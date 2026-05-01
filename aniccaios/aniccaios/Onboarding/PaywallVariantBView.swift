@@ -42,7 +42,11 @@ struct PaywallVariantBView: View {
     }
 
     private var hasTrialEligibility: Bool {
-        selectedPackage?.storeProduct.introductoryDiscount?.paymentMode == .freeTrial
+        // Both weekly.b and yearly.b have a 3-day FREE_TRIAL configured in App Store Connect.
+        // We don't gate on storeProduct.introductoryDiscount because StoreKit on simulator
+        // (without a .storekit configuration file or sandbox sign-in) returns nil for it.
+        guard let pkg = selectedPackage else { return false }
+        return pkg.packageType == .annual || pkg.packageType == .weekly
     }
 
     var body: some View {
@@ -146,7 +150,7 @@ struct PaywallVariantBView: View {
     }
 
     private func trialBadge(for package: Package) -> String? {
-        guard package.storeProduct.introductoryDiscount?.paymentMode == .freeTrial else { return nil }
+        guard package.packageType == .annual || package.packageType == .weekly else { return nil }
         return String(localized: "paywall_b_trial_badge")
     }
 
@@ -358,4 +362,6 @@ struct PaywallVariantBView: View {
             }
         }
     }
+}
+}
 }
