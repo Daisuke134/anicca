@@ -1303,10 +1303,12 @@
 "paywall_plan_price_monthly" = "%@/mes";
 "paywall_plan_save_dynamic" = "Ahorra %d%%";
 "paywall_plan_weekly" = "%@/semana";
-"paywall_plan_cta_trial" = "Comenzar prueba gratuita";
+"paywall_plan_cta_trial" = "Comenzar gratis";
 "paywall_plan_cta_subscribe" = "Suscribirse";
 "paywall_plan_cta_no_trial" = "Comenzar viaje";
 "paywall_plan_trust" = "Sin compromiso. Cancela cuando quieras.";
+"paywall_plan_trust_trial" = "3 días gratis, luego %@. Cancela cuando quieras.";
+"paywall_plan_trial_badge" = "3 DÍAS GRATIS";
 "paywall_plan_review" = "\"Esta app me hizo detenerme y reflexionar.\" — Un usuario real";
 "paywall_plan_maybe_later" = "Quizás después";
 "paywall_plan_restore" = "Restaurar compras";
@@ -1326,8 +1328,11 @@
 "paywall_b_per_week" = "/semana";
 "paywall_b_daily_price" = "Solo %@ por día";
 "paywall_b_cta_no_trial" = "Comienza tu viaje ahora";
+"paywall_b_cta_trial" = "Comenzar gratis";
 "paywall_b_review" = "\"Anicca me ayudó a ser más amable conmigo.\"";
 "paywall_b_trust_no_trial" = "Cancela cuando quieras · Satisfacción garantizada";
+"paywall_b_trust_trial" = "3 días gratis, luego %@ · Cancela cuando quieras";
+"paywall_b_trial_badge" = "3 DÍAS GRATIS";
 
 // MARK: - Paywall Primer (1.8.3)
 "paywall_primer_title" = "Tu plan personalizado\nestá listo";

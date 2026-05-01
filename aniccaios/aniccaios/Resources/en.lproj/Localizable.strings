@@ -1406,10 +1406,12 @@
 "paywall_plan_price_monthly" = "%@/mo";
 "paywall_plan_save_dynamic" = "Save %d%%";
 "paywall_plan_weekly" = "%@/week";
-"paywall_plan_cta_trial" = "Start Free Trial";
+"paywall_plan_cta_trial" = "Start For Free";
 "paywall_plan_cta_subscribe" = "Subscribe";
 "paywall_plan_cta_no_trial" = "Start Journey";
 "paywall_plan_trust" = "No commitment. Cancel anytime.";
+"paywall_plan_trust_trial" = "3 days free, then %@. Cancel anytime.";
+"paywall_plan_trial_badge" = "3 DAYS FREE";
 "paywall_plan_review" = "\"This app actually made me stop and think.\" — A real user";
 "paywall_plan_maybe_later" = "Maybe later";
 "paywall_plan_restore" = "Restore Purchases";
@@ -1432,8 +1434,11 @@
 "paywall_b_per_week" = "/week";
 "paywall_b_daily_price" = "Just %@ per day";
 "paywall_b_cta_no_trial" = "Start Your Journey Now";
+"paywall_b_cta_trial" = "Start For Free";
 "paywall_b_review" = "\"Anicca helped me be kinder to myself.\"";
 "paywall_b_trust_no_trial" = "Cancel anytime · Satisfaction guaranteed";
+"paywall_b_trust_trial" = "3 days free, then %@ · Cancel anytime";
+"paywall_b_trial_badge" = "3 DAYS FREE";
 
 // MARK: - Onboarding New 3 Screens (1.8.3)
 "onboarding_processing_title" = "Setting everything up for you";
