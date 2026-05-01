@@ -363,5 +363,3 @@ struct PaywallVariantBView: View {
         }
     }
 }
-}
-}
