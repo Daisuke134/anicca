@@ -1285,3 +1285,14 @@
 "nudge_loneliness_detail_12" = "Einsamkeit ist ein Gefühl, keine Tatsache. Schreib heute 1 Person \"Wie geht's dir?\".";
 "nudge_loneliness_detail_13" = "Cafe geht. Supermarkt geht. Spür menschliche Nähe. Geh jetzt raus.";
 "nudge_loneliness_detail_14" = "Statt zu reden, hör zu. Das ist Verbindung. Frag heute jemanden \"Wie geht's?\".";
+
+// MARK: - Paywall Variant B (1.8.5+ Free Trial)
+"paywall_b_cta_no_trial" = "Jetzt starten";
+"paywall_b_cta_trial" = "Kostenlos starten";
+"paywall_b_trust_no_trial" = "Jederzeit kündbar · Zufriedenheitsgarantie";
+"paywall_b_trust_trial" = "3 Tage kostenlos, dann %@ · Jederzeit kündbar";
+"paywall_b_trial_badge" = "3 TAGE KOSTENLOS";
+"paywall_plan_cta_trial" = "Kostenlos starten";
+"paywall_plan_cta_no_trial" = "Reise beginnen";
+"paywall_plan_trust_trial" = "3 Tage kostenlos, dann %@. Jederzeit kündbar.";
+"paywall_plan_trial_badge" = "3 TAGE KOSTENLOS";

@@ -1285,3 +1285,14 @@
 "nudge_loneliness_detail_12" = "Solidão é um sentimento, não um fato. Mande \"tudo bem?\" pra 1 pessoa hoje.";
 "nudge_loneliness_detail_13" = "Cafeteria serve. Padaria serve. Sinta a presença humana. Saia agora.";
 "nudge_loneliness_detail_14" = "Em vez de falar, ouça. Isso é conexão. Pergunte a alguém \"como vai?\" hoje.";
+
+// MARK: - Paywall Variant B (1.8.5+ Free Trial)
+"paywall_b_cta_no_trial" = "Comece sua jornada agora";
+"paywall_b_cta_trial" = "Começar grátis";
+"paywall_b_trust_no_trial" = "Cancele quando quiser · Satisfação garantida";
+"paywall_b_trust_trial" = "3 dias grátis, depois %@ · Cancele quando quiser";
+"paywall_b_trial_badge" = "3 DIAS GRÁTIS";
+"paywall_plan_cta_trial" = "Começar grátis";
+"paywall_plan_cta_no_trial" = "Começar jornada";
+"paywall_plan_trust_trial" = "3 dias grátis, depois %@. Cancele quando quiser.";
+"paywall_plan_trial_badge" = "3 DIAS GRÁTIS";

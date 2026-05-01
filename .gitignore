@@ -175,3 +175,6 @@ CLAUDE.local.md
 .claude/skills/aso-skills/
 mobile-apps/rork--ai/
 mobile-apps/rork-lookmax-pro/
+
+# Anicca music factory output (large generated binaries)
+music-factory/

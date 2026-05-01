@@ -1405,10 +1405,12 @@
 "paywall_plan_price_monthly" = "%@/月";
 "paywall_plan_save_dynamic" = "%d%%お得";
 "paywall_plan_weekly" = "%@/週";
-"paywall_plan_cta_trial" = "無料トライアルを始める";
+"paywall_plan_cta_trial" = "無料で始める";
 "paywall_plan_cta_subscribe" = "登録する";
 "paywall_plan_cta_no_trial" = "旅を始める";
 "paywall_plan_trust" = "いつでもキャンセル可能。";
+"paywall_plan_trust_trial" = "3日間無料、その後 %@。いつでもキャンセル可能。";
+"paywall_plan_trial_badge" = "3日間無料";
 "paywall_plan_review" = "「このアプリのおかげで立ち止まって考えるようになりました」— 実際のユーザー";
 "paywall_plan_maybe_later" = "あとで";
 "paywall_plan_restore" = "購入を復元";
@@ -1431,8 +1433,11 @@
 "paywall_b_per_week" = "/週";
 "paywall_b_daily_price" = "1日あたりたった%@";
 "paywall_b_cta_no_trial" = "今すぐ旅を始める";
+"paywall_b_cta_trial" = "無料で始める";
 "paywall_b_review" = "「アニッチャのおかげで自分に優しくなれました」";
 "paywall_b_trust_no_trial" = "いつでもキャンセル · 満足保証";
+"paywall_b_trust_trial" = "3日間無料、その後 %@ · いつでもキャンセル可能";
+"paywall_b_trial_badge" = "3日間無料";
 
 // MARK: - Onboarding New 3 Screens (1.8.3)
 "onboarding_processing_title" = "あなた専用のプランを\n準備しています";

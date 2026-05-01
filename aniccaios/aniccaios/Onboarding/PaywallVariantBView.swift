@@ -41,6 +41,14 @@ struct PaywallVariantBView: View {
         return formatter.string(from: NSNumber(value: price))
     }
 
+    private var hasTrialEligibility: Bool {
+        // Both weekly.b and yearly.b have a 3-day FREE_TRIAL configured in App Store Connect.
+        // We don't gate on storeProduct.introductoryDiscount because StoreKit on simulator
+        // (without a .storekit configuration file or sandbox sign-in) returns nil for it.
+        guard let pkg = selectedPackage else { return false }
+        return pkg.packageType == .annual || pkg.packageType == .weekly
+    }
+
     var body: some View {
         VStack(spacing: 12) {
             heroSection
@@ -111,7 +119,7 @@ struct PaywallVariantBView: View {
                     planCard(
                         package: yearly,
                         priceLabel: yearly.localizedPriceString + String(localized: "paywall_b_per_year"),
-                        badge: String(localized: "paywall_plan_yearly_badge"),
+                        badge: trialBadge(for: yearly) ?? String(localized: "paywall_plan_yearly_badge"),
                         dailyPriceLabel: dailyPrice.map {
                             String(format: NSLocalizedString("paywall_b_daily_price", comment: ""), $0)
                         }
@@ -122,7 +130,7 @@ struct PaywallVariantBView: View {
                     planCard(
                         package: monthly,
                         priceLabel: monthly.localizedPriceString + String(localized: "paywall_b_per_month"),
-                        badge: nil,
+                        badge: trialBadge(for: monthly),
                         dailyPriceLabel: nil
                     )
                 }
@@ -131,7 +139,7 @@ struct PaywallVariantBView: View {
                     planCard(
                         package: weekly,
                         priceLabel: weekly.localizedPriceString + String(localized: "paywall_b_per_week"),
-                        badge: nil,
+                        badge: trialBadge(for: weekly),
                         dailyPriceLabel: nil
                     )
                 }
@@ -139,6 +147,18 @@ struct PaywallVariantBView: View {
             .padding(.horizontal, 24)
             .padding(.top, 8)
         }
+    }
+
+    private func trialBadge(for package: Package) -> String? {
+        guard package.packageType == .annual || package.packageType == .weekly else { return nil }
+        return String(localized: "paywall_b_trial_badge")
+    }
+
+    private var trustText: String {
+        guard hasTrialEligibility, let pkg = selectedPackage else {
+            return String(localized: "paywall_b_trust_no_trial")
+        }
+        return String(format: NSLocalizedString("paywall_b_trust_trial", comment: ""), pkg.localizedPriceString)
     }
 
     private var ctaSection: some View {
@@ -155,7 +175,7 @@ struct PaywallVariantBView: View {
                     if isPurchasing {
                         ProgressView().tint(.white)
                     } else {
-                        Text(String(localized: "paywall_b_cta_no_trial"))
+                        Text(String(localized: hasTrialEligibility ? "paywall_b_cta_trial" : "paywall_b_cta_no_trial"))
                     }
                 }
                 .font(.system(size: 18, weight: .semibold))
@@ -175,7 +195,7 @@ struct PaywallVariantBView: View {
                 .italic()
                 .padding(.horizontal, 24)
 
-            Text(String(localized: "paywall_b_trust_no_trial"))
+            Text(trustText)
                 .font(.system(size: 12))
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
