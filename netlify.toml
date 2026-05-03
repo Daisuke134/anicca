@@ -2,9 +2,13 @@
   base = "apps/landing"
   publish = "out"
   command = "npm ci && npm run build"
+  functions = "netlify/functions"
 
 [build.environment]
   GIT_LFS_ENABLED = "false"
+
+[functions]
+  node_bundler = "esbuild"
 
 [[redirects]]
   from = "/api/*"
