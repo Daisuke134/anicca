@@ -44,3 +44,13 @@
   from = "/revenue"
   to = "/revenue.html"
   status = 200
+
+[[redirects]]
+  from = "/account"
+  to = "/.netlify/functions/account"
+  status = 200
+
+[[redirects]]
+  from = "/account/*"
+  to = "/.netlify/functions/account"
+  status = 200
