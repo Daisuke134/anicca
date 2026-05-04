@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-05-04T11:31:20.872Z",
+  "updated_at": "2026-05-04T12:32:35.907Z",
   "mrr": {
-    "total_usd": 10.99,
+    "total_usd": 67.99,
     "by_product": {
       "anicca-ios": 0,
       "letter": 0,
@@ -11,11 +11,12 @@
       "coldcraft": 0,
       "signaturecraft": 0,
       "deepworkfm": 0,
-      "_other": 10.99
+      "_other": 10.99,
+      "anicca-ios-rc": 57
     },
     "sources": {
       "stripe": 10.99,
-      "revenuecat_mobile": null
+      "revenuecat_mobile": 57
     }
   },
   "followers": {
@@ -23,23 +24,28 @@
     "by_account": [
       {
         "platform": "tiktok",
-        "handle": "unknown",
-        "followers": 0
-      },
-      {
-        "platform": "tiktok",
-        "handle": "unknown",
-        "followers": 0
-      },
-      {
-        "platform": "tiktok",
-        "handle": "unknown",
-        "followers": 0
-      },
-      {
-        "platform": "tiktok",
         "handle": "aniccajp",
         "followers": 0
+      },
+      {
+        "platform": "tiktok",
+        "handle": "unknown",
+        "followers": 0
+      },
+      {
+        "platform": "tiktok",
+        "handle": "unknown",
+        "followers": 0
+      },
+      {
+        "platform": "tiktok",
+        "handle": "unknown",
+        "followers": 0
+      },
+      {
+        "platform": "tiktok",
+        "handle": "obou_anicca",
+        "followers": 1
       },
       {
         "platform": "tiktok",
@@ -53,18 +59,18 @@
       },
       {
         "platform": "tiktok",
-        "handle": "unknown",
-        "followers": 0
-      },
-      {
-        "platform": "tiktok",
         "handle": "anicca.jp4",
         "followers": 57
       },
       {
         "platform": "tiktok",
-        "handle": "obou_anicca",
-        "followers": 1
+        "handle": "unknown",
+        "followers": 0
+      },
+      {
+        "platform": "tiktok",
+        "handle": "unknown",
+        "followers": 0
       },
       {
         "platform": "tiktok",
@@ -73,17 +79,12 @@
       },
       {
         "platform": "tiktok",
-        "handle": "unknown",
+        "handle": "anicca.en7",
         "followers": 0
       },
       {
         "platform": "tiktok",
         "handle": "aniccajp2",
-        "followers": 0
-      },
-      {
-        "platform": "tiktok",
-        "handle": "anicca.en7",
         "followers": 0
       },
       {
@@ -149,7 +150,7 @@
     ]
   },
   "views": {
-    "weekly_total": 37957,
+    "weekly_total": 37960,
     "weekly_total_likes": 156,
     "weekly_total_comments": 11,
     "posts_count": 331,
@@ -158,13 +159,13 @@
     "progress_pct": 3.8
   },
   "spend": {
-    "total_usd": 553.49,
+    "total_usd": 553.59,
     "by_category": {
       "claude": 200,
       "chatgpt": 20,
       "living": 200,
       "apify": 0,
-      "railway": 9.49,
+      "railway": 9.59,
       "supabase": 25,
       "postiz": 99
     },
@@ -174,26 +175,26 @@
       "living: $200/mo - Dais monthly burn (manual)"
     ]
   },
-  "profit_usd": -542.5,
+  "profit_usd": -485.6,
   "goals": {
     "mrr_target": 10000,
     "mrr_deadline": "2026-05-31",
-    "progress_pct": 0.1
+    "progress_pct": 0.7
   },
   "basic_income": {
-    "pool_usd": 1.1,
+    "pool_usd": 6.8,
     "recipients": 0,
     "per_person_usd": 0,
     "next_payout": "TBD"
   },
   "meta": {
-    "rc_status": "unavailable",
+    "rc_status": "ok",
     "fetcher_versions": {
-      "stripe": "2026-05-04T11:29:30.102Z",
-      "rc": "2026-05-04T11:29:29.525Z",
-      "postiz": "2026-05-04T11:30:57.097Z",
-      "followers": "2026-05-04T11:31:20.799Z",
-      "spend": "2026-05-04T11:29:30.351Z"
+      "stripe": "2026-05-04T12:30:09.723Z",
+      "rc": "2026-05-04T12:30:08.994Z",
+      "postiz": "2026-05-04T12:31:51.807Z",
+      "followers": "2026-05-04T12:32:35.823Z",
+      "spend": "2026-05-04T12:30:09.840Z"
     }
   }
 }
