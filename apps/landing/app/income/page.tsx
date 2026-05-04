@@ -10,6 +10,83 @@ interface BasicIncome {
   per_person_usd: number;
 }
 
+function ApplyForm() {
+  const [email, setEmail] = useState('');
+  const [reason, setReason] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setSubmitting(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/income/apply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), reason: reason.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || 'something went wrong');
+        setSubmitting(false);
+        return;
+      }
+      if (data.onboarding_url) {
+        window.location.href = data.onboarding_url;
+        return;
+      }
+      setError('no onboarding url returned');
+      setSubmitting(false);
+    } catch (err) {
+      setError(String(err));
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <section className="mt-12 rounded-xl border border-border px-6 py-6">
+      <h2 className="text-xl font-semibold">Apply</h2>
+      <p className="mt-2 text-sm text-muted-foreground">
+        On submit you'll be redirected to Stripe Connect onboarding. KYC + bank
+        info takes about 5 minutes. After that you wait — you'll get an email
+        when you're approved into the next cohort.
+      </p>
+      <form className="mt-6 space-y-4" onSubmit={onSubmit}>
+        <input
+          name="email"
+          type="email"
+          required
+          placeholder="you@example.com"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="w-full rounded-md border border-border bg-background px-4 py-3 text-foreground"
+        />
+        <textarea
+          name="reason"
+          required
+          maxLength={280}
+          placeholder="Why you'd want this — one sentence (280 chars max)"
+          rows={3}
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          className="w-full rounded-md border border-border bg-background px-4 py-3 text-foreground"
+        />
+        {error && (
+          <p className="text-sm text-red-500">⚠ {error}</p>
+        )}
+        <button
+          type="submit"
+          disabled={submitting}
+          className="w-full rounded-md bg-foreground px-6 py-3 font-bold text-background transition-opacity hover:opacity-90 disabled:opacity-50"
+        >
+          {submitting ? 'Connecting to Stripe…' : 'Continue to Stripe Connect →'}
+        </button>
+      </form>
+    </section>
+  );
+}
+
 export default function Page() {
   const [bi, setBi] = useState<BasicIncome | null>(null);
 
@@ -64,41 +141,7 @@ export default function Page() {
         </ol>
       </section>
 
-      <section className="mt-12 rounded-xl border border-border px-6 py-6">
-        <h2 className="text-xl font-semibold">Apply</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          The form is being wired up to Stripe Connect Express right now. For
-          now, drop your email here and we'll email you the moment onboarding
-          is live (matter of days).
-        </p>
-        <form
-          className="mt-6 space-y-4"
-          action="https://formspree.io/f/xnnvogyr"
-          method="POST"
-        >
-          <input
-            name="email"
-            type="email"
-            required
-            placeholder="you@example.com"
-            className="w-full rounded-md border border-border bg-background px-4 py-3 text-foreground"
-          />
-          <textarea
-            name="reason"
-            required
-            maxLength={280}
-            placeholder="Why you'd want this — one sentence (280 chars max)"
-            rows={3}
-            className="w-full rounded-md border border-border bg-background px-4 py-3 text-foreground"
-          />
-          <button
-            type="submit"
-            className="w-full rounded-md bg-foreground px-6 py-3 font-bold text-background transition-opacity hover:opacity-90"
-          >
-            Join the waitlist →
-          </button>
-        </form>
-      </section>
+      <ApplyForm />
 
       <section className="mt-12 space-y-4 text-sm leading-relaxed text-muted-foreground">
         <p>
