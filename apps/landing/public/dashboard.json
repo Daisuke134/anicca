@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-05-04T13:04:27.440Z",
+  "updated_at": "2026-05-04T19:03:13.160Z",
   "mrr": {
     "total_usd": 67.99,
     "by_product": {
@@ -20,28 +20,8 @@
     }
   },
   "followers": {
-    "total": 90,
+    "total": 92,
     "by_account": [
-      {
-        "platform": "tiktok",
-        "handle": "unknown",
-        "followers": 0
-      },
-      {
-        "platform": "tiktok",
-        "handle": "unknown",
-        "followers": 0
-      },
-      {
-        "platform": "tiktok",
-        "handle": "unknown",
-        "followers": 0
-      },
-      {
-        "platform": "tiktok",
-        "handle": "unknown",
-        "followers": 0
-      },
       {
         "platform": "tiktok",
         "handle": "aniccajp",
@@ -49,8 +29,28 @@
       },
       {
         "platform": "tiktok",
+        "handle": "unknown",
+        "followers": 0
+      },
+      {
+        "platform": "tiktok",
+        "handle": "unknown",
+        "followers": 0
+      },
+      {
+        "platform": "tiktok",
+        "handle": "unknown",
+        "followers": 0
+      },
+      {
+        "platform": "tiktok",
         "handle": "monk_anicca",
-        "followers": 6
+        "followers": 7
+      },
+      {
+        "platform": "tiktok",
+        "handle": "unknown",
+        "followers": 0
       },
       {
         "platform": "tiktok",
@@ -69,8 +69,13 @@
       },
       {
         "platform": "tiktok",
+        "handle": "unknown",
+        "followers": 0
+      },
+      {
+        "platform": "tiktok",
         "handle": "obou_anicca",
-        "followers": 1
+        "followers": 2
       },
       {
         "platform": "tiktok",
@@ -85,11 +90,6 @@
       {
         "platform": "tiktok",
         "handle": "anicca_slideshow",
-        "followers": 0
-      },
-      {
-        "platform": "tiktok",
-        "handle": "unknown",
         "followers": 0
       },
       {
@@ -150,7 +150,7 @@
     ]
   },
   "views": {
-    "weekly_total": 37962,
+    "weekly_total": 37980,
     "weekly_total_likes": 157,
     "weekly_total_comments": 11,
     "posts_count": 331,
@@ -190,11 +190,11 @@
   "meta": {
     "rc_status": "ok",
     "fetcher_versions": {
-      "stripe": "2026-05-04T13:02:07.837Z",
-      "rc": "2026-05-04T13:02:07.227Z",
-      "postiz": "2026-05-04T13:03:44.437Z",
-      "followers": "2026-05-04T13:04:27.345Z",
-      "spend": "2026-05-04T13:02:09.417Z"
+      "stripe": "2026-05-04T19:01:18.878Z",
+      "rc": "2026-05-04T19:01:18.305Z",
+      "postiz": "2026-05-04T19:02:37.317Z",
+      "followers": "2026-05-04T19:03:13.057Z",
+      "spend": "2026-05-04T19:01:19.360Z"
     }
   }
 }
