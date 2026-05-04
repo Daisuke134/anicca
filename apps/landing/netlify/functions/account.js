@@ -1,69 +1,76 @@
-// Stripe Customer Portal entry point.
-// GET /account?email=<email>  → redirects to Stripe billing portal session
-// FTC click-to-cancel compliance: subscribers can manage / cancel any time.
+// Stripe Customer Portal entry point — one-click direct redirect from email.
+// GET /account?cid=<stripe_customer_id>   → 302 to Stripe portal (preferred, used in emails)
+// GET /account?email=<email>              → fallback: lookup customer by email, 302
+// GET /account                            → friendly fallback page (no form, just info)
 exports.handler = async (event) => {
   const STRIPE_KEY = process.env.STRIPE_SECRET_KEY;
   if (!STRIPE_KEY) return { statusCode: 500, body: 'missing config' };
 
   const ORIGIN = (event.headers && (event.headers.origin || event.headers.Origin)) || 'https://aniccaai.com';
+  const params = event.queryStringParameters || {};
+  const cid = params.cid || '';
+  const email = params.email || '';
 
-  // Email comes from query string (linked from email footer of letters)
-  const email = (event.queryStringParameters && event.queryStringParameters.email) || '';
-  if (!email) {
-    return {
-      statusCode: 200,
-      headers: { 'Content-Type': 'text/html; charset=utf-8' },
-      body: `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Manage subscription</title>
-        <style>body{font-family:Georgia,serif;max-width:480px;margin:80px auto;padding:24px;color:#2A2520;background:#FBF7EF;line-height:1.7;text-align:center}
-        input,button{font-family:inherit;font-size:14px;padding:10px;border:1px solid #8B7355;background:transparent;color:inherit}
-        button{background:#2A2520;color:#FBF7EF;cursor:pointer;letter-spacing:2px;text-transform:uppercase;margin-left:8px}</style>
-        </head><body>
-        <h1 style="font-weight:300">Manage your subscription</h1>
-        <p>Enter the email you subscribed with. We'll send you a portal link.</p>
-        <form method="GET">
-          <input type="email" name="email" placeholder="your@email.com" required />
-          <button type="submit">Continue →</button>
-        </form>
-        </body></html>`,
-    };
+  // PATH 1: cid present → 1-API-call direct portal redirect (used in welcome / daily emails)
+  if (cid && /^cus_[A-Za-z0-9]+$/.test(cid)) {
+    const portal = await createPortalSession(STRIPE_KEY, cid, ORIGIN);
+    if (portal.url) return { statusCode: 302, headers: { Location: portal.url }, body: '' };
+    return { statusCode: portal.status || 500, body: JSON.stringify(portal.body || {}) };
   }
 
-  // 1) Find Stripe customer by email
-  const customerSearch = await fetch(
-    `https://api.stripe.com/v1/customers/search?query=${encodeURIComponent('email:"' + email + '"')}&limit=1`,
-    { headers: { Authorization: 'Basic ' + Buffer.from(STRIPE_KEY + ':').toString('base64') } }
-  );
-  const cs = await customerSearch.json();
-  const customer = cs.data && cs.data[0];
-  if (!customer) {
-    return {
-      statusCode: 200,
-      headers: { 'Content-Type': 'text/html; charset=utf-8' },
-      body: `<!DOCTYPE html><html><body style="font-family:Georgia,serif;max-width:480px;margin:80px auto;padding:24px;text-align:center">
-        <p>No subscription found for ${email}.</p>
-        <p><a href="/account">Try another email</a></p></body></html>`,
-    };
+  // PATH 2: email fallback → search customer by email, redirect
+  if (email) {
+    const customerSearch = await fetch(
+      `https://api.stripe.com/v1/customers/search?query=${encodeURIComponent('email:"' + email + '"')}&limit=1`,
+      { headers: { Authorization: 'Basic ' + Buffer.from(STRIPE_KEY + ':').toString('base64') } }
+    );
+    const cs = await customerSearch.json();
+    const customer = cs.data && cs.data[0];
+    if (customer) {
+      const portal = await createPortalSession(STRIPE_KEY, customer.id, ORIGIN);
+      if (portal.url) return { statusCode: 302, headers: { Location: portal.url }, body: '' };
+    }
+    return notFoundPage(email);
   }
 
-  // 2) Create portal session
-  const portalParams = new URLSearchParams();
-  portalParams.append('customer', customer.id);
-  portalParams.append('return_url', `${ORIGIN}/account`);
-  const portalRes = await fetch('https://api.stripe.com/v1/billing_portal/sessions', {
-    method: 'POST',
-    headers: {
-      Authorization: 'Basic ' + Buffer.from(STRIPE_KEY + ':').toString('base64'),
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: portalParams.toString(),
-  });
-  const portal = await portalRes.json();
-  if (!portalRes.ok) return { statusCode: portalRes.status, body: JSON.stringify(portal) };
-
-  // 3) 302 redirect to portal
+  // PATH 3: no params → minimal info page directing to email
   return {
-    statusCode: 302,
-    headers: { Location: portal.url },
-    body: '',
+    statusCode: 200,
+    headers: { 'Content-Type': 'text/html; charset=utf-8' },
+    body: `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Manage subscription</title>
+      <style>body{font-family:Georgia,serif;max-width:560px;margin:80px auto;padding:24px;color:#2A2520;background:#FBF7EF;line-height:1.7;text-align:center}</style>
+      </head><body>
+      <h1 style="font-weight:300">Manage your subscription</h1>
+      <p>The "Manage subscription" link inside any Anicca email takes you<br />directly to your Stripe billing portal.</p>
+      <p style="font-size:14px;color:#8B7355">If you can't find that email, contact <a href="mailto:hello@aniccaai.com">hello@aniccaai.com</a>.</p>
+      </body></html>`,
   };
 };
+
+async function createPortalSession(stripeKey, customerId, origin) {
+  const params = new URLSearchParams();
+  params.append('customer', customerId);
+  params.append('return_url', `${origin}/letter`);
+  const res = await fetch('https://api.stripe.com/v1/billing_portal/sessions', {
+    method: 'POST',
+    headers: {
+      Authorization: 'Basic ' + Buffer.from(stripeKey + ':').toString('base64'),
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: params.toString(),
+  });
+  const json = await res.json();
+  if (!res.ok) return { status: res.status, body: json };
+  return { url: json.url };
+}
+
+function notFoundPage(email) {
+  return {
+    statusCode: 200,
+    headers: { 'Content-Type': 'text/html; charset=utf-8' },
+    body: `<!DOCTYPE html><html><body style="font-family:Georgia,serif;max-width:480px;margin:80px auto;padding:24px;text-align:center;color:#2A2520;background:#FBF7EF">
+      <p>No active subscription found for ${email}.</p>
+      <p style="font-size:13px;color:#8B7355"><a href="https://aniccaai.com/letter" style="color:#2A2520">Subscribe to Daily Anicca Letter →</a></p>
+      </body></html>`,
+  };
+}

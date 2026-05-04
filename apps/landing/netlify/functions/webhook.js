@@ -58,7 +58,7 @@ exports.handler = async (event) => {
         }).catch(() => {});
       }
       const subject = lang === 'jp' ? '無常の手紙へようこそ' : 'Welcome to the Daily Anicca Letter';
-      const html = lang === 'jp' ? jpLetterWelcomeHtml() : enLetterWelcomeHtml();
+      const html = lang === 'jp' ? jpLetterWelcomeHtml(session.customer) : enLetterWelcomeHtml(session.customer);
       await sendResend(RESEND_API_KEY, email, subject, html);
       return { statusCode: 200, body: 'ok subscription' };
     }
@@ -145,24 +145,36 @@ async function sendResend(key, email, subject, html) {
   }).catch(() => {});
 }
 
-function enLetterWelcomeHtml() {
+function enLetterWelcomeHtml(customerId) {
+  const manageUrl = customerId ? `https://aniccaai.com/account?cid=${customerId}` : 'https://aniccaai.com/account';
   return `
   <div style="font-family: Georgia, serif; max-width: 560px; margin: 0 auto; padding: 24px; color: #2A2520; line-height: 1.7;">
     <h1 style="font-weight: 300;">Welcome.</h1>
     <p>Your daily letters on impermanence start tomorrow morning.</p>
-    <p>You've subscribed to the <em>Daily Anicca Letter</em>. One short meditation, every morning, on the body's emotional weather. The first 14 days are free. After that, $9.99/month — cancel any time from <a href="https://aniccaai.com/account">aniccaai.com/account</a>.</p>
+    <p>You've subscribed to the <em>Daily Anicca Letter</em>. One short meditation, every morning, on the body's emotional weather. The first 14 days are free. After that, $9.99/month.</p>
     <p>Read each letter slowly. Let it settle. The teaching is in the noticing, not in the rushing.</p>
     <p>— Anicca</p>
+    <hr style="border:none; border-top: 1px solid #E5DCC9; margin: 32px 0;" />
+    <p style="font-size:13px; color:#8B7355;">If you'd like the full 49-lesson book: <a href="https://aniccaai.com/monk" style="color:#2A2520;">The Anicca Reset — $10.99</a></p>
+    <p style="text-align:center; margin: 24px 0 8px 0;">
+      <a href="${manageUrl}" style="display:inline-block; border:1px solid #8B7355; color:#8B7355; padding: 10px 22px; text-decoration:none; letter-spacing:2px; font-size:11px; text-transform:uppercase;">Manage subscription</a>
+    </p>
   </div>`;
 }
-function jpLetterWelcomeHtml() {
+function jpLetterWelcomeHtml(customerId) {
+  const manageUrl = customerId ? `https://aniccaai.com/account?cid=${customerId}` : 'https://aniccaai.com/account';
   return `
   <div style="font-family: 'Hiragino Mincho ProN', serif; max-width: 560px; margin: 0 auto; padding: 24px; color: #2A2520; line-height: 1.9;">
     <h1 style="font-weight: 300;">ようこそ。</h1>
     <p>明日の朝から、無常をめぐる短い手紙を毎日お届けします。</p>
-    <p>『無常の手紙』をご購読いただきありがとうございます。一通あたり約2分。365通、毎日1通ずつ。最初の14日間は無料、以後は月¥980。<a href="https://aniccaai.com/account">aniccaai.com/account</a> からいつでも解約できます。</p>
+    <p>『無常の手紙』をご購読いただきありがとうございます。一通あたり約2分。365通、毎日1通ずつ。最初の14日間は無料、以後は月¥980。</p>
     <p>急がず、ゆっくり読んでください。気づくこと、それが教えです。</p>
     <p>— アニッチャ</p>
+    <hr style="border:none; border-top: 1px solid #E5DCC9; margin: 32px 0;" />
+    <p style="font-size:13px; color:#8B7355;">49章すべて読みたい方は: <a href="https://aniccaai.com/achan" style="color:#2A2520;">『アニッチャ・リセット』 — ¥1,580</a></p>
+    <p style="text-align:center; margin: 24px 0 8px 0;">
+      <a href="${manageUrl}" style="display:inline-block; border:1px solid #8B7355; color:#8B7355; padding: 10px 22px; text-decoration:none; letter-spacing:2px; font-size:11px;">サブスクリプションを管理</a>
+    </p>
   </div>`;
 }
 
