@@ -11,6 +11,21 @@
   node_bundler = "esbuild"
 
 [[redirects]]
+  from = "/api/income/apply"
+  to = "/.netlify/functions/income-apply"
+  status = 200
+
+[[redirects]]
+  from = "/api/income/webhook"
+  to = "/.netlify/functions/income-webhook"
+  status = 200
+
+[[redirects]]
+  from = "/api/income/list"
+  to = "/.netlify/functions/income-list"
+  status = 200
+
+[[redirects]]
   from = "/api/*"
   to = "https://anicca-proxy-production.up.railway.app/api/:splat"
   status = 200
@@ -64,18 +79,3 @@
   from = "/anicca-mobile/*"
   to = "/affirmation-app/:splat"
   status = 301
-
-[[redirects]]
-  from = "/api/income/apply"
-  to = "/.netlify/functions/income-apply"
-  status = 200
-
-[[redirects]]
-  from = "/api/income/webhook"
-  to = "/.netlify/functions/income-webhook"
-  status = 200
-
-[[redirects]]
-  from = "/api/income/list"
-  to = "/.netlify/functions/income-list"
-  status = 200
