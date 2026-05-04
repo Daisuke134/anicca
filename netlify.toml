@@ -54,3 +54,13 @@
   from = "/account/*"
   to = "/.netlify/functions/account"
   status = 200
+
+[[redirects]]
+  from = "/anicca-mobile"
+  to = "/affirmation-app"
+  status = 301
+
+[[redirects]]
+  from = "/anicca-mobile/*"
+  to = "/affirmation-app/:splat"
+  status = 301

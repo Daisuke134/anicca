@@ -1,21 +1,34 @@
 /* eslint-disable react/no-unescaped-entities */
+import Image from 'next/image';
 import Link from 'next/link';
 
 export const metadata = {
-  title: 'Anicca — Daily Affirmations · AI Self-Care + Manifestation App',
+  title: 'Anicca Affirmation App — iOS Daily Buddhist Nudges',
   description:
-    'Anicca is an iOS app that delivers AI-personalized daily affirmation cards at the exact moment you need them. Self-love, manifestation, anxiety relief — Buddhist-inspired (Anicca = impermanence). For people healing from self-criticism, burnout, and overthinking.',
+    'Anicca Affirmation App — iOS app that delivers AI-personalized affirmation cards at the exact moment you need them. The mobile instance of the Anicca empire. Buddhist-inspired (Anicca = impermanence).',
 };
+
+const SCREENSHOTS = [
+  { src: '/screenshots/en/onboarding.png', title: 'Tell it what hurts', desc: 'Onboard in 90 seconds. Pick what you carry — anxiety, self-doubt, late nights, loneliness.' },
+  { src: '/screenshots/en/notification.png', title: 'Get a card at the right moment', desc: 'Anicca learns your day and sends a single line of kindness exactly when you would otherwise spiral.' },
+  { src: '/screenshots/en/nudge-card.png', title: 'Feel a little lighter', desc: 'Tap to read. Thumb up if it lands. Cards become more you. No streaks. No guilt.' },
+];
 
 export default function Page() {
   return (
     <main className="mx-auto max-w-3xl px-6 py-16 text-foreground leading-relaxed">
+      <p className="mb-6 text-sm">
+        <Link href="/en" className="text-muted-foreground underline transition-colors hover:text-foreground">
+          ← Back to Anicca Empire
+        </Link>
+      </p>
+
       <header className="mb-14">
         <p className="mb-3 text-sm uppercase tracking-widest text-muted-foreground">
-          Brand brief · Anicca · Mobile App
+          One product of the Anicca empire · iOS subscription
         </p>
         <h1 className="text-4xl font-bold md:text-6xl">
-          Daily Affirmations · AI self-care + manifestation
+          Affirmation App — Daily Buddhist Nudges
         </h1>
         <p className="mt-6 text-xl text-muted-foreground">
           Anicca is an iOS app that sends a single line of kindness — an
@@ -24,15 +37,36 @@ export default function Page() {
           your mood. Buddhist-inspired (Anicca means impermanence: every storm
           passes).
         </p>
-        <p className="mt-6">
-          <Link
-            href="https://apps.apple.com/us/app/daily-affirmations-anicca/id6755129214"
-            className="underline"
-          >
-            App Store: apps.apple.com/us/app/daily-affirmations-anicca/id6755129214
-          </Link>
-        </p>
+        <div className="mt-8 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
+          <a href="https://aniccaai.com/app" className="inline-block">
+            <Image
+              src="/app-store-badge-en.svg"
+              alt="Download on the App Store"
+              width={180}
+              height={60}
+              className="h-12 w-auto"
+            />
+          </a>
+          <p className="text-sm text-muted-foreground">
+            iOS 15.0+ · Free · Anicca Pro from $9.99/mo
+          </p>
+        </div>
       </header>
+
+      <section className="mb-16">
+        <h2 className="mb-8 text-2xl font-semibold">How it works</h2>
+        <div className="grid gap-8 md:grid-cols-3">
+          {SCREENSHOTS.map((s) => (
+            <div key={s.src} className="text-center">
+              <div className="relative mx-auto h-96 w-48">
+                <Image src={s.src} alt={s.title} fill className="object-contain" />
+              </div>
+              <h3 className="mt-4 font-bold text-foreground">{s.title}</h3>
+              <p className="mt-2 text-sm text-muted-foreground">{s.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
 
       <section className="mb-12">
         <h2 className="mb-4 text-2xl font-semibold">One-line pitch</h2>
