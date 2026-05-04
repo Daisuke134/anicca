@@ -24,8 +24,7 @@ const PRODUCT_LAYOUT: ProductCard[] = [
   { key: 'fashion', href: '/fashion', emoji: '👕' },
   { key: 'cafe', href: '/cafe', emoji: '🥭' },
   { key: 'donation', href: '/donation', emoji: '💝' },
-  { key: 'teddy', href: '/teddy', emoji: '🧸' },
-  { key: 'factory', href: '/factory', emoji: '🏭' },
+  { key: 'webapps', href: '/factory', emoji: '🌐' },
   { key: 'books', href: '#', emoji: '📚' },
   { key: 'retreats', href: '#', emoji: '🏞️' },
 ];
@@ -53,8 +52,7 @@ export default function TheEmpireProducts({ locale }: TheEmpireProductsProps) {
       fashion: ['fashion'],
       cafe: ['cafe'],
       donation: ['donation'],
-      teddy: ['teddy'],
-      factory: ['factory'],
+      webapps: ['webapps', 'factory'],
       books: ['books'],
       retreats: ['retreats'],
     };

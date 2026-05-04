@@ -19,10 +19,7 @@ const CATEGORY_ORDER = [
   'supabase',
   'chatgpt',
   'railway',
-  'apify',
 ] as const;
-
-const FIXED_KEYS = new Set(['claude', 'chatgpt', 'living']);
 
 export default function TheSpend({ locale }: TheSpendProps) {
   const t = translations[locale].theSpend;
@@ -57,17 +54,11 @@ export default function TheSpend({ locale }: TheSpendProps) {
           {CATEGORY_ORDER.map((cat) => {
             const v = Number(byCategory[cat] || 0);
             const pct = (v / max) * 100;
-            const isFixed = FIXED_KEYS.has(cat);
             return (
               <div key={cat}>
                 <div className="mb-1 flex items-baseline justify-between text-sm">
                   <span className="text-foreground">
                     {(t.categories as Record<string, string>)[cat] || cat}
-                    {isFixed && (
-                      <span className="ml-2 text-xs text-muted-foreground">
-                        *{t.fixedTag}
-                      </span>
-                    )}
                   </span>
                   <span className="font-mono text-foreground">${v.toLocaleString()}</span>
                 </div>
@@ -97,7 +88,6 @@ export default function TheSpend({ locale }: TheSpendProps) {
           </div>
         </div>
 
-        <p className="mt-6 text-xs text-muted-foreground">{t.footnote}</p>
       </div>
     </section>
   );

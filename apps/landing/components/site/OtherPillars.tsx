@@ -10,10 +10,10 @@ const PILLARS = [
   { key: 'research', href: '/research', emoji: '🔬' },
   { key: 'newsletter', href: '/letter', emoji: '✉️' },
   { key: 'tomb', href: '/tomb', emoji: '🪦' },
-  { key: 'internship', href: '/internship', emoji: '🎓' },
   { key: 'comedy', href: '/comedy', emoji: '🎭' },
   { key: 'donation', href: '/donation', emoji: '💝' },
-  { key: 'apps', href: '#what-we-build', emoji: '📱' },
+  { key: 'webapps', href: '/factory', emoji: '🌐' },
+  { key: 'apps', href: '/affirmation-app', emoji: '📱' },
 ];
 
 export default function OtherPillars({ locale }: OtherPillarsProps) {
