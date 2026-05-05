@@ -15,23 +15,30 @@ interface ProductCard {
   external?: boolean;
 }
 
-const PRODUCT_LAYOUT: ProductCard[] = [
-  { key: 'affirmationApp', href: '/affirmation-app', emoji: '🪷' },
-  { key: 'letter', href: '/letter', emoji: '✉️' },
-  { key: 'music', href: 'https://open.spotify.com', emoji: '🎵', external: true },
-  { key: 'comedy', href: '/comedy', emoji: '🎭' },
-  { key: 'tomb', href: '/tomb', emoji: '🪦' },
-  { key: 'fashion', href: '/fashion', emoji: '👕' },
-  { key: 'cafe', href: '/cafe', emoji: '🥭' },
-  { key: 'donation', href: '/donation', emoji: '🤲' },
-  { key: 'webapps', href: '/factory', emoji: '🌐' },
-  { key: 'books', href: '/books', emoji: '📚' },
-  { key: 'politics', href: '/politics', emoji: '🏛️' },
-  { key: 'research', href: '/research', emoji: '🧪' },
-];
+function buildLayout(locale: Locale): ProductCard[] {
+  // Locale-aware routes: books goes directly to the JP/EN dedicated ebook page,
+  // letter goes to /tegami in JP. Both pages already carry the lead-magnet + checkout.
+  const booksHref = locale === 'ja' ? '/achan' : '/monk';
+  const letterHref = locale === 'ja' ? '/tegami' : '/letter';
+  return [
+    { key: 'affirmationApp', href: '/affirmation-app', emoji: '🪷' },
+    { key: 'letter', href: letterHref, emoji: '✉️' },
+    { key: 'music', href: 'https://open.spotify.com', emoji: '🎵', external: true },
+    { key: 'comedy', href: '/comedy', emoji: '🎭' },
+    { key: 'tomb', href: '/tomb', emoji: '🪦' },
+    { key: 'fashion', href: '/fashion', emoji: '👕' },
+    { key: 'cafe', href: '/cafe', emoji: '🥭' },
+    { key: 'donation', href: '/donation', emoji: '🤲' },
+    { key: 'webapps', href: '/factory', emoji: '🌐' },
+    { key: 'books', href: booksHref, emoji: '📚' },
+    { key: 'politics', href: '/politics', emoji: '🏛️' },
+    { key: 'research', href: '/research', emoji: '🧪' },
+  ];
+}
 
 export default function TheEmpireProducts({ locale }: TheEmpireProductsProps) {
   const t = translations[locale].empireProducts;
+  const layout = buildLayout(locale);
   const [byProduct, setByProduct] = useState<Record<string, number> | null>(null);
 
   useEffect(() => {
@@ -77,7 +84,7 @@ export default function TheEmpireProducts({ locale }: TheEmpireProductsProps) {
         </p>
 
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          {PRODUCT_LAYOUT.map((p) => {
+          {layout.map((p) => {
             const card = (
               <div className="flex h-full flex-col rounded-xl border border-border bg-background p-4 transition-colors hover:border-foreground">
                 <div className="mb-2 text-3xl">{p.emoji}</div>
