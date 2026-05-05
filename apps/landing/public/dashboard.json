@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-05-04T19:03:13.160Z",
+  "updated_at": "2026-05-05T01:02:52.418Z",
   "mrr": {
     "total_usd": 67.99,
     "by_product": {
@@ -20,32 +20,32 @@
     }
   },
   "followers": {
-    "total": 92,
+    "total": 97,
     "by_account": [
+      {
+        "platform": "tiktok",
+        "handle": "unknown",
+        "followers": 0
+      },
+      {
+        "platform": "tiktok",
+        "handle": "unknown",
+        "followers": 0
+      },
+      {
+        "platform": "tiktok",
+        "handle": "unknown",
+        "followers": 0
+      },
+      {
+        "platform": "tiktok",
+        "handle": "unknown",
+        "followers": 0
+      },
       {
         "platform": "tiktok",
         "handle": "aniccajp",
         "followers": 0
-      },
-      {
-        "platform": "tiktok",
-        "handle": "unknown",
-        "followers": 0
-      },
-      {
-        "platform": "tiktok",
-        "handle": "unknown",
-        "followers": 0
-      },
-      {
-        "platform": "tiktok",
-        "handle": "unknown",
-        "followers": 0
-      },
-      {
-        "platform": "tiktok",
-        "handle": "monk_anicca",
-        "followers": 7
       },
       {
         "platform": "tiktok",
@@ -69,13 +69,13 @@
       },
       {
         "platform": "tiktok",
-        "handle": "unknown",
-        "followers": 0
+        "handle": "obou_anicca",
+        "followers": 7
       },
       {
         "platform": "tiktok",
-        "handle": "obou_anicca",
-        "followers": 2
+        "handle": "monk_anicca",
+        "followers": 7
       },
       {
         "platform": "tiktok",
@@ -84,12 +84,12 @@
       },
       {
         "platform": "tiktok",
-        "handle": "aniccajp2",
+        "handle": "anicca_slideshow",
         "followers": 0
       },
       {
         "platform": "tiktok",
-        "handle": "anicca_slideshow",
+        "handle": "aniccajp2",
         "followers": 0
       },
       {
@@ -150,13 +150,13 @@
     ]
   },
   "views": {
-    "weekly_total": 37980,
-    "weekly_total_likes": 157,
-    "weekly_total_comments": 11,
-    "posts_count": 331,
-    "avg_views_per_post": 115,
+    "weekly_total": 36103,
+    "weekly_total_likes": 143,
+    "weekly_total_comments": 13,
+    "posts_count": 340,
+    "avg_views_per_post": 106,
     "target": 1000000,
-    "progress_pct": 3.8
+    "progress_pct": 3.6
   },
   "spend": {
     "total_usd": 544,
@@ -190,11 +190,11 @@
   "meta": {
     "rc_status": "ok",
     "fetcher_versions": {
-      "stripe": "2026-05-04T19:01:18.878Z",
-      "rc": "2026-05-04T19:01:18.305Z",
-      "postiz": "2026-05-04T19:02:37.317Z",
-      "followers": "2026-05-04T19:03:13.057Z",
-      "spend": "2026-05-04T19:01:19.360Z"
+      "stripe": "2026-05-05T01:00:21.042Z",
+      "rc": "2026-05-05T01:00:20.464Z",
+      "postiz": "2026-05-05T01:01:40.373Z",
+      "followers": "2026-05-05T01:02:52.318Z",
+      "spend": "2026-05-05T01:00:24.581Z"
     }
   }
 }
