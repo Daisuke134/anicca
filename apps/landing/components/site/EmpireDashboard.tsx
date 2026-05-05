@@ -1,7 +1,29 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { animate, utils } from 'animejs';
 import { translations, type Locale } from '@/lib/i18n';
+
+function CountUp({ value, prefix = '', suffix = '', decimals = 0 }: { value: number; prefix?: string; suffix?: string; decimals?: number }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const prev = useRef(0);
+  useEffect(() => {
+    if (!ref.current) return;
+    const obj = { v: prev.current };
+    animate(obj, {
+      v: value,
+      duration: 1200,
+      ease: 'outExpo',
+      onUpdate: () => {
+        if (ref.current) {
+          ref.current.textContent = `${prefix}${obj.v.toFixed(decimals)}${suffix}`;
+        }
+      },
+    });
+    prev.current = value;
+  }, [value, prefix, suffix, decimals]);
+  return <span ref={ref}>{`${prefix}${value.toFixed(decimals)}${suffix}`}</span>;
+}
 
 interface EmpireDashboardProps {
   locale: Locale;
@@ -84,7 +106,7 @@ export default function EmpireDashboard({ locale }: EmpireDashboardProps) {
             <div className="mb-2 flex items-baseline justify-between">
               <span className="font-semibold text-foreground">{t.mrr}</span>
               <span className="font-mono text-lg text-foreground">
-                ${data.mrr.total_usd.toLocaleString()} / ${data.goals.mrr_target.toLocaleString()}
+                <CountUp value={data.mrr.total_usd} prefix="$" decimals={2} /> / ${data.goals.mrr_target.toLocaleString()}
               </span>
             </div>
             <ProgressBar pct={mrrPct} />
@@ -98,7 +120,7 @@ export default function EmpireDashboard({ locale }: EmpireDashboardProps) {
             <div className="mb-2 flex items-baseline justify-between">
               <span className="font-semibold text-foreground">{t.weeklyViews}</span>
               <span className="font-mono text-lg text-foreground">
-                {data.views.weekly_total.toLocaleString()} / {data.views.target.toLocaleString()}
+                <CountUp value={data.views.weekly_total} /> / {data.views.target.toLocaleString()}
               </span>
             </div>
             <ProgressBar pct={viewsPct} />
@@ -112,13 +134,13 @@ export default function EmpireDashboard({ locale }: EmpireDashboardProps) {
             <div>
               <p className="text-sm text-muted-foreground">{t.followers}</p>
               <p className="font-mono text-2xl font-semibold text-foreground">
-                {data.followers.total.toLocaleString()}
+                <CountUp value={data.followers.total} />
               </p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">{t.spendThisMonth}</p>
               <p className="font-mono text-2xl font-semibold text-foreground">
-                ${data.spend.total_usd.toLocaleString()}
+                <CountUp value={data.spend.total_usd} prefix="$" decimals={2} />
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
                 {t.profit}: ${data.profit_usd.toLocaleString()}
