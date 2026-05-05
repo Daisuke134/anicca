@@ -23,7 +23,7 @@ function buildLayout(locale: Locale): ProductCard[] {
   return [
     { key: 'affirmationApp', href: '/affirmation-app', emoji: '🪷' },
     { key: 'letter', href: letterHref, emoji: '✉️' },
-    { key: 'music', href: 'https://open.spotify.com', emoji: '🎵', external: true },
+    { key: 'music', href: 'https://open.spotify.com/intl-ja/artist/45zyu1wS5ZxLGJvb1EV5PT', emoji: '🎵', external: true },
     { key: 'comedy', href: '/comedy', emoji: '🎭' },
     { key: 'tomb', href: '/tomb', emoji: '🪦' },
     { key: 'fashion', href: '/fashion', emoji: '👕' },
