@@ -23,10 +23,11 @@ const PRODUCT_LAYOUT: ProductCard[] = [
   { key: 'tomb', href: '/tomb', emoji: '🪦' },
   { key: 'fashion', href: '/fashion', emoji: '👕' },
   { key: 'cafe', href: '/cafe', emoji: '🥭' },
-  { key: 'donation', href: '/donation', emoji: '💝' },
+  { key: 'donation', href: '/donation', emoji: '🤲' },
   { key: 'webapps', href: '/factory', emoji: '🌐' },
-  { key: 'books', href: '#', emoji: '📚' },
-  { key: 'retreats', href: '#', emoji: '🏞️' },
+  { key: 'books', href: '/books', emoji: '📚' },
+  { key: 'politics', href: '/politics', emoji: '🏛️' },
+  { key: 'research', href: '/research', emoji: '🧪' },
 ];
 
 export default function TheEmpireProducts({ locale }: TheEmpireProductsProps) {
@@ -54,7 +55,8 @@ export default function TheEmpireProducts({ locale }: TheEmpireProductsProps) {
       donation: ['donation'],
       webapps: ['webapps', 'factory'],
       books: ['books'],
-      retreats: ['retreats'],
+      politics: ['politics'],
+      research: ['research'],
     };
     const cats = map[key] || [];
     let v = 0;
