@@ -13,6 +13,7 @@ interface BasicIncome {
 function ApplyForm() {
   const [email, setEmail] = useState('');
   const [reason, setReason] = useState('');
+  const [country, setCountry] = useState('jp');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,7 +25,7 @@ function ApplyForm() {
       const res = await fetch('/api/income/apply', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), reason: reason.trim() }),
+        body: JSON.stringify({ email: email.trim(), reason: reason.trim(), country }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -62,6 +63,18 @@ function ApplyForm() {
           onChange={(e) => setEmail(e.target.value)}
           className="w-full rounded-md border border-border bg-background px-4 py-3 text-foreground"
         />
+        <select
+          name="country"
+          value={country}
+          onChange={(e) => setCountry(e.target.value)}
+          className="w-full rounded-md border border-border bg-background px-4 py-3 text-foreground"
+        >
+          <option value="jp">🇯🇵 Japan (recommended for first cohort)</option>
+          <option value="us">🇺🇸 United States</option>
+          <option value="gb">🇬🇧 United Kingdom</option>
+          <option value="ca">🇨🇦 Canada</option>
+          <option value="au">🇦🇺 Australia</option>
+        </select>
         <textarea
           name="reason"
           required
