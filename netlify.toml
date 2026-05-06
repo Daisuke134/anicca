@@ -80,6 +80,18 @@
   to = "/.netlify/functions/admin-bank"
   status = 200
 
+# /books → locale-aware split: ja → /achan, default → /monk
+[[redirects]]
+  from = "/books"
+  to = "/achan"
+  status = 302
+  conditions = {Language = ["ja"]}
+
+[[redirects]]
+  from = "/books"
+  to = "/monk"
+  status = 302
+
 [[redirects]]
   from = "/anicca-mobile"
   to = "/affirmation-app"
