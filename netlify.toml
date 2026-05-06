@@ -71,6 +71,16 @@
   status = 200
 
 [[redirects]]
+  from = "/admin/bank"
+  to = "/.netlify/functions/admin-bank"
+  status = 200
+
+[[redirects]]
+  from = "/admin/bank/*"
+  to = "/.netlify/functions/admin-bank"
+  status = 200
+
+[[redirects]]
   from = "/anicca-mobile"
   to = "/affirmation-app"
   status = 301
