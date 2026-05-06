@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-05-05T19:03:10.832Z",
+  "updated_at": "2026-05-06T01:01:27.282Z",
   "mrr": {
     "total_usd": 67.99,
     "by_product": {
@@ -20,120 +20,14 @@
     }
   },
   "followers": {
-    "total": 90,
-    "by_account": [
-      {
-        "platform": "tiktok",
-        "handle": "unknown",
-        "followers": 0
-      },
-      {
-        "platform": "tiktok",
-        "handle": "unknown",
-        "followers": 0
-      },
-      {
-        "platform": "tiktok",
-        "handle": "unknown",
-        "followers": 0
-      },
-      {
-        "platform": "tiktok",
-        "handle": "aniccajp",
-        "followers": 0
-      },
-      {
-        "platform": "tiktok",
-        "handle": "unknown",
-        "followers": 0
-      },
-      {
-        "platform": "tiktok",
-        "handle": "unknown",
-        "followers": 0
-      },
-      {
-        "platform": "tiktok",
-        "handle": "anicca.jp4",
-        "followers": 57
-      },
-      {
-        "platform": "tiktok",
-        "handle": "obou_anicca",
-        "followers": 8
-      },
-      {
-        "platform": "tiktok",
-        "handle": "honnevideo",
-        "followers": 4
-      },
-      {
-        "platform": "tiktok",
-        "handle": "unknown",
-        "followers": 0
-      },
-      {
-        "platform": "instagram",
-        "handle": "obou.anicca",
-        "followers": 1
-      },
-      {
-        "platform": "instagram",
-        "handle": "monk.anicca",
-        "followers": 0
-      },
-      {
-        "platform": "instagram",
-        "handle": "anicca.voice",
-        "followers": 0
-      },
-      {
-        "platform": "instagram",
-        "handle": "anicca.daily",
-        "followers": 0
-      },
-      {
-        "platform": "instagram",
-        "handle": "anicca.nudge",
-        "followers": 0
-      },
-      {
-        "platform": "instagram",
-        "handle": "anicca.jp",
-        "followers": 2
-      },
-      {
-        "platform": "instagram",
-        "handle": "anicca.ai",
-        "followers": 0
-      },
-      {
-        "platform": "instagram",
-        "handle": "anicca.video",
-        "followers": 0
-      },
-      {
-        "platform": "youtube",
-        "handle": "@anicca-jp",
-        "followers": 0
-      },
-      {
-        "platform": "youtube",
-        "handle": "@anicca-en2",
-        "followers": 0
-      },
-      {
-        "platform": "youtube",
-        "handle": "@anicca-ai",
-        "followers": 18
-      }
-    ]
+    "total": 0,
+    "by_account": []
   },
   "views": {
-    "weekly_total": 36257,
-    "weekly_total_likes": 148,
-    "weekly_total_comments": 13,
-    "posts_count": 340,
+    "weekly_total": 36252,
+    "weekly_total_likes": 158,
+    "weekly_total_comments": 17,
+    "posts_count": 339,
     "avg_views_per_post": 107,
     "target": 1000000,
     "progress_pct": 3.6
@@ -170,11 +64,11 @@
   "meta": {
     "rc_status": "ok",
     "fetcher_versions": {
-      "stripe": "2026-05-05T19:00:43.815Z",
-      "rc": "2026-05-05T19:00:43.226Z",
-      "postiz": "2026-05-05T19:02:03.904Z",
-      "followers": "2026-05-05T19:03:10.742Z",
-      "spend": "2026-05-05T19:00:44.118Z"
+      "stripe": "2026-05-06T01:00:11.069Z",
+      "rc": "2026-05-06T01:00:10.455Z",
+      "postiz": "2026-05-06T01:01:27.179Z",
+      "followers": "2026-05-06T01:00:14.830Z",
+      "spend": "2026-05-06T01:00:11.349Z"
     }
   }
 }
