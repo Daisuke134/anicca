@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-05-06T07:03:49.287Z",
+  "updated_at": "2026-05-06T13:05:45.462Z",
   "mrr": {
     "total_usd": 67.99,
     "by_product": {
@@ -24,8 +24,8 @@
     "by_account": []
   },
   "views": {
-    "weekly_total": 36328,
-    "weekly_total_likes": 158,
+    "weekly_total": 36248,
+    "weekly_total_likes": 162,
     "weekly_total_comments": 17,
     "posts_count": 339,
     "avg_views_per_post": 107,
@@ -64,11 +64,11 @@
   "meta": {
     "rc_status": "ok",
     "fetcher_versions": {
-      "stripe": "2026-05-06T07:02:11.717Z",
-      "rc": "2026-05-06T07:02:11.232Z",
-      "postiz": "2026-05-06T07:03:49.181Z",
-      "followers": "2026-05-06T07:02:15.001Z",
-      "spend": "2026-05-06T07:02:12.161Z"
+      "stripe": "2026-05-06T13:04:12.340Z",
+      "rc": "2026-05-06T13:04:10.671Z",
+      "postiz": "2026-05-06T13:05:45.360Z",
+      "followers": "2026-05-06T13:04:14.858Z",
+      "spend": "2026-05-06T13:04:11.497Z"
     }
   }
 }
