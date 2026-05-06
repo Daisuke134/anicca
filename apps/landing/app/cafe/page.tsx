@@ -43,6 +43,20 @@ export default function Page() {
         Cold-pressed mango juice, delivered. ¥1,500 / 350ml. Tokyo only.
       </p>
 
+      <div className="mt-8 overflow-hidden rounded-xl border border-border bg-black">
+        <video
+          src="/cafe/brand.mp4"
+          poster="/cafe/brand-poster.jpg"
+          autoPlay
+          muted
+          loop
+          playsInline
+          controls
+          preload="metadata"
+          className="mx-auto block aspect-[9/16] max-h-[640px] w-auto"
+        />
+      </div>
+
       <div className="mt-10 rounded-xl border-2 border-foreground bg-background px-8 py-8 text-center">
         <p className="text-sm uppercase tracking-widest text-muted-foreground">launching june 1, 2026</p>
         <p className="mt-2 text-6xl font-mono font-bold">
