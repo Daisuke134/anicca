@@ -1,5 +1,6 @@
 /* eslint-disable react/no-unescaped-entities */
 import Link from 'next/link';
+import Image from 'next/image';
 
 export const metadata = {
   title: 'Anicca Fashion — wear the truth',
@@ -13,6 +14,7 @@ interface FashionItem {
   tagline: string;
   price_usd: number;
   status: 'live' | 'coming-soon' | 'concept';
+  image_path: string;
   image_alt: string;
   details: string;
   buy_url?: string;
@@ -20,34 +22,40 @@ interface FashionItem {
 
 const ITEMS: FashionItem[] = [
   {
-    slug: 'everything-shall-pass-tee',
-    title: 'Everything Shall Pass — Black Tee',
-    tagline: 'Anicca app icon · cotton',
-    price_usd: 35,
-    status: 'coming-soon',
-    image_alt: 'Black tee with Anicca app icon on chest, "everything shall pass" on back',
+    slug: 'tee-black',
+    title: 'Anicca Logo Tee — Black',
+    tagline: 'Anicca app icon · 100% cotton',
+    price_usd: 30,
+    status: 'live',
+    image_path: '/fashion/tee-black.jpg',
+    image_alt: 'Black tee with Anicca app icon on chest',
     details:
-      'Bella + Canvas 3001 black, sizes XS–XXL. Anicca app icon centered on the chest, "everything shall pass" across the back. Print-on-demand via Printful — zero inventory, fulfilled per order, worldwide shipping.',
+      'Bella + Canvas 3001 black, sizes XS–XXL. Anicca app icon centered on the chest. Print-on-demand worldwide shipping in 7–12 days.',
+    buy_url: 'https://buy.stripe.com/5kQ14n4tU6tgc1qcEC28803',
   },
   {
-    slug: 'sabbe-sankhara-hoodie',
+    slug: 'hoodie-black',
     title: 'Sabbe Sankhara — Hoodie',
     tagline: 'Pali first line of the Anicca sutta',
-    price_usd: 58,
-    status: 'concept',
-    image_alt: 'Black hoodie with Pali script on chest',
+    price_usd: 50,
+    status: 'live',
+    image_path: '/fashion/hoodie-black.jpg',
+    image_alt: 'Black hoodie with Pali script on left chest',
     details:
-      'Heavyweight black hoodie. Pali "sabbe sankhāra dukkhā" embroidered on the left chest. Concept stage — drops once design is finalized.',
+      'Heavyweight black pullover. "sabbe sankhāra dukkhā" embroidered on left chest in Pali. For the days you need to remember why everything feels heavy.',
+    buy_url: 'https://buy.stripe.com/7sYbJ11hIaJw6H6bAy28804',
   },
   {
-    slug: 'impermanence-cap',
+    slug: 'cap-black',
     title: 'Impermanence Cap',
     tagline: 'low-profile · subtle',
-    price_usd: 28,
-    status: 'concept',
+    price_usd: 25,
+    status: 'live',
+    image_path: '/fashion/cap-black.jpg',
     image_alt: 'Black low-profile cap with embroidered "anicca" wordmark',
     details:
       'Low-profile dad cap. "anicca" embroidered in lowercase on the front. For people who want the reminder without the announcement.',
+    buy_url: 'https://buy.stripe.com/bJe00je4ueZMfdCbAy28805',
   },
 ];
 
@@ -77,11 +85,14 @@ export default function FashionListPage() {
             key={it.slug}
             className="flex flex-col rounded-xl border border-border bg-background p-6 transition-colors hover:border-foreground"
           >
-            <div
-              className="relative mb-5 flex aspect-square w-full items-center justify-center overflow-hidden rounded-lg bg-muted text-xs uppercase tracking-widest text-muted-foreground"
-              aria-label={it.image_alt}
-            >
-              <span className="px-3 text-center">{it.image_alt}</span>
+            <div className="relative mb-5 aspect-square w-full overflow-hidden rounded-lg bg-muted">
+              <Image
+                src={it.image_path}
+                alt={it.image_alt}
+                fill
+                sizes="(max-width: 768px) 100vw, 33vw"
+                className="object-cover"
+              />
             </div>
             <h2 className="text-xl font-semibold">{it.title}</h2>
             <p className="mt-1 text-sm text-muted-foreground">{it.tagline}</p>
@@ -128,7 +139,7 @@ export default function FashionListPage() {
         <div className="rounded-xl border border-border p-6">
           <h2 className="text-xl font-semibold">How it ships</h2>
           <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-            Each order triggers a Printful print. Zero warehouse. Worldwide
+            Each order triggers a Printful print run. Zero warehouse. Worldwide
             shipping in 7–12 days. 100% of profit is reported live on the
             empire dashboard.
           </p>
