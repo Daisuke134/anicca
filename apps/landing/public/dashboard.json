@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-05-06T13:05:45.462Z",
+  "updated_at": "2026-05-07T01:01:40.037Z",
   "mrr": {
     "total_usd": 67.99,
     "by_product": {
@@ -24,23 +24,23 @@
     "by_account": []
   },
   "views": {
-    "weekly_total": 36248,
-    "weekly_total_likes": 162,
-    "weekly_total_comments": 17,
-    "posts_count": 339,
-    "avg_views_per_post": 107,
+    "weekly_total": 35620,
+    "weekly_total_likes": 177,
+    "weekly_total_comments": 14,
+    "posts_count": 375,
+    "avg_views_per_post": 95,
     "target": 1000000,
     "progress_pct": 3.6
   },
   "spend": {
-    "total_usd": 544,
+    "total_usd": 519,
     "by_category": {
       "claude": 200,
       "chatgpt": 20,
       "living": 200,
       "apify": 0,
       "railway": 0,
-      "supabase": 25,
+      "supabase": 0,
       "postiz": 99
     },
     "fixed_subscriptions": [
@@ -49,7 +49,7 @@
       "living: $200/mo - Dais monthly burn (manual)"
     ]
   },
-  "profit_usd": -476.01,
+  "profit_usd": -451.01,
   "goals": {
     "mrr_target": 10000,
     "mrr_deadline": "2026-05-31",
@@ -64,11 +64,11 @@
   "meta": {
     "rc_status": "ok",
     "fetcher_versions": {
-      "stripe": "2026-05-06T13:04:12.340Z",
-      "rc": "2026-05-06T13:04:10.671Z",
-      "postiz": "2026-05-06T13:05:45.360Z",
-      "followers": "2026-05-06T13:04:14.858Z",
-      "spend": "2026-05-06T13:04:11.497Z"
+      "stripe": "2026-05-07T01:00:10.982Z",
+      "rc": "2026-05-07T01:00:10.425Z",
+      "postiz": "2026-05-07T01:01:39.926Z",
+      "followers": "2026-05-07T01:00:15.148Z",
+      "spend": "2026-05-07T01:00:11.356Z"
     }
   }
 }
