@@ -6,37 +6,96 @@ interface FooterProps {
 }
 
 export default function Footer({ locale }: FooterProps) {
-  const t = translations[locale].footer;
+  const t = translations[locale].footerV2;
 
   return (
-    <footer className="border-t border-border bg-background py-8">
-      <div className="text-center">
-        <p className="font-bold text-foreground">Anicca</p>
+    <footer className="border-t border-[hsl(var(--hairline))] bg-background">
+      <div className="container-wide py-20">
+        <div className="grid grid-cols-1 gap-12 md:grid-cols-12">
+          {/* Brand */}
+          <div className="md:col-span-5">
+            <Link href={`/${locale}`} className="font-serif text-3xl tracking-tight text-foreground">
+              Anicca
+            </Link>
+            <p className="mt-4 max-w-sm text-sm leading-relaxed text-secondary">
+              {t.tagline}
+            </p>
+          </div>
 
-        <div className="mt-4 flex flex-wrap justify-center gap-4 text-sm text-muted-foreground">
-          <Link href={`/privacy/${locale}`} className="transition-colors hover:text-foreground">
-            {t.privacy}
-          </Link>
-          <span>|</span>
-          <Link href={`/terms/${locale}`} className="transition-colors hover:text-foreground">
-            {t.terms}
-          </Link>
-          <span>|</span>
-          <Link href="/tokushoho" className="transition-colors hover:text-foreground">
-            {t.tokushoho}
-          </Link>
-          <span>|</span>
-          <a
-            href="mailto:keiodaisuke@gmail.com"
-            className="transition-colors hover:text-foreground"
-          >
-            {t.contact}
-          </a>
+          {/* Sitemap */}
+          <div className="md:col-span-3">
+            <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-muted">
+              {t.sitemapTitle}
+            </p>
+            <ul className="mt-5 space-y-3 text-sm">
+              {t.sitemap.map((it) => (
+                <li key={it.href}>
+                  <Link
+                    href={it.href}
+                    className="text-foreground transition-colors hover:text-[hsl(var(--amber))]"
+                  >
+                    {it.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Legal */}
+          <div className="md:col-span-2">
+            <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-muted">
+              {t.legalTitle}
+            </p>
+            <ul className="mt-5 space-y-3 text-sm">
+              {t.legal.map((it) => (
+                <li key={it.href}>
+                  <Link
+                    href={it.href}
+                    className="text-secondary transition-colors hover:text-foreground"
+                  >
+                    {it.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Contact */}
+          <div className="md:col-span-2">
+            <p className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-muted">
+              {t.contactTitle}
+            </p>
+            <ul className="mt-5 space-y-3 text-sm">
+              <li>
+                <a
+                  href={`mailto:${t.contactEmail}`}
+                  className="text-foreground transition-colors hover:text-[hsl(var(--amber))]"
+                >
+                  {t.contactEmail}
+                </a>
+              </li>
+              <li>
+                <a
+                  href="https://github.com/Daisuke134"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-secondary transition-colors hover:text-foreground"
+                >
+                  {t.githubLabel} ↗
+                </a>
+              </li>
+            </ul>
+          </div>
         </div>
 
-        <p className="mt-4 text-sm text-muted-foreground">
-          &copy; {new Date().getFullYear()} Anicca. All rights reserved.
-        </p>
+        <hr className="hairline mt-16" />
+
+        <div className="mt-8 flex flex-col items-start justify-between gap-3 font-mono text-[0.7rem] uppercase tracking-[0.18em] text-muted md:flex-row md:items-center">
+          <span>
+            © {new Date().getFullYear()} {t.copyright}
+          </span>
+          <span>{t.tagline.split('.')[0]}.</span>
+        </div>
       </div>
     </footer>
   );

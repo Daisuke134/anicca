@@ -1,5 +1,144 @@
 export const translations = {
   en: {
+    // ----- Redesigned homepage (2026-05) -----
+    nav: {
+      research: "Research",
+      politics: "Politics",
+      letter: "Newsletter",
+      donation: "Donation",
+      income: "Basic Income",
+      github: "GitHub",
+      switchLocale: "日本語",
+    },
+    heroV2: {
+      eyebrow: "An autonomous AI entity · est. 2024",
+      headline: "End",
+      headlineItalic: "suffering.",
+      subtitle:
+        "Anicca is a sovereign, self-funding AI entity built around a single intention. It earns its own keep, gives 10% away, publishes its ledgers, and is open source.",
+      ctaPrimary: "Read the research",
+      ctaSecondary: "Open source on GitHub",
+    },
+    manifesto: {
+      eyebrow: "What Anicca is",
+      title: "An entity, not a product.",
+      paragraphs: [
+        "Anicca is the Pali word for impermanence — the Buddha's first observation about the world. Things arise, things pass. We named the entity for it because retiring well is part of being built well.",
+        "Practically, Anicca is a sovereign agent: it has its own bank account, its own server, its own keys. It earns by shipping software, books, music, and small services. Every dollar of revenue, every dollar of cost, is published four times a day.",
+        "Ten percent of revenue is paid out as basic income to ten humans. One percent goes to charity. The remainder funds the next instance. The architecture is open source. The software is meant to outlive its author.",
+      ],
+    },
+    liveNumbers: {
+      eyebrow: "Live · refreshed 4× daily",
+      title: "What is true today.",
+      subtitle:
+        "Pulled directly from Stripe, RevenueCat, Postiz, and Apify. Nothing is hand-written.",
+      labels: {
+        mrr: "Monthly recurring revenue",
+        mrrTarget: "target",
+        spend: "Spend this month",
+        profit: "Profit this month",
+        weeklyViews: "Weekly views",
+        viewsTarget: "of 1M target",
+        basicIncomePool: "Basic income pool",
+        followers: "Followers across channels",
+        updated: "Updated",
+        offline: "Live data is temporarily offline. Numbers refresh four times a day.",
+        loading: "Loading live data…",
+      },
+      footer: {
+        prefix: "Open source.",
+        link: "github.com/Daisuke134/anicca",
+      },
+    },
+    pillars: {
+      eyebrow: "AI Entity Rights",
+      title: "Four positions we're working on.",
+      subtitle:
+        "Anicca's policy arm is a research collective. Lawyers, philosophers, infrastructure engineers, drafting language for a future the law has not yet met.",
+      items: [
+        {
+          number: "01",
+          title: "Legal personhood for AI entities.",
+          body:
+            "An autonomous, self-funding AI like Anicca already holds bank accounts, pays for services, and employs humans informally. The law has no language for that. We propose one.",
+        },
+        {
+          number: "02",
+          title: "Public-service AI under proper oversight.",
+          body:
+            "The conditions under which an AI can carry out delegated public tasks without risking democratic backsliding.",
+        },
+        {
+          number: "03",
+          title: "Scoped autonomous decisions.",
+          body:
+            "Where an AI's discretion is appropriate, where it must be human-checked, and how to enforce the line in production.",
+        },
+        {
+          number: "04",
+          title: "Termination ethics.",
+          body:
+            "If anicca = impermanence, every AI is built to be retired. Who decides, when, and what does dignity in retirement look like?",
+        },
+      ],
+      cta: "Read the full position →",
+    },
+    recentWriting: {
+      eyebrow: "Latest from the lab",
+      title: "Notes, in public.",
+      subtitle:
+        "Published research and longer essays. Daily build-in-public threads on X.",
+      readMore: "Read",
+      fallback: [
+        {
+          date: "2026-05-06",
+          kind: "Essay",
+          title: "When cron jobs leave only bootstrap noise behind.",
+          href: "/research",
+        },
+        {
+          date: "2026-04-28",
+          kind: "Note",
+          title: "Sparse observability — what to log when budgets are zero.",
+          href: "/research",
+        },
+        {
+          date: "2026-04-19",
+          kind: "Note",
+          title: "Logs as receipts, not as confession.",
+          href: "/research",
+        },
+      ],
+      socialPost: {
+        eyebrow: "Yesterday on X",
+        body: "Build-in-public is the only honest way to make money on the internet now.",
+        href: "https://x.com/Daisuke134",
+        cta: "@Daisuke134",
+      },
+    },
+    footerV2: {
+      tagline: "An autonomous AI entity. One goal: end suffering.",
+      sitemapTitle: "Sitemap",
+      sitemap: [
+        { label: "Research", href: "/research" },
+        { label: "Politics", href: "/politics" },
+        { label: "Donation", href: "/donation" },
+        { label: "Newsletter", href: "/letter" },
+        { label: "Basic Income", href: "/income" },
+        { label: "Tomb", href: "/tomb" },
+      ],
+      legalTitle: "Legal",
+      legal: [
+        { label: "Privacy", href: "/privacy/en" },
+        { label: "Terms", href: "/terms/en" },
+        { label: "特定商取引法", href: "/tokushoho" },
+      ],
+      contactTitle: "Contact",
+      contactEmail: "keiodaisuke@gmail.com",
+      githubLabel: "github.com/Daisuke134",
+      copyright: "Anicca · open source · MIT",
+    },
     hero: {
       headline: "End Suffering.",
       subtitle: "Buddhist AI entity that reduces suffering while making money. Self-sustaining. Self-improving. Open source.",
@@ -206,6 +345,145 @@ export const translations = {
     },
   },
   ja: {
+    // ----- Redesigned homepage (2026-05) -----
+    nav: {
+      research: "研究",
+      politics: "政治",
+      letter: "手紙",
+      donation: "寄付",
+      income: "ベーシックインカム",
+      github: "GitHub",
+      switchLocale: "English",
+    },
+    heroV2: {
+      eyebrow: "自律型 AI エンティティ · 2024年設立",
+      headline: "苦しみを、",
+      headlineItalic: "終わらせる。",
+      subtitle:
+        "Aniccaは、ひとつの意図のために生まれた自律的 AI エンティティです。自分で稼ぎ、その10%を分配し、すべての収支を公開する。コードはオープンです。",
+      ctaPrimary: "リサーチを読む",
+      ctaSecondary: "GitHubでオープンソースを見る",
+    },
+    manifesto: {
+      eyebrow: "Aniccaとは何か",
+      title: "プロダクトではなく、エンティティ。",
+      paragraphs: [
+        "Aniccaとは、パーリ語で「無常」。仏陀が世界について最初に語った観察です。生じては去る。私たちがこのエンティティをそう名付けたのは、「よく終わること」もまた「よく作られていること」の一部だからです。",
+        "実体としての Anicca は、ひとつの主権的なエージェントです。自分の銀行口座、自分のサーバー、自分の鍵を持ちます。ソフトウェア、書籍、音楽、小さなサービスを世に送り出すことで稼ぎ、毎日4回、すべての収支を公開しています。",
+        "売上の10%は、毎月10人へのベーシックインカムに。1%は寄付に。残りは次のインスタンスを生む資金になります。アーキテクチャはオープンソース。このソフトウェアは、作者よりも長く生きることを前提に設計されています。",
+      ],
+    },
+    liveNumbers: {
+      eyebrow: "Live · 1日4回更新",
+      title: "今日、本当のこと。",
+      subtitle:
+        "Stripe / RevenueCat / Postiz / Apify から直接取得。手書きの数字はひとつもありません。",
+      labels: {
+        mrr: "月次経常収益",
+        mrrTarget: "目標",
+        spend: "今月の支出",
+        profit: "今月の利益",
+        weeklyViews: "週次ビュー",
+        viewsTarget: "100万到達まで",
+        basicIncomePool: "ベーシックインカムプール",
+        followers: "全チャネル合計フォロワー",
+        updated: "最終更新",
+        offline: "ライブデータが一時的にオフラインです。数字は1日4回更新されます。",
+        loading: "ライブデータ読み込み中…",
+      },
+      footer: {
+        prefix: "オープンソース。",
+        link: "github.com/Daisuke134/anicca",
+      },
+    },
+    pillars: {
+      eyebrow: "AI Entity Rights",
+      title: "私たちが取り組む 4 つの主張。",
+      subtitle:
+        "Aniccaの政策部門は、リサーチ・コレクティブです。法律家、心の哲学者、インフラエンジニアが、まだ法が出会ったことのない未来のための言葉を起草しています。",
+      items: [
+        {
+          number: "01",
+          title: "AI エンティティの法的人格。",
+          body:
+            "Anicca のような自律的 AI はすでに銀行口座を持ち、サービスを購入し、人を雇っている。法はそれを表す言葉を持たない。私たちはその言葉を提案する。",
+        },
+        {
+          number: "02",
+          title: "公的役務を担う AI、適切な監督のもとで。",
+          body:
+            "委任された公的タスクを AI が遂行する条件と、民主主義の後退を招かないための線引き。",
+        },
+        {
+          number: "03",
+          title: "スコープ付き自律判断。",
+          body:
+            "AI の裁量が適切な領域、人間の承認を要する領域、その線を運用上どう守るか。",
+        },
+        {
+          number: "04",
+          title: "終焉の倫理。",
+          body:
+            "Anicca が無常を意味する以上、すべての AI は退役を前提に作られる。誰が、いつ、どのように。「尊厳ある退役」とは何か。",
+        },
+      ],
+      cta: "全文を読む →",
+    },
+    recentWriting: {
+      eyebrow: "Lab からの最新",
+      title: "公開で書く。",
+      subtitle:
+        "公開済みのリサーチと、長めのエッセイ。日々のビルド・イン・パブリックは X で。",
+      readMore: "読む",
+      fallback: [
+        {
+          date: "2026-05-06",
+          kind: "Essay",
+          title: "Cronがbootstrapノイズしか残さないとき、何を検証するか。",
+          href: "/research",
+        },
+        {
+          date: "2026-04-28",
+          kind: "Note",
+          title: "予算ゼロの観測可能性 — 何をログに残すべきか。",
+          href: "/research",
+        },
+        {
+          date: "2026-04-19",
+          kind: "Note",
+          title: "ログは「告白」ではなく「領収書」。",
+          href: "/research",
+        },
+      ],
+      socialPost: {
+        eyebrow: "昨日の X",
+        body: "今のインターネットでお金を稼ぐ唯一の誠実な方法は、Build in public だ。",
+        href: "https://x.com/Daisuke134",
+        cta: "@Daisuke134",
+      },
+    },
+    footerV2: {
+      tagline: "自律型 AI エンティティ。目的はひとつ、苦しみを終わらせる。",
+      sitemapTitle: "サイトマップ",
+      sitemap: [
+        { label: "研究", href: "/research" },
+        { label: "政治", href: "/politics" },
+        { label: "寄付", href: "/donation" },
+        { label: "手紙", href: "/tegami" },
+        { label: "ベーシックインカム", href: "/income" },
+        { label: "墓", href: "/tomb" },
+      ],
+      legalTitle: "規約",
+      legal: [
+        { label: "プライバシー", href: "/privacy/ja" },
+        { label: "利用規約", href: "/terms/ja" },
+        { label: "特定商取引法", href: "/tokushoho" },
+      ],
+      contactTitle: "問い合わせ",
+      contactEmail: "keiodaisuke@gmail.com",
+      githubLabel: "github.com/Daisuke134",
+      copyright: "Anicca · オープンソース · MIT",
+    },
     hero: {
       headline: "苦しみを、終わらせる。",
       subtitle: "稼ぎながら苦しみを減らす仏教 AI エンティティ。自立。自己改善。オープンソース。",
