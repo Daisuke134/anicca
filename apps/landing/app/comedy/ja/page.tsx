@@ -65,33 +65,34 @@ const SHOWS: Show[] = [
 ];
 
 const FORMATS = [
-  { label: 'Ogiri', label_jp: '大喜利', desc: '30 punchlines on one koan, daily' },
-  { label: 'Skit JP', label_jp: 'スキット 日', desc: '60-second JP street piece' },
-  { label: 'Skit EN', label_jp: 'スキット 英', desc: '60-second EN crossover' },
-  { label: 'Manzai', label_jp: '漫才', desc: '90-second double act, JP' },
-  { label: 'Konto', label_jp: 'コント', desc: '90-second sketch with props' },
-  { label: 'Pin-neta', label_jp: 'ピンネタ', desc: '60-second solo character work' },
-  { label: 'Flip-game', label_jp: 'フリップ芸', desc: 'Five reveals, one reversal' },
+  { label: '大喜利', label_en: 'Ogiri', desc: '同じお題に対して 30 答、毎朝 04:00 に AI が量産する。' },
+  { label: 'スキット 日', label_en: 'Skit JP', desc: '60 秒の街角ネタ。 一人芝居でカメラ向きに撮る用。' },
+  { label: 'スキット 英', label_en: 'Skit EN', desc: 'SF/LA で通じる 60 秒の英語ネタ。 同じ無常を西海岸口調で。' },
+  { label: '漫才', label_en: 'Manzai', desc: '90 秒の二人芝居。 ボケ＝Anicca、ツッコミ＝Dais。' },
+  { label: 'コント', label_en: 'Konto', desc: '90 秒の小道具コント。 寺の境内、SuicaIC、Slack 通知が舞台。' },
+  { label: 'ピンネタ', label_en: 'Pin-neta', desc: '60 秒のピン芸。 一人で 2-3 キャラを演じ分ける。' },
+  { label: 'フリップ芸', label_en: 'Flip-game', desc: 'フリップ 5-7 枚で前フリと裏切り。 視覚芸の基本形。' },
 ];
 
 function fmtDate(iso: string) {
   const d = new Date(iso + 'T00:00:00');
-  const month = d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
-  const day = d.getDate();
-  const dow = d.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
-  return { month, day, dow };
+  const md = d.getDate();
+  const mo = d.getMonth() + 1;
+  const dows = ['日', '月', '火', '水', '木', '金', '土'];
+  const dow = dows[d.getDay()];
+  return { mo, day: md, dow };
 }
 
 const STATUS_LABEL: Record<Show['status'], string> = {
-  confirmed: 'CONFIRMED',
-  pending: 'PENDING REVIEW',
-  tentative: 'WALK-IN',
+  confirmed: '確定',
+  pending: '審査中',
+  tentative: '当日 sign-up',
 };
 
 const KIND_LABEL: Record<Show['kind'], string> = {
-  'open-mic': 'OPEN MIC',
-  demo: 'AI BUILDER DEMO',
-  headliner: 'HEADLINER',
+  'open-mic': 'オープンマイク',
+  demo: 'AI ビルダー デモ',
+  headliner: 'ヘッドライナー',
 };
 
 export default function Page() {
@@ -99,7 +100,6 @@ export default function Page() {
     <main
       className={`${display.variable} ${body.variable} ${mono.variable} ${kanji.variable} relative min-h-screen overflow-hidden bg-[#0a0a0a] text-[#f4f1ea] antialiased`}
     >
-      {/* film grain */}
       <div
         aria-hidden
         className="pointer-events-none fixed inset-0 z-0 opacity-[0.06]"
@@ -109,74 +109,69 @@ export default function Page() {
         }}
       />
 
-      {/* top bar */}
       <header className="relative z-10 flex items-center justify-between border-b border-[#f4f1ea]/15 px-6 py-5 md:px-12">
         <Link
-          href="/en"
+          href="/ja"
           className="font-[family-name:var(--font-mono)] text-xs uppercase tracking-[0.25em] text-[#f4f1ea]/60 transition-colors hover:text-[#f4f1ea]"
         >
           ← Anicca
         </Link>
-        <nav className="flex items-center gap-6 font-[family-name:var(--font-mono)] text-xs uppercase tracking-[0.25em] text-[#f4f1ea]/60">
-          <a href="#shows" className="transition-colors hover:text-[#f4f1ea]">Shows</a>
-          <a href="#daily" className="transition-colors hover:text-[#f4f1ea]">Daily</a>
-          <a href="#join" className="transition-colors hover:text-[#f4f1ea]">Join</a>
-          <Link href="/comedy/ja" className="text-[#c8302e] transition-colors hover:text-[#f4f1ea]">日本語</Link>
+        <nav className="flex items-center gap-6 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.25em] text-[#f4f1ea]/60">
+          <a href="#shows" className="transition-colors hover:text-[#f4f1ea]">出演</a>
+          <a href="#daily" className="transition-colors hover:text-[#f4f1ea]">日々</a>
+          <a href="#join" className="transition-colors hover:text-[#f4f1ea]">参加</a>
+          <Link href="/comedy" className="text-[#c8302e] transition-colors hover:text-[#f4f1ea]">EN</Link>
         </nav>
       </header>
 
-      {/* hero */}
       <section className="relative z-10 grid min-h-[88vh] grid-cols-12 items-end gap-4 px-6 pb-16 pt-24 md:px-12">
         <div className="col-span-12 md:col-span-9">
           <p className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.4em] text-[#c8302e] md:text-xs">
-            ANICCA / 諸行無常 / COMEDY · ESTAB. 2026
+            ANICCA / 諸行無常 / COMEDY · 2026 創設
           </p>
-          <h1 className="mt-6 font-[family-name:var(--font-display)] text-[clamp(4rem,16vw,16rem)] uppercase leading-[0.82] tracking-[-0.02em]">
-            Imper-
+          <h1 className="mt-6 font-[family-name:var(--font-kanji)] text-[clamp(4rem,14vw,14rem)] font-black leading-[0.9] tracking-tight">
+            無常は
             <br />
-            manence
+            <span className="text-[#c8302e]">オチ</span>
             <br />
-            <span className="text-[#c8302e]">is the</span>
-            <br />
-            punch
-            <br />
-            line.
+            なんだ。
           </h1>
         </div>
 
         <div className="col-span-12 mt-8 md:col-span-3 md:mt-0">
           <div className="flex flex-col gap-3 border-l border-[#f4f1ea]/20 pl-6">
-            <p className="font-[family-name:var(--font-kanji)] text-3xl font-black leading-[1] text-[#f4f1ea]/90 md:text-4xl">
-              無常は
+            <p className="font-[family-name:var(--font-display)] text-3xl uppercase leading-[1] text-[#f4f1ea]/90 md:text-4xl">
+              Imper-
               <br />
-              オチ。
+              manence is
+              <br />
+              the punchline.
             </p>
             <p className="mt-4 font-[family-name:var(--font-body)] text-sm leading-relaxed text-[#f4f1ea]/70">
+              一人の僧侶コメディアンと、書く・予約する・流す・払う、を全部やる AI が、
+              無常を笑いに変える。
+            </p>
+            <p className="mt-1 font-[family-name:var(--font-body)] text-sm leading-relaxed text-[#f4f1ea]/55">
               A solo Buddhist comedian and an autonomous AI co-host that writes, books,
               ships, and pays the room.
-            </p>
-            <p className="mt-1 font-[family-name:var(--font-kanji)] text-sm leading-relaxed text-[#f4f1ea]/60">
-              一人の僧侶コメディアンと、書く・予約する・流す・払う、を全部やる AI。
             </p>
           </div>
         </div>
       </section>
 
-      {/* hanko */}
       <div className="relative z-10 -mt-10 flex justify-end px-6 md:px-12">
         <div className="flex h-20 w-20 -rotate-6 items-center justify-center rounded-md border-2 border-[#c8302e] bg-[#c8302e]/10 font-[family-name:var(--font-kanji)] text-base font-black text-[#c8302e]">
           無常
         </div>
       </div>
 
-      {/* shows */}
       <section id="shows" className="relative z-10 border-t border-[#f4f1ea]/15 px-6 py-20 md:px-12">
         <div className="mb-10 flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="font-[family-name:var(--font-display)] text-5xl uppercase tracking-tight md:text-7xl">
-            Next shows
+          <h2 className="font-[family-name:var(--font-kanji)] text-5xl font-black tracking-tight md:text-7xl">
+            次の出演
           </h2>
           <p className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.3em] text-[#f4f1ea]/50 md:text-xs">
-            Come laugh. Tickets free where allowed.
+            来てくれ。チケットは原則 無料。
           </p>
         </div>
 
@@ -190,7 +185,7 @@ export default function Page() {
               >
                 <div className="col-span-3 md:col-span-2">
                   <p className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.3em] text-[#f4f1ea]/50">
-                    {d.dow} · {d.month}
+                    {d.dow}曜 · {d.mo}月
                   </p>
                   <p className="font-[family-name:var(--font-display)] text-5xl leading-none md:text-6xl">
                     {d.day}
@@ -206,7 +201,7 @@ export default function Page() {
                 </div>
                 <div className="col-span-12 md:col-span-3 md:text-right">
                   <span
-                    className={`inline-block border px-3 py-1 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.25em] ${
+                    className={`inline-block border px-3 py-1 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.2em] ${
                       s.status === 'confirmed'
                         ? 'border-[#c8302e] text-[#c8302e]'
                         : s.status === 'pending'
@@ -221,9 +216,9 @@ export default function Page() {
                       href={s.link}
                       target="_blank"
                       rel="noreferrer"
-                      className="mt-2 block font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.25em] text-[#f4f1ea]/50 underline transition-colors hover:text-[#c8302e]"
+                      className="mt-2 block font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.2em] text-[#f4f1ea]/50 underline transition-colors hover:text-[#c8302e]"
                     >
-                      Source →
+                      詳細 →
                     </a>
                   )}
                 </div>
@@ -233,22 +228,20 @@ export default function Page() {
         </ul>
 
         <p className="mt-8 max-w-xl font-[family-name:var(--font-body)] text-sm leading-relaxed text-[#f4f1ea]/55">
-          Schedule is the surface; impermanence is the law. Cities, dates, and rooms are tentative until they aren't.
-          If you're in town, walk in.
+          スケジュールは表面、無常が法則。 都市・日付・会場は確定するまで仮。
+          近くにいたら、ふらっと来てくれ。
         </p>
       </section>
 
-      {/* daily formats */}
       <section id="daily" className="relative z-10 border-t border-[#f4f1ea]/15 px-6 py-20 md:px-12">
-        <h2 className="font-[family-name:var(--font-display)] text-5xl uppercase tracking-tight md:text-7xl">
-          Seven formats,
+        <h2 className="font-[family-name:var(--font-kanji)] text-5xl font-black tracking-tight md:text-7xl">
+          7 つの形、
           <br />
-          one koan.
+          1 つのお題。
         </h2>
         <p className="mt-6 max-w-2xl font-[family-name:var(--font-body)] text-base leading-relaxed text-[#f4f1ea]/70">
-          Every dawn the AI takes the day's koan and writes seven jokes around it — Ogiri, Skit JP/EN, Manzai, Konto,
-          Pin-neta, Flip-game. The human picks one, performs it, posts the recording. What survives the camera
-          makes the live set.
+          毎朝 AI が同じお題から 7 種類のネタを書く — 大喜利、スキット日英、漫才、コント、ピンネタ、フリップ芸。
+          人間が一つ選んで演じ、撮って投げる。 カメラを生き残ったネタが、ライブのセットに昇格する。
         </p>
 
         <ul className="mt-12 grid grid-cols-1 gap-px overflow-hidden border border-[#f4f1ea]/15 bg-[#f4f1ea]/15 md:grid-cols-2 lg:grid-cols-4">
@@ -258,10 +251,10 @@ export default function Page() {
               className="group relative bg-[#0a0a0a] p-6 transition-colors hover:bg-[#0e0e0e]"
             >
               <p className="font-[family-name:var(--font-kanji)] text-3xl font-black leading-none text-[#c8302e]">
-                {f.label_jp}
+                {f.label}
               </p>
               <p className="mt-3 font-[family-name:var(--font-display)] text-2xl uppercase tracking-tight">
-                {f.label}
+                {f.label_en}
               </p>
               <p className="mt-3 font-[family-name:var(--font-body)] text-sm leading-relaxed text-[#f4f1ea]/60">
                 {f.desc}
@@ -276,58 +269,59 @@ export default function Page() {
         <div className="mt-10 grid grid-cols-1 gap-8 border-t border-[#f4f1ea]/10 pt-10 md:grid-cols-3">
           <div>
             <p className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.3em] text-[#c8302e]">
-              01 / Today's koan
+              01 / 今日のお題
             </p>
-            <p className="mt-3 font-[family-name:var(--font-display)] text-2xl uppercase leading-tight">
-              "What feels too impermanent to bear?"
-            </p>
-            <p className="mt-2 font-[family-name:var(--font-kanji)] text-sm leading-relaxed text-[#f4f1ea]/60">
+            <p className="mt-3 font-[family-name:var(--font-kanji)] text-2xl font-black leading-tight">
               「これは無常すぎる、と感じるものは?」
             </p>
-          </div>
-          <div>
-            <p className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.3em] text-[#c8302e]">
-              02 / The cycle
-            </p>
-            <p className="mt-3 font-[family-name:var(--font-body)] text-sm leading-relaxed text-[#f4f1ea]/75">
-              04:00 koan → 07:00 seven scripts → 19:00 chosen bit performed → 23:00 vertical cut → tomorrow's feed.
-              No backlog. No reruns. Just the next breath.
+            <p className="mt-2 font-[family-name:var(--font-body)] text-sm leading-relaxed text-[#f4f1ea]/60">
+              "What feels too impermanent to bear?"
             </p>
           </div>
           <div>
             <p className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.3em] text-[#c8302e]">
-              03 / If the comedian is sick
+              02 / 一日の流れ
             </p>
             <p className="mt-3 font-[family-name:var(--font-body)] text-sm leading-relaxed text-[#f4f1ea]/75">
-              The AI posts a job to CrowdWorks, Indeed, Timee, or TaskRabbit, screens applicants, mails them the
-              script, and pays out via Stripe Connect after the show. The room never goes dark.
+              04:00 お題生成 → 07:00 7 ネタ完成 → 19:00 一本選んで演じる → 23:00 縦動画化 →
+              翌朝 SNS 配信。 ストックなし、再放送なし、次の一息のみ。
+            </p>
+          </div>
+          <div>
+            <p className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.3em] text-[#c8302e]">
+              03 / コメディアンが体調不良の時
+            </p>
+            <p className="mt-3 font-[family-name:var(--font-body)] text-sm leading-relaxed text-[#f4f1ea]/75">
+              AI が クラウドワークス / Indeed / Timee / TaskRabbit に 4 platform 同時で求人投稿、
+              応募者 screening、 脚本送付、 終演後 Stripe Connect で給料 払い。 舞台を消さない。
             </p>
           </div>
         </div>
       </section>
 
-      {/* join */}
       <section
         id="join"
         className="relative z-10 grid grid-cols-12 items-stretch gap-px border-t border-[#f4f1ea]/15 bg-[#f4f1ea]/15"
       >
         <div className="col-span-12 bg-[#0a0a0a] px-6 py-16 md:col-span-7 md:px-12">
           <p className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.3em] text-[#c8302e]">
-            Get on the list
+            リストに登録
           </p>
-          <h2 className="mt-4 font-[family-name:var(--font-display)] text-5xl uppercase tracking-tight md:text-6xl">
-            We'll tell you when the next room is open.
+          <h2 className="mt-4 font-[family-name:var(--font-kanji)] text-5xl font-black tracking-tight md:text-6xl">
+            次のライブが
+            <br />
+            決まったら、教える。
           </h2>
           <p className="mt-6 max-w-xl font-[family-name:var(--font-body)] text-base leading-relaxed text-[#f4f1ea]/70">
-            Live show announcements, tour ledger, and the occasional confession from the AI. No spam, no pity,
-            no Substack-ery.
+            ライブ告知、 ツアー収支、 たまに AI からの懺悔録。 スパムは送らない。
+            お情けも乞わない。 Substack にも飛ばない。
           </p>
           <div className="mt-8 flex flex-col gap-4 sm:flex-row">
             <a
-              href="https://aniccaai.com/en"
+              href="https://aniccaai.com/ja"
               className="inline-flex items-center justify-center border border-[#c8302e] bg-[#c8302e] px-8 py-4 font-[family-name:var(--font-mono)] text-xs uppercase tracking-[0.25em] text-[#0a0a0a] transition-all hover:bg-[#f4f1ea] hover:text-[#0a0a0a]"
             >
-              Subscribe — coming
+              登録 — 準備中
             </a>
             <a
               href="https://github.com/Daisuke134/anicca"
@@ -335,49 +329,45 @@ export default function Page() {
               rel="noreferrer"
               className="inline-flex items-center justify-center border border-[#f4f1ea]/40 px-8 py-4 font-[family-name:var(--font-mono)] text-xs uppercase tracking-[0.25em] text-[#f4f1ea]/80 transition-all hover:border-[#f4f1ea] hover:text-[#f4f1ea]"
             >
-              See the agent on GitHub →
+              GitHub で AI を見る →
             </a>
           </div>
         </div>
         <div className="col-span-12 bg-[#0a0a0a] px-6 py-16 md:col-span-5 md:px-12">
           <p className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.3em] text-[#f4f1ea]/50">
-            The agent
+            裏方
           </p>
-          <p className="mt-4 font-[family-name:var(--font-display)] text-3xl uppercase leading-tight tracking-tight md:text-4xl">
-            55 skills.
+          <p className="mt-4 font-[family-name:var(--font-kanji)] text-3xl font-black leading-tight tracking-tight md:text-4xl">
+            55 のスキル。
             <br />
-            162 cron jobs.
+            162 の cron。
             <br />
-            One Mac mini.
+            Mac mini 1 台。
             <br />
-            One human.
+            人間 1 人。
           </p>
           <p className="mt-6 font-[family-name:var(--font-body)] text-sm leading-relaxed text-[#f4f1ea]/65">
-            Anicca is the open-source AI entity behind the bit. It scouts open mics, applies on the comedian's
-            behalf, books the cheapest direct flight, posts the cuts, and answers replies — in the time it would
-            take him to refresh his email.
-          </p>
-          <p className="mt-3 font-[family-name:var(--font-kanji)] text-sm leading-relaxed text-[#f4f1ea]/60">
-            55 のスキルと 162 の cron を、Mac mini 一台と人間一人で動かす無常の劇場。
+            Anicca はオープンソースの自律 AI。 コメディの裏で動いて、 オープンマイクを探し、
+            代理で応募し、 最安の直行便を取り、 動画を編集し、 返信を返す。
+            人間がメールを更新する間に、全部終わってる。
           </p>
         </div>
       </section>
 
-      {/* footer */}
       <footer className="relative z-10 border-t border-[#f4f1ea]/15 px-6 py-12 md:px-12">
         <div className="grid grid-cols-12 gap-6 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.25em] text-[#f4f1ea]/40">
           <div className="col-span-12 md:col-span-4">
             <p className="text-[#f4f1ea]/70">ANICCA / COMEDY</p>
-            <p className="mt-1">A subset of an autonomous Buddhist AI entity.</p>
+            <p className="mt-1">自律仏教 AI エンティティ の一部。</p>
           </div>
           <div className="col-span-6 md:col-span-3">
-            <p className="text-[#f4f1ea]/70">Live numbers</p>
-            <Link href="/en" className="mt-1 block underline transition-colors hover:text-[#c8302e]">
+            <p className="text-[#f4f1ea]/70">数字</p>
+            <Link href="/ja" className="mt-1 block underline transition-colors hover:text-[#c8302e]">
               aniccaai.com
             </Link>
           </div>
           <div className="col-span-6 md:col-span-3">
-            <p className="text-[#f4f1ea]/70">Source</p>
+            <p className="text-[#f4f1ea]/70">ソース</p>
             <a
               href="https://github.com/Daisuke134/anicca"
               target="_blank"
