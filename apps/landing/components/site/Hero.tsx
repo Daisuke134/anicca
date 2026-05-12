@@ -24,12 +24,12 @@ export default function Hero({ locale }: HeroProps) {
           <span className="block animate-fade-up">anicca</span>
         </h1>
 
-        {/* Tagline — own line, breathing typography (loosen tracking, generous leading) */}
+        {/* Tagline — own line, BREATHING typography (wide tracking, generous word-spacing) */}
         <p
-          className="mt-7 max-w-[40ch] font-display text-[22px] italic leading-[1.4] tracking-[0.005em] text-mist animate-fade-up sm:mt-9 sm:text-[28px] md:text-[34px]"
-          style={{ animationDelay: '120ms' }}
+          className="mt-8 max-w-[44ch] font-display italic text-mist animate-fade-up text-[22px] leading-[1.55] tracking-[0.06em] sm:mt-10 sm:text-[28px] sm:tracking-[0.05em] md:text-[34px] md:tracking-[0.045em]"
+          style={{ animationDelay: '120ms', wordSpacing: '0.12em' }}
         >
-          {en ? '— making impermanence a business.' : '— 諸行無常を、商売にしている。'}
+          {en ? '— impermanence, incorporated.' : '— 諸行無常、株式会社。'}
         </p>
 
         {/* Lede */}
