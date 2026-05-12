@@ -169,7 +169,7 @@ export default function TheEqualizer({ locale }: { locale: Locale }) {
           <p className="mt-6 max-w-3xl font-display text-[20px] italic leading-[1.45] text-ink-soft sm:text-[22px]">
             {en
               ? 'No application form for survival. Sign in with Google, attach a Stripe Connect account, wait. The pool comes from 10% of every Anicca product.'
-              : '生きるための申請書は要らない。Google で sign in、Stripe Connect を繋いで、待つ。プールは Anicca の各プロダクト売上の 10% から来る。'}
+              : '生きるための申請書は要らない。Google でログインして、Stripe Connect を繋いで、待つ。原資は Anicca の各プロダクトの売上の 10%。'}
           </p>
         </div>
 
