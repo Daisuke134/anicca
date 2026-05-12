@@ -211,11 +211,11 @@ export const translations = {
   ja: {
     hero: {
       headline: "苦しみを、終わらせる。",
-      subtitle: "稼ぎながら苦しみを減らす仏教 AI エンティティ。自立。自己改善。オープンソース。",
+      subtitle: "自分で稼いで、その金で苦しみを減らす、仏教の AI。自分で動く。自分で直る。オープンソース。",
     },
     twoCta: {
-      income: { title: "💸 ベーシックインカムを受け取る", subtitle: "アニッチャ 売上の 10% を毎月 10 人に分配" },
-      local: { title: "🛠 自分で アニッチャ を動かす", subtitle: "オープンソース。自分の API key で動かして、稼ぎは自分のもの。" },
+      income: { title: "💸 毎月、無料でお金を受け取る", subtitle: "アニッチャの売上の 10% を、毎月 10 人で分ける。" },
+      local: { title: "🛠 自分の手でアニッチャを動かす", subtitle: "オープンソース。自分の API key で動かせば、稼いだぶんは全部自分のもの。" },
     },
     empire: {
       title: "Live",
@@ -227,18 +227,18 @@ export const translations = {
       followers: "総フォロワー",
       spendThisMonth: "今月の支出",
       profit: "利益",
-      openSource: "アニッチャ はオープンソース。",
+      openSource: "アニッチャはオープンソース。",
       loading: "ライブデータ読込中...",
       dashboardOffline: "ライブデータは一時的にオフライン。1 日 4 回更新。",
     },
     empireProducts: {
       title: "稼ぎの内訳",
-      subtitle: "各プロダクトは独立した アニッチャ インスタンス。タップで何でどう稼ぐか。",
+      subtitle: "プロダクトはどれも、独立して動いている一個体のアニッチャ。タップで、何で、どう稼いでるかが見える。",
       loading: "—",
       zeroLabel: "$0",
       viewsLabel: "ビュー/週",
       products: {
-        affirmationApp: { name: "Anicca Mobile Apps", tagline: "iOS · 最初の アニッチャ インスタンス" },
+        affirmationApp: { name: "Anicca Mobile Apps", tagline: "iOS · 最初に作ったアニッチャ" },
         letter: { name: "Anicca Letter", tagline: "毎日の無常ニュースレター" },
         music: { name: "Anicca Music", tagline: "アンビエント · Spotify" },
         comedy: { name: "Anicca Comedy", tagline: "AI 生成スキット · TT/IG/X" },
@@ -257,15 +257,15 @@ export const translations = {
     },
     bigGive: {
       title: "ベーシックインカム",
-      subtitle: "アニッチャ 売上の 10% を毎月分配。何もしなくていい。Stripe を繋いで待つだけ。",
-      poolLabel: "今月のプール",
+      subtitle: "アニッチャの売上の 10% を、毎月配り直す。応募者は何もしなくていい — Stripe を繋いで、あとは待つだけ。",
+      poolLabel: "今月の原資",
       spotsLabel: "枠",
       perPersonLabel: "1 人あたり",
       applyButton: "ベーシックインカムに応募 →",
-      fineprint: "Stripe Connect オンボーディング 5 分で完了。承認後、毎月自動入金。",
+      fineprint: "Stripe Connect の登録は 5 分で終わる。通れば、翌月から毎月、自分の口座に振り込まれる。",
     },
     theSpend: {
-      title: "アニッチャ が燃やすもの",
+      title: "アニッチャが燃やしている金",
       subtitle: "毎月のコスト全て。可能な限り API ライブ取得。",
       categories: {
         claude: "Claude",
