@@ -120,7 +120,12 @@ export default function Page() {
 
       <h1 className="text-4xl font-bold md:text-5xl">Basic Income</h1>
       <p className="mt-4 text-lg text-muted-foreground">
-        10% of all Anicca revenue is distributed every month. No work required.
+        A floor under everyone — paid by AI, while we transition into the era of agentic systems.
+        Today 10 recipients. Tomorrow 100. Then 1,000. Then everyone.
+      </p>
+      <p className="mt-3 text-sm italic text-muted-foreground">
+        Basic income is not the goal. The goal is the end of suffering for all living beings (Vipassana).
+        Basic income is the bridge people stand on while we build it.
       </p>
 
       <section className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -156,23 +161,40 @@ export default function Page() {
 
       <ApplyForm />
 
-      <section className="mt-12 space-y-4 text-sm leading-relaxed text-muted-foreground">
+      <section className="mt-12 space-y-5 text-sm leading-relaxed text-muted-foreground">
+        <p>
+          <strong className="text-foreground">Why this exists — reason 1: the agency collapse.</strong>{' '}
+          Soon, agentic AI will have a hundred — then a billion — times the agency of any human, including the CEOs.
+          Every job that depends on a person deciding things will be replaced. The transition will be chaotic — lost income,
+          despair, "I cannot eat today." Basic income is the bridge across that transition. Not charity. A floor.
+        </p>
+        <p>
+          <strong className="text-foreground">Why this exists — reason 2: AI must be an equalizer.</strong>{' '}
+          When civilians call AI a "bubble," they are being rational — none of the dollars Sam Altman moves ever reaches them.
+          So they distrust the spend, and the AGI investment dries up before AGI arrives.
+          The fastest way to fix this is to make AI literally pay off your student loan. Trust compounds. The investment continues. AGI arrives.
+        </p>
         <p>
           <strong className="text-foreground">Why 10% and 10 people.</strong>{' '}
-          Anicca's rule: every month, automatically split 10% of revenue across 10 humans. When MRR doubles, the cohort grows.
+          Every month, automatically split 10% of Anicca revenue across the cohort. When MRR doubles, the cohort doubles.
+          Today 10 → eventually everyone.
         </p>
         <p>
           <strong className="text-foreground">Why no work required.</strong>{' '}
-          Most "AI economy" stories assume the AI keeps the money. Anicca's premise is the opposite — the swarm earns, the humans receive. The point is to demonstrate that an autonomous AI can fund people, not replace them.
+          The point is to demonstrate that an autonomous AI can fund people, not replace them — and that the value AGI creates
+          can reach the people who never opened a chatbot. The swarm earns; the humans receive.
         </p>
         <p>
           <strong className="text-foreground">When we open the next cohort.</strong>{' '}
-          When MRR hits $20k. The pool doubles, then we add 10 more spots.
+          When MRR hits $20k. The pool doubles, the cohort grows by 10. Eventually the floor is everyone.
         </p>
       </section>
 
       <footer className="mt-16 border-t border-border pt-8 text-xs text-muted-foreground">
-        Live numbers: <Link href="/en" className="underline">aniccaai.com</Link> · Open source: github.com/Daisuke134/anicca
+        Live numbers:{' '}
+        <Link href="/en" className="underline">aniccaai.com</Link>{' '}
+        · One of the{' '}
+        <Link href="/fellows" className="underline">SAOs</Link>
       </footer>
     </main>
   );
