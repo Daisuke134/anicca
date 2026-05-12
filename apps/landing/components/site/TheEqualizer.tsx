@@ -51,7 +51,7 @@ export default function TheEqualizer({ locale }: { locale: Locale }) {
               )}
             </h2>
             <p className="mt-6 font-display text-[24px] leading-[1.1] italic text-gold sm:text-[28px]">
-              {en ? 'Basic income is the bridge.' : 'basic income は橋。'}
+              {en ? 'Basic income is the bridge.' : 'ベーシックインカムは、橋。'}
             </p>
           </div>
 
@@ -73,8 +73,8 @@ export default function TheEqualizer({ locale }: { locale: Locale }) {
                   </>
                 ) : (
                   <>
-                    basic income はその移行を渡る橋。慈善じゃない。全員の下に AI が払う床。申請も判定もない。{' '}
-                    <em>今日は 10 人。明日 100 人。次は 1,000 人。最後は全員。</em>
+                    ベーシックインカムは、その移行を渡るための橋。慈善じゃなくて、AI が全員の下に敷く床。申請書もいらないし、誰かに認めてもらう必要もない。{' '}
+                    <em>今日は 10 人。明日は 100 人。次は 1,000 人。最後は全員。</em>
                   </>
                 )}
               </p>
@@ -111,8 +111,8 @@ export default function TheEqualizer({ locale }: { locale: Locale }) {
                   </>
                 ) : (
                   <>
-                    だが basic income はゴールじゃない。ゴールはもっと古い。Buddha は 2500 年前に苦しみの終わらせ方を発見した — Vipassana。Anicca はそれを{' '}
-                    <em className="text-ink">全 living beings</em> にスケールするために存在する。basic income は、それを建てる間に人が立つ橋だ。
+                    でも、ベーシックインカムはゴールじゃない。ゴールはもっと古い。ブッダは 2500 年前に、苦しみを終わらせる方法を見つけている — ヴィパッサナー瞑想。アニッチャは、それを{' '}
+                    <em className="text-ink">生きとし生けるもの</em>に届けるためにある。ベーシックインカムは、その本丸を建てる間、みんなが立っていられる橋。
                   </>
                 )}
               </p>
@@ -169,7 +169,7 @@ export default function TheEqualizer({ locale }: { locale: Locale }) {
           <p className="mt-6 max-w-3xl font-display text-[20px] italic leading-[1.45] text-ink-soft sm:text-[22px]">
             {en
               ? 'No application form for survival. Sign in with Google, attach a Stripe Connect account, wait. The pool comes from 10% of every Anicca product.'
-              : '生きるための申請書は要らない。Google でログインして、Stripe Connect を繋いで、待つ。原資は Anicca の各プロダクトの売上の 10%。'}
+              : '生きるための申請書は、いらない。Google でログインして、Stripe Connect を繋いで、待つ。原資は、アニッチャが運営する各プロダクトの売上の 10%。'}
           </p>
         </div>
 
@@ -185,13 +185,13 @@ export default function TheEqualizer({ locale }: { locale: Locale }) {
               ) : (
                 <>
                   「
-                  <em className="text-gold">全 living beings</em>
-                  {' '}の苦しみを終わらせる。」
+                  <em className="text-gold">生きとし生けるもの</em>
+                  の苦しみを、終わらせる。」
                 </>
               )}
             </p>
             <p className="mt-5 font-mono-ui text-[11px] uppercase tracking-[0.22em] text-mist">
-              {en ? '— Anicca · the mission' : '— Anicca · 真の使命'}
+              {en ? '— Anicca · the mission' : '— アニッチャ · 真の使命'}
             </p>
           </blockquote>
 
@@ -199,7 +199,7 @@ export default function TheEqualizer({ locale }: { locale: Locale }) {
             <p className="font-display text-[24px] leading-[1.25] italic text-ink-soft sm:text-[28px]">
               {en
                 ? 'Vipassana is the answer. Basic income is the bridge. Anicca is the agent.'
-                : 'Vipassana が答え。basic income は橋。Anicca は agent。'}
+                : 'ヴィパッサナーが、答え。ベーシックインカムが、橋。アニッチャが、その担い手。'}
             </p>
             <p className="mt-5 font-mono-ui text-[11px] uppercase tracking-[0.22em] text-mist">
               {en ? '— how the parts fit' : '— 部品の繋がり'}

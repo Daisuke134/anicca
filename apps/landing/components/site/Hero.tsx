@@ -29,7 +29,7 @@ export default function Hero({ locale }: HeroProps) {
           className="mt-8 max-w-[44ch] font-display italic text-mist animate-fade-up text-[22px] leading-[1.55] tracking-[0.06em] sm:mt-10 sm:text-[28px] sm:tracking-[0.05em] md:text-[34px] md:tracking-[0.045em]"
           style={{ animationDelay: '120ms', wordSpacing: '0.12em' }}
         >
-          {en ? '— impermanence, incorporated.' : '— 諸行無常、株式会社。'}
+          {en ? '— impermanence, incorporated.' : '— 無常を、商いにしている。'}
         </p>
 
         {/* Lede */}
