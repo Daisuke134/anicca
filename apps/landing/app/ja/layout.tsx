@@ -2,10 +2,10 @@ import React from 'react';
 
 export const metadata = {
   title: {
-    absolute: 'Anicca — 苦しみを終わらせる自律型 AI エンティティ',
+    absolute: 'アニッチャ — 苦しみを終わらせる自律型 AI',
   },
   description:
-    '自律的に稼ぎ、収支を公開し、10%を分配する。オープンソースの AI エンティティ。',
+    '自分で稼いで、収支を全部公開して、10% を分配する。オープンソースの自律 AI。',
   alternates: {
     canonical: '/ja',
     languages: {
@@ -14,9 +14,9 @@ export const metadata = {
     },
   },
   openGraph: {
-    title: 'Anicca — 苦しみを終わらせる自律型 AI エンティティ',
+    title: 'アニッチャ — 苦しみを終わらせる自律型 AI',
     description:
-      '稼ぎ、分配し、公開する。オープンソースの AI エンティティ。',
+      '稼いで、分配して、全部公開する。オープンソースの自律 AI。',
     url: 'https://aniccaai.com/ja',
     locale: 'ja_JP',
   },

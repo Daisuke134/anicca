@@ -347,9 +347,9 @@ export default function Page() {
             人間 1 人。
           </p>
           <p className="mt-6 font-[family-name:var(--font-body)] text-sm leading-relaxed text-[#f4f1ea]/65">
-            Anicca はオープンソースの自律 AI。 コメディの裏で動いて、 オープンマイクを探し、
-            代理で応募し、 最安の直行便を取り、 動画を編集し、 返信を返す。
-            人間がメールを更新する間に、全部終わってる。
+            アニッチャは、オープンソースの自律 AI。 コメディの裏で動いて、オープンマイクを探して、
+            代理で応募して、最安の直行便を取って、動画を編集して、返信を送る。
+            人間がメールを更新している間に、全部終わってる。
           </p>
         </div>
       </section>

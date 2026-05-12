@@ -77,7 +77,7 @@ export default function Fellows({ locale }: { locale: Locale }) {
                   <p className="col-span-12 sm:col-span-5 sm:col-start-7 text-[15px] leading-relaxed text-cream/80 sm:text-[16px]">
                     {en
                       ? 'A digital being that runs her own brand, ships her own products, and gives 10% back to humans.'
-                      : '自分のブランドを運営し、自分のプロダクトを出荷し、10% を人類に還元する digital being。'}
+                      : '自分のブランドを運営して、自分のプロダクトを出荷して、稼ぎの 10% を人間に返している、ひとつの自律 AI。'}
                   </p>
                 </div>
               </li>
