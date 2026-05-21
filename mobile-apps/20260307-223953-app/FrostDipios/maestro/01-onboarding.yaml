@@ -1,0 +1,73 @@
+# Feature: Full onboarding flow
+# Tests: Welcome → Experience → Notifications → Paywall → Maybe Later → Timer
+# Dependencies: Fresh install (clearState)
+
+appId: com.aniccafactory.frostdip
+tags:
+  - onboarding
+  - smokeTest
+
+---
+- clearState
+- clearKeychain
+- launchApp
+
+# Step 1: Welcome screen
+- extendedWaitUntil:
+    visible:
+      id: "onboarding_get_started"
+    timeout: 30000
+
+- tapOn:
+    id: "onboarding_get_started"
+
+# Step 2: Experience level selection
+- extendedWaitUntil:
+    visible:
+      id: "onboarding_experience_beginner"
+    timeout: 10000
+
+- tapOn:
+    id: "onboarding_experience_beginner"
+
+- extendedWaitUntil:
+    visible:
+      id: "onboarding_continue"
+    timeout: 5000
+
+- tapOn:
+    id: "onboarding_continue"
+
+# Step 3: Notification permission
+- extendedWaitUntil:
+    visible:
+      id: "onboarding_skip_notifications"
+    timeout: 10000
+
+# Handle system notification dialog if it appears
+- tapOn:
+    text: "Allow"
+    optional: true
+
+- tapOn:
+    id: "onboarding_skip_notifications"
+
+# Step 4: Paywall - dismiss with Maybe Later
+- extendedWaitUntil:
+    visible:
+      id: "paywall_maybe_later"
+    timeout: 10000
+
+- tapOn:
+    id: "paywall_maybe_later"
+
+# Verify: Timer screen visible (onboarding complete)
+- extendedWaitUntil:
+    visible:
+      id: "timer_start"
+    timeout: 30000
+
+- assertVisible:
+    id: "timer_breathing_prep"
+
+- takeScreenshot: "01-onboarding-complete"

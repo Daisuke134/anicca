@@ -1,0 +1,639 @@
+{
+  "query": "AI Responsibility",
+  "source": "semantic_scholar",
+  "limit": 25,
+  "timestamp": 1778223428.8488462,
+  "papers": [
+    {
+      "paper_id": "s2-c2b69bb698ead5f25f5ae132ab5c0c2ff2688505",
+      "title": "Uncovering the gap: challenging the agential nature of AI responsibility problems",
+      "authors": [
+        {
+          "name": "Joan Llorca Albareda",
+          "affiliation": ""
+        }
+      ],
+      "year": 2025,
+      "abstract": "In this paper, I will argue that the responsibility gap arising from new AI systems is reducible to the problem of many hands and collective agency. Systematic analysis of the agential dimension of AI will lead me to outline a disjunctive between the two problems. Either we reduce individual responsibility gaps to the many hands, or we abandon the individual dimension and accept the possibility of responsible collective agencies. Depending on which conception of AI agency we begin with, the responsibility gap will boil down to one of these two moral problems. Moreover, I will adduce that this conclusion reveals an underlying weakness in AI ethics: the lack of attention to the question of the disciplinary boundaries of AI ethics. This absence has made it difficult to identify the specifics of the responsibility gap arising from new AI systems as compared to the responsibility gaps of other applied ethics. Lastly, I will be concerned with outlining these specific aspects.",
+      "venue": "AI and Ethics",
+      "citation_count": 6,
+      "doi": "10.1007/s43681-025-00685-w",
+      "arxiv_id": "",
+      "url": "https://www.semanticscholar.org/paper/c2b69bb698ead5f25f5ae132ab5c0c2ff2688505",
+      "source": "semantic_scholar",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "s2-ebe3d74471147fcc12adc2a97de6a2e3aa65d247",
+      "title": "AI responsibility by design? How startup founders frame and govern AI adoption",
+      "authors": [
+        {
+          "name": "Diana Olar",
+          "affiliation": ""
+        },
+        {
+          "name": "Diana Iordache",
+          "affiliation": ""
+        }
+      ],
+      "year": 2025,
+      "abstract": "This article explores how startup founders justify AI-related strategic decisions and negotiate boundaries of responsibility, legitimacy, and ethical acceptability in resource-constrained organizational environments. Drawing on a sociological framework of justification and boundary-work, the analysis uses mixed-method survey data from 72 founders. Results show that most respondents employ efficiency-based justifications, while ethical and civic rationales remain largely symbolic or anticipatory. Despite widespread recognition of AI-related risks, only a minority of founders have implemented concrete governance mechanisms, with most relying on informal practices and shifting responsibility across actors. The findings demonstrate how symbolic legitimacy is constructed through selective invocation of moral logics and illustrate the contingent, negotiated nature of ethical boundary-setting in early-stage AI adoption.",
+      "venue": "Journal of Comparative Research in Anthropology and Sociology",
+      "citation_count": 0,
+      "doi": "10.62229/cmp2_25/2",
+      "arxiv_id": "",
+      "url": "https://www.semanticscholar.org/paper/ebe3d74471147fcc12adc2a97de6a2e3aa65d247",
+      "source": "semantic_scholar",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "s2-f5347faf51f0e0ba07fc0fab4f136abb75a2d987",
+      "title": "AI responsibility gap: not new, inevitable, unproblematic",
+      "authors": [
+        {
+          "name": "Huzeyfe Demirtas",
+          "affiliation": ""
+        }
+      ],
+      "year": 2024,
+      "abstract": "",
+      "venue": "Ethics and Information Technology",
+      "citation_count": 6,
+      "doi": "10.1007/s10676-024-09814-1",
+      "arxiv_id": "",
+      "url": "https://www.semanticscholar.org/paper/f5347faf51f0e0ba07fc0fab4f136abb75a2d987",
+      "source": "semantic_scholar",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "s2-08a7a73287117442cca6b3e3ece4c42b4a52fdcc",
+      "title": "Assessing Smart Nation Singapore as an International Model for AI Responsibility",
+      "authors": [
+        {
+          "name": "Philip L. Frana",
+          "affiliation": ""
+        }
+      ],
+      "year": 2024,
+      "abstract": "",
+      "venue": "International journal on responsibility",
+      "citation_count": 11,
+      "doi": "10.62365/2576-0955.1109",
+      "arxiv_id": "",
+      "url": "https://www.semanticscholar.org/paper/08a7a73287117442cca6b3e3ece4c42b4a52fdcc",
+      "source": "semantic_scholar",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "s2-84409269b92e74187ac7aa6cb91c29f3b8aa74a1",
+      "title": "How Do We Demonstrate AI Responsibility: The Devil Is in the Details",
+      "authors": [
+        {
+          "name": "Matthew S. Johnson",
+          "affiliation": ""
+        }
+      ],
+      "year": 2024,
+      "abstract": "This commentary examines the Duolingo English Test Responsible AI standards and provides some thoughts on specific ways we can evaluate the use of AI for automated scoring.",
+      "venue": "Journal of educational and behavioral statistics",
+      "citation_count": 3,
+      "doi": "10.3102/10769986241257963",
+      "arxiv_id": "",
+      "url": "https://www.semanticscholar.org/paper/84409269b92e74187ac7aa6cb91c29f3b8aa74a1",
+      "source": "semantic_scholar",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "s2-0d819672e8caa003026c61646cb7010892dcf318",
+      "title": "Vicarious liability: a solution to a problem of AI responsibility?",
+      "authors": [
+        {
+          "name": "Daniela Glavani\u010dov\u00e1",
+          "affiliation": ""
+        },
+        {
+          "name": "Matteo Pascucci",
+          "affiliation": ""
+        }
+      ],
+      "year": 2022,
+      "abstract": "",
+      "venue": "Ethics and Information Technology",
+      "citation_count": 20,
+      "doi": "10.1007/s10676-022-09657-8",
+      "arxiv_id": "",
+      "url": "https://www.semanticscholar.org/paper/0d819672e8caa003026c61646cb7010892dcf318",
+      "source": "semantic_scholar",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "s2-4cd911f942bf131eba22ccc755594349b1137cb3",
+      "title": "Insurance System as a Possible Way to Secure AI Responsibility",
+      "authors": [
+        {
+          "name": "E. Abrosimova",
+          "affiliation": ""
+        }
+      ],
+      "year": 2023,
+      "abstract": "",
+      "venue": "Social Science Research Network",
+      "citation_count": 0,
+      "doi": "10.2139/ssrn.4470101",
+      "arxiv_id": "",
+      "url": "https://www.semanticscholar.org/paper/4cd911f942bf131eba22ccc755594349b1137cb3",
+      "source": "semantic_scholar",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "s2-24c1614ab1915d37fa793b0aa8d73d3d548bea12",
+      "title": "Can ChatGPT replace humans in crisis communication? The effects of AI-mediated crisis communication on stakeholder satisfaction and responsibility attribution",
+      "authors": [
+        {
+          "name": "Yi Xiao",
+          "affiliation": ""
+        },
+        {
+          "name": "Shubin Yu",
+          "affiliation": ""
+        }
+      ],
+      "year": 2025,
+      "abstract": "",
+      "venue": "International Journal of Information Management",
+      "citation_count": 37,
+      "doi": "10.1016/j.ijinfomgt.2024.102835",
+      "arxiv_id": "",
+      "url": "https://www.semanticscholar.org/paper/24c1614ab1915d37fa793b0aa8d73d3d548bea12",
+      "source": "semantic_scholar",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "s2-0b2c53d1e4ae0dd1b266cfab176d35b7ff080ce7",
+      "title": "Influence of AI behavior on human moral decisions, agency, and responsibility",
+      "authors": [
+        {
+          "name": "Adriana Salatino",
+          "affiliation": ""
+        },
+        {
+          "name": "Arthur Pr\u00e9vel",
+          "affiliation": ""
+        },
+        {
+          "name": "Emilie A. Caspar",
+          "affiliation": ""
+        },
+        {
+          "name": "Salvatore Lo Bue",
+          "affiliation": ""
+        }
+      ],
+      "year": 2025,
+      "abstract": "There is a growing interest in understanding the effects of human-machine interaction on moral decision-making (Moral-DM) and sense of agency (SoA). Here, we investigated whether the \u201cmoral behavior\u201d of an AI may affect both moral-DM and SoA in a military population, by using a task in which cadets played the role of drone operators on a battlefield. Participants had to decide whether or not to initiate an attack based on the presence of enemies and the risk of collateral damage. By combining three different types of trials (Moral vs. two No-Morals) in three blocks with three type of intelligent system support (No-AI support vs. Aggressive-AI vs. Conservative-AI), we showed that participants\u2019 decisions in the morally challenging situations were influenced by the inputs provided by the autonomous system. Furthermore, by measuring implicit and explicit agency, we found a significant increase in the SoA at the implicit level in the morally challenging situations, and a decrease in the explicit responsibility during the interaction with both AIs. These results suggest that the AI behavior influences human moral decision-making and alters the sense of agency and responsibility in ethical scenarios. These findings have implications for the design of AI-assisted decision-making processes in moral contexts.",
+      "venue": "Scientific Reports",
+      "citation_count": 26,
+      "doi": "10.1038/s41598-025-95587-6",
+      "arxiv_id": "",
+      "url": "https://www.semanticscholar.org/paper/0b2c53d1e4ae0dd1b266cfab176d35b7ff080ce7",
+      "source": "semantic_scholar",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "s2-cc3b73a1b3de2d7d12d0bdc13c4102f82bb4da5c",
+      "title": "Homo agenticus in the age of agentic AI: Agency loops, power displacement, and the circulation of responsibility",
+      "authors": [
+        {
+          "name": "Paul M. Leonardi",
+          "affiliation": ""
+        }
+      ],
+      "year": 2025,
+      "abstract": "",
+      "venue": "Information and organization",
+      "citation_count": 23,
+      "doi": "10.1016/j.infoandorg.2025.100582",
+      "arxiv_id": "",
+      "url": "https://www.semanticscholar.org/paper/cc3b73a1b3de2d7d12d0bdc13c4102f82bb4da5c",
+      "source": "semantic_scholar",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "s2-4bab9ae25b07b20d72d92f82b9bf74d6f858f4c8",
+      "title": "Civil Responsibility in the Medical Industry for Artificial Intelligence Applications: the Legal Rules of AI Responsibility",
+      "authors": [
+        {
+          "name": "Ammar Kareim Kadham Al-Bsherawy",
+          "affiliation": ""
+        },
+        {
+          "name": "Ali Abdul-Jabbar Rahim Al-Mashhadi",
+          "affiliation": ""
+        }
+      ],
+      "year": 2021,
+      "abstract": "The paper addresses the debate on AI robots\u2019 legal status, which often confuses the jurisprudence and decision-makers between these synthetic drugs\u2019 legal effect and the legal personality status. If only the theories of jurisprudence or philosophers\u2019 opinions contribute to the law\u2019s development, engineers with their inventions also contribute to its effect. It considers the trends in this field and the actions made by specialists in artificial intelligence, and the independence of robots based on the latter. The lack of systems of responsibility traditional to absorb the damage caused by AI technologies. The European civil law commission for robotics is awarded the most sophisticated and independent robot\u2019s legal personality for holding them responsible for themselves and not human beings. Still, this proposal faces many legal, moral, and philosophical challenges. According to this framework, the paper aims to shed more light on, discuss and analyze such an intelligent position robot might have from legal, ethical, and philosophical aspects. The article also explores the possibility of granting autonomous robots a new legal status that removes them from the circle of things and places them within the scope of personal. What is the point of giving this legal personality to robots based on artificial intelligence advocated by international institutions and researchers in law? The results show that granting legal personality within intelligent robots\u2019 philosophical concept is possible as it exists. However, robots\u2019 moral nature differs from a legal person\u2019s existence because we see and feel the latter",
+      "venue": "Indian Journal of Forensic Medicine & Toxicology",
+      "citation_count": 3,
+      "doi": "10.37506/ijfmt.v15i3.15683",
+      "arxiv_id": "",
+      "url": "https://www.semanticscholar.org/paper/4bab9ae25b07b20d72d92f82b9bf74d6f858f4c8",
+      "source": "semantic_scholar",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "s2-78328f04ce6db4b3d466c08a46fa9b546e74c888",
+      "title": "Measuring AI responsibility: A cross-country validation of a multidimensional framework",
+      "authors": [
+        {
+          "name": "Nutt Jaturat",
+          "affiliation": ""
+        },
+        {
+          "name": "Khahan Na-nan",
+          "affiliation": ""
+        },
+        {
+          "name": "Bowei Hu",
+          "affiliation": ""
+        }
+      ],
+      "year": 2026,
+      "abstract": "",
+      "venue": "Int. J. Inf. Manag. Data Insights",
+      "citation_count": 0,
+      "doi": "10.1016/j.jjimei.2026.100388",
+      "arxiv_id": "",
+      "url": "https://www.semanticscholar.org/paper/78328f04ce6db4b3d466c08a46fa9b546e74c888",
+      "source": "semantic_scholar",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "s2-20f464c3c0bffbfe56c3a9bdd8b80fda8da49965",
+      "title": "Locating fault for AI harms: a systems theory of foreseeability, reasonable care and causal responsibility in the AI value chain",
+      "authors": [
+        {
+          "name": "Henry Fraser",
+          "affiliation": ""
+        },
+        {
+          "name": "Nicolas P Suzor",
+          "affiliation": ""
+        }
+      ],
+      "year": 2025,
+      "abstract": "ABSTRACT This paper presents an original perspective on fault and responsibility for harms caused by artificial intelligence (AI) systems. Scholarship on liability for AI harms highlights the difficulties that doctrines like negligence may encounter in attributing responsibility across complex AI value chains. Drawing on the theory of \u2018system safety\u2019, this paper argues that these difficulties can be diminished by conceptualising AI hazards as a set of socio-technical conditions rather than specific aberrant outputs (\u2018errors\u2019) with discrete technical causes. System affordances, use context, and organisational arrangements are all key risk factors. Animated by case studies of AI harms and near misses, the paper clarifies what is \u2018reasonably foreseeable\u2019 about AI harms, and to which value chain participants. It also identifies various kinds of \u2018reasonable care\u2019 that different actors can exercise to avert harm. This socio-technical perspective makes it easier to apply concepts that are vital not only to negligence liability, and highlights key priorities for regulating \u2018responsible AI\u2019.",
+      "venue": "Law, Innovation and Technology",
+      "citation_count": 10,
+      "doi": "10.1080/17579961.2025.2469345",
+      "arxiv_id": "",
+      "url": "https://www.semanticscholar.org/paper/20f464c3c0bffbfe56c3a9bdd8b80fda8da49965",
+      "source": "semantic_scholar",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "s2-04d2d2621cae0d1c583e37d9ae0352112ba179f9",
+      "title": "Legal responsibility for errors caused by artificial intelligence (AI) in the public sector",
+      "authors": [
+        {
+          "name": "Ahmed Oudah Mohammed AL-Dulaimi",
+          "affiliation": ""
+        },
+        {
+          "name": "M. Mohammed",
+          "affiliation": ""
+        }
+      ],
+      "year": 2025,
+      "abstract": "Purpose\nThis paper aims to assume the responsibility of examining the shifting patterns of legal liability for failures that result from the integration of artificial intelligence (AI) in the public domain. It explores aspects such as the current legal implications, accountability mechanisms of AI errors and potential concerns and issues and proffered solutions for the complex issues that surround AI-related mistakes in public administration. Toward this end, the study outlines a central problem that is defined by the complex nature of errors that arise when AI is applied within the public service.\n\n\nDesign/methodology/approach\nAI systems have recently been implemented into the public sectors and have influenced positive changes in efficiency and decision-making. However, the development and complication of AI technologies have raised profound worries on accountability in the case of mistakes in public sector.\n\n\nFindings\nAs international governments increasingly rely on AI for critical selection and planning processes, establishing a clean prison system to educate and allocate responsibility when errors occur is paramount. What it has been found to have the potential to guide policy makers, criminologists and AI planners toward the challenges of implementing AI in the public sector easy to navigate. Finally, the research seeks to assess the potential of AI in public administration and will also serve to create a certain level of transparency, accountability and public trust.\n\n\nResearch limitations/implications\nTo provide a comprehensive response, the research employs a multifaceted methodology that encompasses a thorough literature review, in-depth legal analysis, regulatory assessment, exploration of various liability models, consideration of challenges and ethical considerations and real-world case studies. This holistic approach aims to shed light on the intricate web of legal responsibility and accountability entwined with AI in the public sector.\n\n\nPractical implications\nAlthough as a tool, AI is different from the human agents who use it, and defining and attributing legal responsibility for such errors becomes a challenging task because of the classification of AI as either software or a tool, and the accountability of its human users.\n\n\nSocial implications\nConsequently, the primary research question emerges: \u201c\u2018Employing\u2019 AI in the public sector: how can legal responsibility for errors be assigned and governed in ways that respond to the plural employment-aspects of AI?\u201d\n\n\nOriginality/value\nThe significance of this research lies in its ability to address the emerging challenges associated with AI adoption in the public sector. As international governments increasingly rely on AI for critical selection and planning processes, establishing a clean prison system to educate and allocate responsibility when errors occur is paramount. What it has been found to have the potential to guide policy makers, criminologists and AI planners toward the challenges of implementing AI in the public sector.",
+      "venue": "International Journal of Law and Management",
+      "citation_count": 10,
+      "doi": "10.1108/ijlma-08-2024-0295",
+      "arxiv_id": "",
+      "url": "https://www.semanticscholar.org/paper/04d2d2621cae0d1c583e37d9ae0352112ba179f9",
+      "source": "semantic_scholar",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "s2-135000d7d580e25ab87381de3655214cca3f2a66",
+      "title": "Responsibility Attribution in Human Interactions with Everyday AI Systems",
+      "authors": [
+        {
+          "name": "Joe Brailsford",
+          "affiliation": ""
+        },
+        {
+          "name": "F. Vetere",
+          "affiliation": ""
+        },
+        {
+          "name": "Eduardo Velloso",
+          "affiliation": ""
+        }
+      ],
+      "year": 2025,
+      "abstract": "How do individuals perceive AI systems as responsible entities in everyday collaborations between humans and AI? Drawing on psychological literature from attribution theory, praise-blame asymmetries and negativity bias, this study investigated the effects of perspective (actor vs observer) and outcome favorability (positive vs negative) on how participants (N=321) attributed responsibility for outcomes resulting from shared human-AI decision-making. Both Bayesian modelling and reflexive thematic analysis of results revealed that, overall, participants were more likely to attribute greater responsibility to the AI systems. When the outcome was positive, participants were more likely to ascribe shared responsibility to both Human and AI systems, rather than either separately. When the outcome was negative, participants were more likely to attribute responsibility to a single entity, but not consistently towards the human or the AI. These results build on the understanding of how individuals cast blame and praise for shared interactions involving AI systems.",
+      "venue": "International Conference on Human Factors in Computing Systems",
+      "citation_count": 10,
+      "doi": "10.1145/3706598.3713126",
+      "arxiv_id": "",
+      "url": "https://www.semanticscholar.org/paper/135000d7d580e25ab87381de3655214cca3f2a66",
+      "source": "semantic_scholar",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "s2-8e20ce3197a85d89c24b0b8b9db5dd970a247ede",
+      "title": "AI in the Financial Sector: The Line between Innovation, Regulation and Ethical Responsibility",
+      "authors": [
+        {
+          "name": "Nurhadhinah Nadiah Ridzuan",
+          "affiliation": ""
+        },
+        {
+          "name": "Masairol Masri",
+          "affiliation": ""
+        },
+        {
+          "name": "Muhammad Anshari",
+          "affiliation": ""
+        },
+        {
+          "name": "Norma Latif Fitriyani",
+          "affiliation": ""
+        },
+        {
+          "name": "Muhammad Syafrudin",
+          "affiliation": ""
+        }
+      ],
+      "year": 2024,
+      "abstract": "This study examines the applications, benefits, challenges, and ethical considerations of artificial intelligence (AI) in the banking and finance sectors. It reviews current AI regulation and governance frameworks to provide insights for stakeholders navigating AI integration. A descriptive analysis based on a literature review of recent research is conducted, exploring AI applications, benefits, challenges, regulations, and relevant theories. This study identifies key trends and suggests future research directions. The major findings include an overview of AI applications, benefits, challenges, and ethical issues in the banking and finance industries. Recommendations are provided to address these challenges and ethical issues, along with examples of existing regulations and strategies for implementing AI governance frameworks within organizations. This paper highlights innovation, regulation, and ethical issues in relation to AI within the banking and finance sectors. Analyzes the previous literature, and suggests strategies for AI governance framework implementation and future research directions. Innovation in the applications of AI integrates with fintech, such as preventing financial crimes, credit risk assessment, customer service, and investment management. These applications improve decision making and enhance the customer experience, particularly in banks. Existing AI regulations and guidelines include those from Hong Kong SAR, the United States, China, the United Kingdom, the European Union, and Singapore. Challenges include data privacy and security, bias and fairness, accountability and transparency, and the skill gap. Therefore, implementing an AI governance framework requires rules and guidelines to address these issues. This paper makes recommendations for policymakers and suggests practical implications in reference to the ASEAN guidelines for AI development at the national and regional levels. Future research directions, a combination of extended UTAUT, change theory, and institutional theory, as well as the critical success factor, can fill the theoretical gap through mixed-method research. In terms of the population gap can be addressed by research undertaken in a nation where fintech services are projected to be less accepted, such as a developing or Islamic country. In summary, this study presents a novel approach using descriptive analysis, offering four main contributions that make this research novel: (1) the applications of AI in the banking and finance industries, (2) the benefits and challenges of AI adoption in these industries, (3) the current AI regulations and governance, and (4) the types of theories relevant for further research. The research findings are expected to contribute to policy and offer practical implications for fintech development in a country.",
+      "venue": "Inf.",
+      "citation_count": 80,
+      "doi": "10.3390/info15080432",
+      "arxiv_id": "",
+      "url": "https://www.semanticscholar.org/paper/8e20ce3197a85d89c24b0b8b9db5dd970a247ede",
+      "source": "semantic_scholar",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "s2-432bdeb7fa7afcfebcf9afbbbc938ac547956c68",
+      "title": "AI hype as a cyber security risk: the moral responsibility of implementing generative AI in business",
+      "authors": [
+        {
+          "name": "Declan Humphreys",
+          "affiliation": ""
+        },
+        {
+          "name": "Abigail M. Y. Koay",
+          "affiliation": ""
+        },
+        {
+          "name": "Dennis Desmond",
+          "affiliation": ""
+        },
+        {
+          "name": "Erica Mealy",
+          "affiliation": ""
+        }
+      ],
+      "year": 2024,
+      "abstract": "This paper examines the ethical obligations companies have when implementing generative Artificial Intelligence (AI). We point to the potential cyber security risks companies are exposed to when rushing to adopt generative AI solutions or buying into \u201cAI hype\u201d. While the benefits of implementing generative AI solutions for business have been widely touted, the inherent risks associated have been less well publicised. There are growing concerns that the race to integrate generative AI is not being accompanied by adequate safety measures. The rush to buy into the hype of generative AI and not fall behind the competition is potentially exposing companies to broad and possibly catastrophic cyber-attacks or breaches. In this paper, we outline significant cyber security threats generative AI models pose, including potential \u2018backdoors\u2019 in AI models that could compromise user data or the risk of \u2018poisoned\u2019 AI models producing false results. In light of these the cyber security concerns, we discuss the moral obligations of implementing generative AI into business by considering the ethical principles of beneficence, non-maleficence, autonomy, justice, and explicability. We identify two examples of ethical concern, overreliance and over-trust in generative AI, both of which can negatively influence business decisions, leaving companies vulnerable to cyber security threats. This paper concludes by recommending a set of checklists for ethical implementation of generative AI in business environment to minimise cyber security risk based on the discussed moral responsibilities and ethical concern.",
+      "venue": "AI and Ethics",
+      "citation_count": 64,
+      "doi": "10.1007/s43681-024-00443-4",
+      "arxiv_id": "",
+      "url": "https://www.semanticscholar.org/paper/432bdeb7fa7afcfebcf9afbbbc938ac547956c68",
+      "source": "semantic_scholar",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "s2-ae41c7c5b2dcb76f4044dd88386b3bafe71e0c90",
+      "title": "AI and ethics in business: A comprehensive review of responsible AI practices and corporate responsibility",
+      "authors": [
+        {
+          "name": "Chidera Victoria",
+          "affiliation": ""
+        },
+        {
+          "name": "Ibeh",
+          "affiliation": ""
+        },
+        {
+          "name": "Funmilola Olatundun Olatoye",
+          "affiliation": ""
+        },
+        {
+          "name": "Kehinde Feranmi Awonuga",
+          "affiliation": ""
+        },
+        {
+          "name": "N. Mhlongo",
+          "affiliation": ""
+        },
+        {
+          "name": "Oluwafunmi Adijat Elufioye",
+          "affiliation": ""
+        },
+        {
+          "name": "Ndubuisi Leonard Ndubuisi",
+          "affiliation": ""
+        }
+      ],
+      "year": 2024,
+      "abstract": "As artificial intelligence (AI) continues to revolutionize business landscapes, the ethical implications of its deployment have garnered significant attention. This paper presents a comprehensive review of the intersection between AI and ethics in the context of corporate responsibility. The integration of AI into business processes necessitates a thorough understanding of responsible AI practices to ensure that technological advancements align with ethical standards and societal values. The first dimension explored in this review is the critical importance of transparency in AI algorithms and decision-making processes. Businesses adopting AI technologies must prioritize transparency to build trust among stakeholders, ensuring that the decision-making processes are understandable and accountable. Ethical considerations also extend to issues of bias and fairness, prompting the need for diverse and inclusive datasets to prevent discriminatory outcomes. Corporate responsibility in the realm of AI extends beyond technical aspects, encompassing the broader socio-economic impact of AI implementation. The review highlights the significance of considering the effects of AI on employment, inequality, and accessibility. Businesses are urged to adopt ethical guidelines that prioritize the well-being of employees and society at large, mitigating the potential negative consequences of AI on employment dynamics and social structures. Furthermore, the paper delves into the ethical considerations surrounding data privacy and security, emphasizing the importance of responsible data handling practices. As businesses accumulate vast amounts of data, it becomes imperative to prioritize the protection of individuals' privacy rights, reinforcing the ethical foundation of AI applications. This comprehensive review underscores the need for businesses to integrate responsible AI practices within the framework of corporate responsibility. By prioritizing transparency, fairness, and ethical data practices, organizations can navigate the complex terrain of AI implementation while ensuring alignment with societal values and ethical standards. This synthesis of AI and ethics in business is essential for fostering a sustainable and responsible technological future.",
+      "venue": "International Journal of Science and Research Archive",
+      "citation_count": 45,
+      "doi": "10.30574/ijsra.2024.11.1.0235",
+      "arxiv_id": "",
+      "url": "https://www.semanticscholar.org/paper/ae41c7c5b2dcb76f4044dd88386b3bafe71e0c90",
+      "source": "semantic_scholar",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "s2-276964b598a4e4726c0cf675cc87a65c927759d6",
+      "title": "Managing a \u201cresponsibility vacuum\u201d in AI monitoring and governance in healthcare: a qualitative study",
+      "authors": [
+        {
+          "name": "Kellie Owens",
+          "affiliation": ""
+        },
+        {
+          "name": "Z. Griffen",
+          "affiliation": ""
+        },
+        {
+          "name": "Lasya Damaraju",
+          "affiliation": ""
+        }
+      ],
+      "year": 2025,
+      "abstract": "Despite the increasing implementation of artificial intelligence (AI) and machine learning (ML) technologies in healthcare, their long-term safety, effectiveness, and equity remain compromised by a lack of sustained oversight. This study explores the phenomenon of a \u201cresponsibility vacuum\u201d in AI governance, wherein maintenance and monitoring tasks are poorly defined, inconsistently performed, and undervalued across healthcare systems. We conducted semi-structured interviews with 21 experts involved in AI implementation in healthcare, including clinicians, clinical informaticists, computer scientists, and legal/policy professionals. Participants were recruited through purposive and snowball sampling. Interviews were transcribed, coded, and analyzed using abductive qualitative methods to identify themes related to maintenance practices, institutional incentives, and responsibility attribution. Participants widely recognized that AI models degrade over time due to factors such as data drift, changes in clinical practice, and poor generalizability. However, monitoring practices remain ad hoc and fragmented, with few institutions investing in structured oversight infrastructure. This \u201cresponsibility vacuum\u201d is perpetuated by institutional incentives favoring rapid innovation and strategic ignorance of AI failures. Despite these challenges, some participants described grassroots efforts to monitor and maintain AI systems, drawing inspiration from fields such as radiology, laboratory medicine, and transportation safety. Our findings suggest that institutional and cultural forces in healthcare deprioritize the maintenance of AI tools, creating a governance gap that may lead to patient harm and inequitable outcomes. Addressing this responsibility vacuum will require formalized accountability structures, interdisciplinary collaboration, and policy reforms that center long-term safety and equity. Without such changes, AI/ML technologies designed to improve patient health may introduce new forms of harm, ultimately eroding trust in AI and machine learning for healthcare.",
+      "venue": "BMC Health Services Research",
+      "citation_count": 8,
+      "doi": "10.1186/s12913-025-13388-z",
+      "arxiv_id": "",
+      "url": "https://www.semanticscholar.org/paper/276964b598a4e4726c0cf675cc87a65c927759d6",
+      "source": "semantic_scholar",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "s2-6266dca1849b01ee6df4c8a5bd65f0dc7c12cc7e",
+      "title": "Identifying AI Hazards and Responsibility Gaps",
+      "authors": [
+        {
+          "name": "M.L Cummings",
+          "affiliation": ""
+        }
+      ],
+      "year": 2025,
+      "abstract": "With the expansion of artificial intelligence (AI) in general, but especially in self-driving cars in the United States, there is an increasing need for new hazard analysis approaches to determine if and how AI contributes to accidents. The original Swiss Cheese model widely used for hazard analyses focuses uniquely on human activities that lead to accidents but cannot address accidents where AI is a possible causal factor. To this end, the Taxonomy for AI Hazard Analysis (TAIHA) is proposed that introduces layers focusing on the oversight, design, maintenance and testing of AI. Three case studies situated in the self-driving domain demonstrate how TAIHA can be used to better understand how AI contributes to accidents. Resulting TAIHA analyses suggest responsibility gaps are emerging in the self-driving car community in the US where humans, either unknowingly or on purpose, sidestep accountability, leading to serious consequences. Recommendations for mitigating these gaps include more regulatory involvement, as well as the need for company-appointed senior lead test engineers, who should become the new first-line actors in any autonomous system operation.",
+      "venue": "IEEE Access",
+      "citation_count": 8,
+      "doi": "10.1109/ACCESS.2025.3552200",
+      "arxiv_id": "",
+      "url": "https://www.semanticscholar.org/paper/6266dca1849b01ee6df4c8a5bd65f0dc7c12cc7e",
+      "source": "semantic_scholar",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "s2-8ccd3f3f3133d2baac00da10ac7e0222e5405039",
+      "title": "Navigating the ethical landscape of AI integration in education: Balancing innovation and responsibility",
+      "authors": [
+        {
+          "name": "\u00d6zlem Azman",
+          "affiliation": ""
+        },
+        {
+          "name": "Song\u00fcl T\u00fcmkaya",
+          "affiliation": ""
+        }
+      ],
+      "year": 2025,
+      "abstract": "The integration of Artificial Intelligence (AI) in education presents transformative opportunities to personalize learning, enhance teaching methods, and improve student outcomes. AI offers adaptive tutoring systems, data-driven insights, and customized learning experiences, which can significantly improve the educational process. However, the rapid adoption of AI technologies also raises important ethical concerns that must be addressed to ensure responsible implementation. This paper provides an overview of AI\u2019s potential in education, while highlighting key ethical issues such as data privacy, algorithmic bias, transparency, and equitable access to AI-powered tools. Through an analysis of existing frameworks and current AI implementations in education, the paper calls for clear ethical guidelines to ensure the responsible use of AI in educational contexts. A collaborative effort among educators, policymakers, and technology developers is essential to build ethical standards that balance innovation with fairness, accountability, and inclusivity. Ultimately, this paper offers insights and practical recommendations for fostering a responsible AI-driven educational environment that benefits all students while safeguarding their rights.",
+      "venue": "F1000Research",
+      "citation_count": 9,
+      "doi": "10.12688/f1000research.160011.1",
+      "arxiv_id": "",
+      "url": "https://www.semanticscholar.org/paper/8ccd3f3f3133d2baac00da10ac7e0222e5405039",
+      "source": "semantic_scholar",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "s2-e69e9a7098fb3ad9919837eb18af8f807797c4a7",
+      "title": "A Review of How Different Views on Ethics Shape Perceptions of Morality and Responsibility within AI Transformation",
+      "authors": [
+        {
+          "name": "Teresa Hammerschmidt",
+          "affiliation": ""
+        },
+        {
+          "name": "A. Hafner",
+          "affiliation": ""
+        },
+        {
+          "name": "Katharina Stolz",
+          "affiliation": ""
+        },
+        {
+          "name": "N. Passlack",
+          "affiliation": ""
+        },
+        {
+          "name": "Oliver Posegga",
+          "affiliation": ""
+        },
+        {
+          "name": "Karl-Heinz Gerholz",
+          "affiliation": ""
+        }
+      ],
+      "year": 2025,
+      "abstract": "",
+      "venue": "Information Systems Frontiers",
+      "citation_count": 6,
+      "doi": "10.1007/s10796-025-10596-0",
+      "arxiv_id": "",
+      "url": "https://www.semanticscholar.org/paper/e69e9a7098fb3ad9919837eb18af8f807797c4a7",
+      "source": "semantic_scholar",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "s2-8725127c0bdba837fbf286982be34416798245c4",
+      "title": "Ethics in AI: Balancing innovation and responsibility",
+      "authors": [
+        {
+          "name": "Rishi Kumar Sharma",
+          "affiliation": ""
+        }
+      ],
+      "year": 2025,
+      "abstract": "The rapid advancement of artificial intelligence technologies has created unprecedented opportunities while raising significant ethical concerns across various sectors. This comprehensive article examines the challenges and strategies in implementing ethical AI frameworks, focusing on algorithmic bias, transparency, and accountability. The article investigates industry-specific applications in healthcare, financial services, and law enforcement, revealing ethical implementation and governance patterns. Through extensive research across multiple organizations, the article demonstrates the critical importance of structured ethical frameworks, stakeholder engagement, and comprehensive monitoring systems in ensuring responsible AI development. The findings highlight the need for balanced approaches that maintain technological innovation while adhering to ethical principles and human values.",
+      "venue": "International Journal of Science and Research Archive",
+      "citation_count": 9,
+      "doi": "10.30574/ijsra.2025.14.1.0122",
+      "arxiv_id": "",
+      "url": "https://www.semanticscholar.org/paper/8725127c0bdba837fbf286982be34416798245c4",
+      "source": "semantic_scholar",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "s2-2a5ed997d7a805b1edf11d3c7640f98066178e4e",
+      "title": "AI-Driven Risk Management and Sustainable Decision-Making: Role of Perceived Environmental Responsibility",
+      "authors": [
+        {
+          "name": "Jamshed Khalid",
+          "affiliation": ""
+        },
+        {
+          "name": "Chuanmin Mi",
+          "affiliation": ""
+        },
+        {
+          "name": "Fasiha Altaf",
+          "affiliation": ""
+        },
+        {
+          "name": "M. Shafqat",
+          "affiliation": ""
+        },
+        {
+          "name": "Shahid Kalim Khan",
+          "affiliation": ""
+        },
+        {
+          "name": "Muhammad Umair Ashraf",
+          "affiliation": ""
+        }
+      ],
+      "year": 2024,
+      "abstract": "Risk management driven by AI has the potential to play an important role in sustainable decision-making by offering predictive insights and scenario modeling capabilities. This proactive approach empowers top management to align informed decisions in accordance with sustainability goals while optimizing resource allocation and mitigating risks. While existing research examined the benefits of AI risk management, this study addresses the underexplored question of how AI risk management impacts sustainable decision-making, particularly when considering the mediating role of perceived environmental responsibility. A structural equation modeling (SEM) technique was employed on a dataset comprising 428 senior managers from the Pakistani construction sector. The results revealed that AI-driven risk management is highly relevant to sustainable decision-making. Further, perceived environmental responsibility was found to have a partial mediating effect. These results hold a significant promise for organizations seeking to integrate AI for environmental sustainability goals. The findings of the study enhance the understanding of how AI-driven risk management is a driving mechanism empowering decision-makers to make more sustained decisions in the construction sector.",
+      "venue": "Sustainability",
+      "citation_count": 35,
+      "doi": "10.3390/su16166799",
+      "arxiv_id": "",
+      "url": "https://www.semanticscholar.org/paper/2a5ed997d7a805b1edf11d3c7640f98066178e4e",
+      "source": "semantic_scholar",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "s2-5b94101a042c5e7519dd94873ec85d2bc531a595",
+      "title": "How Should We Design, Deploy, and Regulate AI for Young Children? Developmental Appropriateness, Ethical Responsibility, and Child-Centeredness",
+      "authors": [
+        {
+          "name": "Jenny Kean",
+          "affiliation": ""
+        }
+      ],
+      "year": 2025,
+      "abstract": "AI technologies (e.g., systems, applications, platforms, tools), from voice assistants to personalized learning environments, are becoming increasingly pervasive in the daily lives and educational experiences of young children. In light of this trend, the question of how we should design, deploy, and regulate AI for young children takes on heightened urgency and significance. With this question in mind, I offer a reflective and conceptual perspective with a threefold goal. First, I examine how certain current AI tools used by young children (ages 3-8)\u2014often shaped by the assumptions, priorities, and even biases of adult designers\u2014were not developed with consideration of child users, thereby failing to incorporate the perspectives and developmental needs of young children. Second, I further scrutinize ethical concerns, including data privacy, bias, agency, trust, and\u2014above all\u2014young children\u2019s safety and well-being in AI use. Third, I advocate for a child-centered approach to AI design, deployment, and regulation, one that respects young children\u2019s rights, prioritizes their safety and well-being, and empowers them as AI users. Furthermore, drawing on research evidence and practical examples, I call on key stakeholders, especially AI developers, policymakers, researchers, school leaders, educators, and families, to rethink (through critical reflection), reimagine (through a visionary lens), and reshape (through transformative action) AI use for, with, and by children. To guide these efforts, I propose a three-pronged conceptual framework: (1) developmental appropriateness, (2) ethical responsibility, and (3) child-centeredness. Keywords: Artificial intelligence (AI); AI tools; children; developmental appropriateness, ethical responsibility, child-centeredness.",
+      "venue": "AI-Enhanced Learning",
+      "citation_count": 6,
+      "doi": "10.70725/581728isdnsh",
+      "arxiv_id": "",
+      "url": "https://www.semanticscholar.org/paper/5b94101a042c5e7519dd94873ec85d2bc531a595",
+      "source": "semantic_scholar",
+      "_bibtex_override": ""
+    }
+  ]
+}

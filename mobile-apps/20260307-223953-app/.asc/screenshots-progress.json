@@ -1,0 +1,9 @@
+{
+  "app": {"bundle_id": "com.aniccafactory.frostdip"},
+  "output_dir": "./screenshots/raw-69/en-US",
+  "steps": [
+    {"action": "launch"},
+    {"action": "wait", "duration_ms": 3000},
+    {"action": "screenshot", "name": "screen4_progress"}
+  ]
+}

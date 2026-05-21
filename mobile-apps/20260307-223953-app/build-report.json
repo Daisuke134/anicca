@@ -1,0 +1,15 @@
+{
+  "appName": "FrostDip",
+  "description": "Cold Plunge Timer & Breathing Guide",
+  "bundleId": "com.aniccafactory.frostdip",
+  "appStoreId": "6760225278",
+  "totalTokens": 134711848,
+  "costInPlan": 12.03,
+  "iterationCount": 22,
+  "durationMinutes": 291,
+  "weeklyUsagePercent": 24.1,
+  "windowUsagePercent": 149.7,
+  "buildDate": "2026-03-08",
+  "testflightUrl": "https://testflight.apple.com/join/3kVhjVfs",
+  "submissionStatus": "WAITING_FOR_REVIEW"
+}

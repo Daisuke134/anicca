@@ -1,0 +1,77 @@
+default_platform(:ios)
+
+SCHEME = "CalmCortisol"
+APP_DIR = File.expand_path("../..", __FILE__)
+
+platform :ios do
+  before_all do
+    setup_ci if ENV["CI"]
+  end
+
+  desc "Set app version"
+  lane :set_version do |options|
+    version = options[:version] || "1.0.0"
+    increment_version_number(
+      version_number: version,
+      xcodeproj: "#{APP_DIR}/CalmCortisol.xcodeproj"
+    )
+  end
+
+  desc "Run unit tests"
+  lane :test do
+    run_tests(
+      scheme: "CalmCortisolTests",
+      xcodeproj: "#{APP_DIR}/CalmCortisol.xcodeproj",
+      devices: ["iPhone 16 Pro Max"],
+      clean: true
+    )
+  end
+
+  desc "Build for App Store"
+  lane :build do
+    api_key = app_store_connect_api_key(
+      key_id: ENV["ASC_KEY_ID"] || "646Y27MJ8C",
+      issuer_id: ENV["ASC_ISSUER_ID"] || "f53272d9-c12d-4d9d-811c-4eb658284e74",
+      key_filepath: ENV["ASC_KEY_PATH"] || File.expand_path("/tmp/asc_authkey_646.p8"),
+    )
+
+    increment_build_number(
+      xcodeproj: "#{APP_DIR}/CalmCortisol.xcodeproj"
+    )
+
+    gym(
+      scheme: SCHEME,
+      xcodeproj: "#{APP_DIR}/CalmCortisol.xcodeproj",
+      export_method: "app-store",
+      output_directory: "./build",
+      output_name: "CalmCortisol",
+      configuration: "Release"
+    )
+  end
+
+  desc "Upload to App Store Connect"
+  lane :upload do
+    api_key = app_store_connect_api_key(
+      key_id: ENV["ASC_KEY_ID"] || "646Y27MJ8C",
+      issuer_id: ENV["ASC_ISSUER_ID"] || "f53272d9-c12d-4d9d-811c-4eb658284e74",
+      key_filepath: ENV["ASC_KEY_PATH"] || File.expand_path("/tmp/asc_authkey_646.p8"),
+    )
+
+    asc_publish_appstore(
+      ipa: "./build/CalmCortisol.ipa",
+      api_key: api_key
+    )
+  end
+
+  desc "Capture screenshots"
+  lane :screenshots do
+    capture_ios_simulator_screenshots(
+      scheme: "CalmCortisolTests",
+      xcodeproj: "#{APP_DIR}/CalmCortisol.xcodeproj",
+      output_directory: "./docs/screenshots",
+      devices: ["iPhone SE (3rd generation)"],
+      languages: ["en-US", "ja"],
+      erase_simulator: true
+    )
+  end
+end

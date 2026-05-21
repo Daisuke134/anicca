@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Distribution method: app-store, ad-hoc, enterprise, development -->
+	<key>method</key>
+	<string>app-store</string>
+
+	<!-- Team ID -->
+	<key>teamID</key>
+	<string>S5U8UH3JLJ</string>
+
+	<!-- Bitcode is deprecated and no longer accepted -->
+	<key>uploadBitcode</key>
+	<false/>
+
+	<!-- Upload symbols for crash reports -->
+	<key>uploadSymbols</key>
+	<true/>
+
+	<!-- Bitcode compilation (deprecated) -->
+	<key>compileBitcode</key>
+	<false/>
+
+	<!-- Signing style: manual -->
+	<key>signingStyle</key>
+	<string>manual</string>
+
+	<!-- Signing certificate -->
+	<key>signingCertificate</key>
+	<string>Apple Distribution</string>
+
+	<!-- Provisioning profiles -->
+	<key>provisioningProfiles</key>
+	<dict>
+		<key>ai.anicca.app.ios</key>
+		<string>anicca-appstore</string>
+		<key>ai.anicca.app.ios.AniccaWidget</key>
+		<string>anicca-widget-appstore</string>
+	</dict>
+
+	<!-- Strip Swift symbols to reduce IPA size -->
+	<key>stripSwiftSymbols</key>
+	<true/>
+
+	<!-- Generate app size report -->
+	<key>generateAppStoreInformation</key>
+	<true/>
+
+	<!-- Destination: export, upload -->
+	<key>destination</key>
+	<string>export</string>
+</dict>
+</plist>

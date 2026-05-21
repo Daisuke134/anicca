@@ -1,0 +1,266 @@
+# Trend Research & Idea Selection
+
+**Date:** 2026-03-01
+**Status:** COMPLETED
+**Selected Idea:** Daily Affirmation Widget
+
+---
+
+## Developer Profile
+
+| Attribute | Value |
+|-----------|-------|
+| **Skills** | Swift, SwiftUI, WidgetKit, Foundation Models |
+| **Platform** | iOS 26 |
+| **Time** | Side project (4-6 weeks) |
+| **Constraints** | Solo dev, no backend, privacy-first |
+
+---
+
+## Trend Research Summary
+
+### Key Trends Identified (2026)
+
+| # | Trend | Opportunity | Source |
+|---|-------|-------------|--------|
+| 1 | **On-device AI (Foundation Models)** | Few indie apps using Apple's new framework; local processing = privacy selling point | [Apple Newsroom](https://www.apple.com/newsroom/2025/09/apples-foundation-models-framework-unlocks-new-intelligent-app-experiences/) |
+| 2 | **Single-use Utilities** | Users prefer hyper-niche apps that solve one problem well | [DEV Community](https://dev.to/devin-rosario/future-proofing-your-first-app-15-ideas-2026-tools-26mc) |
+| 3 | **Widget-first Design** | "3-second rule" — if task takes >3 sec, app failed; home screen is the new app | [DEV Community](https://dev.to/devin-rosario/ios-widget-interactivity-in-2026-designing-for-the-post-app-era-i17) |
+| 4 | **AI Wellness Companions** | $48.63B market, 31% CAGR — double traditional mental health app growth | [Business of Apps](https://www.businessofapps.com/news/app-market-trends-2026/) |
+| 5 | **Privacy-first Apps** | Apps that explicitly don't collect data are a selling point | [Developer Tech News](https://www.developer-tech.com/news/5-ios-app-development-trends-for-2025-2026/) |
+| 6 | **Simplicity over Features** | Users complain habit apps are "too complicated" and "cluttered" | [ClickUp - Habit Tracker Apps](https://clickup.com/blog/best-habit-tracker-app/) |
+
+### User Pain Points (Reddit/Reviews Research)
+
+| Pain Point | Source |
+|------------|--------|
+| "Too many menus, choices, buttons" in habit apps | [Fabulous Reviews](https://justuseapp.com/en/app/1203637303/fabulous-daily-routine-planner/reviews) |
+| "Interface is too cluttered" | [ClickUp Habit Tracker Analysis](https://clickup.com/blog/best-habit-tracker-app/) |
+| Want apps that "don't add complexity" | [ClickUp Daily Routine Apps](https://clickup.com/blog/daily-routine-apps/) |
+
+---
+
+## Brainstorming Lenses Applied
+
+### Lens 1: Skills & Interests
+- Swift + SwiftUI + WidgetKit → widget-first apps
+- Foundation Models → AI-powered personalization
+- Intersection: AI-powered widget utilities
+
+### Lens 2: Problem-First
+- Users hate complex habit trackers
+- Mental health apps are overwhelming
+- Need: ultra-simple daily wellness tool
+
+### Lens 3: Technology-First
+- Foundation Models framework is new (iOS 26) — few indie apps exist
+- WidgetKit has evolved — "surface-centric" era
+- Opportunity: First movers in AI-native widgets
+
+### Lens 4: Market Gap
+- Affirmation apps exist but most are:
+  - Generic (same quotes for everyone)
+  - Ad-supported (intrusive)
+  - Not using AI personalization
+- Gap: Personalized, AI-generated, privacy-first affirmation widget
+
+### Lens 5: Trend-Based
+- AI Wellness Companions = $48B market
+- Widget-first = future of mobile UX
+- Privacy-first = differentiator
+- Intersection: AI wellness widget that runs 100% on-device
+
+---
+
+## Ideas Evaluated (Ranked)
+
+### Rank 1: Daily Affirmation Widget (SELECTED)
+
+| Field | Value |
+|-------|-------|
+| **idea** | Daily Affirmation Widget |
+| **one_liner** | AI-powered personalized affirmations on your home screen, generated 100% on-device |
+| **platform** | iOS 26 |
+| **problem_statement** | Generic affirmation apps show the same quotes to everyone. Users want personalization but don't trust cloud AI with their thoughts. |
+| **target_user** | iOS users interested in mental wellness, self-improvement, and daily mindfulness (25-45, primarily women) |
+| **lens** | Trend-Based + Technology-First |
+
+**Feasibility:**
+
+| Dimension | Score | Rationale |
+|-----------|-------|-----------|
+| Solo Dev Scope | 9/10 (EXCELLENT) | 3-4 weeks — widget + Foundation Models, no backend |
+| Platform API Fit | 10/10 (EXCELLENT) | Foundation Models + WidgetKit = Apple platform showcase |
+| Monetization | 8/10 (STRONG) | $2.99/week or $29.99/year subscription — wellness users pay |
+| Competition Density | 8/10 (STRONG) | No AI-powered, on-device affirmation widget exists |
+| Technical Fit | 9/10 (EXCELLENT) | SwiftUI + WidgetKit + Foundation Models |
+
+| **overall_score** | **8.9** (weighted: Solo Dev Scope & Technical Fit @ 1.5x) |
+|-------------------|------|
+| **monetization_model** | Freemium: 3 free affirmations/day, unlimited + themes @ $2.99/week or $29.99/year |
+| **competition_notes** | ThinkUp, I Am, Shine exist but use generic quotes. No competitor uses on-device AI for personalization. Blue ocean for AI-native affirmations. |
+| **mvp_scope** | Home screen widget showing daily affirmation generated by Foundation Models. User sets 3 focus areas (confidence, gratitude, calm). AI generates personalized affirmations based on focus areas. Lock screen widget support. |
+| **next_step** | `product-agent discover --idea "AI-powered personalized affirmations on your home screen, generated 100% on-device" --platform iOS --output-format json` |
+
+**Source:** [Apple Foundation Models](https://www.apple.com/newsroom/2025/09/apples-foundation-models-framework-unlocks-new-intelligent-app-experiences/), [Widget Design 2026](https://dev.to/devin-rosario/ios-widget-interactivity-in-2026-designing-for-the-post-app-era-i17), [AI Wellness Market](https://www.businessofapps.com/news/app-market-trends-2026/)
+
+---
+
+### Rank 2: One Breath
+
+| Field | Value |
+|-------|-------|
+| **idea** | One Breath |
+| **one_liner** | Ultra-minimalist breathing exercise widget — one tap, one breath, one moment of calm |
+| **platform** | iOS 26 |
+| **problem_statement** | Breathing apps like Calm are feature-bloated. Users want a quick 30-second reset without opening an app. |
+| **target_user** | Stressed professionals who need quick stress relief throughout the day |
+| **lens** | Problem-First + Simplicity |
+
+**Feasibility:**
+
+| Dimension | Score | Rationale |
+|-----------|-------|-----------|
+| Solo Dev Scope | 10/10 (EXCELLENT) | 2-3 weeks — animation + widget only |
+| Platform API Fit | 7/10 (STRONG) | WidgetKit + SwiftUI animations |
+| Monetization | 6/10 (MODERATE) | Hard to charge for "one feature" — may need bundle |
+| Competition Density | 6/10 (MODERATE) | Breathwrk, Oak exist; differentiation via simplicity |
+| Technical Fit | 9/10 (EXCELLENT) | Pure SwiftUI |
+
+| **overall_score** | **7.6** |
+|-------------------|------|
+| **monetization_model** | $4.99 one-time purchase or $0.99/month |
+| **competition_notes** | Breathwrk, Oak, Calm all exist but are complex. Gap: the most minimal possible breathing tool. |
+| **mvp_scope** | Lock screen widget with animated breathing guide. Tap to start 1-minute guided breath. Haptic feedback on inhale/exhale. |
+| **next_step** | `product-agent discover --idea "Ultra-minimalist breathing exercise widget - one tap, one breath, one moment of calm" --platform iOS --output-format json` |
+
+---
+
+### Rank 3: Gratitude Glow
+
+| Field | Value |
+|-------|-------|
+| **idea** | Gratitude Glow |
+| **one_liner** | AI-powered gratitude journal with on-device insights, never leaves your phone |
+| **platform** | iOS 26 |
+| **problem_statement** | Journaling apps sync to cloud (privacy concerns). Users want AI-powered insights without uploading personal thoughts. |
+| **target_user** | Privacy-conscious journaling enthusiasts |
+| **lens** | Technology-First + Privacy |
+
+**Feasibility:**
+
+| Dimension | Score | Rationale |
+|-----------|-------|-----------|
+| Solo Dev Scope | 7/10 (STRONG) | 5-6 weeks — journal UI + Foundation Models + data persistence |
+| Platform API Fit | 9/10 (EXCELLENT) | Foundation Models + Local storage |
+| Monetization | 7/10 (STRONG) | Subscription viable ($3.99/mo) |
+| Competition Density | 7/10 (STRONG) | Day One dominates; differentiation via AI + privacy |
+| Technical Fit | 8/10 (STRONG) | SwiftUI + Core Data + Foundation Models |
+
+| **overall_score** | **7.5** |
+|-------------------|------|
+| **monetization_model** | Freemium: 1 entry/day free, unlimited + AI insights @ $3.99/month |
+| **competition_notes** | Day One, Stoic, Jour exist. Gap: on-device AI analysis with no cloud sync. |
+| **mvp_scope** | Simple journal entry UI. Foundation Models generates weekly gratitude themes. Local-only storage. |
+| **next_step** | `product-agent discover --idea "AI-powered gratitude journal with on-device insights, never leaves your phone" --platform iOS --output-format json` |
+
+---
+
+### Rank 4: Focus Flame
+
+| Field | Value |
+|-------|-------|
+| **idea** | Focus Flame |
+| **one_liner** | Pomodoro timer widget with a growing flame visualization — break focus and the flame dies |
+| **platform** | iOS 26 |
+| **problem_statement** | Pomodoro apps lack emotional stakes. Users need visual motivation to maintain focus. |
+| **target_user** | Students and remote workers who struggle with focus |
+| **lens** | Market Gap |
+
+**Feasibility:**
+
+| Dimension | Score | Rationale |
+|-----------|-------|-----------|
+| Solo Dev Scope | 8/10 (STRONG) | 4 weeks — timer logic + animation |
+| Platform API Fit | 8/10 (STRONG) | WidgetKit + Live Activities |
+| Monetization | 6/10 (MODERATE) | Crowded space, hard to differentiate on price |
+| Competition Density | 5/10 (MODERATE) | Forest, Focus Keeper, Be Focused all exist |
+| Technical Fit | 8/10 (STRONG) | SwiftUI animations |
+
+| **overall_score** | **7.0** |
+|-------------------|------|
+| **monetization_model** | $2.99 one-time or $1.99/month |
+| **competition_notes** | Forest ($3.99, 4.7 stars) is strong competitor. Differentiation via flame gamification and widget-first design. |
+| **mvp_scope** | Home screen widget with flame animation. Timer with 25/5 default. Flame grows during focus, shrinks on phone unlock. |
+| **next_step** | `product-agent discover --idea "Pomodoro timer widget with a growing flame visualization - break focus and the flame dies" --platform iOS --output-format json` |
+
+---
+
+### Rank 5: Quote Muse
+
+| Field | Value |
+|-------|-------|
+| **idea** | Quote Muse |
+| **one_liner** | AI curates daily quotes based on your reading history and mood |
+| **platform** | iOS 26 |
+| **problem_statement** | Quote apps show random quotes. Users want relevant inspiration based on what resonates with them. |
+| **target_user** | Quote enthusiasts and readers |
+| **lens** | Skills & Interests |
+
+**Feasibility:**
+
+| Dimension | Score | Rationale |
+|-----------|-------|-----------|
+| Solo Dev Scope | 7/10 (STRONG) | 4-5 weeks — quote database + AI curation |
+| Platform API Fit | 7/10 (STRONG) | Foundation Models for curation |
+| Monetization | 5/10 (MODERATE) | Quote apps typically low ARPU |
+| Competition Density | 4/10 (WEAK) | Many quote apps exist (Brilliant, Quotle) |
+| Technical Fit | 7/10 (STRONG) | SwiftUI + Foundation Models |
+
+| **overall_score** | **6.2** |
+|-------------------|------|
+| **monetization_model** | Ad-supported free, $1.99/month ad-free |
+| **competition_notes** | Crowded space. Brilliant Quotes, Quotle, Motivation all exist. Hard to differentiate. |
+| **mvp_scope** | Widget with daily quote. User likes/saves quotes. AI learns preferences and curates. |
+| **next_step** | `product-agent discover --idea "AI curates daily quotes based on your reading history and mood" --platform iOS --output-format json` |
+
+---
+
+## Ideas Filtered Out
+
+| Idea | Lens | Reason |
+|------|------|--------|
+| AI Personal Coach | Technology-First | Competes with Apple's own features (Fitness+, Health). Failed competition filter. |
+| Sleep Story Generator | Trend-Based | Calm and Headspace dominate. 6+ months to differentiate. Failed solo_dev_scope. |
+| Mood Tracker | Problem-First | Too many exist (Daylio, Bearable). No clear differentiation. Failed competition filter. |
+
+---
+
+## Final Recommendation
+
+**Start with Rank 1: Daily Affirmation Widget.**
+
+| Reason | Detail |
+|--------|--------|
+| **Highest Score** | 8.9 overall — best combination of feasibility and opportunity |
+| **Platform Showcase** | Foundation Models + WidgetKit = Apple loves this (App Store featuring potential) |
+| **Blue Ocean** | No AI-powered, on-device affirmation widget exists |
+| **Fast to Ship** | 3-4 weeks MVP |
+| **Clear Monetization** | Wellness users pay for subscriptions ($29.99/year viable) |
+| **Privacy Differentiator** | "100% on-device, your thoughts never leave your phone" |
+
+**Next Action:** Run `product-agent discover` to validate the problem before committing.
+
+---
+
+## Sources
+
+| # | Source | URL |
+|---|--------|-----|
+| 1 | Apple Foundation Models Announcement | https://www.apple.com/newsroom/2025/09/apples-foundation-models-framework-unlocks-new-intelligent-app-experiences/ |
+| 2 | iOS App Trends 2026 | https://www.developer-tech.com/news/5-ios-app-development-trends-for-2025-2026/ |
+| 3 | Widget Design Post-App Era | https://dev.to/devin-rosario/ios-widget-interactivity-in-2026-designing-for-the-post-app-era-i17 |
+| 4 | AI Wellness Market Growth | https://www.businessofapps.com/news/app-market-trends-2026/ |
+| 5 | Habit App Complexity Complaints | https://clickup.com/blog/best-habit-tracker-app/ |
+| 6 | Indie App Success Stories | https://9to5mac.com/2025/11/15/indie-app-spotlight-dimewise-budgeting-app-liquid-glass-iphone/ |
+| 7 | App Ideas 2026 | https://dev.to/devin-rosario/future-proofing-your-first-app-15-ideas-2026-tools-26mc |

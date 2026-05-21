@@ -1,0 +1,14 @@
+@page {
+  size: A5;
+  margin: 22mm 18mm 22mm 18mm;
+  @bottom-center { content: counter(page); font-family: Georgia, serif; font-size: 10pt; color: #8B7355; }
+}
+body { font-family: Georgia, "Hiragino Mincho ProN", serif; line-height: 1.7; color: #2A2520; font-size: 11pt; background: #FBF7EF; }
+h1 { font-size: 26pt; font-weight: 300; text-align: center; margin: 6em 0 0.5em; page-break-before: always; letter-spacing: 0.05em; color: #2A2520; }
+h1:first-of-type { page-break-before: avoid; }
+h2 { font-size: 18pt; font-weight: 400; margin: 2.5em 0 1em; page-break-before: always; color: #2A2520; }
+h2:first-of-type { page-break-before: avoid; }
+p { margin: 0.7em 0; text-align: justify; hyphens: auto; }
+hr { border: none; border-top: 1px solid #8B7355; margin: 2em auto; width: 30%; }
+em { color: #8B7355; }
+strong { color: #2A2520; font-weight: 600; }

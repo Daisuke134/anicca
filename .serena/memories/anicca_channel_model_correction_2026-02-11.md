@@ -1,0 +1,1 @@
+User corrected core model: iOS app/X/TikTok/Moltbook/Newsletter are all equal intervention tools (channels), not funnel steps to move users across channels. Each touchpoint itself must reduce suffering directly. Avoid 'drive to app' framing. Use channel-native nudge design per medium while preserving same mission: reduce suffering.

@@ -1,0 +1,62 @@
+appId: com.aniccafactory.zone2daily
+name: "Onboarding Full Flow"
+tags:
+  - onboarding
+  - smokeTest
+---
+- clearState
+- clearKeychain
+- launchApp
+
+# Wait for onboarding — AgeInputView (Step 0)
+- extendedWaitUntil:
+    visible:
+      id: "onboarding_age_title"
+    timeout: 30000
+
+# Step 0: Age input — Slider already set to default, tap Continue
+- tapOn:
+    id: "btn_continue_age"
+
+# Step 1: Zone2 Explainer
+- extendedWaitUntil:
+    visible:
+      id: "btn_continue_explainer"
+    timeout: 15000
+
+- tapOn:
+    id: "btn_continue_explainer"
+
+# Step 2: Notification permission — skip
+- extendedWaitUntil:
+    visible:
+      id: "btn_skip_notifications"
+    timeout: 15000
+
+# Handle iOS system notification alert (optional — may not appear)
+- tapOn:
+    text: "Allow"
+    optional: true
+
+- tapOn:
+    id: "btn_skip_notifications"
+
+# Step 3: Paywall — tap Maybe Later
+- extendedWaitUntil:
+    visible:
+      id: "paywall_headline"
+    timeout: 15000
+
+# Scroll down to reveal Maybe Later button (it's below Start Training button)
+- scroll
+
+- tapOn:
+    id: "btn_maybe_later"
+
+# Verify main app loaded
+- extendedWaitUntil:
+    visible:
+      id: "label_streak"
+    timeout: 15000
+
+- takeScreenshot: "01-onboarding-complete"

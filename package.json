@@ -1,0 +1,8 @@
+{
+  "name": "anicca-project",
+  "private": true,
+  "description": "Anicca monorepo; dev tooling at root",
+  "devDependencies": {
+    "@playwright/cli": "latest"
+  }
+}

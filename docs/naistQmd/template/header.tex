@@ -1,0 +1,130 @@
+% NAIST修士論文用LaTeXヘッダー（Quarto用）
+% senshuQmdスタイルを参考に、NAISTフォーマットに対応
+
+% Quartoのデフォルト\maketitleを先にバックアップ（NAISTの\titlepageを使用するため）
+\makeatletter
+\@ifundefined{maketitle}{}{%
+  \let\quarto@maketitle\maketitle
+}
+\makeatother
+
+% NAISTのスタイルファイルを読み込む
+% template/naist-jmthesis.styを使用（\input naist-mcommon.styを\input{Mtex/naist-mcommon.sty}に修正済み）
+\makeatletter
+\input{template/naist-jmthesis.sty}
+\makeatother
+
+% ページスタイルを設定（final = カメラレディ）
+\pagestyle{final}
+
+% \maketitleを無効化（NAISTの\titlepageを使用するため）
+\makeatletter
+\renewcommand{\maketitle}{}
+\makeatother
+
+% YAML変数をNAISTのLaTeXコマンドに変換
+% プレースホルダーを使用（post-renderスクリプトで展開される）
+\makeatletter
+
+% \emptyを定義（空文字列チェック用）
+\def\empty{}
+
+% 学籍番号
+\studentnumber{$student-id$}
+
+% 修士論文/課題研究（デフォルト: 修士論文 = 1）
+\doctitle{\mastersthesis}
+
+% 専攻（デフォルト: 工学 = 1）
+\major{\engineering}
+
+% プログラム（デフォルト: 情報理工学プログラム = 1）
+\program{\ise}
+
+% タイトル（日本語・英語）
+\title{$japanese-title$}
+\etitle{$english-title$}
+
+% 著者（日本語・英語）
+\author{$japanese-author$}
+\eauthor{$english-author$}
+
+% 提出年月日
+\jsyear{$japanese-year$}
+\esyear{$english-year$}
+\smonth{$submission-month$}
+\sday{$submission-day$}
+
+% \edatestrを正しく動作させるため、再定義
+% naist-mcommon.styの\edatestr定義は\ifcase\smonthstrを使っているが、
+% \smonthstrは文字列として定義されているため、数値として扱えない
+% そのため、\edatestrを再定義して、月名を直接計算する
+\makeatletter
+% \edatestr-placeholderを後でexpand_preamble.pyで置換する
+\def\edatestr{$edatestr-placeholder$}
+\makeatother
+
+% 研究室名
+\jlabname{$lab-name-japanese$}
+\elabname{$lab-name-english$}
+
+% 審査委員（6人まで対応）
+% デフォルトで6人表示（空の値の場合は空文字列を使用）
+\def\tempthird{$third-member$}
+\def\tempfourth{$fourth-member$}
+\def\tempfifth{$fifth-member$}
+\def\tempsixth{$sixth-member$}
+\def\tempthirdpos{$third-position$}
+\def\tempfourthpos{$fourth-position$}
+\def\tempfifthpos{$fifth-position$}
+\def\tempsixthpos{$sixth-position$}
+% 条件分岐を削除して、常に6人表示（expand_preamble.pyで値が設定される）
+\cmembers{$supervisor$}{（主指導教員，情報科学領域）}
+         {$co-supervisor$}{（副指導教員，情報科学領域）}
+         {$third-member$}{$third-position$}
+         {$fourth-member$}{$fourth-position$}
+% 5人目と6人目を追加（\addcmembersコマンドを使用）
+\addcmembers{$fifth-member$}{$fifth-position$}
+            {$sixth-member$}{$sixth-position$}
+            {}{}
+            {}{}
+
+% 審査委員（英語版、タイトルページで使用）
+% english-supervisorが指定されていない場合は、supervisorを使用（暫定的）
+\def\tempesupervisor{$english-supervisor$}
+\def\tempecosupervisor{$english-co-supervisor$}
+\def\tempethird{$english-third-member$}
+\def\tempethirdpos{$english-third-position$}
+\def\tempfourth{$english-fourth-member$}
+\def\tempfourthpos{$english-fourth-position$}
+\ecmembers{\ifx\tempesupervisor\empty Professor $supervisor$ \else\tempesupervisor\fi}{(Supervisor, Division of Information Science)}
+         {\ifx\tempecosupervisor\empty Professor $co-supervisor$ \else\tempecosupervisor\fi}{(Co-supervisor, Division of Information Science)}
+         {\ifx\tempethird\empty\else\tempethird\fi}{\ifx\tempethirdpos\empty(Co-supervisor, Division of Information Science)\else\tempethirdpos\fi}
+         {\ifx\tempfourth\empty\else\tempfourth\fi}{\ifx\tempfourthpos\empty\else\tempfourthpos\fi}
+
+% キーワード
+\keywords{$keywords-japanese$}
+\ekeywords{$keywords-english$}
+
+% 概要（abstract）
+% \abstractコマンドは既に定義されているため、\renewcommandを使用
+\let\oldabstract\abstract
+\renewcommand{\abstract}[1]{\def\abstracttext{#1}}
+\abstract{$japanese-abstract$}
+
+% 英語概要
+\eabstract{$english-abstract$}
+
+\makeatother
+
+% ハイパーリンクの色を黒に設定（目次の文字が青くならないように）
+\AtEndPreamble{%
+  \hypersetup{
+    colorlinks=true,
+    linkcolor=black,
+    filecolor=black,
+    urlcolor=black,
+    citecolor=black
+  }%
+}
+

@@ -1,0 +1,9 @@
+{
+  "dependencies": ["."],
+  "graphs": {
+    "research_agent": "arxiv_researcher.agent.research_agent:graph",
+    "paper_search_agent": "arxiv_researcher.agent.paper_search_agent:graph",
+    "paper_analyzer_agent": "arxiv_researcher.agent.paper_analyzer_agent:graph"
+  },
+  "env": ".env"
+}

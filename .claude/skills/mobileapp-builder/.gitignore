@@ -1,0 +1,5 @@
+# Internal planning docs (contain personal info)
+.cursor/
+.env
+*.p8
+.env.*

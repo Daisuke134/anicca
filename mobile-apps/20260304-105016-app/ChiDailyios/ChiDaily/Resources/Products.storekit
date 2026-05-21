@@ -1,0 +1,96 @@
+{
+  "identifier" : "Chi Daily Products",
+  "nonRenewingSubscriptions" : [],
+  "products" : [],
+  "settings" : {
+    "_failTransactionsEnabled" : false,
+    "_locale" : "en_US",
+    "_storeKitErrors" : []
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "21959961",
+      "localizations" : [
+        {
+          "description" : "Access all Chi Daily features",
+          "displayName" : "Chi Daily Premium",
+          "locale" : "en_US"
+        },
+        {
+          "description" : "Chi Dailyのすべての機能にアクセス",
+          "displayName" : "Chi Daily プレミアム",
+          "locale" : "ja_JP"
+        }
+      ],
+      "name" : "Chi Daily Premium",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [],
+          "codeOffers" : [],
+          "displayPrice" : "4.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "com.aniccafactory.chidaily.monthly",
+          "introductoryOffer" : {
+            "display_price" : "0.00",
+            "paymentMode" : "FREE_TRIAL",
+            "period" : 7,
+            "periodUnit" : "DAY"
+          },
+          "localizations" : [
+            {
+              "description" : "Full access to Chi Daily features, billed monthly",
+              "displayName" : "Monthly",
+              "locale" : "en_US"
+            },
+            {
+              "description" : "Chi Dailyの機能に完全アクセス、毎月課金",
+              "displayName" : "月額プラン",
+              "locale" : "ja_JP"
+            }
+          ],
+          "productID" : "com.aniccafactory.chidaily.monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Monthly",
+          "subscriptionGroupID" : "21959961",
+          "type" : "RecurringSubscription"
+        },
+        {
+          "adHocOffers" : [],
+          "codeOffers" : [],
+          "displayPrice" : "34.99",
+          "familyShareable" : false,
+          "groupNumber" : 2,
+          "internalID" : "com.aniccafactory.chidaily.annual",
+          "introductoryOffer" : {
+            "display_price" : "0.00",
+            "paymentMode" : "FREE_TRIAL",
+            "period" : 7,
+            "periodUnit" : "DAY"
+          },
+          "localizations" : [
+            {
+              "description" : "Full access to Chi Daily features, billed annually",
+              "displayName" : "Annual",
+              "locale" : "en_US"
+            },
+            {
+              "description" : "Chi Dailyの機能に完全アクセス、年間課金",
+              "displayName" : "年額プラン",
+              "locale" : "ja_JP"
+            }
+          ],
+          "productID" : "com.aniccafactory.chidaily.annual",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "Annual",
+          "subscriptionGroupID" : "21959961",
+          "type" : "RecurringSubscription"
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 3,
+    "minor" : 0
+  }
+}

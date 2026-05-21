@@ -1,0 +1,71 @@
+appId: com.aniccafactory.zone2daily
+name: "Payment Failure Flow"
+tags:
+  - payment
+---
+- clearState
+- clearKeychain
+- launchApp
+
+# Complete onboarding to reach paywall
+- extendedWaitUntil:
+    visible:
+      id: "btn_continue_age"
+    timeout: 30000
+- tapOn:
+    id: "btn_continue_age"
+
+- extendedWaitUntil:
+    visible:
+      id: "btn_continue_explainer"
+    timeout: 15000
+- tapOn:
+    id: "btn_continue_explainer"
+
+- extendedWaitUntil:
+    visible:
+      id: "btn_skip_notifications"
+    timeout: 15000
+- tapOn:
+    text: "Allow"
+    optional: true
+- tapOn:
+    id: "btn_skip_notifications"
+
+# Paywall appears
+- extendedWaitUntil:
+    visible:
+      id: "paywall_headline"
+    timeout: 15000
+
+# Wait for plans to load
+- extendedWaitUntil:
+    visible:
+      id: "selector_plan_monthly"
+    timeout: 60000
+
+- tapOn:
+    id: "selector_plan_monthly"
+
+# Verify paywall headline still visible (plans loaded, user on paywall)
+- assertVisible:
+    id: "paywall_headline"
+
+# Scroll down to reveal Maybe Later button (it's below Start Training button)
+- scroll
+
+# Verify Maybe Later is available (user can always exit — Rule 20)
+- assertVisible:
+    id: "btn_maybe_later"
+
+# Dismiss without purchasing (simulates user declining / payment failure recovery path)
+- tapOn:
+    id: "btn_maybe_later"
+
+# After dismissal — main app
+- extendedWaitUntil:
+    visible:
+      id: "label_streak"
+    timeout: 30000
+
+- takeScreenshot: "06-payment-failure"

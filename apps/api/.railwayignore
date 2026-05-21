@@ -1,0 +1,7 @@
+node_modules/
+.git/
+*.log
+.env.local
+.env.*.local
+coverage/
+.nyc_output/

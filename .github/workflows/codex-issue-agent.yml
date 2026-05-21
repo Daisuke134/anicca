@@ -1,0 +1,133 @@
+# Codex Issue Agent - Automatically work on labeled issues
+# Triggers when an issue gets the "codex" label
+# Creates a PR with the implementation
+
+name: Codex Issue Agent
+
+on:
+  issues:
+    types: [labeled]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: 'Issue number to work on'
+        required: true
+        type: number
+
+concurrency:
+  group: codex-issue-${{ github.event.issue.number || inputs.issue_number }}
+  cancel-in-progress: true
+
+jobs:
+  codex-agent:
+    # Only run when "codex" label is added, or manual trigger
+    if: |
+      github.event.label.name == 'codex' ||
+      github.event_name == 'workflow_dispatch'
+    runs-on: macos-14
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get Issue Details
+        id: issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issueNumber = context.payload.issue?.number || ${{ inputs.issue_number || 0 }};
+            const { data: issue } = await github.rest.issues.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber
+            });
+            core.setOutput('number', issue.number);
+            core.setOutput('title', issue.title);
+            core.setOutput('body', issue.body);
+            
+            // Create branch name from issue
+            const branchName = `codex/issue-${issue.number}`;
+            core.setOutput('branch', branchName);
+
+      - name: Create Branch
+        run: |
+          git checkout -b ${{ steps.issue.outputs.branch }}
+
+      - name: Run Codex
+        uses: openai/codex-action@v1
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          prompt: |
+            GitHub Issue #${{ steps.issue.outputs.number }}: ${{ steps.issue.outputs.title }}
+            
+            ${{ steps.issue.outputs.body }}
+            
+            ---
+            
+            このIssueを実装してください。
+            
+            ルール:
+            - AGENTS.md と CLAUDE.md のガイドラインに従う
+            - 既存のコードスタイルを維持
+            - テストが必要な場合は追加
+            - 破壊的変更は避ける
+            - コミットメッセージは日本語でOK
+            
+            完了したら、変更をコミットしてください。
+          sandbox: workspace-write
+          safety-strategy: drop-sudo
+          codex-args: '["--full-auto"]'
+          output-file: codex-output.md
+
+      - name: Commit Changes
+        run: |
+          git config user.name "codex[bot]"
+          git config user.email "codex[bot]@users.noreply.github.com"
+          git add -A
+          git diff --staged --quiet || git commit -m "feat: implement issue #${{ steps.issue.outputs.number }}"
+
+      - name: Push Branch
+        run: |
+          git push -u origin ${{ steps.issue.outputs.branch }}
+
+      - name: Create Pull Request
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let codexOutput = '';
+            try {
+              codexOutput = fs.readFileSync('codex-output.md', 'utf8');
+            } catch (e) {
+              codexOutput = 'Codex completed the task.';
+            }
+            
+            const { data: pr } = await github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `feat: implement issue #${{ steps.issue.outputs.number }}`,
+              head: '${{ steps.issue.outputs.branch }}',
+              base: 'dev',
+              body: `## Summary\n\nImplements #${{ steps.issue.outputs.number }}\n\n## Codex Output\n\n${codexOutput.substring(0, 3000)}`
+            });
+            
+            // Link PR to issue
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: ${{ steps.issue.outputs.number }},
+              body: `🤖 Codex created PR #${pr.number} to implement this issue.\n\n${pr.html_url}`
+            });
+
+      - name: Upload Codex Output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: codex-output
+          path: codex-output.md

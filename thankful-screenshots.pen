@@ -1,0 +1,296 @@
+{
+  "version": "2.8",
+  "children": [
+    {
+      "type": "frame",
+      "id": "6CImo",
+      "x": 0,
+      "y": 0,
+      "name": "SS01_Hero",
+      "width": 390,
+      "height": 844,
+      "fill": "#F7F6F3",
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "frame",
+          "id": "Tokdo",
+          "name": "CaptionArea1",
+          "width": "fill_container",
+          "height": 160,
+          "fill": "#F7F6F3",
+          "layout": "vertical",
+          "gap": 6,
+          "padding": [
+            40,
+            24,
+            12,
+            24
+          ],
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "Hc0NM",
+              "name": "headline1",
+              "fill": "#2D2D2D",
+              "content": "毎日の感謝が、あなたを変える",
+              "textAlign": "center",
+              "fontFamily": "Inter",
+              "fontSize": 22,
+              "fontWeight": "700"
+            },
+            {
+              "type": "text",
+              "id": "57Iit",
+              "name": "sub1a",
+              "fill": "#6B7280",
+              "content": "3つ書くだけ。続く、シンプルな習慣。",
+              "textAlign": "center",
+              "fontFamily": "Inter",
+              "fontSize": 16,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "text",
+              "id": "NqisN",
+              "name": "sub1b",
+              "fill": "#6B7280",
+              "content": "感謝の力で、毎日が輝き出す",
+              "textAlign": "center",
+              "fontFamily": "Inter",
+              "fontSize": 16,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "v3DJ4",
+          "name": "MockupArea1",
+          "width": "fill_container",
+          "height": 684,
+          "padding": [
+            0,
+            35,
+            20,
+            35
+          ],
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "Ylm64",
+              "name": "PhoneMockup1",
+              "width": 320,
+              "height": 640,
+              "fill": {
+                "type": "image",
+                "enabled": true,
+                "url": "/tmp/screen_home.png",
+                "mode": "fill"
+              },
+              "cornerRadius": 44
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "MLW5t",
+      "x": 430,
+      "y": 0,
+      "name": "SS02_Affirmation",
+      "width": 390,
+      "height": 844,
+      "fill": "#F7F6F3",
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "frame",
+          "id": "BBKMO",
+          "name": "CaptionArea2",
+          "width": "fill_container",
+          "height": 160,
+          "fill": "#F7F6F3",
+          "layout": "vertical",
+          "gap": 6,
+          "padding": [
+            40,
+            24,
+            12,
+            24
+          ],
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "V94qc",
+              "name": "headline2",
+              "fill": "#2D2D2D",
+              "content": "200種類以上のアファメーション",
+              "textAlign": "center",
+              "fontFamily": "Inter",
+              "fontSize": 22,
+              "fontWeight": "700"
+            },
+            {
+              "type": "text",
+              "id": "U8IlD",
+              "name": "sub2a",
+              "fill": "#6B7280",
+              "content": "毎日新しい言葉で、心を整える。",
+              "textAlign": "center",
+              "fontFamily": "Inter",
+              "fontSize": 16,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "text",
+              "id": "tbMTQ",
+              "name": "sub2b",
+              "fill": "#6B7280",
+              "content": "タップするたびに、前向きな自分へ",
+              "textAlign": "center",
+              "fontFamily": "Inter",
+              "fontSize": 16,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "1VZXM",
+          "name": "MockupArea2",
+          "width": "fill_container",
+          "height": 684,
+          "padding": [
+            0,
+            35,
+            20,
+            35
+          ],
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "A7OZn",
+              "name": "PhoneMockup2",
+              "width": 320,
+              "height": 640,
+              "fill": {
+                "type": "image",
+                "enabled": true,
+                "url": "/tmp/screen_history.png",
+                "mode": "fill"
+              },
+              "cornerRadius": 44
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "E7vaZ",
+      "x": 860,
+      "y": 0,
+      "name": "SS03_Paywall",
+      "width": 390,
+      "height": 844,
+      "fill": "#F7F6F3",
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "frame",
+          "id": "nK1aS",
+          "name": "CaptionArea3",
+          "width": "fill_container",
+          "height": 160,
+          "fill": "#F7F6F3",
+          "layout": "vertical",
+          "gap": 6,
+          "padding": [
+            40,
+            24,
+            12,
+            24
+          ],
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "YUoXq",
+              "name": "headline3",
+              "fill": "#2D2D2D",
+              "content": "続く習慣を、今日から始める",
+              "textAlign": "center",
+              "fontFamily": "Inter",
+              "fontSize": 22,
+              "fontWeight": "700"
+            },
+            {
+              "type": "text",
+              "id": "eBXBL",
+              "name": "sub3a",
+              "fill": "#6B7280",
+              "content": "7日間無料で、全機能を体験。",
+              "textAlign": "center",
+              "fontFamily": "Inter",
+              "fontSize": 16,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "text",
+              "id": "2Qahr",
+              "name": "sub3b",
+              "fill": "#6B7280",
+              "content": "いつでもキャンセル可能。",
+              "textAlign": "center",
+              "fontFamily": "Inter",
+              "fontSize": 16,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "dkFpR",
+          "name": "MockupArea3",
+          "width": "fill_container",
+          "height": 684,
+          "padding": [
+            0,
+            35,
+            20,
+            35
+          ],
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "JcMye",
+              "name": "PhoneMockup3",
+              "width": 320,
+              "height": 640,
+              "fill": {
+                "type": "image",
+                "enabled": true,
+                "url": "/tmp/paywall-review.png",
+                "mode": "fill"
+              },
+              "cornerRadius": 44
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

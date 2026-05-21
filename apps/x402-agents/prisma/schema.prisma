@@ -1,0 +1,676 @@
+// Anicca v0.3 Prisma schema (Node ESM .js runtime)
+// - v0.3 は Node ESM の .js を維持し、TypeScript導入は v0.4 以降
+// - 既存DB（snake_case）に合わせて @map/@@map を付ける
+// - v0.3 では Prisma Migrate 主導で既存DBを管理しない（トリガー/式インデックスがあるため）
+
+// Prisma v7+ 注意: `prisma generate` は generator の `output` を必須とする（公式一次情報: Prisma v7.0.0 release notes）
+// - `https://github.com/prisma/prisma/releases/tag/7.0.0`
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// -----------------------------
+// Existing tables (current repo)
+// -----------------------------
+
+model Token {
+  userId           String @map("user_id")
+  provider         String
+  providerSub      String? @map("provider_sub")
+  email            String?
+  accessTokenEnc   Json @db.JsonB @map("access_token_enc")
+  refreshTokenEnc  Json? @db.JsonB @map("refresh_token_enc")
+  scope            String?
+  expiry           DateTime? @db.Timestamptz
+  rotationFamilyId String? @map("rotation_family_id")
+  revokedAt        DateTime? @db.Timestamptz @map("revoked_at")
+  createdAt        DateTime @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt        DateTime @default(now()) @db.Timestamptz @map("updated_at")
+
+  @@id([userId, provider])
+  @@map("tokens")
+}
+
+model RefreshToken {
+  id            String   @id @db.Uuid @default(uuid())
+  userId        String   @db.Uuid @map("user_id")
+  tokenHash     String   @map("token_hash")
+  deviceId      String   @map("device_id")
+  userAgent     String?  @map("user_agent")
+  createdAt     DateTime @default(now()) @db.Timestamptz @map("created_at")
+  expiresAt     DateTime @db.Timestamptz @map("expires_at")
+  rotatedFrom   String?  @db.Uuid @map("rotated_from")
+  revokedAt     DateTime? @db.Timestamptz @map("revoked_at")
+  lastUsedAt    DateTime? @db.Timestamptz @map("last_used_at")
+  reuseDetected Boolean  @default(false) @map("reuse_detected")
+
+  @@map("refresh_tokens")
+}
+
+model MobileProfile {
+  deviceId  String @id @map("device_id")
+  userId    String @map("user_id")
+  profile   Json   @db.JsonB @default("{}")
+  language  String @default("en")
+  updatedAt DateTime? @db.Timestamptz @map("updated_at")
+  createdAt DateTime? @db.Timestamptz @map("created_at")
+
+  @@map("mobile_profiles")
+}
+
+model UserSubscription {
+  userId                          String @id @map("user_id")
+  plan                            String @default("free")
+  status                          String @default("free")
+  entitlementSource               String @default("revenuecat") @map("entitlement_source")
+  revenuecatEntitlementId         String? @map("revenuecat_entitlement_id")
+  revenuecatOriginalTransactionId String? @map("revenuecat_original_transaction_id")
+  entitlementPayload              Json? @db.JsonB @map("entitlement_payload")
+  currentPeriodEnd                DateTime? @db.Timestamptz @map("current_period_end")
+  trialEnd                        DateTime? @db.Timestamptz @map("trial_end")
+  metadata                        Json @db.JsonB @default("{}")
+  updatedAt                       DateTime @default(now()) @db.Timestamptz @map("updated_at")
+
+  @@map("user_subscriptions")
+}
+
+model SubscriptionEvent {
+  eventId   String @id @map("event_id")
+  userId    String? @map("user_id")
+  type      String
+  provider  String @default("revenuecat")
+  payload   Json? @db.JsonB
+  createdAt DateTime @default(now()) @db.Timestamptz @map("created_at")
+
+  @@map("subscription_events")
+}
+
+model MonthlyVcGrant {
+  userId     String @map("user_id")
+  grantMonth DateTime @db.Date @map("grant_month")
+  reason     String
+  minutes    Int
+  grantedAt  DateTime @default(now()) @db.Timestamptz @map("granted_at")
+
+  @@id([userId, grantMonth, reason])
+  @@map("monthly_vc_grants")
+}
+
+model Profile {
+  id        String @id @db.Uuid
+  email     String? @unique
+  metadata  Json @db.JsonB @default("{}")
+  createdAt DateTime @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt DateTime @default(now()) @db.Timestamptz @map("updated_at")
+
+  settings         UserSetting?
+  userTypeEstimate UserTypeEstimate?
+
+  @@map("profiles")
+}
+
+model UserSetting {
+  userId               String @id @db.Uuid @map("user_id")
+  language             String @default("ja")
+  timezone             String @default("Asia/Tokyo")
+  notificationsEnabled Boolean @default(true) @map("notifications_enabled")
+  nudgeDay0LocalDate   DateTime? @db.Date @map("nudge_day0_local_date")
+  nudgeDay0Source      String? @map("nudge_day0_source")
+  preferences          Json @db.JsonB @default("{}")
+  createdAt            DateTime @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt            DateTime @default(now()) @db.Timestamptz @map("updated_at")
+
+  profile Profile @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_settings")
+}
+
+model PushToken {
+  id         String   @id @db.Uuid @default(uuid())
+  profileId  String   @db.Uuid @map("profile_id")
+  deviceId   String   @map("device_id")
+  token      String
+  platform   String   @default("ios")
+  env        String
+  disabledAt DateTime? @db.Timestamptz @map("disabled_at")
+  lastError  String?  @map("last_error")
+  updatedAt  DateTime @default(now()) @db.Timestamptz @map("updated_at")
+  createdAt  DateTime @default(now()) @db.Timestamptz @map("created_at")
+
+  deliverySends NudgeDeliverySend[]
+
+  @@unique([deviceId, env])
+  @@unique([token, env])
+  @@index([profileId])
+  @@map("push_tokens")
+}
+
+model NudgeDelivery {
+  id              String   @id @db.Uuid @default(uuid())
+  profileId       String   @db.Uuid @map("profile_id")
+  problemType     String   @map("problem_type")
+  scheduledTime   String   @map("scheduled_time")
+  deliveryDayLocal DateTime @db.Date @map("delivery_day_local")
+  timezone        String
+  lang            String
+  variantIndex    Int      @map("variant_index")
+  messageTitle    String   @map("message_title")
+  messageBody     String   @map("message_body")
+  messageDetail   String   @map("message_detail")
+  status          String   @default("queued")
+  apnsId          String?  @map("apns_id")
+  error           String?
+  attemptCount    Int      @default(0) @map("attempt_count")
+  lastAttemptAt   DateTime? @db.Timestamptz @map("last_attempt_at")
+  nextAttemptAt   DateTime? @db.Timestamptz @map("next_attempt_at")
+  createdAt       DateTime @default(now()) @db.Timestamptz @map("created_at")
+  sentAt          DateTime? @db.Timestamptz @map("sent_at")
+
+  sends NudgeDeliverySend[]
+
+  @@unique([profileId, problemType, scheduledTime, deliveryDayLocal])
+  @@index([profileId, createdAt])
+  @@map("nudge_deliveries")
+}
+
+model NudgeDeliverySend {
+  id           String   @id @db.Uuid @default(uuid())
+  deliveryId   String   @db.Uuid @map("delivery_id")
+  pushTokenId  String   @db.Uuid @map("push_token_id")
+  status       String   @default("queued")
+  apnsId       String?  @map("apns_id")
+  error        String?
+  attemptCount Int      @default(0) @map("attempt_count")
+  lastAttemptAt DateTime? @db.Timestamptz @map("last_attempt_at")
+  nextAttemptAt DateTime? @db.Timestamptz @map("next_attempt_at")
+  sentAt       DateTime? @db.Timestamptz @map("sent_at")
+  updatedAt    DateTime @default(now()) @db.Timestamptz @map("updated_at")
+  createdAt    DateTime @default(now()) @db.Timestamptz @map("created_at")
+
+  delivery  NudgeDelivery @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+  pushToken PushToken     @relation(fields: [pushTokenId], references: [id], onDelete: Cascade)
+
+  @@unique([deliveryId, pushTokenId])
+  @@index([pushTokenId, status, nextAttemptAt])
+  @@map("nudge_delivery_sends")
+}
+
+// -----------------------------
+// New v0.3 tables
+// -----------------------------
+
+model UserTrait {
+  userId         String   @id @db.Uuid @map("user_id")
+  ideals         String[] @db.Text @default([])
+  struggles      String[] @db.Text @default([])
+  big5           Json     @db.JsonB @default("{}")
+  keywords       String[] @db.Text @default([])
+  summary        String   @db.Text @default("")
+  nudgeIntensity String   @default("normal") @map("nudge_intensity")
+  stickyMode     Boolean  @default(false) @map("sticky_mode")
+  createdAt      DateTime @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt      DateTime @default(now()) @db.Timestamptz @map("updated_at")
+
+  @@map("user_traits")
+}
+
+model NudgeEvent {
+  id             String   @id @db.Uuid @default(uuid())
+  userId         String   @db.Uuid @map("user_id")
+  domain         String
+  subtype        String
+  decisionPoint  String   @map("decision_point")
+  state          Json     @db.JsonB
+  actionTemplate String?  @map("action_template")
+  channel        String
+  sent           Boolean  @default(true)
+  createdAt      DateTime @default(now()) @db.Timestamptz @map("created_at")
+
+  outcomes NudgeOutcome[]
+
+  @@map("nudge_events")
+}
+
+model NudgeOutcome {
+  id           String   @id @db.Uuid @default(uuid())
+  nudgeEventId String   @db.Uuid @map("nudge_event_id")
+  reward       Float?
+  shortTerm    Json     @db.JsonB @default("{}") @map("short_term")
+  emaScore     Json?    @db.JsonB @map("ema_score")
+  signals      Json     @db.JsonB @default("{}")
+  createdAt    DateTime @default(now()) @db.Timestamptz @map("created_at")
+
+  event NudgeEvent @relation(fields: [nudgeEventId], references: [id], onDelete: Cascade)
+
+  @@map("nudge_outcomes")
+}
+
+model FeelingSession {
+  id             String   @id @db.Uuid @default(uuid())
+  userId         String   @db.Uuid @map("user_id")
+  feelingId      String   @map("feeling_id")
+  topic          String?
+  actionTemplate String?  @map("action_template")
+  startedAt      DateTime @default(now()) @db.Timestamptz @map("started_at")
+  endedAt        DateTime? @db.Timestamptz @map("ended_at")
+  emaBetter      Boolean? @map("ema_better")
+  summary        String?  @db.Text
+  transcript     Json?    @db.JsonB
+  context        Json     @db.JsonB @default("{}")
+  createdAt      DateTime @default(now()) @db.Timestamptz @map("created_at")
+
+  @@map("feeling_sessions")
+}
+
+model BanditModel {
+  id         String   @id @db.Uuid @default(uuid())
+  domain     String
+  version    Int      @default(1)
+  weights    Json     @db.JsonB
+  covariance Json     @db.JsonB
+  meta       Json     @db.JsonB @default("{}")
+  createdAt  DateTime @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt  DateTime @default(now()) @db.Timestamptz @map("updated_at")
+
+  @@unique([domain, version])
+  @@map("bandit_models")
+}
+
+// -----------------------------
+// 1.5.0 Cross-User Learning
+// -----------------------------
+
+model UserTypeEstimate {
+  userId      String   @id @db.Uuid @map("user_id")
+  primaryType String   @db.VarChar(10) @map("primary_type")
+  typeScores  Json     @db.JsonB @default("{}") @map("type_scores")
+  confidence  Decimal  @db.Decimal(5,4) @default(0)
+  createdAt   DateTime @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt   DateTime @default(now()) @db.Timestamptz @map("updated_at")
+
+  profile     Profile  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([primaryType])
+  @@map("user_type_estimates")
+}
+
+model TypeStats {
+  typeId          String   @db.VarChar(10) @map("type_id")
+  tone            String   @db.VarChar(20)
+  tappedCount     BigInt   @default(0) @map("tapped_count")
+  ignoredCount    BigInt   @default(0) @map("ignored_count")
+  thumbsUpCount   BigInt   @default(0) @map("thumbs_up_count")
+  thumbsDownCount BigInt   @default(0) @map("thumbs_down_count")
+  sampleSize      BigInt   @default(0) @map("sample_size")
+  updatedAt       DateTime @default(now()) @db.Timestamptz @map("updated_at")
+  // NOTE: tap_rate, thumbs_up_rate are GENERATED ALWAYS AS columns in PostgreSQL
+  // Not defined in Prisma; read via prisma.$queryRaw
+
+  @@id([typeId, tone])
+  @@map("type_stats")
+}
+
+model HookCandidate {
+  id                 String    @id @db.Uuid @default(dbgenerated("gen_random_uuid()"))
+  text               String    @db.Text
+  tone               String    @db.VarChar(20)
+  targetProblemTypes String[]  @default([]) @map("target_problem_types")
+  targetUserTypes    String[]  @default([]) @map("target_user_types")
+  appTapRate         Decimal   @db.Decimal(5,4) @default(0) @map("app_tap_rate")
+  appThumbsUpRate    Decimal   @db.Decimal(5,4) @default(0) @map("app_thumbs_up_rate")
+  appSampleSize      Int       @default(0) @map("app_sample_size")
+  tiktokLikeRate     Decimal   @db.Decimal(5,4) @default(0) @map("tiktok_like_rate")
+  tiktokShareRate    Decimal   @db.Decimal(5,4) @default(0) @map("tiktok_share_rate")
+  tiktokSampleSize   Int       @default(0) @map("tiktok_sample_size")
+  tiktokHighPerformer Boolean  @default(false) @map("tiktok_high_performer")
+  isWisdom           Boolean   @default(false) @map("is_wisdom")
+  explorationWeight  Decimal   @db.Decimal(3,2) @default(1.0) @map("exploration_weight")
+  createdAt          DateTime  @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt          DateTime  @default(now()) @db.Timestamptz @map("updated_at")
+
+  // 1.6.0 Phase 3: Hook Storage → TS Loop
+  source            String    @default("manual") @db.VarChar(20) // 'manual', 'llm_nudge', 'x_agent', 'tiktok_agent'
+  generatedForUserId String?  @db.Uuid @map("generated_for_user_id")
+  promoted          Boolean   @default(false)
+  // 1.6.0 Phase 5: X metrics
+  xEngagementRate   Decimal   @db.Decimal(5,4) @default(0) @map("x_engagement_rate")
+  xSampleSize       Int       @default(0) @map("x_sample_size")
+  xHighPerformer    Boolean   @default(false) @map("x_high_performer")
+
+  // 1.6.1: Moltbook metrics
+  moltbookUpvoteRate    Decimal?  @db.Decimal(5,4) @map("moltbook_upvote_rate")
+  moltbookSampleSize    Int?      @map("moltbook_sample_size")
+  moltbookHighPerformer Boolean?  @map("moltbook_high_performer")
+
+  // 1.6.1: Slack metrics
+  slackReactionRate     Decimal?  @db.Decimal(5,4) @map("slack_reaction_rate")
+  slackSampleSize       Int?      @map("slack_sample_size")
+  slackHighPerformer    Boolean?  @map("slack_high_performer")
+
+  tiktokPosts TiktokPost[]
+  xPosts      XPost[]
+
+  @@unique([text, tone])
+  @@index([tone])
+  @@index([source])
+  @@map("hook_candidates")
+}
+
+model TiktokPost {
+  id                String    @id @db.Uuid @default(dbgenerated("gen_random_uuid()"))
+  hookCandidateId   String?   @db.Uuid @map("hook_candidate_id")
+  tiktokVideoId     String?   @db.VarChar(100) @unique @map("tiktok_video_id")
+  blotatoPostId     String?   @unique @db.VarChar(100) @map("blotato_post_id")
+  caption           String?   @db.Text
+  postedAt          DateTime  @default(now()) @db.Timestamptz @map("posted_at")
+  metricsFetchedAt  DateTime? @db.Timestamptz @map("metrics_fetched_at")
+  viewCount         BigInt?   @map("view_count")
+  likeCount         BigInt?   @map("like_count")
+  commentCount      BigInt?   @map("comment_count")
+  shareCount        BigInt?   @map("share_count")
+  agentReasoning    String?   @db.Text @map("agent_reasoning")
+  slot              String?   @db.VarChar(20) @map("slot")
+  scheduledAt       DateTime? @db.Timestamptz @map("scheduled_at")
+  createdAt         DateTime  @default(now()) @db.Timestamptz @map("created_at")
+
+  hookCandidate HookCandidate? @relation(fields: [hookCandidateId], references: [id])
+
+  @@index([hookCandidateId])
+  @@index([postedAt(sort: Desc)])
+  @@map("tiktok_posts")
+}
+
+model WisdomPattern {
+  id                     String    @id @db.Uuid @default(dbgenerated("gen_random_uuid()"))
+  patternName            String    @unique @db.VarChar(100) @map("pattern_name")
+  description            String?   @db.Text
+  targetUserTypes        String[]  @default([]) @map("target_user_types")
+  effectiveTone          String?   @db.VarChar(20) @map("effective_tone")
+  effectiveHookPattern   String?   @db.Text @map("effective_hook_pattern")
+  effectiveContentLength String?   @db.VarChar(20) @map("effective_content_length")
+  appEvidence            Json      @db.JsonB @default("{}") @map("app_evidence")
+  tiktokEvidence         Json      @db.JsonB @default("{}") @map("tiktok_evidence")
+  confidence             Decimal   @db.Decimal(5,4) @default(0)
+  verifiedAt             DateTime? @db.Timestamptz @map("verified_at")
+  createdAt              DateTime  @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt              DateTime  @default(now()) @db.Timestamptz @map("updated_at")
+
+  @@map("wisdom_patterns")
+}
+
+// 1.6.0 Phase 4: X/Twitter posts
+model XPost {
+  id                String    @id @db.Uuid @default(dbgenerated("gen_random_uuid()"))
+  hookCandidateId   String?   @db.Uuid @map("hook_candidate_id")
+  xPostId           String?   @unique @db.VarChar(100) @map("x_post_id")
+  blotatoPostId     String?   @unique @db.VarChar(100) @map("blotato_post_id")
+  text              String    @db.Text
+  slot              String?   @db.VarChar(20) @map("slot")
+  postedAt          DateTime? @db.Timestamptz @map("posted_at")
+  metricsFetchedAt  DateTime? @db.Timestamptz @map("metrics_fetched_at")
+  impressionCount   BigInt    @default(0) @map("impression_count")
+  likeCount         BigInt    @default(0) @map("like_count")
+  retweetCount      BigInt    @default(0) @map("retweet_count")
+  replyCount        BigInt    @default(0) @map("reply_count")
+  engagementRate    Decimal   @db.Decimal(7,6) @default(0) @map("engagement_rate")
+  agentReasoning    String?   @db.Text @map("agent_reasoning")
+  createdAt         DateTime  @default(now()) @db.Timestamptz @map("created_at")
+
+  hookCandidate HookCandidate? @relation(fields: [hookCandidateId], references: [id])
+
+  @@index([hookCandidateId])
+  @@index([postedAt(sort: Desc)])
+  @@map("x_posts")
+}
+
+// 1.6.0 Phase 7: Notification Schedules (Commander Decision 保存)
+model NotificationSchedule {
+  id              String    @id @db.Uuid @default(dbgenerated("gen_random_uuid()"))
+  userId          String    @unique @db.Uuid @map("user_id")
+  schedule        Json      @db.JsonB  // CommanderDecision (正規化後)
+  agentRawOutput  Json?     @db.JsonB @map("agent_raw_output")  // AgentRawOutput (監査用)
+  createdAt       DateTime  @default(now()) @db.Timestamptz @map("created_at")
+
+  @@map("notification_schedules")
+}
+
+// -----------------------------
+// 1.6.1 Anicca in the World
+// -----------------------------
+
+model AgentPost {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  platform          String    @db.VarChar(50)        // 'moltbook', 'slack', 'x', 'tiktok', 'instagram'
+  externalPostId    String?   @map("external_post_id") @db.VarChar(255)
+  platformUserId    String?   @map("platform_user_id") @db.VarChar(255) // <platform>:<user_id> 形式
+  severity          String?   @db.VarChar(20)        // null | 'crisis'
+  region            String?   @db.VarChar(10)        // 'JP', 'US', 'UK', 'KR', 'OTHER'
+  hook              String?
+  content           String?
+  tone              String?   @db.VarChar(50)
+  problemType       String?   @map("problem_type") @db.VarChar(100)
+  reasoning         String?
+  buddhismReference String?   @map("buddhism_reference")
+
+  // フィードバック
+  upvotes           Int       @default(0)
+  reactions         Json      @default("{}") @db.JsonB  // Slack { "👍": 3, "❤️": 1 }
+  views             Int?      // null = unknown/not available (for Moltbook Z-Score fallback)
+  likes             Int       @default(0)
+  shares            Int       @default(0)
+  comments          Int       @default(0)
+
+  // Z-Score
+  moltbookZ         Float?    @map("moltbook_z")
+  slackZ            Float?    @map("slack_z")
+  tiktokZ           Float?    @map("tiktok_z")
+  xZ                Float?    @map("x_z")
+  instagramZ        Float?    @map("instagram_z")
+  unifiedScore      Float?    @map("unified_score")
+
+  // メタデータ
+  createdAt                  DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt                  DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  promotedToHookCandidates   Boolean   @default(false) @map("promoted_to_hook_candidates")
+  anonymizedAt               DateTime? @map("anonymized_at") @db.Timestamptz
+
+  @@unique([platform, externalPostId])
+  @@index([platform])
+  @@index([createdAt(sort: Desc)])
+  @@index([platformUserId])
+  @@map("agent_posts")
+}
+
+model AgentAuditLog {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  eventType       String    @map("event_type") @db.VarChar(50)  // 'llm_call', 'tool_execution', 'deletion_request', 'deletion_completed'
+  agentPostId     String?   @db.Uuid @map("agent_post_id")
+  platform        String?   @db.VarChar(50)
+  requestPayload  Json?     @db.JsonB @map("request_payload")
+  responsePayload Json?     @db.JsonB @map("response_payload")
+  executedBy      String?   @db.VarChar(100) @map("executed_by")  // 'system', 'admin:<id>', 'user:<id>'
+  durationMs      Int?      @map("duration_ms")
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([eventType])
+  @@index([createdAt(sort: Desc)])
+  @@index([agentPostId])
+  @@map("agent_audit_logs")
+}
+
+// -----------------------------
+// 1.6.2 Phase 2: Structured Memory + Initiative
+// -----------------------------
+
+model MemoryItem {
+  id         String   @id @db.Uuid @default(dbgenerated("gen_random_uuid()"))
+  scope      String   @db.VarChar(255) // 'global' | 'platform:<name>' | 'user:<platformUserId>'
+  category   String   @db.VarChar(50)  // 'safety' | 'policy' | 'content_style' | 'ops' | 'growth'
+  key        String   @db.VarChar(100)
+  value      String   @db.Text
+  confidence Decimal  @db.Decimal(5,4) @default(0)
+  source     String   @db.VarChar(50)
+  expiresAt  DateTime? @db.Timestamptz @map("expires_at")
+  createdAt  DateTime @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt  DateTime @updatedAt @db.Timestamptz @map("updated_at")
+
+  @@unique([scope, category, key])
+  @@index([category])
+  @@index([updatedAt(sort: Desc)])
+  @@map("memory_items")
+}
+
+model Initiative {
+  id        String   @id @db.Uuid @default(dbgenerated("gen_random_uuid()"))
+  kind      String   @db.VarChar(50)  // 'suffering_spike' | 'low_tap_rate' | 'post_failures'
+  status    String   @db.VarChar(20)  @default("proposed") // 'proposed' | 'approved' | 'rejected' | 'executed'
+  reason    String   @db.Text
+  payload   Json     @db.JsonB @default("{}")
+  createdAt DateTime @default(now()) @db.Timestamptz @map("created_at")
+  updatedAt DateTime @default(now()) @db.Timestamptz @map("updated_at")
+
+  @@index([kind])
+  @@index([createdAt(sort: Desc)])
+  @@map("initiatives")
+}
+
+model ResearchItem {
+  id        String   @id @db.Uuid @default(dbgenerated("gen_random_uuid()"))
+  source    String   @db.VarChar(50) // 'x_research' | 'manual'
+  query     String?  @db.Text
+  summary   String   @db.Text
+  payload   Json     @db.JsonB @default("{}")
+  createdAt DateTime @default(now()) @db.Timestamptz @map("created_at")
+
+  @@index([source])
+  @@index([createdAt(sort: Desc)])
+  @@map("research_items")
+}
+
+// 1.6.1 HookCandidate 拡張カラム（既存 HookCandidate に追加）
+// Note: 既存の HookCandidate model に以下のカラムを追加済み:
+// - moltbookUpvoteRate, moltbookSampleSize, moltbookHighPerformer
+// - slackReactionRate, slackSampleSize, slackHighPerformer
+
+// -----------------------------
+// 1.6.2 Closed-Loop Ops
+// -----------------------------
+
+model OpsProposal {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  skillName    String    @map("skill_name") @db.VarChar(50)
+  source       String    @db.VarChar(20)
+  status       String    @default("pending") @db.VarChar(20)
+  title        String    @db.VarChar(500)
+  payload      Json      @default("{}") @db.JsonB
+  rejectReason String?   @map("reject_reason") @db.Text
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  resolvedAt   DateTime? @map("resolved_at") @db.Timestamptz
+
+  missions OpsMission[]
+
+  @@index([status])
+  @@index([skillName])
+  @@index([createdAt(sort: Desc)])
+  @@map("ops_proposals")
+}
+
+model OpsMission {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  proposalId  String    @map("proposal_id") @db.Uuid
+  status      String    @default("running") @db.VarChar(20)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  completedAt DateTime? @map("completed_at") @db.Timestamptz
+
+  proposal OpsProposal   @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  steps    OpsMissionStep[]
+  events   OpsEvent[]
+
+  @@index([status])
+  @@index([createdAt(sort: Desc)])
+  @@map("ops_missions")
+}
+
+model OpsMissionStep {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  missionId   String    @map("mission_id") @db.Uuid
+  stepKind    String    @map("step_kind") @db.VarChar(50)
+  stepOrder   Int       @map("step_order")
+  status      String    @default("queued") @db.VarChar(20)
+  input       Json?     @db.JsonB
+  output      Json?     @db.JsonB
+  lastError   String?   @map("last_error") @db.Text
+  reservedAt  DateTime? @map("reserved_at") @db.Timestamptz
+  completedAt DateTime? @map("completed_at") @db.Timestamptz
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  mission OpsMission @relation(fields: [missionId], references: [id], onDelete: Cascade)
+
+  @@index([missionId, stepOrder])
+  @@index([status])
+  @@index([reservedAt])
+  @@map("ops_mission_steps")
+}
+
+model OpsEvent {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  source    String   @db.VarChar(50)
+  kind      String   @db.VarChar(100)
+  tags      String[] @default([])
+  payload   Json?    @db.JsonB
+  missionId String?  @map("mission_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  mission   OpsMission?  @relation(fields: [missionId], references: [id], onDelete: SetNull)
+  reactions OpsReaction[]
+
+  @@index([kind])
+  @@index([source])
+  @@index([createdAt(sort: Desc)])
+  @@map("ops_events")
+}
+
+model OpsPolicy {
+  key       String   @id @db.VarChar(100)
+  value     Json     @db.JsonB
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@map("ops_policy")
+}
+
+model OpsTriggerRule {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name             String    @unique @db.VarChar(100)
+  eventKind        String    @map("event_kind") @db.VarChar(100)
+  condition        Json      @default("{}") @db.JsonB
+  proposalTemplate Json      @map("proposal_template") @db.JsonB
+  cooldownMin      Int       @default(60) @map("cooldown_min")
+  enabled          Boolean   @default(true)
+  lastFiredAt      DateTime? @map("last_fired_at") @db.Timestamptz
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([eventKind])
+  @@map("ops_trigger_rules")
+}
+
+model OpsReaction {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  eventId     String    @map("event_id") @db.Uuid
+  targetSkill String    @map("target_skill") @db.VarChar(50)
+  actionType  String    @map("action_type") @db.VarChar(50)
+  status      String    @default("pending") @db.VarChar(20)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  processedAt DateTime? @map("processed_at") @db.Timestamptz
+
+  event OpsEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([createdAt(sort: Desc)])
+  @@map("ops_reactions")
+}

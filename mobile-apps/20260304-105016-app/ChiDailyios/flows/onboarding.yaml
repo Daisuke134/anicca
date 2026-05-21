@@ -1,0 +1,16 @@
+appId: com.aniccafactory.chidaily
+tags:
+  - smokeTest
+  - onboarding
+---
+- launchApp
+- clearState
+- launchApp
+- assertVisible: "Chi Daily"
+- tapOn: "Continue"
+- tapOn: "Continue"
+- assertVisible:
+    id: "paywall_skip"
+- tapOn:
+    id: "paywall_skip"
+- assertVisible: "Today"

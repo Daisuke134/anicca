@@ -1,0 +1,45 @@
+@startuml
+title 本を借りるシナリオ
+
+actor User
+participant Library
+participant Book
+participant LoanRecord
+
+User -> Library: 本を借りる(bookId)
+activate Library
+
+Library -> Library: 貸出上限チェック
+alt 貸出上限以内
+    Library -> Book: 状態確認
+    activate Book
+    Book --> Library: 貸出可
+    deactivate Book
+    
+    Library -> LoanRecord: 貸出記録作成
+    activate LoanRecord
+    LoanRecord --> Library: 貸出記録ID
+    deactivate LoanRecord
+    
+    Library -> Book: 状態を「貸出中」に変更
+    activate Book
+    Book --> Library: 更新完了
+    deactivate Book
+    
+    Library --> User: 貸出完了通知
+else 貸出上限超過
+    Library --> User: エラー: 貸出上限に達しています
+end
+deactivate Library
+
+@enduml
+
+
+
+
+
+
+
+
+
+

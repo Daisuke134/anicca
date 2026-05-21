@@ -1,0 +1,15 @@
+{
+	"folders": [
+		{
+			"path": "../../../.."
+		}
+	],
+	"settings": {
+		"coderabbit.autoReviewMode": "prompt"
+	},
+	"extensions": {
+		"recommendations": [
+			"marp-team.marp-vscode"
+		]
+	}
+}

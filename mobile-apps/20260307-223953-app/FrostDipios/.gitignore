@@ -1,0 +1,11 @@
+*.xcodeproj
+DerivedData/
+build/
+.build/
+*.xcworkspace
+*.ipa
+*.dSYM.zip
+*.dSYM
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/test_output

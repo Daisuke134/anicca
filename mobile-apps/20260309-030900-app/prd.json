@@ -1,0 +1,289 @@
+{
+  "project": "mobileapp-factory",
+  "branchName": "ralph/daily-app",
+  "description": "Build and submit one iOS app to App Store",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Trend research + idea selection",
+      "acceptanceCriteria": [
+        "spec/01-trend.md exists",
+        "Contains: rank, idea, one_liner, platform, problem_statement, target_user, feasibility, overall_score, monetization_model, competition_notes, mvp_scope, next_step",
+        "At least 5 ideas evaluated, top 1 selected",
+        "Sources cited for each trend",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": "VagusReset選定。overall_score=8.50。TikTok #vagusnerve 5M+ views確認済み。NEUROFIT™ 651件レビュー(低競合)。spec/01-trend.md at mobile-apps/vagus-reset/spec/01-trend.md"
+    },
+    {
+      "id": "US-002",
+      "title": "Product planning",
+      "acceptanceCriteria": [
+        "product-plan.md exists",
+        "Contains: target user, problem, solution, monetization, MVP scope",
+        "monetization section specifies subscription prices (monthly + annual)",
+        "All claims cite external sources",
+        "curl itunes.apple.com/search for APP_NAME returns 0 exact name matches",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "product-plan.md 作成完了。VagusReset、Bundle ID=com.aniccafactory.vagusreset、$4.99/mo + $29.99/yr。7セクション、21URL出典、iTunes名前確認0件。WHO/PMC/RevenueCat/Jake Mor引用。競合NEUROFIT651件(低競合)確認。"
+    },
+    {
+      "id": "US-003",
+      "title": "Market research",
+      "acceptanceCriteria": [
+        "competitive-analysis.md exists with 5+ competitors analyzed",
+        "market-research.md exists with TAM/SAM/SOM",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": true,
+      "notes": "competitive-analysis.md作成: 7競合分析（直接5+間接2）。Feature Matrix 12マーク。47URL引用。market-research.md作成: TAM$6.7B/SAM$43.5M/SOM Year1$4,350。POEM Score 21/25(Strong Opportunity)。ネガティブシグナル3件記載。iTunes API実測データ使用。全8チェック✅PASS。2026-03-09"
+    },
+    {
+      "id": "US-004a",
+      "title": "Core Spec (PRD, ARCHITECTURE, IMPLEMENTATION_GUIDE)",
+      "acceptanceCriteria": [
+        "docs/PRD.md exists and contains app_name, bundle_id, subscription prices",
+        "docs/ARCHITECTURE.md exists",
+        "docs/IMPLEMENTATION_GUIDE.md exists and references RevenueCat SDK (not Mock)",
+        "Typecheck passes"
+      ],
+      "priority": 4.1,
+      "passes": true,
+      "notes": "docs/PRD.md(237行)・ARCHITECTURE.md(306行)・IMPLEMENTATION_GUIDE.md(471行)作成完了。全AC PASS。Rule 17/20/20b/21 違反なし。app_name=VagusReset、bundle_id=com.aniccafactory.vagusreset、$4.99/mo+$29.99/yr、F-001〜F-010 Feature ID。Purchases.shared.purchase参照あり。RC-UI-package禁止明記。"
+    },
+    {
+      "id": "US-004b",
+      "title": "UX Spec (UX_SPEC, DESIGN_SYSTEM, TEST_SPEC, RELEASE_SPEC)",
+      "acceptanceCriteria": [
+        "docs/UX_SPEC.md exists",
+        "docs/DESIGN_SYSTEM.md exists",
+        "docs/TEST_SPEC.md exists",
+        "docs/RELEASE_SPEC.md exists",
+        "Typecheck passes"
+      ],
+      "priority": 4.2,
+      "passes": true,
+      "notes": "docs/UX_SPEC.md(341行)・DESIGN_SYSTEM.md(178行)・TEST_SPEC.md(183行)・RELEASE_SPEC.md(256行)作成完了。全7ファイル計1972行。Rule 17/20/20b/21 違反なし（Grep確認済み）。accessibilityIdentifier 16個定義。Paywall/Maybe Later記載。カラートークン21個(5+クリア)。2026-03-09"
+    },
+    {
+      "id": "US-004-R",
+      "title": "Spec Review (all 7 documents)",
+      "acceptanceCriteria": [
+        "code-quality-reviewer agent (.claude/agents/) — NOT codex-review skill, NOT Codex CLI run on all 7 docs",
+        "CRITICAL findings = 0",
+        "All blocking issues resolved"
+      ],
+      "priority": 4.3,
+      "passes": true,
+      "notes": "code-quality-reviewer agent実行。5 CRITICAL + 8 WARNINGS + 5 SUGGESTIONS検出。全5 CRITICAL修正完了: (1)ARCH.md バッククォート修正 (2)PaywallView purchase() エラーハンドリング追加 (3)StreakService getLastSessionDate/getCompletedDates 実装仕様明記 (4)SessionViewModel resume()追加 (5)Fastfile archive/upload_to_asc レーン追加。主要WARNING修正: Protocol不一致4箇所同期、Greenlight grep代替表現更新、UX_SPEC S-006 accessibilityIdentifier追加。Rule 17/20/20b/21全PASS。2013行。2026-03-09"
+    },
+    {
+      "id": "US-005a",
+      "title": "Privacy Policy + ASC app creation",
+      "acceptanceCriteria": [
+        "privacy-policy.md exists and deployed to GitHub Pages",
+        "PrivacyInfo.xcprivacy exists in project",
+        "Info.plist contains ITSAppUsesNonExemptEncryption = NO",
+        "App created in ASC (APP_ID recorded in .env)"
+      ],
+      "priority": 5,
+      "passes": true,
+      "notes": "Bundle ID=com.aniccafactory.vagusreset (9WDMY56FKT)登録。APP_ID=6760264773 作成・保存（~/.config/mobileapp-builder/projects/vagus-reset/.env）。App Privacy=DATA_NOT_COLLECTED published:true。Privacy Policy=https://aniccaai.com/privacy（既存URL使用）。PrivacyInfo.xcprivacy + Info.plist は US-006 で実行。2026-03-09"
+    },
+    {
+      "id": "US-005b",
+      "title": "IAP + pricing + RevenueCat setup",
+      "acceptanceCriteria": [
+        "asc subscriptions groups list --app $APP_ID returns 1+ groups",
+        "asc subscriptions list --group $GROUP_ID returns monthly + annual products",
+        "asc subscriptions prices list --id $MONTHLY_ID returns 175 prices",
+        "RevenueCat dashboard shows 2 products + 1 offering",
+        "SPM dependency on RevenueCat added (RevenueCatUI prohibited -- Rule 20)",
+        "Typecheck passes"
+      ],
+      "priority": 5.5,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006a",
+      "title": "TDD Data Layer (xcconfig, Protocol DI, Models, Services)",
+      "acceptanceCriteria": [
+        "xcconfig for API Key management (not hardcoded)",
+        "SubscriptionService uses Protocol + DI",
+        "Models and Services directories exist",
+        "fastlane test PASS",
+        "Typecheck passes"
+      ],
+      "priority": 6.1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006b",
+      "title": "TDD Onboarding + Monetization (MVVM, Onboarding, PaywallView)",
+      "acceptanceCriteria": [
+        "AppState split into MVVM ViewModels",
+        "Onboarding flow complete (includes notification permission step)",
+        "PaywallView uses Purchases.shared.purchase(package:) (self-built SwiftUI -- Rule 20)",
+        "No RevenueCatUI import",
+        "fastlane test PASS",
+        "Typecheck passes"
+      ],
+      "priority": 6.2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006c",
+      "title": "TDD Core Screens (Timer, Settings, ProgressDashboard)",
+      "acceptanceCriteria": [
+        "Timer with background support",
+        "Settings with Upgrade -> PaywallView navigation",
+        "ProgressDashboard with optimized DateFormatter",
+        "fastlane test PASS",
+        "Typecheck passes"
+      ],
+      "priority": 6.3,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006d",
+      "title": "TDD Polish (DESIGN_SYSTEM tokens, a11y IDs, Localization)",
+      "acceptanceCriteria": [
+        "DESIGN_SYSTEM tokens applied to all Views",
+        "All accessibilityIdentifiers match TEST_SPEC",
+        "PrivacyInfo.xcprivacy exists",
+        "Localization files (.xcstrings) exist",
+        "fastlane test PASS",
+        "fastlane build PASS",
+        "Typecheck passes"
+      ],
+      "priority": 6.4,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006-R",
+      "title": "Code Review (006a-d full review)",
+      "acceptanceCriteria": [
+        "code-quality-reviewer agent (.claude/agents/) — NOT codex-review skill, NOT Codex CLI run on all 006 code",
+        "CRITICAL findings = 0",
+        "No Mock/Stub in production code (grep -rw 'class Mock' excludes Tests/)",
+        "All blocking issues resolved"
+      ],
+      "priority": 6.5,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Testing (Maestro E2E)",
+      "acceptanceCriteria": [
+        "6+ Maestro E2E flows in maestro/ (onboarding, timer, settings, payment-monthly, payment-annual, payment-failure)",
+        "All flows use id: selectors (no point: selectors)",
+        "All flows have clearState + takeScreenshot",
+        "maestro test maestro/ -> all PASS",
+        "smokeTest tag exists on 2+ flows"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008a",
+      "title": "Screenshots (capture + upload + review screenshot)",
+      "acceptanceCriteria": [
+        "Screenshots captured via AXe + asc screenshots capture (en-US 4+ + ja 4+)",
+        "en-US/ja MD5 mismatch (locale applied)",
+        "Screenshots uploaded to ASC for en-US and ja (>=4 each)",
+        "Subscription review screenshots uploaded for Monthly + Annual"
+      ],
+      "priority": 8.1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008b",
+      "title": "ASC metadata sync (en-US + ja)",
+      "acceptanceCriteria": [
+        "Metadata synced to ASC via asc-metadata-sync (en-US + ja)",
+        "Privacy Policy URL set for en-US AND ja"
+      ],
+      "priority": 8.2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008c",
+      "title": "IPA build + upload + version attach",
+      "acceptanceCriteria": [
+        ".ipa file built and uploaded (processingState = VALID)",
+        "Build attached to version"
+      ],
+      "priority": 8.3,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008d",
+      "title": "ASC compliance (age rating + encryption + rights + availability + pricing + review details)",
+      "acceptanceCriteria": [
+        "Age Rating all 22 items set",
+        "Review Details set with --demo-account-required false",
+        "Availability set for 175 territories",
+        "Pricing set using subscription price-point IDs",
+        "Encryption: usesNonExemptEncryption = false",
+        "Content Rights: DOES_NOT_USE_THIRD_PARTY_CONTENT"
+      ],
+      "priority": 8.4,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008e",
+      "title": "Preflight validation + TestFlight + Slack",
+      "acceptanceCriteria": [
+        "release-review 5 checklists all pass",
+        "asc validate returns Errors=0",
+        "TestFlight build distributed",
+        "Slack #metrics notified with TestFlight link"
+      ],
+      "priority": 8.5,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "App Store submission (App Privacy + submit)",
+      "acceptanceCriteria": [
+        "Slack #metrics notified: need App Privacy setup",
+        ".app-privacy-done file exists (human created after ASC Web setup)",
+        "asc submit create returns WAITING_FOR_REVIEW",
+        "Slack #metrics notified: WAITING_FOR_REVIEW"
+      ],
+      "priority": 9,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Build Report: Token Usage + Slack + X Post",
+      "acceptanceCriteria": [
+        "build-report.json saved in app directory",
+        "Report posted to Slack #metrics",
+        "Report + product page screenshots posted to X via Postiz API"
+      ],
+      "priority": 10,
+      "passes": false,
+      "notes": ""
+    }
+  ]
+}

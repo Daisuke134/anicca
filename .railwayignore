@@ -1,0 +1,15 @@
+.claude/
+.codex/
+.cursor/
+.git/
+node_modules/
+aniccaios/
+daily-apps/
+docs/
+maestro/
+*.xcodeproj/
+*.xcworkspace/
+*.ipa
+*.app
+DerivedData/
+.worktrees/

@@ -1,0 +1,702 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		020EB4BC30B6F627FE4A3A13 /* PainAreaCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = D383A18AB544549218FB37C6 /* PainAreaCard.swift */; };
+		07A6EC8F0A782A2622762AF9 /* StretchExercise.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26DCEE507C72A911E6C9A3FE /* StretchExercise.swift */; };
+		15C91610F41EAD2A08A206F7 /* StreakBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BD193CF85D8DB5D25A3D3C9 /* StreakBadge.swift */; };
+		1C5F9FF10C56FC04FAAE7937 /* SubscriptionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F0E83209A34A9B6C579CD88 /* SubscriptionService.swift */; };
+		214E3719607358F46A5D07BA /* ExerciseCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BA591E107D9B3D4E5AC6787 /* ExerciseCard.swift */; };
+		2AB2F29EEF6B04791A791516 /* FilterChip.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5227277FECEBE805FF22CDD6 /* FilterChip.swift */; };
+		2C47C9695D1D75A7BE7CD78F /* TimerSettingsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D48521623487C7B28000175 /* TimerSettingsSheet.swift */; };
+		2C64B8F123E150931B51CF3F /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 7DE5F41903D196CD686D6F07 /* PrivacyInfo.xcprivacy */; };
+		2DD0635F713166E660F0DC96 /* StretchSessionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA08745DBEE839B7ABAB527A /* StretchSessionView.swift */; };
+		32187F742FACFC2BB14F4698 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55D25AA84E458A595E150A3E /* AppState.swift */; };
+		3A36FD39013C19859E155FA0 /* PainArea.swift in Sources */ = {isa = PBXBuildFile; fileRef = 315639AA0A6959C49A07F8C4 /* PainArea.swift */; };
+		3F812899388801984221079C /* PaywallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4226F3F1631E36D8685A207 /* PaywallView.swift */; };
+		54D030D7357F04EAD5C5CE8A /* OnboardingContainerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 103BCEAB94E9A501664A6F94 /* OnboardingContainerView.swift */; };
+		5BEFEA1F97C4152DB79D8CD0 /* AIStretchService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BA1AEC5F059D6F77A21675B /* AIStretchService.swift */; };
+		67B07A60F8784ACA3FD05E27 /* StretchExerciseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD1B642B6DB224307F251152 /* StretchExerciseTests.swift */; };
+		69C022A34731F997C2B6F48E /* ProgressService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CA150B73CAE250EBB6E0ABE /* ProgressService.swift */; };
+		6BA24590FA5BB422141BA29B /* ProblemEmpathyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A36CC36275452B6ABC03C140 /* ProblemEmpathyView.swift */; };
+		7A0558BBCBBC63F13E07D813 /* StretchDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7368864623646DB4D1D95CF /* StretchDetailView.swift */; };
+		7B31DABD3855D223E30BA217 /* SecondaryButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4FCF95D26C7B6D9B56B2622D /* SecondaryButton.swift */; };
+		802997279AE34DD27C61AF16 /* PrimaryButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD80DA341F606AC77368F0D8 /* PrimaryButton.swift */; };
+		8929291CF40ED4CC28B68CEF /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38C66C70AC480FCA6CCFD892 /* SettingsView.swift */; };
+		96C4E20306C85B3FEEF4F3A9 /* TimerRing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5689D226A647DC498EB16431 /* TimerRing.swift */; };
+		9AF389681DD111684D50FF9F /* RevenueCat in Frameworks */ = {isa = PBXBuildFile; productRef = 466EA2E119CF5EEA447C3FBE /* RevenueCat */; };
+		A3794BDC9E4409442F1BF892 /* Notification+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5F15D5C8A9E243F5F5F4ADB /* Notification+Extensions.swift */; };
+		A84566782704F8471A0561F0 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EDCF3D42EF3FB1260E7A176 /* NotificationService.swift */; };
+		AF038AAE895935E9343E5B47 /* BreakSchedule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CB544CCA050FA92D31B4105 /* BreakSchedule.swift */; };
+		BCB727151275D51AD3B86358 /* AIStretchServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9012E8A83952A3FC174449A7 /* AIStretchServiceTests.swift */; };
+		BFC4A333191AF309AEAB95B4 /* StretchLibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0E4BFD8D2611EE8F17DB9BC /* StretchLibraryView.swift */; };
+		C00DB7FFA26114270D34FBFC /* ProgressServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CF966ABACC2D6254CA0F882 /* ProgressServiceTests.swift */; };
+		C26A50351B17DA3D5A06BF8A /* StretchLibrary.json in Resources */ = {isa = PBXBuildFile; fileRef = AFCAD4D78DDD397F4EA84B63 /* StretchLibrary.json */; };
+		C64FEF2CEE363F4E11CB8FEC /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9A46B59C76EC92D768C02A0C /* Assets.xcassets */; };
+		D6D95B7B38C967189F478D7F /* TimerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC10FC6B29D9EF68BC525AC7 /* TimerView.swift */; };
+		D8F92BD8607BE08FA09D8969 /* UserProgress.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61A6ADE85CC80262DCC1B5A8 /* UserProgress.swift */; };
+		DA7914C2CCBD2C7724A5D044 /* PainAreaSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37C431EFF72F3FA2D5DA74F5 /* PainAreaSelectionView.swift */; };
+		DB897661B6E4802ED0F42F7E /* StretchSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E2CD1392A8E4D28D9E39064 /* StretchSession.swift */; };
+		DC0570204A4208C0C4364F8E /* ProgressDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6340C3314A288E2D65AFF9D3 /* ProgressDashboardView.swift */; };
+		E0D50F8FC41AA70CAF42CCA0 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6616646BD3C6C29CD939553 /* ContentView.swift */; };
+		E2BC15E2A190AF331673E38A /* StretchLibraryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A51602DC113344616D7A6F8 /* StretchLibraryService.swift */; };
+		F6FAD1F93F09666417ECD148 /* Date+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5424EBF0270633EBF1D0F3B /* Date+Extensions.swift */; };
+		F6FDD6EE7590B777D8C874ED /* DeskStretchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 963523CAC92A39FD75FD6955 /* DeskStretchApp.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		D33113B404DB5A9175A63F7A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 93D961DA254CD24EF7EAE817 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 74D011772E7CDAB6BC58842C;
+			remoteInfo = DeskStretch;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		103BCEAB94E9A501664A6F94 /* OnboardingContainerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingContainerView.swift; sourceTree = "<group>"; };
+		191A9DE217B80E272B3A3CB7 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		1BD193CF85D8DB5D25A3D3C9 /* StreakBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreakBadge.swift; sourceTree = "<group>"; };
+		26DCEE507C72A911E6C9A3FE /* StretchExercise.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StretchExercise.swift; sourceTree = "<group>"; };
+		2CA150B73CAE250EBB6E0ABE /* ProgressService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgressService.swift; sourceTree = "<group>"; };
+		2EDCF3D42EF3FB1260E7A176 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
+		315639AA0A6959C49A07F8C4 /* PainArea.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PainArea.swift; sourceTree = "<group>"; };
+		37C431EFF72F3FA2D5DA74F5 /* PainAreaSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PainAreaSelectionView.swift; sourceTree = "<group>"; };
+		38C66C70AC480FCA6CCFD892 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		3D48521623487C7B28000175 /* TimerSettingsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerSettingsSheet.swift; sourceTree = "<group>"; };
+		4BA1AEC5F059D6F77A21675B /* AIStretchService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIStretchService.swift; sourceTree = "<group>"; };
+		4FCF95D26C7B6D9B56B2622D /* SecondaryButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecondaryButton.swift; sourceTree = "<group>"; };
+		5227277FECEBE805FF22CDD6 /* FilterChip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilterChip.swift; sourceTree = "<group>"; };
+		55D25AA84E458A595E150A3E /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
+		5689D226A647DC498EB16431 /* TimerRing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerRing.swift; sourceTree = "<group>"; };
+		5E2CD1392A8E4D28D9E39064 /* StretchSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StretchSession.swift; sourceTree = "<group>"; };
+		61A6ADE85CC80262DCC1B5A8 /* UserProgress.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserProgress.swift; sourceTree = "<group>"; };
+		6340C3314A288E2D65AFF9D3 /* ProgressDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgressDashboardView.swift; sourceTree = "<group>"; };
+		64FF9D04E29CB48FD9C8B203 /* DeskStretch.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = DeskStretch.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		6A51602DC113344616D7A6F8 /* StretchLibraryService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StretchLibraryService.swift; sourceTree = "<group>"; };
+		6CB544CCA050FA92D31B4105 /* BreakSchedule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreakSchedule.swift; sourceTree = "<group>"; };
+		6DFEC9D557D036519770A03B /* DeskStretchTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = DeskStretchTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		6F0E83209A34A9B6C579CD88 /* SubscriptionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionService.swift; sourceTree = "<group>"; };
+		7DE5F41903D196CD686D6F07 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		8BA591E107D9B3D4E5AC6787 /* ExerciseCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseCard.swift; sourceTree = "<group>"; };
+		9012E8A83952A3FC174449A7 /* AIStretchServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIStretchServiceTests.swift; sourceTree = "<group>"; };
+		963523CAC92A39FD75FD6955 /* DeskStretchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeskStretchApp.swift; sourceTree = "<group>"; };
+		9A46B59C76EC92D768C02A0C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		9CF966ABACC2D6254CA0F882 /* ProgressServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgressServiceTests.swift; sourceTree = "<group>"; };
+		A0E4BFD8D2611EE8F17DB9BC /* StretchLibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StretchLibraryView.swift; sourceTree = "<group>"; };
+		A36CC36275452B6ABC03C140 /* ProblemEmpathyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProblemEmpathyView.swift; sourceTree = "<group>"; };
+		A5424EBF0270633EBF1D0F3B /* Date+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Date+Extensions.swift"; sourceTree = "<group>"; };
+		AFCAD4D78DDD397F4EA84B63 /* StretchLibrary.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = StretchLibrary.json; sourceTree = "<group>"; };
+		B6616646BD3C6C29CD939553 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		BD1B642B6DB224307F251152 /* StretchExerciseTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StretchExerciseTests.swift; sourceTree = "<group>"; };
+		BD80DA341F606AC77368F0D8 /* PrimaryButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrimaryButton.swift; sourceTree = "<group>"; };
+		C4226F3F1631E36D8685A207 /* PaywallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaywallView.swift; sourceTree = "<group>"; };
+		C7368864623646DB4D1D95CF /* StretchDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StretchDetailView.swift; sourceTree = "<group>"; };
+		D383A18AB544549218FB37C6 /* PainAreaCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PainAreaCard.swift; sourceTree = "<group>"; };
+		EC10FC6B29D9EF68BC525AC7 /* TimerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerView.swift; sourceTree = "<group>"; };
+		F5F15D5C8A9E243F5F5F4ADB /* Notification+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Notification+Extensions.swift"; sourceTree = "<group>"; };
+		FA08745DBEE839B7ABAB527A /* StretchSessionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StretchSessionView.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		93BF894439267E3A948E867A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9AF389681DD111684D50FF9F /* RevenueCat in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		2646710F58D9FAF5DA2B7881 = {
+			isa = PBXGroup;
+			children = (
+				EE547E0607561B615B4A3A36 /* DeskStretch */,
+				60EFE6503E74BFE729078B16 /* DeskStretchTests */,
+				9F302697A2651765E44F462C /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		278CBC11C6FF77F785CF54E3 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				9A46B59C76EC92D768C02A0C /* Assets.xcassets */,
+				191A9DE217B80E272B3A3CB7 /* Info.plist */,
+				7DE5F41903D196CD686D6F07 /* PrivacyInfo.xcprivacy */,
+				AFCAD4D78DDD397F4EA84B63 /* StretchLibrary.json */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		2E5EFC0DABF837D342724166 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				6CB544CCA050FA92D31B4105 /* BreakSchedule.swift */,
+				315639AA0A6959C49A07F8C4 /* PainArea.swift */,
+				26DCEE507C72A911E6C9A3FE /* StretchExercise.swift */,
+				5E2CD1392A8E4D28D9E39064 /* StretchSession.swift */,
+				61A6ADE85CC80262DCC1B5A8 /* UserProgress.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		44189AE0C5C7709524990048 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				4BA1AEC5F059D6F77A21675B /* AIStretchService.swift */,
+				2EDCF3D42EF3FB1260E7A176 /* NotificationService.swift */,
+				2CA150B73CAE250EBB6E0ABE /* ProgressService.swift */,
+				6A51602DC113344616D7A6F8 /* StretchLibraryService.swift */,
+				6F0E83209A34A9B6C579CD88 /* SubscriptionService.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		60EFE6503E74BFE729078B16 /* DeskStretchTests */ = {
+			isa = PBXGroup;
+			children = (
+				D37FDFAD62FA211D79EDDA28 /* Models */,
+				B2D59CA98450E2E07F90968C /* Services */,
+			);
+			path = DeskStretchTests;
+			sourceTree = "<group>";
+		};
+		61562F1A7DD5E3D9503B9C10 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				67060AAF130C14D4A0E7BBF1 /* Onboarding */,
+				E6E54E28D1C87DA233860C8A /* Progress */,
+				B4284DB3DEF6F13C4FECC7FF /* Settings */,
+				634339BAFDC66A2A8B887D8D /* Stretch */,
+				9EFB21441DB1A0A8ED824B82 /* Timer */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		634339BAFDC66A2A8B887D8D /* Stretch */ = {
+			isa = PBXGroup;
+			children = (
+				C7368864623646DB4D1D95CF /* StretchDetailView.swift */,
+				A0E4BFD8D2611EE8F17DB9BC /* StretchLibraryView.swift */,
+				FA08745DBEE839B7ABAB527A /* StretchSessionView.swift */,
+			);
+			path = Stretch;
+			sourceTree = "<group>";
+		};
+		67060AAF130C14D4A0E7BBF1 /* Onboarding */ = {
+			isa = PBXGroup;
+			children = (
+				103BCEAB94E9A501664A6F94 /* OnboardingContainerView.swift */,
+				37C431EFF72F3FA2D5DA74F5 /* PainAreaSelectionView.swift */,
+				C4226F3F1631E36D8685A207 /* PaywallView.swift */,
+				A36CC36275452B6ABC03C140 /* ProblemEmpathyView.swift */,
+			);
+			path = Onboarding;
+			sourceTree = "<group>";
+		};
+		98629FD20C7E641318F1B13F /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				8BA591E107D9B3D4E5AC6787 /* ExerciseCard.swift */,
+				5227277FECEBE805FF22CDD6 /* FilterChip.swift */,
+				D383A18AB544549218FB37C6 /* PainAreaCard.swift */,
+				BD80DA341F606AC77368F0D8 /* PrimaryButton.swift */,
+				4FCF95D26C7B6D9B56B2622D /* SecondaryButton.swift */,
+				1BD193CF85D8DB5D25A3D3C9 /* StreakBadge.swift */,
+				5689D226A647DC498EB16431 /* TimerRing.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		9EFB21441DB1A0A8ED824B82 /* Timer */ = {
+			isa = PBXGroup;
+			children = (
+				3D48521623487C7B28000175 /* TimerSettingsSheet.swift */,
+				EC10FC6B29D9EF68BC525AC7 /* TimerView.swift */,
+			);
+			path = Timer;
+			sourceTree = "<group>";
+		};
+		9F302697A2651765E44F462C /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				64FF9D04E29CB48FD9C8B203 /* DeskStretch.app */,
+				6DFEC9D557D036519770A03B /* DeskStretchTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		AA0FD9F77849AE73153818F2 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				55D25AA84E458A595E150A3E /* AppState.swift */,
+				B6616646BD3C6C29CD939553 /* ContentView.swift */,
+				963523CAC92A39FD75FD6955 /* DeskStretchApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		B2D59CA98450E2E07F90968C /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				9012E8A83952A3FC174449A7 /* AIStretchServiceTests.swift */,
+				9CF966ABACC2D6254CA0F882 /* ProgressServiceTests.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		B4284DB3DEF6F13C4FECC7FF /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				38C66C70AC480FCA6CCFD892 /* SettingsView.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
+		C5D2E1C5FAD815F5975B1D1A /* Extensions */ = {
+			isa = PBXGroup;
+			children = (
+				A5424EBF0270633EBF1D0F3B /* Date+Extensions.swift */,
+				F5F15D5C8A9E243F5F5F4ADB /* Notification+Extensions.swift */,
+			);
+			path = Extensions;
+			sourceTree = "<group>";
+		};
+		D37FDFAD62FA211D79EDDA28 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				BD1B642B6DB224307F251152 /* StretchExerciseTests.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		E6E54E28D1C87DA233860C8A /* Progress */ = {
+			isa = PBXGroup;
+			children = (
+				6340C3314A288E2D65AFF9D3 /* ProgressDashboardView.swift */,
+			);
+			path = Progress;
+			sourceTree = "<group>";
+		};
+		EE547E0607561B615B4A3A36 /* DeskStretch */ = {
+			isa = PBXGroup;
+			children = (
+				AA0FD9F77849AE73153818F2 /* App */,
+				98629FD20C7E641318F1B13F /* Components */,
+				C5D2E1C5FAD815F5975B1D1A /* Extensions */,
+				2E5EFC0DABF837D342724166 /* Models */,
+				278CBC11C6FF77F785CF54E3 /* Resources */,
+				44189AE0C5C7709524990048 /* Services */,
+				61562F1A7DD5E3D9503B9C10 /* Views */,
+			);
+			path = DeskStretch;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		6A2413A4C98D71778689F328 /* DeskStretchTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C2570C9E67003415DB7C4F44 /* Build configuration list for PBXNativeTarget "DeskStretchTests" */;
+			buildPhases = (
+				278FAFAD60D3443C71438F06 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				839D3C599AF7BD89AE1FB86C /* PBXTargetDependency */,
+			);
+			name = DeskStretchTests;
+			packageProductDependencies = (
+			);
+			productName = DeskStretchTests;
+			productReference = 6DFEC9D557D036519770A03B /* DeskStretchTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		74D011772E7CDAB6BC58842C /* DeskStretch */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 558BFBC67D6266442B2677F7 /* Build configuration list for PBXNativeTarget "DeskStretch" */;
+			buildPhases = (
+				437C0FC91BB1D07B887FB25E /* Sources */,
+				EB0C90FCB00557237005217E /* Resources */,
+				93BF894439267E3A948E867A /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = DeskStretch;
+			packageProductDependencies = (
+				466EA2E119CF5EEA447C3FBE /* RevenueCat */,
+			);
+			productName = DeskStretch;
+			productReference = 64FF9D04E29CB48FD9C8B203 /* DeskStretch.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		93D961DA254CD24EF7EAE817 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					74D011772E7CDAB6BC58842C = {
+						DevelopmentTeam = TM3HR9L4R6;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 094D73F02A42776A5FFEA4E2 /* Build configuration list for PBXProject "DeskStretch" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 2646710F58D9FAF5DA2B7881;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				4938571BD5238260542435C4 /* XCRemoteSwiftPackageReference "purchases-ios" */,
+			);
+			preferredProjectObjectVersion = 77;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				74D011772E7CDAB6BC58842C /* DeskStretch */,
+				6A2413A4C98D71778689F328 /* DeskStretchTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		EB0C90FCB00557237005217E /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C64FEF2CEE363F4E11CB8FEC /* Assets.xcassets in Resources */,
+				2C64B8F123E150931B51CF3F /* PrivacyInfo.xcprivacy in Resources */,
+				C26A50351B17DA3D5A06BF8A /* StretchLibrary.json in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		278FAFAD60D3443C71438F06 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BCB727151275D51AD3B86358 /* AIStretchServiceTests.swift in Sources */,
+				C00DB7FFA26114270D34FBFC /* ProgressServiceTests.swift in Sources */,
+				67B07A60F8784ACA3FD05E27 /* StretchExerciseTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		437C0FC91BB1D07B887FB25E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5BEFEA1F97C4152DB79D8CD0 /* AIStretchService.swift in Sources */,
+				32187F742FACFC2BB14F4698 /* AppState.swift in Sources */,
+				AF038AAE895935E9343E5B47 /* BreakSchedule.swift in Sources */,
+				E0D50F8FC41AA70CAF42CCA0 /* ContentView.swift in Sources */,
+				F6FAD1F93F09666417ECD148 /* Date+Extensions.swift in Sources */,
+				F6FDD6EE7590B777D8C874ED /* DeskStretchApp.swift in Sources */,
+				214E3719607358F46A5D07BA /* ExerciseCard.swift in Sources */,
+				2AB2F29EEF6B04791A791516 /* FilterChip.swift in Sources */,
+				A3794BDC9E4409442F1BF892 /* Notification+Extensions.swift in Sources */,
+				A84566782704F8471A0561F0 /* NotificationService.swift in Sources */,
+				54D030D7357F04EAD5C5CE8A /* OnboardingContainerView.swift in Sources */,
+				3A36FD39013C19859E155FA0 /* PainArea.swift in Sources */,
+				020EB4BC30B6F627FE4A3A13 /* PainAreaCard.swift in Sources */,
+				DA7914C2CCBD2C7724A5D044 /* PainAreaSelectionView.swift in Sources */,
+				3F812899388801984221079C /* PaywallView.swift in Sources */,
+				802997279AE34DD27C61AF16 /* PrimaryButton.swift in Sources */,
+				6BA24590FA5BB422141BA29B /* ProblemEmpathyView.swift in Sources */,
+				DC0570204A4208C0C4364F8E /* ProgressDashboardView.swift in Sources */,
+				69C022A34731F997C2B6F48E /* ProgressService.swift in Sources */,
+				7B31DABD3855D223E30BA217 /* SecondaryButton.swift in Sources */,
+				8929291CF40ED4CC28B68CEF /* SettingsView.swift in Sources */,
+				15C91610F41EAD2A08A206F7 /* StreakBadge.swift in Sources */,
+				7A0558BBCBBC63F13E07D813 /* StretchDetailView.swift in Sources */,
+				07A6EC8F0A782A2622762AF9 /* StretchExercise.swift in Sources */,
+				E2BC15E2A190AF331673E38A /* StretchLibraryService.swift in Sources */,
+				BFC4A333191AF309AEAB95B4 /* StretchLibraryView.swift in Sources */,
+				DB897661B6E4802ED0F42F7E /* StretchSession.swift in Sources */,
+				2DD0635F713166E660F0DC96 /* StretchSessionView.swift in Sources */,
+				1C5F9FF10C56FC04FAAE7937 /* SubscriptionService.swift in Sources */,
+				96C4E20306C85B3FEEF4F3A9 /* TimerRing.swift in Sources */,
+				2C47C9695D1D75A7BE7CD78F /* TimerSettingsSheet.swift in Sources */,
+				D6D95B7B38C967189F478D7F /* TimerView.swift in Sources */,
+				D8F92BD8607BE08FA09D8969 /* UserProgress.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		839D3C599AF7BD89AE1FB86C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 74D011772E7CDAB6BC58842C /* DeskStretch */;
+			targetProxy = D33113B404DB5A9175A63F7A /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		12C11512DFE436614640754B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.aniccafactory.deskstretch.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/DeskStretch.app/DeskStretch";
+			};
+			name = Release;
+		};
+		14D70429242A3D4C1773726A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = TM3HR9L4R6;
+				INFOPLIST_FILE = DeskStretch/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.aniccafactory.deskstretch;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		6769A821B4C6A49CD3638F3B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = TM3HR9L4R6;
+				INFOPLIST_FILE = DeskStretch/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.aniccafactory.deskstretch;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		6EB3EC89BA4B182DDE890538 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.9;
+			};
+			name = Debug;
+		};
+		7D0AE9F3F9D8DEF3F874E302 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.aniccafactory.deskstretch.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/DeskStretch.app/DeskStretch";
+			};
+			name = Debug;
+		};
+		C19A711F370B3A6132D65B78 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.9;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		094D73F02A42776A5FFEA4E2 /* Build configuration list for PBXProject "DeskStretch" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				6EB3EC89BA4B182DDE890538 /* Debug */,
+				C19A711F370B3A6132D65B78 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		558BFBC67D6266442B2677F7 /* Build configuration list for PBXNativeTarget "DeskStretch" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				6769A821B4C6A49CD3638F3B /* Debug */,
+				14D70429242A3D4C1773726A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		C2570C9E67003415DB7C4F44 /* Build configuration list for PBXNativeTarget "DeskStretchTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7D0AE9F3F9D8DEF3F874E302 /* Debug */,
+				12C11512DFE436614640754B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		4938571BD5238260542435C4 /* XCRemoteSwiftPackageReference "purchases-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/RevenueCat/purchases-ios.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		466EA2E119CF5EEA447C3FBE /* RevenueCat */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4938571BD5238260542435C4 /* XCRemoteSwiftPackageReference "purchases-ios" */;
+			productName = RevenueCat;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 93D961DA254CD24EF7EAE817 /* Project object */;
+}

@@ -1,0 +1,28 @@
+/.git
+/node_modules
+.dockerignore
+.env
+fly.toml
+# Reduce build context
+/.vscode
+/debug-tools
+/supabase
+/mcp-servers
+/tests
+/tmp
+/docs/*
+!/docs/migrations
+# Exclude other apps in monorepo (relative to apps/api)
+../aniccaios
+../apps/desktop
+../apps/landing
+../apps/web
+../apps/workspace-mcp
+../examples
+../release
+../tmp
+../node_modules
+../*.mp3
+../*.pdf
+../*.png
+!../apps/api/**/*.png

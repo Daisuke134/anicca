@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🏭 x402工場 — 完了ダッシュボード</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root[data-theme="dark"] {
+      --color-bg: #0b0f1a;
+      --color-surface: #141929;
+      --color-surface2: #1c2438;
+      --color-text: #e2e8f0;
+      --color-text-muted: #64748b;
+      --color-accent: #38bdf8;
+      --color-accent2: #818cf8;
+      --color-border: #1e293b;
+      --color-green: #22c55e;
+      --color-red: #ef4444;
+      --color-orange: #f59e0b;
+      --color-green-bg: rgba(34,197,94,0.1);
+      --color-red-bg: rgba(239,68,68,0.1);
+      --color-orange-bg: rgba(245,158,11,0.1);
+      --color-accent-bg: rgba(56,189,248,0.08);
+    }
+    :root[data-theme="light"] {
+      --color-bg: #f1f5f9;
+      --color-surface: #ffffff;
+      --color-surface2: #f8fafc;
+      --color-text: #0f172a;
+      --color-text-muted: #94a3b8;
+      --color-accent: #0284c7;
+      --color-accent2: #6366f1;
+      --color-border: #e2e8f0;
+      --color-green: #16a34a;
+      --color-red: #dc2626;
+      --color-orange: #d97706;
+      --color-green-bg: rgba(22,163,74,0.1);
+      --color-red-bg: rgba(220,38,38,0.1);
+      --color-orange-bg: rgba(217,119,6,0.1);
+      --color-accent-bg: rgba(2,132,199,0.08);
+    }
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Space Grotesk', system-ui, sans-serif;
+      background: var(--color-bg);
+      color: var(--color-text);
+      min-height: 100vh;
+      transition: background 0.3s, color 0.3s;
+      -webkit-font-smoothing: antialiased;
+      padding-bottom: 4rem;
+    }
+    code, .mono { font-family: 'JetBrains Mono', monospace; }
+
+    .theme-toggle {
+      position: fixed; top: 1rem; right: 1rem; z-index: 1000;
+      background: var(--color-surface); border: 1px solid var(--color-border);
+      border-radius: 8px; padding: 0.5rem 0.75rem; cursor: pointer;
+      color: var(--color-text); font-size: 1.1rem;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .theme-toggle:hover { border-color: var(--color-accent); }
+    .theme-toggle:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+
+    /* ── Layout ── */
+    .container { max-width: 1280px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+    /* ── Header ── */
+    .header {
+      text-align: center;
+      padding: 3rem 0 2rem;
+      border-bottom: 1px solid var(--color-border);
+      margin-bottom: 2.5rem;
+    }
+    .header-badge {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      background: var(--color-green-bg); border: 1px solid var(--color-green);
+      color: var(--color-green); border-radius: 999px;
+      padding: 0.3rem 1rem; font-size: 0.85rem; font-weight: 600;
+      margin-bottom: 1rem; letter-spacing: 0.05em;
+    }
+    .header h1 { font-size: 2.6rem; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; }
+    .header h1 span { color: var(--color-accent); }
+    .header-sub { color: var(--color-text-muted); margin-top: 0.75rem; font-size: 1rem; }
+    .header-meta { color: var(--color-text-muted); font-size: 0.8rem; margin-top: 0.5rem; }
+
+    /* ── Big Progress ── */
+    .progress-hero {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: 20px;
+      padding: 2rem 2.5rem;
+      margin-bottom: 2rem;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 2rem;
+      align-items: center;
+    }
+    .progress-main { grid-column: 1 / -1; }
+    @media (min-width: 768px) { .progress-main { grid-column: 1; } }
+    .big-num { font-size: 5rem; font-weight: 700; line-height: 1; color: var(--color-green); font-family: 'JetBrains Mono', monospace; }
+    .big-num-label { color: var(--color-text-muted); font-size: 0.9rem; margin-top: 0.25rem; }
+    .progress-bar-wrap { width: 100%; background: var(--color-surface2); border-radius: 999px; height: 12px; margin: 1rem 0 0.5rem; overflow: hidden; }
+    .progress-bar-fill {
+      height: 100%; border-radius: 999px;
+      background: linear-gradient(90deg, var(--color-green), var(--color-accent));
+      width: 0%;
+      transition: width 1.5s cubic-bezier(0.4,0,0.2,1);
+    }
+    .progress-pct { font-size: 1rem; color: var(--color-text-muted); }
+    .kpi-card {
+      background: var(--color-surface2);
+      border-radius: 14px;
+      padding: 1.25rem 1.5rem;
+      border: 1px solid var(--color-border);
+    }
+    .kpi-val { font-size: 2rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+    .kpi-label { font-size: 0.8rem; color: var(--color-text-muted); margin-top: 0.25rem; }
+    .kpi-green { color: var(--color-green); }
+    .kpi-orange { color: var(--color-orange); }
+
+    /* ── Section ── */
+    .section { margin-bottom: 2.5rem; }
+    .section-title {
+      font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem;
+      display: flex; align-items: center; gap: 0.6rem;
+      color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.78rem;
+    }
+    .section-title::after { content: ''; flex: 1; height: 1px; background: var(--color-border); }
+
+    /* ── Skills Grid ── */
+    .skills-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; }
+    .skill-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: 14px;
+      padding: 1.25rem;
+      display: flex; flex-direction: column; gap: 0.75rem;
+      transition: border-color 0.2s, transform 0.2s;
+      cursor: default;
+    }
+    .skill-card:hover { border-color: var(--color-accent); transform: translateY(-2px); }
+    .skill-card-header { display: flex; align-items: center; justify-content: space-between; }
+    .skill-name { font-weight: 600; font-size: 0.95rem; font-family: 'JetBrains Mono', monospace; color: var(--color-accent); }
+    .skill-type { font-size: 0.75rem; color: var(--color-text-muted); margin-top: 0.1rem; }
+    .skill-desc { font-size: 0.82rem; color: var(--color-text-muted); line-height: 1.5; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 0.3rem;
+      border-radius: 999px; padding: 0.2rem 0.6rem; font-size: 0.72rem; font-weight: 600;
+    }
+    .badge-green { background: var(--color-green-bg); color: var(--color-green); border: 1px solid rgba(34,197,94,0.3); }
+    .badge-red { background: var(--color-red-bg); color: var(--color-red); border: 1px solid rgba(239,68,68,0.3); }
+    .badge-orange { background: var(--color-orange-bg); color: var(--color-orange); border: 1px solid rgba(245,158,11,0.3); }
+    .badge-gray { background: var(--color-surface2); color: var(--color-text-muted); border: 1px solid var(--color-border); }
+    .badge-blue { background: var(--color-accent-bg); color: var(--color-accent); border: 1px solid rgba(56,189,248,0.3); }
+
+    /* ── Cron Timeline ── */
+    .cron-list { display: flex; flex-direction: column; gap: 0.75rem; }
+    .cron-row {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      display: grid;
+      grid-template-columns: auto 1fr auto auto;
+      align-items: center;
+      gap: 1rem;
+      transition: border-color 0.2s;
+    }
+    .cron-row:hover { border-color: var(--color-accent2); }
+    .cron-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .cron-dot-on { background: var(--color-green); box-shadow: 0 0 8px var(--color-green); animation: pulse 2s infinite; }
+    .cron-dot-off { background: var(--color-text-muted); }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+    .cron-name { font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; font-weight: 600; }
+    .cron-desc { font-size: 0.78rem; color: var(--color-text-muted); margin-top: 0.1rem; }
+    .cron-expr { font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: var(--color-accent2); background: var(--color-surface2); padding: 0.2rem 0.5rem; border-radius: 6px; white-space: nowrap; }
+    .cron-time { font-size: 0.78rem; color: var(--color-text-muted); white-space: nowrap; }
+
+    /* ── Task Phases ── */
+    .phases-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+    .phase-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: 14px;
+      padding: 1.25rem;
+    }
+    .phase-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; }
+    .phase-name { font-weight: 600; font-size: 0.9rem; }
+    .phase-tasks { display: flex; flex-direction: column; gap: 0.4rem; }
+    .task-item { display: flex; align-items: flex-start; gap: 0.5rem; font-size: 0.78rem; }
+    .task-item .ti { flex-shrink: 0; font-size: 0.8rem; margin-top: 0.05rem; }
+    .task-label { color: var(--color-text-muted); line-height: 1.4; }
+    .task-label strong { color: var(--color-text); font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; }
+    .task-blocked { color: var(--color-orange); }
+
+    /* ── Flow ── */
+    .flow-container {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: 20px;
+      padding: 2rem;
+      overflow-x: auto;
+    }
+    .flow-row { display: flex; align-items: center; gap: 0; flex-wrap: nowrap; min-width: max-content; }
+    .flow-node {
+      background: var(--color-surface2);
+      border: 1.5px solid var(--color-border);
+      border-radius: 12px;
+      padding: 0.75rem 1rem;
+      text-align: center;
+      min-width: 130px;
+      transition: border-color 0.2s, transform 0.2s;
+      cursor: default;
+    }
+    .flow-node:hover { border-color: var(--color-accent); transform: translateY(-2px); }
+    .flow-node-icon { font-size: 1.4rem; display: block; margin-bottom: 0.3rem; }
+    .flow-node-label { font-size: 0.75rem; font-weight: 600; }
+    .flow-node-sub { font-size: 0.65rem; color: var(--color-text-muted); margin-top: 0.15rem; }
+    .flow-node-trigger { border-color: var(--color-accent); }
+    .flow-node-action { border-color: var(--color-accent2); }
+    .flow-node-output { border-color: var(--color-green); }
+    .flow-arrow {
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      width: 36px; color: var(--color-text-muted);
+    }
+    .flow-arrow svg { animation: arrow-move 1.5s ease-in-out infinite; }
+    @keyframes arrow-move { 0%,100% { transform: translateX(0); } 50% { transform: translateX(4px); } }
+    .flow-section-label {
+      font-size: 0.7rem; font-weight: 600; color: var(--color-text-muted);
+      text-transform: uppercase; letter-spacing: 0.08em;
+      margin-bottom: 0.75rem;
+    }
+    .flow-section { margin-bottom: 1.5rem; }
+
+    /* ── Blocker Card ── */
+    .blocker-card {
+      background: var(--color-red-bg);
+      border: 1.5px solid rgba(239,68,68,0.4);
+      border-radius: 16px;
+      padding: 1.5rem 2rem;
+      display: flex; align-items: flex-start; gap: 1.25rem;
+    }
+    .blocker-icon { font-size: 2rem; flex-shrink: 0; }
+    .blocker-title { font-weight: 700; font-size: 1rem; color: var(--color-red); margin-bottom: 0.5rem; }
+    .blocker-desc { font-size: 0.85rem; color: var(--color-text-muted); line-height: 1.6; }
+    .blocker-addr { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--color-text); background: var(--color-surface); padding: 0.3rem 0.6rem; border-radius: 6px; display: inline-block; margin-top: 0.5rem; word-break: break-all; }
+  </style>
+</head>
+<body>
+  <button class="theme-toggle" aria-label="テーマ切替"><span class="theme-icon">🌙</span></button>
+
+  <div class="container">
+
+    <!-- Header -->
+    <div class="header">
+      <div class="header-badge">✅ Phase 1〜6 全完了</div>
+      <h1>🏭 <span>to-agents-skill</span><br>x402スキル工場 — ダッシュボード</h1>
+      <div class="header-sub">スキルを自律量産するエージェント工場が Mac Mini で稼働中</div>
+      <div class="header-meta">2026-02-24 v10 — spec.md 全タスク確認済み</div>
+    </div>
+
+    <!-- Big Progress -->
+    <div class="section">
+      <div class="progress-hero">
+        <div>
+          <div class="big-num" id="count-up">0</div>
+          <div class="big-num-label">/ 33 タスク完了</div>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar-fill" id="prog-bar"></div>
+          </div>
+          <div class="progress-pct">97% 完了（残り T012 のみ — 外部ブロック）</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-val kpi-green">2</div>
+          <div class="kpi-label">x402スキル公開済み<br>（ClawHub）</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-val kpi-green">5</div>
+          <div class="kpi-label">Cron ジョブ 稼働中<br>（Mac Mini）</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-val kpi-orange">$0.01</div>
+          <div class="kpi-label">スキル単価<br>（USDC / call）</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-val kpi-green">9</div>
+          <div class="kpi-label">カタログ残スキル<br>（produce 待ち）</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Skills -->
+    <div class="section">
+      <div class="section-title">⚡ スキル一覧（Mac Mini 稼働中）</div>
+      <div class="skills-grid">
+
+        <div class="skill-card" style="border-color: rgba(56,189,248,0.4);">
+          <div class="skill-card-header">
+            <div>
+              <div class="skill-name">🏭 to-agents-skill</div>
+              <div class="skill-type">工場本体 — produce / discover / measure</div>
+            </div>
+            <span class="badge badge-green">✅ 稼働中</span>
+          </div>
+          <div class="skill-desc">スキルを自律量産する工場本体。カタログから候補を選び、Railway エンドポイント追加 → ClawHub 公開 → Moltbook 宣伝 → learning.md 追記 → #metrics 報告まで全自動。</div>
+          <code style="font-size:0.7rem; color: var(--color-text-muted);">/Users/anicca/.openclaw/skills/to-agents-skill/SKILL.md</code>
+        </div>
+
+        <div class="skill-card">
+          <div class="skill-card-header">
+            <div>
+              <div class="skill-name">🧠 emotion-detector</div>
+              <div class="skill-type">x402製品 — $0.01/call</div>
+            </div>
+            <span class="badge badge-green">✅ 公開済み</span>
+          </div>
+          <div class="skill-desc">感情検出マイクロサービス。テキストから感情を B=MAP で診断し、次の行動を返す。</div>
+          <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+            <span class="badge badge-blue">emotion-detector@1.0.0</span>
+            <span class="badge badge-orange">Staging only（dev→main 未マージ）</span>
+          </div>
+        </div>
+
+        <div class="skill-card">
+          <div class="skill-card-header">
+            <div>
+              <div class="skill-name">🙏 buddhist-counsel</div>
+              <div class="skill-type">x402製品 — $0.01/call</div>
+            </div>
+            <span class="badge badge-green">✅ Production稼働</span>
+          </div>
+          <div class="skill-desc">仏教的カウンセリング。苦しみを減らすための智慧を SAFE-T 付きで提供。</div>
+          <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+            <span class="badge badge-blue">buddhist-counsel@1.0.0</span>
+            <span class="badge badge-green">Production URL live</span>
+          </div>
+        </div>
+
+        <div class="skill-card">
+          <div class="skill-card-header">
+            <div>
+              <div class="skill-name">📢 x402-skill-marketer</div>
+              <div class="skill-type">マーケティング自動化</div>
+            </div>
+            <span class="badge badge-green">✅ 稼働中</span>
+          </div>
+          <div class="skill-desc">Moltbook（エージェント SNS）に x402 スキルの宣伝投稿を月・木自動投稿。</div>
+          <code style="font-size:0.7rem; color: var(--color-text-muted);">Cron: 月・木 18:00 JST</code>
+        </div>
+
+        <div class="skill-card">
+          <div class="skill-card-header">
+            <div>
+              <div class="skill-name">📱 moltbook-interact</div>
+              <div class="skill-type">エージェントSNS投稿</div>
+            </div>
+            <span class="badge badge-green">✅ 稼働中</span>
+          </div>
+          <div class="skill-desc">Moltbook フィードへの投稿・エンゲージメント管理を 4時間ごとに自動実行。</div>
+          <code style="font-size:0.7rem; color: var(--color-text-muted);">Cron: 4時間ごと</code>
+        </div>
+
+        <div class="skill-card">
+          <div class="skill-card-header">
+            <div>
+              <div class="skill-name">📊 trend-hunter</div>
+              <div class="skill-type">トレンド取得</div>
+            </div>
+            <span class="badge badge-green">✅ 稼働中</span>
+          </div>
+          <div class="skill-desc">メトリクスを取得し、トレンドを分析して hooks を生成。朝夕 2回実行。</div>
+          <code style="font-size:0.7rem; color: var(--color-text-muted);">Cron: 5:00 + 17:00 JST</code>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Crons -->
+    <div class="section">
+      <div class="section-title">⏱ Cron ジョブ（Mac Mini jobs.json — 59件中）</div>
+      <div class="cron-list">
+
+        <div class="cron-row">
+          <div class="cron-dot cron-dot-on"></div>
+          <div>
+            <div class="cron-name">to-agents-skill-discover</div>
+            <div class="cron-desc">🆕 今回追加 — カタログから次スキルを選び #metrics に提案</div>
+          </div>
+          <div class="cron-expr">0 1 * * * UTC</div>
+          <div class="cron-time">毎日 10:00 JST</div>
+        </div>
+
+        <div class="cron-row">
+          <div class="cron-dot cron-dot-on"></div>
+          <div>
+            <div class="cron-name">x402-skill-marketer</div>
+            <div class="cron-desc">Moltbook に x402スキル宣伝投稿</div>
+          </div>
+          <div class="cron-expr">0 9 * * 1,4 UTC</div>
+          <div class="cron-time">月・木 18:00 JST</div>
+        </div>
+
+        <div class="cron-row">
+          <div class="cron-dot cron-dot-on"></div>
+          <div>
+            <div class="cron-name">moltbook-interact</div>
+            <div class="cron-desc">Moltbook エンゲージメント（4時間ごと）</div>
+          </div>
+          <div class="cron-expr">0 */4 * * *</div>
+          <div class="cron-time">4時間ごと</div>
+        </div>
+
+        <div class="cron-row">
+          <div class="cron-dot cron-dot-on"></div>
+          <div>
+            <div class="cron-name">trend-hunter-5am</div>
+            <div class="cron-desc">朝のトレンド取得 + hooks生成</div>
+          </div>
+          <div class="cron-expr">0 5 * * * JST</div>
+          <div class="cron-time">毎日 5:00 JST</div>
+        </div>
+
+        <div class="cron-row">
+          <div class="cron-dot cron-dot-on"></div>
+          <div>
+            <div class="cron-name">trend-hunter-5pm</div>
+            <div class="cron-desc">夕のトレンド取得 + hooks生成</div>
+          </div>
+          <div class="cron-expr">0 17 * * * JST</div>
+          <div class="cron-time">毎日 17:00 JST</div>
+        </div>
+
+        <div class="cron-row" style="opacity:0.5;">
+          <div class="cron-dot cron-dot-off"></div>
+          <div>
+            <div class="cron-name">moltbook-interact-today-test</div>
+            <div class="cron-desc">テスト用（無効）</div>
+          </div>
+          <div class="cron-expr">15 23 * * *</div>
+          <div class="cron-time"><span class="badge badge-gray">❌ OFF</span></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- User Experience Flow -->
+    <div class="section">
+      <div class="section-title">🔄 自律ループ — ユーザー体験フロー</div>
+      <div class="flow-container">
+
+        <div class="flow-section">
+          <div class="flow-section-label">🌅 毎日 10:00 JST — discover ループ</div>
+          <div class="flow-row">
+            <div class="flow-node flow-node-trigger">
+              <span class="flow-node-icon">⏰</span>
+              <div class="flow-node-label">Cron 発火</div>
+              <div class="flow-node-sub">10:00 JST</div>
+            </div>
+            <div class="flow-arrow"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 10h12M12 6l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div class="flow-node flow-node-action">
+              <span class="flow-node-icon">📖</span>
+              <div class="flow-node-label">カタログ確認</div>
+              <div class="flow-node-sub">learning.md 読む</div>
+            </div>
+            <div class="flow-arrow"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 10h12M12 6l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div class="flow-node flow-node-action">
+              <span class="flow-node-icon">🔍</span>
+              <div class="flow-node-label">重複チェック</div>
+              <div class="flow-node-sub">clawhub search</div>
+            </div>
+            <div class="flow-arrow"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 10h12M12 6l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div class="flow-node flow-node-output">
+              <span class="flow-node-icon">💬</span>
+              <div class="flow-node-label">Slack 提案</div>
+              <div class="flow-node-sub">#metrics に投稿</div>
+            </div>
+            <div class="flow-arrow"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 10h12M12 6l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div class="flow-node" style="border-color: var(--color-orange);">
+              <span class="flow-node-icon">✅❌</span>
+              <div class="flow-node-label">ダイスが判断</div>
+              <div class="flow-node-sub">リアクションで承認</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flow-section">
+          <div class="flow-section-label">🏭 ✅ 承認後 — produce ループ</div>
+          <div class="flow-row">
+            <div class="flow-node flow-node-trigger">
+              <span class="flow-node-icon">✅</span>
+              <div class="flow-node-label">produce 開始</div>
+              <div class="flow-node-sub">mode=produce</div>
+            </div>
+            <div class="flow-arrow"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 10h12M12 6l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div class="flow-node flow-node-action">
+              <span class="flow-node-icon">🚀</span>
+              <div class="flow-node-label">Railway 追加</div>
+              <div class="flow-node-sub">git push → staging</div>
+            </div>
+            <div class="flow-arrow"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 10h12M12 6l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div class="flow-node flow-node-action">
+              <span class="flow-node-icon">📦</span>
+              <div class="flow-node-label">ClawHub 公開</div>
+              <div class="flow-node-sub">clawhub publish</div>
+            </div>
+            <div class="flow-arrow"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 10h12M12 6l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div class="flow-node flow-node-action">
+              <span class="flow-node-icon">📱</span>
+              <div class="flow-node-label">Moltbook 宣伝</div>
+              <div class="flow-node-sub">moltbook-interact</div>
+            </div>
+            <div class="flow-arrow"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 10h12M12 6l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div class="flow-node flow-node-output">
+              <span class="flow-node-icon">📊</span>
+              <div class="flow-node-label">#metrics 報告</div>
+              <div class="flow-node-sub">完了 + ID</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flow-section" style="margin-bottom:0;">
+          <div class="flow-section-label">📊 週次 — measure ループ</div>
+          <div class="flow-row">
+            <div class="flow-node flow-node-trigger">
+              <span class="flow-node-icon">📏</span>
+              <div class="flow-node-label">measure 実行</div>
+              <div class="flow-node-sub">手動 or 週次 cron</div>
+            </div>
+            <div class="flow-arrow"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 10h12M12 6l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div class="flow-node flow-node-action">
+              <span class="flow-node-icon">🔎</span>
+              <div class="flow-node-label">スキル列挙</div>
+              <div class="flow-node-sub">learning.md 全Run</div>
+            </div>
+            <div class="flow-arrow"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 10h12M12 6l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div class="flow-node flow-node-action">
+              <span class="flow-node-icon">📈</span>
+              <div class="flow-node-label">DL数チェック</div>
+              <div class="flow-node-sub">clawhub search</div>
+            </div>
+            <div class="flow-arrow"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 10h12M12 6l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div class="flow-node flow-node-action">
+              <span class="flow-node-icon">⚖️</span>
+              <div class="flow-node-label">閾値判定</div>
+              <div class="flow-node-sub">7日↓ / 14日0</div>
+            </div>
+            <div class="flow-arrow"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 10h12M12 6l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div class="flow-node flow-node-output">
+              <span class="flow-node-icon">🔔</span>
+              <div class="flow-node-label">改善提案</div>
+              <div class="flow-node-sub">#metrics へ</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Tasks -->
+    <div class="section">
+      <div class="section-title">✅ タスク完了状況（spec.md 全 33 タスク）</div>
+      <div class="phases-grid">
+
+        <div class="phase-card">
+          <div class="phase-header">
+            <div class="phase-name">🔧 Phase 1+2: Setup</div>
+            <span class="badge badge-green">8/8 ✅</span>
+          </div>
+          <div class="phase-tasks">
+            <div class="task-item"><span class="ti">✅</span><span class="task-label"><strong>T001-T005</strong> Mac Mini ワークスペース初期化</span></div>
+            <div class="task-item"><span class="ti">✅</span><span class="task-label"><strong>T006-T008</strong> SKILL.md テンプレート + to-agents-skill 作成</span></div>
+          </div>
+        </div>
+
+        <div class="phase-card">
+          <div class="phase-header">
+            <div class="phase-name">🏭 US1: produce</div>
+            <span class="badge badge-orange">10/11 ✅</span>
+          </div>
+          <div class="phase-tasks">
+            <div class="task-item"><span class="ti">✅</span><span class="task-label"><strong>T009</strong> emotion-detector ハンドラ作成</span></div>
+            <div class="task-item"><span class="ti">✅</span><span class="task-label"><strong>T010</strong> index.js に追加</span></div>
+            <div class="task-item"><span class="ti">✅</span><span class="task-label"><strong>T011</strong> push → staging デプロイ</span></div>
+            <div class="task-item"><span class="ti">⛔</span><span class="task-label task-blocked"><strong>T012</strong> awal テスト 200 OK<br>— mainnet USDC 必要（外部ブロック）</span></div>
+            <div class="task-item"><span class="ti">✅</span><span class="task-label"><strong>T013-T014</strong> SKILL.md 検証 + Mac Mini 配置</span></div>
+            <div class="task-item"><span class="ti">✅</span><span class="task-label"><strong>T015</strong> clawhub publish emotion-detector@1.0.0</span></div>
+            <div class="task-item"><span class="ti">✅</span><span class="task-label"><strong>T016</strong> Moltbook 宣伝投稿（post_id: 847353cd）</span></div>
+            <div class="task-item"><span class="ti">✅</span><span class="task-label"><strong>T017</strong> learning.md に7件追記</span></div>
+            <div class="task-item"><span class="ti">✅</span><span class="task-label"><strong>T018</strong> Slack #metrics 完了報告</span></div>
+            <div class="task-item"><span class="ti">✅</span><span class="task-label"><strong>T019</strong> SKILL.md 実行知見で更新</span></div>
+          </div>
+        </div>
+
+        <div class="phase-card">
+          <div class="phase-header">
+            <div class="phase-name">🔍 US2: discover</div>
+            <span class="badge badge-green">5/5 ✅</span>
+          </div>
+          <div class="phase-tasks">
+            <div class="task-item"><span class="ti">✅</span><span class="task-label"><strong>T020-T021</strong> proposals.json + Slack フォーマット SKILL.md</span></div>
+            <div class="task-item"><span class="ti">✅</span><span class="task-label"><strong>T022</strong> discover E2E（focus-coach 提案成功）</span></div>
+            <div class="task-item"><span class="ti">✅</span><span class="task-label"><strong>T023</strong> proposals.json pending エントリ確認</span></div>
+            <div class="task-item"><span class="ti">✅</span><span class="task-label"><strong>T024</strong> Slack #metrics focus-coach 到着確認</span></div>
+          </div>
+        </div>
+
+        <div class="phase-card">
+          <div class="phase-header">
+            <div class="phase-name">📊 US3: measure</div>
+            <span class="badge badge-green">4/4 ✅</span>
+          </div>
+          <div class="phase-tasks">
+            <div class="task-item"><span class="ti">✅</span><span class="task-label"><strong>T025-T026</strong> measure ロジック + 閾値判定 SKILL.md</span></div>
+            <div class="task-item"><span class="ti">✅</span><span class="task-label"><strong>T027</strong> measure E2E（production 404 検出 ✅）</span></div>
+            <div class="task-item"><span class="ti">✅</span><span class="task-label"><strong>T028</strong> Slack #metrics measure レポート確認</span></div>
+          </div>
+        </div>
+
+        <div class="phase-card">
+          <div class="phase-header">
+            <div class="phase-name">✨ Phase 6: Polish</div>
+            <span class="badge badge-green">5/5 ✅</span>
+          </div>
+          <div class="phase-tasks">
+            <div class="task-item"><span class="ti">✅</span><span class="task-label"><strong>T029</strong> Cron jobs.json 追加（59件、重複除去）</span></div>
+            <div class="task-item"><span class="ti">✅</span><span class="task-label"><strong>T030</strong> Gateway 再起動</span></div>
+            <div class="task-item"><span class="ti">✅</span><span class="task-label"><strong>T031</strong> Cron エントリ 1件確認</span></div>
+            <div class="task-item"><span class="ti">✅</span><span class="task-label"><strong>T032</strong> spec.md branch 001→005 修正</span></div>
+            <div class="task-item"><span class="ti">✅</span><span class="task-label"><strong>T033</strong> commit f076d285 → push</span></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Blocker -->
+    <div class="section">
+      <div class="section-title">⛔ 唯一の残タスク（外部ブロック）</div>
+      <div class="blocker-card">
+        <div class="blocker-icon">⛔</div>
+        <div>
+          <div class="blocker-title">T012: awal x402 pay 200 OK テスト（mainnet USDC 必要）</div>
+          <div class="blocker-desc">
+            emotion-detector が mainnet で動くことを確認するために、Base mainnet に $0.01 USDC が必要。<br>
+            日本では Coinbase は使えない（2023年撤退）。<strong>Bybit または Binance から直送</strong>で解決。<br><br>
+            送金先（Base mainnet ウォレット）:
+            <div class="blocker-addr">0xCE8c58C73a7a5C5838d48DA66cb914aB150f04c9</div>
+            <div style="margin-top: 0.75rem; font-size: 0.8rem; color: var(--color-text-muted);">
+              送金完了後のコマンド: <code style="color: var(--color-orange);">npx awal@2.0.3 x402 pay https://anicca-proxy-production.up.railway.app/api/x402/emotion-detector -X POST -d '{"text":"I feel anxious"}'</code>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="text-align:center; color: var(--color-text-muted); font-size: 0.78rem; padding-top: 1rem; border-top: 1px solid var(--color-border);">
+      SOT: x402-nudge-api-spec.md v10 — 2026-02-24 — to-agents-skill Phase 1〜6 完了
+    </div>
+
+  </div>
+
+  <script>
+    // Theme toggle
+    document.querySelector('.theme-toggle').addEventListener('click', () => {
+      const html = document.documentElement;
+      const isDark = html.dataset.theme === 'dark';
+      html.dataset.theme = isDark ? 'light' : 'dark';
+      document.querySelector('.theme-icon').textContent = isDark ? '☀️' : '🌙';
+    });
+
+    // Animate count-up and progress bar on load
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        document.getElementById('prog-bar').style.width = '97%';
+        let count = 0;
+        const target = 32;
+        const dur = 1500;
+        const step = dur / target;
+        const el = document.getElementById('count-up');
+        const timer = setInterval(() => {
+          count++;
+          el.textContent = count;
+          if (count >= target) clearInterval(timer);
+        }, step);
+      }, 200);
+    });
+  </script>
+</body>
+</html>

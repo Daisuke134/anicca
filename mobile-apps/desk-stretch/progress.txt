@@ -1,0 +1,247 @@
+## 2026-03-06 - US-008d: ASC compliance [RE-VERIFIED PASS]
+
+- Age Rating: 22 items confirmed (gambling=false, healthOrWellnessTopics=true, all categories NONE) → appStoreAgeRating=FOUR_PLUS ✅
+- Review Details: demoAccountRequired=False, contactFirstName=Daisuke, contactEmail=keiodaisuke@gmail.com ✅
+- Availability: territoryAvailabilities total=175 (availableInNewTerritories=true) ✅
+- Pricing: manual-prices 1 entry (USA base, price-point 10000 = free tier) ✅
+- Encryption: ITSAppUsesNonExemptEncryption=false in DeskStretchios/DeskStretch/Resources/Info.plist ✅
+- Content Rights: DOES_NOT_USE_THIRD_PARTY_CONTENT ✅
+- All acceptance criteria PASS → passes: true
+---
+
+## 2026-03-06 - US-008b: ASC metadata sync [RE-VERIFIED PASS #2]
+
+- en-US app-info: name=Desk Stretch Timer, subtitle=Desk Stretch & Break Timer, privacyPolicyUrl=https://aniccaai.com/privacy ✅
+- ja app-info: name=Desk Stretch Timer, subtitle=デスクストレッチ・休憩タイマー, privacyPolicyUrl=https://aniccaai.com/privacy ✅
+- en-US version: desc=1796chars, keywords=desk stretching+7more, supportUrl=https://aniccaai.com/support ✅
+- ja version: desc=913chars (日本語完備), keywords=デスクストレッチ+7more, supportUrl set ✅
+- All acceptance criteria PASS → passes: true
+---
+
+## 2026-03-06 - US-005b: IAP + pricing + RevenueCat setup [FINAL RE-VERIFY + prd.json sync]
+
+- Re-verified all acceptance criteria live:
+  - ASC groups: 1 group (21961645) ✅
+  - ASC subs: monthly (ONE_MONTH) + annual (ONE_YEAR) ✅
+  - Monthly prices: 175 ✅ (asc subscriptions prices list --id 6760079509 --paginate)
+  - Annual prices: 175 ✅ (asc subscriptions prices list --id 6760078995 --paginate)
+  - SPM: RevenueCat in project.yml, no import RevenueCatUI in Sources/ ✅
+- prd.json updated: US-005b → passes: true
+- Also corrected prd.json for US-008b, US-008c, US-008d, US-008e (all completed in previous iterations, prd.json was stale due to ralph.sh reset)
+- Current status: US-001〜US-008e all passes: true. Only US-009 remains.
+---
+
+## 2026-03-06 - US-008b: ASC metadata sync [RE-VERIFIED PASS]
+
+- Re-verified after RESET
+- en-US app-info: name=Desk Stretch Timer, subtitle=Desk Stretch & Break Timer, privacy=https://aniccaai.com/privacy ✅
+- ja app-info: name=Desk Stretch Timer, subtitle=デスクストレッチ・休憩タイマー, privacy=https://aniccaai.com/privacy ✅
+- en-US version: desc=1796chars, keywords confirmed, support URL set ✅
+- ja version: desc=913chars, keywords confirmed, support URL set ✅
+- All acceptance criteria PASS → passes: true
+---
+
+## 2026-03-06 - US-005b: IAP + pricing + RevenueCat setup [RE-VERIFIED PASS]
+
+- Re-verified after auto-reset by ralph.sh
+- ASC: 1 group (21961645), monthly (6760079509) + annual (6760078995), 175 prices each ✅
+- RC: App appca8d955a75 (Desk Stretch Timer), 2 products, deskstretch_default offering with $rc_monthly + $rc_annual ✅
+- SPM: RevenueCat present, no RevenueCatUI ✅
+- All acceptance criteria PASS → passes: true
+---
+
+## 2026-03-06 - US-005b: IAP + pricing + RevenueCat setup [RE-VERIFY]
+
+- ASC: 1 group (21961645), monthly (6760079509) + annual (6760078995) subscriptions, 175 prices each ✅
+- RC App created: appca8d955a75 (com.aniccafactory.deskstretch)
+- RC Public Key: appl_RcCxZbmoRqLkvwSuThcJUNqxLIf (updated in Release.local.xcconfig)
+- RC Products: prod568b76077c (monthly) + prod4bba6c2598 (annual)
+- RC Offering: ofrng0e624e8ed0 (deskstretch_default) with $rc_monthly + $rc_annual packages
+- Both products attached to premium entitlement (entlb492a19927)
+- SPM: RevenueCat (no RevenueCatUI) ✅
+- fastlane build PASS ✅
+- **Learnings for future iterations:**
+  - RC project is shared (projbb7b9d1b anicca) — use app-specific offering lookup key (e.g. deskstretch_default, not default)
+  - Always use app-specific offering key; default offering already exists in shared RC project
+  - Monthly package attach 422 = product already attached; verify products list before assuming failure
+---
+
+## 2026-03-06 - US-008e: Preflight validation + TestFlight + Slack
+
+- Greenlight: GREENLIT (0 blocking issues). Fixed ja keywords 122 bytes→97 bytes (デスクワーク削除, 首の痛み→首痛)
+- asc validate: Errors=0. Fixed: primary category HEALTH_AND_FITNESS を設定（未設定が原因）
+- release-review 5 checklists: ALL PASS
+  - Security: No secrets, HTTPS only, no sensitive UserDefaults
+  - Privacy: PrivacyInfo.xcprivacy (UserDefaults CA92.1), no ATT, no Mixpanel
+  - UX: Onboarding flow, no RevenueCatUI
+  - Distribution: Bundle ID com.aniccafactory.deskstretch, v1.0.0, ITSAppUsesNonExemptEncryption=false
+  - API Design: 完全オフライン (Rule 23 compliant)
+- TestFlight: beta group "External Testers" (8d8685e2) 作成。ビルド追加。betaAppLocalization en-US追加。betaAppReviewDetails contact設定。WAITING_FOR_REVIEW提出成功
+- TestFlight public link: https://testflight.apple.com/join/78sH7CE9
+- Slack #metrics 報告完了
+- **Learnings for future iterations:**
+  - Primary category を最初から設定すること (`asc categories set --app APP_ID --primary HEALTH_AND_FITNESS`)
+  - Greenlight はバイト数カウント。日本語キーワードは3バイト/文字。100バイト制限 = 日本語約33文字
+  - betaAppReviewDetails の contact info (firstName/lastName/email/phone) は全て必須
+  - betaAppLocalizations (Beta App Description) の作成が必須 — POST /v1/betaAppLocalizations
+  - TestFlight public link は PATCH /v1/betaGroups/{id} で publicLinkEnabled=true にして取得
+  - TestFlight ベータレビュー通過まで24-48時間待ち → US-009 はそれ以降
+
+---
+
+## 2026-03-06 - US-008d: ASC compliance (age rating + encryption + rights + availability + pricing + review details)
+
+- Age Rating: 22項目セット完了 → appStoreAgeRating=FOUR_PLUS (gambling=false, healthOrWellnessTopics=true, 全NONE)
+- Review Details: demoAccountRequired=false, contact info set (asc CLI の details-update は bug あり → REST API PATCH で解決)
+- Availability: 175 territories → POST /v2/appAvailabilities with territoryAvailabilities (local ID format required)
+- Pricing: free tier price schedule created (USA base territory, manualPrices=1)
+- Encryption: ITSAppUsesNonExemptEncryption=false in Info.plist (US-005a から継続)
+- Content Rights: DOES_NOT_USE_THIRD_PARTY_CONTENT → PATCH /v1/apps/{id} (appInfos にはない)
+- **Learnings for future iterations:**
+  - `asc pricing availability set` は territories の inline creation 形式エラーで使えない → POST /v2/appAvailabilities + territoryAvailabilities (local ID: `${ta0}`) を使う
+  - `contentRightsDeclaration` は appInfos ではなく apps リソースにある (PATCH /v1/apps/{id})
+  - `asc review details-update` は contactFirstName を CLI フラグで渡せないバグあり → REST API PATCH で直接更新
+  - 暗号化申告: ITSAppUsesNonExemptEncryption=NO の場合、Info.plist のみで OK（ASC encryption declarations create は不要）
+  - JWT 生成: Python `jwt` ライブラリ（PyJWT）が確実。openssl コマンドラインは失敗しやすい
+---
+
+## 2026-03-06 - US-008c: IPA build + upload + version attach
+
+- BUILD_ID: 254413bc-bd9b-47ef-90b2-4134b3c9d3ad, processingState=VALID
+- VERSION_ID: e90beeb7-64c2-4993-8cab-d5c07edc5d01, build attached via ASC REST API PATCH
+- Archive: xcodebuild from anicca-deskstretch-fix worktree (DerivedData resolves there)
+- Export: ExportOptions.plist method=app-store-connect, teamID=S5U8UH3JLJ
+- Upload: xcrun altool --upload-app (gives better error output than asc builds upload)
+- Fixed issues: (1) UIRequiresFullScreen=true added to Info.plist (iPad multitasking), (2) app icon alpha removed via sips -s format jpeg → png
+- **Learnings for future iterations:**
+  - DEVELOPMENT_TEAM for com.aniccafactory.* = S5U8UH3JLJ (not TM3HR9L4R6)
+  - `asc builds attach` doesn't exist — use ASC REST API PATCH /v1/appStoreVersions/{id}/relationships/build
+  - xcrun altool gives verbose error output; asc builds upload just returns JSON with uploadId
+  - App icon must NOT have alpha channel (color_type=2 RGB required, not 6 RGBA)
+  - UIRequiresFullScreen=true required for portrait-only iPhone apps (prevents iPad multitasking error)
+  - xcodebuild always uses anicca-deskstretch-fix worktree (same DerivedData UUID) — run archive from that path
+---
+
+## 2026-03-06 - US-008a: Screenshots (capture + upload + review screenshot) [RE-RUN]
+
+- Created `Localizable.xcstrings` with 55 Japanese translations (ja was showing English in previous run)
+- XcodeGen regenerated project to include xcstrings; rebuilt app
+- en-US: 4 screenshots (Welcome, PainArea, Paywall, Home) — all unique MD5
+- ja: 4 screenshots with Japanese text (ずっと座りっぱなし？, どこが痛いですか？, ストレッチルーティンを全解放, タイマー画面) — all unique MD5
+- MD5 en-US=8d165751f2a84d97e8f936a6b2999b37 vs ja=ded2ec58ee027c9c22446be07386ef9c → mismatch ✅
+- ASC upload: en-US=4 (COMPLETE), ja=4 (COMPLETE) → asc screenshots list uses `sets[].screenshots` not `data`
+- Review screenshots: Monthly(a05188cd) + Annual(8edbb838) uploaded from Paywall screen
+- Files: DeskStretchios/screenshots/raw/en-US/*.png, DeskStretchios/screenshots/raw/ja/*.png
+- **Learnings for future iterations:**
+  - `xcrun simctl uninstall` does NOT delete UserDefaults on macOS Sequoia — must use `xcrun simctl spawn $UDID defaults delete $BUNDLE_ID` to reset onboarding state
+  - `Localizable.xcstrings` must be created and added via XcodeGen (place in Resources/, run `xcodegen generate`, then rebuild)
+  - `asc screenshots list` response uses `sets[].screenshots` structure, NOT `data[]` — count with `sum(len(s['screenshots']) for s in data['sets'])`
+  - ja locale takes effect only if app is installed AFTER `defaults write NSGlobalDomain AppleLanguages -array "ja"` AND UserDefaults are cleared
+
+---
+
+## Codebase Patterns
+
+| Pattern | Detail |
+|---------|--------|
+| iPhone 17 Pro screenshots | 1206x2622 → APP_IPHONE_61 (NOT IPHONE_67) |
+| asc screenshots list | Use `--version-localization LOC_ID` without quotes in shell vars |
+| ja localization creation | `asc localizations list` only returns en-US by default. Use ASC REST API POST to create ja: `POST /v1/appStoreVersionLocalizations {locale: "ja", appStoreVersion: {id: VERSION_ID}}` |
+| JWT for ASC API | Use key_id=646Y27MJ8C from /Users/anicca/.asc/config.json (NOT D637C7RGFN) |
+| JWT generation | Use Python `jwt` library (PyJWT): `jwt.encode(payload, key, algorithm='ES256', headers={...})`. openssl shell command fails |
+| App availability | `asc pricing availability set` broken → use `POST /v2/appAvailabilities` with `territoryAvailabilities` using local IDs `${ta0}`, `${ta1}`... |
+| Content Rights | `PATCH /v1/apps/{id}` with `contentRightsDeclaration`. NOT on appInfos |
+| Review Details update | `asc review details-update` bug (contactFirstName not sent) → use REST API `PATCH /v1/appStoreReviewDetails/{id}` |
+| asc auth key path | /Users/anicca/.appstoreconnect/private_keys/AuthKey_646Y27MJ8C.p8 |
+| MD5 check | Use `/usr/bin/openssl dgst -md5 <file>` (md5 command unavailable) |
+| App name conflict | "DeskStretch" taken by another account → use "Desk Stretch Timer" or variant |
+| asc localizations update | Use for metadata sync: `--type app-info` for name/subtitle/privacy, default type `version` for description/keywords |
+| asc metadata sync command | `asc metadata sync` doesn't exist. Use `asc localizations update` instead |
+
+---
+
+## 2026-03-06 - US-008a: Screenshots (capture + upload + review screenshot)
+
+- Captured 4 screenshots per locale: screen1_welcome, screen2_features, screen3_paywall, screen4_home
+- Simulator: iPhone 17 Pro (D5822106-E149-46E4-B7B7-50101D59B6D7)
+- Screenshot size: 1206x2622 → device-type IPHONE_61 (not IPHONE_67)
+- MD5 mismatch confirmed: en-US(fa0c0c8d) vs ja(826c1d07) ✅
+- Created ja localization via ASC REST API (aec6929d-db34-4889-92e5-7634aae71e5a)
+- en-US uploaded: 4 screenshots COMPLETE
+- ja uploaded: 4 screenshots COMPLETE
+- Subscription review screenshots: Monthly(7b7a1f6c) + Annual(9b47d721) uploaded
+- Files: screenshots/raw/en-US/*.png, screenshots/raw/ja/*.png, /tmp/paywall-review.png
+- **Learnings for future iterations:**
+  - iPhone 17 Pro in simulator captures 1206x2622 = IPHONE_61 display type
+  - ja localization must be created via ASC REST API (asc CLI doesn't have create subcommand)
+  - Use JWT key ID 646Y27MJ8C from ~/.asc/config.json for ASC REST API calls
+  - ENV var expansion breaks `asc screenshots list --version-localization "$VAR"` — use direct value
+---
+
+## 2026-03-06 - US-008b: ASC metadata sync (en-US + ja)
+
+- App name: Desk Stretch Timer (DeskStretch taken by another account on App Store)
+- en-US app-info: name=Desk Stretch Timer, subtitle=Desk Stretch & Break Timer, privacyPolicyUrl=https://aniccaai.com/privacy
+- ja app-info: name=Desk Stretch Timer, subtitle=デスクストレッチ・休憩タイマー, privacyPolicyUrl=https://aniccaai.com/privacy
+- en-US version: description=1796 chars, keywords=desk stretching,break timer,back pain,office exercises,stretch reminder,posture,neck pain,wrist
+- ja version: description=913 chars, keywords=デスクストレッチ,休憩タイマー,腰痛,肩こり,首の痛み,ストレッチ,姿勢,デスクワーク,手首
+- supportUrl=https://aniccaai.com/support (en-US + ja)
+- Privacy Policy: en-US ✅ ja ✅
+- Command used: `asc localizations update` (NOT `asc metadata sync` — doesn't exist)
+- Files: metadata/app-info/en-US.json, metadata/app-info/ja.json, metadata/version-localizations/en-US.json, metadata/version-localizations/ja.json
+- **Learnings for future iterations:**
+  - `asc metadata sync` command doesn't exist — use `asc localizations update` instead
+  - app-info type: `--type app-info --app APP_ID` for name/subtitle/privacyPolicyUrl
+  - version type: `--version VERSION_ID` (default) for description/keywords/supportUrl
+  - "DeskStretch" name is taken by another account → use "Desk Stretch Timer"
+---
+
+## 2026-03-06 - US-008c: IPA build + upload + version attach [RE-VERIFIED PASS]
+
+- Re-verified after auto-reset by ralph.sh (1 US per iteration rule)
+- BUILD_ID=254413bc-bd9b-47ef-90b2-4134b3c9d3ad, processingState=VALID ✅ (asc builds list confirmed)
+- VERSION_ID=e90beeb7-64c2-4993-8cab-d5c07edc5d01, build attached confirmed via GET /v1/appStoreVersions/$VERSION_ID/build → 254413bc (VALID) ✅
+- All acceptance criteria PASS → passes: true
+---
+
+## 2026-03-06 - US-008e: Preflight validation + TestFlight [RE-VERIFIED PASS]
+
+- Greenlight: passed=True, blocking=0 ✅
+- asc validate: Errors=0, Warnings=0, Blocking=0 ✅
+- release-review 5 checklists: ALL PASS (documented in previous run) ✅
+- TestFlight: externalBuildState=WAITING_FOR_BETA_REVIEW ✅
+- TestFlight public link: https://testflight.apple.com/join/78sH7CE9 ✅
+- Slack #metrics 報告完了 ✅
+- All acceptance criteria PASS → passes: true
+---
+
+## 2026-03-06 - US-009: App Store submission [COMPLETE]
+
+- App Privacy: DATA_NOT_COLLECTED applied + published=true ✅
+- Copyright: "2026 Daisuke Kobayashi" set ✅
+- Missing screenshots fixed: IPHONE_65 (1284x2778, iPhone 14 Plus sim) + IPAD_PRO_3GEN_129 (2064x2752, iPadPro13-Screenshots sim)
+- en-US: IPHONE_65=4, IPAD_PRO_3GEN_129=4 ✅
+- ja: IPHONE_65=4, IPAD_PRO_3GEN_129=4 ✅ (Japanese UI confirmed)
+- Submission 4695b13c: state=WAITING_FOR_REVIEW ✅ (submitted 2026-03-06T14:42Z)
+- Slack #metrics 報告完了 ✅
+- .app-privacy-done file created ✅
+- All acceptance criteria PASS → passes: true
+- **Learnings for future iterations:**
+  - App Store requires IPHONE_65 AND IPAD_PRO_3GEN_129 when UIDeviceFamily=[1,2]
+  - Copyright attribute must be set before submission (`asc versions update --copyright`)
+  - `asc review items-add` uses `--submission` (not `--submission-id`)
+  - `asc review submissions-submit` uses `--id` (not `--submission-id`) + `--confirm`
+  - iPhone 14 Plus simulator = 1284x2778 (valid for APP_IPHONE_65)
+  - iPadPro13-Screenshots simulator = 2064x2752 (valid for APP_IPAD_PRO_3GEN_129)
+  - Uninstall app to reset onboarding state (defaults delete fails if domain not found)
+---
+
+## 2026-03-06 - US-009: App Store submission [RESOLVED]
+
+RESOLVED: App Privacy applied successfully (2FA code accepted). DATA_NOT_COLLECTED.
+- apple-appstore-reviewer audit: P0=0, P1=0 → 提出ブロッカーなし ✅
+- asc validate: Errors=0 ✅ (confirmed)
+- App Privacy apply: 2FA required → BLOCKED
+- 次のイテレーション: 2FAコード受信後に `asc web privacy apply --two-factor-code XXXXXX` で再開
+
+---

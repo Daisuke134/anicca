@@ -1,0 +1,15 @@
+{
+  "name": "usdc-testnet-tx-checker",
+  "version": "0.1.0",
+  "private": true,
+  "description": "USDCテストネット送金のintent生成とtx検証（秘密鍵不要）",
+  "type": "module",
+  "scripts": {
+    "build-intent": "node src/build-intent.js",
+    "verify": "node src/verify.js",
+    "allowlist:add": "node src/allowlist.js add",
+    "allowlist:list": "node src/allowlist.js list"
+  },
+  "dependencies": {}
+}
+

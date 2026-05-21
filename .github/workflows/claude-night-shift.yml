@@ -1,0 +1,103 @@
+name: Claude Night Shift
+on:
+  schedule:
+    - cron: '0 16 * * 1-5'  # 平日のみ 01:00 JST (16:00 UTC)
+  workflow_dispatch:
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.issues.outputs.matrix }}
+      has_issues: ${{ steps.issues.outputs.has_issues }}
+    steps:
+      - name: Get claude-ready issues
+        id: issues
+        run: |
+          ISSUES=$(gh issue list \
+            --repo ${{ github.repository }} \
+            --label "claude-ready" \
+            --state open \
+            --json number,title \
+            --limit 5)
+
+          COUNT=$(echo "$ISSUES" | jq 'length')
+          if [ "$COUNT" -eq 0 ]; then
+            echo "has_issues=false" >> $GITHUB_OUTPUT
+            echo "matrix={\"issue\":[]}" >> $GITHUB_OUTPUT
+          else
+            echo "has_issues=true" >> $GITHUB_OUTPUT
+            MATRIX=$(echo "$ISSUES" | jq -c '{issue: [.[] | {number: .number, title: .title}]}')
+            echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  process:
+    needs: collect
+    if: needs.collect.outputs.has_issues == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{ fromJson(needs.collect.outputs.matrix) }}
+      max-parallel: 2
+      fail-fast: false
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    concurrency:
+      group: night-shift-issue-${{ matrix.issue.number }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read and sanitize issue body
+        id: body
+        run: |
+          BODY=$(gh issue view ${{ matrix.issue.number }} \
+            --repo ${{ github.repository }} \
+            --json body -q '.body')
+          SANITIZED=$(echo "$BODY" | sed \
+            -e 's/```[^`]*```//g' \
+            -e 's/<[^>]*>//g' \
+            -e '/^[Ii]gnore previous/d' \
+            -e '/^[Ff]orget all/d' \
+            -e '/^[Yy]ou are now/d' \
+            -e '/SYSTEM:/d')
+          echo "body<<EOFBODY" >> $GITHUB_OUTPUT
+          echo "$SANITIZED" >> $GITHUB_OUTPUT
+          echo "EOFBODY" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Process issue with Claude
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: "--max-turns 15"
+          prompt: |
+            Issue #${{ matrix.issue.number }}: ${{ matrix.issue.title }}
+
+            内容:
+            ${{ steps.body.outputs.body }}
+
+            ルール:
+            - このIssueに対して1つのPRを作成すること
+            - TDD: テストを書いてからコードを実装
+            - 破壊的変更は禁止
+            - 既存テストが全てPASSすること
+            - 夜間実行のため保守的に: 不明な点は安全な選択をする
+            - PRタイトルに「Closes #${{ matrix.issue.number }}」を含める
+            - コミットメッセージに [night-shift] を含める
+
+      - name: Update issue labels
+        if: always()
+        run: |
+          gh issue edit ${{ matrix.issue.number }} \
+            --repo ${{ github.repository }} \
+            --remove-label "claude-ready"
+          gh issue edit ${{ matrix.issue.number }} \
+            --repo ${{ github.repository }} \
+            --add-label "claude-processed"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

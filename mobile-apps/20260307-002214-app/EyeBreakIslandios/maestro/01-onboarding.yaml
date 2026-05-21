@@ -1,0 +1,69 @@
+# Feature: Full onboarding flow (Welcome -> Feature -> Notification -> Paywall dismiss)
+# Tests: User completes onboarding and lands on TimerView
+appId: com.aniccafactory.eyebreakisland
+tags:
+  - onboarding
+  - smokeTest
+
+---
+- clearState
+- clearKeychain
+- launchApp
+
+# Dismiss any stale system dialogs from previous runs
+- tapOn:
+    text: "許可|Allow"
+    optional: true
+
+# Wait for onboarding to load
+- extendedWaitUntil:
+    visible:
+      id: "onboarding_container"
+    timeout: 30000
+
+# Page 1: Welcome -> tap Next
+- extendedWaitUntil:
+    visible:
+      id: "onboarding_next_button"
+    timeout: 10000
+- tapOn:
+    id: "onboarding_next_button"
+
+# Page 2: Feature -> tap Next
+- extendedWaitUntil:
+    visible:
+      id: "onboarding_next_button"
+    timeout: 10000
+- tapOn:
+    id: "onboarding_next_button"
+
+# Page 3: Notification -> tap Allow Notifications
+- extendedWaitUntil:
+    visible:
+      id: "onboarding_allow_notifications"
+    timeout: 10000
+- tapOn:
+    id: "onboarding_allow_notifications"
+
+# Handle iOS notification permission dialog
+- tapOn:
+    text: "許可|Allow"
+    optional: true
+
+# Page 4: Paywall -> tap Maybe Later
+- extendedWaitUntil:
+    visible:
+      id: "paywall_maybe_later"
+    timeout: 15000
+- tapOn:
+    id: "paywall_maybe_later"
+
+# Verify: landed on TimerView
+- extendedWaitUntil:
+    visible:
+      id: "timer_start_button"
+    timeout: 15000
+- assertVisible:
+    id: "timer_start_button"
+
+- takeScreenshot: "01-onboarding-complete"

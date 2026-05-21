@@ -1,0 +1,48 @@
+{
+  "cli": {
+    "version": ">= 16.28.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "base": {
+      "node": "20.18.0"
+    },
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "extends": "base",
+      "env": {
+        "NPM_CONFIG_LEGACY_PEER_DEPS": "true"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "extends": "base",
+      "env": {
+        "NPM_CONFIG_LEGACY_PEER_DEPS": "true"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "extends": "base",
+      "env": {
+        "NPM_CONFIG_LEGACY_PEER_DEPS": "true",
+        "EXPO_PUBLIC_REVENUECAT_IOS_API_KEY": "appl_fHvAqxkeyCBSFIslMvNRuCDjndy",
+        "EXPO_PUBLIC_APP_NAME": "Daily Dhamma",
+        "EXPO_PUBLIC_PRIVACY_POLICY_URL": "https://aniccaai.com/dailydharma/privacy",
+        "EXPO_PUBLIC_TERMS_URL": "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/"
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "ascAppId": "6757726663",
+        "appleId": "keiodaisuke@gmail.com",
+        "ascApiKeyPath": "/Users/cbns03/Downloads/AuthKey_D637C7RGFN.p8",
+        "ascApiKeyIssuerId": "f53272d9-c12d-4d9d-811c-4eb658284e74",
+        "ascApiKeyId": "D637C7RGFN"
+      }
+    }
+  }
+}

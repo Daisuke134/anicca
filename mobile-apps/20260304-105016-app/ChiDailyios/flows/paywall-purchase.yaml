@@ -1,0 +1,14 @@
+appId: com.aniccafactory.chidaily
+tags:
+  - smokeTest
+  - paywall
+---
+- launchApp
+- assertVisible:
+    id: "paywall_plan_monthly"
+- tapOn:
+    id: "paywall_plan_monthly"
+- tapOn:
+    id: "paywall_cta"
+- tapOn:
+    id: "paywall_skip"

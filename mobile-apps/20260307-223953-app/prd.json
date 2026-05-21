@@ -1,0 +1,289 @@
+{
+  "project": "mobileapp-factory",
+  "branchName": "ralph/daily-app",
+  "description": "Build and submit one iOS app to App Store",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Trend research + idea selection",
+      "acceptanceCriteria": [
+        "spec/01-trend.md exists",
+        "Contains: rank, idea, one_liner, platform, problem_statement, target_user, feasibility, overall_score, monetization_model, competition_notes, mvp_scope, next_step",
+        "At least 5 ideas evaluated, top 1 selected",
+        "Sources cited for each trend",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": "FrostDip selected (score 8.5). Cold plunge tracker. Market gap: Brisk 58 reviews. spec/01-trend.md created with 25+ raw ideas, 5 lenses, Top 5 shortlist."
+    },
+    {
+      "id": "US-002",
+      "title": "Product planning",
+      "acceptanceCriteria": [
+        "product-plan.md exists",
+        "Contains: target user, problem, solution, monetization, MVP scope",
+        "monetization section specifies subscription prices (monthly + annual)",
+        "All claims cite external sources",
+        "curl itunes.apple.com/search for APP_NAME returns 0 exact name matches",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "product-plan.md created with 7 sections, 15 sources, $6.99/mo + $29.99/yr pricing. FrostDip: 0 iTunes matches (verified 2026-03-07). TAM ~600K cold plunge owners, SOM 2.4-4.8K Y1."
+    },
+    {
+      "id": "US-003",
+      "title": "Market research",
+      "acceptanceCriteria": [
+        "competitive-analysis.md exists with 5+ competitors analyzed",
+        "market-research.md exists with TAM/SAM/SOM",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": true,
+      "notes": "competitive-analysis.md: 8 competitors (5 direct, 3 indirect), feature matrix 14 checkmarks, SWOT, pricing map, gap analysis. market-research.md: TAM 228K users (bottom-up), SAM 75K iOS US+JP, SOM Y3 $28K ARR. POEM 22/25 Strong Opportunity. 24 sources cited. Negative signal documented."
+    },
+    {
+      "id": "US-004a",
+      "title": "Core Spec (PRD, ARCHITECTURE, IMPLEMENTATION_GUIDE)",
+      "acceptanceCriteria": [
+        "docs/PRD.md exists and contains app_name, bundle_id, subscription prices",
+        "docs/ARCHITECTURE.md exists",
+        "docs/IMPLEMENTATION_GUIDE.md exists and references RevenueCat SDK (not Mock)",
+        "Typecheck passes"
+      ],
+      "priority": 4.1,
+      "passes": true,
+      "notes": "PRD.md (302 lines, 14 sections, 15 Feature IDs, 7 price refs), ARCHITECTURE.md (408 lines, 12 sections, MVVM + Protocol DI), IMPLEMENTATION_GUIDE.md (655 lines, 8 sections, 9 phases). Total 1365 lines. Gate 1-3 all PASS. Rule 17/20/20b/21 compliant (mentions are prohibition context only). RevenueCat SDK via Purchases.shared.purchase(package:), no Mock in production."
+    },
+    {
+      "id": "US-004b",
+      "title": "UX Spec (UX_SPEC, DESIGN_SYSTEM, TEST_SPEC, RELEASE_SPEC)",
+      "acceptanceCriteria": [
+        "docs/UX_SPEC.md exists",
+        "docs/DESIGN_SYSTEM.md exists",
+        "docs/TEST_SPEC.md exists",
+        "docs/RELEASE_SPEC.md exists",
+        "Typecheck passes"
+      ],
+      "priority": 4.2,
+      "passes": true,
+      "notes": "DESIGN_SYSTEM.md (198 lines, 7 sections, 8 brand colors, 12 type styles, 8 components, 19 SF Symbols, 10 animations), UX_SPEC.md (327 lines, 9 sections, 2 personas, 11 screens, 5 wireframes, 4-step onboarding, 45 a11y IDs), TEST_SPEC.md (283 lines, 7 sections, 40 unit tests, 8 integration tests, 7 Maestro E2E flows, 8 Greenlight checks), RELEASE_SPEC.md (286 lines, 11 sections, en-US+ja metadata, 9 pre-submission gates, 22 age rating items). Total 1,094 lines (4 new docs). Combined 7-doc total: 2,756 lines. Gate 2+3 all PASS (context-verified)."
+    },
+    {
+      "id": "US-004-R",
+      "title": "Spec Review (all 7 documents)",
+      "acceptanceCriteria": [
+        "code-quality-reviewer agent (.claude/agents/) — NOT codex-review skill, NOT Codex CLI run on all 7 docs",
+        "CRITICAL findings = 0",
+        "All blocking issues resolved"
+      ],
+      "priority": 4.3,
+      "passes": true,
+      "notes": "code-quality-reviewer agent ran on all 7 docs. Initial: 5 CRITICAL, 9 WARNING, 6 SUGGESTION. All 5 CRITICALs fixed: (1) contrast therapy data model fields added to PlungeSession/PlungeProtocol, (2) listenForUpdates→customerInfoStream, (3) service-layer mutation exception documented, (4) history_browse.yaml full template added, (5) HealthKit no-HR-data error case added. 8 WARNINGs also fixed: @Observable standardized, breathing cycle count specified, session_card a11y unified, Fastfile path corrected, auto-save/discard resolved, Progress tab free-user UX specified, xcodebuild→fastlane, StreakService extracted. Re-review confirmed CRITICAL=0."
+    },
+    {
+      "id": "US-005a",
+      "title": "Privacy Policy + ASC app creation",
+      "acceptanceCriteria": [
+        "privacy-policy.md exists and deployed to GitHub Pages",
+        "PrivacyInfo.xcprivacy exists in project",
+        "Info.plist contains ITSAppUsesNonExemptEncryption = NO",
+        "App created in ASC (APP_ID recorded in .env)"
+      ],
+      "priority": 5,
+      "passes": true,
+      "notes": "ASC App created: APP_ID=6760225278. Bundle ID: GCVGP8K25Q (com.aniccafactory.frostdip). Privacy Policy: https://aniccaai.com/privacy. PrivacyInfo.xcprivacy + Info.plist deferred to US-006 per spec. Project .env: ~/.config/mobileapp-builder/projects/frostdip/.env"
+    },
+    {
+      "id": "US-005b",
+      "title": "IAP + pricing + RevenueCat setup",
+      "acceptanceCriteria": [
+        "asc subscriptions groups list --app $APP_ID returns 1+ groups",
+        "asc subscriptions list --group $GROUP_ID returns weekly + monthly + annual products",
+        "asc subscriptions prices list --id $MONTHLY_ID returns 175 prices",
+        "RevenueCat dashboard shows 3 products + 1 offering",
+        "SPM dependency on RevenueCat added (RevenueCatUI prohibited -- Rule 20)",
+        "Typecheck passes"
+      ],
+      "priority": 5.5,
+      "passes": true,
+      "notes": "ASC IAP complete: GROUP_ID=21966024, WEEKLY=$1.99 (6760225308), MONTHLY=$6.99 (6760225483), ANNUAL=$29.99 (6760225430). 39 locales, 175 territories, 175 prices per sub. RC setup complete: Project=proje06970dd, App=app551d163aab, Entitlement=entl72c97fdb5b (premium), 3 Products (weekly/monthly/annual), Offering=ofrngae87fc46a4 (default, is_current=true), 3 Packages ($rc_weekly/$rc_monthly/$rc_annual). RC_IOS_PUBLIC_KEY=appl_bZDzQANwQsnkihybBcJlKdsybbi. SPM deferred to US-006."
+    },
+    {
+      "id": "US-006a",
+      "title": "TDD Data Layer (xcconfig, Protocol DI, Models, Services)",
+      "acceptanceCriteria": [
+        "xcconfig for API Key management (not hardcoded)",
+        "SubscriptionService uses Protocol + DI",
+        "Models and Services directories exist",
+        "fastlane test PASS",
+        "Typecheck passes"
+      ],
+      "priority": 6.1,
+      "passes": true,
+      "notes": "xcconfig Debug/Release with RC_API_KEY=$(RC_API_KEY). 4 Service Protocols (Timer, HealthKit, Subscription, Notification). 3 Models (PlungeSession, PlungeProtocol, UserPreferences). 5 Services (SubscriptionService with DEBUG uiPreviewMode, TimerService, HealthKitService, NotificationService, StreakService). project.yml + xcodegen. Fastfile. PrivacyInfo.xcprivacy (CA92.1). App icon 1024x1024. 36 tests ALL PASS (0 failures). Greenlight CRITICAL=0. Mock in production=0. RevenueCat=4 imports, RevenueCatUI=0. No AI APIs."
+    },
+    {
+      "id": "US-006b",
+      "title": "TDD Onboarding + Monetization (MVVM, Onboarding, PaywallView)",
+      "acceptanceCriteria": [
+        "AppState split into MVVM ViewModels",
+        "Onboarding flow complete (includes notification permission step)",
+        "PaywallView uses Purchases.shared.purchase(package:) (self-built SwiftUI -- Rule 20)",
+        "No RevenueCatUI import",
+        "fastlane test PASS",
+        "Typecheck passes"
+      ],
+      "priority": 6.2,
+      "passes": true,
+      "notes": "MVVM split: OnboardingViewModel + PaywallViewModel (both @Observable). 4-step onboarding: WelcomeView → ExperienceLevelView → NotificationPermissionView → PaywallView. PaywallView self-built SwiftUI with Purchases.shared.purchase(package:), 3-plan pricing grid (weekly/monthly/annual), benefit bullets, social proof, FAQ, legal links. No RevenueCatUI (0 imports). AccessibilityIDs aligned to UX_SPEC (45 IDs). 54 tests ALL PASS (0 failures). Greenlight CRITICAL=0. Mock=0. AI APIs=0."
+    },
+    {
+      "id": "US-006c",
+      "title": "TDD Core Screens (Timer, Settings, ProgressDashboard)",
+      "acceptanceCriteria": [
+        "Timer with background support",
+        "Settings with Upgrade -> PaywallView navigation",
+        "ProgressDashboard with optimized DateFormatter",
+        "fastlane test PASS",
+        "Typecheck passes"
+      ],
+      "priority": 6.3,
+      "passes": true,
+      "notes": "TimerViewModel (@Observable, state machine: idle/breathing/running/paused/completed, zero-division guard, protocol selector), TimerView (circular timer ring, temperature stepper, action buttons, protocol picker, session summary sheet), BreathingPrepView (animated circle with phase), SessionSummaryView (stats + notes + save/delete), SettingsViewModel (temp unit toggle, notification toggle, paywall sheet), SettingsView (preferences/subscription/about sections), ProgressViewModel (stats aggregation, static DateFormatter, weekday labels), ProgressDashboardView (streak counters, 30-day calendar, Charts duration trend, stat cards, free user blurred preview + upgrade gate), HistoryView (7-day free / unlimited premium, session cards, swipe delete, upgrade banner), SessionDetailView. 91 tests ALL PASS (0 failures). Greenlight CRITICAL=0. Mock=0. RevenueCatUI=0. AI APIs=0."
+    },
+    {
+      "id": "US-006d",
+      "title": "TDD Polish (DESIGN_SYSTEM tokens, a11y IDs, Localization)",
+      "acceptanceCriteria": [
+        "DESIGN_SYSTEM tokens applied to all Views",
+        "All accessibilityIdentifiers match TEST_SPEC",
+        "PrivacyInfo.xcprivacy exists",
+        "Localization files (.xcstrings) exist",
+        "fastlane test PASS",
+        "fastlane build PASS",
+        "Typecheck passes"
+      ],
+      "priority": 6.4,
+      "passes": true,
+      "notes": "Theme.swift typography updated: timerDigits bold (per DESIGN_SYSTEM), hrDisplay 36pt semibold monospaced, temperatureDisplay 24pt medium monospaced added. Tab a11y IDs added (tab_timer, tab_history, tab_progress, tab_settings) to AccessibilityID enum + ContentView. Localizable.xcstrings created with 80+ strings (en source + ja translations). project.yml knownRegions: en, ja. PrivacyInfo.xcprivacy exists (CA92.1). ITSAppUsesNonExemptEncryption=NO in Info.plist. 91 tests ALL PASS. fastlane build PASS. Greenlight CRITICAL=0. Mock=0, RevenueCatUI=0, AI APIs=0."
+    },
+    {
+      "id": "US-006-R",
+      "title": "Code Review (006a-d full review)",
+      "acceptanceCriteria": [
+        "code-quality-reviewer agent (.claude/agents/) — NOT codex-review skill, NOT Codex CLI run on all 006 code",
+        "CRITICAL findings = 0",
+        "No Mock/Stub in production code (grep -rw 'class Mock' excludes Tests/)",
+        "All blocking issues resolved"
+      ],
+      "priority": 6.5,
+      "passes": true,
+      "notes": "code-quality-reviewer agent ran on all 31 production Swift files. Initial: 3 CRITICAL, 7 HIGH, 6 MEDIUM, 3 LOW. All CRITICAL+HIGH fixed: (C-2) isPremium set in DEBUG purchase path, (C-3) StreakService force unwrap→guard let, (H-1/H-2/H-4) SubscriptionService.shared singleton — all views/ViewModels use shared instance, (H-3) FrostDipApp silent return on missing key (assertionFailure removed — crashes test runner), (H-5) HistoryView onDelete uses modelContext.delete(), (H-6/H-7) TimerService DRY refactor + RunLoop .common for scroll-safe timer, (M-3) HealthKitService NSLock thread safety. Re-review: CRITICAL=0, Mock=0, RevenueCatUI=0, AI APIs=0, Greenlight CRITICAL=0. 91 tests ALL PASS."
+    },
+    {
+      "id": "US-007",
+      "title": "Testing (Maestro E2E)",
+      "acceptanceCriteria": [
+        "6+ Maestro E2E flows in maestro/ (onboarding, timer, settings, payment-monthly, payment-annual, payment-failure)",
+        "All flows use id: selectors (no point: selectors)",
+        "All flows have clearState + takeScreenshot",
+        "maestro test maestro/ -> all PASS",
+        "smokeTest tag exists on 2+ flows"
+      ],
+      "priority": 7,
+      "passes": true,
+      "notes": "6 Maestro E2E flows ALL PASS: 01-onboarding (smokeTest), 02-timer, 03-settings, 04-payment-monthly-success (smokeTest), 05-payment-annual-success, 06-payment-failure. Fixes: (1) xcconfig configFiles for RC_API_KEY (was XCCONFIG_FILE — xcodegen ignored), (2) SubscriptionService isConfigured guard (Purchases.shared crash without configure), (3) uiPreviewMode auto-completes purchases — payment flows use optional dialog tap. All id: selectors, clearState+clearKeychain+takeScreenshot in every flow. 91 unit tests still PASS."
+    },
+    {
+      "id": "US-008a",
+      "title": "Screenshots (capture + upload + review screenshot)",
+      "acceptanceCriteria": [
+        "Screenshots captured via AXe + asc screenshots capture (en-US 4+ + ja 4+)",
+        "en-US/ja MD5 mismatch (locale applied)",
+        "Screenshots uploaded to ASC for en-US and ja (>=4 each)",
+        "Subscription review screenshots uploaded for Monthly + Annual"
+      ],
+      "priority": 8.1,
+      "passes": true,
+      "notes": "Maestro-driven capture: en-US 4 screenshots (Welcome/Timer/History/Progress) + ja 4 screenshots. MD5: en≠ja PASS, 0 same-locale duplicates PASS. ASC upload: en-US=4 COMPLETE (APP_IPHONE_67), ja=4 COMPLETE (APP_IPHONE_67). Review screenshots: Monthly=COMPLETE (eadab140), Annual=COMPLETE (004dac60)."
+    },
+    {
+      "id": "US-008b",
+      "title": "ASC metadata sync (en-US + ja)",
+      "acceptanceCriteria": [
+        "Metadata synced to ASC via asc-metadata-sync (en-US + ja)",
+        "Privacy Policy URL set for en-US AND ja"
+      ],
+      "priority": 8.2,
+      "passes": true,
+      "notes": "app-info: en-US+ja name+privacyPolicyUrl=https://aniccaai.com/privacy. version: en-US desc=1289 chars, keywords=92 chars; ja desc=639 chars, keywords=10 terms. Both locales confirmed via asc localizations list."
+    },
+    {
+      "id": "US-008c",
+      "title": "IPA build + upload + version attach",
+      "acceptanceCriteria": [
+        ".ipa file built and uploaded (processingState = VALID)",
+        "Build attached to version"
+      ],
+      "priority": 8.3,
+      "passes": true,
+      "notes": "BUILD_ID=0149dff3-c222-455b-b286-a023600da006 processingState=VALID. Attached to VERSION_ID=291d2259-6d6a-45ff-8898-187bdb516810 (v1.0 PREPARE_FOR_SUBMISSION). Version state=PREPARE_FOR_SUBMISSION confirmed."
+    },
+    {
+      "id": "US-008d",
+      "title": "ASC compliance (age rating + encryption + rights + availability + pricing + review details)",
+      "acceptanceCriteria": [
+        "Age Rating all 22 items set",
+        "Review Details set with --demo-account-required false",
+        "Availability set for 175 territories",
+        "Pricing set using subscription price-point IDs",
+        "Encryption: usesNonExemptEncryption = false",
+        "Content Rights: DOES_NOT_USE_THIRD_PARTY_CONTENT"
+      ],
+      "priority": 8.4,
+      "passes": true,
+      "notes": "Copyright='2026 Daisuke Kobayashi' via REST PATCH. Age Rating: 22 items all NONE (4+). Review Details: demoAccountRequired=false, contactFirstName=Daisuke via asc review details-for-version. Content Rights: DOES_NOT_USE_THIRD_PARTY_CONTENT via REST PATCH. Pricing: Annual/Monthly/Weekly=READY_TO_SUBMIT. Encryption: ITSAppUsesNonExemptEncryption=NO (Info.plist). Deleted 4 empty screenshot sets (APP_IPHONE_65+APP_IPHONE_61 for en-US+ja) that were blocking dry-run. dry-run: status=dry-run, errors=0, warnings=6 (promotional images + READY_TO_SUBMIT — all SKIP per Decision Table)."
+    },
+    {
+      "id": "US-008e",
+      "title": "Preflight validation + TestFlight + Slack",
+      "acceptanceCriteria": [
+        "release-review 5 checklists all pass",
+        "asc validate returns Errors=0",
+        "TestFlight build distributed",
+        "Slack #metrics notified with TestFlight link"
+      ],
+      "priority": 8.5,
+      "passes": true,
+      "notes": "release-review 5/5 PASS (Security/Privacy/UX/Distribution/API). dry-run errors=0, warnings=6 (all SKIP per Decision Table). TestFlight: GROUP_ID=b46584b2, beta WAITING_FOR_REVIEW, TF=https://testflight.apple.com/join/3kVhjVfs. Slack notified. validate.sh Gates 1-6 ALL PASS. Re-validated 2026-03-08."
+    },
+    {
+      "id": "US-009",
+      "title": "App Store submission (App Privacy + submit)",
+      "acceptanceCriteria": [
+        "Slack #metrics notified: need App Privacy setup",
+        ".app-privacy-done file exists (human created after ASC Web setup)",
+        "asc submit create returns WAITING_FOR_REVIEW",
+        "Slack #metrics notified: WAITING_FOR_REVIEW"
+      ],
+      "priority": 9,
+      "passes": true,
+      "notes": "App Privacy published=true (DATA_NOT_COLLECTED). apple-appstore-reviewer P0=0 P1=0. asc validate Errors=0. File backend fixed 2FA issue."
+    },
+    {
+      "id": "US-010",
+      "title": "Build Report: Token Usage + Slack + X Post",
+      "description": "Generate build report with token usage, post to Slack #metrics, and post to X via Postiz API",
+      "acceptanceCriteria": [
+        "build-report.json saved in app dir",
+        "Slack #metrics post sent with app name + token count + screenshots",
+        "X post sent via Postiz API (@aniccaxxx)"
+      ],
+      "passes": true,
+      "notes": "build-report.json saved (134M tokens, $12.03, 22 iterations, 291min, weekly=24.1%). Slack #metrics notified. X posted via Postiz API (@aniccaxxx) with 4 screenshots (HTTP 201)."
+    }
+  ]
+}

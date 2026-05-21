@@ -1,0 +1,17 @@
+{
+  "app": {"bundle_id": "com.aniccafactory.zone2daily"},
+  "output_dir": "/tmp/review-screenshots",
+  "steps": [
+    {"action": "launch"},
+    {"action": "wait", "duration_ms": 3000},
+    {"action": "tap", "id": "btn_continue_age"},
+    {"action": "wait", "duration_ms": 2000},
+    {"action": "tap", "id": "btn_continue_explainer"},
+    {"action": "wait", "duration_ms": 1500},
+    {"action": "tap", "id": "btn_skip_notifications"},
+    {"action": "wait", "duration_ms": 3000},
+    {"action": "tap", "id": "selector_plan_annual"},
+    {"action": "wait", "duration_ms": 1000},
+    {"action": "screenshot", "name": "paywall_review"}
+  ]
+}

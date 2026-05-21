@@ -1,0 +1,10 @@
+appId: com.aniccafactory.zone2daily
+executionOrder:
+  continueOnFailure: false
+  flowsOrder:
+    - 01-onboarding
+    - 02-timer
+    - 03-settings
+    - 04-payment-monthly-success
+    - 05-payment-annual-success
+    - 06-payment-failure

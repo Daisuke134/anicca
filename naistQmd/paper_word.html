@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="ja" xml:lang="ja"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.8.26">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="成田　大祐">
+<meta name="keywords" content="マインドワンダリング, EEG, 瞳孔径, 機械学習, ニューロフィードバック">
+
+<title>EEG・瞳孔径・行動指標を用いたマインドワンダリングの連続予測モデルの開発</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
+
+
+<script src="paper_word_files/libs/clipboard/clipboard.min.js"></script>
+<script src="paper_word_files/libs/quarto-html/quarto.js" type="module"></script>
+<script src="paper_word_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="paper_word_files/libs/quarto-html/axe/axe-check.js" type="module"></script>
+<script src="paper_word_files/libs/quarto-html/popper.min.js"></script>
+<script src="paper_word_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="paper_word_files/libs/quarto-html/anchor.min.js"></script>
+<link href="paper_word_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="paper_word_files/libs/quarto-html/quarto-syntax-highlighting-587c61ba64f3a5504c4d52d930310e48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="paper_word_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="paper_word_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="paper_word_files/libs/bootstrap/bootstrap-2b4f361af69db28df83f62e4f62372d0.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+
+
+</head>
+
+<body class="quarto-light">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+<div class="quarto-alternate-formats"><h2>その他のフォーマット</h2><ul><li><a href="paper_word.docx"><i class="bi bi-file-word"></i>MS Word (apaquarto)</a></li></ul></div></div>
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">EEG・瞳孔径・行動指標を用いたマインドワンダリングの連続予測モデルの開発</h1>
+</div>
+
+
+<div class="quarto-title-meta-author">
+  <div class="quarto-title-meta-heading">作者</div>
+  <div class="quarto-title-meta-heading">所属</div>
+  
+    <div class="quarto-title-meta-contents">
+    <p class="author">成田　大祐 </p>
+  </div>
+  <div class="quarto-title-meta-contents">
+        <p class="affiliation">
+            奈良先端科学技術大学院大学
+          </p>
+      </div>
+  </div>
+
+<div class="quarto-title-meta">
+
+      
+    <div>
+    <div class="quarto-title-meta-heading">公開</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">2026年1月3日</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+<div>
+  <div class="abstract">
+    <div class="block-title">概要</div>
+    <p>マインドワンダリング（MW）とは、注意が今取り組んでいる課題から離れ、無関係な内的思考へと向かう現象である。本研究では、EEG・瞳孔径・行動指標を用いて、MWを連続的に予測するモデルの開発を目的とした。49名の健常成人を対象に、gradual-onset continuous performance task（gradCPT）中の単一チャンネル耳内EEG、瞳孔径、行動応答を記録した。Optunaによるベイズ最適化を用いたSupport Vector Regression（SVR）により、自己報告プローブから算出された連続MWスコアを予測した。その結果、反応時間変動係数（RTCV）およびアイトラッキング特徴量がMW予測に最も強く寄与し、EEG特徴量の寄与は相対的に限定的であった。これらの知見は、行動指標と瞳孔指標がMW状態をリアルタイムで効果的に捉えうることを示唆し、将来的なニューロフィードバック介入への基盤を提供する。</p>
+  </div>
+</div>
+
+<div>
+  <div class="keywords">
+    <div class="block-title">キーワード</div>
+    <p>マインドワンダリング, EEG, 瞳孔径, 機械学習, ニューロフィードバック</p>
+  </div>
+</div>
+
+</header>
+
+
+<section id="はじめに" class="level1">
+<h1>はじめに</h1>
+<p>マインドワンダリング（MW）とは、注意が今取り組んでいる課題から離れ、無関係な内的思考へと向かう現象である <span class="citation" data-cites="Smallwood2015">(<a href="#ref-Smallwood2015" role="doc-biblioref">1</a>)</span>。この注意の移行は誰にでも起こる極めて一般的な現象であり、ある大規模な経験サンプリング研究によれば、人は起きている時間の約半分（約47%）において心が彷徨っており、このような課題から離れた時間は、集中している時に比べて幸福感が低下することが示されている <span class="citation" data-cites="Killingsworth2010">(<a href="#ref-Killingsworth2010" role="doc-biblioref">2</a>)</span>。しかし、マインドワンダリングは必ずしも悪いものではない <span class="citation" data-cites="Smallwood2015">(<a href="#ref-Smallwood2015" role="doc-biblioref">1</a>)</span>。心理学研究は、心を自由に彷徨わせることが創造性や問題解決、将来の計画立案に結びつく場合があることを示している <span class="citation" data-cites="Baird2011 Smallwood2015">(<a href="#ref-Smallwood2015" role="doc-biblioref">1</a>,<a href="#ref-Baird2011" role="doc-biblioref">3</a>)</span>。ぼんやり考えている最中に「ひらめき」が訪れたという話は、実際の研究によっても裏付けられている。インキュベーション期間に課題から離れた思考に耽った人は、その後の創造的な課題でより良い成績を示すことが報告されているのだ <span class="citation" data-cites="Baird2012">(<a href="#ref-Baird2012" role="doc-biblioref">4</a>)</span>。このように、MWは諸刃の剣である。革新的な思考や内省を促す一方で、それに伴うコストも無視できない。この二面性こそが、マインドワンダリングを認知心理学における魅力的な研究対象としており、研究者たちはそのコストを抑えつつ、利益を最大限に活用する方法を探っている。</p>
+<section id="マインドワンダリングの神経基盤" class="level2">
+<h2 class="anchored" data-anchor-id="マインドワンダリングの神経基盤">マインドワンダリングの神経基盤</h2>
+<p>神経科学の研究から、MWは特定の大規模な脳ネットワークによって支えられていることが明らかになっている。特に、デフォルトモードネットワーク（DMN）と呼ばれる脳領域群は、内的な思考に集中している際に活性化する。DMNは自分自身について考えたり、個人的な記憶や過去の経験を思い出したりする際に働くことが知られている <span class="citation" data-cites="Buckner2008 AndrewsHanna2014">(<a href="#ref-Buckner2008" role="doc-biblioref">5</a>,<a href="#ref-AndrewsHanna2014" role="doc-biblioref">6</a>)</span>。これとは対照的に、タスクポジティブネットワーク（TPN）——注意や実行機能を司る回路——は、外界に注意を向け目標志向的な行動をとる際に活性化する <span class="citation" data-cites="Fox2005 Knyazev2020">(<a href="#ref-Fox2005" role="doc-biblioref">7</a>,<a href="#ref-Knyazev2020" role="doc-biblioref">8</a>)</span>。心が彷徨うとき、通常はDMNの活動が高まり、TPNの活動は相対的に低下する。これは、外部への注意から内部への注意へと焦点が移ったことを反映している <span class="citation" data-cites="Christoff2016">(<a href="#ref-Christoff2016" role="doc-biblioref">9</a>)</span>。DMNとTPNのこの相互関係は、脳が内部モード（マインドワンダリング、自己への注目）と外部モード（課題への集中、外的刺激への反応）の間を行き来するという考え方と合致する <span class="citation" data-cites="Smallwood2015">(<a href="#ref-Smallwood2015" role="doc-biblioref">1</a>)</span>。この神経バランスを理解することは重要である。なぜなら、MW中にしばしば外部情報の処理が低下する理由が明確になるからだ。また、これらのネットワークの動態を調整することは、課題遂行に不利なMWを抑えつつ、その適応的な側面を損なわずに活用するための手がかりとなる可能性がある。</p>
+</section>
+<section id="瞳孔径とマインドワンダリング" class="level2">
+<h2 class="anchored" data-anchor-id="瞳孔径とマインドワンダリング">瞳孔径とマインドワンダリング</h2>
+<p>MWの神経基盤に加えて、瞳孔径もMW状態を反映する重要な生理指標として注目されている。瞳孔径は認知的負荷や覚醒度を示す指標とされており、MW中には特徴的な変化を示すことが報告されている。<span class="citation" data-cites="Franklin2013">(<a href="#ref-Franklin2013" role="doc-biblioref">10</a>)</span> による「Window to the wandering mind」と題された研究では、読書中に注意が逸れる直前に瞳孔径が増大することが示された。一方で、別の課題状況ではMW中に瞳孔径が縮小するという報告もあり <span class="citation" data-cites="Grandchamp2014">(<a href="#ref-Grandchamp2014" role="doc-biblioref">11</a>)</span>、瞳孔の反応は課題の種類によって増減いずれの方向にも変化しうる。重要なのは、課題に専念している状態とMW状態の間で、瞳孔径に明確な違いが見られるという点である。さらに、視線の動きについても、MW時には注視のパターンや視線の分散に特徴的な変化が生じることが報告されている <span class="citation" data-cites="Benedek2017 Faber2020">(<a href="#ref-Benedek2017" role="doc-biblioref">12</a>,<a href="#ref-Faber2020" role="doc-biblioref">13</a>)</span>。これらの眼球運動の指標は、外界の情報処理が低下することに伴う視線制御の変化を反映しており、MW検出の有力な手がかりとなる。</p>
+</section>
+<section id="マインドワンダリングの認知的感情的影響" class="level2">
+<h2 class="anchored" data-anchor-id="マインドワンダリングの認知的感情的影響">マインドワンダリングの認知的・感情的影響</h2>
+<p>日常生活においても実験課題においても、頻繁なマインドワンダリングには明確な即座の欠点がある。研究によれば、MWの発生率が高いほど反応時間が遅くなり、注意を要する課題でのミスが増えることが示されている <span class="citation" data-cites="Leszczynski2017">(<a href="#ref-Leszczynski2017" role="doc-biblioref">14</a>)</span>。また、運転中や読書中といった場面でも、注意の欠如につながることが報告されている <span class="citation" data-cites="Galera2012 McVay2009">(<a href="#ref-Galera2012" role="doc-biblioref">15</a>,<a href="#ref-McVay2009" role="doc-biblioref">16</a>)</span>。例えば、運転中に心が彷徨っていると危険を見落としやすくなり、授業中に空想にふけっている学生は情報を記憶しにくくなる <span class="citation" data-cites="Galera2012 Wammes2016">(<a href="#ref-Galera2012" role="doc-biblioref">15</a>,<a href="#ref-Wammes2016" role="doc-biblioref">17</a>)</span>。このように、持続的注意課題や運転・読書のような現実場面では、MWの頻度が高いほど反応時間の遅延やエラー増加など、認知面での即時的なコストが生じる。</p>
+<p>さらに、MWを起こしやすい傾向そのものも、学業成績の低下や学習内容の記憶保持の低下と関連していることが分かっている <span class="citation" data-cites="Szpunar2013 Unsworth2013 Wammes2016">(<a href="#ref-Wammes2016" role="doc-biblioref">17</a>–<a href="#ref-Unsworth2013" role="doc-biblioref">19</a>)</span>。例えば、講義中や読書中に頻繁に「注意が逸れる」学生は、内容の理解や思い出す力が低いことが多い <span class="citation" data-cites="Wammes2016">(<a href="#ref-Wammes2016" role="doc-biblioref">17</a>)</span>。同様に、MWはワーキングメモリ容量の低下とも関連しており、課題から離れた思考に陥りやすい人は、記憶を多用する課題でのパフォーマンスが低下する <span class="citation" data-cites="Unsworth2013">(<a href="#ref-Unsworth2013" role="doc-biblioref">19</a>)</span>。</p>
+<p>こうした認知面での影響に加えて、研究者たちはMWと感情状態の関係にも注目している。マインドワンダリングのエピソード、特に繰り返し生じたり制御が効かなかったりするものは、反芻思考やネガティブな気分を引き起こしやすい <span class="citation" data-cites="Szpunar2013 Smallwood2011">(<a href="#ref-Szpunar2013" role="doc-biblioref">18</a>,<a href="#ref-Smallwood2011" role="doc-biblioref">20</a>)</span>。日常生活での経験サンプリング研究では、自発的なMWが生じている時間帯は、報告される幸福感が低下する傾向があり <span class="citation" data-cites="Killingsworth2010">(<a href="#ref-Killingsworth2010" role="doc-biblioref">2</a>)</span>、悲しい気分を実験的に誘導すると、課題から離れた自己への注目が増えることも示されている <span class="citation" data-cites="Smallwood2011">(<a href="#ref-Smallwood2011" role="doc-biblioref">20</a>)</span>。これらの知見から、MWは将来の計画や創造的なアイデアの醸成といった適応的な機能を果たしうる一方で、とりわけ本人の意図に反して生じる意図しないMWの頻度は、感情面のウェルビーイングの低下と関連することが報告されている <span class="citation" data-cites="Seli2019 Smallwood2011">(<a href="#ref-Smallwood2011" role="doc-biblioref">20</a>,<a href="#ref-Seli2019" role="doc-biblioref">21</a>)</span>。</p>
+</section>
+<section id="マインドワンダリングのeeg指標" class="level2">
+<h2 class="anchored" data-anchor-id="マインドワンダリングのeeg指標">マインドワンダリングのEEG指標</h2>
+<p>神経生理学的なレベルにおいて、MWは脳活動の識別可能な変化、とりわけ脳波（EEG）測定における変化と関連している。スペクトルEEG指標は、マインドワンダリング状態と課題集中状態を区別できることが観察されている。一般に、MWは集中的な注意状態と比べて、低周波帯域（シータ波およびアルファ波）のパワーが増加し、高周波帯域（ベータ波）のパワーが減少するという特徴を持つ <span class="citation" data-cites="Braboszcz2011 Compton2019 vanSon2019">(<a href="#ref-Braboszcz2011" role="doc-biblioref">22</a>–<a href="#ref-vanSon2019" role="doc-biblioref">24</a>)</span>。例えば、内的思考に向かっている時間帯では、シータ帯域の活動が上昇し、それに伴ってベータ帯域の活動が減少することが報告されている <span class="citation" data-cites="Compton2019">(<a href="#ref-Compton2019" role="doc-biblioref">23</a>)</span>。同様に、MWに陥ると後頭部のアルファパワーが増強されることがあり、これは外界からの視覚情報の処理が低下していることを反映している <span class="citation" data-cites="vanSon2019">(<a href="#ref-vanSon2019" role="doc-biblioref">24</a>)</span>。</p>
+<p>進行中の振動変化に加えて、事象関連電位（ERP）成分は、MW中の知覚的・認知的な離脱の証拠を提供する。マインドワンダリング中には、単語を一語ずつ提示して読ませる課題において、視覚単語刺激に対する後頭側頭部のP1–N1応答が変化することが報告されている <span class="citation" data-cites="Broadway2015">(<a href="#ref-Broadway2015" role="doc-biblioref">25</a>)</span>。さらに、注意の配分やワーキングメモリの更新を反映する後期のP3成分は、持続的注意の欠如に先立って減少することが分かっており、課題から離れた瞬間には外的なターゲットの処理が低下していることを示している <span class="citation" data-cites="OConnell2009">(<a href="#ref-OConnell2009" role="doc-biblioref">26</a>)</span>。</p>
+<p>総じて、これらのEEG知見は、MW中の知覚的脱結合という考え方を裏付けている。MWのこうした神経シグネチャを特定することは、理論的に有益であるだけでなく、時間分解能の高いEEG計測を用いて瞬間ごとの注意状態を推定する基盤となる。実際、シミュレータ運転課題において、EEGのアルファ帯域パワーやERPのP3成分の変化からMW検出を推定し、運転成績の低下と対応づけた研究も報告されている <span class="citation" data-cites="Baldwin2017">(<a href="#ref-Baldwin2017" role="doc-biblioref">27</a>)</span>。</p>
+</section>
+<section id="ニューロフィードバックによる介入" class="level2">
+<h2 class="anchored" data-anchor-id="ニューロフィードバックによる介入">ニューロフィードバックによる介入</h2>
+<p>MWの悪影響を軽減する有望なアプローチの一つが、<strong>ニューロフィードバック（NFB）</strong>訓練である。ニューロフィードバックとは、個人に自分自身の脳活動に関するリアルタイムの情報を提供し、特定の神経パターンを自己調整できるように学習させる技術である <span class="citation" data-cites="EnriquezGeppert2017">(<a href="#ref-EnriquezGeppert2017" role="doc-biblioref">28</a>)</span>。マインドワンダリングの文脈では、NFBは集中的な注意の神経シグネチャに報酬を与えたり、MW関連の活動が始まった際に合図を出したりすることで、人々が課題から離れた心的状態に気づき、それを減らすよう訓練するために使用できる <span class="citation" data-cites="deBettencourt2015 Kawashima2023">(<a href="#ref-deBettencourt2015" role="doc-biblioref">29</a>,<a href="#ref-Kawashima2023" role="doc-biblioref">30</a>)</span>。</p>
+<p>持続的な注意を維持するために、視覚的なディスプレイや聴覚的な手がかりを含む、様々なNFBの手法が探索されてきた。例えば、<span class="citation" data-cites="Kawashima2023">(<a href="#ref-Kawashima2023" role="doc-biblioref">30</a>)</span> は、ユーザーのマインドワンダリングに対するメタ認識（自覚）を高めることを目的とした聴覚ニューロフィードバックシステムを開発した。また、リアルタイム機能的磁気共鳴画像法（fMRI）に基づくNFBは、後部帯状皮質（PCC）の活動を調整することでMWを抑制できることが示されている <span class="citation" data-cites="Garrison2013 Garrison2015">(<a href="#ref-Garrison2013" role="doc-biblioref">31</a>,<a href="#ref-Garrison2015" role="doc-biblioref">32</a>)</span>。さらに、<span class="citation" data-cites="deBettencourt2015">(<a href="#ref-deBettencourt2015" role="doc-biblioref">29</a>)</span> は、fMRIを用いたリアルタイムニューロフィードバックを開発し、注意の持続状態をリアルタイムでモニタリングすることで、被験者の注意が低下した際にタスクの難易度を調整する手法を提案した。</p>
+<p>ニューロフィードバック支援型のマインドフルネストレーニングも有望性を示している。例えば、<span class="citation" data-cites="Bhayee2016">(<a href="#ref-Bhayee2016" role="doc-biblioref">33</a>)</span> は、ニューロフィードバック支援型のマインドフルネスシステムを使用した参加者が、アクティブコントロールと比較して注意パフォーマンスの向上と身体的苦痛の軽減を示したことを報告した。同様に、<span class="citation" data-cites="Chow2017">(<a href="#ref-Chow2017" role="doc-biblioref">34</a>)</span> は、わずか15分間のEEGアルファニューロフィードバックセッションによって、アルファ活動が増加し、注意課題中の前頭部応答が調整されることを発見した。</p>
+</section>
+<section id="耳内eegによる日常モニタリングの可能性" class="level2">
+<h2 class="anchored" data-anchor-id="耳内eegによる日常モニタリングの可能性">耳内EEGによる日常モニタリングの可能性</h2>
+<p>これまで紹介してきた多くのMW検出やNFBの研究は、短時間の実験課題やMRI装置内といった制御された環境で実施されている。しかし、運転、学習、オフィスワークなど日常場面で生じるMWに対して介入しようとするなら、実験室の外でも長時間にわたって注意状態をモニタリングできる仕組みが必要となる。</p>
+<p>この問題に対処するため、研究者たちはよりユーザーフレンドリーなウェアラブルEEG技術に注目している。そうした技術革新の一つが<strong>耳内EEG（in-ear EEG）</strong>であり、耳道内に快適にフィットするイヤピース型のデバイスに電極が埋め込まれている <span class="citation" data-cites="Looney2012 Mikkelsen2015">(<a href="#ref-Looney2012" role="doc-biblioref">35</a>,<a href="#ref-Mikkelsen2015" role="doc-biblioref">36</a>)</span>。耳内EEGデバイスは通常、外耳の内側から脳信号を記録する小型のイヤバッド様のセンサーで構成され、目立たない設計となっている。この設計は長期モニタリングに複数の利点をもたらす。イヤピースは皮膚との安定した密着接触を提供し、その結果、EEG信号は動作に対して非常に頑健になる <span class="citation" data-cites="Meiser2020 Mikkelsen2015">(<a href="#ref-Mikkelsen2015" role="doc-biblioref">36</a>,<a href="#ref-Meiser2020" role="doc-biblioref">37</a>)</span>。</p>
+<p>多くの研究でEEG単独でも、MW状態の分類が可能であることが示されているものの <span class="citation" data-cites="Dong2021">(<a href="#ref-Dong2021" role="doc-biblioref">38</a>)</span>、その分類精度は個人差やタスクによってしばしば6〜8割程度にとどまり、実用的なNFBシステムとしてはさらなる改善が望まれる。その一つの方向性として、EEGと他の生理指標を組み合わせたマルチモーダルなMW検出が提案されている。例えば、EEGとアイトラッキングを用いて内部指向／外部指向の注意を分類する研究では、EEG単独・アイトラッキング単独よりも、両者を特徴融合した方が高い分類精度を達成することが報告されている <span class="citation" data-cites="Vortmann2022">(<a href="#ref-Vortmann2022" role="doc-biblioref">39</a>)</span>。</p>
+</section>
+<section id="研究の目的" class="level2">
+<h2 class="anchored" data-anchor-id="研究の目的">研究の目的</h2>
+<p>本研究は、単一チャンネルのEEG、アイトラッキング、および行動パフォーマンスのデータを用いて、MW検出モデルを開発することを目的とする。長期的な目標は、これらの検出技術をニューロフィードバック介入に応用し、MWを軽減するための個別化された戦略を創出することである。現在のMW検出方法論の限界に対処することで、本研究の知見は、MW研究とその教育、ヘルスケア、認知心理学における応用を前進させ、最終的には注意制御能力と精神的ウェルビーイングの向上を促すことが期待される。</p>
+</section>
+</section>
+<section id="方法" class="level1">
+<h1>方法</h1>
+<section id="参加者" class="level2">
+<h2 class="anchored" data-anchor-id="参加者">参加者</h2>
+<p>本研究では、2021〜2023年度に収集された、50名の健常成人（男性25名、女性25名）を対象とした生体データを用いた。すべての参加者は研究への参加に同意し、株式会社国際電気通信基礎技術研究所（ATR）倫理審査委員会による承認を得ている。参加者には実験協力の謝礼が支払われ、取得されたデータは匿名化された上で解析に用いられた。</p>
+</section>
+<section id="課題とラベリング方法" class="level2">
+<h2 class="anchored" data-anchor-id="課題とラベリング方法">課題とラベリング方法</h2>
+<p>本研究では、マインドワンダリング（MW）を引き起こす課題としてGradual Onset Continuous Performance Task（gradCPT）を使用した <span class="citation" data-cites="Rosenberg2013">(<a href="#ref-Rosenberg2013" role="doc-biblioref">40</a>)</span>。gradCPTは持続的注意の測定に特化した課題であり、連続呈示される画像に対して、特定の画像（山の画像）には反応を控え、それ以外（街の画像）にはキーを押下するGo/No-Go課題である。本課題の特徴は、刺激画像が徐々にフェードイン・フェードアウトすることで、明確な刺激オンセットを排除し、持続的な注意維持を要求する点にある。先行研究では、gradCPTが注意の揺らぎやマインドワンダリングを誘発しやすいことが報告されており、課題パフォーマンス（反応時間の変動、エラー率）とMW状態との関連性が実証されている <span class="citation" data-cites="Esterman2013">(<a href="#ref-Esterman2013" role="doc-biblioref">41</a>)</span>。</p>
+<p>本課題はgradCPT <span class="citation" data-cites="Rosenberg2013">(<a href="#ref-Rosenberg2013" role="doc-biblioref">40</a>)</span> に基づき、12分間の課題中、刺激は1200msごとに連続的に切り替わる。自己報告プローブは、参加者の内的注意状態を評価するための質問画面であり、課題中にランダムに提示された。被験者は直前の注意の状態を課題関与/非関与×感覚志向/思考志向の2軸で報告した <span class="citation" data-cites="Rosenberg2013">(<a href="#ref-Rosenberg2013" role="doc-biblioref">40</a>)</span>。第一軸（x軸）は「課題関与度」を表し、左端（-1）が「完全に課題から離れた思考」、右端（+1）が「完全に課題に集中」を意味する。第二軸（y軸）は「思考の志向性」を表し、下端（-1）が「感覚的・知覚的経験に焦点」、上端（+1）が「抽象的思考や内的対話に焦点」を意味する。各参加者に対して、実験全体で25回のプローブが提示された。この報告から得られるx軸（課題関与度）とy軸（感覚志向度）の座標を用いて、ユークリッド距離を算出し、MWの強度を連続変数（0〜1）として定量化した。</p>
+</section>
+<section id="データ取得と前処理" class="level2">
+<h2 class="anchored" data-anchor-id="データ取得と前処理">データ取得と前処理</h2>
+<p>データ取得は以下の3つのモダリティで行われた：</p>
+<ul>
+<li><strong>EEG</strong>（耳内装着型：Auris In-Ear EEG、サンプリングレート：250 Hz）</li>
+<li><strong>瞳孔径</strong>（Pupil Core）</li>
+<li><strong>課題反応</strong>（キー入力および反応時間）</li>
+</ul>
+<section id="eegデータの前処理" class="level3">
+<h3 class="anchored" data-anchor-id="eegデータの前処理">EEGデータの前処理</h3>
+<p>EEG信号は0.5〜40 Hzのバンドパスフィルタおよび50 Hzノッチフィルタで前処理された後、プローブイベントを基準として、その3.9秒前から0秒（プローブ提示時点）までの区間をエポックとして抽出した。計算負荷軽減のためダウンサンプリングされ、DCオフセット除去のためベースライン補正が適用された。</p>
+<p>EEGは左手首をグランド電極、右耳内をリファレンス電極として、左耳内から記録された <span class="citation" data-cites="Looney2012 Mikkelsen2015">(<a href="#ref-Looney2012" role="doc-biblioref">35</a>,<a href="#ref-Mikkelsen2015" role="doc-biblioref">36</a>)</span>。</p>
+</section>
+<section id="瞳孔データの前処理" class="level3">
+<h3 class="anchored" data-anchor-id="瞳孔データの前処理">瞳孔データの前処理</h3>
+<p>瞳孔径はPupil Core（Pupil Labs社製）を用いて測定された。Pupil Coreは赤外線カメラを用いた眼球追跡システムであり、2D楕円フィッティングアルゴリズムによって瞳孔径を算出する <span class="citation" data-cites="Kassner2014">(<a href="#ref-Kassner2014" role="doc-biblioref">42</a>)</span>。具体的には、検出された瞳孔輪郭に対して楕円を当てはめ、その長軸と短軸から瞳孔面積を推定し、等価円直径として瞳孔径（単位：ピクセルまたはmm）を出力する。さらに、Pupil Coreはpye3dと呼ばれる3D眼球モデルも実装しており、これは眼球運動学と光学を捉えた数学的3D眼球モデルに基づいている <span class="citation" data-cites="Swirski2013">(<a href="#ref-Swirski2013" role="doc-biblioref">43</a>)</span>。この3Dモデルは視線角度による瞳孔の遠近法歪みを補正し、より正確な瞳孔サイズ推定を可能にする。本研究では、両モデルから得られた瞳孔径データを特徴量として使用した。</p>
+<p>瞳孔データはタイムスタンプに基づいてEEGと同期された。信頼度（confidence）は、Pupil Coreが瞳孔輪郭検出時に自動算出する指標であり、楕円フィッティングの精度を0〜1のスケールで表す。本研究では信頼度が0.9未満のデータを低品質とみなし除外した。リサンプリング後も残存するNaN値を除外し、最終的にプローブイベントに基づきエポック分割を行った。</p>
+</section>
+</section>
+<section id="特徴量抽出" class="level2">
+<h2 class="anchored" data-anchor-id="特徴量抽出">特徴量抽出</h2>
+<section id="eeg特徴量" class="level3">
+<h3 class="anchored" data-anchor-id="eeg特徴量">EEG特徴量</h3>
+<p>EEGデータからは周波数帯域別のパワー（Theta: 4–8Hz、Alpha: 8–12Hz、Beta: 13–30Hz）を算出した。Thetaパワーは内的注意やマインドワンダリングに関係し <span class="citation" data-cites="RodriguezLarios2020 vanSon2019">(<a href="#ref-vanSon2019" role="doc-biblioref">24</a>,<a href="#ref-RodriguezLarios2020" role="doc-biblioref">44</a>)</span>、Alphaパワーは外的課題からの乖離を示す指標とされる <span class="citation" data-cites="Ceh2020 Compton2019">(<a href="#ref-Compton2019" role="doc-biblioref">23</a>,<a href="#ref-Ceh2020" role="doc-biblioref">45</a>)</span>。また、Betaパワーは認知的集中に関連し、マインドワンダリング中には減少する傾向がある。加えて、EEG時系列の構造的特性を捉えるために、Embedding Matrixから算出された統計量（平均、標準偏差、最大値、最小値）を用いた。Embedding Matrixとは、時系列信号から遅延座標を用いて構築される行列であり、信号の動的な構造や位相空間の特性を表現する手法である <span class="citation" data-cites="Hazarika2024">(<a href="#ref-Hazarika2024" role="doc-biblioref">46</a>)</span>。</p>
+<p>本研究における単一チャンネルEEGの前処理において、Embedded Artifact Subspace Reconstruction（E-ASR）手法を採用した。従来のArtifact Subspace Reconstruction（ASR）アルゴリズムは、主成分分析を用いた適応的空間フィルタリング手法として多チャンネルEEGにおいて高い性能を示してきたが、単一チャンネルデータには適用できないという本質的な限界を有していた。この問題を解決するため、<span class="citation" data-cites="Hazarika2024">(<a href="#ref-Hazarika2024" role="doc-biblioref">46</a>)</span> によって提案されたE-ASR手法は、動的埋め込み（dynamical embedding）の概念を導入し、単一チャンネルEEG信号から遅延ベクトルを用いて疑似多チャンネル行列を構築することで、ASRアルゴリズムの適用を可能にした。</p>
+</section>
+<section id="瞳孔径特徴量" class="level3">
+<h3 class="anchored" data-anchor-id="瞳孔径特徴量">瞳孔径特徴量</h3>
+<p>瞳孔径データからは、基本統計量（平均、標準偏差、最大、最小）に加えて、時間変化の傾き（1次導関数）を算出した。さらに、注視（fixation）とサッカード（saccade）に関する情報も特徴量として抽出した。一般に、マインドワンダリング中は注視時間が延長し、視覚探索活動が低下することが知られており <span class="citation" data-cites="Benedek2017 Faber2020">(<a href="#ref-Benedek2017" role="doc-biblioref">12</a>,<a href="#ref-Faber2020" role="doc-biblioref">13</a>)</span>、これらの特徴量はMW状態を反映する重要な指標となる。</p>
+</section>
+<section id="行動応答特徴量" class="level3">
+<h3 class="anchored" data-anchor-id="行動応答特徴量">行動応答特徴量</h3>
+<p>gradCPT中のキー反応からは、RTCV（Response Time Coefficient of Variability）を算出した。RTCVは反応時間の標準偏差を平均で割ったものであり、注意の揺らぎやマインドワンダリングに伴う不安定な反応を示す指標とされる <span class="citation" data-cites="Esterman2013 Rosenberg2013">(<a href="#ref-Rosenberg2013" role="doc-biblioref">40</a>,<a href="#ref-Esterman2013" role="doc-biblioref">41</a>)</span>。</p>
+</section>
+</section>
+<section id="ラベリングとスコア化" class="level2">
+<h2 class="anchored" data-anchor-id="ラベリングとスコア化">ラベリングとスコア化</h2>
+<p>各ブロックの終了時に取得された自己報告プローブのx/y座標に基づき、原点（課題に関与しており、感覚にも向いている状態）からのユークリッド距離をMWスコアとした。このスコアは、マインドワンダリングの強度を連続的に表すものであり、以降のモデリングにおいて回帰問題として扱った。</p>
+</section>
+<section id="モデリングと検証" class="level2">
+<h2 class="anchored" data-anchor-id="モデリングと検証">モデリングと検証</h2>
+<p>得られた各エポックに対して、上述のEEG、瞳孔径、行動特徴量を入力とし、MWスコアを出力とする回帰モデルを構築した。モデルにはSupport Vector Regression（SVR）を使用した。ハイパーパラメータの探索には、ハイパーパラメータ最適化ライブラリOptunaによるベイズ最適化を用いて、Tree-structured Parzen Estimator（TPE）に基づくベイズ最適化を行った <span class="citation" data-cites="Akiba2019">(<a href="#ref-Akiba2019" role="doc-biblioref">47</a>)</span>。具体的には、Leave-One-Subject-Out交差検証における平均二乗誤差（MSE）を最小化することを目的として、SVRのC（0.01〜100、対数スケール）、epsilon（0.001〜2）、kernel（linear/poly/rbf）に加えて、各特徴量の使用有無をカテゴリカルな探索変数として定義し、合計10試行の探索を行った。</p>
+<p>本研究では、Nested cross-validation（入れ子型交差検証）を採用した。外側のCV（outer CV）にはLeave-One-Subject-Out Cross Validation（LOSO）を用い、各被験者をテスト群として汎化性能を評価した。内側のCV（inner CV）では、残りの被験者のデータを用いてOptunaによるベイズ最適化（10試行）を行い、SVRのハイパーパラメータ（C, epsilon, kernel）および特徴量選択を最適化した。また、LassoCVによる特徴量選択では5分割の内側CVにより最適な正則化パラメータλを決定した。</p>
+<p>特徴量選択には、LassoCV（Least Absolute Shrinkage and Selection Operator with Cross-Validation）を用いた。LassoCVは5分割交差検証により最適な正則化パラメータλを自動決定する。scikit-learnのLassoCVでは、入力データに基づいて探索するλの範囲が自動的に設定され（対数スケールで100点）、その中から最小の交差検証誤差を与えるλが選択される。本研究では、LassoCVによって算出された特徴量重要度の中央値を閾値とし、それ以上の重要度を持つ特徴量のみを選択した。</p>
+<p>本研究では、マインドワンダリング予測における各生理指標の寄与を検討するため、使用する特徴量セットを変えた複数のモデルを構築し比較した。具体的には、以下の4条件を設定した：</p>
+<ol type="1">
+<li><strong>RTCV Only</strong>：行動指標のみ（反応時間変動係数、1特徴量）</li>
+<li><strong>EEG Only</strong>：脳波指標のみ（delta, theta, alpha, beta, gamma、5特徴量）</li>
+<li><strong>Pupil Only</strong>：瞳孔・視線指標のみ（瞳孔径統計量およびサッカード頻度、11特徴量）</li>
+<li><strong>All Features</strong>：上記すべてを統合（17特徴量）</li>
+</ol>
+<p>評価指標には、予測スコアと実際のMWスコアのピアソン相関係数、および予測スコアを閾値0.65で二値化した分類器のAUC（曲線下面積）を用いた。検証は被験者の重複を避けるため、Leave-One-Subject-Out Cross Validation（LOSO）を採用し、各被験者をテスト群として用いた際の汎化性能を評価した。</p>
+</section>
+</section>
+<section id="結果" class="level1">
+<h1>結果</h1>
+<section id="svrモデルの性能" class="level2">
+<h2 class="anchored" data-anchor-id="svrモデルの性能">SVRモデルの性能</h2>
+<p>マインドワンダリング（MW）スコアの予測精度を評価するために、EEG、瞳孔径、行動データから抽出された特徴量を用いてSupport Vector Regression（SVR）モデルを訓練した。データセットは、49名の被験者から取得された合計1,225サンプル（各被験者25プローブ）で構成された。特徴量数は条件により異なり、EEG特徴量のみの条件では5特徴量（delta, theta, alpha, beta, gamma）、全特徴量を用いた条件では11特徴量（EEG 5 + 瞳孔径・視線6）を用いた。ただし、LassoCVによる特徴量選択により、各交差検証フォールドで実際に使用される特徴量数は変動した。</p>
+<p>汎化性能の評価にはLeave-One-Group-Out（LOSO）交差検証を用い、各被験者を一度ずつテストデータとした。全特徴量を用いたモデルは、ピアソン相関係数0.091、AUC 0.5406を達成した。EEGのみを用いたモデルでは、相関0.0648、AUC 0.5300となり、予測性能はやや低かった。特徴量選択によって性能は向上し、相関係数は0.110、AUCは0.5600となった。参考までに、<span class="citation" data-cites="Kawashima2017">(<a href="#ref-Kawashima2017" role="doc-biblioref">48</a>)</span> によるベンチマークは、相関0.203、AUC 0.5900であった。</p>
+<p>LOSO交差検証の結果、条件ごとに被験者単位の予測性能を評価した。EEG特徴量のみを用いた条件（n=47フォールド）では、AUC平均値0.532±0.133（中央値0.536）、ピアソン相関係数平均値0.046±0.236であった。Pupil特徴量のみの条件（n=43フォールド）では、AUC平均値0.514±0.170（中央値0.500）、相関係数平均値0.009±0.283となった。Pupil + EEG条件（n=41フォールド）では、AUC平均値0.518±0.172（中央値0.500）、相関係数平均値0.027±0.287であった。</p>
+<p>被験者間で顕著なばらつきが観察され、EEG Only条件ではAUC範囲31.3%〜85.7%、Pupil条件では一部被験者でAUC100%を達成する一方で最低18%まで低下するケースも見られた。この大きな個人差は、マインドワンダリング検出における被験者固有の特性の重要性を示唆している。</p>
+</section>
+<section id="分類性能roc-auc" class="level2">
+<h2 class="anchored" data-anchor-id="分類性能roc-auc">分類性能（ROC AUC）</h2>
+<p>ROC AUCによる分類性能の評価では、EEG Onlyが最も高い性能を示した（53.2%）。Pupil + EEGは53.1%とEEG Onlyとほぼ同等の性能であったが、Pupil Onlyは51.0%と最も低い性能であった。標準偏差を見ると、EEG Onlyが13.5%と最も小さく、被験者間での性能のばらつきが最も少なかった。一方、Pupil OnlyとPupil + EEGはそれぞれ17.3%、17.9%と大きなばらつきを示した。</p>
+</section>
+<section id="予測精度ピアソン相関係数" class="level2">
+<h2 class="anchored" data-anchor-id="予測精度ピアソン相関係数">予測精度（ピアソン相関係数）</h2>
+<p>予測値と実測値間のピアソン相関係数では、Pupil + EEGが最も高い相関を示した（r = 0.059）。EEG Onlyは0.050、Pupil Onlyは0.014であった。しかし、いずれの条件においても相関係数は非常に低く、予測精度は限定的であることが示された。</p>
+</section>
+<section id="特徴量の重要度" class="level2">
+<h2 class="anchored" data-anchor-id="特徴量の重要度">特徴量の重要度</h2>
+<p>MW予測においてどの特徴量が重要であったかを特定するため、Optunaで選択された特徴量を用いたSVRモデルの重要度スコアを解析した。最も影響力が大きかったのは、RTCV（反応時間の変動係数）であり、注意の揺らぎを表す行動指標がMW予測の中心的役割を担っていることが示された。</p>
+<p>サッカード角度の平均、注視持続時間、瞳孔径の微分値といった眼球運動関連の特徴量も上位にランクされており、これらの指標は、マインドワンダリング中に視線のサンプリング行動が変化し、注視時間や視線スキャンパターンが変わることを示した先行研究の結果と一致している <span class="citation" data-cites="Mikkelsen2015">(<a href="#ref-Mikkelsen2015" role="doc-biblioref">36</a>)</span>。EEG特徴量の寄与は限定的であり、現在の記録条件や前処理方法では、EEG以外のモダリティの方が頑健な信号源となる可能性が示唆された。</p>
+</section>
+<section id="被験者間のばらつき" class="level2">
+<h2 class="anchored" data-anchor-id="被験者間のばらつき">被験者間のばらつき</h2>
+<p>モデルの予測性能が被験者ごとにどのように異なるかも評価した。全テストフォールドにおけるピアソン相関係数およびAUCの分布を見ると、中程度の個人差が存在した。</p>
+<p>全ての条件において被験者間で顕著な個人差が観察された。ROC AUCの標準偏差は、EEG Onlyで13.5%、Pupil Onlyで17.3%、Pupil + EEGで17.9%であった。特にEEG Onlyは他の条件と比較して標準偏差が小さく、被験者間での性能の一貫性が高いことが示された。</p>
+<p>ピアソン相関係数においても同様の傾向が見られ、標準偏差はEEG Onlyで0.236、Pupil Onlyで0.283、Pupil + EEGで0.287であった。これらの大きな標準偏差は、マインドワンダリング分類における個人差の存在を強く示唆している。</p>
+<p>ROC AUCの分布範囲を見ると、EEG Onlyでは31.3%〜85.7%、Pupil OnlyとPupil + EEGでは一部の被験者で完全分類（AUC = 100%）が達成される一方で、ランダムレベル（約18%）まで低下する被験者も存在した。この極端な個人差は、マインドワンダリング検出における被験者固有の特性の重要性を示している。</p>
+</section>
+</section>
+<section id="考察" class="level1">
+<h1>考察</h1>
+<section id="主要な知見の要約" class="level2">
+<h2 class="anchored" data-anchor-id="主要な知見の要約">主要な知見の要約</h2>
+<p>本研究では、EEG（耳内電極による記録）・瞳孔径・行動指標を統合し、Support Vector Regression（SVR）によって連続的なマインドワンダリング（MW）スコアを予測した。最大の特徴は、反応時間の変動（特に反応時間の変動係数: RTCV）および視線・瞳孔指標がモデル予測に強く寄与した点である。一方、EEG由来の特徴量の寄与は相対的に小さく、従来期待されていた脳波指標の予測力は限定的であった。これらの結果から、本研究はマルチモーダル指標による連続MW推定の可能性を示し、行動と生理指標を組み合わせることでMW状態を定量的に捉え得ることを明らかにした。</p>
+</section>
+<section id="結果の解釈と意義" class="level2">
+<h2 class="anchored" data-anchor-id="結果の解釈と意義">結果の解釈と意義</h2>
+<p>本研究でRTCVや瞳孔指標が強力な予測因子となったことは、MW時の注意変動の特徴を反映していると考えられる。反応時間のばらつきは注意の乱れを反映する典型的指標であり、MWエピソードでは平均反応時間の遅延および反応時間変動が増大することが先行研究でも報告されている <span class="citation" data-cites="Bastian2013 Esterman2013">(<a href="#ref-Esterman2013" role="doc-biblioref">41</a>,<a href="#ref-Bastian2013" role="doc-biblioref">49</a>)</span>。我々の結果でもRTCVが高いとMW傾向が強まることから、行動指標だけでも内的注意状態を捉えうることが示唆される。このことは、実験課題中の注意水準変動をリアルタイムに検知する簡便な手段として反応時間変動が有用である可能性を示している。</p>
+<p>加えて、瞳孔や視線の指標が大きな寄与を示したことは、MW時の覚醒水準や視覚的注意の変化を反映していると考えられる。瞳孔径は認知負荷や覚醒度の指標とされ、MW中には瞳孔応答が有意に変化することが知られている。例えば、<span class="citation" data-cites="Franklin2013">(<a href="#ref-Franklin2013" role="doc-biblioref">10</a>)</span> の研究「Window to the wandering mind」では、読解中に注意が逸れる直前に瞳孔径が上昇することが示された。一方、呼吸課題中の計測ではMW中に瞳孔径が縮小するとの報告もあり <span class="citation" data-cites="Grandchamp2014">(<a href="#ref-Grandchamp2014" role="doc-biblioref">11</a>)</span>、瞳孔反応は課題状況によって増減双方の方向で変化するが、いずれにせよタスク専念状態との瞳孔径の差異が見られる点が重要である。視線挙動についても、MW時には視線の固定や分散に特徴的な変化が生じることが報告されている <span class="citation" data-cites="Benedek2017 Faber2020">(<a href="#ref-Benedek2017" role="doc-biblioref">12</a>,<a href="#ref-Faber2020" role="doc-biblioref">13</a>)</span>。実際に本研究でも瞳孔径や視線の分散などの指標がモデルに寄与しており、眼球運動・瞳孔は内的注意状態の有力な生体指標であることが改めて示された。</p>
+</section>
+<section id="eeg特徴量の限定的寄与について" class="level2">
+<h2 class="anchored" data-anchor-id="eeg特徴量の限定的寄与について">EEG特徴量の限定的寄与について</h2>
+<p>EEG由来の特徴量の寄与が小さかった点については、いくつかの要因が考えられる。第一に、本研究では装着性を考慮して耳内電極によるEEG（いわゆるear-EEG）を用いたが、その信号品質および計測可能な脳部位の制約が影響した可能性がある。耳周囲で記録されるEEG信号は主として側頭葉近傍の脳活動に感度が高く、頭頂や前頭部の信号は減衰しやすいことが報告されている <span class="citation" data-cites="Meiser2020">(<a href="#ref-Meiser2020" role="doc-biblioref">37</a>)</span>。</p>
+<p>MWに関連するとされる脳波指標には、タスク関連刺激に対するP300（P3）成分の振幅低下や、α帯域パワーの変動などがあり、比較的安定したマーカーとして報告されている <span class="citation" data-cites="Kam2022">(<a href="#ref-Kam2022" role="doc-biblioref">50</a>)</span>。耳内EEGではこうした典型的指標、例えば注意集中時に高振幅となるP3がMW時には低下する現象を捉えにくく、結果的にEEG特徴の寄与が限定的になったと考えられる。</p>
+<p>第二に、使用した課題であるgradCPT（gradual Continuous Performance Task）の性質も影響した可能性がある。gradCPTは刺激が徐々に遷移するため刺激オンセットに時間ロックしたERP解析は困難であるが、本研究ではEEGの周波数帯域パワーを特徴量として使用しており、むしろ明確な刺激誘発反応が生じにくい分、持続的な注意状態の変化に伴う脳活動の差異がEEG周波数特性に反映されやすいと考えられる。</p>
+</section>
+<section id="既存研究との比較" class="level2">
+<h2 class="anchored" data-anchor-id="既存研究との比較">既存研究との比較</h2>
+<p>本研究のアプローチと成果を、先行するMW研究と比較する。まず、<span class="citation" data-cites="Kawashima2017">(<a href="#ref-Kawashima2017" role="doc-biblioref">48</a>)</span> はSART課題中のEEGパワー・コヒーレンスからSVRによってMWの強度を予測し、限られた電極数でも線形モデルを上回る精度が得られることを示した。我々の研究はこの先行研究を発展させ、EEGに加えて瞳孔や反応時間といった指標を組み入れることで予測精度の向上と汎用性の拡大を図ったものである。</p>
+<p>また、本研究は複数指標を統合した連続MW予測を実現した点で新規性が高い。従来、MWの検出は単一の生理指標に基づくモデルが多く、例えばEEGに基づくMW判別モデル <span class="citation" data-cites="Franklin2013">(<a href="#ref-Franklin2013" role="doc-biblioref">10</a>)</span> や、瞳孔・視線指標に基づくモデル、あるいは行動指標に着目したモデルなど、各モダリティ個別の検討が主流であった。これに対し本研究は、脳活動・眼球反応・行動という異なる階層の指標を組み合わせることで、それぞれ単独では捉えきれないMW状態の変動をより安定に捉えることに成功した点が重要である。実際、先行研究でも読み課題中のMW検出において眼球指標と皮膚電気反応を組み合わせると単一指標より検出精度が向上することが報告されている <span class="citation" data-cites="Brishtel2020">(<a href="#ref-Brishtel2020" role="doc-biblioref">51</a>)</span>。</p>
+<p>さらに、近年の関連研究と比較すると、本研究の特徴である多指標統合と連続予測は、MWの実世界応用への橋渡しとなる点で意義がある。例えば、自動車運転中の注意散漫（MWに起因する脇見運転）を検知するため、被験者のブレーキ反応の変動や自己報告といった行動指標のみからMW推定を試みる研究がある <span class="citation" data-cites="Yoshida2023">(<a href="#ref-Yoshida2023" role="doc-biblioref">52</a>)</span>。これに対し我々の研究は、生理データを含む多面的な指標を組み合わせることでより高精度かつ汎用的なMW検出の可能性を示した。</p>
+</section>
+<section id="限界" class="level2">
+<h2 class="anchored" data-anchor-id="限界">限界</h2>
+<p>本研究にはいくつかの限界が存在する。第一に、EEG計測には耳内装着型の簡易EEGデバイスを用いたため、脳波信号の空間的解像度と品質に制約があった。前述のようにear-EEGは側頭部以外の脳活動の検出感度が低く <span class="citation" data-cites="AndrewsHanna2014">(<a href="#ref-AndrewsHanna2014" role="doc-biblioref">6</a>)</span>、高密度頭皮EEGに比べてノイズ耐性や信号強度の面で劣る可能性がある。その結果、MWに伴う微細な脳活動変化の一部は捉え損ねられ、EEG特徴量の予測力低下につながった可能性がある。今後の研究では、耳内電極の配置数を増やすか、高密度の頭皮EEGとの併用によって、この問題に対処できるだろう。</p>
+<p>第二に、サンプルサイズと被験者特性の限界がある。本研究の被験者数は限定的であり、得られたモデルが一般集団にどこまで当てはまるかについては慎重な解釈が必要である。結果セクションで示したように、被験者間で顕著な個人差が観察され、ROC AUCの標準偏差はEEG Onlyで13.5%、Pupil + EEGで17.9%と大きなばらつきを示した。これは、被験者ごとに課題への集中度、MW傾向、あるいは生理信号の質に差がある可能性を示唆している。</p>
+<p>第三に、課題設定に関する限界としてgradCPT課題の固有の制約が挙げられる。gradCPTは持続的注意力の計測に優れた課題である反面、単調な刺激が長時間繰り返されるために参加者が課題に順応して自動処理的な反応をしてしまう可能性がある。</p>
+</section>
+<section id="今後の課題と展望" class="level2">
+<h2 class="anchored" data-anchor-id="今後の課題と展望">今後の課題と展望</h2>
+<p>本研究で示された成果は、今後のMW研究および応用展開において幾つかの方向性を示唆する。第一に、高密度EEGやfMRIとの統合による神経基盤のさらなる理解が挙げられる。マルチモーダル指標でMW状態を推定できることが示された今、その背後にある脳内メカニズムを解明するために、より詳細な脳活動計測との組み合わせが有用と考えられる。例えば最近の研究では、被験者に同時にEEG・瞳孔計測とfMRIスキャンを行い、高い時間分解能と空間分解能でMW時の脳活動を捉える試みが報告されている <span class="citation" data-cites="Groot2021">(<a href="#ref-Groot2021" role="doc-biblioref">53</a>)</span>。</p>
+<p>第二に、リアルタイムフィードバックへの応用である。MWをリアルタイムに検知できれば、その情報をユーザ本人にフィードバックすることで注意をタスクに引き戻したり、集中力トレーニングを行ったりする応用が考えられる。近年、MW検知技術を学習支援システムに組み込んで、オンライン授業中に注意散漫になった学生へリマインドを送るといった研究も増えつつある。例えば <span class="citation" data-cites="Dhindsa2019">(<a href="#ref-Dhindsa2019" role="doc-biblioref">54</a>)</span> の研究では、講義中のEEGから個人ごとのMWパターンを機械学習で検出し、その精度は約80%にも達したと報告されている。</p>
+<p>第三に、ウェアラブル機器による日常的MWモニタリングへの拡張が挙げられる。昨今、スマートウォッチやARグラスなどのウェアラブルデバイスで生理情報を取得し、人間の認知状態をトラッキングする試みが活発化している。本研究で用いた耳内EEGや眼球計測も小型デバイスへの実装が可能であり、将来的には日常生活で装着可能なMWモニタリングシステムの実現につながるだろう。</p>
+</section>
+</section>
+<section id="結論" class="level1">
+<h1>結論</h1>
+<p>本研究では、EEG、瞳孔、行動指標という複数の生理・行動データを用いて、マインドワンダリング（MW）状態を連続的に予測する回帰モデルを構築し、その有効性を検証した。具体的には、gradual onset Continuous Performance Task（gradCPT）中に得られたマルチモーダルデータから特徴量を抽出し、Support Vector Regression（SVR）によるモデル学習を行った。特徴量選択とハイパーパラメータの同時最適化を行うことで、モデルの性能を最大化し、Leave-One-Group-Out（LOSO）交差検証によって一般化性能を評価した。</p>
+<p>その結果、反応時間の変動（RTCV）やサッカード指標といった行動・視線関連の特徴量がMW予測に最も強く寄与し、EEG指標の相対的な寄与は小さいことが明らかとなった。このことは、MWが外部刺激への応答や視線制御といった行動レベルの変化として現れることを示唆しており、簡易な生体計測手段を用いたMW検出の可能性を支持するものである。</p>
+<p>また、本研究は、MW状態を二値的に分類するのではなく、連続スケールでの予測を実現した点において、新たなアプローチを提示した。これにより、時間的に滑らかなMW状態の変化を定量的に捉えることが可能となり、リアルタイムでの注意状態のモニタリングやフィードバックへの応用が期待される。</p>
+<p>今後は、より高密度な脳波計測との統合や、日常環境での実装に向けた簡易デバイスの活用、さらに異なる課題・状況下での一般化可能性の検証が求められる。マインドワンダリングという主観的・内的な現象を客観的に可視化し、人の注意状態をより深く理解するための手がかりとして、本研究の成果は重要な一歩となると考えられる。</p>
+</section>
+<section id="謝辞" class="level1">
+<h1>謝辞</h1>
+<p>本研究の遂行にあたり、ご指導いただいた田中沙織教授、川島一朔研究員に深く感謝申し上げます。</p>
+</section>
+<section id="参考文献" class="level1">
+<h1>参考文献</h1>
+<div id="refs" class="references csl-bib-body" role="list">
+<div id="ref-Smallwood2015" class="csl-entry" role="listitem">
+<div class="csl-left-margin">1. </div><div class="csl-right-inline">Smallwood J, Schooler JW. The science of mind wandering: empirically navigating the stream of consciousness. Annual Review of Psychology. 2015年;66:487–518. </div>
+</div>
+<div id="ref-Killingsworth2010" class="csl-entry" role="listitem">
+<div class="csl-left-margin">2. </div><div class="csl-right-inline">Killingsworth MA, Gilbert DT. A wandering mind is an unhappy mind. Science. 2010年;330(6006):932. </div>
+</div>
+<div id="ref-Baird2011" class="csl-entry" role="listitem">
+<div class="csl-left-margin">3. </div><div class="csl-right-inline">Baird B, Smallwood J, Schooler JW. Back to the future: Autobiographical planning and the functionality of mind-wandering. Consciousness and Cognition. 2011年;20(4):1604–11. </div>
+</div>
+<div id="ref-Baird2012" class="csl-entry" role="listitem">
+<div class="csl-left-margin">4. </div><div class="csl-right-inline">Baird B, Smallwood J, Mrazek MD, Kam JWY, Franklin MS, Schooler JW. Inspired by distraction: Mind wandering facilitates creative incubation. Psychological Science. 2012年;23(10):1117–22. </div>
+</div>
+<div id="ref-Buckner2008" class="csl-entry" role="listitem">
+<div class="csl-left-margin">5. </div><div class="csl-right-inline">Buckner RL, Andrews-Hanna JR, Schacter DL. The brain’s default network: anatomy, function, and relevance to disease. Annals of the New York Academy of Sciences. 2008年;1124(1):1–38. </div>
+</div>
+<div id="ref-AndrewsHanna2014" class="csl-entry" role="listitem">
+<div class="csl-left-margin">6. </div><div class="csl-right-inline">Andrews-Hanna JR, Smallwood J, Spreng RN. The default network and self-generated thought: component processes, dynamic control, and clinical relevance. Annals of the New York Academy of Sciences. 2014年;1316(1):29–52. </div>
+</div>
+<div id="ref-Fox2005" class="csl-entry" role="listitem">
+<div class="csl-left-margin">7. </div><div class="csl-right-inline">Fox MD, Snyder AZ, Vincent JL, Corbetta M, Van Essen DC, Raichle ME. The human brain is intrinsically organized into dynamic, anticorrelated functional networks. Proceedings of the National Academy of Sciences USA. 2005年;102(27):9673–8. </div>
+</div>
+<div id="ref-Knyazev2020" class="csl-entry" role="listitem">
+<div class="csl-left-margin">8. </div><div class="csl-right-inline">Knyazev GG, Savostyanov AN, Bocharov AV. Intrinsic connectivity networks in the self- and other-referential processing. Frontiers in Human Neuroscience. 2020年;14:70. </div>
+</div>
+<div id="ref-Christoff2016" class="csl-entry" role="listitem">
+<div class="csl-left-margin">9. </div><div class="csl-right-inline">Christoff K, Irving ZC, Fox KCR, Spreng RN, Andrews-Hanna JR. Mind-wandering as spontaneous thought: a dynamic framework. Nature Reviews Neuroscience. 2016年;17(11):718–31. </div>
+</div>
+<div id="ref-Franklin2013" class="csl-entry" role="listitem">
+<div class="csl-left-margin">10. </div><div class="csl-right-inline">Franklin MS, Broadway JM, Mrazek MD, Smallwood J, Schooler JW. Window to the wandering mind: Pupillometry of spontaneous thought while reading. Quarterly Journal of Experimental Psychology. 2013年;66(12):2289–94. </div>
+</div>
+<div id="ref-Grandchamp2014" class="csl-entry" role="listitem">
+<div class="csl-left-margin">11. </div><div class="csl-right-inline">Grandchamp R, Braboszcz C, Delorme A. Oculometric variations during mind wandering. Frontiers in Psychology. 2014年;5:31. </div>
+</div>
+<div id="ref-Benedek2017" class="csl-entry" role="listitem">
+<div class="csl-left-margin">12. </div><div class="csl-right-inline">Benedek M, Stoiser R, Walcher S, Körner C. Eye behavior associated with internally versus externally directed cognition. Frontiers in Psychology. 2017年;8:1092. </div>
+</div>
+<div id="ref-Faber2020" class="csl-entry" role="listitem">
+<div class="csl-left-margin">13. </div><div class="csl-right-inline">Faber M, Krasich K, Bixler RE, Brockmole JR, D’Mello SK. The eye–mind wandering link: Identifying gaze indices of mind wandering across tasks. Journal of Experimental Psychology: Human Perception and Performance. 2020年;46(10):1201–21. </div>
+</div>
+<div id="ref-Leszczynski2017" class="csl-entry" role="listitem">
+<div class="csl-left-margin">14. </div><div class="csl-right-inline">Leszczynski M ほか. Mind wandering disrupts cortical phase-locking to perceptual events. Journal of Neuroscience. 2017年; </div>
+</div>
+<div id="ref-Galera2012" class="csl-entry" role="listitem">
+<div class="csl-left-margin">15. </div><div class="csl-right-inline">Galéra C, Orriols L, M’Bailara K, ほか. Mind wandering and driving: responsibility case-control study. BMJ. 2012年;345:e8105. </div>
+</div>
+<div id="ref-McVay2009" class="csl-entry" role="listitem">
+<div class="csl-left-margin">16. </div><div class="csl-right-inline">McVay JC, Kane MJ. Conducting the train of thought: working memory capacity, goal neglect, and mind wandering in an executive-control task. Journal of Experimental Psychology: Learning, Memory, and Cognition. 2009年;35:196–204. </div>
+</div>
+<div id="ref-Wammes2016" class="csl-entry" role="listitem">
+<div class="csl-left-margin">17. </div><div class="csl-right-inline">Wammes JD, Seli P, Cheyne JA, Boucher PO, Smilek D. Mind wandering during lectures <span>II</span>: Relation to academic performance. Scholarship of Teaching and Learning in Psychology. 2016年;2(1):33–48. </div>
+</div>
+<div id="ref-Szpunar2013" class="csl-entry" role="listitem">
+<div class="csl-left-margin">18. </div><div class="csl-right-inline">Szpunar KK, Khan NY, Schacter DL. Interpolated memory tests reduce mind wandering and improve learning of online lectures. Proceedings of the National Academy of Sciences USA. 2013年;110(16):6313–7. </div>
+</div>
+<div id="ref-Unsworth2013" class="csl-entry" role="listitem">
+<div class="csl-left-margin">19. </div><div class="csl-right-inline">Unsworth N, McMillan BD. Mind wandering and reading comprehension: roles of working memory capacity, interest, motivation, and topic experience. Journal of Experimental Psychology: Learning, Memory, and Cognition. 2013年;39(3):832–42. </div>
+</div>
+<div id="ref-Smallwood2011" class="csl-entry" role="listitem">
+<div class="csl-left-margin">20. </div><div class="csl-right-inline">Smallwood J, O’Connor RC. Imprisoned by the past: unhappy moods lead to a retrospective bias to mind wandering. Cognition and Emotion. 2011年;25(8):1481–90. </div>
+</div>
+<div id="ref-Seli2019" class="csl-entry" role="listitem">
+<div class="csl-left-margin">21. </div><div class="csl-right-inline">Seli P, Beaty RE, Cheyne JA, Smilek D, Oakman J, Schacter DL. Shifting attention to dynamics: measuring dimensions of mind wandering with mouse tracking. Consciousness and Cognition. 2019年; </div>
+</div>
+<div id="ref-Braboszcz2011" class="csl-entry" role="listitem">
+<div class="csl-left-margin">22. </div><div class="csl-right-inline">Braboszcz C, Delorme A. Lost in thoughts: Neural markers of low alertness during mind wandering. Frontiers in Psychology. 2011年;2:430. </div>
+</div>
+<div id="ref-Compton2019" class="csl-entry" role="listitem">
+<div class="csl-left-margin">23. </div><div class="csl-right-inline">Compton RJ, Gearinger D, Wild H. The wandering mind oscillates: <span>EEG</span> alpha power is enhanced during moments of mind-wandering. Cognitive, Affective, &amp; Behavioral Neuroscience. 2019年;19(5):1184–91. </div>
+</div>
+<div id="ref-vanSon2019" class="csl-entry" role="listitem">
+<div class="csl-left-margin">24. </div><div class="csl-right-inline">Son D van, De Blasio FM, Fogarty JS, Putman P, Barry RJ. <span>EEG</span> theta/beta ratio covaries with mind wandering. Annals of the New York Academy of Sciences. 2019年;1464(1):52–71. </div>
+</div>
+<div id="ref-Broadway2015" class="csl-entry" role="listitem">
+<div class="csl-left-margin">25. </div><div class="csl-right-inline">Broadway JM, Franklin MS, Schooler JW. Early <span>ERPs</span> and hemispheric asymmetries reveal mind-wandering while reading. Biological Psychology. 2015年;107:31–43. </div>
+</div>
+<div id="ref-OConnell2009" class="csl-entry" role="listitem">
+<div class="csl-left-margin">26. </div><div class="csl-right-inline">O’Connell RG, Dockree PM, Robertson IH, ほか. Electrophysiological signals predict errors up to 20 s before they occur. Journal of Neuroscience. 2009年;29(26):8604–11. </div>
+</div>
+<div id="ref-Baldwin2017" class="csl-entry" role="listitem">
+<div class="csl-left-margin">27. </div><div class="csl-right-inline">Baldwin CL, Roberts DM, Barragan D, ほか. Detecting and quantifying mind wandering during simulated driving. Frontiers in Human Neuroscience. 2017年;11:406. </div>
+</div>
+<div id="ref-EnriquezGeppert2017" class="csl-entry" role="listitem">
+<div class="csl-left-margin">28. </div><div class="csl-right-inline">Enriquez-Geppert S, Huster RJ, Herrmann CS. <span>EEG</span>-Neurofeedback as a Tool to Modulate Cognition and Behavior: A Review Tutorial. Frontiers in Human Neuroscience. 2017年;11:51. </div>
+</div>
+<div id="ref-deBettencourt2015" class="csl-entry" role="listitem">
+<div class="csl-left-margin">29. </div><div class="csl-right-inline">deBettencourt MT, Cohen JD, Lee RF, Norman KA, Turk-Browne NB. Closed-loop training of attention with real-time brain imaging. Nature Neuroscience. 2015年;18(3):470–5. </div>
+</div>
+<div id="ref-Kawashima2023" class="csl-entry" role="listitem">
+<div class="csl-left-margin">30. </div><div class="csl-right-inline">Kawashima I, Nagahama T, Kumano H, Momose K, Tanaka SC. Pavlovian-based neurofeedback enhances meta-awareness of mind-wandering. Neural Networks. 2023年;158:239–48. </div>
+</div>
+<div id="ref-Garrison2013" class="csl-entry" role="listitem">
+<div class="csl-left-margin">31. </div><div class="csl-right-inline">Garrison KA, Scheinost D, Worhunsky PD, ほか. Real-time <span>fMRI</span> links subjective experience with brain activity during focused attention. NeuroImage. 2013年;81:110–8. </div>
+</div>
+<div id="ref-Garrison2015" class="csl-entry" role="listitem">
+<div class="csl-left-margin">32. </div><div class="csl-right-inline">Garrison KA, Zeffiro TA, Scheinost D, Constable RT, Brewer JA. Meditation leads to reduced default mode network activity beyond an active task. Cognitive, Affective, &amp; Behavioral Neuroscience. 2015年;15(3):712–20. </div>
+</div>
+<div id="ref-Bhayee2016" class="csl-entry" role="listitem">
+<div class="csl-left-margin">33. </div><div class="csl-right-inline">Bhayee S, Tomaszewski P, Lee DH, ほか. Attentional and affective consequences of technology supported mindfulness training. BMC Psychology. 2016年;4:60. </div>
+</div>
+<div id="ref-Chow2017" class="csl-entry" role="listitem">
+<div class="csl-left-margin">34. </div><div class="csl-right-inline">Chow T, Javan T, Ros T, Frewen P. <span>EEG</span> dynamics of mindfulness meditation versus alpha neurofeedback: A sham-controlled study. Mindfulness. 2017年;8(2):572–84. </div>
+</div>
+<div id="ref-Looney2012" class="csl-entry" role="listitem">
+<div class="csl-left-margin">35. </div><div class="csl-right-inline">Looney D, Kidmose P, Park C, ほか. The in-the-ear recording concept: User-centered and wearable brain monitoring. IEEE Pulse. 2012年;3(6):32–42. </div>
+</div>
+<div id="ref-Mikkelsen2015" class="csl-entry" role="listitem">
+<div class="csl-left-margin">36. </div><div class="csl-right-inline">Mikkelsen KB, Kappel SL, Mandic DP, Kidmose P. <span>EEG</span> recorded from the ear: Characterizing the ear-<span>EEG</span> method. Frontiers in Neuroscience. 2015年;9:438. </div>
+</div>
+<div id="ref-Meiser2020" class="csl-entry" role="listitem">
+<div class="csl-left-margin">37. </div><div class="csl-right-inline">Meiser A, Tadel F, Debener S, Bleichner MG. The Sensitivity of Ear-<span>EEG</span>: Evaluating the Source-Sensor Relationship Using Forward Modeling. Brain Topography. 2020年;33(6):665–76. </div>
+</div>
+<div id="ref-Dong2021" class="csl-entry" role="listitem">
+<div class="csl-left-margin">38. </div><div class="csl-right-inline">Dong HW, Mills C, Knight RT, Bhangal S, Bhattacharya B, Bhattacharya J. A multi-modal approach for detecting mind wandering. Frontiers in Human Neuroscience. 2021年; </div>
+</div>
+<div id="ref-Vortmann2022" class="csl-entry" role="listitem">
+<div class="csl-left-margin">39. </div><div class="csl-right-inline">Vortmann LM, Klauke F, Putze F. Attention state classification with <span>EEG</span> and eye-tracking. IEEE Transactions on Neural Systems and Rehabilitation Engineering. 2022年; </div>
+</div>
+<div id="ref-Rosenberg2013" class="csl-entry" role="listitem">
+<div class="csl-left-margin">40. </div><div class="csl-right-inline">Rosenberg M, Noonan S, DeGutis J, Esterman M. Sustaining visual attention in the face of distraction: a novel gradual-onset continuous performance task. Attention, Perception, &amp; Psychophysics. 2013年;75(3):426–39. </div>
+</div>
+<div id="ref-Esterman2013" class="csl-entry" role="listitem">
+<div class="csl-left-margin">41. </div><div class="csl-right-inline">Esterman M, Noonan SK, Rosenberg M, DeGutis J. In the zone or zoning out? Tracking behavioral and neural fluctuations during sustained attention. Cerebral Cortex. 2013年;23(11):2712–23. </div>
+</div>
+<div id="ref-Kassner2014" class="csl-entry" role="listitem">
+<div class="csl-left-margin">42. </div><div class="csl-right-inline">Kassner M, Patera W, Bulling A. Pupil: An open source platform for pervasive eye tracking. UbiComp Adjunct. 2014. p. 1151–60. </div>
+</div>
+<div id="ref-Swirski2013" class="csl-entry" role="listitem">
+<div class="csl-left-margin">43. </div><div class="csl-right-inline">Świrski L, Dodgson NA. A fully-automatic, temporal approach to single camera, glint-free <span>3D</span> eye model fitting. Proceedings of ECEM. 2013. </div>
+</div>
+<div id="ref-RodriguezLarios2020" class="csl-entry" role="listitem">
+<div class="csl-left-margin">44. </div><div class="csl-right-inline">Rodriguez-Larios J, Alaerts K. Tracking transient changes in the neural frequency architecture: Harmonic relationships between theta and alpha peaks facilitate cognitive performance. Journal of Neuroscience. 2020年; </div>
+</div>
+<div id="ref-Ceh2020" class="csl-entry" role="listitem">
+<div class="csl-left-margin">45. </div><div class="csl-right-inline">Ceh SM, Bredewold Rob A. and"; Anneke, ほか. Mind wandering in the classroom: Using <span>EEG</span> to track attention during lectures. Frontiers in Psychology. 2020年; </div>
+</div>
+<div id="ref-Hazarika2024" class="csl-entry" role="listitem">
+<div class="csl-left-margin">46. </div><div class="csl-right-inline">Hazarika A, Dutta L, Barthakur M, Bhuyan MK. <span>E-ASR</span>: Embedded artifact subspace reconstruction for noise removal in single-channel <span>EEG</span>. Sensors. 2024年;24(20):6734. </div>
+</div>
+<div id="ref-Akiba2019" class="csl-entry" role="listitem">
+<div class="csl-left-margin">47. </div><div class="csl-right-inline">Akiba T, Sano S, Yanase T, Ohta T, Koyama M. Optuna: A next-generation hyperparameter optimization framework. Proceedings of the 25th ACM SIGKDD International Conference on Knowledge Discovery &amp; Data Mining. 2019年;2623–31. </div>
+</div>
+<div id="ref-Kawashima2017" class="csl-entry" role="listitem">
+<div class="csl-left-margin">48. </div><div class="csl-right-inline">Kawashima I, Kumano H. Prediction of Mind-Wandering with Electroencephalogram and Non-linear Regression Modeling. Frontiers in Human Neuroscience. 2017年;11:365. </div>
+</div>
+<div id="ref-Bastian2013" class="csl-entry" role="listitem">
+<div class="csl-left-margin">49. </div><div class="csl-right-inline">Bastian M, Sackur J. Mind wandering at the fingertips: Automatic parsing of subjective states based on response time variability. Frontiers in Psychology. 2013年;4:573. </div>
+</div>
+<div id="ref-Kam2022" class="csl-entry" role="listitem">
+<div class="csl-left-margin">50. </div><div class="csl-right-inline">Kam JWY ほか. Electrophysiological markers of mind wandering: A systematic review. NeuroImage. 2022年;263:119648. </div>
+</div>
+<div id="ref-Brishtel2020" class="csl-entry" role="listitem">
+<div class="csl-left-margin">51. </div><div class="csl-right-inline">Brishtel I, Khan AA, Schmidt T, Dingler T, Ishimaru S, Dengel A. Mind Wandering in a Multimodal Reading Setting: Behavior Analysis &amp; Automatic Detection Using Eye-Tracking and an <span>EDA</span> Sensor. Sensors. 2020年;20(9):2546. </div>
+</div>
+<div id="ref-Yoshida2023" class="csl-entry" role="listitem">
+<div class="csl-left-margin">52. </div><div class="csl-right-inline">Yoshida K, Sawamura D, Yagi M, Nakashima Y, Mitsukura Y. Detecting inattentiveness caused by mind-wandering during a driving task: A behavioral study. Applied Ergonomics. 2023年;106:103892. </div>
+</div>
+<div id="ref-Groot2021" class="csl-entry" role="listitem">
+<div class="csl-left-margin">53. </div><div class="csl-right-inline">Groot JM ほか. Probing the neural signature of mind wandering with simultaneous <span>fMRI-EEG</span> and pupillometry. NeuroImage. 2021年; </div>
+</div>
+<div id="ref-Dhindsa2019" class="csl-entry" role="listitem">
+<div class="csl-left-margin">54. </div><div class="csl-right-inline">Dhindsa K, Acai A, Wagner N, ほか. Individualized pattern recognition for detecting mind wandering from <span>EEG</span> during live lectures. PLoS ONE. 2019年;14(9):e0222276. </div>
+</div>
+</div>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "コピーしました");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "コピーしました");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

@@ -1,0 +1,39 @@
+<paper_information>
+<title>{title}</title>
+<authors>{authors}</authors>
+<abstract>{abstract}</abstract>
+</paper_information>
+
+<sections>
+{context}
+</sections>
+
+<goal_setting>
+{goal}
+</goal_setting>
+
+<selected_section_indices>
+{selected_section_indices}
+</selected_section_indices>
+
+<sufficiency_check>
+{sufficiency_check}
+</sufficiency_check>
+
+<task>
+goal_settingsタグで与えられている目標を達成するために、調査タスクとして「{task}」を実施します。今あなたはpaper_informationタグに含まれている論文を読んでいます。調査タスクを実行する上で、sectionsタグに含まれている内容から読むべきセクション番号を出力してください。セクション番号をカンマ区切りで出力すること。
+
+例：
+1,3,4
+
+最大{max_sections}個のセクションまで選択可能です。
+</task>
+
+以下のrulesタグに囲まれた内容を必ず守ること。
+
+<rules>
+- selected_section_indicesタグに含まれているセクション番号は指定しないこと。
+- sufficiency_checkタグに記載されている内容を参考にセクション番号を選択すること。
+- カンマ区切りで複数のセクション番号を出力すること。
+- スペースは絶対に含めないこと。
+</rules>

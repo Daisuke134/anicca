@@ -1,0 +1,26 @@
+{
+  "app": {"bundle_id": "com.aniccafactory.frostdip"},
+  "output_dir": "./screenshots/raw-67/en-US",
+  "steps": [
+    {"action": "launch"},
+    {"action": "wait", "duration_ms": 5000},
+    {"action": "screenshot", "name": "screen1_welcome"},
+    {"action": "tap", "id": "onboarding_get_started"},
+    {"action": "wait", "duration_ms": 2000},
+    {"action": "tap", "id": "onboarding_experience_beginner"},
+    {"action": "wait", "duration_ms": 1000},
+    {"action": "tap", "id": "onboarding_continue"},
+    {"action": "wait", "duration_ms": 2000},
+    {"action": "tap", "id": "onboarding_skip_notifications"},
+    {"action": "wait", "duration_ms": 3000},
+    {"action": "tap", "id": "paywall_maybe_later"},
+    {"action": "wait", "duration_ms": 2000},
+    {"action": "screenshot", "name": "screen2_timer"},
+    {"action": "tap", "id": "tab_history"},
+    {"action": "wait", "duration_ms": 1500},
+    {"action": "screenshot", "name": "screen3_history"},
+    {"action": "tap", "id": "tab_progress"},
+    {"action": "wait", "duration_ms": 1500},
+    {"action": "screenshot", "name": "screen4_progress"}
+  ]
+}

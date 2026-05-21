@@ -1,0 +1,53 @@
+# docs/screenshots/config/screenshots.yaml
+# l.md Bible 100% — YAML駆動設計
+# ヘッドラインを変えたい → caption.title だけ編集して make generate-store-screenshots
+
+global:
+  canvas:
+    width: 1290
+    height: 2796
+  device:
+    name: "iPhone 17"
+    bezel_path: "resources/iphone17_bezel.png"
+  colors:
+    background: "#F5F5F7"
+    text: "#1D1D1F"
+    wave: "#E8E8EA"
+  fonts:
+    title:
+      path: "/System/Library/Fonts/ヒラギノ角ゴシック W6.ttc"
+      size: 80
+    subtitle:
+      path: "/System/Library/Fonts/ヒラギノ角ゴシック W3.ttc"
+      size: 48
+
+screens:
+  - id: "screen1"
+    caption:
+      title: "6 Years. 10 Apps.\nStill Nothing Changed."
+      subtitle: "Finally, an app that fights back."
+    layout:
+      text_x: 100
+      text_y: 200
+      device_x: center
+      device_y: 1200
+
+  - id: "screen2"
+    caption:
+      title: "3,000+ People\nFinally Broke The Loop."
+      subtitle: "Join them. Start free today."
+    layout:
+      text_x: 100
+      text_y: 200
+      device_x: center
+      device_y: 1200
+
+  - id: "screen3"
+    caption:
+      title: "This Is What\nChange Looks Like."
+      subtitle: "AI that nudges you before you quit."
+    layout:
+      text_x: 100
+      text_y: 200
+      device_x: center
+      device_y: 1200

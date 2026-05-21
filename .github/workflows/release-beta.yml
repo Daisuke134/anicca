@@ -1,0 +1,97 @@
+name: Release Beta (macOS)
+
+on:
+  push:
+    tags:
+      - 'v*.*.*-beta.*'
+
+concurrency:
+  group: desktop-release-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      APPLE_ID: ${{ secrets.APPLE_ID }}
+      APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      CSC_LINK: ${{ secrets.CSC_LINK }}
+      CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: apps/desktop/package-lock.json
+
+      - name: Install deps (include dev)
+        working-directory: apps/desktop
+        run: npm ci --include=dev
+
+      - name: Validate tag (vX.Y.Z-beta.N) and expose VERSION
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          echo "TAG=$TAG"
+          if ! [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-beta\.[0-9]+$ ]]; then
+            echo "❌ Tag must match vX.Y.Z-beta.N (got: $TAG)"; exit 1
+          fi
+          echo "VERSION=${TAG#v}" >> $GITHUB_ENV
+
+      - name: Ensure package.json version matches tag
+        working-directory: apps/desktop
+        run: |
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          if [ "$PKG_VERSION" != "$VERSION" ]; then
+            echo "❌ Version mismatch. package.json=$PKG_VERSION tag=$VERSION"; exit 1
+          fi
+          echo "✅ Version match: $PKG_VERSION"
+
+      - name: Validate proxy secrets (beta)
+        run: |
+          test -n "${{ secrets.PROXY_URL_PRODUCTION }}" || (echo "Missing PROXY_URL_PRODUCTION" && exit 1)
+          test -n "${{ secrets.PROXY_URL_STAGING }}"    || (echo "Missing PROXY_URL_STAGING" && exit 1)
+
+      - name: Build and Publish (beta)
+        working-directory: apps/desktop
+        env:
+          PROXY_URL_PRODUCTION: ${{ secrets.PROXY_URL_PRODUCTION }}
+          PROXY_URL_STAGING: ${{ secrets.PROXY_URL_STAGING }}
+          SUPABASE_URL_PRODUCTION: ${{ secrets.SUPABASE_URL_PRODUCTION }}
+          SUPABASE_ANON_KEY_PRODUCTION: ${{ secrets.SUPABASE_ANON_KEY_PRODUCTION }}
+          SUPABASE_URL_STAGING: ${{ secrets.SUPABASE_URL_STAGING }}
+          SUPABASE_ANON_KEY_STAGING: ${{ secrets.SUPABASE_ANON_KEY_STAGING }}
+        run: |
+          npm run build:voice
+          # Pre-embed proxy URLs into package.json (no repo change)
+          node -e "const fs=require('fs'); const p=JSON.parse(fs.readFileSync('package.json')); p.appConfig=p.appConfig||{}; p.appConfig.proxy={ production: process.env.PROXY_URL_PRODUCTION, staging: process.env.PROXY_URL_STAGING }; fs.writeFileSync('package.json', JSON.stringify(p,null,2));"
+          NODE_ENV=production \
+          npx electron-builder --mac --config electron-builder-voice.yml --publish always \
+            -c.publish.releaseType=prerelease \
+            -c.publish.channel=latest \
+            -c.extraMetadata.appConfig.proxy.production=$PROXY_URL_PRODUCTION \
+            -c.extraMetadata.appConfig.proxy.staging=$PROXY_URL_STAGING \
+            -c.extraMetadata.appConfig.supabase.production.url=$SUPABASE_URL_PRODUCTION \
+            -c.extraMetadata.appConfig.supabase.production.anonKey=$SUPABASE_ANON_KEY_PRODUCTION \
+            -c.extraMetadata.appConfig.supabase.staging.url=$SUPABASE_URL_STAGING \
+            -c.extraMetadata.appConfig.supabase.staging.anonKey=$SUPABASE_ANON_KEY_STAGING
+
+      - name: Generate release notes (auto)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api repos/$GITHUB_REPOSITORY/releases/generate-notes \
+            -f tag_name="$GITHUB_REF_NAME" \
+            -f target_commitish="$GITHUB_SHA" \
+            --jq '.body' > release-notes.md
+          gh release edit "$GITHUB_REF_NAME" \
+            --repo "$GITHUB_REPOSITORY" \
+            --notes-file release-notes.md

@@ -1,0 +1,40 @@
+@startuml
+title 本を返すシナリオ
+
+actor User
+participant Library
+participant LoanRecord
+participant Book
+
+User -> Library: 本を返す(loanId)
+activate Library
+
+Library -> LoanRecord: 貸出記録検索
+activate LoanRecord
+LoanRecord --> Library: 貸出記録情報
+deactivate LoanRecord
+
+Library -> LoanRecord: 返却日を更新
+activate LoanRecord
+LoanRecord --> Library: 更新完了
+deactivate LoanRecord
+
+Library -> Book: 状態を「貸出可」に変更
+activate Book
+Book --> Library: 更新完了
+deactivate Book
+
+Library --> User: 返却完了通知
+deactivate Library
+
+@enduml
+
+
+
+
+
+
+
+
+
+

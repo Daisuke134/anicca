@@ -1,0 +1,36 @@
+name: Fetch X Metrics
+
+on:
+  schedule:
+    - cron: '0 1 * * *'  # 10:00 JST
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fetch-x-metrics
+  cancel-in-progress: false
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Fetch X Metrics
+        working-directory: scripts/x-agent
+        run: python fetch_x_metrics.py
+        env:
+          X_BEARER_TOKEN: ${{ secrets.X_BEARER_TOKEN }}
+          API_BASE_URL: ${{ secrets.API_BASE_URL }}
+          API_AUTH_TOKEN: ${{ secrets.API_AUTH_TOKEN }}
+          BLOTATO_API_KEY: ${{ secrets.BLOTATO_API_KEY }}

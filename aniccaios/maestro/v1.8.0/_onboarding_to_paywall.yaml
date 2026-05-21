@@ -1,0 +1,93 @@
+# Shared: Onboarding → Paywall arrival
+# Used by paywall tests as a sub-flow
+
+appId: ai.anicca.app.ios
+
+---
+# Handle Apple Account dialog
+- tapOn:
+    text: "キャンセル|Cancel|Not Now"
+    optional: true
+
+# Step 1: Welcome
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-welcome-cta"
+    timeout: 60000
+
+- tapOn:
+    id: "onboarding-welcome-cta"
+
+# Step 2: Struggles
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-struggle-staying_up_late"
+    timeout: 15000
+
+- tapOn:
+    id: "onboarding-struggle-staying_up_late"
+
+- tapOn:
+    id: "onboarding-struggles-next"
+
+# Step 3: Struggle Depth
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-depth-daily"
+    timeout: 15000
+
+- tapOn:
+    id: "onboarding-depth-daily"
+
+# Step 4: Goals
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-goals-next"
+    timeout: 15000
+
+- tapOn:
+    id: "onboarding-goal-better_sleep"
+    optional: true
+
+- tapOn:
+    id: "onboarding-goals-next"
+
+# Step 5: Personal Insight
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-insight-continue"
+    timeout: 15000
+
+- tapOn:
+    id: "onboarding-insight-continue"
+
+# Step 6: Value Prop
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-valueprop-continue"
+    timeout: 15000
+
+- tapOn:
+    id: "onboarding-valueprop-continue"
+
+# Step 7: Notifications
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-notifications-allow"
+    timeout: 15000
+
+- tapOn:
+    id: "onboarding-notifications-allow"
+
+- tapOn:
+    text: "許可|Allow"
+    optional: true
+
+# Step 8: Primer
+- extendedWaitUntil:
+    visible:
+      id: "paywall-primer-cta"
+    timeout: 15000
+
+- tapOn:
+    id: "paywall-primer-cta"

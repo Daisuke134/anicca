@@ -1,0 +1,7 @@
+// Debug xcconfig — Zone2Daily
+// Source: Apple Technical Note — https://developer.apple.com/documentation/bundleresources/information_property_list
+// "Never hardcode secrets. Use xcconfig → Info.plist → Bundle.main.infoDictionary."
+// ⚠️ DO NOT COMMIT real keys. Override via Debug.local.xcconfig (gitignored)
+// IMPORTANT: placeholder MUST come before #include? so local.xcconfig can override
+RC_API_KEY = appl_debug_placeholder
+#include? "Debug.local.xcconfig"

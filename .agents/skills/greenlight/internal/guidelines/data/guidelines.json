@@ -1,0 +1,407 @@
+{
+  "guidelines": [
+    {
+      "section": "1",
+      "title": "Safety",
+      "content": "When people install an app from the App Store, they want to feel confident that it's safe to do so.",
+      "subsections": [
+        {
+          "section": "1.1",
+          "title": "Objectionable Content",
+          "content": "Apps should not include content that is offensive, insensitive, upsetting, intended to disgust, in exceptionally poor taste, or just plain creepy.",
+          "common_violations": [
+            "User-generated content without moderation",
+            "Realistic violence or gore",
+            "Content that targets a specific group"
+          ],
+          "subsections": [
+            {"section": "1.1.1", "title": "Defamatory, discriminatory, or mean-spirited content", "content": "No content targeting religion, race, sexual orientation, gender, national/ethnic origin, or other groups."},
+            {"section": "1.1.2", "title": "Realistic portrayals of violence", "content": "No realistic portrayals of people or animals being killed, maimed, tortured, or abused."},
+            {"section": "1.1.3", "title": "Content encouraging illegal activities", "content": "Depictions that encourage illegal or reckless use of weapons and dangerous objects."},
+            {"section": "1.1.4", "title": "Overtly sexual or pornographic material", "content": "Explicit descriptions or displays of sexual organs or activities."},
+            {"section": "1.1.5", "title": "Religious commentary", "content": "No controversial or inaccurate references to religious texts."},
+            {"section": "1.1.6", "title": "False information and features", "content": "Apps with false info or features that are not accurately represented."},
+            {"section": "1.1.7", "title": "App Store Reviews manipulation", "content": "No attempting to manipulate reviews through incentivized reviews, fake reviews, etc."}
+          ]
+        },
+        {
+          "section": "1.2",
+          "title": "User-Generated Content",
+          "content": "Apps with user-generated content present particular challenges. Apps with UGC must have filtering, reporting, blocking, and content moderation.",
+          "common_violations": [
+            "Missing content reporting mechanism",
+            "No ability to block abusive users",
+            "Inadequate content moderation",
+            "No method for users to flag inappropriate content",
+            "Missing contact info for reporting concerns"
+          ]
+        },
+        {
+          "section": "1.3",
+          "title": "Kids Category",
+          "content": "Apps in the Kids Category must not include links out of the app, purchasing opportunities, or other content inappropriate for kids. Must comply with COPPA and GDPR-K.",
+          "common_violations": [
+            "Third-party analytics SDKs collecting data from minors",
+            "External links or web views without parental gates",
+            "Ads not appropriate for children",
+            "Missing parental gate before external links or purchases",
+            "Using analytics/tracking SDKs that collect child data"
+          ]
+        },
+        {
+          "section": "1.4",
+          "title": "Physical Harm",
+          "content": "Apps should not encourage illegal or excessive consumption of drugs/alcohol, or encourage minors to consume such substances.",
+          "common_violations": [
+            "Medical apps providing dangerous advice without disclaimers",
+            "Apps encouraging substance abuse",
+            "Drug dosage calculators without medical professional oversight",
+            "Apps facilitating purchase of controlled substances"
+          ]
+        },
+        {
+          "section": "1.5",
+          "title": "Developer Information",
+          "content": "People need to know how to reach you with questions and support issues. Provide a working support URL and contact info.",
+          "common_violations": [
+            "Missing or broken support URL",
+            "No contact information",
+            "Fake developer information"
+          ]
+        },
+        {
+          "section": "1.6",
+          "title": "Data Security",
+          "content": "Apps should implement appropriate security measures to ensure proper handling of user information.",
+          "common_violations": [
+            "Transmitting sensitive data without encryption (HTTP instead of HTTPS)",
+            "Storing passwords in plain text",
+            "Missing SSL/TLS for API communications"
+          ]
+        }
+      ]
+    },
+    {
+      "section": "2",
+      "title": "Performance",
+      "content": "Your app should be complete, reliable, and ready for prime time.",
+      "subsections": [
+        {
+          "section": "2.1",
+          "title": "App Completeness",
+          "content": "Submissions must be final versions. Apps that crash, have broken links, placeholder content, or are clearly not finished will be rejected.",
+          "common_violations": [
+            "App crashes on launch or during core flows",
+            "Placeholder text or images (Lorem ipsum, etc.)",
+            "Broken links or features",
+            "Incomplete onboarding flows",
+            "Features that don't work as described",
+            "'Coming soon' or 'under construction' sections",
+            "console.log/print statements left in production code",
+            "Debug menus or developer tools accessible to users"
+          ]
+        },
+        {
+          "section": "2.2",
+          "title": "Beta Testing",
+          "content": "Demos, betas, and trial versions don't belong on the App Store. Use TestFlight instead.",
+          "common_violations": [
+            "App labeled as 'beta' or 'preview'",
+            "Time-limited functionality",
+            "References to TestFlight or beta programs in UI"
+          ]
+        },
+        {
+          "section": "2.3",
+          "title": "Accurate Metadata",
+          "content": "Customers should know what they're getting when they download your app. Description, screenshots, and previews must accurately reflect the app.",
+          "common_violations": [
+            "Screenshots that don't match actual app UI",
+            "Description promises features that don't exist",
+            "Wrong category selected",
+            "Hidden features not described in metadata",
+            "References to other mobile platforms (Android, Google Play, etc.)",
+            "Mentioning competing platforms in keywords or description",
+            "Misleading app previews"
+          ]
+        },
+        {
+          "section": "2.4",
+          "title": "Hardware Compatibility",
+          "content": "Apps should work on all supported devices without crashes or compatibility issues.",
+          "common_violations": [
+            "App doesn't work on older supported devices",
+            "Missing iPad support when marked as universal",
+            "Crashes on specific screen sizes",
+            "Hardcoded device dimensions instead of responsive layout"
+          ]
+        },
+        {
+          "section": "2.5",
+          "title": "Software Requirements",
+          "content": "Apps must use public APIs and run on the currently shipping OS.",
+          "common_violations": [
+            "Using private/undocumented APIs",
+            "Not supporting IPv6 (hardcoded IPv4 addresses)",
+            "Using deprecated APIs without fallbacks",
+            "Downloading or executing remote code",
+            "Using non-WebKit rendering engines on iOS",
+            "Background modes not justified by app functionality",
+            "Dynamic code execution (eval, dlopen)",
+            "CodePush or similar hot-patching that changes app behavior significantly"
+          ]
+        }
+      ]
+    },
+    {
+      "section": "3",
+      "title": "Business",
+      "content": "Apps on the App Store must follow business model guidelines for payments, subscriptions, and monetization.",
+      "subsections": [
+        {
+          "section": "3.1",
+          "title": "Payments",
+          "content": "Apps must use Apple's in-app purchase system for digital goods and services.",
+          "subsections": [
+            {
+              "section": "3.1.1",
+              "title": "In-App Purchase",
+              "content": "Digital content, subscriptions, and unlockable features must use Apple IAP. Physical goods and services can use external payment.",
+              "common_violations": [
+                "Digital goods purchased outside IAP (Stripe, PayPal for digital content)",
+                "Missing 'Restore Purchases' button",
+                "Directing users to external purchase mechanisms for digital goods",
+                "Crypto/NFT purchases not using IAP for digital goods",
+                "Links or buttons to external payment pages"
+              ]
+            },
+            {
+              "section": "3.1.2",
+              "title": "Subscriptions",
+              "content": "Auto-renewable subscriptions must clearly communicate pricing, duration, and cancellation terms.",
+              "common_violations": [
+                "Unclear subscription pricing on sign-up screen",
+                "Missing free trial duration disclosure",
+                "No clear cancellation instructions",
+                "Misleading 'free' claims for subscription apps",
+                "Not disclosing auto-renewal terms"
+              ]
+            },
+            {
+              "section": "3.1.3",
+              "title": "Reader Apps",
+              "content": "Reader apps may allow users to access previously purchased content but must not include buttons or links for external purchases.",
+              "common_violations": [
+                "Including 'Subscribe' buttons linking to website for digital content"
+              ]
+            },
+            {
+              "section": "3.1.5",
+              "title": "Cryptocurrency",
+              "content": "Apps may facilitate cryptocurrency transactions but must not mine cryptocurrency on device.",
+              "common_violations": [
+                "On-device cryptocurrency mining",
+                "ICO/token offerings without proper compliance",
+                "Crypto wallets without proper security measures"
+              ]
+            }
+          ]
+        },
+        {
+          "section": "3.2",
+          "title": "Other Business Model Issues",
+          "content": "Various business model requirements including acceptable monetization, advertising, and app functionality.",
+          "common_violations": [
+            "Apps that are primarily marketing material",
+            "Apps with no clear business model or functionality",
+            "Misleading advertising practices",
+            "Loot boxes without odds disclosure"
+          ]
+        }
+      ]
+    },
+    {
+      "section": "4",
+      "title": "Design",
+      "content": "Apple customers place a high value on products that are simple, refined, and easy to use.",
+      "subsections": [
+        {
+          "section": "4.1",
+          "title": "Copycats",
+          "content": "Don't create an app that appears confusingly similar to an existing app. Bring your own ideas.",
+          "common_violations": [
+            "Cloning popular apps with minimal changes",
+            "Using another app's UI design wholesale",
+            "Confusingly similar name or icon"
+          ]
+        },
+        {
+          "section": "4.2",
+          "title": "Minimum Functionality",
+          "content": "Your app should include sufficient content and features that it is more than a repackaged website.",
+          "common_violations": [
+            "Web view wrapper with no native features (WebView-only apps)",
+            "Single-feature apps with insufficient depth",
+            "Apps that are just a website in a frame",
+            "Apps with no meaningful native functionality"
+          ]
+        },
+        {
+          "section": "4.3",
+          "title": "Spam",
+          "content": "Don't create multiple apps that provide the same experience. Quality over quantity.",
+          "common_violations": [
+            "Multiple nearly identical apps with different branding",
+            "Template apps with only cosmetic changes",
+            "Submitting the same app with different names"
+          ]
+        },
+        {
+          "section": "4.4",
+          "title": "Extensions",
+          "content": "Extensions must comply with Extension Programming Guide and additional requirements.",
+          "common_violations": [
+            "Extensions that don't function independently",
+            "Keyboard extensions accessing the network unnecessarily",
+            "Safari extensions that inject ads"
+          ]
+        },
+        {
+          "section": "4.5",
+          "title": "Apple Sites and Services",
+          "content": "Apps must not use Apple services in unauthorized ways.",
+          "common_violations": [
+            "Using Apple Maps data outside of MapKit",
+            "Scraping Apple websites or services"
+          ]
+        },
+        {
+          "section": "4.7",
+          "title": "Mini Apps, Mini Games, Streaming Games, Chatbots, Plug-ins, and Game Emulators",
+          "content": "Apps offering mini apps or games must ensure each one follows all App Store Review Guidelines.",
+          "common_violations": [
+            "Mini apps that violate content guidelines",
+            "Emulators distributing copyrighted ROMs"
+          ]
+        },
+        {
+          "section": "4.8",
+          "title": "Sign in with Apple",
+          "content": "Apps that use a third-party or social login must also offer Sign in with Apple as an equivalent option.",
+          "common_violations": [
+            "Offering Google/Facebook login without Sign in with Apple",
+            "Sign in with Apple placed less prominently than alternatives",
+            "Sign in with Apple missing when any social login is present"
+          ]
+        }
+      ]
+    },
+    {
+      "section": "5",
+      "title": "Legal",
+      "content": "Apps must comply with all legal requirements in any location where they are available.",
+      "subsections": [
+        {
+          "section": "5.1",
+          "title": "Privacy",
+          "content": "Protecting user privacy is paramount. Apps must comply with Apple's privacy guidelines.",
+          "subsections": [
+            {
+              "section": "5.1.1",
+              "title": "Data Collection and Storage",
+              "content": "Apps must have a privacy policy and clearly describe what data they collect and how it's used.",
+              "common_violations": [
+                "No privacy policy or privacy policy URL",
+                "Collecting data not disclosed in privacy nutrition labels",
+                "Missing PrivacyInfo.xcprivacy manifest",
+                "Missing or vague purpose strings for camera, location, microphone, etc.",
+                "Collecting data without user consent",
+                "Third-party SDKs collecting undisclosed data",
+                "Requesting 'Always' location when 'WhenInUse' suffices",
+                "Missing App Tracking Transparency (ATT) prompt when using ad/tracking SDKs"
+              ]
+            },
+            {
+              "section": "5.1.2",
+              "title": "Data Use and Sharing",
+              "content": "Data collected must not be shared or sold without user knowledge and consent.",
+              "common_violations": [
+                "Sharing user data with third parties without disclosure",
+                "Using collected data for purposes not described",
+                "Tracking users without ATT consent"
+              ]
+            },
+            {
+              "section": "5.1.3",
+              "title": "Health and Health Research",
+              "content": "Health-related apps must not store health data in iCloud and must use HealthKit APIs properly.",
+              "common_violations": [
+                "Storing health data insecurely",
+                "Using HealthKit data for advertising",
+                "Health apps without medical disclaimers"
+              ]
+            },
+            {
+              "section": "5.1.4",
+              "title": "Kids",
+              "content": "Apps in the Kids category must not transmit information about a child to third parties.",
+              "common_violations": [
+                "Analytics SDKs tracking minors",
+                "Ad SDKs in kids apps",
+                "Collecting personal data from children without parental consent"
+              ]
+            },
+            {
+              "section": "5.1.5",
+              "title": "Location Services",
+              "content": "Use location only when directly relevant to the app's features.",
+              "common_violations": [
+                "Requesting always-on location without justification",
+                "Using location for advertising without consent",
+                "Background location without clear user benefit"
+              ]
+            }
+          ]
+        },
+        {
+          "section": "5.2",
+          "title": "Intellectual Property",
+          "content": "Make sure your app only includes content you created or have a license to use.",
+          "common_violations": [
+            "Using copyrighted images, music, or video",
+            "Trademark infringement in app name or icon",
+            "Including content from other apps without permission"
+          ]
+        },
+        {
+          "section": "5.3",
+          "title": "Gaming, Gambling, and Lotteries",
+          "content": "Gambling apps must be geo-restricted and provide proper age gates.",
+          "common_violations": [
+            "Simulated gambling without age restrictions",
+            "Real-money gambling without proper licensing",
+            "Missing geo-restriction for regulated gambling"
+          ]
+        },
+        {
+          "section": "5.4",
+          "title": "VPN Apps",
+          "content": "VPN apps must use the NEVPNManager API and may not sell or share user data.",
+          "common_violations": [
+            "VPN apps not using NEVPNManager API",
+            "VPN apps logging/selling user traffic data"
+          ]
+        },
+        {
+          "section": "5.5",
+          "title": "Mobile Device Management",
+          "content": "MDM apps must only be offered by commercial enterprises and must not be required by non-enterprise apps.",
+          "common_violations": [
+            "Consumer apps requiring MDM enrollment",
+            "MDM apps collecting unnecessary data"
+          ]
+        }
+      ]
+    }
+  ]
+}

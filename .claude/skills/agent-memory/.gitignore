@@ -1,0 +1,6 @@
+# メモリファイルはプライベート（gitにコミットしない）
+# チームで共有したいメモリは memories-shared/ に置く
+memories/
+
+# ただしフォルダ構造は保持
+!memories/.gitkeep

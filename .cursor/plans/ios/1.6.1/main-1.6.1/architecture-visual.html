@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anicca 1.6.1 Architecture</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #eee;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        h1 {
+            text-align: center;
+            color: #ffd700;
+            margin-bottom: 10px;
+        }
+        h2 {
+            text-align: center;
+            color: #888;
+            font-weight: normal;
+            margin-top: 0;
+        }
+        .mermaid {
+            background: #0d1117;
+            border-radius: 16px;
+            padding: 30px;
+            margin: 20px auto;
+            max-width: 1400px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        }
+        .section {
+            margin: 40px auto;
+            max-width: 1400px;
+        }
+        .section h3 {
+            color: #ffd700;
+            border-bottom: 2px solid #ffd700;
+            padding-bottom: 10px;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .info-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .info-card h4 {
+            color: #ffd700;
+            margin-top: 0;
+        }
+        .info-card p {
+            margin: 5px 0;
+            color: #aaa;
+        }
+        .info-card code {
+            background: rgba(255,215,0,0.1);
+            color: #ffd700;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .status-done { color: #4ade80; }
+        .status-new { color: #60a5fa; }
+    </style>
+</head>
+<body>
+    <h1>🙏 Anicca 1.6.1 Architecture</h1>
+    <h2>「全ての生きとし生けるものの苦しみを終わらせる」</h2>
+
+    <div class="mermaid">
+flowchart TB
+    subgraph VPS["🖥️ Hetzner VPS (OpenClaw) — NEW in 1.6.1"]
+        direction TB
+        SOUL["📜 SOUL.md\nペルソナ定義"]
+        ENV["🔐 .env\nAPI Keys"]
+        
+        subgraph Skills["⚡ Skills"]
+            MR["🔍 moltbook-responder\n苦しみ検出 → Nudge返信"]
+            SR["📅 slack-reminder\n月曜 #meeting\n危機 #metrics"]
+            FF["📊 feedback-fetch\nupvotes収集"]
+        end
+    end
+    
+    subgraph Railway["🚂 Railway API (Backend)"]
+        direction TB
+        subgraph AgentAPI["Agent API — NEW in 1.6.1"]
+            AN["/agent/nudge"]
+            AW["/agent/wisdom"]
+            AF["/agent/feedback"]
+            AP["/agent/posts"]
+            AC["/agent/content"]
+        end
+        
+        subgraph MobileAPI["Mobile API — Existing"]
+            MN["/mobile/nudge"]
+            MP["/mobile/profile"]
+        end
+        
+        subgraph DB["💾 PostgreSQL"]
+            AGP["agent_posts\n— NEW"]
+            HC["hook_candidates"]
+            US["unified_score"]
+        end
+    end
+    
+    subgraph GHA["⚙️ GitHub Actions"]
+        TT["🎵 TikTok Agent\nPython / 毎日投稿"]
+        DM["📈 Daily Metrics\nASC/Mixpanel"]
+    end
+    
+    subgraph RailwayCron["⏰ Railway Cron"]
+        LLM["🤖 LLM Nudge生成\n毎日実行"]
+    end
+    
+    subgraph App["📱 iOS App"]
+        PNS["🔔 Notification\nScheduler"]
+        LN["💡 LLM Nudge\n日次取得"]
+        FB["👍👎 Feedback"]
+    end
+    
+    subgraph External["🌐 External Platforms"]
+        Moltbook["🦞 Moltbook\nAI SNS"]
+        Slack["💬 Slack\n#meeting #metrics"]
+        TikTok["📹 TikTok"]
+    end
+    
+    %% VPS connections
+    MR --> Moltbook
+    SR --> Slack
+    FF --> AF
+    
+    %% GHA connections
+    TT --> TikTok
+    TikTok -.->|views/likes| AF
+    
+    %% Railway Cron
+    LLM --> MN
+    MN --> LN
+    
+    %% App connections
+    FB --> MobileAPI
+    
+    %% Feedback loop
+    Moltbook -.->|upvotes| FF
+    AF --> AGP
+    AGP --> HC
+    HC -.->|高スコア昇格| AN
+
+    style VPS fill:#1e3a5f,stroke:#60a5fa,stroke-width:2px
+    style Railway fill:#2d1f4e,stroke:#a78bfa,stroke-width:2px
+    style GHA fill:#1f2937,stroke:#9ca3af,stroke-width:2px
+    style App fill:#14532d,stroke:#4ade80,stroke-width:2px
+    style External fill:#4a1d1d,stroke:#f87171,stroke-width:2px
+    </div>
+
+    <div class="section">
+        <h3>📊 Platform Status</h3>
+        <div class="info-grid">
+            <div class="info-card">
+                <h4>📱 iOS App</h4>
+                <p><span class="status-done">✅ Existing</span></p>
+                <p>Railway Cron → LLM Nudge 生成</p>
+                <p>毎日実行</p>
+            </div>
+            <div class="info-card">
+                <h4>📹 TikTok</h4>
+                <p><span class="status-done">✅ Existing</span></p>
+                <p>GitHub Actions → Python Agent</p>
+                <p>毎日 Nudge 動画投稿</p>
+            </div>
+            <div class="info-card">
+                <h4>🦞 Moltbook</h4>
+                <p><span class="status-new">🆕 NEW in 1.6.1</span></p>
+                <p>Hetzner VPS → moltbook-responder</p>
+                <p>苦しみ検出 → Nudge 返信</p>
+            </div>
+            <div class="info-card">
+                <h4>💬 Slack</h4>
+                <p><span class="status-new">🆕 NEW in 1.6.1</span></p>
+                <p>Hetzner VPS → slack-reminder</p>
+                <p>月曜 #meeting / 危機 #metrics</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h3>🔑 API Keys & Credentials</h3>
+        <div class="info-grid">
+            <div class="info-card">
+                <h4>Moltbook</h4>
+                <p>Agent: <code>anicca-wisdom</code></p>
+                <p>Submolt: <code>m/endingsuffering</code></p>
+                <p>Status: <span class="status-done">✅ Claimed</span></p>
+            </div>
+            <div class="info-card">
+                <h4>VPS</h4>
+                <p>IP: <code>46.225.70.241</code></p>
+                <p>User: <code>anicca</code></p>
+                <p>Env: <code>~/.env</code></p>
+            </div>
+            <div class="info-card">
+                <h4>Railway</h4>
+                <p>Staging: <code>anicca-proxy-staging</code></p>
+                <p>Production: <code>anicca-proxy-production</code></p>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h3>🔄 Learning Loop (Wisdom)</h3>
+        <div class="mermaid">
+flowchart LR
+    A["📊 Data Collection"] --> B["📈 Z-Score統合"]
+    B --> C["⭐ hook_candidates昇格"]
+    C --> D["🤖 次のNudge生成"]
+    D --> A
+    
+    subgraph Sources["Data Sources"]
+        S1["TikTok views/likes"]
+        S2["App 👍👎"]
+        S3["Moltbook upvotes"]
+    end
+    
+    Sources --> A
+
+    style A fill:#1e3a5f,stroke:#60a5fa
+    style B fill:#2d1f4e,stroke:#a78bfa
+    style C fill:#14532d,stroke:#4ade80
+    style D fill:#4a1d1d,stroke:#f87171
+        </div>
+    </div>
+
+    <script>
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'dark',
+            flowchart: {
+                curve: 'basis',
+                padding: 20
+            }
+        });
+    </script>
+</body>
+</html>

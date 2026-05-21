@@ -1,0 +1,82 @@
+# Feature: Settings screen navigation
+# Tests: User opens settings from timer, sees all sections, closes settings
+appId: com.aniccafactory.eyebreakisland
+tags:
+  - settings
+
+---
+- clearState
+- clearKeychain
+- launchApp
+
+# Dismiss any stale system dialogs from previous runs
+- tapOn:
+    text: "許可|Allow"
+    optional: true
+
+# Complete onboarding quickly
+- extendedWaitUntil:
+    visible:
+      id: "onboarding_container"
+    timeout: 30000
+- tapOn:
+    id: "onboarding_next_button"
+- extendedWaitUntil:
+    visible:
+      id: "onboarding_next_button"
+    timeout: 10000
+- tapOn:
+    id: "onboarding_next_button"
+- extendedWaitUntil:
+    visible:
+      id: "onboarding_allow_notifications"
+    timeout: 10000
+- tapOn:
+    id: "onboarding_allow_notifications"
+- tapOn:
+    text: "許可|Allow"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: "paywall_maybe_later"
+    timeout: 15000
+- tapOn:
+    id: "paywall_maybe_later"
+
+# Now on TimerView - wait for start button as proof
+- extendedWaitUntil:
+    visible:
+      id: "timer_start_button"
+    timeout: 15000
+
+# Open settings via gear button
+- tapOn:
+    id: "settings_gear_button"
+
+# Wait for settings to appear
+- extendedWaitUntil:
+    visible:
+      id: "settings_view"
+    timeout: 15000
+
+# Verify settings sections
+- assertVisible:
+    id: "settings_interval_row"
+- assertVisible:
+    id: "settings_notifications_toggle"
+- assertVisible:
+    id: "settings_upgrade_button"
+- assertVisible:
+    id: "settings_privacy_link"
+
+# Close settings
+- tapOn:
+    id: "settings_done_button"
+
+# Verify back on timer
+- extendedWaitUntil:
+    visible:
+      id: "timer_start_button"
+    timeout: 10000
+
+- takeScreenshot: "03-settings-complete"

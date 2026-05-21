@@ -1,0 +1,15 @@
+{
+  "appName": "Zone2Daily",
+  "description": "Zone 2 cardio tracker using Maffetone method \u2014 train smarter for metabolic health",
+  "bundleId": "com.aniccafactory.zone2daily",
+  "totalTokens": 99770854,
+  "costInPlan": 44.2,
+  "iterationCount": 22,
+  "durationMinutes": 361,
+  "weeklyUsagePercent": 95.0,
+  "windowUsagePercent": 3182.2,
+  "buildDate": "2026-03-09",
+  "status": "WAITING_FOR_REVIEW",
+  "appStoreId": "6760271560",
+  "testFlightLink": "https://testflight.apple.com/join/wHJEg7v3"
+}

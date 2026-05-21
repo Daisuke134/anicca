@@ -1,0 +1,218 @@
+[
+    {
+        "id": "neck_rolls",
+        "name": "Neck Rolls",
+        "category": "neck",
+        "instructions": "Slowly roll your head in a circle. 5 times clockwise, then 5 times counter-clockwise. Keep shoulders relaxed.",
+        "durationSeconds": 30,
+        "sfSymbol": "arrow.clockwise.circle",
+        "isPremium": false
+    },
+    {
+        "id": "chin_tucks",
+        "name": "Chin Tucks",
+        "category": "neck",
+        "instructions": "Pull your chin straight back, creating a double chin. Hold for 5 seconds. Repeat 5 times.",
+        "durationSeconds": 25,
+        "sfSymbol": "person.crop.circle",
+        "isPremium": false
+    },
+    {
+        "id": "neck_side_stretch",
+        "name": "Neck Side Stretch",
+        "category": "neck",
+        "instructions": "Tilt your head toward your right shoulder. Hold 15 seconds. Repeat on the left side.",
+        "durationSeconds": 30,
+        "sfSymbol": "person.crop.circle",
+        "isPremium": false
+    },
+    {
+        "id": "neck_rotation",
+        "name": "Deep Neck Rotation",
+        "category": "neck",
+        "instructions": "Slowly turn your head to look over your right shoulder. Hold 10 seconds. Repeat left.",
+        "durationSeconds": 20,
+        "sfSymbol": "arrow.triangle.2.circlepath",
+        "isPremium": true
+    },
+    {
+        "id": "neck_flexion",
+        "name": "Neck Flexion Stretch",
+        "category": "neck",
+        "instructions": "Gently bring your chin to your chest. Place hands behind your head for gentle pressure. Hold 20 seconds.",
+        "durationSeconds": 20,
+        "sfSymbol": "person.crop.circle",
+        "isPremium": true
+    },
+    {
+        "id": "levator_stretch",
+        "name": "Levator Scapulae Stretch",
+        "category": "neck",
+        "instructions": "Look down toward your right armpit. Use your hand to gently pull. Hold 20 seconds each side.",
+        "durationSeconds": 30,
+        "sfSymbol": "hand.raised",
+        "isPremium": true
+    },
+    {
+        "id": "cat_cow",
+        "name": "Seated Cat-Cow",
+        "category": "back",
+        "instructions": "Sit upright. Arch your back (cow), then round it (cat). Move slowly between positions 10 times.",
+        "durationSeconds": 30,
+        "sfSymbol": "figure.seated.side",
+        "isPremium": false
+    },
+    {
+        "id": "spinal_twist",
+        "name": "Seated Spinal Twist",
+        "category": "back",
+        "instructions": "Sit tall, twist your torso to the right. Hold the back of the chair. Hold 15 seconds each side.",
+        "durationSeconds": 30,
+        "sfSymbol": "arrow.triangle.2.circlepath",
+        "isPremium": false
+    },
+    {
+        "id": "forward_fold",
+        "name": "Seated Forward Fold",
+        "category": "back",
+        "instructions": "Sit at the edge of your chair. Fold forward, letting your arms hang. Hold for 20 seconds.",
+        "durationSeconds": 20,
+        "sfSymbol": "figure.seated.side",
+        "isPremium": false
+    },
+    {
+        "id": "hip_flexor_stretch",
+        "name": "Hip Flexor Stretch",
+        "category": "back",
+        "instructions": "Stand up, step one foot forward into a lunge. Push hips forward gently. Hold 20 seconds each side.",
+        "durationSeconds": 30,
+        "sfSymbol": "figure.walk",
+        "isPremium": true
+    },
+    {
+        "id": "figure_four",
+        "name": "Figure Four Stretch",
+        "category": "back",
+        "instructions": "Sit and cross your right ankle over left knee. Lean forward gently. Hold 20 seconds each side.",
+        "durationSeconds": 30,
+        "sfSymbol": "figure.seated.side",
+        "isPremium": true
+    },
+    {
+        "id": "standing_extension",
+        "name": "Standing Back Extension",
+        "category": "back",
+        "instructions": "Stand up. Place hands on your lower back and gently arch backward. Hold 10 seconds. Repeat 3 times.",
+        "durationSeconds": 25,
+        "sfSymbol": "figure.stand",
+        "isPremium": true
+    },
+    {
+        "id": "shoulder_rolls",
+        "name": "Shoulder Rolls",
+        "category": "shoulders",
+        "instructions": "Roll your shoulders forward 10 times, then backward 10 times. Keep movements smooth and controlled.",
+        "durationSeconds": 20,
+        "sfSymbol": "figure.arms.open",
+        "isPremium": false
+    },
+    {
+        "id": "cross_body_stretch",
+        "name": "Cross-Body Stretch",
+        "category": "shoulders",
+        "instructions": "Bring your right arm across your chest. Use your left hand to pull gently. Hold 15 seconds each side.",
+        "durationSeconds": 30,
+        "sfSymbol": "figure.arms.open",
+        "isPremium": false
+    },
+    {
+        "id": "overhead_stretch",
+        "name": "Overhead Reach",
+        "category": "shoulders",
+        "instructions": "Interlace fingers, push palms to ceiling. Stretch upward and hold for 15 seconds.",
+        "durationSeconds": 15,
+        "sfSymbol": "arrow.up",
+        "isPremium": false
+    },
+    {
+        "id": "doorway_stretch",
+        "name": "Doorway Chest Stretch",
+        "category": "shoulders",
+        "instructions": "Stand in a doorway, arms on frame at 90 degrees. Step forward gently. Hold 20 seconds.",
+        "durationSeconds": 20,
+        "sfSymbol": "figure.arms.open",
+        "isPremium": true
+    },
+    {
+        "id": "eagle_arms",
+        "name": "Eagle Arms",
+        "category": "shoulders",
+        "instructions": "Cross right elbow over left, wrap forearms. Lift elbows to shoulder height. Hold 15 seconds each side.",
+        "durationSeconds": 25,
+        "sfSymbol": "figure.arms.open",
+        "isPremium": true
+    },
+    {
+        "id": "shoulder_shrugs",
+        "name": "Shoulder Shrugs",
+        "category": "shoulders",
+        "instructions": "Raise both shoulders toward your ears. Hold 5 seconds, then release. Repeat 10 times.",
+        "durationSeconds": 20,
+        "sfSymbol": "arrow.up.and.down",
+        "isPremium": true
+    },
+    {
+        "id": "wrist_circles",
+        "name": "Wrist Circles",
+        "category": "wrists",
+        "instructions": "Extend your arms. Make circles with your wrists. 10 times each direction.",
+        "durationSeconds": 20,
+        "sfSymbol": "hand.raised",
+        "isPremium": false
+    },
+    {
+        "id": "prayer_stretch",
+        "name": "Prayer Stretch",
+        "category": "wrists",
+        "instructions": "Press palms together in front of chest. Lower hands until you feel the stretch. Hold 15 seconds.",
+        "durationSeconds": 15,
+        "sfSymbol": "hands.sparkles",
+        "isPremium": false
+    },
+    {
+        "id": "wrist_flexor",
+        "name": "Wrist Flexor Stretch",
+        "category": "wrists",
+        "instructions": "Extend your right arm, palm up. Use left hand to pull fingers down. Hold 15 seconds each side.",
+        "durationSeconds": 25,
+        "sfSymbol": "hand.raised",
+        "isPremium": false
+    },
+    {
+        "id": "finger_spread",
+        "name": "Finger Spread",
+        "category": "wrists",
+        "instructions": "Spread your fingers wide, hold 5 seconds, then make a fist. Repeat 10 times.",
+        "durationSeconds": 20,
+        "sfSymbol": "hand.point.up.left",
+        "isPremium": true
+    },
+    {
+        "id": "thumb_stretch",
+        "name": "Thumb Stretch",
+        "category": "wrists",
+        "instructions": "Wrap your fingers around your thumb. Gently bend your wrist toward pinky. Hold 15 seconds each hand.",
+        "durationSeconds": 25,
+        "sfSymbol": "hand.thumbsup",
+        "isPremium": true
+    },
+    {
+        "id": "wrist_extensor",
+        "name": "Wrist Extensor Stretch",
+        "category": "wrists",
+        "instructions": "Extend your arm, palm down. Use other hand to press fingers toward you. Hold 15 seconds each side.",
+        "durationSeconds": 25,
+        "sfSymbol": "hand.raised",
+        "isPremium": true
+    }
+]

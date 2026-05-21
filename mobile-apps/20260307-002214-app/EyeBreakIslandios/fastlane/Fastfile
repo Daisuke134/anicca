@@ -1,0 +1,63 @@
+default_platform(:ios)
+
+platform :ios do
+  desc "Run tests"
+  lane :test do
+    scan(
+      scheme: "EyeBreakIsland",
+      devices: ["iPhone 17 Pro"],
+      clean: true,
+      code_coverage: true
+    )
+  end
+
+  desc "Build for testing"
+  lane :build do
+    build_app(
+      scheme: "EyeBreakIsland",
+      skip_archive: true,
+      skip_codesigning: true,
+      destination: "generic/platform=iOS Simulator"
+    )
+  end
+
+  desc "Build for simulator (Maestro E2E)"
+  lane :build_for_simulator do
+    build_app(
+      scheme: "EyeBreakIsland",
+      skip_archive: true,
+      skip_codesigning: true,
+      destination: "platform=iOS Simulator,name=iPhone 17 Pro",
+      derived_data_path: "./build/DerivedData"
+    )
+  end
+
+  desc "Archive for distribution"
+  lane :archive do
+    build_app(
+      scheme: "EyeBreakIsland",
+      export_method: "app-store",
+      output_directory: "./build"
+    )
+  end
+
+  desc "Upload to TestFlight"
+  lane :beta do
+    api_key = app_store_connect_api_key(
+      key_id: ENV["ASC_KEY_ID"],
+      issuer_id: ENV["ASC_ISSUER_ID"],
+      key_filepath: File.expand_path("~/.appstoreconnect/private_keys/AuthKey_#{ENV['ASC_KEY_ID']}.p8")
+    )
+    build_app(
+      scheme: "EyeBreakIsland",
+      export_method: "app-store",
+      output_directory: "./build",
+      clean: true,
+      xcargs: "-allowProvisioningUpdates"
+    )
+    upload_to_testflight(
+      api_key: api_key,
+      skip_waiting_for_build_processing: true
+    )
+  end
+end

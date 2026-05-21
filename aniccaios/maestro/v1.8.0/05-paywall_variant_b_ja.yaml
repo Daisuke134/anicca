@@ -1,0 +1,53 @@
+# Test 5: Paywall Variant B — Japanese
+# Verifies: JA localization on Variant B
+
+appId: ai.anicca.app.ios
+name: Paywall Variant B JA
+tags:
+  - paywall
+  - v1.8.0
+  - variant-b
+  - ja
+
+---
+- clearState
+- clearKeychain
+- launchApp:
+    arguments:
+      UITESTING: "true"
+      AppleLanguages: "(ja)"
+      AppleLocale: "ja_JP"
+    env:
+      PAYWALL_VARIANT: "test"
+
+- runFlow: ../_onboarding_to_paywall.yaml
+
+- extendedWaitUntil:
+    visible:
+      id: "paywall-plan-cta"
+    timeout: 15000
+
+- takeScreenshot: "v180-05-variant-b-ja"
+
+# Verify JA Variant B title
+- assertVisible:
+    text: "毎日の習慣を変える"
+
+# Verify JA review
+- assertVisible:
+    text: ".*Aniccaのおかげで.*"
+
+# Dismiss
+- tapOn:
+    id: "paywall-dismiss"
+
+- tapOn:
+    text: "今はしない|Not Now"
+    optional: true
+
+- extendedWaitUntil:
+    visible:
+      id: "mypath-root"
+    timeout: 10000
+
+- takeScreenshot: "v180-05-variant-b-ja-home"

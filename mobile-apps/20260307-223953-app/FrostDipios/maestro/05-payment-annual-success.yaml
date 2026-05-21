@@ -1,0 +1,74 @@
+# Feature: RC Test Store annual purchase success
+# Tests: Skip onboarding → Paywall → Select Annual → Test valid purchase
+# Dependencies: Fresh install, uiPreviewMode enabled (DEBUG)
+
+appId: com.aniccafactory.frostdip
+tags:
+  - payment
+
+---
+- clearState
+- clearKeychain
+- launchApp
+
+# Skip onboarding to paywall
+- extendedWaitUntil:
+    visible:
+      id: "onboarding_get_started"
+    timeout: 30000
+
+- tapOn:
+    id: "onboarding_get_started"
+
+- extendedWaitUntil:
+    visible:
+      id: "onboarding_experience_beginner"
+    timeout: 10000
+
+- tapOn:
+    id: "onboarding_experience_beginner"
+
+- tapOn:
+    id: "onboarding_continue"
+
+- extendedWaitUntil:
+    visible:
+      id: "onboarding_skip_notifications"
+    timeout: 10000
+
+- tapOn:
+    text: "Allow"
+    optional: true
+
+- tapOn:
+    id: "onboarding_skip_notifications"
+
+# Paywall appears (onboarding step 4)
+- extendedWaitUntil:
+    visible:
+      id: "paywall_plan_annual"
+    timeout: 10000
+
+# Select annual plan
+- tapOn:
+    id: "paywall_plan_annual"
+
+# Tap Subscribe CTA (uiPreviewMode: purchase auto-completes)
+- tapOn:
+    id: "paywall_cta"
+
+# Handle RC Test Store dialog if it appears (optional in uiPreviewMode)
+- tapOn:
+    text: "Test valid purchase"
+    optional: true
+
+# After purchase, onboarding completes → Timer screen
+- extendedWaitUntil:
+    visible:
+      id: "timer_start"
+    timeout: 30000
+
+- assertVisible:
+    id: "timer_breathing_prep"
+
+- takeScreenshot: "05-payment-annual-success"

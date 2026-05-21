@@ -1,0 +1,62 @@
+export const metadata = { title: 'プライバシーポリシー | CalmCortisol' };
+
+export default function CalmCortisolPrivacyJA() {
+  return (
+    <main className="container mx-auto max-w-3xl px-4 py-24">
+      <h1 className="text-3xl font-bold text-foreground">プライバシーポリシー — CalmCortisol</h1>
+      <p className="mt-4 text-sm text-muted-foreground">最終更新日：2026年2月25日</p>
+
+      <p className="mt-6 text-muted-foreground">
+        本プライバシーポリシーは、CalmCortisol（以下「本アプリ」）がユーザーデータをどのように扱うかを説明するものです。
+      </p>
+
+      <h2 className="mt-10 text-xl font-semibold text-foreground">1. 事業者情報</h2>
+      <p className="mt-3 text-muted-foreground">成田大輔（個人事業主） / contact@aniccaai.com</p>
+
+      <h2 className="mt-10 text-xl font-semibold text-foreground">2. 収集する情報</h2>
+      <ul className="mt-3 list-disc pl-6 text-muted-foreground space-y-2">
+        <li>デバイス識別子 — アナリティクスおよび不正防止のために使用</li>
+        <li>アプリ使用イベント — 例：呼吸セッション完了、ペイウォールのインタラクション</li>
+        <li>サブスクリプションステータス — App Store / RevenueCat を通じて管理</li>
+      </ul>
+
+      <h2 className="mt-10 text-xl font-semibold text-foreground">3. 収集しない情報</h2>
+      <ul className="mt-3 list-disc pl-6 text-muted-foreground space-y-2">
+        <li>呼吸セッションの内容や個人的なメモ</li>
+        <li>健康データや生体情報</li>
+        <li>位置情報</li>
+        <li>連絡先、写真、マイク録音</li>
+      </ul>
+
+      <h2 className="mt-10 text-xl font-semibold text-foreground">4. 第三者サービス</h2>
+      <ul className="mt-3 list-disc pl-6 text-muted-foreground space-y-2">
+        <li><strong>RevenueCat</strong> — サブスクリプション管理（購入履歴）</li>
+        <li><strong>Mixpanel</strong> — 匿名使用状況の分析</li>
+        <li><strong>Apple App Store</strong> — 決済処理</li>
+      </ul>
+
+      <h2 className="mt-10 text-xl font-semibold text-foreground">5. データ保持期間</h2>
+      <p className="mt-3 text-muted-foreground">
+        アナリティクスデータは最大12か月間保持されます。削除をご希望の場合はお問い合わせください。
+      </p>
+
+      <h2 className="mt-10 text-xl font-semibold text-foreground">6. 子どものプライバシー</h2>
+      <p className="mt-3 text-muted-foreground">
+        本アプリは13歳未満のお子様を対象としていません。
+      </p>
+
+      <h2 className="mt-10 text-xl font-semibold text-foreground">7. お問い合わせ</h2>
+      <p className="mt-3 text-muted-foreground">
+        プライバシーに関するご要望：contact@aniccaai.com
+      </p>
+
+      <h2 className="mt-10 text-xl font-semibold text-foreground">8. 利用規約</h2>
+      <p className="mt-3 text-muted-foreground">
+        利用規約はApple標準エンドユーザー使用許諾契約（EULA）に準拠します：{' '}
+        <a href="https://www.apple.com/legal/internet-services/itunes/dev/stdeula/" className="underline">
+          https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
+        </a>
+      </p>
+    </main>
+  );
+}

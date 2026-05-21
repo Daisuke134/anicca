@@ -1,0 +1,72 @@
+name: CalmCortisol
+options:
+  bundleIdPrefix: com.anicca
+  deploymentTarget:
+    iOS: "15.0"
+  xcodeVersion: "16.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    MARKETING_VERSION: "1.0.0"
+    CURRENT_PROJECT_VERSION: "1"
+    DEVELOPMENT_TEAM: "S5U8UH3JLJ"
+    PRODUCT_BUNDLE_IDENTIFIER: com.anicca.calmcortisol
+    INFOPLIST_FILE: CalmCortisol/Info.plist
+    CODE_SIGN_STYLE: Automatic
+    TARGETED_DEVICE_FAMILY: "1"
+    IPHONEOS_DEPLOYMENT_TARGET: "15.0"
+
+packages:
+  RevenueCat:
+    url: https://github.com/RevenueCat/purchases-ios.git
+    from: "4.44.2"
+  Mixpanel:
+    url: https://github.com/mixpanel/mixpanel-swift.git
+    from: "4.4.0"
+
+targets:
+  CalmCortisol:
+    type: application
+    platform: iOS
+    sources:
+      - path: CalmCortisol
+        excludes:
+          - "**/*.md"
+    resources:
+      - path: CalmCortisol/Resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.anicca.calmcortisol
+        DEVELOPMENT_TEAM: "S5U8UH3JLJ"
+        MARKETING_VERSION: "1.0.0"
+        CURRENT_PROJECT_VERSION: "1"
+        INFOPLIST_FILE: CalmCortisol/Info.plist
+    dependencies:
+      - package: RevenueCat
+        product: RevenueCat
+      - package: Mixpanel
+        product: Mixpanel
+    info:
+      path: CalmCortisol/Info.plist
+      properties:
+        CFBundleName: CalmCortisol
+        CFBundleDisplayName: CalmCortisol
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        NSUserNotificationsUsageDescription: "CalmCortisol detects when you're stressed and sends breathing reminders."
+        NSUserTrackingUsageDescription: "CalmCortisol uses anonymous analytics to improve the app experience. No personal data is shared with advertisers."
+        UIBackgroundModes: []
+
+  CalmCortisolTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: CalmCortisolTests
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.anicca.calmcortisol.tests
+    dependencies:
+      - target: CalmCortisol

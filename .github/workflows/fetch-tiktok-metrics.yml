@@ -1,0 +1,36 @@
+name: Fetch TikTok Metrics
+
+on:
+  schedule:
+    - cron: '0 1 * * *'  # 01:00 UTC = 10:00 JST (~25h after post)
+  workflow_dispatch: {}   # Manual trigger
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fetch-tiktok-metrics
+  cancel-in-progress: false
+
+env:
+  APIFY_API_TOKEN: ${{ secrets.APIFY_API_TOKEN }}
+  API_BASE_URL: ${{ secrets.API_BASE_URL }}
+  API_AUTH_TOKEN: ${{ secrets.API_AUTH_TOKEN }}
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install -r scripts/anicca-agent/requirements.txt
+
+      - name: Fetch Metrics
+        working-directory: scripts/anicca-agent
+        run: python fetch_metrics.py

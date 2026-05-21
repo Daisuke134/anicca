@@ -1,0 +1,45 @@
+default_platform(:ios)
+
+platform :ios do
+  desc "Run unit tests"
+  lane :test do
+    run_tests(
+      scheme: "Zone2Daily",
+      device: "iPhone 17 Pro",
+      clean: true,
+      output_files: "test-results.junit",
+      result_bundle: true
+    )
+  end
+
+  desc "Build for simulator (Debug)"
+  lane :build_for_simulator do
+    sh(
+      "LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 xcodebuild " \
+      "-scheme Zone2Daily " \
+      "-configuration Debug " \
+      "-sdk iphonesimulator " \
+      "-destination 'platform=iOS Simulator,name=iPhone 17 Pro' " \
+      "-derivedDataPath build/DerivedData " \
+      "build 2>&1 | tail -5"
+    )
+  end
+
+  desc "Build for App Store"
+  lane :build_for_release do
+    build_app(
+      scheme: "Zone2Daily",
+      configuration: "Release",
+      export_method: "app-store"
+    )
+  end
+
+  desc "Build for App Store (alias)"
+  lane :build do
+    build_app(
+      scheme: "Zone2Daily",
+      configuration: "Release",
+      export_method: "app-store"
+    )
+  end
+end

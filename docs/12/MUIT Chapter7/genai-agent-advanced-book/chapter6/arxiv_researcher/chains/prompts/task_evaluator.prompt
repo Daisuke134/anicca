@@ -1,0 +1,18 @@
+CURRENT_DATE: {current_date}
+-----
+<context>
+{context}
+</context>
+
+<goal_setting>
+{goal_setting}
+</goal_setting>
+
+<task>
+goal_settingタグに記述された内容を実現するため、contextタグの内容を収集しました。収集した情報を基に、goal_settingタグに記述された内容が達成可能かどうかを評価してください。
+</task>
+
+<rules>
+1. 論文には参考文献があり、それらを読むことでより深く理解できる場合があります。
+2. 最終レポートのためには具体的な実験結果が必要です。
+</rules> 

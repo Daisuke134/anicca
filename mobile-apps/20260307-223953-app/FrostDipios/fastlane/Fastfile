@@ -1,0 +1,45 @@
+default_platform(:ios)
+
+platform :ios do
+  desc "Run all tests"
+  lane :test do
+    run_tests(
+      scheme: "FrostDip",
+      devices: ["iPhone 16 Pro"],
+      clean: true
+    )
+  end
+
+  desc "Build for testing"
+  lane :build do
+    build_app(
+      scheme: "FrostDip",
+      skip_archive: true,
+      skip_codesigning: true
+    )
+  end
+
+  desc "Build for simulator (Maestro E2E)"
+  lane :build_for_simulator do
+    build_app(
+      scheme: "FrostDip",
+      configuration: "Debug",
+      destination: "generic/platform=iOS Simulator",
+      derived_data_path: "build/DerivedData",
+      skip_archive: true,
+      skip_codesigning: true
+    )
+  end
+
+  desc "Archive and upload to ASC"
+  lane :release do
+    build_app(
+      scheme: "FrostDip",
+      export_method: "app-store"
+    )
+    upload_to_app_store(
+      skip_screenshots: true,
+      skip_metadata: true
+    )
+  end
+end

@@ -1,0 +1,380 @@
+---
+description: Anicca Design System Rules - For Figma MCP integration and consistent UI implementation
+globs:
+  - "aniccaios/**/*.swift"
+  - "apps/landing/**/*.tsx"
+  - "apps/web/**/*.tsx"
+alwaysApply: true
+---
+
+# Anicca Design System Rules
+
+このドキュメントは、Figma MCPを使用してデザインをコードに変換する際のルールを定義します。
+
+---
+
+## 1. Color Tokens
+
+### iOS (SwiftUI) - `AppTheme.Colors`
+
+| Token Name | Light Mode | Dark Mode | Usage |
+|------------|------------|-----------|-------|
+| `accent` | `#222222` | `#e5e5e5` | Global accent color |
+| `background` | `#f8f5ed` | `#1c1b1a` | Main background |
+| `cardBackground` | `#fdfcfc` | `#2c2b2a` | Card surfaces |
+| `cardBackgroundAlt` | `#fcfcfb` | `#333231` | Alternative card surfaces |
+| `label` | `#393634` | `#e5e4e2` | Primary text |
+| `secondaryLabel` | `#898783` | `#a0a09e` | Secondary text |
+| `tertiaryLabel` | `#b8b6b0` | `#6e6e6c` | Tertiary/disabled text |
+| `buttonSelected` | `#222222` | `#e5e5e5` | Selected button background |
+| `buttonUnselected` | `#e9e6e0` | `#3a3938` | Unselected button background |
+| `buttonTextSelected` | `#e1e1e1` | `#1c1b1a` | Selected button text |
+| `buttonTextUnselected` | `#898783` | `#a0a09e` | Unselected button text |
+| `border` | `#c8c6bf` | `#4a4948` | Standard border |
+| `borderLight` | `#f2f0ed` | `#3a3938` | Light border |
+| `tabBarBackground` | `#FDFCFC` | `#2c2b2a` | Tab bar background |
+| `tabBarSelectedBackground` | `#E9E6E0` | `#3a3938` | Selected tab background |
+
+### Figma Source Colors (from Mobbin Community design)
+
+| Figma Color | Hex Value | Mapped To |
+|-------------|-----------|-----------|
+| Background | `#f5f3ed` | `AppTheme.Colors.background` |
+| Card | `#fdfcfa` | `AppTheme.Colors.cardBackground` |
+| Primary Text | `#3a3a3a` | `AppTheme.Colors.label` |
+| Secondary Text | `#8a8a82` | `AppTheme.Colors.secondaryLabel` |
+| Accent/Gold | `#c9b382` | Custom habit accent (use sparingly) |
+| Tab Bar | `#fdfcfa` | `AppTheme.Colors.tabBarBackground` |
+| Selected Tab BG | `#e8e6df` | `AppTheme.Colors.tabBarSelectedBackground` |
+| Border | `rgba(217,215,207,0.2)` | `AppTheme.Colors.tabBarBorder` |
+
+### Web (Tailwind CSS)
+
+```css
+/* globals.css */
+:root {
+  --background: 0 0% 100%;      /* #ffffff */
+  --foreground: 222.2 47.4% 11.2%;
+  --card: 0 0% 100%;
+  --primary: 222.2 47.4% 11.2%;
+  --secondary: 210 40% 96.1%;
+  --accent: 210 40% 96.1%;
+  --border: 214.3 31.8% 91.4%;
+}
+```
+
+---
+
+## 2. Typography
+
+### iOS (SwiftUI) - `AppTheme.Typography`
+
+| Token | Font | Usage |
+|-------|------|-------|
+| `onboardingTitle` | 36pt Heavy | Onboarding screen titles |
+| `appTitleDynamic` | .largeTitle | App-level titles |
+| `title2Dynamic` | .title2 | Section titles |
+| `headlineDynamic` | .headline | Card headlines |
+| `bodyDynamic` | .body | Body text |
+| `subheadlineDynamic` | .subheadline | Supporting text |
+| `footnote` | .footnote | Small labels |
+| `caption1Dynamic` | .caption | Captions |
+| `caption2Dynamic` | .caption2 | Smallest text |
+
+### Figma Font Mapping
+
+| Figma Font | iOS Equivalent |
+|------------|----------------|
+| `Instrument Sans:Bold` 36px | `AppTheme.Typography.onboardingTitle` |
+| `Instrument Sans:Bold` 14px | `.system(size: 14, weight: .bold)` |
+| `Instrument Sans:Medium` 16px | `.headline` |
+| `Instrument Sans:Regular` 14px | `.subheadline` |
+| `Instrument Sans:SemiBold` 10px | `.caption2` weight semibold |
+
+### Web Font
+
+```typescript
+// fonts.ts
+import { Inter } from 'next/font/google';
+export const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+});
+```
+
+---
+
+## 3. Spacing System
+
+### iOS - `AppTheme.Spacing`
+
+| Token | Value | Usage |
+|-------|-------|-------|
+| `xs` | 4pt | Tight spacing |
+| `sm` | 8pt | Small spacing |
+| `md` | 12pt | Medium spacing |
+| `lg` | 16pt | Standard padding |
+| `xl` | 24pt | Large spacing |
+| `xxl` | 32pt | Extra large spacing |
+
+### Figma → iOS Mapping
+
+| Figma Value | iOS Token |
+|-------------|-----------|
+| 8px | `AppTheme.Spacing.sm` |
+| 16px | `AppTheme.Spacing.lg` |
+| 20px | Custom (use 24pt) |
+| 24px | `AppTheme.Spacing.xl` |
+| 32px | `AppTheme.Spacing.xxl` |
+
+---
+
+## 4. Border Radius
+
+### iOS - `AppTheme.Radius`
+
+| Token | Value | Usage |
+|-------|-------|-------|
+| `sm` | 8pt | Small elements |
+| `md` | 12pt | Medium elements |
+| `lg` | 20pt | Large elements |
+| `xl` | 36pt | Extra large |
+| `xxl` | 76pt | Primary buttons |
+| `card` | 37pt | Standard cards |
+| `cardLarge` | 76pt | Large cards |
+| `cardXLarge` | 87pt | Extra large cards |
+
+### Figma → iOS Mapping
+
+| Figma Radius | iOS Token |
+|--------------|-----------|
+| 16px | `AppTheme.Radius.md` |
+| 37px | `AppTheme.Radius.card` |
+| Capsule/Pill | `.infinity` (Capsule) |
+
+---
+
+## 5. Component Patterns
+
+### Cards
+
+**iOS (SwiftUI):**
+
+```swift
+CardView {
+    // content
+}
+// Uses: cornerRadius: 37pt, padding: 16pt, shadow: 0.05 opacity
+```
+
+**Figma Properties:**
+- Background: `#fdfcfa`
+- Border radius: 37px
+- Shadow: `0px 1px 2px -1px rgba(0,0,0,0.1), 0px 1px 3px rgba(0,0,0,0.1)`
+
+### Primary Buttons
+
+**iOS (SwiftUI):**
+
+```swift
+PrimaryButton(title: "Title") {
+    // action
+}
+// Height: 64pt, cornerRadius: xxl (76pt)
+```
+
+**Figma Properties:**
+- Height: 64px
+- Background: accent color
+- Border radius: capsule or 76px
+
+### Toggle Switches
+
+**Figma Properties:**
+- Track: `#c9b382` (active), `#e9e6e0` (inactive)
+- Thumb: `#fdfcfa` with shadow
+- Size: 48x28px
+- Thumb size: 24x24px
+
+### Tab Bar
+
+**iOS (SwiftUI):**
+
+```swift
+// Use FigmaTabBar or standard TabView
+// Background: tabBarBackground
+// Selected: tabBarSelectedBackground
+// Border: tabBarBorder (top only)
+```
+
+**Figma Properties:**
+- Height: 76px
+- Background: `#fdfcfa`
+- Border-top: `rgba(217,215,207,0.2)`
+- Tab button: 80x59px, rounded 16px
+- Selected tab bg: `#e8e6df`
+
+### Habit Cards
+
+**Figma Properties:**
+- Height: 90px
+- Border radius: 37px
+- Checkbox: 32x32px, rounded full, bg `#c9b382`
+- Toggle: 48x28px
+- Streak badge: `rgba(201,179,130,0.1)` bg, 22px height
+
+---
+
+## 6. Icon System
+
+### iOS
+- Use SF Symbols when possible
+- Fallback to custom assets in `Assets.xcassets`
+- Icon sizes: 16pt, 20pt, 24pt standard
+
+### Figma Export
+- Export icons as SVG or PDF for iOS
+- Use `@2x` and `@3x` for raster images
+
+---
+
+## 7. Shadow System
+
+### Standard Card Shadow
+
+**iOS:**
+```swift
+.shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+```
+
+**CSS/Figma:**
+```css
+box-shadow: 0px 1px 2px -1px rgba(0,0,0,0.1), 0px 1px 3px 0px rgba(0,0,0,0.1);
+```
+
+---
+
+## 8. Conversion Rules
+
+### Figma → iOS (SwiftUI)
+
+1. **Colors**
+   - Map Figma hex to `AppTheme.Colors.*`
+   - Always use adaptive colors (light/dark support)
+
+2. **Spacing**
+   - Convert px to pt (1:1 on iOS)
+   - Use nearest `AppTheme.Spacing.*` token
+
+3. **Typography**
+   - Use `AppTheme.Typography.*` for consistency
+   - Preserve font weight mapping
+
+4. **Layout**
+   - Use `HStack`, `VStack`, `ZStack` for flex layouts
+   - Use `.frame()` for fixed sizes
+   - Use `.padding()` with spacing tokens
+
+5. **Borders**
+   - Use `.overlay(RoundedRectangle(...).stroke(...))`
+   - Use `AppTheme.Colors.border*` colors
+
+### Figma → Web (React/Tailwind)
+
+1. **Colors**
+   - Use CSS variables: `hsl(var(--*))`
+   - Or direct Tailwind classes
+
+2. **Typography**
+   - Use Inter font family
+   - Tailwind text-* classes
+
+3. **Spacing**
+   - Use Tailwind spacing: `p-4`, `m-2`, etc.
+
+---
+
+## 9. Asset Management
+
+### iOS
+- Location: `aniccaios/aniccaios/Assets.xcassets/`
+- Icons: Use SF Symbols or add to Assets catalog
+- Images: Add `@2x` and `@3x` variants
+
+### Web
+- Location: `apps/landing/public/`
+- Use Next.js Image component for optimization
+
+---
+
+## 10. Code Generation Rules
+
+When converting Figma to code:
+
+1. **DO NOT** install Tailwind in iOS projects
+2. **ALWAYS** use `AppTheme.*` tokens in SwiftUI
+3. **PRESERVE** exact visual design while adapting to platform patterns
+4. **USE** existing component abstractions (CardView, PrimaryButton, etc.)
+5. **FOLLOW** existing naming conventions
+6. **ADD** accessibility labels for interactive elements
+7. **TEST** in both light and dark mode
+
+---
+
+## 11. Quick Reference
+
+### iOS Color Usage
+
+```swift
+// Backgrounds
+AppTheme.Colors.background        // Main bg
+AppTheme.Colors.cardBackground    // Card surfaces
+
+// Text
+AppTheme.Colors.label             // Primary text
+AppTheme.Colors.secondaryLabel    // Secondary text
+AppTheme.Colors.tertiaryLabel     // Disabled text
+
+// Interactive
+AppTheme.Colors.accent            // Accent/CTA
+AppTheme.Colors.buttonSelected    // Selected state
+AppTheme.Colors.buttonUnselected  // Unselected state
+
+// Borders
+AppTheme.Colors.border            // Standard
+AppTheme.Colors.borderLight       // Light/subtle
+```
+
+### iOS Component Usage
+
+```swift
+// Cards
+CardView {
+    Text("Content")
+}
+
+// Buttons
+PrimaryButton(title: "Action", style: .primary) {
+    // action
+}
+
+// Section Rows
+SectionRow.text(label: "Label", text: "Value")
+SectionRow.toggle(label: "Setting", isOn: $isEnabled)
+```
+
+---
+
+## 12. File Locations
+
+| Purpose | iOS Path | Web Path |
+|---------|----------|----------|
+| Theme/Tokens | `aniccaios/DesignSystem/AppTheme.swift` | `apps/landing/tailwind.config.ts` |
+| Components | `aniccaios/DesignSystem/Components/` | `apps/landing/components/ui/` |
+| Colors CSS | N/A | `apps/landing/app/globals.css` |
+| Assets | `aniccaios/Assets.xcassets/` | `apps/landing/public/` |
+
+---
+
+*Last updated: 2025-01-XX*
+*Figma Source: Mobbin Community (ofMTWHWaKsIFuuAP1vhvoT)*

@@ -1,0 +1,26 @@
+{
+  "name": "greenlight",
+  "owner": {
+    "name": "revylai"
+  },
+  "plugins": [
+    {
+      "name": "greenlight",
+      "source": "../",
+      "category": "compliance",
+      "tags": [
+        "apple",
+        "app-store",
+        "review",
+        "guidelines",
+        "ios",
+        "swift",
+        "react-native",
+        "expo",
+        "rejection",
+        "compliance"
+      ],
+      "strict": true
+    }
+  ]
+}

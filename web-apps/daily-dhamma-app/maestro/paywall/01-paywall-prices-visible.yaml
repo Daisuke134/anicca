@@ -1,0 +1,45 @@
+appId: com.dailydhamma.app
+tags:
+  - smokeTest
+  - paywall
+---
+# E-P1: paywall 画面が開く
+# 初回起動 or clearState 後はオンボーディング → スキップ → paywall
+# 既にオンボーディング済みの場合は Settings → プレミアムを利用する → paywall
+- launchApp:
+    clearState: false
+
+# オンボーディング中の通知許可ダイアログが出た場合は閉じる
+- tapOn:
+    text: "許可しない"
+    optional: true
+
+# オンボーディングをスキップ（表示された場合）
+- tapOn:
+    text: "Skip|スキップ"
+    optional: true
+
+# 既にオンボーディング済みの場合: Settings → Unlock Premium でパywallへ
+- tapOn:
+    point: "90%,10%"
+    optional: true
+- tapOn:
+    text: "プレミアムを利用する|Unlock Premium"
+    optional: true
+
+# E-P2: Monthly プランボタン(paywall_plan_monthly)が表示される
+- assertVisible:
+    id: "paywall_plan_monthly"
+
+# E-P3: Yearly プランボタン(paywall_plan_yearly)が表示される
+- assertVisible:
+    id: "paywall_plan_yearly"
+
+# E-P4: CTA ボタン(paywall_cta)がタップ可能
+- assertVisible:
+    id: "paywall_cta"
+- tapOn:
+    id: "paywall_cta"
+
+# タップ後: RevenueCat Test Purchase ダイアログ（開発環境）またはエラーUI（sandbox）
+- takeScreenshot: "paywall-cta-tap-result"

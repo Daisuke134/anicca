@@ -1,0 +1,92 @@
+# Anicca Progress
+
+このファイルは Claude Code が毎セッション開始時に読むべき進捗記録。
+他のエージェントもここを見れば現在の状態が分かる。
+
+---
+
+## 現在の状態（2026-02-06 16:45 JST）
+
+| 項目 | 状態 |
+|------|------|
+| **OpenClaw Gateway** | 🟡 VPS 移行作業中 |
+| **VPS** | 46.225.70.241 — 環境変数設定完了、systemd 未設定 |
+| **ローカル Mac** | まだ稼働中（VPS 完了後に停止） |
+
+---
+
+## VPS 移行進捗（Step 2）
+
+| # | タスク | 状態 |
+|---|--------|------|
+| 2.1 | SSH 接続確認 | ✅ |
+| 2.2 | anicca ユーザー | ✅ 既存 |
+| 2.3 | OpenClaw インストール | ✅ 既存 (v2026.2.1) |
+| 2.4 | 環境変数設定 | ✅ 完了 |
+| 2.5 | systemd サービス作成 | ❌ 次 |
+| 2.6 | openclaw.json コピー | ❌ |
+| 2.7 | API テスト | ❌ |
+| 2.8 | Slack 投稿テスト | ❌ |
+| 2.9 | ローカル Gateway 停止 | ❌ |
+
+---
+
+## VPS 環境変数（/home/anicca/.env に設定済み）
+
+| 変数 | 状態 |
+|------|------|
+| OPENAI_API_KEY | ✅ |
+| SLACK_BOT_TOKEN | ✅ |
+| SLACK_APP_TOKEN | ✅ |
+| MIXPANEL_PROJECT_ID | ✅ (3970220) |
+| MIXPANEL_API_SECRET | ✅ |
+| REVENUECAT_V2_SECRET_KEY | ✅ |
+| ASC_KEY_ID | ✅ |
+| ASC_ISSUER_ID | ✅ |
+
+---
+
+## 完了したこと
+
+| 日付 | タスク |
+|------|--------|
+| 2026-02-05 | RevenueCat API 動作確認 |
+| 2026-02-05 | Mixpanel API 動作確認 |
+| 2026-02-05 | SKILL.md を curl ベースに書き換え |
+| 2026-02-06 | groupPolicy を open に変更 |
+| 2026-02-06 | Step 1 ドキュメント整理完了 |
+| 2026-02-06 | VPS SSH 接続確認 |
+| 2026-02-06 | VPS 環境変数追加（RC/MP/SLACK_APP） |
+
+---
+
+## 次のタスク
+
+1. **systemd サービス作成**（Step 2.5）
+2. **openclaw.json を VPS にコピー**（Step 2.6）
+3. **Gateway 起動 & テスト**（Step 2.7-2.8）
+4. **ローカル Gateway 停止**（Step 2.9）
+
+---
+
+## 重要な参照先
+
+| ファイル | 内容 |
+|---------|------|
+| Spec | `.cursor/plans/ios/1.6.1/openclaw/anicca-openclaw-spec.md` |
+| Secrets | `.cursor/plans/reference/secrets.md` |
+| VPS SSH | `ssh root@46.225.70.241` |
+| VPS .env | `/home/anicca/.env` |
+
+---
+
+## 注意事項
+
+- **VPS 移行完了するまでローカル Gateway は停止しない**
+- **MCP ツール（mcp__*）は OpenClaw では使えない**
+- **Slack 投稿は `exec` + `openclaw message send` CLI**
+
+---
+
+最終更新: 2026-02-06 16:45 JST
+更新者: Claude Code

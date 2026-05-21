@@ -1,0 +1,110 @@
+{
+  "onboarding": {
+    "slide1": {
+      "title": "現代の心に\n古代の智慧を",
+      "subtitle": "法句経の普遍の教えに\n安らぎを見つけてください"
+    },
+    "slide2": {
+      "title": "毎日の法句経を\nロック画面に",
+      "subtitle": "視点を変える智慧で\n毎日を始めましょう"
+    },
+    "slide3": {
+      "title": "毎日マインドフルに過ごす",
+      "subtitle": "通知を有効にすることで、毎朝の法句経と日中のマインドフルネスリマインダーの受信に同意します。\n\nいつでも設定から無効にできます。"
+    },
+    "continue": "次へ",
+    "enableNotifications": "通知を有効にする",
+    "skip": "スキップ"
+  },
+  "paywall": {
+    "title": "修行を\n深める",
+    "subtitle": "より多くの法句経と通知を利用可能に",
+    "feature": {
+      "verses": {
+        "title": "プレミアム法句経",
+        "desc": "より多くの法句経の教えを利用できます"
+      },
+      "reminders": {
+        "title": "より多くの通知",
+        "desc": "1日最大10回のマインドフルネス通知"
+      },
+      "bookmark": {
+        "title": "ブックマーク",
+        "desc": "お気に入りの法句経を保存できます"
+      }
+    },
+    "plan": {
+      "monthly": "月額プラン",
+      "yearly": "年額プラン",
+      "perMonth": "/月",
+      "perYear": "/年"
+    },
+    "cta": "登録する",
+    "free": "無料で続ける",
+    "restore": "購入を復元",
+    "restoring": "復元中...",
+    "loading": "プランを読み込み中...",
+    "terms": "いつでもキャンセル可 • キャンセルしない限り自動更新",
+    "termsOfUse": "利用規約",
+    "privacyPolicy": "プライバシーポリシー",
+    "alert": {
+      "error": {
+        "title": "エラー",
+        "unavailable": "サブスクリプションプランを利用できません。後でもう一度お試しください。"
+      },
+      "purchaseFailed": {
+        "title": "購入失敗",
+        "msg": "後でもう一度お試しください。"
+      },
+      "restoreSuccess": {
+        "title": "復元完了",
+        "msg": "プレミアムアクセスが復元されました。"
+      },
+      "restoreNone": {
+        "title": "購入履歴なし",
+        "msg": "以前の購入が見つかりませんでした。"
+      },
+      "restoreFailed": {
+        "title": "復元失敗",
+        "msg": "後でもう一度お試しください。"
+      }
+    }
+  },
+  "index": {
+    "title": "デイリーダンマ",
+    "swipeHint": "スワイプで次の法句経へ"
+  },
+  "settings": {
+    "title": "設定",
+    "section": {
+      "appearance": "外観",
+      "notifications": "通知",
+      "stayPresent": "今この瞬間への通知",
+      "morningVerse": "朝の法句経",
+      "about": "について",
+      "legal": "法的情報"
+    },
+    "darkMode": "ダークモード",
+    "enableNotifications": "通知を有効にする",
+    "notificationsHint": "毎朝の法句経とマインドフルネスリマインダーを受け取ります",
+    "dailyFrequency": "1日の頻度",
+    "frequencyHint": "1日何回マインドフルネスリマインダーを受け取るか",
+    "frequencyFixed": "1日3回",
+    "upgradeForMore": "より多く受け取るにはアップグレード",
+    "notificationTime": "朝の時刻",
+    "freq": {
+      "x3": "3回",
+      "x5": "5回",
+      "x7": "7回",
+      "x10": "10回"
+    },
+    "aboutDhammapada": "法句経について",
+    "privacyPolicy": "プライバシーポリシー",
+    "termsOfService": "利用規約",
+    "premium": {
+      "title": "プレミアムを利用する",
+      "subtitle": "全法句経・無制限機能"
+    },
+    "version": "Daily Dhamma v1.0.0"
+  }
+}

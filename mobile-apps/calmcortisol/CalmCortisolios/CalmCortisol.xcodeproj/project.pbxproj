@@ -1,0 +1,633 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		034A633E479211ADB985A955 /* NotificationPermissionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B488BEC308A1A472D13DF79 /* NotificationPermissionView.swift */; };
+		08F6EEE0A45BFC8631B9435A /* PainSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C5F2D2692CC0C5A13AF42B6 /* PainSelectionView.swift */; };
+		0EC7F9D948AFB45D54025F14 /* SessionRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B871E9EA3A53C346D38D7A6 /* SessionRecord.swift */; };
+		1E7D6707FEB6433C84CFBDE2 /* SubscriptionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62EEC6C070869D2B1DB123D5 /* SubscriptionManager.swift */; };
+		368C9577D08D2B4E5DA35319 /* L10n.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D548A3A6D1414C51B5659D6 /* L10n.swift */; };
+		3C63906EAC6C86E048DDAC8F /* SessionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12CCACDBEC99FCE9FD7C2767 /* SessionView.swift */; };
+		64A165C84ADBB6FF5BE34AB7 /* AnalyticsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 638533A1823DE44981DC1E0C /* AnalyticsManager.swift */; };
+		79129DBFB0BE4C8C8F025FD4 /* OnboardingWelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3D970474635D483DA5C6714 /* OnboardingWelcomeView.swift */; };
+		791BAFB878C0F17665A72C63 /* BreathingType.swift in Sources */ = {isa = PBXBuildFile; fileRef = A26133D8B10FA878E076E9DF /* BreathingType.swift */; };
+		7DA50E6B88F29A5802A73819 /* DemoSessionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA45F9E8E80A812914EE1043 /* DemoSessionView.swift */; };
+		828E9A98EA5560D42BF58D28 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D92BA2E8979BD48D2CBF0DE2 /* DashboardView.swift */; };
+		89D783079850F7001D80AFD7 /* RevenueCat in Frameworks */ = {isa = PBXBuildFile; productRef = 9ECAE528495B9738314C8895 /* RevenueCat */; };
+		9189200504AE25A50454CC24 /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 288E6F0C53B15F2081F7EF11 /* MainTabView.swift */; };
+		9BC861CA71306EFB973D6744 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 7B84E6E255549A0E9D5CD94B /* PrivacyInfo.xcprivacy */; };
+		9DA2A860E64A0B58802151C4 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72D8C310D0D0936CF4D82193 /* SettingsView.swift */; };
+		A2877CC7583D92F6AFAC84B8 /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F43AB8B983AB216F5C787995 /* NotificationManager.swift */; };
+		BD6267CC352EDAADF7A372C3 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F28B655994F104A92F7F267F /* Assets.xcassets */; };
+		D0E5130A7597A5CED31283D0 /* CalmCortisolApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 931AC2530A0ED2408C4F9B12 /* CalmCortisolApp.swift */; };
+		D246C3E1D72A7AADD07D8F88 /* Color+Hex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 218165A521FF3762F4AA1242 /* Color+Hex.swift */; };
+		DC80F1BCAD5F0CBF9B20DD67 /* CalmCortisolTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C1E5ECCA56A6F0084BEB52E /* CalmCortisolTests.swift */; };
+		EB194FD6DA595C0AAD5554DE /* Mixpanel in Frameworks */ = {isa = PBXBuildFile; productRef = E62A790F54322F5FE7AD1575 /* Mixpanel */; };
+		F2A16DB7353D246CBDE055BC /* PaywallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DDEFB3EA85B5671D3283B4B /* PaywallView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		70D2B462093461775E415C43 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 4032D8F2A76E05108D6EA5EA /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 1BB5D777268430915371D166;
+			remoteInfo = CalmCortisol;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		12CCACDBEC99FCE9FD7C2767 /* SessionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionView.swift; sourceTree = "<group>"; };
+		1C1E5ECCA56A6F0084BEB52E /* CalmCortisolTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalmCortisolTests.swift; sourceTree = "<group>"; };
+		218165A521FF3762F4AA1242 /* Color+Hex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Hex.swift"; sourceTree = "<group>"; };
+		288E6F0C53B15F2081F7EF11 /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
+		3D548A3A6D1414C51B5659D6 /* L10n.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = L10n.swift; sourceTree = "<group>"; };
+		4DDEFB3EA85B5671D3283B4B /* PaywallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaywallView.swift; sourceTree = "<group>"; };
+		5B488BEC308A1A472D13DF79 /* NotificationPermissionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationPermissionView.swift; sourceTree = "<group>"; };
+		62EEC6C070869D2B1DB123D5 /* SubscriptionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionManager.swift; sourceTree = "<group>"; };
+		638533A1823DE44981DC1E0C /* AnalyticsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsManager.swift; sourceTree = "<group>"; };
+		72D8C310D0D0936CF4D82193 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		7B84E6E255549A0E9D5CD94B /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		7C5F2D2692CC0C5A13AF42B6 /* PainSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PainSelectionView.swift; sourceTree = "<group>"; };
+		8B871E9EA3A53C346D38D7A6 /* SessionRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionRecord.swift; sourceTree = "<group>"; };
+		931AC2530A0ED2408C4F9B12 /* CalmCortisolApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalmCortisolApp.swift; sourceTree = "<group>"; };
+		A26133D8B10FA878E076E9DF /* BreathingType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BreathingType.swift; sourceTree = "<group>"; };
+		A2689E3AF2AA9A8C9599C20D /* CalmCortisolTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = CalmCortisolTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		B02BFB9DFC3D27FFBB037FAC /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		B3D970474635D483DA5C6714 /* OnboardingWelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingWelcomeView.swift; sourceTree = "<group>"; };
+		C80AE97613F559E4D352BC9C /* CalmCortisol.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = CalmCortisol.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		D92BA2E8979BD48D2CBF0DE2 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
+		EA45F9E8E80A812914EE1043 /* DemoSessionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoSessionView.swift; sourceTree = "<group>"; };
+		F28B655994F104A92F7F267F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		F43AB8B983AB216F5C787995 /* NotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationManager.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		D92F537DA86FF012DC55C100 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				89D783079850F7001D80AFD7 /* RevenueCat in Frameworks */,
+				EB194FD6DA595C0AAD5554DE /* Mixpanel in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		262A988CA56DB4220651DD32 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				E71FB82EF3B7E97CA683B34A /* Main */,
+				36B57358DE2D0EA87DB6EB32 /* Onboarding */,
+				460000C6D9F9BAF041758737 /* Paywall */,
+				4A5028E39264D5427A37BD3C /* Session */,
+				72968D8D9DE20A8508627761 /* Settings */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		36B57358DE2D0EA87DB6EB32 /* Onboarding */ = {
+			isa = PBXGroup;
+			children = (
+				EA45F9E8E80A812914EE1043 /* DemoSessionView.swift */,
+				5B488BEC308A1A472D13DF79 /* NotificationPermissionView.swift */,
+				B3D970474635D483DA5C6714 /* OnboardingWelcomeView.swift */,
+				7C5F2D2692CC0C5A13AF42B6 /* PainSelectionView.swift */,
+			);
+			path = Onboarding;
+			sourceTree = "<group>";
+		};
+		3D36B5C754D01CB1EE2A84F9 /* Localization */ = {
+			isa = PBXGroup;
+			children = (
+				3D548A3A6D1414C51B5659D6 /* L10n.swift */,
+			);
+			path = Localization;
+			sourceTree = "<group>";
+		};
+		460000C6D9F9BAF041758737 /* Paywall */ = {
+			isa = PBXGroup;
+			children = (
+				4DDEFB3EA85B5671D3283B4B /* PaywallView.swift */,
+			);
+			path = Paywall;
+			sourceTree = "<group>";
+		};
+		4A5028E39264D5427A37BD3C /* Session */ = {
+			isa = PBXGroup;
+			children = (
+				12CCACDBEC99FCE9FD7C2767 /* SessionView.swift */,
+			);
+			path = Session;
+			sourceTree = "<group>";
+		};
+		60DD959CA209EE007875918A /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				931AC2530A0ED2408C4F9B12 /* CalmCortisolApp.swift */,
+				7B84E6E255549A0E9D5CD94B /* PrivacyInfo.xcprivacy */,
+				A5DC5BF3F485EEE650C0A383 /* Extensions */,
+				3D36B5C754D01CB1EE2A84F9 /* Localization */,
+				66C86EC13DB27BBECDF046C4 /* Models */,
+				FDCD6150358626D016133DC8 /* Services */,
+				262A988CA56DB4220651DD32 /* Views */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		66C86EC13DB27BBECDF046C4 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				A26133D8B10FA878E076E9DF /* BreathingType.swift */,
+				8B871E9EA3A53C346D38D7A6 /* SessionRecord.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		72968D8D9DE20A8508627761 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				72D8C310D0D0936CF4D82193 /* SettingsView.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
+		80B00CB969E998796A228C14 = {
+			isa = PBXGroup;
+			children = (
+				AB1AD3E2CB3B6E2103EB7D00 /* CalmCortisol */,
+				977700B1C66683A3C45C7713 /* CalmCortisolTests */,
+				BB92FECDAA105CF78339D3C7 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		977700B1C66683A3C45C7713 /* CalmCortisolTests */ = {
+			isa = PBXGroup;
+			children = (
+				1C1E5ECCA56A6F0084BEB52E /* CalmCortisolTests.swift */,
+			);
+			path = CalmCortisolTests;
+			sourceTree = "<group>";
+		};
+		A5DC5BF3F485EEE650C0A383 /* Extensions */ = {
+			isa = PBXGroup;
+			children = (
+				218165A521FF3762F4AA1242 /* Color+Hex.swift */,
+			);
+			path = Extensions;
+			sourceTree = "<group>";
+		};
+		AB1AD3E2CB3B6E2103EB7D00 /* CalmCortisol */ = {
+			isa = PBXGroup;
+			children = (
+				F28B655994F104A92F7F267F /* Assets.xcassets */,
+				B02BFB9DFC3D27FFBB037FAC /* Info.plist */,
+				60DD959CA209EE007875918A /* Sources */,
+			);
+			path = CalmCortisol;
+			sourceTree = "<group>";
+		};
+		BB92FECDAA105CF78339D3C7 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				C80AE97613F559E4D352BC9C /* CalmCortisol.app */,
+				A2689E3AF2AA9A8C9599C20D /* CalmCortisolTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		E71FB82EF3B7E97CA683B34A /* Main */ = {
+			isa = PBXGroup;
+			children = (
+				D92BA2E8979BD48D2CBF0DE2 /* DashboardView.swift */,
+				288E6F0C53B15F2081F7EF11 /* MainTabView.swift */,
+			);
+			path = Main;
+			sourceTree = "<group>";
+		};
+		FDCD6150358626D016133DC8 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				638533A1823DE44981DC1E0C /* AnalyticsManager.swift */,
+				F43AB8B983AB216F5C787995 /* NotificationManager.swift */,
+				62EEC6C070869D2B1DB123D5 /* SubscriptionManager.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		1BB5D777268430915371D166 /* CalmCortisol */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1A181F21EBD705049C5510F6 /* Build configuration list for PBXNativeTarget "CalmCortisol" */;
+			buildPhases = (
+				7B8329BA760768B0DFADD08D /* Sources */,
+				82671128D54949E6DE7E7DE4 /* Resources */,
+				D92F537DA86FF012DC55C100 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = CalmCortisol;
+			packageProductDependencies = (
+				9ECAE528495B9738314C8895 /* RevenueCat */,
+				E62A790F54322F5FE7AD1575 /* Mixpanel */,
+			);
+			productName = CalmCortisol;
+			productReference = C80AE97613F559E4D352BC9C /* CalmCortisol.app */;
+			productType = "com.apple.product-type.application";
+		};
+		D7495E00F396F33488E5778B /* CalmCortisolTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 4EA393AB92FFA8C4BA458D21 /* Build configuration list for PBXNativeTarget "CalmCortisolTests" */;
+			buildPhases = (
+				52AB1F8EC1E1D19190ED12D5 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				F0C667DD857798BF315766F5 /* PBXTargetDependency */,
+			);
+			name = CalmCortisolTests;
+			packageProductDependencies = (
+			);
+			productName = CalmCortisolTests;
+			productReference = A2689E3AF2AA9A8C9599C20D /* CalmCortisolTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		4032D8F2A76E05108D6EA5EA /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					1BB5D777268430915371D166 = {
+						DevelopmentTeam = S5U8UH3JLJ;
+						ProvisioningStyle = Automatic;
+					};
+					D7495E00F396F33488E5778B = {
+						DevelopmentTeam = S5U8UH3JLJ;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = C570807AB6F1537D1C78EB1F /* Build configuration list for PBXProject "CalmCortisol" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 80B00CB969E998796A228C14;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				B1831E72075A13E3BE666AE4 /* XCRemoteSwiftPackageReference "mixpanel-swift" */,
+				04FFA17F44116D88C2E91C5C /* XCRemoteSwiftPackageReference "purchases-ios" */,
+			);
+			preferredProjectObjectVersion = 77;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				1BB5D777268430915371D166 /* CalmCortisol */,
+				D7495E00F396F33488E5778B /* CalmCortisolTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		82671128D54949E6DE7E7DE4 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BD6267CC352EDAADF7A372C3 /* Assets.xcassets in Resources */,
+				9BC861CA71306EFB973D6744 /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		52AB1F8EC1E1D19190ED12D5 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				DC80F1BCAD5F0CBF9B20DD67 /* CalmCortisolTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7B8329BA760768B0DFADD08D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				64A165C84ADBB6FF5BE34AB7 /* AnalyticsManager.swift in Sources */,
+				791BAFB878C0F17665A72C63 /* BreathingType.swift in Sources */,
+				D0E5130A7597A5CED31283D0 /* CalmCortisolApp.swift in Sources */,
+				D246C3E1D72A7AADD07D8F88 /* Color+Hex.swift in Sources */,
+				828E9A98EA5560D42BF58D28 /* DashboardView.swift in Sources */,
+				7DA50E6B88F29A5802A73819 /* DemoSessionView.swift in Sources */,
+				368C9577D08D2B4E5DA35319 /* L10n.swift in Sources */,
+				9189200504AE25A50454CC24 /* MainTabView.swift in Sources */,
+				A2877CC7583D92F6AFAC84B8 /* NotificationManager.swift in Sources */,
+				034A633E479211ADB985A955 /* NotificationPermissionView.swift in Sources */,
+				79129DBFB0BE4C8C8F025FD4 /* OnboardingWelcomeView.swift in Sources */,
+				08F6EEE0A45BFC8631B9435A /* PainSelectionView.swift in Sources */,
+				F2A16DB7353D246CBDE055BC /* PaywallView.swift in Sources */,
+				0EC7F9D948AFB45D54025F14 /* SessionRecord.swift in Sources */,
+				3C63906EAC6C86E048DDAC8F /* SessionView.swift in Sources */,
+				9DA2A860E64A0B58802151C4 /* SettingsView.swift in Sources */,
+				1E7D6707FEB6433C84CFBDE2 /* SubscriptionManager.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		F0C667DD857798BF315766F5 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 1BB5D777268430915371D166 /* CalmCortisol */;
+			targetProxy = 70D2B462093461775E415C43 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		4A7DDB0AE116878798345757 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.anicca.calmcortisol.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/CalmCortisol.app/CalmCortisol";
+			};
+			name = Release;
+		};
+		58ADF82E29CC753B01B67987 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = S5U8UH3JLJ;
+				INFOPLIST_FILE = CalmCortisol/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.anicca.calmcortisol;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		97D9DFA5CA33257E988D41C9 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = S5U8UH3JLJ;
+				INFOPLIST_FILE = CalmCortisol/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.anicca.calmcortisol;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		C1449EA8B24EE46BAE474F9A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = S5U8UH3JLJ;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				INFOPLIST_FILE = CalmCortisol/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 1.0.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.anicca.calmcortisol;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		E33EC9E76E7115E486ABAA79 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = S5U8UH3JLJ;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				INFOPLIST_FILE = CalmCortisol/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 1.0.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.anicca.calmcortisol;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		F6B523B70626D4D7CB7E3D0E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.anicca.calmcortisol.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/CalmCortisol.app/CalmCortisol";
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		1A181F21EBD705049C5510F6 /* Build configuration list for PBXNativeTarget "CalmCortisol" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				97D9DFA5CA33257E988D41C9 /* Debug */,
+				58ADF82E29CC753B01B67987 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		4EA393AB92FFA8C4BA458D21 /* Build configuration list for PBXNativeTarget "CalmCortisolTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F6B523B70626D4D7CB7E3D0E /* Debug */,
+				4A7DDB0AE116878798345757 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		C570807AB6F1537D1C78EB1F /* Build configuration list for PBXProject "CalmCortisol" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E33EC9E76E7115E486ABAA79 /* Debug */,
+				C1449EA8B24EE46BAE474F9A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		04FFA17F44116D88C2E91C5C /* XCRemoteSwiftPackageReference "purchases-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/RevenueCat/purchases-ios.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 4.44.2;
+			};
+		};
+		B1831E72075A13E3BE666AE4 /* XCRemoteSwiftPackageReference "mixpanel-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/mixpanel/mixpanel-swift.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 4.4.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		9ECAE528495B9738314C8895 /* RevenueCat */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 04FFA17F44116D88C2E91C5C /* XCRemoteSwiftPackageReference "purchases-ios" */;
+			productName = RevenueCat;
+		};
+		E62A790F54322F5FE7AD1575 /* Mixpanel */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B1831E72075A13E3BE666AE4 /* XCRemoteSwiftPackageReference "mixpanel-swift" */;
+			productName = Mixpanel;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 4032D8F2A76E05108D6EA5EA /* Project object */;
+}

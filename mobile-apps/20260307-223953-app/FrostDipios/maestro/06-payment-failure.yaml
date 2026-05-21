@@ -1,0 +1,81 @@
+# Feature: Payment non-conversion (dismiss paywall)
+# Tests: Skip onboarding → Paywall → Verify UI → Dismiss with Maybe Later → Timer
+# Dependencies: Fresh install, uiPreviewMode enabled (DEBUG)
+
+appId: com.aniccafactory.frostdip
+tags:
+  - payment
+
+---
+- clearState
+- clearKeychain
+- launchApp
+
+# Skip onboarding to paywall
+- extendedWaitUntil:
+    visible:
+      id: "onboarding_get_started"
+    timeout: 30000
+
+- tapOn:
+    id: "onboarding_get_started"
+
+- extendedWaitUntil:
+    visible:
+      id: "onboarding_experience_beginner"
+    timeout: 10000
+
+- tapOn:
+    id: "onboarding_experience_beginner"
+
+- tapOn:
+    id: "onboarding_continue"
+
+- extendedWaitUntil:
+    visible:
+      id: "onboarding_skip_notifications"
+    timeout: 10000
+
+- tapOn:
+    text: "Allow"
+    optional: true
+
+- tapOn:
+    id: "onboarding_skip_notifications"
+
+# Paywall appears (onboarding step 4)
+- extendedWaitUntil:
+    visible:
+      id: "paywall_plan_monthly"
+    timeout: 10000
+
+# Verify paywall UI elements
+- assertVisible:
+    id: "paywall_plan_weekly"
+
+- assertVisible:
+    id: "paywall_plan_monthly"
+
+- assertVisible:
+    id: "paywall_plan_annual"
+
+- assertVisible:
+    id: "paywall_cta"
+
+- assertVisible:
+    id: "paywall_maybe_later"
+
+# Dismiss paywall without purchasing (non-conversion)
+- tapOn:
+    id: "paywall_maybe_later"
+
+# Verify Timer screen (free user path)
+- extendedWaitUntil:
+    visible:
+      id: "timer_start"
+    timeout: 30000
+
+- assertVisible:
+    id: "timer_breathing_prep"
+
+- takeScreenshot: "06-payment-failure"

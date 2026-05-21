@@ -1,0 +1,46 @@
+## Codebase Patterns
+
+| Pattern | 詳細 |
+|---------|------|
+| APP_ID in prd.json notes | validate.sh が `APP_ID=(\d+)` regex でprd.json notesから読む。必ずnotesに含める |
+| Privacy Policy URL | https://aniccaai.com/privacy を全アプリで再利用。カスタムファイル不要 |
+| Project env path | `~/.config/mobileapp-builder/projects/<slug>/.env` (例: desk-stretch) |
+| DeskStretchios location | `/Users/anicca/anicca-project/DeskStretchios/` (dev branch main worktree) |
+
+---
+
+## 2026-03-06 - US-005a: Privacy Policy + ASC App Creation
+
+- ASC にアプリ確認済み（DeskStretch - deskstretch, APP_ID=6760048397）
+- Bundle ID: com.aniccafactory.deskstretch
+- Privacy Policy: https://aniccaai.com/privacy（既存URL使用、カスタムホスティング不要）
+- privacy-policy.md を mobile-apps/20260306-070136-app/ に作成
+- PrivacyInfo.xcprivacy: DeskStretchios/DeskStretch/Resources/PrivacyInfo.xcprivacy ✅
+- ITSAppUsesNonExemptEncryption=NO: Info.plist ✅
+- Project env: ~/.config/mobileapp-builder/projects/desk-stretch/.env (APP_ID=6760048397)
+
+- Files changed:
+  - mobile-apps/20260306-070136-app/prd.json (passes: true, notes with evidence)
+  - mobile-apps/20260306-070136-app/privacy-policy.md (新規作成)
+  - mobile-apps/20260306-070136-app/progress.txt (新規作成)
+
+- **Learnings for future iterations:**
+  - validate.sh は prd.json の US-005a/005b の notes から `APP_ID=(\d+)` regex で APP_ID を読む。notes に APP_ID= を必ず含めること
+  - PrivacyInfo.xcprivacy と Info.plist は US-006 でも作成できる（us-005a-infra.md 参照）
+  - DeskStretchios が既に dev branch 上に存在する場合、app dir (20260306-*) から相対パスで参照できない
+---
+
+## 2026-03-06 - US-005b: IAP + pricing + RevenueCat setup
+
+- ASC サブスク確認済み（GROUP_ID=21961645, MONTHLY_ID=6760079509, ANNUAL_ID=6760078995）
+- Monthly 175価格 ✅, Annual 175価格 ✅
+- RC_IOS_PUBLIC_KEY 設定済み（既存セッションで RC App 作成済み）
+- RevenueCat SPM 追加済み（DeskStretchios/project.yml + xcodeproj ✅）
+- WAITING_FOR_HUMAN: RC SK Key（Products/Offerings 確認・作成のため）
+  - RC Secret Key を取得 → .env に保存 → RC Products/Offerings 作成 → passes: true
+
+**Learnings for future iterations:**
+  - source コマンドは bash -c 内でないと環境変数が継続しない（zsh eval コンテキスト問題）
+  - RC_IOS_PUBLIC_KEY が設定済み = RC App は作成済み。しかし Products/Offerings は SK Key なしで確認不可
+  - SPM は US-006 の前に追加されている場合がある（過去セッションで実行済みの可能性）
+---

@@ -1,0 +1,29 @@
+﻿Campaign: EU-Tier2_discovery (ID: 2143331128)
+Ad Group: EU-Tier2_broad (ID: 2145142841))
+"Start Date: Jan 29, 2026"
+"End Date: Feb 04, 2026"
+Currency: JPY
+Time Zone: UTC
+""
+
+Keyword ID,Keyword,Match Type,Status,Ad Group ID,Ad Group Name,CPT Bid,Recommended Max CPT Bid,Spend,Avg CPA (Total),Average CPT,Avg CPM,Avg Daily Spend,Impressions,Taps,Installs (Total),TTR,CR (Total),Pre-Orders Placed (Tap-Through),Pre-Orders Placed (View-Through),Pre-Orders Placed (Total),CR (Tap-Through),New Downloads (Total),Redownloads (Total),Installs (View-Through),Installs (Tap-Through),Avg CPA (Tap-Through),New Downloads (View-Through),Redownloads (View-Through),New Downloads (Tap-Through),Redownloads (Tap-Through)
+2208194075,anger management,BROAD,RUNNING,2145142841,EU-Tier2_broad,106.0,,0.0,0.0,0.0,,,0,0,0,0.0,0.0,0,0,0,0.0,0,0,0,0,0.0,0,0,0,0
+2208194067,anxiety relief,BROAD,RUNNING,2145142841,EU-Tier2_broad,106.0,,0.0,0.0,0.0,,,18,0,0,0.0,0.0,0,0,0,0.0,0,0,0,0,0.0,0,0,0,0
+2208194078,focus app,BROAD,RUNNING,2145142841,EU-Tier2_broad,106.0,,560.0,0.0,93.33,,,283,6,0,0.02,0.0,0,0,0,0.0,0,0,0,0,0.0,0,0,0,0
+2208194072,habit tracker,BROAD,RUNNING,2145142841,EU-Tier2_broad,106.0,,855.0,427.5,77.73,,,168,11,2,0.07,0.18,0,0,0,0.18,2,0,0,2,427.5,0,0,2,0
+2208194076,meditation app,BROAD,RUNNING,2145142841,EU-Tier2_broad,106.0,,184.0,184.0,92.0,,,32,2,1,0.06,0.5,0,0,0,0.5,1,0,0,1,184.0,0,0,1,0
+2208194081,meditation free,BROAD,RUNNING,2145142841,EU-Tier2_broad,106.0,,0.0,0.0,0.0,,,19,0,0,0.0,0.0,0,0,0,0.0,0,0,0,0,0.0,0,0,0,0
+2208194066,mental health app,BROAD,RUNNING,2145142841,EU-Tier2_broad,106.0,,86.0,0.0,86.0,,,29,1,0,0.03,0.0,0,0,0,0.0,0,0,0,0,0.0,0,0,0,0
+2208194082,mental health free,BROAD,RUNNING,2145142841,EU-Tier2_broad,106.0,,0.0,0.0,0.0,,,8,0,0,0.0,0.0,0,0,0,0.0,0,0,0,0,0.0,0,0,0,0
+2208194065,mindfulness,BROAD,RUNNING,2145142841,EU-Tier2_broad,106.0,,180.0,0.0,90.0,,,29,2,0,0.07,0.0,0,0,0,0.0,0,0,0,0,0.0,0,0,0,0
+2208194080,mindfulness free,BROAD,RUNNING,2145142841,EU-Tier2_broad,106.0,,0.0,0.0,0.0,,,12,0,0,0.0,0.0,0,0,0,0.0,0,0,0,0,0.0,0,0,0,0
+2208194073,morning routine,BROAD,RUNNING,2145142841,EU-Tier2_broad,106.0,,315.0,0.0,78.75,,,176,4,0,0.02,0.0,0,0,0,0.0,0,0,0,0,0.0,0,0,0,0
+2208194071,overthinking,BROAD,RUNNING,2145142841,EU-Tier2_broad,106.0,,0.0,0.0,0.0,,,2,0,0,0.0,0.0,0,0,0,0.0,0,0,0,0,0.0,0,0,0,0
+2208194070,procrastination,BROAD,RUNNING,2145142841,EU-Tier2_broad,106.0,,291.0,0.0,97.0,,,143,3,0,0.02,0.0,0,0,0,0.0,0,0,0,0,0.0,0,0,0,0
+2208194064,self care,BROAD,RUNNING,2145142841,EU-Tier2_broad,106.0,,247.0,0.0,82.33,,,89,3,0,0.03,0.0,0,0,0,0.0,0,0,0,0,0.0,0,0,0,0
+2208194079,self care free,BROAD,RUNNING,2145142841,EU-Tier2_broad,106.0,,0.0,0.0,0.0,,,2,0,0,0.0,0.0,0,0,0,0.0,0,0,0,0,0.0,0,0,0,0
+2208194077,self help,BROAD,RUNNING,2145142841,EU-Tier2_broad,106.0,,106.0,0.0,106.0,,,99,1,0,0.01,0.0,0,0,0,0.0,0,0,0,0,0.0,0,0,0,0
+2208194069,self improvement,BROAD,RUNNING,2145142841,EU-Tier2_broad,106.0,,81.0,0.0,81.0,,,33,1,0,0.03,0.0,0,0,0,0.0,0,0,0,0,0.0,0,0,0,0
+2208194074,sleep better,BROAD,RUNNING,2145142841,EU-Tier2_broad,106.0,,0.0,0.0,0.0,,,21,0,0,0.0,0.0,0,0,0,0.0,0,0,0,0,0.0,0,0,0,0
+2208194068,stress relief,BROAD,RUNNING,2145142841,EU-Tier2_broad,106.0,,0.0,0.0,0.0,,,40,0,0,0.0,0.0,0,0,0,0.0,0,0,0,0,0.0,0,0,0,0
+"",,,,,,,,2905.0,968.33,85.44,,,1203,34,3,0.03,0.09,0,0,0,0.09,3,0,0,3,968.33,0,0,3,0

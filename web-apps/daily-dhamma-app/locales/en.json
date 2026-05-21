@@ -1,0 +1,110 @@
+{
+  "onboarding": {
+    "slide1": {
+      "title": "Ancient wisdom for\nmodern minds",
+      "subtitle": "Find peace in the timeless teachings\nof the Dhammapada"
+    },
+    "slide2": {
+      "title": "Daily verses on\nyour lock screen",
+      "subtitle": "Start each day with wisdom\nthat transforms your perspective"
+    },
+    "slide3": {
+      "title": "Stay mindful each day",
+      "subtitle": "By enabling notifications, you agree to receive daily morning wisdom verses and mindfulness reminders throughout the day.\n\nYou can disable these anytime in Settings."
+    },
+    "continue": "Continue",
+    "enableNotifications": "Enable Notifications",
+    "skip": "Skip"
+  },
+  "paywall": {
+    "title": "Deepen Your\nPractice",
+    "subtitle": "Unlock more verses and reminders",
+    "feature": {
+      "verses": {
+        "title": "Premium Verses",
+        "desc": "Unlock many more Dhammapada teachings"
+      },
+      "reminders": {
+        "title": "More Reminders",
+        "desc": "Up to 10 mindfulness moments per day"
+      },
+      "bookmark": {
+        "title": "Bookmarking",
+        "desc": "Save your favorite verses"
+      }
+    },
+    "plan": {
+      "monthly": "Monthly",
+      "yearly": "Yearly",
+      "perMonth": "/month",
+      "perYear": "/year"
+    },
+    "cta": "Subscribe Now",
+    "free": "Continue with Free",
+    "restore": "Restore Purchases",
+    "restoring": "Restoring...",
+    "loading": "Loading plans...",
+    "terms": "Cancel anytime • Auto-renews unless cancelled",
+    "termsOfUse": "Terms of Use",
+    "privacyPolicy": "Privacy Policy",
+    "alert": {
+      "error": {
+        "title": "Error",
+        "unavailable": "Subscription plans are not available. Please try again later."
+      },
+      "purchaseFailed": {
+        "title": "Purchase Failed",
+        "msg": "Please try again later."
+      },
+      "restoreSuccess": {
+        "title": "Restored",
+        "msg": "Your premium access has been restored."
+      },
+      "restoreNone": {
+        "title": "No Purchases",
+        "msg": "No previous purchases found."
+      },
+      "restoreFailed": {
+        "title": "Restore Failed",
+        "msg": "Please try again later."
+      }
+    }
+  },
+  "index": {
+    "title": "Daily Dhamma",
+    "swipeHint": "Swipe up for next verse"
+  },
+  "settings": {
+    "title": "Settings",
+    "section": {
+      "appearance": "APPEARANCE",
+      "notifications": "NOTIFICATIONS",
+      "stayPresent": "STAY PRESENT REMINDERS",
+      "morningVerse": "MORNING VERSE",
+      "about": "ABOUT",
+      "legal": "LEGAL"
+    },
+    "darkMode": "Dark Mode",
+    "enableNotifications": "Enable Notifications",
+    "notificationsHint": "Receive morning wisdom verses and mindfulness reminders",
+    "dailyFrequency": "Daily Frequency",
+    "frequencyHint": "How many mindfulness reminders per day",
+    "frequencyFixed": "3x per day",
+    "upgradeForMore": "Upgrade for more",
+    "notificationTime": "Notification Time",
+    "freq": {
+      "x3": "3x",
+      "x5": "5x",
+      "x7": "7x",
+      "x10": "10x"
+    },
+    "aboutDhammapada": "About the Dhammapada",
+    "privacyPolicy": "Privacy Policy",
+    "termsOfService": "Terms of Service",
+    "premium": {
+      "title": "Unlock Premium",
+      "subtitle": "Full library & unlimited features"
+    },
+    "version": "Daily Dhamma v1.0.0"
+  }
+}

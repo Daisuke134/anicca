@@ -1,0 +1,623 @@
+{
+  "query": "AI Responsibility",
+  "source": "openalex",
+  "limit": 25,
+  "timestamp": 1778223424.6783402,
+  "papers": [
+    {
+      "paper_id": "oalex-W4285386582",
+      "title": "Vicarious liability: a solution to a problem of AI responsibility?",
+      "authors": [
+        {
+          "name": "Daniela Glavani\u010dov\u00e1",
+          "affiliation": "Comenius University Bratislava"
+        },
+        {
+          "name": "Matteo Pascucci",
+          "affiliation": "Slovak Academy of Sciences"
+        }
+      ],
+      "year": 2022,
+      "abstract": "",
+      "venue": "Ethics and Information Technology",
+      "citation_count": 23,
+      "doi": "10.1007/s10676-022-09657-8",
+      "arxiv_id": "",
+      "url": "https://doi.org/10.1007/s10676-022-09657-8",
+      "source": "openalex",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "oalex-W3045238219",
+      "title": "Clinical AI: opacity, accountability, responsibility and liability",
+      "authors": [
+        {
+          "name": "Helen Smith",
+          "affiliation": "University of Bristol"
+        }
+      ],
+      "year": 2020,
+      "abstract": "Abstract The aim of this literature review was to compose a narrative review supported by a systematic approach to critically identify and examine concerns about accountability and the allocation of responsibility and legal liability as applied to the clinician and the technologist as applied the use of opaque AI-powered systems in clinical decision making. This review questions (a) if it is permissible for a clinician to use an opaque AI system (AIS) in clinical decision making and (b) if a patient was harmed as a result of using a clinician using an AIS\u2019s suggestion, how would responsibility and legal liability be allocated? Literature was systematically searched, retrieved, and reviewed from nine databases, which also included items from three clinical professional regulators, as well as relevant grey literature from governmental and non-governmental organisations. This literature was subjected to inclusion/exclusion criteria; those items found relevant to this review underwent data extraction. This review found that there are multiple concerns about opacity, accountability, responsibility and liability when considering the stakeholders of technologists and clinicians in the creation and use of AIS in clinical decision making. Accountability is challenged when the AIS used is opaque, and allocation of responsibility is somewhat unclear. Legal analysis would help stakeholders to understand their obligations and prepare should an undesirable scenario of patient harm eventuate when AIS were used.",
+      "venue": "AI & Society",
+      "citation_count": 200,
+      "doi": "10.1007/s00146-020-01019-6",
+      "arxiv_id": "",
+      "url": "https://doi.org/10.1007/s00146-020-01019-6",
+      "source": "openalex",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "oalex-W4399999610",
+      "title": "Assessing Smart Nation Singapore as an International Model for AI Responsibility",
+      "authors": [
+        {
+          "name": "Philip L. Frana",
+          "affiliation": "James Madison University"
+        }
+      ],
+      "year": 2024,
+      "abstract": "While AI and other smart technologies greatly contribute to material aspects of well-being, there are concerns that they threaten quality of life in Singapore. Smart technologies and digital governance have freed up labor for activities where human empathy and understanding are unique and indispensable, but also threaten to undermine human dignity and accountability. This paper undertakes a comprehensive assessment of Singapore as an international model for AI responsibility from the perspective of the history and philosophy of technological governance. It examines the evolution of regulatory frameworks, ethical considerations, and key legal documents and social initiatives shaping the nation\u2019s approach to responsible, transparent, and just AI development. It also compares Singapore\u2019s actions, principles, and guidelines for AI responsibility to international activities and frameworks. This paper emphasizes the need for responsible and trustworthy AI development that considers causal links between AI technologies and their consequences, and encourages more conscientious collaboration to bridge the responsibility gap caused by AI\u2019s centralized and distributed sociotechnical systems.",
+      "venue": "International Journal on Responsibility",
+      "citation_count": 16,
+      "doi": "10.62365/2576-0955.1109",
+      "arxiv_id": "",
+      "url": "https://doi.org/10.62365/2576-0955.1109",
+      "source": "openalex",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "oalex-W4207071830",
+      "title": "Diffused responsibility: attributions of responsibility in the use of AI-driven clinical decision support systems",
+      "authors": [
+        {
+          "name": "Hannah Bleher",
+          "affiliation": "Friedrich-Alexander-Universit\u00e4t Erlangen-N\u00fcrnberg"
+        },
+        {
+          "name": "Matthias Braun",
+          "affiliation": "Friedrich-Alexander-Universit\u00e4t Erlangen-N\u00fcrnberg"
+        }
+      ],
+      "year": 2022,
+      "abstract": "Good decision-making is a complex endeavor, and particularly so in a health context. The possibilities for day-to-day clinical practice opened up by AI-driven clinical decision support systems (AI-CDSS) give rise to fundamental questions around responsibility. In causal, moral and legal terms the application of AI-CDSS is challenging existing attributions of responsibility. In this context, responsibility gaps are often identified as main problem. Mapping out the changing dynamics and levels of attributing responsibility, we argue in this article that the application of AI-CDSS causes diffusions of responsibility with respect to a causal, moral, and legal dimension. Responsibility diffusion describes the situation where multiple options and several agents can be considered for attributing responsibility. Using the example of an AI-driven 'digital tumor board', we illustrate how clinical decision-making is changed and diffusions of responsibility take place. Not denying or attempting to bridge responsibility gaps, we argue that dynamics and ambivalences are inherent in responsibility, which is based on normative considerations such as avoiding experiences of disregard and vulnerability of human life, which are inherently accompanied by a moment of uncertainty, and is characterized by revision openness. Against this background and to avoid responsibility gaps, the article concludes with suggestions for managing responsibility diffusions in clinical decision-making with AI-CDSS.",
+      "venue": "AI and Ethics",
+      "citation_count": 128,
+      "doi": "10.1007/s43681-022-00135-x",
+      "arxiv_id": "",
+      "url": "https://doi.org/10.1007/s43681-022-00135-x",
+      "source": "openalex",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "oalex-W3169234955",
+      "title": "Towards an Equitable Digital Society: Artificial Intelligence (AI) and Corporate Digital Responsibility (CDR)",
+      "authors": [
+        {
+          "name": "Karen Elliott",
+          "affiliation": "Newcastle University"
+        },
+        {
+          "name": "Rob Price",
+          "affiliation": "Holy Family Hospital"
+        },
+        {
+          "name": "Patricia Shaw",
+          "affiliation": "BH Consulting (Ireland)"
+        },
+        {
+          "name": "Tasos Spiliotopoulos",
+          "affiliation": "Newcastle University"
+        },
+        {
+          "name": "Magdalene Ng",
+          "affiliation": "Newcastle University"
+        },
+        {
+          "name": "Kovila Coopamootoo",
+          "affiliation": "Newcastle University"
+        },
+        {
+          "name": "Aad van Moorsel",
+          "affiliation": "Newcastle University"
+        }
+      ],
+      "year": 2021,
+      "abstract": "In the digital era, we witness the increasing use of artificial intelligence (AI) to solve problems, while improving productivity and efficiency. Yet, inevitably costs are involved with delegating power to algorithmically based systems, some of whose workings are opaque and unobservable and thus termed the \"black box\". Central to understanding the \"black box\" is to acknowledge that the algorithm is not mendaciously undertaking this action; it is simply using the recombination afforded to scaled computable machine learning algorithms. But an algorithm with arbitrary precision can easily reconstruct those characteristics and make life-changing decisions, particularly in financial services (credit scoring, risk assessment, etc.), and it could be difficult to reconstruct, if this was done in a fair manner reflecting the values of society. If we permit AI to make life-changing decisions, what are the opportunity costs, data trade-offs, and implications for social, economic, technical, legal, and environmental systems? We find that over 160 ethical AI principles exist, advocating organisations to act responsibly to avoid causing digital societal harms. This maelstrom of guidance, none of which is compulsory, serves to confuse, as opposed to guide. We need to think carefully about how we implement these algorithms, the delegation of decisions and data usage, in the absence of human oversight and AI governance. The paper seeks to harmonise and align approaches, illustrating the opportunities and threats of AI, while raising awareness of Corporate Digital Responsibility (CDR) as a potential collaborative mechanism to demystify governance complexity and to establish an equitable digital society.",
+      "venue": "Society",
+      "citation_count": 156,
+      "doi": "10.1007/s12115-021-00594-8",
+      "arxiv_id": "",
+      "url": "https://doi.org/10.1007/s12115-021-00594-8",
+      "source": "openalex",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "oalex-W3167166977",
+      "title": "Responsibility beyond design: Physicians\u2019 requirements for ethical medical AI",
+      "authors": [
+        {
+          "name": "Martin Sand",
+          "affiliation": "Delft University of Technology"
+        },
+        {
+          "name": "Juan M. Dur\u00e1n",
+          "affiliation": "Delft University of Technology"
+        },
+        {
+          "name": "Karin Jongsma",
+          "affiliation": "Utrecht University"
+        }
+      ],
+      "year": 2021,
+      "abstract": "Medical AI is increasingly being developed and tested to improve medical diagnosis, prediction and treatment of a wide array of medical conditions. Despite worries about the explainability and accuracy of such medical AI systems, it is reasonable to assume that they will be increasingly implemented in medical practice. Current ethical debates focus mainly on design requirements and suggest embedding certain values such as transparency, fairness, and explainability in the design of medical AI systems. Aside from concerns about their design, medical AI systems also raise questions with regard to physicians' responsibilities once these technologies are being implemented and used. How do physicians' responsibilities change with the implementation of medical AI? Which set of competencies do physicians have to learn to responsibly interact with medical AI? In the present article, we will introduce the notion of forward-looking responsibility and enumerate through this conceptual lens a number of competencies and duties that physicians ought to employ to responsibly utilize medical AI in practice. Those include amongst others understanding the range of reasonable outputs, being aware of own experience and skill decline, and monitoring potential accuracy decline of the AI systems.",
+      "venue": "Bioethics",
+      "citation_count": 103,
+      "doi": "10.1111/bioe.12887",
+      "arxiv_id": "",
+      "url": "https://doi.org/10.1111/bioe.12887",
+      "source": "openalex",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "oalex-W4385491340",
+      "title": "Corporate digital responsibility (CDR) in the age of AI: implications for interactive marketing",
+      "authors": [
+        {
+          "name": "Werner H. Kunz",
+          "affiliation": "University of Massachusetts Boston"
+        },
+        {
+          "name": "Jochen Wirtz",
+          "affiliation": "National University of Singapore"
+        }
+      ],
+      "year": 2023,
+      "abstract": "Purpose Despite all the recent achievements in the field of interactive marketing and artificial intelligence (AI), it is important to consider the ethical implications of these technologies. This paper explains the concept of corporate digital responsibility (CDR) and how it is affected by new advances in AI. Design/methodology/approach The authors build on the work of Wirtz et al. , (2023) and derive several managerial implications for the challenges that AI poses to CDR. CDR refers to a service company's ethical and fair use of data and technology within its digital service ecosystem. It involves establishing standards, protecting customer privacy, conducting external audits and striving for an equitable power dynamic between service firms and their partners. Findings Despite the risks involved, many companies are not prioritizing good CDR practices. Financial benefits from the collection and use of consumer data, improved customer experience through AI-driven customization and personalization, cost reduction through service automation and the trade-offs between organizational goals and CDR practices can prevent companies from prioritizing good CDR practices. Originality/value This is one of the first articles in the service domain to take the concept of CDR and apply it to recent developments in generative AI. Research limitations/implications The emergence of powerful AI tools presents opportunities and challenges. Research opportunities include responsible business restructuring, responsible service automation to ensure fairness and human oversight, addressing dehumanization of service delivery, responsible customer profiling to address privacy and discrimination concerns and preventing AI misuse.",
+      "venue": "Journal of Research in Interactive Marketing",
+      "citation_count": 128,
+      "doi": "10.1108/jrim-06-2023-0176",
+      "arxiv_id": "",
+      "url": "https://doi.org/10.1108/jrim-06-2023-0176",
+      "source": "openalex",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "oalex-W4206801982",
+      "title": "The AI Carbon Footprint and Responsibilities of AI Scientists",
+      "authors": [
+        {
+          "name": "Guglielmo Tamburrini",
+          "affiliation": "University of Naples Federico II"
+        }
+      ],
+      "year": 2022,
+      "abstract": "This article examines ethical implications of the growing AI carbon footprint, focusing on the fair distribution of prospective responsibilities among groups of involved actors. First, major groups of involved actors are identified, including AI scientists, AI industry, and AI infrastructure providers, from datacenters to electrical energy suppliers. Second, responsibilities of AI scientists concerning climate warming mitigation actions are disentangled from responsibilities of other involved actors. Third, to implement these responsibilities nudging interventions are suggested, leveraging on AI competitive games which would prize research combining better system accuracy with greater computational and energy efficiency. Finally, in addition to the AI carbon footprint, it is argued that another ethical issue with a genuinely global dimension is now emerging in the AI ethics agenda. This issue concerns the threats that AI-powered cyberweapons pose to the digital command, control, and communication infrastructure of nuclear weapons systems.",
+      "venue": "Philosophies",
+      "citation_count": 60,
+      "doi": "10.3390/philosophies7010004",
+      "arxiv_id": "",
+      "url": "https://doi.org/10.3390/philosophies7010004",
+      "source": "openalex",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "oalex-W2953522645",
+      "title": "The global landscape of AI ethics guidelines",
+      "authors": [
+        {
+          "name": "Anna Jobin",
+          "affiliation": "ETH Zurich"
+        },
+        {
+          "name": "Marcello Ienca",
+          "affiliation": "ETH Zurich"
+        },
+        {
+          "name": "Effy Vayena",
+          "affiliation": "ETH Zurich"
+        }
+      ],
+      "year": 2019,
+      "abstract": "",
+      "venue": "Nature Machine Intelligence",
+      "citation_count": 4772,
+      "doi": "10.1038/s42256-019-0088-2",
+      "arxiv_id": "",
+      "url": "https://doi.org/10.1038/s42256-019-0088-2",
+      "source": "openalex",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "oalex-W4377093829",
+      "title": "Embedding responsibility in intelligent systems: from AI ethics to responsible AI ecosystems",
+      "authors": [
+        {
+          "name": "Bernd Carsten Stahl",
+          "affiliation": "University of Nottingham"
+        }
+      ],
+      "year": 2023,
+      "abstract": "Intelligent systems that are capable of making autonomous decisions based on input from their environment have great potential to do good, but they also raise significant social and ethical concerns. The discourse on ethics and artificial intelligence (AI) has covered these concerns in depth and developed an array of possible ways of addressing them. This article argues that a shortcoming of this discourse is that it concentrates on specific issues and their mitigation but neglects the nature of intelligent systems as socio-technical systems of systems that are often described as ecosystems. Building on the discussion of ethics and AI, the article suggests that it would be beneficial to come to an understanding of what would constitute responsible AI ecosystems. By introducing the concept of meta-responsibility or higher-level responsibility, the article proposes characteristics that an ecosystem would have to fulfil, in order to be considered a responsible ecosystem. This perspective is theoretically interesting because it extends the current AI ethics discourse. It furthermore offers a novel perspective for researchers and developers of intelligent system and helps them reflect on the way they relate to ethical issues.",
+      "venue": "Scientific Reports",
+      "citation_count": 82,
+      "doi": "10.1038/s41598-023-34622-w",
+      "arxiv_id": "",
+      "url": "https://doi.org/10.1038/s41598-023-34622-w",
+      "source": "openalex",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "oalex-W4405574957",
+      "title": "AI responsibility gap: not new, inevitable, unproblematic",
+      "authors": [
+        {
+          "name": "Huzeyfe Demirtas",
+          "affiliation": "Harvard University"
+        }
+      ],
+      "year": 2024,
+      "abstract": "",
+      "venue": "Ethics and Information Technology",
+      "citation_count": 7,
+      "doi": "10.1007/s10676-024-09814-1",
+      "arxiv_id": "",
+      "url": "https://doi.org/10.1007/s10676-024-09814-1",
+      "source": "openalex",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "oalex-W4392106982",
+      "title": "AI hype as a cyber security risk: the moral responsibility of implementing generative AI in business",
+      "authors": [
+        {
+          "name": "Declan Humphreys",
+          "affiliation": "University of the Sunshine Coast"
+        },
+        {
+          "name": "Abigail Koay",
+          "affiliation": "University of the Sunshine Coast"
+        },
+        {
+          "name": "Dennis Desmond",
+          "affiliation": "University of the Sunshine Coast"
+        },
+        {
+          "name": "Erica Mealy",
+          "affiliation": "University of the Sunshine Coast"
+        }
+      ],
+      "year": 2024,
+      "abstract": "Abstract This paper examines the ethical obligations companies have when implementing generative Artificial Intelligence (AI). We point to the potential cyber security risks companies are exposed to when rushing to adopt generative AI solutions or buying into \u201cAI hype\u201d. While the benefits of implementing generative AI solutions for business have been widely touted, the inherent risks associated have been less well publicised. There are growing concerns that the race to integrate generative AI is not being accompanied by adequate safety measures. The rush to buy into the hype of generative AI and not fall behind the competition is potentially exposing companies to broad and possibly catastrophic cyber-attacks or breaches. In this paper, we outline significant cyber security threats generative AI models pose, including potential \u2018backdoors\u2019 in AI models that could compromise user data or the risk of \u2018poisoned\u2019 AI models producing false results. In light of these the cyber security concerns, we discuss the moral obligations of implementing generative AI into business by considering the ethical principles of beneficence, non-maleficence, autonomy, justice, and explicability. We identify two examples of ethical concern, overreliance and over-trust in generative AI, both of which can negatively influence business decisions, leaving companies vulnerable to cyber security threats. This paper concludes by recommending a set of checklists for ethical implementation of generative AI in business environment to minimise cyber security risk based on the discussed moral responsibilities and ethical concern.",
+      "venue": "AI and Ethics",
+      "citation_count": 80,
+      "doi": "10.1007/s43681-024-00443-4",
+      "arxiv_id": "",
+      "url": "https://doi.org/10.1007/s43681-024-00443-4",
+      "source": "openalex",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "oalex-W3092032417",
+      "title": "Responsible AI and moral responsibility: a common appreciation",
+      "authors": [
+        {
+          "name": "Daniel W. Tigard",
+          "affiliation": "Technical University of Munich"
+        }
+      ],
+      "year": 2020,
+      "abstract": "Abstract Responsibility is among the most widespread buzzwords in the ethics of artificial intelligence (AI) and robotics. Yet, the term often remains unsubstantiated when employed in these important technological domains. Indeed, notions like \u2018responsible AI\u2019 and \u2018responsible robotics\u2019 may sound appealing, for they seem to convey a sense of moral goodness or ethical approval, thereby inciting psychological connections to self-regulation, social acceptance, or political correctness. For AI and ethics to come together in truly harmonious ways, we will need to work toward establishing a common appreciation. In this commentary, I breakdown three varieties of the term and invoke insights from the analytic ethics literature as a means of offering a robust understanding of moral responsibility in emerging technology. While I do not wish to accuse any parties of incorrect usage, my hope is that together researchers in AI and ethics can be better positioned to appreciate and to develop notions of responsibility for technological domains.",
+      "venue": "AI and Ethics",
+      "citation_count": 62,
+      "doi": "10.1007/s43681-020-00009-0",
+      "arxiv_id": "",
+      "url": "https://doi.org/10.1007/s43681-020-00009-0",
+      "source": "openalex",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "oalex-W3201150582",
+      "title": "Corporate digital responsibility (CDR) in construction engineering\u2014ethical guidelines for the application of digital transformation and artificial intelligence (AI) in user practice",
+      "authors": [
+        {
+          "name": "Bianca Christina Weber-Lewerenz",
+          "affiliation": "Weber and Weber (Germany)"
+        }
+      ],
+      "year": 2021,
+      "abstract": "Abstract Digitization is developing fast and has become a powerful tool for digital planning, construction and operations, for instance digital twins. Now is the right time for constructive approaches and to apply ethics-by-design in order to develop and implement a safe and efficient artificial intelligence (AI) application. So far, no study has addressed the key research question: Where can corporate digital responsibility (CDR) be allocated, and how shall an adequate ethical framework be designed to support digital innovations in order to make full use of the potentials of digitization and AI? Therefore, the research on how best practices meet their corporate responsibility in the digital transformation process and the requirements of the EU for trustworthy AI and its human-friendly use is essential. Its transformation bears a high potential for companies, is critical for success and thus, requires responsible handling. This study generates data by conducting case studies and interviewing experts as part of the qualitative method to win profound insights into applied practice. It provides an assessment of demands stated in the Sustainable Development Goals by the United Nations (SDGs), White Papers on AI by international institutions, European Commission and German Government requesting the consideration and protection of values and fundamental rights, the careful demarcation between machine (artificial) and human intelligence and the careful use of such technologies. The study discusses digitization and the impacts of AI in construction engineering from an ethical perspective. This research critically evaluates opportunities and risks concerning CDR in construction industry. To the author\u2019s knowledge, no study has set out to investigate how CDR in construction could be conceptualized, especially in relation to digitization and AI, to mitigate digital transformation both in large, medium- and small-sized companies. This study applies a holistic, interdisciplinary, inclusive approach to provide guidelines for orientation and examine benefits as well as risks of AI. Furthermore, the goal is to define ethical principles which are key for success, resource-cost-time efficiency and sustainability using digital technologies and AI in construction engineering to enhance digital transformation. This study concludes that innovative corporate organizations starting new business models are more likely to succeed than those dominated by a more conservative, traditional attitude.",
+      "venue": "SN Applied Sciences",
+      "citation_count": 138,
+      "doi": "10.1007/s42452-021-04776-1",
+      "arxiv_id": "",
+      "url": "https://doi.org/10.1007/s42452-021-04776-1",
+      "source": "openalex",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "oalex-W4289638041",
+      "title": "Role of the state and responsibility in governing artificial intelligence: a comparative analysis of AI strategies",
+      "authors": [
+        {
+          "name": "Christian Djeffal",
+          "affiliation": "Technical University of Munich"
+        },
+        {
+          "name": "Markus \u0392. Siewert",
+          "affiliation": "Munich School of Philosophy"
+        },
+        {
+          "name": "Stefan Wurster",
+          "affiliation": "Munich School of Philosophy"
+        }
+      ],
+      "year": 2022,
+      "abstract": "Technologies based on artificial intelligence (AI) represent a crucial governance challenge for policymakers. This study contributes to the understanding of how states plan to govern AI with respect to the role they assume and to the way they develop AI in a responsible manner. In different policy instruments across 22 countries plus the European Union, there is considerable variation in how governments approach the governance of AI, both regarding the policy measures proposed and their focus on public responsibility. Analysing a set of policy instruments we find multiple modes of AI governance, with the major difference being between self-regulation-promoting and market-based approaches, and a combination of entrepreneurial and regulatory governance approaches. Our analysis also indicates that the approach to public responsibility is largely independent of the chosen policy mix of AI governance. Therefore, responsibility seems to be a cross-cutting issue that cannot be tied to a specific approach of states towards technology.",
+      "venue": "Journal of European Public Policy",
+      "citation_count": 81,
+      "doi": "10.1080/13501763.2022.2094987",
+      "arxiv_id": "",
+      "url": "https://doi.org/10.1080/13501763.2022.2094987",
+      "source": "openalex",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "oalex-W3126538636",
+      "title": "Human Perceptions on Moral Responsibility of AI: A Case Study in AI-Assisted Bail Decision-Making",
+      "authors": [
+        {
+          "name": "Gabriel Lima",
+          "affiliation": "Korea Advanced Institute of Science and Technology"
+        },
+        {
+          "name": "Nina Grgi\u0107-Hla\u010da",
+          "affiliation": "Max Planck Institute for Software Systems"
+        },
+        {
+          "name": "Meeyoung Cha",
+          "affiliation": "Institute for Basic Science"
+        }
+      ],
+      "year": 2021,
+      "abstract": "How to attribute responsibility for autonomous artificial intelligence (AI) systems\u2019 actions has been widely debated across the humanities and social science disciplines. This work presents two experiments (N=200 each) that measure people\u2019s perceptions of eight different notions of moral responsibility concerning AI and human agents in the context of bail decision-making. Using real-life adapted vignettes, our experiments show that AI agents are held causally responsible and blamed similarly to human agents for an identical task. However, there was a meaningful difference in how people perceived these agents\u2019 moral responsibility; human agents were ascribed to a higher degree of present-looking and forward-looking notions of responsibility than AI agents. We also found that people expect both AI and human decision-makers and advisors to justify their decisions regardless of their nature. We discuss policy and HCI implications of these findings, such as the need for explainable AI in high-stakes scenarios.",
+      "venue": "",
+      "citation_count": 67,
+      "doi": "10.1145/3411764.3445260",
+      "arxiv_id": "",
+      "url": "https://doi.org/10.1145/3411764.3445260",
+      "source": "openalex",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "oalex-W4408048937",
+      "title": "Uncovering the gap: challenging the agential nature of AI responsibility problems",
+      "authors": [
+        {
+          "name": "Joan Llorca Albareda",
+          "affiliation": "Universidad de Granada"
+        }
+      ],
+      "year": 2025,
+      "abstract": "Abstract In this paper, I will argue that the responsibility gap arising from new AI systems is reducible to the problem of many hands and collective agency. Systematic analysis of the agential dimension of AI will lead me to outline a disjunctive between the two problems. Either we reduce individual responsibility gaps to the many hands, or we abandon the individual dimension and accept the possibility of responsible collective agencies. Depending on which conception of AI agency we begin with, the responsibility gap will boil down to one of these two moral problems. Moreover, I will adduce that this conclusion reveals an underlying weakness in AI ethics: the lack of attention to the question of the disciplinary boundaries of AI ethics. This absence has made it difficult to identify the specifics of the responsibility gap arising from new AI systems as compared to the responsibility gaps of other applied ethics. Lastly, I will be concerned with outlining these specific aspects.",
+      "venue": "AI and Ethics",
+      "citation_count": 6,
+      "doi": "10.1007/s43681-025-00685-w",
+      "arxiv_id": "",
+      "url": "https://doi.org/10.1007/s43681-025-00685-w",
+      "source": "openalex",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "oalex-W2954398798",
+      "title": "Racism, responsibility and autonomy in HCI: Testing perceptions of an AI agent",
+      "authors": [
+        {
+          "name": "Joo-Wha Hong",
+          "affiliation": "University of Southern California"
+        },
+        {
+          "name": "Dmitri Williams",
+          "affiliation": "University of Southern California"
+        }
+      ],
+      "year": 2019,
+      "abstract": "",
+      "venue": "Computers in Human Behavior",
+      "citation_count": 66,
+      "doi": "10.1016/j.chb.2019.06.012",
+      "arxiv_id": "",
+      "url": "https://doi.org/10.1016/j.chb.2019.06.012",
+      "source": "openalex",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "oalex-W4391706801",
+      "title": "AI and ethics in business: A comprehensive review of responsible AI practices and corporate responsibility",
+      "authors": [
+        {
+          "name": "Funmilola Olatundun Olatoye",
+          "affiliation": ""
+        },
+        {
+          "name": "Kehinde Feranmi Awonuga",
+          "affiliation": ""
+        },
+        {
+          "name": "Noluthando Zamanjomane Mhlongo",
+          "affiliation": ""
+        },
+        {
+          "name": "Chidera Victoria Ibeh",
+          "affiliation": ""
+        },
+        {
+          "name": "Oluwafunmi Adijat Elufioye",
+          "affiliation": ""
+        },
+        {
+          "name": "Ndubuisi Leonard Ndubuisi",
+          "affiliation": ""
+        }
+      ],
+      "year": 2024,
+      "abstract": "As artificial intelligence (AI) continues to revolutionize business landscapes, the ethical implications of its deployment have garnered significant attention. This paper presents a comprehensive review of the intersection between AI and ethics in the context of corporate responsibility. The integration of AI into business processes necessitates a thorough understanding of responsible AI practices to ensure that technological advancements align with ethical standards and societal values. The first dimension explored in this review is the critical importance of transparency in AI algorithms and decision-making processes. Businesses adopting AI technologies must prioritize transparency to build trust among stakeholders, ensuring that the decision-making processes are understandable and accountable. Ethical considerations also extend to issues of bias and fairness, prompting the need for diverse and inclusive datasets to prevent discriminatory outcomes. Corporate responsibility in the realm of AI extends beyond technical aspects, encompassing the broader socio-economic impact of AI implementation. The review highlights the significance of considering the effects of AI on employment, inequality, and accessibility. Businesses are urged to adopt ethical guidelines that prioritize the well-being of employees and society at large, mitigating the potential negative consequences of AI on employment dynamics and social structures. Furthermore, the paper delves into the ethical considerations surrounding data privacy and security, emphasizing the importance of responsible data handling practices. As businesses accumulate vast amounts of data, it becomes imperative to prioritize the protection of individuals' privacy rights, reinforcing the ethical foundation of AI applications. This comprehensive review underscores the need for businesses to integrate responsible AI practices within the framework of corporate responsibility. By prioritizing transparency, fairness, and ethical data practices, organizations can navigate the complex terrain of AI implementation while ensuring alignment with societal values and ethical standards. This synthesis of AI and ethics in business is essential for fostering a sustainable and responsible technological future.",
+      "venue": "International Journal of Science and Research Archive",
+      "citation_count": 54,
+      "doi": "10.30574/ijsra.2024.11.1.0235",
+      "arxiv_id": "",
+      "url": "https://doi.org/10.30574/ijsra.2024.11.1.0235",
+      "source": "openalex",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "oalex-W3203933983",
+      "title": "Understanding responsibility in Responsible AI. Dianoetic virtues and the hard problem of context",
+      "authors": [
+        {
+          "name": "Mihaela Constantinescu",
+          "affiliation": "University of Bucharest"
+        },
+        {
+          "name": "Cristina Voinea",
+          "affiliation": "Bucharest University of Economic Studies"
+        },
+        {
+          "name": "Radu Uszkai",
+          "affiliation": "Bucharest University of Economic Studies"
+        },
+        {
+          "name": "Constantin Vic\u0103",
+          "affiliation": "University of Bucharest"
+        }
+      ],
+      "year": 2021,
+      "abstract": "Abstract During the last decade there has been burgeoning research concerning the ways in which we should think of and apply the concept of responsibility for Artificial Intelligence. Despite this conceptual richness, there is still a lack of consensus regarding what Responsible AI entails on both conceptual and practical levels. The aim of this paper is to connect the ethical dimension of responsibility in Responsible AI with Aristotelian virtue ethics, where notions of context and dianoetic virtues play a grounding role for the concept of moral responsibility. The paper starts by highlighting the important difficulties in assigning responsibility to either technologies themselves or to their developers. Top-down and bottom-up approaches to moral responsibility are then contrasted, as we explore how they could inform debates about Responsible AI. We highlight the limits of the former ethical approaches and build the case for classical Aristotelian virtue ethics. We show that two building blocks of Aristotle\u2019s ethics, dianoetic virtues and the context of actions, although largely ignored in the literature, can shed light on how we could think of moral responsibility for both AI and humans. We end by exploring the practical implications of this particular understanding of moral responsibility along the triadic dimensions of ethics by design, ethics in design and ethics for designers.",
+      "venue": "Ethics and Information Technology",
+      "citation_count": 60,
+      "doi": "10.1007/s10676-021-09616-9",
+      "arxiv_id": "",
+      "url": "https://doi.org/10.1007/s10676-021-09616-9",
+      "source": "openalex",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "oalex-W4391179655",
+      "title": "Benefits or concerns of AI: A multistakeholder responsibility",
+      "authors": [
+        {
+          "name": "Somesh Sharma",
+          "affiliation": "Erasmus University Rotterdam"
+        }
+      ],
+      "year": 2024,
+      "abstract": "This article provides a comprehensive overview of the current state of academic research on benefits and concerns of artificial intelligence (AI) in everyday life. Findings from the literature presented in this article offer useful guidance for the stakeholders who are looking into establishing governance practices for responsible artificial intelligence (AI) so that the future of our smart societies is safe, inclusive, and sustainable. This synthesis of literature review connects the dots from various academic disciplines concluding with a model theoretical framework for responsible AI in a multi-stakeholder arrangement. Based on the findings from the literature review, two interesting discussions are presented in this article. The discussions reflect upon inevitable multidisciplinary complexity of the topic AI and society. Discussion 1, by breaking down complex concepts and providing clear explanations, offers useful insights on the reasons why ethical considerations have become a focal concern for AI governance. Similarly, discussion 2 highlights the need for a multi-stakeholder approach for the responsible adoption of AI. Overall, this article contributes to the ongoing discussions and debates about the responsible AI by systematically building an argument as to why a multi-stakeholder approach is vital to address the societal concerns of AI.",
+      "venue": "Futures",
+      "citation_count": 66,
+      "doi": "10.1016/j.futures.2024.103328",
+      "arxiv_id": "",
+      "url": "https://doi.org/10.1016/j.futures.2024.103328",
+      "source": "openalex",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "oalex-W4282829606",
+      "title": "Expert responsibility in AI development",
+      "authors": [
+        {
+          "name": "Maria Hedlund",
+          "affiliation": "Lund University"
+        },
+        {
+          "name": "Erik Persson",
+          "affiliation": "Lund University"
+        }
+      ],
+      "year": 2022,
+      "abstract": "Abstract The purpose of this paper is to discuss the responsibility of AI experts for guiding the development of AI in a desirable direction. More specifically, the aim is to answer the following research question: To what extent are AI experts responsible in a forward-looking way for effects of AI technology that go beyond the immediate concerns of the programmer or designer? AI experts, in this paper conceptualised as experts regarding the technological aspects of AI, have knowledge and control of AI technology that non-experts do not have. Drawing on responsibility theory, theories of the policy process, and critical algorithm studies, we discuss to what extent this capacity, and the positions that these experts have to influence the AI development, make AI experts responsible in a forward-looking sense for consequences of the use of AI technology. We conclude that, as a professional collective, AI experts, to some extent, are responsible in a forward-looking sense for consequences of use of AI technology that they could foresee, but with the risk of increased influence of AI experts at the expense of other actors. It is crucial that a diversity of actors is included in democratic processes on the future development of AI, but for this to be meaningful, AI experts need to take responsibility for how the AI technology they develop affects public deliberation.",
+      "venue": "AI & Society",
+      "citation_count": 35,
+      "doi": "10.1007/s00146-022-01498-9",
+      "arxiv_id": "",
+      "url": "https://doi.org/10.1007/s00146-022-01498-9",
+      "source": "openalex",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "oalex-W4281789976",
+      "title": "Responsibility of AI Systems",
+      "authors": [
+        {
+          "name": "Mehdi Dastani",
+          "affiliation": "Utrecht University"
+        },
+        {
+          "name": "Vahid Yazdanpanah",
+          "affiliation": "University of Southampton"
+        }
+      ],
+      "year": 2022,
+      "abstract": "Abstract To support the trustworthiness of AI systems, it is essential to have precise methods to determine what or who is to account for the behaviour, or the outcome, of AI systems. The assignment of responsibility to an AI system is closely related to the identification of individuals or elements that have caused the outcome of the AI system. In this work, we present an overview of approaches that aim at modelling responsibility of AI systems, discuss their advantages and shortcomings to deal with various aspects of the notion of responsibility, and present research gaps and ways forward.",
+      "venue": "AI & Society",
+      "citation_count": 29,
+      "doi": "10.1007/s00146-022-01481-4",
+      "arxiv_id": "",
+      "url": "https://doi.org/10.1007/s00146-022-01481-4",
+      "source": "openalex",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "oalex-W4200468012",
+      "title": "Responsibility, second opinions and peer-disagreement: ethical and epistemological challenges of using AI in clinical diagnostic contexts",
+      "authors": [
+        {
+          "name": "Hendrik Kempt",
+          "affiliation": "RWTH Aachen University"
+        },
+        {
+          "name": "Saskia K. Nagel",
+          "affiliation": "RWTH Aachen University"
+        }
+      ],
+      "year": 2021,
+      "abstract": "In this paper, we first classify different types of second opinions and evaluate the ethical and epistemological implications of providing those in a clinical context. Second, we discuss the issue of how artificial intelligent (AI) could replace the human cognitive labour of providing such second opinion and find that several AI reach the levels of accuracy and efficiency needed to clarify their use an urgent ethical issue. Third, we outline the normative conditions of how AI may be used as second opinion in clinical processes, weighing the benefits of its efficiency against concerns of responsibility attribution. Fourth, we provide a 'rule of disagreement' that fulfils these conditions while retaining some of the benefits of expanding the use of AI-based decision support systems (AI-DSS) in clinical contexts. This is because the rule of disagreement proposes to use AI as much as possible, but retain the ability to use human second opinions to resolve disagreements between AI and physician-in-charge. Fifth, we discuss some counterarguments.",
+      "venue": "Journal of Medical Ethics",
+      "citation_count": 80,
+      "doi": "10.1136/medethics-2021-107440",
+      "arxiv_id": "",
+      "url": "https://doi.org/10.1136/medethics-2021-107440",
+      "source": "openalex",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "oalex-W4223649245",
+      "title": "Blame It on the AI? On the Moral Responsibility of Artificial Moral Advisors",
+      "authors": [
+        {
+          "name": "Mihaela Constantinescu",
+          "affiliation": "University of Bucharest"
+        },
+        {
+          "name": "Constantin Vic\u0103",
+          "affiliation": "University of Bucharest"
+        },
+        {
+          "name": "Radu Uszkai",
+          "affiliation": "Bucharest University of Economic Studies"
+        },
+        {
+          "name": "Cristina Voinea",
+          "affiliation": "Bucharest University of Economic Studies"
+        }
+      ],
+      "year": 2022,
+      "abstract": "",
+      "venue": "Philosophy & Technology",
+      "citation_count": 50,
+      "doi": "10.1007/s13347-022-00529-z",
+      "arxiv_id": "",
+      "url": "https://doi.org/10.1007/s13347-022-00529-z",
+      "source": "openalex",
+      "_bibtex_override": ""
+    }
+  ]
+}

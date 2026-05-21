@@ -1,0 +1,3 @@
+[submodule "openclaw/workspace"]
+	path = openclaw/workspace
+	url = https://github.com/Daisuke134/anicca.ai.git

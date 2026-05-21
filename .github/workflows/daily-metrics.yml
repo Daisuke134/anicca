@@ -1,0 +1,58 @@
+name: Daily Metrics Report
+
+on:
+  schedule:
+    # 5:15 JST = 20:15 UTC (previous day)
+    # Using :15 instead of :00 to avoid GitHub Actions peak load delays
+    - cron: '15 20 * * *'
+  workflow_dispatch: # Manual trigger for testing
+
+concurrency:
+  group: daily-metrics
+  cancel-in-progress: false
+
+jobs:
+  collect-and-report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: scripts/daily-metrics/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r scripts/daily-metrics/requirements.txt
+
+      - name: Download previous metrics artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: daily-metrics-archive
+          path: scripts/daily-metrics/metrics_archive
+        continue-on-error: true  # First run has no previous artifact
+
+      - name: Collect and send metrics
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
+          ASC_VENDOR_NUMBER: ${{ secrets.ASC_VENDOR_NUMBER }}
+          REVENUECAT_V2_SECRET_KEY: ${{ secrets.REVENUECAT_V2_SECRET_KEY }}
+          SLACK_METRICS_WEBHOOK_URL: ${{ secrets.SLACK_METRICS_WEBHOOK_URL }}
+          METRICS_DIR: metrics_archive
+        working-directory: scripts/daily-metrics
+        run: python main.py
+
+      - name: Upload metrics artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: daily-metrics-archive
+          path: scripts/daily-metrics/metrics_archive/
+          retention-days: 90
+          overwrite: true

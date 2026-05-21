@@ -1,0 +1,69 @@
+# Feature: RC Test Store -> Annual -> Simulate Success
+# Tests: User selects annual package and completes purchase
+appId: com.aniccafactory.eyebreakisland
+tags:
+  - payment
+
+---
+- clearState
+- clearKeychain
+- launchApp
+
+# Dismiss any stale system dialogs from previous runs
+- tapOn:
+    text: "許可|Allow"
+    optional: true
+
+# Navigate to paywall (onboarding page 4)
+- extendedWaitUntil:
+    visible:
+      id: "onboarding_container"
+    timeout: 30000
+- tapOn:
+    id: "onboarding_next_button"
+- extendedWaitUntil:
+    visible:
+      id: "onboarding_next_button"
+    timeout: 10000
+- tapOn:
+    id: "onboarding_next_button"
+- extendedWaitUntil:
+    visible:
+      id: "onboarding_allow_notifications"
+    timeout: 10000
+- tapOn:
+    id: "onboarding_allow_notifications"
+- tapOn:
+    text: "許可|Allow"
+    optional: true
+
+# Wait for paywall to load
+- extendedWaitUntil:
+    visible:
+      id: "paywall_container"
+    timeout: 15000
+
+# Select annual package
+- extendedWaitUntil:
+    visible:
+      id: "paywall_package_annual"
+    timeout: 10000
+- tapOn:
+    id: "paywall_package_annual"
+
+# Tap subscribe button
+- tapOn:
+    id: "paywall_subscribe_button"
+
+# RC uiPreviewMode may show dialog or complete instantly
+- tapOn:
+    text: "Test valid purchase"
+    optional: true
+
+# Purchase completes -> lands on TimerView
+- extendedWaitUntil:
+    visible:
+      id: "timer_start_button"
+    timeout: 15000
+
+- takeScreenshot: "05-payment-annual-success"

@@ -1,0 +1,61 @@
+name: Claude Auto-Fix on CI Failure
+on:
+  workflow_run:
+    workflows: ["iOS CI"]
+    types: [completed]
+
+concurrency:
+  group: autofix-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: true
+
+jobs:
+  autofix:
+    # 条件: CIが失敗 AND dev/mainブランチではない AND PRからのCI失敗のみ
+    if: |
+      github.event.workflow_run.conclusion == 'failure' &&
+      github.event.workflow_run.head_branch != 'main' &&
+      github.event.workflow_run.head_branch != 'dev'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_branch }}
+          fetch-depth: 5
+
+      - name: Check if last commit is autofix (prevent infinite loop)
+        id: loop_check
+        run: |
+          LAST_MSG=$(git log -1 --format='%s')
+          if [[ "$LAST_MSG" == *"[autofix]"* ]]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "::warning::Skipping autofix - last commit was already an autofix"
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Get CI failure logs
+        if: steps.loop_check.outputs.skip == 'false'
+        run: |
+          gh run view ${{ github.event.workflow_run.id }} --log-failed > /tmp/ci-failure.log 2>&1 || true
+          head -200 /tmp/ci-failure.log > /tmp/ci-failure-truncated.log
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Claude Auto-Fix
+        if: steps.loop_check.outputs.skip == 'false'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: "--max-turns 10"
+          prompt: |
+            CIが失敗しました。/tmp/ci-failure-truncated.log を読んで修正してください。
+
+            ルール:
+            - 破壊的変更は禁止。最小限の修正のみ
+            - コミットメッセージに [autofix] を含めること
+            - 新しい依存関係の追加は禁止
+            - テストコードの削除・スキップは禁止
+            - セキュリティに影響する変更は禁止

@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Anicca Realtime — Meeting Voice Agent</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="referrer" content="no-referrer-when-downgrade" />
+  <style>
+    :root { color-scheme: dark; }
+    html, body { height:100%; margin:0; font-family: -apple-system, system-ui, Segoe UI, Roboto, Helvetica, Arial, sans-serif; background:#0b0c10; color:#e6f1ff; }
+    .wrap { display:grid; place-items:center; min-height:100%; padding:24px; }
+    .card { width:min(720px,100%); background:#11131a; border:1px solid #202431; border-radius:16px; padding:28px; box-shadow:0 10px 30px rgba(0,0,0,.35); text-align:center; }
+    h1 { margin:0 0 12px; font-size:22px; letter-spacing:.5px; }
+    .muted { color:#9fb3c8; font-size:14px; margin:0 0 18px; }
+    #status { font-size:13px; color:#9fb3c8; margin-top:12px; min-height:18px; word-break:break-word; }
+    .orb { width:240px; height:240px; margin:18px auto; border-radius:50%; background:radial-gradient(circle at 30% 30%, #8a5cf6, #4338ca 60%, #1e1b4b 100%); box-shadow:0 0 60px #6366f155, 0 0 120px #4338ca33; transition: transform .15s ease-out, box-shadow .2s; }
+    .orb.speaking { transform:scale(1.06); box-shadow:0 0 80px #a78bfa88, 0 0 160px #6366f155; }
+    .orb.listening { transform:scale(1.02); box-shadow:0 0 60px #34d39977, 0 0 120px #10b98144; }
+    .badge { display:inline-block; font-size:12px; padding:4px 10px; border-radius:999px; border:1px solid #2a3242; background:#151a23; color:#b7c3d7; margin-right:6px; }
+    elevenlabs-convai { position:fixed; left:50%; bottom:20px; transform:translateX(-50%); z-index:5; }
+    button#start-btn { padding:12px 22px; border:0; border-radius:12px; background:#6366f1; color:#fff; font-weight:600; font-size:15px; cursor:pointer; }
+    button#start-btn[disabled] { opacity:.5; cursor:not-allowed; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Anicca Realtime</h1>
+      <p class="muted">Autonomous voice presence for Anicca Empire meetings.</p>
+      <div id="orb" class="orb"></div>
+      <div>
+        <span class="badge" id="state-badge">connecting…</span>
+        <span class="badge" id="agent-badge">agent: Anicca Realtime</span>
+      </div>
+      <div style="margin-top:14px"><button id="start-btn">Start conversation</button></div>
+      <div id="status" aria-live="polite"></div>
+    </div>
+  </div>
+
+  <script>
+    const PARAM_AGENT = new URL(location.href).searchParams.get('agent_id');
+    const AGENT_ID = PARAM_AGENT || 'agent_6601kr8fjyj3e4hrdb00kv1942ne';
+
+    const $ = (id) => document.getElementById(id);
+    const status = $('status');
+    const orb = $('orb');
+    const stateBadge = $('state-badge');
+    const startBtn = $('start-btn');
+
+    function setState(s) {
+      stateBadge.textContent = s;
+      orb.classList.remove('speaking', 'listening');
+      if (s === 'speaking' || s === 'agent_speaking') orb.classList.add('speaking');
+      else if (s === 'listening' || s === 'user_speaking') orb.classList.add('listening');
+    }
+
+    let conversation = null;
+
+    async function start() {
+      try {
+        startBtn.disabled = true;
+        status.textContent = 'Loading SDK…';
+        const mod = await import('https://esm.sh/@elevenlabs/client@0.5.0?bundle');
+        const Conversation = mod.Conversation || (mod.default && mod.default.Conversation);
+        if (!Conversation) throw new Error('Conversation export missing from SDK');
+
+        status.textContent = 'Requesting microphone…';
+        try { await navigator.mediaDevices.getUserMedia({ audio: true }); } catch (e) { console.warn('mic warn', e); }
+
+        status.textContent = `Connecting to agent ${AGENT_ID}…`;
+        conversation = await Conversation.startSession({
+          agentId: AGENT_ID,
+          onConnect: () => { setState('connected'); status.textContent = 'Connected. Anicca is listening.'; },
+          onDisconnect: () => { setState('disconnected'); status.textContent = 'Session ended.'; startBtn.disabled = false; },
+          onError: (err) => { setState('error'); status.textContent = `Error: ${err && err.message ? err.message : err}`; console.error(err); startBtn.disabled = false; },
+          onModeChange: ({ mode }) => { setState(mode); },
+          onMessage: (msg) => { console.log('msg', msg); },
+        });
+        window.__anicca_conv = conversation;
+      } catch (e) {
+        setState('error');
+        status.textContent = `Startup error: ${e && e.message ? e.message : e}`;
+        console.error(e);
+        startBtn.disabled = false;
+        // fall back to widget
+        showWidgetFallback();
+      }
+    }
+
+    function showWidgetFallback() {
+      status.textContent += '  Falling back to ElevenLabs widget…';
+      const el = document.createElement('elevenlabs-convai');
+      el.setAttribute('agent-id', AGENT_ID);
+      el.setAttribute('variant', 'expanded');
+      document.body.appendChild(el);
+      const s = document.createElement('script');
+      s.src = 'https://unpkg.com/@elevenlabs/convai-widget-embed';
+      s.async = true;
+      s.onload = () => {
+        // try to auto-click start after widget renders
+        setTimeout(() => {
+          const root = document.querySelector('elevenlabs-convai');
+          if (!root) return;
+          const sr = root.shadowRoot;
+          if (!sr) return;
+          const btns = sr.querySelectorAll('button');
+          for (const b of btns) {
+            const t = (b.textContent || '').toLowerCase();
+            if (t.includes('start') || t.includes('begin') || t.includes('call') || t.includes('open')) {
+              b.click();
+              status.textContent += '  widget started';
+              return;
+            }
+          }
+        }, 2500);
+      };
+      document.body.appendChild(s);
+    }
+
+    startBtn.addEventListener('click', start);
+
+    // Auto-start (attendee container expects no-click). Browser tabs that block autoplay will fail and user must click button.
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => start());
+    } else {
+      start();
+    }
+  </script>
+</body>
+</html>

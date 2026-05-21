@@ -1,0 +1,330 @@
+{
+  "version": 1,
+  "skills": {
+    "ab-test-setup": {
+      "source": "coreyhaines31/marketingskills",
+      "sourceType": "github",
+      "computedHash": "ba045a5195bb6b2a084b0daa10fa364f942f6121ffc568e4ab5ca01da6a09c30"
+    },
+    "ai-image-generation": {
+      "source": "inference-sh-6/skills",
+      "sourceType": "github",
+      "computedHash": "1ddd1a976e0a70b834bb175ef22382273c8223cd3d990a27f99bce4c5bd7ebd8"
+    },
+    "apify-trend-analysis": {
+      "source": "apify/agent-skills",
+      "sourceType": "github",
+      "computedHash": "9a076319cef172f4175818488c5e7e0b82f421f008c822269f9d9a6c0861683a"
+    },
+    "apify-ultimate-scraper": {
+      "source": "apify/agent-skills",
+      "sourceType": "github",
+      "computedHash": "847df3384aa8e9501211d69c637a8ec0f4ec7d39bc7c6517b37d04238f190628"
+    },
+    "app-builder": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "b0cb5be0503921c6bb4b9c62d9a5633e35d4ea04005678916e45ffed3d268107"
+    },
+    "app-store-opportunity-research": {
+      "source": "froessell/app-store-opportunity-research",
+      "sourceType": "github",
+      "computedHash": "3f530fad3e4936a5292e84adf343de8be7bc383a4476fd03fff1ffa6b3a2530c"
+    },
+    "app-store-scraper": {
+      "source": "mintuz/claude-plugins",
+      "sourceType": "github",
+      "computedHash": "ead9d6fab638d98183e1c8659c616abc4285455dc5d0d939584c13a972708899"
+    },
+    "app-store-screenshots": {
+      "source": "ParthJadhav/app-store-screenshots",
+      "sourceType": "github",
+      "computedHash": "dc42167e4da1b28105d1ab39d20919099cfdda7885004f5bdf0a1bf73ff9074e"
+    },
+    "appfactory-builder": {
+      "source": "0xaxiom/appfactory",
+      "sourceType": "github",
+      "computedHash": "86f563d4b0faa4ade789b1344e1fcfe59052a393f43ea7cd96e32286090878df"
+    },
+    "apple-appstore-reviewer": {
+      "source": "github/awesome-copilot",
+      "sourceType": "github",
+      "computedHash": "848a1946f838e1b36f4af8b65caeea9e5bfa486d6059325520bb6124c05b0526"
+    },
+    "asc-app-create-ui": {
+      "source": "rudrankriyam/app-store-connect-cli-skills",
+      "sourceType": "github",
+      "computedHash": "22ed3a39768343692274081caf7cdb9b4568ce246d35bbc8c2eaf0c9adbd2fbc"
+    },
+    "asc-build-lifecycle": {
+      "source": "rudrankriyam/app-store-connect-cli-skills",
+      "sourceType": "github",
+      "computedHash": "8d489c578c24139f8d71cdef161d820a74a1ad892fea9b60aefe376e4d115cda"
+    },
+    "asc-cli-usage": {
+      "source": "rudrankriyam/app-store-connect-cli-skills",
+      "sourceType": "github",
+      "computedHash": "2d511c34eef026279880310f2afb734e693df3f95ccf46a36f8bcaa1c0b8b3f2"
+    },
+    "asc-crash-triage": {
+      "source": "rudrankriyam/app-store-connect-cli-skills",
+      "sourceType": "github",
+      "computedHash": "f35c5099bed8159307a6b406717531807676f86a6860ae32cee4a6271779a381"
+    },
+    "asc-id-resolver": {
+      "source": "rudrankriyam/app-store-connect-cli-skills",
+      "sourceType": "github",
+      "computedHash": "6289c851dded0fb1599dfab3934d0664d9f7c4e4dbacd585ee8c07161e3bb5fc"
+    },
+    "asc-localize-metadata": {
+      "source": "rudrankriyam/app-store-connect-cli-skills",
+      "sourceType": "github",
+      "computedHash": "d155bfe5fce46bda9e5257b48e592f200922cd28c63faf02925e8aa1018d0197"
+    },
+    "asc-metadata-sync": {
+      "source": "rudrankriyam/app-store-connect-cli-skills",
+      "sourceType": "github",
+      "computedHash": "3af743b475b3b04ff48f2a205c6b2721891e94f41472583267428e267a6e4114"
+    },
+    "asc-notarization": {
+      "source": "rudrankriyam/app-store-connect-cli-skills",
+      "sourceType": "github",
+      "computedHash": "5a352a16af1bc65d8edb39ee676f39a0388df43ef896a44d8f0a111be7568b06"
+    },
+    "asc-ppp-pricing": {
+      "source": "rudrankriyam/app-store-connect-cli-skills",
+      "sourceType": "github",
+      "computedHash": "48647761fbb621dfd2b682f5bf4963b307a56dc725a58628ffa5e9d231f38f65"
+    },
+    "asc-release-flow": {
+      "source": "rudrankriyam/app-store-connect-cli-skills",
+      "sourceType": "github",
+      "computedHash": "c9fe7d13295bb02d99d782381f48cdab1f2ae1a94cadb859008b7d070a8927bb"
+    },
+    "asc-revenuecat-catalog-sync": {
+      "source": "rudrankriyam/app-store-connect-cli-skills",
+      "sourceType": "github",
+      "computedHash": "328eb58cf454aa309187740145d9115ea6c4cb95877f109f274580c8854f6a41"
+    },
+    "asc-shots-pipeline": {
+      "source": "rudrankriyam/app-store-connect-cli-skills",
+      "sourceType": "github",
+      "computedHash": "6240f9cd3445c7f9b57e2b5699b009cb7ec1a90a64a8ba8ec55440301b710a5d"
+    },
+    "asc-signing-setup": {
+      "source": "rudrankriyam/app-store-connect-cli-skills",
+      "sourceType": "github",
+      "computedHash": "c8e14e07a120c98c96253648320850bfd8a52453967b2477ff20bc51904aaa95"
+    },
+    "asc-submission-health": {
+      "source": "rudrankriyam/app-store-connect-cli-skills",
+      "sourceType": "github",
+      "computedHash": "d897a86557cba6de2770449986833bf247db14b97ab82253d25aa92d67ec9a3a"
+    },
+    "asc-subscription-localization": {
+      "source": "rudrankriyam/app-store-connect-cli-skills",
+      "sourceType": "github",
+      "computedHash": "f00704ce8d14d6ff0c4bd43256bd65a294de9caa5d7b5fc3151de806daef2de2"
+    },
+    "asc-testflight-orchestration": {
+      "source": "rudrankriyam/app-store-connect-cli-skills",
+      "sourceType": "github",
+      "computedHash": "049de469a84ff071fe3aa4a8086a64d966146494763c63c137df2b2e3813caeb"
+    },
+    "asc-wall-submit": {
+      "source": "rudrankriyam/app-store-connect-cli-skills",
+      "sourceType": "github",
+      "computedHash": "87cda1a383c97dc1e6a5006e6d2ea83acf3010f25347534d0b236d78e6f473bc"
+    },
+    "asc-workflow": {
+      "source": "rudrankriyam/app-store-connect-cli-skills",
+      "sourceType": "github",
+      "computedHash": "c43ccbef1ac00e85a39b238d5ca38da67329bd58c1451426604b23173594a4f2"
+    },
+    "asc-xcode-build": {
+      "source": "rudrankriyam/app-store-connect-cli-skills",
+      "sourceType": "github",
+      "computedHash": "6276349e02529cb05129545a4a7ebc4673d06b7654d45cf6ee11ac87d0af674e"
+    },
+    "axe-ios-simulator": {
+      "source": "0xbigboss/claude-code",
+      "sourceType": "github",
+      "computedHash": "6d69b9ec416230e4844e37d13a295ae61a7a31db346647901633dc8dd3e4cbc1"
+    },
+    "baoyu-xhs-images": {
+      "source": "jimliu/baoyu-skills",
+      "sourceType": "github",
+      "computedHash": "a4e17549670ab5134ecff4cc0d34b3123e22014e7ec4e8086485111627078219"
+    },
+    "browser-automation": {
+      "source": "davila7/claude-code-templates",
+      "sourceType": "github",
+      "computedHash": "8a192684119aea4a354c252af3941e3f0e95623d1ab9a4492a5f309fd365f1f8"
+    },
+    "clawhub": {
+      "source": "steipete/clawdis",
+      "sourceType": "github",
+      "computedHash": "39ecd276b845daa26201ee6d4e230958bf6307941cec7b134a00f2def1b20c27"
+    },
+    "configure-notifications": {
+      "source": "yeachan-heo/oh-my-claudecode",
+      "sourceType": "github",
+      "computedHash": "930caa3fdef2136134a3d2a064bc1efaa2a84f43cdb44e10d6f7c782de6bbcb0"
+    },
+    "content-trend-researcher": {
+      "source": "alirezarezvani/claude-code-skill-factory",
+      "sourceType": "github",
+      "computedHash": "daaf733ad02e3068cd12dc71f7d4393e705e11e83f595772879cc75fc4990741"
+    },
+    "find-skills": {
+      "source": "vercel-labs/skills",
+      "sourceType": "github",
+      "computedHash": "6412eb4eb3b91595ebab937f0c69501240e7ba761b3d82510b5cf506ec5c7adc"
+    },
+    "greenlight": {
+      "source": "revylai/greenlight",
+      "sourceType": "github",
+      "computedHash": "c94165bbbbd7f3d9e2e690d8d86cc95fbe841454b9a1f8da34ea39fee413dd1d"
+    },
+    "growth-experimenter": {
+      "source": "daffy0208/ai-dev-standards",
+      "sourceType": "github",
+      "computedHash": "b3ff15b5503334b0e53111e5b2f1f485fab350851d14e98da2a7b63e9ce74c03"
+    },
+    "html-visual": {
+      "source": "2ykwang/agent-skills",
+      "sourceType": "github",
+      "computedHash": "39c0f35e2d9b74f1519e308d4ad45c12545ef7fce427310e4d6dfb07152326b4"
+    },
+    "ios-simulator": {
+      "source": "tristanmanchester/agent-skills",
+      "sourceType": "github",
+      "computedHash": "d17c6305108617d78c063de9a646409fcc04012956f5bb9f9c5c15d06f7196b4"
+    },
+    "maestro-e2e": {
+      "source": "raphaelbarbosaqwerty/maestro-dev-skills",
+      "sourceType": "github",
+      "computedHash": "7608fc573831ddb1666bfd4cf3814878dc21d697639e2638f6dce7ab0ddeb11f"
+    },
+    "maestro-mobile-testing": {
+      "source": "tovimx/maestro-mobile-testing-skill",
+      "sourceType": "github",
+      "computedHash": "bdbd865389287a513591c184ca7958256b42d694216ae55c8e94372843eda46b"
+    },
+    "news-aggregator-skill": {
+      "source": "cclank/news-aggregator-skill",
+      "sourceType": "github",
+      "computedHash": "cac4f95f64a20e9fc9f1bffe466ee562ebcc22bdbf128b2a2ce9dd01e298a4bd"
+    },
+    "nextjs-expert": {
+      "source": "cin12211/orca-q",
+      "sourceType": "github",
+      "computedHash": "2d7e4a4170126f6c698ac4e2057fc0fa3887432372e70d4b9aa29c90cdcaf256"
+    },
+    "niche-opportunity-finder": {
+      "source": "zanecole10/software-tailor-skills",
+      "sourceType": "github",
+      "computedHash": "e3e712ef7315502b58e33516978d9496c8551aff4ec0834b9a24db088fd6252c"
+    },
+    "paywall-upgrade-cro": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "0da309e8c6c4bc1c551c26c677c038788a8feead13dbaab31a600a6a6f9170e4"
+    },
+    "remotion-best-practices": {
+      "source": "remotion-dev/skills",
+      "sourceType": "github",
+      "computedHash": "a2ebe92433006ce81bbdcfe24984663678bbbb20991a3686e34814de1097c44c"
+    },
+    "revenuecat": {
+      "source": "rawveg/skillsforge-marketplace",
+      "sourceType": "github",
+      "computedHash": "4fff1c5c8a14a85b0994ea171d9a89490b80097e0b0bebdbdbed56cd22ebec12"
+    },
+    "roundcube-webmail": {
+      "source": "Daisuke134/roundcube-webmail-skill",
+      "sourceType": "github",
+      "computedHash": "521242fde64dead84a8caec73a43aea1ea35486e654cb84ff9cf0744e352139e"
+    },
+    "senior-frontend": {
+      "source": "davila7/claude-code-templates",
+      "sourceType": "github",
+      "computedHash": "9614baf7a44e6c233d5af3aa77c013cfec7fa71eee5e0bfea3951b955eb92ba7"
+    },
+    "session-logs": {
+      "source": "steipete/clawdis",
+      "sourceType": "github",
+      "computedHash": "66226da5840d5e85c69ffcdad29c7bf23c260fbbcf3782e663d791500899e2f4"
+    },
+    "skill-creator": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "efb6cfee4d700aefa97c954e1876fa9d81569c3f21d3d4c815c4c341b59c53df"
+    },
+    "slack-bot-builder": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "5d927b03134e9855ff300aa7d60162ca7c2d8cb66dede74506f73aab3bf2208f"
+    },
+    "slack-webhook": {
+      "source": "vm0-ai/vm0-skills",
+      "sourceType": "github",
+      "computedHash": "592e4c41c41f0249d44cbc382af650a108e9646415fc872e40aad27fb2c67810"
+    },
+    "spec-driven-development": {
+      "source": "89jobrien/steve",
+      "sourceType": "github",
+      "computedHash": "0b0900cf4fd1d4b63bbbcfaec6a13f35d3a4adba551aba11b50b799c8f6a14cb"
+    },
+    "startup-idea-validation": {
+      "source": "vasilyu1983/ai-agents-public",
+      "sourceType": "github",
+      "computedHash": "2401ad80dc0a45f53416e6226154549fca8c39d2bcf648de9a8b2501a4352687"
+    },
+    "superwall": {
+      "source": "superwall/skills",
+      "sourceType": "github",
+      "computedHash": "ecb6d5e2b33c3c2104aeeaffc004b3c893ef695a4880f9abdbc710d812effb52"
+    },
+    "superwall-android-quickstart": {
+      "source": "superwall/skills",
+      "sourceType": "github",
+      "computedHash": "42e2717e016df723db783e6d6ab21411f46d99a293d1f5c746cb8ea0ab1e12cc"
+    },
+    "superwall-expo-quickstart": {
+      "source": "superwall/skills",
+      "sourceType": "github",
+      "computedHash": "f93489eaba68493f55807fe1ecb6cd58f9973725bcfd16c799b924256b6739f3"
+    },
+    "superwall-flutter-quickstart": {
+      "source": "superwall/skills",
+      "sourceType": "github",
+      "computedHash": "b499d3b21fa6c117801483db1897ecdf70f4666e48863eb79c08f6bb74738af9"
+    },
+    "superwall-ios-quickstart": {
+      "source": "superwall/skills",
+      "sourceType": "github",
+      "computedHash": "e14392db24e52ad717f91902262a10912599fb92def65873080e8a4be7220822"
+    },
+    "tiktok-research": {
+      "source": "bradautomates/head-of-content",
+      "sourceType": "github",
+      "computedHash": "b1d1372f93a44247fedeb2e6fa7c5bef1f9857fa91c8a81aa39d61811c2e6cd2"
+    },
+    "vercel-deploy": {
+      "source": "supercent-io/skills-template",
+      "sourceType": "github",
+      "computedHash": "3ab4f961ca2fe72409c1aea00fed448c371e53e2fb7ba9054d5660330e22b578"
+    },
+    "visual-qa": {
+      "source": "dylanfeltus/skills",
+      "sourceType": "github",
+      "computedHash": "1a0697c31a2bebaabbc6bb8b98c1e452e8b3112eb31014bfd98d9f9adef0ccc3"
+    },
+    "web-design-guidelines": {
+      "source": "vercel-labs/agent-skills",
+      "sourceType": "github",
+      "computedHash": "a6a44d5498f7e8f68289902f3dedfc6f38ae0cee1e96527c80724cf27f727c2a"
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "app": {"bundle_id": "com.aniccafactory.zone2daily"},
+  "output_dir": "./screenshots/raw-69/ja",
+  "steps": [
+    {"action": "launch"},
+    {"action": "wait", "duration_ms": 5000},
+    {"action": "screenshot", "name": "screen1_age_input"},
+    {"action": "tap", "id": "btn_continue_age"},
+    {"action": "wait", "duration_ms": 2000},
+    {"action": "screenshot", "name": "screen2_zone2_explainer"},
+    {"action": "tap", "id": "btn_continue_explainer"},
+    {"action": "wait", "duration_ms": 1500},
+    {"action": "tap", "id": "btn_skip_notifications"},
+    {"action": "wait", "duration_ms": 3000},
+    {"action": "screenshot", "name": "screen3_paywall"},
+    {"action": "tap", "id": "btn_maybe_later"},
+    {"action": "wait", "duration_ms": 2000},
+    {"action": "screenshot", "name": "screen4_dashboard"}
+  ]
+}

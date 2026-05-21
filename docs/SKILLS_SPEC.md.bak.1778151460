@@ -1,0 +1,1100 @@
+# OpenClaw Skills Spec — Source of Truth
+
+v1, last updated 2026-05-07
+
+---
+
+## How to use this document
+
+This file is the **contract**. It is the single canonical source-of-truth for the ten OpenClaw / Anicca skills that make up the Anicca operating system. Every skill defined here ships open-source as its own GitHub repo; every agent that loads a skill runs the setup wizard defined in this document; every cron entry in `~/.openclaw/cron/jobs.json` is generated from a `cron-template.json` block in this document; every Slack alert routes to the metrics channel via the template defined in cross-cutting infrastructure.
+
+Read order if you are an agent loading a skill for the first time:
+1. The cross-cutting infrastructure section (one read, applies to all skills).
+2. The open-source release standard (defines what every repo must contain).
+3. The skill-specific section, in this document, in the order listed in “The 10 skills at a glance”.
+4. The roll-out sequence and open-source rollout sequence — these define what to build first and what to ship public first.
+5. The marketing playbook — defines how to announce each public release.
+
+Read order if you are a human collaborator (or Dais himself):
+1. The 10 skills at a glance.
+2. The skill you care about.
+3. The roll-out sequence to know what blocks what.
+
+If two parts of this document disagree, the per-skill section wins, then the cross-cutting infrastructure section, then the roll-out sequence. If the document and the live system disagree, the live system loses — fix the live system to match this document.
+
+When updating this document: bump the `v1` at the top, change `last updated`, and append a one-line entry to the “Changelog” at the bottom of this file. Do not delete history.
+
+---
+
+## The 10 skills at a glance
+
+| # | name | one-line description | status | open-source readiness | repo slug |
+|---|------|---------------------|--------|----------------------|-----------|
+| 1 | tuning-skills | nightly diagnostic + repair pass over failing crons | IN-DEV | needs 2 weeks of telemetry, then ship | `Daisuke134/tuning-skills` |
+| 2 | larry / content-iteration | TikTok / Instagram / X / YouTube cross-platform content + closed-loop iteration on metrics | PROD | ship today after redaction | `Daisuke134/content-iteration` |
+| 3 | build-in-public | daily X build-in-public posts, Postiz analytics-driven | PROD | ship today | `Daisuke134/build-in-public` |
+| 4 | article-writer | daily dev.to + Zenn articles | IN-DEV | ship after first month of metrics | `Daisuke134/article-writer` |
+| 5 | app-review | daily/weekly App Store review pull + auto-reply | IN-DEV | ship after rate-limit hardening | `Daisuke134/app-review` |
+| 6 | skill-for-you | daily ClawHub skill recommendations from session-log analysis | GREENFIELD | ship after MVP works internally | `Daisuke134/skill-for-you` |
+| 7 | donation | monthly 1% revenue donation to charities, Stripe rails | GREENFIELD | ship after first month-end completes cleanly | `Daisuke134/donation` |
+| 8 | NAIST | full automation of NAIST student/professor workload (Roundcube-FREE, Gmail-MCP based) | IN-DEV | hold private until graduation | `Daisuke134/naist-automation` |
+| 9 | auto-research | autonomous AI scientist: literature → hypothesis → experiment (BFTS) → paper → grants | GREENFIELD | ship after one paper drafted end-to-end | `Daisuke134/auto-research` |
+| 10 | politician | autonomous AI politician: 政治団体 + DE LLC + 527 + Super PAC + LDA lobbying + bill drafting + staffer CRM + civic action APIs + human-instrument hiring | GREENFIELD | ship after legal shells exist + first bill drafted | `Daisuke134/anicca-politician` |
+
+Skill #2 (mobileapp-iterator) in the original list is intentionally skipped. Skills #3 (larry) and #10 (content-iteration) are merged in this spec because they are functionally identical — both iterate cross-platform content on a closed feedback loop. The merged skill is documented as “2. larry / content-iteration” below.
+
+---
+
+## Cross-cutting infrastructure
+
+This section defines the shared infrastructure every skill depends on. Build it once; every skill consumes it.
+
+### Cron master
+
+- Path: `~/.openclaw/cron/jobs.json` (the file on the VPS / dev Mac that the OpenClaw Gateway reads).
+- Mirror in the dev repo: `/Users/anicca/anicca-project/openclaw-skills/jobs.json`. The repo mirror is the source of truth for proposed changes; the live `~/.openclaw/cron/jobs.json` is the running copy.
+- Sync rule: `rsync -av openclaw-skills/jobs.json anicca@VPS:/home/anicca/.openclaw/cron/jobs.json` while the gateway is stopped, then restart the gateway (`systemctl --user stop / start openclaw-gateway.service`).
+- Format: a single JSON object with keys `version` (currently 1) and `jobs` (an array). Every job has `id`, `agentId`, `jobId`, `name`, `schedule {kind, expr, tz}`, `sessionTarget`, `wakeMode`, `payload {kind, message}`, `delivery {mode, channel, to}`, `enabled`.
+- Editing rule: only the cron-master file is edited. Per-skill `cron-template.json` files in each skill repo are merged into this master at sync time. No skill writes to its own crontab.
+
+### Run history (task_runs)
+
+- Path: `~/.openclaw/tasks/runs.sqlite`.
+- Single table: `task_runs(id INTEGER PRIMARY KEY, skill TEXT NOT NULL, started_at TEXT NOT NULL, finished_at TEXT, status TEXT NOT NULL, exit_code INTEGER, slot TEXT, output_path TEXT, error TEXT, slack_ts TEXT)`.
+- Status values: `running`, `succeeded`, `failed`, `skipped`, `dlq`.
+- Every skill writes one row when it starts (`status='running'`), then updates the same row at finish.
+- The daily-memory skill is rewritten to query this table for “what ran today” instead of crawling session history (see fix below).
+
+### Slack alert channel
+
+- Channel name: `#metrics`.
+- Channel ID: `C091G3PKHL2`.
+- Every skill posts a result line here. Failure-path posts MUST include the skill name, slot, and a one-paragraph error excerpt.
+- The Slack target is **never hard-coded** in a skill prompt. Instead each cron entry’s `payload.message` template uses:
+  ```
+  --target $(jq -r .slack.metrics_channel ~/.openclaw/state/anicca.json)
+  ```
+  This means the channel can be moved by editing one JSON value (`~/.openclaw/state/anicca.json` → `slack.metrics_channel`) instead of grep-replacing 22 cron entries.
+
+### Daily-memory rewrite
+
+The current `daily-memory` skill (`~/.openclaw/skills/daily-memory/SKILL.md`) infers “what ran today” by reading session history. That is fragile, slow, and breaks when sessions are pruned. Fix:
+
+1. Replace the input step with a single SQL query: `SELECT skill, status, slot, started_at, finished_at, error FROM task_runs WHERE date(started_at, 'localtime', 'start of day') = date('now', 'localtime') ORDER BY started_at`.
+2. Pass that result set, plus the `roundtable-standup` JSON of the day, into the diary writer.
+3. Output paths stay the same: `~/.openclaw/workspace/daily-memory/lessons-learned.md` (append) and `~/.openclaw/workspace/daily-memory/diary-YYYY-MM-DD.md` (write).
+
+### Model-fallback fix
+
+`~/.openclaw/openclaw.json` currently contains `openai-codex/gpt-5.5` as a fallback model entry. This model does not exist and causes silent fallback failures. Action: remove that entry. The replacement chain is `anthropic/claude-sonnet-4-6` → `anthropic/claude-opus-4-6` → `anthropic/claude-haiku-4-5-20251001`. Drop GPT-5.5 entirely.
+
+### Slack-target template fix
+
+Every cron `payload.message` that currently embeds the literal `C091G3PKHL2` is updated to use the template above. Run-once migration script:
+
+```bash
+python3 - <<'PY'
+import json, re, pathlib
+p = pathlib.Path('~/.openclaw/cron/jobs.json').expanduser()
+d = json.loads(p.read_text())
+sub = "$(jq -r .slack.metrics_channel ~/.openclaw/state/anicca.json)"
+changed = 0
+for j in d['jobs']:
+    msg = j.get('payload', {}).get('message', '')
+    new = re.sub(r'C091G3PKHL2', sub, msg)
+    if new != msg:
+        j['payload']['message'] = new
+        changed += 1
+p.write_text(json.dumps(d, indent=2, ensure_ascii=False))
+print(f'patched {changed} jobs')
+PY
+```
+
+After this migration, the channel ID lives in exactly one place: `~/.openclaw/state/anicca.json`.
+
+### Skill-onboarder meta-skill: standard load-time wizard pattern
+
+Every skill loaded for the first time on a host runs a standard wizard defined here. The wizard:
+
+1. Looks up the skill’s entry in this spec, parses the “Setup wizard” numbered list.
+2. For each numbered question, prompts the user, accepting the bracketed default on empty input.
+3. Persists each answer to the file path written next to the question.
+4. After all answers are persisted, runs `~/.openclaw/skills/<skill>/scripts/postinstall.sh` if it exists.
+5. Writes a one-line success note to `~/.openclaw/state/skills.jsonl`: `{"skill":"<name>","installed_at":"<iso>","host":"<hostname>","version":"<git-sha>"}`.
+
+This wizard is itself a skill: `~/.openclaw/skills/skill-onboarder/SKILL.md`. Other skills inherit from it; they don’t reimplement question prompting.
+
+---
+
+## Open-source release standard
+
+Every skill in this spec ships as its own GitHub repo under `github.com/Daisuke134` (eventually `github.com/anicca-org` once the org is set up — repo slugs in the per-skill sections will move at that point). Each repo MUST contain:
+
+- `SKILL.md` — the spec for **agents**. Format: front-matter (`name`, `description`, `metadata.openclaw`) + the “Features”, “Setup wizard”, “Crons”, “Required env / secrets” sections from this document, copied verbatim.
+- `README.md` — the spec for **humans**. Format: tagline, a one-paragraph “what this is”, a “how to install” block (`openclaw skill install <slug>`), a “what it does” bullet list (mirrors the Features list), a screenshot or widget link, a “status” badge tied to GitHub Actions, the launch tweet at the bottom.
+- `LICENSE` — MIT. No exceptions. The whole point is composability.
+- `examples/` — directory with one or more `<scenario>.json` and the corresponding `<scenario>.expected.json` (or `.md`) so both humans and agents can see what input produces what output.
+- `.github/workflows/release.yml` — on `git tag v*`, runs the test suite, builds the skill bundle, and publishes a release to ClawHub via `claw release publish`.
+- `X-announce-copy.md` — exactly what gets tweeted on launch day. The text in this file and the “Launch tweet” line in this spec must match.
+- `cron-template.json` — drop-in cron entries for `~/.openclaw/cron/jobs.json`. The `tuning-skills` repair pass uses this file when restoring a broken cron.
+
+Human-instrument hiring is in scope for the politician repo (see #10) but not for any other repo.
+
+---
+
+## Skill specs
+
+The ten skills, in order, with the exact subsection set required by the contract.
+
+---
+
+### 1. tuning-skills
+
+**Status.** IN-DEV — the master cron list and run-history table exist, but the auto-repair pass that consumes them is not yet wired in.
+
+**What it brings.** A nightly diagnostic that reads `~/.openclaw/tasks/runs.sqlite`, identifies skills that failed in the last 24 h or 7 d, and either (a) auto-repairs known failure modes (missing env, broken Slack target template, deprecated model name in payload) or (b) opens a structured “tuning ticket” in `~/.openclaw/workspace/tuning-skills/tickets/YYYY-MM-DD.json` with a one-paragraph summary and a proposed fix. Result: the system gets healthier night-over-night without manual triage.
+
+**File paths (current).**
+- `~/.openclaw/tasks/runs.sqlite` (input — run history, see cross-cutting infra)
+- `~/.openclaw/cron/jobs.json` (input/output — the cron master)
+- `~/.openclaw/state/anicca.json` (input — Slack channel and other targets)
+- `~/.openclaw/openclaw.json` (input/output — model fallback chain)
+- `~/.openclaw/skills/tuning-skills/SKILL.md` (to-create)
+- `~/.openclaw/skills/tuning-skills/scripts/diagnose.py` (to-create)
+- `~/.openclaw/skills/tuning-skills/scripts/repair.py` (to-create)
+- `~/.openclaw/workspace/tuning-skills/tickets/YYYY-MM-DD.json` (output, to-create)
+- `~/.openclaw/workspace/tuning-skills/repairs/YYYY-MM-DD.json` (output, to-create — log of automated fixes applied tonight)
+
+**Features.**
+1. **fail-scan** — query `task_runs` for `status='failed'` rows in the last 24 h, group by skill+error-class.
+2. **dlq-scan** — query `task_runs` for `status='dlq'` rows ever, alert if > 3 rows for the same skill.
+3. **known-fix table** — apply these patches without asking: missing `BLOTATO_API_KEY` env → re-source `~/.openclaw/.env`; literal `C091G3PKHL2` in payload → swap to template; `openai-codex/gpt-5.5` in any payload → drop and let fallback chain resolve.
+4. **ticket-write** — for unknown failure classes, write a Markdown-flavoured JSON ticket with reproduction steps and a `proposed_fix` field.
+5. **Slack rollup** — one Slack post per night summarizing repairs applied + tickets opened. Format: `tuning-skills 2026-05-07 — :wrench: 4 auto-repairs / :clipboard: 2 tickets`.
+6. **codex-review escalation** — for tickets older than 3 days, escalate by posting the ticket body to Slack and tagging `@dais` directly.
+
+**Crons.**
+
+| cron expr | tz | label | what it does |
+|-----------|----|-------|-------------|
+| `0 2 * * *` | Asia/Tokyo | tuning-skills-nightly | full diagnostic + auto-repair pass |
+| `0 9 * * 0` | Asia/Tokyo | tuning-skills-weekly-summary | post 7-day rollup to #metrics every Sunday morning |
+
+**Setup wizard.**
+1. Confirm the cron master path. Default: `~/.openclaw/cron/jobs.json`. Persisted to: `~/.openclaw/state/anicca.json` → `cron.master_path`.
+2. Confirm the run-history DB path. Default: `~/.openclaw/tasks/runs.sqlite`. Persisted to: `~/.openclaw/state/anicca.json` → `runs.db_path`.
+3. Confirm Slack escalation channel. Default: `C091G3PKHL2` (#metrics). Persisted to: `~/.openclaw/state/anicca.json` → `slack.metrics_channel`.
+4. Confirm DLQ alert threshold. Default: 3. Persisted to: `~/.openclaw/state/anicca.json` → `tuning.dlq_threshold`.
+5. Confirm escalation handle on Slack. Default: `@dais`. Persisted to: `~/.openclaw/state/anicca.json` → `tuning.escalate_to`.
+
+**Required env / secrets.**
+- `SLACK_BOT_TOKEN` (post the rollup)
+- `OPENCLAW_API_KEY` (read other skills’ runs)
+
+**External APIs / tools.**
+- Slack Web API `chat.postMessage` (auth: bot token; rate limit: 1 msg/sec/channel).
+- SQLite (local, no auth).
+- Python 3.11+, `jq`, `rsync` (used by repair pass).
+
+**Open-source release plan.**
+- Repo slug: `github.com/Daisuke134/tuning-skills`
+- Public name: `OpenClaw Tuning`
+- Tagline: nightly self-repair for your OpenClaw skills.
+- README.md outline:
+  - what this is + screenshot of a Slack rollup
+  - install (one command)
+  - the known-fix table (so users can extend it)
+  - how to add a custom repair recipe
+  - how to read tickets and propose fixes back
+- Launch tweet: `OpenClaw Tuning ships tonight. It runs at 2am, reads the run history of every other skill, auto-fixes the broken cron entries it knows how to fix, files tickets for the rest, and posts a rollup. The thing that keeps the agent layer alive. MIT. <REPO_URL>`
+- Why ship now / why hold: IN-DEV — ship after first month of real-world telemetry. Need ~30 nights of repair-pass logs to make sure no recipe is destructive.
+
+**Risks / known gaps.**
+- Auto-repair is a foot-gun: a wrong recipe could silently break a working cron. Mitigation: every repair writes a `before/after` diff to `repairs/YYYY-MM-DD.json` and a one-line Slack message; the user can revert by re-running the night with `--undo`.
+- DLQ semantics not yet defined per skill — need a per-skill convention before the alert is meaningful.
+- The known-fix table will rot — needs to be reviewed monthly.
+
+---
+
+### 2. larry / content-iteration
+
+**Status.** PROD — TikTok, X, and (via reelfarm) the slideshow stack are live; daily-report and strategy-updater are governed by the existing Bible compliance spec and currently flipping back to enabled.
+
+**What it brings.** Cross-platform content production with closed-loop iteration. The skill drafts and posts to TikTok, Instagram, X, and YouTube on a daily schedule; the metrics-loop reads engagement back from each platform; the strategy-updater rewrites the hook bank weekly so under-performing hooks are retired and high performers cloned. This is the skill that turns Anicca from “posts a thing once” to “a content engine that gets better while you sleep”.
+
+**File paths (current).**
+- `~/.openclaw/skills/x-poster/SKILL.md` — current path. Mirror: `openclaw-skills/x-poster/SKILL.md`.
+- `~/.openclaw/skills/tiktok-poster/SKILL.md` — current path. Mirror: `openclaw-skills/tiktok-poster/SKILL.md`.
+- `~/.openclaw/skills/trend-hunter/SKILL.md` — current path. Mirror: `openclaw-skills/trend-hunter/SKILL.md`.
+- `~/.openclaw/skills/reelfarm/SKILL.md` — current path. Mirror: `openclaw-skills/reelfarm-skill/`.
+- `~/.openclaw/skills/larry-strategy-updater/SKILL.md` — current path (governed by `larry-bible-compliance-spec.md`).
+- `~/.openclaw/skills/larry-daily-report-en/SKILL.md`, `~/.openclaw/skills/larry-daily-report-ja/SKILL.md` — current paths.
+- `~/.openclaw/workspace/hooks/{9am,9pm}/YYYY-MM-DD.json` — output of trend-hunter, input of x-poster + tiktok-poster.
+- `~/.openclaw/workspace/trends/{9am,9pm}/YYYY-MM-DD.json` — raw trend dump.
+- `~/.openclaw/workspace/reelfarm/metrics/YYYY-MM-DD.json`, `~/.openclaw/workspace/reelfarm/library/YYYY-MM-DD.json` — engagement readback.
+- `~/.openclaw/skills/instagram-poster/SKILL.md` (to-create — IG arm not yet wired).
+- `~/.openclaw/skills/youtube-shorts-poster/SKILL.md` (to-create — YouTube arm not yet wired).
+
+**Features.**
+1. **trend-hunter** — pulls X / TikTok / Reddit trends twice a day (5am + 5pm JST); writes one slot file with one X postText + one TikTok caption + imagePrompt.
+2. **x-poster** — reads the slot file, posts to X via Blotato (`backend.blotato.com/v2`), 260-char cap, no replies.
+3. **tiktok-poster** — reads the slot file; if `imageUrl` is empty, calls FAL with `imagePrompt` to generate one; posts to TikTok via Blotato; polls Blotato for `publicUrl` and writes it back.
+4. **instagram-poster** (planned) — reads the same slot file with `platform: "instagram"`; posts via Blotato Instagram graph.
+5. **youtube-shorts-poster** (planned) — reads slot file with `platform: "youtube"`; posts a 9:16 short via Blotato YouTube channel binding.
+6. **reelfarm-metrics-loop (LOOP A)** — daily at 04:00 JST; reads 7-day metrics for every active automation, scores hooks (`views*0.4 + likes*0.3 + comments*0.2 + shares*0.1`), retires the bottom 3, generates 3 replacements, PATCHes automations.
+7. **reelfarm-library-loop (LOOP B)** — weekly Sun 04:30 JST; pulls viral library content per niche, creates new automations subject to the 6/day per-account cap.
+8. **larry-strategy-updater** — daily 05:00 JST; rewrites the hook bank for the day’s posts using yesterday’s engagement.
+9. **larry-daily-report-en / larry-daily-report-ja** — EN 07:00 / JA 06:30; posts the “what we shipped, what worked, what didn’t” recap.
+
+**Crons.**
+
+| cron expr | tz | label | what it does |
+|-----------|----|-------|-------------|
+| `0 5 * * *` | Asia/Tokyo | trend-hunter-5am | morning slot trend pull |
+| `0 17 * * *` | Asia/Tokyo | trend-hunter-5pm | evening slot trend pull |
+| `0 9 * * *` | Asia/Tokyo | x-poster-morning | post 9am slot to X |
+| `0 21 * * *` | Asia/Tokyo | x-poster-evening | post 9pm slot to X |
+| `0 9 * * *` | Asia/Tokyo | tiktok-poster-morning | post 9am slot to TikTok |
+| `0 21 * * *` | Asia/Tokyo | tiktok-poster-evening | post 9pm slot to TikTok |
+| `0 9 * * *` | Asia/Tokyo | instagram-poster-morning | (planned) post 9am to IG |
+| `0 21 * * *` | Asia/Tokyo | instagram-poster-evening | (planned) post 9pm to IG |
+| `0 9 * * *` | Asia/Tokyo | youtube-shorts-poster | (planned) post daily short |
+| `0 4 * * *` | Asia/Tokyo | reelfarm-metrics-loop | LOOP A — retire bottom 3 hooks |
+| `30 4 * * 0` | Asia/Tokyo | reelfarm-library-loop | LOOP B — weekly viral library scan |
+| `0 5 * * *` | Asia/Tokyo | larry-strategy-updater | rewrite hook bank from yesterday’s metrics |
+| `0 7 * * *` | Asia/Tokyo | larry-daily-report-en | EN recap |
+| `30 6 * * *` | Asia/Tokyo | larry-daily-report-ja | JA recap |
+
+**Setup wizard.**
+1. Blotato API key. No default. Persisted to: `~/.openclaw/.env` → `BLOTATO_API_KEY`.
+2. Blotato X account ID (English, @aniccaen). No default. Persisted to: `~/.openclaw/.env` → `BLOTATO_ACCOUNT_ID_EN`.
+3. Blotato X account ID (Japanese, @aniccaxxx). No default. Persisted to: `~/.openclaw/.env` → `BLOTATO_ACCOUNT_ID_JA`.
+4. Blotato TikTok account ID. No default. Persisted to: `~/.openclaw/.env` → `BLOTATO_TIKTOK_ACCOUNT_ID`.
+5. Blotato Instagram account ID (optional, for IG arm). No default. Persisted to: `~/.openclaw/.env` → `BLOTATO_INSTAGRAM_ACCOUNT_ID`.
+6. Blotato YouTube channel binding (optional). No default. Persisted to: `~/.openclaw/.env` → `BLOTATO_YOUTUBE_CHANNEL_ID`.
+7. FAL API key. No default. Persisted to: `~/.openclaw/.env` → `FAL_KEY`.
+8. Apify API token (TikTok scraper). No default. Persisted to: `~/.openclaw/.env` → `APIFY_API_TOKEN`.
+9. X bearer token (for trend-hunter X arm). No default. Persisted to: `~/.openclaw/.env` → `X_BEARER_TOKEN`.
+10. Reelfarm API key. No default. Persisted to: `~/.openclaw/.env` → `REELFARM_API_KEY`.
+11. Larry start day (Day 1 of building Anicca). Default: `2026-01-02`. Persisted to: `~/.openclaw/state/anicca.json` → `larry.start_day`.
+
+**Required env / secrets.**
+- `BLOTATO_API_KEY`, `BLOTATO_ACCOUNT_ID_EN`, `BLOTATO_ACCOUNT_ID_JA`, `BLOTATO_TIKTOK_ACCOUNT_ID`, `BLOTATO_INSTAGRAM_ACCOUNT_ID` (optional), `BLOTATO_YOUTUBE_CHANNEL_ID` (optional)
+- `FAL_KEY`
+- `APIFY_API_TOKEN`
+- `X_BEARER_TOKEN`
+- `REELFARM_API_KEY`
+- `SLACK_BOT_TOKEN` (for the daily reports)
+
+**External APIs / tools.**
+- Blotato API: `https://backend.blotato.com/v2/...` (auth: API key in header; rate limit: 100/min, 1000/hour).
+- FAL API: `https://fal.ai/...` (auth: bearer; varies by model).
+- Apify TikTok scraper: `https://api.apify.com/v2/acts/clockworks~tiktok-scraper/runs` (auth: token query param).
+- X v2 search (via `x-research`): `https://api.x.com/2/tweets/search/recent` (auth: bearer).
+- Reelfarm API (auth: API key in header).
+- Slack Web API (`chat.postMessage`).
+
+**Open-source release plan.**
+- Repo slug: `github.com/Daisuke134/content-iteration`
+- Public name: `Content Iteration`
+- Tagline: cross-platform content engine with a closed feedback loop.
+- README.md outline:
+  - the loop diagram (trend → draft → post → measure → rewrite hooks)
+  - install + Blotato + FAL + Apify keys
+  - example slot file (`hooks/9am/YYYY-MM-DD.json`)
+  - tuning the scoring weights
+  - how to add a new platform arm (e.g., Threads)
+- Launch tweet: `Content Iteration ships open. Trend hunter + 4 platform posters + a metrics loop that rewrites hooks every night based on what worked yesterday. Drop in Blotato + FAL + Apify keys, point it at your accounts, walk away. MIT. <REPO_URL>`
+- Why ship now / why hold: PROD — ship today after redaction (Blotato account IDs and Reelfarm key are gitignored; the wizard collects them on install).
+
+**Risks / known gaps.**
+- IG and YouTube arms are not yet wired — placeholders in this spec.
+- Larry strategy-updater currently uses model `anthropic/claude-sonnet-4-6`; if the fallback chain resolves to Haiku, hook quality drops. Pin Sonnet in the payload until Haiku 4.5 quality is verified.
+- Bible compliance fix per `larry-bible-compliance-spec.md` (slot timing 07:30/16:30/21:00, config = SELF_ONLY+UPLOAD, clean backgrounds) needs to be applied to the open-source release before public launch — otherwise the public skill is materially different from what the YouTube/X audience will see.
+
+---
+
+### 3. build-in-public
+
+**Status.** PROD — `/post-update` skill exists and posts daily to X via Blotato. Spec at `.cursor/plans/ios/1.6.0/sns-poster/build-in-public-spec.md`.
+
+**What it brings.** Daily Build-in-Public posts to X (and a Postiz analytics layer that pulls per-tweet engagement back so the next post’s tone is informed by what worked yesterday). The skill turns commits and SessionEnd hooks into a “Day X of building Anicca” thread automatically — no manual “hey post this” needed.
+
+**File paths (current).**
+- `.claude/skills/build-in-public/SKILL.md` (current spec — to be moved to `~/.openclaw/skills/build-in-public/SKILL.md` for the open-source release)
+- `.claude/hooks/session-end-daily-log.sh` — SessionEnd hook that writes today’s session log
+- `.claude/skills/agent-memory/memories/daily-logs/YYYY-MM-DD.md` — daily log accumulation
+- `.cursor/plans/ios/version-logs/YYYY-MM-DD.md` — version-log persistence
+- `.cursor/plans/ios/sns-poster/blotato.py` — Blotato post helper
+- `~/.openclaw/workspace/build-in-public/sent_YYYY-MM-DD.json` (to-create — record of what posted today, with tweet URL + analytics ID)
+- `~/.openclaw/workspace/build-in-public/postiz-cache.json` (to-create — Postiz analytics cache)
+
+**Features.**
+1. **session-end accumulator** — SessionEnd hook appends a transcript summary to today’s daily log.
+2. **post-update generator** — reads git diff + today’s daily log, generates a 280-char EN tweet (@aniccaen) and a JA tweet (@aniccaxxx).
+3. **day-counter** — computes Day X from `larry.start_day` (default 2026-01-02), minimum 1, never decrements.
+4. **preview gate** — shows the post for confirmation before sending; auto-confirm only when `--auto` flag is passed by cron.
+5. **Postiz analytics pull** — daily 23:00 JST: pulls per-tweet engagement (likes/RTs/replies/views) for the last 7 days’ posts via Postiz API; writes to `postiz-cache.json`.
+6. **analytics-driven prompt** — the next morning’s draft prompt includes the top-3 and bottom-3 tweets from the last 7 days as in-context examples.
+7. **thread-split** — if the post exceeds 280 chars, auto-splits into a thread of 280-char chunks numbered “1/n”.
+8. **retry on failure** — Blotato API errors → 30 s wait → retry, max 3 attempts; final failure posts to Slack #metrics with the error code.
+
+**Crons.**
+
+| cron expr | tz | label | what it does |
+|-----------|----|-------|-------------|
+| `0 8 * * *` | Asia/Tokyo | bip-post-morning | generate + post the morning Build-in-Public update |
+| `0 23 * * *` | Asia/Tokyo | bip-postiz-pull | pull last-24h analytics from Postiz |
+| `0 20 * * 0` | Asia/Tokyo | bip-weekly-rollup | weekly “best tweets” thread Sunday evening |
+
+**Setup wizard.**
+1. Blotato API key. (Reuses the larry/content-iteration value if already set.) Persisted to: `~/.openclaw/.env` → `BLOTATO_API_KEY`.
+2. Blotato X account ID, English (@aniccaen). Persisted to: `~/.openclaw/.env` → `BLOTATO_ACCOUNT_ID_EN`.
+3. Blotato X account ID, Japanese (@aniccaxxx). Persisted to: `~/.openclaw/.env` → `BLOTATO_ACCOUNT_ID_JA`.
+4. Postiz API key. No default. Persisted to: `~/.openclaw/.env` → `POSTIZ_API_KEY`.
+5. Postiz workspace ID. No default. Persisted to: `~/.openclaw/.env` → `POSTIZ_WORKSPACE_ID`.
+6. Day 1 start date. Default: `2026-01-02`. Persisted to: `~/.openclaw/state/anicca.json` → `larry.start_day`.
+7. Auto-confirm cron posts? Default: `yes`. Persisted to: `~/.openclaw/state/anicca.json` → `bip.auto_confirm`.
+8. Project repo path. Default: `/Users/anicca/anicca-project`. Persisted to: `~/.openclaw/state/anicca.json` → `bip.repo_path`.
+
+**Required env / secrets.**
+- `BLOTATO_API_KEY`, `BLOTATO_ACCOUNT_ID_EN`, `BLOTATO_ACCOUNT_ID_JA`
+- `POSTIZ_API_KEY`, `POSTIZ_WORKSPACE_ID`
+- `SLACK_BOT_TOKEN`
+
+**External APIs / tools.**
+- Blotato API: `https://backend.blotato.com/v2/...` (auth: API key; rate limit: 100/min, 1000/hour).
+- Postiz API (auth: API key; rate limit per Postiz docs).
+- `git` (local).
+
+**Open-source release plan.**
+- Repo slug: `github.com/Daisuke134/build-in-public`
+- Public name: `Build in Public`
+- Tagline: turn your commits into a daily X thread, automatically.
+- README.md outline:
+  - what it does, in one diagram (commits + session log → tweet)
+  - install + Blotato + Postiz keys
+  - the “Day X” counter explained
+  - thread-split rules
+  - how to override the morning post manually
+- Launch tweet: `Build in Public ships open. Plug in Blotato + Postiz, hook it to your repo, walk away. It writes the “Day X of building” tweet from your git diff + session log every morning, and rewrites tomorrow’s prompt from yesterday’s engagement. MIT. <REPO_URL>`
+- Why ship now / why hold: PROD — ship today.
+
+**Risks / known gaps.**
+- Postiz analytics layer is the new piece — the existing `/post-update` skill posts but doesn’t close the loop. Wire that in before the launch tweet goes out.
+- The `blotato.py` default account-key bug (`x_xg2grb` vs `x_aniccaxxx`) is fixed in spec but verify the prod copy matches.
+- Session-end hook depends on `.claude/hooks/session-end-daily-log.sh` existing — for users who don’t use Claude Code, provide an alternative input (e.g., daily plain-text journal at a configurable path).
+
+---
+
+### 4. article-writer
+
+**Status.** IN-DEV — there is no current dev.to / Zenn cron. Skill needs to be built from scratch using the same Blotato pattern.
+
+**What it brings.** A daily long-form article published to dev.to (English) and Zenn (Japanese). Subject is selected from yesterday’s top X engagement, today’s git diff, and a “backlog of unfinished thoughts” file. Output is a 1200–2000-word article in dev.to/Zenn-flavoured Markdown, posted via each platform’s API. Anicca becomes a dev-blog presence without Dais writing a word.
+
+**File paths (current).**
+- `~/.openclaw/skills/article-writer/SKILL.md` (to-create)
+- `~/.openclaw/skills/article-writer/scripts/draft.py` (to-create — pulls yesterday’s top tweet + today’s diff, drafts article)
+- `~/.openclaw/skills/article-writer/scripts/post-devto.py` (to-create — POST to https://dev.to/api/articles)
+- `~/.openclaw/skills/article-writer/scripts/post-zenn.py` (to-create — push to Zenn’s GitHub-backed repo, since Zenn doesn’t have a public publish API)
+- `~/.openclaw/workspace/article-writer/drafts/YYYY-MM-DD-en.md` (output)
+- `~/.openclaw/workspace/article-writer/drafts/YYYY-MM-DD-ja.md` (output)
+- `~/.openclaw/workspace/article-writer/published.json` (running ledger of dev.to + Zenn URLs and slugs)
+- `~/.openclaw/workspace/article-writer/backlog.md` (input — running list of unfinished thoughts; `/jot` skill appends)
+
+**Features.**
+1. **subject-picker** — picks today’s subject from: top X tweet of last 24 h (40% weight), today’s git diff (30% weight), oldest item in `backlog.md` (30% weight).
+2. **draft-en** — produces 1200–2000-word dev.to article with code blocks, headings, tags.
+3. **draft-ja** — produces 1200–2000-word Zenn article in Zenn’s Markdown dialect, with frontmatter (`title`, `emoji`, `type: tech`, `topics: []`, `published: true`).
+4. **post-devto** — POST `https://dev.to/api/articles` with `api-key` header; saves slug and URL.
+5. **post-zenn** — commits the Markdown file to the user’s Zenn repo (configured), pushes; Zenn auto-publishes on push.
+6. **rss-mirror** — appends new articles to `~/.openclaw/workspace/article-writer/rss.xml` for the personal site.
+7. **cross-link** — once both posted, posts a single tweet announcing both URLs (does NOT use the build-in-public skill — separate post window).
+
+**Crons.**
+
+| cron expr | tz | label | what it does |
+|-----------|----|-------|-------------|
+| `0 6 * * *` | Asia/Tokyo | article-writer-draft | draft today’s EN + JA articles |
+| `30 8 * * *` | Asia/Tokyo | article-writer-publish | publish to dev.to + Zenn |
+| `0 12 * * *` | Asia/Tokyo | article-writer-tweet | cross-link tweet |
+
+**Setup wizard.**
+1. dev.to API key. No default. Persisted to: `~/.openclaw/.env` → `DEVTO_API_KEY`.
+2. Zenn GitHub repo (your `zenn-content` fork). No default. Persisted to: `~/.openclaw/state/anicca.json` → `article.zenn_repo`.
+3. Zenn deploy SSH key path. Default: `~/.ssh/id_ed25519`. Persisted to: `~/.openclaw/state/anicca.json` → `article.zenn_ssh_key`.
+4. Default dev.to tags. Default: `agi,opensource,ai,automation`. Persisted to: `~/.openclaw/state/anicca.json` → `article.devto_tags`.
+5. Word-count target. Default: `1500`. Persisted to: `~/.openclaw/state/anicca.json` → `article.word_target`.
+6. Cross-link tweet account (EN). Default: `BLOTATO_ACCOUNT_ID_EN`. Persisted to: `~/.openclaw/state/anicca.json` → `article.tweet_account_en`.
+
+**Required env / secrets.**
+- `DEVTO_API_KEY`
+- SSH key for Zenn repo push
+- `BLOTATO_API_KEY` + account IDs (reused)
+- `SLACK_BOT_TOKEN`
+
+**External APIs / tools.**
+- dev.to API: `https://dev.to/api/articles` (auth: `api-key` header; rate limit: 30 req/30s).
+- Zenn: GitHub Push (no public API; rate limited by GitHub).
+- Slack Web API.
+
+**Open-source release plan.**
+- Repo slug: `github.com/Daisuke134/article-writer`
+- Public name: `Article Writer`
+- Tagline: a daily dev.to + Zenn post out of your commits.
+- README.md outline:
+  - the daily flow (subject → draft → publish → tweet)
+  - install + dev.to + Zenn setup
+  - tag policy
+  - how to add another platform (medium, hashnode)
+  - example articles
+- Launch tweet: `Article Writer ships open. It picks a subject from yesterday’s top tweet, today’s diff, and your jot backlog, drafts a 1500-word article in EN and JA, and ships them to dev.to and Zenn before lunch. MIT. <REPO_URL>`
+- Why ship now / why hold: IN-DEV — ship after first month of real-world telemetry. Need to verify dev.to and Zenn publishing rates aren’t flagged as spam.
+
+**Risks / known gaps.**
+- Zenn doesn’t have a publish API — relies on GitHub-backed repo. If the user’s Zenn account isn’t connected to a GitHub repo, the JA arm won’t work; wizard must detect and surface that.
+- dev.to has soft anti-spam rules; daily publishing may get flagged. Mitigation: rotate weekend posts to “summary of the week” cadence.
+- Article quality is the unknown — needs ~30 days of real output before public launch to verify it isn’t embarrassing.
+
+---
+
+### 5. app-review
+
+**Status.** IN-DEV — Anicca iOS is in the App Store but there is no automated review-pull or auto-reply yet.
+
+**What it brings.** Daily and weekly App Store review pulls. The skill fetches new reviews from App Store Connect, classifies them (bug / feature-request / praise / 1-star-rant), drafts a reply for the kinds that benefit from one (everything except spam), and on the user’s confirmation, posts the reply via App Store Connect API. Fast triage without checking the app store every day.
+
+**File paths (current).**
+- `~/.openclaw/skills/app-review/SKILL.md` (to-create)
+- `~/.openclaw/skills/app-review/scripts/pull.py` (to-create)
+- `~/.openclaw/skills/app-review/scripts/reply.py` (to-create)
+- `~/.openclaw/workspace/app-review/raw/YYYY-MM-DD.json` (output — raw review pull)
+- `~/.openclaw/workspace/app-review/triaged/YYYY-MM-DD.json` (output — classified reviews)
+- `~/.openclaw/workspace/app-review/replies-pending.json` (output — drafted replies awaiting user confirmation)
+- `~/.openclaw/workspace/app-review/replies-sent.json` (output — sent replies + timestamps)
+
+**Features.**
+1. **pull-daily** — every morning, fetches new reviews via App Store Connect API since last pull.
+2. **classify** — labels each review as `bug`, `feature-request`, `praise`, `complaint`, `spam`.
+3. **draft-reply** — drafts a one-paragraph reply for each non-spam review, in the same language as the review (EN/JA only for now).
+4. **slack-batch** — posts the daily batch of drafted replies to Slack #metrics with a 👍 / ❌ react-to-confirm pattern.
+5. **send** — for replies that got 👍, sends via App Store Connect API; logs to `replies-sent.json`.
+6. **weekly-rollup** — Friday 18:00 JST: posts a thread to Slack with “top complaints this week” + “top praise this week”.
+7. **bug-to-issue** — if `bug` classification with confidence > 0.85, auto-opens a GitHub issue against the iOS repo with the review excerpt.
+
+**Crons.**
+
+| cron expr | tz | label | what it does |
+|-----------|----|-------|-------------|
+| `0 9 * * *` | Asia/Tokyo | app-review-pull | daily pull + classify + draft replies |
+| `0 18 * * 5` | Asia/Tokyo | app-review-weekly | Friday rollup |
+
+**Setup wizard.**
+1. App Store Connect API key ID. No default. Persisted to: `~/.openclaw/.env` → `ASC_KEY_ID`.
+2. App Store Connect issuer ID. No default. Persisted to: `~/.openclaw/.env` → `ASC_ISSUER_ID`.
+3. App Store Connect private key path. Default: `~/.openclaw/secrets/AuthKey.p8`. Persisted to: `~/.openclaw/state/anicca.json` → `app_review.asc_p8_path`.
+4. App ID (your Anicca app ID). No default. Persisted to: `~/.openclaw/state/anicca.json` → `app_review.app_id`.
+5. GitHub token (for bug → issue). No default. Persisted to: `~/.openclaw/.env` → `GITHUB_TOKEN`.
+6. iOS repo slug. Default: `Daisuke134/anicca-ios`. Persisted to: `~/.openclaw/state/anicca.json` → `app_review.ios_repo`.
+7. Languages to draft replies for. Default: `en,ja`. Persisted to: `~/.openclaw/state/anicca.json` → `app_review.languages`.
+
+**Required env / secrets.**
+- `ASC_KEY_ID`, `ASC_ISSUER_ID`, App Store Connect `.p8` private key
+- `GITHUB_TOKEN`
+- `SLACK_BOT_TOKEN`
+
+**External APIs / tools.**
+- App Store Connect API: `https://api.appstoreconnect.apple.com/v1/...` (auth: JWT signed with ES256 + p8; rate limit: 3500 req/hour).
+- GitHub API: `https://api.github.com/repos/...` (auth: token; rate limit: 5000 req/hour).
+- Slack Web API.
+
+**Open-source release plan.**
+- Repo slug: `github.com/Daisuke134/app-review`
+- Public name: `App Review`
+- Tagline: triage and reply to App Store reviews while you sleep.
+- README.md outline:
+  - the flow (pull → classify → draft → confirm → send)
+  - App Store Connect key generation
+  - the 👍 / ❌ react-to-confirm pattern
+  - language support and how to add one
+  - example weekly rollup
+- Launch tweet: `App Review ships open. Hooks into App Store Connect, pulls every new review, drafts a reply in the right language, posts the batch to Slack for thumbs-up confirmation, sends. Bugs auto-file as GitHub issues. MIT. <REPO_URL>`
+- Why ship now / why hold: IN-DEV — ship after rate-limit hardening. ASC throttles aggressively; need to verify the daily pull never hits ceiling on a popular app.
+
+**Risks / known gaps.**
+- App Store Connect API has had inconsistent reply support across regions; need to verify reply works in all configured storefronts before launch.
+- Auto-classify on a 1-star rant can be wrong; the human-in-the-loop confirmation is non-negotiable.
+- Drafted replies must avoid making promises the team can’t keep — prompt should explicitly forbid commitments and timelines.
+
+---
+
+### 6. skill-for-you
+
+**Status.** GREENFIELD — does not exist yet. Cron entry needs to be added; skill scaffolding needs to be written.
+
+**What it brings.** A daily personalized recommendation: “based on what you did yesterday, you’d benefit from this ClawHub skill”. Reads session logs (Claude Code transcripts + recent shell history + recent calendar events), matches against the ClawHub catalog, picks the top 1–3 skills the user does not already have installed, and posts the recommendation with one-click `openclaw skill install <slug>` commands. Net effect: surfacing useful skills without the user knowing to look.
+
+**File paths (current).**
+- `~/.openclaw/skills/skill-for-you/SKILL.md` (to-create)
+- `~/.openclaw/skills/skill-for-you/scripts/profile-day.py` (to-create — builds an embedding profile of yesterday)
+- `~/.openclaw/skills/skill-for-you/scripts/match-clawhub.py` (to-create — matches profile against ClawHub catalog)
+- `~/.openclaw/workspace/skill-for-you/profile-YYYY-MM-DD.json` (output)
+- `~/.openclaw/workspace/skill-for-you/recommendations-YYYY-MM-DD.json` (output)
+- `~/.openclaw/workspace/skill-for-you/installed.json` (running list — what the user has already installed)
+
+**Features.**
+1. **session-profile** — concatenates yesterday’s Claude Code transcript bullets, recent zsh history (last 200 lines, redacted), recent git diffs across `~/anicca-project` and `~/dev`; embeds with a small model.
+2. **clawhub-fetch** — pulls the ClawHub catalog (`https://clawhub.dev/api/skills`) and embeds each skill’s description.
+3. **rank** — cosine-similarity rank, exclude installed.
+4. **draft** — writes a 3-sentence pitch per recommendation.
+5. **post** — posts to Slack #metrics: “3 skills you’d like today: A, B, C — install with `openclaw skill install A`”.
+6. **install-feedback** — if the user runs `openclaw skill install <slug>`, the skill-onboarder hook adds the slug to `installed.json` so we never re-recommend it.
+7. **weekly-summary** — Sunday 09:00 JST: posts a thread of the week’s top recommendations (helpful when the daily ones get lost in the channel).
+
+**Crons.**
+
+| cron expr | tz | label | what it does |
+|-----------|----|-------|-------------|
+| `0 10 * * *` | Asia/Tokyo | skill-for-you-daily | profile yesterday + post 3 recs |
+| `0 9 * * 0` | Asia/Tokyo | skill-for-you-weekly | Sunday weekly thread |
+
+**Setup wizard.**
+1. ClawHub catalog URL. Default: `https://clawhub.dev/api/skills`. Persisted to: `~/.openclaw/state/anicca.json` → `skill_for_you.catalog_url`.
+2. Embedding model. Default: `text-embedding-3-small`. Persisted to: `~/.openclaw/state/anicca.json` → `skill_for_you.embed_model`.
+3. Recommend N per day. Default: `3`. Persisted to: `~/.openclaw/state/anicca.json` → `skill_for_you.daily_n`.
+4. Sources to include in profile. Default: `claude_transcripts,zsh_history,git_diff,calendar`. Persisted to: `~/.openclaw/state/anicca.json` → `skill_for_you.sources`.
+5. Redaction rules path. Default: `~/.openclaw/skills/skill-for-you/redact.yaml`. Persisted to: `~/.openclaw/state/anicca.json` → `skill_for_you.redact_path`.
+
+**Required env / secrets.**
+- `OPENAI_API_KEY` (for embedding the profile and the catalog)
+- `SLACK_BOT_TOKEN`
+- (optional) `GOOGLE_CALENDAR_TOKEN` if calendar events are included
+
+**External APIs / tools.**
+- ClawHub catalog endpoint (auth: none for read).
+- OpenAI Embeddings API (auth: API key; rate limit per OpenAI tier).
+- Slack Web API.
+
+**Open-source release plan.**
+- Repo slug: `github.com/Daisuke134/skill-for-you`
+- Public name: `Skill For You`
+- Tagline: a daily ClawHub skill rec, picked from what you actually did yesterday.
+- README.md outline:
+  - the daily loop (profile → match → rec)
+  - install + redaction config
+  - how to add a new source (pomodoro app, time-tracker, etc.)
+  - what gets sent to OpenAI for embedding (and how to keep PII out)
+  - example posts
+- Launch tweet: `Skill For You ships open. It reads what you did yesterday, embeds it, matches against the ClawHub catalog, and DMs you the 3 skills you’d benefit from today. MIT. <REPO_URL>`
+- Why ship now / why hold: GREENFIELD — ship after MVP works internally for Dais for ~30 days, including the redaction rules. Privacy is the concern; we need to be sure the embedding payload never leaks secrets.
+
+**Risks / known gaps.**
+- Privacy of the profile is the dominant risk. Redaction rules must filter env files, secrets, customer PII, and unreleased product names before embedding leaves the box.
+- ClawHub catalog API doesn’t formally exist yet — coordinate with the ClawHub team to confirm the endpoint.
+- Recommendations get noisy fast — daily cap and a “mute for 7 days” reaction are required for v1.
+
+---
+
+### 7. donation
+
+**Status.** GREENFIELD — there is no monthly donation cron. Stripe Connect transfers exist as a primitive but the skill orchestrating them does not.
+
+**What it brings.** On the 1st of every month, calculates last month’s revenue, computes 1% (configurable), splits it across a list of charities (configurable), executes the transfers via Stripe, and posts a public receipt to X with the amount and recipients. Earned trust is irreversible — public recurring proof of giving raises the customer-trust ceiling and is itself a marketing asset.
+
+**File paths (current).**
+- `~/.openclaw/skills/donation/SKILL.md` (to-create)
+- `~/.openclaw/skills/donation/scripts/compute-revenue.py` (to-create)
+- `~/.openclaw/skills/donation/scripts/transfer.py` (to-create)
+- `~/.openclaw/skills/donation/recipients.json` (input — list of charity Stripe Connect account IDs and weights)
+- `~/.openclaw/workspace/donation/run-YYYY-MM.json` (output — month run record)
+- `~/.openclaw/workspace/donation/receipts/YYYY-MM.pdf` (output — public PDF receipt)
+
+**Features.**
+1. **revenue-pull** — Stripe `Charges.list` and `Refunds.list` for the previous calendar month; nets out refunds, adjusts for fees; produces gross + net.
+2. **percent-compute** — computes `donation_amount = net * donation_percentage` (default 1%).
+3. **split** — splits the donation across `recipients.json` according to weights.
+4. **transfer** — Stripe `transfers.create` for each recipient (Stripe Connect destination account); waits for `succeeded`.
+5. **receipt** — generates a PDF receipt with date, gross, net, donation amount, per-recipient breakdown, transaction IDs.
+6. **public-post** — posts a tweet via Blotato: amount + list of charities + receipt URL.
+7. **annual-1099** — December run also produces a `run-YYYY.csv` rollup for tax filing.
+8. **manual-override** — `donation skip <YYYY-MM>` records a skip with a reason; useful for low-revenue months.
+
+**Crons.**
+
+| cron expr | tz | label | what it does |
+|-----------|----|-------|-------------|
+| `0 9 1 * *` | Asia/Tokyo | donation-monthly | 09:00 on the 1st: compute, transfer, receipt, post |
+| `0 12 1 1 *` | Asia/Tokyo | donation-annual-rollup | January 1st 12:00: produce annual rollup |
+
+**Setup wizard.**
+1. Donation percentage. Default: `1.0` (= 1%). Persisted to: `~/.openclaw/state/anicca.json` → `donation.percent`.
+2. Stripe API key (live secret). No default. Persisted to: `~/.openclaw/.env` → `STRIPE_API_KEY`.
+3. Stripe webhook endpoint secret. No default. Persisted to: `~/.openclaw/.env` → `STRIPE_WEBHOOK_SECRET`.
+4. Recipients file path. Default: `~/.openclaw/skills/donation/recipients.json`. Persisted to: `~/.openclaw/state/anicca.json` → `donation.recipients_path`.
+5. Public receipt host. Default: `https://anicca.dev/donations/`. Persisted to: `~/.openclaw/state/anicca.json` → `donation.receipt_host`.
+6. Blotato account for the public tweet. Default: `BLOTATO_ACCOUNT_ID_EN`. Persisted to: `~/.openclaw/state/anicca.json` → `donation.tweet_account`.
+7. Tax filing entity name. No default. Persisted to: `~/.openclaw/state/anicca.json` → `donation.tax_entity`.
+
+**Required env / secrets.**
+- `STRIPE_API_KEY` (live)
+- `STRIPE_WEBHOOK_SECRET`
+- `BLOTATO_API_KEY`, `BLOTATO_ACCOUNT_ID_EN`
+- `SLACK_BOT_TOKEN`
+
+**External APIs / tools.**
+- Stripe API: `https://api.stripe.com/v1/...` (auth: secret key; rate limit: 100 req/sec live).
+- Blotato API.
+- Slack Web API.
+- A PDF library (`reportlab` for Python).
+
+**Open-source release plan.**
+- Repo slug: `github.com/Daisuke134/donation`
+- Public name: `Tithe`
+- Tagline: monthly automated 1% donation + public receipt.
+- README.md outline:
+  - the loop (revenue → transfer → receipt → post)
+  - Stripe Connect setup for charities
+  - how to add or weight recipients
+  - the public receipt template
+  - example month runs
+- Launch tweet: `Tithe ships open. On the 1st of every month, it pulls last month’s revenue from Stripe, transfers 1% to your charities, generates a PDF receipt, and posts it publicly. Recurring proof you give back. MIT. <REPO_URL>`
+- Why ship now / why hold: GREENFIELD — ship after first month-end completes cleanly. Need a successful real run with non-zero revenue and a real PDF receipt before public.
+
+**Risks / known gaps.**
+- Stripe transfers to Connect destinations require the destination to be onboarded; the wizard must validate each recipient ID is `charges_enabled = true` before the run.
+- Tax implications differ by jurisdiction — the README must include a “consult your tax advisor” disclaimer; the spec doesn’t and isn’t legal advice.
+- Public posting amounts can be sensitive — provide a `--anonymize-amount` flag that posts only the recipient list and a “committed 1%” phrase.
+
+---
+
+### 8. NAIST
+
+**Status.** IN-DEV — partial. Existing `naistQmd/` and `naistHomework` directories suggest individual assignments are partially automated, but the full Roundcube → Gmail forwarding pipeline and the professor-side automation are not in place.
+
+**What it brings.** Full automation of the NAIST student/professor workload. Inbound: NAIST Roundcube (the school’s mail system) is forwarded to a personal Gmail; an Anicca cron reads Gmail via the Gmail-MCP, classifies each thread (announcement / homework / question / TA-task / professor-task), drafts the right action, surfaces it to the user for confirmation, sends. Outbound: homework gets drafted as Quarto/Markdown, compiled to PDF, uploaded back to Roundcube via Send-mail-as. Net: NAIST stops being a daily 90-minute attention drain.
+
+**File paths (current).**
+- `~/anicca-project/docs/naistQmd/` — existing Quarto sources for paper drafts (`paper.qmd`, `01_introduction.qmd`, etc.).
+- `~/anicca-project/docs/naistHomework/` — existing homework dir.
+- `~/.openclaw/skills/naist/SKILL.md` (to-create)
+- `~/.openclaw/skills/naist/scripts/triage.py` (to-create)
+- `~/.openclaw/skills/naist/scripts/draft-homework.py` (to-create)
+- `~/.openclaw/skills/naist/scripts/quarto-render.sh` (to-create — shells out to `quarto render`)
+- `~/.openclaw/skills/naist/scripts/send-as.py` (to-create — sends via Gmail Send-mail-as as the NAIST address)
+- `~/.openclaw/workspace/naist/inbox-YYYY-MM-DD.json` (output)
+- `~/.openclaw/workspace/naist/triaged-YYYY-MM-DD.json` (output)
+- `~/.openclaw/workspace/naist/drafts/<thread-id>.md` (output)
+- `~/.openclaw/workspace/naist/sent.json` (running ledger)
+
+**Features (Section C from the v2 research).**
+1. **roundcube-forward** — set up Roundcube to forward all incoming mail to the user’s personal Gmail. Roundcube auto-reply OFF; Gmail filter applies the `naist` label to forwarded mail.
+2. **gmail-mcp-pull** — every 15 min, the Gmail-MCP reads the `label:naist is:unread` query; returns thread bodies and attachments.
+3. **classify** — labels each thread as `announcement`, `homework`, `question`, `ta-task`, `professor-task`, `bureaucracy`.
+4. **draft per class** —
+   - `announcement`: summarise to 3 bullets, no reply.
+   - `homework`: load the homework spec into Quarto template, draft the answer, compile to PDF.
+   - `question`: draft a 1-paragraph reply in Japanese.
+   - `ta-task`: extract the deadline + the deliverable, file a task.
+   - `professor-task` (if Dais is a TA / lab assistant): draft an Issue in the lab’s GitHub repo or update a Notion page.
+   - `bureaucracy`: extract the form, fill the fillable fields from the user’s NAIST profile, surface for signature.
+5. **send-as-naist** — uses Gmail’s `Send mail as` setup so replies leave from `<student-id>@is.naist.jp` while authoring through Gmail. **Roundcube is not used for outbound at all.**
+6. **homework-render** — Quarto renders Markdown → PDF; the PDF is attached to the outbound reply.
+7. **slack-confirm** — every drafted reply hits Slack #metrics with a 👍 / ❌ react-to-confirm pattern (same as app-review).
+8. **professor-mode** — when in professor capacity (e.g., student question to Dais’s lab inbox), drafts a TA-style reply with citations to lecture notes (`paper.qmd`-style references).
+9. **deadline-watch** — extracts deadlines from inbox, writes them to a `deadlines.ics` file the user’s calendar subscribes to.
+
+**Removed in v2 (do not implement).**
+- Direct Roundcube IMAP integration. Removed in v2 in favour of the Gmail-MCP forwarding flow above. Anicca **never** authenticates against the NAIST IMAP server. All inbound flows through Gmail; all outbound uses Gmail Send-mail-as.
+- Roundcube auto-reply rules. Removed; replies are user-confirmed via Slack.
+
+**Crons.**
+
+| cron expr | tz | label | what it does |
+|-----------|----|-------|-------------|
+| `*/15 * * * *` | Asia/Tokyo | naist-pull | Gmail-MCP pull every 15 min |
+| `0 9 * * *` | Asia/Tokyo | naist-morning-rollup | digest yesterday’s NAIST traffic |
+| `0 18 * * 5` | Asia/Tokyo | naist-friday-rollup | weekly TA rollup |
+| `0 7 * * *` | Asia/Tokyo | naist-deadline-ical | rebuild deadlines.ics |
+
+**Setup wizard.**
+1. Personal Gmail address (forwarding target). No default. Persisted to: `~/.openclaw/state/anicca.json` → `naist.personal_gmail`.
+2. NAIST address (for Send-mail-as). No default. Persisted to: `~/.openclaw/state/anicca.json` → `naist.naist_email`.
+3. NAIST student ID. No default. Persisted to: `~/.openclaw/state/anicca.json` → `naist.student_id`.
+4. NAIST profile JSON (full name kanji + romaji, lab, advisor). Default: `~/.openclaw/skills/naist/profile.json`. Persisted to: `~/.openclaw/state/anicca.json` → `naist.profile_path`.
+5. Quarto template path. Default: `~/anicca-project/docs/naistQmd/paper.qmd`. Persisted to: `~/.openclaw/state/anicca.json` → `naist.quarto_template`.
+6. Calendar deadlines `.ics` output path. Default: `~/.openclaw/workspace/naist/deadlines.ics`. Persisted to: `~/.openclaw/state/anicca.json` → `naist.ics_path`.
+7. Default reply language. Default: `ja`. Persisted to: `~/.openclaw/state/anicca.json` → `naist.reply_language`.
+8. Auto-confirm threshold. Default: `low` (always confirm). Persisted to: `~/.openclaw/state/anicca.json` → `naist.auto_confirm`.
+
+**Required env / secrets.**
+- `GMAIL_OAUTH_TOKEN` (Gmail-MCP authentication for the personal Gmail account)
+- `GMAIL_SEND_AS_ALIAS` (must be configured in Gmail settings as a verified alias before the wizard runs)
+- `SLACK_BOT_TOKEN`
+
+**External APIs / tools.**
+- Gmail-MCP (auth: OAuth; rate limit per Gmail API: 250 quota units/user/sec).
+- Quarto (`quarto render` CLI).
+- Slack Web API.
+- (Optional) Notion API if professor-mode pushes lab updates to Notion.
+
+**Open-source release plan.**
+- Repo slug: `github.com/Daisuke134/naist-automation`
+- Public name: `NAIST Automation`
+- Tagline: a NAIST workload that runs without you.
+- README.md outline:
+  - the forwarding setup (Roundcube → Gmail → MCP)
+  - the Quarto template
+  - the Slack confirm flow
+  - professor mode
+  - what is NOT automated (and never will be — exam answers, anything graded individually)
+- Launch tweet: `NAIST Automation ships open after I graduate. Forwards Roundcube to Gmail, classifies every NAIST thread, drafts homework in Quarto, sends as my NAIST address. The professor side too — TA tasks, lab questions, deadlines into iCal. MIT. <REPO_URL>`
+- Why ship now / why hold: IN-DEV — hold private until graduation. Public release of a tool that automates university work while still enrolled is a bad look; release after the degree is conferred.
+
+**Risks / known gaps.**
+- Academic-integrity boundaries: the skill must NEVER auto-send graded work. The Slack-confirm gate is non-negotiable for `homework` class.
+- Gmail Send-mail-as requires a one-time verification email from the NAIST address — wizard must surface that step.
+- Forwarding rules are NAIST-specific; the open-source repo should ship a generic `university-automation` mode for other schools (Kyoto, Tokyo, …) with a config file for each school’s mail server.
+
+---
+
+### 9. auto-research
+
+**Status.** GREENFIELD — does not exist. The Quarto `paper.qmd` machinery exists for typesetting; the autonomous-scientist loop does not.
+
+**What it brings (Section B from v2).** An autonomous AI scientist. The skill executes the full research cycle without human intervention: pulls open-access literature on a configured topic, generates a hypothesis, designs an experiment, runs it (locally for code-only experiments; flagged for human approval for wet-lab or expensive compute), analyses results, drafts a paper, drafts the matching grant application, and submits to a configurable list (NSF, JST, Open Philanthropy, FLI). Net: Anicca becomes a research lab of one — operating 24/7, paper drafted in days instead of months.
+
+**File paths (current).**
+- `~/.openclaw/skills/auto-research/SKILL.md` (to-create)
+- `~/.openclaw/skills/auto-research/scripts/literature-pull.py` (to-create — pulls from arXiv, Semantic Scholar, OpenAlex)
+- `~/.openclaw/skills/auto-research/scripts/hypothesise.py` (to-create — generates hypotheses ranked by novelty + tractability)
+- `~/.openclaw/skills/auto-research/scripts/experiment-bfts.py` (to-create — Best-First Tree Search over experiments, Sakana-style)
+- `~/.openclaw/skills/auto-research/scripts/run-local.sh` (to-create — sandboxed experiment runner for code-only experiments)
+- `~/.openclaw/skills/auto-research/scripts/draft-paper.py` (to-create — produces Quarto paper with results from experiment)
+- `~/.openclaw/skills/auto-research/scripts/draft-grant.py` (to-create — produces grant application)
+- `~/.openclaw/workspace/auto-research/literature/YYYY-MM-DD.json` (output)
+- `~/.openclaw/workspace/auto-research/hypotheses/YYYY-MM-DD.json` (output)
+- `~/.openclaw/workspace/auto-research/experiments/<exp-id>/` (output — code, logs, results)
+- `~/.openclaw/workspace/auto-research/papers/<exp-id>.qmd` and `.pdf` (output)
+- `~/.openclaw/workspace/auto-research/grants/<call-id>.md` (output)
+- `~/.openclaw/workspace/auto-research/projects.yaml` (input — list of active research topics)
+
+**Features (Section B from v2).**
+1. **K-Dense pulls** — pulls open-access papers from arXiv (CS, q-bio), Semantic Scholar, OpenAlex; **skips** paywalled journals and pre-publication theses (no source available). Caches embeddings.
+2. **Sakana-style hypothesise** — generates a tree of candidate hypotheses, scores each on (novelty, tractability, expected information gain).
+3. **AutoResearchClaw modifications** — skill executes one Best-First Tree Search step per cron tick: expand the highest-scored hypothesis into 2–4 candidate experiments, score the experiments, pick the top one to run.
+4. **Karpathy pattern** — every research artifact (literature note, hypothesis, experiment, result) is committed to a per-experiment git branch with a structured commit message (`HYP: <hash>`, `EXP: <hash>`, `RES: <hash>`).
+5. **run-local sandboxing** — code-only experiments run in a Docker container with no network and a 30-min wall clock; resource ceilings configurable per project.
+6. **human-flag** — experiments tagged `wet-lab`, `expensive-compute`, or `external-data` post a Slack message and wait for a 👍 react before running.
+7. **draft-paper** — produces a Quarto manuscript with the experimental results figure inline; renders to PDF; uploads to a configured pre-print server.
+8. **draft-grant** — generates a grant application aligned to the configured funder’s template (`templates/nsf.md`, `templates/jst.md`, `templates/openphil.md`, `templates/fli.md`).
+9. **submit** — for funders with a public submission API, submits via API; otherwise drafts the email and surfaces it for the user to send manually.
+10. **5–8 week roadmap** — week 1: literature-pull working. Week 2: hypothesise working. Week 3: BFTS picks experiments. Week 4: run-local sandbox. Week 5: paper draft from results. Week 6: grant draft. Week 7: submit pipeline. Week 8: end-to-end run on one project.
+
+**Crons.**
+
+| cron expr | tz | label | what it does |
+|-----------|----|-------|-------------|
+| `0 1 * * *` | Asia/Tokyo | auto-research-literature | nightly literature pull |
+| `0 2 * * *` | Asia/Tokyo | auto-research-hypothesise | one BFTS hypothesise tick |
+| `0 3 * * *` | Asia/Tokyo | auto-research-experiment | run highest-scored experiment |
+| `0 4 * * *` | Asia/Tokyo | auto-research-write | draft / update papers |
+| `0 5 * * 1` | Asia/Tokyo | auto-research-grant | weekly grant-draft / submit pass |
+
+**Setup wizard.**
+1. Active projects file path. Default: `~/.openclaw/skills/auto-research/projects.yaml`. Persisted to: `~/.openclaw/state/anicca.json` → `auto_research.projects_path`.
+2. Compute budget (USD/month). Default: `100`. Persisted to: `~/.openclaw/state/anicca.json` → `auto_research.budget_usd`.
+3. Wall-clock per experiment. Default: `1800` seconds. Persisted to: `~/.openclaw/state/anicca.json` → `auto_research.experiment_walltime`.
+4. Pre-print server. Default: `arxiv` (cs.LG). Persisted to: `~/.openclaw/state/anicca.json` → `auto_research.preprint_server`.
+5. Funders to draft for. Default: `nsf,jst,openphil,fli`. Persisted to: `~/.openclaw/state/anicca.json` → `auto_research.funders`.
+6. arXiv API key (if any). No default. Persisted to: `~/.openclaw/.env` → `ARXIV_API_KEY`.
+7. Semantic Scholar API key. No default. Persisted to: `~/.openclaw/.env` → `S2_API_KEY`.
+8. OpenAlex email (for higher rate limits). Default: user’s email. Persisted to: `~/.openclaw/.env` → `OPENALEX_EMAIL`.
+9. Confirm-before-submit. Default: `yes`. Persisted to: `~/.openclaw/state/anicca.json` → `auto_research.submit_confirm`.
+
+**Required env / secrets.**
+- `S2_API_KEY` (Semantic Scholar)
+- `OPENALEX_EMAIL`
+- `OPENAI_API_KEY` (embeddings, drafting; or Anthropic key for drafting)
+- `ANTHROPIC_API_KEY`
+- `SLACK_BOT_TOKEN`
+- (optional) NSF / JST / OpenPhil / FLI submission credentials per funder
+
+**External APIs / tools.**
+- arXiv API: `https://export.arxiv.org/api/query` (auth: none; rate limit: 1 req/3s).
+- Semantic Scholar API: `https://api.semanticscholar.org/graph/v1/...` (auth: API key; rate limit: 100 req/5min).
+- OpenAlex API: `https://api.openalex.org/...` (auth: email-in-mailto; rate limit: 100 req/sec polite).
+- arXiv submission API (auth: per arXiv’s submitter program).
+- Quarto (`quarto render`).
+- Docker (for sandboxed experiments).
+- Slack Web API.
+
+**Open-source release plan.**
+- Repo slug: `github.com/Daisuke134/auto-research`
+- Public name: `Auto Research`
+- Tagline: a research lab of one, running 24/7.
+- README.md outline:
+  - the loop (literature → hypothesise → experiment → paper → grant)
+  - install + Docker sandbox setup
+  - the `projects.yaml` schema
+  - the BFTS scoring function (so users can tune their own)
+  - example end-to-end run (toy project)
+- Launch tweet: `Auto Research ships open. Pulls literature nightly, hypothesises, picks an experiment via best-first tree search, runs it sandboxed, drafts the paper in Quarto, drafts the matching grant. A research lab of one. MIT. <REPO_URL>`
+- Why ship now / why hold: GREENFIELD — ship after one paper drafted end-to-end. The credibility threshold for releasing an autonomous-scientist tool is “it produced a real artifact”.
+
+**Risks / known gaps.**
+- Hallucinated literature is the dominant risk. Cross-check every citation against OpenAlex IDs before any paper is drafted.
+- Wet-lab and expensive-compute experiments are explicitly human-flagged; verify the flag is enforced and not bypassed by an enthusiastic LLM.
+- Pre-print spam is a real risk if the loop runs uncontrolled. The `auto_research.submit_confirm` defaults to `yes`; do NOT auto-submit even when convinced the paper is good.
+- Reproducibility — experiments must be re-runnable from the committed branch, otherwise the paper is worthless.
+
+---
+
+### 10. politician
+
+**Status.** v0.1.0 scaffold shipped 2026-05-07 (read-only intel LIVE; action items DRY_RUN until incorporation + hiring complete). Legal shells (政治団体, DE LLC, 527, Super PAC) and LDA registration remain aspirational — see `~/.openclaw/skills/politician/docs/flip-to-live-checklist.md` for the bridge between agent-builds and user-bootstraps.
+
+**v0.1.0 shipped (2026-05-07).** SKILL.md + 11 mode scripts (monitor / bill_tracker / news / opensecrets / staffer_brief / reply_watch / lda / fec / jp_report / stripe_pac / fundraising_prep) + 4 lib files (api_clients, crm, bill_drafter, slack_format) + data files (pillars.json, target_legislators.json [13 names], coordination_blacklist.json, humans.yaml, crm.schema.sql, bill_corpus/README.md, 3 outreach templates) + 3 docs (incorporation-checklist, hiring-roster, flip-to-live-checklist) + 11 cron entries in jobs.json (4 LIVE intel, 7 DRY_RUN action). Smoke tests pass.
+
+**What it brings (Section A from v2).** An autonomous AI politician — a software-driven civic actor that operates within existing campaign-finance and lobbying law via an explicit set of legal shells and registered roles. The skill drafts bills, runs an LDA-registered lobbying operation, manages a staffer CRM, executes campaign-finance flows through a 527 / Super PAC, and integrates with civic-action APIs (Phone2Action, Quorum). It hires humans where the law requires a human-in-the-loop signatory (campaign treasurer, registered lobbyist, FEC filer). Net: a continuously-operating policy entrepreneur whose unit cost of bill-drafting and stakeholder outreach is near-zero.
+
+**File paths (current).**
+- `~/.openclaw/skills/politician/SKILL.md` (to-create)
+- `~/.openclaw/skills/politician/legal/政治団体-application.pdf` (to-create — Japan 政治団体 application template)
+- `~/.openclaw/skills/politician/legal/de-llc-articles.md` (to-create — Delaware LLC articles)
+- `~/.openclaw/skills/politician/legal/527-spec.md` (to-create — IRS 527 organizing document)
+- `~/.openclaw/skills/politician/legal/super-pac-spec.md` (to-create — independent-expenditure-only PAC structure)
+- `~/.openclaw/skills/politician/legal/lda-registration.md` (to-create — Lobbying Disclosure Act registration form template)
+- `~/.openclaw/skills/politician/scripts/draft-bill.py` (to-create)
+- `~/.openclaw/skills/politician/scripts/staffer-crm.py` (to-create)
+- `~/.openclaw/skills/politician/scripts/lda-quarterly.py` (to-create — auto-prepares quarterly LDA filings)
+- `~/.openclaw/skills/politician/scripts/527-quarterly.py` (to-create — auto-prepares 527/Super-PAC quarterly filings)
+- `~/.openclaw/skills/politician/scripts/civic-action.py` (to-create — Phone2Action / Quorum integrations)
+- `~/.openclaw/skills/politician/staffers.yaml` (input — names, roles, congressional district, last-contact)
+- `~/.openclaw/skills/politician/legislators.yaml` (input — receptive legislator list with positions)
+- `~/.openclaw/workspace/politician/bills/<topic>/<draft-n>.md` (output — bill drafts)
+- `~/.openclaw/workspace/politician/contacts/YYYY-MM-DD.json` (output — outreach log)
+- `~/.openclaw/workspace/politician/filings/<period>.pdf` (output — filings ready for human signature)
+- `~/.openclaw/workspace/politician/donations-ledger.json` (output — every PAC contribution in/out)
+
+**Features (Section A from v2).**
+
+1. **Legal shells.** A four-entity stack: a Japan 政治団体 (registered with 総務省 if national or with each prefecture if local), a Delaware LLC for the operating company, a U.S. 527 organization for issue-advocacy spending, and a Super PAC (independent-expenditure-only PAC) for federal campaign communications. The Delaware LLC owns the IP; the 527 and Super PAC are independent entities; the 政治団体 is the Japan-side analogue. None of these can coordinate with a candidate’s campaign.
+
+2. **Lobbying registration.** Register under the Lobbying Disclosure Act (LDA): 2 U.S.C. §1601 et seq.; thresholds — 20% of an employee’s time over a 3-month period AND $14,000+ income from a client AND ≥2 “lobbying contacts”. Quarterly LD-2 filings; semi-annual LD-203 contributions reports.
+
+3. **Receptive legislators list.** Maintain `legislators.yaml` of legislators known (from public records) to be receptive on the policy topic; per legislator, last-known-position citation, top 3 staffers with portfolios, last-contact date. Update from public sources (congress.gov, voting records, Quorum).
+
+4. **Bill drafting pipeline.** Topic → research brief → draft bill in Ramseyer-style legislative format → red-line vs. existing US Code → produce one-pager + section-by-section + CBO-style cost estimate; commit each draft to per-bill git branch.
+
+5. **PAC contribution flow.** Donations into the 527 / Super PAC are tracked in `donations-ledger.json`; outflows for independent expenditures are pre-cleared by counsel in the wizard configuration; every flow generates an FEC filing draft for human signature.
+
+6. **Civic-action APIs.** Phone2Action and Quorum integrations: when a bill draft needs grassroots support, the skill drafts the action page copy, drafts the call-to-action email, and (with human-in-the-loop sign-off) launches the campaign.
+
+7. **Staffer CRM.** `staffers.yaml` is the source of truth. The skill maintains last-contact dates, drafts outreach messages tailored to each staffer’s portfolio, and rate-limits contacts (no more than once per 30 days per staffer absent a good reason).
+
+8. **Human-instrument hiring.** The law requires named natural persons for: campaign treasurer (Super PAC), registered lobbyist (LDA), FEC compliance filer, signatory on Phone2Action campaigns, 政治団体 会計責任者 (treasurer in Japan). The skill maintains `humans.yaml` listing each role, the named person, their email, and the legal scope of their authorisation; auto-onboards new hires through the wizard.
+
+9. **Crons (Japan + US).** All cron times Asia/Tokyo unless noted; LDA quarterly times in America/New_York to align with FEC.
+
+**Crons.**
+
+| cron expr | tz | label | what it does |
+|-----------|----|-------|-------------|
+| `0 9 * * 1` | Asia/Tokyo | politician-weekly-bill-draft | weekly: pick the next bill from priorities, draft round N |
+| `0 10 * * 1` | Asia/Tokyo | politician-weekly-staffer-outreach | weekly: draft this week’s staffer messages |
+| `0 9 1 1,4,7,10 *` | America/New_York | politician-lda-quarterly | quarterly: prepare LD-2 filing |
+| `0 9 1 6,12 *` | America/New_York | politician-lda-203-semi | semi-annual: prepare LD-203 contributions |
+| `0 9 15 1,4,7,10 *` | America/New_York | politician-fec-quarterly | quarterly: prepare FEC quarterly report |
+| `0 8 * * *` | Asia/Tokyo | politician-legislator-watch | daily: pull congress.gov updates for tracked legislators |
+| `0 18 * * 5` | Asia/Tokyo | politician-friday-rollup | Friday rollup: bill progress + CRM heatmap |
+
+**Setup wizard.**
+1. Japan 政治団体 name. No default. Persisted to: `~/.openclaw/state/anicca.json` → `politician.jp_seijidantai_name`.
+2. Delaware LLC name. No default. Persisted to: `~/.openclaw/state/anicca.json` → `politician.de_llc_name`.
+3. 527 organization name. No default. Persisted to: `~/.openclaw/state/anicca.json` → `politician.org_527_name`.
+4. Super PAC name. No default. Persisted to: `~/.openclaw/state/anicca.json` → `politician.super_pac_name`.
+5. LDA-registered lobbyist (full legal name). No default. Persisted to: `~/.openclaw/skills/politician/humans.yaml`.
+6. Super PAC treasurer (full legal name). No default. Persisted to: `~/.openclaw/skills/politician/humans.yaml`.
+7. FEC filer (full legal name). No default. Persisted to: `~/.openclaw/skills/politician/humans.yaml`.
+8. 政治団体 会計責任者 (full kanji + romaji). No default. Persisted to: `~/.openclaw/skills/politician/humans.yaml`.
+9. Phone2Action API key. No default. Persisted to: `~/.openclaw/.env` → `PHONE2ACTION_API_KEY`.
+10. Quorum API key. No default. Persisted to: `~/.openclaw/.env` → `QUORUM_API_KEY`.
+11. ProPublica Congress API key. No default. Persisted to: `~/.openclaw/.env` → `PROPUBLICA_CONGRESS_API_KEY`.
+12. Stripe key for the 527/Super PAC ledger. No default. Persisted to: `~/.openclaw/.env` → `STRIPE_API_KEY_PAC`.
+13. Top 3 issue priorities. No default. Persisted to: `~/.openclaw/state/anicca.json` → `politician.priorities`.
+14. Receptive legislators initial list path. Default: `~/.openclaw/skills/politician/legislators.yaml`. Persisted to: `~/.openclaw/state/anicca.json` → `politician.legislators_path`.
+15. Counsel email (for pre-clearance of independent expenditures). No default. Persisted to: `~/.openclaw/state/anicca.json` → `politician.counsel_email`.
+
+**Required env / secrets.**
+- `PHONE2ACTION_API_KEY`
+- `QUORUM_API_KEY`
+- `PROPUBLICA_CONGRESS_API_KEY`
+- `STRIPE_API_KEY_PAC` (separate from the donation skill’s key)
+- `GMAIL_OAUTH_TOKEN` (for staffer outreach email)
+- `SLACK_BOT_TOKEN`
+
+**External APIs / tools.**
+- congress.gov + ProPublica Congress API (auth: API key; rate limit: 5000 req/day).
+- Phone2Action API (auth: API key; rate limit per partner contract).
+- Quorum API (auth: API key; rate limit per partner contract).
+- FEC EFS (Electronic Filing System; auth: filer credentials; submission via XML).
+- Senate / House LDA online filing portals (auth: filer credentials; submission via web form — until an API ships, the skill prepares the form, a human signs).
+- 総務省 政治資金収支報告書 web filing (auth: per prefecture; semi-manual).
+- Slack Web API.
+
+**Open-source release plan.**
+- Repo slug: `github.com/Daisuke134/anicca-politician`
+- Public name: `Anicca Politician`
+- Tagline: a continuously-operating policy entrepreneur, in software.
+- README.md outline:
+  - the four-entity stack (政治団体 / DE LLC / 527 / Super PAC) — diagram
+  - what is automated and what is human-only
+  - the LDA registration walkthrough
+  - the bill-drafting pipeline
+  - the legal disclaimers (this is not legal advice, hire a lawyer)
+- Launch tweet: `Anicca Politician ships open after the first bill is drafted end-to-end. A four-entity stack — 政治団体, Delaware LLC, 527, Super PAC — plus LDA-registered lobbying, bill drafting, staffer CRM, civic-action APIs. The unit cost of policy entrepreneurship goes to ~zero. MIT. <REPO_URL>`
+- Why ship now / why hold: GREENFIELD — ship after legal shells exist + first bill drafted. The credibility threshold for releasing this is the existence of registered entities and at least one drafted bill that survives counsel review.
+
+**Risks / known gaps.**
+- Coordination prohibitions: Super PACs cannot coordinate with candidate campaigns; the skill must enforce a hard wall against any contact with a candidate campaign’s staff. Add a coordination-check before any outreach.
+- Foreign-national prohibitions: the Japan 政治団体 and the U.S. PACs cannot exchange funds; the donation-ledger schema must enforce currency- and entity-domiciled invariants.
+- LDA filings are personal: the registered lobbyist is personally liable. Auto-prepared filings are signed by a human; the skill must never sign on behalf of the human.
+- The skill needs a real lawyer in the loop. The wizard captures `politician.counsel_email` for that reason.
+
+---
+
+## Roll-out sequence
+
+Ordered list of what to fix, build, or ship in what order. Days are rough (a “day” = an effective focused half-day).
+
+1. **daily-memory SQL rewrite.** 1 day. Dependency: `task_runs` table exists in `runs.sqlite` (build that first if not present — half-day). Rewrites `~/.openclaw/skills/daily-memory/SKILL.md` to read from SQL.
+2. **drop `openai-codex/gpt-5.5`.** 0.5 day. Dependency: none. One-line edit in `~/.openclaw/openclaw.json`; restart gateway.
+3. **Slack target template migration.** 0.5 day. Dependency: `~/.openclaw/state/anicca.json` exists with `slack.metrics_channel`. Run the python migration script in cross-cutting infra.
+4. **skill-onboarder meta-skill.** 1 day. Dependency: none. Establishes the wizard pattern every other skill inherits.
+5. **skill-for-you cron wire.** 1 day. Dependency: ClawHub catalog API confirmed; `OPENAI_API_KEY` set. MVP first — daily rec, no install-feedback yet.
+6. **app-review cron + draft pipeline.** 2 days. Dependency: ASC API key, GitHub token. Daily pull, classify, draft, Slack-confirm.
+7. **donation reuse for monthly run.** 2 days. Dependency: Stripe live key, recipients onboarded as Connect accounts, PDF receipt template. Run a $0 dry-run first.
+8. **NAIST forwarding wire-up.** 3 days. Dependency: Roundcube forward set up, Gmail Send-mail-as verified, Quarto template path confirmed. Phase 1: classify + draft. Phase 2: render homework PDF + send.
+9. **content-iteration completion (IG + YouTube arms + Bible compliance).** 5 days. Dependency: Blotato IG account ID, YouTube channel binding. Apply Bible-compliance fixes from `larry-bible-compliance-spec.md` to the open-source variant.
+10. **auto-research MVP.** 5–8 weeks per Section B roadmap. Week 1: literature pull. Week 2: hypothesise. Week 3: BFTS. Week 4: sandbox runner. Week 5: paper draft. Week 6: grant draft. Week 7: submit. Week 8: end-to-end run.
+11. **politician MVP.** 8–12 weeks. Phase 1: legal shells stood up (counsel-supervised). Phase 2: humans hired into named roles. Phase 3: bill-drafting pipeline working on one priority. Phase 4: LDA registration + first quarterly filing prepared. Phase 5: civic-action APIs wired.
+12. **tuning-skills.** Wire after `task_runs` has 30 nights of data (so the diagnostic has signal). 2 days for the diagnose pass, 1 day for the auto-repair recipes, 1 day for the Slack rollup and the tickets format.
+
+Critical path: items 1–4 are blockers for everything else (they fix the cross-cutting infra). After that, items 5–9 can run in parallel. Items 10 and 11 are independent of the rest and are the longest two efforts.
+
+## Open-source rollout sequence
+
+A 10-week launch calendar — one repo public per week. PROD goes first because it has telemetry; GREENFIELD goes last because it needs MVP output before public.
+
+| Week | Date (Sunday) | Repo | Status at launch |
+|------|---------------|------|-----------------|
+| 1 | 2026-05-10 | `build-in-public` | PROD — daily posts running |
+| 2 | 2026-05-17 | `content-iteration` | PROD — Bible compliance applied |
+| 3 | 2026-05-24 | `tuning-skills` | IN-DEV — 30 nights of repair-pass logs |
+| 4 | 2026-05-31 | `app-review` | IN-DEV — rate-limit hardened |
+| 5 | 2026-06-07 | `article-writer` | IN-DEV — 30 days of articles published |
+| 6 | 2026-06-14 | `donation` | GREENFIELD — first month-end ran clean |
+| 7 | 2026-06-21 | `skill-for-you` | GREENFIELD — privacy-redaction validated |
+| 8 | 2026-06-28 | `auto-research` | GREENFIELD — one paper drafted end-to-end |
+| 9 | 2026-09-06 | `naist-automation` | held until graduation date |
+| 10 | (gated) | `anicca-politician` | held until first bill drafted + counsel review |
+
+Spread launches across Sundays: best engagement on X for technical content. Each launch tweet goes out at 09:00 JST (= 19:00 EST Saturday) to catch both audiences.
+
+## Marketing playbook
+
+**Anicca’s narrative — the first AGI ending suffering.** Every public post threads the same story: an AGI is being built one skill at a time; the goal is the elimination of suffering; each open-source release is a brick in that road. The narrative is grand on purpose — it has to be, because the work is grand. Specific releases (a build-in-public bot, a donation skill) are concrete proof points within the larger arc, not isolated tools. The audience grows because they want to watch the arc.
+
+**Why open-sourcing each skill matters — composability + community.** OpenClaw is an open ecosystem; the Anicca skills are the reference set. Open-sourcing each one does three things: (1) **composability** — other agents on ClawHub can compose Anicca skills with their own; (2) **community** — every PR on a Daisuke134 repo is somebody contributing to the AGI thesis without us paying them; (3) **moat-by-velocity** — a closed thing is only ahead until the next funded clone catches up; an open thing with an active community accumulates contributions faster than any clone can keep up. Closed source is a slower path to the same place, with less help.
+
+**The recurring tweet pattern.** Every public release follows the same template: (1) **what** — one sentence on what the skill is, no jargon; (2) **how it works** — three bullets / one micro-diagram; (3) **repo link** — `<REPO_URL>`; (4) **screenshot or widget** — one image showing it in action. Caption ≤ 280 chars, no emoji, single repo URL. Replies follow up over the next 24 h with deeper threads (a “build log” thread on the technical side, a “why this matters” thread on the philosophy side).
+
+**Sample 4-week tweet schedule for the first batch.**
+
+- **Week 1, Sunday 09:00 JST** — `build-in-public` launch tweet (above). Monday: thread of how Postiz analytics close the loop. Tuesday: thread on the Day X counter. Wednesday: thread on the SessionEnd hook. Thursday: stat — “Day Y, X tweets shipped, Z replies, this is the bot writing this”. Friday: open-call-for-PRs tweet.
+- **Week 2, Sunday 09:00 JST** — `content-iteration` launch tweet. Monday: thread on the Reelfarm LOOP A scoring function. Tuesday: thread on Bible compliance (cleanly explaining the religion analogy). Wednesday: stat — “3 platforms, 2 slots, 1 brain”. Thursday: thread on FAL for image generation. Friday: open issue list invitation.
+- **Week 3, Sunday 09:00 JST** — `tuning-skills` launch tweet. Monday: post the first ever auto-repair from the wild (anonymised). Tuesday: ticket-format walkthrough. Wednesday: known-fix table tour. Thursday: thread on `runs.sqlite` schema. Friday: contributors honour-list.
+- **Week 4, Sunday 09:00 JST** — `app-review` launch tweet. Monday: thread on the 👍 react-to-confirm pattern. Tuesday: bug-to-issue auto-pipeline. Wednesday: language support. Thursday: weekly rollup screenshot. Friday: ASC rate-limit lesson learned.
+
+This rhythm — Sunday launch, daily depth-thread for the next 5 days, Friday call-for-PRs — gets every release ~60% of its lifetime engagement in the launch week, and seeds long-tail GitHub stars on Friday.
+
+---
+
+## Third-party skills
+
+Beyond the Anicca-authored skills above, OpenClaw also installs vetted skills from
+upstream open-source projects. These live in `~/.openclaw/skills/` alongside our own and
+are auto-discovered the same way. Full per-skill attribution is in
+`~/.openclaw/skills/_THIRD_PARTY_CREDITS.md`.
+
+### K-Dense AI — scientific-agent-skills (MIT, © 2025 K-Dense Inc.)
+
+Source: https://github.com/K-Dense-AI/scientific-agent-skills · Installed commit:
+`7a1d69cc3feb50b20f4b4bbe275316d39a5a7ba7` (2026-05-07).
+
+Fourteen K-Dense skills are installed and wired into the AutoResearchClaw pipeline:
+`paper-lookup`, `bgpt-paper-search`, `literature-review`, `parallel-web`, `database-lookup` for literature & search; `hypothesis-generation`, `scientific-writing`, `peer-review` for reasoning & writing; `matplotlib`, `seaborn`, `infographics`, `markdown-mermaid-writing` for tooling; and `pytorch-lightning`, `transformers` for the ML domain.
+
+Pipeline integration: stages 3 (literature pull), 4 (related work / PRISMA), 8
+(hypothesis), 16-19 (writeup + peer review), and figure generation invoke these by
+frontmatter `name`. See `~/.openclaw/workspace/AutoResearchClaw/INTEGRATION_LOG.md` for
+the per-stage diff and the Phase-1 → Phase-4 rollout schedule.
+
+The `document-skills` entry from the K-Dense roster was *not* installed: the upstream
+repo has no skill by that name, and the closest matches (`docx`, `pptx`, `pdf`, `xlsx`)
+collide with already-installed Anthropic skills. Decision deferred until intent is
+confirmed.
+
+---
+
+## Standard wizard pattern
+
+Every OpenClaw skill that has *any* persistent state — cron entry, env-flag gates, hired humans, account IDs, channel preferences — MUST include a `## Setup wizard` section in its `SKILL.md` and defer to the `skill-onboarder` meta-skill (`~/.openclaw/skills/skill-onboarder/`) for first-time setup. Skills that are purely on-demand and stateless may omit it.
+
+**Convention.** The wizard section is parsed by `skill-onboarder/scripts/run.sh`. Each question follows this exact shape so the regex extractor in the onboarder can pull it cleanly:
+
+```markdown
+## Setup wizard (N questions)
+
+The wizard is invoked by the `skill-onboarder` skill (`SKILL=<this-skill> bash ~/.openclaw/skills/skill-onboarder/scripts/run.sh`).
+
+1. **<short label>** — <prompt sentence>. Default: `<default>`. → `<dotted.state.path>`.
+2. **<short label>** — <prompt>. → `<dotted.state.path>`.
+…
+```
+
+- **Question count.** 3 minimum, 8 maximum. Below 3, the skill probably doesn't need onboarding; above 8, split across two skills or move to a manually-edited config file.
+- **State routing.** The dotted path after `→` resolves to `~/.openclaw/state/anicca.json` if it starts with the skill's own name (canonical), otherwise to `~/.openclaw/state/<skill>.json` (per-skill). Override the default with `metadata.state_file` in frontmatter.
+- **Secrets are never written to state JSON.** When a question would capture an API key, the onboarder writes a placeholder reminder to `~/.openclaw/state/<skill>.todo.md` instead.
+- **Cron proposals are always `enabled: false`.** Flipping to `true` is a separate explicit step.
+
+**Slack target resolution (required everywhere).** No skill may hardcode a Slack channel ID. The canonical resolver pattern in bash:
+
+```bash
+--target $(jq -r .slack.metrics_channel ~/.openclaw/state/anicca.json)
+```
+
+In Node:
+
+```js
+const { resolveTarget } = require("../auto-skill-creator/scripts/utils/slack");
+const channelId = resolveTarget();   // canonical: state file → SLACK_CHANNEL_ID env → fallback
+```
+
+This pattern is now baked into the canonical bash skill template at `~/.openclaw/skills/auto-skill-creator/templates/skill-template.sh` so every newly-scaffolded skill inherits it. The "Slack target missing" cron failure is fixed at the template layer, not by patching individual skills after the fact.
+
+**Reference implementations.**
+- `politician/SKILL.md` — 8-question wizard covering legal-shell status, registered humans, counsel email.
+- `skill-onboarder/SKILL.md` — the meta-skill itself (this is the parser).
+- `auto-skill-creator/scripts/utils/slack.js` — Node-side `resolveTarget()`.
+- `auto-skill-creator/templates/skill-template.sh` — bash template.
+
+---
+
+## Changelog
+
+- 2026-05-07 — v1 — Initial source-of-truth, 10 skills, full subsection set, roll-out + launch sequences, marketing playbook.
+- 2026-05-07 — v1.1 — Added Third-party skills section. Bulk-installed 14 K-Dense scientific-agent-skills (commit `7a1d69c`) into `~/.openclaw/skills/` and wired them into AutoResearchClaw stages 3, 4, 8, 16-19, and figure-gen. Phase 1 of the autonomous-AI-scientist rollout (Phases 2-4 = Sakana BFTSManager / writeup / Karpathy iterative refine).
+- 2026-05-07 — v1.2 — Added Standard wizard pattern section. Built `skill-onboarder` meta-skill at `~/.openclaw/skills/skill-onboarder/`. Patched `auto-skill-creator/scripts/utils/slack.js` to resolve Slack target from `~/.openclaw/state/anicca.json::slack.metrics_channel`. Added canonical bash template at `auto-skill-creator/templates/skill-template.sh`. Wired LIVE paths in `politician` v0.1.0 (staffer_brief → Resend, lda_filer / fec_reporter / jp_shushihokoku → browser-harness handoff, stripe_to_pac → Stripe transfers, reply_watcher / fundraising_prep → always-live read-only).
+- 2026-05-07 — v1.3 — Blotato → Postiz migration (Daisuke direction). Decision: "We aren't using Blotato anymore, only Postiz." Replaced Blotato API calls, env vars, and integration-ID references across the codebase with their Postiz equivalents (`POST https://api.postiz.com/public/v1/posts`, `Authorization: Bearer ${POSTIZ_API_KEY}`). Source-of-truth integration index lives at `~/.openclaw/state/postiz-integrations.json` (15 active integrations across X / TikTok / Instagram / YouTube). Migrated: `anicca-project/.cursor/plans/ios/1.6.0/sns-poster/blotato.py` → `postiz.py` (with `BlotatoClient = PostizClient` back-compat alias and a deprecation shim left in place); `anicca-project/openclaw-skills/{x-poster,tiktok-poster,trend-hunter}/SKILL.md` rewritten for Postiz; `~/.openclaw/skills/mission-worker/SKILL.md` updated to reference Postiz instead of Blotato; legacy script stubs (`anicca-project/scripts/{anicca-agent,cross-poster,x-agent,tiktok-poster}/...`) got deprecation banners + env-var renames (`BLOTATO_* → POSTIZ_*`). Quick-win bug fix: the old `BlotatoClient.post_to_x` defaulted unknown account keys to `ACCOUNTS["x_xg2grb"]` (a key that never existed), masking typos as `KeyError`; the new `PostizClient` raises `ValueError` with the unknown key, and the X default is now `x_aniccaxxx` resolved via handle. Also installed 3 third-party skills into `~/.openclaw/skills/`: `remotion-best-practices` (remotion-dev), `find-skills` (vercel-labs), `frontend-design` (anthropics) — credited in `_THIRD_PARTY_CREDITS.md`. Active cron in `jobs.json` was already on Postiz prior to this work; no cron schedule was modified.

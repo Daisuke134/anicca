@@ -1,0 +1,126 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "onboarding.age.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "How old are you?" }
+        },
+        "ja" : {
+          "stringUnit" : { "state" : "translated", "value" : "何歳ですか？" }
+        }
+      }
+    },
+    "onboarding.age.zone2preview" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Your Zone 2 HR: %d–%d bpm" }
+        },
+        "ja" : {
+          "stringUnit" : { "state" : "translated", "value" : "あなたのゾーン2 HR: %d〜%d bpm" }
+        }
+      }
+    },
+    "onboarding.explainer.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Why Zone 2 Works" }
+        },
+        "ja" : {
+          "stringUnit" : { "state" : "translated", "value" : "ゾーン2が効果的な理由" }
+        }
+      }
+    },
+    "onboarding.notification.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Stay Consistent" }
+        },
+        "ja" : {
+          "stringUnit" : { "state" : "translated", "value" : "習慣を継続しよう" }
+        }
+      }
+    },
+    "paywall.headline" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Unlock Your Zone 2 Potential" }
+        },
+        "ja" : {
+          "stringUnit" : { "state" : "translated", "value" : "ゾーン2の可能性を解放" }
+        }
+      }
+    },
+    "paywall.cta" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Start Training" }
+        },
+        "ja" : {
+          "stringUnit" : { "state" : "translated", "value" : "トレーニングを始める" }
+        }
+      }
+    },
+    "paywall.maybeLater" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Maybe Later" }
+        },
+        "ja" : {
+          "stringUnit" : { "state" : "translated", "value" : "あとで" }
+        }
+      }
+    },
+    "dashboard.weeklyGoal" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "This Week: %d/%d min" }
+        },
+        "ja" : {
+          "stringUnit" : { "state" : "translated", "value" : "今週: %d/%d分" }
+        }
+      }
+    },
+    "dashboard.streak" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "%d day streak" }
+        },
+        "ja" : {
+          "stringUnit" : { "state" : "translated", "value" : "%d日連続" }
+        }
+      }
+    },
+    "workout.zone2target" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Zone 2: %d–%d bpm" }
+        },
+        "ja" : {
+          "stringUnit" : { "state" : "translated", "value" : "ゾーン2: %d〜%d bpm" }
+        }
+      }
+    },
+    "notification.title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Zone 2 Time!" }
+        },
+        "ja" : {
+          "stringUnit" : { "state" : "translated", "value" : "ゾーン2の時間です！" }
+        }
+      }
+    },
+    "notification.body" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : { "state" : "translated", "value" : "Ready for your Zone 2 session today?" }
+        },
+        "ja" : {
+          "stringUnit" : { "state" : "translated", "value" : "今日のゾーン2セッションの準備はできましたか？" }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

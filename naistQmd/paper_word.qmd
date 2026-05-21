@@ -1,0 +1,90 @@
+---
+title: 'EEG・瞳孔径・行動指標を用いたマインドワンダリングの連続予測モデルの開発'
+shorttitle: 'マインドワンダリングの連続予測モデル'
+japanese-title: 'EEG・瞳孔径・行動指標を用いたマインドワンダリングの連続予測モデルの開発'
+english-title: 'Development of a Continuous Mind-Wandering Prediction Model Using EEG, Pupillometry, and Behavioral Indices'
+
+author:
+  - name: "成田　大祐"
+    corresponding: true
+    affiliations:
+      - name: "奈良先端科学技術大学院大学"
+        department: "脳・行動モデリング研究室"
+
+japanese-author: "成田　大祐"
+english-author: "Daisuke Narita"
+student-id: "2411218"
+date: today
+japanese-year: "令和7"
+english-year: "2025"
+submission-month: "2"
+submission-day: "XX"
+lab-name-japanese: "脳・行動モデリング研究室"
+lab-name-english: "Computational Brain and Behavior Modeling Lab"
+supervisor: "田中　沙織　教授"
+co-supervisor: "川島　一朔　研究員"
+
+author-note:
+  disclosures:
+    conflict-of-interest: The authors have no conflicts of interest to disclose.
+
+abstract: |
+  マインドワンダリング（MW）とは、注意が今取り組んでいる課題から離れ、無関係な内的思考へと向かう現象である。本研究では、EEG・瞳孔径・行動指標を用いて、MWを連続的に予測するモデルの開発を目的とした。49名の健常成人を対象に、gradual-onset continuous performance task（gradCPT）中の単一チャンネル耳内EEG、瞳孔径、行動応答を記録した。Optunaによるベイズ最適化を用いたSupport Vector Regression（SVR）により、自己報告プローブから算出された連続MWスコアを予測した。その結果、反応時間変動係数（RTCV）およびアイトラッキング特徴量がMW予測に最も強く寄与し、EEG特徴量の寄与は相対的に限定的であった。これらの知見は、行動指標と瞳孔指標がMW状態をリアルタイムで効果的に捉えうることを示唆し、将来的なニューロフィードバック介入への基盤を提供する。
+
+japanese-abstract: |
+  マインドワンダリング（MW）とは、注意が今取り組んでいる課題から離れ、無関係な内的思考へと向かう現象である。本研究では、EEG・瞳孔径・行動指標を用いて、MWを連続的に予測するモデルの開発を目的とした。49名の健常成人を対象に、gradual-onset continuous performance task（gradCPT）中の単一チャンネル耳内EEG、瞳孔径、行動応答を記録した。Optunaによるベイズ最適化を用いたSupport Vector Regression（SVR）により、自己報告プローブから算出された連続MWスコアを予測した。その結果、反応時間変動係数（RTCV）およびアイトラッキング特徴量がMW予測に最も強く寄与し、EEG特徴量の寄与は相対的に限定的であった。これらの知見は、行動指標と瞳孔指標がMW状態をリアルタイムで効果的に捉えうることを示唆し、将来的なニューロフィードバック介入への基盤を提供する。
+
+keywords: 
+  - マインドワンダリング
+  - EEG
+  - 瞳孔径
+  - 機械学習
+  - ニューロフィードバック
+
+keywords-japanese: 'マインドワンダリング, EEG, 瞳孔径, 機械学習, ニューロフィードバック'
+keywords-english: 'mind wandering, EEG, pupillometry, machine learning, neurofeedback'
+
+floatsintext: true
+link-citations: true
+suppress-title-page: false
+word-count: false
+numbered-lines: false
+first-page: 1
+mask: false
+meta-analysis: false
+draft-date: false
+lang: ja
+no-ampersand-parenthetical: false
+fontsize: 11pt
+
+crossref:
+  subref-labels: alpha A
+
+bibliography: 
+  - references/bibliography.bib
+csl: https://raw.githubusercontent.com/citation-style-language/styles/master/vancouver.csl
+
+format:
+  apaquarto-docx: 
+    toc: false
+---
+
+{{< include 01_introduction.qmd >}}
+
+{{< include 02_method.qmd >}}
+
+{{< include 03_result.qmd >}}
+
+{{< include 04_discussion.qmd >}}
+
+{{< include 05_conclusion.qmd >}}
+
+# 謝辞
+
+本研究の遂行にあたり、ご指導いただいた田中沙織教授、川島一朔研究員に深く感謝申し上げます。
+
+# 参考文献
+
+::: {#refs}
+:::
+

@@ -1,0 +1,182 @@
+---
+title: "太陽と月を利用した$\\pi$の低速計算アルゴリズムに関する理論的研究"
+japanese-title: "太陽と月を利用した$\\pi$の低速計算アルゴリズムに関する理論的研究"
+english-title: "Theoretical Studies on Low-Speed Calculation Algorithms of $\\pi$ \\\\Utilizing the Sun and the Moon"
+
+author: "田中　研太郎"
+japanese-author: "田中　研太郎"
+english-author: "Hanako Sentan"
+student-id: "123456"
+
+date: today
+japanese-year: "令和XX"
+english-year: "202X"
+submission-month: "2"
+submission-day: "20"
+
+lab-name-japanese: "脳・行動モデリング研究室"
+lab-name-english: "xxx Lab."
+supervisor: "田中　沙織　教授"
+co-supervisor: "あああああ　教授"
+third-member: "あああああ　准教授"
+third-position: "（副指導教員，情報科学領域）"
+# 追加する場合は、以下のコメントを解除してください
+#fourth-member: "あああああ　准教授"
+#fourth-position: "（△△大学）"
+#fifth-member: "あああああ　准教授"
+#fifth-position: "（△△大学）"
+#sixth-member: "あああああ　准教授"
+#sixth-position: "（△△大学）"
+
+keywords-japanese: '$\\pi$, 天文学, 数学, 計算機, アルゴリズム'
+keywords-english: '$\\pi$, astronomy, mathematics, computer, algorithm'
+
+japanese-abstract: |
+  人類がこの地上に現われて以来、$\\pi$の計算には多くの関心が払われてきた。
+
+  本論文では、太陽と月を利用して$\\pi$を低速に計算するための
+  画期的なアルゴリズムを与える。
+
+  ここには内容梗概を書く。ここには内容梗概を書く。ここには内容梗概を書く。
+  ここには内容梗概を書く。ここには内容梗概を書く。ここには内容梗概を書く。
+  ここには内容梗概を書く。ここには内容梗概を書く。ここには内容梗概を書く。
+  ここには内容梗概を書く。ここには内容梗概を書く。ここには内容梗概を書く。
+  ここには内容梗概を書く。ここには内容梗概を書く。ここには内容梗概を書く。
+
+  ここには内容梗概を書く。ここには内容梗概を書く。ここには内容梗概を書く。
+  ここには内容梗概を書く。ここには内容梗概を書く。ここには内容梗概を書く。
+  ここには内容梗概を書く。ここには内容梗概を書く。ここには内容梗概を書く。
+  ここには内容梗概を書く。ここには内容梗概を書く。ここには内容梗概を書く。
+  ここには内容梗概を書く。ここには内容梗概を書く。ここには内容梗概を書く。
+  
+english-abstract: |
+  The calculation of $\\pi$ has been paid much attention since human beings
+  appeared on the earth.
+
+  This thesis presents novel low-speed algorithms to calculate
+  $\\pi$ utilizing the sun and the moon.
+
+  This is a sample abstract. This is a sample abstract.
+  This is a sample abstract. This is a sample abstract.
+  This is a sample abstract. This is a sample abstract.
+  This is a sample abstract. This is a sample abstract.
+  This is a sample abstract. This is a sample abstract.
+
+  This is a sample abstract. This is a sample abstract.
+  This is a sample abstract. This is a sample abstract.
+  This is a sample abstract. This is a sample abstract.
+  This is a sample abstract. This is a sample abstract.
+  This is a sample abstract. This is a sample abstract.
+
+crossref:
+  sec-prefix: ""
+
+format:
+  naist-pdf: 
+    number-sections: true
+    number-depth: 3
+    include-in-header: template/fix-subsubsection.tex
+
+bibliography: 
+  - references/bibliography-jp.bib  # 日本語文献（手動管理）
+  - references/bibliography-en.bib  # 英語文献（Zotero自動エクスポート）
+suppress-bibliography: true
+---
+<!-- 荻島注：
+以下のコメントは，基本，国里先生が書かれたものをそのまま採用しています。
+今後修正していきます。
+-->
+
+<!-- 
+(1) このRmdテンプレートを使う際の注意事項
+・この項目は消さないでください。
+　変更すると正常に動かなくなります。
+
+・以下に色々と説明が書いてあるので，それにしたがって，書き足していってください。
+　作業が進んだら，上の「Knit」を押すと，Rmd→TeX→PDFの変換が自動的になされます。
+　このRmdテンプレートを用いた卒論執筆については，以下も参照ください。
+　https://kunisatolab.github.io/main/how-to-write-with-rstudio.html
+
+・この<!　 >で囲われた部分は，TeXやPDFには反映されないので，削除しなくても大丈夫です。
+　削除しても問題はないので，邪魔になったら削除してもいいです。
+
+
+(２) 卒論・修論全体の注意事項
+1.パラグラフライティングを心がけてください。
+　・１パラグラフで述べる主張は１つにしぼる。
+　・１パラグラフは，最初に主張，そしてその主張を裏付ける複数の文から構成します。
+　・段落を組み合わせることで,論理展開を行う(文を接続詞でつないで，論理展開しない）。
+　
+2.卒論や修論は，指導教員に向けて書くのではなく，
+　その領域に詳しくない人にもわかるように書いてください。
+　・前提となる知識を序文で説明する。
+　・概念や方法の説明を丁寧にする。
+　・略語を多用しない。
+
+3.主語を意識して文章を書く。
+　日本語は主語を省略することが多いので，主語が不明確だったり，
+　場合によっては主語がブレることがあります。以下を注意ください。
+　・今書いている文の主語は何かを意識してください。
+　・特に自分の考えた主張なのか，他の研究者の主張なのかは確実に分けてください。
+　・パラグラフや全体を通して，主語がぶれてないか注意ください
+　　（よくあるのは，他の研究者の主張を書いていて，途中から自分の主張が混ざるとかです）。
+-->
+
+<!-- 
+Rパッケージの読み込み
+卒論で使用するRパケージは，すべてこちらで読み込む（他のチャンクでlibaryを使わない）
+
+Rを使わない場合は、以下のRコードチャンクをコメントアウトしてください。
+Rを使う場合は、Rパッケージをインストールしてからコメントアウトを解除してください。
+-->
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+library(kableExtra)
+library(knitr)
+library(tidyverse)
+library(psych)
+library(gridExtra)
+library(jtools)
+library(ggsignif)
+library(effsize)
+# apaTablesは3.0以上を使うのでgithubからインストール
+# remotes::install_github("dstanley4/apaTables")
+library(apaTables)
+```
+
+{{< include 01_introduction.qmd >}}
+
+{{< include 02_method.qmd >}}
+
+{{< include 03_result.qmd >}}
+
+{{< include 04_discussion.qmd >}}
+
+# 要約
+
+<!--  要約は論文が完成したら，以下の４点を以下の順番にまとめて，要約を作成しましょう
+1背景と目的
+2方法
+3結果
+4考察・結論
+-->
+
+
+
+
+# 謝辞
+
+Thank you. Thank you.
+
+# 参考文献
+
+```{=latex}
+\printbibliography[heading=none]
+```
+
+```{=latex}
+\appendix
+```
+
+{{< include 05_supplementary.qmd >}}
+

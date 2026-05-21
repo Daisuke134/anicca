@@ -1,0 +1,8 @@
+// Release xcconfig — Zone2Daily
+// Source: Apple Technical Note — https://developer.apple.com/documentation/bundleresources/information_property_list
+// "Never hardcode secrets. Use xcconfig → Info.plist → Bundle.main.infoDictionary."
+// IMPORTANT: Set RC_API_KEY in Release.local.xcconfig (gitignored)
+#include? "Release.local.xcconfig"
+
+// Placeholder — real key lives in Release.local.xcconfig (gitignored)
+RC_API_KEY = $(RC_API_KEY)

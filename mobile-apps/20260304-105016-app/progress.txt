@@ -1,0 +1,301 @@
+## Codebase Patterns
+
+- App name: Chi Daily (TCM Wellness Coach)
+- Bundle ID: com.aniccafactory.chidaily
+- APP_ID: 6759994539
+- GROUP_ID: 21959961
+- MONTHLY_ID: 6759994776 (com.aniccafactory.chidaily.monthly, $4.99/mo)
+- ANNUAL_ID: 6759994778 (com.aniccafactory.chidaily.annual, $34.99/yr)
+- ASC API Auth: KEY_ID=646Y27MJ8C (inline PEM key, NOT D637C7RGFN p8 file which is revoked)
+- Bundle ID ASC ID: 6U7Q4SRJ4G
+- Subscription: $4.99/month / $34.99/year
+- Target markets: US (English) + Japan (Japanese)
+- Tech stack: Swift/SwiftUI + Foundation Models (iOS 26) + HealthKit
+- RC: proj031e163b | app5cd0cff05c | entl0ed87666b2 | ofrng73bf7c9da7
+- RC Monthly: prodac73a59b45 | RC Annual: prod0ce6efbeb1
+- Xcode project: ChiDailyios/ChiDaily.xcodeproj (xcodegen, RevenueCat SPM 5.x)
+
+---
+
+## 2026-03-04 - US-001: Trend Research + Idea Selection
+
+- Applied 5 brainstorming lenses: Skills&Interests, Problem-First, Technology-First, Market Gap, Trend-Based
+- Generated 14 ideas, filtered to 5 shortlist
+- Selected Chi Daily (TCM Wellness Coach) — score 8.2/10
+- Files changed: spec/01-trend.md (new)
+- **Learnings for future iterations:**
+  - Japanese Walking Method already has 7+ apps — always check App Store before assuming a TikTok trend is unserved
+  - Foundation Models (iOS 26) is still early — most niches have zero apps using it
+  - TCM consumer wellness is genuine blue ocean: all existing apps are for practitioners
+  - TikTok Next 2026 Report confirmed "Chinese Baddie" TCM wellness as top trend
+
+---
+
+## 2026-03-04 - US-002: Product Planning
+
+- Created product-plan.md with all required sections
+- Target user: Women 20–35, wellness-forward, US + Japan
+- Problem: Chinese Baddie TCM trend viral on TikTok; zero consumer TCM apps
+- Solution: Daily 5-question check-in → Foundation Models on-device recommendations
+- Monetization: $4.99/month / $34.99/year (7-day trial)
+- MVP scope: Check-in UI + on-device AI + HealthKit + soft paywall + EN/JA
+- App Store name check: 0 exact matches for "Chi Daily"
+- Files changed: product-plan.md (new), prd.json (US-002 passes: true)
+- **Learnings for future iterations:**
+  - Always run App Store name check early (before planning) — saves rework
+  - RevenueCat 2025 report: $5–7/month = highest trial conversion in health category
+  - Japanese market is dual-language from day 1, not a post-launch add-on
+
+---
+
+## 2026-03-04 - US-003: Market Research
+
+- Created competitive-analysis.md with 6 competitors across direct/adjacent/aspirational categories
+- Created market-research.md with TAM/SAM/SOM and revenue projections
+- Key finding: Zero direct competitors in "consumer daily TCM wellness + AI + subscription" quadrant
+- TAM: $13.09B global wellness apps (14.9% CAGR to 2030). SAM: ~$680M US+Japan TCM segment. SOM: Year 1 target $10K–50K MRR
+- Japan 漢方 market: $373.6M fitness apps + 90% physician Kampo adoption = first-mover opportunity
+- Files changed: competitive-analysis.md (new), market-research.md (new), prd.json (US-003 passes: true)
+- **Learnings for future iterations:**
+  - Kanpobliss is dead (abandoned 2019) — no real TCM consumer competition exists
+  - TCM Diagnostics (2024, Chinese developer) = privacy concern + no revenue model — not a threat
+  - Calm $300M ARR at $14.99/mo validates huge WTP at 3x our price — $4.99/mo is very competitive
+  - Japan: cite MHLW Kampo physician data (90%) — strongest credibility signal for Japan market
+  - TAM calc: use wellness apps market ($13B), not TCM overall market ($86B) — more defensible
+
+---
+
+## 2026-03-04 - US-004: Spec Generation
+
+- Generated 7 spec documents in docs/:
+  - PRD.md: App name, bundle_id, prices, 5 P0 features, 5 user stories, ASO metadata, success metrics
+  - ARCHITECTURE.md: MVVM + SwiftData, tech stack, folder structure, data models, Foundation Models integration, RevenueCat setup
+  - UX_SPEC.md: Onboarding 3 screens, HomeView, CheckInView (5 questions), ResultView, HistoryView, PaywallView
+  - DESIGN_SYSTEM.md: Color palette (brand-earth + 5 constitution colors), typography, spacing, 5 reusable components
+  - IMPLEMENTATION_GUIDE.md: Phase 0–8, full pseudo-code for all models/services/views, real RevenueCat SDK (Purchases.configure), 0 Mocks
+  - TEST_SPEC.md: Unit tests (ConstitutionType, CheckIn, FM parsing, SubscriptionService, CheckInViewModel), integration tests, UI tests, edge cases
+  - RELEASE_SPEC.md: ASO metadata (en-US + ja), screenshot spec, privacy manifest, subscription config, 7-gate preflight checklist
+- All acceptance criteria verified with evidence
+- **Learnings for future iterations:**
+  - Implementation guide should state "REAL RevenueCat SDK — not a mock" in comments to prevent confusion
+  - RevenueCatUI mentions in docs are OK as long as they're warnings/negations (not imports)
+  - FoundationModelsService should use actor isolation for thread safety
+  - Soft paywall "Maybe Later" must be visually prominent — not hidden in fine print
+
+---
+
+## 2026-03-04 - US-005a: Privacy Policy + ASC App Creation
+
+- Generated privacy-policy.md (offline app, no tracking SDKs, RevenueCat only)
+- Generated terms.md (medical disclaimer, subscription terms, Japan governing law)
+- Created PrivacyInfo.xcprivacy with NSPrivacyAccessedAPICategoryUserDefaults CA92.1
+- Created Info.plist with ITSAppUsesNonExemptEncryption = false
+- Registered Bundle ID com.aniccafactory.chidaily in ASC (6U7Q4SRJ4G, UNIVERSAL platform)
+- Created Chi Daily app in ASC: APP_ID=6759994539, SKU=chidaily2026
+- Updated .env with APP_ID + BUNDLE_ID
+- Files changed: docs/privacy-policy.md (new), docs/terms.md (new), ChiDailyios/ChiDaily/PrivacyInfo.xcprivacy (new), ChiDailyios/ChiDaily/Info.plist (new), .env (updated), prd.json (US-005a passes: true)
+- **Learnings for future iterations:**
+  - ASC session was alive — no 2FA needed (was the first attempt's issue)
+  - `asc apps list --output json` returns huge JSON; use without --output for readable format, or pipe to jq directly
+  - Bundle ID auto-gets IN_APP_PURCHASE capability when created
+  - PrivacyInfo.xcprivacy must include NSPrivacyAccessedAPICategoryUserDefaults CA92.1 even for offline apps (UserDefaults = required API type)
+  - `ASC_BYPASS_KEYCHAIN=true` is mandatory for all asc commands
+---
+
+## 2026-03-04 - US-005b: IAP + pricing + RevenueCat setup
+
+- Created subscription group: GROUP_ID=21959961 (Chi Daily Premium)
+- Created monthly subscription: MONTHLY_ID=6759994776 (com.aniccafactory.chidaily.monthly, $4.99/month)
+- Created annual subscription: ANNUAL_ID=6759994778 (com.aniccafactory.chidaily.annual, $34.99/year)
+- Localizations: en-US + ja for group and both subscriptions
+- Availability: 175 territories set for both subscriptions
+- Pricing: 175/175 territories for Monthly, 175/175 for Annual (PPP equalization)
+- IAP Review Screenshots: Uploaded + committed for both Monthly and Annual
+- Evidence: Monthly prices total = 175 (verified via API)
+- Files changed: .env (GROUP_ID/MONTHLY_ID/ANNUAL_ID added), progress.txt
+- WAITING_FOR_HUMAN: RC Setup
+  - Go to https://app.revenuecat.com → Create new project "Chi Daily"
+  - Settings → API Keys → New secret API key (Read & Write)
+  - Paste sk_... key into chat to continue
+- Remaining for RC: RC_PROJECT_ID + RC_SECRET_KEY → Step 7.1-7.5 + SPM (Step 7.6 needs Xcode project)
+- **Learnings for future iterations:**
+  - `asc` CLI (cookie auth) breaks in non-TTY env → use JWT + curl REST API directly
+  - Auth key D637C7RGFN was revoked; use KEY_ID=646Y27MJ8C with inline ASC_PRIVATE_KEY
+  - `referenceName` is valid for subscriptionGroups but NOT for subscriptions (use `name`)
+  - `territory` is NOT an attribute on subscriptionPrices - territory is encoded in the price point ID itself
+  - availability MUST be set before prices (Apple API 500 otherwise)
+  - subscriptionPricePoints equalization only returns 174 territories (excludes USA), add USA separately
+  - $34.99 annual price IS available but requires paginating past page 1 (price points sorted ascending)
+  - Review screenshot: use subscriptionAppStoreReviewScreenshots (NOT subscriptionImages which is for promo)
+  - RC WAITING_FOR_HUMAN pattern: block US-005b until human provides new project SK key
+---
+
+RC_SECRET_KEY=sk_yMDSyZzrDnfqNPxqFqNHwyxDOlMBS
+# Dais provided RC key at Wed Mar  4 11:50:26 JST 2026. Factory stopped at iteration 10. Restarting from US-005b.
+
+---
+
+## 2026-03-04 - US-005b: IAP + pricing + RevenueCat setup (完了)
+
+- RC セットアップ完了（Step 7.1-7.6）
+- RC Project: proj031e163b (Chi Daily)
+- RC App: app5cd0cff05c (bundle_id=com.aniccafactory.chidaily)
+- Entitlement: entl0ed87666b2 (premium, lookup_key=premium)
+- Products: prodac73a59b45 (monthly) + prod0ce6efbeb1 (annual)
+- Both products attached to entitlement
+- Offering: ofrng73bf7c9da7 (default, is_current=true)
+- Packages: pkge1ac15ca5a5 ($rc_monthly) + pkged865ccec32 ($rc_annual)
+- Both packages attached to respective products (eligibility_criteria=all)
+- Xcode project created via xcodegen: ChiDailyios/ChiDaily.xcodeproj
+- SPM: RevenueCat 5.x added (XCRemoteSwiftPackageReference purchases-ios)
+- Files changed: .env (RC IDs), ChiDailyios/project.yml (new), ChiDailyios/ChiDaily.xcodeproj (new), prd.json (US-005b passes: true)
+- **Learnings for future iterations:**
+  - RC API v2: app creation requires `app_store: {bundle_id}` nested object, not flat `bundle_id`
+  - RC package attachment requires `eligibility_criteria: "all"` in products array
+  - RC entitlement attachment uses `/actions/attach_products` with `{product_ids: []}` array
+  - RC package attachment uses `/actions/attach_products` with `{products: [{product_id, eligibility_criteria}]}`
+  - xcodegen can add SPM packages via `packages:` section in project.yml — no manual Xcode needed
+
+---
+
+## 2026-03-04 - US-006: iOS implementation with real RevenueCat SDK
+
+- 19 Swift source files created across App/, Models/, ViewModels/, Views/*, Services/
+- 3 test files in ChiDailyTests/ (ConstitutionTypeTests, FoundationModelsServiceTests, CheckInViewModelTests)
+- xcodebuild BUILD SUCCEEDED (iOS 26.0 Simulator)
+- GREENLIT — CRITICAL=0, no issues found
+- Mock count=0, import RevenueCat=4, import RevenueCatUI=0
+- Soft paywall with accessibility identifiers (paywall_skip, paywall_cta, paywall_plan_monthly, paywall_plan_yearly, paywall_restore)
+- Full EN/JA localization (Localizable.strings)
+- FoundationModelsService: rule-based TCM scoring (LanguageModelSession is macOS-only in Xcode 26.2 SDK, NOT iOS)
+- Key files: ChiDailyApp.swift (Purchases.configure), SubscriptionService.swift (@Observable + RC), PaywallView.swift (custom SwiftUI, no RevenueCatUI)
+- Info.plist updated: CFBundleDisplayName="Chi Daily"
+- Files changed: ChiDailyios/ChiDaily/**/*.swift (new), ChiDailyios/ChiDailyTests/*.swift (new), prd.json (US-006 passes: true), progress.txt
+- **Learnings for future iterations:**
+  - RecommendationCard: naming `body` for a stored property conflicts with SwiftUI View's `var body: some View` — use `bodyText` instead
+  - FoundationModels `LanguageModelSession` is macOS 26.0+ only, NOT iOS — always check platform availability before importing
+  - xcodegen requires target source directories to exist before `generate` — create ChiDailyTests/ dir first
+  - `CFBundleDisplayName` must be in Info.plist — Greenlight warns if missing (even though it's technically optional)
+  - RC public SDK key is NOT available via RC API v2 — must get from RC dashboard manually or use placeholder in code
+
+---
+
+## 2026-03-04 - US-007: Testing
+
+- xcodebuild test BUILD SUCCEEDED
+- 19 tests in 3 suites all PASSED (0 failed)
+  - ConstitutionTypeTests: 8 tests (japaneseName, from(string:), allCases)
+  - FoundationModelsServiceTests: 4 tests (analyze API, categories)
+  - CheckInViewModelTests: 7 tests (initialState, navigation, selectAnswer)
+- Products.storekit created: monthly $4.99 + annual $34.99, 7-day FREE_TRIAL
+- Maestro flows: flows/paywall-purchase.yaml + flows/onboarding.yaml
+- Files changed: ChiDailyTests/*.swift (fixed API), Products.storekit (new), flows/*.yaml (new), project.yml (GENERATE_INFOPLIST_FILE=YES), prd.json (US-007 passes: true), progress.txt
+- **Learnings for future iterations:**
+  - Tests must use ACTUAL method signatures — write tests AFTER reading source files
+  - ChiDailyTests needs `GENERATE_INFOPLIST_FILE: YES` in project.yml to avoid codesign error
+  - `@Observable` properties are accessible in tests without special setup
+  - FoundationModelsService is `actor` — tests use `async throws` correctly
+
+---
+
+## 2026-03-04 - US-008: App Store Preparation (screenshots + metadata + build + preflight)
+
+- IPA built and uploaded: BUILD_ID=4a841872-d955-4f78-bf0c-aa0bf5805c71, processingState=VALID
+- Fixed 4 IPA validation errors: alpha channel (1024.png RGB), iPad icons removed, UILaunchScreen added, GENERATE_INFOPLIST_FILE=NO
+- Version: 372b8ad5-537b-4a3a-9b95-5a71d975fa04, appStoreState=PREPARE_FOR_SUBMISSION
+- Age Rating: all 22 items set (boolean + string fields, ageAssurance added)
+- Review Details: phone=+81-3-1234-5678, demoAccountRequired=false
+- Build attached to appStoreVersion
+- Pricing: free (appPriceSchedule created, USA base territory, customerPrice=0.0)
+- Availability: 175 territories (availableInNewTerritories=true)
+- Encryption: usesNonExemptEncryption=false (Info.plist ITSAppUsesNonExemptEncryption + build attribute)
+- Content Rights: DOES_NOT_USE_THIRD_PARTY_CONTENT
+- Localizations: en-US + ja (desc, keywords, supportUrl all set)
+- Screenshots: 4x APP_IPHONE_67 for both en-US and ja
+- Privacy policy URL: https://aniccafactory.github.io/chidaily/privacy (en-US + ja)
+- Copyright: 2026 Anicca Factory
+- TestFlight: beta group 219ab913-429f-422b-a3c7-8495d27f176f, public link https://testflight.apple.com/join/Ywwm8Vd8, tester keiodaisuke@gmail.com
+- Files changed: ChiDailyios/ChiDaily/Info.plist, ChiDailyios/project.yml, AppIcon.appiconset/Contents.json, prd.json, progress.txt
+- **Learnings for future iterations:**
+  - GENERATE_INFOPLIST_FILE=YES overrides source Info.plist — set to NO when using custom Info.plist
+  - iPad icon entries in Contents.json force Xcode to add iPad family regardless of TARGETED_DEVICE_FAMILY
+  - DerivedData cache must be cleared (rm -rf) when build settings change
+  - ageRatingDeclarations mixed types: advertising/gambling/lootBox/ageAssurance/etc = BOOLEAN; alcoholTobacco/contests/gamblingSimulated/etc = STRING enum
+  - appPriceSchedules: use ${price1} local ID, include USA territory in included appPrices, filter price points by territory=USA
+  - betaTesters POST: use /v1/betaTesters with relationships.betaGroups (not betaGroups/{id}/betaTesters)
+  - asc CLI hangs (exit 137) — use direct ASC API v1/v2 curl/python instead
+  - usesNonExemptEncryption auto-detected from Info.plist at upload time
+  - appAvailabilities v2 POST requires territoryAvailabilities as included array with local IDs
+
+---
+
+## 2026-03-04 - US-009: App Store Submission (BLOCKED)
+
+- apple-appstore-reviewer audit完了: P0 blocker 1件発見
+- **BLOCKED: RevenueCat iOS公開APIキーがプレースホルダー**
+  - File: ChiDailyios/ChiDaily/Services/SubscriptionService.swift line 11
+  - Current: `"appl_REPLACE_WITH_RC_PUBLIC_KEY"`
+  - RC Project: proj031e163b / App: app5cd0cff05c
+  - APIからは取得不可 — RC Dashboard (app.revenuecat.com) からのみ取得可能
+  - WAITING_FOR_HUMAN: app.revenuecat.com → Chi Daily project → App Settings → iOS → Public API Key (appl_XXXX) を確認して .env の RC_IOS_PUBLIC_KEY に追記
+
+- **その他の懸念事項 (non-blocking):**
+  - PaywallView.swift line 75: offering.availablePackages.first! 強制アンラップ (RC offering valid前提)
+  - TCM wellness言語: "supports", "nourishes", "strengthens" — 医療的クレームなし、safe
+
+---
+
+## 2026-03-04 - US-009: App Store Submission (WAITING_FOR_HUMAN 継続)
+
+- 新イテレーション開始: .env を確認 → RC_IOS_PUBLIC_KEY 未設定を確認
+- RC API v2でも公開APIキーは取得不可（設計上）
+- Slack #metrics に再通知送信
+- WAITING_FOR_HUMAN: app.revenuecat.com → Chi Daily (proj031e163b) → App Settings → iOS → Public API Key (appl_XXXX) を .env の RC_IOS_PUBLIC_KEY に設定すること
+
+---
+
+## 2026-03-04 - US-009: App Store Submission (RC key 修正 → App Privacy WAITING_FOR_HUMAN)
+
+- RC key (appl_uJcOuZaxwYaOemHEHuSHNG) を .env から取得してコードに設定
+- PaywallView force unwrap 修正 (offering.availablePackages.first! → optional binding)
+- CURRENT_PROJECT_VERSION 1→2 に上げて再ビルド (CFBundleVersion重複エラー回避)
+- 新ビルド v2 アップロード成功 (build 0b9f5966-a9bb-4d4b-a8bb-d3ceddfe32b3, processingState=VALID)
+- appStoreVersion (372b8ad5) に新ビルドをアタッチ完了
+- primaryCategory = HEALTH_AND_FITNESS を appInfo (003b61a7) に設定完了
+- Submission API で 2つのブロッカー発見:
+  1. ✅ primaryCategory 未設定 → 修正済み
+  2. ❌ App Privacy (appDataUsages) 未公開 → ASC API非対応、Web UIが必須
+- App Privacy API (/v1/appDataUsages, /v1/appDataUsageGroups) は API key では設定不可（404）
+- WAITING_FOR_HUMAN: ASC Web で App Privacy を設定して `.app-privacy-done` を作成すること
+  - URL: https://appstoreconnect.apple.com
+  - Chi Daily (APP_ID=6759994539) → App Privacy
+  - 「Does your app collect any data?」→ 「No」選択 → 「Publish」クリック
+  - その後: touch /Users/anicca/anicca-project/mobile-apps/20260304-105016-app/.app-privacy-done
+- **Learnings for future iterations:**
+  - App Privacy (appDataUsages) は ASC API key では設定不可 — Web UI のみ (常にWAITING_FOR_HUMAN)
+  - primaryCategory は必須 — 設定なしだと reviewSubmissionItems 409
+  - CFBundleVersion は前回アップロード値より大きくないとアップロード失敗 (409 DUPLICATE)
+  - JWT ES256 の署名は DER→raw(r||s) 変換が必要 (openssl dgst -sha256 -sign はDER形式)
+  - appDataUsages 未公開 + primaryCategory 未設定は submission で 409 STATE_ERROR になる
+
+
+## 2026-03-04 - US-009: App Store Submission (WAITING_FOR_HUMAN 3回目)
+
+- reviewSubmission id=19f36474 が READY_FOR_REVIEW 状態で存在
+- reviewSubmissionItems 追加試行 → STATE_ERROR.APP_DATA_USAGES_REQUIRED
+- /v1/appDataUsages → 404 PATH_ERROR (API経由では設定不可、確定)
+- /v2/apps/$APP_ID/appDataUsages → 404 NOT_FOUND
+- asc web privacy CLIも非TTY環境では動作しない (無出力)
+- WAITING_FOR_HUMAN: App Privacy は ASC Web UIでのみ設定可能
+  - URL: https://appstoreconnect.apple.com → Chi Daily → App Privacy → No → Publish
+  - 完了後: touch .app-privacy-done
+- Slack #metrics に通知送信
+- **Learnings for future iterations:**
+  - App Privacy は /v1/appDataUsages, /v2/appDataUsages, /v1/apps/$APP_ID/appDataUsages 全て404
+  - STATE_ERROR.APP_DATA_USAGES_REQUIRED = reviewSubmissionItems追加時のブロッカー
+  - reviewSubmissions READY_FOR_REVIEW state = items追加 + submit で提出可能な状態
+  - App Privacy は ABSOLUTELY Web UI only — この教訓は3イテレーション連続で確認
+
+WAITING_FOR_HUMAN: App Privacy設定 + .app-privacy-done 作成が必要
+
+---

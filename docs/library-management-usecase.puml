@@ -1,0 +1,35 @@
+@startuml
+left to right direction
+actor User as user
+actor Librarian as librarian
+
+rectangle "図書館管理システム" {
+  usecase "ユーザー登録" as UC1
+  usecase "登録解除" as UC2
+  usecase "本を借りる" as UC3
+  usecase "本を返す" as UC4
+  usecase "本を購入する" as UC5
+  usecase "本を廃棄する" as UC6
+}
+
+user --> UC1
+user --> UC2
+user --> UC3
+user --> UC4
+librarian --> UC5
+librarian --> UC6
+
+UC3 ..> UC1 : <<include>>
+UC4 ..> UC1 : <<include>>
+
+@enduml
+
+
+
+
+
+
+
+
+
+

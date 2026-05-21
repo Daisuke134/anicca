@@ -1,0 +1,66 @@
+@startuml
+title 本を借りるシナリオ
+
+actor "利用者" as User
+participant "図書館" as Library
+participant "利用者" as UserObj
+participant "本" as Book
+participant "貸出記録" as LoanRecord
+
+User -> Library: 本を借りる(userId, bookId)
+activate Library
+
+Library -> UserObj: findUser(userId)
+activate UserObj
+UserObj --> Library: Userオブジェクト
+deactivate UserObj
+
+alt ユーザーが未登録
+    Library --> User: エラー: ユーザー登録が必要です
+    deactivate Library
+else ユーザーが登録済み
+    Library -> UserObj: isWithinBorrowLimit()
+    activate UserObj
+    UserObj -> UserObj: getCurrentBorrowCount()
+    UserObj --> Library: 貸出上限チェック結果
+    deactivate UserObj
+    
+    alt 貸出上限に達している
+        Library --> User: エラー: 貸出上限に達しています\n(現在の貸出冊数: X冊)
+        deactivate Library
+    else 貸出上限以内
+        Library -> Book: findAvailableBook(bookId)
+        activate Book
+        Book -> Book: isAvailable()
+        Book --> Library: Bookオブジェクトまたはnull
+        deactivate Book
+        
+        alt 本が存在しない、または貸出不可
+            Library --> User: エラー: この本は現在貸出できません
+            deactivate Library
+        else 本が貸出可能
+            Library -> LoanRecord: create(user, book)
+            activate LoanRecord
+            LoanRecord -> LoanRecord: 貸出日・返却期限を設定
+            LoanRecord --> Library: LoanRecordオブジェクト
+            deactivate LoanRecord
+            
+            Library -> Book: markAsBorrowed()
+            activate Book
+            Book -> Book: status = BORROWED
+            Book --> Library: 更新完了
+            deactivate Book
+            
+            Library -> UserObj: 貸出記録を追加
+            activate UserObj
+            UserObj --> Library: 更新完了
+            deactivate UserObj
+            
+            Library --> User: 貸出完了\n(返却期限: YYYY-MM-DD)
+        end
+    end
+end
+deactivate Library
+
+@enduml
+

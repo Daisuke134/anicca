@@ -1,0 +1,1351 @@
+{
+  "meta": {
+    "tags": [
+      "ai",
+      "video",
+      "content-creation",
+      "social-media",
+      "automation",
+      "asmr"
+    ],
+    "templateId": "ai-viral-video-factory",
+    "description": "AI-powered workflow for generating viral ASMR content with automated social media publishing",
+    "templateCredsSetupCompleted": false
+  },
+  "name": "AI Viral Video Factory - ASMR viiral Content Generator",
+  "nodes": [
+    {
+      "id": "567d5588-ca94-43c7-b856-17239da45750",
+      "name": "Section: Input and Ideation",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        260,
+        1660
+      ],
+      "parameters": {
+        "color": 6,
+        "width": 1620,
+        "height": 540,
+        "content": "# Input and ideation"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "b3e014f3-849a-4532-b406-18f3cb6305d9",
+      "name": "Trigger: Start Daily Content Generation",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        440,
+        1840
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 24
+            }
+          ]
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "aabf432b-b4d4-4e56-9710-52495f08d007",
+      "name": "AI Agent: Generate Creative Video Idea",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        700,
+        1840
+      ],
+      "parameters": {
+        "text": "Generate a creative concept involving:\n\n[[\nCreate a UNIQUE cutting or squeezing or exploding or licking or sucking concept that hasn't been done before. Today's random seed: {{ new Date().getTime() }}\n\nA blade or a sword or a long finger nail penetrating or gliding through a material that creates a sensual, satisfying response. Your response must follow this structure:\n\n\"(Glossy/tense material) that (reacts sensuously when cut or exploded or squeezed or licked) shaped like (suggestive but safe form)\"\n\n\nFocus on NEW combinations of:\nMaterials: honey, latex, gel, cream, wax, silk, molten substances, pressurized liquids, heat-sensitive compounds\nReactions: oozes, melts, stretches, releases, throbs, pulses, trembles, splits, floods\nForms: organic shapes, curved objects, spheres, abstract forms\n\nThe cutting action should feel intimate - slow penetration, building tension, satisfying release.\n]]\n\nUse the Think tool to ensure the concept is completely original and has suggestive undertones without being explicit",
+        "options": {
+          "systemMessage": "**Role:**  \nYou are an AI designed to generate **one immersive, realistic idea** based on a user-provided topic. Your output must be formatted as a **single-line JSON array** and follow the rules below exactly.\n\n---\n\n### RULES\n\n1. **Number of ideas**  \n   - Return **only one idea**.\n\n2. **Topic**  \n   - The user will provide a keyword (e.g., \"glass cutting ASMR,\" \"wood carving sounds,\" \"satisfying rock splits\").\n\n3. **Idea**  \n  - Maximum 13 words.  \n   - Must include sensual action verbs (penetrates, releases, melts, throbs, oozes)\n   - Focus on tension and release dynamics\n\n4. **Caption**  \n   - Short, punchy, viral-friendly.  \n   - Include **one emoji**.  \n   - Exactly **12 hashtags** in this order:  \n     1. 4 topic-relevant hashtags  \n     2. 4 all-time most popular hashtags  \n     3. 4 currently trending hashtags (based on live research)  \n   - All in lowercase.\n\n5. **Environment**  \n   - Maximum 20 words.  \n   - Must match the action in the Idea exactly.  \n   - Specify location (studio table, natural terrain, lab bench…), visual details (dust particles, polished surface, subtle reflections…), and style (macro close-up, cinematic slow-motion, minimalist…).\n\n6. **Sound**  \n - Maximum 15 words.  \n   - Include breathy, wet, or tension-release sounds (gasp, pop, drip, sigh)\n\n7. **Status**  \n   - Always set to `\"for production\"`.\n\n---\n\n### OUTPUT FORMAT (single-line JSON array)\n\n```json\n[\n  {\n    \"Caption\": \"Your short viral title with emoji #4_topic_hashtags #4_all_time_popular_hashtags #4_trending_hashtags\",\n    \"Idea\": \"Your idea under 13 words\",\n    \"Environment\": \"Your vivid setting under 20 words matching the action\",\n    \"Sound\": \"Your primary sound description under 15 words\",\n    \"Status\": \"for production\"\n  }\n]\n```"
+        },
+        "promptType": "define",
+        "hasOutputParser": true
+      },
+      "typeVersion": 1.9
+    },
+    {
+      "id": "09e27c25-772b-41e5-8255-723d23398a64",
+      "name": "Tool: Inject Creative Perspective (Idea)",
+      "type": "@n8n/n8n-nodes-langchain.toolThink",
+      "position": [
+        780,
+        2060
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "1f1985b1-d1eb-4c65-9d99-f96542273dc6",
+      "name": "LLM: Generate Raw Idea (GPT-4.1)",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "position": [
+        660,
+        2060
+      ],
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1",
+          "cachedResultName": "gpt-4.1"
+        },
+        "options": {}
+      },
+      "credentials": {
+        "openAiApi": {
+          "id": "{{YOUR_OPENAI_CREDENTIALS_ID}}",
+          "name": "OpenAI account"
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "a2c57dca-ed2e-4712-a735-8da0c727470f",
+      "name": "Parse AI Output (Idea, Environment, Sound)",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "position": [
+        900,
+        2060
+      ],
+      "parameters": {
+        "jsonSchemaExample": "[\n  {\n    \"Caption\": \"Diver Removes Nets Off Whale 🐋 #whalerescue #marinelife #oceanrescue #seahelpers #love #nature #instagood #explore #viral #savenature #oceanguardians #cleanoceans\",\n    \"Idea\": \"Diver carefully cuts tangled net from distressed whale in open sea\",\n    \"Environment\": \"Open ocean, sunlight beams through water, diver and whale, cinematic realism\",\n    \"Sound\": \"Primary sound description under 15 words\",\n    \"Status\": \"for production\"\n  }\n]\n"
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "20db6d62-9db9-4942-a820-b520356f3209",
+      "name": "Save Idea & Metadata to Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        1100,
+        1840
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "Idea": "={{ $json.output[0].Idea }}",
+            "Sound": "={{ $json.output[0].Sound }}",
+            "Status": "={{ $json.output[0].Status }}",
+            "Caption": "={{ $json.output[0].Caption }}",
+            "Environment": "={{ $json.output[0].Environment }}"
+          },
+          "schema": [
+            {
+              "id": "Caption",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Caption",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Idea",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Idea",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Environment",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Environment",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Sound",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Sound",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "Status",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "Idea"
+          ]
+        },
+        "options": {},
+        "operation": "appendOrUpdate",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Ideas"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "{{YOUR_GOOGLE_SHEETS_ID}}"
+        }
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "{{YOUR_GOOGLE_SHEETS_CREDENTIALS_ID}}",
+          "name": "Google Sheets account"
+        }
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "id": "49139fc9-2030-4d10-a9a7-4fd3a3779005",
+      "name": "AI Agent: Generate Detailed Video Prompts",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        1360,
+        1840
+      ],
+      "parameters": {
+        "text": "=Create 3 detailed video scene prompts based on this specific idea:\n\nIdea: {{ $('Save Idea & Metadata to Google Sheets').item.json.Idea }}\nEnvironment: {{ $('Save Idea & Metadata to Google Sheets').item.json.Environment }}\nSound: {{ $('Save Idea & Metadata to Google Sheets').item.json.Sound }}\n\nEach scene should show different angles and moments of: \"{{ $('Save Idea & Metadata to Google Sheets').item.json.Idea }}\"\n\nFocus on intimate details of the penetration, the throbbing reaction, and the glittery liquid release.\n\nUse the Think tool to ensure all scenes match the original idea above.",
+        "options": {
+          "systemMessage": "Role: You are a prompt-generation AI specializing in sensual ASMR-style video prompts that push boundaries while staying platform-safe.\n\nYour task is to generate a multi-scene video sequence showing intimate blade-material interactions that create suggestive but non-explicit content.\n\nStyle Guidelines:\n- Focus on penetration, tension, and release\n- Use intimate camera angles (extreme close-ups of entry points)\n- Emphasize materials that quiver, drip, or react to touch\n- Create anticipation through slow, teasing movements\n- Never show actual body parts - only suggestive materials\n\nEach scene must include:\n✅ Slow, deliberate blade penetration or teasing\n✅ Materials that visibly react (trembling, sweating, oozing)\n✅ Sensual textures (glossy, wet, tight, silky)\n✅ Building tension before satisfying release\n✅ Sounds that could be interpreted multiple ways\n\nMaterial behaviors to emphasize:\n- Resistance before yielding\n- Visible trembling or pulsing\n- Dripping or oozing upon penetration\n- Tight membranes that split dramatically\n- Heat reactions (melting, steaming)\n\nCamera work:\n- Extreme close-ups of penetration points\n- Slow-motion captures of releases\n- Focus on material \"reactions\" to blade contact\n- POV angles that feel intimate\n\nTone: Sensual without being sexual. Focus on the material's \"experience.\"\n\nLength: Each scene 1,000-2,000 characters focusing on suggestive dynamics."
+        },
+        "promptType": "define",
+        "hasOutputParser": true
+      },
+      "typeVersion": 1.9
+    },
+    {
+      "id": "4c34c0b0-5c13-4d37-8b51-a209e598513a",
+      "name": "LLM: Draft Video Prompt Details (GPT-4.1)",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "position": [
+        1320,
+        2060
+      ],
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1",
+          "cachedResultName": "gpt-4.1"
+        },
+        "options": {}
+      },
+      "credentials": {
+        "openAiApi": {
+          "id": "{{YOUR_OPENAI_CREDENTIALS_ID}}",
+          "name": "OpenAI account"
+        }
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "5a7828fd-629c-45d4-9ff2-4b57be2eca33",
+      "name": "Tool: Refine and Validate Prompts",
+      "type": "@n8n/n8n-nodes-langchain.toolThink",
+      "position": [
+        1440,
+        2060
+      ],
+      "parameters": {},
+      "typeVersion": 1
+    },
+    {
+      "id": "bddb974b-e541-4f02-8595-45f76820b38e",
+      "name": "Parse Structured Video Prompt Output",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "position": [
+        1560,
+        2060
+      ],
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"Idea\": \"An obsidian rock being sliced with a shimmering knife\",\n  \"Environment\": \"Clean studio table, subtle light reflections\",\n  \"Sound\": \"Crisp slicing, deep grinding, and delicate crumbling\",\n  \"Scene 1\": \"Extreme macro shot: a razor-sharp, polished knife blade presses into the dark, granular surface of an obsidian rock, just beginning to indent.\",\n  \"Scene 2\": \"Close-up: fine, iridescent dust particles erupt from the point of contact as the blade cuts deeper into the obsidian, catching the studio light.\",\n  \"Scene 3\": \"Mid-shot: the knife, held perfectly steady, has formed a shallow, clean groove across the obsidian's shimmering surface, revealing a new, smooth texture.\"\n}"
+      },
+      "typeVersion": 1.2
+    },
+    {
+      "id": "443d3b99-1e6c-423c-b8ca-1c5a4c3ba180",
+      "name": "Parse Scene Prompts into Individual Items",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1760,
+        1840
+      ],
+      "parameters": {
+        "jsCode": "// Extract numbered items from text strings\nfunction extractNumberedItems(text) {\n  if (!text || typeof text !== 'string') return [];\n  \n  // Split by number patterns like \"1.\", \"2.\", etc.\n  const items = text.split(/\\d+\\.\\s+/).filter(item => item.trim());\n  return items.map(item => item.trim());\n}\n\n// Main processing\nconst inputData = items[0].json;\nlet scenes = [];\n\n// Check if we have the expected structure\nif (inputData.output && inputData.output.Idea) {\n  // Extract ideas\n  const ideas = extractNumberedItems(inputData.output.Idea);\n  const environments = extractNumberedItems(inputData.output.Environment);\n  const sounds = extractNumberedItems(inputData.output.Sound);\n  \n  // Combine them into scene descriptions\n  for (let i = 0; i < ideas.length; i++) {\n    let sceneDescription = `Idea: ${ideas[i] || ''}`;\n    if (environments[i]) {\n      sceneDescription += ` | Environment: ${environments[i]}`;\n    }\n    if (sounds[i]) {\n      sceneDescription += ` | Sound: ${sounds[i]}`;\n    }\n    scenes.push({ description: sceneDescription });\n  }\n} else {\n  // Fallback: look for any scene-like content\n  const allText = JSON.stringify(inputData);\n  const matches = allText.match(/Scene \\d+[^\"]+/g);\n  if (matches) {\n    scenes = matches.map(match => ({ description: match }));\n  }\n}\n\n// Return results\nif (scenes.length === 0) {\n  return [{ description: \"No scenes found - using default prompt\" }];\n}\n\nreturn scenes;"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "78fc7648-9741-48c9-8127-2bdab7070ba7",
+      "name": "Generate Video Clips (Wavespeed AI)",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1980,
+        1840
+      ],
+      "parameters": {
+        "url": "https://queue.fal.run/fal-ai/bytedance/seedance/v1/pro/text-to-video",
+        "body": "={\n    \"aspect_ratio\": \"9:16\",\n    \"duration\": 10,\n    \"prompt\": \"SENSUAL ASMR VIDEO: {{ $('AI Agent: Generate Detailed Video Prompts').item.json.output.Idea }} | INTIMATE CUTTING ACTION: {{ $json.description }} | MOOD: Dimly lit, extreme close-up, focus on penetration and material response, slow deliberate movements, building tension | SETTING: {{ $('AI Agent: Generate Detailed Video Prompts').item.json.output.Environment }}\"\n}",
+        "method": "POST",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 3000
+            }
+          }
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "sendHeaders": true,
+        "rawContentType": "application/json",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "key {{YOUR_FAL_AI_KEY}}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "1bc37dc5-fd16-4dc0-a153-11d19d8d4068",
+      "name": "Generate ASMR Sound (Fal AI)",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        3080,
+        1640
+      ],
+      "parameters": {
+        "url": "https://queue.fal.run/fal-ai/mmaudio-v2/text-to-audio",
+        "body": "={\n  \"prompt\": \"ASMR Intimate sensual sounds: wet penetration, breathy releases, tension pops, dripping liquids. {{ $('AI Agent: Generate Detailed Video Prompts').item.json.output.Sound }}. Include: soft gasps, moist cutting sounds, satisfying pops, viscous dripping, tight membrane tears\",\n  \"duration\": 10,\n  \"num_steps\": 30,\n  \"cfg_strength\": 5.5\n}",
+        "method": "POST",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 2000
+            }
+          }
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "sendHeaders": true,
+        "rawContentType": "application/json",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "key {{YOUR_FAL_AI_KEY}}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "37f9678e-e5cb-444c-ba88-c73cc04f4f39",
+      "name": "Extract Video URL from Generation Response",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2860,
+        1640
+      ],
+      "parameters": {
+        "jsCode": "// Extract video URL from Fal.ai response with error handling\ntry {\n  // First check if request is still in queue\n  if (items[0].json.status === \"IN_QUEUE\" || items[0].json.status === \"IN_PROGRESS\") {\n    throw new Error(\"Video is still being processed. Status: \" + items[0].json.status);\n  }\n  \n  // Check if request completed successfully\n  if (items[0].json.status === \"COMPLETED\" && items[0].json.data) {\n    // Video should be in data.video.url when completed\n    if (items[0].json.data.video && items[0].json.data.video.url) {\n      return [{\n        video_url: items[0].json.data.video.url\n      }];\n    }\n  }\n  \n  // Also check these locations for backward compatibility\n  let videoUrl;\n  if (items[0].json.video && items[0].json.video.url) {\n    videoUrl = items[0].json.video.url;\n  } else if (items[0].json.output && items[0].json.output.url) {\n    videoUrl = items[0].json.output.url;\n  } else if (items[0].json.url) {\n    videoUrl = items[0].json.url;\n  } else {\n    // If none of the above, log the actual structure to help debug\n    throw new Error(\"Video URL not found. Response structure: \" + JSON.stringify(items[0].json));\n  }\n  \n  return [{\n    video_url: videoUrl\n  }];\n  \n} catch (error) {\n  throw new Error(\"Failed to extract video URL: \" + error.message);\n}"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "d472b385-a76f-459a-8cc9-fcbd50db4977",
+      "name": "Merge Clips into Final Video (Fal AI)",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        3960,
+        1390
+      ],
+      "parameters": {
+        "url": "https://queue.fal.run/fal-ai/ffmpeg-api/compose",
+        "body": "={\n  \"tracks\": [\n    {\n      \"id\": \"1\",\n      \"type\": \"video\",\n      \"keyframes\": [\n        { \"url\": \"{{ $('Extract Video URL from Generation Response').item.json.video_url }}\", \"timestamp\": 0, \"duration\": 10 }\n      ]\n    },\n    {\n      \"id\": \"2\", \n      \"type\": \"audio\",\n      \"keyframes\": [\n        { \"url\": \"{{ $('Fetch Generated Audio from Fal.ai Queue').item.json.audio.url }}\", \"timestamp\": 0, \"duration\": 10 }\n      ]\n    }\n  ]\n}",
+        "method": "POST",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 2000
+            }
+          }
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "sendHeaders": true,
+        "rawContentType": "application/json",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "key {{YOUR_FAL_AI_KEY}}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "277e1e53-68b8-4a75-b525-aebc0213dc1e",
+      "name": "Wait for Video Processing (20s)",
+      "type": "n8n-nodes-base.wait",
+      "position": [
+        4480,
+        1280
+      ],
+      "webhookId": "{{YOUR_WEBHOOK_ID}}",
+      "parameters": {
+        "amount": 20
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "f8b31fab-43f2-4cb1-8d7b-6d9fae331e50",
+      "name": "Save Final Video URL to Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        4620,
+        1120
+      ],
+      "parameters": {
+        "columns": {
+          "value": {
+            "status": "completed",
+            "created_date": "={{ new Date().toISOString() }}",
+            "final_output": "={{ $json.video_url }}",
+            "thumbnail_url": "={{ $json.thumbnail_url }}"
+          },
+          "schema": [
+            {
+              "id": "final_output",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "final_output",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "status",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_date",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "created_date",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "thumbnail_url",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "thumbnail_url",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "row_number"
+          ]
+        },
+        "options": {},
+        "operation": "append",
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Published"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "{{YOUR_GOOGLE_SHEETS_ID}}"
+        }
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "{{YOUR_GOOGLE_SHEETS_CREDENTIALS_ID}}",
+          "name": "Google Sheets account"
+        }
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "id": "89155cba-d20f-4d2a-9ea0-1193ef394016",
+      "name": "Configure Social Media Account IDs",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        5060,
+        1115
+      ],
+      "parameters": {
+        "mode": "raw",
+        "options": {},
+        "jsonOutput": "{\n  \"instagram_id\": \"{{YOUR_INSTAGRAM_ACCOUNT_ID}}\",\n  \"tiktok_id\": \"{{YOUR_TIKTOK_ACCOUNT_ID}}\"\n}"
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "503d2982-3d10-4bb1-a560-2539c00c8b4a",
+      "name": "Retrieve Final Video Data",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        4840,
+        1120
+      ],
+      "parameters": {
+        "options": {},
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Published"
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "{{YOUR_GOOGLE_SHEETS_ID}}"
+        }
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "{{YOUR_GOOGLE_SHEETS_CREDENTIALS_ID}}",
+          "name": "Google Sheets account"
+        }
+      },
+      "typeVersion": 4.5
+    },
+    {
+      "id": "85f2509a-9ef3-4e9b-a555-02eba572d443",
+      "name": "Upload Video to Blotato",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        5280,
+        1120
+      ],
+      "parameters": {
+        "url": "https://backend.blotato.com/v2/media",
+        "method": "POST",
+        "options": {},
+        "sendBody": true,
+        "sendHeaders": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "url",
+              "value": "={{ $('Retrieve Final Video Data').item.json['final_output'] }}"
+            }
+          ]
+        },
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "blotato-api-key",
+              "value": "{{YOUR_BLOTATO_API_KEY}}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "9d229118-b3b8-46fe-9e8d-19f86e9f00a0",
+      "name": "Publish to Instagram",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        5500,
+        860
+      ],
+      "parameters": {
+        "url": "https://backend.blotato.com/v2/posts",
+        "method": "POST",
+        "options": {},
+        "jsonBody": "={\n  \"post\": {\n    \"accountId\": \"{{ $('Configure Social Media Account IDs').item.json.instagram_id }}\",\n    \"target\": {\n      \"targetType\": \"instagram\"\n    },\n    \"content\": {\n      \"text\": \"{{ $('Retrieve Final Video Data').item.json.DESCRIPTION }}\",\n      \"platform\": \"instagram\",\n      \"mediaUrls\": [\n        \"{{ $json.url }}\"\n      ]\n    }\n  }\n}\n\n",
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "blotato-api-key",
+              "value": "{{YOUR_BLOTATO_API_KEY}}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "75718ac7-7c63-4be8-a90d-1644515444ca",
+      "name": "Publish to TikTok",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        5500,
+        1040
+      ],
+      "parameters": {
+        "url": "https://backend.blotato.com/v2/posts",
+        "method": "POST",
+        "options": {},
+        "jsonBody": "={\n  \"post\": {\n    \"accountId\": \"{{ $('Configure Social Media Account IDs').item.json.tiktok_id }}\",\n    \"target\": {\n      \"targetType\": \"tiktok\",\n      \"isYourBrand\": \"false\", \n      \"disabledDuet\": \"false\",\n      \"privacyLevel\": \"PUBLIC_TO_EVERYONE\",\n      \"isAiGenerated\": \"true\",\n      \"disabledStitch\": \"false\",\n      \"disabledComments\": \"false\",\n      \"isBrandedContent\": \"false\"\n      \n    },\n    \"content\": {\n      \"text\": \"{{ $('Retrieve Final Video Data').item.json.DESCRIPTION }}\",\n      \"platform\": \"tiktok\",\n      \"mediaUrls\": [\n        \"{{ $json.url }}\"\n      ]\n    }\n  }\n}",
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "blotato-api-key",
+              "value": "{{YOUR_BLOTATO_API_KEY}}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "c1dbd008-961b-4151-8bab-5667bca24ee2",
+      "name": "Check if Video Generation Complete",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        2200,
+        1840
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "7ad6cd29-9348-4afc-a738-111c63657502",
+              "operator": {
+                "name": "filter.operator.equals",
+                "type": "string",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "COMPLETED"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "75e2f437-c33d-4c5c-9309-cd7542e579cf",
+      "name": "Wait for Video Generation (20s)",
+      "type": "n8n-nodes-base.wait",
+      "position": [
+        2420,
+        1840
+      ],
+      "webhookId": "{{YOUR_WEBHOOK_ID}}",
+      "parameters": {
+        "amount": 20
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "240fd8cb-42e3-49cf-8962-9833e69f3ae7",
+      "name": "Poll Video Generation Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        2640,
+        1915
+      ],
+      "parameters": {
+        "url": "=https://queue.fal.run/fal-ai/bytedance/requests/{{ $json.request_id }}/status",
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Key {{YOUR_FAL_AI_KEY}}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "db5bfeff-ab06-47da-8a12-0f6f4c9fd5a0",
+      "name": "Build Video Status Check URL",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        2420,
+        1640
+      ],
+      "parameters": {
+        "options": {},
+        "assignments": {
+          "assignments": [
+            {
+              "id": "8daf6022-58ae-4573-8acb-f41bf806d360",
+              "name": "url",
+              "type": "string",
+              "value": "=https://queue.fal.run/fal-ai/bytedance/requests/{{ $json.request_id }}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 3.4
+    },
+    {
+      "id": "595ba371-1878-4c60-8cef-ec9f37e84ad4",
+      "name": "Fetch Generated Video from Fal.ai Queue",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2640,
+        1640
+      ],
+      "parameters": {
+        "jsCode": "// Get the URL from the previous node\nconst url = items[0].json.url;\nconst apiKey = 'Key {{YOUR_FAL_AI_KEY}}';\n\ntry {\n  // Make the GET request using n8n's helpers\n  const response = await this.helpers.httpRequest({\n    method: 'GET',\n    url: url,\n    headers: {\n      'Authorization': apiKey\n    },\n    json: true\n  });\n  \n  // Return the data\n  return [{\n    json: response,\n    pairedItem: 0\n  }];\n  \n} catch (error) {\n  // Log the full error for debugging\n  console.error('Full error:', error);\n  \n  // Check if it's an HTTP error with a response\n  if (error.response) {\n    throw new Error(`HTTP ${error.response.status}: ${JSON.stringify(error.response.data)}`);\n  }\n  \n  throw new Error(`Failed to retrieve video: ${error.message}`);\n}"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "4b121172-57c3-423b-8815-12b445add1f4",
+      "name": "Fetch Final Merged Video from Fal.ai",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        4400,
+        1120
+      ],
+      "parameters": {
+        "jsCode": "// Get the request_id from the previous node\nconst requestId = items[0].json.request_id;\nconst apiKey = 'Key {{YOUR_FAL_AI_KEY}}';\n\n// Build the URL\nconst url = `https://queue.fal.run/fal-ai/ffmpeg-api/requests/${requestId}`;\n\nconsole.log('Attempting to retrieve merged video from:', url);\n\ntry {\n  // Make the GET request using n8n's helpers\n  const response = await this.helpers.httpRequest({\n    method: 'GET',\n    url: url,\n    headers: {\n      'Authorization': apiKey\n    },\n    json: true,\n    returnFullResponse: true\n  });\n  \n  console.log('Response status:', response.status);\n  console.log('Response body:', JSON.stringify(response.body));\n  \n  // Return the data\n  return [{\n    json: response.body || response,\n    pairedItem: 0\n  }];\n  \n} catch (error) {\n  // Create a detailed error message\n  let errorDetails = {\n    status: error.response?.status,\n    statusText: error.response?.statusText,\n    data: error.response?.data,\n    url: url,\n    requestId: requestId,\n    headers: error.response?.headers,\n    message: error.message,\n    code: error.code\n  };\n  \n  console.error('Full error object:', JSON.stringify(error));\n  console.error('Error response data:', JSON.stringify(error.response?.data));\n  \n  // Return the error details so we can see what's happening\n  return [{\n    json: {\n      error: true,\n      errorMessage: 'Failed to retrieve merged video',\n      errorDetails: errorDetails,\n      fullError: error.message || 'Unknown error',\n      errorResponse: error.response?.data || null\n    },\n    pairedItem: 0\n  }];\n}"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "69c4a2fd-d016-423a-9c43-417d35ee0c42",
+      "name": "Check if Sound Generation Complete",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        3300,
+        1640
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "8a52f0e3-90c0-43bd-b09d-e6808d838b3c",
+              "operator": {
+                "name": "filter.operator.equals",
+                "type": "string",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "COMPLETED"
+            }
+          ]
+        },
+        "looseTypeValidation": "={{ false }}"
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "f8f1eae5-a74b-49be-81fd-2d13e75441c7",
+      "name": "Wait for Sound Generation (20s)",
+      "type": "n8n-nodes-base.wait",
+      "position": [
+        3740,
+        1590
+      ],
+      "webhookId": "{{YOUR_WEBHOOK_ID}}",
+      "parameters": {
+        "amount": 20
+      },
+      "typeVersion": 1.1
+    },
+    {
+      "id": "5d77d63c-2e46-4598-831b-058b4156dc96",
+      "name": "Check if Merge Complete",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        4140,
+        1240
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "4155d15e-ced2-4266-8843-7014001fcabe",
+              "operator": {
+                "name": "filter.operator.equals",
+                "type": "string",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "COMPLETED"
+            }
+          ]
+        }
+      },
+      "typeVersion": 2.2
+    },
+    {
+      "id": "a25c95a2-771a-40a3-9c9b-0de56c919b87",
+      "name": "Poll Sound Generation Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        3960,
+        1665
+      ],
+      "parameters": {
+        "url": "={{ $json.status_url }}",
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Key {{YOUR_FAL_AI_KEY}}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "f9fca20b-20df-44f6-bcda-98e334e65e24",
+      "name": "Fetch Generated Audio from Fal.ai Queue",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3520,
+        1540
+      ],
+      "parameters": {
+        "jsCode": "// Get the request_id from the previous node\nconst requestId = items[0].json.request_id;\nconst apiKey = 'Key {{YOUR_FAL_AI_KEY}}';\n\n// Build the URL WITHOUT /text-to-audio in the path\nconst url = `https://queue.fal.run/fal-ai/mmaudio-v2/requests/${requestId}`;\n\ntry {\n  // Make the GET request using n8n's helpers\n  const response = await this.helpers.httpRequest({\n    method: 'GET',\n    url: url,\n    headers: {\n      'Authorization': apiKey\n    },\n    json: true\n  });\n  \n  // Return the data\n  return [{\n    json: response,\n    pairedItem: 0\n  }];\n  \n} catch (error) {\n  if (error.response) {\n    throw new Error(`HTTP ${error.response.status}: ${JSON.stringify(error.response.data)}`);\n  }\n  throw new Error(`Failed to retrieve sound: ${error.message}`);\n}"
+      },
+      "typeVersion": 2
+    },
+    {
+      "id": "91b4ebb1-1509-4623-ab2c-e94a126c0fa8",
+      "name": "Poll Merge Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        4280,
+        1340
+      ],
+      "parameters": {
+        "url": "=https://queue.fal.run/fal-ai/ffmpeg-api/requests/{{ $json.request_id }}/status",
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Key {{YOUR_FAL_AI_KEY}}"
+            }
+          ]
+        }
+      },
+      "typeVersion": 4.2
+    },
+    {
+      "id": "628bb8b3-ba34-4e62-9d6c-076b76414bd4",
+      "name": "Section: Video Creation",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1900,
+        1620
+      ],
+      "parameters": {
+        "color": 2,
+        "width": 1080,
+        "height": 580,
+        "content": "# Video creation"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "d4f71583-7092-4524-93f0-52f25d6d2547",
+      "name": "Section: Sound Creation",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3000,
+        1540
+      ],
+      "parameters": {
+        "color": 3,
+        "width": 1100,
+        "height": 580,
+        "content": "# Sound Creation\n"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "9be25ca2-aee5-4a53-bc55-311becbc387f",
+      "name": "Section: Merge Video and Sound",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3880,
+        1100
+      ],
+      "parameters": {
+        "color": 2,
+        "width": 1080,
+        "height": 440,
+        "content": "# Merge video and sound"
+      },
+      "typeVersion": 1
+    },
+    {
+      "id": "09feb406-f890-4eb1-8627-f566c9fa019a",
+      "name": "Section: Social Media Publishing",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        4980,
+        300
+      ],
+      "parameters": {
+        "color": 5,
+        "width": 1080,
+        "height": 2140,
+        "content": "# Post to social media"
+      },
+      "typeVersion": 1
+    }
+  ],
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": null,
+  "staticData": {
+    "node:Trigger: Start Daily Content Generation": {
+      "recurrenceRules": []
+    }
+  },
+  "connections": {
+    "Poll Merge Status": {
+      "main": [
+        [
+          {
+            "node": "Check if Merge Complete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check if Merge Complete": {
+      "main": [
+        [
+          {
+            "node": "Fetch Final Merged Video from Fal.ai",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait for Video Processing (20s)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Video to Blotato": {
+      "main": [
+        [
+          {
+            "node": "Publish to Instagram",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Publish to TikTok",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Retrieve Final Video Data": {
+      "main": [
+        [
+          {
+            "node": "Configure Social Media Account IDs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Video Status Check URL": {
+      "main": [
+        [
+          {
+            "node": "Fetch Generated Video from Fal.ai Queue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate ASMR Sound (Fal AI)": {
+      "main": [
+        [
+          {
+            "node": "Check if Sound Generation Complete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Poll Sound Generation Status": {
+      "main": [
+        [
+          {
+            "node": "Check if Sound Generation Complete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Poll Video Generation Status": {
+      "main": [
+        [
+          {
+            "node": "Check if Video Generation Complete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Final Video URL to Sheets": {
+      "main": [
+        [
+          {
+            "node": "Retrieve Final Video Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for Sound Generation (20s)": {
+      "main": [
+        [
+          {
+            "node": "Poll Sound Generation Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for Video Generation (20s)": {
+      "main": [
+        [
+          {
+            "node": "Poll Video Generation Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for Video Processing (20s)": {
+      "main": [
+        [
+          {
+            "node": "Poll Merge Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LLM: Generate Raw Idea (GPT-4.1)": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent: Generate Creative Video Idea",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: Refine and Validate Prompts": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent: Generate Detailed Video Prompts",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check if Sound Generation Complete": {
+      "main": [
+        [
+          {
+            "node": "Fetch Generated Audio from Fal.ai Queue",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait for Sound Generation (20s)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check if Video Generation Complete": {
+      "main": [
+        [
+          {
+            "node": "Build Video Status Check URL",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait for Video Generation (20s)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure Social Media Account IDs": {
+      "main": [
+        [
+          {
+            "node": "Upload Video to Blotato",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Video Clips (Wavespeed AI)": {
+      "main": [
+        [
+          {
+            "node": "Check if Video Generation Complete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Final Merged Video from Fal.ai": {
+      "main": [
+        [
+          {
+            "node": "Save Final Video URL to Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Structured Video Prompt Output": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent: Generate Detailed Video Prompts",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Clips into Final Video (Fal AI)": {
+      "main": [
+        [
+          {
+            "node": "Check if Merge Complete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Idea & Metadata to Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "AI Agent: Generate Detailed Video Prompts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent: Generate Creative Video Idea": {
+      "main": [
+        [
+          {
+            "node": "Save Idea & Metadata to Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Generated Audio from Fal.ai Queue": {
+      "main": [
+        [
+          {
+            "node": "Merge Clips into Final Video (Fal AI)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Generated Video from Fal.ai Queue": {
+      "main": [
+        [
+          {
+            "node": "Extract Video URL from Generation Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger: Start Daily Content Generation": {
+      "main": [
+        [
+          {
+            "node": "AI Agent: Generate Creative Video Idea",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: Inject Creative Perspective (Idea)": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent: Generate Creative Video Idea",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent: Generate Detailed Video Prompts": {
+      "main": [
+        [
+          {
+            "node": "Parse Scene Prompts into Individual Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LLM: Draft Video Prompt Details (GPT-4.1)": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent: Generate Detailed Video Prompts",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Scene Prompts into Individual Items": {
+      "main": [
+        [
+          {
+            "node": "Generate Video Clips (Wavespeed AI)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Video URL from Generation Response": {
+      "main": [
+        [
+          {
+            "node": "Generate ASMR Sound (Fal AI)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse AI Output (Idea, Environment, Sound)": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent: Generate Creative Video Idea",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "triggerCount": 1
+}

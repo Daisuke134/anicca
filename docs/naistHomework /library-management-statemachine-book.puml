@@ -1,0 +1,52 @@
+@startuml
+title Bookオブジェクトのステートマシン図
+
+[*] --> 購入済み
+
+購入済み : entry / 図書館が購入\npurchase()
+購入済み : do / 登録処理\nstatus = PURCHASED
+
+購入済み --> 貸出可 : 登録完了\n[登録処理完了]
+
+貸出可 : entry / 貸出可能状態\nstatus = AVAILABLE
+貸出可 : do / 貸出待ち\nisAvailable() = true
+
+貸出可 --> 貸出中 : 貸出\nborrowBook()\n[利用者が登録済み\nかつ貸出上限以内]
+
+貸出中 : entry / 貸出記録作成\nstatus = BORROWED
+貸出中 : do / 貸出中\nLoanRecord作成済み
+
+貸出中 --> 貸出可 : 返却\nreturnBook()\n[期限内に返却]
+
+貸出可 --> 廃棄 : 廃棄\n[破損または\n一定期間経過]\ndiscard()\n[shouldBeDiscarded() = true]
+貸出中 --> 廃棄 : 廃棄\n[破損または\n一定期間経過]\ndiscard()\n[shouldBeDiscarded() = true]
+
+廃棄 : entry / 廃棄処理\nstatus = DISCARDED
+廃棄 : do / データ削除準備
+
+廃棄 --> [*] : 削除完了
+
+note right of 購入済み
+  図書館が1冊ずつ購入
+  購入後に登録処理
+end note
+
+note right of 貸出可
+  貸出可能な状態
+  複数の利用者が
+  順番に借りられる
+end note
+
+note right of 貸出中
+  1人の利用者が
+  借りている状態
+end note
+
+note right of 廃棄
+  破損または
+  一定期間利用されたら
+  廃棄される
+end note
+
+@enduml
+

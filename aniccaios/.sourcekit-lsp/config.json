@@ -1,0 +1,12 @@
+{
+  "server": "xcode-build-server",
+  "xcode-build-server": {
+    "workspace": "aniccaios.xcodeproj/project.xcworkspace",
+    "scheme": "aniccaios",
+    "destination": "generic/platform=iOS Simulator"
+  }
+}
+
+
+
+

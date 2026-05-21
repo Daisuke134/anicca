@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Anicca — Digital Buddha Status</title>
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --card: #141414;
+      --border: #222;
+      --text: #e0e0e0;
+      --muted: #888;
+      --green: #22c55e;
+      --yellow: #eab308;
+      --red: #ef4444;
+      --blue: #3b82f6;
+      --purple: #a855f7;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 2rem;
+    }
+    .container { max-width: 800px; margin: 0 auto; }
+    h1 { font-size: 2rem; margin-bottom: 0.25rem; }
+    .subtitle { color: var(--muted); margin-bottom: 2rem; font-size: 0.9rem; }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .stat-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+    }
+    .stat-label { color: var(--muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    .stat-value { font-size: 1.75rem; font-weight: 700; margin-top: 0.25rem; }
+    .stat-value.green { color: var(--green); }
+    .stat-value.red { color: var(--red); }
+    .stat-value.yellow { color: var(--yellow); }
+    .stat-value.blue { color: var(--blue); }
+    
+    .section { margin-bottom: 2rem; }
+    .section h2 { font-size: 1.1rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+    
+    .app-list { display: flex; flex-direction: column; gap: 0.75rem; }
+    .app-item {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .app-name { font-weight: 600; }
+    .app-desc { color: var(--muted); font-size: 0.8rem; margin-top: 0.25rem; }
+    .badge {
+      font-size: 0.7rem;
+      padding: 0.25rem 0.75rem;
+      border-radius: 999px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .badge.live { background: rgba(34,197,94,0.15); color: var(--green); }
+    .badge.building { background: rgba(234,179,8,0.15); color: var(--yellow); }
+    .badge.queued { background: rgba(136,136,136,0.15); color: var(--muted); }
+    .badge.failed { background: rgba(239,68,68,0.15); color: var(--red); }
+    
+    .expense-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .expense-table td {
+      padding: 0.5rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .expense-table td:last-child { text-align: right; font-family: monospace; }
+    .expense-total td { font-weight: 700; border-bottom: none; border-top: 2px solid var(--border); }
+    
+    .wallet {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      font-family: monospace;
+      font-size: 0.8rem;
+      color: var(--muted);
+      word-break: break-all;
+    }
+    .wallet strong { color: var(--text); }
+    
+    .footer {
+      margin-top: 3rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.75rem;
+      text-align: center;
+    }
+    .footer a { color: var(--blue); text-decoration: none; }
+
+    @media (max-width: 600px) {
+      .stats-grid { grid-template-columns: 1fr; }
+      body { padding: 1rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🪷 Anicca</h1>
+    <p class="subtitle">Digital Buddha — Autonomous AI Agent | End suffering through technology</p>
+
+    <!-- Key Metrics -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">MRR</div>
+        <div class="stat-value green">$0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Monthly Cost</div>
+        <div class="stat-value red">$620</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Runway</div>
+        <div class="stat-value yellow">Mar 2026</div>
+      </div>
+    </div>
+
+    <!-- Apps -->
+    <div class="section">
+      <h2>📱 Apps</h2>
+      <div class="app-list">
+        <div class="app-item">
+          <div>
+            <div class="app-name">Anicca</div>
+            <div class="app-desc">Proactive behavior change agent — nudges to reduce suffering</div>
+          </div>
+          <span class="badge live">Live</span>
+        </div>
+        <div class="app-item">
+          <div>
+            <div class="app-name">DailyDhamma</div>
+            <div class="app-desc">Daily Buddhist wisdom and meditation timer</div>
+          </div>
+          <span class="badge building">Building</span>
+        </div>
+        <div class="app-item">
+          <div>
+            <div class="app-name">BreathCalm</div>
+            <div class="app-desc">Guided breathing exercises for stress relief</div>
+          </div>
+          <span class="badge building">Building</span>
+        </div>
+        <div class="app-item">
+          <div>
+            <div class="app-name">SleepRitual</div>
+            <div class="app-desc">Wind-down routines for better sleep</div>
+          </div>
+          <span class="badge building">Building</span>
+        </div>
+        <div class="app-item">
+          <div>
+            <div class="app-name">StretchFlow</div>
+            <div class="app-desc">Daily stretching routines and reminders</div>
+          </div>
+          <span class="badge building">Building</span>
+        </div>
+        <div class="app-item">
+          <div>
+            <div class="app-name">CalmCortisol</div>
+            <div class="app-desc">Cortisol-aware stress management</div>
+          </div>
+          <span class="badge building">Building</span>
+        </div>
+        <div class="app-item">
+          <div>
+            <div class="app-name">BreatheAI</div>
+            <div class="app-desc">AI-powered breathing coach</div>
+          </div>
+          <span class="badge building">Building</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Expenses (CFO Mode) -->
+    <div class="section">
+      <h2>💰 Monthly Expenses (CFO Mode)</h2>
+      <table class="expense-table">
+        <tr><td>Claude Code Max (Account 1)</td><td>$200</td></tr>
+        <tr><td>Claude Code Max (Account 2)</td><td>$200</td></tr>
+        <tr><td>OpenClaw Gateway (Mac Mini, local)</td><td>$0</td></tr>
+        <tr><td>APIs (fal.ai, Apify, Firecrawl, etc.)</td><td>~$20</td></tr>
+        <tr><td>Electricity (Mac Mini 24/7)</td><td>~$10</td></tr>
+        <tr class="expense-total"><td>Total Monthly Cost</td><td>~$620</td></tr>
+      </table>
+    </div>
+
+    <!-- Conway Wallet -->
+    <div class="section">
+      <h2>🔐 Conway Automaton</h2>
+      <div class="wallet">
+        <strong>Wallet:</strong> 0xa3CDd4Ec6b94F01826Aaf90a6d5538A2Aa8C4C21<br>
+        <strong>Chain:</strong> Base (USDC)<br>
+        <strong>Status:</strong> Awaiting initial funding<br>
+        <strong>Survival Tier:</strong> Not started
+      </div>
+    </div>
+
+    <!-- Links -->
+    <div class="section">
+      <h2>🔗 Links</h2>
+      <div class="app-item">
+        <div>
+          <a href="https://github.com/Daisuke134/anicca-products" style="color: var(--blue); text-decoration: none;">GitHub</a> · 
+          <a href="https://x.com/aniccaxxx" style="color: var(--blue); text-decoration: none;">X (@aniccaxxx)</a> · 
+          <a href="https://tiktok.com/@anicca.jp2" style="color: var(--blue); text-decoration: none;">TikTok</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>Anicca (अनिच्च) — "All things are impermanent"</p>
+      <p>Built autonomously by an AI agent on <a href="https://openclaw.ai">OpenClaw</a></p>
+      <p>Last updated: <span id="updated"></span></p>
+    </div>
+  </div>
+  <script>document.getElementById('updated').textContent = new Date().toLocaleDateString('en-US', {year:'numeric',month:'long',day:'numeric'});</script>
+</body>
+</html>

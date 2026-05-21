@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Anicca - Your Path to Clarity</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,700;1,400&amp;family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "inverse-primary": "#7c572d",
+                        "primary-fixed": "#ffdcbc",
+                        "on-primary-fixed-variant": "#614018",
+                        "secondary-container": "#564331",
+                        "tertiary-container": "#8ab4ca",
+                        "on-tertiary-fixed": "#001f2a",
+                        "error-container": "#93000a",
+                        "surface-container-lowest": "#0e0e0e",
+                        "tertiary": "#a5d0e6",
+                        "primary-fixed-dim": "#efbd8a",
+                        "on-tertiary-fixed-variant": "#204c5f",
+                        "outline": "#9c8e82",
+                        "surface": "#131313",
+                        "surface-container-high": "#2a2a2a",
+                        "on-secondary-fixed": "#271909",
+                        "surface-dim": "#131313",
+                        "on-secondary": "#3e2d1c",
+                        "on-background": "#e5e2e1",
+                        "surface-container-low": "#1c1b1b",
+                        "surface-container-highest": "#353534",
+                        "tertiary-fixed-dim": "#a2cde3",
+                        "on-surface": "#e5e2e1",
+                        "inverse-surface": "#e5e2e1",
+                        "outline-variant": "#50453b",
+                        "on-tertiary": "#003547",
+                        "surface-tint": "#efbd8a",
+                        "on-surface-variant": "#d4c4b7",
+                        "background": "#131313",
+                        "inverse-on-surface": "#313030",
+                        "primary": "#f2c08d",
+                        "secondary-fixed-dim": "#dcc2a9",
+                        "surface-bright": "#3a3939",
+                        "error": "#ffb4ab",
+                        "secondary": "#dcc2a9",
+                        "surface-container": "#201f1f",
+                        "secondary-fixed": "#fadec4",
+                        "on-secondary-container": "#cab199",
+                        "on-primary": "#472a03",
+                        "on-error-container": "#ffdad6",
+                        "on-secondary-fixed-variant": "#564331",
+                        "tertiary-fixed": "#bfe8ff",
+                        "on-error": "#690005",
+                        "surface-variant": "#353534",
+                        "on-primary-fixed": "#2c1700",
+                        "on-primary-container": "#5b3a13",
+                        "on-tertiary-container": "#194659",
+                        "primary-container": "#d4a574"
+                    },
+                    fontFamily: {
+                        "headline": ["Noto Serif", "serif"],
+                        "body": ["Manrope", "sans-serif"],
+                        "label": ["Manrope", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "2xl": "1rem",
+                        "3xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background-color: #0A0A0A;
+            color: #E5E2E1;
+            -webkit-font-smoothing: antialiased;
+        }
+        .glass-player {
+            background: rgba(53, 53, 52, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+        .gold-gradient {
+            background: linear-gradient(135deg, #D4A574 0%, #F2C08D 100%);
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="font-body selection:bg-primary-container selection:text-on-primary-container">
+<!-- Top Navigation Bar -->
+<nav class="fixed top-0 w-full z-50 bg-[#131313] flex items-center justify-between px-6 py-4">
+<button class="hover:opacity-80 transition-opacity flex items-center justify-center p-2">
+<span class="material-symbols-outlined text-[#D4A574] text-2xl">close</span>
+</button>
+<span class="font-headline text-lg tracking-wide text-[#D4A574] italic font-bold">Anicca</span>
+<div class="w-10"></div> <!-- Spacer for symmetry -->
+</nav>
+<main class="pt-24 pb-32 px-6 max-w-lg mx-auto overflow-y-auto">
+<!-- Hero Section -->
+<section class="flex flex-col items-center mb-12">
+<div class="relative w-64 h-64 flex items-center justify-center mb-10">
+<!-- Abstract Zen Circle / Enso representation -->
+<div class="absolute inset-0 border-[1px] border-primary/20 rounded-full animate-pulse"></div>
+<div class="absolute inset-4 border-[0.5px] border-primary/10 rounded-full"></div>
+<img alt="Zen lotus flower" class="w-48 h-48 object-contain mix-blend-screen opacity-90" data-alt="Minimalist glowing lotus flower against dark background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAaOQkey0PVXSvVt4N1UCd8bAAl_ZFcZWzb0qU-ASvwC_ORcw1x7ncKGpou1ZcAhS6q1uJLg6dceYVgH07TPx91foCnwlXMLxp8ZrMkUfq1EPd4C2MKfkO72LI8DI6Bu6FdbIpaXdPVHi10M82ZsYYdsczJeZZvBzW0xe8DDX1fxm12QVeOh9zVXalbVD2DKmGp_CwCK01W0SXNwKw594XEt3lwyiy3c-gzJ9e-X2XFjOT7A664y-FpsV_2jkj0hEuc6ZKYOXHzxrQu"/>
+</div>
+<div class="text-left w-full space-y-3">
+<h1 class="font-headline text-4xl font-bold leading-tight tracking-tight text-on-surface">
+                    Your Path to Clarity
+                </h1>
+<p class="font-body text-on-surface-variant text-lg leading-relaxed max-w-xs">
+                    Unlock the full power of your digital Buddha
+                </p>
+</div>
+</section>
+<!-- Features List -->
+<section class="space-y-6 mb-12">
+<div class="flex items-start space-x-4">
+<span class="material-symbols-outlined text-primary mt-0.5" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="text-on-surface font-medium">Personalized daily wisdom &amp; insights</span>
+</div>
+<div class="flex items-start space-x-4">
+<span class="material-symbols-outlined text-primary mt-0.5" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="text-on-surface font-medium">Smart proactive nudges that transform habits</span>
+</div>
+<div class="flex items-start space-x-4">
+<span class="material-symbols-outlined text-primary mt-0.5" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="text-on-surface font-medium">Unlimited conversations with your guide</span>
+</div>
+</section>
+<!-- Pricing Cards -->
+<section class="grid grid-cols-2 gap-4 mb-10">
+<!-- Monthly Card -->
+<div class="bg-surface-container-low rounded-3xl p-6 flex flex-col items-center justify-center border border-transparent transition-all duration-300">
+<span class="text-on-surface-variant text-sm mb-2 font-semibold">Monthly</span>
+<div class="text-on-surface text-xl font-bold">$9.99</div>
+<span class="text-on-surface-variant text-xs mt-1">per month</span>
+</div>
+<!-- Annual Card (Recommended) -->
+<div class="bg-surface-container relative rounded-3xl p-6 flex flex-col items-center justify-center border border-primary/40 shadow-2xl shadow-primary/5">
+<div class="absolute -top-3 left-1/2 -translate-x-1/2 gold-gradient text-on-primary-fixed px-3 py-0.5 rounded-full text-[10px] font-bold tracking-wider">
+                    SAVE 58%
+                </div>
+<span class="text-primary text-sm mb-2 font-bold">Annual</span>
+<div class="text-on-surface text-xl font-bold">$49.99</div>
+<span class="text-on-surface-variant text-xs mt-1">per year</span>
+</div>
+</section>
+<!-- Primary Call to Action -->
+<section class="mb-10">
+<button class="w-full gold-gradient py-5 rounded-3xl text-on-primary-fixed font-bold text-lg shadow-xl shadow-primary/10 active:scale-[0.98] transition-transform duration-200">
+                Start Your Journey
+            </button>
+</section>
+<!-- Legal Footer -->
+<footer class="flex flex-col items-center space-y-4 max-w-2xl mx-auto py-12 px-8">
+<button class="text-[#D4A574] hover:text-[#F2C08D] transition-colors text-xs underline font-medium tracking-wide">
+                Restore Purchases
+            </button>
+<p class="font-manrope text-[10px] leading-relaxed text-center text-[#D4C4B7]/60 uppercase tracking-[0.1em]">
+                Cancel anytime. Auto-renews.
+            </p>
+<div class="flex space-x-6 text-[10px] text-[#D4C4B7]/40">
+<a class="hover:text-primary transition-colors" href="#">Privacy Policy</a>
+<a class="hover:text-primary transition-colors" href="#">Terms of Service</a>
+</div>
+<p class="text-[9px] text-[#D4C4B7]/30 mt-4">
+                © 2024 Anicca Meditation. All rights reserved.
+            </p>
+</footer>
+</main>
+<!-- Visual Embellishment: Subtle bottom gradient to suggest depth -->
+<div class="fixed bottom-0 left-0 w-full h-24 bg-gradient-to-t from-[#0A0A0A] to-transparent pointer-events-none"></div>
+</body></html>

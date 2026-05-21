@@ -1,0 +1,7 @@
+build/
+*.exe
+.DS_Store
+.env
+*.p8
+.agents/
+.claude/skills/

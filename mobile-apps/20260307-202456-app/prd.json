@@ -1,0 +1,277 @@
+{
+  "project": "mobileapp-factory",
+  "branchName": "ralph/daily-app",
+  "description": "Build and submit one iOS app to App Store",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Trend research + idea selection",
+      "acceptanceCriteria": [
+        "spec/01-trend.md exists",
+        "Contains: rank, idea, one_liner, platform, problem_statement, target_user, feasibility, overall_score, monetization_model, competition_notes, mvp_scope, next_step",
+        "At least 5 ideas evaluated, top 1 selected",
+        "Sources cited for each trend",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": "Selected: EyeRest (20-20-20 eye care timer). Score 8.2. Competition: Eye Care 20 20 20 (365 reviews, 4.34 rating). 26 raw ideas generated across 5 lenses. 5 shortlisted. Evidence: spec/01-trend.md exists, all 13 fields present, 5 ranks, 20+ sources cited."
+    },
+    {
+      "id": "US-002",
+      "title": "Product planning",
+      "acceptanceCriteria": [
+        "product-plan.md exists",
+        "Contains: target user, problem, solution, monetization, MVP scope",
+        "monetization section specifies subscription prices (monthly + annual)",
+        "All claims cite external sources",
+        "curl itunes.apple.com/search for APP_NAME returns 0 exact name matches",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "product-plan.md created with 7 sections, 13 sources (29 URLs). Pricing: $4.99/mo + $29.99/yr. App name 'EyeRest' verified unique (0 exact matches via iTunes API 2026-03-07). Bundle ID: com.aniccafactory.eyerest. MVP: 13 must-have features, 10 won't-have with PROHIBITED reasons. Competitors: Eye Care 20 20 20 (365 reviews, 4.34) + 6 others analyzed."
+    },
+    {
+      "id": "US-003",
+      "title": "Market research",
+      "acceptanceCriteria": [
+        "competitive-analysis.md exists with 5+ competitors analyzed",
+        "market-research.md exists with TAM/SAM/SOM",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": true,
+      "notes": "competitive-analysis.md: 7 competitors profiled (3 direct + 4 indirect), 15-cell feature matrix, 21 star-1-2 reviews analyzed, pricing analysis with positioning map. market-research.md: TAM $181.6M (bottom-up), SAM $27.2M, SOM Y1 $2,720 / Y3 $54,400. POEM score 20/25 (Strong Opportunity). 17 sources cited across both files. Negative signal documented: niche may be too small for subscription."
+    },
+    {
+      "id": "US-004a",
+      "title": "Core Spec (PRD, ARCHITECTURE, IMPLEMENTATION_GUIDE)",
+      "acceptanceCriteria": [
+        "docs/PRD.md exists and contains app_name, bundle_id, subscription prices",
+        "docs/ARCHITECTURE.md exists",
+        "docs/IMPLEMENTATION_GUIDE.md exists and references RevenueCat SDK (not Mock)",
+        "Typecheck passes"
+      ],
+      "priority": 4.1,
+      "passes": true,
+      "notes": "PRD.md (229 lines): 14 sections, 13 Feature IDs (F-001 to F-013), app_name/bundle_id/prices present, free_tier_limit defined. ARCHITECTURE.md (390 lines): 12 sections, MVVM + Protocol DI, RevenueCat only dependency, no prohibited SDKs. IMPLEMENTATION_GUIDE.md (489 lines): 8 sections, 6-phase breakdown, Purchases.shared.purchase(package:) referenced, Fastfile lanes. All Gate 1/2/3 checks PASS. AC-1 to AC-25 all PASS. Rule 17/20/20b/23 violations = 0."
+    },
+    {
+      "id": "US-004b",
+      "title": "UX Spec (UX_SPEC, DESIGN_SYSTEM, TEST_SPEC, RELEASE_SPEC)",
+      "acceptanceCriteria": [
+        "docs/UX_SPEC.md exists",
+        "docs/DESIGN_SYSTEM.md exists",
+        "docs/TEST_SPEC.md exists",
+        "docs/RELEASE_SPEC.md exists",
+        "Typecheck passes"
+      ],
+      "priority": 4.2,
+      "passes": true,
+      "notes": "UX_SPEC.md (340 lines): 9 sections, 2 personas, IA diagram, 3-tab navigation, 6 ASCII wireframes, 3-act onboarding flow, 60+ accessibilityIdentifiers, 9 localization pairs. DESIGN_SYSTEM.md (213 lines): 7 sections, 5 brand + 10 semantic colors, 3 gradients, 10-style typography scale, 8pt spacing scale, 10 reusable components, 21 SF Symbols, 11 animations with haptics, WCAG AA contrast. TEST_SPEC.md (235 lines): 7 sections, 37 unit tests + 8 integration + 6 E2E Maestro flows = 51 total, Greenlight checks (Rules 17/20/20b/23), performance targets. RELEASE_SPEC.md (260 lines): 11 sections, en-US + ja metadata (PRD §14 match), 4 screenshots per locale, 22 age rating items (all NONE), signing config, TestFlight plan, hotfix protocol. Gate 2 all PASS. Gate 3 all 13 Feature IDs traced. Rule violations = 0. Total: 2609 lines across 7 docs (target 1300+)."
+    },
+    {
+      "id": "US-004-R",
+      "title": "Spec Review (all 7 documents)",
+      "acceptanceCriteria": [
+        "code-quality-reviewer agent (.claude/agents/) — NOT codex-review skill, NOT Codex CLI run on all 7 docs",
+        "CRITICAL findings = 0",
+        "All blocking issues resolved"
+      ],
+      "priority": 4.3,
+      "passes": true,
+      "notes": "code-quality-reviewer agent executed on all 7 docs. Initial: 5 CRITICAL, 8 WARNING, 5 SUGGESTION. All 5 CRITICAL fixed: C-1 BreakSession fatigueLevel removed (data in FatigueEntry only), C-2/W-8 NotificationServiceProtocol + TimerServiceProtocol added (Protocol DI consistent), C-3 fireImmediateBreakNotification() added (no timeInterval:0 crash), C-4 Components/ directory added (10 reusable components), C-5 contrast usage rules documented (brand colors large-text only). All 8 WARNING fixed: W-1 background/foreground transition strategy with targetFireDate, W-2 test count 32+ → 37+, W-3 missing test files added (8 total), W-4 free-tier interval behavior clarified, W-5 Phase Breakdown aligned with sections, W-6 PaywallView dismissal context-dependent, W-7 badge text uses text.primary. Re-verification: Gate 1/2/3 PASS, Rule 17/20/20b/21 PASS, 2717 lines total (target ≥ 1300), CRITICAL = 0."
+    },
+    {
+      "id": "US-005a",
+      "title": "Privacy Policy + ASC app creation",
+      "acceptanceCriteria": [
+        "privacy-policy.md exists and deployed to GitHub Pages",
+        "PrivacyInfo.xcprivacy exists in project",
+        "Info.plist contains ITSAppUsesNonExemptEncryption = NO",
+        "App created in ASC (APP_ID recorded in .env)"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005b",
+      "title": "IAP + pricing + RevenueCat setup",
+      "acceptanceCriteria": [
+        "asc subscriptions groups list --app $APP_ID returns 1+ groups",
+        "asc subscriptions list --group $GROUP_ID returns monthly + annual products",
+        "asc subscriptions prices list --id $MONTHLY_ID returns 175 prices",
+        "RevenueCat dashboard shows 2 products + 1 offering",
+        "SPM dependency on RevenueCat added (RevenueCatUI prohibited -- Rule 20)",
+        "Typecheck passes"
+      ],
+      "priority": 5.5,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006a",
+      "title": "TDD Data Layer (xcconfig, Protocol DI, Models, Services)",
+      "acceptanceCriteria": [
+        "xcconfig for API Key management (not hardcoded)",
+        "SubscriptionService uses Protocol + DI",
+        "Models and Services directories exist",
+        "fastlane test PASS",
+        "Typecheck passes"
+      ],
+      "priority": 6.1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006b",
+      "title": "TDD Onboarding + Monetization (MVVM, Onboarding, PaywallView)",
+      "acceptanceCriteria": [
+        "AppState split into MVVM ViewModels",
+        "Onboarding flow complete (includes notification permission step)",
+        "PaywallView uses Purchases.shared.purchase(package:) (self-built SwiftUI -- Rule 20)",
+        "No RevenueCatUI import",
+        "fastlane test PASS",
+        "Typecheck passes"
+      ],
+      "priority": 6.2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006c",
+      "title": "TDD Core Screens (Timer, Settings, ProgressDashboard)",
+      "acceptanceCriteria": [
+        "Timer with background support",
+        "Settings with Upgrade -> PaywallView navigation",
+        "ProgressDashboard with optimized DateFormatter",
+        "fastlane test PASS",
+        "Typecheck passes"
+      ],
+      "priority": 6.3,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006d",
+      "title": "TDD Polish (DESIGN_SYSTEM tokens, a11y IDs, Localization)",
+      "acceptanceCriteria": [
+        "DESIGN_SYSTEM tokens applied to all Views",
+        "All accessibilityIdentifiers match TEST_SPEC",
+        "PrivacyInfo.xcprivacy exists",
+        "Localization files (.xcstrings) exist",
+        "fastlane test PASS",
+        "fastlane build PASS",
+        "Typecheck passes"
+      ],
+      "priority": 6.4,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006-R",
+      "title": "Code Review (006a-d full review)",
+      "acceptanceCriteria": [
+        "code-quality-reviewer agent (.claude/agents/) — NOT codex-review skill, NOT Codex CLI run on all 006 code",
+        "CRITICAL findings = 0",
+        "No Mock/Stub in production code (grep -rw 'class Mock' excludes Tests/)",
+        "All blocking issues resolved"
+      ],
+      "priority": 6.5,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Testing (Maestro E2E)",
+      "acceptanceCriteria": [
+        "6+ Maestro E2E flows in maestro/ (onboarding, timer, settings, payment-monthly, payment-annual, payment-failure)",
+        "All flows use id: selectors (no point: selectors)",
+        "All flows have clearState + takeScreenshot",
+        "maestro test maestro/ -> all PASS",
+        "smokeTest tag exists on 2+ flows"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008a",
+      "title": "Screenshots (capture + upload + review screenshot)",
+      "acceptanceCriteria": [
+        "Screenshots captured via AXe + asc screenshots capture (en-US 4+ + ja 4+)",
+        "en-US/ja MD5 mismatch (locale applied)",
+        "Screenshots uploaded to ASC for en-US and ja (>=4 each)",
+        "Subscription review screenshots uploaded for Monthly + Annual"
+      ],
+      "priority": 8.1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008b",
+      "title": "ASC metadata sync (en-US + ja)",
+      "acceptanceCriteria": [
+        "Metadata synced to ASC via asc-metadata-sync (en-US + ja)",
+        "Privacy Policy URL set for en-US AND ja"
+      ],
+      "priority": 8.2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008c",
+      "title": "IPA build + upload + version attach",
+      "acceptanceCriteria": [
+        ".ipa file built and uploaded (processingState = VALID)",
+        "Build attached to version"
+      ],
+      "priority": 8.3,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008d",
+      "title": "ASC compliance (age rating + encryption + rights + availability + pricing + review details)",
+      "acceptanceCriteria": [
+        "Age Rating all 22 items set",
+        "Review Details set with --demo-account-required false",
+        "Availability set for 175 territories",
+        "Pricing set using subscription price-point IDs",
+        "Encryption: usesNonExemptEncryption = false",
+        "Content Rights: DOES_NOT_USE_THIRD_PARTY_CONTENT"
+      ],
+      "priority": 8.4,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008e",
+      "title": "Preflight validation + TestFlight + Slack",
+      "acceptanceCriteria": [
+        "release-review 5 checklists all pass",
+        "asc validate returns Errors=0",
+        "TestFlight build distributed",
+        "Slack #metrics notified with TestFlight link"
+      ],
+      "priority": 8.5,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "App Store submission (App Privacy + submit)",
+      "acceptanceCriteria": [
+        "Slack #metrics notified: need App Privacy setup",
+        ".app-privacy-done file exists (human created after ASC Web setup)",
+        "asc submit create returns WAITING_FOR_REVIEW",
+        "Slack #metrics notified: WAITING_FOR_REVIEW"
+      ],
+      "priority": 9,
+      "passes": false,
+      "notes": ""
+    }
+  ]
+}

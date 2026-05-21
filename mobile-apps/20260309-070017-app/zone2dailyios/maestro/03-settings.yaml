@@ -1,0 +1,78 @@
+appId: com.aniccafactory.zone2daily
+name: "Settings Screen Navigation"
+tags:
+  - settings
+---
+- clearState
+- clearKeychain
+- launchApp
+
+# Complete onboarding quickly
+- extendedWaitUntil:
+    visible:
+      id: "btn_continue_age"
+    timeout: 30000
+- tapOn:
+    id: "btn_continue_age"
+
+- extendedWaitUntil:
+    visible:
+      id: "btn_continue_explainer"
+    timeout: 15000
+- tapOn:
+    id: "btn_continue_explainer"
+
+- extendedWaitUntil:
+    visible:
+      id: "btn_skip_notifications"
+    timeout: 15000
+- tapOn:
+    text: "Allow"
+    optional: true
+- tapOn:
+    id: "btn_skip_notifications"
+
+- extendedWaitUntil:
+    visible:
+      id: "paywall_headline"
+    timeout: 15000
+- scroll
+- tapOn:
+    id: "btn_maybe_later"
+
+# Navigate to Settings tab
+- extendedWaitUntil:
+    visible:
+      id: "label_streak"
+    timeout: 15000
+
+- tapOn: "Settings"
+
+# Verify settings screen — use interactive elements (containers not detectable by Maestro)
+- extendedWaitUntil:
+    visible:
+      id: "toggle_notifications"
+    timeout: 15000
+
+- assertVisible:
+    id: "input_age_settings"
+
+# Tap Upgrade to Premium
+- tapOn:
+    id: "btn_upgrade"
+
+# Verify paywall appears
+- extendedWaitUntil:
+    visible:
+      id: "paywall_headline"
+    timeout: 15000
+
+- assertVisible:
+    id: "paywall_headline"
+
+# Dismiss paywall
+- scroll
+- tapOn:
+    id: "btn_maybe_later"
+
+- takeScreenshot: "03-settings-complete"

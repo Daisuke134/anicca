@@ -1,0 +1,75 @@
+# Feature: RC Test Store monthly purchase success
+# Tests: Skip onboarding → Paywall → Select Monthly → Test valid purchase
+# Dependencies: Fresh install, uiPreviewMode enabled (DEBUG)
+
+appId: com.aniccafactory.frostdip
+tags:
+  - payment
+  - smokeTest
+
+---
+- clearState
+- clearKeychain
+- launchApp
+
+# Skip onboarding to paywall
+- extendedWaitUntil:
+    visible:
+      id: "onboarding_get_started"
+    timeout: 30000
+
+- tapOn:
+    id: "onboarding_get_started"
+
+- extendedWaitUntil:
+    visible:
+      id: "onboarding_experience_beginner"
+    timeout: 10000
+
+- tapOn:
+    id: "onboarding_experience_beginner"
+
+- tapOn:
+    id: "onboarding_continue"
+
+- extendedWaitUntil:
+    visible:
+      id: "onboarding_skip_notifications"
+    timeout: 10000
+
+- tapOn:
+    text: "Allow"
+    optional: true
+
+- tapOn:
+    id: "onboarding_skip_notifications"
+
+# Paywall appears (onboarding step 4)
+- extendedWaitUntil:
+    visible:
+      id: "paywall_plan_monthly"
+    timeout: 10000
+
+# Select monthly plan
+- tapOn:
+    id: "paywall_plan_monthly"
+
+# Tap Subscribe CTA (uiPreviewMode: purchase auto-completes)
+- tapOn:
+    id: "paywall_cta"
+
+# Handle RC Test Store dialog if it appears (optional in uiPreviewMode)
+- tapOn:
+    text: "Test valid purchase"
+    optional: true
+
+# After purchase, onboarding completes → Timer screen
+- extendedWaitUntil:
+    visible:
+      id: "timer_start"
+    timeout: 30000
+
+- assertVisible:
+    id: "timer_breathing_prep"
+
+- takeScreenshot: "04-payment-monthly-success"

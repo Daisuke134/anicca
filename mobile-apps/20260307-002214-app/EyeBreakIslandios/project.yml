@@ -1,0 +1,91 @@
+name: EyeBreakIsland
+options:
+  bundleIdPrefix: com.aniccafactory
+  deploymentTarget:
+    iOS: "16.1"
+  xcodeVersion: "16.0"
+  generateEmptyDirectories: true
+  defaultConfig: Release
+  developmentLanguage: en
+
+packages:
+  RevenueCat:
+    url: https://github.com/RevenueCat/purchases-ios.git
+    from: "5.0.0"
+
+settings:
+  base:
+    DEVELOPMENT_TEAM: S5U8UH3JLJ
+    CODE_SIGN_STYLE: Automatic
+    SWIFT_VERSION: "5.9"
+
+targets:
+  EyeBreakIsland:
+    type: application
+    platform: iOS
+    deploymentTarget: "16.1"
+    sources:
+      - path: EyeBreakIsland
+      - path: Shared
+    settings:
+      base:
+        INFOPLIST_FILE: EyeBreakIsland/Info.plist
+        PRODUCT_BUNDLE_IDENTIFIER: com.aniccafactory.eyebreakisland
+        MARKETING_VERSION: "1.0.0"
+        CURRENT_PROJECT_VERSION: "2"
+        GENERATE_INFOPLIST_FILE: false
+        SUPPORTS_MACCATALYST: false
+        TARGETED_DEVICE_FAMILY: "1"
+      configs:
+        Debug:
+          OTHER_SWIFT_FLAGS: ["-DDEBUG"]
+    dependencies:
+      - package: RevenueCat
+        product: RevenueCat
+    configFiles:
+      Debug: EyeBreakIsland/xcconfig/Config.xcconfig
+      Release: EyeBreakIsland/xcconfig/Config.xcconfig
+
+  EyeBreakIslandTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: EyeBreakIslandTests
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: true
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/EyeBreakIsland.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/EyeBreakIsland"
+        BUNDLE_LOADER: "$(TEST_HOST)"
+    dependencies:
+      - target: EyeBreakIsland
+      - package: RevenueCat
+        product: RevenueCat
+
+  EyeBreakIslandWidgetExtension:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: "16.1"
+    sources:
+      - path: EyeBreakIslandWidgetExtension
+      - path: Shared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.aniccafactory.eyebreakisland.widget
+        INFOPLIST_FILE: EyeBreakIslandWidgetExtension/Info.plist
+        GENERATE_INFOPLIST_FILE: false
+    entitlements:
+      path: EyeBreakIslandWidgetExtension/EyeBreakIslandWidgetExtension.entitlements
+      properties: {}
+
+schemes:
+  EyeBreakIsland:
+    build:
+      targets:
+        EyeBreakIsland: all
+        EyeBreakIslandTests: [test]
+        EyeBreakIslandWidgetExtension: all
+    test:
+      targets:
+        - EyeBreakIslandTests
+    run:
+      config: Debug

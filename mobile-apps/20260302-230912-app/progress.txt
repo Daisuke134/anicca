@@ -1,0 +1,24 @@
+## Codebase Patterns
+
+- Foundation Models (iOS 18+): on-device LLM, free inference, no API key required. Use for all AI features. No backend needed.
+- SwiftData: use over CoreData for new projects (iOS 17+). Simple schema, works with SwiftUI @Query.
+- RevenueCat: keys from Info.plist, NOT ProcessInfo.processInfo.environment (CRITICAL RULE #17).
+- Soft paywall: SwiftUI custom PaywallView + Purchases.shared.purchase(package:). RevenueCatUI.PaywallView is BANNED.
+- HealthKit: read-only sleep data integration requires NSHealthShareUsageDescription in Info.plist.
+
+---
+
+## 2026-03-02 - US-001: Trend research + idea selection
+
+- 5 brainstorming lenses applied (Skills/Interests, Problem-First, Tech-First, Market Gap, Trend-Based)
+- 5 ideas scored: Hush (8.7), Sleep Lens (8.1), Dream Decoder (8.1), One Line (7.9), Screen Mindful (7.5)
+- **Selected: Hush — Pre-Sleep Worry Journal** (overall_score: 8.7)
+- Stack: SwiftUI + Foundation Models + SwiftData + RevenueCat + HealthKit (optional)
+- Subscription: $4.99/mo, $29.99/yr. iOS 18+. Solo dev, 1-day build.
+- Files: spec/01-trend.md
+- **Learnings for future iterations:**
+  - Foundation Models is the strongest iOS 2026 differentiator: free, on-device, private, no API key
+  - Health & Fitness trial-to-paid conversion is 43.8% (RevenueCat 2025) — best category for subscription
+  - Family Controls entitlement (DeviceActivity) adds App Review risk — avoid unless needed
+  - grep for required fields should be case-insensitive (use grep -qi)
+---

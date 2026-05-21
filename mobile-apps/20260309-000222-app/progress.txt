@@ -1,0 +1,24 @@
+## Codebase Patterns
+- App Dir: /Users/anicca/anicca-project/mobile-apps/20260309-000222-app/
+- Selected App: GroundFlow (earthing/grounding tracker)
+- Bundle ID: TBD (US-005a で決定)
+- App Store Category: Health & Fitness
+- Subscription: $4.99/月, $29.99/年
+- Apple Frameworks: CoreMotion + HealthKit + Live Activities + UserNotifications
+- No AI API / No external backend required (Rule 23)
+- TikTok trend: #grounding 1.1M views, #earthing 610K views
+- App Store competition: GroundSync = 14 reviews (事実上ゼロ)
+- Exclusion categories confirmed: breathing, sleep, meditation, gratitude, stretching, cold plunge, lymph, caffeine, eye rest, TCM
+
+---
+## 2026-03-09 - US-001: Trend Research + Idea Selection
+- Firecrawl search + iTunes API + Apify TikTok scraper で5 Lens調査実施
+- 25個の raw ideas 生成 → Feasibility Filtering → Top 5 Shortlist
+- **選定: GroundFlow** (overall_score: 8.67, 競合=14件のみ)
+- ファイル: spec/01-trend.md 作成
+- **Learnings for future iterations:**
+  - Apify REST API (`/v2/acts/.../run-sync-get-dataset-items`) は mcpc OAuth不要で直接使用可能
+  - `playCount` フィールドがビュー数（TikTokスクレイパー）
+  - iTunes API: `averageUserRating` + `userRatingCount` + `trackId` がキーフィールド
+  - Grounding/Earthing は2026年最大の「競合皆無×TikTokバイラル」ニッチ
+---

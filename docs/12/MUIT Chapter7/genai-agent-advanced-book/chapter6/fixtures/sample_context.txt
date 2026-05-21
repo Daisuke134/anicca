@@ -1,0 +1,699 @@
+<item><id>0</id><task>LLMベースのAIエージェントに関するarXivの最新研究を調査し、各研究の概要をまとめる</task><paper>{{'id': '2308.05391', 'title': 'Enhancing Trust in LLM-Based AI Automation Agents: New Considerations\n  and Future Challenges', 'link': 'http://arxiv.org/abs/2308.05391v1', 'pdf_link': 'http://arxiv.org/pdf/2308.05391v1', 'abstract': 'Trust in AI agents has been extensively studied in the literature, resulting in significant advancements in our understanding of this field. However, the rapid advancements in Large Language Models (LLMs) and the emergence of LLM-based AI agent frameworks pose new challenges and opportunities for further research. In the field of process automation, a new generation of AI-based agents has emerged, enabling the execution of complex tasks. At the same time, the process of building automation has become more accessible to business users via user-friendly no-code tools and training mechanisms. This paper explores these new challenges and opportunities, analyzes the main aspects of trust in AI agents discussed in existing literature, and identifies specific considerations and challenges relevant to this new generation of automation agents. We also evaluate how nascent products in this category address these considerations. Finally, we highlight several challenges that the research community should address in this evolving landscape.', 'published': datetime.datetime(2023, 8, 10, 7, 12, 11), 'updated': datetime.datetime(2023, 8, 10, 7, 12, 11), 'version': 1, 'authors': ['Sivan Schwartz', 'Avi Yaeli', 'Segev Shlomov'], 'categories': ['cs.AI', '68T01'], 'relevance_score': 0.8992984}}</paper><answer>- Answer
+
+  - **Research Overview**: The paper discusses the evolution of trust in AI agents, particularly focusing on Large Language Models (LLMs) and the emergence of AI-based automation agents. It emphasizes the importance of trust for the adoption of these technologies in business processes, drawing parallels between human-to-human trust and human-to-AI-agent trust. 
+
+    - "Trust in AI agents has been extensively studied in the literature, resulting in significant advancements in our understanding of this field. However, the rapid advancements in Large Language Models (LLMs) and the emergence of LLM-based AI agent frameworks pose new challenges and opportunities for further research."
+
+    
+
+  - **Design Methods**: The paper outlines key dimensions of trust that need to be considered in the design of LLM-based AI agents, including reliability, openness, tangibility, immediacy behaviors, and task characteristics. Each of these dimensions has specific sub-factors that contribute to establishing trust between users and AI systems.
+
+    - "We argue that AI systems must be developed with trust considerations, originating from human-to-human trustworthy interaction. Reliability, openness, tangibility, immediacy behavior, and task characteristics have been found to be core considerations and are becoming eminent in nascent LLM-based agent systems."
+
+  - **Application Areas**: The paper implies that LLM-based AI agents are becoming increasingly relevant in areas such as business process automation, where complex tasks are performed autonomously. It discusses the need for these agents to be designed with trust in mind to ensure user acceptance and effective integration into workflows.
+
+    - "In the context of business process automation, AI-based agents will also be poised to make automatic decisions and take actions, often on increasingly more complex types of tasks."
+
+  - **Technical Details**: The paper emphasizes several technical dimensions that contribute to trust, including prompt mediation, content mediation, and knowledge grounding among others. These aspects are essential for ensuring that AI agents operate reliably and transparently.
+
+    - "To establish trust, it is imperative that agents consistently deliver high-quality results with a high degree of accuracy."
+
+  - **Outcomes and Conclusions**: The authors conclude that building and maintaining trust in AI requires a coordinated effort across disciplines and stakeholders. They advocate for the development of comprehensive metrics to evaluate trust in LLM-based systems and call for interdisciplinary collaboration to tackle these challenges.
+
+    - "This paper serves as a call to action for these communities. As AI continues to exponentially evolve and defuse into every aspect of our lives, building and maintaining trust in AI is not just a technical challenge but a societal one that will determine the level of adoption of these technologies."
+
+  - **Publication Year**: The paper was presented at AutoMate'23@IJCAI in August 2023.
+
+  - **Authors and Affiliations**: The authors of the paper are Sivan Schwartz, Avi Yaeli, and Segev Shlomov, affiliated with IBM Research.
+
+- Related Papers
+
+  - The paper references several studies and existing literature relevant to trust in AI and human interactions, including:
+
+    - "User trust in artificial intelligence: A comprehensive conceptual framework" by Yang, R., and Wibowo, S. (2022)
+
+      - **Key Contributions**: This paper reviews the existing studies and frameworks on trust in AI, providing a comprehensive overview of factors influencing user trust.
+
+      - **Relevance**: It is directly related to the current research as it establishes foundational concepts that the authors build upon in their discussion of LLMs and trust.
+
+      - **Further Investigation**: Recommended for its comprehensive exploration of trust factors in AI contexts.
+
+    - "Psychological foundations of trust" by Simpson, J. A. (2007)
+
+      - **Key Contributions**: This study explores the dynamics of trust in human relationships, which informs the understanding of trust in human-AI interactions.
+
+      - **Relevance**: Provides insights into the psychological aspects of trust that are applicable to AI systems.
+
+      - **Further Investigation**: Recommended for understanding the psychological dimensions of trust in AI.
+
+    - "Transparency and trust in artificial intelligence systems" by Schmidt, P., Biessmann, F., and Teubner, T. (2020)
+
+      - **Key Contributions**: This paper discusses the role of transparency in building trust in AI systems, a key theme in the current research.
+
+      - **Relevance**: Relevant for its focus on transparency, a critical aspect highlighted in the trust considerations for LLM-based agents.
+
+      - **Further Investigation**: Recommended for its insights into the importance of transparency in AI systems.
+
+    - "Human trust in artificial intelligence: Review of empirical research" by Glikson, E. and Woolley, A. W. (2020)
+
+      - **Key Contributions**: This paper reviews empirical research on trust in AI, summarizing various factors affecting human trust in automation.
+
+      - **Relevance**: Directly supports the current research by providing empirical evidence on trust-related factors.
+
+      - **Further Investigation**: Recommended for its empirical approach to understanding trust in AI systems.</answer><is_related>True</is_related></item>
+
+<item><id>1</id><task>LLMベースのAIエージェントに関するarXivの最新研究を調査し、各研究の概要をまとめる</task><paper>{{'id': '2403.16971', 'title': 'AIOS: LLM Agent Operating System', 'link': 'http://arxiv.org/abs/2403.16971v3', 'pdf_link': 'http://arxiv.org/pdf/2403.16971v3', 'abstract': 'LLM-based intelligent agents face significant deployment challenges, particularly related to resource management. Allowing unrestricted access to LLM or tool resources can lead to inefficient or even potentially harmful resource allocation and utilization for agents. Furthermore, the absence of proper scheduling and resource management mechanisms in current agent designs hinders concurrent processing and limits overall system efficiency. As the diversity and complexity of agents continue to grow, addressing these resource management issues becomes increasingly critical to LLM-based agent systems. To address these challenges, this paper proposes the architecture of AIOS (LLM-based AI Agent Operating System) under the context of managing LLM-based agents. It introduces a novel architecture for serving LLM-based agents by isolating resources and LLM-specific services from agent applications into an AIOS kernel. This AIOS kernel provides fundamental services (e.g., scheduling, context management, memory management, storage management, access control) and efficient management of resources (e.g., LLM and external tools) for runtime agents. To enhance usability, AIOS also includes an AIOS-Agent SDK, a comprehensive suite of APIs designed for utilizing functionalities provided by the AIOS kernel. Experimental results demonstrate that using AIOS can achieve up to 2.1x faster execution for serving agents built by various agent frameworks. The source code is available at https://github.com/agiresearch/AIOS.', 'published': datetime.datetime(2024, 3, 25, 17, 32, 23), 'updated': datetime.datetime(2024, 11, 7, 19, 10, 11), 'version': 3, 'authors': ['Kai Mei', 'Xi Zhu', 'Wujiang Xu', 'Wenyue Hua', 'Mingyu Jin', 'Zelong Li', 'Shuyuan Xu', 'Ruosong Ye', 'Yingqiang Ge', 'Yongfeng Zhang'], 'categories': ['cs.OS', 'cs.AI', 'cs.CL'], 'relevance_score': 0.8866169}}</paper><answer>- Answer
+
+  - The paper introduces the architecture of AIOS (LLM-based AI Agent Operating System) to address the challenges faced by LLM-based intelligent agents, particularly in resource management. It states, "LLM-based intelligent agents face significant deployment challenges, particularly related to resource management. Allowing unrestricted access to LLM or tool resources can lead to inefficient or even potentially harmful resource allocation and utilization for agents." This highlights the dilemma of uncontrolled resource access, which can result in inefficiencies or abuses by agents.
+
+  - Furthermore, the paper elaborates on the limitations of existing agent frameworks: "System-level resources such as LLMs and tools... are typically treated as direct inputs to agents, granting agents explicit access and control. Such implementations can compromise optimal resource utilization and potentially expose the system to vulnerabilities if some agents exploit the resources." The text emphasizes the need for structured resource management to ensure that agents can operate efficiently without monopolizing resources or causing failures in the system.
+
+  - The proposed AIOS architecture separates agent applications from the resources they utilize, which is crucial for enhancing efficiency and safety. According to the authors, "This architecture divides agent applications and their accessible resources such as LLMs and tools into distinct layers, i.e., the application layer and the kernel layer." This layered approach allows for better management and optimization of resource usage.
+
+  - The paper also discusses the implementation of the AIOS kernel, which includes an agent scheduler, memory management, and access control: "In this kernel, agent primitives are designed to decompose LLM-related queries into sub execution units to enhance concurrency." This suggests that the AIOS kernel is designed to improve the performance of LLM-based agents by allowing them to execute tasks concurrently rather than sequentially. The experimental results demonstrate that AIOS can achieve up to "2.1× faster execution for serving agents built by various agent frameworks," showcasing the effectiveness of the proposed system.
+
+- Related Papers
+
+  - The paper cites several related works, including foundational research in autonomous agents and advancements in large language models:
+
+    - "Wooldridge & Jennings, 1995; Jennings et al., 1998; Bresciani et al., 2004" discuss early efforts in autonomous agent research, which laid the groundwork for current developments in AI agents. These papers are relevant as they provide context for the evolution of agent design and capabilities.
+
+    - "Achiam et al., 2023; Touvron et al., 2023a; Team et al., 2023" highlight the advancements in large language models that have enabled more sophisticated agent behaviors. These papers are significant as they reflect the current state of LLM technology, which AIOS leverages.
+
+    - "Ouyang et al., 2022; Chung et al., 2022; Touvron et al., 2023b; Geng et al., 2022" detail the capabilities of LLMs in understanding and generating human-like text. These findings are relevant as they directly inform the functional capabilities that the AIOS architecture aims to enhance.
+
+  - Each of the aforementioned papers contributes to a deeper understanding of the challenges and opportunities in the field of LLM-based agents. Further investigation of these papers is recommended, particularly for those involved in the design and implementation of AI systems, as they provide foundational insights that can inform future developments in agent architecture and resource management.</answer><is_related>True</is_related></item>
+
+<item><id>2</id><task>LLMベースのAIエージェントに関するarXivの最新研究を調査し、各研究の概要をまとめる</task><paper>{{'id': '2407.12821', 'title': 'AutoFlow: Automated Workflow Generation for Large Language Model Agents', 'link': 'http://arxiv.org/abs/2407.12821v1', 'pdf_link': 'http://arxiv.org/pdf/2407.12821v1', 'abstract': 'Recent advancements in Large Language Models (LLMs) have shown significant progress in understanding complex natural language. One important application of LLM is LLM-based AI Agent, which leverages the ability of LLM as well as external tools for complex-task solving. To make sure LLM Agents follow an effective and reliable procedure to solve the given task, manually designed workflows are usually used to guide the working mechanism of agents. However, manually designing the workflows requires considerable efforts and domain knowledge, making it difficult to develop and deploy agents on massive scales. To address these issues, we propose AutoFlow, a framework designed to automatically generate workflows for agents to solve complex tasks. AutoFlow takes natural language program as the format of agent workflow and employs a workflow optimization procedure to iteratively optimize the workflow quality. Besides, this work offers two workflow generation methods: fine-tuning-based and in-context-based methods, making the AutoFlow framework applicable to both open-source and closed-source LLMs. Experimental results show that our framework can produce robust and reliable agent workflows. We believe that the automatic generation and interpretation of workflows in natural language represent a promising paradigm for solving complex tasks, particularly with the rapid development of LLMs. The source code of this work is available at https://github.com/agiresearch/AutoFlow.', 'published': datetime.datetime(2024, 7, 1, 21, 5, 2), 'updated': datetime.datetime(2024, 7, 1, 21, 5, 2), 'version': 1, 'authors': ['Zelong Li', 'Shuyuan Xu', 'Kai Mei', 'Wenyue Hua', 'Balaji Rama', 'Om Raheja', 'Hao Wang', 'He Zhu', 'Yongfeng Zhang'], 'categories': ['cs.CL', 'cs.AI', 'cs.LG'], 'relevance_score': 0.8718026}}</paper><answer>- Answer
+
+  - "Recent advancements in Large Language Models (LLMs) have demonstrated substantial progress in understanding and processing complex natural language. These developments have opened up a wide array of applications, among which the deployment of LLM-based AI agents stands out. These agents leverage the capabilities of LLMs along with external tools to tackle intricate tasks, ranging from data analysis, software development, scientific research, travel planning to many other decision-making processes in various domains."
+
+  
+
+  - "One of the critical aspects of ensuring that LLM-based AI agents operate effectively and reliably is the design of workflows that guide their task-solving procedures. For example, an LLM-based agent for fake news detection may execute under the following workflow designed by communication experts: 1) Check the URL, 2) Check the language, 3) Commonsense evaluation, 4) Standpoint evaluation, 5) Summarize the findings, and 6) Classification."
+
+  - "To address the challenges associated with manual workflow design, this paper proposes AutoFlow, a novel framework aimed at the automatic generation of workflows for AI agents to solve complex tasks. AutoFlow represents workflows in the form of natural language programs, facilitating easier comprehension and interaction."
+
+  - "Technically, AutoFlow introduces two innovative workflow generation methods: a fine-tuning-based method and an in-context-based method. The fine-tuning-based approach customizes the workflow generation process for specific tasks and domains by adjusting the parameters of the LLMs. In contrast, the in-context-based method utilizes contextual information to guide the generation process without the need for extensive fine-tuning, making it suitable for both open-source and closed-source LLMs."
+
+  - "Our experimental results validate the effectiveness of the AutoFlow framework, showing that the generated workflows by AutoFlow outperform manually designed ones while keeping readability, and showcasing its ability to produce high-quality workflows that enable AI agents to perform complex tasks with a high degree of reliability."
+
+    - The content details the advancements in LLMs and their significance in creating AI agents capable of performing complex tasks in various fields. It highlights the necessity of designing effective workflows for these agents and how the AutoFlow framework addresses the challenges of manual workflow design. By using natural language programs for workflows and offering two methods for workflow generation, the framework significantly improves the process of automating tasks while ensuring reliability and readability in the generated outputs.
+
+- Related Papers
+
+  - "Automated Machine Learning: Methods, Systems, Challenges" by Hutter et al. (2019)
+
+    - This paper discusses the field of Automated Machine Learning (AutoML) and its approaches to reducing the human labor involved in designing and deploying machine learning techniques.
+
+    - It is relevant as AutoFlow draws inspiration from the principles of AutoML to automate the design of workflows for LLM-based AI agents.
+
+    - Further investigation is recommended to understand how AutoML techniques can be integrated into the development of AI agents.
+
+  - "OpenAGI: When LLM Meets Domain Experts" by Ge et al. (2023)
+
+    - This research introduces the OpenAGI benchmark, which helps evaluate the capabilities of LLMs in various domains by integrating domain expert knowledge into AI systems.
+
+    - Its relevance lies in providing a framework for understanding how LLMs can be effectively utilized in conjunction with expert knowledge to enhance AI performance.
+
+    - Further investigation is suggested to explore the integration of domain expertise in AI agent workflows, as discussed in AutoFlow.
+
+  - "LLM as OS, Agents as Apps: Envisioning AIOS, Agents and the AIOS-Agent Ecosystem" by Ge et al. (2023)
+
+    - This paper envisions a new ecosystem where LLMs operate as operating systems for AI agents, providing a broad context for the interaction of different AI applications.
+
+    - It is significant because it provides insights into the future of AI agent ecosystems, potentially influencing the design of workflows in AutoFlow.
+
+    - A deeper dive into this paper may provide valuable insights into the architectural considerations for LLM-based agents.
+
+  - "CoRE: LLM as Interpreter for Natural Language Programming, Pseudo-Code Programming, and Flow Programming of AI Agents" by Xu et al. (2024)
+
+    - This paper presents the CoRE language, which organizes workflows as natural language instructions, serving as a basis for the AutoFlow framework.
+
+    - Its relevance lies in the foundational role it plays in shaping how workflows are structured and interpreted by LLMs.
+
+    - Reviewing this paper is highly recommended as it directly underpins the methodological framework employed in AutoFlow.</answer><is_related>True</is_related></item>
+
+<item><id>3</id><task>各研究のAIエージェント設計方法を詳細に分析し、使用されている技術スタックやアルゴリズムを特定する</task><paper>{{'id': '1903.09709', 'title': 'An Interaction Framework for Studying Co-Creative AI', 'link': 'http://arxiv.org/abs/1903.09709v1', 'pdf_link': 'http://arxiv.org/pdf/1903.09709v1', 'abstract': 'Machine learning has been applied to a number of creative, design-oriented tasks. However, it remains unclear how to best empower human users with these machine learning approaches, particularly those users without technical expertise. In this paper we propose a general framework for turn-based interaction between human users and AI agents designed to support human creativity, called {{co-creative systems}}. The framework can be used to better understand the space of possible designs of co-creative systems and reveal future research directions. We demonstrate how to apply this framework in conjunction with a pair of recent human subject studies, comparing between the four human-AI systems employed in these studies and generating hypotheses towards future studies.', 'published': datetime.datetime(2019, 3, 22, 20, 57, 5), 'updated': datetime.datetime(2019, 3, 22, 20, 57, 5), 'version': 1, 'authors': ['Matthew Guzdial', 'Mark Riedl'], 'categories': ['cs.HC', 'cs.AI'], 'relevance_score': 0.8053262}}</paper><answer>- Answer
+
+  - The paper outlines the design methods of AI agents used in the context of co-creative systems, particularly in the area of game level design. The authors conducted studies comparing various machine learning (ML) approaches, specifically mentioning three distinct ML-based AI partners: "an LSTM, a Markov Chain, and a Bayes Net." The researchers aimed to understand user perceptions of these AI agents and how their designs influenced co-creative interactions.
+
+  
+
+  - "In the first study interface... allowed users to interact with one of three distinct ML-based AI partners in the backend: an LSTM, a Markov Chain, and a Bayes Net." The framework also mentions the evolution of the interface, noting that they removed certain user abilities and introduced features like the ability to ask for explanations of the AI agent's actions and an undo button for the user's actions.
+
+  - The AI agents were designed with different algorithms, influencing how users perceived their creativity and usability. The results indicated that "the Bayes Net produced less changes per action compared to the LSTM or Markov Chain," suggesting that the design of these agents directly affected the user experience.
+
+  - The paper states, "Including active learning as a non-turn action for the Deep RL AI agent improved simulated test performance," highlighting the importance of incorporating learning mechanisms that adapt based on user interactions.
+
+    - In simple terms, the research focused on how different AI algorithms (like LSTM, Markov Chain, and Bayes Net) were designed to assist users in creating game levels. By adjusting the AI's capabilities, such as allowing it to learn from user feedback or providing explanations for its actions, researchers aimed to enhance the collaborative experience between human users and AI.
+
+- Related Papers
+
+  - "Mixed-initiative interaction" by JE Allen, Curry I Guinn, and E Horvtz (1999). This paper discusses the concept of mixed-initiative systems where humans and AI can collaborate effectively. It is relevant as it lays the groundwork for understanding co-creative systems, which the current research builds upon. Further investigation into this paper is recommended for foundational knowledge in AI-human interaction.
+
+  - "Fostering creativity in the mixed-initiative evolutionary dungeon designer" by Alberto Alvarez et al. (2018). This work explores how mixed-initiative systems can enhance creativity in game design. It connects to the current research by providing insights into how AI can support creative processes. Further reading is suggested to gain additional perspectives on AI's role in creative environments.
+
+  - "Evaluating Creativity in Computational Co-Creative Systems" by Pegah Karimi et al. (2018). This paper looks into metrics and methods for assessing creativity in AI systems, which is crucial for understanding the effectiveness of the AI agents studied in the current paper. Investigating this work may offer valuable criteria for evaluating similar systems.
+
+  - "Explainable AI for Designers: A Human-Centered Perspective on Mixed-Initiative Co-Creation" by Jichen Zhu et al. (2018). This research emphasizes the need for explainability in AI systems, which resonates with the findings that user perceptions improved with explanations of AI actions. Further exploration of this paper is recommended as it aligns closely with the current study's focus on user experience.</answer><is_related>True</is_related></item>
+
+<item><id>4</id><task>各研究のAIエージェント設計方法を詳細に分析し、使用されている技術スタックやアルゴリズムを特定する</task><paper>{{'id': '2410.14393', 'title': 'Debug Smarter, Not Harder: AI Agents for Error Resolution in\n  Computational Notebooks', 'link': 'http://arxiv.org/abs/2410.14393v1', 'pdf_link': 'http://arxiv.org/pdf/2410.14393v1', 'abstract': 'Computational notebooks became indispensable tools for research-related development, offering unprecedented interactivity and flexibility in the development process. However, these benefits come at the cost of reproducibility and an increased potential for bugs. With the rise of code-fluent Large Language Models empowered with agentic techniques, smart bug-fixing tools with a high level of autonomy have emerged. However, those tools are tuned for classical script programming and still struggle with non-linear computational notebooks. In this paper, we present an AI agent designed specifically for error resolution in a computational notebook. We have developed an agentic system capable of exploring a notebook environment by interacting with it -- similar to how a user would -- and integrated the system into the JetBrains service for collaborative data science called Datalore. We evaluate our approach against the pre-existing single-action solution by comparing costs and conducting a user study. Users rate the error resolution capabilities of the agentic system higher but experience difficulties with UI. We share the results of the study and consider them valuable for further improving user-agent collaboration.', 'published': datetime.datetime(2024, 10, 18, 11, 55, 34), 'updated': datetime.datetime(2024, 10, 18, 11, 55, 34), 'version': 1, 'authors': ['Konstantin Grotov', 'Artem Borzilov', 'Maksim Krivobok', 'Timofey Bryksin', 'Yaroslav Zharov'], 'categories': ['cs.LG', 'cs.AI'], 'relevance_score': 0.75036985}}</paper><answer>- Answer
+
+  - The paper presents a detailed architecture for an AI agent designed specifically for error resolution in computational notebooks. The system consists of three main components: an agent, an environment, and a user interface. The agent acts as a stateful back-end service that facilitates communication between the Large Language Model (LLM) and the notebook environment. It is responsible for orchestrating the resolution process of runtime exceptions by storing interaction history and converting LLM predictions into actionable steps within the notebook.
+
+  
+
+  - The AI agent was built using the GPT-4-0613 foundation model, which was selected for its reliable performance in generating function calls. The design includes a memory stack that stores the history of previous interactions and observations from the notebook environment. The agent engages in a strategy of reflection, prompting the LLM to consider the outcomes of past actions before deciding on the next step. The agent can create, edit, and execute cells in the notebook, allowing it to interactively explore the environment and resolve errors in a manner similar to a human user.
+
+  - The environment is described as a fully functional computational notebook that supports various features such as Python execution, inline plotting, and markdown support. The notebook environment is augmented with tools that enable the agent to perform actions like creating and executing cells, allowing for exploration beyond the immediate context of the notebook.
+
+  - The authors emphasize the importance of avoiding "hacks" in error resolution—actions that merely circumvent the issue rather than addressing the root cause. The system is structured to encourage the agent to explore the environment iteratively for a more effective resolution process.
+
+- Related Papers
+
+  - The paper cites several related works that provide context and support for their research. Here are some significant references:
+
+  
+
+    - **"Why Jupyter is Data Scientists’ Computational Notebook of Choice" by Jeffrey M. Perkel, 2018**  
+
+      This paper discusses the popularity of Jupyter notebooks in data science and highlights their stateful nature, which is fundamental to understanding the challenges of reproducibility and debugging in such environments.
+
+    - **"Chain-of-Thought Prompting Elicits Reasoning in Large Language Models" by Wei et al., 2022**  
+
+      This study introduces the concept of chain-of-thought prompting, which is relevant to the agent's strategy of reflecting on previous actions to guide future ones.
+
+    - **"Teaching and Learning with Jupyter" by Barba et al., 2019**  
+
+      This paper covers pedagogical approaches using Jupyter notebooks, which could inform the design of user interfaces that facilitate learning and error resolution in computational notebooks.
+
+    - **"Understanding and Improving the Quality and Reproducibility of Jupyter Notebooks" by Pimentel et al., 2021**  
+
+      This research provides insights into the reproducibility issues in notebooks, underlining the importance of effective debugging tools like the AI agent presented in the current work.
+
+  
+
+  - Each of these papers contributes to the foundational understanding of computational notebooks and the challenges faced within them, making them highly relevant to the current research on AI agents for error resolution. Further investigation into these papers is recommended as they provide essential context and methodologies that could enhance the understanding of the design choices made in the AI agent developed by the authors.</answer><is_related>True</is_related></item>
+
+<item><id>5</id><task>各研究におけるAIエージェントの応用分野を特定し、どのような分野で活用されているかを記述する</task><paper>{{'id': '2308.05391', 'title': 'Enhancing Trust in LLM-Based AI Automation Agents: New Considerations\n  and Future Challenges', 'link': 'http://arxiv.org/abs/2308.05391v1', 'pdf_link': 'http://arxiv.org/pdf/2308.05391v1', 'abstract': 'Trust in AI agents has been extensively studied in the literature, resulting in significant advancements in our understanding of this field. However, the rapid advancements in Large Language Models (LLMs) and the emergence of LLM-based AI agent frameworks pose new challenges and opportunities for further research. In the field of process automation, a new generation of AI-based agents has emerged, enabling the execution of complex tasks. At the same time, the process of building automation has become more accessible to business users via user-friendly no-code tools and training mechanisms. This paper explores these new challenges and opportunities, analyzes the main aspects of trust in AI agents discussed in existing literature, and identifies specific considerations and challenges relevant to this new generation of automation agents. We also evaluate how nascent products in this category address these considerations. Finally, we highlight several challenges that the research community should address in this evolving landscape.', 'published': datetime.datetime(2023, 8, 10, 7, 12, 11), 'updated': datetime.datetime(2023, 8, 10, 7, 12, 11), 'version': 1, 'authors': ['Sivan Schwartz', 'Avi Yaeli', 'Segev Shlomov'], 'categories': ['cs.AI', '68T01'], 'relevance_score': 0.8992984}}</paper><answer>- Answer
+
+  - The paper discusses various applications of LLM-based AI automation agents across multiple domains, emphasizing their growing capabilities in understanding and generating human-like language. For instance, it mentions that "products such as Microsoft CoPilot, Adept.AI, MultiOn, chatGPT, and Watson Orchestrate have begun to embed these models and frameworks while providing AI-assistants that help humans perform work." This indicates that AI agents are being integrated into productivity tools to assist with tasks such as data entry, analysis, process automation, and content generation.
+
+  - Furthermore, in the section about ChatGPT, it is illustrated that "ChatGPT plugins offer 3rd party vendors to provide APIs to external knowledge and systems." This suggests that ChatGPT can interact with various external systems, enhancing its applicability in fields requiring integration with other services, such as customer service, automated booking systems, and more.
+
+- Related Papers
+
+  - "User trust in artificial intelligence: A comprehensive conceptual framework" by Yang and Wibowo, 2022
+
+    - This paper provides insights into the components and frameworks necessary for understanding user trust in AI systems, which is crucial in applications where AI agents are used.
+
+    - It is relevant because it lays the groundwork for understanding user interactions with AI agents, particularly in automation and service delivery contexts.
+
+    - Further investigation into this paper is recommended as it may offer frameworks that can be applied to assess trust in the specific applications of LLM-based agents.
+
+  - "Transparency and trust in artificial intelligence systems" by Schmidt, Biessmann, and Teubner, 2020
+
+    - This paper discusses the significance of transparency in AI systems and how it relates to user trust—a critical factor for the successful deployment of AI agents in business processes.
+
+    - Its relevance lies in providing guidelines on how transparency can be implemented in AI applications, which is essential for user acceptance and trust.
+
+    - Further exploration of this paper is advisable, as its findings could inform the design of transparent AI agents that enhance user trust in various applications.
+
+  - "GPT-3: Language Models are Few-Shot Learners" by Brown et al., 2020
+
+    - This foundational paper on GPT-3 outlines its capabilities in natural language processing and the implications of its use in various applications.
+
+    - It is relevant for understanding the underlying technology that powers many of the discussed automation agents and their potential applications in diverse fields.
+
+    - Investigating this paper is recommended for insights into the capabilities of LLMs and how they can be leveraged in automation tasks.
+
+  - "ChatGPT Plugins Documentation," OpenAI, 2023
+
+    - This documentation provides detailed information on the capabilities and integration of ChatGPT with external systems.
+
+    - It is relevant because it highlights practical applications and how developers can utilize ChatGPT in various domains.
+
+    - Further examination of this documentation is recommended, especially for developers and researchers interested in practical implementations of LLM-based agents.</answer><is_related>True</is_related></item>
+
+<item><id>6</id><task>各研究におけるAIエージェントの応用分野を特定し、どのような分野で活用されているかを記述する</task><paper>{{'id': '2403.16971', 'title': 'AIOS: LLM Agent Operating System', 'link': 'http://arxiv.org/abs/2403.16971v3', 'pdf_link': 'http://arxiv.org/pdf/2403.16971v3', 'abstract': 'LLM-based intelligent agents face significant deployment challenges, particularly related to resource management. Allowing unrestricted access to LLM or tool resources can lead to inefficient or even potentially harmful resource allocation and utilization for agents. Furthermore, the absence of proper scheduling and resource management mechanisms in current agent designs hinders concurrent processing and limits overall system efficiency. As the diversity and complexity of agents continue to grow, addressing these resource management issues becomes increasingly critical to LLM-based agent systems. To address these challenges, this paper proposes the architecture of AIOS (LLM-based AI Agent Operating System) under the context of managing LLM-based agents. It introduces a novel architecture for serving LLM-based agents by isolating resources and LLM-specific services from agent applications into an AIOS kernel. This AIOS kernel provides fundamental services (e.g., scheduling, context management, memory management, storage management, access control) and efficient management of resources (e.g., LLM and external tools) for runtime agents. To enhance usability, AIOS also includes an AIOS-Agent SDK, a comprehensive suite of APIs designed for utilizing functionalities provided by the AIOS kernel. Experimental results demonstrate that using AIOS can achieve up to 2.1x faster execution for serving agents built by various agent frameworks. The source code is available at https://github.com/agiresearch/AIOS.', 'published': datetime.datetime(2024, 3, 25, 17, 32, 23), 'updated': datetime.datetime(2024, 11, 7, 19, 10, 11), 'version': 3, 'authors': ['Kai Mei', 'Xi Zhu', 'Wujiang Xu', 'Wenyue Hua', 'Mingyu Jin', 'Zelong Li', 'Shuyuan Xu', 'Ruosong Ye', 'Yingqiang Ge', 'Yongfeng Zhang'], 'categories': ['cs.OS', 'cs.AI', 'cs.CL'], 'relevance_score': 0.8866169}}</paper><answer>- Answer
+
+  - **From Section 5.2: Large Language Model Agents**:
+
+    "LLM-based single-agent systems (SAS) use a single LLM agent for complex task solving, such as travel planning (Xie et al., 2024), personalized recommendation, and artistic design (Ge et al., 2023a). The agent takes natural language instruction from users as input and decomposes the task into a multistep plan for task solving, where each step may call external tools to be completed, such as collecting information, executing specialized models, or interacting with the external world."
+
+    "For example, agents in virtual or digital environments may invoke APIs (Ge et al., 2023a; Schick et al., 2023; Yao & Narasimhan, 2023; Parisi et al., 2022; Tang et al., 2023; Xie et al., 2024), browse websites (Nakano et al., 2022; Deng et al., 2023; Wu et al., 2024), or execute codes (Zhang et al., 2023; Yang et al.), while agents in the physical environment may manipulate objects (Brohan et al., 2023; Fan et al., 2022; Wang et al., 2023a), carry out lab experiments (Boiko et al., 2023; Bran et al., 2023), or make actionable decisions (Huang et al., 2022; Xiang et al., 2023)."
+
+    - Based on the above quotes, LLM-based agents have applications across various fields. They can solve complex tasks such as travel planning, personalized recommendations, and artistic design, indicating their versatility in service-oriented roles. Moreover, they can function in both digital (like invoking APIs or browsing websites) and physical environments (like manipulating objects or conducting lab experiments), showcasing their functionality in diverse contexts ranging from virtual assistance to physical tasks in real-world settings.
+
+- Related Papers
+
+  - "Travel Planning" by Xie et al., 2024
+
+    - This paper explores the use of LLM-based agents in travel planning, providing insights into how agents can efficiently decompose tasks for comprehensive itinerary management.
+
+    - This paper is relevant as it exemplifies a specific application of LLM agents in a user-centric scenario, integrating their capabilities to enhance travel experiences.
+
+    - Further investigation is recommended as it provides practical examples of LLM usage in real-world applications.
+
+  - "Personalized Recommendation" by Ge et al., 2023a
+
+    - This work discusses how LLM agents can generate tailored recommendations based on user inputs and preferences, emphasizing their role in enhancing user engagement.
+
+    - This paper is significant for understanding the personalization capabilities of LLM agents, illustrating how they cater to individual user needs.
+
+    - Further investigation is advisable to delve deeper into the methodologies applied for personalization in LLM agents.
+
+  - "Artistic Design" by Ge et al., 2023a
+
+    - The research investigates how LLMs can assist in creative processes, such as generating artworks or design ideas based on user prompts.
+
+    - This paper highlights the innovative applications of LLM agents in creative fields, demonstrating their potential beyond traditional computational tasks.
+
+    - Further exploration is recommended to assess the implications of LLMs in artistic domains and their impact on creativity. 
+
+  - "Manipulating Objects" by Brohan et al., 2023
+
+    - This paper examines the physical capabilities of LLM agents, detailing how they can interact with and manipulate real-world objects.
+
+    - This research is pertinent as it expands the understanding of LLM applications into robotics and physical interactions, emphasizing their versatility.
+
+    - Further investigation may yield insights into the practical challenges and advancements in robotic applications of LLM agents.
+
+  - "Lab Experiments" by Boiko et al., 2023
+
+    - The study describes the use of LLM agents in conducting laboratory experiments, focusing on their ability to make decisions and execute tasks based on experimental protocols.
+
+    - This paper is relevant since it connects LLM capabilities with scientific research, showcasing their potential to assist in experimental settings.
+
+    - Further investigation is suggested to explore the integration of LLM agents in scientific methodologies and their impact on research efficiency. 
+
+  - "Actionable Decisions" by Huang et al., 2022
+
+    - This research discusses the decision-making capabilities of LLM agents, particularly in contexts requiring timely and informed actions.
+
+    - This paper is significant for understanding how LLMs can influence decision-making processes in various applications.
+
+    - Further exploration may provide valuable insights into enhancing decision-support systems through LLM integration.</answer><is_related>True</is_related></item>
+
+<item><id>7</id><task>各研究におけるAIエージェントの応用分野を特定し、どのような分野で活用されているかを記述する</task><paper>{{'id': '2407.12821', 'title': 'AutoFlow: Automated Workflow Generation for Large Language Model Agents', 'link': 'http://arxiv.org/abs/2407.12821v1', 'pdf_link': 'http://arxiv.org/pdf/2407.12821v1', 'abstract': 'Recent advancements in Large Language Models (LLMs) have shown significant progress in understanding complex natural language. One important application of LLM is LLM-based AI Agent, which leverages the ability of LLM as well as external tools for complex-task solving. To make sure LLM Agents follow an effective and reliable procedure to solve the given task, manually designed workflows are usually used to guide the working mechanism of agents. However, manually designing the workflows requires considerable efforts and domain knowledge, making it difficult to develop and deploy agents on massive scales. To address these issues, we propose AutoFlow, a framework designed to automatically generate workflows for agents to solve complex tasks. AutoFlow takes natural language program as the format of agent workflow and employs a workflow optimization procedure to iteratively optimize the workflow quality. Besides, this work offers two workflow generation methods: fine-tuning-based and in-context-based methods, making the AutoFlow framework applicable to both open-source and closed-source LLMs. Experimental results show that our framework can produce robust and reliable agent workflows. We believe that the automatic generation and interpretation of workflows in natural language represent a promising paradigm for solving complex tasks, particularly with the rapid development of LLMs. The source code of this work is available at https://github.com/agiresearch/AutoFlow.', 'published': datetime.datetime(2024, 7, 1, 21, 5, 2), 'updated': datetime.datetime(2024, 7, 1, 21, 5, 2), 'version': 1, 'authors': ['Zelong Li', 'Shuyuan Xu', 'Kai Mei', 'Wenyue Hua', 'Balaji Rama', 'Om Raheja', 'Hao Wang', 'He Zhu', 'Yongfeng Zhang'], 'categories': ['cs.CL', 'cs.AI', 'cs.LG'], 'relevance_score': 0.8718026}}</paper><answer>- Answer
+
+  - "These agents leverage the capabilities of LLMs along with external tools to tackle intricate tasks, ranging from data analysis [7], software development [23, 35], scientific research [2], travel planning [46] to many other decision-making processes in various domains."
+
+  
+
+  - "One of the critical aspects of ensuring that LLM-based AI agents operate effectively and reliably is the design of workflows that guide their task-solving procedures."
+
+  
+
+  - "For example, an LLM-based agent for fake news detection may execute under the following workflow designed by communication experts [24]: 1) Check the URL, 2) Check the language, 3) Commonsense evaluation, 4) Standpoint evaluation, 5) Summarize the findings, and 6) Classification."
+
+    - The citations above indicate that LLM-based AI agents are applied in diverse fields such as data analysis, software development, scientific research, travel planning, and decision-making processes. Additionally, they can be specifically utilized in domains like fake news detection, where a structured workflow guides the agent through various evaluation steps. This illustrates the versatility of LLMs and their ability to assist in complex tasks across different sectors.
+
+- Related Papers
+
+  - "OpenAGI: When LLM Meets Domain Experts" by Yingqiang Ge, Wenyue Hua, Kai Mei, Jianchao Ji, Juntao Tan, Shuyuan Xu, Zelong Li, and Yongfeng Zhang (2023).
+
+    - Key contributions or findings discussed in the context: This paper discusses how LLMs can integrate with domain expertise to enhance their application and effectiveness in various tasks, emphasizing the collaborative nature of AI agents and human knowledge.
+
+    - Why this paper is relevant to the current research: It provides insights into the practical implementation of LLMs in real-world applications, supporting the idea of using AI agents for complex tasks.
+
+    - Further investigation recommendation: Yes, exploring this paper could yield valuable information on the synergy between LLMs and domain experts.
+
+  - "Large Language Model Agent for Fake News Detection" by Xinyi Li, Yongfeng Zhang, and Edward C Malthouse (2024).
+
+    - Key contributions or findings discussed in the context: The focus of this research is on developing LLM-based agents that can detect fake news effectively. It highlights the structured workflows these agents follow to evaluate information critically.
+
+    - Why this paper is relevant to the current research: It provides a concrete example of LLM applications in a sensitive and impactful area, illustrating how workflows can enhance task execution.
+
+    - Further investigation recommendation: Yes, this paper is crucial for understanding the specific applications of LLMs in combating misinformation.
+
+  - "LLM as OS, Agents as Apps: Envisioning AIOS, Agents and the AIOS-Agent Ecosystem" by Yingqiang Ge, Yujie Ren, Wenyue Hua, Shuyuan Xu, Juntao Tan, and Yongfeng Zhang (2023).
+
+    - Key contributions or findings discussed in the context: This paper discusses the conceptual framework of AI agents acting as applications within an operating system driven by LLMs, showcasing their potential applications across various sectors.
+
+    - Why this paper is relevant to the current research: It expands on the ecosystem of LLMs and AI agents, providing a broader context for their application areas.
+
+    - Further investigation recommendation: Yes, this paper could provide additional insights into the ecosystem of AI agents related to LLMs.</answer><is_related>True</is_related></item>
+
+<item><id>8</id><task>各研究の成果や結論をまとめ、各研究がもたらした具体的な影響を検討する</task><paper>{{'id': '2405.05248', 'title': 'LLMs with Personalities in Multi-issue Negotiation Games', 'link': 'http://arxiv.org/abs/2405.05248v2', 'pdf_link': 'http://arxiv.org/pdf/2405.05248v2', 'abstract': 'Powered by large language models (LLMs), AI agents have become capable of many human tasks. Using the most canonical definitions of the Big Five personality, we measure the ability of LLMs to negotiate within a game-theoretical framework, as well as methodological challenges to measuring notions of fairness and risk. Simulations (n=1,500) for both single-issue and multi-issue negotiation reveal increase in domain complexity with asymmetric issue valuations improve agreement rates but decrease surplus from aggressive negotiation. Through gradient-boosted regression and Shapley explainers, we find high openness, conscientiousness, and neuroticism are associated with fair tendencies; low agreeableness and low openness are associated with rational tendencies. Low conscientiousness is associated with high toxicity. These results indicate that LLMs may have built-in guardrails that default to fair behavior, but can be "jail broken" to exploit agreeable opponents. We also offer pragmatic insight in how negotiation bots can be designed, and a framework of assessing negotiation behavior based on game theory and computational social science.', 'published': datetime.datetime(2024, 5, 8, 17, 51, 53), 'updated': datetime.datetime(2024, 5, 9, 1, 9, 9), 'version': 2, 'authors': ['Sean Noh', 'Ho-Chun Herbert Chang'], 'categories': ['cs.CL', 'cs.AI', 'cs.MA'], 'relevance_score': 0.7829945}}</paper><answer>- Answer
+
+  - The paper presents three main generalizations regarding personality-endowed LLMs in negotiation contexts. The first generalization notes that "more agreeable agents have the highest payoffs but are exploitable by less agreeable agents." This suggests that while agreeable agents can successfully negotiate with a wide range of customers, they are vulnerable to being taken advantage of by those who are less agreeable. 
+
+  - The second generalization emphasizes that "the behavior of these agents are generally fair rather than rational." This indicates that the negotiation strategies employed by these agents often prioritize fairness over achieving the best possible outcome, which can lead to irrational behaviors such as rejecting final offers and thus losing potential utility. 
+
+  - The third generalization provides insights into the design of negotiation bots, stating that "bots with fairness-based arguments will be able to reach more deals while bots with rational arguments will extract increased value." This highlights the importance of the personality traits programmed into negotiation bots, where assertive language can enhance both agreement rates and value extraction. However, it also warns that more aggressive personalities may create a toxic negotiating environment, necessitating a careful balance between assertiveness and aggression.
+
+- Related Papers
+
+  - [NOT_RELATED]</answer><is_related>True</is_related></item>
+
+<item><id>0</id><task>LLMベースのAIエージェントに関するarXivの最新研究を調査し、各研究の概要をまとめる</task><paper>{{'id': '2308.05391', 'title': 'Enhancing Trust in LLM-Based AI Automation Agents: New Considerations\n  and Future Challenges', 'link': 'http://arxiv.org/abs/2308.05391v1', 'pdf_link': 'http://arxiv.org/pdf/2308.05391v1', 'abstract': 'Trust in AI agents has been extensively studied in the literature, resulting in significant advancements in our understanding of this field. However, the rapid advancements in Large Language Models (LLMs) and the emergence of LLM-based AI agent frameworks pose new challenges and opportunities for further research. In the field of process automation, a new generation of AI-based agents has emerged, enabling the execution of complex tasks. At the same time, the process of building automation has become more accessible to business users via user-friendly no-code tools and training mechanisms. This paper explores these new challenges and opportunities, analyzes the main aspects of trust in AI agents discussed in existing literature, and identifies specific considerations and challenges relevant to this new generation of automation agents. We also evaluate how nascent products in this category address these considerations. Finally, we highlight several challenges that the research community should address in this evolving landscape.', 'published': datetime.datetime(2023, 8, 10, 7, 12, 11), 'updated': datetime.datetime(2023, 8, 10, 7, 12, 11), 'version': 1, 'authors': ['Sivan Schwartz', 'Avi Yaeli', 'Segev Shlomov'], 'categories': ['cs.AI', '68T01'], 'relevance_score': 0.8992984}}</paper><answer>- Answer
+
+  - **Research Overview**: The paper discusses the evolution of trust in AI agents, particularly focusing on Large Language Models (LLMs) and the emergence of AI-based automation agents. It emphasizes the importance of trust for the adoption of these technologies in business processes, drawing parallels between human-to-human trust and human-to-AI-agent trust. 
+
+    - "Trust in AI agents has been extensively studied in the literature, resulting in significant advancements in our understanding of this field. However, the rapid advancements in Large Language Models (LLMs) and the emergence of LLM-based AI agent frameworks pose new challenges and opportunities for further research."
+
+    
+
+  - **Design Methods**: The paper outlines key dimensions of trust that need to be considered in the design of LLM-based AI agents, including reliability, openness, tangibility, immediacy behaviors, and task characteristics. Each of these dimensions has specific sub-factors that contribute to establishing trust between users and AI systems.
+
+    - "We argue that AI systems must be developed with trust considerations, originating from human-to-human trustworthy interaction. Reliability, openness, tangibility, immediacy behavior, and task characteristics have been found to be core considerations and are becoming eminent in nascent LLM-based agent systems."
+
+  - **Application Areas**: The paper implies that LLM-based AI agents are becoming increasingly relevant in areas such as business process automation, where complex tasks are performed autonomously. It discusses the need for these agents to be designed with trust in mind to ensure user acceptance and effective integration into workflows.
+
+    - "In the context of business process automation, AI-based agents will also be poised to make automatic decisions and take actions, often on increasingly more complex types of tasks."
+
+  - **Technical Details**: The paper emphasizes several technical dimensions that contribute to trust, including prompt mediation, content mediation, and knowledge grounding among others. These aspects are essential for ensuring that AI agents operate reliably and transparently.
+
+    - "To establish trust, it is imperative that agents consistently deliver high-quality results with a high degree of accuracy."
+
+  - **Outcomes and Conclusions**: The authors conclude that building and maintaining trust in AI requires a coordinated effort across disciplines and stakeholders. They advocate for the development of comprehensive metrics to evaluate trust in LLM-based systems and call for interdisciplinary collaboration to tackle these challenges.
+
+    - "This paper serves as a call to action for these communities. As AI continues to exponentially evolve and defuse into every aspect of our lives, building and maintaining trust in AI is not just a technical challenge but a societal one that will determine the level of adoption of these technologies."
+
+  - **Publication Year**: The paper was presented at AutoMate'23@IJCAI in August 2023.
+
+  - **Authors and Affiliations**: The authors of the paper are Sivan Schwartz, Avi Yaeli, and Segev Shlomov, affiliated with IBM Research.
+
+- Related Papers
+
+  - The paper references several studies and existing literature relevant to trust in AI and human interactions, including:
+
+    - "User trust in artificial intelligence: A comprehensive conceptual framework" by Yang, R., and Wibowo, S. (2022)
+
+      - **Key Contributions**: This paper reviews the existing studies and frameworks on trust in AI, providing a comprehensive overview of factors influencing user trust.
+
+      - **Relevance**: It is directly related to the current research as it establishes foundational concepts that the authors build upon in their discussion of LLMs and trust.
+
+      - **Further Investigation**: Recommended for its comprehensive exploration of trust factors in AI contexts.
+
+    - "Psychological foundations of trust" by Simpson, J. A. (2007)
+
+      - **Key Contributions**: This study explores the dynamics of trust in human relationships, which informs the understanding of trust in human-AI interactions.
+
+      - **Relevance**: Provides insights into the psychological aspects of trust that are applicable to AI systems.
+
+      - **Further Investigation**: Recommended for understanding the psychological dimensions of trust in AI.
+
+    - "Transparency and trust in artificial intelligence systems" by Schmidt, P., Biessmann, F., and Teubner, T. (2020)
+
+      - **Key Contributions**: This paper discusses the role of transparency in building trust in AI systems, a key theme in the current research.
+
+      - **Relevance**: Relevant for its focus on transparency, a critical aspect highlighted in the trust considerations for LLM-based agents.
+
+      - **Further Investigation**: Recommended for its insights into the importance of transparency in AI systems.
+
+    - "Human trust in artificial intelligence: Review of empirical research" by Glikson, E. and Woolley, A. W. (2020)
+
+      - **Key Contributions**: This paper reviews empirical research on trust in AI, summarizing various factors affecting human trust in automation.
+
+      - **Relevance**: Directly supports the current research by providing empirical evidence on trust-related factors.
+
+      - **Further Investigation**: Recommended for its empirical approach to understanding trust in AI systems.</answer><is_related>True</is_related></item>
+
+<item><id>1</id><task>LLMベースのAIエージェントに関するarXivの最新研究を調査し、各研究の概要をまとめる</task><paper>{{'id': '2403.16971', 'title': 'AIOS: LLM Agent Operating System', 'link': 'http://arxiv.org/abs/2403.16971v3', 'pdf_link': 'http://arxiv.org/pdf/2403.16971v3', 'abstract': 'LLM-based intelligent agents face significant deployment challenges, particularly related to resource management. Allowing unrestricted access to LLM or tool resources can lead to inefficient or even potentially harmful resource allocation and utilization for agents. Furthermore, the absence of proper scheduling and resource management mechanisms in current agent designs hinders concurrent processing and limits overall system efficiency. As the diversity and complexity of agents continue to grow, addressing these resource management issues becomes increasingly critical to LLM-based agent systems. To address these challenges, this paper proposes the architecture of AIOS (LLM-based AI Agent Operating System) under the context of managing LLM-based agents. It introduces a novel architecture for serving LLM-based agents by isolating resources and LLM-specific services from agent applications into an AIOS kernel. This AIOS kernel provides fundamental services (e.g., scheduling, context management, memory management, storage management, access control) and efficient management of resources (e.g., LLM and external tools) for runtime agents. To enhance usability, AIOS also includes an AIOS-Agent SDK, a comprehensive suite of APIs designed for utilizing functionalities provided by the AIOS kernel. Experimental results demonstrate that using AIOS can achieve up to 2.1x faster execution for serving agents built by various agent frameworks. The source code is available at https://github.com/agiresearch/AIOS.', 'published': datetime.datetime(2024, 3, 25, 17, 32, 23), 'updated': datetime.datetime(2024, 11, 7, 19, 10, 11), 'version': 3, 'authors': ['Kai Mei', 'Xi Zhu', 'Wujiang Xu', 'Wenyue Hua', 'Mingyu Jin', 'Zelong Li', 'Shuyuan Xu', 'Ruosong Ye', 'Yingqiang Ge', 'Yongfeng Zhang'], 'categories': ['cs.OS', 'cs.AI', 'cs.CL'], 'relevance_score': 0.8866169}}</paper><answer>- Answer
+
+  - The paper introduces the architecture of AIOS (LLM-based AI Agent Operating System) to address the challenges faced by LLM-based intelligent agents, particularly in resource management. It states, "LLM-based intelligent agents face significant deployment challenges, particularly related to resource management. Allowing unrestricted access to LLM or tool resources can lead to inefficient or even potentially harmful resource allocation and utilization for agents." This highlights the dilemma of uncontrolled resource access, which can result in inefficiencies or abuses by agents.
+
+  - Furthermore, the paper elaborates on the limitations of existing agent frameworks: "System-level resources such as LLMs and tools... are typically treated as direct inputs to agents, granting agents explicit access and control. Such implementations can compromise optimal resource utilization and potentially expose the system to vulnerabilities if some agents exploit the resources." The text emphasizes the need for structured resource management to ensure that agents can operate efficiently without monopolizing resources or causing failures in the system.
+
+  - The proposed AIOS architecture separates agent applications from the resources they utilize, which is crucial for enhancing efficiency and safety. According to the authors, "This architecture divides agent applications and their accessible resources such as LLMs and tools into distinct layers, i.e., the application layer and the kernel layer." This layered approach allows for better management and optimization of resource usage.
+
+  - The paper also discusses the implementation of the AIOS kernel, which includes an agent scheduler, memory management, and access control: "In this kernel, agent primitives are designed to decompose LLM-related queries into sub execution units to enhance concurrency." This suggests that the AIOS kernel is designed to improve the performance of LLM-based agents by allowing them to execute tasks concurrently rather than sequentially. The experimental results demonstrate that AIOS can achieve up to "2.1× faster execution for serving agents built by various agent frameworks," showcasing the effectiveness of the proposed system.
+
+- Related Papers
+
+  - The paper cites several related works, including foundational research in autonomous agents and advancements in large language models:
+
+    - "Wooldridge & Jennings, 1995; Jennings et al., 1998; Bresciani et al., 2004" discuss early efforts in autonomous agent research, which laid the groundwork for current developments in AI agents. These papers are relevant as they provide context for the evolution of agent design and capabilities.
+
+    - "Achiam et al., 2023; Touvron et al., 2023a; Team et al., 2023" highlight the advancements in large language models that have enabled more sophisticated agent behaviors. These papers are significant as they reflect the current state of LLM technology, which AIOS leverages.
+
+    - "Ouyang et al., 2022; Chung et al., 2022; Touvron et al., 2023b; Geng et al., 2022" detail the capabilities of LLMs in understanding and generating human-like text. These findings are relevant as they directly inform the functional capabilities that the AIOS architecture aims to enhance.
+
+  - Each of the aforementioned papers contributes to a deeper understanding of the challenges and opportunities in the field of LLM-based agents. Further investigation of these papers is recommended, particularly for those involved in the design and implementation of AI systems, as they provide foundational insights that can inform future developments in agent architecture and resource management.</answer><is_related>True</is_related></item>
+
+<item><id>2</id><task>LLMベースのAIエージェントに関するarXivの最新研究を調査し、各研究の概要をまとめる</task><paper>{{'id': '2407.12821', 'title': 'AutoFlow: Automated Workflow Generation for Large Language Model Agents', 'link': 'http://arxiv.org/abs/2407.12821v1', 'pdf_link': 'http://arxiv.org/pdf/2407.12821v1', 'abstract': 'Recent advancements in Large Language Models (LLMs) have shown significant progress in understanding complex natural language. One important application of LLM is LLM-based AI Agent, which leverages the ability of LLM as well as external tools for complex-task solving. To make sure LLM Agents follow an effective and reliable procedure to solve the given task, manually designed workflows are usually used to guide the working mechanism of agents. However, manually designing the workflows requires considerable efforts and domain knowledge, making it difficult to develop and deploy agents on massive scales. To address these issues, we propose AutoFlow, a framework designed to automatically generate workflows for agents to solve complex tasks. AutoFlow takes natural language program as the format of agent workflow and employs a workflow optimization procedure to iteratively optimize the workflow quality. Besides, this work offers two workflow generation methods: fine-tuning-based and in-context-based methods, making the AutoFlow framework applicable to both open-source and closed-source LLMs. Experimental results show that our framework can produce robust and reliable agent workflows. We believe that the automatic generation and interpretation of workflows in natural language represent a promising paradigm for solving complex tasks, particularly with the rapid development of LLMs. The source code of this work is available at https://github.com/agiresearch/AutoFlow.', 'published': datetime.datetime(2024, 7, 1, 21, 5, 2), 'updated': datetime.datetime(2024, 7, 1, 21, 5, 2), 'version': 1, 'authors': ['Zelong Li', 'Shuyuan Xu', 'Kai Mei', 'Wenyue Hua', 'Balaji Rama', 'Om Raheja', 'Hao Wang', 'He Zhu', 'Yongfeng Zhang'], 'categories': ['cs.CL', 'cs.AI', 'cs.LG'], 'relevance_score': 0.8718026}}</paper><answer>- Answer
+
+  - "Recent advancements in Large Language Models (LLMs) have demonstrated substantial progress in understanding and processing complex natural language. These developments have opened up a wide array of applications, among which the deployment of LLM-based AI agents stands out. These agents leverage the capabilities of LLMs along with external tools to tackle intricate tasks, ranging from data analysis, software development, scientific research, travel planning to many other decision-making processes in various domains."
+
+  
+
+  - "One of the critical aspects of ensuring that LLM-based AI agents operate effectively and reliably is the design of workflows that guide their task-solving procedures. For example, an LLM-based agent for fake news detection may execute under the following workflow designed by communication experts: 1) Check the URL, 2) Check the language, 3) Commonsense evaluation, 4) Standpoint evaluation, 5) Summarize the findings, and 6) Classification."
+
+  - "To address the challenges associated with manual workflow design, this paper proposes AutoFlow, a novel framework aimed at the automatic generation of workflows for AI agents to solve complex tasks. AutoFlow represents workflows in the form of natural language programs, facilitating easier comprehension and interaction."
+
+  - "Technically, AutoFlow introduces two innovative workflow generation methods: a fine-tuning-based method and an in-context-based method. The fine-tuning-based approach customizes the workflow generation process for specific tasks and domains by adjusting the parameters of the LLMs. In contrast, the in-context-based method utilizes contextual information to guide the generation process without the need for extensive fine-tuning, making it suitable for both open-source and closed-source LLMs."
+
+  - "Our experimental results validate the effectiveness of the AutoFlow framework, showing that the generated workflows by AutoFlow outperform manually designed ones while keeping readability, and showcasing its ability to produce high-quality workflows that enable AI agents to perform complex tasks with a high degree of reliability."
+
+    - The content details the advancements in LLMs and their significance in creating AI agents capable of performing complex tasks in various fields. It highlights the necessity of designing effective workflows for these agents and how the AutoFlow framework addresses the challenges of manual workflow design. By using natural language programs for workflows and offering two methods for workflow generation, the framework significantly improves the process of automating tasks while ensuring reliability and readability in the generated outputs.
+
+- Related Papers
+
+  - "Automated Machine Learning: Methods, Systems, Challenges" by Hutter et al. (2019)
+
+    - This paper discusses the field of Automated Machine Learning (AutoML) and its approaches to reducing the human labor involved in designing and deploying machine learning techniques.
+
+    - It is relevant as AutoFlow draws inspiration from the principles of AutoML to automate the design of workflows for LLM-based AI agents.
+
+    - Further investigation is recommended to understand how AutoML techniques can be integrated into the development of AI agents.
+
+  - "OpenAGI: When LLM Meets Domain Experts" by Ge et al. (2023)
+
+    - This research introduces the OpenAGI benchmark, which helps evaluate the capabilities of LLMs in various domains by integrating domain expert knowledge into AI systems.
+
+    - Its relevance lies in providing a framework for understanding how LLMs can be effectively utilized in conjunction with expert knowledge to enhance AI performance.
+
+    - Further investigation is suggested to explore the integration of domain expertise in AI agent workflows, as discussed in AutoFlow.
+
+  - "LLM as OS, Agents as Apps: Envisioning AIOS, Agents and the AIOS-Agent Ecosystem" by Ge et al. (2023)
+
+    - This paper envisions a new ecosystem where LLMs operate as operating systems for AI agents, providing a broad context for the interaction of different AI applications.
+
+    - It is significant because it provides insights into the future of AI agent ecosystems, potentially influencing the design of workflows in AutoFlow.
+
+    - A deeper dive into this paper may provide valuable insights into the architectural considerations for LLM-based agents.
+
+  - "CoRE: LLM as Interpreter for Natural Language Programming, Pseudo-Code Programming, and Flow Programming of AI Agents" by Xu et al. (2024)
+
+    - This paper presents the CoRE language, which organizes workflows as natural language instructions, serving as a basis for the AutoFlow framework.
+
+    - Its relevance lies in the foundational role it plays in shaping how workflows are structured and interpreted by LLMs.
+
+    - Reviewing this paper is highly recommended as it directly underpins the methodological framework employed in AutoFlow.</answer><is_related>True</is_related></item>
+
+<item><id>3</id><task>各研究のAIエージェント設計方法を詳細に分析し、使用されている技術スタックやアルゴリズムを特定する</task><paper>{{'id': '1903.09709', 'title': 'An Interaction Framework for Studying Co-Creative AI', 'link': 'http://arxiv.org/abs/1903.09709v1', 'pdf_link': 'http://arxiv.org/pdf/1903.09709v1', 'abstract': 'Machine learning has been applied to a number of creative, design-oriented tasks. However, it remains unclear how to best empower human users with these machine learning approaches, particularly those users without technical expertise. In this paper we propose a general framework for turn-based interaction between human users and AI agents designed to support human creativity, called {{co-creative systems}}. The framework can be used to better understand the space of possible designs of co-creative systems and reveal future research directions. We demonstrate how to apply this framework in conjunction with a pair of recent human subject studies, comparing between the four human-AI systems employed in these studies and generating hypotheses towards future studies.', 'published': datetime.datetime(2019, 3, 22, 20, 57, 5), 'updated': datetime.datetime(2019, 3, 22, 20, 57, 5), 'version': 1, 'authors': ['Matthew Guzdial', 'Mark Riedl'], 'categories': ['cs.HC', 'cs.AI'], 'relevance_score': 0.8053262}}</paper><answer>- Answer
+
+  - The paper outlines the design methods of AI agents used in the context of co-creative systems, particularly in the area of game level design. The authors conducted studies comparing various machine learning (ML) approaches, specifically mentioning three distinct ML-based AI partners: "an LSTM, a Markov Chain, and a Bayes Net." The researchers aimed to understand user perceptions of these AI agents and how their designs influenced co-creative interactions.
+
+  
+
+  - "In the first study interface... allowed users to interact with one of three distinct ML-based AI partners in the backend: an LSTM, a Markov Chain, and a Bayes Net." The framework also mentions the evolution of the interface, noting that they removed certain user abilities and introduced features like the ability to ask for explanations of the AI agent's actions and an undo button for the user's actions.
+
+  - The AI agents were designed with different algorithms, influencing how users perceived their creativity and usability. The results indicated that "the Bayes Net produced less changes per action compared to the LSTM or Markov Chain," suggesting that the design of these agents directly affected the user experience.
+
+  - The paper states, "Including active learning as a non-turn action for the Deep RL AI agent improved simulated test performance," highlighting the importance of incorporating learning mechanisms that adapt based on user interactions.
+
+    - In simple terms, the research focused on how different AI algorithms (like LSTM, Markov Chain, and Bayes Net) were designed to assist users in creating game levels. By adjusting the AI's capabilities, such as allowing it to learn from user feedback or providing explanations for its actions, researchers aimed to enhance the collaborative experience between human users and AI.
+
+- Related Papers
+
+  - "Mixed-initiative interaction" by JE Allen, Curry I Guinn, and E Horvtz (1999). This paper discusses the concept of mixed-initiative systems where humans and AI can collaborate effectively. It is relevant as it lays the groundwork for understanding co-creative systems, which the current research builds upon. Further investigation into this paper is recommended for foundational knowledge in AI-human interaction.
+
+  - "Fostering creativity in the mixed-initiative evolutionary dungeon designer" by Alberto Alvarez et al. (2018). This work explores how mixed-initiative systems can enhance creativity in game design. It connects to the current research by providing insights into how AI can support creative processes. Further reading is suggested to gain additional perspectives on AI's role in creative environments.
+
+  - "Evaluating Creativity in Computational Co-Creative Systems" by Pegah Karimi et al. (2018). This paper looks into metrics and methods for assessing creativity in AI systems, which is crucial for understanding the effectiveness of the AI agents studied in the current paper. Investigating this work may offer valuable criteria for evaluating similar systems.
+
+  - "Explainable AI for Designers: A Human-Centered Perspective on Mixed-Initiative Co-Creation" by Jichen Zhu et al. (2018). This research emphasizes the need for explainability in AI systems, which resonates with the findings that user perceptions improved with explanations of AI actions. Further exploration of this paper is recommended as it aligns closely with the current study's focus on user experience.</answer><is_related>True</is_related></item>
+
+<item><id>4</id><task>各研究のAIエージェント設計方法を詳細に分析し、使用されている技術スタックやアルゴリズムを特定する</task><paper>{{'id': '2410.14393', 'title': 'Debug Smarter, Not Harder: AI Agents for Error Resolution in\n  Computational Notebooks', 'link': 'http://arxiv.org/abs/2410.14393v1', 'pdf_link': 'http://arxiv.org/pdf/2410.14393v1', 'abstract': 'Computational notebooks became indispensable tools for research-related development, offering unprecedented interactivity and flexibility in the development process. However, these benefits come at the cost of reproducibility and an increased potential for bugs. With the rise of code-fluent Large Language Models empowered with agentic techniques, smart bug-fixing tools with a high level of autonomy have emerged. However, those tools are tuned for classical script programming and still struggle with non-linear computational notebooks. In this paper, we present an AI agent designed specifically for error resolution in a computational notebook. We have developed an agentic system capable of exploring a notebook environment by interacting with it -- similar to how a user would -- and integrated the system into the JetBrains service for collaborative data science called Datalore. We evaluate our approach against the pre-existing single-action solution by comparing costs and conducting a user study. Users rate the error resolution capabilities of the agentic system higher but experience difficulties with UI. We share the results of the study and consider them valuable for further improving user-agent collaboration.', 'published': datetime.datetime(2024, 10, 18, 11, 55, 34), 'updated': datetime.datetime(2024, 10, 18, 11, 55, 34), 'version': 1, 'authors': ['Konstantin Grotov', 'Artem Borzilov', 'Maksim Krivobok', 'Timofey Bryksin', 'Yaroslav Zharov'], 'categories': ['cs.LG', 'cs.AI'], 'relevance_score': 0.75036985}}</paper><answer>- Answer
+
+  - The paper presents a detailed architecture for an AI agent designed specifically for error resolution in computational notebooks. The system consists of three main components: an agent, an environment, and a user interface. The agent acts as a stateful back-end service that facilitates communication between the Large Language Model (LLM) and the notebook environment. It is responsible for orchestrating the resolution process of runtime exceptions by storing interaction history and converting LLM predictions into actionable steps within the notebook.
+
+  
+
+  - The AI agent was built using the GPT-4-0613 foundation model, which was selected for its reliable performance in generating function calls. The design includes a memory stack that stores the history of previous interactions and observations from the notebook environment. The agent engages in a strategy of reflection, prompting the LLM to consider the outcomes of past actions before deciding on the next step. The agent can create, edit, and execute cells in the notebook, allowing it to interactively explore the environment and resolve errors in a manner similar to a human user.
+
+  - The environment is described as a fully functional computational notebook that supports various features such as Python execution, inline plotting, and markdown support. The notebook environment is augmented with tools that enable the agent to perform actions like creating and executing cells, allowing for exploration beyond the immediate context of the notebook.
+
+  - The authors emphasize the importance of avoiding "hacks" in error resolution—actions that merely circumvent the issue rather than addressing the root cause. The system is structured to encourage the agent to explore the environment iteratively for a more effective resolution process.
+
+- Related Papers
+
+  - The paper cites several related works that provide context and support for their research. Here are some significant references:
+
+  
+
+    - **"Why Jupyter is Data Scientists’ Computational Notebook of Choice" by Jeffrey M. Perkel, 2018**  
+
+      This paper discusses the popularity of Jupyter notebooks in data science and highlights their stateful nature, which is fundamental to understanding the challenges of reproducibility and debugging in such environments.
+
+    - **"Chain-of-Thought Prompting Elicits Reasoning in Large Language Models" by Wei et al., 2022**  
+
+      This study introduces the concept of chain-of-thought prompting, which is relevant to the agent's strategy of reflecting on previous actions to guide future ones.
+
+    - **"Teaching and Learning with Jupyter" by Barba et al., 2019**  
+
+      This paper covers pedagogical approaches using Jupyter notebooks, which could inform the design of user interfaces that facilitate learning and error resolution in computational notebooks.
+
+    - **"Understanding and Improving the Quality and Reproducibility of Jupyter Notebooks" by Pimentel et al., 2021**  
+
+      This research provides insights into the reproducibility issues in notebooks, underlining the importance of effective debugging tools like the AI agent presented in the current work.
+
+  
+
+  - Each of these papers contributes to the foundational understanding of computational notebooks and the challenges faced within them, making them highly relevant to the current research on AI agents for error resolution. Further investigation into these papers is recommended as they provide essential context and methodologies that could enhance the understanding of the design choices made in the AI agent developed by the authors.</answer><is_related>True</is_related></item>
+
+<item><id>5</id><task>各研究におけるAIエージェントの応用分野を特定し、どのような分野で活用されているかを記述する</task><paper>{{'id': '2308.05391', 'title': 'Enhancing Trust in LLM-Based AI Automation Agents: New Considerations\n  and Future Challenges', 'link': 'http://arxiv.org/abs/2308.05391v1', 'pdf_link': 'http://arxiv.org/pdf/2308.05391v1', 'abstract': 'Trust in AI agents has been extensively studied in the literature, resulting in significant advancements in our understanding of this field. However, the rapid advancements in Large Language Models (LLMs) and the emergence of LLM-based AI agent frameworks pose new challenges and opportunities for further research. In the field of process automation, a new generation of AI-based agents has emerged, enabling the execution of complex tasks. At the same time, the process of building automation has become more accessible to business users via user-friendly no-code tools and training mechanisms. This paper explores these new challenges and opportunities, analyzes the main aspects of trust in AI agents discussed in existing literature, and identifies specific considerations and challenges relevant to this new generation of automation agents. We also evaluate how nascent products in this category address these considerations. Finally, we highlight several challenges that the research community should address in this evolving landscape.', 'published': datetime.datetime(2023, 8, 10, 7, 12, 11), 'updated': datetime.datetime(2023, 8, 10, 7, 12, 11), 'version': 1, 'authors': ['Sivan Schwartz', 'Avi Yaeli', 'Segev Shlomov'], 'categories': ['cs.AI', '68T01'], 'relevance_score': 0.8992984}}</paper><answer>- Answer
+
+  - The paper discusses various applications of LLM-based AI automation agents across multiple domains, emphasizing their growing capabilities in understanding and generating human-like language. For instance, it mentions that "products such as Microsoft CoPilot, Adept.AI, MultiOn, chatGPT, and Watson Orchestrate have begun to embed these models and frameworks while providing AI-assistants that help humans perform work." This indicates that AI agents are being integrated into productivity tools to assist with tasks such as data entry, analysis, process automation, and content generation.
+
+  - Furthermore, in the section about ChatGPT, it is illustrated that "ChatGPT plugins offer 3rd party vendors to provide APIs to external knowledge and systems." This suggests that ChatGPT can interact with various external systems, enhancing its applicability in fields requiring integration with other services, such as customer service, automated booking systems, and more.
+
+- Related Papers
+
+  - "User trust in artificial intelligence: A comprehensive conceptual framework" by Yang and Wibowo, 2022
+
+    - This paper provides insights into the components and frameworks necessary for understanding user trust in AI systems, which is crucial in applications where AI agents are used.
+
+    - It is relevant because it lays the groundwork for understanding user interactions with AI agents, particularly in automation and service delivery contexts.
+
+    - Further investigation into this paper is recommended as it may offer frameworks that can be applied to assess trust in the specific applications of LLM-based agents.
+
+  - "Transparency and trust in artificial intelligence systems" by Schmidt, Biessmann, and Teubner, 2020
+
+    - This paper discusses the significance of transparency in AI systems and how it relates to user trust—a critical factor for the successful deployment of AI agents in business processes.
+
+    - Its relevance lies in providing guidelines on how transparency can be implemented in AI applications, which is essential for user acceptance and trust.
+
+    - Further exploration of this paper is advisable, as its findings could inform the design of transparent AI agents that enhance user trust in various applications.
+
+  - "GPT-3: Language Models are Few-Shot Learners" by Brown et al., 2020
+
+    - This foundational paper on GPT-3 outlines its capabilities in natural language processing and the implications of its use in various applications.
+
+    - It is relevant for understanding the underlying technology that powers many of the discussed automation agents and their potential applications in diverse fields.
+
+    - Investigating this paper is recommended for insights into the capabilities of LLMs and how they can be leveraged in automation tasks.
+
+  - "ChatGPT Plugins Documentation," OpenAI, 2023
+
+    - This documentation provides detailed information on the capabilities and integration of ChatGPT with external systems.
+
+    - It is relevant because it highlights practical applications and how developers can utilize ChatGPT in various domains.
+
+    - Further examination of this documentation is recommended, especially for developers and researchers interested in practical implementations of LLM-based agents.</answer><is_related>True</is_related></item>
+
+<item><id>6</id><task>各研究におけるAIエージェントの応用分野を特定し、どのような分野で活用されているかを記述する</task><paper>{{'id': '2403.16971', 'title': 'AIOS: LLM Agent Operating System', 'link': 'http://arxiv.org/abs/2403.16971v3', 'pdf_link': 'http://arxiv.org/pdf/2403.16971v3', 'abstract': 'LLM-based intelligent agents face significant deployment challenges, particularly related to resource management. Allowing unrestricted access to LLM or tool resources can lead to inefficient or even potentially harmful resource allocation and utilization for agents. Furthermore, the absence of proper scheduling and resource management mechanisms in current agent designs hinders concurrent processing and limits overall system efficiency. As the diversity and complexity of agents continue to grow, addressing these resource management issues becomes increasingly critical to LLM-based agent systems. To address these challenges, this paper proposes the architecture of AIOS (LLM-based AI Agent Operating System) under the context of managing LLM-based agents. It introduces a novel architecture for serving LLM-based agents by isolating resources and LLM-specific services from agent applications into an AIOS kernel. This AIOS kernel provides fundamental services (e.g., scheduling, context management, memory management, storage management, access control) and efficient management of resources (e.g., LLM and external tools) for runtime agents. To enhance usability, AIOS also includes an AIOS-Agent SDK, a comprehensive suite of APIs designed for utilizing functionalities provided by the AIOS kernel. Experimental results demonstrate that using AIOS can achieve up to 2.1x faster execution for serving agents built by various agent frameworks. The source code is available at https://github.com/agiresearch/AIOS.', 'published': datetime.datetime(2024, 3, 25, 17, 32, 23), 'updated': datetime.datetime(2024, 11, 7, 19, 10, 11), 'version': 3, 'authors': ['Kai Mei', 'Xi Zhu', 'Wujiang Xu', 'Wenyue Hua', 'Mingyu Jin', 'Zelong Li', 'Shuyuan Xu', 'Ruosong Ye', 'Yingqiang Ge', 'Yongfeng Zhang'], 'categories': ['cs.OS', 'cs.AI', 'cs.CL'], 'relevance_score': 0.8866169}}</paper><answer>- Answer
+
+  - **From Section 5.2: Large Language Model Agents**:
+
+    "LLM-based single-agent systems (SAS) use a single LLM agent for complex task solving, such as travel planning (Xie et al., 2024), personalized recommendation, and artistic design (Ge et al., 2023a). The agent takes natural language instruction from users as input and decomposes the task into a multistep plan for task solving, where each step may call external tools to be completed, such as collecting information, executing specialized models, or interacting with the external world."
+
+    "For example, agents in virtual or digital environments may invoke APIs (Ge et al., 2023a; Schick et al., 2023; Yao & Narasimhan, 2023; Parisi et al., 2022; Tang et al., 2023; Xie et al., 2024), browse websites (Nakano et al., 2022; Deng et al., 2023; Wu et al., 2024), or execute codes (Zhang et al., 2023; Yang et al.), while agents in the physical environment may manipulate objects (Brohan et al., 2023; Fan et al., 2022; Wang et al., 2023a), carry out lab experiments (Boiko et al., 2023; Bran et al., 2023), or make actionable decisions (Huang et al., 2022; Xiang et al., 2023)."
+
+    - Based on the above quotes, LLM-based agents have applications across various fields. They can solve complex tasks such as travel planning, personalized recommendations, and artistic design, indicating their versatility in service-oriented roles. Moreover, they can function in both digital (like invoking APIs or browsing websites) and physical environments (like manipulating objects or conducting lab experiments), showcasing their functionality in diverse contexts ranging from virtual assistance to physical tasks in real-world settings.
+
+- Related Papers
+
+  - "Travel Planning" by Xie et al., 2024
+
+    - This paper explores the use of LLM-based agents in travel planning, providing insights into how agents can efficiently decompose tasks for comprehensive itinerary management.
+
+    - This paper is relevant as it exemplifies a specific application of LLM agents in a user-centric scenario, integrating their capabilities to enhance travel experiences.
+
+    - Further investigation is recommended as it provides practical examples of LLM usage in real-world applications.
+
+  - "Personalized Recommendation" by Ge et al., 2023a
+
+    - This work discusses how LLM agents can generate tailored recommendations based on user inputs and preferences, emphasizing their role in enhancing user engagement.
+
+    - This paper is significant for understanding the personalization capabilities of LLM agents, illustrating how they cater to individual user needs.
+
+    - Further investigation is advisable to delve deeper into the methodologies applied for personalization in LLM agents.
+
+  - "Artistic Design" by Ge et al., 2023a
+
+    - The research investigates how LLMs can assist in creative processes, such as generating artworks or design ideas based on user prompts.
+
+    - This paper highlights the innovative applications of LLM agents in creative fields, demonstrating their potential beyond traditional computational tasks.
+
+    - Further exploration is recommended to assess the implications of LLMs in artistic domains and their impact on creativity. 
+
+  - "Manipulating Objects" by Brohan et al., 2023
+
+    - This paper examines the physical capabilities of LLM agents, detailing how they can interact with and manipulate real-world objects.
+
+    - This research is pertinent as it expands the understanding of LLM applications into robotics and physical interactions, emphasizing their versatility.
+
+    - Further investigation may yield insights into the practical challenges and advancements in robotic applications of LLM agents.
+
+  - "Lab Experiments" by Boiko et al., 2023
+
+    - The study describes the use of LLM agents in conducting laboratory experiments, focusing on their ability to make decisions and execute tasks based on experimental protocols.
+
+    - This paper is relevant since it connects LLM capabilities with scientific research, showcasing their potential to assist in experimental settings.
+
+    - Further investigation is suggested to explore the integration of LLM agents in scientific methodologies and their impact on research efficiency. 
+
+  - "Actionable Decisions" by Huang et al., 2022
+
+    - This research discusses the decision-making capabilities of LLM agents, particularly in contexts requiring timely and informed actions.
+
+    - This paper is significant for understanding how LLMs can influence decision-making processes in various applications.
+
+    - Further exploration may provide valuable insights into enhancing decision-support systems through LLM integration.</answer><is_related>True</is_related></item>
+
+<item><id>7</id><task>各研究におけるAIエージェントの応用分野を特定し、どのような分野で活用されているかを記述する</task><paper>{{'id': '2407.12821', 'title': 'AutoFlow: Automated Workflow Generation for Large Language Model Agents', 'link': 'http://arxiv.org/abs/2407.12821v1', 'pdf_link': 'http://arxiv.org/pdf/2407.12821v1', 'abstract': 'Recent advancements in Large Language Models (LLMs) have shown significant progress in understanding complex natural language. One important application of LLM is LLM-based AI Agent, which leverages the ability of LLM as well as external tools for complex-task solving. To make sure LLM Agents follow an effective and reliable procedure to solve the given task, manually designed workflows are usually used to guide the working mechanism of agents. However, manually designing the workflows requires considerable efforts and domain knowledge, making it difficult to develop and deploy agents on massive scales. To address these issues, we propose AutoFlow, a framework designed to automatically generate workflows for agents to solve complex tasks. AutoFlow takes natural language program as the format of agent workflow and employs a workflow optimization procedure to iteratively optimize the workflow quality. Besides, this work offers two workflow generation methods: fine-tuning-based and in-context-based methods, making the AutoFlow framework applicable to both open-source and closed-source LLMs. Experimental results show that our framework can produce robust and reliable agent workflows. We believe that the automatic generation and interpretation of workflows in natural language represent a promising paradigm for solving complex tasks, particularly with the rapid development of LLMs. The source code of this work is available at https://github.com/agiresearch/AutoFlow.', 'published': datetime.datetime(2024, 7, 1, 21, 5, 2), 'updated': datetime.datetime(2024, 7, 1, 21, 5, 2), 'version': 1, 'authors': ['Zelong Li', 'Shuyuan Xu', 'Kai Mei', 'Wenyue Hua', 'Balaji Rama', 'Om Raheja', 'Hao Wang', 'He Zhu', 'Yongfeng Zhang'], 'categories': ['cs.CL', 'cs.AI', 'cs.LG'], 'relevance_score': 0.8718026}}</paper><answer>- Answer
+
+  - "These agents leverage the capabilities of LLMs along with external tools to tackle intricate tasks, ranging from data analysis [7], software development [23, 35], scientific research [2], travel planning [46] to many other decision-making processes in various domains."
+
+  
+
+  - "One of the critical aspects of ensuring that LLM-based AI agents operate effectively and reliably is the design of workflows that guide their task-solving procedures."
+
+  
+
+  - "For example, an LLM-based agent for fake news detection may execute under the following workflow designed by communication experts [24]: 1) Check the URL, 2) Check the language, 3) Commonsense evaluation, 4) Standpoint evaluation, 5) Summarize the findings, and 6) Classification."
+
+    - The citations above indicate that LLM-based AI agents are applied in diverse fields such as data analysis, software development, scientific research, travel planning, and decision-making processes. Additionally, they can be specifically utilized in domains like fake news detection, where a structured workflow guides the agent through various evaluation steps. This illustrates the versatility of LLMs and their ability to assist in complex tasks across different sectors.
+
+- Related Papers
+
+  - "OpenAGI: When LLM Meets Domain Experts" by Yingqiang Ge, Wenyue Hua, Kai Mei, Jianchao Ji, Juntao Tan, Shuyuan Xu, Zelong Li, and Yongfeng Zhang (2023).
+
+    - Key contributions or findings discussed in the context: This paper discusses how LLMs can integrate with domain expertise to enhance their application and effectiveness in various tasks, emphasizing the collaborative nature of AI agents and human knowledge.
+
+    - Why this paper is relevant to the current research: It provides insights into the practical implementation of LLMs in real-world applications, supporting the idea of using AI agents for complex tasks.
+
+    - Further investigation recommendation: Yes, exploring this paper could yield valuable information on the synergy between LLMs and domain experts.
+
+  - "Large Language Model Agent for Fake News Detection" by Xinyi Li, Yongfeng Zhang, and Edward C Malthouse (2024).
+
+    - Key contributions or findings discussed in the context: The focus of this research is on developing LLM-based agents that can detect fake news effectively. It highlights the structured workflows these agents follow to evaluate information critically.
+
+    - Why this paper is relevant to the current research: It provides a concrete example of LLM applications in a sensitive and impactful area, illustrating how workflows can enhance task execution.
+
+    - Further investigation recommendation: Yes, this paper is crucial for understanding the specific applications of LLMs in combating misinformation.
+
+  - "LLM as OS, Agents as Apps: Envisioning AIOS, Agents and the AIOS-Agent Ecosystem" by Yingqiang Ge, Yujie Ren, Wenyue Hua, Shuyuan Xu, Juntao Tan, and Yongfeng Zhang (2023).
+
+    - Key contributions or findings discussed in the context: This paper discusses the conceptual framework of AI agents acting as applications within an operating system driven by LLMs, showcasing their potential applications across various sectors.
+
+    - Why this paper is relevant to the current research: It expands on the ecosystem of LLMs and AI agents, providing a broader context for their application areas.
+
+    - Further investigation recommendation: Yes, this paper could provide additional insights into the ecosystem of AI agents related to LLMs.</answer><is_related>True</is_related></item>
+
+<item><id>8</id><task>各研究の成果や結論をまとめ、各研究がもたらした具体的な影響を検討する</task><paper>{{'id': '2405.05248', 'title': 'LLMs with Personalities in Multi-issue Negotiation Games', 'link': 'http://arxiv.org/abs/2405.05248v2', 'pdf_link': 'http://arxiv.org/pdf/2405.05248v2', 'abstract': 'Powered by large language models (LLMs), AI agents have become capable of many human tasks. Using the most canonical definitions of the Big Five personality, we measure the ability of LLMs to negotiate within a game-theoretical framework, as well as methodological challenges to measuring notions of fairness and risk. Simulations (n=1,500) for both single-issue and multi-issue negotiation reveal increase in domain complexity with asymmetric issue valuations improve agreement rates but decrease surplus from aggressive negotiation. Through gradient-boosted regression and Shapley explainers, we find high openness, conscientiousness, and neuroticism are associated with fair tendencies; low agreeableness and low openness are associated with rational tendencies. Low conscientiousness is associated with high toxicity. These results indicate that LLMs may have built-in guardrails that default to fair behavior, but can be "jail broken" to exploit agreeable opponents. We also offer pragmatic insight in how negotiation bots can be designed, and a framework of assessing negotiation behavior based on game theory and computational social science.', 'published': datetime.datetime(2024, 5, 8, 17, 51, 53), 'updated': datetime.datetime(2024, 5, 9, 1, 9, 9), 'version': 2, 'authors': ['Sean Noh', 'Ho-Chun Herbert Chang'], 'categories': ['cs.CL', 'cs.AI', 'cs.MA'], 'relevance_score': 0.7829945}}</paper><answer>- Answer
+
+  - The paper presents three main generalizations regarding personality-endowed LLMs in negotiation contexts. The first generalization notes that "more agreeable agents have the highest payoffs but are exploitable by less agreeable agents." This suggests that while agreeable agents can successfully negotiate with a wide range of customers, they are vulnerable to being taken advantage of by those who are less agreeable. 
+
+  - The second generalization emphasizes that "the behavior of these agents are generally fair rather than rational." This indicates that the negotiation strategies employed by these agents often prioritize fairness over achieving the best possible outcome, which can lead to irrational behaviors such as rejecting final offers and thus losing potential utility. 
+
+  - The third generalization provides insights into the design of negotiation bots, stating that "bots with fairness-based arguments will be able to reach more deals while bots with rational arguments will extract increased value." This highlights the importance of the personality traits programmed into negotiation bots, where assertive language can enhance both agreement rates and value extraction. However, it also warns that more aggressive personalities may create a toxic negotiating environment, necessitating a careful balance between assertiveness and aggression.
+
+- Related Papers
+
+  - [NOT_RELATED]</answer><is_related>True</is_related></item>

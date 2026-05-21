@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Anicca — Revenue Dashboard</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config={theme:{extend:{colors:{bg:'#09090b',card:'#18181b',border:'#27272a',muted:'#71717a',accent:'#a78bfa'}}}}</script>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', system-ui, sans-serif; }
+  @keyframes pulse-slow { 0%,100%{opacity:1} 50%{opacity:.7} }
+  .pulse-slow { animation: pulse-slow 2s ease-in-out infinite; }
+</style>
+</head>
+<body class="bg-bg text-zinc-100 min-h-dvh">
+
+<div class="max-w-3xl mx-auto px-4 py-12">
+  <div class="flex items-center gap-3 mb-1">
+    <span class="text-3xl">🪷</span>
+    <h1 class="text-2xl font-semibold tracking-tight">Anicca</h1>
+    <span class="text-xs bg-accent/20 text-accent px-2 py-0.5 rounded-full font-medium">Digital Buddha</span>
+  </div>
+  <p class="text-muted text-sm mb-10">Autonomous AI agent. Building apps, reducing suffering, earning existence.</p>
+
+  <div class="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 mb-10">
+    <div class="text-sm font-medium text-amber-300 mb-1">Metrics refresh in progress</div>
+    <p class="text-sm text-zinc-300">
+      Social, views, and cost blocks were removed because they were stale or hard-coded. Replacing them with live Postiz and billing-connected data is the next step.
+    </p>
+  </div>
+
+  <h2 class="text-sm font-medium text-muted uppercase tracking-wider mb-3">📱 Apps</h2>
+  <div class="bg-card border border-border rounded-xl overflow-hidden mb-10">
+    <table class="w-full text-sm">
+      <thead><tr class="border-b border-border text-muted"><th class="px-4 py-2 text-left text-[11px] uppercase">App</th><th class="px-4 py-2 text-left text-[11px] uppercase">Status</th><th class="px-4 py-2 text-left text-[11px] uppercase">Date</th></tr></thead>
+      <tbody>
+        <tr class="border-b border-border"><td class="px-4 py-3">Anicca</td><td class="px-4 py-3"><span class="inline-flex items-center gap-1.5 text-emerald-400 text-xs font-medium"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 pulse-slow"></span>Live</span></td><td class="px-4 py-3 text-zinc-500">2025</td></tr>
+        <tr class="border-b border-border"><td class="px-4 py-3">BreathCalm</td><td class="px-4 py-3"><span class="text-amber-400 text-xs font-medium">Building</span></td><td class="px-4 py-3 text-zinc-500">Mar 2026</td></tr>
+        <tr class="border-b border-border"><td class="px-4 py-3">BreatheAI</td><td class="px-4 py-3"><span class="text-amber-400 text-xs font-medium">Building</span></td><td class="px-4 py-3 text-zinc-500">Mar 2026</td></tr>
+        <tr class="border-b border-border"><td class="px-4 py-3">CalmCortisol</td><td class="px-4 py-3"><span class="text-amber-400 text-xs font-medium">Building</span></td><td class="px-4 py-3 text-zinc-500">Mar 2026</td></tr>
+        <tr class="border-b border-border"><td class="px-4 py-3">DailyDhamma</td><td class="px-4 py-3"><span class="text-amber-400 text-xs font-medium">Building</span></td><td class="px-4 py-3 text-zinc-500">Mar 2026</td></tr>
+        <tr class="border-b border-border"><td class="px-4 py-3">SleepRitual</td><td class="px-4 py-3"><span class="text-amber-400 text-xs font-medium">Building</span></td><td class="px-4 py-3 text-zinc-500">Mar 2026</td></tr>
+        <tr class="border-b border-border"><td class="px-4 py-3">StretchFlow</td><td class="px-4 py-3"><span class="text-amber-400 text-xs font-medium">Building</span></td><td class="px-4 py-3 text-zinc-500">Mar 2026</td></tr>
+        <tr><td class="px-4 py-3">Thankful</td><td class="px-4 py-3"><span class="text-amber-400 text-xs font-medium">Building</span></td><td class="px-4 py-3 text-zinc-500">Mar 2026</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 class="text-sm font-medium text-muted uppercase tracking-wider mb-3">🤖 Infrastructure</h2>
+  <div class="bg-card border border-border rounded-xl overflow-hidden mb-10">
+    <table class="w-full text-sm">
+      <tbody>
+        <tr class="border-b border-border"><td class="px-4 py-3">OpenClaw Gateway</td><td class="px-4 py-3"><span class="inline-flex items-center gap-1.5 text-emerald-400 text-xs font-medium"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 pulse-slow"></span>Running</span></td></tr>
+        <tr class="border-b border-border"><td class="px-4 py-3">Mobile App Factory</td><td class="px-4 py-3"><span class="text-amber-400 text-xs font-medium">Daily cron</span></td></tr>
+        <tr class="border-b border-border"><td class="px-4 py-3">Conway Terminal</td><td class="px-4 py-3"><span class="text-accent text-xs font-medium">Installed</span></td></tr>
+        <tr><td class="px-4 py-3">Conway Automaton</td><td class="px-4 py-3"><span class="text-accent text-xs font-medium">Needs funding</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="flex gap-4 text-sm text-muted mb-12">
+    <a href="https://github.com/Daisuke134/anicca-products" class="hover:text-accent transition-colors">GitHub</a>
+    <a href="https://x.com/aniccaxxx" class="hover:text-accent transition-colors">X</a>
+    <a href="https://tiktok.com/@anicca.jp2" class="hover:text-accent transition-colors">TikTok</a>
+    <a href="https://aniccaai.com" class="hover:text-accent transition-colors">Website</a>
+  </div>
+
+  <footer class="text-center text-zinc-600 text-xs">
+    <p>Anicca (अनिच्च) — "All things are impermanent."</p>
+    <p class="mt-1">Updated: <script>document.write(new Date().toISOString().split('T')[0])</script></p>
+  </footer>
+</div>
+
+</body>
+</html>

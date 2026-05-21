@@ -1,0 +1,181 @@
+% NAIST修士論文用LaTeXヘッダー（Quarto用）
+% senshuQmdスタイルを参考に、NAISTフォーマットに対応
+
+% Quartoのデフォルト\maketitleを先にバックアップ（NAISTの\titlepageを使用するため）
+\makeatletter
+\@ifundefined{maketitle}{}{%
+  \let\quarto@maketitle\maketitle
+}
+\makeatother
+
+% NAISTのスタイルファイルを読み込む
+% template/naist-jmthesis.styを使用（\input naist-mcommon.styを\input{Mtex/naist-mcommon.sty}に修正済み）
+\makeatletter
+\input{template/naist-jmthesis.sty}
+\makeatother
+
+% NAISTフォーマットのページレイアウトを設定（スタイルファイルの後に設定して上書き）
+\usepackage{geometry}
+\geometry{
+  a4paper,
+  top=20mm,
+  bottom=25mm,
+  left=25mm,
+  right=25mm
+}
+
+% 図を1ページに1つだけ表示するためにplaceinsパッケージを使用
+\usepackage{placeins}
+
+% ページスタイルを設定（final = カメラレディ）
+\pagestyle{final}
+
+% \maketitleを無効化（NAISTの\titlepageを使用するため）
+\makeatletter
+\renewcommand{\maketitle}{}
+\makeatother
+
+% YAML変数をNAISTのLaTeXコマンドに変換
+% プレースホルダーを使用（post-renderスクリプトで展開される）
+\makeatletter
+
+% \emptyを定義（空文字列チェック用）
+\def\empty{}
+
+% 学籍番号
+\studentnumber{123456}
+
+% 修士論文/課題研究（デフォルト: 修士論文 = 1）
+\doctitle{\mastersthesis}
+
+% 専攻（デフォルト: 工学 = 1）
+\major{\engineering}
+
+% プログラム（デフォルト: 情報理工学プログラム = 1）
+\program{\ise}
+
+% タイトル（日本語・英語）
+\title{太陽と月を利用した\piの低速計算アルゴリズムに関する理論的研究}
+\etitle{Theoretical Studies on Low-Speed Calculation Algorithms of \pi Utilizing the Sun and the Moon}
+
+% 著者（日本語・英語）
+\author{田中　研太郎}
+\eauthor{Hanako Sentan}
+
+% 提出年月日
+\jsyear{令和XX}
+\esyear{202X}
+\smonth{2}
+\sday{20}
+
+% \edatestrを正しく動作させるため、再定義
+% naist-mcommon.styの\edatestr定義は\ifcase\smonthstrを使っているが、
+% \smonthstrは文字列として定義されているため、数値として扱えない
+% そのため、\edatestrを再定義して、月名を直接計算する
+% 注意: naist-mcommon.styの読み込み後に再定義する必要があるため、
+% ここではプレースホルダーのみ設定し、expand_preamble.pyで実際の値を設定する
+\makeatletter
+% \edatestr-placeholderを後でexpand_preamble.pyで置換する
+\def\edatestr{February 20, 202X}
+\makeatother
+
+% naist-mcommon.styの読み込み後に\edatestrを再定義するためのプレースホルダー
+% expand_preamble.pyで、naist-mcommon.styの読み込み後に\def\edatestr{...}を追加する
+
+% 研究室名
+\jlabname{脳・行動モデリング研究室}
+\elabname{xxx Lab.}
+
+% 審査委員（6人まで対応）
+% デフォルトで6人表示（空の値の場合は空文字列を使用）
+\def\tempthird{あああああ　准教授}
+\def\tempfourth{}
+\def\tempfifth{}
+\def\tempsixth{}
+\def\tempthirdpos{（副指導教員，情報科学領域）}
+\def\tempfourthpos{}
+\def\tempfifthpos{}
+\def\tempsixthpos{}
+% 条件分岐を削除して、常に6人表示（expand_preamble.pyで値が設定される）
+\cmembers{田中　沙織　教授}{（主指導教員，情報科学領域）}
+         {あああああ　教授}{（副指導教員，情報科学領域）}
+         {あああああ　准教授}{（副指導教員，情報科学領域）}
+         {}{}
+% 5人目と6人目を追加（\addcmembersコマンドを使用）
+\addcmembers{}{}
+            {}{}
+            {}{}
+            {}{}
+
+% 審査委員（英語版、タイトルページで使用）
+% english-supervisorが指定されていない場合は、supervisorを使用（暫定的）
+\def\tempesupervisor{}
+\def\tempecosupervisor{}
+\def\tempethird{}
+\def\tempethirdpos{}
+\def\tempfourth{}
+\def\tempfourthpos{}
+\ecmembers{\ifx\tempesupervisor\empty Professor 田中　沙織　教授 \else\tempesupervisor\fi}{(Supervisor, Division of Information Science)}
+         {\ifx\tempecosupervisor\empty Professor あああああ　教授 \else\tempecosupervisor\fi}{(Co-supervisor, Division of Information Science)}
+         {\ifx\tempethird\empty\else\tempethird\fi}{\ifx\tempethirdpos\empty(Co-supervisor, Division of Information Science)\else\tempethirdpos\fi}
+         {\ifx\tempfourth\empty\else\tempfourth\fi}{\ifx\tempfourthpos\empty\else\tempfourthpos\fi}
+
+% キーワード
+\keywords{$\pi$, 天文学, 数学, 計算機, アルゴリズム}
+\ekeywords{$\pi$, astronomy, mathematics, computer, algorithm}
+
+% 概要（abstract）
+% \abstractコマンドは既に定義されているため、\renewcommandを使用
+\let\oldabstract\abstract
+\renewcommand{\abstract}[1]{\def\abstracttext{#1}}
+\abstract{人類がこの地上に現われて以来、$\pi$の計算には多くの関心が払われてきた。本論文では、太陽と月を利用して$\pi$を低速に計算するための 画期的なアルゴリズムを与える。ここには内容梗概を書く。ここには内容梗概を書く。ここには内容梗概を書く。 ここには内容梗概を書く。ここには内容梗概を書く。ここには内容梗概を書く。 ここには内容梗概を書く。ここには内容梗概を書く。ここには内容梗概を書く。 ここには内容梗概を書く。ここには内容梗概を書く。ここには内容梗概を書く。 ここには内容梗概を書く。ここには内容梗概を書く。ここには内容梗概を書く。ここには内容梗概を書く。ここには内容梗概を書く。ここには内容梗概を書く。 ここには内容梗概を書く。ここには内容梗概を書く。ここには内容梗概を書く。 ここには内容梗概を書く。ここには内容梗概を書く。ここには内容梗概を書く。 ここには内容梗概を書く。ここには内容梗概を書く。ここには内容梗概を書く。 ここには内容梗概を書く。ここには内容梗概を書く。ここには内容梗概を書く。}
+
+% 英語概要
+\eabstract{The calculation of $\pi$ has been paid much attention since human beings appeared on the earth.This thesis presents novel low-speed algorithms to calculate $\pi$ utilizing the sun and the moon.This is a sample abstract. This is a sample abstract. This is a sample abstract. This is a sample abstract. This is a sample abstract. This is a sample abstract. This is a sample abstract. This is a sample abstract. This is a sample abstract. This is a sample abstract.This is a sample abstract. This is a sample abstract. This is a sample abstract. This is a sample abstract. This is a sample abstract. This is a sample abstract. This is a sample abstract. This is a sample abstract. This is a sample abstract. This is a sample abstract.}
+
+\makeatother
+
+% ハイパーリンクの色を黒に設定（目次の文字が青くならないように）
+\AtEndPreamble{%
+  \hypersetup{
+    colorlinks=true,
+    linkcolor=black,
+    filecolor=black,
+    urlcolor=black,
+    citecolor=black
+  }%
+}
+
+% 図のデフォルト配置を独立ページ（[p]）に設定
+% テーブルのデフォルト配置をhtbpに設定（Mtexと同じ）
+\makeatletter
+\def\fps@figure{p}
+\def\fps@table{htbp}
+\makeatother
+
+% 図表キャプションの形式をMtexテンプレートに合わせる
+% Mtexでは「Figure 1 キャプション」のようにスペースのみ（コロンなし）
+% Quartoのデフォルト「Figure 1: キャプション」を上書き
+% \figurenameと\tablenameにスペースを追加し、labelsep=spaceでコロンを削除
+\makeatletter
+\AtBeginDocument{%
+  % \figurenameと\tablenameにスペースを追加
+
+  
+  \@ifpackageloaded{caption}{%
+    % captionパッケージが読み込まれている場合
+    % labelsep=spaceでスペースのみ（コロンなし）に設定
+    \DeclareCaptionLabelFormat{naist}{#1 #2}
+    \captionsetup{labelformat=naist, labelsep=newline, textfont=it, singlelinecheck=false, position=top}
+  }{%
+    % captionパッケージが読み込まれていない場合（\@makecaptionを使用）
+    \long\def\@makecaption#1#2{
+     \vskip 10pt 
+     \setbox\@tempboxa\hbox{#1 \ #2}
+     \ifdim \wd\@tempboxa >\hsize #1 \ #2\par \else \hbox
+to\hsize{\hfil\box\@tempboxa\hfil} 
+     \fi}
+  }%
+}
+\makeatother
+

@@ -1,0 +1,58 @@
+# Test 4: Paywall Variant B — English
+# Variant B (test): PaywallVariantBView
+# Verifies: daily price, trial badge, review, trust copy, all elements
+
+appId: ai.anicca.app.ios
+name: Paywall Variant B EN
+tags:
+  - paywall
+  - v1.8.0
+  - variant-b
+
+---
+- clearState
+- clearKeychain
+- launchApp:
+    arguments:
+      UITESTING: "true"
+    env:
+      PAYWALL_VARIANT: "test"
+
+- runFlow: ../_onboarding_to_paywall.yaml
+
+# Variant B paywall
+- extendedWaitUntil:
+    visible:
+      id: "paywall-plan-cta"
+    timeout: 15000
+
+- takeScreenshot: "v180-04-variant-b-en"
+
+# Verify Variant B elements
+- assertVisible:
+    text: "Transform Your Daily Habits"
+- assertVisible:
+    id: "paywall-dismiss"
+- assertVisible:
+    id: "paywall-maybe-later"
+- assertVisible:
+    id: "paywall-restore"
+
+# Verify review text
+- assertVisible:
+    text: ".*Anicca helped me.*"
+
+# Dismiss
+- tapOn:
+    id: "paywall-dismiss"
+
+- tapOn:
+    text: "今はしない|Not Now"
+    optional: true
+
+- extendedWaitUntil:
+    visible:
+      id: "mypath-root"
+    timeout: 10000
+
+- takeScreenshot: "v180-04-variant-b-en-home"

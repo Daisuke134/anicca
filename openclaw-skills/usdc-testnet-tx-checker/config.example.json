@@ -1,0 +1,9 @@
+{
+  "name": "base-sepolia (example)",
+  "chainId": 84532,
+  "rpcUrl": "https://YOUR_RPC_URL",
+  "usdcTokenAddress": "0xUSDC_TOKEN_ADDRESS_ON_THIS_TESTNET",
+  "minConfirmations": 1,
+  "usdcDecimals": 6
+}
+

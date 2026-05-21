@@ -1,0 +1,800 @@
+% Options for packages loaded elsewhere
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+\PassOptionsToPackage{dvipsnames,svgnames,x11names}{xcolor}
+%
+\documentclass[
+  english,
+  xelatex,
+  ja=standard,
+  12pt,
+  a4paper]{bxjsarticle}
+\usepackage{xcolor}
+\usepackage{amsmath,amssymb}
+\setcounter{secnumdepth}{3}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math} % this also loads fontspec
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\ifPDFTeX\else
+  % xetex/luatex font selection
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+% Make \paragraph and \subparagraph free-standing
+\makeatletter
+\ifx\paragraph\undefined\else
+  \let\oldparagraph\paragraph
+  \renewcommand{\paragraph}{
+    \@ifstar
+      \xxxParagraphStar
+      \xxxParagraphNoStar
+  }
+  \newcommand{\xxxParagraphStar}[1]{\oldparagraph*{#1}\mbox{}}
+  \newcommand{\xxxParagraphNoStar}[1]{\oldparagraph{#1}\mbox{}}
+\fi
+\ifx\subparagraph\undefined\else
+  \let\oldsubparagraph\subparagraph
+  \renewcommand{\subparagraph}{
+    \@ifstar
+      \xxxSubParagraphStar
+      \xxxSubParagraphNoStar
+  }
+  \newcommand{\xxxSubParagraphStar}[1]{\oldsubparagraph*{#1}\mbox{}}
+  \newcommand{\xxxSubParagraphNoStar}[1]{\oldsubparagraph{#1}\mbox{}}
+\fi
+\makeatother
+
+
+\usepackage{longtable,booktabs,array}
+\usepackage{calc} % for calculating minipage widths
+% Correct order of tables after \paragraph or \subparagraph
+\usepackage{etoolbox}
+\makeatletter
+\patchcmd\longtable{\par}{\if@noskipsec\mbox{}\fi\par}{}{}
+\makeatother
+% Allow footnotes in longtable head/foot
+\IfFileExists{footnotehyper.sty}{\usepackage{footnotehyper}}{\usepackage{footnote}}
+\makesavenoteenv{longtable}
+\usepackage{graphicx}
+\makeatletter
+\newsavebox\pandoc@box
+\newcommand*\pandocbounded[1]{% scales image to fit in text height/width
+  \sbox\pandoc@box{#1}%
+  \Gscale@div\@tempa{\textheight}{\dimexpr\ht\pandoc@box+\dp\pandoc@box\relax}%
+  \Gscale@div\@tempb{\linewidth}{\wd\pandoc@box}%
+  \ifdim\@tempb\p@<\@tempa\p@\let\@tempa\@tempb\fi% select the smaller of both
+  \ifdim\@tempa\p@<\p@\scalebox{\@tempa}{\usebox\pandoc@box}%
+  \else\usebox{\pandoc@box}%
+  \fi%
+}
+% Set default figure placement to htbp
+\def\fps@figure{htbp}
+\makeatother
+
+
+
+\ifLuaTeX
+\usepackage[bidi=basic]{babel}
+\else
+\usepackage[bidi=default]{babel}
+\fi
+% get rid of language-specific shorthands (see #6817):
+\let\LanguageShortHands\languageshorthands
+\def\languageshorthands#1{}
+\ifLuaTeX
+  \usepackage[english]{selnolig} % disable illegal ligatures
+\fi
+
+
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+
+
+
+ 
+\usepackage[style=template/jpa,backend=biber]{biblatex}
+\addbibresource{references/bibliography-jp.bib}
+\addbibresource{references/bibliography-en.bib}
+
+
+% NAIST修士論文用LaTeXヘッダー（Quarto用）
+% senshuQmdスタイルを参考に、NAISTフォーマットに対応
+
+% Quartoのデフォルト\maketitleを先にバックアップ（NAISTの\titlepageを使用するため）
+\makeatletter
+\@ifundefined{maketitle}{}{%
+  \let\quarto@maketitle\maketitle
+}
+\makeatother
+
+% NAISTのスタイルファイルを読み込む
+% template/naist-jmthesis.styを使用（\input naist-mcommon.styを\input{Mtex/naist-mcommon.sty}に修正済み）
+\makeatletter
+\input{template/naist-jmthesis.sty}
+\makeatother
+
+% NAISTフォーマットのページレイアウトを設定（スタイルファイルの後に設定して上書き）
+\usepackage{geometry}
+\geometry{
+  a4paper,
+  top=20mm,
+  bottom=25mm,
+  left=25mm,
+  right=25mm
+}
+
+% 図を1ページに1つだけ表示するためにplaceinsパッケージを使用
+\usepackage{placeins}
+
+% ページスタイルを設定（final = カメラレディ）
+\pagestyle{final}
+
+% \maketitleを無効化（NAISTの\titlepageを使用するため）
+\makeatletter
+\renewcommand{\maketitle}{}
+\makeatother
+
+% YAML変数をNAISTのLaTeXコマンドに変換
+% プレースホルダーを使用（post-renderスクリプトで展開される）
+\makeatletter
+
+% \emptyを定義（空文字列チェック用）
+\def\empty{}
+
+% 学籍番号
+\studentnumber{123456}
+
+% 修士論文/課題研究（デフォルト: 修士論文 = 1）
+\doctitle{\mastersthesis}
+
+% 専攻（デフォルト: 工学 = 1）
+\major{\engineering}
+
+% プログラム（デフォルト: 情報理工学プログラム = 1）
+\program{\ise}
+
+% タイトル（日本語・英語）
+\title{太陽と月を利用した\piの低速計算アルゴリズムに関する理論的研究}
+\etitle{Theoretical Studies on Low-Speed Calculation Algorithms of \pi Utilizing the Sun and the Moon}
+
+% 著者（日本語・英語）
+\author{田中　研太郎}
+\eauthor{Hanako Sentan}
+
+% 提出年月日
+\jsyear{令和XX}
+\esyear{202X}
+\smonth{2}
+\sday{20}
+
+% \edatestrを正しく動作させるため、再定義
+% naist-mcommon.styの\edatestr定義は\ifcase\smonthstrを使っているが、
+% \smonthstrは文字列として定義されているため、数値として扱えない
+% そのため、\edatestrを再定義して、月名を直接計算する
+% 注意: naist-mcommon.styの読み込み後に再定義する必要があるため、
+% ここではプレースホルダーのみ設定し、expand_preamble.pyで実際の値を設定する
+\makeatletter
+% \edatestr-placeholderを後でexpand_preamble.pyで置換する
+\def\edatestr{February 20, 202X}
+\makeatother
+
+% naist-mcommon.styの読み込み後に\edatestrを再定義するためのプレースホルダー
+% expand_preamble.pyで、naist-mcommon.styの読み込み後に\def\edatestr{...}を追加する
+
+% 研究室名
+\jlabname{脳・行動モデリング研究室}
+\elabname{xxx Lab.}
+
+% 審査委員（6人まで対応）
+% デフォルトで6人表示（空の値の場合は空文字列を使用）
+\def\tempthird{あああああ　准教授}
+\def\tempfourth{}
+\def\tempfifth{}
+\def\tempsixth{}
+\def\tempthirdpos{（副指導教員，情報科学領域）}
+\def\tempfourthpos{}
+\def\tempfifthpos{}
+\def\tempsixthpos{}
+% 条件分岐を削除して、常に6人表示（expand_preamble.pyで値が設定される）
+\cmembers{田中　沙織　教授}{（主指導教員，情報科学領域）}
+         {あああああ　教授}{（副指導教員，情報科学領域）}
+         {あああああ　准教授}{（副指導教員，情報科学領域）}
+         {}{}
+% 5人目と6人目を追加（\addcmembersコマンドを使用）
+\addcmembers{}{}
+            {}{}
+            {}{}
+            {}{}
+
+% 審査委員（英語版、タイトルページで使用）
+% english-supervisorが指定されていない場合は、supervisorを使用（暫定的）
+\def\tempesupervisor{}
+\def\tempecosupervisor{}
+\def\tempethird{}
+\def\tempethirdpos{}
+\def\tempfourth{}
+\def\tempfourthpos{}
+\ecmembers{\ifx\tempesupervisor\empty Professor 田中　沙織　教授 \else\tempesupervisor\fi}{(Supervisor, Division of Information Science)}
+         {\ifx\tempecosupervisor\empty Professor あああああ　教授 \else\tempecosupervisor\fi}{(Co-supervisor, Division of Information Science)}
+         {\ifx\tempethird\empty\else\tempethird\fi}{\ifx\tempethirdpos\empty(Co-supervisor, Division of Information Science)\else\tempethirdpos\fi}
+         {\ifx\tempfourth\empty\else\tempfourth\fi}{\ifx\tempfourthpos\empty\else\tempfourthpos\fi}
+
+% キーワード
+\keywords{$\pi$, 天文学, 数学, 計算機, アルゴリズム}
+\ekeywords{$\pi$, astronomy, mathematics, computer, algorithm}
+
+% 概要（abstract）
+% \abstractコマンドは既に定義されているため、\renewcommandを使用
+\let\oldabstract\abstract
+\renewcommand{\abstract}[1]{\def\abstracttext{#1}}
+\abstract{人類がこの地上に現われて以来、$\pi$の計算には多くの関心が払われてきた。本論文では、太陽と月を利用して$\pi$を低速に計算するための 画期的なアルゴリズムを与える。ここには内容梗概を書く。ここには内容梗概を書く。ここには内容梗概を書く。 ここには内容梗概を書く。ここには内容梗概を書く。ここには内容梗概を書く。 ここには内容梗概を書く。ここには内容梗概を書く。ここには内容梗概を書く。 ここには内容梗概を書く。ここには内容梗概を書く。ここには内容梗概を書く。 ここには内容梗概を書く。ここには内容梗概を書く。ここには内容梗概を書く。ここには内容梗概を書く。ここには内容梗概を書く。ここには内容梗概を書く。 ここには内容梗概を書く。ここには内容梗概を書く。ここには内容梗概を書く。 ここには内容梗概を書く。ここには内容梗概を書く。ここには内容梗概を書く。 ここには内容梗概を書く。ここには内容梗概を書く。ここには内容梗概を書く。 ここには内容梗概を書く。ここには内容梗概を書く。ここには内容梗概を書く。}
+
+% 英語概要
+\eabstract{The calculation of $\pi$ has been paid much attention since human beings appeared on the earth.This thesis presents novel low-speed algorithms to calculate $\pi$ utilizing the sun and the moon.This is a sample abstract. This is a sample abstract. This is a sample abstract. This is a sample abstract. This is a sample abstract. This is a sample abstract. This is a sample abstract. This is a sample abstract. This is a sample abstract. This is a sample abstract.This is a sample abstract. This is a sample abstract. This is a sample abstract. This is a sample abstract. This is a sample abstract. This is a sample abstract. This is a sample abstract. This is a sample abstract. This is a sample abstract. This is a sample abstract.}
+
+\makeatother
+
+% ハイパーリンクの色を黒に設定（目次の文字が青くならないように）
+\AtEndPreamble{%
+  \hypersetup{
+    colorlinks=true,
+    linkcolor=black,
+    filecolor=black,
+    urlcolor=black,
+    citecolor=black
+  }%
+}
+
+% 図のデフォルト配置を独立ページ（[p]）に設定
+% テーブルのデフォルト配置をhtbpに設定（Mtexと同じ）
+\makeatletter
+\def\fps@figure{p}
+\def\fps@table{htbp}
+\makeatother
+
+% 図表キャプションの形式をMtexテンプレートに合わせる
+% Mtexでは「Figure 1 キャプション」のようにスペースのみ（コロンなし）
+% Quartoのデフォルト「Figure 1: キャプション」を上書き
+% \figurenameと\tablenameにスペースを追加し、labelsep=spaceでコロンを削除
+\makeatletter
+\AtBeginDocument{%
+  % \figurenameと\tablenameにスペースを追加
+
+  
+  \@ifpackageloaded{caption}{%
+    % captionパッケージが読み込まれている場合
+    % labelsep=spaceでスペースのみ（コロンなし）に設定
+    \DeclareCaptionLabelFormat{naist}{#1 #2}
+    \captionsetup{labelformat=naist, labelsep=newline, textfont=it, singlelinecheck=false, position=top}
+  }{%
+    % captionパッケージが読み込まれていない場合（\@makecaptionを使用）
+    \long\def\@makecaption#1#2{
+     \vskip 10pt 
+     \setbox\@tempboxa\hbox{#1 \ #2}
+     \ifdim \wd\@tempboxa >\hsize #1 \ #2\par \else \hbox
+to\hsize{\hfil\box\@tempboxa\hfil} 
+     \fi}
+  }%
+}
+\makeatother
+
+% Explicitly redefine subsubsection to ensure it is visible
+\makeatletter
+\renewcommand{\subsubsection}{\@startsection{subsubsection}{3}{\z@}%
+    {3.5ex plus 1ex minus .2ex}%
+    {2.3ex plus .2ex}%
+    {\normalfont\normalsize\bfseries}}
+\makeatother
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{3}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{wrapfig}
+\usepackage{float}
+\usepackage{colortbl}
+\usepackage{pdflscape}
+\usepackage{tabu}
+\usepackage{threeparttable}
+\usepackage{threeparttablex}
+\usepackage[normalem]{ulem}
+\usepackage{makecell}
+\usepackage{xcolor}
+\makeatletter
+\@ifpackageloaded{caption}{}{\usepackage{caption}}
+\AtBeginDocument{%
+\ifdefined\contentsname
+  \renewcommand*\contentsname{Table of contents}
+\else
+  \newcommand\contentsname{Table of contents}
+\fi
+\ifdefined\listfigurename
+  \renewcommand*\listfigurename{List of Figures}
+\else
+  \newcommand\listfigurename{List of Figures}
+\fi
+\ifdefined\listtablename
+  \renewcommand*\listtablename{List of Tables}
+\else
+  \newcommand\listtablename{List of Tables}
+\fi
+\ifdefined\figurename
+  \renewcommand*\figurename{Figure}
+\else
+  \newcommand\figurename{Figure}
+\fi
+\ifdefined\tablename
+  \renewcommand*\tablename{Table}
+\else
+  \newcommand\tablename{Table}
+\fi
+}
+\@ifpackageloaded{float}{}{\usepackage{float}}
+\floatstyle{ruled}
+\@ifundefined{c@chapter}{\newfloat{codelisting}{h}{lop}}{\newfloat{codelisting}{h}{lop}[chapter]}
+\floatname{codelisting}{Listing}
+\newcommand*\listoflistings{\listof{codelisting}{List of Listings}}
+\makeatother
+\makeatletter
+\makeatother
+\makeatletter
+\@ifpackageloaded{caption}{}{\usepackage{caption}}
+\@ifpackageloaded{subcaption}{}{\usepackage{subcaption}}
+\makeatother
+\usepackage{bookmark}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same}
+\hypersetup{
+  pdftitle={太陽と月を利用した\textbackslash piの低速計算アルゴリズムに関する理論的研究},
+  pdfauthor={田中　研太郎},
+  pdflang={en},
+  colorlinks=true,
+  linkcolor={blue},
+  filecolor={Maroon},
+  citecolor={Blue},
+  urlcolor={Blue},
+  pdfcreator={LaTeX via pandoc}}
+
+
+\title{太陽と月を利用した\(\pi\)の低速計算アルゴリズムに関する理論的研究}
+\author{田中　研太郎}
+\date{2025-12-13}
+\begin{document}
+\maketitle
+
+% タイトルページ、審査委員ページ、概要ページを生成（NAISTフォーマット）
+\titlepage
+\cmemberspage
+\firstabstract
+\secondabstract
+
+% 目次（NAISTフォーマット）
+\toc
+% 図目次と表目次
+\newpage
+\listoffigures
+\listoftables
+
+% 本文開始
+\newpage
+\pagenumbering{arabic}
+
+
+\section{はじめに}\label{ux306fux3058ux3081ux306b}
+
+まず，\textcite{Abrams2020}
+のように，すると，bibファイル内のAbramsの2020年の論文が引用されます。そして，次のように，{[}{]}でくくると文末の引用スタイルになります\autocite{Allport1935}。また，文末に複数引用する場合は，こういう感じにします\autocite{Bergson2002,Freud1956}。このQmdファイルではBibLatex-jpaを使っていますので，日本語文献も処理できます。例えば，\textcite{向田2009}
+, \textcite{堀2009}, \textcite{矢嶋2013}
+は，XXXについて示した\autocite{Helmholtz1925,Freud1956}などの文章も処理できます。
+
+\ref{sec-kako} 節では、過去における研究について述べ、 \ref{sec-kadai}
+章では、現状と今後の課題について述べる。 また、付録 \ref{sec-omake1}
+におまけその１を添付する。
+
+\subsection{過去における研究}\label{sec-kako}
+
+\begin{figure}[htbp]
+
+\caption{\label{fig-CNN}Convolutional Neural Network (CNN)}
+
+\centering{
+
+\includegraphics[width=0.8\linewidth,height=\textheight,keepaspectratio]{figures/fig1.png}
+
+}
+
+\end{figure}%
+
+過去における研究としては\autocite{alex_nips12}などがある。Figure ~\ref{fig-CNN}
+に示すように、CNNの構造は複雑である。
+
+数式の表示を確認するため、いくつかの例を示す。インライン数式の例として、相関係数は
+\(r = 0.85\) であった。また、平均値は \(\mu = 100\)、標準偏差は
+\(\sigma = 15\) である。
+
+ディスプレイ数式（番号付き）の例として、オイラーの公式は以下のように表される：
+
+\begin{equation}\phantomsection\label{eq-euler}{
+e^{i\pi} + 1 = 0
+}\end{equation}
+
+Equation~\ref{eq-euler}
+は数学において最も美しい公式の一つとして知られている。
+
+また、zスコアの計算式は Equation~\ref{eq-zscore} で示される：
+
+\begin{equation}\phantomsection\label{eq-zscore}{
+z = \frac{X - \mu}{\sigma}
+}\end{equation}
+
+番号なしのディスプレイ数式の例として、標準誤差は以下のように計算される：
+
+\[
+\sigma_e = \sigma_y \sqrt{1 - r_{xy}^2}
+\]
+
+\subsubsection{先行研究での知見1}\label{ux5148ux884cux7814ux7a76ux3067ux306eux77e5ux898b1}
+
+\subsubsection{先行研究での知見2}\label{ux5148ux884cux7814ux7a76ux3067ux306eux77e5ux898b2}
+
+\subsubsection{先行研究での知見3}\label{ux5148ux884cux7814ux7a76ux3067ux306eux77e5ux898b3}
+
+\subsubsection{先行研究での知見4}\label{ux5148ux884cux7814ux7a76ux3067ux306eux77e5ux898b4}
+
+\subsubsection{先行研究での知見5}\label{ux5148ux884cux7814ux7a76ux3067ux306eux77e5ux898b5}
+
+\subsubsection{先行研究での知見6}\label{ux5148ux884cux7814ux7a76ux3067ux306eux77e5ux898b6}
+
+\subsubsection{先行研究での知見7}\label{ux5148ux884cux7814ux7a76ux3067ux306eux77e5ux898b7}
+
+\subsection{先行研究の問題点}\label{sec-mondai}
+
+\subsection{研究の目的と意義}\label{ux7814ux7a76ux306eux76eeux7684ux3068ux610fux7fa9}
+
+研究の目的と意義 研究の目的と意義 研究の目的と意義 研究の目的と意義
+研究の目的と意義 研究の目的と意義 研究の目的と意義 研究の目的と意義
+研究の目的と意義 研究の目的と意義 研究の目的と意義 研究の目的と意義
+研究の目的と意義 研究の目的と意義 研究の目的と意義 研究の目的と意義
+
+\section{現状と今後の課題}\label{sec-kadai}
+
+現状と今後の課題 現状と今後の課題 現状と今後の課題 現状と今後の課題
+現状と今後の課題 現状と今後の課題 現状と今後の課題 現状と今後の課題
+現状と今後の課題 現状と今後の課題 現状と今後の課題 現状と今後の課題
+現状と今後の課題 現状と今後の課題 現状と今後の課題 現状と今後の課題
+
+\section{方法}\label{ux65b9ux6cd5}
+
+\subsection{参加者}\label{ux53c2ux52a0ux8005}
+
+\subsection{実験材料・装置・刺激}\label{ux5b9fux9a13ux6750ux6599ux88c5ux7f6eux523aux6fc0}
+
+\begin{figure}[htbp]
+
+\caption{\label{fig-muller-lyer}ミュラー・リヤー錯視の例}
+
+\centering{
+
+\includegraphics[width=0.8\linewidth,height=\textheight,keepaspectratio]{figures/fig1.png}
+
+}
+
+\end{figure}%
+
+Figure ~\ref{fig-muller-lyer}
+は、ミュラー・リヤー錯視の典型的な例を示している。
+
+\subsection{統計解析}\label{ux7d71ux8a08ux89e3ux6790}
+
+　統計解析は，macOS 26.0.1上で，R version 4.3.1
+(2023-06-16)を用いて実施された。
+
+\section{結果}\label{ux7d50ux679c}
+
+\subsection{記述統計}\label{ux8a18ux8ff0ux7d71ux8a08}
+
+Table ~\ref{tbl-descriptive} に、Big Five因子の記述統計量を示す。
+
+\begin{table}
+
+\caption{\label{tbl-descriptive}Big Five因子の記述統計量}
+
+\centering{
+
+\begin{tabular}{lrrrrrrrr}
+\toprule
+  & n & Mean & SD & Median & Min & Max & Skewness & kurtosis\\
+\midrule
+Extraversion & 2713 & 18.96 & 2.71 & 19 & 5 & 29 & 0.01 & 1.08\\
+Neuroticism & 2694 & 15.82 & 5.97 & 15 & 5 & 30 & 0.22 & -0.66\\
+Conscientiousness & 2707 & 19.04 & 2.77 & 19 & 5 & 30 & -0.17 & 0.81\\
+Agreeableness & 2709 & 21.04 & 3.68 & 22 & 5 & 30 & -0.66 & 0.68\\
+Openness & 2726 & 19.34 & 2.74 & 19 & 5 & 29 & -0.02 & 1.09\\
+\bottomrule
+\multicolumn{9}{l}{\textsuperscript{} Note. SD=standard deviation}\\
+\end{tabular}
+
+}
+
+\end{table}%
+
+\subsection{メインの解析の前提となる解析}\label{ux30e1ux30a4ux30f3ux306eux89e3ux6790ux306eux524dux63d0ux3068ux306aux308bux89e3ux6790}
+
+\subsubsection{変数間の相関係数}\label{ux5909ux6570ux9593ux306eux76f8ux95a2ux4fc2ux6570}
+
+変数間の相関係数を以下に示す。
+
+\renewcommand{\arraystretch}{1}
+\begin{landscape}\begin{table}
+
+\caption{\label{tab:apa-correlation}Big Five因子の平均・標準偏差と相関}
+\fontsize{10}{12}\selectfont
+\begin{threeparttable}
+\begin{tabular}[t]{lrrccccc}
+\toprule
+Variable & $N$ & $M$ & $SD$ & 1 & 2 & 3 & 4\\
+\midrule
+1. Extraversion & 2713 & 18.96 & 2.71 &  &  &  & \\
+ &  &  &  &  &  &  & \\
+ &  &  &  &  &  &  & \\
+ &  &  &  &  &  &  & \\
+2. Neuroticism & 2694 & 15.82 & 5.97 & .04$^{*}$ &  &  & \\
+ &  &  &  & {}[.00, .08] &  &  & \\
+ &  &  &  & $p$ = .049 &  &  & \\
+ &  &  &  &  &  &  & \\
+3. Conscientiousness & 2707 & 19.04 & 2.77 & .18$^{**}$ & .25$^{**}$ &  & \\
+ &  &  &  & {}[.15, .22] & {}[.21, .28] &  & \\
+ &  &  &  & $p$ < .001 & $p$ < .001 &  & \\
+ &  &  &  &  &  &  & \\
+4. Agreeableness & 2709 & 21.04 & 3.68 & .30$^{**}$ & -.14$^{**}$ & .06$^{**}$ & \\
+ &  &  &  & {}[.26, .33] & {}[-.18, -.10] & {}[.02, .10] & \\
+ &  &  &  & $p$ < .001 & $p$ < .001 & $p$ = .002 & \\
+ &  &  &  &  &  &  & \\
+5. Openness & 2726 & 19.34 & 2.74 & .25$^{**}$ & .16$^{**}$ & .25$^{**}$ & .19$^{**}$\\
+ &  &  &  & {}[.22, .29] & {}[.12, .20] & {}[.21, .28] & {}[.15, .23]\\
+ &  &  &  & $p$ < .001 & $p$ < .001 & $p$ < .001 & $p$ < .001\\
+ &  &  &  &  &  &  & \\
+\bottomrule
+\end{tabular}
+\begin{tablenotes}
+\item \textit{Note}. \textit{N} = number of cases. \textit{M} = mean. \textit{SD} = standard deviation. Square brackets = 95\% confidence interval. \newline  * indicates $p$ < .05. ** indicates $p$ < .01.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+\end{landscape}
+\renewcommand{\arraystretch}{1}
+
+\subsubsection{ヒストグラム}\label{ux30d2ux30b9ux30c8ux30b0ux30e9ux30e0}
+
+神経症傾向の分布を Figure ~\ref{fig-histogram} に示す。
+
+\begin{figure}[htbp]
+
+\caption{\label{fig-histogram}神経症傾向のヒストグラム}
+
+\centering{
+
+\pandocbounded{\includegraphics[keepaspectratio]{paper_files/figure-pdf/fig-histogram-1.pdf}}
+
+}
+
+\end{figure}%
+
+\subsubsection{2群の比較（連続変数）}\label{ux7fa4ux306eux6bd4ux8f03ux9023ux7d9aux5909ux6570}
+
+神経症傾向に関して性差を検討したところ,男性(\emph{M} = 14.74, \emph{SD}
+= 5.72)よりも、女性(\emph{M} = 16.35, \emph{SD} =
+6.03)の方が有意に神経症傾向が高かった(\emph{t} (1853.20) = 6.77,
+\emph{p} = 0.00 , \emph{d} = 0.27,95 \%CI {[}0.19, 0.35{]})。この結果を
+Figure ~\ref{fig-figs} に示す。
+
+\begin{figure}
+
+\caption{\label{fig-figs}神経症傾向の平均と標準誤差}
+
+\centering{
+
+\pandocbounded{\includegraphics[keepaspectratio]{paper_files/figure-pdf/fig-figs-1.pdf}}
+
+}
+
+\end{figure}%
+
+\subsubsection{2群の比較（離散変数）}\label{ux7fa4ux306eux6bd4ux8f03ux96e2ux6563ux5909ux6570}
+
+\begin{table}
+
+\caption{\label{tbl-contingency}性別と教育歴についてのクロス集計表}
+
+\centering{
+
+\begin{tabular}{lrr}
+\toprule
+\multicolumn{1}{c}{ } & \multicolumn{2}{c}{Education} \\
+\cmidrule(l{3pt}r{3pt}){2-3}
+  & High & Low\\
+\midrule
+\addlinespace[0.3em]
+\multicolumn{3}{l}{\textbf{Gender}}\\
+\hspace{1em}Female & 131 & 1608\\
+\hspace{1em}Male & 93 & 745\\
+\bottomrule
+\end{tabular}
+
+}
+
+\end{table}%
+
+女性より、男性の方が高学歴者が多いことが示唆された( \(\chi ^2\) (1.00,
+\emph{N} = 2800) = 8.61, \emph{p} = 0.00)。詳細は
+Table ~\ref{tbl-contingency} を参照されたい。
+
+\subsection{メインの解析の記載}\label{ux30e1ux30a4ux30f3ux306eux89e3ux6790ux306eux8a18ux8f09}
+
+\subsubsection{重回帰分析}\label{ux91cdux56deux5e30ux5206ux6790}
+
+重回帰分析の結果を以下に示す。
+
+\begin{verbatim}
+
+MBESS package needs to be installed to calculate R2 confidence intervals.
+\end{verbatim}
+
+\renewcommand{\arraystretch}{1}
+\begin{landscape}\begin{table}
+
+\caption{\label{tab:apa-regression}重回帰分析結果}
+\fontsize{10}{12}\selectfont
+\begin{threeparttable}
+\begin{tabular}[t]{lrrcrcrcc}
+\toprule
+Predictor & $b$ & 95\% CI & $beta$ & 95\% CI & Unique $R^2$ & 95\% CI & $r$ & Fit\\
+\midrule
+(Intercept) & 41.12** & {}[22.72, 59.53] &  &  &  &  &  & \\
+adverts & 0.09** & {}[0.07, 0.10] & 0.52 & {}[0.44, 0.61] & .27** & {}[.18, .36] & .58** & \\
+airplay & 3.59** & {}[3.02, 4.15] & 0.55 & {}[0.46, 0.63] & .29** & {}[.20, .38] & .60** & \\
+ &  &  &  &  &  &  &  & $R^2$ = .629**\\
+ &  &  &  &  &  &  &  & 95\% CI[NA,NA]\\
+ &  &  &  &  &  &  &  & \\
+\bottomrule
+\end{tabular}
+\begin{tablenotes}
+\item \textit{Note}. $N$ = 200. $b$ = unstandardized regression weight. $beta$ = standardized regression weight. Unique $R^2$ = semipartial correlation squared. $r$ = zero-order correlation. CI = confidence interval. \newline  * indicates $p$ < .05. ** indicates $p$ < .01.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+\end{landscape}
+\renewcommand{\arraystretch}{1}
+
+\subsubsection{分散分析の結果}\label{ux5206ux6563ux5206ux6790ux306eux7d50ux679c}
+
+分散分析の結果を以下に示す。
+
+\begin{verbatim}
+
+MBESS package needs to be installed to calculate eta-squared confidence intervals.
+
+MBESS package needs to be installed to calculate eta-squared confidence intervals.
+
+MBESS package needs to be installed to calculate eta-squared confidence intervals.
+
+MBESS package needs to be installed to calculate eta-squared confidence intervals.
+
+MBESS package needs to be installed to calculate eta-squared confidence intervals.
+
+MBESS package needs to be installed to calculate eta-squared confidence intervals.
+\end{verbatim}
+
+\renewcommand{\arraystretch}{1}\begin{table}
+
+\caption{\label{tab:apa-anova}分散分析結果}
+\fontsize{10}{12}\selectfont
+\begin{threeparttable}
+\begin{tabular}[t]{lrrrrrrc}
+\toprule
+Predictor & $SS$ & $df$ & $MS$ & $F$ & $p$ & $\eta_{partial}^2$ & 90\% CI\\
+\midrule
+(Intercept) & 29403.12 & 1 & 29403.12 & 354.10 & <.001 &  & \\
+gender & 156.25 & 1 & 156.25 & 1.88 & .177 & .04 & {}[NA, NA]\\
+alcohol & 102.08 & 2 & 51.04 & 0.61 & .546 & .03 & {}[NA, NA]\\
+gender x alcohol & 1978.12 & 2 & 989.06 & 11.91 & <.001 & .36 & {}[NA, NA]\\
+Error & 3487.50 & 42 & 83.04 &  &  &  & \\
+\bottomrule
+\end{tabular}
+\begin{tablenotes}
+\item \textit{Note}. $SS$ = Sum of squares. $df$ = degrees of freedom. $MS$ = mean square. CI indicates the confidence interval for $\eta_{partial}^2$.
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+\renewcommand{\arraystretch}{1}
+
+\subsection{メインの解析結果を補強する解析の記載}\label{ux30e1ux30a4ux30f3ux306eux89e3ux6790ux7d50ux679cux3092ux88dcux5f37ux3059ux308bux89e3ux6790ux306eux8a18ux8f09}
+
+\section{考察}\label{ux8003ux5bdf}
+
+\subsection{主要な発見の概要}\label{ux4e3bux8981ux306aux767aux898bux306eux6982ux8981}
+
+\subsection{考えられるメカニズムの考察と説明}\label{ux8003ux3048ux3089ux308cux308bux30e1ux30abux30cbux30baux30e0ux306eux8003ux5bdfux3068ux8aacux660e}
+
+\subsection{関連のある先行研究の結果との比較}\label{ux95a2ux9023ux306eux3042ux308bux5148ux884cux7814ux7a76ux306eux7d50ux679cux3068ux306eux6bd4ux8f03}
+
+\subsection{研究結果が与える示唆}\label{ux7814ux7a76ux7d50ux679cux304cux4e0eux3048ux308bux793aux5506}
+
+\subsection{研究の限界と今後の課題}\label{ux7814ux7a76ux306eux9650ux754cux3068ux4ecaux5f8cux306eux8ab2ux984c}
+
+\subsection{結論}\label{ux7d50ux8ad6}
+
+\section{要約}\label{ux8981ux7d04}
+
+\section{謝辞}\label{ux8b1dux8f9e}
+
+Thank you. Thank you.
+
+\section{参考文献}\label{ux53c2ux8003ux6587ux732e}
+
+\printbibliography[heading=none]
+
+\appendix
+
+\section{付録}\label{ux4ed8ux9332}
+
+\subsection{おまけその１}\label{sec-omake1}
+
+これはおまけです。これはおまけです。これはおまけです。これはおまけです。
+これはおまけです。これはおまけです。これはおまけです。これはおまけです。
+これはおまけです。これはおまけです。これはおまけです。これはおまけです。
+これはおまけです。これはおまけです。これはおまけです。これはおまけです。
+
+\begin{figure}
+
+\caption{\label{fig-omake}おまけの図}
+
+\centering{
+
+\pandocbounded{\includegraphics[keepaspectratio]{paper_files/figure-pdf/fig-omake-1.pdf}}
+
+}
+
+\end{figure}%
+
+\subsection{おまけその２}\label{ux304aux307eux3051ux305dux306euxff12}
+
+これもおまけです。これもおまけです。これもおまけです。これもおまけです。
+これもおまけです。これもおまけです。これもおまけです。これもおまけです。
+これもおまけです。これもおまけです。これもおまけです。これもおまけです。
+これもおまけです。これもおまけです。これもおまけです。これもおまけです。
+
+
+% Empty biblio.tex partial to suppress default \printbibliography
+% This prevents Quarto from automatically adding a "References" section
+% when using BibLaTeX. Manual \printbibliography[heading=none] in the document
+% will still work.
+
+
+\end{document}

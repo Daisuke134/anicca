@@ -1,0 +1,868 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		AF001 /* AffirmFlowApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF101 /* AffirmFlowApp.swift */; };
+		AF002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF102 /* ContentView.swift */; };
+		AF003 /* FocusArea.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF103 /* FocusArea.swift */; };
+		AF004 /* Affirmation.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF104 /* Affirmation.swift */; };
+		AF005 /* UserSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF105 /* UserSettings.swift */; };
+		AF006 /* AffirmationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF106 /* AffirmationService.swift */; };
+		AF007 /* SubscriptionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF107 /* SubscriptionService.swift */; };
+		AF008 /* HapticsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF108 /* HapticsService.swift */; };
+		AF009 /* DesignTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF109 /* DesignTokens.swift */; };
+		AF010 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF110 /* OnboardingView.swift */; };
+		AF011 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF111 /* WelcomeView.swift */; };
+		AF012 /* FocusAreaSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF112 /* FocusAreaSelectionView.swift */; };
+		AF013 /* WidgetTutorialView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF113 /* WidgetTutorialView.swift */; };
+		AF014 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF114 /* HomeView.swift */; };
+		AF015 /* AffirmationCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF115 /* AffirmationCardView.swift */; };
+		AF016 /* FavoritesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF116 /* FavoritesView.swift */; };
+		AF017 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF117 /* HistoryView.swift */; };
+		AF018 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF118 /* SettingsView.swift */; };
+		AF019 /* PaywallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF119 /* PaywallView.swift */; };
+		AF020 /* AffirmationWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF120 /* AffirmationWidgetBundle.swift */; };
+		AF021 /* AffirmationEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF121 /* AffirmationEntry.swift */; };
+		AF022 /* Provider.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF122 /* Provider.swift */; };
+		AF023 /* RefreshAffirmationIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF123 /* RefreshAffirmationIntent.swift */; };
+		AF024 /* SmallWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF124 /* SmallWidgetView.swift */; };
+		AF025 /* MediumWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF125 /* MediumWidgetView.swift */; };
+		AF026 /* LargeWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF126 /* LargeWidgetView.swift */; };
+		AF027 /* FocusArea.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF103 /* FocusArea.swift */; };
+		AF028 /* DesignTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF109 /* DesignTokens.swift */; };
+		AF029 /* AffirmFlowWidget.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = AF200 /* AffirmFlowWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		AF030 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AF132 /* Assets.xcassets */; };
+		AF031 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AF134 /* Assets.xcassets */; };
+		AFT001 /* FocusAreaTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFT101 /* FocusAreaTests.swift */; };
+		AFT002 /* AffirmationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFT102 /* AffirmationTests.swift */; };
+		AFT003 /* UserSettingsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFT103 /* UserSettingsTests.swift */; };
+		AFT004 /* AffirmationServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFT104 /* AffirmationServiceTests.swift */; };
+		AFT005 /* SubscriptionServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFT105 /* SubscriptionServiceTests.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		AF400 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AF300 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = AF201;
+			remoteInfo = AffirmFlowWidget;
+		};
+		AFT400 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AF300 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = AF310;
+			remoteInfo = AffirmFlow;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		AF450 /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				AF029 /* AffirmFlowWidget.appex in Embed App Extensions */,
+			);
+			name = "Embed App Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		AF100 /* AffirmFlow.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AffirmFlow.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AF101 /* AffirmFlowApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AffirmFlowApp.swift; sourceTree = "<group>"; };
+		AF102 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		AF103 /* FocusArea.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusArea.swift; sourceTree = "<group>"; };
+		AF104 /* Affirmation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Affirmation.swift; sourceTree = "<group>"; };
+		AF105 /* UserSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserSettings.swift; sourceTree = "<group>"; };
+		AF106 /* AffirmationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AffirmationService.swift; sourceTree = "<group>"; };
+		AF107 /* SubscriptionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionService.swift; sourceTree = "<group>"; };
+		AF108 /* HapticsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticsService.swift; sourceTree = "<group>"; };
+		AF109 /* DesignTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignTokens.swift; sourceTree = "<group>"; };
+		AF110 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		AF111 /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
+		AF112 /* FocusAreaSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusAreaSelectionView.swift; sourceTree = "<group>"; };
+		AF113 /* WidgetTutorialView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetTutorialView.swift; sourceTree = "<group>"; };
+		AF114 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		AF115 /* AffirmationCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AffirmationCardView.swift; sourceTree = "<group>"; };
+		AF116 /* FavoritesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoritesView.swift; sourceTree = "<group>"; };
+		AF117 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
+		AF118 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		AF119 /* PaywallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaywallView.swift; sourceTree = "<group>"; };
+		AF120 /* AffirmationWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AffirmationWidgetBundle.swift; sourceTree = "<group>"; };
+		AF121 /* AffirmationEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AffirmationEntry.swift; sourceTree = "<group>"; };
+		AF122 /* Provider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Provider.swift; sourceTree = "<group>"; };
+		AF123 /* RefreshAffirmationIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RefreshAffirmationIntent.swift; sourceTree = "<group>"; };
+		AF124 /* SmallWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmallWidgetView.swift; sourceTree = "<group>"; };
+		AF125 /* MediumWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediumWidgetView.swift; sourceTree = "<group>"; };
+		AF126 /* LargeWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LargeWidgetView.swift; sourceTree = "<group>"; };
+		AF130 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		AF131 /* AffirmFlow.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = AffirmFlow.entitlements; sourceTree = "<group>"; };
+		AF132 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		AF133 /* AffirmFlowWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = AffirmFlowWidget.entitlements; sourceTree = "<group>"; };
+		AF134 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		AF200 /* AffirmFlowWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = AffirmFlowWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		AFT100 /* AffirmFlowTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AffirmFlowTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		AFT101 /* FocusAreaTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusAreaTests.swift; sourceTree = "<group>"; };
+		AFT102 /* AffirmationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AffirmationTests.swift; sourceTree = "<group>"; };
+		AFT103 /* UserSettingsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserSettingsTests.swift; sourceTree = "<group>"; };
+		AFT104 /* AffirmationServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AffirmationServiceTests.swift; sourceTree = "<group>"; };
+		AFT105 /* SubscriptionServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionServiceTests.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		AF350 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AF351 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AFT350 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		AF250 = {
+			isa = PBXGroup;
+			children = (
+				AF251 /* App */,
+				AF252 /* Models */,
+				AF253 /* ViewModels */,
+				AF254 /* Views */,
+				AF255 /* Services */,
+				AF256 /* Utilities */,
+				AF257 /* Resources */,
+				AF258 /* Widget */,
+				AFT250 /* AffirmFlowTests */,
+				AF259 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		AF251 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				AF101 /* AffirmFlowApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		AF252 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				AF103 /* FocusArea.swift */,
+				AF104 /* Affirmation.swift */,
+				AF105 /* UserSettings.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		AF253 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		AF254 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				AF102 /* ContentView.swift */,
+				AF260 /* Onboarding */,
+				AF261 /* Home */,
+				AF262 /* Favorites */,
+				AF263 /* Settings */,
+				AF264 /* Paywall */,
+				AF265 /* Components */,
+				AF266 /* History */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		AF255 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				AF106 /* AffirmationService.swift */,
+				AF107 /* SubscriptionService.swift */,
+				AF108 /* HapticsService.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		AF256 /* Utilities */ = {
+			isa = PBXGroup;
+			children = (
+				AF109 /* DesignTokens.swift */,
+			);
+			path = Utilities;
+			sourceTree = "<group>";
+		};
+		AF257 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				AF130 /* Info.plist */,
+				AF131 /* AffirmFlow.entitlements */,
+				AF132 /* Assets.xcassets */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		AF258 /* Widget */ = {
+			isa = PBXGroup;
+			children = (
+				AF120 /* AffirmationWidgetBundle.swift */,
+				AF121 /* AffirmationEntry.swift */,
+				AF122 /* Provider.swift */,
+				AF123 /* RefreshAffirmationIntent.swift */,
+				AF267 /* WidgetViews */,
+				AF134 /* Assets.xcassets */,
+				AF133 /* AffirmFlowWidget.entitlements */,
+			);
+			path = Widget;
+			sourceTree = "<group>";
+		};
+		AF259 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				AF100 /* AffirmFlow.app */,
+				AF200 /* AffirmFlowWidget.appex */,
+				AFT100 /* AffirmFlowTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		AF260 /* Onboarding */ = {
+			isa = PBXGroup;
+			children = (
+				AF110 /* OnboardingView.swift */,
+				AF111 /* WelcomeView.swift */,
+				AF112 /* FocusAreaSelectionView.swift */,
+				AF113 /* WidgetTutorialView.swift */,
+			);
+			path = Onboarding;
+			sourceTree = "<group>";
+		};
+		AF261 /* Home */ = {
+			isa = PBXGroup;
+			children = (
+				AF114 /* HomeView.swift */,
+				AF115 /* AffirmationCardView.swift */,
+			);
+			path = Home;
+			sourceTree = "<group>";
+		};
+		AF262 /* Favorites */ = {
+			isa = PBXGroup;
+			children = (
+				AF116 /* FavoritesView.swift */,
+			);
+			path = Favorites;
+			sourceTree = "<group>";
+		};
+		AF263 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				AF118 /* SettingsView.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
+		AF264 /* Paywall */ = {
+			isa = PBXGroup;
+			children = (
+				AF119 /* PaywallView.swift */,
+			);
+			path = Paywall;
+			sourceTree = "<group>";
+		};
+		AF265 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		AF266 /* History */ = {
+			isa = PBXGroup;
+			children = (
+				AF117 /* HistoryView.swift */,
+			);
+			path = History;
+			sourceTree = "<group>";
+		};
+		AF267 /* WidgetViews */ = {
+			isa = PBXGroup;
+			children = (
+				AF124 /* SmallWidgetView.swift */,
+				AF125 /* MediumWidgetView.swift */,
+				AF126 /* LargeWidgetView.swift */,
+			);
+			path = WidgetViews;
+			sourceTree = "<group>";
+		};
+		AFT250 /* AffirmFlowTests */ = {
+			isa = PBXGroup;
+			children = (
+				AFT251 /* Models */,
+				AFT252 /* Services */,
+			);
+			path = AffirmFlowTests;
+			sourceTree = "<group>";
+		};
+		AFT251 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				AFT101 /* FocusAreaTests.swift */,
+				AFT102 /* AffirmationTests.swift */,
+				AFT103 /* UserSettingsTests.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		AFT252 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				AFT104 /* AffirmationServiceTests.swift */,
+				AFT105 /* SubscriptionServiceTests.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		AF201 /* AffirmFlowWidget */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AF371 /* Build configuration list for PBXNativeTarget "AffirmFlowWidget" */;
+			buildPhases = (
+				AF341 /* Sources */,
+				AF351 /* Frameworks */,
+				AF361 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = AffirmFlowWidget;
+			productName = AffirmFlowWidget;
+			productReference = AF200 /* AffirmFlowWidget.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		AF310 /* AffirmFlow */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AF370 /* Build configuration list for PBXNativeTarget "AffirmFlow" */;
+			buildPhases = (
+				AF340 /* Sources */,
+				AF350 /* Frameworks */,
+				AF360 /* Resources */,
+				AF450 /* Embed App Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				AF401 /* PBXTargetDependency */,
+			);
+			name = AffirmFlow;
+			productName = AffirmFlow;
+			productReference = AF100 /* AffirmFlow.app */;
+			productType = "com.apple.product-type.application";
+		};
+		AFT310 /* AffirmFlowTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AFT370 /* Build configuration list for PBXNativeTarget "AffirmFlowTests" */;
+			buildPhases = (
+				AFT340 /* Sources */,
+				AFT350 /* Frameworks */,
+				AFT360 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				AFT401 /* PBXTargetDependency */,
+			);
+			name = AffirmFlowTests;
+			productName = AffirmFlowTests;
+			productReference = AFT100 /* AffirmFlowTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		AF300 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1600;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					AF201 = {
+						CreatedOnToolsVersion = 16.0;
+					};
+					AF310 = {
+						CreatedOnToolsVersion = 16.0;
+					};
+					AFT310 = {
+						CreatedOnToolsVersion = 16.0;
+						TestTargetID = AF310;
+					};
+				};
+			};
+			buildConfigurationList = AF380 /* Build configuration list for PBXProject "AffirmFlow" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = AF250;
+			productRefGroup = AF259 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				AF310 /* AffirmFlow */,
+				AF201 /* AffirmFlowWidget */,
+				AFT310 /* AffirmFlowTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		AF360 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AF030 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AF361 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AF031 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AFT360 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		AF340 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AF001 /* AffirmFlowApp.swift in Sources */,
+				AF002 /* ContentView.swift in Sources */,
+				AF003 /* FocusArea.swift in Sources */,
+				AF004 /* Affirmation.swift in Sources */,
+				AF005 /* UserSettings.swift in Sources */,
+				AF006 /* AffirmationService.swift in Sources */,
+				AF007 /* SubscriptionService.swift in Sources */,
+				AF008 /* HapticsService.swift in Sources */,
+				AF009 /* DesignTokens.swift in Sources */,
+				AF010 /* OnboardingView.swift in Sources */,
+				AF011 /* WelcomeView.swift in Sources */,
+				AF012 /* FocusAreaSelectionView.swift in Sources */,
+				AF013 /* WidgetTutorialView.swift in Sources */,
+				AF014 /* HomeView.swift in Sources */,
+				AF015 /* AffirmationCardView.swift in Sources */,
+				AF016 /* FavoritesView.swift in Sources */,
+				AF017 /* HistoryView.swift in Sources */,
+				AF018 /* SettingsView.swift in Sources */,
+				AF019 /* PaywallView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AF341 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AF020 /* AffirmationWidgetBundle.swift in Sources */,
+				AF021 /* AffirmationEntry.swift in Sources */,
+				AF022 /* Provider.swift in Sources */,
+				AF023 /* RefreshAffirmationIntent.swift in Sources */,
+				AF024 /* SmallWidgetView.swift in Sources */,
+				AF025 /* MediumWidgetView.swift in Sources */,
+				AF026 /* LargeWidgetView.swift in Sources */,
+				AF027 /* FocusArea.swift in Sources */,
+				AF028 /* DesignTokens.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AFT340 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AFT001 /* FocusAreaTests.swift in Sources */,
+				AFT002 /* AffirmationTests.swift in Sources */,
+				AFT003 /* UserSettingsTests.swift in Sources */,
+				AFT004 /* AffirmationServiceTests.swift in Sources */,
+				AFT005 /* SubscriptionServiceTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		AF401 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = AF201 /* AffirmFlowWidget */;
+			targetProxy = AF400 /* PBXContainerItemProxy */;
+		};
+		AFT401 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = AF310 /* AffirmFlow */;
+			targetProxy = AFT400 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		AF390 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		AF391 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		AF392 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Resources/AffirmFlow.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Distribution";
+				CODE_SIGN_STYLE = Manual;
+				CURRENT_PROJECT_VERSION = 2;
+				DEVELOPMENT_ASSET_PATHS = "";
+				DEVELOPMENT_TEAM = S5U8UH3JLJ;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Resources/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = AffirmFlow;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.anicca.affirmflow;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "AffirmFlow AppStore";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		AF393 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Resources/AffirmFlow.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Distribution";
+				CODE_SIGN_STYLE = Manual;
+				CURRENT_PROJECT_VERSION = 2;
+				DEVELOPMENT_ASSET_PATHS = "";
+				DEVELOPMENT_TEAM = S5U8UH3JLJ;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Resources/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = AffirmFlow;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.anicca.affirmflow;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "AffirmFlow AppStore";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		AF394 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Widget/AffirmFlowWidget.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Distribution";
+				CODE_SIGN_STYLE = Manual;
+				CURRENT_PROJECT_VERSION = 2;
+				DEVELOPMENT_TEAM = S5U8UH3JLJ;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Widget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "AffirmFlow Widget";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.anicca.affirmflow.widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "AffirmFlow Widget AppStore";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		AF395 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Widget/AffirmFlowWidget.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Distribution";
+				CODE_SIGN_STYLE = Manual;
+				CURRENT_PROJECT_VERSION = 2;
+				DEVELOPMENT_TEAM = S5U8UH3JLJ;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Widget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "AffirmFlow Widget";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.anicca.affirmflow.widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "AffirmFlow Widget AppStore";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		AFT392 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Manual;
+				CURRENT_PROJECT_VERSION = 2;
+				DEVELOPMENT_TEAM = S5U8UH3JLJ;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.anicca.affirmflow.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/AffirmFlow.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/AffirmFlow";
+			};
+			name = Debug;
+		};
+		AFT393 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Manual;
+				CURRENT_PROJECT_VERSION = 2;
+				DEVELOPMENT_TEAM = S5U8UH3JLJ;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.anicca.affirmflow.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/AffirmFlow.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/AffirmFlow";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		AF370 /* Build configuration list for PBXNativeTarget "AffirmFlow" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AF392 /* Debug */,
+				AF393 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		AF371 /* Build configuration list for PBXNativeTarget "AffirmFlowWidget" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AF394 /* Debug */,
+				AF395 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		AF380 /* Build configuration list for PBXProject "AffirmFlow" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AF390 /* Debug */,
+				AF391 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		AFT370 /* Build configuration list for PBXNativeTarget "AffirmFlowTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AFT392 /* Debug */,
+				AFT393 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = AF300 /* Project object */;
+}

@@ -1,0 +1,66 @@
+@startuml
+class User {
+  -userId: String
+  -name: String
+  -registrationDate: Date
+  -maxBorrowLimit: int
+  +register(): void
+  +unregister(): void
+  +canBorrow(): boolean
+}
+
+class Book {
+  -bookId: String
+  -isbn: String
+  -title: String
+  -purchaseDate: Date
+  -status: BookStatus
+  +purchase(): void
+  +discard(): void
+  +isAvailable(): boolean
+}
+
+enum BookStatus {
+  PURCHASED
+  AVAILABLE
+  BORROWED
+  DISCARDED
+}
+
+class Library {
+  -libraryId: String
+  +registerUser(user: User): void
+  +unregisterUser(user: User): void
+  +borrowBook(user: User, book: Book): LoanRecord
+  +returnBook(loanRecord: LoanRecord): void
+  +purchaseBook(book: Book): void
+  +discardBook(book: Book): void
+  +checkBorrowLimit(user: User): boolean
+}
+
+class LoanRecord {
+  -loanId: String
+  -borrowDate: Date
+  -dueDate: Date
+  -returnDate: Date
+  +calculateFine(): int
+  +isOverdue(): boolean
+}
+
+User "1" -- "*" LoanRecord : borrows
+Book "1" -- "*" LoanRecord : lent
+Library "1" -- "*" User : manages
+Library "1" -- "*" Book : manages
+LoanRecord ..> BookStatus : uses
+
+@enduml
+
+
+
+
+
+
+
+
+
+

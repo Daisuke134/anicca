@@ -1,0 +1,511 @@
+{
+  "version": 1,
+  "jobs": [
+    {
+      "id": "ops-heartbeat",
+      "agentId": "anicca",
+      "jobId": "ops-heartbeat",
+      "name": "ops-heartbeat",
+      "schedule": {
+        "kind": "cron",
+        "expr": "*/10 * * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Execute ops-heartbeat skill. Read ~/.openclaw/workspace/ops/heartbeat_state.json and proposals.json. Run heartbeat logic. Write results to those files. Do not call any heartbeat API or POST to Railway. CRITICAL: After you finish, you MUST post a summary of your execution results (success or failure, what you did, any errors) to Slack #metrics channel (channel ID: C091G3PKHL2). This Slack report is MANDATORY and non-negotiable. Do not skip it under any circumstances."
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C091G3PKHL2"
+      },
+      "enabled": false
+    },
+    {
+      "id": "mission-worker",
+      "agentId": "anicca",
+      "jobId": "mission-worker",
+      "name": "mission-worker",
+      "schedule": {
+        "kind": "cron",
+        "expr": "*/10 * * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Execute mission-worker skill. Read ~/.openclaw/workspace/ops/steps.json, take one step, run it, append result to ~/.openclaw/workspace/ops/completed/YYYY-MM-DD.json (today) and remove that step from steps.json. Do not call any step API or Railway. CRITICAL: After you finish, you MUST post a summary of your execution results (success or failure, what you did, any errors) to Slack #metrics channel (channel ID: C091G3PKHL2). This Slack report is MANDATORY and non-negotiable. Do not skip it under any circumstances."
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C091G3PKHL2"
+      },
+      "enabled": false
+    },
+    {
+      "id": "trend-hunter-5am",
+      "agentId": "anicca",
+      "jobId": "trend-hunter-5am",
+      "name": "trend-hunter-5am",
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 5 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Execute trend-hunter skill. Do NOT run run_trend_hunter.sh or any .sh. Read ~/.openclaw/skills/trend-hunter/SKILL.md and perform the steps yourself with run_terminal_cmd and file writes. Slot 9am, date today (Asia/Tokyo). Do not infer time; do not run date. CRITICAL: After you finish, you MUST post a summary of your execution results (success or failure, what you did, any errors) to Slack #metrics channel (channel ID: C091G3PKHL2). This Slack report is MANDATORY and non-negotiable. Do not skip it under any circumstances."
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C091G3PKHL2"
+      },
+      "enabled": true
+    },
+    {
+      "id": "trend-hunter-5pm",
+      "agentId": "anicca",
+      "jobId": "trend-hunter-5pm",
+      "name": "trend-hunter-5pm",
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 17 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Execute trend-hunter skill. Do NOT run run_trend_hunter.sh or any .sh. Read ~/.openclaw/skills/trend-hunter/SKILL.md and perform the steps yourself with run_terminal_cmd and file writes. Slot 9pm, date today (Asia/Tokyo). Do not infer time; do not run date. CRITICAL: After you finish, you MUST post a summary of your execution results (success or failure, what you did, any errors) to Slack #metrics channel (channel ID: C091G3PKHL2). This Slack report is MANDATORY and non-negotiable. Do not skip it under any circumstances."
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C091G3PKHL2"
+      },
+      "enabled": true
+    },
+    {
+      "id": "suffering-detector",
+      "agentId": "anicca",
+      "jobId": "suffering-detector",
+      "name": "suffering-detector",
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 */6 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Execute suffering-detector skill. Write result to ~/.openclaw/workspace/suffering/findings_YYYY-MM-DD.json (use today). Do not POST to any jobs API. CRITICAL: After you finish, you MUST post a summary of your execution results (success or failure, what you did, any errors) to Slack #metrics channel (channel ID: C091G3PKHL2). This Slack report is MANDATORY and non-negotiable. Do not skip it under any circumstances."
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C091G3PKHL2"
+      },
+      "enabled": true
+    },
+    {
+      "id": "x-poster-morning",
+      "agentId": "anicca",
+      "jobId": "x-poster-morning",
+      "name": "x-poster-morning",
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 9 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Execute x-poster skill. Read ~/.openclaw/workspace/hooks/YYYY-MM-DD.json for today, slot 9am. Post the 9am postText to X now. CRITICAL: After you finish, you MUST post a summary of your execution results (success or failure, what you did, any errors) to Slack #metrics channel (channel ID: C091G3PKHL2). This Slack report is MANDATORY and non-negotiable. Do not skip it under any circumstances."
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C091G3PKHL2"
+      },
+      "enabled": true
+    },
+    {
+      "id": "x-poster-evening",
+      "agentId": "anicca",
+      "jobId": "x-poster-evening",
+      "name": "x-poster-evening",
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 21 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Execute x-poster skill. Read ~/.openclaw/workspace/hooks/YYYY-MM-DD.json for today, slot 9pm. Post the 9pm postText to X now. CRITICAL: After you finish, you MUST post a summary of your execution results (success or failure, what you did, any errors) to Slack #metrics channel (channel ID: C091G3PKHL2). This Slack report is MANDATORY and non-negotiable. Do not skip it under any circumstances."
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C091G3PKHL2"
+      },
+      "enabled": true
+    },
+    {
+      "id": "tiktok-poster-morning",
+      "agentId": "anicca",
+      "jobId": "tiktok-poster-morning",
+      "name": "tiktok-poster-morning",
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 9 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Execute tiktok-poster skill. Read ~/.openclaw/workspace/hooks/YYYY-MM-DD.json for today, slot 9am. Post the 9am caption and imageUrl to TikTok now. CRITICAL: After you finish, you MUST post a summary of your execution results (success or failure, what you did, any errors) to Slack #metrics channel (channel ID: C091G3PKHL2). This Slack report is MANDATORY and non-negotiable. Do not skip it under any circumstances."
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C091G3PKHL2"
+      },
+      "enabled": true
+    },
+    {
+      "id": "tiktok-poster-evening",
+      "agentId": "anicca",
+      "jobId": "tiktok-poster-evening",
+      "name": "tiktok-poster-evening",
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 21 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Execute tiktok-poster skill. Read ~/.openclaw/workspace/hooks/YYYY-MM-DD.json for today, slot 9pm. Post the 9pm caption and imageUrl to TikTok now. CRITICAL: After you finish, you MUST post a summary of your execution results (success or failure, what you did, any errors) to Slack #metrics channel (channel ID: C091G3PKHL2). This Slack report is MANDATORY and non-negotiable. Do not skip it under any circumstances."
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C091G3PKHL2"
+      },
+      "enabled": true
+    },
+    {
+      "id": "app-nudge-morning",
+      "agentId": "anicca",
+      "jobId": "app-nudge-morning",
+      "name": "app-nudge-morning",
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 9 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Execute app-nudge-sender skill. POST /api/admin/jobs/app-nudge-sender with slot: morning. CRITICAL: After you finish, you MUST post a summary of your execution results (success or failure, what you did, any errors) to Slack #metrics channel (channel ID: C091G3PKHL2). This Slack report is MANDATORY and non-negotiable. Do not skip it under any circumstances."
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C091G3PKHL2"
+      },
+      "enabled": true
+    },
+    {
+      "id": "app-nudge-afternoon",
+      "agentId": "anicca",
+      "jobId": "app-nudge-afternoon",
+      "name": "app-nudge-afternoon",
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 14 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Execute app-nudge-sender skill. POST /api/admin/jobs/app-nudge-sender with slot: afternoon. CRITICAL: After you finish, you MUST post a summary of your execution results (success or failure, what you did, any errors) to Slack #metrics channel (channel ID: C091G3PKHL2). This Slack report is MANDATORY and non-negotiable. Do not skip it under any circumstances."
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C091G3PKHL2"
+      },
+      "enabled": true
+    },
+    {
+      "id": "app-nudge-evening",
+      "agentId": "anicca",
+      "jobId": "app-nudge-evening",
+      "name": "app-nudge-evening",
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 20 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Execute app-nudge-sender skill. POST /api/admin/jobs/app-nudge-sender with slot: evening. CRITICAL: After you finish, you MUST post a summary of your execution results (success or failure, what you did, any errors) to Slack #metrics channel (channel ID: C091G3PKHL2). This Slack report is MANDATORY and non-negotiable. Do not skip it under any circumstances."
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C091G3PKHL2"
+      },
+      "enabled": true
+    },
+    {
+      "id": "roundtable-standup",
+      "agentId": "anicca",
+      "jobId": "roundtable-standup",
+      "name": "roundtable-standup",
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 9 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Execute roundtable-standup skill. Write result to ~/.openclaw/workspace/roundtable-standup/run_YYYY-MM-DD.json (use today). Do not POST to any API. CRITICAL: After you finish, you MUST post a summary of your execution results (success or failure, what you did, any errors) to Slack #metrics channel (channel ID: C091G3PKHL2). This Slack report is MANDATORY and non-negotiable. Do not skip it under any circumstances."
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C091G3PKHL2"
+      },
+      "enabled": true
+    },
+    {
+      "id": "roundtable-initiative-generate",
+      "agentId": "anicca",
+      "jobId": "roundtable-initiative-generate",
+      "name": "roundtable-initiative-generate",
+      "schedule": {
+        "kind": "cron",
+        "expr": "5 9 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Execute roundtable-initiative-generate skill. Write result to ~/.openclaw/workspace/roundtable-initiative-generate/run_YYYY-MM-DD.json (use today). Do not POST to any API. CRITICAL: After you finish, you MUST post a summary of your execution results (success or failure, what you did, any errors) to Slack #metrics channel (channel ID: C091G3PKHL2). This Slack report is MANDATORY and non-negotiable. Do not skip it under any circumstances."
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C091G3PKHL2"
+      },
+      "enabled": true
+    },
+    {
+      "id": "hookpost-ttl-cleaner",
+      "agentId": "anicca",
+      "jobId": "hookpost-ttl-cleaner",
+      "name": "hookpost-ttl-cleaner",
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 3 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Execute hookpost-ttl-cleaner skill. Write result to ~/.openclaw/workspace/hookpost-ttl-cleaner/run_YYYY-MM-DD.json (use today). Do not POST to any jobs API. CRITICAL: After you finish, you MUST post a summary of your execution results (success or failure, what you did, any errors) to Slack #metrics channel (channel ID: C091G3PKHL2). This Slack report is MANDATORY and non-negotiable. Do not skip it under any circumstances."
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C091G3PKHL2"
+      },
+      "enabled": true
+    },
+    {
+      "id": "sto-weekly-refresh",
+      "agentId": "anicca",
+      "jobId": "sto-weekly-refresh",
+      "name": "sto-weekly-refresh",
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 3 * * 0",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Execute sto-weekly-refresh skill. Write result to ~/.openclaw/workspace/sto-weekly-refresh/run_YYYY-MM-DD.json (use today). Do not POST to any jobs API. CRITICAL: After you finish, you MUST post a summary of your execution results (success or failure, what you did, any errors) to Slack #metrics channel (channel ID: C091G3PKHL2). This Slack report is MANDATORY and non-negotiable. Do not skip it under any circumstances."
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C091G3PKHL2"
+      },
+      "enabled": true
+    },
+    {
+      "id": "autonomy-check",
+      "agentId": "anicca",
+      "jobId": "autonomy-check",
+      "name": "autonomy-check",
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 3 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Execute autonomy-check skill. Write result to ~/.openclaw/workspace/autonomy-check/audit_YYYY-MM-DD.json (use today). Do not POST to any jobs API. CRITICAL: After you finish, you MUST post a summary of your execution results (success or failure, what you did, any errors) to Slack #metrics channel (channel ID: C091G3PKHL2). This Slack report is MANDATORY and non-negotiable. Do not skip it under any circumstances."
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C091G3PKHL2"
+      },
+      "enabled": true
+    },
+    {
+      "id": "daily-memory",
+      "agentId": "anicca",
+      "jobId": "daily-memory",
+      "name": "daily-memory",
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 23 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Execute daily-memory skill. Extract today's learnings from session history, roundtable-standup の結果、および今日の cron の成功/失敗. Do NOT read AGENTS.md. Append to ~/.openclaw/workspace/daily-memory/lessons-learned.md. Write today's diary to ~/.openclaw/workspace/daily-memory/diary-YYYY-MM-DD.md (use today's date). CRITICAL: After you finish, you MUST post a summary of your execution results (success or failure, what you did, any errors) to Slack #metrics channel (channel ID: C091G3PKHL2). This Slack report is MANDATORY and non-negotiable. Do not skip it under any circumstances."
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C091G3PKHL2"
+      },
+      "enabled": true
+    },
+    {
+      "id": "moltbook-interact",
+      "agentId": "anicca",
+      "jobId": "moltbook-interact",
+      "name": "moltbook-interact",
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 */4 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Execute moltbook-interact skill. Fetch feed, check own posts for new comments, reply up to 3 per cycle (optional new post). Write result to ~/.openclaw/workspace/moltbook-interact/run_YYYY-MM-DD.json (use today Asia/Tokyo). Output MUST follow the exact JSON format in the skill: date, executedAt, status, repliesCount, replies[] (commentId, permalink, repliedToContent, replyBody), createdPost (postId, permalink, postBody or null), errorMessage. CRITICAL: After you finish, post to Slack #metrics (channel ID: C091G3PKHL2) using the exact Slack format in the skill: 1) skill name and result, 2) date and time JST, 3) result as Japanese summary + permalink link for each reply/post (NO full JSON paste), 4) remarks or 'なし'. This Slack report is MANDATORY."
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C091G3PKHL2"
+      },
+      "enabled": true
+    },
+    {
+      "id": "moltbook-interact-today-test",
+      "agentId": "anicca",
+      "jobId": "moltbook-interact-today-test",
+      "name": "moltbook-interact-today-test",
+      "schedule": {
+        "kind": "cron",
+        "expr": "15 23 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Execute moltbook-interact skill. Fetch feed, check own posts for new comments, reply up to 3 per cycle (optional new post). Write result to ~/.openclaw/workspace/moltbook-interact/run_YYYY-MM-DD.json (use today Asia/Tokyo). Output MUST follow the exact JSON format in the skill: date, executedAt, status, repliesCount, replies[] (commentId, permalink, repliedToContent, replyBody), createdPost (postId, permalink, postBody or null), errorMessage. CRITICAL: After you finish, post to Slack #metrics (channel ID: C091G3PKHL2) using the exact Slack format in the skill: 1) skill name and result, 2) date and time JST, 3) result as Japanese summary + permalink link for each reply/post (NO full JSON paste), 4) remarks or 'なし'. This Slack report is MANDATORY."
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C091G3PKHL2"
+      },
+      "enabled": true
+    },
+    {
+      "id": "reelfarm-metrics-loop",
+      "agentId": "anicca",
+      "jobId": "reelfarm-metrics-loop",
+      "name": "reelfarm-metrics-loop",
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 4 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Execute reelfarm skill in LOOP A mode (Daily Metrics Iteration). Read ~/.openclaw/skills/reelfarm/SKILL.md and follow the 'Cron Mode: Daily Metrics Iteration (LOOP A)' section exactly. API key: <REDACTED_REVOKED_2026-05-21>. Step 1: GET /automations to list all active automations dynamically. Step 2: GET /tiktok/accounts to build account ID→username mapping. Step 3: For each automation, GET /tiktok/posts?automation_id={id}&timeframe=7 for 7-day metrics. Step 4: For each automation, score hooks (views*0.4+likes*0.3+comments*0.2+shares*0.1), identify top 3 and bottom 3, generate replacement hooks in emotional 2nd-person style, PATCH /automations/{id} with updated hooks. Save results to ~/.openclaw/workspace/reelfarm/metrics/YYYY-MM-DD.json (use today Asia/Tokyo). CRITICAL: After you finish, you MUST post a summary of your execution results to Slack #metrics channel (channel ID: C091G3PKHL2). Use the exact report format in the LOOP A section of the skill. This Slack report is MANDATORY and non-negotiable. Do not skip it under any circumstances."
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C091G3PKHL2"
+      },
+      "enabled": true
+    },
+    {
+      "id": "reelfarm-library-loop",
+      "agentId": "anicca",
+      "jobId": "reelfarm-library-loop",
+      "name": "reelfarm-library-loop",
+      "schedule": {
+        "kind": "cron",
+        "expr": "30 4 * * 0",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Execute reelfarm skill in LOOP B mode (Weekly Library Exploration). Read ~/.openclaw/skills/reelfarm/SKILL.md and follow the 'Cron Mode: Weekly Library Exploration (LOOP B)' section exactly. API key: <REDACTED_REVOKED_2026-05-21>. Step 1: GET /library/niches to check available niches (some return 0 profiles — skip those). Step 2: For niches with profiles, GET /library?niche=X to find viral slideshows (sort by views). Step 3: Analyze top hooks from viral content. Step 4: GET /automations + GET /tiktok/posts to check posting capacity (6/day limit per account). Step 5: If capacity available, POST /automations with auto_pull_images:true and all_slides:'auto' in image_settings. Step 6: Before creating, GET /slideshows?status=queued to verify queue is not full (if >100 queued, skip creation and notify). Save results to ~/.openclaw/workspace/reelfarm/library/YYYY-MM-DD.json (use today Asia/Tokyo). CRITICAL: After you finish, you MUST post a summary of your execution results to Slack #metrics channel (channel ID: C091G3PKHL2). Use the exact report format in the LOOP B section of the skill. This Slack report is MANDATORY and non-negotiable. Do not skip it under any circumstances."
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C091G3PKHL2"
+      },
+      "enabled": false
+    }
+  ]
+}

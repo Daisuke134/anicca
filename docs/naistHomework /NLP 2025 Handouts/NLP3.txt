@@ -1,0 +1,228 @@
+NLP3 Assignment: Language Identification by Byte Language Model
+Student ID: 2411218
+Name: daisuke narita
+================================================================================
+
+Part 1: Testing ByteLM with different language models (70 points)
+================================================================================
+
+Bug Fix Explanation:
+--------------------
+The original ByteLM class had a bug where it assigned -inf (negative infinity) 
+for zero probabilities in the log probability computation. This caused 
+infinite perplexity when test data contained bytes not seen in training data.
+
+Solution:
+I applied Laplace smoothing (add-one smoothing) in the __init__ method. 
+Instead of assigning -inf for zero probabilities, I add 1 to each count before 
+normalizing, ensuring all 256 possible bytes have non-zero probability. This 
+prevents -inf values in log probabilities and makes the model probabilistic.
+
+Code changes:
+- In __init__: Changed from `probs = counts / np.sum(counts)` followed by 
+  `log_probs = np.where(probs == 0.0, -np.inf, np.log(probs))` to 
+  `smoothed_counts = counts + 1.0` followed by `probs = smoothed_counts / 
+  np.sum(smoothed_counts)` and `log_probs = np.log(probs)`.
+- This ensures all probabilities are positive and finite.
+
+Results:
+--------
+English model: perplexity: 13.431301184867843 prob: 0.999999999997258
+Japanese model: perplexity: 196.09094718142185 prob: 0.9999999999997222
+Simplified Chinese model: perplexity: 155.13165142613286 prob: 0.9999999999964516
+Traditional Chinese model: perplexity: 182.54658837935466 prob: 1.0000000000032374
+
+All assertions passed! All perplexities are finite and all probabilities are 
+close to 1.0, confirming the model is probabilistic.
+
+Why perplexities are different? (10 points)
+-------------------------------------------
+The perplexities differ because each language model is trained on different 
+training data with different byte distributions:
+
+1. English model (13.43): Lowest perplexity because the test data is English. 
+   The English training data has byte patterns that match the test data well.
+
+2. Japanese model (196.09): High perplexity because Japanese uses different 
+   character encodings (e.g., UTF-8 encoding of Japanese characters) and 
+   byte patterns that don't match English text.
+
+3. Simplified Chinese (155.13): Lower than Japanese but higher than English. 
+   Chinese characters are encoded differently than English, but the byte 
+   distribution might have some overlap.
+
+4. Traditional Chinese (182.55): Similar to Simplified Chinese but slightly 
+   higher perplexity, possibly due to different character distributions.
+
+Perplexity measures how "surprised" the model is by the test data. Lower 
+perplexity means the model predicted the test data better. Since the test data 
+is English, the English model has the lowest perplexity, while models trained 
+on other languages have higher perplexity because their byte distributions 
+don't match English text patterns.
+
+
+================================================================================
+Part 2: Identifying the language of languages/unk.test (30 points)
+================================================================================
+
+Method:
+-------
+I trained byte language models for all 102 languages available in the 
+languages/dev directory. For each language, I:
+1. Trained a ByteLM model on the corresponding .dev file
+2. Computed perplexity on languages/unk.test
+3. Identified the language with the lowest perplexity
+
+Results:
+--------
+Best match (lowest perplexity): oci (Occitan)
+Perplexity: 11.186163
+Probability: 1.000000
+
+Top 5 languages (lowest perplexity):
+  1. oci (Occitan)           : 11.186163
+  2. cat (Catalan)            : 17.709293
+  3. spa (Spanish)            : 21.285006
+  4. fra (French)             : 21.490091
+  5. ast (Asturian)           : 22.095465
+
+All languages tested:
+afr (Afrikaans)              : 43.365837
+amh (Amharic)                : 173.248665
+ara (Arabic)                 : 288.650395
+asm (Assamese)               : 332.158087
+ast (Asturian)               : 22.095465
+azj (Azerbaijani)            : 59.964178
+bel (Belarusian)             : 357.242794
+ben (Bengali)                : 354.907909
+bos (Bosnian)                : 46.668334
+bul (Bulgarian)              : 186.469220
+cat (Catalan)                : 17.709293
+ceb (Cebuano)                : 44.384510
+ces (Czech)                  : 47.977121
+ckb (Central Kurdish)        : 494.222132
+cym (Welsh)                  : 49.475355
+dan (Danish)                 : 38.172881
+deu (German)                 : 42.891044
+ell (Greek)                  : 173.362843
+eng (English)                : 29.045792
+est (Estonian)               : 45.948871
+fas (Persian)                : 167.168345
+fin (Finnish)                : 56.186021
+fra (French)                 : 21.490091
+ful (Fulah)                  : 44.109562
+gle (Irish)                  : 47.038770
+glg (Galician)               : 22.400035
+guj (Gujarati)               : 615.150874
+hau (Hausa)                  : 63.777126
+heb (Hebrew)                 : 204.491384
+hin (Hindi)                  : 268.076216
+hrv (Croatian)               : 46.780001
+hun (Hungarian)              : 46.164212
+hye (Armenian)               : 233.871812
+ibo (Igbo)                   : 71.092048
+ind (Indonesian)             : 41.253625
+isl (Icelandic)              : 59.527365
+ita (Italian)                : 28.630081
+jav (Javanese)               : 42.408375
+jpn (Japanese)               : 214.162721
+kam (Kamba)                  : 72.230553
+kan (Kannada)                : 260.322715
+kat (Georgian)               : 184.832744
+kaz (Kazakh)                 : 166.349858
+kea (Kabuverdianu)           : 36.160535
+khm (Khmer)                  : 127.976635
+kir (Kyrgyz)                 : 175.050091
+kor (Korean)                 : 172.779452
+lao (Lao)                    : 121.603537
+lav (Latvian)                : 45.744352
+lin (Lingala)                : 61.419321
+lit (Lithuanian)             : 44.919621
+ltz (Luxembourgish)          : 44.378936
+lug (Ganda)                  : 69.871266
+luo (Luo)                    : 52.607662
+mal (Malayalam)              : 281.727286
+mar (Marathi)                : 744.909439
+mkd (Macedonian)             : 189.782003
+mlt (Maltese)                : 48.330232
+mon (Mongolian)              : 517.063629
+mri (Maori)                  : 110.677151
+msa (Malay)                  : 45.118658
+mya (Burmese)                : 180.238216
+nld (Dutch)                  : 40.163299
+nob (Norwegian Bokmål)       : 39.484132
+npi (Nepali)                 : 204.523993
+nso (Northern Sotho)         : 63.592166
+nya (Chichewa)               : 60.412998
+oci (Occitan)                : 11.186163  <-- BEST MATCH
+orm (Oromo)                  : 68.696721
+ory (Odia)                   : 315.598924
+pan (Punjabi)                : 206.947580
+pol (Polish)                 : 53.930710
+por (Portuguese)             : 23.375723
+pus (Pashto)                 : 120.170651
+ron (Romanian)               : 29.460511
+rus (Russian)                : 171.850636
+slk (Slovak)                 : 46.676436
+slv (Slovenian)              : 46.988565
+sna (Shona)                  : 70.086991
+snd (Sindhi)                 : 336.531790
+som (Somali)                 : 60.174953
+spa (Spanish)                : 21.285006
+srp (Serbian)                : 207.721957
+swe (Swedish)                : 35.186089
+swh (Swahili)                : 67.604767
+tam (Tamil)                  : 234.284892
+tel (Telugu)                 : 175.778484
+tgk (Tajik)                  : 174.181279
+tgl (Tagalog)                : 49.092250
+tha (Thai)                   : 148.397924
+tur (Turkish)                : 50.761464
+ukr (Ukrainian)              : 267.418938
+umb (Umbundu)                : 70.281511
+urd (Urdu)                   : 252.230405
+uzb (Uzbek)                  : 54.873523
+vie (Vietnamese)             : 95.729624
+wol (Wolof)                  : 45.616863
+xho (Xhosa)                  : 64.801210
+yor (Yoruba)                 : 61.671500
+zho_simpl (Simplified Chinese): 162.726595
+zho_trad (Traditional Chinese): 187.766051
+zul (Zulu)                   : 77.459350
+
+Answer: oci (Occitan)
+---------------------
+The language of languages/unk.test is identified as oci (Occitan).
+
+How you identify the language? (10 points)
+-------------------------------------------
+I identified the language by training byte language models for all available 
+languages and computing perplexity on the test file. The language model 
+with the lowest perplexity is the best match because:
+
+1. Perplexity measures how well a model predicts the test data. Lower 
+   perplexity means the model is less "surprised" by the test data, indicating 
+   that the training data (language) matches the test data better.
+
+2. Byte language models capture the statistical distribution of bytes in text. 
+   Each language has characteristic byte patterns due to:
+   - Character encoding (e.g., UTF-8 encoding of characters)
+   - Character frequency distributions
+   - Common character sequences (n-grams)
+
+3. The Occitan model achieved the lowest perplexity (11.19), significantly 
+   lower than other Romance languages like Catalan (17.71), Spanish (21.29), 
+   and French (21.49). This suggests that the test file contains Occitan text.
+
+4. The fact that other Romance languages (Catalan, Spanish, French, Asturian, 
+   Portuguese) also have relatively low perplexity (all in the top 5) 
+   supports this identification, as Occitan is a Romance language and shares 
+   similar byte patterns with other Romance languages.
+
+The method is robust because:
+- It uses statistical properties of the entire text rather than specific 
+  keywords
+- It handles any language that can be represented as bytes
+- The smoothing ensures all bytes have non-zero probability, preventing 
+  infinite perplexity
+

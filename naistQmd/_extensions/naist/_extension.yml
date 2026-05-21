@@ -1,0 +1,46 @@
+title: NAIST Master's Thesis Format
+author: NAIST
+version: 1.0.0
+quarto-required: ">=1.2.0"
+contributes:
+  formats:
+    common:
+      filters:
+        - naist-vars.lua
+    pdf:
+      keep-tex: true
+      documentclass: bxjsarticle
+      pdf-engine: xelatex
+      classoption:
+        - xelatex
+        - ja=standard
+        - 12pt
+        - a4paper
+      include-in-header: _extensions/naist/partials/header-expanded.tex
+      include-before-body: _extensions/naist/partials/before-body.tex
+      template-partials:
+        - partials/biblio.tex
+      cite-method: biblatex
+      biblio-style: template/jpa
+      biblatexoptions:
+        - backend=biber
+      citation-location: paragraph
+      fig-cap-location: top
+      lang: en
+      number-depth: 3
+      language:
+        crossref-fig-title: "Figure "
+        crossref-tbl-title: "Table "
+      suppress-bibliography: true
+      # format-resourcesは不要（template/から相対パスで参照しているため）
+      # コメントアウトして、ルートにファイルがコピーされないようにする
+      # format-resources:
+      #   - template/naist-jmthesis.sty
+      #   - template/naist-mcommon.sty
+      #   - template/naist-mthesis.sty
+      #   - template/jpa.bbx
+      #   - template/jpa.cbx
+      #   - template/jpa.dbx
+      #   - template/biblatex-dm.cfg
+
+

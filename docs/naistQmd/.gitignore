@@ -1,0 +1,50 @@
+# Quarto生成ファイル
+_output/
+*.aux
+*.log
+*.lof
+*.lot
+*.toc
+*.out
+*.synctex.gz
+*.fls
+*.fdb_latexmk
+*.dvi
+*.fdb_latexmk
+*.synctex.gz
+
+# 生成されたPDF（必要に応じてコメントアウト）
+# paper.pdf
+
+# 生成されたTeXファイル（必要に応じてコメントアウト）
+# paper.tex
+
+# Quartoのformat-resourcesがルートにコピーするファイル（template/に存在するため無視）
+naist-*.sty
+jpa.bbx
+jpa.cbx
+jpa.dbx
+biblatex-dm.cfg
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# macOS
+.DS_Store
+
+# エディタ
+.vscode/
+.idea/
+
+# Microsoft Office一時ファイル
+~$*
+*.tmp
+
+
+/.quarto/
+
+/.luarc.json
+
+**/*.quarto_ipynb

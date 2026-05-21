@@ -1,0 +1,142 @@
+[build]
+  base = "apps/landing"
+  publish = "out"
+  command = "npm ci && npm run build"
+  functions = "netlify/functions"
+
+[build.environment]
+  GIT_LFS_ENABLED = "false"
+
+[functions]
+  node_bundler = "esbuild"
+
+# ===== Anicca SAO install endpoint (issue #48) =====
+# Lets visitors run `curl -fsSL https://aniccaai.com/install.sh | bash`
+# without anyone needing to remember the github raw URL.
+[[redirects]]
+  from = "/install.sh"
+  to = "https://raw.githubusercontent.com/Daisuke134/anicca/main/install.sh"
+  status = 200
+  force = true
+
+# Same for the SHARE.md (so 'aniccaai.com/SHARE.md' resolves to the cross-
+# harness install matrix without users browsing github).
+[[redirects]]
+  from = "/SHARE.md"
+  to = "https://raw.githubusercontent.com/Daisuke134/anicca/main/SHARE.md"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/income/apply"
+  to = "/.netlify/functions/income-apply"
+  status = 200
+
+[[redirects]]
+  from = "/api/income/webhook"
+  to = "/.netlify/functions/income-webhook"
+  status = 200
+
+[[redirects]]
+  from = "/api/income/list"
+  to = "/.netlify/functions/income-list"
+  status = 200
+
+[[redirects]]
+  from = "/api/*"
+  to = "https://anicca-proxy-production.up.railway.app/api/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/billing/manage"
+  to = "/"
+  status = 301
+
+[[redirects]]
+  from = "/support"
+  to = "/support/en"
+  status = 301
+
+[[redirects]]
+  from = "/privacy"
+  to = "/privacy/en"
+  status = 301
+
+[[redirects]]
+  from = "/app"
+  to = "https://apps.apple.com/app/id6755129214"
+  status = 302
+
+[[redirects]]
+  from = "/challenge"
+  to = "https://apps.apple.com/app/id6755129214"
+  status = 302
+
+[[redirects]]
+  from = "/revenue"
+  to = "/revenue.html"
+  status = 200
+
+[[redirects]]
+  from = "/account"
+  to = "/.netlify/functions/account"
+  status = 200
+
+[[redirects]]
+  from = "/account/*"
+  to = "/.netlify/functions/account"
+  status = 200
+
+[[redirects]]
+  from = "/admin/bank"
+  to = "/.netlify/functions/admin-bank"
+  status = 200
+
+[[redirects]]
+  from = "/admin/bank/*"
+  to = "/.netlify/functions/admin-bank"
+  status = 200
+
+# /books → locale-aware split: ja → /achan, default → /monk
+[[redirects]]
+  from = "/books"
+  to = "/achan"
+  status = 302
+  conditions = {Language = ["ja"]}
+
+[[redirects]]
+  from = "/books"
+  to = "/monk"
+  status = 302
+
+[[redirects]]
+  from = "/anicca-mobile"
+  to = "/affirmation-app"
+  status = 301
+
+[[redirects]]
+  from = "/anicca-mobile/*"
+  to = "/affirmation-app/:splat"
+  status = 301
+
+# /cemetery locale split: Japanese browsers → /cemetery/ja, everyone else
+# stays on the English /cemetery (same pattern as /books → /achan|/monk).
+# force=true so the ja rule overrides the static English page for ja UAs.
+[[redirects]]
+  from = "/cemetery"
+  to = "/cemetery/ja"
+  status = 302
+  force = true
+  conditions = {Language = ["ja"]}
+
+# /tomb → /cemetery (renamed 2026-05-17). Blog article + QR codes + Stripe
+# success pages still point at /tomb, so keep these 301s permanently.
+[[redirects]]
+  from = "/tomb"
+  to = "/cemetery"
+  status = 301
+
+[[redirects]]
+  from = "/tomb/*"
+  to = "/cemetery/:splat"
+  status = 301

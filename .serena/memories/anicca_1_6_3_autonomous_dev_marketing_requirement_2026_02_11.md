@@ -1,0 +1,1 @@
+User clarified Anicca requirement: full autonomous operation across both product development and marketing. Not just channel content automation. Must include autonomous spec->implement->test->improve loops, with human approval only for high-risk operations. This was added to 1.6.3 spec file: .cursor/plans/ios/1.6.3/main/spec-multichannel-nudge-ux.md.

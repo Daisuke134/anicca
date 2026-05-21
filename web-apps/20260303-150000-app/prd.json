@@ -1,0 +1,101 @@
+{
+  "project": "web-app-factory",
+  "branchName": "main",
+  "description": "Build and deploy one web app to Vercel with Stripe subscriptions",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Trend research + app name selection",
+      "acceptanceCriteria": [
+        "prd.json exists with app_name, slug, tagline, problem, target, monetization",
+        "At least 5 trends evaluated, top 1 selected",
+        "Sources cited for each trend",
+        "CLAUDE.md exists pointing to SKILL.md"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Stripe product + price creation",
+      "acceptanceCriteria": [
+        "Stripe product created via API (prod_xxx)",
+        "Stripe price created via API (price_xxx)",
+        ".env.local contains STRIPE_SECRET_KEY, STRIPE_PRICE_ID, NEXT_PUBLIC_URL"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Next.js project initialization",
+      "acceptanceCriteria": [
+        "Next.js 15 project created with TypeScript + Tailwind + App Router",
+        "stripe and @stripe/stripe-js installed",
+        "npm run build passes"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Feature implementation with Stripe Checkout",
+      "acceptanceCriteria": [
+        "Landing page (/) with hero + features + CTA",
+        "Pricing page (/pricing) with Stripe Checkout via Server Action",
+        "Main feature pages implemented",
+        "Success page (/success) for post-checkout redirect",
+        "Webhook handler at /api/webhook (returns 503 if STRIPE_WEBHOOK_SECRET not set)",
+        "No alert(), href='#', 'coming soon', console.log, TODO, lorem ipsum",
+        "npm run build passes"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Quality check + E2E test",
+      "acceptanceCriteria": [
+        "npm run build passes",
+        "npm run lint passes",
+        "SEO: metadata in layout.tsx, robots.txt, sitemap.ts exist",
+        "Playwright E2E test passes (landing + pricing visible)"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Vercel deploy",
+      "acceptanceCriteria": [
+        "Deployed to Vercel with vercel deploy --prod",
+        "Environment variables set (STRIPE_SECRET_KEY, STRIPE_PRICE_ID, NEXT_PUBLIC_URL)",
+        "Redeployed after env var setup",
+        "Slack notified with Webhook registration request",
+        "Vercel URL recorded in prd.json and progress.txt"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": "STRIPE_WEBHOOK_SECRET is NOT set here — created post-deploy by user"
+    },
+    {
+      "id": "US-007",
+      "title": "Final report + AGENTS.md + X post",
+      "acceptanceCriteria": [
+        "All US passes: true in prd.json",
+        "AGENTS.md created with learnings",
+        "X post via Postiz CLI",
+        "progress.txt updated with final summary",
+        "<promise>COMPLETE</promise> output"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": ""
+    }
+  ]
+}

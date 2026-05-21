@@ -1,0 +1,11 @@
+﻿"Start Date: Jan 05, 2026"
+"End Date: Feb 01, 2026"
+Currency: JPY
+Time Zone: UTC
+""
+
+Campaign ID,Campaign Name,Start Date,End Date,Days Left in Campaign,Status,App Name,Country or Region,Ad Placement,Lifetime Budget,Daily Budget,Spend,Avg CPA (Total),Average CPT,Avg CPM,Avg Daily Spend,Impressions,Taps,Installs (Total),TTR,CR (Total),Pre-Orders Placed (Tap-Through),Pre-Orders Placed (View-Through),Pre-Orders Placed (Total),CR (Tap-Through),New Downloads (Total),Redownloads (Total),Installs (View-Through),Installs (Tap-Through),Avg CPA (Tap-Through),New Downloads (View-Through),Redownloads (View-Through),New Downloads (Tap-Through),Redownloads (Tap-Through)
+2143222383,Anicca Discovery,"Jan 14, 2026","Jan 31, 2026",0,PAUSED,Mindful Self Care - Anicca,United States,App Store Search Results,,1500.0,12590.0,1049.17,153.54,1355.8,,9286,82,12,0.01,0.15,0,0,0,0.15,12,0,0,12,1049.17,0,0,12,0
+2143249334,Anicca Discovery JP,"Jan 17, 2026","Feb 28, 2026",22,RUNNING,Mindful Self Care - Anicca,Japan,App Store Search Results,,3000.0,12724.0,795.25,112.6,3253.39,,3911,113,16,0.03,0.14,0,0,0,0.14,16,0,0,16,795.25,0,0,16,0
+2143331128,EU-Tier2_discovery,"Jan 27, 2026",N/A,,RUNNING,Mindful Self Care - Anicca,"Czech Republic,Estonia,Croatia,Hungary,Latvia,Poland,Romania,Slovenia,Slovakia",App Store Search Results,,1500.0,2322.0,1161.0,77.4,2006.91,,1157,30,2,0.03,0.07,0,0,0,0.07,1,1,0,2,1161.0,0,0,1,1
+"",,N/A,N/A,,,,N/A,N/A,,,27636.0,921.2,122.83,1925.32,,14354,225,30,0.02,0.13,0,0,0,0.13,29,1,0,30,921.2,0,0,29,1

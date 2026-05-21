@@ -1,0 +1,11 @@
+{
+  "app": {"bundle_id": "ai.anicca.app.ios"},
+  "output_dir": "/tmp/screenshot-ab-raw",
+  "steps": [
+    {"action": "launch"},
+    {"action": "wait", "duration_ms": 5000},
+    {"action": "tap", "id": "onboarding-welcome-cta"},
+    {"action": "wait", "duration_ms": 3000},
+    {"action": "screenshot", "name": "screen2_struggles"}
+  ]
+}

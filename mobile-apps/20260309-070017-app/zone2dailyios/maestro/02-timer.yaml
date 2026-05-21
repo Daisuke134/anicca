@@ -1,0 +1,82 @@
+appId: com.aniccafactory.zone2daily
+name: "Workout Timer Flow"
+tags:
+  - timer
+---
+- clearState
+- clearKeychain
+- launchApp
+
+# Complete onboarding quickly
+- extendedWaitUntil:
+    visible:
+      id: "btn_continue_age"
+    timeout: 30000
+- tapOn:
+    id: "btn_continue_age"
+
+- extendedWaitUntil:
+    visible:
+      id: "btn_continue_explainer"
+    timeout: 15000
+- tapOn:
+    id: "btn_continue_explainer"
+
+- extendedWaitUntil:
+    visible:
+      id: "btn_skip_notifications"
+    timeout: 15000
+- tapOn:
+    text: "Allow"
+    optional: true
+- tapOn:
+    id: "btn_skip_notifications"
+
+- extendedWaitUntil:
+    visible:
+      id: "paywall_headline"
+    timeout: 15000
+- scroll
+- tapOn:
+    id: "btn_maybe_later"
+
+# Navigate to Workout tab
+- extendedWaitUntil:
+    visible:
+      id: "label_streak"
+    timeout: 15000
+
+- tapOn: "Workout"
+
+# Verify timer screen
+- extendedWaitUntil:
+    visible:
+      id: "label_timer"
+    timeout: 15000
+
+- assertVisible:
+    id: "label_timer"
+
+# Start workout
+- tapOn:
+    id: "btn_start_workout"
+
+- extendedWaitUntil:
+    visible:
+      id: "btn_stop_workout"
+    timeout: 10000
+
+- assertVisible:
+    id: "btn_stop_workout"
+
+# Stop workout after brief moment
+- tapOn:
+    id: "btn_stop_workout"
+
+# Workout log sheet appears
+- extendedWaitUntil:
+    visible:
+      id: "screen_workout_log"
+    timeout: 10000
+
+- takeScreenshot: "02-timer-complete"

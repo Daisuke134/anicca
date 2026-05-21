@@ -1,0 +1,95 @@
+# Feature: Settings screen navigation
+# Tests: Skip onboarding → Navigate to Settings → Verify elements → Tap Upgrade
+# Dependencies: Fresh install
+
+appId: com.aniccafactory.frostdip
+tags:
+  - settings
+
+---
+- clearState
+- clearKeychain
+- launchApp
+
+# Skip onboarding
+- extendedWaitUntil:
+    visible:
+      id: "onboarding_get_started"
+    timeout: 30000
+
+- tapOn:
+    id: "onboarding_get_started"
+
+- extendedWaitUntil:
+    visible:
+      id: "onboarding_experience_beginner"
+    timeout: 10000
+
+- tapOn:
+    id: "onboarding_experience_beginner"
+
+- tapOn:
+    id: "onboarding_continue"
+
+- extendedWaitUntil:
+    visible:
+      id: "onboarding_skip_notifications"
+    timeout: 10000
+
+- tapOn:
+    text: "Allow"
+    optional: true
+
+- tapOn:
+    id: "onboarding_skip_notifications"
+
+- extendedWaitUntil:
+    visible:
+      id: "paywall_maybe_later"
+    timeout: 10000
+
+- tapOn:
+    id: "paywall_maybe_later"
+
+# Navigate to Settings tab (use text selector — tab a11y IDs on content not visible when unselected)
+- extendedWaitUntil:
+    visible: "Settings"
+    timeout: 30000
+
+- tapOn: "Settings"
+
+# Verify Settings screen elements
+- extendedWaitUntil:
+    visible:
+      id: "settings_temp_unit"
+    timeout: 10000
+
+- assertVisible:
+    id: "settings_temp_unit"
+
+- assertVisible:
+    id: "settings_upgrade"
+
+# Tap Upgrade to open Paywall
+- tapOn:
+    id: "settings_upgrade"
+
+- extendedWaitUntil:
+    visible:
+      id: "paywall_plan_monthly"
+    timeout: 10000
+
+- assertVisible:
+    id: "paywall_plan_monthly"
+
+# Dismiss paywall
+- tapOn:
+    id: "paywall_maybe_later"
+
+# Back to settings
+- extendedWaitUntil:
+    visible:
+      id: "settings_upgrade"
+    timeout: 10000
+
+- takeScreenshot: "03-settings-complete"

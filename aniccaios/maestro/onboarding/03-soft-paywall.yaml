@@ -1,0 +1,91 @@
+# Soft Paywall Display & Free Dismiss Test
+# Tests: full onboarding -> paywall appears -> Close (X) tap -> MyPath arrival
+# Custom close button (paywall-close-button) replaces RC SDK close button for testability
+
+appId: ai.anicca.app.ios
+name: Soft Paywall dismiss to Free
+tags:
+  - onboarding
+  - paywall
+
+---
+# Clean start
+- clearState
+- clearKeychain
+- launchApp
+
+# Step 1: Welcome
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-welcome-cta"
+    timeout: 30000
+
+- tapOn:
+    id: "onboarding-welcome-cta"
+
+# Step 2: Struggles
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-struggle-staying_up_late"
+    timeout: 15000
+
+- tapOn:
+    id: "onboarding-struggle-staying_up_late"
+
+- tapOn:
+    id: "onboarding-struggles-next"
+
+# Step 3: LIVE DEMO
+- extendedWaitUntil:
+    visible:
+      id: "live_demo_trigger_button"
+    timeout: 15000
+
+- tapOn:
+    id: "live_demo_trigger_button"
+
+- extendedWaitUntil:
+    visible:
+      id: "nudge-card-view"
+    timeout: 5000
+
+- tapOn:
+    id: "nudge-primary-action"
+
+# Step 4: Notifications
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-notifications-allow"
+    timeout: 15000
+
+- tapOn:
+    id: "onboarding-notifications-allow"
+
+# Handle system notification permission dialog (system dialog = optional: true allowed)
+# Japanese: "許可" / English: "Allow"
+- tapOn:
+    text: "許可|Allow"
+    optional: true
+
+# Step 5: Paywall appears (fullScreenCover with custom close button)
+- extendedWaitUntil:
+    visible:
+      id: "paywall-close-button"
+    timeout: 15000
+
+- tapOn:
+    id: "paywall-close-button"
+
+# Handle App Store review dialog (system dialog = optional: true allowed)
+# Japanese: "今はしない" / English: "Not Now"
+- tapOn:
+    text: "今はしない|Not Now"
+    optional: true
+
+# Step 6: Verify main screen arrival after Free dismiss
+- extendedWaitUntil:
+    visible:
+      id: "mypath-root"
+    timeout: 10000
+
+- takeScreenshot: "soft-paywall-free-dismiss"

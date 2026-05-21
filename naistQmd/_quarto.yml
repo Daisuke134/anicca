@@ -1,0 +1,15 @@
+project:
+  type: default
+
+# Quarto設定
+execute:
+  enabled: false  # Rを使わない場合
+
+# 言語設定
+lang: ja
+
+# 出力形式のデフォルト設定
+format:
+  apaquarto-docx:
+    toc: false
+    number-sections: true

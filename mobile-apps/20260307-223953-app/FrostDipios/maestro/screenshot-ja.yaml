@@ -1,0 +1,30 @@
+appId: com.aniccafactory.frostdip
+---
+- launchApp
+- waitForAnimationToEnd
+- assertVisible:
+    id: "onboarding_get_started"
+- takeScreenshot: /Users/anicca/anicca-project/mobile-apps/20260307-223953-app/screenshots/raw-69/ja/screen1_welcome
+- tapOn:
+    id: "onboarding_get_started"
+- waitForAnimationToEnd
+- tapOn:
+    id: "onboarding_experience_beginner"
+- tapOn:
+    id: "onboarding_continue"
+- waitForAnimationToEnd
+- tapOn:
+    id: "onboarding_skip_notifications"
+- waitForAnimationToEnd
+- tapOn:
+    id: "paywall_maybe_later"
+- waitForAnimationToEnd
+- takeScreenshot: /Users/anicca/anicca-project/mobile-apps/20260307-223953-app/screenshots/raw-69/ja/screen2_timer
+- tapOn:
+    text: "履歴"
+- waitForAnimationToEnd
+- takeScreenshot: /Users/anicca/anicca-project/mobile-apps/20260307-223953-app/screenshots/raw-69/ja/screen3_history
+- tapOn:
+    text: "進捗"
+- waitForAnimationToEnd
+- takeScreenshot: /Users/anicca/anicca-project/mobile-apps/20260307-223953-app/screenshots/raw-69/ja/screen4_progress

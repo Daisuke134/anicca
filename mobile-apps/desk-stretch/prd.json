@@ -1,0 +1,277 @@
+{
+  "project": "mobileapp-factory",
+  "branchName": "ralph/daily-app",
+  "description": "Build and submit one iOS app to App Store",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Trend research + idea selection",
+      "acceptanceCriteria": [
+        "spec/01-trend.md exists",
+        "Contains: rank, idea, one_liner, platform, problem_statement, target_user, feasibility, overall_score, monetization_model, competition_notes, mvp_scope, next_step",
+        "At least 5 ideas evaluated, top 1 selected",
+        "Sources cited for each trend",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Product planning",
+      "acceptanceCriteria": [
+        "product-plan.md exists",
+        "Contains: target user, problem, solution, monetization, MVP scope",
+        "monetization section specifies subscription prices (monthly + annual)",
+        "All claims cite external sources",
+        "curl itunes.apple.com/search for APP_NAME returns 0 exact name matches",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Market research",
+      "acceptanceCriteria": [
+        "competitive-analysis.md exists with 5+ competitors analyzed",
+        "market-research.md exists with TAM/SAM/SOM",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-004a",
+      "title": "Core Spec (PRD, ARCHITECTURE, IMPLEMENTATION_GUIDE)",
+      "acceptanceCriteria": [
+        "docs/PRD.md exists and contains app_name, bundle_id, subscription prices",
+        "docs/ARCHITECTURE.md exists",
+        "docs/IMPLEMENTATION_GUIDE.md exists and references RevenueCat SDK (not Mock)",
+        "Typecheck passes"
+      ],
+      "priority": 4.1,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-004b",
+      "title": "UX Spec (UX_SPEC, DESIGN_SYSTEM, TEST_SPEC, RELEASE_SPEC)",
+      "acceptanceCriteria": [
+        "docs/UX_SPEC.md exists",
+        "docs/DESIGN_SYSTEM.md exists",
+        "docs/TEST_SPEC.md exists",
+        "docs/RELEASE_SPEC.md exists",
+        "Typecheck passes"
+      ],
+      "priority": 4.2,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-004-R",
+      "title": "Spec Review (all 7 documents)",
+      "acceptanceCriteria": [
+        "code-quality-reviewer subagent run on all 7 docs",
+        "CRITICAL findings = 0",
+        "All blocking issues resolved"
+      ],
+      "priority": 4.3,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-005a",
+      "title": "Privacy Policy + ASC app creation",
+      "acceptanceCriteria": [
+        "privacy-policy.md exists and deployed to GitHub Pages",
+        "PrivacyInfo.xcprivacy exists in project",
+        "Info.plist contains ITSAppUsesNonExemptEncryption = NO",
+        "App created in ASC (APP_ID recorded in .env)"
+      ],
+      "priority": 5,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-005b",
+      "title": "IAP + pricing + RevenueCat setup",
+      "acceptanceCriteria": [
+        "asc subscriptions groups list --app $APP_ID returns 1+ groups",
+        "asc subscriptions list --group $GROUP_ID returns monthly + annual products",
+        "asc subscriptions prices list --id $MONTHLY_ID returns 175 prices",
+        "RevenueCat dashboard shows 2 products + 1 offering",
+        "SPM dependency on RevenueCat added (RevenueCatUI prohibited -- Rule 20)",
+        "Typecheck passes"
+      ],
+      "priority": 5.5,
+      "passes": true,
+      "notes": "APP_ID=6760048397. RC App=appca8d955a75, validated. Screenshots copied to APP_DIR."
+    },
+    {
+      "id": "US-006a",
+      "title": "TDD Data Layer (xcconfig, Protocol DI, Models, Services)",
+      "acceptanceCriteria": [
+        "xcconfig for API Key management (not hardcoded)",
+        "SubscriptionService uses Protocol + DI",
+        "Models and Services directories exist",
+        "fastlane test PASS",
+        "Typecheck passes"
+      ],
+      "priority": 6.1,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-006b",
+      "title": "TDD Onboarding + Monetization (MVVM, Onboarding, PaywallView)",
+      "acceptanceCriteria": [
+        "AppState split into MVVM ViewModels",
+        "Onboarding flow complete (includes notification permission step)",
+        "PaywallView uses Purchases.shared.purchase(package:) (self-built SwiftUI -- Rule 20)",
+        "No RevenueCatUI import",
+        "fastlane test PASS",
+        "Typecheck passes"
+      ],
+      "priority": 6.2,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-006c",
+      "title": "TDD Core Screens (Timer, Settings, ProgressDashboard)",
+      "acceptanceCriteria": [
+        "Timer with background support",
+        "Settings with Upgrade -> PaywallView navigation",
+        "ProgressDashboard with optimized DateFormatter",
+        "fastlane test PASS",
+        "Typecheck passes"
+      ],
+      "priority": 6.3,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-006d",
+      "title": "TDD Polish (DESIGN_SYSTEM tokens, a11y IDs, Localization)",
+      "acceptanceCriteria": [
+        "DESIGN_SYSTEM tokens applied to all Views",
+        "All accessibilityIdentifiers match TEST_SPEC",
+        "PrivacyInfo.xcprivacy exists",
+        "Localization files (.xcstrings) exist",
+        "fastlane test PASS",
+        "fastlane build PASS",
+        "Typecheck passes"
+      ],
+      "priority": 6.4,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-006-R",
+      "title": "Code Review (006a-d full review)",
+      "acceptanceCriteria": [
+        "code-quality-reviewer subagent run on all 006 code",
+        "CRITICAL findings = 0",
+        "No Mock/Stub in production code (grep -rw 'class Mock' excludes Tests/)",
+        "All blocking issues resolved"
+      ],
+      "priority": 6.5,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Testing (Maestro E2E)",
+      "acceptanceCriteria": [
+        "6+ Maestro E2E flows in maestro/ (onboarding, timer, settings, payment-monthly, payment-annual, payment-failure)",
+        "All flows use id: selectors (no point: selectors)",
+        "All flows have clearState + takeScreenshot",
+        "maestro test maestro/ -> all PASS",
+        "smokeTest tag exists on 2+ flows"
+      ],
+      "priority": 7,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-008a",
+      "title": "Screenshots (capture + upload + review screenshot)",
+      "acceptanceCriteria": [
+        "Screenshots captured via AXe + asc screenshots capture (en-US 4+ + ja 4+)",
+        "en-US/ja MD5 mismatch (locale applied)",
+        "Screenshots uploaded to ASC for en-US and ja (>=4 each)",
+        "Subscription review screenshots uploaded for Monthly + Annual"
+      ],
+      "priority": 8.1,
+      "passes": true,
+      "notes": "en-US 4 screenshots (IPHONE_61, COMPLETE). ja 4 screenshots (Japanese text via Localizable.xcstrings created). MD5: en=8d165751 ja=ded2ec58 (mismatch OK). Review screenshots: Monthly=a05188cd Annual=8edbb838. Key fix: xcrun simctl uninstall does NOT delete UserDefaults - must use `defaults delete $BUNDLE_ID` to reset onboarding state."
+    },
+    {
+      "id": "US-008b",
+      "title": "ASC metadata sync (en-US + ja)",
+      "acceptanceCriteria": [
+        "Metadata synced to ASC via asc-metadata-sync (en-US + ja)",
+        "Privacy Policy URL set for en-US AND ja"
+      ],
+      "priority": 8.2,
+      "passes": true,
+      "notes": "en-US: name=Desk Stretch Timer, subtitle=Desk Stretch & Break Timer, privacy=https://aniccaai.com/privacy, desc=1796chars, keywords=desk stretching+7more. ja: name=Desk Stretch Timer, subtitle=デスクストレッチ・休憩タイマー, privacy set. Re-verified 2026-03-06."
+    },
+    {
+      "id": "US-008c",
+      "title": "IPA build + upload + version attach",
+      "acceptanceCriteria": [
+        ".ipa file built and uploaded (processingState = VALID)",
+        "Build attached to version"
+      ],
+      "priority": 8.3,
+      "passes": true,
+      "notes": "BUILD_ID=254413bc-bd9b-47ef-90b2-4134b3c9d3ad, processingState=VALID. VERSION_ID=e90beeb7-64c2-4993-8cab-d5c07edc5d01, build attached via ASC REST API PATCH. Re-verified 2026-03-06."
+    },
+    {
+      "id": "US-008d",
+      "title": "ASC compliance (age rating + encryption + rights + availability + pricing + review details)",
+      "acceptanceCriteria": [
+        "Age Rating all 22 items set",
+        "Review Details set with --demo-account-required false",
+        "Availability set for 175 territories",
+        "Pricing set using subscription price-point IDs",
+        "Encryption: usesNonExemptEncryption = false",
+        "Content Rights: DOES_NOT_USE_THIRD_PARTY_CONTENT"
+      ],
+      "priority": 8.4,
+      "passes": true,
+      "notes": "Age Rating 22 items (FOUR_PLUS, gambling=false). Review Details demoAccountRequired=False, contactFirstName=Daisuke. Availability territoryAvailabilities total=175. Pricing free tier (USA base, price-point 10000). Encryption ITSAppUsesNonExemptEncryption=false in Info.plist. Content Rights DOES_NOT_USE_THIRD_PARTY_CONTENT. Re-verified 2026-03-06."
+    },
+    {
+      "id": "US-008e",
+      "title": "Preflight validation + TestFlight + Slack",
+      "acceptanceCriteria": [
+        "release-review 5 checklists all pass",
+        "asc validate returns Errors=0",
+        "TestFlight build distributed",
+        "Slack #metrics notified with TestFlight link"
+      ],
+      "priority": 8.5,
+      "passes": true,
+      "notes": "Greenlight GREENLIT (0 blocking). asc validate Errors=0. release-review 5 checklists ALL PASS. TestFlight WAITING_FOR_BETA_REVIEW. Public link: https://testflight.apple.com/join/78sH7CE9. Re-verified 2026-03-06."
+    },
+    {
+      "id": "US-009",
+      "title": "App Store submission (App Privacy + submit)",
+      "acceptanceCriteria": [
+        "Slack #metrics notified: need App Privacy setup",
+        ".app-privacy-done file exists (human created after ASC Web setup)",
+        "asc submit create returns WAITING_FOR_REVIEW",
+        "Slack #metrics notified: WAITING_FOR_REVIEW"
+      ],
+      "priority": 9,
+      "passes": true,
+      "notes": "App Privacy applied (DATA_NOT_COLLECTED, published=true). Copyright set. IPHONE_65 (1284x2778) and IPAD_PRO_3GEN_129 (2064x2752) screenshots uploaded (en-US 4+4, ja 4+4). Submission 4695b13c state=WAITING_FOR_REVIEW. Submitted: 2026-03-06T14:42Z."
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+appId: com.aniccafactory.zone2daily
+name: "Payment Monthly Success"
+tags:
+  - payment
+  - smokeTest
+---
+- clearState
+- clearKeychain
+- launchApp
+
+# Complete onboarding to reach paywall
+- extendedWaitUntil:
+    visible:
+      id: "btn_continue_age"
+    timeout: 30000
+- tapOn:
+    id: "btn_continue_age"
+
+- extendedWaitUntil:
+    visible:
+      id: "btn_continue_explainer"
+    timeout: 15000
+- tapOn:
+    id: "btn_continue_explainer"
+
+- extendedWaitUntil:
+    visible:
+      id: "btn_skip_notifications"
+    timeout: 15000
+- tapOn:
+    text: "Allow"
+    optional: true
+- tapOn:
+    id: "btn_skip_notifications"
+
+# Paywall appears
+- extendedWaitUntil:
+    visible:
+      id: "paywall_headline"
+    timeout: 15000
+
+# Wait for plans to load (uiPreviewMode retry loop up to 10s x 5 = 50s max)
+- extendedWaitUntil:
+    visible:
+      id: "selector_plan_monthly"
+    timeout: 60000
+
+- tapOn:
+    id: "selector_plan_monthly"
+
+# Tap Subscribe
+# uiPreviewMode: purchase auto-completes (no "Test valid purchase" dialog)
+- tapOn:
+    id: "btn_subscribe"
+
+# After purchase — paywall dismissed → main app (onComplete called)
+- extendedWaitUntil:
+    visible:
+      id: "label_streak"
+    timeout: 15000
+
+- takeScreenshot: "04-payment-monthly-success"

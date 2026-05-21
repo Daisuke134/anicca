@@ -1,0 +1,52 @@
+name: ChiDaily
+options:
+  bundleIdPrefix: com.aniccafactory
+  deploymentTarget:
+    iOS: "26.0"
+  xcodeVersion: "26.0"
+  createIntermediateGroups: true
+
+packages:
+  RevenueCat:
+    url: https://github.com/RevenueCat/purchases-ios
+    from: 5.0.0
+
+targets:
+  ChiDaily:
+    type: application
+    platform: iOS
+    deploymentTarget: "26.0"
+    sources:
+      - path: ChiDaily
+        excludes:
+          - "**/*.md"
+    dependencies:
+      - package: RevenueCat
+        product: RevenueCat
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.aniccafactory.chidaily
+        MARKETING_VERSION: 1.0.0
+        CURRENT_PROJECT_VERSION: 3
+        SWIFT_VERSION: 5.9
+        INFOPLIST_FILE: ChiDaily/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        TARGETED_DEVICE_FAMILY: "1"
+        DEVELOPMENT_TEAM: S5U8UH3JLJ
+        CODE_SIGN_STYLE: Automatic
+        ENABLE_PREVIEWS: YES
+        IPHONEOS_DEPLOYMENT_TARGET: 26.0
+
+  ChiDailyTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "26.0"
+    sources:
+      - path: ChiDailyTests
+    dependencies:
+      - target: ChiDaily
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.aniccafactory.chidailytests
+        SWIFT_VERSION: 5.9
+        GENERATE_INFOPLIST_FILE: YES

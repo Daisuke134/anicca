@@ -1,0 +1,121 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<testsuites name='EyeBreakIslandTests.xctest' tests='96' failures='0'>
+  <testsuite name='EyeBreakIslandTests.ConstantsTests' tests='6' failures='0'>
+    <testcase classname='EyeBreakIslandTests.ConstantsTests' name='testAccessibilityIDPaywallMaybeLater' time='0.001'/>
+    <testcase classname='EyeBreakIslandTests.ConstantsTests' name='testAccessibilityIDTimerStart' time='0.000'/>
+    <testcase classname='EyeBreakIslandTests.ConstantsTests' name='testDefaultBreakDurationSecondsIs20' time='0.000'/>
+    <testcase classname='EyeBreakIslandTests.ConstantsTests' name='testDefaultWorkIntervalMinutesIs20' time='0.000'/>
+    <testcase classname='EyeBreakIslandTests.ConstantsTests' name='testDefaultWorkIntervalSecondsIs1200' time='0.000'/>
+    <testcase classname='EyeBreakIslandTests.ConstantsTests' name='testHasCompletedOnboardingKey' time='0.000'/>
+  </testsuite>
+  <testsuite name='EyeBreakIslandTests.ModelTests' tests='12' failures='0'>
+    <testcase classname='EyeBreakIslandTests.ModelTests' name='testBreakSessionCodable' time='0.004'/>
+    <testcase classname='EyeBreakIslandTests.ModelTests' name='testBreakSessionCustomInit' time='0.000'/>
+    <testcase classname='EyeBreakIslandTests.ModelTests' name='testBreakSessionDefaultInit' time='0.000'/>
+    <testcase classname='EyeBreakIslandTests.ModelTests' name='testBreakSessionIdentifiable' time='0.001'/>
+    <testcase classname='EyeBreakIslandTests.ModelTests' name='testSubscriptionStatusCodable' time='0.002'/>
+    <testcase classname='EyeBreakIslandTests.ModelTests' name='testSubscriptionStatusFree' time='0.000'/>
+    <testcase classname='EyeBreakIslandTests.ModelTests' name='testSubscriptionStatusPro' time='0.000'/>
+    <testcase classname='EyeBreakIslandTests.ModelTests' name='testTimerStateBreaking' time='0.000'/>
+    <testcase classname='EyeBreakIslandTests.ModelTests' name='testTimerStateCodable' time='0.002'/>
+    <testcase classname='EyeBreakIslandTests.ModelTests' name='testTimerStateIdle' time='0.000'/>
+    <testcase classname='EyeBreakIslandTests.ModelTests' name='testTimerStatePaused' time='0.000'/>
+    <testcase classname='EyeBreakIslandTests.ModelTests' name='testTimerStateRunning' time='0.000'/>
+  </testsuite>
+  <testsuite name='EyeBreakIslandTests.NotificationServiceTests' tests='3' failures='0'>
+    <testcase classname='EyeBreakIslandTests.NotificationServiceTests' name='testCancelAllDoesNotCrash' time='0.004'/>
+    <testcase classname='EyeBreakIslandTests.NotificationServiceTests' name='testProtocolConformance' time='0.000'/>
+    <testcase classname='EyeBreakIslandTests.NotificationServiceTests' name='testScheduleBreakNotificationDoesNotCrash' time='0.006'/>
+  </testsuite>
+  <testsuite name='EyeBreakIslandTests.OnboardingViewModelTests' tests='13' failures='0'>
+    <testcase classname='EyeBreakIslandTests.OnboardingViewModelTests' name='testCanGoNextIsFalseForLastPage' time='0.000'/>
+    <testcase classname='EyeBreakIslandTests.OnboardingViewModelTests' name='testCanGoNextIsTrueForPages0To2' time='0.000'/>
+    <testcase classname='EyeBreakIslandTests.OnboardingViewModelTests' name='testCompleteOnboardingSetsFlag' time='0.007'/>
+    <testcase classname='EyeBreakIslandTests.OnboardingViewModelTests' name='testInitialPageIsZero' time='0.000'/>
+    <testcase classname='EyeBreakIslandTests.OnboardingViewModelTests' name='testIsOnboardingCompletedReturnsFalseInitially' time='0.000'/>
+    <testcase classname='EyeBreakIslandTests.OnboardingViewModelTests' name='testIsOnboardingCompletedReturnsTrueAfterCompletion' time='0.007'/>
+    <testcase classname='EyeBreakIslandTests.OnboardingViewModelTests' name='testNextPageDoesNotExceedMaxPage' time='0.000'/>
+    <testcase classname='EyeBreakIslandTests.OnboardingViewModelTests' name='testNextPageIncrementsPage' time='0.000'/>
+    <testcase classname='EyeBreakIslandTests.OnboardingViewModelTests' name='testPagesHaveCorrectContent' time='0.000'/>
+    <testcase classname='EyeBreakIslandTests.OnboardingViewModelTests' name='testRequestNotificationPermissionCallsService' time='0.004'/>
+    <testcase classname='EyeBreakIslandTests.OnboardingViewModelTests' name='testRequestNotificationPermissionDeniedStillAdvances' time='0.000'/>
+    <testcase classname='EyeBreakIslandTests.OnboardingViewModelTests' name='testRequestNotificationPermissionGrantedAdvancesPage' time='0.000'/>
+    <testcase classname='EyeBreakIslandTests.OnboardingViewModelTests' name='testTotalPagesIsFour' time='0.000'/>
+  </testsuite>
+  <testsuite name='EyeBreakIslandTests.PaywallViewModelTests' tests='9' failures='0'>
+    <testcase classname='EyeBreakIslandTests.PaywallViewModelTests' name='testInitialStateIsIdle' time='0.001'/>
+    <testcase classname='EyeBreakIslandTests.PaywallViewModelTests' name='testLoadOfferingSetsLoadingDuringFetch' time='0.103'/>
+    <testcase classname='EyeBreakIslandTests.PaywallViewModelTests' name='testLoadOfferingsFailureSetsError' time='0.004'/>
+    <testcase classname='EyeBreakIslandTests.PaywallViewModelTests' name='testLoadOfferingsSuccessClearsError' time='0.001'/>
+    <testcase classname='EyeBreakIslandTests.PaywallViewModelTests' name='testPurchaseWithNoPackageDoesNothing' time='0.000'/>
+    <testcase classname='EyeBreakIslandTests.PaywallViewModelTests' name='testPurchaseWithNoPackageKeepsState' time='0.001'/>
+    <testcase classname='EyeBreakIslandTests.PaywallViewModelTests' name='testRestoreFailureSetsError' time='0.000'/>
+    <testcase classname='EyeBreakIslandTests.PaywallViewModelTests' name='testRestoreSuccess' time='0.000'/>
+    <testcase classname='EyeBreakIslandTests.PaywallViewModelTests' name='testRestoreToFreeDoesNotComplete' time='0.000'/>
+  </testsuite>
+  <testsuite name='EyeBreakIslandTests.SettingsViewModelTests' tests='10' failures='0'>
+    <testcase classname='EyeBreakIslandTests.SettingsViewModelTests' name='testCheckStatusUpdates' time='0.001'/>
+    <testcase classname='EyeBreakIslandTests.SettingsViewModelTests' name='testInitialState' time='0.000'/>
+    <testcase classname='EyeBreakIslandTests.SettingsViewModelTests' name='testIsProReturnsFalseWhenFree' time='0.000'/>
+    <testcase classname='EyeBreakIslandTests.SettingsViewModelTests' name='testIsProReturnsTrueWhenPro' time='0.000'/>
+    <testcase classname='EyeBreakIslandTests.SettingsViewModelTests' name='testPrivacyPolicyURL' time='0.001'/>
+    <testcase classname='EyeBreakIslandTests.SettingsViewModelTests' name='testRestoreErrorShowsMessage' time='0.002'/>
+    <testcase classname='EyeBreakIslandTests.SettingsViewModelTests' name='testRestoreKeepsFreeOnFailure' time='0.000'/>
+    <testcase classname='EyeBreakIslandTests.SettingsViewModelTests' name='testRestoreUpdatesStatus' time='0.000'/>
+    <testcase classname='EyeBreakIslandTests.SettingsViewModelTests' name='testShowPaywallSetsTrue' time='0.006'/>
+    <testcase classname='EyeBreakIslandTests.SettingsViewModelTests' name='testTimerIntervalMinutesDefault' time='0.000'/>
+  </testsuite>
+  <testsuite name='EyeBreakIslandTests.SubscriptionServiceTests' tests='3' failures='0'>
+    <testcase classname='EyeBreakIslandTests.SubscriptionServiceTests' name='testConfigureWithEmptyKeyDoesNotCrash' time='0.001'/>
+    <testcase classname='EyeBreakIslandTests.SubscriptionServiceTests' name='testInitialStatusIsFree' time='0.000'/>
+    <testcase classname='EyeBreakIslandTests.SubscriptionServiceTests' name='testProtocolConformance' time='0.000'/>
+  </testsuite>
+  <testsuite name='EyeBreakIslandTests.TimerFormattingTests' tests='8' failures='0'>
+    <testcase classname='EyeBreakIslandTests.TimerFormattingTests' name='testFormattedTimeExactMinute' time='0.000'/>
+    <testcase classname='EyeBreakIslandTests.TimerFormattingTests' name='testFormattedTimeMmSs' time='0.000'/>
+    <testcase classname='EyeBreakIslandTests.TimerFormattingTests' name='testFormattedTimeOneSecond' time='0.000'/>
+    <testcase classname='EyeBreakIslandTests.TimerFormattingTests' name='testFormattedTimeZero' time='0.000'/>
+    <testcase classname='EyeBreakIslandTests.TimerFormattingTests' name='testProgressFull' time='0.000'/>
+    <testcase classname='EyeBreakIslandTests.TimerFormattingTests' name='testProgressIdle' time='0.000'/>
+    <testcase classname='EyeBreakIslandTests.TimerFormattingTests' name='testProgressNormal' time='0.000'/>
+    <testcase classname='EyeBreakIslandTests.TimerFormattingTests' name='testProgressZeroDivisionGuard' time='0.000'/>
+  </testsuite>
+  <testsuite name='EyeBreakIslandTests.TimerServiceTests' tests='20' failures='0'>
+    <testcase classname='EyeBreakIslandTests.TimerServiceTests' name='testCompleteBreakIncrementsCount' time='0.001'/>
+    <testcase classname='EyeBreakIslandTests.TimerServiceTests' name='testCompleteBreakResetsToWorkInterval' time='0.003'/>
+    <testcase classname='EyeBreakIslandTests.TimerServiceTests' name='testCompleteBreakSetsRunning' time='0.000'/>
+    <testcase classname='EyeBreakIslandTests.TimerServiceTests' name='testCustomBreakInterval' time='0.000'/>
+    <testcase classname='EyeBreakIslandTests.TimerServiceTests' name='testCustomWorkInterval' time='0.000'/>
+    <testcase classname='EyeBreakIslandTests.TimerServiceTests' name='testDefaultBreakIntervalIs20Seconds' time='0.000'/>
+    <testcase classname='EyeBreakIslandTests.TimerServiceTests' name='testDefaultWorkIntervalIs20Minutes' time='0.002'/>
+    <testcase classname='EyeBreakIslandTests.TimerServiceTests' name='testInitialBreakCountIsZero' time='0.000'/>
+    <testcase classname='EyeBreakIslandTests.TimerServiceTests' name='testInitialRemainingSecondsEqualsWorkInterval' time='0.000'/>
+    <testcase classname='EyeBreakIslandTests.TimerServiceTests' name='testInitialStateIsIdle' time='0.000'/>
+    <testcase classname='EyeBreakIslandTests.TimerServiceTests' name='testPauseOnlyWorksWhenRunning' time='0.000'/>
+    <testcase classname='EyeBreakIslandTests.TimerServiceTests' name='testPauseSessionSetsPaused' time='0.045'/>
+    <testcase classname='EyeBreakIslandTests.TimerServiceTests' name='testResumeOnlyWorksWhenPaused' time='0.015'/>
+    <testcase classname='EyeBreakIslandTests.TimerServiceTests' name='testResumeSessionSetsRunning' time='0.009'/>
+    <testcase classname='EyeBreakIslandTests.TimerServiceTests' name='testStartBreakSetsBreaking' time='0.000'/>
+    <testcase classname='EyeBreakIslandTests.TimerServiceTests' name='testStartBreakSetsRemainingToBreakInterval' time='0.000'/>
+    <testcase classname='EyeBreakIslandTests.TimerServiceTests' name='testStartSessionResetsRemainingSeconds' time='0.008'/>
+    <testcase classname='EyeBreakIslandTests.TimerServiceTests' name='testStartSessionSetsRunning' time='0.009'/>
+    <testcase classname='EyeBreakIslandTests.TimerServiceTests' name='testStopSessionResetsToWorkInterval' time='0.003'/>
+    <testcase classname='EyeBreakIslandTests.TimerServiceTests' name='testStopSessionSetsIdle' time='0.006'/>
+  </testsuite>
+  <testsuite name='EyeBreakIslandTests.TimerStateMachineTests' tests='10' failures='0'>
+    <testcase classname='EyeBreakIslandTests.TimerStateMachineTests' name='testBreakStartSetsBreakingState' time='0.000'/>
+    <testcase classname='EyeBreakIslandTests.TimerStateMachineTests' name='testCompleteBreakIncrementsCount' time='0.000'/>
+    <testcase classname='EyeBreakIslandTests.TimerStateMachineTests' name='testPauseFromNonRunningNoOp' time='0.000'/>
+    <testcase classname='EyeBreakIslandTests.TimerStateMachineTests' name='testPauseSetsState' time='0.005'/>
+    <testcase classname='EyeBreakIslandTests.TimerStateMachineTests' name='testResumeFromNonPausedNoOp' time='0.000'/>
+    <testcase classname='EyeBreakIslandTests.TimerStateMachineTests' name='testResumeFromPaused' time='0.001'/>
+    <testcase classname='EyeBreakIslandTests.TimerStateMachineTests' name='testStartResetsRemaining' time='0.006'/>
+    <testcase classname='EyeBreakIslandTests.TimerStateMachineTests' name='testStartSetsRunning' time='3.060'/>
+    <testcase classname='EyeBreakIslandTests.TimerStateMachineTests' name='testStopResetsRemaining' time='0.004'/>
+    <testcase classname='EyeBreakIslandTests.TimerStateMachineTests' name='testStopSetsIdle' time='0.003'/>
+  </testsuite>
+  <testsuite name='EyeBreakIslandTests.TimerViewModelContainerTests' tests='2' failures='0'>
+    <testcase classname='EyeBreakIslandTests.TimerViewModelContainerTests' name='testInitialShowBreakOverlayFalse' time='0.006'/>
+    <testcase classname='EyeBreakIslandTests.TimerViewModelContainerTests' name='testInitialShowSettingsFalse' time='0.001'/>
+  </testsuite>
+</testsuites>

@@ -1,0 +1,94 @@
+@startuml
+skinparam classAttributeIconSize 0
+
+class User {
+  - userId: String
+  - name: String
+  - registrationDate: Date
+  - maxBorrowLimit: int = 5
+  - isActive: boolean
+  --
+  + register(): void
+  + unregister(): void
+  + canBorrow(): boolean
+  + getCurrentBorrowCount(): int
+  + isWithinBorrowLimit(): boolean
+}
+
+class Book {
+  - bookId: String
+  - isbn: String
+  - title: String
+  - purchaseDate: Date
+  - status: BookStatus
+  - usageCount: int
+  - lastUsedDate: Date
+  --
+  + purchase(): void
+  + discard(): void
+  + isAvailable(): boolean
+  + markAsBorrowed(): void
+  + markAsReturned(): void
+  + shouldBeDiscarded(): boolean
+}
+
+enum BookStatus {
+  PURCHASED
+  AVAILABLE
+  BORROWED
+  DISCARDED
+}
+
+class Library {
+  - libraryId: String
+  - name: String
+  --
+  + registerUser(user: User): void
+  + unregisterUser(userId: String): void
+  + borrowBook(userId: String, bookId: String): LoanRecord
+  + returnBook(loanId: String): void
+  + purchaseBook(isbn: String, title: String): Book
+  + discardBook(bookId: String): void
+  + checkBorrowLimit(user: User): boolean
+  + findAvailableBook(bookId: String): Book
+  + findUser(userId: String): User
+}
+
+class LoanRecord {
+  - loanId: String
+  - borrowDate: Date
+  - dueDate: Date
+  - returnDate: Date
+  - isOverdue: boolean
+  --
+  + create(user: User, book: Book): LoanRecord
+  + markAsReturned(returnDate: Date): void
+  + calculateFine(): int
+  + isOverdue(): boolean
+  + getDaysOverdue(): int
+}
+
+' 関連性
+User "1" -- "*" LoanRecord : borrows
+Book "1" -- "*" LoanRecord : lent
+Library "1" -- "*" User : manages
+Library "1" -- "*" Book : manages
+LoanRecord ..> BookStatus : uses
+
+note right of User
+  利用者は登録解除可能
+  貸出上限は5冊まで
+end note
+
+note right of Book
+  本は購入後に貸出可能
+  破損や一定期間経過で廃棄
+end note
+
+note right of LoanRecord
+  貸出記録は返却時に更新
+  延滞チェック機能あり
+end note
+
+@enduml
+

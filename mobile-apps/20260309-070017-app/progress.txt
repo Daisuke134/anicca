@@ -1,0 +1,193 @@
+
+## 2026-03-09 - US-010: Build Report (Token Usage + Slack + X Post)
+
+- Token集計: 8 iteration-*.log ファイル → totalTokens=99.8M, cost=$44.20
+- build-report.json 保存 (appName/description/bundleId/totalTokens/cost/iterations/duration/weeklyUsagePercent)
+- Slack #metrics 投稿: ok
+- X投稿 via Postiz: postId=cmmisvld300vmpq0ylg7iaolu (4スクショ: screen1/2/4/5 en-US)
+
+**Learnings for future iterations:**
+- Postiz upload: curl -F "file=@path.png" → JSON {id, path}。ループ内変数展開でシングルクォートのfor文はOK
+- Postiz posts API: "type":"now" + "date": current UTC ISO8601 で即時投稿
+
+---
+
+## 2026-03-09 - US-009: App Store submission (App Privacy + submit)
+
+- apple-appstore-reviewer audit: P1 found — fabricated social proof (4.9 rating / 2000+ athletes) → removed
+- PaywallView.swift: socialProofSection → neutral text, FAQ trial text fixed, restore feedback alert added
+- New archive + IPA export (build/app.xcarchive 15:11 → build/export2/Zone2Daily.ipa)
+- Uploaded new IPA → BUILD_ID=a8e03258-edf0-4341-813d-ddb7841df720 (version=2, processingState=VALID)
+- App pricing: FREE (schedule created start-date=2026-03-08, base=USA, tier=0)
+- Build attached to VERSION_ID=09c6d80a
+- Review submission created SUBMISSION_ID=a584a39d → items-add → submissions-submit
+- state=WAITING_FOR_REVIEW (submittedDate=2026-03-09T06:25:09Z)
+
+**Learnings for future iterations:**
+- App pricing must be set BEFORE review submission (items-add fails with "App is not eligible for submission until pricing has been set")
+- pricing schedule create start-date: must match app creation date (not today, not past-before-app)
+- FREE price point ID (tier 0) = `eyJzIjoiNjc2MDI3MTU2MCIsInQiOiJVU0EiLCJwIjoiMTAwMDAifQ` (app-specific, look up via `asc pricing price-points --territory USA`)
+- App Privacy DATA_NOT_COLLECTED set in US-005a survives new build uploads — no need to re-set
+
+---
+
+## Codebase Patterns
+
+| パターン | 詳細 |
+|--------|------|
+| fastlane test | `LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 fastlane test` 必須（xcpretty UTF-8 バグ回避） |
+| xcodegen | ファイル追加後は `xcodegen generate` 必須（テストファイル含め自動pick-up） |
+| SubscriptionService env | `@Environment(SubscriptionService.self)` で取得。`SubscriptionService()` 新規生成禁止 |
+| URL optional | `URL(string:)!` 禁止。`if let url = URL(string:)` で optional binding |
+| Background Timer | `startDate = Date.now` で計時開始。タイマーTick: `Int(Date.now.timeIntervalSince(startDate))`。suspend後も正確 |
+| Greenlight | `greenlight preflight <dir>` (xcodeproj じゃなくディレクトリを渡す) |
+| Maestro sequential | `maestro/config.yaml` に `executionOrder.flowsOrder` を設定 → sequential実行 |
+| Maestro btn off-screen | `tapOn: id: "btn_maybe_later"` の前に `- scroll` 必須。ボタンがfold下にある場合、Maestroの自動スクロールは動作しない |
+| PaywallView完了 | `@AppStorage("hasCompletedOnboarding")` をPaywallView直接に持ち、`hasCompletedOnboarding = true` でナビゲーション。callbackチェーンは不安定 |
+| WorkoutLogView | elapsed=0でも sheet を表示する（guard条件削除）。E2Eテストでstop直後はelapsed=0になる |
+| iOS26+ UserDefaults | `xcrun simctl uninstall` でもUserDefaultsが消去されない。`xcrun simctl spawn $UDID defaults write $BUNDLE_ID key -bool false` で手動リセット必須 |
+| Onboarding reset | スクショ撮り直しは uninstall+install だけでは不十分。`defaults write hasCompletedOnboarding -bool false` が必要 |
+
+---
+
+## 2026-03-09 - US-008a: Screenshots (capture + upload + review screenshot)
+
+- en-US 4枚 + ja 4枚 asc screenshots run で撮影・ASCアップロード完了 (displayType: APP_IPHONE_67)
+- MD5 mismatch確認: en≠ja PASS (screen1, screen4 両方)
+- Review screenshot (Paywall画面) → Monthly + Annual にアップロード完了
+- Files: .asc/screenshots.json, .asc/screenshots-ja.json, .asc/review-screenshots.json, screenshots/raw-69/
+
+**Learnings for future iterations:**
+- iOS 26+ で `xcrun simctl uninstall` はUserDefaultsを消去しない → `defaults write key -bool false` で手動リセット
+- `asc screenshots run --plan` の `launch` action で onboarding state がリセットされない → 事前にdefaults writeが必須
+- Paywall画面はプロダクトページに含めない (Fix #1)。review-screenshots.jsonで別途撮影
+- IPHONE_69でアップロード → ASCは APP_IPHONE_67 にマッピング（正常動作）
+- VERSION_ID=09c6d80a, EN_LOC_ID=7b9bd1ba, JA_LOC_ID=3f1547f4, UDID_69=1D9F5D85
+
+---
+
+## 2026-03-09 - US-007: Testing (Maestro E2E)
+
+- 6 Maestro E2E flows: 01-onboarding, 02-timer, 03-settings, 04-payment-monthly, 05-payment-annual, 06-payment-failure
+- `maestro test maestro/` → 6/6 PASS (103s)
+- Files changed: PaywallView.swift, OnboardingContainerView.swift, WorkoutTimerView.swift, SubscriptionService.swift, Debug.xcconfig, maestro/01-06.yaml, maestro/config.yaml
+
+**Learnings for future iterations:**
+- Maestro parallel実行: 複数simulator起動中は全flowが並列実行される → 他のsimulatorをshutdownすること
+- btn_maybe_later は ScrollView の fold 下 → `- scroll` を tapOn の前に必ず追加
+- PaywallView の `onComplete` コールバックチェーンは不安定 → `@AppStorage` を直接PaywallViewに持つ
+- elapsed=0ガード削除: E2E Testでは start→stop が速すぎてelapsed=0になる
+
+---
+
+## 2026-03-09 - US-006-R: Code Review (006a-d full review)
+
+- code-quality-reviewer agent 実行 → CRITICAL=2発見
+- CRITICAL-1: Release.xcconfig に RC API key がコミット済み → Release.local.xcconfig (gitignored) に移動
+- CRITICAL-2: entitlementVerificationMode 本番で .informational → .enforced に変更
+- HIGH-1: WorkoutViewModel @MainActor 追加（UIApplication thread safety）
+- HIGH-2: calculateStreak O(n²) → O(n)（Set<Day> lookup）
+- HIGH-3: AgeInputView.saveProfile() 重複挿入修正（@Query + upsert）
+- WorkoutViewModelTests: @MainActor 追加
+- fastlane test PASS (61/61), Greenlight CRITICAL=0
+
+**Learnings for future iterations:**
+- xcconfig: .local.xcconfig だけでなく本体 xcconfig も placeholder に差し替えること
+- @Observable + @MainActor: Test class も同じく @MainActor が必要
+- Timer([weak self]) + @MainActor: MainActor.assumeIsolated {} でSendable警告解消
+
+---
+
+## 2026-03-09 - US-006d: TDD Polish (DESIGN_SYSTEM tokens, a11y IDs, Localization)
+
+- AgeInputView: +/-ボタン → Slider(10...80) + slider_age + label_zone2_hr ID追加
+- WorkoutLogView: input_zone2_minutes Stepper + @State zone2MinutesInput + btn_save_workout
+- SettingsView: toggle_notifications Toggle + 通知ON/OFF + Privacy/Terms リンク追加
+- Localizable.xcstrings: en-US + ja 12キー (UX_SPEC §9準拠)
+- Resources/PrivacyInfo.xcprivacy 重複削除（Zone2Daily/ に統一）
+- fastlane test PASS (61/61), Archive SUCCEEDED, Greenlight CRITICAL=0
+
+**Learnings for future iterations:**
+- Duplicate PrivacyInfo.xcprivacy: sources: + resources: 両方に置くと "Multiple commands produce" エラー → どちらか片方のみ
+- fastlane build は Archive Succeeded でも provisioning profile なければ export 失敗（正常、US-008c で対処）
+- Write ツールで上書き前に必ず Read 必須（ツールの制約）
+
+---
+
+## 2026-03-09 - US-006c: Core Screens (Timer, Settings, ProgressDashboard)
+
+- WorkoutViewModel: UIBackgroundTask + startDate anchor (background accuracy)
+- WorkoutLogView: 新規 SCR-008（ワークアウト終了後サマリー sheet）
+- WeeklyProgressView: 新規 SCR-006（7日間バーチャート）
+- DashboardViewModel: static DateFormatter + weekdayActivity(7) プロパティ
+- DashboardView: HR target card + WeeklyProgressView 統合 + 無料3件制限
+- PrivacyInfo.xcprivacy: 追加（Greenlight CRITICAL=0）
+- Tests: 61/61 PASS (WorkoutViewModelTests 10 + DashboardViewModelTests 6 追加)
+
+**Learnings for future iterations:**
+- `greenlight preflight <dir>` (xcodeproj ではなくディレクトリを渡す)
+- Background timer は startDate アンカー方式 (suspend 後も正確)
+- private(set) var はテストから直接代入不可 → startTimer() 経由でテスト
+
+---
+
+## 2026-03-09 - US-006b: Onboarding + Monetization
+
+- OnboardingViewModelTests 11テスト追加(43/43 PASS)
+- SubscriptionService: Configuration.builder + entitlementVerificationMode
+- OnboardingContainerView: @Environment(SubscriptionService.self) へ修正
+- PaywallView: URL force-unwrap → optional binding
+- PaywallView: offerings empty state + isLoadingOfferings
+- PaywallView: PricingCardView a11y IDs → selector_plan_monthly/annual
+- NotificationPermissionView: "Not Now" テキスト修正 (UX_SPEC準拠)
+- Greenlight CRITICAL=0, fastlane test PASS
+
+**Learnings:**
+- fastlane test は LANG=en_US.UTF-8 必須（xcpretty の ASCII/UTF-8 バグ）
+- xcodegen generate はテストファイル追加後に必ず実行
+- OnboardingContainerView は env から SubscriptionService を取得すること
+
+---
+
+## 2026-03-09 - US-002: Product Planning
+
+- product-plan.md 作成完了（7セクション、12ソース、23 URLs）
+- App 正式名: Zone2Daily、Bundle ID: com.aniccafactory.zone2daily
+- MVP 確定: HealthKit 禁止 → Maffetone 計算 + 手動ログ + 週間ダッシュボード
+- 価格確定: $4.99/月、$29.99/年（RevenueCat SOSA 2025 基準内）
+- iTunes API: "Zone2Daily" = 0 exact matches ✅ (verified 2026-03-09)
+- 競合: Zone 2: Heart Rate Training (226 reviews) — 大きな市場の穴
+- Files changed: product-plan.md, prd.json, progress.txt
+
+**Learnings for future iterations:**
+- HealthKit は PROHIBITED list にある → 手動入力 + SwiftData が安全なアプローチ
+- Bundle ID は US-002 で確定させることで US-004 以降に迷わない
+- iTunes API の完全一致チェックは `ascii_downcase + contains()` で確実に実施
+---
+
+## 2026-03-09 - US-008d: ASC Compliance
+- copyright=2026 Daisuke Kobayashi
+- ageRating=FOUR_PLUS (all 22 items NONE, health-or-wellness-topics=true)
+- reviewDetails=demoAccountRequired:false (REST PATCH required — asc CLI doesn't properly set false)
+- availability=175 territories via v2/appAvailabilities (local IDs format: ${ta_N})
+- contentRights=DOES_NOT_USE_THIRD_PARTY_CONTENT
+- category=HEALTH_AND_FITNESS
+- weekly subscription review screenshot uploaded (READY_TO_SUBMIT)
+- **Learnings:**
+  - age-rating set requires --age-assurance, --health-or-wellness-topics, --parental-controls, --messaging-and-chat
+  - demoAccountRequired=false: asc CLI doesn't update, use REST PATCH
+  - v2/appAvailabilities territoryAvailabilities local IDs must use ${ta_N} format
+---
+
+## 2026-03-09 - US-008e: Preflight + TestFlight
+- greenlight: ja keywords fixed (143 bytes → 81 bytes), 6.7" screenshot BLOCK is false positive (Rule 24)
+- asc release run dry-run: errors=0 blocking=0 (6 warnings all skippable per Decision Table)
+- Beta group created: b32808a7 "External Testers"
+- Beta review submitted: WAITING_FOR_REVIEW
+- TestFlight public link: https://testflight.apple.com/join/wHJEg7v3
+- betaAppReviewDetail contact required for submission (firstName/lastName/phone/email)
+- **Learnings:**
+  - betaAppReviewDetail (separate from App Store review detail) must have contact info for beta submission
+  - asc beta-app-localizations create required before testflight review submit
+  - beta group must be created fresh — GROUP_ID from .env was US-005b subscription group (wrong)
+---

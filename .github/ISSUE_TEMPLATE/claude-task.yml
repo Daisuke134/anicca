@@ -1,0 +1,68 @@
+name: Claude Task
+description: エージェントが自律的に処理するタスク
+labels: ["claude-ready"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: タスク概要
+      description: 何をやるか
+      placeholder: |
+        例: NudgeCardViewにフィードバックアニメーションを追加する
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: 受け入れ条件
+      description: テスト可能な形式で
+      placeholder: |
+        - [ ] thumbs upタップ時にスケールアニメーションが再生される
+        - [ ] thumbs downタップ時にシェイクアニメーションが再生される
+    validations:
+      required: true
+
+  - type: textarea
+    id: target-files
+    attributes:
+      label: 対象ファイル
+      description: 変更が必要なファイル（分かる範囲で）
+      placeholder: |
+        - aniccaios/Views/NudgeCardView.swift
+    validations:
+      required: false
+
+  - type: textarea
+    id: constraints
+    attributes:
+      label: 制約
+      description: やってはいけないこと
+      placeholder: |
+        - 既存のNudge表示ロジックは変更しない
+    validations:
+      required: false
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: 優先度
+      options:
+        - 高（今日中）
+        - 中（今週中）
+        - 低（いつでも）
+    validations:
+      required: true
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: スコープ
+      options:
+        - iOS（Swift/SwiftUI）
+        - API（Node.js）
+        - Landing Page（Next.js）
+        - CI/CD
+        - ドキュメント
+    validations:
+      required: true

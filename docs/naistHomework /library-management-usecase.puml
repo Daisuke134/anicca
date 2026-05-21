@@ -1,0 +1,33 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+
+actor "利用者" as User
+actor "図書館員" as Librarian
+
+rectangle "図書館管理システム" {
+  usecase "ユーザー登録" as UC1
+  usecase "登録解除" as UC2
+  usecase "本を借りる" as UC3
+  usecase "本を返す" as UC4
+  usecase "本を購入する" as UC5
+  usecase "本を廃棄する" as UC6
+  usecase "貸出上限チェック" as UC7
+  usecase "利用可能状態確認" as UC8
+}
+
+User --> UC1 : 登録する
+User --> UC2 : 登録を解除する
+User --> UC3 : 本を借りる
+User --> UC4 : 本を返す
+Librarian --> UC5 : 本を購入する
+Librarian --> UC6 : 本を廃棄する
+
+UC3 ..> UC1 : <<include>>\n(ユーザー登録が必要)
+UC3 ..> UC7 : <<include>>\n(貸出上限チェック)
+UC3 ..> UC8 : <<include>>\n(利用可能状態確認)
+UC4 ..> UC1 : <<include>>\n(ユーザー登録が必要)
+UC4 ..> UC8 : <<include>>\n(貸出記録確認)
+
+@enduml
+

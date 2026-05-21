@@ -1,0 +1,17 @@
+<paper_information>
+<title>{title}</title>
+<authors>{authors}</authors>
+<abstract>{abstract}</abstract>
+</paper_information>
+
+<sections>
+{sections}
+</sections>
+
+<goal_setting>
+{goal}
+</goal_setting>
+
+<task>
+goal_settingsタグで与えられている目標を達成するために、調査タスクとして「{task}」を実施します。今あなたはpaper_informationタグに含まれている論文を読んでいます。調査タスクを実行する上で、sectionsタグに含まれている内容で十分かどうかを判断してください。
+</task> 

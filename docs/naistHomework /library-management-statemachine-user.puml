@@ -1,0 +1,44 @@
+@startuml
+title Userオブジェクトのステートマシン図
+
+[*] --> 未登録
+
+未登録 : entry / 新規ユーザー
+未登録 : do / 登録待ち
+
+未登録 --> 登録済み : ユーザー登録\nregister()
+
+登録済み : entry / 利用可能状態\nisActive = true
+登録済み : do / 本を借りる/返す\ncanBorrow() = true
+
+登録済み --> 利用停止 : 利用停止\n[貸出上限超過または\nその他の理由]
+利用停止 : entry / 利用不可状態\nisActive = false
+利用停止 : do / 本を借りられない
+
+利用停止 --> 登録済み : 利用再開\n[貸出冊数が上限以内]
+
+登録済み --> 登録解除 : 登録解除\nunregister()\n[貸出中の本がない]
+利用停止 --> 登録解除 : 登録解除\nunregister()\n[貸出中の本がない]
+
+登録解除 : entry / 削除処理\n貸出記録の確認
+登録解除 : do / データ削除
+
+登録解除 --> [*] : 削除完了
+
+note right of 登録済み
+  貸出上限以内なら
+  追加で借りられる
+end note
+
+note right of 利用停止
+  貸出上限超過時は
+  自動的に利用停止状態
+end note
+
+note right of 登録解除
+  貸出中の本がある場合は
+  登録解除不可
+end note
+
+@enduml
+

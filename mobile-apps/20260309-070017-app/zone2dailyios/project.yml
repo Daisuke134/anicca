@@ -1,0 +1,78 @@
+name: Zone2Daily
+options:
+  bundleIdPrefix: com.aniccafactory
+  deploymentTarget:
+    iOS: "17.0"
+  xcodeVersion: "16.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.10"
+    IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+    MARKETING_VERSION: "1.0.0"
+    CURRENT_PROJECT_VERSION: "3"
+    PRODUCT_BUNDLE_IDENTIFIER: com.aniccafactory.zone2daily
+    DEVELOPMENT_TEAM: S5U8UH3JLJ
+    CODE_SIGN_STYLE: Automatic
+    ENABLE_HARDENED_RUNTIME: YES
+    TARGETED_DEVICE_FAMILY: "1"
+
+packages:
+  RevenueCat:
+    url: https://github.com/RevenueCat/purchases-ios
+    from: "5.0.0"
+
+targets:
+  Zone2Daily:
+    type: application
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: Zone2Daily
+    resources:
+      - Zone2Daily/Resources
+    settings:
+      base:
+        INFOPLIST_FILE: Zone2Daily/Info.plist
+        PRODUCT_BUNDLE_IDENTIFIER: com.aniccafactory.zone2daily
+        DEVELOPMENT_TEAM: S5U8UH3JLJ
+        CODE_SIGN_STYLE: Automatic
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: $(inherited)
+        TARGETED_DEVICE_FAMILY: "1"
+    configFiles:
+      Debug: Zone2Daily/Config/Debug.xcconfig
+      Release: Zone2Daily/Config/Release.xcconfig
+    dependencies:
+      - package: RevenueCat
+        product: RevenueCat
+    info:
+      path: Zone2Daily/Info.plist
+      properties:
+        CFBundleDisplayName: Zone2Daily
+        CFBundleName: Zone2Daily
+        CFBundleShortVersionString: "1.0.0"
+        CFBundleVersion: "3"
+        LSRequiresIPhoneOS: true
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        UILaunchScreen:
+          UIColorName: ""
+        RC_API_KEY: $(RC_API_KEY)
+        ITSAppUsesNonExemptEncryption: false
+
+  Zone2DailyTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: Zone2DailyTests
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.aniccafactory.zone2daily.tests
+        DEVELOPMENT_TEAM: S5U8UH3JLJ
+        GENERATE_INFOPLIST_FILE: YES
+    dependencies:
+      - target: Zone2Daily
+      - package: RevenueCat
+        product: RevenueCat

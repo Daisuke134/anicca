@@ -1,0 +1,276 @@
+# 結果
+
+## 記述統計
+<!--
+↑この見出しは，内容に合わせて変更ください
+-->
+
+<!--
+得られたデータの平均値，標準偏差，得点範囲などの基本的な記述統計を記載してください。
+また，ヒストグラムなどを使って，データの分布も示しましょう
+-->
+
+@tbl-descriptive に、Big Five因子の記述統計量を示す。
+
+<!--
+表は以下のようにすると綺麗に出力されます
+-->
+
+```{r tbl-descriptive, echo=FALSE}
+#| tbl-cap: "Big Five因子の記述統計量"
+# bfiの各Big Five因子を合計して，describe関数で記述統計を計算する。不要なものは除外。
+summary_bfi <- bfi |> 
+   mutate(Agreeableness = A1 + A2 + A3 + A4 + A5,
+          Conscientiousness = C1 + C2 + C3 + C4 + C5,
+          Extraversion = E1 + E2 + E3 + E4 + E5,
+          Neuroticism = N1 + N2 + N3 + N4 + N5,
+          Openness = O1 + O2 + O3 + O4 + O5) |> 
+   select(Extraversion,Neuroticism,Conscientiousness,Agreeableness,Openness) |> 
+   describe() |> 
+   as_tibble() |>
+   mutate(vars = c("Extraversion","Neuroticism","Conscientiousness",
+                   "Agreeableness","Openness")) |> 
+   select(-trimmed, -mad, -range, -se)
+
+# kableを使って表を作る（以下のようにやると結構きれいになります）
+kable(summary_bfi, 
+      format = "latex", 
+      booktabs = T, 
+      digits = 2,
+      col.names = c(" ","n","Mean","SD","Median","Min","Max","Skewness","kurtosis"))|> 
+  add_footnote("Note. SD=standard deviation", notation = "none")
+```
+
+## メインの解析の前提となる解析
+
+### 変数間の相関係数
+<!--
+↑見出しは変更してください。
+
+相関行列はapaTablesを使うのが便利です。表に乗せたい変数だけにしぼったデータフレームを作って、apa.cor.table()にいれると相関行列が出力されます
+
+【重要】apaTablesで作成した表のクロスレファレンスについて：
+- apaTablesはQuartoの自動番号付けと統合されていないため、@tbl-*での参照ができません
+- そのため、本文中では「以下に示す」「次の表に示す」などの直接的な表現を使用してください
+- どうしても番号で参照したい場合は、kableExtraを使ってAPA形式の表を手動で作成する必要があります
+-->
+
+変数間の相関係数を以下に示す。
+
+```{r apa-correlation, echo=FALSE, message=FALSE}
+# データの準備
+cor_bfi <- bfi |> 
+   mutate(Agreeableness = A1 + A2 + A3 + A4 + A5,
+          Conscientiousness = C1 + C2 + C3 + C4 + C5,
+          Extraversion = E1 + E2 + E3 + E4 + E5,
+          Neuroticism = N1 + N2 + N3 + N4 + N5,
+          Openness = O1 + O2 + O3 + O4 + O5) |> 
+   select(Extraversion,Neuroticism,Conscientiousness,Agreeableness,Openness)
+# 相関行列表の作成と出力
+cor_table_latex <- apa.cor.table(cor_bfi, filename = NA)
+apa.knit.table.for.pdf(cor_table_latex, table_title = "Big Five因子の平均・標準偏差と相関")
+```
+
+### ヒストグラム
+<!--
+↑見出しは変更してください。
+
+Rチャンクの指定において，\\label{fig:figs}以降に図のタイトルを書きます。
+ヒストグラムを描くには以下のコードを使います。
+-->
+
+神経症傾向の分布を @fig-histogram に示す。
+
+```{r fig-histogram}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-width: 7
+#| fig-height: 4
+#| fig-pos: "htbp"
+#| fig-cap: "神経症傾向のヒストグラム"
+# データの準備
+histogram_bfi <- bfi |> 
+   mutate(Agreeableness = A1 + A2 + A3 + A4 + A5,
+          Conscientiousness = C1 + C2 + C3 + C4 + C5,
+          Extraversion = E1 + E2 + E3 + E4 + E5,
+          Neuroticism = N1 + N2 + N3 + N4 + N5,
+          Openness = O1 + O2 + O3 + O4 + O5)
+
+ggplot(histogram_bfi,aes(x = Neuroticism)) +
+  geom_histogram(binwidth = 1, fill = "gray", color = "black") +
+  theme_apa() +
+  xlab("Neuroticism") +
+  ylab("Frequency") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        panel.border = element_blank(),
+        axis.line.y = element_line(),
+        axis.line.x = element_line()) +
+  scale_y_continuous(expand = c(0,NA),limits = c(0,NA))
+```
+
+### 2群の比較（連続変数）
+
+<!--
+↑見出しは変更してください。
+
+2群の群間比較(t検定)をします。検定結果などをそのまま本文に挿入することができます。
+-->
+
+```{r echo=FALSE,message=FALSE}
+# データの準備
+t_bfi <- bfi |> 
+   mutate(Agreeableness = A1 + A2 + A3 + A4 + A5,
+          Conscientiousness = C1 + C2 + C3 + C4 + C5,
+          Extraversion = E1 + E2 + E3 + E4 + E5,
+          Neuroticism = N1 + N2 + N3 + N4 + N5,
+          Openness = O1 + O2 + O3 + O4 + O5) |> 
+   mutate(gender = ifelse(gender=="1", "Male","Female")) |> 
+   filter(!is.na(Neuroticism)) 
+
+# t検定
+t_result <- t.test(Neuroticism ~ gender,
+       data = t_bfi, 
+       var.equal = FALSE)
+# 効果量
+g_result <- cohen.d(Neuroticism ~ gender,
+                            data = t_bfi,
+                            hedges.correction = TRUE)
+# 男性と女性のデータを用意
+male_bfi <- t_bfi |> 
+  filter(gender == "Male")
+
+female_bfi <- t_bfi |> 
+  filter(gender == "Female")
+```
+
+神経症傾向に関して性差を検討したところ,男性(*M* = `r sprintf('%.2f',mean(male_bfi$Neuroticism))`, *SD* = `r sprintf('%.2f',sd(male_bfi$Neuroticism))`)よりも、女性(*M* = `r sprintf('%.2f',mean(female_bfi$Neuroticism))`, *SD* = `r sprintf('%.2f',sd(female_bfi$Neuroticism))`)の方が有意に神経症傾向が高かった(*t* (`r sprintf('%.2f',t_result$parameter)`) = `r sprintf('%.2f',t_result$statistic)`, *p* = `r sprintf('%.2f',t_result$p.value)` , *d* = `r sprintf('%.2f',g_result$estimate)`,95 %CI \[`r sprintf('%.2f',g_result$conf.int[1])`, `r sprintf('%.2f',g_result$conf.int[2])`\])。この結果を @fig-figs に示す。
+
+<!--
+2群の群間比較をプロットをします。
+Rチャンクの指定において，\\label{fig:figs}以降に図のタイトルを書きます。
+-->
+
+```{r fig-figs, echo=FALSE, message=FALSE, warning=FALSE, fig.width=7,fig.height=4,fig.cap="神経症傾向の平均と標準誤差"}
+# 標準誤差を計算する関数を定義
+mean_se <- function(x) {
+  n <- length(x)
+  m <- mean(x)
+  s <- sd(x)
+  se <- s / sqrt(n)
+  data.frame(y = m, ymin = m - se, ymax = m + se)
+}
+
+# プロット
+ggplot(t_bfi,aes(x = gender, y = Neuroticism)) +
+   stat_summary(aes(fill=gender),fun=mean,geom="bar",alpha=0.8, colour="black", position="dodge", show.legend = F) +
+   stat_summary(aes(group=gender),fun.data=mean_se,geom="errorbar",size=0.5,width=0.2,position=position_dodge(.9)) +
+   scale_fill_manual(values=c("gray10","white")) +
+   theme(panel.background = element_blank()) +
+   xlab("Gender") +
+   theme_apa() +
+   theme(panel.border = element_blank(),
+        axis.line.y = element_line(),
+        axis.line.x = element_line()) +
+   geom_signif(stat = "identity",data = data.frame(x = c(1),xend = c(2),y = c(18),annotation = c("***")),
+              aes(x = x, xend = xend, y = y, yend = y, annotation = annotation)) +
+   scale_y_continuous(expand = c(0,0),limits = c(0,25))
+
+```
+
+### 2群の比較（離散変数）
+
+<!--
+↑この見出しは，内容に合わせて変更ください
+
+あまり使わないかもしれないですが、離散変数の場合の比較も記述しておきます。
+-->
+
+```{r tbl-contingency, echo=FALSE, message=FALSE}
+#| tbl-cap: "性別と教育歴についてのクロス集計表"
+# データの準備
+x_bfi <- bfi |> 
+   mutate(Agreeableness = A1 + A2 + A3 + A4 + A5,
+          Conscientiousness = C1 + C2 + C3 + C4 + C5,
+          Extraversion = E1 + E2 + E3 + E4 + E5,
+          Neuroticism = N1 + N2 + N3 + N4 + N5,
+          Openness = O1 + O2 + O3 + O4 + O5) |> 
+   mutate(gender = ifelse(gender=="1", "Male","Female")) |> 
+   mutate(education = ifelse(education=="1", "High","Low"))  
+
+# クロス集計表の作成
+contingency_table <- table(x_bfi$gender, x_bfi$education)
+
+# kableを使って表を作る
+kable(contingency_table, 
+      format = "latex", 
+      booktabs = T, 
+      digits = 2,
+      row.names = TRUE) |>  
+  add_header_above(c(" "=1,"Education" = 2)) |> 
+  pack_rows(index = c("Gender" = 2))
+```
+
+```{r echo=FALSE,message=FALSE}
+# カイ二乗検定の実行
+chisq_test_result <- chisq.test(contingency_table)
+```
+
+女性より、男性の方が高学歴者が多いことが示唆された( $\chi ^2$ (`r sprintf('%.2f',chisq_test_result$parameter)`, *N* = `r sprintf('%.0f',nrow(x_bfi))`) = `r sprintf('%.2f',chisq_test_result$statistic)`, *p* = `r sprintf('%.2f',chisq_test_result$p.value)`)。詳細は @tbl-contingency を参照されたい。
+
+<!--
+研究の目的においてメインの解析の前提となる解析結果について記述してください。
+例えば，群間比較において，ベースラインで差がないかどうか調べるなどがこれにあたります。  
+-->
+
+## メインの解析の記載
+
+### 重回帰分析
+
+<!-- 
+↑この見出しは，内容に合わせて変更ください
+
+重回帰分析もapaTablesを使うと便利です。重回帰分析の結果を保存して、apa.reg.table()にいれると重回帰分析の結果が出力されます。
+-->
+
+重回帰分析の結果を以下に示す。
+
+```{r apa-regression, echo=FALSE, message=FALSE}
+# 重回帰分析
+reg_result <- lm(sales ~ adverts + airplay,data = album)
+# 重回帰分析の結果を表で出力
+reg_latex <- apa.reg.table(reg_result, filename = NA)
+apa.knit.table.for.pdf(reg_latex, table_title = "重回帰分析結果")
+```
+
+### 分散分析の結果
+
+<!-- 
+↑この見出しは，内容に合わせて変更ください
+
+分散分析もapaTablesを使うと便利です。重回帰分析の結果を保存して、apa.aov.table()にいれると分散分析の結果が出力されます。
+-->
+
+分散分析の結果を以下に示す。
+
+```{r apa-anova, echo=FALSE, message=FALSE}
+# 重回帰分析を実施
+aov_result <- lm(attractiveness ~ gender*alcohol, data = goggles)
+# 分散分析の結果を表で出力
+aov_table <- apa.aov.table(aov_result)
+apa.knit.table.for.pdf(aov_table, table_title = "分散分析結果")
+```
+
+## メインの解析結果を補強する解析の記載
+
+<!-- 
+↑この見出しは，内容に合わせて変更ください
+-->
+
+<!--
+メインの解析結果を補強するような解析，
+もしくは理解を深める上で必要な解析結果について記述してください。
+なお，その解析が事前に計画したものでない場合は，
+必ずデータ取得後に追加した探索的な解析であるとわかるように記載してください。
+-->
+

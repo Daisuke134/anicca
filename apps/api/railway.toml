@@ -1,0 +1,7 @@
+[build]
+builder = "dockerfile"
+rootDirectory = "apps/api"
+watchPaths = ["apps/api/**"]
+
+[deploy]
+startCommand = "bash -lc 'if [ \"$CRON_MODE\" = \"nudges\" ]; then node src/jobs/generateNudges.js; else printf \"%s\" \"$GCP_SA_KEY_JSON\" > /tmp/gcp.json && export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp.json && npm start; fi'"

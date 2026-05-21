@@ -1,0 +1,72 @@
+# Feature: Timer start -> running state
+# Tests: User starts timer and sees running state with pause/stop buttons
+appId: com.aniccafactory.eyebreakisland
+tags:
+  - timer
+
+---
+- clearState
+- clearKeychain
+- launchApp
+
+# Dismiss any stale system dialogs from previous runs
+- tapOn:
+    text: "許可|Allow"
+    optional: true
+
+# Complete onboarding quickly
+- extendedWaitUntil:
+    visible:
+      id: "onboarding_container"
+    timeout: 30000
+- tapOn:
+    id: "onboarding_next_button"
+- extendedWaitUntil:
+    visible:
+      id: "onboarding_next_button"
+    timeout: 10000
+- tapOn:
+    id: "onboarding_next_button"
+- extendedWaitUntil:
+    visible:
+      id: "onboarding_allow_notifications"
+    timeout: 10000
+- tapOn:
+    id: "onboarding_allow_notifications"
+- tapOn:
+    text: "許可|Allow"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: "paywall_maybe_later"
+    timeout: 15000
+- tapOn:
+    id: "paywall_maybe_later"
+
+# Now on TimerView
+- extendedWaitUntil:
+    visible:
+      id: "timer_start_button"
+    timeout: 15000
+
+# Verify idle state
+- assertVisible:
+    id: "timer_start_button"
+- assertVisible:
+    id: "timer_ring"
+- assertVisible:
+    id: "timer_break_count"
+
+# Start timer
+- tapOn:
+    id: "timer_start_button"
+
+# Verify running state: pause + stop buttons visible
+- extendedWaitUntil:
+    visible:
+      id: "timer_pause_button"
+    timeout: 10000
+- assertVisible:
+    id: "timer_stop_button"
+
+- takeScreenshot: "02-timer-running"

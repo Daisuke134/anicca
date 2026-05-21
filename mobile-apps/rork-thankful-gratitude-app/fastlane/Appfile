@@ -1,0 +1,4 @@
+app_identifier("app.rork.thankful-gratitude-app")
+apple_id("your-apple-id@example.com")
+team_id("S5U8UH3JLJ")
+itc_team_id("S5U8UH3JLJ")

@@ -1,0 +1,20 @@
+## Codebase Patterns
+- Factory profile: iOS solo dev, 1-day build, subscription model, no backend
+- Scoring formula: (1.5×Solo_Dev_Scope + 1.5×Technical_Fit + Platform_API_Fit + Monetization + Competition) / 6
+- Top app pick = pure Apple stack (no external APIs), clear value, crowded market but quality gap
+---
+
+## 2026-03-03 - US-001: Trend research + idea selection
+- spec/01-trend.md created with 5 ideas via 5 brainstorming lenses
+- **Winner: MomentLog (Score 8.3)** — pick 3 photos from today = visual gratitude journal
+- Technologies: PhotosKit, SwiftData, WidgetKit, Foundation Models (optional AI captions)
+- Monetization: $4.99/mo or $29.99/yr (Freemium, 7-day free history)
+- Differentiation: Zero-writing barrier, no backend, "Year-in-Review" premium feature
+- Files changed: spec/01-trend.md
+- **Learnings for future iterations:**
+  - AI journaling space is crowded (Reflection, Rosebud, Mindsera) — avoid head-on
+  - Foundation Models (iOS 26) = free on-device AI, no API keys = killer differentiator
+  - DeviceActivity API adds entitlement complexity — avoid for 1-day builds
+  - Photo-based apps (PhotosKit) have very fast build path, all standard Apple APIs
+  - "Quiet flex" / self-reflection is TikTok's #1 trend for 2026
+---

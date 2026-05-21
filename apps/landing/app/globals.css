@@ -1,0 +1,128 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Anicca v25 — editorial manifesto + warm cream + deep ink + saffron */
+:root {
+  /* Core palette (HSL channels — multiply through hsl() calls) */
+  --ink: 230 15% 9%;            /* deep almost-black with warmth */
+  --ink-soft: 230 12% 18%;      /* secondary ink */
+  --cream: 38 35% 95%;          /* warm parchment */
+  --bone: 36 22% 88%;           /* darker cream / borders */
+  --gold: 38 60% 52%;           /* saffron — Buddhist hint */
+  --ember: 12 70% 50%;          /* rare alarm/heat accent */
+  --mist: 232 8% 45%;           /* muted gray for body text */
+
+  /* shadcn-compatible aliases (existing components depend on these) */
+  --background: var(--cream);
+  --background-alt: 38 30% 92%;
+  --foreground: var(--ink);
+  --muted: 36 22% 88%;
+  --muted-foreground: var(--mist);
+  --card: 38 40% 97%;
+  --card-foreground: var(--ink);
+  --popover: var(--cream);
+  --popover-foreground: var(--ink);
+  --primary: var(--ink);
+  --primary-foreground: var(--cream);
+  --secondary: var(--bone);
+  --secondary-foreground: var(--ink);
+  --accent: var(--gold);
+  --accent-foreground: var(--ink);
+  --destructive: var(--ember);
+  --destructive-foreground: var(--cream);
+  --border: 36 18% 82%;
+  --input: 36 18% 82%;
+  --ring: var(--ink);
+}
+
+@layer base {
+  html, body {
+    height: 100%;
+  }
+  body {
+    margin: 0;
+    background: hsl(var(--cream));
+    color: hsl(var(--ink));
+    font-family: var(--font-newsreader), 'Iowan Old Style', 'Apple Garamond', Georgia, serif;
+    font-feature-settings: 'kern', 'liga', 'calt', 'ss01';
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  :lang(ja) body, [lang="ja"] {
+    font-family: var(--font-noto-serif-jp), var(--font-newsreader), 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    text-wrap: balance;
+    font-family: var(--font-newsreader), 'Iowan Old Style', Georgia, serif;
+    letter-spacing: -0.02em;
+    font-weight: 400;
+  }
+  :lang(ja) h1, :lang(ja) h2, :lang(ja) h3, :lang(ja) h4 {
+    font-family: var(--font-noto-serif-jp), serif;
+  }
+  p {
+    text-wrap: pretty;
+  }
+
+  /* Selection */
+  ::selection {
+    background: hsl(var(--gold) / 0.35);
+    color: hsl(var(--ink));
+  }
+}
+
+/* Decorative grain — subtle paper texture overlay */
+.bg-grain {
+  position: relative;
+  isolation: isolate;
+}
+.bg-grain::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.04;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.6 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+
+/* Editorial rule */
+.editorial-rule {
+  position: relative;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, hsl(var(--ink) / 0.25), transparent);
+}
+
+/* Typography utilities */
+.font-display {
+  font-family: var(--font-newsreader), Georgia, serif;
+  font-feature-settings: 'kern', 'liga', 'ss01';
+}
+.font-mono-ui {
+  font-family: var(--font-jetbrains), 'SF Mono', Menlo, monospace;
+  font-feature-settings: 'tnum', 'zero';
+}
+
+/* Soft fade-in (paired with motion-safe) */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .animate-fade-up {
+    animation: fade-up 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+}
+
+/* Marquee (for SAO banner / fellow logos) */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.animate-marquee {
+  animation: marquee 38s linear infinite;
+}

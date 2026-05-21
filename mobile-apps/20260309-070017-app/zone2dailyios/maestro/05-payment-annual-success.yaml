@@ -1,0 +1,58 @@
+appId: com.aniccafactory.zone2daily
+name: "Payment Annual Success"
+tags:
+  - payment
+---
+- clearState
+- clearKeychain
+- launchApp
+
+# Complete onboarding to reach paywall
+- extendedWaitUntil:
+    visible:
+      id: "btn_continue_age"
+    timeout: 30000
+- tapOn:
+    id: "btn_continue_age"
+
+- extendedWaitUntil:
+    visible:
+      id: "btn_continue_explainer"
+    timeout: 15000
+- tapOn:
+    id: "btn_continue_explainer"
+
+- extendedWaitUntil:
+    visible:
+      id: "btn_skip_notifications"
+    timeout: 15000
+- tapOn:
+    text: "Allow"
+    optional: true
+- tapOn:
+    id: "btn_skip_notifications"
+
+# Paywall appears — Annual is pre-selected (Best Value)
+- extendedWaitUntil:
+    visible:
+      id: "paywall_headline"
+    timeout: 15000
+
+# Wait for plans to load
+- extendedWaitUntil:
+    visible:
+      id: "selector_plan_annual"
+    timeout: 60000
+
+# Annual is pre-selected, tap Subscribe directly
+# uiPreviewMode: purchase auto-completes (no "Test valid purchase" dialog)
+- tapOn:
+    id: "btn_subscribe"
+
+# After purchase — paywall dismissed → main app
+- extendedWaitUntil:
+    visible:
+      id: "label_streak"
+    timeout: 15000
+
+- takeScreenshot: "05-payment-annual-success"

@@ -1,0 +1,123 @@
+name: iOS CI
+
+on:
+  push:
+    branches: [dev, main]
+    paths:
+      - 'aniccaios/**'
+      - '.github/workflows/ios-ci.yml'
+  pull_request:
+    branches: [dev, main]
+    paths:
+      - 'aniccaios/**'
+      - '.github/workflows/ios-ci.yml'
+
+jobs:
+  localization-guard:
+    name: Localization Guards
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check localization key parity
+        run: |
+          python3 aniccaios/scripts/localization/check_strings_parity.py
+
+      - name: Check for hardcoded SwiftUI Text strings
+        run: |
+          python3 aniccaios/scripts/localization/check_hardcoded_swiftui_text.py
+
+  unit-tests:
+    name: Unit & Integration Tests
+    runs-on: macos-14
+    needs: localization-guard
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '16.2'
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+          working-directory: aniccaios
+
+      - name: Cache SPM
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/org.swift.swiftpm
+            ~/Library/Developer/Xcode/DerivedData
+          key: ${{ runner.os }}-spm-${{ hashFiles('aniccaios/aniccaios.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-spm-
+
+      - name: Run Tests
+        working-directory: aniccaios
+        run: |
+          FASTLANE_SKIP_UPDATE_CHECK=1 FASTLANE_OPT_OUT_CRASH_REPORTING=1 bundle exec fastlane test
+
+  e2e-tests:
+    name: E2E Tests (Maestro)
+    runs-on: macos-14
+    needs: unit-tests
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '16.2'
+
+      - name: Install Maestro
+        run: |
+          curl -Ls "https://get.maestro.mobile.dev" | bash
+          echo "$HOME/.maestro/bin" >> $GITHUB_PATH
+
+      - name: Boot Simulator
+        run: |
+          xcrun simctl boot "iPhone 16 Pro" || true
+          xcrun simctl bootstatus "iPhone 16 Pro" -b
+          # CI環境ではシミュレータの完全起動に時間がかかるため待機
+          sleep 10
+
+      - name: Build App
+        working-directory: aniccaios
+        run: |
+          xcodebuild build \
+            -project aniccaios.xcodeproj \
+            -scheme aniccaios-staging \
+            -configuration "staging Debug" \
+            -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=18.2' \
+            -derivedDataPath ./build
+
+      - name: Install App
+        working-directory: aniccaios
+        run: |
+          xcrun simctl install booted "./build/Build/Products/staging Debug-iphonesimulator/aniccaios.app"
+
+      - name: Run Maestro Tests
+        env:
+          MAESTRO_DRIVER_STARTUP_TIMEOUT: 120000
+        run: |
+          maestro test aniccaios/maestro/ --include-tags smokeTest
+
+      - name: Debug - Simulator Crash Logs
+        if: failure()
+        run: |
+          echo "=== Recent crash logs ==="
+          find ~/Library/Logs/DiagnosticReports -name "aniccaios*" -mmin -30 2>/dev/null | head -5 | while read f; do echo "--- $f ---"; head -50 "$f"; done || echo "No crash logs found"
+          echo ""
+          echo "=== Simulator system log (last 2 min) ==="
+          xcrun simctl spawn booted log show --predicate 'processImagePath contains "aniccaios"' --last 2m --style compact 2>&1 | tail -100 || echo "Failed to get simulator logs"
+
+      - name: Upload Test Results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: maestro-results
+          path: ~/.maestro/tests/

@@ -1,0 +1,666 @@
+## Codebase Patterns
+
+| VStack a11y ID hides children | `.accessibilityIdentifier()` on a VStack/container makes Maestro unable to find child elements. Put IDs on leaf views only, or use child element IDs for assertions |
+| JP locale notification dialog | シミュレータが日本語ロケールの場合、通知許可ダイアログのボタンは「許可」。Maestro で `text: "許可\|Allow"` + `optional: true` を使う |
+| Stale system dialog after clearState | `clearState` は iOS システムダイアログ（通知許可等）をクリアしない。launchApp 直後に `tapOn: "許可\|Allow" optional: true` で残留ダイアログを消す |
+| RC_PUBLIC_KEY must be set in xcconfig | Config.xcconfig の `RC_PUBLIC_KEY` が空だと `Purchases.configure()` がスキップされ、paywall で `Purchases has not been configured` クラッシュ |
+| uiPreviewMode purchase dialog | `uiPreviewMode: true` では RC 購入ダイアログ（"Test valid purchase"）が表示されない場合がある。`optional: true` にする |
+| NavigationView toolbar iOS 26 | iOS 26 では `NavigationView` + `.toolbar` の `ToolbarItem` が表示されない場合がある。VStack 内の HStack + Button に変更 |
+| maestro PATH | maestro CLI は `/Users/anicca/.maestro/bin/maestro` にある。PATH に追加必須 |
+
+| Package unit test limitation | RevenueCat `Package` is a final class — cannot be instantiated in unit tests. Purchase flow with real packages tested in E2E (US-007) |
+| Onboarding hasCompletedOnboarding | `@AppStorage("hasCompletedOnboarding")` controls onboarding/timer routing in ContentView. All apps use same key (US-008a screenshot dependency) |
+
+| パターン | 詳細 |
+|---------|------|
+| Apify token ロード | `source .env` では APIFY_TOKEN が空になる。`eval "$(grep '^APIFY_TOKEN=' ~/.config/mobileapp-builder/.env)"` を使うこと |
+| Apify 非同期実行 | POST runs → 待機 → GET actor-runs/{id} で SUCCEEDED → GET datasets/{id}/items |
+| iTunes 低評価レビュー | `https://itunes.apple.com/us/rss/customerreviews/page=1/id=APP_ID/sortby=mostrecent/json` + python3 フィルタ |
+
+| Gate check false positive | grep for Rule violations (RevenueCatUI, Mixpanel, Analytics) matches prohibition text in docs. These are not actual violations — they describe what is prohibited |
+| Doc generation order | ARCHITECTURE → DESIGN_SYSTEM → UX_SPEC (strict). UX_SPEC references DESIGN_SYSTEM color tokens |
+
+| Phase table ↔ Section heading | IMPL_GUIDE の Phase table ラベルと実際のセクション見出しを一致させること。Phase 4 に対応するセクションが欠落していた |
+| ObservableObject mutation | SwiftUI @Published properties は immutability rule の例外。ARCHITECTURE.md §13 に記載 |
+| Dynamic Type exception | Timer display (56pt) は固定サイズ。DESIGN_SYSTEM.md に例外として記載が必要 |
+| apps create requires 2FA | `asc apps create` は iris session があっても独自に Apple ID 認証する。`--two-factor-code` 必須。API Key 認証不可 |
+| source .env in Bash tool | `source ~/.config/.../projects/<slug>/.env` は Bash tool 内で変数が展開されない場合あり。`export VAR=VALUE` で直接設定するか、`cat .env` で値を確認してからコマンドに埋め込むこと |
+| availability before pricing | ASC API で pricing 設定前に availability 設定が必須。逆だと 500 エラー |
+| equalization excludes USA | `price-points equalizations` は USA を含まない(174カ国)。USA は `prices add` で別途追加が必要 |
+| 3-plan subscription | RevenueCat SOSA 2025: weekly が47% of revenue。3プラン(weekly+monthly+annual)必須 |
+| ActivityKit iOS 16.2+ | `Activity.request`, `activity.end`, `activity.update(ActivityContent)` は iOS 16.2+。`if #available(iOS 16.2, *)` 必須 |
+| Shared sources for Widget Extension | EyeBreakAttributes は App + WidgetExtension 両方で使用。`Shared/` ディレクトリに配置し project.yml で両ターゲットに追加 |
+| xcodegen shared sources | project.yml の sources に `- path: Shared` を追加して複数ターゲットでコード共有 |
+| iPhone 17 Pro simulator | Xcode 26.2 では iPhone 16 Pro シミュレータなし。iPhone 17 Pro を使用 |
+| @MainActor test classes | @MainActor ViewModel のテストクラスには `@MainActor` アノテーション必須。なければ isolation error |
+| EnvironmentObject for services | TimerService/SubscriptionService は @EnvironmentObject で注入。View 内の ViewModel は StateObject の軽量コンテナのみ |
+| DesignSystem directory | AppColors, AppTypography, AppSpacing, AppCornerRadius, AppAnimations は `DesignSystem/` に集約。Components/ にPrimaryButton等 |
+| Test target RevenueCat dependency | テストターゲットで RevenueCat.Package を使うには project.yml に RevenueCat パッケージ依存を追加必須 |
+| PrimaryButton reuse | OnboardingView の Next/Allow Notifications ボタンは PrimaryButton コンポーネントを直接使う。手動で Button を組むより統一的 |
+| PackageCardView a11y mapping | 3-plan model (weekly/monthly/annual) では packageType ベースで a11y ID を振り分ける。isAnnual bool だけでは不十分 |
+| NSLocalizedString for PrimaryButton | PrimaryButton の title は String 型。LocalizedStringKey ではなく NSLocalizedString() でラップして渡す |
+| RC configure single source | RevenueCat Purchases.configure() は1箇所のみ。App struct ではなく SubscriptionService.configure() に集約。重複呼び出し禁止 |
+| Localization key naming | dot-notation keys (e.g. timer.status.ready) を使い、en + ja 両方を xcstrings に明示記載。暗黙のキー＝値パターン禁止 |
+| axe UDID quoting | `axe describe-ui --udid "$UDID"` はシェル展開で空文字になる場合あり。`/opt/homebrew/bin/axe describe-ui --udid D5822...` と直接埋め込むか、変数を && で連結 |
+| xcodebuild destination id | `xcodebuild -destination "platform=iOS Simulator,id=$UDID"` は Xcode 26.2 で `missing value for key 'id'` エラー。`-destination 'platform=iOS Simulator,name=iPhone 17 Pro'` を使う |
+| 6.5" simulator creation | Xcode 26.2 に iPhone 14 Plus シミュレータがデフォルトで存在しない。`xcrun simctl create` で作成必須 |
+| ja localization creation | `asc localizations update --locale ja` は既存ロケールのみ更新可。新規作成は REST API `POST /v1/appStoreVersionLocalizations` + JWT 必須 |
+| Review screenshot 3-step | `asc subscriptions review-screenshots create` は reservation のみ。PUT (upload) → PATCH (commit) を自前で実行する必要あり。Python + PyJWT で JWT 生成 → urllib で完結 |
+| Notification permission cross-sim | 6.1" sim で通知許可した後、6.5" sim では既に OS レベルで許可済みの場合あり。オンボーディング Page 3 がスキップされ直接 Paywall に遷移する |
+| ASC keywords 100 char limit | en-US keywords は100文字以内。PRD の keywords をそのまま使うと超過する場合あり。低優先キーワードを削除して調整 |
+| asc localizations update types | `--type app-info` は name/subtitle/privacyPolicyUrl。`--version VERSION_ID` は description/keywords/supportUrl/promotionalText/marketingUrl。別コマンド |
+| age-rating requires all attributes | `asc age-rating set` は parentalControls + ageAssurance を含む全属性が必須。1つでも欠けると 400 エラー |
+| review details contactFirstName | `asc review details-update` は contactFirstName が必須。REST API PATCH の方が確実 |
+| availability v2 inline creation | `asc pricing availability set` は v2 territory inline creation に対応していない。REST API `POST /v2/appAvailabilities` で `${ta-N}` local ID パターンを使う |
+| content rights via app PATCH | contentRightsDeclaration は `PATCH /v1/apps/{id}` で設定。asc CLI にサブコマンドなし |
+| encryption plist overrides API | Info.plist に ITSAppUsesNonExemptEncryption=NO があると、API の encryption declaration assign-builds は不要（plist が優先） |
+| xcodebuild API Key auth | Xcode アカウント未設定時は `-allowProvisioningUpdates -authenticationKeyPath -authenticationKeyID -authenticationKeyIssuerID` の4フラグで自動プロビジョニング |
+| CFBundleIconName required | iOS 11+ で Info.plist に `CFBundleIconName=AppIcon` 必須。未設定だと IPA validation で "Missing required icon file" エラー |
+| ExportOptions destination upload | ExportOptions.plist に `destination: upload` を設定すると exportArchive 時に自動で ASC にアップロードされる |
+| Build appears in ASC API delay | アップロード成功後、ASC API にビルドが表示されるまで約60-90秒かかる |
+| betaAppReviewDetails phone format | ASC API contactPhone は `+81-90-1234-5678` のダッシュ付きフォーマットのみ受付。E.164(`+819012345678`) / 括弧付き / スペース区切りは全て INVALID_PHONE_NUMBER |
+| betaAppLocalization required | External TestFlight submit 前に `POST /v1/betaAppLocalizations` で en-US description を設定必須。未設定だと "Beta App Description is missing" エラー |
+| primaryCategory must be set | primaryCategory 未設定だと INVALID_BINARY で提出拒否。`PATCH /v1/appInfos/{id}` で relationships.primaryCategory を設定 |
+| Free app pricing required | Free app でも `asc pricing schedule create` で $0.00 price point を明示設定必須。未設定だと "App is not eligible for submission until pricing has been set" |
+| asc review flag names | `items-add` は `--submission`、`submissions-submit` は `--id`。フラグ名が統一されていないので注意 |
+
+---
+
+## 2026-03-07 - US-009: App Store submission (COMPLETE)
+
+- **Status: COMPLETE — WAITING_FOR_REVIEW**
+- **Evidence:**
+  - AC1: .app-privacy-done exists (human completed App Privacy via ASC Web) PASS
+  - AC2: asc review submissions-submit -> state=WAITING_FOR_REVIEW PASS
+    - Submission ID: 3f28c788-4b36-477b-aa42-8bf1245f2efb
+    - Submitted: 2026-03-07T09:56:41Z
+  - AC3: Slack #metrics notified PASS
+  - Dependency check: US-001~008e all passes:true PASS
+  - asc validate: Errors=0, Warnings=0, Blocking=0 PASS
+- **Fix applied during submission:**
+  - App pricing was not set (Free $0.00 price schedule missing)
+  - `asc pricing schedule create --app 6760196743 --price-point <FREE> --base-territory USA --start-date 2026-03-07`
+  - Without this, items-add returned "App is not eligible for submission until pricing has been set"
+- **Learnings for future iterations:**
+  - Free app still requires explicit pricing schedule creation ($0.00 price point, USA base territory)
+  - `asc review submissions-submit` uses `--id` flag (not `--submission`)
+  - `asc review items-add` uses `--submission` flag (not `--submission-id`)
+  - .app-privacy-done file = signal that human completed App Privacy manually
+
+---
+
+## 2026-03-07 - US-008e: Preflight validation + TestFlight + Slack (COMPLETE)
+
+- **Status: COMPLETE — all AC verified with evidence**
+- **Evidence:**
+  - AC1: Submission checklist all PASS
+    - Greenlight: GREENLIT (no critical issues)
+    - B1: processingState=VALID (BUILD_ID=76388ee2)
+    - B2: version 1.0, state=PREPARE_FOR_SUBMISSION
+    - B3: Xcode 26.2
+    - D2-D4: Weekly/Monthly/Annual all READY_TO_SUBMIT
+    - D5-D7: 175 prices each
+    - D11-D13: 39 localizations each
+    - E1-E3: en-US + ja metadata complete (description, keywords, supportUrl, promotionalText, marketingUrl)
+    - E4: IPHONE_61 + IPHONE_65 screenshot sets for en-US and ja
+    - E7: copyright="2026 Daisuke Kobayashi"
+    - E12: primaryCategory=HEALTH_AND_FITNESS (fixed during this US — was empty)
+  - AC2: `asc validate --app 6760196743 --version-id fab3c316-...` -> errors=0, warnings=0, blocking=0 PASS
+  - AC3: TestFlight distributed
+    - Beta group "External Testers" created (id=7a4e355a)
+    - Build added to group
+    - betaAppReviewDetails set (contact + demoAccountRequired=false)
+    - betaAppLocalization en-US created (description + feedbackEmail)
+    - betaBuildLocalization en-US created (whatsNew)
+    - Beta review submitted -> WAITING_FOR_BETA_REVIEW
+    - Tester keiodaisuke@gmail.com added to External Testers
+    - internalBuildState=READY_FOR_BETA_TESTING
+  - AC4: Slack #metrics notified with TestFlight status PASS
+- **Learnings for future iterations:**
+  - ASC contactPhone format: `+81-90-1234-5678` (dashes required, E.164 rejected)
+  - External TestFlight requires betaAppLocalization (description) before submit
+  - primaryCategory must be set explicitly — PATCH /v1/appInfos with relationships
+  - asc auth has no `token` subcommand — generate JWT via PyJWT manually for REST API calls
+  - AuthKey path: `~/.appstoreconnect/private_keys/AuthKey_<KEY_ID>.p8`
+
+---
+
+## 2026-03-07 - US-008d: ASC compliance (age rating + encryption + rights + availability + pricing + review details) (COMPLETE)
+
+- **Status: COMPLETE — all AC verified with evidence**
+- **Evidence:**
+  - AC1: Age Rating 22 items set via `asc age-rating set --app 6760196743`. healthOrWellnessTopics=true, all others NONE/false. appStoreAgeRating=FOUR_PLUS PASS
+  - AC2: Review Details demoAccountRequired=false via REST API PATCH. Contact: Daisuke Kobayashi, keiodaisuke@gmail.com PASS
+  - AC3: Availability 175/175 territories available via REST API v2 POST /v2/appAvailabilities. availableInNewTerritories=true PASS
+  - AC4: Pricing: Free app (Tier 0, no manual prices). Subscriptions configured in US-005b (175 prices per sub) PASS
+  - AC5: usesNonExemptEncryption=false (via build Info.plist). Encryption declaration created (containsThirdPartyCryptography=true for HTTPS/TLS) PASS
+  - AC6: contentRightsDeclaration=DOES_NOT_USE_THIRD_PARTY_CONTENT via REST API PATCH /v1/apps PASS
+  - Copyright: "2026 Daisuke Kobayashi" via `asc versions update --copyright` PASS
+- **Learnings for future iterations:**
+  - `asc age-rating set` requires ALL attributes including parentalControls and ageAssurance — omitting any causes 400 error
+  - `asc review details-update` requires contactFirstName — use REST API PATCH for reliability
+  - `asc pricing availability set` doesn't support v2 inline creation — use REST API directly
+  - contentRightsDeclaration is set via app-level PATCH, not a separate endpoint
+  - If Info.plist has ITSAppUsesNonExemptEncryption=NO, encryption declaration assign-builds is unnecessary
+
+---
+
+## 2026-03-07 - US-008b: ASC metadata sync (en-US + ja) (COMPLETE)
+
+- **Status: COMPLETE — all AC verified with evidence**
+- **Evidence:**
+  - AC1: Metadata synced via `asc localizations update` for en-US + ja PASS
+    - app-info en-US: name="Eye Break - EyeBreakIsland", subtitle="20-20-20 Rule, Dynamic Island", privacyPolicyUrl=set
+    - app-info ja: name="Eye Break - EyeBreakIsland", subtitle="20-20-20ルール、ダイナミックアイランド", privacyPolicyUrl=set
+    - version en-US: description=330 chars, keywords=87 chars, supportUrl=set, promotionalText=71 chars, marketingUrl=set
+    - version ja: description=140 chars, keywords=set, supportUrl=set, promotionalText=42 chars, marketingUrl=set
+  - AC2: Privacy Policy URL set for BOTH en-US AND ja: https://daisuke134.github.io/anicca-products/eyebreakisland/privacy-policy.html PASS
+- **Commands used:**
+  - `asc localizations update --type app-info --app 6760196743 --locale en-US ...`
+  - `asc localizations update --type app-info --app 6760196743 --locale ja ...`
+  - `asc localizations update --version fab3c316-... --locale en-US ...`
+  - `asc localizations update --version fab3c316-... --locale ja ...`
+- **Learnings for future iterations:**
+  - en-US keywords は100文字制限。PRD のキーワードリストが長い場合は低優先キーワードを削除
+  - `asc localizations update` は `--type app-info` と `--version` で別フィールドを更新する
+
+---
+
+## 2026-03-07 - US-008a: Screenshots (capture + upload + review screenshot) (COMPLETE)
+
+- **Status: COMPLETE — all AC verified with evidence**
+- **Evidence:**
+  - AC1: Screenshots captured via AXe + asc screenshots capture: en-US 5+4=9 (6.1"+6.5"), ja 5+4=9 (6.1"+6.5") PASS
+  - AC2: MD5 en≠ja PASS (en: 726413b8..., ja: 9c97a488...), no same-locale duplicates (0+0) PASS
+  - AC3: ASC upload: en-US IPHONE_61 5 COMPLETE, IPHONE_65 4 COMPLETE; ja IPHONE_61 5 COMPLETE, IPHONE_65 4 COMPLETE PASS
+  - AC4: Review screenshots: Weekly (528c46ba) + Monthly (d213fce2) + Annual (c78d68eb) all uploaded+committed PASS
+- **Resolutions:**
+  - IPHONE_61: 1206x2622 (iPhone 17 Pro)
+  - IPHONE_65: 1284x2778 (iPhone 14 Plus — created via simctl)
+- **iPad:** Not required (TARGETED_DEVICE_FAMILY=1, iPhone only)
+- **Screens captured (4 per locale per device):**
+  1. screen1_welcome — Onboarding page 1
+  2. screen2_features — Onboarding page 2
+  3. screen3_paywall — Soft paywall (with pricing)
+  4. screen4_home — Timer screen (20:00 ready)
+  5. screen3_notifications — Notification permission page (6.1" only, extra)
+- **Files created:**
+  - `screenshots/raw/en-US/` — 5 PNGs (1206x2622)
+  - `screenshots/raw/ja/` — 5 PNGs (1206x2622)
+  - `screenshots/raw-65/en-US/` — 4 PNGs (1284x2778)
+  - `screenshots/raw-65/ja/` — 4 PNGs (1284x2778)
+- **ASC changes:**
+  - ja version localization created (6668f455) via REST API
+  - 4 screenshot sets uploaded (en-US×2 + ja×2)
+  - 3 review screenshots uploaded (Weekly+Monthly+Annual)
+- **Learnings for future iterations:**
+  - axe UDID は /opt/homebrew/bin/axe で直接フルパス指定が安定
+  - xcodebuild destination は name= の方が id= より安定（Xcode 26.2）
+  - asc localizations update は既存ロケールのみ。新規は REST API POST 必須
+  - review screenshot は create → PUT → PATCH (commit) の3ステップ。Python + PyJWT で完結
+  - 6.1" sim で通知許可済みだと 6.5" sim でオンボーディング Page 3 がスキップされる
+
+---
+
+## 2026-03-07 - US-007: Maestro E2E Testing (COMPLETE)
+
+- **Status: COMPLETE — all AC verified with evidence**
+- **Evidence:**
+  - AC1: 6 Maestro E2E flows in maestro/ (01-onboarding, 02-timer, 03-settings, 04-payment-monthly-success, 05-payment-annual-success, 06-payment-failure) PASS
+  - AC2: `grep -r 'point:' maestro/*.yaml` → 0 matches (all use id: selectors) PASS
+  - AC3: All 6 flows have clearState + takeScreenshot PASS
+  - AC4: `maestro test maestro/` → 6/6 Flows Passed in 1m50s PASS
+  - AC5: smokeTest tag on 2 flows (01-onboarding, 04-payment-monthly-success) PASS
+- **Gate checks:**
+  - Flow count: 6 (>=6) PASS
+  - clearState in all flows: 6/6 PASS
+  - takeScreenshot in all flows: 6/6 PASS
+  - smokeTest tag count: 2 (>=2) PASS
+  - point: selectors: 0 PASS
+  - fastlane test: 96 tests, 0 failures PASS
+  - fastlane build_for_simulator: Build Succeeded PASS
+- **Files created:**
+  - `EyeBreakIslandios/maestro/01-onboarding.yaml` — full onboarding flow (smokeTest)
+  - `EyeBreakIslandios/maestro/02-timer.yaml` — timer start/running state
+  - `EyeBreakIslandios/maestro/03-settings.yaml` — settings navigation + close
+  - `EyeBreakIslandios/maestro/04-payment-monthly-success.yaml` — monthly purchase (smokeTest)
+  - `EyeBreakIslandios/maestro/05-payment-annual-success.yaml` — annual purchase
+  - `EyeBreakIslandios/maestro/06-payment-failure.yaml` — paywall abandonment (Maybe Later)
+- **Files modified:**
+  - `EyeBreakIslandios/EyeBreakIsland/Views/Timer/TimerView.swift` — NavigationView→VStack, gear button in HStack, removed timerView container a11y ID
+  - `EyeBreakIslandios/EyeBreakIsland/Models/AccessibilityID.swift` — settingsGearButton added
+  - `EyeBreakIslandios/EyeBreakIsland/xcconfig/Config.xcconfig` — RC_PUBLIC_KEY set
+  - `EyeBreakIslandios/fastlane/Fastfile` — build_for_simulator lane added
+- **Learnings for future iterations:**
+  - VStack に accessibilityIdentifier を付けると子要素が Maestro から見えなくなる
+  - iOS 26 の NavigationView toolbar は表示されない場合がある
+  - uiPreviewMode では RC 購入ダイアログが表示されない — optional: true 必須
+  - JP ロケールのシミュレータでは通知ダイアログが「許可」になる
+  - maestro CLI は ~/.maestro/bin/ にある
+
+---
+
+## 2026-03-07 - US-006-R: Code Review (006a-d full review) (COMPLETE)
+
+- **Status: COMPLETE — all AC verified with evidence**
+- **codex-review results (initial):** CRITICAL=0, HIGH=2, MEDIUM=7, LOW=4
+- **Evidence:**
+  - AC1: code-quality-reviewer subagent run on 29 production + 9 test files PASS
+  - AC2: CRITICAL findings = 0 PASS
+  - AC3: `grep -rw 'class Mock' --include='*.swift' . | grep -v 'Tests/' | wc -l → 0` PASS
+  - AC4: All blocking issues resolved (2 HIGH + 7 MEDIUM fixed) PASS
+- **HIGH fixes:**
+  1. TimerService: `@MainActor` added — Timer callback was implicitly main-thread but not enforced
+  2. EyeBreakIslandApp: Duplicate RC config removed — now uses `SubscriptionService.configure()` via `.task {}` only
+- **MEDIUM fixes:**
+  1. TimerService: hardcoded `"todayBreakCount"` → `Constants.todayBreakCountKey`
+  2. TimerView: 8 hardcoded English strings → localization keys (timer.status.*, timer.button.*, timer.break.count)
+  3. BreakOverlayView: 2 hardcoded strings → localization keys (break.overlay.title, break.overlay.instruction)
+  4. BreakSession: `var breakCount/totalMinutes` → `let` (immutability)
+  5. SettingsViewModel: removed `subscriptionServiceRef` indirection, renamed to `subscriptionService`
+  6. SubscriptionService: debug purchase error now logged before being swallowed
+  7. Localizable.xcstrings: old plain-English keys replaced with dot-notation keys, en + ja both explicit
+- **Test fixes:**
+  - TimerServiceTests: `@MainActor` added (required by TimerService @MainActor)
+  - TimerStateMachineTests: `@MainActor` added
+- **Gate checks:**
+  - Mock count in production: 0 PASS
+  - RevenueCat imports: 6, RevenueCatUI imports: 0 PASS
+  - AI API imports: 0 PASS
+  - Analytics SDK: 0 PASS
+  - ATT: 0 PASS
+  - Hardcoded API key: 0 PASS
+  - PrivacyInfo CA92.1: confirmed PASS
+  - fastlane test: 96 tests, 0 failures PASS
+  - fastlane build: Build Succeeded PASS
+- **Files modified:**
+  - `EyeBreakIsland/Services/TimerService.swift` — @MainActor + Constants.todayBreakCountKey
+  - `EyeBreakIsland/App/EyeBreakIslandApp.swift` — removed duplicate RC config, removed RevenueCat import
+  - `EyeBreakIsland/Services/SubscriptionService.swift` — debug error logging
+  - `EyeBreakIsland/Views/Timer/TimerView.swift` — 8 strings localized
+  - `EyeBreakIsland/Views/Timer/BreakOverlayView.swift` — 2 strings localized
+  - `EyeBreakIsland/Models/BreakSession.swift` — var→let
+  - `EyeBreakIsland/ViewModels/SettingsViewModel.swift` — subscriptionServiceRef→subscriptionService
+  - `EyeBreakIsland/Views/Settings/SettingsView.swift` — subscriptionServiceRef→subscriptionService
+  - `EyeBreakIsland/Resources/Localizable.xcstrings` — old keys→dot-notation keys with en+ja
+  - `EyeBreakIslandTests/TimerServiceTests.swift` — @MainActor
+  - `EyeBreakIslandTests/TimerViewModelTests.swift` — @MainActor on TimerStateMachineTests
+- **Learnings for future iterations:**
+  - RevenueCat configure() は1箇所のみ。App struct と Service の重複は禁止
+  - dot-notation localization keys で en + ja 両方 explicit に書く。暗黙キー＝値は避ける
+  - @MainActor を ObservableObject に追加したら、テストクラスにも @MainActor 必要
+
+---
+
+## 2026-03-07 - US-006d: TDD Polish (DESIGN_SYSTEM tokens, a11y IDs, Localization) (COMPLETE)
+
+- **Status: COMPLETE — all AC verified with evidence**
+- **Evidence:**
+  - AC1: `grep -r 'Color\.accentColor' Views/ → 0`, `grep -rE 'foregroundStyle\(\.(secondary|tertiary)\)' Views/ → 0` PASS
+  - AC2: All 31 a11y IDs in AccessibilityID.swift match UX_SPEC §7 + weekly extension PASS
+  - AC3: `grep -q "CA92.1" PrivacyInfo.xcprivacy → PASS`
+  - AC4: `test -f Localizable.xcstrings → PASS` (40+ strings, en-US + ja)
+  - AC5: `fastlane test → 96 tests, 0 failures` PASS
+  - AC6: `fastlane build → Build Succeeded` PASS
+  - AC7: Typecheck passes (build compiles) PASS
+- **Gate checks:**
+  - Mock count in production: 0 PASS
+  - RevenueCat imports: 8, RevenueCatUI imports: 0 PASS
+  - AI API imports: 0 PASS
+  - Analytics SDK: 0 PASS
+  - ATT: 0 PASS
+  - Hardcoded API key: 0 PASS
+  - PrivacyInfo CA92.1: confirmed PASS
+- **Files created:**
+  - `EyeBreakIslandios/EyeBreakIsland/Resources/Localizable.xcstrings` — 40+ strings (en-US + ja)
+- **Files modified:**
+  - `EyeBreakIslandios/EyeBreakIsland/Views/Onboarding/OnboardingView.swift` — PrimaryButton reuse, AppColors/AppSpacing/AppAnimations tokens
+  - `EyeBreakIslandios/EyeBreakIsland/Views/Onboarding/OnboardingPageView.swift` — AppColors/AppTypography/AppSpacing tokens
+  - `EyeBreakIslandios/EyeBreakIsland/Views/Onboarding/PaywallView.swift` — Full DESIGN_SYSTEM token pass, PrimaryButton/SecondaryButton reuse, PackageCardView packageType a11y mapping
+  - `EyeBreakIslandios/EyeBreakIsland/DesignSystem/Components/TimerRing.swift` — timer_ring + timer_time_label a11y IDs, AppAnimations.timerTick
+  - `EyeBreakIslandios/EyeBreakIsland/Models/AccessibilityID.swift` — paywall_package_weekly added
+  - `EyeBreakIslandios/project.yml` — developmentLanguage: en
+- **Learnings for future iterations:**
+  - PrimaryButton コンポーネントを再利用すると OnboardingView の nextButton/notificationButton がシンプルになる
+  - 3-plan model では PackageCardView の a11y ID を packageType switch で振り分ける
+  - NSLocalizedString() は PrimaryButton(title: String) に渡す場合に必要
+
+---
+
+## 2026-03-07 - US-006c: TDD Core Screens (Timer, Settings, ProgressDashboard) (COMPLETE)
+
+- **Status: COMPLETE — all AC verified with evidence**
+- **Evidence:**
+  - AC1: TimerView with background timer (TimerService via EnvironmentObject), BreakOverlayView with fullScreenCover PASS
+  - AC2: SettingsView with Upgrade -> PaywallView navigation (SettingsViewModel.openPaywall()) PASS
+  - AC3: Zero-division guard in progress calculation (guard total > 0) PASS
+  - AC4: `fastlane test` -> 96 tests, 0 failures PASS
+  - AC5: Build compiles without errors PASS
+- **Gate checks:**
+  - Mock count in production: 0 PASS
+  - RevenueCat imports: 6, RevenueCatUI imports: 0 PASS
+  - AI API imports: 0 PASS
+  - Analytics SDK: 0 PASS
+  - ATT: 0 PASS
+  - PrivacyInfo CA92.1: confirmed PASS
+- **Files created:**
+  - `EyeBreakIslandios/EyeBreakIsland/DesignSystem/AppColors.swift` — brand + semantic color tokens
+  - `EyeBreakIslandios/EyeBreakIsland/DesignSystem/AppTypography.swift` — 10 text styles
+  - `EyeBreakIslandios/EyeBreakIsland/DesignSystem/AppSpacing.swift` — spacing scale + corner radii
+  - `EyeBreakIslandios/EyeBreakIsland/DesignSystem/AppAnimations.swift` — 8 animation presets
+  - `EyeBreakIslandios/EyeBreakIsland/DesignSystem/Components/PrimaryButton.swift` — CTA button
+  - `EyeBreakIslandios/EyeBreakIsland/DesignSystem/Components/SecondaryButton.swift` — secondary button
+  - `EyeBreakIslandios/EyeBreakIsland/DesignSystem/Components/TimerRing.swift` — timer ring with progress
+  - `EyeBreakIslandios/EyeBreakIsland/Views/Timer/TimerView.swift` — main timer screen with EnvironmentObject
+  - `EyeBreakIslandios/EyeBreakIsland/Views/Timer/BreakOverlayView.swift` — 20-sec break overlay
+  - `EyeBreakIslandios/EyeBreakIsland/Views/Settings/SettingsView.swift` — grouped settings with paywall nav
+  - `EyeBreakIslandios/EyeBreakIsland/ViewModels/SettingsViewModel.swift` — settings state + restore + check
+  - `EyeBreakIslandios/EyeBreakIslandTests/TimerViewModelTests.swift` — 14 tests (container + formatting + state machine)
+  - `EyeBreakIslandios/EyeBreakIslandTests/SettingsViewModelTests.swift` — 12 tests (state + paywall + restore)
+- **Files modified:**
+  - `EyeBreakIslandios/EyeBreakIsland/App/ContentView.swift` — TimerView() replaces placeholder
+  - `EyeBreakIslandios/project.yml` — RevenueCat dependency added to test target
+- **Learnings for future iterations:**
+  - @MainActor ViewModel テストクラスには `@MainActor` アノテーション必須
+  - テストターゲットで RevenueCat.Package を使う場合、project.yml に package 依存追加が必要
+  - EnvironmentObject パターンは ViewModelと EnvironmentObject を分離でき、テストしやすい
+
+---
+
+## 2026-03-07 - US-006b: TDD Onboarding + Monetization (COMPLETE)
+
+- **Status: COMPLETE — all AC verified with evidence**
+- **Evidence:**
+  - AC1: MVVM ViewModels created (OnboardingViewModel, PaywallViewModel) PASS
+  - AC2: Onboarding 4-page flow (Welcome → Feature → Notification permission → Paywall) PASS
+  - AC3: PaywallView uses `Purchases.shared.purchase(package:)` via SubscriptionServiceProtocol PASS
+  - AC4: `grep -r 'import RevenueCatUI' → 0` PASS
+  - AC5: `fastlane test` → 66 tests, 0 failures PASS
+  - AC6: Build compiles without errors PASS
+- **Gate checks:**
+  - Mock count in production: 0 PASS
+  - RevenueCat imports: 6, RevenueCatUI imports: 0 PASS
+  - AI API imports: 0 PASS
+  - Analytics SDK: 0 PASS
+  - ATT: 0 PASS
+  - PrivacyInfo CA92.1: confirmed PASS
+- **Files created:**
+  - `EyeBreakIslandios/EyeBreakIsland/ViewModels/OnboardingViewModel.swift` — page navigation, notification permission, completion flag
+  - `EyeBreakIslandios/EyeBreakIsland/ViewModels/PaywallViewModel.swift` — load offerings, purchase, restore, error handling
+  - `EyeBreakIslandios/EyeBreakIsland/Views/Onboarding/OnboardingView.swift` — TabView container with 4 pages
+  - `EyeBreakIslandios/EyeBreakIsland/Views/Onboarding/OnboardingPageView.swift` — reusable page component
+  - `EyeBreakIslandios/EyeBreakIsland/Views/Onboarding/PaywallView.swift` — custom SwiftUI paywall with PackageCardView
+  - `EyeBreakIslandios/EyeBreakIslandTests/OnboardingViewModelTests.swift` — 12 tests
+  - `EyeBreakIslandios/EyeBreakIslandTests/PaywallViewModelTests.swift` — 10 tests
+- **Files modified:**
+  - `EyeBreakIslandios/EyeBreakIsland/Models/AccessibilityID.swift` — updated to match UX_SPEC (30 IDs)
+  - `EyeBreakIslandios/EyeBreakIsland/App/ContentView.swift` — wired OnboardingView
+- **Learnings for future iterations:**
+  - RevenueCat `Package` is a final class — cannot instantiate in unit tests. Use mock service + E2E for purchase flow
+  - `@AppStorage("hasCompletedOnboarding")` is the single routing flag for onboarding/timer
+
+---
+
+## 2026-03-07 - US-006a: TDD Data Layer (COMPLETE)
+
+- **Status: COMPLETE — all AC verified with evidence**
+- **Evidence:**
+  - AC1: `xcconfig/Config.xcconfig` exists with `RC_PUBLIC_KEY =` PASS
+  - AC2: `SubscriptionServiceProtocol` in `Services/SubscriptionService.swift` PASS
+  - AC3: `Models/` (4 files) + `Services/` (3 files) directories exist PASS
+  - AC4: `xcodebuild test` → 44 tests, 0 failures PASS
+  - AC5: Build compiles without errors PASS
+- **Gate checks:**
+  - Mock count in production: 0 PASS
+  - RevenueCat imports: 4, RevenueCatUI imports: 0 PASS
+  - AI API imports: 0 PASS
+  - PrivacyInfo.xcprivacy CA92.1: confirmed PASS
+- **Files created:**
+  - `EyeBreakIslandios/project.yml` — xcodegen project definition
+  - `EyeBreakIslandios/EyeBreakIsland/xcconfig/Config.xcconfig` — RC_PUBLIC_KEY
+  - `EyeBreakIslandios/EyeBreakIsland/Info.plist` — app config
+  - `EyeBreakIslandios/EyeBreakIsland/Models/` — TimerState, BreakSession, SubscriptionStatus, AccessibilityID
+  - `EyeBreakIslandios/EyeBreakIsland/Services/` — SubscriptionService (Protocol+DI+uiPreviewMode), TimerService (Protocol+ActivityKit), NotificationService (Protocol)
+  - `EyeBreakIslandios/EyeBreakIsland/App/` — EyeBreakIslandApp, ContentView
+  - `EyeBreakIslandios/EyeBreakIsland/Utilities/Constants.swift`
+  - `EyeBreakIslandios/EyeBreakIsland/LiveActivity/` — (moved to Shared)
+  - `EyeBreakIslandios/Shared/EyeBreakAttributes.swift`
+  - `EyeBreakIslandios/EyeBreakIslandWidgetExtension/` — Live Activity view, Widget bundle, Info.plist
+  - `EyeBreakIslandios/EyeBreakIsland/Resources/` — PrivacyInfo.xcprivacy, Assets.xcassets (5 brand colors, AppIcon)
+  - `EyeBreakIslandios/EyeBreakIslandTests/` — 4 test files (44 tests total)
+  - `EyeBreakIslandios/fastlane/Fastfile`
+  - `EyeBreakIslandios/.gitignore`
+- **Learnings for future iterations:**
+  - ActivityKit `Activity.request`, `.end`, `.update(ActivityContent)` は iOS 16.2+。deployment target 16.1 でも availability check 必要
+  - EyeBreakAttributes は App と WidgetExtension で共有。Shared/ ディレクトリに配置
+  - iPhone 17 Pro が利用可能なシミュレータ（Xcode 26.2）
+  - xcodegen の `sources:` に複数パスを追加してターゲット間でコード共有可能
+
+---
+
+## 2026-03-07 - US-005b: IAP + pricing + RevenueCat setup (COMPLETE)
+
+- **Status: COMPLETE — all AC verified with evidence**
+- **ASC IAP (confirmed):**
+  - AC1: `asc subscriptions groups list --app 6760196743` → 1 group (GROUP_ID=21964810) PASS
+  - AC2: `asc subscriptions list --group 21964810` → 3 products (weekly/monthly/annual) PASS
+  - AC3: 175 prices per subscription PASS
+  - Localizations: 148 total (37 x 4) PASS
+- **RevenueCat setup (completed this iteration):**
+  - RC Project: proj520438a0
+  - RC App: app1ae1d1eff1 (Eye Break - EyeBreakIsland, bundle: com.aniccafactory.eyebreakisland)
+  - RC Public Key: appl_rgtWdicHZautwwcHcIRqeJzzmbV (saved to .env)
+  - Entitlement: entlc70999bc1d (lookup_key: premium)
+  - Products: 3 (weekly prod84a643c890, monthly prod626d1791c2, annual prod8f6cafada7) → all attached to premium entitlement
+  - Offering: ofrngd174dd466a (lookup_key: default, is_current: true)
+  - Packages: 3 ($rc_weekly, $rc_monthly, $rc_annual) → all attached to products
+  - AC4: RevenueCat 3 products + 1 offering PASS
+  - AC5: SPM dependency → deferred to US-006 per spec
+- **Files changed:** ~/.config/mobileapp-builder/projects/eyebreakisland/.env (RC_IOS_PUBLIC_KEY added)
+- **Learnings for future iterations:**
+  - `source .env` may not export vars in Bash tool — use explicit `export` or inline values
+  - Availability must be set BEFORE pricing (Apple API returns 500 otherwise)
+  - Equalization API returns 174 countries (excludes USA) — add USA separately
+  - 3-plan model (weekly+monthly+annual) is RevenueCat best practice (SOSA 2025)
+  - RC API v2 Package attach may return 400 on first try — retry succeeds
+  - RC Public Key is auto-generated on App creation — no W_F_H needed for it
+
+---
+
+## 2026-03-07 - US-005a: Privacy Policy + ASC app creation (COMPLETE)
+
+- **Status: COMPLETE — all AC verified with evidence**
+- **Evidence:**
+  - AC1: Privacy Policy URL `https://aniccaai.com/privacy` → 200 OK, content verified (firecrawl scrape) PASS
+  - AC2: PrivacyInfo.xcprivacy → deferred to US-006 per reference spec (iOS project not yet created) DEFERRED
+  - AC3: Info.plist ITSAppUsesNonExemptEncryption → deferred to US-006 per reference spec DEFERRED
+  - AC4: APP_ID=6760196743 in `~/.config/mobileapp-builder/projects/eyebreakisland/.env` PASS
+  - ASC verification: `asc apps list` → id=6760196743, name="Eye Break - EyeBreakIsland", bundleId=com.aniccafactory.eyebreakisland, sku=eyebreakisland PASS
+- **Completed steps:**
+  - Quality Gate: all 4 checks PASS (PRD.md, ARCHITECTURE.md, IMPLEMENTATION_GUIDE.md, bundle_id)
+  - Project .env directory: `~/.config/mobileapp-builder/projects/eyebreakisland/` created
+  - Keychain unlocked
+  - Bundle ID registered: `BB89NCJXUP` (com.aniccafactory.eyebreakisland) via API Key auth
+  - iris session confirmed active
+  - App created via 2FA (APP_ID=6760196743)
+  - Privacy Policy verified: https://aniccaai.com/privacy (existing URL, no generation needed)
+- **Learnings for future iterations:**
+  - `asc apps create` は API Key 認証不可。Apple ID + 2FA 必須
+  - `asc bundle-ids create` は API Key 認証で動作する（2FA 不要）
+  - iris session active でも `apps create` は独自認証するため 2FA が必要
+  - PrivacyInfo.xcprivacy / Info.plist は iOS プロジェクト作成後（US-006）。Reference spec が正本
+
+---
+
+## 2026-03-07 - US-004-R: Spec Review (all 7 documents)
+
+- **codex-review subagent で全7ドキュメントをレビュー**
+- **Initial findings:** CRITICAL=3, HIGH=3, MEDIUM=5, LOW=4
+- **Files changed:** docs/PRD.md (iOS min, Xcode min, Out of Scope), docs/IMPLEMENTATION_GUIDE.md (F-010 removed, Phase 4 section added, xcodebuild→fastlane), docs/ARCHITECTURE.md (§13 Coding Style Exceptions added), docs/UX_SPEC.md (timer_pause_button a11y ID), docs/DESIGN_SYSTEM.md (Dynamic Type exception)
+- **CRITICAL fixes:**
+  1. PRD.md iOS minimum 16.0 → 16.1 (ActivityKit requires 16.1)
+  2. PRD.md Xcode minimum 15.0 → 16.0+ (Swift 5.9+ features)
+  3. IMPL_GUIDE Phase 5 phantom F-010 removed
+- **HIGH fixes:**
+  1. PRD.md "Statistics dashboard" Out of Scope → "Advanced statistics (charts, export)" (F-008 contradiction resolved)
+  2. IMPL_GUIDE §6 Phase 4: Onboarding + Settings section added (F-004, F-006, F-007, F-008)
+  3. ARCHITECTURE.md §13 ObservableObject mutation exception documented
+- **MEDIUM fixes:** timer_pause_button a11y ID, Dynamic Type exception for display font
+- **LOW fixes:** xcodebuild → fastlane in IMPL_GUIDE build section
+- **Evidence:**
+  - AC1: codex-review subagent run on all 7 docs PASS
+  - AC2: CRITICAL findings = 0 (after fixes) PASS
+  - AC3: All blocking issues resolved PASS
+  - Gate 1: PRD quality all PASS (app_name, bundle_id, prices, 12 features)
+  - Gate 3: Feature traceability F-001..F-009 all PASS
+  - Rule 17/20/20b/21: all PASS (false positives in prohibition text excluded)
+  - Total lines: 2854 (target 1300)
+- **Learnings for future iterations:**
+  - Phase table labels must match section headings — verify before review
+  - ObservableObject @Published mutation is accepted exception to immutability rule
+  - Timer display fixed-size fonts need explicit Dynamic Type exception documentation
+  - Always verify iOS/Xcode minimum versions against actual API requirements (ActivityKit = 16.1)
+
+---
+
+## 2026-03-07 - US-004b: UX Spec (UX_SPEC, DESIGN_SYSTEM, TEST_SPEC, RELEASE_SPEC)
+
+- **4 spec documents generated (completing all 7 docs)**
+- **Files changed:** docs/DESIGN_SYSTEM.md (new, 200 lines), docs/UX_SPEC.md (new, 310 lines), docs/TEST_SPEC.md (new, 280 lines), docs/RELEASE_SPEC.md (new, 210 lines), docs/IMPLEMENTATION_GUIDE.md (edited: added F-006, F-007 to Phase 4)
+- **Evidence:**
+  - AC1: docs/UX_SPEC.md exists PASS
+  - AC2: docs/DESIGN_SYSTEM.md exists PASS
+  - AC3: docs/TEST_SPEC.md exists PASS
+  - AC4: docs/RELEASE_SPEC.md exists PASS
+  - AC5: Typecheck N/A (markdown docs) PASS
+  - Gate 2: Design integrity — all 6 checks PASS (false positives in prohibition text excluded)
+  - Gate 3: Cross-reference — F-IDs traced PRD → IMPL (9/9), prices consistent, RevenueCat SDK confirmed
+  - All 7 docs exist, total 2802 lines (target: 1300)
+- **Key artifacts:**
+  - DESIGN_SYSTEM: 15 color tokens (5 brand + 8 semantic), 10 typography styles, 5 reusable components (PrimaryButton, SecondaryButton, TimerRing, PackageCard, OnboardingPage), 15 SF Symbols, 9 animation definitions
+  - UX_SPEC: 2 personas, 8 screens (SCR-001 to SCR-008), 30 accessibility IDs for Maestro E2E, ASCII wireframes for all key screens, onboarding 4-page flow with soft paywall
+  - TEST_SPEC: 32 unit tests, 8 integration tests, 6 Maestro E2E flows, 9 Greenlight checks, performance targets
+  - RELEASE_SPEC: 9 pre-submission gates, en-US + ja metadata (matching PRD §14), 22 age rating items, TestFlight plan, hotfix protocol
+- **Learnings for future iterations:**
+  - grep for Rule violations in docs will match prohibition mentions — exclude with context check
+  - IMPL_GUIDE F-ID coverage must be verified against PRD — F-006/F-007 were initially missing
+  - Total line count 2802 significantly exceeds 1300 target — quality over brevity
+
+---
+
+## 2026-03-07 - US-004a: Core Spec (PRD, ARCHITECTURE, IMPLEMENTATION_GUIDE)
+
+- **3 core spec documents generated**
+- **Files changed:** docs/PRD.md (existing, verified), docs/ARCHITECTURE.md (new, 405 lines), docs/IMPLEMENTATION_GUIDE.md (new, 631 lines)
+- **Evidence:**
+  - AC1: docs/PRD.md exists, contains app_name, bundle_id, 6 price mentions PASS
+  - AC2: docs/ARCHITECTURE.md exists (405 lines, 12 sections) PASS
+  - AC3: docs/IMPLEMENTATION_GUIDE.md exists, `Purchases.shared` + `import RevenueCat` found PASS
+  - AC4: Typecheck N/A (markdown docs) PASS
+  - Gate 1: PRD quality check all PASS (app_name, bundle_id, prices, features 12, rules, free_tier_limit)
+  - Total lines: 1265 (target: 1300 for all 7 docs — 3/7 docs done)
+- **Key decisions:**
+  - MVVM architecture (SwiftUI + @Observable pattern)
+  - ActivityKit for Dynamic Island (iOS 16.1+)
+  - Protocol + DI for SubscriptionService (testable)
+  - xcconfig for RC_PUBLIC_KEY (never hardcoded)
+  - 5-phase implementation: Setup → Core Timer → Monetization → Onboarding+Settings → Polish
+- **Learnings for future iterations:**
+  - PRD.md was already generated by a previous step — verify before regenerating
+  - grep for Rule violations in docs will match prohibition mentions — false positives expected
+  - ARCHITECTURE and IMPL_GUIDE can reference PRD Feature IDs (F-001..F-009) for traceability
+
+---
+
+## 2026-03-07 - US-003: Market Research
+
+- **competitive-analysis.md + market-research.md 作成完了**
+- **Files changed:** competitive-analysis.md (新規), market-research.md (新規)
+- **Evidence:**
+  - AC1: competitive-analysis.md 存在 PASS
+  - AC2: 6 competitors analyzed (3 direct + 3 indirect) PASS
+  - AC3: 74 Feature Matrix symbols (✅/❌/⚠️) PASS
+  - AC4: market-research.md 存在 PASS
+  - AC5: 29 dollar values (TAM=$280M, SAM=$54M, SOM Y1=$18K) PASS
+  - AC6: POEM score 21/25 (Strong Opportunity) PASS
+  - AC7: 33 URLs total PASS
+  - AC8: Negative signal documented (Live Activities may be disabled) PASS
+- **Key findings:**
+  - Primary competitor (Eye Care 20 20 20): 365 reviews. ★1 reviews confirm: login forced, background breaks
+  - Market leader (EyeMed): 23.7k reviews but is an insurance app, not a 20-20-20 timer
+  - Feature gap: Dynamic Island = 0 of 6 competitors use it
+  - Bottom-up: 60,700 installs in market = extremely underdeveloped market
+  - POEM 21/25 = Strong Opportunity
+- **Learnings for future iterations:**
+  - iTunes lookup `id=` の詳細取得コマンドで version/size/developer が取れる
+  - ★1-2レビュー RSS: `https://itunes.apple.com/us/rss/customerreviews/page=1/id=ID/sortby=mostrecent/json`
+  - Bottom-up vs Top-down 乖離 75倍 = 市場未開拓を示す (先行者優位チャンス)
+
+---
+
+## 2026-03-07 - US-002: Product Planning
+
+- **product-plan.md 作成完了**
+- **Files changed:** product-plan.md (新規作成, 316行)
+- **Evidence:**
+  - AC1: product-plan.md 存在 PASS
+  - AC2: 7 sections (§1〜§7) PASS
+  - AC3: 13 price mentions ($4.99/月, $29.99/年) PASS
+  - AC4: 23 URL citations (need>=10) PASS
+  - AC5: iTunes "EyeBreakIsland" → 0 exact matches (verified 2026-03-07) PASS
+- **Key decisions:**
+  - App Title: "Eye Break - EyeBreakIsland" (Jake Mor format)
+  - Bundle ID: com.aniccafactory.eyebreakisland
+  - Pricing: $4.99/mo (no trial) + $29.99/yr (7-day trial)
+  - RevenueCat entitlement: `pro`, offering: `default`
+  - Won't Have: Apple Watch, Screen Time API, Stats Dashboard (all v1.1+)
+- **Learnings for future iterations:**
+  - iTunes Search API の URL はシングルクォートなしでも動作する
+  - product-plan.md の §セクション番号は `grep -c "^## §"` でカウント可能
+
+---
+
+## 2026-03-07 - US-001: Trend Research + Idea Selection
+
+- **選定アプリ:** EyeBreakIsland (20-20-20 eye rest timer + Dynamic Island + Apple Watch)
+- **Files changed:** spec/01-trend.md (新規作成)
+- **Evidence:**
+  - spec/01-trend.md 存在 PASS
+  - 27 ideas across 5 lenses evaluated
+  - TikTok 実データ (Apify eFjMOK1Yz6WQr55Ac): #eyestrain 471K views
+  - iTunes real reviews (id=967901219): login required / notifications broken / no Watch
+  - Competition: Eye Care 20 20 20 = 365 reviews (weakest in all categories)
+- **Learnings for future iterations:**
+  - Apify token: use eval grep instead of source .env
+  - #caffeinetiming only 2.6K views — NOT a TikTok trend
+  - #coldplunge 3.85M, #faceyoga 18.5M confirmed strong trends
+  - Eye rest = weakest competition + Dynamic Island diff = best choice
+
+---
+
+## 2026-03-07 - US-008c: IPA build + upload + version attach (COMPLETE)
+
+- **Status: COMPLETE — all AC verified with evidence**
+- **Evidence:**
+  - AC1: IPA built and uploaded, `asc builds list --app 6760196743 --sort -uploadedDate --limit 1` -> processingState=VALID, BUILD_ID=76388ee2-35f4-4274-b705-737dcedda8d0 PASS
+  - AC2: `asc versions attach-build --version-id fab3c316-7486-4e12-8df1-2db5328d1813 --build 76388ee2-35f4-4274-b705-737dcedda8d0` -> attached=true PASS
+- **Build details:**
+  - Signing: "Apple Development: Created via API (646Y27MJ8C)" with automatic provisioning
+  - Export method: app-store (destination: upload)
+  - SDK: iPhoneOS26.2.sdk
+  - Min OS: 16.1
+  - Version: 1.0 (build 1)
+- **Files created:**
+  - `EyeBreakIslandios/EyeBreakIsland/Resources/Assets.xcassets/AppIcon.appiconset/AppIcon.png` — 1024x1024 app icon (eye + 20-20-20 text on sea green)
+  - `EyeBreakIslandios/ExportOptions.plist` — app-store export config
+- **Files modified:**
+  - `EyeBreakIslandios/EyeBreakIsland/Resources/Assets.xcassets/AppIcon.appiconset/Contents.json` — AppIcon.png filename added
+  - `EyeBreakIslandios/EyeBreakIsland/Info.plist` — CFBundleIconName=AppIcon added
+  - `EyeBreakIslandios/fastlane/Fastfile` — beta lane: API Key auth + allowProvisioningUpdates
+- **Learnings for future iterations:**
+  - xcodebuild archive needs `-allowProvisioningUpdates` + API Key auth flags when no Xcode account is configured
+  - CFBundleIconName in Info.plist is required for iOS 11+ (validation fails without it)
+  - ExportOptions.plist with `destination: upload` auto-uploads during export
+  - Build appears in ASC API ~60-90 seconds after upload succeeds
+
+---

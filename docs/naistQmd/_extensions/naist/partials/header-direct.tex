@@ -1,0 +1,114 @@
+% NAIST修士論文用LaTeXヘッダー（Quarto用）
+% senshuQmdスタイルを参考に、NAISTフォーマットに対応
+
+% Quartoのデフォルト\maketitleを先にバックアップ（NAISTの\titlepageを使用するため）
+\makeatletter
+\@ifundefined{maketitle}{}{%
+  \let\quarto@maketitle\maketitle
+}
+\makeatother
+
+% NAISTのスタイルファイルを読み込む
+% template/naist-jmthesis.styを使用（\input naist-mcommon.styを\input{Mtex/naist-mcommon.sty}に修正済み）
+\makeatletter
+\input{template/naist-jmthesis.sty}
+\makeatother
+
+% NAISTフォーマットのページレイアウトを設定（スタイルファイルの後に設定して上書き）
+\usepackage{geometry}
+\geometry{
+  a4paper,
+  top=20mm,
+  bottom=25mm,
+  left=25mm,
+  right=25mm
+}
+
+% ページスタイルを設定（final = カメラレディ）
+\pagestyle{final}
+
+% \maketitleを無効化（NAISTの\titlepageを使用するため）
+\makeatletter
+\renewcommand{\maketitle}{}
+\makeatother
+
+% YAML変数をNAISTのLaTeXコマンドに変換
+% プレースホルダーを使用（post-renderスクリプトで展開される）
+\makeatletter
+
+% 学籍番号
+\studentnumber{$student-id$}
+
+% 修士論文/課題研究（デフォルト: 修士論文 = 1）
+\doctitle{\mastersthesis}
+
+% 専攻（デフォルト: 工学 = 1）
+\major{\engineering}
+
+% プログラム（デフォルト: 情報理工学プログラム = 1）
+\program{\ise}
+
+% タイトル（日本語・英語）
+\title{$japanese-title$}
+\etitle{$english-title$}
+
+% 著者（日本語・英語）
+\author{$japanese-author$}
+\eauthor{$english-author$}
+
+% 提出年月日
+\jsyear{$japanese-year$}
+\esyear{$english-year$}
+\smonth{$submission-month$}
+\sday{$submission-day$}
+
+% \edatestrを正しく動作させるため、再定義
+% naist-mcommon.styの\edatestr定義は\ifcase\smonthstrを使っているが、
+% \smonthstrは文字列として定義されているため、数値として扱えない
+% そのため、\edatestrを再定義して、月名を直接計算する
+\makeatletter
+% \edatestr-placeholderを後でexpand_preamble.pyで置換する
+\def\edatestr{$edatestr-placeholder$}
+\makeatother
+
+% 研究室名
+\jlabname{$lab-name-japanese$}
+\elabname{$lab-name-english$}
+
+% 審査委員（4人まで対応）
+% 空の値の場合は\emptyを使用
+\def\tempthird{$third-member$}
+\def\tempfourth{$fourth-member$}
+\def\tempthirdpos{$third-position$}
+\def\tempfourthpos{$fourth-position$}
+\cmembers{$supervisor$}{（主指導教員，情報科学領域）}
+         {$co-supervisor$}{（副指導教員，情報科学領域）}
+         {\ifx\tempthird\empty\else\tempthird\fi}{\ifx\tempthirdpos\empty\else\tempthirdpos\fi}
+         {\ifx\tempfourth\empty\else\tempfourth\fi}{\ifx\tempfourthpos\empty\else\tempfourthpos\fi}
+
+% キーワード
+\keywords{$keywords-japanese$}
+\ekeywords{$keywords-english$}
+
+% 概要（abstract）
+% \abstractコマンドは既に定義されているため、\renewcommandを使用
+\let\oldabstract\abstract
+\renewcommand{\abstract}[1]{\def\abstracttext{#1}}
+\abstract{$japanese-abstract$}
+
+% 英語概要
+\eabstract{$english-abstract$}
+
+\makeatother
+
+% ハイパーリンクの色を黒に設定（目次の文字が青くならないように）
+\AtEndPreamble{%
+  \hypersetup{
+    colorlinks=true,
+    linkcolor=black,
+    filecolor=black,
+    urlcolor=black,
+    citecolor=black
+  }%
+}
+

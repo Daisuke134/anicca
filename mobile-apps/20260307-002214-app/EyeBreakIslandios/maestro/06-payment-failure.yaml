@@ -1,0 +1,66 @@
+# Feature: Payment abandonment (Maybe Later dismissal)
+# Tests: User views paywall but dismisses without purchasing
+appId: com.aniccafactory.eyebreakisland
+tags:
+  - payment
+
+---
+- clearState
+- clearKeychain
+- launchApp
+
+# Dismiss any stale system dialogs from previous runs
+- tapOn:
+    text: "許可|Allow"
+    optional: true
+
+# Navigate to paywall (onboarding page 4)
+- extendedWaitUntil:
+    visible:
+      id: "onboarding_container"
+    timeout: 30000
+- tapOn:
+    id: "onboarding_next_button"
+- extendedWaitUntil:
+    visible:
+      id: "onboarding_next_button"
+    timeout: 10000
+- tapOn:
+    id: "onboarding_next_button"
+- extendedWaitUntil:
+    visible:
+      id: "onboarding_allow_notifications"
+    timeout: 10000
+- tapOn:
+    id: "onboarding_allow_notifications"
+- tapOn:
+    text: "許可|Allow"
+    optional: true
+
+# Wait for paywall to load
+- extendedWaitUntil:
+    visible:
+      id: "paywall_container"
+    timeout: 15000
+
+# Verify all paywall elements are present
+- assertVisible:
+    id: "paywall_package_monthly"
+- assertVisible:
+    id: "paywall_subscribe_button"
+- assertVisible:
+    id: "paywall_maybe_later"
+- assertVisible:
+    id: "paywall_restore"
+
+# Dismiss paywall via Maybe Later (user abandons purchase)
+- tapOn:
+    id: "paywall_maybe_later"
+
+# Should land on TimerView (free tier, no purchase)
+- extendedWaitUntil:
+    visible:
+      id: "timer_start_button"
+    timeout: 15000
+
+- takeScreenshot: "06-payment-abandonment"

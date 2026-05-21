@@ -1,0 +1,19 @@
+appId: com.aniccafactory.frostdip
+---
+- launchApp
+- waitForAnimationToEnd
+- tapOn:
+    id: "onboarding_get_started"
+- waitForAnimationToEnd
+- tapOn:
+    id: "onboarding_experience_beginner"
+- tapOn:
+    id: "onboarding_continue"
+- waitForAnimationToEnd
+- tapOn:
+    id: "onboarding_skip_notifications"
+- waitForAnimationToEnd
+- tapOn:
+    id: "paywall_plan_annual"
+- waitForAnimationToEnd
+- takeScreenshot: /tmp/review-screenshots/paywall_review

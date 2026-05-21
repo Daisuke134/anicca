@@ -1,0 +1,14 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<testsuites>
+  <testsuite name="Test Suite" device="iPhone 17 Pro - iOS 26.2 - 0937A6BF-7687-420F-A02B-F9BD60E42B84" tests="3" failures="3" time="3.0">
+    <testcase id="02-feedback-flow" name="02-feedback-flow" classname="02-feedback-flow" time="1.0" status="ERROR">
+      <failure>Unable to launch app com.anicca.ios.staging</failure>
+    </testcase>
+    <testcase id="01-llm-nudge-display" name="01-llm-nudge-display" classname="01-llm-nudge-display" time="1.0" status="ERROR">
+      <failure>Unable to launch app com.anicca.ios.staging</failure>
+    </testcase>
+    <testcase id="03-feedback-thumbs-down" name="03-feedback-thumbs-down" classname="03-feedback-thumbs-down" time="1.0" status="ERROR">
+      <failure>Unable to launch app com.anicca.ios.staging</failure>
+    </testcase>
+  </testsuite>
+</testsuites>

@@ -1,0 +1,37 @@
+---
+
+## 4. VoIP Push + CallKit による起床コール実装
+
+### 4.1 概要
+AlarmKit が iOS 18.2 以降のみ対応のため、PushKit (VoIP Push) + CallKit を採用して確実な起床コールを実現する。
+
+### 4.2 実装構成
+- **iOS側**: `VoIPPushRegistry.swift` (PushKit管理), `CallManager.swift` (CallKit着信UI)
+- **API側**: `apps/api/src/routes/mobileAlarms.js` (スケジュール管理), `apps/api/src/jobs/voipAlarmDispatcher.js` (時刻監視・APNs送信)
+- **データベース**: Railway PostgreSQL (`mobile_voip_tokens`, `mobile_alarm_schedules`)
+
+### 4.3 環境変数設定（Railway Secrets）
+以下の環境変数を Railway の Secrets に設定する（`.env.defaults` には空値でキー名のみ記載）:
+
+```
+APNS_KEY_ID=<Apple Developer Key ID>
+APNS_TEAM_ID=<Apple Team ID>
+APNS_VOIP_KEY=<-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY----->
+APNS_TOPIC=com.anicca.app.voip
+APNS_ENVIRONMENT=production
+```
+
+### 4.4 データベースマイグレーション
+`apps/api/docs/migrations/004_create_voip_alarms.sql` を Railway PostgreSQL で実行する。
+
+### 4.5 動作フロー
+1. ユーザーが起床時刻を設定 → `HabitAlarmScheduler.scheduleAlarms()` → API `/mobile/alarms` へPOST
+2. サーバ側で `voipAlarmDispatcher` が毎分スケジュールを走査
+3. 発火時刻の1分前に APNs へ VoIP プッシュ送信
+4. iOS側で `VoIPPushRegistry` が受信 → `CallManager.reportIncomingCall()` で着信UI表示
+5. ユーザーが応答 → `VoiceSessionController.startFromVoip()` で即座に会話開始
+
+### 4.6 審査対策
+- App Store 申請時に「応答するとリアルタイム音声コーチングが始まる」旨を明記
+- デモ動画で着信→応答→会話開始の流れを提示
+- プライバシーポリシーに音声データ処理の記載を追加

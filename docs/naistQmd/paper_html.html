@@ -1,0 +1,1167 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.43">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="田中　研太郎">
+<meta name="dcterms.date" content="2025-11-28">
+
+<title>太陽と月を利用した\piの低速計算アルゴリズムに関する理論的研究</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+  margin-bottom: 0em;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
+
+
+<script src="paper_html_files/libs/clipboard/clipboard.min.js"></script>
+<script src="paper_html_files/libs/quarto-html/quarto.js"></script>
+<script src="paper_html_files/libs/quarto-html/popper.min.js"></script>
+<script src="paper_html_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="paper_html_files/libs/quarto-html/anchor.min.js"></script>
+<link href="paper_html_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="paper_html_files/libs/quarto-html/quarto-syntax-highlighting-d4d76bf8491c20bad77d141916dc28e1.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="paper_html_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="paper_html_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="paper_html_files/libs/bootstrap/bootstrap-c0367b04c37547644fece4185067e4a7.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+  <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#はじめに" id="toc-はじめに" class="nav-link active" data-scroll-target="#はじめに"><span class="header-section-number">1</span> はじめに</a>
+  <ul class="collapse">
+  <li><a href="#sec-kako" id="toc-sec-kako" class="nav-link" data-scroll-target="#sec-kako"><span class="header-section-number">1.1</span> 過去における研究</a>
+  <ul class="collapse">
+  <li><a href="#先行研究での知見1" id="toc-先行研究での知見1" class="nav-link" data-scroll-target="#先行研究での知見1"><span class="header-section-number">1.1.1</span> 先行研究での知見1</a></li>
+  <li><a href="#先行研究での知見2" id="toc-先行研究での知見2" class="nav-link" data-scroll-target="#先行研究での知見2"><span class="header-section-number">1.1.2</span> 先行研究での知見2</a></li>
+  <li><a href="#先行研究での知見3" id="toc-先行研究での知見3" class="nav-link" data-scroll-target="#先行研究での知見3"><span class="header-section-number">1.1.3</span> 先行研究での知見3</a></li>
+  <li><a href="#先行研究での知見4" id="toc-先行研究での知見4" class="nav-link" data-scroll-target="#先行研究での知見4"><span class="header-section-number">1.1.4</span> 先行研究での知見4</a></li>
+  <li><a href="#先行研究での知見5" id="toc-先行研究での知見5" class="nav-link" data-scroll-target="#先行研究での知見5"><span class="header-section-number">1.1.5</span> 先行研究での知見5</a></li>
+  <li><a href="#先行研究での知見6" id="toc-先行研究での知見6" class="nav-link" data-scroll-target="#先行研究での知見6"><span class="header-section-number">1.1.6</span> 先行研究での知見6</a></li>
+  <li><a href="#先行研究での知見7" id="toc-先行研究での知見7" class="nav-link" data-scroll-target="#先行研究での知見7"><span class="header-section-number">1.1.7</span> 先行研究での知見7</a></li>
+  </ul></li>
+  <li><a href="#sec-mondai" id="toc-sec-mondai" class="nav-link" data-scroll-target="#sec-mondai"><span class="header-section-number">1.2</span> 先行研究の問題点</a></li>
+  <li><a href="#研究の目的と意義" id="toc-研究の目的と意義" class="nav-link" data-scroll-target="#研究の目的と意義"><span class="header-section-number">1.3</span> 研究の目的と意義</a></li>
+  </ul></li>
+  <li><a href="#sec-kadai" id="toc-sec-kadai" class="nav-link" data-scroll-target="#sec-kadai"><span class="header-section-number">2</span> 現状と今後の課題</a></li>
+  <li><a href="#方法" id="toc-方法" class="nav-link" data-scroll-target="#方法"><span class="header-section-number">3</span> 方法</a>
+  <ul class="collapse">
+  <li><a href="#参加者" id="toc-参加者" class="nav-link" data-scroll-target="#参加者"><span class="header-section-number">3.1</span> 参加者</a></li>
+  <li><a href="#実験材料装置刺激" id="toc-実験材料装置刺激" class="nav-link" data-scroll-target="#実験材料装置刺激"><span class="header-section-number">3.2</span> 実験材料・装置・刺激</a></li>
+  <li><a href="#統計解析" id="toc-統計解析" class="nav-link" data-scroll-target="#統計解析"><span class="header-section-number">3.3</span> 統計解析</a></li>
+  </ul></li>
+  <li><a href="#結果" id="toc-結果" class="nav-link" data-scroll-target="#結果"><span class="header-section-number">4</span> 結果</a>
+  <ul class="collapse">
+  <li><a href="#記述統計" id="toc-記述統計" class="nav-link" data-scroll-target="#記述統計"><span class="header-section-number">4.1</span> 記述統計</a></li>
+  <li><a href="#メインの解析の前提となる解析" id="toc-メインの解析の前提となる解析" class="nav-link" data-scroll-target="#メインの解析の前提となる解析"><span class="header-section-number">4.2</span> メインの解析の前提となる解析</a>
+  <ul class="collapse">
+  <li><a href="#変数間の相関係数" id="toc-変数間の相関係数" class="nav-link" data-scroll-target="#変数間の相関係数"><span class="header-section-number">4.2.1</span> 変数間の相関係数</a></li>
+  <li><a href="#ヒストグラム" id="toc-ヒストグラム" class="nav-link" data-scroll-target="#ヒストグラム"><span class="header-section-number">4.2.2</span> ヒストグラム</a></li>
+  <li><a href="#群の比較連続変数" id="toc-群の比較連続変数" class="nav-link" data-scroll-target="#群の比較連続変数"><span class="header-section-number">4.2.3</span> 2群の比較（連続変数）</a></li>
+  <li><a href="#群の比較離散変数" id="toc-群の比較離散変数" class="nav-link" data-scroll-target="#群の比較離散変数"><span class="header-section-number">4.2.4</span> 2群の比較（離散変数）</a></li>
+  </ul></li>
+  <li><a href="#メインの解析の記載" id="toc-メインの解析の記載" class="nav-link" data-scroll-target="#メインの解析の記載"><span class="header-section-number">4.3</span> メインの解析の記載</a>
+  <ul class="collapse">
+  <li><a href="#重回帰分析" id="toc-重回帰分析" class="nav-link" data-scroll-target="#重回帰分析"><span class="header-section-number">4.3.1</span> 重回帰分析</a></li>
+  <li><a href="#分散分析の結果" id="toc-分散分析の結果" class="nav-link" data-scroll-target="#分散分析の結果"><span class="header-section-number">4.3.2</span> 分散分析の結果</a></li>
+  </ul></li>
+  <li><a href="#メインの解析結果を補強する解析の記載" id="toc-メインの解析結果を補強する解析の記載" class="nav-link" data-scroll-target="#メインの解析結果を補強する解析の記載"><span class="header-section-number">4.4</span> メインの解析結果を補強する解析の記載</a></li>
+  </ul></li>
+  <li><a href="#考察" id="toc-考察" class="nav-link" data-scroll-target="#考察"><span class="header-section-number">5</span> 考察</a>
+  <ul class="collapse">
+  <li><a href="#主要な発見の概要" id="toc-主要な発見の概要" class="nav-link" data-scroll-target="#主要な発見の概要"><span class="header-section-number">5.1</span> 主要な発見の概要</a></li>
+  <li><a href="#考えられるメカニズムの考察と説明" id="toc-考えられるメカニズムの考察と説明" class="nav-link" data-scroll-target="#考えられるメカニズムの考察と説明"><span class="header-section-number">5.2</span> 考えられるメカニズムの考察と説明</a></li>
+  <li><a href="#関連のある先行研究の結果との比較" id="toc-関連のある先行研究の結果との比較" class="nav-link" data-scroll-target="#関連のある先行研究の結果との比較"><span class="header-section-number">5.3</span> 関連のある先行研究の結果との比較</a></li>
+  <li><a href="#研究結果が与える示唆" id="toc-研究結果が与える示唆" class="nav-link" data-scroll-target="#研究結果が与える示唆"><span class="header-section-number">5.4</span> 研究結果が与える示唆</a></li>
+  <li><a href="#研究の限界と今後の課題" id="toc-研究の限界と今後の課題" class="nav-link" data-scroll-target="#研究の限界と今後の課題"><span class="header-section-number">5.5</span> 研究の限界と今後の課題</a></li>
+  <li><a href="#結論" id="toc-結論" class="nav-link" data-scroll-target="#結論"><span class="header-section-number">5.6</span> 結論</a></li>
+  </ul></li>
+  <li><a href="#要約" id="toc-要約" class="nav-link" data-scroll-target="#要約"><span class="header-section-number">6</span> 要約</a></li>
+  <li><a href="#謝辞" id="toc-謝辞" class="nav-link" data-scroll-target="#謝辞"><span class="header-section-number">7</span> 謝辞</a></li>
+  <li><a href="#参考文献" id="toc-参考文献" class="nav-link" data-scroll-target="#参考文献"><span class="header-section-number">8</span> 参考文献</a></li>
+  <li><a href="#付録" id="toc-付録" class="nav-link" data-scroll-target="#付録"><span class="header-section-number">9</span> 付録</a></li>
+  <li><a href="#付録-1" id="toc-付録-1" class="nav-link" data-scroll-target="#付録-1"><span class="header-section-number">10</span> 付録</a>
+  <ul class="collapse">
+  <li><a href="#sec-omake1" id="toc-sec-omake1" class="nav-link" data-scroll-target="#sec-omake1"><span class="header-section-number">10.1</span> おまけその１</a></li>
+  <li><a href="#おまけその２" id="toc-おまけその２" class="nav-link" data-scroll-target="#おまけその２"><span class="header-section-number">10.2</span> おまけその２</a></li>
+  </ul></li>
+  </ul>
+</nav>
+</div>
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">太陽と月を利用した<span class="math inline">\(\pi\)</span>の低速計算アルゴリズムに関する理論的研究</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>田中　研太郎 </p>
+          </div>
+  </div>
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">November 28, 2025</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<!-- 
+Rパッケージの読み込み
+卒論で使用するRパケージは，すべてこちらで読み込む（他のチャンクでlibaryを使わない）
+-->
+<section id="はじめに" class="level1" data-number="1">
+<h1 data-number="1"><span class="header-section-number">1</span> はじめに</h1>
+<!-- 
+「はじめに」で，1.その研究領域全体における大きな問題点や事実の指摘をします。
+臨床的問題の場合は，疫学的なデータや疾患による障害度など一般的な背景知識を提示しつつ，
+多くの読者が知っている知識から始めて，段々と論点を絞ってください。 
+-->
+<!-- 
+<<< 文献の引用について >>>
+bibファイルが用意されていれば，参照名（ラベル）を使って，以下のように簡単に引用できます。
+bibファイルの準備に関しては，以下を参照ください。
+特に日本語文献は少しややこしい手続きをふむ必要があります。
+https://kunisatolab.github.io/main/how-to-write-with-rstudio.html
+-->
+<p>まず，<span class="citation" data-cites="Abrams2020">Abrams (<a href="#ref-Abrams2020" role="doc-biblioref">2020</a>)</span> のように，すると，bibファイル内のAbramsの2020年の論文が引用されます。そして，次のように，[]でくくると文末の引用スタイルになります<span class="citation" data-cites="Allport1935">(<a href="#ref-Allport1935" role="doc-biblioref">Allport 1967</a>)</span>。また，文末に複数引用する場合は，こういう感じにします<span class="citation" data-cites="Bergson2002 Freud1956">(<a href="#ref-Bergson2002" role="doc-biblioref">ベルクソン [1889] 2002</a>; <a href="#ref-Freud1956" role="doc-biblioref">Freud 1956–1974</a>)</span>。このQmdファイルではBibLatex-jpaを使っていますので，日本語文献も処理できます。例えば，<span class="citation" data-cites="向田2009">向田 (<a href="#ref-向田2009" role="doc-biblioref">2009</a>)</span> , <span class="citation" data-cites="堀2009">堀 (<a href="#ref-堀2009" role="doc-biblioref">2009</a>)</span>, <span class="citation" data-cites="矢嶋2013">矢嶋 and 長谷川 (<a href="#ref-矢嶋2013" role="doc-biblioref">2013</a>)</span> は，XXXについて示した<span class="citation" data-cites="Helmholtz1925 Freud1956">(<a href="#ref-Helmholtz1925" role="doc-biblioref">von Helmholtz [1910] 1925</a>; <a href="#ref-Freud1956" role="doc-biblioref">Freud 1956–1974</a>)</span>などの文章も処理できます。</p>
+<p><a href="#sec-kako" class="quarto-xref">1.1</a> 節では、過去における研究について述べ、 <a href="#sec-kadai" class="quarto-xref">2</a> 章では、現状と今後の課題について述べる。 また、付録 <a href="#sec-omake1" class="quarto-xref">10.1</a> におまけその１を添付する。</p>
+<section id="sec-kako" class="level2" data-number="1.1">
+<h2 data-number="1.1" class="anchored" data-anchor-id="sec-kako"><span class="header-section-number">1.1</span> 過去における研究</h2>
+<!-- 
+↑この見出しは，内容に合わせて変更ください
+-->
+<!-- 
+2.少し専門領域にしぼりこんだ上で，先行研究を整理する（何が既にわかっているか？）
+・先行研究について概観して，どこまで分かっているのか述べてください。
+・必要に応じて，扱う構成概念，方法などの定義や整理をしてください。
+・最初に，一般的な問題から当該研究への移行を促す一文をいれるとスムーズです
+（研究分野での問題解決には今回扱う内容が重要であることを示して移行すると良いです） 
+・先行研究レビューする順序は，以下の３つの順序があるので，適宜選択してください
+(1)時系列：過去から並べていく
+(2)方法/理論/モデル：方法，理論，方法などのカテゴリーごとにまとめる
+(3)一般的な事象から個別の事象へと進める-->
+<div id="fig-CNN" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-pos="htbp">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-CNN-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="figures/fig1.png" class="img-fluid figure-img" style="width:80.0%" data-fig-pos="htbp">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-CNN-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1: Convolutional Neural Network (CNN)
+</figcaption>
+</figure>
+</div>
+<p>過去における研究としては<span class="citation" data-cites="alex_nips12">(<a href="#ref-alex_nips12" role="doc-biblioref">Krizhevsky, Sutskever, and Hinton 2012</a>)</span>などがある。<a href="#fig-CNN" class="quarto-xref">Figure&nbsp;1</a> に示すように、CNNの構造は複雑である。</p>
+<p>数式の表示を確認するため、いくつかの例を示す。インライン数式の例として、相関係数は <span class="math inline">\(r = 0.85\)</span> であった。また、平均値は <span class="math inline">\(\mu = 100\)</span>、標準偏差は <span class="math inline">\(\sigma = 15\)</span> である。</p>
+<p>ディスプレイ数式（番号付き）の例として、オイラーの公式は以下のように表される：</p>
+<p><span id="eq-euler"><span class="math display">\[
+e^{i\pi} + 1 = 0
+\tag{1}\]</span></span></p>
+<p><a href="#eq-euler" class="quarto-xref">Equation&nbsp;1</a> は数学において最も美しい公式の一つとして知られている。</p>
+<p>また、zスコアの計算式は <a href="#eq-zscore" class="quarto-xref">Equation&nbsp;2</a> で示される：</p>
+<p><span id="eq-zscore"><span class="math display">\[
+z = \frac{X - \mu}{\sigma}
+\tag{2}\]</span></span></p>
+<p>番号なしのディスプレイ数式の例として、標準誤差は以下のように計算される：</p>
+<p><span class="math display">\[
+\sigma_e = \sigma_y \sqrt{1 - r_{xy}^2}
+\]</span></p>
+<section id="先行研究での知見1" class="level3" data-number="1.1.1">
+<h3 data-number="1.1.1" class="anchored" data-anchor-id="先行研究での知見1"><span class="header-section-number">1.1.1</span> 先行研究での知見1</h3>
+<!-- 
+↑この見出しは，内容に合わせて変更ください
+-->
+</section>
+<section id="先行研究での知見2" class="level3" data-number="1.1.2">
+<h3 data-number="1.1.2" class="anchored" data-anchor-id="先行研究での知見2"><span class="header-section-number">1.1.2</span> 先行研究での知見2</h3>
+<!-- 
+↑この見出しは，内容に合わせて変更ください
+-->
+</section>
+<section id="先行研究での知見3" class="level3" data-number="1.1.3">
+<h3 data-number="1.1.3" class="anchored" data-anchor-id="先行研究での知見3"><span class="header-section-number">1.1.3</span> 先行研究での知見3</h3>
+<!-- 
+↑この見出しは，内容に合わせて変更ください
+-->
+</section>
+<section id="先行研究での知見4" class="level3" data-number="1.1.4">
+<h3 data-number="1.1.4" class="anchored" data-anchor-id="先行研究での知見4"><span class="header-section-number">1.1.4</span> 先行研究での知見4</h3>
+<!-- 
+↑この見出しは，内容に合わせて変更ください
+-->
+</section>
+<section id="先行研究での知見5" class="level3" data-number="1.1.5">
+<h3 data-number="1.1.5" class="anchored" data-anchor-id="先行研究での知見5"><span class="header-section-number">1.1.5</span> 先行研究での知見5</h3>
+<!-- 
+↑この見出しは，内容に合わせて変更ください
+-->
+</section>
+<section id="先行研究での知見6" class="level3" data-number="1.1.6">
+<h3 data-number="1.1.6" class="anchored" data-anchor-id="先行研究での知見6"><span class="header-section-number">1.1.6</span> 先行研究での知見6</h3>
+<!-- 
+↑この見出しは，内容に合わせて変更ください
+-->
+</section>
+<section id="先行研究での知見7" class="level3" data-number="1.1.7">
+<h3 data-number="1.1.7" class="anchored" data-anchor-id="先行研究での知見7"><span class="header-section-number">1.1.7</span> 先行研究での知見7</h3>
+<!-- 
+↑この見出しは，内容に合わせて変更ください
+-->
+</section>
+</section>
+<section id="sec-mondai" class="level2" data-number="1.2">
+<h2 data-number="1.2" class="anchored" data-anchor-id="sec-mondai"><span class="header-section-number">1.2</span> 先行研究の問題点</h2>
+<!-- ↑この見出しは，内容に合わせて変更ください。
+3.先行研究の問題点の指摘（何が分かってないか？）
+・研究における未解決の問題について記載してください。ここが一番大切です。
+・これまで概観してきた先攻研究では未解決な点について書いて，取り組もうとする問題を明確にしてください。
+・何が分かってないのかだけでなく，それが分かるとどう役に立つのかについても述べてください 
+
+4.本研究での解決策の提案（先行研究で分かってないことをどう調べるか？）
+・3を書いた上で，パラグラフを分けて，本研究ではどのようにその問題を解決するのかを書いてください。
+・解決法としては，(1)未検討部分を検討する，(2)方法の改善をする，(3)理論の拡張や限定をする，(4)モデルの改良をするなどがあります。
+・この解決策の有効性と意義についても述べてください。
+-->
+</section>
+<section id="研究の目的と意義" class="level2" data-number="1.3">
+<h2 data-number="1.3" class="anchored" data-anchor-id="研究の目的と意義"><span class="header-section-number">1.3</span> 研究の目的と意義</h2>
+<!-- 
+本研究の目的について，仮説も含めて明確に述べてください
+-->
+<p>研究の目的と意義 研究の目的と意義 研究の目的と意義 研究の目的と意義 研究の目的と意義 研究の目的と意義 研究の目的と意義 研究の目的と意義 研究の目的と意義 研究の目的と意義 研究の目的と意義 研究の目的と意義 研究の目的と意義 研究の目的と意義 研究の目的と意義 研究の目的と意義</p>
+</section>
+</section>
+<section id="sec-kadai" class="level1" data-number="2">
+<h1 data-number="2"><span class="header-section-number">2</span> 現状と今後の課題</h1>
+<p>現状と今後の課題 現状と今後の課題 現状と今後の課題 現状と今後の課題 現状と今後の課題 現状と今後の課題 現状と今後の課題 現状と今後の課題 現状と今後の課題 現状と今後の課題 現状と今後の課題 現状と今後の課題 現状と今後の課題 現状と今後の課題 現状と今後の課題 現状と今後の課題</p>
+</section>
+<section id="方法" class="level1" data-number="3">
+<h1 data-number="3"><span class="header-section-number">3</span> 方法</h1>
+<!--
+↑この見出しは，内容に合わせて変更ください
+-->
+<!--
+方法のセクションでは，研究の目的を達成するためにどのような手続きをとったのかを記載してください。
+方法のセクションは，以下のような構成で書くことが多いです。
+1.参加者（被験者）
+2.実験材料・装置・刺激
+3.手続き
+4.統計解析
+
+なお，方法のセクションは，他の研究者が同じ研究を再現できるように，
+十分に詳細に記載する必要があります。
+-->
+<section id="参加者" class="level2" data-number="3.1">
+<h2 data-number="3.1" class="anchored" data-anchor-id="参加者"><span class="header-section-number">3.1</span> 参加者</h2>
+<!--
+↑この見出しは，内容に合わせて変更ください
+-->
+<!--
+参加者の人数，性別，年齢，その他の関連する属性（学歴，職業など）を記載してください。
+また，どのように参加者を募集したかも記載してください。
+-->
+</section>
+<section id="実験材料装置刺激" class="level2" data-number="3.2">
+<h2 data-number="3.2" class="anchored" data-anchor-id="実験材料装置刺激"><span class="header-section-number">3.2</span> 実験材料・装置・刺激</h2>
+<!--
+↑この見出しは，内容に合わせて変更ください
+-->
+<!--
+実験で使用した材料，装置，刺激について記載してください。
+例えば，質問紙を使った場合は，その質問紙の内容や項目数，尺度などを記載してください。
+また，実験装置を使った場合は，その装置の詳細を記載してください。
+-->
+<!--
+図の挿入方法について：
+
+【マークダウン記法】
+![キャプション](ファイル名.png)
+- 自動的に図番号が付与されます
+- デフォルトの配置は独立ページ（[p]）です
+- 配置を変更する場合：![キャプション](ファイル名.png){fig-pos="H"} のように指定
+
+【LaTeX記法】
+\begin{figure}[配置オプション]
+\centering
+\includegraphics[オプション]{ファイル名.png}
+\caption{キャプション}
+\end{figure}
+
+【配置オプションの説明】
+- [p] : 独立したページに配置（デフォルト、推奨）
+- [H] : 絶対にここに配置（floatパッケージが必要）
+- [h] : ここに配置（可能な場合）
+- [t] : ページの上部に配置
+- [b] : ページの下部に配置
+- [htbp] : 複数指定（優先順位順：h→t→b→p）
+- [!htbp] : !で制約を緩和
+
+【図のサイズ調整方法】
+LaTeX記法の場合：
+- width=8cm : 幅を8cmに指定
+- height=6cm : 高さを6cmに指定
+- scale=0.8 : 元のサイズの80%に縮小
+- width=0.8\textwidth : 本文幅の80%に指定
+- keepaspectratio : アスペクト比を保持
+
+マークダウン記法の場合：
+- {width="8cm"} : 幅を8cmに指定
+- {height="6cm"} : 高さを6cmに指定
+- {fig-width=8} : 幅を8cmに指定（Quarto形式）
+- {fig-height=6} : 高さを6cmに指定（Quarto形式）
+
+【注意】
+- LaTeX記法だけで図を挿入するとエラーが出る場合があります
+- その場合は、上記のマークダウン記法を1つ入れるとうまくいきます
+-->
+<div id="fig-muller-lyer" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-pos="htbp">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-muller-lyer-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="figures/fig1.png" class="img-fluid figure-img" style="width:80.0%" data-fig-pos="htbp">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-muller-lyer-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;2: ミュラー・リヤー錯視の例
+</figcaption>
+</figure>
+</div>
+<p><a href="#fig-muller-lyer" class="quarto-xref">Figure&nbsp;2</a> は、ミュラー・リヤー錯視の典型的な例を示している。</p>
+</section>
+<section id="統計解析" class="level2" data-number="3.3">
+<h2 data-number="3.3" class="anchored" data-anchor-id="統計解析"><span class="header-section-number">3.3</span> 統計解析</h2>
+<!--
+以下のようにするとsessionInfoから使用したRのバージョンとOS情報が抽出されるので，解析環境の情報を自動的に記録できます
+-->
+<p>　統計解析は，macOS 15.3.1上で，R version 4.3.3 (2024-02-29)を用いて実施された。</p>
+<!-- 
+<<< 結果の書き方 >>>
+解析計画に合わせて，何を明らかにする解析をしているのか書いてから，結果を書いてください。
+-->
+</section>
+</section>
+<section id="結果" class="level1" data-number="4">
+<h1 data-number="4"><span class="header-section-number">4</span> 結果</h1>
+<section id="記述統計" class="level2" data-number="4.1">
+<h2 data-number="4.1" class="anchored" data-anchor-id="記述統計"><span class="header-section-number">4.1</span> 記述統計</h2>
+<!--
+↑この見出しは，内容に合わせて変更ください
+-->
+<!--
+得られたデータの平均値，標準偏差，得点範囲などの基本的な記述統計を記載してください。
+また，ヒストグラムなどを使って，データの分布も示しましょう
+-->
+<p><a href="#tbl-descriptive" class="quarto-xref">Table&nbsp;1</a> に、Big Five因子の記述統計量を示す。</p>
+<!--
+表は以下のようにすると綺麗に出力されます
+-->
+<div class="cell">
+<div id="tbl-descriptive" class="cell quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-descriptive-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;1: Big Five&lt;U+56E0&gt;&lt;U+5B50&gt;&lt;U+306E&gt;&lt;U+8A18&gt;&lt;U+8FF0&gt;&lt;U+7D71&gt;&lt;U+8A08&gt;&lt;U+91CF&gt;
+</figcaption>
+<div aria-describedby="tbl-descriptive-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="cell-output-display">
+
+</div>
+</div>
+</figure>
+</div>
+</div>
+</section>
+<section id="メインの解析の前提となる解析" class="level2" data-number="4.2">
+<h2 data-number="4.2" class="anchored" data-anchor-id="メインの解析の前提となる解析"><span class="header-section-number">4.2</span> メインの解析の前提となる解析</h2>
+<section id="変数間の相関係数" class="level3" data-number="4.2.1">
+<h3 data-number="4.2.1" class="anchored" data-anchor-id="変数間の相関係数"><span class="header-section-number">4.2.1</span> 変数間の相関係数</h3>
+<!--
+↑見出しは変更してください。
+
+相関行列はapaTablesを使うのが便利です。表に乗せたい変数だけにしぼったデータフレームを作って、apa.cor.table()にいれると相関行列が出力されます
+
+【重要】apaTablesで作成した表のクロスレファレンスについて：
+- apaTablesはQuartoの自動番号付けと統合されていないため、@tbl-*での参照ができません
+- そのため、本文中では「以下に示す」「次の表に示す」などの直接的な表現を使用してください
+- どうしても番号で参照したい場合は、kableExtraを使ってAPA形式の表を手動で作成する必要があります
+-->
+<p>変数間の相関係数を以下に示す。</p>
+<div class="cell">
+<div class="cell-output-display">
+
+</div>
+</div>
+</section>
+<section id="ヒストグラム" class="level3" data-number="4.2.2">
+<h3 data-number="4.2.2" class="anchored" data-anchor-id="ヒストグラム"><span class="header-section-number">4.2.2</span> ヒストグラム</h3>
+<!--
+↑見出しは変更してください。
+
+Rチャンクの指定において，\\label{fig:figs}以降に図のタイトルを書きます。
+ヒストグラムを描くには以下のコードを使います。
+-->
+<p>神経症傾向の分布を <a href="#fig-histogram" class="quarto-xref">Figure&nbsp;3</a> に示す。</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-histogram" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-pos="htbp">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-histogram-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="paper_html_files/figure-html/fig-histogram-1.png" class="img-fluid figure-img" data-fig-pos="htbp" width="672">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-histogram-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;3: 神経症傾向のヒストグラム
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="群の比較連続変数" class="level3" data-number="4.2.3">
+<h3 data-number="4.2.3" class="anchored" data-anchor-id="群の比較連続変数"><span class="header-section-number">4.2.3</span> 2群の比較（連続変数）</h3>
+<!--
+↑見出しは変更してください。
+
+2群の群間比較(t検定)をします。検定結果などをそのまま本文に挿入することができます。
+-->
+<p>神経症傾向に関して性差を検討したところ,男性(<em>M</em> = 14.74, <em>SD</em> = 5.72)よりも、女性(<em>M</em> = 16.35, <em>SD</em> = 6.03)の方が有意に神経症傾向が高かった(<em>t</em> (1853.20) = 6.77, <em>p</em> = 0.00 , <em>d</em> = 0.27,95 %CI [0.19, 0.35])。この結果を <a href="#fig-figs" class="quarto-xref">Figure&nbsp;4</a> に示す。</p>
+<!--
+2群の群間比較をプロットをします。
+Rチャンクの指定において，\\label{fig:figs}以降に図のタイトルを書きます。
+-->
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-figs" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-figs-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="paper_html_files/figure-html/fig-figs-1.png" class="img-fluid figure-img" width="672">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-figs-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;4: &lt;U+795E&gt;&lt;U+7D4C&gt;&lt;U+75C7&gt;&lt;U+50BE&gt;&lt;U+5411&gt;&lt;U+306E&gt;&lt;U+5E73&gt;&lt;U+5747&gt;&lt;U+3068&gt;&lt;U+6A19&gt;&lt;U+6E96&gt;&lt;U+8AA4&gt;&lt;U+5DEE&gt;
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="群の比較離散変数" class="level3" data-number="4.2.4">
+<h3 data-number="4.2.4" class="anchored" data-anchor-id="群の比較離散変数"><span class="header-section-number">4.2.4</span> 2群の比較（離散変数）</h3>
+<!--
+↑この見出しは，内容に合わせて変更ください
+
+あまり使わないかもしれないですが、離散変数の場合の比較も記述しておきます。
+-->
+<div class="cell">
+<div id="tbl-contingency" class="cell quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-contingency-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;2: &lt;U+6027&gt;&lt;U+5225&gt;&lt;U+3068&gt;&lt;U+6559&gt;&lt;U+80B2&gt;&lt;U+6B74&gt;&lt;U+306B&gt;&lt;U+3064&gt;&lt;U+3044&gt;&lt;U+3066&gt;&lt;U+306E&gt;&lt;U+30AF&gt;&lt;U+30ED&gt;&lt;U+30B9&gt;&lt;U+96C6&gt;&lt;U+8A08&gt;&lt;U+8868&gt;
+</figcaption>
+<div aria-describedby="tbl-contingency-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="cell-output-display">
+
+</div>
+</div>
+</figure>
+</div>
+</div>
+<p>女性より、男性の方が高学歴者が多いことが示唆された( <span class="math inline">\(\chi ^2\)</span> (1.00, <em>N</em> = 2800) = 8.61, <em>p</em> = 0.00)。詳細は <a href="#tbl-contingency" class="quarto-xref">Table&nbsp;2</a> を参照されたい。</p>
+<!--
+研究の目的においてメインの解析の前提となる解析結果について記述してください。
+例えば，群間比較において，ベースラインで差がないかどうか調べるなどがこれにあたります。  
+-->
+</section>
+</section>
+<section id="メインの解析の記載" class="level2" data-number="4.3">
+<h2 data-number="4.3" class="anchored" data-anchor-id="メインの解析の記載"><span class="header-section-number">4.3</span> メインの解析の記載</h2>
+<section id="重回帰分析" class="level3" data-number="4.3.1">
+<h3 data-number="4.3.1" class="anchored" data-anchor-id="重回帰分析"><span class="header-section-number">4.3.1</span> 重回帰分析</h3>
+<!-- 
+↑この見出しは，内容に合わせて変更ください
+
+重回帰分析もapaTablesを使うと便利です。重回帰分析の結果を保存して、apa.reg.table()にいれると重回帰分析の結果が出力されます。
+-->
+<p>重回帰分析の結果を以下に示す。</p>
+<div class="cell">
+<div class="cell-output-display">
+
+</div>
+</div>
+</section>
+<section id="分散分析の結果" class="level3" data-number="4.3.2">
+<h3 data-number="4.3.2" class="anchored" data-anchor-id="分散分析の結果"><span class="header-section-number">4.3.2</span> 分散分析の結果</h3>
+<!-- 
+↑この見出しは，内容に合わせて変更ください
+
+分散分析もapaTablesを使うと便利です。重回帰分析の結果を保存して、apa.aov.table()にいれると分散分析の結果が出力されます。
+-->
+<p>分散分析の結果を以下に示す。</p>
+<div class="cell">
+<div class="cell-output-display">
+
+</div>
+</div>
+</section>
+</section>
+<section id="メインの解析結果を補強する解析の記載" class="level2" data-number="4.4">
+<h2 data-number="4.4" class="anchored" data-anchor-id="メインの解析結果を補強する解析の記載"><span class="header-section-number">4.4</span> メインの解析結果を補強する解析の記載</h2>
+<!-- 
+↑この見出しは，内容に合わせて変更ください
+-->
+<!--
+メインの解析結果を補強するような解析，
+もしくは理解を深める上で必要な解析結果について記述してください。
+なお，その解析が事前に計画したものでない場合は，
+必ずデータ取得後に追加した探索的な解析であるとわかるように記載してください。
+-->
+</section>
+</section>
+<section id="考察" class="level1" data-number="5">
+<h1 data-number="5"><span class="header-section-number">5</span> 考察</h1>
+<section id="主要な発見の概要" class="level2" data-number="5.1">
+<h2 data-number="5.1" class="anchored" data-anchor-id="主要な発見の概要"><span class="header-section-number">5.1</span> 主要な発見の概要</h2>
+<!--
+↑この見出しは，内容に合わせて変更ください
+-->
+<!--
+今回の研究で得られた主な結果をまとめてください。
+結果で記載した順ではなくて，本研究での目的に従った優先順に従って記載してください。
+研究の目的や仮説を簡単に振り返った上で，その目的に対して，
+今回得られた結果を記述するとスムーズかと思います。
+大切なのは，序論で指摘した問題点がどのように解決されたのか
+できなかったのかを考察することです（予想通りの結果が得られることが重要ではない）。
+-->
+</section>
+<section id="考えられるメカニズムの考察と説明" class="level2" data-number="5.2">
+<h2 data-number="5.2" class="anchored" data-anchor-id="考えられるメカニズムの考察と説明"><span class="header-section-number">5.2</span> 考えられるメカニズムの考察と説明</h2>
+<!--
+↑この見出しは，内容に合わせて変更ください
+-->
+<!--　
+序論から予想されない結果が得られた場合は，
+得られた結果のメカニズムについて考察してください。
+なぜ，そのような結果になったのか？
+得られた結果からどのような事が考えられるのか？を考えて考察ください  -->
+</section>
+<section id="関連のある先行研究の結果との比較" class="level2" data-number="5.3">
+<h2 data-number="5.3" class="anchored" data-anchor-id="関連のある先行研究の結果との比較"><span class="header-section-number">5.3</span> 関連のある先行研究の結果との比較</h2>
+<!--
+↑この見出しは，内容に合わせて変更ください
+-->
+<!--
+序文で概観した先行研究と比較しつつ，これまでの研究を踏まえた上で，
+自分の今回の研究がどこに位置づけられ，どういう知見を提供して，
+研究領域にどのような貢献をしたのかを述べてください
+-->
+</section>
+<section id="研究結果が与える示唆" class="level2" data-number="5.4">
+<h2 data-number="5.4" class="anchored" data-anchor-id="研究結果が与える示唆"><span class="header-section-number">5.4</span> 研究結果が与える示唆</h2>
+<!--
+↑この見出しは，内容に合わせて変更ください
+-->
+<!--
+今回の研究成果の利点と長所を明確に記述してください。
+本研究でなされた発見されたことの価値を読む人が理解できるようにしてください。
+特に，今回の研究によってどのような応用面の価値があるのか記載してください
+-->
+</section>
+<section id="研究の限界と今後の課題" class="level2" data-number="5.5">
+<h2 data-number="5.5" class="anchored" data-anchor-id="研究の限界と今後の課題"><span class="header-section-number">5.5</span> 研究の限界と今後の課題</h2>
+<!--
+↑この見出しは，内容に合わせて変更ください
+-->
+<!--
+今回の研究の限界点について記述して，そこから将来の研究においてどこを扱うべきなのか，
+将来の研究の方向性について具体的に述べてください。
+-->
+</section>
+<section id="結論" class="level2" data-number="5.6">
+<h2 data-number="5.6" class="anchored" data-anchor-id="結論"><span class="header-section-number">5.6</span> 結論</h2>
+<!--
+↑この見出しは，内容に合わせて変更ください
+-->
+<!--
+考察が長くなってくるので，考察を要約して，コンパクトに結論を述べてください。
+結論がデータから乖離したものにならないように注意してください
+-->
+</section>
+</section>
+<section id="要約" class="level1" data-number="6">
+<h1 data-number="6"><span class="header-section-number">6</span> 要約</h1>
+<!--  要約は論文が完成したら，以下の４点を以下の順番にまとめて，要約を作成しましょう
+1背景と目的
+2方法
+3結果
+4考察・結論
+-->
+</section>
+<section id="謝辞" class="level1" data-number="7">
+<h1 data-number="7"><span class="header-section-number">7</span> 謝辞</h1>
+<p>Thank you. Thank you.</p>
+</section>
+<section id="参考文献" class="level1" data-number="8">
+<h1 data-number="8"><span class="header-section-number">8</span> 参考文献</h1>
+<div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list">
+<div id="ref-Abrams2020" class="csl-entry" role="listitem">
+Abrams, Z. 2020. <span>“Building a Safe Space in the Pandemic.”</span> American Psychological Association. 2020. <a href="https://www.apa.org/topics/covid-19/pandemic-safe-space#">https://www.apa.org/topics/covid-19/pandemic-safe-space#</a>.
+</div>
+<div id="ref-Allport1935" class="csl-entry" role="listitem">
+Allport, Gordon W. 1967. <span>“Attitudes.”</span> In <em>Readings in Attitude Theory and Measurement</em>, edited by Martin Fishbein, 3–13. New York: John Wiley &amp; Sons Inc.
+</div>
+<div id="ref-Freud1956" class="csl-entry" role="listitem">
+Freud, S. 1956–1974. <em>Standard Editions of Complete Psychological Works of Sigmund Freud</em>. 1–24 vols. Hogarth Press.
+</div>
+<div id="ref-alex_nips12" class="csl-entry" role="listitem">
+Krizhevsky, A., I. Sutskever, and G. E. Hinton. 2012. <span>“ImageNet Classification with Deep Convolutional Neural Networks.”</span> In <em>Advances in Neural Information Processing Systems 25 (NIPS’12)</em>, 1097–1105.
+</div>
+<div id="ref-Helmholtz1925" class="csl-entry" role="listitem">
+von Helmholtz, H. (1910) 1925. <em>Treatise on Physiological Optics</em>. Translated by J. P. C. Southall. Vol. 3. Optical Society of America.
+</div>
+<div id="ref-Bergson2002" class="csl-entry" role="listitem">
+ベルクソンH. (1889) 2002. <em>意識に直接与えられたものについての試論</em>. Translated by 合田正人 and 平井靖史. 筑摩書房.
+</div>
+<div id="ref-向田2009" class="csl-entry" role="listitem">
+向田久美子. 2009. <span>“語りに見るライフ・スクリプトの文化心理学的研究: 文化圏間比較と世代間比較を通して.”</span> 博士論文, 白百合女子大学大学院.
+</div>
+<div id="ref-堀2009" class="csl-entry" role="listitem">
+堀洋道. 2009. <em>新編 社会心理学</em>. Edited by 吉田富二雄, 松井豊, and 宮本聡介. 改訂版. 福村出版.
+</div>
+<div id="ref-矢嶋2013" class="csl-entry" role="listitem">
+矢嶋美保, and 長谷川晃. 2013. <span>“家族機能が中学生の社交不安に及ぼす影響: 日本の親子のデータを用いた検討.”</span> <em>感情心理学研究</em> 27 (3): 83–94. <a href="https://doi.org/10.4092/jsre.27.3_83">https://doi.org/10.4092/jsre.27.3_83</a>.
+</div>
+</div>
+</section>
+<section id="付録" class="level1" data-number="9">
+<h1 data-number="9"><span class="header-section-number">9</span> 付録</h1>
+</section>
+<section id="付録-1" class="level1" data-number="10">
+<h1 data-number="10"><span class="header-section-number">10</span> 付録</h1>
+<section id="sec-omake1" class="level2" data-number="10.1">
+<h2 data-number="10.1" class="anchored" data-anchor-id="sec-omake1"><span class="header-section-number">10.1</span> おまけその１</h2>
+<p>これはおまけです。これはおまけです。これはおまけです。これはおまけです。 これはおまけです。これはおまけです。これはおまけです。これはおまけです。 これはおまけです。これはおまけです。これはおまけです。これはおまけです。 これはおまけです。これはおまけです。これはおまけです。これはおまけです。</p>
+<div class="cell">
+<div class="cell-output-display">
+<div id="fig-omake" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-omake-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="paper_html_files/figure-html/fig-omake-1.png" class="img-fluid figure-img" width="672">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-omake-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;5: &lt;U+304A&gt;&lt;U+307E&gt;&lt;U+3051&gt;&lt;U+306E&gt;&lt;U+56F3&gt;
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="おまけその２" class="level2" data-number="10.2">
+<h2 data-number="10.2" class="anchored" data-anchor-id="おまけその２"><span class="header-section-number">10.2</span> おまけその２</h2>
+<p>これもおまけです。これもおまけです。これもおまけです。これもおまけです。 これもおまけです。これもおまけです。これもおまけです。これもおまけです。 これもおまけです。これもおまけです。これもおまけです。これもおまけです。 これもおまけです。これもおまけです。これもおまけです。これもおまけです。</p>
+</section>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

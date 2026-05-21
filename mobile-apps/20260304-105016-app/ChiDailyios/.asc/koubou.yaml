@@ -1,0 +1,15 @@
+version: "1"
+output_dir: screenshots/framed
+screenshots:
+  - name: screen1_welcome
+    image: screenshots/raw/screen1_welcome.png
+    device: "iPhone 16 - Black - Portrait"
+  - name: screen2_features
+    image: screenshots/raw/screen2_features.png
+    device: "iPhone 16 - Black - Portrait"
+  - name: screen3_paywall
+    image: screenshots/raw/screen3_paywall.png
+    device: "iPhone 16 - Black - Portrait"
+  - name: screen4_today
+    image: screenshots/raw/screen4_today.png
+    device: "iPhone 16 - Black - Portrait"

@@ -1,0 +1,32 @@
+{
+  "date": "2026-01-28",
+  "app_store": {
+    "total_downloads_7d": 96,
+    "downloads_by_country": [
+      [
+        "JP",
+        60
+      ],
+      [
+        "US",
+        34
+      ],
+      [
+        "AU",
+        2
+      ]
+    ],
+    "impressions": 0,
+    "page_views": 0,
+    "cvr_page_to_download": 0.0
+  },
+  "revenuecat": {
+    "mrr": 17.0,
+    "active_subscriptions": 2,
+    "active_trials": 0,
+    "trial_to_paid_count": 0,
+    "trial_expired_count": 0,
+    "monthly_churn_rate": 0.0
+  },
+  "errors": []
+}
