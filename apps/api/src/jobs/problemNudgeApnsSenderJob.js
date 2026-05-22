@@ -3,12 +3,34 @@ import { prisma } from '../lib/prisma.js';
 import { SCHEDULE_MAP } from '../agents/scheduleMap.js';
 import { getVariantIndex } from '../agents/dayCycling.js';
 import { toLocalDateString, toLocalTimeHHMM } from '../utils/timezone.js';
-import { loadProblemNudgeCatalog, normalizeCatalogLang } from '../modules/problem_nudges/catalogLoader.js';
+import { normalizeCatalogLang } from '../modules/problem_nudges/catalogLoader.js';
+import { appName, affirmationText, allQuoteIds } from '../modules/affirmations/affirmationsLoader.js';
 import ApnsClient, { ApnsError } from '../services/apns/apnsClient.js';
 import { getEntitlementState } from '../services/subscriptionStore.js';
 import { getRawPushEnv, parsePushEnv } from '../utils/pushEnv.js';
 
-const logger = baseLogger.withContext('ProblemNudgeApnsSenderJob');
+const logger = baseLogger.withContext('AffirmationApnsSenderJob');
+
+// 2026-05-23: this sender now delivers daily AFFIRMATIONS (not problem nudges).
+// title = brand name (appName by lang), body = affirmation text, payload carries
+// quoteId so the app deep-links to the matching Feed card. Local notifications are
+// removed app-side, so this remote path is the single source of notifications.
+const AFFIRMATION_SENTINEL = 'affirmation';
+const AFFIRMATION_FREE_SLOTS = ['09:00', '14:00', '20:00'];
+const AFFIRMATION_PRO_SLOTS = ['08:00', '12:30', '17:30', '21:30'];
+
+/**
+ * Deterministic daily quote rotation. Every user receives the same affirmation on
+ * a given local day + slot, cycling through the whole pool with no repeat within a
+ * cycle. Stable across replicas (pure function of day + slot).
+ */
+function quoteIdForSlot(deliveryDayLocal, slotIndex, slotsPerDay) {
+  const ids = allQuoteIds();
+  if (!ids.length) return null;
+  const epochDay = Math.floor(new Date(`${deliveryDayLocal}T00:00:00.000Z`).getTime() / 86400000);
+  const raw = epochDay * slotsPerDay + slotIndex;
+  return ids[((raw % ids.length) + ids.length) % ids.length];
+}
 
 function parseHHMM(s) {
   const [h, m] = String(s).split(':').map(Number);
@@ -251,40 +273,11 @@ export async function runProblemNudgeApnsSender(nowUtc = new Date(), { apnsClien
     }
 
     const timezone = settings?.timezone || 'UTC';
-    const timezoneIsFallback = !settings?.timezone;
     const lang = normalizeCatalogLang(settings?.language || 'en');
-    const catalog = loadProblemNudgeCatalog(lang);
 
-    // Struggles source of truth can be inconsistent during migration.
-    // Prefer UUID-linked mobile_profiles, but also include rows keyed by device_id and user_traits fallback.
-    const profileDeviceIds = profileTokens.map(t => t.deviceId);
-    const mobileRows = await prisma.mobileProfile.findMany({
-      where: {
-        OR: [
-          { userId: profileId },
-          { deviceId: { in: profileDeviceIds } },
-        ],
-      },
-      select: { profile: true },
-    });
-    const struggleSet = new Set();
-    for (const r of mobileRows || []) {
-      for (const s of extractStruggles(r?.profile || {})) struggleSet.add(s);
-    }
-    if (!struggleSet.size) {
-      const traits = await prisma.userTrait.findUnique({
-        where: { userId: profileId },
-        select: { struggles: true },
-      });
-      for (const s of normalizeStruggles(traits?.struggles || [])) struggleSet.add(s);
-    }
-    const struggles = [...struggleSet];
-    if (!struggles.length) continue;
-
-    const day0 = await ensureDay0({ profileId, timezone, timezoneIsFallback });
-    const day0Local = ymdFromDateOnly(day0?.nudgeDay0LocalDate) || toLocalDateString(nowUtc, timezone);
-
-    const freeSlots = plan === 'free' ? selectFreeDailySlots(struggles, SCHEDULE_MAP) : null;
+    // Affirmations are universal: every user with a token receives them, regardless
+    // of selected struggles. Slots are fixed (free=3/day, pro=4/day).
+    const affirmationSlots = plan === 'free' ? AFFIRMATION_FREE_SLOTS : AFFIRMATION_PRO_SLOTS;
 
     // Retry failed sends regardless of the original slot window.
     // Otherwise, a failure near the end of the 30-min window can become "unretryable".
@@ -294,6 +287,9 @@ export async function runProblemNudgeApnsSender(nowUtc = new Date(), { apnsClien
           pushTokenId: t.id,
           status: 'failed',
           nextAttemptAt: { lte: nowUtc },
+          // Only retry affirmation deliveries. Excludes any pre-migration problem-nudge
+          // rows so we never re-send stale problem-nudge copy under the AFFIRMATION shape.
+          delivery: { is: { problemType: AFFIRMATION_SENTINEL } },
         },
         take: 20,
         orderBy: { nextAttemptAt: 'asc' },
@@ -307,6 +303,7 @@ export async function runProblemNudgeApnsSender(nowUtc = new Date(), { apnsClien
               problemType: true,
               scheduledTime: true,
               deliveryDayLocal: true,
+              quoteId: true,
               messageTitle: true,
               messageBody: true,
               messageDetail: true,
@@ -324,11 +321,11 @@ export async function runProblemNudgeApnsSender(nowUtc = new Date(), { apnsClien
         const payload = {
           aps: {
             alert: { title: d.messageTitle || 'Anicca', body: d.messageBody || '' },
-            category: 'PROBLEM_NUDGE',
+            category: 'AFFIRMATION',
             sound: 'default',
           },
           messageId: d.id,
-          problemType: d.problemType,
+          quoteId: d.quoteId || null,
           scheduledTime: d.scheduledTime,
           deliveryDayLocal,
         };
@@ -429,18 +426,22 @@ export async function runProblemNudgeApnsSender(nowUtc = new Date(), { apnsClien
     }
 
     for (const t of profileTokens) {
-      const sendOne = async ({ problemType, scheduledTime, slotIndex, slotsPerDay }) => {
+      const sendOne = async ({ scheduledTime, slotIndex, slotsPerDay }) => {
         if (!isSlotDue({ nowUtc, timezone, scheduledTime })) return;
 
-        const totalVariants = 60;
-        const deliveryDayLocal = computeDeliveryDayLocal({ nowUtc, timezone, problemType, scheduledTime });
-        const dayIndex = Math.max(0, dayDiff(deliveryDayLocal, day0Local));
-        const variantIndex = getVariantIndex(dayIndex, slotIndex, slotsPerDay, totalVariants);
+        // Affirmation delivery: brand title + affirmation body + quoteId deep-link.
+        // problemType is a fixed sentinel so the (profileId, problemType, scheduledTime,
+        // deliveryDayLocal) uniqueness yields one affirmation per slot per day.
+        const problemType = AFFIRMATION_SENTINEL;
+        const deliveryDayLocal = toLocalDateString(nowUtc, timezone);
+        const variantIndex = slotIndex;
 
-        const title = catalog.titles[problemType] || 'Anicca';
-        const hook = catalog.hooks[problemType]?.[variantIndex] || '';
-        const detail = catalog.details[problemType]?.[variantIndex] || '';
-        if (!hook || !detail) return;
+        const quoteId = quoteIdForSlot(deliveryDayLocal, slotIndex, slotsPerDay);
+        if (!quoteId) return;
+        const title = appName(lang);
+        const hook = affirmationText(quoteId, lang) || '';
+        const detail = '';
+        if (!hook) return;
 
         const deliveryDayDate = new Date(`${deliveryDayLocal}T00:00:00.000Z`);
 
@@ -466,8 +467,10 @@ export async function runProblemNudgeApnsSender(nowUtc = new Date(), { apnsClien
               });
               if (already?.id) return { deliveryId: already.id, created: false };
 
+              // Count only affirmation deliveries against the free cap so leftover
+              // problem-nudge rows from a transition day cannot suppress affirmations.
               const used = await tx.nudgeDelivery.count({
-                where: { profileId, deliveryDayLocal: deliveryDayDate },
+                where: { profileId, problemType, deliveryDayLocal: deliveryDayDate },
               });
               if (used >= 3) return { deliveryId: null, created: false };
 
@@ -481,6 +484,7 @@ export async function runProblemNudgeApnsSender(nowUtc = new Date(), { apnsClien
                     timezone,
                     lang,
                     variantIndex,
+                    quoteId,
                     messageTitle: title,
                     messageBody: hook,
                     messageDetail: detail,
@@ -515,6 +519,7 @@ export async function runProblemNudgeApnsSender(nowUtc = new Date(), { apnsClien
                   timezone,
                   lang,
                   variantIndex,
+                  quoteId,
                   messageTitle: title,
                   messageBody: hook,
                   messageDetail: detail,
@@ -570,11 +575,11 @@ export async function runProblemNudgeApnsSender(nowUtc = new Date(), { apnsClien
         const payload = {
           aps: {
             alert: { title, body: hook },
-            category: 'PROBLEM_NUDGE',
+            category: 'AFFIRMATION',
             sound: 'default',
           },
           messageId: deliveryId,
-          problemType,
+          quoteId,
           scheduledTime,
           deliveryDayLocal,
         };
@@ -672,18 +677,12 @@ export async function runProblemNudgeApnsSender(nowUtc = new Date(), { apnsClien
       };
 
       try {
-        if (plan === 'free') {
-          for (const s of freeSlots || []) {
-            await sendOne(s);
-          }
-        } else {
-          for (const problemType of struggles) {
-            const schedule = SCHEDULE_MAP[problemType];
-            if (!schedule) continue;
-            for (let slotIndex = 0; slotIndex < schedule.length; slotIndex += 1) {
-              await sendOne({ problemType, scheduledTime: schedule[slotIndex], slotIndex, slotsPerDay: schedule.length });
-            }
-          }
+        for (let slotIndex = 0; slotIndex < affirmationSlots.length; slotIndex += 1) {
+          await sendOne({
+            scheduledTime: affirmationSlots[slotIndex],
+            slotIndex,
+            slotsPerDay: affirmationSlots.length,
+          });
         }
       } catch (e) {
         // Global config/auth errors should stop this run early.

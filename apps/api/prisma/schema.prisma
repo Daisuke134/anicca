@@ -160,6 +160,7 @@ model NudgeDelivery {
   timezone        String
   lang            String
   variantIndex    Int      @map("variant_index")
+  quoteId         String?  @map("quote_id")
   messageTitle    String   @map("message_title")
   messageBody     String   @map("message_body")
   messageDetail   String   @map("message_detail")
