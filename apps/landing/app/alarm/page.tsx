@@ -8,11 +8,12 @@ import { motion } from "framer-motion";
 
 const PRICE = "$9.99";
 
-const fade = (d = 0) => ({
+// returns motion props; typed loose to spread cleanly onto motion.* elements
+const fade = (d = 0): any => ({
   initial: { opacity: 0, y: 24 },
   whileInView: { opacity: 1, y: 0 },
   viewport: { once: true, margin: "-80px" },
-  transition: { duration: 0.7, delay: d, ease: [0.16, 1, 0.3, 1] as const },
+  transition: { duration: 0.7, delay: d, ease: [0.16, 1, 0.3, 1] },
 });
 
 function Step({ n, t, d }: { n: string; t: string; d: string }) {
