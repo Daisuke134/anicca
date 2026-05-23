@@ -44,15 +44,16 @@ exports.handler = async (event) => {
       const phone = s.metadata?.phone || s.customer_details?.phone;
       const wakeTime = s.metadata?.wakeTime || "07:00";
       if (phone) {
-        await supa("POST", "alarm_subscribers", {
-          phone, wake_time: wakeTime,
+        // upsert into the unified subscriber_profiles (wake + never-late share one row)
+        await supa("POST", "subscriber_profiles?on_conflict=phone", {
+          phone, wake_time: wakeTime, email: s.customer_details?.email || null,
           stripe_customer: s.customer, stripe_subscription: s.subscription,
           status: "active", updated_at: new Date().toISOString(),
         });
       }
     } else if (evt.type === "customer.subscription.deleted") {
       const sub = evt.data.object;
-      await supa("PATCH", `alarm_subscribers?stripe_subscription=eq.${sub.id}`,
+      await supa("PATCH", `subscriber_profiles?stripe_subscription=eq.${sub.id}`,
         { status: "canceled", updated_at: new Date().toISOString() });
     }
   } catch (e) {

@@ -21,7 +21,7 @@ exports.handler = async (event) => {
   params.append("mode", "subscription");
   params.append("line_items[0][price]", PRICE);
   params.append("line_items[0][quantity]", "1");
-  params.append("success_url", `${ORIGIN}/alarm?success=1&session_id={CHECKOUT_SESSION_ID}`);
+  params.append("success_url", `${ORIGIN}/alarm/setup?session_id={CHECKOUT_SESSION_ID}`);
   params.append("cancel_url", `${ORIGIN}/alarm?canceled=1`);
   params.append("subscription_data[metadata][phone]", phone);
   params.append("subscription_data[metadata][wakeTime]", wakeTime);
