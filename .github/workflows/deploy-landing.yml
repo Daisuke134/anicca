@@ -1,0 +1,36 @@
+name: Deploy landing (aniccaai.com)
+
+# Durable CI/CD: pushes to anicca-products-oss build apps/landing and deploy to the
+# Netlify "anicca2" site (aniccaai.com). Replaces the legacy git connection to the
+# retired anicca-products repo. Manual run via the Actions tab (workflow_dispatch).
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/landing/**"
+      - ".github/workflows/deploy-landing.yml"
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install & build
+        working-directory: apps/landing
+        run: |
+          npm ci
+          npm run build
+      - name: Deploy to Netlify (production)
+        working-directory: apps/landing
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        run: |
+          npx netlify-cli@latest deploy --prod \
+            --dir=out --functions=netlify/functions \
+            --site="$NETLIFY_SITE_ID" --auth="$NETLIFY_AUTH_TOKEN" \
+            --message "GH Actions: ${GITHUB_SHA::7}"
