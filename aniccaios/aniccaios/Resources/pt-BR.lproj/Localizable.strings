@@ -1296,3 +1296,26 @@
 "paywall_plan_cta_no_trial" = "Começar jornada";
 "paywall_plan_trust_trial" = "3 dias grátis, depois %@. Cancele quando quiser.";
 "paywall_plan_trial_badge" = "3 DIAS GRÁTIS";
+
+// MARK: - iAm Feed (2026-05-13 redesign) — EN fallback for v1
+"settings_title" = "Settings";
+"settings_theme" = "Theme";
+"settings_notifications" = "Notifications";
+"settings_liked_quotes" = "Liked";
+"settings_subscription" = "Subscription";
+"settings_subscription_placeholder" = "Subscription management is in the App Store.";
+"settings_sign_out" = "Sign out";
+"common_done" = "Done";
+"liked_empty_title" = "No liked affirmations yet";
+"liked_empty_subtitle" = "Tap the heart on any affirmation to save it here.";
+"notifications_daily_count" = "Daily count";
+"notifications_schedule_label" = "08:00 / 12:30 / 17:30 / 21:30";
+"notifications_footer" = "Four affirmations a day. Tap a notification to open that exact affirmation.";
+"theme_silk_dusk" = "Silk Dusk";
+"theme_sand_wave" = "Sand Wave";
+"theme_ocean_sunset" = "Ocean Sunset";
+"theme_midnight_dusk" = "Midnight Dusk";
+"theme_linen_cream" = "Linen Cream";
+"theme_sage_mist" = "Sage Mist";
+"theme_sky_dawn" = "Sky Dawn";
+"theme_rose_petal" = "Rose Petal";

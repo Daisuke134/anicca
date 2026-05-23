@@ -1316,21 +1316,20 @@
 "paywall_plan_privacy" = "Privacidad";
 
 // MARK: - Paywall Variant B (A/B Test)
-"paywall_b_title" = "Palabras que llegan cuando más las necesitas";
-"paywall_b_subtitle" = "Tarjetas diarias para ayudarte con tus dificultades";
-"paywall_b_feature_nudges" = "Recordatorios en el momento justo";
-"paywall_b_feature_ai" = "Guía personalizada generada por IA";
-"paywall_b_feature_personalized" = "Se adapta a tus dificultades únicas";
-"paywall_b_feature_feedback" = "Aprende de tus comentarios";
-"paywall_b_feature_cancel" = "Cancela cuando quieras, sin preguntas";
+"paywall_b_title" = "Mente serena.\nCada día.";
+"paywall_b_subtitle" = "200 afirmaciones en 20 temas. Entregadas con calma.";
+"paywall_b_feature_nudges" = "De 1 a 4 recordatorios al día, a tu ritmo";
+"paywall_b_feature_ai" = "8 fondos hechos a mano";
+"paywall_b_feature_personalized" = "Imágenes para compartir sin marca";
+"paywall_b_feature_feedback" = "Sin anuncios. Nunca.";
+"paywall_b_feature_cancel" = "Cancela cuando quieras";
 "paywall_b_per_year" = "/año";
 "paywall_b_per_month" = "/mes";
-"paywall_b_per_week" = "/semana";
 "paywall_b_daily_price" = "Solo %@ por día";
 "paywall_b_cta_no_trial" = "Comienza tu viaje ahora";
 "paywall_b_cta_trial" = "Comenzar gratis";
 "paywall_b_review" = "\"Anicca me ayudó a ser más amable conmigo.\"";
-"paywall_b_trust_no_trial" = "Cancela cuando quieras · Satisfacción garantizada";
+"paywall_b_trust_no_trial" = "Cancela cuando quieras · Sin anuncios";
 "paywall_b_trust_trial" = "3 días gratis, luego %@ · Cancela cuando quieras";
 "paywall_b_trial_badge" = "3 DÍAS GRATIS";
 
@@ -2587,3 +2586,26 @@
 // MARK: - Widget
 "widget_description" = "Sabiduría diaria para tu crecimiento";
 
+
+// MARK: - iAm Feed (2026-05-13 redesign) — EN fallback for v1
+"settings_title" = "Settings";
+"settings_theme" = "Theme";
+"settings_notifications" = "Notifications";
+"settings_liked_quotes" = "Liked";
+"settings_subscription" = "Subscription";
+"settings_subscription_placeholder" = "Subscription management is in the App Store.";
+"settings_sign_out" = "Sign out";
+"common_done" = "Done";
+"liked_empty_title" = "No liked affirmations yet";
+"liked_empty_subtitle" = "Tap the heart on any affirmation to save it here.";
+"notifications_daily_count" = "Daily count";
+"notifications_schedule_label" = "08:00 / 12:30 / 17:30 / 21:30";
+"notifications_footer" = "Four affirmations a day. Tap a notification to open that exact affirmation.";
+"theme_silk_dusk" = "Silk Dusk";
+"theme_sand_wave" = "Sand Wave";
+"theme_ocean_sunset" = "Ocean Sunset";
+"theme_midnight_dusk" = "Midnight Dusk";
+"theme_linen_cream" = "Linen Cream";
+"theme_sage_mist" = "Sage Mist";
+"theme_sky_dawn" = "Sky Dawn";
+"theme_rose_petal" = "Rose Petal";

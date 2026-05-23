@@ -123,8 +123,6 @@ final class AppState: ObservableObject {
         // アプリ起動時にignored判定を実行
         Task {
             await NudgeStatsManager.shared.checkAndRecordIgnored()
-            // Phase 7+8: 6時間経過の未タップNudgeをignoredとしてサーバーに送信
-            await NudgeFeedbackService.shared.sendIgnoredFeedbackForExpiredNudges()
         }
         
         // v0.4: 匿名ユーザーでもサーバーからプロフィールを復元
@@ -386,12 +384,11 @@ final class AppState: ObservableObject {
         userProfile = profile
         saveUserProfile()
 
-        // Proactive Agent: 問題（苦しみ）が変更された場合、問題ベースの通知をスケジュール
+        // v1.8.7: struggles no longer drive notifications. Widget keeps using them
+        // for back-compat; affirmation notifications are delivered remotely via APNs
+        // (backend), with no on-device scheduling.
         if Set(previousProfile.struggles) != Set(profile.struggles) {
             NudgeWidgetDataStore.sync(struggles: profile.struggles)
-            Task {
-                await ProblemNotificationScheduler.shared.scheduleNotifications(for: profile.struggles)
-            }
         }
 
         if sync {

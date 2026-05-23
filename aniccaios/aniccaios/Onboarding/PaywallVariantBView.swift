@@ -20,7 +20,6 @@ struct PaywallVariantBView: View {
     private var packages: [Package] { offering?.availablePackages ?? [] }
     private var yearlyPackage: Package? { packages.first { $0.packageType == .annual } }
     private var monthlyPackage: Package? { packages.first { $0.packageType == .monthly } }
-    private var weeklyPackage: Package? { packages.first { $0.packageType == .weekly } }
 
     private var savePct: Int? {
         guard let yearly = yearlyPackage, let monthly = monthlyPackage else { return nil }
@@ -42,11 +41,13 @@ struct PaywallVariantBView: View {
     }
 
     private var hasTrialEligibility: Bool {
-        // Both weekly.b and yearly.b have a 3-day FREE_TRIAL configured in App Store Connect.
-        // We don't gate on storeProduct.introductoryDiscount because StoreKit on simulator
-        // (without a .storekit configuration file or sandbox sign-in) returns nil for it.
-        guard let pkg = selectedPackage else { return false }
-        return pkg.packageType == .annual || pkg.packageType == .weekly
+        // 2026-05-22 Dais directive: free trial back ON. annual.b and monthly.b ($9.99/mo)
+        // both have a 3-day FREE_TRIAL configured in App Store Connect (verified across all
+        // 174 territories). We don't gate on storeProduct.introductoryDiscount because StoreKit
+        // on simulator (no .storekit config / sandbox sign-in) returns nil for it, so we trust
+        // the package type and default to the trial side when no package is selected yet.
+        guard let pkg = selectedPackage else { return true }
+        return pkg.packageType == .annual || pkg.packageType == .monthly
     }
 
     var body: some View {
@@ -71,7 +72,7 @@ struct PaywallVariantBView: View {
                 AnalyticsManager.shared.trackPaywallViewed()
             }
             if selectedPackage == nil {
-                selectedPackage = yearlyPackage ?? monthlyPackage ?? weeklyPackage
+                selectedPackage = yearlyPackage ?? monthlyPackage
             }
         }
         .sheet(isPresented: $showRetention) {
@@ -134,15 +135,6 @@ struct PaywallVariantBView: View {
                         dailyPriceLabel: nil
                     )
                 }
-
-                if let weekly = weeklyPackage {
-                    planCard(
-                        package: weekly,
-                        priceLabel: weekly.localizedPriceString + String(localized: "paywall_b_per_week"),
-                        badge: trialBadge(for: weekly),
-                        dailyPriceLabel: nil
-                    )
-                }
             }
             .padding(.horizontal, 24)
             .padding(.top, 8)
@@ -150,7 +142,8 @@ struct PaywallVariantBView: View {
     }
 
     private func trialBadge(for package: Package) -> String? {
-        guard package.packageType == .annual || package.packageType == .weekly else { return nil }
+        guard hasTrialEligibility else { return nil }
+        guard package.packageType == .annual || package.packageType == .monthly else { return nil }
         return String(localized: "paywall_b_trial_badge")
     }
 

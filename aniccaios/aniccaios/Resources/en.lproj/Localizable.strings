@@ -1408,7 +1408,7 @@
 "paywall_plan_weekly" = "%@/week";
 "paywall_plan_cta_trial" = "Start For Free";
 "paywall_plan_cta_subscribe" = "Subscribe";
-"paywall_plan_cta_no_trial" = "Start Journey";
+"paywall_plan_cta_no_trial" = "Start my journey";
 "paywall_plan_trust" = "No commitment. Cancel anytime.";
 "paywall_plan_trust_trial" = "3 days free, then %@. Cancel anytime.";
 "paywall_plan_trial_badge" = "3 DAYS FREE";
@@ -1419,24 +1419,23 @@
 "paywall_plan_privacy" = "Privacy";
 
 // MARK: - Paywall Variant B (A/B Test)
-"paywall_b_title" = "Gentle words when you need them most";
-"paywall_b_subtitle" = "Daily cards to help you through your struggles";
-"paywall_b_feature_nudges" = "Reminders at the right moment";
-"paywall_b_feature_ai" = "AI-generated personalized guidance";
-"paywall_b_feature_personalized" = "Adapts to your unique struggles";
-"paywall_b_feature_feedback" = "Learns from your feedback";
-"paywall_b_feature_cancel" = "Cancel anytime, no questions asked";
+"paywall_b_title" = "Steady mind.\nEvery day.";
+"paywall_b_subtitle" = "200 affirmations across 20 themes. Calmly delivered.";
+"paywall_b_feature_nudges" = "1–4 reminders a day, on your schedule";
+"paywall_b_feature_ai" = "8 hand-crafted backgrounds";
+"paywall_b_feature_personalized" = "Clean share images";
+"paywall_b_feature_feedback" = "No ads. Ever.";
+"paywall_b_feature_cancel" = "Cancel anytime";
 "paywall_b_per_year" = "/yr";
 "paywall_b_per_month" = "/mo";
 "paywall_b_plan_yearly" = "Annual Plan";
 "paywall_b_plan_monthly" = "Monthly Plan";
 "paywall_b_plan_weekly" = "Weekly Plan";
-"paywall_b_per_week" = "/week";
 "paywall_b_daily_price" = "Just %@ per day";
-"paywall_b_cta_no_trial" = "Start Your Journey Now";
+"paywall_b_cta_no_trial" = "Start my journey";
 "paywall_b_cta_trial" = "Start For Free";
 "paywall_b_review" = "\"Anicca helped me be kinder to myself.\"";
-"paywall_b_trust_no_trial" = "Cancel anytime · Satisfaction guaranteed";
+"paywall_b_trust_no_trial" = "Cancel anytime · No ads, ever";
 "paywall_b_trust_trial" = "3 days free, then %@ · Cancel anytime";
 "paywall_b_trial_badge" = "3 DAYS FREE";
 
@@ -2669,3 +2668,27 @@
 
 // MARK: - Widget
 "widget_description" = "Daily wisdom for your growth";
+
+// MARK: - iAm Feed (2026-05-13 redesign)
+"settings_title" = "Settings";
+"settings_theme" = "Theme";
+"settings_notifications" = "Notifications";
+"settings_liked_quotes" = "Liked";
+"settings_subscription" = "Subscription";
+"settings_subscription_placeholder" = "Subscription management is in the App Store.";
+"settings_sign_out" = "Sign out";
+"common_done" = "Done";
+"liked_empty_title" = "No liked affirmations yet";
+"liked_empty_subtitle" = "Tap the heart on any affirmation to save it here.";
+"notifications_daily_count" = "Daily count";
+"notifications_schedule_label" = "08:00 / 12:30 / 17:30 / 21:30";
+"notifications_footer" = "Four affirmations a day. Tap a notification to open that exact affirmation.";
+"theme_silk_dusk" = "Silk Dusk";
+"theme_sand_wave" = "Sand Wave";
+"theme_ocean_sunset" = "Ocean Sunset";
+"theme_midnight_dusk" = "Midnight Dusk";
+"theme_linen_cream" = "Linen Cream";
+"theme_sage_mist" = "Sage Mist";
+"theme_sky_dawn" = "Sky Dawn";
+"theme_rose_petal" = "Rose Petal";
+"quote_copied" = "Copied";

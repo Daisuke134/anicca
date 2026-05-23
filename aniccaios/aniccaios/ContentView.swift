@@ -22,11 +22,11 @@ struct ContentRouterView: View {
             switch appState.authStatus {
             case .signedOut:
                 // v3-ui.md: Sign in は Skip 可能。オンボーディング完了後はアプリに進める。
-                MainTabView()
+                FeedRootView()
             case .signingIn:
                 AuthenticationProcessingView()
             case .signedIn:
-                MainTabView()
+                FeedRootView()
             }
         }
     }

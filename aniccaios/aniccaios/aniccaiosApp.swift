@@ -25,32 +25,19 @@ struct aniccaiosApp: App {
                     #endif
                 }
                 .onOpenURL { url in
-                    // Debug deep link for E2E: anicca://debug/pushTap?messageId=<uuid>
                     guard url.scheme == "anicca" else { return }
-                    guard url.host == "debug" else { return }
-                    guard url.path == "/pushTap" else { return }
-                    guard let comps = URLComponents(url: url, resolvingAgainstBaseURL: false),
-                          let messageId = comps.queryItems?.first(where: { $0.name == "messageId" })?.value,
-                          !messageId.isEmpty else {
-                        return
-                    }
-                    Task { @MainActor in
-                        do {
-                            let delivery = try await ProblemNudgeDeliveryService.shared.fetchDelivery(id: messageId)
-                            if let problem = ProblemType(rawValue: delivery.problemType) {
-                                let content = NudgeContent(
-                                    problemType: problem,
-                                    notificationText: delivery.hook,
-                                    detailText: delivery.detail,
-                                    variantIndex: delivery.variantIndex,
-                                    isAIGenerated: false,
-                                    llmNudgeId: nil
-                                )
-                                AppState.shared.showNudgeCard(content)
-                            }
-                        } catch {
-                            print("deep link fetch failed: \(error)")
+
+                    // 4-daily affirmation deep link: anicca://quote/<qid>
+                    if url.host == "quote" {
+                        let qid = url.lastPathComponent
+                        if !qid.isEmpty && qid != "quote" {
+                            NotificationCenter.default.post(
+                                name: .aniccaScrollToQuote,
+                                object: nil,
+                                userInfo: ["quoteId": qid]
+                            )
                         }
+                        return
                     }
                 }
         }
