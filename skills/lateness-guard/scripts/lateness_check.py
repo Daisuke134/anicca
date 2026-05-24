@@ -60,10 +60,11 @@ def haversine_m(lat1, lon1, lat2, lon2):
     return 2 * R * math.asin(math.sqrt(a))
 
 
-def decide(now, location, departures, home=None, home_radius_m=None):
+def decide(now, location, departures, home=None, home_radius_m=None, dest=None, arrive_radius_m=400):
     """Pure decision. Returns dict {action, reason, event}.
     action in {'call', 'ok', 'no-events', 'no-location', 'stale-location'}.
-    home=(lat,lon) overrides the module HOME_* (multi-tenant: pass the subscriber's home)."""
+    home=(lat,lon) overrides module HOME_*; dest=(lat,lon) of the next event lets us
+    detect 'already arrived' (so we don't nag once he's there)."""
     if not departures:
         return {"action": "no-events", "reason": "no upcoming events", "event": None}
     if not location:
@@ -80,33 +81,41 @@ def decide(now, location, departures, home=None, home_radius_m=None):
     moving = vel is not None and vel >= MOVING_VEL
     age_min = (now.timestamp() - location["tst"]) / 60
 
-    # FRESHNESS GATE — fixes the 2026-05-24 "出発しろ" misfire while he was already
-    # at the <training-school>. A "leave now / you're late" decision must be based on a FRESH
-    # fix. If the location is stale we genuinely don't know where he is, so we never
-    # tell him to leave — guessing on an old at-home fix is exactly what went wrong.
+    # FRESHNESS GATE — the 2026-05-24 misfire was a STALE fix mistaken for "home".
+    # Every decision must use a FRESH fix; if stale we don't know where he is, so
+    # we don't guess. (Requires OwnTracks=Move so a fresh fix exists when stationary.)
     if age_min > STALE_MIN:
         return {"action": "stale-location",
-                "reason": f"location {int(age_min)}m old — won't guess (need fresh fix; set OwnTracks=Move)",
+                "reason": f"location {int(age_min)}m old — won't guess (need fresh fix; OwnTracks=Move)",
                 "event": nxt}
 
-    # Already left home / moving / en route -> he's on his way. Don't tell him to
-    # leave. (If he left the house, is on the train, or has arrived, no call.)
-    if moving or not at_home:
-        return {"action": "ok",
-                "reason": f"en route — atHome={at_home}({int(dist)}m) moving={moving}, no leave-call",
-                "event": nxt}
+    # UNIFIED model: departBy is computed from his CURRENT location's ETA (not home),
+    # so this works wherever he is. "Leave now" = it's time to leave THIS spot to
+    # arrive on time. (gcal_departures sets travelMin/departBy from current_origin.)
+    travel = nxt.get("travelMin")
 
-    # At home, FRESH fix, not moving -> the only state where "leave now" is valid.
+    # Already at / near the destination -> nothing to do. (Use real distance to dest,
+    # NOT travelMin, since travelMin=0 also happens for 'baked' 出発: events.)
+    if dest:
+        dist_dest = haversine_m(dest[0], dest[1], location["lat"], location["lon"])
+        if dist_dest <= arrive_radius_m:
+            return {"action": "ok", "reason": f"arrived ({int(dist_dest)}m from dest)", "event": nxt}
+
+    # Actively moving toward it (on foot/train) -> on his way; reassess next tick.
+    if moving:
+        return {"action": "ok", "reason": f"en route, moving (vel={vel}) — reassess next tick", "event": nxt}
+
+    # Stationary + fresh: if it's time to leave from where he is now, call & guide.
     if mins <= LEAD_MIN:
         return {"action": "call",
-                "reason": f"departBy in {int(mins)}m, still home ({int(dist)}m), fresh+not moving",
+                "reason": f"departBy in {int(mins)}m — must leave now (travel {travel}m, {int(dist)}m from home)",
                 "event": nxt}
     if mins <= NUDGE_MIN:
         return {"action": "nudge",
-                "reason": f"departBy in {int(mins)}m, still home — gentle reminder",
+                "reason": f"departBy in {int(mins)}m — get ready to leave soon",
                 "event": nxt}
     return {"action": "ok",
-            "reason": f"departBy in {int(mins)}m, atHome={at_home}({int(dist)}m), moving={moving}",
+            "reason": f"departBy in {int(mins)}m, travel {travel}m, moving={moving}",
             "event": nxt}
 
 
@@ -122,6 +131,21 @@ def get_location():
         return None
 
 
+def geocode_place(address):
+    """Address/place string -> (lat, lon) for arrival detection. None on failure."""
+    key = env("GOOGLE_API_KEY")
+    if not (address and key):
+        return None
+    try:
+        q = urllib.parse.urlencode({"address": address, "key": key, "language": "ja"})
+        with urllib.request.urlopen(f"https://maps.googleapis.com/maps/api/geocode/json?{q}", timeout=8) as r:
+            j = json.loads(r.read().decode())
+        loc = j["results"][0]["geometry"]["location"]
+        return (loc["lat"], loc["lng"])
+    except Exception:
+        return None
+
+
 def reverse_geocode(loc):
     """lat/lon -> short JP place name (for a location-aware call message)."""
     key = env("GOOGLE_API_KEY")
@@ -132,7 +156,7 @@ def reverse_geocode(loc):
         with urllib.request.urlopen(f"https://maps.googleapis.com/maps/api/geocode/json?{q}", timeout=8) as r:
             j = json.loads(r.read().decode())
         comps = j["results"][0]["address_components"]
-        # prefer ward + neighbourhood (新宿区 + <your-address>) over full address
+        # prefer ward + neighbourhood (新宿区 + 南元町) over full address
         parts = [c["long_name"] for c in comps
                  if any(t in c["types"] for t in ("sublocality_level_1", "sublocality_level_2", "locality"))]
         return "".join(parts[-2:]) if parts else j["results"][0]["formatted_address"]
@@ -175,7 +199,9 @@ def slack(text):
 def main():
     now = datetime.now(JST)
     loc_now = get_location()
-    d = decide(now, loc_now, get_departures())
+    deps = get_departures()
+    dest = geocode_place(deps[0]["location"]) if (deps and deps[0].get("location")) else None
+    d = decide(now, loc_now, deps, dest=dest)
     print(json.dumps({k: (v if k != "event" else (v or {}).get("summary")) for k, v in d.items()}, ensure_ascii=False))
     if d["action"] == "nudge":
         e = d["event"]
