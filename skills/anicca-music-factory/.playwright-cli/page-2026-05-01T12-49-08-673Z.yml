@@ -1,0 +1,158 @@
+- generic [ref=e1]:
+  - dialog "クッキー同意バナー" [ref=e2]:
+    - button "このダイアログを閉じる" [active] [ref=e3] [cursor=pointer]:
+      - img "このダイアログを閉じる" [ref=e4]
+    - generic [ref=e5]:
+      - generic [ref=e6]: この Web サイトは、分析、パーソナライゼーション、およびターゲットを絞った広告の目的だけでなく、サイトの重要な機能を有効にするために Cookie などのテクノロジーを利用します。 詳細については、次のリンクをご覧ください。
+      - link "プライバシーポリシー" [ref=e7] [cursor=pointer]:
+        - /url: distrokid.com/privacy/
+  - generic [ref=e11]:
+    - link "ホワイトのDistroKidロゴ" [ref=e13] [cursor=pointer]:
+      - /url: /
+      - img "ホワイトのDistroKidロゴ" [ref=e14]
+    - generic [ref=e15] [cursor=pointer]:
+      - generic [ref=e16]: ログイン
+      - generic [ref=e17]: ▼
+    - link "新規登録" [ref=e18] [cursor=pointer]:
+      - /url: /signup/
+      - generic [ref=e20]: 新規登録
+    - link "ホーム" [ref=e21] [cursor=pointer]:
+      - /url: /
+      - generic [ref=e23]: ホーム
+  - generic [ref=e25]:
+    - generic [ref=e28]: DistroKidアカウントにログインする
+    - generic [ref=e29]:
+      - generic [ref=e30]:
+        - generic [ref=e32]:
+          - text: 
+          - textbox "メールアドレス" [ref=e34]
+        - generic [ref=e36]:
+          - text: 
+          - textbox "パスワード" [ref=e38]
+        - generic [ref=e39]:
+          - button "ログイン" [ref=e40] [cursor=pointer]
+          - link "パスワードを忘れた場合" [ref=e42] [cursor=pointer]:
+            - /url: /forgotPassword/
+        - generic [ref=e43]:
+          - separator [ref=e44]
+          - paragraph [ref=e45]: または
+          - separator [ref=e46]
+        - generic [ref=e47]:
+          - button "Googleでログイン" [ref=e48] [cursor=pointer]:
+            - img [ref=e49]
+            - text: Googleでログイン
+          - button "Appleでログイン" [ref=e50] [cursor=pointer]:
+            - img [ref=e51]
+            - text: Appleでログイン
+      - generic [ref=e52]:
+        - text: メンバーではありませんか？
+        - link "新規登録する" [ref=e53] [cursor=pointer]:
+          - /url: /signup/?forward=/
+  - generic [ref=e56]:
+    - generic [ref=e57]:
+      - generic [ref=e58]:
+        - generic [ref=e59]:
+          - link [ref=e60] [cursor=pointer]:
+            - /url: https://www.youtube.com/subscription_center?add_user=distrokid
+            - generic [ref=e61]: 
+          - link "" [ref=e62] [cursor=pointer]:
+            - /url: https://facebook.com/distrokid
+            - generic [ref=e63]: 
+          - link [ref=e64] [cursor=pointer]:
+            - /url: https://bsky.app/profile/distrokid.com
+            - generic [ref=e65]: 
+          - link [ref=e66] [cursor=pointer]:
+            - /url: https://www.instagram.com/distrokid/
+            - generic [ref=e67]: 
+        - generic [ref=e68]: © DistroKid 2026
+      - combobox [ref=e72]:
+        - option "Bahasa Indonesia"
+        - option "Bahasa Melayu"
+        - option "Čeština"
+        - option "Dansk"
+        - option "Deutsch"
+        - option "English"
+        - option "English (UK)"
+        - option "Español"
+        - option "Español (España)"
+        - option "Français"
+        - option "Français (Canada)"
+        - option "Italiano"
+        - option "Kiswahili"
+        - option "Magyar"
+        - option "Nederlands"
+        - option "Norsk Bokmål"
+        - option "Polski"
+        - option "Português (Brasil)"
+        - option "Português (Portugal)"
+        - option "Românã"
+        - option "Suomi"
+        - option "Svenska"
+        - option "Tiếng Việt"
+        - option "Türkçe"
+        - option "日本語" [selected]
+        - option "ελληνικά"
+        - option "українська"
+        - option "עברית"
+        - option "العربية‬‎"
+        - option "हिन्दी"
+        - option "ภาษาไทย"
+        - option "한국어"
+    - generic [ref=e73]:
+      - generic [ref=e74]:
+        - heading "ヘルプ" [level=2] [ref=e75]
+        - link "サポートセンター" [ref=e76] [cursor=pointer]:
+          - /url: https://distrokid.com/help/
+      - generic [ref=e77]:
+        - heading "DistroKid" [level=2] [ref=e78]
+        - link "お知らせ" [ref=e79] [cursor=pointer]:
+          - /url: https://news.distrokid.com/
+        - link "グッズ" [ref=e80] [cursor=pointer]:
+          - /url: https://store.distrokid.com/
+        - link "Artists For Change" [ref=e81] [cursor=pointer]:
+          - /url: https://distrokid.com/artistsforchange/
+        - link "教育機関向け料金" [ref=e82] [cursor=pointer]:
+          - /url: https://distrokid.com/edu/
+        - link "採用情報" [ref=e83] [cursor=pointer]:
+          - /url: https://boards.greenhouse.io/distrokid
+        - link "インフルエンサー＆アフィリエイター・プログラム" [ref=e84] [cursor=pointer]:
+          - /url: https://distrokid.com/product/partners
+      - generic [ref=e85]:
+        - heading "ツール" [level=2] [ref=e86]
+        - link "プラン" [ref=e87] [cursor=pointer]:
+          - /url: https://distrokid.com/pricing/
+        - link "Bandzoogle" [ref=e88] [cursor=pointer]:
+          - /url: https://bandzoogle.com/?pc=DK14&utm_source=distrokid&utm_medium=website&utm_campaign=footer
+        - link "Instant Share" [ref=e89] [cursor=pointer]:
+          - /url: https://distrokid.com/instantshare/
+        - link "Mixea" [ref=e90] [cursor=pointer]:
+          - /url: https://mixea.com/
+        - link "DistroVid" [ref=e91] [cursor=pointer]:
+          - /url: https://distrovid.com/
+        - link "HyperFollow" [ref=e92] [cursor=pointer]:
+          - /url: https://hyperfollow.com/
+        - link "Direct" [ref=e93] [cursor=pointer]:
+          - /url: https://distrokid.com/direct/?ref=footer
+      - generic [ref=e94]:
+        - heading "モバイルアプリ" [level=2] [ref=e95]
+        - link "iPhone版" [ref=e96] [cursor=pointer]:
+          - /url: /app/
+        - link "Android版" [ref=e97] [cursor=pointer]:
+          - /url: /app/
+      - generic [ref=e98]:
+        - heading "割引" [level=2] [ref=e99]
+        - link "学生割引" [ref=e100] [cursor=pointer]:
+          - /url: /student/
+    - generic [ref=e101]:
+      - link "プライバシーポリシー" [ref=e102] [cursor=pointer]:
+        - /url: /privacy/
+      - link "Cookieポリシー" [ref=e103] [cursor=pointer]:
+        - /url: /privacy/
+      - link "Cookie設定" [ref=e104] [cursor=pointer]:
+        - /url: javascript:void(0)
+      - link "利用規約" [ref=e105] [cursor=pointer]:
+        - /url: https://distrokid.com/terms/
+      - link "サイトマップ" [ref=e106] [cursor=pointer]:
+        - /url: /sitemap/
+      - link "配信規約" [ref=e107] [cursor=pointer]:
+        - /url: /agreement/

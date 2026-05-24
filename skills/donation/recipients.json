@@ -1,0 +1,30 @@
+{
+  "_note": "Each recipient MUST be a Stripe Connected Account before receiving transfers. charges_enabled_verified=false until the user manually verifies through the dashboard. The monthly cron skips entries with charges_enabled_verified=false and emits a 🚨 to Slack. Most US charities are NOT on Stripe Connect — they need to onboard with us as a connected account before this rail works. For charities that won't onboard, set rail='agent-{{profile.lateness.stakeholders.channel}}' and the routing will fall through to ~/.openclaw/skills/donation-v2-archive/.",
+  "_schema_version": 1,
+  "recipients": [
+    {
+      "recipient_id": "givewell-top-charities",
+      "name": "GiveWell Top Charities Fund",
+      "stripe_connect_account_id": "acct_PLACEHOLDER_GIVEWELL",
+      "weight": 50,
+      "charges_enabled_verified": false,
+      "country": "US",
+      "ein_or_npo_id": "20-8625442",
+      "rail": "stripe-connect",
+      "_status": "GiveWell currently uses Stripe Checkout, not Connect. To enable this entry, ask GiveWell to onboard as a Stripe Connected Account, then verify charges_enabled via the Stripe Dashboard and flip charges_enabled_verified=true. Until then this recipient is skipped at runtime.",
+      "_evidence_url": "https://www.givewell.org/about/donate/payment"
+    },
+    {
+      "recipient_id": "crisis-text-line",
+      "name": "Crisis Text Line",
+      "stripe_connect_account_id": "acct_PLACEHOLDER_CTL",
+      "weight": 50,
+      "charges_enabled_verified": false,
+      "country": "US",
+      "ein_or_npo_id": "47-1928014",
+      "rail": "agent-{{profile.lateness.stakeholders.channel}}",
+      "_status": "Crisis Text Line is on Stripe Checkout (not Connect). Currently routed via the agent-{{profile.lateness.stakeholders.channel}} rail (see ~/.openclaw/skills/donation-v2-archive/). Set rail='stripe-connect' and charges_enabled_verified=true once onboarding completes.",
+      "_evidence_url": "https://www.crisistextline.org/donate/"
+    }
+  ]
+}

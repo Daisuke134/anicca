@@ -1,0 +1,24 @@
+{
+  "name": "roundcube-webmail-skill",
+  "version": "1.0.0",
+  "description": "Roundcube webmail reader with SAML+TOTP auth for Claude Code / Cursor / OpenClaw",
+  "main": "scripts/read-mail.js",
+  "scripts": {
+    "start": "node scripts/read-mail.js",
+    "setup": "npx playwright install chromium"
+  },
+  "keywords": [
+    "roundcube",
+    "webmail",
+    "saml",
+    "totp",
+    "playwright",
+    "claude-skill",
+    "openclaw"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "otplib": "^12.0.1",
+    "playwright": "^1.58.2"
+  }
+}

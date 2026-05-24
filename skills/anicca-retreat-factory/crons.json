@@ -1,0 +1,50 @@
+{
+  "schema": "openclaw-cron-v2",
+  "skill": "anicca-retreat-factory",
+  "timezone": "Asia/Tokyo",
+  "comment": "v2 — Phase 0 + Phase 1 cron 登録済 (openclaw cron add 経由、gateway 内 auto-apply)。Phase 2-10 は実装後 register。",
+  "registered_crons": [
+    {
+      "id": "2745d595-7b11-49c0-9357-1f3748540b99",
+      "name": "retreat-phase1-reply-watch-hourly",
+      "schedule": "0 * * * *",
+      "stagger_ms": 300000,
+      "agent": "anicca",
+      "session": "isolated",
+      "model": "openai-codex/gpt-5.4-mini",
+      "command": "bash $HOME/.openclaw/skills/anicca-retreat-factory/scripts/phase1-reply-watch.sh",
+      "deliver": "none (script reports own Slack)",
+      "phase": 1,
+      "registered_at": "2026-05-09T22:08:58+09:00",
+      "verified_run": {
+        "manual_trigger_ts": 1778332991110,
+        "duration_ms": 27419,
+        "status": "ok",
+        "summary": "完了, 新規返信なしです。`0 replied, 0 bounced, 8 pending`"
+      }
+    },
+    {
+      "id": "38c90693-26b8-4180-9dfc-57efba7dd44e",
+      "name": "retreat-phase0-location-discover-monthly",
+      "schedule": "0 9 1 * *",
+      "agent": "anicca",
+      "session": "isolated",
+      "model": "openai-codex/gpt-5.4-mini",
+      "command": "bash $HOME/.openclaw/skills/anicca-retreat-factory/scripts/phase0-location-discover.sh",
+      "deliver": "none (script reports own Slack)",
+      "phase": 0,
+      "registered_at": "2026-05-09T22:09:05+09:00",
+      "next_run": "2026-06-01T09:00:00+09:00 (next month 1st)"
+    }
+  ],
+  "deferred_crons": [
+    {"name": "retreat-application-collect-daily", "schedule": "0 14 * * *", "phase": 3, "blocked_by": "phase3-application-process.sh + Supabase application form 未実装"},
+    {"name": "retreat-marketing-content-daily", "schedule": "0 11 * * *", "phase": "marketing", "blocked_by": "marketing-content-daily.sh 未実装"},
+    {"name": "anicca-retreat-slideshow-daily", "schedule": "30 11 * * *", "phase": "marketing", "blocked_by": "slideshow-daily.sh 未実装"},
+    {"name": "retreat-day0-trigger", "schedule": "event", "phase": 6, "blocked_by": "phase6-day0-trigger.sh + 1 件目契約成立後"},
+    {"name": "retreat-during-ops-daily", "schedule": "30 4 * * *", "phase": 7, "blocked_by": "開催 retreat 不在 + phase7-during-ops-daily.sh 未実装"},
+    {"name": "retreat-end-followup", "schedule": "event", "phase": 8, "blocked_by": "phase8-end-followup.sh 未実装"},
+    {"name": "retreat-donation-ledger-monthly", "schedule": "0 23 28-31 * *", "phase": 9, "blocked_by": "phase9 + Stripe webhook 未実装"},
+    {"name": "retreat-old-students-reminder-monthly", "schedule": "0 8 1 * *", "phase": 10, "blocked_by": "phase10 + 卒業生 DB 空"}
+  ]
+}

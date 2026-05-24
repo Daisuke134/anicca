@@ -1,0 +1,32 @@
+# projects.yaml — auto-research orchestrator project ledger.
+# Round-robin order = list order. Add/remove projects freely; cursor wraps modulo length.
+# `human_flags` triggers a Slack ack gate before the experiment cron will execute the project.
+
+projects:
+  - id: ai-entity-gdp
+    title: "AI Entity GDP"
+    description: "Measuring the market size of the Asian economy contributed by AI agents earning money."
+    arxiv_categories: [econ.GN, cs.AI]
+    target_venues: [NeurIPS, ICML, EconLetters]
+    human_flags: []
+
+  - id: oogiri-bench
+    title: "Oogiri-bench"
+    description: "Benchmarking AI's ability to make people laugh, starting from Algerian humor and Manzai."
+    arxiv_categories: [cs.CL, cs.AI]
+    target_venues: [EMNLP, ACL, COLM]
+    human_flags: []
+
+  - id: ai-responsibility
+    title: "AI Responsibility"
+    description: "How AI entities can take {{profile.lateness.stakeholders.senderType}}/ethical responsibility autonomously."
+    arxiv_categories: [cs.CY, cs.AI]
+    target_venues: [FAccT, AIES]
+    human_flags: [{{profile.lateness.stakeholders.senderType}}-review]
+
+  - id: ai-mindfulness
+    title: "AI Mindfulness"
+    description: "Awareness and impermanence in AI cognition; Buddhism-inspired AI."
+    arxiv_categories: [cs.AI, q-bio.NC]
+    target_venues: [Cognitive Science, AGI conf]
+    human_flags: []

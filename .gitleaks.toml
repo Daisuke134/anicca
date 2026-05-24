@@ -1,0 +1,23 @@
+# Anicca OSS gitleaks config — allowlist env-var refs, placeholders, API-doc examples.
+# These are NOT real secrets (verified 2026-05-24): curl uses $ENV_VARS, docs show
+# YOUR_TOKEN / <placeholder>, reference/*.md describe API fields.
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "env var references and placeholder tokens in examples/docs"
+regexTarget = "match"
+regexes = [
+  '''\$\{?[A-Za-z_][A-Za-z0-9_]*\}?''',
+  '''YOUR_[A-Z0-9_]+''',
+  '''<[A-Za-z0-9_ .:/-]+>''',
+  '''(?i)example|placeholder|your-|changeme|xxxx''',
+]
+
+[[allowlists]]
+description = "API reference docs and example files (descriptions, not secrets)"
+paths = [
+  '''.*/references/.*\.md''',
+  '''.*\.example(\..*)?''',
+  '''.*/SKILL\.md''',
+]

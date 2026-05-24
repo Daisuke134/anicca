@@ -1,0 +1,190 @@
+{
+  "version": "0.4.0",
+  "last_updated": "2026-05-08",
+  "patterns": [
+    {
+      "id": "slack-target-missing",
+      "match_any": [
+        "target.*not found",
+        "channel.*invalid",
+        "slack.*recipient.*missing",
+        "Action send requires a target"
+      ],
+      "fix": {
+        "kind": "set_field",
+        "path": "delivery.to",
+        "value": "channel:$(jq -r .slack.metrics_channel ~/.openclaw/state/anicca.json)"
+      },
+      "auto_apply_safe": true
+    },
+    {
+      "id": "gpt-5.5-model-not-found",
+      "match_any": [
+        "model_not_found.*gpt-5\\.5",
+        "gpt-5\\.5.*model_not_found",
+        "model.*gpt-5\\.5.*does not exist"
+      ],
+      "fix": {
+        "kind": "replace_field",
+        "path": "payload.model",
+        "from_substr": "gpt-5.5",
+        "to": "openai-codex/gpt-5.4-mini"
+      },
+      "auto_apply_safe": true
+    },
+    {
+      "id": "edit-failed-stale-path",
+      "match_any": [
+        "Edit failed.*path",
+        "file_not_found.*Edit",
+        "stale path"
+      ],
+      "fix": {
+        "kind": "manual_review",
+        "reason": "Edit-failed-stale-path requires reading current SKILL.md to determine new path"
+      },
+      "auto_apply_safe": false
+    },
+    {
+      "id": "ENOSPC-disk-full",
+      "match_any": [
+        "ENOSPC: no space left on device",
+        "no space left on device"
+      ],
+      "fix": {
+        "kind": "shell",
+        "command": "rm -rf ~/.npm/_cacache ~/Library/Caches/CocoaPods ~/Library/Caches/org.swift.swiftpm ~/Library/Caches/com.anthropic.claudefordesktop.ShipIt ~/Library/Caches/pencil-updater ~/Library/Caches/pip ~/Library/Caches/Homebrew && bash /Users/anicca/scripts/disk-cleaner.sh"
+      },
+      "auto_apply_safe": true,
+      "emergency": true,
+      "tested_on": "2026-05-08 — freed 2.5GB from 95%→79%"
+    },
+    {
+      "id": "timeout-bump",
+      "match_any": [
+        "Request timed out before a response was generated",
+        "increase `agents.defaults.timeoutSeconds`"
+      ],
+      "fix": {
+        "kind": "set_field",
+        "path": "payload.timeoutSeconds",
+        "value": 900
+      },
+      "auto_apply_safe": true,
+      "tested_on": "2026-05-08 — reelclaw-anicca-ja-widget-2 (ce=2 → 0)"
+    },
+    {
+      "id": "test-artifact-orphan-schedule-null",
+      "match_any": [
+        "schedule:null",
+        "schedule.*kind.*null"
+      ],
+      "fix": {
+        "kind": "delete_job",
+        "criteria": {
+          "name_pattern": "(test|test-today-\\d{8}|monk-test\\d|jp-test-\\d+)"
+        }
+      },
+      "auto_apply_safe": true,
+      "tested_on": "2026-05-08 — removed 5 anicca-monk-* test artifacts"
+    },
+    {
+      "id": "auto-research-chassis-import-paper-lookup",
+      "match_any": [
+        "cannot import name 'paper_lookup' from 'researchclaw.literature'",
+        "cannot import name 'database_lookup' from 'researchclaw.literature'"
+      ],
+      "fix": {
+        "kind": "edit_script",
+        "target": "~/.openclaw/skills/auto-research/scripts/literature-pull.py",
+        "replace": {
+          "from": "from researchclaw.literature import paper_lookup, database_lookup",
+          "to": "from researchclaw.literature import search_papers"
+        },
+        "note": "search_papers is the unified API. results loop must rebuild as Paper objects"
+      },
+      "auto_apply_safe": true,
+      "tested_on": "2026-05-08 — auto-research literature now writes 25 records live"
+    },
+    {
+      "id": "auto-research-chassis-import-knowledge-debate",
+      "match_any": [
+        "cannot import name 'hypothesis_generation' from 'researchclaw.knowledge'",
+        "cannot import name 'debate' from 'researchclaw.collaboration'"
+      ],
+      "fix": {
+        "kind": "manual_review",
+        "reason": "researchclaw.knowledge and .collaboration do not export the expected symbols. Refactor hypothesise.py / experiment-bfts.py / draft-paper.py to use the actual chassis API. Aspirational K-Dense API not wired."
+      },
+      "auto_apply_safe": false
+    },
+    {
+      "id": "external-api-credit-depleted",
+      "match_any": [
+        "Apify response not an array.*platform-feature-disabled",
+        "monthly usage hard limit exceeded",
+        "X API.*402",
+        "X API credits depleted"
+      ],
+      "fix": {
+        "kind": "alert_user",
+        "message": "External API credit/quota depleted. Cannot auto-fix. User must refill or rotate."
+      },
+      "auto_apply_safe": false
+    },
+    {
+      "id": "external-login-expired",
+      "match_any": [
+        "DistroKid login expired",
+        "login expired",
+        "session expired"
+      ],
+      "fix": {
+        "kind": "alert_user",
+        "message": "External service login expired. User must run setup-login.sh interactively (cannot auto-login due to 2FA / {{profile.lateness.stakeholders.channel}} captcha)."
+      },
+      "auto_apply_safe": false
+    },
+    {
+      "id": "postiz-integration-id-missing",
+      "match_any": [
+        "All posts must have an integration id",
+        "Postiz returned.*integration id"
+      ],
+      "fix": {
+        "kind": "set_field",
+        "path": "payload.env.POSTIZ_INTEGRATION_ID",
+        "value_from": "~/.openclaw/state/postiz-integrations.json"
+      },
+      "auto_apply_safe": false,
+      "note": "Need to map cron name → integration_id from postiz-integrations.json. Manual review until mapping is in known_fixes."
+    },
+    {
+      "id": "gateway-message-failed",
+      "match_any": [
+        "Message failed",
+        "✉️ Message failed",
+        "envelope.*failed.*send"
+      ],
+      "fix": {
+        "kind": "manual_review",
+        "reason": "Gateway-level 'Message failed' — the skill's internal send/announce failed. Probable causes: SKILL.md uses 'send' tool without --target, payload has wrong delivery.to, or the skill spawned a subagent that lacks Slack credentials. Inspect ~/.openclaw/skills/<skill>/SKILL.md and confirm Slack target template is used."
+      },
+      "auto_apply_safe": false
+    },
+    {
+      "id": "skill-fixer-apply-patch-failed",
+      "match_any": [
+        "🩹 Apply Patch failed",
+        "Apply Patch failed",
+        "patch.*could not be applied"
+      ],
+      "fix": {
+        "kind": "alert_user",
+        "message": "skill-fixer (= tuning v0.1.0 production) failed to apply a patch. v0.2.0 (Python edition) is the replacement; consider deprecating skill-fixer once v0.2.0 has 30 nights of clean shadow runs."
+      },
+      "auto_apply_safe": false,
+      "note": "Recursion: tuning fixing tuning. Don't auto-apply."
+    }
+  ]
+}

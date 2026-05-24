@@ -1,0 +1,955 @@
+- generic [ref=e1]:
+  - generic [ref=e7]:
+    - link [ref=e9] [cursor=pointer]:
+      - /url: /
+      - img [ref=e10]
+    - generic [ref=e14] [cursor=pointer]:
+      - text: アップロード
+      - generic [ref=e15]: 
+    - link "マイミュージック" [ref=e835] [cursor=pointer]:
+      - /url: /mymusic/
+      - generic [ref=e18]: マイミュージック
+    - link "レポート" [ref=e836] [cursor=pointer]:
+      - /url: /stats/?data=streams
+      - generic [ref=e21]: レポート
+    - link "スプリット" [ref=e837] [cursor=pointer]:
+      - /url: /teams
+      - generic [ref=e24]: スプリット
+    - link "アップグレード" [ref=e838] [cursor=pointer]:
+      - /url: /plan/?upgrade=1
+      - generic [ref=e29]: アップグレード
+    - link "バンク" [ref=e839] [cursor=pointer]:
+      - /url: /bank
+      - generic [ref=e32]: バンク
+    - generic [ref=e33]:
+      - generic [ref=e37] [cursor=pointer]:
+        - img [ref=e39]
+        - generic [ref=e41]: 
+      - text:         
+    - text:                  
+    - generic [ref=e47] [cursor=pointer]: 
+  - generic [ref=e51]:
+    - generic [ref=e53]:
+      - generic [ref=e54]:
+        - heading "配信先" [level=2] [ref=e840]:
+          - generic [ref=e56]: 配信先
+        - generic [ref=e57]:
+          - generic [ref=e58]:
+            - checkbox "Spotify" [checked] [ref=e59] [cursor=pointer]
+            - text: Spotify
+          - generic [ref=e60]:
+            - checkbox "Apple Music" [active] [ref=e61] [cursor=pointer]
+            - text: Apple Music
+          - generic [ref=e62]:
+            - checkbox "iTunes" [checked] [ref=e63] [cursor=pointer]
+            - text: iTunes
+          - generic [ref=e64]:
+            - checkbox "InstagramとFacebook" [checked] [ref=e841] [cursor=pointer]
+            - text: InstagramとFacebook
+          - generic [ref=e66]:
+            - checkbox "TikTokと その他ByteDanceストア" [checked] [ref=e842] [cursor=pointer]
+            - text: TikTokと
+            - link "その他ByteDanceストア" [ref=e843] [cursor=pointer]:
+              - /url: https://support.distrokid.com/hc/ja/articles/23769646022803-What-Stores-Are-Included-In-TikTok-Other-Bytedance-Stores-
+          - generic [ref=e69]:
+            - checkbox "YouTube Music" [checked] [ref=e70] [cursor=pointer]
+            - text: YouTube Music
+          - generic [ref=e71]:
+            - checkbox "Amazon" [checked] [ref=e72] [cursor=pointer]
+            - text: Amazon
+          - generic [ref=e73]:
+            - checkbox "Pandora" [checked] [ref=e74] [cursor=pointer]
+            - text: Pandora
+          - generic [ref=e75]:
+            - checkbox "Deezer" [checked] [ref=e76] [cursor=pointer]
+            - text: Deezer
+          - generic [ref=e77]:
+            - checkbox "Tidal" [checked] [ref=e78] [cursor=pointer]
+            - text: Tidal
+          - generic [ref=e79]:
+            - checkbox "iHeartRadio" [checked] [ref=e80] [cursor=pointer]
+            - text: iHeartRadio
+          - generic [ref=e81]:
+            - checkbox "Qobuz" [checked] [ref=e82] [cursor=pointer]
+            - text: Qobuz
+          - generic [ref=e83]:
+            - checkbox "Saavn" [checked] [ref=e84] [cursor=pointer]
+            - text: Saavn
+          - generic [ref=e85]:
+            - checkbox "Boomplay" [checked] [ref=e86] [cursor=pointer]
+            - text: Boomplay
+          - generic [ref=e87]:
+            - checkbox "Anghami" [checked] [ref=e88] [cursor=pointer]
+            - text: Anghami
+          - generic [ref=e89]:
+            - checkbox "NetEase" [checked] [ref=e90] [cursor=pointer]
+            - text: NetEase
+          - generic [ref=e91]:
+            - checkbox "Tencent" [checked] [ref=e92] [cursor=pointer]
+            - text: Tencent
+          - generic [ref=e93]:
+            - checkbox "Claro Música" [checked] [ref=e94] [cursor=pointer]
+            - text: Claro Música
+          - generic [ref=e95]:
+            - checkbox "Joox" [checked] [ref=e96] [cursor=pointer]
+            - text: Joox
+          - generic [ref=e97]:
+            - checkbox "Kuack Media" [checked] [ref=e98] [cursor=pointer]
+            - text: Kuack Media
+          - generic [ref=e99]:
+            - checkbox "Adaptr" [checked] [ref=e100] [cursor=pointer]
+            - text: Adaptr
+          - generic [ref=e101]:
+            - checkbox "Flo" [checked] [ref=e102] [cursor=pointer]
+            - text: Flo
+          - generic [ref=e103]:
+            - checkbox "MediaNet" [checked] [ref=e104] [cursor=pointer]
+            - text: MediaNet
+          - generic [ref=e105]:
+            - checkbox "Snapchat" [ref=e106] [cursor=pointer]
+            - text: Snapchat
+          - generic [ref=e107]:
+            - checkbox "Roblox（ベータ版）" [ref=e844] [cursor=pointer]
+            - text: Roblox（ベータ版）
+      - generic [ref=e109]:
+        - heading "トラック数" [level=2] [ref=e845]
+        - combobox [ref=e113]:
+          - option "1曲（シングル）" [selected]
+          - option "2曲"
+          - option "3曲"
+          - option "4曲"
+          - option "5曲"
+          - option "6曲"
+          - option "7曲"
+          - option "8曲"
+          - option "9曲"
+          - option "10曲"
+          - option "11曲"
+          - option "12曲"
+          - option "13曲"
+          - option "14曲"
+          - option "15曲"
+          - option "16曲"
+          - option "17曲"
+          - option "18曲"
+          - option "19曲"
+          - option "20曲"
+          - option "21曲"
+          - option "22曲"
+          - option "23曲"
+          - option "24曲"
+          - option "25曲"
+          - option "26曲"
+          - option "27曲"
+          - option "28曲"
+          - option "29曲"
+          - option "30曲"
+          - option "31曲"
+          - option "32曲"
+          - option "33曲"
+          - option "34曲"
+          - option "35曲"
+      - generic [ref=e114]:
+        - heading "SNSでこのシングルを収益化する" [level=2] [ref=e846]
+        - table [ref=e120]:
+          - rowgroup [ref=e121]:
+            - row "SNSパック （4.95ドル／年 + 広告収入の20％） YouTube、TikTok、Instagram、Facebookで楽曲を収益化します。（楽曲が使われている動画が見つかった場合に通知と広告収益を受け取ることができます。） 楽曲の登録先  YouTubeのContent ID、クリエイターミュージック、ショート音楽ライブラリ  TikTokの音楽ID認識サービス  Instagramの収益化サービス（Meta Rights Manager）  Facebookの楽曲検出サービス（Meta Rights Manager） 詳しくはこちら" [ref=e847]:
+              - cell "SNSパック （4.95ドル／年 + 広告収入の20％） YouTube、TikTok、Instagram、Facebookで楽曲を収益化します。（楽曲が使われている動画が見つかった場合に通知と広告収益を受け取ることができます。） 楽曲の登録先  YouTubeのContent ID、クリエイターミュージック、ショート音楽ライブラリ  TikTokの音楽ID認識サービス  Instagramの収益化サービス（Meta Rights Manager）  Facebookの楽曲検出サービス（Meta Rights Manager） 詳しくはこちら" [ref=e848]:
+                - checkbox "SNSパック （4.95ドル／年 + 広告収入の20％） YouTube、TikTok、Instagram、Facebookで楽曲を収益化します。（楽曲が使われている動画が見つかった場合に通知と広告収益を受け取ることができます。） 楽曲の登録先  YouTubeのContent ID、クリエイターミュージック、ショート音楽ライブラリ  TikTokの音楽ID認識サービス  Instagramの収益化サービス（Meta Rights Manager）  Facebookの楽曲検出サービス（Meta Rights Manager） 詳しくはこちら" [ref=e849] [cursor=pointer]
+              - cell "SNSパック （4.95ドル／年 + 広告収入の20％） YouTube、TikTok、Instagram、Facebookで楽曲を収益化します。（楽曲が使われている動画が見つかった場合に通知と広告収益を受け取ることができます。） 楽曲の登録先  YouTubeのContent ID、クリエイターミュージック、ショート音楽ライブラリ  TikTokの音楽ID認識サービス  Instagramの収益化サービス（Meta Rights Manager）  Facebookの楽曲検出サービス（Meta Rights Manager） 詳しくはこちら" [ref=e850]:
+                - generic [ref=e127]:
+                  - generic [ref=e128]:
+                    - img [ref=e129]
+                    - text: SNSパック （4.95ドル／年 + 広告収入の20％）
+                  - text: YouTube、TikTok、Instagram、Facebookで楽曲を収益化します。（楽曲が使われている動画が見つかった場合に通知と広告収益を受け取ることができます。）
+                  - text: 楽曲の登録先
+                  - generic [ref=e130]: 
+                  - text: YouTubeのContent ID、クリエイターミュージック、ショート音楽ライブラリ
+                  - generic [ref=e131]: 
+                  - text: TikTokの音楽ID認識サービス
+                  - generic [ref=e132]: 
+                  - text: Instagramの収益化サービス（Meta Rights Manager）
+                  - generic [ref=e133]: 
+                  - text: Facebookの楽曲検出サービス（Meta Rights Manager）
+                  - link "詳しくはこちら" [ref=e851] [cursor=pointer]:
+                    - /url: https://support.distrokid.com/hc/ja/articles/30785369645843-What-is-Social-Media-Pack
+      - generic [ref=e135]:
+        - heading "このシングルはすでにリリースされていますか？" [level=2] [ref=e852]
+        - generic [ref=e137]:
+          - generic [ref=e138]:
+            - radio "いいえ" [checked] [ref=e853] [cursor=pointer]
+            - text: いいえ
+          - generic [ref=e140]:
+            - radio "はい" [ref=e854] [cursor=pointer]
+            - text: はい
+      - generic [ref=e143]:
+        - generic [ref=e144]:
+          - generic [ref=e145]:
+            - generic [ref=e146]: Ultimateプランにアップグレードして限定機能を使う
+            - generic [ref=e147]:
+              - generic [ref=e148]: 
+              - text: 今日311名がアップグレードしました
+          - generic [ref=e149]:
+            - generic [ref=e150]:
+              - generic [ref=e152]: 
+              - paragraph [ref=e153]: 公開後でも楽曲のオーディオを差し替え可能
+            - generic [ref=e154]:
+              - generic [ref=e156]: 
+              - paragraph [ref=e157]: レポートとアナリティクス
+            - generic [ref=e158]:
+              - generic [ref=e160]: 
+              - paragraph [ref=e161]: Spotifyプレイリストに楽曲をアピール
+            - generic [ref=e162]:
+              - generic [ref=e164]: 
+              - paragraph [ref=e165]: 1～100組のアーティストまたはバンド
+        - generic [ref=e166]:
+          - button "アップグレード：89.99ドル $45" [ref=e855] [cursor=pointer]:
+            - generic [ref=e171]: アップグレード：89.99ドル $45
+          - button "結構です" [ref=e856] [cursor=pointer]
+      - generic [ref=e173]:
+        - heading "アーティスト名／バンド名" [level=2] [ref=e857]
+        - textbox [ref=e176]: Anicca
+        - text: 
+        - generic [ref=e177]:
+          - generic [ref=e178]: 💡重要：自分の名前、アーティスト名、バンド名を入力してください。他人の名前やレーベル名は（許可を得ている場合を除き）使えません。「〜プレゼンツ」等の形でも他人の名前は使えません。
+          - generic [ref=e179]: 💡絵文字：絵文字は使えません。配信に問題が出る可能性があります。
+          - generic [ref=e180]: 💡ランダムに決める：  Random Name Generatorでアーティスト名を選んでみましょう。
+        - link:
+          - /url: /new/?freebie=1
+        - link:
+          - /url: https://distrokid.com/plan/?upgrade=1
+        - text: 
+      - generic [ref=e181]:
+        - heading "Spotifyのロゴ" [level=2] [ref=e858]:
+          - img "Spotifyのロゴ" [ref=e859]
+        - heading "このアーティスト名でSpotifyに配信したことはありますか？" [level=3] [ref=e860]
+        - text:   
+        - generic [ref=e186]:
+          - generic [ref=e188]: 
+          - generic [ref=e189]: 準備OKです！このリリースはAniccaのこれまでのリリースと一緒に表示されます。
+        - text: 
+      - generic [ref=e190]:
+        - heading "Apple Musicのロゴ" [level=2] [ref=e861]:
+          - img "Apple Musicのロゴ" [ref=e862]
+        - heading "このアーティスト名でApple Musicに配信したことはありますか？" [level=3] [ref=e863]
+        - generic [ref=e194]:
+          - generic [ref=e196]:
+            - generic [ref=e198]: Aniccaという名前のアーティストがApple Musicにすでに存在します。
+            - generic [ref=e199]: 楽曲を正しいページに表示するため、当てはまるものを選択してください。リンクをクリックすると新しいウィンドウでアーティストプロフィールが開きます。
+          - generic [ref=e200]:
+            - generic [ref=e999]:
+              - radio "Anicca Heartstring - シングル" [ref=e1000] [cursor=pointer]
+              - img [ref=e1001]
+              - link "Anicca" [ref=e1002] [cursor=pointer]:
+                - /url: https://music.apple.com/artist/1203009538
+              - generic [ref=e1006]: Heartstring - シングル
+            - generic [ref=e1009]:
+              - radio "Anicca bitter(sweet)" [ref=e1010] [cursor=pointer]
+              - img [ref=e1011]
+              - link "Anicca" [ref=e1012] [cursor=pointer]:
+                - /url: https://music.apple.com/artist/1813045519
+              - generic [ref=e1016]: bitter(sweet)
+            - generic [ref=e1019]:
+              - radio "Anicca Ahora Veo Tu Luz" [ref=e1020] [cursor=pointer]
+              - img [ref=e1021]
+              - link "Anicca" [ref=e1022] [cursor=pointer]:
+                - /url: https://music.apple.com/artist/1859813787
+              - generic [ref=e1026]: Ahora Veo Tu Luz
+            - generic [ref=e1029]:
+              - radio "ANICCA Hail Them - シングル" [ref=e1030] [cursor=pointer]
+              - img [ref=e1031]
+              - link "ANICCA" [ref=e1032] [cursor=pointer]:
+                - /url: https://music.apple.com/artist/1740652137
+              - generic [ref=e1036]: Hail Them - シングル
+            - generic [ref=e1039]:
+              - radio "anicca Fluffy & Crispy" [ref=e1040] [cursor=pointer]
+              - img [ref=e1041]
+              - link "anicca" [ref=e1042] [cursor=pointer]:
+                - /url: https://music.apple.com/artist/1864248881
+              - generic [ref=e1046]: Fluffy & Crispy
+            - generic [ref=e1049]:
+              - radio "Anicca Slide Back - シングル" [ref=e1050] [cursor=pointer]
+              - img [ref=e1051]
+              - link "Anicca" [ref=e1052] [cursor=pointer]:
+                - /url: https://music.apple.com/artist/1879973983
+              - generic [ref=e1056]: Slide Back - シングル
+          - generic [ref=e261]:
+            - generic [ref=e262]:
+              - radio "Anicca名義でiTunes・Apple Musicに配信したことがあるがここには表示されていない" [ref=e867] [cursor=pointer]
+              - generic [ref=e266]: Anicca名義でiTunes・Apple Musicに配信したことがあるがここには表示されていない
+            - text: 
+          - generic [ref=e267]:
+            - radio "Anicca名義でiTunes・Apple Musicに配信したことはない" [ref=e868] [cursor=pointer]
+            - generic [ref=e271]: Anicca名義でiTunes・Apple Musicに配信したことはない
+        - text:       
+      - generic [ref=e272]:
+        - heading "YouTube Musicのロゴ" [level=2] [ref=e869]:
+          - img "YouTube Musicのロゴ" [ref=e870]
+        - heading "このアーティスト名でYouTube Musicに配信したことはありますか？" [level=3] [ref=e871]
+        - text:   
+        - generic [ref=e277]:
+          - generic [ref=e279]: 
+          - generic [ref=e280]: 準備OKです！このリリースはAniccaのこれまでのリリースと一緒に表示されます。
+        - generic: 
+      - generic [ref=e281]:
+        - heading "Instagramのロゴ" [level=2] [ref=e872]:
+          - img "Instagramのロゴ" [ref=e873]
+        - heading "このアーティスト名でInstagramに配信したことはありますか？" [level=3] [ref=e874]
+        - text: 
+        - generic [ref=e285]:
+          - generic [ref=e287]:
+            - generic [ref=e288]:
+              - radio "はい - このシングルをAniccaのこれまでのリリースと一緒に表示する" [ref=e875] [cursor=pointer]
+              - generic [ref=e292]: はい - このシングルをAniccaのこれまでのリリースと一緒に表示する
+            - text: 
+          - generic [ref=e294]:
+            - radio "いいえ - Anicca名義でInstagramに配信したことはない" [checked] [ref=e876] [cursor=pointer]
+            - generic [ref=e298]: いいえ - Anicca名義でInstagramに配信したことはない
+      - generic [ref=e299]:
+        - heading "Facebookのロゴ" [level=2] [ref=e877]:
+          - img "Facebookのロゴ" [ref=e878]
+        - heading "このアーティスト名でFacebookに配信したことはありますか？" [level=3] [ref=e879]
+        - text: 
+        - generic [ref=e303]:
+          - generic [ref=e305]:
+            - generic [ref=e306]:
+              - radio "はい - このシングルをAniccaのこれまでのリリースと一緒に表示する" [ref=e880] [cursor=pointer]
+              - generic [ref=e310]: はい - このシングルをAniccaのこれまでのリリースと一緒に表示する
+            - text: 
+          - generic [ref=e312]:
+            - radio "いいえ - Anicca名義でFacebookに配信したことはない" [checked] [ref=e881] [cursor=pointer]
+            - generic [ref=e316]: いいえ - Anicca名義でFacebookに配信したことはない
+      - generic [ref=e317]:
+        - heading "リリース日" [level=2] [ref=e882]:
+          - generic [ref=e319]: リリース日
+        - generic [ref=e320]:
+          - textbox [ref=e321]
+          - generic [ref=e322]:
+            - text: リリース日を1週間以上先に設定するとプレイリストに追加される可能性が高くなります。
+            - text: すべての配信先で同じ日にリリースする方法は
+            - link "こちら" [ref=e883] [cursor=pointer]:
+              - /url: https://support.distrokid.com/hc/ja/articles/360013534454-If-I-Specify-a-Custom-Release-Date-When-Will-My-Album-Appear-in-Streaming-Services-
+      - text: 
+      - generic [ref=e324]:
+        - heading "レーベル名" [level=2] [ref=e884]
+        - textbox [ref=e328]: 12535260 Records DK
+      - generic [ref=e329]:
+        - heading "言語" [level=2] [ref=e885]:
+          - generic [ref=e331]: 言語
+        - combobox [ref=e332]:
+          - option "Arabic"
+          - option "Bosnian"
+          - option "Bulgarian"
+          - option "Cantonese"
+          - option "Catalan"
+          - option "Chinese (Simplified)"
+          - option "Chinese (Traditional)"
+          - option "Croatian"
+          - option "Czech"
+          - option "Danish"
+          - option "Dutch"
+          - option "English" [selected]
+          - option "Estonian"
+          - option "Finnish"
+          - option "French"
+          - option "German"
+          - option "Greek"
+          - option "Hebrew"
+          - option "Hindi"
+          - option "Hungarian"
+          - option "Icelandic"
+          - option "Indonesian"
+          - option "Italian"
+          - option "Japanese"
+          - option "Korean"
+          - option "Lao"
+          - option "Latvian"
+          - option "Lithuanian"
+          - option "Malay"
+          - option "Norwegian"
+          - option "Persian"
+          - option "Polish"
+          - option "Portuguese"
+          - option "Punjabi"
+          - option "Romanian"
+          - option "Russian"
+          - option "Slovak"
+          - option "Spanish"
+          - option "Swahili"
+          - option "Swedish"
+          - option "Tagalog"
+          - option "Thai"
+          - option "Turkish"
+          - option "Ukrainian"
+          - option "Vietnamese"
+        - text:     
+      - generic [ref=e333]:
+        - heading "メインジャンル" [level=2] [ref=e886]:
+          - generic [ref=e336]: メインジャンル
+        - generic [ref=e337]:
+          - combobox [ref=e338]:
+            - option "ジャンルを選択" [selected]
+            - option "J-POP"
+            - option "K-POP"
+            - option "R&B／ソウル"
+            - option "アフロビート"
+            - option "アフロポップ"
+            - option "ヴォーカル"
+            - option "エレクトロニック"
+            - option "オルタナティブ"
+            - option "カントリー"
+            - option "クラシック"
+            - option "クリスチャン／ゴスペル"
+            - option "コメディ"
+            - option "コンテンポラリーラテン"
+            - option "サウンドトラック"
+            - option "シーズンソング"
+            - option "シガザ"
+            - option "ジャーマンフォーク"
+            - option "ジャーマンポップス"
+            - option "ジャズ"
+            - option "シンガーソングライター"
+            - option "スペイン語ポップ"
+            - option "スペイン語ロック"
+            - option "スポークンワード"
+            - option "ダンス"
+            - option "ニューエイジ"
+            - option "パンク"
+            - option "ビッグバンド"
+            - option "ヒップホップ／ラップ"
+            - option "フィットネス＆エクササイズ"
+            - option "フォーク"
+            - option "ブルース"
+            - option "フレンチポップス"
+            - option "ポップス"
+            - option "マスカンディ"
+            - option "メタル"
+            - option "ラテン"
+            - option "ラテン・アーバン"
+            - option "ラテンジャズ"
+            - option "ラテンハウス"
+            - option "レゲエ"
+            - option "ロック"
+            - option "ワールド"
+            - option "子供向け音楽"
+          - text:   
+      - generic [ref=e339]:
+        - heading "第二ジャンル （任意）" [level=2] [ref=e887]
+        - combobox [ref=e343]:
+          - option "第二ジャンルを選択" [selected]
+          - option "J-POP"
+          - option "K-POP"
+          - option "R&B／ソウル"
+          - option "アフロビート"
+          - option "アフロポップ"
+          - option "ヴォーカル"
+          - option "エレクトロニック"
+          - option "オルタナティブ"
+          - option "カントリー"
+          - option "クリスチャン／ゴスペル"
+          - option "コメディ"
+          - option "コンテンポラリーラテン"
+          - option "シーズンソング"
+          - option "シガザ"
+          - option "ジャーマンフォーク"
+          - option "ジャーマンポップス"
+          - option "ジャズ"
+          - option "シンガーソングライター"
+          - option "スペイン語ポップ"
+          - option "スペイン語ロック"
+          - option "スポークンワード"
+          - option "ダンス"
+          - option "ニューエイジ"
+          - option "パンク"
+          - option "ビッグバンド"
+          - option "ヒップホップ／ラップ"
+          - option "フィットネス＆エクササイズ"
+          - option "フォーク"
+          - option "ブルース"
+          - option "フレンチポップス"
+          - option "ポップス"
+          - option "マスカンディ"
+          - option "メタル"
+          - option "ラテン"
+          - option "ラテン・アーバン"
+          - option "ラテンジャズ"
+          - option "ラテンハウス"
+          - option "レゲエ"
+          - option "ロック"
+          - option "ワールド"
+          - option "子供向け音楽"
+      - generic [ref=e344]:
+        - heading "ジャケット画像" [level=2] [ref=e888]:
+          - generic [ref=e347]: ジャケット画像
+        - generic [ref=e348]:
+          - generic [ref=e349]:
+            - generic [ref=e350] [cursor=pointer]:
+              - generic [ref=e352]:
+                - generic [ref=e354]: 
+                - generic [ref=e355]: 画像を選択
+                - generic [ref=e356]: またはここにドラッグしてアップロード
+                - text: 
+              - button "Choose File" [ref=e359]
+            - text:    
+          - generic [ref=e360]:
+            - generic [ref=e361]: 💡サイズ：JPG形式。3000px × 3000px の正方形を推奨（異なるサイズでも可）。
+            - generic [ref=e362]: 💡禁止事項：URLやXのアカウント名を含むジャケット、ピクセルが粗い画像、傾いた画像、画質の低い画像は受け付けられません。また、価格表示やストアのロゴ（iTunesやSpotifyのロゴなど）が入ったジャケットも使用できません。さらに、同じジャケットを複数のアルバムで使い回さないでください。
+            - generic [ref=e363]: 💡著作権：画像全体とその中で使われている要素を所有している必要があります。オンラインで見つけた画像を無断で使用している画像は配信できません。
+    - generic [ref=e365]:
+      - heading "トラック1" [level=2] [ref=e889]
+      - generic [ref=e368]:
+        - heading "曲名" [level=3] [ref=e890]
+        - generic [ref=e370]: 曲名のみを入力します。フィーチャリングアーティスト等の情報は入力しないでください。
+      - generic [ref=e371]:
+        - textbox "トラック1の曲名" [ref=e891]
+        - generic [ref=e373]:
+          - generic [ref=e374]:          
+          - generic [ref=e375]:
+            - generic [ref=e376]: 💡フィーチャリングアーティストは次の項目で入力します。
+            - generic [ref=e377]: 💡カバー曲の場合、原曲のアーティスト名は入力しないでください。
+            - generic [ref=e378]: 💡年号、日付：「2026」のような表現は使えません。
+      - generic [ref=e379]:
+        - generic [ref=e381]:
+          - heading "曲名にフィーチャリングアーティストを入れる" [level=3] [ref=e892]
+          - generic [ref=e383]: フィーチャリングアーティスト／リミキサーの名前を曲名に入れることができます。（Anicca以外）
+        - generic [ref=e385]:
+          - radio "曲名に他のアーティストの名前を入れない" [checked] [ref=e893] [cursor=pointer]
+          - generic [ref=e388]: 曲名に他のアーティストの名前を入れない
+        - generic [ref=e389]:
+          - generic [ref=e390]:
+            - radio "曲名に他のアーティストの名前を入れる" [ref=e894] [cursor=pointer]
+            - generic [ref=e393]: 曲名に他のアーティストの名前を入れる
+          - text: 
+      - generic [ref=e394]:
+        - generic [ref=e396]:
+          - heading "曲名に「バージョン」情報を入れる" [level=3] [ref=e895]
+          - generic [ref=e400]:
+            - radio "通常バージョンなのでバージョン情報は入れない。" [checked] [ref=e896] [cursor=pointer]
+            - generic [ref=e403]: 通常バージョンなのでバージョン情報は入れない。
+          - generic [ref=e405]:
+            - radio "「Radio Edit（ラジオ放送用）」を入れる" [ref=e897] [cursor=pointer]
+            - generic [ref=e408]: 「Radio Edit（ラジオ放送用）」を入れる
+          - generic [ref=e410]:
+            - radio "その他のバージョン情報を入れる" [ref=e898] [cursor=pointer]
+            - generic [ref=e413]: その他のバージョン情報を入れる
+        - generic [ref=e414]:
+          - heading "曲名のプレビュー：" [level=4] [ref=e899]
+          - generic [ref=e417]:
+            - heading "1" [level=3] [ref=e419]
+            - generic [ref=e421]: 
+            - generic [ref=e422]:
+              - generic [ref=e423]: トラック1
+              - generic [ref=e424]: Anicca
+          - generic [ref=e426]:
+            - generic [ref=e427]: 注意事項：
+            - list [ref=e429]:
+              - listitem [ref=e430]: 配信先によって曲名の表示方法が異なり、上記と異なる表記になることがあります。
+              - listitem [ref=e431]: プロデューサーは、曲名に表示されません。Spotifyでは、曲名の下にプロデューサーが表示されます。他のサービスでは「クレジット」メニューに表示されます。
+              - listitem [ref=e432]: メインアーティスト（「追加の」メインアーティストを含む）は曲名に表示されません。Spotifyでは曲名の下に表示されます。
+              - listitem [ref=e433]: リミキサーの名前はバージョン情報の一部として曲名に表示されます。
+              - listitem [ref=e434]: 配信先のルールに沿ってかっこが角括弧（[]）に変換されることがあります。
+      - separator [ref=e435]
+      - generic [ref=e436]:
+        - generic [ref=e437]:
+          - heading "オーディオファイルをアップロード (WAV, MP3, M4A, FLAC, AIFF, WMA)" [level=3] [ref=e900]
+          - generic [ref=e440] [cursor=pointer]: すでにISRCコードをお持ちですか？
+        - generic [ref=e443] [cursor=pointer]:
+          - generic [ref=e445]:
+            - generic [ref=e447]: 
+            - generic [ref=e448]: オーディオファイルを選択
+            - generic [ref=e449]: または、ここにオーディオファイルをドラッグしてアップロード
+            - text: 
+          - button "Choose File" [ref=e451]
+      - generic [ref=e452]:
+        - link "Mixeaで楽曲をマスタリングする" [ref=e901] [cursor=pointer]:
+          - /url: /mixea/?ref=upload
+        - generic [ref=e454]: 
+      - separator [ref=e455]
+      - generic [ref=e456]:
+        - heading "Dolby Atmos／空間オーディオ" [level=3] [ref=e902]
+        - generic [ref=e458]:
+          - text: Apple Music、Tidal、Amazon MusicでDolby Atmosミックスを配信しますか？（
+          - link "詳しくはこちら" [ref=e903] [cursor=pointer]:
+            - /url: https://distrokid.zendesk.com/hc/ja/articles/4405783945363
+          - text: ）
+        - generic [ref=e460]:
+          - generic [ref=e462]:
+            - radio "いいえ" [checked] [ref=e904] [cursor=pointer]
+            - generic [ref=e465]: いいえ
+          - generic [ref=e466]:
+            - generic [ref=e467]:
+              - radio "はい - Atmosミックスを追加でアップロードする" [ref=e905] [cursor=pointer]
+              - generic [ref=e470]: はい - Atmosミックスを追加でアップロードする
+            - text:  
+      - separator [ref=e471]
+      - generic [ref=e472]:
+        - heading "ソングライター／カバー曲" [level=3] [ref=e906]
+        - generic [ref=e475]:
+          - generic [ref=e477]:
+            - radio "作曲者／作詞者は自分自身、あるいは自分の担当するアーティスト（オリジナル曲）" [checked] [ref=e907] [cursor=pointer]
+            - generic [ref=e480]: 作曲者／作詞者は自分自身、あるいは自分の担当するアーティスト（オリジナル曲）
+          - generic [ref=e481]:
+            - generic [ref=e483]:
+              - radio "作曲者／作詞者は別のアーティスト（カバー曲）" [ref=e908] [cursor=pointer]
+              - generic [ref=e486]: 作曲者／作詞者は別のアーティスト（カバー曲）
+            - text:      
+      - separator [ref=e487]
+      - generic [ref=e488]:
+        - heading "ソングライターの本名" [level=3] [ref=e909]
+        - generic [ref=e490]:
+          - text: アーティスト名ではなく本名を入力してください（
+          - link "詳しくはこちら" [ref=e910] [cursor=pointer]:
+            - /url: https://distrokid.zendesk.com/hc/ja/articles/360013545554
+          - text: ）
+        - generic [ref=e493]:
+          - generic [ref=e494]:
+            - combobox [ref=e496]:
+              - option "作曲"
+              - option "作詞"
+              - option "作曲・作詞" [selected]
+            - generic [ref=e498]:
+              - textbox "名" [ref=e911]
+              - textbox "ミドルネーム" [ref=e912]
+              - textbox "姓" [ref=e913]
+          - generic: 
+        - generic [ref=e505]:
+          - generic [ref=e507] [cursor=pointer]:
+            - generic [ref=e508]: 
+            - text: 追加
+          - text: 
+        - separator [ref=e509]
+      - generic [ref=e510]:
+        - heading "露骨な歌詞はありますか？" [level=3] [ref=e914]
+        - generic [ref=e514]:
+          - radio "いいえ" [checked] [ref=e915] [cursor=pointer]
+          - generic [ref=e517]: いいえ
+        - generic [ref=e519]:
+          - radio "はい" [ref=e916] [cursor=pointer]
+          - generic [ref=e522]: はい
+        - separator [ref=e523]
+      - generic [ref=e524]:
+        - heading "Radio Edit（ラジオ放送用）への該当" [level=3] [ref=e917]:
+          - generic [ref=e527]: Radio Edit（ラジオ放送用）への該当
+        - generic [ref=e528]:
+          - generic [ref=e530]:
+            - radio "この楽曲に露骨な歌詞はない。（露骨な歌詞のあるバージョンは存在しない。）" [checked] [ref=e918] [cursor=pointer]
+            - generic [ref=e533]: この楽曲に露骨な歌詞はない。（露骨な歌詞のあるバージョンは存在しない。）
+          - generic [ref=e535]:
+            - radio "この楽曲に露骨な歌詞がある別バージョンがあり、今回のリリースは露骨な歌詞を取り除いたバージョン（「Radio Edit」）にあたる" [ref=e919] [cursor=pointer]
+            - generic [ref=e538]: この楽曲に露骨な歌詞がある別バージョンがあり、今回のリリースは露骨な歌詞を取り除いたバージョン（「Radio Edit」）にあたる
+        - separator [ref=e539]
+      - generic [ref=e540]:
+        - heading "歌もの／インストの区分" [level=3] [ref=e920]:
+          - generic [ref=e543]: 歌もの／インストの区分
+        - generic [ref=e544]:
+          - generic [ref=e546]:
+            - radio "歌もの" [checked] [ref=e921] [cursor=pointer]
+            - generic [ref=e549]: 歌もの
+          - generic [ref=e551]:
+            - radio "インスト" [ref=e922] [cursor=pointer]
+            - generic [ref=e554]: インスト
+      - separator [ref=e555]
+      - generic [ref=e556]:
+        - heading "Does this song include AI-generated music, vocals, or lyrics?" [level=3] [ref=e557]
+        - generic [ref=e558]:
+          - text: Using AI for mastering or mixing doesn't count.
+          - link "詳しくはこちら" [ref=e923] [cursor=pointer]:
+            - /url: https://support.distrokid.com/hc/en-us/articles/50784235803411
+        - generic [ref=e561]:
+          - radio "いいえ" [checked] [ref=e924] [cursor=pointer]
+          - generic [ref=e564]: いいえ
+        - generic [ref=e566]:
+          - radio "はい" [ref=e925] [cursor=pointer]
+          - generic [ref=e569]: はい
+        - text: 
+        - generic [ref=e570]: 
+      - separator [ref=e571]
+      - generic [ref=e572]:
+        - heading "試聴開始位置（TikTok、Apple Music、iTunes）" [level=3] [ref=e926]
+        - generic [ref=e575]:
+          - generic [ref=e577]:
+            - radio "配信先に任せる" [checked] [ref=e927] [cursor=pointer]
+            - generic [ref=e580]: 配信先に任せる
+          - generic [ref=e582]:
+            - radio "試聴開始位置を自分で決める" [ref=e928] [cursor=pointer]
+            - generic [ref=e585]: 試聴開始位置を自分で決める
+      - separator [ref=e586]
+      - generic [ref=e587]:
+        - heading "トラックの価格" [level=3] [ref=e929]
+        - generic [ref=e589]: iTunes・Amazon Music （米国ドル）
+        - generic [ref=e590]:
+          - combobox [ref=e591]:
+            - option "0.69ドル"
+            - option "0.99ドル" [selected]
+            - option "$1.29ドル"
+          - generic [ref=e592]: 10分を超えるトラックは価格が高くなります。
+    - generic [ref=e593]:
+      - generic [ref=e594]:
+        - img "Apple Musicのロゴ" [ref=e930]
+        - heading "追加要件" [level=2] [ref=e931]
+        - generic [ref=e600]:
+          - generic [ref=e601]: 
+          - text: 未入力
+      - generic [ref=e602]: Apple Musicに配信するには各トラックに演奏者とプロデューサーをクレジットする必要があります。
+      - generic [ref=e604]:
+        - generic [ref=e605] [cursor=pointer]:
+          - generic [ref=e606]: 
+          - text: 
+          - generic [ref=e608]: 
+          - text: クレジットを追加
+        - text:      
+      - generic [ref=e609]:
+        - strong [ref=e610]: この手順をスキップするには
+        - text: ページ上部でApple MusicとiTunesの選択を解除してください。あとで配信先としてAppleを追加できます。
+    - generic [ref=e611]:
+      - generic [ref=e614]: オプション
+      - generic [ref=e615]:
+        - generic [ref=e616]:
+          - table [ref=e620]:
+            - rowgroup [ref=e621]:
+              - row "レガシーパック （29ドル、買い切り、月額費用なし） アカウントを解約した場合やクレジットカードが拒否された場合でも、このシングルが削除されないように設定します。楽曲を自ら削除しない限り収益を受け取れます。" [ref=e932]:
+                - cell "レガシーパック （29ドル、買い切り、月額費用なし） アカウントを解約した場合やクレジットカードが拒否された場合でも、このシングルが削除されないように設定します。楽曲を自ら削除しない限り収益を受け取れます。" [ref=e933]:
+                  - checkbox "レガシーパック （29ドル、買い切り、月額費用なし） アカウントを解約した場合やクレジットカードが拒否された場合でも、このシングルが削除されないように設定します。楽曲を自ら削除しない限り収益を受け取れます。" [ref=e934] [cursor=pointer]
+                - cell "レガシーパック （29ドル、買い切り、月額費用なし） アカウントを解約した場合やクレジットカードが拒否された場合でも、このシングルが削除されないように設定します。楽曲を自ら削除しない限り収益を受け取れます。" [ref=e935]:
+                  - generic [ref=e626]:
+                    - generic [ref=e627]:
+                      - img [ref=e628]
+                      - text: レガシーパック （29ドル、買い切り、月額費用なし）
+                    - text: アカウントを解約した場合やクレジットカードが拒否された場合でも、このシングルが削除されないように設定します。楽曲を自ら削除しない限り収益を受け取れます。
+          - table [ref=e631]:
+            - rowgroup [ref=e632]:
+              - row "ディスカバリーパック （0.99ドル／年） これシングルを楽曲／アーティスト情報のグローバルデータベースに登録します。 Gracenoteデータベース：自動車数百万台で楽曲認識に使われています。 SoundScan：Billboardチャートに使われています。 Jaxsta：アーティスト、トラック、アルバムのクレジットデータベースです。 ACRCloud：音声フィンガープリンティング技術を利用した楽曲認識サービスです。" [ref=e936]:
+                - cell "ディスカバリーパック （0.99ドル／年） これシングルを楽曲／アーティスト情報のグローバルデータベースに登録します。 Gracenoteデータベース：自動車数百万台で楽曲認識に使われています。 SoundScan：Billboardチャートに使われています。 Jaxsta：アーティスト、トラック、アルバムのクレジットデータベースです。 ACRCloud：音声フィンガープリンティング技術を利用した楽曲認識サービスです。" [ref=e937]:
+                  - checkbox "ディスカバリーパック （0.99ドル／年） これシングルを楽曲／アーティスト情報のグローバルデータベースに登録します。 Gracenoteデータベース：自動車数百万台で楽曲認識に使われています。 SoundScan：Billboardチャートに使われています。 Jaxsta：アーティスト、トラック、アルバムのクレジットデータベースです。 ACRCloud：音声フィンガープリンティング技術を利用した楽曲認識サービスです。" [ref=e938] [cursor=pointer]
+                - cell "ディスカバリーパック （0.99ドル／年） これシングルを楽曲／アーティスト情報のグローバルデータベースに登録します。 Gracenoteデータベース：自動車数百万台で楽曲認識に使われています。 SoundScan：Billboardチャートに使われています。 Jaxsta：アーティスト、トラック、アルバムのクレジットデータベースです。 ACRCloud：音声フィンガープリンティング技術を利用した楽曲認識サービスです。" [ref=e939]:
+                  - generic [ref=e637]:
+                    - generic [ref=e638]:
+                      - img [ref=e639]
+                      - text: ディスカバリーパック （0.99ドル／年）
+                    - text: これシングルを楽曲／アーティスト情報のグローバルデータベースに登録します。
+                    - list [ref=e641]:
+                      - listitem [ref=e642]: Gracenoteデータベース：自動車数百万台で楽曲認識に使われています。
+                      - listitem [ref=e643]: SoundScan：Billboardチャートに使われています。
+                      - listitem [ref=e644]: Jaxsta：アーティスト、トラック、アルバムのクレジットデータベースです。
+                      - listitem [ref=e645]: ACRCloud：音声フィンガープリンティング技術を利用した楽曲認識サービスです。
+          - table [ref=e648]:
+            - rowgroup [ref=e649]:
+              - row "ストアマキシマイザー （7.95ドル／年） DistroKidから他の配信先にも配信できるようになった際、このシングルを自動的にアップロードします。配信先は頻繁に追加されます。このシングルを配信できるサービスが増えた場合、配信前に通知が届きます。" [ref=e940]:
+                - cell "ストアマキシマイザー （7.95ドル／年） DistroKidから他の配信先にも配信できるようになった際、このシングルを自動的にアップロードします。配信先は頻繁に追加されます。このシングルを配信できるサービスが増えた場合、配信前に通知が届きます。" [ref=e941]:
+                  - checkbox "ストアマキシマイザー （7.95ドル／年） DistroKidから他の配信先にも配信できるようになった際、このシングルを自動的にアップロードします。配信先は頻繁に追加されます。このシングルを配信できるサービスが増えた場合、配信前に通知が届きます。" [ref=e942] [cursor=pointer]
+                - cell "ストアマキシマイザー （7.95ドル／年） DistroKidから他の配信先にも配信できるようになった際、このシングルを自動的にアップロードします。配信先は頻繁に追加されます。このシングルを配信できるサービスが増えた場合、配信前に通知が届きます。" [ref=e943]:
+                  - generic [ref=e654]:
+                    - generic [ref=e655]:
+                      - img [ref=e656]
+                      - text: ストアマキシマイザー （7.95ドル／年）
+                    - text: DistroKidから他の配信先にも配信できるようになった際、このシングルを自動的にアップロードします。配信先は頻繁に追加されます。このシングルを配信できるサービスが増えた場合、配信前に通知が届きます。
+          - table [ref=e660]:
+            - rowgroup [ref=e661]:
+              - row "DistroVid：ミュージックビデオ配信（8.25ドル／月、年に𝟣度99ドルを請求） Spotify, Apple, Tidal, Boomplay, VEVOにミュージックビデオを配信できます。何曲配信しても料金は定額。収益は100％を受け取れます。詳細はこちら" [ref=e944]:
+                - cell "DistroVid：ミュージックビデオ配信（8.25ドル／月、年に𝟣度99ドルを請求） Spotify, Apple, Tidal, Boomplay, VEVOにミュージックビデオを配信できます。何曲配信しても料金は定額。収益は100％を受け取れます。詳細はこちら" [ref=e945]:
+                  - checkbox "DistroVid：ミュージックビデオ配信（8.25ドル／月、年に𝟣度99ドルを請求） Spotify, Apple, Tidal, Boomplay, VEVOにミュージックビデオを配信できます。何曲配信しても料金は定額。収益は100％を受け取れます。詳細はこちら" [ref=e946] [cursor=pointer]
+                - cell "DistroVid：ミュージックビデオ配信（8.25ドル／月、年に𝟣度99ドルを請求） Spotify, Apple, Tidal, Boomplay, VEVOにミュージックビデオを配信できます。何曲配信しても料金は定額。収益は100％を受け取れます。詳細はこちら" [ref=e947]:
+                  - generic [ref=e666]:
+                    - generic [ref=e667]:
+                      - img [ref=e668]
+                      - text: DistroVid：ミュージックビデオ配信（8.25ドル／月、年に𝟣度99ドルを請求）
+                    - text: Spotify, Apple, Tidal, Boomplay, VEVOにミュージックビデオを配信できます。何曲配信しても料金は定額。収益は100％を受け取れます。
+                    - link "詳細はこちら" [ref=e948] [cursor=pointer]:
+                      - /url: https://distrovid.com/?ref=upload
+          - table [ref=e673]:
+            - rowgroup [ref=e674]:
+              - row "音量正規化 （2.99ドル、買い切り、月額費用なし） 音量をSpotifyの推奨規格（-14dB統合LUFS／最大-1dBトゥルーピーク）に合わせて調整します。これにより、配信先のトランスコードプロセス中の歪みやクリッピングを軽減／排除できます。 音質やダイナミックレンジはキープされます。このシングルの音量がすでに十分大きい場合（-14dB LUFS以上）、正規化は行われず、料金も請求されません。" [ref=e949]:
+                - cell "音量正規化 （2.99ドル、買い切り、月額費用なし） 音量をSpotifyの推奨規格（-14dB統合LUFS／最大-1dBトゥルーピーク）に合わせて調整します。これにより、配信先のトランスコードプロセス中の歪みやクリッピングを軽減／排除できます。 音質やダイナミックレンジはキープされます。このシングルの音量がすでに十分大きい場合（-14dB LUFS以上）、正規化は行われず、料金も請求されません。" [ref=e950]:
+                  - checkbox "音量正規化 （2.99ドル、買い切り、月額費用なし） 音量をSpotifyの推奨規格（-14dB統合LUFS／最大-1dBトゥルーピーク）に合わせて調整します。これにより、配信先のトランスコードプロセス中の歪みやクリッピングを軽減／排除できます。 音質やダイナミックレンジはキープされます。このシングルの音量がすでに十分大きい場合（-14dB LUFS以上）、正規化は行われず、料金も請求されません。" [ref=e951] [cursor=pointer]
+                - cell "音量正規化 （2.99ドル、買い切り、月額費用なし） 音量をSpotifyの推奨規格（-14dB統合LUFS／最大-1dBトゥルーピーク）に合わせて調整します。これにより、配信先のトランスコードプロセス中の歪みやクリッピングを軽減／排除できます。 音質やダイナミックレンジはキープされます。このシングルの音量がすでに十分大きい場合（-14dB LUFS以上）、正規化は行われず、料金も請求されません。" [ref=e952]:
+                  - generic [ref=e679]:
+                    - generic [ref=e680]:
+                      - img [ref=e681]
+                      - text: 音量正規化 （2.99ドル、買い切り
+                      - text: 、月額費用なし）
+                    - text: 音量をSpotifyの推奨規格（-14dB統合LUFS／最大-1dBトゥルーピーク）に合わせて調整します。これにより、配信先のトランスコードプロセス中の歪みやクリッピングを軽減／排除できます。 音質やダイナミックレンジはキープされます。このシングルの音量がすでに十分大きい場合（-14dB LUFS以上）、正規化は行われず、料金も請求されません。
+          - table [ref=e684]:
+            - rowgroup [ref=e685]:
+              - row "SNSパック （4.95ドル／年 + 広告収入の20％） YouTube、TikTok、Instagram、Facebookで楽曲を収益化します。（楽曲が使われている動画が見つかった場合に通知と広告収益を受け取ることができます。）" [ref=e953]:
+                - cell "SNSパック （4.95ドル／年 + 広告収入の20％） YouTube、TikTok、Instagram、Facebookで楽曲を収益化します。（楽曲が使われている動画が見つかった場合に通知と広告収益を受け取ることができます。）" [ref=e954]:
+                  - checkbox "SNSパック （4.95ドル／年 + 広告収入の20％） YouTube、TikTok、Instagram、Facebookで楽曲を収益化します。（楽曲が使われている動画が見つかった場合に通知と広告収益を受け取ることができます。）" [ref=e955] [cursor=pointer]
+                - cell "SNSパック （4.95ドル／年 + 広告収入の20％） YouTube、TikTok、Instagram、Facebookで楽曲を収益化します。（楽曲が使われている動画が見つかった場合に通知と広告収益を受け取ることができます。）" [ref=e956]:
+                  - generic [ref=e691]:
+                    - generic [ref=e692]:
+                      - img [ref=e693]
+                      - text: SNSパック （4.95ドル／年 + 広告収入の20％）
+                    - text: YouTube、TikTok、Instagram、Facebookで楽曲を収益化します。（楽曲が使われている動画が見つかった場合に通知と広告収益を受け取ることができます。）
+        - generic [ref=e696]:
+          - text: 合計：
+          - generic [ref=e697]: 0ドル
+          - generic [ref=e698]:
+            - generic [ref=e699]: 
+            - text: 次の番号で終わるカードに請求されます：
+            - generic [ref=e700]: "2838"
+            - text: （カードを更新する）
+    - generic [ref=e701]:
+      - heading "重要事項（必須）" [level=2] [ref=e957]
+      - generic [ref=e704]:
+        - generic [ref=e707]:
+          - checkbox "配信先として「YouTube Music」を選択しました。楽曲がYouTubeに配信されることを理解しています。" [ref=e958] [cursor=pointer]
+          - generic [ref=e710]: 配信先として「YouTube Music」を選択しました。楽曲がYouTubeに配信されることを理解しています。
+        - generic [ref=e713]:
+          - checkbox "再生回数を増やすサービスを使用しません。「自然な方法」であるとされているサービスも必ず不正に再生回数を増やすボットを使用しており、この不正は配信先によって検出されることを理解しています。不正に再生回数を増やすサービスの危険性について" [ref=e959] [cursor=pointer]
+          - generic [ref=e716]:
+            - text: 再生回数を増やすサービスを使用しません。「自然な方法」であるとされているサービスも必ず不正に再生回数を増やすボットを使用しており、この不正は配信先によって検出されることを理解しています。
+            - link "不正に再生回数を増やすサービスの危険性について" [ref=e960] [cursor=pointer]:
+              - /url: https://support.distrokid.com/hc/ja/articles/27691746904595-Don-t-Put-Your-Music-At-Risk
+        - generic [ref=e720]:
+          - checkbox "この音源は私自身がレコーディングしたものです。私はこの音源を世界中のストアで販売し、すべての収益を回収する権利を持っています。" [ref=e961] [cursor=pointer]
+          - generic [ref=e723]: この音源は私自身がレコーディングしたものです。私はこの音源を世界中のストアで販売し、すべての収益を回収する権利を持っています。
+        - generic [ref=e726]:
+          - checkbox "アーティスト名、曲名、アルバム名に、承認を得ていない他のアーティストの名前を使用していません。" [ref=e962] [cursor=pointer]
+          - generic [ref=e729]: アーティスト名、曲名、アルバム名に、承認を得ていない他のアーティストの名前を使用していません。
+        - generic [ref=e732]:
+          - checkbox "以下の利用規約を読み、同意しました。DistroKidディストリビューション規約" [ref=e963] [cursor=pointer]
+          - generic [ref=e735]:
+            - text: 以下の利用規約を読み、同意しました。
+            - link "DistroKidディストリビューション規約" [ref=e964] [cursor=pointer]:
+              - /url: https://distrokid.com/agreement/
+    - generic [ref=e738]: リリース内容の確認
+    - generic [ref=e739]:
+      - generic [ref=e740]:
+        - img [ref=e742]
+        - generic [ref=e743]:
+          - generic [ref=e744]:
+            - generic [ref=e745]: トラック1
+            - generic [ref=e746]: Anicca
+          - generic [ref=e748]:
+            - img "Spotifyのロゴ" [ref=e1057]
+            - img "iTunesのロゴ" [ref=e1058]
+            - img "Facebookのロゴ" [ref=e1059]
+            - img "TikTokのロゴ" [ref=e1060]
+            - img "Googleのロゴ" [ref=e1061]
+            - img "Amazon Musicのロゴ" [ref=e1062]
+            - img "Rdioのロゴ" [ref=e1063]
+            - img "Deezerのロゴ" [ref=e1064]
+            - img "Tidalのロゴ" [ref=e1065]
+            - img "iHeartのロゴ" [ref=e1066]
+            - img "Qobuzのロゴ" [ref=e1067]
+            - img "Saavnのロゴ" [ref=e1068]
+            - img "Boomplayのロゴ" [ref=e1069]
+            - generic [ref=e1070]: その他
+        - generic [ref=e764]:
+          - generic [ref=e765]:
+            - generic [ref=e766]: リリース日
+            - generic [ref=e767]: 最速
+          - generic [ref=e768]:
+            - generic [ref=e769]: レコードレーベル
+            - generic [ref=e770]: 12535260 Records DK
+      - generic [ref=e771]:
+        - generic [ref=e773]: トラックリスト
+        - generic [ref=e776]:
+          - generic [ref=e777]: "1"
+          - generic [ref=e778]:
+            - generic [ref=e779]: 曲名
+            - generic [ref=e780]: Anicca
+    - generic [ref=e781]: 次に進む
+    - button "続ける" [ref=e978] [cursor=pointer]
+  - generic [ref=e787]:
+    - generic [ref=e788]:
+      - generic [ref=e789]:
+        - generic [ref=e790]:
+          - link [ref=e791] [cursor=pointer]:
+            - /url: https://www.youtube.com/subscription_center?add_user=distrokid
+            - generic [ref=e792]: 
+          - link "" [ref=e793] [cursor=pointer]:
+            - /url: https://facebook.com/distrokid
+            - generic [ref=e794]: 
+          - link [ref=e795] [cursor=pointer]:
+            - /url: https://bsky.app/profile/distrokid.com
+            - generic [ref=e796]: 
+          - link [ref=e797] [cursor=pointer]:
+            - /url: https://www.instagram.com/distrokid/
+            - generic [ref=e798]: 
+        - generic [ref=e799]: © DistroKid 2026
+      - combobox [ref=e803]:
+        - option "Bahasa Indonesia"
+        - option "Bahasa Melayu"
+        - option "Čeština"
+        - option "Dansk"
+        - option "Deutsch"
+        - option "English"
+        - option "English (UK)"
+        - option "Español"
+        - option "Español (España)"
+        - option "Français"
+        - option "Français (Canada)"
+        - option "Italiano"
+        - option "Kiswahili"
+        - option "Magyar"
+        - option "Nederlands"
+        - option "Norsk Bokmål"
+        - option "Polski"
+        - option "Português (Brasil)"
+        - option "Português (Portugal)"
+        - option "Românã"
+        - option "Suomi"
+        - option "Svenska"
+        - option "Tiếng Việt"
+        - option "Türkçe"
+        - option "日本語" [selected]
+        - option "ελληνικά"
+        - option "українська"
+        - option "עברית"
+        - option "العربية‬‎"
+        - option "हिन्दी"
+        - option "ภาษาไทย"
+        - option "한국어"
+    - generic [ref=e804]:
+      - generic [ref=e805]:
+        - heading "ヘルプ" [level=2] [ref=e979]
+        - link "サポートセンター" [ref=e980] [cursor=pointer]:
+          - /url: https://distrokid.com/help/
+      - generic [ref=e808]:
+        - heading "DistroKid" [level=2] [ref=e981]
+        - link "お知らせ" [ref=e982] [cursor=pointer]:
+          - /url: https://news.distrokid.com/
+        - link "グッズ" [ref=e983] [cursor=pointer]:
+          - /url: https://store.distrokid.com/
+        - link "Artists For Change" [ref=e812] [cursor=pointer]:
+          - /url: https://distrokid.com/artistsforchange/
+        - link "採用情報" [ref=e984] [cursor=pointer]:
+          - /url: https://boards.greenhouse.io/distrokid
+        - link "インフルエンサー＆アフィリエイター・プログラム" [ref=e985] [cursor=pointer]:
+          - /url: https://distrokid.com/product/partners
+      - generic [ref=e815]:
+        - heading "ツール" [level=2] [ref=e986]
+        - link "プラン" [ref=e987] [cursor=pointer]:
+          - /url: https://distrokid.com/pricing/
+        - link "Bandzoogle" [ref=e818] [cursor=pointer]:
+          - /url: https://bandzoogle.com/?pc=DK14&utm_source=distrokid&utm_medium=website&utm_campaign=footer
+        - link "Instant Share" [ref=e819] [cursor=pointer]:
+          - /url: https://distrokid.com/instantshare/
+        - link "Mixea" [ref=e820] [cursor=pointer]:
+          - /url: https://mixea.com/
+        - link "DistroVid" [ref=e821] [cursor=pointer]:
+          - /url: https://distrovid.com/
+        - link "HyperFollow" [ref=e822] [cursor=pointer]:
+          - /url: https://hyperfollow.com/
+        - link "Direct" [ref=e823] [cursor=pointer]:
+          - /url: https://distrokid.com/direct/?ref=footer
+      - generic [ref=e824]:
+        - heading "モバイルアプリ" [level=2] [ref=e988]
+        - link "iPhone版" [ref=e989] [cursor=pointer]:
+          - /url: /app/
+        - link "Android版" [ref=e990] [cursor=pointer]:
+          - /url: /app/
+    - generic [ref=e828]:
+      - link "プライバシーポリシー" [ref=e991] [cursor=pointer]:
+        - /url: /privacy/
+      - link "Cookieポリシー" [ref=e992] [cursor=pointer]:
+        - /url: /privacy/
+      - link "Cookie設定" [ref=e993] [cursor=pointer]:
+        - /url: javascript:void(0)
+      - link "利用規約" [ref=e994] [cursor=pointer]:
+        - /url: https://distrokid.com/terms/
+      - link "サイトマップ" [ref=e995] [cursor=pointer]:
+        - /url: /sitemap/
+      - link "配信規約" [ref=e996] [cursor=pointer]:
+        - /url: /agreement/
+  - text: 

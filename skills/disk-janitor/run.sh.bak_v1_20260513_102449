@@ -1,0 +1,107 @@
+#!/usr/bin/env bash
+# disk-janitor v2 — every hour, aggressive sweep of disposable disk hogs.
+# 2026-05-13 Dais: cron must keep disk healthy. Goal = keep >20GB free always.
+# NEVER delete: cached_*.mp4 (preloaded HeyGen/Kling), bank_*.jsonl, .env,
+#                state/*.json, SKILL.md, scripts/, .git/, node_modules/, .next/
+
+set -uo pipefail
+
+before_kb=$(df -k / | awk 'END{print $4}')
+before_gb=$(awk -v k="$before_kb" 'BEGIN{printf "%.2f", k/1024/1024}')
+
+# ─── HARD-NEVER list (safety) ───
+NEVER='cached_en|cached_jp|bank_en|bank_jp|\.env|SKILL\.md|preload_en|state/.*\.json'
+
+# ── 1. sao-content-factory output (huge MP4s/audio) ─────────────────
+rm -rf "$HOME/anicca-project/sao-content-factory/remotion/out" 2>/dev/null
+rm -rf "$HOME/anicca-project/sao-content-factory/remotion/.cache" 2>/dev/null
+find "$HOME/anicca-project/sao-content-factory/assets" -type d -name output -mtime +1 -exec rm -rf {} + 2>/dev/null
+find "$HOME/anicca-project/sao-content-factory/assets" -type f -name 'yt_full.mp4' -mtime +1 -delete 2>/dev/null
+find "$HOME/anicca-project/sao-content-factory/assets" -type f -name 'bgm_*_full.mp3' -mtime +1 -delete 2>/dev/null
+find "$HOME/.openclaw/skills/sao-content-factory/output" -mindepth 3 -type d -mtime +1 -exec rm -rf {} + 2>/dev/null
+
+# ── 2. /tmp transients ──────────────────────────────────────────────
+rm -f /tmp/*.md /tmp/x_thread_*.json /tmp/sao_draft_*.json /tmp/jobs.json.* 2>/dev/null
+find /private/tmp/claude-501 -mindepth 2 -type f -mtime +0 -delete 2>/dev/null
+find /private/tmp/claude-501 -mindepth 2 -type d -empty -delete 2>/dev/null
+find /tmp -maxdepth 2 -type f \( -name '*.png' -o -name '*.jpg' -o -name '*.mp4' -o -name '*.log' \) -mtime +1 -delete 2>/dev/null
+find /tmp -maxdepth 1 -type d -name 'anicca-*' -mtime +1 -exec rm -rf {} + 2>/dev/null
+
+# ── 3. OpenClaw workspace dated outputs (1d threshold = more aggressive) ──
+find "$HOME/.openclaw/workspace" -maxdepth 1 -type d \( \
+  -name 'reelclaw*' -o -name 'slideshow-*' -o -name 'TODAY-*' -o -name '*-run' -o -name '*-work' -o -name '*-test*' -o -name 'tmp*' \
+\) -mtime +1 -exec rm -rf {} + 2>/dev/null
+
+# ── 4. tiktok-marketing dated dirs ──────────────────────────────────
+find "$HOME/.openclaw/workspace/tiktok-marketing" -maxdepth 1 -type d \( \
+  -name '*2026*' -o -name 'morning-*' -o -name 'afternoon-*' -o -name 'evening-*' \
+  -o -name 'reelclaw-*' -o -name 'work-*' -o -name 'slideshow-*' -o -name 'test-*' -o -name 'demo-reel-*' \
+\) -mtime +1 -exec rm -rf {} + 2>/dev/null
+find "$HOME/.openclaw/workspace/tiktok-marketing/posts" -mindepth 1 -maxdepth 1 -type d -mtime +2 -exec rm -rf {} + 2>/dev/null
+
+# ── 5. honne-ai generated artifacts ─────────────────────────────────
+find "$HOME/.openclaw/workspace/honne-ai" -mindepth 1 -maxdepth 1 -type d \( \
+  -name 'runs' -o -name 'work' -o -name 'exports' -o -name 'build*' -o -name 'out*' -o -name 'render*' \
+  -o -name 'reelclaw-*' -o -name '_reelclaw_tmp' -o -name 'tmp' -o -name 'sample-*' -o -name 'finals' \
+\) -mtime +1 -exec rm -rf {} + 2>/dev/null
+find "$HOME/.openclaw/workspace/honne-ai" -mindepth 1 -type f \( -name '*.mp4' -o -name '*.wav' -o -name '*.mp3' \) -mtime +2 -delete 2>/dev/null
+
+# ── 6. Mau TikTok output ────────────────────────────────────────────
+find "$HOME/.openclaw/workspace/mau-tiktok/output" -type f -mtime +3 -delete 2>/dev/null
+find "$HOME/.openclaw/workspace/mau-tiktok/hooks" -type f -mtime +2 -delete 2>/dev/null
+
+# ── 7. AutoResearchClaw (bigger, 7d threshold OK since research) ────
+find "$HOME/.openclaw/workspace/AutoResearchClaw" -type f -mtime +5 -delete 2>/dev/null
+find "$HOME/.openclaw/workspace/AutoResearchClaw" -type d -empty -delete 2>/dev/null
+
+# ── 8. reelclaw runs ────────────────────────────────────────────────
+find "$HOME/.openclaw/workspace/reelclaw-runs" -mindepth 1 -maxdepth 2 -type d -mtime +2 -exec rm -rf {} + 2>/dev/null
+find "$HOME/.openclaw/workspace/reelclaw_runs" -mindepth 1 -maxdepth 2 -type d -mtime +2 -exec rm -rf {} + 2>/dev/null
+
+# ── 9. monk factory renders (keep last 7d, mp4 already posted) ──────
+find "$HOME/anicca-monk-factory/renders" -type f -name '*.mp4' -mtime +7 -delete 2>/dev/null
+find "$HOME/anicca-monk-factory/renders" -type d -mtime +7 -empty -delete 2>/dev/null
+
+# ── 10. 4.7-slideshow-factory output (older slideshow runs) ─────────
+find "$HOME/.openclaw/skills/4.7-slideshow-factory/output" -mindepth 2 -type d -mtime +1 -exec rm -rf {} + 2>/dev/null
+
+# ── 11. individual product slideshow output (cafe/tomb/fashion/retreat/mantra/iam) ──
+for d in "$HOME/.openclaw/skills"/anicca-*-slideshow*/output "$HOME/.openclaw/skills"/anicca-iam*/output; do
+  [ -d "$d" ] || continue
+  find "$d" -mindepth 1 -maxdepth 1 -type d -mtime +1 -exec rm -rf {} + 2>/dev/null
+done
+
+# ── 12. comedy-factory output (skits / live recordings) ────────────
+find "$HOME/.openclaw/skills/anicca-comedy-factory/output" -mindepth 1 -type d -mtime +3 -exec rm -rf {} + 2>/dev/null
+
+# ── 13. paperclip / tinyagi work dirs ──────────────────────────────
+find "$HOME/.openclaw/workspace/paperclip" -type f -mtime +3 -delete 2>/dev/null
+find "$HOME/.openclaw/workspace/tinyagi" -type d -name "node_modules" -prune -o -type f -mtime +3 -print 2>/dev/null | head -1000 | xargs -r rm -f 2>/dev/null
+
+# ── 14. cron runs jsonl (keep last 50 lines per file) ──────────────
+for jf in "$HOME/.openclaw/cron/runs"/*.jsonl; do
+  [ -f "$jf" ] || continue
+  tail -50 "$jf" > "$jf.tmp" && mv "$jf.tmp" "$jf"
+done
+
+# ── 15. user-trash + .Trash ────────────────────────────────────────
+find "$HOME/.Trash" -mindepth 1 -mtime +1 -exec rm -rf {} + 2>/dev/null
+
+# ── 16. cleanup empty dirs in workspace ────────────────────────────
+find "$HOME/.openclaw/workspace" -mindepth 2 -type d -empty -delete 2>/dev/null
+
+# ── results ─────────────────────────────────────────────────────────
+after_kb=$(df -k / | awk 'END{print $4}')
+free_avail_gb=$(awk -v k="$after_kb" 'BEGIN{printf "%.2f", k/1024/1024}')
+freed_mb=$(( (after_kb - before_kb) / 1024 ))
+
+# Critical threshold: <5GB → ALERT
+critical_kb=$((5 * 1024 * 1024))
+if [ "$after_kb" -lt "$critical_kb" ]; then
+  echo "❌ disk-janitor v2: ALERT — only ${free_avail_gb}GB free after sweep (freed ${freed_mb}MB, before=${before_gb}GB). Investigate workspace growth or extend cleanup."
+  echo "Top 10 dirs >100M:"
+  du -sh "$HOME/.openclaw/workspace"/*/ 2>/dev/null | sort -rh | head -10
+  exit 4
+fi
+
+echo "🧹 disk-janitor v2: freed ${freed_mb}MB · ${free_avail_gb}GB free on / (was ${before_gb}GB)"

@@ -1,0 +1,28 @@
+{
+  "character": "Ajahn Sutta",
+  "updated": "2026-05-22",
+  "rule": "every angle ends with ONE specific named answer. tracks alternate. ebook ~1 in 5.",
+  "angles": [
+    {"id":"A01","track":"T1","format":"listicle","pain":"tired even after sleep","hook":"Five signs your body never truly rests, my friend.","keyword":"REST"},
+    {"id":"A02","track":"T1","format":"ritual","pain":"mind won't quiet at night","hook":"If your mind will not go quiet at night, do this one thing before sleep.","keyword":"STILL"},
+    {"id":"A03","track":"T1","format":"ritual","pain":"wake at 3am wired","hook":"When you wake at three in the morning, do this for two minutes — not your phone.","keyword":"THREE"},
+    {"id":"A04","track":"T1","format":"reveal","pain":"always tired/low energy","hook":"The thing stealing your energy is not coffee, and it is not your age.","keyword":"LIGHT"},
+    {"id":"A05","track":"T1","format":"listicle","pain":"anxious body, can't relax","hook":"Five signs your nervous system has been running too long.","keyword":"CALM"},
+    {"id":"A06","track":"T1","format":"ritual","pain":"racing heart / panic","hook":"When your heart races for no reason, breathe this way — the body has a switch.","keyword":"BREATHE"},
+    {"id":"A07","track":"T1","format":"reveal","pain":"bad sleep despite 8 hours","hook":"They told you to sleep eight hours. They left out the part that matters more.","keyword":"RHYTHM"},
+    {"id":"A08","track":"T1","format":"ritual","pain":"groggy mornings","hook":"Do these three things in your first five minutes awake, and the whole day changes.","keyword":"MORNING"},
+    {"id":"A09","track":"T1","format":"reveal","pain":"anxiety, wants natural calm","hook":"The cheapest medicine for a worried mind is free, and you carry it everywhere.","keyword":"FREE"},
+    {"id":"A10","track":"T1","format":"listicle","pain":"body tension held all day","hook":"Five places your body hides the stress you never let go of.","keyword":"SOFTEN"},
+
+    {"id":"A11","track":"T2","format":"reveal+ritual","pain":"can't stop replaying being hurt","hook":"If you keep replaying what they did to you, here is how to set it down tonight.","keyword":"SETITDOWN"},
+    {"id":"A12","track":"T2","format":"listicle","pain":"carrying old weight","hook":"Five signs you are still carrying something you were meant to put down.","keyword":"RELEASE"},
+    {"id":"A13","track":"T2","format":"ritual","pain":"overthinking at night","hook":"When your mind will not stop at night, do this — it takes one pen and one minute.","keyword":"QUIET"},
+    {"id":"A14","track":"T2","format":"reframe","pain":"shame about overthinking","hook":"If you are going to replay the past, my friend, replay it differently.","keyword":"AGAIN"},
+    {"id":"A15","track":"T2","format":"validation","pain":"feeling behind in life","hook":"You are not behind in life. Here is what is actually happening to you.","keyword":"ENOUGH"},
+    {"id":"A16","track":"T2","format":"ritual","pain":"can't switch off thoughts","hook":"The two-minute practice that ends overthinking before sleep.","keyword":"LABEL"},
+    {"id":"A17","track":"T2","format":"reveal","pain":"can't forgive someone","hook":"They told you to forgive to find peace. There is an easier first step.","keyword":"PEACE"},
+    {"id":"A18","track":"T2","format":"ritual","pain":"3am anxiety spiral","hook":"How to stop the three a.m. spiral, in three breaths.","keyword":"SPIRAL"},
+    {"id":"A19","track":"T2","format":"validation","pain":"unnamed sadness","hook":"If you feel a sadness with no name, this is what it is — and the one thing to do.","keyword":"NAME"},
+    {"id":"A20","track":"T2","format":"reframe","pain":"fighting own mind","hook":"You do not need to quiet your mind, my friend. You need to stop believing it.","keyword":"WATCH"}
+  ]
+}

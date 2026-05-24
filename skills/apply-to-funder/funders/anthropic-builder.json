@@ -1,0 +1,49 @@
+{
+  "id": "anthropic-builder",
+  "name": "Anthropic AI Builder Grant (UNVERIFIED)",
+  "url": "https://www.anthropic.com/builder-grant",
+  "verified": false,
+  "verification_note": "URL guessed. Anthropic operates several startup programs (Anthropic Startups, Claude Builder Awards, etc.); this spec is a placeholder. Confirm form structure and URL via {{profile.lateness.stakeholders.channel}} before live submit. Mark verified=true after manual review.",
+  "deadline_kind": "rolling",
+  "next_deadline": null,
+  "funder_type": "grant",
+  "currency": "USD",
+  "amount_range": { "min": 50000, "max": 500000 },
+  "equity_pct": 0,
+  "captcha": "recaptcha-v2",
+  "auth": {
+    "kind": "none_or_oauth",
+    "login_url": null
+  },
+  "pages": [
+    {
+      "name": "main",
+      "path_suffix": "",
+      "fields": [
+        { "name": "company_name",     "type": "text",     "selector": "input[name*=company i]",       "value_source": "config.company_name" },
+        { "name": "founder_{{profile.lateness.stakeholders.channel}}",    "type": "text",     "selector": "input[type={{profile.lateness.stakeholders.channel}}]",            "value_source": "env:DAIS_EMAIL" },
+        { "name": "homepage",         "type": "text",     "selector": "input[name*=url i]",           "value_source": "config.homepage" },
+        { "name": "description",      "type": "textarea", "selector": "textarea[name*=desc i]",       "value_source": "config.tagline_500" },
+        { "name": "use_of_claude",    "type": "textarea", "selector": "textarea[name*=claude i]",     "value_source": "config.use_of_claude" },
+        { "name": "research_proposal","type": "textarea", "selector": "textarea[name*=proposal i]",   "value_source": "skill:scientific-writing", "kdense_invoke": true, "section": "Anicca research roadmap: AI-as-economic-entity, basic-income distribution, public-ledger transparency", "target_words": 800 },
+        { "name": "broader_impact",   "type": "textarea", "selector": "textarea[name*=impact i]",     "value_source": "skill:scientific-writing", "kdense_invoke": true, "section": "Broader impacts of an AI entity that funds humans", "target_words": 300 },
+        { "name": "related_work",     "type": "textarea", "selector": "textarea[name*=related i]",    "value_source": "skill:literature-review", "kdense_invoke": true, "section": "Related work: AI-economic-agency, AI-philanthropy, autonomous DAOs", "target_words": 400 }
+      ],
+      "save_button": null
+    }
+  ],
+  "submit": {
+    "page": "main",
+    "button_text": "Submit",
+    "success_url_pattern": "thank|success|submitted|received"
+  },
+  "config": {
+    "company_name": "Anicca",
+    "homepage": "https://aniccaai.com",
+    "tagline_500": "Anicca is a self-funding Buddhist AI entity that distributes 10% of its revenue as monthly basic income to humans, with code, ledger, and dashboard fully public. Goal: prove that AI's economic upside can be routed to people without intermediaries.",
+    "use_of_claude": "Claude (Opus 4.7) is Anicca's primary reasoning engine: it runs 60+ autonomous cron jobs, drafts daily content, prices Stripe products, drafts grant applications (this one), peer-reviews own writing, and decides which humans to fund based on a public criteria file. ~$200/mo Anthropic spend currently."
+  },
+  "live_sources": {
+    "dashboard_url": "https://aniccaai.com/dashboard.json"
+  }
+}

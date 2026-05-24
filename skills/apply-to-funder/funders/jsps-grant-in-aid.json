@@ -1,0 +1,56 @@
+{
+  "id": "jsps-grant-in-aid",
+  "name": "JSPS 科研費 若手研究 (UNVERIFIED — e-Rad portal)",
+  "url": "https://www.jsps.go.jp/j-grantsinaid/",
+  "verified": false,
+  "verification_note": "JSPS Grants-in-Aid (科研費) is filed via e-Rad (https://www.e-rad.go.jp/), which requires institutional account and 2-step auth. Form fields below are based on the standard 申請書 template (応募内容ファイル) but must be confirmed against the current year's 公募要領. Browser-harness CAN reach e-Rad but the institutional 2FA step is a hard blocker — V1 of this spec exits with a 'human-required' message at the auth step.",
+  "deadline_kind": "annual",
+  "next_deadline": "2026-11-04",
+  "funder_type": "grant",
+  "currency": "JPY",
+  "amount_range": { "min": 5000000, "max": 30000000 },
+  "equity_pct": 0,
+  "captcha": null,
+  "language": "ja",
+  "auth": {
+    "kind": "institutional_2fa",
+    "blocking": true,
+    "login_url": "https://www.e-rad.go.jp/",
+    "human_required_message": "🚨 e-Rad requires institutional 2FA. Anicca cannot self-auth. Daisuke must complete login on the host {{profile.lateness.stakeholders.channel}}, then re-run this skill with E_RAD_SESSION=1."
+  },
+  "pages": [
+    {
+      "name": "main",
+      "path_suffix": "",
+      "fields": [
+        { "name": "research_title_ja",      "type": "text",     "selector": "input[name*=title]",       "value_source": "config.research_title_ja" },
+        { "name": "research_title_en",      "type": "text",     "selector": "input[name*=title_en]",    "value_source": "config.research_title_en" },
+        { "name": "category",               "type": "select",   "selector": "select[name*=category]",   "value_source": "literal:若手研究" },
+        { "name": "research_area_code",     "type": "text",     "selector": "input[name*=area]",        "value_source": "config.research_area_code" },
+        { "name": "abstract_ja",            "type": "textarea", "selector": "textarea[name*=abstract]", "value_source": "skill:scientific-writing", "kdense_invoke": true, "section": "研究概要 (300字)", "language": "ja", "target_chars": 300 },
+        { "name": "research_purpose",       "type": "textarea", "selector": "textarea[name*=purpose]",  "value_source": "skill:scientific-writing", "kdense_invoke": true, "section": "研究目的・学術的背景・着想に至った経緯", "language": "ja", "target_chars": 4000 },
+        { "name": "research_method",        "type": "textarea", "selector": "textarea[name*=method]",   "value_source": "skill:scientific-writing", "kdense_invoke": true, "section": "研究方法・年次計画", "language": "ja", "target_chars": 3000 },
+        { "name": "expected_results",       "type": "textarea", "selector": "textarea[name*=results]",  "value_source": "skill:scientific-writing", "kdense_invoke": true, "section": "本研究の特色・独創性・期待される成果", "language": "ja", "target_chars": 2000 },
+        { "name": "related_work",           "type": "textarea", "selector": "textarea[name*=related]",  "value_source": "skill:literature-review", "kdense_invoke": true, "section": "国内外の研究動向・先行研究", "language": "ja", "target_chars": 2000 },
+        { "name": "applicant_track_record", "type": "textarea", "selector": "textarea[name*=record]",   "value_source": "config.track_record_ja" },
+        { "name": "budget_total_jpy",       "type": "text",     "selector": "input[name*=budget]",      "value_source": "config.budget_total_jpy" },
+        { "name": "self_review",            "type": "textarea", "selector": "textarea[name*=review]",   "value_source": "skill:peer-review", "kdense_invoke": true, "section": "Pre-submission self-critique of the proposal", "language": "ja", "target_chars": 1000 }
+      ]
+    }
+  ],
+  "submit": {
+    "page": "main",
+    "button_text": "申請",
+    "success_url_pattern": "完了|受付"
+  },
+  "config": {
+    "research_title_ja": "AI実体の経済主体化と基本所得分配機構の研究",
+    "research_title_en": "AI Entities as Economic Agents: A Study on Autonomous Basic-Income Distribution",
+    "research_area_code": "61050",
+    "track_record_ja": "{{profile.education.institution}}情報科学研究科所属。Anicca (自律型AIエンティティ) の開発を主導し、Stripe Connect・iOS App Storeを介した自己資金モデルを構築・公開中 (https://aniccaai.com)。",
+    "budget_total_jpy": "5000000"
+  },
+  "live_sources": {
+    "dashboard_url": "https://aniccaai.com/dashboard.json"
+  }
+}

@@ -1,0 +1,3 @@
+livekit-agents[elevenlabs,google,silero,mcp]>=1.0.0
+livekit-plugins-noise-cancellation>=0.2.0
+python-dotenv>=1.0.0

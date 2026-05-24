@@ -1,0 +1,40 @@
+{
+  "platform": "douyin",
+  "word_range": [200, 500],
+  "duration_range": [60, 120],
+  "tag_count": 5,
+  "structure": {
+    "sections": [
+      {
+        "name": "开场钩子",
+        "position": "前3秒",
+        "type": "hook",
+        "requirement": "必须让人停下来"
+      },
+      {
+        "name": "正文",
+        "position": "3秒-90秒",
+        "type": "body",
+        "tone": "对话式，自然，像朋友分享"
+      },
+      {
+        "name": "结尾CTA",
+        "position": "最后5秒",
+        "type": "cta",
+        "example": "觉得有用点赞收藏！"
+      },
+      {
+        "name": "字幕文案",
+        "position": "发布描述",
+        "length": "60字内"
+      }
+    ]
+  },
+  "caption_rules": [
+    "前3秒包含核心看点",
+    "标签不超过5个",
+    "用竖线分隔关键信息",
+    "添加热门话题"
+  ],
+  "script_template": "【时长】{{估算秒数}}秒\n【开场钩子】前3秒：{{钩子}}\n【正文】{{内容}}\n【结尾CTA】{{行动号召}}\n【字幕文案】{{描述}}\n【标签】{{#tag1 #tag2}}"
+}

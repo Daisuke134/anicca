@@ -1,0 +1,956 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e7]:
+    - link [ref=e9] [cursor=pointer]:
+      - /url: /
+      - img [ref=e10]
+    - generic [ref=e14] [cursor=pointer]:
+      - text: Upload
+      - generic [ref=e15]: 
+    - link "My Music" [ref=e17] [cursor=pointer]:
+      - /url: /mymusic/
+      - generic [ref=e18]: My Music
+    - link "Stats" [ref=e20] [cursor=pointer]:
+      - /url: /stats/?data=streams
+      - generic [ref=e21]: Stats
+    - link "Splits" [ref=e23] [cursor=pointer]:
+      - /url: /teams
+      - generic [ref=e24]: Splits
+    - link "Upgrade" [ref=e26] [cursor=pointer]:
+      - /url: /plan/?upgrade=1
+      - generic [ref=e29]: Upgrade
+    - link "Bank" [ref=e31] [cursor=pointer]:
+      - /url: /bank
+      - generic [ref=e32]: Bank
+    - generic [ref=e33]:
+      - generic [ref=e37] [cursor=pointer]:
+        - img [ref=e39]
+        - generic [ref=e41]: 
+      - text:         
+    - text:                  
+    - generic [ref=e47] [cursor=pointer]: 
+  - generic [ref=e51]:
+    - generic [ref=e53]:
+      - generic [ref=e54]:
+        - heading "Services" [level=2] [ref=e55]:
+          - generic [ref=e56]: Services
+        - generic [ref=e57]:
+          - generic [ref=e58]:
+            - checkbox "Spotify" [checked] [ref=e59] [cursor=pointer]
+            - text: Spotify
+          - generic [ref=e60]:
+            - checkbox "Apple Music" [checked] [ref=e61] [cursor=pointer]
+            - text: Apple Music
+          - generic [ref=e62]:
+            - checkbox "iTunes" [checked] [ref=e63] [cursor=pointer]
+            - text: iTunes
+          - generic [ref=e64]:
+            - checkbox "Instagram & Facebook" [checked] [ref=e65] [cursor=pointer]
+            - text: Instagram & Facebook
+          - generic [ref=e66]:
+            - checkbox "TikTok & other ByteDance stores" [checked] [ref=e67] [cursor=pointer]
+            - text: TikTok &
+            - link "other ByteDance stores" [ref=e68] [cursor=pointer]:
+              - /url: https://support.distrokid.com/hc/en-us/articles/23769646022803-What-Stores-Are-Included-In-TikTok-Other-Bytedance-Stores-
+          - generic [ref=e69]:
+            - checkbox "YouTube Music" [checked] [ref=e70] [cursor=pointer]
+            - text: YouTube Music
+          - generic [ref=e71]:
+            - checkbox "Amazon" [checked] [ref=e72] [cursor=pointer]
+            - text: Amazon
+          - generic [ref=e73]:
+            - checkbox "Pandora" [checked] [ref=e74] [cursor=pointer]
+            - text: Pandora
+          - generic [ref=e75]:
+            - checkbox "Deezer" [checked] [ref=e76] [cursor=pointer]
+            - text: Deezer
+          - generic [ref=e77]:
+            - checkbox "Tidal" [checked] [ref=e78] [cursor=pointer]
+            - text: Tidal
+          - generic [ref=e79]:
+            - checkbox "iHeartRadio" [checked] [ref=e80] [cursor=pointer]
+            - text: iHeartRadio
+          - generic [ref=e81]:
+            - checkbox "Qobuz" [checked] [ref=e82] [cursor=pointer]
+            - text: Qobuz
+          - generic [ref=e83]:
+            - checkbox "Saavn" [checked] [ref=e84] [cursor=pointer]
+            - text: Saavn
+          - generic [ref=e85]:
+            - checkbox "Boomplay" [checked] [ref=e86] [cursor=pointer]
+            - text: Boomplay
+          - generic [ref=e87]:
+            - checkbox "Anghami" [checked] [ref=e88] [cursor=pointer]
+            - text: Anghami
+          - generic [ref=e89]:
+            - checkbox "NetEase" [checked] [ref=e90] [cursor=pointer]
+            - text: NetEase
+          - generic [ref=e91]:
+            - checkbox "Tencent" [checked] [ref=e92] [cursor=pointer]
+            - text: Tencent
+          - generic [ref=e93]:
+            - checkbox "Claro Música" [checked] [ref=e94] [cursor=pointer]
+            - text: Claro Música
+          - generic [ref=e95]:
+            - checkbox "Joox" [checked] [ref=e96] [cursor=pointer]
+            - text: Joox
+          - generic [ref=e97]:
+            - checkbox "Kuack Media" [checked] [ref=e98] [cursor=pointer]
+            - text: Kuack Media
+          - generic [ref=e99]:
+            - checkbox "Adaptr" [checked] [ref=e100] [cursor=pointer]
+            - text: Adaptr
+          - generic [ref=e101]:
+            - checkbox "Flo" [checked] [ref=e102] [cursor=pointer]
+            - text: Flo
+          - generic [ref=e103]:
+            - checkbox "MediaNet" [checked] [ref=e104] [cursor=pointer]
+            - text: MediaNet
+          - generic [ref=e105]:
+            - checkbox "Snapchat" [ref=e106] [cursor=pointer]
+            - text: Snapchat
+          - generic [ref=e107]:
+            - checkbox "Roblox (beta)" [ref=e108] [cursor=pointer]
+            - text: Roblox (beta)
+      - generic [ref=e109]:
+        - heading "Number of songs" [level=2] [ref=e111]
+        - combobox [ref=e113]:
+          - option "1 song (a single)" [selected]
+          - option "2 songs"
+          - option "3 songs"
+          - option "4 songs"
+          - option "5 songs"
+          - option "6 songs"
+          - option "7 songs"
+          - option "8 songs"
+          - option "9 songs"
+          - option "10 songs"
+          - option "11 songs"
+          - option "12 songs"
+          - option "13 songs"
+          - option "14 songs"
+          - option "15 songs"
+          - option "16 songs"
+          - option "17 songs"
+          - option "18 songs"
+          - option "19 songs"
+          - option "20 songs"
+          - option "21 songs"
+          - option "22 songs"
+          - option "23 songs"
+          - option "24 songs"
+          - option "25 songs"
+          - option "26 songs"
+          - option "27 songs"
+          - option "28 songs"
+          - option "29 songs"
+          - option "30 songs"
+          - option "31 songs"
+          - option "32 songs"
+          - option "33 songs"
+          - option "34 songs"
+          - option "35 songs"
+      - generic [ref=e114]:
+        - heading "Monetize your single on social media?" [level=2] [ref=e116]
+        - table [ref=e120]:
+          - rowgroup [ref=e121]:
+            - 'row "Social Media Pack ($4.95/yr + 20% of platform ad revenue) Get notified & paid when your music is used in content on YouTube, TikTok, Instagram, and Facebook. We automatically detect matches and pay you ad revenue from videos that use your music. Your music will be added to:  YouTube''s Content ID, Creator Music, and Shorts music libraries.  TikTok''s music ID recognition service.  Instagram monetization with Meta Rights Manager.  Facebook''s recognition service using Meta Rights Manager. Learn more about monetizing your music on social media." [ref=e122]':
+              - 'cell "Social Media Pack ($4.95/yr + 20% of platform ad revenue) Get notified & paid when your music is used in content on YouTube, TikTok, Instagram, and Facebook. We automatically detect matches and pay you ad revenue from videos that use your music. Your music will be added to:  YouTube''s Content ID, Creator Music, and Shorts music libraries.  TikTok''s music ID recognition service.  Instagram monetization with Meta Rights Manager.  Facebook''s recognition service using Meta Rights Manager. Learn more about monetizing your music on social media." [ref=e123]':
+                - 'checkbox "Social Media Pack ($4.95/yr + 20% of platform ad revenue) Get notified & paid when your music is used in content on YouTube, TikTok, Instagram, and Facebook. We automatically detect matches and pay you ad revenue from videos that use your music. Your music will be added to:  YouTube''s Content ID, Creator Music, and Shorts music libraries.  TikTok''s music ID recognition service.  Instagram monetization with Meta Rights Manager.  Facebook''s recognition service using Meta Rights Manager. Learn more about monetizing your music on social media." [ref=e124] [cursor=pointer]'
+              - 'cell "Social Media Pack ($4.95/yr + 20% of platform ad revenue) Get notified & paid when your music is used in content on YouTube, TikTok, Instagram, and Facebook. We automatically detect matches and pay you ad revenue from videos that use your music. Your music will be added to:  YouTube''s Content ID, Creator Music, and Shorts music libraries.  TikTok''s music ID recognition service.  Instagram monetization with Meta Rights Manager.  Facebook''s recognition service using Meta Rights Manager. Learn more about monetizing your music on social media." [ref=e125]':
+                - generic [ref=e127]:
+                  - generic [ref=e128]:
+                    - img [ref=e129]
+                    - text: Social Media Pack ($4.95/yr + 20% of platform ad revenue)
+                  - text: Get notified & paid when your music is used in content on YouTube, TikTok, Instagram, and Facebook. We automatically detect matches and pay you ad revenue from videos that use your music.
+                  - text: "Your music will be added to:"
+                  - generic [ref=e130]: 
+                  - text: YouTube's Content ID, Creator Music, and Shorts music libraries.
+                  - generic [ref=e131]: 
+                  - text: TikTok's music ID recognition service.
+                  - generic [ref=e132]: 
+                  - text: Instagram monetization with Meta Rights Manager.
+                  - generic [ref=e133]: 
+                  - text: Facebook's recognition service using Meta Rights Manager.
+                  - link "Learn more about monetizing your music on social media." [ref=e134] [cursor=pointer]:
+                    - /url: https://support.distrokid.com/hc/en-us/articles/30785369645843-What-is-Social-Media-Pack
+      - generic [ref=e135]:
+        - heading "Has this single been previously released?" [level=2] [ref=e136]
+        - generic [ref=e137]:
+          - generic [ref=e138]:
+            - radio "No" [checked] [ref=e139] [cursor=pointer]
+            - text: "No"
+          - generic [ref=e140]:
+            - radio "Yes" [ref=e141] [cursor=pointer]
+            - text: "Yes"
+      - generic [ref=e143]:
+        - generic [ref=e144]:
+          - generic [ref=e145]:
+            - generic [ref=e146]: Upgrade to Ultimate to get the newest and most powerful features.
+            - generic [ref=e147]:
+              - generic [ref=e148]: 
+              - text: 311 artists upgraded today
+          - generic [ref=e149]:
+            - generic [ref=e150]:
+              - generic [ref=e152]: 
+              - paragraph [ref=e153]: Swap your song's audio even after it's live
+            - generic [ref=e154]:
+              - generic [ref=e156]: 
+              - paragraph [ref=e157]: Advanced analytics & stats
+            - generic [ref=e158]:
+              - generic [ref=e160]: 
+              - paragraph [ref=e161]: Search engine for playlist contact info
+            - generic [ref=e162]:
+              - generic [ref=e164]: 
+              - paragraph [ref=e165]: 1-100 artists or bands
+        - generic [ref=e166]:
+          - button "Upgrade for $89.99 $45" [ref=e169] [cursor=pointer]:
+            - generic [ref=e171]: Upgrade for $89.99 $45
+          - button "No thanks" [ref=e172] [cursor=pointer]
+      - generic [ref=e173]:
+        - heading "Artist/band name" [level=2] [ref=e175]
+        - textbox [ref=e176]: Anicca
+        - text: 
+        - generic [ref=e177]:
+          - generic [ref=e178]: "💡 Important: Only list your name, {{profile.lateness.stakeholders.senderType}} name, or band name. Do not include anyone else's name (without their permission), label name, \"Presents...\", etc."
+          - generic [ref=e179]: "💡 Don't Use Emojis Here: Streaming services do not allow them and it could mess up your release."
+          - generic [ref=e180]: 🤪 Feeling zany?  Try the random name generator
+        - link:
+          - /url: /new/?freebie=1
+        - link:
+          - /url: https://distrokid.com/plan/?upgrade=1
+        - text: 
+      - generic [ref=e181]:
+        - heading "Spotify Logo" [level=2] [ref=e182]:
+          - img "Spotify Logo" [ref=e183]
+        - heading "Artist already in Spotify?" [level=3] [ref=e184]
+        - text:   
+        - generic [ref=e186]:
+          - generic [ref=e188]: 
+          - generic [ref=e189]: You're all set! This release will appear in Spotify alongside your other Anicca release(s).
+        - text: 
+      - generic [ref=e190]:
+        - heading "Apple Music Logo" [level=2] [ref=e191]:
+          - img "Apple Music Logo" [ref=e192]
+        - heading "Artist already in Apple Music?" [level=3] [ref=e193]
+        - generic [ref=e194]:
+          - generic [ref=e196]:
+            - generic [ref=e198]: There are already artists named "Anicca" live on Apple Music. Are any of these you?
+            - generic [ref=e199]: Ensure you select your correct artist profile so we can group your releases together. Click the link to open the artist profile in a new window.
+          - generic [ref=e200]:
+            - generic [ref=e203]:
+              - radio "Anicca Heartstring - Single" [ref=e204] [cursor=pointer]
+              - img [ref=e205]
+              - link "Anicca" [ref=e206] [cursor=pointer]:
+                - /url: https://music.apple.com/artist/1203009538
+              - generic [ref=e210]: Heartstring - Single
+            - generic [ref=e213]:
+              - radio "Anicca bitter(sweet)" [ref=e214] [cursor=pointer]
+              - img [ref=e215]
+              - link "Anicca" [ref=e216] [cursor=pointer]:
+                - /url: https://music.apple.com/artist/1813045519
+              - generic [ref=e220]: bitter(sweet)
+            - generic [ref=e223]:
+              - radio "Anicca Ahora Veo Tu Luz" [ref=e224] [cursor=pointer]
+              - img [ref=e225]
+              - link "Anicca" [ref=e226] [cursor=pointer]:
+                - /url: https://music.apple.com/artist/1859813787
+              - generic [ref=e230]: Ahora Veo Tu Luz
+            - generic [ref=e233]:
+              - radio "ANICCA Hail Them - Single" [ref=e234] [cursor=pointer]
+              - img [ref=e235]
+              - link "ANICCA" [ref=e236] [cursor=pointer]:
+                - /url: https://music.apple.com/artist/1740652137
+              - generic [ref=e240]: Hail Them - Single
+            - generic [ref=e243]:
+              - radio "anicca Fluffy & Crispy" [ref=e244] [cursor=pointer]
+              - img [ref=e245]
+              - link "anicca" [ref=e246] [cursor=pointer]:
+                - /url: https://music.apple.com/artist/1864248881
+              - generic [ref=e250]: Fluffy & Crispy
+            - generic [ref=e253]:
+              - radio "Anicca Slide Back - Single" [ref=e254] [cursor=pointer]
+              - img [ref=e255]
+              - link "Anicca" [ref=e256] [cursor=pointer]:
+                - /url: https://music.apple.com/artist/1879973983
+              - generic [ref=e260]: Slide Back - Single
+          - generic [ref=e261]:
+            - generic [ref=e262]:
+              - radio "There is a page for Anicca in iTunes and Apple Music, but it’s not listed above." [ref=e264] [cursor=pointer]
+              - generic [ref=e266]: There is a page for Anicca in iTunes and Apple Music, but it’s not listed above.
+            - text: 
+          - generic [ref=e267]:
+            - radio "This will be my first Anicca release in iTunes and Apple Music." [ref=e269] [cursor=pointer]
+            - generic [ref=e271]: This will be my first Anicca release in iTunes and Apple Music.
+        - text:       
+      - generic [ref=e272]:
+        - heading "YouTube Music Logo" [level=2] [ref=e273]:
+          - img "YouTube Music Logo" [ref=e274]
+        - heading "Artist already in YouTube Music?" [level=3] [ref=e275]
+        - text:   
+        - generic [ref=e277]:
+          - generic [ref=e279]: 
+          - generic [ref=e280]: You're all set! This release will appear in YouTube Music alongside your other Anicca release(s).
+        - generic: 
+      - generic [ref=e281]:
+        - heading "Instagram Logo" [level=2] [ref=e282]:
+          - img "Instagram Logo" [ref=e283]
+        - heading "Artist already on Instagram?" [level=3] [ref=e284]
+        - text: 
+        - generic [ref=e285]:
+          - generic [ref=e287]:
+            - generic [ref=e288]:
+              - radio "Yes - Group this single with my other Anicca releases on Instagram" [ref=e290] [cursor=pointer]
+              - generic [ref=e292]: Yes - Group this single with my other Anicca releases on Instagram
+            - text: 
+          - generic [ref=e294]:
+            - radio "No - Anicca doesn't yet have a profile on Instagram" [checked] [ref=e296] [cursor=pointer]
+            - generic [ref=e298]: No - Anicca doesn't yet have a profile on Instagram
+      - generic [ref=e299]:
+        - heading "Facebook Logo" [level=2] [ref=e300]:
+          - img "Facebook Logo" [ref=e301]
+        - heading "Artist already on Facebook?" [level=3] [ref=e302]
+        - text: 
+        - generic [ref=e303]:
+          - generic [ref=e305]:
+            - generic [ref=e306]:
+              - radio "Yes - Group this single with my other Anicca releases on Facebook" [ref=e308] [cursor=pointer]
+              - generic [ref=e310]: Yes - Group this single with my other Anicca releases on Facebook
+            - text: 
+          - generic [ref=e312]:
+            - radio "No - Anicca doesn't yet have a profile on Facebook" [checked] [ref=e314] [cursor=pointer]
+            - generic [ref=e316]: No - Anicca doesn't yet have a profile on Facebook
+      - generic [ref=e317]:
+        - heading "Release date" [level=2] [ref=e318]:
+          - generic [ref=e319]: Release date
+        - generic [ref=e320]:
+          - textbox [ref=e321]
+          - generic [ref=e322]:
+            - text: Setting your release date to at least 1-week in the future increases your chances of getting added to playlists.
+            - text: If it's important that your album goes live in all stores on the same day,
+            - link "click here for info" [ref=e323] [cursor=pointer]:
+              - /url: https://support.distrokid.com/hc/en-us/articles/360013534454-If-I-Specify-a-Custom-Release-Date-When-Will-My-Album-Appear-in-Streaming-Services-
+            - text: .
+      - text: 
+      - generic [ref=e324]:
+        - heading "Record label" [level=2] [ref=e326]
+        - textbox [ref=e328]: 12535260 Records DK
+      - generic [ref=e329]:
+        - heading "Language" [level=2] [ref=e330]:
+          - generic [ref=e331]: Language
+        - combobox [ref=e332]:
+          - option "Arabic"
+          - option "Bosnian"
+          - option "Bulgarian"
+          - option "Cantonese"
+          - option "Catalan"
+          - option "Chinese (Simplified)"
+          - option "Chinese (Traditional)"
+          - option "Croatian"
+          - option "Czech"
+          - option "Danish"
+          - option "Dutch"
+          - option "English" [selected]
+          - option "Estonian"
+          - option "Finnish"
+          - option "French"
+          - option "German"
+          - option "Greek"
+          - option "Hebrew"
+          - option "Hindi"
+          - option "Hungarian"
+          - option "Icelandic"
+          - option "Indonesian"
+          - option "Italian"
+          - option "Japanese"
+          - option "Korean"
+          - option "Lao"
+          - option "Latvian"
+          - option "Lithuanian"
+          - option "Malay"
+          - option "Norwegian"
+          - option "Persian"
+          - option "Polish"
+          - option "Portuguese"
+          - option "Punjabi"
+          - option "Romanian"
+          - option "Russian"
+          - option "Slovak"
+          - option "Spanish"
+          - option "Swahili"
+          - option "Swedish"
+          - option "Tagalog"
+          - option "Thai"
+          - option "Turkish"
+          - option "Ukrainian"
+          - option "Vietnamese"
+        - text:     
+      - generic [ref=e333]:
+        - heading "Primary genre" [level=2] [ref=e335]:
+          - generic [ref=e336]: Primary genre
+        - generic [ref=e337]:
+          - combobox [ref=e338]:
+            - option "Select a genre" [selected]
+            - option "Afrobeat"
+            - option "Afropop"
+            - option "Alternative"
+            - option "Big Band"
+            - option "Blues"
+            - option "Children's Music"
+            - option "Christian/Gospel"
+            - option "Classical"
+            - option "Comedy"
+            - option "Contemporary Latin"
+            - option "Country"
+            - option "Dance"
+            - option "Electronic"
+            - option "Fitness & Workout"
+            - option "Folk"
+            - option "French Pop"
+            - option "German Folk"
+            - option "German Pop"
+            - option "Hip Hop/Rap"
+            - option "Holiday"
+            - option "J-Pop"
+            - option "Jazz"
+            - option "K-Pop"
+            - option "Latin"
+            - option "Latin House"
+            - option "Latin Jazz"
+            - option "Latin Urban"
+            - option "Maskandi"
+            - option "Metal"
+            - option "New Age"
+            - option "Pop"
+            - option "Pop in Spanish"
+            - option "Punk"
+            - option "R&B/Soul"
+            - option "Reggae"
+            - option "Rock"
+            - option "Rock en Español"
+            - option "Singer/Songwriter"
+            - option "Soundtrack"
+            - option "Spoken Word"
+            - option "Vocal"
+            - option "World"
+            - option "Xigaza"
+          - text:   
+      - generic [ref=e339]:
+        - heading "Secondary genre (optional)" [level=2] [ref=e341]
+        - combobox [ref=e343]:
+          - option "Select another genre" [selected]
+          - option "Afrobeat"
+          - option "Afropop"
+          - option "Alternative"
+          - option "Big Band"
+          - option "Blues"
+          - option "Children's Music"
+          - option "Christian/Gospel"
+          - option "Comedy"
+          - option "Contemporary Latin"
+          - option "Country"
+          - option "Dance"
+          - option "Electronic"
+          - option "Fitness & Workout"
+          - option "Folk"
+          - option "French Pop"
+          - option "German Folk"
+          - option "German Pop"
+          - option "Hip Hop/Rap"
+          - option "Holiday"
+          - option "J-Pop"
+          - option "Jazz"
+          - option "K-Pop"
+          - option "Latin"
+          - option "Latin House"
+          - option "Latin Jazz"
+          - option "Latin Urban"
+          - option "Maskandi"
+          - option "Metal"
+          - option "New Age"
+          - option "Pop"
+          - option "Pop in Spanish"
+          - option "Punk"
+          - option "R&B/Soul"
+          - option "Reggae"
+          - option "Rock"
+          - option "Rock en Español"
+          - option "Singer/Songwriter"
+          - option "Spoken Word"
+          - option "Vocal"
+          - option "World"
+          - option "Xigaza"
+      - generic [ref=e344]:
+        - heading "Album cover" [level=2] [ref=e346]:
+          - generic [ref=e347]: Album cover
+        - generic [ref=e348]:
+          - generic [ref=e349]:
+            - generic [ref=e350] [cursor=pointer]:
+              - generic [ref=e352]:
+                - generic [ref=e354]: 
+                - generic [ref=e355]: Select an image
+                - generic [ref=e356]: Or drag image here to upload
+                - text: 
+              - button "Choose File" [ref=e359]
+            - text:    
+          - generic [ref=e360]:
+            - generic [ref=e361]: 💡 Recommended images are 3000x3000 square JPG format. This is just a recommendation though—we accept most image sizes.
+            - generic [ref=e362]: 💡 Stores will reject artwork that contains a website address (URL), X name, or any image that's pixelated, rotated, or poor quality. They'll also reject artwork with prices or store logos (don't put an iTunes or Spotify logo on your artwork). Also, please don't reuse the same artwork for multiple albums.
+            - generic [ref=e363]: 💡 You own this artwork and everything in it. Stores will reject your artwork if it contains images you found online that you don't have the explicit right to use.
+    - generic [ref=e365]:
+      - heading "Track 1" [level=2] [ref=e366]
+      - generic [ref=e368]:
+        - heading "Song title" [level=3] [ref=e369]
+        - generic [ref=e370]: Just the title, no feat. artists or other info
+      - generic [ref=e371]:
+        - textbox "Track 1 title" [ref=e372]
+        - generic [ref=e373]:
+          - generic [ref=e374]:          
+          - generic [ref=e375]:
+            - generic [ref=e376]: 💡 Don't include featured artists here. Add them below, instead.
+            - generic [ref=e377]: 💡 If a cover song, don't include original artist's name
+            - generic [ref=e378]: "💡 No year/dates. Do not include any year info (ex: 2026) in your song title."
+      - generic [ref=e379]:
+        - generic [ref=e381]:
+          - heading "Add featured artist to song title?" [level=3] [ref=e382]
+          - generic [ref=e383]: Featured artist or remixer other than Anicca
+        - generic [ref=e385]:
+          - radio "No, don't show any other artists in song title" [checked] [ref=e387] [cursor=pointer]
+          - generic [ref=e388]: No, don't show any other artists in song title
+        - generic [ref=e389]:
+          - generic [ref=e390]:
+            - radio "Yes, add featured artists to track title (please specify...)" [ref=e392] [cursor=pointer]
+            - generic [ref=e393]: Yes, add featured artists to track title (please specify...)
+          - text: 
+      - generic [ref=e394]:
+        - generic [ref=e396]:
+          - heading "Add \"version\" info to song title?" [level=3] [ref=e398]
+          - generic [ref=e400]:
+            - radio "No, this is the normal version" [checked] [ref=e402] [cursor=pointer]
+            - generic [ref=e403]: No, this is the normal version
+          - generic [ref=e405]:
+            - radio "Radio Edit" [ref=e407] [cursor=pointer]
+            - generic [ref=e408]: Radio Edit
+          - generic [ref=e410]:
+            - radio "Other..." [ref=e412] [cursor=pointer]
+            - generic [ref=e413]: Other...
+        - generic [ref=e414]:
+          - heading "Song title preview:" [level=4] [ref=e415]
+          - generic [ref=e417]:
+            - heading "1" [level=3] [ref=e419]
+            - generic [ref=e421]: 
+            - generic [ref=e422]:
+              - generic [ref=e423]: Track 1
+              - generic [ref=e424]: Anicca
+          - generic [ref=e426]:
+            - generic [ref=e427]: "Disclaimers:"
+            - list [ref=e429]:
+              - listitem [ref=e430]: Different streaming services show titles differently, thus yours may not appear exactly as above—and that's okay!
+              - listitem [ref=e431]: Producers aren't shown in song titles. Spotify shows them underneath the track title; other services show producers in a "credits" menu.
+              - listitem [ref=e432]: Primary artists (incl. "additional" primary artists) aren't shown in song titles. Spotify shows them underneath the track title.
+              - listitem [ref=e433]: Remixer's name is shown in song titles as part of version info.
+              - listitem [ref=e434]: Some parentheses have been converted to [square brackets] to comply with streaming service guidelines.
+      - separator [ref=e435]
+      - generic [ref=e436]:
+        - generic [ref=e437]:
+          - heading "Upload your audio file (WAV, MP3, M4A, FLAC, AIFF, WMA)" [level=3] [ref=e438]
+          - generic [ref=e440] [cursor=pointer]: Already have an ISRC code?
+        - generic [ref=e443] [cursor=pointer]:
+          - generic [ref=e445]:
+            - generic [ref=e447]: 
+            - generic [ref=e448]: Select an audio file
+            - generic [ref=e449]: Or drag audio file here to upload
+            - text: 
+          - button "Choose File" [ref=e451]
+      - generic [ref=e452]:
+        - link "Master your track with Mixea" [ref=e453] [cursor=pointer]:
+          - /url: /mixea/?ref=upload
+        - generic [ref=e454]: 
+      - separator [ref=e455]
+      - generic [ref=e456]:
+        - heading "Dolby Atmos/Spatial audio" [level=3] [ref=e457]
+        - generic [ref=e458]:
+          - text: Apple, Tidal and Amazon (
+          - link "Tell me more..." [ref=e459] [cursor=pointer]:
+            - /url: https://distrokid.zendesk.com/hc/en-us/articles/4405783945363
+          - text: )
+        - generic [ref=e460]:
+          - generic [ref=e462]:
+            - radio "No" [checked] [ref=e464] [cursor=pointer]
+            - generic [ref=e465]: "No"
+          - generic [ref=e466]:
+            - generic [ref=e467]:
+              - radio "Yes, I have a version mixed with Atmos I'd like to upload in addition..." [ref=e469] [cursor=pointer]
+              - generic [ref=e470]: Yes, I have a version mixed with Atmos I'd like to upload in addition...
+            - text:  
+      - separator [ref=e471]
+      - generic [ref=e472]:
+        - heading "Songwriter / Cover Song" [level=3] [ref=e474]
+        - generic [ref=e475]:
+          - generic [ref=e477]:
+            - radio "I wrote this song, or manage the songwriter (it's an original song)" [checked] [ref=e479] [cursor=pointer]
+            - generic [ref=e480]: I wrote this song, or manage the songwriter (it's an original song)
+          - generic [ref=e481]:
+            - generic [ref=e483]:
+              - radio "Another artist wrote it (it's a cover song)" [ref=e485] [cursor=pointer]
+              - generic [ref=e486]: Another artist wrote it (it's a cover song)
+            - text:      
+      - separator [ref=e487]
+      - generic [ref=e488]:
+        - heading "Songwriter(s) real name" [level=3] [ref=e489]
+        - generic [ref=e490]:
+          - text: Real names, not {{profile.lateness.stakeholders.senderType}} names (
+          - link "why?" [ref=e491] [cursor=pointer]:
+            - /url: https://distrokid.zendesk.com/hc/en-us/articles/360013545554
+          - text: )
+        - generic [ref=e493]:
+          - generic [ref=e494]:
+            - combobox [ref=e496]:
+              - option "Music"
+              - option "Lyrics"
+              - option "Music and lyrics" [selected]
+            - generic [ref=e498]:
+              - textbox "First name" [ref=e500]
+              - textbox "Middle name" [ref=e502]
+              - textbox "Last name" [ref=e504]
+          - generic: 
+        - generic [ref=e505]:
+          - generic [ref=e507] [cursor=pointer]:
+            - generic [ref=e508]: 
+            - text: Add another songwriter
+          - text: 
+        - separator [ref=e509]
+      - generic [ref=e510]:
+        - heading "Explicit lyrics" [level=3] [ref=e512]
+        - generic [ref=e514]:
+          - radio "No" [checked] [ref=e516] [cursor=pointer]
+          - generic [ref=e517]: "No"
+        - generic [ref=e519]:
+          - radio "Yes" [ref=e521] [cursor=pointer]
+          - generic [ref=e522]: "Yes"
+        - separator [ref=e523]
+      - generic [ref=e524]:
+        - heading "Is this a \"radio edit\"?" [level=3] [ref=e526]:
+          - generic [ref=e527]: Is this a "radio edit"?
+        - generic [ref=e528]:
+          - generic [ref=e530]:
+            - radio "No - This song is clean, and always has been" [checked] [ref=e532] [cursor=pointer]
+            - generic [ref=e533]: No - This song is clean, and always has been
+          - generic [ref=e535]:
+            - radio "Yes - There is an explicit version of this song, but this is the clean (or censored) version of it" [ref=e537] [cursor=pointer]
+            - generic [ref=e538]: Yes - There is an explicit version of this song, but this is the clean (or censored) version of it
+        - separator [ref=e539]
+      - generic [ref=e540]:
+        - heading "Instrumental?" [level=3] [ref=e542]:
+          - generic [ref=e543]: Instrumental?
+        - generic [ref=e544]:
+          - generic [ref=e546]:
+            - radio "This song contains lyrics" [checked] [ref=e548] [cursor=pointer]
+            - generic [ref=e549]: This song contains lyrics
+          - generic [ref=e551]:
+            - radio "This song is instrumental and contains no lyrics" [ref=e553] [cursor=pointer]
+            - generic [ref=e554]: This song is instrumental and contains no lyrics
+      - separator [ref=e555]
+      - generic [ref=e556]:
+        - heading "Does this song include AI-generated music, vocals, or lyrics?" [level=3] [ref=e557]
+        - generic [ref=e558]:
+          - text: Using AI for mastering or mixing doesn't count.
+          - link "Learn more." [ref=e559] [cursor=pointer]:
+            - /url: https://support.distrokid.com/hc/en-us/articles/50784235803411
+        - generic [ref=e561]:
+          - radio "No" [checked] [ref=e563] [cursor=pointer]
+          - generic [ref=e564]: "No"
+        - generic [ref=e566]:
+          - radio "Yes" [ref=e568] [cursor=pointer]
+          - generic [ref=e569]: "Yes"
+        - text: 
+        - generic [ref=e570]: 
+      - separator [ref=e571]
+      - generic [ref=e572]:
+        - heading "Preview clip start time (TikTok, Apple Music, iTunes)" [level=3] [ref=e574]
+        - generic [ref=e575]:
+          - generic [ref=e577]:
+            - radio "Let streaming services decide" [checked] [ref=e579] [cursor=pointer]
+            - generic [ref=e580]: Let streaming services decide
+          - generic [ref=e582]:
+            - radio "Let me specify when the good part starts" [ref=e584] [cursor=pointer]
+            - generic [ref=e585]: Let me specify when the good part starts
+      - separator [ref=e586]
+      - generic [ref=e587]:
+        - heading "Track Price" [level=3] [ref=e588]
+        - generic [ref=e589]: iTunes and Amazon (USD)
+        - generic [ref=e590]:
+          - combobox [ref=e591]:
+            - option "$0.69"
+            - option "$0.99" [selected]
+            - option "$1.29"
+          - generic [ref=e592]: Tracks over 10-minutes long will be priced higher.
+    - generic [ref=e593]:
+      - generic [ref=e594]:
+        - img "applemusic Logo" [ref=e596]
+        - heading "Additional requirements" [level=2] [ref=e599]
+        - generic [ref=e600]:
+          - generic [ref=e601]: 
+          - text: Not yet complete
+      - generic [ref=e602]: Apple Music requires at least one performer and producer credit for each song.
+      - generic [ref=e604]:
+        - generic [ref=e605] [cursor=pointer]:
+          - generic [ref=e606]: 
+          - text: 
+          - generic [ref=e608]: 
+          - text: Add credits for each song on this release
+        - text:      
+      - generic [ref=e609]:
+        - strong [ref=e610]: To skip this step for now
+        - text: ", simply deselect Apple Music and iTunes at the top of the page. You can always add this release to Apple later."
+    - generic [ref=e611]:
+      - generic [ref=e614]: Extras (optional but awesome)
+      - generic [ref=e615]:
+        - generic [ref=e616]:
+          - table [ref=e620]:
+            - rowgroup [ref=e621]:
+              - row "Leave a Legacy ($29 one-time fee, nonrecurring) DistroKid will never delete this single, even if you cancel your account or your credit card is declined. You can always choose to delete it any time—or not. You will continue to accrue all royalties, as normal. Protect your music and leave a legacy for future generations." [ref=e622]:
+                - cell "Leave a Legacy ($29 one-time fee, nonrecurring) DistroKid will never delete this single, even if you cancel your account or your credit card is declined. You can always choose to delete it any time—or not. You will continue to accrue all royalties, as normal. Protect your music and leave a legacy for future generations." [ref=e623]:
+                  - checkbox "Leave a Legacy ($29 one-time fee, nonrecurring) DistroKid will never delete this single, even if you cancel your account or your credit card is declined. You can always choose to delete it any time—or not. You will continue to accrue all royalties, as normal. Protect your music and leave a legacy for future generations." [ref=e624] [cursor=pointer]
+                - cell "Leave a Legacy ($29 one-time fee, nonrecurring) DistroKid will never delete this single, even if you cancel your account or your credit card is declined. You can always choose to delete it any time—or not. You will continue to accrue all royalties, as normal. Protect your music and leave a legacy for future generations." [ref=e625]:
+                  - generic [ref=e626]:
+                    - generic [ref=e627]:
+                      - img [ref=e628]
+                      - text: Leave a Legacy ($29 one-time fee, nonrecurring)
+                    - text: DistroKid will never delete this single, even if you cancel your account or your credit card is declined. You can always choose to delete it any time—or not. You will continue to accrue all royalties, as normal. Protect your music and leave a legacy for future generations.
+          - table [ref=e631]:
+            - rowgroup [ref=e632]:
+              - 'row "Discovery Pack ($0.99/yr) Add this single to the global databases that people use to match music and artist information. Includes: Song recognition in millions of automobiles (via Gracenote) Registration with SoundScan (used for Billboard charts) Artist, track and album credits officially listed and linked in Jaxsta Audio fingerprinting for rights protection with ACRCloud" [ref=e633]':
+                - 'cell "Discovery Pack ($0.99/yr) Add this single to the global databases that people use to match music and artist information. Includes: Song recognition in millions of automobiles (via Gracenote) Registration with SoundScan (used for Billboard charts) Artist, track and album credits officially listed and linked in Jaxsta Audio fingerprinting for rights protection with ACRCloud" [ref=e634]':
+                  - 'checkbox "Discovery Pack ($0.99/yr) Add this single to the global databases that people use to match music and artist information. Includes: Song recognition in millions of automobiles (via Gracenote) Registration with SoundScan (used for Billboard charts) Artist, track and album credits officially listed and linked in Jaxsta Audio fingerprinting for rights protection with ACRCloud" [ref=e635] [cursor=pointer]'
+                - 'cell "Discovery Pack ($0.99/yr) Add this single to the global databases that people use to match music and artist information. Includes: Song recognition in millions of automobiles (via Gracenote) Registration with SoundScan (used for Billboard charts) Artist, track and album credits officially listed and linked in Jaxsta Audio fingerprinting for rights protection with ACRCloud" [ref=e636]':
+                  - generic [ref=e637]:
+                    - generic [ref=e638]:
+                      - img [ref=e639]
+                      - text: Discovery Pack ($0.99/yr)
+                    - text: "Add this single to the global databases that people use to match music and artist information. Includes:"
+                    - list [ref=e641]:
+                      - listitem [ref=e642]: Song recognition in millions of automobiles (via Gracenote)
+                      - listitem [ref=e643]: Registration with SoundScan (used for Billboard charts)
+                      - listitem [ref=e644]: Artist, track and album credits officially listed and linked in Jaxsta
+                      - listitem [ref=e645]: Audio fingerprinting for rights protection with ACRCloud
+          - table [ref=e648]:
+            - rowgroup [ref=e649]:
+              - row "Store Maximizer ($7.95/yr) DistroKid will automatically deliver this single to new online stores and streaming services as we add them. Which is often. We'll give you notice each time we add the single to a new service." [ref=e650]:
+                - cell "Store Maximizer ($7.95/yr) DistroKid will automatically deliver this single to new online stores and streaming services as we add them. Which is often. We'll give you notice each time we add the single to a new service." [ref=e651]:
+                  - checkbox "Store Maximizer ($7.95/yr) DistroKid will automatically deliver this single to new online stores and streaming services as we add them. Which is often. We'll give you notice each time we add the single to a new service." [ref=e652] [cursor=pointer]
+                - cell "Store Maximizer ($7.95/yr) DistroKid will automatically deliver this single to new online stores and streaming services as we add them. Which is often. We'll give you notice each time we add the single to a new service." [ref=e653]:
+                  - generic [ref=e654]:
+                    - generic [ref=e655]:
+                      - img [ref=e656]
+                      - text: Store Maximizer ($7.95/yr)
+                    - text: DistroKid will automatically deliver this single to new online stores and streaming services as we add them. Which is often. We'll give you notice each time we add the single to a new service.
+          - table [ref=e660]:
+            - rowgroup [ref=e661]:
+              - row "DistroVid Music Video Distribution ($8.25/mo, billed annually at $99) Unlimited music video distribution to Spotify, Apple, Tidal, Boomplay, VEVO while keeping 100% of your earnings! Learn more about DistroVid here." [ref=e662]:
+                - cell "DistroVid Music Video Distribution ($8.25/mo, billed annually at $99) Unlimited music video distribution to Spotify, Apple, Tidal, Boomplay, VEVO while keeping 100% of your earnings! Learn more about DistroVid here." [ref=e663]:
+                  - checkbox "DistroVid Music Video Distribution ($8.25/mo, billed annually at $99) Unlimited music video distribution to Spotify, Apple, Tidal, Boomplay, VEVO while keeping 100% of your earnings! Learn more about DistroVid here." [ref=e664] [cursor=pointer]
+                - cell "DistroVid Music Video Distribution ($8.25/mo, billed annually at $99) Unlimited music video distribution to Spotify, Apple, Tidal, Boomplay, VEVO while keeping 100% of your earnings! Learn more about DistroVid here." [ref=e665]:
+                  - generic [ref=e666]:
+                    - generic [ref=e667]:
+                      - img [ref=e668]
+                      - text: DistroVid Music Video Distribution ($8.25/mo, billed annually at $99)
+                    - text: Unlimited music video distribution to Spotify, Apple, Tidal, Boomplay, VEVO while keeping 100% of your earnings!
+                    - link "Learn more about DistroVid here." [ref=e669] [cursor=pointer]:
+                      - /url: https://distrovid.com/?ref=upload
+          - table [ref=e673]:
+            - rowgroup [ref=e674]:
+              - row "Loudness Normalization ($2.99 one-time fee, nonrecurring) Optimizes audio level for streaming services per Spotify's recommendation (-14dB integrated LUFS & -1dB true peak maximum). This sets the volume of your track to an optimal level, and reduces or eliminates distortion & clipping during streaming services' transcoding process—without changing the sound or dynamic range of your music. If your single is already loud enough (> -14dB LUFS), this optimization will be skipped and you won't be charged." [ref=e675]:
+                - cell "Loudness Normalization ($2.99 one-time fee, nonrecurring) Optimizes audio level for streaming services per Spotify's recommendation (-14dB integrated LUFS & -1dB true peak maximum). This sets the volume of your track to an optimal level, and reduces or eliminates distortion & clipping during streaming services' transcoding process—without changing the sound or dynamic range of your music. If your single is already loud enough (> -14dB LUFS), this optimization will be skipped and you won't be charged." [ref=e676]:
+                  - checkbox "Loudness Normalization ($2.99 one-time fee, nonrecurring) Optimizes audio level for streaming services per Spotify's recommendation (-14dB integrated LUFS & -1dB true peak maximum). This sets the volume of your track to an optimal level, and reduces or eliminates distortion & clipping during streaming services' transcoding process—without changing the sound or dynamic range of your music. If your single is already loud enough (> -14dB LUFS), this optimization will be skipped and you won't be charged." [ref=e677] [cursor=pointer]
+                - cell "Loudness Normalization ($2.99 one-time fee, nonrecurring) Optimizes audio level for streaming services per Spotify's recommendation (-14dB integrated LUFS & -1dB true peak maximum). This sets the volume of your track to an optimal level, and reduces or eliminates distortion & clipping during streaming services' transcoding process—without changing the sound or dynamic range of your music. If your single is already loud enough (> -14dB LUFS), this optimization will be skipped and you won't be charged." [ref=e678]:
+                  - generic [ref=e679]:
+                    - generic [ref=e680]:
+                      - img [ref=e681]
+                      - text: Loudness Normalization ($2.99 one-time fee
+                      - text: ", nonrecurring)"
+                    - text: Optimizes audio level for streaming services per Spotify's recommendation (-14dB integrated LUFS & -1dB true peak maximum). This sets the volume of your track to an optimal level, and reduces or eliminates distortion & clipping during streaming services' transcoding process—without changing the sound or dynamic range of your music. If your single is already loud enough (> -14dB LUFS), this optimization will be skipped and you won't be charged.
+          - table [ref=e684]:
+            - rowgroup [ref=e685]:
+              - row "Social Media Pack ($4.95/yr + 20% of platform ad revenue) Get notified & paid when your music is used in content on YouTube, TikTok, Instagram, and Facebook. We automatically detect matches and pay you ad revenue from videos that use your music." [ref=e686]:
+                - cell "Social Media Pack ($4.95/yr + 20% of platform ad revenue) Get notified & paid when your music is used in content on YouTube, TikTok, Instagram, and Facebook. We automatically detect matches and pay you ad revenue from videos that use your music." [ref=e687]:
+                  - checkbox "Social Media Pack ($4.95/yr + 20% of platform ad revenue) Get notified & paid when your music is used in content on YouTube, TikTok, Instagram, and Facebook. We automatically detect matches and pay you ad revenue from videos that use your music." [ref=e688] [cursor=pointer]
+                - cell "Social Media Pack ($4.95/yr + 20% of platform ad revenue) Get notified & paid when your music is used in content on YouTube, TikTok, Instagram, and Facebook. We automatically detect matches and pay you ad revenue from videos that use your music." [ref=e689]:
+                  - generic [ref=e691]:
+                    - generic [ref=e692]:
+                      - img [ref=e693]
+                      - text: Social Media Pack ($4.95/yr + 20% of platform ad revenue)
+                    - text: Get notified & paid when your music is used in content on YouTube, TikTok, Instagram, and Facebook. We automatically detect matches and pay you ad revenue from videos that use your music.
+        - generic [ref=e696]:
+          - text: "Total:"
+          - generic [ref=e697]: $0.00
+          - generic [ref=e698]:
+            - generic [ref=e699]: 
+            - text: billed to card ending with
+            - generic [ref=e700]: "2838"
+            - text: (update card)
+    - generic [ref=e701]:
+      - heading "Important checkboxes (mandatory)" [level=2] [ref=e702]
+      - generic [ref=e704]:
+        - generic [ref=e707]:
+          - checkbox "I selected \"YouTube Music\". So I won't {{profile.lateness.stakeholders.channel}} DistroKid later asking, \"why'd you upload my music to YouTube?!\" ...mkay?" [ref=e709] [cursor=pointer]
+          - generic [ref=e710]: I selected "YouTube Music". So I won't {{profile.lateness.stakeholders.channel}} DistroKid later asking, "why'd you upload my music to YouTube?!" ...mkay?
+        - generic [ref=e713]:
+          - 'checkbox "I won''t use \"promo services\" that guarantee streams or playlisting—even if they claim \"organic and real\" streams. These services typically use fake stream-bots easily detectable by streaming services. Read this message from Spotify to learn more: Don''t put your music at risk" [ref=e715] [cursor=pointer]'
+          - generic [ref=e716]:
+            - text: "I won't use \"promo services\" that guarantee streams or playlisting—even if they claim \"organic and real\" streams. These services typically use fake stream-bots easily detectable by streaming services. Read this message from Spotify to learn more:"
+            - link "Don't put your music at risk" [ref=e717] [cursor=pointer]:
+              - /url: https://support.distrokid.com/hc/en-us/articles/27691746904595-Don-t-Put-Your-Music-At-Risk
+        - generic [ref=e720]:
+          - checkbox "I recorded this music, and am authorized to sell it in stores worldwide & collect all royalties." [ref=e722] [cursor=pointer]
+          - generic [ref=e723]: I recorded this music, and am authorized to sell it in stores worldwide & collect all royalties.
+        - generic [ref=e726]:
+          - checkbox "I'm not using any other artist's name in my name, song titles, or album title, without their approval." [ref=e728] [cursor=pointer]
+          - generic [ref=e729]: I'm not using any other artist's name in my name, song titles, or album title, without their approval.
+        - generic [ref=e732]:
+          - checkbox "I have read and agree to the terms of the DistroKid Distribution Agreement" [ref=e734] [cursor=pointer]
+          - generic [ref=e735]:
+            - text: I have read and agree to the terms of the
+            - link "DistroKid Distribution Agreement" [ref=e736] [cursor=pointer]:
+              - /url: https://distrokid.com/agreement/
+    - generic [ref=e738]: "You're almost there! Preview your release details:"
+    - generic [ref=e739]:
+      - generic [ref=e740]:
+        - img [ref=e742]
+        - generic [ref=e743]:
+          - generic [ref=e744]:
+            - generic [ref=e745]: Track 1
+            - generic [ref=e746]: Anicca
+          - generic [ref=e748]:
+            - img "spotify logo" [ref=e749]
+            - img "applemusic logo" [ref=e750]
+            - img "itunes logo" [ref=e751]
+            - img "facebook logo" [ref=e752]
+            - img "tiktok logo" [ref=e753]
+            - img "google logo" [ref=e754]
+            - img "amazon logo" [ref=e755]
+            - img "rdio logo" [ref=e756]
+            - img "deezer logo" [ref=e757]
+            - img "tidal logo" [ref=e758]
+            - img "iheart logo" [ref=e759]
+            - img "qobuz logo" [ref=e760]
+            - img "saavn logo" [ref=e761]
+            - generic [ref=e762]: +more
+        - generic [ref=e764]:
+          - generic [ref=e765]:
+            - generic [ref=e766]: Release date
+            - generic [ref=e767]: ASAP
+          - generic [ref=e768]:
+            - generic [ref=e769]: Record label
+            - generic [ref=e770]: 12535260 Records DK
+      - generic [ref=e771]:
+        - generic [ref=e773]: Track list
+        - generic [ref=e776]:
+          - generic [ref=e777]: "1"
+          - generic [ref=e778]:
+            - generic [ref=e779]: Song Title
+            - generic [ref=e780]: Anicca
+    - generic [ref=e781]: Looks good? 🎉
+    - button "Continue" [ref=e784] [cursor=pointer]
+  - generic [ref=e787]:
+    - generic [ref=e788]:
+      - generic [ref=e789]:
+        - generic [ref=e790]:
+          - link [ref=e791] [cursor=pointer]:
+            - /url: https://www.youtube.com/subscription_center?add_user=distrokid
+            - generic [ref=e792]: 
+          - link "" [ref=e793] [cursor=pointer]:
+            - /url: https://facebook.com/distrokid
+            - generic [ref=e794]: 
+          - link [ref=e795] [cursor=pointer]:
+            - /url: https://bsky.app/profile/distrokid.com
+            - generic [ref=e796]: 
+          - link [ref=e797] [cursor=pointer]:
+            - /url: https://www.instagram.com/distrokid/
+            - generic [ref=e798]: 
+        - generic [ref=e799]: © DistroKid 2026
+      - combobox [ref=e803]:
+        - option "Bahasa Indonesia"
+        - option "Bahasa Melayu"
+        - option "Čeština"
+        - option "Dansk"
+        - option "Deutsch"
+        - option "English"
+        - option "English (UK)"
+        - option "Español"
+        - option "Español (España)"
+        - option "Français"
+        - option "Français (Canada)"
+        - option "Italiano"
+        - option "Kiswahili"
+        - option "Magyar"
+        - option "Nederlands"
+        - option "Norsk Bokmål"
+        - option "Polski"
+        - option "Português (Brasil)"
+        - option "Português (Portugal)"
+        - option "Românã"
+        - option "Suomi"
+        - option "Svenska"
+        - option "Tiếng Việt"
+        - option "Türkçe"
+        - option "日本語" [selected]
+        - option "ελληνικά"
+        - option "українська"
+        - option "עברית"
+        - option "العربية‬‎"
+        - option "हिन्दी"
+        - option "ภาษาไทย"
+        - option "한국어"
+    - generic [ref=e804]:
+      - generic [ref=e805]:
+        - heading "Help" [level=2] [ref=e806]
+        - link "Support Center" [ref=e807] [cursor=pointer]:
+          - /url: https://distrokid.com/help/
+      - generic [ref=e808]:
+        - heading "Company" [level=2] [ref=e809]
+        - link "DistroKid News" [ref=e810] [cursor=pointer]:
+          - /url: https://news.distrokid.com/
+        - link "Nail Clippers & More" [ref=e811] [cursor=pointer]:
+          - /url: https://store.distrokid.com/
+        - link "Artists For Change" [ref=e812] [cursor=pointer]:
+          - /url: https://distrokid.com/artistsforchange/
+        - link "Careers" [ref=e813] [cursor=pointer]:
+          - /url: https://boards.greenhouse.io/distrokid
+        - link "Influencer & Affiliate Programs" [ref=e814] [cursor=pointer]:
+          - /url: https://distrokid.com/product/partners
+      - generic [ref=e815]:
+        - heading "Product" [level=2] [ref=e816]
+        - link "Plans" [ref=e817] [cursor=pointer]:
+          - /url: https://distrokid.com/pricing/
+        - link "Bandzoogle" [ref=e818] [cursor=pointer]:
+          - /url: https://bandzoogle.com/?pc=DK14&utm_source=distrokid&utm_medium=website&utm_campaign=footer
+        - link "Instant Share" [ref=e819] [cursor=pointer]:
+          - /url: https://distrokid.com/instantshare/
+        - link "Mixea" [ref=e820] [cursor=pointer]:
+          - /url: https://mixea.com/
+        - link "DistroVid" [ref=e821] [cursor=pointer]:
+          - /url: https://distrovid.com/
+        - link "HyperFollow" [ref=e822] [cursor=pointer]:
+          - /url: https://hyperfollow.com/
+        - link "Direct" [ref=e823] [cursor=pointer]:
+          - /url: https://distrokid.com/direct/?ref=footer
+      - generic [ref=e824]:
+        - heading "Mobile App" [level=2] [ref=e825]
+        - link "DistroKid for iPhone" [ref=e826] [cursor=pointer]:
+          - /url: /app/
+        - link "DistroKid for Android" [ref=e827] [cursor=pointer]:
+          - /url: /app/
+    - generic [ref=e828]:
+      - link "Privacy policy" [ref=e829] [cursor=pointer]:
+        - /url: /privacy/
+      - link "Cookie policy" [ref=e830] [cursor=pointer]:
+        - /url: /privacy/
+      - link "Cookie settings" [ref=e831] [cursor=pointer]:
+        - /url: javascript:void(0)
+      - link "Terms of use" [ref=e832] [cursor=pointer]:
+        - /url: https://distrokid.com/terms/
+      - link "Sitemap" [ref=e833] [cursor=pointer]:
+        - /url: /sitemap/
+      - link "Distribution agreement" [ref=e834] [cursor=pointer]:
+        - /url: /agreement/
+  - text: 

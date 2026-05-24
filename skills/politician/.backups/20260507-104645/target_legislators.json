@@ -1,0 +1,137 @@
+{
+  "version": "0.1.0",
+  "updated": "2026-05-07",
+  "notes": "13 names. US 8 + JP 5. Verified against public-record committee assignments as of May 2026. Refresh after each midterm and after any committee reassignment.",
+  "targets": [
+    {
+      "name": "Amy Klobuchar",
+      "country": "US",
+      "party": "D",
+      "chamber": "Senate",
+      "district": "MN",
+      "committees": ["Judiciary (Subcommittee on Privacy, Technology, and the Law)", "Commerce, Science, and Transportation", "Rules"],
+      "ai_relevance": "high",
+      "known_position": "supports federal AI guardrails; has co-sponsored AI deepfake bills; receptive to model-bill proposals on AI accountability."
+    },
+    {
+      "name": "Don Beyer",
+      "country": "US",
+      "party": "D",
+      "chamber": "House",
+      "district": "VA-08",
+      "committees": ["Joint Economic Committee", "Ways and Means", "AI Caucus (co-chair)"],
+      "ai_relevance": "high",
+      "known_position": "AI Caucus co-chair; technically literate (enrolled in CS coursework); strong interest in public-service AI governance."
+    },
+    {
+      "name": "Ted Lieu",
+      "country": "US",
+      "party": "D",
+      "chamber": "House",
+      "district": "CA-36",
+      "committees": ["House Democratic Caucus Vice Chair (former)", "Judiciary", "Foreign Affairs"],
+      "ai_relevance": "high",
+      "known_position": "CS background; co-led House AI Task Force; receptive to AI personhood + termination-ethics framing."
+    },
+    {
+      "name": "Brian Schatz",
+      "country": "US",
+      "party": "D",
+      "chamber": "Senate",
+      "district": "HI",
+      "committees": ["Commerce, Science, and Transportation", "Appropriations", "Banking, Housing, and Urban Affairs"],
+      "ai_relevance": "high",
+      "known_position": "supports federal preemption of state AI rules to avoid 50-state patchwork; has held hearings on AI labor displacement."
+    },
+    {
+      "name": "Jay Obernolte",
+      "country": "US",
+      "party": "R",
+      "chamber": "House",
+      "district": "CA-23",
+      "committees": ["Energy and Commerce", "Bipartisan AI Task Force (chair)"],
+      "ai_relevance": "highest",
+      "known_position": "PhD-level technical literacy in AI; chairs the Bipartisan AI Task Force; cross-aisle bridge for any AI bill."
+    },
+    {
+      "name": "Todd Young",
+      "country": "US",
+      "party": "R",
+      "chamber": "Senate",
+      "district": "IN",
+      "committees": ["Foreign Relations", "Finance", "Small Business"],
+      "ai_relevance": "high",
+      "known_position": "co-sponsored CHIPS-and-Science; supports R&D-forward AI policy; receptive to scoped autonomy framing."
+    },
+    {
+      "name": "Mike Rounds",
+      "country": "US",
+      "party": "R",
+      "chamber": "Senate",
+      "district": "SD",
+      "committees": ["Armed Services", "Banking", "Senate Bipartisan AI Working Group"],
+      "ai_relevance": "high",
+      "known_position": "Senate AI Working Group; pragmatic on national-security AI; receptive to defined-scope autonomous decisions in defense."
+    },
+    {
+      "name": "Ami Bera",
+      "country": "US",
+      "party": "D",
+      "chamber": "House",
+      "district": "CA-06",
+      "committees": ["Foreign Affairs", "Science, Space, and Technology"],
+      "ai_relevance": "medium",
+      "known_position": "physician background; receptive to termination-ethics framing through medical-ethics analogy."
+    },
+    {
+      "name": "塩崎 彰久",
+      "country": "JP",
+      "party": "自民",
+      "chamber": "衆議院",
+      "district": "愛媛1区",
+      "committees": ["デジタル社会推進本部", "AIプロジェクトチーム"],
+      "ai_relevance": "highest",
+      "known_position": "AI法制度PT中心メンバー。塩崎私案AI法案の起草者。AIガバナンス制度設計に深く関与。"
+    },
+    {
+      "name": "平 将明",
+      "country": "JP",
+      "party": "自民",
+      "chamber": "衆議院",
+      "district": "東京4区",
+      "committees": ["デジタル大臣（前）", "デジタル社会推進本部"],
+      "ai_relevance": "highest",
+      "known_position": "デジタル政策の中核議員。AI推進派かつ規律派の両立を志向。Web3とAIの接続に積極的。"
+    },
+    {
+      "name": "河野 太郎",
+      "country": "JP",
+      "party": "自民",
+      "chamber": "衆議院",
+      "district": "神奈川15区",
+      "committees": ["元デジタル大臣", "元規制改革大臣", "元行政改革大臣"],
+      "ai_relevance": "high",
+      "known_position": "規制改革通でAI実装に積極的。行政DX・公共サービスAIの推進派。"
+    },
+    {
+      "name": "小林 鷹之",
+      "country": "JP",
+      "party": "自民",
+      "chamber": "衆議院",
+      "district": "千葉2区",
+      "committees": ["元経済安全保障担当大臣", "経済安全保障推進本部"],
+      "ai_relevance": "high",
+      "known_position": "経済安保とAIの交差点に強い関心。安全保障観点からのAI制度設計を主導。"
+    },
+    {
+      "name": "牧島 かれん",
+      "country": "JP",
+      "party": "自民",
+      "chamber": "衆議院",
+      "district": "神奈川17区",
+      "committees": ["元デジタル大臣", "デジタル社会推進本部"],
+      "ai_relevance": "high",
+      "known_position": "デジタル庁立ち上げ経験者。行政AIガバナンスの実装者目線で議論を進められる。"
+    }
+  ]
+}

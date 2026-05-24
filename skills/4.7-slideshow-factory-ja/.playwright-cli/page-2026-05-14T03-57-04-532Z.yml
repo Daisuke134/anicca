@@ -1,0 +1,48 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - link "コンテンツへスキップ":
+      - /url: "#"
+      - generic [ref=e8] [cursor=pointer]: コンテンツへスキップ
+    - generic [ref=e10]:
+      - generic [ref=e11]:
+        - link "Pinterest ホーム" [ref=e13] [cursor=pointer]:
+          - /url: /
+          - img [ref=e16]
+        - link "アイデアを探す" [ref=e32] [cursor=pointer]:
+          - /url: /ideas
+          - generic [ref=e33]: アイデアを探す
+      - generic [ref=e37]:
+        - combobox "検索する" [ref=e39]: 瞑想 部屋 落ち着く
+        - button "検索キーワードを削除する" [ref=e44] [cursor=pointer]:
+          - img [ref=e47]
+      - generic [ref=e49]:
+        - button "ログイン" [ref=e51] [cursor=pointer]:
+          - generic [ref=e53]: ログイン
+        - button "無料登録" [ref=e55] [cursor=pointer]:
+          - generic [ref=e57]: 無料登録
+        - button "設定" [ref=e60] [cursor=pointer]:
+          - img [ref=e63]
+  - main [ref=e66]:
+    - generic [ref=e68]:
+      - generic [ref=e71]:
+        - heading "検索する" [level=1] [ref=e73]
+        - button "フィルターを表示する" [ref=e84] [cursor=pointer]:
+          - img [ref=e88]
+      - generic [ref=e127]:
+        - generic [ref=e128]: 瞑想 部屋 落ち着く の検索結果を読み込み中
+        - list [ref=e133]:
+          - listitem [ref=e134]
+          - listitem [ref=e138]
+          - listitem [ref=e142]
+          - listitem [ref=e146]
+          - listitem [ref=e150]
+          - listitem [ref=e154]
+          - listitem [ref=e158]
+          - listitem [ref=e162]
+          - listitem [ref=e166]
+          - listitem [ref=e170]
+          - listitem [ref=e174]
+          - listitem [ref=e178]
+          - listitem [ref=e182]
+          - listitem [ref=e186]
+          - listitem [ref=e190]

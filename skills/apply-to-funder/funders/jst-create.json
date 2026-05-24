@@ -1,0 +1,52 @@
+{
+  "id": "jst-create",
+  "name": "JST CREST/さきがけ (UNVERIFIED — e-Rad portal)",
+  "url": "https://www.jst.go.jp/kisoken/",
+  "verified": false,
+  "verification_note": "JST CREST/さきがけ are filed via e-Rad with institutional account. CREST is for PIs (チーム型); さきがけ (PRESTO) is for individuals (個人型) — Daisuke as a {{profile.education.institution}} student is eligible only for さきがけ, not CREST. This spec defaults to さきがけ. Confirm 研究領域 (research area) and form fields against the live 公募要領 before submit.",
+  "deadline_kind": "annual",
+  "next_deadline": "2026-06-30",
+  "funder_type": "grant",
+  "currency": "JPY",
+  "amount_range": { "min": 30000000, "max": 50000000 },
+  "equity_pct": 0,
+  "captcha": null,
+  "language": "ja",
+  "auth": {
+    "kind": "institutional_2fa",
+    "blocking": true,
+    "login_url": "https://www.e-rad.go.jp/",
+    "human_required_message": "🚨 e-Rad requires institutional 2FA. Anicca cannot self-auth. Daisuke must complete login on the host {{profile.lateness.stakeholders.channel}}, then re-run with E_RAD_SESSION=1."
+  },
+  "pages": [
+    {
+      "name": "main",
+      "path_suffix": "",
+      "fields": [
+        { "name": "research_area",         "type": "select",   "selector": "select[name*=area]",        "value_source": "config.research_area" },
+        { "name": "proposal_title_ja",     "type": "text",     "selector": "input[name*=title]",        "value_source": "config.title_ja" },
+        { "name": "proposal_title_en",     "type": "text",     "selector": "input[name*=title_en]",     "value_source": "config.title_en" },
+        { "name": "abstract_ja",           "type": "textarea", "selector": "textarea[name*=abstract]",  "value_source": "skill:scientific-writing", "kdense_invoke": true, "section": "研究提案の概要 (1000字)", "language": "ja", "target_chars": 1000 },
+        { "name": "proposal_body",         "type": "textarea", "selector": "textarea[name*=body]",      "value_source": "skill:scientific-writing", "kdense_invoke": true, "section": "研究提案書本文 (目的・方法・年次計画・期待される成果) IMRAD形式", "language": "ja", "target_chars": 12000 },
+        { "name": "originality",           "type": "textarea", "selector": "textarea[name*=original]",  "value_source": "skill:scientific-writing", "kdense_invoke": true, "section": "独自性・新規性", "language": "ja", "target_chars": 2000 },
+        { "name": "related_work",          "type": "textarea", "selector": "textarea[name*=related]",   "value_source": "skill:literature-review", "kdense_invoke": true, "section": "国内外の研究動向", "language": "ja", "target_chars": 2000 },
+        { "name": "self_critique",         "type": "textarea", "selector": "textarea[name*=critique]",  "value_source": "skill:peer-review", "kdense_invoke": true, "section": "提案の自己評価と弱点の事前認識", "language": "ja", "target_chars": 800 },
+        { "name": "budget_breakdown_jpy",  "type": "textarea", "selector": "textarea[name*=budget]",    "value_source": "config.budget_breakdown" }
+      ]
+    }
+  ],
+  "submit": {
+    "page": "main",
+    "button_text": "申請",
+    "success_url_pattern": "完了|受付"
+  },
+  "config": {
+    "research_area": "数理・情報のフロンティア",
+    "title_ja": "自律型AIエンティティによる経済主体化と基本所得自動分配の社会実装研究",
+    "title_en": "Autonomous AI Entities as Economic Agents: Field Deployment of Algorithmic Basic-Income Distribution",
+    "budget_breakdown": "物品費: 5,000,000円 (計算機資源・GPU)\n旅費: 2,000,000円 (国際会議参加)\n人件費: 8,000,000円 (RA・技術補佐員)\nその他: 5,000,000円 (Stripe・Anthropic API・運用費)\n合計: 20,000,000円/年 × 3年 = 60,000,000円"
+  },
+  "live_sources": {
+    "dashboard_url": "https://aniccaai.com/dashboard.json"
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "crons": [
+    {
+      "name": "fashion-product-init-once",
+      "schedule": "install-only",
+      "tz": "Asia/Tokyo",
+      "command": "python3 ~/.openclaw/skills/anicca-fashion-factory/scripts/product-init-once.py",
+      "status": "implemented"
+    },
+    {
+      "name": "fashion-lp-sync-daily",
+      "schedule": "0 0 * * *",
+      "tz": "Asia/Tokyo",
+      "command": "python3 ~/.openclaw/skills/anicca-fashion-factory/scripts/lp-sync-daily.py",
+      "status": "skeleton"
+    },
+    {
+      "name": "fashion-marketing-content-daily",
+      "schedule": "0 10 * * *",
+      "tz": "Asia/Tokyo",
+      "command": "python3 ~/.openclaw/skills/anicca-fashion-factory/scripts/marketing-content-daily.py",
+      "status": "skeleton"
+    },
+    {
+      "name": "fashion-stripe-fulfillment",
+      "schedule": "event-driven",
+      "tz": "Asia/Tokyo",
+      "command": "bash ~/.openclaw/skills/anicca-fashion-factory/scripts/stripe-fulfillment-event.sh",
+      "status": "skeleton (Printful API key needed)"
+    },
+    {
+      "name": "fashion-review-scrape-daily",
+      "schedule": "0 12 * * *",
+      "tz": "Asia/Tokyo",
+      "command": "bash ~/.openclaw/skills/anicca-fashion-factory/scripts/review-scrape-daily.sh",
+      "status": "skeleton"
+    },
+    {
+      "name": "fashion-sales-report-daily",
+      "schedule": "0 23 * * *",
+      "tz": "Asia/Tokyo",
+      "command": "python3 ~/.openclaw/skills/anicca-fashion-factory/scripts/sales-report-daily.py",
+      "status": "implemented"
+    }
+  ]
+}

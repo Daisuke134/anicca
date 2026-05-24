@@ -1,0 +1,46 @@
+{
+  "platform": "wechat",
+  "word_range": [1500, 3000],
+  "tag_count": 3,
+  "structure": {
+    "sections": [
+      {
+        "name": "标题",
+        "type": "title",
+        "style": "吸睛，引发好奇"
+      },
+      {
+        "name": "引言",
+        "type": "intro",
+        "approach": "痛点切入或故事共情"
+      },
+      {
+        "name": "小标题1",
+        "type": "subtitle",
+        "content": "背景与问题"
+      },
+      {
+        "name": "小标题2",
+        "type": "subtitle",
+        "content": "核心方法"
+      },
+      {
+        "name": "小标题3",
+        "type": "subtitle",
+        "content": "实操步骤"
+      },
+      {
+        "name": "结尾",
+        "type": "closing",
+        "approach": "提升立意+明确CTA"
+      }
+    ]
+  },
+  "writing_rules": [
+    "标题要引发好奇或制造紧迫感",
+    "引言建立共情，不能太学术",
+    "段落控制在200字以内",
+    "小标题要有实际内容，不能虚",
+    "结尾引导点在看和转发"
+  ]
+}

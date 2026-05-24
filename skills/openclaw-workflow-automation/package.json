@@ -1,0 +1,7 @@
+{
+  "name": "openclaw-workflow-automation",
+  "version": "1.0.0",
+  "description": "快速搭建 OpenClaw 工作流自动化系统",
+  "tags": ["workflow", "automation", "chinese", "productivity"],
+  "author": "OpenClaw 中文社区贡献者"
+}

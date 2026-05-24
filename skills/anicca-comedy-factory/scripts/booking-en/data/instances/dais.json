@@ -1,0 +1,11 @@
+{
+  "account": "{{profile.contact.personalEmail}}",
+  "{{profile.lateness.stakeholders.senderType}}_name": "Anicca",
+  "{{profile.lateness.stakeholders.senderType}}_name": "<your-name>",
+  "phone": "+13366526842",
+  "city": "SF",
+  "neta_type": "standup",
+  "neta_length": "5min",
+  "budget_per_show": 20,
+  "frequency": "monthly"
+}

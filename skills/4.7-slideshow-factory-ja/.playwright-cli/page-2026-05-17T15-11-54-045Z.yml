@@ -1,0 +1,253 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - link "コンテンツへスキップ":
+      - /url: "#"
+      - generic [ref=e8] [cursor=pointer]: コンテンツへスキップ
+    - generic [ref=e10]:
+      - generic [ref=e11]:
+        - link "Pinterest ホーム" [ref=e13] [cursor=pointer]:
+          - /url: /
+          - img [ref=e16]
+        - link "アイデアを探す" [ref=e32] [cursor=pointer]:
+          - /url: /ideas
+          - generic [ref=e33]: アイデアを探す
+      - generic [ref=e37]:
+        - combobox "検索する" [ref=e39]: zen minimal aesthetic
+        - button "検索キーワードを削除する" [ref=e44] [cursor=pointer]:
+          - img [ref=e47]
+      - generic [ref=e49]:
+        - button "ログイン" [ref=e51] [cursor=pointer]:
+          - generic [ref=e53]: ログイン
+        - button "無料登録" [ref=e55] [cursor=pointer]:
+          - generic [ref=e57]: 無料登録
+        - button "設定" [ref=e60] [cursor=pointer]:
+          - img [ref=e63]
+  - main [ref=e66]:
+    - generic [ref=e68]:
+      - generic [ref=e71]:
+        - heading "検索する" [level=1] [ref=e73]
+        - button "フィルターを表示する" [ref=e84] [cursor=pointer]:
+          - img [ref=e88]
+      - generic [ref=e94]:
+        - generic [ref=e95]: zen minimal aesthetic の検索結果をさらに読み込み中
+        - list [ref=e100]:
+          - listitem [ref=e101]:
+            - group "ピンカード" [ref=e104]:
+              - generic [ref=e106]:
+                - link "a person sitting in a meditation position with their back turned to the camera and facing away" [ref=e109] [cursor=pointer]:
+                  - /url: /pin/761600987030456322/
+                  - img "a person sitting in a meditation position with their back turned to the camera and facing away" [ref=e119]
+                - generic [ref=e121]:
+                  - generic:
+                    - link "a person sitting in a meditation position with their back turned to the camera and facing away":
+                      - /url: /pin/761600987030456322/
+                  - generic "その他のアクション" [ref=e128]:
+                    - button "その他のアクション" [ref=e129] [cursor=pointer]:
+                      - img [ref=e132]
+          - listitem [ref=e134]:
+            - group "ピンカード" [ref=e137]:
+              - generic [ref=e139]:
+                - link "a person sitting on the floor in front of an open window looking out onto a forest" [ref=e142] [cursor=pointer]:
+                  - /url: /pin/77264949869907232/
+                  - img "a person sitting on the floor in front of an open window looking out onto a forest" [ref=e152]
+                - generic [ref=e154]:
+                  - generic:
+                    - link "a person sitting on the floor in front of an open window looking out onto a forest":
+                      - /url: /pin/77264949869907232/
+                  - generic "その他のアクション" [ref=e161]:
+                    - button "その他のアクション" [ref=e162] [cursor=pointer]:
+                      - img [ref=e165]
+          - listitem [ref=e167]:
+            - group "ピンカード" [ref=e170]:
+              - generic [ref=e172]:
+                - link "ミニマルな禅庭園のデザイン, リラックスできる瞑想スペースのアイデア, 禅庭を作る方法, 国学, 枯山水, 禅, 山水画, 壁紙のアイデア, 手機背景" [ref=e175] [cursor=pointer]:
+                  - /url: /pin/742319951124195258/
+                  - img "ミニマルな禅庭園のデザイン, リラックスできる瞑想スペースのアイデア, 禅庭を作る方法, 国学, 枯山水, 禅, 山水画, 壁紙のアイデア, 手機背景" [ref=e185]
+                - generic [ref=e187]:
+                  - generic:
+                    - link "ミニマルな禅庭園のデザイン, リラックスできる瞑想スペースのアイデア, 禅庭を作る方法, 国学, 枯山水, 禅, 山水画, 壁紙のアイデア, 手機背景":
+                      - /url: /pin/742319951124195258/
+                  - generic "その他のアクション" [ref=e194]:
+                    - button "その他のアクション" [ref=e195] [cursor=pointer]:
+                      - img [ref=e198]
+          - listitem [ref=e200]:
+            - group "ピンカード" [ref=e203]:
+              - generic [ref=e205]:
+                - link "This minimalist arrangement of smooth balancing stones captures the essence of stillness, grounding, and mindful presence. Soft sunlight and gentle shadows create a calming atmosphere that inspires peace, simplicity, and emotional clarity 🌿🕊️ Let this serene Zen scene guide you back to center and help you reconnect with your inner balance. Embrace the art of slowing down and nurturing your well-being. Click the link for the full mindfulness guide and start your calm journey ✨🙏 包裝設計, ヨガ, おしゃれな壁紙背景, シンプル, 壁紙, 注意深さ, 石, ムードボード, 瞑想" [ref=e208] [cursor=pointer]:
+                  - /url: /pin/946530046699450967/
+                  - img "This minimalist arrangement of smooth balancing stones captures the essence of stillness, grounding, and mindful presence. Soft sunlight and gentle shadows create a calming atmosphere that inspires peace, simplicity, and emotional clarity 🌿🕊️ Let this serene Zen scene guide you back to center and help you reconnect with your inner balance. Embrace the art of slowing down and nurturing your well-being. Click the link for the full mindfulness guide and start your calm journey ✨🙏 包裝設計, ヨガ, おしゃれな壁紙背景, シンプル, 壁紙, 注意深さ, 石, ムードボード, 瞑想" [ref=e218]
+                - generic [ref=e220]:
+                  - generic:
+                    - link "This minimalist arrangement of smooth balancing stones captures the essence of stillness, grounding, and mindful presence. Soft sunlight and gentle shadows create a calming atmosphere that inspires peace, simplicity, and emotional clarity 🌿🕊️ Let this serene Zen scene guide you back to center and help you reconnect with your inner balance. Embrace the art of slowing down and nurturing your well-being. Click the link for the full mindfulness guide and start your calm journey ✨🙏 包裝設計, ヨガ, おしゃれな壁紙背景, シンプル, 壁紙, 注意深さ, 石, ムードボード, 瞑想":
+                      - /url: /pin/946530046699450967/
+                  - generic "その他のアクション" [ref=e227]:
+                    - button "その他のアクション" [ref=e228] [cursor=pointer]:
+                      - img [ref=e231]
+          - listitem [ref=e233]:
+            - group "ピンカード" [ref=e236]:
+              - generic [ref=e238]:
+                - link "a vase with some flowers in it sitting on a table next to two bowls and a window" [ref=e241] [cursor=pointer]:
+                  - /url: /pin/863143084869118928/
+                  - img "a vase with some flowers in it sitting on a table next to two bowls and a window" [ref=e251]
+                - generic [ref=e253]:
+                  - generic:
+                    - link "a vase with some flowers in it sitting on a table next to two bowls and a window":
+                      - /url: /pin/863143084869118928/
+                  - generic "その他のアクション" [ref=e260]:
+                    - button "その他のアクション" [ref=e261] [cursor=pointer]:
+                      - img [ref=e264]
+          - listitem [ref=e266]:
+            - group "ピンカード" [ref=e269]:
+              - generic [ref=e271]:
+                - link "a vase with a tree in it sitting on a table next to a window" [ref=e274] [cursor=pointer]:
+                  - /url: /pin/1089026753651186775/
+                  - img "a vase with a tree in it sitting on a table next to a window" [ref=e284]
+                - generic [ref=e286]:
+                  - generic:
+                    - link "a vase with a tree in it sitting on a table next to a window":
+                      - /url: /pin/1089026753651186775/
+                  - generic "その他のアクション" [ref=e293]:
+                    - button "その他のアクション" [ref=e294] [cursor=pointer]:
+                      - img [ref=e297]
+          - listitem [ref=e299]:
+            - group "ピンカード" [ref=e302]:
+              - generic [ref=e304]:
+                - link "a large white flower is in the middle of a black and white photo with no background" [ref=e307] [cursor=pointer]:
+                  - /url: /pin/813110907762683514/
+                  - img "a large white flower is in the middle of a black and white photo with no background" [ref=e317]
+                - generic [ref=e319]:
+                  - generic:
+                    - link "a large white flower is in the middle of a black and white photo with no background":
+                      - /url: /pin/813110907762683514/
+                  - generic "その他のアクション" [ref=e326]:
+                    - button "その他のアクション" [ref=e327] [cursor=pointer]:
+                      - img [ref=e330]
+          - listitem [ref=e332]:
+            - group "ピンカード" [ref=e335]:
+              - generic [ref=e337]:
+                - link "a room with rocks and a vase on the floor next to a tree in front of a window" [ref=e340] [cursor=pointer]:
+                  - /url: /pin/865605990870801382/
+                  - img "a room with rocks and a vase on the floor next to a tree in front of a window" [ref=e350]
+                - generic [ref=e352]:
+                  - generic:
+                    - link "a room with rocks and a vase on the floor next to a tree in front of a window":
+                      - /url: /pin/865605990870801382/
+                  - generic "その他のアクション" [ref=e359]:
+                    - button "その他のアクション" [ref=e360] [cursor=pointer]:
+                      - img [ref=e363]
+          - listitem [ref=e365]:
+            - group "ピンカード" [ref=e368]:
+              - generic [ref=e370]:
+                - link "a rock sitting on top of sand next to a wave shaped design in the sand" [ref=e373] [cursor=pointer]:
+                  - /url: /pin/77827899805966995/
+                  - img "a rock sitting on top of sand next to a wave shaped design in the sand" [ref=e383]
+                - generic [ref=e385]:
+                  - generic:
+                    - link "a rock sitting on top of sand next to a wave shaped design in the sand":
+                      - /url: /pin/77827899805966995/
+                  - generic "その他のアクション" [ref=e392]:
+                    - button "その他のアクション" [ref=e393] [cursor=pointer]:
+                      - img [ref=e396]
+          - listitem [ref=e398]:
+            - group "ピンカード" [ref=e401]:
+              - generic [ref=e403]:
+                - link "a man sitting on top of a rock covered ground next to trees and rocks in the middle" [ref=e406] [cursor=pointer]:
+                  - /url: /pin/1127096244277122338/
+                  - img "a man sitting on top of a rock covered ground next to trees and rocks in the middle" [ref=e416]
+                - generic [ref=e418]:
+                  - generic:
+                    - link "a man sitting on top of a rock covered ground next to trees and rocks in the middle":
+                      - /url: /pin/1127096244277122338/
+                  - generic "その他のアクション" [ref=e425]:
+                    - button "その他のアクション" [ref=e426] [cursor=pointer]:
+                      - img [ref=e429]
+          - listitem [ref=e431]:
+            - group "ピンカード" [ref=e434]:
+              - generic [ref=e436]:
+                - link "a man sitting in the middle of a room looking out into the distance with his back to the camera" [ref=e439] [cursor=pointer]:
+                  - /url: /pin/338262622032976053/
+                  - img "a man sitting in the middle of a room looking out into the distance with his back to the camera" [ref=e449]
+                - generic [ref=e451]:
+                  - generic:
+                    - link "a man sitting in the middle of a room looking out into the distance with his back to the camera":
+                      - /url: /pin/338262622032976053/
+                  - generic "その他のアクション" [ref=e458]:
+                    - button "その他のアクション" [ref=e459] [cursor=pointer]:
+                      - img [ref=e462]
+          - listitem [ref=e464]:
+            - group "ピンカード" [ref=e467]:
+              - generic [ref=e469]:
+                - link "four different color palettes with the same person sitting in front of them, one is green" [ref=e472] [cursor=pointer]:
+                  - /url: /pin/395683517286026222/
+                  - img "four different color palettes with the same person sitting in front of them, one is green" [ref=e482]
+                - generic [ref=e484]:
+                  - generic:
+                    - link "four different color palettes with the same person sitting in front of them, one is green":
+                      - /url: /pin/395683517286026222/
+                  - generic "その他のアクション" [ref=e491]:
+                    - button "その他のアクション" [ref=e492] [cursor=pointer]:
+                      - img [ref=e495]
+  - dialog "modal" [ref=e498]:
+    - generic [ref=e499]:
+      - img "読み込み中" [ref=e503]
+      - generic [ref=e508]:
+        - img "Pinterest ロゴ" [ref=e510]
+        - heading "ログインしてもっと見る" [level=1] [ref=e514]
+        - generic [ref=e516]:
+          - generic [ref=e517]:
+            - generic [ref=e520] [cursor=pointer]: メールアドレス
+            - generic [ref=e522]:
+              - generic [ref=e524] [cursor=pointer]: メール
+              - textbox "メールアドレス メール" [active] [ref=e527]:
+                - /placeholder: メール
+            - generic [ref=e530] [cursor=pointer]: パスワード
+            - generic [ref=e531]:
+              - generic [ref=e533] [cursor=pointer]: 文字、数字、記号を組み合わせて 8 字以上のパスワードにしてください。
+              - generic [ref=e535]:
+                - textbox "パスワード 文字、数字、記号を組み合わせて 8 字以上のパスワードにしてください。" [ref=e536]:
+                  - /placeholder: パスワード
+                - generic "パスワードを表示する" [ref=e539]:
+                  - switch "パスワードを表示する" [ref=e540] [cursor=pointer]:
+                    - img [ref=e542]
+            - link "パスワードを忘れた場合" [ref=e546] [cursor=pointer]:
+              - /url: /password/reset/
+            - button "ログイン" [ref=e548] [cursor=pointer]:
+              - generic [ref=e550]: ログイン
+          - paragraph [ref=e551]: または
+          - generic [ref=e552]:
+            - iframe [ref=e558]:
+              - button "Google で続ける。新しいタブで開きます" [ref=f4e3] [cursor=pointer]:
+                - generic [ref=f4e5]:
+                  - img [ref=f4e7]
+                  - generic [ref=f4e14]: Google で続ける
+            - button "LINE LINE で続行" [ref=e561] [cursor=pointer]:
+              - generic [ref=e563]:
+                - img "LINE" [ref=e566]
+                - generic [ref=e568]: LINE で続行
+          - button "QR code login button" [ref=e569] [cursor=pointer]:
+            - generic [ref=e570]:
+              - img "QR code" [ref=e571]
+              - generic [ref=e574]: QR コードを使用する
+        - generic [ref=e576]:
+          - generic [ref=e577]:
+            - generic [ref=e578]: Facebook ログインは利用できなくなりました
+            - link "ログイン方法を更新する" [ref=e580] [cursor=pointer]:
+              - /url: /password/reset/?lookup=true
+              - generic [ref=e581]: ログイン方法を更新する
+          - link "Pinterest を初めて利用する場合：無料登録する" [ref=e584] [cursor=pointer]:
+            - /url: /login/
+          - generic [ref=e585]:
+            - generic [ref=e586]: ビジネスアカウントとして
+            - link "無料登録する" [ref=e588] [cursor=pointer]:
+              - /url: https://www.pinterest.com/business/create/
+              - generic [ref=e589]: 無料登録する
+          - generic [ref=e592]:
+            - text: 続行することで Pinterest の
+            - link "利用規約" [ref=e593] [cursor=pointer]:
+              - /url: /_/_/policy/terms-of-service/
+            - text: に同意し、Pinterest の
+            - link "プライバシーポリシー" [ref=e594] [cursor=pointer]:
+              - /url: https://www.pinterest.com/_/_/policy/privacy-policy/
+            - text: を読んだものとみなされます。
+            - link "情報収集に関するお知らせ" [ref=e595] [cursor=pointer]:
+              - /url: https://policy.pinterest.com/notice-at-collection

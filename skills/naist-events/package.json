@@ -1,0 +1,15 @@
+{
+  "name": "naist-events",
+  "version": "1.0.0",
+  "description": "{{profile.education.institution}}イベント週次通知スキル",
+  "scripts": {
+    "test": "jest --no-coverage"
+  },
+  "devDependencies": {
+    "jest": "^29.0.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testMatch": ["**/tests/**/*.test.js"]
+  }
+}

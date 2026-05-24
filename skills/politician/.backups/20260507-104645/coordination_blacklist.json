@@ -1,0 +1,12 @@
+{
+  "version": "0.1.0",
+  "updated": "2026-05-07",
+  "notes": "Recipients on this list are CAMPAIGN STAFF — federal-election-law coordination wall applies. Super PAC and 527 outreach must NEVER reach these {{profile.lateness.stakeholders.channel}}s. Initially empty; populate as we identify campaign-side staff (distinguish from official-office staff, who ARE allowed contacts).",
+  "blocked_{{profile.lateness.stakeholders.channel}}s": [],
+  "blocked_domains": [
+    "*.electioncommittee.example",
+    "*.forcongress.example",
+    "*.forsenate.example"
+  ],
+  "blocked_handles": []
+}

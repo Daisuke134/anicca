@@ -1,0 +1,279 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - link "コンテンツへスキップ":
+      - /url: "#"
+      - generic [ref=e8] [cursor=pointer]: コンテンツへスキップ
+    - generic [ref=e10]:
+      - generic [ref=e11]:
+        - link "Pinterest ホーム" [ref=e13] [cursor=pointer]:
+          - /url: /
+          - img [ref=e16]
+        - link "アイデアを探す" [ref=e32] [cursor=pointer]:
+          - /url: /ideas
+          - generic [ref=e33]: アイデアを探す
+      - generic [ref=e37]:
+        - combobox "検索する" [ref=e39]: misty mountain temple
+        - button "検索キーワードを削除する" [ref=e44] [cursor=pointer]:
+          - img [ref=e47]
+      - generic [ref=e49]:
+        - button "ログイン" [ref=e51] [cursor=pointer]:
+          - generic [ref=e53]: ログイン
+        - button "無料登録" [ref=e55] [cursor=pointer]:
+          - generic [ref=e57]: 無料登録
+        - button "設定" [ref=e60] [cursor=pointer]:
+          - img [ref=e63]
+  - main [ref=e66]:
+    - generic [ref=e68]:
+      - generic [ref=e71]:
+        - heading "検索する" [level=1] [ref=e73]
+        - button "フィルターを表示する" [ref=e84] [cursor=pointer]:
+          - img [ref=e88]
+      - generic [ref=e94]:
+        - generic [ref=e95]: misty mountain temple の検索結果をさらに読み込み中
+        - list [ref=e100]:
+          - listitem [ref=e101]:
+            - group "ピンカード" [ref=e104]:
+              - generic [ref=e106]:
+                - link "a tall building sitting on top of a mountain surrounded by fog and low lying clouds" [ref=e109] [cursor=pointer]:
+                  - /url: /pin/750975306654562676/
+                  - img "a tall building sitting on top of a mountain surrounded by fog and low lying clouds" [ref=e119]
+                - generic [ref=e121]:
+                  - generic:
+                    - link "a tall building sitting on top of a mountain surrounded by fog and low lying clouds":
+                      - /url: /pin/750975306654562676/
+                  - generic "その他のアクション" [ref=e128]:
+                    - button "その他のアクション" [ref=e129] [cursor=pointer]:
+                      - img [ref=e132]
+          - listitem [ref=e134]:
+            - group "ピンカード" [ref=e137]:
+              - generic [ref=e139]:
+                - link "Discover the serene and mystical atmosphere of an ancient Chinese temple, nestled in the misty mountains and surrounded by tall bamboo trees. A captivating view of intricate architecture. アジア旅行のインスピレーション, ファンタジー風の風景アートのアイデア, 神秘的な森の寺院, 鬼ヶ島, 和風 ファンタジー, 古代中国, 美しい芸術, 山水畫, 南海" [ref=e142] [cursor=pointer]:
+                  - /url: /pin/877005727475223767/
+                  - img "Discover the serene and mystical atmosphere of an ancient Chinese temple, nestled in the misty mountains and surrounded by tall bamboo trees. A captivating view of intricate architecture. アジア旅行のインスピレーション, ファンタジー風の風景アートのアイデア, 神秘的な森の寺院, 鬼ヶ島, 和風 ファンタジー, 古代中国, 美しい芸術, 山水畫, 南海" [ref=e152]
+                - generic [ref=e154]:
+                  - generic:
+                    - link "Discover the serene and mystical atmosphere of an ancient Chinese temple, nestled in the misty mountains and surrounded by tall bamboo trees. A captivating view of intricate architecture. アジア旅行のインスピレーション, ファンタジー風の風景アートのアイデア, 神秘的な森の寺院, 鬼ヶ島, 和風 ファンタジー, 古代中国, 美しい芸術, 山水畫, 南海":
+                      - /url: /pin/877005727475223767/
+                  - generic "その他のアクション" [ref=e161]:
+                    - button "その他のアクション" [ref=e162] [cursor=pointer]:
+                      - img [ref=e165]
+          - listitem [ref=e167]:
+            - group "ピンカード" [ref=e170]:
+              - generic [ref=e172]:
+                - link "Layered peaks, hidden stairways, and soft autumn light — these misty Chinese mountain landscapes feel like something from a storybook. From mountain temples to stone paths lined with fallen leaves, explore how this aesthetic brings ancient worlds to life. ダークファンタジー, 自然, ファンタジーアート" [ref=e175] [cursor=pointer]:
+                  - /url: /pin/1001347298407076402/
+                  - img "Layered peaks, hidden stairways, and soft autumn light — these misty Chinese mountain landscapes feel like something from a storybook. From mountain temples to stone paths lined with fallen leaves, explore how this aesthetic brings ancient worlds to life. ダークファンタジー, 自然, ファンタジーアート" [ref=e185]
+                - generic [ref=e187]:
+                  - generic:
+                    - link "Layered peaks, hidden stairways, and soft autumn light — these misty Chinese mountain landscapes feel like something from a storybook. From mountain temples to stone paths lined with fallen leaves, explore how this aesthetic brings ancient worlds to life. ダークファンタジー, 自然, ファンタジーアート":
+                      - /url: /pin/1001347298407076402/
+                  - generic "その他のアクション" [ref=e194]:
+                    - button "その他のアクション" [ref=e195] [cursor=pointer]:
+                      - img [ref=e198]
+          - listitem [ref=e200]:
+            - group "ピンカード" [ref=e203]:
+              - generic [ref=e205]:
+                - link "a large building sitting on top of a mountain covered in fog" [ref=e208] [cursor=pointer]:
+                  - /url: /pin/55732114134170089/
+                  - img "a large building sitting on top of a mountain covered in fog" [ref=e218]
+                - generic [ref=e220]:
+                  - generic:
+                    - link "a large building sitting on top of a mountain covered in fog":
+                      - /url: /pin/55732114134170089/
+                  - generic "その他のアクション" [ref=e227]:
+                    - button "その他のアクション" [ref=e228] [cursor=pointer]:
+                      - img [ref=e231]
+          - listitem [ref=e233]:
+            - group "ピンカード" [ref=e236]:
+              - generic [ref=e238]:
+                - link "an aerial view of a castle surrounded by fog" [ref=e241] [cursor=pointer]:
+                  - /url: /pin/1094304409448319431/
+                  - img "an aerial view of a castle surrounded by fog" [ref=e251]
+                - generic [ref=e253]:
+                  - generic:
+                    - link "an aerial view of a castle surrounded by fog":
+                      - /url: /pin/1094304409448319431/
+                  - generic "その他のアクション" [ref=e260]:
+                    - button "その他のアクション" [ref=e261] [cursor=pointer]:
+                      - img [ref=e264]
+          - listitem [ref=e266]:
+            - group "ピンカード" [ref=e269]:
+              - generic [ref=e271]:
+                - link "the mountains are covered in trees and rock formations, with mist coming from the tops" [ref=e274] [cursor=pointer]:
+                  - /url: /pin/1083256516640990346/
+                  - img "the mountains are covered in trees and rock formations, with mist coming from the tops" [ref=e284]
+                - generic [ref=e286]:
+                  - generic:
+                    - link "the mountains are covered in trees and rock formations, with mist coming from the tops":
+                      - /url: /pin/1083256516640990346/
+                  - generic "その他のアクション" [ref=e293]:
+                    - button "その他のアクション" [ref=e294] [cursor=pointer]:
+                      - img [ref=e297]
+          - listitem [ref=e299]:
+            - group "ピンカード" [ref=e302]:
+              - generic [ref=e304]:
+                - link "two pagodas on top of a mountain surrounded by fog and mist in the air" [ref=e307] [cursor=pointer]:
+                  - /url: /pin/753719687641602955/
+                  - img "two pagodas on top of a mountain surrounded by fog and mist in the air" [ref=e317]
+                - generic [ref=e319]:
+                  - generic:
+                    - link "two pagodas on top of a mountain surrounded by fog and mist in the air":
+                      - /url: /pin/753719687641602955/
+                  - generic "その他のアクション" [ref=e326]:
+                    - button "その他のアクション" [ref=e327] [cursor=pointer]:
+                      - img [ref=e330]
+          - listitem [ref=e332]:
+            - group "ピンカード" [ref=e335]:
+              - generic [ref=e337]:
+                - link "A peaceful cliffside temple surrounded by waterfalls, misty mountains, and blooming cherry blossoms — pure fantasy serenity. 古代, かわいい壁紙, ファンタジーな風景, 住宅建築デザイン, 中国, かわいい背景の壁紙, 中国の芸術, 建築, 壁紙の背景" [ref=e340] [cursor=pointer]:
+                  - /url: /pin/1135892337287057532/
+                  - img "A peaceful cliffside temple surrounded by waterfalls, misty mountains, and blooming cherry blossoms — pure fantasy serenity. 古代, かわいい壁紙, ファンタジーな風景, 住宅建築デザイン, 中国, かわいい背景の壁紙, 中国の芸術, 建築, 壁紙の背景" [ref=e350]
+                - generic [ref=e352]:
+                  - generic:
+                    - link "A peaceful cliffside temple surrounded by waterfalls, misty mountains, and blooming cherry blossoms — pure fantasy serenity. 古代, かわいい壁紙, ファンタジーな風景, 住宅建築デザイン, 中国, かわいい背景の壁紙, 中国の芸術, 建築, 壁紙の背景":
+                      - /url: /pin/1135892337287057532/
+                  - generic "その他のアクション" [ref=e359]:
+                    - button "その他のアクション" [ref=e360] [cursor=pointer]:
+                      - img [ref=e363]
+          - listitem [ref=e365]:
+            - group "ピンカード" [ref=e368]:
+              - generic [ref=e370]:
+                - link "戦場のヴァルキュリア, ヴァルキュリア, 中国建築, 古城, 戦闘シーン, 廟, ファンタジーのキャラクターデザイン, 寺院, 風景 イラスト" [ref=e373] [cursor=pointer]:
+                  - /url: /pin/1123507438262182042/
+                  - img "戦場のヴァルキュリア, ヴァルキュリア, 中国建築, 古城, 戦闘シーン, 廟, ファンタジーのキャラクターデザイン, 寺院, 風景 イラスト" [ref=e383]
+                - generic [ref=e385]:
+                  - generic:
+                    - link "戦場のヴァルキュリア, ヴァルキュリア, 中国建築, 古城, 戦闘シーン, 廟, ファンタジーのキャラクターデザイン, 寺院, 風景 イラスト":
+                      - /url: /pin/1123507438262182042/
+                  - generic "その他のアクション" [ref=e392]:
+                    - button "その他のアクション" [ref=e393] [cursor=pointer]:
+                      - img [ref=e396]
+          - listitem [ref=e398]:
+            - group "ピンカード" [ref=e401]:
+              - generic [ref=e403]:
+                - 'link "Find peace at Seoraksan Mountain Temple, where the first snow kisses ancient pines and prayer flags flutter in the mountain winds. Discover the beauty of this remote Buddhist sanctuary amidst misty granite peaks. #Korea #Temple #Mountains #Seoraksan" [ref=e406] [cursor=pointer]':
+                  - /url: /pin/113364115616416597/
+                  - 'img "Find peace at Seoraksan Mountain Temple, where the first snow kisses ancient pines and prayer flags flutter in the mountain winds. Discover the beauty of this remote Buddhist sanctuary amidst misty granite peaks. #Korea #Temple #Mountains #Seoraksan" [ref=e416]'
+                - generic [ref=e418]:
+                  - generic:
+                    - 'link "Find peace at Seoraksan Mountain Temple, where the first snow kisses ancient pines and prayer flags flutter in the mountain winds. Discover the beauty of this remote Buddhist sanctuary amidst misty granite peaks. #Korea #Temple #Mountains #Seoraksan"':
+                      - /url: /pin/113364115616416597/
+                  - generic "その他のアクション" [ref=e425]:
+                    - button "その他のアクション" [ref=e426] [cursor=pointer]:
+                      - img [ref=e429]
+          - listitem [ref=e431]:
+            - group "ピンカード" [ref=e434]:
+              - generic [ref=e436]:
+                - link "the cover of mount koya, with mountains in the background and foggy sky" [ref=e439] [cursor=pointer]:
+                  - /url: /pin/425168021095096951/
+                  - img "the cover of mount koya, with mountains in the background and foggy sky" [ref=e449]
+                - generic [ref=e451]:
+                  - generic:
+                    - link "the cover of mount koya, with mountains in the background and foggy sky":
+                      - /url: /pin/425168021095096951/
+                  - generic "その他のアクション" [ref=e458]:
+                    - button "その他のアクション" [ref=e459] [cursor=pointer]:
+                      - img [ref=e462]
+          - listitem [ref=e464]:
+            - group "ピンカード" [ref=e467]:
+              - generic [ref=e469]:
+                - 'link "Experience tranquility and spiritual connection in this breathtaking scene of a monk meditating before a majestic mountain temple enveloped in mist. Ideal for those seeking peace, inspiration, and a touch of the mystical in their digital art collection. Click to explore more stunning and serene artworks! #Meditation#MysticalArt#MountainTemple#ZenMoments#SpiritualJourney 道, アジアの歴史, 壁画アート, 瞑想, 寺院, 禅, 美的芸術, アニメの風景, スピリチュアル" [ref=e472] [cursor=pointer]':
+                  - /url: /pin/1021050546762180044/
+                  - 'img "Experience tranquility and spiritual connection in this breathtaking scene of a monk meditating before a majestic mountain temple enveloped in mist. Ideal for those seeking peace, inspiration, and a touch of the mystical in their digital art collection. Click to explore more stunning and serene artworks! #Meditation#MysticalArt#MountainTemple#ZenMoments#SpiritualJourney 道, アジアの歴史, 壁画アート, 瞑想, 寺院, 禅, 美的芸術, アニメの風景, スピリチュアル" [ref=e482]'
+                - generic [ref=e484]:
+                  - generic:
+                    - 'link "Experience tranquility and spiritual connection in this breathtaking scene of a monk meditating before a majestic mountain temple enveloped in mist. Ideal for those seeking peace, inspiration, and a touch of the mystical in their digital art collection. Click to explore more stunning and serene artworks! #Meditation#MysticalArt#MountainTemple#ZenMoments#SpiritualJourney 道, アジアの歴史, 壁画アート, 瞑想, 寺院, 禅, 美的芸術, アニメの風景, スピリチュアル"':
+                      - /url: /pin/1021050546762180044/
+                  - generic "その他のアクション" [ref=e491]:
+                    - button "その他のアクション" [ref=e492] [cursor=pointer]:
+                      - img [ref=e495]
+          - listitem [ref=e497]:
+            - group "ピンカード" [ref=e500]:
+              - generic [ref=e502]:
+                - link "stairs leading up to a shrine in the woods with foggy skies above them, surrounded by tall trees" [ref=e505] [cursor=pointer]:
+                  - /url: /pin/670684569541815308/
+                  - img "stairs leading up to a shrine in the woods with foggy skies above them, surrounded by tall trees" [ref=e515]
+                - generic [ref=e517]:
+                  - generic:
+                    - link "stairs leading up to a shrine in the woods with foggy skies above them, surrounded by tall trees":
+                      - /url: /pin/670684569541815308/
+                  - generic "その他のアクション" [ref=e524]:
+                    - button "その他のアクション" [ref=e525] [cursor=pointer]:
+                      - img [ref=e528]
+          - listitem [ref=e530]:
+            - group "ピンカード" [ref=e533]:
+              - generic [ref=e535]:
+                - link "Mountain temple, built along misty overlapping peaks, intricate flying eaves and dougong (bracket sets), stone steps leading through pine forests, tiny human figures for scale, ancient Chinese painting チベット, 中國風, 建物, 風, 建築, 中国, 中国の芸術, 中国の絵画, 中国建築" [ref=e538] [cursor=pointer]:
+                  - /url: /pin/1023865296539519379/
+                  - img "Mountain temple, built along misty overlapping peaks, intricate flying eaves and dougong (bracket sets), stone steps leading through pine forests, tiny human figures for scale, ancient Chinese painting チベット, 中國風, 建物, 風, 建築, 中国, 中国の芸術, 中国の絵画, 中国建築" [ref=e548]
+                - generic [ref=e550]:
+                  - generic:
+                    - link "Mountain temple, built along misty overlapping peaks, intricate flying eaves and dougong (bracket sets), stone steps leading through pine forests, tiny human figures for scale, ancient Chinese painting チベット, 中國風, 建物, 風, 建築, 中国, 中国の芸術, 中国の絵画, 中国建築":
+                      - /url: /pin/1023865296539519379/
+                  - generic "その他のアクション" [ref=e557]:
+                    - button "その他のアクション" [ref=e558] [cursor=pointer]:
+                      - img [ref=e561]
+  - dialog "modal" [ref=e564]:
+    - generic [ref=e565]:
+      - img "読み込み中" [ref=e569]
+      - generic [ref=e574]:
+        - img "Pinterest ロゴ" [ref=e576]
+        - heading "ログインしてもっと見る" [level=1] [ref=e580]
+        - generic [ref=e582]:
+          - generic [ref=e583]:
+            - generic [ref=e586] [cursor=pointer]: メールアドレス
+            - generic [ref=e588]:
+              - generic [ref=e590] [cursor=pointer]: メール
+              - textbox "メールアドレス メール" [active] [ref=e593]:
+                - /placeholder: メール
+            - generic [ref=e596] [cursor=pointer]: パスワード
+            - generic [ref=e597]:
+              - generic [ref=e599] [cursor=pointer]: 文字、数字、記号を組み合わせて 8 字以上のパスワードにしてください。
+              - generic [ref=e601]:
+                - textbox "パスワード 文字、数字、記号を組み合わせて 8 字以上のパスワードにしてください。" [ref=e602]:
+                  - /placeholder: パスワード
+                - generic "パスワードを表示する" [ref=e605]:
+                  - switch "パスワードを表示する" [ref=e606] [cursor=pointer]:
+                    - img [ref=e608]
+            - link "パスワードを忘れた場合" [ref=e612] [cursor=pointer]:
+              - /url: /password/reset/
+            - button "ログイン" [ref=e614] [cursor=pointer]:
+              - generic [ref=e616]: ログイン
+          - paragraph [ref=e617]: または
+          - generic [ref=e618]:
+            - iframe [ref=e624]:
+              - button "Google で続ける。新しいタブで開きます" [ref=f2e3] [cursor=pointer]:
+                - generic [ref=f2e5]:
+                  - img [ref=f2e7]
+                  - generic [ref=f2e14]: Google で続ける
+            - button "LINE LINE で続行" [ref=e627] [cursor=pointer]:
+              - generic [ref=e629]:
+                - img "LINE" [ref=e632]
+                - generic [ref=e634]: LINE で続行
+          - button "QR code login button" [ref=e635] [cursor=pointer]:
+            - generic [ref=e636]:
+              - img "QR code" [ref=e637]
+              - generic [ref=e640]: QR コードを使用する
+        - generic [ref=e642]:
+          - generic [ref=e643]:
+            - generic [ref=e644]: Facebook ログインは利用できなくなりました
+            - link "ログイン方法を更新する" [ref=e646] [cursor=pointer]:
+              - /url: /password/reset/?lookup=true
+              - generic [ref=e647]: ログイン方法を更新する
+          - link "Pinterest を初めて利用する場合：無料登録する" [ref=e650] [cursor=pointer]:
+            - /url: /login/
+          - generic [ref=e651]:
+            - generic [ref=e652]: ビジネスアカウントとして
+            - link "無料登録する" [ref=e654] [cursor=pointer]:
+              - /url: https://www.pinterest.com/business/create/
+              - generic [ref=e655]: 無料登録する
+          - generic [ref=e658]:
+            - text: 続行することで Pinterest の
+            - link "利用規約" [ref=e659] [cursor=pointer]:
+              - /url: /_/_/policy/terms-of-service/
+            - text: に同意し、Pinterest の
+            - link "プライバシーポリシー" [ref=e660] [cursor=pointer]:
+              - /url: https://www.pinterest.com/_/_/policy/privacy-policy/
+            - text: を読んだものとみなされます。
+            - link "情報収集に関するお知らせ" [ref=e661] [cursor=pointer]:
+              - /url: https://policy.pinterest.com/notice-at-collection

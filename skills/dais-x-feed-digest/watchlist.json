@@ -1,0 +1,50 @@
+{
+  "x_handles": [
+    "@claudeai",
+    "@AnthropicAI",
+    "@truth_terminal",
+    "@sama",
+    "@karpathy",
+    "@AravSrinivas",
+    "@levelsio",
+    "@nutlope",
+    "@theo",
+    "@dharmesh",
+    "@simonw",
+    "@swyx"
+  ],
+  "websites": [
+    "https://iamkelly.ai/",
+    "https://andonlabs.com/",
+    "https://www.lightanchor.ai/",
+    "https://polsia.com/",
+    "https://truthterminal.wiki/"
+  ],
+  "queries": [
+    {
+      "id": "model_launches",
+      "label": "AI モデル/製品 launch",
+      "prompt": "Use x_search to find the top 3 most-liked X posts in the past 48 hours about new AI model launches or product releases from Anthropic, OpenAI, xAI, Google DeepMind, Meta AI, Mistral, or Cohere.\n\nOutput in Japanese (日本語で出力必須). Format strictly:\n\n1. 【見出し】1〜2 文の日本語要約\nURL: https://x.com/...\n投稿者: @handle (❤️N)\n\n2. 【見出し】...\n\n3. 【見出し】...\n\nNo English explanations. No preamble. Just the 3 numbered items in Japanese."
+    },
+    {
+      "id": "ai_entities",
+      "label": "AI エージェント/AI entity",
+      "prompt": "Use x_search to find the top 3 most-liked X posts in the past 48 hours about autonomous AI agents or novel AI entities. Cover @truth_terminal, andon labs, kelly claude ai (iamkelly.ai), light anchor (lightanchor.ai), polsia (polsia.com), and any newly-launched autonomous AI persona/agent.\n\nOutput in Japanese (日本語で出力必須). Format strictly:\n\n1. 【見出し】1〜2 文の日本語要約\nURL: https://x.com/...\n投稿者: @handle (❤️N)\n\n2. 【見出し】...\n\n3. 【見出し】...\n\nNo English explanations. No preamble."
+    },
+    {
+      "id": "ai_money",
+      "label": "AI で稼ぐ",
+      "prompt": "Use x_search to find the top 3 most-liked X posts in the past 48 hours about making money with AI: indie hacker AI revenue, AI SaaS MRR growth, AI side hustles, AI agent businesses. Prefer concrete numbers ($MRR, $ARR).\n\nOutput in Japanese (日本語で出力必須). Format strictly:\n\n1. 【見出し】1〜2 文の日本語要約 (具体的な $ 数値含む)\nURL: https://x.com/...\n投稿者: @handle (❤️N)\n\n2. 【見出し】...\n\n3. 【見出し】...\n\nNo English explanations. No preamble."
+    },
+    {
+      "id": "mobile_app_growth",
+      "label": "モバイルアプリ growth",
+      "prompt": "Use x_search to find the top 3 most-liked X posts in the past 48 hours about iOS/mobile app growth: App Store ranking, paywall optimization, ASO, retention tactics, indie iOS shipping.\n\nOutput in Japanese (日本語で出力必須). Format strictly:\n\n1. 【見出し】1〜2 文の日本語要約\nURL: https://x.com/...\n投稿者: @handle (❤️N)\n\n2. 【見出し】...\n\n3. 【見出し】...\n\nNo English explanations. No preamble."
+    },
+    {
+      "id": "claude_code",
+      "label": "Claude Code / AI coding",
+      "prompt": "Use x_search to find the top 3 most-liked X posts in the past 48 hours about Claude Code updates, Cursor updates, Cline, Aider, Codex, AI coding agents, or AI-powered IDE features.\n\nOutput in Japanese (日本語で出力必須). Format strictly:\n\n1. 【見出し】1〜2 文の日本語要約\nURL: https://x.com/...\n投稿者: @handle (❤️N)\n\n2. 【見出し】...\n\n3. 【見出し】...\n\nNo English explanations. No preamble."
+    }
+  ]
+}

@@ -1,0 +1,132 @@
+[
+  {
+    "id": "naist-mail-digest",
+    "agentId": "anicca",
+    "name": "naist-mail-digest",
+    "schedule": {
+      "kind": "cron",
+      "expr": "0 7,18 * * *",
+      "tz": "Asia/Tokyo"
+    },
+    "sessionTarget": "isolated",
+    "wakeMode": "now",
+    "payload": {
+      "kind": "agentTurn",
+      "message": "Execute naist-onboarding skill in MAIL_DIGEST mode. Read ~/.openclaw/skills/naist-onboarding/SKILL.md and follow it.\n\nFor each subdirectory under ~/.openclaw/state/naist/ (each represents a slug):\n1. Read state files: {{profile.lateness.stakeholders.channel}}_naist.txt, slack_channel.txt. If either missing, skip that slug and post one line to #metrics ({{profile.channels.reportChannel}}): 'naist-mail-digest: <slug> not yet onboarded — run onboarding wizard'.\n2. Use Gmail MCP search_threads with query 'from:*naist* OR from:*@*.naist* newer_than:12h is:unread' (forwarded {{profile.education.institution}} mails arrive in Gmail; the original From header is preserved).\n3. For each thread: get subject, sender, snippet via Gmail MCP get_thread.\n4. Build a Japanese digest grouped by sender domain. Truncate body snippets at 200 chars. List up to 20 threads.\n5. Post the digest to the channel ID in slack_channel.txt via Slack API. Format: '📬 *{{profile.education.institution}}メール（直近12時間・未読）*' followed by per-thread lines '・<sender> — <subject> (<snippet>)'. End with '返信したいスレッドがあれば「<番号>に返信」と言ってください。'\n6. Print a one-line status to stdout ('Posted mail digest for <slug>: N threads' or 'no new mail for <slug>') so cron announce can relay it to #metrics.\n\nIf ~/.openclaw/state/naist/ directory does not exist or is empty: print 'naist-mail-digest: no users onboarded yet — skipping' and exit 0.\n\nDo NOT call the message tool. Do NOT modify openclaw.json.",
+      "timeoutSeconds": 600,
+      "env": {}
+    },
+    "delivery": {
+      "mode": "announce",
+      "channel": "slack",
+      "to": "channel:{{profile.channels.reportChannel}}",
+      "bestEffort": true
+    },
+    "enabled": true,
+    "state": {}
+  },
+  {
+    "id": "naist-papers-daily",
+    "agentId": "anicca",
+    "name": "naist-papers-daily",
+    "schedule": {
+      "kind": "cron",
+      "expr": "0 8 * * *",
+      "tz": "Asia/Tokyo"
+    },
+    "sessionTarget": "isolated",
+    "wakeMode": "now",
+    "payload": {
+      "kind": "agentTurn",
+      "message": "Execute naist-papers skill in DAILY mode. Read ~/.openclaw/skills/naist-papers/SKILL.md and follow it.\n\nFor each subdirectory under ~/.openclaw/state/naist/ (each represents a slug):\n1. Read state files: research_topic.json, slack_channel.txt. If either missing, post one line to #metrics ({{profile.channels.reportChannel}}): 'naist-papers-daily: <slug> not yet onboarded' and skip.\n2. Use bash scripts/search_arxiv.sh with the topic phrase, count=10, field=all. Filter to papers from the last 24h via the published date.\n3. Cross-filter by categories array from research_topic.json (e.g. cs.AI, cs.HC). If the topic is broad or no recent papers match, fall back to 3 most-recent papers in the categories.\n4. Pick the 3 most-relevant papers. Generate Japanese summaries per the SKILL.md format (3-4 lines each).\n5. Post to the channel ID in slack_channel.txt: '📄 *今日のarXiv論文（<topic>）*' followed by 3 entries.\n6. Print a one-line status to stdout ('Posted N papers for <slug>' or 'no new papers for <slug>') so cron announce relays it to #metrics.\n\nIf ~/.openclaw/state/naist/ directory missing or empty: print 'naist-papers-daily: no users onboarded yet — skipping' and exit 0.\n\nDo NOT call the message tool. Do NOT modify openclaw.json.",
+      "timeoutSeconds": 600,
+      "env": {}
+    },
+    "delivery": {
+      "mode": "announce",
+      "channel": "slack",
+      "to": "channel:{{profile.channels.reportChannel}}",
+      "bestEffort": true
+    },
+    "enabled": true,
+    "state": {}
+  },
+  {
+    "id": "naist-funds-weekly",
+    "agentId": "anicca",
+    "name": "naist-funds-weekly",
+    "schedule": {
+      "kind": "cron",
+      "expr": "0 9 * * 1",
+      "tz": "Asia/Tokyo"
+    },
+    "sessionTarget": "isolated",
+    "wakeMode": "now",
+    "payload": {
+      "kind": "agentTurn",
+      "message": "Execute naist-funds skill in WEEKLY mode. Read ~/.openclaw/skills/naist-funds/SKILL.md and follow it.\n\nFor each subdirectory under ~/.openclaw/state/naist/:\n1. Read slack_channel.txt. If missing, post one line to #metrics ({{profile.channels.reportChannel}}): 'naist-funds-weekly: <slug> not yet onboarded' and skip.\n2. Run: cd /Users/anicca/.openclaw/skills/naist-funds && SLACK_CHANNEL_ID=$(cat ~/.openclaw/state/naist/<slug>/slack_channel.txt) node scripts/scan.js — this scans JSPS / 学振 / 科研費 / JST / JFUND for new opportunities since the last run (cache.json gating).\n3. The script posts to the SLACK_CHANNEL_ID itself.\n4. Print a one-line status to stdout ('Posted N funds for <slug>' or 'no new funds for <slug>') so cron announce relays it to #metrics.\n\nIf ~/.openclaw/state/naist/ directory missing or empty: print 'naist-funds-weekly: no users onboarded yet — skipping' and exit 0.\n\nDo NOT call the message tool. Do NOT modify openclaw.json.",
+      "timeoutSeconds": 600,
+      "env": {}
+    },
+    "delivery": {
+      "mode": "announce",
+      "channel": "slack",
+      "to": "channel:{{profile.channels.reportChannel}}",
+      "bestEffort": true
+    },
+    "enabled": true,
+    "state": {}
+  },
+  {
+    "id": "naist-events-weekly",
+    "agentId": "anicca",
+    "name": "naist-events-weekly",
+    "schedule": {
+      "kind": "cron",
+      "expr": "0 10 * * 1",
+      "tz": "Asia/Tokyo"
+    },
+    "sessionTarget": "isolated",
+    "wakeMode": "now",
+    "payload": {
+      "kind": "agentTurn",
+      "message": "Execute naist-events skill in WEEKLY mode. Read ~/.openclaw/skills/naist-events/SKILL.md and follow it.\n\nFor each subdirectory under ~/.openclaw/state/naist/:\n1. Read slack_channel.txt. If missing, post one line to #metrics ({{profile.channels.reportChannel}}): 'naist-events-weekly: <slug> not yet onboarded' and skip.\n2. Run: cd /Users/anicca/.openclaw/skills/naist-events && SLACK_CHANNEL_ID=$(cat ~/.openclaw/state/naist/<slug>/slack_channel.txt) node scripts/scan.js — fetches naist.jp/event/ and naist.jp/seminar/, filters this-week, dedupes via cache.json.\n3. The script posts to SLACK_CHANNEL_ID itself.\n4. Print a one-line status to stdout ('Posted N events for <slug>' or 'no new events for <slug>') so cron announce relays it to #metrics.\n\nIf ~/.openclaw/state/naist/ directory missing or empty: print 'naist-events-weekly: no users onboarded yet — skipping' and exit 0.\n\nDo NOT call the message tool. Do NOT modify openclaw.json.",
+      "timeoutSeconds": 600,
+      "env": {}
+    },
+    "delivery": {
+      "mode": "announce",
+      "channel": "slack",
+      "to": "channel:{{profile.channels.reportChannel}}",
+      "bestEffort": true
+    },
+    "enabled": true,
+    "state": {}
+  },
+  {
+    "id": "naist-deadline-reminder",
+    "agentId": "anicca",
+    "name": "naist-deadline-reminder",
+    "schedule": {
+      "kind": "cron",
+      "expr": "0 18 * * *",
+      "tz": "Asia/Tokyo"
+    },
+    "sessionTarget": "isolated",
+    "wakeMode": "now",
+    "payload": {
+      "kind": "agentTurn",
+      "message": "Execute naist-deadline skill in REMINDER mode. Read ~/.openclaw/skills/naist-deadline/SKILL.md and follow it.\n\nFor each subdirectory under ~/.openclaw/state/naist/:\n1. Read slack_channel.txt. If missing, post one line to #metrics ({{profile.channels.reportChannel}}): 'naist-deadline-reminder: <slug> not yet onboarded' and skip.\n2. Read ~/.openclaw/skills/naist-deadline/data/deadlines.json. Filter to entries with status != 'done' AND due_date in {today, tomorrow} (Asia/Tokyo).\n3. If 0 hits for this slug, do nothing (no Slack post). Otherwise post to slack_channel.txt the formatted reminder per SKILL.md '一覧' format, prefixed with '⏰ *締切リマインド（明日まで）*'.\n4. Print a one-line status to stdout ('Posted N deadlines for <slug>' or 'no upcoming deadlines for <slug>') so cron announce relays it to #metrics.\n\nIf ~/.openclaw/state/naist/ directory missing or empty: print 'naist-deadline-reminder: no users onboarded yet — skipping' and exit 0.\n\nDo NOT call the message tool. Do NOT modify openclaw.json.",
+      "timeoutSeconds": 300,
+      "env": {}
+    },
+    "delivery": {
+      "mode": "announce",
+      "channel": "slack",
+      "to": "channel:{{profile.channels.reportChannel}}",
+      "bestEffort": true
+    },
+    "enabled": true,
+    "state": {}
+  }
+]

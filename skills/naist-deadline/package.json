@@ -1,0 +1,17 @@
+{
+  "name": "naist-deadline",
+  "version": "1.0.0",
+  "description": "{{profile.education.institution}}締切管理スキル",
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch"
+  },
+  "dependencies": {
+    "@slack/web-api": "^7.0.0",
+    "chrono-node": "^2.7.0",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "jest": "^29.0.0"
+  }
+}

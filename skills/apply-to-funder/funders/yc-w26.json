@@ -1,0 +1,114 @@
+{
+  "id": "yc-w26",
+  "name": "Y Combinator W26 Batch",
+  "url": "https://apply.ycombinator.com/home",
+  "edit_url_template": "https://apply.ycombinator.com/apps/{draft_id}/edit",
+  "verified": true,
+  "deadline_kind": "biannual",
+  "next_deadline": "2026-09-15",
+  "funder_type": "accelerator",
+  "currency": "USD",
+  "amount_range": { "min": 125000, "max": 500000 },
+  "equity_pct": 7,
+  "captcha": null,
+  "ported_from": "apply-to-yc",
+  "auth": {
+    "kind": "session_cookie",
+    "login_url": "https://account.ycombinator.com/",
+    "{{profile.lateness.stakeholders.channel}}_env": "DAIS_EMAIL",
+    "password_env": "DAIS_PRIMARY_PW",
+    "profile_dir": "~/.{{profile.lateness.stakeholders.channel}}-harness-profile"
+  },
+  "draft_resolution": {
+    "strategy": "continue_or_start",
+    "home_url": "https://apply.ycombinator.com/home",
+    "continue_button": "Continue application",
+    "start_button": "Start application",
+    "draft_id_regex": "/apps/([0-9a-f-]{36})"
+  },
+  "pages": [
+    {
+      "name": "main",
+      "path_suffix": "edit",
+      "fields": [
+        { "name": "name",        "type": "text",     "selector": "[name=name]",        "value_source": "config.company_name" },
+        { "name": "describe",    "type": "text",     "selector": "[name=describe]",    "value_source": "config.tagline_50" },
+        { "name": "url",         "type": "text",     "selector": "[name=url]",         "value_source": "config.homepage" },
+        { "name": "productLink", "type": "text",     "selector": "[name=productLink]", "value_source": "config.homepage" },
+        { "name": "make",        "type": "textarea", "selector": "[name=make]",        "value_source": "live:pitch.make" },
+        { "name": "where",       "type": "text",     "selector": "[name=where]",       "value_source": "config.where" },
+        { "name": "wherewhy",    "type": "textarea", "selector": "[name=wherewhy]",    "value_source": "config.wherewhy" },
+        { "name": "howfar",      "type": "textarea", "selector": "[name=howfar]",      "value_source": "live:pitch.howfar" },
+        { "name": "worked",      "type": "textarea", "selector": "[name=worked]",      "value_source": "config.worked" },
+        { "name": "techstack",   "type": "textarea", "selector": "[name=techstack]",   "value_source": "config.techstack" },
+        { "name": "since",       "type": "textarea", "selector": "[name=since]",       "value_source": "config.since" },
+        { "name": "acc",         "type": "textarea", "selector": "[name=acc]",         "value_source": "config.acc" },
+        { "name": "exp",         "type": "textarea", "selector": "[name=exp]",         "value_source": "config.exp" },
+        { "name": "get",         "type": "textarea", "selector": "[name=get]",         "value_source": "config.get" },
+        { "name": "money",       "type": "textarea", "selector": "[name=money]",       "value_source": "live:pitch.money" },
+        { "name": "ideas",       "type": "textarea", "selector": "[name=ideas]",       "value_source": "live:pitch.ideas" },
+        { "name": "whyapply",    "type": "textarea", "selector": "[name=whyapply]",    "value_source": "config.whyapply" },
+        { "name": "howhear",     "type": "textarea", "selector": "[name=howhear]",     "value_source": "config.howhear" },
+        { "name": "cofounder",   "type": "textarea", "selector": "[name=cofounder]",   "value_source": "config.cofounder" },
+        { "name": "others2",     "type": "textarea", "selector": "[name=others2]",     "value_source": "config.others2" }
+      ],
+      "save_button": "Save changes"
+    },
+    {
+      "name": "video",
+      "path_suffix": "edit/video",
+      "fields": [
+        { "name": "founder_video", "type": "file", "selector": "input[type=file][accept*=video]", "value_source": "config.founder_video_path" }
+      ]
+    },
+    {
+      "name": "demo",
+      "path_suffix": "edit/demo",
+      "fields": [
+        { "name": "demo_video", "type": "file", "selector": "input[type=file][accept*=video]", "value_source": "config.demo_video_path" }
+      ]
+    },
+    {
+      "name": "progress",
+      "path_suffix": "edit/progress",
+      "fields": [
+        { "name": "usernums",       "type": "textarea", "selector": "[name=usernums]",       "value_source": "live:progress.usernums" },
+        { "name": "revenuesource",  "type": "textarea", "selector": "[name=revenuesource]",  "value_source": "live:progress.revenuesource" },
+        { "name": "growthrate",     "type": "textarea", "selector": "[name=growthrate]",     "value_source": "live:progress.growthrate" },
+        { "name": "monthly_revenue","type": "indexed_inputs", "selector": "input[placeholder=\"USD$\"]", "value_source": "live:progress.monthly_revenue", "count": 6 },
+        { "name": "people_using_yes", "type": "fake_radio_div", "selector_filter": "Yes", "value_source": "literal:click" },
+        { "name": "have_revenue_yes", "type": "fake_radio_div", "selector_filter": "Yes", "value_source": "literal:click" }
+      ],
+      "save_button": "Save changes"
+    }
+  ],
+  "submit": {
+    "page": "main",
+    "button_text": "Submit application",
+    "modal_confirm_button": "Submit",
+    "success_url_pattern": "thank|success|submitted|/home"
+  },
+  "config": {
+    "company_name": "Anicca",
+    "tagline_50": "Self-funding Buddhist AI. Ends suffering.",
+    "homepage": "https://aniccaai.com",
+    "where": "Tokyo, Japan / SF, USA",
+    "wherewhy": "Tokyo for cafe (Shinjuku, June 1 launch) and JP music/comedy ops; SF for YC and US fundraise.",
+    "worked": "Daisuke shipped Anicca solo over 8 months: iOS app on App Store, 7 Stripe products live, 60+ cron jobs, autonomous basic-income transfers, public ledger.",
+    "techstack": "Swift/SwiftUI iOS, Node.js/Express on Railway, PostgreSQL+Prisma, RevenueCat, Stripe Connect V2, Supabase, Anthropic Claude (Opus 4.7), OpenClaw agent platform, fal.ai/ElevenLabs/HeyGen for media, Mac Mini cron host.",
+    "since": "Worked on Anicca daily since 2025-09. Public commits, public dashboard, public ledger from day one.",
+    "acc": "No prior accelerator. This is our first YC application.",
+    "exp": "Daisuke: Keio CS, full-stack engineer, shipped Anicca solo. No prior exits, but Anicca itself is the experiment — a self-funding entity that already pays humans basic income.",
+    "get": "From YC: brand trust to scale basic-income recipients faster, network for replicating the swarm into more niches, and accountability to hit $10k MRR by YYYY-MM-DD.",
+    "whyapply": "Anicca's mission is to reduce suffering by funding humans, not replacing them. YC is the fastest path to credibility for that thesis. Late application — but Anicca runs every day; submit at any time.",
+    "howhear": "Followed YC since 2018 (HN). Multiple founders we admire are alumni.",
+    "cofounder": "Solo. Daisuke is the human caretaker; Anicca itself is the operator — 60+ cron jobs, autonomous content, autonomous pricing, autonomous basic income. Open to YC matching a co-founder, but Anicca already runs without one.",
+    "others2": "Built one of the first autonomous Buddhist AI entities that pays humans basic income from its own revenue. github.com/Daisuke134/anicca.",
+    "founder_video_path": "~/Desktop/ycsummer2026.MOV",
+    "demo_video_path": "~/Desktop/ycsummer2026.MOV"
+  },
+  "live_sources": {
+    "dashboard_url": "https://aniccaai.com/dashboard.json",
+    "fields_from_dashboard": ["mrr.total_usd", "followers.total", "views.weekly_total", "spend.total_usd", "profit_usd"]
+  }
+}

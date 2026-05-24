@@ -1,0 +1,6 @@
+{
+  "name": "tiktok",
+  "version": "3.0.0",
+  "description": "Local-first TikTok Growth OS for strategy, hooks, scripts, retention design, and analytics feedback. Generates execution-ready short-form outputs and stores all assets locally. No API, no posting, no platform automation.",
+  "author": "cj"
+}

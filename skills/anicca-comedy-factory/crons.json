@@ -1,0 +1,67 @@
+{
+  "crons": [
+    {
+      "name": "comedy-skit-deliver-daily",
+      "schedule": "0 7 * * *",
+      "tz": "Asia/Tokyo",
+      "command": "python3 ~/.openclaw/skills/anicca-comedy-factory/scripts/skit-deliver-daily.py",
+      "status": "implemented"
+    },
+    {
+      "name": "comedy-ogiri-practice-daily",
+      "schedule": "0 4 * * *",
+      "tz": "Asia/Tokyo",
+      "command": "python3 ~/.openclaw/skills/anicca-comedy-factory/scripts/ogiri-practice-daily.py",
+      "status": "skeleton"
+    },
+    {
+      "name": "comedy-live-discover-monthly",
+      "schedule": "0 9 1 * *",
+      "tz": "Asia/Tokyo",
+      "command": "bash ~/.openclaw/skills/anicca-comedy-factory/scripts/live-discover-monthly.sh",
+      "status": "skeleton"
+    },
+    {
+      "name": "comedy-live-apply-event",
+      "schedule": "event-driven",
+      "tz": "Asia/Tokyo",
+      "command": "bash ~/.openclaw/skills/anicca-comedy-factory/scripts/live-apply-event.sh <city>",
+      "status": "skeleton"
+    },
+    {
+      "name": "comedy-live-schedule-publish",
+      "schedule": "0 10 * * 1",
+      "tz": "Asia/Tokyo",
+      "command": "bash ~/.openclaw/skills/anicca-comedy-factory/scripts/live-schedule-publish.sh",
+      "status": "skeleton"
+    },
+    {
+      "name": "comedy-post-live-process",
+      "schedule": "event-driven",
+      "tz": "Asia/Tokyo",
+      "command": "bash ~/.openclaw/skills/anicca-comedy-factory/scripts/post-live-process.sh <recording>",
+      "status": "skeleton"
+    },
+    {
+      "name": "comedy-tiktok-cross-post-daily",
+      "schedule": "0 16 * * *",
+      "tz": "Asia/Tokyo",
+      "command": "bash ~/.openclaw/skills/anicca-comedy-factory/scripts/tiktok-cross-post-daily.sh",
+      "status": "skeleton"
+    },
+    {
+      "name": "comedy-ticket-fulfillment",
+      "schedule": "event-driven",
+      "tz": "Asia/Tokyo",
+      "command": "bash ~/.openclaw/skills/anicca-comedy-factory/scripts/ticket-fulfillment-event.sh",
+      "status": "skeleton"
+    },
+    {
+      "name": "comedy-recruit-event",
+      "schedule": "event-driven",
+      "tz": "Asia/Tokyo",
+      "command": "bash ~/.openclaw/skills/anicca-comedy-factory/scripts/recruit-comedian-event.sh",
+      "status": "skeleton"
+    }
+  ]
+}

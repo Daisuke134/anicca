@@ -1,0 +1,17 @@
+{
+  "name": "naist-funds",
+  "version": "1.0.0",
+  "description": "{{profile.education.institution}}助成金・奨学金情報の週次Slack通知スキル",
+  "main": "scripts/scan.js",
+  "scripts": {
+    "test": "jest --testEnvironment node"
+  },
+  "jest": {
+    "testMatch": [
+      "**/tests/**/*.test.js"
+    ]
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  }
+}

@@ -1,0 +1,88 @@
+# skill-for-you / redact.yaml
+# Applied BEFORE any embedding payload leaves the box. See scripts/redact.py.
+#
+# Each rule has:
+#   kind: one of secret | env_path | pii | denylist
+#   pattern: a Python regex. Multiline=False, IGNORECASE flag honored if `case_insensitive: true`
+#   replacement: literal string substituted in (default `<REDACTED:KIND>`)
+#
+# Rules execute top-to-bottom. The first match in a line wins.
+
+version: 1
+
+# 1. Secrets — env vars, keys, tokens
+secrets:
+  - kind: secret
+    pattern: '(?i)(?:^|[\s,;])([A-Z0-9_]*(?:_KEY|_SECRET|_TOKEN|_PASSWORD|API_KEY))\s*=\s*[^\s]+'
+    replacement: ' <REDACTED:SECRET_ASSIGN>'
+  - kind: secret
+    pattern: '(?i)\b(?:sk|pk|rk)_(?:live|test)_[A-Za-z0-9]{16,}\b'
+    replacement: '<REDACTED:STRIPE_KEY>'
+  - kind: secret
+    pattern: '\bxox[abprs]-[A-Za-z0-9-]{10,}\b'
+    replacement: '<REDACTED:SLACK_TOKEN>'
+  - kind: secret
+    pattern: '\bgh[pousr]_[A-Za-z0-9]{16,}\b'
+    replacement: '<REDACTED:GITHUB_TOKEN>'
+  - kind: secret
+    pattern: '\bAKIA[0-9A-Z]{16}\b'
+    replacement: '<REDACTED:AWS_KEY>'
+
+# 2. Env paths / credential files (the path itself is sensitive)
+env_paths:
+  - kind: env_path
+    pattern: '(?:^|[\s/"''=])(\.?env(?:\.[A-Za-z0-9._-]+)?)\b'
+    replacement: ' <REDACTED:ENV_FILE>'
+  - kind: env_path
+    pattern: '\b(?:id_rsa|id_ed25519|id_dsa|id_ecdsa)(?:\.pub)?\b'
+    replacement: '<REDACTED:SSH_KEY_FILE>'
+  - kind: env_path
+    pattern: '\.(?:pem|p12|pfx|jks|keystore)\b'
+    replacement: '<REDACTED:CERT_FILE>'
+  - kind: env_path
+    pattern: '\bcredentials\.json\b'
+    replacement: '<REDACTED:CRED_FILE>'
+
+# 3. Customer PII
+pii:
+  - kind: pii
+    pattern: '\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b'
+    replacement: '<REDACTED:EMAIL>'
+  - kind: pii
+    pattern: '\+\d{7,15}\b'
+    replacement: '<REDACTED:PHONE_E164>'
+  - kind: pii
+    pattern: '\b\d{3}-\d{2}-\d{4}\b'
+    replacement: '<REDACTED:US_SSN>'
+  - kind: pii
+    # JP MyNumber (12 digits, common spaced/dashed forms)
+    pattern: '\b\d{4}[ -]?\d{4}[ -]?\d{4}\b'
+    replacement: '<REDACTED:JP_MYNUMBER>'
+  - kind: pii
+    # Stripe customer id (cus_...) — leak surface for customer linking
+    pattern: '\bcus_[A-Za-z0-9]{10,}\b'
+    replacement: '<REDACTED:STRIPE_CUSTOMER>'
+
+# 4. Unreleased product names — denylist (extend as needed)
+denylist:
+  - kind: denylist
+    pattern: '(?i)\bclawhub-?(?:beta|preview|internal)\b'
+    replacement: '<REDACTED:UNRELEASED>'
+  - kind: denylist
+    pattern: '(?i)\banicca-(?:enterprise|pro|cloud)\b'
+    replacement: '<REDACTED:UNRELEASED>'
+  - kind: denylist
+    pattern: '(?i)\bproject[-_ ]?lotus\b'
+    replacement: '<REDACTED:UNRELEASED>'
+
+# 5. Always-skip files (read but the contents are dropped wholesale)
+skip_files:
+  - '.env'
+  - '.env.*'
+  - 'credentials.json'
+  - 'service-account*.json'
+  - '*.pem'
+  - '*.p12'
+  - '*.pfx'
+  - 'id_rsa*'
+  - 'id_ed25519*'

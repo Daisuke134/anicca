@@ -1,0 +1,10 @@
+{
+  "name": "naist-qa",
+  "version": "1.0.0",
+  "scripts": {
+    "test": "jest --no-coverage"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  }
+}

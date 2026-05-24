@@ -1,0 +1,193 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e7]:
+    - link [ref=e9] [cursor=pointer]:
+      - /url: /
+      - img [ref=e10]
+    - generic [ref=e14] [cursor=pointer]:
+      - text: アップロード
+      - generic [ref=e15]: 
+    - link "マイミュージック" [ref=e17] [cursor=pointer]:
+      - /url: /mymusic/
+      - generic [ref=e18]: マイミュージック
+    - link "レポート" [ref=e20] [cursor=pointer]:
+      - /url: /stats/?data=streams
+      - generic [ref=e21]: レポート
+    - link "スプリット" [ref=e23] [cursor=pointer]:
+      - /url: /teams
+      - generic [ref=e24]: スプリット
+    - link "アップグレード" [ref=e26] [cursor=pointer]:
+      - /url: /plan/?upgrade=1
+      - generic [ref=e29]: アップグレード
+    - link "バンク" [ref=e31] [cursor=pointer]:
+      - /url: /bank
+      - generic [ref=e32]: バンク
+    - generic [ref=e33]:
+      - generic [ref=e37] [cursor=pointer]:
+        - img [ref=e39]
+        - generic [ref=e41]: 
+      - text:         
+    - text:                  
+    - generic [ref=e47] [cursor=pointer]: 
+  - generic [ref=e50]:
+    - list [ref=e52]:
+      - listitem [ref=e53]: アップロード
+      - listitem [ref=e54]: 強化する
+      - listitem [ref=e55]: 完了
+    - img [ref=e58]: 
+    - heading "おめでとうございます。音楽が配信されます！" [level=1] [ref=e60]
+    - generic [ref=e61]:
+      - img [ref=e63]
+      - generic [ref=e64]:
+        - paragraph [ref=e65]: 最新のリリース
+        - heading "Empty Sky" [level=2] [ref=e66]
+        - paragraph [ref=e67]: Anicca
+        - paragraph [ref=e68]: 2026 • 1曲
+        - generic [ref=e69]:
+          - generic [ref=e70]: 
+          - paragraph [ref=e71]: アルバムを処理しています。まもなく配信先にアップロードされます。
+    - generic [ref=e72]:
+      - heading "次のステップ" [level=2] [ref=e73]
+      - generic [ref=e74]:
+        - generic [ref=e75]:
+          - heading "リリース日" [level=3] [ref=e76]
+          - generic [ref=e77]:
+            - paragraph [ref=e78]: リリース指定日
+            - paragraph [ref=e79]: 2026年𝟧月11日
+          - generic [ref=e80]:
+            - paragraph [ref=e81]: Spotifyリリース時間
+            - paragraph [ref=e82]: 12:00 AM
+        - generic [ref=e83]:
+          - heading "新曲のPRページ" [level=3] [ref=e84]
+          - paragraph [ref=e85]:
+            - text: 楽曲のPRに便利なHyperFollowページが作成されました（
+            - link "プレビューはこちら" [ref=e86] [cursor=pointer]:
+              - /url: https://distrokid.com/hyperfollow/anicca4/empty-sky
+            - text: ）。文章を編集してからシェアできます。
+          - generic [ref=e87]:
+            - strong [ref=e89]: HyperFollowページをシェア
+            - generic [ref=e90]:
+              - img [ref=e92] [cursor=pointer]
+              - generic [ref=e94] [cursor=pointer]: 
+              - generic [ref=e96] [cursor=pointer]: 
+              - generic [ref=e98] [cursor=pointer]: 
+            - generic [ref=e99]: https://distrokid.com/hyperfollow/anicca4/empty-sky
+            - generic [ref=e100] [cursor=pointer]:
+              - generic [ref=e101]: 
+              - text: リンクをコピー
+        - generic [ref=e102]:
+          - heading "最後の仕上げ" [level=3] [ref=e103]
+          - generic [ref=e104]:
+            - generic [ref=e105]: 
+            - link "歌詞を追加" [ref=e106] [cursor=pointer]:
+              - /url: /lyrics/track/?id=6CBBA9DA-880A-4310-B0D82CE38BA2E41A,1
+          - generic [ref=e107]:
+            - generic [ref=e108]: 
+            - link "クレジットとライナーノーツを追加" [ref=e109] [cursor=pointer]:
+              - /url: /credits/album/?albumuuid=6CBBA9DA-880A-4310-B0D82CE38BA2E41A
+          - generic [ref=e112]: または
+          - link "楽曲の管理画面を表示する" [ref=e114] [cursor=pointer]:
+            - /url: /mymusic/
+      - link "他の楽曲をアップロード" [ref=e116] [cursor=pointer]:
+        - /url: /new/
+  - generic [ref=e119]:
+    - generic [ref=e120]:
+      - generic [ref=e121]:
+        - generic [ref=e122]:
+          - link [ref=e123] [cursor=pointer]:
+            - /url: https://www.youtube.com/subscription_center?add_user=distrokid
+            - generic [ref=e124]: 
+          - link "" [ref=e125] [cursor=pointer]:
+            - /url: https://facebook.com/distrokid
+            - generic [ref=e126]: 
+          - link [ref=e127] [cursor=pointer]:
+            - /url: https://bsky.app/profile/distrokid.com
+            - generic [ref=e128]: 
+          - link [ref=e129] [cursor=pointer]:
+            - /url: https://www.instagram.com/distrokid/
+            - generic [ref=e130]: 
+        - generic [ref=e131]: © DistroKid 2026
+      - combobox [ref=e135]:
+        - option "Bahasa Indonesia"
+        - option "Bahasa Melayu"
+        - option "Čeština"
+        - option "Dansk"
+        - option "Deutsch"
+        - option "English"
+        - option "English (UK)"
+        - option "Español"
+        - option "Español (España)"
+        - option "Français"
+        - option "Français (Canada)"
+        - option "Italiano"
+        - option "Kiswahili"
+        - option "Magyar"
+        - option "Nederlands"
+        - option "Norsk Bokmål"
+        - option "Polski"
+        - option "Português (Brasil)"
+        - option "Português (Portugal)"
+        - option "Românã"
+        - option "Suomi"
+        - option "Svenska"
+        - option "Tiếng Việt"
+        - option "Türkçe"
+        - option "日本語" [selected]
+        - option "ελληνικά"
+        - option "українська"
+        - option "עברית"
+        - option "العربية‬‎"
+        - option "हिन्दी"
+        - option "ภาษาไทย"
+        - option "한국어"
+    - generic [ref=e136]:
+      - generic [ref=e137]:
+        - heading "ヘルプ" [level=2] [ref=e138]
+        - link "サポートセンター" [ref=e139] [cursor=pointer]:
+          - /url: https://distrokid.com/help/
+      - generic [ref=e140]:
+        - heading "DistroKid" [level=2] [ref=e141]
+        - link "お知らせ" [ref=e142] [cursor=pointer]:
+          - /url: https://news.distrokid.com/
+        - link "グッズ" [ref=e143] [cursor=pointer]:
+          - /url: https://store.distrokid.com/
+        - link "Artists For Change" [ref=e144] [cursor=pointer]:
+          - /url: https://distrokid.com/artistsforchange/
+        - link "採用情報" [ref=e145] [cursor=pointer]:
+          - /url: https://boards.greenhouse.io/distrokid
+        - link "インフルエンサー＆アフィリエイター・プログラム" [ref=e146] [cursor=pointer]:
+          - /url: https://distrokid.com/product/partners
+      - generic [ref=e147]:
+        - heading "ツール" [level=2] [ref=e148]
+        - link "プラン" [ref=e149] [cursor=pointer]:
+          - /url: https://distrokid.com/pricing/
+        - link "Bandzoogle" [ref=e150] [cursor=pointer]:
+          - /url: https://bandzoogle.com/?pc=DK14&utm_source=distrokid&utm_medium=website&utm_campaign=footer
+        - link "Instant Share" [ref=e151] [cursor=pointer]:
+          - /url: https://distrokid.com/instantshare/
+        - link "Mixea" [ref=e152] [cursor=pointer]:
+          - /url: https://mixea.com/
+        - link "DistroVid" [ref=e153] [cursor=pointer]:
+          - /url: https://distrovid.com/
+        - link "HyperFollow" [ref=e154] [cursor=pointer]:
+          - /url: https://hyperfollow.com/
+        - link "Direct" [ref=e155] [cursor=pointer]:
+          - /url: https://distrokid.com/direct/?ref=footer
+      - generic [ref=e156]:
+        - heading "モバイルアプリ" [level=2] [ref=e157]
+        - link "iPhone版" [ref=e158] [cursor=pointer]:
+          - /url: /app/
+        - link "Android版" [ref=e159] [cursor=pointer]:
+          - /url: /app/
+    - generic [ref=e160]:
+      - link "プライバシーポリシー" [ref=e161] [cursor=pointer]:
+        - /url: /privacy/
+      - link "Cookieポリシー" [ref=e162] [cursor=pointer]:
+        - /url: /privacy/
+      - link "Cookie設定" [ref=e163] [cursor=pointer]:
+        - /url: javascript:void(0)
+      - link "利用規約" [ref=e164] [cursor=pointer]:
+        - /url: https://distrokid.com/terms/
+      - link "サイトマップ" [ref=e165] [cursor=pointer]:
+        - /url: /sitemap/
+      - link "配信規約" [ref=e166] [cursor=pointer]:
+        - /url: /agreement/

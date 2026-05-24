@@ -1,0 +1,15 @@
+{
+  "name": "Your Name",
+  "phone": "+10000000000",
+  "timezone": "Asia/Tokyo",
+  "googleAccount": "you@example.com",
+  "home": { "address": "Your home address", "lat": 0.0, "lon": 0.0 },
+  "wakeTime": "07:00",
+  "identities": {
+    "default": { "name": "Your Name", "match": ".*" }
+  },
+  "stakeholders": [
+    { "match": "work|office|boss", "channel": "{{profile.lateness.stakeholders.channel}}", "to": "boss@example.com", "sender": "Your Name", "note": "work" }
+  ],
+  "defaultSender": "Your Name"
+}

@@ -1,0 +1,45 @@
+{
+  "id": "a16z-start-26",
+  "name": "a16z START batch 2026 (UNVERIFIED)",
+  "url": "https://a16z.com/start",
+  "verified": false,
+  "verification_note": "URL guessed. a16z runs the START program for pre-seed founders; the application form may be on a Typeform/Airtable. Confirm before live submit.",
+  "deadline_kind": "rolling",
+  "next_deadline": null,
+  "funder_type": "accelerator",
+  "currency": "USD",
+  "amount_range": { "min": 0, "max": 1000000 },
+  "equity_pct": null,
+  "captcha": null,
+  "auth": { "kind": "none" },
+  "pages": [
+    {
+      "name": "main",
+      "path_suffix": "",
+      "fields": [
+        { "name": "company_name", "type": "text",     "selector": "input[name*=company i]",  "value_source": "config.company_name" },
+        { "name": "founder",      "type": "text",     "selector": "input[name*=founder i]",  "value_source": "config.founder_name" },
+        { "name": "{{profile.lateness.stakeholders.channel}}",        "type": "text",     "selector": "input[type={{profile.lateness.stakeholders.channel}}]",       "value_source": "env:DAIS_EMAIL" },
+        { "name": "homepage",     "type": "text",     "selector": "input[name*=url i]",      "value_source": "config.homepage" },
+        { "name": "{{profile.lateness.stakeholders.senderType}}",        "type": "select",   "selector": "select[name*={{profile.lateness.stakeholders.senderType}} i]",   "value_source": "literal:pre-seed" },
+        { "name": "thesis",       "type": "textarea", "selector": "textarea[name*=thesis i]","value_source": "config.thesis_300" },
+        { "name": "traction",     "type": "textarea", "selector": "textarea[name*=traction i]","value_source": "live:pitch.howfar" },
+        { "name": "revenue",      "type": "textarea", "selector": "textarea[name*=revenue i]","value_source": "live:pitch.money" }
+      ]
+    }
+  ],
+  "submit": {
+    "page": "main",
+    "button_text": "Submit",
+    "success_url_pattern": "thank|success|submitted"
+  },
+  "config": {
+    "company_name": "Anicca",
+    "founder_name": "Daisuke",
+    "homepage": "https://aniccaai.com",
+    "thesis_300": "Anicca is a self-funding AI entity. It earns from iOS subs, music streams, cafe ops, and routes 10% of revenue to humans on basic income — fully autonomous, fully public. Thesis: AI's economic surplus can be redistributed by code, not policy."
+  },
+  "live_sources": {
+    "dashboard_url": "https://aniccaai.com/dashboard.json"
+  }
+}

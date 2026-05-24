@@ -1,0 +1,15 @@
+{
+  "current": {
+    "experiment_id": null,
+    "name": null,
+    "treatment_id": null,
+    "en_loc": null,
+    "ja_loc": null,
+    "headlines_en": [],
+    "headlines_ja": [],
+    "started_at": null
+  },
+  "history": [],
+  "winning_patterns": [],
+  "losing_patterns": []
+}

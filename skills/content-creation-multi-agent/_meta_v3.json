@@ -1,0 +1,125 @@
+{
+  "name": "content-creation-multi-agent",
+  "version": "3.0.0",
+  "description": "内容生成多 Agent 技能包 - 6 个专业化内容创作 Agent",
+  "author": "OpenClaw 社区",
+  "license": "MIT",
+  "keywords": [
+    "content-creation",
+    "multi-agent",
+    "note-taking",
+    "copywriting",
+    "video-script",
+    "image-generation",
+    "seedance-prompt"
+  ],
+  "requirements": {
+    "openclaw": ">=1.0.0",
+    "feishu_oauth": true,
+    "bash": ">=4.0",
+    "git": ">=2.0"
+  },
+  "features": [
+    "6 个专业化内容创作 Agent",
+    "一键自动安装",
+    "Agent 选择功能",
+    "自动下载技能文件",
+    "自动创建目录结构",
+    "自动配置权限",
+    "自动生成说明文档",
+    "自动重启 Gateway"
+  ],
+  "agents": {
+    "count": 6,
+    "roles": [
+      "note-shrimp",
+      "moments-shrimp",
+      "video-director-shrimp",
+      "content-creator-shrimp",
+      "image-generator-shrimp",
+      "seedacne-director-shrimp"
+    ]
+  },
+  "agent_details": {
+    "note-shrimp": {
+      "name": "第二大脑笔记虾",
+      "role": "知识管理与内容素材提供",
+      "model": "doubao-pro",
+      "skills": ["web-search", "file-reading", "knowledge-management", "content-curation", "material-supply"],
+      "keywords": "笔记、整理、知识库、素材库、全网搜索、文件读取、内容提供",
+      "integrations": {
+        "supply_to": ["moments-shrimp", "content-creator-shrimp"]
+      }
+    },
+    "moments-shrimp": {
+      "name": "朋友圈创作虾",
+      "role": "朋友圈文案创作",
+      "model": "doubao",
+      "skills": ["copywriting", "social-media"],
+      "keywords": "朋友圈、文案、推广、分享、社交"
+    },
+    "video-director-shrimp": {
+      "name": "电商视频导演虾",
+      "role": "电商视频脚本创作",
+      "model": "doubao-pro",
+      "skills": ["video-script", "storyboard"],
+      "keywords": "视频、脚本、分镜、拍摄、电商"
+    },
+    "content-creator-shrimp": {
+      "name": "通用内容创作虾",
+      "role": "通用内容创作",
+      "model": "doubao",
+      "skills": ["writing", "editing"],
+      "keywords": "文章、报告、文案、邮件、创作"
+    },
+    "image-generator-shrimp": {
+      "name": "图片素材生成虾",
+      "role": "图片搜索 + 豆包图片生成",
+      "model": "doubao-pro",
+      "skills": ["image-search", "doubao-prompt", "image-generation"],
+      "keywords": "图片、素材、搜索、豆包、AI 绘图、提示词",
+      "doubao_rules": {
+        "prompt_count": 5,
+        "image_count": 5,
+        "search_count": 5
+      }
+    },
+    "seedacne-director-shrimp": {
+      "name": "电商 seedacne 导演虾",
+      "role": "Seedance 视频生成提示词专家",
+      "model": "doubao-pro",
+      "skills": ["seedance-prompt", "video-direction", "prompt-engineering"],
+      "keywords": "seedance、视频生成提示词、导演级提示词、AI 视频、提示词工程",
+      "seedance_rules": {
+        "format": "导演级提示词格式",
+        "structure": ["场景描述", "镜头语言", "角色动作", "光影效果", "氛围情绪", "技术参数"]
+      }
+    }
+  },
+  "install": {
+    "method": "auto",
+    "source": "github",
+    "url": "https://github.com/openclaw/content-creation-multi-agent.git",
+    "target": "~/.openclaw/workspace/skills/content-creation-multi-agent",
+    "scripts": ["auto-install.sh"]
+  },
+  "output": {
+    "skill_dir": "~/.openclaw/workspace/skills/content-creation-multi-agent",
+    "agents_dir": "~/.openclaw/workspace/skills/content-creation-multi-agent/agents",
+    "config_dir": "~/.openclaw/workspace-main/content-creation-configs"
+  },
+  "auto_install": {
+    "enabled": true,
+    "steps": [
+      "create_directories",
+      "download_files",
+      "create_agent_configs",
+      "set_permissions",
+      "verify_install",
+      "restart_gateway",
+      "generate_docs"
+    ]
+  },
+  "created_at": "2026-03-16",
+  "updated_at": "2026-03-16"
+}

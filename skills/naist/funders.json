@@ -1,0 +1,70 @@
+{
+  "funders": [
+    {
+      "id": "jsps-kakenhi",
+      "name": "JSPS 科研費",
+      "name_en": "JSPS Grants-in-Aid (KAKENHI)",
+      "lang": "ja",
+      "country": "JP",
+      "login_url": "https://www-shinsei.jsps.go.jp/topkakenhi/top_kakenhi.html",
+      "selectors": {
+        "username_input": "input[name='userId'], input[id*='user']",
+        "password_input": "input[type='password']",
+        "login_button_text": "ログイン",
+        "new_application_link_text": "新規応募",
+        "topic_textarea": "textarea[name*='title'], textarea[id*='subject']",
+        "abstract_textarea": "textarea[name*='abstract'], textarea[id*='gaiyo']",
+        "method_textarea": "textarea[name*='method'], textarea[id*='houhou']",
+        "file_upload_selector": "input[type='file']",
+        "submit_button_text": "提出する"
+      },
+      "credentials_env": {"user": "KAKEN_USER", "password": "KAKEN_PASSWORD"},
+      "active_window": "varies (check call-for-proposals)"
+    },
+    {
+      "id": "jst-create",
+      "name": "JST CREST",
+      "name_en": "JST Core Research for Evolutional Science and Technology",
+      "lang": "ja",
+      "country": "JP",
+      "login_url": "https://www.jst.go.jp/kisoken/crest/",
+      "selectors": {},
+      "credentials_env": {"user": "JST_USER", "password": "JST_PASSWORD"},
+      "active_window": "varies"
+    },
+    {
+      "id": "openphil",
+      "name": "Open Philanthropy",
+      "lang": "en",
+      "country": "US",
+      "login_url": "https://www.openphilanthropy.org/grants/",
+      "selectors": {
+        "submit_button_text": "Submit"
+      },
+      "credentials_env": {"user": "OPENPHIL_USER", "password": "OPENPHIL_PASSWORD"},
+      "active_window": "rolling"
+    },
+    {
+      "id": "fli",
+      "name": "Future of Life Institute",
+      "lang": "en",
+      "country": "US",
+      "login_url": "https://futureoflife.org/grants/",
+      "selectors": {
+        "submit_button_text": "Submit Application"
+      },
+      "credentials_env": {"user": "FLI_USER", "password": "FLI_PASSWORD"},
+      "active_window": "varies"
+    },
+    {
+      "id": "naist-internal",
+      "name": "{{profile.education.institution}} 内部研究助成",
+      "lang": "ja",
+      "country": "JP",
+      "login_url": "https://edu-portal.naist.jp/uprx/up/km/kmh006/Kmh00601.xhtml",
+      "selectors": {},
+      "credentials_env": {"user": "{{profile.education.institution}}_IDP_USERNAME", "password": "{{profile.education.institution}}_IDP_PASSWORD"},
+      "active_window": "varies"
+    }
+  ]
+}

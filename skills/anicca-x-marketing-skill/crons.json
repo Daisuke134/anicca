@@ -1,0 +1,68 @@
+{
+  "crons": [
+    {
+      "name": "x-marketing-daily-info",
+      "schedule": "0 8 * * *",
+      "tz": "Asia/Tokyo",
+      "channel": "A",
+      "command": "bash ~/.openclaw/skills/anicca-x-marketing-skill/scripts/channel-a-daily-info.sh",
+      "status": "implemented"
+    },
+    {
+      "name": "x-marketing-weekly-article",
+      "schedule": "0 9 * * 1",
+      "tz": "Asia/Tokyo",
+      "channel": "B",
+      "command": "bash ~/.openclaw/skills/anicca-x-marketing-skill/scripts/channel-b-weekly-article.sh",
+      "status": "skeleton"
+    },
+    {
+      "name": "x-marketing-launch-trigger",
+      "schedule": "event-driven",
+      "tz": "Asia/Tokyo",
+      "channel": "C",
+      "command": "bash ~/.openclaw/skills/anicca-x-marketing-skill/scripts/channel-c-launch-trigger.sh <product-slug>",
+      "status": "skeleton"
+    },
+    {
+      "name": "x-marketing-cold-dm-daily",
+      "schedule": "0 14 * * *",
+      "tz": "Asia/Tokyo",
+      "channel": "D",
+      "command": "bash ~/.openclaw/skills/anicca-x-marketing-skill/scripts/channel-d-cold-dm-daily.sh",
+      "status": "skeleton"
+    },
+    {
+      "name": "x-marketing-cross-post-daily",
+      "schedule": "0 16 * * *",
+      "tz": "Asia/Tokyo",
+      "channel": "E",
+      "command": "bash ~/.openclaw/skills/anicca-x-marketing-skill/scripts/channel-e-cross-post-daily.sh",
+      "status": "skeleton"
+    },
+    {
+      "name": "x-marketing-analytics-daily",
+      "schedule": "0 23 * * *",
+      "tz": "Asia/Tokyo",
+      "channel": "analytics",
+      "command": "bash ~/.openclaw/skills/anicca-x-marketing-skill/scripts/analytics-daily.sh",
+      "status": "skeleton"
+    },
+    {
+      "name": "x-marketing-utm-conversion-daily",
+      "schedule": "30 23 * * *",
+      "tz": "Asia/Tokyo",
+      "channel": "conversion",
+      "command": "bash ~/.openclaw/skills/anicca-x-marketing-skill/scripts/utm-conversion-daily.sh",
+      "status": "skeleton"
+    },
+    {
+      "name": "x-marketing-finetune-weekly",
+      "schedule": "0 4 * * 1",
+      "tz": "Asia/Tokyo",
+      "channel": "fine-tune",
+      "command": "bash ~/.openclaw/skills/anicca-x-marketing-skill/scripts/finetune-weekly.sh",
+      "status": "skeleton"
+    }
+  ]
+}

@@ -1,0 +1,98 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Social Media Commander Memory",
+  "type": "object",
+  "required": ["version","updated","content","campaigns","analytics","audience","stats"],
+  "properties": {
+    "version": { "type": "string" },
+    "updated": { "type": "string", "format": "date" },
+    "content": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["slug","platform","type","state","funnel_{{profile.lateness.stakeholders.senderType}}","pillar","created"],
+        "properties": {
+          "slug":          { "type": "string" },
+          "platform":      { "enum": ["instagram","twitter-x","linkedin","youtube","threads","whatsapp-channel","telegram"] },
+          "format":        { "type": "string" },
+          "type":          { "enum": ["educational","entertaining","inspirational","promotional","engagement","social-proof","behind-scenes","news","repurposed"] },
+          "state":         { "enum": ["idea","draft","review","approved","scheduled","published","archived","rejected"] },
+          "funnel_{{profile.lateness.stakeholders.senderType}}":  { "enum": ["awareness","consideration","conversion","retention","advocacy"] },
+          "pillar":        { "type": "string" },
+          "campaign":      { "type": ["string","null"] },
+          "ab_test":       { "enum": ["none","A","B"] },
+          "repurposed_from":{ "type": ["string","null"] },
+          "created":       { "type": "string", "format": "date" },
+          "scheduled_for": { "type": ["string","null"] },
+          "published_at":  { "type": ["string","null"] },
+          "engagement_rate":{ "type": ["number","null"] },
+          "classification":{ "enum": ["viral","high","average","under",null] },
+          "template_worthy":{ "type": ["boolean","null"] }
+        }
+      }
+    },
+    "campaigns": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id","goal","state","start_date"],
+        "properties": {
+          "id":          { "type": "string" },
+          "goal":        { "type": "string" },
+          "state":       { "enum": ["active","paused","completed","archived"] },
+          "platforms":   { "type": "array", "items": { "type": "string" } },
+          "start_date":  { "type": "string", "format": "date" },
+          "end_date":    { "type": ["string","null"], "format": "date" },
+          "post_count":  { "type": "integer" },
+          "summary":     { "type": "string" }
+        }
+      }
+    },
+    "analytics": {
+      "type": "object",
+      "properties": {
+        "platforms": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "followers":        { "type": "integer" },
+              "avg_engagement":   { "type": "number" },
+              "posts_this_month": { "type": "integer" },
+              "trend":            { "enum": ["growing","stable","declining"] }
+            }
+          }
+        },
+        "funnel_balance": {
+          "type": "object",
+          "properties": {
+            "awareness":     { "type": "number" },
+            "consideration": { "type": "number" },
+            "conversion":    { "type": "number" },
+            "retention":     { "type": "number" },
+            "advocacy":      { "type": "number" }
+          }
+        }
+      }
+    },
+    "audience": {
+      "type": "object",
+      "properties": {
+        "total_reach":   { "type": "integer" },
+        "competitors":   { "type": "array", "items": { "type": "string" } },
+        "active_personas":{ "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "stats": {
+      "type": "object",
+      "properties": {
+        "total_published":     { "type": "integer" },
+        "avg_engagement_rate": { "type": "number" },
+        "best_platform":       { "type": "string" },
+        "best_content_type":   { "type": "string" },
+        "brand_violations":    { "type": "integer" },
+        "pipeline_health":     { "enum": ["healthy","thin","critical"] }
+      }
+    }
+  }
+}

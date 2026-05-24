@@ -1,0 +1,89 @@
+{
+  "_note": "Hardcoded fallback used when the live ClawHub catalog endpoint is unreachable or unauthenticated. Edit freely; the rank script treats this as ground truth when network fetch fails.",
+  "skills": [
+    {
+      "slug": "karpathy/nanochat@read-arxiv-paper",
+      "title": "read-arxiv-paper",
+      "summary": "Fetch an arXiv paper, summarize to Markdown, post to Slack.",
+      "tags": ["arxiv", "research", "summarize", "paper", "markdown", "ml"],
+      "url": "https://clawhub.dev/karpathy/nanochat/read-arxiv-paper"
+    },
+    {
+      "slug": "anthropic/skills@docx",
+      "title": "docx",
+      "summary": "Create or edit Word documents (.docx) with rich formatting.",
+      "tags": ["docx", "word", "document", "report", "memo"],
+      "url": "https://clawhub.dev/anthropic/skills/docx"
+    },
+    {
+      "slug": "anthropic/skills@pdf",
+      "title": "pdf",
+      "summary": "Extract text/tables from PDFs, fill forms, merge or split.",
+      "tags": ["pdf", "extract", "form", "merge", "split"],
+      "url": "https://clawhub.dev/anthropic/skills/pdf"
+    },
+    {
+      "slug": "anthropic/skills@xlsx",
+      "title": "xlsx",
+      "summary": "Build, read, and edit Excel spreadsheets with formulas and charts.",
+      "tags": ["excel", "xlsx", "spreadsheet", "csv", "chart", "budget"],
+      "url": "https://clawhub.dev/anthropic/skills/xlsx"
+    },
+    {
+      "slug": "anthropic/skills@pptx",
+      "title": "pptx",
+      "summary": "Create or modify PowerPoint decks (.pptx) — slides, layouts, notes.",
+      "tags": ["powerpoint", "pptx", "slides", "deck", "presentation"],
+      "url": "https://clawhub.dev/anthropic/skills/pptx"
+    },
+    {
+      "slug": "openclaw/devops@deploy-vercel",
+      "title": "deploy-vercel",
+      "summary": "Trigger a Vercel deploy from CLI with preview / production routing.",
+      "tags": ["vercel", "deploy", "ci", "preview", "production"],
+      "url": "https://clawhub.dev/openclaw/devops/deploy-vercel"
+    },
+    {
+      "slug": "openclaw/social@x-poster",
+      "title": "x-poster",
+      "summary": "Compose and post threads to X via Postiz with attached media.",
+      "tags": ["twitter", "x", "post", "social", "postiz", "thread"],
+      "url": "https://clawhub.dev/openclaw/social/x-poster"
+    },
+    {
+      "slug": "openclaw/research@literature-review",
+      "title": "literature-review",
+      "summary": "Survey related work on a topic with citations and synthesis.",
+      "tags": ["literature", "survey", "citations", "research", "academic"],
+      "url": "https://clawhub.dev/openclaw/research/literature-review"
+    },
+    {
+      "slug": "openclaw/research@scientific-writing",
+      "title": "scientific-writing",
+      "summary": "Draft scientific manuscripts with structured sections.",
+      "tags": ["paper", "writing", "scientific", "manuscript", "academic"],
+      "url": "https://clawhub.dev/openclaw/research/scientific-writing"
+    },
+    {
+      "slug": "openclaw/finance@stripe-mrr",
+      "title": "stripe-mrr",
+      "summary": "Compute MRR, churn, and net new revenue from Stripe.",
+      "tags": ["stripe", "mrr", "revenue", "finance", "metrics", "saas"],
+      "url": "https://clawhub.dev/openclaw/finance/stripe-mrr"
+    },
+    {
+      "slug": "openclaw/calendar@meeting-prep",
+      "title": "meeting-prep",
+      "summary": "Pull next meeting context, generate prep doc, attach to event.",
+      "tags": ["calendar", "meeting", "agenda", "prep", "google-calendar"],
+      "url": "https://clawhub.dev/openclaw/calendar/meeting-prep"
+    },
+    {
+      "slug": "openclaw/{{profile.lateness.stakeholders.channel}}@triage-inbox",
+      "title": "triage-inbox",
+      "summary": "Read inbox, label by intent, draft replies for the top items.",
+      "tags": ["gmail", "{{profile.lateness.stakeholders.channel}}", "triage", "inbox", "draft", "reply"],
+      "url": "https://clawhub.dev/openclaw/{{profile.lateness.stakeholders.channel}}/triage-inbox"
+    }
+  ]
+}

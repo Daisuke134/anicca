@@ -1,0 +1,11 @@
+{
+  "account": "{{profile.contact.personalEmail}}",
+  "{{profile.lateness.stakeholders.senderType}}_name": "{{profile.identity.{{profile.lateness.stakeholders.senderType}}Name}}",
+  "{{profile.lateness.stakeholders.senderType}}_name": "<your-name>",
+  "phone": "08046270314",
+  "neta_type": "漫談",
+  "neta_length": "3min",
+  "persona": "pin",
+  "budget_per_show": 2500,
+  "frequency": "weekly"
+}

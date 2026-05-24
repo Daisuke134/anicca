@@ -1,0 +1,37 @@
+{
+  "platform": "xiaohongshu",
+  "word_range": [300, 800],
+  "tag_count": 15,
+  "structure": {
+    "headline": "{{EMOJI}} {{数字+关键词标题}}",
+    "sections": [
+      {
+        "name": "开头钩子",
+        "type": "hook",
+        "length": "1-2句",
+        "example": "说实话，我一开始也不信这个方法有用，直到……"
+      },
+      {
+        "name": "正文",
+        "type": "body",
+        "paragraphs": "4-6段",
+        "length": "40-90字/段"
+      },
+      {
+        "name": "结尾CTA",
+        "type": "cta",
+        "example": "如果也在做这类内容，这条可以先收藏 | 评论区聊聊"
+      }
+    ]
+  },
+  "hashtag_mix": {
+    "high_volume": 5,
+    "niche": 5,
+    "scene": 5
+  },
+  "image_prompts": {
+    "cover": "封面图：标题大字+情绪氛围，暖色调，高质感",
+    "content": "内容图：步骤截图或对比图，信息密度高",
+    "ending": "结尾图：结论总结+收藏引导"
+  }
+}

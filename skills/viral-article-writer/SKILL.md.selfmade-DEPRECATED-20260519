@@ -1,0 +1,233 @@
+---
+name: viral-article-writer
+description: Writes long-form viral articles (4000+ words) in Ivy/Greg-Isenberg style — 5-stage breakdown, math ladders, metric/mistake callouts, real screenshots — and publishes weekly to note.com (JP) and Substack/Medium (EN). Use when viral-article-weekly cron fires or user asks for a long-form viral article.
+---
+
+# viral-article-writer SKILL
+
+## 概要
+
+Ivy (@ivygrowths) / Greg Isenberg / Justin Welsh 系の long-form viral 記事を週1本生成する。
+短尺の daily article-writer skill とは別物（あちらは 1200-1800字、こちらは 4000+ words）。
+
+**Sources:**
+- [Ivy: How To ACTUALLY Make $1M/yr on Roblox](https://x.com/ivygrowths) — 5-stage pipeline + math ladder + metric/mistake 構造
+- [Greg Isenberg playbook](https://www.gregisenberg.com/) — "show your work, then sell the workflow"
+- [Justin Welsh: Long-form on LinkedIn](https://justinwelsh.me/) — "story → framework → CTA"
+
+---
+
+## 構造（Ivy 完全準拠）
+
+| セクション | 文字数目安 | 内容 |
+|----------|----------|------|
+| Header (Hook) | 200-300 | Bold claim + 数字 (例: "$1.8B paid out", "100+ devs made $1M") |
+| Why now | 400-600 | 市場サイズ + 過去比成長率 + ソース引用 + 「窓は今だけ」と言い切る |
+| Stage 1-5 | 各 600-800 | 各 stage = やること / stack / 自分の事例スクショ / math ladder / metric to watch / mistake to avoid |
+| The Pattern | 200-300 | 全 5 stage を1段落で再要約 + 「1番効くのはどれか」決め打ち |
+| Conclusion | 200-300 | CTA (コメント or DM で配布) + 「窓を逃すな」 |
+
+**合計 4000-5500 words / 8000-12000字**
+
+---
+
+## 実行手順
+
+### Step 1: 環境設定
+
+```bash
+export PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin
+source /Users/anicca/.openclaw/.env
+TODAY=$(TZ=Asia/Tokyo date +%Y-%m-%d)
+WORKSPACE="/Users/anicca/.openclaw/workspace/viral-article-writer/${TODAY}"
+mkdir -p "$WORKSPACE"
+```
+
+### Step 2: トピック選定
+
+**選定優先順位:**
+
+| 優先 | トピック種別 | 例 |
+|-----|-----------|-----|
+| 1位 | 「巨大な数字 + 誰も話してない」ニッチ | "How indie devs are making $30K/mo on iOS in 2026" |
+| 2位 | 自分の実数字を使った breakdown | "How Anicca got to $X MRR in 6 months" |
+| 3位 | 5-stage で分解できる workflow | "The 5-stage AI app factory pipeline" |
+| 4位 | 業界全体への提言 | "Why every solopreneur should build a digital companion" |
+
+**素材ソース（先週 trend-hunter が貯めた素材を使う）:**
+
+```bash
+TREND_DIR="/Users/anicca/.openclaw/workspace/trend-hunter"
+# 直近7日分のtrend findingsを読む
+find "$TREND_DIR" -name "findings_*.json" -mtime -7 -type f
+```
+
+### Step 3: 数字の事前リサーチ（必須・引用なき主張は削除）
+
+**最低3ソースから引用付き数字を集める:**
+
+| データ種別 | ソース例 | 取得方法 |
+|----------|---------|---------|
+| 市場サイズ | App Store revenue, Sensor Tower, Mobile Action | firecrawl scrape |
+| 成長率 | App Annie, Statista, official PR | firecrawl scrape |
+| 自分の実績 | Anicca Mixpanel / Stripe / RevenueCat | mcp / API |
+| 業界事例 | TechCrunch, Indie Hackers, Twitter posts | firecrawl scrape |
+
+**形式:**
+```markdown
+[数字] [主張]
+Source: [サイト名](URL)
+核心の引用: 「原文ママ」
+```
+
+### Step 4: Stage ごとに「自分の事例スクショ」を集める
+
+| Stage | 何のスクショ |
+|------|------------|
+| 1. リサーチ | trend-hunter が出した dashboard / opportunity scanner |
+| 2. 設計 | Anicca のスペック・ワイヤーフレーム |
+| 3. 実装 | actual screenshot of working feature |
+| 4. 配信 | analytics dashboard (Mixpanel funnel, Stripe MRR chart) |
+| 5. 結果 | 数字が出たグラフ + before/after |
+
+スクショは `${WORKSPACE}/screenshots/` に保存し、note.com / Substack に画像として埋め込む。
+
+### Step 5: 各 Stage の「math ladder」を計算
+
+**フォーマット (Ivy 準拠):**
+
+```markdown
+Math ladder:
+[小さい数] × [変換率] × [単価] ≈ [小さい収益]
+[中くらい数] × [同変換率] ≈ [中くらい収益]
+[大きい数] × [同変換率] ≈ [大きい収益]
+
+metric to watch: [1つだけ。これを見てれば判断できる指標]
+mistake to avoid: [1つだけ。これだけは絶対やるな]
+```
+
+### Step 6: JP記事を書く（note.com 向け）
+
+```bash
+cat > "${WORKSPACE}/jp.md" << 'ARTICLE'
+# [見出し: 数字 + 強い主張]
+（例: "AI 時代に iOS 個人開発で月 $30K 稼ぐ ACTUAL way")
+
+## なぜ今か
+（市場サイズ + 成長率 + 「窓は今だけ」）
+
+## Stage 1 / 5 | [タイトル]
+
+[やること本文]
+
+→ [小見出し: 具体的アクション]
+
+スタック:
+- ツール A
+- ツール B
+
+[スクショ埋め込み]
+
+Math ladder:
+...
+
+metric to watch: ...
+mistake to avoid: ...
+
+## Stage 2 / 5 | ...
+（以下同様）
+
+## The pattern
+（全段階の再要約）
+
+## Conclusion
+（CTA）
+
+## P.S.
+（lead magnet）
+ARTICLE
+```
+
+**文字数:** 8000-12000字
+
+### Step 7: EN記事を書く（Substack / Medium 向け）
+
+JP記事と1対1対応。直訳ではなく英語ネイティブの文体に書き直す。
+
+**文字数:** 4000-5500 words
+
+### Step 8: textlint 校正（MANDATORY）
+
+```bash
+ARTICLE_DIR="/Users/anicca/.openclaw/workspace/article-writer"
+if [ -f "$ARTICLE_DIR/node_modules/kuromoji/dict/manifest.json" ]; then
+  npx --prefix "$ARTICLE_DIR" textlint --config "$ARTICLE_DIR/.textlintrc.json" "${WORKSPACE}/en.md" 2>&1 || true
+  npx --prefix "$ARTICLE_DIR" textlint --config "$ARTICLE_DIR/.textlintrc.json" "${WORKSPACE}/jp.md" 2>&1 || true
+else
+  echo "textlint skipped: kuromoji dictionary missing"
+fi
+```
+
+**If the local kuromoji dictionary is missing, skip textlint and continue. Do not fail the run on that dependency.**
+
+### Step 9: note.com に下書き保存
+
+skill: `auto-article-poster` を使う。
+
+```bash
+# auto-article-poster skill を呼ぶ
+# 入力: ${WORKSPACE}/jp.md
+# 出力: note.com の下書き URL
+```
+
+### Step 10: X (Twitter) スレッド化
+
+記事の各 stage を 1 ツイートに分解（5-7 ツイートのスレッド）。
+最後のツイートで note.com 記事 URL に誘導。
+
+```bash
+# build-in-public skill または twitter-automation skill 経由で投稿
+```
+
+### Step 11: Slack #metrics に報告（MANDATORY）
+
+```
+message tool:
+  action: send
+  channel: slack
+  target: C091G3PKHL2
+  message: |
+    📰 viral-article-writer 実行完了
+    🇯🇵 note.com (下書き): {NOTE_URL}
+    🐦 X thread: {X_THREAD_URL}
+    🇺🇸 Substack/Medium: {EN_URL}
+    トピック: {TOPIC}
+    文字数: JP {JP_LEN} / EN {EN_LEN}
+```
+
+**cron 実行では送信済みの定型文を再生成しない。配信は cron delivery に任せる。**
+
+---
+
+## 絶対禁止
+
+| 禁止 | 理由 |
+|------|------|
+| 引用なき数字 | CLAUDE.md 根本原則: 引用なき判断は削除 |
+| 直訳 EN | 英語ネイティブが読んで違和感ある文は削除 |
+| Math ladder なしの stage | Ivy 構造の核心。これがないと刺さらない |
+| metric / mistake 省略 | 各 stage で必ず1つずつ |
+| Slack 報告スキップ | cron 実行では MANDATORY |
+| daily 実行 | Long-form は週1。daily article-writer と被る |
+
+---
+
+## ファイルパス
+
+| 項目 | パス |
+|------|------|
+| 素材（trend findings） | `/Users/anicca/.openclaw/workspace/trend-hunter/findings_*.json` |
+| スクショ保存先 | `/Users/anicca/.openclaw/workspace/viral-article-writer/YYYY-MM-DD/screenshots/` |
+| JP記事 | `/Users/anicca/.openclaw/workspace/viral-article-writer/YYYY-MM-DD/jp.md` |
+| EN記事 | `/Users/anicca/.openclaw/workspace/viral-article-writer/YYYY-MM-DD/en.md` |
+| 過去記事インデックス | `/Users/anicca/.openclaw/workspace/viral-article-writer/INDEX.md` |

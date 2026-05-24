@@ -1,0 +1,36 @@
+{
+  "context": {
+    "user_role": "Dais — MUIT (MUFG IT) data science department, EPOC project (MUFG new CRM, Salesforce Financial Services Cloud + Tableau, 2026 年度 26,000 行員へ拡大)",
+    "user_strength": "World-class AI agent / AI safety expertise. ICLR 2026 Sao Paulo presenter. Up-to-date on Anthropic Petri / Andon Labs / agentic frameworks.",
+    "constraint": "OpenClaw / Anicca が会社データに access することは絶対禁止。外部世界の知識を社内に持ち込む人間レイヤーの役にだけ立つ。",
+    "goal": "EPOC project と MUIT 全体への contribution に直結するネタを毎朝 5 行で受け取る。社内勉強会・週次 brief・上司への提案ネタとして即使える形。"
+  },
+  "queries": [
+    {
+      "id": "salesforce_agentforce",
+      "label": "Salesforce Agentforce 360 / Financial Services Cloud (banking)",
+      "prompt": "Use x_search to find the top 3 most-relevant X posts in the past 48 hours about Salesforce Agentforce 360, Financial Services Cloud, or AI agents inside Salesforce CRM specifically for banking/finance. Skip generic marketing. Prefer release notes, customer case studies, prompt engineering tips, performance numbers.\n\nOutput in Japanese (日本語で出力必須). For each item:\n\n1. 【見出し】2〜3 文の日本語要約 (機能名・数値・銀行名を含める)\nURL: https://x.com/...\n投稿者: @handle (❤️N)\n👉 EPOC への示唆: 1 行で「これをダイスが社内でどう使えるか」(例: 提案書生成 prompt 改善案 / 稟議書 AI 反映 risk 評価 / 上司に出す 1 ページ提案)\n\nNo English. No preamble. Just 3 numbered items."
+    },
+    {
+      "id": "banking_ai_deployment",
+      "label": "Banking AI agent deployment (JPM/Goldman/HSBC/DBS/Citi/MUFG/SMBC/Mizuho)",
+      "prompt": "Use x_search to find the top 3 most-relevant X posts in the past 48 hours about how major banks (JPMorgan, Goldman Sachs, HSBC, DBS, Citi, MUFG, SMBC, Mizuho, Nomura) are deploying AI agents, LLMs, or autonomous systems. Prefer concrete deployments, headcount impact, MAU, ROI, regulatory framing.\n\nOutput in Japanese (日本語で出力必須). For each item:\n\n1. 【見出し】2〜3 文の日本語要約 (銀行名・規模・数値必須)\nURL: https://x.com/...\n投稿者: @handle (❤️N)\n👉 EPOC への示唆: 1 行で「これをダイスが社内でどう使えるか」\n\nNo English. No preamble."
+    },
+    {
+      "id": "ai_safety_finance",
+      "label": "AI safety / alignment / regulation (financial services)",
+      "prompt": "Use x_search to find the top 3 most-relevant X posts in the past 48 hours about AI safety, AI alignment, AI eval, or regulation (EU AI Act, Japan FSA 金融庁, BIS, OCC, FRB) as applied to financial services or enterprise AI agents. Cover Anthropic Petri, Andon Labs eval frameworks, jailbreak research, model autonomy risk.\n\nOutput in Japanese (日本語で出力必須). For each item:\n\n1. 【見出し】2〜3 文の日本語要約\nURL: https://x.com/...\n投稿者: @handle (❤️N)\n👉 EPOC への示唆: 1 行で「これをダイスが社内勉強会・コンプラ部門・モデル risk 部門にどう持ち込めるか」\n\nNo English. No preamble."
+    },
+    {
+      "id": "anthropic_enterprise",
+      "label": "Anthropic / Claude / Constitutional AI in enterprise & banking",
+      "prompt": "Use x_search to find the top 3 most-relevant X posts in the past 48 hours about Anthropic, Claude (Sonnet/Opus/Haiku), Constitutional AI, Petri, or Mythos being used in enterprise / banking / financial services. Prefer benchmarks, eval results, deployment case studies, API usage patterns.\n\nOutput in Japanese (日本語で出力必須). For each item:\n\n1. 【見出し】2〜3 文の日本語要約 (model 名・bench 数値必須)\nURL: https://x.com/...\n投稿者: @handle (❤️N)\n👉 EPOC への示唆: 1 行で「これをダイスが社内でどう使えるか」\n\nNo English. No preamble."
+    },
+    {
+      "id": "ai_agent_crm_productivity",
+      "label": "AI agent x CRM productivity & sales automation",
+      "prompt": "Use x_search to find the top 3 most-relevant X posts in the past 48 hours about AI agents inside CRM systems (Salesforce, HubSpot, Microsoft Dynamics, Zoho) — actual deployment results, productivity gains, prompt engineering for sales/relationship management agents, RM activity-record automation.\n\nOutput in Japanese (日本語で出力必須). For each item:\n\n1. 【見出し】2〜3 文の日本語要約 (productivity 数値含む)\nURL: https://x.com/...\n投稿者: @handle (❤️N)\n👉 EPOC への示唆: 1 行で「これをダイスが EPOC ロードマップ会議で出せるネタにどう変換するか」\n\nNo English. No preamble."
+    }
+  ],
+  "synthesis_prompt": "You are Dais's internal AI brief writer. Dais works at MUIT (MUFG IT) data science department on the EPOC project (Salesforce Financial Services Cloud + Tableau, scaling to 26,000 employees in FY2026). His edge: world-class AI agent / AI safety knowledge.\n\nGiven the 5 search results above, write in Japanese a final 'EPOC contribution 案 3 件' section. Each item must be:\n\n- 1 行 title (action verb で始める, 例: 「提案書生成 prompt の A/B テスト案を出す」)\n- 2〜3 行 rationale (なぜ刺さるか、根拠ソース引用)\n- 1 行 next step (今日中にできる具体行動。1 文)\n\n3 件のうち最低 1 件は EPOC project 内 (提案書生成 / 稟議書 AI 反映 / Tableau dashboard) ネタ、1 件は MUIT 全社向け (社内勉強会 / model risk / コンプラ) ネタ。\n\nNo preamble. Just the 3 numbered items."
+}

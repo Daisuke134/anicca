@@ -1,0 +1,59 @@
+{
+  "_comment": "Day of week (1=Mon ... 7=Sun) → theme + Suno prompt + FLUX cover prompt + DistroKid genre. Genre values MUST match DistroKid's Japanese option labels exactly (ニューエイジ, ワールド, クラシック, etc).",
+  "day_1": {
+    "theme": "tibetan_bowls",
+    "suno_prompt": "tibetan singing bowls deep meditation drone, slow tempo, sacred space, instrumental, no vocals, calming",
+    "cover_prompt": "abstract meditation cover art, misty mountain peak emerging from soft golden clouds, ethereal dreamy atmosphere, painterly style, no text no logos no watermark",
+    "title_seed": "spacious mountain stillness emptiness silence",
+    "genre_primary": "ニューエイジ",
+    "genre_secondary": "ワールド"
+  },
+  "day_2": {
+    "theme": "528hz_healing",
+    "suno_prompt": "528Hz healing frequency ambient pads, deep relaxation, sacred geometry sound, instrumental, slow, no vocals",
+    "cover_prompt": "sacred geometry mandala album cover, glowing warm gold and rose pink center, healing frequency aesthetic, ethereal soft glow, minimal abstract, no text no logos",
+    "title_seed": "frequency healing heart open vibration",
+    "genre_primary": "ニューエイジ",
+    "genre_secondary": "ヴォーカル"
+  },
+  "day_3": {
+    "theme": "soft_piano_rain",
+    "suno_prompt": "soft solo piano with gentle rain ambient, melancholic mindfulness, slow contemplative, instrumental, no vocals",
+    "cover_prompt": "album cover, flowing river through misty pine forest at twilight, soft impressionist watercolor, calm contemplative mood, minimal, no text no logos",
+    "title_seed": "rain memory rivers piano window evening",
+    "genre_primary": "クラシック",
+    "genre_secondary": "ニューエイジ"
+  },
+  "day_4": {
+    "theme": "deep_drone",
+    "suno_prompt": "deep ambient drone, soft synth pads, contemplating impermanence, slow evolution, instrumental, no vocals",
+    "cover_prompt": "minimal zen abstract cover art, vast empty pastel gradient space, soft floating geometry, profound stillness, no text no logos",
+    "title_seed": "stillness vast empty drift impermanence",
+    "genre_primary": "ニューエイジ",
+    "genre_secondary": "エレクトロニック"
+  },
+  "day_5": {
+    "theme": "forest_chimes",
+    "suno_prompt": "forest ambient with wind chimes, distant bird calls, ethereal flute, dawn meditation, instrumental, no vocals",
+    "cover_prompt": "abstract painting of dewy forest at dawn with soft sunlight beams through pine trees, watercolor, minimal, no text no logos",
+    "title_seed": "forest dawn breath wind chime woodland",
+    "genre_primary": "ニューエイジ",
+    "genre_secondary": "ワールド"
+  },
+  "day_6": {
+    "theme": "shakuhachi",
+    "suno_prompt": "shakuhachi flute solo, zen garden, traditional Japanese meditation, sparse minimal, instrumental, no vocals",
+    "cover_prompt": "sumi-e ink wash painting cover art, single zen circle enso, minimal black ink on aged rice paper, contemplative, no text no logos",
+    "title_seed": "zen wind bamboo silence path mu",
+    "genre_primary": "ワールド",
+    "genre_secondary": "ニューエイジ"
+  },
+  "day_7": {
+    "theme": "zen_drone",
+    "suno_prompt": "zen meditation drone with subtle bell tones, profound stillness, slow evolution, minimal, instrumental, no vocals",
+    "cover_prompt": "minimal cover art, single luminous sphere floating in vast empty pastel gradient space, profound stillness contemplative emptiness, no text no logos",
+    "title_seed": "bell stillness presence light orb breath",
+    "genre_primary": "ニューエイジ",
+    "genre_secondary": "ワールド"
+  }
+}

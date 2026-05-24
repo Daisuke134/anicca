@@ -1,0 +1,36 @@
+{
+  "platform": "zhihu",
+  "word_range": [1000, 2000],
+  "tag_count": 5,
+  "structure": {
+    "sections": [
+      {
+        "name": "直接回答",
+        "type": "answer",
+        "note": "第一句话就是答案，建立权威感"
+      },
+      {
+        "name": "扩展论证",
+        "type": "argument",
+        "note": "逻辑结构，数据引用，案例支撑"
+      },
+      {
+        "name": "要点总结",
+        "type": "summary",
+        "format": "bullet_points"
+      },
+      {
+        "name": "互动引导",
+        "type": "cta",
+        "note": "关注/点赞引导"
+      }
+    ]
+  },
+  "writing_rules": [
+    "第一行必须包含核心答案（显示在「查看更多」之前）",
+    "使用积极肯定的权威语气",
+    "数据必须有来源",
+    "避免绝对化用语（最好、第一、唯一）",
+    "积极互动引导关注"
+  ]
+}
