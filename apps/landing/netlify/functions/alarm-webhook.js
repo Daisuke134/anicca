@@ -46,7 +46,7 @@ exports.handler = async (event) => {
       if (phone) {
         // upsert into the unified subscriber_profiles (wake + never-late share one row)
         await supa("POST", "subscriber_profiles?on_conflict=phone", {
-          phone, wake_time: wakeTime, email: s.customer_details?.email || null,
+          phone, wake_time: wakeTime, name: s.metadata?.name || null, email: s.customer_details?.email || null,
           stripe_customer: s.customer, stripe_subscription: s.subscription,
           status: "active", updated_at: new Date().toISOString(),
         });

@@ -9,6 +9,7 @@ exports.handler = async (event) => {
 
   const phone = String(body.phone || "").trim();
   const wakeTime = String(body.wakeTime || "07:00").trim();
+  const name = String(body.name || "").trim().slice(0, 40);
   if (!/^\+?[0-9][0-9\s\-]{6,}$/.test(phone)) return { statusCode: 400, body: "invalid phone" };
 
   const STRIPE_KEY = process.env.STRIPE_SECRET_KEY;
@@ -25,8 +26,10 @@ exports.handler = async (event) => {
   params.append("cancel_url", `${ORIGIN}/alarm?canceled=1`);
   params.append("subscription_data[metadata][phone]", phone);
   params.append("subscription_data[metadata][wakeTime]", wakeTime);
+  params.append("subscription_data[metadata][name]", name);
   params.append("metadata[phone]", phone);
   params.append("metadata[wakeTime]", wakeTime);
+  params.append("metadata[name]", name);
   // collect their phone at checkout too (for receipts / verification)
   params.append("phone_number_collection[enabled]", "true");
 

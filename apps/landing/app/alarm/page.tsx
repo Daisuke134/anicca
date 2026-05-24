@@ -27,19 +27,39 @@ function Step({ n, t, d }: { n: string; t: string; d: string }) {
 }
 
 export default function AlarmPage() {
+  const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [wake, setWake] = useState("07:00");
   const [loading, setLoading] = useState(false);
+  const [demoState, setDemoState] = useState<"idle" | "calling" | "done" | "used">("idle");
 
-  async function start(e: React.FormEvent) {
-    e.preventDefault();
+  async function demo() {
+    if (!phone.trim()) { alert("電話番号を入れてください。"); return; }
+    setDemoState("calling");
+    try {
+      const r = await fetch("/.netlify/functions/alarm-demo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: name.trim(), phone: phone.trim(), wakeTime: wake }),
+      });
+      if (r.status === 409) { setDemoState("used"); return; }
+      if (!r.ok) throw new Error("demo failed");
+      setDemoState("done");
+    } catch {
+      setDemoState("idle");
+      alert("発信できませんでした。番号を確認して、もう一度試してください。");
+    }
+  }
+
+  async function start(e?: React.FormEvent) {
+    if (e) e.preventDefault();
     if (!phone.trim()) return;
     setLoading(true);
     try {
       const r = await fetch("/.netlify/functions/alarm-checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: phone.trim(), wakeTime: wake }),
+        body: JSON.stringify({ name: name.trim(), phone: phone.trim(), wakeTime: wake }),
       });
       const { url } = await r.json();
       if (url) window.location.href = url;
@@ -76,28 +96,62 @@ export default function AlarmPage() {
           起きた日も、起きられなかった日も学習して、明日はもっと効く。
         </motion.p>
 
-        {/* onboarding card */}
-        <motion.form {...fade(0.22)} onSubmit={start}
+        {/* onboarding card — experience first, then pay */}
+        <motion.form {...fade(0.22)} onSubmit={(e: React.FormEvent) => e.preventDefault()}
           className="mt-12 max-w-md rounded-2xl border border-white/12 bg-white/[0.03] p-6 backdrop-blur-sm">
           <div className="grid grid-cols-2 gap-3">
+            <label className="col-span-2 block">
+              <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-white/40">名前</span>
+              <input value={name} onChange={(e) => setName(e.target.value)}
+                placeholder="大祐"
+                className="mt-1.5 w-full rounded-lg border border-white/15 bg-black/40 px-4 py-3 font-mono text-white outline-none placeholder:text-white/25 focus:border-amber-500/70" />
+            </label>
             <label className="col-span-2 block">
               <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-white/40">電話番号</span>
               <input value={phone} onChange={(e) => setPhone(e.target.value)} inputMode="tel"
                 placeholder="+81 80 0000 0000"
                 className="mt-1.5 w-full rounded-lg border border-white/15 bg-black/40 px-4 py-3 font-mono text-white outline-none placeholder:text-white/25 focus:border-amber-500/70" />
             </label>
-            <label className="block">
+            <label className="col-span-2 block">
               <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-white/40">起きたい時刻</span>
               <input type="time" value={wake} onChange={(e) => setWake(e.target.value)}
                 className="mt-1.5 w-full rounded-lg border border-white/15 bg-black/40 px-4 py-3 font-mono text-white outline-none focus:border-amber-500/70" />
             </label>
-            <button disabled={loading} type="submit"
-              className="mt-[22px] rounded-lg bg-amber-500 px-4 py-3 font-soft text-base text-black transition hover:bg-amber-400 disabled:opacity-50">
-              {loading ? "..." : "起こしてもらう"}
-            </button>
           </div>
+
+          {/* ① free one-time demo */}
+          {demoState !== "done" && demoState !== "used" && (
+            <button type="button" onClick={demo} disabled={demoState === "calling"}
+              className="mt-4 w-full rounded-lg bg-amber-500 px-4 py-3.5 font-soft text-base text-black transition hover:bg-amber-400 disabled:opacity-60">
+              {demoState === "calling" ? "📞 今、発信しています…出てください" : "① 今すぐ1回、電話を体験する（無料）"}
+            </button>
+          )}
+
+          {/* after the demo: nudge to subscribe */}
+          {(demoState === "done" || demoState === "used") && (
+            <div className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/[0.06] p-4">
+              <p className="font-serif-jp text-sm text-white/80">
+                {demoState === "done"
+                  ? "どうだった？これが毎朝、起き上がるまで鳴る。"
+                  : "体験は1回までです。続けるには登録を。"}
+              </p>
+              <button type="button" onClick={() => start()} disabled={loading}
+                className="mt-3 w-full rounded-lg bg-amber-500 px-4 py-3.5 font-soft text-base text-black transition hover:bg-amber-400 disabled:opacity-60">
+                {loading ? "..." : `毎朝これを → ${PRICE}/月で続ける`}
+              </button>
+            </div>
+          )}
+
+          {/* ② subscribe directly */}
+          {demoState !== "done" && demoState !== "used" && (
+            <button type="button" onClick={() => start()} disabled={loading}
+              className="mt-2.5 w-full rounded-lg border border-white/20 px-4 py-3 font-soft text-base text-white/80 transition hover:border-amber-500/70 hover:text-amber-400 disabled:opacity-50">
+              {loading ? "..." : `② 体験なしで始める → ${PRICE}/月`}
+            </button>
+          )}
+
           <p className="mt-3 font-serif-jp text-xs text-white/40">
-            {PRICE}/月・無料トライアルなし。いつでも解約可。
+            体験は1番号につき1回・無料。{PRICE}/月・無料トライアルなし。いつでも解約可。
           </p>
         </motion.form>
       </section>
