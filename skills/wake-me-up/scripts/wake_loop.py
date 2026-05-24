@@ -70,11 +70,24 @@ def twilio(method, path, data=None):
         return json.loads(r.read().decode())
 
 
+def _tuning():
+    """Self-improvement: read what the tuner learned from past wakes."""
+    try:
+        p = Path(__file__).resolve().parent.parent / "state" / "wake_tuning.json"
+        return json.loads(p.read_text())
+    except Exception:
+        return {}
+
+
 def place_call(to_num, name, base):
     q = {"name": name}
     _mode = os.environ.get("WAKE_MODE", "")  # 'wakeup_generic' for SaaS subscribers
     if _mode:
         q["mode"] = _mode
+    # B6: apply the intensity the tuner learned (e.g. he usually needs many calls -> 'high')
+    intensity = _tuning().get("intensity")
+    if intensity:
+        q["intensity"] = intensity
     twiml_url = f"{base}/twiml?{urllib.parse.urlencode(q)}"
     call = {
         "To": to_num, "From": env("TWILIO_PHONE_NUMBER"),
@@ -129,18 +142,22 @@ def is_awake(status, dur, min_sec=AWAKE_MIN_SEC):
 def wake_run(to_num, name, base, sleep_fn=time.sleep):
     """Re-call until awake or attempt cap. Returns (awake, log). Pure-ish:
     delegates to module-level place_call / wait_for_outcome (monkeypatchable)."""
+    # B6: if the tuner learned this person needs more pushing, call more times & faster.
+    high = _tuning().get("intensity") == "high"
+    max_attempts = int(MAX_ATTEMPTS * 1.5) if high else MAX_ATTEMPTS
+    gap = max(30, RETRY_GAP_SEC // 2) if high else RETRY_GAP_SEC
     log = []
     awake = False
-    for attempt in range(1, MAX_ATTEMPTS + 1):
+    for attempt in range(1, max_attempts + 1):
         sid = place_call(to_num, name, base)
         status, dur = wait_for_outcome(sid)
         log.append(f"#{attempt} {status} {dur}s")
-        print(f"[wake] attempt {attempt}: sid={sid} status={status} dur={dur}s", flush=True)
+        print(f"[wake] attempt {attempt}/{max_attempts} (intensity={'high' if high else 'normal'}): sid={sid} status={status} dur={dur}s", flush=True)
         if is_awake(status, dur):
             awake = True
             break
-        if attempt < MAX_ATTEMPTS:
-            sleep_fn(RETRY_GAP_SEC)
+        if attempt < max_attempts:
+            sleep_fn(gap)
     return awake, log
 
 
@@ -156,6 +173,19 @@ def main():
 
     awake, log = wake_run(to_num, name, base)
     summary = " | ".join(log)
+    # B6 self-improvement: record this wake outcome so the tuner can adapt tomorrow.
+    try:
+        from datetime import datetime
+        rec = {"ts": datetime.now().isoformat(timespec="seconds"), "name": name,
+               "mode": os.environ.get("WAKE_MODE", "wakeup"),
+               "intensity": _tuning().get("intensity", "normal"),
+               "awake": awake, "attempts": len(log), "log": log}
+        outp = Path(__file__).resolve().parent.parent / "state" / "wake_outcomes.jsonl"
+        outp.parent.mkdir(parents=True, exist_ok=True)
+        with outp.open("a") as f:
+            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+    except Exception as e:
+        print(f"[wake] outcome log failed: {e}", file=sys.stderr)
     if awake:
         slack(f"☀️ {name} is up. wake-me-up succeeded after {len(log)} call(s): {summary}")
     else:
