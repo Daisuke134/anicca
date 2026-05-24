@@ -25,8 +25,25 @@ async function supa(method, path, body, extra) {
 }
 
 function normPhone(p) {
-  const t = String(p || "").replace(/[^\d+]/g, "");
-  return /^\+?[1-9]\d{6,14}$/.test(t) ? (t.startsWith("+") ? t : `+${t}`) : null;
+  let t = String(p || "").replace(/[\s\-()]/g, "");
+  // Japanese domestic ("08046270314") -> E.164 (+818046270314): drop the trunk 0.
+  if (!t.startsWith("+") && t.startsWith("0")) t = "+81" + t.slice(1);
+  t = t.replace(/[^\d+]/g, "");
+  return /^\+[1-9]\d{6,14}$/.test(t.startsWith("+") ? t : `+${t}`)
+    ? (t.startsWith("+") ? t : `+${t}`)
+    : null;
+}
+
+// Did this phone already ANSWER a demo? (lets a missed call be retried)
+async function priorDemoAnswered(callSid) {
+  if (!callSid) return false;
+  try {
+    const r = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${TW_SID}/Calls/${callSid}.json`, {
+      headers: { Authorization: "Basic " + Buffer.from(`${TW_SID}:${TW_TOKEN}`).toString("base64") },
+    });
+    const j = await r.json();
+    return j.status === "completed" && Number(j.duration || 0) >= 8;
+  } catch { return false; }
 }
 
 exports.handler = async (event) => {
@@ -40,9 +57,10 @@ exports.handler = async (event) => {
   if (!phone) return { statusCode: 400, body: JSON.stringify({ error: "invalid_phone" }) };
   const name = (b.name || "").toString().slice(0, 40);
 
-  // 1 free demo per phone
-  const existing = await supa("GET", `demo_calls?phone=eq.${encodeURIComponent(phone)}&select=phone`);
-  if (Array.isArray(existing.data) && existing.data.length) {
+  // 1 free *answered* demo per phone — but a missed/unanswered call can be retried.
+  const existing = await supa("GET", `demo_calls?phone=eq.${encodeURIComponent(phone)}&select=phone,call_sid`);
+  const prior = Array.isArray(existing.data) && existing.data[0];
+  if (prior && (await priorDemoAnswered(prior.call_sid))) {
     return { statusCode: 409, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ error: "demo_used" }) };
   }
 
@@ -69,7 +87,9 @@ exports.handler = async (event) => {
 
   // record the demo (1/phone) + ip
   const ip = (event.headers["x-nf-client-connection-ip"] || event.headers["x-forwarded-for"] || "").split(",")[0];
-  await supa("POST", "demo_calls", { phone, name: name || null, call_sid: callSid, ip: ip || null }, { Prefer: "return=minimal" });
+  await supa("POST", "demo_calls?on_conflict=phone",
+    { phone, name: name || null, call_sid: callSid, ip: ip || null },
+    { Prefer: "resolution=merge-duplicates,return=minimal" });
 
   // stash optional setup so it carries to subscription
   const profile = { phone, status: "demo", updated_at: new Date().toISOString() };

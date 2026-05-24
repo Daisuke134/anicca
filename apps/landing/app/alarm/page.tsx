@@ -8,6 +8,16 @@ import { motion } from "framer-motion";
 
 const PRICE = "$9.99";
 
+// Normalize a Japanese phone number to E.164 so users can type it the everyday way.
+// "090 1234 5678" / "08046270314" -> "+818046270314" (drop the domestic leading 0).
+// Already-international (+...) numbers pass through untouched.
+function normalizeJP(raw: string): string {
+  const t = (raw || "").replace(/[\s\-()]/g, "");
+  if (t.startsWith("+")) return t;
+  if (t.startsWith("0")) return "+81" + t.slice(1);
+  return t;
+}
+
 // returns motion props; typed loose to spread cleanly onto motion.* elements
 const fade = (d = 0): any => ({
   initial: { opacity: 0, y: 24 },
@@ -40,7 +50,7 @@ export default function AlarmPage() {
       const r = await fetch("/.netlify/functions/alarm-demo", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), phone: phone.trim(), wakeTime: wake }),
+        body: JSON.stringify({ name: name.trim(), phone: normalizeJP(phone), wakeTime: wake }),
       });
       if (r.status === 409) { setDemoState("used"); return; }
       if (!r.ok) throw new Error("demo failed");
@@ -59,7 +69,7 @@ export default function AlarmPage() {
       const r = await fetch("/.netlify/functions/alarm-checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), phone: phone.trim(), wakeTime: wake }),
+        body: JSON.stringify({ name: name.trim(), phone: normalizeJP(phone), wakeTime: wake }),
       });
       const { url } = await r.json();
       if (url) window.location.href = url;
@@ -109,8 +119,9 @@ export default function AlarmPage() {
             <label className="col-span-2 block">
               <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-white/40">電話番号</span>
               <input value={phone} onChange={(e) => setPhone(e.target.value)} inputMode="tel"
-                placeholder="+81 80 0000 0000"
+                placeholder="090 1234 5678"
                 className="mt-1.5 w-full rounded-lg border border-white/15 bg-black/40 px-4 py-3 font-mono text-white outline-none placeholder:text-white/25 focus:border-amber-500/70" />
+              <span className="mt-1 block font-serif-jp text-[11px] text-white/35">0から入力でOK。自動で国際形式(+81)に変換します。</span>
             </label>
             <label className="col-span-2 block">
               <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-white/40">起きたい時刻</span>
