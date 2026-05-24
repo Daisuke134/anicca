@@ -44,7 +44,10 @@ jobs:
           ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
           ASC_VENDOR_NUMBER: ${{ secrets.ASC_VENDOR_NUMBER }}
           REVENUECAT_V2_SECRET_KEY: ${{ secrets.REVENUECAT_V2_SECRET_KEY }}
+          MIXPANEL_SERVICE_ACCOUNT: ${{ secrets.MIXPANEL_SERVICE_ACCOUNT }}
           SLACK_METRICS_WEBHOOK_URL: ${{ secrets.SLACK_METRICS_WEBHOOK_URL }}
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_METRICS_CHANNEL_ID: ${{ secrets.SLACK_METRICS_CHANNEL_ID }}
           METRICS_DIR: metrics_archive
         working-directory: scripts/daily-metrics
         run: python main.py
