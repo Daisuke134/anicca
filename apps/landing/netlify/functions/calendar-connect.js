@@ -27,6 +27,20 @@ exports.handler = async (event) => {
   if (!userId) return { statusCode: 404, body: "subscriber not found" };
 
   try {
+    // Idempotent: if this user already has an ACTIVE Google Calendar connection, done.
+    const existing = await fetch(
+      `${COMPOSIO_API}/connected_accounts?user_ids=${encodeURIComponent(userId)}&toolkit_slugs=googlecalendar`,
+      { headers: { "x-api-key": COMPOSIO_KEY } });
+    const ej = await existing.json();
+    const active = (ej.items || []).find((i) => i.status === "ACTIVE");
+    if (active) {
+      await fetch(`${SUPABASE_URL}/rest/v1/subscriber_profiles?owntracks_token=eq.${encodeURIComponent(token)}`, {
+        method: "PATCH",
+        headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, "Content-Type": "application/json", Prefer: "return=minimal" },
+        body: JSON.stringify({ calendar_provider: "composio_gcal", updated_at: new Date().toISOString() }),
+      });
+      return { statusCode: 200, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ connected: true }) };
+    }
     const r = await fetch(`${COMPOSIO_API}/connected_accounts`, {
       method: "POST",
       headers: { "x-api-key": COMPOSIO_KEY, "Content-Type": "application/json" },
