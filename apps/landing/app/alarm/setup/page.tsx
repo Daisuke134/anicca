@@ -34,6 +34,21 @@ export default function SetupPage() {
   const [token, setToken] = useState<string | null>(null);
   const [loco, setLoco] = useState<string | null>(null);
   const [icsUrl, setIcsUrl] = useState("");
+  const [calConnecting, setCalConnecting] = useState(false);
+
+  async function connectCalendar() {
+    if (!token) return;
+    setCalConnecting(true);
+    try {
+      const r = await fetch(`/.netlify/functions/calendar-connect?token=${encodeURIComponent(token)}`);
+      const { redirect_url } = await r.json();
+      if (redirect_url) window.location.href = redirect_url;
+      else throw new Error("no redirect");
+    } catch {
+      setCalConnecting(false);
+      alert("接続できませんでした。少し待って、もう一度お試しください。");
+    }
+  }
   const [home, setHome] = useState("");
   const [wake, setWake] = useState("07:00");
   const [stakeholders, setStakeholders] = useState<Stakeholder[]>([
@@ -111,10 +126,13 @@ export default function SetupPage() {
         )}
 
         <div className="mt-14 space-y-12">
-          {/* 01 — Calendar */}
-          <Card n="01" t="カレンダーを繋ぐ" sub="Google カレンダー → 設定 → 「予定の公開設定」→「iCal 形式の限定公開 URL」をコピーして貼り付け。">
-            <input className={inputCls} placeholder="https://calendar.google.com/.../basic.ics"
-              value={icsUrl} onChange={(e) => setIcsUrl(e.target.value)} />
+          {/* 01 — Calendar (Composio managed OAuth, real-time) */}
+          <Card n="01" t="カレンダーを繋ぐ" sub="Google カレンダーをワンタップで接続。予定はリアルタイムで反映されます。">
+            <button type="button" onClick={connectCalendar} disabled={!token || calConnecting}
+              className="flex items-center gap-3 rounded-lg border border-white/20 bg-white/[0.04] px-5 py-3.5 font-soft text-[15px] text-white transition hover:border-amber-500/60 disabled:opacity-50">
+              <span className="text-lg">📅</span>
+              {calConnecting ? "接続ページへ…" : "Google カレンダーを接続"}
+            </button>
           </Card>
 
           {/* 02 — Location */}
