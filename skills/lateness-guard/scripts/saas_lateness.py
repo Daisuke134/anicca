@@ -109,6 +109,49 @@ def fetch_ics_events(ics_url, now, horizon_h=18):
     return events
 
 
+def fetch_composio_events(user_id, now, horizon_h=18):
+    """Real-time Google Calendar via Composio (managed OAuth). Same shape as fetch_ics_events.
+    user_id = subscriber phone (the Composio user id used at connect time)."""
+    key = env("COMPOSIO_API_KEY")
+    if not key:
+        return []
+    body = json.dumps({"user_id": user_id, "arguments": {
+        "calendarId": "primary", "singleEvents": True, "orderBy": "startTime",
+        "timeMin": now.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "timeMax": (now + timedelta(hours=horizon_h)).astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    }}).encode()
+    req = urllib.request.Request(
+        "https://backend.composio.dev/api/v3/tools/execute/GOOGLECALENDAR_EVENTS_LIST",
+        data=body, method="POST", headers={"x-api-key": key, "Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=20) as r:
+            j = json.loads(r.read().decode())
+    except Exception as e:
+        print(f"[saas-late] composio events failed: {e}", file=sys.stderr)
+        return []
+    if not j.get("successful"):
+        print(f"[saas-late] composio not connected for {user_id}: {str(j.get('error'))[:80]}", file=sys.stderr)
+        return []
+    data = j.get("data") or {}
+    items = data.get("items") or data.get("events") or []
+    events = []
+    for e in items:
+        st = (e.get("start") or {})
+        raw = st.get("dateTime")   # timed events only; skip all-day (date-only) — no leave time
+        if not raw:
+            continue
+        try:
+            start = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+            if start.tzinfo is None:
+                start = start.replace(tzinfo=now.tzinfo)
+        except Exception:
+            continue
+        if now <= start <= now + timedelta(hours=horizon_h):
+            events.append({"summary": e.get("summary") or "予定", "location": e.get("location"), "start": start})
+    events.sort(key=lambda e: e["start"])
+    return events
+
+
 def send_sms(to, body):
     sid, token, frm = env("TWILIO_ACCOUNT_SID"), env("TWILIO_AUTH_TOKEN"), env("TWILIO_PHONE_NUMBER")
     data = urllib.parse.urlencode({"To": to, "From": frm, "Body": body}).encode()
@@ -149,9 +192,9 @@ def place_lateness_call(phone, ctx, name):
 
 def main():
     try:
-        subs = supa_get("subscriber_profiles?status=eq.active&ics_url=not.is.null"
+        subs = supa_get("subscriber_profiles?status=eq.active"
                         "&select=user_id,phone,tz,location_lat,location_lon,location_vel,location_tst,"
-                        "ics_url,stakeholders,home_lat,home_lon,home_address")
+                        "ics_url,calendar_provider,stakeholders,home_lat,home_lon,home_address")
     except Exception as e:
         print(f"[saas-late] supabase read failed: {e}", file=sys.stderr); return
     try:
@@ -165,7 +208,13 @@ def main():
         tz = s.get("tz") or "Asia/Tokyo"
         now = datetime.now(ZoneInfo(tz))
         loc = {"lat": s["location_lat"], "lon": s["location_lon"], "vel": s.get("location_vel"), "tst": s["location_tst"]}
-        events = fetch_ics_events(s["ics_url"], now)
+        # calendar source: Composio (real-time Google Calendar) preferred; ICS fallback (legacy)
+        if s.get("calendar_provider") == "composio_gcal":
+            events = fetch_composio_events(s["phone"], now)
+        elif s.get("ics_url"):
+            events = fetch_ics_events(s["ics_url"], now)
+        else:
+            continue
         # build departures (ETA from CURRENT location to each event)
         origin = f"{loc['lat']},{loc['lon']}"
         deps = []
