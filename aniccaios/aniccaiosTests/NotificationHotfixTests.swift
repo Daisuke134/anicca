@@ -215,99 +215,13 @@ final class NotificationHotfixTests: XCTestCase {
         }
     }
 
-    // MARK: - P3: notificationVariantCount - v1.6.1拡張（stayingUpLate: 21, others: 14）
+    // MARK: - P3: notificationVariantCount - v1.8.0: 全問題60バリアントに拡張（20日間新鮮体験）
 
     func test_variantCount_allProblems() {
-        // v1.6.1: 2週間新鮮体験のため拡張
-        XCTAssertEqual(ProblemType.stayingUpLate.notificationVariantCount, 21) // 5回/日 × 4.2日
-
-        let fourteenVariantProblems: [ProblemType] = [.cantWakeUp, .selfLoathing, .rumination,
-            .procrastination, .anxiety, .lying, .badMouthing, .pornAddiction, .alcoholDependency,
-            .anger, .obsessive, .loneliness]
-        for problem in fourteenVariantProblems {
-            XCTAssertEqual(problem.notificationVariantCount, 14, "\(problem.rawValue) should have 14 variants") // 3回/日 × 4.67日
-        }
-    }
-
-    // MARK: - P5: Day 1 決定論的バリアント割り当て
-
-    func test_day1DeterministicVariant_sequentialAssignment() {
-        // Day 1: スロット順にバリアント 0,1,2 を割り当て（v1.6.0: 3スロット）
-        // slotIndex 0 → variant 0, slotIndex 1 → variant 1, etc.
-        let selector = NudgeContentSelector.shared
-
-        // anxiety (3スロット) — Day 1
-        for slotIndex in 0..<3 {
-            let variant = selector.day1VariantIndex(for: .anxiety, slotIndex: slotIndex)
-            XCTAssertEqual(variant, slotIndex, "anxiety Day 1 slot \(slotIndex) should be variant \(slotIndex)")
-        }
-    }
-
-    func test_day1DeterministicVariant_stayingUpLate_timeAwareMapping() {
-        let selector = NudgeContentSelector.shared
-
-        // v1.6.0: staying_up_late は5スロット
-        // スロット0-2は順番(0,1,2)、スロット3-4はtimeAwareMapping(slot-3 → [5,3,4])
-        // 既存のday1VariantIndexロジック維持
-        XCTAssertEqual(selector.day1VariantIndex(for: .stayingUpLate, slotIndex: 0), 0) // 20:00
-        XCTAssertEqual(selector.day1VariantIndex(for: .stayingUpLate, slotIndex: 1), 1) // 22:00
-        XCTAssertEqual(selector.day1VariantIndex(for: .stayingUpLate, slotIndex: 2), 2) // 23:30
-        XCTAssertEqual(selector.day1VariantIndex(for: .stayingUpLate, slotIndex: 3), 5) // 0:00 → timeAwareMapping[0]
-        XCTAssertEqual(selector.day1VariantIndex(for: .stayingUpLate, slotIndex: 4), 3) // 1:00 → timeAwareMapping[1]
-    }
-
-    func test_day1_noDuplicateVariants() {
-        // Day 1 で同じバリアントが2回以上使われないことを検証
-        let selector = NudgeContentSelector.shared
-
+        // v1.8.0: notificationVariantCount は全 ProblemType で 60 に統一
         for problem in ProblemType.allCases {
-            let slotCount = problem.notificationSchedule.count
-            var usedVariants: Set<Int> = []
-            var duplicates: [Int] = []
-
-            for slotIndex in 0..<slotCount {
-                let variant = selector.day1VariantIndex(for: problem, slotIndex: slotIndex)
-                if usedVariants.contains(variant) {
-                    duplicates.append(variant)
-                }
-                usedVariants.insert(variant)
-            }
-
-            XCTAssertTrue(duplicates.isEmpty,
-                "\(problem.rawValue) Day 1 has duplicate variants: \(duplicates)")
+            XCTAssertEqual(problem.notificationVariantCount, 60, "\(problem.rawValue) should have 60 variants")
         }
     }
 
-    // MARK: - P4: Day-Cycling（v1.6.1: usedVariants → Day-Cycling に変更）
-
-    func test_selectVariant_dayCycling_usesDayAndSlot() {
-        // オンボーディング日をリセットしてDay 0から開始
-        NudgeStatsManager.shared.resetOnboardingDateForProblem(ProblemType.anxiety.rawValue)
-        
-        let selector = NudgeContentSelector.shared
-        // Day-Cycling: Day 0, slot 0 → variant 0
-        let result = selector.selectExistingVariantTestable(for: .anxiety, scheduledHour: 10, usedVariants: [], slotIndex: 0)
-        // リセット後はDay 0なので、slot 0 → variant 0
-        XCTAssertEqual(result, 0, "Day 0, slot 0 should return variant 0")
-    }
-
-    func test_selectVariant_dayCycling_differentSlots_differentVariants() {
-        // オンボーディング日をリセットしてDay 0から開始
-        NudgeStatsManager.shared.resetOnboardingDateForProblem(ProblemType.anxiety.rawValue)
-        
-        let selector = NudgeContentSelector.shared
-        // 同日内で異なるスロットは異なるバリアントを返す
-        let result0 = selector.selectExistingVariantTestable(for: .anxiety, scheduledHour: 10, usedVariants: [], slotIndex: 0)
-        let result1 = selector.selectExistingVariantTestable(for: .anxiety, scheduledHour: 10, usedVariants: [], slotIndex: 1)
-        let result2 = selector.selectExistingVariantTestable(for: .anxiety, scheduledHour: 10, usedVariants: [], slotIndex: 2)
-
-        // Day 0: slot 0→0, slot 1→1, slot 2→2
-        XCTAssertEqual(result0, 0, "Day 0, slot 0 → variant 0")
-        XCTAssertEqual(result1, 1, "Day 0, slot 1 → variant 1")
-        XCTAssertEqual(result2, 2, "Day 0, slot 2 → variant 2")
-        
-        // 3つとも異なるはず（同日内重複なし）
-        let uniqueVariants = Set([result0, result1, result2])
-        XCTAssertEqual(uniqueVariants.count, 3, "Same day, different slots should return different variants")
-    }
 }

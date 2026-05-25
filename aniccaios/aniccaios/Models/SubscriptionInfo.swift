@@ -18,6 +18,14 @@ struct SubscriptionInfo: Codable, Equatable {
     var isEntitled: Bool { plan != .free && status != "expired" }
     var shouldShowPaywall: Bool { !isEntitled }
 
+    /// 課金更新に失敗し、Apple がリトライ中(grace/billing retry)の状態。
+    /// アクセスはまだ継続しているが、ユーザーが支払い方法を更新しないと失効する。
+    /// → involuntary churn を防ぐため、支払い更新を促す導線を出す。
+    var hasBillingIssue: Bool {
+        let billingStates: Set<String> = ["grace", "in_grace_period", "billing_issue", "billing_retry"]
+        return billingStates.contains(status)
+    }
+
     // MARK: - Hard Paywall Properties
 
     /// 許可されるステータス（fail-close: このリストにないステータスはブロック）

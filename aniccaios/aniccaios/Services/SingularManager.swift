@@ -14,8 +14,8 @@ final class SingularManager {
         guard !isConfigured else { return }
 
         guard let config = SingularConfig(
-            apiKey: "<YOUR_SINGULAR_API_KEY>",
-            andSecret: "<YOUR_SINGULAR_SDK_SECRET>"
+            apiKey: "aniccaai_e8e6f239",
+            andSecret: "6ce48fd492d16cf4e7905759762b96cd"
         ) else {
             logger.error("Singular config creation failed")
             return

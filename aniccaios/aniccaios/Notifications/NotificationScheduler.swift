@@ -107,45 +107,6 @@ final class NotificationScheduler {
         center.setNotificationCategories([nudgeCategory, problemNudgeCategory])
     }
 
-    // MARK: - Server-driven Nudge
-
-    /// /mobile/nudge/trigger の応答を「即時ローカル通知」として提示
-    func scheduleNudgeNow(nudgeId: String, domain: String, message: String, userInfo: [String: Any]) async {
-        guard !nudgeId.isEmpty, !message.isEmpty else { return }
-
-        let content = UNMutableNotificationContent()
-        content.title = localizedString("app_name")
-        content.body = message
-        content.categoryIdentifier = Category.nudge.rawValue
-        content.userInfo = userInfo
-        content.sound = .default
-
-        if #available(iOS 15.0, *) {
-            let settings = await center.notificationSettings()
-            content.interruptionLevel = (settings.timeSensitiveSetting == .enabled) ? .timeSensitive : .active
-        }
-
-        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
-        let request = UNNotificationRequest(
-            identifier: keyNudgeMain(nudgeId: nudgeId),
-            content: content,
-            trigger: trigger
-        )
-
-        do {
-            try await center.add(request)
-        } catch {
-            logger.error("Failed to schedule nudge notification: \(error.localizedDescription, privacy: .public)")
-        }
-    }
-
-    func nudgeId(fromIdentifier identifier: String) -> String? {
-        let parts = identifier.split(separator: "_")
-        guard parts.count >= 3, parts[0] == "NUDGE", parts[1] == "MAIN" else { return nil }
-        return String(parts[2])
-    }
-
-    private func keyNudgeMain(nudgeId: String) -> String {
-        "NUDGE_MAIN_\(nudgeId)"
-    }
+    // v1.8.7: local daily-affirmation scheduling removed. Affirmations are delivered
+    // remotely via APNs (backend), so there is no on-device scheduling here.
 }

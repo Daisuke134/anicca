@@ -98,6 +98,8 @@ struct NotificationPermissionStepView: View {
                 isRequesting = false
                 hasAttemptedPermission = true
                 if granted {
+                    // v1.8.7: notifications are remote-only (APNs). Register now that
+                    // the user granted permission so the device token reaches the backend.
                     UIApplication.shared.registerForRemoteNotifications()
                 }
                 next()

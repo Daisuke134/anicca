@@ -63,13 +63,10 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         }
 
         Task {
-            // APNs token registration is idempotent and may be delayed by iOS.
-            // Best-effort: if the user has already granted notification authorization, always (re)register
-            // on launch so token registration can recover without extra user actions.
-            let authorized = await NotificationScheduler.shared.isAuthorizedForAlerts()
-            if authorized {
-                await MainActor.run { UIApplication.shared.registerForRemoteNotifications() }
-            }
+            // v1.8.7: affirmations are delivered REMOTELY (APNs) — no local scheduling.
+            // Register for remote notifications on launch if already authorized so the
+            // device token reaches the backend and recovers without extra user action.
+            await registerForRemoteIfAuthorized()
             await SubscriptionManager.shared.refreshOfferings()
             await AuthHealthCheck.shared.warmBackend()
         }
@@ -77,14 +74,17 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {
-        // v1.6.2: poll worker-sent nudges and schedule them locally (best-effort).
-        Task { await ServerNudgeInboxService.shared.pullAndScheduleIfAuthorized() }
         // Best-effort: recover APNs token registration if it was delayed on first run.
-        Task {
-            let authorized = await NotificationScheduler.shared.isAuthorizedForAlerts()
-            if authorized {
-                await MainActor.run { UIApplication.shared.registerForRemoteNotifications() }
-            }
+        Task { await registerForRemoteIfAuthorized() }
+    }
+
+    /// Register for remote notifications when the user has granted alert authorization.
+    /// Idempotent; iOS de-dupes. The resulting token is sent to the backend by
+    /// `didRegisterForRemoteNotificationsWithDeviceToken`.
+    private func registerForRemoteIfAuthorized() async {
+        let authorized = await NotificationScheduler.shared.isAuthorizedForAlerts()
+        if authorized {
+            await MainActor.run { UIApplication.shared.registerForRemoteNotifications() }
         }
     }
 
@@ -99,108 +99,16 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
         defer { completionHandler() }
 
-        let identifier = response.actionIdentifier
-        let notificationIdentifier = response.notification.request.identifier
-        let content = response.notification.request.content
-        let userInfo = content.userInfo
+        let userInfo = response.notification.request.content.userInfo
 
-        // v1.6.3: APNs-delivered Problem Nudge (remote push)
-        if let messageId = userInfo["messageId"] as? String, !messageId.isEmpty,
-           let problemRaw = userInfo["problemType"] as? String,
-           let problem = ProblemType(rawValue: problemRaw) {
-            switch identifier {
-            case UNNotificationDefaultActionIdentifier,
-                 NotificationScheduler.Action.startConversation.rawValue:
-                Task { @MainActor in
-                    do {
-                        let delivery = try await ProblemNudgeDeliveryService.shared.fetchDelivery(id: messageId)
-                        let nudgeContent = NudgeContent(
-                            problemType: problem,
-                            notificationText: delivery.hook,
-                            detailText: delivery.detail,
-                            variantIndex: delivery.variantIndex,
-                            isAIGenerated: false,
-                            llmNudgeId: nil
-                        )
-                        AppState.shared.showNudgeCard(nudgeContent)
-                    } catch {
-                        // Best-effort fallback: show a card using the APNs alert even if the API is unavailable.
-                        // This avoids "tap does nothing" in offline/5xx scenarios.
-                        print("Failed to fetch delivery \(messageId): \(error)")
-                        let fallback = NudgeContent(
-                            problemType: problem,
-                            notificationText: content.body,
-                            detailText: "",
-                            variantIndex: 0,
-                            isAIGenerated: false,
-                            llmNudgeId: nil
-                        )
-                        AppState.shared.showNudgeCard(fallback)
-                    }
-                }
-            default:
-                break
-            }
-            return
-        }
-
-        // Proactive Agent: Problem Nudge通知のハンドリング
-        if ProblemNotificationScheduler.isProblemNudge(identifier: notificationIdentifier) {
-            switch identifier {
-            case UNNotificationDefaultActionIdentifier,
-                 NotificationScheduler.Action.startConversation.rawValue:
-                if let nudgeContent = ProblemNotificationScheduler.nudgeContent(from: userInfo) {
-                    // nudge_tapped を記録
-                    let scheduledHour = userInfo["scheduledHour"] as? Int ?? 0
-                    Task { @MainActor in
-                        // NudgeStats に記録（isAIGeneratedとllmNudgeIdを含む）
-                        NudgeStatsManager.shared.recordTapped(
-                            problemType: nudgeContent.problemType.rawValue,
-                            variantIndex: nudgeContent.variantIndex,
-                            scheduledHour: scheduledHour,
-                            isAIGenerated: nudgeContent.isAIGenerated,
-                            llmNudgeId: nudgeContent.llmNudgeId
-                        )
-
-                        // Phase 7+8: hookFeedback "tapped" をサーバーに送信
-                        if let nudgeId = nudgeContent.llmNudgeId {
-                            Task {
-                                do {
-                                    try await NudgeFeedbackService.shared.handleNudgeTapped(nudgeId: nudgeId)
-                                } catch {
-                                    // エラーは無視（ユーザー体験を妨げない）
-                                    print("Failed to send tapped feedback: \(error)")
-                                }
-                            }
-                        }
-
-                        // NudgeCard を表示
-                        AppState.shared.showNudgeCard(nudgeContent)
-                    }
-                }
-            case NotificationScheduler.Action.dismissAll.rawValue,
-                 UNNotificationDismissActionIdentifier:
-                break
-            default:
-                break
-            }
-            return
-        }
-
-        // Server-driven Nudge
-        if let nudgeId = NotificationScheduler.shared.nudgeId(fromIdentifier: notificationIdentifier) {
-            Task {
-                switch identifier {
-                case UNNotificationDismissActionIdentifier,
-                     NotificationScheduler.Action.dismissAll.rawValue:
-                    await NudgeTriggerService.shared.recordDismissed(nudgeId: nudgeId)
-                case NotificationScheduler.Action.startConversation.rawValue,
-                     UNNotificationDefaultActionIdentifier:
-                    await NudgeTriggerService.shared.recordOpened(nudgeId: nudgeId, actionIdentifier: identifier)
-                default:
-                    break
-                }
-            }
+        // v1.8.7: Affirmation quote tap (remote APNs) → scroll Feed to that quote.
+        // If quoteId is missing/unknown the Feed simply opens at the top (graceful).
+        if let quoteId = userInfo["quoteId"] as? String, !quoteId.isEmpty {
+            NotificationCenter.default.post(
+                name: .aniccaScrollToQuote,
+                object: nil,
+                userInfo: ["quoteId": quoteId]
+            )
         }
     }
 
@@ -211,13 +119,11 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     }
 
     func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
+        // v1.8.7: notifications are remote-only. On registration failure we simply mark
+        // the token unregistered; there is no local-notification fallback by design.
         print("APNs registration failed: \(error)")
         Task { @MainActor in
             PushTokenService.shared.markUnregistered()
-            let problems = AppState.shared.userProfile.struggles
-            if !problems.isEmpty {
-                await ProblemNotificationScheduler.shared.scheduleNotifications(for: problems)
-            }
         }
     }
 }
