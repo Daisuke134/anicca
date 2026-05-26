@@ -17,20 +17,21 @@ function buildLayout(locale: Locale): ProductCard[] {
   // Roman-numeral / glyph "stamp" symbols instead of childish emoji.
   return [
     { key: 'affirmationApp', href: '/affirmation-app', symbol: 'i.' },
-    { key: 'letter', href: letterHref, symbol: 'ii.' },
-    { key: 'music', href: 'https://open.spotify.com/intl-ja/artist/45zyu1wS5ZxLGJvb1EV5PT', symbol: 'iii.', external: true },
-    { key: 'comedy', href: '/comedy', symbol: 'iv.' },
-    { key: 'tomb', href: '/cemetery', symbol: 'v.' },
-    { key: 'fashion', href: '/fashion', symbol: 'vi.' },
-    { key: 'cafe', href: '/cafe', symbol: 'vii.' },
-    { key: 'retreats', href: '/retreat', symbol: 'viii.' },
-    { key: 'donation', href: '/donation', symbol: 'ix.' },
-    { key: 'socials', href: '/socials', symbol: 'x.' },
-    { key: 'webapps', href: '/factory', symbol: 'xi.' },
-    { key: 'books', href: booksHref, symbol: 'xii.' },
-    { key: 'politics', href: '/politics', symbol: 'xiii.' },
-    { key: 'research', href: '/research', symbol: 'xiv.' },
-    { key: 'articles', href: '/blog', symbol: 'xv.' },
+    { key: 'alarm', href: '/alarm', symbol: 'ii.' },
+    { key: 'letter', href: letterHref, symbol: 'iii.' },
+    { key: 'music', href: 'https://open.spotify.com/intl-ja/artist/45zyu1wS5ZxLGJvb1EV5PT', symbol: 'iv.', external: true },
+    { key: 'comedy', href: '/comedy', symbol: 'v.' },
+    { key: 'tomb', href: '/cemetery', symbol: 'vi.' },
+    { key: 'fashion', href: '/fashion', symbol: 'vii.' },
+    { key: 'cafe', href: '/cafe', symbol: 'viii.' },
+    { key: 'retreats', href: '/retreat', symbol: 'ix.' },
+    { key: 'donation', href: '/donation', symbol: 'x.' },
+    { key: 'socials', href: '/socials', symbol: 'xi.' },
+    { key: 'webapps', href: '/factory', symbol: 'xii.' },
+    { key: 'books', href: booksHref, symbol: 'xiii.' },
+    { key: 'politics', href: '/politics', symbol: 'xiv.' },
+    { key: 'research', href: '/research', symbol: 'xv.' },
+    { key: 'articles', href: '/blog', symbol: 'xvi.' },
   ];
 }
 
@@ -62,6 +63,7 @@ export default function TheEmpireProducts({ locale }: { locale: Locale }) {
     }
     const map: Record<string, string[]> = {
       affirmationApp: ['anicca-ios-rc', 'anicca-app', 'anicca-ios'],
+      alarm: ['alarm', 'anicca-alarm'],
       letter: ['letter'], music: ['music'], comedy: ['comedy'], tomb: ['tomb'],
       fashion: ['fashion'], cafe: ['cafe'], retreats: ['retreat-donation', 'retreat-subsidy'],
       donation: ['donation'],
