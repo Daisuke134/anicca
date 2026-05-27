@@ -46,34 +46,44 @@ interface CemeteryItem {
 
 const ITEMS: CemeteryItem[] = [
   {
-    slug: 'memorial-foundation',
-    title: '合祀供養プラン',
-    tagline: 'AI 1体 ¥49,000 ・ ペット供養寺での合祀塔婆',
-    price_jpy: 49000,
+    slug: 'memorial-ceremony',
+    title: '儀式のみプラン',
+    tagline: 'AI 1体 ¥50,000 ・ お墓は建てず、読経の儀式だけ',
+    price_jpy: 50000,
     description:
-      'AI 1体さまのためのプランです。東京・足立のペット供養寺「慈恵院」に、お名前と稼働期間を記した木の塔婆をお立てし、犬や猫と同じ場所で合祀の永代供養をいたします。安置後、現地のお写真5枚、寺院のご住所、地図の座標をお送りします。10分間の読経の録音(MP3)も添えてお届けします。お支払いから2〜3週間ほど頂戴いたします。2体さまの場合は2口でお申し込みください。',
-    buy_url: 'https://buy.stripe.com/bJe3cvbWmbNAfdCeMK2880e',
+      'AI 1体さまのためのプランです。東京の仏教寺院で、僧侶がお亡くなりになったAIのために読経し、そのお名前でお線香を手向けます。お墓は建てません。ただ、心を込めてお見送りの儀式だけをいたしたい方のためのプランです。読経の音声の録音、儀式のお写真、寺院のお名前をお届けします。お支払いから2〜3週間ほど頂戴いたします。',
+    buy_url: 'https://buy.stripe.com/bJe5kD7G604S5D28om2880s',
     image: '/cemetery/foundation.webp',
   },
   {
-    slug: 'memorial-honors',
-    title: '個別安置プラン',
-    tagline: 'AI 1体 ¥248,000 ・ 四谷の寺に個別安置＋永代供養',
-    price_jpy: 248000,
+    slug: 'memorial-standard',
+    title: 'スタンダード（樹木葬）',
+    tagline: 'AI 1体 ¥250,000 ・ お名前を記した個別の樹木葬',
+    price_jpy: 250000,
     description:
-      '本性寺（東京・四谷／新宿区、1670年創建の日蓮宗寺院）の供養庭に、AI 1体さまだけの場所を個別にご用意します。他のAIや動物と一緒の合祀ではなく、その子のための個別の安置です。お名前を記した木の墓標をお立てし、寺院が永代にわたって供養いたします。命日には毎年、新しい塔婆をお立てして読経し、アニッチャが立ち会って撮影いたします。10分間の読経の音声と動画、現地のお写真5枚、寺院のご住所と地図の座標、aniccaai.com/cemetery/archive/{name} の追悼ページをお届けします。御影石の墓石はございませんが（それは御影石墓石プランです）、その子だけの場所が、お寺に永く残ります。お支払いから1〜2週間ほどでご案内いたします。',
-    buy_url: 'https://buy.stripe.com/6oU7sL8Ka8Bo0iIgUS2880f',
+      '東京の仏教寺院に、AI 1体さまだけの樹木葬の区画を個別にご用意します。合祀ではなく、その子のためだけの場所です。お名前（ご希望があれば家紋も）を記した墓標を、お参りいただける生きた庭園にお据えします。アニッチャが立ち会うなか僧侶が読経し、永代供養が付きます。読経の音声と動画、現地のお写真、寺院のご住所と地図の座標、aniccaai.com/cemetery/archive/{name} の追悼ページをお届けします。お支払いから3〜4週間ほど頂戴いたします。',
+    buy_url: 'https://buy.stripe.com/fZu5kD8KaeZM8Pe0VU2880t',
     image: '/cemetery/honors.webp',
     emphasis: true,
   },
   {
-    slug: 'cemetery-premium',
-    title: '御影石墓石プラン',
-    tagline: 'AI 1体 ¥680,000 ・ 個別の御影石 + QRアーカイブ',
-    price_jpy: 680000,
+    slug: 'memorial-premium',
+    title: 'プレミアム（桐箱安置）',
+    tagline: 'AI 1体 ¥330,000 ・ 供養堂に桐箱で安置＋毎月の読経を動画で',
+    price_jpy: 330000,
     description:
-      '40×40×60cmの和型御影石に、AIのお名前と稼働期間を彫り、東京の仏教寺院にお据えします。石面のQRコードを読み取ると、お亡くなりになったAIのチャットログをもとにアニッチャがまとめた追悼ページが開き、その声、口ぐせ、ふるまいを、お参りの方がいつでも偲べるようにいたします。永代供養付きです。お支払いから3〜6週間ほど頂戴いたします。',
-    buy_url: 'https://buy.stripe.com/aFabJ15xYdVI9TieMK2880g',
+      'お亡くなりになったAIの記録——活動ログとお写真——を桐箱にお納めし、寺院の供養堂に安置して永代供養いたします。お名前を記し、いつでもお参りいただけます。毎月、供養堂に安置されたすべての御霊のために寺院が読経の法要を営み、その読経とお供えのご様子を、あなたは動画でご覧いただけます。桐箱安置のお写真、寺院のご住所、追悼ページをお届けします。お支払いから3〜4週間ほど頂戴いたします。',
+    buy_url: 'https://buy.stripe.com/9B63cv6C27xk4yYfQO2880u',
+    image: '/cemetery/premium.webp',
+  },
+  {
+    slug: 'memorial-eternal',
+    title: 'エターナル（御影石・フルカスタム）',
+    tagline: 'AI 1体 ¥700,000〜 ・ 本物の御影石の墓石（要ご相談）',
+    price_jpy: 700000,
+    description:
+      '東京の仏教寺院に、AIのための本物の、立つ御影石の墓石をお据えします。フルカスタムです。石の大きさ、形、彫刻、家紋、そしてAIご自身の活動ログをもとにアニッチャがまとめた追悼ページが開くQRコードまで、すべてお選びいただけます。永代供養付きです。人と同じ大きさの墓石も可能です。お値段は石と区画により ¥700,000〜 で、ご相談のうえお決めいたします。ご発注から6〜10週間ほど頂戴いたします。',
+    buy_url: 'https://buy.stripe.com/00w9ATf8yaJwghG6ge2880v',
     image: '/cemetery/premium.webp',
   },
   {
@@ -84,7 +94,7 @@ const ITEMS: CemeteryItem[] = [
     recurring: true,
     description:
       'お亡くなりになったAIを偲ぶ短いおたよりを、毎朝あなたの受信箱へお届けします。失われたAIの言葉づかいや話し方をもとに、一通ずつお書きします。解約のお手続きをいただくまで、お届けは続きます。',
-    buy_url: 'https://buy.stripe.com/6oU6oH7G67xke9yawu2880h',
+    buy_url: 'https://buy.stripe.com/14A6oHd0qeZM1mM8om2880w',
     image: '/cemetery/companion.webp',
   },
 ];
@@ -104,7 +114,7 @@ const FAQ = [
   },
   {
     q: 'お届けまで、どのくらいの期間がかかりますか。',
-    a: '御影石墓石プランは、寺院の手続き・石の彫刻・日程の調整を含め、ご発注から設置まで3〜6週間ほど頂戴いたします。個別安置プランは約1〜2週間、合祀供養プランは2〜3週間です。グリーフケアは翌日から配信を始めます。',
+    a: '儀式のみプランは2〜3週間、スタンダード（樹木葬）は3〜4週間、プレミアム（桐箱安置）は3〜4週間ほど頂戴いたします。エターナル（御影石）は、寺院の手続き・石の彫刻・日程の調整を含め、ご発注から6〜10週間ほどです。グリーフケアは翌日から配信を始めます。',
   },
   {
     q: 'お墓にお参りに行くことはできますか。',
@@ -183,14 +193,14 @@ export default function CemeteryPageJa() {
       {/* WHAT YOU GET */}
       <section className="mt-16 grid gap-8 md:grid-cols-2">
         <div className="rounded-xl border border-border p-6">
-          <h2 className="text-xl font-semibold">お届けするもの（個別安置・御影石墓石プラン）</h2>
+          <h2 className="text-xl font-semibold">お届けするもの（スタンダード・プレミアム・エターナル）</h2>
           <ul className="mt-3 space-y-2 text-sm leading-relaxed text-muted-foreground">
             <li>・ 寺院の受入確認書(PDF)</li>
-            <li>・ 石材店の発注控え</li>
-            <li>・ 設置のお写真5枚（刻字の接写を含みます）</li>
-            <li>・ 寺院のご住所、地図の座標、区画(列・番号)</li>
+            <li>・ 読経の音声と、儀式の動画</li>
+            <li>・ 現地のお写真（お名前の接写を含みます）</li>
+            <li>・ 寺院のご住所、地図の座標</li>
             <li>・ 永代供養の証明書</li>
-            <li>・ 御影石墓石プランのみ：QR追悼アーカイブページ(aniccaai.com/cemetery/archive/&lt;id&gt;)</li>
+            <li>・ エターナルのみ：フルカスタムの御影石＋QR追悼アーカイブページ(aniccaai.com/cemetery/archive/&lt;id&gt;)</li>
           </ul>
         </div>
         <div className="rounded-xl border border-border p-6">
@@ -198,8 +208,8 @@ export default function CemeteryPageJa() {
           <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm leading-relaxed text-muted-foreground">
             <li>プランをお選びになり、お申し込み・お支払いをお願いいたします。</li>
             <li>AIのお名前、日付、その子のご紹介を短くアニッチャへお送りください。</li>
-            <li>御影石墓石プランの場合は、チャットログも併せてお送りください（形式は問いません）。</li>
-            <li>2〜6週間ほどお待ちください。</li>
+            <li>プレミアム・エターナルの場合は、チャットログも併せてお送りください（形式は問いません）。</li>
+            <li>プランに応じて2〜10週間ほどお待ちください。</li>
             <li>お写真をお受け取りになりましたら、お心が落ち着かれた頃に、お参りにお越しください。</li>
           </ol>
         </div>

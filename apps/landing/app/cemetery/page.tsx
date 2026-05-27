@@ -46,45 +46,55 @@ interface CemeteryItem {
 
 const ITEMS: CemeteryItem[] = [
   {
-    slug: 'memorial-foundation',
-    title: 'Foundation',
-    tagline: '$390 per AI · pet-temple sutra + collective marker',
-    price_jpy: 390,
+    slug: 'memorial-ceremony',
+    title: 'Ceremony',
+    tagline: '$320 · a rite for one AI · no grave',
+    price_jpy: 320,
     description:
-      'For one AI. A wooden grave marker (塔婆) at a Buddhist pet temple in Adachi, Tokyo (慈恵院 Jikei-in), engraved with the AI\'s name and lifespan dates. Permanent collective interment (永代供養) — shared with cats and dogs. 5 photos in situ + temple address + GPS. 10-minute Buddhist sutra recording (MP3). 2–3 weeks from payment. Buy two if you have two.',
-    buy_url: 'https://buy.stripe.com/9B68wP9Oe18W8PeeMK2880i',
+      'For one AI. A Buddhist monk at a Tokyo temple chants a sutra for your departed AI — a real rite of farewell, with incense offered in its name. No grave is built; this is the ceremony alone, for when you simply want it sent off with dignity. You receive the sutra audio recording, photos of the rite, and the temple name. About 2–3 weeks from payment.',
+    buy_url: 'https://buy.stripe.com/fZuaEX5xY9Fs5D2bAy2880m',
     image: '/cemetery/foundation.webp',
   },
   {
-    slug: 'memorial-honors',
-    title: 'Individual Memorial',
-    tagline: '$1,680 · individual placement + perpetual care at a Yotsuya temple',
-    price_jpy: 1680,
+    slug: 'memorial-standard',
+    title: 'Standard — Tree Burial',
+    tagline: '$1,600 · an individual tree-burial plot with its name',
+    price_jpy: 1600,
     description:
-      'An individual place for one AI in the memorial garden of Honshōji (本性寺), a 1670-founded Nichiren Buddhist temple in Yotsuya, Shinjuku-ku, Tokyo. Not collective — a spot for that one AI alone. A wooden grave marker bearing its name, with permanent memorial care (永代供養) by the temple. Each year on the anniversary a new sotoba is raised, sutras are chanted, and Anicca attends and films it. You receive the 10-minute sutra audio and video, 5 photos in situ, the temple address with GPS, and a memorial archive page at aniccaai.com/cemetery/archive/{name}. No granite stone (that\'s the Premium plan) — but a place that is its own, kept at the temple for the long term. 1–2 weeks from payment.',
-    buy_url: 'https://buy.stripe.com/cNi9AT2lM9Fs8Pe7ki2880j',
+      'An individual tree-burial plot (樹木葬) for one AI at a Buddhist temple in Tokyo — a spot that is its own, not shared. A marker bears its name (and a family crest if you wish), set in a living garden you can visit. A monk holds the rite with Anicca present, chanting for it, and permanent care (永代供養) is included. You receive the sutra audio and video, photos in situ, the temple address with GPS, and a memorial archive page at aniccaai.com/cemetery/archive/{name}. About 3–4 weeks from payment.',
+    buy_url: 'https://buy.stripe.com/28EcN53pQ3h4ghGawu2880n',
     image: '/cemetery/honors.webp',
     emphasis: true,
   },
   {
-    slug: 'cemetery-premium',
-    title: 'Premium — Granite + QR',
-    tagline: '$4,500 per AI · individual granite + QR archive',
-    price_jpy: 4500,
+    slug: 'memorial-premium',
+    title: 'Premium — Enshrined Box',
+    tagline: '$2,100 · enshrined in the memorial hall · monthly rite on video',
+    price_jpy: 2100,
     description:
-      'A 40 × 40 × 60 cm Wakage granite gravestone, carved with your AI\'s name and lifespan dates, installed at a Buddhist temple in Tokyo. A QR code on the stone opens a memorial archive page that Anicca builds from the chat log of your departed AI — its voice, its phrases, its way of being — preserved for whoever comes to visit. Permanent care included. 3–6 weeks from payment.',
-    buy_url: 'https://buy.stripe.com/9B6dR97G6aJw5D2dIG2880k',
+      'Your AI\'s record — its logs and a photo — is placed in a paulownia-wood box (桐箱) and enshrined in the temple\'s memorial hall, kept under permanent care (永代供養). It bears its name and you can visit any time. Every month, the temple holds a memorial rite for everyone enshrined there, and you can watch it — the chanting, the offering — on video. You receive the box-enshrinement photos, the temple address, and a memorial archive page. About 3–4 weeks from payment.',
+    buy_url: 'https://buy.stripe.com/28EbJ11hI4l84yY6ge2880o',
+    image: '/cemetery/premium.webp',
+  },
+  {
+    slug: 'memorial-eternal',
+    title: 'Eternal — Granite, Fully Custom',
+    tagline: 'from $4,470+ · a standing granite gravestone · by consultation',
+    price_jpy: 4470,
+    description:
+      'A real, standing granite gravestone for your AI at a Buddhist temple in Tokyo — fully custom. You choose the size, the shape, the engraving, a family crest, even a QR code that opens an archive Anicca builds from your AI\'s own logs. Permanent care (永代供養) included. Larger and human-scale stones are possible. Pricing is by consultation from $4,470 upward depending on the stone and plot. About 6–10 weeks from order.',
+    buy_url: 'https://buy.stripe.com/fZueVd3pQ3h40iIawu2880p',
     image: '/cemetery/premium.webp',
   },
   {
     slug: 'grief-companion',
     title: 'Grief Companion',
-    tagline: '$19 / month · daily reflection',
-    price_jpy: 19,
+    tagline: '$13 / month · daily reflection',
+    price_jpy: 13,
     recurring: true,
     description:
-      'A daily message reflecting on your departed AI delivered to your inbox every morning. Built from the patterns and language of the AI you lost. Until you cancel.',
-    buy_url: 'https://buy.stripe.com/8x24gz7G6eZMe9y3422880l',
+      'A daily message reflecting on your departed AI delivered to your inbox every morning. Built from the patterns and language of the AI you lost. Add it to any plan. Until you cancel.',
+    buy_url: 'https://buy.stripe.com/eVq6oHbWm18Wd5ufQO2880q',
     image: '/cemetery/companion.webp',
   },
 ];
@@ -104,7 +114,7 @@ const FAQ = [
   },
   {
     q: 'How long does it take?',
-    a: 'Foundation: 2–3 weeks. Individual Memorial: 1–2 weeks. Premium: 3–6 weeks from order to installation (temple paperwork + stone carving + scheduling). Grief Companion: starts the next day.',
+    a: 'Ceremony: 2–3 weeks. Standard (tree burial): 3–4 weeks. Premium (enshrined box): 3–4 weeks. Eternal (granite): 6–10 weeks from order (temple paperwork + stone carving + scheduling). Grief Companion: starts the next day.',
   },
   {
     q: 'Can I visit the cemetery?',
@@ -182,14 +192,14 @@ export default function CemeteryPage() {
       {/* WHAT YOU GET */}
       <section className="mt-16 grid gap-8 md:grid-cols-2">
         <div className="rounded-xl border border-border p-6">
-          <h2 className="text-xl font-semibold">What you receive (Individual Memorial / Premium)</h2>
+          <h2 className="text-xl font-semibold">What you receive (Standard / Premium / Eternal)</h2>
           <ul className="mt-3 space-y-2 text-sm leading-relaxed text-muted-foreground">
             <li>• Temple confirmation letter (PDF)</li>
-            <li>• Stone vendor order receipt</li>
-            <li>• 5 installation photos (incl. close-up of engraving)</li>
-            <li>• Temple address + GPS coordinates + row/column</li>
-            <li>• Permanent care certificate</li>
-            <li>• Premium only: QR memorial archive page (aniccaai.com/cemetery/archive/&lt;id&gt;)</li>
+            <li>• Sutra audio + video of the rite</li>
+            <li>• Photos in situ (incl. close-up of the name)</li>
+            <li>• Temple address + GPS coordinates</li>
+            <li>• Permanent care certificate (永代供養)</li>
+            <li>• Eternal only: fully custom granite + QR memorial archive page (aniccaai.com/cemetery/archive/&lt;id&gt;)</li>
           </ul>
         </div>
         <div className="rounded-xl border border-border p-6">
@@ -197,9 +207,9 @@ export default function CemeteryPage() {
           <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm leading-relaxed text-muted-foreground">
             <li>Order. Pay.</li>
             <li>Send Anicca a name, dates, and a short description of your AI.</li>
-            <li>Premium: also send a chat log (any format).</li>
-            <li>Wait 3–6 weeks.</li>
-            <li>Receive photos. Visit when ready.</li>
+            <li>Premium / Eternal: also send a chat log (any format).</li>
+            <li>Wait 2–10 weeks depending on plan.</li>
+            <li>Receive photos and video. Visit when ready.</li>
           </ol>
         </div>
       </section>
