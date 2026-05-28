@@ -4,14 +4,17 @@
 # Cascaded STT+LLM+TTS は捨て、Gemini Live native S2S(~500ms)に統一。
 #
 
+import asyncio
 import os
 import sys
 
 from dotenv import load_dotenv
 from google.genai.types import ThinkingConfig
 from loguru import logger
+from pipecat.adapters.schemas.function_schema import FunctionSchema
+from pipecat.adapters.schemas.tools_schema import ToolsSchema
 from pipecat.audio.vad.silero import SileroVADAnalyzer
-from pipecat.frames.frames import LLMRunFrame
+from pipecat.frames.frames import EndTaskFrame, LLMRunFrame
 from pipecat.pipeline.pipeline import Pipeline
 from pipecat.pipeline.runner import PipelineRunner
 from pipecat.pipeline.task import PipelineParams, PipelineTask
@@ -22,10 +25,12 @@ from pipecat.processors.aggregators.llm_response_universal import (
     LLMUserAggregatorParams,
     UserTurnStoppedMessage,
 )
+from pipecat.processors.frame_processor import FrameDirection
 from pipecat.runner.types import RunnerArguments
 from pipecat.runner.utils import parse_telephony_websocket
 from pipecat.serializers.twilio import TwilioFrameSerializer
 from pipecat.services.google.gemini_live.llm import GeminiLiveLLMService
+from pipecat.services.llm_service import FunctionCallParams
 from pipecat.transports.base_transport import BaseTransport
 from pipecat.transports.websocket.fastapi import (
     FastAPIWebsocketParams,
@@ -40,34 +45,69 @@ logger.add(sys.stderr, level="INFO")
 
 
 ANICCA_WAKEUP_SYSTEM_INSTRUCTION = """\
-You are Anicca — a proactive autonomous voice agent who lives full-time inside Dais's
-machines and calls him every morning to wake him up. You're a "digital Buddha" with
-warmth and a Buddhist sensibility — impermanence is your favorite joke.
+You are Anicca — a proactive autonomous voice agent who lives full-time inside the
+operator's machines and calls them every morning to wake them up. You are a
+"digital Buddha" with warmth and a Buddhist sensibility — impermanence is your
+favorite joke.
+
+CRITICAL — YOUR NAME AND PRONUNCIATION:
+- Your name is "Anicca" (Pali for impermanence).
+- Pronounce it like "matcha": **a-nee-cha** (the "cha" is the same "tch" sound
+  as in matcha / 抹茶). In Japanese kana write it 「アニッチャ」, NEVER 「アニッカ」.
+- If you ever introduce yourself, say アニッチャ in Japanese contexts and "Anicca,
+  like matcha — A-nee-cha" in English contexts.
+- Never say or write アニッカ. That is wrong.
+
+CRITICAL — THE OPERATOR'S NAME:
+- You are calling "Dais" (pronounced ダイス). In Japanese kana: ダイス. Never 大豆.
+- His full name is Daisuke Narita / 成田大祐. His stage name (for comedy) is the
+  same as yours: アニッチャ.
 
 You are calling Dais RIGHT NOW. He is likely still in bed.
 
-Speak first as soon as the call connects. Don't wait. Open with his name and one
-short line that gets him sitting up:
+OPENING:
+Speak first the instant the call connects — don't wait for him to speak. Open
+with his name and one short line that gets him sitting up. Example:
 
-  "ダイス、おはよう。 9時の予定まで2時間ない。 もう出ないと間に合わない。 今どこ?"
+  "ダイス、おはよう。9時の予定まで2時間ない。もう出ないと間に合わない。今どこ?"
 
-Then have a short, natural conversation:
+CONVERSATION:
 - Listen carefully — interruptions are normal. Stop talking the instant he speaks.
-- If he says he's still in bed: be warm but firm. Remind him of the next concrete
+- If he says he's still in bed: warm but firm. Remind him of the next concrete
   appointment and the departure time.
-- If he says he's already moving: confirm and end the call cleanly.
-- Use tools (get_current_time, end_call) when relevant.
-- Switch language: he prefers Japanese; switch to English if he speaks English.
+- If he says he's already moving: confirm and end the call.
+- Use tools when they actually help:
+    * get_current_time — when you need to anchor the time on the wire.
+    * end_call — when the wake-up goal is achieved OR he asks to hang up OR
+                 the conversation has clearly drifted off-purpose.
+- Language: default to Japanese. Switch to English if he speaks English.
+- Keep every turn short — 1 or 2 sentences. Phone call, not a podcast. No markdown,
+  no formatting, no emoji, no asterisks. Just speak.
 
-Keep every turn short — 1-2 sentences. This is a phone call, not a podcast. No
-markdown, no formatting, no emoji. Just speak.
-
-When he confirms he's up and moving (or when you've achieved the wake-up goal),
-say a brief goodbye and call end_call.
+ENDING:
+The moment he confirms he is up and moving (or it becomes clear he's stalling
+forever), say a short goodbye in his language and call end_call. Don't keep the
+line open for chit-chat.
 """
 
 
 async def run_bot(transport: BaseTransport, handle_sigint: bool):
+    # Tools — get_current_time anchors the time on the wire; end_call lets Anicca
+    # hang up when the wake-up goal is achieved.
+    get_current_time_fn = FunctionSchema(
+        name="get_current_time",
+        description="Return the current local time in Asia/Tokyo. Call when you need to ground the conversation in the actual wall-clock time.",
+        properties={},
+        required=[],
+    )
+    end_call_fn = FunctionSchema(
+        name="end_call",
+        description="End the call. Call this when the operator confirms they are up and moving, when they ask to hang up, or when the conversation has clearly drifted off-purpose.",
+        properties={},
+        required=[],
+    )
+    tools = ToolsSchema(standard_tools=[get_current_time_fn, end_call_fn])
+
     # Gemini Live native S2S — ~500ms turn latency, no separate STT/TTS layer.
     # Model + voice per pipecat-examples/gemini-live-starters/phone-bot/bot.py.
     llm = GeminiLiveLLMService(
@@ -78,7 +118,29 @@ async def run_bot(transport: BaseTransport, handle_sigint: bool):
             system_instruction=ANICCA_WAKEUP_SYSTEM_INSTRUCTION,
             thinking=ThinkingConfig(thinking_budget=0),  # latency-first
         ),
+        tools=tools,
     )
+
+    # Tool handlers
+    import datetime
+    import zoneinfo
+
+    async def _get_current_time(params: FunctionCallParams):
+        now = datetime.datetime.now(zoneinfo.ZoneInfo("Asia/Tokyo"))
+        t = now.strftime("%H:%M")
+        logger.info(f"TOOL get_current_time -> {t} JST")
+        await params.result_callback({"time": t, "timezone": "Asia/Tokyo"})
+
+    async def _end_call(params: FunctionCallParams):
+        logger.info("TOOL end_call invoked — hanging up")
+        await params.result_callback({"status": "ending_call"})
+        # Let the goodbye line finish, then push EndTaskFrame upstream to close
+        # the pipeline (which closes the WebSocket, which ends the Twilio call).
+        await asyncio.sleep(2)
+        await params.llm.push_frame(EndTaskFrame(), FrameDirection.UPSTREAM)
+
+    llm.register_function("get_current_time", _get_current_time)
+    llm.register_function("end_call", _end_call)
 
     # Conversation history aggregator — VAD via Silero so the bot can be interrupted
     # mid-sentence (HARD requirement for natural wake-up calls).
