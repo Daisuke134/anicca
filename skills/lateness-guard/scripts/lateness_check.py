@@ -43,7 +43,7 @@ HOME_RADIUS_M = float(os.environ.get("LATE_HOME_RADIUS_M", "300"))
 LEAD_MIN = int(os.environ.get("LATE_LEAD_MIN", "8"))         # call ~this far before the real leave time
 NUDGE_MIN = int(os.environ.get("LATE_NUDGE_MIN", "20"))      # gentle Slack nudge this far before
 MOVING_VEL = float(os.environ.get("LATE_MOVING_VEL", "0.8")) # m/s -> considered moving
-STALE_MIN = int(os.environ.get("LATE_STALE_MIN", "12"))      # location older than this = stale (no leave-call on stale data)
+STALE_MIN = int(os.environ.get("LATE_STALE_MIN", "25"))      # > OwnTracks Significant cadence (~15m); older = unknown, never guess
 
 
 def env(name, default=""):
@@ -81,12 +81,15 @@ def decide(now, location, departures, home=None, home_radius_m=None, dest=None, 
     moving = vel is not None and vel >= MOVING_VEL
     age_min = (now.timestamp() - location["tst"]) / 60
 
-    # FRESHNESS GATE — the 2026-05-24 misfire was a STALE fix mistaken for "home".
-    # Every decision must use a FRESH fix; if stale we don't know where he is, so
-    # we don't guess. (Requires OwnTracks=Move so a fresh fix exists when stationary.)
+    # FRESHNESS GATE (2026-05-26 fix): NEVER guess from a stale fix. With OwnTracks
+    # in Significant-change mode, leaving home (>500m) ALWAYS publishes, and a fresh
+    # fix lands ~every 15 min. So if the fix is stale beyond STALE_MIN, the app died /
+    # no signal — we genuinely don't know where he is, and "last fix was home" is NOT
+    # proof he's still home (he may have left hours ago = the 11h-stale misfire). Don't
+    # fire any leave-call on stale data. Only act on a fresh fix.
     if age_min > STALE_MIN:
         return {"action": "stale-location",
-                "reason": f"location {int(age_min)}m old — won't guess (need fresh fix; OwnTracks=Move)",
+                "reason": f"location {int(age_min)}m old — 居場所不明、新鮮な位置のみで判断(誤発火防止)",
                 "event": nxt}
 
     # UNIFIED model: departBy is computed from his CURRENT location's ETA (not home),
@@ -101,9 +104,15 @@ def decide(now, location, departures, home=None, home_radius_m=None, dest=None, 
         if dist_dest <= arrive_radius_m:
             return {"action": "ok", "reason": f"arrived ({int(dist_dest)}m from dest)", "event": nxt}
 
-    # Actively moving toward it (on foot/train) -> on his way; reassess next tick.
+    # Actively moving toward it (on foot/train). If departBy already passed he's
+    # running behind → fire a realtime GUIDE call (Google-Maps-style "you won't make
+    # it, hurry"). Otherwise he's on track → reassess next tick.
     if moving:
-        return {"action": "ok", "reason": f"en route, moving (vel={vel}) — reassess next tick", "event": nxt}
+        if mins <= 0:
+            return {"action": "guide",
+                    "reason": f"移動中だが departBy を {int(-mins)}m 超過 — 間に合わせるため急かす",
+                    "event": nxt}
+        return {"action": "ok", "reason": f"en route, moving (vel={vel}) — 間に合う見込み", "event": nxt}
 
     # Stationary + fresh: if it's time to leave from where he is now, call & guide.
     if mins <= LEAD_MIN:
@@ -250,6 +259,17 @@ def main():
             done.append(key)
             once_path.write_text(json.dumps(done, ensure_ascii=False))
             print(f"[late] nudge sent for {e['summary']}")
+
+    if d["action"] == "guide":
+        # Moving but behind schedule → realtime Google-Maps-style hurry-up call.
+        e = d["event"]
+        dest = e.get("location") or ""
+        try:
+            subprocess.run([sys.executable, str(Path(__file__).resolve().parent / "guide_me_now.py"), dest], timeout=120)
+            slack(f"🧭 移動中催促コール: {d['reason']} → {e['summary']}")
+            print(f"[late] guide call fired for {e['summary']}")
+        except Exception as ex:
+            print(f"[late] guide failed: {ex}")
 
     if d["action"] == "call":
         e = d["event"]
