@@ -1,25 +1,60 @@
-# Onboarding Flow Test (Updated for Soft Paywall - new 4-step flow)
-# Tests: welcome -> struggles -> liveDemo -> notifications
-# Value step removed, LIVE DEMO added
-# Uses accessibilityIdentifier-based selectors for reliability
-# Note: inspect_view_hierarchy で全ID確認済み
+# Onboarding Smoke Test — full v7 11-step flow
+# Steps: welcome → goal → painPoints → struggleFreq → nudgeTimes →
+#        processing (auto) → planReveal → comparison → appDemo → ratingPrompt → notifications
+# accessibilityIdentifier-based selectors for reliability
 
 appId: ai.anicca.app.ios
-name: Onboarding new flow
+name: Onboarding full flow
 tags:
   - smokeTest
   - onboarding
 
 ---
-# Clean start - simulate first launch
-- clearState
-- clearKeychain
+# Clean start - wipe app container + UserDefaults
 - launchApp:
+    clearState: true
+    clearKeychain: true
     arguments:
-      UITESTING: "true"
+      resetOnLaunch: true
 
-# Step 1: Welcome screen - wait for app to fully load
-# CI環境ではコールドスタートに時間がかかるため60sに設定
+# Dismiss Apple Account dialogs if they appear
+# (RevenueCat/StoreKit triggers a keychain auth prompt on a fresh simulator with cleared keychain)
+# Cascade pattern: "Sign In" dialog (キャンセル) → "Confirmation" dialog (今はしない)
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow:
+    when:
+      visible:
+        text: "キャンセル"
+    commands:
+      - tapOn:
+          text: "キャンセル"
+- runFlow:
+    when:
+      visible:
+        text: "Cancel"
+    commands:
+      - tapOn:
+          text: "Cancel"
+# Wait for potential cascade dialog (Apple Account の確認) to appear
+- waitForAnimationToEnd:
+    timeout: 1500
+- runFlow:
+    when:
+      visible:
+        text: "今はしない"
+    commands:
+      - tapOn:
+          text: "今はしない"
+- runFlow:
+    when:
+      visible:
+        text: "Not Now"
+    commands:
+      - tapOn:
+          text: "Not Now"
+
+# Step 1: Welcome screen (CI cold start up to 60s)
 - extendedWaitUntil:
     visible:
       id: "onboarding-welcome-cta"
@@ -28,43 +63,109 @@ tags:
 - tapOn:
     id: "onboarding-welcome-cta"
 
-# Step 2: Struggles screen (value screen removed - direct transition)
+# Step 2: Goal (auto-advances 0.2s after selection)
 - extendedWaitUntil:
     visible:
-      id: "onboarding-struggle-staying_up_late"
+      id: "onboarding-goal-reduce_anxiety"
     timeout: 15000
 
-# Select one struggle
 - tapOn:
-    id: "onboarding-struggle-staying_up_late"
+    id: "onboarding-goal-reduce_anxiety"
+
+# Step 3: Pain Points / Struggles
+# Options: negative_thoughts / putting_off / anxiety_overwhelm / stuck_habit / emotions_take_over
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-struggle-anxiety_overwhelm"
+    timeout: 15000
+
+- tapOn:
+    id: "onboarding-struggle-anxiety_overwhelm"
 
 - tapOn:
     id: "onboarding-struggles-next"
 
-# Step 3: LIVE DEMO screen (new - replaces value step)
+# Step 4: Struggle Depth (auto-advances after selection)
 - extendedWaitUntil:
     visible:
-      id: "live_demo_title"
+      id: "onboarding-depth-daily"
     timeout: 15000
 
-# Tap demo trigger button
 - tapOn:
-    id: "live_demo_trigger_button"
+    id: "onboarding-depth-daily"
 
-# Wait for NudgeCard slide-in animation
+# Step 5: Nudge Times
 - extendedWaitUntil:
     visible:
-      id: "nudge-card-view"
-    timeout: 5000
+      id: "onboarding-nudge-morning"
+    timeout: 15000
 
-# Tap PRIMARY action to advance to notifications
 - tapOn:
-    id: "nudge-primary-action"
+    id: "onboarding-nudge-morning"
 
-# Step 4: Notifications screen - verify arrival
+- tapOn:
+    id: "onboarding-nudge-continue"
+
+# Step 6: Processing (auto-advances in ~5s — wait for planReveal to appear)
+# Step 7: Plan Reveal
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-insight-cta"
+    timeout: 15000
+
+- tapOn:
+    id: "onboarding-insight-cta"
+
+# Step 8: Comparison table
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-comparison-continue"
+    timeout: 15000
+
+- tapOn:
+    id: "onboarding-comparison-continue"
+
+# Step 9: App Demo (card auto-shows on appear)
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-demo-title"
+    timeout: 15000
+
+- tapOn:
+    id: "onboarding-demo-cta"
+
+# Step 10: Rating prompt — tap CTA, then dismiss native App Store dialog
+# (SKStoreReviewRequest shows "アニッチャ はいかがですか？" with 今はしない/Not Now)
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-rating-cta"
+    timeout: 15000
+
+- tapOn:
+    id: "onboarding-rating-cta"
+
+# Dismiss App Store rating dialog if it appears
+- waitForAnimationToEnd:
+    timeout: 2000
+- runFlow:
+    when:
+      visible:
+        text: "今はしない"
+    commands:
+      - tapOn:
+          text: "今はしない"
+- runFlow:
+    when:
+      visible:
+        text: "Not Now"
+    commands:
+      - tapOn:
+          text: "Not Now"
+
+# Step 11: Notifications screen — verify we reached the end
 - extendedWaitUntil:
     visible:
       id: "onboarding-notifications-allow"
     timeout: 15000
 
-- takeScreenshot: "onboarding-new-flow-complete"
+- takeScreenshot: "onboarding-full-flow-complete"
