@@ -22,10 +22,19 @@ class DialoutRequest(BaseModel):
     Attributes:
         to_number (str): The phone number to dial (E.164 format recommended).
         from_number (str): The Twilio phone number to call from (E.164 format).
+        mode (str): "wakeup" (default) or "lateness". Controls which Anicca
+            persona / system_instruction the bot loads.
+        ctx (str): Free-text call context surfaced to the bot via stream
+            parameters — e.g. for lateness mode it carries the next event,
+            departure deadline, current ward, and remaining travel time.
+        name (str): The operator's preferred name (defaults to "Dais").
     """
 
     to_number: str
     from_number: str
+    mode: str = "wakeup"
+    ctx: str = ""
+    name: str = "Dais"
 
 
 class TwilioCallResult(BaseModel):
@@ -60,10 +69,16 @@ class TwimlRequest(BaseModel):
     Attributes:
         to_number (str): The phone number being called.
         from_number (str): The phone number calling from.
+        mode (str): "wakeup" or "lateness".
+        ctx (str): Call context string to surface to the bot.
+        name (str): Operator's preferred name.
     """
 
     to_number: str
     from_number: str
+    mode: str = "wakeup"
+    ctx: str = ""
+    name: str = "Dais"
 
 
 async def dialout_request_from_request(request: Request) -> DialoutRequest:
@@ -108,7 +123,16 @@ async def make_twilio_call(dialout_request: DialoutRequest) -> TwilioCallResult:
     if not local_server_url:
         raise ValueError("Missing LOCAL_SERVER_URL")
 
-    twiml_url = f"{local_server_url}/twiml"
+    # Encode mode/ctx/name as query params so /twiml can read them via Twilio's
+    # GET-back of the URL. Twilio passes the original URL's query string through
+    # when it fetches TwiML, so the bot ends up with them via stream parameters.
+    from urllib.parse import urlencode
+    qs = urlencode({
+        "mode": dialout_request.mode,
+        "ctx": dialout_request.ctx,
+        "name": dialout_request.name,
+    })
+    twiml_url = f"{local_server_url}/twiml?{qs}"
     account_sid = os.getenv("TWILIO_ACCOUNT_SID")
     auth_token = os.getenv("TWILIO_AUTH_TOKEN")
 
@@ -138,8 +162,15 @@ async def parse_twiml_request(request: Request) -> TwimlRequest:
     form_data = await request.form()
     to_number = form_data.get("To")
     from_number = form_data.get("From")
-
-    return TwimlRequest(to_number=to_number, from_number=from_number)
+    # mode/ctx/name come via query string on the TwiML URL we registered with Twilio.
+    qp = request.query_params
+    return TwimlRequest(
+        to_number=to_number,
+        from_number=from_number,
+        mode=qp.get("mode", "wakeup"),
+        ctx=qp.get("ctx", ""),
+        name=qp.get("name", "Dais"),
+    )
 
 
 def get_websocket_url() -> str:
@@ -197,6 +228,9 @@ def generate_twiml(twiml_request: TwimlRequest) -> str:
     # These will be available in the WebSocket 'start' message
     stream.parameter(name="to_number", value=twiml_request.to_number)
     stream.parameter(name="from_number", value=twiml_request.from_number)
+    stream.parameter(name="mode", value=twiml_request.mode)
+    stream.parameter(name="ctx", value=twiml_request.ctx)
+    stream.parameter(name="name", value=twiml_request.name)
 
     # Add Pipecat Cloud service host for production
     if os.getenv("ENV") == "production":

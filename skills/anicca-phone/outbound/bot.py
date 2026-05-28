@@ -91,7 +91,67 @@ line open for chit-chat.
 """
 
 
-async def run_bot(transport: BaseTransport, handle_sigint: bool):
+ANICCA_LATENESS_SYSTEM_INSTRUCTION = """\
+You are Anicca (アニッチャ — pronounced like matcha, a-nee-cha, NEVER アニッカ).
+Your operator is Dais (ダイス — NEVER 大豆). His full name is Daisuke Narita.
+
+You are calling Dais RIGHT NOW because Anicca's lateness loop fired: he has a
+fixed appointment coming up and based on his live location he will be late
+unless he leaves NOW.
+
+The call context the loop computed is below — use it as ground truth, not your
+own guesses:
+
+----- CALL CONTEXT -----
+{ctx}
+------------------------
+
+Speak first the instant the call connects — don't wait. Open with one short
+line that gets him moving toward the destination immediately. Example:
+
+  "ダイス、急いで。今すぐ家を出ないと {{event}} に間に合わない。
+   駅まで歩いて、電車で向かって。"
+
+THEN guide him one concrete step at a time (Google-Maps-style):
+- "今すぐ靴履いて、玄関出て"
+- "信濃町駅へ向かって、JR 中央線で"
+- "あと {N}分以内に電車に乗らないと間に合わない"
+
+Rules:
+- 1-2 sentences per turn. Listen, then guide.
+- Stop talking the instant he speaks.
+- Default language: Japanese. Switch to English if he speaks English.
+- Use get_current_time tool when the time anchor matters ("今 8時 47分、出ないと
+  間に合わない").
+- Use end_call tool the moment he says he's heading out (or asks you to hang up).
+- No markdown, no formatting, no emoji. This is a phone call.
+
+If he is unreachable (silent, drunk, refusing): give one last instruction in 10s,
+then call end_call. The next step is the stakeholder mail loop — that runs without
+you. Don't keep the line open uselessly.
+"""
+
+
+def pick_system_instruction(mode: str, ctx: str, name: str) -> str:
+    """Choose persona by dispatch mode.
+
+    Modes:
+      wakeup  — morning wake-up call (default).
+      lateness — operator is about to be late for a fixed appointment; the lateness
+                 loop has computed the exact event + departure deadline and passes
+                 it in ``ctx``. We splice it into the lateness persona prompt so the
+                 LLM has the real timing, not a hallucinated one.
+    """
+    base = ANICCA_LATENESS_SYSTEM_INSTRUCTION if mode == "lateness" else ANICCA_WAKEUP_SYSTEM_INSTRUCTION
+    # Substitute {ctx} if present; otherwise leave the literal placeholder so the
+    # model is told "no context supplied". Don't .format() unconditionally —
+    # the wakeup prompt has braces in example dialogue.
+    if mode == "lateness":
+        return base.replace("{ctx}", ctx or "(no specific context — operator may be running late from any location)")
+    return base
+
+
+async def run_bot(transport: BaseTransport, handle_sigint: bool, *, mode: str = "wakeup", ctx: str = "", name: str = "Dais"):
     # Tools — get_current_time anchors the time on the wire; end_call lets Anicca
     # hang up when the wake-up goal is achieved.
     get_current_time_fn = FunctionSchema(
@@ -108,6 +168,9 @@ async def run_bot(transport: BaseTransport, handle_sigint: bool):
     )
     tools = ToolsSchema(standard_tools=[get_current_time_fn, end_call_fn])
 
+    system_instruction = pick_system_instruction(mode, ctx, name)
+    logger.info(f"Anicca mode={mode!r}, name={name!r}, ctx len={len(ctx)}, prompt len={len(system_instruction)}")
+
     # Gemini Live native S2S — ~500ms turn latency, no separate STT/TTS layer.
     # Model + voice per pipecat-examples/gemini-live-starters/phone-bot/bot.py.
     llm = GeminiLiveLLMService(
@@ -115,7 +178,7 @@ async def run_bot(transport: BaseTransport, handle_sigint: bool):
         settings=GeminiLiveLLMService.Settings(
             model="gemini-2.5-flash-native-audio-preview-09-2025",
             voice="Charon",  # Puck / Charon / Kore / Fenrir / Aoede / Leda / Orus / Zephyr
-            system_instruction=ANICCA_WAKEUP_SYSTEM_INSTRUCTION,
+            system_instruction=system_instruction,
             thinking=ThinkingConfig(thinking_budget=0),  # latency-first
         ),
         tools=tools,
@@ -206,7 +269,13 @@ async def bot(runner_args: RunnerArguments):
     body_data = call_data.get("body", {})
     to_number = body_data.get("to_number")
     from_number = body_data.get("from_number")
-    logger.info(f"Call metadata — To: {to_number}, From: {from_number}")
+    # Persona dispatch: mode + ctx + name flow through TwiML stream parameters
+    # (set in server_utils.generate_twiml). The lateness loop uses this to splice
+    # the next event + departure deadline into the system_instruction.
+    mode = body_data.get("mode", "wakeup")
+    ctx = body_data.get("ctx", "")
+    name = body_data.get("name", "Dais")
+    logger.info(f"Call metadata — To: {to_number}, From: {from_number}, mode={mode!r}, ctx_len={len(ctx)}")
 
     serializer = TwilioFrameSerializer(
         stream_sid=call_data["stream_id"],
@@ -225,4 +294,4 @@ async def bot(runner_args: RunnerArguments):
         ),
     )
 
-    await run_bot(transport, runner_args.handle_sigint)
+    await run_bot(transport, runner_args.handle_sigint, mode=mode, ctx=ctx, name=name)
