@@ -174,15 +174,47 @@ def get_departures():
 
 
 def place_lateness_call(ctx):
-    base = URL_FILE.read_text().strip().rstrip("/")
-    sid, token, frm = env("TWILIO_ACCOUNT_SID"), env("TWILIO_AUTH_TOKEN"), env("TWILIO_PHONE_NUMBER")
+    """Fire the lateness-mode call.
+
+    New (#20, 2026-05-29): goes through the Pipecat outbound /dialout endpoint
+    instead of the old imokenet bridge. The persona + ctx splicing happens inside
+    the bot (see anicca-oss-pipecat/skills/anicca-phone/outbound/bot.py).
+
+    Source of the dial-out endpoint:
+      1. ANICCA_PHONE_DIALOUT_URL env var (preferred — set by launchd / cron config)
+      2. ~/.openclaw/state/anicca_phone_url.txt (matches the imokenet URL_FILE pattern)
+      3. http://127.0.0.1:7860/dialout (local default during dev)
+    """
+    base = (
+        os.environ.get("ANICCA_PHONE_DIALOUT_URL")
+        or _read_url_file(Path.home() / ".openclaw" / "state" / "anicca_phone_url.txt")
+        or "http://127.0.0.1:7860"
+    ).rstrip("/")
     to = os.environ.get("LATE_PHONE") or prof.phone()
-    twiml_url = f"{base}/twiml?{urllib.parse.urlencode({'name': prof.name(), 'mode': 'lateness', 'ctx': ctx})}"
-    data = urllib.parse.urlencode({"To": to, "From": frm, "Url": twiml_url, "Method": "GET"}).encode()
-    req = urllib.request.Request(f"https://api.twilio.com/2010-04-01/Accounts/{sid}/Calls.json", data=data, method="POST")
-    req.add_header("Authorization", "Basic " + base64.b64encode(f"{sid}:{token}".encode()).decode())
+    from_number = env("TWILIO_PHONE_NUMBER") or "+13366526842"
+    body = json.dumps({
+        "to_number": to,
+        "from_number": from_number,
+        "mode": "lateness",
+        "ctx": ctx,
+        "name": prof.name(),
+    }).encode()
+    req = urllib.request.Request(
+        f"{base}/dialout",
+        data=body,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
     with urllib.request.urlopen(req, timeout=30) as r:
-        return json.loads(r.read().decode()).get("sid")
+        resp = json.loads(r.read().decode())
+    return resp.get("call_sid")
+
+
+def _read_url_file(p: Path) -> str:
+    try:
+        return p.read_text().strip()
+    except Exception:
+        return ""
 
 
 def slack(text):
