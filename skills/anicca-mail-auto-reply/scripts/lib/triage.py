@@ -20,7 +20,7 @@ SKIP_FROM = re.compile(
 # NOTE: sbivc.co.jp / sbivcsupport@sbivc.co.jp は SKIP_FROM から除外 (2026-05-29)。
 # SBI VC trade Customer Support は actionable な travel-rule 系問合せを送るので、 LLM stage に流して
 # triage4=notify or email として heartbeat が判断・返信する。 sbisec.co.jp (証券明細) は skip 継続。
-SELF_FROM = re.compile(r"(keiodaisuke@gmail\.com|daisuke narita|成田\s*大祐|anicca from anicca|aniccabuddha@substack\.com)", re.IGNORECASE)
+SELF_FROM = re.compile(r"(keiodaisuke@gmail\.com|daisuke narita|${OSS_USER_NAME_JP}|anicca from anicca|aniccabuddha@substack\.com)", re.IGNORECASE)
 DAIS_ACTION_KEYWORDS = re.compile(
     r"(予約|booking|book|チェックイン|発注|申込|ヒゲ脱毛|美容クリニック|shonan|脱毛|appointment\s+request|schedule.*me|me.*schedule)",
     re.IGNORECASE,
