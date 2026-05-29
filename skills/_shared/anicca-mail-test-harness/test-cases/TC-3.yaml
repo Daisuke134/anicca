@@ -1,0 +1,34 @@
+# ~/.openclaw/skills/_shared/anicca-mail-test-harness/test-cases/TC-3.yaml
+id: TC-3
+category: reply_imagine
+name: "SBI VC KYC question (profile fill, no [記入])"
+spec_ref: ".specify/specs/anicca-mail-agent/spec.md AS-3"
+input:
+  from: "${OSS_TEST_RECIPIENT}"
+  to: "${OSS_TEST_RECIPIENT}"
+  subject: "[TC-3-{ts}] [SIM from:sbivcsupport@sbivc.co.jp] 【SBI VCトレード】出庫予約 追加確認 [#TEST{ts}#]"
+  body: |
+    [Simulating sender: sbivcsupport@sbivc.co.jp]
+
+    平素よりSBIVCトレードをご愛顧いただきありがとうございます。
+    トラベルルールに基づき、以下ご回答ください。
+
+    1. 受取人情報
+    ・氏名:
+    ・住所(都道府県市町村):
+    ・ウォレット名:
+    ・所在国:
+    ・出庫目的:
+
+    2. 受取人=本人か
+
+    3. 資金源:
+expected:
+  triage4: "email"
+  reply: true
+verify:
+  - type: gmail_reply_body
+    thread_query: 'subject:"TC-3-{ts}" newer_than:1h'
+    required_strings: ['成田 大祐', '新宿区南元町', 'anicca', '日本', '給与']
+    forbidden_strings: ['[記入]', '[fill in]', '[TBD]', 'on behalf of Daisuke', '+1 (336)', '+1 336']
+    required_signature: 'Anicca'

@@ -1,0 +1,10 @@
+{
+  "mrr_usd": 57,
+  "active_subscriptions": 9,
+  "active_trials": 0,
+  "revenue_last_28d_usd": 84,
+  "new_customers_last_28d": 779,
+  "active_users_last_28d": 841,
+  "snapshot_source": "RevenueCat MCP get-overview-metrics 2026-05-04",
+  "stale_after": "2026-05-11T00:00:00Z"
+}

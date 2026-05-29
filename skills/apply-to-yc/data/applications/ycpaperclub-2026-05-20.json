@@ -1,0 +1,18 @@
+{
+  "event": "YC Paper Club",
+  "url": "https://events.ycombinator.com/ycpaperclub",
+  "date": "2026-05-20",
+  "time": "17:00-21:00",
+  "location": "Mountain View, CA",
+  "submitted_at": "2026-05-05T17:25:00+09:00",
+  "status": "request_submitted",
+  "confirmation_text": "Request submitted! We'll email you with details if we're able to give you a spot.",
+  "withdraw_button_present": true,
+  "fields_filled": {
+    "why_join": "Anicca self-funding Buddhist AI pitch (4 sentences)",
+    "linkedin": "https://www.linkedin.com/in/daisuke-narita-9b0a23166/",
+    "personal_site": "https://aniccaai.com",
+    "github": "https://github.com/Daisuke134",
+    "papers": "Anthropic — Biology of an LLM / DeepMind RLM-Reflection / Constitutional AI"
+  }
+}

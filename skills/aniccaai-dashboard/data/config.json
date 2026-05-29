@@ -1,0 +1,36 @@
+{
+  "goals": {
+    "mrr_target": 10000,
+    "mrr_deadline": "2026-05-31",
+    "weekly_views_target": 1000000
+  },
+  "fixed_subscriptions": {
+    "claude": { "amount_usd": 200, "label": "Claude Max plan (flat fee, includes API)" },
+    "chatgpt": { "amount_usd": 20, "label": "ChatGPT Plus (flat fee)" },
+    "living": { "amount_usd": 200, "label": "Dais monthly burn (manual)" }
+  },
+  "social_handles": {
+    "tiktok": [
+      "anicca.jp8", "anicca.ai", "honnevideo",
+      "user6721125412040"
+    ],
+    "instagram": [
+      "obou.anicca"
+    ]
+  },
+  "stripe_category_map": {
+    "prod_T5DuZfF5Cj2xcJ": "anicca-ios",
+    "prod_URieLh8XQX9v9s": "letter",
+    "prod_URieWG8X0gUcG1": "letter",
+    "prod_UR5WZuPI0imjnm": "iglowup",
+    "prod_UR4eWC3NUo7btr": "iglowup",
+    "prod_UQw0YKIRiasv5y": "clearpdf",
+    "prod_UQ2LrpVy4b1bAY": "anicca-app",
+    "prod_UQ2LTH66Rwict4": "anicca-app",
+    "prod_U4YiuOW1XJP6HU": "coldcraft",
+    "prod_U4Sgi7Fu1Bkz4A": "signaturecraft",
+    "prod_U4KicmEZfpkr9x": "deepworkfm"
+  },
+  "rc_project_id": "YOUR_REVENUECAT_PROJECT_ID",
+  "railway_workspace_id": "faba61e6-087e-4227-be3c-d02f1c303e27"
+}

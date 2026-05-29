@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://aniccaai.com/schemas/profile.schema.json",
   "title": "Anicca user profile",
-  "description": "Single source of truth for per-user PERSONAL DATA (non-secret). Secrets (API keys/tokens) live in .env, NEVER here. Raw payment cards are NEVER stored — only processor tokens. This file is gitignored; ship identity/profile.example.json as the template. Skills READ from here (e.g. profile.{{profile.lateness.stakeholders.toField}}); only the anicca-config skill WRITES here, validated against this schema.",
+  "description": "Single source of truth for per-user PERSONAL DATA (non-secret). Secrets (API keys/tokens) live in .env, NEVER here. Raw payment cards are NEVER stored — only processor tokens. This file is gitignored; ship identity/profile.example.json as the template. Skills READ from here (e.g. profile.contact.workEmail); only the anicca-config skill WRITES here, validated against this schema.",
   "type": "object",
   "additionalProperties": false,
   "required": ["identity", "contact", "channels"],
@@ -10,10 +10,10 @@
     "identity": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["{{profile.lateness.stakeholders.senderType}}Name", "timezone", "languages"],
+      "required": ["stageName", "timezone", "languages"],
       "properties": {
-        "{{profile.lateness.stakeholders.senderType}}Name": { "type": "string", "description": "Legal/real name — use ONLY for official docs (graves, government, contracts)." },
-        "{{profile.lateness.stakeholders.senderType}}Name": { "type": "string", "description": "Public-facing name used everywhere else (e.g. {{profile.identity.{{profile.lateness.stakeholders.senderType}}Name}})." },
+        "legalName": { "type": "string", "description": "Legal/real name — use ONLY for official docs (graves, government, contracts)." },
+        "stageName": { "type": "string", "description": "Public-facing name used everywhere else (e.g. アニッチャ)." },
         "timezone": { "type": "string", "description": "IANA timezone, e.g. Asia/Tokyo." },
         "languages": { "type": "array", "items": { "type": "string" }, "description": "BCP-47-ish codes in priority order, e.g. [\"ja\",\"en\"]." },
         "homeAddress": { "type": "string", "description": "Base address for travel-time calculations (calendar booking)." }
@@ -24,8 +24,8 @@
       "additionalProperties": false,
       "required": ["personalEmail"],
       "properties": {
-        "personalEmail": { "type": "string", "format": "{{profile.lateness.stakeholders.channel}}" },
-        "workEmail": { "type": "string", "format": "{{profile.lateness.stakeholders.channel}}", "description": "Day-job {{profile.lateness.stakeholders.channel}}. Skills must read this — NEVER hardcode it." },
+        "personalEmail": { "type": "string", "format": "email" },
+        "workEmail": { "type": "string", "format": "email", "description": "Day-job email. Skills must read this — NEVER hardcode it." },
         "phone": { "type": "string" }
       }
     },
@@ -34,9 +34,9 @@
       "additionalProperties": false,
       "required": ["reportPlatform"],
       "properties": {
-        "reportPlatform": { "type": "string", "enum": ["slack", "{{profile.lateness.stakeholders.channel}}", "telegram"], "description": "Where Anicca posts its diary/heartbeat reports." },
+        "reportPlatform": { "type": "string", "enum": ["slack", "email", "telegram"], "description": "Where Anicca posts its diary/heartbeat reports." },
         "reportChannel": { "type": "string", "description": "Platform-specific channel id (e.g. Slack channel C0XXXXXXXXX)." },
-        "notifyEmail": { "type": "string", "format": "{{profile.lateness.stakeholders.channel}}", "description": "Where urgent/nudge mails go if reportPlatform != {{profile.lateness.stakeholders.channel}}." }
+        "notifyEmail": { "type": "string", "format": "email", "description": "Where urgent/nudge mails go if reportPlatform != email." }
       }
     },
     "work": {
@@ -53,19 +53,19 @@
       "additionalProperties": false,
       "description": "Generalized: ANY school. Lets a school-specific skill (e.g. naist-*) work for any student who fills this.",
       "properties": {
-        "institution": { "type": "string", "description": "e.g. {{profile.education.institution}}." },
+        "institution": { "type": "string", "description": "e.g. NAIST." },
         "studentId": { "type": "string" },
         "portalUrl": { "type": "string" },
-        "advisorEmail": { "type": "string", "format": "{{profile.lateness.stakeholders.channel}}" },
+        "advisorEmail": { "type": "string", "format": "email" },
         "contacts": {
           "type": "array",
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["{{profile.lateness.stakeholders.channel}}"],
+            "required": ["email"],
             "properties": {
               "name": { "type": "string" },
-              "{{profile.lateness.stakeholders.channel}}": { "type": "string", "format": "{{profile.lateness.stakeholders.channel}}" },
+              "email": { "type": "string", "format": "email" },
               "role": { "type": "string", "description": "e.g. advisor, faculty-list, student-list." }
             }
           }

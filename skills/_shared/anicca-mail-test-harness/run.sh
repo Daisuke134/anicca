@@ -83,8 +83,19 @@ for yaml in "${SELECTED[@]}"; do
   case_id=$(basename "$yaml" .yaml)
   echo "── $case_id ──"
 
-  # Substitute {ts} placeholder in subject/body for uniqueness
-  CASE_YAML=$(sed "s/{ts}/$TS/g" "$yaml")
+  # Env-substitute the YAML before send.
+  # Order: {ts} first, then env vars (so a literal $X in subject is replaced).
+  : "${OSS_TEST_RECIPIENT:=${GOG_ACCOUNT:-}}"
+  : "${USER_NAME_EN:=Daisuke Narita}"
+  : "${USER_NAME_PREFERRED:=Dais}"
+  : "${SLACK_REPORT_CHANNEL:=C091G3PKHL2}"
+  CASE_YAML=$(sed \
+    -e "s/{ts}/$TS/g" \
+    -e "s|\${OSS_TEST_RECIPIENT}|$OSS_TEST_RECIPIENT|g" \
+    -e "s|\${USER_NAME_EN}|$USER_NAME_EN|g" \
+    -e "s|\${USER_NAME_PREFERRED}|$USER_NAME_PREFERRED|g" \
+    -e "s|\${SLACK_REPORT_CHANNEL}|$SLACK_REPORT_CHANNEL|g" \
+    "$yaml")
 
   # Extract input fields via python yaml
   FROM=$(echo "$CASE_YAML" | python3 -c "import sys,yaml; print(yaml.safe_load(sys.stdin)['input']['from'])")
@@ -127,8 +138,16 @@ except Exception:
   sleep 5
 
   # 3. verify (per category)
-  CAT_LETTER=$(echo "$case_id" | sed -E 's/^TC-([A-G]).*/\1/')
-  EVAL_SCRIPT="$LIB_DIR/evaluate-${CAT_LETTER,,}.sh"
+  # Dispatch: prefer evaluate-<N>.sh (e.g. evaluate-1.sh, evaluate-2.sh) for TC-<digit> ids,
+  # else fall back to legacy evaluate-<letter>.sh (e.g. evaluate-a.sh) for TC-<letter> ids.
+  if [[ "$case_id" =~ ^TC-([0-9]+) ]]; then
+    EVAL_SCRIPT="$LIB_DIR/evaluate-${BASH_REMATCH[1]}.sh"
+  elif [[ "$case_id" =~ ^TC-([A-Ga-g]) ]]; then
+    L=$(echo "${BASH_REMATCH[1]}" | tr '[:upper:]' '[:lower:]')
+    EVAL_SCRIPT="$LIB_DIR/evaluate-${L}.sh"
+  else
+    EVAL_SCRIPT=""
+  fi
   if [ -f "$EVAL_SCRIPT" ]; then
     if bash "$EVAL_SCRIPT" "$yaml" "$TS"; then
       echo "  ✅ PASS"
@@ -159,7 +178,12 @@ cat > "$REPORT" <<EOF
 }
 EOF
 
-ln -sf "$REPORT" "$REPORTS_DIR/latest.json"
+HARNESS="${ANICCA_HARNESS:-claude-anicca}"
+if [ "$HARNESS" = "openclaw-anicca" ]; then
+  ln -sf "$REPORT" "$REPORTS_DIR/latest-openclaw.json"
+else
+  ln -sf "$REPORT" "$REPORTS_DIR/latest.json"
+fi
 
 echo ""
 echo "════════════════════════════════════════"

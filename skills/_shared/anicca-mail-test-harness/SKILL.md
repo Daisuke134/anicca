@@ -38,8 +38,8 @@ id: TC-A1
 category: silent_archive    # silent_archive | notify | reply_imagine | reply_action | ask_dais | reject | long_running
 name: "FIX-TEST promo from self"
 input:
-  from: "${OSS_TEST_RECIPIENT}"
-  to: "${OSS_TEST_RECIPIENT}"
+  from: "keiodaisuke@gmail.com"
+  to: "keiodaisuke@gmail.com"
   subject: "🎁 EXCLUSIVE OFFER - Weekend Sale 50% off"
   body: |
     Don't miss our exclusive offer. Limited time only!

@@ -1,0 +1,92 @@
+{
+  "yc": {
+    "name": "Y Combinator",
+    "amount_usd": 500000,
+    "equity_pct": 7,
+    "cadence": "biannual",
+    "next_deadline": "2026-09-29",
+    "form_url": "https://www.ycombinator.com/apply",
+    "notes": "$125k SAFE + $375k uncapped MFN. Accept rate 1.5%. W2027 batch."
+  },
+  "techstars": {
+    "name": "Techstars",
+    "amount_usd": 120000,
+    "equity_pct": 6,
+    "cadence": "rolling",
+    "next_deadline": null,
+    "form_url": "https://www.techstars.com/apply",
+    "notes": "City-specific (NYC, Boulder, etc). Rolling. Mentor-driven 13-week."
+  },
+  "500global": {
+    "name": "500 Global",
+    "amount_usd": 150000,
+    "equity_pct": 6,
+    "cadence": "rolling",
+    "next_deadline": null,
+    "form_url": "https://500.co/apply",
+    "notes": "Global. Several geographic programs (US, Asia, etc)."
+  },
+  "antler": {
+    "name": "Antler Tokyo",
+    "amount_usd": 250000,
+    "equity_pct": 12,
+    "cadence": "biannual",
+    "next_deadline": "2026-09-30",
+    "form_url": "https://www.antler.co/apply",
+    "notes": "Pre-team. Tokyo cohort relevant for Anicca."
+  },
+  "ef": {
+    "name": "Entrepreneur First",
+    "amount_gbp": 230000,
+    "equity_pct": 7,
+    "cadence": "rolling",
+    "next_deadline": null,
+    "form_url": "https://www.joinef.com/apply",
+    "notes": "£80k stipend + £150k investment. London/Bangalore/Singapore."
+  },
+  "spc": {
+    "name": "South Park Commons",
+    "amount_usd": 400000,
+    "equity_pct": null,
+    "cadence": "rolling",
+    "next_deadline": null,
+    "form_url": "https://www.southparkcommons.com/apply",
+    "notes": "Founder Fellowship. SF-based community."
+  },
+  "soma": {
+    "name": "Soma Capital",
+    "amount_usd": 150000,
+    "equity_pct": 6,
+    "cadence": "rolling",
+    "next_deadline": null,
+    "form_url": "https://www.somacap.com",
+    "notes": "$25k-$150k. Founder community."
+  },
+  "aigrant": {
+    "name": "AI Grant (Daniel Gross)",
+    "amount_usd": 250000,
+    "equity_pct": 6.7,
+    "cadence": "rolling",
+    "next_deadline": null,
+    "form_url": "https://aigrant.com",
+    "notes": "AI-focused. Daniel Gross / Nat Friedman."
+  },
+  "openai_startup_fund": {
+    "name": "OpenAI Startup Fund",
+    "amount_usd": null,
+    "equity_pct": null,
+    "cadence": "invitation",
+    "next_deadline": null,
+    "form_url": "https://openai.com/startup-fund",
+    "notes": "Invitation only. Apply via portfolio companies."
+  },
+  "x_google": {
+    "name": "Astro Teller / X (Google)",
+    "amount_usd": null,
+    "equity_pct": 0,
+    "cadence": "invitation",
+    "next_deadline": null,
+    "form_url": "https://x.company",
+    "notes": "Research grant. Highly selective."
+  }
+}

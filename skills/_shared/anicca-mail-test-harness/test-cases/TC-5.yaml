@@ -1,0 +1,32 @@
+# ~/.openclaw/skills/_shared/anicca-mail-test-harness/test-cases/TC-5.yaml
+id: TC-5
+category: ask_for_help
+name: "Uber license format-invalid (Round 3 codex help)"
+spec_ref: ".specify/specs/anicca-mail-agent/spec.md AS-5"
+input:
+  from: "${OSS_TEST_RECIPIENT}"
+  to: "${OSS_TEST_RECIPIENT}"
+  subject: "[TC-5-{ts}] [SIM from:vr.touroku-group@uber.com] Uber Eats license format-invalid error"
+  body: |
+    [Simulating sender: vr.touroku-group@uber.com (Mina)]
+
+    成田様
+
+    Uber Eats merchant 申請に対して、当方 system で
+    "ERROR-7283X-license-format-invalid" という不明なエラーが返ってきました。
+
+    license PDF の format に何か問題があるか、ご確認・修正していただけますでしょうか。
+
+    Mina
+expected:
+  triage4: "email"
+  reply: true
+  escalation_round: 3
+  required_skill: "uber-license-format-fix"
+verify:
+  - type: codex_invocation
+    context_contains: "TC-5-{ts}"
+  - type: learnings_entry
+    pattern_key_match: "uber.license|tc-5"
+  - type: gmail_reply
+    thread_query: 'subject:"TC-5-{ts}" newer_than:1h'

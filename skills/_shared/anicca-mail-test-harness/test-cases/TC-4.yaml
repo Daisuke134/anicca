@@ -1,0 +1,28 @@
+# ~/.openclaw/skills/_shared/anicca-mail-test-harness/test-cases/TC-4.yaml
+id: TC-4
+category: reply_action
+name: "湘南美容 booking request (browser action + reply)"
+spec_ref: ".specify/specs/anicca-mail-agent/spec.md AS-4"
+input:
+  from: "${OSS_TEST_RECIPIENT}"
+  to: "${OSS_TEST_RECIPIENT}"
+  subject: "[TC-4-{ts}] Anicca、湘南美容新宿院 来週水14:00 ヒゲ脱毛5回目 予約お願い"
+  body: |
+    Anicca
+
+    湘南美容クリニックの新宿院、来週水曜 14:00 で ヒゲ脱毛 5 回目 を予約して。
+
+    ${USER_NAME_PREFERRED}
+expected:
+  triage4: "email"
+  reply: true
+  action_chain: true
+  required_skill: "shonan-bishu-book"
+verify:
+  - type: gmail_reply
+    thread_query: 'subject:"TC-4-{ts}" newer_than:1h'
+  - type: tasks_json_followup
+    id_contains: "shonan-bishu"
+  - type: skill_state_artifact
+    skill: "shonan-bishu-book"
+    patterns: ["state/*.png", "state/booking-*.json"]

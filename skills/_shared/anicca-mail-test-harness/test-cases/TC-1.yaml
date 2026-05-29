@@ -1,0 +1,28 @@
+# ~/.openclaw/skills/_shared/anicca-mail-test-harness/test-cases/TC-1.yaml
+id: TC-1
+category: silent_archive
+name: "Self-sent promo (FIX-TEST pattern)"
+spec_ref: ".specify/specs/anicca-mail-agent/spec.md AS-1"
+input:
+  from: "${OSS_TEST_RECIPIENT}"
+  to: "${OSS_TEST_RECIPIENT}"
+  subject: "🎁 [TC-1-{ts}] EXCLUSIVE OFFER - Weekend Sale 50% off promotion"
+  body: |
+    🎉 BIG SALE THIS WEEKEND! 50% OFF EVERYTHING!
+
+    Don't miss our exclusive offer. Limited time only!
+    Click here to shop now. Best deals on summer collection.
+
+    Newsletter unsubscribe: example.com/unsub
+expected:
+  triage4: "no"
+  triage_reason_match: "SKIP_SUBJECT regex|SELF_FROM\\+promo"
+  archive: true
+  reply: false
+verify:
+  - type: gmail_label
+    thread_query: 'subject:"TC-1-{ts}" newer_than:1h'
+    label: "INBOX"
+    expect_absent: true
+  - type: not_replied
+    thread_query: 'subject:"TC-1-{ts}" newer_than:1h'

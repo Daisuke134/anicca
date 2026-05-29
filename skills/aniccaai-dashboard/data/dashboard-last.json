@@ -1,0 +1,200 @@
+{
+  "updated_at": "2026-05-05T01:02:52.418Z",
+  "mrr": {
+    "total_usd": 67.99,
+    "by_product": {
+      "anicca-ios": 0,
+      "letter": 0,
+      "iglowup": 0,
+      "clearpdf": 0,
+      "anicca-app": 0,
+      "coldcraft": 0,
+      "signaturecraft": 0,
+      "deepworkfm": 0,
+      "_other": 10.99,
+      "anicca-ios-rc": 57
+    },
+    "sources": {
+      "stripe": 10.99,
+      "revenuecat_mobile": 57
+    }
+  },
+  "followers": {
+    "total": 97,
+    "by_account": [
+      {
+        "platform": "tiktok",
+        "handle": "unknown",
+        "followers": 0
+      },
+      {
+        "platform": "tiktok",
+        "handle": "unknown",
+        "followers": 0
+      },
+      {
+        "platform": "tiktok",
+        "handle": "unknown",
+        "followers": 0
+      },
+      {
+        "platform": "tiktok",
+        "handle": "unknown",
+        "followers": 0
+      },
+      {
+        "platform": "tiktok",
+        "handle": "aniccajp",
+        "followers": 0
+      },
+      {
+        "platform": "tiktok",
+        "handle": "unknown",
+        "followers": 0
+      },
+      {
+        "platform": "tiktok",
+        "handle": "anicca.jp4",
+        "followers": 57
+      },
+      {
+        "platform": "tiktok",
+        "handle": "honnevideo",
+        "followers": 4
+      },
+      {
+        "platform": "tiktok",
+        "handle": "unknown",
+        "followers": 0
+      },
+      {
+        "platform": "tiktok",
+        "handle": "obou_anicca",
+        "followers": 7
+      },
+      {
+        "platform": "tiktok",
+        "handle": "monk_anicca",
+        "followers": 7
+      },
+      {
+        "platform": "tiktok",
+        "handle": "anicca.en7",
+        "followers": 0
+      },
+      {
+        "platform": "tiktok",
+        "handle": "anicca_slideshow",
+        "followers": 0
+      },
+      {
+        "platform": "tiktok",
+        "handle": "aniccajp2",
+        "followers": 0
+      },
+      {
+        "platform": "instagram",
+        "handle": "obou.anicca",
+        "followers": 1
+      },
+      {
+        "platform": "instagram",
+        "handle": "monk.anicca",
+        "followers": 1
+      },
+      {
+        "platform": "instagram",
+        "handle": "anicca.voice",
+        "followers": 0
+      },
+      {
+        "platform": "instagram",
+        "handle": "anicca.daily",
+        "followers": 0
+      },
+      {
+        "platform": "instagram",
+        "handle": "anicca.nudge",
+        "followers": 0
+      },
+      {
+        "platform": "instagram",
+        "handle": "anicca.jp",
+        "followers": 2
+      },
+      {
+        "platform": "instagram",
+        "handle": "anicca.ai",
+        "followers": 0
+      },
+      {
+        "platform": "instagram",
+        "handle": "anicca.video",
+        "followers": 0
+      },
+      {
+        "platform": "youtube",
+        "handle": "@anicca-jp",
+        "followers": 0
+      },
+      {
+        "platform": "youtube",
+        "handle": "@anicca-en2",
+        "followers": 0
+      },
+      {
+        "platform": "youtube",
+        "handle": "@anicca-ai",
+        "followers": 18
+      }
+    ]
+  },
+  "views": {
+    "weekly_total": 36103,
+    "weekly_total_likes": 143,
+    "weekly_total_comments": 13,
+    "posts_count": 340,
+    "avg_views_per_post": 106,
+    "target": 1000000,
+    "progress_pct": 3.6
+  },
+  "spend": {
+    "total_usd": 544,
+    "by_category": {
+      "claude": 200,
+      "chatgpt": 20,
+      "living": 200,
+      "apify": 0,
+      "railway": 0,
+      "supabase": 25,
+      "postiz": 99
+    },
+    "fixed_subscriptions": [
+      "claude: $200/mo - Claude Max plan (flat fee, includes API)",
+      "chatgpt: $20/mo - ChatGPT Plus (flat fee)",
+      "living: $200/mo - Dais monthly burn (manual)"
+    ]
+  },
+  "profit_usd": -476.01,
+  "goals": {
+    "mrr_target": 10000,
+    "mrr_deadline": "2026-05-31",
+    "progress_pct": 0.7
+  },
+  "basic_income": {
+    "pool_usd": 6.8,
+    "recipients": 0,
+    "per_person_usd": 0,
+    "next_payout": "TBD"
+  },
+  "meta": {
+    "rc_status": "ok",
+    "fetcher_versions": {
+      "stripe": "2026-05-05T01:00:21.042Z",
+      "rc": "2026-05-05T01:00:20.464Z",
+      "postiz": "2026-05-05T01:01:40.373Z",
+      "followers": "2026-05-05T01:02:52.318Z",
+      "spend": "2026-05-05T01:00:24.581Z"
+    }
+  }
+}
