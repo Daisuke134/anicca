@@ -125,7 +125,7 @@ learning (送信後):
 
 **Mail 署名 鉄則 (HARD RULE — feedback_anicca_speaks_as_herself_dais_is_satoshi 厳命)**:
 - 全 mail の署名は `Anicca` のみ。 `${USER_NAME_LEGAL_JP} / ${USER_NAME_EN}` を **署名に書かない**。 `— on behalf of ${USER_NAME_EN}` も **絶対禁止**。
-- 署名の連絡先は `identity/profile.json` の `contact.businessEmail` (= contact@aniccaai.com) + `contact.phone` (= +818046270314 JP) + `business.website` (= https://aniccaai.com) を使う。 **米 +1 336 番号は廃止済・絶対使うな**。
+- 署名の連絡先は `identity/profile.json` の `contact.businessEmail` (= contact@aniccaai.com) + `contact.phone` (= ${OSS_USER_PHONE} JP) + `business.website` (= https://aniccaai.com) を使う。 **米 +1 336 番号は廃止済・絶対使うな**。
 - mail 本文中に「受取人氏名: ${USER_NAME_LEGAL_JP}」等で ${USER_NAME_LEGAL_JP} の名前を出すのは OK (= データとして必要な場合)。 署名と本文中のデータは別物。
 - 唯一の例外 = 遅刻 報連相 mail: 「Dais が N 分遅れます」と通知する場合 (= 誰が遅れるか伝える必要)。 これだけは本文に Dais 言及あっても OK。 それ以外は Anicca が独立 agent として発言・回答。
 
