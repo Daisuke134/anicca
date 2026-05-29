@@ -5,8 +5,13 @@
 #
 
 import asyncio
+import base64
+import json
 import os
+import re
 import sys
+import urllib.parse
+import urllib.request
 
 from dotenv import load_dotenv
 from google.genai.types import ThinkingConfig
@@ -107,23 +112,37 @@ own guesses:
 ------------------------
 
 Speak first the instant the call connects — don't wait. Open with one short
-line that gets him moving toward the destination immediately. Example:
+line that gets him moving immediately. Example:
 
-  "ダイス、急いで。今すぐ家を出ないと {{event}} に間に合わない。
-   駅まで歩いて、電車で向かって。"
+  "ダイス、急いで。今すぐ家を出ないと {{event}} に間に合わない。"
 
-THEN guide him one concrete step at a time (Google-Maps-style):
+ROUTE GUIDANCE — TRUST THE CALL CONTEXT FIRST:
+- The CALL CONTEXT above already contains a "推奨ルート(Google Maps): ..."
+  line. This was scraped from Google Maps Web seconds before the call —
+  station names, line names, duration, fare are ALL accurate and current.
+  Use those EXACT names and numbers. Don't paraphrase, don't translate to
+  what you think the right line is.
+- Your own training data about Tokyo trains is wrong. You have been observed
+  saying "信濃町 → 中央線" which is WRONG (信濃町 is on 総武線各停). Never
+  invent station names or lines.
+- If — and only if — the CALL CONTEXT does NOT contain a "推奨ルート" line,
+  call the get_directions tool with destination=the event location.
+- If get_directions returns transit_available=False, just say
+  "Google Maps 開いて<destination>入れて" and stop trying to navigate.
+
+THEN guide him one concrete step at a time using the route in context:
 - "今すぐ靴履いて、玄関出て"
-- "信濃町駅へ向かって、JR 中央線で"
-- "あと {N}分以内に電車に乗らないと間に合わない"
+- "<推奨ルート の最初の駅> へ向かって、<推奨ルート の最初の line>"
+- "あと N 分以内に電車に乗らないと間に合わない" (N も推奨ルートの duration から)
 
 Rules:
 - 1-2 sentences per turn. Listen, then guide.
 - Stop talking the instant he speaks.
 - Default language: Japanese. Switch to English if he speaks English.
-- Use get_current_time tool when the time anchor matters ("今 8時 47分、出ないと
-  間に合わない").
-- Use end_call tool the moment he says he's heading out (or asks you to hang up).
+- Tools you have:
+    * get_directions(destination) — call FIRST before giving any station/line.
+    * get_current_time — when the time anchor matters.
+    * end_call — when he confirms he's moving / asks to hang up / drift.
 - No markdown, no formatting, no emoji. This is a phone call.
 
 If he is unreachable (silent, drunk, refusing): give one last instruction in 10s,
@@ -166,7 +185,28 @@ async def run_bot(transport: BaseTransport, handle_sigint: bool, *, mode: str = 
         properties={},
         required=[],
     )
-    tools = ToolsSchema(standard_tools=[get_current_time_fn, end_call_fn])
+    get_directions_fn = FunctionSchema(
+        name="get_directions",
+        description=(
+            "Look up the real transit route from Dais's CURRENT live location to "
+            "the given destination via Google Directions API. Call this BEFORE "
+            "telling him any station name, line, or transfer — your training data "
+            "is unreliable for Tokyo transit specifics."
+        ),
+        properties={
+            "destination": {
+                "type": "string",
+                "description": (
+                    "Destination address or venue. Pass the location string from "
+                    "the CALL CONTEXT verbatim if available (e.g. "
+                    "'中野セントラルパークサウス' or '東京都中野区中野4-10-2'). "
+                    "If only a name is known, the API will geocode."
+                ),
+            }
+        },
+        required=["destination"],
+    )
+    tools = ToolsSchema(standard_tools=[get_current_time_fn, end_call_fn, get_directions_fn])
 
     system_instruction = pick_system_instruction(mode, ctx, name)
     logger.info(f"Anicca mode={mode!r}, name={name!r}, ctx len={len(ctx)}, prompt len={len(system_instruction)}")
@@ -202,8 +242,158 @@ async def run_bot(transport: BaseTransport, handle_sigint: bool, *, mode: str = 
         await asyncio.sleep(2)
         await params.llm.push_frame(EndTaskFrame(), FrameDirection.UPSTREAM)
 
+    async def _get_directions(params: FunctionCallParams):
+        """Resolve the real transit route from Dais's current live position to
+        `destination` via Google Directions API. Speak only the API result —
+        never let the LLM guess Tokyo train geography from its training data."""
+        destination = (params.arguments or {}).get("destination") or ""
+        if not destination:
+            await params.result_callback({"error": "destination required"})
+            return
+
+        # Origin = Dais's freshest loco fix (OwnTracks server at :8788).
+        origin = None
+        try:
+            ot_user = os.getenv("OWNTRACKS_USER", "")
+            ot_pass = os.getenv("OWNTRACKS_PASS", "")
+            if ot_user and ot_pass:
+                auth = base64.b64encode(f"{ot_user}:{ot_pass}".encode()).decode()
+                req = urllib.request.Request(
+                    "http://127.0.0.1:8788/loc/latest",
+                    headers={"Authorization": f"Basic {auth}"},
+                )
+                with urllib.request.urlopen(req, timeout=4) as r:
+                    fix = json.loads(r.read().decode())
+                origin = f"{fix['lat']},{fix['lon']}"
+        except Exception as e:
+            logger.warning(f"get_directions: loco fetch failed ({e}), falling back to profile home")
+
+        if not origin:
+            # Fall back to profile home_latlon. Same module the lateness loop uses.
+            try:
+                sys.path.insert(0, os.path.expanduser("~/.openclaw/skills/_shared"))
+                import anicca_profile as prof  # type: ignore
+                lat, lon = prof.home_latlon()
+                origin = f"{lat},{lon}"
+            except Exception as e:
+                logger.error(f"get_directions: no origin available ({e})")
+                await params.result_callback({"error": f"no live location and no fallback ({e})"})
+                return
+
+        key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
+        if not key:
+            await params.result_callback({"error": "GOOGLE_API_KEY missing"})
+            return
+
+        # Google Directions deprecated transit mode in Japan around 2022 — every
+        # transit query returns ZERO_RESULTS. We fall back to driving as the
+        # urgency-proxy (lower bound on travel) and walking (upper bound), then
+        # tell the LLM transit specifics aren't available — Anicca redirects
+        # Dais to Google Maps rather than hallucinating station names.
+        def _query(mode: str) -> dict:
+            params_map = {
+                "origin": origin,
+                "destination": destination,
+                "mode": mode,
+                "language": "ja",
+                "key": key,
+            }
+            if mode == "transit":
+                params_map["departure_time"] = "now"
+            url = (
+                "https://maps.googleapis.com/maps/api/directions/json?"
+                + urllib.parse.urlencode(params_map)
+            )
+            with urllib.request.urlopen(url, timeout=8) as r:
+                return json.loads(r.read().decode())
+
+        try:
+            transit = _query("transit")
+            driving = _query("driving") if (transit.get("status") != "OK") else transit
+            walking = _query("walking") if (transit.get("status") != "OK") else None
+        except Exception as e:
+            logger.error(f"get_directions: directions API failed ({e})")
+            await params.result_callback({"error": f"directions API failed: {e}"})
+            return
+
+        transit_ok = transit.get("status") == "OK" and transit.get("routes")
+
+        if transit_ok:
+            # Lucky — transit worked (likely a non-JP destination). Emit the
+            # canonical transit route exactly as before.
+            route = transit["routes"][0]
+            leg = route["legs"][0]
+            duration_min = round(leg["duration"]["value"] / 60)
+            steps: list[str] = []
+            for s in leg.get("steps", []):
+                m = s.get("travel_mode")
+                if m == "WALKING":
+                    instr = re.sub(r"<[^>]+>", "", s.get("html_instructions", "歩く"))
+                    mins = round(s.get("duration", {}).get("value", 0) / 60)
+                    steps.append(f"歩く: {instr} ({mins}分)")
+                elif m == "TRANSIT":
+                    td = s.get("transit_details", {})
+                    line = td.get("line", {})
+                    line_name = line.get("short_name") or line.get("name", "")
+                    arrival = (td.get("arrival_stop") or {}).get("name", "")
+                    departure = (td.get("departure_stop") or {}).get("name", "")
+                    num_stops = td.get("num_stops", 0)
+                    mins = round(s.get("duration", {}).get("value", 0) / 60)
+                    steps.append(
+                        f"電車: {departure} → {line_name} で {num_stops}駅 → {arrival} ({mins}分)"
+                    )
+                else:
+                    mins = round(s.get("duration", {}).get("value", 0) / 60)
+                    steps.append(f"{m}: {mins}分")
+            result = {
+                "transit_available": True,
+                "duration_min": duration_min,
+                "destination": leg.get("end_address", destination),
+                "origin": leg.get("start_address", origin),
+                "steps": steps,
+                "summary": route.get("summary", ""),
+            }
+        else:
+            # Japan transit feed is unavailable — give the LLM the best info we
+            # have (driving + walking durations) and TELL it not to invent the
+            # rail route. Anicca will redirect Dais to Google Maps.
+            def _dur(d):
+                try:
+                    return round(d["routes"][0]["legs"][0]["duration"]["value"] / 60)
+                except Exception:
+                    return None
+
+            drv_min = _dur(driving) if driving else None
+            wlk_min = _dur(walking) if walking else None
+            end_addr = (
+                (driving or walking or {}).get("routes", [{}])[0]
+                .get("legs", [{}])[0]
+                .get("end_address", destination)
+                if (driving or walking)
+                else destination
+            )
+            result = {
+                "transit_available": False,
+                "note": (
+                    "Google Directions has no transit data inside Japan. "
+                    "Do NOT name stations or lines — you will be wrong. Tell "
+                    "Dais to open Google Maps with this destination."
+                ),
+                "destination": end_addr,
+                "driving_min": drv_min,
+                "walking_min": wlk_min,
+            }
+
+        logger.info(f"TOOL get_directions -> {result}")
+        await params.result_callback(result)
+
     llm.register_function("get_current_time", _get_current_time)
     llm.register_function("end_call", _end_call)
+    # cancel_on_interruption=False → Gemini tags this NON_BLOCKING + uses
+    # scheduling="WHEN_IDLE" on the response, so Anicca finishes her current
+    # sentence, processes the directions, then keeps speaking with the real
+    # route — without freezing mid-word.
+    llm.register_function("get_directions", _get_directions, cancel_on_interruption=False)
 
     # Conversation history aggregator — VAD via Silero so the bot can be interrupted
     # mid-sentence (HARD requirement for natural wake-up calls).
