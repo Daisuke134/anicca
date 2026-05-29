@@ -1,0 +1,5 @@
+flowchart LR
+  C1["a cron job dies<br/>(silently)"] --> C2["heartbeat notices<br/>the gap in the logs"]
+  C2 --> C3["claude -p diagnoses<br/>and patches the job"]
+  C3 --> C4(["green again<br/>no human touched it"])
+  C4 -. next beat .-> C1

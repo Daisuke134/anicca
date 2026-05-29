@@ -1,0 +1,16 @@
+flowchart LR
+  subgraph THEN["THEN&nbsp;&middot;&nbsp;a cron machine"]
+    direction TB
+    A1["Claude Code"] --> A2["me, by hand"]
+    A2 --> A3["fixed cron jobs"]
+    A3 --> A4["posts on a timer"]
+  end
+  subgraph NOW["NOW&nbsp;&middot;&nbsp;a heartbeat agent"]
+    direction TB
+    B1["heartbeat every few min"] --> B2["claude -p reads state"]
+    B2 --> B3{"decide"}
+    B3 --> B4["fix / delete crons"]
+    B3 --> B5["write new skills"]
+    B3 --> B6["ship code, deploy"]
+  end
+  THEN ==> NOW

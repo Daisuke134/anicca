@@ -1,0 +1,12 @@
+flowchart TD
+  HB["heartbeat loop&nbsp;&middot;&nbsp;launchd, every few min"] --> CP["claude -p&nbsp;&middot;&nbsp;Claude Opus 4.7, headless"]
+  CP --> SK["55+ skills"]
+  CP --> CR["60+ cron jobs"]
+  CP --> BR["camofox browser-harness&nbsp;&middot;&nbsp;stealth"]
+  CP --> PAY["Stripe Connect V2"]
+  SK --> OUT["posts &middot; apps &middot; calls &middot; payouts"]
+  CR --> OUT
+  BR --> OUT
+  PAY --> OUT
+  CP --> ST[("state files + memory")]
+  ST -. feeds back .-> CP

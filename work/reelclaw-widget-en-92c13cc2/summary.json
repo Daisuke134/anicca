@@ -1,0 +1,29 @@
+{
+  "hookId": "W4",
+  "demoVideo": "styaling-up-late.MP4",
+  "hookTrimmedToSeconds": 3,
+  "demoUntrimmed": true,
+  "hookPreserved": true,
+  "noCTA": true,
+  "tiktokDirectPostSucceeded": true,
+  "tiktok": [
+    {
+      "postId": "cmpjme6ga00l8ql0yz87g3h0x",
+      "integration": "cmn8y47do02mmo70yckb46dyu"
+    }
+  ],
+  "instagram": [
+    {
+      "postId": "cmpjme6sv00klma0y21as925w",
+      "integration": "cmn8y95rg02d2qx0y09bbk5pb"
+    }
+  ],
+  "uploaded": {
+    "id": "ea6f2cca-d8a5-4989-8819-00f69d631b38",
+    "name": "j6D3RB6j4w.mp4",
+    "originalName": null,
+    "path": "https://uploads.postiz.com/j6D3RB6j4w.mp4",
+    "thumbnail": null,
+    "alt": null
+  }
+}

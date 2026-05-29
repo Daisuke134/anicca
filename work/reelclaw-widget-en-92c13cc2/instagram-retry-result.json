@@ -1,0 +1,1 @@
+{"message":["posts.0.settings.post_type must be one of the following values: post, story"],"error":"Bad Request","statusCode":400}

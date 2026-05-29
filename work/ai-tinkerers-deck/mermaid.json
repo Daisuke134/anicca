@@ -1,0 +1,1 @@
+{ "theme": "dark", "themeVariables": { "fontSize": "20px", "primaryColor": "#1b2433", "primaryTextColor": "#f0e6cf", "primaryBorderColor": "#E8B84B", "lineColor": "#9aa7bd", "secondaryColor": "#222c3d", "tertiaryColor": "#161d29", "clusterBkg": "#11161f", "clusterBorder": "#E8B84B" } }
