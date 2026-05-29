@@ -19,7 +19,7 @@ FORBIDDEN=(
   '[name]'
   '[NAME]'
   'on behalf of Daisuke'
-  'on behalf of Daisuke Narita'
+  'on behalf of ${OSS_USER_NAME_EN}'
   '+1 (336)'
   '+1 336'
 )

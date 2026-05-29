@@ -86,7 +86,7 @@ for yaml in "${SELECTED[@]}"; do
   # Env-substitute the YAML before send.
   # Order: {ts} first, then env vars (so a literal $X in subject is replaced).
   : "${OSS_TEST_RECIPIENT:=${GOG_ACCOUNT:-}}"
-  : "${USER_NAME_EN:=Daisuke Narita}"
+  : "${USER_NAME_EN:=${OSS_USER_NAME_EN}}"
   : "${USER_NAME_PREFERRED:=Dais}"
   : "${SLACK_REPORT_CHANNEL:=C091G3PKHL2}"
   CASE_YAML=$(sed \

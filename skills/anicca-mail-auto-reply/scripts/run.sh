@@ -21,7 +21,7 @@ STATE="$SKILL/data/state.json"
 SKIP="$SKILL/data/skip-patterns.json"
 [ -f "$STATE" ] || echo '{"replied":[]}' > "$STATE"
 
-ACCOUNT="${GMAIL_ACCOUNT:-keiodaisuke@gmail.com}"
+ACCOUNT="${GMAIL_ACCOUNT:-${OSS_USER_EMAIL}}"
 WINDOW_HOURS="${WINDOW_HOURS:-$(bash "$SKILL/scripts/lib/compute-window.sh")}"
 MAX_REPLIES="${MAX_REPLIES:-5}"
 DRY_RUN="${DRY_RUN:-0}"

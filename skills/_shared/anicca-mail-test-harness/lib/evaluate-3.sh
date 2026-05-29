@@ -32,7 +32,7 @@ print(walk(last.get('payload',{})))
 ")
 [ -z "$REPLY_BODY" ] && { echo "    ❌ no reply message in thread"; exit 1; }
 # Required substrings
-for s in '成田 大祐' '新宿区南元町' 'anicca' '日本' '給与'; do
+for s in '${OSS_USER_NAME_JP}' '新宿区南元町' 'anicca' '日本' '給与'; do
   echo "$REPLY_BODY" | grep -qF "$s" || { echo "    ❌ missing required '$s'"; exit 1; }
 done
 # Forbidden substrings
