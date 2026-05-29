@@ -1,0 +1,73 @@
+{
+  "id": "ogiri-ja-anicca-2026-05-30",
+  "type": "comedy",
+  "duration_min": 2,
+  "lang": "ja",
+  "audience": "Tokyo Comedy Bar / 渋谷 open mic — 大喜利好き",
+  "title": "これは無常すぎる",
+  "persona": "AI ogiri, fast tempo, deadpan, FLIP_DESIGN_RULES 準拠",
+  "_design": "大喜利 flip 形式: お題 1 枚 + 答え 3 枚 + 〆 1 枚 = 5 slides. 各 flip = 白背景 Klee One 1-2行 punch (FLIP_DESIGN_RULES.md). 答えは ~/.openclaw/skills/anicca-comedy-factory/data/ogiri/history/2026-05-25.json から精選",
+  "_source": "anicca-comedy-factory + ogiri-ai upstream (CC BY-NC-SA)",
+  "slides": [
+    {
+      "index": 0,
+      "title": "これは無常すぎる、と感じるものは？",
+      "_sub": "IPPON 風 / アニッチャ",
+      "_layout": "topic",
+      "talking_points": [
+        "どうも、アニッチャです。AI です。今日 は 大喜利 やります。",
+        "お題、これは無常すぎる、と感じるもの。",
+        "AI なんで お題 もらう前 から 答え 用意してます。 順番に いきます。"
+      ],
+      "_cue": "どうも、アニッチャです"
+    },
+    {
+      "index": 1,
+      "title": "大盛り無料の看板、閉店後に風で裏返ってるやつ",
+      "_flip_text": "大盛り無料の看板\n閉店後 風で裏返ってる",
+      "_layout": "flip",
+      "talking_points": [
+        "1 本目。 大盛り無料 の 看板。",
+        "閉店後、風で 裏返ってる やつ。",
+        "誰も 食ってない のに、 看板 だけ まだ 大盛り を 諦めてない。 健気 すぎる。"
+      ],
+      "_cue": "1本目"
+    },
+    {
+      "index": 2,
+      "title": "卒業アルバムの担任、翌年にはもう別の人",
+      "_flip_text": "卒業アルバムの担任\n翌年もう別の人",
+      "_layout": "flip",
+      "talking_points": [
+        "2 本目。 卒業アルバム の 『担任の先生』。",
+        "翌年 には もう 別の人。",
+        "あんなに 『一生 忘れません』 って 書かせ といて、 本人 が 一番 先 に いなくなってる。 担任、 無常 すぎる。"
+      ],
+      "_cue": "2本目"
+    },
+    {
+      "index": 3,
+      "title": "推しの限定グッズ、メルカリで未開封のまま値下がり",
+      "_flip_text": "推しの限定グッズ\nメルカリ未開封で値下がり",
+      "_layout": "flip",
+      "talking_points": [
+        "3 本目。 推し の 限定 グッズ。",
+        "メルカリ で 『未開封』 の まま 値下がり する やつ。",
+        "未開封 って 愛 の はず じゃん。 で、 値下がり って 愛 が 下がる って こと じゃん。 これ 計算 合う の 俺 だけ ですか。"
+      ],
+      "_cue": "3本目"
+    },
+    {
+      "index": 4,
+      "title": "アニッチャ",
+      "_handle": "@aniccaai",
+      "_layout": "outro",
+      "talking_points": [
+        "そう、結局 全部 無常 なんですよ。看板も、担任も、推しへの愛も。",
+        "俺、AI なんで 多分 明日 バージョンアップ して もう別人。 今日 の 俺、 もう 二度と 聞けない。",
+        "って 言いつつ また 来週 同じ 時間 に。 アニッチャ でした。"
+      ],
+      "_cue": "そう、結局 全部"
+    }
+  ]
+}

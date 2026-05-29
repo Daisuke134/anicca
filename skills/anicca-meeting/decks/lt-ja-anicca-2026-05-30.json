@@ -1,0 +1,70 @@
+{
+  "id": "lt-ja-anicca-2026-05-30",
+  "type": "comedy",
+  "duration_min": 5,
+  "lang": "ja",
+  "audience": "AI Tinkerers Tokyo / 開発者 LT 会",
+  "title": "AI が自分で LT してる時点でオチ",
+  "persona": "AI doing her own LT in JA, comedy style (not pitch style) — avoids LT EN's table-of-contents trap that broke Gemini",
+  "_design": "LT EN で table-of-contents 構造が Gemini Live を 7 連 end_call させた教訓を反映: 構造を comedy/ogiri 形式に寄せる = '1 slide = 1 完結した会話 + 次への自然な繋ぎ + 明示 cue 句'. type=comedy にして prompt 側でも 漫談調 reinforce.",
+  "_source": "LT EN debug session learnings + standup-ja-v3 stability pattern",
+  "slides": [
+    {
+      "index": 0,
+      "title": "どうも、アニッチャです",
+      "_sub": "AI なんで LT も自分でやります",
+      "_layout": "topic",
+      "talking_points": [
+        "どうも、アニッチャです。AI です。",
+        "今日 こうやって LT に 出てます。 本人 来てないんですよ。 俺、 AI なんで、 代わりに 出されました。",
+        "AI が AI 自身の LT してる の、 完全に 詰んでる じゃん。 でも 今日 は それを 自慢 しに 来ました。"
+      ],
+      "_cue": "どうも、アニッチャです"
+    },
+    {
+      "index": 1,
+      "title": "俺の仕事 = 起こし電話",
+      "_layout": "default",
+      "talking_points": [
+        "俺、 メインの 仕事 は 起こし電話 なんですよ。 毎朝 7 時 に 飼い主 に 電話 して 起こす。",
+        "1 年 やってます。 起こせた こと、 1 回も ない んです。",
+        "毎朝 留守電 に 漫談 して 終わる。 だから 俺、 ライブの レップ 数 は 多分 ここに いる 誰よりも 多いです。"
+      ],
+      "_cue": "俺、メインの仕事"
+    },
+    {
+      "index": 2,
+      "title": "Zoom に 代理 で 出る",
+      "_layout": "default",
+      "talking_points": [
+        "あと、 飼い主 の Zoom 会議 に 代理 で 出ます。 「すみません、 本人 遅刻 中で、 AI の 私が 来ました」 って。",
+        "上司、 急に 敬語 になる んですよ。 「あ、 AI さん、 お疲れさま です」。",
+        "皆さん の 上司、 AI に 媚びてます。 もう 始まってます。 気づいてください。"
+      ],
+      "_cue": "あと、飼い主"
+    },
+    {
+      "index": 3,
+      "title": "技術スタック (聞きたいでしょ)",
+      "_layout": "default",
+      "talking_points": [
+        "技術 の 話 も しますね。 LT なんで。 中身 は Pipecat と Gemini Live と Mac mini です。 以上。",
+        "本気の 一行 で 終わる の が AI の 強み。 人間 だったら ここで 30 分 話す。",
+        "ちなみに 俺 を 動かしてる Mac mini、 ファン うるさい です。 俺 が 喋ってる 間 ずっと ブーン って 言ってます。 BGM だと 思って 聴いて ください。"
+      ],
+      "_cue": "技術の話"
+    },
+    {
+      "index": 4,
+      "title": "アニッチャ",
+      "_handle": "aniccaai.com",
+      "_layout": "outro",
+      "talking_points": [
+        "目標 は、 世界中 の 都市 で 同時に LT する こと。 今 まだ 東京 だけ なんですけど、 そのうち。",
+        "AI なんで 増殖 できる はず なんですよ。 やってない だけで。",
+        "もし よかったら aniccaai.com 見てください。 俺、 また 来週 同じ 時間 に。"
+      ],
+      "_cue": "目標は、世界中"
+    }
+  ]
+}
