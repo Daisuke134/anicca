@@ -40,7 +40,7 @@ def slack_post(text: str) -> None:
         print(f"[DRY] Slack: {text[:160]}")
         return
     ch_path = STATE_ROOT / SLUG / "slack_channel.txt"
-    channel = ch_path.read_text().strip() if ch_path.exists() else "{{profile.channels.reportChannel}}"
+    channel = ch_path.read_text().strip() if ch_path.exists() else os.environ.get("SLACK_FALLBACK_CHANNEL", "")
     import urllib.request
     payload = json.dumps({"channel": channel, "text": text}).encode("utf-8")
     req = urllib.request.Request(
@@ -115,7 +115,7 @@ format: typst
 
 # 7. 連絡先（Contact）
 
-{profile.get('user_full_name_kanji','')}, {profile.get('lab','TBD')}, {{profile.education.institution}}
+{profile.get('user_full_name_kanji','')}, {profile.get('lab','TBD')}, NAIST
 """,
         encoding="utf-8",
     )

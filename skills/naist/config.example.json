@@ -1,0 +1,42 @@
+{
+  "_comment": "Copy this file to ~/.openclaw/state/naist/<your-slug>/profile.json and replace every <PLACEHOLDER>. Do NOT commit your real profile.json — it is .gitignored.",
+
+  "user_full_name_kanji":   "<姓> <名>",
+  "user_full_name_romaji":  "<Surname> <Given>",
+  "naist_email":            "<your.name>@naist.ac.jp",
+  "personal_gmail":         "<your-gmail>@gmail.com",
+  "student_id":             "<7-digit-student-id>",
+
+  "lab":                    "<lab-name-or-TBD>",
+  "advisor_email":          "<advisor>@is.naist.jp",
+  "advisors":               [],
+  "lab_members":            [],
+  "ta_coordinators":        [],
+
+  "default_reply_language": "en",
+  "auto_confirm":           true,
+
+  "_secrets_note": "The following live in ~/.openclaw/state/naist/<slug>/secrets.env (chmod 600), NOT in this JSON. See .env.example.",
+  "_secrets_required": [
+    "NAIST_IDP_USERNAME",
+    "NAIST_IDP_PASSWORD",
+    "NAIST_TOTP_SECRET"
+  ],
+
+  "_optional_slack": {
+    "channel_id_file": "~/.openclaw/state/naist/<slug>/slack_channel.txt",
+    "fallback_env_var": "SLACK_FALLBACK_CHANNEL",
+    "note": "If both unset, all Slack posts are skipped (no error). The submission record itself still goes through edu-portal."
+  },
+
+  "_optional_research_profile": {
+    "file": "~/.openclaw/state/naist/<slug>/research-profile.json",
+    "schema": {
+      "topic":               "<short title>",
+      "method":              "<approach>",
+      "preliminary_results": "<one-paragraph summary>",
+      "research_keywords":   ["<kw1>", "<kw2>", "<kw3>"]
+    },
+    "used_by": ["papers-suggest", "funds-apply", "research-proposal-gen"]
+  }
+}

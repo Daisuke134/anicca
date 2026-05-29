@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """homework-fetch.py — Procedure G end-to-end (read-only).
 
-Logs into {{profile.education.institution}} IDP → SSO into edu-portal → opens 期限あり tab on the home
+Logs into NAIST IDP → SSO into edu-portal → opens 期限あり tab on the home
 calendar → clicks every homework deadline link → scrapes the 課題提出 detail
 page for each one → posts a structured summary to Slack and saves a JSON
 snapshot per slug.
@@ -17,9 +17,9 @@ Output:
 
 Required env (loaded from secrets.env + ~/.openclaw/.env):
   SLUG                     — per-user slug (e.g. "dais")
-  {{profile.education.institution}}_IDP_USERNAME / {{profile.education.institution}}_EDU_USER
-  {{profile.education.institution}}_IDP_PASSWORD / {{profile.education.institution}}_EDU_PASSWORD
-  {{profile.education.institution}}_TOTP_SECRET
+  NAIST_IDP_USERNAME / NAIST_EDU_USER
+  NAIST_IDP_PASSWORD / NAIST_EDU_PASSWORD
+  NAIST_TOTP_SECRET
   SLACK_BOT_TOKEN (optional — DRY_RUN if unset)
 
 Exit codes: 0 ok, 1 fatal (login/nav failure)
@@ -44,8 +44,8 @@ WORKSPACE = Path.home() / ".openclaw" / "workspace" / "naist"
 STATE_ROOT = Path.home() / ".openclaw" / "state" / "naist"
 AB = (
     os.environ.get("AGENT_BROWSER_BIN")
-    or shutil.which("agent-{{profile.lateness.stakeholders.channel}}")
-    or "/opt/homebrew/bin/agent-{{profile.lateness.stakeholders.channel}}"
+    or shutil.which("agent-browser")
+    or "/opt/homebrew/bin/agent-browser"
 )
 
 IDP_URL = "https://idp.naist.jp/"
@@ -159,11 +159,11 @@ def screenshot(label: str, ss_dir: Path) -> None:
 
 def procedure_a_login(secrets: dict[str, str], ss_dir: Path) -> None:
     """IDP login: TOTP → password → SSO redirect. Skips if already logged in."""
-    user = secrets.get("{{profile.education.institution}}_IDP_USERNAME") or secrets.get("{{profile.education.institution}}_EDU_USER")
-    pwd = secrets.get("{{profile.education.institution}}_IDP_PASSWORD") or secrets.get("{{profile.education.institution}}_EDU_PASSWORD")
-    totp_secret = secrets.get("{{profile.education.institution}}_TOTP_SECRET")
+    user = secrets.get("NAIST_IDP_USERNAME") or secrets.get("NAIST_EDU_USER")
+    pwd = secrets.get("NAIST_IDP_PASSWORD") or secrets.get("NAIST_EDU_PASSWORD")
+    totp_secret = secrets.get("NAIST_TOTP_SECRET")
     if not all([user, pwd, totp_secret]):
-        fail("missing {{profile.education.institution}}_IDP_USERNAME / PASSWORD / TOTP_SECRET in secrets")
+        fail("missing NAIST_IDP_USERNAME / PASSWORD / TOTP_SECRET in secrets")
 
     ab(["open", IDP_URL])
     time.sleep(2)
@@ -364,9 +364,9 @@ def fetch_homework_detail(ref: str, label: str, idx: int, ss_dir: Path) -> dict:
 
 def format_slack(homeworks: list[dict], slug: str) -> str:
     if not homeworks:
-        return f":school: *{{profile.education.institution}} 宿題チェック (期限あり)* — `{slug}`\n\n:white_check_mark: 期限ありの課題はありません。"
+        return f":school: *NAIST 宿題チェック (期限あり)* — `{slug}`\n\n:white_check_mark: 期限ありの課題はありません。"
 
-    lines = [f":school: *{{profile.education.institution}} 宿題チェック (期限あり)* — `{slug}`", ""]
+    lines = [f":school: *NAIST 宿題チェック (期限あり)* — `{slug}`", ""]
     for hw in homeworks:
         subj = hw.get("subject") or "?"
         code = hw.get("subject_code") or ""
@@ -400,6 +400,7 @@ def main() -> int:
     ss_dir = out_dir / "screenshots" / today / "homework"
 
     homeworks: list[dict] = []
+    errors: list[str] = []
     try:
         procedure_a_login(secrets, ss_dir)
         procedure_b_sso(ss_dir)
@@ -407,56 +408,73 @@ def main() -> int:
         print(f"homework-fetch[{SLUG}]: found {len(refs)} homework deadline(s)")
 
         for run_idx, item in enumerate(refs, 1):
-            # Return to home before each click (the home menu changes after a click)
-            if run_idx > 1:
-                ab(["open", EDU_PORTAL_HOME])
-                time.sleep(3)
-                # Session-expiry guard: if we got bounced back to IDP, re-login
-                url_check = ab_eval("location.href")
-                if "edu-portal.naist.jp" not in url_check:
-                    print(f"  warn: session expired (URL={url_check}); re-logging in")
-                    procedure_a_login(secrets, ss_dir)
-                    procedure_b_sso(ss_dir)
-                refs2 = list_deadline_homework_refs(ss_dir)
-                # Re-match by ordinal index (immune to duplicate labels); fallback to label
-                cur = next((r for r in refs2 if r.get("idx") == item.get("idx")), None)
-                if not cur:
-                    cur = next((r for r in refs2 if r["label"] == item["label"]), None)
-                if not cur:
-                    print(f"  warn: lost ref for {item['label']!r} (idx={item.get('idx')}); skipping")
+            # Per-item try: partial-failure must NOT prevent the snapshot from
+            # being written. Pre-2026-05-29 versions of this script raised the
+            # first exception and silently dropped 10 days of fetches; now we
+            # collect errors and continue.
+            try:
+                if run_idx > 1:
+                    # Return to home. If session expired, full re-login from
+                    # scratch (cheaper than risking stuck JSF ViewState).
+                    ab(["open", EDU_PORTAL_HOME])
+                    time.sleep(3)
+                    url_check = ab_eval("location.href")
+                    if "edu-portal.naist.jp" not in url_check:
+                        print(f"  warn: session expired (URL={url_check}); full re-login")
+                        subprocess.run([AB, "close"], capture_output=True, timeout=10)
+                        time.sleep(2)
+                        procedure_a_login(secrets, ss_dir)
+                        procedure_b_sso(ss_dir)
+                    refs2 = list_deadline_homework_refs(ss_dir)
+                    cur = next((r for r in refs2 if r.get("idx") == item.get("idx")), None)
+                    if not cur:
+                        cur = next((r for r in refs2 if r["label"] == item["label"]), None)
+                    if not cur:
+                        msg = f"lost ref for {item['label']!r} (idx={item.get('idx')})"
+                        print(f"  warn: {msg}; skipping")
+                        errors.append(msg)
+                        continue
+                    item = cur
+                detail = fetch_homework_detail(item["ref"], item["label"], run_idx, ss_dir)
+                if "edu-portal.naist.jp" not in (detail.get("url") or ""):
+                    msg = f"homework click left edu-portal (URL={detail.get('url')})"
+                    print(f"  warn: {msg}; skipping entry")
+                    errors.append(msg)
                     continue
-                item = cur
-            detail = fetch_homework_detail(item["ref"], item["label"], run_idx, ss_dir)
-            # Sanity: did we actually land on a homework page?
-            if "edu-portal.naist.jp" not in (detail.get("url") or ""):
-                print(f"  warn: homework click left edu-portal (URL={detail.get('url')}); skipping entry")
+                homeworks.append(detail)
+            except Exception as item_e:
+                msg = f"per-item {item.get('label', '?')}: {item_e}"
+                print(f"  warn: {msg}; continuing", file=sys.stderr)
+                errors.append(msg)
                 continue
-            homeworks.append(detail)
 
     except SystemExit:
         raise
     except Exception as e:
-        slack_post(f":warning: naist:homework-fetch[{SLUG}] failed: {e}")
-        raise
+        # Pre-loop failure (login / SSO / first home snapshot). Record but still
+        # persist whatever we have so cron history shows the failure mode.
+        errors.append(f"pre-loop fatal: {e}")
+        slack_post(f":warning: naist:homework-fetch[{SLUG}] pre-loop failed: {e}")
     finally:
         subprocess.run([AB, "close"], capture_output=True, timeout=10)
 
-    # Persist
     snapshot = {
         "slug": SLUG,
         "fetched_at": f"{today}T{time.strftime('%H:%M:%SZ', time.gmtime())}",
-        "fetched_via": "agent-{{profile.lateness.stakeholders.channel}} 0.27.0 + {{profile.education.institution}} IDP TOTP",
+        "fetched_via": "agent-browser 0.27.0 + NAIST IDP TOTP",
         "homework_count": len(homeworks),
         "homeworks": homeworks,
+        "errors": errors,
     }
     out = out_dir / f"homework-{today}.json"
     out.write_text(json.dumps(snapshot, ensure_ascii=False, indent=2))
-    print(f"homework-fetch[{SLUG}]: wrote {out}")
+    print(f"homework-fetch[{SLUG}]: wrote {out} (homeworks={len(homeworks)}, errors={len(errors)})")
 
-    # Slack
     msg = format_slack(homeworks, SLUG)
+    if errors:
+        msg += f"\n\n:warning: {len(errors)} fetch error(s) — see `{out}`"
     slack_post(msg)
-    return 0
+    return 0 if homeworks or not errors else 2
 
 
 if __name__ == "__main__":

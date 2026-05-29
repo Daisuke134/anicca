@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """gcal-sync.py — push schedule-<term>.json events to Google Calendar via gog CLI.
 
-Per v1.8 SKILL.md: {{profile.education.institution}} class events + 健康診断 + announced events from
+Per v1.8 SKILL.md: NAIST class events + 健康診断 + announced events from
 ~/.openclaw/workspace/naist/<slug>/schedule-*.json are upserted into the user's
 primary calendar at <slug>'s account using `gog calendar create`.
 
@@ -11,9 +11,9 @@ Idempotent: maintains a ledger at
 events present in the ledger are skipped (or updated via `gog calendar update`
 if the title/topic/instructor changed).
 
-Auth: GOG_KEYRING_PASSWORD must be set (or in ~/.openclaw/.env). Account {{profile.lateness.stakeholders.channel}}
+Auth: GOG_KEYRING_PASSWORD must be set (or in ~/.openclaw/.env). Account email
 is read from <slug>/profile.json::naist.personal_gmail. NEVER use Google MCP /
-agent-{{profile.lateness.stakeholders.channel}} / gcloud — only `gog`.
+agent-browser / gcloud — only `gog`.
 """
 from __future__ import annotations
 
@@ -62,7 +62,7 @@ def get_account(slug: str) -> str:
 
 def get_slack_channel(slug: str) -> str:
     p = STATE_ROOT / slug / "slack_channel.txt"
-    return p.read_text().strip() if p.exists() else "{{profile.channels.reportChannel}}"
+    return p.read_text().strip() if p.exists() else os.environ.get("SLACK_FALLBACK_CHANNEL", "")
 
 
 def slack_post(text: str, channel: str) -> None:
@@ -93,7 +93,7 @@ def event_key(course_code: str, n: int, ev_date: str) -> str:
 
 
 def make_summary(course: dict, sess: dict) -> str:
-    return f"[{{profile.education.institution}}] {course['name']} #{sess['n']}: {sess['topic'][:40]}"
+    return f"[NAIST] {course['name']} #{sess['n']}: {sess['topic'][:40]}"
 
 
 def make_description(course: dict, sess: dict) -> str:
@@ -140,7 +140,7 @@ def upsert_other_event(ev: dict, ledger: dict, account: str, env: dict[str, str]
     args = [
         "calendar", "create", "primary",
         "--account", account,
-        "--summary", f"[{{profile.education.institution}}] {ev['title']}",
+        "--summary", f"[NAIST] {ev['title']}",
         "--from", ev["date"],
         "--to", ev["date"],
         "--all-day",
