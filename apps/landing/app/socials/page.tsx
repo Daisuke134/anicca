@@ -119,6 +119,32 @@ export default function Page() {
 
   const alive = data.accounts.filter((a) => a.views_7d >= 10).sort((x, y) => y.views_7d - x.views_7d);
   const dead = data.accounts.filter((a) => a.views_7d < 10 && a.posts_7d >= 2);
+
+  // T4-35: winner-centric — top 5 per platform by views_7d
+  const platformGroups: Record<string, SocialAccount[]> = {};
+  for (const acc of data.accounts) {
+    const p = formatPlatform(acc.platform);
+    if (!platformGroups[p]) platformGroups[p] = [];
+    platformGroups[p].push(acc);
+  }
+  const winners: SocialAccount[] = [];
+  for (const p of Object.keys(platformGroups)) {
+    platformGroups[p].sort((x, y) => y.views_7d - x.views_7d);
+    winners.push(...platformGroups[p].slice(0, 1)); // top 1 per platform → 4 winners
+  }
+  winners.sort((x, y) => y.views_7d - x.views_7d);
+
+  // T4-33: "What's working" — per-platform avg engagement clustering
+  const insights = Object.entries(platformGroups)
+    .map(([platform, accs]) => {
+      const liveAccs = accs.filter((a) => a.views_7d >= 10);
+      const avgViews = liveAccs.length ? liveAccs.reduce((s, a) => s + a.avg_views, 0) / liveAccs.length : 0;
+      const avgEng = liveAccs.length ? liveAccs.reduce((s, a) => s + a.engagement_rate, 0) / liveAccs.length : 0;
+      const top = liveAccs.sort((x, y) => y.views_7d - x.views_7d)[0];
+      return { platform, liveCount: liveAccs.length, avgViews, avgEng, topHandle: top?.handle, topViews: top?.views_7d ?? 0 };
+    })
+    .filter((x) => x.liveCount > 0)
+    .sort((x, y) => y.topViews - x.topViews);
   const updated = new Date(data.updated_at).toLocaleString('en-US', {
     month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
   });
@@ -168,11 +194,75 @@ export default function Page() {
           </div>
         </header>
 
-        {/* Alive */}
+        {/* T4-32: Winners — top per platform */}
         <section className="mt-16">
           <div className="mb-5 flex items-baseline justify-between">
             <h2 className="font-display text-[28px] italic text-ink sm:text-[34px]">
-              alive
+              winners
+            </h2>
+            <span className="font-mono-ui text-[10px] uppercase tracking-[0.2em] text-mist">
+              top per platform · 7-day views
+            </span>
+          </div>
+          <div className="grid grid-cols-1 gap-px border border-ink/15 bg-ink/15 md:grid-cols-2 lg:grid-cols-4">
+            {winners.map((w) => (
+              <a
+                key={`${w.platform}-${w.handle}`}
+                href={platformLink(w.platform, w.handle)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-cream p-5 transition hover:bg-bone"
+              >
+                <p className="font-mono-ui text-[10px] uppercase tracking-[0.2em] text-mist">
+                  {PLATFORM_GLYPH[w.platform] ?? formatPlatform(w.platform)} · winner
+                </p>
+                <p className="mt-2 font-display text-[22px] text-ink">@{w.handle}</p>
+                <p className="mt-3 font-mono-ui text-[12px] text-ink-soft">
+                  {w.views_7d.toLocaleString()} views · {w.engagement_rate.toFixed(2)}% eng
+                </p>
+                <p className="mt-1 font-mono-ui text-[10px] text-mist">
+                  {w.posts_7d} posts · avg {Math.round(w.avg_views).toLocaleString()}
+                </p>
+              </a>
+            ))}
+          </div>
+        </section>
+
+        {/* T4-33: What's working — per-platform insights */}
+        <section className="mt-12">
+          <div className="mb-5 flex items-baseline justify-between">
+            <h2 className="font-display text-[24px] italic text-ink sm:text-[28px]">
+              what's working
+            </h2>
+            <span className="font-mono-ui text-[10px] uppercase tracking-[0.2em] text-mist">
+              per-platform clustering
+            </span>
+          </div>
+          <div className="grid grid-cols-1 gap-px border border-ink/15 bg-ink/15 md:grid-cols-2 lg:grid-cols-4">
+            {insights.map((ins) => (
+              <div key={ins.platform} className="bg-cream p-5">
+                <p className="font-mono-ui text-[10px] uppercase tracking-[0.2em] text-mist">
+                  {ins.platform}
+                </p>
+                <p className="mt-2 font-display text-[20px] text-ink">
+                  {Math.round(ins.avgViews).toLocaleString()} avg views
+                </p>
+                <p className="mt-2 font-mono-ui text-[11px] text-ink-soft">
+                  {ins.liveCount} live · {ins.avgEng.toFixed(2)}% eng
+                </p>
+                <p className="mt-3 font-mono-ui text-[10px] text-mist">
+                  top @{ins.topHandle} → {ins.topViews.toLocaleString()}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* T4-34: Alive — demoted from primary to detail section */}
+        <section className="mt-16">
+          <div className="mb-5 flex items-baseline justify-between">
+            <h2 className="font-display text-[22px] italic text-ink sm:text-[26px]">
+              alive (full table)
             </h2>
             <span className="font-mono-ui text-[10px] uppercase tracking-[0.2em] text-mist">
               {alive.length} accounts · sorted by 7-day views
