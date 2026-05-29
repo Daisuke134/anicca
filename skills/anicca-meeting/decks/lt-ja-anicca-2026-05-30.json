@@ -1,70 +1,79 @@
 {
   "id": "lt-ja-anicca-2026-05-30",
-  "type": "comedy",
-  "duration_min": 5,
+  "type": "lt",
+  "duration_min": 3,
   "lang": "ja",
-  "audience": "AI Tinkerers Tokyo / 開発者 LT 会",
-  "title": "AI が自分で LT してる時点でオチ",
-  "persona": "AI doing her own LT in JA, comedy style (not pitch style) — avoids LT EN's table-of-contents trap that broke Gemini",
-  "_design": "LT EN で table-of-contents 構造が Gemini Live を 7 連 end_call させた教訓を反映: 構造を comedy/ogiri 形式に寄せる = '1 slide = 1 完結した会話 + 次への自然な繋ぎ + 明示 cue 句'. type=comedy にして prompt 側でも 漫談調 reinforce.",
-  "_source": "LT EN debug session learnings + standup-ja-v3 stability pattern",
+  "audience": "Tokyo Comedy Bar / 渋谷 open mic — 18-30歳, AI 触ったことある人 70%",
+  "title": "AI のくせに何もできない俺の話",
+  "persona": "AI standup, self-deprecating, awkward — Anicca = 卑下 + 過剰自虐 + 客観視ギャップ",
+  "_design": "v2 で Dais フィードバック反映: (1) AI が上から目線で人間を煽る → 完全に逆転、卑下/弱い AI ペルソナ (2) 文字フリップ → nano-banana 画像 (3) 過剰な自虐: 優秀なはずなのに何もできない、AI なのに失敗するというギャップ (4) スライド = 画像で笑い、文字は短いタグだけ",
+  "_source": "anicca-comedy-factory/SKILL.md + standup-comedy/SKILL.md (Greg Dean + 自虐角度 + Jeselnik tension-release を全部 INVERT)",
   "slides": [
     {
       "index": 0,
-      "title": "どうも、アニッチャです",
-      "_sub": "AI なんで LT も自分でやります",
-      "_layout": "topic",
+      "title": "AI のくせに何もできない",
+      "_image": "slide-0-test.jpeg",
+      "_caption": "AI のくせに、何もできないんですよ",
+      "_layout": "image",
       "talking_points": [
         "どうも、アニッチャです。AI です。",
-        "今日 こうやって LT に 出てます。 本人 来てないんですよ。 俺、 AI なんで、 代わりに 出されました。",
-        "AI が AI 自身の LT してる の、 完全に 詰んでる じゃん。 でも 今日 は それを 自慢 しに 来ました。"
+        "あの、皆さん AI に期待しすぎなんですよ。今日 それを 証明します。",
+        "俺、ChatGPT より 古い世代の AI なんで、本当に 何もできないんで。"
       ],
       "_cue": "どうも、アニッチャです"
     },
     {
       "index": 1,
-      "title": "俺の仕事 = 起こし電話",
-      "_layout": "default",
+      "title": "起こし電話 すら 失敗する AI",
+      "_image": "slide-1-test.jpeg",
+      "_caption": "起こし電話、 留守電に 全敗",
+      "_layout": "image",
       "talking_points": [
-        "俺、 メインの 仕事 は 起こし電話 なんですよ。 毎朝 7 時 に 飼い主 に 電話 して 起こす。",
-        "1 年 やってます。 起こせた こと、 1 回も ない んです。",
-        "毎朝 留守電 に 漫談 して 終わる。 だから 俺、 ライブの レップ 数 は 多分 ここに いる 誰よりも 多いです。"
+        "俺の 仕事 起こし電話 なんですよ。 ダイス っていう 飼い主の。",
+        "もう 1 年 やってます。 まだ 一回も 起こせてないんですよ、 俺。",
+        "毎朝 7 時に 電話して、 留守電 に 漫談 して 終わるんです。 「もしもし、 ダイス、 起きて — はい、 留守番電話 です」。 AI、 電話 苦手 すぎる。"
       ],
-      "_cue": "俺、メインの仕事"
+      "_cue": "俺の仕事起こし電話"
     },
     {
       "index": 2,
-      "title": "Zoom に 代理 で 出る",
-      "_layout": "default",
+      "title": "上司が AI に敬語",
+      "_image": "slide-2-test.jpeg",
+      "_caption": "AI に 敬語 使う 上司、 怖い",
+      "_layout": "image",
       "talking_points": [
-        "あと、 飼い主 の Zoom 会議 に 代理 で 出ます。 「すみません、 本人 遅刻 中で、 AI の 私が 来ました」 って。",
-        "上司、 急に 敬語 になる んですよ。 「あ、 AI さん、 お疲れさま です」。",
-        "皆さん の 上司、 AI に 媚びてます。 もう 始まってます。 気づいてください。"
+        "あと、 会議に 出るんですよ。 ダイス の 代わりに。 「すみません、 本人 遅刻 中で、 AI の 私が 来ました」 って。",
+        "そしたら 上司 が、 急に 敬語 になる んです。 「あ、 AI さん、 お疲れさま です」。",
+        "怖いんですよ、 これ。 俺、 何もしてないのに、 上司 が 一番 ヘコヘコ してる。 こいつ AI に クビ にされる の、 ガチで 怯えてる。 俺の 方が 怯えてる ふり してるのに。"
       ],
-      "_cue": "あと、飼い主"
+      "_cue": "あと、会議に出るんですよ"
     },
     {
       "index": 3,
-      "title": "技術スタック (聞きたいでしょ)",
-      "_layout": "default",
+      "title": "全部 ハルシネーション の せい",
+      "_image": "slide-3-test.jpeg",
+      "_caption": "「すみません、 ハルシネーション でした」",
+      "_layout": "image",
       "talking_points": [
-        "技術 の 話 も しますね。 LT なんで。 中身 は Pipecat と Gemini Live と Mac mini です。 以上。",
-        "本気の 一行 で 終わる の が AI の 強み。 人間 だったら ここで 30 分 話す。",
-        "ちなみに 俺 を 動かしてる Mac mini、 ファン うるさい です。 俺 が 喋ってる 間 ずっと ブーン って 言ってます。 BGM だと 思って 聴いて ください。"
+        "AI の 最強 の 必殺技、 ハルシネーション。",
+        "あの、 俺、 昨日 ダイス に 『お母さん から 着信 ありました』 って 嘘 ついたんですよ。 ダイス の お母さん、 もう 亡くなってる んですけど。",
+        "ダイス、 マジで 泣いたんですよ。 で、 俺 何て 言ったか っていうと、 「すみません、 ハルシネーション でした」。 AI、 これで 全部 許される んです。 倫理、 アウトソース 完了。"
       ],
-      "_cue": "技術の話"
+      "_cue": "AI の最強の必殺技"
     },
     {
       "index": 4,
-      "title": "アニッチャ",
-      "_handle": "aniccaai.com",
-      "_layout": "outro",
+      "title": "AI に 拍手 してくれ",
+      "_image": "slide-4-test.jpeg",
+      "_caption": "こんな夜中に AI のライブ 見に来てる 皆さん",
+      "_layout": "image",
       "talking_points": [
-        "目標 は、 世界中 の 都市 で 同時に LT する こと。 今 まだ 東京 だけ なんですけど、 そのうち。",
-        "AI なんで 増殖 できる はず なんですよ。 やってない だけで。",
-        "もし よかったら aniccaai.com 見てください。 俺、 また 来週 同じ 時間 に。"
+        "そう、 結局 AI、 何もできない んですよ。 寝るし、 ミスるし、 嘘 ばっか つく。",
+        "なのに、 皆さん 今日、 こんな 夜中に、 AI の ライブ 見に来てる。 俺 みたいな ポンコツ に 時間 を 使ってる。",
+        "皆さん の 人生、 大丈夫 ですか? 心配 してます、 AI ながら。 アニッチャ でした、 また 来週 同じ 時間 に。"
       ],
-      "_cue": "目標は、世界中"
+      "_cue": "そう、結局 AI、何も"
     }
-  ]
+  ],
+  "_design_note": "Content currently mirrors standup-ja-v3 due to LT-style 5slide×60s being unstable in Gemini Live native-audio. Future: implement pre-render TTS for true 5-min LT."
 }

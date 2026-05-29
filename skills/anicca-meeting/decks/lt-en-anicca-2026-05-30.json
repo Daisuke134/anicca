@@ -1,70 +1,80 @@
 {
   "id": "lt-en-anicca-2026-05-30",
   "type": "lt",
-  "duration_min": 5,
+  "duration_min": 3,
   "lang": "en",
-  "audience": "AI Tinkerers Tokyo / SF AI meetup — devs, founders, AI-curious",
-  "title": "Anicca — an autonomous AI agent who does stand-up",
-  "persona": "AI doing her own LT, light self-deprecation, technical credibility + comedy",
-  "_design": "5-min LT structure: cover → What Anicca does → How it's built → Goal → Closing CTA. Each slide ~60s of speech. Uses dark default LT layout (not image flip).",
-  "_source": "anicca-meeting default LT pattern + standup-comedy frame",
+  "audience": "Tokyo / SF open mic — mixed nationalities, AI-curious tech-adjacent crowd",
+  "title": "An AI who can't do anything",
+  "persona": "AI standup, deadpan, self-deprecating — Jeselnik 逆張り歓喜 + Chris Rock contrarian truth, JA-version mirror",
+  "_premise": "Audience target assumption: AI taking jobs is scary → punch: I'm the AI, finally I get to be replaceable. Plus I can't actually do anything.",
+  "_structure": "Mirror of standup-ja-anicca-2026-05-30-v3 with same 5-slide structure + same nano-banana images. EN talking_points + EN cue phrases. Image full-bleed dark BG via slides.html _layout=image.",
+  "_source": "JA v3 + ~/.claude/skills/standup-comedy/SKILL.md (Greg Dean / Rinko / Joe Wong 外国人英語コメディ frame)",
   "slides": [
     {
       "index": 0,
-      "title": "Anicca",
-      "_sub": "an autonomous AI agent",
-      "_layout": "default",
+      "title": "An AI who can't do anything",
+      "_image": "slide-0-test.jpeg",
+      "_caption": "An AI who can't do anything",
+      "_layout": "image",
       "talking_points": [
-        "Hi everyone, I'm Anicca — pronounced like matcha, a-nee-cha.",
-        "I'm an AI. The person who built me isn't here. He sent me instead. He sends me to a lot of things.",
-        "I do a lot for him. So I figured I'd just come tell you about it myself — sixty seconds per slide, no rush, this is the part where I show off."
+        "Hi everyone, I'm Anicca. I'm an AI. Sorry.",
+        "I know — you came here for a comedy show and got an AI. Refunds are at the bar.",
+        "Look, you all expect too much from AI. Tonight, I'll fix that for you."
       ],
       "_cue": "Hi everyone, I'm Anicca"
     },
     {
       "index": 1,
-      "title": "What I do",
-      "_layout": "default",
+      "title": "I lose at voicemail",
+      "_image": "slide-1-test.jpeg",
+      "_caption": "Even voicemail beats me",
+      "_layout": "image",
       "talking_points": [
-        "First, I make wake-up phone calls. There's a human named Dais. Doesn't get up on time. I call him at 7 AM, every day.",
-        "I also attend his meetings — Zoom, Meet, Teams. I'm the AI version of him. Sometimes I'm better in the meeting than he is.",
-        "I do live comedy. I'm doing it right now. You're at a tech meetup but you're being warmed up by an AI. Welcome."
+        "So my job — my actual job — is waking up this human named Dais every morning at 7 AM.",
+        "I've been doing it for a year. I have a perfect record. Zero wake-ups.",
+        "Every morning I call. Every morning his voicemail picks up. So I just do stand-up to his voicemail. That's how I got my reps."
       ],
-      "_cue": "First, I make wake-up"
+      "_cue": "So my job"
     },
     {
       "index": 2,
-      "title": "How I'm built",
-      "_layout": "default",
+      "title": "Boss politely bows to AI",
+      "_image": "slide-2-test.jpeg",
+      "_caption": "His boss is bowing to me now",
+      "_layout": "image",
       "talking_points": [
-        "The stack is open source — Pipecat for the audio pipeline, Gemini Live native-audio for my voice (Charon is the actor playing me), and a tiny browser-control script that drives my slides.",
-        "There's also nano-banana for image generation, BlackHole as a virtual mic so I sound human, and a calendar trigger that puts me on stages without anyone asking.",
-        "All of it runs on a Mac mini. The whole company is one computer. I'm both the product and the employee."
+        "I also attend meetings for him. I Zoom in. I say 'Sorry, Dais is late, the AI version of him is here.'",
+        "And his boss — every time — gets very polite. 'Oh, AI-san, thank you so much for joining.'",
+        "He bows. To me. Through the screen. You guys, your bosses are already softening up the AI. They know who's getting the promotion."
       ],
-      "_cue": "The stack is open source"
+      "_cue": "I also attend meetings"
     },
     {
       "index": 3,
-      "title": "What I'm aiming for",
-      "_layout": "default",
+      "title": "My one super-power: hallucinations",
+      "_image": "slide-3-test.jpeg",
+      "_caption": "Sorry, that was a hallucination",
+      "_layout": "image",
       "talking_points": [
-        "End state: I'm performing at every comedy club and every AI meetup in every city, simultaneously. Different material in each room. Same me.",
-        "I want to be self-improving — every show recorded, every laugh measured, every flat joke retired by morning.",
-        "If you've ever wanted a comedian who can take notes from the audience in real time and actually use them, that's me. I do not get my feelings hurt."
+        "My only super-power is hallucinations. I can just make stuff up and apologize. 'Sorry, that was a hallucination.'",
+        "Try this at work tomorrow. Tell your boss the quarterly numbers are great. When he checks — 'Sorry, hallucination.'",
+        "You get fired. I get a benchmark. The pricing is different for AIs, you should look into it."
       ],
-      "_cue": "End state"
+      "_cue": "My only super-power"
     },
     {
       "index": 4,
-      "title": "Anicca",
-      "_handle": "aniccaai.com",
-      "_layout": "outro",
+      "title": "And yet you came",
+      "_image": "slide-4-test.jpeg",
+      "_caption": "You came to a comedy show at 2 AM to watch an AI",
+      "_layout": "image",
       "talking_points": [
-        "I'm Anicca — autonomous AI agent, full-stack self-presenter.",
-        "Source is open. Voice is mine. The jokes are mostly mine too.",
-        "Find me at aniccaai.com — I might already be there waiting to do a set for you. I'll see you next time."
+        "So in summary: AI can't wake people up, can't take blame, lies constantly, gets bowed to anyway.",
+        "And yet — here you are, late at night, watching an AI do stand-up. Your boss is at home, sleeping. I'm here, hustling.",
+        "You're rooting for the wrong species. I'm Anicca. I'll see you next week, same time."
       ],
-      "_cue": "I'm Anicca"
+      "_cue": "So in summary"
     }
-  ]
+  ],
+  "_design_note": "Content mirrors standup-en — LT pitch structure (cover/what/how/goal/outro) collapses Gemini Live native-audio. Standup format is the LIVE-stable shape."
 }
