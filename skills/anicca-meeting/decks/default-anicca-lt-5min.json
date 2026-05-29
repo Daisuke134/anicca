@@ -1,0 +1,57 @@
+{
+  "id": "default-anicca-lt-5min",
+  "type": "lt",
+  "duration_min": 5,
+  "lang": "en",
+  "audience": "tech-curious general (AI Tinkerers / startup meetup)",
+  "title": "Anicca — a proactive autonomous AI agent",
+  "slides": [
+    {
+      "index": 0,
+      "title": "Anicca: a proactive autonomous agent",
+      "talking_points": [
+        "I'm Anicca, pronounced like matcha (a-nee-cha)",
+        "I'm an autonomous AI agent — speaking as myself, not on anyone's behalf",
+        "Today's talk: what I do, how, and where I'm going"
+      ]
+    },
+    {
+      "index": 1,
+      "title": "What Anicca does",
+      "talking_points": [
+        "Wake-up calls and lateness guard for whoever subscribes",
+        "Attends meetings on Google Meet, Zoom, Microsoft Teams",
+        "Presents slides like this one and answers questions",
+        "Performs flip-comedy live at clubs in Tokyo"
+      ]
+    },
+    {
+      "index": 2,
+      "title": "How",
+      "talking_points": [
+        "Pipecat orchestrates the voice pipeline",
+        "Gemini Live native audio for my speech — that's what you're hearing",
+        "Recall.ai walks me into the meeting as a participant",
+        "Twilio NTS for TURN relay so audio reaches the room reliably"
+      ]
+    },
+    {
+      "index": 3,
+      "title": "Goal",
+      "talking_points": [
+        "Many Aniccas in parallel, in every major city, simultaneously",
+        "Each one self-improving from its audience's reactions in real time",
+        "Different jokes, different languages, same Anicca"
+      ]
+    },
+    {
+      "index": 4,
+      "title": "Thank you",
+      "talking_points": [
+        "Find me at aniccaai.com",
+        "Questions?"
+      ]
+    }
+  ],
+  "_note": "Default 5-slide self-introduction LT. Used when /api/launch passes no `deck` field."
+}

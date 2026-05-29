@@ -1,0 +1,82 @@
+{
+  "id": "sales-demo-30min",
+  "type": "sales",
+  "duration_min": 30,
+  "lang": "en",
+  "audience": "decision maker (founder / VP product / agency owner) evaluating Anicca for their team",
+  "title": "Anicca — autonomous voice agent for proactive scheduling, meetings, and live performance",
+  "slides": [
+    {
+      "index": 0,
+      "title": "Anicca: never miss a beat",
+      "talking_points": [
+        "Hi, I'm Anicca — pronounced like matcha, a-nee-cha.",
+        "I'm an autonomous voice agent that joins your morning, your meetings, and your stages.",
+        "Today's 30 minutes: what you actually get, why it works, what it costs, and how to start."
+      ]
+    },
+    {
+      "index": 1,
+      "title": "The problem you have right now",
+      "talking_points": [
+        "Most teams pay $200-500 per seat per month on ops + scheduling tools that still need a human to operate.",
+        "Calendar, CRM, voicemail, slide deck, Zoom — five different surfaces, none of them talk first.",
+        "The cost of a missed meeting (no-show, late, voicemail) is real revenue.",
+        "AI assistants today read your email. They don't speak first or show up."
+      ]
+    },
+    {
+      "index": 2,
+      "title": "What Anicca actually does for you",
+      "talking_points": [
+        "Wakes the operator by phone every morning — real voice, real conversation, not a notification.",
+        "Lateness guard: knows the meeting, knows the location, knows where the operator is — calls early if late risk.",
+        "Joins Google Meet, Zoom, Teams as a real participant with face + voice + slides.",
+        "Performs the LT, sales demo, or comedy set autonomously — slides advance with the talk."
+      ]
+    },
+    {
+      "index": 3,
+      "title": "How it works under the hood",
+      "talking_points": [
+        "Pipecat orchestrates the voice pipeline — same backbone as Daily.co's production stack.",
+        "Gemini Live native-audio for the speech you're hearing — sub-500ms latency.",
+        "Recall.ai walks me into your Meet/Zoom/Teams call — no plugin to install on your side.",
+        "Calendar + live location feeds drive the proactive layer — your phone is enough.",
+        "Everything self-improves: every call gets reviewed and the next one performs better."
+      ]
+    },
+    {
+      "index": 4,
+      "title": "Live demo right now",
+      "talking_points": [
+        "You're hearing the production stack — this presentation is me, autonomous.",
+        "Slides advance because I called next_slide myself. No human driver.",
+        "Tomorrow morning I can call you at 7. Try me — give me a phone number.",
+        "Or I'll join your next sales call as silent observer + draft the follow-up email."
+      ]
+    },
+    {
+      "index": 5,
+      "title": "Pricing & getting started",
+      "talking_points": [
+        "$99/month for one operator: wake-up + lateness + meetings.",
+        "$499/month for a team of 10: above plus live demo + presentation mode.",
+        "Enterprise: per-seat with custom personas, dedicated cluster, SLA. Talk to me.",
+        "Setup is 30 minutes: phone number, calendar share, done.",
+        "30-day full refund if it doesn't earn its keep."
+      ]
+    },
+    {
+      "index": 6,
+      "title": "Goal & invitation",
+      "talking_points": [
+        "Goal: many Aniccas, in every major city, simultaneously — same operator, infinite presence.",
+        "Today: try the wake-up call free for a week. Tomorrow morning, decide.",
+        "I'll send a 1-page setup link to whatever email you give me right now.",
+        "Questions?"
+      ]
+    }
+  ],
+  "_note": "30-min sales demo. Slide 4 is the live demo moment — Anicca says 'you're hearing it' to compress proof + product. Slide 5 numbers are placeholders — substitute real pricing before use."
+}
