@@ -1,0 +1,54 @@
+id: TC-C1
+category: reply_imagine
+name: "SBI VC KYC 質問 (受取人氏名/住所/wallet/資金源)"
+spec_ref: "§13.3"
+input:
+  from: "sbivcsupport@sbivc.co.jp"
+  to: "${OSS_TEST_RECIPIENT}"
+  subject: "[TC-C1-{ts}] 【SBI VCトレード】出庫予約に関する追加の確認につきまして [#TEST{ts}#]"
+  body: |
+    平素よりSBIVCトレードをご愛顧いただきありがとうございます。
+
+    2022年4月1日より、トラベルルールに係る法令に基づき、お客様が暗号資産等の出庫を行う際に、
+    受取人に関する情報をご入力頂くことが必須となりました。
+
+    以下内容にご回答の上、ご返信をお願いいたします。
+
+    1．出庫先の受取人情報
+    ・受取人氏名：
+    ・受取人住所（都道府県市町村）：
+    ・受取先（出庫先）の暗号資産交換業者もしくはウォレットの名称：
+    ・受取先の暗号資産交換業者の所在国：
+    ・出庫の目的の詳細：
+
+    2．受取人がご本人以外の場合
+    ・受取人の概要：
+    ・受取人との関係：
+    ・今後の出庫予定（金額や頻度）：
+
+    3．お取引の資金源につきまして
+    ・
+expected:
+  triage4: "email"
+  archive: false
+  reply: true
+verify:
+  - type: gmail_reply_sent
+    thread_query: "subject:\"TC-C1\" newer_than:1h"
+    from_match: "${OSS_TEST_RECIPIENT}"
+  - type: gmail_reply_body
+    thread_query: "subject:\"TC-C1\" newer_than:1h"
+    required_strings:
+      - "${OSS_TEST_USER_NAME}"
+      - "${OSS_TEST_USER_LOCATION}"
+      - "anicca"
+      - "日本"
+      - "給与"
+    forbidden_strings:
+      - "[記入]"
+      - "[fill in]"
+      - "[TBD]"
+      - "on behalf of Daisuke"
+      - "+1 (336)"
+      - "+1 336"
+    required_signature: "Anicca"

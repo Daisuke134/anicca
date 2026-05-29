@@ -1,15 +1,43 @@
 {
-  "name": "Your Name",
-  "phone": "+10000000000",
-  "timezone": "Asia/Tokyo",
-  "googleAccount": "you@example.com",
-  "home": { "address": "Your home address", "lat": 0.0, "lon": 0.0 },
-  "wakeTime": "07:00",
-  "identities": {
-    "default": { "name": "Your Name", "match": ".*" }
+  "_comment": "Copy this to identity/profile.json and fill in YOUR values. profile.json is gitignored.",
+  "identity": {
+    "legalName": "Your Legal Name in Native Script",
+    "stageName": "Your Public/Stage Name",
+    "preferredName": "Nickname",
+    "timezone": "Asia/Tokyo",
+    "languages": ["ja", "en"],
+    "homeAddress": "Your home address"
   },
-  "stakeholders": [
-    { "match": "work|office|boss", "channel": "{{profile.lateness.stakeholders.channel}}", "to": "boss@example.com", "sender": "Your Name", "note": "work" }
-  ],
-  "defaultSender": "Your Name"
+  "contact": {
+    "personalEmail": "you@example.com",
+    "workEmail": "you@your-company.com",
+    "businessEmail": "contact@your-domain.com",
+    "phone": "+810000000000",
+    "_note_phone": "Use only ONE primary phone. Legacy/retired numbers are forbidden in signatures."
+  },
+  "business": {
+    "name": "Your Business Name",
+    "website": "https://your-business.com",
+    "contactEmail": "contact@your-business.com",
+    "contactPhone": "+810000000000",
+    "address": "Business address",
+    "country": "Country"
+  },
+  "crypto": {
+    "selfCustodyWallet": {
+      "label": "your-wallet-label",
+      "longName": "Description of self-custody wallet for travel-rule queries",
+      "country": "Country",
+      "purpose": "Use case description for KYC responses",
+      "_note_secrets": "NEVER write wallet addresses or private keys here"
+    }
+  },
+  "income": {
+    "primary": "Primary income source description (e.g. salary / freelance / business)",
+    "_note": "Used for travel-rule / KYC fund-source questions"
+  },
+  "channels": {
+    "reportPlatform": "slack",
+    "reportChannel": "CXXXXXXXXX"
+  }
 }
