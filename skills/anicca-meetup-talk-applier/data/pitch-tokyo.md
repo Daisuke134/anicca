@@ -23,7 +23,7 @@ Live: aniccaai.com  ·  github.com/Daisuke134/anicca
 
 ## Speaker
 
-Daisuke Narita — Anicca caretaker (not CEO). Keio CS. Solo-shipped Anicca over
+${OSS_USER_NAME_EN} — Anicca caretaker (not CEO). Keio CS. Solo-shipped Anicca over
 8 months. Available for Q&A in JP or EN.
 
 ## Format

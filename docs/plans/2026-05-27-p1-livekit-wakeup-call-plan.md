@@ -142,14 +142,14 @@ worktree: `feature/livekit-wakeup`（anicca-oss）。
 - [ ] **Step 2: dispatch スクリプト** `dispatch_call.sh`
   ```bash
   #!/bin/bash
-  NAME="${1:-Dais}"; PHONE="${2:-+818046270314}"
+  NAME="${1:-Dais}"; PHONE="${2:-${OSS_USER_PHONE}}"
   lk dispatch create --agent-name anicca-wakeup \
     --metadata "{\"phone_number\":\"$PHONE\",\"name\":\"$NAME\"}"
   ```
 
 ### Task 5: E2E 実走（必須・dry-run 禁止）
 
-- [ ] **Step 1:** worker 起動中に `bash dispatch_call.sh Dais +818046270314` で**実際に Dais に発信**。
+- [ ] **Step 1:** worker 起動中に `bash dispatch_call.sh Dais ${OSS_USER_PHONE}` で**実際に Dais に発信**。
 - [ ] **Step 2:** 通話を実評価: 着信→双方向→1.5秒以内応答→話被せで即停止(barge-in)→「今何時?」で get_current_time 発火→起床確認後 end_call で切断。
 - [ ] **Step 3:** 旧 imokenet と自然さ/遅延を比較。劣る点があれば S2S モデル/VAD/turn_detection を調整して再発信。
 - [ ] **Step 4:** `superpowers:verification-before-completion` の 5 step gate を通す（録音/通話ログを fresh evidence に）。
