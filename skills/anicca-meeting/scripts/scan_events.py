@@ -52,13 +52,17 @@ STATE_FILE = STATE_DIR / "launched-events.jsonl"
 PIPECAT_URL_FILE = Path.home() / ".openclaw" / "state" / "anicca_meeting_url.txt"
 
 # Tag → deck-generator args
+# default_deck_id is used ONLY when its language matches the tag language;
+# otherwise the script falls through to deck_generator.py so the deck is
+# actually in the right language. Hardcoded English defaults for JA tags
+# was a bug (caught E2E 2026-05-29: [BOT-LT-JA] ran the English deck).
 TAG_TABLE = [
     # (regex, type, lang, duration, default_deck_id_if_no_gen)
-    (r"\[BOT-LT-JA\]",     "lt",     "ja", 5,  "default-anicca-lt-5min"),
+    (r"\[BOT-LT-JA\]",     "lt",     "ja", 5,  None),  # generate JA fresh
     (r"\[BOT-LT(?!-)\]",   "lt",     "en", 5,  "default-anicca-lt-5min"),
     (r"\[BOT-SALES-30\]",  "sales",  "en", 30, "sales-demo-30min"),
     (r"\[BOT-SALES\]",     "sales",  "en", 30, "sales-demo-30min"),
-    (r"\[BOT-COMEDY-JA\]", "comedy", "ja", 3,  "comedy-3min"),
+    (r"\[BOT-COMEDY-JA\]", "comedy", "ja", 3,  "comedy-3min"),  # JA bundled exists
     (r"\[BOT-COMEDY-EN\]", "comedy", "en", 3,  None),
     (r"\[BOT-COMEDY\]",    "comedy", "ja", 3,  "comedy-3min"),
 ]
