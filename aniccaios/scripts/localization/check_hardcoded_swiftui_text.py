@@ -23,6 +23,7 @@ APP_SRC = ROOT / "aniccaios"
 # Extremely small allowlist — keep tight.
 ALLOWED_LITERALS = {
     "Anicca",
+    "aniccaai.com",  # branding watermark URL — not translatable
 }
 
 SWIFT_TEXT_RE = re.compile(r'Text\("(?P<lit>(?:\\.|[^"\\])*)"\)')
