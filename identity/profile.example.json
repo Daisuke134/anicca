@@ -4,9 +4,56 @@
     "legalName": "Your Legal Name in Native Script",
     "stageName": "Your Public/Stage Name",
     "preferredName": "Nickname",
+    "name": "Your nickname (short, used in calls and mails)",
     "timezone": "Asia/Tokyo",
     "languages": ["ja", "en"],
-    "homeAddress": "Your home address"
+    "homeAddress": "Your home address",
+    "homeLatLon": [35.0000, 139.0000],
+    "phone": "+810000000000",
+    "googleAccount": "you@example.com",
+    "goals": {
+      "northStar": "One sentence describing what you want your life to be in 5 years",
+      "ideal_state": [
+        {
+          "domain": "example_domain",
+          "milestone": "Concrete time-bound goal — e.g. 'MRR $1000 by 2026-09'",
+          "weekly_action": "What you commit to do weekly — e.g. '週 1 LT 出演'",
+          "sources": ["URL or platform names where relevant"]
+        }
+      ],
+      "anti_goals": [
+        "What you explicitly do NOT want — e.g. 'never become a corporate IC again'"
+      ]
+    }
+  },
+  "alarm": {
+    "wakeTime": "07:00",
+    "wakeWeekdays": "07:00",
+    "wakeWeekends": "08:00",
+    "quietHoursStart": "23:30",
+    "quietHoursEnd": "05:30",
+    "defaultArrivalBufferMinutes": 15,
+    "departLeadMinutes": 5,
+    "callIntervalSecondsNoPickup": 180,
+    "callIntervalSecondsPickupNoMove": 300,
+    "moveDetectionMeters": 300,
+    "staleLocationMinutes": 10,
+    "eventStyles": {
+      "default":      { "buffer": 15, "intensity": "normal" },
+      "airport_intl": { "buffer": 180, "intensity": "high" },
+      "airport_dom":  { "buffer": 60, "intensity": "high" },
+      "shinkansen":   { "buffer": 15, "intensity": "normal" },
+      "hospital":     { "buffer": 30, "intensity": "normal" },
+      "remote":       { "buffer": 5, "intensity": "normal" },
+      "wake":         { "buffer": 0, "intensity": "relentless" },
+      "sleep":        { "buffer": 10, "intensity": "gentle" },
+      "meditation":   { "buffer": 5, "intensity": "gentle" },
+      "running":      { "buffer": 5, "intensity": "gentle" },
+      "lt":           { "buffer": 15, "intensity": "normal" },
+      "comedy":       { "buffer": 25, "intensity": "normal" },
+      "work":         { "buffer": 15, "intensity": "normal" },
+      "exam":         { "buffer": 60, "intensity": "high" }
+    }
   },
   "contact": {
     "personalEmail": "you@example.com",
