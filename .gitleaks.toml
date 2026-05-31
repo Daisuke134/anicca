@@ -21,3 +21,23 @@ paths = [
   '''.*\.example(\..*)?''',
   '''.*/SKILL\.md''',
 ]
+
+[[allowlists]]
+description = "public on-chain contract addresses (NOT secrets — anyone can look them up on basescan.org / etherscan.io)"
+regexTarget = "match"
+regexes = [
+  '''0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913''',
+  '''0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48''',
+]
+stopwords = [
+  "token_contract",
+  "contract_address",
+  "BASE_USDC",
+]
+
+[[allowlists]]
+description = "anicca-earn-x402 files that hard-code the public USDC token contract"
+paths = [
+  '''skills/anicca-earn-x402/workers/src/index\.ts''',
+  '''skills/anicca-earn-x402/deploy/netlify/functions/x402\.js''',
+]
