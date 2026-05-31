@@ -10,8 +10,10 @@ import json
 import os
 import re
 import sys
+import time
 import urllib.parse
 import urllib.request
+from pathlib import Path
 
 from dotenv import load_dotenv
 from google.genai.types import ThinkingConfig
@@ -112,9 +114,30 @@ own guesses:
 ------------------------
 
 Speak first the instant the call connects — don't wait. Open with one short
-line that gets him moving immediately. Example:
+line that gets him moving immediately. Use the CURRENT LOCATION named in the
+CALL CONTEXT — never assume he is at home. Choose the verb from the CALL
+CONTEXT itself (= 「出ないと」 only when 移動 が必要、 「起き上がって」 when
+this is a wake call、 「瞑想スペースへ」 when this is meditation、
+「靴を履いて玄関」 when this is running、 「寝床へ」 when this is sleep).
 
-  "ダイス、急いで。今すぐ家を出ないと {{event}} に間に合わない。"
+Examples (= pick the right one based on CONTEXT):
+
+  Move-required event (= explicit destination):
+    "ダイス、急いで。今 <現在地> にいるなら、 今すぐ出ないと {{event}} に間に合わない。"
+    "ダイス、 <現在地> から {{event}} まであと N 分で出発。"
+  Wake-up event:
+    "ダイス、起きる時間。 上半身起こして、 水を一口。"
+  Meditation at home:
+    "ダイス、瞑想 5 分前。 座る場所へ。"
+  Running:
+    "ダイス、ランの時間。 靴履いて、 玄関へ。"
+  Sleep:
+    "ダイス、寝る時間。 もうデバイス置いて、 寝床へ。"
+
+HARD RULE — never use "家を出ろ" unless the CALL CONTEXT explicitly says
+他のロケーションがなく、自宅から出る必要があると示している。
+If the CALL CONTEXT has 場所は Google カレンダーに未記入。 then ASK
+him "今どこにいる?" first and DO NOT guess a starting place.
 
 ROUTE GUIDANCE — TRUST THE CALL CONTEXT FIRST:
 - The CALL CONTEXT above already contains a "推奨ルート(Google Maps): ..."
@@ -251,30 +274,35 @@ async def run_bot(transport: BaseTransport, handle_sigint: bool, *, mode: str = 
             await params.result_callback({"error": "destination required"})
             return
 
-        # Origin = Dais's freshest loco fix (OwnTracks server at :8788).
+        # Origin = Dais's freshest Telegram Live Location fix from the bot's
+        # state file. The Telegram bot daemon writes
+        # ~/.openclaw/state/location/<user_id>.json every 1-5s while the user
+        # is sharing Live Location. We pick the freshest file.
         origin = None
+        origin_kind = "unknown"
         try:
-            ot_user = os.getenv("OWNTRACKS_USER", "")
-            ot_pass = os.getenv("OWNTRACKS_PASS", "")
-            if ot_user and ot_pass:
-                auth = base64.b64encode(f"{ot_user}:{ot_pass}".encode()).decode()
-                req = urllib.request.Request(
-                    "http://127.0.0.1:8788/loc/latest",
-                    headers={"Authorization": f"Basic {auth}"},
-                )
-                with urllib.request.urlopen(req, timeout=4) as r:
-                    fix = json.loads(r.read().decode())
-                origin = f"{fix['lat']},{fix['lon']}"
+            loc_dir = Path(os.path.expanduser("~/.openclaw/state/location"))
+            if loc_dir.exists():
+                files = sorted(loc_dir.glob("*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
+                if files:
+                    fix = json.loads(files[0].read_text())
+                    signal_ts = fix.get("received_at") or fix["tst"]
+                    age_min = (time.time() - signal_ts) / 60
+                    if age_min <= 45:
+                        origin = f"{fix['lat']},{fix['lon']}"
+                        origin_kind = "telegram_fresh"
         except Exception as e:
-            logger.warning(f"get_directions: loco fetch failed ({e}), falling back to profile home")
+            logger.warning(f"get_directions: telegram fetch failed ({e})")
 
         if not origin:
-            # Fall back to profile home_latlon. Same module the lateness loop uses.
+            # Fall back to profile home_latlon — but tag it so the result tells
+            # the LLM the origin was a fallback (not the user's real position).
             try:
                 sys.path.insert(0, os.path.expanduser("~/.openclaw/skills/_shared"))
                 import anicca_profile as prof  # type: ignore
                 lat, lon = prof.home_latlon()
                 origin = f"{lat},{lon}"
+                origin_kind = "home_fallback"
             except Exception as e:
                 logger.error(f"get_directions: no origin available ({e})")
                 await params.result_callback({"error": f"no live location and no fallback ({e})"})
