@@ -83,6 +83,7 @@ jobs:
                   | { grep -v INSTALL_BOOTSTRAP.md || true; } \
                   | { grep -v LAUNCH_COPY.md         || true; } \
                   | { grep -v README.md              || true; } \
+                  | { grep -v 'sec-scan.yml'         || true; } \
                   | wc -l | tr -d ' ')
             if [ "${n:-0}" -gt 0 ]; then
               echo "❌ PII pattern '$p' has $n hit(s)"
@@ -92,7 +93,8 @@ jobs:
                 | { grep -v '\.git/' || true; } \
                 | { grep -v INSTALL_BOOTSTRAP.md || true; } \
                 | { grep -v LAUNCH_COPY.md         || true; } \
-                | { grep -v README.md              || true; }
+                | { grep -v README.md              || true; } \
+                | { grep -v 'sec-scan.yml'         || true; }
               hits=$((hits + n))
             fi
           done
