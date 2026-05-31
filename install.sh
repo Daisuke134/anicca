@@ -124,6 +124,33 @@ for skill in "${SKILLS_TO_INSTALL[@]}"; do
 done
 echo
 
+# ─── 4.5  launchd plists from templates ────────────────────────────────
+cyan "[4.5/6] installing launchd plists from templates…"
+TEMPLATES_DIR="$REPO_ROOT/templates"
+LA_DIR="$HOME/Library/LaunchAgents"
+mkdir -p "$LA_DIR"
+for plist in ai.anicca.tg-loc-bot ai.anicca.pipecat-phone; do
+  src="$TEMPLATES_DIR/${plist}.plist"
+  dst="$LA_DIR/${plist}.plist"
+  if [ ! -f "$src" ]; then
+    yellow "  ⚠ $src missing — skip"
+    continue
+  fi
+  if [ -f "$dst" ]; then
+    green "  ✓ $plist already installed"
+    continue
+  fi
+  sed -e "s|__HOME__|$HOME|g" \
+      -e "s|__ANICCA_HOME__|$ANICCA_HOME|g" \
+      "$src" > "$dst"
+  if launchctl bootstrap "gui/$(id -u)" "$dst" >/dev/null 2>&1; then
+    green "  ✎ installed + bootstrapped $plist"
+  else
+    yellow "  ⚠ installed $plist but bootstrap failed (= may already be loaded)"
+  fi
+done
+echo
+
 # ─── 5. cron registration ──────────────────────────────────────────────
 cyan "[5/6] registering openclaw cron entries…"
 if [ "$HAS_OPENCLAW" -eq 0 ]; then
