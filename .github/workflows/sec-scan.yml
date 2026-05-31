@@ -1,0 +1,119 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancel older runs of the same PR/branch.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gitleaks:
+    name: gitleaks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # full history for git scan
+
+      - name: Run gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITLEAKS_CONFIG: .gitleaks.toml
+        # Allow contributors to see the report; only block on verified findings.
+
+  trufflehog:
+    name: TruffleHog (filesystem + git history)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: TruffleHog filesystem scan
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          extra_args: --only-verified
+
+      - name: TruffleHog git history scan
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.before }}
+          head: HEAD
+          extra_args: --only-verified
+
+  pii-grep:
+    name: PII grep (= maintainer personal patterns)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Grep for known PII strings
+        shell: bash
+        run: |
+          set -uo pipefail
+          patterns=(
+            'keiodaisuke'
+            'shizen1234'
+            '+818046'
+            '南元町[0-9]'
+          )
+          hits=0
+          for p in "${patterns[@]}"; do
+            n=$(grep -rIE "$p" --include='*.py' --include='*.sh' \
+                  --include='*.md' --include='*.json' --include='*.toml' . \
+                  2>/dev/null | grep -v '\.git/' \
+                  | grep -v INSTALL_BOOTSTRAP.md \
+                  | grep -v LAUNCH_COPY.md \
+                  | grep -v README.md \
+                  | wc -l)
+            if [ "$n" -gt 0 ]; then
+              echo "❌ PII pattern '$p' has $n hit(s)"
+              grep -rIE "$p" --include='*.py' --include='*.sh' \
+                --include='*.md' --include='*.json' . 2>/dev/null \
+                | grep -v '\.git/' \
+                | grep -v INSTALL_BOOTSTRAP.md \
+                | grep -v LAUNCH_COPY.md \
+                | grep -v README.md
+              hits=$((hits + n))
+            fi
+          done
+          if [ "$hits" -gt 0 ]; then
+            echo "::error::PII grep found $hits hit(s) — block merge"
+            exit 1
+          fi
+          echo "✅ PII grep clean"
+
+  python-lint:
+    name: Python syntax check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Verify every .py parses
+        run: |
+          set -e
+          find . -name '*.py' -not -path './.git/*' \
+            -exec python3 -c "import ast,sys; ast.parse(open(sys.argv[1]).read())" {} \;
+          echo "✅ all .py files parse"
+
+  shell-lint:
+    name: Shell script syntax check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify every .sh parses with bash -n
+        run: |
+          set -e
+          find . -name '*.sh' -not -path './.git/*' -exec bash -n {} \;
+          echo "✅ all .sh files parse"
