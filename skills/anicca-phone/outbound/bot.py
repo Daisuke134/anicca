@@ -119,11 +119,13 @@ def pick_system_instruction(mode: str, ctx: str, name: str) -> str:
                  LLM has the real timing, not a hallucinated one.
     """
     base = ANICCA_LATENESS_SYSTEM_INSTRUCTION if mode == "lateness" else ANICCA_WAKEUP_SYSTEM_INSTRUCTION
-    # Substitute {ctx} if present; otherwise leave the literal placeholder so the
-    # model is told "no context supplied". Don't .format() unconditionally —
-    # the wakeup prompt has braces in example dialogue.
+    # We can't str.format() the whole prompt: the example dialogue contains
+    # literal braces. Substitute the two known placeholders by hand so an
+    # untrimmed `{name}` never reaches the model (= "calling {name} to wake
+    # up" would be spoken verbatim by Gemini).
+    base = base.replace("{name}", name or "friend")
     if mode == "lateness":
-        return base.replace("{ctx}", ctx or "(no specific context — operator may be running late from any location)")
+        base = base.replace("{ctx}", ctx or "(no specific context — operator may be running late from any location)")
     return base
 
 
