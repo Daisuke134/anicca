@@ -54,7 +54,7 @@ def build_skeleton(thread: dict[str, Any], class_slug: str, cfg: dict[str, Any])
     return {
         "thread_id": thread["id"],
         "class_slug": class_slug,
-        "from": cfg.get("naist_{{profile.lateness.stakeholders.channel}}", ""),
+        "from": cfg.get("naist_email", ""),
         "to": thread.get("from", ""),
         "subject": "Re: " + (thread.get("subject") or ""),
         "in_reply_to": thread.get("id"),
@@ -95,7 +95,7 @@ def main() -> int:
     classes = load_classes(SLUG)
     config = load_config(SLUG)
     cfg_default = {
-        "naist_{{profile.lateness.stakeholders.channel}}": config.get("naist_{{profile.lateness.stakeholders.channel}}", ""),
+        "naist_email": config.get("naist_email", ""),
         "reply_language": config.get("reply_language", DEFAULT_LANG),
         "quarto_template": config.get("quarto_template", DEFAULT_QMD),
     }

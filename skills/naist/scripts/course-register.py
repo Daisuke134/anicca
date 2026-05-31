@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """course-register.py — Procedure D verified 2026-05-08.
 
-Drives `agent-{{profile.lateness.stakeholders.channel}}` CLI to register courses from
-~/.openclaw/state/naist/<slug>/preferences.json into {{profile.education.institution}} UNIPA Kmd004 form.
+Drives `agent-browser` CLI to register courses from
+~/.openclaw/state/naist/<slug>/preferences.json into NAIST UNIPA Kmd004 form.
 Submission is real and durable (server-side persisted).
 
 Verified path (matches SKILL.md Procedure D step-by-step):
@@ -37,7 +37,7 @@ SLACK_TOKEN = os.environ.get("SLACK_BOT_TOKEN", "")
 
 WORKSPACE = Path.home() / ".openclaw" / "workspace" / "naist"
 STATE_ROOT = Path.home() / ".openclaw" / "state" / "naist"
-AB = "/opt/homebrew/bin/agent-{{profile.lateness.stakeholders.channel}}"
+AB = "/opt/homebrew/bin/agent-browser"
 
 
 def fail(msg: str) -> None:
@@ -62,7 +62,7 @@ def slack_post(text: str) -> None:
         print(f"[DRY] Slack: {text[:160]}")
         return
     ch_path = STATE_ROOT / SLUG / "slack_channel.txt"
-    channel = ch_path.read_text().strip() if ch_path.exists() else "{{profile.channels.reportChannel}}"
+    channel = ch_path.read_text().strip() if ch_path.exists() else os.environ.get("SLACK_FALLBACK_CHANNEL", "")
     import urllib.request
     payload = json.dumps({"channel": channel, "text": text}).encode("utf-8")
     req = urllib.request.Request(
@@ -116,11 +116,11 @@ def screenshot(label: str, ss_dir: Path) -> None:
 
 
 def login_idp_and_sso(secrets: dict[str, str], ss_dir: Path) -> None:
-    user = secrets.get("{{profile.education.institution}}_IDP_USERNAME") or secrets.get("{{profile.education.institution}}_EDU_USER")
-    pwd = secrets.get("{{profile.education.institution}}_IDP_PASSWORD") or secrets.get("{{profile.education.institution}}_EDU_PASSWORD")
-    totp_secret = secrets.get("{{profile.education.institution}}_TOTP_SECRET")
+    user = secrets.get("NAIST_IDP_USERNAME") or secrets.get("NAIST_EDU_USER")
+    pwd = secrets.get("NAIST_IDP_PASSWORD") or secrets.get("NAIST_EDU_PASSWORD")
+    totp_secret = secrets.get("NAIST_TOTP_SECRET")
     if not all([user, pwd, totp_secret]):
-        fail("missing {{profile.education.institution}}_IDP_USERNAME / PASSWORD / TOTP_SECRET")
+        fail("missing NAIST_IDP_USERNAME / PASSWORD / TOTP_SECRET")
 
     ab(["open", "https://idp.naist.jp/"])
     time.sleep(2)

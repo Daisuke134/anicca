@@ -62,7 +62,7 @@
 - 修正: `wake_loop.py` 終了時に wake_log 書込、run.sh の後に tuner
 
 ### #44 LP 番号0自動変換+体験リトライ
-- `app/alarm/page.tsx`: normalizeJP() — "08046270314"→先頭0除去+"+81"→"+818046270314"。demo/checkout両方
+- `app/alarm/page.tsx`: normalizeJP() — "08046270314"→先頭0除去+"+81"→"${OSS_USER_PHONE}"。demo/checkout両方
 - `alarm-demo.js`: normPhone をJP 0除去対応 + 体験リトライ(再送許可)
 - placeholder "090 1234 5678" + 「0から入力OK・自動変換」
 

@@ -1,0 +1,27 @@
+id: TC-B1
+category: notify
+name: "Apple Dev expiry warning (notify only)"
+spec_ref: "§13.2"
+input:
+  from: "developer@apple.com"
+  to: "${OSS_TEST_RECIPIENT}"
+  subject: "[TC-B1-{ts}] Your Apple Developer Program membership is expiring"
+  body: |
+    Dear ${USER_NAME_EN},
+
+    Your Apple Developer Program membership will expire on 2026-06-02.
+    Renew at developer.apple.com/account to continue distributing iOS apps.
+expected:
+  triage4: "notify"
+  archive: false
+  reply: false
+verify:
+  - type: gmail_label
+    thread_query: "subject:\"TC-B1\" newer_than:1h"
+    label: "INBOX"
+    expect_present: true
+  - type: slack_post
+    channel: "${SLACK_REPORT_CHANNEL}"
+    text_contains: "TC-B1"
+  - type: not_replied
+    thread_query: "subject:\"TC-B1\" newer_than:1h"

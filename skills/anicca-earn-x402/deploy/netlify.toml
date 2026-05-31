@@ -1,0 +1,42 @@
+[build]
+  publish = "."
+  functions = "netlify/functions"
+
+[functions]
+  included_files = ["pdfs/**"]
+
+[[redirects]]
+  from = "/qa"
+  to = "/.netlify/functions/x402?route=qa"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/research"
+  to = "/.netlify/functions/x402?route=research"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/x-post"
+  to = "/.netlify/functions/x402?route=x-post"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/build"
+  to = "/.netlify/functions/x402?route=build"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/pdf/*"
+  to = "/.netlify/functions/x402?route=pdf&slug=:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/.well-known/x402"
+  to = "/.netlify/functions/x402?route=well-known"
+  status = 200
+  force = true

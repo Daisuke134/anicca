@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""send-as.py — wrapper around Gmail "Send mail as" for {{profile.education.institution}} replies.
+"""send-as.py — wrapper around Gmail "Send mail as" for NAIST replies.
 
-The agent never touches {{profile.education.institution}} SMTP. This script:
+The agent never touches NAIST SMTP. This script:
   1. Loads a draft from ~/.openclaw/workspace/naist/drafts/<class>/<thread>.json
   2. Verifies a matching ack file exists at confirms/<thread>.ack (homework HARD-GATE)
   3. Emits a JSON envelope to stdout that the agent layer feeds into Gmail MCP send
-     (with `from: <naist {{profile.lateness.stakeholders.channel}}>` so Gmail uses the configured "Send mail as" alias)
+     (with `from: <naist email>` so Gmail uses the configured "Send mail as" alias)
   4. Appends an entry to sent.json
 
 In DRY_RUN mode it stops before step 3 and prints the planned envelope.

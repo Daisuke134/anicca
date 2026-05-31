@@ -58,12 +58,12 @@
     },
     {
       "id": "naist-internal",
-      "name": "{{profile.education.institution}} 内部研究助成",
+      "name": "NAIST 内部研究助成",
       "lang": "ja",
       "country": "JP",
       "login_url": "https://edu-portal.naist.jp/uprx/up/km/kmh006/Kmh00601.xhtml",
       "selectors": {},
-      "credentials_env": {"user": "{{profile.education.institution}}_IDP_USERNAME", "password": "{{profile.education.institution}}_IDP_PASSWORD"},
+      "credentials_env": {"user": "NAIST_IDP_USERNAME", "password": "NAIST_IDP_PASSWORD"},
       "active_window": "varies"
     }
   ]

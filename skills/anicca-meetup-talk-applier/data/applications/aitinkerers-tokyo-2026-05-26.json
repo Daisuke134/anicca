@@ -1,0 +1,18 @@
+{
+  "event": "AI Tinkerers Tokyo - Shinagawa: May 26th Meetup",
+  "url": "https://tokyo.aitinkerers.org/p/ai-tinkerers-tokyo-shinagawa-may-26th-meetup",
+  "demo_form_url": "https://tokyo.aitinkerers.org/meetup/mu_3W5A5jDbSL8/speaking",
+  "city": "Tokyo",
+  "date": "2026-05-26",
+  "time": "18:00-21:00 JST",
+  "applied_at": "2026-05-05T10:50:00+09:00",
+  "registration_status": "Application submitted (Under Review)",
+  "talk_title": "Anicca — A self-funding Buddhist AI that pays humans basic income",
+  "demo_proposal_status": "Pending review by organizers",
+  "status": "pending",
+  "auth_method": "email_otp_4digit",
+  "register_form_fields": ["full_name", "company", "job_title", "linkedin", "github", "twitter"],
+  "demo_form_fields": ["speaker_title", "speaker_description", "speaker_justification", "speaker_technologies", "speaker_url_1", "speaker_url_2", "speaker_video", "code-agreement (checkbox)"],
+  "submit_quirk": "Submit Proposal button only triggers via form.querySelector('button[type=submit][name=submit]').click(); coords click + text-search .click() were silently swallowed",
+  "register_quirk": "rsvp-submit needs JS .click() (not click_at_xy) once form scrolled into viewport"
+}

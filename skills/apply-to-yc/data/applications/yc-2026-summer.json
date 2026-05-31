@@ -1,0 +1,14 @@
+{
+  "accelerator": "yc",
+  "batch": "Summer 2026 (late)",
+  "application_id": "99b966b0-7e90-4856-ab0d-93651488a4ea",
+  "edit_url": "https://apply.ycombinator.com/apps/99b966b0-7e90-4856-ab0d-93651488a4ea/edit",
+  "preview_url": "https://apply.ycombinator.com/apps/99b966b0-7e90-4856-ab0d-93651488a4ea",
+  "fully_filled_at": "2026-05-05T17:50:00+09:00",
+  "filled_text_fields": 20,
+  "filled_files": ["founder_video: ycsummer2026.MOV → S3 app_videos/s2026/Mark435/683535/intro.mp4", "demo_video: pre-existing S3"],
+  "validation_errors": "none",
+  "submit_button_state": "enabled",
+  "status": "ready_to_submit",
+  "next": "click Submit application — Dais authorization required for actual submit"
+}

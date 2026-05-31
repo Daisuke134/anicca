@@ -1,0 +1,62 @@
+{
+  "guides": [
+    {
+      "id": "jsps-dc1",
+      "keywords": ["学振", "DC1", "特別研究員", "JSPS", "学術振興会"],
+      "name": "日本学術振興会 特別研究員DC1",
+      "steps": [
+        "1. JSPS公式サイトで公募要領を確認: https://www.jsps.go.jp/j-pd/",
+        "2. 指導教員と研究計画の相談・承認を得る",
+        "3. e-Rad (府省共通研究開発管理システム) にアカウント登録",
+        "4. 申請書類を作成（研究計画書・業績一覧）",
+        "5. 所属機関（NAIST）の事務局に書類を提出（学内締切は公募締切の2週間前が目安）",
+        "6. 機関承認後、e-Radで電子申請"
+      ],
+      "officialUrl": "https://www.jsps.go.jp/j-pd/",
+      "deadline": "毎年5月頃（年度によって変動）"
+    },
+    {
+      "id": "jsps-dc2",
+      "keywords": ["学振", "DC2", "特別研究員", "JSPS", "D2"],
+      "name": "日本学術振興会 特別研究員DC2",
+      "steps": [
+        "1. JSPS公式サイトで公募要領を確認: https://www.jsps.go.jp/j-pd/",
+        "2. 指導教員と研究計画の相談・承認を得る（博士課程在学2年目以上対象）",
+        "3. e-Rad にアカウント登録（未登録の場合）",
+        "4. 申請書類を作成（研究計画書・業績一覧・在学証明書）",
+        "5. 所属機関（NAIST）の事務局に書類を提出（学内締切確認必須）",
+        "6. 機関承認後、e-Radで電子申請"
+      ],
+      "officialUrl": "https://www.jsps.go.jp/j-pd/",
+      "deadline": "毎年5月頃（年度によって変動）"
+    },
+    {
+      "id": "jst-presto",
+      "keywords": ["さきがけ", "PRESTO", "JST", "戦略的創造"],
+      "name": "JST さきがけ（戦略的創造研究推進事業）",
+      "steps": [
+        "1. JST公式サイトで研究領域・公募要領を確認: https://www.jst.go.jp/kisoken/presto/",
+        "2. 自分の研究がいずれかの研究領域に合致するか確認",
+        "3. 研究提案書を作成（研究目的・計画・独自性・期待される成果）",
+        "4. e-Radで申請（所属機関の事務局に相談）",
+        "5. 書面審査 → 面接審査の2段階"
+      ],
+      "officialUrl": "https://www.jst.go.jp/kisoken/presto/",
+      "deadline": "毎年6〜7月頃（領域によって異なる）"
+    },
+    {
+      "id": "jst-crest",
+      "keywords": ["CREST", "JST", "戦略的創造研究", "チーム型"],
+      "name": "JST CREST（戦略的創造研究推進事業 チーム型）",
+      "steps": [
+        "1. JST公式サイトで研究領域・公募要領を確認: https://www.jst.go.jp/kisoken/crest/",
+        "2. 研究代表者としての要件を確認（原則PIが申請）",
+        "3. 研究提案書を作成（チーム構成含む）",
+        "4. e-Radで申請",
+        "5. 書面審査 → 面接審査"
+      ],
+      "officialUrl": "https://www.jst.go.jp/kisoken/crest/",
+      "deadline": "毎年6〜7月頃（領域によって異なる）"
+    }
+  ]
+}

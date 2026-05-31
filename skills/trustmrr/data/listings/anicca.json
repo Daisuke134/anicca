@@ -1,0 +1,15 @@
+{
+  "product_key": "anicca",
+  "trustmrr_url": "https://trustmrr.com/startup/anicca",
+  "dashboard_url": "https://trustmrr.com/dashboard?tab=my-startups&mode=seller&startup=anicca",
+  "owner_email": "your-email@example.com",
+  "stripe_key_used": "STRIPE_RK_LIVE_ALL",
+  "anonymous_mode": false,
+  "listed_for_sale": false,
+  "claim_method": "email_otp_4digit",
+  "verified_revenue_30d_usd": 11,
+  "listed_at": "2026-05-05T17:30:00+09:00",
+  "status": "listed_and_claimed",
+  "title": "anicca - $11 last 30 days | TrustMRR",
+  "description": "Anicca: AI Agent for Behavior Change."
+}

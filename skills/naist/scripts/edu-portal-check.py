@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """edu-portal-check.py — runs Procedure A + B + C from SKILL.md.
 
-Drives agent-{{profile.lateness.stakeholders.channel}} CLI to log into {{profile.education.institution}} IDP via TOTP, SSO into edu-portal,
+Drives agent-browser CLI to log into NAIST IDP via TOTP, SSO into edu-portal,
 scrape 学生時間割表 + 成績照会, and write a per-slug JSON snapshot.
 
 This script is intentionally THIN — most logic is in SKILL.md as a procedure
@@ -28,7 +28,7 @@ SLACK_TOKEN = os.environ.get("SLACK_BOT_TOKEN", "")
 
 WORKSPACE = Path.home() / ".openclaw" / "workspace" / "naist"
 STATE_ROOT = Path.home() / ".openclaw" / "state" / "naist"
-AB = "/opt/homebrew/bin/agent-{{profile.lateness.stakeholders.channel}}"
+AB = "/opt/homebrew/bin/agent-browser"
 
 
 def fail(msg: str, code: int = 1) -> None:
@@ -37,16 +37,16 @@ def fail(msg: str, code: int = 1) -> None:
 
 
 def ab(args: list[str]) -> str:
-    """Run agent-{{profile.lateness.stakeholders.channel}}, return stdout text."""
+    """Run agent-browser, return stdout text."""
     r = subprocess.run([AB, *args], capture_output=True, text=True, timeout=60)
     if r.returncode != 0:
-        print(f"agent-{{profile.lateness.stakeholders.channel}} {' '.join(args)} → {r.returncode}\nSTDERR: {r.stderr}", file=sys.stderr)
+        print(f"agent-browser {' '.join(args)} → {r.returncode}\nSTDERR: {r.stderr}", file=sys.stderr)
     return r.stdout
 
 
 def ab_eval(js: str) -> str:
     out = ab(["eval", js])
-    # agent-{{profile.lateness.stakeholders.channel}} eval prints JSON-quoted string; strip outer quotes
+    # agent-browser eval prints JSON-quoted string; strip outer quotes
     s = out.strip()
     if s.startswith('"') and s.endswith('"'):
         s = json.loads(s)
@@ -58,7 +58,7 @@ def slack_post(text: str) -> None:
         print(f"[DRY] Slack: {text[:160]}")
         return
     ch_path = STATE_ROOT / SLUG / "slack_channel.txt"
-    channel = ch_path.read_text().strip() if ch_path.exists() else "{{profile.channels.reportChannel}}"
+    channel = ch_path.read_text().strip() if ch_path.exists() else os.environ.get("SLACK_FALLBACK_CHANNEL", "")
     import urllib.request
     payload = json.dumps({"channel": channel, "text": text}).encode("utf-8")
     req = urllib.request.Request(
@@ -131,11 +131,11 @@ def screenshot(label: str, ss_dir: Path) -> None:
 
 def procedure_a_login(secrets: dict[str, str], ss_dir: Path) -> None:
     """Procedure A — IDP login via TOTP (see SKILL.md)."""
-    user = secrets.get("{{profile.education.institution}}_IDP_USERNAME") or secrets.get("{{profile.education.institution}}_EDU_USER")
-    pwd = secrets.get("{{profile.education.institution}}_IDP_PASSWORD") or secrets.get("{{profile.education.institution}}_EDU_PASSWORD")
-    totp_secret = secrets.get("{{profile.education.institution}}_TOTP_SECRET")
+    user = secrets.get("NAIST_IDP_USERNAME") or secrets.get("NAIST_EDU_USER")
+    pwd = secrets.get("NAIST_IDP_PASSWORD") or secrets.get("NAIST_EDU_PASSWORD")
+    totp_secret = secrets.get("NAIST_TOTP_SECRET")
     if not all([user, pwd, totp_secret]):
-        fail("missing {{profile.education.institution}}_IDP_USERNAME / PASSWORD / TOTP_SECRET in secrets")
+        fail("missing NAIST_IDP_USERNAME / PASSWORD / TOTP_SECRET in secrets")
 
     ab(["open", "https://idp.naist.jp/"])
     time.sleep(2)
@@ -273,7 +273,7 @@ def main() -> int:
     except SystemExit:
         raise
     except Exception as e:
-        slack_post(f":warning: naist:edu-portal-check[{SLUG}] failed at agent-{{profile.lateness.stakeholders.channel}} step: {e}")
+        slack_post(f":warning: naist:edu-portal-check[{SLUG}] failed at agent-browser step: {e}")
         raise
     finally:
         subprocess.run([AB, "close"], capture_output=True, timeout=10)
@@ -285,7 +285,7 @@ def main() -> int:
     snapshot = {
         "slug": SLUG,
         "scraped_at": f"{today}T{time.strftime('%H:%M:%SZ', time.gmtime())}",
-        "scraped_via": "agent-{{profile.lateness.stakeholders.channel}} 0.26.0 + {{profile.education.institution}} IDP TOTP",
+        "scraped_via": "agent-browser 0.26.0 + NAIST IDP TOTP",
         "current_courses": courses,
         "gpa": gpa,
         "failures_needing_retake": failures,
@@ -296,7 +296,7 @@ def main() -> int:
     out.write_text(json.dumps(snapshot, ensure_ascii=False, indent=2))
     print(f"edu-portal-check[{SLUG}]: wrote {out}")
 
-    msg_lines = [f":school: *{{profile.education.institution}} edu-portal weekly* ({SLUG})"]
+    msg_lines = [f":school: *NAIST edu-portal weekly* ({SLUG})"]
     msg_lines.append(f"履修中: {len(courses)} 科目  /  GPA 通算: {gpa.get('cumulative', 'n/a')}")
     if failures:
         msg_lines.append(f":warning: 不可 ({len(failures)}): {', '.join(failures[:6])}")

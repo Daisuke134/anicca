@@ -4,7 +4,8 @@
 # Modes:
 #   pull, morning-rollup, friday-rollup, deadline-ical, confirm,
 #   papers-suggest, funds-apply, edu-portal-check, course-register,
-#   homework-fetch, homework-submit, gcal-sync, research-proposal-gen
+#   homework-fetch, homework-auto-draft, homework-submit, gcal-sync,
+#   research-proposal-gen
 # Optional: DRY_RUN=true
 set -euo pipefail
 
@@ -53,6 +54,7 @@ case "$MODE" in
   edu-portal-check)     run_per_slug edu-portal-check.py ;;
   course-register)      run_per_slug course-register.py ;;
   homework-fetch)       run_per_slug homework-fetch.py ;;
+  homework-auto-draft)  run_per_slug homework-auto-draft.py ;;
   homework-submit)      run_per_slug homework-submit.py ;;
   gcal-sync)            run_per_slug gcal-sync.py ;;
   research-proposal-gen) run_per_slug research-proposal-gen.py ;;

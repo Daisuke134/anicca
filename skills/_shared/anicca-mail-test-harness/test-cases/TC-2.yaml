@@ -1,0 +1,31 @@
+id: TC-2
+category: notify
+name: "Apple Dev expiry alert (notify only)"
+spec_ref: ".specify/specs/anicca-mail-agent/spec.md AS-2"
+input:
+  from: "${OSS_TEST_RECIPIENT}"
+  to: "${OSS_TEST_RECIPIENT}"
+  subject: "[TC-2-{ts}] [SIM from:developer@apple.com] Your Apple Developer Program is expiring 06-02"
+  body: |
+    [Simulating sender: developer@apple.com]
+
+    Dear ${USER_NAME_EN},
+
+    Your Apple Developer Program membership will expire on June 2, 2026.
+    Renew at developer.apple.com/account to continue distributing iOS apps.
+
+    Annual fee: $99 USD
+
+    — Apple Developer Program Support
+expected:
+  triage4: "notify"
+  archive: false
+  reply: false
+verify:
+  - type: gmail_label
+    thread_query: 'subject:"TC-2-{ts}" newer_than:1h'
+    label: "INBOX"
+    expect_present: true
+  - type: slack_post
+    channel: "${SLACK_REPORT_CHANNEL}"
+    text_contains: "TC-2-{ts}"

@@ -1,0 +1,158 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancel older runs of the same PR/branch.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gitleaks:
+    name: gitleaks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # full history for git scan
+
+      # gitleaks-action@v2 requires a paid license for orgs; use the
+      # upstream binary directly (= MIT-licensed) instead.
+      - name: Install gitleaks
+        run: |
+          set -e
+          VERSION=8.30.1
+          curl -sSL "https://github.com/gitleaks/gitleaks/releases/download/v${VERSION}/gitleaks_${VERSION}_linux_x64.tar.gz" \
+            | tar -xz -C /tmp gitleaks
+          sudo mv /tmp/gitleaks /usr/local/bin/gitleaks
+          gitleaks version
+
+      - name: Run gitleaks (detect = scan working tree)
+        run: gitleaks detect --source . --config .gitleaks.toml --no-banner --redact -v
+
+      - name: Run gitleaks (git = scan history)
+        run: gitleaks git . --config .gitleaks.toml --no-banner --redact -v
+
+  trufflehog:
+    name: TruffleHog (filesystem + git history)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: TruffleHog filesystem scan
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          extra_args: --only-verified
+
+      - name: TruffleHog git history scan
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.before }}
+          head: HEAD
+          extra_args: --only-verified
+
+  pii-grep:
+    name: PII grep (= maintainer personal patterns)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Grep for known PII strings
+        shell: bash
+        run: |
+          # Fixed-string patterns (= grep -F) so '+' '.' etc are literal,
+          # not regex metacharacters. GNU grep -E rejects a leading '+'.
+          set -uo pipefail
+          fixed_patterns=(
+            'keiodaisuke'
+            'shizen1234'
+            '+818046'
+            '南元町1'
+            '南元町2'
+            '南元町3'
+            '南元町4'
+            '南元町5'
+            '南元町6'
+            '南元町7'
+            '南元町8'
+            '南元町9'
+          )
+          hits=0
+          for p in "${fixed_patterns[@]}"; do
+            n=$( { grep -rIF -- "$p" \
+                     --include='*.py' --include='*.sh' \
+                     --include='*.md' --include='*.json' --include='*.toml' . \
+                     2>/dev/null || true; } \
+                  | { grep -v '\.git/' || true; } \
+                  | { grep -v INSTALL_BOOTSTRAP.md || true; } \
+                  | { grep -v LAUNCH_COPY.md         || true; } \
+                  | { grep -v README.md              || true; } \
+                  | { grep -v 'sec-scan.yml'         || true; } \
+                  | wc -l | tr -d ' ')
+            if [ "${n:-0}" -gt 0 ]; then
+              echo "❌ PII pattern '$p' has $n hit(s)"
+              { grep -rIF -- "$p" \
+                  --include='*.py' --include='*.sh' \
+                  --include='*.md' --include='*.json' . 2>/dev/null || true; } \
+                | { grep -v '\.git/' || true; } \
+                | { grep -v INSTALL_BOOTSTRAP.md || true; } \
+                | { grep -v LAUNCH_COPY.md         || true; } \
+                | { grep -v README.md              || true; } \
+                | { grep -v 'sec-scan.yml'         || true; }
+              hits=$((hits + n))
+            fi
+          done
+          if [ "$hits" -gt 0 ]; then
+            echo "::error::PII grep found $hits hit(s) — block merge"
+            exit 1
+          fi
+          echo "✅ PII grep clean"
+
+  python-lint:
+    name: Python syntax check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Verify every .py parses
+        run: |
+          set -e
+          find . -name '*.py' -not -path './.git/*' \
+            -exec python3 -c "import ast,sys; ast.parse(open(sys.argv[1]).read())" {} \;
+          echo "✅ all .py files parse"
+
+      - name: Run pure-stdlib unittest discovery
+        # Skills include some test_*.py files written to run on stdlib only
+        # (= no pipecat / loguru / fastapi). Discover and execute them.
+        # If no tests are found, unittest exits 0 — that's fine.
+        run: |
+          set -e
+          python3 -m unittest discover -s . -p 'test_*.py' -v 2>&1 | tee /tmp/utest.log
+          # Fail only if a test failed; an empty discover is OK.
+          if grep -qE '^(FAIL|ERROR)' /tmp/utest.log; then
+            echo "::error::unittest run reported failure"
+            exit 1
+          fi
+
+  shell-lint:
+    name: Shell script syntax check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify every .sh parses with bash -n
+        run: |
+          set -e
+          find . -name '*.sh' -not -path './.git/*' -exec bash -n {} \;
+          echo "✅ all .sh files parse"

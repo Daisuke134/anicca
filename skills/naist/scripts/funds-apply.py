@@ -6,7 +6,7 @@ For each funder in ~/.openclaw/skills/naist/funders.json:
     secrets.env / ~/.openclaw/.env.
   - Skip unless research-profile.json has all of {topic, method,
     preliminary_results} populated (i.e. no "TBD").
-  - agent-{{profile.lateness.stakeholders.channel}} open login URL, fill creds, click Login button.
+  - agent-browser open login URL, fill creds, click Login button.
   - Click "新規応募" / "Apply" link.
   - Fill text fields from research-profile.
   - Upload Quarto-rendered proposal.pdf.
@@ -38,7 +38,7 @@ SLACK_TOKEN = os.environ.get("SLACK_BOT_TOKEN", "")
 WORKSPACE = Path.home() / ".openclaw" / "workspace" / "naist"
 STATE_ROOT = Path.home() / ".openclaw" / "state" / "naist"
 SKILL_DIR = Path.home() / ".openclaw" / "skills" / "naist"
-AB = "/opt/homebrew/bin/agent-{{profile.lateness.stakeholders.channel}}"
+AB = "/opt/homebrew/bin/agent-browser"
 
 
 def fail(msg: str) -> None:
@@ -63,7 +63,7 @@ def slack_post(text: str) -> None:
         print(f"[DRY] Slack: {text[:200]}")
         return
     ch_path = STATE_ROOT / SLUG / "slack_channel.txt"
-    channel = ch_path.read_text().strip() if ch_path.exists() else "{{profile.channels.reportChannel}}"
+    channel = ch_path.read_text().strip() if ch_path.exists() else os.environ.get("SLACK_FALLBACK_CHANNEL", "")
     import urllib.request
     payload = json.dumps({"channel": channel, "text": text}).encode("utf-8")
     req = urllib.request.Request(

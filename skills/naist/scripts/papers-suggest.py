@@ -167,7 +167,7 @@ def main() -> int:
         return 0
 
     lines = [
-        f":books: *{{profile.education.institution}} 関連論文 daily ({SLUG})* — {len(papers)} 件 (キーワード: {', '.join(keywords)[:120]})",
+        f":books: *NAIST 関連論文 daily ({SLUG})* — {len(papers)} 件 (キーワード: {', '.join(keywords)[:120]})",
     ]
     for p in enriched:
         first_author = p["authors"][0] if p["authors"] else "?"

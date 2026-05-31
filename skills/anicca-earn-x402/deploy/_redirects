@@ -1,0 +1,6 @@
+/qa /.netlify/functions/x402?route=qa 200!
+/research /.netlify/functions/x402?route=research 200!
+/x-post /.netlify/functions/x402?route=x-post 200!
+/build /.netlify/functions/x402?route=build 200!
+/pdf/* /.netlify/functions/x402?route=pdf&slug=:splat 200!
+/.well-known/x402 /.netlify/functions/x402?route=well-known 200!

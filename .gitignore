@@ -46,3 +46,10 @@ skills/_shared/venv-cloak/
 # Personal data (single source) — never commit
 identity/profile.json
 identity/scrub-patterns.json
+skills/*/state/
+skills/*/data/
+skills/*/work/
+skills/*/pdfs/
+skills/*/queue/
+skills/*/state/wallet.encrypted
+skills/*/state/MNEMONIC_BACKUP_ONCE.txt

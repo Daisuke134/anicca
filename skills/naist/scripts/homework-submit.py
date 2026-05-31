@@ -16,7 +16,7 @@ draft files. Each draft has:
 For each draft where submit_at <= today AND submitted == false AND pdf_path
 exists:
   1. Procedure A + B login.
-  2. agent-{{profile.lateness.stakeholders.channel}} open submission_url.
+  2. agent-browser open submission_url.
   3. find <input type=file> via aria-role search; upload pdf_path.
   4. find a "提出する" / "提出" / "Submit" button by visible text and click.
   5. capture confirmation page text + screenshot.
@@ -41,7 +41,7 @@ DRY_RUN = os.environ.get("DRY_RUN", "false").lower() == "true"
 SLACK_TOKEN = os.environ.get("SLACK_BOT_TOKEN", "")
 WORKSPACE = Path.home() / ".openclaw" / "workspace" / "naist"
 STATE_ROOT = Path.home() / ".openclaw" / "state" / "naist"
-AB = "/opt/homebrew/bin/agent-{{profile.lateness.stakeholders.channel}}"
+AB = "/opt/homebrew/bin/agent-browser"
 
 
 def fail(msg: str) -> None:
@@ -66,7 +66,7 @@ def slack_post(text: str) -> None:
         print(f"[DRY] Slack: {text[:160]}")
         return
     ch_path = STATE_ROOT / SLUG / "slack_channel.txt"
-    channel = ch_path.read_text().strip() if ch_path.exists() else "{{profile.channels.reportChannel}}"
+    channel = ch_path.read_text().strip() if ch_path.exists() else os.environ.get("SLACK_FALLBACK_CHANNEL", "")
     import urllib.request
     payload = json.dumps({"channel": channel, "text": text}).encode("utf-8")
     req = urllib.request.Request(
@@ -135,11 +135,11 @@ def find_ref_near(snap: str, term: str, kind: str) -> str | None:
 
 
 def login_idp_and_sso(secrets: dict[str, str]) -> None:
-    user = secrets.get("{{profile.education.institution}}_IDP_USERNAME") or secrets.get("{{profile.education.institution}}_EDU_USER")
-    pwd = secrets.get("{{profile.education.institution}}_IDP_PASSWORD") or secrets.get("{{profile.education.institution}}_EDU_PASSWORD")
-    totp_secret = secrets.get("{{profile.education.institution}}_TOTP_SECRET")
+    user = secrets.get("NAIST_IDP_USERNAME") or secrets.get("NAIST_EDU_USER")
+    pwd = secrets.get("NAIST_IDP_PASSWORD") or secrets.get("NAIST_EDU_PASSWORD")
+    totp_secret = secrets.get("NAIST_TOTP_SECRET")
     if not all([user, pwd, totp_secret]):
-        fail("missing {{profile.education.institution}} IDP credentials")
+        fail("missing NAIST IDP credentials")
     ab(["open", "https://idp.naist.jp/"])
     time.sleep(2)
     snap = ab(["snapshot"])
@@ -153,6 +153,39 @@ def login_idp_and_sso(secrets: dict[str, str]) -> None:
     time.sleep(3)
 
 
+def js_upload_pdf(pdf_path: str) -> str:
+    """Upload PDF via JS DataTransfer (PrimeFaces auto-upload triggers on change event).
+
+    agent-browser's `upload` command writes to input.files via CDP but does NOT
+    fire the change event that PrimeFaces' fileUpload widget listens for, so the
+    auto-upload AJAX never runs and 確定 fails with "添付ファイルを選択してください".
+    The reliable path is: read PDF → base64 → JS constructs File + DataTransfer
+    → sets input.files → dispatches change event manually. Verified 2026-05-29
+    against edu-portal.naist.jp PrimeFaces (NAIST UNIPA) for 3 distinct courses.
+    """
+    import base64 as b64mod
+    b64 = b64mod.b64encode(Path(pdf_path).read_bytes()).decode()
+    fname = Path(pdf_path).name
+    js = (
+        f'(async () => {{'
+        f' const b64 = "{b64}";'
+        f' const bin = atob(b64);'
+        f' const bytes = new Uint8Array(bin.length);'
+        f' for (let i=0; i<bin.length; i++) bytes[i] = bin.charCodeAt(i);'
+        f' const blob = new Blob([bytes], {{type: "application/pdf"}});'
+        f' const file = new File([blob], "{fname}", {{type: "application/pdf"}});'
+        f' const dt = new DataTransfer();'
+        f' dt.items.add(file);'
+        f' const inp = document.querySelector("input[type=file]");'
+        f' if (!inp) return "no-file-input";'
+        f' inp.files = dt.files;'
+        f' inp.dispatchEvent(new Event("change", {{bubbles: true}}));'
+        f' return "uploaded-" + inp.files.length;'
+        f'}})()'
+    )
+    return ab_eval(js)
+
+
 def submit_one_draft(draft_path: Path, ss_dir: Path) -> dict:
     draft = json.loads(draft_path.read_text())
     if draft.get("submitted"):
@@ -164,27 +197,52 @@ def submit_one_draft(draft_path: Path, ss_dir: Path) -> dict:
     if not url:
         return {"draft": str(draft_path), "skipped": True, "reason": "submission_url missing"}
 
-    ab(["open", url])
-    time.sleep(4)
     label = draft_path.stem
+
+    ab(["open", url])
+    time.sleep(5)
+    landed = ab_eval("location.href")
+    if "edu-portal.naist.jp" not in landed:
+        return {"draft": str(draft_path), "skipped": True, "reason": f"navigation failed (url={landed})"}
     ab(["screenshot", str(ss_dir / f"01-form-{label}.png")])
 
-    ab(["upload", 'input[type="file"]', pdf])
-    time.sleep(2)
-
-    snap = ab(["snapshot"])
-    submit_ref = (
-        find_button_ref(snap, "提出する")
-        or find_button_ref(snap, "提出")
-        or find_button_ref(snap, "Submit")
-        or find_link_ref(snap, "提出する")
-    )
-    if not submit_ref:
-        return {"draft": str(draft_path), "skipped": True, "reason": "submit button not found"}
-    ab(["click", f"@{submit_ref}"])
+    upload_result = js_upload_pdf(pdf)
+    if "uploaded" not in upload_result:
+        return {"draft": str(draft_path), "skipped": True, "reason": f"upload failed: {upload_result}"}
     time.sleep(6)
-    ab(["screenshot", str(ss_dir / f"02-confirm-{label}.png")])
-    confirm = ab_eval("document.body.innerText.substring(0, 600)")
+    ab(["screenshot", str(ss_dir / f"02-uploaded-{label}.png")])
+
+    body_check = ab_eval(
+        'JSON.stringify(document.body.innerText.match(/' + Path(pdf).stem + r'.{0,30}KB/g) || [])'
+    )
+    if "KB" not in body_check:
+        return {"draft": str(draft_path), "skipped": True, "reason": f"file not visible after upload: {body_check}"}
+
+    kakutei_result = ab_eval(
+        '(()=>{const b = Array.from(document.querySelectorAll("button"))'
+        '.find(x => x.textContent.trim() === "確定" && x.offsetParent !== null);'
+        ' return b ? (b.click(), "kakutei-clicked") : "no-kakutei";})()'
+    )
+    if "no-kakutei" in kakutei_result:
+        return {"draft": str(draft_path), "skipped": True, "reason": "確定 button not found"}
+    time.sleep(4)
+
+    ok_result = ab_eval(
+        '(()=>{const ds = Array.from(document.querySelectorAll(".ui-confirm-dialog"));'
+        ' const v = ds.find(d => getComputedStyle(d).display !== "none");'
+        ' if (!v) return "no-dialog";'
+        ' const ok = v.querySelector("button#yes, button.ui-confirmdialog-yes");'
+        ' return ok ? (ok.click(), "OK-fired") : "no-ok";})()'
+    )
+    if "OK-fired" not in ok_result:
+        return {"draft": str(draft_path), "skipped": True, "reason": f"OK dialog not handled: {ok_result}"}
+    time.sleep(8)
+
+    ab(["screenshot", str(ss_dir / f"03-submitted-{label}.png")])
+    confirm = ab_eval("document.body.innerText.substring(0, 1200)")
+
+    if "提出日時" not in confirm and "更新日時" not in confirm:
+        return {"draft": str(draft_path), "skipped": True, "reason": "submission record fields missing after OK"}
 
     draft["submitted"] = True
     draft["submitted_at"] = date.today().isoformat()

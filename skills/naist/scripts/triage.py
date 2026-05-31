@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""triage.py — classify forwarded {{profile.education.institution}} mails into 6 buckets.
+"""triage.py — classify forwarded NAIST mails into 6 buckets.
 
 Reads:
   ~/.openclaw/workspace/naist/inbox-YYYY-MM-DD.json   (written by Gmail MCP search_threads in agentTurn)
@@ -52,9 +52,9 @@ def load_profile(slug: str) -> dict[str, Any]:
         return json.loads(p.read_text())
     # legacy v1 fallback — synthesise a minimal profile
     legacy = {}
-    em = STATE_ROOT / slug / "{{profile.lateness.stakeholders.channel}}_naist.txt"
+    em = STATE_ROOT / slug / "email_naist.txt"
     if em.exists():
-        legacy["naist_{{profile.lateness.stakeholders.channel}}"] = em.read_text().strip()
+        legacy["naist_email"] = em.read_text().strip()
     return {"advisors": [], "lab_members": [], "ta_coordinators": [], **legacy}
 
 
@@ -76,7 +76,7 @@ def classify(thread: dict[str, Any], profile: dict[str, Any]) -> str:
         return "question"
     if RX_ANN.search(blob) or any(s in sender for s in ("staff@", "info@", "office@")):
         return "announcement"
-    # fallback heuristic: institutional {{profile.education.institution}} sender → announcement
+    # fallback heuristic: institutional NAIST sender → announcement
     if "naist.jp" in sender:
         return "announcement"
     return "announcement"
@@ -87,7 +87,7 @@ def stub_inbox() -> list[dict[str, Any]]:
         {
             "id": "stub-1",
             "from": "staff@is.naist.jp",
-            "subject": "[{{profile.education.institution}}] 健康診断のお知らせ",
+            "subject": "[NAIST] 健康診断のお知らせ",
             "snippet": "5月15日に健康診断を実施します。受診票を持参してください。",
             "date": dt.datetime.utcnow().isoformat() + "Z",
         },

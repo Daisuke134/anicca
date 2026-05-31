@@ -54,7 +54,7 @@ def class_vevents(schedule_files: list[Path]) -> list[str]:
                 ds = fmt_dt(s["date"], start_t)
                 de = fmt_dt(s["date"], end_t)
                 uid = md5(f"class-{course['code']}-{s['n']}-{s['date']}")
-                summary = f"[{{profile.education.institution}}] {course['name']} #{s['n']}: {s['topic'][:50]}"
+                summary = f"[NAIST] {course['name']} #{s['n']}: {s['topic'][:50]}"
                 desc = (
                     f"科目: {course['name']} ({course['code']})\\n"
                     f"第{s['n']}回 / {s['date']} {s['time']} / {s['period']}限\\n"
@@ -72,7 +72,7 @@ def class_vevents(schedule_files: list[Path]) -> list[str]:
                     f"SUMMARY:{summary}\n"
                     f"DESCRIPTION:{desc}\n"
                     f"LOCATION:{location.replace(',', '')}\n"
-                    "CATEGORIES:{{profile.education.institution}},授業\n"
+                    "CATEGORIES:NAIST,授業\n"
                     "END:VEVENT"
                 )
         for ev in sched.get("other_events", []):
@@ -83,8 +83,8 @@ def class_vevents(schedule_files: list[Path]) -> list[str]:
                 f"UID:{uid}@naist.openclaw\n"
                 f"DTSTAMP:{datetime.utcnow().strftime('%Y%m%dT%H%M%SZ')}\n"
                 f"DTSTART;VALUE=DATE:{d}\n"
-                f"SUMMARY:[{{profile.education.institution}}] {ev['title']}\n"
-                "CATEGORIES:{{profile.education.institution}},行事\n"
+                f"SUMMARY:[NAIST] {ev['title']}\n"
+                "CATEGORIES:NAIST,行事\n"
                 "END:VEVENT"
             )
     return out
@@ -127,9 +127,9 @@ def triaged_deadline_vevents(slug_dir: Path) -> list[str]:
             f"UID:{uid}@naist.openclaw\n"
             f"DTSTAMP:{datetime.utcnow().strftime('%Y%m%dT%H%M%SZ')}\n"
             f"DTSTART;VALUE=DATE:{d_compact}\n"
-            f"SUMMARY:[{{profile.education.institution}}/{bucket}] {it.get('subject','')[:60]}\n"
+            f"SUMMARY:[NAIST/{bucket}] {it.get('subject','')[:60]}\n"
             f"DESCRIPTION:{(it.get('snippet','')[:300]).replace(chr(10),' ')}\n"
-            "CATEGORIES:{{profile.education.institution}},締切\n"
+            "CATEGORIES:NAIST,締切\n"
             "END:VEVENT"
         )
     return out
@@ -165,7 +165,7 @@ def main() -> int:
         "VERSION:2.0\r\n"
         "PRODID:-//openclaw//naist v2//EN\r\n"
         "CALSCALE:GREGORIAN\r\n"
-        f"X-WR-CALNAME:{{profile.education.institution}} ({SLUG})\r\n"
+        f"X-WR-CALNAME:NAIST ({SLUG})\r\n"
         "BEGIN:VTIMEZONE\r\n"
         "TZID:Asia/Tokyo\r\n"
         "BEGIN:STANDARD\r\n"

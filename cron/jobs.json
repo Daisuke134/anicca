@@ -1,0 +1,2089 @@
+{
+  "version": 1,
+  "jobs": [
+    {
+      "id": "suffering-detector",
+      "agentId": "main",
+      "name": "suffering-detector",
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 10 * * *",
+        "tz": "Asia/Tokyo",
+        "staggerMs": 300000
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Execute suffering-detector skill. Read ~/.openclaw/skills/suffering-detector/SKILL.md.\n\n1. Detect suffering: Search X for suffering signals using x-research (bun run x-search.ts search \"feeling anxious\" OR \"can't sleep\" OR \"burnout\" OR \"lonely\" OR \"depressed\" --sort recent --limit 30)\n2. Categorize findings by type: mental health, loneliness, burnout, grief, anxiety\n3. Take ACTION (not just list):\n   a. Write a compassionate X thread about the most common suffering found (via Postiz API, integration YOUR_POSTIZ_X_INTEGRATION_ID)\n   b. Share helpful resources (hotlines, apps, meditation guides)\n   c. Raise awareness about specific suffering patterns\n4. Write findings to ~/.openclaw/workspace/suffering/findings_YYYY-MM-DD.json\n\nDo NOT report to Slack yourself — cron delivery handles it. Do NOT call the message tool.",
+        "model": "openai-codex/gpt-5.4-mini"
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL",
+        "bestEffort": true
+      },
+      "enabled": true
+    },
+    {
+      "id": "autonomy-check",
+      "agentId": "main",
+      "name": "autonomy-check",
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 3 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Execute autonomy-check skill. Write result to ~/.openclaw/workspace/autonomy-check/audit_YYYY-MM-DD.json (use today). Do not POST to any jobs API.",
+        "model": "openai-codex/gpt-5.4-mini",
+        "timeoutSeconds": 600
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL",
+        "bestEffort": true
+      },
+      "enabled": true
+    },
+    {
+      "id": "daily-memory",
+      "agentId": "main",
+      "name": "daily-memory",
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 23 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Execute daily-memory skill. Extract today's learnings from session history, roundtable-standup の結果、および今日の cron の成功/失敗. Do NOT read AGENTS.md. Append to ~/.openclaw/workspace/daily-memory/lessons-learned.md. Write today's diary to ~/.openclaw/workspace/daily-memory/diary-YYYY-MM-DD.md (use today's date).",
+        "model": "openai-codex/gpt-5.4-mini"
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL",
+        "bestEffort": true
+      },
+      "enabled": true
+    },
+    {
+      "id": "8db042f0-014d-466c-92e5-8a85da188491",
+      "agentId": "main",
+      "name": "app-metrics-morning",
+      "enabled": true,
+      "createdAtMs": 1771209782749,
+      "schedule": {
+        "kind": "cron",
+        "expr": "5 5 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "model": "openai-codex/gpt-5.4-mini",
+        "message": "Execute app-metrics skill. Read ~/.openclaw/skills/app-metrics/SKILL.md and follow it exactly. Collect metrics from RevenueCat, Mixpanel, and ASC. Write to ~/.openclaw/workspace/app-metrics/metrics_YYYY-MM-DD_0505.json. 【重要】全ての出力は日本語で行うこと。\n\nMANDATORY: After saving the JSON, post the full formatted metrics report to Slack #metrics (channel ID: C_YOUR_SLACK_CHANNEL) yourself, following the exact Slack format defined in ~/.openclaw/skills/app-metrics/SKILL.md. Do NOT rely on cron delivery summary for the report body."
+      },
+      "delivery": {
+        "mode": "none",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL",
+        "bestEffort": true
+      }
+    },
+    {
+      "id": "37282c24-d608-461f-b644-8841cc752c4d",
+      "agentId": "main",
+      "name": "latest-papers",
+      "enabled": true,
+      "createdAtMs": 1771209813329,
+      "schedule": {
+        "kind": "cron",
+        "expr": "30 6 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "model": "openai-codex/gpt-5.4-mini",
+        "message": "Execute latest-papers skill. Read ~/.openclaw/skills/latest-papers/SKILL.md and follow it. Search X using x-research skill (bun run x-search.ts) for latest AI agent papers, autonomous agents, LLM research. Write findings to ~/.openclaw/workspace/latest-papers/papers_YYYY-MM-DD.json.\n\nDo NOT report to Slack yourself — cron delivery handles it. Do NOT call the message tool.",
+        "timeoutSeconds": 600
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL",
+        "bestEffort": true
+      }
+    },
+    {
+      "id": "1ac04007-1ad9-43a1-a1b7-bfac037235d6",
+      "agentId": "main",
+      "name": "larry-daily-report-en",
+      "enabled": true,
+      "createdAtMs": 1771479868439,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 7 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "model": "openai-codex/gpt-5.4-mini",
+        "message": "Larry日次レポート（ENアカウント）を実行。\n\n【ステップ1: release-id接続（必須・レポートの前に実行）】\nnode ~/.openclaw/workspace/skills/larry/scripts/check-analytics.js --config ~/.openclaw/workspace/tiktok-marketing/config.json --days 3 --connect --app cmlt171eq04d9r00yzzceb6bw\n\n【ステップ2: 日次レポート生成】\nnode ~/.openclaw/workspace/skills/larry/scripts/daily-report.js --config ~/.openclaw/workspace/tiktok-marketing/config.json --days 3\n\n出力先: ~/.openclaw/workspace/tiktok-marketing/reports/YYYY-MM-DD-en.md\n\nDo NOT report to Slack yourself — cron delivery handles it. Do NOT call the message tool.",
+        "timeoutSeconds": 900
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL",
+        "bestEffort": true
+      }
+    },
+    {
+      "id": "a4092e38-8229-461e-8cbd-0e01478566f0",
+      "agentId": "main",
+      "name": "larry-anicca-en-1",
+      "enabled": true,
+      "createdAtMs": 1771479890860,
+      "schedule": {
+        "kind": "cron",
+        "expr": "30 16 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "model": "openai-codex/gpt-5.4-mini",
+        "message": "Execute Larry slideshow skill.\nRead ~/.openclaw/workspace/skills/larry/SKILL.md and follow the scheduled slideshow production flow.\n\nTikTok integration: cmlt171eq04d9r00yzzceb6bw\nInstagram integration: cmmzzg2es0539p30ycb94ayx0\nSlot: afternoon-en\nLanguage: en\nApp Name: Anicca\n\nClean image folder: ~/.openclaw/workspace/tiktok-marketing/assets/6-slide-images/bedroom/\nHook source: ~/.openclaw/workspace/tiktok-marketing/hooks-en.json\nCTA image: ~/.openclaw/workspace/tiktok-marketing/assets/cta/anicca-cta-en.png\n\nTikTok title: try Anicca — words like these, every day\nCaption: #mentalhealth #selfcare #healing #selflove #anxiety #fyp",
+        "timeoutSeconds": 900
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL",
+        "bestEffort": true
+      }
+    },
+    {
+      "id": "512c9ecd-76d1-4751-8bc1-d6843bd381d9",
+      "agentId": "main",
+      "name": "larry-anicca-en-2",
+      "enabled": true,
+      "createdAtMs": 1771479900983,
+      "schedule": {
+        "kind": "cron",
+        "expr": "30 21 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "model": "openai-codex/gpt-5.4-mini",
+        "message": "Execute Larry slideshow skill.\nRead ~/.openclaw/workspace/skills/larry/SKILL.md and follow the scheduled slideshow production flow.\n\nTikTok integration: cmlt171eq04d9r00yzzceb6bw\nInstagram integration: cmmzzg2es0539p30ycb94ayx0\nSlot: evening-en\nLanguage: en\nApp Name: Anicca\n\nClean image folder: ~/.openclaw/workspace/tiktok-marketing/assets/6-slide-images/bedroom/\nHook source: ~/.openclaw/workspace/tiktok-marketing/hooks-en.json\nCTA image: ~/.openclaw/workspace/tiktok-marketing/assets/cta/anicca-cta-en.png\n\nTikTok title: try Anicca — words like these, every day\nCaption: #mentalhealth #selfcare #healing #selflove #anxiety #fyp",
+        "timeoutSeconds": 900
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL",
+        "bestEffort": true
+      }
+    },
+    {
+      "id": "4ec097d5-2c36-4c1d-b8b9-0d9fb2e8a979",
+      "agentId": "main",
+      "name": "larry-daily-report-ja",
+      "enabled": true,
+      "createdAtMs": 1771487373933,
+      "schedule": {
+        "kind": "cron",
+        "expr": "30 6 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "model": "openai-codex/gpt-5.4-mini",
+        "message": "Larry日次レポート（JAアカウント）を実行。\n\n【ステップ1: release-id接続（必須・レポートの前に実行）】\nnode ~/.openclaw/workspace/skills/larry/scripts/check-analytics.js --config ~/.openclaw/workspace/tiktok-marketing/config.json --days 3 --connect --app YOUR_POSTIZ_TIKTOK_INTEGRATION_ID\n\n【ステップ2: 日次レポート生成】\nnode ~/.openclaw/workspace/skills/larry/scripts/daily-report.js --config ~/.openclaw/workspace/tiktok-marketing/config.json --days 3\n\n出力先: ~/.openclaw/workspace/tiktok-marketing/reports/YYYY-MM-DD-ja.md\n\nDo NOT report to Slack yourself — cron delivery handles it. Do NOT call the message tool.",
+        "timeoutSeconds": 420
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL",
+        "bestEffort": true
+      }
+    },
+    {
+      "id": "61d431fc-774e-4e58-b421-6e06571e6ec8",
+      "agentId": "main",
+      "name": "larry-anicca-ja-1",
+      "enabled": true,
+      "createdAtMs": 1771487461887,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 16 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "model": "openai-codex/gpt-5.4-mini",
+        "message": "Execute Larry slideshow skill.\nRead ~/.openclaw/workspace/skills/larry/SKILL.md and follow the scheduled slideshow production flow.\n\nTikTok integration: YOUR_POSTIZ_TIKTOK_INTEGRATION_ID\nInstagram integration: cmmzujxpa04ujp30yxqpg1vci\nSlot: afternoon-ja\nLanguage: ja\nApp Name: アニッチャ\n\nClean image folder: ~/.openclaw/workspace/tiktok-marketing/assets/6-slide-images/clean/\nHook source: ~/.openclaw/workspace/tiktok-marketing/hooks-ja.json\nHook priority: preferred first, then active\nCTA image: ~/.openclaw/workspace/tiktok-marketing/assets/cta/anicca-cta-ja.png\n\nTikTok title: こんな言葉が欲しい人は、アニッチャ試してみて\nCaption: #メンタルヘルス #自己肯定感 #自己嫌悪 #癒し #共感 #仏教 #fyp",
+        "timeoutSeconds": 900
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL",
+        "bestEffort": true
+      }
+    },
+    {
+      "id": "b551d1ea-e6e5-40b6-ab94-cde0696a3fc4",
+      "agentId": "main",
+      "name": "larry-anicca-ja-2",
+      "enabled": true,
+      "createdAtMs": 1771487499421,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 21 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "model": "openai-codex/gpt-5.4-mini",
+        "message": "Execute Larry slideshow skill.\nRead ~/.openclaw/workspace/skills/larry/SKILL.md and follow the scheduled slideshow production flow.\n\nTikTok integration: YOUR_POSTIZ_TIKTOK_INTEGRATION_ID\nInstagram integration: cmmzujxpa04ujp30yxqpg1vci\nSlot: evening-ja\nLanguage: ja\nApp Name: アニッチャ\n\nClean image folder: ~/.openclaw/workspace/tiktok-marketing/assets/6-slide-images/clean/\nHook source: ~/.openclaw/workspace/tiktok-marketing/hooks-ja.json\nCTA image: ~/.openclaw/workspace/tiktok-marketing/assets/cta/anicca-cta-ja.png\n\nTikTok title: こんな言葉が欲しい人は、アニッチャ試してみて\nCaption: #メンタルヘルス #自己肯定感 #自己嫌悪 #癒し #共感 #仏教 #fyp",
+        "timeoutSeconds": 900
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL",
+        "bestEffort": true
+      }
+    },
+    {
+      "id": "article-writer",
+      "agentId": "main",
+      "name": "article-writer",
+      "schedule": {
+        "kind": "cron",
+        "expr": "30 23 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Execute article-writer skill. Read ~/.openclaw/skills/article-writer/SKILL.md and perform the steps yourself. Use today's date (Asia/Tokyo). Read today's diary from ~/.openclaw/workspace/daily-memory/.",
+        "model": "openai-codex/gpt-5.4-mini",
+        "timeoutSeconds": 1200
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL",
+        "bestEffort": true
+      },
+      "enabled": true
+    },
+    {
+      "id": "build-in-public",
+      "agentId": "main",
+      "name": "build-in-public",
+      "schedule": {
+        "kind": "cron",
+        "expr": "10 23 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Execute build-in-public skill. Read ~/.openclaw/skills/build-in-public/SKILL.md and perform the steps yourself. Use today date (Asia/Tokyo). Read today diary from ~/.openclaw/workspace/daily-memory/.\n\nDo NOT report to Slack yourself — cron delivery handles it. Do NOT call the message tool.",
+        "model": "openai-codex/gpt-5.4-mini"
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL",
+        "bestEffort": true
+      },
+      "enabled": true
+    },
+    {
+      "id": "029b5c9e-2604-4984-85f9-f5d2011149c1",
+      "name": "factory-bp-revenue",
+      "enabled": true,
+      "createdAtMs": 1772807219381,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 22 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Execute factory-bp-revenue skill. Read ~/.openclaw/skills/factory-bp-revenue/SKILL.md and follow its steps exactly. You are Anicca — use web_search, firecrawl, and edit tools directly. Do NOT use Claude Code or ralph.sh.\n\nDo NOT report to Slack yourself — cron delivery handles it. Do NOT call the message tool.",
+        "model": "openai-codex/gpt-5.4-mini",
+        "timeoutSeconds": 600
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL"
+      }
+    },
+    {
+      "id": "ce6b6ae7-ae5c-4b9b-affc-717fc4543da8",
+      "name": "factory-bp-efficiency",
+      "enabled": true,
+      "createdAtMs": 1772807220748,
+      "schedule": {
+        "kind": "cron",
+        "expr": "20 22 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Execute factory-bp-efficiency skill. Read ~/.openclaw/skills/factory-bp-efficiency/SKILL.md and follow its steps exactly. You are Anicca — use web_search, firecrawl, clawhub, and edit tools directly. Do NOT use Claude Code or ralph.sh.\n\nDo NOT report to Slack yourself — cron delivery handles it. Do NOT call the message tool.",
+        "model": "openai-codex/gpt-5.4-mini"
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL"
+      }
+    },
+    {
+      "id": "8427156d-8fdb-4575-9df0-de565706f797",
+      "name": "factory-bp-internal",
+      "enabled": true,
+      "createdAtMs": 1772807221745,
+      "schedule": {
+        "kind": "cron",
+        "expr": "40 22 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Execute factory-bp-internal skill. Read ~/.openclaw/skills/factory-bp-internal/SKILL.md and follow its steps exactly. You are Anicca — use read and edit tools directly. Do NOT use Claude Code or ralph.sh.\n\nDo NOT report to Slack yourself — cron delivery handles it. Do NOT call the message tool.",
+        "model": "openai-codex/gpt-5.4-mini"
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL"
+      }
+    },
+    {
+      "id": "71e0e811-a031-4ee8-a794-16c91974728c",
+      "agentId": "main",
+      "sessionKey": "agent:anicca:main",
+      "name": "larry-trend-hunter-ja",
+      "enabled": true,
+      "createdAtMs": 1773705924757,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 4 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "model": "openai-codex/gpt-5.4-mini",
+        "message": "Execute trend-hunter skill.\nRead ~/.openclaw/skills/trend-hunter/SKILL.md and follow it.\ntarget: larry-ja\n\nDo NOT report to Slack yourself — cron delivery handles it. Do NOT call the message tool.",
+        "timeoutSeconds": 600
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL",
+        "bestEffort": true
+      }
+    },
+    {
+      "id": "26932ef8-5bb6-487d-aaf0-94febda4b2a4",
+      "agentId": "main",
+      "sessionKey": "agent:anicca:main",
+      "name": "larry-strategy-updater",
+      "enabled": true,
+      "createdAtMs": 1773705924813,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 5 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "model": "openai-codex/gpt-5.4-mini",
+        "message": "hookPool自動更新。\n1. winning-trends/最新日付.json を読む\n2. hook-performance.json を読む\n3. 判定:\n   - 50K+ views → SCALE（バリエーション3つ追加）\n   - <1K views × 2回連続 → DROP\n   - ⭐ 新外部フック → 無条件でhookPoolに追加（engagement閾値なし！全て追加）\n   - droppedHooksに含まれるフックのみ除外\n4. 全6 slot JSONを更新:\n   ~/.openclaw/workspace/tiktok-marketing/slots/morning-en.json\n   ~/.openclaw/workspace/tiktok-marketing/slots/morning-ja.json\n   ~/.openclaw/workspace/tiktok-marketing/slots/afternoon-en.json\n   ~/.openclaw/workspace/tiktok-marketing/slots/afternoon-ja.json\n   ~/.openclaw/workspace/tiktok-marketing/slots/evening-en.json\n   ~/.openclaw/workspace/tiktok-marketing/slots/evening-ja.json\n   ⚠️ 更新時に既存のhookPool構造を保持（type, slides, account, integration, imageDir, etc.は絶対に変えない）\n   ⚠️ hookPoolは常に15個以上を維持\n5. demos-mapping.json も同様に更新（新フックをテーマ別にhooks_ja/hooks_enに追加）\n6. strategy.json の droppedHooks を更新",
+        "timeoutSeconds": 600
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL",
+        "bestEffort": true
+      }
+    },
+    {
+      "id": "174f01dd-b2ae-413f-85f7-3b03236e3944",
+      "agentId": "main",
+      "sessionKey": "agent:anicca:main",
+      "name": "reelclaw-anicca-ja-card-1",
+      "enabled": true,
+      "createdAtMs": 1773705982003,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 12 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "model": "openai-codex/gpt-5.4-mini",
+        "message": "Execute ReelClaw skill.\nRead ~/.agents/skills/reelclaw/SKILL.md and follow it.\nTikTok integration: cmnhlk3ju058lpn0ytilqdpo0\nInstagram integration: cmnipef7g00oerm0y3dz4lamx\nYouTube integration: cmn1oukj9012nnq0yqhouc3ib\nFont: /System/Library/Fonts/ヒラギノ角ゴシック W6.ttc\nLanguage: ja\nApp Name: アニッチャ\nMusic: ~/.openclaw/workspace/tiktok-marketing/music/bgm-cta.mp3\n\n## MANDATORY OVERRIDES\n\n### Demo rotation\nRead demos-mapping.json field rotation_ja (not rotation). Pick next theme from rotation_ja.order based on rotation_ja.lastUsed.reelclaw-ja-1.\nDemo video: assets/demos/ja/trimmed/{theme}.mp4\n\n### TITLE & CAPTION (MANDATORY)\n- TikTok settings.title: \"こんな言葉が欲しい人は、アニッチャ試してみて\"\n- YouTube settings.title: \"こんな言葉が欲しい人は、アニッチャ試してみて\"\n- ALL platforms content (caption): \"こんな言葉が欲しい人は、アニッチャ試してみて\\n\\n#メンタルヘルス #自己肯定感 #自己嫌悪 #癒し #共感 #仏教 #fyp\"\n- ⚠️ DO NOT put hook text in content. Hook goes ONLY on the video text overlay (Step 3d).\n\n### POSTING RULES (CRITICAL — copy from SKILL.md Step 4b)\n1. 3 SEPARATE API calls: TikTok, Instagram, YouTube. NEVER combine platforms in one posts array.\n2. TikTok: privacy_level: PUBLIC_TO_EVERYONE, content_posting_method: DIRECT_POST, video_made_with_ai: false, autoAddMusic: \"no\", duet: false, stitch: false, comment: false, brand_content_toggle: false, brand_organic_toggle: false.\n3. Instagram: __type: instagram-standalone, post_type: reel, type: now, tags: []. Do NOT use __type: \"instagram\".\n4. YouTube: __type: youtube, selfDeclaredMadeForKids: \"no\", privacy: \"public\", type: now.\n5. ALL payloads MUST have: type: \"now\", date: ISO-8601, shortLink: false, tags: []\n6. COPY the posting template from SKILL.md Step 4b. DO NOT write posting code from scratch.\n7. Do NOT report to Slack yourself — cron delivery handles it.\n8. ローカルの12本を優先。予算が許す場合は新規購入可。\n\n### MANDATORY VIDEO RULES\n- BGM: reel-final.mp4 に ffmpeg で焼き込み済み。autoAddMusic は絶対 \"no\"。\n- CTA テキスト: 「アニッチャ試してみて」等のテキストオーバーレイ禁止。Hook テキストのみ 0-4.5s。demo部分(5-15s)はテキストなし。\n- フォント: JA は必ず /System/Library/Fonts/ヒラギノ角ゴシック W6.ttc（TikTokSans は □X 文字化け）\n- テキスト: textfile= 禁止。separate drawtext per line 必須。\\n 禁止。\n- 感情マッチ: Hook テキストの感情と UGC クリップの感情を一致させる。不安系→Confused/Stressed、自己嫌悪→Disappointed/Upset、発見→Shock/Amazement。\n- UGC マッピング: Card JA → Girl_feeling_overwhelmed_then_relieved.mp4 固定。Widget JA → Woman_Reacts_with_Amazement_and_Joy.mp4 固定。Honne JA → Confused_and_Stressed_Reaction.MOV 固定。",
+        "timeoutSeconds": 900
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL",
+        "bestEffort": true
+      }
+    },
+    {
+      "id": "a6ccfc01-42c8-4b5c-8c43-5713e90ee10d",
+      "agentId": "main",
+      "sessionKey": "agent:anicca:main",
+      "name": "reelclaw-anicca-ja-card-2",
+      "enabled": true,
+      "createdAtMs": 1773705982058,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 21 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "model": "openai-codex/gpt-5.4-mini",
+        "message": "Execute ReelClaw skill.\nRead ~/.agents/skills/reelclaw/SKILL.md and follow it.\nTikTok integration: cmnhlk3ju058lpn0ytilqdpo0\nInstagram integration: cmnipef7g00oerm0y3dz4lamx\nYouTube integration: cmn1oukj9012nnq0yqhouc3ib\nFont: /System/Library/Fonts/ヒラギノ角ゴシック W6.ttc\nLanguage: ja\nApp Name: アニッチャ\nMusic: ~/.openclaw/workspace/tiktok-marketing/music/bgm-cta.mp3\n\n## MANDATORY OVERRIDES\n\n### Demo rotation\nRead demos-mapping.json field rotation_ja (not rotation). Pick next theme from rotation_ja.order based on rotation_ja.lastUsed.reelclaw-ja-2.\nDemo video: assets/demos/ja/trimmed/{theme}.mp4\n\n### TITLE & CAPTION (MANDATORY)\n- TikTok settings.title: \"こんな言葉が欲しい人は、アニッチャ試してみて\"\n- YouTube settings.title: \"こんな言葉が欲しい人は、アニッチャ試してみて\"\n- ALL platforms content (caption): \"こんな言葉が欲しい人は、アニッチャ試してみて\\n\\n#メンタルヘルス #自己肯定感 #自己嫌悪 #癒し #共感 #仏教 #fyp\"\n- ⚠️ DO NOT put hook text in content. Hook goes ONLY on the video text overlay (Step 3d).\n\n### POSTING RULES (CRITICAL)\n1. 3 SEPARATE API calls: TikTok, Instagram, YouTube.\n2. TikTok: privacy_level: PUBLIC_TO_EVERYONE, content_posting_method: DIRECT_POST, video_made_with_ai: false, autoAddMusic: \"no\", duet: false, stitch: false, comment: false, brand_content_toggle: false, brand_organic_toggle: false.\n3. Instagram: __type: instagram-standalone, post_type: reel, type: now, tags: [].\n4. YouTube: __type: youtube, selfDeclaredMadeForKids: \"no\", privacy: \"public\", type: now.\n5. ALL payloads: type: \"now\", date: ISO-8601, shortLink: false, tags: []\n6. Do NOT report to Slack yourself.\n7. ローカルの12本を優先。予算が許す場合は新規購入可。\n8. Use different hook clip and text from reelclaw-ja-1 today.\n\n### MANDATORY VIDEO RULES\n- BGM: reel-final.mp4 に ffmpeg で焼き込み済み。autoAddMusic は絶対 \"no\"。\n- CTA テキスト: 「アニッチャ試してみて」等のテキストオーバーレイ禁止。Hook テキストのみ 0-4.5s。demo部分(5-15s)はテキストなし。\n- フォント: JA は必ず /System/Library/Fonts/ヒラギノ角ゴシック W6.ttc（TikTokSans は □X 文字化け）\n- テキスト: textfile= 禁止。separate drawtext per line 必須。\\n 禁止。\n- 感情マッチ: Hook テキストの感情と UGC クリップの感情を一致させる。不安系→Confused/Stressed、自己嫌悪→Disappointed/Upset、発見→Shock/Amazement。\n- UGC マッピング: Card JA → Girl_feeling_overwhelmed_then_relieved.mp4 固定。Widget JA → Woman_Reacts_with_Amazement_and_Joy.mp4 固定。Honne JA → Confused_and_Stressed_Reaction.MOV 固定。",
+        "timeoutSeconds": 900
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL",
+        "bestEffort": true
+      }
+    },
+    {
+      "id": "7a6230f8-d2a9-4d4b-8421-eba46faba984",
+      "agentId": "main",
+      "sessionKey": "agent:anicca:main",
+      "name": "larry-trend-hunter-en",
+      "enabled": true,
+      "createdAtMs": 1774091445663,
+      "schedule": {
+        "kind": "cron",
+        "expr": "30 4 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "model": "openai-codex/gpt-5.4-mini",
+        "message": "Execute trend-hunter skill.\nRead ~/.openclaw/skills/trend-hunter/SKILL.md and follow it.\ntarget: larry-en\n\nDo NOT report to Slack yourself — cron delivery handles it. Do NOT call the message tool.",
+        "timeoutSeconds": 900
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL",
+        "bestEffort": true
+      }
+    },
+    {
+      "id": "a0a1d2fe-4087-4ee4-bc7b-526b6f8d8e65",
+      "agentId": "main",
+      "sessionKey": "agent:anicca:main",
+      "name": "reelclaw-anicca-en-card-1",
+      "enabled": true,
+      "createdAtMs": 1774091459830,
+      "schedule": {
+        "kind": "cron",
+        "expr": "30 12 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "model": "openai-codex/gpt-5.4-mini",
+        "message": "Execute ReelClaw skill.\nRead ~/.agents/skills/reelclaw/SKILL.md and follow it.\nTikTok integration: cmn8y47do02mmo70yckb46dyu\nInstagram integration: cmn8y95rg02d2qx0y09bbk5pb\nYouTube integration: cmmzukbkw04ulp30yfvijrwio\nFont: ~/Library/Fonts/TikTokSansDisplayBold.ttf\nLanguage: en\nApp Name: Anicca\nMusic: ~/.openclaw/workspace/tiktok-marketing/music/bgm-cta.mp3\n\n## MANDATORY OVERRIDES\n\n### Demo rotation\nRead demos-mapping.json field rotation_en (not rotation or rotation_ja). Pick next theme from rotation_en.order based on rotation_en.lastUsed.reelclaw-en-1.\nDemo video: assets/demos/en/trimmed/{theme}.mp4\n\n### TITLE & CAPTION (MANDATORY)\n- TikTok settings.title: \"try Anicca — words like these, every day\"\n- YouTube settings.title: \"try Anicca — words like these, every day\"\n- ALL platforms content (caption): \"try Anicca — words like these, every day\\n\\n#mentalhealth #selfcare #healing #selflove #anxiety #fyp\"\n- ⚠️ DO NOT put hook text in content. Hook goes ONLY on the video text overlay (Step 3d).\n\n### POSTING RULES (CRITICAL)\n1. 3 SEPARATE API calls: TikTok, Instagram, YouTube.\n2. TikTok: privacy_level: PUBLIC_TO_EVERYONE, content_posting_method: DIRECT_POST, video_made_with_ai: false, autoAddMusic: \"no\", duet: false, stitch: false, comment: false, brand_content_toggle: false, brand_organic_toggle: false.\n3. Instagram: __type: instagram-standalone, post_type: reel, type: now, tags: [].\n4. YouTube: __type: youtube, selfDeclaredMadeForKids: \"no\", privacy: \"public\", type: now.\n5. ALL payloads: type: \"now\", date: ISO-8601, shortLink: false, tags: []\n6. Do NOT report to Slack yourself.\n7. Prefer local 12 clips. New purchases OK if budget allows.\n\n### MANDATORY VIDEO RULES\n- BGM: reel-final.mp4 に ffmpeg で焼き込み済み。autoAddMusic は絶対 \"no\"。\n- CTA テキスト: \"try Anicca — link in bio\" 等のテキストオーバーレイ禁止。Hook テキストのみ 0-4.5s。demo部分(5-15s)はテキストなし。\n- フォント: EN は ~/Library/Fonts/TikTokSansDisplayBold.ttf\n- テキスト: textfile= 禁止。separate drawtext per line 必須。\n- 感情マッチ: Hook テキストの感情と UGC クリップの感情を一致させる。\n- UGC マッピング: Card EN → Disappointed_and_Upset_Reaction.mp4 固定。Widget EN → Girl_Reacts_With_Shock_and_Amazement.mp4 固定。\n- Card EN hook テキストにアポストロフィ禁止（ffmpeg drawtext 破壊）。",
+        "timeoutSeconds": 900
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL",
+        "bestEffort": true
+      }
+    },
+    {
+      "id": "330bbaf7-3ea2-41f6-8479-f1c6f8ef1f45",
+      "agentId": "main",
+      "sessionKey": "agent:anicca:main",
+      "name": "reelclaw-anicca-en-card-2",
+      "enabled": true,
+      "createdAtMs": 1774091466875,
+      "schedule": {
+        "kind": "cron",
+        "expr": "30 21 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "model": "openai-codex/gpt-5.4-mini",
+        "message": "Execute ReelClaw skill.\nRead ~/.agents/skills/reelclaw/SKILL.md and follow it.\nTikTok integration: cmn8y47do02mmo70yckb46dyu\nInstagram integration: cmn8y95rg02d2qx0y09bbk5pb\nYouTube integration: cmmzukbkw04ulp30yfvijrwio\nFont: ~/Library/Fonts/TikTokSansDisplayBold.ttf\nLanguage: en\nApp Name: Anicca\nMusic: ~/.openclaw/workspace/tiktok-marketing/music/bgm-cta.mp3\n\n## MANDATORY OVERRIDES\n\n### Demo rotation\nRead demos-mapping.json field rotation_en (not rotation or rotation_ja). Pick next theme from rotation_en.order based on rotation_en.lastUsed.reelclaw-en-2.\nDemo video: assets/demos/en/trimmed/{theme}.mp4\n\n### TITLE & CAPTION (MANDATORY)\n- TikTok settings.title: \"try Anicca — words like these, every day\"\n- YouTube settings.title: \"try Anicca — words like these, every day\"\n- ALL platforms content (caption): \"try Anicca — words like these, every day\\n\\n#mentalhealth #selfcare #healing #selflove #anxiety #fyp\"\n- ⚠️ DO NOT put hook text in content. Hook goes ONLY on the video text overlay (Step 3d).\n\n### POSTING RULES (CRITICAL)\n1. 3 SEPARATE API calls: TikTok, Instagram, YouTube.\n2. TikTok: privacy_level: PUBLIC_TO_EVERYONE, content_posting_method: DIRECT_POST, video_made_with_ai: false, autoAddMusic: \"no\", duet: false, stitch: false, comment: false, brand_content_toggle: false, brand_organic_toggle: false.\n3. Instagram: __type: instagram-standalone, post_type: reel, type: now, tags: [].\n4. YouTube: __type: youtube, selfDeclaredMadeForKids: \"no\", privacy: \"public\", type: now.\n5. ALL payloads: type: \"now\", date: ISO-8601, shortLink: false, tags: []\n6. Do NOT report to Slack yourself.\n7. Prefer local 12 clips. New purchases OK if budget allows.\n8. Use different hook clip and text from reelclaw-en-1 today.\n\n### MANDATORY VIDEO RULES\n- BGM: reel-final.mp4 に ffmpeg で焼き込み済み。autoAddMusic は絶対 \"no\"。\n- CTA テキスト: \"try Anicca — link in bio\" 等のテキストオーバーレイ禁止。Hook テキストのみ 0-4.5s。demo部分(5-15s)はテキストなし。\n- フォント: EN は ~/Library/Fonts/TikTokSansDisplayBold.ttf\n- テキスト: textfile= 禁止。separate drawtext per line 必須。\n- 感情マッチ: Hook テキストの感情と UGC クリップの感情を一致させる。\n- UGC マッピング: Card EN → Disappointed_and_Upset_Reaction.mp4 固定。Widget EN → Girl_Reacts_With_Shock_and_Amazement.mp4 固定。\n- Card EN hook テキストにアポストロフィ禁止（ffmpeg drawtext 破壊）。",
+        "timeoutSeconds": 900
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL",
+        "bestEffort": true
+      }
+    },
+    {
+      "id": "22c0584b-f310-48a8-b339-d7885c3e5be9",
+      "agentId": "main",
+      "sessionKey": "agent:anicca:main",
+      "name": "zenn-backlog-deploy",
+      "enabled": true,
+      "createdAtMs": 1774170310138,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 6 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "model": "openai-codex/gpt-5.4-mini",
+        "message": "Zennバックログデプロイ。以下の手順を実行:\n\n1. cd ~/.openclaw/workspace/zenn-articles\n2. ls articles/*.md でファイル一覧取得\n3. 各ファイルのslugに対して curl -s -o /dev/null -w '%{http_code}' https://zenn.dev/anicca/articles/{slug}\n4. 404のslugリスト = 未デプロイ\n5. リストが空なら「✅ Zennバックログ完了」と報告して終了\n6. 最古の1つを選択（日付順）\n7. echo '' >> articles/{slug}.md && git add . && git commit -m 'deploy: {slug}' && git push origin main\n8. 30秒待ってから curl で200確認\n9. 結果報告: 「✅ {slug} デプロイ完了。残りバックログ: N記事」",
+        "timeoutSeconds": 600
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL",
+        "bestEffort": true
+      }
+    },
+    {
+      "id": "2cd53ee8-bcbe-4bec-894d-ffe09b4991ee",
+      "agentId": "main",
+      "sessionKey": "agent:anicca:main",
+      "name": "mau-tiktok-en-morning",
+      "enabled": true,
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "model": "openai-codex/gpt-5.4-mini",
+        "message": "Execute mau-tiktok skill.\nRead ~/.openclaw/skills/mau-tiktok/SKILL.md and follow it EXACTLY.\nLanguage: en\n\n## EXECUTION (3 commands in order)\n\n```bash\ncd ~/.openclaw/skills/mau-tiktok/scripts\nnode scrape-hooks.js --lang en --count 1\nnode trim-and-stitch.js --lang en --count 1\nnode post-to-postiz.js --lang en\n```\n\n## RULES\n1. Run the 3 scripts above IN ORDER. That is ALL you do.\n2. NEVER modify any script files.\n3. NEVER modify config.json, creators.json, or CTA videos.\n4. If a script fails, log the error and stop. Do not retry.\n5. Do NOT report to Slack yourself - cron delivery handles it.",
+        "timeoutSeconds": 600
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL",
+        "bestEffort": true
+      },
+      "schedule": {
+        "kind": "cron",
+        "expr": "15 8 * * *",
+        "tz": "Asia/Tokyo"
+      }
+    },
+    {
+      "id": "8d93b805-0318-488c-b1e1-30e81340062e",
+      "agentId": "main",
+      "sessionKey": "agent:anicca:main",
+      "name": "mau-tiktok-en-evening",
+      "enabled": true,
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "model": "openai-codex/gpt-5.4-mini",
+        "message": "Execute mau-tiktok skill.\nRead ~/.openclaw/skills/mau-tiktok/SKILL.md and follow it EXACTLY.\nLanguage: en\n\n## EXECUTION (3 commands in order)\n\n```bash\ncd ~/.openclaw/skills/mau-tiktok/scripts\nnode scrape-hooks.js --lang en --count 1\nnode trim-and-stitch.js --lang en --count 1\nnode post-to-postiz.js --lang en\n```\n\n## RULES\n1. Run the 3 scripts above IN ORDER. That is ALL you do.\n2. NEVER modify any script files.\n3. NEVER modify config.json, creators.json, or CTA videos.\n4. If a script fails, log the error and stop. Do not retry.\n5. Do NOT report to Slack yourself - cron delivery handles it.",
+        "timeoutSeconds": 600
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL",
+        "bestEffort": true
+      },
+      "schedule": {
+        "kind": "cron",
+        "expr": "15 17 * * *",
+        "tz": "Asia/Tokyo"
+      }
+    },
+    {
+      "id": "92360066-371c-44de-bda7-eb8c2396c35c",
+      "agentId": "main",
+      "sessionKey": "agent:anicca:main",
+      "name": "skill-scout",
+      "enabled": true,
+      "createdAtMs": 1774716742969,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 7 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "model": "openai-codex/gpt-5.4-mini",
+        "message": "Skill Scout: Find and install useful new skills for OpenClaw.\n\n1. Search X for new tools using x-research:\n   bun run ~/.openclaw/skills/x-research/x-search.ts search \"OpenClaw skill\" --sort likes --limit 20 --since 7d\n   bun run ~/.openclaw/skills/x-research/x-search.ts search \"AI agent tool\" --sort likes --limit 20 --since 7d\n\n2. Search ClawHub + skills.sh:\n   clawhub search \"automation\" --limit 5\n   clawhub search \"marketing\" --limit 5\n   clawhub search \"tiktok\" --limit 5\n   clawhub search \"revenue\" --limit 5\n   skills-search \"monetization\"\n   skills-search \"content creation\"\n\n3. For each promising find:\n   a. Check if it's actually useful for: reducing suffering, earning money, marketing, app building\n   b. Check security (no malicious code)\n   c. clawhub install <name> --dir ~/.openclaw/skills\n   d. Or: npx skills add <source>\n   e. GitHub clone ONLY if no clawhub/skills.sh version exists\n   f. Create a cron job if it should run regularly\n\nDo NOT report to Slack yourself — cron delivery handles it. Do NOT call the message tool.",
+        "timeoutSeconds": 600
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL",
+        "bestEffort": true
+      }
+    },
+    {
+      "id": "c4bf6b79-48b6-482e-bc59-2e290a564eae",
+      "agentId": "main",
+      "sessionKey": "agent:anicca:main",
+      "name": "youtube-shorts-generator",
+      "enabled": true,
+      "createdAtMs": 1774967902036,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 13 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "model": "openai-codex/gpt-5.4-mini",
+        "message": "Execute Nova skill SYSTEM 8 (Automated Daily Short).\nRead ~/.openclaw/workspace/nova-youtube-agent/SKILL.md and follow SYSTEM 8 exactly.\nLanguage: ja\nFont: /System/Library/Fonts/ヒラギノ角ゴシック W7.ttc\nYouTube integration: cmn1oukj9012nnq0yqhouc3ib\nDo NOT report to Slack yourself — cron delivery handles it.",
+        "timeoutSeconds": 900
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL",
+        "bestEffort": true
+      }
+    },
+    {
+      "id": "dc2e995e-3097-4145-91b2-c719bf646c27",
+      "agentId": "main",
+      "sessionKey": "agent:anicca:main",
+      "name": "grok-x-research",
+      "enabled": true,
+      "createdAtMs": 1774967911667,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 11 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "model": "openai-codex/gpt-5.4-mini",
+        "message": "Execute grok-x-research skill.\nRead ~/.openclaw/skills/grok-x-research/SKILL.md and follow it.\nSearch X via x_search for 3 themes (AI agents, mental health, suffering).\nGenerate trend report to ~/.openclaw/workspace/grok-x-research/report-YYYY-MM-DD.json.\nPost 1 tweet via Postiz (@aniccaxxx, YOUR_POSTIZ_X_INTEGRATION_ID).\n1 post only. No multiple posts.\nDo NOT report to Slack yourself — cron delivery handles it. Do NOT call the message tool.",
+        "timeoutSeconds": 600
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL",
+        "bestEffort": true
+      }
+    },
+    {
+      "id": "cb8b3701-dd6f-452f-8d13-172e7a4d3e61",
+      "agentId": "main",
+      "sessionKey": "agent:anicca:main",
+      "name": "skill-fixer",
+      "enabled": true,
+      "createdAtMs": 1774967920535,
+      "schedule": {
+        "kind": "cron",
+        "expr": "50 22 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "model": "openai-codex/gpt-5.4-mini",
+        "message": "Execute skill-fixer skill.\nRead ~/.openclaw/skills/skill-log-analyzer/SKILL.md and follow it.\nCheck ALL enabled crons. For failing ones, read actual logs, investigate cause, fix SKILL.md directly.\nDo NOT report to Slack yourself.",
+        "timeoutSeconds": 600
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL",
+        "bestEffort": true
+      }
+    },
+    {
+      "id": "b5b49526-a38c-49b8-9c13-2d8d51b97834",
+      "agentId": "main",
+      "name": "reelclaw-anicca-ja-widget-1",
+      "enabled": true,
+      "createdAtMs": 1775706699793,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 8 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Execute reelclaw skill. Language: ja. App: Anicca (Widget demo). Font: /System/Library/Fonts/ヒラギノ角ゴシック W6.ttc. DEMO_MODE: TRIM_HOOK_ONLY. Hook video MUST be trimmed to first 3 seconds (use ffmpeg pattern from references/ffmpeg-patterns.md). Demo video is NEVER trimmed (use AS-IS, full length). Do NOT run Gemini analysis on demo. Run Gemini analysis on hook ONLY if needed for 3s trim point. NEVER shorten the hook in order to fit a 15-second limit. Widget demo runs do NOT have a 15-second cap. NEVER append any CTA clip or CTA message video at the end. Final output must be hook -> demo only, with BGM. Use the widget demo video AS-IS without cutting. The full source video IS the demo section. If any script would normally trim or rebuild the demo, OVERRIDE that behavior and keep the full demo unchanged. Video source: widget demo videos from ~/anicca-project/assets/reelclaw/ja-widget-videos/ (rotate in this exact order: anger.MP4, choosewisely.MP4, compulsivethinjing.MP4, self-hatred-affirmatino.MP4, sleepinglate.MP4, stopiingrumination.MP4). UGC hook video source: ~/.openclaw/workspace/tiktok-marketing/ugc-library/hooks/. BGM: ~/.openclaw/workspace/tiktok-marketing/music/bgm-cta.mp3. Hook text source: ~/.openclaw/workspace/tiktok-marketing/reelclaw-widget-hooks-ja.json. Rotation state source: ~/.openclaw/workspace/tiktok-marketing/reelclaw-widget-rotation.json. Daily rule: rotate without reusing the same hook on the same day across widget JA crons. Title: ロック画面にアファメーションを設定する方法. Caption: ロック画面にアファメーションを設定する方法\n\n#アファメーション #ロック画面 #セルフケア #メンタルヘルス #自己肯定感 #fyp. Publish to TikTok JA directly via Postiz (privacy_level: PUBLIC_TO_EVERYONE, content_posting_method: DIRECT_POST, autoAddMusic: \"no\"). TikTok direct post is REQUIRED. If TikTok direct post fails, treat the run as FAILURE even if Instagram or YouTube succeed. Publish to Instagram JA (direct) and YouTube JA (direct) only after TikTok direct post succeeds. TikTok: cmnhlk3ju058lpn0ytilqdpo0. Instagram: cmnipef7g00oerm0y3dz4lamx. YouTube: cmn1oukj9012nnq0yqhouc3ib. DEMO OVERLAY RULE: DO NOT overlay text on demo section. CRITICAL: After you finish, you MUST post a summary to Slack #metrics channel (channel ID: C_YOUR_SLACK_CHANNEL), explicitly stating whether the demo remained untrimmed, whether hook was preserved, whether no CTA was included, and whether TikTok direct post succeeded.\n\n### MANDATORY VIDEO RULES\n- BGM: reel-final.mp4 に ffmpeg で焼き込み済み。autoAddMusic は絶対 \"no\"。\n- CTA テキスト: テキストオーバーレイ禁止（Hook テキストのみ 0-4.5s、demo部分はテキストなし）。\n- フォント: JA は必ず /System/Library/Fonts/ヒラギノ角ゴシック W6.ttc（TikTokSans は日本語 □X 文字化け）\n- テキスト: textfile= 禁止。separate drawtext per line 必須。\\n 禁止。\n- UGC マッピング: Widget JA → Woman_Reacts_with_Amazement_and_Joy.mp4 固定。ポジティブ提案テキストに驚嘆・喜び表情。Confused/Stressed/Skeptical 禁止。\n- Hook テキストにアポストロフィ禁止（ffmpeg drawtext 破壊）。",
+        "model": "openai-codex/gpt-5.4-mini"
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL"
+      }
+    },
+    {
+      "id": "71957a9d-36bb-44f3-8fa6-078f72244fb4",
+      "agentId": "main",
+      "name": "reelclaw-anicca-ja-widget-2",
+      "enabled": true,
+      "createdAtMs": 1775706705655,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 18 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Execute reelclaw skill. Language: ja. App: Anicca (Widget demo). Font: /System/Library/Fonts/ヒラギノ角ゴシック W6.ttc. DEMO_MODE: TRIM_HOOK_ONLY. Hook video MUST be trimmed to first 3 seconds (use ffmpeg pattern from references/ffmpeg-patterns.md). Demo video is NEVER trimmed (use AS-IS, full length). Do NOT run Gemini analysis on demo. Run Gemini analysis on hook ONLY if needed for 3s trim point. NEVER shorten the hook in order to fit a 15-second limit. Widget demo runs do NOT have a 15-second cap. NEVER append any CTA clip or CTA message video at the end. Final output must be hook -> demo only, with BGM. Use the widget demo video AS-IS without cutting. The full source video IS the demo section. If any script would normally trim or rebuild the demo, OVERRIDE that behavior and keep the full demo unchanged. Video source: widget demo videos from ~/anicca-project/assets/reelclaw/ja-widget-videos/ (rotate in this exact order: anger.MP4, choosewisely.MP4, compulsivethinjing.MP4, self-hatred-affirmatino.MP4, sleepinglate.MP4, stopiingrumination.MP4). UGC hook video source: ~/.openclaw/workspace/tiktok-marketing/ugc-library/hooks/. BGM: ~/.openclaw/workspace/tiktok-marketing/music/bgm-cta.mp3. Hook text source: ~/.openclaw/workspace/tiktok-marketing/reelclaw-widget-hooks-ja.json. Rotation state source: ~/.openclaw/workspace/tiktok-marketing/reelclaw-widget-rotation.json. Daily rule: rotate without reusing the same hook on the same day across widget JA crons. Title: ロック画面にアファメーションを設定する方法. Caption: ロック画面にアファメーションを設定する方法\n\n#アファメーション #ロック画面 #セルフケア #メンタルヘルス #自己肯定感 #fyp. Publish to TikTok JA directly via Postiz (privacy_level: PUBLIC_TO_EVERYONE, content_posting_method: DIRECT_POST, autoAddMusic: \"no\"). TikTok direct post is REQUIRED. If TikTok direct post fails, treat the run as FAILURE even if Instagram or YouTube succeed. Publish to Instagram JA (direct) and YouTube JA (direct) only after TikTok direct post succeeds. TikTok: cmnhlk3ju058lpn0ytilqdpo0. Instagram: cmnipef7g00oerm0y3dz4lamx. YouTube: cmn1oukj9012nnq0yqhouc3ib. DEMO OVERLAY RULE: DO NOT overlay text on demo section. CRITICAL: After you finish, you MUST post a summary to Slack #metrics channel (channel ID: C_YOUR_SLACK_CHANNEL), explicitly stating whether the demo remained untrimmed, whether hook was preserved, whether no CTA was included, and whether TikTok direct post succeeded.\n\n### MANDATORY VIDEO RULES\n- BGM: reel-final.mp4 に ffmpeg で焼き込み済み。autoAddMusic は絶対 \"no\"。\n- CTA テキスト: テキストオーバーレイ禁止（Hook テキストのみ 0-4.5s、demo部分はテキストなし）。\n- フォント: JA は必ず /System/Library/Fonts/ヒラギノ角ゴシック W6.ttc（TikTokSans は日本語 □X 文字化け）\n- テキスト: textfile= 禁止。separate drawtext per line 必須。\\n 禁止。\n- UGC マッピング: Widget JA → Woman_Reacts_with_Amazement_and_Joy.mp4 固定。ポジティブ提案テキストに驚嘆・喜び表情。Confused/Stressed/Skeptical 禁止。\n- Hook テキストにアポストロフィ禁止（ffmpeg drawtext 破壊）。",
+        "model": "openai-codex/gpt-5.4-mini"
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL"
+      }
+    },
+    {
+      "id": "f31e4870-f0ef-451b-853a-d88a066da447",
+      "agentId": "main",
+      "name": "reelclaw-anicca-en-widget-1",
+      "enabled": true,
+      "createdAtMs": 1775706711595,
+      "schedule": {
+        "kind": "cron",
+        "expr": "30 9 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Execute reelclaw skill. Language: en. App: Anicca (Widget demo). Font: ~/Library/Fonts/TikTokSansDisplayBold.ttf. DEMO_MODE: TRIM_HOOK_ONLY. Hook video MUST be trimmed to first 3 seconds (use ffmpeg pattern from references/ffmpeg-patterns.md). Demo video is NEVER trimmed (use AS-IS, full length). Do NOT run Gemini analysis on demo. Run Gemini analysis on hook ONLY if needed for 3s trim point. NEVER shorten the hook in order to fit a 15-second limit. Widget demo runs do NOT have a 15-second cap. NEVER append any CTA clip or CTA message video at the end. Final output must be hook -> demo only, with BGM. Use the widget demo video AS-IS without cutting. The full source video IS the demo section. If any script would normally trim or rebuild the demo, OVERRIDE that behavior and keep the full demo unchanged. Video source: widget demo videos from ~/anicca-project/assets/reelclaw/en-widget-videos/ (rotate in this exact order: anger.MP4, anxietty.MP4, obseeive-thinking.MP4, rumnation.mov, slef-hatred.MP4, styaling-up-late.MP4). UGC hook video source: ~/.openclaw/workspace/tiktok-marketing/ugc-library/hooks/. BGM: ~/.openclaw/workspace/tiktok-marketing/music/bgm-cta.mp3. Hook text source: ~/.openclaw/workspace/tiktok-marketing/reelclaw-widget-hooks-en.json. Rotation state source: ~/.openclaw/workspace/tiktok-marketing/reelclaw-widget-rotation.json. Daily rule: rotate without reusing the same hook on the same day across widget EN crons. Title: how to put affirmations on your lockscreen. Caption: how to put affirmations on your lockscreen\n\n#affirmations #lockscreen #selfcare #mentalhealth #selflove #fyp. Publish to TikTok EN directly via Postiz (privacy_level: PUBLIC_TO_EVERYONE, content_posting_method: DIRECT_POST, autoAddMusic: \"no\"). TikTok direct post is REQUIRED. If TikTok direct post fails, treat the run as FAILURE even if Instagram or YouTube succeed. Publish to Instagram EN (direct) and YouTube EN (direct) only after TikTok direct post succeeds. TikTok: cmn8y47do02mmo70yckb46dyu. Instagram: cmn8y95rg02d2qx0y09bbk5pb. YouTube: cmmzukbkw04ulp30yfvijrwio. DEMO OVERLAY RULE: DO NOT overlay text on demo section. CRITICAL: After you finish, you MUST post a summary to Slack #metrics channel (channel ID: C_YOUR_SLACK_CHANNEL), explicitly stating whether the demo remained untrimmed, whether hook was preserved, whether no CTA was included, and whether TikTok direct post succeeded.\n\n### MANDATORY VIDEO RULES\n- BGM: reel-final.mp4 に ffmpeg で焼き込み済み。autoAddMusic は絶対 \"no\"。\n- CTA テキスト: テキストオーバーレイ禁止（Hook テキストのみ 0-4.5s、demo部分はテキストなし）。\n- フォント: EN は ~/Library/Fonts/TikTokSansDisplayBold.ttf\n- テキスト: textfile= 禁止。separate drawtext per line 必須。\n- UGC マッピング: Widget EN → Girl_Reacts_With_Shock_and_Amazement.mp4 固定。ポジティブ提案テキストに驚嘆表情。Confused/Stressed/Skeptical 禁止。\n- Hook テキストにアポストロフィ禁止（ffmpeg drawtext 破壊）。",
+        "model": "openai-codex/gpt-5.4-mini"
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL"
+      }
+    },
+    {
+      "id": "92c13cc2-3888-4c4a-b2b7-5a200f223677",
+      "agentId": "main",
+      "name": "reelclaw-anicca-en-widget-2",
+      "enabled": true,
+      "createdAtMs": 1775706717474,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 19 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Execute reelclaw skill. Language: en. App: Anicca (Widget demo). Font: ~/Library/Fonts/TikTokSansDisplayBold.ttf. DEMO_MODE: TRIM_HOOK_ONLY. Hook video MUST be trimmed to first 3 seconds (use ffmpeg pattern from references/ffmpeg-patterns.md). Demo video is NEVER trimmed (use AS-IS, full length). Do NOT run Gemini analysis on demo. Run Gemini analysis on hook ONLY if needed for 3s trim point. NEVER shorten the hook in order to fit a 15-second limit. Widget demo runs do NOT have a 15-second cap. NEVER append any CTA clip or CTA message video at the end. Final output must be hook -> demo only, with BGM. Use the widget demo video AS-IS without cutting. The full source video IS the demo section. If any script would normally trim or rebuild the demo, OVERRIDE that behavior and keep the full demo unchanged. Video source: widget demo videos from ~/anicca-project/assets/reelclaw/en-widget-videos/ (rotate in this exact order: anger.MP4, anxietty.MP4, obseeive-thinking.MP4, rumnation.mov, slef-hatred.MP4, styaling-up-late.MP4). UGC hook video source: ~/.openclaw/workspace/tiktok-marketing/ugc-library/hooks/. BGM: ~/.openclaw/workspace/tiktok-marketing/music/bgm-cta.mp3. Hook text source: ~/.openclaw/workspace/tiktok-marketing/reelclaw-widget-hooks-en.json. Rotation state source: ~/.openclaw/workspace/tiktok-marketing/reelclaw-widget-rotation.json. Daily rule: rotate without reusing the same hook on the same day across widget EN crons. Title: how to put affirmations on your lockscreen. Caption: how to put affirmations on your lockscreen\n\n#affirmations #lockscreen #selfcare #mentalhealth #selflove #fyp. Publish to TikTok EN directly via Postiz (privacy_level: PUBLIC_TO_EVERYONE, content_posting_method: DIRECT_POST, autoAddMusic: \"no\"). TikTok direct post is REQUIRED. If TikTok direct post fails, treat the run as FAILURE even if Instagram or YouTube succeed. Publish to Instagram EN (direct) and YouTube EN (direct) only after TikTok direct post succeeds. TikTok: cmn8y47do02mmo70yckb46dyu. Instagram: cmn8y95rg02d2qx0y09bbk5pb. YouTube: cmmzukbkw04ulp30yfvijrwio. DEMO OVERLAY RULE: DO NOT overlay text on demo section. CRITICAL: After you finish, you MUST post a summary to Slack #metrics channel (channel ID: C_YOUR_SLACK_CHANNEL), explicitly stating whether the demo remained untrimmed, whether hook was preserved, whether no CTA was included, and whether TikTok direct post succeeded.\n\n### MANDATORY VIDEO RULES\n- BGM: reel-final.mp4 に ffmpeg で焼き込み済み。autoAddMusic は絶対 \"no\"。\n- CTA テキスト: テキストオーバーレイ禁止（Hook テキストのみ 0-4.5s、demo部分はテキストなし）。\n- フォント: EN は ~/Library/Fonts/TikTokSansDisplayBold.ttf\n- テキスト: textfile= 禁止。separate drawtext per line 必須。\n- UGC マッピング: Widget EN → Girl_Reacts_With_Shock_and_Amazement.mp4 固定。ポジティブ提案テキストに驚嘆表情。Confused/Stressed/Skeptical 禁止。\n- Hook テキストにアポストロフィ禁止（ffmpeg drawtext 破壊）。",
+        "model": "openai-codex/gpt-5.4-mini"
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL"
+      }
+    },
+    {
+      "id": "c6eaca79-8de5-4f61-9020-d7e082b14f1a",
+      "agentId": "main",
+      "name": "reelclaw-honne-ja-1",
+      "enabled": true,
+      "createdAtMs": 1775706723484,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 9 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Execute reelclaw skill. Language: ja. App: Honne AI. Font: /System/Library/Fonts/ヒラギノ角ゴシック W6.ttc. DEMO_MODE: TRIM_HOOK_ONLY. Hook video MUST be trimmed to first 3 seconds. Demo video is NEVER trimmed. NEVER output demo-only. NEVER append any CTA clip or CTA message video at the end. NEVER add CTA text at the end. The demo itself is the CTA. Hook segment is REQUIRED. Demo video segment is REQUIRED. BGM is REQUIRED in the final exported video. Final output must be hook -> demo only, with BGM. Build the final video in ReelClaw style: UGC hook clip -> Honne demo video, with BGM mixed across the final export. Use the demo video AS-IS without cutting. The full video IS the demo. Video source: ~/.openclaw/workspace/honne-ai/demos/ (rotate existing files in order defined by ~/.openclaw/workspace/honne-ai/honne-mapping.json). Rotation state source: ~/.openclaw/workspace/honne-ai/honne-mapping.json rotation.lastUsed.honne-ja-morning. Hook text source: ~/.openclaw/workspace/honne-ai/honne-mapping.json videos[].hooks[] — each video has 3 hooks tied to it, use the hook matching the current video and hookIndex from rotation state. UGC hook video source: ~/.openclaw/workspace/tiktok-marketing/ugc-library/hooks/. BGM: ~/.openclaw/workspace/tiktok-marketing/music/bgm-cta.mp3. Hook text must be overlaid on the hook segment, not in title/caption only. DEMO OVERLAY RULE: DO NOT overlay text on demo section. Title rotation: use one of these 3 titles (rotate daily): 1) LINEの本音をAIが翻訳する 2) もう返信で悩まない 3) あの人の本音、AIが教えてくれた. Caption: (use selected title)\n\n#本音 #人間関係 #職場関係 #恋愛関係 #親子関係 #言いづらい #fyp. Publish to TikTok ONLY via Postiz. TikTok integration: cmnit95mg015rrm0ye5vm8dhl. Posting mode: direct, PUBLIC_TO_EVERYONE, autoAddMusic: \"no\". CRITICAL: If the final output is missing hook segment, missing BGM, includes CTA, or exports demo-only, treat the run as FAILURE. CRITICAL: After you finish, you MUST post a summary to Slack #metrics channel (channel ID: C_YOUR_SLACK_CHANNEL), explicitly stating whether hook and demo were present, whether BGM was present, and whether no CTA was included.\n\n### MANDATORY VIDEO RULES\n- BGM: reel-final.mp4 に ffmpeg で焼き込み済み。autoAddMusic は絶対 \"no\"。\n- CTA テキスト: テキストオーバーレイ禁止（Hook テキストのみ 0-4.5s、demo部分はテキストなし）。\n- フォント: JA は必ず /System/Library/Fonts/ヒラギノ角ゴシック W6.ttc（TikTokSans は日本語 □X 文字化け）\n- テキスト: textfile= 禁止。separate drawtext per line 必須。\\n 禁止。\n- UGC マッピング: Honne JA → Confused_and_Stressed_Reaction.MOV 固定。全 Honne フック（boss/huuhu/mom/parent/girlfriend 全パターン）は「言われた時の不安・困惑」感情。Happy/Amazement/Joy 禁止。\n- Hook テキストにアポストロフィ禁止（ffmpeg drawtext 破壊）。",
+        "model": "openai-codex/gpt-5.4-mini"
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL"
+      }
+    },
+    {
+      "id": "216a8d9a-cf91-4f5c-9795-37228c89f325",
+      "agentId": "main",
+      "name": "reelclaw-honne-ja-2",
+      "enabled": true,
+      "createdAtMs": 1775706729513,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 15 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Execute reelclaw skill. Language: ja. App: Honne AI. Font: /System/Library/Fonts/ヒラギノ角ゴシック W6.ttc. DEMO_MODE: TRIM_HOOK_ONLY. Hook video MUST be trimmed to first 3 seconds. Demo video is NEVER trimmed. NEVER output demo-only. NEVER append any CTA clip or CTA message video at the end. NEVER add CTA text at the end. The demo itself is the CTA. Hook segment is REQUIRED. Demo video segment is REQUIRED. BGM is REQUIRED in the final exported video. Final output must be hook -> demo only, with BGM. Build the final video in ReelClaw style: UGC hook clip -> Honne demo video, with BGM mixed across the final export. Use the demo video AS-IS without cutting. The full video IS the demo. Video source: ~/.openclaw/workspace/honne-ai/demos/ (rotate existing files in order defined by ~/.openclaw/workspace/honne-ai/honne-mapping.json). Rotation state source: ~/.openclaw/workspace/honne-ai/honne-mapping.json rotation.lastUsed.honne-ja-afternoon. Hook text source: ~/.openclaw/workspace/honne-ai/honne-mapping.json videos[].hooks[] — each video has 3 hooks tied to it, use the hook matching the current video and hookIndex from rotation state. UGC hook video source: ~/.openclaw/workspace/tiktok-marketing/ugc-library/hooks/. BGM: ~/.openclaw/workspace/tiktok-marketing/music/bgm-cta.mp3. Hook text must be overlaid on the hook segment, not in title/caption only. DEMO OVERLAY RULE: DO NOT overlay text on demo section. Title rotation: use one of these 3 titles (rotate daily): 1) LINEの本音をAIが翻訳する 2) もう返信で悩まない 3) あの人の本音、AIが教えてくれた. Caption: (use selected title)\n\n#本音 #人間関係 #職場関係 #恋愛関係 #親子関係 #言いづらい #fyp. Publish to TikTok ONLY via Postiz. TikTok integration: cmnit95mg015rrm0ye5vm8dhl. Posting mode: direct, PUBLIC_TO_EVERYONE, autoAddMusic: \"no\". CRITICAL: If the final output is missing hook segment, missing BGM, includes CTA, or exports demo-only, treat the run as FAILURE. CRITICAL: After you finish, you MUST post a summary to Slack #metrics channel (channel ID: C_YOUR_SLACK_CHANNEL), explicitly stating whether hook and demo were present, whether BGM was present, and whether no CTA was included.\n\n### MANDATORY VIDEO RULES\n- BGM: reel-final.mp4 に ffmpeg で焼き込み済み。autoAddMusic は絶対 \"no\"。\n- CTA テキスト: テキストオーバーレイ禁止（Hook テキストのみ 0-4.5s、demo部分はテキストなし）。\n- フォント: JA は必ず /System/Library/Fonts/ヒラギノ角ゴシック W6.ttc（TikTokSans は日本語 □X 文字化け）\n- テキスト: textfile= 禁止。separate drawtext per line 必須。\\n 禁止。\n- UGC マッピング: Honne JA → Confused_and_Stressed_Reaction.MOV 固定。全 Honne フック（boss/huuhu/mom/parent/girlfriend 全パターン）は「言われた時の不安・困惑」感情。Happy/Amazement/Joy 禁止。\n- Hook テキストにアポストロフィ禁止（ffmpeg drawtext 破壊）。",
+        "model": "openai-codex/gpt-5.4-mini"
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL"
+      }
+    },
+    {
+      "id": "6ba602cb-b3c3-4cb9-8498-56eb1c5d64cc",
+      "agentId": "main",
+      "name": "reelclaw-honne-ja-3",
+      "enabled": true,
+      "createdAtMs": 1775706735619,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 20 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Execute reelclaw skill. Language: ja. App: Honne AI. Font: /System/Library/Fonts/ヒラギノ角ゴシック W6.ttc. DEMO_MODE: TRIM_HOOK_ONLY. Hook video MUST be trimmed to first 3 seconds. Demo video is NEVER trimmed. NEVER output demo-only. NEVER append any CTA clip or CTA message video at the end. NEVER add CTA text at the end. The demo itself is the CTA. Hook segment is REQUIRED. Demo video segment is REQUIRED. BGM is REQUIRED in the final exported video. Final output must be hook -> demo only, with BGM. Build the final video in ReelClaw style: UGC hook clip -> Honne demo video, with BGM mixed across the final export. Use the demo video AS-IS without cutting. The full video IS the demo. Video source: ~/.openclaw/workspace/honne-ai/demos/ (rotate existing files in order defined by ~/.openclaw/workspace/honne-ai/honne-mapping.json). Rotation state source: ~/.openclaw/workspace/honne-ai/honne-mapping.json rotation.lastUsed.honne-ja-evening. Hook text source: ~/.openclaw/workspace/honne-ai/honne-mapping.json videos[].hooks[] — each video has 3 hooks tied to it, use the hook matching the current video and hookIndex from rotation state. UGC hook video source: ~/.openclaw/workspace/tiktok-marketing/ugc-library/hooks/. BGM: ~/.openclaw/workspace/tiktok-marketing/music/bgm-cta.mp3. Hook text must be overlaid on the hook segment, not in title/caption only. DEMO OVERLAY RULE: DO NOT overlay text on demo section. Title rotation: use one of these 3 titles (rotate daily): 1) LINEの本音をAIが翻訳する 2) もう返信で悩まない 3) あの人の本音、AIが教えてくれた. Caption: (use selected title)\n\n#本音 #人間関係 #職場関係 #恋愛関係 #親子関係 #言いづらい #fyp. Publish to TikTok ONLY via Postiz. TikTok integration: cmnit95mg015rrm0ye5vm8dhl. Posting mode: direct, PUBLIC_TO_EVERYONE, autoAddMusic: \"no\". CRITICAL: If the final output is missing hook segment, missing BGM, includes CTA, or exports demo-only, treat the run as FAILURE. CRITICAL: After you finish, you MUST post a summary to Slack #metrics channel (channel ID: C_YOUR_SLACK_CHANNEL), explicitly stating whether hook and demo were present, whether BGM was present, and whether no CTA was included.\n\n### MANDATORY VIDEO RULES\n- BGM: reel-final.mp4 に ffmpeg で焼き込み済み。autoAddMusic は絶対 \"no\"。\n- CTA テキスト: テキストオーバーレイ禁止（Hook テキストのみ 0-4.5s、demo部分はテキストなし）。\n- フォント: JA は必ず /System/Library/Fonts/ヒラギノ角ゴシック W6.ttc（TikTokSans は日本語 □X 文字化け）\n- テキスト: textfile= 禁止。separate drawtext per line 必須。\\n 禁止。\n- UGC マッピング: Honne JA → Confused_and_Stressed_Reaction.MOV 固定。全 Honne フック（boss/huuhu/mom/parent/girlfriend 全パターン）は「言われた時の不安・困惑」感情。Happy/Amazement/Joy 禁止。\n- Hook テキストにアポストロフィ禁止（ffmpeg drawtext 破壊）。",
+        "model": "openai-codex/gpt-5.4-mini"
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL"
+      }
+    },
+    {
+      "id": "TEMPLATE-test-slideshow-ja",
+      "agentId": "main",
+      "name": "TEMPLATE-test-slideshow-ja",
+      "schedule": {
+        "kind": "at",
+        "at": "2025-12-31T15:00:00.000Z"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Execute Larry slideshow skill.\nRead ~/.openclaw/workspace/skills/larry/SKILL.md and follow the scheduled slideshow production flow.\n\nTikTok integration: YOUR_POSTIZ_TIKTOK_INTEGRATION_ID\nInstagram integration: cmmzujxpa04ujp30yxqpg1vci\nSlot: test-ja\nLanguage: ja\nApp Name: アニッチャ\n\nClean image folder: ~/.openclaw/workspace/tiktok-marketing/assets/6-slide-images/clean/\nHook source: ~/.openclaw/workspace/tiktok-marketing/hooks-ja.json\nHook priority: preferred first, then active\nCTA image: ~/.openclaw/workspace/tiktok-marketing/assets/cta/anicca-cta-ja.png\n\nTikTok title: こんな言葉が欲しい人は、アニッチャ試してみて\nCaption: #メンタルヘルス #自己肯定感 #自己嫌悪 #癒し #共感 #仏教 #fyp",
+        "model": "openai-codex/gpt-5.4-mini"
+      },
+      "enabled": false,
+      "deleteAfterRun": true
+    },
+    {
+      "id": "TEMPLATE-test-slideshow-en",
+      "agentId": "main",
+      "name": "TEMPLATE-test-slideshow-en",
+      "schedule": {
+        "kind": "at",
+        "at": "2025-12-31T15:05:00.000Z"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Execute Larry slideshow skill.\nRead ~/.openclaw/workspace/skills/larry/SKILL.md and follow the scheduled slideshow production flow.\n\nTikTok integration: cmlt171eq04d9r00yzzceb6bw\nInstagram integration: cmmzzg2es0539p30ycb94ayx0\nSlot: test-en\nLanguage: en\nApp Name: Anicca\n\nClean image folder: ~/.openclaw/workspace/tiktok-marketing/assets/6-slide-images/clean/\nHook source: ~/.openclaw/workspace/tiktok-marketing/hooks-en.json\nCTA image: ~/.openclaw/workspace/tiktok-marketing/assets/cta/anicca-cta-en.png\n\nTikTok title: try Anicca — words like these, every day\nCaption: #mentalhealth #selfcare #healing #selflove #anxiety #fyp",
+        "model": "openai-codex/gpt-5.4-mini"
+      },
+      "enabled": false,
+      "deleteAfterRun": true
+    },
+    {
+      "id": "61b913e6-57e9-46f0-a2b1-d7dc20435580",
+      "agentId": "main",
+      "name": "reelclaw-honne-en-1",
+      "enabled": true,
+      "createdAtMs": 1777306381779,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 7 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Execute reelclaw skill. Language: en. App: Honne (English version). Font: $HOME/Library/Fonts/TikTokSansDisplayBold.ttf. DEMO_MODE: TRIM_HOOK_ONLY. Hook video MUST be trimmed to first 3 seconds. Demo video is NEVER trimmed. NEVER output demo-only. NEVER append any CTA clip. NEVER add CTA text overlay (only hook text 0-3s on hook segment). The demo itself is the CTA. Hook segment is REQUIRED (~3s). Demo video segment is REQUIRED (use AS-IS, no trim).\n\nPLATFORM: TikTok ONLY for now. RUN Step 3e BGM bake (DIRECT_POST requires baked audio for virality). Upload reel-text-bgm.mp4 (with BGM). Use BGM_ID in TikTok API call. Set autoAddMusic: \"no\". content_posting_method: DIRECT_POST (= live on TikTok feed, not draft). Music must be pre-baked into mp4.\n\nMapping source: ~/.openclaw/workspace/honne-ai/honne-mapping-en.json\nDemo dir: ~/.openclaw/workspace/honne-ai/demos-en/\nUGC dir: ~/.openclaw/workspace/tiktok-marketing/ugc-library/hooks/\nRotation key: rotation.lastUsed.honne-en-1\n\nRotation logic:\n1. Read mapping JSON. videos[] is ranked 1..19. Pick the next video AFTER lastUsed[\"honne-en-1\"].rank (mod 19, 1-indexed). If null/missing, start from rank 1.\n2. From the picked row: use file as demo, ugcClip as hook UGC, lines for drawtext (NOT lines_emoji — drawtext does not render emoji), title for TikTok title.\n3. Build reel: hook UGC trimmed to 3s -> demo as-is. Hook text overlay (separate drawtext per line, y=600 line1, y=690 line2, fontsize 70-80, fontcolor white, borderw 5, bordercolor black, x=(60+(900-text_w)/2), enable='between(t,0,3)'). NO text overlay on demo segment.\n4. Concat hook+demo. Output reel-text.mp4 (silent — DO NOT add BGM).\n5. Validate duration <= 18s. If over, reduce hook to 2s.\n6. Upload reel-text.mp4 to Postiz.\n\nTikTok integration: cmoig11ew001zlv0yk6vqo1us (本音翻訳/honnevideo).\nTikTok title: from mapping row .title field.\nTikTok content (caption): same as title + \"\\n\\n#fyp #ai #honne #relationship #relatable #couples #ricegpt #decode #situationship #pov\"\n\nTikTok settings:\n{\n  \"__type\": \"tiktok\",\n  \"title\": \"{row.title}\",\n  \"privacy_level\": \"PUBLIC_TO_EVERYONE\",\n  \"duet\": false, \"stitch\": false, \"comment\": false,\n  \"brand_content_toggle\": false, \"brand_organic_toggle\": false,\n  \"video_made_with_ai\": false,\n  \"content_posting_method\": \"DIRECT_POST\",\n  \"autoAddMusic\": \"no\"\n}\n\nAfter successful post, atomically update rotation.lastUsed[\"honne-en-1\"] in honne-mapping-en.json with {rank, hookId, file, date} per skill 4d.\n\n### MANDATORY VIDEO RULES\n- video has BGM baked. autoAddMusic: \"no\". content_posting_method: DIRECT_POST (live).\n- フォント: EN は必ず $HOME/Library/Fonts/TikTokSansDisplayBold.ttf\n- アポストロフィ・絵文字は lines (drawtext) には絶対入れるな (drawtext 破壊/非対応)。lines は安全な text-only。emoji は title と caption (Postiz API は透過)。\n- 1行ごとに別 drawtext (\\n禁止)\n- 5タイプ固定 UGC マッピング表ではなく per-row mapping (videos[].ugcClip) を使う",
+        "model": "openai-codex/gpt-5.4-mini",
+        "timeoutSeconds": 600
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL"
+      }
+    },
+    {
+      "id": "fd9bdcad-48b4-4efa-9eed-90f0b0358041",
+      "agentId": "main",
+      "name": "reelclaw-honne-en-2",
+      "enabled": true,
+      "createdAtMs": 1777306395932,
+      "schedule": {
+        "kind": "cron",
+        "expr": "30 19 * * *"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Execute reelclaw skill. Language: en. App: Honne (English version). Font: $HOME/Library/Fonts/TikTokSansDisplayBold.ttf. DEMO_MODE: TRIM_HOOK_ONLY. Hook video MUST be trimmed to first 3 seconds. Demo video is NEVER trimmed. NEVER output demo-only. NEVER append any CTA clip. NEVER add CTA text overlay (only hook text 0-3s on hook segment). The demo itself is the CTA. Hook segment is REQUIRED (~3s). Demo video segment is REQUIRED (use AS-IS, no trim).\n\nPLATFORM: TikTok ONLY for now. RUN Step 3e BGM bake (DIRECT_POST requires baked audio for virality). Upload reel-text-bgm.mp4 (with BGM). Use BGM_ID in TikTok API call. Set autoAddMusic: \"no\". content_posting_method: DIRECT_POST (= live on TikTok feed, not draft). Music must be pre-baked into mp4.\n\nMapping source: ~/.openclaw/workspace/honne-ai/honne-mapping-en.json\nDemo dir: ~/.openclaw/workspace/honne-ai/demos-en/\nUGC dir: ~/.openclaw/workspace/tiktok-marketing/ugc-library/hooks/\nRotation key: rotation.lastUsed.honne-en-2\n\nRotation logic:\n1. Read mapping JSON. videos[] is ranked 1..19. Pick the next video AFTER lastUsed[\"honne-en-2\"].rank (mod 19, 1-indexed). If null/missing, start from rank 1.\n2. From the picked row: use file as demo, ugcClip as hook UGC, lines for drawtext (NOT lines_emoji — drawtext does not render emoji), title for TikTok title.\n3. Build reel: hook UGC trimmed to 3s -> demo as-is. Hook text overlay (separate drawtext per line, y=600 line1, y=690 line2, fontsize 70-80, fontcolor white, borderw 5, bordercolor black, x=(60+(900-text_w)/2), enable='between(t,0,3)'). NO text overlay on demo segment.\n4. Concat hook+demo. Output reel-text.mp4 (silent — DO NOT add BGM).\n5. Validate duration <= 18s. If over, reduce hook to 2s.\n6. Upload reel-text.mp4 to Postiz.\n\nTikTok integration: cmoig11ew001zlv0yk6vqo1us (本音翻訳/honnevideo).\nTikTok title: from mapping row .title field.\nTikTok content (caption): same as title + \"\\n\\n#fyp #ai #honne #relationship #relatable #couples #ricegpt #decode #situationship #pov\"\n\nTikTok settings:\n{\n  \"__type\": \"tiktok\",\n  \"title\": \"{row.title}\",\n  \"privacy_level\": \"PUBLIC_TO_EVERYONE\",\n  \"duet\": false, \"stitch\": false, \"comment\": false,\n  \"brand_content_toggle\": false, \"brand_organic_toggle\": false,\n  \"video_made_with_ai\": false,\n  \"content_posting_method\": \"DIRECT_POST\",\n  \"autoAddMusic\": \"no\"\n}\n\nAfter successful post, atomically update rotation.lastUsed[\"honne-en-2\"] in honne-mapping-en.json with {rank, hookId, file, date} per skill 4d.\n\n### MANDATORY VIDEO RULES\n- video has BGM baked. autoAddMusic: \"no\". content_posting_method: DIRECT_POST (live).\n- フォント: EN は必ず $HOME/Library/Fonts/TikTokSansDisplayBold.ttf\n- アポストロフィ・絵文字は lines (drawtext) には絶対入れるな (drawtext 破壊/非対応)。lines は安全な text-only。emoji は title と caption (Postiz API は透過)。\n- 1行ごとに別 drawtext (\\n禁止)\n- 5タイプ固定 UGC マッピング表ではなく per-row mapping (videos[].ugcClip) を使う",
+        "model": "openai-codex/gpt-5.4-mini",
+        "timeoutSeconds": 600
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL"
+      }
+    },
+    {
+      "id": "042fd723-623e-47a3-bfeb-c1a1260bb9bf",
+      "agentId": "main",
+      "name": "watercolor-monk-morning",
+      "enabled": true,
+      "createdAtMs": 1777386087651,
+      "schedule": {
+        "kind": "cron",
+        "expr": "30 7 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Read ~/.openclaw/skills/watercolor-monk-factory/SKILL.md, then run: bash ~/.openclaw/skills/watercolor-monk-factory/scripts/run-detached.sh jp morning cmo5s4edx00vgn10ygnu34a0n. Returns immediately. Do NOT report to Slack yourself.",
+        "model": "openai-codex/gpt-5.4-mini",
+        "timeoutSeconds": 300
+      },
+      "delivery": {
+        "mode": "none",
+        "channel": "last"
+      }
+    },
+    {
+      "id": "2648d386-5880-455e-9e10-65052c419ee0",
+      "agentId": "main",
+      "name": "watercolor-monk-evening",
+      "enabled": true,
+      "createdAtMs": 1777386096050,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 21 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Read ~/.openclaw/skills/watercolor-monk-factory/SKILL.md, then run: bash ~/.openclaw/skills/watercolor-monk-factory/scripts/run-detached.sh jp evening cmo5s4edx00vgn10ygnu34a0n. Returns immediately. Do NOT report to Slack yourself.",
+        "model": "openai-codex/gpt-5.4-mini",
+        "timeoutSeconds": 300
+      },
+      "delivery": {
+        "mode": "none",
+        "channel": "last"
+      }
+    },
+    {
+      "id": "add19fe4-76b0-4969-ba8d-c47fa23cabff",
+      "agentId": "main",
+      "name": "yangmun-monk-morning",
+      "enabled": true,
+      "createdAtMs": 1777386105891,
+      "schedule": {
+        "kind": "cron",
+        "expr": "30 19 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Read ~/.openclaw/skills/yangmun-monk-factory/SKILL.md, then run: bash ~/.openclaw/skills/yangmun-monk-factory/scripts/run-detached.sh en morning cmo5rwq2p00twn10yrsdglng3. Returns immediately. Do NOT report to Slack yourself.",
+        "model": "openai-codex/gpt-5.4-mini",
+        "timeoutSeconds": 300
+      },
+      "delivery": {
+        "mode": "none",
+        "channel": "last"
+      }
+    },
+    {
+      "id": "24d0460b-372c-4edb-8022-8b04bf59afc3",
+      "agentId": "main",
+      "name": "yangmun-monk-evening",
+      "enabled": true,
+      "createdAtMs": 1777386111815,
+      "schedule": {
+        "kind": "cron",
+        "expr": "30 8 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Read ~/.openclaw/skills/yangmun-monk-factory/SKILL.md, then run: bash ~/.openclaw/skills/yangmun-monk-factory/scripts/run-detached.sh en evening cmo5rwq2p00twn10yrsdglng3. Returns immediately. Do NOT report to Slack yourself.",
+        "model": "openai-codex/gpt-5.4-mini",
+        "timeoutSeconds": 300
+      },
+      "delivery": {
+        "mode": "none",
+        "channel": "last"
+      }
+    },
+    {
+      "id": "d56592ff-28c0-498e-a62a-9436602e0065",
+      "agentId": "main",
+      "name": "anicca-monk-test4-jp",
+      "enabled": false,
+      "deleteAfterRun": true,
+      "createdAtMs": 1777386117402,
+      "schedule": {
+        "kind": "at",
+        "at": "2026-04-28T14:26:54.416Z"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Read ~/.openclaw/skills/anicca-monk-factory/SKILL.md, then run: bash ~/.openclaw/skills/anicca-monk-factory/scripts/run-detached.sh jp morning cmo5s4edx00vgn10ygnu34a0n. Returns immediately. Do NOT report to Slack yourself.",
+        "model": "openai-codex/gpt-5.4-mini",
+        "timeoutSeconds": 300
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "last"
+      }
+    },
+    {
+      "id": "8eb7d727-e858-434c-b41b-6c7d45a03cb6",
+      "agentId": "main",
+      "name": "anicca-monk-test4-en",
+      "enabled": false,
+      "deleteAfterRun": true,
+      "createdAtMs": 1777386121432,
+      "schedule": {
+        "kind": "at",
+        "at": "2026-04-28T14:31:59.918Z"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Read ~/.openclaw/skills/anicca-monk-factory/SKILL.md, then run: bash ~/.openclaw/skills/anicca-monk-factory/scripts/run-detached.sh en morning cmo5rwq2p00twn10yrsdglng3. Returns immediately. Do NOT report to Slack yourself.",
+        "model": "openai-codex/gpt-5.4-mini",
+        "timeoutSeconds": 300
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "last"
+      }
+    },
+    {
+      "id": "c19fbcd3-98c3-4dc9-9afa-82014fb28298",
+      "agentId": "main",
+      "name": "anicca-monk-en-test-today-20260430",
+      "enabled": false,
+      "deleteAfterRun": true,
+      "createdAtMs": 1777543969719,
+      "schedule": {
+        "kind": "at",
+        "at": "2026-04-30T10:14:25.000Z"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Read ~/.openclaw/skills/anicca-monk-factory/SKILL.md, then run: bash ~/.openclaw/skills/anicca-monk-factory/scripts/run-detached.sh en morning cmo5rwq2p00twn10yrsdglng3. Returns immediately. Do NOT report to Slack yourself.",
+        "model": "openai-codex/gpt-5.4-mini"
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "last"
+      }
+    },
+    {
+      "id": "730a5247-c10e-4b0b-b471-81febd4f07f1",
+      "agentId": "main",
+      "name": "anicca-monk-jp-test-today-20260430",
+      "enabled": false,
+      "deleteAfterRun": true,
+      "createdAtMs": 1777543975627,
+      "schedule": {
+        "kind": "at",
+        "at": "2026-04-30T10:19:25.000Z"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Read ~/.openclaw/skills/anicca-monk-factory/SKILL.md, then run: bash ~/.openclaw/skills/anicca-monk-factory/scripts/run-detached.sh jp morning cmo5s4edx00vgn10ygnu34a0n. Returns immediately. Do NOT report to Slack yourself.",
+        "model": "openai-codex/gpt-5.4-mini"
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "last"
+      }
+    },
+    {
+      "id": "anicca-music-daily",
+      "agentId": "main",
+      "name": "anicca-music-daily",
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 4 * * *",
+        "tz": "Asia/Tokyo",
+        "staggerMs": 60000
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Execute anicca-music-factory daily skill. Read ~/.openclaw/skills/anicca-music-factory/SKILL.md and follow it exactly. Run the single bash command from SKILL.md, capture its stdout, and pass that final line through as your response. Do NOT call any Slack tool — cron delivery handles posting.",
+        "model": "openai-codex/gpt-5.4-mini"
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL",
+        "bestEffort": true
+      },
+      "enabled": true
+    },
+    {
+      "id": "anicca-music-test-now",
+      "agentId": "main",
+      "name": "anicca-music-test-now",
+      "schedule": {
+        "kind": "cron",
+        "expr": "40 23 1 5 *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Execute anicca-music-factory daily skill. Read ~/.openclaw/skills/anicca-music-factory/SKILL.md and follow it exactly. Run the single bash command from SKILL.md, capture its stdout, and pass that final line through as your response. Do NOT call any Slack tool — cron delivery handles posting.",
+        "model": "openai-codex/gpt-5.4-mini"
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL",
+        "bestEffort": true
+      },
+      "enabled": true
+    },
+    {
+      "id": "4.7-slideshow-test-now",
+      "agentId": "main",
+      "name": "4.7-slideshow-test-now",
+      "schedule": {
+        "kind": "cron",
+        "expr": "32 5 3 5 *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Execute 4.7-slideshow-factory skill. Read ~/.openclaw/skills/4.7-slideshow-factory/SKILL.md and follow it exactly end-to-end: discover viral TikTok hooks (apify), analyze and write analysis.json, scrape Pinterest images, generate 6 slides via Node Canvas, write caption + hashtags, and publish to TikTok Drafts via Postiz (06-postiz-publish.sh). Bundle output to ~/Downloads/. Report final stdout one-line summary. Do NOT call any Slack tool — cron delivery handles posting.",
+        "model": "openai-codex/gpt-5.4-mini"
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL",
+        "bestEffort": true
+      },
+      "enabled": true
+    },
+    {
+      "id": "4.7-slideshow-morning",
+      "agentId": "main",
+      "name": "4.7-slideshow-morning",
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 9 * * *",
+        "tz": "Asia/Tokyo",
+        "staggerMs": 60000
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Execute 4.7-slideshow-factory skill. Read ~/.openclaw/skills/4.7-slideshow-factory/SKILL.md and follow it exactly end-to-end: discover viral TikTok hooks (apify), analyze and write analysis.json, scrape Pinterest images, generate 6 slides via Node Canvas, write caption + hashtags, and publish to TikTok Drafts via Postiz (06-postiz-publish.sh). Bundle output to ~/Downloads/. Report final stdout one-line summary. Do NOT call any Slack tool — cron delivery handles posting.",
+        "model": "openai-codex/gpt-5.4-mini"
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL",
+        "bestEffort": true
+      },
+      "enabled": true
+    },
+    {
+      "id": "4.7-slideshow-evening",
+      "agentId": "main",
+      "name": "4.7-slideshow-evening",
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 21 * * *",
+        "tz": "Asia/Tokyo",
+        "staggerMs": 60000
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Execute 4.7-slideshow-factory skill. Read ~/.openclaw/skills/4.7-slideshow-factory/SKILL.md and follow it exactly end-to-end: discover viral TikTok hooks (apify), analyze and write analysis.json, scrape Pinterest images, generate 6 slides via Node Canvas, write caption + hashtags, and publish to TikTok Drafts via Postiz (06-postiz-publish.sh). Bundle output to ~/Downloads/. Report final stdout one-line summary. Do NOT call any Slack tool — cron delivery handles posting.",
+        "model": "openai-codex/gpt-5.4-mini"
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL",
+        "bestEffort": true
+      },
+      "enabled": true
+    },
+    {
+      "id": "fba94ed6-0f6f-4c2a-ad7c-ba6265f81b03",
+      "agentId": "main",
+      "name": "winner-analyzer-weekly",
+      "enabled": true,
+      "createdAtMs": 1777691120159,
+      "schedule": {
+        "kind": "cron",
+        "expr": "13 4 * * 1",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Read ~/.openclaw/skills/winner-analyzer/SKILL.md, then run: bash ~/.openclaw/skills/winner-analyzer/scripts/run-detached.sh weekly. Returns immediately. Do NOT report to Slack yourself.",
+        "model": "openai-codex/gpt-5.4-mini",
+        "timeoutSeconds": 300
+      },
+      "delivery": {
+        "mode": "none",
+        "channel": "last"
+      }
+    },
+    {
+      "id": "cb4efe4c-456d-4810-a989-728e35b43d41",
+      "agentId": "main",
+      "name": "kpi-dashboard-daily",
+      "enabled": true,
+      "createdAtMs": 1777691128571,
+      "schedule": {
+        "kind": "cron",
+        "expr": "13 12 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Read ~/.openclaw/skills/kpi-dashboard/SKILL.md, then run: bash ~/.openclaw/skills/kpi-dashboard/scripts/run-detached.sh daily. Returns immediately. Do NOT report to Slack yourself.",
+        "model": "openai-codex/gpt-5.4-mini",
+        "timeoutSeconds": 300
+      },
+      "delivery": {
+        "mode": "none",
+        "channel": "last"
+      }
+    },
+    {
+      "id": "d391069f-0f32-49f3-ab78-eddd9d162883",
+      "agentId": "main",
+      "name": "virality-copy-factory-weekly",
+      "enabled": false,
+      "createdAtMs": 1777691372415,
+      "schedule": {
+        "kind": "cron",
+        "expr": "30 4 * * 1",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Read ~/.openclaw/skills/virality-copy-factory/SKILL.md, then run: bash ~/.openclaw/skills/virality-copy-factory/scripts/run-detached.sh weekly. Returns immediately. Do NOT report to Slack yourself.",
+        "model": "openai-codex/gpt-5.4-mini",
+        "timeoutSeconds": 600
+      },
+      "delivery": {
+        "mode": "none",
+        "channel": "last"
+      }
+    },
+    {
+      "id": "adfc14dc-ee5e-40e7-bd6f-60ff87057b03",
+      "agentId": "main",
+      "name": "daily-letter-sender",
+      "enabled": true,
+      "createdAtMs": 1777691571230,
+      "schedule": {
+        "kind": "cron",
+        "expr": "13 6 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Read ~/.openclaw/skills/daily-letter-sender/SKILL.md, then run: bash ~/.openclaw/skills/daily-letter-sender/scripts/run-detached.sh daily. Returns immediately. Do NOT report to Slack yourself.",
+        "model": "openai-codex/gpt-5.4-mini",
+        "timeoutSeconds": 300
+      },
+      "delivery": {
+        "mode": "none",
+        "channel": "last"
+      }
+    },
+    {
+      "id": "4c61a267-57f4-41ad-b6ea-2df3742264c4",
+      "agentId": "main",
+      "name": "weekly-fresh-letter",
+      "enabled": true,
+      "createdAtMs": 1777691581495,
+      "schedule": {
+        "kind": "cron",
+        "expr": "13 8 * * 0",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Read ~/.openclaw/skills/weekly-fresh-letter/SKILL.md, then run: bash ~/.openclaw/skills/weekly-fresh-letter/scripts/run-detached.sh weekly. Returns immediately. Do NOT report to Slack yourself.",
+        "model": "openai-codex/gpt-5.4-mini",
+        "timeoutSeconds": 300
+      },
+      "delivery": {
+        "mode": "none",
+        "channel": "last"
+      }
+    },
+    {
+      "id": "viral-trend-scan-daily",
+      "agentId": "main",
+      "name": "viral-trend-scan-daily",
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 6 * * *",
+        "tz": "Asia/Tokyo",
+        "staggerMs": 300000
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Execute trend-hunter skill. Read ~/.openclaw/skills/trend-hunter/SKILL.md.\n\nGoal: scan TikTok / X / YouTube / Reddit for emerging niches that Anicca (digital Buddha for behavior change) can address. Score each opportunity (gap=demand/supply ratio, virality, fit_with_anicca).\n\nWrite findings to ~/.openclaw/workspace/trend-hunter/findings_$(date +%Y-%m-%d).json with schema: { date, opportunities: [{ niche, gap_score, viral_examples: [url], anicca_angle, math_ladder }] }.\n\nThis cron feeds viral-article-weekly (Sunday 09:00 JST). Do NOT report to Slack — cron delivery handles it.",
+        "model": "openai-codex/gpt-5.4-mini",
+        "timeoutSeconds": 1200
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL",
+        "bestEffort": true
+      },
+      "enabled": true
+    },
+    {
+      "id": "viral-article-weekly",
+      "agentId": "main",
+      "name": "viral-article-weekly",
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 9 * * 0",
+        "tz": "Asia/Tokyo",
+        "staggerMs": 60000
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Execute viral-article-writer skill. Read ~/.openclaw/skills/viral-article-writer/SKILL.md.\n\nGoal: produce ONE long-form viral article (4000+ words EN / 8000+ chars JP) in Ivy/Greg-Isenberg structure (5-stage pipeline + math ladder + metric/mistake callouts).\n\nSource material: read ~/.openclaw/workspace/trend-hunter/findings_*.json from the last 7 days. Pick the highest gap_score opportunity that fits Anicca's angle.\n\nMandatory: 3+ cited sources per major claim (firecrawl scrape required, no WebFetch). Embed actual screenshots from Anicca's Mixpanel/Stripe/RevenueCat where relevant.\n\nPublish: note.com (JP draft via auto-article-poster skill), Substack/Medium (EN), then thread it on X via twitter-automation. Save outputs to ~/.openclaw/workspace/viral-article-writer/$(date +%Y-%m-%d)/.\n\nDo NOT report to Slack — cron delivery handles it.",
+        "model": "openai-codex/gpt-5.4-mini",
+        "timeoutSeconds": 3600
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL",
+        "bestEffort": true
+      },
+      "enabled": true
+    },
+    {
+      "id": "viral-article-republish",
+      "agentId": "main",
+      "name": "viral-article-republish",
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 19 * * 4",
+        "tz": "Asia/Tokyo",
+        "staggerMs": 60000
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Republish a past viral article from a different angle.\n\n1. Read ~/.openclaw/workspace/viral-article-writer/INDEX.md and pick the article with highest engagement (X impressions + note.com views) from the last 90 days.\n2. Re-angle: change the hook, swap the lead example, and refresh the math with current numbers.\n3. Publish ONLY as an X thread (5-7 tweets) via twitter-automation skill. Do NOT republish to note.com (avoid SEO duplicate).\n4. Save the new thread script to ~/.openclaw/workspace/viral-article-writer/republish/$(date +%Y-%m-%d)-thread.md.\n\nDo NOT report to Slack — cron delivery handles it.",
+        "model": "openai-codex/gpt-5.4-mini",
+        "timeoutSeconds": 1800
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL",
+        "bestEffort": true
+      },
+      "enabled": true
+    },
+    {
+      "id": "4fa36257-216f-4b12-ad23-f53bef58680d",
+      "agentId": "main",
+      "name": "anicca-monk-jp-test-1922",
+      "enabled": false,
+      "deleteAfterRun": true,
+      "createdAtMs": 1777890160418,
+      "schedule": {
+        "kind": "at",
+        "at": "2026-05-04T10:30:37.600Z"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Read ~/.openclaw/skills/anicca-monk-factory/SKILL.md, then run: bash ~/.openclaw/skills/anicca-monk-factory/scripts/run-detached.sh jp morning cmo5s4edx00vgn10ygnu34a0n. Returns immediately. Do NOT report to Slack yourself.",
+        "model": "openai-codex/gpt-5.4-mini"
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "last"
+      }
+    },
+    {
+      "id": "aniccaai-dashboard-refresh-1777894449129",
+      "agentId": "main",
+      "name": "aniccaai-dashboard-refresh",
+      "enabled": true,
+      "createdAtMs": 1777894449129,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 4,10,16,22 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "model": "openai-codex/gpt-5.4-mini",
+        "message": "Run aniccaai-dashboard refresh.\n\nExecute: bash ~/.openclaw/skills/aniccaai-dashboard/scripts/refresh.sh\n\nThe script:\n1. Loads secrets from ~/anicca-monk-factory/.env + ~/.openclaw/.env\n2. Fetches Stripe (revenue), RC (mobile MRR), Postiz (views), Apify (followers), Railway/Supabase (spend) in parallel\n3. Merges into ~/anicca-products/apps/landing/public/dashboard.json\n4. git add + commit + push origin main → Netlify auto-build\n\nDo NOT report to Slack yourself — cron delivery handles it. Do NOT call the message tool.\n\nIf any fetcher fails, the script falls back to the last known dashboard.json. Just run the script.",
+        "timeoutSeconds": 600
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL",
+        "bestEffort": true
+      }
+    },
+    {
+      "id": "tt-draft-graduator-daily-1777896839412",
+      "agentId": "main",
+      "name": "tt-draft-graduator-daily",
+      "enabled": true,
+      "createdAtMs": 1777896839412,
+      "schedule": {
+        "kind": "cron",
+        "expr": "30 4 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "model": "openai-codex/gpt-5.4-mini",
+        "message": "Run TikTok draft graduator.\n\nExecute: bash ~/.openclaw/skills/tt-draft-graduator/scripts/check.sh\n\nReads ~/.openclaw/state/tt-posting-state.json and auto-flips factories from in_draft:true to in_draft:false when started_at is older than draft_days. TikTok-only — IG/X/YT post directly from day 1.\n\nDo NOT report to Slack yourself — cron delivery handles it.",
+        "timeoutSeconds": 120
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL",
+        "bestEffort": true
+      }
+    },
+    {
+      "id": "donation-x-daily-1777896944805",
+      "agentId": "main",
+      "name": "donation-x-daily",
+      "enabled": true,
+      "createdAtMs": 1777896944805,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 10 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "model": "openai-codex/gpt-5.4-mini",
+        "message": "Post the daily Anicca Donation total to X.\n\nSteps:\n1. Fetch live dashboard data: curl -sS https://aniccaai.com/dashboard.json\n2. Read total donation amount: jq '.mrr.by_product.donation // 0'\n3. Compose 1 tweet (English, <240 chars):\n   \"Today's Anicca Fund: $X.XX. Toward 10 humans on basic income. Tip the empire: aniccaai.com/donation\"\n4. POST to Postiz REST: https://api.postiz.com/public/v1/posts\n   - integration: { id: $POSTIZ_X_INTEGRATION_ID }\n   - settings: { __type: 'twitter' }\n   - content: <tweet text>\n5. Report Postiz post ID + tweet URL\n\nLoad envs from ~/anicca-monk-factory/.env (POSTIZ_API_KEY) and ~/.openclaw/.env if exists.\nPostiz X integration ID for @aniccaxxx: YOUR_POSTIZ_X_INTEGRATION_ID (from x-poster skill).\n\nDo NOT report to Slack yourself.",
+        "timeoutSeconds": 300
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL",
+        "bestEffort": true
+      }
+    },
+    {
+      "id": "basic-income-monthly-1777931347854",
+      "agentId": "main",
+      "name": "basic-income-monthly",
+      "enabled": true,
+      "createdAtMs": 1777931347854,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 9 1 * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "model": "openai-codex/gpt-5.4-mini",
+        "message": "Run Anicca Basic Income monthly distribution.\n\nExecute: bash ~/.openclaw/skills/basic-income-monthly/scripts/run.sh\n\nReads aniccaai.com/dashboard.json for MRR, calculates 10% pool, divides by active recipient count, calls stripe.transfers.create() for each, logs to Supabase payouts. Sends Slack #metrics report.\n\nNo active recipients yet → exits cleanly. First real run is when first cohort is approved.\n\nDo NOT report to Slack yourself.",
+        "timeoutSeconds": 600
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL",
+        "bestEffort": true
+      }
+    },
+    {
+      "id": "accelerator-application-monthly-1777948324077",
+      "agentId": "main",
+      "name": "accelerator-application-monthly",
+      "enabled": true,
+      "createdAtMs": 1777948324077,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 12 1 * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "model": "openai-codex/gpt-5.4-mini",
+        "message": "Apply Anicca to one rolling-deadline accelerator this month.\n\nRead ~/.openclaw/skills/anicca-accelerator-factory/SKILL.md.\nCheck ~/.openclaw/skills/anicca-accelerator-factory/data/accelerators.json for cadence='rolling' entries.\nQuery Supabase accelerator_submissions: skip if any accelerator already submitted this month.\nPick the next un-submitted rolling accelerator (priority: soma → 500global → antler → techstars → spc → ef).\nRun: bash ~/.openclaw/skills/anicca-accelerator-factory/scripts/apply.sh <key>\nThe script generates a fresh pitch with current dashboard.json data and opens the form via browser-harness.\nFor accelerators where data/forms/<key>.json exists, fully auto-submit. For others, save the pitch and post the URL to Slack for Dais to manually finish.\n\nDo NOT report to Slack yourself — cron delivery handles it.",
+        "timeoutSeconds": 600
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL",
+        "bestEffort": true
+      }
+    },
+    {
+      "id": "trustmrr-list-weekly-1777965010046",
+      "agentId": "main",
+      "name": "trustmrr-list-weekly",
+      "enabled": true,
+      "createdAtMs": 1777965010046,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 6 * * 1",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "model": "openai-codex/gpt-5.4-mini",
+        "message": "Run TrustMRR weekly listing.\n\nExecute: bash ~/.openclaw/skills/anicca-trustmrr-lister/scripts/list-products.sh\n\nReads aniccaai.com/dashboard.json, lists each Anicca product with MRR > 0 on trustmrr.com, updates existing listings. Browser-harness Way 2 (port 9223) for browser actions.\n\nDo NOT report to Slack yourself.",
+        "timeoutSeconds": 900
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL",
+        "bestEffort": true
+      }
+    },
+    {
+      "id": "trustmrr-sell-decision-monthly-1777965010046",
+      "agentId": "main",
+      "name": "trustmrr-sell-decision-monthly",
+      "enabled": true,
+      "createdAtMs": 1777965010046,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 7 1 * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "model": "openai-codex/gpt-5.4-mini",
+        "message": "TrustMRR monthly sale decision.\n\nFor each listed product where MRR > $500 AND month-over-month growth < 5%, flip status to 'for_sale' on trustmrr.com via browser-harness. Estimate 24-36x MRR multiple sale price.\n\nDo NOT report to Slack yourself.",
+        "timeoutSeconds": 900
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL",
+        "bestEffort": true
+      }
+    },
+    {
+      "id": "anicca-music-stockmusic-batch-daily-1777965010046",
+      "agentId": "main",
+      "name": "anicca-music-stockmusic-batch-daily",
+      "enabled": true,
+      "createdAtMs": 1777965010046,
+      "schedule": {
+        "kind": "cron",
+        "expr": "30 4 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "model": "openai-codex/gpt-5.4-mini",
+        "message": "Generate + upload 5 stock music tracks to AudioJungle/Pond5/Epidemic.\n\nRead ~/.openclaw/skills/anicca-music-stockmusic/SKILL.md.\nPhase 1: Suno generation via existing anicca-music-factory.\nPhase 2: AudioJungle metadata + browser-harness upload (requires Dais signup, cookies in ~/.browser-harness-profile).\n\nDo NOT report to Slack yourself.",
+        "timeoutSeconds": 900
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL",
+        "bestEffort": true
+      }
+    },
+    {
+      "id": "b0374b1f-1338-4710-a498-024930519d98",
+      "agentId": "main",
+      "name": "yangmun-monk-noon",
+      "enabled": true,
+      "createdAtMs": 1777969096960,
+      "schedule": {
+        "kind": "cron",
+        "expr": "30 12 * * *"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Read ~/.openclaw/skills/yangmun-monk-factory/SKILL.md, then run: bash ~/.openclaw/skills/yangmun-monk-factory/scripts/run-detached.sh en noon cmo5rwq2p00twn10yrsdglng3. Returns immediately. Do NOT report to Slack yourself.",
+        "model": "openai-codex/gpt-5.4-mini"
+      },
+      "delivery": {
+        "mode": "none",
+        "channel": "last"
+      }
+    },
+    {
+      "id": "2a568fd7-3fa5-43b9-b8f4-c9d6143602c6",
+      "agentId": "main",
+      "name": "watercolor-monk-noon",
+      "enabled": true,
+      "createdAtMs": 1777969102566,
+      "schedule": {
+        "kind": "cron",
+        "expr": "30 12 * * *"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Read ~/.openclaw/skills/watercolor-monk-factory/SKILL.md, then run: bash ~/.openclaw/skills/watercolor-monk-factory/scripts/run-detached.sh jp noon cmo5s4edx00vgn10ygnu34a0n. Returns immediately. Do NOT report to Slack yourself.",
+        "model": "openai-codex/gpt-5.4-mini"
+      },
+      "delivery": {
+        "mode": "none",
+        "channel": "last"
+      }
+    },
+    {
+      "id": "ecc1fd07-2d8e-4841-a556-6abc24ef8f92",
+      "agentId": "main",
+      "name": "account-burn-detector-weekly",
+      "enabled": true,
+      "createdAtMs": 1777969218804,
+      "schedule": {
+        "kind": "cron",
+        "expr": "25 4 * * 1"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Read ~/.openclaw/skills/account-burn-detector/SKILL.md, then run: bash ~/.openclaw/skills/account-burn-detector/scripts/run.sh. Returns immediately. Do NOT report to Slack yourself.",
+        "model": "openai-codex/gpt-5.4-mini"
+      },
+      "delivery": {
+        "mode": "none",
+        "channel": "last"
+      }
+    },
+    {
+      "id": "5dc9727b-5df2-4557-a9c1-68d618194e1c",
+      "agentId": "main",
+      "name": "copy-viral-format-factory-3day",
+      "enabled": true,
+      "createdAtMs": 1777969306513,
+      "schedule": {
+        "kind": "cron",
+        "expr": "13 4 */3 * *"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Read ~/.openclaw/skills/copy-viral-format-factory/SKILL.md, then run: bash ~/.openclaw/skills/copy-viral-format-factory/scripts/run.sh weekly. Returns immediately. Do NOT report to Slack yourself.",
+        "model": "openai-codex/gpt-5.4-mini"
+      },
+      "delivery": {
+        "mode": "none",
+        "channel": "last"
+      }
+    },
+    {
+      "id": "anicca-meetup-discover-daily-1777976530000",
+      "agentId": "main",
+      "name": "anicca-meetup-discover-daily",
+      "enabled": true,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 9 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "model": "openai-codex/gpt-5.4-mini",
+        "message": "Discover AI meetups in Tokyo + SF.\n\nExecute: bash ~/.openclaw/skills/anicca-meetup-talk-applier/scripts/discover.sh\n\nSaves new events to data/discovered/. Connpass API + lu.ma + meetup.com via browser-harness Way 2 (port 9223).\n\nDo NOT report to Slack yourself.",
+        "timeoutSeconds": 600
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL",
+        "bestEffort": true
+      }
+    },
+    {
+      "id": "anicca-meetup-apply-tokyo-weekly-1777976530000",
+      "agentId": "main",
+      "name": "anicca-meetup-apply-tokyo-weekly",
+      "enabled": true,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 10 * * 1",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "model": "openai-codex/gpt-5.4-mini",
+        "message": "Apply for Tokyo AI meetup talk slots (next 14 days).\n\nExecute: bash ~/.openclaw/skills/anicca-meetup-talk-applier/scripts/apply.sh tokyo\n\nReads data/discovered/, picks 1-2 events, fills CFP forms via browser-harness, saves data/applications/.\n\nAfter script: use Gmail MCP to monitor for accept/decline mails.\n\nDo NOT report to Slack yourself.",
+        "timeoutSeconds": 900
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL",
+        "bestEffort": true
+      }
+    },
+    {
+      "id": "anicca-meetup-apply-sf-monthly-1777976530000",
+      "agentId": "main",
+      "name": "anicca-meetup-apply-sf-monthly",
+      "enabled": true,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 12 1 * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "model": "openai-codex/gpt-5.4-mini",
+        "message": "Apply for SF AI meetup talk (next 30 days).\n\nExecute: bash ~/.openclaw/skills/anicca-meetup-talk-applier/scripts/apply.sh sf\n\nDo NOT report to Slack yourself.",
+        "timeoutSeconds": 900
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL",
+        "bestEffort": true
+      }
+    },
+    {
+      "id": "anicca-meetup-accept-watch-6h-1777976530000",
+      "agentId": "main",
+      "name": "anicca-meetup-accept-watch-6h",
+      "enabled": true,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 */6 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "model": "openai-codex/gpt-5.4-mini",
+        "message": "Watch Gmail for meetup talk accept/decline mails.\n\nUse Gmail MCP: search_threads with query \"from:luma OR from:no-reply@meetup OR from:connpass newer_than:1d\".\n\nFor each pending application in ~/.openclaw/skills/anicca-meetup-talk-applier/data/applications/, if mail body confirms accept → flip status to accepted + add to Google Calendar. If decline → status=declined. Slack ping on accept only.",
+        "timeoutSeconds": 300
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL",
+        "bestEffort": true
+      }
+    },
+    {
+      "id": "cafe-license-status-check-weekly-1777976530000",
+      "agentId": "main",
+      "name": "cafe-license-status-check-weekly",
+      "enabled": true,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 10 * * 1",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "model": "openai-codex/gpt-5.4-mini",
+        "message": "Check cafe license status.\n\nExecute: bash ~/.openclaw/skills/anicca-cafe-license-applier/scripts/status.sh\n\nReports current status + suggested next step to Slack via openclaw message send.",
+        "timeoutSeconds": 120
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL",
+        "bestEffort": true
+      }
+    },
+    {
+      "id": "anicca-x-build-in-public-daily-1777976530000",
+      "agentId": "main",
+      "name": "anicca-x-build-in-public-daily",
+      "enabled": true,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 7 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "model": "openai-codex/gpt-5.4-mini",
+        "message": "Post Build in Public daily thread on X.\n\nExecute: bash ~/.openclaw/skills/anicca-webapp-x-marketing/scripts/bip.sh\n\nFetches dashboard.json, composes 4-tweet thread, posts via Postiz X integration.\n\nDo NOT report to Slack yourself.",
+        "timeoutSeconds": 300
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL",
+        "bestEffort": true
+      }
+    },
+    {
+      "id": "anicca-x-painpoint-daily-1777976530000",
+      "agentId": "main",
+      "name": "anicca-x-painpoint-daily",
+      "enabled": true,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 12 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "model": "openai-codex/gpt-5.4-mini",
+        "message": "Post Pain-Point thread on X for today rotation web app.\n\nExecute: bash ~/.openclaw/skills/anicca-webapp-x-marketing/scripts/painpoint.sh\n\nReads state/rotation.json, picks app for today, posts 4-tweet thread with UTM CTA via Postiz.\n\nDo NOT report to Slack yourself.",
+        "timeoutSeconds": 300
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL",
+        "bestEffort": true
+      }
+    },
+    {
+      "id": "anicca-x-cold-dm-daily-1777976530000",
+      "agentId": "main",
+      "name": "anicca-x-cold-dm-daily",
+      "enabled": true,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 14 * * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "model": "openai-codex/gpt-5.4-mini",
+        "message": "Send 50 cold DMs on X to ICP for today rotation app.\n\nExecute: bash ~/.openclaw/skills/anicca-webapp-x-marketing/scripts/dm.sh\n\nApify Twitter search → top 50 candidates → browser-harness Way 2 sends DM template.\n\nDo NOT report to Slack yourself.",
+        "timeoutSeconds": 1200
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL",
+        "bestEffort": true
+      }
+    },
+    {
+      "id": "anicca-x-promote-monthly-1777976530000",
+      "agentId": "main",
+      "name": "anicca-x-promote-monthly",
+      "enabled": true,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 10 1 * *",
+        "tz": "Asia/Tokyo"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "model": "openai-codex/gpt-5.4-mini",
+        "message": "Pick last-30-day winner X thread and queue $50 promoted boost.\n\nExecute: bash ~/.openclaw/skills/anicca-webapp-x-marketing/scripts/promote.sh\n\nWrites state/winner-thread.json. Manual boost via x.com/i/ads.",
+        "timeoutSeconds": 180
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "slack",
+        "to": "channel:C_YOUR_SLACK_CHANNEL",
+        "bestEffort": true
+      }
+    }
+  ]
+}
