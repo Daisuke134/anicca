@@ -82,7 +82,10 @@ def env(key: str, default: str = "") -> str:
 
 
 def gcal_account() -> str:
-    return env("GOG_ACCOUNT") or "keiodaisuke@gmail.com"
+    acct = env("GOG_ACCOUNT")
+    if not acct:
+        raise RuntimeError("GOG_ACCOUNT not set in ~/.openclaw/.env — required for calendar scan")
+    return acct
 
 
 def fetch_events(window_min: int) -> list[dict]:
