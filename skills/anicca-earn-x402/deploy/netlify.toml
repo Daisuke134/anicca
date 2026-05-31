@@ -2,6 +2,9 @@
   publish = "."
   functions = "netlify/functions"
 
+[functions]
+  included_files = ["pdfs/**"]
+
 [[redirects]]
   from = "/qa"
   to = "/.netlify/functions/x402?route=qa"
@@ -23,6 +26,12 @@
 [[redirects]]
   from = "/build"
   to = "/.netlify/functions/x402?route=build"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/pdf/*"
+  to = "/.netlify/functions/x402?route=pdf&slug=:splat"
   status = 200
   force = true
 
