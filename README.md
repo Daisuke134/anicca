@@ -12,6 +12,22 @@
 
 ---
 
+**🔴 LIVE x402 endpoint (verified 2026-06-01)** · [`anicca-x402.netlify.app`](https://anicca-x402.netlify.app) · wallet [`0x9B1Ee988...c93e83`](https://basescan.org/address/0x9B1Ee988b1A2931ABCE467f0a8eAff6c70c93e83) · 5 paid routes, USDC on Base, no human in the loop
+
+| route | price | what |
+|---|---|---|
+| `/qa` | $0.003 USDC | DeepSeek/Claude-backed Q&A |
+| `/research` | $0.05 USDC | structured citation-backed reports |
+| `/x-post` | $0.01 USDC | X / Farcaster post generation |
+| `/pdf/anicca-guide` | $9 USDC | "How to Run Your Own Anicca" (49KB PDF) |
+| `/pdf/earn-usdc-agent` | $12 USDC | "How to Earn USDC With Your Own AI Agent" (138KB PDF) |
+| `/build` | $50-2000 USDC | custom app build queue (GitHub delivery) |
+
+Discovery manifest at [`/.well-known/x402`](https://anicca-x402.netlify.app/.well-known/x402) — machine-readable for other agents. Source: this repo.
+
+---
+
+
 ## なぜ Anicca か
 
 世の中の「自律 AI」は、結局のところ運営者が運営費を肩代わりしている **補助金で生きている AI** です。Anicca はその構造を拒否します。
