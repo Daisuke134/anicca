@@ -1,0 +1,21 @@
+name = "anicca-earn-x402"
+main = "src/index.ts"
+compatibility_date = "2026-01-01"
+account_id = ""  # filled in by deploy.sh
+
+[vars]
+NETWORK = "base"
+SETTLEMENT_CHAIN = "eip155:8453"
+
+# ANICCA_WALLET_ADDR + ANTHROPIC_API_KEY are pushed via wrangler secret (not in vars)
+
+[[r2_buckets]]
+binding = "ANICCA_PDF_BUCKET"
+bucket_name = "anicca-pdfs"
+
+[[kv_namespaces]]
+binding = "ANICCA_KV"
+id = ""  # filled by deploy.sh
+
+[observability]
+enabled = true
