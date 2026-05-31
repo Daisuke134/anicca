@@ -132,6 +132,19 @@ jobs:
             -exec python3 -c "import ast,sys; ast.parse(open(sys.argv[1]).read())" {} \;
           echo "✅ all .py files parse"
 
+      - name: Run pure-stdlib unittest discovery
+        # Skills include some test_*.py files written to run on stdlib only
+        # (= no pipecat / loguru / fastapi). Discover and execute them.
+        # If no tests are found, unittest exits 0 — that's fine.
+        run: |
+          set -e
+          python3 -m unittest discover -s . -p 'test_*.py' -v 2>&1 | tee /tmp/utest.log
+          # Fail only if a test failed; an empty discover is OK.
+          if grep -qE '^(FAIL|ERROR)' /tmp/utest.log; then
+            echo "::error::unittest run reported failure"
+            exit 1
+          fi
+
   shell-lint:
     name: Shell script syntax check
     runs-on: ubuntu-latest
