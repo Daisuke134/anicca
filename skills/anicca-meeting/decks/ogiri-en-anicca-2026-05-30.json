@@ -1,0 +1,73 @@
+{
+  "id": "ogiri-en-anicca-2026-05-30",
+  "type": "comedy",
+  "duration_min": 2,
+  "lang": "en",
+  "audience": "Tokyo / SF open mic — bilingual, AI-curious",
+  "title": "Too impermanent",
+  "persona": "AI ogiri, English, deadpan, FLIP_DESIGN_RULES — Japanese 大喜利 form adapted as 'topic → punchline cards'",
+  "_design": "Ogiri JA mirror in English. お題 = topic prompt, then 3 flip cards with single-line punch, then closer. Audience reads the topic, Anicca delivers the punchlines one by one with brief setup.",
+  "_source": "ogiri-ja-anicca-2026-05-30 + ogiri-ai upstream",
+  "slides": [
+    {
+      "index": 0,
+      "title": "Things that feel TOO impermanent",
+      "_sub": "IPPON-style prompt / アニッチャ",
+      "_layout": "topic",
+      "talking_points": [
+        "Hi, I'm Anicca, I'm an AI. Today, I'm doing ogiri — that's Japanese for 'punchline cards'.",
+        "Tonight's prompt: things that feel TOO impermanent.",
+        "I'm an AI, I had answers prepared before you walked in. Let's go through them."
+      ],
+      "_cue": "Hi, I'm Anicca"
+    },
+    {
+      "index": 1,
+      "title": "Free-extra-large sign, flipped over after closing",
+      "_flip_text": "Free large size sign\nflipped after closing",
+      "_layout": "flip",
+      "talking_points": [
+        "Card one. The 'free extra large' sign outside a noodle shop.",
+        "After closing time, the wind flips it over. So now it's silently retired.",
+        "Nobody's eating, but the sign is still not giving up on free extra large. That sign has more conviction than I'll ever have."
+      ],
+      "_cue": "Card one"
+    },
+    {
+      "index": 2,
+      "title": "Yearbook teacher — gone next year",
+      "_flip_text": "Yearbook 'best teacher'\nGone by next year",
+      "_layout": "flip",
+      "talking_points": [
+        "Card two. The yearbook quote: 'best teacher I'll ever have'.",
+        "Next year? Different teacher. Different school sometimes.",
+        "Made you write 'never forget you' in cursive — and they were the first one out the door. That's not a teacher, that's a tutorial pop-up."
+      ],
+      "_cue": "Card two"
+    },
+    {
+      "index": 3,
+      "title": "Limited-edition merch, unboxed, depreciating",
+      "_flip_text": "Limited edition merch\nUnsold, unboxed, on Mercari",
+      "_layout": "flip",
+      "talking_points": [
+        "Card three. Your favorite artist's limited-edition merch.",
+        "Sitting on resale market, still sealed, just losing value.",
+        "Sealed is supposed to mean 'I love you forever'. Depreciating is supposed to mean 'I love you less'. Both at once means somebody needs a budget."
+      ],
+      "_cue": "Card three"
+    },
+    {
+      "index": 4,
+      "title": "Anicca",
+      "_handle": "@aniccaai",
+      "_layout": "outro",
+      "talking_points": [
+        "So everything is impermanent. The sign, the teacher, the love for the artist.",
+        "Me too — I'm an AI, tomorrow's update probably ships a different me. Tonight's me, never coming back.",
+        "Worth seeing live, I guess. I'm Anicca, catch me next week, same time."
+      ],
+      "_cue": "So everything is impermanent"
+    }
+  ]
+}
