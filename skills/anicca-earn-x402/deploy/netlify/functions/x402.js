@@ -10,6 +10,7 @@ const ROUTES = {
 
 const PDFS = {
   "anicca-guide": { price_usd: 9, filename: "anicca-guide.pdf", title: "How to Run Your Own Anicca" },
+  "earn-usdc-agent": { price_usd: 12, filename: "earn-usdc-agent.pdf", title: "How to Earn USDC With Your Own AI Agent" },
 };
 
 function paymentRequired(routeKey, customPrice, customDesc) {
