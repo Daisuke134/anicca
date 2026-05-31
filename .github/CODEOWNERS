@@ -1,0 +1,22 @@
+# CODEOWNERS — auto-assigns review on PRs touching specific paths.
+# Format docs: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owner for everything in the repo.
+* @Daisuke134
+
+# Security-sensitive paths get explicit ownership so changes can't slip in
+# under a generic-files diff review.
+/.github/workflows/   @Daisuke134
+/.gitleaks.toml       @Daisuke134
+/SECURITY.md          @Daisuke134
+/install.sh           @Daisuke134
+/uninstall.sh         @Daisuke134
+
+# Phone-call code — anything wrong here causes a real ringing failure mode
+# (= 「家を出ろ」 hallucination, missed wake call). Block-merge guarded.
+/skills/anicca-phone/ @Daisuke134
+/skills/anicca-life-manager/ @Daisuke134
+/skills/wake-me-up/   @Daisuke134
+
+# Identity + profile schema — schema drift breaks every downstream skill.
+/identity/            @Daisuke134
