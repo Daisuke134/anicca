@@ -160,7 +160,7 @@ async def cmd_stop(update: Update, _ctx: ContextTypes.DEFAULT_TYPE):
 
 
 async def cmd_where(update: Update, _ctx: ContextTypes.DEFAULT_TYPE):
-    """Debug."""
+    """Debug — show what location Anicca knows."""
     user_id = update.effective_user.id
     f = STATE_DIR / f"{user_id}.json"
     if not f.exists():
@@ -176,6 +176,89 @@ async def cmd_where(update: Update, _ctx: ContextTypes.DEFAULT_TYPE):
         f"  lon: {r['lon']:.5f}\n"
         f"  accuracy: {r['accuracy_m']}m\n"
         f"  age: {age} sec"
+    )
+
+
+async def cmd_help(update: Update, _ctx: ContextTypes.DEFAULT_TYPE):
+    """List every command the bot understands."""
+    await update.message.reply_text(
+        "Commands:\n"
+        "  /start    begin (or resume) onboarding\n"
+        "  /where    show what location I currently know\n"
+        "  /status   show daemon + cron health\n"
+        "  /payout   set or change your payout destination\n"
+        "  /reset    clear your onboarding state to start over\n"
+        "  /stop     forget your location\n"
+        "  /help     this message"
+    )
+
+
+async def cmd_status(update: Update, _ctx: ContextTypes.DEFAULT_TYPE):
+    """Quick health snapshot — daemons + last call time + wallet status."""
+    msg_lines = ["🩺 Anicca status\n"]
+    # Location freshness
+    f = STATE_DIR / f"{update.effective_user.id}.json"
+    if f.exists():
+        r = json.loads(f.read_text())
+        age = int(time.time() - r["received_at"])
+        msg_lines.append(f"📍 Location: fresh {age}s ago")
+    else:
+        msg_lines.append("📍 Location: not shared yet")
+    # Last lateness call
+    log_path = ANICCA_HOME / "skills" / "anicca-life-manager" / "state" / "run.log"
+    last_call = None
+    if log_path.exists():
+        for line in reversed(log_path.read_text(errors="ignore").splitlines()):
+            if "placed lateness call sid=" in line:
+                last_call = line[-60:]
+                break
+    if last_call:
+        msg_lines.append(f"📞 Last call: {last_call}")
+    else:
+        msg_lines.append("📞 Last call: none yet today")
+    # Profile completeness
+    try:
+        prof = json.loads(PROFILE_PATH.read_text())
+        completed = sum(1 for k in ("identity.name", "identity.phone",
+                                    "identity.googleAccount")
+                        if _get_dot(prof, k))
+        msg_lines.append(f"👤 Profile: {completed}/3 onboarding answers filled")
+    except Exception:
+        msg_lines.append("👤 Profile: not yet created")
+    await update.message.reply_text("\n".join(msg_lines))
+
+
+def _get_dot(d, dotpath):
+    node = d
+    for p in dotpath.split("."):
+        if not isinstance(node, dict):
+            return None
+        node = node.get(p)
+    return node
+
+
+async def cmd_payout(update: Update, _ctx: ContextTypes.DEFAULT_TYPE):
+    """Re-prompt for payout destination at any time."""
+    state = _load_onboarding()
+    state.setdefault(str(update.effective_user.id), {})["step"] = "ask_payout"
+    _save_onboarding(state)
+    await update.message.reply_text(
+        "Pick a payout destination (= where I send your 10% share):\n\n"
+        "  1) Stripe Connect Express (Japan bank, T+3-5d)\n"
+        "  2) Wise (same-day Zengin)\n"
+        "  3) Crypto wallet (paste a 0x address)\n"
+        "  4) Skip — decide later\n\n"
+        "Reply 1 / 2 / 3 / 4."
+    )
+
+
+async def cmd_reset(update: Update, _ctx: ContextTypes.DEFAULT_TYPE):
+    """Clear onboarding state to restart."""
+    state = _load_onboarding()
+    state.pop(str(update.effective_user.id), None)
+    _save_onboarding(state)
+    await update.message.reply_text(
+        "Onboarding state cleared. Send /start to restart."
     )
 
 
@@ -321,6 +404,10 @@ def main() -> None:
     app.add_handler(CommandHandler("start", cmd_start))
     app.add_handler(CommandHandler("stop", cmd_stop))
     app.add_handler(CommandHandler("where", cmd_where))
+    app.add_handler(CommandHandler("help", cmd_help))
+    app.add_handler(CommandHandler("status", cmd_status))
+    app.add_handler(CommandHandler("payout", cmd_payout))
+    app.add_handler(CommandHandler("reset", cmd_reset))
     app.add_handler(MessageHandler(filters.LOCATION, on_location))
     app.add_handler(MessageHandler(filters.UpdateType.EDITED_MESSAGE, on_edited_location))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, on_text))
