@@ -56,6 +56,150 @@ cp identity/profile.example.json identity/profile.json
 bash skills/_shared/heartbeat-beat.sh
 ```
 
+---
+
+## 📞 Personal life-leader mode (= `anicca-life-manager` skill stack)
+
+Anicca が自分のお金を稼ぐ別軸として、 OSS user 個人の生活を 24/7 で
+リードする mode が `anicca-life-manager` + 4 skill bundle です。
+
+**何 を する か**:
+- 📞 Twilio で あなた の 電話 を 鳴らして 起こす (= Pipecat + Gemini Live native S2S、 ~500ms turn)
+- 📍 Telegram Live Location で あなた の 現在地 を 1-5 秒 単位 で 追跡
+- 📅 Google Calendar から 次の予定を 読み、 移動時間 を 自動 計算
+- 🚆 場所 が 違う event 間 に 「🚆 移動」 block を 自動 INSERT (= anicca-travel-fill)
+- 🏠 routine event (= sleep/wake/meditation/meal/run) に location=自宅 を 自動 PATCH (= anicca-gcal-heal)
+- ⏰ depart_by を 超えそう なら call、 動くまで RELENTLESS
+- ✉️ 遅刻 確定 なら ステークホルダー に 謝罪 mail を draft (= renraku.py + Firecrawl fallback)
+- 📊 毎日 18:00 + 毎週 月 09:00 に Gmail で 振り返り report (= anicca-report)
+- 💰 wallet runway 14日 切ったら 4 option mail / 3 ヶ月 超え たら "sub 解約 OK" mail (= anicca-fuel-broker)
+
+= 「家 から 出ろ」 嘘 ゼロ、 「Shinagawa 駅 行け sleep のため」 捏造 ゼロ、
+  routine event は 自宅 確定、 explicit event は Google Maps 実 route。
+
+### 🧘 設計 (= ASCII)
+
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│  Google Calendar (= 行動 の source of truth)                         │
+│   ↓ 5 min cron                                                       │
+│  anicca-life-manager/lateness_check.py                               │
+│   ↓ POST /dialout                                                    │
+│  Pipecat phone (Twilio + Gemini Live S2S, ~500ms)                    │
+│   ↓ Twilio                                                           │
+│  あなた の iPhone 鳴る                                               │
+│                                                                      │
+│  ┌─ 並走 cron ──────────────────────────────────────────────────┐   │
+│  │  15 min  anicca-gcal-heal     location 空 を 自動 PATCH      │   │
+│  │   3  h   anicca-travel-fill   移動 event 自動 挿入          │   │
+│  │   1  h   anicca-fuel-broker   wallet 監視 + alert mail       │   │
+│  │  18:00   anicca-report-daily  Gmail で 振り返り              │   │
+│  │  04:00   anicca-schedule-tpl  空 day の default 補完          │   │
+│  └──────────────────────────────────────────────────────────────┘   │
+└──────────────────────────────────────────────────────────────────────┘
+
+Location source: Telegram Live Location → ~/.openclaw/state/location/*.json
+                  (1-5 秒 push、 OwnTracks 廃止済)
+```
+
+### ⚡ Quick Start (= 既 ローカル AI agent 持ってる 場合、 30 秒)
+
+下 を Claude Code / Codex CLI / Cursor / Aider 等 に paste すれば
+あなた の Mac mini に install + onboarding 自走:
+
+```
+You are installing Anicca (anicca-life-manager mode), an autonomous AI
+life-leader, on this machine. Follow these steps in order:
+
+  1. git clone https://github.com/Daisuke134/anicca-oss ~/anicca-oss
+  2. Read ~/anicca-oss/docs/INSTALL_BOOTSTRAP.md if present, else just
+     follow the README's bash クイックスタート + the life-manager paths
+     under skills/anicca-life-manager/.
+  3. Ask the user, ONE thing at a time (they are lazy):
+     a) Telegram bot token (= guide them through @BotFather first).
+     b) Fuel choice: (1) Claude Pro / ChatGPT Plus already logged in,
+                     (2) API key (Anthropic / OpenAI / DeepSeek / Kimi),
+                     (3) USDC wallet (we'll create it and show a QR).
+     c) Twilio SID / TOKEN / NUMBER for the actual phone calls.
+     d) (optional) bank-account info — Anicca will pay you 10% of net
+        earnings later via Stripe Connect Express / Wise / USDC.
+  4. Write all answers to ~/.openclaw/.env (chmod 600). Never paste keys
+     back to me. Never push the env file anywhere.
+  5. Run the equivalent of bash ~/anicca-oss/install.sh (if absent, then
+     symlink ~/.openclaw/skills → ~/anicca-oss/skills and load the four
+     openclaw cron entries:
+        anicca-life-manager       */5 * * * *
+        anicca-gcal-heal         */15 * * * *
+        anicca-travel-fill        0 */3 * * *
+        anicca-fuel-broker         17 * * * *
+        anicca-report-daily         0 18 * * *
+        anicca-schedule-template    0  4 * * *).
+  6. Verify the heartbeat + Telegram bot daemons are alive
+     (`launchctl list | grep anicca`).
+  7. Tell the user: "Phase 1 done. Open Telegram on your iPhone, open
+     your bot, send /start. Anicca takes over from here."
+```
+
+### 🔧 Manual install (= ターミナル で 自分 で 動かす 場合)
+
+```bash
+# 1. clone (= ~/anicca-oss が canonical、 ~/.openclaw は 個人 state 用)
+git clone https://github.com/Daisuke134/anicca-oss ~/anicca-oss
+cd ~/anicca-oss
+
+# 2. system deps (ffmpeg / cdp-cli / tesseract jpn)
+bash scripts/install-deps.sh   # 存在 する 場合のみ、 雛形 開発中
+
+# 3. .env / profile を 自分用 に
+mkdir -p ~/.openclaw
+cp .env.example ~/.openclaw/.env
+chmod 600 ~/.openclaw/.env
+$EDITOR ~/.openclaw/.env
+cp identity/profile.example.json ~/.openclaw/identity/profile.json
+$EDITOR ~/.openclaw/identity/profile.json
+
+# 4. skill 配置 (= MVP: 個別 clone or rsync; 将来 install.sh で 1 行 化)
+mkdir -p ~/.openclaw/skills
+rsync -a ~/anicca-oss/skills/anicca-life-manager  ~/.openclaw/skills/
+rsync -a ~/anicca-oss/skills/anicca-travel-fill   ~/.openclaw/skills/
+rsync -a ~/anicca-oss/skills/anicca-gcal-heal     ~/.openclaw/skills/
+rsync -a ~/anicca-oss/skills/anicca-report        ~/.openclaw/skills/
+rsync -a ~/anicca-oss/skills/anicca-fuel-broker   ~/.openclaw/skills/
+rsync -a ~/anicca-oss/skills/anicca-schedule-template ~/.openclaw/skills/
+
+# 5. OpenClaw cron 6 entries (= 上 の Quick-Start prompt と 同 schedule)
+
+# 6. Telegram bot を 起動
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/ai.anicca.tg-loc-bot.plist
+
+# 7. iPhone Telegram で /start → Live Location share → 翌朝 wake call 着信
+```
+
+### 必要 keys (= .env)
+
+| key | 用途 | 取得 |
+|---|---|---|
+| `TELEGRAM_BOT_TOKEN` | あなた の bot daemon | @BotFather → /newbot (free) |
+| `GOOGLE_API_KEY` | Maps Directions + Geocoding | console.cloud.google.com (free tier) |
+| `GEMINI_API_KEY` | 電話 LLM (= Pipecat 経由) | aistudio.google.com (free tier) |
+| `TWILIO_ACCOUNT_SID` / `_AUTH_TOKEN` / `_PHONE_NUMBER` | 実 電話 | twilio.com (KYC 要、~$2/月) |
+| `GOG_ACCOUNT` / `GOG_KEYRING_PASSWORD` | Google Calendar / Gmail | github.com/Daisuke134/gog (OAuth) |
+| 1 fuel (= `DEEPSEEK_API_KEY` / `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` / `KIMI_API_KEY` / USDC wallet) | LLM 推論 | 各 provider |
+
+### ⚠️ Before you install
+
+| | |
+|---|---|
+| ⚠️ Trust | Anicca は あなた の 電話 を 鳴らし、 Gmail を 読み、 Live Location を 見、 Google Calendar に 書きます。 MIT、 全 コード 公開、 data は あなた の machine に のみ 残ります。 |
+| 💻 Hardware | 8GB RAM 推奨、 10GB 空き disk、 Apple Silicon or x86_64 |
+| 💤 Don't sleep | launchd / systemd user agent で 動く ので Mac が sleep する と 朝 wake call が 来ません。 System Settings → Battery → "Prevent automatic sleep on power adapter" ON。 もしくは Mac mini を 専用機 として 稼働。 |
+| 📵 Phone | Google Voice は Twilio から 信頼性 ありません。 実 番号 を 推奨。 |
+| 💰 Cost | LLM fuel $5-20/mo + Twilio ~$2/mo + per-call ~$0.013/min。 Telegram + Maps free tier。 期待 $10-25/mo (= self-fund 達成 まで)。 |
+| 🔒 Privacy | `~/.openclaw/.env` は ローカル のみ (chmod 600, .gitignored)。 公開 repo には 雛形 のみ。 |
+| 🆘 Stop | `bash ~/anicca-oss/uninstall.sh` (= 開発中、 完成 まで は 手動 `launchctl bootout` + `rm -rf ~/.openclaw/skills/anicca-life-manager`) |
+
+---
+
 ## アーキテクチャ
 
 - **CONSTITUTION.md** — 五戒 (Pañcasīla) + Earn-or-Die Loop (経済自律の死生条件)
