@@ -57,30 +57,42 @@ jobs:
       - name: Grep for known PII strings
         shell: bash
         run: |
+          # Fixed-string patterns (= grep -F) so '+' '.' etc are literal,
+          # not regex metacharacters. GNU grep -E rejects a leading '+'.
           set -uo pipefail
-          patterns=(
+          fixed_patterns=(
             'keiodaisuke'
             'shizen1234'
             '+818046'
-            '南元町[0-9]'
+            '南元町1'
+            '南元町2'
+            '南元町3'
+            '南元町4'
+            '南元町5'
+            '南元町6'
+            '南元町7'
+            '南元町8'
+            '南元町9'
           )
           hits=0
-          for p in "${patterns[@]}"; do
-            n=$(grep -rIE "$p" --include='*.py' --include='*.sh' \
+          for p in "${fixed_patterns[@]}"; do
+            n=$(grep -rIF -- "$p" \
+                  --include='*.py' --include='*.sh' \
                   --include='*.md' --include='*.json' --include='*.toml' . \
-                  2>/dev/null | grep -v '\.git/' \
-                  | grep -v INSTALL_BOOTSTRAP.md \
-                  | grep -v LAUNCH_COPY.md \
-                  | grep -v README.md \
-                  | wc -l)
-            if [ "$n" -gt 0 ]; then
+                  2>/dev/null | { grep -v '\.git/' || true; } \
+                  | { grep -v INSTALL_BOOTSTRAP.md || true; } \
+                  | { grep -v LAUNCH_COPY.md         || true; } \
+                  | { grep -v README.md              || true; } \
+                  | wc -l | tr -d ' ')
+            if [ "${n:-0}" -gt 0 ]; then
               echo "❌ PII pattern '$p' has $n hit(s)"
-              grep -rIE "$p" --include='*.py' --include='*.sh' \
+              grep -rIF -- "$p" \
+                --include='*.py' --include='*.sh' \
                 --include='*.md' --include='*.json' . 2>/dev/null \
-                | grep -v '\.git/' \
-                | grep -v INSTALL_BOOTSTRAP.md \
-                | grep -v LAUNCH_COPY.md \
-                | grep -v README.md
+                | { grep -v '\.git/' || true; } \
+                | { grep -v INSTALL_BOOTSTRAP.md || true; } \
+                | { grep -v LAUNCH_COPY.md         || true; } \
+                | { grep -v README.md              || true; }
               hits=$((hits + n))
             fi
           done
