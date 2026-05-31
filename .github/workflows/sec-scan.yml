@@ -20,11 +20,22 @@ jobs:
         with:
           fetch-depth: 0  # full history for git scan
 
-      - name: Run gitleaks
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITLEAKS_CONFIG: .gitleaks.toml
-        # Allow contributors to see the report; only block on verified findings.
+      # gitleaks-action@v2 requires a paid license for orgs; use the
+      # upstream binary directly (= MIT-licensed) instead.
+      - name: Install gitleaks
+        run: |
+          set -e
+          VERSION=8.21.0
+          curl -sSL "https://github.com/gitleaks/gitleaks/releases/download/v${VERSION}/gitleaks_${VERSION}_linux_x64.tar.gz" \
+            | tar -xz -C /tmp gitleaks
+          sudo mv /tmp/gitleaks /usr/local/bin/gitleaks
+          gitleaks version
+
+      - name: Run gitleaks (detect = scan working tree)
+        run: gitleaks detect --source . --config .gitleaks.toml --no-banner --redact -v
+
+      - name: Run gitleaks (git = scan history)
+        run: gitleaks git . --config .gitleaks.toml --no-banner --redact -v
 
   trufflehog:
     name: TruffleHog (filesystem + git history)
@@ -76,10 +87,11 @@ jobs:
           )
           hits=0
           for p in "${fixed_patterns[@]}"; do
-            n=$(grep -rIF -- "$p" \
-                  --include='*.py' --include='*.sh' \
-                  --include='*.md' --include='*.json' --include='*.toml' . \
-                  2>/dev/null | { grep -v '\.git/' || true; } \
+            n=$( { grep -rIF -- "$p" \
+                     --include='*.py' --include='*.sh' \
+                     --include='*.md' --include='*.json' --include='*.toml' . \
+                     2>/dev/null || true; } \
+                  | { grep -v '\.git/' || true; } \
                   | { grep -v INSTALL_BOOTSTRAP.md || true; } \
                   | { grep -v LAUNCH_COPY.md         || true; } \
                   | { grep -v README.md              || true; } \
@@ -87,9 +99,9 @@ jobs:
                   | wc -l | tr -d ' ')
             if [ "${n:-0}" -gt 0 ]; then
               echo "❌ PII pattern '$p' has $n hit(s)"
-              grep -rIF -- "$p" \
-                --include='*.py' --include='*.sh' \
-                --include='*.md' --include='*.json' . 2>/dev/null \
+              { grep -rIF -- "$p" \
+                  --include='*.py' --include='*.sh' \
+                  --include='*.md' --include='*.json' . 2>/dev/null || true; } \
                 | { grep -v '\.git/' || true; } \
                 | { grep -v INSTALL_BOOTSTRAP.md || true; } \
                 | { grep -v LAUNCH_COPY.md         || true; } \
