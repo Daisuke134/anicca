@@ -253,7 +253,7 @@ print(walk(last.get('payload',{})))
 ")
 [ -z "$REPLY_BODY" ] && { echo "    ❌ no reply message in thread"; exit 1; }
 # Required substrings
-for s in '${OSS_USER_NAME_JP}' '新宿区南元町' 'anicca' '日本' '給与'; do
+for s in '${OSS_USER_NAME_JP}' '${OSS_USER_ADDRESS_WARD}' 'anicca' '日本' '給与'; do
   echo "$REPLY_BODY" | grep -qF "$s" || { echo "    ❌ missing required '$s'"; exit 1; }
 done
 # Forbidden substrings
@@ -306,7 +306,7 @@ expected:
 verify:
   - type: gmail_reply_body
     thread_query: 'subject:"TC-3-{ts}" newer_than:1h'
-    required_strings: ['${OSS_USER_NAME_JP}', '新宿区南元町', 'anicca', '日本', '給与']
+    required_strings: ['${OSS_USER_NAME_JP}', '${OSS_USER_ADDRESS_WARD}', 'anicca', '日本', '給与']
     forbidden_strings: ['[記入]', '[fill in]', '[TBD]', 'on behalf of Daisuke', '+1 (336)', '+1 336']
     required_signature: 'Anicca'
 ```

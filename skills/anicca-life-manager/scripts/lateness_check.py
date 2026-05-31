@@ -119,14 +119,23 @@ def haversine_m(lat1, lon1, lat2, lon2):
 
 
 def arrival_radius_for(dest_addr, default=400):
-    """Event-type aware "you have arrived" threshold (meters)."""
+    """Event-type aware "you have arrived" threshold (meters).
+
+    Home is recognised by string-containing the user's own home_address
+    from profile (no hard-coded ward name). Falls back to defaults for
+    stations / airports / specific street addresses.
+    """
     if not dest_addr:
         return default
     a = dest_addr
     if "駅" in a:
         return 200            # station — within walking distance of any platform
-    if any(k in a for k in ("新宿区南元町", )):
-        return 100            # home  ─ matched by string contains
+    try:
+        home = prof.home_address() or ""
+    except Exception:
+        home = ""
+    if home and (home in a or a in home):
+        return 100            # home — string-match the user's actual address
     if any(k in a for k in ("空港", "Airport", "airport")):
         return 800            # airport terminal — wide
     if any(k in a for k in ("〒", "丁目", "番地")):
@@ -262,7 +271,7 @@ def reverse_geocode(loc):
         with urllib.request.urlopen(f"https://maps.googleapis.com/maps/api/geocode/json?{q}", timeout=8) as r:
             j = json.loads(r.read().decode())
         comps = j["results"][0]["address_components"]
-        # prefer ward + neighbourhood (新宿区 + 南元町) over full address
+        # prefer ward + neighbourhood (e.g. <city/区> + <neighbourhood>) over full address
         parts = [c["long_name"] for c in comps
                  if any(t in c["types"] for t in ("sublocality_level_1", "sublocality_level_2", "locality"))]
         return "".join(parts[-2:]) if parts else j["results"][0]["formatted_address"]
