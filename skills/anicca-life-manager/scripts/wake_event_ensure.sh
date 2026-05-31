@@ -12,7 +12,7 @@ SHARED_LIB="$HOME/.openclaw/skills/_shared/lib"
 PROFILE="$HOME/.openclaw/identity/profile.json"
 
 [ -f "$HOME/.openclaw/.env" ] && set -a && . "$HOME/.openclaw/.env" && set +a
-: "${GOG_ACCOUNT:=keiodaisuke@gmail.com}"
+: "${GOG_ACCOUNT:?GOG_ACCOUNT not set — populate ~/.openclaw/.env first}"
 
 WAKE_HORIZON_DAYS="${WAKE_HORIZON_DAYS:-7}"
 

@@ -132,9 +132,12 @@ def firecrawl_find_contact(summary, event=None):
         out = subprocess.run(cmd, capture_output=True, text=True, timeout=20)
         if out.returncode != 0:
             return None
-        # Extract first plausible email (skip Anicca's own + common noise)
+        # Extract first plausible email (skip the operator's own gog account
+        # and common noise). The operator's address comes from env at runtime
+        # so no maintainer identity is baked into shipping code.
         emails = re.findall(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b", out.stdout)
-        skip = {"keiodaisuke@gmail.com", "noreply@", "no-reply@", "support@firecrawl", "info@example"}
+        own_account = (env("GOG_ACCOUNT", "") or "").lower()
+        skip = {own_account, "noreply@", "no-reply@", "support@firecrawl", "info@example"}
         for em in emails:
             if any(em.lower().startswith(s) or s in em.lower() for s in skip):
                 continue

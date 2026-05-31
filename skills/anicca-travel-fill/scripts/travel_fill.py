@@ -209,7 +209,7 @@ def short_name(addr):
     if len(parts) == 1:
         parts = re.split(r"\s+", addr, maxsplit=2)
     cand = parts[0].strip()
-    # If only "新宿区南元町15-27" style, use the postal-friendly short
+    # If only a "区/市 + 番地" style street address, use the postal-friendly short
     m = re.search(r"(.+?[駅町区市])", cand)
     return m.group(1) if m else cand[:12]
 
