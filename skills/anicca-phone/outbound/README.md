@@ -111,16 +111,16 @@ With the server running and exposed via ngrok, you can initiate outbound calls:
 curl -X POST https://your-ngrok-url.ngrok.io/dialout \
   -H "Content-Type: application/json" \
   -d '{
-    "to_number": "+15551234567",
-    "from_number": "+15559876543"
+    "to_number": "+1XXXXXXXXXX",
+    "from_number": "+1YYYYYYYYYY"
   }'
 ```
 
 Replace:
 
 - `your-ngrok-url.ngrok.io` with your actual ngrok URL
-- `+15551234567` with the phone number to call (E.164 format)
-- `+15559876543` with your Twilio phone number (E.164 format)
+- `+1XXXXXXXXXX` with the phone number to call (E.164 format)
+- `+1YYYYYYYYYY` with your Twilio phone number (E.164 format)
 
 > Note: the `from_number` must be a phone number owned by your Twilio account
 
