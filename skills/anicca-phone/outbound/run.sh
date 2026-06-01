@@ -54,12 +54,37 @@ CF_PID=$!
 echo "[run.sh] cloudflared pid=$CF_PID"
 
 # Wait up to 30s for cloudflared to print the URL.
+# CRITICAL: cloudflared logs its OWN management API endpoint as
+# 'https://api.trycloudflare.com' BEFORE the tunnel is up. If the regex
+# matches that, Twilio's webhook breaks and the operator hears Twilio's
+# default TTS instead of Gemini Live Charon (the "shitty AI voice"
+# failure, observed 2026-06-01 ~09:45 JST). Excluding 'api.' + requiring
+# at least one internal hyphen matches only the real "random-word-word"
+# subdomain format.
 TUNNEL_URL=""
 for _ in $(seq 1 30); do
-  TUNNEL_URL=$(grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' "$CF_LOG" | head -n 1 || true)
+  TUNNEL_URL=$(grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' "$CF_LOG" \
+                | grep -v 'https://api\.trycloudflare\.com' \
+                | grep -E 'https://[a-z0-9]+-[a-z0-9-]+\.trycloudflare\.com' \
+                | head -n 1 || true)
   if [ -n "$TUNNEL_URL" ]; then break; fi
   sleep 1
 done
+
+# Sanity smoke test the URL actually routes to the local server before
+# handing it off to Pipecat / Twilio. A tunnel that's "up" per cloudflared
+# but not yet fully routed yields 502 or hangs — better to crash here so
+# launchd retries than to ship a broken URL to Twilio.
+if [ -n "$TUNNEL_URL" ]; then
+  for _ in $(seq 1 10); do
+    if curl -sf --max-time 5 "$TUNNEL_URL" > /dev/null 2>&1 \
+       || curl -sf --max-time 5 -o /dev/null -X POST "$TUNNEL_URL/dialout" \
+            -H 'Content-Type: application/json' -d '{}'; then
+      break
+    fi
+    sleep 2
+  done
+fi
 
 if [ -z "$TUNNEL_URL" ]; then
   echo "[run.sh] cloudflared did not produce a URL within 30s — aborting" >&2
