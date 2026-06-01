@@ -361,7 +361,18 @@ async def run_bot(transport: BaseTransport, handle_sigint: bool, *, mode: str = 
 
     # Conversation history aggregator — VAD via Silero so the bot can be interrupted
     # mid-sentence (HARD requirement for natural wake-up calls).
-    context = LLMContext()
+    # Initial user message — same pattern as pipecat-examples/gemini-live-starters/phone-bot.
+    # Without this, Gemini Live has no "prompt to respond to" when LLMRunFrame
+    # fires on Twilio stream connect. The gap between Twilio answering the
+    # call and Anicca's first audio byte gets filled by Twilio's default hold
+    # music (= the "fucking music" the operator hears for 3-5 sec at the start
+    # of every call). With the kick-off prompt below, Gemini starts generating
+    # audio the instant the stream opens.
+    if mode == "wakeup":
+        kickoff = "Speak NOW. The phone just connected. Open with your one-line wake-up urgent opener from the system prompt. Do not greet, do not pause."
+    else:  # lateness
+        kickoff = "Speak NOW. The phone just connected. Open with your one-line lateness opener from the system prompt — pick the verb matching the CALL CONTEXT event type. Do not greet, do not pause."
+    context = LLMContext(messages=[{"role": "user", "content": kickoff}])
     user_aggregator, assistant_aggregator = LLMContextAggregatorPair(
         context,
         user_params=LLMUserAggregatorParams(
