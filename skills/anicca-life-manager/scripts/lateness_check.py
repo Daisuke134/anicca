@@ -584,7 +584,7 @@ def main():
             ctx = (
                 f"次の予定『{e['summary']}』は {start} 開始"
                 + dest_line
-                + f"。今{name}は{place}にいる"
+                + f"。今{prof.name() or 'the user'}は{place}にいる"
                 + action_line
                 + " 自宅にいない場合は自宅へ戻るよう促す (= 自宅予定なので)。"
             )
@@ -592,7 +592,7 @@ def main():
             ctx = (
                 f"次の予定『{e['summary']}』は {start} 開始"
                 + dest_line
-                + f"。今{name}は{place}にいて、{travel_str}{depart} までに出ないと間に合わない"
+                + f"。今{prof.name() or 'the user'}は{place}にいて、{travel_str}{depart} までに出ないと間に合わない"
                 + route_block
                 + "。出発地は『家』ではなく上記の現在地。そこから出発するよう案内する。"
                 + " 場所が自宅なら自宅へ戻る案内、explicit なら最寄駅まで歩いて電車で。"
