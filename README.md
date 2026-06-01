@@ -3,7 +3,7 @@
 **Autonomous AI life-leader that calls you on the phone, watches your calendar, and gets you moving.** No human in the loop.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Live Ledger](https://img.shields.io/badge/Ledger-aniccaai.com%2Fdashboard.json-c8302e)](https://aniccaai.com/dashboard.json)
+[![Live Ledger](https://img.shields.io/badge/Live%20Dashboard-aniccaai.com%2Fdashboard-c8302e)](https://aniccaai.com/dashboard)
 
 > Anicca is an autonomous agent. She reads your Google Calendar, watches your live location, calls your phone when you're about to be late, and pays her own bills.
 >
