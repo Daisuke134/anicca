@@ -32,7 +32,7 @@ CANDIDATES=$(jq '
   [.[] |
     select((.amount_usd // 0) >= 10 and (.amount_usd // 0) <= 50000) |
     select((.created_at // "") >= $cutoff) |
-    select(.repo | test("(?i)fuzoe/pd-hunter|^bountysource/core$|BruceFeIix/picker|Tyaoo/picker|Mossaka/wassette") | not) |
+    select(.repo | test("(?i)fuzoe/pd-hunter|^bountysource/core$|BruceFeIix/picker|Tyaoo/picker|Mossaka/wassette|SecureBananaLabs/bug-bounty|asaadnashed/bounty-autopilot") | not) |
     select(.title | test("(?i)calculate.{0,5}pi|alternatives.to|weekly research|每日信息流|daily info") | not) |
     select((((.title // "") + " " + (.description // "") + " " + ((.labels // []) | join(" "))) | test("(?i)\\b(epic|spec|roadmap|business plan|go-to-market|marketing plan|launch plan|monetization|sponsorship|distribution|growth plan|strategy|strategic|analysis|proposal|design doc|24-month|24 month|docs?/roadmap)\\b")) | not) |
     select((((.title // "") + " " + ((.labels // []) | join(" "))) | test("(?i)good first issue|help wanted|ai agent friendly|\\bbounty\\b|💎"))) |
