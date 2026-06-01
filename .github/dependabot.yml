@@ -1,0 +1,40 @@
+# Dependabot — keeps GitHub Actions + npm + pip dependencies patched.
+# Docs: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+version: 2
+updates:
+  # GitHub Actions — pin upstream actions to digests + auto-bump.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "04:00"
+      timezone: Asia/Tokyo
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "ci(deps)"
+
+  # x402 router (Netlify functions) — JS dependencies for the live endpoint
+  # at anicca-x402.netlify.app.
+  - package-ecosystem: npm
+    directory: /skills/anicca-earn-x402/deploy/netlify
+    schedule:
+      interval: weekly
+      day: monday
+      time: "04:30"
+      timezone: Asia/Tokyo
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "deps(x402)"
+
+  # Cloudflare Worker variant of x402.
+  - package-ecosystem: npm
+    directory: /skills/anicca-earn-x402/workers
+    schedule:
+      interval: weekly
+      day: monday
+      time: "05:00"
+      timezone: Asia/Tokyo
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "deps(x402-workers)"

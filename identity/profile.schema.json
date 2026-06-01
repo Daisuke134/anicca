@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aniccaai.com/schemas/profile.schema.json",
+  "title": "Anicca user profile",
+  "description": "Single source of truth for per-user PERSONAL DATA (non-secret). Secrets (API keys/tokens) live in .env, NEVER here. Raw payment cards are NEVER stored — only processor tokens. This file is gitignored; ship identity/profile.example.json as the template. Skills READ from here (e.g. profile.contact.workEmail); only the anicca-config skill WRITES here, validated against this schema.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["identity", "contact", "channels"],
+  "properties": {
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["stageName", "timezone", "languages"],
+      "properties": {
+        "legalName": { "type": "string", "description": "Legal/real name — use ONLY for official docs (graves, government, contracts)." },
+        "stageName": { "type": "string", "description": "Public-facing name used everywhere else (e.g. アニッチャ)." },
+        "timezone": { "type": "string", "description": "IANA timezone, e.g. Asia/Tokyo." },
+        "languages": { "type": "array", "items": { "type": "string" }, "description": "BCP-47-ish codes in priority order, e.g. [\"ja\",\"en\"]." },
+        "homeAddress": { "type": "string", "description": "Base address for travel-time calculations (calendar booking)." }
+      }
+    },
+    "contact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["personalEmail"],
+      "properties": {
+        "personalEmail": { "type": "string", "format": "email" },
+        "workEmail": { "type": "string", "format": "email", "description": "Day-job email. Skills must read this — NEVER hardcode it." },
+        "phone": { "type": "string" }
+      }
+    },
+    "channels": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reportPlatform"],
+      "properties": {
+        "reportPlatform": { "type": "string", "enum": ["slack", "email", "telegram"], "description": "Where Anicca posts its diary/heartbeat reports." },
+        "reportChannel": { "type": "string", "description": "Platform-specific channel id (e.g. Slack channel C0XXXXXXXXX)." },
+        "notifyEmail": { "type": "string", "format": "email", "description": "Where urgent/nudge mails go if reportPlatform != email." }
+      }
+    },
+    "work": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Day-job constraints so Anicca never books over them.",
+      "properties": {
+        "schedule": { "type": "string", "description": "Free-text protected hours, e.g. \"Mon-Fri 09:00-17:00 JST\"." },
+        "calendarBase": { "type": "string", "description": "Address travel time is computed from (often = identity.homeAddress)." }
+      }
+    },
+    "education": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Generalized: ANY school. Lets a school-specific skill (e.g. <school-skill>) work for any student who fills this.",
+      "properties": {
+        "institution": { "type": "string", "description": "e.g. ." },
+        "studentId": { "type": "string" },
+        "portalUrl": { "type": "string" },
+        "advisorEmail": { "type": "string", "format": "email" },
+        "contacts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["email"],
+            "properties": {
+              "name": { "type": "string" },
+              "email": { "type": "string", "format": "email" },
+              "role": { "type": "string", "description": "e.g. advisor, faculty-list, student-list." }
+            }
+          }
+        }
+      }
+    },
+    "social": {
+      "type": "object",
+      "description": "Per-platform accounts. Postiz/Blotato integration IDs are account references (not secrets) — fine to keep here; API KEYS stay in .env.",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["handle"],
+          "properties": {
+            "handle": { "type": "string" },
+            "postizIntegrationId": { "type": "string" },
+            "blotatoAccountId": { "type": "string" },
+            "purpose": { "type": "string", "description": "What this account is for, e.g. \"JA slideshow (focus)\"." },
+            "postMode": { "type": "string", "enum": ["direct", "draft"], "description": "TikTok usually draft (UPLOAD); IG/X/YT direct (now)." }
+          }
+        }
+      }
+    },
+    "goals": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "North-star / mission anchors the heartbeat re-reads each beat."
+    },
+    "payment": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "NEVER store raw card/PAN/CVV. Only processor tokens/ids (PCI-safe).",
+      "properties": {
+        "stripeCustomerId": { "type": "string", "description": "Stripe customer id (cus_...) — card data lives at Stripe, not here." },
+        "payoutStripeAccountId": { "type": "string", "description": "Stripe Connect account id (acct_...) for payouts." }
+      }
+    }
+  }
+}
