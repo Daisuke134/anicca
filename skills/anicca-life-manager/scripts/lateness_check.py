@@ -2,13 +2,13 @@
 """
 lateness check — the core of the never-be-late loop.
 
-Combines (a) gcal departure times [gcal_departures.py] with (b) Dais's live
+Combines (a) gcal departure times [gcal_departures.py] with (b) the user's live
 location [loco /loc/latest] and decides whether to fire a realtime "you must
 leave NOW" phone call.
 
 Decision (pure, unit-tested in decide()):
   late risk  ⟺  the next event's departBy is within LEAD minutes (or past)
-                AND Dais is still home (within radius) AND not moving.
+                AND the user is still home (within radius) AND not moving.
 
 On late risk: place a realtime lateness-mode call (Twilio <-> Gemini Live, the
 imokenet bridge) with a context string describing the event + deadline, and
@@ -55,7 +55,7 @@ def is_routine_at_home(summary: str) -> bool:
 ADDR_PATTERNS = (
     re.compile(r"(〒\d{3}-\d{4}\s*[^,;()\n　]+)"),
     re.compile(r"((?:北海道|東京都|京都府|大阪府|[^\s]{1,3}県)[^\s,;()\n　]{2,40})"),
-    re.compile(r"((?:NAIST|MUIT|MUFG)\s+〒?\d{0,3}-?\d{0,4}\s*[^\s,;()\n　]+)"),
+    re.compile(r"([A-Z]{3,8}\s+〒?\d{0,3}-?\d{0,4}\s*[^\s,;()\n　]+)"),
     re.compile(r"([一-龯ぁ-んァ-ヶ]{2,8}駅)"),
 )
 
@@ -168,10 +168,10 @@ def decide(now, location, departures, home=None, home_radius_m=None, dest=None, 
     # Telegram publishes every 1-5s while user is sharing Live Location.
     # Stale > STALE_MIN → bot died OR user stopped sharing.
     # NEVER silent-skip (causes missed events). Always CALL to confirm where user is.
-    # Trade-off: occasional false call vs guaranteed miss. Dais 厳命 = 誤発火許容.
+    # Trade-off: occasional false call vs guaranteed miss. HARD RULE = 誤発火許容.
     if age_min > STALE_MIN:
         return {"action": "call",
-                "reason": f"location {int(age_min)}m stale — Telegram Live Location may be off; calling to confirm where Dais is",
+                "reason": f"location {int(age_min)}m stale — Telegram Live Location may be off; calling to confirm where the user is",
                 "event": nxt}
 
     # UNIFIED model: departBy is computed from his CURRENT location's ETA (not home),
@@ -502,7 +502,7 @@ def main():
 
         # Resolve destination explicitly. Routine events at home get
         # profile.home_address() so the LLM never fabricates a station name
-        # (the "Shinagawa 駅 for sleep" bug, Dais 2026-05-31).
+        # (the "Shinagawa 駅 for sleep" bug, 2026-05-31).
         dest_addr, dest_kind = resolve_event_destination(e)
 
         # Pre-compute the actual transit route via Google Maps Web. Skip when
