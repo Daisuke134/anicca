@@ -1,7 +1,7 @@
 #!/bin/bash
 # anicca-life-manager 5-min heartbeat entrypoint.
 # Deterministic: gcal departBy x Telegram Live Location -> call if late-risk.
-# Invoked by openclaw cron b2bf06ee (anicca-life-manager-heartbeat) every 5 min, 0-23 JST.
+# Invoked by openclaw cron b2bf06ee (dais-lateness-heartbeat) every 5 min, 0-23 JST.
 set -uo pipefail
 SKILL="$HOME/.openclaw/skills/anicca-life-manager"
 LOG="$SKILL/state/run.log"
