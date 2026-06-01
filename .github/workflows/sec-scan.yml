@@ -1,0 +1,142 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gitleaks:
+    name: gitleaks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install gitleaks
+        run: |
+          set -e
+          VERSION=8.30.1
+          curl -sSL "https://github.com/gitleaks/gitleaks/releases/download/v${VERSION}/gitleaks_${VERSION}_linux_x64.tar.gz" \
+            | tar -xz -C /tmp gitleaks
+          sudo mv /tmp/gitleaks /usr/local/bin/gitleaks
+          gitleaks version
+
+      - name: gitleaks detect (= working tree)
+        run: gitleaks detect --source . --config .gitleaks.toml --no-banner --redact -v
+
+      - name: gitleaks git (= history)
+        run: gitleaks git . --config .gitleaks.toml --no-banner --redact -v
+
+  trufflehog:
+    name: TruffleHog (filesystem + git history)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: TruffleHog filesystem
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          extra_args: --only-verified
+
+      - name: TruffleHog git history
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.before }}
+          head: HEAD
+          extra_args: --only-verified
+
+  shape-grep:
+    name: PII shape grep (= block phone / email / address shapes)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Block accidental PII patterns
+        shell: bash
+        run: |
+          # Block phone-number-shaped, gmail-shaped, JP postal-shaped strings.
+          # Generic shapes — no contributor-identifying literals — so this
+          # workflow itself reveals nothing about any specific person.
+          set -uo pipefail
+          declare -a PATTERNS=(
+            '\+81[0-9]{9,11}'              # JP mobile E.164
+            '\+1[0-9]{10}'                  # US mobile E.164
+            '[a-z0-9._%-]+@gmail\.com'      # personal gmail
+            '〒[0-9]{3}-[0-9]{4}'           # JP postal code
+            '"home_address"\s*:\s*"[^"]+"'  # JSON home address with content
+            '"phone"\s*:\s*"\+[0-9]'        # JSON phone number with content
+          )
+          hits=0
+          for p in "${PATTERNS[@]}"; do
+            n=$( { grep -rIE -- "$p" \
+                     --include='*.py' --include='*.sh' \
+                     --include='*.md' --include='*.json' --include='*.toml' \
+                     --include='*.yml' --include='*.html' --include='*.ts' \
+                     --include='*.js' . 2>/dev/null || true; } \
+                  | { grep -v '\.git/' || true; } \
+                  | { grep -v '\.env\.example' || true; } \
+                  | { grep -v 'profile\.example\.json' || true; } \
+                  | { grep -v 'profile\.schema\.json' || true; } \
+                  | { grep -v 'README\.md' || true; } \
+                  | { grep -v 'sec-scan\.yml' || true; } \
+                  | wc -l | tr -d ' ')
+            if [ "${n:-0}" -gt 0 ]; then
+              echo "❌ shape '$p' hit $n line(s)"
+              hits=$((hits + n))
+            fi
+          done
+          if [ "$hits" -gt 0 ]; then
+            echo "::error::PII shape grep found $hits hit(s) — block merge"
+            exit 1
+          fi
+          echo "✅ shape grep clean"
+
+  python-lint:
+    name: Python syntax + unittest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: ast.parse every .py
+        run: |
+          set -e
+          find . -name '*.py' -not -path './.git/*' \
+            -exec python3 -c "import ast,sys; ast.parse(open(sys.argv[1]).read())" {} \;
+          echo "✅ syntax clean"
+
+      - name: run pure-stdlib tests
+        run: |
+          set -e
+          # Hyphenated skill paths break unittest discovery, so run each
+          # test_*.py file directly.
+          fail=0
+          while IFS= read -r t; do
+            echo "→ $t"
+            if ! python3 "$t"; then fail=1; fi
+          done < <(find . -name 'test_*.py' -not -path './.git/*' | sort)
+          [ "$fail" -eq 0 ] && echo "✅ all tests passed" || { echo "::error::test failures"; exit 1; }
+
+  shell-lint:
+    name: Shell syntax check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: bash -n every .sh
+        run: |
+          set -e
+          find . -name '*.sh' -not -path './.git/*' -exec bash -n {} \;
+          echo "✅ all .sh files parse"
