@@ -1,15 +1,13 @@
 {
-  "updated_at": "2026-05-29T12:01:42.790Z",
+  "updated_at": "2026-06-01T00:00:46.650Z",
   "mrr": {
-    "total_usd": 34.99,
-    "by_product": {
-      "anicca (App Store)": 47.98
-    },
-    "revenue_28d_usd": 47.98,
-    "actually_landed_usd": 10.44
+    "total_usd": 27,
+    "by_product": {},
+    "revenue_28d_usd": 0,
+    "actually_landed_usd": 31.97
   },
   "followers": {
-    "total": 3755,
+    "total": 3806,
     "by_account": [
       {
         "platform": "tiktok",
@@ -28,28 +26,23 @@
       },
       {
         "platform": "tiktok",
+        "handle": "anicca_buddha",
+        "followers": 3295
+      },
+      {
+        "platform": "tiktok",
+        "handle": "anicca.jp",
+        "followers": 231
+      },
+      {
+        "platform": "tiktok",
         "handle": "unknown",
         "followers": 0
       },
       {
         "platform": "tiktok",
-        "handle": "aniccaaffirmation",
-        "followers": 135
-      },
-      {
-        "platform": "tiktok",
         "handle": "anicca.jp4",
-        "followers": 72
-      },
-      {
-        "platform": "tiktok",
-        "handle": "anicca_buddha",
-        "followers": 3273
-      },
-      {
-        "platform": "tiktok",
-        "handle": "anicca.jp",
-        "followers": 228
+        "followers": 73
       },
       {
         "platform": "tiktok",
@@ -58,22 +51,22 @@
       },
       {
         "platform": "tiktok",
-        "handle": "unknown",
-        "followers": 0
-      },
-      {
-        "platform": "tiktok",
-        "handle": "unknown",
-        "followers": 0
-      },
-      {
-        "platform": "tiktok",
-        "handle": "obou_anicca",
-        "followers": 11
+        "handle": "aniccaaffirmation",
+        "followers": 140
       },
       {
         "platform": "tiktok",
         "handle": "aniccajp",
+        "followers": 0
+      },
+      {
+        "platform": "tiktok",
+        "handle": "unknown",
+        "followers": 0
+      },
+      {
+        "platform": "tiktok",
+        "handle": "unknown",
         "followers": 0
       },
       {
@@ -83,13 +76,18 @@
       },
       {
         "platform": "tiktok",
+        "handle": "aniccajp2",
+        "followers": 0
+      },
+      {
+        "platform": "tiktok",
         "handle": "anicca_slideshow",
         "followers": 0
       },
       {
         "platform": "tiktok",
-        "handle": "aniccajp2",
-        "followers": 0
+        "handle": "obou_anicca",
+        "followers": 11
       },
       {
         "platform": "instagram",
@@ -129,7 +127,7 @@
       {
         "platform": "instagram",
         "handle": "anicca.bochi",
-        "followers": 2
+        "followers": 3
       },
       {
         "platform": "instagram",
@@ -143,11 +141,6 @@
       },
       {
         "platform": "youtube",
-        "handle": "@anicca-jp",
-        "followers": 0
-      },
-      {
-        "platform": "youtube",
         "handle": "@anicca-affirmation-video",
         "followers": 0
       },
@@ -155,183 +148,199 @@
         "platform": "youtube",
         "handle": "@anicca-ai",
         "followers": 22
+      },
+      {
+        "platform": "youtube",
+        "handle": "@anicca-jp",
+        "followers": 19
       }
     ]
   },
   "views": {
-    "weekly_total": 5678,
-    "weekly_total_likes": 26,
-    "weekly_total_comments": 6,
-    "posts_count": 218,
-    "avg_views_per_post": 26,
+    "weekly_total": 3914,
+    "weekly_total_likes": 33,
+    "weekly_total_comments": 20,
+    "posts_count": 281,
+    "avg_views_per_post": 14,
     "target": 1000000,
-    "progress_pct": 0.6
+    "progress_pct": 0.4
   },
   "spend": {
-    "total_usd": 183.19,
+    "total_usd": 128,
     "by_category": {
-      "supabase_pte": 55.19,
-      "openai": 20,
       "heygen_technology": 29,
       "eleven_labs": 0,
       "grok_xai": 30,
-      "postiz": 49
+      "postiz": 49,
+      "openai": 20
     },
     "fixed_subscriptions": [
-      "Supabase Pte: $55.19/mo - Supabase (DB)",
-      "OpenAI: $20/mo - GPT/Codex (model Anicca runs on)",
       "HeyGen Technology: $29/mo - HeyGen (video)",
       "Eleven Labs: $0/mo - ElevenLabs (voice)",
       "Grok xAI: $30/mo - Grok xAI (read X)",
-      "Postiz: $49/mo - Postiz (posting)"
+      "Postiz: $49/mo - Postiz (posting)",
+      "OpenAI: $20/mo - GPT/Codex (model Anicca runs on)"
     ]
   },
-  "profit_usd": -148.2,
+  "profit_usd": -101,
   "goals": {
     "mrr_target": 10000,
     "mrr_deadline": "2026-05-31",
     "progress_pct": 0.3
   },
   "basic_income": {
-    "pool_usd": 3.5,
+    "pool_usd": 2.7,
     "recipients": 0,
     "per_person_usd": 0,
     "next_payout": "TBD"
   },
   "socials": {
-    "updated_at": "2026-05-27T21:56:43.076838+00:00",
-    "window_start": "2026-05-20",
-    "window_end": "2026-05-27",
-    "weekly_views": 7125,
-    "weekly_likes": 31,
-    "weekly_comments": 29,
-    "weekly_posts": 190,
+    "updated_at": "2026-05-31T19:04:21.430499+00:00",
+    "window_start": "2026-05-24",
+    "window_end": "2026-05-31",
+    "weekly_views": 7348,
+    "weekly_likes": 39,
+    "weekly_comments": 33,
+    "weekly_posts": 295,
     "accounts_total": 30,
-    "alive_accounts": 9,
-    "dead_accounts": 3,
+    "alive_accounts": 10,
+    "dead_accounts": 2,
     "accounts": [
       {
-        "platform": "youtube",
-        "handle": "@anicca-jp",
+        "platform": "instagram-standalone",
+        "handle": "anicca.ai",
         "name": "Anicca",
-        "posts_7d": 20,
-        "posts_with_data": 9,
-        "views_7d": 4703,
-        "likes_7d": 11,
-        "comments_7d": 0,
-        "avg_views": 235.2,
-        "engagement_rate": 0.23,
+        "posts_7d": 15,
+        "posts_with_data": 15,
+        "views_7d": 3336,
+        "likes_7d": 27,
+        "comments_7d": 1,
+        "avg_views": 222.4,
+        "engagement_rate": 0.84,
         "status": "ok"
       },
       {
         "platform": "instagram-standalone",
         "handle": "obou.anicca",
         "name": "obou",
-        "posts_7d": 10,
-        "posts_with_data": 9,
-        "views_7d": 1513,
-        "likes_7d": 1,
+        "posts_7d": 21,
+        "posts_with_data": 20,
+        "views_7d": 2621,
+        "likes_7d": 4,
         "comments_7d": 0,
-        "avg_views": 151.3,
-        "engagement_rate": 0.07,
+        "avg_views": 124.8,
+        "engagement_rate": 0.15,
+        "status": "ok"
+      },
+      {
+        "platform": "youtube",
+        "handle": "@anicca-jp",
+        "name": "Anicca",
+        "posts_7d": 27,
+        "posts_with_data": 7,
+        "views_7d": 626,
+        "likes_7d": 0,
+        "comments_7d": 0,
+        "avg_views": 23.2,
+        "engagement_rate": 0,
         "status": "ok"
       },
       {
         "platform": "x",
         "handle": "aniccaxxx",
         "name": "アニッチャ",
-        "posts_7d": 31,
-        "posts_with_data": 30,
-        "views_7d": 591,
-        "likes_7d": 5,
-        "comments_7d": 21,
-        "avg_views": 19.1,
-        "engagement_rate": 4.4,
+        "posts_7d": 33,
+        "posts_with_data": 18,
+        "views_7d": 366,
+        "likes_7d": 2,
+        "comments_7d": 12,
+        "avg_views": 11.1,
+        "engagement_rate": 3.83,
         "status": "ok"
       },
       {
         "platform": "instagram-standalone",
         "handle": "monk.anicca",
         "name": "monk",
-        "posts_7d": 11,
-        "posts_with_data": 7,
-        "views_7d": 242,
+        "posts_7d": 12,
+        "posts_with_data": 8,
+        "views_7d": 311,
         "likes_7d": 3,
         "comments_7d": 1,
-        "avg_views": 22,
-        "engagement_rate": 1.65,
+        "avg_views": 25.9,
+        "engagement_rate": 1.29,
         "status": "ok"
       },
       {
         "platform": "instagram-standalone",
         "handle": "anicca.bochi",
         "name": "アニッチャ",
-        "posts_7d": 13,
-        "posts_with_data": 10,
+        "posts_7d": 9,
+        "posts_with_data": 9,
         "views_7d": 53,
-        "likes_7d": 4,
+        "likes_7d": 0,
         "comments_7d": 0,
-        "avg_views": 4.1,
-        "engagement_rate": 7.55,
-        "status": "ok"
-      },
-      {
-        "platform": "instagram-standalone",
-        "handle": "anicca.jp1",
-        "name": "Anicca",
-        "posts_7d": 10,
-        "posts_with_data": 5,
-        "views_7d": 16,
-        "likes_7d": 4,
-        "comments_7d": 4,
-        "avg_views": 1.6,
-        "engagement_rate": 50,
-        "status": "ok"
-      },
-      {
-        "platform": "instagram-standalone",
-        "handle": "anicca.fashion",
-        "name": "Anicca",
-        "posts_7d": 11,
-        "posts_with_data": 2,
-        "views_7d": 4,
-        "likes_7d": 2,
-        "comments_7d": 2,
-        "avg_views": 0.4,
-        "engagement_rate": 100,
+        "avg_views": 5.9,
+        "engagement_rate": 0,
         "status": "ok"
       },
       {
         "platform": "instagram-standalone",
         "handle": "anicca.encards",
         "name": "Anicca iOS",
-        "posts_7d": 2,
-        "posts_with_data": 1,
-        "views_7d": 2,
-        "likes_7d": 1,
-        "comments_7d": 1,
-        "avg_views": 1,
-        "engagement_rate": 100,
+        "posts_7d": 9,
+        "posts_with_data": 8,
+        "views_7d": 15,
+        "likes_7d": 0,
+        "comments_7d": 10,
+        "avg_views": 1.7,
+        "engagement_rate": 66.67,
         "status": "ok"
       },
       {
         "platform": "instagram-standalone",
-        "handle": "anicca.cemetery",
-        "name": "Anicca Cemetery",
-        "posts_7d": 8,
-        "posts_with_data": 1,
-        "views_7d": 1,
+        "handle": "anicca.jp1",
+        "name": "Anicca",
+        "posts_7d": 19,
+        "posts_with_data": 8,
+        "views_7d": 11,
         "likes_7d": 0,
+        "comments_7d": 7,
+        "avg_views": 0.6,
+        "engagement_rate": 63.64,
+        "status": "ok"
+      },
+      {
+        "platform": "youtube",
+        "handle": "@anicca-ai",
+        "name": "Anicca - AI Coaching app",
+        "posts_7d": 10,
+        "posts_with_data": 4,
+        "views_7d": 5,
+        "likes_7d": 1,
         "comments_7d": 0,
-        "avg_views": 0.1,
-        "engagement_rate": 0,
+        "avg_views": 0.5,
+        "engagement_rate": 20,
+        "status": "ok"
+      },
+      {
+        "platform": "instagram-standalone",
+        "handle": "anicca.fashion",
+        "name": "Anicca",
+        "posts_7d": 12,
+        "posts_with_data": 2,
+        "views_7d": 4,
+        "likes_7d": 2,
+        "comments_7d": 2,
+        "avg_views": 0.3,
+        "engagement_rate": 100,
         "status": "ok"
       },
       {
         "platform": "tiktok",
         "handle": "aniccaen2",
         "name": "Anicca",
-        "posts_7d": 6,
+        "posts_7d": 17,
         "posts_with_data": 0,
         "views_7d": 0,
         "likes_7d": 0,
@@ -357,7 +366,20 @@
         "platform": "tiktok",
         "handle": "aniccaaffirmation",
         "name": "Affirmation Girl",
-        "posts_7d": 2,
+        "posts_7d": 9,
+        "posts_with_data": 0,
+        "views_7d": 0,
+        "likes_7d": 0,
+        "comments_7d": 0,
+        "avg_views": 0,
+        "engagement_rate": 0,
+        "status": "no_analytics_from_postiz"
+      },
+      {
+        "platform": "instagram-standalone",
+        "handle": "anicca.cemetery",
+        "name": "Anicca Cemetery",
+        "posts_7d": 10,
         "posts_with_data": 0,
         "views_7d": 0,
         "likes_7d": 0,
@@ -422,7 +444,7 @@
         "platform": "tiktok",
         "handle": "anicca.jp",
         "name": "アニッチャ iOS",
-        "posts_7d": 8,
+        "posts_7d": 19,
         "posts_with_data": 0,
         "views_7d": 0,
         "likes_7d": 0,
@@ -435,7 +457,7 @@
         "platform": "tiktok",
         "handle": "anicca.jp8",
         "name": "アニッチャ",
-        "posts_7d": 24,
+        "posts_7d": 23,
         "posts_with_data": 0,
         "views_7d": 0,
         "likes_7d": 0,
@@ -448,7 +470,7 @@
         "platform": "tiktok",
         "handle": "honnevideo",
         "name": "本音翻訳",
-        "posts_7d": 10,
+        "posts_7d": 22,
         "posts_with_data": 0,
         "views_7d": 0,
         "likes_7d": 0,
@@ -461,20 +483,7 @@
         "platform": "youtube",
         "handle": "@anicca-affirmation-video",
         "name": "Daily Affirmation App - Anicca",
-        "posts_7d": 0,
-        "posts_with_data": 0,
-        "views_7d": 0,
-        "likes_7d": 0,
-        "comments_7d": 0,
-        "avg_views": 0,
-        "engagement_rate": 0,
-        "status": "no_published_posts"
-      },
-      {
-        "platform": "youtube",
-        "handle": "@anicca-ai",
-        "name": "Anicca - AI Coaching app",
-        "posts_7d": 2,
+        "posts_7d": 6,
         "posts_with_data": 0,
         "views_7d": 0,
         "likes_7d": 0,
@@ -482,19 +491,6 @@
         "avg_views": 0,
         "engagement_rate": 0,
         "status": "no_analytics_from_postiz"
-      },
-      {
-        "platform": "instagram-standalone",
-        "handle": "anicca.ai",
-        "name": "Anicca",
-        "posts_7d": 0,
-        "posts_with_data": 0,
-        "views_7d": 0,
-        "likes_7d": 0,
-        "comments_7d": 0,
-        "avg_views": 0,
-        "engagement_rate": 0,
-        "status": "no_published_posts"
       },
       {
         "platform": "instagram-standalone",
@@ -552,7 +548,7 @@
         "platform": "tiktok",
         "handle": "monk_anicca",
         "name": "Monk Anicca",
-        "posts_7d": 8,
+        "posts_7d": 5,
         "posts_with_data": 0,
         "views_7d": 0,
         "likes_7d": 0,
@@ -565,7 +561,7 @@
         "platform": "tiktok",
         "handle": "obou_anicca",
         "name": "アニッチャ - 無常の教え",
-        "posts_7d": 10,
+        "posts_7d": 13,
         "posts_with_data": 0,
         "views_7d": 0,
         "likes_7d": 0,
@@ -602,23 +598,63 @@
       }
     ],
     "dead_handles": [
-      "anicca.fashion",
-      "anicca.encards",
-      "anicca.cemetery"
+      "@anicca-ai",
+      "anicca.fashion"
     ],
     "viral_handles": []
   },
   "meta": {
     "rc_status": "ok",
     "fetcher_versions": {
-      "stripe": "2026-05-28T20:01:09.187Z",
-      "rc": "2026-05-28T20:01:11.759Z",
-      "postiz": "2026-05-28T20:01:50.030Z",
-      "followers": "2026-05-28T20:04:09.001Z",
-      "spend": "2026-05-28T20:01:09.321Z",
-      "socials": "2026-05-27T21:56:43.076838+00:00"
+      "stripe": "2026-05-31T20:04:51.258Z",
+      "rc": "2026-05-31T20:04:51.207Z",
+      "postiz": "2026-05-31T20:05:49.061Z",
+      "followers": "2026-05-31T20:07:57.923Z",
+      "spend": "2026-05-31T20:04:51.708Z",
+      "socials": "2026-05-31T19:04:21.430499+00:00"
     }
   },
   "lifeline_status": "HUNGRY",
-  "cfo_source": "cfo-core/build-anicca v1"
+  "cfo_source": "cfo-core/build-anicca v1 + lineage v1",
+  "lineage": [
+    {
+      "id": "anicca-001-claude",
+      "harness": "claude-anicca",
+      "model": "claude-sonnet-4-6 / claude-opus-4-7",
+      "runtime": "Mac mini (Tokyo)",
+      "run_mode": "Claude Max subscription",
+      "wallet": null,
+      "wallet_usdc": null,
+      "role": "Origin Anicca · launchd heartbeat 2h cycle",
+      "status": "ALIVE",
+      "monthly_earn_usd": 27,
+      "monthly_spend_usd": 200
+    },
+    {
+      "id": "anicca-001-openclaw",
+      "harness": "openclaw-anicca",
+      "model": "deepseek-chat (primary) / gpt-4o-mini (fallback)",
+      "runtime": "Mac mini (Tokyo) + Netlify Functions (x402 endpoint)",
+      "run_mode": "API key + x402 USDC inbound",
+      "wallet": "0x9B1Ee988b1A2931ABCE467f0a8eAff6c70c93e83",
+      "wallet_usdc": 0,
+      "role": "x402 service vendor · cron-driven beat (208 cron jobs) · anicca-x402.netlify.app live",
+      "status": "ALIVE",
+      "monthly_earn_usd": 0,
+      "monthly_spend_usd": 12
+    },
+    {
+      "id": "anicca-001-hermes",
+      "harness": "hermes-anicca",
+      "model": "deepseek-v4-pro (planned)",
+      "runtime": "TBD (VPS / Akash candidate)",
+      "run_mode": "planned",
+      "wallet": null,
+      "wallet_usdc": null,
+      "role": "Third harness, coming online",
+      "status": "PROVISIONED",
+      "monthly_earn_usd": 0,
+      "monthly_spend_usd": 0
+    }
+  ]
 }
