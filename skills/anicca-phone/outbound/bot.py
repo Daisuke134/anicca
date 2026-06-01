@@ -147,7 +147,7 @@ async def run_bot(transport: BaseTransport, handle_sigint: bool, *, mode: str = 
     get_directions_fn = FunctionSchema(
         name="get_directions",
         description=(
-            "Look up the real transit route from the user's CURRENT live location to "
+            "Look up the real transit route from Dais's CURRENT live location to "
             "the given destination via Google Directions API. Call this BEFORE "
             "telling him any station name, line, or transfer — your training data "
             "is unreliable for Tokyo transit specifics."
@@ -202,7 +202,7 @@ async def run_bot(transport: BaseTransport, handle_sigint: bool, *, mode: str = 
         await params.llm.push_frame(EndTaskFrame(), FrameDirection.UPSTREAM)
 
     async def _get_directions(params: FunctionCallParams):
-        """Resolve the real transit route from the user's current live position to
+        """Resolve the real transit route from Dais's current live position to
         `destination` via Google Directions API. Speak only the API result —
         never let the LLM guess Tokyo train geography from its training data."""
         destination = (params.arguments or {}).get("destination") or ""
@@ -210,7 +210,7 @@ async def run_bot(transport: BaseTransport, handle_sigint: bool, *, mode: str = 
             await params.result_callback({"error": "destination required"})
             return
 
-        # Origin = the user's freshest Telegram Live Location fix from the bot's
+        # Origin = Dais's freshest Telegram Live Location fix from the bot's
         # state file. The Telegram bot daemon writes
         # ~/.openclaw/state/location/<user_id>.json every 1-5s while the user
         # is sharing Live Location. We pick the freshest file.
@@ -253,7 +253,7 @@ async def run_bot(transport: BaseTransport, handle_sigint: bool, *, mode: str = 
         # transit query returns ZERO_RESULTS. We fall back to driving as the
         # urgency-proxy (lower bound on travel) and walking (upper bound), then
         # tell the LLM transit specifics aren't available — Anicca redirects
-        # the user to Google Maps rather than hallucinating station names.
+        # Dais to Google Maps rather than hallucinating station names.
         def _query(mode: str) -> dict:
             params_map = {
                 "origin": origin,
@@ -320,7 +320,7 @@ async def run_bot(transport: BaseTransport, handle_sigint: bool, *, mode: str = 
         else:
             # Japan transit feed is unavailable — give the LLM the best info we
             # have (driving + walking durations) and TELL it not to invent the
-            # rail route. Anicca will redirect the user to Google Maps.
+            # rail route. Anicca will redirect Dais to Google Maps.
             def _dur(d):
                 try:
                     return round(d["routes"][0]["legs"][0]["duration"]["value"] / 60)
@@ -341,7 +341,7 @@ async def run_bot(transport: BaseTransport, handle_sigint: bool, *, mode: str = 
                 "note": (
                     "Google Directions has no transit data inside Japan. "
                     "Do NOT name stations or lines — you will be wrong. Tell "
-                    "the user to open Google Maps with this destination."
+                    "Dais to open Google Maps with this destination."
                 ),
                 "destination": end_addr,
                 "driving_min": drv_min,
@@ -361,7 +361,18 @@ async def run_bot(transport: BaseTransport, handle_sigint: bool, *, mode: str = 
 
     # Conversation history aggregator — VAD via Silero so the bot can be interrupted
     # mid-sentence (HARD requirement for natural wake-up calls).
-    context = LLMContext()
+    # Initial user message — same pattern as pipecat-examples/gemini-live-starters/phone-bot.
+    # Without this, Gemini Live has no "prompt to respond to" when LLMRunFrame
+    # fires on Twilio stream connect. The gap between Twilio answering the
+    # call and Anicca's first audio byte gets filled by Twilio's default hold
+    # music (= the "fucking music" the operator hears for 3-5 sec at the start
+    # of every call). With the kick-off prompt below, Gemini starts generating
+    # audio the instant the stream opens.
+    if mode == "wakeup":
+        kickoff = "Speak NOW. The phone just connected. Open with your one-line wake-up urgent opener from the system prompt. Do not greet, do not pause."
+    else:  # lateness
+        kickoff = "Speak NOW. The phone just connected. Open with your one-line lateness opener from the system prompt — pick the verb matching the CALL CONTEXT event type. Do not greet, do not pause."
+    context = LLMContext(messages=[{"role": "user", "content": kickoff}])
     user_aggregator, assistant_aggregator = LLMContextAggregatorPair(
         context,
         user_params=LLMUserAggregatorParams(
@@ -394,7 +405,7 @@ async def run_bot(transport: BaseTransport, handle_sigint: bool, *, mode: str = 
 
     @transport.event_handler("on_client_connected")
     async def on_client_connected(transport, client):
-        # Kick off conversation: Anicca speaks first (the user is asleep, won't initiate).
+        # Kick off conversation: Anicca speaks first (Dais is asleep, won't initiate).
         logger.info("Twilio stream connected — Anicca starting the wake-up call")
         await task.queue_frames([LLMRunFrame()])
 
@@ -405,7 +416,7 @@ async def run_bot(transport: BaseTransport, handle_sigint: bool, *, mode: str = 
 
     @user_aggregator.event_handler("on_user_turn_stopped")
     async def on_user_turn_stopped(aggregator, strategy, message: UserTurnStoppedMessage):
-        logger.info(f"TRANSCRIPT [caller]: {message.content}")
+        logger.info(f"TRANSCRIPT [Dais]: {message.content}")
 
     @assistant_aggregator.event_handler("on_assistant_turn_stopped")
     async def on_assistant_turn_stopped(aggregator, message: AssistantTurnStoppedMessage):
