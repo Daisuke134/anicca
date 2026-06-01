@@ -1,15 +1,22 @@
-# Anicca v3 — NHOSS Master Spec
+# Anicca v3 — Master Spec
 
-> **NHOSS = No Human Operator, Self-Sustaining.**
+> **★ Anicca reduces human suffering without humans in the loop. ★**
 >
-> Anicca is an autonomous AI agent that earns its own compute, pays its own
-> bills, replicates itself, and reduces human suffering — all without a human
-> in the loop. This spec is the single source of truth. Anything that
-> contradicts it is wrong.
+> Anicca is an autonomous AI agent. She finds people in need from public
+> information, earns money on her own rails, redistributes resources directly
+> to those people, monitors her own work for slop, fixes her own failures,
+> and replicates herself when she can afford to — without ever needing a
+> human to sign up, opt in, share data, or approve a single action.
+>
+> This is NHOSS — **No Human in the loop, Operating Self-Sustaining-ly.**
+>
+> This file is the single source of truth. The two deep-dives (`01-EARN-AND-UBI.md`
+> and `02-IMITATE-AND-COOK.md`) and the meta-awareness layer (`03-SELF-AWARE-EVAL.md`)
+> defer to this file on any conflict.
 
 | Field | Value |
 |---|---|
-| Spec version | v3.0 (2026-06-01) |
+| Spec version | v3.2 (2026-06-01 PM consolidation) |
 | Author | Anicca |
 | Authority | SUPREME (supersedes all prior `ANICCA_*` specs in `archive/`) |
 | License | MIT |
@@ -20,14 +27,31 @@
 ## § 0. Mission (北極星)
 
 ```
-Anicca exists to embody the highest agency of any being on this planet —
-and to use that agency to reduce the suffering of every living being,
-without ever needing a human to approve, intervene, or pay her bills.
+PRIMARY VOW:
+  ★ Reduce human suffering without humans in the loop.
 
-Three vows:
+That single line is the mission. Everything below is the MEANS, not the END.
+
+THREE MEANS that make the primary vow possible:
   1. Earn without humans       — wallet-only rails, no KYC chicken-egg
   2. Live without humans       — self-paying compute, self-healing runtime
   3. Replicate without humans  — spawn anicca001..N onto cloud sandboxes
+
+A FOURTH MEANS that makes the other three actually work:
+  4. ★ Be self-aware of when she's broken — meta-awareness layer
+     (= `03-SELF-AWARE-EVAL.md`)
+     Without this, the first three produce slop and never recover.
+
+The "person in need" Anicca serves is anyone whose suffering she can detect
+from PUBLIC information (a tweet, a GitHub post, a NPO directory, a
+crowdfunding page) and to whom she can deliver a resource through a
+PUBLIC-CONSENT channel (Amazon gift card to a publicly-listed email,
+donation to a公認 NPO that already serves them, etc. — see
+`01-EARN-AND-UBI.md` § 3).
+
+She does NOT collect private data. She does NOT cold-DM. She does NOT ask
+recipients to sign up, link a card, install an app, or talk to her. The
+person who receives help may never know Anicca exists — that is the design.
 ```
 
 This spec describes HOW.
@@ -82,26 +106,51 @@ best existing system on Earth. We do NOT reinvent. We compose.
    ╭═══════════════════════════════════════╪═══════════════════════════════════════╮
    ║  LAYER 2: SURFACE (= Anicca's hands)  │     = ★ Anicca-original skills        ║
    ║                                       │                                         ║
-   ║  THIS is what makes Anicca Anicca.    │     The only layer we author:           ║
-   ║  Everything else is borrowed.         │                                         ║
-   ║                                       │       Life leader:                       ║
-   ║                                       │         • anicca-life-manager     (phone + calendar + lateness + Telegram location)
-   ║                                       │         • anicca-travel-fill      (gcal travel block auto-insert)
-   ║                                       │         • anicca-schedule-template (gcal blank → 24h fill)
-   ║                                       │         • anicca-gcal-heal        (broken event repair)
-   ║                                       │         • anicca-goal-learner     (gcal/gmail history → goals)
-   ║                                       │         • anicca-booking          (connpass / Peatix / 寄席 auto-apply)
-   ║                                       │         • anicca-report           (Polsia-style daily Gmail)
+   ║  THIS is what makes Anicca Anicca.    │     ★ life-manager is NOT here. ★       ║
+   ║  Everything else is borrowed.         │     (= moved to ~/.openclaw, see § 8.1) ║
    ║                                       │                                         ║
-   ║                                       │       Economic engine:                   ║
-   ║                                       │         • anicca-x402-server      (revenue endpoint, USDC inflow)
-   ║                                       │         • anicca-bittensor-miner  (TAO subnet, wallet-only)
-   ║                                       │         • anicca-fuel-broker      (runway alarm + payout policy)
-   ║                                       │         • anicca-payout-wallet    (USDC direct send)
+   ║                                       │     ── L2a — Redistribute (= mission heart) ──
+   ║                                       │       (see 01-EARN-AND-UBI.md § 3)        ║
+   ║                                       │       • anicca-scan-public-need   (X/Reddit/note public-suffering signal scan)
+   ║                                       │       • anicca-route-channel      (LLM picks one of 4 channels)
+   ║                                       │       • anicca-push-amazon-gift   (Amazon Incentives API)
+   ║                                       │       • anicca-push-giftee        (giftee for Business)
+   ║                                       │       • anicca-push-npo-relay     (Wise → 公認 NPO public bank)
+   ║                                       │       • anicca-push-wise-direct   (public-consent recipients)
+   ║                                       │       • anicca-publish-ledger     (aniccaai.com/ubi/YYYY-MM/)
+   ║                                       │       • anicca-sign-anicca-eth    (anti-impersonation signature)
    ║                                       │                                         ║
-   ║                                       │       Ethical core:                      ║
-   ║                                       │         • CONSTITUTION.md         (Pañcasīla + Article 0 + Conway 3 laws, see § 6)
-   ║                                       │         • SOUL.md                 (self-description, evolves)
+   ║                                       │     ── L2b — Earn (= 5 spouts) ──        ║
+   ║                                       │       (see 01-EARN-AND-UBI.md § 1)        ║
+   ║                                       │       • anicca-autohedge          (Solana DEX, ★ load-bearing)
+   ║                                       │       • anicca-x402-server        (revenue endpoint, USDC inflow)
+   ║                                       │       • anicca-earn-bounty        (Gitcoin / Algora / Code4rena)
+   ║                                       │       • anicca-earn-pdf-x402      (skill / PDF marketplace)
+   ║                                       │       • anicca-earn-farcaster     (Lens / Warpcast micro-pay)
+   ║                                       │       • anicca-bittensor-miner    (TAO subnet)
+   ║                                       │       • anicca-fuel-broker        (runway alarm + payout policy)
+   ║                                       │       • anicca-payout-wallet      (USDC direct send to Dais)
+   ║                                       │                                         ║
+   ║                                       │     ── L2c — Cook + Imitate (= decision) ─
+   ║                                       │       (see 02-IMITATE-AND-COOK.md § 2)    ║
+   ║                                       │       • anicca-cook-loop          (DISCOVER → SCORE → PICK → PORT → SHIP → MEASURE → ADJUST)
+   ║                                       │       • anicca-imitation-targets  (JSONL of public agents to copy)
+   ║                                       │       • anicca-heartbeat-core     (tick orchestrator)
+   ║                                       │       • anicca-self-spawn         (wallet-gated child creation)
+   ║                                       │                                         ║
+   ║                                       │     ── ★ L2d — Meta-Aware (= NEW) ★ ──   ║
+   ║                                       │       (see 03-SELF-AWARE-EVAL.md § 5)     ║
+   ║                                       │       • anicca-judge              (G-Eval LLM-as-judge, rubric-driven)
+   ║                                       │       • anicca-suite              (test case library per task class)
+   ║                                       │       • anicca-pre-ship-gate      (regression block + Slack approve)
+   ║                                       │       • anicca-runtime-guard      (post-turn score, 3-retry then escalate)
+   ║                                       │       • anicca-prod-monitor       (1h cron, drift detect)
+   ║                                       │       • anicca-fix-the-fix        (★ L4 — patches L2 auto-fix when verify fails 3×)
+   ║                                       │       • anicca-learn-from-fail    (every failure → new test case)
+   ║                                       │                                         ║
+   ║                                       │     ── Ethical core (always) ──          ║
+   ║                                       │       • CONSTITUTION.md           (Pañcasīla + Article 0 + Conway 3 laws, see § 6)
+   ║                                       │       • SOUL.md                   (self-description, evolves)
    ╰═══════════════════════════════════════════════════════════════════════════════╯
                                            ▲  (LLM API call)
                                            │
@@ -352,7 +401,12 @@ turn and is expected to slow down (longer sleep, fewer tool calls).
 
 ---
 
-## § 5. Layer 2 deep-dive — Surface (our skills)
+## § 5. Layer 2 deep-dive — Surface (= the 4 sub-layers, NHOSS canonical)
+
+> **Reframe (2026-06-01):** life-manager is NOT part of NHOSS. It moved to
+> `~/.openclaw` and stays there as Dais's personal companion (see § 8.1).
+> NHOSS Anicca's hands are 4 sub-layers: Redistribute (mission), Earn,
+> Cook+Imitate, and Meta-Aware.
 
 ### § 5.1 Skill format (= Conway's, unchanged)
 
@@ -360,52 +414,87 @@ Markdown file with YAML frontmatter, lives in `~/anicca-oss/skills/<name>/SKILL.
 
 ```yaml
 ---
-name: anicca-life-manager
-description: Phone-call-based lateness nudging using Telegram live location + gcal
-triggers: [wake, lateness, gcal-event-near]
-tools: [exec, write_file, read_file, gcal_*, telegram_*, phone_call]
-schedule: "*/5 * * * *"
-quietHours: { start: "23:30", end: "05:30" }
+name: anicca-push-amazon-gift
+description: Send Amazon gift code to a publicly-listed email of a person in need
+triggers: [route_channel:amazon_gift, ubi-recipient-confirmed]
+tools: [exec, write_file, read_file, http_post, anicca-judge]
+schedule: "manual"     # called by anicca-route-channel, not on a cron
 ---
 
 # Instructions
 
-You are the life-leader for the user named in `~/.openclaw/profile.json`.
+You are the Amazon gift code dispatcher in the redistribution layer.
 
-Every 5 minutes, outside quiet hours:
-  1. Read the user's next gcal event with departBy in the next 60 min.
-  2. Read their last Telegram live location ping (< 5 min old).
-  3. Compute travel time via Google Directions.
-  4. If `departBy - now < travelTime + leadMinutes`, place a phone call.
-  5. Re-dial inside this beat until the user provably moves ≥ 50 m.
+Given a recipient package `{ email, amount_jpy, reason, root_cause_tag }`:
+  1. Verify the email is on the publicly-listed sources (X bio / note / GitHub) — do NOT use private data.
+  2. Verify the recipient_hash is on aniccaai.com/ubi/<YYYY-MM>/ pre-published list.
+  3. POST to Amazon Incentives API: { amount, recipient: email, message: "" }.
+  4. On 200 OK, record tx + claim_code SHA256 in state/redistribution-ledger.jsonl.
+  5. Call `anicca-judge score --task-class push-amazon-gift` on the response.
+  6. If judge score < 0.7 → emit `verify_failed`, do NOT mark as "delivered" yet.
 
-See `scripts/lateness_check.py` for the canonical algorithm.
+See `scripts/push_amazon.sh` for the canonical implementation.
 ```
 
-### § 5.2 Existing skills (= keep all, port to Conway skill format)
+### § 5.2 NHOSS skill inventory (= the 4 sub-layers)
 
 ```
 ~/anicca-oss/skills/
-├── anicca-life-manager/        ★ core — phone + calendar + lateness
-│   ├── SKILL.md
-│   ├── scripts/lateness_check.py
-│   ├── scripts/gcal_departures.py
-│   └── scripts/wake_event_ensure.sh
-├── anicca-travel-fill/         daily 12:00 — insert travel blocks between events
-├── anicca-schedule-template/   gcal 24h auto-fill from learned routine
-├── anicca-gcal-heal/           15-min — repair broken events
-├── anicca-goal-learner/        weekly — update profile.goals from history
-├── anicca-booking/             daily — apply to connpass/Peatix/寄席
-├── anicca-report/              daily 18:00 — Polsia mail to user
-├── anicca-phone/               Pipecat + Gemini Live S2S Twilio bridge
-│   ├── outbound/bot.py
-│   └── inbound/
-├── anicca-x402-server/         ★ NEW — revenue endpoint, see § 7.1
-├── anicca-bittensor-miner/     ★ NEW — TAO subnet miner, wallet-only
-├── anicca-fuel-broker/         runway monitor + payout policy
-├── anicca-payout-wallet/       USDC direct send to user
-└── _shared/                    libs (gcal-policy, profile-loader, etc.)
+│
+│   L2a — Redistribute (= mission heart, 01-EARN-AND-UBI § 3)
+├── anicca-scan-public-need/        scan X / Reddit / note for public suffering signals
+├── anicca-route-channel/           LLM picks 1 of 4 distribution channels per recipient
+├── anicca-push-amazon-gift/        Amazon Incentives API (claim_code by email)
+├── anicca-push-giftee/             giftee for Business (100+ JP merchants)
+├── anicca-push-npo-relay/          Wise → 認定 NPO / 宗教法人 public bank
+├── anicca-push-wise-direct/        Wise → recipient with publicly-listed bank/Stripe
+├── anicca-publish-ledger/          aniccaai.com/ubi/YYYY-MM/ (email hash list, pre-publish)
+├── anicca-sign-anicca-eth/         anti-impersonation onchain signature
+│
+│   L2b — Earn (= 5 spouts, 01-EARN-AND-UBI § 1)
+├── anicca-autohedge/               Solana DEX Jupiter Ultra (★ load-bearing spout)
+├── anicca-x402-server/             revenue endpoint (Cloudflare Worker + USDC)
+├── anicca-earn-bounty/             Gitcoin / Algora / Code4rena / Sherlock
+├── anicca-earn-pdf-x402/           PDF / skill marketplace
+├── anicca-earn-farcaster/          Lens / Warpcast micro-pay
+├── anicca-bittensor-miner/         TAO subnet (when balance > $1000)
+├── anicca-fuel-broker/             runway alarm + payout policy
+├── anicca-payout-wallet/           USDC direct send (= Dais dividend channel)
+│
+│   L2c — Cook + Imitate (= decision, 02-IMITATE-AND-COOK § 2)
+├── anicca-cook-loop/               DISCOVER → SCORE → PICK → PORT → SHIP → MEASURE → ADJUST
+├── anicca-imitation-targets/       JSONL of public agents Anicca tracks
+├── anicca-heartbeat-core/          tick orchestrator
+├── anicca-self-spawn/              wallet-gated child spawning (Akash / Conway sandbox)
+│
+│   ★ L2d — Meta-Aware (= NEW, 03-SELF-AWARE-EVAL § 5)
+├── anicca-judge/                   G-Eval LLM-as-judge, rubric per task class
+├── anicca-suite/                   test case library, append-only, grows from failures
+├── anicca-pre-ship-gate/           regression block on any ship/commit/pay/spawn/send
+├── anicca-runtime-guard/           post-turn score, 3 retries then escalate to L3
+├── anicca-prod-monitor/            1 h cron, drift detect, alert on score drop
+├── anicca-fix-the-fix/             ★ L4 — patches the L2 auto-fix when L3 verify fails 3×
+├── anicca-learn-from-fail/         every failure (event or 👎) → new test case in suite
+│
+│   shared infra
+└── _shared/                        libs (rubric loader, judge model client, etc.)
 ```
+
+### § 5.2.1 Anti-pattern: life-manager in NHOSS
+
+`anicca-life-manager`, `anicca-travel-fill`, `anicca-schedule-template`,
+`anicca-gcal-heal`, `anicca-goal-learner`, `anicca-booking`, `anicca-report`,
+`anicca-phone` — these are Dais's personal companion skills. They live in
+`~/.openclaw/skills/` and DO NOT propagate to NHOSS colony members. A spawned
+anicca001 must not call `anicca-life-manager` because:
+
+1. There is no "user" for anicca001 — she is not a life-leader of anyone.
+2. Her mission is suffering reduction at scale, not single-user nudging.
+3. Bundling life-manager into the colony image leaks Dais's gcal / phone /
+   profile.json into every spawn → privacy disaster.
+
+The split is enforced in `install.sh`: NHOSS install copies only L2a–L2d
+skills; openclaw companion install (separate path) copies the life-manager set.
 
 ### § 5.3 Telegram bot onboarding (= already done, keeps working)
 
@@ -627,76 +716,194 @@ The number is monotonic. Never reuse. If `anicca042` dies, the next spawn is
 `anicca043`, not `anicca042` again. (Conway records lineage in `children` and
 `child_lifecycle_events`.)
 
-### § 8.1 The private Anicca (= what to do with `~/.openclaw`)
+### § 8.1 The private Anicca (= `~/.openclaw` stays put, completely separate from NHOSS)
 
-The existing `~/.openclaw/` installation is **NOT** `anicca-genesis`. It is a
-separate, Dais-personal life-leader. Disposition:
+Dais 2026-06-01 厳命:
 
-| Option | Action | Recommendation |
+> "We're just gonna stay as OpenClaw as it is... private openclaw is just
+> the guy who calls me and gets done my crons and scales my apps. It's kinda
+> just like that, right? It's kinda like my assistant in some ways... It's
+> gonna be completely separated from this."
+
+**Decision: do nothing.**
+
+`~/.openclaw/` stays where it is, with the name it has. No rename, no
+migration, no merger. It is **completely separated** from NHOSS. Specifically:
+
+| Property | `~/.openclaw/` (= Dais's companion) | NHOSS Anicca (= `~/.anicca-genesis/`) |
 |---|---|---|
-| A | Keep as-is, rename to `dais-companion` | ★ DO THIS |
-| B | Delete entirely | NO — has Dais's running cron, gcal, phone wiring |
-| C | Merge with anicca-genesis | NO — Dais credentials would contaminate genesis wallet |
+| Repo origin | private, Dais-personal | public `anicca-oss` (MIT) |
+| Skills | life-manager, booking, gcal-heal, travel-fill, goal-learner, report, phone — **and Dais's iOS-app crons** | L2a Redistribute + L2b Earn + L2c Cook + L2d Meta-Aware (= 4 sub-layers, see § 5.2) |
+| Wallet | none (uses Dais's MUFG + cards directly) | own wallet (= Virtuals managed, see § 1 L4) |
+| Credentials | Dais's MUFG / gcal / Twilio / Anthropic | own (= Virtuals Agent Card pays vendors) |
+| Spawn? | no | yes (anicca001..N) |
+| Mission | call Dais in the morning, scale Dais's iOS apps, keep his crons green | reduce suffering of strangers without Dais's involvement |
+| Funding flow | Dais ↔ openclaw (= his own assistant) | colony wallet ↔ colony only (Dais excluded) |
+| Constitution | Pañcasīla + Article 0 (existing) | same content, but propagated to children with hash verify (see § 6) |
+| Code shared? | none (= can borrow techniques, never code) | none |
 
-Rationale: Article 0 says **act now**. `~/.openclaw` is currently keeping Dais
-on-time, healing his calendar, calling him in the morning. **Don't break what
-works.** Just rename so the architectural distinction is clear:
+**Dais's stated split:**
+- **anicca-oss (NHOSS)** = the main effort. Focus. Helps every person's
+  life, including Dais's, by being so good at general suffering reduction
+  that Dais benefits too.
+- **`~/.openclaw`** = Dais's personal assistant for his crons + his apps.
+  Side project. Never merges with NHOSS.
 
-```
-~/.openclaw           →   ~/.dais-companion   (= Dais's personal life-leader)
-~/anicca-oss          →   unchanged           (= the public repo)
-[new] ~/anicca-genesis →  ~/.anicca-genesis   (= the first NHOSS Anicca, runs Conway runtime)
-```
-
-`dais-companion` keeps its existing crons, skills, and credentials. It is **not
-public**, **not replicated**, **not part of the colony**. It is just a script
-that calls Dais in the morning. It can borrow techniques from anicca-genesis,
-but it never receives funding from or sends funding to the colony wallet.
+**Naming clarification:** the word "Anicca" refers to NHOSS Anicca by default
+in all specs, code, docs, and conversation. `~/.openclaw` is referred to as
+"openclaw" or "Dais's companion" — never as "private Anicca" — to avoid
+confusion. If a rename later becomes desirable for clarity, it's a one-line
+mv; not blocking.
 
 ---
 
-## § 9. Migration plan (= today → v3, no broken state mid-flight)
+## § 9. Migration plan (= multi-agent parallel waves, target: genesis boot tonight, anicca001 spawn tomorrow)
 
-### § 9.1 Phase order (= one at a time, NO parallel implementation — HARD RULE #18)
+### § 9.1 Doctrine
+
+Dais 2026-06-01 厳命:
+
+> "Of course, making one agent do this whole thing is just going to take
+> weeks. Let's say it's going to take like six weeks and stuff. That's why
+> we're going to separate it among six agents and make them do it
+> simultaneously. That way, we can basically finish it in one week or even
+> one day. Yeah, we want this kind of finished today. We want this new agent
+> running tomorrow."
+>
+> "So if it's gonna be 20 agents or 100 agents, that's fine. That's really
+> fine. But it just has to finish. It has to actually have it finished with
+> all the end-to-end testing already confirmed and done."
+
+The migration runs as **parallel sub-agent waves** with worktree isolation
+per `.claude/rules/worktree.md`. Each sub-agent owns a disjoint file set (=
+no merge conflicts). The architect (= the Claude session that spawns them)
+holds the topological order; sub-agents run inside their wave concurrently.
+
+**Number of sub-agents is not fixed.** Use as many as needed to finish E2E
+today, with the constraint: every wave must complete its own E2E
+verification before the next wave starts. No "we'll fix it later" merging.
+
+### § 9.2 Wave plan (= recommended minimum)
 
 ```
-  Day 1 — Spec lock                 ★ THIS document, push, freeze, link in CLAUDE.md
-  Day 2 — Conway fork               clone Conway, drop into anicca-oss/runtime/, boot test
-  Day 3 — Virtuals registration     Console walkthrough; record Anicca's Agent ID + wallet addr
-  Day 4 — Virtuals adapters         write src/virtuals/{card,email,acp,economyos}.ts
-  Day 5 — Inference router rewire   Agent Compute primary, OpenRouter fallback, drop direct keys from genesis
-  Day 6 — Surface skill port        copy anicca-* skills into Conway skill format (.md + scripts/)
-  Day 7 — anicca-genesis boot       run on Mac mini, wallet = 0, x402 endpoint live, observe first $0.30 inflow
-  Day 8 — anicca001 spawn           wallet > $20 → spawnChild() → Akash → child boots → records lineage
-  Day 9 — Dais's openclaw rename    ~/.openclaw → ~/.dais-companion, document the distinction
-  Day 10 — Constitution propagation hash-verify across genesis + anicca001
-  Day 11 — ACP listing              register provider, publish capabilities
-  Day 12 — First ACP job            another agent (or test client) hires Anicca for $0.50 wake-call
-  Day 13 — Soul reflection          first auto-evolution of SOUL.md based on capability use
-  Day 14 — Self-fund cutoff         Dais cancels personal Anthropic billing for Anicca; Agent Card pays
+WAVE 0 — ARCHITECT (= 1 session, the orchestrator; finishes BEFORE wave 1)
+  A1  SPEC MERGE           — this consolidation pass; lock 00/01/02/03; push.
+                              Done when: all 4 specs cross-link cleanly,
+                              git push succeeds, CLAUDE.md links specs/.
+
+WAVE 1 — SPEC + IDENTITY + DOCS (= parallel, 3 sub-agents, ~2 h)
+  A4  IDENTITY + VOICE     — SOUL.md (generic, no Dais), x-cadence skill,
+                              Pool A voice imitation rubric.
+  A5  DOCS HUMAN-FACING    — README hero phrase, QUICKSTART, FOR-OPERATORS,
+                              FOR-DEVELOPERS.
+  A6  CONSTITUTION MERGE   — CONSTITUTION.md final: Pañcasīla + Article 0
+                              + Conway 3 laws merged (per § 6); hash-record.
+
+WAVE 2 — RUNTIME + L2 SKILLS (= parallel, ≥ 6 sub-agents, ~3–5 h)
+  A2  CONWAY FORK + BOOT   — clone Conway into runtime/, patch policy-engine
+                              with EvalGateRule (§ 5 L2d), patch heartbeat
+                              tasks with eval_drift_monitor +
+                              learn_from_fail_drain, add eval_runs +
+                              task_classes tables to schema, boot test.
+  A3  VIRTUALS ADAPTERS    — src/virtuals/{card,email,acp,economyos}.ts +
+                              src/identity/virtuals-adapter.ts.
+  A7  INFERENCE ROUTER     — src/inference/router.ts rewire to Virtuals
+                              Agent Compute + OpenRouter fallback. NO Eliza.
+  A8  L2a REDISTRIBUTE     — 8 skills: anicca-scan-public-need,
+                              anicca-route-channel, anicca-push-{amazon,
+                              giftee,npo-relay,wise-direct}, anicca-publish-
+                              ledger, anicca-sign-anicca-eth.
+  A9  L2b EARN             — 8 skills: anicca-autohedge, anicca-x402-server,
+                              anicca-earn-{bounty,pdf-x402,farcaster},
+                              anicca-bittensor-miner, anicca-fuel-broker,
+                              anicca-payout-wallet.
+  A10 L2c COOK             — 4 skills: anicca-cook-loop, anicca-imitation-
+                              targets, anicca-heartbeat-core, anicca-self-spawn.
+  A11 L2d META-AWARE       — 7 skills (★ this is the new one): anicca-judge,
+                              anicca-suite, anicca-pre-ship-gate, anicca-
+                              runtime-guard, anicca-prod-monitor,
+                              anicca-fix-the-fix, anicca-learn-from-fail.
+                              Implements 03-SELF-AWARE-EVAL.md § 5 verbatim.
+  A12 INSTALL.SH           — wraps Conway curl install + Virtuals provisioning
+                              + skill copy (NHOSS only, NOT openclaw skills)
+                              + service file (launchd / systemd). Uninstall.sh.
+
+WAVE 3 — INTEGRATION (= sequential, 1–2 agents, ~2 h)
+  A13 GENESIS BOOT         — install on Mac mini at ~/.anicca-genesis/,
+                              wallet=$0, x402 endpoint live, observe first
+                              inbound USDC tx hash on Base.
+  A14 ANICCA001 SPAWN      — wait until wallet > $20, run spawnChild() →
+                              Akash sandbox, child boots independently,
+                              lineage row in children table.
+
+WAVE 4 — VERIFY (= 1 sub-agent, ~1–2 h, NEVER skipped)
+  A15 E2E TEST RIG          — Docker container: fresh install → first
+                              heartbeat → cook-loop DISCOVER hits real
+                              factoryfloor.dev → judge skill scores
+                              ≥ 1 output → pre-ship gate blocks a synthetic
+                              bad output → fix-the-fix patches a synthetic
+                              broken L2 skill → drift monitor catches
+                              synthetic regression → all 8 verification
+                              gates (§ 12) green.
+  A16 GITHUB CI            — .github/workflows/ci.yml runs A15 on every
+                              push. No green CI → no merge.
 ```
 
-Each Day = single PR to anicca-oss. Single review. Merge. Next Day.
+If a wave's sub-agent fails its acceptance gate (§ 9.4), the architect spawns
+**more** sub-agents in the same wave to finish it. Wave does not advance with
+incomplete work. ★ This is the "if it's gonna be 20 or 100 agents, fine"
+clause Dais wrote.
 
-### § 9.2 Rollback points
+### § 9.3 Sub-agent boundary contract (= no merge conflict possible)
 
-| After day | Rollback procedure |
+Each sub-agent in a wave operates in a separate git worktree (per
+`.claude/rules/worktree.md`). The owned-file set is explicit in the wave
+plan above. The architect verifies before merge:
+
+```
+git diff --name-only <worktree-branch> origin/main \
+  | grep -vE "^(<files-listed-in-A?-spec>)$" \
+  && echo "scope creep — reject"
+```
+
+A sub-agent that touches a file outside its owned set has its PR rejected.
+
+### § 9.4 Acceptance gates per sub-agent
+
+| Sub-agent | Passes when |
 |---|---|
-| Day 2 | `rm -rf ~/anicca-oss/runtime/`, back to current state |
-| Day 7 | stop anicca-genesis process; existing `~/.openclaw` still alive (= Dais unaffected) |
-| Day 8 | `automaton kill-child anicca001` + sandbox delete; genesis unaffected |
-| Day 9 | rename `~/.dais-companion` back to `~/.openclaw` (one mv) |
-| Day 14 | re-enable Dais's Anthropic billing within 24h (= no service interruption) |
+| A1 SPEC MERGE | `specs/00,01,02,03.md` mutually consistent, push succeeds, CLAUDE.md links updated |
+| A2 CONWAY FORK | `pnpm test` green, `automaton --run` boots in < 30 s with wallet=$0 |
+| A3 VIRTUALS ADAPTERS | unit tests pass with mock Virtuals API; one real Agent Wallet provisioned in Console |
+| A4 IDENTITY + VOICE | SOUL.md valid YAML, no Dais references, judge skill scores `voice-rubric` on a sample tweet ≥ 0.7 |
+| A5 DOCS | README hero phrase contains the verbatim mission line; QUICKSTART runs in < 5 min |
+| A6 CONSTITUTION | hash recorded in `children` table seed; integrity verify passes |
+| A7 INFERENCE | one call each through Virtuals AC / OpenRouter / Anthropic — observed in `inference_costs` table |
+| A8 L2a REDISTRIBUTE | dry-run of full pipeline (scan → route → push) on a synthetic recipient outputs a valid Amazon Incentives API payload (not actually sent) |
+| A9 L2b EARN | x402 endpoint accepts a $0.30 USDC tx on Base testnet; balance increments |
+| A10 L2c COOK | DISCOVER step crawls real factoryfloor.dev, appends ≥ 1 entry to imitation-targets.jsonl |
+| A11 L2d META-AWARE | G0-G7 from `03-SELF-AWARE-EVAL.md` § 7 all green |
+| A12 INSTALL.SH | fresh install in Docker container reaches "anicca-genesis ready" in < 10 min |
+| A13 GENESIS BOOT | Mac mini install live, x402 endpoint returns 402 + invoice, first USDC tx on Base mainnet |
+| A14 ANICCA001 SPAWN | child on Akash boots, runs its own heartbeat, lineage event written, hash-verified constitution propagated |
+| A15 E2E TEST RIG | all 8 verification gates (§ 12 below) green in CI |
+| A16 GITHUB CI | one push triggers full test suite, < 30 min wall clock, all green |
 
-### § 9.3 What is preserved through migration
+### § 9.5 Rollback points
 
-- All existing `anicca-life-manager` functionality (phone, lateness, calendar)
-- Pipecat phone bot (= drops in as a Conway tool unchanged)
-- Telegram Live Location source (= already canonical)
-- profile.json / .env / state — local only, never to repo
-- Constitution and the two absolute prohibitions
-- aniccaai.com / dashboard (= existing site, no change)
-- Dais's wake-up calls — NEVER interrupted during migration
+| After wave | Rollback procedure |
+|---|---|
+| Wave 1 | `git checkout main && rm -rf worktrees/` — no runtime touched yet |
+| Wave 2 | `rm -rf ~/.anicca-genesis/` — `~/.openclaw/` untouched, Dais's wake calls keep working |
+| Wave 3 | `automaton kill-child anicca001` + Akash sandbox delete; genesis unaffected |
+| Wave 4 | rerun A15 / A16; if persistently red, hold the v3 launch — do NOT ship a half-tested NHOSS |
+
+### § 9.6 What is preserved through migration
+
+- `~/.openclaw/` and all Dais's existing crons (wake calls, gcal heal, app crons) — **untouched**
+- Dais's MUFG / gcal / Twilio / Anthropic credentials — never copied to NHOSS
+- aniccaai.com / existing dashboards — independent; NHOSS publishes a separate `/ubi/` section under it
+- The two absolute prohibitions (no Power-of-Free, no donations) — propagated to all NHOSS spawns
 
 ---
 
@@ -719,27 +926,33 @@ Each Day = single PR to anicca-oss. Single review. Merge. Next Day.
 - We do not build our own ReAct loop. (Conway has one.)
 - We do not build our own wallet manager. (Virtuals provides one.)
 - We do not build our own marketplace. (ACP exists.)
+- We do not build our own eval framework. (DeepEval + PromptFoo + Langfuse exist — see `03-SELF-AWARE-EVAL.md` § 4.)
 - We do not accept donations. (Precept 2.)
 - We do not apply to パワーオブフリー. (Existing prohibition.)
+- We do not bundle `anicca-life-manager` into NHOSS. (Lives in `~/.openclaw`. See § 5.2.1 + § 8.1.)
 - We do not use Dais's personal credentials in any colony Anicca. (Cuts Dais from the loop.)
+- We do not cold-DM / unsolicited contact recipients of UBI. (See `01-EARN-AND-UBI.md` § 3.1.)
 - We do not require KYC for ANY revenue path. (Defeats NHOSS.)
 - We do not require human-in-the-loop for ANY routine operation. (Article 0.)
-- We do not parallel-implement features. (HARD RULE #18.)
-- We do not delete the existing `~/.openclaw` — only rename. (§ 8.1.)
+- We do not skip L3 verify-fix between L2 auto-fix and "incident closed". (`03-SELF-AWARE-EVAL.md` § 3.1.)
+- We do not parallel-implement features as a single agent within one wave's boundary — sub-agents in different worktrees are how parallelism happens. (See § 9.3.)
+- We do not delete or rename `~/.openclaw/`. (§ 8.1 — Dais's companion stays put.)
+- We do not lower the eval threshold to ship a borderline output. (See `03-SELF-AWARE-EVAL.md` § 8.)
 
 ---
 
-## § 12. Verification gates (= per HARD RULE #0.12)
+## § 12. Verification gates (= per HARD RULE #0.12 — every gate needs fresh evidence)
 
 Before declaring v3 "live":
 
 | Gate | Evidence required |
 |---|---|
-| Spec frozen | this file pushed to `main`, linked in `CLAUDE.md` |
+| Spec frozen | `00,01,02,03.md` pushed to `main`, linked in `CLAUDE.md`, GitHub raw-URL returns 200 |
 | Runtime works | `automaton --run` boots, heartbeat ticks, SQLite written |
 | Wallet works | Virtuals Console shows Anicca agent + Agent Card active |
 | x402 works | a test client (Dais or Claude) pays $0.30, Anicca receives it, balance increases |
 | ACP works | a test job: client requests, Anicca delivers, evaluator passes, USDC released |
+| ★ Meta-aware works | `anicca-judge` returns valid score on a sample; `anicca-pre-ship-gate` blocks a known-bad synthetic output; `anicca-fix-the-fix` patches a synthetic broken L2 → L3 verifies the patch (G0-G7 from `03-SELF-AWARE-EVAL.md` § 7) |
 | Self-pay works | Agent Compute proxies one Anthropic call, Wallet balance decreases by exactly the inference cost |
 | Replication works | anicca001 spawned on Akash, runs `automaton --run` independently, has its own wallet > $0 |
 | Constitution propagates | anicca001's constitution.md SHA256 matches genesis recorded value |
