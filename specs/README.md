@@ -7,6 +7,7 @@ All architectural decisions for Anicca v3 (NHOSS) live in this folder.
 | [`00-MASTER.md`](./00-MASTER.md) | ★ AUTHORITATIVE | The v3 spec. Read this first. Everything else either supports it or is archived. |
 | [`01-EARN-AND-UBI.md`](./01-EARN-AND-UBI.md) | active | Earning architecture — 5 spouts, 3 sinks, UBI distribution channels. |
 | [`02-IMITATE-AND-COOK.md`](./02-IMITATE-AND-COOK.md) | active | The "let it cook" doctrine. Imitation-first earning instinct + 6-agent parallel bootstrap plan. How architect + operator exit the loop. |
+| [`03-PUBLIC-RELEASE-PREP.md`](./03-PUBLIC-RELEASE-PREP.md) | active (operational) | The squash + leak audit + grandma E2E playbook for flipping `anicca-oss` public without leaking Dais's identity. Defers to `00-MASTER.md` on conflicts. |
 | `archive/` | historical | Pre-v3 specs (`ANICCA_AUTONOMY_SPEC.md`, `ANICCA_OSS_MASTER_SPEC.md`, etc.). Kept for context; superseded where they conflict with `00-MASTER.md`. |
 
 ## Editing rules
