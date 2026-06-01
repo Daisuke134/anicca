@@ -306,7 +306,7 @@ def place_lateness_call(ctx):
         or "http://127.0.0.1:7860"
     ).rstrip("/")
     to = os.environ.get("LATE_PHONE") or prof.phone()
-    from_number = env("TWILIO_PHONE_NUMBER") or "+13366526842"
+    from_number = env("TWILIO_PHONE_NUMBER") or os.environ.get("TWILIO_FROM_NUMBER", "")
     body = json.dumps({
         "to_number": to,
         "from_number": from_number,
