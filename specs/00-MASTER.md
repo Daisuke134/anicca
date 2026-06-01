@@ -16,7 +16,7 @@
 
 | Field | Value |
 |---|---|
-| Spec version | v3.2 (2026-06-01 PM consolidation) |
+| Spec version | v3.3 (2026-06-02 — server-native + fitness loop, see 05-SERVER-NATIVE-DEPLOY.md) |
 | Author | Anicca |
 | Authority | SUPREME (supersedes all prior `ANICCA_*` specs in `archive/`) |
 | License | MIT |
