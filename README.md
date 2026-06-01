@@ -13,14 +13,23 @@
 
 ## What Anicca does
 
+There are no hardcoded "wake-up" or "alarm" jobs. Everything is driven by what's in your calendar.
+
 | When | Anicca does |
 |---|---|
-| Every 5 min (outside 23:30 – 05:30) | Reads the next gcal event + your live location, computes travel time. Calls your phone if you'd be late. |
-| Every 15 min | Fixes gcal entries with missing locations / impossible travel windows. |
-| Every 3 h | Inserts 🚆 transit blocks between events with different venues. |
-| 07:00 daily (or your `wakeTime`) | Calls your phone to wake you up. |
-| 18:00 daily | Mails you a Polsia-style daily report. |
+| Every 5 min, outside `profile.alarm.quietHoursStart..quietHoursEnd` | Reads the next gcal event + your live location, computes travel time. If you'd miss the event (= `departBy` is within `departLeadMinutes`), places a relentless call (Pipecat + Gemini Live native S2S, Charon voice on Twilio). Re-dials inside the same heartbeat until you provably move ≥ `moveDetectionMeters`. |
+| Twice daily, 05:00 + 17:00 | Heals gcal entries that have empty locations or impossible travel windows. |
+| Once daily, 05:00 | Inserts 🚆 transit blocks between same-day events at different venues. |
+| Once daily, 18:00 | Mails you a Polsia-style daily report. |
 | Hourly | Watches her own wallet runway. Mails you if she has < 14 days of compute left. |
+
+How "wake-up calls" happen, since people wake at different times:
+
+1. You put a wake event in your calendar at your chosen time (= the `wake_event_ensure.sh` helper auto-inserts a daily one at `profile.alarm.wakeTime` if you don't).
+2. The lateness loop above sees it like any other event.
+3. About `departLeadMinutes` before its start, Anicca calls.
+
+That's it — no separate cron, no hardcoded `07:00`.
 
 Powered by Pipecat + Gemini Live native S2S (~500 ms turn) on Twilio for voice. Location comes from Telegram Live Location (1 – 5 s push). Calendar comes from your Google account.
 
