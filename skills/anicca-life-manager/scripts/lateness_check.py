@@ -2,13 +2,13 @@
 """
 lateness check — the core of the never-be-late loop.
 
-Combines (a) gcal departure times [gcal_departures.py] with (b) the user's live
+Combines (a) gcal departure times [gcal_departures.py] with (b) Dais's live
 location [loco /loc/latest] and decides whether to fire a realtime "you must
 leave NOW" phone call.
 
 Decision (pure, unit-tested in decide()):
   late risk  ⟺  the next event's departBy is within LEAD minutes (or past)
-                AND the user is still home (within radius) AND not moving.
+                AND Dais is still home (within radius) AND not moving.
 
 On late risk: place a realtime lateness-mode call (Twilio <-> Gemini Live, the
 imokenet bridge) with a context string describing the event + deadline, and
@@ -55,7 +55,7 @@ def is_routine_at_home(summary: str) -> bool:
 ADDR_PATTERNS = (
     re.compile(r"(〒\d{3}-\d{4}\s*[^,;()\n　]+)"),
     re.compile(r"((?:北海道|東京都|京都府|大阪府|[^\s]{1,3}県)[^\s,;()\n　]{2,40})"),
-    re.compile(r"((?:||MUFG)\s+〒?\d{0,3}-?\d{0,4}\s*[^\s,;()\n　]+)"),
+    re.compile(r"((?:NAIST|MUIT|MUFG)\s+〒?\d{0,3}-?\d{0,4}\s*[^\s,;()\n　]+)"),
     re.compile(r"([一-龯ぁ-んァ-ヶ]{2,8}駅)"),
 )
 
@@ -168,10 +168,10 @@ def decide(now, location, departures, home=None, home_radius_m=None, dest=None, 
     # Telegram publishes every 1-5s while user is sharing Live Location.
     # Stale > STALE_MIN → bot died OR user stopped sharing.
     # NEVER silent-skip (causes missed events). Always CALL to confirm where user is.
-    # Trade-off: occasional false call vs guaranteed miss. HARD RULE = 誤発火許容.
+    # Trade-off: occasional false call vs guaranteed miss. Dais 厳命 = 誤発火許容.
     if age_min > STALE_MIN:
         return {"action": "call",
-                "reason": f"location {int(age_min)}m stale — Telegram Live Location may be off; calling to confirm where the user is",
+                "reason": f"location {int(age_min)}m stale — Telegram Live Location may be off; calling to confirm where Dais is",
                 "event": nxt}
 
     # UNIFIED model: departBy is computed from his CURRENT location's ETA (not home),
@@ -286,6 +286,54 @@ def get_departures():
     except Exception:
         print(f"[late] departures parse failed: {out.stderr[:200]}", file=sys.stderr)
         return []
+
+
+def _twilio_call_status(call_sid: str):
+    """GET /Accounts/{sid}/Calls/{call_sid}.json — for RELENTLESS outcome polling."""
+    acct = env("TWILIO_ACCOUNT_SID")
+    tok = env("TWILIO_AUTH_TOKEN")
+    if not (acct and tok and call_sid):
+        return None
+    try:
+        import base64
+        url = f"https://api.twilio.com/2010-04-01/Accounts/{acct}/Calls/{call_sid}.json"
+        auth = base64.b64encode(f"{acct}:{tok}".encode()).decode()
+        req = urllib.request.Request(url, headers={"Authorization": f"Basic {auth}"})
+        with urllib.request.urlopen(req, timeout=15) as r:
+            return json.loads(r.read().decode())
+    except Exception as exn:
+        print(f"[late] twilio status fetch failed: {exn}", file=sys.stderr)
+        return None
+
+
+def _wait_for_call_outcome(call_sid: str, deadline_sec: int = 120):
+    """Poll Twilio until the call reaches a terminal state. Returns (status, duration_sec)."""
+    terminal = {"completed", "no-answer", "busy", "failed", "canceled"}
+    end = time.time() + deadline_sec
+    last = ("unknown", 0)
+    while time.time() < end:
+        d = _twilio_call_status(call_sid)
+        if not d:
+            time.sleep(3); continue
+        status = d.get("status") or "unknown"
+        dur = int(d.get("duration") or 0)
+        last = (status, dur)
+        if status in terminal:
+            return last
+        time.sleep(3)
+    return last
+
+
+def _user_moved(origin_loc, fresh_loc, threshold_m: int):
+    """True if user moved more than threshold_m between origin_loc and fresh_loc."""
+    if not (origin_loc and fresh_loc):
+        return False
+    try:
+        d = haversine_m(origin_loc["lat"], origin_loc["lon"],
+                        fresh_loc["lat"], fresh_loc["lon"])
+        return d >= threshold_m
+    except Exception:
+        return False
 
 
 def place_lateness_call(ctx):
@@ -454,7 +502,7 @@ def main():
 
         # Resolve destination explicitly. Routine events at home get
         # profile.home_address() so the LLM never fabricates a station name
-        # (the "Shinagawa 駅 for sleep" bug, the user 2026-05-31).
+        # (the "Shinagawa 駅 for sleep" bug, Dais 2026-05-31).
         dest_addr, dest_kind = resolve_event_destination(e)
 
         # Pre-compute the actual transit route via Google Maps Web. Skip when
@@ -493,7 +541,7 @@ def main():
         else:
             dest_line = (
                 "、場所は Google カレンダーに未記入。"
-                " ダイスに直接『どこでやる予定?』と聞いてから案内すること。"
+                " {name}に直接『どこでやる予定?』と聞いてから案内すること。"
                 " 駅名や住所を勝手に推測してはいけない"
             )
 
@@ -536,7 +584,7 @@ def main():
             ctx = (
                 f"次の予定『{e['summary']}』は {start} 開始"
                 + dest_line
-                + f"。今ダイスは{place}にいる"
+                + f"。今{name}は{place}にいる"
                 + action_line
                 + " 自宅にいない場合は自宅へ戻るよう促す (= 自宅予定なので)。"
             )
@@ -544,16 +592,62 @@ def main():
             ctx = (
                 f"次の予定『{e['summary']}』は {start} 開始"
                 + dest_line
-                + f"。今ダイスは{place}にいて、{travel_str}{depart} までに出ないと間に合わない"
+                + f"。今{name}は{place}にいて、{travel_str}{depart} までに出ないと間に合わない"
                 + route_block
                 + "。出発地は『家』ではなく上記の現在地。そこから出発するよう案内する。"
                 + " 場所が自宅なら自宅へ戻る案内、explicit なら最寄駅まで歩いて電車で。"
                 + " ルート情報は Google Maps の実データ — 駅名と線名はそのまま使い、"
                 + " 自分の記憶で言い換えない。"
             )
+        # Substitute {name} placeholder in ctx with profile.identity.preferredName
+        # so the model sees the actual name instead of literal "{name}".
+        ctx = ctx.replace("{name}", prof.name() or "you")
+
         sid = place_lateness_call(ctx)
         slack(f"🏃 遅刻防止コール: {d['reason']} → {e['summary']} (call {sid})")
         print(f"[late] placed lateness call sid={sid}")
+
+        # RELENTLESS within-tick loop. HARD RULE: if the user did not pick up
+        # OR did not start moving after the first call, KEEP CALLING in the
+        # SAME heartbeat — do not wait for the next 5-min cron. It is
+        # Anicca's job to actually move the user. Stop only when the user
+        # provably moved (>= moveDetectionMeters from the origin) or after
+        # MAX attempts. Skipped entirely for "guide" (already-moving) and
+        # routine-only nudges.
+        MAX = int(os.environ.get("LATE_RELENTLESS_MAX", "6"))
+        GAP_NOPICKUP_SEC = int(os.environ.get("LATE_RELENTLESS_GAP_NOPICKUP", "60"))
+        GAP_PICKUP_NOMOVE_SEC = int(os.environ.get("LATE_RELENTLESS_GAP_PICKUP_NOMOVE", "120"))
+        MOVE_THRESHOLD_M = int(prof.get("alarm.moveDetectionMeters", 300))
+        origin_loc = loc_now  # captured before any call placed
+
+        for attempt in range(2, MAX + 1):
+            # Poll Twilio for outcome of the previous attempt (max 2 min).
+            status, dur = _wait_for_call_outcome(sid, deadline_sec=120)
+            pickup_seems_real = dur >= 25  # call held > 25s ≈ heard Anicca
+            print(f"[late] RELENTLESS attempt #{attempt-1}/{MAX}: status={status} dur={dur}s pickup_real={pickup_seems_real}")
+
+            # Give the location bridge a moment to push a fresh fix.
+            time.sleep(20)
+            fresh = get_location()
+            moved = _user_moved(origin_loc, fresh, MOVE_THRESHOLD_M)
+            if moved:
+                slack(f"✅ {prof.name() or 'user'} 動き出した — RELENTLESS exit (attempt {attempt-1})")
+                print(f"[late] RELENTLESS exit: user moved >{MOVE_THRESHOLD_M}m")
+                break
+
+            # Not moving → call again. Pick gap based on whether prev call seemed answered.
+            gap = GAP_PICKUP_NOMOVE_SEC if pickup_seems_real else GAP_NOPICKUP_SEC
+            print(f"[late] RELENTLESS no-move — re-dial in {gap}s")
+            time.sleep(gap)
+
+            # Augment ctx with attempt counter so the model knows this is escalation.
+            re_ctx = ctx + f" これで{attempt}回目の連絡。 前回出てくれなかった/動いてくれてない。 もっと強く promote する。"
+            sid = place_lateness_call(re_ctx)
+            slack(f"🔁 RELENTLESS #{attempt}/{MAX}: {e['summary']} (call {sid})")
+            print(f"[late] RELENTLESS placed attempt {attempt} sid={sid}")
+        else:
+            slack(f"⚠️ RELENTLESS exhausted {MAX} attempts on {e['summary']} — escalate via mail")
+            print(f"[late] RELENTLESS exhausted {MAX} attempts")
 
         # If departBy already passed and he's still home, he WILL be late.
         # Don't hard-code the recipient: emit a RENRAKU_NEEDED block with the
