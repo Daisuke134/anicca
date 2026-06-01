@@ -1,0 +1,26 @@
+# `anicca-oss/specs/` — single source of truth
+
+All architectural decisions for Anicca v3 (NHOSS) live in this folder.
+
+| File | Status | What it is |
+|---|---|---|
+| [`00-MASTER.md`](./00-MASTER.md) | ★ AUTHORITATIVE | The v3 spec. Read this first. Everything else either supports it or is archived. |
+| `archive/` | historical | Pre-v3 specs (`ANICCA_AUTONOMY_SPEC.md`, `ANICCA_OSS_MASTER_SPEC.md`, etc.). Kept for context; superseded where they conflict with `00-MASTER.md`. |
+
+## Editing rules
+
+1. **One source of truth.** If a value (model name, port, threshold) appears in
+   both `00-MASTER.md` and a deep-dive file, the master wins. Deep-dives must
+   say "see § N of 00-MASTER.md" rather than restate.
+2. **Never silently delete a section.** If a decision is reversed, move the old
+   paragraph to `archive/` with a date and a one-line reason.
+3. **Date every change at the top of `00-MASTER.md`.** Bump the version field.
+4. **Don't add a new top-level spec file without first asking: does this belong
+   as a section in `00-MASTER.md`?** Usually it does.
+
+## How to read this folder if you've never seen it before
+
+1. Open `00-MASTER.md`.
+2. Read § 0 (Mission), § 1 (Architecture), § 8 (Naming), § 6 (Constitution).
+3. Stop. That's the whole picture. The rest is detail you pull in when you're
+   touching a specific layer.
