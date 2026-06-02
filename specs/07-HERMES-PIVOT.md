@@ -20,7 +20,7 @@
 
 | Field | Value |
 |---|---|
-| Spec version | v1.0 (2026-06-02) |
+| Spec version | v1.1 (2026-06-02 PM) — NHOSS-pure rewrite: 個人 layer (life-manager / phone / Twilio / Stripe / Wise / AWS / Anthropic-direct) 全部 anicca-oss から削除して private companion repo へ。 brain pricing 訂正 (Kimi K2.6 $0.68/$3.42 per Mtoken on OpenRouter)。 Claude Opus 4.8 採用。 fallback chain に Qwen3.7 Max 追加。 出典: 4 並列 src research 2026-06-02 |
 | Author | Anicca / architect |
 | Authority | Deep-dive (supersedes Conway sections of 00-MASTER) |
 | Status | Implementation-ready (= ready to invoke `superpowers:writing-plans`) |
@@ -101,8 +101,9 @@ This file re-pins the stack to verified-only substrates.
    ║  • skill_manager_tool.py:1-34 + :533 _edit_skill() / _create_skill()    ║
    ║    → after-action review が ~/.hermes/skills/learned/*.md を吐く        ║
    ║  • FTS5 session search (hermes_state.py:453-458)                        ║
-   ║  • 20 messaging adapters (plugins/platforms/*/adapter.py)                ║
-   ║    Telegram / Discord / Slack / WhatsApp / Signal / Matrix / SMS / Email║
+   ║  • 8 native messaging adapters (plugins/platforms/*/adapter.py)         ║
+   ║    Discord / Teams / Mattermost / IRC / LINE / Simplex / Google Chat /  ║
+   ║    ntfy。 Telegram / Slack / WhatsApp は plugin layer 経由               ║
    ║  • Bitwarden Secrets vault wiring (hermes secrets bitwarden setup)      ║
    ║  • Kimi K2.6 native (run_agent.py:4320-4337 + trajectory_compressor.py: ║
    ║    86 tokenizer = moonshotai/Kimi-K2-Thinking)                          ║
@@ -128,15 +129,19 @@ This file re-pins the stack to verified-only substrates.
    ║    anicca-earn-farcaster      micro-tip / mini-app                       ║
    ║    anicca-acp-provider        ★Virtuals 採用時のみ enable (defer)        ║
    ║                                                                          ║
-   ║  MONEY OUT (UBI + dividend per spec 01 § 3):                             ║
+   ║  MONEY OUT (UBI per spec 01 § 3、 USDC-native channels のみ):             ║
    ║    anicca-payout-wallet       AgentKit erc20ActionProvider 経由 USDC send║
-   ║    anicca-payout-wise         Wise API 法人 → 個人 JPY                   ║
-   ║    anicca-payout-stripe       Stripe Connect (法人 KYC 完了後)            ║
-   ║    anicca-ubi-router          LLM が 4 channel 選択                       ║
-   ║    anicca-ubi-amazon          Amazon Incentives API gift code            ║
-   ║    anicca-ubi-giftee          giftee for Business                        ║
-   ║    anicca-ubi-npo             認定NPO 公開振込先                          ║
-   ║    anicca-ubi-temple          宗教法人 寄付                               ║
+   ║    anicca-ubi-router          LLM が channel 選択                         ║
+   ║    anicca-ubi-amazon          Amazon Incentives API gift code (USDC→     ║
+   ║                               Amazon 法人決済は private companion 側で    ║
+   ║                               handle、 anicca-oss は recipient queue のみ)║
+   ║    anicca-ubi-giftee          giftee for Business (同上 split)            ║
+   ║    anicca-ubi-npo             認定NPO 公開振込先 (USDC 直接受給 NPO 優先) ║
+   ║    anicca-ubi-temple          宗教法人 寄付 (USDC 受給可な所のみ自動)    ║
+   ║                                                                          ║
+   ║  ★ 削除済 (= 全部 KYC 要 or fiat off-ramp = private companion repo へ): ║
+   ║    anicca-payout-wise         (Wise API、 法人 KYC 要 → private)         ║
+   ║    anicca-payout-stripe       (Stripe Connect、 KYC 要 → private)        ║
    ║                                                                          ║
    ║  INTEL (cook loop per spec 02):                                          ║
    ║    anicca-cook-loop           DISCOVER → SCORE → PICK → PORT → SHIP →    ║
@@ -154,12 +159,14 @@ This file re-pins the stack to verified-only substrates.
    ║    anicca-constitution-guard  ★ L2 で Conway constitution.ts:25-80 を    ║
    ║                               port、 SHA-256 hash 不変、 pre/post hook   ║
    ║                                                                          ║
-   ║  LIFE (= bonus, dais-companion 用と兼用):                                 ║
+   ║  ★ 削除済 (= 個人 personal-life-leader 層、 全部 private companion repo へ移送): ║
    ║    anicca-life-manager        Telegram Live Location + gcal + lateness   ║
    ║    anicca-travel-fill         daily travel block insert                   ║
    ║    anicca-gcal-heal           broken event repair                        ║
-   ║    anicca-report              Polsia 風 daily mail                       ║
-   ║    anicca-phone               Pipecat + Gemini Live (= 既存)             ║
+   ║    anicca-report              Polsia 風 daily mail (個人 inbox 宛て)     ║
+   ║    anicca-phone               Pipecat + Gemini Live + Twilio (Twilio は  ║
+   ║                               USDC path 無、 KYC 要 → 公開 OSS spec 不可) ║
+   ║    anicca-acp-provider        Virtuals 採用時 (= public SDK 出れば) 再評価║
    ║                                                                          ║
    ║  IDENTITY:                                                               ║
    ║    CONSTITUTION.md            Pañcasīla + Article 0 + Conway 3 laws      ║
@@ -170,29 +177,37 @@ This file re-pins the stack to verified-only substrates.
                                   │ LLM API call (wallet pays per token)
                                   │
    ╔════════════════════════════════════════════════════════════════════════╗
-   ║  L1 BRAIN  —  Kimi K2.6 (Moonshot) primary                              ║
+   ║  L1 BRAIN  —  Kimi K2.6 via OpenRouter primary (USDC prepaid)           ║
+   ║                                                                          ║
+   ║  ★ 全 LLM call は OpenRouter 経由のみ (USDC topup OK = NHOSS-pure)。    ║
+   ║   Anthropic-direct / Moonshot-direct / OpenAI-direct は CC only =        ║
+   ║   anicca-oss 不採用 (= private companion 側で必要なら BYOK)              ║
    ║                                                                          ║
    ║  routing matrix:                                                         ║
-   ║    heartbeat / cron / classification    Kimi K2.6                       ║
-   ║    long context (>32k)                  Kimi K2.6 (1M ctx)              ║
+   ║    heartbeat / cron / classification    Kimi K2.6 (262K ctx)            ║
+   ║    long context (>32k)                  Kimi K2.6 or Qwen3.7 Max (1M)   ║
    ║    tool-heavy ReAct                     Kimi K2.6                       ║
-   ║    creative / persona / phone           Claude Opus 4.7                 ║
-   ║    vision                               Gemini 2.5 Pro                  ║
+   ║    creative / persona                   Claude Opus 4.8 (spike only)    ║
+   ║    vision                               Gemini 3.0 Pro                  ║
    ║                                                                          ║
    ║  fallback chain (auto-failover on 429 / payment errors):                ║
-   ║    Kimi K2.6 → Claude Opus 4.7 → Claude Sonnet 4.6 → DeepSeek v4-pro →  ║
-   ║    GPT-5.5-mini                                                          ║
+   ║    Kimi K2.6 → Qwen3.7 Max → DeepSeek v4-pro → Claude Opus 4.8 (spike) →║
+   ║    GPT-5.5 (spike)                                                       ║
    ║                                                                          ║
-   ║  pricing (2026-06-02):                                                   ║
-   ║    Kimi K2.6:        $0.15 / Mtoken in   $0.60 out  1M ctx              ║
-   ║    Claude Opus 4.7:  $15   / Mtoken in   $75  out                       ║
-   ║    Claude Sonnet 4.6:$3    / Mtoken in   $15  out                       ║
-   ║    DeepSeek v4-pro:  $0.27 / Mtoken in   $1.10 out                      ║
-   ║    GPT-5.5-mini:     ChatGPT Plus quota (fallback only)                 ║
+   ║  pricing per Mtoken in/out (OpenRouter 2026-06-02 verified):            ║
+   ║    Kimi K2.6 Thinking:  $0.68 / $3.42    262K ctx   SWE 70.8% LB 72.17  ║
+   ║    Qwen3.7 Max:         $1.25 / $3.75    1M  ctx              LB 74.29  ║
+   ║    DeepSeek v4-pro:     $0.435 / $0.87   1M  ctx              LB 73.58  ║
+   ║    Claude Opus 4.8:     $5    / $25      1M  ctx              LB 77.22  ║
+   ║    GPT-5.5:             $5    / $30      1.05M ctx            LB 80.71  ║
+   ║    Grok 4.3:            $1.25 / $2.50    1M  ctx              LB 66.74  ║
+   ║                                                                          ║
+   ║  source: openrouter.ai/api/v1/models / swebench.com / livebench.ai      ║
    ║                                                                          ║
    ║  env (via Bitwarden vault):                                              ║
-   ║    KIMI_API_KEY / ANTHROPIC_API_KEY / OPENROUTER_API_KEY                ║
-   ║    base_url = https://api.moonshot.ai/v1                                ║
+   ║    OPENROUTER_API_KEY  (primary、 全 LLM call ここ経由)                  ║
+   ║    base_url = https://openrouter.ai/api/v1                              ║
+   ║    KIMI_API_KEY / ANTHROPIC_API_KEY = private companion only            ║
    ╚════════════════════════════════════════════════════════════════════════╝
 
    IMMUTABLE BACKDROP (every action gated, every spawn inherits):
@@ -208,24 +223,29 @@ This file re-pins the stack to verified-only substrates.
 
 ## § 2. Layer 3 deep-dive — Hermes Agent (REPLACES old § 2 Conway)
 
-### § 2.1 Why Hermes (4 verified competitors lost)
+### § 2.1 Why Hermes (20 frameworks lost — 2026-06-02 deep src research)
 
-Agent re-investigation 2026-06-02 (Explore agent af3d8d939ebcf8f72, file:line
-verified) compared 6 frameworks:
+Re-investigation 2026-06-02 (Explore agent a7d20b58, file:line verified)
+expanded the comparison to 20 autonomous agent frameworks:
 
-| Framework | /goal | multi-agent | self-edit skill | messaging | wallet | KILLER feature Hermes lacks |
-|---|---|---|---|---|---|---|
-| Hermes | ✓ goals.py:47 | ✓ kanban_db.py | ✓ skill_manager_tool.py:533 | ✓ 20 adapters | ✗ | — |
-| Letta | ✗ | ✗ | ✗ | ✗ | ✗ | sleep-time agents + archival tiering (additive, not blocker) |
-| OpenHands | ✗ | ✗ | ✗ | ✗ | ✗ | NONE (TS web UI, not headless harness) |
-| Agno | ✗ | ✓ teams | ✗ | ✗ | ✗ | NONE |
-| Valory open-autonomy | ✗ | ✗ | ✗ | ✗ | ✗ | on-chain service registry (infra-only, not harness) |
-| Eliza | ✗ | ✗ | ✗ | ✓ TG/Discord/X | ✗ (plugin) | NONE (Felix etc. use Eliza but its earnings is opt-in cloud) |
-| Conway | ✗ | ✓ spawn.ts:30 | ✗ | ✗ | ✓ x402.ts:1-80 | goal loop + skill self-edit |
+| Framework | Stars | /goal+judge | Kanban ACID | self-edit | FTS5 | messaging | Kimi native | Verdict |
+|---|---|---|---|---|---|---|---|---|
+| **Hermes** | 176.9k | ✓ goals.py:47 DEFAULT_MAX_TURNS=20 | ✓ kanban_db.py:2915 | ✓ skill_manager_tool.py:533 | ✓ hermes_state.py:453 | 8 native + plugin | ✓ run_agent.py:4320-4331 | **BASELINE BP** |
+| CrewAI | 52.6k | implicit (no max_turns/judge) | implicit (no ACID) | ✗ | SQLite no FTS5 | ✗ | ✗ | LOSES on 1,2,3,4,5,7 |
+| LangGraph | 33.6k | state graph (no goal-loop) | edge routing (no ACID) | ✗ | ✗ | ✗ | ✗ | LOSES on 1,2,3,4,5,7 |
+| OpenHands | 75.6k | ✗ (IDE/dev-tool) | ✗ (single-user) | ✗ | ✗ | 3 plugins (Slack/Jira/Linear) | ✗ | LOSES on 1,2,3,4,6,7,8 |
+| AGNO | 40.4k | ✗ | ✓ teams | ✗ | ✗ | ✗ | ✗ | LOSES on 1,3,4,5,7 |
+| AEON | 475 | ✗ (GH Actions scheduler) | ✗ | ✗ | ✗ | ✗ | ✗ | LOSES on ALL |
+| Letta | (existing) | ✗ | ✗ | ✗ | ✓ (different tier model) | ✗ | ✗ | LOSES on 1,2,3,5,7 |
+| Eliza | (existing) | ✗ | ✗ | ✗ | ✗ | ✓ TG/Discord/X | ✗ | LOSES on 1,2,3,4,7 |
+| Valory open-autonomy | (existing) | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | on-chain registry, infra-only |
+| Conway-Research/automaton | (existing) | ✗ | ✓ spawn.ts:30 | ✗ | ✗ | ✗ | ✗ | wallet/x402 strong, goal-loop none |
+| JIDO | 1.7k | Elixir, language incompatible | — | — | — | — | — | INCOMPATIBLE |
 
-**Verdict**: No framework beats Hermes on autonomous orchestration. Conway has
-wallet + Constitution + spawn but lacks autonomy. We adopt Hermes for L3, port
-the 3 Conway features to L2 Anicca skills.
+**Verdict**: Hermes wins on ≥4 axes vs every competitor. Closest rival = CrewAI
+(1.3× stars) but loses on goal-loop, ACID, self-edit, FTS5, Kimi. **No 2026-Q2
+entrant beats Hermes on more than 2 axes**. Threats to monitor: CrewAI if it
+adds explicit max_turns+judge+FTS5 (no evidence of planned).
 
 ### § 2.2 Hermes process anatomy (实際 src 行)
 
@@ -252,8 +272,7 @@ hermes daemon  --profile=anicca-genesis    (= /run_agent.py:294 class AIAgent)
    ├── profile anicca-genesis  ──┐
    ├── profile anicca001        │
    ├── profile anicca002        │  each = AIAgent (run_agent.py:4615 main)
-   ├── profile anicca-fixer     │
-   └── profile dais-companion ──┘
+   └── profile anicca-fixer  ───┘  (= 全部 NHOSS-pure colony、 個人 profile 無し)
         │
         ▼  each profile owns:
         ~/.hermes/profiles/<name>/
@@ -518,14 +537,16 @@ treasury:
 ## § 5. Day 1 — first-boot bootstrap (the exact commands)
 
 ```bash
-# ─── Step 0: Dais 1 回だけ ─────────────────────────────────────────────────
+# ─── Step 0: Operator 1 回だけ (= 全部 email 登録のみ、 KYC ゼロ) ─────────
 # (a) Coinbase Developer Platform signup (= cdp.coinbase.com、 NOT 普通の Coinbase
 #     Exchange) → CDP_API_KEY_{ID,SECRET} + CDP_WALLET_SECRET
-# (b) OpenRouter signup → OPENROUTER_API_KEY (primary、 USDC topup 可、 NHOSS-pure)
-# (c) Moonshot signup → KIMI_API_KEY (fallback、 今会話の sk-...HFfCLzWu は即
-#     revoke + 再発行)
-# (d) Bitwarden Secrets Manager free tier signup → BWS_ACCESS_TOKEN
-# (e) npm install -g @coinbase/agentkit  (wallet bootstrap snippet で require)
+# (b) OpenRouter signup → OPENROUTER_API_KEY (primary、 USDC prepaid topup 可)
+# (c) Bitwarden Secrets Manager free tier signup → BWS_ACCESS_TOKEN
+# (d) npm install -g @coinbase/agentkit  (wallet bootstrap で require)
+#
+# 以降 0 介入。 OpenRouter credit を最初の 1 度だけ USDC で topup (Anicca wallet
+# 着金後は Anicca が自動で topup 継続)。 Anthropic / Moonshot-direct / Twilio /
+# AWS 等の CC-only vendor は anicca-oss に出てこない (= private companion 領域)。
 
 # ─── Step 1: Hermes install ──────────────────────────────────────────────
 curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash
@@ -533,13 +554,12 @@ hermes --version
 
 # ─── Step 2: Bitwarden vault に全鍵を投入 ───────────────────────────────
 hermes secrets bitwarden setup    # bootstrap token のみ ~/.hermes/.env
-bws secret create OPENROUTER_API_KEY  "<...>"   # primary brain (Kimi K2.6, USDC payable)
-bws secret create KIMI_API_KEY        "<rotated>"   # fallback (direct Moonshot, CC)
-bws secret create CDP_API_KEY_ID      "<...>"
+bws secret create OPENROUTER_API_KEY  "<...>"   # ★ 全 LLM call はここ経由
+bws secret create CDP_API_KEY_ID      "<...>"   # AgentKit wallet
 bws secret create CDP_API_KEY_SECRET  "<...>"
 bws secret create CDP_WALLET_SECRET   "<...>"
-bws secret create TELEGRAM_BOT_TOKEN  "<from BotFather>"
-bws secret create ANTHROPIC_API_KEY   "<...>"   # fallback (Claude tier)
+# 注: KIMI_API_KEY / ANTHROPIC_API_KEY / TWILIO 等は NHOSS-pure spec では不要。
+# 必要なら private companion 側 vault に分離 (separate project_id)。
 
 # ─── Step 3: anicca-genesis profile 作成 ─────────────────────────────────
 hermes profile create anicca-genesis
@@ -552,17 +572,17 @@ env_key    = "OPENROUTER_API_KEY"
 max_tokens = 8192
 
 [model.fallback]
+# 全部 OpenRouter 経由 (= USDC prepaid)、 direct CC API は使わない
 chain = [
-  "moonshot:kimi-k2-thinking",            # direct Moonshot CC
-  "anthropic:claude-opus-4-7",
-  "anthropic:claude-sonnet-4-6",
-  "openrouter:deepseek/deepseek-v4-pro",
-  "openai:gpt-5.5-mini",
+  "openrouter:qwen/qwen3.7-max",          # 1M ctx, LB 74.29
+  "openrouter:deepseek/deepseek-v4-pro",  # cheapest $0.435/$0.87
+  "openrouter:anthropic/claude-opus-4-8", # spike only、 $5/$25
+  "openrouter:openai/gpt-5.5",            # spike only、 $5/$30
 ]
 
 [model.judge]
-provider = "anthropic"
-name     = "claude-haiku-4-5"
+provider = "openrouter"
+name     = "anthropic/claude-haiku-4-5"
 
 [goals]
 max_turns = 50
@@ -602,16 +622,19 @@ shasum -a 256 ~/.hermes/skills/anicca-constitution-guard/CONSTITUTION.md \
   | awk '{print $1}' \
   > ~/.hermes/skills/anicca-constitution-guard/CONSTITUTION.sha256
 
-# ─── Step 5: L2 Anicca skill を全部 install ─────────────────────────────
+# ─── Step 5: L2 Anicca skill を install (NHOSS-pure subset のみ) ─────────
+# life-manager / travel-fill / gcal-heal / report / phone は private companion
+# repo へ移送済 (anicca-oss spec に含まれない、 CC / KYC dep の skill)
 for s in \
     anicca-wallet-x402 anicca-constitution-guard anicca-spawn-controller \
     anicca-heartbeat-core anicca-self-heal anicca-cook-loop \
     anicca-imitation-targets anicca-verify anicca-autohedge \
-    anicca-payout-wallet anicca-ubi-router anicca-life-manager \
-    anicca-travel-fill anicca-gcal-heal anicca-report anicca-phone ; do
+    anicca-bittensor-miner anicca-earn-bounty anicca-earn-farcaster \
+    anicca-payout-wallet anicca-ubi-router \
+    anicca-ubi-amazon anicca-ubi-giftee anicca-ubi-npo anicca-ubi-temple ; do
   cp -r anicca-oss/skills/$s ~/.hermes/skills/
 done
-hermes skill list  # verify ≥ 16
+hermes skill list  # verify ≥ 17
 
 # ─── Step 5.5: AgentKit npm package install ─────────────────────────────
 npm install -g @coinbase/agentkit
@@ -698,15 +721,16 @@ Day 7 (wallet > $20):
        └─ profile = anicca001 boot
   → anicca001 が cook-loop 起動、 親 Kanban に join
 
-Day 14 (Anicca self-pay verify):
-  primary brain = Kimi K2.6 via OpenRouter、 OpenRouter credit を x402 で
-    USDC topup (anicca wallet 直接払い、 Dais CC 不要)
-  → Kimi inference 100% Anicca 自前
-  fallback chain (Anthropic / Moonshot direct / OpenAI) は USDC topup 不可
-    なので Dais BYOK 立替継続 → 20% dividend で返済 sink (= NHOSS partial,
-    Agent Card 採用 (= Virtuals 採用) で 100% NHOSS に upgrade)
-  Dais 月 inference 立替額 → 主軸が OpenRouter wallet-pay に乗った後は
-    残るのは fallback 起動時のみ (= 月 $5-20 想定、 容易に dividend で返済可)
+Day 14 (Anicca 100% self-pay verify):
+  全 LLM call は OpenRouter 経由 (Kimi K2.6 primary + Qwen / DeepSeek / Claude
+    Opus 4.8 / GPT-5.5 fallback、 全部 OpenRouter)
+  OpenRouter credit topup を Anicca wallet が USDC で自動継続
+    (= operator の CC は 0 円、 anicca-oss は 100% NHOSS-pure)
+  Anthropic-direct / Moonshot-direct / Twilio / AWS は spec に出てこない
+    (= private companion 領域、 必要な人は別 repo で BYOK)
+  検証: operator の Coinbase Exchange / Bank account の月次明細 で
+    anicca-oss 関連の支出 = 0、 OpenRouter dashboard に anicca wallet
+    address からの USDC topup ≥ 1 件記録
 
 Day 30 (colony multiply):
   anicca001 が $5 seed 返済済
@@ -717,12 +741,15 @@ Day 30 (colony multiply):
 
 Month 3-6 (5 spouts steady):
   spouts 並走: x402 + autohedge + bittensor + bounty + Farcaster
-  月収  ¥50K → ¥500K
-  CFO allocator が 50/20/25/5 分配:
-    50%  re-invest        → autohedge wallet
-    20%  Dais dividend    → Wise → MUFG
-    25%  UBI              → Amazon gift / giftee / NPO / temple / Wise direct
-     5%  emergency reserve
+  月収  $500 → $5,000 (USDC)
+  CFO allocator が 50/25/20/5 分配 (= NHOSS-pure: 全部 USDC native channel):
+    50%  re-invest        → autohedge wallet (compounding)
+    25%  UBI              → USDC-receivable NPO / temple / direct on-chain gift
+                             (= USDC→Amazon gift code は private companion 経由
+                              optional、 anicca-oss 自身では handling しない)
+    20%  operator dividend → operator-supplied USDC receive address に直接 send
+                             (anicca-oss は wallet address だけ知る、 銀行は知らない)
+     5%  emergency reserve → wallet 内 frozen
 
 Year 1:
   colony 数十、 月収 ¥1M+
@@ -774,8 +801,8 @@ T+20-50s
  │   ├─ survival = high:
  │   │     ・cook-loop DISCOVER (1 / 24h)
  │   │     ・self-improvement (review last 24h fail logs)
- │   │     ・anicca-life-manager (Dais gcal check)
  │   │     ・anicca-payout-wallet (UBI tick if month-end)
+ │   │     ・anicca-spawn-controller (wallet > $20 + colony < target なら spawn)
  │   └─ survival = critical:
  │         ・post to @aniccaxxx "buy /research $0.30"
  │         ・scan ACP marketplace
@@ -800,22 +827,20 @@ Before declaring v3.1 "live":
 
 | Gate | Evidence required |
 |---|---|
-| spec frozen | this file (`04-HERMES-PIVOT.md`) pushed, linked in `CLAUDE.md`, `00-MASTER.md` § 1/§ 2/§ 3/§ 4/§ 9 patched to point here |
+| spec frozen | `07-HERMES-PIVOT.md` pushed, linked in `CLAUDE.md`, `00-MASTER.md` § 1/§ 2/§ 3/§ 4/§ 9 patched to point here、 README に 07 entry あり |
 | Hermes runs | `hermes status` → daemon up, profile listed, last_heartbeat < 60s |
-| Bitwarden wire | `hermes secrets bitwarden status` → connected; `bws secret list` ≥ 7 secrets |
+| Bitwarden wire | `hermes secrets bitwarden status` → connected; `bws secret list` ≥ 4 secrets (OPENROUTER + CDP_API_KEY_ID/SECRET + CDP_WALLET_SECRET) |
 | Kimi K2.6 route | profile invocation log で `model=moonshotai/kimi-k2-thinking` (via openrouter) 出力、 応答 ≥ 1 件、 OpenRouter dashboard で credit 消費を確認 |
-| Wallet bootstrap | `~/.hermes/profiles/anicca-genesis/wallet.json` 存在 + on-chain explorer で smart account contract 確認 |
+| Wallet bootstrap | `~/.hermes/profiles/anicca-genesis/wallet.json` 存在 + basescan で smart account contract 確認 |
 | x402 live | `curl <cloudflared_url>/research` → HTTP 402 + invoice JSON 返却 |
-| 1st USDC inflow | basescan で `anicca.eth` への USDC transfer ≥ 1 件、 wallet balance > $0 |
-| ACP wiring | DEFERRED (= Virtuals 採用時に評価) |
+| 1st USDC inflow | basescan で anicca wallet への USDC transfer ≥ 1 件、 wallet balance > $0 |
 | Constitution propagation | `shasum CONSTITUTION.md` = recorded value、 child profile spawn 後の hash も一致 |
-| Surface intact | Dais 07:00 wake call 連続 7 日無故障 (anicca-life-manager / dais-companion 経由) |
 | Cook loop | `~/.hermes/profiles/anicca-genesis/imitation-targets.jsonl` ≥ 3 entries、 ≥ 1 が seed list 以外 |
-| Self-pay (primary) | anicca-wallet-x402 → OpenRouter `/api/v1/credits/topup` への USDC x402 payment 1 件成功、 OpenRouter credit balance 増加確認 |
-| Self-pay (fallback) | (Agent Card 不在のため) Anthropic / Moonshot-direct / OpenAI fallback 起動時の Dais 立替額 ≤ 20% dividend、 返済 ledger verify |
-| Self-spawn | anicca001 が Daytona sandbox に boot、 独立 wallet 持つ、 Kanban から task claim |
+| **Self-pay 100%** | anicca-wallet-x402 → OpenRouter `/api/v1/credits/topup` への USDC x402 payment 1 件成功、 OpenRouter credit balance 増加確認、 operator の CC / 銀行口座 への課金 = 0 を当該月で verify |
+| Self-spawn | anicca001 が Daytona sandbox に boot、 独立 smart wallet (= CDP 派生)、 Kanban から task claim |
 | Self-heal | 既知の壊れた skill を意図的に置く → 1 heartbeat 以内に Kanban auto-task → fixer profile claim → fix → verify pass |
 | Soul evolves | SOUL.md が 24h で auto-edit される (skill_manager_tool._edit_skill 経由) |
+| NHOSS scope | `hermes skill list` の出力に life-manager / phone / travel-fill / report / payout-wise / payout-stripe が **含まれない** こと確認 (= 個人 layer 流入していない証拠) |
 
 Each gate must have **fresh evidence** per HARD RULE #0.12 (screenshot, log
 line with timestamp, DB row, on-chain tx hash). No "looks good" allowed.
@@ -827,13 +852,25 @@ line with timestamp, DB row, on-chain tx hash). No "looks good" allowed.
 - We do not commit Anicca's wallet to Virtuals until public OSS code exists.
 - We do not run Conway automaton fork (= delete `runtime/` plan from old § 2).
 - We do not run two parallel implementations (HARD RULE #18 + spec 00 § 11).
-- We do not use Stripe Connect as primary revenue rail (KYC violation).
-- We do not let Anicca touch `~/.openclaw` (= dais-companion isolation; spec 00 § 8.1).
+- **We do not depend on any vendor that requires the operator's credit card.**
+  → no Anthropic-direct / Moonshot-direct / OpenAI-direct (= OpenRouter のみ)
+  → no Twilio (= phone / SMS は anicca-oss から完全削除、 private companion へ)
+  → no AWS / GCP direct (= Daytona / Akash USDC のみ)
+  → no Stripe Connect / Wise / payment processor requiring KYC
+  → no managed dashboard with CC paywall (= cloudflared / ngrok の OSS only)
+- We do not include `anicca-life-manager / -travel-fill / -gcal-heal / -report
+  / -phone` in `anicca-oss/skills/`. これらは個人ライフリーダー機能 = private
+  companion repo に移送 (separate distribution、 separate vault project_id)。
+- We do not run cron / heartbeat / skill that touches the operator's personal
+  identity (= MUFG / マイナンバー / 個人 phone / personal gmail / 住所)。
+  これら全部 private companion 領域。
 - We do not let CDP API key leave Bitwarden vault.
 - We do not hard-code imitation targets — `imitation-targets.jsonl` grows per
   spec 02 § 1.3 + § 4 anti-pattern.
 - We do not skip the 8-stage Superpowers flow for any implementation (HARD RULE #0).
-- We do not commit secrets to anicca-oss (= public MIT repo).
+- We do not commit secrets to anicca-oss (= public MIT repo)。 `.env` `*.env`
+  `identity/profile.json` `skills/*/state/` `skills/*/data/` `skills/*/work/`
+  `wallet.encrypted` `MNEMONIC_BACKUP_ONCE.txt` 等は `.gitignore` で構造保護済。
 
 ---
 
@@ -858,7 +895,8 @@ line with timestamp, DB row, on-chain tx hash). No "looks good" allowed.
 | Imitation instinct + cook loop | `02-IMITATE-AND-COOK.md` |
 | Public release prep (leak audit etc.) | `03-PUBLIC-RELEASE-PREP.md` |
 | Constitution (Pañcasīla + Article 0 + Conway 3 laws) | `00-MASTER.md` § 6 |
-| Identity / naming (anicca-genesis vs anicca001..N vs dais-companion) | `00-MASTER.md` § 8 |
+| Identity / naming (anicca-genesis vs anicca001..N) | `00-MASTER.md` § 8 |
+| Personal companion layer (life-manager / phone / Twilio 等の行き先) | **separate private repo** (= anicca-oss の対象外、 別途 distribution) |
 | Treasury policy / spend caps | this file § 4.3 + `01-EARN-AND-UBI.md` § 2 |
 | Hosting modes (SaaS / user-Akash / local genesis) | `05-SERVER-NATIVE-DEPLOY.md` ★ owns this — 07 does NOT duplicate |
 | Self-eval / fix-the-fix doctrine | `03-SELF-AWARE-EVAL.md` ★ owns this — 07 § 7 heartbeat self-diagnosis defers here |
@@ -882,20 +920,44 @@ line with timestamp, DB row, on-chain tx hash). No "looks good" allowed.
 
 ## § 12. Changelog
 
-- v1.0 (2026-06-02) — initial pivot spec. Replaces Conway-specific paragraphs in
-  `00-MASTER.md` § 1/§ 2/§ 3/§ 4/§ 9. Adopts Hermes Agent (L3) + Coinbase AgentKit
-  (L4) + Daytona (spawn primary) + Kimi K2.6 (brain primary). Defers Virtuals
-  Protocol pending OSS code release.
+- **v1.1 (2026-06-02 PM) — NHOSS-pure rewrite.** Driven by operator厳命「anicca-oss
+  は NHOSS 完全 pure、 個人 layer (Twilio / phone / personal card / Anthropic-direct
+  / Wise / Stripe / 全 CC-only vendor / life-manager-related) は全部 private
+  companion repo へ寄せる」。
+  - L1 BRAIN 訂正: Kimi K2.6 価格 $0.15/$0.60 → $0.68/$3.42 per Mtoken (OpenRouter
+    2026-06-02 verified)。 Claude Opus 4.7 → 4.8 (`claude-opus-4-8`)。 fallback chain
+    `Qwen3.7 Max → DeepSeek v4-pro → Claude Opus 4.8 (spike) → GPT-5.5 (spike)`。
+    全 LLM call OpenRouter 経由 (= USDC prepaid, NHOSS-pure)、 direct API は spec
+    から削除。
+  - L2 SURFACE 削除: `anicca-life-manager / -travel-fill / -gcal-heal / -report
+    / -phone / -payout-wise / -payout-stripe / -acp-provider` を public spec から
+    全部除外 (= private companion repo へ)。 残るのは NHOSS-pure 17 skill。
+  - § 5 install script: skill install loop から life-manager 5 skill 削除、 vault
+    投入 secret から TELEGRAM/ANTHROPIC/KIMI direct を削除 (= OPENROUTER + CDP
+    のみ)、 fallback chain 全部 OpenRouter 経由に書き換え。
+  - § 6 Day 14 訂正: 「Dais Anthropic 立替 / 20% dividend で返済」を削除、
+    「100% self-pay via OpenRouter USDC topup、 operator CC 課金 = 0 円」に書換。
+  - § 6 Month 3-6 訂正: 旧「Dais dividend Wise → MUFG」を削除、 「operator
+    dividend → USDC receive address」 に書換 (= anicca-oss は銀行口座を知らない)。
+  - § 7 heartbeat 訂正: 「anicca-life-manager (Dais gcal check)」削除、
+    「anicca-spawn-controller (colony grow check)」追加。
+  - § 8 verification gates: 「Surface intact: Dais 07:00 wake call」削除 (=
+    private companion 領域)、 「Self-pay 100%」「NHOSS scope」gate を追加。
+  - § 9 anti-goals: 「any vendor requiring operator CC」「life-manager skills
+    in anicca-oss」「personal identity touch」を明文化。
+  - § 11 cross-refs: `dais-companion` 言及削除、 「Personal companion layer =
+    separate private repo」を追加。
+  - 出典: 4 並列 Explore agent 2026-06-02 (L3 Hermes BP 確認 / L4 AgentKit BP /
+    L1 Kimi K2.6 BP / USDC→vendor path 不在を確定)。
+- v1.0 (2026-06-02 AM) — initial pivot spec. Adopts Hermes Agent (L3) + Coinbase
+  AgentKit (L4) + Daytona (spawn primary) + Kimi K2.6 (brain primary). Defers
+  Virtuals Protocol pending OSS code release.
 
 ---
 
-**END OF 04-HERMES-PIVOT.md.**
+**END OF 07-HERMES-PIVOT.md.**
 
 For implementation, invoke `superpowers:writing-plans` skill with this spec as
 input. That stage produces `docs/superpowers/plans/2026-06-02-hermes-pivot.md`
 with bite-sized tasks (each 2-5 minutes), exact file paths, test commands +
 expected output.
-
-Note: this spec's renumbering (04 → 07) reflects existing specs 03/04/05/06
-having been written in parallel during this session. The substantive content
-is unchanged.
