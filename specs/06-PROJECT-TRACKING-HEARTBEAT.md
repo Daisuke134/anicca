@@ -426,8 +426,149 @@ emails — per `01-EARN-AND-UBI` § 3.4 anti-scam rules).
 
 ---
 
-## § 9. Changelog
+## § 10. v2 PIVOT (2026-06-03) — DON'T BUILD CRON, FORK INBOX ZERO + WIRE MASTRA
+
+### § 10.0 Why v1 was wrong
+
+v1 of this spec proposed `anicca-inbox-watcher` + `anicca-reply-decide` as
+**new cron-fired skills**. Dais's 2026-06-03 race call exposed the rot:
+
+> "That's just sending crons. The original opinion. Easy, simple, optimistic
+> in a good way, very dumb in a bad way — a piece of shit harmful to humanity.
+> Search the repos, actually use them, then tell me what's the best one."
+
+The honest truth after deep search: **NO single OSS solves "watch inbox →
+context-aware reply → action → 24h followup → project-state update → learn
+from outcome" end-to-end**. But **multiple OSS each solve a piece** and one
+of them (Inbox Zero) solves the part v1 of this spec waved away.
+
+### § 10.1 What changed in our understanding
+
+| v1 assumption | v2 correction |
+|---|---|
+| "Reply-tracker / followup-tracker doesn't exist as OSS — we'll write it." | ★ **WRONG.** Inbox Zero's "Reply Zero" feature (https://github.com/elie222/inbox-zero — 11k+ stars, AGPL, actively maintained, "Reply Zero: Track emails to reply to and those awaiting responses") is precisely the followup tracker we said didn't exist. |
+| "Cron sweeps every 5 min are fine for now." | ★ **WRONG.** Gmail Pub/Sub push + Mastra suspend/resume gives event-driven durability with no polling. Cron is rubber-banding around a problem already solved by event streams. |
+| "Write a custom state machine in plain TypeScript." | ★ **WRONG.** Mastra (https://mastra.ai) provides suspend/resume + storage out of the box. LangGraph (Python) does the same. Pick the one that matches the substrate language. |
+| "Each adapter (Gmail / Slack / Linear / Lancers) is a custom skill." | ★ **WRONG.** Composio (https://composio.dev) provides 250+ pre-built tool adapters. Lancers/Coconala may need custom but the 90% is solved. |
+
+### § 10.2 The corrected stack
+
+```
+                                                                                                
+   ┌──────────────────────────────────────────────────────────────────────────────────────┐    
+   │                      ★ Anicca v3 inbox-responder stack ★                              │    
+   ├──────────────────────────────────────────────────────────────────────────────────────┤    
+   │                                                                                      │    
+   │  L3.a daemon orchestrator   ★ Hermes Agent v0.12+ ★ (already installed)                │    
+   │       ~/.local/bin/hermes — 24/7 background process, FTS5 memory, skill registry      │    
+   │       Source: https://github.com/NousResearch/hermes-agent                            │    
+   │                                                                                      │    
+   │  L3.b email-loop reference   ★ Inbox Zero (fork) ★                                     │    
+   │       Repo: https://github.com/elie222/inbox-zero  (AGPL, 11k+ stars, 2026-06-02 act) │    
+   │       Provides: Gmail watch (push + IMAP), AI Assistant rule engine,                  │    
+   │                 Reply Zero followup tracker, multi-identity, bulk unsubscriber        │    
+   │       Fork location: anicca-oss/services/inbox-zero/  (= our customized fork)         │    
+   │                                                                                      │    
+   │  L3.c durable workflow      ★ Mastra ★ (TypeScript, matches Inbox Zero Next.js)       │    
+   │       Repo: https://github.com/mastra-ai/mastra  (MIT, suspend/resume + storage)      │    
+   │       Provides: suspend a workflow mid-step (e.g. "wait 24h for reply"),              │    
+   │                 resume after restart with full state, agent ReAct loops               │    
+   │       Location: anicca-oss/runtime/mastra-graphs/                                     │    
+   │                                                                                      │    
+   │  L3.d action adapters       ★ Composio ★                                              │    
+   │       Repo: https://github.com/ComposioHQ/composio  (250+ tool adapters)              │    
+   │       Provides: Gmail send / Slack / Linear / GitHub / X / Calendar / Notion          │    
+   │       Plus custom: Lancers + Coconala + Bland.ai + AgentMail (our own adapters)       │    
+   │                                                                                      │    
+   │  L3.e project state DB      ★ Conway state.db ★ (reuse — already has projects table)  │    
+   │       ~/.automaton/state.db  schema in § 1                                              │    
+   │       Both Inbox Zero (Postgres → SQLite shim) and Mastra (any KV) write here.        │    
+   │                                                                                      │    
+   │  L4   wallet substrate      ★ Coinbase AgentKit + viem ★ (already wired)              │    
+   │       ~/.anicca-genesis/agentkit/  using ~/.automaton/wallet.json (0xa3CDd...)        │    
+   │                                                                                      │    
+   └──────────────────────────────────────────────────────────────────────────────────────┘    
+                                                                                                
+```
+
+### § 10.3 What we still need to write (= the irreducible glue)
+
+After forking Inbox Zero + installing Mastra + Composio, the gap is:
+
+1. **Project-aware prompt injection** (= 100 LOC) — when Inbox Zero's rule
+   engine fires, inject the project context from `projects` table into the
+   LLM prompt. Inbox Zero by default treats each email standalone.
+
+2. **Reply Zero → projects bridge** (= 50 LOC) — Inbox Zero's Reply Zero
+   tracks "did they reply". We bridge that signal into the `projects.next_action_at`
+   field so multi-step gigs (apply → response → followup → contract → invoice)
+   become a single project row.
+
+3. **Mastra graph per project type** (= 200 LOC) — one durable workflow per
+   project archetype: `gig-application`, `github-issue`, `customer-thread`,
+   `cold-outreach`. Each graph has explicit suspend-points ("wait 24h for
+   reply", "wait until PR merged", "wait until invoice paid").
+
+4. **Composio + Lancers/Coconala custom adapters** (= 150 LOC each) — the
+   Japanese gig platforms aren't in Composio's 250 yet. We add them.
+
+5. **Self-improvement edge** (= 100 LOC) — at the end of each Mastra graph
+   completion, compare `actual outcome vs predicted outcome` and write a
+   delta into Hermes FTS5 memory as a "learning". Next graph instance reads
+   the FTS5 result of similar past graphs at the entry node.
+
+Total ≈ **600 LOC** of glue. NOT a from-scratch system. NOT a new framework.
+Fork + wire 4 mature OSS + bridge them.
+
+### § 10.4 Why NOT pick just one
+
+| Single-tool option | Why it fails alone |
+|---|---|
+| Inbox Zero only | Has Reply Zero + AI Assistant but NO multi-step project state machine. Treats each thread independently. |
+| Mastra only | Has durable workflows but NO Gmail watch, NO reply tracker, NO email-specific rule engine. |
+| Hermes only | Has daemon + memory but NO Gmail-specific watcher, NO project state machine. |
+| Composio only | Has adapters but NO orchestration, NO state, NO triggers. |
+| n8n only | Polling-based Gmail (not push), no agent autonomy primitives, workflow editing is GUI not git-native. |
+| Suna (Kortix) only | Git-as-org is interesting but no email-specific layer, requires sandbox-per-session (heavy). |
+
+Each tool was built for a different problem. The pivot is **stop searching
+for the one tool, compose the 4 that already exist correctly**.
+
+### § 10.5 Bootstrap compute (= chicken-egg solve)
+
+Dais 2026-06-03: *"The good thing is we're paying for its inference compute
+first by authenticating with a subscription or API key."*
+
+Bootstrap phases:
+
+| Phase | Compute source | Anicca's USDC balance |
+|---|---|---|
+| 0 (now) | Dais's Anthropic Claude Max subscription + OpenAI subscription | $0 |
+| 1 (week 1-2) | Same subscription, Anicca starts earning via Lancers/Coconala/x402 | $8 (SBI VC seed) |
+| 2 (month 1) | Anicca buys OpenRouter API key with own USDC (Kimi K2 / DeepSeek pay-as-you-go) | self-funded |
+| 3 (month 3+) | Anicca auto-top-ups OpenRouter when balance dips, Dais cancels his subscriptions | self-sufficient |
+
+The subscription-bootstrap is **not a hack**, it's the standard chicken-egg
+solve. Dais's seed is exactly what § 0 of `00-MASTER.md` calls "the original
+investment" that gets repaid before independence.
+
+---
+
+## § 11. Verification gates (v2 additions)
+
+| Gate | Evidence |
+|---|---|
+| G6 — Inbox Zero forked + running | `curl http://localhost:3000/api/health` from local Inbox Zero fork returns OK. Gmail OAuth completed. |
+| G7 — Reply Zero tracking real threads | After sending a real test email and getting a reply, Inbox Zero's `replied_threads` table has 1 row with correct status. |
+| G8 — Mastra graph durable across restart | Suspend a workflow at "wait 24h" step → `pm2 restart all` → workflow resumes from same step. |
+| G9 — Composio Gmail send works | `composio call gmail.send_email --to=test@example.com --body=hi` returns 200. |
+| G10 — End-to-end gig E2E | Real Lancers gig invitation email arrives → Anicca drafts reply (project context loaded) → judges → sends → 24h later if no reply, auto re-pings. All recorded in `projects` + `project_events`. |
+
+---
+
+## § 12. Changelog
 
 | Date | Change | Author |
 |---|---|---|
 | 2026-06-02 | Initial draft. Encodes Dais's 2026-06-02 monologue on "Anicca treats everything as one-off". | this Claude session |
+| 2026-06-03 | § 10-11 v2 PIVOT. After Dais's race call exposing v1 as naive cron design, deep-searched 30+ OSS frameworks. Adopted Inbox Zero (= the Reply Zero followup tracker I claimed didn't exist) + Mastra + Composio + Hermes 4-component stack. ≈600 LOC of glue, not a from-scratch build. | this Claude session |
