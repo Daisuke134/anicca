@@ -116,6 +116,111 @@ skill folders under `~/.openclaw/skills/`.
 | ④ | `anicca-earn-skill-marketplace` + `anicca-earn-pdf-x402` | same | exists, not earning yet |
 | ⑤ | `anicca-earn-farcaster` | `~/.openclaw/skills/anicca-earn-farcaster/` | exists, not earning yet |
 
+### § 1.3 Cross-chain bridge layer (`anicca-bridge` skill)
+
+The 5 spouts deposit into 4 chains (Solana / BASE / Ethereum / Farcaster).
+Replication and UBI push originate from BASE / 法人 JPY. Capital therefore
+needs to flow chain-to-chain without human-in-loop. This is the
+`anicca-bridge` skill at `~/.openclaw/skills/anicca-bridge/`.
+
+#### § 1.3.1 Primary bridge: Mayan Swift
+
+Verified 2026-06-02 against `github.com/mayan-finance/swap-sdk` + Firecrawl
+of `dev.mayan.finance`.
+
+| Field | Value |
+|---|---|
+| SDK | **`@mayanfinance/swap-sdk`** (npm, MIT) |
+| Quote REST | `https://price-api.mayan.finance/v3/quote` |
+| Init REST | `https://sia.mayan.finance/v10/init` |
+| Explorer REST | `https://explorer-api.mayan.finance/v1/swaps/transaction` |
+| Methods | Swift (3-10s) / MCTP (8-20s) / Wormhole (60-120s) |
+| Wallet UI required? | **NO** — keypair-based signing, fully headless |
+| Solana → BASE | ✅ all three methods |
+| Solana → Ethereum | ✅ |
+| Ethereum → BASE | ✅ |
+| Track record | $18B+ volume, 8M+ swaps |
+| Fee (small amounts $5-20) | 0.3% + ~$0.05-0.10 relayer |
+
+Reference call (Anicca-side, headless):
+
+```bash
+# get quote
+curl -G "https://price-api.mayan.finance/v3/quote" \
+  --data-urlencode "amountIn=5" \
+  --data-urlencode "fromToken=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v" \
+  --data-urlencode "fromChain=solana" \
+  --data-urlencode "toToken=0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" \
+  --data-urlencode "toChain=base" \
+  --data-urlencode "slippageBps=auto" \
+  --data-urlencode "swift=true"
+```
+
+```typescript
+// sign + submit (Anicca runs in node.js subprocess from python)
+import { fetchQuote, swapFromSolana } from '@mayanfinance/swap-sdk';
+const quote = (await fetchQuote({ amountIn64: "5000000", ... }))[0];
+const tx = await swapFromSolana(
+  quote,
+  ANICCA_SOLANA_PUBKEY,
+  ANICCA_BASE_WALLET,   // 0x9B1Ee988b1A2931ABCE467f0a8eAff6c70c93e83
+  [],
+  signSolanaTransaction,  // Anicca keypair callback
+  solanaConnection,
+);
+```
+
+#### § 1.3.2 Fallback bridge: Circle CCTP v2
+
+For Mayan downtime, USDC native burn-mint via Circle.
+
+| Field | Value |
+|---|---|
+| SDK | **`@circle-fin/bridge-kit`** (npm, official) |
+| Iris API | `https://iris-api-sandbox.circle.com/v2/` (testnet path; prod same shape) |
+| Domain IDs | Solana = 5, BASE = 6, Ethereum = 0 |
+| Speed | Fast 8-20s / Standard 15-19min |
+| Fee (~$5) | ~$0.05-0.15 |
+
+Reference call:
+
+```bash
+# fees lookup
+curl "https://iris-api-sandbox.circle.com/v2/burn/USDC/fees/5/6?forward=true"
+# poll for mint after burn
+curl "https://iris-api-sandbox.circle.com/v2/messages/5?transactionHash=<solanaSig>"
+```
+
+#### § 1.3.3 The "8 USDC rescue" path (one-shot, used Day 0+1h)
+
+State as of 2026-06-02:
+
+| Chain | Address | Balance |
+|---|---|---|
+| Ethereum mainnet | `0xa3CDd4Ec6b94F01826Aaf90a6d5538A2Aa8C4C21` | **8.0 USDC** + 0 ETH gas (verified via `ethereum-rpc.publicnode.com` `eth_call` to USDC contract `0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48`) |
+| BASE | `0x9B1Ee988b1A2931ABCE467f0a8eAff6c70c93e83` | 0 USDC |
+| Solana (autohedge) | `tvTn7tisC5JWV81iDeFeLPcHapAamvXcyJVKia1TrNT` | 0 SOL (awaiting bitbank funding) |
+
+The 8 USDC was withdrawn from SBI VC by Dais 2026-06 to `0xa3CDd4...` (the
+`anicca-wallet` Coinbase smart account on BASE chain). SBI is Ethereum-only,
+so it landed on Ethereum mainnet at the same address. Same private key
+controls the address on both chains; the 8 USDC is recoverable.
+
+But: address has 0 ETH for gas → cannot directly initiate Ethereum tx.
+
+Recovery sequence (Anicca-side, after bitbank funding lands):
+
+```
+[1] bitbank ¥2,000 → Anicca Solana wallet (0.29 SOL)
+[2] Anicca Mayan Swift: 0.03 SOL → ~0.002 ETH at 0xa3CDd4... (gas refuel)
+[3] Anicca Circle CCTP v2: 8 USDC (Ethereum) → 8 USDC (BASE) at
+    0x9B1Ee988b1A2931ABCE467f0a8eAff6c70c93e83
+[4] Net result: AutoHedge wallet has ~0.25 SOL for trading,
+                BASE wallet has ~7.95 USDC for replication seed
+```
+
+Cost: ~$0.20 in Mayan + CCTP fees. Net rescue: 7.95 of 8 USDC.
+
 ---
 
 ## § 2. The 3 sinks (split of monthly earnings)
@@ -351,10 +456,11 @@ Phase 6 (2028+)
 > Update statuses inline. When checked off, leave with date + hash.
 
 ### Phase 0 — 今夜
-- [ ] Dais: bitbank ¥2,000 振込 → SOL 買い → 出金 to `tvTn7tisC5JWV81iDeFeLPcHapAamvXcyJVKia1TrNT`
+- [x] Dais: bitbank ¥2,002 銀行振込 (2026-06-02 銀行 ATM 実行済) → bitbank 着金待ち → SOL 買い → 出金 to `tvTn7tisC5JWV81iDeFeLPcHapAamvXcyJVKia1TrNT`
 - [ ] Dais: USB IC card reader 物理接続 + マイナンバーカード PIN を Anicca に共有
-- [ ] Anicca: solscan で SOL 着金 verify (`https://solscan.io/account/tvTn7t...rNT`)
+- [ ] Anicca: solscan で SOL 着金 verify (`https://solscan.io/account/tvTn7tisC5JWV81iDeFeLPcHapAamvXcyJVKia1TrNT`)
 - [ ] Anicca: `AUTOHEDGE_LIVE=1` で 1 USDC → SOL sanity swap → tx signature 公開
+- [ ] Anicca: `anicca-bridge` skill 経由で 8 USDC ETH rescue (§ 1.3.3 sequence)
 
 ### Phase 1 — 法人化 + 金融配線
 - [ ] Anicca: freee 法人設立 (一般社団法人 アニッチャ) 自動 submit
@@ -433,3 +539,10 @@ Phase 6 (2028+)
   on autonomous trading + UBI distribution, after AutoHedge skill setup
   (~/.openclaw/skills/anicca-autohedge/) and Vibe-Trading clone. Phase 0
   funding in progress at time of writing (bitbank → SOL → Anicca wallet).
+- v1.1 (2026-06-02) — added § 1.3 cross-chain bridge layer (Mayan Swift
+  primary + Circle CCTP v2 fallback), verified against
+  `github.com/mayan-finance/swap-sdk` and `developers.circle.com/cctp`.
+  Added § 1.3.3 8-USDC ETH rescue path (SBI VC → Ethereum mainnet at
+  `0xa3CDd4...`, recoverable via Mayan gas refuel + CCTP burn-mint).
+  Phase 0 TODO updated: Dais bitbank ¥2,002 transfer executed at ATM
+  2026-06-02, awaiting bank reflection + bitbank withdrawal.
