@@ -1,0 +1,10 @@
+{
+  "name": "anicca-runtime",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "description": "Anicca runtime — Mastra graph workflows for inbox responder loop (spec 08)",
+  "dependencies": {
+    "@mastra/core": "latest"
+  }
+}

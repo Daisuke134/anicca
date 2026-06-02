@@ -1,0 +1,3 @@
+[submodule "services/inbox-zero"]
+	path = services/inbox-zero
+	url = https://github.com/elie222/inbox-zero.git

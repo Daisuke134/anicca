@@ -1,0 +1,11 @@
+{
+  "name": "anicca-adapters",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "description": "Anicca adapters — Composio integrations for Gmail / Slack / GitHub / Lancers etc. (spec 08)",
+  "dependencies": {
+    "@composio/core": "latest",
+    "composio-core": "latest"
+  }
+}
