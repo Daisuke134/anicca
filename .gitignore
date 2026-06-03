@@ -58,3 +58,7 @@ skills/*/state/MNEMONIC_BACKUP_ONCE.txt
 runtime/memu/data/items.jsonl
 runtime/memu/data/memu.db*
 runtime/memu/data/resources/
+
+# Python bytecode
+__pycache__/
+*.pyc
