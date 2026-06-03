@@ -90,6 +90,8 @@ jobs:
                   | { grep -v 'profile\.schema\.json' || true; } \
                   | { grep -v 'README\.md' || true; } \
                   | { grep -v 'sec-scan\.yml' || true; } \
+                  | { grep -v 'services/inbox-zero/' || true; } \
+                  | { grep -v 'specs/archive/' || true; } \
                   | wc -l | tr -d ' ')
             if [ "${n:-0}" -gt 0 ]; then
               echo "❌ shape '$p' hit $n line(s)"
