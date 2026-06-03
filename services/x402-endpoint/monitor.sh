@@ -15,6 +15,7 @@ ENV_FILE="${HOME}/.openclaw/.env"
 SERVER_LOG="/tmp/anicca-x402.log"
 STATE_FILE="${HOME}/.openclaw/state/anicca_x402_revenue.jsonl"
 SLACK_CHANNEL="C091G3PKHL2"
+CFO_HOOK="/Users/anicca/anicca-oss/.worktrees/earn-x402/services/x402-endpoint/cfo-hook.sh"
 
 # shellcheck disable=SC1090
 [ -f "${ENV_FILE}" ] && set -a && . "${ENV_FILE}" && set +a
@@ -34,6 +35,10 @@ tail -F -n 0 "${SERVER_LOG}" 2>/dev/null | while read -r line; do
     *REVENUE*)
       # Persist the raw line so we have an append-only ledger.
       printf '%s\n' "${line}" >>"${STATE_FILE}"
+      # Fire the CFO hook (best-effort; never blocks the Slack post).
+      if [ -x "${CFO_HOOK}" ]; then
+        "${CFO_HOOK}" "${line}" >/dev/null 2>&1 || true
+      fi
       # Post to Slack.
       /usr/bin/curl -sS -m 10 -X POST \
         -H "Authorization: Bearer ${SLACK_BOT_TOKEN}" \

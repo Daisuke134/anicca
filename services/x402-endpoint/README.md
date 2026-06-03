@@ -140,4 +140,33 @@ python3 services/x402-endpoint/scripts/register-cron.py
 
 ## Deploy
 
-Wave 1 = local + manual. Wave 2-public = launchd plist + cloudflared quick tunnel (this revision). Wave 3 adds a named Cloudflare tunnel (stable hostname) + `Dockerfile` for Akash per spec § 2 T6.
+| Stage | Path |
+|---|---|
+| Local | `pnpm install && pnpm start` (port `:8403`) |
+| LaunchAgent on the Mac Mini | three plists from `launchd/` — server + tunnel + monitor (this revision, round-4) |
+| Container | `docker build -t anicca-x402:0.1 .` (multi-stage Alpine, runs as non-root `anicca:anicca`, HEALTHCHECK on `/health`). The Dockerfile is intentionally minimal — copies only `server.ts`, `challenge.ts`, `verify.ts`, `pricing.json` + production `node_modules`; tsx executes TS at runtime. Built image expects port-mapping `-p 8403:8403`. |
+| Akash | drop the container into the spec-13 SDL once Agent-5 lands. The lifeline of this directory ends at the container; Akash deploy is owned by `deploy/akash/**` (NOT this file boundary). |
+
+## CFO hook
+
+`cfo-hook.sh` is invoked by `monitor.sh` on every paying 200 (spec 09 § 2 T9). It:
+
+1. Parses the `REVENUE` log line emitted by `server.ts`.
+2. Appends a structured event to `~/.openclaw/state/cfo_x402_events.jsonl` (schema `anicca-x402/cfo-event/v1`).
+3. Atomically updates `~/.openclaw/state/x402_revenue_summary.json` (schema `anicca-x402/cfo-hook/v1`) — rolling totals + per-route + last-tx + wallet pointer.
+
+Schema of the summary blob (the file `cfo-core` reads to bump `dashboard.lineage[*].x402_revenue` on its next pass):
+
+```json
+{
+  "schema": "anicca-x402/cfo-hook/v1",
+  "wallet": "0xa3CDd4Ec6b94F01826Aaf90a6d5538A2Aa8C4C21",
+  "x402_revenue_usdc_total": 0.011,
+  "x402_revenue_count": 2,
+  "x402_revenue_by_route": { "echo": 0.001, "learn": 0.01 },
+  "last_event_at": "2026-06-03T15:31:00Z",
+  "last_tx_hash":  "0x..."
+}
+```
+
+The wallet pointer matches the lineage entry `id=anicca-001-claude` (or any entry whose `wallet` field equals the receiver). Writing is atomic (`mv` from `.tmp.<pid>`).
