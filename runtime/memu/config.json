@@ -1,0 +1,44 @@
+{
+  "_comment": "memU LLM profile config — DeepSeek (chat) + Ollama (embeddings). Loaded by wrappers/memorize.py + wrappers/retrieve.py via load_service(). Mirrors spec 11 § 2.",
+  "llm_profiles": {
+    "default": {
+      "provider": "openai",
+      "base_url": "https://api.deepseek.com/v1",
+      "api_key": "DEEPSEEK_API_KEY",
+      "chat_model": "deepseek-chat",
+      "client_backend": "sdk"
+    },
+    "embedding": {
+      "provider": "openai",
+      "base_url": "http://localhost:11434/v1",
+      "api_key": "OLLAMA_API_KEY",
+      "chat_model": "nomic-embed-text",
+      "embed_model": "nomic-embed-text",
+      "client_backend": "sdk",
+      "embed_batch_size": 16
+    }
+  },
+  "database_config": {
+    "_note": "v1 = in-memory store + JSONL snapshot via wrappers. SQLAlchemy mapping for nested lists not implemented in memu-py 1.5.1; sqlite DSN deferred to v2.",
+    "metadata_store": {
+      "provider": "inmemory"
+    }
+  },
+  "blob_config": {
+    "provider": "local",
+    "resources_dir": "./runtime/memu/data/resources"
+  },
+  "memorize_config": {
+    "memory_categories": [
+      {"name": "relationships", "description": "People Anicca interacts with: name, role, preferences, last contact, owed actions."},
+      {"name": "projects", "description": "Active projects: state, deadlines, blockers, who owns what, money owed."},
+      {"name": "lessons", "description": "What worked, what failed, why. Skills accumulated. Repeated mistake patterns."},
+      {"name": "skills", "description": "Capabilities Anicca has: APIs/CLIs/credentials proven, browser flows mapped, channels active."}
+    ]
+  },
+  "retrieve_config": {
+    "method": "rag",
+    "item": {"enabled": true, "top_k": 5, "ranking": "salience", "recency_decay_days": 14.0},
+    "category": {"enabled": true, "top_k": 4}
+  }
+}

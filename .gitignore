@@ -53,3 +53,8 @@ skills/*/pdfs/
 skills/*/queue/
 skills/*/state/wallet.encrypted
 skills/*/state/MNEMONIC_BACKUP_ONCE.txt
+
+# spec 11 memU runtime data (binary embeddings + raw conversation files)
+runtime/memu/data/items.jsonl
+runtime/memu/data/memu.db*
+runtime/memu/data/resources/
