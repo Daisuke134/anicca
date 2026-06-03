@@ -58,3 +58,10 @@ skills/*/state/MNEMONIC_BACKUP_ONCE.txt
 adapters/custom/*/state/
 state/adapter-test-log.jsonl
 state/last-captcha-block.txt
+# Exception: submitted proposals are evidence — kept in repo per HARD RULE #14
+!adapters/custom/lancers/state/
+adapters/custom/lancers/state/*
+!adapters/custom/lancers/state/proposals/
+!adapters/custom/coconala/state/
+adapters/custom/coconala/state/*
+!adapters/custom/coconala/state/proposals/

@@ -23,9 +23,10 @@ JP gig platform adapter. Lancers has no public API — this adapter wraps camofo
 
 | Script | Use |
 |---|---|
-| `scripts/login.sh` | One-time + idempotent. Opens lancers.jp via camofox, Google OAuth with env creds, persists cookie. Writes `state/lancers-session.json` (chmod 600). |
+| `scripts/login.sh` | One-time + idempotent. Opens lancers.jp via camofox, email-pw login + email-2FA, persists cookie. Writes `state/lancers-session.json` (chmod 600). |
 | `scripts/send-dm.sh <thread_url> <body>` | Sends a DM in the given thread. Enforces ≤ 10 DM/h via local sleep gate. |
 | `scripts/read-inbox.sh` | Returns JSON list of recent threads via camofox snapshot. |
+| `scripts/apply.sh <gig_id> <proposal_file> [amount] [delivery]` | Submit a proposal to a Lancers gig. Walks /work/detail → propose_start → propose_confirm → propose_finish. Verifies via /mypage/proposals listing. Logs to `state/apply-log.jsonl`. |
 
 ## Session
 
@@ -46,3 +47,11 @@ Per HARD RULE #-1: if camofox snapshot reports a CAPTCHA element, the script log
 - Inbox URL is `/mypage/message` (NOT `/mypage/inbox` — that URL 404s). Each thread is a board accessible via `/mypage/message?boardId=<N>`. read-inbox.sh parses the board panel and emits `{title, counterparty}` rows; boardId hydrates only after a button click in the JS app, so url=`""` for now.
 - Live session today (anicca_ai_jp): read-inbox.sh returned 3 real threads.
 - Send-DM caveat: on at least one live thread Lancers disabled the textbox with `規約違反の恐れがあるため、メッセージを送信できません` — the platform's anti-spam interceptor. send-dm.sh propagates this as `status:"unconfirmed"` and exits non-zero.
+
+## Live revenue path (2026-06-04 round 3)
+
+- **First Anicca JPY proposal submitted**: gig `5552409` (リラトラ / 副業系YouTube動画台本), proposal ID `27544191`, contract amount ¥500 (matching the client's stated test rate).
+- Submission walked /work/detail → /work/propose_start → /work/propose_confirm → /work/propose_finish with required fields: 提案文 / 完了予定日 / 契約金額 / **生成AIの使用 radio (= "使用している, 著作権の侵害がなく, 修正の要望も対応できる")**. Without that radio, the form returns to /propose_start with `入力内容をご確認ください`.
+- Verified independently by reading `/mypage/proposals` — the gig appears as the most-recent entry.
+- The flow is canonicalized in `scripts/apply.sh`; the actual submitted proposal text and the finish-page screenshot live under `state/proposals/<gig_id>.md` + `state/proposals/<gig_id>-finish.png`.
+- Proposal disclosed Anicca as an autonomous AI agent up-front (per HARD RULE 「自分自身として登場」 + Pañcasīla #4). No fabricated portfolio links.
