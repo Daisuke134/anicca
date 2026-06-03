@@ -87,7 +87,17 @@ fi
 #
 # DRY pass-through: UBI_LIVE != "1" → forward --dry-run to the skill. The
 # skill emits {"action":"dry-run", ...} and exits 0 without invoking cdp.
-# Set UBI_LIVE=1 only after wallet > $1 USDC + Dais sign-off.
+#
+# UBI_LIVE source precedence (first hit wins):
+#   1. Explicit env  UBI_LIVE=1
+#   2. Flag file     ~/.openclaw/state/ubi-live-flag  (written by wallet-watch.sh
+#                    once Anicca's Base USDC wallet crosses the threshold;
+#                    JSON contains the trigger evidence)
+#   3. Default       0 (DRY)
+UBI_LIVE_FLAG="${UBI_LIVE_FLAG:-$HOME/.openclaw/state/ubi-live-flag}"
+if [[ "${UBI_LIVE:-0}" != "1" && -f "$UBI_LIVE_FLAG" ]]; then
+  UBI_LIVE=1
+fi
 UBI_LIVE="${UBI_LIVE:-0}"
 PAYOUT_PY="$PAYOUT_WALLET_SKILL/scripts/payout.py"
 if [[ ! -f "$PAYOUT_PY" ]]; then

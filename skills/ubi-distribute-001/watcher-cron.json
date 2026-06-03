@@ -1,0 +1,12 @@
+{
+  "name": "anicca-ubi-trigger-check",
+  "schedule": {
+    "kind": "cron",
+    "expr": "0 * * * *",
+    "tz": "Asia/Tokyo"
+  },
+  "payload": {
+    "kind": "agentTurn",
+    "message": "bash ~/.openclaw/skills/ubi-distribute-001/scripts/wallet-watch.sh"
+  }
+}

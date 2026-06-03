@@ -31,7 +31,14 @@ if [[ -f "$OVERRIDE" ]]; then
 fi
 
 # 2. Month-of-year rotation.
-month=$(date +%-m)            # 1..12 (no leading zero)
+# MONTH_OVERRIDE=1..12 lets test harnesses simulate any month without touching
+# the system clock. Falls back to the live calendar month otherwise.
+if [[ -n "${MONTH_OVERRIDE:-}" && "$MONTH_OVERRIDE" =~ ^[0-9]+$ ]] \
+   && (( MONTH_OVERRIDE >= 1 && MONTH_OVERRIDE <= 12 )); then
+  month="$MONTH_OVERRIDE"
+else
+  month=$(date +%-m)          # 1..12 (no leading zero)
+fi
 len=$(jq 'length' "$CHARITIES")
 if [[ -z "$len" || "$len" -le 0 ]]; then
   echo "[select-charity] charities.json is empty" >&2

@@ -30,7 +30,9 @@ HOME = Path.home()
 JOBS_PATH = Path(os.environ.get("OPENCLAW_JOBS_FILE",
                                  HOME / ".openclaw" / "cron" / "jobs.json"))
 SKILL_DIR = Path(__file__).resolve().parent.parent
-CRON_SPEC = SKILL_DIR / "cron.json"
+# All cron specs we register: the monthly payout + any companion crons
+# (e.g. wallet watcher). Each file is registered idempotently by `name`.
+CRON_SPECS = [SKILL_DIR / "cron.json", SKILL_DIR / "watcher-cron.json"]
 
 GATEWAY_LABEL = "ai.openclaw.gateway"
 SLACK_METRICS_CHANNEL = "channel:C091G3PKHL2"
@@ -47,15 +49,23 @@ def load_jobs() -> dict:
         sys.exit(2)
 
 
-def load_spec() -> dict:
-    if not CRON_SPEC.exists():
-        print(f"[register-cron] missing cron.json at {CRON_SPEC}", file=sys.stderr)
+def load_specs() -> list[tuple[Path, dict]]:
+    """Load every cron spec file we manage. Missing files are silently skipped
+    (the watcher spec is optional in older skill checkouts)."""
+    specs: list[tuple[Path, dict]] = []
+    for path in CRON_SPECS:
+        if not path.exists():
+            continue
+        try:
+            specs.append((path, json.loads(path.read_text())))
+        except json.JSONDecodeError as e:
+            print(f"[register-cron] {path.name} unparseable: {e}", file=sys.stderr)
+            sys.exit(3)
+    if not specs:
+        print(f"[register-cron] no cron spec files found in {SKILL_DIR}",
+              file=sys.stderr)
         sys.exit(3)
-    try:
-        return json.loads(CRON_SPEC.read_text())
-    except json.JSONDecodeError as e:
-        print(f"[register-cron] cron.json unparseable: {e}", file=sys.stderr)
-        sys.exit(3)
+    return specs
 
 
 def build_entry(spec: dict) -> dict:
@@ -122,41 +132,55 @@ def kickstart_gateway() -> tuple[bool, str]:
 
 
 def main() -> int:
-    spec = load_spec()
-    name = spec["name"]
+    specs = load_specs()
     doc = load_jobs()
     jobs = doc.get("jobs", [])
     if not isinstance(jobs, list):
         print("[register-cron] jobs.json.jobs is not a list", file=sys.stderr)
         return 2
 
-    # Idempotent: identify by `name` (humans rename ids; names are stable).
-    existing = [j for j in jobs if isinstance(j, dict) and j.get("name") == name]
-    if existing:
-        ids = [j.get("id") for j in existing]
-        print(json.dumps({
-            "action": "already-registered",
+    results = []
+    mutated = False
+    backup_path = None
+
+    for path, spec in specs:
+        name = spec.get("name") or path.stem
+        existing = [j for j in jobs if isinstance(j, dict) and j.get("name") == name]
+        if existing:
+            results.append({
+                "spec": path.name,
+                "action": "already-registered",
+                "name": name,
+                "existing_ids": [j.get("id") for j in existing],
+            })
+            continue
+
+        entry = build_entry(spec)
+        # Backup once on first mutation in this run.
+        if not mutated:
+            backup_path = JOBS_PATH.with_suffix(
+                JOBS_PATH.suffix + f".bak.ubi.{int(time.time())}")
+            shutil.copy2(JOBS_PATH, backup_path)
+            mutated = True
+        jobs = jobs + [entry]
+        results.append({
+            "spec": path.name,
+            "action": "inserted",
+            "id": entry["id"],
             "name": name,
-            "existing_ids": ids,
-            "kickstart_skipped": True,
-        }, ensure_ascii=False))
-        return 0
+            "schedule": entry["schedule"],
+        })
 
-    entry = build_entry(spec)
+    if mutated:
+        doc["jobs"] = jobs
+        atomic_write(JOBS_PATH, doc)
+        kick_ok, kick_msg = kickstart_gateway()
+    else:
+        kick_ok, kick_msg = True, "kickstart skipped — no insert"
 
-    # Backup, then write
-    bak = JOBS_PATH.with_suffix(JOBS_PATH.suffix + f".bak.ubi.{int(time.time())}")
-    shutil.copy2(JOBS_PATH, bak)
-    doc["jobs"] = jobs + [entry]
-    atomic_write(JOBS_PATH, doc)
-
-    kick_ok, kick_msg = kickstart_gateway()
     print(json.dumps({
-        "action": "inserted",
-        "id": entry["id"],
-        "name": name,
-        "schedule": entry["schedule"],
-        "backup": str(bak),
+        "results": results,
+        "backup": str(backup_path) if backup_path else None,
         "kickstart_ok": kick_ok,
         "kickstart_msg": kick_msg,
     }, ensure_ascii=False))
