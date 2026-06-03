@@ -402,3 +402,122 @@ Each sketch is committed as a placeholder script that returns exit 99 ("not yet 
 | 1 | 2026-06-03 | Initial spec written (§ 0–§ 8). Surface-level. |
 | 2 | 2026-06-03 | Patches added (§ 9). 6/11 scripts patched in full, 5/11 placeholder pending Q15/21/23/29/33/36 research. |
 | 3 | (next) | Resolve Q15/21/23/29/33/36 via live camofox + script reading + cron-runs grep. |
+
+## § 11. ROUND 3 — research findings + patch design corrections (2026-06-03)
+
+### § 11.1 Resolved Q15 — camofox session
+
+camofox profile dir is hashed (`~/.camofox/profiles/<sha>/`). Caller passes
+`userId` + `sessionKey` as REST params; internal hash decides storage path.
+Decision: use `userId="anicca"`, `sessionKey="hivemind-login"` for the
+fix-hivemind.sh flow. No further uncertainty.
+
+### § 11.2 ★ MAJOR finding — Q21 + Q23: jobs.json does NOT carry model/provider ★
+
+```python
+total cron in jobs.json: 254
+with model field: 0
+with provider field: 0
+```
+
+→ Patching `jobs.json` to switch model is **impossible** because the field
+isn't there. The model+provider must come from elsewhere — likely:
+
+1. OpenClaw cron-agent default config (= envvar or skill-shared file)
+2. `~/.openclaw/skills/_shared/claude-router/` skill that picks per-task
+3. Per-cron heartbeat prompt that names a model inline
+
+The 20+ affected jobIds all share `provider=blockrun, model=free/deepseek-v4-flash`
+in run history. So the default lives upstream of jobs.json.
+
+★ Patch correction ★: `fix-blockrun-rejection.sh` does NOT mutate jobs.json.
+Instead it patches the upstream default. Round 4 will:
+1. `grep -r "blockrun\\|free/deepseek-v4-flash" ~/.openclaw/skills/_shared/`
+2. Identify the file holding the default
+3. Patch to `deepseek/deepseek-v4-pro` via openrouter (per memory feedback_crons_use_mini_models_only)
+
+### § 11.3 Resolved Q29 — GCP credentials page state captured
+
+```
+url: https://console.cloud.google.com/apis/credentials?pli=1&project=gen-lang-client-0072731773
+account: Daisuke Narita (keiodaisuke@gmail.com)  ← already logged in via camofox profile
+status: "Action Required: One or more projects enabled with Gemini API..."
+```
+
+→ camofox arrives at the credentials page with Anicca's project already selected.
+The "Create credentials" button is below the status banner. Round 4 will:
+1. Snapshot the main content area
+2. Identify the "Create credentials" button ref
+3. Click → modal appears with "API key" option
+4. Click "API key"
+5. Modal shows the key; copy via clipboard or DOM read
+6. Write to `~/.openclaw/.env` chmod 600
+
+### § 11.4 Q15 fresh URL captured
+
+```
+fresh URL: https://auth.deeplake.ai/activate?user_code=SRNZ-FKCZ
+```
+
+→ fix-hivemind.sh template will:
+1. `URL=$(hivemind status 2>&1 | grep -oE 'https://auth.deeplake.ai/activate\?user_code=[A-Z0-9-]+')`
+2. camofox open URL with userId=anicca / sessionKey=hivemind-login
+3. snapshot → if "Choose an account" → click keiodaisuke@gmail.com
+4. else if "Continue with Google" → click → Google session auto-recognize
+5. else if Codex-style "Sign in to Deeplake" consent → click Continue
+6. wait 6s, verify ~/.deeplake/auth.json populated OR `hivemind status` returns "logged in: yes"
+
+### § 11.5 Resolved Q33 — disk safe-delete candidates
+
+```
+disk: 21Gi free / 228Gi (9%)
+top consumers:
+  ~/.npm                     1.6G  → `npm cache clean --force` (safe, regenerable)
+  ~/Library/Caches           1.6G  → selective: Anicca/Cursor/etc. caches >30d
+  ~/.cache/anicca-clones     576M  → drop clones > 30d (regenerable via git)
+  ~/Downloads                126M  → SKIP (user-owned)
+  /tmp                       0B    → clean (good)
+```
+
+Patch design: fix-disk-full.sh starts at threshold `df / < 10% free`, executes
+in this order until df > 15%: npm cache clean → anicca-clones >30d → Library
+Caches >30d. Never touches Downloads or user code.
+
+### § 11.6 Resolved Q36 — slack-bridge hook point
+
+```
+~/.openclaw/services/slack-bridge/slack-bridge.py
+  line 556: "Post a reply via chat.postMessage with marker extraction."
+```
+
+→ wrap-outbound.sh hook = patch slack-bridge.py to call
+`bash ~/.openclaw/skills/anicca-friction-fixer/scripts/detect.sh outbound`
+just before `chat.postMessage`. If detect.sh exits 1 (= forbidden phrase
+matched), block the post and dispatch the matching fix-script via
+`scripts/<fix>.sh`. If exit 0, proceed normally.
+
+The patch is a small inline addition to the existing reply function, not
+a separate wrapper script (= cleaner than spawning subprocess on every msg).
+
+---
+
+## § 12. Open questions remaining for ROUND 4
+
+| Q | Topic | What round 4 will do |
+|---|---|---|
+| Q44 | Which file holds `provider=blockrun, model=free/deepseek-v4-flash` default? | `grep -r blockrun ~/.openclaw/skills/_shared/` + read |
+| Q45 | OpenClaw cron-agent restart command after config change? | `openclaw daemon restart` or launchd unload/load? |
+| Q46 | GCP "Create credentials" button DOM ref after first click? | live camofox snapshot, sequence ref/refs |
+| Q47 | Are there any other env vars beyond GOOGLE_API_KEY missing? | grep ~/.openclaw/cron/runs/ "missing from env" |
+| Q48 | The `fix-self-correct.sh` placeholder (for P01/P03/P04/P05/P07) is just a redirect? what's its body? | propose: log to violations.jsonl + post correct message instead of forbidden one |
+
+Round 4 will resolve Q44–Q48 + finish the remaining 5 patches.
+
+## § 13. State
+
+| Round | Date | Files patched | Files placeholder |
+|---|---|---|---|
+| 1 | 2026-06-03 | 0 | 11 |
+| 2 | 2026-06-03 | 6 | 5 |
+| 3 | 2026-06-03 | 6 + research log | 5 (designs locked) |
+| 4 | (next) | target 11 | 0 |
