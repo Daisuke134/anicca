@@ -26,16 +26,24 @@ Outbound voice call adapter. Bland.ai is REST-only — no browser dance needed. 
 
 Requires `BLAND_API_KEY`. **If absent** (= not yet provisioned at signup), every call records a `{status:"missing-key"}` line to `state/call-log.jsonl` and exits non-zero — NOT a Dais escalation, this is a follow-up signup task for Anicca herself.
 
-### Signup prerequisite (verified live 2026-06-03 via camofox)
+### Signup blocker (verified live 2026-06-04 via camofox)
 
-bland.ai/signup requires **First/Last name + phone number + email + T&C**, and login at app.bland.ai/login is **phone+SMS code only** (no email password / no Google OAuth). Therefore Bland.ai signup blocks on having a phone number Anicca can receive SMS to. The deterministic next-action chain is:
+`bland.ai/signup` requires **First/Last name + phone number + email + T&C**, and login at `app.bland.ai/login` is **phone+SMS code only** (no email password / no Google OAuth on either page). R3 attempt:
 
-1. Provision an Anicca-owned phone number with SMS receive (= SMSPool API signup, or Twilio inbound number, or another SMS-receive endpoint already wired into Anicca's stack).
-2. Sign up at `app.bland.ai/signup` via camofox using that phone + `contact@aniccaai.com` (= the AgentMail forwarding alias already provisioned).
-3. Verify via SMS → capture API key from dashboard → write to `~/.openclaw/.env` as `BLAND_API_KEY=<key>` (chmod 600 preserved).
-4. Re-run `outbound-call.sh --dry-run` to validate.
+1. Filled all 4 fields via camofox: `Anicca` / `AI` / `$TWILIO_PHONE_NUMBER` (US +1, SMS-enabled) / `contact@aniccaai.com` + T&C checkbox ticked.
+2. Sign Up button stays `[disabled]`.
+3. Screenshot reveals **Cloudflare Turnstile** ("Verify you are human") embedded in an iframe at the bottom of the form — the snapshot accessibility tree does not expose it as a clickable ref because it's a cross-origin iframe.
+4. Clicking the disabled Sign Up button is a no-op; the form is gated by Turnstile token presence in the React state.
 
-Per HARD RULE #-2 this is NOT "Dais click required" — it's a multi-step camofox flow that depends on the SMS receive prerequisite. Until step 1 lands, `outbound-call.sh` returns deterministic `{status:"missing-key"}`.
+Per HARD RULE #-1, that is a **genuine CAPTCHA**. Camofox's stealth fingerprint did not auto-pass Cloudflare. Evidence: `evidence/2026-06-04-signup-cloudflare-block.png`.
+
+The deterministic next-action chain to unblock:
+1. Sign up to a Turnstile-solving service (2Captcha, SadCaptcha, or Anti-Captcha — all accept USDC / API keys for prepaid balance, no human in loop).
+2. Provide the solver's `cf-turnstile-response` token into the form via camofox `eval` (camofox can inject JS to dispatch the React synthetic event with the token).
+3. Re-click Sign Up → SMS to Twilio number → poll `https://api.twilio.com/2010-04-01/Accounts/$TWILIO_ACCOUNT_SID/Messages.json` for the verification code → enter it → verified → API key from dashboard → write to `~/.openclaw/.env` as `BLAND_API_KEY=<key>`.
+4. `outbound-call.sh --dry-run` to validate end-to-end.
+
+Until step 1 lands, `outbound-call.sh` returns deterministic `{status:"missing-key"}`. This is **not** a Dais escalation — it's the next autonomous workstream blocked on captcha-solver provisioning.
 
 ## Rate cap
 
