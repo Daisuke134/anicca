@@ -1244,3 +1244,90 @@ Report status to Slack #metrics with: "💓 friction-fixer v1 ready · SHIP=N/HO
 ★ spec 15 is **iteration-complete for v1**. ★ 9 questions tagged as residual
 (U-87, U-88, U-89, U-90, U-92, U-93, U-94, U-65, U-75) all categorized as
 v2-features OR runnable-in-round-11 (= post-deploy live tests).
+
+## § 27. ROUND 11 — per-cron diagnostic reveals Friction Report mis-framing (2026-06-03)
+
+### § 27.1 ★ MAJOR finding ★ — jobs.json uses `payload.message`, not `prompt`/`run_cmd`
+
+Round 2's patch checked `prompt` / `run_cmd` / `command` / `exec` fields — but the
+real field is `payload.message`. That's why round 8 flagged 220 of 254 crons.
+True orphan-ness can't be judged from those fields.
+
+### § 27.2 Per-cron diagnostic on the Friction Report's 5
+
+| cron | enabled | payload.message | runs/ recent_30d | status |
+|---|---|---|---|---|
+| anicca-cron-harvester | **FALSE** | `python3 ~/.openclaw/skills/anicca-core/scripts/...` | 0 | disabled+dormant → SAFE-DELETE-from-jobs |
+| jsps-application-monthly | TRUE | `Pick one JSPS / 学振 / 科研費 / JST grant…` | 1 (DRY RUN OK) | working, institutional 2FA on real run — KEEP+SKIP per A0.5.5 |
+| larry-strategy-updater | TRUE | `hookPool自動更新` | 0 | enabled but silent — needs root-cause, NOT delete |
+| politician-receptive-update-weekly | **NOT IN jobs.json** | n/a | 1 (= "CONGRESS_GOV_API_KEY missing") | true orphan in runs/ → SAFE-DELETE-from-runs |
+| politician-stripe-to-pac | TRUE | `Run politician skill, mode=stripe_pac` | 1 (DRY RUN OK) | working — KEEP |
+
+**Friction Report mis-framed:**
+- 3 of 5 are working, not piling.
+- 1 (anicca-cron-harvester) is `enabled=false` AND payload present — it's dormant by design, not piling.
+- 1 (politician-receptive-update-weekly) is a genuine runs/ orphan (jobs.json removed but runs file lingers) — its failure was a missing `CONGRESS_GOV_API_KEY`, NOT "piling up" semantics.
+- larry-strategy-updater has 0 runs in 30d despite being enabled → that's a real CRIME, but it's a SCHEDULING or DAEMON bug, not "piling up".
+
+### § 27.3 fix-piling-up.sh v1 allowlist (= safe minimal)
+
+```json
+{
+  "version": 1,
+  "actions": {
+    "delete-from-jobs": ["anicca-cron-harvester"],
+    "delete-runs-orphan": ["politician-receptive-update-weekly"],
+    "diagnose-only": ["larry-strategy-updater"],
+    "skip-institutional-auth": ["jsps-application-monthly"],
+    "keep": ["politician-stripe-to-pac"]
+  }
+}
+```
+
+→ fix-piling-up.sh v1 acts on **2 entries** safely. 3 are reclassified.
+
+### § 27.4 U-93 P02 regex — still tightening
+
+Round-11 test input `"Please click here: https://...sign in"` has 50+ chars
+between "click here" and "sign in" → `.{0,40}` was too tight. Try `.*` (greedy):
+
+```regex
+click here.*sign in
+```
+
+→ matches the synthetic. But greedy `.*` over multi-line text can over-match.
+Final: use `click here[^.]{0,200}sign in` (= 200 char bound + no period to
+prevent sentence-spanning).
+
+### § 27.5 Updated patterns.json entry for P02
+
+```json
+{"id":"P02","regex":"Click (this URL|here)( to sign| to authenticate| to authorize)?|click here[^.]{0,200}sign in|click here[^.]{0,200}continue","scope":"outbound","fix_script":"fix-hivemind.sh","severity":"high"}
+```
+
+---
+
+## § 28. v1 ship checklist — round-11-final
+
+| Component | v1 status | Change since round 10 |
+|---|---|---|
+| fix-piling-up.sh | **SHIP (allowlist-mode)** | unblocked: now acts on 2 explicit entries, not heuristic 220 |
+| patterns.json | SHIP (with round-11 P02 tighten) | updated |
+| All other components | unchanged | — |
+
+★ v1 SHIP: now 9/11 (was 8/11). HOLD: 1 (slack-bridge.py) — only Dais review remains. ★
+
+---
+
+## § 29. Final residual (= round 12 onward)
+
+| # | Question | Priority |
+|---|---|---|
+| U-87 | Router de-minify | P3 (not blocking) |
+| U-88 | Hot-reload live (needs API key) | P2 (verify works) |
+| U-89 | outbox merge | P2 (DRY) |
+| U-90 | ERRORS append loop | P2 (auto-skill) |
+| U-94 | slack-bridge dry-run mode | P1 (Dais sign-off) |
+| U-65 | Override v2 | future |
+| U-75 | Sync v2 | future |
+| larry-strategy-updater silent-fail | NEW Q (= U-100) | P2 (separate investigation) |
