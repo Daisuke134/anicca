@@ -42,6 +42,24 @@ curl -H "x-paid-tx-hash: 0xYOUR_TX_HASH" \
 | `/v0/draft` | POST | 0.05 USDC | TBD (Wave 2) |
 | `/v0/call` | POST | 0.30 USDC | TBD (Wave 2) |
 
+## Synthetic test
+
+```bash
+pnpm start &        # in another shell or background
+./node_modules/.bin/tsx test/synthetic.ts
+# → 4/4 passed, exit 0
+```
+
+Cases: `/health` 200 + receiver match · `/v0/echo` no-payment 402 + nonce_sig present · `/v0/echo` bogus tx → 402 (verify fails) · `/v0/learn` no-payment 402.
+
+## Security notes
+
+| Layer | Mechanism |
+|---|---|
+| Forgery | Each challenge nonce signed with HMAC-SHA256 (`X402_HMAC_SECRET` env or per-process random) |
+| Replay | On-chain tx hash uniqueness + Base block age window < 10 min (see `verify.ts`) |
+| Tamper | `nonce_sig` recomputable server-side via `recomputeNonceSig()` |
+
 ## Deploy
 
 Wave 1 = local + manual deploy. Wave 2 adds `Dockerfile` + Netlify Functions + Akash per spec § 2 T6.
