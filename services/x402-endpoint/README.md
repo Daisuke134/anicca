@@ -69,15 +69,37 @@ Cases: `/health` 200 + receiver match · `/v0/echo` no-payment 402 + nonce_sig p
 | Replay | On-chain tx hash uniqueness + Base block age window < 10 min (see `verify.ts`) |
 | Tamper | `nonce_sig` recomputable server-side via `recomputeNonceSig()` |
 
-## Install / reinstall the launchd job
+## Install / reinstall the launchd jobs
+
+Three plists work together; server and tunnel are decoupled so picking up new code never rotates the public URL.
 
 ```bash
 cp services/x402-endpoint/launchd/ai.anicca.x402-endpoint.plist ~/Library/LaunchAgents/
+cp services/x402-endpoint/launchd/ai.anicca.x402-tunnel.plist   ~/Library/LaunchAgents/
+cp services/x402-endpoint/launchd/ai.anicca.x402-monitor.plist  ~/Library/LaunchAgents/
 launchctl load -w ~/Library/LaunchAgents/ai.anicca.x402-endpoint.plist
-launchctl list ai.anicca.x402-endpoint        # expect LastExitStatus=0, PID present
-tail -f /tmp/anicca-x402.log                  # boot trace; tunnel URL line lands ~10s after start
-cat ~/.openclaw/state/anicca_x402_url.txt     # current public URL
+launchctl load -w ~/Library/LaunchAgents/ai.anicca.x402-tunnel.plist
+launchctl load -w ~/Library/LaunchAgents/ai.anicca.x402-monitor.plist
+launchctl list ai.anicca.x402-endpoint        # server  — PID + LastExitStatus=0
+launchctl list ai.anicca.x402-tunnel          # tunnel  — PID + LastExitStatus=0
+launchctl list ai.anicca.x402-monitor         # monitor — PID + LastExitStatus=0
+cat ~/.openclaw/state/anicca_x402_url.txt     # current public URL (stable across server restarts)
 ```
+
+| Plist | Wrapper | Role |
+|---|---|---|
+| `ai.anicca.x402-endpoint` | `run.sh` | Hono server on :8403; exec's tsx |
+| `ai.anicca.x402-tunnel`   | `tunnel.sh` | cloudflared quick tunnel; persists URL to state file |
+| `ai.anicca.x402-monitor`  | `monitor.sh` | tails `/tmp/anicca-x402.log` for REVENUE lines → Slack #metrics |
+
+## Uptime self-heal (hourly cron)
+
+```bash
+python3 services/x402-endpoint/scripts/register-cron.py
+# → idempotently registers `anicca-x402-uptime-check` in ~/.openclaw/cron/jobs.json
+```
+
+`scripts/uptime-check.sh` runs at minute 0 of every hour (Asia/Tokyo). If `localhost:8403/health` or `<public_url>/health` doesn't return 200, it `launchctl kickstart`s the relevant plist and appends a JSONL line to `~/.openclaw/state/anicca_x402_uptime.jsonl`. Output is delivered to Slack #metrics via the openclaw gateway's announce mode.
 
 ## agentic.market listing
 
