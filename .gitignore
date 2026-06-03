@@ -53,3 +53,8 @@ skills/*/pdfs/
 skills/*/queue/
 skills/*/state/wallet.encrypted
 skills/*/state/MNEMONIC_BACKUP_ONCE.txt
+
+# Spec 12 — adapter state (sessions, DM logs, call logs all chmod 600)
+adapters/custom/*/state/
+state/adapter-test-log.jsonl
+state/last-captcha-block.txt
