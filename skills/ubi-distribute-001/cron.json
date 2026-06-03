@@ -1,0 +1,12 @@
+{
+  "name": "anicca-ubi-monthly",
+  "schedule": {
+    "kind": "cron",
+    "expr": "5 6 1 * *",
+    "tz": "Asia/Tokyo"
+  },
+  "payload": {
+    "kind": "agentTurn",
+    "message": "bash ~/.openclaw/skills/ubi-distribute-001/scripts/select-charity.sh | xargs bash ~/.openclaw/skills/ubi-distribute-001/scripts/payout.sh"
+  }
+}

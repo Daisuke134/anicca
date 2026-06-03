@@ -1,0 +1,105 @@
+[
+  {
+    "name": "GiveDirectly, Inc",
+    "url": "https://www.givedirectly.org/",
+    "base_addr": "0x21D0D88CAF045a9a285fE7341AbAC0B6ba1647BB",
+    "ethereum_addr": "0x21D0D88CAF045a9a285fE7341AbAC0B6ba1647BB",
+    "kyc_required": false,
+    "category": "direct-cash-transfer",
+    "verification": {
+      "ein": "27-1661997",
+      "via": "Endaoment Org entity (EIP-1167 minimal proxy)",
+      "endaoment_org_id": "d937a50f-336b-4f0a-8143-7b47b03d0988",
+      "endaoment_url": "https://app.endaoment.org/orgs/27-1661997",
+      "endaoment_api": "https://api.endaoment.org/v2/orgs/search?searchTerm=GiveDirectly",
+      "is_deployed_on_base": true,
+      "basescan": "https://basescan.org/address/0x21D0D88CAF045a9a285fE7341AbAC0B6ba1647BB",
+      "verified_at": "2026-06-03"
+    }
+  },
+  {
+    "name": "Doctors Without Borders (MSF USA)",
+    "url": "https://www.doctorswithoutborders.org/",
+    "base_addr": "0xA296e4d394b7dfE76B384717a7E0A26564f425a2",
+    "ethereum_addr": "0xA296e4d394b7dfE76B384717a7E0A26564f425a2",
+    "kyc_required": false,
+    "category": "emergency-medical",
+    "verification": {
+      "ein": "13-3433452",
+      "via": "Endaoment Org entity (EIP-1167 minimal proxy)",
+      "endaoment_url": "https://app.endaoment.org/orgs/13-3433452",
+      "endaoment_api": "https://api.endaoment.org/v2/orgs/search?searchTerm=Doctors+Without+Borders",
+      "is_deployed_on_base": true,
+      "basescan": "https://basescan.org/address/0xA296e4d394b7dfE76B384717a7E0A26564f425a2",
+      "verified_at": "2026-06-03"
+    }
+  },
+  {
+    "name": "Wikimedia Foundation, Inc.",
+    "url": "https://wikimediafoundation.org/",
+    "base_addr": "0xe5F123750FcEa2D82b1441048F1A431FDD3D2Dc1",
+    "ethereum_addr": "0xe5F123750FcEa2D82b1441048F1A431FDD3D2Dc1",
+    "kyc_required": false,
+    "category": "knowledge-commons",
+    "verification": {
+      "ein": "20-0049703",
+      "via": "Endaoment Org entity (EIP-1167 minimal proxy)",
+      "endaoment_url": "https://app.endaoment.org/orgs/20-0049703",
+      "endaoment_api": "https://api.endaoment.org/v2/orgs/search?searchTerm=Wikimedia",
+      "is_deployed_on_base": true,
+      "basescan": "https://basescan.org/address/0xe5F123750FcEa2D82b1441048F1A431FDD3D2Dc1",
+      "verified_at": "2026-06-03"
+    }
+  },
+  {
+    "name": "charity: water",
+    "url": "https://www.charitywater.org/",
+    "base_addr": "0xe5E6681F4eEe26019FeA569ad751410cF4c99A80",
+    "ethereum_addr": "0xe5E6681F4eEe26019FeA569ad751410cF4c99A80",
+    "kyc_required": false,
+    "category": "clean-water",
+    "verification": {
+      "ein": "22-3936753",
+      "via": "Endaoment Org entity (EIP-1167 minimal proxy)",
+      "endaoment_url": "https://app.endaoment.org/orgs/22-3936753",
+      "endaoment_api": "https://api.endaoment.org/v2/orgs/search?searchTerm=charity:+water",
+      "is_deployed_on_base": true,
+      "basescan": "https://basescan.org/address/0xe5E6681F4eEe26019FeA569ad751410cF4c99A80",
+      "verified_at": "2026-06-03"
+    }
+  },
+  {
+    "name": "Internet Archive",
+    "url": "https://archive.org/",
+    "base_addr": "0xE11C93708f20027282b151F704D6922E452B77D4",
+    "ethereum_addr": "0xE11C93708f20027282b151F704D6922E452B77D4",
+    "kyc_required": false,
+    "category": "digital-preservation",
+    "verification": {
+      "ein": "94-3242767",
+      "via": "Endaoment Org entity (EIP-1167 minimal proxy)",
+      "endaoment_url": "https://app.endaoment.org/orgs/94-3242767",
+      "endaoment_api": "https://api.endaoment.org/v2/orgs/search?searchTerm=Internet+Archive",
+      "is_deployed_on_base": true,
+      "basescan": "https://basescan.org/address/0xE11C93708f20027282b151F704D6922E452B77D4",
+      "verified_at": "2026-06-03"
+    }
+  },
+  {
+    "name": "Electronic Frontier Foundation",
+    "url": "https://www.eff.org/",
+    "base_addr": "0xA104195E51eC7497E5D893f85820c4b8EEbAc3bc",
+    "ethereum_addr": "0x1ca9EB2a5C213d417269134b80111F57e1644105",
+    "kyc_required": false,
+    "category": "digital-rights",
+    "verification": {
+      "ein": "04-3091431",
+      "via": "Endaoment Org entity on Base (EIP-1167 minimal proxy); ethereum_addr is EFF's self-published L1 wallet from https://www.eff.org/pages/other-ways-give-and-donor-support",
+      "endaoment_url": "https://app.endaoment.org/orgs/04-3091431",
+      "endaoment_api": "https://api.endaoment.org/v2/orgs/search?searchTerm=Electronic+Frontier",
+      "is_deployed_on_base": true,
+      "basescan": "https://basescan.org/address/0xA104195E51eC7497E5D893f85820c4b8EEbAc3bc",
+      "verified_at": "2026-06-03"
+    }
+  }
+]
