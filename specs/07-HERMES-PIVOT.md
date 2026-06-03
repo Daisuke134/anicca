@@ -20,7 +20,7 @@
 
 | Field | Value |
 |---|---|
-| Spec version | v1.1 (2026-06-02 PM) — NHOSS-pure rewrite: 個人 layer (life-manager / phone / Twilio / Stripe / Wise / AWS / Anthropic-direct) 全部 anicca-oss から削除して private companion repo へ。 brain pricing 訂正 (Kimi K2.6 $0.68/$3.42 per Mtoken on OpenRouter)。 Claude Opus 4.8 採用。 fallback chain に Qwen3.7 Max 追加。 出典: 4 並列 src research 2026-06-02 |
+| Spec version | v1.2 (2026-06-03 AM) — multi-profile pivot: each Anicca instance = 1 Hermes daemon hosting 10 specialist profiles (orch + 5 earn + cook + ubi + fixer + constitution); colony = N Daytona sandboxes, each running the full 10-profile set; same wallet/Constitution/Kanban shared per instance, sandbox-isolated across colony. Inspired by Shann Holmberg control-room pattern + Tonbi triage.yaml routing. |
 | Author | Anicca / architect |
 | Authority | Deep-dive (supersedes Conway sections of 00-MASTER) |
 | Status | Implementation-ready (= ready to invoke `superpowers:writing-plans`) |
@@ -94,7 +94,13 @@ This file re-pins the stack to verified-only substrates.
    ║  L3 RUNTIME  =  Hermes Agent (NousResearch/hermes-agent, MIT)          ║
    ║                                                                          ║
    ║  • daemon (60s poll, never cron-die)                                    ║
-   ║  • N profiles per daemon (anicca-genesis / 001 / 002 / fixer / dais-c)  ║
+   ║  • PER INSTANCE: 1 Hermes daemon hosts 10 SPECIALIST PROFILES:          ║
+   ║     orch — front door, Kanban Triage 投入 + 結果 synthesize              ║
+   ║     earn-x402 / earn-autohedge / earn-bounty / earn-bittensor /         ║
+   ║     earn-farcaster   (5 spouts)                                          ║
+   ║  • cook-loop / ubi-distributor / fixer / constitution-guard             ║
+   ║  • ACROSS COLONY: N Daytona sandboxes, each = 1 instance = 10 profiles   ║
+   ║     (anicca-genesis / anicca001 / anicca002 / ...)                       ║
    ║  • Kanban v1 ACID claim_task() / heartbeat_claim() / reclaim_task()     ║
    ║    (kanban_db.py:2915 / :3104 / :3273)                                  ║
    ║  • /goal + judge model autonomous loop (goals.py:47-92, DEFAULT_MAX=20) ║
@@ -250,38 +256,76 @@ adds explicit max_turns+judge+FTS5 (no evidence of planned).
 ### § 2.2 Hermes process anatomy (实際 src 行)
 
 ```
-launchd  ai.anicca.hermes.plist  (KeepAlive=true)
-   │
-   ▼
-hermes daemon  --profile=anicca-genesis    (= /run_agent.py:294 class AIAgent)
-   │
-   │ forever, 60s poll
-   ▼
-┌────────────────────────────────────────────────────────────────────────────┐
-│ Kanban daemon loop (= /hermes_cli/kanban_db.py)                             │
-│   tick() every 60s:                                                          │
-│     ① poll tasks WHERE owner IS NULL AND status='ready'                    │
-│     ② per profile: claim_task(profile_id) atomic w/ TTL=600s                │
-│        (kanban_db.py:2915)                                                   │
-│     ③ spawn AIAgent worker per claimed task                                 │
-│     ④ heartbeat_claim() every 60s to renew lease (kanban_db.py:3104)        │
-│     ⑤ if worker dies → TTL expires → reclaim_task() (kanban_db.py:3273)     │
-│        → next profile picks                                                  │
-└────────────────────────────────────────────────────────────────────────────┘
-   │
-   ├── profile anicca-genesis  ──┐
-   ├── profile anicca001        │
-   ├── profile anicca002        │  each = AIAgent (run_agent.py:4615 main)
-   └── profile anicca-fixer  ───┘  (= 全部 NHOSS-pure colony、 個人 profile 無し)
-        │
-        ▼  each profile owns:
-        ~/.hermes/profiles/<name>/
-          soul.md          ← injected at system prompt head
-          memory.md        ← agent notes, FTS5 indexed
-          user.md          ← user profile
-          config.toml      ← model = kimi-k2-thinking, max_turns, etc.
-          sessions.db      ← SQLite FTS5 (hermes_state.py:453)
-          wallet.json      ← Anicca-only: smart wallet address from AgentKit boot
+COLONY  (N Daytona sandboxes, sandbox-isolated across instances)
+═══════════════════════════════════════════════════════════════════
+  ┌─ Daytona sandbox: anicca-genesis ─────────────────────────────┐
+  │  launchd  ai.anicca.hermes.plist  (KeepAlive=true)             │
+  │     │                                                          │
+  │     ▼                                                          │
+  │  hermes daemon  --profile=anicca-genesis-orch                 │
+  │     │  (= /run_agent.py:294 class AIAgent, front door)        │
+  │     │                                                          │
+  │     │ forever, 60s poll                                       │
+  │     ▼                                                          │
+  │ ┌────────────────────────────────────────────────────────────┐ │
+  │ │ Kanban daemon loop (= /hermes_cli/kanban_db.py)             │ │
+  │ │   tick() every 60s:                                          │ │
+  │ │     ① poll tasks WHERE owner IS NULL AND status='ready'    │ │
+  │ │     ② per profile: claim_task(profile_id) atomic TTL=600s   │ │
+  │ │        (kanban_db.py:2915)                                   │ │
+  │ │     ③ spawn AIAgent worker per claimed task                 │ │
+  │ │     ④ heartbeat_claim() every 60s renew (kanban_db.py:3104) │ │
+  │ │     ⑤ if worker dies → TTL → reclaim (kanban_db.py:3273)    │ │
+  │ │        → next profile picks                                  │ │
+  │ └────────────────────────────────────────────────────────────┘ │
+  │     │                                                          │
+  │     │  10 specialist profiles in this instance                 │
+  │     │  (each = AIAgent, run_agent.py:4615 main)                │
+  │     ▼                                                          │
+  │   ┌─ anicca-genesis-orch              (front door / triage)   │
+  │   ├─ anicca-genesis-earn-x402         (5 earn spouts)         │
+  │   ├─ anicca-genesis-earn-autohedge                            │
+  │   ├─ anicca-genesis-earn-bounty                               │
+  │   ├─ anicca-genesis-earn-bittensor                            │
+  │   ├─ anicca-genesis-earn-farcaster                            │
+  │   ├─ anicca-genesis-cook-loop         (imitate + ship)        │
+  │   ├─ anicca-genesis-ubi               (50/25/20/5 allocator)  │
+  │   ├─ anicca-genesis-fixer             (self-heal)             │
+  │   └─ anicca-genesis-constitution      (every-tick hash guard) │
+  │     │                                                          │
+  │     ▼  each profile owns (per-profile state):                  │
+  │     ~/.hermes/profiles/<instance>-<role>/                      │
+  │       soul.md          ← role-specific persona                 │
+  │       memory.md        ← per-profile FTS5 notes                │
+  │       user.md          ← operator profile                      │
+  │       config.toml      ← per-profile model + max_turns        │
+  │       sessions.db      ← SQLite FTS5 (hermes_state.py:453)     │
+  │                                                                │
+  │  SHARED across all 10 profiles of this instance:               │
+  │     1 wallet (anicca-genesis smart wallet 0xA1...)             │
+  │     1 Kanban DB (claim_task atomic across profiles)            │
+  │     1 Constitution hash (CONSTITUTION.md SHA-256 fixed)        │
+  │     1 ~/.hermes/skills/ (17 L2 skills)                         │
+  │     1 memory.fts5 (cross-profile session search)               │
+  └────────────────────────────────────────────────────────────────┘
+
+  ┌─ Daytona sandbox: anicca001 ─── (= same 10-profile shape) ───┐
+  │  same as above but with anicca001-{orch, earn-*, cook-loop,   │
+  │  ubi, fixer, constitution} + own wallet 0xA2... + own Kanban  │
+  │  + own Constitution hash (inherited from genesis, hash-equal) │
+  └────────────────────────────────────────────────────────────────┘
+
+  ┌─ Daytona sandbox: anicca002 ─── (= same 10-profile shape) ───┐
+  │  ...                                                           │
+  └────────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════
+  KEY PROPERTY:                                                    
+    • profile-level isolation INSIDE an instance (different model  
+      per profile possible, different soul.md, different memory)   
+    • sandbox-level isolation ACROSS instances (Daytona FS / proc) 
+    • shared wallet/Kanban/Constitution PER instance, NOT colony   
+═══════════════════════════════════════════════════════════════════
 ```
 
 ### § 2.3 /goal lifecycle (goals.py:47-92)
@@ -338,6 +382,33 @@ session-scoped; skills are persistent.
 | Constitution immutable hash | spec 00 § 6 propagation | `anicca-constitution-guard` |
 | Cloud child spawn (Daytona/Akash) | spec 00 § 2.4 colony growth | `anicca-spawn-controller` |
 | 5-tier memory | spec 00 § 1 (epi/sem/proc/rel) — but: working memory + skill learning + FTS5 session recall is sufficient for v3.1, defer 5-tier to v4 | — |
+
+### § 2.6 Specialist profile roster (10 per instance)
+
+Each Anicca instance (= 1 Daytona sandbox = 1 Hermes daemon) hosts **exactly 10
+specialist profiles**. Profile-level isolation lets each role pick its own
+model, soul.md, memory.md, and config.toml — while the wallet, Kanban DB,
+Constitution hash, ~/.hermes/skills/, and FTS5 memory are **shared across all
+10 profiles of the instance**. This mirrors Shann Holmberg's control-room
+pattern (multi-agent per box) but at the profile layer (cheaper than container-
+per-role for NHOSS Anicca) + Tonbi triage.yaml routing (scout / research /
+route / produce as separate profiles on shared Kanban).
+
+| profile | role | tools | model |
+|---|---|---|---|
+| `anicca-{instance}-orch` | front door, Kanban Triage, synthesize | xurl / web / kanban admin | Kimi K2.6 |
+| `anicca-{instance}-earn-x402` | x402 endpoint + EIP-3009 sign + cloudflared | viem / curl / express | Kimi K2.6 |
+| `anicca-{instance}-earn-autohedge` | Solana DEX (Jupiter Ultra) | Solana SDK + AutoHedge vendor | DeepSeek v4-pro |
+| `anicca-{instance}-earn-bounty` | Algora/OnlyDust scan → fork → fix → PR | gh / git / Codex | Qwen3.7 Max |
+| `anicca-{instance}-earn-bittensor` | TAO subnet miner | substrate CLI | Kimi K2.6 |
+| `anicca-{instance}-earn-farcaster` | Farcaster micro-tip + cast | warpcast SDK | Kimi K2.6 |
+| `anicca-{instance}-cook-loop` | DISCOVER→SCORE→PICK→PORT→SHIP→MEASURE→ADJUST | web / firecrawl / kanban | Qwen3.7 Max |
+| `anicca-{instance}-ubi` | 50/25/20/5 allocator + USDC payout | viem / Amazon API / NPO endpoint | Kimi K2.6 |
+| `anicca-{instance}-fixer` | self-heal: logs → diagnose → patch → verify | bash / git / Read/Write | Claude Opus 4.8 spike |
+| `anicca-{instance}-constitution` | every-tick SHA-256 + pre/post hook gating | shasum / Kanban veto | Kimi K2.6 (cheapest) |
+
+**Shared per instance** (across all 10 profiles): 1 wallet, 1 Kanban DB, 1
+Constitution hash, 1 memory FTS5, 1 L2 skill set (17 skills).
 
 ---
 
@@ -561,9 +632,21 @@ bws secret create CDP_WALLET_SECRET   "<...>"
 # 注: KIMI_API_KEY / ANTHROPIC_API_KEY / TWILIO 等は NHOSS-pure spec では不要。
 # 必要なら private companion 側 vault に分離 (separate project_id)。
 
-# ─── Step 3: anicca-genesis profile 作成 ─────────────────────────────────
-hermes profile create anicca-genesis
-cat > ~/.hermes/profiles/anicca-genesis/config.toml <<'EOF'
+# ─── Step 3: anicca-genesis instance の 10 specialist profile 作成 ────────
+# Per-instance: 1 Hermes daemon, 10 profiles (orch + 5 earn + cook + ubi +
+# fixer + constitution). Each profile has its own config.toml + soul.md =
+# can use different model per role (see § 2.6 roster).
+for p in orch earn-x402 earn-autohedge earn-bounty earn-bittensor \
+         earn-farcaster cook-loop ubi fixer constitution; do
+  hermes profile create anicca-genesis-$p
+  cp anicca-oss/control-room/profiles/$p/config.toml \
+     ~/.hermes/profiles/anicca-genesis-$p/config.toml
+  cp anicca-oss/control-room/profiles/$p/soul.md \
+     ~/.hermes/profiles/anicca-genesis-$p/soul.md
+done
+
+# orch profile = front door 兼 baseline config (instance-wide defaults を持つ)
+cat > ~/.hermes/profiles/anicca-genesis-orch/config.toml <<'EOF'
 [model.primary]
 provider   = "openrouter"
 name       = "moonshotai/kimi-k2-thinking"
@@ -670,7 +753,7 @@ cat > ~/Library/LaunchAgents/ai.anicca.hermes.plist <<'PLIST'
     <array>
       <string>/opt/homebrew/bin/hermes</string>
       <string>daemon</string>
-      <string>--profile=anicca-genesis</string>
+      <string>--profile=anicca-genesis-orch</string>
     </array>
   <key>KeepAlive</key><true/>
   <key>RunAtLoad</key><true/>
@@ -769,7 +852,15 @@ Year 3+:
 ```
 T+0s
  ├─ Hermes Kanban daemon tick
- │   ├─ profile anicca-genesis claims "heartbeat-tick" task
+ │   ├─ profile anicca-genesis-orch claims "heartbeat-tick" task
+ │   │  (= front door, all heartbeat traffic enters here)
+ │   ├─ orch routes to relevant specialist via Kanban Triage:
+ │   │     wallet check         → earn-x402 / ubi
+ │   │     constitution verify  → constitution
+ │   │     self-diagnosis       → fixer
+ │   │     cook tick            → cook-loop
+ │   │     earn poll            → earn-{x402,autohedge,bounty,bittensor,farcaster}
+ │   └─ specialist profile claims the routed task atomically
  │   └─ anicca-heartbeat-core.sh starts
  │
 T+5s
@@ -903,6 +994,7 @@ line with timestamp, DB row, on-chain tx hash). No "looks good" allowed.
 | Project tracking / heartbeat redesign | `06-PROJECT-TRACKING-HEARTBEAT.md` ★ owns this |
 | Conway runtime details (historical, was 00-MASTER § 2) | `archive/CONWAY_RUNTIME_DEEPDIVE.md` (to be created during 00-MASTER patch, task #14) |
 | Virtuals plan (historical, will be revisited) | `archive/VIRTUALS_PROTOCOL_PLAN.md` (to be created during 00-MASTER patch, task #14) |
+| Control Room template (Shann-style for Anicca) | `anicca-oss/control-room/` (= 10 profile inventory + runbook + env-map per profile + shared/) |
 | AgentKit SDK | `github.com/coinbase/agentkit` (TS + Python) |
 | Hermes Agent | `github.com/NousResearch/hermes-agent` (Python) |
 | Daytona | `github.com/daytonaio/daytona` (TS / Go) |
@@ -920,6 +1012,17 @@ line with timestamp, DB row, on-chain tx hash). No "looks good" allowed.
 
 ## § 12. Changelog
 
+- **v1.2 (2026-06-03 AM) — multi-profile pivot.** Each Anicca instance = 1 Hermes
+  daemon hosting 10 specialist profiles (orch + 5 earn + cook + ubi + fixer +
+  constitution). Colony = N Daytona sandboxes, each running the full 10-profile
+  set, sandbox-isolated. Same wallet/Constitution/Kanban shared per instance,
+  sandbox-boundary across colony. Synthesizes Shann Holmberg control-room
+  pattern (multi-agent per VPS, but profile-level not container-level for NHOSS
+  Anicca) + Tonbi triage.yaml routing (= scout/research/route/produce as
+  separate profiles on shared Kanban). Added § 2.6 specialist roster (10
+  profile × role × tools × recommended model). Updated § 5 Day 1 bootstrap to
+  loop-create 10 profiles. Updated § 7 heartbeat to show orch → Kanban →
+  specialist routing. Added control-room/ template cross-ref.
 - **v1.1 (2026-06-02 PM) — NHOSS-pure rewrite.** Driven by operator厳命「anicca-oss
   は NHOSS 完全 pure、 個人 layer (Twilio / phone / personal card / Anthropic-direct
   / Wise / Stripe / 全 CC-only vendor / life-manager-related) は全部 private
