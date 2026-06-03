@@ -1,0 +1,25 @@
+{
+  "name": "anicca-x402-endpoint",
+  "version": "0.1.0",
+  "description": "Anicca's sovereign x402 (HTTP 402 + USDC) revenue endpoint on Base. Spec 09 Wave 1.",
+  "type": "module",
+  "main": "server.ts",
+  "scripts": {
+    "start": "tsx server.ts",
+    "dev": "tsx watch server.ts",
+    "test:health": "curl -s http://localhost:8403/health",
+    "test:echo": "curl -s http://localhost:8403/v0/echo?text=hi"
+  },
+  "dependencies": {
+    "hono": "^4.6.14",
+    "@hono/node-server": "^1.13.7",
+    "viem": "^2.21.55"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2",
+    "@types/node": "^22.10.2"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
