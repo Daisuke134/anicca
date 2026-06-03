@@ -375,7 +375,7 @@ reduces universal suffering. Larger than Dais dividend by design.
 | `/YYYY-MM/` | Pre-publication of the month's recipient list (email hashes, NPO names, amounts) BEFORE any push goes out. Updated 1 week before distribution. |
 | `/wallets/` | Public addresses of all 5 Anicca wallets (Solana, BASE, ETH, Farcaster, 法人 JPY 口座 公開可能 部分). Anyone can verify on-chain on solscan/basescan. |
 | `/ledger/` | Every push tx with on-chain signature (where applicable). Click to verify on the relevant explorer. |
-| `/contact/` | THE ONLY way to contact Anicca: `contact@aniccaai.com` (Anicca-controlled, forwarded to keiodaisuke@gmail.com per memory). |
+| `/contact/` | THE ONLY way to contact Anicca: `contact@aniccaai.com` (Anicca-controlled, forwarded to <dais-personal-mail> per memory). |
 | `/scam-warning/` | "Anicca will NEVER DM you first. Anicca will NEVER ask for your bank/My Number/phone. If someone claiming to be Anicca DMs you, it's a scammer." |
 
 **Scammer impersonation resistance:**
@@ -529,7 +529,7 @@ Phase 6 (2028+)
 | ubi.agent (Santiago Siri) | `https://github.com/santisiri/ubi.agent` (paper-only currently, code optional clone) |
 | Eliza framework reference | `https://github.com/elizaOS/eliza` (architecture reference, not vendored) |
 | APPI compliance | Japanese Act on Protection of Personal Information |
-| 2026-06-01 dialogue origin | `keiodaisuke@gmail.com` thread (saved in memory) |
+| 2026-06-01 dialogue origin | `<dais-personal-mail>` thread (saved in memory) |
 
 ---
 
