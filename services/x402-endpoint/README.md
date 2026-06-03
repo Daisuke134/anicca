@@ -83,7 +83,17 @@ cat ~/.openclaw/state/anicca_x402_url.txt     # current public URL
 
 `agentic-market.json` carries this endpoint's discovery payload (per the x402 Bazaar PaymentRequiredResponse schema).
 
-Probed 2026-06-03: **agentic.market has no public REST submission endpoint** (`/api/*` returns 404). Discovery is settlement-driven — when a payment routes through a Bazaar-compatible facilitator (e.g. `api.cdp.coinbase.com/platform/v2/x402/facilitator/*`), the resource is auto-indexed at `/platform/v2/x402/discovery/resources` and surfaces on agentic.market. The 402 challenge already emits the canonical `accepts[]` + `extensions.bazaar` envelope (see `server.ts`), so the endpoint is ready to be picked up on first settled payment.
+### Submission flow (probed 2026-06-03)
+
+| Step | Mechanism |
+|---|---|
+| Direct REST submission | **Does not exist** — `/api/v1/services` returns 404 for POST, `/api/v1/validate` likewise. |
+| `POST https://api.agentic.market/v1/validate/run` | Returns a 19-check preflight + simulate. With our server.ts payload, both `/v0/echo` and `/v0/learn` return **19/19 PASS, valid=true, simulate.outcome="processing"** with a `workflowIdHint: discover-http-<method>-<resource>`. This queues the endpoint with the Coinbase x402 facilitator for indexing. |
+| Surfacing on agentic.market | Settlement-driven: per the wizard's "First Request" step, "Your endpoint needs at least one successful transaction through the CDP facilitator before it appears in the Bazaar." Until a payment routes through the facilitator, the endpoint stays in the indexing queue (`/v1/validate/check` returns `found:false`). |
+
+### Revenue monitor
+
+`monitor.sh` (installed as `~/Library/LaunchAgents/ai.anicca.x402-monitor.plist`, source kept at `launchd/ai.anicca.x402-monitor.plist`) tails `/tmp/anicca-x402.log` for the `REVENUE` marker that server.ts emits on every paying 200, mirrors the line into `~/.openclaw/state/anicca_x402_revenue.jsonl`, and forwards it to Slack channel #metrics via `chat.postMessage` (`SLACK_BOT_TOKEN` from `~/.openclaw/.env`).
 
 ## Deploy
 

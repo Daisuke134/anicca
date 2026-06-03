@@ -10,7 +10,7 @@
   },
   "endpoints": [
     {
-      "resource": "https://industrial-cameron-rise-treasurer.trycloudflare.com/v0/echo",
+      "resource": "https://efficiently-elliott-completing-awards.trycloudflare.com/v0/echo",
       "type": "http",
       "x402Version": 2,
       "accepts": [
@@ -52,7 +52,7 @@
       "description": "Echoes the supplied text after USDC payment. Cheapest route — proves the loop."
     },
     {
-      "resource": "https://industrial-cameron-rise-treasurer.trycloudflare.com/v0/learn",
+      "resource": "https://efficiently-elliott-completing-awards.trycloudflare.com/v0/learn",
       "type": "http",
       "x402Version": 2,
       "accepts": [
