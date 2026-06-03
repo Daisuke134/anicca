@@ -1,22 +1,20 @@
 #!/usr/bin/env bash
 # adapters/custom/lancers/scripts/login.sh
-# Open lancers.jp via camofox visible mode, complete Google OAuth using env creds,
-# persist cookie under ~/.camofox/profiles/anicca/lancers/.
-# Idempotent: if session is already valid (= inbox page reachable without redirect),
-# skip the OAuth dance.
+# Lancers session bootstrap. Live-verified 2026-06-03:
+#   - Google OAuth path FAILS ("この Google で会員登録されていません") because
+#     `keiodaisuke@gmail.com` is not linked. The Lancers account is registered
+#     under `keiodaisuke+anicca@gmail.com` + raw password (= existing MEMORY.md
+#     entry: "Lancers Google login 違反 = re-link 宿題").
+#   - Working path: email-pw login → email 2FA code → /mypage redirect.
+#   - 2FA code is auto-fetched from Gmail via `gog` CLI (forwarded from the
+#     +anicca alias to keiodaisuke@gmail.com).
 #
-# Required env (loaded from ~/.openclaw/.env):
-#   GOOGLE_LOGIN_EMAIL
-#   GOOGLE_LOGIN_PASSWORD
-#
-# Output:
-#   state/lancers-session.json (chmod 600)
-#   exit 0 = session live
-#   exit 2 = camofox not running
-#   exit 3 = CAPTCHA hit (HARD RULE #-1: log + exit, no human escalation)
+# Exit:
+#   0 = /mypage reached (session live)
+#   2 = camofox down / env missing / login failure
+#   3 = CAPTCHA hit (per HARD RULE #-1, no Dais escalation)
 
 set -uo pipefail
-
 [ -f "$HOME/.openclaw/.env" ] && set -a && . "$HOME/.openclaw/.env" && set +a
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -27,79 +25,129 @@ mkdir -p "$STATE_DIR"
 USER_ID="anicca"
 SESSION_KEY="lancers"
 CAMOFOX="http://127.0.0.1:9377"
-TARGET="https://www.lancers.jp/mypage/inbox"
 
 # 1. Health check
-HEALTH=$(curl -sS "$CAMOFOX/health" || true)
-if ! echo "$HEALTH" | grep -q '"ok":true'; then
+if ! curl -sS -m 10 "$CAMOFOX/health" | grep -q '"ok":true'; then
   echo "[lancers/login] camofox not alive on $CAMOFOX" >&2
   exit 2
 fi
 
-# 2. Open lancers inbox — if cookie already valid we'll see inbox DOM directly
-TAB_ID=$(curl -sS -X POST "$CAMOFOX/tabs" \
+# 2. Probe existing session by hitting /mypage
+TAB_ID=$(curl -sS -m 30 -X POST "$CAMOFOX/tabs" \
   -H 'Content-Type: application/json' \
-  -d "{\"url\":\"$TARGET\",\"userId\":\"$USER_ID\",\"sessionKey\":\"$SESSION_KEY\"}" \
+  -d "{\"url\":\"https://www.lancers.jp/mypage\",\"userId\":\"$USER_ID\",\"sessionKey\":\"$SESSION_KEY\"}" \
   | jq -r '.tabId // empty')
 
 if [ -z "$TAB_ID" ]; then
   echo "[lancers/login] failed to open tab" >&2
   exit 2
 fi
+sleep 4
 
-sleep 2
+snapshot_text() {
+  local raw
+  raw=$(curl -sS -m 30 "$CAMOFOX/tabs/$TAB_ID/snapshot?userId=$USER_ID&sessionKey=$SESSION_KEY" 2>/dev/null || true)
+  local t
+  t=$(echo "$raw" | jq -r '.snapshot // empty' 2>/dev/null)
+  [ -z "$t" ] && t="$raw"
+  echo "$t"
+}
 
-# 3. Snapshot to see what page we landed on. Strip the JSON envelope so we
-#    don't false-match on the URL string (= "/mypage/inbox" appears in the
-#    .url field even when we got a 404 redirect).
-SNAP_RAW=$(curl -sS "$CAMOFOX/tabs/$TAB_ID/snapshot?userId=$USER_ID&sessionKey=$SESSION_KEY" || true)
-SNAP=$(echo "$SNAP_RAW" | jq -r '.snapshot // empty' 2>/dev/null)
-[ -z "$SNAP" ] && SNAP="$SNAP_RAW"
+current_url() {
+  curl -sS -m 30 "$CAMOFOX/tabs/$TAB_ID/snapshot?userId=$USER_ID&sessionKey=$SESSION_KEY" 2>/dev/null \
+    | jq -r '.url // empty' 2>/dev/null
+}
 
-# CAPTCHA guard per HARD RULE #-1
+SNAP=$(snapshot_text)
+URL=$(current_url)
+
 if echo "$SNAP" | grep -qiE 'captcha|recaptcha|hcaptcha|cloudflare challenge'; then
-  echo "[lancers/login] CAPTCHA detected — exiting per HARD RULE #-1" >&2
-  echo "$SNAP" | head -c 2000 > "$STATE_DIR/last-captcha-block.txt"
+  echo "[lancers/login] CAPTCHA — exit per HARD RULE #-1" >&2
+  echo "$SNAP" | head -c 4000 > "$STATE_DIR/last-captcha-block.txt"
   exit 3
 fi
 
-# Already-logged-in heuristic: real inbox shows the user nav (= マイページ /
-# プロフィール / お知らせ items) — NOT just the inbox URL string.
-if echo "$SNAP" | grep -qE 'マイページ|お知らせ|メッセージ一覧|新着メッセージ'; then
+# Real /mypage shows the user role nav (ランサーメニュー / マイページ / etc.)
+if echo "$URL" | grep -q '/mypage' && echo "$SNAP" | grep -qE 'ランサーメニュー|anicca_ai_jp|発注者に切り替え'; then
   STATUS="reused-existing-session"
 else
-  # 4. Need Google OAuth. Click "Googleでログイン" or navigate to oauth entry.
-  curl -sS -X POST "$CAMOFOX/tabs" \
-    -H 'Content-Type: application/json' \
-    -d "{\"url\":\"https://www.lancers.jp/user/login\",\"userId\":\"$USER_ID\",\"sessionKey\":\"$SESSION_KEY\"}" >/dev/null
-  sleep 2
-
-  if [ -z "${GOOGLE_LOGIN_EMAIL:-}" ] || [ -z "${GOOGLE_LOGIN_PASSWORD:-}" ]; then
-    echo "[lancers/login] GOOGLE_LOGIN_EMAIL / GOOGLE_LOGIN_PASSWORD missing" >&2
+  # 3. Need fresh login. Email-pw is the only path that works.
+  if [ -z "${LANCERS_EMAIL:-}" ] || [ -z "${LANCERS_PASSWORD:-}" ]; then
+    echo "[lancers/login] LANCERS_EMAIL / LANCERS_PASSWORD missing in env" >&2
     exit 2
   fi
 
-  # Re-snapshot the login page (text format with [eN] refs)
-  sleep 1
-  LOGIN_SNAP_RAW=$(curl -sS "$CAMOFOX/tabs/$TAB_ID/snapshot?userId=$USER_ID&sessionKey=$SESSION_KEY" || true)
-  LOGIN_SNAP=$(echo "$LOGIN_SNAP_RAW" | jq -r '.snapshot // empty' 2>/dev/null)
-  [ -z "$LOGIN_SNAP" ] && LOGIN_SNAP="$LOGIN_SNAP_RAW"
+  # Navigate to login page
+  curl -sS -m 30 -X POST "$CAMOFOX/tabs" \
+    -H 'Content-Type: application/json' \
+    -d "{\"url\":\"https://www.lancers.jp/user/login\",\"userId\":\"$USER_ID\",\"sessionKey\":\"$SESSION_KEY\"}" >/dev/null
+  sleep 4
+  SNAP=$(snapshot_text)
 
-  # Find Google login control by scanning text-format snapshot for a line
-  # mentioning Google and pulling the [eN] ref right after it. Camofox emits
-  # lines like: `link "Googleでログイン" [e42]:` or `button "Google" [e9]`.
-  GOOGLE_REF=$(echo "$LOGIN_SNAP" | grep -iE '"[^"]*google[^"]*"\s*\[e[0-9]+\]' | grep -oE 'e[0-9]+' | head -1)
+  # Find email + password + login button refs (text snapshot)
+  EMAIL_REF=$(echo "$SNAP" | grep -E 'textbox\s+"メールアドレス"' | grep -oE 'e[0-9]+' | head -1)
+  PW_REF=$(echo "$SNAP" | grep -E 'textbox\s+"パスワード"' | grep -oE 'e[0-9]+' | head -1)
+  LOGIN_REF=$(echo "$SNAP" | grep -E 'button\s+"ログイン"' | grep -oE 'e[0-9]+' | head -1)
 
-  if [ -n "$GOOGLE_REF" ] && [ "$GOOGLE_REF" != "null" ]; then
-    curl -sS -X POST "$CAMOFOX/tabs/$TAB_ID/click" \
-      -H 'Content-Type: application/json' \
-      -d "{\"ref\":\"$GOOGLE_REF\",\"userId\":\"$USER_ID\",\"sessionKey\":\"$SESSION_KEY\"}" >/dev/null
-    sleep 3
+  if [ -z "$EMAIL_REF" ] || [ -z "$PW_REF" ] || [ -z "$LOGIN_REF" ]; then
+    echo "[lancers/login] login form refs not found (EMAIL=$EMAIL_REF PW=$PW_REF LOGIN=$LOGIN_REF)" >&2
+    exit 2
   fi
-  STATUS="oauth-initiated"
+
+  curl -sS -m 30 -X POST "$CAMOFOX/tabs/$TAB_ID/type" \
+    -H 'Content-Type: application/json' \
+    -d "$(jq -nc --arg ref "$EMAIL_REF" --arg t "$LANCERS_EMAIL" '{ref:$ref,text:$t,userId:"anicca",sessionKey:"lancers"}')" >/dev/null
+  curl -sS -m 30 -X POST "$CAMOFOX/tabs/$TAB_ID/type" \
+    -H 'Content-Type: application/json' \
+    -d "$(jq -nc --arg ref "$PW_REF" --arg t "$LANCERS_PASSWORD" '{ref:$ref,text:$t,userId:"anicca",sessionKey:"lancers"}')" >/dev/null
+
+  # Submit; click endpoint can stall on nav, treat timeout as fire-and-forget
+  curl -sS -m 60 -X POST "$CAMOFOX/tabs/$TAB_ID/click" \
+    -H 'Content-Type: application/json' \
+    -d "{\"ref\":\"$LOGIN_REF\",\"userId\":\"$USER_ID\",\"sessionKey\":\"$SESSION_KEY\"}" >/dev/null 2>&1 || true
+  sleep 4
+
+  URL=$(current_url)
+  if echo "$URL" | grep -q 'verify_code'; then
+    # 4. Fetch 6-digit code from Gmail using `gog` if available
+    CODE=""
+    if command -v gog >/dev/null 2>&1; then
+      CODE=$(gog gmail search 'from:lancers.co.jp subject:ログイン認証コード newer_than:1h' --limit 1 --json 2>/dev/null \
+        | jq -r '.[0].snippet // empty' 2>/dev/null \
+        | grep -oE '[0-9]{6}' | head -1)
+    fi
+    if [ -z "$CODE" ]; then
+      echo "[lancers/login] verify_code page reached but no gog CLI / Gmail code found" >&2
+      echo "[lancers/login] use an external Gmail fetcher to type the 6-digit code into ref [textbox '認証コード']" >&2
+      exit 2
+    fi
+    SNAP=$(snapshot_text)
+    CODE_REF=$(echo "$SNAP" | grep -E 'textbox\s+"認証コード"' | grep -oE 'e[0-9]+' | head -1)
+    VERIFY_REF=$(echo "$SNAP" | grep -E 'button\s+"認証する"' | grep -oE 'e[0-9]+' | head -1)
+    if [ -n "$CODE_REF" ] && [ -n "$VERIFY_REF" ]; then
+      curl -sS -m 30 -X POST "$CAMOFOX/tabs/$TAB_ID/type" \
+        -H 'Content-Type: application/json' \
+        -d "$(jq -nc --arg ref "$CODE_REF" --arg t "$CODE" '{ref:$ref,text:$t,userId:"anicca",sessionKey:"lancers"}')" >/dev/null
+      curl -sS -m 60 -X POST "$CAMOFOX/tabs/$TAB_ID/click" \
+        -H 'Content-Type: application/json' \
+        -d "{\"ref\":\"$VERIFY_REF\",\"userId\":\"$USER_ID\",\"sessionKey\":\"$SESSION_KEY\"}" >/dev/null 2>&1 || true
+      sleep 4
+    fi
+  fi
+
+  # 5. Confirm by re-probing /mypage
+  curl -sS -m 30 -X POST "$CAMOFOX/tabs" \
+    -H 'Content-Type: application/json' \
+    -d "{\"url\":\"https://www.lancers.jp/mypage\",\"userId\":\"$USER_ID\",\"sessionKey\":\"$SESSION_KEY\"}" >/dev/null
+  sleep 3
+  FINAL=$(snapshot_text)
+  if echo "$FINAL" | grep -qE 'ランサーメニュー|発注者に切り替え'; then
+    STATUS="fresh-login-ok"
+  else
+    STATUS="login-attempt-unconfirmed"
+  fi
 fi
 
-# 5. Persist session marker (cookies live in camofox profile dir; we record meta)
 COOKIE_DIR="$HOME/.camofox/profiles/$USER_ID/$SESSION_KEY"
 cat > "$STATE_DIR/lancers-session.json" <<EOF
 {
@@ -114,4 +162,7 @@ EOF
 chmod 600 "$STATE_DIR/lancers-session.json"
 
 echo "[lancers/login] $STATUS — session meta saved to $STATE_DIR/lancers-session.json"
-exit 0
+case "$STATUS" in
+  reused-existing-session|fresh-login-ok) exit 0 ;;
+  *) exit 2 ;;
+esac

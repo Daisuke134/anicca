@@ -38,3 +38,11 @@ camofox userId=`anicca`, sessionKey=`coconala`. Cookie/storage persist under `~/
 ## CAPTCHA
 
 Per HARD RULE #-1: if camofox snapshot reports a CAPTCHA element, the script logs the verbatim block and exits non-zero.
+
+## Live verification (2026-06-03 round 2)
+
+- Working path is email-pw (`COCONALA_EMAIL` / `COCONALA_PASSWORD` from env). Google OAuth fallback exists but the live account is registered under email-pw.
+- Coconala redirects `/mypage` → `/` on first hit; auth detection therefore probes `/mypage/dashboard_provider` and matches dashboard nav (`ダッシュボード` / `取引管理` / `サービス管理`) instead of URL only.
+- The inbox URL is `/message` (NOT `/mypage/inbox` or `/mypage/message` — those don't exist on Coconala). Each thread URL is `/mypage/direct_message/<id>`.
+- Live session today (mtdc): read-inbox.sh returned 4 real threads with valid direct_message URLs.
+- Email-pw login button is `" メールアドレスでログインする"` (leading space) and stays `[disabled]` until both fields validate — login.sh types into the textboxes first, then resolves the button ref.

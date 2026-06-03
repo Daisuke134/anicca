@@ -38,3 +38,11 @@ camofox userId=`anicca`, sessionKey=`lancers`. Cookie/storage persist under `~/.
 ## CAPTCHA
 
 Per HARD RULE #-1: if camofox snapshot reports a CAPTCHA element, the script logs the verbatim block and exits non-zero. No "ask Dais" — the loop owner retries on next cron with a fresh sessionKey.
+
+## Live verification (2026-06-03 round 2)
+
+- Google OAuth path: REJECTED — `keiodaisuke@gmail.com` is not registered. Lancers account uses `keiodaisuke+anicca@gmail.com` alias + raw password. login.sh canonicalizes the email-pw path; Google OAuth is not attempted.
+- Email 2FA: a 6-digit code is sent to the +anicca alias (forwards to keiodaisuke@gmail.com). login.sh fetches it via `gog` CLI when available, otherwise expects an external Gmail fetcher to populate the code.
+- Inbox URL is `/mypage/message` (NOT `/mypage/inbox` — that URL 404s). Each thread is a board accessible via `/mypage/message?boardId=<N>`. read-inbox.sh parses the board panel and emits `{title, counterparty}` rows; boardId hydrates only after a button click in the JS app, so url=`""` for now.
+- Live session today (anicca_ai_jp): read-inbox.sh returned 3 real threads.
+- Send-DM caveat: on at least one live thread Lancers disabled the textbox with `規約違反の恐れがあるため、メッセージを送信できません` — the platform's anti-spam interceptor. send-dm.sh propagates this as `status:"unconfirmed"` and exits non-zero.
