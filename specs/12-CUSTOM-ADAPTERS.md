@@ -76,7 +76,7 @@ Each `adapters/custom/<name>/` contains:
 
 ## § 5. Anti-goals
 
-- Not bypassing platform ToS (= Anicca operates her own keiodaisuke+anicca@gmail.com identity per existing memory `identity_anicca_login_accounts`)
+- Not bypassing platform ToS (= Anicca operates her own <dais-anicca-alias> identity per existing memory `identity_anicca_login_accounts`)
 - Not aggressive bot behavior (= ≤ 10 DM/hour per platform, ≤ 3 bids/day)
 - Not posting CAPTCHA-bypass code (= per HARD RULE #-1 genuine CAPTCHA = stop + Slack)
 

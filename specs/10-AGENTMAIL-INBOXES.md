@@ -76,7 +76,7 @@ The previous spec (08 v1) proposed forking Inbox Zero. That is **abandoned**. Ag
 
 - Not forking Inbox Zero (= abandoned)
 - Not Postgres (= SQLite via Conway state.db)
-- Not Gmail polling (= AgentMail push only for these custom addresses; legacy Gmail polling kept for Dais's redacted@example.invalid)
+- Not Gmail polling (= AgentMail push only for these custom addresses; legacy Gmail polling kept for Dais's <dais-personal-mail>)
 
 ## § 6. Cost (= verified)
 
