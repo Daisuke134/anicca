@@ -10,7 +10,8 @@ charity. v1 of spec 14.
 | `SKILL.md` | frontmatter + flow doc |
 | `charities.json` | 6 Endaoment-deployed Base Org entities (verified on-chain) |
 | `scripts/select-charity.sh` | override OR month-of-year rotation → addr on stdout |
-| `scripts/payout.sh` | `<addr> [amount]` — calls `anicca-payout-wallet` |
+| `scripts/payout.sh` | `<addr> [amount]` — auto-picks cdp OR viem broadcaster |
+| `scripts/payout-viem.js` | self-contained viem broadcaster (no cdp dependency) |
 | `scripts/ledger-append.sh` | append-only writer + dashboard.json patch |
 | `scripts/wallet-watch.sh` | hourly: promote DRY → LIVE when wallet crosses threshold |
 | `scripts/register-cron.py` | idempotent insert of both crons into openclaw jobs.json |
@@ -46,6 +47,21 @@ decision and not an oscillation. Override the thresholds via
 `payout.sh` checks `UBI_LIVE` env, then the flag file, in that order. So
 `UBI_LIVE=1 bash payout.sh …` always wins (testing override); a present flag
 upgrades the monthly cron without touching the cron payload.
+
+## Broadcaster selection
+
+`payout.sh` auto-detects which signer to use, and you can override with
+`UBI_BROADCASTER`:
+
+| Broadcaster | Path | When picked |
+|---|---|---|
+| `cdp` | `~/.openclaw/skills/anicca-payout-wallet/scripts/payout.py` | `cdp` binary on PATH AND `CDP_API_KEY_NAME` + `CDP_API_KEY_PRIVATE` in `~/.openclaw/.env` |
+| `viem` | `./scripts/payout-viem.js` (self-contained) | Default fallback — reads `~/.automaton/wallet.json` privateKey, signs via viem, broadcasts via `https://mainnet.base.org` |
+
+The viem path verifies sender balance + ETH gas before signing and refuses
+to broadcast when funds are insufficient (`action: no-funds`). `--dry-run`
+uses `simulateContract` (`eth_call`) so the cron can prove the broadcast
+WOULD land without spending gas.
 
 ## Notes
 

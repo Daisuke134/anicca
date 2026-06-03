@@ -79,14 +79,26 @@ if [[ "$is_dry" == "1" ]]; then
   exit 0
 fi
 
-# --- non-zero amount: call anicca-payout-wallet skill ----------------------
-# Single source of truth = ~/.openclaw/skills/anicca-payout-wallet/scripts/payout.py
-# (the skill's run.sh wrapper redirects stdout to its own log, so we invoke
-#  payout.py directly with the same env loading the wrapper does, so we can
-#  capture the canonical JSON response and use its `action` as the status.)
+# --- non-zero amount: call a broadcaster -----------------------------------
+# Two implementations are available; one is canonical, one is a fallback:
 #
-# DRY pass-through: UBI_LIVE != "1" → forward --dry-run to the skill. The
-# skill emits {"action":"dry-run", ...} and exits 0 without invoking cdp.
+#   cdp  — ~/.openclaw/skills/anicca-payout-wallet/scripts/payout.py
+#          (single source of truth; uses the Coinbase AgentKit CLI for
+#          signing + broadcast. Requires `cdp` in PATH + CDP_API_KEY_NAME
+#          + CDP_API_KEY_PRIVATE in ~/.openclaw/.env.)
+#
+#   viem — ./payout-viem.js (this skill)
+#          (self-contained; reads ~/.automaton/wallet.json privateKey,
+#          signs with viem, broadcasts via https://mainnet.base.org. No
+#          cdp dependency.)
+#
+# Selection (first hit wins):
+#   1. Explicit  UBI_BROADCASTER=cdp|viem
+#   2. Auto      `cdp` is in PATH AND CDP env vars set       → cdp
+#                else                                        → viem
+#
+# DRY pass-through: UBI_LIVE != "1" → both broadcasters honor --dry-run and
+# emit `{"action":"dry-run", ...}` without sending a tx.
 #
 # UBI_LIVE source precedence (first hit wins):
 #   1. Explicit env  UBI_LIVE=1
@@ -99,11 +111,20 @@ if [[ "${UBI_LIVE:-0}" != "1" && -f "$UBI_LIVE_FLAG" ]]; then
   UBI_LIVE=1
 fi
 UBI_LIVE="${UBI_LIVE:-0}"
-PAYOUT_PY="$PAYOUT_WALLET_SKILL/scripts/payout.py"
-if [[ ! -f "$PAYOUT_PY" ]]; then
-  echo "[payout] missing anicca-payout-wallet payout.py: $PAYOUT_PY" >&2
-  exit 66
+
+# Auto-detect broadcaster.
+UBI_BROADCASTER="${UBI_BROADCASTER:-}"
+if [[ -z "$UBI_BROADCASTER" ]]; then
+  if command -v cdp >/dev/null 2>&1 \
+     && grep -qE '^(CDP_API_KEY_NAME|CDP_API_KEY_PRIVATE)=' "$HOME/.openclaw/.env" 2>/dev/null; then
+    UBI_BROADCASTER="cdp"
+  else
+    UBI_BROADCASTER="viem"
+  fi
 fi
+
+PAYOUT_PY="$PAYOUT_WALLET_SKILL/scripts/payout.py"
+PAYOUT_VIEM="$SKILL_DIR/scripts/payout-viem.js"
 
 dry_flag=""
 if [[ "$UBI_LIVE" != "1" ]]; then
@@ -114,17 +135,40 @@ tmp_out=$(mktemp)
 tmp_err=$(mktemp)
 trap 'rm -f "$tmp_out" "$tmp_err"' EXIT
 
-# Match run.sh's env loading exactly (single source of truth: anicca-payout-wallet)
-(
-  set -a
-  # shellcheck source=/dev/null
-  source "$HOME/.openclaw/.env" 2>/dev/null || true
-  set +a
-  /opt/homebrew/bin/timeout --kill-after=10 60 \
-    /opt/homebrew/bin/python3 "$PAYOUT_PY" \
-      --to "$to_addr" --amount "$amount" $dry_flag
-) >"$tmp_out" 2>"$tmp_err"
-rc=$?
+case "$UBI_BROADCASTER" in
+  cdp)
+    if [[ ! -f "$PAYOUT_PY" ]]; then
+      echo "[payout] cdp broadcaster requested but $PAYOUT_PY missing" >&2
+      exit 66
+    fi
+    # Match run.sh's env loading exactly (canonical anicca-payout-wallet path).
+    (
+      set -a
+      # shellcheck source=/dev/null
+      source "$HOME/.openclaw/.env" 2>/dev/null || true
+      set +a
+      /opt/homebrew/bin/timeout --kill-after=10 60 \
+        /opt/homebrew/bin/python3 "$PAYOUT_PY" \
+          --to "$to_addr" --amount "$amount" $dry_flag
+    ) >"$tmp_out" 2>"$tmp_err"
+    rc=$?
+    ;;
+  viem)
+    if [[ ! -f "$PAYOUT_VIEM" ]]; then
+      echo "[payout] viem broadcaster requested but $PAYOUT_VIEM missing" >&2
+      exit 66
+    fi
+    /opt/homebrew/bin/timeout --kill-after=10 90 \
+      /opt/homebrew/bin/node "$PAYOUT_VIEM" \
+        --to "$to_addr" --amount "$amount" $dry_flag \
+      >"$tmp_out" 2>"$tmp_err"
+    rc=$?
+    ;;
+  *)
+    echo "[payout] unknown UBI_BROADCASTER: $UBI_BROADCASTER (expected cdp|viem)" >&2
+    exit 64
+    ;;
+esac
 
 # The skill emits exactly one JSON object on stdout. Parse it.
 skill_json=$(tail -n 1 "$tmp_out" 2>/dev/null | head -c 4096)
