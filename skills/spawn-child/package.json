@@ -1,0 +1,19 @@
+{
+  "name": "anicca-spawn-child",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Spec 13 — spawn-child skill (wallet factory + inbox factory + Akash deploy)",
+  "scripts": {
+    "wallet": "tsx scripts/wallet-factory.ts",
+    "inbox": "tsx scripts/inbox-factory.ts",
+    "spawn": "bash scripts/spawn.sh"
+  },
+  "dependencies": {
+    "agentmail": "^0.5.2",
+    "viem": "^2.21.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0"
+  }
+}

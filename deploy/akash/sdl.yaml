@@ -1,0 +1,49 @@
+---
+# SPDX-License-Identifier: MIT
+# Akash SDL for anicca-002 — minimum-footprint Hermes deployment.
+# Validate locally:   akash validate deploy/akash/sdl.yaml
+# Estimate cost:      akash provider estimate deploy/akash/sdl.yaml
+
+version: "2.0"
+
+services:
+  hermes:
+    image: ghcr.io/daisuke134/anicca-hermes:002-v1
+    expose:
+      - port: 8080
+        as: 80
+        to:
+          - global: true
+    env:
+      - ANICCA_INSTANCE_ID=anicca-002
+      - CONSTITUTION_REPO=https://github.com/Daisuke134/anicca-oss.git
+      # secrets injected via akash provider env-var injection (= NOT in SDL)
+      - AGENTMAIL_API_KEY
+      - DEEPSEEK_API_KEY
+      - PEER_API_BASE_URL=https://anicca-001.aniccaai.com
+
+profiles:
+  compute:
+    hermes:
+      resources:
+        cpu:
+          units: 1
+        memory:
+          size: 2Gi
+        storage:
+          - size: 10Gi
+  placement:
+    akash:
+      pricing:
+        hermes:
+          denom: uakt
+          amount: 1000  # ≈ $0.75–$2/mo at AKT spot
+      attributes: {}
+      signedBy:
+        anyOf: []
+
+deployment:
+  hermes:
+    akash:
+      profile: hermes
+      count: 1

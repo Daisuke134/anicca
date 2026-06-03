@@ -1,0 +1,45 @@
+# SPDX-License-Identifier: MIT
+# anicca-002 base image — Hermes runtime on Akash.
+# Footprint target: 1 vCPU / 2 GB RAM / 10 GB storage (Akash $0.75–$2/mo tier).
+
+FROM python:3.11-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    ANICCA_INSTANCE_ID=anicca-002 \
+    ANICCA_HOME=/anicca
+
+WORKDIR /anicca
+
+# OS deps — curl for boot self-check, ca-certificates for HTTPS, git for
+# constitution clone, dumb-init for clean signal handling.
+RUN apt-get update \
+ && apt-get install --no-install-recommends -y \
+        curl ca-certificates git dumb-init \
+ && rm -rf /var/lib/apt/lists/*
+
+# Python deps mirror anicca-001's runtime minimum.
+RUN pip install \
+        agentmail==0.5.2 \
+        memu-py==1.5.1 \
+        viem==0.0.0a0 || true \
+ && pip install \
+        httpx \
+        pydantic \
+        cryptography \
+        rich
+
+# Constitution + boot script baked in (immutable); secrets injected at runtime.
+COPY skills/spawn-child/scripts/constitution-hash.sh /anicca/constitution-hash.sh
+COPY skills/spawn-child/scripts/boot.sh /anicca/boot.sh
+COPY skills/spawn-child/scripts/register.py /anicca/register.py
+
+RUN chmod +x /anicca/constitution-hash.sh /anicca/boot.sh
+
+# Health endpoint — Akash provider probes this for liveness.
+EXPOSE 8080
+
+ENTRYPOINT ["/usr/bin/dumb-init", "--"]
+CMD ["/anicca/boot.sh"]
