@@ -48,7 +48,7 @@ Once anicca-x402 is live and earns its first 0.01 USDC, the wallet has fuel for 
 | # | Task | Verify |
 |---|---|---|
 | 09.T1 | Read x402 protocol spec (= https://x402.org or RFC equivalent) + 1 reference impl (= read source code, not README) | quote 3 specific lines + URL |
-| 09.T2 | `pnpm init` + Hono server scaffold listening on `:8402` | `curl http://localhost:8402/health` → 200 |
+| 09.T2 | `pnpm init` + Hono server scaffold listening on `:8403` (★ NOT :8402 — collision with OpenClaw gateway's built-in x402-proxy, see spec 15 § 17.4 U-86) | `curl http://localhost:8403/health` → 200 |
 | 09.T3 | 402 challenge generator (= response `{price_usdc, receiver, nonce, route_id}`) | unit test: 1st GET → 402 with JSON body |
 | 09.T4 | USDC tx verification on Base via viem `getTransaction()` + ERC20 Transfer log decode | test with synthetic tx hash |
 | 09.T5 | Receipt issuance (= signed response with original payload + `x-paid-tx-hash` header) | replay protection via nonce |
