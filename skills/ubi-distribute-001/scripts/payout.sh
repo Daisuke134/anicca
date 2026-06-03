@@ -79,35 +79,63 @@ if [[ "$is_dry" == "1" ]]; then
   exit 0
 fi
 
-# --- live mode: call anicca-payout-wallet ----------------------------------
-# Existing skill entrypoint is run.sh (NOT send.sh as referenced in upstream
-# spec); keep that the single source of truth so signing logic stays in one
-# place. The skill takes USDC as a USD float and scales internally.
-WALLET_RUN="$PAYOUT_WALLET_SKILL/scripts/run.sh"
-if [[ ! -x "$WALLET_RUN" && ! -f "$WALLET_RUN" ]]; then
-  echo "[payout] missing anicca-payout-wallet entrypoint: $WALLET_RUN" >&2
+# --- non-zero amount: call anicca-payout-wallet skill ----------------------
+# Single source of truth = ~/.openclaw/skills/anicca-payout-wallet/scripts/payout.py
+# (the skill's run.sh wrapper redirects stdout to its own log, so we invoke
+#  payout.py directly with the same env loading the wrapper does, so we can
+#  capture the canonical JSON response and use its `action` as the status.)
+#
+# DRY pass-through: UBI_LIVE != "1" → forward --dry-run to the skill. The
+# skill emits {"action":"dry-run", ...} and exits 0 without invoking cdp.
+# Set UBI_LIVE=1 only after wallet > $1 USDC + Dais sign-off.
+UBI_LIVE="${UBI_LIVE:-0}"
+PAYOUT_PY="$PAYOUT_WALLET_SKILL/scripts/payout.py"
+if [[ ! -f "$PAYOUT_PY" ]]; then
+  echo "[payout] missing anicca-payout-wallet payout.py: $PAYOUT_PY" >&2
   exit 66
 fi
 
-tmp_out=$(mktemp)
-trap 'rm -f "$tmp_out"' EXIT
-
-bash "$WALLET_RUN" --to "$to_addr" --amount "$amount" >"$tmp_out" 2>&1
-rc=$?
-
-# Extract tx hash (cdp prints it inline; run.sh also tees to its own log)
-tx_hash=$(grep -oE '0x[a-fA-F0-9]{64}' "$tmp_out" | head -n1 || true)
-if [[ -z "$tx_hash" ]]; then
-  # fall back to scanning the skill's run log (it appends one line per call)
-  log="$PAYOUT_WALLET_SKILL/state/run.log"
-  if [[ -f "$log" ]]; then
-    tx_hash=$(tail -n 40 "$log" | grep -oE '0x[a-fA-F0-9]{64}' | head -n1 || true)
-  fi
+dry_flag=""
+if [[ "$UBI_LIVE" != "1" ]]; then
+  dry_flag="--dry-run"
 fi
 
-status="sent"
-if [[ $rc -ne 0 || -z "$tx_hash" ]]; then
+tmp_out=$(mktemp)
+tmp_err=$(mktemp)
+trap 'rm -f "$tmp_out" "$tmp_err"' EXIT
+
+# Match run.sh's env loading exactly (single source of truth: anicca-payout-wallet)
+(
+  set -a
+  # shellcheck source=/dev/null
+  source "$HOME/.openclaw/.env" 2>/dev/null || true
+  set +a
+  /opt/homebrew/bin/timeout --kill-after=10 60 \
+    /opt/homebrew/bin/python3 "$PAYOUT_PY" \
+      --to "$to_addr" --amount "$amount" $dry_flag
+) >"$tmp_out" 2>"$tmp_err"
+rc=$?
+
+# The skill emits exactly one JSON object on stdout. Parse it.
+skill_json=$(tail -n 1 "$tmp_out" 2>/dev/null | head -c 4096)
+if [[ -z "$skill_json" ]]; then
+  skill_json='{}'
+fi
+
+# Read `action` field as status (dry-run / sent / send-failed / no-destination / no-funds)
+status=$(echo "$skill_json" | jq -r '.action // "unknown"' 2>/dev/null)
+if [[ -z "$status" || "$status" == "null" ]]; then
+  status="unknown"
+fi
+# If skill crashed before emitting JSON, attribute to send-failed with stderr peek
+if [[ $rc -ne 0 && "$status" == "unknown" ]]; then
   status="send-failed"
+fi
+
+# Extract tx hash from the JSON if present, else scan stdout+stderr
+tx_hash=$(echo "$skill_json" | jq -r '.tx_hash // empty' 2>/dev/null)
+if [[ -z "$tx_hash" || "$tx_hash" == "null" ]]; then
+  tx_hash=$(grep -oE '0x[a-fA-F0-9]{64}' "$tmp_out" "$tmp_err" 2>/dev/null | head -n1 || true)
 fi
 
 bash "$LEDGER_APPEND" \
