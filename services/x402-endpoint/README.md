@@ -92,6 +92,27 @@ cat ~/.openclaw/state/anicca_x402_url.txt     # current public URL (stable acros
 | `ai.anicca.x402-tunnel`   | `tunnel.sh` | cloudflared quick tunnel; persists URL to state file |
 | `ai.anicca.x402-monitor`  | `monitor.sh` | tails `/tmp/anicca-x402.log` for REVENUE lines → Slack #metrics |
 
+## Public URL state
+
+`tunnel.sh` writes the current cloudflared URL to **both**:
+
+| Path | Why |
+|---|---|
+| `~/.openclaw/state/anicca_x402_url.txt` | Canonical store (cron consumers, listing bumper) |
+| `services/x402-endpoint/state/public-url.txt` | Repo-relative mirror (review / CI / inline tests) |
+
+Each write is atomic (`mv` from a `.tmp.<pid>` sibling) so readers never see a half-written value.
+
+## Named tunnel — blocker (round 4 attempt)
+
+| Option | State | Why blocked |
+|---|---|---|
+| `cloudflared tunnel create anicca-x402 + tunnel route dns x402.aniccaai.com` | Blocked | `aniccaai.com` is on **NS1** (`dns1.p06.nsone.net`), not Cloudflare. The `tunnel route dns` command requires the zone to be on Cloudflare. No CF API token / no NS1 API token in `~/.openclaw/.env` to scriptthe migration. |
+| `cloudflared tunnel login` + named tunnel on `<uuid>.cfargotunnel.com` | Possible but not autonomous in <15 min | Requires browser OAuth on dash.cloudflare.com against a CF account. The agent can drive camofox through it (~30 min), but the resulting `cfargotunnel.com` URL is no more memorable than the trycloudflare one — and it still rotates if the tunnel is deleted. |
+| Quick tunnel (current) | Live | Decoupled from server lifecycle (separate launchd job) + hourly self-heal cron means the URL rotates only on `ai.anicca.x402-tunnel` restart, not on every server respawn. |
+
+Round-5 candidate: pair `aniccaai.com` to Cloudflare DNS (one-time NS1 → CF nameserver swap; ~30-60 min including propagation) → then named tunnel comes for free.
+
 ## Uptime self-heal (hourly cron)
 
 ```bash
