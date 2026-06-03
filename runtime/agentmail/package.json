@@ -1,0 +1,18 @@
+{
+  "name": "anicca-agentmail",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "description": "Per-Anicca AgentMail inboxes + webhook receiver on :8810 (spec 10)",
+  "scripts": {
+    "inboxes": "node inboxes.ts",
+    "server": "node webhook-server.ts",
+    "subscribe": "node webhook-subscribe.ts"
+  },
+  "dependencies": {
+    "agentmail": "^0.5.8",
+    "body-parser": "^1.20.3",
+    "express": "^4.21.2",
+    "svix": "^1.95.1"
+  }
+}
