@@ -20,20 +20,23 @@ CREATE INDEX IF NOT EXISTS idx_inbox_threads_last_message_at
     ON inbox_threads(last_message_at);
 
 CREATE TABLE IF NOT EXISTS inbox_messages (
-    id          TEXT PRIMARY KEY,               -- AgentMail message_id
-    thread_id   TEXT NOT NULL REFERENCES inbox_threads(id) ON DELETE CASCADE,
-    direction   TEXT NOT NULL CHECK (direction IN ('inbound', 'outbound')),
-    sent_at     TEXT NOT NULL,                  -- ISO-8601 UTC
-    from_addr   TEXT,
-    to_addr     TEXT,
-    subject     TEXT,
-    body        TEXT,
-    created_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+    id           TEXT PRIMARY KEY,              -- AgentMail message_id
+    thread_id    TEXT NOT NULL REFERENCES inbox_threads(id) ON DELETE CASCADE,
+    direction    TEXT NOT NULL CHECK (direction IN ('inbound', 'outbound')),
+    sent_at      TEXT NOT NULL,                 -- ISO-8601 UTC
+    from_addr    TEXT,
+    to_addr      TEXT,
+    subject      TEXT,
+    body         TEXT,
+    in_reply_to  TEXT,                          -- NULL for inbound; for outbound: inbound id replied to
+    created_at   TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
 CREATE INDEX IF NOT EXISTS idx_inbox_messages_thread_id
     ON inbox_messages(thread_id);
 CREATE INDEX IF NOT EXISTS idx_inbox_messages_sent_at
     ON inbox_messages(sent_at);
+CREATE INDEX IF NOT EXISTS idx_inbox_messages_in_reply_to
+    ON inbox_messages(in_reply_to);
 
 -- Reply-Zero analog: rows live here only while we are waiting for the
 -- counterparty to reply. friction-fixer (spec 15) drains this table.

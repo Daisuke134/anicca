@@ -1,0 +1,17 @@
+[build]
+  publish = "public"
+  functions = "netlify/functions"
+
+[functions]
+  node_bundler = "esbuild"
+  external_node_modules = ["svix"]
+
+[[redirects]]
+  from = "/agentmail"
+  to = "/.netlify/functions/agentmail-webhook"
+  status = 200
+
+[[redirects]]
+  from = "/healthz"
+  to = "/.netlify/functions/agentmail-webhook"
+  status = 200

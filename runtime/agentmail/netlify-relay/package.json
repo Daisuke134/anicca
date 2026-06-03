@@ -1,0 +1,11 @@
+{
+  "name": "anicca-agentmail-netlify-relay",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Stable public webhook endpoint that verifies Svix HMAC and relays to the on-prem :8810 receiver via cloudflared.",
+  "dependencies": {
+    "@netlify/functions": "^4.0.0",
+    "svix": "^1.95.1"
+  }
+}

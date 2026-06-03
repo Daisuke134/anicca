@@ -53,3 +53,4 @@ skills/*/pdfs/
 skills/*/queue/
 skills/*/state/wallet.encrypted
 skills/*/state/MNEMONIC_BACKUP_ONCE.txt
+runtime/agentmail/netlify-relay/.netlify/
