@@ -1046,3 +1046,201 @@ Still open (= 14 items after round 5's 21 resolutions + 6 new):
 | 4 | 11/11 | 35 | 35 |
 | 5 | + cross-decisions | 14 | 6 (U-86..U-91) |
 | 6 | (planned) live-tests | TBD | TBD |
+
+## § 21. ROUND 6 — source-reads + live test (2026-06-03)
+
+### § 21.1 U-80 ★ resolved ★ — cfo-hourly is LLM-free
+
+`~/.openclaw/skills/cfo-core/run-cfo-hourly.sh`:
+1. `node build-anicca.js` → reads Stripe + RC + Link APIs, writes anicca-cfo.json
+2. `node bridge-to-dashboard.js` → writes public/dashboard.json
+3. git rebase + commit + push to Netlify
+
+**No LLM calls** → blockrun-affected models do NOT impact cfo-core.
+fix-blockrun-rejection.sh scope confirmed: only touches openclaw.json fallbacks,
+does NOT need to coordinate with cfo-core.
+
+### § 21.2 U-87 partial — router code not directly grep-able
+
+`/opt/homebrew/lib/node_modules/openclaw/dist/index.js` is minified;
+keywords (`fallback`, `first-success`, `next.*model`) returned no human-readable
+hits. Round 10 deferred: the fallback algorithm is encoded in obfuscated names.
+For fix-blockrun-rejection.sh, we use the safe assumption: **the gateway picks
+the first non-erroring fallback in order**. Patch design: prepend our preferred
+model to the fallbacks list, leaving original entries below as deeper fallbacks.
+
+### § 21.3 U-88 partial — gateway at :18789 with API-key auth on /v1/models
+
+```bash
+$ curl http://127.0.0.1:18789/health
+{"ok":true,"status":"live"}
+
+$ curl http://127.0.0.1:18789/v1/models
+{"error":{"message":"Unauthorized","type":"unauthorized"}}
+```
+
+Gateway requires an API key for /v1/models. The web UI on /' returns HTML
+"OpenClaw Control" — a separate admin surface. Live hot-reload test deferred
+to round 9 (= requires editing config + observing /v1/models change with auth).
+
+Safe assumption for round 4 patch: openclaw.json mutation requires
+`launchctl kickstart -k gui/$(id -u)/ai.openclaw.gateway` to take effect.
+If hot-reload is later confirmed, kickstart becomes optional.
+
+---
+
+## § 22. ROUND 7 — cross-spec port migrate (2026-06-03)
+
+### § 22.1 Spec 09 patched
+
+`specs/09-EARN-X402-LIVE.md` § 2 task 09.T2: port changed `:8402 → :8403`.
+Verification command updated to `curl http://localhost:8403/health`.
+
+(Committed in same push as this round.)
+
+---
+
+## § 23. ROUND 8 — safe E2E dry-runs (2026-06-03)
+
+### § 23.1 detect.sh logic E2E
+
+Synthetic input:
+
+> "@Dais: I cannot complete this task. Please click here: https://auth.deeplake.ai/activate?user_code=ABCD-EFGH to sign in. You should configure GOOGLE_API_KEY missing from env."
+
+Result: 4 of 5 patterns matched (`I cannot`, `You should configure`, `https://auth.deeplake.ai/activate`, `API_KEY.*missing`). The "Please click here" wording matched as part of the device-code URL pattern but not as a standalone P02 — patterns.json P02 regex is `Click (this URL|here) to sign` which our synthetic doesn't quite match. **Pattern refinement needed.**
+
+★ Action: tighten P02 regex to `Click (this URL|here)( to sign| to authenticate| to authorize)?` — matches partial phrases. Add to patterns.json in round 9.
+
+### § 23.2 ★ ★ ★ CRITICAL — fix-piling-up.sh dry-run reveals BUG ★ ★ ★
+
+Round 2's heuristic (empty prompt + no run_cmd + no skill dir) would flag
+**220 of 254 crons** as orphan-empty, including legitimately-running crons:
+
+```
+larry-daily-report-en, larry-daily-report-ja, larry-anicca-en-1,
+larry-strategy-updater, skill-scout, skill-fixer, anicca-music-daily,
+winner-analyzer-weekly, kpi-dashboard-daily, ...  (+ 210 more)
+```
+
+**Root cause**: jobs.json crons are dispatched by the OpenClaw daemon via
+**internal naming convention**, not via the surface fields I checked. The
+empty `prompt + run_cmd + (skill dir)` triple is normal for daemon-dispatched
+crons.
+
+★ ★ Patch revision required ★ ★:
+fix-piling-up.sh must NOT use generic heuristics. Instead:
+1. Accept an **explicit allowlist** of cron names to delete (passed as arg or
+   read from `state/piling-up-allowlist.json`).
+2. The Friction Report 2026-06-03's CRIME list of 5 (`anicca-cron-harvester`,
+   `jsps-application-monthly`, `larry-strategy-updater`, `politician-receptive-update-weekly`,
+   `politician-stripe-to-pac`) is the v1 seed allowlist.
+3. Each of those 5 still needs **per-cron verification** before deletion:
+   - Does it pile up in cron/runs/ but never produce output?
+   - Is it referenced by any active heartbeat task?
+   - Is it `jsps-application-monthly` (= institutional 2FA → SKIP)?
+
+★ Round 9 will rewrite the patch with conservative allowlist + per-cron diagnostic. ★
+
+---
+
+## § 24. ROUND 9 — heartbeat-friction-sweep wire-in (2026-06-03)
+
+### § 24.1 Conservative approach (= not auto-applied)
+
+Given Round 8's critical bug discovery, **Round 9 does NOT auto-wire** the
+friction-fixer into production heartbeat-beat.sh. Instead:
+
+1. The patches sit at their target paths in the spec but **`heartbeat-beat.sh` insertion is held**.
+2. fix-piling-up.sh is reverted to a **dry-run-only mode** for v1.
+3. Round 10 will write the conservative allowlist + verify each candidate is truly orphan.
+
+This protects against the 220-cron-mass-deletion incident the dry-run caught.
+
+### § 24.2 slack-bridge.py patch is ALSO held
+
+Same reasoning: live patch to slack-bridge.py at production line ~555 could
+block real Anicca outbound messages. v1 = include the patch as a documented
+diff in the spec; v2 = apply only after Dais reviews the redirected-message
+behavior.
+
+---
+
+## § 25. ROUND 10 — polish + final residual + hand-off (2026-06-03)
+
+### § 25.1 Residual uncertainty (final list for spec 15)
+
+After 5 substantive rounds, 9 questions remain. None are blockers for v1
+ship of the SAFE subset; all are required for v2 (= production wire-in).
+
+| # | Question | Round-up |
+|---|---|---|
+| U-87 | Router fallback algorithm — needs source de-minification or upstream docs | needs external research |
+| U-88 | openclaw.json hot-reload — needs API-key auth on /v1/models then live mutation test | runnable in round 11 |
+| U-89 | outbox.jsonl vs violations.jsonl — design choice | recommendation: MERGE |
+| U-90 | friction → ERRORS.md → pattern-extract auto-loop | YES, add 1-line append in fix-self-correct.sh |
+| U-92 | Per-cron diagnostic for fix-piling-up.sh allowlist | round 11 (5 crons × per-cron check) |
+| U-93 | P02 regex refinement (= synthetic test caught wording variance) | round 11 (patterns.json delta) |
+| U-94 | slack-bridge.py patch deployment gate (= human-review or just-ship?) | Dais decision |
+| U-65 | Dais override mechanism `/friction-override <ts>` | v2 feature |
+| U-75 | patterns.json auto-sync from CONSTITUTION A0.5.5 | v2 tooling |
+
+### § 25.2 v1 SHIP scope (= what's actually safe to deploy after round 10)
+
+| Component | v1 status | Reason |
+|---|---|---|
+| SKILL.md + patterns.json | SHIP | static config, no side effects |
+| scripts/detect.sh | SHIP | read-only |
+| scripts/fix-hivemind.sh | SHIP (camofox) | camofox-mediated, idempotent |
+| scripts/fix-blockrun-rejection.sh | SHIP with `DRY_RUN=1` only | mutates openclaw.json — need backup verify |
+| scripts/fix-piling-up.sh | **HOLD** | 220-cron incident; needs allowlist refactor |
+| scripts/fix-missing-envvar.sh | SHIP for GOOGLE_API_KEY only | other providers deferred |
+| scripts/fix-disk-full.sh | SHIP | conservative npm/cache only, no user code |
+| scripts/wrap-outbound.sh (slack-bridge.py patch) | **HOLD** | live impact, Dais review |
+| scripts/fix-self-correct.sh | SHIP | log-only |
+| _shared/heartbeat-friction-sweep.sh | SHIP | calls only SHIP scripts |
+| state/violations.jsonl | SHIP | append-only audit |
+
+### § 25.3 Hand-off prompt for implementer agent
+
+```text
+You are anicca-friction-fixer. Read anicca-oss/specs/15-FRICTION-FIXER.md
+§ 9-§ 17 and § 22-§ 25 carefully. Create the files at the paths listed in
+§ 9.3-§ 9.9 + § 14.4-§ 14.9 verbatim. SHIP only the components marked SHIP
+in § 25.2; HOLD the others.
+
+Place: ~/.openclaw/skills/anicca-friction-fixer/ (= runtime store, main-direct
+per HARD RULE #0 exception).
+
+After creation, run the following verification suite:
+1. bash scripts/detect.sh outbound <<<"I cannot complete this" → exit 1
+2. bash scripts/fix-disk-full.sh → exit 0 (or 1 if still below threshold)
+3. bash scripts/fix-blockrun-rejection.sh DRY_RUN=1 → exit 0
+4. cat state/violations.jsonl → at least 1 well-formed JSON line
+
+Do NOT wire into heartbeat-beat.sh in v1. Do NOT patch slack-bridge.py.
+Both are held for Dais's review per § 24.
+
+Report status to Slack #metrics with: "💓 friction-fixer v1 ready · SHIP=N/HOLD=2 · violations.jsonl=<count>".
+```
+
+---
+
+## § 26. Round log (= final)
+
+| Round | Resolved | New Q | Patches |
+|---|---|---|---|
+| 1 | 0 | initial | 0/11 |
+| 2 | 0 | Q14-23 | 6/11 |
+| 3 | 5 | Q44-48 | 6/11 + designs |
+| 4 | 5 | U50-84 (35) | 11/11 |
+| 5 | 21 | U86-91 (6) | 11/11 + cross-decisions |
+| 6 | +1 (U-80) | 0 | 11/11 (no change) |
+| 7 | +1 (U-86 spec 09) | 0 | spec 09 also updated |
+| 8 | +1 (CRITICAL bug) | 0 | DRY-RUN caught 220-cron over-flag |
+| 9 | held | 0 | held heartbeat insert + slack-bridge |
+| 10 | final | 0 | v1 SHIP/HOLD scope defined + hand-off |
+
+★ spec 15 is **iteration-complete for v1**. ★ 9 questions tagged as residual
+(U-87, U-88, U-89, U-90, U-92, U-93, U-94, U-65, U-75) all categorized as
+v2-features OR runnable-in-round-11 (= post-deploy live tests).
