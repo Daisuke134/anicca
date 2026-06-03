@@ -21,7 +21,21 @@ import { homedir } from "node:os";
 const PORT = Number.parseInt(process.env.AGENTMAIL_WEBHOOK_PORT ?? "8810", 10);
 const QUEUE_PATH = process.env.AGENTMAIL_QUEUE_PATH
   ?? `${homedir()}/.openclaw/state/inbox-queue.jsonl`;
-const SIGNING_SECRET = process.env.AGENTMAIL_WEBHOOK_SECRET ?? "";
+
+// Multi-org / multi-secret support. AgentMail issues one Svix secret per webhook
+// subscription. We may have several orgs (e.g. anicca-001-claude lives in the
+// primary org, anicca-001-hermes in a sibling org). Each org has its own secret.
+// Layout (one secret per env var, all suffix-coded so launchd just inherits them):
+//   AGENTMAIL_WEBHOOK_SECRET           — primary (claude + openclaw + genesis)
+//   AGENTMAIL_WEBHOOK_SECRET_HERMES    — hermes org
+//   AGENTMAIL_WEBHOOK_SECRET_<NAME>    — any future org
+// We try each in turn; first match wins. Empty secrets are skipped.
+const SECRETS: Array<{ name: string; secret: string }> = Object.entries(process.env)
+  .filter(([k, v]) => k.startsWith("AGENTMAIL_WEBHOOK_SECRET") && typeof v === "string" && v.length > 0)
+  .map(([k, v]) => ({
+    name: k === "AGENTMAIL_WEBHOOK_SECRET" ? "primary" : k.replace(/^AGENTMAIL_WEBHOOK_SECRET_/, "").toLowerCase(),
+    secret: v as string,
+  }));
 
 mkdirSync(dirname(QUEUE_PATH), { recursive: true });
 
@@ -29,6 +43,7 @@ type QueueRecord = {
   received_at: string;
   status: "verified" | "rejected" | "unverified";
   reason?: string;
+  org?: string;            // which secret bucket verified the event
   svix_id?: string;
   svix_timestamp?: string;
   event_type?: string;
@@ -47,7 +62,13 @@ function enqueue(record: QueueRecord): void {
 const app = express();
 
 app.get("/healthz", (_req, res) => {
-  res.json({ ok: true, port: PORT, queue: QUEUE_PATH, signed: SIGNING_SECRET.length > 0 });
+  res.json({
+    ok: true,
+    port: PORT,
+    queue: QUEUE_PATH,
+    signed: SECRETS.length > 0,
+    secret_buckets: SECRETS.map(s => s.name),
+  });
 });
 
 // Raw body required for Svix HMAC verification (express.json() would mutate it).
@@ -65,26 +86,34 @@ app.post(
     let verified: unknown;
     let status: QueueRecord["status"] = "unverified";
     let reason: string | undefined;
+    let org: string | undefined;
 
-    if (SIGNING_SECRET) {
-      try {
-        const wh = new Webhook(SIGNING_SECRET);
-        verified = wh.verify(rawStr, {
-          "svix-id": svixId,
-          "svix-timestamp": svixTimestamp,
-          "svix-signature": svixSignature,
-        });
-        status = "verified";
-      } catch (err) {
+    if (SECRETS.length > 0) {
+      const headers = {
+        "svix-id": svixId,
+        "svix-timestamp": svixTimestamp,
+        "svix-signature": svixSignature,
+      };
+      const reasons: string[] = [];
+      for (const candidate of SECRETS) {
+        try {
+          const wh = new Webhook(candidate.secret);
+          verified = wh.verify(rawStr, headers);
+          status = "verified";
+          org = candidate.name;
+          break;
+        } catch (err) {
+          reasons.push(`${candidate.name}: ${err instanceof WebhookVerificationError ? err.message : (err as Error).message}`);
+        }
+      }
+      if (status !== "verified") {
         status = "rejected";
-        reason = err instanceof WebhookVerificationError
-          ? `svix-verify: ${err.message}`
-          : `verify-error: ${(err as Error).message}`;
+        reason = `svix-verify: tried [${reasons.join(" | ")}]`;
         try { verified = JSON.parse(rawStr); } catch { verified = rawStr; }
       }
     } else {
       // No secret configured (local smoke test). Best-effort parse, mark unverified.
-      reason = "AGENTMAIL_WEBHOOK_SECRET unset — skipping HMAC";
+      reason = "AGENTMAIL_WEBHOOK_SECRET* unset — skipping HMAC";
       try { verified = JSON.parse(rawStr); } catch { verified = rawStr; }
     }
 
@@ -97,6 +126,7 @@ app.post(
       received_at: new Date().toISOString(),
       status,
       reason,
+      org,
       svix_id: svixId || undefined,
       svix_timestamp: svixTimestamp || undefined,
       event_type: eventType,
@@ -105,7 +135,7 @@ app.post(
     enqueue(record);
 
     process.stdout.write(
-      `[agentmail-webhook] ${status} event=${eventType ?? "?"} id=${svixId || "-"}\n`
+      `[agentmail-webhook] ${status} org=${org ?? "-"} event=${eventType ?? "?"} id=${svixId || "-"}\n`
     );
 
     // Always 200 — retry storms harm us more than silently dropping bad sigs.

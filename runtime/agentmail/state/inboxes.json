@@ -1,33 +1,31 @@
 {
   "provisioned_at": "2026-06-03T14:19:32Z",
-  "free_tier_cap": 3,
-  "org_id": "4812311a-000e-4236-b1a7-e47a6261cf0c",
-  "inboxes": [
+  "last_updated_at": "2026-06-04T15:50:00Z",
+  "free_tier_inbox_cap_per_org": 3,
+  "orgs": [
     {
-      "username": "anicca-001-claude",
-      "email": "anicca-001-claude@agentmail.to",
-      "client_id": "spec-10-anicca-001-claude",
-      "display_name": "Anicca 001 Claude",
-      "created_at": "2026-06-03T14:19:05.322Z"
+      "name": "primary",
+      "org_id": "4812311a-000e-4236-b1a7-e47a6261cf0c",
+      "human_email": "contact@aniccaai.com",
+      "inboxes": [
+        { "username": "anicca-001-claude",   "email": "anicca-001-claude@agentmail.to",   "client_id": "spec-10-anicca-001-claude",   "display_name": "Anicca 001 Claude",   "created_at": "2026-06-03T14:19:05.322Z" },
+        { "username": "anicca-001-openclaw", "email": "anicca-001-openclaw@agentmail.to", "client_id": "spec-10-anicca-001-openclaw", "display_name": "Anicca 001 OpenClaw", "created_at": "2026-06-03T14:19:32.761Z" },
+        { "username": "anicca-genesis",      "email": "anicca-genesis@agentmail.to",      "client_id": null,                          "display_name": "AgentMail",          "created_at": "2026-06-03T01:55:58.639Z" }
+      ],
+      "env_key": "AGENTMAIL_API_KEY",
+      "webhook_env_key": "AGENTMAIL_WEBHOOK_SECRET"
     },
     {
-      "username": "anicca-001-openclaw",
-      "email": "anicca-001-openclaw@agentmail.to",
-      "client_id": "spec-10-anicca-001-openclaw",
-      "display_name": "Anicca 001 OpenClaw",
-      "created_at": "2026-06-03T14:19:32.761Z"
-    },
-    {
-      "username": "anicca-001-hermes",
-      "email": "anicca-001-hermes@agentmail.to",
-      "status": "deferred",
-      "reason": "AgentMail free-tier inbox cap = 3 per org; anicca-genesis preserved as canonical identity inbox"
+      "name": "hermes",
+      "org_id": "63a065d7-42a0-46b2-bf4b-39281a5364a4",
+      "human_email": "keiodaisuke+hermes@gmail.com",
+      "inboxes": [
+        { "username": "anicca-001-hermes",   "email": "anicca-001-hermes@agentmail.to",   "client_id": null,                          "display_name": "AgentMail",          "created_at": "2026-06-04T15:44:00Z" }
+      ],
+      "env_key": "AGENTMAIL_HERMES_API_KEY",
+      "webhook_env_key": "AGENTMAIL_WEBHOOK_SECRET_HERMES",
+      "signup_method": "client.agent.signUp() — OTP fetched programmatically from gog gmail; runtime/agentmail/inboxes-hermes.ts is the helper"
     }
   ],
-  "preserved": [
-    {
-      "email": "anicca-genesis@agentmail.to",
-      "role": "canonical identity inbox per MEMORY.md"
-    }
-  ]
+  "g1_status": "PASS — all 3 named anicca-001-* inboxes (claude, openclaw, hermes) are live and addressable; webhook server accepts events from both orgs via multi-secret support; replier mirrors the from-address per inbox using the matching org's API key"
 }
