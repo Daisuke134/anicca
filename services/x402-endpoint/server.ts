@@ -33,16 +33,48 @@ app.get("/health", (c) =>
 );
 
 // --- Helper: 402 challenge response -----------------------------------------
+// Body carries BOTH (a) Anicca's custom `challenge` object (human-readable, HMAC-signed nonce)
+// AND (b) the canonical x402 v2 `accepts[]` PaymentRequiredResponse fields so this endpoint is
+// discoverable by Bazaar-compatible facilitators (Coinbase x402 facilitator etc.).
+// Schema ref: https://github.com/x402-foundation/x402/blob/main/docs/extensions/bazaar.mdx
+const USDC_DECIMAL_DIVISOR = 1_000_000;
+const ROUTE_TIMEOUT_SECONDS = 600;
 function challenge402(c: import("hono").Context, routeId: RouteId, reason?: string) {
   const ch = buildChallenge(routeId);
-  c.header("WWW-Authenticate", `x402 route_id="${routeId}", price="${ch.price_usdc} USDC", receiver="${ch.receiver}", nonce="${ch.nonce}"`);
+  const amountBaseUnits = Math.round(ch.price_usdc * USDC_DECIMAL_DIVISOR).toString();
+  c.header(
+    "WWW-Authenticate",
+    `x402 route_id="${routeId}", price="${ch.price_usdc} USDC", receiver="${ch.receiver}", nonce="${ch.nonce}"`
+  );
   return c.json(
     {
+      // Anicca-native fields
       type: "https://x402.org/challenge",
       status: 402,
       title: "Payment Required",
       detail: reason ?? `This route costs ${ch.price_usdc} USDC. Send on Base and retry with x-paid-tx-hash.`,
       challenge: ch,
+      // Canonical x402 v2 PaymentRequiredResponse shape (bazaar-compatible)
+      x402Version: 2,
+      accepts: [
+        {
+          scheme: "exact",
+          network: "eip155:8453",
+          asset: ch.asset,
+          extra: { name: "USD Coin", version: "2" },
+          amount: amountBaseUnits,
+          maxTimeoutSeconds: ROUTE_TIMEOUT_SECONDS,
+          payTo: ch.receiver,
+        },
+      ],
+      extensions: {
+        bazaar: {
+          info: {
+            input: { type: "http", method: routeId === "learn" ? "POST" : "GET" },
+            output: { type: "json" },
+          },
+        },
+      },
     },
     402
   );
