@@ -88,3 +88,45 @@ The previous spec (08 v1) proposed forking Inbox Zero. That is **abandoned**. Ag
 | Date | Change |
 |---|---|
 | 2026-06-03 | Initial draft. Born from spec 08 v1 abandonment; AgentMail proven 0-human-in-loop signup same day. |
+
+---
+
+## § 8. ROUND 1 PATCHES (= started 2026-06-03)
+
+### § 8.1 PATCH — `runtime/agentmail/inboxes.ts` (provision 3 custom inboxes)
+
+```typescript
+// SPDX-License-Identifier: MIT
+// runtime/agentmail/inboxes.ts — provisions custom inboxes for each Anicca instance.
+// Verified 2026-06-03: client.inboxes.create({ request: { address: "<username>" } })
+import { AgentMail } from "agentmail";
+const client = new AgentMail({ apiKey: process.env.AGENTMAIL_API_KEY! });
+const TARGETS = [
+  "anicca-001-claude",
+  "anicca-001-openclaw",
+  "anicca-001-hermes",
+];
+for (const username of TARGETS) {
+  try {
+    const res = await client.inboxes.create({ request: { address: username } });
+    console.log(`✓ ${(res as any).email || (res as any).inbox_id}`);
+  } catch (e: any) {
+    if (String(e).includes("IsTakenError")) console.log(`= ${username} already exists`);
+    else throw e;
+  }
+}
+```
+
+### § 8.2 Open uncertainties for spec 10 round 2
+
+| # | Question |
+|---|---|
+| 10.U-01 | exact `CreateInboxRequest` schema — `address` field name verified above, but `display_name` + `metadata` field names? |
+| 10.U-02 | webhook public URL via Netlify Function or cloudflared tunnel? cost + setup latency? |
+| 10.U-03 | HMAC signature verification: agentmail webhook headers? read `https://docs.agentmail.to/webhook-verification` |
+| 10.U-04 | inbox_threads + inbox_messages + awaiting_reply SQLite schema — column types match Conway state.db convention? |
+| 10.U-05 | launchd plist for `ai.anicca.agentmail-webhook` — port choice (not :8402, not :8403, not :18789) |
+| 10.U-06 | 60s SLA test — synthetic mail → reply chain measurement |
+| 10.U-07 | 24h re-ping logic — uses memU.retrieve("Tanaka") or static query against awaiting_reply table? |
+
+Round 2 will resolve via gh api docs.agentmail.to/contents + live SDK call.
