@@ -1,0 +1,33 @@
+{
+  "provisioned_at": "2026-06-03T14:19:32Z",
+  "free_tier_cap": 3,
+  "org_id": "4812311a-000e-4236-b1a7-e47a6261cf0c",
+  "inboxes": [
+    {
+      "username": "anicca-001-claude",
+      "email": "anicca-001-claude@agentmail.to",
+      "client_id": "spec-10-anicca-001-claude",
+      "display_name": "Anicca 001 Claude",
+      "created_at": "2026-06-03T14:19:05.322Z"
+    },
+    {
+      "username": "anicca-001-openclaw",
+      "email": "anicca-001-openclaw@agentmail.to",
+      "client_id": "spec-10-anicca-001-openclaw",
+      "display_name": "Anicca 001 OpenClaw",
+      "created_at": "2026-06-03T14:19:32.761Z"
+    },
+    {
+      "username": "anicca-001-hermes",
+      "email": "anicca-001-hermes@agentmail.to",
+      "status": "deferred",
+      "reason": "AgentMail free-tier inbox cap = 3 per org; anicca-genesis preserved as canonical identity inbox"
+    }
+  ],
+  "preserved": [
+    {
+      "email": "anicca-genesis@agentmail.to",
+      "role": "canonical identity inbox per MEMORY.md"
+    }
+  ]
+}

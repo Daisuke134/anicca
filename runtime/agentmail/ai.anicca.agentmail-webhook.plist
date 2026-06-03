@@ -16,8 +16,8 @@
 
   <key>ProgramArguments</key>
   <array>
-    <string>/usr/local/bin/node</string>
-    <string>/Users/&lt;USER&gt;/anicca-oss/runtime/agentmail/webhook-server.ts</string>
+    <string>/bin/bash</string>
+    <string>/Users/&lt;USER&gt;/anicca-oss/runtime/agentmail/launch.sh</string>
   </array>
 
   <key>WorkingDirectory</key>
@@ -31,10 +31,11 @@
     <string>8810</string>
     <key>AGENTMAIL_QUEUE_PATH</key>
     <string>/Users/&lt;USER&gt;/.openclaw/state/inbox-queue.jsonl</string>
+    <key>NODE_BIN</key>
+    <string>/opt/homebrew/bin/node</string>
     <!--
-      AGENTMAIL_WEBHOOK_SECRET is loaded from ~/.openclaw/.env at runtime via
-      a wrapper script in production; for this template we leave it unset so
-      the server runs in "unverified" smoke-test mode until configured.
+      AGENTMAIL_WEBHOOK_SECRET (and AGENTMAIL_API_KEY) are sourced by
+      launch.sh from ~/.openclaw/.env at startup. Do NOT inline secrets here.
     -->
   </dict>
 
