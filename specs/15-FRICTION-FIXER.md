@@ -892,3 +892,157 @@ Total open uncertainties: 35. Round 5 will resolve as many as possible.
 | 3 | 2026-06-03 | 6/11 + designs | Q44–Q48 |
 | 4 | 2026-06-03 | 11/11 ★ | U-50…U-84 (35 open) |
 | 5 | (next) | refine | resolve U-77 (full fallback list), U-76 (slack code), U-79 (config reload), then E2E |
+
+## § 17. ROUND 5 — 21 of 35 uncertainties resolved + 6 new surfaced (2026-06-03)
+
+### § 17.1 Resolved (§ 15.F source-reads)
+
+| # | Resolution |
+|---|---|
+| U-76 | `_send_reply(channel, thread_ts, text, task_id)` at slack-bridge.py line 555; calls `app.client.chat_postMessage`; chunks at 4000 chars; writes to `outbox.jsonl` for audit. Hook = BEFORE the try block on the chat_postMessage call. |
+| U-77 | openclaw.json `.agents.defaults.model.fallbacks` = ONLY 3 entries: `blockrun/free/gpt-oss-120b`, `blockrun/free/qwen3-next-80b-a3b-thinking`, `blockrun/free/deepseek-v4-pro`. Heartbeat uses `openai-codex/gpt-5.4` every 30 min. |
+| U-78 | heartbeat-extract-queue.sh reads `~/.openclaw/.learnings/ERRORS.md` via `pattern-extract.py`, appends to `~/.openclaw/state/skill-extraction-queue.txt`. Dedup-preserving. Best-effort. |
+| U-79 | `ai.openclaw.gateway` runs `node openclaw/dist/index.js gateway --port 18789`. KeepAlive=1. ThrottleInterval=10. Restart via `launchctl kickstart -k gui/$(id -u)/ai.openclaw.gateway`; wait 12s for throttle. |
+| U-80 | (cfo-core/run-cfo-hourly.sh deferred — only invoked from heartbeat-beat.sh's CFO refresh block, not from friction-fixer path. Not blocking patches.) |
+
+### § 17.2 Resolved (§ 15.A file-level)
+
+| # | Resolution |
+|---|---|
+| U-50 | bash `grep -E` does NOT handle Unicode properties. For Japanese patterns in patterns.json, use python `re` via `python3 -c` wrapper in detect.sh. ASCII patterns use bash grep -E. |
+| U-51 | Existing state dirs are `drwxr-xr-x anicca staff` (755). Match: `mkdir -p $SKILL_DIR/state && chmod 755`. JSONL files written 644. |
+| U-52 | slack-bridge.py is local (not auto-updated). Python patch survives across machine restarts. Risk = manual update overwrites; document via comment marker `# A0.5.5 friction-fixer hook (spec 15) — DO NOT REMOVE` and add a CI check that greps for the marker. |
+| U-53 | 12-factor: "treat logs as event streams." For violations.jsonl: append-only, no rotation in app. Daily archive cron (= optional, separate skill `anicca-log-archiver` if disk pressure). |
+| U-54 | camofox SKILL.md says it IS the OAuth fallback. Round 5 retry policy: 1 retry on transient (= snapshot returns no refs), 0 retry on hard fail (= 404, login wall). On hard fail, log + escalate via violations.jsonl. |
+| U-55 | hivemind 0.7.69 at `/opt/homebrew/bin/hivemind → @deeplake/hivemind`. Pin range `>=0.7.0,<0.8.0` in requires. CI gate: `hivemind --version | grep -E '^0\.7\.'`. |
+
+### § 17.3 Resolved (§ 15.G Friction Report)
+
+| # | Resolution |
+|---|---|
+| U-81 | `politician-receptive-update-weekly.jsonl` exists in runs/ but not in jobs.json — confirmed orphan. fix-piling-up.sh's orphan-cleanup logic handles it. |
+| U-82 | "Disk at 93%" came from Friction Report human prose, no skill-side trigger string. Adopt < 10% free as threshold in fix-disk-full.sh (= 90% used). Current 21Gi/228Gi = 91% used, just over threshold. |
+| U-83 | ★ HUGE: last 90d has **68 unique cron runs** with "Invalid request body" (= ~0.75/day) vs the 12 in Friction Report (1d window). Long-term trend much worse than the snapshot suggested. fix-blockrun-rejection.sh is high-leverage. |
+| U-84 | github.com/Daisuke134/anicca-oss issues = 0 open. No GitHub-tracked CRIME-tier work. |
+
+### § 17.4 ★ NEW critical finding ★ U-95 (= x402-proxy port collision)
+
+```bash
+$ curl http://127.0.0.1:8402/v1/models
+# returns 200+ model IDs, owned by blockrun + namespaces:
+#   openai/, anthropic/, deepseek/, moonshot/, google/, xai/,
+#   nvidia/, free/, zai/, minimax/, qwen/, openai-codex/
+
+$ lsof -i :8402
+# node 61976 anicca → SAME PID as ai.openclaw.gateway
+```
+
+★ ★ `:8402` is OpenClaw gateway's BUILT-IN x402-proxy. NOT external blockrun. ★ ★
+
+→ Spec 09 (`anicca-earner-x402` listening on `:8402`) collides with this.
+   Spec 09 patch needed: change port to `:8403` or higher.
+   Friction-fixer adds U-95 as cross-spec issue (Spec 09 owner = future me).
+
+### § 17.5 Other resolved/decisions documented
+
+| # | Decision |
+|---|---|
+| U-56 | wrap-outbound blocks → memU still memorizes via the violation event (NOT the original blocked text). Memory captures what Anicca tried to do + why it was blocked. |
+| U-57 | Order: friction-sweep BEFORE memU.memorize in heartbeat. Sweep happens early; memorize at end captures full picture including any fixes applied. |
+| U-58 | YES — spec 11 (memory-weaver) reads violations.jsonl as a Lessons category. memU's pluggable source-loader handles JSONL. |
+| U-59 | Constitution hash propagation per spec 13 includes A0.5.5 → child's friction-fixer inherits the same patterns.json. |
+| U-60 | spec 10 AgentMail webhook → drops event into `~/.openclaw/state/inbox-queue.jsonl` → next heartbeat-friction-sweep scans it. NOT direct fire. |
+| U-61 | Production canary = run on Mac mini AS-IS first (= current author env), 24h soak, watch violations.jsonl. Iterate. |
+| U-62 | Rollback for fix-blockrun-rejection.sh = restore `$CONF.bak.friction-$(epoch)` (= backup made before mutation). For fix-piling-up.sh = no rollback (deletion final); pre-state stored in violations.jsonl evidence field. |
+| U-63 | SLA target: violation detected → corrected within 5 sec (= local pipeline, no LLM call). |
+| U-64 | Monitoring = `tail -F violations.jsonl | jq` + Slack #metrics daily summary. |
+| U-65 | Human override = Dais posts `/friction-override <ts>` to Slack → entry's `dais_visible` flipped to false + manual reversal logged. (= future enhancement, not v1.) |
+| U-66 | spec 10 webhook → in-queue → next heartbeat-sweep. Outbound is wrap-outbound at slack-bridge level. |
+| U-67 | spec 14 (UBI) calls memU.retrieve independently; if returns empty, spec 14 has its own fallback to `charities.json` rotation. Friction-fixer doesn't intervene. |
+| U-68 | spec 13 (cloud-spawn) anicca-002 has ITS OWN friction-fixer instance with same patterns.json (= synced via constitution hash). Patterns.json eventually pulled from anicca-oss/ via daily sync. |
+| U-69 | spec 09 402 challenge says `"You must pay X USDC"` — that's a protocol response, NOT a "user click" violation. Scope filter excludes spec-09 HTTP responses. patterns.json `scope` field includes `"!x402-response"`. |
+| U-70 | Japanese 「ご連絡ください」 is legitimate business politeness — NOT a P03 trigger (P03 matches "You should configure X" with English noun). Pattern precision retains. |
+| U-71 | When fire-yourself activates, friction-fixer GRADUATES (= becomes Anicca's intrinsic behavior, not a separate watchdog). The skill stays but loses `cadence`. |
+| U-72 | Friction-fixer writing "user must" to its OWN logs = meta-loop. Check: log messages prefixed with `[friction-fixer]` are excluded from detect.sh via scope filter. |
+| U-73 | i18n: spec 15 v1 covers English + Japanese only. Korean/Chinese deferred to spec 15 v2 (= when first non-EN/JP locale spawns). |
+| U-74 | Soft warnings = severity:"low" in patterns.json. Hard blocks = severity:"high". Current patterns are high only. Low tier deferred. |
+| U-75 | Living rule sync: CONSTITUTION.md A0.5.5 update → CI workflow regenerates patterns.json via `tools/sync-friction-patterns.py` (= future). v1 = manual sync. |
+
+### § 17.6 NEW questions surfaced in round 5 (= 6 entries)
+
+| # | Question | Why |
+|---|---|---|
+| U-86 | x402-proxy :8402 vs spec 09 anicca-earn-x402 port collision — change spec 09 to :8403? | Cross-spec |
+| U-87 | OpenClaw model-router fallback algorithm — round-robin, first-success, weighted? | fix-blockrun precision |
+| U-88 | openclaw.json hot-reload or require gateway restart? Live test pending. | Q45 follow-up |
+| U-89 | Should outbox.jsonl gain a `friction_blocked: true` field, replacing separate violations.jsonl? | DRY |
+| U-90 | Should friction-fixer write to ERRORS.md (= heartbeat-extract-queue picks up) for skill auto-extraction? | Auto-skill loop |
+| U-91 | Heartbeat config uses `openai-codex/gpt-5.4` (= Codex via Plus). Same Plus account we just authorized. Healthy. | Confirmation |
+
+---
+
+## § 18. FULL REMAINING UNCERTAINTY LIST (= for next round)
+
+Still open (= 14 items after round 5's 21 resolutions + 6 new):
+
+| # | Question | Group |
+|---|---|---|
+| U-80 | `cfo-core/run-cfo-hourly.sh` body — does it use blockrun-affected models? | source-reads (deferred) |
+| U-86 | x402-proxy :8402 vs spec 09 — change spec 09 port? | cross-spec |
+| U-87 | OpenClaw model-router fallback algorithm | precision |
+| U-88 | openclaw.json hot-reload mechanism — live test | operational |
+| U-89 | outbox.jsonl friction_blocked field vs separate violations.jsonl | DRY |
+| U-90 | friction-fixer → ERRORS.md → pattern-extract → auto-skill loop | self-improvement |
+| Q44+ | Other env-vars beyond GOOGLE_API_KEY (= round 4 found 0 in 30d, but Friction Report says one. Search older logs.) | Q47 follow-up |
+| ... | Remaining U-65 alternatives, U-71 details, U-73 i18n V2 plan, U-75 patterns.json sync tooling | future iterations |
+
+---
+
+## § 19. FULL TO-DO LIST (= round 6 onward)
+
+### Round 6 (= execute pending source-reads + decisions)
+
+1. Read `cfo-core/run-cfo-hourly.sh` (= U-80)
+2. Live-test openclaw.json hot-reload (= U-88) — edit then call gateway endpoint, observe
+3. Read OpenClaw router code in `/opt/homebrew/lib/node_modules/openclaw/dist/` (= U-87)
+4. Decide on outbox.jsonl vs violations.jsonl (= U-89) — recommend MERGE
+5. Decide friction-fixer → ERRORS.md (= U-90) — recommend YES
+
+### Round 7 (= cross-spec patches)
+
+6. Spec 09 patch: change port :8402 → :8403 (= U-86)
+7. Update spec 10 / 11 / 13 / 14 with cross-spec uncertainty resolutions (U-56–U-60, U-66–U-68)
+8. CONSTITUTION patch: A0.5.5 references friction-fixer's patterns.json (= U-75 living rule)
+
+### Round 8 (= E2E live test, no Codex review possible)
+
+9. Live-run fix-hivemind.sh against actual current Hivemind URL — verify auth.deeplake.ai/activate completes
+10. Live-run fix-blockrun-rejection.sh — patch openclaw.json, verify next cron uses new model
+11. Live-run fix-disk-full.sh — verify disk free goes from 9% to 15%+
+12. Live-run fix-piling-up.sh — verify 5 piling-up entries reduce to 0
+13. Trigger synthetic Slack outbound containing "click here" — verify wrap-outbound blocks + dispatches
+
+### Round 9 (= production canary)
+
+14. Wire friction-fixer into heartbeat-beat.sh (= governance merge)
+15. Push slack-bridge.py inline patch
+16. 24h soak, monitor violations.jsonl
+
+### Round 10–20 (= continuous polish + 6 remaining specs)
+
+17. Apply same round-1 → round-N methodology to specs 10, 11, 12, 09, 13, 14 in parallel
+18. Each gets 6 patch files + their own uncertainty enumeration
+19. Each iterates 5–10 rounds until clear
+
+---
+
+## § 20. Round log
+
+| Round | Patches | Open Q | New Q |
+|---|---|---|---|
+| 1 | 0 | initial | 0 |
+| 2 | 6/11 | 6 | 0 |
+| 3 | designs locked | 5 | 5 |
+| 4 | 11/11 | 35 | 35 |
+| 5 | + cross-decisions | 14 | 6 (U-86..U-91) |
+| 6 | (planned) live-tests | TBD | TBD |
