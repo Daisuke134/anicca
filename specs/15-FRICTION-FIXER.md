@@ -1331,3 +1331,18 @@ prevent sentence-spanning).
 | U-65 | Override v2 | future |
 | U-75 | Sync v2 | future |
 | larry-strategy-updater silent-fail | NEW Q (= U-100) | P2 (separate investigation) |
+
+## § 30. v1 DEPLOYED 2026-06-03 14:05 JST
+
+★ DEPLOYED ★ at `~/.openclaw/skills/anicca-friction-fixer/`:
+- 9 SHIP files all in place + chmod +x verified
+- detect.sh real fire: 5/5 patterns matched on synthetic
+- fix-disk-full.sh real fire: 9% → 9% (npm cache cleaned)
+- fix-blockrun-rejection.sh DRY_RUN: 0 affected models in last 7d
+- violations.jsonl: 2 real entries from fires above
+
+Wire-in to heartbeat-beat.sh @ line 28-30 (marker `SPEC15-FRICTION-FIXER`).
+Next heartbeat fire (= every 2h) will pick it up.
+
+HOLD items v1 (= Dais review required):
+- slack-bridge.py inline patch (spec § 14.8) — production-impact, not yet applied
