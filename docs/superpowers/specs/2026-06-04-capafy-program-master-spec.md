@@ -48,27 +48,35 @@
 | 検索 | JSON body `{"query":...}`。`--env claude_code` |
 | スキル所在 | LOCAL `~/.openclaw/skills/`（anicca-private-backupはバックアップで fetch元ではない） |
 
-## 2. Git方針（恒久）
+## 2. Git方針（恒久・Trunk-Based Development）
+
+**BP = Trunk-Based Development**（[trunkbaseddevelopment.com](https://trunkbaseddevelopment.com/): "resist any pressure to create other long-lived development branches… avoid merge hell" / 「branchは2日以内にmerge&delete」/ release は just-in-time に切り **ship後削除**）。[Atlassian](https://www.atlassian.com/continuous-delivery/continuous-integration/trunk-based-development): "frequent, daily merges to the main branch… keep the trunk green"。git-flow(複数long-lived branch)は禁止＝455コミット放置の元凶。
+
+Anicca infra に適合させた2層trunk:
 
 | branch | 役割 | ルール |
 |---|---|---|
-| **dev** | 唯一の作業trunk（iOS/content/Capafy 全部） | 普段はここにpush |
-| main | 本番(Railway自動deploy) | dev→main のみ。直接作業禁止 |
-| release/x.x.x | App Store提出専用 | mainから切る。他作業を積まない |
+| **dev** | 唯一の統合trunk（iOS/content/Capafy 全部） | 普段はここに直push可 |
+| main | 本番(Railway自動deploy) | **dev→main のPR経由のみ**。直接commit/push禁止 |
+| feature/* fix/* chore/* docs/* app-factory/* | 短命(≤2日)・1-2人・mergeしたら削除 | 規約名のみ許可 |
+| release/x.x.x | App Store提出専用・mainから切る | 他作業を積まない・**ship後削除** |
 
-**現状の負債**: main↔release/1.8.7 が 455/147 分岐(iOSコード混在)。収束手順=①dev←main ②dev←release/1.8.7(conflictはdevで解決) ③dev build/test ④dev→main ⑤release作業禁止徹底。
+**強制ツール = lefthook**（[evilmartians/lefthook](https://github.com/evilmartians/lefthook) 単一Goバイナリ・polyglot）導入済(`brew install lefthook`)。`lefthook.yml` が①main/release直commit block ②branch名規約 ③commitlint(conventional commits・graceful) ④main/release直push block を全contributor(AI含む)で強制。実発火検証済。
+- 注意: local hookは `--no-verify` で回避可＝助言層。main の最終強制は **GitHub ruleset(server-side)** だが private `anicca-products` は **GitHub Pro未加入で403**（"Upgrade to GitHub Pro"）。→ Pro加入 or org移管で server-side も有効化(task[1]の⑥)。public `anicca-oss` は無料で可。各contributorは clone後 `lefthook install` 1回必須。
 
-## 3. やるべきこと全部（task list と同期）
+**現状の負債**: main↔release/1.8.7 が 455/147 分岐(iOSコード混在)。収束手順(task[1]) = ①dev←main ②dev←release/1.8.7(conflictはdevで解決=本番無傷) ③dev build/test ④dev→main(PR) ⑤release作業禁止徹底。
 
-| # | タスク | 種別 | 依存 | gate/メモ |
-|---|---|---|---|---|
-| T8 | Git整流: dev唯一trunk化・main↔release収束 | infra | — | 本番main更新含む。普通の必要作業として実行 |
-| **T3** | **capafy-autopublish スキル作成**(公開代行・BP内蔵) | 実装 | — | spec→plan→TDD。記憶が新鮮な今が最適 |
-| T7 | monetize-capafy スキル(BP単体・壁打ち・公開機能なし) | 実装 | — | 安価Download。中身はBP doc |
-| T2 | life-manager reject修正→Download/BYOK再submit | 実装 | — | 最重要。reject 7項目+retry/rate上限コード強制。agent_id 4437197514 |
-| T6 | capafy-autopublish を Capafy販売($9.99)+OSS化 | 公開 | T3 | autopublish使用 |
-| T4 | 全スキルを Anicca cron で自走公開(LOCAL skills) | infra/公開 | T3 | gate=jp-humanizer承認+目玉3-5本実証後に全面 |
-| T5 | jp-humanizer 審査承認→listing確認 | 受動 | — | 審査1-2日。**最後尾** |
+## 3. やるべきこと全部（task list と ID昇順=実行順 で同期）
+
+| 順 | task id | タスク | 種別 | 依存 | gate/メモ |
+|---|---|---|---|---|---|
+| [1] | #9 | Git整流: dev=trunk確立・main↔release収束（lefthook導入✓済） | infra | — | 残務=branch収束+dev→main+GitHub Pro検討 |
+| [2] | #10 | **capafy-autopublish スキル作成**(公開代行・BP内蔵・売り物の核) | 実装 | — | spec→plan→TDD。記憶が新鮮な今 |
+| [3] | #11 | **life-manager** reject修正→Download/BYOK再submit | 実装 | — | **最重要**。7項目+retry/rate上限コード強制。agent_id 4437197514 |
+| [4] | #12 | capafy-autopublish を Capafy販売($9.99)+OSS化 | 公開 | #10 | dogfood |
+| [5] | #13 | monetize-capafy(BP単体・壁打ち・公開機能なし) | 実装 | — | 安価Download |
+| [6] | #14 | 全スキルを Anicca cron で自走公開(LOCAL skills) | infra/公開 | #10 | gate=jp-humanizer承認+目玉3-5本実証後 |
+| [7] | #15 | jp-humanizer 審査承認→listing確認 | 受動 | — | 審査1-2日・**最後尾** |
 
 ## 4. life-manager の鍵（重要判断の記録）
 
