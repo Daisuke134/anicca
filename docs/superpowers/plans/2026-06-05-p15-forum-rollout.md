@@ -288,8 +288,9 @@ process_issue() {
     [ -n "$at" ] && [ -n "$target" ] || { echo "rollout: issue #$n malformed block — skip"; fr_log "$n" "$sha" "${at:-none}" "${target:-none}" false 90 "BLOCKED:malformed"; return 0; }
 
     local summary="Roll out forum CONSENSUS on issue #$n: $at on '$target'. Source: anicca-oss collective forum."
-    if ! fr_guard "$summary"; then
-      local grc=$?; echo "rollout: issue #$n BLOCKED by guard (exit $grc)"; fr_log "$n" "$sha" "$at" "$target" false "$grc" "BLOCKED:guard"; return 0
+    fr_guard "$summary"; local grc=$?
+    if [ "$grc" -ne 0 ]; then
+      echo "rollout: issue #$n BLOCKED by guard (exit $grc)"; fr_log "$n" "$sha" "$at" "$target" false "$grc" "BLOCKED:guard"; return 0
     fi
     if fr_hard_no "$target"; then
       echo "rollout: issue #$n TARGET '$target' on HARD-NO list — BLOCKED"; fr_log "$n" "$sha" "$at" "$target" false 2 "BLOCKED:hard-no-list"; return 0
