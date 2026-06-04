@@ -1,5 +1,16 @@
 # 07 — HERMES PIVOT
 
+> ⚠️ **CODE-TRUTH WARNING (2026-06-04):** This spec was written WITHOUT reading the
+> automaton source. On 2026-06-04 all three codebases were read at source — see
+> **`16-RUNTIME-CODE-TRUTH.md`** (AUTHORITATIVE, file:line cited). The code shows
+> automaton ALREADY self-replicates to cloud + self-modifies + self-funds (the
+> mission-critical "army" trio), while Hermes has NO wallet/x402/self-spawn/constitution
+> (`grep x402` = 0). So "drop Conway/automaton, use Hermes as L3" is NOT code-supported.
+> Treat this file's substrate claims (L3=Hermes, Daytona spawn) as SUSPECT pending the
+> decision in spec 16 §5/§6. Where this conflicts with spec 16, **spec 16 wins.** Hermes
+> deep-read still in progress — keep this file; Hermes may return as a supplementary
+> skill/kanban layer, not the base runtime.
+
 > Deep-dive on the v3.1 substrate decision: Layer 3 RUNTIME swaps from Conway
 > automaton fork to **Hermes Agent** (NousResearch, MIT); Layer 4 SERVICE swaps
 > from "Virtuals Protocol everything" to **Coinbase AgentKit CDP Smart Wallet**
