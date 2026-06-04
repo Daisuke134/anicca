@@ -1,86 +1,71 @@
 ---
 name: anicca-life-manager
 description: |
-  Push-type AI 電話 エージェント。Google Calendar + 位置情報 + Bland.ai/Twilio + AgentMail で、user (OSS buyer) の人生を 全管理。出発時刻に電話 (RELENTLESS until 動く)、遅刻時に 謝罪 mail 自動 送信、wake/sleep/meditation/run/work/LT/comedy 全 event に 個別 buffer (15分前到着 + 空港 60-180min) を 適用。Conway-Research/automaton の Buddhist edition。
+  Push-type AI phone agent. Reads your Google Calendar + live location, computes your real depart-by time per event, and calls you when it's time to leave — capped at 3 attempts, never endless. If you run late it can notify the right person, only after you confirm. Runs locally on your own always-on machine with YOUR OWN keys (BYOK); your location, calendar, and contacts never leave your device.
 metadata:
-  tags: [voice, calendar, reminder, twilio, bland-ai, pipecat, gemini-live, openclaw, hard-rule-19]
+  tags: [voice, calendar, reminder, twilio, pipecat, gemini-live, telegram, byok]
   type: life-manager
   requires:
     bins: [python3, gog, curl, jq]
-    env: [TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER, GEMINI_API_KEY, GOOGLE_API_KEY, GOG_ACCOUNT, GOG_KEYRING_PASSWORD, OWNTRACKS_USER, OWNTRACKS_PASS]
-    services: [pipecat-phone (ai.anicca.pipecat-phone launchd), loco (anicca-alarm/loco/server.js)]
-  spec: ~/.openclaw/docs/ANICCA_LIFE_MANAGER_SPEC.md
+    env: [TELEGRAM_BOT_TOKEN, TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER, GEMINI_API_KEY, GOOGLE_API_KEY, GOG_ACCOUNT]
 ---
 
 # anicca-life-manager
 
-User の **人生 全管理** を Anicca が引き受ける skill。User は gcal も Gmail も見なくていい。Anicca が 常駐 harness で 5min 毎に gcal を読み、位置を把握し、出発時刻に call し、移動を guide し、遅刻が確定したら stakeholder に 謝罪 mail を自動送る。
-
-Source of truth: `~/.openclaw/docs/ANICCA_LIFE_MANAGER_SPEC.md` (v0.8, 38 sections, 2900+ 行)
+Calendar-driven phone agent. Every few minutes it reads your next Google Calendar event + your live location, computes the real time you must leave (travel ETA + per-event buffer), and calls you when it's time. If you're late, it can notify the right person — only with your confirmation.
 
 ## Architecture
 
 ```
-[Google Calendar] ← Single Source of Truth
-      ↓ gog cal events (poll every 5min)
-[gcal_departures.py] — travel-time aware + event_type classifier (default 15min, airport 60-180, sleep 10, wake 0, lt 15, comedy 25)
-      ↓
-[lateness_check.py] — decision engine:
-   ・depart_by ≤ now+5min & home → call_leave
-   ・stale loc + last=home → call (no silent skip; Power of Free 5/30 教訓)
-   ・event past & not @venue → late_flow
-      ↓
-[Bland.ai or Twilio + Gemini Live] — relentless call until vel>2 OR 移動>300m
-[renraku.py] — 遅刻 mail (event名/名前なし、申し訳ございません必須) + Firecrawl fallback for stakeholder lookup
+[Google Calendar] -- poll every 5 min --> [gcal_departures.py] travel-time + per-event buffer
+        |                                          |
+[Telegram Live Location] ----------------> [lateness_check.py] decision engine
+        |   depart_by <= now+lead & at home -> call
+        v
+[Twilio + Gemini Live (Pipecat)] capped reminder call (max 3, 60-120s apart)
+[renraku.py] late-notice email -- confirm-gated (off by default)
 ```
 
-## Inputs
+## PREREQUISITES (you set this up — not the package's job)
 
-- `~/.openclaw/identity/profile.json`
-  - `alarm.wakeTime`, `alarm.eventStyles[type].buffer`, `alarm.defaultArrivalBufferMinutes`
-  - `goals.northStar`, `goals.ideal_state[]`, `goals.anti_goals[]`
-  - `lateness.blocklistApply`, `lateness.blocklistRenraku` (Power of Free 分離)
-  - `lateness.stakeholders[]`
-  - `location.homeLat / homeLon`
-- `~/.openclaw/.env` — Twilio / Gemini / Google Maps / OwnTracks keys (gitignored)
+Anicca runs on YOUR always-on machine. The download installs the skill bundle; you bring the infrastructure:
+1. An always-on machine (Mac mini, home server, VPS) with an agent runtime (Claude Code / Codex / OpenClaw).
+2. A Telegram bot (BotFather -> /newbot) — drives Telegram Live Location (the location source).
+3. Your own API keys in a local .env (see env list) — BYOK.
+4. install.sh registers the local daemons (Telegram-location bridge, Pipecat phone) + the 5-min calendar poll. login/OAuth/2FA are done by you.
 
-## Cron (Anicca 自走)
+## Capafy Disclosure (R1/R2/R3 — Download, all data local)
 
-| name | schedule | what |
+| # | Item | Detail |
 |---|---|---|
-| `calendar-event-call` | `*/5 6-23 * * *` | 5min polling, depart_by call + late_flow + stale-loc handle |
-| (廃止予定) `anicca-life-manager-heartbeat` | `8,23,38,53 6-23 * * *` | 15min backup (今は redundant) |
+| (1) Data accessed | GPS/velocity (via your Telegram Live Location), calendar events (Google Calendar), your phone number / home address / stakeholder contacts (local config). All stored locally; nothing sent to us. |
+| (2) External services | Telegram (Live Location), Twilio (calls), Gemini Live (voice), Google Directions (travel time), Google Calendar (read), Gmail/gog (late-notice email). |
+| (3) Credentials (BYOK — you supply) | TELEGRAM_BOT_TOKEN, TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER, GEMINI_API_KEY, GOOGLE_API_KEY, GOG_ACCOUNT. |
+| (4) When calls/email fire | Call: when depart_by <= now + lead and you're still at home. Email: only when an event has passed and you haven't arrived. |
+| (5) Max retry / rate limit | Calls capped at 3 attempts (LATE_RELENTLESS_MAX, default 3), 60-120s apart — never endless. Email: 1 per event. |
+| (6) Pause / stop | Set lifeManager.enabled=false in your profile to stop everything (enforced in code: life_manager_enabled()). Quiet hours (23:30-05:30 default) suppress routine calls. |
+| (7) Third-party contact consent | Late-notice email is OFF by default; sent only if you opt in (lateness.autoSendMail=true). Otherwise a draft is shown for your confirmation (enforced: auto_send_allowed()). |
 
-廃止済: `anicca-phone-wake-call-daily`, `anicca-audio-wake-up-daily`, `anicca-wake-up-daily`, `dais-morning-leave-check`
+No Supabase. No OwnTracks. Location is Telegram Live Location only.
+
+## Inputs (local config)
+
+- profile config: alarm.wakeTime, alarm.eventStyles[type].buffer, lateness.stakeholders[], lateness.autoSendMail, lifeManager.enabled, location.homeLat/homeLon
+- .env: the BYOK keys above
 
 ## Run
 
 ```bash
-bash ~/.openclaw/skills/anicca-life-manager/scripts/run.sh
-# stdout last line: SUMMARY_JSON: {...}
+bash scripts/run.sh          # 5-min heartbeat: gcal departBy x Telegram location -> call if late-risk
 ```
 
 ## Failure modes
+- Twilio/Gemini dialout fail -> retry max 3 -> stop.
+- Telegram location silent -> use last known + flag stale.
+- Google Directions quota -> haversine fallback x1.5.
 
-- Twilio/Bland.ai dialout fail → 30s 後 再試行 max 3 回 → Slack DM
-- Gemini Live drop → bridge restart → 60s 後 再 call
-- OwnTracks 完全沈黙 24h+ → call to ask "iPhone 大丈夫?"
-- Google Directions quota → fallback haversine + 1.5x
-- gcal-policy.sh 経由しない event 挿入 → HARD RULE #19 違反
-
-## HARD RULE #14 verify
-
-末尾 mandatory:
-```bash
-bash ~/.openclaw/skills/_shared/verify-public-state.sh \
-  ~/.openclaw/skills/anicca-life-manager/state/run.log \
-  "lateness run" \
-  1
-```
-
-## Related
-
-- `~/.openclaw/skills/anicca-booking/` — sister skill: empty gcal slot detection + ideal_state apply
-- `~/.openclaw/skills/_shared/lib/gcal-policy.sh` — HARD RULE #19 helper (全 event 挿入時 必須経由)
-- `anicca-alarm` repo (OSS): https://github.com/the user134/anicca-alarm
-- Conway-Research/automaton (理論的 spine): https://github.com/Conway-Research/automaton
+## Limits enforced in code
+- RELENTLESS_MAX_DEFAULT = 3 (lateness_check.py)
+- life_manager_enabled(profile) — lifeManager.enabled=false halts the run
+- auto_send_allowed(profile) — third-party email requires lateness.autoSendMail=true, else draft-only
+</content>

@@ -33,6 +33,12 @@ def gog_account():
     return env("GOG_ACCOUNT", "") or prof.google_account()
 
 
+def auto_send_allowed(profile: dict) -> bool:
+    """第三者への謝罪mail自動送信は明示opt-in (lateness.autoSendMail:true) のみ。
+    既定 False = 送信前にユーザー確認 (Capafy reject R2: third-party連絡前のconsent)。"""
+    return bool(((profile or {}).get("lateness") or {}).get("autoSendMail", False))
+
+
 def compose(sender, event, minutes):
     # the user 2026-05-31 mail template HARD RULE (Power of Free BAN 事件 後):
     #   ・event 名 入れない (誤特定 リスク回避)
@@ -80,6 +86,16 @@ def send_renraku(event, minutes, attendees=None):
     sender = (entry or {}).get("sender") or prof.identity_for(ctx_text)
     msg = compose(sender, summary, minutes)
     subject = "本日の遅刻のお知らせ"  # event 名 入れない (the user 2026-05-31 厳命)
+
+    # Capafy reject R2: 第三者連絡前の確認。autoSendMail opt-in でなければ送信せず下書きのみ。
+    try:
+        _profile = prof.load_profile()
+    except Exception:
+        _profile = {}
+    if not auto_send_allowed(_profile):
+        slack(f"🏃 *遅刻 renraku 確認待ち* (自動送信OFF)\n予定: *{summary}*\n送信先候補: {((entry or {}).get('to')) or 'attendees/未登録'}\nそのまま送れる文面:\n> {msg}\n"
+              f"_自動送信を許可するなら profile.json の lateness.autoSendMail を true に。_")
+        return {"via": "confirm-required", "ok": False, "sent": False}
 
     # 1) profile stakeholder (email / slack)
     if entry:
