@@ -27,3 +27,16 @@ Gemini API を直接叩いて再現:
 - Before: Gemini 死 → 毎回 robotic「application error」or 無音 call（原因不明・サイレント）。
 - After(コード): Gemini 死 → call せず Slack に「Gemini unreachable: <理由> / 課金を直せ」即通知。壊れた call ゼロ。
 - 完全復旧(Anicca が Charon で会話): 課金解消 待ち(ユーザー行動)。解消後は gate が通り通常 call。
+
+## 恒久Fix（2026-06-04 承認）: 課金依存を捨て、無料ローカル音声に差替
+
+Gemini Live / OpenAI Realtime は課金必須（両wallet $0）。→ **Pipecat 標準内蔵の無料ローカルスタックに差替**（書き換えでなく config 差替・Mac mini で $0・恒久）:
+
+| 役割 | 採用 | Pipecat |
+|---|---|---|
+| STT | faster-whisper（ローカル・$0） | `pipecat-ai[whisper]` |
+| LLM | **DeepSeek**（鍵生存・激安・品質優先） / 完全$0 なら Ollama | `pipecat-ai[deepseek]` / `pipecat-ai[ollama]` |
+| TTS | **Kokoro**（github.com/hexgrad/kokoro・Apache・オープン最高品質・Apple Silicon可） | `pipecat-ai[kokoro]` |
+
+実装: `~/anicca-oss-pipecat/skills/anicca-phone/outbound/bot.py` の `GeminiLiveLLMService`(native S2S) を **WhisperSTT → DeepSeek/Ollama LLM → Kokoro TTS のカスケード pipeline** に置換。男声voiceを選択。`gemini_reachable()` health gate は汎用化（音声バックエンド到達性checkに）。買い手にも同利益（課金不要で動く）。
+トレードオフ: native S2S比で遅延 +0.8-1.5s（遅刻電話には十分）。GPU不要(Kyutai Mosh/Unmuteはここで不採用＝GPU前提)。
