@@ -116,8 +116,12 @@ every step behind a shipped impl; roll-out de-risked by in-house `self_update.py
  wallet       = 0xa3CDd4Ec... on Base → 0 USDC / 0 ETH (empty; x402 earn skill #324 not built).
  economics    = MRR ~$27 ; all-time landed ¥4,956 (NOT monthly) ; runtime spend ~$99/mo+ → NET NEGATIVE.
                 "avg ¥5,000/mo income, ~¥1,000 cost" = NOT true today (cost is ~¥15k/mo, income < cost).
- self-X       = friction-fixer(spec15) lives; self-improve #335 / self-manage #336 / self-replication
-                #327 = NOT built. "self-heals / refactors / self-improves / self-replicates" = aspirational.
+ self-X       = friction-fixer(spec15) lives; self-improve #335 / self-manage #336 = NOT built.
+                self-replication #327 = skill BUILT (skills/spawn-child, Hermes-registered) + dry-run/
+                cost-cap unit tests PASS; provision path reaches the live Daytona API. BUT no live child
+                yet: Daytona Personal org has 0 compute regions (/api/regions=[], create rejected
+                "no default region") AND wallet=$0 USDC, so Phase B (real spawn) is GATED on funding.
+                "self-heals / refactors / self-replicates" = still aspirational until a child boots.
  LIVE & TRUE  = daily email report (anicca-report #231) ✓ · dashboard auto-update (anicca-cfo.json, CFO
                 daily) ✓ · anicca-oss published (#229) ✓ · runtime self-monitors its own logs (friction) ✓.
  → Launch pitch must describe THIS state (or framed as the roadmap), not the target state, until PHASE 2
@@ -145,8 +149,12 @@ is blockedBy every claim-task; when it goes green, the pitch is fact and may be 
         (Coconala + CrowdWorks join as ④b/④c in Wave 2 follow-ons.)
  ⑤a「行動ログ監視→エラー自己解決」           →  #335 (friction spec15 ✓) →  loop observed fixing a real error
  ⑤b「リファクタリング・自己改善」            →  #335, #336 self-manage   →  loop observed raising own quality
- ⑤c「クラウド上で自己増殖」                  →  #327 replicate, #328     →  a child spawns on Daytona/Akash,
-                                                 colony                      own wallet + constitution hash
+ ⑤c「クラウド上で自己増殖」(skill BUILT,     →  #327 replicate ✓skill,   →  a child spawns on Daytona/Akash,
+      Phase B GATED on funding)                  #328 colony, #327c probe    own wallet + constitution hash.
+                                                                             skills/spawn-child ships +
+                                                                             unit-tests PASS; NOT checked-off:
+                                                                             Daytona org has no region (needs
+                                                                             billing) + wallet $0 → no live child
  ⑤d「メールで日次報告」                      →  #231 ✓ LIVE / #330 ◐     →  daily email arrives; #330 Hermes-native
                                                  (7d gate pending)           skill live (cron 0 6 * * *, sends from
                                                                              anicca-genesis@agentmail.to,
