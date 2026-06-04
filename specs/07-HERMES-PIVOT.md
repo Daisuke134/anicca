@@ -1,15 +1,14 @@
 # 07 — HERMES PIVOT
 
-> ⚠️ **CODE-TRUTH WARNING (2026-06-04):** This spec was written WITHOUT reading the
-> automaton source. On 2026-06-04 all three codebases were read at source — see
-> **`16-RUNTIME-CODE-TRUTH.md`** (AUTHORITATIVE, file:line cited). The code shows
-> automaton ALREADY self-replicates to cloud + self-modifies + self-funds (the
-> mission-critical "army" trio), while Hermes has NO wallet/x402/self-spawn/constitution
-> (`grep x402` = 0). So "drop Conway/automaton, use Hermes as L3" is NOT code-supported.
-> Treat this file's substrate claims (L3=Hermes, Daytona spawn) as SUSPECT pending the
-> decision in spec 16 §5/§6. Where this conflicts with spec 16, **spec 16 wins.** Hermes
-> deep-read still in progress — keep this file; Hermes may return as a supplementary
-> skill/kanban layer, not the base runtime.
+> ✅ **VINDICATED + REFINED (2026-06-04):** After reading all 3 runtimes at source + a real
+> boot (see **`16-RUNTIME-CODE-TRUTH.md`** + `00-MASTER.md` § 1.0, both AUTHORITATIVE on
+> substrate), this spec's CORE thesis is CONFIRMED: **L3 = Hermes** (BYOK-native, Daytona
+> host, Kimi brain). The earlier "fake/suspect" flag was UNFAIR. What this spec MISSED, now
+> fixed in § 1.0: instead of dropping automaton entirely, we PORT automaton's 4 MIT primitives
+> (wallet / x402-in+out / self-replication / constitution) into Hermes **skills** — Hermes
+> lacks exactly those. Net: Hermes = the one runtime; automaton = the reference we port from.
+> Where § 3 below says "L4 = Coinbase AgentKit" — that becomes the **wallet skill** (CDP/viem),
+> not a separate layer. Hosts: Daytona (native) / Akash (sovereign) / Conway (optional).
 
 > Deep-dive on the v3.1 substrate decision: Layer 3 RUNTIME swaps from Conway
 > automaton fork to **Hermes Agent** (NousResearch, MIT); Layer 4 SERVICE swaps
