@@ -500,15 +500,29 @@ Expected: push succeeds.
 
 **Files:** none new in the repo; Hermes manages its own cron metadata under `~/.hermes/cron/`.
 
-- [ ] **Step 1: Create the cron entry**
+- [ ] **Step 1: Create the cron entry (verified against `hermes cron create --help` v0.12.0)**
 
-Run:
+`hermes cron create --help` confirms the supported flags are `--name`, `--script`, `--no-agent`,
+`--schedule`, `--repeat`, `--workdir`, `--deliver`, `--skill`. The script path MUST be under
+`~/.hermes/scripts/` per the help text ("Path to a script under ~/.hermes/scripts/"). We satisfy that
+with a symlink:
+```bash
+mkdir -p /Users/operator/.hermes/scripts
+ln -sf /Users/operator/anicca-oss/skills/anicca-heartbeat/scripts/heartbeat.sh \
+       /Users/operator/.hermes/scripts/anicca-heartbeat.sh
+ls -l /Users/operator/.hermes/scripts/anicca-heartbeat.sh
+```
+Expected: symlink output `… -> /Users/operator/anicca-oss/skills/anicca-heartbeat/scripts/heartbeat.sh`.
+
+Then create the cron job with `--no-agent` (skip LLM — the script IS the job; matches our cheap,
+side-effect-only design):
 ```bash
 hermes cron create "every 30m" \
   --name anicca-heartbeat \
-  --command "/Users/operator/anicca-oss/skills/anicca-heartbeat/scripts/heartbeat.sh"
+  --script /Users/operator/.hermes/scripts/anicca-heartbeat.sh \
+  --no-agent
 ```
-Expected: prints `Created anicca-heartbeat (every 30m)` or the local equivalent + exit 0. If the `hermes cron create` flags differ in the installed version, run `hermes cron create --help` and adjust the flags inline; the only required behavior is "every 30m, runs that exact path".
+Expected: prints `Created anicca-heartbeat (every 30m)` (or the local equivalent) + exit 0.
 
 - [ ] **Step 2: Confirm it's listed**
 
@@ -532,99 +546,85 @@ Expected: `delta=1`. If `hermes cron run` is not implemented in this version, th
 
 ---
 
-### Task 7: Keep the Hermes cron daemon alive via launchd
+### Task 7: Install Hermes gateway as the cron scheduler (verified: `hermes gateway install`)
 
-**Files:**
-- Create: `/Users/operator/anicca-oss/scripts/launchd/ai.anicca.hermes-cron.plist`
-- Create: `/Users/operator/anicca-oss/scripts/launchd/install-hermes-cron-launchd.sh`
-- Modify: `~/Library/LaunchAgents/ai.anicca.hermes-cron.plist` (installed copy)
+> **Verified against the running binary (v0.12.0, 2026-06-04 21:30 JST):** `hermes cron daemon`
+> does NOT exist as a subcommand. Instead, `hermes cron status` prints:
+> `✗ Gateway is not running — cron jobs will NOT fire`
+> `To enable automatic execution: hermes gateway install (Install as a user service)`
+> So the gateway IS the scheduler. We use Hermes's own installer — no hand-rolled plist needed.
 
-- [ ] **Step 1: Author the plist**
+**Files:** none new in the repo; Hermes installs its own launchd plist under
+`~/Library/LaunchAgents/`. We add ONE verification helper to the repo so the install can be replayed.
 
-Create `/Users/operator/anicca-oss/scripts/launchd/ai.anicca.hermes-cron.plist` with EXACTLY:
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-  <key>Label</key><string>ai.anicca.hermes-cron</string>
-  <key>ProgramArguments</key>
-  <array>
-    <string>/Users/operator/.local/bin/hermes</string>
-    <string>cron</string>
-    <string>daemon</string>
-  </array>
-  <key>RunAtLoad</key><true/>
-  <key>KeepAlive</key><true/>
-  <key>ThrottleInterval</key><integer>30</integer>
-  <key>StandardOutPath</key><string>/Users/operator/.hermes/logs/hermes-cron.launchd.out</string>
-  <key>StandardErrorPath</key><string>/Users/operator/.hermes/logs/hermes-cron.launchd.err</string>
-  <key>EnvironmentVariables</key>
-  <dict>
-    <key>PATH</key><string>/Users/operator/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
-    <key>HOME</key><string>/Users/operator</string>
-  </dict>
-</dict>
-</plist>
+- [ ] **Step 1: Install gateway as a launchd background service**
+
+Run:
+```bash
+hermes gateway install
 ```
+Expected: prints a sequence ending with `Installed user service` (or local equivalent), and a hint
+that the gateway is now running. If the installer asks for confirmation, accept; if it asks for
+Telegram/Discord tokens during `setup`, skip — gateway can run cron-only without messaging tokens.
 
-NOTE: If `hermes cron --help` shows that scheduling is in-process (no separate `daemon` subcommand), replace `ProgramArguments` with the in-process command Hermes ships (e.g. `hermes gateway run` or `hermes -z "tick"` in a loop). Verify with `hermes cron --help` BEFORE installing the plist; if uncertain, gate this task and report — do NOT guess.
+- [ ] **Step 2: Verify the gateway service is alive in launchd**
 
-- [ ] **Step 2: Author the installer script**
+Run:
+```bash
+launchctl list | grep -i hermes
+```
+Expected: at least one row whose Label contains `hermes` (commonly `com.nousresearch.hermes` or
+`io.hermes.gateway` — accept whatever Hermes registered) with a non-`-` PID in the first column.
+Record the Label string for the verification step below.
 
-Create `/Users/operator/anicca-oss/scripts/launchd/install-hermes-cron-launchd.sh` with EXACTLY:
+- [ ] **Step 3: Confirm cron is now active**
+
+Run:
+```bash
+hermes cron status
+hermes cron list
+```
+Expected: `hermes cron status` no longer prints `✗ Gateway is not running` — it prints a positive
+status line. `hermes cron list` shows the `anicca-heartbeat` job created in Task 6.
+
+- [ ] **Step 4: Restart-survival check**
+
+Run:
+```bash
+LABEL=$(launchctl list | awk '/hermes/{print $3; exit}')
+echo "LABEL=$LABEL"
+launchctl kickstart -k "gui/$(id -u)/$LABEL"
+sleep 5
+launchctl list | grep -i hermes
+hermes cron status
+```
+Expected: after kickstart, `launchctl list` still shows the gateway row with a valid PID, and
+`hermes cron status` still reports the gateway as running.
+
+- [ ] **Step 5: Capture the install for repeatability**
+
+Create `/Users/operator/anicca-oss/scripts/launchd/install-hermes-gateway.sh` with EXACTLY:
 ```bash
 #!/usr/bin/env bash
+# Installs the Hermes gateway as a user-level launchd background service.
+# Idempotent: if already installed, `hermes gateway install` is a no-op or upgrade.
 set -euo pipefail
-SRC="$(cd "$(dirname "$0")" && pwd)/ai.anicca.hermes-cron.plist"
-DST="$HOME/Library/LaunchAgents/ai.anicca.hermes-cron.plist"
-mkdir -p "$HOME/Library/LaunchAgents" "$HOME/.hermes/logs"
-cp "$SRC" "$DST"
-launchctl bootout gui/$(id -u) "$DST" 2>/dev/null || true
-launchctl bootstrap gui/$(id -u) "$DST"
-launchctl enable gui/$(id -u)/ai.anicca.hermes-cron
-launchctl kickstart -k gui/$(id -u)/ai.anicca.hermes-cron
-echo "installed: $DST"
-launchctl list | grep ai.anicca.hermes-cron || true
+hermes gateway install
+hermes cron status
+launchctl list | grep -i hermes || true
 ```
 Make executable:
 ```bash
-chmod +x /Users/operator/anicca-oss/scripts/launchd/install-hermes-cron-launchd.sh
+chmod +x /Users/operator/anicca-oss/scripts/launchd/install-hermes-gateway.sh
 ```
-
-- [ ] **Step 3: Install and start**
-
-Run:
-```bash
-/Users/operator/anicca-oss/scripts/launchd/install-hermes-cron-launchd.sh
-```
-Expected: ends with a `launchctl list` line containing `ai.anicca.hermes-cron`, with a PID (or `-`) in the first column.
-
-- [ ] **Step 4: Verify the launchd count incremented by exactly 1**
-
-Run:
-```bash
-launchctl list | grep -c '^[^	]*[0-9]*	[0-9]*	ai\.anicca\.'
-```
-Expected: `24` (was 23 in Task 1 Step 3).
-
-- [ ] **Step 5: Verify the launchd job survives a forced restart**
-
-Run:
-```bash
-launchctl kickstart -k gui/$(id -u)/ai.anicca.hermes-cron
-sleep 5
-launchctl list | grep ai.anicca.hermes-cron
-```
-Expected: still shows the job with a valid PID (not `-` and not exit code ≠ 0).
 
 - [ ] **Step 6: Commit**
 
 Run:
 ```bash
 cd /Users/operator/anicca-oss
-git add scripts/launchd/ai.anicca.hermes-cron.plist scripts/launchd/install-hermes-cron-launchd.sh
-git commit -m "feat(launchd): keep hermes cron daemon alive (ai.anicca.hermes-cron)"
+git add scripts/launchd/install-hermes-gateway.sh
+git commit -m "feat(launchd): install-hermes-gateway.sh — hermes gateway IS the cron scheduler"
 git push
 ```
 
