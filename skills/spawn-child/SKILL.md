@@ -16,10 +16,14 @@ and schedules the 30-min recurring heartbeat. The parent appends one JSON row to
 ## How it's invoked
 Called by:
 - A human/agent at the CLI: `~/.hermes/skills/spawn-child/scripts/spawn-child.sh anicca-001`
-- The future self-replication loop (#327 Wave 2+) when the parent's lifeline says THRIVE
-  and the wallet has surplus.
+- The #327c auto-watcher (`scripts/spawn-watcher.sh`, hourly Hermes cron `anicca-spawn-watcher`):
+  it does NOT spawn on a schedule — it CHECKS two economic gates each hour (wallet ≥ $5 USDC
+  AND a Daytona region exists) and fires `spawn-child --confirm anicca-001` exactly ONCE, the
+  first hour both gates clear. Idempotent (skips if anicca-001 already alive); logs every
+  decision to `~/.hermes/state/spawn-watcher.jsonl`.
 
-NEVER from a cron — replication must be a deliberate decision, not a recurring side effect.
+The cron is a gated condition-check, not a recurring spawn — replication still happens at most
+once and only when the body can afford it.
 
 ## Cost cap
 Spawn refuses unless parent `~/.hermes/state/wallet.json` shows `balance_usdc ≥ 5`. Exit 75
