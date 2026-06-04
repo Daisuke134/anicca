@@ -56,3 +56,7 @@ skills/*/state/MNEMONIC_BACKUP_ONCE.txt
 
 # Git worktrees (transient)
 .worktrees/
+
+# DeepEval local telemetry/cache (eval-loop skill runtime artifact; zero phone-home)
+.deepeval/
+.deepeval_telemetry.txt
