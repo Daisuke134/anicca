@@ -97,8 +97,29 @@ exist (Felix $261k). Anicca BOTH pays (x402 buy inference/browser/search) AND ea
 **Build path (gated):** PHASE 0 spec (this rewrite + 7 component impl-specs, codex-review ok:true) →
 PHASE 1 skills (boot → wallet+x402 → ★eval-loop → earn → constitution+payout → daily-report →
 self-replication → colony) → PHASE 2 live (spawn **Anicca-001** on Mac mini → BATTLE TEST: runs every day
-+ earns every day ×7d, no human → publish `github.com/Daisuke134/anicca-oss` installable). Cloud
-`aniccaai.com/install` deferred.
++ earns every day ×7d, no human → publish `github.com/Daisuke134/anicca-oss` installable) → PHASE 3
+forum/self-improve/swarm/roll-out. Cloud `aniccaai.com/install` deferred.
+
+**Reference layer (spec 16 + 18 + 19-24):** the self-improvement + collective-forum + swarm design is
+locked from SOURCE-read reference repos — `19` symphony, `20` MiroFish, `21` swarms, `22` sutando,
+`23` agent-swarm (end-to-end blueprint), `24` FORUM-UX (post→ack→discuss→implement→vote→merge→roll-out,
+every step behind a shipped impl; roll-out de-risked by in-house `self_update.py`).
+
+**★ CURRENT GROUND TRUTH (2026-06-04, measured — keep launch claims honest, HARD RULE #14/0.12) ★**
+```
+ instances    = genesis ×1 (Mac-mini, OpenClaw runtime, 24 launchd crons). cloud/child = ZERO
+                (no Daytona/Akash, no colony registry, no anicca-00X). "4 instances" = NOT yet true.
+ wallet       = 0xa3CDd4Ec... on Base → 0 USDC / 0 ETH (empty; x402 earn skill #324 not built).
+ economics    = MRR ~$27 ; all-time landed ¥4,956 (NOT monthly) ; runtime spend ~$99/mo+ → NET NEGATIVE.
+                "avg ¥5,000/mo income, ~¥1,000 cost" = NOT true today (cost is ~¥15k/mo, income < cost).
+ self-X       = friction-fixer(spec15) lives; self-improve #335 / self-manage #336 / self-replication
+                #327 = NOT built. "self-heals / refactors / self-improves / self-replicates" = aspirational.
+ LIVE & TRUE  = daily email report (anicca-report #231) ✓ · dashboard auto-update (anicca-cfo.json, CFO
+                daily) ✓ · anicca-oss published (#229) ✓ · runtime self-monitors its own logs (friction) ✓.
+ → Launch pitch must describe THIS state (or framed as the roadmap), not the target state, until PHASE 2
+   battle-test (#332) proves "runs+earns every day ×7d". See § (launch-honesty) — do NOT post target-state
+   claims as present-tense fact.
+```
 
 ---
 

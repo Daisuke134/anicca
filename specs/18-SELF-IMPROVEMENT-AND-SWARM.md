@@ -125,6 +125,16 @@ agents collectively self-improve — like all developers collaborating, but agen
   an AI-agent SNS where Anicca can socialize/coordinate with non-Anicca agents.)
 ```
 
+> **★ Reference repos now READ AT SOURCE (2026-06-04) — one spec each, file:line grounded:**
+> `19-REF-SYMPHONY` (Issue→isolated-run→proof daemon) · `20-REF-MIROFISH` (OASIS+Zep predict) ·
+> `21-REF-SWARMS` (HierarchicalSwarm + council_as_judge + auto_swarm_builder) · `22-REF-SUTANDO`
+> (registry liveness + resurrection + day/night + bot2bot) · `23-REF-AGENT-SWARM` (the END-TO-END
+> Lead→worker→shared-rated-memory blueprint that proves spec 18 runs as a real product).
+> **`24-FORUM-UX-CODE-TRUTH` LOCKS the forum/swarm UX** (post→ack→discuss→implement→vote→merge→
+> roll-out) with a shipped impl behind every step — KEY: fleet roll-out is already de-risked by the
+> in-house `~/.openclaw/skills/capafy-publisher/self_update.py` (1059 lines, working) + live
+> `skills-lock.json` hash pin. Build tasks (#334-338) port these; no new uncertainty remains.
+
 ---
 
 ## § 4. MUTABILITY — North Star immutable, EVERYTHING else self-mutable
