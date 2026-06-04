@@ -17,13 +17,16 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-# extract_jids: arg $1 = file path, or "-" to read camofox snapshot JSON from stdin.
+# extract_jids: arg $1 = file path, or "-" to read camofox snapshot JSON from
+# the SNAP_JSON env var. (A heredoc binds stdin, so the live path must NOT read
+# sys.stdin — that would return the empty post-heredoc stream.)
 extract_jids() {
   "$PYTHON" - "$1" <<'PY'
-import json, re, sys
+import json, re, sys, os
 src = sys.argv[1]
-fp = sys.stdin if src == '-' else open(src)
-d = json.load(fp)
+raw = os.environ.get('SNAP_JSON', '') if src == '-' else open(src).read()
+# camofox live snapshot JSON contains unescaped control chars → strict=False
+d = json.loads(raw, strict=False)
 snap = d.get('snapshot', '')
 seen = []
 for m in re.finditer(r'/work/detail/(\d+)', snap):
@@ -61,4 +64,4 @@ sleep 10
 SNAP=$(cf_snapshot "$TAB")
 cf_close "$TAB"
 
-printf '%s' "$SNAP" | extract_jids -
+SNAP_JSON="$SNAP" extract_jids -
