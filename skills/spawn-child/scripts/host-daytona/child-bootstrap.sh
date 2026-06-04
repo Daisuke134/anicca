@@ -33,10 +33,7 @@ fi
 cp /tmp/CONSTITUTION.md "$HOME_DIR/.hermes/AGENTS.md"
 echo "$CONSTITUTION_SHA" > "$HOME_DIR/.hermes/state/constitution.sha"
 
-# 2) Install minimal deps: Python 3, pip, git
-for pkg in python3 python3-pip python3-venv git curl; do
-  command -v "${pkg%%3*}" >/dev/null 2>&1 || true
-done
+# 2) Install minimal deps: Python 3, pip, venv, git, curl
 if ! command -v python3 >/dev/null || ! command -v git >/dev/null || ! command -v pip3 >/dev/null; then
   (sudo apt-get update -qq && sudo apt-get install -y -qq python3 python3-pip python3-venv git curl) \
     || (apt-get update -qq && apt-get install -y -qq python3 python3-pip python3-venv git curl)
