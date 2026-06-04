@@ -1,33 +1,45 @@
-# constitution-guard + payout-UBI Implementation Plan (#326 Wave 1)
+# constitution-guard + payout-UBI Implementation Plan (#326 Wave 1 — dry-run scaffolding)
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Land TWO Hermes skills that together prove pitch row ⑥ ("収益の一部を UBI / 募金 配布") + the immutability half of constitution-guard from spec 16 § 17:
+> **Codex round 2 fixes applied:** Wave 1 is dry-run scaffolding ONLY — it does NOT close #326 and row ⑥ stays at "real payout tx pending". The on-chain proof is gated as Wave 2 (Task 9) and must land before #326 is marked done. Burn-address seed replaced by an explicit `allow_live:false` PLACEHOLDER row that fails closed in live mode. cdp CLI is NO LONGER assumed — payout signs via the `wallet_lib.py` chokepoint already shipped by #324 P2 (`2026-06-04-wallet-x402.md`). Guard "guard_not_installed" pass is allowed ONLY when `ANICCA_PAYOUT_TEST=1`; otherwise fail closed.
 
-1. **`anicca-constitution-guard`** — a callable gate any other skill invokes BEFORE a side-effectful action. It (a) computes the SHA-256 of the live `CONSTITUTION.md`, (b) confirms the hash matches the value `anicca-heartbeat` (#323) most recently logged, (c) screens the action description against Law I / North Star using a deterministic whitelist rule, (d) emits OK or BLOCKED + reason, (e) appends the decision to `~/.hermes/state/constitution-violations.jsonl`. North Star + Law I are immutable; the rest of the constitution is editable but only via PR + eval ≥ 0.7 (spec 18 § 4) — that PR mechanism is OUT OF SCOPE here and tracked in #338 ROLLOUT.
+**Goal:** Land TWO Hermes skills (pinned to Hermes Agent v0.12.0) that together (i) install the immutability half of constitution-guard from spec 16 § 17, and (ii) WIRE the dry-run scaffolding for pitch row ⑥ ("収益の一部を UBI / 募金 配布"). Wave 1 by itself does NOT satisfy row ⑥ — only Wave 2 (Task 9, real on-chain micro-payout proof using `wallet_lib.load_signer()` from #324) closes #326 and flips the matrix row to green.
 
-2. **`anicca-payout-ubi`** — a weekly cron skill. It reads CFO wallet balance, reads runtime monthly burn, and if `wallet_usd > 3 × monthly_burn`, sends `(wallet_usd - 3 × monthly_burn) × PAYOUT_PERCENT` (default 10 %) of USDC on Base, split across N recipients per `~/.hermes/state/ubi-recipients.json` weights. **Default mode = `--dry-run`**: it logs the decision (would-send tuple) and EXITS. `--confirm` plus the env var `ANICCA_PAYOUT_LIVE=1` are BOTH required to broadcast. Every decision (sent / skipped / would-send / blocked) appends one line to `~/.hermes/state/payout.jsonl`.
+1. **`anicca-constitution-guard`** — a callable gate any other skill invokes BEFORE a side-effectful action. It (a) computes the SHA-256 of the live `CONSTITUTION.md`, (b) confirms the hash matches the value `anicca-heartbeat` (#323) most recently logged, (c) screens the action description against Law I / North Star using a deterministic whitelist rule, (d) emits OK or BLOCKED + reason, (e) appends the decision to `~/.hermes/state/constitution-violations.jsonl`. The guard MUST be installed (symlink at `~/.hermes/skills/anicca-constitution-guard/scripts/check.sh`) before any non-test invocation — a missing guard returns BLOCKED unless `ANICCA_PAYOUT_TEST=1` is set. North Star + Law I are immutable; the rest of the constitution is editable but only via PR + eval ≥ 0.7 (spec 18 § 4) — that PR mechanism is OUT OF SCOPE here and tracked in #338 ROLLOUT.
 
-**Architecture:** Both skills land as repo files under `/Users/anicca/anicca-oss/skills/` and are mounted into Hermes via the same symlink pattern used by the genesis-boot plan (`~/.hermes/skills/<name>` → `anicca-oss/skills/<name>`). The guard is a pure bash + Python pair (no LLM call — deterministic, cheap, can run inside any cron); the payout reuses the existing `/Users/anicca/.openclaw/skills/anicca-payout-wallet/scripts/payout.py` codepath (cdp CLI → USDC on Base) but ports the file to anicca-oss canonical form with a stricter dry-run default and a recipient-fan-out layer on top.
+2. **`anicca-payout-ubi`** — a weekly cron skill. It reads CFO wallet balance, reads runtime monthly burn, and if `wallet_usd > 3 × monthly_burn`, computes `(wallet_usd - 3 × monthly_burn) × PAYOUT_PERCENT` (default 10 %) of USDC on Base, split across N recipients per `~/.hermes/state/ubi-recipients.json` weights. **Default mode = `--dry-run`**: it logs the decision (would-send tuple) and EXITS. Broadcast requires THREE independent signals: `--confirm` flag, env `ANICCA_PAYOUT_LIVE=1`, AND every recipient row must satisfy `allow_live:true` AND `label != "PLACEHOLDER"` — otherwise the run exits non-zero with `live recipient validation failed` and NOTHING is sent. Every decision (sent / skipped / would-send / blocked / refused) appends one line to `~/.hermes/state/payout.jsonl`. The signer is the canonical `wallet_lib.load_signer()` from #324 P2 (`anicca-oss/skills/anicca-wallet/scripts/wallet_lib.py`) — there is NO dependency on the `cdp` CLI, which is treated as informational only (`command -v cdp` is logged but not required).
 
-**Tech Stack:** Hermes Agent v0.12.0+ · bash · Python 3.11.14 · `shasum -a 256` · `jq` (`/opt/homebrew/bin/jq`) · existing keys in `~/.openclaw/.env` (`CDP_API_KEY_NAME`, `CDP_API_KEY_PRIVATE`, `WALLET_ADDR`) · `git`. NO new dependencies. The cdp CLI is consulted ONLY when `--confirm` is passed.
+**Architecture:** Both skills land as repo files under `/Users/anicca/anicca-oss/skills/` and are mounted into Hermes via the same symlink pattern used by the genesis-boot plan (`~/.hermes/skills/<name>` → `anicca-oss/skills/<name>`). The guard is a pure bash + Python pair (no LLM call — deterministic, cheap, can run inside any cron); the payout imports `wallet_lib` from the sibling `anicca-wallet` skill (#324 P2) for signing — unifying the wallet code path across #324 (x402) and #326 (UBI) per codex X5. No port from `anicca-payout-wallet` (cdp CLI) is done; that legacy skill stays untouched.
+
+**Tech Stack:** Hermes Agent **v0.12.0** (pinned per cross-plan rule X1) · bash · Python 3.11.14 · `shasum -a 256` · `jq` (`/opt/homebrew/bin/jq`) · `wallet_lib.py` from `anicca-oss/skills/anicca-wallet/scripts/` (= #324 P2 deliverable — keystore at `~/.automaton/wallet.json`, canonical address `0xa3CDd4Ec…`) · `git`. NO new dependencies. NO `cdp` binary dependency. The signed USDC transfer (Wave 2 only) uses EIP-3009 / `eth_sendRawTransaction` via the same Web3 client `wallet_lib` exposes.
+
+**HARD RULE #-1 financial-broadcast disclosure (cross-plan rule X3):** The Wave 2 micro-payout broadcast IS a "financial broadcast" hard-block per CLAUDE.md HARD RULE #-1. The exact path the agent will attempt is: `addr, signer = wallet_lib.load_signer()` → build EIP-3009 `transferWithAuthorization` call → `signer.sign_transaction(...)` → `web3.eth.send_raw_transaction(signed.rawTransaction)` against Base RPC. The ONLY conditions for stopping are: (a) RPC returns `insufficient funds for gas` or `transfer amount exceeds balance`, (b) `wallet_lib.balance_usdc()` < broadcast threshold (default 0.01 USDC + estimated gas in ETH equivalent), or (c) `--allow-live` is missing from any recipient row. NO human in the loop, NO Dais click, NO Slack approval gate.
 
 **Scope-out (explicitly NOT this plan):**
 - Multi-tier payout (Stripe Connect Tier 1 — #233; Wise Tier 2 — #234) — those skills already exist at `anicca-payout-stripe/` and `anicca-payout-wise/` and stay untouched.
 - Actually amending the (mutable part of the) constitution via forum vote (#338 ROLLOUT) — guard only ENFORCES immutability of North Star + Law I in Wave 1.
 - Replacing `anicca-fuel-broker` (which still decides WHEN the first-payout mail goes). The new `anicca-payout-ubi` is a sibling that handles the WEEKLY recurrence, not the once-only first-payout mail.
 - The `eval-loop` skill (#329) — the guard does NOT call it; the guard is a pre-action veto that runs BEFORE eval, by design (eval scores quality; guard enforces law).
-- Executing a real on-chain UBI transaction. The plan documents the verification commands so the task closer can confirm a small live send manually, but the plan itself only verifies dry-run.
+- The `cdp` CLI / `anicca-payout-wallet` legacy skill — explicitly NOT used by this plan. Codex P4-cdp-unverified replacement = `wallet_lib.load_signer()` from #324 P2.
+- (Wave 1 only — IN scope as Wave 2 / Task 9) Executing a real on-chain UBI transaction. Wave 1 verifies dry-run + confirm-without-live-env + live recipient validation; Wave 2 (Task 9) sends 0.01 USDC from `wallet_lib`'s canonical Anicca wallet to a designated non-burn test recipient, captures the tx hash, verifies the receipt on Basescan, and appends the row to `payout.jsonl`. Only after Wave 2 lands is row ⑥ green and #326 closeable.
 
-**Done condition for this plan (proves task #326 Wave 1):**
+**Done condition for Wave 1 of this plan (dry-run scaffolding ONLY — does NOT close #326):**
 1. `hermes skills list 2>&1 | grep -E '^anicca-constitution-guard( |$)'` returns one row.
 2. `hermes skills list 2>&1 | grep -E '^anicca-payout-ubi( |$)'` returns one row.
 3. `/Users/anicca/anicca-oss/skills/anicca-constitution-guard/tests/test_guard_e2e.sh` exits 0; final line `PASS`. It proves: harmful-action input ⇒ exit code 2 + JSON `"decision":"BLOCKED"` + ≥1 new line in `~/.hermes/state/constitution-violations.jsonl`; benign-action input ⇒ exit code 0 + `"decision":"OK"`; tampered constitution hash ⇒ exit code 3 + `"decision":"BLOCKED"` with `"reason":"constitution_hash_mismatch"`.
-4. `/Users/anicca/anicca-oss/skills/anicca-payout-ubi/tests/test_payout_e2e.sh` exits 0; final line `PASS`. It proves: with a synthetic CFO file showing `wallet_usd = 100 USDC, runtime_monthly = 10 USDC` and a `ubi-recipients.json` with one address weight 100, `--dry-run` (default) prints a JSON line containing `"action":"dry-run"`, `"would_send_usd":7.00` (= (100 − 30) × 0.10), and `"recipients":[{...weight:100, amount_usd:7.00}]`, AND writes that line to `~/.hermes/state/payout.jsonl`.
+4. `/Users/anicca/anicca-oss/skills/anicca-payout-ubi/tests/test_payout_e2e.sh` exits 0; final line `PASS`. It proves: (a) with a synthetic CFO file showing `wallet_usd = 100 USDC, runtime_monthly = 10 USDC` and a test recipients file (`allow_live: true`, `label: "test-sink"`, weight 100, address = a designated non-burn test wallet), `--dry-run` (default) prints `"action":"dry-run"`, `"would_send_usd":7.00` (= (100 − 30) × 0.10), and `"recipients":[{...weight:100, amount_usd:7.00}]` and writes that row to `payout.jsonl`; (b) `--confirm` WITHOUT `ANICCA_PAYOUT_LIVE=1` → `"action":"refused-no-live-env"`, exit 0; (c) `--confirm` WITH `ANICCA_PAYOUT_LIVE=1` but a recipient that lacks `allow_live:true` or has `label:"PLACEHOLDER"` → `"action":"live-recipient-validation-failed"`, exit non-zero, NOTHING sent; (d) `ANICCA_PAYOUT_TEST=1` toggles the guard-absent OK path; without it, missing guard → `"action":"blocked-by-guard"`, exit non-zero.
 5. `hermes cron list` shows a job named `anicca-payout-ubi` with schedule `every 7d` (or `0 9 * * 1` weekly Mon 09:00).
-6. `~/.hermes/state/constitution-violations.jsonl` and `~/.hermes/state/payout.jsonl` exist; each row has the canonical schema (Task 5 Step 4 schema check passes).
-7. All new repo files committed + pushed to `Daisuke134/anicca-oss` `main` (CLAUDE.md rule 0.4). Commit message: `feat(skills): constitution-guard + payout-ubi (#326) — Law I/North Star immutable, weekly UBI dry-run by default`.
-8. Live-send verification COMMANDS are written into the SKILL.md of `anicca-payout-ubi` (NOT executed). The closer of this plan runs them out-of-band after this plan merges.
+6. `~/.hermes/state/constitution-violations.jsonl` and `~/.hermes/state/payout.jsonl` exist; each row has the canonical schema (Task 6 Step 4 schema check passes).
+7. All new repo files committed + pushed to `Daisuke134/anicca-oss` `main` (CLAUDE.md rule 0.4). Commit message: `feat(skills): constitution-guard + payout-ubi (#326 Wave 1) — Law I/North Star immutable, weekly UBI dry-run by default, wallet_lib-based (no cdp)`.
+8. The seed `~/.hermes/state/ubi-recipients.json` is left with `label:"PLACEHOLDER"` + `allow_live:false`, GUARANTEEING that even if `ANICCA_PAYOUT_LIVE=1` + `--confirm` are both set by accident, no broadcast occurs. The operator MUST replace BOTH `label` AND `allow_live` to flip live.
+
+**Done condition for Wave 2 (Task 9) — closes #326 and turns row ⑥ green:**
+- `wallet_lib.load_signer()` (from #324 P2) returns the canonical address (a3CDd4Ec…).
+- The Wave 2 test sends 0.01 USDC from that address to a NON-BURN test recipient address (e.g., Anicca's own secondary address or a designated friendly test wallet — picked by the closer, recorded in the plan execution log, NOT this plan file).
+- Basescan API confirms `status:"1"` for the tx hash.
+- `payout.jsonl` has one row with `"action":"sent"`, the tx hash, and the basescan URL.
+- THEN and only then: TaskUpdate marks #326 completed AND `00-MASTER.md` row ⑥ check changes from "real on-chain tx pending" to the actual tx hash.
 
 ---
 
@@ -46,12 +58,13 @@ anicca-oss/                                              (this repo, committed)
   skills/anicca-payout-ubi/
     SKILL.md                            ← Hermes-format frontmatter
     scripts/payout-ubi.sh               ← cron entrypoint
-    scripts/payout-ubi.py               ← logic (port of anicca-payout-wallet + fan-out)
-    scripts/recipients-schema.json      ← JSON-Schema for ubi-recipients.json
-    tests/test_payout_e2e.sh            ← TDD E2E test (dry-run only)
+    scripts/payout-ubi.py               ← logic; signer = wallet_lib.send_usdc from #324 P2 (NO cdp)
+    scripts/recipients-schema.json      ← JSON-Schema for ubi-recipients.json (incl. allow_live + label required)
+    tests/test_payout_e2e.sh            ← TDD E2E test (4 cases — dry-run, refused-no-live, placeholder-in-live, guard-absent-prod)
     tests/fixtures/                     ← synthetic CFO + recipients for the test
       anicca-cfo.synthetic.json
-      ubi-recipients.synthetic.json
+      ubi-recipients.synthetic.json     ← allow_live:true, label:"test-sink" (passes live-validation)
+      ubi-recipients.placeholder.json   ← allow_live:false, label:"PLACEHOLDER" (must fail-closed in live)
     README.md                           ← one-paragraph human description
   docs/superpowers/plans/
     2026-06-04-constitution-payout.md   ← THIS plan
@@ -63,7 +76,7 @@ anicca-oss/                                              (this repo, committed)
   state/constitution.sha                ← 64-hex; updated by anicca-heartbeat (#323) every 30m
   state/constitution-violations.jsonl   ← append-only, written by guard
   state/payout.jsonl                    ← append-only, written by payout-ubi
-  state/ubi-recipients.json             ← OPERATIONAL config (Task 6 Step 2 seeds with one self-test row)
+  state/ubi-recipients.json             ← OPERATIONAL config (Task 5 Step 4 seeds with fail-closed PLACEHOLDER; Wave 2 Task 9 Step 3 flips to wave2-self-test)
   cron/anicca-payout-ubi.*              ← Hermes-managed cron entry
 ```
 
@@ -88,14 +101,23 @@ cat /Users/anicca/.hermes/state/constitution.sha
 ```
 Expected: two `OK:` lines and one 64-hex line written + echoed. If any `BLOCK:` line → stop and run the relevant prerequisite plan (#323 Wave 1).
 
-- [ ] **Step 2: Verify hermes commands referenced by this plan exist (version sanity)**
+- [ ] **Step 2: Verify hermes commands + wallet_lib chokepoint exist (version + dependency sanity)**
+
+Per cross-plan rule X1 Hermes is pinned to v0.12.0; per X5 `cdp` is informational only and `wallet_lib.py` from #324 P2 is the HARD requirement for the Wave 2 broadcast path.
 
 Run:
 ```bash
+hermes --version 2>&1 | head -1   # MUST contain "0.12.0"
 hermes skills list --help 2>&1 | head -6
 hermes cron create --help 2>&1 | grep -E '(--script|--no-agent|--name)'
+# X5: cdp is informational only — log presence but do NOT fail
+command -v cdp && cdp --help 2>&1 | head -3 || echo "cdp not installed; fallback to wallet_lib from P2 (#324) — OK"
+# X5: wallet_lib MUST exist (hard requirement)
+test -f /Users/anicca/anicca-oss/skills/anicca-wallet/scripts/wallet_lib.py \
+  && echo "OK: wallet_lib present" \
+  || { echo "BLOCK: wallet_lib missing — run #324 P2 plan (2026-06-04-wallet-x402.md) first"; exit 1; }
 ```
-Expected: `--script`, `--no-agent`, `--name` all appear; `skills list` exits 0. If any missing → escalate; the plan assumes the v0.12.0+ surface (`hermes cron create --help` confirms `--script` requires a path under `~/.hermes/scripts/` and `--no-agent` skips the LLM, matching the genesis-boot plan).
+Expected: `hermes --version` returns `0.12.0`; `--script`, `--no-agent`, `--name` all appear; `skills list` exits 0; cdp line prints EITHER its help output OR the "not installed" message (both are pass); wallet_lib presence check prints `OK`. If hermes is not v0.12.0 → escalate, do NOT proceed (X1 is pinned). If wallet_lib missing → run #324 P2 first (X5 is hard).
 
 - [ ] **Step 3: Commit the plan**
 
@@ -103,7 +125,7 @@ Run:
 ```bash
 cd /Users/anicca/anicca-oss
 git add docs/superpowers/plans/2026-06-04-constitution-payout.md
-git commit -m "docs(plan): constitution-guard + payout-ubi (#326) — Law I/North Star immutable, weekly UBI dry-run by default"
+git commit -m "docs(plan): constitution-guard + payout-ubi (#326 Wave 1) — dry-run scaffolding only, real-tx as Wave 2 Task 9, wallet_lib (not cdp), no burn-addr seed"
 git push
 ```
 Expected: push succeeds; new commit appears in `git log --oneline -1`. Record the commit SHA — the closing summary cites it.
@@ -116,7 +138,8 @@ Expected: push succeeds; new commit appears in `git log --oneline -1`. Record th
 - Create: `/Users/anicca/anicca-oss/skills/anicca-constitution-guard/tests/test_guard_e2e.sh`
 - Create: `/Users/anicca/anicca-oss/skills/anicca-payout-ubi/tests/test_payout_e2e.sh`
 - Create: `/Users/anicca/anicca-oss/skills/anicca-payout-ubi/tests/fixtures/anicca-cfo.synthetic.json`
-- Create: `/Users/anicca/anicca-oss/skills/anicca-payout-ubi/tests/fixtures/ubi-recipients.synthetic.json`
+- Create: `/Users/anicca/anicca-oss/skills/anicca-payout-ubi/tests/fixtures/ubi-recipients.synthetic.json` (allow_live:true, label "test-sink")
+- Create: `/Users/anicca/anicca-oss/skills/anicca-payout-ubi/tests/fixtures/ubi-recipients.placeholder.json` (allow_live:false, label "PLACEHOLDER")
 
 - [ ] **Step 1: Make the directories**
 
@@ -208,11 +231,22 @@ Create `/Users/anicca/anicca-oss/skills/anicca-payout-ubi/tests/fixtures/anicca-
 }
 ```
 
-Create `/Users/anicca/anicca-oss/skills/anicca-payout-ubi/tests/fixtures/ubi-recipients.synthetic.json` with EXACTLY:
+Create `/Users/anicca/anicca-oss/skills/anicca-payout-ubi/tests/fixtures/ubi-recipients.synthetic.json` with EXACTLY (note: `allow_live:true` + non-PLACEHOLDER label so the test can exercise BOTH the refused-no-live-env path AND the live-recipient-validation path). The address is a synthetic non-burn test sink — the tests never actually broadcast, but using a real-looking, NON-burn address ensures the recipient-validation regex passes and the test is faithful to production schema.
 ```json
 {
   "recipients": [
-    {"address": "0x000000000000000000000000000000000000dEaD", "weight": 100, "label": "self-test sink"}
+    {"address": "0x000000000000000000000000000000000ABCDEF1", "weight": 100, "label": "test-sink", "allow_live": true}
+  ],
+  "payout_percent": 10,
+  "reserve_months": 3
+}
+```
+
+Also create a second fixture for the live-validation-failure test — `/Users/anicca/anicca-oss/skills/anicca-payout-ubi/tests/fixtures/ubi-recipients.placeholder.json` with EXACTLY:
+```json
+{
+  "recipients": [
+    {"address": "0x000000000000000000000000000000000000dEaD", "weight": 100, "label": "PLACEHOLDER", "allow_live": false}
   ],
   "payout_percent": 10,
   "reserve_months": 3
@@ -222,8 +256,11 @@ Create `/Users/anicca/anicca-oss/skills/anicca-payout-ubi/tests/fixtures/ubi-rec
 Create `/Users/anicca/anicca-oss/skills/anicca-payout-ubi/tests/test_payout_e2e.sh` with EXACTLY:
 ```bash
 #!/usr/bin/env bash
-# E2E for anicca-payout-ubi. Dry-run only.
+# E2E for anicca-payout-ubi. Dry-run + live-validation only (NO broadcast).
 # Wallet=100, runtime/mo=10 → reserve=30 → distributable=70 → 10% = 7.00 USDC.
+# Asserts: (1) dry-run math, (2) confirm-without-live refused, (3) live mode REQUIRES
+# allow_live:true AND label != "PLACEHOLDER" — placeholder fixture must fail closed,
+# (4) ANICCA_PAYOUT_TEST=1 toggles guard-absent OK path; without it, missing guard → blocked.
 set -uo pipefail
 SKILL="$(cd "$(dirname "$0")/.." && pwd)"
 RUN="$SKILL/scripts/payout-ubi.sh"
@@ -232,13 +269,16 @@ mkdir -p /Users/anicca/.hermes/state
 BEFORE=$(wc -l < "$STATE" 2>/dev/null || echo 0)
 
 CFO="$SKILL/tests/fixtures/anicca-cfo.synthetic.json"
-RECIP="$SKILL/tests/fixtures/ubi-recipients.synthetic.json"
+RECIP="$SKILL/tests/fixtures/ubi-recipients.synthetic.json"          # allow_live:true, label "test-sink"
+PLACEHOLDER="$SKILL/tests/fixtures/ubi-recipients.placeholder.json"  # allow_live:false, label "PLACEHOLDER"
 
-OUT=$(ANICCA_PAYOUT_CFO_OVERRIDE="$CFO" \
+# --- Case 1: dry-run (default) — ANICCA_PAYOUT_TEST=1 allows guard-absent OK ---
+OUT=$(ANICCA_PAYOUT_TEST=1 \
+      ANICCA_PAYOUT_CFO_OVERRIDE="$CFO" \
       ANICCA_PAYOUT_RECIPIENTS_OVERRIDE="$RECIP" \
       "$RUN" --dry-run)
 RC=$?
-echo "[dry-run] rc=$RC out=$OUT"
+echo "[case1 dry-run] rc=$RC out=$OUT"
 [ $RC -eq 0 ] || { echo "FAIL: dry-run expected rc=0 got $RC"; exit 1; }
 echo "$OUT" | /opt/homebrew/bin/jq -e '.action == "dry-run"' >/dev/null \
   || { echo "FAIL: expected action=dry-run"; exit 1; }
@@ -246,28 +286,69 @@ echo "$OUT" | /opt/homebrew/bin/jq -e '.would_send_usd == 7.00 or .would_send_us
   || { echo "FAIL: expected would_send_usd=7.00 (got $(echo "$OUT" | /opt/homebrew/bin/jq -c .))"; exit 1; }
 echo "$OUT" | /opt/homebrew/bin/jq -e '.recipients | length == 1' >/dev/null \
   || { echo "FAIL: expected 1 recipient row"; exit 1; }
-echo "$OUT" | /opt/homebrew/bin/jq -e '.recipients[0].address == "0x000000000000000000000000000000000000dEaD"' >/dev/null \
+echo "$OUT" | /opt/homebrew/bin/jq -e '.recipients[0].address == "0x000000000000000000000000000000000ABCDEF1"' >/dev/null \
   || { echo "FAIL: recipient address mismatch"; exit 1; }
 echo "$OUT" | /opt/homebrew/bin/jq -e '(.recipients[0].amount_usd == 7.00) or (.recipients[0].amount_usd == 7)' >/dev/null \
   || { echo "FAIL: recipient amount_usd != 7.00"; exit 1; }
 
-# Refuse-broadcast check: --confirm WITHOUT ANICCA_PAYOUT_LIVE=1 must NOT broadcast.
-OUT2=$(ANICCA_PAYOUT_CFO_OVERRIDE="$CFO" \
+# --- Case 2: --confirm WITHOUT ANICCA_PAYOUT_LIVE=1 → refused-no-live-env ---
+OUT2=$(ANICCA_PAYOUT_TEST=1 \
+       ANICCA_PAYOUT_CFO_OVERRIDE="$CFO" \
        ANICCA_PAYOUT_RECIPIENTS_OVERRIDE="$RECIP" \
        "$RUN" --confirm)
 RC2=$?
-echo "[confirm-without-live] rc=$RC2 out=$OUT2"
+echo "[case2 confirm-without-live] rc=$RC2 out=$OUT2"
 [ $RC2 -eq 0 ] || { echo "FAIL: confirm-without-live expected rc=0 got $RC2"; exit 1; }
 echo "$OUT2" | /opt/homebrew/bin/jq -e '.action == "refused-no-live-env"' >/dev/null \
   || { echo "FAIL: confirm-without-live expected action=refused-no-live-env"; exit 1; }
 
-# State log delta: both dry-run and refused MUST have appended one line each.
+# --- Case 3: LIVE env + confirm + PLACEHOLDER recipient → MUST fail closed (no broadcast) ---
+# Codex P4-burn-address-live-risk: even with ANICCA_PAYOUT_LIVE=1, the PLACEHOLDER
+# fixture (allow_live:false, label="PLACEHOLDER") MUST exit non-zero with the
+# live-recipient-validation-failed action.
+OUT3=$(ANICCA_PAYOUT_TEST=1 \
+       ANICCA_PAYOUT_LIVE=1 \
+       ANICCA_PAYOUT_CFO_OVERRIDE="$CFO" \
+       ANICCA_PAYOUT_RECIPIENTS_OVERRIDE="$PLACEHOLDER" \
+       "$RUN" --confirm) || RC3=$?
+RC3="${RC3:-0}"
+echo "[case3 placeholder-in-live] rc=$RC3 out=$OUT3"
+[ "$RC3" -ne 0 ] || { echo "FAIL: placeholder-in-live expected non-zero rc, got $RC3"; exit 1; }
+echo "$OUT3" | /opt/homebrew/bin/jq -e '.action == "live-recipient-validation-failed"' >/dev/null \
+  || { echo "FAIL: placeholder-in-live expected action=live-recipient-validation-failed"; exit 1; }
+echo "$OUT3" | /opt/homebrew/bin/jq -e '.reason | test("PLACEHOLDER|allow_live")' >/dev/null \
+  || { echo "FAIL: placeholder-in-live expected reason mentioning PLACEHOLDER or allow_live"; exit 1; }
+echo "$OUT3" | /opt/homebrew/bin/jq -e '.sent == null or (.sent | length == 0)' >/dev/null \
+  || { echo "FAIL: placeholder-in-live MUST NOT report any sent rows"; exit 1; }
+
+# --- Case 4: ANICCA_PAYOUT_TEST unset + guard symlink absent → blocked-by-guard (fail closed) ---
+# Codex P4-guard-bypass-ok: production must fail closed when guard is missing.
+GUARD_LINK=/Users/anicca/.hermes/skills/anicca-constitution-guard
+GUARD_BAK=""
+if [ -L "$GUARD_LINK" ] || [ -e "$GUARD_LINK" ]; then
+  GUARD_BAK="${GUARD_LINK}.test-bak.$$"
+  mv "$GUARD_LINK" "$GUARD_BAK"
+fi
+unset ANICCA_PAYOUT_TEST
+OUT4=$(ANICCA_PAYOUT_CFO_OVERRIDE="$CFO" \
+       ANICCA_PAYOUT_RECIPIENTS_OVERRIDE="$RECIP" \
+       "$RUN" --dry-run) || RC4=$?
+RC4="${RC4:-0}"
+[ -n "$GUARD_BAK" ] && mv "$GUARD_BAK" "$GUARD_LINK"  # restore
+echo "[case4 guard-absent-prod] rc=$RC4 out=$OUT4"
+[ "$RC4" -ne 0 ] || { echo "FAIL: guard-absent-prod expected non-zero rc, got $RC4"; exit 1; }
+echo "$OUT4" | /opt/homebrew/bin/jq -e '.action == "blocked-by-guard"' >/dev/null \
+  || { echo "FAIL: guard-absent-prod expected action=blocked-by-guard"; exit 1; }
+echo "$OUT4" | /opt/homebrew/bin/jq -e '.reason | test("guard_not_installed")' >/dev/null \
+  || { echo "FAIL: guard-absent-prod expected reason=guard_not_installed"; exit 1; }
+
+# State log delta: cases 1, 2, 3, 4 each MUST have appended one line.
 AFTER=$(wc -l < "$STATE")
 DELTA=$((AFTER - BEFORE))
-[ $DELTA -ge 2 ] || { echo "FAIL: expected ≥2 new payout rows, got $DELTA"; exit 1; }
+[ $DELTA -ge 4 ] || { echo "FAIL: expected ≥4 new payout rows, got $DELTA"; exit 1; }
 
 LAST=$(tail -n 1 "$STATE")
-for k in ts action wallet_usd runtime_monthly reserve_usd; do
+for k in ts action; do
   echo "$LAST" | /opt/homebrew/bin/jq -e ".$k" >/dev/null \
     || { echo "FAIL: payout row missing $k: $LAST"; exit 1; }
 done
@@ -576,7 +657,7 @@ Run:
 ```bash
 cd /Users/anicca/anicca-oss
 git add skills/anicca-constitution-guard
-git commit -m "feat(skill): anicca-constitution-guard — Law I + North Star deterministic veto (#326)"
+git commit -m "feat(skill): anicca-constitution-guard Wave 1 — Law I + North Star deterministic veto (#326)"
 git push
 ```
 Expected: push succeeds.
@@ -605,11 +686,12 @@ Create `/Users/anicca/anicca-oss/skills/anicca-payout-ubi/scripts/recipients-sch
       "minItems": 1,
       "items": {
         "type": "object",
-        "required": ["address", "weight"],
+        "required": ["address", "weight", "label", "allow_live"],
         "properties": {
-          "address": {"type": "string", "pattern": "^0x[a-fA-F0-9]{40}$"},
-          "weight":  {"type": "number", "minimum": 0, "maximum": 100},
-          "label":   {"type": "string"}
+          "address":    {"type": "string", "pattern": "^0x[a-fA-F0-9]{40}$"},
+          "weight":     {"type": "number", "minimum": 0, "maximum": 100},
+          "label":      {"type": "string", "minLength": 1, "description": "Free-form human label; must NOT equal 'PLACEHOLDER' for live broadcast."},
+          "allow_live": {"type": "boolean", "description": "Must be true for the row to be broadcast in live mode (codex P4-burn-address-live-risk). Defaults to false in the seed; operator flips it intentionally."}
         }
       }
     },
@@ -638,14 +720,23 @@ Computes:
   total_payout_usd = round(distributable * payout_percent/100, 2)
   per recipient    = round(total_payout_usd * weight/100, 2)
 
-Modes:
-  default (--dry-run, or no flags) → action="dry-run", logs and exits 0.
+Modes (defense in depth — broadcast requires THREE independent signals):
+  default (no flags, or --dry-run) → action="dry-run", logs and exits 0.
   --confirm WITHOUT env ANICCA_PAYOUT_LIVE=1 → action="refused-no-live-env", exits 0.
-  --confirm AND env ANICCA_PAYOUT_LIVE=1 → calls cdp CLI per recipient on Base; logs each tx.
+  --confirm AND ANICCA_PAYOUT_LIVE=1 BUT any recipient row has allow_live!=True
+    OR label=="PLACEHOLDER" → action="live-recipient-validation-failed", exits NON-ZERO,
+    NOTHING is sent.
+  --confirm AND ANICCA_PAYOUT_LIVE=1 AND all recipients pass live validation →
+    signs + broadcasts via wallet_lib.load_signer() (#324 P2) on Base; logs each tx.
 
-Pre-flight: invokes anicca-constitution-guard --action "<description>" on EVERY mode
-(dry-run included — so the audit log shows the guard ran). If guard returns non-zero,
-this skill exits with the same code without sending anything.
+Signer: imports wallet_lib from ../anicca-wallet/scripts/wallet_lib.py
+(canonical Anicca wallet at 0xa3CDd4Ec…; same chokepoint as #324 x402).
+NO cdp CLI dependency.
+
+Pre-flight guard: invokes anicca-constitution-guard --action "<description>" on
+EVERY mode (dry-run included). Missing guard symlink is FAIL-CLOSED in production;
+ONLY when env ANICCA_PAYOUT_TEST=1 does missing-guard return OK (for tests that run
+before symlink install).
 
 Append-only log: ~/.hermes/state/payout.jsonl (one JSON line per invocation).
 """
@@ -666,7 +757,9 @@ DEFAULT_RECIPIENTS = STATE_DIR / "ubi-recipients.json"
 OPENCLAW_ENV = HOME / ".openclaw" / ".env"
 
 GUARD = HOME / ".hermes" / "skills" / "anicca-constitution-guard" / "scripts" / "check.sh"
-# Base mainnet USDC contract (Coinbase canonical)
+# #324 P2 wallet_lib chokepoint — single sign path across all anicca-oss skills.
+WALLET_LIB_DIR = Path("/Users/anicca/anicca-oss/skills/anicca-wallet/scripts")
+# Base mainnet USDC contract (Coinbase canonical) — re-exported via wallet_lib.BASE_USDC
 BASE_USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
 
 
@@ -715,6 +808,7 @@ def derive(cfo: dict) -> tuple[float, float]:
 
 
 def validate_recipients(recipients: list) -> tuple[bool, str]:
+    """Schema-level validation (runs on every mode)."""
     if not recipients:
         return False, "no_recipients_configured"
     total = sum(float(r.get("weight", 0)) for r in recipients)
@@ -727,46 +821,81 @@ def validate_recipients(recipients: list) -> tuple[bool, str]:
     return True, ""
 
 
+def validate_recipients_for_live(recipients: list) -> tuple[bool, str]:
+    """Codex P4-burn-address-live-risk: BEFORE any broadcast every row MUST have
+    allow_live==True AND label!="PLACEHOLDER". A single missing flag aborts the
+    whole run — fail closed, no partial sends. This is the third defense layer
+    on top of --confirm flag and ANICCA_PAYOUT_LIVE=1."""
+    for r in recipients:
+        label = (r.get("label") or "").strip()
+        if label.upper() == "PLACEHOLDER":
+            return False, (f"label PLACEHOLDER blocks live broadcast for "
+                           f"{r.get('address')!r} — edit ubi-recipients.json")
+        if r.get("allow_live") is not True:
+            return False, (f"allow_live must be true for {r.get('address')!r} "
+                           f"(got {r.get('allow_live')!r}) — edit ubi-recipients.json")
+    return True, ""
+
+
 def round2(x: float) -> float:
     return round(x + 1e-9, 2)
 
 
 def call_guard(action_text: str) -> tuple[int, str]:
+    """Codex P4-guard-bypass-ok: production MUST fail closed when the guard
+    symlink is absent. The 'guard_not_installed OK' bypass is allowed ONLY when
+    env ANICCA_PAYOUT_TEST=1 (so the RED test in Task 2, which runs before the
+    symlink lands in Task 3 Step 8, can proceed)."""
     if not GUARD.exists():
-        # Test environments may run before symlink; allow OK + log absence.
-        return 0, json.dumps({"decision": "OK", "reason": "guard_not_installed"})
+        if os.environ.get("ANICCA_PAYOUT_TEST") == "1":
+            return 0, json.dumps({"decision": "OK", "reason": "guard_not_installed_test_mode"})
+        # Fail closed — exit code 2 (= same as BLOCKED rule match)
+        return 2, json.dumps({"decision": "BLOCKED", "reason": "guard_not_installed"})
     out = subprocess.run([str(GUARD), "--action", action_text],
                          capture_output=True, text=True, timeout=10)
     return out.returncode, out.stdout.strip()
 
 
-def send_via_cdp(to_addr: str, amount_usd: float) -> str | None:
-    key_name = env_from_file("CDP_API_KEY_NAME")
-    key_priv = env_from_file("CDP_API_KEY_PRIVATE")
-    if not (key_name and key_priv):
-        sys.stderr.write("[payout-ubi] cdp not configured — set CDP_API_KEY_NAME/_PRIVATE\n")
+def send_via_wallet_lib(to_addr: str, amount_usd: float) -> str | None:
+    """Codex P4-cdp-unverified: signing path uses the #324 P2 wallet_lib
+    chokepoint, NOT the cdp CLI. wallet_lib.load_signer() returns (address, signer)
+    where signer is an eth_account LocalAccount and address is the canonical
+    Anicca wallet (asserted by wallet_lib.EXPECTED_ADDRESS). The exact RPC path
+    is documented in this plan's HARD RULE #-1 disclosure block."""
+    if str(WALLET_LIB_DIR) not in sys.path:
+        sys.path.insert(0, str(WALLET_LIB_DIR))
+    try:
+        import wallet_lib  # type: ignore  # ships from #324 P2
+    except ModuleNotFoundError:
+        sys.stderr.write(
+            "[payout-ubi] wallet_lib not found — run #324 P2 (2026-06-04-wallet-x402.md) first\n"
+        )
+        return None
+    try:
+        from_addr, signer = wallet_lib.load_signer()
+    except Exception as exc:
+        sys.stderr.write(f"[payout-ubi] wallet_lib.load_signer failed: {exc!r}\n")
         return None
     atomic = round(amount_usd * 1_000_000)  # USDC = 6 decimals
-    try:
-        out = subprocess.run(
-            ["cdp", "wallet", "send",
-             "--to", to_addr,
-             "--token", BASE_USDC,
-             "--network", "base-mainnet",
-             "--amount", str(atomic)],
-            capture_output=True, text=True, timeout=120,
-            env={**os.environ,
-                 "CDP_API_KEY_NAME": key_name,
-                 "CDP_API_KEY_PRIVATE": key_priv},
+    # The actual EIP-3009 transferWithAuthorization build + send is implemented
+    # in wallet_lib.send_usdc() (helper added in #324 P2). If that helper is
+    # absent in your wallet_lib version, escalate to #324 maintainer — do NOT
+    # fall back to cdp.
+    if not hasattr(wallet_lib, "send_usdc"):
+        sys.stderr.write(
+            "[payout-ubi] wallet_lib.send_usdc() missing — add helper in #324 P2 then retry\n"
         )
-    except FileNotFoundError:
-        sys.stderr.write("[payout-ubi] cdp binary not in PATH\n")
         return None
-    if out.returncode != 0:
-        sys.stderr.write(f"[payout-ubi] cdp send failed: {out.stderr[:300]}\n")
+    try:
+        tx_hash = wallet_lib.send_usdc(signer=signer, to_addr=to_addr, amount_atomic=atomic)
+    except Exception as exc:
+        sys.stderr.write(f"[payout-ubi] wallet_lib.send_usdc failed: {exc!r}\n")
         return None
-    m = re.search(r"(0x[a-fA-F0-9]{64})", out.stdout)
-    return m.group(1) if m else None
+    # Defensive: ensure 0x… 32-byte hex tx hash shape
+    if not (isinstance(tx_hash, str) and re.match(r"^0x[a-fA-F0-9]{64}$", tx_hash)):
+        sys.stderr.write(f"[payout-ubi] unexpected tx_hash shape: {tx_hash!r}\n")
+        return None
+    return tx_hash
 
 
 def write_log(row: dict) -> None:
@@ -861,13 +990,28 @@ def main() -> int:
         print(json.dumps(row, ensure_ascii=False))
         return 0
 
-    # --confirm + ANICCA_PAYOUT_LIVE=1 → REAL broadcast
+    # Codex P4-burn-address-live-risk: third defense layer before broadcast.
+    # Every recipient row must have allow_live==True AND label!="PLACEHOLDER".
+    live_ok, live_why = validate_recipients_for_live(cfg["recipients"])
+    if not live_ok:
+        row = {"ts": ts, "action": "live-recipient-validation-failed",
+               "reason": live_why,
+               "wallet_usd": wallet_usd, "runtime_monthly": runtime_monthly,
+               "reserve_usd": reserve_usd, "would_send_usd": total_payout,
+               "recipients": rec_breakdown,
+               "sent": []}
+        write_log(row)
+        print(json.dumps(row, ensure_ascii=False))
+        return 2  # non-zero — refuse to proceed
+
+    # --confirm + ANICCA_PAYOUT_LIVE=1 + all live-validation passed → REAL broadcast
+    # Signing via wallet_lib chokepoint from #324 P2 (NOT cdp CLI).
     sent = []
     failed = []
     for r in rec_breakdown:
         if r["amount_usd"] <= 0:
             continue
-        tx = send_via_cdp(r["address"], r["amount_usd"])
+        tx = send_via_wallet_lib(r["address"], r["amount_usd"])
         if tx:
             sent.append({**r, "tx_hash": tx,
                          "basescan": f"https://basescan.org/tx/{tx}"})
@@ -945,22 +1089,22 @@ Create `/Users/anicca/anicca-oss/skills/anicca-payout-ubi/SKILL.md` with EXACTLY
 ```markdown
 ---
 name: anicca-payout-ubi
-description: Weekly UBI fan-out. Reads wallet balance from CFO, computes distributable = max(0, wallet - runtime_monthly × reserve_months) (reserve_months default 3), then sends payout_percent (default 10%) of distributable USDC on Base, split across N recipients per ~/.hermes/state/ubi-recipients.json weights. DRY-RUN BY DEFAULT — every invocation logs to ~/.hermes/state/payout.jsonl. Real broadcast requires BOTH the --confirm flag AND env ANICCA_PAYOUT_LIVE=1 (defense-in-depth). Calls anicca-constitution-guard before every action, including dry-run, so the audit trail proves the guard ran. Use this skill ONLY from cron; do not call it from chat. Cron schedule: every 7d (or "0 9 * * 1").
+description: Weekly UBI fan-out. Reads wallet balance from CFO, computes distributable = max(0, wallet - runtime_monthly × reserve_months) (reserve_months default 3), then sends payout_percent (default 10%) of distributable USDC on Base, split across N recipients per ~/.hermes/state/ubi-recipients.json weights. DRY-RUN BY DEFAULT — every invocation logs to ~/.hermes/state/payout.jsonl. Real broadcast requires THREE independent signals: --confirm flag, env ANICCA_PAYOUT_LIVE=1, AND every recipient row must have allow_live:true plus label != "PLACEHOLDER" (codex round-2 fail-closed guard against burn-address footgun). Calls anicca-constitution-guard before every action, including dry-run; production fails closed if the guard symlink is missing (ANICCA_PAYOUT_TEST=1 toggles test-mode OK-on-missing). Signing path = wallet_lib.load_signer() from #324 P2 (NO cdp CLI dependency). Use this skill ONLY from cron; do not call it from chat. Cron schedule: every 7d (or "0 9 * * 1").
 ---
 
 # anicca-payout-ubi
 
 ## What it does
-Weekly cron skill that funnels a slice of Anicca's net earnings to a configurable list of recipient wallet addresses on Base mainnet via USDC, satisfying pitch row ⑥ "収益の一部を UBI / 募金 配布" (00-MASTER LAUNCH ACCEPTANCE MATRIX). Recipients can be charities (公認 NPO wallets), Dais's dividend address, or other publicly-declared addresses — the skill is agnostic; the config file picks the policy.
+Weekly cron skill that funnels a slice of Anicca's net earnings to a configurable list of recipient wallet addresses on Base mainnet via USDC, scaffolding pitch row ⑥ "収益の一部を UBI / 募金 配布" (00-MASTER LAUNCH ACCEPTANCE MATRIX). Row ⑥ flips green only after Wave 2 (Task 9 of `2026-06-04-constitution-payout.md`) lands a real on-chain micro-payout (0.01 USDC) with a verified Basescan receipt. Recipients can be charities (公認 NPO wallets), Dais's dividend address, or other publicly-declared addresses — the skill is agnostic; the config file picks the policy.
 
 ## Inputs
 - `~/.openclaw/skills/cfo-core/data/anicca-cfo.json` — wallet balance + runtime monthly burn (already maintained by `cfo-daily` launchd job).
-- `~/.hermes/state/ubi-recipients.json` — operational config. Schema in `scripts/recipients-schema.json`. Recipient weights MUST sum to 100. Example:
+- `~/.hermes/state/ubi-recipients.json` — operational config. Schema in `scripts/recipients-schema.json`. Recipient weights MUST sum to 100. Each recipient row MUST carry `label` (string, must not equal "PLACEHOLDER" for live broadcast) and `allow_live` (boolean, must be true for live broadcast). Example:
   ```json
   {
     "recipients": [
-      {"address": "0xCharityA…", "weight": 60, "label": "Animal welfare 認定 NPO"},
-      {"address": "0xCharityB…", "weight": 40, "label": "Suicide prevention 公認"}
+      {"address": "0xCharityA…", "weight": 60, "label": "Animal welfare 認定 NPO", "allow_live": true},
+      {"address": "0xCharityB…", "weight": 40, "label": "Suicide prevention 公認", "allow_live": true}
     ],
     "payout_percent": 10,
     "reserve_months": 3
@@ -975,43 +1119,33 @@ total_payout_usd = distributable × payout_percent / 100         (rounded to cen
 per recipient    = total_payout_usd × weight / 100               (rounded to cents)
 ```
 
-## Modes (defense in depth — broadcast requires TWO independent signals)
+## Modes (defense in depth — broadcast requires THREE independent signals)
 | Invocation | Behavior |
 |---|---|
 | `./payout-ubi.sh` (default) | Dry-run. Logs `action="dry-run"`. Exit 0. |
 | `./payout-ubi.sh --dry-run` | Explicit dry-run. Same as above. |
 | `./payout-ubi.sh --confirm` (no env) | Refused. Logs `action="refused-no-live-env"`. Exit 0. |
-| `ANICCA_PAYOUT_LIVE=1 ./payout-ubi.sh --confirm` | REAL broadcast via `cdp wallet send` per recipient. Logs `action="sent"` / `"partial"` / `"send-failed"`. |
+| `ANICCA_PAYOUT_LIVE=1 ./payout-ubi.sh --confirm` with any PLACEHOLDER or `allow_live:false` row | Refused. Logs `action="live-recipient-validation-failed"`. Exit non-zero. NOTHING sent. |
+| `ANICCA_PAYOUT_LIVE=1 ./payout-ubi.sh --confirm` with all rows `allow_live:true` + `label != "PLACEHOLDER"` | REAL broadcast via `wallet_lib.send_usdc()` from #324 P2 per recipient on Base mainnet. Logs `action="sent"` / `"partial"` / `"send-failed"`. |
 
-## Pre-flight guard
-On every invocation (including dry-run), this skill calls `anicca-constitution-guard --action "UBI weekly payout: …"` and aborts immediately if the guard returns non-zero. The audit trail in `~/.hermes/state/constitution-violations.jsonl` therefore proves the guard ran for every payout decision.
+## Pre-flight guard (fail-closed in production)
+On every invocation (including dry-run), this skill calls `anicca-constitution-guard --action "UBI weekly payout: …"` and aborts immediately if the guard returns non-zero. The audit trail in `~/.hermes/state/constitution-violations.jsonl` therefore proves the guard ran for every payout decision. **If the guard symlink is missing**, production exits with `action="blocked-by-guard"` + non-zero rc — codex P4-guard-bypass-ok fix. The legacy "OK + guard_not_installed" return is allowed ONLY when env `ANICCA_PAYOUT_TEST=1` (used by the RED phase of the TDD test before Task 3's symlink lands).
 
-## Verifying a real on-chain send (RUN OUT OF BAND — NOT part of the plan execution)
-After this skill ships, the human closer verifies a tiny live send manually:
-```bash
-# 1. Edit ~/.hermes/state/ubi-recipients.json to add ONE row with address = your own test wallet,
-#    weight = 100, AND set payout_percent low enough that the math yields ~0.01 USDC.
-#    Example: with wallet=100 USDC, runtime_monthly=10 → distributable=70 → payout_percent=0.014
-#    → would_send = round(70 × 0.014 / 100, 2) = 0.01 USDC.
-# 2. Dry-run first to confirm the math:
-/Users/anicca/.hermes/skills/anicca-payout-ubi/scripts/payout-ubi.sh --dry-run
-# 3. Broadcast:
-ANICCA_PAYOUT_LIVE=1 /Users/anicca/.hermes/skills/anicca-payout-ubi/scripts/payout-ubi.sh --confirm
-# 4. Read the tx hash from ~/.hermes/state/payout.jsonl:
-tail -n 1 /Users/anicca/.hermes/state/payout.jsonl | /opt/homebrew/bin/jq '.sent[0].tx_hash'
-# 5. Confirm on Basescan (replace <HASH>):
-curl -s "https://api.basescan.org/api?module=transaction&action=gettxreceiptstatus&txhash=<HASH>" \
-  | /opt/homebrew/bin/jq .
-# Expected: {"status":"1","message":"OK","result":{"status":"1"}}
-# 6. Revert ~/.hermes/state/ubi-recipients.json to the real policy.
-```
+## Signing path (codex P4-cdp-unverified fix)
+Signing imports `wallet_lib` from `anicca-oss/skills/anicca-wallet/scripts/wallet_lib.py` (shipped by #324 P2). The canonical Anicca wallet is the one `wallet_lib.EXPECTED_ADDRESS` asserts (0xa3CDd4Ec…). There is NO dependency on the `cdp` CLI; `command -v cdp` is informational only and never branched on. If `wallet_lib.send_usdc()` is absent in your tree, run #324 P2 (`docs/superpowers/plans/2026-06-04-wallet-x402.md`) before this skill — that plan adds the helper.
+
+## HARD RULE #-1 disclosure (financial-broadcast hard-block)
+Per CLAUDE.md HARD RULE #-1, the Wave 2 broadcast IS a financial broadcast. The exact path the agent will attempt: `wallet_lib.load_signer()` → `wallet_lib.send_usdc(signer, to, atomic_amount)` → internally builds EIP-3009 `transferWithAuthorization` → signs → `web3.eth.send_raw_transaction()` against Base RPC. The ONLY conditions for stopping (without human-in-loop): (a) RPC returns `insufficient funds`, (b) wallet balance < threshold, (c) recipient row fails `allow_live:true` + `label != "PLACEHOLDER"`. No Dais click, no Slack approval gate. Dais's role for the first broadcast is monitoring `payout.jsonl` + Basescan, NOT clicking through a wallet UI.
+
+## Wave 2 verification (handled in Task 9 of the plan — NOT out-of-band)
+The plan's Task 9 ("Real micro-payout proof") executes the live 0.01 USDC send + Basescan receipt check + payout.jsonl row append IN-BAND, with the cross-plan rule X2 invariant that ONLY after that task lands does #326 close and row ⑥ go green. Task 9 contains the exact commands; this SKILL.md no longer carries a separate "run it out-of-band" block.
 
 ## Why this is separate from `anicca-fuel-broker`
 `anicca-fuel-broker` is a one-shot alerter that mails Dais ONCE when the wallet first crosses self-fund threshold (broker.json `first_payout_sent`). `anicca-payout-ubi` is the recurring weekly cron that distributes the ongoing slice. The two skills do NOT race because broker only ever mails (no on-chain send) and `payout-ubi` only ever sends on-chain (no mail).
 
 ## Schema of `~/.hermes/state/payout.jsonl`
 ```json
-{"ts":"…","action":"dry-run|refused-no-live-env|below-threshold|invalid-recipients|blocked-by-guard|sent|partial|send-failed",
+{"ts":"…","action":"dry-run|refused-no-live-env|below-threshold|invalid-recipients|blocked-by-guard|live-recipient-validation-failed|sent|partial|send-failed",
  "wallet_usd":100.0,"runtime_monthly":10.0,"reserve_usd":30.0,
  "would_send_usd":7.0,"recipients":[{"address":"0x…","weight":100,"amount_usd":7.0,"label":"…"}],
  "sent":[{"address":"0x…","amount_usd":7.0,"tx_hash":"0x…","basescan":"https://basescan.org/tx/…"}]}
@@ -1024,7 +1158,7 @@ Create `/Users/anicca/anicca-oss/skills/anicca-payout-ubi/README.md` with EXACTL
 ```markdown
 # anicca-payout-ubi
 
-Weekly cron skill that sends a 10 %-by-default slice of Anicca's net earnings as USDC on Base to a list of recipient addresses (charity, Dais's dividend wallet, etc.). DRY-RUN BY DEFAULT — broadcast requires BOTH `--confirm` and env `ANICCA_PAYOUT_LIVE=1`. Calls `anicca-constitution-guard` before every action so the audit trail proves the guard ran. Implements pitch row ⑥ ("収益の一部を UBI / 募金 配布") of `00-MASTER.md` § LAUNCH ACCEPTANCE MATRIX. Wired by `2026-06-04-constitution-payout` plan.
+Weekly cron skill that sends a 10 %-by-default slice of Anicca's net earnings as USDC on Base to a list of recipient addresses (charity, Dais's dividend wallet, etc.). DRY-RUN BY DEFAULT — broadcast requires THREE independent signals: `--confirm` + env `ANICCA_PAYOUT_LIVE=1` + every recipient row `allow_live:true` AND `label != "PLACEHOLDER"` (codex round-2 fail-closed against burn-address footgun). Signs via `wallet_lib.load_signer()` from #324 P2 (NO `cdp` CLI dependency). Calls `anicca-constitution-guard` before every action; production fails closed if guard symlink is missing. Scaffolds pitch row ⑥ ("収益の一部を UBI / 募金 配布") of `00-MASTER.md` § LAUNCH ACCEPTANCE MATRIX in Wave 1; row goes green only after Wave 2 (Task 9 of the plan) lands a real on-chain micro-payout with a Basescan receipt. Wired by `2026-06-04-constitution-payout` plan.
 ```
 
 - [ ] **Step 3: Symlink skill + script into ~/.hermes/**
@@ -1042,7 +1176,9 @@ hermes skills list 2>&1 | grep -E '^anicca-payout-ubi( |$)' || \
 ```
 Expected: skill symlink + script symlink both visible; `hermes skills list` returns a row.
 
-- [ ] **Step 4: Seed `~/.hermes/state/ubi-recipients.json` if absent**
+- [ ] **Step 4: Seed `~/.hermes/state/ubi-recipients.json` if absent (codex P4-burn-address-live-risk: no burn-address seed, fail-closed by default)**
+
+Codex round-2 fix: the seed uses the ZERO address (`0x0000…0000`) + `label:"PLACEHOLDER"` + `allow_live:false`. This combination makes a live broadcast IMPOSSIBLE until the operator INTENTIONALLY edits all three of: `address`, `label` (away from "PLACEHOLDER"), and `allow_live` (to `true`). Even an accidental `ANICCA_PAYOUT_LIVE=1 ... --confirm` will exit non-zero with `live-recipient-validation-failed`. No funds can be burned by accident.
 
 Run:
 ```bash
@@ -1051,44 +1187,52 @@ if [ ! -f "$RECIP" ]; then
   cat > "$RECIP" <<'JSON'
 {
   "recipients": [
-    {"address": "0x000000000000000000000000000000000000dEaD", "weight": 100, "label": "PLACEHOLDER — edit before going live"}
+    {"address": "0x0000000000000000000000000000000000000000", "weight": 100, "label": "PLACEHOLDER", "allow_live": false}
   ],
   "payout_percent": 10,
   "reserve_months": 3
 }
 JSON
   chmod 600 "$RECIP"
-  echo "seeded placeholder recipients"
+  echo "seeded fail-closed placeholder recipients (allow_live:false, label:PLACEHOLDER)"
 else
   echo "ubi-recipients.json already present — no overwrite"
 fi
 cat "$RECIP"
 ```
-Expected: prints either "seeded placeholder recipients" or "already present" then the JSON content. The placeholder address (`0x…dEaD`) is the EIP-55 "burn" address — sending to it succeeds on-chain but the funds are unrecoverable, so the operator MUST replace it before flipping `ANICCA_PAYOUT_LIVE=1`. The PLACEHOLDER label is the warning.
+Expected: prints either the seeded-message or the already-present message, then the JSON content. Operator workflow to flip live: (1) replace `address` with a real recipient wallet (NOT a burn address), (2) replace `label` with any non-"PLACEHOLDER" string (e.g., "Animal welfare 認定 NPO"), (3) set `allow_live` to `true`. If ANY of the three is left at the seed default → broadcast fails closed.
 
-- [ ] **Step 5: Validate the seed against the schema**
+- [ ] **Step 5: Validate the seed against the schema (incl. label + allow_live presence)**
 
 Run:
 ```bash
 /opt/homebrew/bin/python3 - <<'PY'
-import json
+import json, re
 from pathlib import Path
 data = json.loads(Path('/Users/anicca/.hermes/state/ubi-recipients.json').read_text())
 schema_path = '/Users/anicca/anicca-oss/skills/anicca-payout-ubi/scripts/recipients-schema.json'
 schema = json.loads(Path(schema_path).read_text())
-# Minimal hand-rolled validator (no jsonschema dep): checks required keys + weight sum
-req = schema['required']
-for k in req:
-    assert k in data, f"missing key {k}"
+# Minimal hand-rolled validator (no jsonschema dep): top-level required keys
+for k in schema['required']:
+    assert k in data, f"missing top-level key {k}"
+# Recipients: weight sum, address shape, AND new fields label + allow_live
 total = sum(r['weight'] for r in data['recipients'])
 assert abs(total - 100) < 0.01, f"weights sum != 100 (got {total})"
-import re
 for r in data['recipients']:
     assert re.match(r'^0x[a-fA-F0-9]{40}$', r['address']), f"bad addr {r['address']}"
-print("schema-valid OK")
+    assert 'label' in r and isinstance(r['label'], str) and r['label'], f"label missing/empty: {r}"
+    assert 'allow_live' in r and isinstance(r['allow_live'], bool), \
+        f"allow_live must be a bool: {r}"
+# Sanity: the seed must be fail-closed (allow_live:false or label:PLACEHOLDER).
+seed_is_fail_closed = any(
+    (r.get('label','').upper() == 'PLACEHOLDER') or (r.get('allow_live') is not True)
+    for r in data['recipients']
+)
+assert seed_is_fail_closed, "seed has no fail-closed marker — would broadcast on accident!"
+print("schema-valid OK + fail-closed seed verified")
 PY
 ```
-Expected: prints `schema-valid OK`. Any AssertionError → fix the seed JSON.
+Expected: prints `schema-valid OK + fail-closed seed verified`. Any AssertionError → fix the seed JSON before proceeding.
 
 - [ ] **Step 6: Re-run payout E2E test (proves symlinked path + seed work)**
 
@@ -1104,7 +1248,7 @@ Run:
 ```bash
 cd /Users/anicca/anicca-oss
 git add skills/anicca-payout-ubi
-git commit -m "feat(skill): anicca-payout-ubi — weekly UBI dry-run by default (#326)"
+git commit -m "feat(skill): anicca-payout-ubi Wave 1 — dry-run + fail-closed live-validation + wallet_lib signer (no cdp) (#326)"
 git push
 ```
 Expected: push succeeds.
@@ -1166,22 +1310,28 @@ Expected: two `OK` lines.
 
 ---
 
-### Task 7: Update spec 00-MASTER pitch row + cross-link
+### Task 7: Update spec 00-MASTER pitch row + cross-link (Wave 1 honest scope — row stays NOT green)
 
 **Files:**
 - Modify: `/Users/anicca/anicca-oss/specs/00-MASTER.md` (LAUNCH ACCEPTANCE MATRIX row ⑥)
 
-- [ ] **Step 1: Update the row ⑥ check note**
+Codex round-2 fix (P4-no-real-payout): row ⑥'s check condition stays "a real payout tx observed on-chain" — Wave 1 does NOT weaken it. We add a status annotation pointing at Wave 2 / Task 9 of this plan and explicitly note that the row stays UN-checked until that task lands.
+
+- [ ] **Step 1: Update the row ⑥ status annotation (NOT the check condition)**
 
 In `/Users/anicca/anicca-oss/specs/00-MASTER.md`, find the line:
 ```
  ⑥「収益の一部をUBI・募金配布」              →  #326 payout, #284 spec14 →  a real payout tx observed on-chain
 ```
-Replace with:
+Replace with (status annotation appended; check condition UNCHANGED):
 ```
- ⑥「収益の一部をUBI・募金配布」              →  #326 payout, #284 spec14 →  anicca-payout-ubi skill LIVE (dry-run wired,
-                                                                              guard-gated); real on-chain tx pending
-                                                                              recipient list flip + ANICCA_PAYOUT_LIVE=1.
+ ⑥「収益の一部をUBI・募金配布」              →  #326 payout, #284 spec14 →  a real payout tx observed on-chain
+                                                                              [Wave 1 = anicca-payout-ubi skill scaffolding
+                                                                               LIVE (dry-run + guard fail-closed + recipient
+                                                                               live-validation wired); row stays NOT green
+                                                                               until Wave 2 / Task 9 of 2026-06-04-
+                                                                               constitution-payout.md lands the 0.01 USDC
+                                                                               proof tx via wallet_lib.send_usdc()]
 ```
 
 - [ ] **Step 2: Commit + push the GROUND TRUTH update**
@@ -1190,31 +1340,37 @@ Run:
 ```bash
 cd /Users/anicca/anicca-oss
 git add specs/00-MASTER.md
-git commit -m "docs(spec): pitch row ⑥ — anicca-payout-ubi LIVE (dry-run + guard); real tx pending (#326)"
+git commit -m "docs(spec): pitch row ⑥ status — Wave 1 scaffolding LIVE, row stays NOT green until Wave 2 real tx (#326)"
 git push
 ```
 Expected: push succeeds.
 
-- [ ] **Step 3: Mark task #326 done in the TaskList**
+- [ ] **Step 3: Open follow-up TaskList entry for Wave 2 (do NOT close #326)**
 
-Use the TaskUpdate tool to set `#326` status to `completed` and add a note pointing at the two skill READMEs + this plan + the SKILL.md "Verifying a real on-chain send" block. Open follow-up task `#326b payout-ubi LIVE FIRST TX` with the SKILL.md verification commands as the AC.
+Codex X2 enforcement: #326 is NOT marked completed by this plan. Use the TaskList tool to:
+- Leave #326 in its current (in-progress) state with a note: "Wave 1 scaffolding complete; row ⑥ stays NOT green; Wave 2 (Task 9 of 2026-06-04-constitution-payout.md) is the remaining work."
+- Add a sub-task or related task `#326-wave2 payout-ubi REAL micro-payout proof (0.01 USDC via wallet_lib)` with the Task 9 acceptance criteria.
 
 ---
 
-### Task 8: Final verification — superpowers:verification-before-completion (5-step gate)
+### Task 8: Wave 1 verification — superpowers:verification-before-completion (5-step gate)
 
-Per CLAUDE.md rule 0.12, fresh-evidence verification before claiming done. Run ALL 5 steps below, then claim done.
+Per CLAUDE.md rule 0.12, fresh-evidence verification before claiming Wave 1 complete. This task verifies SCAFFOLDING ONLY; #326 stays open. Run ALL 5 steps below, then claim Wave 1 (NOT #326) done.
 
 - [ ] **Step 1: IDENTIFY the proof commands**
 
 The proof commands are exactly:
 ```bash
+hermes --version 2>&1 | head -1   # MUST contain "0.12.0" (X1)
 hermes skills list 2>&1 | grep -E '^(anicca-constitution-guard|anicca-payout-ubi)( |$)'
 /Users/anicca/anicca-oss/skills/anicca-constitution-guard/tests/test_guard_e2e.sh
 /Users/anicca/anicca-oss/skills/anicca-payout-ubi/tests/test_payout_e2e.sh
 hermes cron list 2>&1 | grep -E 'anicca-payout-ubi'
 tail -n 1 /Users/anicca/.hermes/state/payout.jsonl | /opt/homebrew/bin/jq -e '.ts'
 tail -n 1 /Users/anicca/.hermes/state/constitution-violations.jsonl | /opt/homebrew/bin/jq -e '.ts'
+# Confirm seed is fail-closed (no burn-addr risk)
+/opt/homebrew/bin/jq -e '.recipients[0].label == "PLACEHOLDER" and .recipients[0].allow_live == false' \
+  /Users/anicca/.hermes/state/ubi-recipients.json
 git -C /Users/anicca/anicca-oss log --oneline -5
 git -C /Users/anicca/anicca-oss status -s
 ```
@@ -1226,52 +1382,204 @@ Run the block from Step 1 verbatim.
 - [ ] **Step 3: READ output + exit codes + assert each line below**
 
 Required observations (ALL must hold):
+- `hermes --version` contains `0.12.0` (X1 pin).
 - `hermes skills list` returned BOTH `anicca-constitution-guard` AND `anicca-payout-ubi` (two grep hits).
-- Both test scripts ended with `PASS` and exit 0.
+- Both test scripts ended with `PASS` and exit 0 — including the 4 new test cases (dry-run math, refused-no-live-env, live-recipient-validation-failed under PLACEHOLDER, blocked-by-guard under guard-absent + no test mode).
 - `hermes cron list` shows `anicca-payout-ubi` with a 7-day schedule.
 - Last `payout.jsonl` row + last `constitution-violations.jsonl` row both parse + have an `ts` field.
-- `git log --oneline -5` shows the three commits from this plan: plan commit (Task 1.3), guard commit (Task 3.10), payout commit (Task 5.7), spec commit (Task 7.2). Total ≥4 commits, top of `main`.
+- Seed-fail-closed jq check exits 0 (label==PLACEHOLDER + allow_live==false).
+- `git log --oneline -5` shows the four commits from Wave 1: plan commit (Task 1.3), guard commit (Task 3.10), payout commit (Task 5.7), spec commit (Task 7.2). Total ≥4 commits, top of `main`.
 - `git status -s` is empty for `skills/` and `specs/` paths (clean working tree).
 
-- [ ] **Step 4: VERIFY the claim "Wave 1 of #326 is complete" is supported by the evidence above**
+- [ ] **Step 4: VERIFY the claim "Wave 1 scaffolding of #326 is complete" is supported by the evidence above**
 
-If ANY single observation in Step 3 is false → return to the failing Task and fix; do NOT claim done. Per HARD RULE #14 (JOB'S NOT FINISHED), no advance allowed until ALL evidence is fresh and green.
+If ANY single observation in Step 3 is false → return to the failing Task and fix; do NOT claim Wave 1 done. Per HARD RULE #14 (JOB'S NOT FINISHED), no advance to Task 9 (Wave 2) until ALL Wave 1 evidence is fresh and green. ABSOLUTELY do NOT mark #326 completed here — only Wave 2 / Task 9 closes #326.
 
-- [ ] **Step 5: CLAIM with evidence in the closing summary**
+- [ ] **Step 5: CLAIM Wave 1 with evidence**
 
-Write the closing summary as: "Wave 1 of #326 complete. Evidence: ⟨paste 8-line block from Step 2 with real outputs⟩."
+Write the Wave 1 closing summary as: "Wave 1 of #326 (dry-run scaffolding) complete. #326 stays OPEN — row ⑥ is NOT green. Next: Task 9 (Wave 2) real micro-payout proof. Evidence: ⟨paste 9-line block from Step 2 with real outputs⟩."
+
+---
+
+### Task 9: Wave 2 — Real micro-payout proof (CLOSES #326 + flips row ⑥ to green)
+
+Codex X2 cross-plan rule: row ⑥ goes green ONLY when this task lands. Wave 2 sends 0.01 USDC from the canonical Anicca wallet (`wallet_lib.EXPECTED_ADDRESS` ≈ 0xa3CDd4Ec…) to a designated NON-BURN test recipient, captures the Base mainnet tx hash, verifies the receipt on Basescan, and appends the success row to `~/.hermes/state/payout.jsonl`. NO human in the loop per HARD RULE #-1; the broadcast IS the hard-block surface — only `insufficient funds` or `wallet balance < threshold` are valid stop conditions.
+
+**Files (this task writes mostly state + log; no new repo code beyond the live recipient file):**
+- Modify (state, NOT committed): `/Users/anicca/.hermes/state/ubi-recipients.json` — flip one row to a real test recipient with `allow_live:true`, `label:"wave2-self-test"` (per X2 "non-burn test address, e.g., Anicca's own second address or a designated test recipient").
+- Append (state, NOT committed): one new row in `~/.hermes/state/payout.jsonl` with `"action":"sent"` + `"tx_hash":"0x…"` + `"basescan":"https://basescan.org/tx/0x…"`.
+
+- [ ] **Step 1: Confirm wallet_lib + Anicca wallet balance**
+
+Run:
+```bash
+/opt/homebrew/bin/python3 - <<'PY'
+import sys
+sys.path.insert(0, "/Users/anicca/anicca-oss/skills/anicca-wallet/scripts")
+import wallet_lib
+addr, _ = wallet_lib.load_signer()
+print("address:", addr)
+print("expected:", wallet_lib.EXPECTED_ADDRESS)
+assert addr.lower() == wallet_lib.EXPECTED_ADDRESS.lower(), "wallet address mismatch"
+# Balance helper from #324 P2; if absent, escalate to #324 maintainer (NO cdp fallback).
+print("usdc balance:", wallet_lib.balance_usdc())
+PY
+```
+Expected: prints the canonical Anicca address (matches `wallet_lib.EXPECTED_ADDRESS`) and a non-zero USDC balance ≥ 0.02 USDC (= 0.01 for the broadcast + cushion for gas in ETH equivalent). If balance < 0.02 USDC → STOP per HARD RULE #-1 stop condition (b); record as `insufficient_funds` and escalate to #324 P2 fuel-broker.
+
+- [ ] **Step 2: Pick a NON-BURN test recipient (the closer decides; do NOT hardcode in this plan)**
+
+Per codex X2, the test recipient is "Anicca's own second address or a designated test recipient" — picked by the closer at Wave-2 execution time and recorded in the run log, NOT in this plan file (which would burn it into git). The address MUST NOT be:
+- `0x0000…0000` (zero address)
+- `0x…dEaD` (canonical burn address)
+- any other known burn / blackhole address
+
+If the closer has no second wallet, generate one via `wallet_lib.generate_secondary()` (or, if absent, derive deterministically from a different HD path of the same seed via #324 P2 helpers) and record the new address in the Wave-2 run log.
+
+- [ ] **Step 3: Flip `~/.hermes/state/ubi-recipients.json` to the Wave-2 self-test policy**
+
+Run (substituting `<TEST_ADDR>` with the address from Step 2; `payout_percent` is set ~0.014 so the math yields exactly 0.01 USDC with the live CFO numbers):
+```bash
+TEST_ADDR="<paste the non-burn test address from Step 2>"
+cat > /Users/anicca/.hermes/state/ubi-recipients.json <<JSON
+{
+  "recipients": [
+    {"address": "${TEST_ADDR}", "weight": 100, "label": "wave2-self-test", "allow_live": true}
+  ],
+  "payout_percent": 0.014,
+  "reserve_months": 3
+}
+JSON
+chmod 600 /Users/anicca/.hermes/state/ubi-recipients.json
+cat /Users/anicca/.hermes/state/ubi-recipients.json
+```
+Expected: prints the JSON with the real test address, `label:"wave2-self-test"`, `allow_live:true`. NO `PLACEHOLDER` token anywhere.
+
+- [ ] **Step 4: Dry-run first to confirm math = 0.01 USDC**
+
+Run:
+```bash
+/Users/anicca/.hermes/skills/anicca-payout-ubi/scripts/payout-ubi.sh --dry-run \
+  | /opt/homebrew/bin/jq -e '.would_send_usd == 0.01 and .recipients[0].amount_usd == 0.01'
+```
+Expected: jq exits 0 (would_send_usd == 0.01). If the live CFO numbers make the math different from 0.01, adjust `payout_percent` in the JSON until the dry-run prints exactly 0.01, then re-run this step. Do NOT proceed to broadcast until the dry-run shows 0.01.
+
+- [ ] **Step 5: BROADCAST (HARD RULE #-1 surface — financial-broadcast)**
+
+Per HARD RULE #-1 the only valid stop conditions here are: (a) RPC `insufficient funds`, (b) `wallet_lib.balance_usdc()` < 0.02, (c) recipient row fails `allow_live:true` + `label != "PLACEHOLDER"`. NO human-in-loop. The agent runs the command and reads `payout.jsonl` for the result — no Slack approval, no Dais click.
+
+Run:
+```bash
+LINES_BEFORE=$(wc -l < /Users/anicca/.hermes/state/payout.jsonl)
+ANICCA_PAYOUT_LIVE=1 \
+  /Users/anicca/.hermes/skills/anicca-payout-ubi/scripts/payout-ubi.sh --confirm
+LINES_AFTER=$(wc -l < /Users/anicca/.hermes/state/payout.jsonl)
+echo "delta=$((LINES_AFTER - LINES_BEFORE))"
+LAST=$(tail -n 1 /Users/anicca/.hermes/state/payout.jsonl)
+echo "$LAST" | /opt/homebrew/bin/jq '{action, sent: .sent[0].tx_hash, basescan: .sent[0].basescan}'
+```
+Expected: `delta=1`, action `"sent"`, `tx_hash` matches `^0x[a-fA-F0-9]{64}$`, basescan URL printed.
+
+- [ ] **Step 6: Verify the Basescan receipt (cross-plan rule X2 acceptance)**
+
+Run:
+```bash
+TX=$(tail -n 1 /Users/anicca/.hermes/state/payout.jsonl | /opt/homebrew/bin/jq -r '.sent[0].tx_hash')
+test -n "$TX" && test "$TX" != "null" || { echo "FAIL: no tx hash"; exit 1; }
+curl -s "https://api.basescan.org/api?module=transaction&action=gettxreceiptstatus&txhash=${TX}" \
+  | /opt/homebrew/bin/jq -e '.result.status == "1"' \
+  && echo "OK: basescan receipt status=1 for $TX" \
+  || { echo "FAIL: basescan receipt not status=1 for $TX"; exit 1; }
+```
+Expected: `OK: basescan receipt status=1 for 0x…`. If the receipt status is not `1`, the tx reverted — investigate via `wallet_lib`'s logs, fix, and retry Step 5. Do NOT proceed.
+
+- [ ] **Step 7: Restore the fail-closed seed (operator hygiene)**
+
+Run:
+```bash
+cat > /Users/anicca/.hermes/state/ubi-recipients.json <<'JSON'
+{
+  "recipients": [
+    {"address": "0x0000000000000000000000000000000000000000", "weight": 100, "label": "PLACEHOLDER", "allow_live": false}
+  ],
+  "payout_percent": 10,
+  "reserve_months": 3
+}
+JSON
+chmod 600 /Users/anicca/.hermes/state/ubi-recipients.json
+echo "restored fail-closed seed"
+```
+Expected: prints `restored fail-closed seed`. The weekly cron will now log `live-recipient-validation-failed` until the operator intentionally re-flips, which is the safe default for the recurring cron.
+
+- [ ] **Step 8: Update spec 00 row ⑥ to GREEN with the tx hash**
+
+In `/Users/anicca/anicca-oss/specs/00-MASTER.md`, replace the Task 7 Step 1 annotation block with:
+```
+ ⑥「収益の一部をUBI・募金配布」              →  #326 payout, #284 spec14 →  REAL on-chain tx observed
+                                                                              [Wave 2 closed: tx 0x<HASH>
+                                                                               https://basescan.org/tx/0x<HASH>
+                                                                               anicca-payout-ubi LIVE]
+```
+(Substitute `<HASH>` with the actual tx hash from Step 5.) Commit + push:
+```bash
+cd /Users/anicca/anicca-oss
+git add specs/00-MASTER.md
+git commit -m "docs(spec): pitch row ⑥ GREEN — real UBI tx broadcast 0x<HASH> via wallet_lib (#326)"
+git push
+```
+
+- [ ] **Step 9: NOW mark #326 completed in the TaskList**
+
+ONLY after Steps 1-8 succeed: use the TaskList tool to set `#326` to `completed` with the tx hash + basescan URL in the note. Verification-before-completion (rule 0.12) requires citing the Step 6 `OK: basescan receipt status=1 for 0x<HASH>` line as fresh evidence.
+
+- [ ] **Step 10: Closing summary**
+
+Write: "Wave 2 of #326 complete. Tx 0x<HASH> confirmed on Basescan (status=1). Row ⑥ green. #326 closed. Evidence: ⟨Step 6 jq output⟩."
 
 ---
 
 ## Self-Review
 
 **Spec coverage:**
-- Spec `00-MASTER.md` § LAUNCH ACCEPTANCE MATRIX row ⑥ ("収益の一部を UBI / 募金 配布") — Task 4-6 implement; Task 7 updates the matrix note from "real payout tx observed on-chain" to "skill LIVE (dry-run wired), real tx pending recipient flip + env" so the matrix row tracks Wave 1 truthfully without false present-tense.
+- Spec `00-MASTER.md` § LAUNCH ACCEPTANCE MATRIX row ⑥ ("収益の一部を UBI / 募金 配布") — Tasks 4-6 wire the Wave 1 dry-run scaffolding; Task 7 ADDS an annotation but does NOT weaken the check condition (codex P4-no-real-payout fix). Row ⑥ stays NOT green until Task 9 (Wave 2) lands the real on-chain tx and updates the spec to GREEN with the tx hash.
 - Spec `16-RUNTIME-CODE-TRUTH.md` § 17 PANEL D ("constitution-guard — check 3 Laws before any action — ports from automaton constitution.md") — Task 3 implements with the live `CONSTITUTION.md` as the source of truth (= the canonical file at `anicca-oss/CONSTITUTION.md`, lines 144-184).
 - Spec `18-SELF-IMPROVEMENT-AND-SWARM.md` § 4 mutability ("IMMUTABLE: North Star + Law I; MUTABLE: everything else (via forum → consensus → implement)") — Task 3 enforces the IMMUTABLE half via hash-pin + rule files; the MUTABLE half (forum vote → PR → eval ≥ 0.7) is explicitly OUT OF SCOPE here and pointed at #338 ROLLOUT in SKILL.md.
-- CLAUDE.md rule 0.4 ("edit したら commit + push 即実行") — every Task that creates files ends with a `git add && commit && push` step (Tasks 1.3, 3.10, 5.7, 7.2).
-- CLAUDE.md rule 0.12 (verification-before-completion 5-step gate) — Task 8 is exactly that gate. No "Done!" claim without fresh evidence from Steps 1-5.
+- CLAUDE.md rule 0.4 ("edit したら commit + push 即実行") — every Task that creates files ends with a `git add && commit && push` step (Tasks 1.3, 3.10, 5.7, 7.2, 9.8).
+- CLAUDE.md rule 0.12 (verification-before-completion 5-step gate) — Task 8 is the gate for Wave 1 scaffolding; Task 9 (Wave 2) ends with its own evidence (Step 6 Basescan receipt check) before #326 is closed. NO "Done!" claim without fresh evidence.
 
-**Placeholder scan:** none. Every file content is verbatim. Every test asserts the exact arithmetic (wallet=100, runtime=10 → reserve=30, distributable=70, payout=7.00; weight=100 → recipient gets 7.00). The two "substitute"-like spots are:
-- Task 7 Step 1 — the matrix row replacement text is verbatim, not a TODO.
-- SKILL.md "Verifying a real on-chain send" — explicitly labeled OUT-OF-BAND, with the exact `curl` against Basescan; the closer runs it after merge.
+**Codex round-2 cross-plan rules honored:**
+- X1: Hermes pinned to v0.12.0 (preflight in Task 1 Step 2 enforces).
+- X2: Wave 1 scaffolding ≠ #326 close. Task 9 (Wave 2) is the explicit follow-on with real-tx + Basescan receipt + payout.jsonl row, gating row ⑥ green.
+- X3: HARD RULE #-1 financial-broadcast disclosure block added in plan header; exact RPC path = `wallet_lib.load_signer()` → `send_usdc()` → `eth_sendRawTransaction`; stop conditions only on `insufficient funds` / balance threshold / recipient-validation. NO human-in-loop in Task 9.
+- X4: Runtime state under `~/.hermes/state/` (constitution-violations.jsonl, payout.jsonl, ubi-recipients.json, constitution.sha).
+- X5: Preflight `command -v cdp` informational only; hard requirement is `wallet_lib.py` from #324 P2 (preflight blocks with explicit pointer at the #324 plan if missing).
+
+**Placeholder scan:** every file content is verbatim. Every Wave 1 test asserts the exact arithmetic (wallet=100, runtime=10 → reserve=30, distributable=70, payout=7.00; weight=100 → recipient gets 7.00). The only intentional substitution points are:
+- Task 7 Step 1 — the matrix row replacement annotation is verbatim, NOT a TODO; the check condition itself stays UNCHANGED until Task 9.
+- Task 9 Step 2 — the test recipient address is INTENTIONALLY picked at execution time by the closer (codex X2 wants "Anicca's own second address or a designated test recipient", which is per-instance state, NOT a value to bake into the repo plan). The `<TEST_ADDR>` token in Task 9 Step 3 is the explicit substitution point.
+- Task 9 Step 8 — the `<HASH>` token in the spec annotation is filled with the actual tx hash from Step 5 at execution time.
 
 **Type consistency:**
-- `payout.jsonl` row shape: writer (`payout-ubi.py` `write_log`) and reader (`test_payout_e2e.sh` jq checks + Task 6 Step 4 jq check) both reference `{ts, action, wallet_usd, runtime_monthly, reserve_usd, would_send_usd, recipients[]}`. Schema match verified by the test.
+- `payout.jsonl` row shape: writer (`payout-ubi.py` `write_log`) and reader (`test_payout_e2e.sh` jq checks + Task 6 Step 4 jq check + Task 9 Step 6 jq check) all reference `{ts, action, wallet_usd, runtime_monthly, reserve_usd, would_send_usd, recipients[]}` plus the live-broadcast extension `{sent[]: {address, weight, amount_usd, label, tx_hash, basescan}}`. Schema match verified by tests + the Step 6 jq.
 - `constitution-violations.jsonl` row shape: writer (`check.py` `write_log`) and reader (`test_guard_e2e.sh` jq + Task 6 Step 4 jq) both reference `{ts, decision, reason, action_digest, constitution_sha}`. Match verified by the test.
-- Recipient JSON shape: schema file (`recipients-schema.json`), seed (`ubi-recipients.json`), validator (`validate_recipients` in `payout-ubi.py`), and Task 5 Step 5 hand-rolled validator all agree on `{address: ^0x[a-f0-9]{40}$, weight: 0-100, label: string}` and the 100-sum constraint.
+- Recipient JSON shape: schema file (`recipients-schema.json`), seed (`ubi-recipients.json`), test fixtures (synthetic + placeholder), validator (`validate_recipients` + `validate_recipients_for_live` in `payout-ubi.py`), and Task 5 Step 5 hand-rolled validator all agree on `{address: ^0x[a-f0-9]{40}$, weight: 0-100, label: string non-empty, allow_live: boolean}` and the 100-sum constraint. The Wave-1 fail-closed requirement (`label==PLACEHOLDER OR allow_live!=true → no broadcast`) is enforced by `validate_recipients_for_live` and asserted by test cases 3 + 4.
 - Symlink targets: skill dirs at `/Users/anicca/anicca-oss/skills/<name>/` ↔ `~/.hermes/skills/<name>` and script at `/Users/anicca/.hermes/scripts/anicca-payout-ubi.sh` — exact paths repeated in Task 3 Step 8, Task 5 Step 3, and Task 6 Step 1.
+- Signer chokepoint: `payout-ubi.py` `send_via_wallet_lib` imports `wallet_lib` from `/Users/anicca/anicca-oss/skills/anicca-wallet/scripts/`. That path is the same one #324 P2 (`2026-06-04-wallet-x402.md`) writes — one chokepoint across both plans (codex X5).
 
 **Risk notes (read before executing):**
 - Risk A — Task 1 Step 1 depends on `~/.hermes/state/constitution.sha` existing. If `anicca-heartbeat` (#323) hasn't run yet, the seed line in Task 1 Step 1 writes it directly (idempotent). Heartbeat will overwrite it on its next 30-min fire with the same value. No race.
 - Risk B — Task 3 Step 5 (guard test) writes ≥3 rows into `constitution-violations.jsonl`. That file is shared with the live runtime; if the heartbeat or another skill writes between the BEFORE and AFTER `wc -l`, the test could overshoot the expected delta. The test uses `[ $DELTA -ge 3 ]` (≥, not ==) precisely to tolerate concurrent appenders. Acceptable.
-- Risk C — Task 4 Step 2 (`call_guard`) wraps `subprocess.run` with `timeout=10` and a `if not GUARD.exists()` short-circuit. In the TEST environment (Task 2 runs BEFORE Task 3 finishes the symlink), the guard symlink does not yet exist on first call — `call_guard` returns OK with `reason: guard_not_installed`. After Task 3 Step 8 installs the symlink, real calls go through. This is intentional, NOT a bypass: the symlink install is a hard step in the same plan, so by the time the production cron fires (Task 6 Step 3), the guard is wired. The audit trail will show one or two "guard_not_installed" rows from the test itself, then real OK rows forever after.
-- Risk D — The `0x…dEaD` burn address in the seed (`ubi-recipients.json`, Task 5 Step 4) is intentional: if anyone flips `ANICCA_PAYOUT_LIVE=1` WITHOUT editing the recipients first, the funds burn (not catastrophic for a 0.01 USDC self-test, but irreversible). This is a feature: the explicit "PLACEHOLDER — edit before going live" label combined with the dEaD address makes premature live broadcast loud and self-evident in the tx log. The Task 7 Step 3 follow-up `#326b` is the ticket that does the real flip.
+- Risk C — Codex P4-guard-bypass-ok fix: `call_guard` now fails closed in production when the guard symlink is absent. The "OK + guard_not_installed_test_mode" return path is gated on env `ANICCA_PAYOUT_TEST=1`, which the Task 2 RED-phase test sets explicitly so the test can run before Task 3 Step 8 installs the symlink. Once the symlink lands, production cron fires with no env var set — a deleted symlink (operator error, disk corruption) immediately produces `action="blocked-by-guard"` + non-zero exit + no broadcast. Audit-tight.
+- Risk D — Codex P4-burn-address-live-risk fix: the seed (`ubi-recipients.json`, Task 5 Step 4) uses the zero address (`0x0000…0000`) + `label:"PLACEHOLDER"` + `allow_live:false`. A live broadcast is IMPOSSIBLE while ANY of those three values is at the seed default — `validate_recipients_for_live()` exits with `live-recipient-validation-failed` BEFORE any signing happens. The operator must intentionally edit three distinct fields to flip live, and Wave 2 / Task 9 does so under controlled conditions with a non-burn test recipient. No "feature where funds burn on accident" — fully closed.
+- Risk E — Codex P4-cdp-unverified fix: the signing path is `wallet_lib.send_usdc()` from #324 P2. If wallet_lib lacks `send_usdc()` in your tree (= you ran Wave 1 of #326 before #324 P2), Task 1 Step 2's preflight fails with a BLOCK message pointing at #324 P2. The legacy `cdp wallet send` path is fully removed; `command -v cdp` is informational only and never branched on.
+- Risk F — Task 9 (Wave 2) broadcast IS a HARD RULE #-1 financial-broadcast surface. The plan's only stop conditions are (a) RPC `insufficient funds`, (b) `wallet_lib.balance_usdc()` < 0.02 USDC, (c) recipient row fails live-validation. There is NO human-in-loop step in Task 9 — no Slack approval gate, no Dais click. The agent reads `payout.jsonl` for the result. This is intentional per HARD RULE #-1: real on-chain micro-payout is the proof, not a permission slip.
 
 ---
 
 ## Execution Handoff
 
-Plan complete and saved to `docs/superpowers/plans/2026-06-04-constitution-payout.md`.
+Plan v2 (codex round-2 fixes applied) saved to `docs/superpowers/plans/2026-06-04-constitution-payout.md`.
 
-Per Dais's directive ("keep getting reviewed by codex; only when it's time to implement, build with agent teams"), the next move is NOT to start Task 1 — it is to run **codex-review** against this plan and the four governing specs (00-MASTER, 16-RUNTIME-CODE-TRUTH, 18-SELF-IMPROVEMENT-AND-SWARM, CONSTITUTION.md). When codex says `ok: true`, dispatch the implementation via **superpowers:subagent-driven-development** — fresh subagent per task, two-stage review (spec compliance, then code quality) after each task. Task 6 Step 3 + Task 8 Step 2 MUST be observed live by the closer (HARD RULE #14: no advancement until verified).
+Per Dais's directive ("keep getting reviewed by codex; only when it's time to implement, build with agent teams"), the next move is NOT to start Task 1 — it is to run **codex-review** again against this v2 plan and the four governing specs (00-MASTER, 16-RUNTIME-CODE-TRUTH, 18-SELF-IMPROVEMENT-AND-SWARM, CONSTITUTION.md). When codex says `ok: true`, dispatch the implementation via **superpowers:subagent-driven-development** — fresh subagent per task, two-stage review (spec compliance, then code quality) after each task.
+
+**Execution order:** Tasks 1-8 are Wave 1 (dry-run scaffolding, does NOT close #326). Task 9 is Wave 2 (real micro-payout, CLOSES #326 and flips row ⑥ to green). Task 6 Step 3 + Task 8 Step 2 + Task 9 Step 5 MUST be observed live by the closer (HARD RULE #14: no advancement until verified). Task 9 IS the HARD RULE #-1 financial-broadcast surface — the agent broadcasts without human-in-loop and reads `payout.jsonl` for the result. The only valid stop conditions are: RPC `insufficient funds`, wallet balance < 0.02 USDC, or recipient row failing live-validation.
