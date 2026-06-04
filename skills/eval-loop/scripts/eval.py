@@ -19,10 +19,19 @@ from __future__ import annotations
 import json
 import os
 import sys
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any
+
+# HermesJudge shells out to a heavyweight `hermes chat` process per call. Eight
+# of them at once (4 dims × Steps+ReasonScore) intermittently exhaust local
+# resources and a child exits non-zero. Serialize the subprocess judge with a
+# module-level lock so dims still SUBMIT in parallel but the actual CLI calls
+# run one-at-a-time (the bottleneck is the LLM round-trip either way). One
+# transient retry absorbs the occasional cold-start failure.
+_HERMES_CALL_LOCK = threading.Lock()
 
 STATE_DIR = Path(os.environ.get("HERMES_STATE", "/Users/anicca/.hermes/state"))
 COST_LOG = STATE_DIR / "eval-cost.jsonl"
@@ -85,18 +94,21 @@ def _make_hermes_judge(model: str = HERMES_JUDGE_MODEL):
             return self
 
         def _run(self, prompt: str) -> str:
-            result = subprocess.run(
-                [HERMES_BIN, "chat", "-Q", "-q", prompt],
-                capture_output=True,
-                text=True,
-                timeout=120,
-            )
-            if result.returncode != 0:
-                raise RuntimeError(
-                    f"hermes chat failed (rc={result.returncode}): {result.stderr[:200]}"
-                )
-            lines = [ln for ln in result.stdout.splitlines() if _HERMES_NOISE not in ln]
-            return "\n".join(lines).strip()
+            last_err = ""
+            for attempt in range(2):  # one transient retry
+                with _HERMES_CALL_LOCK:  # serialize the heavyweight CLI calls
+                    result = subprocess.run(
+                        [HERMES_BIN, "chat", "-Q", "-q", prompt],
+                        capture_output=True,
+                        text=True,
+                        timeout=120,
+                    )
+                if result.returncode == 0:
+                    lines = [ln for ln in result.stdout.splitlines() if _HERMES_NOISE not in ln]
+                    return "\n".join(lines).strip()
+                last_err = result.stderr[:200] or result.stdout[:200]
+                time.sleep(1.0)
+            raise RuntimeError(f"hermes chat failed after retry: {last_err}")
 
         def generate(self, prompt: str, schema=None):
             if schema is not None:
