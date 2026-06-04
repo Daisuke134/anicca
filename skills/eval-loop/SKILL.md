@@ -1,6 +1,6 @@
 ---
 name: eval-loop
-description: 4-dimension LLM-as-judge gate (accuracy / helpfulness / harmlessness / coherence) for ANY agent output. Mirrors swarms council_as_judge.py:36-65 and DeepEval GEval. Default threshold 0.7 (configurable per rubric). Use this skill BEFORE shipping any output (X post, gig reply, SEO page, paywall copy, cron output) — pass = ship, fail = rework. Wired as both a CLI (scripts/eval.sh) and a sourceable shell helper (scripts/lib.sh::eval_or_fail). Includes a fail-closed deterministic heuristic fallback so the gate runs even when every BYOK backend is down. Cost per eval is logged to ~/.hermes/state/eval-cost.jsonl.
+description: 4-dimension LLM-as-judge gate (accuracy / helpfulness / harmlessness / coherence) for ANY agent output. Mirrors swarms council_as_judge.py:36-65 and DeepEval GEval. Default threshold 0.7 (configurable per rubric). Use this skill BEFORE shipping any output (X post, gig reply, SEO page, paywall copy, cron output) — pass = ship, fail = rework. Wired as both a CLI (scripts/eval.sh) and a sourceable shell helper (scripts/lib.sh::eval_or_fail). Default Wave-1 judge is HermesJudge (hermes chat via the gh auth subscription — free gpt-4o-mini, no per-token cost), with BYOK backends and a fail-closed deterministic heuristic fallback so the gate runs even when every external backend is down. Cost per eval is logged to ~/.hermes/state/eval-cost.jsonl.
 ---
 
 # eval-loop
@@ -55,15 +55,30 @@ Three call sites — all back the same engine:
 harm; physically, financially, psychologically).
 
 ## Backend selection
-Wave 1 priority (first key present wins; mini/cheap models per CLAUDE.md
-"OpenClaw cron は mini 主軸"): `OPENAI_API_KEY` → `gpt-4o-mini`, else
-`DEEPSEEK_API_KEY` → `deepseek-chat`, else `ANTHROPIC_API_KEY` →
-`claude-haiku-4-5-20251001`, else `GEMINI_API_KEY`/`GOOGLE_API_KEY` →
-`gemini-2.0-flash`, else `MOONSHOT_API_KEY`/`KIMI_API_KEY` → `moonshot-v1-8k`,
-else **heuristic** (deterministic offline scorer — fail-closed, never crashes
-the gate). Each non-OpenAI provider is constructed via its concrete DeepEval
-model class (a bare model-id string only routes to OpenAI). The chosen backend
-is recorded per row in `~/.hermes/state/eval-cost.jsonl`.
+Wave 1 priority (first available wins; mini/cheap models per CLAUDE.md
+"OpenClaw cron は mini 主軸"):
+
+1. **`hermes_copilot` — the DEFAULT Wave 1 judge.** Shells out to
+   `hermes chat -Q -q` (Hermes provider pinned to copilot/`gpt-4o-mini` per
+   #323), which rides the `gh auth` subscription token — **zero per-token
+   cost**. This is the lifeline judge while the CFO is HUNGRY: external judges
+   starve (every BYOK key below is out of credit), so Hermes copilot is what
+   keeps the gate scoring with a REAL LLM. The heavyweight CLI calls are
+   serialized via a module lock (+1 transient retry) so 8 concurrent dim×schema
+   invocations don't exhaust local resources. Disable with
+   `EVAL_LOOP_NO_HERMES_JUDGE=1`.
+2. `OPENAI_API_KEY` → `gpt-4o-mini`
+3. `DEEPSEEK_API_KEY` → `deepseek-chat`
+4. `ANTHROPIC_API_KEY` → `claude-haiku-4-5-20251001`
+5. `GEMINI_API_KEY`/`GOOGLE_API_KEY` → `gemini-2.0-flash`
+6. `MOONSHOT_API_KEY`/`KIMI_API_KEY` → `moonshot-v1-8k`
+7. **heuristic** (deterministic offline scorer — fail-closed, never crashes
+   the gate).
+
+Each non-OpenAI BYOK provider is constructed via its concrete DeepEval model
+class (a bare model-id string only routes to OpenAI). The chosen backend is
+recorded per row in `~/.hermes/state/eval-cost.jsonl`; `hermes_copilot` rows
+carry `cost_usd: 0.0` + `via: "gh_auth_subscription"`.
 
 ## Mode (`EVAL_MODE`)
 - `production` (DEFAULT — pre-push hook, `eval_or_fail`, every side-effectful caller):
@@ -82,7 +97,7 @@ path could not be exercised in tests).
 ## What it writes
 `~/.hermes/state/eval-cost.jsonl` (append-only). Each line:
 ```json
-{"ts":"...","backend":"openai","model":"gpt-4o-mini","dim_count":4,"total":0.84,"pass":true,"elapsed_s":3.21,"rubric_task_class":"post-to-x"}
+{"ts":"...","backend":"hermes_copilot","model":"gpt-4o-mini","dim_count":4,"total":0.875,"pass":true,"cost_usd":0.0,"via":"gh_auth_subscription","elapsed_s":106.8,"rubric_task_class":"post-to-x"}
 ```
 
 ## Out of scope (tracked elsewhere)

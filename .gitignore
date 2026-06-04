@@ -1,5 +1,7 @@
 
 __pycache__/
+.deepeval/
+.deepeval_telemetry.txt
 .env
 .worktrees/
 *.b64
