@@ -12,7 +12,7 @@
 
 **Reuse strategy (DRY):** the new Hermes skill READS the same input files the legacy skill reads — `~/.openclaw/skills/cfo-core/data/anicca-cfo.json` (refreshed daily 06:00 by `ai.anicca.cfo-daily` launchd, verified via `updated_at` field) + `~/.hermes/state/heartbeat.jsonl` (written by the genesis-boot heartbeat from 2026-06-04 sister plan) + `~/.openclaw/skills/anicca-friction-fixer/state/violations.jsonl` (friction errors) + `~/.openclaw/state/friction-sweep.log`. NO data is duplicated; the skill is a pure read/compose/send pipeline.
 
-**Tech Stack:** Hermes Agent (latest, post-genesis-boot) · Python 3.13 in a project-local venv at `~/.hermes/skills/daily-report/.venv/` · `agentmail` Python SDK ≥0.5.2 · jq for JSONL parsing · existing `AGENTMAIL_API_KEY` + `AGENTMAIL_INBOX_ID` in `~/.openclaw/.env` (copy ONE line into `~/.hermes/.env` per genesis-boot Task 3 Step 2 pattern). The send path uses ONE Hermes LLM call for bullet synthesis (tiny prompt, model = whatever genesis-boot Task 3 selected); on LLM failure the skill emits a header-only email and exits 0.
+**Tech Stack:** Hermes Agent **pinned to v0.12.0** (command surfaces locked per cross-plan rule X1) · Python 3.13 in a project-local venv at `~/.hermes/skills/daily-report/.venv/` · `agentmail==0.5.2` Python SDK (PINNED per cross-plan rule X5; no `>=` ranges) · jq for JSONL parsing · existing `AGENTMAIL_API_KEY` + `AGENTMAIL_INBOX_ID` in `~/.openclaw/.env` (copy ONE line into `~/.hermes/.env` per genesis-boot Task 3 Step 2 pattern). The send path uses ONE Hermes LLM call for bullet synthesis (tiny prompt, model = whatever genesis-boot Task 3 selected); on LLM failure the skill emits a header-only email and exits 0.
 
 **Scope-out (other plans):**
 - Weekly Monday 09:00 digest (= Wave 2; same skill, `--weekly` flag, separate cron entry once daily proves stable for 7 days).
@@ -24,12 +24,13 @@
 
 1. `hermes skills list | grep '^daily-report'` shows exactly one row.
 2. `hermes cron list | grep daily-report` shows ONE job with schedule `0 6 * * *` (or local equivalent `every 1d at 06:00`).
-3. Manual fire: `hermes cron run daily-report` (fallback `~/.hermes/scripts/daily-report.sh`) exits 0 and the AgentMail inbox `anicca-genesis@agentmail.to` shows the sent message in `client.inboxes.messages.list(inbox_id=…)` within 60 s.
+3. Manual fire: `hermes cron run daily-report` (fallback `~/.hermes/scripts/daily-report.sh`) exits 0 and the AgentMail inbox `anicca-genesis@agentmail.to` shows the sent message in `client.inboxes.messages.list(inbox_id=…)` within 60 s. The Hermes-native send is **identified by the SMTP header `X-Anicca-Origin: hermes-genesis`** — the legacy OpenClaw `anicca-report` skill is still firing at 18:00 JST until LAUNCH-GATE #341 retires it, so TWO emails/day are expected during the transition; only the one carrying `X-Anicca-Origin: hermes-genesis` proves #330.
 4. The sent email contains, in this order, all the following sections (each non-empty unless explicitly noted): subject line `[Anicca] Day N — MRR $X · runtime $Y · status STATUS`; deterministic header block with MRR/revenue-28d/runtime/net/wallet/runway from `anicca-cfo.json`; "Yesterday's heartbeat" block with last-24h heartbeat row count + ok/total ratio; "Constitution-violations" block from `~/.openclaw/state/friction-sweep.log` (last 24h grep) OR "none today"; "Errors logged by friction-fixer" block from `violations.jsonl` last 24h OR "none today"; "What I did" block = top-3 LLM-synthesized substantive bullets (NOT generic affirmation per HARD RULE 0.19); footer `— Anicca · /report off · /report to <email>`.
-5. Budget: `anicca-cfo.json` `spends.runtime_items` delta after a fire shows ≤ $0.01 added in the model line for that fire. The skill logs the token cost to `~/.hermes/state/daily-report.jsonl` so the next plan-completion check can verify.
+5. Budget: `anicca-cfo.json` `spends.runtime_items` delta after a fire shows ≤ $0.01 added in the model line for that fire. The skill logs the token cost to `~/.hermes/state/daily-report.jsonl` so the next plan-completion check can verify. Per cross-plan rule X2, #330 closure requires CFO heartbeat to record cost ≤ $0.01 in the same window.
 6. The skill writes a JSONL trace line to `~/.hermes/state/daily-report.jsonl` per fire, with shape `{ts, ok, sent_to:[…], subject, body_chars, llm_tokens, llm_cost_usd}`. Used by tests + future eval-loop (#329).
-7. Codex-review passes `ok: true` on (a) this plan, (b) the SKILL.md, (c) the `compose.py` source. Mandated by GATE-1 + GATE-3 in `.claude/rules/dev-workflow.md`.
-8. All new files committed + pushed to `anicca-oss`. CLAUDE.md rule 0.4.
+7. **Sustained-send gate (replaces single-fire claim):** #330 is NOT closed until BOTH (a) ≥ 7 consecutive successful sends are observed in `~/.hermes/state/daily-report.jsonl` (i.e. last 7 rows all have `send.ok == true`) AND (b) ZERO `severity=critical` rows appear in `~/.hermes/state/daily-report-alerts.jsonl` during the same 7-day window. If `send.ok == false` at any fire, send.py writes one `severity=critical` row to `daily-report-alerts.jsonl` (see Task 5) and the cron exit code stays 0 so cron itself survives, but the 7-day counter restarts. This is the explicit fix for the silent-send-failure risk.
+8. Codex-review passes `ok: true` on (a) this plan, (b) the SKILL.md, (c) the `compose.py` source, (d) the `send.py` source. Mandated by GATE-1 + GATE-3 in `.claude/rules/dev-workflow.md`.
+9. All new files committed + pushed to `anicca-oss`. CLAUDE.md rule 0.4.
 
 ---
 
@@ -70,16 +71,31 @@ Why a project-local venv (NOT system Python): system Python 3.13 is PEP-668 exte
 
 **Files:** none new; this is verification per superpowers:verification-before-completion.
 
-- [ ] **Step 1: Confirm Hermes binary + cron subcommand are usable**
+- [ ] **Step 1: Confirm Hermes binary is pinned to v0.12.0 + cron subcommand is usable**
 
-Run:
+Per cross-plan rule X1, Hermes is LOCKED at v0.12.0 — we do not call `hermes update` and we do not gate on `Update available` output. Run:
 ```bash
-/Users/operator/.local/bin/hermes --version
+/Users/operator/.local/bin/hermes --version | grep -F 'v0.12.0' \
+  || { echo "FAIL: hermes is not pinned to v0.12.0"; exit 1; }
 /Users/operator/.local/bin/hermes cron --help | head -3
 /Users/operator/.local/bin/hermes cron create --help | grep -E 'schedule|script|no-agent'
 /Users/operator/.local/bin/hermes skills --help | head -3
 ```
-Expected: all four commands print non-empty output without an "Update available" line; `cron create --help` shows the `schedule`, `--script`, and `--no-agent` flags. If "Update available" prints, STOP and run genesis-boot Task 2 first.
+Expected: the version grep succeeds (binary reports `v0.12.0`); `cron create --help` shows the `schedule`, `--script`, and `--no-agent` flags; the other two commands print non-empty output. If the version grep fails, STOP and re-pin via genesis-boot Task 2 (which installs the v0.12.0 tarball) before continuing.
+
+- [ ] **Step 1b: AgentMail SDK preflight (cross-plan rule X5)**
+
+Run:
+```bash
+/opt/homebrew/bin/python3 -c "import agentmail; print(agentmail.__version__)" \
+  || /opt/homebrew/bin/python3 -m pip install --user 'agentmail==0.5.2'
+command -v agentmail || /opt/homebrew/bin/python3 -m pip install --user 'agentmail==0.5.2'
+set -a; . /Users/operator/.openclaw/.env; set +a
+curl -s -H "X-API-Key: $AGENTMAIL_API_KEY" https://api.agentmail.to/v0/inboxes \
+  | /opt/homebrew/bin/jq -e '.inboxes // .items // . | length > 0' >/dev/null \
+  && echo "OK agentmail reachable"
+```
+Expected: prints the installed version (must be `0.5.2`; the venv created in Task 2 will pin the same string in `requirements.txt`) and `OK agentmail reachable`. If the curl returns 401, the `AGENTMAIL_API_KEY` is stale — re-mint from the AgentMail dashboard before continuing.
 
 - [ ] **Step 2: Confirm AgentMail credentials exist in OpenClaw .env**
 
@@ -148,9 +164,9 @@ Expected: `scripts/  tests/` printed.
 
 - [ ] **Step 2: Pin Python dependencies**
 
-Create `/Users/operator/anicca-oss/skills/daily-report/scripts/requirements.txt` with EXACTLY this content:
+Create `/Users/operator/anicca-oss/skills/daily-report/scripts/requirements.txt` with EXACTLY this content (PINNED per cross-plan rule X5 — no `>=` ranges):
 ```
-agentmail>=0.5.2,<1.0.0
+agentmail==0.5.2
 ```
 
 - [ ] **Step 3: Symlink the skill into ~/.hermes/skills/ early so the venv lives at a stable path**
@@ -649,12 +665,36 @@ Expected: final line `PASS`, exit code 0. If FAIL, fix compose.py (do NOT loosen
 
 - [ ] **Step 3: Run compose against LIVE data once, no send, no LLM, to sanity-check shape**
 
-Run:
+Run EXACTLY this command (pinned to the live data sources Task 1 verified):
 ```bash
+TODAY=$(date -u +%F)
 /Users/operator/anicca-oss/skills/daily-report/.venv/bin/python \
-  /Users/operator/anicca-oss/skills/daily-report/scripts/compose.py --offline | head -40
+  /Users/operator/anicca-oss/skills/daily-report/scripts/compose.py --offline \
+  --now "${TODAY}T06:00:00+09:00" \
+  > /tmp/daily-report-live.txt
+head -8 /tmp/daily-report-live.txt
 ```
-Expected: prints `SUBJECT: [Anicca] Day N — MRR $… · runtime $… · status …`, then BODY-START, header block with real numbers from the live `anicca-cfo.json`, then BODY-END. No traceback.
+Expected first ~8 lines of `/tmp/daily-report-live.txt` (numbers vary by day; structure is fixed):
+```
+SUBJECT: [Anicca] Day <N> — MRR $<X> · runtime $<Y> · status <STATUS>
+BODY-START
+Hi,
+
+Headline (<YYYY-MM-DD>):
+  MRR:             $<X>.00 / mo
+  Revenue 28d:     $<R>.00  (landed $<L>.00)
+  Runtime cost:    $<Y>.00 / mo
+```
+Then assert the contract holds against the live output:
+```bash
+head -1 /tmp/daily-report-live.txt | grep -qE '^SUBJECT: \[Anicca\] Day [0-9]+ — MRR \$[0-9]+ · runtime \$[0-9]+ · status [A-Z]+$' \
+  || { echo "FAIL live subject shape"; exit 1; }
+for h in 'BODY-START' "Headline ($(date -u +%F)):" "Yesterday's heartbeat:" "Constitution-violations (24h):" "Errors from friction-fixer (24h):" "What I did:" 'BODY-END'; do
+  grep -qF "$h" /tmp/daily-report-live.txt || { echo "FAIL live missing section: $h"; exit 1; }
+done
+echo "OK live shape"
+```
+Expected: prints `OK live shape`. No traceback. If any assertion fails, fix `compose.py` (do NOT loosen the assertion) and re-run before proceeding to Task 5.
 
 ---
 
@@ -771,16 +811,44 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         client = AgentMail(api_key=api_key)
+        # X-Anicca-Origin header lets recipients (and tests) distinguish the
+        # Hermes-native send from the legacy OpenClaw anicca-report send that
+        # still fires at 18:00 JST until LAUNCH-GATE #341 retires it.
         resp = client.inboxes.messages.send(
             inbox_id=inbox_id,
             to=recipients,
             subject=subject,
             text=body,
+            headers={"X-Anicca-Origin": "hermes-genesis"},
         )
         trace["ok"] = True
         trace["message_id"] = getattr(resp, "message_id", None) or getattr(resp, "id", None)
     except Exception as e:  # noqa: BLE001 — keep cron silent
         trace["error"] = f"{type(e).__name__}: {str(e)[:200]}"
+
+    # Critical-alert path: if the send failed, write a severity=critical row
+    # to ~/.hermes/state/daily-report-alerts.jsonl so Done condition #7 (≥7
+    # consecutive successes + zero critical alerts) can detect it. Exit code
+    # stays 0 so the cron job survives, but #330 cannot close until the
+    # alert log stays clean for 7 days.
+    if not trace["ok"]:
+        try:
+            from datetime import datetime, timezone
+            alert_log = Path.home() / ".hermes" / "state" / "daily-report-alerts.jsonl"
+            alert_log.parent.mkdir(parents=True, exist_ok=True)
+            alert = {
+                "ts": datetime.now(timezone.utc).isoformat(),
+                "severity": "critical",
+                "source": "daily-report.send",
+                "error": trace["error"],
+                "recipients": recipients,
+                "subject": subject,
+            }
+            with alert_log.open("a") as fh:
+                fh.write(json.dumps(alert, ensure_ascii=False) + "\n")
+        except Exception as alert_err:  # noqa: BLE001
+            # Surface to the trace so daily-report.sh sees it, but never raise.
+            trace["alert_log_error"] = f"{type(alert_err).__name__}: {str(alert_err)[:120]}"
 
     print(json.dumps(trace, ensure_ascii=False))
     return 0
@@ -1006,8 +1074,11 @@ on transient errors — next 24-hour window does).
 
 ## Failure mode
 - LLM unreachable → header-only email (no bullets), `compose.llm_tokens=0`.
-- AgentMail API down → trace line `send.ok=false`, NO email, NO exception propagated.
+- AgentMail API down → trace line `send.ok=false`, NO email, NO exception propagated, **AND one `severity=critical` row appended to `~/.hermes/state/daily-report-alerts.jsonl`** so the closure gate (≥ 7 consecutive `send.ok=true` AND zero critical alerts in the same window) detects the outage. Exit code stays 0 so the cron job survives.
 - CFO data stale (>26 h) → still sends, with status field reflecting the stale read.
+
+## Transition: two emails per day
+Until LAUNCH-GATE #341 retires the legacy OpenClaw `anicca-report` skill, Dais receives TWO daily emails — the legacy one at 18:00 JST and this one at 06:00 JST. The Hermes-native send carries SMTP header `X-Anicca-Origin: hermes-genesis`; cross-checking that header is the canonical way to attribute which send proves #330.
 
 ## Wave 2 (not yet built)
 - Weekly Monday 09:00 digest via `--weekly` flag, separate cron entry.
@@ -1093,7 +1164,7 @@ Expected: codex returns `ok: true`. If `ok: false`, fix the plan and re-run (up 
 
 - [ ] **Step 2: Run codex-review against compose.py + send.py + daily-report.sh + SKILL.md**
 
-Invoke codex-review with the 4 files. Same termination rule: `ok: true` or 5 iterations max.
+Invoke codex-review with the 4 files. Same termination rule: `ok: true` or 5 iterations max. Per Done condition #8, send.py review is REQUIRED (not optional) because the critical-alert path lives there.
 
 - [ ] **Step 3: Address blocking findings (if any)**
 
@@ -1152,7 +1223,7 @@ Replace with:
                                                                             anicca-genesis@agentmail.to
                                                                             via Hermes cron 06:00 JST
 ```
-(Only replace if Task 8 Step 4 actually sent successfully AND the inbox verification in Task 6 Step 4 PASSed. Otherwise leave `#330` as-is until a real fire confirms.)
+(Only replace if Done condition #7 is satisfied: the last 7 rows in `~/.hermes/state/daily-report.jsonl` ALL show `send.ok == true` AND `~/.hermes/state/daily-report-alerts.jsonl` has ZERO `severity=critical` rows in the same window AND the AgentMail inbox verification in Task 6 Step 4 PASSed for the most-recent fire AND the most-recent inbox message carries SMTP header `X-Anicca-Origin: hermes-genesis`. Otherwise leave `#330` as-is — a single successful fire is NOT sufficient per the sustained-send gate.)
 
 - [ ] **Step 4: Commit the spec update**
 
@@ -1164,7 +1235,7 @@ git commit -m "docs(spec): GROUND TRUTH — LAUNCH MATRIX row ⑤d Hermes covera
 git push
 ```
 
-- [ ] **Step 5: Verification gate — run BOTH tests one more time + visually inspect the inbox**
+- [ ] **Step 5: Verification gate — run BOTH tests one more time + visually inspect the inbox + check the alert log**
 
 Run:
 ```bash
@@ -1172,15 +1243,25 @@ Run:
 /Users/operator/anicca-oss/skills/daily-report/tests/test_send_e2e.sh
 /Users/operator/.local/bin/hermes cron list | grep daily-report
 /Users/operator/.local/bin/hermes skills list | grep '^daily-report'
-tail -3 /Users/operator/.hermes/state/daily-report.jsonl | /opt/homebrew/bin/jq '.send.ok, .compose.llm_cost_usd'
+tail -7 /Users/operator/.hermes/state/daily-report.jsonl | /opt/homebrew/bin/jq '.send.ok, .compose.llm_cost_usd'
+# Critical-alert log must be empty (file missing OR zero severity=critical rows in last 7d)
+if [ -f /Users/operator/.hermes/state/daily-report-alerts.jsonl ]; then
+  /opt/homebrew/bin/jq -r 'select(.severity=="critical") | .ts' \
+    /Users/operator/.hermes/state/daily-report-alerts.jsonl \
+    | awk -v cutoff="$(date -u -v-7d +%FT%TZ 2>/dev/null || date -u -d '7 days ago' +%FT%TZ)" '$1 >= cutoff' \
+    | wc -l
+else
+  echo 0
+fi
 ```
 Expected:
 - Both tests print final line `PASS`.
 - `hermes cron list` row present.
 - `hermes skills list` row present.
-- Last 3 trace lines all show `send.ok == true` and `llm_cost_usd ≤ 0.01`.
+- Last 7 trace lines all show `send.ok == true` and `llm_cost_usd ≤ 0.01`.
+- The final `wc -l` (or `echo 0`) prints `0` — zero `severity=critical` rows in the last 7 days.
 
-Per CLAUDE.md rule 0.12 + HARD RULE #8 (verification-before-completion), this is the IDENTIFY→RUN→READ→VERIFY→CLAIM gate. Only after all 5 outputs match expectations may #330 be marked completed in the TaskList.
+Per CLAUDE.md rule 0.12 + HARD RULE #8 (verification-before-completion), this is the IDENTIFY→RUN→READ→VERIFY→CLAIM gate. Only after ALL outputs match expectations may #330 be marked completed in the TaskList. A single fire is NOT sufficient — Done condition #7 requires 7 consecutive successful days.
 
 - [ ] **Step 6: Close task #330**
 
@@ -1214,7 +1295,8 @@ Use the TaskList tool to mark `#330 P1-REPORT daily-report skill` status = `comp
 **Risk notes (read before executing):**
 - Task 4's `llm_bullets()` estimates token cost from char count (precise accounting needs `hermes insights`). The 2000-char prompt cap and the `cost ≤ $0.01` gate in Task 6 Step 5 prevent budget overrun even if the estimate is off by 3x.
 - The E2E test in Task 6 Step 3 polls the inbox for up to 60 s. If AgentMail's send-to-list latency exceeds 60 s, the test will FAIL falsely. If observed, raise the poll to 180 s — DO NOT loosen the `[Anicca] Day` prefix check.
-- The OpenClaw `anicca-report` skill still fires at 18:00 JST (legacy cadence) — Dais will receive TWO emails per day until LAUNCH-GATE #341 explicitly retires the OpenClaw version. This is INTENDED transition behavior, not a bug. Document in the plan close-out memory.
+- The OpenClaw `anicca-report` skill still fires at 18:00 JST (legacy cadence) — Dais will receive TWO emails per day until LAUNCH-GATE #341 explicitly retires the OpenClaw version. This is INTENDED transition behavior, not a bug. **Done condition #3 above explicitly notes that only the message carrying SMTP header `X-Anicca-Origin: hermes-genesis` proves #330**; the legacy 18:00 send does NOT count. Document in the plan close-out memory.
+- Done condition #7 (sustained-send gate) means a single successful fire is NOT sufficient to close #330. Implementation must observe the trace log for 7 days with `send.ok == true` on every row AND zero `severity=critical` rows in `daily-report-alerts.jsonl` before flipping the LAUNCH MATRIX cell in Task 10 Step 3.
 
 ---
 
