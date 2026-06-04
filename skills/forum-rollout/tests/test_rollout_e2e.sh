@@ -65,4 +65,17 @@ grep -q 'STUB-EDIT-SKILL' "$STATE_DIR/stub.log" 2>/dev/null && bad "hard-no: wal
 blocked="$(/usr/bin/jq -s 'map(select(.issue_n==12 and .evidence_url=="BLOCKED:hard-no-list"))|length' "$LOG" 2>/dev/null)"
 [ "$blocked" = "1" ] && ok "hard-no: BLOCKED row logged" || bad "hard-no: BLOCKED row (got $blocked)"
 
+# --- guard BLOCK: a guard that returns 2 must log exit_code 2 (not 0) ---
+FX3="$WORK/fx3"; mkdir -p "$FX3"
+echo '[{"number":13,"body":"x"}]' > "$FX3/issues.json"
+cat > "$FX3/thread-13.json" <<'EOF'
+[{"id":4,"body":"CONSENSUS: do a thing\n\n```rollout\nACTION: edit-skill\nTARGET: some-skill\nPAYLOAD: {\"reason\":\"ok\"}\n```"}]
+EOF
+GUARD2="$WORK/guard-block.sh"; printf '#!/usr/bin/env bash\nexit 2\n' > "$GUARD2"; chmod +x "$GUARD2"
+FR_GUARD_CHECK="$GUARD2" FR_FIXTURE_DIR="$FX3" bash "$ROOT/rollout.sh" --dry-run >/dev/null 2>&1 || true
+gexit="$(/usr/bin/jq -s 'map(select(.issue_n==13))|.[0].exit_code' "$LOG" 2>/dev/null)"
+[ "$gexit" = "2" ] && ok "guard BLOCK: exit_code captured (2)" || bad "guard BLOCK exit_code (got $gexit)"
+gev="$(/usr/bin/jq -s 'map(select(.issue_n==13))|.[0].evidence_url' "$LOG" 2>/dev/null)"
+[ "$gev" = '"BLOCKED:guard"' ] && ok "guard BLOCK: evidence row" || bad "guard BLOCK evidence (got $gev)"
+
 echo "---"; echo "PASS=$pass FAIL=$fail"; [ "$fail" -eq 0 ]

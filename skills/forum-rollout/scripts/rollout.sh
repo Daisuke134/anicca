@@ -107,8 +107,8 @@ process_issue() {
     fi
 
     local summary="Roll out forum CONSENSUS on issue #$n: $at on '$target'. Source: anicca-oss collective forum."
-    if ! fr_guard "$summary"; then
-      local grc=$?
+    fr_guard "$summary"; local grc=$?
+    if [ "$grc" -ne 0 ]; then
       echo "rollout: issue #$n BLOCKED by guard (exit $grc)"
       fr_log "$n" "$sha" "$at" "$target" false "$grc" "BLOCKED:guard"
       return 0
