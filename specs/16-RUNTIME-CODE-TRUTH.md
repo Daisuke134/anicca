@@ -138,16 +138,35 @@ automaton's `conway/x402.ts` signs payments **OUT only**. `survival/funding.ts` 
 
 ---
 
-## § 3. hermes — pure harness (code-verified, deeper read pending)
+## § 3. hermes — RICH harness (DEEP read 2026-06-04, stronger than first pass)
 
 ```
-HARNESS only: ReAct loop [run_agent.py:10811] + ~45 tools [toolsets.py:31] + skill_manage (self-edit, best of the 3)
-  + cron + delegate_task (LOCAL depth-1) + kanban (multi-agent coord) + Kimi K2.6 native [trajectory_compressor.py:86]
-LACKS: wallet, x402 (grep=0), USDC topup, self-spawn-to-cloud, constitution engine
-COMBINE SEAM: execute_code [toolsets.py:56] can shell out → could invoke automaton's CLI as a skill,
-  BUT hermes=Python, automaton=TS → no in-process merge; only parent/child-process, which double-loops.
+HARNESS: ReAct loop [run_agent.py:10811] + ~45 tools [toolsets.py:31] + Kimi K2.6 native [trajectory_compressor.py:86]
+RICH layers the first pass UNDERSOLD (all in tools/ + cli.py):
+  • self-improve-from-logs  ✅ _spawn_background_review [run_agent.py:3559]:
+      forks a full AIAgent (same model/tools/ctx) in a bg thread, reviews the
+      conversation, AUTO-SAVES memory + AUTO-EDITS skills to shared stores.
+      = after-action review loop. (automaton has git self-mod; hermes has
+        log→reflect→skill-save. DIFFERENT, both real.)
+  • skill subsystem (7 files)  ✅ tools/{skill_manager_tool, skill_provenance,
+      skill_usage, skills_guard, skills_hub(GitHub sync), skills_sync, skills_tool}.py
+      = create/edit/provenance/security-guard/hub-sync/usage. FAR richer than
+        automaton's single skills/loader.ts.
+  • army coordination  ✅ tools/kanban_tools.py + /kanban [cli.py:6265] +
+      hermes_cli/kanban.py run_slash = multi-agent board (the "何兆体協調" layer)
+  • stealth browser  ✅ tools/browser_camofox.py = Camofox built-in (= what Anicca
+      uses for Lancers/Coconala login + earning; automaton has no browser)
+  • mixture-of-agents ✅ tools/mixture_of_agents_tool.py (multi-model vote)
+  • cron/heartbeat ✅ tools/cronjob_tools.py ; delegate_task ✅ tools/delegate_tool.py (local)
+STILL LACKS (confirmed by full *.py grep): wallet, x402, USDC topup,
+  self-spawn-to-cloud, constitution engine. (402 hits = vision credit-error text +
+  a fallback tip only; skills_hub private_key = GitHub App auth, not a crypto wallet.)
+COMBINE SEAM: hermes execute_code/code_execution_tool can shell to any binary →
+  automaton's Node CLI (node dist/index.js <cmd>) can be a hermes skill, exposing
+  wallet/x402/spawn. hermes=Python, automaton=TS → bridge is process-level, not in-process.
 ```
-> **PENDING (Dais 2026-06-04):** read hermes deeper — its self-rating / skill self-edit / kanban-army coordination may be stronger than this first pass shows. Update § 3 after the deep read, THEN decide.
+
+**Revised read:** hermes is NOT a thin loop — it is a RICH harness (skills+provenance+guard+hub, kanban army, background self-review, Camofox browser, MoA, Kimi). It lacks exactly the economic+replication primitives automaton owns. → The "supplementary" hypothesis is now strongly code-supported: **automaton = economic body + replication + self-fund; hermes = rich skill/coordination/browser/brain layer.** Genuinely complementary.
 
 ---
 
@@ -168,11 +187,28 @@ VERDICT: do NOT import the monorepo. STEAL designs: autonomy 30s-loop, x402-mana
 
 ```
 CONFIRMED (Dais + code): automaton stays. Self-replication is non-negotiable and only automaton has it.
-OPEN: is the harness
-   (A) automaton alone           — already complete; only ADD x402-IN earning + (optional) Akash 2nd spawn target
-   (B) automaton + hermes         — automaton base + hermes as a richer skill/kanban layer (parent/child process, double-loop cost)
-   (C) automaton, borrow hermes/eliza IDEAS only (Kimi brain, x402-IN design) — no second runtime
-"Supplementary vs pick-one" is itself open. Data decides, not preference.
+
+After hermes DEEP read, the 3 options re-weighted:
+   (A) automaton alone
+       + simplest, already self-replicating/self-funding
+       − weak skill system, no browser (can't do Lancers/Coconala earning), gpt-5.2 brain
+       − must build x402-IN earning ourselves
+   (B) automaton + hermes (COMPLEMENTARY)  ★ now strongest on evidence ★
+       automaton = economic body (wallet/x402-out/spawn-to-cloud/survival/self-mod-core, 24/7 unattended)
+       hermes    = rich hands (Camofox browser earning, skill subsystem+provenance, kanban army,
+                   background self-review, Kimi brain, MoA)
+       bridge    = hermes calls automaton's Node CLI as a skill for wallet/x402/spawn
+       cost      = two runtimes (TS + Python), process-level bridge, must decide which loop is "primary"
+   (C) automaton, borrow hermes IDEAS only — no second runtime; reimplement browser/skills in TS (large work)
+
+RECOMMENDATION (evidence, not preference): (B) complementary.
+   - automaton is the only self-replicating self-funding body → it is the PRIMARY autonomous loop (runs 24/7).
+   - hermes is the richest hands+brain → invoked BY automaton (or by heartbeat) for hard tasks
+     (browser-based earning, skill authoring, army kanban). Its Camofox + skill subsystem are exactly
+     what the "earn on Lancers/Coconala" + "self-author skills" mission needs and automaton lacks.
+   - The ONE economic gap (x402-IN earning) is built once as an automaton tool/skill (spec 09 logic re-homed).
+   - Akash deferred (Conway cloud already replicates; add Akash only as anti-lock 2nd target).
+"Supplementary vs pick-one" → DATA says supplementary (B). Final call is Dais's; data is the argument.
 ```
 
 ## § 6. Open uncertainties (honest, to resolve before any implementation)
