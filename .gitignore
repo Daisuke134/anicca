@@ -1,62 +1,54 @@
+
+__pycache__/
+.env
+.worktrees/
+*.b64
+*.env
+*.mov
+*.mp4
+*.pyc
+*.sqlite
+**/node_modules/
+# Auth (secrets)
+# Binary / media (too large for git)
+# Git worktrees (transient)
+# Large workspace generated assets (renderings, slides, UGC)
+# Node modules
+# Personal data (single source) — never commit
 # Sessions & logs (large, regenerated)
+# Workspace generated media (PNGs in work dirs)
+agents/*/agent/auth-profiles.json
 agents/*/sessions/*.jsonl
-agents/*/sessions/*.jsonl.reset.*
 agents/*/sessions/*.jsonl.deleted.*
+agents/*/sessions/*.jsonl.reset.*
 agents/*/sessions/sessions.json
 cron/runs/*.jsonl
+identity/profile.json
+identity/scrub-patterns.json
 logs/*.log
-
-# Binary / media (too large for git)
-*.mp4
-*.mov
-*.sqlite
-*.b64
 media/inbound/*
-
-# Workspace generated media (PNGs in work dirs)
-workspace/tiktok-marketing/work/**/*.png
-workspace/tiktok-marketing/work/**/*.mp4
-workspace/tiktok-marketing/work/**/*.mov
-workspace/tiktok-marketing/ugc-library/**/*.mp4
-workspace/tiktok-marketing/ugc-library/**/*.mov
-workspace/ugc-library/**/*.mp4
-workspace/ugc-library/**/*.mov
-
-# Node modules
-**/node_modules/
-
-# Large workspace generated assets (renderings, slides, UGC)
+skills/_shared/venv-cloak/
+skills/*/.venv/
+skills/*/data/
+skills/*/pdfs/
+skills/*/queue/
+skills/*/state/
+skills/*/state/MNEMONIC_BACKUP_ONCE.txt
+skills/*/state/wallet.encrypted
+skills/*/work/
+workspace/mau-tiktok/cta-video/
 workspace/mau-tiktok/hooks/
 workspace/mau-tiktok/output/
-workspace/mau-tiktok/cta-video/
 workspace/tiktok-marketing/assets/6-slide-images/
 workspace/tiktok-marketing/posts/
 workspace/tiktok-marketing/ugc-library/
-workspace/tiktok-marketing/work/
+workspace/tiktok-marketing/ugc-library/**/*.mov
+workspace/tiktok-marketing/ugc-library/**/*.mp4
 workspace/tiktok-marketing/work-*/
+workspace/tiktok-marketing/work/
+workspace/tiktok-marketing/work/**/*.mov
+workspace/tiktok-marketing/work/**/*.mp4
+workspace/tiktok-marketing/work/**/*.png
 workspace/ugc-library/
-
-# Auth (secrets)
-agents/*/agent/auth-profiles.json
-
-.env
-*.env
-skills/_shared/venv-cloak/
-
-# Personal data (single source) — never commit
-identity/profile.json
-identity/scrub-patterns.json
-skills/*/state/
-skills/*/data/
-skills/*/work/
-skills/*/pdfs/
-skills/*/queue/
-skills/*/state/wallet.encrypted
-skills/*/state/MNEMONIC_BACKUP_ONCE.txt
-
-# Git worktrees (transient)
-.worktrees/
-
-# DeepEval local telemetry/cache (eval-loop skill runtime artifact; zero phone-home)
-.deepeval/
-.deepeval_telemetry.txt
+workspace/ugc-library/**/*.mov
+workspace/ugc-library/**/*.mp4
