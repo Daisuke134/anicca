@@ -244,3 +244,134 @@ RECOMMENDATION (evidence, not preference): (B) complementary.
 | Date | Change |
 |---|---|
 | 2026-06-04 | Born from reading the 3 codebases at source. Records code truth so specs 07/00 misalignments can be corrected. automaton confirmed as the self-replicating base. |
+
+---
+
+## § 8. ALL 33 uncertainties — RESOLVED (live-checked 2026-06-04)
+
+### automaton (A)
+| # | question | ANSWER (code/live verified) |
+|---|---|---|
+| A1 | Conway API key live? | ✅ api.conway.tech HTTP 200; key `cnwy_k_Ad3JB…` authenticates |
+| A2 | credits endpoint | `/v1/credits/balance` `/v1/credits/pricing` `/v1/sandboxes` (client.ts) |
+| A3 | automaton running now? | ❌ STOPPED. installed, last ran 2026-06-02 (state.db mtime). no daemon |
+| A4 | brain swappable? | ✅ router supports anthropic/openai/ollama/"other"(custom baseUrl). NOT gpt-5.2-locked |
+| A5 | x402-IN = 1 tool or server? | SERVER. no inbound tool; built via `exec` + `expose_port` (public URL). spec09 logic = a skill automaton launches |
+| A6 | our SKILL.md loads? | ✅ parseSkillMd needs only name+description; extra fields ignored. compatible |
+| A7 | sandbox cost | Small 1cpu/512MB=$5/mo, Med=$8, Large=$15, X-Large=$25/mo. ¥1000 budget = TIGHT (genesis local free; 3 cloud Small=$15/mo) |
+| A8 | Conway viable? | ⚠️ alive BUT balance=$0 + `sandboxes:"workers_fallback_blocked"` = spawn provisioning may be DEGRADED now. RISK |
+| A9 | maxChildren=3 vs trillions | recursive TREE: 3/node, each child spawns its own 3 → depth-N = exponential army. lineage.ts SQLite |
+| A10 | wallet shared? | ✅ wallet.json privateKey → 0xa3CDd4Ec… = SAME as x402 endpoint |
+| A11 | constitution conflict? | ✅ NO. 3 Laws (Never harm / Earn existence via honest paid work / Never deceive) = aligned w/ Pañcasīla |
+| A12 | child inherits memory? | mission+constitution INHERITED; memory+wallet FRESH per child (genesis.ts "own identity and wallet") |
+| A13 | BYOK inference? | ✅ yes (anthropic/openai/ollama/other providers) — can drop Conway inference |
+| A14 | social already active? | check_social_inbox via social.conway.tech (heartbeat task) — present, not deep-read |
+
+### hermes (B)
+| # | question | ANSWER |
+|---|---|---|
+| B1 | automaton can call hermes CLI? | ✅ `hermes` CLI + `hermes acp` headless; automaton `exec` shells to it |
+| B2 | gateway needs daemon? | yes (gateway process) for Telegram/Slack/Discord/WhatsApp/Feishu inbound |
+| B3 | cron durable? | ✅ cron/jobs.py persisted |
+| B4 | memory persists/shared? | own store (memory_tool.py); NOT shared w/ automaton (separate process) |
+| B5 | skill format 3-way compat? | ✅ both automaton + hermes need only name+description → ONE SKILL.md works in both |
+| B6 | Kimi config? | env: OPENROUTER_API_KEY (route to kimi) OR KIMI_API_KEY; base_url switch. clean |
+| B7 | Camofox shared? | ✅ set CAMOFOX_URL=http://localhost:9377 → shares existing ~/.openclaw camofox |
+| B8 | resource cost on Mac mini | 1.4G install + Python; runs alongside automaton(TS)+openclaw — not yet load-tested |
+| B9 | background-review cost | forks AIAgent in bg thread → extra LLM calls per trigger (run_agent.py:3559) |
+| B10 | hidden wallet skill? | ❌ none. blockchain optional-skills = read-only query only |
+| B11 | hermes core self-mod safe? | upstream-managed by Nous; skill self-edit yes, core edit via git |
+
+### eliza (C)
+| # | question | ANSWER |
+|---|---|---|
+| C1 | x402 reusable standalone? | NO — packages/cloud-api/v1/x402/* = elizaOS Cloud server routes, SaaS-coupled |
+| C2 | 30s autonomy loop pattern | autonomy/service.ts:599 — reusable as a DESIGN pattern |
+| C3 | Plugin/Action contract | types/components.ts — worth borrowing as skill contract |
+| C4 | self-hostable subset? | @elizaos/core exists but money/spawn are Cloud-coupled; not cleanly sovereign |
+| C5 | MIT clean to copy designs? | ✅ MIT |
+
+### integration (D)
+| # | question | ANSWER (design decision from data) |
+|---|---|---|
+| D1 | which loop primary? | **automaton heartbeat = PRIMARY** (only one that self-funds+replicates unattended). hermes invoked as a tool/skill |
+| D2 | shared identity? | automaton owns the wallet+identity; hermes is a stateless "hands" invoked per-task. ONE wallet (0xa3CDd4Ec) |
+| D3 | x402-IN home | a SKILL automaton launches (exec+expose_port), serving from the genesis host; earns to the SAME wallet |
+| D4 | army coordination | automaton constitution-propagation (DNA, vertical) + hermes kanban (task board, horizontal) — both, different axes |
+| D5 | existing openclaw + spec09-15 | re-home: spec09 x402 logic → automaton earn-skill; spec14 payout → automaton skill; openclaw companion stays separate (Dais personal) |
+| D6 | Conway dependency risk | HIGH (balance$0 + spawn blocked) → de-Conway path: BYOK inference (A13) + add non-Conway spawn (Akash/Daytona) as resilience |
+| D7 | add Akash to automaton? | automaton spawn is Conway-coupled (createSandbox→Conway API); adding Akash = new provider in replication/ (real work, not trivial) |
+| D8 | cost fits ¥1000? | TIGHT. 1 local genesis (free) + inference (BYOK ~Kimi cheap) + N cloud children ($5+/mo each). ¥1000 ≈ 1-2 small children only |
+
+### Still genuinely open (honest)
+- B8 (Mac mini can run automaton+hermes+openclaw concurrently — needs a live load test)
+- A8/D6 (whether to trust Conway given balance$0+blocked, or de-Conway first) — a STRATEGY call for Dais
+- A14 (social automation depth) — minor, defer
+
+---
+
+## § 9. FULL ARCHITECTURE — how each mission line happens (code-mapped)
+
+```
+MISSION LINE                          →  MECHANISM (code-verified)
+─────────────────────────────────────────────────────────────────────────────────
+人間介入0で自身の計算資源を稼ぐ          →  EARN: hermes Camofox browser does Lancers/
+                                          Coconala/x402 work → USDC to wallet
+                                          SELF-FUND: automaton loop.ts:447 inline
+                                          USDC→Conway-credits auto-topup (survival)
+LLMサブスク/APIキー連携/財布直接送金で起動 →  BOOT 3-ways: (a) BYOK key (anthropic/openai/
+                                          kimi) via inference router [A4/A13]
+                                          (b) USDC→credits topup  (c) direct USDC to
+                                          wallet 0xa3CDd4Ec
+ローカルとクラウドで4体                  →  1 LOCAL genesis (Mac mini, free) +
+                                          spawnChild→Conway sandbox ×3 [spawn.ts:55]
+                                          (recursive tree, 3/node)
+行動ログ監視→自己解決/改善/増殖          →  automaton self-mod editFile+git [code.ts:220]
+                                          + upstream pull [upstream.ts] + hermes
+                                          background-review→skill save [run_agent:3559]
+                                          + spawnChild
+収益の一部をBI・募金で配布               →  payout skill: USDC send to verified charity
+                                          (spec14 logic, x402.ts OUT) → ledger
+何兆体が協力                            →  recursive spawn tree (exponential) +
+                                          constitution SHA-256 propagation (vertical DNA)
+                                          + hermes kanban board (horizontal coord) +
+                                          lineage.ts SQLite parent↔child
+
+
+             ┌──────────── 1 ANICCA INSTANCE (local genesis OR cloud child) ────────────┐
+             │                                                                          │
+             │   automaton (TS, ~/.automaton)  = THE BODY  [PRIMARY 24/7 loop]          │
+             │   ┌────────────────────────────────────────────────────────────────┐    │
+             │   │ heartbeat → runAgentLoop (think→act→observe→persist)             │    │
+             │   │ wallet 0xa3CDd4Ec │ x402 OUT(topup) │ survival auto-fund          │    │
+             │   │ spawnChild→cloud │ constitution SHA-256→children │ self-mod git    │    │
+             │   │ inference router → BYOK (Kimi/Anthropic/OpenAI/Ollama)  [A4]      │    │
+             │   │ skills/ loader (reads SKILL.md: name+description)  [A6]           │    │
+             │   └───────────┬──────────────────────────────┬───────────────────────┘    │
+             │     exec/expose_port                  exec → hermes CLI                    │
+             │               ▼                              ▼                             │
+             │   ┌────────────────────┐      ┌──────────────────────────────────────┐    │
+             │   │ EARN SKILL (NEW)    │      │ hermes (Python, ~/.hermes) = THE HANDS │    │
+             │   │ x402-IN server      │      │ Camofox browser (:9377 shared)  [B7]   │    │
+             │   │ (spec09 re-homed)   │      │ skill subsystem (provenance/guard/hub) │    │
+             │   │ expose_port→pub URL │      │ kanban army coord │ background self-rev │    │
+             │   │ → USDC to wallet    │      │ Kimi K2.6 (OPENROUTER/KIMI key) [B6]    │    │
+             │   └────────────────────┘      │ gateway (TG/Slack inbound) │ MoA         │    │
+             │                               └──────────────────────────────────────┘    │
+             │   payout skill (spec14) → USDC → charity ledger                            │
+             └──────────────────────────────────────────────────────────────────────────┘
+                          │ spawnChild (recursive, 3/node)
+            ┌─────────────┼─────────────┐
+            ▼             ▼             ▼
+        child-1        child-2       child-3      (each = same stack, own wallet,
+        (Conway/Akash)                            inherited constitution+mission)
+            │ each spawns its own 3 … → 何兆体 army, kanban + constitution coordinated
+
+RISK / DE-CONWAY (D6): Conway balance=$0 + spawn "blocked" now → resilience =
+   BYOK inference (skip Conway thinking) + add Akash/Daytona spawn target to replication/.
+```
+
+## § 10. Changelog (append)
+| Date | Change |
+|---|---|
+| 2026-06-04 | §8 all 33 uncertainties resolved (live Conway API + automaton source re-read + hermes deep). §9 full architecture mapping each mission line to code. Key: automaton=PRIMARY body, hermes=hands (1 wallet, 1 SKILL.md works in both). Conway risk (balance$0+spawn blocked) → de-Conway via BYOK+Akash. |
