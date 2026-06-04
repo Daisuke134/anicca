@@ -94,21 +94,31 @@ def _make_hermes_judge(model: str = HERMES_JUDGE_MODEL):
             return self
 
         def _run(self, prompt: str) -> str:
+            # Calls are serialized (lock) so they queue; a single cold/loaded
+            # `hermes chat` round-trip can take tens of seconds, so the per-call
+            # timeout is generous (override with HERMES_JUDGE_TIMEOUT). Retry
+            # absorbs both transient non-zero exits AND a timed-out child.
+            timeout_s = float(os.environ.get("HERMES_JUDGE_TIMEOUT", "240"))
             last_err = ""
-            for attempt in range(2):  # one transient retry
-                with _HERMES_CALL_LOCK:  # serialize the heavyweight CLI calls
-                    result = subprocess.run(
-                        [HERMES_BIN, "chat", "-Q", "-q", prompt],
-                        capture_output=True,
-                        text=True,
-                        timeout=120,
-                    )
+            for attempt in range(3):
+                try:
+                    with _HERMES_CALL_LOCK:  # serialize the heavyweight CLI calls
+                        result = subprocess.run(
+                            [HERMES_BIN, "chat", "-Q", "-q", prompt],
+                            capture_output=True,
+                            text=True,
+                            timeout=timeout_s,
+                        )
+                except subprocess.TimeoutExpired:
+                    last_err = f"timeout after {timeout_s}s (attempt {attempt + 1})"
+                    time.sleep(1.0)
+                    continue
                 if result.returncode == 0:
                     lines = [ln for ln in result.stdout.splitlines() if _HERMES_NOISE not in ln]
                     return "\n".join(lines).strip()
                 last_err = result.stderr[:200] or result.stdout[:200]
                 time.sleep(1.0)
-            raise RuntimeError(f"hermes chat failed after retry: {last_err}")
+            raise RuntimeError(f"hermes chat failed after retries: {last_err}")
 
         def generate(self, prompt: str, schema=None):
             if schema is not None:
