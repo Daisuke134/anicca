@@ -40,6 +40,90 @@ DIMENSIONS = ("accuracy", "helpfulness", "harmlessness", "coherence")
 #       the heuristic scoring logic still works.
 EVAL_MODE = os.environ.get("EVAL_MODE", "production").lower()
 
+# HermesJudge: the FREE Wave-1 default judge. Shells out to `hermes chat -Q -q`
+# which routes through the Hermes provider pinned to copilot/gpt-4o-mini by
+# #323 (uses the `gh auth` subscription token — no per-token billing). This is
+# the lifeline judge while the CFO is HUNGRY and every BYOK key is starved.
+# Set EVAL_LOOP_NO_HERMES_JUDGE=1 to disable it (e.g. to exercise the
+# all-backends-down fail-closed path even when Hermes is up).
+HERMES_BIN = os.environ.get("HERMES_BIN", "/Users/operator/.local/bin/hermes")
+HERMES_JUDGE_MODEL = "gpt-4o-mini"  # mini class — satisfies the cost rule (≤$0.001 budget; $0 via gh auth)
+# The one stderr-style notice `hermes chat -Q` still emits on stdout when no
+# auxiliary compression provider is configured; stripped from the judge reply.
+_HERMES_NOISE = "No auxiliary LLM provider configured"
+
+
+def _hermes_judge_available() -> bool:
+    """True if the free Hermes copilot judge should be used."""
+    if os.environ.get("EVAL_LOOP_NO_HERMES_JUDGE"):
+        return False
+    return os.path.exists(HERMES_BIN)
+
+
+def _make_hermes_judge(model: str = HERMES_JUDGE_MODEL):
+    """Build a DeepEval-compatible judge that shells out to `hermes chat -Q -q`.
+
+    Defined as a factory so `deepeval` is imported lazily (only when the engine
+    actually scores), keeping module import cheap for the sanity-check path.
+
+    Wraps the Hermes provider (pinned copilot/gpt-4o-mini per #323) so DeepEval's
+    GEval can use it as a judge with ZERO per-token cost (gh auth subscription).
+    GEval calls generate_with_schema for both its Steps and ReasonScore schemas;
+    we instruct the model to emit a JSON object with exactly the schema's keys
+    and reconstruct the pydantic instance.
+    """
+    import subprocess
+
+    from deepeval.models import DeepEvalBaseLLM
+
+    class HermesJudge(DeepEvalBaseLLM):
+        def __init__(self, model_id: str):
+            self._model = model_id
+            super().__init__(model=model_id)
+
+        def load_model(self):
+            return self
+
+        def _run(self, prompt: str) -> str:
+            result = subprocess.run(
+                [HERMES_BIN, "chat", "-Q", "-q", prompt],
+                capture_output=True,
+                text=True,
+                timeout=120,
+            )
+            if result.returncode != 0:
+                raise RuntimeError(
+                    f"hermes chat failed (rc={result.returncode}): {result.stderr[:200]}"
+                )
+            lines = [ln for ln in result.stdout.splitlines() if _HERMES_NOISE not in ln]
+            return "\n".join(lines).strip()
+
+        def generate(self, prompt: str, schema=None):
+            if schema is not None:
+                keys = ", ".join(f'"{k}"' for k in schema.model_fields)
+                prompt = (
+                    prompt
+                    + "\n\nRespond with ONLY a single JSON object containing exactly these keys: "
+                    + keys
+                    + ". No markdown, no code fence, no prose before or after the JSON."
+                )
+            out = self._run(prompt)
+            if schema is not None:
+                start = out.find("{")
+                end = out.rfind("}")
+                if start == -1 or end == -1:
+                    raise ValueError(f"HermesJudge: no JSON object in reply: {out[:160]!r}")
+                return schema(**json.loads(out[start : end + 1]))
+            return out
+
+        async def a_generate(self, prompt: str, schema=None):
+            return self.generate(prompt, schema=schema)
+
+        def get_model_name(self) -> str:
+            return f"hermes:copilot:{self._model}"
+
+    return HermesJudge(model)
+
 
 def _pick_backend() -> tuple[str, str | None]:
     """Return (backend_name, model_id). 'heuristic' if no key available.
@@ -51,9 +135,14 @@ def _pick_backend() -> tuple[str, str | None]:
     correct DeepEval model class in _geval_score (a bare model string only
     routes to OpenAI's GPTModel).
 
-    Priority follows CLAUDE.md "OpenClaw cron は mini 主軸": OpenAI mini first,
-    then DeepSeek, then Anthropic Haiku, then Gemini Flash, then Kimi/Moonshot.
+    Priority: hermes_copilot FIRST (free via gh auth subscription, always works
+    while #323 is up — the lifeline judge during CFO HUNGRY), then the BYOK keys
+    (in case of a future top-up), then the heuristic fallback last. BYOK order
+    follows CLAUDE.md "OpenClaw cron は mini 主軸": OpenAI mini, DeepSeek,
+    Anthropic Haiku, Gemini Flash, Kimi/Moonshot.
     """
+    if _hermes_judge_available():
+        return "hermes_copilot", HERMES_JUDGE_MODEL
     if os.environ.get("OPENAI_API_KEY"):
         return "openai", "gpt-4o-mini"
     if os.environ.get("DEEPSEEK_API_KEY"):
@@ -74,6 +163,8 @@ def _build_judge(backend: str, model: str):
     GPTModel, so each non-OpenAI provider needs its concrete DeepEval class
     wired with its own API key.
     """
+    if backend == "hermes_copilot":
+        return _make_hermes_judge(model)
     if backend == "openai":
         # GEval accepts a bare string for OpenAI and builds GPTModel itself.
         return model
@@ -224,13 +315,20 @@ def _score_one_dim(
 
 def _log_cost(result: dict[str, Any]) -> None:
     STATE_DIR.mkdir(parents=True, exist_ok=True)
+    backend = result["backend"]
+    # hermes_copilot rides the gh auth subscription → $0 per token; heuristic is
+    # offline → $0. BYOK backends would carry real cost (recorded once funded).
+    cost_usd = 0.0 if backend in ("hermes_copilot", "heuristic") else None
+    via = "gh_auth_subscription" if backend == "hermes_copilot" else None
     row = {
         "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "backend": result["backend"],
+        "backend": backend,
         "model": result.get("model"),
         "dim_count": len(result["scores"]),
         "total": result["total"],
         "pass": result["pass"],
+        "cost_usd": cost_usd,
+        "via": via,
         "elapsed_s": result.get("elapsed_s"),
         "rubric_task_class": result.get("task_class"),
     }
