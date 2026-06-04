@@ -1,0 +1,1 @@
+Write one X post for Anicca's eval-loop launch. Target audience: indie AI agent builders. The post must name a specific tool, give one concrete number, and end with a verifiable claim. No emojis. No "AI assistant" disclaimers. Max 280 characters.
