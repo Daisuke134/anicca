@@ -1,8 +1,10 @@
-# Earn Lancers (Wave 1) Implementation Plan
+# Earn Lancers — #325 Wave 1 dry-run scaffolding (Implementation Plan)
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Port the proven in-house Lancers earner (= the only existing skill that already submitted real ¥1万 proposals through `propose_confirm → propose_finish`) into the Hermes skills format at `anicca-oss/skills/anicca-earn-lancers/`, wire it to ONE daily Hermes cron, drive Camofox (`:9377`) with Google-login-canonical session for the apply flow, and prove a `--dry-run` end-to-end with 3 scored gigs WITHOUT submitting. A LIVE smoke (¥1k tier `--confirm`) is documented but NOT auto-executed.
+> **Codex round 2 (2026-06-04) verdict applied — version v2.** Scope of this plan = SCAFFOLDING ONLY. `#325` (= LAUNCH MATRIX row ④) is **NOT** closed by this plan. Real-submit + CFO bank evidence live in the follow-on Wave 2 plan (see Task 13 below). Per HARD RULE #-2: zero human-in-the-loop language ("Dais reviews / eyeball / tap 2FA / pull the trigger" all removed); the agent drives camofox + Google login env autonomously; the ONLY hard-block path is a real CAPTCHA element rendering or a financial broadcast attempt. Runtime state lives under `~/.hermes/state/`, never `/tmp`.
+
+**Goal (revised — scaffolding only):** Port the proven in-house Lancers earner (= the only existing skill that already submitted real ¥1万 proposals through `propose_confirm → propose_finish`) into the Hermes skills format at `anicca-oss/skills/anicca-earn-lancers/`, wire it to ONE daily Hermes cron, drive Camofox (`:9377`) with Google-login-canonical session for the apply flow autonomously, and prove a `--dry-run` end-to-end with 3 scored gigs WITHOUT submitting. **This plan does NOT close `#325`** — closing `#325` requires real submitted proposals + CFO bank deposit evidence, both produced by the Wave 2 follow-on plan (Task 13).
 
 **Architecture:** `anicca-earn-bounty` (already in `anicca-oss/skills/`) is the structural template — `SKILL.md` + `scripts/{run,scan,select,solve,submit}.sh` + `state/` + `data/` + `.gitignore`. We mirror that layout exactly. The actual apply logic ports verbatim from `~/.openclaw/skills/_archive/hybrid-v1/cfo-earner-lancers/scripts/run.sh` (= "Vue hidden-field set" pattern that proved out on JID `5550526/5550727/5550692` and got URLs `https://www.lancers.jp/work/propose_finish/<JID>`). Camofox is consumed strictly through its REST `:9377` per `~/.openclaw/skills/camofox-browser/SKILL.md` — no playwright, no Selenium. Login is Google OAuth via Camofox (HARD RULE: camofox > cloak > agent-browser); the Lancers session is the alias account `keiodaisuke+anicca@gmail.com` with `LANCERS_PASSWORD` (the one HARD-RULE-documented Google-login exception, already in `~/.openclaw/.env`). Hermes cron is invoked via `hermes cron create` with `--no-agent --script` (= cheap, no LLM per fire) per `hermes cron create --help` v0.12.0 — the scoring/templating LLM is invoked *inside* the script via `hermes chat -q` with `--model` pinned to a mini model (HARD RULE "OpenClaw cron は mini 主軸").
 
@@ -16,15 +18,16 @@
 - Hermes runtime, BYOK fuel, gateway / launchd, AGENTS.md symlink → done by `2026-06-04-hermes-genesis-boot.md`. This plan ASSUMES that body is alive.
 - eKYC / selfie upload / withdraw → out of scope here; Lancers releases reward to the bank tied to the Lancers account, then CFO surfaces it. eKYC is a one-time HARD-RULE-#18 physical exception covered by the future `anicca-earn-lancers/scripts/ekyc.sh` task (NOT in Wave 1).
 
-**Done condition for this plan (proves task #325 Wave 1):**
+**Done condition for this plan (Wave 1 scaffolding only — `#325` stays OPEN):**
 1. `hermes skills list 2>&1 | grep -E '^anicca-earn-lancers( |$)'` → exactly one row.
 2. `hermes cron list 2>&1 | grep anicca-earn-lancers` → exactly one row, schedule `0 10 * * *` (daily 10:00 JST = quiet hour, Lancers traffic low → less competition).
 3. `bash skills/anicca-earn-lancers/scripts/run.sh --dry-run` prints a single JSON envelope with `mode:"dry-run"`, `candidates: [<3 objects>]`, each object has `{jid, url, title_truncated, budget_jpy, effort_estimate, score, generated_message}`, and NO `applied` rows. Exit 0. NO HTTP call to `/work/propose_start/*/submit` is made (verified by grep against the camofox `evaluate` payload).
-4. `bash skills/anicca-earn-lancers/scripts/run.sh --dry-run` also writes `state/dry-run-latest.json` (overwritable) and does NOT touch `data/apply-log.jsonl`.
+4. `bash skills/anicca-earn-lancers/scripts/run.sh --dry-run` also writes `~/.hermes/state/earn-lancers-dry-run-latest.json` (overwritable, OUTSIDE the repo per X4) and does NOT touch `~/.hermes/state/earn-lancers-runs.jsonl`.
 5. The E2E test `tests/test_earn_lancers_dry_run.sh` passes (RED → GREEN → REFACTOR completed).
-6. A documented LIVE smoke procedure exists at `docs/superpowers/runbooks/2026-06-04-earn-lancers-smoke.md` with: (a) safety-bounded flags (`--max-apply 1`, `--max-budget-jpy 1000`, `--confirm`), (b) the exact `bash` invocation, (c) the kill-switch (`hermes cron pause anicca-earn-lancers`), (d) the verify command (`tail -1 data/apply-log.jsonl | jq '.finish_url'`). The runbook is committed but is NOT auto-executed by this plan or by cron.
-7. `specs/00-MASTER.md` § LAUNCH ACCEPTANCE MATRIX row ④「平均月収 x円（コスト約 y円）」 has a sub-bullet noting "Lancers channel: anicca-earn-lancers skill live, cron daily 10:00 JST, dry-run E2E green; LIVE smoke pending Dais human-of-record nod" (this is the ONE place a human OK is required, because LIVE submits a real proposal under the user's Lancers account).
+6. Wave 2 follow-on plan exists at `docs/superpowers/plans/2026-06-04-earn-lancers-wave2-realsubmit.md` (created in Task 13) describing the EXACT autonomous-agent steps to submit one ¥1k-cap proposal (`--max-apply 1 --max-budget-jpy 1000 --confirm`), watch CFO/bank, and only close `#325` when the cash lands. The Wave 2 plan is committed but NOT executed by this plan.
+7. `specs/00-MASTER.md` § LAUNCH ACCEPTANCE MATRIX row ④「平均月収 x円（コスト約 y円）」 has a sub-bullet noting "Lancers channel: anicca-earn-lancers Wave 1 scaffold live (cron daily 10:00 JST, dry-run only). Row ④ does NOT advance from this plan — advancement requires Wave 2 real-submit + CFO deposit evidence."
 8. All new files committed + pushed to `anicca-oss` (CLAUDE.md rule 0.4).
+9. `#325` is NOT marked completed. It remains OPEN with a comment "Wave 1 scaffolding done; awaiting Wave 2 real-submit + CFO bank evidence".
 
 ---
 
@@ -34,28 +37,31 @@
 anicca-oss/                                              (this repo, committed)
   skills/anicca-earn-lancers/
     SKILL.md                       ← Hermes frontmatter + how-it-runs
-    .gitignore                     ← ignore state/*, data/*.jsonl
-    scripts/run.sh                 ← orchestrator: parses flags, calls scan/select/apply
+    .gitignore                     ← keep only state/.keep + data/.keep in repo
+    state/.keep                    ← repo placeholder ONLY; runtime state lives under ~/.hermes/state/
+    data/.keep                     ← repo placeholder ONLY; runtime logs live under ~/.hermes/state/
+    scripts/run.sh                 ← orchestrator: parses flags, calls scan/select/apply, writes ~/.hermes/state/
     scripts/scan.sh                ← Camofox search → JID list (read-only)
     scripts/select.sh              ← LLM-score top 3 by (budget vs effort) via `hermes chat -q --model`
     scripts/apply.sh               ← Camofox apply (--dry-run = stop before evaluate(); --confirm = submit)
-    scripts/login-check.sh         ← Camofox `/sessions/anicca/cookies` probe; if no Lancers cookie → Google-OAuth flow
+    scripts/login-check.sh         ← Camofox `/sessions/anicca/cookies` probe; if no Lancers cookie → autonomous Google-OAuth via GOOGLE_LOGIN_EMAIL/PASSWORD (+ optional Authy TOTP env)
     scripts/_lib.sh                ← shared helpers (camofox curl wrappers, slack_post, redact)
     tests/test_earn_lancers_dry_run.sh   ← E2E: dry-run produces a 3-candidate JSON envelope
     tests/fixtures/sample-snapshot.json  ← canned camofox snapshot for offline-of-Lancers unit tests
     README.md                      ← one-paragraph human description
   docs/superpowers/plans/
-    2026-06-04-earn-lancers.md     ← THIS plan
-  docs/superpowers/runbooks/
-    2026-06-04-earn-lancers-smoke.md ← LIVE smoke runbook (humans read before pulling the trigger)
-  specs/00-MASTER.md               ← add sub-bullet to § LAUNCH MATRIX row ④
+    2026-06-04-earn-lancers.md     ← THIS plan (Wave 1 scaffolding)
+    2026-06-04-earn-lancers-wave2-realsubmit.md ← Wave 2 follow-on (real submit + CFO verify)
+  specs/00-MASTER.md               ← add sub-bullet to § LAUNCH MATRIX row ④ (scaffold-only note)
 
-~/.hermes/                                               (runtime, NOT committed)
-  skills/anicca-earn-lancers/      ← SYMLINK → anicca-oss/skills/anicca-earn-lancers/
-  scripts/anicca-earn-lancers.sh   ← SYMLINK → anicca-oss/skills/anicca-earn-lancers/scripts/run.sh
-                                     (Hermes cron requires the script to live under ~/.hermes/scripts/)
-  state/anicca-earn-lancers/       ← created on first run (jsonl logs)
-  cron/anicca-earn-lancers.*       ← managed by `hermes cron create`
+~/.hermes/                                               (runtime, NOT committed — X4)
+  skills/anicca-earn-lancers/                  ← SYMLINK → anicca-oss/skills/anicca-earn-lancers/
+  scripts/anicca-earn-lancers.sh               ← SYMLINK → anicca-oss/skills/anicca-earn-lancers/scripts/run.sh
+                                                 (Hermes cron requires the script to live under ~/.hermes/scripts/)
+  state/earn-lancers-dry-run-latest.json       ← last dry-run envelope (overwritable) — canonical runtime path
+  state/earn-lancers-runs.jsonl                ← append-only LIVE submit log (1 row per apply attempt, written by apply.sh)
+  state/earn-lancers-cron-fire.log             ← transient cron-fire stdout/stderr (Task 10 Step 4) — never `/tmp`
+  cron/anicca-earn-lancers.*                   ← managed by `hermes cron create`
 
 ~/.openclaw/.env                                         (read-only, NEVER echoed)
   GOOGLE_LOGIN_EMAIL=…             ← canonical Google identity (HARD RULE)
@@ -68,6 +74,49 @@ anicca-oss/                                              (this repo, committed)
 Why symlinks for the skill + run.sh: identical to the genesis-boot pattern. The canonical source lives in the repo (where review/PR lands); Hermes reads it instantly via the symlink — no copy step to forget.
 
 Why `_lib.sh`: the camofox curl wrappers (`cf_open`, `cf_navigate`, `cf_snapshot`, `cf_evaluate`) repeat 4× across scan/select/apply. Extracting them keeps each step file ≤200 lines (CLAUDE.md coding-style.md: "200-400 lines typical, 800 max").
+
+---
+
+### Task 0: Preflight (cross-plan X5 — camofox + hermes + env presence)
+
+**Files:** none new. Read-only checks.
+
+- [ ] **Step 1: Camofox health (X5)**
+
+Run:
+```bash
+curl -sS --max-time 5 http://localhost:9377/health \
+  | /opt/homebrew/bin/jq -e '.ok == true and .browserConnected == true' >/dev/null \
+  && echo CAMOFOX_OK
+```
+Expected: `CAMOFOX_OK`. If non-zero → `bash ~/.openclaw/skills/camofox-browser/scripts/start.sh` then re-check. Camofox is non-negotiable (camofox > cloak > agent-browser per HARD RULE).
+
+- [ ] **Step 2: Hermes binary presence (X1 + X5)**
+
+Run:
+```bash
+command -v hermes && hermes --version
+```
+Expected: a path printed and a version line ≥ `0.12.0`. Do NOT run `hermes update` (X1 — pin v0.12.0).
+
+- [ ] **Step 3: Env presence check — GOOGLE_LOGIN_EMAIL / GOOGLE_LOGIN_PASSWORD / LANCERS_PASSWORD (X5)**
+
+Run:
+```bash
+for k in GOOGLE_LOGIN_EMAIL GOOGLE_LOGIN_PASSWORD LANCERS_PASSWORD; do
+  if grep -q "^$k=" /Users/anicca/.openclaw/.env 2>/dev/null; then echo "FOUND $k"; else echo "MISSING $k"; fi
+done
+```
+Expected: 3× `FOUND …`. Any `MISSING …` → STOP. Do NOT proceed: the autonomous flow needs all three (HARD RULE: Google login canonical, Lancers documented exception).
+
+- [ ] **Step 4: Authy / TOTP env (optional — only if a Google 2FA challenge actually renders)**
+
+Run:
+```bash
+grep -q "^GOOGLE_TOTP_SECRET=" /Users/anicca/.openclaw/.env 2>/dev/null \
+  && echo "TOTP_AVAILABLE" || echo "TOTP_ABSENT (gog-gmail auto-read fallback will be used)"
+```
+Expected: either line is acceptable. If absent, `login-check.sh` auto-reads the 2FA code from `keiodaisuke@gmail.com` via the existing gog-gmail MCP (no human in loop). If a real CAPTCHA element renders (= `iframe[src*="recaptcha"]` or `iframe[src*="hcaptcha"]` in the snapshot) — and ONLY then — record the exact rendered HTML and stop; that is the only HARD RULE #-2 genuine hard-block.
 
 ---
 
@@ -154,15 +203,17 @@ Create `/Users/anicca/anicca-oss/skills/anicca-earn-lancers/tests/test_earn_lanc
 ```bash
 #!/usr/bin/env bash
 # E2E: `run.sh --dry-run --offline-fixture <path>` MUST produce a JSON envelope on stdout
-# with mode=dry-run and exactly 3 scored candidates, and MUST NOT touch data/apply-log.jsonl.
+# with mode=dry-run and exactly 3 scored candidates, and MUST NOT touch the runs jsonl.
 
 set -euo pipefail
 SKILL_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 FIXTURE="$SKILL_DIR/tests/fixtures/sample-snapshot.json"
-LOG="$SKILL_DIR/data/apply-log.jsonl"
+STATE_DIR="${HERMES_STATE_DIR:-$HOME/.hermes/state}"
+LOG="$STATE_DIR/earn-lancers-runs.jsonl"
+DRY_LATEST="$STATE_DIR/earn-lancers-dry-run-latest.json"
 
 # Capture log size before
-mkdir -p "$SKILL_DIR/data"
+mkdir -p "$STATE_DIR"
 LOG_BEFORE=$(wc -c < "$LOG" 2>/dev/null || echo 0)
 
 OUT=$("$SKILL_DIR/scripts/run.sh" --dry-run --offline-fixture "$FIXTURE")
@@ -187,15 +238,15 @@ done
 SORTED=$(echo "$OUT" | /opt/homebrew/bin/jq '[.candidates[].score] == ([.candidates[].score] | sort | reverse)')
 [ "$SORTED" = "true" ] || { echo "FAIL: candidates not sorted by score desc"; exit 1; }
 
-# Assertion 6: apply-log untouched
+# Assertion 6: runs log untouched (~/.hermes/state/earn-lancers-runs.jsonl)
 LOG_AFTER=$(wc -c < "$LOG" 2>/dev/null || echo 0)
-[ "$LOG_BEFORE" = "$LOG_AFTER" ] || { echo "FAIL: apply-log.jsonl mutated (before=$LOG_BEFORE after=$LOG_AFTER)"; exit 1; }
+[ "$LOG_BEFORE" = "$LOG_AFTER" ] || { echo "FAIL: $LOG mutated (before=$LOG_BEFORE after=$LOG_AFTER)"; exit 1; }
 
-# Assertion 7: state/dry-run-latest.json written
-test -s "$SKILL_DIR/state/dry-run-latest.json" || { echo "FAIL: state/dry-run-latest.json not written"; exit 1; }
+# Assertion 7: ~/.hermes/state/earn-lancers-dry-run-latest.json written
+test -s "$DRY_LATEST" || { echo "FAIL: $DRY_LATEST not written"; exit 1; }
 
 # Assertion 8: NO call would hit the submit URL (grep the dry-run-latest for forbidden URL substring)
-if /opt/homebrew/bin/jq -r '.candidates[] | .url' "$SKILL_DIR/state/dry-run-latest.json" | grep -q 'propose_finish'; then
+if /opt/homebrew/bin/jq -r '.candidates[] | .url' "$DRY_LATEST" | grep -q 'propose_finish'; then
   echo "FAIL: candidate URLs leaked propose_finish path (= submit-side URL)"; exit 1
 fi
 
@@ -603,11 +654,12 @@ Create `/Users/anicca/anicca-oss/skills/anicca-earn-lancers/scripts/apply.sh`:
 # stdout: JSON array of {jid, url, generated_message, status} per candidate.
 #
 # Modes:
-#   --dry-run         → DO NOT call cf_evaluate, DO NOT touch apply-log.jsonl,
+#   --dry-run         → DO NOT call cf_evaluate, DO NOT touch the runs log,
 #                       generated_message stops at the proposal text, status="dry-run".
 #   --confirm         → execute the proven 2-stage submit
 #                       (propose_start → propose_confirm → propose_finish).
-#                       Append one JSONL row per candidate to data/apply-log.jsonl.
+#                       Append one JSONL row per candidate to
+#                       ~/.hermes/state/earn-lancers-runs.jsonl (HERMES_STATE_DIR overridable).
 #   --max-apply N     → hard cap on submits per run (default 3 in run.sh; here we honor whatever caller passes).
 #   --max-budget-jpy B → in --confirm mode, skip candidates with budget > B (safety bound).
 
@@ -631,8 +683,9 @@ done
 
 INPUT=$(cat)
 SKILL_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-APPLY_LOG="$SKILL_DIR/data/apply-log.jsonl"
-mkdir -p "$SKILL_DIR/data"
+STATE_DIR="${HERMES_STATE_DIR:-$HOME/.hermes/state}"
+APPLY_LOG="$STATE_DIR/earn-lancers-runs.jsonl"
+mkdir -p "$STATE_DIR"
 
 generate_message() {
   local jid="$1" title="$2" budget="$3"
@@ -795,7 +848,7 @@ Run:
 | /Users/anicca/anicca-oss/skills/anicca-earn-lancers/scripts/apply.sh --dry-run \
 | /opt/homebrew/bin/jq '[.[] | .status]'
 ```
-Expected: `["dry-run","dry-run","dry-run"]`. And `wc -l /Users/anicca/anicca-oss/skills/anicca-earn-lancers/data/apply-log.jsonl 2>/dev/null` must show 0 (= no log write in dry-run).
+Expected: `["dry-run","dry-run","dry-run"]`. And `wc -l ~/.hermes/state/earn-lancers-runs.jsonl 2>/dev/null` must show 0 (= no log write in dry-run; the runs log lives under `~/.hermes/state/`, not in the repo per X4).
 
 ---
 
@@ -809,10 +862,23 @@ Expected: `["dry-run","dry-run","dry-run"]`. And `wc -l /Users/anicca/anicca-oss
 Create `/Users/anicca/anicca-oss/skills/anicca-earn-lancers/scripts/login-check.sh`:
 ```bash
 #!/usr/bin/env bash
-# login-check.sh — verify the camofox session has a Lancers cookie; if not, run
-# Google-OAuth login via Camofox using GOOGLE_LOGIN_EMAIL/PASSWORD.
-# Exit 0: session usable. Exit non-0: needs human intervention (HARD-RULE
-# physical exception, e.g. Google 2FA tap on phone — same gate as Camofox SKILL.md).
+# login-check.sh — verify the camofox session has a Lancers cookie; if not, the
+# agent runs the FULL Google-OAuth flow autonomously via Camofox using
+# GOOGLE_LOGIN_EMAIL/PASSWORD (HARD RULE #-2: Anicca does everything).
+#
+# 2FA handling — fully autonomous:
+#   (a) If a TOTP challenge renders, use GOOGLE_TOTP_SECRET (Authy/OTP env) to
+#       compute the 6-digit code with `oathtool --totp -b "$GOOGLE_TOTP_SECRET"`
+#       and type it; OR
+#   (b) read the latest 2-step verification email at keiodaisuke@gmail.com
+#       via the gog-gmail MCP and type the code.
+# No "Dais reviews", no "tap on phone", no human eyeball — the agent drives.
+#
+# HARD-BLOCK (only): a real CAPTCHA element renders in the snapshot
+# (iframe with src containing "recaptcha" / "hcaptcha" / "turnstile") OR the
+# page asks for a financial broadcast. Record the verbatim snapshot subset
+# at ~/.hermes/state/earn-lancers-login-hardblock.json and exit non-0.
+# The earn task stays OPEN (do NOT close it).
 
 set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -858,7 +924,7 @@ fi
 
 # 3. Google OAuth steps (verified pattern from Camofox SKILL.md):
 #    type email → Next → "Try another way" → "Enter your password" → type pw
-#    → 2-step verification (TAP on phone, one-time physical exception)
+#    → 2-step verification handled autonomously by 3b/3c below (TOTP env OR gog-gmail auto-read).
 SNAP=$(cf_snapshot "$TAB")
 EMAIL_REF=$(printf '%s' "$SNAP" | "$PYTHON" -c '
 import json,sys,re
@@ -902,6 +968,76 @@ if [ -n "$PW_REF" ] && [ -n "${GOOGLE_LOGIN_PASSWORD:-}" ]; then
   sleep 10
 fi
 
+# 3b. CAPTCHA / hard-block detector (HARD RULE #-2 genuine hard-block ONLY)
+SNAP=$(cf_snapshot "$TAB")
+if printf '%s' "$SNAP" | grep -Eq 'iframe[^>]*src=[^>]*(recaptcha|hcaptcha|turnstile)'; then
+  HARDBLOCK_PATH="$HOME/.hermes/state/earn-lancers-login-hardblock.json"
+  mkdir -p "$(dirname "$HARDBLOCK_PATH")"
+  printf '%s' "$SNAP" > "$HARDBLOCK_PATH"
+  err "real CAPTCHA element rendered — verbatim snapshot saved to $HARDBLOCK_PATH (#325 stays OPEN)"
+  cf_close "$TAB"
+  exit 9
+fi
+
+# 3c. Autonomous 2FA handling (no human in loop)
+#  - TOTP path (if GOOGLE_TOTP_SECRET present)
+if printf '%s' "$SNAP" | grep -Eq '2-step|two-step|verification code|認証コード'; then
+  if [ -n "${GOOGLE_TOTP_SECRET:-}" ] && command -v oathtool >/dev/null 2>&1; then
+    CODE=$(oathtool --totp -b "$GOOGLE_TOTP_SECRET" 2>/dev/null || true)
+    if [ -n "$CODE" ]; then
+      TOTP_REF=$(printf '%s' "$SNAP" | "$PYTHON" -c '
+import json,sys,re
+d=json.load(sys.stdin); s=d.get("snapshot","")
+m=re.search(r"ref=(\S+).*(?:totpPin|code|verification|認証コード)", s, re.I)
+print(m.group(1) if m else "")
+')
+      if [ -n "$TOTP_REF" ]; then
+        curl -sS -X POST "$CAMOFOX/tabs/$TAB/type" \
+          -H 'Content-Type: application/json' \
+          -d "$("$JQ" -n --arg r "$TOTP_REF" --arg t "$CODE" \
+                          --arg uid "$USER_ID" --arg sk "$SESSION_KEY" \
+                          '{ref:$r, text:$t, userId:$uid, sessionKey:$sk}')" >/dev/null
+        sleep 1
+        curl -sS -X POST "$CAMOFOX/tabs/$TAB/press" \
+          -H 'Content-Type: application/json' \
+          -d "$("$JQ" -n --arg k "Enter" --arg uid "$USER_ID" --arg sk "$SESSION_KEY" \
+                          '{key:$k, userId:$uid, sessionKey:$sk}')" >/dev/null
+        sleep 8
+      fi
+    fi
+  fi
+  #  - gog-gmail auto-read fallback path (no TOTP env)
+  #  Polls keiodaisuke@gmail.com for "Google" subject in the last 60s via
+  #  `hermes chat -q --skill gog-gmail "fetch latest Google 2-step code"`.
+  #  The mini model returns the 6-digit code, which we then type.
+  if [ -z "${GOOGLE_TOTP_SECRET:-}" ]; then
+    GCODE=$(hermes chat -q --model "${LANCERS_SCORE_MODEL:-gpt-5.2-mini}" \
+      "Read the most recent email in keiodaisuke@gmail.com (last 90s) with subject containing 'Google' or '確認コード' or '2-step verification'. Reply with ONLY the 6-digit verification code, no prose. If none found, reply NONE." 2>/dev/null | tr -d ' \n\r' || true)
+    if printf '%s' "$GCODE" | grep -Eq '^[0-9]{6}$'; then
+      SNAP2=$(cf_snapshot "$TAB")
+      G_REF=$(printf '%s' "$SNAP2" | "$PYTHON" -c '
+import json,sys,re
+d=json.load(sys.stdin); s=d.get("snapshot","")
+m=re.search(r"ref=(\S+).*(?:code|verification|認証コード)", s, re.I)
+print(m.group(1) if m else "")
+')
+      if [ -n "$G_REF" ]; then
+        curl -sS -X POST "$CAMOFOX/tabs/$TAB/type" \
+          -H 'Content-Type: application/json' \
+          -d "$("$JQ" -n --arg r "$G_REF" --arg t "$GCODE" \
+                          --arg uid "$USER_ID" --arg sk "$SESSION_KEY" \
+                          '{ref:$r, text:$t, userId:$uid, sessionKey:$sk}')" >/dev/null
+        sleep 1
+        curl -sS -X POST "$CAMOFOX/tabs/$TAB/press" \
+          -H 'Content-Type: application/json' \
+          -d "$("$JQ" -n --arg k "Enter" --arg uid "$USER_ID" --arg sk "$SESSION_KEY" \
+                          '{key:$k, userId:$uid, sessionKey:$sk}')" >/dev/null
+        sleep 8
+      fi
+    fi
+  fi
+fi
+
 # 4. Re-probe cookies
 COOKIES_JSON=$(curl -sS "$CAMOFOX/sessions/$USER_ID/cookies?sessionKey=$SESSION_KEY" 2>/dev/null || echo '[]')
 HAS=$(printf '%s' "$COOKIES_JSON" | "$JQ" '[.[] | select(.domain | test("lancers.jp"))] | length')
@@ -910,7 +1046,10 @@ if [ "${HAS:-0}" -gt 0 ]; then
   ok "lancers cookie obtained (n=$HAS)"
   exit 0
 fi
-err "login flow ran but no lancers cookie — likely 2FA tap pending (HARD-RULE-#-2 physical exception)"
+err "login flow ran but no lancers cookie — autonomous 2FA path did not converge (TOTP missing + gog-gmail empty), record state and retry next beat"
+HARDBLOCK_PATH="$HOME/.hermes/state/earn-lancers-login-hardblock.json"
+mkdir -p "$(dirname "$HARDBLOCK_PATH")"
+printf '%s' "$SNAP" > "$HARDBLOCK_PATH"
 exit 6
 ```
 
@@ -927,7 +1066,8 @@ chmod +x /Users/anicca/anicca-oss/skills/anicca-earn-lancers/scripts/login-check
 | 3    | Camofox not running |
 | 4    | Google-login button missing on Lancers login page (page redesign — needs script update) |
 | 5    | Google email field ref not found (OAuth UI redesign) |
-| 6    | OAuth ran but no cookie produced — almost always Google 2FA "Tap Yes on phone" pending. **This is the ONE allowed physical exception** (HARD RULE Camofox SKILL.md line 84-85). After the tap, re-run `login-check.sh` and the cookie persists in `~/.camofox/profiles/anicca/default/`. |
+| 6    | Autonomous 2FA path (TOTP env + gog-gmail auto-read) did not converge this beat — verbatim Camofox snapshot saved to `~/.hermes/state/earn-lancers-login-hardblock.json`. Earn task stays OPEN. Next beat retries automatically (cron). |
+| 9    | Real CAPTCHA / hCaptcha / Turnstile iframe rendered in snapshot — verbatim subset saved to `~/.hermes/state/earn-lancers-login-hardblock.json` (HARD RULE #-2 genuine hard-block). Earn task stays OPEN. |
 
 (No live execution in this step — that happens in Task 9. This step writes the file and prints the table; the table is the contract that Task 9 checks against.)
 
@@ -961,6 +1101,7 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 . "$SCRIPT_DIR/_lib.sh"
 SKILL_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+STATE_DIR="${HERMES_STATE_DIR:-$HOME/.hermes/state}"
 
 MODE="dry-run"
 FIXTURE=""
@@ -1014,8 +1155,8 @@ ENV=$("$JQ" -n --arg ts "$TS" --arg mode "$MODE" --argjson cands "$APPLY_OUT" \
               '{ts:$ts, mode:$mode, candidates:$cands}')
 
 if [ "$MODE" = "dry-run" ]; then
-  mkdir -p "$SKILL_DIR/state"
-  printf '%s' "$ENV" > "$SKILL_DIR/state/dry-run-latest.json"
+  mkdir -p "$STATE_DIR"
+  printf '%s' "$ENV" > "$STATE_DIR/earn-lancers-dry-run-latest.json"
 fi
 
 echo "$ENV"
@@ -1071,15 +1212,18 @@ Hermes skill, Wave 1 of the earn channel. Daily cron fires `scripts/run.sh` at 1
 | `scripts/_lib.sh`        | Shared Camofox REST wrappers + redact + Slack |
 | `tests/test_earn_lancers_dry_run.sh` | E2E TDD gate |
 | `tests/fixtures/sample-snapshot.json` | offline Camofox snapshot |
-| `state/dry-run-latest.json` | last dry-run envelope (overwritable) |
-| `data/apply-log.jsonl`   | append-only LIVE submit log |
+| `state/.keep`            | repo placeholder; runtime state lives at `~/.hermes/state/` (X4) |
+| `data/.keep`             | repo placeholder; runtime logs live at `~/.hermes/state/` (X4) |
+| `~/.hermes/state/earn-lancers-dry-run-latest.json` | last dry-run envelope (overwritable) — runtime |
+| `~/.hermes/state/earn-lancers-runs.jsonl` | append-only LIVE submit log — runtime |
+| `~/.hermes/state/earn-lancers-cron-fire.log` | transient cron-fire stdout/stderr — runtime |
 
 ## Invocation
 ```bash
 # Default (safe)
 bash scripts/run.sh --dry-run
 
-# LIVE (read docs/superpowers/runbooks/2026-06-04-earn-lancers-smoke.md first)
+# LIVE (Wave 2 only — see docs/superpowers/plans/2026-06-04-earn-lancers-wave2-realsubmit.md)
 bash scripts/run.sh --confirm --max-apply 1 --max-budget-jpy 1000
 ```
 
@@ -1095,7 +1239,8 @@ The symlink `~/.hermes/scripts/anicca-earn-lancers.sh → run.sh` carries the de
 ## Verify (HARD RULE #14 JOB'S NOT FINISHED)
 - E2E test green: `tests/test_earn_lancers_dry_run.sh`
 - Hermes cron registered: `hermes cron list | grep anicca-earn-lancers`
-- After a LIVE smoke, `tail -1 data/apply-log.jsonl | jq '.status == "applied"'` must be `true` and the Lancers dashboard URL must show the proposal.
+- Wave 1 done = scaffold only. `#325` (LAUNCH MATRIX row ④) is NOT closed by this skill alone.
+- After a Wave 2 LIVE submit, `tail -1 ~/.hermes/state/earn-lancers-runs.jsonl | jq '.status == "applied"'` must be `true`, the Lancers dashboard URL must show the proposal, AND `cfo-bank` must surface the incoming deposit before `#325` can move.
 ```
 
 - [ ] **Step 4: Write `README.md`**
@@ -1104,15 +1249,15 @@ Create `/Users/anicca/anicca-oss/skills/anicca-earn-lancers/README.md` with EXAC
 ```markdown
 # anicca-earn-lancers
 
-Hermes skill that scans Lancers (lancers.jp) for AI / 動画 / Python gigs daily, ranks the top 3 by budget vs effort with a mini-model scorer, and (in `--confirm` mode) submits a proposal through the proven 2-stage Vue-hidden-field path verified in the in-house archive (JIDs 5550526 / 5550727 / 5550692 received `propose_finish` confirmation URLs). Default mode is `--dry-run` — the daily cron writes only `state/dry-run-latest.json` and never submits. LIVE submission is gated by an explicit `--confirm` flag plus `--max-apply` and `--max-budget-jpy` safety caps, and is documented in `docs/superpowers/runbooks/2026-06-04-earn-lancers-smoke.md`. Wave 1 of the earn channel; Coconala + CrowdWorks join Wave 2.
+Hermes skill (Wave 1 = scaffolding only) that scans Lancers (lancers.jp) for AI / 動画 / Python gigs daily, ranks the top 3 by budget vs effort with a mini-model scorer, and (in `--confirm` mode) submits a proposal through the proven 2-stage Vue-hidden-field path verified in the in-house archive (JIDs 5550526 / 5550727 / 5550692 received `propose_finish` confirmation URLs). Default mode is `--dry-run` — the daily cron writes only `~/.hermes/state/earn-lancers-dry-run-latest.json` and never submits. LIVE submission is gated by an explicit `--confirm` flag plus `--max-apply` and `--max-budget-jpy` safety caps and lives in the Wave 2 follow-on plan (`docs/superpowers/plans/2026-06-04-earn-lancers-wave2-realsubmit.md`). Closing `#325` (LAUNCH MATRIX row ④) requires Wave 2 real-submit + CFO bank deposit evidence — Wave 1 does NOT close `#325`.
 ```
 
 - [ ] **Step 5: Write `.gitignore`**
 
-Create `/Users/anicca/anicca-oss/skills/anicca-earn-lancers/.gitignore` with EXACTLY:
+Create `/Users/anicca/anicca-oss/skills/anicca-earn-lancers/.gitignore` with EXACTLY (X4 — only `.keep` files belong in the repo; all runtime state lives under `~/.hermes/state/`):
 ```
 state/*
-data/*.jsonl
+data/*
 !state/.keep
 !data/.keep
 ```
@@ -1203,7 +1348,7 @@ hermes cron create "0 10 * * *" \
 ```
 Expected: prints `Created anicca-earn-lancers (0 10 * * *)` (or local equivalent), exit 0.
 
-Note: the script defaults to `--dry-run` (= no submit). LIVE switch is NOT done via cron in Wave 1 — it requires editing the cron's `--script` line to pass `--confirm` plus safety caps. That edit is explicitly documented in the smoke runbook (Task 11) and is NOT part of this plan.
+Note: the script defaults to `--dry-run` (= no submit). LIVE switch is NOT done via cron in Wave 1 — it requires the Wave 2 plan (`docs/superpowers/plans/2026-06-04-earn-lancers-wave2-realsubmit.md`) which runs ONE autonomous capped real-submit manually via the agent (not via cron). Task 11's ops note documents Wave 1 retry semantics only.
 
 - [ ] **Step 3: Confirm registration**
 
@@ -1213,32 +1358,40 @@ hermes cron list 2>&1 | grep anicca-earn-lancers
 ```
 Expected: one row containing `anicca-earn-lancers` and the schedule. (This is DONE condition #2.)
 
-- [ ] **Step 4: Force-fire the cron once and confirm the contract**
+- [ ] **Step 4: Force-fire the cron once and confirm the contract (logs to ~/.hermes/state, NEVER /tmp)**
 
 Run:
 ```bash
+mkdir -p ~/.hermes/state
 hermes cron run anicca-earn-lancers 2>&1 | tail -20 \
-  | tee /tmp/earn-lancers-cron-fire.log
-test -s /Users/anicca/anicca-oss/skills/anicca-earn-lancers/state/dry-run-latest.json
-/opt/homebrew/bin/jq '.mode' /Users/anicca/anicca-oss/skills/anicca-earn-lancers/state/dry-run-latest.json
+  | tee ~/.hermes/state/earn-lancers-cron-fire.log
+test -s ~/.hermes/state/earn-lancers-dry-run-latest.json
+/opt/homebrew/bin/jq '.mode' ~/.hermes/state/earn-lancers-dry-run-latest.json
 ```
 Expected:
-- the log contains a JSON envelope with `"mode":"dry-run"`
-- `state/dry-run-latest.json` exists
+- `~/.hermes/state/earn-lancers-cron-fire.log` contains a JSON envelope with `"mode":"dry-run"`
+- `~/.hermes/state/earn-lancers-dry-run-latest.json` exists
 - `jq '.mode'` prints `"dry-run"`
 
 If `hermes cron run` is not implemented, the equivalent direct call is:
 ```bash
 bash /Users/anicca/.hermes/scripts/anicca-earn-lancers.sh --dry-run
 ```
-This will fall through to live Camofox (no `--offline-fixture`), so `login-check.sh` must already have a cookie (= prior Task 7 + manual Google 2FA tap). If Camofox prompts for 2FA tap and the tap is pending, this step's expected output is exit 7 (`login-check failed — abort`) and that is a recognized state — proceed to Task 11 to document the kickoff and complete the 2FA tap manually before the next 10:00 fire.
+This falls through to live Camofox (no `--offline-fixture`). `login-check.sh` runs autonomously per Task 7 (Google login env + TOTP / gog-gmail auto-read — NO human tap). Recognized non-success exits:
+- exit 6 → autonomous 2FA path did not converge this beat; verbatim Camofox snapshot saved to `~/.hermes/state/earn-lancers-login-hardblock.json`. The next cron fire retries automatically. Earn task stays OPEN.
+- exit 9 → real CAPTCHA iframe rendered (HARD RULE #-2 genuine hard-block); verbatim snapshot saved to the same hardblock file. Earn task stays OPEN.
+- exit 7 → `login-check` aborted; inspect `~/.hermes/state/earn-lancers-login-hardblock.json` to diagnose and patch on the next beat.
+
+In all cases above the cron is allowed to keep retrying — no human eyeballing, no "ping Dais" step, no `/tmp` writes.
 
 ---
 
-### Task 11: Write the LIVE smoke runbook
+### Task 11: Write the Wave 1 autonomous-operation note (NOT a "human reads before pulling trigger" runbook)
+
+> Codex round 2: the previous "smoke runbook with human eyeballing" is removed. Wave 1 is autonomous + dry-run-only. The autonomous real-submit lives in Wave 2 (Task 13). This task only documents the kill-switch + retry semantics for the daily dry-run cron.
 
 **Files:**
-- Create: `docs/superpowers/runbooks/2026-06-04-earn-lancers-smoke.md`
+- Create: `docs/superpowers/runbooks/2026-06-04-earn-lancers-ops.md`
 
 - [ ] **Step 1: Create the directory**
 
@@ -1247,41 +1400,38 @@ Run:
 mkdir -p /Users/anicca/anicca-oss/docs/superpowers/runbooks
 ```
 
-- [ ] **Step 2: Write the runbook with EXACTLY this content**
+- [ ] **Step 2: Write the ops note with EXACTLY this content**
 
-Create `/Users/anicca/anicca-oss/docs/superpowers/runbooks/2026-06-04-earn-lancers-smoke.md`:
+Create `/Users/anicca/anicca-oss/docs/superpowers/runbooks/2026-06-04-earn-lancers-ops.md`:
 ```markdown
-# anicca-earn-lancers — LIVE smoke runbook
+# anicca-earn-lancers Wave 1 — autonomous ops note
 
-This is NOT executed by cron and NOT executed by `2026-06-04-earn-lancers.md`. A human (Dais or the implementer-on-duty) reads this before the first LIVE submit. Lancers proposals create a public reputation footprint on `keiodaisuke+anicca@gmail.com`'s Lancers account; the cap below limits the blast radius to ¥1,000 / 1 gig.
+Wave 1 is dry-run-only and runs autonomously. No human reads, eyeballs, or taps anything. This note exists ONLY to document the kill-switch path and the exit-code semantics that the autonomous loop honors. Real-submit / `--confirm` lives in the Wave 2 plan: `docs/superpowers/plans/2026-06-04-earn-lancers-wave2-realsubmit.md`.
 
-## Pre-flight (every time)
+## Daily beat
 
-1. `curl -sS http://localhost:9377/health | jq -e '.ok and .browserConnected'` → exit 0.
-2. `bash skills/anicca-earn-lancers/scripts/login-check.sh` → exit 0.
-   - If exit 6 (= Google 2FA tap pending): tap "Yes" on the Google sign-in prompt on Dais's phone, then re-run. This is the **one HARD-RULE-#-2 physical exception** (Camofox SKILL.md L82-88) and is unavoidable until the cookie is minted.
-3. `bash skills/anicca-earn-lancers/scripts/run.sh --dry-run` → check the JSON envelope; eyeball the 3 candidate `title_truncated` and `generated_message` fields. If any candidate is clearly NSFW / political / out-of-niche → abort, fix the keyword rotation or the scoring prompt, and re-run dry-run.
+`hermes cron` fires `~/.hermes/scripts/anicca-earn-lancers.sh` at `0 10 * * *` JST. The script runs `login-check.sh → scan.sh → select.sh → apply.sh --dry-run` and writes:
+- `~/.hermes/state/earn-lancers-dry-run-latest.json` — latest envelope.
+- `~/.hermes/state/earn-lancers-cron-fire.log` — last fire's stdout/stderr.
 
-## LIVE smoke (one-shot, capped)
+## Login = autonomous (no human, no 2FA tap-on-phone, no "Dais reviews")
 
-```bash
-bash /Users/anicca/anicca-oss/skills/anicca-earn-lancers/scripts/run.sh \
-  --confirm \
-  --max-apply 1 \
-  --max-budget-jpy 1000
-```
+`login-check.sh` does everything itself:
+1. Probe Camofox `/sessions/anicca/cookies` for a `lancers.jp` cookie. If present → done.
+2. Otherwise open `https://www.lancers.jp/user/login` and click "Googleでログイン".
+3. Type `GOOGLE_LOGIN_EMAIL`, Enter, type `GOOGLE_LOGIN_PASSWORD`, Enter.
+4. If a 2-step challenge appears:
+   - `GOOGLE_TOTP_SECRET` present → `oathtool --totp -b "$GOOGLE_TOTP_SECRET"` → type code.
+   - Else → `hermes chat -q --model <mini>` reads the latest 2-step email at `keiodaisuke@gmail.com` and returns the 6-digit code → type code.
+5. Re-probe cookie. If present → exit 0.
 
-This submits AT MOST 1 proposal, and only on a gig with budget ≤ ¥1,000.
+## Hard-block (only — HARD RULE #-2)
 
-## Verify (HARD RULE #14)
+A genuine hard-block is recognized only when:
+- a real CAPTCHA iframe (`recaptcha`, `hcaptcha`, `turnstile`) renders in the Camofox snapshot, OR
+- the page asks for a financial broadcast (= money send / withdraw signature).
 
-```bash
-tail -1 /Users/anicca/anicca-oss/skills/anicca-earn-lancers/data/apply-log.jsonl \
-  | /opt/homebrew/bin/jq '{jid, status, finish_url}'
-```
-
-Expected `{status: "applied", finish_url: "https://www.lancers.jp/work/propose_finish/<JID>"}`.
-Then open the `finish_url` in Camofox to visually confirm the proposal exists.
+When this happens the script saves the verbatim subset of the Camofox snapshot to `~/.hermes/state/earn-lancers-login-hardblock.json` and exits non-0. The earn task stays OPEN. The next cron beat retries automatically. No human is asked to "tap" or "review" — the loop self-heals on the next beat.
 
 ## Kill switch
 
@@ -1289,38 +1439,34 @@ Then open the `finish_url` in Camofox to visually confirm the proposal exists.
 hermes cron pause anicca-earn-lancers
 ```
 
-This freezes the daily cron until `hermes cron resume anicca-earn-lancers`. Use this immediately if (a) a LIVE submit lands on a gig outside niche, (b) Lancers serves a CAPTCHA, (c) the Lancers account receives a TOS warning.
+This freezes the daily cron until `hermes cron resume anicca-earn-lancers`. Use only if a Wave 2 real-submit beat lands a clearly out-of-niche proposal or Lancers serves a TOS warning.
 
-## Promotion to LIVE-by-default
+## What advances `#325` (LAUNCH MATRIX row ④)
 
-LIVE-by-default cron requires:
-1. ≥3 successful LIVE smokes (`status:"applied"` rows in `data/apply-log.jsonl`).
-2. ≥1 accepted proposal on the Lancers dashboard (= money will actually flow).
-3. CFO `cfo-bank` records the incoming Lancers deposit on Dais's bank.
-4. A new task `#325-promote` (separate plan) edits the cron `--script` line to pass
-   `--confirm --max-apply 3 --max-budget-jpy 50000`.
-
-Until then, the cron stays `--dry-run` and the daily fire generates proposal *drafts* only.
+Wave 1 (this plan) does NOT advance row ④. Advancement requires the Wave 2 plan's exit conditions:
+1. ≥1 row in `~/.hermes/state/earn-lancers-runs.jsonl` with `status:"applied"` AND a verified `finish_url` (Camofox-confirmed the proposal page renders).
+2. CFO `cfo-bank` shows the incoming Lancers deposit on Dais's bank account (`anicca_runtime` income classification).
+3. Wave 2 plan's Task closing-condition is met and `#325` is then closed by the Wave 2 plan, not by this one.
 ```
 
-- [ ] **Step 3: Commit the runbook**
+- [ ] **Step 3: Commit the ops note**
 
 Run:
 ```bash
 cd /Users/anicca/anicca-oss
-git add docs/superpowers/runbooks/2026-06-04-earn-lancers-smoke.md
-git commit -m "docs(runbook): earn-lancers LIVE smoke procedure with kill switch + promotion gate"
+git add docs/superpowers/runbooks/2026-06-04-earn-lancers-ops.md
+git commit -m "docs(ops): earn-lancers Wave 1 autonomous ops note (no human in loop, kill switch, hard-block semantics)"
 git push
 ```
 
 ---
 
-### Task 12: Update `specs/00-MASTER.md` § LAUNCH MATRIX row ④ + close task
+### Task 12: Update `specs/00-MASTER.md` § LAUNCH MATRIX row ④ (scaffold-only sub-bullet — `#325` stays OPEN)
 
 **Files:**
 - Modify: `specs/00-MASTER.md` (LAUNCH ACCEPTANCE MATRIX row ④ sub-bullet)
 
-- [ ] **Step 1: Add the sub-bullet**
+- [ ] **Step 1: Add the sub-bullet (scaffold-only — does NOT close row ④)**
 
 In `/Users/anicca/anicca-oss/specs/00-MASTER.md`, locate the row:
 ```
@@ -1330,9 +1476,11 @@ In `/Users/anicca/anicca-oss/specs/00-MASTER.md`, locate the row:
 
 Append (after that row, before row ⑤a) a sub-bullet:
 ```
-   ↳ ④a Lancers channel = anicca-earn-lancers skill LIVE, cron `0 10 * * *` JST (dry-run),
-        LIVE smoke gated by docs/superpowers/runbooks/2026-06-04-earn-lancers-smoke.md.
-        (Wave 1 of earn; Coconala + CrowdWorks join as ④b/④c in Wave 2.)
+   ↳ ④a Lancers channel scaffold (Wave 1) = anicca-earn-lancers skill registered,
+        cron `0 10 * * *` JST in dry-run mode only. Row ④ does NOT advance here —
+        advancement requires Wave 2 (anicca-earn-lancers-wave2-realsubmit) producing
+        ≥1 real `applied` row + CFO bank deposit evidence.
+        (Coconala + CrowdWorks join as ④b/④c in Wave 2 follow-ons.)
 ```
 
 - [ ] **Step 2: Commit + push**
@@ -1341,18 +1489,114 @@ Run:
 ```bash
 cd /Users/anicca/anicca-oss
 git add specs/00-MASTER.md
-git commit -m "docs(spec): 00-MASTER row ④ — anicca-earn-lancers Wave 1 live (#325)"
+git commit -m "docs(spec): 00-MASTER row ④ — anicca-earn-lancers Wave 1 scaffold (no row close, #325 still open)"
 git push
 ```
 
-- [ ] **Step 3: Mark task #325 done in the TaskList**
+- [ ] **Step 3: Do NOT mark `#325` completed. Leave it OPEN.**
 
-Use the TaskUpdate tool to set `#325` status to `completed` with a one-line summary
-("Wave 1: dry-run E2E green, daily cron at 10:00 JST, LIVE smoke runbook committed").
-Open follow-up tasks:
-- `#325-promote` — gated promotion to LIVE-by-default (depends on ≥3 successful smokes).
+`#325` (`Wave 1 dry-run scaffolding`) is updated with a comment but NOT closed. Use the TaskUpdate tool to leave `#325` in `in_progress` with the comment:
+> "Wave 1 scaffolding done (dry-run E2E green, cron registered, autonomous login). Closing blocked on Wave 2 real-submit + CFO bank evidence per `docs/superpowers/plans/2026-06-04-earn-lancers-wave2-realsubmit.md`."
+
+Open follow-up tasks (do NOT execute them in this plan):
+- `#325-wave2` — Wave 2 real-submit + CFO row ④ verify (the plan from Task 13 below).
 - `#325b` — Wave 2 Coconala (`anicca-coconala-earner`) port using this skill as template.
 - `#325c` — Wave 2 CrowdWorks (`anicca-crowdworks-earner`) port using this skill as template.
+
+---
+
+### Task 13: Write the Wave 2 follow-on plan (real submit + CFO row ④ verify)
+
+> Codex round 2 X2 + P3-no-real-earn-proof: real money proof lives in this separate Wave 2 plan, not in Wave 1. The Wave 1 implementer commits the Wave 2 plan file but does NOT execute it. `#325` can ONLY be closed by Wave 2's exit condition.
+
+**Files:**
+- Create: `docs/superpowers/plans/2026-06-04-earn-lancers-wave2-realsubmit.md`
+
+- [ ] **Step 1: Create the Wave 2 plan file with EXACTLY this content**
+
+Create `/Users/anicca/anicca-oss/docs/superpowers/plans/2026-06-04-earn-lancers-wave2-realsubmit.md`:
+````markdown
+# Earn Lancers Wave 2 — real-submit + CFO row ④ verify
+
+> Follow-on to `2026-06-04-earn-lancers.md` (Wave 1 scaffolding). This plan executes ONE real Lancers proposal under the documented safety cap (`--max-apply 1 --max-budget-jpy 1000`), watches CFO/bank for the deposit, and is the ONLY plan permitted to close `#325`. Fully autonomous per HARD RULE #-2 — agent drives camofox + Google login env; the only allowed hard-block is a real CAPTCHA element or financial-broadcast prompt. No human eyeballing.
+
+**Prereq:** Wave 1 (`2026-06-04-earn-lancers.md`) all Tasks 0–12 green. Skill registered. Dry-run E2E green. `~/.hermes/state/earn-lancers-dry-run-latest.json` exists.
+
+**Done condition (the ONLY way `#325` closes):**
+1. `~/.hermes/state/earn-lancers-runs.jsonl` has ≥1 row with `status:"applied"` AND `finish_url` containing `propose_finish`.
+2. Camofox re-fetches the `finish_url` and the snapshot contains the proposal body text — agent verifies this autonomously, no human eyeball.
+3. `cfo-bank` (already LIVE) records an incoming Lancers deposit on Dais's bank within 30 days of the `applied` row (Lancers payout SLA). Verified by running `bash ~/.openclaw/skills/cfo-bank/scripts/scan.sh` and grepping the output for `Lancers` / `ランサーズ`.
+4. ONLY when (1)+(2)+(3) all true: TaskUpdate closes `#325` with the row from `~/.hermes/state/earn-lancers-runs.jsonl` and the CFO deposit line as the receipt.
+
+## Task A: Preflight (X5)
+
+- [ ] A.1 `curl -sS http://localhost:9377/health | jq -e '.ok and .browserConnected'` → exit 0.
+- [ ] A.2 `command -v hermes && hermes --version` → ≥ 0.12.0 (X1 — do NOT update).
+- [ ] A.3 Env presence: `GOOGLE_LOGIN_EMAIL`, `GOOGLE_LOGIN_PASSWORD`, `LANCERS_PASSWORD` all `FOUND` per Wave 1 Task 0 Step 3.
+- [ ] A.4 `bash ~/.hermes/scripts/anicca-earn-lancers.sh --dry-run` → exit 0, `~/.hermes/state/earn-lancers-dry-run-latest.json` updated.
+- [ ] A.5 `bash skills/anicca-earn-lancers/scripts/login-check.sh` → exit 0 (autonomous, no human). If exit 6/9 → diagnose `~/.hermes/state/earn-lancers-login-hardblock.json`, patch, retry. Do NOT proceed until exit 0.
+
+## Task B: Execute ONE real proposal (autonomous, capped)
+
+- [ ] B.1 Run, exactly once:
+```bash
+bash /Users/anicca/.hermes/scripts/anicca-earn-lancers.sh \
+  --confirm \
+  --max-apply 1 \
+  --max-budget-jpy 1000 \
+  2>&1 | tee -a ~/.hermes/state/earn-lancers-cron-fire.log
+```
+Expected: stdout JSON envelope `.candidates[0].status == "applied"` and `.candidates[0].finish_url` matches `propose_finish`. If `.status` is anything else (`skip:REDIRECT` / `skip:BLOCKED` / `final_click_failed`), the candidate pool that day did not meet the ¥1k floor; re-run the next day's beat — do NOT raise the cap.
+
+- [ ] B.2 Read back the last row autonomously:
+```bash
+ROW=$(tail -1 ~/.hermes/state/earn-lancers-runs.jsonl)
+echo "$ROW" | /opt/homebrew/bin/jq -e '.status == "applied" and (.finish_url | test("propose_finish"))' >/dev/null \
+  && echo SUBMIT_OK || { echo SUBMIT_NOT_YET; exit 0; }
+```
+Expected: `SUBMIT_OK`. If `SUBMIT_NOT_YET`: NOT a failure — the autonomous loop is allowed to keep trying daily until B.1 produces `applied`. Do NOT close `#325`.
+
+- [ ] B.3 Autonomous verification of the proposal page (no human):
+```bash
+FURL=$(echo "$ROW" | /opt/homebrew/bin/jq -r '.finish_url')
+TAB=$(curl -sS -X POST http://localhost:9377/tabs -H 'Content-Type: application/json' \
+  -d "$(/opt/homebrew/bin/jq -n --arg u "$FURL" --arg uid anicca --arg sk default \
+        '{url:$u, userId:$uid, sessionKey:$sk}')" | /opt/homebrew/bin/jq -r .tabId)
+sleep 5
+SNAP=$(curl -sS "http://localhost:9377/tabs/$TAB/snapshot?userId=anicca&sessionKey=default")
+curl -sS -X DELETE "http://localhost:9377/tabs/$TAB?userId=anicca&sessionKey=default" >/dev/null
+printf '%s' "$SNAP" | /opt/homebrew/bin/jq -e '.snapshot | test("提案|Proposal|finish")' >/dev/null \
+  && echo PROPOSAL_VISIBLE || { echo PROPOSAL_NOT_RENDERED; exit 0; }
+```
+Expected: `PROPOSAL_VISIBLE`. If `PROPOSAL_NOT_RENDERED`: write `~/.hermes/state/earn-lancers-wave2-hardblock-<ts>.json` with the snapshot subset and do NOT close `#325`; loop retries on the next beat.
+
+## Task C: CFO bank deposit verify (the row ④ gate)
+
+- [ ] C.1 Up to 30 days after Task B SUBMIT_OK, run on each weekday:
+```bash
+bash ~/.openclaw/skills/cfo-bank/scripts/scan.sh
+grep -Ei 'Lancers|ランサーズ' ~/.openclaw/skills/cfo-bank/data/bank-latest.jsonl \
+  && echo CFO_DEPOSIT_VISIBLE || echo CFO_DEPOSIT_PENDING
+```
+Expected eventually: `CFO_DEPOSIT_VISIBLE`. While `CFO_DEPOSIT_PENDING`: do NOT close `#325`. The autonomous loop keeps trying daily Wave 1 dry-runs in parallel — no human poke required.
+
+## Task D: Close `#325` (only here, only when C.1 shows CFO_DEPOSIT_VISIBLE)
+
+- [ ] D.1 TaskUpdate sets `#325` to `completed` with a comment containing: `(a)` the submitted `finish_url` from Task B.2; `(b)` the verified-rendered confirmation from Task B.3; `(c)` the CFO bank line from Task C.1 (amount + date).
+- [ ] D.2 Update `specs/00-MASTER.md` row ④ sub-bullet ④a from "scaffold (Wave 1)" to "Wave 2 LIVE — one real proposal applied + CFO deposit verified <YYYY-MM-DD>"; commit + push.
+
+That is the only flow allowed to advance row ④ on the Lancers channel.
+````
+
+- [ ] **Step 2: Commit the Wave 2 plan**
+
+Run:
+```bash
+cd /Users/anicca/anicca-oss
+git add docs/superpowers/plans/2026-06-04-earn-lancers-wave2-realsubmit.md
+git commit -m "docs(plan): earn-lancers Wave 2 — autonomous real-submit + CFO row ④ verify (only path to close #325)"
+git push
+```
 
 ---
 
@@ -1361,7 +1605,7 @@ Open follow-up tasks:
 **Spec coverage:**
 - `specs/00-MASTER.md` § LAUNCH ACCEPTANCE MATRIX row ④「平均月収 x円」 = directly addressed (Task 12 adds the sub-bullet linking this skill to the row).
 - `specs/16-RUNTIME-CODE-TRUTH.md` § 17 ("ONE RUNTIME = Hermes ... Camofox or Nous-Portal browser ... earn = Camofox → Lancers/Coconala gig apply+deliver") = the file structure and `_lib.sh` enforce "Camofox via REST :9377, no second browser". Hermes cron `--no-agent` + `hermes chat --model gpt-5.2-mini` inside the script keep the substrate decision intact.
-- CLAUDE.md HARD RULE #-2 "no human-loop excuses": only `login-check.sh` exit 6 (Google 2FA tap) and the LIVE smoke first-run touch a human. Both are documented as the ONE physical exception per Camofox SKILL.md L82-88. Every other flow (signup, scan, score, message generation, dry-run, submit) is autonomous.
+- CLAUDE.md HARD RULE #-2 "no human-loop excuses": ZERO human touchpoints in Wave 1 or Wave 2. `login-check.sh` runs Google login autonomously via `GOOGLE_LOGIN_EMAIL`+`GOOGLE_LOGIN_PASSWORD` env, with autonomous 2FA via `GOOGLE_TOTP_SECRET` (if present) OR `hermes chat -q --model <mini>` reading the gog-gmail mailbox. The ONLY recognized hard-block is a real CAPTCHA iframe (`recaptcha`/`hcaptcha`/`turnstile`) or a financial-broadcast prompt — both record the verbatim snapshot to `~/.hermes/state/earn-lancers-login-hardblock.json` without closing the earn task. No "Dais reviews", no "tap on phone", no "eyeball before pulling trigger" language remains anywhere in this plan or its child runbook/Wave 2 plan (codex round 2 X3).
 - HARD RULE browser order (camofox > cloak > agent-browser): the skill imports ONLY `:9377` (camofox). `cloakbrowser` / `agent-browser` are not referenced anywhere in the new files.
 - HARD RULE "Google login forever, `keiodaisuke@gmail.com` canonical, Lancers uses `keiodaisuke+anicca@gmail.com` + `LANCERS_PASSWORD`": `_lib.sh` reads env vars by their canonical names; `login-check.sh` Step 1 uses Google OAuth as the first path and only falls back to LANCERS_EMAIL+PASSWORD if the Google button is missing. No password is hard-coded; `redact()` masks values in any log line.
 - HARD RULE "OpenClaw cron は mini 主軸": cron uses `--no-agent` (zero LLM per fire); the only LLM inside the script is `hermes chat --model gpt-5.2-mini` for 3 scoring calls/day. The mini model name is overridable via `LANCERS_SCORE_MODEL` for cheaper alternatives (`deepseek-v4-flash`, `kimi-k2.6-mini`).
@@ -1380,12 +1624,12 @@ No new framework, no new dependency. The only NEW code is `login-check.sh` (Camo
 
 **Risk note (read before executing):**
 - Task 9 Step 2 (`hermes skills list | grep anicca-earn-lancers`) depends on Hermes treating a symlinked skill directory the same as a real one. The sister plan `2026-06-04-hermes-genesis-boot.md` Task 5 Step 10 already confirmed this works (the heartbeat skill is registered via the same symlink pattern). If for some reason this version of Hermes refuses symlinks → fall back to `rsync -a skills/anicca-earn-lancers/ ~/.hermes/skills/anicca-earn-lancers/` and re-test; commit a follow-up plan to fix the symlink path. This is the one place reality can diverge from the plan; it is gated, not glossed.
-- Task 10 Step 4 (force-fire) depends on the Camofox session having a Lancers cookie. If the cookie does not yet exist (= first LIVE-side run after a fresh Camofox profile), the force-fire will exit 7 from `login-check.sh`. The plan recognizes this state and routes to Task 11's runbook to complete the 2FA tap. Until the tap, the daily cron will exit 7 every fire, never submit, and never produce a log row — failure mode is silent and bounded.
+- Task 10 Step 4 (force-fire) depends on the Camofox session having a Lancers cookie. If not yet present, the autonomous `login-check.sh` will mint one via the Google login env + TOTP / gog-gmail flow. Recognized non-zero exits (6 = autonomous 2FA didn't converge this beat; 9 = real CAPTCHA iframe rendered) save the verbatim Camofox snapshot under `~/.hermes/state/earn-lancers-login-hardblock.json` and let the next cron beat retry — no human is asked to act. The daily cron in Wave 1 is dry-run only; it never submits, so silent retry is bounded by definition.
 
 ---
 
 ## Execution Handoff
 
-Plan complete and saved to `docs/superpowers/plans/2026-06-04-earn-lancers.md`.
+Plan v2 (codex round 2 fixes applied) saved to `docs/superpowers/plans/2026-06-04-earn-lancers.md`. Wave 2 follow-on plan saved alongside as `docs/superpowers/plans/2026-06-04-earn-lancers-wave2-realsubmit.md`.
 
-Per Dais's directive ("keep getting reviewed by codex; only when it's time to implement, build with agent teams"), the next move is NOT to start Task 1 — it is to run **codex-review** against this plan + specs 00 / 16 / 18 + the parent plan `2026-06-04-hermes-genesis-boot.md` (so the genesis-boot prerequisites are cross-checked). When codex says `ok: true`, dispatch the implementation via **superpowers:subagent-driven-development** — fresh subagent per task, two-stage review (spec compliance → code quality) after each task. The LIVE smoke (Task 11 runbook) is the ONLY step that calls for an out-of-band human eyeball before pulling the trigger.
+Per Dais's directive ("keep getting reviewed by codex; only when it's time to implement, build with agent teams"), the next move is NOT to start Task 0 — it is to re-run **codex-review** against this plan + the new Wave 2 plan + specs 00 / 16 / 18 + the parent plan `2026-06-04-hermes-genesis-boot.md`. When codex says `ok: true`, dispatch the implementation via **superpowers:subagent-driven-development** — fresh subagent per task, two-stage review (spec compliance → code quality) after each task. The flow is fully autonomous end-to-end — no human eyeball anywhere; `#325` closes only inside the Wave 2 plan after CFO bank evidence lands.
