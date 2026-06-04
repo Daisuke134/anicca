@@ -1,0 +1,8 @@
+2026-06-18 — anicca-inbox DRY_RUN 14d window done.
+
+Action: remove DRY_RUN=1 from ~/Library/LaunchAgents/ai.anicca.inbox.plist:
+  - delete the <key>DRY_RUN</key>/<string>1</string> lines
+  - launchctl unload ~/Library/LaunchAgents/ai.anicca.inbox.plist
+  - launchctl load ~/Library/LaunchAgents/ai.anicca.inbox.plist
+
+Then enable live send (the run.sh DRY_RUN==1 branch will skip; the else branch fires gmail send).
