@@ -1,13 +1,13 @@
 ---
 name: anicca-earn-lancers
-description: Daily Lancers gig discovery and apply skill. Camofox (:9377) drives the search, parses up to 15 candidate JIDs, ranks the top 3 by budget vs effort using a mini model (`hermes chat --model gpt-5.2-mini`), and either dry-runs (default — generates proposal text only) or submits via the proven 2-stage Vue-hidden-field pattern (`propose_start → propose_confirm → propose_finish`). LIVE mode requires explicit `--confirm` and is bounded by `--max-apply` + `--max-budget-jpy`. Login uses Google OAuth canonical (`GOOGLE_LOGIN_EMAIL`) via Camofox per HARD RULE; Lancers credentials live in `~/.openclaw/.env`. Cron schedule: daily 10:00 JST (`hermes cron`). Incoming payment routes to the existing OpenClaw bank, which CFO already scrapes — this skill does NOT touch payout. Wave 1 of the earn channel; Coconala + CrowdWorks are Wave 2.
+description: Daily Lancers gig discovery and apply skill. Camofox (:9377) drives the search, parses up to 15 candidate JIDs, ranks the top 3 by budget vs effort using a mini model (`hermes chat --model gpt-5.2-mini`), and either dry-runs (default — generates proposal text only) or submits via the proven 2-stage Vue-hidden-field pattern (`propose_start → propose_confirm → propose_finish`). LIVE mode requires explicit `--confirm` and is bounded by `--max-apply` + `--max-budget-jpy`. Login uses the Lancers email/pw form via Camofox with autonomous email-2FA (`gog`) — the Google-OAuth path is dead because the account is registered under the `LANCERS_EMAIL` (`+anicca`) alias, not the bare Google account; `login-check.sh` is the single source of truth for the login method. Lancers credentials live in `~/.openclaw/.env`. Cron schedule: daily 10:00 JST (`hermes cron`). Incoming payment routes to the existing OpenClaw bank, which CFO already scrapes — this skill does NOT touch payout. Wave 1 of the earn channel; Coconala + CrowdWorks are Wave 2.
 metadata:
   type: earn
   parallel_safe: false
   expected_revenue: ¥3,000–¥50,000 per accepted gig; ~10% accept rate per port-from data
   requires:
     bins: [bash, curl, jq, python3, hermes]
-    env: [GOOGLE_LOGIN_EMAIL, GOOGLE_LOGIN_PASSWORD, LANCERS_EMAIL, LANCERS_USERNAME, LANCERS_PASSWORD]
+    env: [LANCERS_EMAIL, LANCERS_PASSWORD]
     skills: [camofox-browser]
 ---
 
@@ -19,7 +19,7 @@ Hermes skill, Wave 1 of the earn channel. Daily cron fires `scripts/run.sh` at 1
 | Path | Role |
 |------|------|
 | `scripts/run.sh`         | orchestrator (default `--dry-run`) |
-| `scripts/login-check.sh` | Camofox session probe + Google OAuth fallback |
+| `scripts/login-check.sh` | Camofox /mypage session probe + email/pw login + email-2FA (canonical login method) |
 | `scripts/scan.sh`        | Camofox search → JID list |
 | `scripts/select.sh`      | Mini-model scoring → top 3 |
 | `scripts/apply.sh`       | Proposal generation + (with `--confirm`) 2-stage submit |
