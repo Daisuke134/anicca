@@ -345,6 +345,32 @@ def _user_moved(origin_loc, fresh_loc, threshold_m: int):
         return False
 
 
+def gemini_reachable():
+    """Pre-flight: is the Gemini API actually callable? If billing is in dunning /
+    the key is blocked (403), placing the call only yields Twilio's robotic
+    'application error' message (no Charon voice). Better to skip + alert than
+    subject the user to a broken call. Returns (ok: bool, reason: str)."""
+    key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY") or ""
+    if not key:
+        return False, "no GEMINI/GOOGLE_API_KEY"
+    try:
+        req = urllib.request.Request(
+            f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={key}",
+            data=b'{"contents":[{"parts":[{"text":"ping"}]}]}',
+            headers={"Content-Type": "application/json"}, method="POST")
+        with urllib.request.urlopen(req, timeout=10) as r:
+            return (r.status == 200), f"HTTP {r.status}"
+    except urllib.error.HTTPError as e:
+        detail = ""
+        try:
+            detail = json.loads(e.read().decode()).get("error", {}).get("message", "")[:120]
+        except Exception:
+            pass
+        return False, f"HTTP {e.code}: {detail}"
+    except Exception as e:
+        return False, f"{type(e).__name__}: {e}"
+
+
 def place_lateness_call(ctx):
     """Fire the lateness-mode call.
 
@@ -357,6 +383,14 @@ def place_lateness_call(ctx):
       2. state/anicca_phone_url.txt (matches the imokenet URL_FILE pattern)
       3. http://127.0.0.1:7860/dialout (local default during dev)
     """
+    # Pre-flight: don't place a doomed call that only plays Twilio's robotic
+    # "application error" message when the voice LLM (Gemini Live) is unreachable.
+    ok, why = gemini_reachable()
+    if not ok:
+        slack(f"📵 lateness call SKIPPED — Gemini Live unreachable ({why}). "
+              f"No Charon voice would connect. Fix: resolve Google Cloud billing (dunning) or swap to a funded GEMINI_API_KEY. Event ctx: {ctx[:120]}")
+        print(f"[late] call skipped — gemini unreachable: {why}")
+        return None
     base = (
         os.environ.get("ANICCA_PHONE_DIALOUT_URL")
         or _read_url_file(Path.home() / ".openclaw" / "state" / "anicca_phone_url.txt")
