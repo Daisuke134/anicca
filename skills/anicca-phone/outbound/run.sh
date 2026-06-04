@@ -48,12 +48,6 @@ sleep 1
 # free quick-tunnel here (trycloudflare.com); upgrading to a named tunnel
 # (固定 hostname) is a follow-up — the consumers all read STATE_FILE so the
 # URL being dynamic is fine as long as the file is current.
-#
-# CRITICAL: truncate CF_LOG before boot. Otherwise the grep below picks up
-# the FIRST URL in the file = a STALE URL from a previous boot whose tunnel
-# is no longer live. Twilio then fetches wss://<dead>.trycloudflare.com and
-# the call rings into silence (observed 2026-06-04 21:41 JST).
-: > "$CF_LOG"
 nohup /opt/homebrew/bin/cloudflared tunnel --url "http://localhost:$PORT" \
   > "$CF_LOG" 2>&1 &
 CF_PID=$!
@@ -108,18 +102,6 @@ cd "$REPO_DIR"
 # shellcheck source=/dev/null
 source venv/bin/activate
 
-# Pre-warm qwen2.5:3b in the background and pin it in RAM for 24h. Default
-# Ollama TTL is 5 min → first call after idle pays a 4-7 s reload penalty
-# (observed 2026-06-04 21:36 JST: 7b cold-start caused 11-s silence
-# hang-up). Long keep_alive + a one-shot warm request collapses TTFT.
-(
-  sleep 2
-  curl -s --max-time 60 http://localhost:11434/api/generate \
-    -d '{"model":"qwen2.5:3b","prompt":"ok","keep_alive":"24h","stream":false}' \
-    > /dev/null 2>&1 \
-    && echo "[run.sh] qwen2.5:3b pre-warmed (resident for 24h)" >&2
-) &
-
 # Exec uvicorn-style server (server.py runs uvicorn internally) so launchd
 # tracks Python as the foreground process.
 exec env \
@@ -127,5 +109,4 @@ exec env \
   ENV=local \
   LOCAL_SERVER_URL="$TUNNEL_URL" \
   ANICCA_PHONE_DIALOUT_URL="$TUNNEL_URL" \
-  OLLAMA_KEEP_ALIVE=24h \
   python server.py
