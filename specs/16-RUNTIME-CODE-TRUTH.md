@@ -495,3 +495,54 @@ boot.log kept at /tmp/auto-boot.log. config restored to gpt-5.2 after test (back
 | Date | Change |
 |---|---|
 | 2026-06-04 | REAL BOOT. Body proven (heartbeat/loop/survival/self-update/constitution run locally). BUT §11 BYOK claim CORRECTED: shipped binary routes inference through Conway; provider-registry exists but unwired; config wizard only exposes Conway key; --pick-model only Conway models. BYOK = fork+wire (MIT) OR Conway feature request. Short-term = fund Conway $5-10 to run now; parallel = wire BYOK. Spawn de-Conway = SandboxProvider refactor (Daytona/Akash). |
+
+---
+
+## § 15. BEST-PRACTICE (authors' intent) — automaton is STANDALONE → don't stack (2026-06-04)
+
+Read the automaton README (authors' positioning = best practice, not my opinion):
+> "Automaton: Self-Improving, Self-Replicating, **Sovereign** AI ... A continuously running,
+>  self-improving, self-replicating, sovereign AI agent ... **No human operator required.**"
+> Quick Start = `node dist/index.js --run`  (runs STANDALONE; own loop, heartbeat, skills, self-mod, replication)
+
+→ automaton is a COMPLETE agent meant to run ALONE. Hermes is ALSO a complete agent (own loop, heartbeat
+via cron, skills, self-mod). **Running both = two agent loops = redundant double-brain.** Dais's redundancy
+intuition is CORRECT and code-supported.
+
+### Category clarity (Dais asked: Akash / Daytona / automaton 住み分け)
+```
+automaton  = an AGENT PROGRAM  (the runtime/body: thinks, earns, replicates). SOFTWARE.
+Hermes     = an AGENT PROGRAM  (a tool-rich harness: thinks, browses, authors skills). SOFTWARE.
+Daytona    = a CLOUD SANDBOX HOST  (a PLACE to run code/containers; AI-native SDK; self-host OSS). INFRA.
+Akash      = a DECENTRALIZED CLOUD HOST  (a PLACE to rent compute; crypto-paid; censorship-resistant). INFRA.
+Conway     = BOTH a host (sandboxes) AND an inference provider (credits). INFRA + brain-as-a-service.
+
+→ automaton/Hermes = the THING that runs. Daytona/Akash/Conway = WHERE it runs.
+   "self-replicate to cloud" = the runtime creates a sandbox ON Daytona/Akash/Conway and runs a child there.
+   Daytona vs Akash = interchangeable HOST options (Daytona easy SDK/self-host; Akash crypto-sovereign).
+```
+
+### The real decision = ONE runtime (not a stack)
+| option | what it is | gains | costs |
+|---|---|---|---|
+| **automaton-only** | run automaton standalone; add browser/skills as automaton skills (Conway-Research/skills WIP) | wallet+x402+self-replication+constitution+survival ALREADY BUILT & TESTED | weak skill system, NO browser (can't do Lancers earning), Conway-coupled inference (BYOK = fork) |
+| **Hermes-only + ported primitives** ★ | run Hermes standalone; PORT automaton's MIT primitives (wallet, x402, spawn-via-Daytona, constitution) in as Hermes skills | richest harness (Camofox browser earning, 7-file skill subsystem, kanban, Kimi, gateway); ONE runtime (no TS/Python bridge); no Conway lock | must BUILD the 4 economic/spawn primitives (port from automaton TS → Hermes Python skills); ~bounded work |
+
+### RECOMMENDATION (data + best-practice)
+**Hermes = the ONE runtime (body). Port automaton's 4 primitives (wallet / x402-in+out / spawn / constitution)
+as Hermes skills. Daytona = primary spawn host, Akash = sovereign fallback, Conway = optional inference/spawn
+fallback tier. automaton = REFERENCE we port from (its MIT x402.ts/spawn.ts/constitution.ts), NOT a running
+2nd runtime.**
+Why: (1) authors say don't stack; (2) the mission's proven revenue path (Lancers) needs a browser — automaton
+has none, Hermes has Camofox; (3) one runtime kills the double-loop + the TS/Python bridge + Conway lock.
+
+### OPEN QUESTION to verify before locking this (honest)
+Does Hermes have a TRUE autonomous continuous loop (self-wakes + acts with no trigger), like automaton's
+heartbeat→survival loop? Confirmed: Hermes has cron/scheduler + gateway (trigger-driven). NOT yet confirmed
+it has automaton's "continuous self-prompting survival loop." → verify run_agent.py autonomy before final lock.
+If Hermes lacks it, we either add it (a heartbeat skill) or reconsider automaton-only.
+
+## § 16. Changelog (append)
+| Date | Change |
+|---|---|
+| 2026-06-04 | BEST-PRACTICE via automaton README: it is STANDALONE → automaton+Hermes stack = redundant double-loop (Dais correct). Category clarity: automaton/Hermes=runtime(software), Daytona/Akash/Conway=host(infra). DECISION reframed to ONE runtime. RECOMMEND Hermes-as-body + port automaton's 4 MIT primitives as skills; Daytona/Akash=hosts; automaton=reference. OPEN: verify Hermes has a true autonomous loop (not just cron/gateway triggers) before final lock. |
