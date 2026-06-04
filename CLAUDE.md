@@ -6,6 +6,14 @@
 全判断に最低3回の検索（英語/日本語）→ ソース名/URL/核心の引用を付ける。引用なき判断は削除。
 質問禁止。選択肢提示禁止。答えは1つ。見つからない → 一般化 → 隣接分野 → 根底原則まで掘る。
 
+## HARD RULE #6 exception — anicca-inbox owns its own LLM judgment
+
+Mail triage / draft inside `anicca-inbox` skill IS allowed to call LLM directly.
+Reason: per-thread deterministic input→output classifier is NOT judgment-as-cron.
+Heartbeat cannot own it: heartbeat is rate-limited to 1 highest-value action per beat
+(HEARTBEAT.md §2), but mail volume is 10-20 threads per beat. See
+docs/superpowers/specs/2026-06-04-anicca-inbox-autonomy-design.md §12.
+
 ## HARD RULE #-2 (= 上位 の 上位) — 「user click」 「OAuth は human」 「device-code 渡 すから sign in して」 と 言った 瞬間 嘘 (2026-06-03)
 
 **Dais 2026-06-03 厳命 verbatim**:
