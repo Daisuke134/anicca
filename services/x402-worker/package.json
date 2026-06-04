@@ -1,0 +1,18 @@
+{
+  "name": "anicca-x402-worker",
+  "version": "1.0.0",
+  "private": true,
+  "description": "x402 earn endpoint on Cloudflare edge — verifies buyer-signed EIP-3009 transferWithAuthorization on Base USDC",
+  "type": "module",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev"
+  },
+  "dependencies": {
+    "viem": "^2.21.0"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0",
+    "@cloudflare/workers-types": "^4.20240909.0"
+  }
+}
