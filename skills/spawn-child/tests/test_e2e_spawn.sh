@@ -40,7 +40,7 @@ CHILD_ADDR=$(echo "$LAST" | "$JQ" -r '.address')
 
 # Heartbeat appears within 10 min
 DEADLINE=$(( $(date +%s) + 600 ))
-while [ $(date +%s) -lt $DEADLINE ]; do
+while [ "$(date +%s)" -lt "$DEADLINE" ]; do
   LINE=$(daytona exec "$NAME" -- tail -n 1 "$CHILD_HOME/.hermes/state/heartbeat.jsonl" 2>/dev/null || true)
   if [ -n "$LINE" ] && echo "$LINE" | "$JQ" -e '.ok == true' >/dev/null 2>&1; then
     echo "PASS heartbeat: $LINE"
