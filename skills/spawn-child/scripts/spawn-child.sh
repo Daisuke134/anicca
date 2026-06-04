@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # Spawn a sovereign Anicca child instance.
 # Usage:
-#   spawn-child.sh [--dry-run] [--host=daytona] <name>
+#   spawn-child.sh [--dry-run] [--host=daytona] [--confirm] <name>
+# --confirm: explicit intent marker for autonomous (unattended) real spawns, e.g. the
+#            #327c spawn-watcher cron. Accepted-but-optional for interactive CLI use.
 # Exit codes:
 #   0  success (sandbox up, heartbeat fired, colony row written)
 #   64 bad input (preflight failed)
@@ -14,12 +16,14 @@ SKILL_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 DRY_RUN=0
 HOST=daytona
 NAME=""
+CONFIRM=0
 
 while [ $# -gt 0 ]; do
   case "$1" in
     --dry-run) DRY_RUN=1; shift ;;
     --host=*)  HOST="${1#--host=}"; shift ;;
-    --help)    sed -n '1,16p' "$0"; exit 0 ;;
+    --confirm) CONFIRM=1; shift ;;
+    --help)    sed -n '1,18p' "$0"; exit 0 ;;
     -*)        echo "spawn-child: unknown flag $1" >&2; exit 64 ;;
     *)         NAME="$1"; shift ;;
   esac
@@ -84,4 +88,4 @@ LAST=$(tail -n 1 "$COLONY" | "$JQ" -c --arg sb "$SB_ID" --arg ch "$CHILD_HOME" '
 printf '%s\n' "$LAST" >> "$TMP"
 mv "$TMP" "$COLONY"
 
-echo "spawn-child: $NAME alive on $HOST as $SB_ID (wallet $ADDR, home $CHILD_HOME)"
+echo "spawn-child: $NAME alive on $HOST as $SB_ID (wallet $ADDR, home $CHILD_HOME, confirm=$CONFIRM)"
