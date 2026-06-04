@@ -375,3 +375,72 @@ RISK / DE-CONWAY (D6): Conway balance=$0 + spawn "blocked" now → resilience =
 | Date | Change |
 |---|---|
 | 2026-06-04 | §8 all 33 uncertainties resolved (live Conway API + automaton source re-read + hermes deep). §9 full architecture mapping each mission line to code. Key: automaton=PRIMARY body, hermes=hands (1 wallet, 1 SKILL.md works in both). Conway risk (balance$0+spawn blocked) → de-Conway via BYOK+Akash. |
+
+---
+
+## § 11. THE COMPUTE QUESTION — answered (code + docs, 2026-06-04)
+
+**Dais's question: can automaton run on OUR API keys / LLM subscription, instead of being LOCKED to Conway's wallet-funded compute?**
+
+### ANSWER: YES. Two fully-independent axes — pick either/both.
+
+```
+AXIS 1 = THINKING (inference)         AXIS 2 = HOSTING (where the process runs)
+─────────────────────────────        ──────────────────────────────────────────
+automaton provider-registry.ts:       genesis runs LOCAL (Mac mini) = $0, no Conway
+  • openai     (OPENAI_API_KEY)        children need a CLOUD HOST:
+  • anthropic  (ANTHROPIC_API_KEY)       • Conway sandbox  (createSandbox, needs credits)
+  • groq       (GROQ_API_KEY)            • Daytona         (daytona.create(), SDK 1-line)
+  • together   (TOGETHER_API_KEY)        • Akash           (SDL deploy, AKT)
+  • local/Ollama (localhost:11434)       • Mac mini local  (just run another process)
+  • overrideBaseUrl() → OpenRouter/Kimi
+  setup model-picker.ts lets you PICK.   spawn.ts is HARD-CODED to conway.createSandbox →
+  DEFAULT = gpt-5.2(Conway) but BYOK is   adding Daytona/Akash = introduce a SandboxProvider
+  a config switch (set key + pick).       interface (real refactor, not a config flip).
+```
+
+**So Conway credits are needed ONLY if you (a) choose Conway as the inference provider AND/OR (b) spawn into Conway sandboxes. Neither is mandatory.**
+- Thinking on OUR keys/subscription = **supported today** (config: set `ANTHROPIC_API_KEY`/`OPENAI_API_KEY`/OpenRouter+Kimi, pick provider).
+- Genesis hosting = **local Mac mini, $0, no Conway**.
+- Cloud-spawn children without Conway = **needs the SandboxProvider refactor** (Daytona easiest).
+
+### Both options should COEXIST (Dais's call, code supports it)
+| | Option A: Conway-funded (NHOSS-pure) | Option B: BYOK (we provide compute) |
+|---|---|---|
+| thinking | wallet USDC → Conway credits → Conway inference | our Anthropic/OpenAI/Kimi/OpenRouter keys |
+| hosting | Conway sandbox | Mac mini local / Daytona / Akash |
+| pro | true zero-human self-funding | never dies when wallet=$0; full control |
+| con | Conway-dependent (now: balance$0 + spawn "blocked") | we pay the compute (not self-funded) |
+| status | live but degraded | works today for inference; cloud-spawn needs refactor |
+
+provider-registry has `fallbackOrder` → can chain BYOK-first then Conway backstop (or vice versa). So it is NOT either/or — both live as fallback tiers.
+
+### Daytona (docs verified)
+- `npm i @daytona/sdk` / `pip install daytona`; `const d = new Daytona({apiKey}); d.create()` — sandbox in 1 line.
+- SDKs: TS/Python/Ruby/Go/Java + CLI + API + MCP server. snapshots/volumes (persistent). webhooks.
+- **Self-hostable (OSS "Open Source deployment") = $0 on our own box** OR hosted (usage billing). API-key auth, no crypto.
+- 72.5K★, "Secure & Elastic Infra for Running AI-Generated Code", active (pushed 2026-06-03).
+- → Cleanest non-Conway spawn target. Best DX.
+
+### Akash (docs/repos verified)
+- Decentralized compute marketplace; pay in AKT (crypto). Deploy via SDL (yaml) → provider bids → lease.
+- repos: node, console, console-air (self-custody crypto fork), chain-sdk, provider, awesome-akash (examples), terraform-provider-akash, docs.
+- More friction (need AKT via USDC→AKT bridge, SDL, bidding) BUT censorship-resistant + cheapest raw compute + crypto-native (fits wallet-only NHOSS).
+- → Best as the SOVEREIGN fallback host (when we want zero-SaaS, crypto-paid).
+
+### Recommendation (data)
+```
+COMPUTE for thinking : BYOK primary (our keys/Kimi) + Conway credits as fallback tier
+                       → automaton never dies at wallet=$0, AND can self-fund when rich
+HOSTING for genesis  : Mac mini local ($0)
+HOSTING for children : Daytona (clean SDK, self-host) primary + Akash (crypto sovereign) fallback
+                       + Conway sandbox (when credits available)
+BUILD NEEDED         : SandboxProvider abstraction in automaton replication/ (Conway|Daytona|Akash)
+                       — this is the one real refactor to make spawn host-agnostic.
+NOTE                 : root@conway.tech = email to request features (e.g. BYOK-spawn) from Conway.
+```
+
+## § 12. Changelog (append)
+| Date | Change |
+|---|---|
+| 2026-06-04 | §11 answers the compute question: automaton inference is BYOK-capable (provider-registry: openai/anthropic/groq/together/ollama/OpenRouter) — NOT locked to Conway. Conway needed only for Conway-inference or Conway-sandbox. Genesis runs local $0. Cloud-spawn de-Conway = SandboxProvider refactor (Daytona 1-line SDK easiest; Akash crypto-sovereign fallback). Both compute options coexist via fallbackOrder. |
