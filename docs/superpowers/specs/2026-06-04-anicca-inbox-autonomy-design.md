@@ -138,6 +138,23 @@ token saved : 0.24-0.48M tokens/day = ~4-8%
 - sonnet 主力化 完全回避 (= Dais 厳命「sonnet 温存」遵守)
 ```
 
+### ⚠️ doctor --fix 罠 (= 2026-06-05 実行中 incident)
+
+`openclaw doctor --fix` の "Cron store normalized" pass は **Patch Y を巻き戻す**。 verbatim log:
+
+```
+Cron store normalized at ~/.openclaw/cron/jobs.json.
+- 11 jobs still uses legacy `openai-codex/*` cron model refs
+```
+
+= override 不在を "legacy 状態" とみなして defaults primary を書き戻す。 Phase 1 実行中、 Patch Y で 143 件 clear → doctor --fix → 全件 deepseek 復活した。 再度 Patch Y 再適用で復旧。
+
+**hard rule**: **Phase 1 (Patch Y) 後 `openclaw doctor --fix` を 二度と 走らせない**。 cron schedule 変更は `openclaw cron edit` CLI or jobs.json 直編集で Gateway hot-reload 完了 (= doctor 不要)。 memory: `feedback_openclaw_doctor_fix_rolls_back_cron_model_clears.md`
+
+### §14 / §4 model table 補注 (= reviewer iter 2 N1)
+
+**§14 と §4 Phase 3 に列挙されている `deepseek/deepseek-v4-pro` (Leader classify model) と `anthropic/claude-sonnet-4-6` (REPLY draft model) は "Patch X+H+Y 適用前 の レガシー値"**。 v4 適用後 の **effective model = `claude-cli/claude-sonnet-4-6`** (= codex primary → deepseek (402) → kimi (429) → claude-cli fallback chain で 着地)。 §14 を更新せず 注記 のみ で 履歴 維持。
+
 ### Circuit breaker risk (= reviewer iter 1 で追加)
 
 **全 provider 死亡 シナリオ**: codex 429 + deepseek 402 + kimi 429 全部 down 時、 全 cron + heartbeat が `claude-cli/sonnet-4-6` に着地 → subscription 1 日 5.6M token 焼く。
