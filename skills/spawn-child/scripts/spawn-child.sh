@@ -51,19 +51,33 @@ chmod 600 "$WALLET_TMP"
 ADDR=$("$JQ" -r '.address' "$WALLET_TMP")
 
 # 5) Append PROVISIONAL row to colony so we never lose track of the spawn even if step 6 fails
+COLONY=/Users/operator/.hermes/state/colony.jsonl
 "$SKILL_DIR/scripts/colony/append.sh" \
   "$NAME" "$HOST" "PENDING" "$ADDR" "$SHA" "provisioning" >/dev/null
 
+# If provisioning fails, flip the dangling provisional row to "failed" (do not leave it
+# stuck at "provisioning") so the ledger stays honest. Single-writer last-line rewrite.
+mark_failed() {
+  local reason="$1"
+  local tmp; tmp=$(mktemp /Users/operator/.hermes/state/.tmp-colony-XXXX)
+  head -n $(( $(wc -l < "$COLONY") - 1 )) "$COLONY" > "$tmp"
+  tail -n 1 "$COLONY" | "$JQ" -c --arg r "$reason" '.status="failed" | .fail_reason=$r' >> "$tmp"
+  mv "$tmp" "$COLONY"
+}
+
 # 6) Provision the sandbox + boot the child
-OUT=$("$SKILL_DIR/scripts/host-daytona/provision.sh" "$NAME" "$WALLET_TMP" \
-       /Users/operator/anicca-oss/CONSTITUTION.md "$SHA")
+if ! OUT=$("$SKILL_DIR/scripts/host-daytona/provision.sh" "$NAME" "$WALLET_TMP" \
+       /Users/operator/anicca-oss/CONSTITUTION.md "$SHA"); then
+  mark_failed "provision.sh failed (see stderr above)"
+  echo "spawn-child: provisioning failed for $NAME — colony row marked failed" >&2
+  exit 1
+fi
 echo "$OUT"
 SB_ID=$(echo "$OUT" | awk -F= '/^SANDBOX_ID=/{print $2}')
 CHILD_HOME=$(echo "$OUT" | awk -F= '/^CHILD_HOME=/{print $2}')
 [ -n "$CHILD_HOME" ] || CHILD_HOME=/home/daytona
 
 # 7) Promote the colony row from provisioning to alive (single-writer; safe last-line rewrite)
-COLONY=/Users/operator/.hermes/state/colony.jsonl
 TMP=$(mktemp /Users/operator/.hermes/state/.tmp-colony-XXXX)
 head -n $(( $(wc -l < "$COLONY") - 1 )) "$COLONY" > "$TMP"
 LAST=$(tail -n 1 "$COLONY" | "$JQ" -c --arg sb "$SB_ID" --arg ch "$CHILD_HOME" '.sandbox_id=$sb | .child_home=$ch | .status="alive"')
