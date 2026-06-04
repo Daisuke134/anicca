@@ -107,8 +107,12 @@ every step behind a shipped impl; roll-out de-risked by in-house `self_update.py
 
 **★ CURRENT GROUND TRUTH (2026-06-04, measured — keep launch claims honest, HARD RULE #14/0.12) ★**
 ```
- instances    = genesis ×1 (Mac-mini, OpenClaw runtime, 24 launchd crons). cloud/child = ZERO
-                (no Daytona/Akash, no colony registry, no anicca-00X). "4 instances" = NOT yet true.
+ instances    = genesis ×1 = Hermes Agent v0.12.0 (2026.4.30) on Mac-mini, BYOK fuel=copilot (gh auth), model=gpt-4o-mini,
+                heartbeat every 30m -> ~/.hermes/state/heartbeat.jsonl (writer = skills/anicca-heartbeat;
+                ok=true, fuel="GitHub Copilot", model="gpt-4o-mini" verified live 2026-06-04 23:02 JST).
+                Hermes gateway launchd service alive: label "ai.hermes.gateway" (recorded in
+                ~/.hermes/state/hermes-launchd-label; PID survives kickstart).
+                (OpenClaw 19 jobs co-resident; cloud/child = ZERO; "4 instances" still target-state.)
  wallet       = 0xa3CDd4Ec... on Base → 0 USDC / 0 ETH (empty; x402 earn skill #324 not built).
  economics    = MRR ~$27 ; all-time landed ¥4,956 (NOT monthly) ; runtime spend ~$99/mo+ → NET NEGATIVE.
                 "avg ¥5,000/mo income, ~¥1,000 cost" = NOT true today (cost is ~¥15k/mo, income < cost).
