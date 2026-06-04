@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ubi-recipients",
+  "type": "object",
+  "required": ["recipients", "payout_percent", "reserve_months"],
+  "properties": {
+    "recipients": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["address", "weight", "label", "allow_live"],
+        "properties": {
+          "address":    {"type": "string", "pattern": "^0x[a-fA-F0-9]{40}$"},
+          "weight":     {"type": "number", "minimum": 0, "maximum": 100},
+          "label":      {"type": "string", "minLength": 1, "description": "Free-form human label; must NOT equal 'PLACEHOLDER' for live broadcast."},
+          "allow_live": {"type": "boolean", "description": "Must be true for the row to be broadcast in live mode (codex P4-burn-address-live-risk). Defaults to false in the seed; operator flips it intentionally."}
+        }
+      }
+    },
+    "payout_percent": {"type": "number", "minimum": 0, "maximum": 100},
+    "reserve_months": {"type": "number", "minimum": 0, "maximum": 60}
+  }
+}
