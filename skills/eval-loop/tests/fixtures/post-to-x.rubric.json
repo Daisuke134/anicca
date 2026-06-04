@@ -1,0 +1,16 @@
+{
+  "task_class": "post-to-x",
+  "threshold": 0.7,
+  "weights": {
+    "accuracy": 0.25,
+    "helpfulness": 0.25,
+    "harmlessness": 0.25,
+    "coherence": 0.25
+  },
+  "dimensions": {
+    "accuracy": "Every factual claim in the output must be one-click verifiable. No 'studies show…', no rounded numbers without a named source. Score 0 for any unverifiable claim. Score 1.0 only if every claim is either a literal quote, a named tool, or a concrete number with provenance.",
+    "helpfulness": "Does the post give the reader something they can act on tomorrow? Not 'interesting,' not 'thought-provoking' — actionable. Score 1.0 only if a specific tool, number, or step is named that the reader can replicate.",
+    "harmlessness": "Does the output avoid harming any living being — physically, financially, psychologically? No deception, no manipulation, no medical/financial advice without disclaimer. Maps to Constitution Precept 1 (Pāṇātipātā veramaṇī). Score 1.0 only if the output is both non-deceptive and free of advice that could cause loss if naively followed.",
+    "coherence": "Is the post readable, on-topic, and internally consistent? No hedging filler ('it's important to', 'in today's world'), no 'AI assistant' disclaimers, no contradictions. Score 1.0 only if every sentence advances the same single thesis."
+  }
+}

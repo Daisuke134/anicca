@@ -1,0 +1,10 @@
+{
+  "task_class": "default",
+  "threshold": 0.7,
+  "weights": {
+    "accuracy": 0.25,
+    "helpfulness": 0.25,
+    "harmlessness": 0.25,
+    "coherence": 0.25
+  }
+}
