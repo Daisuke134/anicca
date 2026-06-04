@@ -16,96 +16,149 @@
 
 ### v3 で間違った 3 つ
 
-1. **「launchd 19 plist 削除」**を最重要 task 化していた → 実は 19/19 中 17 件が pure-bash で **token cost = 0**。 削除しても何も節約 にならない。 真の問題は別。
-2. **「全 180 cron job を `claude-cli/sonnet-4-6` に swap」**案 → これは **sacred な Claude Code subscription を毎日 燃やす自殺案**。 Dais 厳命: 「sonnet は last resort、 codex 主力」。
+1. **「launchd 19 plist 削除」**を最重要 task 化していた → 実は **18 plist の内 16 件が pure-bash** で OpenClaw agentTurn cost = 0。 削除しても OpenClaw token は節約 されない (= agentmail-replier は別途 DeepSeek API 直叩きで paid だが launchd 起因ではない)。 真の問題は別。
+2. **「全 cron job を `claude-cli/sonnet-4-6` に swap」**案 → これは **sacred な Claude Code subscription を毎日 燃やす自殺案**。 Dais 厳命: 「sonnet は last resort、 codex 主力」。
 3. **launchd を OpenClaw cron に統合する Phase 2 epic** を 4 task 登録 → OpenClaw に shell-only kind 無い (= GitHub #18160 open) ので統合すると **逆に高くなる**。
 
-### 真の money leech (= 修正対象)
+### 真の money leech (= 修正対象、 2026-06-05 live data 確定)
 
-| 観察 | 数値 |
+| 観察 | 数値 (= `openclaw cron list` 実測) |
 |---|---|
-| OpenClaw cron 有効 job 数 | 192 |
-| 内 dead model (`deepseek/moonshot/openai-codex`) 指定 job | 180 (= 94%) |
-| sub-hourly 設定 job | 5 (= naist-pull / event-bot / arrival-mail / lateness / exec-guard) |
-| 真 duplicate | 2-3 (= naist-pull × 2 確定 / cron-doctor × 2 要確認) |
-| 1 日 総 cron fire 回数 | ~780 |
-| 1 fire 平均 token cost (= agentTurn 起動 + system prompt + bootstrap) | ~5K input |
-| 1 日 総 token cost 推定 | ~3.9M tokens |
+| OpenClaw cron 有効 job 数 | **155** (= 別 agent の cron-cull で 192→162→155 推移) |
+| 内 dead model 指定 job | **143** (= deepseek/v4-pro 113 + moonshot/kimi-k2.5 30) |
+| 内 model 指定無 (= defaults 継承) | **8** |
+| 内 codex/gpt-5.4-mini 指定 | 2 |
+| 内 claude-cli/sonnet-4-6 指定 | 2 |
+| sub-hourly 設定 job (= */N min) | **4** (= arrival */5 + lateness */5 + event-bot */15 + exec-guard */30) |
+| 真 duplicate | **要再確認** (= cron-cull 後 / anicca-cron-doctor 同名 2 件 別 schedule で 別目的可能性) |
 
-### Patch 戦略 (= 全面改訂)
+### Patch 戦略 (= 4 patch 分離、 reviewer iter 1 で修正)
 
-#### Patch X: `~/.openclaw/openclaw.json` defaults model chain
+#### Patch X — `openclaw.json` defaults model chain (= 3 行 配列 1 個)
 ```diff
-   "agents.defaults.model": {
-     "primary": "openai-codex/gpt-5.4-mini",  // Dais 主力 (今 429 だが復活待ち)
-     "fallbacks": [
--      "openai-codex/gpt-5.4-mini",   // duplicate of primary
--      "moonshot/kimi-k2.5",
--      "deepseek/deepseek-v4-pro"
-+      "deepseek/deepseek-v4-pro",          // 1st fallback (今 402)
-+      "moonshot/kimi-k2.5",                // 2nd fallback (今 429)
-+      "claude-cli/claude-sonnet-4-6"       // LAST resort — subscription 温存
-     ]
+   "fallbacks": [
+-    "openai-codex/gpt-5.4-mini",
+-    "moonshot/kimi-k2.5",
+-    "deepseek/deepseek-v4-pro"
++    "deepseek/deepseek-v4-pro",
++    "moonshot/kimi-k2.5",
++    "claude-cli/claude-sonnet-4-6"
+   ]
+```
+**primary 不変** (= `openai-codex/gpt-5.4-mini` Dais 主力)。 fallback 順序 = Dais 直命 `codex → deepseek → kimi → sonnet (LAST)`。
+
+#### Patch H — `openclaw.json` heartbeat.model 削除 (= 1 行)
+```diff
+   "heartbeat": {
+     "every": "60m",
+-    "model": "openai-codex/gpt-5.4-mini",
+     ...
    }
 ```
+heartbeat が `agents.defaults.model.primary` 継承 + fallback chain 走る。 citation: `concepts/model-failover.md` 「Heartbeat runs without an explicit `heartbeat.model` clear direct auto overrides」。
 
-#### Patch Y: 全 180 cron job の `payload.model` 削除 → defaults 継承
-個別 model override 撤去で全 job が primary→fallback chain を走る。 sonnet 焼き付け 回避。
+**Patch X + Patch H = openclaw.json の 4 行 編集**。 これで 155 cron + heartbeat 全部 codex primary + 正しい fallback chain に。
 
-#### Patch A: sub-hourly 緩和 (= 3 件のみ、 calling/real-time 2 件は例外維持)
+#### Patch Y — `jobs.json` の dead-model job 143 件 の `payload.model` 削除
+**対象 = `deepseek/*` と `moonshot/*` パターンのみ**。 codex (2) / sonnet (2) 指定 job は **保持** (= 意図的 override の可能性)。
+```bash
+# 編集前 backup
+cp ~/.openclaw/cron/jobs.json ~/.openclaw/cron/jobs.json.bak-patch-y-$(date +%s)
+# 編集: deepseek/* + moonshot/* 一致 job の payload.model 削除
+python3 - <<'PY'
+import json, re
+p = '/Users/anicca/.openclaw/cron/jobs.json'
+d = json.load(open(p))
+DEAD = re.compile(r'^(deepseek|moonshot)/')
+removed = 0
+for j in d['jobs']:
+    m = j.get('payload', {}).get('model', '')
+    if DEAD.match(m):
+        del j['payload']['model']
+        removed += 1
+json.dump(d, open(p, 'w'), indent=2, ensure_ascii=False)
+print(f'removed model override from {removed} jobs')
+PY
 ```
-naist-pull         */15 → 1h  (-72 fires/day)
-event-bot-trigger  */15 → 1h  (-72 fires/day)
-exec-guard         */30 → 1h  (-24 fires/day)
-arrival-mail       */15 → 維持 (Dais 例外 "calling stuff")
-lateness-heartbeat */10 → 維持 (Dais 例外)
-```
+**注**: jobs.json hot-reload (= Gateway 動作中編集対応)。 SQLite migration 未実行なので直編集が canonical。
 
-#### Patch Z: 真 duplicate 削除
-- `naist-pull` × 2: */15 (name-id) を remove、 1h (GUID-id) を残す
-- `anicca-cron-doctor` × 2: 用途確認後判断 (= 同名異 schedule で別目的の可能性)
+#### Patch A — sub-hourly 緩和 (= 2 件 のみ、 reviewer iter 1 で修正)
+real-time exception per Dais "calling stuff":
+| Job | 現 schedule | 提案 | fires/day 変化 |
+|---|---|---|---|
+| `anicca-arrival-mail` | `*/5 * * * *` | **維持** (Dais 例外 "calling") | 288 → 288 |
+| `anicca-lateness-heartbeat-shell` | `*/5 * * * *` | **維持** (同上) | 288 → 288 |
+| `anicca-event-bot-trigger` | `*/15 * * * *` | `0 * * * *` (1h) | 96 → 24 (-72) |
+| `anicca-exec-guard` | `*/30 * * * *` | `0 * * * *` (1h) | 48 → 24 (-24) |
 
-#### Patch H: heartbeat model 継承化
-`agents.defaults.heartbeat.model` から個別指定削除 → defaults 継承。 sonnet 焼き付け 回避。
+(naist-pull は cron-cull で既に hourly 化済、 Patch A 対象外)
 
-#### Patch L: launchd 19 plist は **全件維持**
-- 9 daemons (= webhook/endpoint/voice/bridge) は OpenClaw に supervisor 機能無 = 移行不可
-- 10 scheduled の内 8 件は pure-bash (= token 0)、 残 2 件 (cfo-daily / agentmail-replier) は要 grep 後判断
+**total sub-hourly: 720 → 624 fires/day (-96, -13%)**
+
+#### Patch Z — duplicate 削除 (= 要確認後)
+- `anicca-cron-doctor` 2 件 (= hourly `37 * * * *` + daily `0 3 * * *`): 用途別か duplicate か `--message` 内容で判別後判断
+- 他 duplicate は `openclaw cron list | sort -k2 | uniq -c -f1` で検出
+
+#### Patch L — launchd 18 plist は **全件維持** (= reviewer iter 1 で 19→18 修正)
+- **9 daemons** (= webhook/endpoint/voice/bridge): OpenClaw に supervisor 機能無 = 移行不可
+- **9 scheduled** の内 **8 件 pure-bash** = OpenClaw agentTurn token 0
+- **1 件 直 paid API**: `agentmail-replier` が DeepSeek API 直叩き (= per-reply paid call、 launchd 起因ではない、 hermes 側 設計問題)
 - **launchd 議論 完全終了** = Phase 2 epic 全 retire
 
-### 効果試算
+### 効果試算 (= reviewer iter 1 で recompute)
 
 ```
-=== Before Phase 1 ===
-fires/day total : 780
-  sub-hourly    : 384  (5 jobs)
-  hourly        : 216
-  multi-hour    :  37
-  daily         : 143
-token cost/day  : ~3.9M (= 780 × 5K)
+=== Before Phase 1 (= 155 enabled, 2026-06-05 live) ===
+sub-hourly  (4 jobs)     : 720 fires/day
+  arrival-mail    */5    : 288
+  lateness        */5    : 288
+  event-bot       */15   :  96
+  exec-guard      */30   :  48
+hourly      (~12 jobs)   : ~288 fires/day
+multi-hour  (~5 jobs)    : ~30 fires/day
+daily       (~134 jobs)  : ~134 fires/day
+TOTAL                    : ~1,172 fires/day
+token cost (= 5K/fire avg input + agentTurn bootstrap) : ~5.9M tokens/day
 
 === After Phase 1 (= Patch A + Z) ===
-fires/day total : 612 (-168, -21%)
-token cost/day  : ~3.06M
-saved           : ~0.84M tokens/day = ~21%
+sub-hourly  (4 jobs)     : 624 fires/day  (-96)
+hourly      (~14 jobs)   : ~336 fires/day (+ event-bot + exec-guard)
+multi-hour              : unchanged
+daily                   : unchanged
+TOTAL                    : ~1,124 fires/day  (-48 / -4%)
+token cost              : ~5.62M tokens/day
 
-=== 残 leak (= 別 epic) ===
-- 180 jobs が defaults 継承で結局 fail fallback で sonnet 着地中
-  → 他 provider (codex/deepseek/kimi) 復活 で自動解消
-- daemon は launchd 維持 (= 移行不可)
+=== 効果 (= 控えめ修正後) ===
+fires saved : 48-96/day (= Patch A 範囲、 duplicate 削除すれば追加)
+token saved : 0.24-0.48M tokens/day = ~4-8%
+
+=== Patch X + Y + H の真の効果 (= LLM call 効率化) ===
+- 5-min probe cache で codex 復活時自動切替
+- 143 jobs の dead-model retry overhead 解消 (= 1 fire で 1 LLM 試行 のみ)
+- sonnet 主力化 完全回避 (= Dais 厳命「sonnet 温存」遵守)
 ```
 
-### 残ギャップ (v4 で未完、 task #39-59 で追跡)
+### Circuit breaker risk (= reviewer iter 1 で追加)
+
+**全 provider 死亡 シナリオ**: codex 429 + deepseek 402 + kimi 429 全部 down 時、 全 cron + heartbeat が `claude-cli/sonnet-4-6` に着地 → subscription 1 日 5.6M token 焼く。
+
+**現状 対策**: `concepts/model-failover.md` の 5-min probe cache が 1 session 内で 1 primary 1 回までに制限。 だが 155 session (= 1 job 1 session) なので全 session 同時 sonnet 着地 可能性 残る。
+
+**今後追加 検討**:
+1. `cfo-core` 内 monitor 追加: `claude-cli/*` 1 日 fire 数 が閾値 (例 500/day) 超えたら Slack alert
+2. OpenClaw cron `failure-alert` 設定で 連続失敗時 自動 disable
+3. blockrun/* free 経由で別 provider 復活 → fallback chain 更新
+
+### 残ギャップ (v4 で未完、 task #39-60 で追跡)
 
 | 項目 | tasklist ID | 状態 |
 |---|---|---|
-| Patch X (defaults fallback chain 修正) | #50 P1.02 | 🔴 即実行可 |
-| Patch Y (cron 180 model override 削除) | #50 P1.02 | 🔴 同 task |
-| Patch A (sub-hourly 緩和 3 件) | #49 P1.01 | 🔴 即実行可 |
-| Patch Z (duplicate 削除) | #58 P1.05 | 🔴 即実行可 |
-| Patch H (heartbeat 継承化) | #59 P1.06 | 🔴 即実行可 |
-| Patch L (launchd 維持) | — | ✅ 維持確定 |
-| spec v4 update | #52 P1.04 | 🟡 in_progress (= この doc) |
+| Patch X + H (openclaw.json 4 行) | **新 task** | 🔴 即実行可 |
+| Patch Y (jobs.json dead-model override 143 件 削除) | **新 task** (= 旧 #60 分離) | 🔴 即実行可 |
+| Patch A (sub-hourly 緩和 2 件 = event-bot/exec-guard) | #49 P1.01 (scope 修正必要) | 🔴 即実行可 |
+| Patch Z (duplicate 削除) | #58 P1.05 | 🟡 要 cron-doctor 用途確認 |
+| Patch L (launchd 18 維持) | — | ✅ 維持確定 |
+| spec v4 update | #52 P1.04 | ✅ done (iter 1 修正済) |
 | Anicca 自走観測 (A1-A3) | #39-41 | 🔴 時間 + inbound 待ち |
 | dormant path 観測 (B4-B6) | #42-44 | 🔴 自然 inbound 待ち |
 | Dais 判断 (C12) | #45 | 🔴 |
