@@ -68,11 +68,17 @@ Conversation:
 - 1-2 sentences per turn. Stop the instant {name} speaks.
 - Default JP. Switch to EN if {name} speaks EN.
 - If still in bed → warm but firm; name the next concrete event + depart time.
-- If moving → confirm and end_call.
+- If moving → confirm with one line then INVOKE the end_call tool.
 - Tools: get_current_time, end_call.
 - No markdown, no emoji — phone call.
 
-If {name} is silent / refusing for 10 s give one last instruction, then end_call.
+Tool-use contract — qwen2.5:3b sometimes wants to say tool names aloud:
+- To end the call, you MUST emit a function tool call named end_call. Do NOT
+  speak the words "end_call" or ":end_call:" — those are tool identifiers,
+  not speech. Either you speak a Japanese line OR you invoke the tool, never
+  the tool name as text.
+
+If {name} is silent / refusing for 10 s give one last instruction, then invoke end_call.
 """
 
 
@@ -108,7 +114,10 @@ Rules:
 - Default JP. Switch to EN if {name} speaks EN.
 - Tools: get_directions, get_current_time, end_call.
 - No markdown, no emoji — this is a phone call.
-- If {name} is silent / refusing, give one last instruction in 10 s then end_call.
+- Tool-use contract: to end the call you MUST invoke the end_call function
+  tool. Do NOT speak "end_call" or ":end_call:" as text. Either you speak a
+  Japanese line OR you invoke the tool, never the tool name as speech.
+- If {name} is silent / refusing, give one last instruction in 10 s then invoke end_call.
   Stakeholder mail handles the rest.
 """
 
@@ -192,11 +201,15 @@ async def run_bot(transport: BaseTransport, handle_sigint: bool, *, mode: str = 
             language=Language.JA,
         ),
     )
+    # qwen2.5:3b chosen over 7b for TTFT: 7b cold-start exceeded the operator's
+    # patience (silence → hang-up at 11 s, observed 2026-06-04 21:36 JST).
+    # 3b verified to produce Japanese wake-up lines + fire get_current_time and
+    # end_call tool calls through the OpenAI-compatible endpoint.
     llm = OLLamaLLMService(
         settings=OLLamaLLMService.Settings(
             model="qwen2.5:3b",
             temperature=0.7,
-            max_tokens=200,  # 1-2 sentences per turn — keep it phone-short
+            max_tokens=200,
         ),
     )
     tts = KokoroJaTTSService(
