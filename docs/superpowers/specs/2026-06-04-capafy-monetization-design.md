@@ -28,7 +28,7 @@ Capafy審査基準 1.3.1–1.3.3: 全外部ネットワークリクエストはA
 
 | Fork | 決定 | 根拠 |
 |---|---|---|
-| **D1: 既定の課金モデル** | **スキル毎にコストで自動判定**（下記 §4 decision rule） | Bessemer「usage shapeに合わせろ」。利益最大化 |
+| **D1: 既定の課金モデル** | **スキル毎にコストで自動判定**（実装ルールは BP §4 v2 が SSOT） | Bessemer「usage shapeに合わせろ」。利益最大化 |
 | **D2: life-manager 再submitモード** | **Download / BYOK 買い切り** | ①機微データがユーザー端末から出ない→R1/R2を構造的に解消 ②我々のAPI代ゼロ ③Capafy cloudで常駐telephony不要。代償=orchestration logic開示は許容 |
 | **D3: Task 3 公開範囲** | **gate→batch** | life-manager再submit成功+目玉3-5本E2E公開→収益ループ実証→その後カテゴリ別一括。1度rejectされた以上、規模拡大前にloop検証 |
 
@@ -40,7 +40,7 @@ Capafy審査基準 1.3.1–1.3.3: 全外部ネットワークリクエストはA
 |---|---|---|
 | 手数料 | Capafy 20%（publisher 80%） | [capafy.ai/earn](https://capafy.ai/earn): "Capafy takes a 20% revenue share per transaction — you keep 80%." |
 | 認証料 | 初回公開時 **$0.99 一回** | [capafy.ai/earn](https://capafy.ai/earn): "A one-time Certification Fee of US$0.99 applies when you first publish." |
-| Sandbox Fee | Subscriptionのみ分配前控除（**金額非公開**）/ Download・Rentは無し | [capafy.ai/earn](https://capafy.ai/earn): "For Subscribed Skills, an Platform Sandbox Fee is deducted before the split; Download and renting mode has no Platform Sandbox Fee." |
+| Sandbox Fee | Subscriptionのみ分配前控除 = **US$0.07/日（確定・2026-06-04 publish web checkpoint 2 で実見: "Platform Sandbox Fee: US$0.07/day"）** / Download・Rentは無し | [capafy.ai/earn](https://capafy.ai/earn) + publish web checkpoint 実見 |
 | 鍵管理 | Run Online = **publisher鍵を暗号vaultに保管しruntime注入**（≠BYOK、API代はpublisher負担） | [capafy.ai/earn](https://capafy.ai/earn): "API credentials are stored in an encrypted vault and injected at runtime" |
 | 3モード | Subscription(日/週/月) / Hourly(rent) / Download(買い切り・**ソース全開示**) | [capafy.ai/earn](https://capafy.ai/earn) |
 | 売れ筋価格 | content/video: **$1.99–7.99/日 or 週** + Free Trial / Hourly $3–6/hr / Download ~$29 | [capafy.ai](https://capafy.ai/) ライブ出品実測 2026-06-04 |
@@ -50,7 +50,7 @@ Capafy審査基準 1.3.1–1.3.3: 全外部ネットワークリクエストはA
 | 自社事例 | KOL Hunter Pro $6/hr→$412/mo・Financial Report Analyst $19/mo×32subs→$408/mo・SEO Content Planner $29×40→$928 | [capafy.ai/earn](https://capafy.ai/earn) |
 | 売れ筋実測 | 最高Sold = TikTok Script(66) / Commerce Video(53) / Hook Optimizer(46) — 全て安価($1.99–2.99/日)+Free Trial の社会/動画系 | [capafy.ai](https://capafy.ai/) |
 
-**未解決ギャップ（捏造禁止）**: ①Sandbox Fee金額非公開（subscription実粗利を決める唯一の数字→価格にmargin headroom確保）②集計GMV非公開（per-listing Sold数のみ）③EN/JAで同Agent価格表示が異なる（ENは"Free Trial"表示で実recurring価格を隠す→locale毎に実価格確認）。
+**未解決ギャップ（捏造禁止）**: ①~~Sandbox Fee金額非公開~~ **[解決 2026-06-04: US$0.07/日 と判明]** ②集計GMV非公開（per-listing Sold数のみ）③EN/JAで同Agent価格表示が異なる（ENは"Free Trial"表示で実recurring価格を隠す→locale毎に実価格確認）。
 
 ---
 
@@ -61,6 +61,7 @@ Capafy審査基準 1.3.1–1.3.3: 全外部ネットワークリクエストはA
 各スキルにつき以下で **mode + price** を機械的に決める:
 
 ```
+# ⚠️ 以下 code block 全体は【旧・履歴・実装しない】。実装は BP §4 v2 を参照。
 STEP 1 — API/compute コスト推定（1 run あたり）
   high  = 電話(Twilio/Bland) / 動画レンダ(Remotion/Seedance) / 長時間Gemini Live / 大量scrape
   low   = テキストLLM 1-数回 / 軽い画像 / API 1-2 call
@@ -80,11 +81,11 @@ STEP 4 — IP判定（override）
      → それでもDownloadは露出する。露出を許容できない場合のみ Run Online + hard rate limit に倒す
 ```
 
-この rule を **§6の monetize-on-capafy スキルの中核ロジック**として実装し、§7の一括publishでも使う（single source of truth）。
+⚠️ **上記 STEP1-4 は初版・履歴（DO NOT IMPLEMENT）**。実装が参照する唯一の SSOT は **`2026-06-04-capafy-profit-playbook-BP.md` §4 v2**（subscription既定・high-costはmessage capでsubscription維持・Downloadは最終手段）。monetize-capafy / capafy-autopublish / 一括publish は全て BP §4 v2 を参照する。
 
 ---
 
-## 5. Task 1 — life-manager 再submit（Phase A・最優先）
+## 5. life-manager 再submit 詳細（実装は master §3 [3]#11・順序はmaster §3が正）
 
 ### 5.1 モード変換（D2）
 現状: Run Online志向（pipecat-phone launchd常駐 + 我々の鍵）→ **Download / BYOK 買い切り** へ変換。
@@ -129,7 +130,7 @@ publish-ship                          （validate・package・upload）
 | 項目 | 値 |
 |---|---|
 | 名前案 | `Capafy Profit Playbook — Price & List to Sell`（命名定石準拠） |
-| 中身 | §3 BP（引用付き）+ §4 decision rule script + 命名/説明テンプレ + reject回避checklist |
+| 中身 | §3 BP（引用付き）+ BP §4 v2 decision rule script + 命名/説明テンプレ + reject回避checklist |
 | publisher skill gap | E2E publishは公式skillで完結（browser不要）。gap = **「何をどう値付けするか」の判断レイヤー**が無い → ここを埋める |
 | 販売モード | Download 買い切り **$9–19**（self-contained methodology・軽量・API代ゼロ） |
 | 検証 | 自分でこのスキルを使ってlife-manager値付けを再現できるか（dogfood） |
@@ -142,13 +143,13 @@ publish-ship                          （validate・package・upload）
 - [ ] life-manager 再submit → audit通過（live URL）
 - [ ] 目玉3-5本（monk-factory系・reelfarm・content-creator等）をE2E公開し、最低1本 paid order着金 or live listing確認
 
-### 7.2 enumeration（HARD RULE: 2GB repoフルclone禁止）
-anicca-private-backup = ~2GB。**`gh api repos/Daisuke134/anicca-private-backup/contents/skills`** でスキル名を列挙（フルcloneしない）。各スキルは公開時にローカル`~/.openclaw/skills/`の対応物 or `gh api`で個別fetch。
+### 7.2 enumeration（訂正: スキルは LOCAL）
+スキルは既に LOCAL `~/.openclaw/skills/` に在る（anicca-private-backup はバックアップで fetch元ではない・gh api不要）。`~/.openclaw/skills/` を走査して列挙。詳細は master §3 [6]#14。
 
 ### 7.3 batch process（1個ずつE2E・HARD RULE並列禁止）
 ```
 for each skill (カテゴリ別バッチ):
-  1. §4 decision rule で mode+price 決定
+  1. BP doc 2026-06-04-capafy-profit-playbook-BP.md §4 v2 で mode+price 決定
   2. SKILL.md に disclosure（life-managerで確立した7要件テンプレ）適用
   3. publish-init/configure/ship（1スキル=1 Agent。bundle禁止=BP）
   4. audit通過をverify（次へ進む前に）
@@ -161,14 +162,14 @@ for each skill (カテゴリ別バッチ):
 
 ---
 
-## 8. Decomposition & Sequencing
+## 8. Decomposition & Sequencing ⚠️ SUPERSEDED（履歴）
+
+> 下記 Phase A-C は初期分解で**履歴**。**実行順の唯一のSSOT = master spec §3 の task table（[1]#9 Git整流 → [2]#10 capafy-autopublish → [3]#11 life-manager → …）**。jp-humanizer は Download $9.99 で提出済(審査中)＝確認のみ。本節は実装順の参照に使わない。
 
 ```
-Phase A (first money)   : Task 0 BP doc(本spec §3で完了) → Task 1 life-manager再submit
-Phase B                 : Task 2 monetize-on-capafy skill 作成・publish
-Phase C (gate→batch)    : Task 3 目玉3-5本 → カテゴリ別一括
+（履歴）Phase A: jp-humanizer / Phase B: monetize / Phase C: 目玉→一括
 ```
-各Phaseは spec→plan→worktree(該当時)→TDD/verify→review→finish の superpowers full flow を個別に通す（HARD RULE #0）。本specはPhase A-Cの上位設計。**直近のplan化対象 = Phase A (Task 1 life-manager再submit)**。
+各実装は spec→plan→worktree(該当時)→TDD/verify→review→finish の superpowers full flow を個別に通す（HARD RULE #0）。
 
 ---
 
@@ -176,8 +177,8 @@ Phase C (gate→batch)    : Task 3 目玉3-5本 → カテゴリ別一括
 
 | # | リスク | 緩和 |
 |---|---|---|
-| 1 | Sandbox Fee非公開→subscription実粗利不明 | subscriptionはmargin headroom確保。最初のsubscription publish後に実控除額をdashboardで確認しdecision ruleへfeedback |
-| 2 | Download = IP/prompt開示 | high-costスキルのみDownload。コアIP露出不可のものはRun Online+rate limitへoverride(§4 STEP4) |
+| 1 | ~~Sandbox Fee非公開~~ [解決: $0.07/日] → 残リスクはAnthropic等のAPI実コスト変動 | cap で実行回数を固定し price ≥ 2×(API+sandbox) を保つ。publish後dashboardで実コスト確認 |
+| 2 | Download = IP/prompt開示 | **BP §4 v2準拠**: high-costは まず message cap付き Run Online subscription で粗利防衛(ソース秘匿)。赤字 or 外部費用が制御不能な場合のみ Download/BYOK を最終手段。 |
 | 3 | 再submitで再reject | 7要件を**コードで強制**（SKILL.md記載だけでなくretry上限/confirmゲートを実装）。1本通してからbatch |
 | 4 | ~~`am_sk_...` の正体~~ **[解決 2026-06-04]** | **これはCapafy access tokenだった**（publisher `config.json` に `email:keiodaisuke@gmail.com / user_id:2060981302278778880 / developerVerified:true` で保存済）。`CAPAFY_ACCESS_TOKEN` env で OTP無しに全API認証可。マーケット検索で実証済（§4実データBPは別doc `2026-06-04-capafy-profit-playbook-BP.md`） |
 | 5 | 300本×$0.99 + reject大量再発 | gate→batch。カテゴリ別に少数ずつ・audit通過確認しながら |
@@ -190,5 +191,3 @@ Phase C (gate→batch)    : Task 3 目玉3-5本 → カテゴリ別一括
 - publish-workflow: `~/.openclaw/skills/capafy-publisher/publish-workflow.md`（Core Iron Rule #6 = 再submitはagent_id付き）
 - life-manager spec: `~/.openclaw/docs/ANICCA_LIFE_MANAGER_SPEC.md`
 - 調査ソース: [capafy.ai/earn](https://capafy.ai/earn), [capafy.ai](https://capafy.ai/), [Bessemer](https://www.bvp.com/atlas/the-ai-pricing-and-monetization-playbook), [Stripe](https://stripe.com/resources/more/ai-companies-and-usage-based-billing)
-</content>
-</invoke>

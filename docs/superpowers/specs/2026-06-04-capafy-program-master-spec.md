@@ -1,7 +1,8 @@
 # Capafy 収益化プログラム — MASTER SPEC（やるべきこと全部）
 
 - **Date**: 2026-06-04
-- **Status**: PLANNING（実装未着手）
+- **Status**: IN PROGRESS（[7]#15 jp-humanizer は Download $9.99 で提出済・審査中 / [1]-[6] 未着手）
+- **GATE 1 (spec review)**: ✅ PASS — Codex iter1/iter2 で blocking 修正 → iter3 superpowers code-reviewer で ok:true 収束(2026-06-04)
 - **Branch policy**: `dev` = 唯一の作業trunk（このspecもdevに置く）
 - **方法論**: SDD/TDD（各実装タスクは個別に spec→plan→TDD→verify→review→dev push）
 - **関連**: `2026-06-04-capafy-monetization-design.md` / `2026-06-04-capafy-profit-playbook-BP.md` / `~/.openclaw/docs/CAPAFY_PUBLISH_PLAYBOOK.md`
@@ -43,7 +44,7 @@
 | 鍵の出し手 | サブスク=我々 / Download=買い手。買い手が鍵出せるのはDownloadのみ |
 | 収益実測232件 | TOP35全サブスク・Download最高販売2本 |
 | コスト | Sonnet4.6 $3/M in・$15/M out。1 humanize≈$0.12/回(agent overhead込) |
-| 安全黒字 | サブスク 週$5.99×cap8/週(4.6:1)。cap40は赤字 |
+| 安全黒字 | サブスク 週$5.99×cap8/週。手残り=5.99×0.8=$4.79 vs 総コスト(API $0.12×8=$0.96 + sandbox $0.07×7=$0.49 = $1.45)＝**約3.3:1**(sandbox込)。cap40は赤字 |
 | token | `~/.openclaw/skills/capafy-publisher/config.json::access_token`(OTP不要) |
 | 検索 | JSON body `{"query":...}`。`--env claude_code` |
 | スキル所在 | LOCAL `~/.openclaw/skills/`（anicca-private-backupはバックアップで fetch元ではない） |
@@ -91,11 +92,13 @@ DeepSeek等の安い鍵で「サブスク化」は **LLM部分のみ**解決。l
 | advise | BP(232件)で「今これが売れてる→こう直せ」を壁打ち |
 | build/fix | 既存スキルを売れる形にリライト / 0から生成 |
 | price | BPルールで mode+価格を推奨提示 → 人が最終承認(唯一の人判断) |
-| publish | CLI chain + camofox web自動化(CP1 Card/CP2 cred/deep-scan/CP3 Submit) + リーク防止(Workspace Docs deselect=CLAUDE.md除外) + logo canvas生成 |
+| publish | CLI chain + camofox web自動化(CP1 Card/CP2 cred/deep-scan/CP3 Submit) + logo canvas生成 |
+| リーク防止(fail-closed・自走の安全境界) | ①**allowlist方式**: bundleはskill本体(SKILL.md/README/LICENSE/scripts/references)のみ。それ以外は既定除外 ②**denylist**: `CLAUDE.md` `.env*` `settings*.json` `.credentials*` `*token*` `*secret*` `.git` `histories/session logs` `private docs` を必ず除外(CP1でWorkspace Docs deselect + configure deep-scan + staging grep) ③**検出時fail-closed**: 秘密/denylist hit を検出したら publish中止(exit≠0)・続行しない ④**publish前 manifest diff** をログ出力し想定外ファイルを検知 ⑤**台帳 `_shared/capafy-published.jsonl` に token/secret/API key を残さない**(agent_id/title/mode/price/日付のみ) |
 | verify | publish-remote-status で status=1/4 確認(嘘禁止) |
 | 自走 | Anicca cron が ~/.openclaw/skills/ 走査→未公開1つ→実行→台帳(_shared/capafy-published.jsonl)記録→次。1run=1スキル |
 
 ## 6. 進め方（SDD/TDD・恒久ルール）
 
-各実装タスク(T2/T3/T7)は個別に: **brainstorming spec → writing-plans → using-git-worktrees(該当時) → TDD(RED→GREEN→REFACTOR) → verification-before-completion → code-review → finishing(dev push)**。本spec は上位master。直近 plan化対象は **T8(Git整流) → T3(autopublish)**。
-</content>
+各実装タスク([2]#10 / [3]#11 / [5]#13)は個別に: **brainstorming spec → writing-plans → using-git-worktrees(該当時) → TDD(RED→GREEN→REFACTOR) → verification-before-completion → code-review → finishing(dev push)**。本spec は上位master。
+
+**実行順 SSOT（唯一の正）**: §3 の task table（ID昇順=実行順）が唯一の実行順。jp-humanizer は **Download $9.99 で提出済(agent_id 3332784488・審査中)＝[7]#15で確認のみ・再公開しない**。次の着手は **[1]#9 Git整流 → [2]#10 capafy-autopublish → [3]#11 life-manager**。design doc の「Phase A」表記・jp-humanizer plan は履歴（superseded）であり、実行順はこの table のみを参照する。

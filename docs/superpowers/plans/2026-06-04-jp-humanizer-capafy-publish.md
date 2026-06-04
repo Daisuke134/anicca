@@ -1,5 +1,7 @@
 # JP Humanizer → Capafy Subscription Publish — Implementation Plan
 
+> ⚠️⚠️ **SUPERSEDED / 履歴 (2026-06-04)** — 本plan は初期案（Run Online subscription・cap40）。**実際の公開は Download $9.99・agent_id 3332784488 として status=1(under review) まで提出済**。理由: サブスクは我々のAnthropic鍵hosting必須だが口座$0.01・auto-reload off で不成立→Dais判断で Download に切替（master spec §3 / BP §6）。**cap40 は赤字ラインで未使用**（黒字=週$5.99×cap8）。本plan の subscription手順・cap40・record追記は**実行しない**。残作業は listing確認のみ=task `[7]#15`。TDD/NG語同期・実runtime検証の教訓は capafy-autopublish spec([2]#10) に引き継ぐ。以下は記録として残置。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 自前のオリジナル日本語Humanizerスキルを新規作成し、Capafyに **Run Online subscription（$5.99/週・Free Trial・message cap）** Agentとして公開する（Phase A = 最初の金）。
@@ -312,5 +314,4 @@ Expected: 自分の `Japanese Humanizer — Strip the AI Tells` が検索結果�
 ## Open execution notes
 
 - Capafy web checkpoint（mode/price/Free Trial/cap/submit）はCLIフラグでなくweb設定 → camofox/agent-browserで**自分で**駆動（HARD RULE #-2/#-1/#18: human-loop禁止）。実CAPTCHA描画時のみ例外。
-- `--env claude`（runtime=claude。BP上位スキルと一致）。
-</content>
+- `--env claude_code`（runtime。`claude`は無効値だった＝実行時に判明し修正済）。

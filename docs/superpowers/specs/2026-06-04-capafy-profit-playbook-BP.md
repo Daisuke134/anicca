@@ -104,7 +104,7 @@ STEP 2 — 価格
   必ず Free Trial を front door に付ける
 
 STEP 3 — message cap（subscriptionの粗利防衛）
-  cycleMaxMessageCount を設定し、1サイクルの実行回数=API代の上限を固定（Sandbox Fee非公開対策）
+  cycleMaxMessageCount を設定し、1サイクルの実行回数=API代の上限を固定（Sandbox Fee = $0.07/日 確定込みで黒字設計）
 
 STEP 4 — 命名/説明（F4/F5を機械適用）
   title  = `成果/対象 — 制約付きベネフィット`
@@ -118,9 +118,8 @@ STEP 4 — 命名/説明（F4/F5を機械適用）
 
 ## 5. 経済前提（再掲・引用§3 of design spec）
 
-Capafy 20%手数料 / 初回$0.99認証 / Subscriptionのみ Sandbox Fee（非公開）控除。
-→ subscription価格は **message capで実行回数を固定**し、`想定API代 × cap × 2 ≤ cyclePrice` を満たすこと。
-</content>
+Capafy 20%手数料 / 初回$0.99認証 / Subscriptionのみ Sandbox Fee **US$0.07/日（確定・publish web checkpoint実見）** 控除。
+→ subscription価格は **message capで実行回数を固定**し、`(想定API代/回 × cap) + (sandbox $0.07×日数) ≤ cyclePrice × 0.8 / 2` を満たすこと（手残り≥API+sandboxの2倍）。
 
 ---
 
@@ -137,6 +136,6 @@ Capafy 20%手数料 / 初回$0.99認証 / Subscriptionのみ Sandbox Fee（非�
 
 **経緯の教訓（重要・次回以降のため）**:
 - Capafy「Run on Capafy(サブスク)」= publisher(我々)のLLM鍵をvault hosting＝我々がAPI代負担。買い手が鍵を出せるのは Download のみ。
-- 実コスト計算: Sonnet 4.6 = $3/M in・$15/M out。1 humanize ≈ 保守$0.12/回（agent runtime overhead込み）。**初期cap=40/週は power user 1人で赤字**→cap 8-10/週が4.6:1黒字ライン。
+- 実コスト計算: Sonnet 4.6 = $3/M in・$15/M out。1 humanize ≈ 保守$0.12/回（agent runtime overhead込み）。**初期cap=40/週は power user 1人で赤字**→cap 8/週で 手残り$4.79 vs 総コスト$1.45(API$0.96+sandbox$0.49)＝**約3.3:1**(sandbox込)の黒字ライン。
 - Anthropic口座が $0.01・auto-reload off → サブスク鍵hosting不可（要入金）。→ Dais判断で **Download（入金不要）に切替**して公開。
 - サブスク再挑戦時は Anthropic入金 + cap 8/週 + 週$5.99 が黒字設計。
