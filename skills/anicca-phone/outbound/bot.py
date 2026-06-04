@@ -1,7 +1,9 @@
 #
-# Anicca outbound wake-up bot.
-# Pattern: pipecat-examples/twilio-chatbot/outbound + gemini-live-starters/phone-bot.
-# Cascaded STT+LLM+TTS は捨て、Gemini Live native S2S(~500ms)に統一。
+# Anicca outbound wake-up / lateness bot.
+# Pattern: pipecat-examples/twilio-chatbot/outbound.
+# Voice stack (2026-06-04): free local cascade — MLX Whisper (STT) + DeepSeek
+# (LLM) + Kokoro+misaki[ja] (TTS). Replaced Gemini Live native S2S after its
+# Google Cloud billing went into dunning (403 → robotic Twilio error voice).
 #
 
 import asyncio
@@ -16,7 +18,6 @@ import urllib.request
 from pathlib import Path
 
 from dotenv import load_dotenv
-from google.genai.types import ThinkingConfig
 from loguru import logger
 from pipecat.adapters.schemas.function_schema import FunctionSchema
 from pipecat.adapters.schemas.tools_schema import ToolsSchema
@@ -36,13 +37,17 @@ from pipecat.processors.frame_processor import FrameDirection
 from pipecat.runner.types import RunnerArguments
 from pipecat.runner.utils import parse_telephony_websocket
 from pipecat.serializers.twilio import TwilioFrameSerializer
-from pipecat.services.google.gemini_live.llm import GeminiLiveLLMService
 from pipecat.services.llm_service import FunctionCallParams
+from pipecat.services.ollama.llm import OLLamaLLMService
+from pipecat.services.whisper.stt import MLXModel, WhisperSTTServiceMLX
+from pipecat.transcriptions.language import Language
 from pipecat.transports.base_transport import BaseTransport
 from pipecat.transports.websocket.fastapi import (
     FastAPIWebsocketParams,
     FastAPIWebsocketTransport,
 )
+
+from kokoro_ja_tts import KokoroJaTTSService
 
 # Anicca secrets live in ~/.openclaw/.env (never committed).
 load_dotenv(os.path.expanduser("~/.openclaw/.env"), override=True)
@@ -170,17 +175,35 @@ async def run_bot(transport: BaseTransport, handle_sigint: bool, *, mode: str = 
     system_instruction = pick_system_instruction(mode, ctx, name)
     logger.info(f"Anicca mode={mode!r}, name={name!r}, ctx len={len(ctx)}, prompt len={len(system_instruction)}")
 
-    # Gemini Live native S2S — ~500ms turn latency, no separate STT/TTS layer.
-    # Model + voice per pipecat-examples/gemini-live-starters/phone-bot/bot.py.
-    llm = GeminiLiveLLMService(
-        api_key=os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY"),
-        settings=GeminiLiveLLMService.Settings(
-            model="gemini-2.5-flash-native-audio-preview-09-2025",
-            voice="Charon",  # Puck / Charon / Kore / Fenrir / Aoede / Leda / Orus / Zephyr
-            system_instruction=system_instruction,
-            thinking=ThinkingConfig(thinking_budget=0),  # latency-first
+    # Free, local, billing-independent cascade (2026-06-04): we dropped Gemini
+    # Live native S2S after its Google Cloud billing went into dunning (403 on
+    # every key → Twilio played its default robotic "application error" voice).
+    # STT  = MLX Whisper (Apple-Silicon-native, $0, runs on the Mac mini)
+    # LLM  = Ollama qwen2.5:3b (fully local, $0; cloud LLMs were all unfunded —
+    #        Gemini billing in dunning, DeepSeek 402 no-balance, OpenAI $0).
+    #        Verified: Japanese wake-up lines + end_call/get_directions tool
+    #        calls both work through Ollama's OpenAI-compatible endpoint.
+    # TTS  = Kokoro + misaki[ja] g2p (jm_kumo male voice; see kokoro_ja_tts.py
+    #        for why stock KokoroTTSService's espeak path mangles Japanese)
+    # Trade-off vs S2S: +0.8-1.5s turn latency, acceptable for a wake-up call.
+    stt = WhisperSTTServiceMLX(
+        settings=WhisperSTTServiceMLX.Settings(
+            model=MLXModel.LARGE_V3_TURBO.value,
+            language=Language.JA,
         ),
-        tools=tools,
+    )
+    llm = OLLamaLLMService(
+        settings=OLLamaLLMService.Settings(
+            model="qwen2.5:3b",
+            temperature=0.7,
+            max_tokens=200,  # 1-2 sentences per turn — keep it phone-short
+        ),
+    )
+    tts = KokoroJaTTSService(
+        settings=KokoroJaTTSService.Settings(
+            voice="jm_kumo",  # Japanese male; jf_* are female
+            language=Language.JA,
+        ),
     )
 
     # Tool handlers
@@ -372,7 +395,15 @@ async def run_bot(transport: BaseTransport, handle_sigint: bool, *, mode: str = 
         kickoff = "Speak NOW. The phone just connected. Open with your one-line wake-up urgent opener from the system prompt. Do not greet, do not pause."
     else:  # lateness
         kickoff = "Speak NOW. The phone just connected. Open with your one-line lateness opener from the system prompt — pick the verb matching the CALL CONTEXT event type. Do not greet, do not pause."
-    context = LLMContext(messages=[{"role": "user", "content": kickoff}])
+    # Cascade LLM (DeepSeek/OpenAI-style): the persona goes in as a system
+    # message (Gemini took it as a setting); tools live on the context.
+    context = LLMContext(
+        messages=[
+            {"role": "system", "content": system_instruction},
+            {"role": "user", "content": kickoff},
+        ],
+        tools=tools,
+    )
     user_aggregator, assistant_aggregator = LLMContextAggregatorPair(
         context,
         user_params=LLMUserAggregatorParams(
@@ -380,12 +411,16 @@ async def run_bot(transport: BaseTransport, handle_sigint: bool, *, mode: str = 
         ),
     )
 
-    # No STT/TTS in the pipeline — gemini_live handles both directions natively.
+    # Cascade pipeline: caller audio → Whisper STT → context → DeepSeek LLM →
+    # Kokoro TTS → caller audio. (Gemini Live used to collapse STT+TTS into one
+    # native S2S service; the local cascade makes each stage explicit.)
     pipeline = Pipeline(
         [
             transport.input(),
+            stt,
             user_aggregator,
             llm,
+            tts,
             transport.output(),
             assistant_aggregator,
         ]
