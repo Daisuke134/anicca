@@ -53,6 +53,35 @@ cf_snapshot() {
   curl -sS "$CAMOFOX/tabs/$tab/snapshot?userId=$USER_ID&sessionKey=$SESSION_KEY"
 }
 
+# ─── snapshot accessibility text (robust: camofox JSON has unescaped control ─
+# chars that break jq, so parse with python json.loads(strict=False)) ────────
+cf_snapshot_text() {
+  local tab="$1"
+  curl -sS "$CAMOFOX/tabs/$tab/snapshot?userId=$USER_ID&sessionKey=$SESSION_KEY" \
+    | "$PYTHON" -c '
+import sys,json
+raw=sys.stdin.read()
+try:
+    print(json.loads(raw, strict=False).get("snapshot",""))
+except Exception:
+    print(raw)
+'
+}
+
+# ─── current tab URL (same robust parse) ───────────────────────────────────
+cf_url() {
+  local tab="$1"
+  curl -sS "$CAMOFOX/tabs/$tab/snapshot?userId=$USER_ID&sessionKey=$SESSION_KEY" \
+    | "$PYTHON" -c '
+import sys,json
+raw=sys.stdin.read()
+try:
+    print(json.loads(raw, strict=False).get("url",""))
+except Exception:
+    print("")
+'
+}
+
 # ─── evaluate JS in tab (returns raw JSON on stdout) ───────────────────────
 # Forbidden in --dry-run; callers MUST gate.
 cf_evaluate() {

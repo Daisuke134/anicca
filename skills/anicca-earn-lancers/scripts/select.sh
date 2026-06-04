@@ -88,15 +88,30 @@ for JID in $JIDS; do
 
   PARSED=$(JID="$JID" SNAP="$SNAP" "$PYTHON" - <<'PY'
 import json, re, os
-d = json.loads(os.environ.get('SNAP', '{}') or '{}')
+# camofox live snapshot JSON contains unescaped control chars → strict=False
+d = json.loads(os.environ.get('SNAP', '{}') or '{}', strict=False)
 snap = d.get('snapshot', '')
 jid = os.environ['JID']
-title = (re.search(r'(?m)^\s*(?:[#=]+\s*)?(.{4,60})$', snap) or [None, ''])[1].strip() if re.search(r'(?m)^\s*(?:[#=]+\s*)?(.{4,60})$', snap) else ''
-b = re.search(r'予算\s*¥?([\d,]+)\s*[-〜~]?\s*¥?([\d,]+)?', snap)
-budget = 0
-if b:
-    budget = int((b.group(2) or b.group(1)).replace(',', ''))
-print(json.dumps({"jid": jid, "url": f"https://www.lancers.jp/work/detail/{jid}", "title": title, "budget_jpy": budget}, ensure_ascii=False))
+
+# Title = the level=1 heading (the gig title). Strip the trailing
+# " [ category ] NEW" suffix and the accessibility-tree markup.
+title = ''
+mt = re.search(r'heading "([^"]+)" \[level=1\]', snap)
+if mt:
+    title = re.sub(r'\s*\[\s*[^\]]*\]\s*(NEW)?\s*$', '', mt.group(1)).strip()
+
+# Budget lives in the 依頼概要 → 提案状況 window as "~ 5,000円" /
+# "10,000円 ~ 20,000円". Amounts after 提案状況 are recommended-gig sidebar
+# entries (different gigs) — exclude them. Take the largest figure in the
+# window (upper bound of the budget range).
+start = snap.find('依頼概要')
+end = snap.find('提案状況')
+window = snap[start:end] if (start != -1 and end != -1 and end > start) else ''
+amounts = [int(x.replace(',', '')) for x in re.findall(r'([\d,]+)\s*円', window)]
+budget = max(amounts) if amounts else 0
+
+print(json.dumps({"jid": jid, "url": f"https://www.lancers.jp/work/detail/{jid}",
+                  "title": title, "budget_jpy": budget}, ensure_ascii=False))
 PY
 )
 
@@ -106,7 +121,7 @@ PY
   EFF=$(printf '%s' "$EFF_LINE" | "$JQ" -r '.effort_estimate // 5' 2>/dev/null || echo 5)
 
   ROW=$("$JQ" -n --argjson p "$PARSED" --argjson e "$EFF" \
-    '$p + {effort_estimate:$e, score: ((.budget_jpy // 0) / ([1, $e] | max))}')
+    '$p + {effort_estimate:$e, score: (($p.budget_jpy // 0) / ([1, $e] | max))}')
   ROWS_JSON=$("$JQ" -n --argjson a "$ROWS_JSON" --argjson r "$ROW" '$a + [$r]')
 done
 
