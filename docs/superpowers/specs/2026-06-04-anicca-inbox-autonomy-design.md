@@ -1,13 +1,119 @@
-# Anicca Inbox Autonomy v3 — Live + LLM Gateway Pivot
+# Anicca Inbox Autonomy v4 — Cron Policy + Model Chain Doctrine
 
 | Field | Value |
 |---|---|
-| Date | 2026-06-04 |
+| Date | 2026-06-05 |
 | Author | Anicca (Claude main loop) |
-| Status | **LIVE** (first real send 2026-06-04 23:41:47 JST) |
-| Replaces | v2 (DRY_RUN 14d window 案・LLM model 設計が paid provider 死で破綻) |
-| Replaces² | v1 (Slack escalation 案・HARD RULE #18 違反だったので破棄) |
+| Status | **LIVE** (first real send 2026-06-04 23:41:47 JST) + cron money-leech 退治 |
+| Replaces | v3 (= cron policy 不在、 model swap 戦略 が sonnet 焼き付け = 間違い) |
+| Replaces² | v2 (DRY_RUN 14d window 案・LLM model 設計が paid provider 死で破綻) |
+| Replaces³ | v1 (Slack escalation 案・HARD RULE #18 違反だったので破棄) |
 | Successor of | `anicca-mail-auto-reply` v1 (stub since 2026-05-30) |
+
+---
+
+## 0.2. v3 → v4 diff (= money leech 発見と修正)
+
+### v3 で間違った 3 つ
+
+1. **「launchd 19 plist 削除」**を最重要 task 化していた → 実は 19/19 中 17 件が pure-bash で **token cost = 0**。 削除しても何も節約 にならない。 真の問題は別。
+2. **「全 180 cron job を `claude-cli/sonnet-4-6` に swap」**案 → これは **sacred な Claude Code subscription を毎日 燃やす自殺案**。 Dais 厳命: 「sonnet は last resort、 codex 主力」。
+3. **launchd を OpenClaw cron に統合する Phase 2 epic** を 4 task 登録 → OpenClaw に shell-only kind 無い (= GitHub #18160 open) ので統合すると **逆に高くなる**。
+
+### 真の money leech (= 修正対象)
+
+| 観察 | 数値 |
+|---|---|
+| OpenClaw cron 有効 job 数 | 192 |
+| 内 dead model (`deepseek/moonshot/openai-codex`) 指定 job | 180 (= 94%) |
+| sub-hourly 設定 job | 5 (= naist-pull / event-bot / arrival-mail / lateness / exec-guard) |
+| 真 duplicate | 2-3 (= naist-pull × 2 確定 / cron-doctor × 2 要確認) |
+| 1 日 総 cron fire 回数 | ~780 |
+| 1 fire 平均 token cost (= agentTurn 起動 + system prompt + bootstrap) | ~5K input |
+| 1 日 総 token cost 推定 | ~3.9M tokens |
+
+### Patch 戦略 (= 全面改訂)
+
+#### Patch X: `~/.openclaw/openclaw.json` defaults model chain
+```diff
+   "agents.defaults.model": {
+     "primary": "openai-codex/gpt-5.4-mini",  // Dais 主力 (今 429 だが復活待ち)
+     "fallbacks": [
+-      "openai-codex/gpt-5.4-mini",   // duplicate of primary
+-      "moonshot/kimi-k2.5",
+-      "deepseek/deepseek-v4-pro"
++      "deepseek/deepseek-v4-pro",          // 1st fallback (今 402)
++      "moonshot/kimi-k2.5",                // 2nd fallback (今 429)
++      "claude-cli/claude-sonnet-4-6"       // LAST resort — subscription 温存
+     ]
+   }
+```
+
+#### Patch Y: 全 180 cron job の `payload.model` 削除 → defaults 継承
+個別 model override 撤去で全 job が primary→fallback chain を走る。 sonnet 焼き付け 回避。
+
+#### Patch A: sub-hourly 緩和 (= 3 件のみ、 calling/real-time 2 件は例外維持)
+```
+naist-pull         */15 → 1h  (-72 fires/day)
+event-bot-trigger  */15 → 1h  (-72 fires/day)
+exec-guard         */30 → 1h  (-24 fires/day)
+arrival-mail       */15 → 維持 (Dais 例外 "calling stuff")
+lateness-heartbeat */10 → 維持 (Dais 例外)
+```
+
+#### Patch Z: 真 duplicate 削除
+- `naist-pull` × 2: */15 (name-id) を remove、 1h (GUID-id) を残す
+- `anicca-cron-doctor` × 2: 用途確認後判断 (= 同名異 schedule で別目的の可能性)
+
+#### Patch H: heartbeat model 継承化
+`agents.defaults.heartbeat.model` から個別指定削除 → defaults 継承。 sonnet 焼き付け 回避。
+
+#### Patch L: launchd 19 plist は **全件維持**
+- 9 daemons (= webhook/endpoint/voice/bridge) は OpenClaw に supervisor 機能無 = 移行不可
+- 10 scheduled の内 8 件は pure-bash (= token 0)、 残 2 件 (cfo-daily / agentmail-replier) は要 grep 後判断
+- **launchd 議論 完全終了** = Phase 2 epic 全 retire
+
+### 効果試算
+
+```
+=== Before Phase 1 ===
+fires/day total : 780
+  sub-hourly    : 384  (5 jobs)
+  hourly        : 216
+  multi-hour    :  37
+  daily         : 143
+token cost/day  : ~3.9M (= 780 × 5K)
+
+=== After Phase 1 (= Patch A + Z) ===
+fires/day total : 612 (-168, -21%)
+token cost/day  : ~3.06M
+saved           : ~0.84M tokens/day = ~21%
+
+=== 残 leak (= 別 epic) ===
+- 180 jobs が defaults 継承で結局 fail fallback で sonnet 着地中
+  → 他 provider (codex/deepseek/kimi) 復活 で自動解消
+- daemon は launchd 維持 (= 移行不可)
+```
+
+### 残ギャップ (v4 で未完、 task #39-59 で追跡)
+
+| 項目 | tasklist ID | 状態 |
+|---|---|---|
+| Patch X (defaults fallback chain 修正) | #50 P1.02 | 🔴 即実行可 |
+| Patch Y (cron 180 model override 削除) | #50 P1.02 | 🔴 同 task |
+| Patch A (sub-hourly 緩和 3 件) | #49 P1.01 | 🔴 即実行可 |
+| Patch Z (duplicate 削除) | #58 P1.05 | 🔴 即実行可 |
+| Patch H (heartbeat 継承化) | #59 P1.06 | 🔴 即実行可 |
+| Patch L (launchd 維持) | — | ✅ 維持確定 |
+| spec v4 update | #52 P1.04 | 🟡 in_progress (= この doc) |
+| Anicca 自走観測 (A1-A3) | #39-41 | 🔴 時間 + inbound 待ち |
+| dormant path 観測 (B4-B6) | #42-44 | 🔴 自然 inbound 待ち |
+| Dais 判断 (C12) | #45 | 🔴 |
+| 長期 (E18-E20) | #46-48 | 🔴 |
+
+---
+
+## 0.1 v2 → v3 diff (= 旧、 履歴維持)
 
 ---
 
