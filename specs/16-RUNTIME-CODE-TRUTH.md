@@ -158,6 +158,13 @@ RICH layers the first pass UNDERSOLD (all in tools/ + cli.py):
       uses for Lancers/Coconala login + earning; automaton has no browser)
   • mixture-of-agents ✅ tools/mixture_of_agents_tool.py (multi-model vote)
   • cron/heartbeat ✅ tools/cronjob_tools.py ; delegate_task ✅ tools/delegate_tool.py (local)
+  • UNATTENDED 24/7  ✅ gateway/ (Telegram/Discord/Slack/WhatsApp/Feishu inbound→autonomous reply)
+      + tools/cronjob_tools.py (own cron scheduler w/ threat-scan). So Hermes CAN run
+      unattended like automaton's heartbeat — CORRECTS the earlier "automaton only" claim.
+  • ACP adapter (acp_adapter/) = **Agent CLIENT Protocol** (JSON-RPC for editors like Zed,
+      server.py:241 "model selector for editors like Zed") — NOT Agent COMMERCE Protocol.
+      `billing_provider` (session.py:506) = which LLM to bill, NOT earning. → My "ACP = earning"
+      hypothesis was WRONG. Hermes has NO earning path. Confirmed.
 STILL LACKS (confirmed by full *.py grep): wallet, x402, USDC topup,
   self-spawn-to-cloud, constitution engine. (402 hits = vision credit-error text +
   a fallback tip only; skills_hub private_key = GitHub App auth, not a crypto wallet.)
@@ -178,7 +185,23 @@ DISQUALIFIERS for us:
   (1) self-improve-from-logs ABSENT (self-updater = npm binary upgrade only) ← mission capability #2 missing
   (2) self-spawn tied to elizaOS Cloud (Hetzner, admin-gated SaaS) — not self-hostable to our cloud
   (3) 2.27GB TS monorepo, heavy coupling
-VERDICT: do NOT import the monorepo. STEAL designs: autonomy 30s-loop, x402-manager (cleanest x402-IN ref), Plugin/Action interface.
+VERDICT: do NOT import the monorepo. STEAL designs: autonomy 30s-loop, x402 verify/settle flow, Plugin/Action interface.
+```
+
+### § 4.1 DEEP read 2026-06-04 (reinforces the verdict)
+```
+• "self-replication" — there is a packages/alberta/ "Step 1 replication" test, BUT alberta
+  = a RL RESEARCH framework (actor_critic, IDBD, continual_backprop, Sutton-1992 reproduction,
+  ≥30 seeds). "replication" = reproducing academic paper RESULTS, NOT agent self-cloning.
+  → Eliza does NOT self-clone the agent. My "Eliza replicates" hypothesis was WRONG.
+• x402 lives in packages/cloud-api/v1/x402/{route,settle,requests/[id]}.ts = elizaOS CLOUD
+  SaaS server routes (verify+settle facilitator). It is NOT a self-hostable agent primitive;
+  it is bolted to elizaOS Cloud — same pattern as the Hetzner spawn.
+• wallet suite is rich (packages/agent/src/api/wallet-{keygen,evm-balance,dex-prices,trading-
+  profile,rpc}.ts) but coupled to their runtime + cloud key store.
+CONCLUSION: Eliza's impressive money/spawn capabilities are SaaS-coupled (elizaOS Cloud), not
+self-hostable for a sovereign anicca. Confirmed: borrow DESIGNS (x402 verify/settle, 30s
+autonomy loop, Plugin/Action contract), do NOT adopt the monorepo.
 ```
 
 ---
