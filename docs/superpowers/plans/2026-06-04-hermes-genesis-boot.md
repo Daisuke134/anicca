@@ -4,7 +4,7 @@
 
 **Goal:** Boot a single Hermes "genesis" body that runs 24/7 with one BYOK fuel, loads anicca-oss CONSTITUTION as AGENTS.md, and fires a minimal `anicca-heartbeat` skill every 30 minutes via `hermes cron`, with launchd auto-restart and an observed end-to-end fire cycle.
 
-**Architecture:** Hermes Agent v0.12.0 (already installed at `/Users/operator/.local/bin/hermes`) is the substrate. We do NOT change Hermes itself. We (a) bring it current via `hermes update`, (b) wire ONE BYOK provider from the existing `~/.openclaw/.env`, (c) symlink `anicca-oss/CONSTITUTION.md` → `~/.hermes/AGENTS.md` so any later update to the constitution propagates without a Hermes config change, (d) author a minimal `anicca-heartbeat` skill at `~/.hermes/skills/anicca-heartbeat/`, (e) schedule it via `hermes cron`, and (f) keep the Hermes cron daemon alive via a launchd plist that mirrors the 23 existing `ai.anicca.*` jobs. WAVE 1 = ONE fuel (BYOK existing key); WAVES 2-3 (Anthropic OAuth, Base USDC) are SEPARATE plans.
+**Architecture:** Hermes Agent v0.12.0 (already installed at `/Users/operator/.local/bin/hermes`) is the substrate. We do NOT change Hermes itself, and we do NOT run `hermes update` — this plan is pinned strictly to v0.12.0 (2026.4.30). We (a) verify the v0.12.0 install, (b) wire ONE BYOK provider from the existing `~/.openclaw/.env`, (c) symlink `anicca-oss/CONSTITUTION.md` → `~/.hermes/AGENTS.md` so any later update to the constitution propagates without a Hermes config change, (d) author a minimal `anicca-heartbeat` skill at `~/.hermes/skills/anicca-heartbeat/` with runtime state under `~/.hermes/state/`, (e) schedule it via `hermes cron`, and (f) keep the Hermes cron scheduler alive via Hermes's own `hermes gateway install` (which registers a user launchd service whose label is captured at install time). WAVE 1 = ONE fuel (BYOK existing key); WAVES 2-3 (Anthropic OAuth, Base USDC) are SEPARATE plans.
 
 **Tech Stack:** Hermes Agent v0.12.0 (Python 3.11.14 + OpenAI SDK 2.32.0) · zsh · launchd · jq (`/opt/homebrew/bin/jq` already on PATH) · existing keys in `~/.openclaw/.env` · `git`.
 
@@ -17,15 +17,15 @@
 - 3-fuel matrix verification — Anthropic OAuth and Base-USDC fuel are tracked by #341 LAUNCH-GATE row ②; this plan satisfies ONE of the three. Successor plans add the others.
 
 **Done condition for this plan (proves task #323 Wave 1):**
-1. `hermes --version` shows updated build with no "Update available" line.
+1. `hermes --version` reports exactly `Hermes Agent v0.12.0 (2026.4.30)` (pinned — no `hermes update` is run in this plan).
 2. `hermes chat -q "Say pong only."` returns a string containing `pong` (one BYOK fuel works).
 3. `readlink ~/.hermes/AGENTS.md` → `/Users/operator/anicca-oss/CONSTITUTION.md`.
 4. `hermes skills list` includes `anicca-heartbeat`.
 5. `hermes cron list` shows one job named `anicca-heartbeat` with schedule `every 30m`.
-6. `launchctl list | grep ai.anicca.hermes` returns one ACTIVE row.
+6. The Hermes gateway launchd label captured at install time (recorded as `$HERMES_LAUNCHD_LABEL` in Task 7) is present in `launchctl list` as one ACTIVE row with a non-`-` PID.
 7. After ≥1 natural fire cycle (≥35 min wait), `~/.hermes/state/heartbeat.jsonl` has ≥1 new line with fields `{ts, ok, fuel, model, constitution_sha}` and `ok=true`.
-8. All new files committed + pushed to `anicca-oss` (CLAUDE.md rule 0.4).
-9. spec `00-MASTER.md` § GROUND TRUTH updated to reflect "genesis body running on Hermes v…, fuel=…, heartbeat every 30m".
+8. All new files committed + pushed to `anicca-oss` (CLAUDE.md rule 0.4). Runtime state (`~/.hermes/state/heartbeat.jsonl`, `~/.hermes/state/constitution.sha`) lives under `~/.hermes/state/` and is NOT committed.
+9. spec `00-MASTER.md` § GROUND TRUTH updated to reflect "genesis body running on Hermes v0.12.0 (2026.4.30), fuel=…, heartbeat every 30m".
 
 ---
 
@@ -39,8 +39,7 @@ anicca-oss/                                              (this repo, committed)
     scripts/lifeline-check.sh ← health probes the heartbeat calls
     README.md               ← one-paragraph human description
   scripts/launchd/
-    ai.anicca.hermes-cron.plist  ← keeps `hermes cron daemon` alive
-    install-hermes-cron-launchd.sh ← installs the plist into ~/Library/LaunchAgents
+    install-hermes-gateway.sh ← thin wrapper around `hermes gateway install` (Hermes registers its own launchd plist)
   docs/superpowers/plans/
     2026-06-04-hermes-genesis-boot.md  ← THIS plan
   specs/00-MASTER.md        ← edit § GROUND TRUTH at end
@@ -52,7 +51,7 @@ anicca-oss/                                              (this repo, committed)
   cron/anicca-heartbeat.*   ← Hermes-managed cron entry files (created by `hermes cron create`)
   .env                      ← gets ONE line appended if the key is missing
 ~/Library/LaunchAgents/
-  ai.anicca.hermes-cron.plist  ← installed copy
+  <hermes-installed plist>     ← installed by `hermes gateway install`; label captured at install time
 ```
 
 Why symlinks for AGENTS.md and the skill: a constitution or skill edit lands in the repo (where review/PR/roll-out lives), and Hermes immediately sees it. No copy step to forget; matches the existing OpenClaw pattern (skills live in `~/.openclaw/skills/` but the canonical sources are in repos).
@@ -74,7 +73,7 @@ Expected output contains exactly:
 ```
 Hermes Agent v0.12.0 (2026.4.30)
 ```
-(Plus an "Update available" line — that is what Task 2 fixes.)
+This plan is pinned to v0.12.0; we do NOT run `hermes update`. Any "Update available" line in the output is ignored — version pin takes precedence.
 
 - [ ] **Step 2: Take a snapshot tarball of ~/.hermes so we can rollback**
 
@@ -110,50 +109,28 @@ Expected: push succeeds, new commit appears in `git log --oneline -1`.
 
 ---
 
-### Task 2: Bring Hermes current (`hermes update`)
+### Task 2: Sanity-check Hermes v0.12.0 config integrity (no update)
 
-**Files:** none new; modifies `~/.hermes/hermes-agent/` in place via Hermes's own updater.
+**Files:** none new; read-only checks against the pinned v0.12.0 install.
 
-- [ ] **Step 1: Check what's available**
+> **Pinned to Hermes Agent v0.12.0 (2026.4.30).** Earlier drafts of this plan ran `hermes update --backup --yes` here; codex round 2 flagged that as a runtime drift risk (the project context locks runtime to v0.12.0). The update step is removed. Only command surfaces confirmed on v0.12.0 are used below.
 
-Run:
-```bash
-hermes update --check
-```
-Expected: prints the new version and the commit delta from `v0.12.0 (2026.4.30)`. If output says "Already up to date", skip to Step 4.
-
-- [ ] **Step 2: Take a labeled Hermes-native backup**
-
-Run:
-```bash
-hermes backup -l before-genesis-boot
-```
-Expected: prints a backup path under `~/.hermes/backups/` and `OK`.
-
-- [ ] **Step 3: Apply the update**
-
-Run:
-```bash
-hermes update --backup --yes
-```
-Expected: prints progress lines and ends with `Hermes updated to vX.Y.Z` (a version number > 0.12.0).
-
-- [ ] **Step 4: Verify version advanced + no pending update**
-
-Run:
-```bash
-hermes --version
-```
-Expected: prints a version line, AND does NOT contain "Update available". Record the new version string — Task 9 commit message includes it.
-
-- [ ] **Step 5: Sanity-check config integrity**
+- [ ] **Step 1: Sanity-check config integrity on v0.12.0**
 
 Run:
 ```bash
 hermes config check
 hermes doctor
 ```
-Expected: both print a structured report ending in `OK` (or a green ✓). Any `ERROR` line → stop, do not proceed; treat as a bug in the update and rollback with the snapshot from Task 1.
+Expected: both print a structured report ending in `OK` (or a green ✓). Any `ERROR` line → stop, do not proceed; rollback with the snapshot from Task 1.
+
+- [ ] **Step 2: Re-confirm the pinned version string**
+
+Run:
+```bash
+hermes --version
+```
+Expected: contains exactly `Hermes Agent v0.12.0 (2026.4.30)`. Record this string verbatim — Task 9 commit message uses it.
 
 ---
 
@@ -264,11 +241,10 @@ The two must match (modulo whitespace and Markdown header chars like `#`).
 
 Run:
 ```bash
-shasum -a 256 /Users/operator/anicca-oss/CONSTITUTION.md | awk '{print $1}' > /Users/operator/.hermes/state/constitution.sha
 mkdir -p /Users/operator/.hermes/state
 shasum -a 256 /Users/operator/anicca-oss/CONSTITUTION.md | awk '{print $1}' | tee /Users/operator/.hermes/state/constitution.sha
 ```
-Expected: a single 64-char hex line both echoed and saved.
+Expected: a single 64-char hex line both echoed and saved to `/Users/operator/.hermes/state/constitution.sha`. (The `mkdir -p` runs BEFORE any redirect to that path so this works on a fresh state dir.)
 
 ---
 
@@ -567,15 +543,22 @@ Expected: prints a sequence ending with `Installed user service` (or local equiv
 that the gateway is now running. If the installer asks for confirmation, accept; if it asks for
 Telegram/Discord tokens during `setup`, skip — gateway can run cron-only without messaging tokens.
 
-- [ ] **Step 2: Verify the gateway service is alive in launchd**
+- [ ] **Step 2: Capture the actual Hermes gateway launchd label**
 
 Run:
 ```bash
 launchctl list | grep -i hermes
+HERMES_LAUNCHD_LABEL=$(launchctl list | awk 'tolower($3) ~ /hermes/ {print $3; exit}')
+echo "HERMES_LAUNCHD_LABEL=$HERMES_LAUNCHD_LABEL"
+mkdir -p /Users/operator/.hermes/state
+printf '%s\n' "$HERMES_LAUNCHD_LABEL" > /Users/operator/.hermes/state/hermes-launchd-label
 ```
 Expected: at least one row whose Label contains `hermes` (commonly `com.nousresearch.hermes` or
-`io.hermes.gateway` — accept whatever Hermes registered) with a non-`-` PID in the first column.
-Record the Label string for the verification step below.
+`io.hermes.gateway` — accept whatever Hermes registered) with a non-`-` PID in the first column. The
+captured `$HERMES_LAUNCHD_LABEL` is persisted to `~/.hermes/state/hermes-launchd-label` so later
+verification steps (Task 8 Step 4 and the Done condition) read the same actual label rather than a
+hard-coded guess. There must NEVER be a hard-coded `ai.anicca.hermes-cron` reference past this point —
+Hermes registers its own label and we use whatever it chose.
 
 - [ ] **Step 3: Confirm cron is now active**
 
@@ -591,15 +574,15 @@ status line. `hermes cron list` shows the `anicca-heartbeat` job created in Task
 
 Run:
 ```bash
-LABEL=$(launchctl list | awk '/hermes/{print $3; exit}')
-echo "LABEL=$LABEL"
-launchctl kickstart -k "gui/$(id -u)/$LABEL"
+HERMES_LAUNCHD_LABEL=$(cat /Users/operator/.hermes/state/hermes-launchd-label)
+echo "HERMES_LAUNCHD_LABEL=$HERMES_LAUNCHD_LABEL"
+launchctl kickstart -k "gui/$(id -u)/$HERMES_LAUNCHD_LABEL"
 sleep 5
-launchctl list | grep -i hermes
+launchctl list | grep -F "$HERMES_LAUNCHD_LABEL"
 hermes cron status
 ```
-Expected: after kickstart, `launchctl list` still shows the gateway row with a valid PID, and
-`hermes cron status` still reports the gateway as running.
+Expected: after kickstart, `launchctl list` still shows the row for `$HERMES_LAUNCHD_LABEL` with a
+valid PID, and `hermes cron status` still reports the gateway as running.
 
 - [ ] **Step 5: Capture the install for repeatability**
 
@@ -657,13 +640,17 @@ tail -n 1 /Users/operator/.hermes/state/heartbeat.jsonl | /opt/homebrew/bin/jq .
 ```
 Expected: `LINES_T1 > LINES_T0`. The tailed object has `ok: true`. If `ok: false`, debug with `cat /Users/operator/.hermes/logs/hermes-cron.launchd.err | tail -50` before claiming done.
 
-- [ ] **Step 4: Verify the launchd job is still alive after the window**
+- [ ] **Step 4: Verify the Hermes gateway launchd job is still alive after the window**
 
 Run:
 ```bash
-launchctl list | grep ai.anicca.hermes-cron
+HERMES_LAUNCHD_LABEL=$(cat /Users/operator/.hermes/state/hermes-launchd-label)
+echo "HERMES_LAUNCHD_LABEL=$HERMES_LAUNCHD_LABEL"
+launchctl list | grep -F "$HERMES_LAUNCHD_LABEL"
 ```
-Expected: still present, no error exit code in column 2.
+Expected: still present, no error exit code in column 2. We use the label that Hermes actually
+registered (captured in Task 7 Step 2) rather than any hard-coded `ai.anicca.hermes-cron` string —
+this plan does not create that label.
 
 ---
 
@@ -674,13 +661,14 @@ Expected: still present, no error exit code in column 2.
 
 - [ ] **Step 1: Replace the GROUND TRUTH `instances` line**
 
-In `/Users/operator/anicca-oss/specs/00-MASTER.md`, find the line beginning with ` instances    = genesis ×1 (Mac-mini, OpenClaw runtime, ...).` and replace it with:
+In `/Users/operator/anicca-oss/specs/00-MASTER.md`, find the line beginning with ` instances    = genesis ×1 (Mac-mini, OpenClaw runtime, ...).` and replace it with (pin = Hermes Agent v0.12.0 (2026.4.30); Hermes-registered launchd label captured at install time in `~/.hermes/state/hermes-launchd-label`):
 ```
- instances    = genesis ×1 = Hermes vX.Y.Z on Mac-mini (BYOK fuel=<provider>, model=<model>),
-                heartbeat every 30m -> ~/.hermes/state/heartbeat.jsonl, launchd ai.anicca.hermes-cron alive.
+ instances    = genesis ×1 = Hermes Agent v0.12.0 (2026.4.30) on Mac-mini (BYOK fuel=<provider>, model=<model>),
+                heartbeat every 30m -> ~/.hermes/state/heartbeat.jsonl, Hermes gateway launchd service alive
+                (label recorded in ~/.hermes/state/hermes-launchd-label).
                 (OpenClaw 23 jobs remain co-resident; cloud/child = ZERO; "4 instances" still target-state.)
 ```
-Substitute the actual `vX.Y.Z`, `<provider>`, `<model>` recorded in Tasks 2 and 3.
+Substitute the actual `<provider>` and `<model>` recorded in Task 3.
 
 - [ ] **Step 2: Commit + push the GROUND TRUTH update**
 
@@ -688,10 +676,9 @@ Run:
 ```bash
 cd /Users/operator/anicca-oss
 git add specs/00-MASTER.md
-git commit -m "docs(spec): GROUND TRUTH — genesis body now Hermes vX.Y.Z (#323 Wave 1 done)"
+git commit -m "docs(spec): GROUND TRUTH — genesis body on Hermes v0.12.0 (2026.4.30) (#323 Wave 1 done)"
 git push
 ```
-Substitute the real version.
 
 - [ ] **Step 3: Mark task #323 done in the TaskList**
 
@@ -702,16 +689,18 @@ Use the TaskUpdate tool to set `#323` status to `completed`. The task descriptio
 ## Self-Review
 
 **Spec coverage:**
-- Spec `00-MASTER.md` § 1.0 RUNTIME DECISION says "Hermes = ONE runtime, native BYOK brain via `hermes model`, cron scheduler = autonomous heartbeat". Tasks 2, 3, 6, 7 implement this directly.
+- Spec `00-MASTER.md` § 1.0 RUNTIME DECISION says "Hermes = ONE runtime, native BYOK brain via `hermes model`, cron scheduler = autonomous heartbeat". Tasks 3, 6, 7 implement this directly on the pinned v0.12.0 install.
 - Spec `16-RUNTIME-CODE-TRUTH.md` § 17 ("Hermes one runtime + port automaton 4 primitives") — primitives (wallet/x402/self-replication/constitution-guard) are explicitly OUT of scope here and tracked in #324/#326/#327; only the constitution wiring (the cheapest of the four) is done here via the AGENTS.md symlink, which is the prerequisite the other three skills need to see the law.
 - LAUNCH ACCEPTANCE MATRIX row ② (boot via each of 3 fuels): this plan satisfies ONE fuel. Followed by sister plans for the remaining two.
 - Heartbeat skill matches the spec 18 § 1 "self-monitor" leaf at its smallest possible form.
 
-**Placeholder scan:** none — every step has the full command, full file content, and the exact expected output. The two places that say "substitute" (Task 3 Step 2 the key name, Task 9 Step 1 the version) MUST be filled with the values literally observed in Tasks 1-3; they are not TODOs, they are values that can only exist after the prior step completes.
+**Placeholder scan:** none — every step has the full command, full file content, and the exact expected output. The one place that says "substitute" (Task 3 Step 2 the key name; Task 9 Step 1 the provider/model strings) MUST be filled with the values literally observed in the prior steps; they are not TODOs, they are values that can only exist after the prior step completes. The Hermes version itself is pinned (v0.12.0) and not substituted.
 
-**Type consistency:** the JSONL row shape `{ts, ok, fuel, model, constitution_sha, probe}` is identical in `heartbeat.sh` (writer) and `test_heartbeat_e2e.sh` (reader, via `jq -e`). `lifeline-check.sh` outputs the keys it exports, and `heartbeat.sh` reads them by the exact same name. The launchd `Label` `ai.anicca.hermes-cron` is identical across plist, installer, and verification step.
+**Type consistency:** the JSONL row shape `{ts, ok, fuel, model, constitution_sha, probe}` is identical in `heartbeat.sh` (writer) and `test_heartbeat_e2e.sh` (reader, via `jq -e`). `lifeline-check.sh` outputs the keys it exports, and `heartbeat.sh` reads them by the exact same name. The Hermes gateway launchd label is captured ONCE in Task 7 Step 2 (persisted to `~/.hermes/state/hermes-launchd-label`) and reused by name in Task 7 Step 4, Task 8 Step 4, and the Done condition — no hard-coded `ai.anicca.hermes-cron` string survives anywhere in this plan.
 
-**Risk note (read before executing):** Task 7 Step 1 contains an explicit NOTE that the `hermes cron daemon` subcommand may not exist in your installed Hermes version. The plan tells the implementer to check `hermes cron --help` BEFORE installing the plist and to escalate rather than guess. This is the one place reality can diverge from the plan — and it is gated, not silently glossed over.
+**Runtime vs. repo state (X4):** the only things this plan adds to the repo are skill source (`skills/anicca-heartbeat/`) and the install wrapper (`scripts/launchd/install-hermes-gateway.sh`). All runtime state — `~/.hermes/state/heartbeat.jsonl`, `~/.hermes/state/constitution.sha`, `~/.hermes/state/hermes-launchd-label`, Hermes-managed cron entries, and the gateway launchd plist — lives under `~/.hermes/` and is NOT committed.
+
+**Version pin (X1):** Hermes Agent v0.12.0 (2026.4.30) is the only runtime version this plan targets. `hermes update` is NOT invoked anywhere. Every command surface used (`hermes config check`, `hermes doctor`, `hermes model`, `hermes chat`, `hermes skills list`, `hermes cron create/list/run/status`, `hermes gateway install`) is one that exists on v0.12.0.
 
 ---
 
