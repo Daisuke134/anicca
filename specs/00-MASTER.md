@@ -117,9 +117,41 @@ every step behind a shipped impl; roll-out de-risked by in-house `self_update.py
  LIVE & TRUE  = daily email report (anicca-report #231) ✓ · dashboard auto-update (anicca-cfo.json, CFO
                 daily) ✓ · anicca-oss published (#229) ✓ · runtime self-monitors its own logs (friction) ✓.
  → Launch pitch must describe THIS state (or framed as the roadmap), not the target state, until PHASE 2
-   battle-test (#332) proves "runs+earns every day ×7d". See § (launch-honesty) — do NOT post target-state
-   claims as present-tense fact.
+   battle-test (#332) proves "runs+earns every day ×7d". See § LAUNCH ACCEPTANCE MATRIX — do NOT post
+   target-state claims as present-tense fact.
 ```
+
+### § LAUNCH ACCEPTANCE MATRIX (the target pitch → the task that makes each line TRUE → checked-off when)
+The target pitch (with `x体 / x円 / y円` placeholders) becomes 100% true **iff every row below is checked
+off**. `x/y` are FILLED from MEASURED CFO/registry data at post-time — never invented. `#341 LAUNCH-GATE`
+is blockedBy every claim-task; when it goes green, the pitch is fact and may be posted (with human OK).
+```
+ pitch line                                  →  task(s)                  →  checked-off WHEN (E2E proof)
+ ────────────────────────────────────────────────────────────────────────────────────────────────────
+ ①「公開しました」(published)                →  #333 (+#229 done)        →  anicca-oss public + installable
+ ②「sub/APIkey/Base送金で起動」              →  #323 boot, #324 wallet   →  boot succeeds via EACH of 3 fuels
+ ③「ローカル+クラウドで x体」                 →  #331 local, #327/#328/   →  registry shows x active across
+                                                 #264 cloud                  Mac+Daytona/Akash; x = measured
+ ④「平均月収 x円（コスト約 y円）」            →  #325 earn, #332 battle,  →  CFO dashboard real monthly x>y;
+                                                 CFO (live)                  if not 黒字 → write honest/drop
+ ⑤a「行動ログ監視→エラー自己解決」           →  #335 (friction spec15 ✓) →  loop observed fixing a real error
+ ⑤b「リファクタリング・自己改善」            →  #335, #336 self-manage   →  loop observed raising own quality
+ ⑤c「クラウド上で自己増殖」                  →  #327 replicate, #328     →  a child spawns on Daytona/Akash,
+                                                 colony                      own wallet + constitution hash
+ ⑤d「メールで日次報告」                      →  #231 ✓ LIVE / #330       →  daily email arrives (already true)
+ ⑥「収益の一部をUBI・募金配布」              →  #326 payout, #284 spec14 →  a real payout tx observed on-chain
+ ⑦「何兆体が協力して苦しみをなくす」          →  #334 forum, #337 swarm,  →  2+ instances coordinate via forum;
+                                                 #338 roll-out               1 learning rolls out to all
+ dashboard自動更新 (aniccaai.com/dashboard)   →  CFO daily (live)         →  ✓ already true
+ ローカル github.com/Daisuke134/anicca-oss    →  #333 (#229 done)         →  ✓ repo live, installable pending
+ クラウド aniccaai.com/install                →  #333 (#274 page done)    →  Hermes-install flow works E2E
+ デモ動画 Youtube                             →  #340 LAUNCH-DEMO         →  YouTube URL exists
+ ── FINAL ── 全行 ✓ or 正直な現在形に書換     →  #341 LAUNCH-GATE         →  human OK → post present-tense
+```
+> So: **"after implementing everything, is it checked off?" — YES.** Every pitch line maps to a task whose
+> DONE condition IS that line's truth (E2E proof, not "code written" — HARD RULE #14). The ONE gap found
+> (demo video had no task) is now #340. When #341 (blockedBy all claim-tasks) goes green, the pitch is
+> fact. Until then it is posted as roadmap, or not at all.
 
 ---
 
