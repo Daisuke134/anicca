@@ -138,6 +138,11 @@ is blockedBy every claim-task; when it goes green, the pitch is fact and may be 
                                                  #264 cloud                  Mac+Daytona/Akash; x = measured
  ④「平均月収 x円（コスト約 y円）」            →  #325 earn, #332 battle,  →  CFO dashboard real monthly x>y;
                                                  CFO (live)                  if not 黒字 → write honest/drop
+   ↳ ④a Lancers channel scaffold (Wave 1) = anicca-earn-lancers skill registered,
+        cron `0 10 * * *` JST in dry-run mode only. Row ④ does NOT advance here —
+        advancement requires Wave 2 (anicca-earn-lancers-wave2-realsubmit) producing
+        ≥1 real `applied` row + CFO bank deposit evidence.
+        (Coconala + CrowdWorks join as ④b/④c in Wave 2 follow-ons.)
  ⑤a「行動ログ監視→エラー自己解決」           →  #335 (friction spec15 ✓) →  loop observed fixing a real error
  ⑤b「リファクタリング・自己改善」            →  #335, #336 self-manage   →  loop observed raising own quality
  ⑤c「クラウド上で自己増殖」                  →  #327 replicate, #328     →  a child spawns on Daytona/Akash,
