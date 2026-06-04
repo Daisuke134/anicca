@@ -48,6 +48,12 @@ sleep 1
 # free quick-tunnel here (trycloudflare.com); upgrading to a named tunnel
 # (固定 hostname) is a follow-up — the consumers all read STATE_FILE so the
 # URL being dynamic is fine as long as the file is current.
+#
+# CRITICAL: truncate CF_LOG before boot. Otherwise the grep below picks up
+# the FIRST URL in the file = a STALE URL from a previous boot whose tunnel
+# is no longer live. Twilio then fetches wss://<dead>.trycloudflare.com and
+# the call rings into silence (observed 2026-06-04 21:41 JST).
+: > "$CF_LOG"
 nohup /opt/homebrew/bin/cloudflared tunnel --url "http://localhost:$PORT" \
   > "$CF_LOG" 2>&1 &
 CF_PID=$!
