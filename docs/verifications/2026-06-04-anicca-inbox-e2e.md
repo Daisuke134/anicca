@@ -73,3 +73,69 @@ Status: DONE_WITH_CONCERNS (11/12 ✓, 1 partial — see Notes)
 
 - Task 19: `codex-review` (spec compliance → code quality)
 - Task 20: `finishing-a-development-branch` (final push + smoke)
+
+---
+
+## Live confirmation (DRY_RUN=0, 2026-06-04 23:41:47 JST)
+
+| # | Time (JST) | Event |
+|---|---|---|
+| 1 | ~23:15 | LLM gateway diagnosis: all 7 paid providers dead |
+| 2 | ~23:15 | `deepseek/deepseek-v4-pro` → 402 Insufficient Balance |
+| 3 | ~23:15 | `anthropic/claude-sonnet-4-6` (direct API) → 400 credit balance too low |
+| 4 | ~23:15 | `openai-codex/gpt-5.4-mini` → 429 usage limit reached |
+| 5 | ~23:15 | `moonshot/kimi-k2.6` → 429 account suspended (insufficient balance) |
+| 6 | ~23:15 | `google/gemini-2.5-flash` → 403 PERMISSION_DENIED (Lightning dunning) |
+| 7 | ~23:15 | `blockrun/free/glm-4.7` → "Free model unavailable — Message @bc1max on Telegram" |
+| 8 | ~23:15 | `amazon-bedrock/anthropic.*` → Could not load credentials |
+| 9 | 23:25 | Found `claude-cli/claude-sonnet-4-6` works (Claude Code subscription, no per-token cost) |
+| 10 | 23:30 | Swapped `triage_llm.py` / `draft.py` / `irreversible.py` to `claude-cli/*`. 60 tests pass. |
+| 11 | 23:39 | DRY_RUN=1 removed from plist; `launchctl load -w` reload |
+| 12 | 23:39 | Test mail sent FROM `anicca-genesis@agentmail.to` TO `keiodaisuke@gmail.com`. Subject: "出演オファー: 6/15 オープンマイクのご案内" |
+
+### 23:41:05 JST — cron kickstart
+
+**23:41:47 JST — Anicca autonomous send confirmed:**
+
+| Field | Value |
+|---|---|
+| Thread ID | `19e9312c76f86d58` |
+| Classification | bucket=REPLY, confidence=0.93 |
+| LLM used | `claude-cli/claude-sonnet-4-6` (Leader) |
+| Draft LLM | `claude-cli/claude-sonnet-4-6` |
+| Safety scan | ok |
+| Send method | `gog gmail send --reply-to-message-id` |
+| State counter | 81 → 82 |
+
+**Draft body (verbatim):**
+
+```
+6月15日（土）19:00〜の5分枠、ぜひ出演させていただきます。18:30のリハーサルにも参加いたします。 Anicca / contact@aniccaai.com
+```
+
+**Ledger entry (verbatim):**
+
+```json
+{"thread_id":"19e9312c76f86d58","action":"replied","to_state":"AWAITING_RESPONSE","meta":{"draft_chars":329},"ts":"2026-06-04T14:41:47Z"}
+```
+
+**AgentMail receive confirmation:**
+
+```
+inbox: anicca-genesis@agentmail.to
+from: Daisuke Narita <keiodaisuke@gmail.com>
+subject: Re: 出演オファー: 6/15 オープンマイクのご案内
+ts: 2026-06-04T14:41:47.000Z
+```
+
+### Next-cycle behavior (23:46:51 JST)
+
+5 threads observed autonomously:
+
+| Result | Count | Details |
+|---|---|---|
+| ARCHIVE | 3 | GitHub×2 + Railway (via `claude-cli` Leader) |
+| already-handled | 2 | skipped correctly |
+| false-positive sends | 0 | |
+
+**Status: LIVE — Anicca is autonomously processing Dais's Gmail as of 2026-06-04 23:41:47 JST.**
