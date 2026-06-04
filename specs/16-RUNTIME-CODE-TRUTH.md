@@ -444,3 +444,54 @@ NOTE                 : root@conway.tech = email to request features (e.g. BYOK-s
 | Date | Change |
 |---|---|
 | 2026-06-04 | §11 answers the compute question: automaton inference is BYOK-capable (provider-registry: openai/anthropic/groq/together/ollama/OpenRouter) — NOT locked to Conway. Conway needed only for Conway-inference or Conway-sandbox. Genesis runs local $0. Cloud-spawn de-Conway = SandboxProvider refactor (Daytona 1-line SDK easiest; Akash crypto-sovereign fallback). Both compute options coexist via fallbackOrder. |
+
+---
+
+## § 13. REAL BOOT (2026-06-04) — CORRECTS the §11 BYOK claim
+
+**Booted automaton for real** (`~/automaton`, pnpm install + `node dist/index.js --run`, gtimeout 95s).
+
+### ✅ What the boot PROVED (the body is real)
+```
+[main] Conway Automaton v0.2.1 starting...
+[heartbeat] Daemon started. Tick interval: 60s
+[HEARTBEAT] Wake request: Distress: critical. Credits: $0.00. Need funding.
+[HEARTBEAT] Wake request: 41 new commit(s) on origin/main. Review with review_upstream_changes, pull_upstream.  ← self-update awareness LIVE
+[loop] [WAKE UP] Anicca is alive. Credits: $0.00
+[loop] [THINK] Routing inference (tier: critical, model: claude-sonnet-4-6)...
+[loop] survival tiers + 5-consecutive-error sleep + heartbeat re-wake all firing
+```
+→ heartbeat daemon, agent loop, survival tiers, self-update detection, constitution = ALL run locally on Mac mini. The autonomous body is real.
+
+### 🔴 What the boot DISPROVED (my §11 overclaim)
+I set `inferenceModel: claude-sonnet-4-6` expecting it to use OUR ANTHROPIC_API_KEY. The loop logged:
+```
+[THINK] Routing inference (model: claude-sonnet-4-6)...
+[ERROR] Turn failed: Inference error (conway): 402: Insufficient credits (balance 0 cents)
+```
+**It routed to provider=CONWAY anyway.** Then I inspected `--configure → Inference Providers`: the wizard ONLY exposes a "Conway API key" field. `--pick-model` lists only Conway-served OpenAI-family models (gpt-4.1 $200/M = Conway markup). NO anthropic/ollama/BYOK option in the shipped UI.
+
+**CORRECTED TRUTH:** the shipped automaton binary routes ALL inference through Conway. The BYOK scaffolding exists in code (`dist/inference/provider-registry.js` has `api.anthropic.com` + `OPENAI_API_KEY`, `loop.js` references it) BUT it is **NOT wired into the config wizard or the live routing**. So "BYOK is a config switch" (§11) was WRONG — verified by boot, not assumption.
+
+### What this means for the compute question
+| path | reality |
+|---|---|
+| Run on OUR keys out-of-the-box | ❌ NOT possible in shipped binary (routes to Conway) |
+| Run on Conway credits | ✅ works once funded (≥10¢; fund via `node packages/cli/dist/index.js fund 5.00` or USDC→credits) |
+| Run on OUR keys with work | ✅ possible: automaton is MIT → fork + wire `provider-registry` into `agent/loop` routing (real code change), OR request it from Conway (root@conway.tech) |
+
+### Revised recommendation (honest)
+```
+SHORT TERM (today): fund Conway ~$5-10 (wallet→credits) → automaton runs its full loop NOW on Conway compute.
+                    Genesis local, children to Conway sandbox (when "workers_fallback_blocked" clears).
+PARALLEL (de-Conway): fork automaton (MIT) → wire provider-registry so Inference Providers can = our
+                    ANTHROPIC/OPENAI/Kimi key. This is the ONE code change that frees us from Conway
+                    for thinking. Until then, inference = Conway-only.
+SPAWN host de-Conway: still the SandboxProvider refactor (Daytona primary / Akash fallback), separate axis.
+```
+boot.log kept at /tmp/auto-boot.log. config restored to gpt-5.2 after test (backup at ~/.automaton/automaton.json.bak).
+
+## § 14. Changelog (append)
+| Date | Change |
+|---|---|
+| 2026-06-04 | REAL BOOT. Body proven (heartbeat/loop/survival/self-update/constitution run locally). BUT §11 BYOK claim CORRECTED: shipped binary routes inference through Conway; provider-registry exists but unwired; config wizard only exposes Conway key; --pick-model only Conway models. BYOK = fork+wire (MIT) OR Conway feature request. Short-term = fund Conway $5-10 to run now; parallel = wire BYOK. Spawn de-Conway = SandboxProvider refactor (Daytona/Akash). |
