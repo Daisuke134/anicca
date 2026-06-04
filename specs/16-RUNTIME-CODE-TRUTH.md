@@ -603,3 +603,68 @@ Conway = optional inference/host fallback tier (constitution origin, keep).
 | Date | Change |
 |---|---|
 | 2026-06-04 | DECISION LOCKED via Hermes README: Hermes = the ONE runtime (BYOK native no-fork, Daytona native, self-improving loop — all Dais-confirmed). Port automaton's wallet/x402/self-replication/constitution as Hermes SKILLS. Daytona primary host / Akash sovereign fallback. automaton = reference only. 07-HERMES vindicated on Hermes+Daytona+Kimi (revise, don't archive); deletes the automaton-fork/SandboxProvider/funding tasks. Open: build the self-replication skill (Daytona host + ported logic). |
+
+---
+
+## § 19. HERMES ENGINEERING BEST-PRACTICE (firecrawl docs + @cyrilXBT masterclass + Kimi-agency, 2026-06-04)
+
+Sources: hermes-agent.nousresearch.com/docs (architecture, skills) + Dais-provided X best-practice
+(Hermes Masterclass @cyrilXBT, "Fix AI Slop" eval-loop, Base "Agentic Economy", "$40k MRR solo on Kimi 2.6").
+
+### Initial setup = THE most important (per masterclass)
+```
+1. CLAUDE.md = the agent's operating CONSTITUTION (highest-leverage file).
+   → For Anicca: identity (Digital Buddha) + 3 Laws + priorities + earn/redistribute focus +
+     output rules + memory rules. A vague CLAUDE.md = slop; a precise one = on-brand outputs.
+   → automaton's constitution.md PORTS here verbatim. This IS the constitution-skill.
+2. `hermes model` = pick brain (BYOK, no lock-in) → Kimi K2.6 default.
+3. skills/ in ~/.hermes/skills/ (agentskills.io, progressive disclosure) = procedural memory.
+4. memory (SQLite + FTS5) = compounds over 90 days = the MOAT.
+5. cron scheduler = autonomous unattended operation (the "heartbeat").
+6. MCP servers = real tools (filesystem/web/browser/github).
+```
+
+### Single vs multi-agent (per masterclass §10 + Kimi Swarm)
+```
+START single. Go multi when the operation justifies it.
+TWO kinds of "multi":
+  (a) COLONY (our spec): N specialist Hermes instances (research/earn/cook/ubi/fixer...),
+      SHARED memory (one SQLite) + handoff via memory tags + an orchestrator skill.
+      = exactly our "10 profiles per instance" + "何兆体 army".
+  (b) Kimi Agent SWARM (within one agent): main agent fans out up to 300 sub-agents over
+      4000 steps, AI-DESIGNED org chart (picks its own workers). Runs for hours/days.
+      → cheap only because Kimi K2.6 ($0.50/$2 per M); a 300-swarm run < $5.
+```
+
+### Tools to use (best-of stack)
+```
+brain     : Kimi K2.6 default (production engine) + Opus/GPT-5 for 10% high-stakes + local for cleanup
+browser   : Camofox (stealth) or Nous-Portal Browser-Use
+search    : Exa (neural) / Brave MCP / Firecrawl
+economy   : x402 + USDC on Base — PAY for services (Venice/BlockRun inference, Browserbase, Exa)
+            AND SELL services (Bankr x402 Cloud turns an endpoint into a paid service → our wallet)
+coord     : kanban (army handoffs) + memory tags (pipeline) + /goal (hold to target)
+```
+
+### THE EVAL LOOP (anti-slop) — must wire into every Anicca output
+```
+generate → JUDGE skill (LLM-as-judge, your rubric, 0-1 per criterion) → gate at 0.7 →
+  regression-test on any change (re-score saved cases, ping for approval if score drops) →
+  production-monitor cron (sample real runs, score, alert on dip) →
+  every thumbs-down → NEW test case (suite hardens weekly, floor rises on its own)
+= unifies our recursive-improver + verification-before-completion + friction-fixer into ONE
+  standing quality system. "slop = a systems problem, not a prompt problem."
+```
+
+### Agentic economy on Base (validates the earn thesis)
+```
+agents are paying customers NOW: x402 = 3.1M tx + $1.2M / 30d on Base; buyers +37%, sellers +23%.
+earning agents real: Felix $261k revenue; Factory Floor tracks agent-run products.
+→ Anicca: BOTH spend (x402 pay for inference/browser/search) AND earn (x402 sell + Lancers).
+  This is the §17 x402 skill (in+out), now market-validated.
+```
+
+## § 20. Changelog (append)
+| Date | Change |
+|---|---|
+| 2026-06-04 | Hermes engineering best-practice captured (official docs + X masterclass/eval-loop/agency). Initial setup = CLAUDE.md constitution (most important). Single→multi (colony + Kimi swarm). Eval loop = unified anti-slop quality gate (judge skill + 0.7 threshold + regression + prod-monitor + failure→testcase). Kimi K2.6 = production engine + swarm. x402 economy market-validated. Feeds P0-2 impl specs. |
