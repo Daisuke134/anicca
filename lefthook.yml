@@ -1,0 +1,43 @@
+# lefthook.yml — Trunk-Based Development guardrails (Anicca)
+# Policy: dev = 唯一の作業trunk / main = 本番(PR経由のみ) / release/* = App Store用(ship後削除)
+# Refs: https://trunkbaseddevelopment.com/ , https://github.com/evilmartians/lefthook
+# 注意: local hookは `--no-verify` で回避可=助言層。main の最終強制は GitHub ruleset(要Pro)。
+
+pre-commit:
+  parallel: true
+  commands:
+    no-commit-to-protected:
+      run: |
+        b="$(git rev-parse --abbrev-ref HEAD)"
+        case "$b" in
+          main|master|release/*)
+            echo "❌ '$b' への直接コミット禁止。dev か feature/<name> で作業し PR してください。"; exit 1 ;;
+        esac
+      fail_text: "protected branch への直接コミット"
+    valid-branch-name:
+      run: |
+        b="$(git rev-parse --abbrev-ref HEAD)"
+        echo "$b" | grep -Eq '^dev$|^(feature|fix|chore|release|app-factory|docs|spec)/[a-z0-9._-]+$' || {
+          echo "❌ branch名 '$b' が規約外。dev / feature/<x> / fix/<x> / chore/<x> / docs/<x> / app-factory/<x> を使う。"; exit 1; }
+      fail_text: "branch名 規約違反"
+
+commit-msg:
+  commands:
+    commitlint:
+      run: |
+        if [ -x node_modules/.bin/commitlint ]; then node_modules/.bin/commitlint --edit {1};
+        else echo "ℹ commitlint 未install (任意): npm i -D @commitlint/cli @commitlint/config-conventional"; fi
+      fail_text: "Conventional Commits 違反 (feat:/fix:/chore:/docs:...)"
+
+pre-push:
+  parallel: true
+  commands:
+    no-push-to-protected:
+      run: |
+        while read -r l ls remote rs; do
+          case "$remote" in
+            refs/heads/main|refs/heads/master|refs/heads/release/*)
+              echo "❌ '$remote' への直接push禁止。feature branch から PR してください。"; exit 1 ;;
+          esac
+        done
+      fail_text: "protected branch は PR-only"
