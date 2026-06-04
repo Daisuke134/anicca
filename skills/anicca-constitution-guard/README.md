@@ -1,0 +1,3 @@
+# anicca-constitution-guard
+
+Deterministic pre-action veto for every Anicca instance. Other skills call `scripts/check.sh --action "<text>"` BEFORE any side-effectful operation; it returns OK or BLOCKED in <50 ms by screening against Law I + North Star pattern files and verifying the live `CONSTITUTION.md` SHA-256 matches the value `anicca-heartbeat` last pinned. Every call is logged to `~/.hermes/state/constitution-violations.jsonl`. North Star + Law I are immutable; the rest of the constitution is mutable only via PR + eval ≥ 0.7 (see spec `18-SELF-IMPROVEMENT-AND-SWARM.md` § 4). Wired by `2026-06-04-constitution-payout` plan; sister skill `anicca-payout-ubi` is the first caller.
