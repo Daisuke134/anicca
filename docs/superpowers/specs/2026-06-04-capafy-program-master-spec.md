@@ -102,3 +102,25 @@ DeepSeek等の安い鍵で「サブスク化」は **LLM部分のみ**解決。l
 各実装タスク([2]#10 / [3]#11 / [5]#13)は個別に: **brainstorming spec → writing-plans → using-git-worktrees(該当時) → TDD(RED→GREEN→REFACTOR) → verification-before-completion → code-review → finishing(dev push)**。本spec は上位master。
 
 **実行順 SSOT（唯一の正）**: §3 の task table（ID昇順=実行順）が唯一の実行順。jp-humanizer は **Download $9.99 で提出済(agent_id 3332784488・審査中)＝[7]#15で確認のみ・再公開しない**。次の着手は **[1]#9 Git整流 → [2]#10 capafy-autopublish → [3]#11 life-manager**。design doc の「Phase A」表記・jp-humanizer plan は履歴（superseded）であり、実行順はこの table のみを参照する。
+
+---
+
+## 11. 修正理解（2026-06-04 research: Capafy 実行モデル）
+
+**一次ソース**（[capafy.ai/help-center](https://capafy.ai/help-center)）: 「The Agent runs in Capafy's secure cloud environment. You interact with it **only through the chatbot**.」「Subscription: the Agent **runs continuously in the cloud**… talk to it via chatbot anytime.」
+
+### Capafy skill fit（何が skill になり、何がならないか）
+| 種別 | 例 | Capafy適合 |
+|---|---|---|
+| **自己完結チャット型**（入力→成果物） | jp-humanizer / slides / deep-research / humanizer / resume / 文字起こし | ✅ Run-Online(chatbot) or Download。即publish可 |
+| **daemon/インフラ型**（電話発信・live位置・常駐polling・launchd） | **life-manager** | ❌ Run-Online不可（Capafyはcloud chatbotで、ユーザーのマシンで電話/位置daemonは動かせない） |
+| **web app / OSS install 一式 / aniccaai.com** | dashboard等 | ❌ skillではない・Capafyに出さない |
+
+### life-manager の正しい売り方（[3] 修正）
+- **mode = Download 一択**（Run-Online不可）。買い手は bundle を DL → **自分の always-on マシンで install.sh で daemon(Telegram位置bridge / Pipecat phone)+cron+Telegram bot を自前起動**（BYOK・全データ端末内）。
+- **publish 元 = `~/anicca-oss/skills/anicca-life-manager`（clean）**。~/.openclaw の messy SaaS版（saas_lateness.py / Supabase / OwnTracks）は使わない。**Supabase完全排除・位置=Telegram Live Location**。
+- 売るのは **life-manager skill bundle のみ**（web app/OSS repo一式は出さない）。
+- Agent Card に reject 7要件（データ/サービス/鍵/発火/cap3/停止 enabled/第三者mail確認）+ **daemon自前起動を PREREQUISITES** として開示。
+
+### Capafy収益の本線
+**自己完結skillを量産publish**（jp-humanizer実証済）。life-manager は Download の特殊ケースとして別途。
