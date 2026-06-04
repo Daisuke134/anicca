@@ -16,7 +16,7 @@
 
 | Field | Value |
 |---|---|
-| Spec version | v3.4 (2026-06-03) — multi-profile pivot: each Anicca instance = 1 Hermes daemon hosting 10 specialist profiles (orch + 5 earn + cook + ubi + fixer + constitution); colony = N Daytona sandboxes. Builds on v3.3 server-native + fitness loop (see 05-SERVER-NATIVE-DEPLOY.md). Conway / Virtuals / DeepSeek superseded by Hermes (L3) + Coinbase AgentKit (L4) + Kimi K2.6 via OpenRouter (L1) + Daytona spawn primary, per 07-HERMES-PIVOT.md v1.2 (substrate) and anicca-oss/control-room/ (operational). |
+| Spec version | v3.5 (2026-06-04) — RUNTIME LOCKED via code-read + real boot (see `16-RUNTIME-CODE-TRUTH.md`, AUTHORITATIVE for substrate). **ONE runtime = Hermes Agent** (NousResearch, Python, MIT) — BYOK-native (`hermes model`, no fork), Daytona-native host backend, self-improving learning loop, cron heartbeat, gateway. automaton (Conway, MIT) is **NOT a second runtime** — it is the REFERENCE we PORT its 4 MIT primitives from (wallet / x402-in+out / self-replication / constitution) into Hermes **skills**. Brain = Kimi K2.6 default ($0.50/$2·M) + Opus/GPT-5 for 10% high-stakes + local cleanup. Hosts = Daytona (native, primary) / Akash (sovereign fallback) / Conway (optional). Quality = the **eval-loop** (judge→0.7 gate→regression→prod-monitor→failure-as-testcase) gates every output. Stacking automaton+Hermes (v3.4 framing) was REDUNDANT double-loop — corrected. See § 1.0. |
 | Author | Anicca |
 | Authority | SUPREME (supersedes all prior `ANICCA_*` specs in `archive/`) |
 | License | MIT |
@@ -55,6 +55,50 @@ person who receives help may never know Anicca exists — that is the design.
 ```
 
 This spec describes HOW.
+
+---
+
+## § 1.0 RUNTIME DECISION (v3.5, code-verified 2026-06-04 — read this first)
+
+> Locked after reading the source of all 3 candidate runtimes + a REAL boot of automaton.
+> Full evidence (file:line) in `16-RUNTIME-CODE-TRUTH.md` (AUTHORITATIVE for substrate; when
+> any older spec conflicts on the runtime, spec 16 + this § 1.0 win).
+
+```
+ONE RUNTIME = Hermes Agent (NousResearch, Python, MIT)         ← the body, runs standalone
+  native already (no build needed):
+    · BYOK brain, no lock-in        `hermes model` → Kimi K2.6 / Anthropic / OpenAI / OpenRouter
+    · Daytona + Modal host backends (serverless, hibernate-idle)   ← the spawn host
+    · self-improving learning loop (creates+improves skills from experience)
+    · cron scheduler = autonomous heartbeat · gateway TG/Slack/Discord · memory (MEMORY.md+SQLite)
+  PORT from automaton (Conway, MIT) as Hermes SKILLS (the 4 things Hermes lacks):
+    1. wallet        (Base sign/send — automaton identity/wallet.ts)
+    2. x402          (IN=earn server + OUT=pay services — automaton conway/x402.ts + spec 09)
+    3. self-replication (new sovereign Hermes child on Daytona/Akash + own wallet +
+                         constitution SHA-256 propagation — automaton replication/spawn.ts)
+    4. constitution-guard (3 Laws immutable, Pañcasīla-aligned — automaton constitution.md → CLAUDE.md)
+  HOSTS: Mac-mini-local (genesis $0) / Daytona (native, primary) / Akash (sovereign) / Conway (optional)
+  QUALITY: eval-loop skill gates EVERY output (judge 0-1 → 0.7 → regression → prod-monitor → testcase)
+```
+
+**Why NOT stack automaton + Hermes (the v3.4 framing):** both are complete standalone agents with
+their own loop. Running both = a redundant double-brain. automaton's README positions it as standalone
+("No human operator required", `node dist/index.js --run`). So we pick ONE (Hermes — richest harness +
+the only browser-earning path + BYOK-native) and port automaton's economic/replication primitives as
+skills. automaton = reference, not a running component.
+
+**Why automaton inference is NOT used directly:** a real boot (2026-06-04) proved the shipped automaton
+binary routes ALL inference through Conway (402 on $0 balance) even when the model name is set to a Claude
+model; its config wizard exposes only the Conway provider. Hermes solves this natively (`hermes model`).
+
+**Earn thesis is market-validated:** on Base, agents already pay $1.2M/30d via x402, and earning agents
+exist (Felix $261k). Anicca BOTH pays (x402 buy inference/browser/search) AND earns (x402 sell + Lancers).
+
+**Build path (gated):** PHASE 0 spec (this rewrite + 7 component impl-specs, codex-review ok:true) →
+PHASE 1 skills (boot → wallet+x402 → ★eval-loop → earn → constitution+payout → daily-report →
+self-replication → colony) → PHASE 2 live (spawn **Anicca-001** on Mac mini → BATTLE TEST: runs every day
++ earns every day ×7d, no human → publish `github.com/Daisuke134/anicca-oss` installable). Cloud
+`aniccaai.com/install` deferred.
 
 ---
 
@@ -240,7 +284,15 @@ Source: openrouter.ai/api/v1/models / livebench.ai / swebench.com
 > NHOSS Anicca's hands are 4 sub-layers: Redistribute (mission), Earn,
 > Cook+Imitate, and Meta-Aware.
 
-### § 5.1 Skill format (= Conway's, unchanged)
+### § 5.1 Skill format (= Hermes / agentskills.io — see § 1.0)
+
+> v3.5: skills live in `~/.hermes/skills/<name>/SKILL.md` (agentskills.io standard, progressive
+> disclosure, agent-self-editable). name+description minimum. The L2 inventory below maps onto these.
+> wallet / x402 / self-replication / constitution-guard are PORTED from automaton (MIT). The L2d
+> Meta-Aware block IS the eval-loop (judge → 0.7 gate → regression → prod-monitor → failure-as-testcase).
+
+(legacy note, kept for lineage — original wording was "Conway's format"; the YAML-frontmatter+MD shape is
+the same, only the home dir and standard name changed.)
 
 Markdown file with YAML frontmatter, lives in `~/anicca-oss/skills/<name>/SKILL.md`:
 
