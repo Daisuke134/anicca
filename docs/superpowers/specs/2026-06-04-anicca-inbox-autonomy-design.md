@@ -1,12 +1,92 @@
-# Anicca Inbox Autonomy v2 — Long-Running Stateful Agent Design
+# Anicca Inbox Autonomy v3 — Live + LLM Gateway Pivot
 
 | Field | Value |
 |---|---|
 | Date | 2026-06-04 |
 | Author | Anicca (Claude main loop) |
-| Status | brainstorming v2 — Dais review待ち |
-| Replaces | v1 (Slack escalation 案・HARD RULE #18 違反だったので破棄) |
+| Status | **LIVE** (first real send 2026-06-04 23:41:47 JST) |
+| Replaces | v2 (DRY_RUN 14d window 案・LLM model 設計が paid provider 死で破綻) |
+| Replaces² | v1 (Slack escalation 案・HARD RULE #18 違反だったので破棄) |
 | Successor of | `anicca-mail-auto-reply` v1 (stub since 2026-05-30) |
+
+---
+
+## 0. v2 → v3 diff (= 実装中に判明した現実)
+
+### LLM gateway pivot — paid providers 全死
+
+v2 spec §14 では `deepseek/deepseek-v4-pro` を Leader、 `anthropic/claude-sonnet-4-6` を draft、 `anthropic/claude-opus-4-7` を IRREVERSIBLE vote の 1 つに指定していた。 **2026-06-04 実装時点で 7 provider 全死**:
+
+| Provider | 状態 |
+|---|---|
+| `deepseek/deepseek-v4-pro` | 402 Insufficient Balance |
+| `anthropic/claude-sonnet-4-6` | 400 credit balance too low |
+| `openai-codex/gpt-5.4-mini` | 429 usage limit reached |
+| `moonshot/kimi-k2.6` | 429 account suspended |
+| `google/gemini-2.5-flash` | 403 Lightning dunning decision |
+| `blockrun/free/glm-4.7` | "Free model unavailable — @bc1max" |
+| `amazon-bedrock/anthropic.*` | Could not load credentials |
+
+**唯一動いた = `claude-cli/*`** (= Claude Code subscription 経由、 per-token billing 無し):
+- `claude-cli/claude-sonnet-4-6` — Leader + draft + IRREVERSIBLE vote 1
+- `claude-cli/claude-opus-4-6` — IRREVERSIBLE vote 2
+- `claude-cli/claude-opus-4-7` — IRREVERSIBLE vote 3
+
+**doctrine**: anicca-inbox の LLM 呼出は **claude-cli/* のみ**。 paid provider 復活したら env override (`INBOX_TRIAGE_MODEL` / `INBOX_DRAFT_MODEL`) で切替可能だが **default は claude-cli 固定**。 理由: subscription path は credit 切れリスクゼロ、 Dais の財布と切り離されている。
+
+### subprocess CLI = `openclaw capability model run --json`
+
+v2 spec は `openclaw chat --no-stream` を pattern で書いていたが、 これは interactive TUI で stdin/stdout pipe 不可。 **正解 = `openclaw capability model run --model <p>/<m> --prompt <txt> --json`**、 結果は JSON envelope `{outputs: [{text: "..."}]}` を parse して `outputs[0].text` を取り出す。 4 module (triage_llm.py / draft.py / irreversible.py / leader_runner.py) 全部この path 採用。
+
+### DRY_RUN window 廃止
+
+v2 spec §17 Step 17 で「14 日並走 → 2026-06-18 に DRY_RUN 解除」と書いていたが、 Dais 直命「DRY_RUN は fake」で **2026-06-04 23:39 JST 即解除**。 `~/Library/LaunchAgents/ai.anicca.inbox.plist` から `<key>DRY_RUN</key><string>1</string>` 削除済 + launchctl reload 済。 観測窓は live trafic で 7 日。
+
+### orchestrator surgery (Step 4 gate fix + draft.py CLI mode)
+
+v2 plan Task 17.5 (= 後追い加筆) で `run.sh` の Step 4 main loop に bucket-based gate を追加:
+
+```bash
+# v2: skip APPLY/IRREVERSIBLE/ARCHIVE (Step 3c で処理済)
+if [ "$BUCKET" = "APPLY" ] || [ "$BUCKET" = "IRREVERSIBLE" ] || [ "$BUCKET" = "ARCHIVE" ]; then
+    SKIPPED=$((SKIPPED+1)); continue
+fi
+# v2: bucket=REPLY を REPLY 扱いに昇格
+if [ "$BUCKET" = "REPLY" ]; then VERDICT="REPLY"; fi
+```
+
+更に `draft.py` をライブラリ化したまま run.sh が `echo $ROW | draft.py` で呼んでた → **`if __name__ == "__main__": _cli_main()`** ブロック追加で stdin JSON → stdout draft の CLI mode 復元。
+
+### Live confirmation (= goal 達成 evidence)
+
+| 観測 | 値 |
+|---|---|
+| First real send 時刻 | **2026-06-04 23:41:47 JST** |
+| Thread | `19e9312c76f86d58` (test thread from `anicca-genesis@agentmail.to`) |
+| Leader 判定 | bucket=REPLY confidence=0.93 |
+| Draft model | `claude-cli/claude-sonnet-4-6` |
+| Draft 内容 | 「6月15日（土）19:00〜の5分枠、ぜひ出演させていただきます。18:30のリハーサルにも参加いたします。 Anicca / contact@aniccaai.com」 |
+| Safety scan | ok |
+| Send 経路 | `gog gmail send --reply-to-message-id 19e9312c76f86d58 --body ...` |
+| 受信確認 | AgentMail inbox `anicca-genesis@agentmail.to` に `Re: 出演オファー: 6/15 オープンマイクのご案内` ts=2026-06-04T14:41:47Z (= 23:41:47 JST) で着信 |
+| state.json | replied count 81 → 82 |
+| inbox-ledger.jsonl | `{action:"replied", to_state:"AWAITING_RESPONSE", meta:{draft_chars:329}, ts:"2026-06-04T14:41:47Z"}` |
+
+Next cycle (23:46:51 JST) も autonomous で 5 thread 観測 → 3× ARCHIVE (GitHub×2 + Railway) + 2× already-handled、 false-positive 0。
+
+### 残ギャップ (v3 で未完、 task #30-48 で追跡)
+
+| 項目 | tasklist ID | 理由 |
+|---|---|---|
+| REFLECT phase の run.sh 配線 | #30 (C7) | reflect.py 完成・呼出未配線 |
+| AWAITING → RESPONDED 復活経路 | #31 (C8) | monitor.py 検出後の Phase 1 再投入未配線 |
+| state.json と inbox-ledger.jsonl の SoT 統一 | #32 (C9) | 二重記録 |
+| 旧 triage.py の死コード除去 | #33 (C10) | llm_triage import → soft fallback misleading log |
+| @agentmail.to を SKIP_FROM に追加 | #34 (C11) | テスト経路 noise |
+| From header 仕様判断 (= Dais's gmail or contact@aniccaai.com) | #45 (C12) | Dais 判断 |
+| 7d clean window 観測 | #41 (A3) | Target 2026-06-11 |
+| APPLY / IRREVERSIBLE / FOLLOWUP の live 発火観測 | #42/#43/#44 (B4/B5/B6) | 自然 inbound 待ち |
+| Dais Gmail アプリ削除 | #48 (E20) | A3 + A1/A2 + E18 完走後 |
 
 ---
 
