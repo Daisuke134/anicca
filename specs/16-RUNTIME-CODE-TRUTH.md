@@ -546,3 +546,60 @@ If Hermes lacks it, we either add it (a heartbeat skill) or reconsider automaton
 | Date | Change |
 |---|---|
 | 2026-06-04 | BEST-PRACTICE via automaton README: it is STANDALONE → automaton+Hermes stack = redundant double-loop (Dais correct). Category clarity: automaton/Hermes=runtime(software), Daytona/Akash/Conway=host(infra). DECISION reframed to ONE runtime. RECOMMEND Hermes-as-body + port automaton's 4 MIT primitives as skills; Daytona/Akash=hosts; automaton=reference. OPEN: verify Hermes has a true autonomous loop (not just cron/gateway triggers) before final lock. |
+
+---
+
+## § 17. DECISION LOCKED (Hermes README + run_agent verified, 2026-06-04)
+
+Read the Hermes README (authors' positioning) + local source. It RESOLVES the runtime question and
+vindicates Dais's intuition on every point:
+
+| Dais said | Hermes README / code confirms |
+|---|---|
+| Hermes has a heartbeat/autonomous loop | ✅ "the ONLY agent with a built-in **learning loop** — creates skills from experience, improves during use, **nudges itself to persist knowledge**" + cron/scheduler ticks 60s (cron/__init__.py) "running unattended" |
+| Hermes can use our own keys (BYOK) | ✅ "Use **any model... your own endpoint**. Switch with `hermes model` — **no code changes, no lock-in**" (Nous Portal/OpenRouter/Kimi/OpenAI/Anthropic). **No fork needed** — this is what automaton lacks. |
+| Hermes can spawn to Daytona/Akash | ✅ "Six terminal backends — local, Docker, SSH, Singularity, Modal, **and Daytona**. Daytona/Modal = **serverless persistence, hibernates idle, wakes on demand**." Daytona is BUILT-IN. |
+| automaton + Hermes = redundant | ✅ both are complete standalone agents w/ own loop. Stacking = double-brain. |
+
+### FINAL ARCHITECTURE (locked by data)
+```
+ONE RUNTIME = Hermes (NousResearch, Python, MIT)  ← the body
+  native already: BYOK(no lock-in, `hermes model`) / Daytona+Modal serverless host /
+                  self-improving learning loop / skill creation / memory / cron unattended /
+                  gateway(TG/Slack/Discord/WhatsApp/Signal) / Camofox or Nous-Portal browser / Kimi
+  PORT from automaton (MIT) as Hermes SKILLS (the 3 things Hermes lacks):
+     1. wallet skill        (sign/send, viem/cdp — automaton identity/wallet.ts)
+     2. x402 skill          (in=earn + out=topup — automaton conway/x402.ts + our spec09)
+     3. self-replication skill (spawn a NEW sovereign Hermes on Daytona/Akash + own wallet +
+                              constitution propagation — automaton replication/spawn.ts+constitution.ts)
+  + constitution = immutable file + guard skill (automaton's 3 Laws, Pañcasīla-aligned)
+HOSTS: Daytona(native, primary) / Akash(sovereign fallback, add backend) / Modal / Conway(optional)
+automaton = REFERENCE we port MIT logic from. NOT a running 2nd runtime.
+Conway = optional inference/host fallback tier (constitution origin, keep).
+```
+
+### HONEST correction to my own earlier calls
+- §5/§9 said "automaton=body + Hermes=hands (complementary, exec bridge)". WRONG — that's the redundant
+  double-loop. Corrected: ONE runtime = Hermes; automaton = reference.
+- I called 07-HERMES-PIVOT "fake/suspect". Partially UNFAIR: its core thesis (runtime=Hermes + Daytona
+  spawn + Kimi brain) is VINDICATED by the README. What 07 MISSED = it dropped automaton entirely instead
+  of porting automaton's wallet/x402/replication/constitution as skills. → 07 gets REVISED (add the
+  ported-primitives layer), not archived.
+- §11/§13 BYOK saga: for AUTOMATON, BYOK needs a fork (Conway-locked). For HERMES, BYOK is NATIVE
+  (`hermes model`). Choosing Hermes makes the whole BYOK-fork problem disappear.
+
+### What this DELETES from the plan (moot under Hermes-only)
+- automaton fork + provider-registry wire (BYOK) → moot (Hermes BYOK native)
+- SandboxProvider refactor in automaton → moot (Hermes Daytona native)
+- automaton funding/launchd as the body → moot (Hermes is the body)
+
+### Remaining honest open item
+- Hermes self-replicates a NEW SOVEREIGN instance? README shows local subagents + Daytona host backend,
+  but NOT "clone myself into a new wallet-owning sovereign Hermes". → that's the self-replication SKILL we
+  build (port automaton replication.ts: Daytona sandbox → install hermes → inject constitution → mint wallet
+  → start). Daytona gives the host; we build the "clone myself" skill.
+
+## § 18. Changelog (append)
+| Date | Change |
+|---|---|
+| 2026-06-04 | DECISION LOCKED via Hermes README: Hermes = the ONE runtime (BYOK native no-fork, Daytona native, self-improving loop — all Dais-confirmed). Port automaton's wallet/x402/self-replication/constitution as Hermes SKILLS. Daytona primary host / Akash sovereign fallback. automaton = reference only. 07-HERMES vindicated on Hermes+Daytona+Kimi (revise, don't archive); deletes the automaton-fork/SandboxProvider/funding tasks. Open: build the self-replication skill (Daytona host + ported logic). |
