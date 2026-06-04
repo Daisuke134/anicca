@@ -1,0 +1,145 @@
+{
+  "version": "v1.0",
+  "created": "2026-06-05",
+  "source_spec": "~/anicca-project/docs/superpowers/specs/2026-06-05-cron-cull-design.md",
+  "source_plan": "~/anicca-project/docs/superpowers/plans/2026-06-05-cron-cull.md",
+  "rules": [
+    {
+      "id": "R1_NANO_BANANA",
+      "match_grep": "nano-banana|gemini-cli|imagen|vertex(ai)?",
+      "action": "disable_immediate",
+      "reason": "Dais 2026-06-05 banned image-gen crons (cost + life-manager Gemini contention)"
+    },
+    {
+      "id": "R2_DIGEST_TO_DAIS",
+      "match_grep": "(report|digest|summary|rollup|brief|dashboard).*(Slack|#metrics|#content-metrics)",
+      "match_anti": "(post|publish|publishToPostiz|send|apply|submit|outreach|outbound|click|fetch|pull|sync|heal|monitor|fire|email|reply|tt-warmup|ig-warmup)",
+      "action": "flag_for_review",
+      "reason": "Slack 投稿 のみ で 外部 action verb 無し = leech",
+      "false_positive_examples": [
+        "anicca-morning-report (= lateness alert = 外部 action 相当 = 守護)",
+        "anicca-watch-sweep (= dispatcher で 15+ watcher carry = 守護)",
+        "daily-memory (= article-writer 上流 input = 守護)",
+        "anicca-postiz-health-daily (= SNS infra alert = 守護)",
+        "anicca-account-health-daily (= SNS account ban 検出 = 守護)",
+        "mufg-epoc-watcher (= Dais MUIT 仕事 直結 = KEEP-FIXED)",
+        "aniccaai-dashboard-refresh (= 公開帳簿 = KEEP-FIXED)"
+      ]
+    },
+    {
+      "id": "R3_DRY_RUN_FOREVER",
+      "match_grep": "DRY_RUN=true|DRY_RUN: true|DRY-RUN-only",
+      "match_anti": "DRY_RUN=false",
+      "min_silent_days": 30,
+      "action": "disable_immediate",
+      "reason": "fake-ass dry run"
+    },
+    {
+      "id": "R4_ORPHAN_SKILL",
+      "match": "skill_dir does NOT exist AND payload does NOT have embedded bash one-liner",
+      "action": "disable_immediate",
+      "reason": "zombie cron, skill deleted"
+    },
+    {
+      "id": "R5_DUPLICATE_ENTRY",
+      "match": "same cron name appears 2+ in jobs.json AND schedules identical AND scripts identical",
+      "match_anti": "schedules differ OR scripts differ (= 別機能)",
+      "action": "flag_for_review (keep newest schema)",
+      "reason": "jobs.json corruption / tombstone"
+    },
+    {
+      "id": "R6_LAUNCHD_DUPLICATE",
+      "match": "launchctl list shows same daemon name",
+      "action": "flag_for_review (one must die)",
+      "reason": "OS-level vs OpenClaw cron duplication"
+    },
+    {
+      "id": "R7_HR15_ROTATION_OBSOLETE",
+      "match_grep": "rotation-audit|rotation\\-rebalance|rotation\\.cron",
+      "action": "disable_immediate",
+      "reason": "HARD RULE #15 rotation 廃止"
+    },
+    {
+      "id": "R8_DORMANT_REVENUE_PATH",
+      "match": "skill in dormant_rails list (= retreat / tomb / fashion-LP-not-live / coconala-not-listed / trustmrr-no-MRR-gt-500) AND >30 day no real revenue event",
+      "action": "flag_for_review",
+      "reason": "rail 未本番、 product family 一括 で Dais 判断"
+    }
+  ],
+  "guardrails_NEVER_DISABLE": {
+    "tt_ig_yt_post": [
+      "reelclaw-*", "monk-factory-*", "watercolor-*", "yangmun-*",
+      "4.7-slideshow-*", "iam-color-*-daily", "iam-photo-*-daily",
+      "mantra-slideshow-*", "honne-*", "larry-anicca-*", "mau-tiktok-*",
+      "fashion-slideshow-*", "tomb-slideshow-*", "cafe-slideshow-*",
+      "retreat-slideshow-*", "comedy-tiktok-cross-post"
+    ],
+    "article_1_channel_each": [
+      "anicca-article-daily-zenn", "anicca-article-daily-devto",
+      "anicca-article-daily-substack-en", "anicca-article-daily-substack-ja",
+      "anicca-article-daily-note", "anicca-article-daily-blog"
+    ],
+    "apply_revenue_acquisition": [
+      "anicca-meetup-apply-*", "comedy-*-apply-*", "comedy-booking-*",
+      "anicca-cold-email-send", "anicca-cold-email-reply",
+      "anicca-corey-cold-email-daily", "connpass-lt-apply-daily",
+      "accelerator-application-monthly", "jsps-application-monthly",
+      "naist-funds-apply", "anicca-mail-triage", "anicca-product-growth"
+    ],
+    "naist_learning": [
+      "naist-pull (= hourly skill 版 のみ、 inline */15 は 削除 済)",
+      "naist-deadline-ical", "naist-deadline-watch", "naist-gcal-sync",
+      "naist-homework-fetch", "naist-homework-submit",
+      "naist-course-register", "attention-tracker-6h"
+    ],
+    "self_heal_trio": [
+      "anicca-cron-harvester", "anicca-cron-doctor (両 entry: hourly :37 + daily 03:00 lint)",
+      "anicca-cron-auto-disable", "tuning-skills-nightly",
+      "anicca-exec-guard", "anicca-health",
+      "anicca-pattern-promoter", "anicca-pattern-jsonl-refiller"
+    ],
+    "heartbeat": [
+      "anicca-heartbeat", "anicca-lateness-heartbeat-shell"
+    ],
+    "revenue_infra": [
+      "factory-bp-*", "contra-daily", "anicca-earn-bounty",
+      "anicca-cfo-sync", "anicca-wallet-balance", "anicca-fuel-broker",
+      "anicca-credit-monitor", "app-reviews-daily",
+      "app-reviews-weekly-digest (= reply NOT digest)"
+    ],
+    "sns_infra_health": [
+      "anicca-postiz-health-daily", "anicca-account-health-daily"
+    ],
+    "mail_lateness_physical": [
+      "anicca-arrival-mail", "anicca-morning-leave-check",
+      "anicca-morning-report (= lateness Slack alert NOT digest)",
+      "anicca-mail-triage"
+    ],
+    "fresh_content_engine": [
+      "larry-trend-hunter-en", "larry-trend-hunter-ja",
+      "larry-strategy-updater", "anicca-article-self-improve",
+      "anicca-article-daily-whitelist-learn"
+    ],
+    "content_upstream_input": [
+      "daily-memory (= article-writer + build-in-public 必須 input)"
+    ],
+    "watch_sweep_dispatcher": [
+      "anicca-watch-sweep (= 15+ standalone watcher 統合)"
+    ],
+    "public_transparency": [
+      "aniccaai-dashboard-refresh (= 公開帳簿、 no-theatre)"
+    ],
+    "dais_work_direct": [
+      "mufg-epoc-watcher (= MUIT 仕事 daily intel brief)"
+    ]
+  },
+  "before_disable_checklist": [
+    "1. verify skill SKILL.md description does NOT contain ANY of: 'post to TikTok' / 'post to IG' / 'post to YouTube' / 'publish to substack' / 'publish to zenn' / 'publish to dev.to' / 'publish to note' / 'publish to blog' / 'send email' / 'cold mail' / 'apply' / 'cafe' / 'naist' / 'self-heal' / 'heartbeat'",
+    "2. verify cron is NOT in any guardrails_NEVER_DISABLE list",
+    "3. verify cron's recent runs (= last 7 days) — if 1+ successful real action, NOT disable",
+    "4. verify launchd does NOT host same daemon (= R6)",
+    "5. emit disable candidate to workspace/tasks.json (= pending status) BEFORE actual disable",
+    "6. after 24h Slack observation, if no engine death signal, actual disable"
+  ],
+  "operational_path": "cron-auto-disable (daily 03:11 JST) → load this audit-rules.json → read harvester events (~/.openclaw/state/events/*.jsonl) → filter by rules → cross-check guardrails → emit candidates → openclaw cron disable <id> → Slack '🧹 cron-auto-disable: X→Y (R1:.., R2:..)' #content-metrics"
+}
