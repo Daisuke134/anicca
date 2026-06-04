@@ -103,6 +103,15 @@ NUDGE_MIN = int(os.environ.get("LATE_NUDGE_MIN", "20"))      # gentle Slack nudg
 MOVING_VEL = float(os.environ.get("LATE_MOVING_VEL", "0.8")) # m/s -> considered moving
 STALE_MIN = int(os.environ.get("LATE_STALE_MIN", "10"))      # Telegram Live Location updates 1-5s while sharing; >10m stale = bot died or user stopped sharing
 
+# Capafy reject R2 fix: bound the call loop (was 6 → 3).
+RELENTLESS_MAX_DEFAULT = 3
+
+
+def life_manager_enabled(profile: dict) -> bool:
+    """profile.json の lifeManager.enabled。未指定なら True(既定ON)。False で全停止 (Capafy reject R2: pause/stop手段)。"""
+    lm = (profile or {}).get("lifeManager") or {}
+    return lm.get("enabled", True) is not False
+
 
 def env(name, default=""):
     m = re.search(rf"^{name}=(.*)$", ENV, re.M)
@@ -212,7 +221,7 @@ def decide(now, location, departures, home=None, home_radius_m=None, dest=None, 
 
 # ---- IO ----
 def get_location():
-    """Read latest Telegram Live Location fix from ~/.openclaw/state/location/<user_id>.json.
+    """Read latest Telegram Live Location fix from state/location/<user_id>.json.
 
     Bot writes one file per user (key = telegram user id). If multiple files exist
     we take the freshest. None = no Live Location sharing active → upstream calls
@@ -345,7 +354,7 @@ def place_lateness_call(ctx):
 
     Source of the dial-out endpoint:
       1. ANICCA_PHONE_DIALOUT_URL env var (preferred — set by launchd / cron config)
-      2. ~/.openclaw/state/anicca_phone_url.txt (matches the imokenet URL_FILE pattern)
+      2. state/anicca_phone_url.txt (matches the imokenet URL_FILE pattern)
       3. http://127.0.0.1:7860/dialout (local default during dev)
     """
     base = (
@@ -420,6 +429,13 @@ def _in_quiet_hours(now):
 
 def main():
     now = datetime.now(JST)
+    # Capafy reject R2: 全停止スイッチ。lifeManager.enabled:false で routine call/mail を止める。
+    try:
+        if not life_manager_enabled(prof.load_profile()):
+            print(json.dumps({"action": "disabled", "reason": "lifeManager.enabled=false"}, ensure_ascii=False))
+            return
+    except Exception:
+        pass
     if _in_quiet_hours(now):
         # Quiet hours are how the user tells us "I'm asleep / leave me alone".
         # Critical events still trigger (handled inside decide), but the
@@ -614,7 +630,7 @@ def main():
         # provably moved (>= moveDetectionMeters from the origin) or after
         # MAX attempts. Skipped entirely for "guide" (already-moving) and
         # routine-only nudges.
-        MAX = int(os.environ.get("LATE_RELENTLESS_MAX", "6"))
+        MAX = int(os.environ.get("LATE_RELENTLESS_MAX", str(RELENTLESS_MAX_DEFAULT)))
         GAP_NOPICKUP_SEC = int(os.environ.get("LATE_RELENTLESS_GAP_NOPICKUP", "60"))
         GAP_PICKUP_NOMOVE_SEC = int(os.environ.get("LATE_RELENTLESS_GAP_PICKUP_NOMOVE", "120"))
         MOVE_THRESHOLD_M = int(prof.get("alarm.moveDetectionMeters", 300))
