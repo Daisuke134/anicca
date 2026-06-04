@@ -19,19 +19,16 @@ from __future__ import annotations
 import json
 import os
 import sys
-import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any
 
-# HermesJudge shells out to a heavyweight `hermes chat` process per call. Eight
-# of them at once (4 dims × Steps+ReasonScore) intermittently exhaust local
-# resources and a child exits non-zero. Serialize the subprocess judge with a
-# module-level lock so dims still SUBMIT in parallel but the actual CLI calls
-# run one-at-a-time (the bottleneck is the LLM round-trip either way). One
-# transient retry absorbs the occasional cold-start failure.
-_HERMES_CALL_LOCK = threading.Lock()
+# HermesJudge shells out to a `hermes chat` process per call (8 per eval: 4 dims
+# × GEval's Steps+ReasonScore). Measured: 8 concurrent `hermes chat` invocations
+# all succeed and finish in ~40s total — they parallelize fine, so the dims run
+# concurrently via the engine's ThreadPoolExecutor (NO serialization lock).
+# Robustness comes from a generous per-call timeout + retry in HermesJudge._run.
 
 STATE_DIR = Path(os.environ.get("HERMES_STATE", "/Users/operator/.hermes/state"))
 COST_LOG = STATE_DIR / "eval-cost.jsonl"
@@ -94,21 +91,20 @@ def _make_hermes_judge(model: str = HERMES_JUDGE_MODEL):
             return self
 
         def _run(self, prompt: str) -> str:
-            # Calls are serialized (lock) so they queue; a single cold/loaded
-            # `hermes chat` round-trip can take tens of seconds, so the per-call
-            # timeout is generous (override with HERMES_JUDGE_TIMEOUT). Retry
-            # absorbs both transient non-zero exits AND a timed-out child.
-            timeout_s = float(os.environ.get("HERMES_JUDGE_TIMEOUT", "240"))
+            # Dims run concurrently (engine ThreadPoolExecutor); each call gets a
+            # generous timeout since a loaded box can slow a round-trip
+            # (override with HERMES_JUDGE_TIMEOUT). Retry absorbs both a transient
+            # non-zero exit AND a timed-out child.
+            timeout_s = float(os.environ.get("HERMES_JUDGE_TIMEOUT", "120"))
             last_err = ""
             for attempt in range(3):
                 try:
-                    with _HERMES_CALL_LOCK:  # serialize the heavyweight CLI calls
-                        result = subprocess.run(
-                            [HERMES_BIN, "chat", "-Q", "-q", prompt],
-                            capture_output=True,
-                            text=True,
-                            timeout=timeout_s,
-                        )
+                    result = subprocess.run(
+                        [HERMES_BIN, "chat", "-Q", "-q", prompt],
+                        capture_output=True,
+                        text=True,
+                        timeout=timeout_s,
+                    )
                 except subprocess.TimeoutExpired:
                     last_err = f"timeout after {timeout_s}s (attempt {attempt + 1})"
                     time.sleep(1.0)
