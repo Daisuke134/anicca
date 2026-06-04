@@ -142,7 +142,12 @@ is blockedBy every claim-task; when it goes green, the pitch is fact and may be 
  ⑤b「リファクタリング・自己改善」            →  #335, #336 self-manage   →  loop observed raising own quality
  ⑤c「クラウド上で自己増殖」                  →  #327 replicate, #328     →  a child spawns on Daytona/Akash,
                                                  colony                      own wallet + constitution hash
- ⑤d「メールで日次報告」                      →  #231 ✓ LIVE / #330       →  daily email arrives (already true)
+ ⑤d「メールで日次報告」                      →  #231 ✓ LIVE / #330 ◐     →  daily email arrives; #330 Hermes-native
+                                                 (7d gate pending)           skill live (cron 0 6 * * *, sends from
+                                                                             anicca-genesis@agentmail.to,
+                                                                             X-Anicca-Origin: hermes-genesis).
+                                                                             ◐ = impl + E2E done, awaiting 7
+                                                                             consecutive send.ok=true before ✓
  ⑥「収益の一部をUBI・募金配布」              →  #326 payout, #284 spec14 →  a real payout tx observed on-chain
  ⑦「何兆体が協力して苦しみをなくす」          →  #334 forum, #337 swarm,  →  2+ instances coordinate via forum;
                                                  #338 roll-out               1 learning rolls out to all
