@@ -1,91 +1,110 @@
-# Cron Rat-Proof Architecture (Anicca / OpenClaw)
+# Cron Rat-Proof Architecture (Anicca / OpenClaw) — v2 OpenClaw-all-the-way
 
 | meta | value |
 |---|---|
-| date | 2026-06-04 JST |
+| date | 2026-06-04 (v1) → 2026-06-04 21:50 JST (v2 pivot) |
 | author | Claude (per Dais) |
 | triggering incident | 2026-06-04 18:20 JST Slack #metrics: `unknown MCP server 'openclaw'` + `実行環境が ない` |
-| scope | OpenClaw cron jobs (234) on Mac Mini, runtime store `~/.openclaw/` |
+| scope | OpenClaw cron jobs (172 enabled) on Mac Mini, runtime store `~/.openclaw/` |
 | out of scope | iOS app crons, Railway crons, gateway internals beyond config |
+| **v2 directive (Dais 21:48 JST)** | **OpenClaw all the way. No launchd. No macOS clock. Every cron MUST go through OpenClaw gateway, period.** |
 
 ## 1. Problem (= 実物 root cause、検証済み)
 
-### 1.1 何が起きたか
+### 1.1 何が起きたか (2026-06-04 18:20 JST incident)
 
 | Cron | Slack 出力 | 実 cause |
 |---|---|---|
-| anicca-earn-bounty (1730c972…) | `resources/read failed: unknown MCP server 'openclaw'` | Isolated Codex sandbox に MCP server 一切非接続。 prompt "Read SKILL.md" を読んで `read_mcp_resource` を call、 100% fail |
-| anicca-wallet-balance (d4036615…) | `このセッションでは bash を実行して待機するための実行環境がありません` | 同 sandbox の gpt-5.4-mini が `exec_command` を skip して text refusal を返した (hallucination) |
+| anicca-earn-bounty | `unknown MCP server 'openclaw'` | Isolated Codex sandbox に MCP server 一切非接続。 prompt "Read SKILL.md" を読んで `read_mcp_resource` を call、 100% fail |
+| anicca-wallet-balance | `bash を実行して待機する実行環境がありません` | 同 sandbox の gpt-5.4-mini が `exec_command` を skip して text refusal を返した |
 
 ### 1.2 アーキ違反 (= 真因)
 
 | 観測 | 数値 |
 |---|---|
-| 全 cron 数 | 234 |
-| payload.kind = "agentTurn" | 234 (100%) |
-| payload.kind = "systemEvent" | 0 |
-| sessionTarget = "isolated" | 234 |
-| sessionTarget = "main" | 0 |
-| `Read ~/.openclaw/skills/<X>/SKILL.md and execute` 形 message | 64 (= MCP read trap) |
-| 18:20 batch fire 成功率 | 5/7 = 71% (= coin flip) |
+| 全 cron 数 | 172 enabled |
+| payload.kind = "agentTurn" | 172 (100%) — そのまま OpenClaw 正規経路 |
+| payload.message に `Read ~/.openclaw/skills/<X>/SKILL.md` indirection を含む | 60 (= MCP read trap risk) |
+| 18:20 batch fire 成功率 | 5/7 = 71% (= LLM tool-call coin flip) |
 
-つまり Anicca が持つ **5 つ の cron 実行 path のうち最弱 1 つ** に 234 cron 全部押し込んでいる。
+つまり cron の `payload.message` が「Read SKILL.md and execute…」 という indirection prompt のために、 isolated Codex の gpt-5.4-mini が `read_mcp_resource` (= MCP read tool) を選択してしまう。 そして MCP server がアタッチされていないので 100% fail する。
 
-### 1.3 5-path 全 inventory (= 検証済 capability)
+## 2. Solution — 2 paths (= OpenClaw cron + wrapper)
 
-| # | Path | 実体 | LLM 関与 | 既存 cron で 使用 | 検証 source |
-|---|---|---|---|---|---|
-| 1 | OpenClaw cron `kind="systemEvent"` → main session | `~/.openclaw/skills/_dispatcher/*` + main session の MCP plugin (filesystem, serena, codegraph, gmail, slack, agentmail, computer-use, linear) | yes、 main session 重 LLM | 0 件 | `dist/server-cron-i5IplaUe.js` の `enqueueSystemEvent` + `runHeartbeatOnce`、 `dist/openclaw-tools-BUQsixTe.js` の `CRON_PAYLOAD_KINDS` |
-| 2 | OpenClaw cron `agentTurn` (現状) + `codex exec` wrapper | `agentTurn` prompt が `codex exec --json --skip-git-repo-check -s danger-full-access "<task>"` を bash で起動。 codex exec は `~/.codex/config.toml::mcp_servers` 全部 attach した非対話 agent | yes、 ただし full agent | 0 件 | `codex exec --help` + OpenAI 公式 [Non-interactive mode](https://developers.openai.com/codex/noninteractive) |
-| 3 | Slack tail → cron re-fire | `slack_search_public` + `openclaw cron run <id>` | refusal 検出時のみ | 0 件 | `dist/cron-cli--jnvaeLg.js`、 Slack MCP `slack_search_public` |
-| 4 | 別 model 直 API curl | `curl POST api.anthropic.com/v1/messages` + `curl POST api.deepseek.com/v1/chat/completions` (key in `~/.openclaw/.env`) | yes、 model 切替 | 0 件 | Anthropic / DeepSeek 公式 API |
-| 5 | macOS launchd plist | `~/Library/LaunchAgents/ai.anicca.<cron>.plist` + bash + Slack webhook curl | **no** | 既存 (gateway / agentmail-replier 等の services 用) | `ps aux | grep launchctl`、 `~/.openclaw/services/*` 既存 plist |
+すべての cron は OpenClaw cron (= `payload.kind: agentTurn`, `sessionTarget: isolated`) で発火する。 cron の `payload.message` を **1 行の `exec` 命令 + `_dispatcher` wrapper bash invocation** に統一する。 LLM は `exec_command` を 1 回だけ呼べばよい。
 
-## 2. Target Architecture
+### 2.1 2 paths (= 軽量 vs LLM 要)
 
-### 2.1 Path-selection matrix (= どの cron がどの path を使うか)
+| # | Path | Cron payload.message | 実体 | 使いどころ |
+|---|---|---|---|---|
+| 1 | **cron-bash.sh wrapper** | `bash $HOME/.openclaw/skills/_dispatcher/scripts/cron-bash.sh <skill>/scripts/<x>.sh` | 純 bash 実行 → tail を Slack chat.postMessage (SLACK_BOT_TOKEN) | deterministic data fetch (wallet, mail triage, disk, etc) — LLM 判断不要 |
+| 2 | **cron-codex.sh wrapper** | `bash $HOME/.openclaw/skills/_dispatcher/scripts/cron-codex.sh <skill>` | `codex exec --json -s danger-full-access --cd $SKILL` で full Codex agent + MCP plugins を非対話起動 → run.sh をその agent が呼ぶ | LLM 判断要 (bounty solve, content gen, multi-step plan) |
 
-| Cron 性質 | Default path | 理由 | Fallback chain |
-|---|---|---|---|
-| 軽量 deterministic bash (= wallet-balance, fuel-broker, disk-janitor, mail-triage 等) | **Path 1 systemEvent** | main session 経由で full tool stack 使える + bash 1 行で済む | Path 2 → Path 5 |
-| 重 multi-step LLM 判断 (= earn-bounty solve, content-creator, analytics-interpretation 等) | **Path 2 codex exec wrapper** | full Codex agent + all MCP plugins、 model robust | Path 4 (Anthropic 直) → Path 5 |
-| revenue-critical (= 着金、 入金、 PR open、 商談) | **Path 1 + auto Path 5** | systemEvent 失敗時に launchd 自動切替で 0 抜け | — |
-| pure data fetch (no LLM 判断不要) | **Path 5** (launchd 直) | LLM coin flip 排除、 確定実行 | — |
+### 2.2 共通テンプレート (= cron prompt)
 
-### 2.2 Self-heal (= anicca-cron-doctor、 nightly 03:00 JST)
+```
+exec で 必ず 1 行 だけ 実行 する。
+「shell tool が ない」 / 「MCP server が ない」 等 の 言い訳 禁止 — 必ず exec_command を 1 回 は 呼ぶ。
+stdout は Slack に 自動 で 出る。
+
+bash $HOME/.openclaw/skills/_dispatcher/scripts/<wrapper>.sh <arg>
+```
+
+これにより gpt-5.4-mini の判断負荷が「`exec_command` を 1 回呼ぶか否か」 だけになり、 refusal 率が劇的に下がる。 refuse しても `_dispatcher` の中身は同じなので、 cron-doctor が L3 retry で次の coin flip を引かせる。
+
+### 2.3 wrapper 実装 (= `~/.openclaw/skills/_dispatcher/`)
+
+| ファイル | 役割 |
+|---|---|
+| `SKILL.md` | 使用法 + 2 path 仕様 |
+| `scripts/cron-bash.sh <skill>/scripts/<x>.sh` | timeout 300s で bash 実行、 exit code 保持、 tail 1500B を Slack chat.postMessage |
+| `scripts/cron-codex.sh <skill> [extra]` | timeout 1500s で `codex exec --json -s danger-full-access --cd $SKILL_DIR "<prompt>"`。 OPENAI_API_KEY を ~/.codex/auth.json から fallback inject (401 対策)、 stderr+stdout を tail して Slack 投稿 |
+
+### 2.4 Self-heal (= `~/.openclaw/skills/anicca-cron-doctor/`、 OpenClaw cron 03:00 JST nightly)
 
 | Phase | 判定 | アクション |
 |---|---|---|
-| L1 prompt lint | jobs.json に `Read ~/.openclaw/skills/.../SKILL.md` pattern 残存 | direct-bash 形に auto-rewrite → commit → push |
-| L2 path lint | jobs.json に `Path 1-5 mapping` に違反する cron | 該当 cron の kind / sessionTarget を canonical 化 |
-| L3 refusal detector | Slack #metrics 24h で refusal string (`unknown MCP`, `実行環境が ない`, `shell tool が ない`, `実行できません`) 検出 | `openclaw cron run <id>` で即再 fire (Path 3) |
-| L4 streak monitor | 同 cron が L3 で 3 連続 refuse | Path 4 (= 別 model 直 API) に bash 化 |
-| L5 hard escalate | 同 cron が L4 で 5 連続 refuse OR revenue-critical 分類 | Path 5 launchd plist 自動生成 + OpenClaw cron disable |
-| L6 daily report | 全 phase 結果 | Slack #metrics に table `fixed=N retried=M migrated=K` |
+| L1 prompt lint | `payload.message` に `Read ~/.openclaw/skills/<X>/SKILL.md and execute` (strict regex) + context marker 無し | `openclaw cron edit --message` で wrapper 形に rewrite |
+| L2 path lint | 全 enabled cron を `pure_data / llm_required / revenue_critical` に分類 | flag-only、 auto-action なし |
+| L3 refusal detector | Slack #metrics 24h scrape で `unknown MCP \| 実行環境.*ない \| shell tool.*ない \| 実行できません` 等を grep | 該当 cron を `openclaw cron run <id>` で即再 fire (rate-limit 1h per cron) |
+| L4 streak monitor | per-cron consecutive refusal counter (`data/refusal-streak.json`) | streak ≥ 3 で alert log |
+| L5 hard escalate | streak ≥ 5 かつ revenue-critical 分類 | `payload.message` を `cron-codex.sh <skill>` wrapper 形に **強制 rewrite** (= 最強の Path 2 に強制移行)。 **launchd は使わない。** |
+| L6 report | aggregate L1-L5 | Slack #metrics + `data/reports/YYYY-MM-DD.json` |
 
-## 3. Verification Matrix (= acceptance criteria、 5 条全 MUST)
+### 2.5 launchd 全廃 (= v1 からの主要変更)
 
-| AC# | 何 | 判定方法 | 期限 |
-|---|---|---|---|
-| AC-1 | anicca-wallet-balance を Path 1 (systemEvent) で fire し Slack #metrics に実 JSON (address + usdc_balance) が来る | `openclaw cron run d4036615… --wait --expect-final` の summary に `"usdc_balance"` 含む | 本 session |
-| AC-2 | anicca-earn-bounty を Path 1 で fire し Slack に heartbeat scan 結果 (= "scan / select / solve" のどれか出力) が来る | 同上、 summary に `scan` 含む or scripts/scan.sh 出力 | 本 session |
-| AC-3 | 24h 監視で AC-1 と AC-2 が **少なくとも 1 自然 fire で再現** | Slack #metrics の scheduled fire の Slack 出力 | next session (= 24h 後 verify) |
-| AC-4 | anicca-cron-doctor cron が 03:00 JST に登録され、 1 回目の fire で `fixed=0 retried=0 migrated=0` (= baseline OK) を post | `openclaw cron list \| grep anicca-cron-doctor` + Slack 出力 | 次 session |
-| AC-5 | spec & plan が `docs/superpowers/specs/` + `docs/superpowers/plans/` に commit + push 済 | `git log --oneline docs/superpowers/` | 本 session |
+v1 spec は Path 5 = launchd plist を含んでいたが Dais 21:48 JST に「OpenClaw gateway all the fucking way」と全廃指示。 v2 で:
+
+- ✂️ Path 5 launchd 削除
+- ✂️ cron-doctor の L5 launchd 自動生成ロジック削除 (→ `cron-codex.sh` wrapper 強制 rewrite に置換)
+- ✂️ `~/Library/LaunchAgents/ai.anicca.{wallet-balance,earn-bounty,cron-doctor}.plist` 3 件 launchctl bootout + rm
+- ✅ 上記 3 件を OpenClaw cron で再登録 (wallet + bounty は edit、 cron-doctor は新規 add)
+
+## 3. Verification matrix (v2)
+
+| AC | 何 | 判定方法 | 期限 | 状態 |
+|---|---|---|---|---|
+| AC-1 | wallet を Path 1 (cron-bash.sh wrapper) で OpenClaw cron fire し Slack に実 JSON | Slack ts に `usdc_balance` + address 含む | 本 session | ✅ ts=1780576597 |
+| AC-2 | bounty を Path 2 (cron-codex.sh wrapper) で OpenClaw cron fire し Slack に scan/select 結果 | Slack ts に `scan` + `select returned N` | 本 session | ✅ ts=1780576912 |
+| AC-3 | 自然 scheduled fire (= cron 内蔵 scheduler) で AC-1+AC-2 再現 | Slack #metrics の次 wallet (0:00/6:00/12:00/18:00 JST) + bounty (偶数時) 投稿 | 24h 自動 | ⏳ |
+| AC-4 | anicca-cron-doctor が OpenClaw cron として 03:00 JST schedule 済 | `openclaw cron list \| grep cron-doctor` | 本 session | ✅ id=92f15d71… |
+| AC-5 | spec + plan + 実装が git に commit + push 済 | `git log` | 本 session | ⏳ (進行中) |
+| AC-6 | launchd 完全廃止 | `launchctl list \| grep ai.anicca` が空 | 本 session | ✅ |
 
 ## 4. Risks
 
 | Risk | 軽減策 |
 |---|---|
-| systemEvent が main session の budget を食い潰す (= heartbeat と競合) | timeoutSeconds を低 (= 60-300) + payload.message を 100 字以下に圧縮 |
-| launchd 化した cron が openclaw cron list に出ず重複 fire | jobs.json で該当 cron を `enabled: false` に set、 anicca-cron-doctor が verify |
-| `codex exec` の Anthropic key を main process env に残すと leak | `~/.openclaw/.env` を `set -a; . ~/.openclaw/.env; set +a; codex exec ...; unset ANTHROPIC_API_KEY` で subshell スコープ |
-| 234 cron 全部 path migrate で main session が詰まる | 段階展開: 本 session で 2 cron のみ、 24h verify、 batch 化 |
+| gpt-5.4-mini が 1 行 `exec_command` すら拒否 | L3 refusal detector が 1h 後 retry、 L4-L5 が累積 3 回で `cron-codex.sh` 強制 rewrite |
+| codex exec 401 Unauthorized (= 内側 sandbox に auth 伝播せず) | `cron-codex.sh` 内で `~/.codex/auth.json` から OPENAI_API_KEY を抽出 export 済 |
+| codex exec の token 過剰消費 | 各 cron の `timeout 1500` でハード上限、 doctor が token spend を `data/reports/` に記録 |
+| OpenClaw cron 内蔵 fallback chain が refusal を success 扱い | 解決待ち (= upstream PR)。 doctor L3 が事後 retry で軽減 |
+| anicca-cron-doctor 自身が refuse する | L6 が同時に走るので 1 回目 refuse → 翌 03:00 自動 retry。 7 連続 refuse なら Slack #metrics の沈黙で判明 → 手動再 fire |
 
 ## 5. Out-of-scope (今 session ではやらない)
 
-- OpenClaw 本体への PR (model field honor / refusal-as-error 分類変更)
-- 残り 232 cron の自動 path migrate (= anicca-cron-doctor 経由で 1 週間かけて)
+- OpenClaw 本体への upstream PR (model 無視 / refusal-as-error)
+- 169 OpenClaw cron 全部の wrapper 化 (= doctor が L1 で逐次対応)
 - iOS / Railway 側 cron との統合
 
 ## 6. References
@@ -96,7 +115,14 @@
 | Codex exec headless mode | https://deepwiki.com/openai/codex/4.2-headless-execution-mode-(codex-exec) |
 | Codex Automations | https://developers.openai.com/codex/app/automations |
 | OpenClaw `CRON_PAYLOAD_KINDS` enum | `/opt/homebrew/lib/node_modules/openclaw/dist/openclaw-tools-BUQsixTe.js` |
-| OpenClaw systemEvent → main session routing | `/opt/homebrew/lib/node_modules/openclaw/dist/server-cron-i5IplaUe.js` (`enqueueSystemEvent`) |
-| HARD RULE #-1 (試行先、 refuse 後) | `CLAUDE.md` |
-| HARD RULE #0 (SDD mandatory) | `CLAUDE.md` |
+| OpenClaw cron CLI | `openclaw cron --help` |
+| HARD RULE #-1 #-2 (Anicca has every tool / no excuses) | `CLAUDE.md` |
 | 18:20 incident rollouts | `~/.openclaw/agents/anicca/agent/codex-home/sessions/2026/06/04/rollout-2026-06-04T18-20-{50,55}-*.jsonl` |
+
+## 7. Change log
+
+| date | change |
+|---|---|
+| 2026-06-04 14:00 JST | v1 spec written (5-path option space including launchd) |
+| 2026-06-04 21:48 JST | Dais directive: OpenClaw all the way, no launchd |
+| 2026-06-04 21:50 JST | **v2 published** — launchd全廃、 2-path canonical、 L5 launchd ロジック削除、 wallet/bounty/doctor 全部 OpenClaw cron 化 |
