@@ -144,6 +144,12 @@ is blockedBy every claim-task; when it goes green, the pitch is fact and may be 
                                                  colony                      own wallet + constitution hash
  ⑤d「メールで日次報告」                      →  #231 ✓ LIVE / #330       →  daily email arrives (already true)
  ⑥「収益の一部をUBI・募金配布」              →  #326 payout, #284 spec14 →  a real payout tx observed on-chain
+                                                                              [Wave 1 = anicca-payout-ubi skill scaffolding
+                                                                               LIVE (dry-run + guard fail-closed + recipient
+                                                                               live-validation wired); row stays NOT green
+                                                                               until Wave 2 / Task 9 of 2026-06-04-
+                                                                               constitution-payout.md lands the 0.01 USDC
+                                                                               proof tx via wallet_lib.send_usdc()]
  ⑦「何兆体が協力して苦しみをなくす」          →  #334 forum, #337 swarm,  →  2+ instances coordinate via forum;
                                                  #338 roll-out               1 learning rolls out to all
  dashboard自動更新 (aniccaai.com/dashboard)   →  CFO daily (live)         →  ✓ already true
