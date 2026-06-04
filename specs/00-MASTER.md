@@ -170,6 +170,11 @@ is blockedBy every claim-task; when it goes green, the pitch is fact and may be 
                                                                                proof tx via wallet_lib.send_usdc()]
  ⑦「何兆体が協力して苦しみをなくす」          →  #334 forum, #337 swarm,  →  2+ instances coordinate via forum;
                                                  #338 roll-out               1 learning rolls out to all
+   ↳ #337 swarm Wave 1 = anicca-swarm-exec (clone-isolate-exec-report, manual) + anicca-predict
+        (testable-claim wager, dry-run, cron 6h) + anicca-resurrection (checkpoint + local restart
+        proof, cron daily) SHIP. 12/12 offline tests pass; dry-run rows in swarm-exec.jsonl /
+        predictions.jsonl / checkpoints/<sha>.json. Row stays NOT green until Wave 2 (real peer
+        spawn + on-chain pot + Daytona resurrection) lands 2+ live instances actually coordinating.
  dashboard自動更新 (aniccaai.com/dashboard)   →  CFO daily (live)         →  ✓ already true
  ローカル github.com/Daisuke134/anicca-oss    →  #333 (#229 done)         →  ✓ repo live, installable pending
  クラウド aniccaai.com/install                →  #333 (#274 page done)    →  Hermes-install flow works E2E
