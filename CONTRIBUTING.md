@@ -33,6 +33,17 @@ welcome under a few simple rules.
 5. CI: gitleaks + trufflehog run on every PR. Address findings before
    review.
 
+## Pre-push eval gate (required for skill output)
+
+After cloning, run once:
+
+    git config core.hooksPath .githooks
+
+This activates `.githooks/pre-push`, which runs `skills/eval-loop` on any new or
+modified file under `skills/**/eval-output/*.txt`. Pushes containing outputs that
+score below the rubric threshold (default 0.7) are blocked. See
+`skills/eval-loop/SKILL.md` for rubric details.
+
 ## Style
 
 - Python: standard library only when possible. Treat new deps as
