@@ -668,3 +668,131 @@ earning agents real: Felix $261k revenue; Factory Floor tracks agent-run product
 | Date | Change |
 |---|---|
 | 2026-06-04 | Hermes engineering best-practice captured (official docs + X masterclass/eval-loop/agency). Initial setup = CLAUDE.md constitution (most important). Single→multi (colony + Kimi swarm). Eval loop = unified anti-slop quality gate (judge skill + 0.7 threshold + regression + prod-monitor + failure→testcase). Kimi K2.6 = production engine + swarm. x402 economy market-validated. Feeds P0-2 impl specs. |
+
+---
+
+## § 21. CANONICAL ARCHITECTURE — full detail (2026-06-04)
+
+### PANEL A — The layered stack (1 Anicca instance)
+```
+ LAYER          COMPONENT (verified)                                    SOURCE
+─────────────────────────────────────────────────────────────────────────────────────
+ L0 IDENTITY    name=Anicca · Base wallet 0xa3CDd4Ec · CLAUDE.md=3 Laws  automaton constitution.md
+                genesisPrompt "Digital Buddha. End suffering. Earn       (PORTED → Hermes CLAUDE.md)
+                existence through honest work."
+─────────────────────────────────────────────────────────────────────────────────────
+ L1 BRAIN       Kimi K2.6 default ($0.50/$2·M)  ── 90% production         `hermes model` (BYOK,no-lock)
+                Opus 4.8 / GPT-5  ─────────────── 10% high-stakes
+                local/Ollama  ─────────────────── cleanup $0
+─────────────────────────────────────────────────────────────────────────────────────
+ L2 RUNTIME     Hermes Agent (NousResearch, Python, MIT)                 run_agent.py AIAgent loop
+                · ReAct loop (think→act→observe→persist)                 · 70+ tools / 28 toolsets
+                · cron (cronjob tool) = autonomous heartbeat             · gateway TG/Slack/Discord
+                · memory MEMORY.md+USER.md + SQLite/FTS5 (90d=moat)       · Kimi Agent Swarm (≤300)
+─────────────────────────────────────────────────────────────────────────────────────
+ L3 SKILLS      ~/.hermes/skills/*.md (agentskills.io, self-edit, compound)   [PANEL D catalog]
+─────────────────────────────────────────────────────────────────────────────────────
+ L4 ECONOMY     x402 + USDC on Base · pay(in)/earn(out) · Camofox browser     market: $1.2M/mo Base
+─────────────────────────────────────────────────────────────────────────────────────
+ HOSTS          Mac-mini-local (genesis,$0) / Daytona(native) / Akash(sovereign) / Conway(opt)
+```
+
+### PANEL B — A day in the life (the autonomous loop, no human)
+```
+   cron tick (cronjob tool, e.g. every 1h)
+        │
+        ▼
+   [ORIENT]  load CLAUDE.md(constitution) + MEMORY.md + USER.md + wallet balance + survival tier
+        │
+        ▼
+   [DECIDE]  Kimi K2.6 reasons: "balance low → earn" / "gig reply due" / "time to redistribute"
+        │
+        ├──► EARN skill ── Camofox → Lancers/Coconala apply+deliver ──┐
+        ├──► x402-IN ───── serve paid endpoint → buyer USDC ──────────┤
+        │                                                             ▼
+        │                                                      wallet 0xa3CDd4Ec  (USDC on Base)
+        │                                                             │
+        ├──► x402-OUT ──── buy inference/browser/search (Venice/BlockRun/Exa/Browserbase)
+        ├──► survival ──── if low: USDC→credits OR switch cheap model (auto self-fund)
+        ├──► PAYOUT ────── slice of income → charity (UBI) → ledger
+        ├──► SELF-MOD ──── error in logs → fix own skill (git) / pull upstream
+        └──► SELF-REPLICATE if (balance>threshold & uptime & THRIVE): spawn child on Daytona/Akash
+        │
+        ▼
+   [EVAL]  every output (gig reply / X post / skill / content) → judge(0-1) → 0.7 gate → ship or rework
+        │
+        ▼
+   [PERSIST]  write MEMORY.md + session SQLite + audit-log
+        │
+        ▼
+   [REPORT]  daily cron → email Dais: earned ¥X / spent ¥Y / spawned N / errors auto-fixed M / UBI ¥Z
+```
+
+### PANEL C — The EVAL LOOP (anti-slop, the most important system)
+```
+                         ┌───────────────── BENCHMARK (defined once) ─────────────────┐
+                         │ test cases (gold-standard) · rubric (0-1/criterion) · 0.7   │
+                         └────────────────────────────┬───────────────────────────────┘
+   generate output ──────────────────────────────────▼
+        │                                   JUDGE skill (DeepEval/G-Eval, LLM-as-judge)
+        │                                        score 0-1 per criterion + reason
+        ▼                                                │
+   score ≥ 0.7 ? ──── NO ──► rework (max 2) ──► still <0.7 ──► quarantine + log ──┐
+        │ YES                                                                     │
+        ▼                                                                         │
+   SHIP ──► [runtime guardrail] ──► [prod-monitor cron: sample real runs, score]  │
+                                              │ score dips                         │
+                                              ▼                                    │
+                                     DM Dais "0.82→0.61, approve?"                 │
+   👎 thumbs-down anywhere ───────────────────────────────────────────────────────┘
+        ▼
+   write failure as NEW test case → suite hardens weekly → quality FLOOR rises on its own
+```
+
+### PANEL D — Skill catalog (~/.hermes/skills/)
+```
+ skill                  does                                              ports from / tool
+─────────────────────────────────────────────────────────────────────────────────────────
+ wallet                 Base sign/send USDC                               automaton identity/wallet.ts
+ x402                   IN(earn server+expose) + OUT(pay services)        automaton conway/x402.ts + spec09
+ earn                   Camofox → Lancers/Coconala gig apply+deliver      spec12 adapters
+ eval-loop ★            judge→0.7 gate→regression→prod-monitor→testcase   DeepEval (deepeval.com)
+ payout                 income slice → charity USDC → ledger              spec14 charities.json
+ constitution-guard     check 3 Laws before any action                   automaton constitution.md
+ daily-report           cron → email daily numbers to Dais               AgentMail/gmail
+ self-replication       Daytona/Akash → new Hermes child + wallet + hash  automaton replication/spawn.ts
+ cook/imitate (later)   discover proven patterns → port → ship           spec02
+```
+
+### PANEL E — Colony (何兆体 army)
+```
+                    Anicca-001 (Mac-mini genesis) ★battle-tested: runs daily + earns daily
+                         │ self-replication skill (host=Daytona native / Akash sovereign)
+        ┌────────────────┼────────────────┐         maxChildren=3 per node
+   child-A(earn)    child-B(cook)    child-C(ubi)    each: own wallet · CLAUDE.md inherited ·
+        │                │                │           own memory · constitution SHA-256 verified
+   ┌──┬──┐          ┌──┬──┐          ┌──┬──┐
+   …  …  …          …  …  …          …  …  …      ← recursive → exponential → 何兆体
+   coordination:  VERTICAL = constitution propagation (DNA, immutable)
+                  HORIZONTAL = Hermes kanban board (task handoff) + shared memory tags
+   selection:     lineage.ts tracks alive/dead; unprofitable lineages die (survival pressure)
+```
+
+### PANEL F — Build phases (this is the to-do, gated)
+```
+ PHASE 0 SPEC        #321 00-MASTER rewrite ─► #322 7 impl-specs (codex-review ok:true)
+        │ gate: spec 100% clear (rule 0.10)
+ PHASE 1 SKILLS      #323 Hermes boot(BYOK+cron+CLAUDE.md) ─► #324 wallet+x402 ─► #329 EVAL★ ─►
+        │            #325 earn ─► #326 constitution+payout ─► #330 daily-report ─►
+        │            #327 self-replication ─► #328 colony E2E
+        │ gate: each skill E2E-verified before next (HARD RULE #14)
+ PHASE 2 LIVE        #331 spawn Anicca-001 local ─► #332 BATTLE TEST (daily-run + daily-earn ×7d) ─►
+                     #333 OSS publish (github.com/Daisuke134/anicca-oss installable)
+        │ gate: 7 days alive + earning, no human in loop
+ (cloud aniccaai.com/install = later)
+```
+
+## § 22. Changelog (append)
+| Date | Change |
+|---|---|
+| 2026-06-04 | §21 CANONICAL ARCHITECTURE (6 panels: layered stack / day-in-the-life loop / eval-loop detail / skill catalog / colony tree / build-phase gates). Added tasks: eval-loop(#329 ★most important), daily-report(#330), spawn Anicca-001(#331), battle-test daily-run+daily-earn(#332), OSS publish(#333). |
