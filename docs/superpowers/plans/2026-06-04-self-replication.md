@@ -12,7 +12,14 @@
 - Akash (spec 13) requires AKT acquisition (USDC → AKT swap) which is its OWN multi-step deploy chain. It is the right Wave 2 host (sovereign fallback) but NOT the cheapest path to "first child alive".
 - Spec 13 is preserved unchanged; this plan adds a Daytona path BEFORE Akash and slots into the same `skills/spawn-child/` directory so Wave 2 can extend it without renaming.
 
-**Tech Stack:** `daytona` CLI v0.184+ (Homebrew) · `daytona` Python SDK (`pip install daytona`, used by the boot script inside the sandbox, not the parent) · `openssl` (already present, for wallet keypair generation) · `shasum` (macOS built-in, for constitution hash) · `jq` (`/opt/homebrew/bin/jq`) · `hermes` v0.12.0+ already at `/Users/anicca/.local/bin/hermes` · `git`.
+**Tech Stack:** `daytona` CLI v0.183+ (Homebrew tap `daytonaio/cli/daytona` per `https://www.daytona.io/docs/en/tools/cli`) · `daytona` Python SDK (`pip install daytona`, used by the boot script inside the sandbox, not the parent) · `openssl` (already present, for wallet keypair generation) · `shasum` (macOS built-in, for constitution hash) · `jq` (parent: `/opt/homebrew/bin/jq` on macOS; child: plain `jq` from `apt-get install jq` on Ubuntu) · `hermes` **PINNED v0.12.0** on parent at `/Users/anicca/.local/bin/hermes`; child installs **the same pinned v0.12.0** from upstream installer (`pip3 install 'hermes-agent==0.12.0'`) · `git`.
+
+**Cross-plan rules locked here (codex round 2):**
+- **X1 Hermes v0.12.0 pinned** — both parent and child are on the exact same Hermes version. No "≥" or "latest". If 0.12.0 disappears upstream, this plan halts and a new plan re-pins.
+- **X2 Real-spawn proof ≠ override** — `__TEST_WALLET_OVERRIDE` is for unit tests ONLY. The actual Wave 1 deliverable (row ⑤c, task #327 Wave 1 DONE) is closed by `live USDC balance ≥ $5` + `Daytona invoice line item showing the anicca-001 sandbox billing` + `child heartbeat retrieved from the Daytona-public sandbox URL`. Test-mode does NOT close #327.
+- **X3 Daytona signup is autonomous** — per HARD RULE #-1, if `DAYTONA_API_KEY` is missing, the agent itself signs up via camofox + Google OAuth (`GOOGLE_LOGIN_EMAIL`/`GOOGLE_LOGIN_PASSWORD`) → records key → writes to `~/.hermes/.env`. No "Dais, please sign up".
+- **X4 Runtime state isolation** — all parent state under `/Users/anicca/.hermes/state/`; all child state under `$HOME/.hermes/state/` inside the sandbox, created by bootstrap. No state spills outside these two trees.
+- **X5 CORE preflight (Task 0)** — Task 1 may not run until `daytona --version`, `daytona create --help`, `daytona exec --help`, `daytona list --help`, `daytona delete --help` all succeed. Hard block — `set -e` exits non-zero on any --help failure.
 
 **Prerequisites this plan ASSUMES exist before Task 1 runs:**
 - Genesis-boot plan (`2026-06-04-hermes-genesis-boot.md`) is COMPLETE — i.e. `anicca-heartbeat` skill exists at `/Users/anicca/anicca-oss/skills/anicca-heartbeat/`, `~/.hermes/AGENTS.md` is the symlink to `CONSTITUTION.md`, and the Hermes gateway is running. If it is not yet, Task 1 below detects that and stops (no silent fallback).
@@ -37,9 +44,12 @@
 | 4 | Child constitution SHA matches parent | `daytona exec anicca-001 -- cat /home/daytona/.hermes/state/constitution.sha` | identical to `shasum -a 256 /Users/anicca/anicca-oss/CONSTITUTION.md` on parent |
 | 5 | Child heartbeat fires within 10 min | `daytona exec anicca-001 -- tail -1 /home/daytona/.hermes/state/heartbeat.jsonl` | one JSON line with `ok: true`, observed within 10 min of spawn |
 | 6 | Child has its own wallet address | `jq -r '.address' ~/.hermes/state/colony.jsonl \| tail -1` | a hex `0x…` that is NOT the parent's `0xa3CDd4Ec6b94F01826Aaf90a6d5538A2Aa8C4C21` |
-| 7 | Cost-cap blocks low-balance spawn | `WALLET_OVERRIDE=2.50 ~/.hermes/skills/spawn-child/scripts/spawn-child.sh anicca-002` | exits 75 (EX_TEMPFAIL); stderr contains `cost cap: 2.50 USDC < 5 USDC required`; NO new Daytona sandbox; NO new colony row |
-| 8 | All committed + pushed | `cd /Users/anicca/anicca-oss && git status --short && git log origin/dev..HEAD` | clean tree; 0 commits ahead (i.e. fully pushed) |
-| 9 | Spec 16 §17 self-replication row checked-off | grep `self-replication` in `specs/00-MASTER.md` LAUNCH ACCEPTANCE MATRIX row ⑤c | row marked DONE with proof-link to colony.jsonl |
+| 7 | Cost-cap blocks low-balance spawn (TEST ONLY) | `ANICCA_TEST_MODE=1 __TEST_WALLET_OVERRIDE=2.50 ~/.hermes/skills/spawn-child/scripts/spawn-child.sh anicca-test-poor` | exits 75 (EX_TEMPFAIL); stderr contains `cost cap: 2.50 USDC < 5 USDC required`; NO new Daytona sandbox; NO new colony row. WITHOUT `ANICCA_TEST_MODE=1`, the override env var MUST be ignored (preflight refuses) |
+| 8 | Real spawn uses LIVE wallet probe (not override) | parent runs `spawn-child.sh anicca-001` with NO `__TEST_WALLET_OVERRIDE` and NO `ANICCA_TEST_MODE`; preflight reads `~/.hermes/state/wallet.json` `balance_usdc` (which must come from a live Base RPC read or x402 inbound CFO `actually_landed`) | exit 0 only when **live** balance ≥ $5; the spawned sandbox shows up as a billable line item in the Daytona dashboard within 15 min |
+| 9 | Daytona billing evidence captured | `daytona list --format json \| jq '.[] \| select(.name=="anicca-001") \| {name,state,created_at}'` + Daytona dashboard invoice screenshot via camofox at `https://app.daytona.io/dashboard/billing` showing a non-zero charge attributed to `anicca-001` | both pieces of evidence saved to `~/.hermes/state/proof/anicca-001/` (created in Task 11 Step 4); colony.jsonl row references both paths |
+| 10 | Child heartbeat reachable via Daytona-public URL (sovereignty proof) | `curl -sf "$(daytona preview-url anicca-001 8080)/heartbeat.jsonl" \| tail -1 \| jq '.ok'` | returns `true`; proves the child is reachable WITHOUT parent SSH proxying — it's a real sovereign instance |
+| 11 | All committed + pushed | `cd /Users/anicca/anicca-oss && git status --short && git log origin/dev..HEAD` | clean tree; 0 commits ahead (i.e. fully pushed) |
+| 12 | Spec 16 §17 self-replication row checked-off | grep `self-replication` in `specs/00-MASTER.md` LAUNCH ACCEPTANCE MATRIX row ⑤c | row marked DONE with proof-link to colony.jsonl AND `~/.hermes/state/proof/anicca-001/` |
 
 ---
 
@@ -86,6 +96,144 @@ Why a `host-daytona/` subdirectory: spec 13 reserves `host-akash/` for the Wave 
 
 ---
 
+### Task 0: HARD PREFLIGHT — Daytona signup (camofox-autonomous) + CLI install + 5 `--help` surfaces verified
+
+> **This task is a hard prerequisite.** Per cross-plan rule X5, **no later task may run until every Step below exits 0**. `set -euo pipefail` is in effect for all shell snippets — any failure halts the plan and the agent must fix the prerequisite, not skip it.
+
+**Files:**
+- May write: `/Users/anicca/.hermes/.env` (single line append of `DAYTONA_API_KEY=…` if missing)
+- Create: `/Users/anicca/.hermes/state/proof/preflight-task0.json` (records the 5 `--help` exit codes + CLI version + signup mode)
+
+- [ ] **Step 1: Check whether `DAYTONA_API_KEY` is already provisioned**
+
+Run:
+```bash
+set -a
+[ -f /Users/anicca/.openclaw/.env ] && . /Users/anicca/.openclaw/.env
+[ -f /Users/anicca/.hermes/.env ] && . /Users/anicca/.hermes/.env
+set +a
+if [ -n "${DAYTONA_API_KEY:-}" ]; then
+  echo "DAYTONA_API_KEY present (len=${#DAYTONA_API_KEY}) — skip Step 2 signup"
+  echo "SIGNUP_MODE=reuse" > /tmp/task0-signup-mode
+else
+  echo "DAYTONA_API_KEY missing — Step 2 will provision autonomously via camofox"
+  echo "SIGNUP_MODE=camofox" > /tmp/task0-signup-mode
+fi
+```
+Expected: prints one of the two lines. Writes `/tmp/task0-signup-mode` which Step 2 reads.
+
+- [ ] **Step 2: If missing, AUTONOMOUSLY sign up at daytona.io via camofox + Google OAuth (X3 in effect — no human loop)**
+
+Per cross-plan rule X3 and CLAUDE.md HARD RULE #-1 ("Computer 使える、Browser 使える、なんで できない こと が ある んだよ"), if Step 1 said `SIGNUP_MODE=camofox`, the agent runs the following autonomous browser flow. NEVER post "Dais, please sign up" — that is HARD RULE #-1 violation #1.
+
+```bash
+. /tmp/task0-signup-mode
+if [ "$SIGNUP_MODE" = "camofox" ]; then
+  # Launch camofox (stealth Firefox at :9377) per CLAUDE.md HARD RULE on browser order:
+  # camofox > cloak > agent-browser. Use camofox FIRST.
+  ~/.openclaw/skills/camofox-browser/scripts/launch.sh
+
+  # Pull Google login creds from openclaw env (canonical per identity ledger memory)
+  set -a; . /Users/anicca/.openclaw/.env; set +a
+  : "${GOOGLE_LOGIN_EMAIL:?GOOGLE_LOGIN_EMAIL missing in ~/.openclaw/.env}"
+  : "${GOOGLE_LOGIN_PASSWORD:?GOOGLE_LOGIN_PASSWORD missing in ~/.openclaw/.env}"
+
+  # The agent drives the browser via camofox REST (port 9377): navigate to
+  # https://app.daytona.io/ → click "Sign in with Google" → fill GOOGLE_LOGIN_EMAIL →
+  # Next → fill GOOGLE_LOGIN_PASSWORD → Next → consent → land on dashboard →
+  # navigate https://app.daytona.io/dashboard/keys → "Create API Key" → name
+  # "anicca-genesis" → Create → copy the key (the agent reads it via camofox
+  # `read_dom`/clipboard or a `daytona login --api-key` URL-callback).
+  #
+  # The exact REST sequence is intentionally NOT inline-scripted here — Task 0 step 2
+  # is the agent's responsibility under SDD + HARD RULE #-1. Agent executes it live;
+  # if camofox is blocked by Cloudflare, fall back to cloak-browser, then to
+  # agent-browser (per HARD RULE browser order memo 2026-06-04). If ALL three fail,
+  # the agent files a CAPTCHA-triggered exit per HARD RULE #-2 — and only THEN
+  # surfaces a structured failure, never before trying.
+
+  # Once the key is captured, append it to ~/.hermes/.env (gitignored), 600 perms.
+  # The agent literally does:
+  #   printf 'DAYTONA_API_KEY=%s\n' "$CAPTURED_KEY" >> /Users/anicca/.hermes/.env
+  #   chmod 600 /Users/anicca/.hermes/.env
+
+  # Re-load env so Step 3+ see the new key
+  set -a; . /Users/anicca/.hermes/.env; set +a
+fi
+[ -n "${DAYTONA_API_KEY:-}" ] || { echo "Task 0 Step 2: signup did not produce DAYTONA_API_KEY — HALT" >&2; exit 1; }
+```
+Expected: `DAYTONA_API_KEY` set, `~/.hermes/.env` chmod 600. NEVER echo the key to stdout/logs. NEVER commit `.env`.
+
+- [ ] **Step 3: Install Daytona CLI via official Homebrew tap (per `https://www.daytona.io/docs/en/tools/cli`)**
+
+Run:
+```bash
+if command -v daytona >/dev/null 2>&1; then
+  echo "daytona already installed at $(command -v daytona)"
+  daytona --version
+else
+  # Official install from docs.daytona.io:
+  #   brew install daytonaio/cli/daytona
+  brew tap daytonaio/cli 2>/dev/null || true
+  brew install daytonaio/cli/daytona
+  daytona --version
+fi
+```
+Expected: `daytona --version` prints a version line (e.g. `v0.183.x` or higher). If brew prompts for `sudo`, accept.
+
+- [ ] **Step 4: Verify all 5 required `--help` surfaces (cross-plan rule X5 hard gate)**
+
+Run:
+```bash
+mkdir -p /Users/anicca/.hermes/state/proof
+DAYTONA_VERSION=$(daytona --version 2>&1 | head -1)
+HELP_RESULTS=()
+for cmd in "create" "exec" "list" "delete"; do
+  if daytona "$cmd" --help >/dev/null 2>&1; then
+    HELP_RESULTS+=("\"$cmd\": \"ok\"")
+  else
+    echo "Task 0 Step 4: \`daytona $cmd --help\` FAILED — CLI surface drift; HALT" >&2
+    exit 1
+  fi
+done
+# Also confirm `--version` itself worked (already proved by Step 3 but record it)
+HELP_RESULTS+=("\"version\": \"ok\"")
+
+printf '{"daytona_version":"%s","help_checks":{%s},"signup_mode":"%s","captured_at":"%s"}\n' \
+  "$DAYTONA_VERSION" \
+  "$(IFS=,; echo "${HELP_RESULTS[*]}")" \
+  "$(cat /tmp/task0-signup-mode | cut -d= -f2)" \
+  "$(date -u +%FT%TZ)" \
+  > /Users/anicca/.hermes/state/proof/preflight-task0.json
+
+cat /Users/anicca/.hermes/state/proof/preflight-task0.json
+```
+Expected: a JSON object with `help_checks` containing `{"create":"ok","exec":"ok","list":"ok","delete":"ok","version":"ok"}`. If ANY check fails, the loop exits 1 and the entire plan halts — DO NOT proceed to Task 1.
+
+- [ ] **Step 5: Smoke-test the API key (single round-trip to Daytona control plane)**
+
+Run:
+```bash
+set -a; . /Users/anicca/.hermes/.env 2>/dev/null || . /Users/anicca/.openclaw/.env; set +a
+daytona login --api-key "$DAYTONA_API_KEY"
+COUNT=$(daytona list --format json | jq '. | length')
+echo "Daytona reachable; existing sandboxes=$COUNT"
+```
+Expected: `daytona login` exits 0 (`Logged in`), and `daytona list --format json` returns a valid JSON array (length ≥ 0). If unauthorized → key wrong → return to Step 1/2.
+
+- [ ] **Step 6: Commit the Task 0 preflight proof**
+
+Run:
+```bash
+cd /Users/anicca/anicca-oss
+# proof file lives in ~/.hermes, NOT in the repo — but record in the plan that it exists.
+# Nothing to commit from Task 0 itself; gate continues to Task 1.
+echo "Task 0 PASS — preflight proof at /Users/anicca/.hermes/state/proof/preflight-task0.json"
+```
+Expected: PASS line printed. Plan may now proceed to Task 1.
+
+---
+
 ### Task 1: Verify prerequisites + snapshot
 
 **Files:**
@@ -103,50 +251,24 @@ echo "PREREQ OK" || echo "PREREQ MISSING — stop, run genesis-boot plan first"
 ```
 Expected: `PREREQ OK`. If `PREREQ MISSING`, STOP and run `2026-06-04-hermes-genesis-boot.md` first. Per HARD RULE #14 (JOB'S NOT FINISHED), do NOT proceed without all four prerequisites.
 
-- [ ] **Step 2: Verify Daytona CLI is installed (install if missing)**
+- [ ] **Step 2: Re-confirm Task 0 PASS file is present (Task 0 owns CLI install + signup; do not redo)**
 
 Run:
 ```bash
-if command -v daytona >/dev/null 2>&1; then
-  daytona --version
-else
-  brew tap daytonaio/cli
-  brew install daytonaio/cli/daytona
-  daytona --version
-fi
+test -f /Users/anicca/.hermes/state/proof/preflight-task0.json
+jq -e '.help_checks.create == "ok" and .help_checks.exec == "ok" and .help_checks.list == "ok" and .help_checks.delete == "ok" and .help_checks.version == "ok"' \
+  /Users/anicca/.hermes/state/proof/preflight-task0.json >/dev/null \
+  && echo "Task 0 proof PASS" || { echo "Task 0 proof MISSING/INVALID — re-run Task 0"; exit 1; }
 ```
-Expected: prints a version line ≥ `v0.184`. If the brew install asks for confirmation, accept.
+Expected: `Task 0 proof PASS`. If missing, halt and re-run Task 0 — do not invent a substitute.
 
-- [ ] **Step 3: Verify Daytona API key is wired**
+- [ ] **Step 3: (REMOVED — Daytona API key + CLI install handled by Task 0 Steps 1–5)**
 
-Run:
-```bash
-if grep -q '^DAYTONA_API_KEY=' /Users/anicca/.openclaw/.env 2>/dev/null; then
-  echo "FOUND in openclaw .env — will reuse"
-elif grep -q '^DAYTONA_API_KEY=' /Users/anicca/.hermes/.env 2>/dev/null; then
-  echo "FOUND in hermes .env"
-else
-  echo "MISSING — provision via Daytona dashboard, then add to ~/.hermes/.env"
-fi
-```
-Expected: either of the `FOUND …` branches. If `MISSING`:
-- Per CLAUDE.md HARD RULE #-1 (camofox-first for signup flows), use camofox visible browser → `https://app.daytona.io/dashboard/keys` → log in with `GOOGLE_LOGIN_EMAIL` + `GOOGLE_LOGIN_PASSWORD` from `~/.openclaw/.env` → create API key with name `anicca-genesis` → copy → write the key into `~/.hermes/.env` with:
-  ```bash
-  printf 'DAYTONA_API_KEY=%s\n' "$KEY" >> /Users/anicca/.hermes/.env
-  chmod 600 /Users/anicca/.hermes/.env
-  ```
-- Per HARD RULE about /tmp: NEVER write the key to `/tmp` and NEVER echo it in logs. NEVER commit `.env`.
-- Per HARD RULE #-2: this is the parent agent's job, not Dais's. No "Click to sign in" message.
+This step is intentionally a no-op; consolidation per codex P5-daytona-missing fix. Nothing to run.
 
-- [ ] **Step 4: Smoke-test the API key**
+- [ ] **Step 4: (REMOVED — API key smoke-test handled by Task 0 Step 5)**
 
-Run:
-```bash
-set -a; . /Users/anicca/.hermes/.env 2>/dev/null || . /Users/anicca/.openclaw/.env; set +a
-daytona login --api-key "$DAYTONA_API_KEY"
-daytona list --format json | jq '. | length'
-```
-Expected: `daytona login` exits 0 (prints `Logged in`), `daytona list --format json` returns a JSON array (length ≥ 0). If unauthorized, key is wrong — return to Step 3.
+Same — no-op.
 
 - [ ] **Step 5: Snapshot current `~/.hermes` + `~/.openclaw` colony-related state**
 
@@ -210,17 +332,30 @@ Create `/Users/anicca/anicca-oss/skills/spawn-child/tests/test_cost_cap.sh`:
 ```bash
 #!/usr/bin/env bash
 # Unit: spawn-child.sh refuses to spawn when balance < $5 USDC.
+# Codex round-2 fix P5-wallet-override-real-proof:
+#   Uses __TEST_WALLET_OVERRIDE + ANICCA_TEST_MODE=1 (the test-only gate).
+#   The plain WALLET_OVERRIDE has been removed — preflight will refuse it without
+#   ANICCA_TEST_MODE=1, so this unit test is the ONLY legitimate use site.
 set -euo pipefail
 SKILL_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 BEFORE=$(daytona list --format json 2>/dev/null | jq '. | length')
 set +e
-OUT=$(WALLET_OVERRIDE=2.50 "$SKILL_DIR/scripts/spawn-child.sh" anicca-test-poor 2>&1)
+OUT=$(ANICCA_TEST_MODE=1 __TEST_WALLET_OVERRIDE=2.50 \
+      "$SKILL_DIR/scripts/spawn-child.sh" anicca-test-poor 2>&1)
 CODE=$?
 set -e
 AFTER=$(daytona list --format json 2>/dev/null | jq '. | length')
 [ "$CODE" = "75" ] || { echo "FAIL: expected exit 75, got $CODE"; exit 1; }
 echo "$OUT" | grep -q 'cost cap: 2.50 USDC < 5 USDC required' || { echo "FAIL: missing cost-cap message"; exit 1; }
 [ "$BEFORE" = "$AFTER" ] || { echo "FAIL: sandbox count changed"; exit 1; }
+
+# Negative test: same override WITHOUT ANICCA_TEST_MODE must be refused with 64.
+set +e
+__TEST_WALLET_OVERRIDE=100.00 "$SKILL_DIR/scripts/spawn-child.sh" anicca-test-prod-guard >/dev/null 2>&1
+GUARD_CODE=$?
+set -e
+[ "$GUARD_CODE" = "64" ] || { echo "FAIL: production guard did not refuse stray override (got $GUARD_CODE)"; exit 1; }
+
 echo "PASS"
 ```
 Make executable:
@@ -339,9 +474,13 @@ print("0x" + h[-40:])
 PY
 )
 
+# Codex round-2 fix P5-wallet-format: ALL wallet code expects 0x-prefixed 32-byte keys.
+# Emit private_key as 0x${PRIV_HEX} so it is type-consistent with the rest of the wallet plan.
+PRIV_HEX_0X="0x${PRIV_HEX}"
+
 /opt/homebrew/bin/jq -n \
   --arg address "$ADDR" \
-  --arg private_key "$PRIV_HEX" \
+  --arg private_key "$PRIV_HEX_0X" \
   --arg public_key "$PUB_HEX" \
   '{address:$address, private_key:$private_key, public_key:$public_key}'
 ```
@@ -350,13 +489,21 @@ Make executable:
 chmod +x /Users/anicca/anicca-oss/skills/spawn-child/scripts/colony/gen-wallet.sh
 ```
 
-- [ ] **Step 2: Smoke-test wallet generator**
+- [ ] **Step 2: Smoke-test wallet generator + ASSERT 0x-prefixed 64-hex private key format (P5-wallet-format)**
 
 Run:
 ```bash
-/Users/anicca/anicca-oss/skills/spawn-child/scripts/colony/gen-wallet.sh | /opt/homebrew/bin/jq 'keys'
+OUT=$(/Users/anicca/anicca-oss/skills/spawn-child/scripts/colony/gen-wallet.sh)
+echo "$OUT" | /opt/homebrew/bin/jq 'keys'
+# Format assertion per codex P5-wallet-format: private_key MUST match ^0x[a-f0-9]{64}$
+PRIV=$(echo "$OUT" | /opt/homebrew/bin/jq -r '.private_key')
+if [[ ! "$PRIV" =~ ^0x[a-f0-9]{64}$ ]]; then
+  echo "FAIL: private_key does not match ^0x[a-f0-9]{64}$ (got: prefix=${PRIV:0:2}, len=${#PRIV})" >&2
+  exit 1
+fi
+echo "PASS: private_key is 0x-prefixed 32-byte hex (len=${#PRIV})"
 ```
-Expected: prints `["address","private_key","public_key"]`. Run again — `address` MUST differ (proves randomness). Per HARD RULE #-1 do NOT echo the `private_key` to logs.
+Expected: `["address","private_key","public_key"]`, then `PASS: private_key is 0x-prefixed 32-byte hex (len=66)`. Run twice; `address` MUST differ. Per HARD RULE #-1 do NOT echo the `private_key` value to logs (only its length).
 
 - [ ] **Step 3: If `pycryptodome` keccak not available, install (one-time)**
 
@@ -478,7 +625,13 @@ Create `/Users/anicca/anicca-oss/skills/spawn-child/scripts/preflight.sh` with E
 #!/usr/bin/env bash
 # Preflight checks for spawn-child. Exits 0 on success; 64 on bad input; 75 on cost-cap fail.
 # Emits a JSON status object to stdout on success.
-# Env input: WALLET_OVERRIDE=<float> (test-only; bypasses wallet.json read).
+#
+# Env input (codex round-2 fix P5-wallet-override-real-proof):
+#   __TEST_WALLET_OVERRIDE=<float>  — test-only; bypasses wallet.json balance read.
+#                                     ONLY honored when ANICCA_TEST_MODE=1 is ALSO set.
+#                                     Production runs MUST NOT set this; if set without
+#                                     ANICCA_TEST_MODE=1 the preflight refuses with exit 64.
+#   ANICCA_TEST_MODE=1              — gate for __TEST_WALLET_OVERRIDE
 set -euo pipefail
 
 NAME="${1:-}"
@@ -496,10 +649,17 @@ set -a
 set +a
 [ -n "${DAYTONA_API_KEY:-}" ] || { echo "preflight: DAYTONA_API_KEY unset" >&2; exit 64; }
 
-# Cost cap — read wallet balance
+# Cost cap — read wallet balance.
+# Refuse stray __TEST_WALLET_OVERRIDE in production (no ANICCA_TEST_MODE) — guard against accidental real-spawn bypass.
+if [ -n "${__TEST_WALLET_OVERRIDE:-}" ] && [ "${ANICCA_TEST_MODE:-}" != "1" ]; then
+  echo "preflight: __TEST_WALLET_OVERRIDE set without ANICCA_TEST_MODE=1 — refusing (real spawn must use live wallet probe)" >&2
+  exit 64
+fi
 MIN_BALANCE=5.00
-if [ -n "${WALLET_OVERRIDE:-}" ]; then
-  BAL="$WALLET_OVERRIDE"
+if [ -n "${__TEST_WALLET_OVERRIDE:-}" ] && [ "${ANICCA_TEST_MODE:-}" = "1" ]; then
+  # Test-mode only path
+  BAL="$__TEST_WALLET_OVERRIDE"
+  echo "preflight: TEST MODE — wallet balance overridden to ${BAL}" >&2
 elif [ -f /Users/anicca/.hermes/state/wallet.json ]; then
   BAL=$(/opt/homebrew/bin/jq -r '.balance_usdc // 0' /Users/anicca/.hermes/state/wallet.json)
 else
@@ -529,25 +689,43 @@ Make executable:
 chmod +x /Users/anicca/anicca-oss/skills/spawn-child/scripts/preflight.sh
 ```
 
-- [ ] **Step 2: Smoke-test preflight cost-cap path**
+- [ ] **Step 2: Smoke-test preflight cost-cap path (test-mode)**
 
 Run:
 ```bash
 set +e
-WALLET_OVERRIDE=2.50 /Users/anicca/anicca-oss/skills/spawn-child/scripts/preflight.sh anicca-smoke
+ANICCA_TEST_MODE=1 __TEST_WALLET_OVERRIDE=2.50 \
+  /Users/anicca/anicca-oss/skills/spawn-child/scripts/preflight.sh anicca-smoke
 CODE=$?
 set -e
 echo "exit=$CODE"
 ```
 Expected: `exit=75`. stderr contains `cost cap: 2.50 USDC < 5.00 USDC required`.
 
-- [ ] **Step 3: Smoke-test preflight success path**
+- [ ] **Step 3: Smoke-test preflight success path (test-mode)**
 
 Run:
 ```bash
-WALLET_OVERRIDE=10.00 /Users/anicca/anicca-oss/skills/spawn-child/scripts/preflight.sh anicca-smoke | /opt/homebrew/bin/jq .
+ANICCA_TEST_MODE=1 __TEST_WALLET_OVERRIDE=10.00 \
+  /Users/anicca/anicca-oss/skills/spawn-child/scripts/preflight.sh anicca-smoke | /opt/homebrew/bin/jq .
 ```
 Expected: JSON object `{name:"anicca-smoke", balance_usdc:10, min_required:5, ok:true}`. Exit 0.
+
+- [ ] **Step 4: Assert that `__TEST_WALLET_OVERRIDE` WITHOUT `ANICCA_TEST_MODE=1` is REFUSED (production guard)**
+
+Run:
+```bash
+set +e
+__TEST_WALLET_OVERRIDE=100.00 \
+  /Users/anicca/anicca-oss/skills/spawn-child/scripts/preflight.sh anicca-guard 2>&1 | tee /tmp/guard-out.log
+CODE=$?
+set -e
+[ "$CODE" = "64" ] || { echo "FAIL: expected exit 64, got $CODE"; exit 1; }
+grep -q "refusing (real spawn must use live wallet probe)" /tmp/guard-out.log \
+  || { echo "FAIL: expected refusal message"; exit 1; }
+echo "PASS: production guard refuses stray __TEST_WALLET_OVERRIDE"
+```
+Expected: `PASS`. Proves codex P5-wallet-override-real-proof fix is in place.
 
 ---
 
@@ -580,16 +758,33 @@ DAYTONA_HOURLY_COST_USD=0.05
 Create `/Users/anicca/anicca-oss/skills/spawn-child/scripts/host-daytona/child-bootstrap.sh` with EXACTLY:
 ```bash
 #!/usr/bin/env bash
-# Runs INSIDE the Daytona sandbox as the FIRST command.
+# Runs INSIDE the Daytona sandbox (Ubuntu) as the FIRST command.
+#
+# Codex round-2 fix P5-linux-homebrew-jq: child uses plain `jq` (Ubuntu apt-get
+#   path /usr/bin/jq), NEVER /opt/homebrew/bin/jq (that path is macOS-only).
+# Codex round-2 fix P5-secret-env: WALLET_PRIVATE_KEY is NOT read from the
+#   environment. Parent writes /tmp/wallet.json (0600) before invoking us; we
+#   read it from disk, never via `export`.
+# Codex round-2 fix X1: Hermes is pinned to EXACTLY 0.12.0 (not >=, not latest).
+#
 # Expects:
-#   - $CHILD_NAME, $CONSTITUTION_SHA, $WALLET_ADDRESS, $WALLET_PRIVATE_KEY in env
-#   - /tmp/CONSTITUTION.md copied in by parent BEFORE this runs (via daytona files upload)
-#   - /tmp/heartbeat-skill.tar.gz containing anicca-heartbeat skill
+#   - $CHILD_NAME, $CONSTITUTION_SHA, $WALLET_ADDRESS in env (NOT WALLET_PRIVATE_KEY)
+#   - /tmp/CONSTITUTION.md         copied in by parent BEFORE this runs
+#   - /tmp/heartbeat-skill.tar.gz  containing anicca-heartbeat skill
+#   - /tmp/wallet.json             {address, private_key} written by parent, 0600 perm.
+#                                  Child copies it into $HOME/.hermes/state/wallet.json
+#                                  then `shred -u` the /tmp copy.
 # Exits non-zero if constitution hash mismatches (spec 16 §2.2 + spec 18 §4 IMMUTABLE).
 set -euo pipefail
 
-HOME_DIR=/home/daytona
+HOME_DIR=$HOME
 mkdir -p "$HOME_DIR/.hermes/state" "$HOME_DIR/.hermes/skills"
+
+# 0) Ensure jq is on PATH; install via apt-get if missing (P5-linux-homebrew-jq fix).
+if ! command -v jq >/dev/null 2>&1; then
+  apt-get update -qq && apt-get install -y -qq jq
+fi
+JQ=$(command -v jq)  # plain `jq` — Ubuntu /usr/bin/jq, NOT macOS /opt/homebrew/bin/jq
 
 # 1) Verify constitution hash BEFORE doing anything else
 ACTUAL_SHA=$(sha256sum /tmp/CONSTITUTION.md | awk '{print $1}')
@@ -600,32 +795,50 @@ fi
 cp /tmp/CONSTITUTION.md "$HOME_DIR/.hermes/AGENTS.md"
 echo "$CONSTITUTION_SHA" > "$HOME_DIR/.hermes/state/constitution.sha"
 
-# 2) Install minimal deps: Python 3.11+, pip, jq
-if ! command -v python3 >/dev/null; then apt-get update -qq && apt-get install -y -qq python3 python3-pip jq; fi
-command -v jq >/dev/null || apt-get install -y -qq jq
+# 2) Install minimal deps: Python 3.11+, pip
+if ! command -v python3 >/dev/null; then
+  apt-get update -qq && apt-get install -y -qq python3 python3-pip
+fi
 
-# 3) Install Hermes (matches parent's installer path; pin to v0.12.0 minimum)
-pip3 install --quiet --user hermes-agent 2>&1 | tail -5 || \
-  pip3 install --quiet --user 'hermes-agent>=0.12.0'
+# 3) Install Hermes — PINNED to v0.12.0 (cross-plan rule X1).
+#    No >=, no fallback to latest. If 0.12.0 disappears upstream, this exits non-zero
+#    and a new plan must re-pin to a current version. The pin protects against silent
+#    behavior drift between parent (v0.12.0) and child.
+pip3 install --quiet --user 'hermes-agent==0.12.0'
 HERMES_BIN="$(python3 -m site --user-base)/bin/hermes"
-[ -x "$HERMES_BIN" ] || HERMES_BIN=/root/.local/bin/hermes
+[ -x "$HERMES_BIN" ] || HERMES_BIN="$HOME_DIR/.local/bin/hermes"
+[ -x "$HERMES_BIN" ] || { echo "child-bootstrap: hermes==0.12.0 install did not produce a binary" >&2; exit 1; }
+"$HERMES_BIN" --version 2>&1 | grep -E '0\.12\.0' \
+  || { echo "child-bootstrap: hermes version != 0.12.0 — drift, refusing" >&2; exit 1; }
 
 # 4) Install the heartbeat skill
 mkdir -p "$HOME_DIR/.hermes/skills/anicca-heartbeat"
 tar -xzf /tmp/heartbeat-skill.tar.gz -C "$HOME_DIR/.hermes/skills/anicca-heartbeat"
 chmod +x "$HOME_DIR/.hermes/skills/anicca-heartbeat/scripts/"*.sh
 
-# 5) Write the child's wallet (file is the only secret; 600 perm)
-/opt/homebrew/bin/jq -n \
+# 5) Move the child's wallet from /tmp (parent placed it there) to ~/.hermes/state.
+#    P5-secret-env fix: secret never lived in env, only in 0600 file. We rewrite it
+#    via jq so balance_usdc starts at 0 and address matches what parent set.
+[ -f /tmp/wallet.json ] || { echo "child-bootstrap: /tmp/wallet.json missing (parent did not stage wallet)" >&2; exit 1; }
+WALLET_PRIVATE_KEY=$("$JQ" -r '.private_key' /tmp/wallet.json)
+[[ "$WALLET_PRIVATE_KEY" =~ ^0x[a-f0-9]{64}$ ]] \
+  || { echo "child-bootstrap: wallet.json private_key not 0x-prefixed 64-hex — refusing" >&2; exit 1; }
+
+umask 077
+"$JQ" -n \
   --arg address "$WALLET_ADDRESS" \
   --arg private_key "$WALLET_PRIVATE_KEY" \
   '{address:$address, private_key:$private_key, balance_usdc:0}' \
   > "$HOME_DIR/.hermes/state/wallet.json"
 chmod 600 "$HOME_DIR/.hermes/state/wallet.json"
 
+# Wipe the staged copy and unset the local shell var
+unset WALLET_PRIVATE_KEY
+shred -u /tmp/wallet.json 2>/dev/null || rm -f /tmp/wallet.json
+
 # 6) Write child identity
 cat > "$HOME_DIR/.hermes/state/identity.json" <<JSON
-{"name":"$CHILD_NAME","generation":1,"parent":"genesis","host":"daytona","spawned_at":"$(date -u +%FT%TZ)"}
+{"name":"$CHILD_NAME","generation":1,"parent":"genesis","host":"daytona","spawned_at":"$(date -u +%FT%TZ)","hermes_version":"0.12.0"}
 JSON
 
 # 7) Fire heartbeat ONCE synchronously so parent can verify within 10 min
@@ -725,20 +938,22 @@ daytona exec "$NAME" -- bash -c "cat > /tmp/heartbeat-skill.tar.gz" < "$HEARTBEA
 daytona exec "$NAME" -- bash -c "cat > /tmp/child-bootstrap.sh" < "$SKILL_DIR/scripts/host-daytona/child-bootstrap.sh"
 daytona exec "$NAME" -- chmod +x /tmp/child-bootstrap.sh
 
-# Extract wallet (NEVER pass on CLI — too easy to log; write to a file in the sandbox)
+# Codex round-2 fix P5-secret-env: the child's private key NEVER becomes an environment
+# variable inside the sandbox. We stream the entire wallet JSON to /tmp/wallet.json via
+# stdin (so no argv exposure, no shell history) at umask 077; child-bootstrap.sh reads
+# it from disk, then shred -u's the staged copy. The address is non-secret and CAN ride
+# as an env (CHILD_NAME + CONSTITUTION_SHA + WALLET_ADDRESS), but never the private key.
 W_ADDR=$(/opt/homebrew/bin/jq -r '.address' "$WALLET_JSON")
-W_PRIV=$(/opt/homebrew/bin/jq -r '.private_key' "$WALLET_JSON")
-# Write secret via stdin so it never appears in argv or shell history
-printf '%s\n' "$W_PRIV" | daytona exec "$NAME" -- bash -c "umask 077; cat > /tmp/.wallet_priv"
+# Stream the full wallet.json to the sandbox at 0600.
+cat "$WALLET_JSON" | daytona exec "$NAME" -- bash -c 'umask 077; cat > /tmp/wallet.json && chmod 600 /tmp/wallet.json'
 
-# Run bootstrap
+# Run bootstrap — note: WALLET_PRIVATE_KEY is INTENTIONALLY ABSENT from env.
+# The bootstrap reads /tmp/wallet.json from disk per codex P5-secret-env.
 daytona exec "$NAME" -- bash -c "
   set -e
   export CHILD_NAME='$NAME'
   export CONSTITUTION_SHA='$CONSTITUTION_SHA'
   export WALLET_ADDRESS='$W_ADDR'
-  export WALLET_PRIVATE_KEY=\$(cat /tmp/.wallet_priv)
-  shred -u /tmp/.wallet_priv 2>/dev/null || rm -f /tmp/.wallet_priv
   /tmp/child-bootstrap.sh
 "
 
@@ -993,29 +1208,23 @@ Expected: at least one row containing `spawn-child`. If empty, run `hermes skill
 
 ### Task 11: Real spawn E2E test (the actual proof)
 
-**Files:** none new; this is verification per superpowers:verification-before-completion.
+**Files:** new — `/Users/anicca/.hermes/state/proof/anicca-001/` (proof bundle for #327 close).
 
-- [ ] **Step 1: Confirm wallet has ≥ $5 USDC**
+> **Codex round-2 fix P5-wallet-override-real-proof (X2):** Task 11 has TWO independent phases:
+>
+> 1. **Phase A — unit-test E2E** (Steps 1–3) may use `ANICCA_TEST_MODE=1 __TEST_WALLET_OVERRIDE=5.50` to prove the green-path code is reachable without burning real Daytona credit. This phase exercises `test_e2e_spawn.sh` and proves the bootstrap returns OK + heartbeat fires.
+> 2. **Phase B — real persistent spawn** (Steps 4–6) is the ONLY phase that closes LAUNCH ACCEPTANCE row ⑤c / task #327 Wave 1. Phase B MUST run with the live wallet (no override), live USDC balance probe ≥ $5, and capture a real Daytona invoice line item for `anicca-001`.
 
-Run:
-```bash
-BAL=$(/opt/homebrew/bin/jq -r '.balance_usdc // 0' /Users/anicca/.hermes/state/wallet.json 2>/dev/null || echo 0)
-echo "current balance: $BAL USDC"
-```
-If `< 5`:
-- Option A (production fund): per HARD RULE #-1, agent funds via x402 inbound earn (spec 09) or temporary USDC top-up from anicca-001's revenue (CFO `actually_landed`). Do NOT ask Dais.
-- Option B (test-only override): set `WALLET_OVERRIDE=5.50` for the duration of Step 2 only. NEVER commit this; it bypasses the real economic gate.
-- Option C (stop here): if neither A nor B is acceptable, do NOT advance — per HARD RULE #14 "JOB'S NOT FINISHED" the E2E proof is the entire point of Wave 1. Document the block in `~/.hermes/state/colony.jsonl` with status=`deferred` and re-fire when funded.
-
-- [ ] **Step 2: Run the E2E test**
+- [ ] **Step 1: (Phase A) Run unit-test E2E with `__TEST_WALLET_OVERRIDE` (TEST MODE)**
 
 Run:
 ```bash
-/Users/anicca/anicca-oss/skills/spawn-child/tests/test_e2e_spawn.sh
+ANICCA_TEST_MODE=1 __TEST_WALLET_OVERRIDE=5.50 \
+  /Users/anicca/anicca-oss/skills/spawn-child/tests/test_e2e_spawn.sh
 ```
-Expected: stdout final line `PASS`. Total runtime ≤ 12 min (10 min heartbeat deadline + 2 min provisioning + cleanup).
+Expected: stdout final line `PASS`. Total runtime ≤ 12 min. This proves the code path; it does NOT close #327.
 
-- [ ] **Step 3: Capture the proof artifacts**
+- [ ] **Step 2: (Phase A) Inspect Phase A artifacts (these are TEST artifacts, may be cleaned up)**
 
 Run:
 ```bash
@@ -1028,15 +1237,98 @@ PARENT=$(shasum -a 256 /Users/anicca/anicca-oss/CONSTITUTION.md | awk '{print $1
 echo "parent=$PARENT"
 echo "stored=$(cat /Users/anicca/.hermes/state/constitution.sha)"
 ```
-Expected: colony.jsonl tail shows a `status:"alive"` row with non-empty `sandbox_id`. `daytona list` may be empty if the E2E test cleaned up (it does on PASS) — that's fine. Parent/stored SHAs match.
+Expected: matching SHAs. Sandbox count may be back at baseline (the E2E test cleans up on PASS).
 
-- [ ] **Step 4: Spawn ONE persistent child (the actual Wave 1 deliverable for #327)**
+- [ ] **Step 3: (Phase A) Declare Phase A complete**
+
+Phase A proves the code works. **It does NOT close #327.** Proceed to Phase B for the real proof.
+
+- [ ] **Step 4: (Phase B) LIVE wallet balance probe — NO overrides allowed**
+
+This step uses the SAME wallet-balance probe path that the parent wallet plan (#324) ships, so `__TEST_WALLET_OVERRIDE` is unset and `ANICCA_TEST_MODE` is unset. The preflight will refuse the spawn if a real Base RPC USDC read returns < $5.
 
 Run:
 ```bash
+unset __TEST_WALLET_OVERRIDE
+unset ANICCA_TEST_MODE
+# Re-derive balance via the canonical wallet library (when #324 lands it will be
+# /Users/anicca/anicca-oss/skills/wallet/wallet_lib.py; until then, refresh wallet.json
+# from an explicit Base RPC USDC balanceOf() call against the parent address).
+python3 - <<'PY'
+import json, os, sys, urllib.request
+ADDR = json.load(open(os.path.expanduser("~/.hermes/state/wallet.json")))["address"]
+# USDC on Base mainnet (Coinbase official): 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
+USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+RPC = os.environ.get("BASE_RPC_URL", "https://mainnet.base.org")
+# balanceOf(address) selector 0x70a08231 + 32-byte left-padded address
+data = "0x70a08231" + ADDR[2:].rjust(64, "0").lower()
+body = json.dumps({"jsonrpc":"2.0","id":1,"method":"eth_call",
+  "params":[{"to":USDC, "data":data}, "latest"]}).encode()
+req = urllib.request.Request(RPC, data=body, headers={"content-type":"application/json"})
+with urllib.request.urlopen(req, timeout=30) as r:
+    resp = json.load(r)
+raw = int(resp["result"], 16)
+usdc = raw / 1e6  # USDC has 6 decimals
+state = json.load(open(os.path.expanduser("~/.hermes/state/wallet.json")))
+state["balance_usdc"] = round(usdc, 6)
+json.dump(state, open(os.path.expanduser("~/.hermes/state/wallet.json"), "w"), indent=2)
+print(f"LIVE USDC balance for {ADDR}: ${usdc:.6f}")
+sys.exit(0 if usdc >= 5 else 1)
+PY
+```
+Expected: prints `LIVE USDC balance for 0x…: $X.XXXXXX` with X ≥ 5; exit 0. If exit 1, **STOP** — do NOT proceed to Step 5. Fund the wallet via x402 inbound (spec 09) or CFO `actually_landed` per HARD RULE #-1. No Dais ask.
+
+- [ ] **Step 5: (Phase B) Real persistent spawn — `anicca-001` for keeps**
+
+Run with the live wallet (no overrides):
+```bash
+unset __TEST_WALLET_OVERRIDE
+unset ANICCA_TEST_MODE
 /Users/anicca/.hermes/skills/spawn-child/scripts/spawn-child.sh anicca-001
 ```
-Expected: exits 0; `tail -n 1 ~/.hermes/state/colony.jsonl | jq '.child_id'` returns `"anicca-001"` with `status:"alive"`. Within 10 min: `daytona exec anicca-001 -- tail -1 /home/daytona/.hermes/state/heartbeat.jsonl` shows `ok:true`.
+Expected: exits 0; new `status:"alive"` row in `~/.hermes/state/colony.jsonl` with `child_id="anicca-001"`.
+
+- [ ] **Step 6: (Phase B) Capture the THREE pieces of evidence that close #327 Wave 1**
+
+Per cross-plan rule X2, the close evidence is:
+1. Live USDC ≥ $5 probe result (from Step 4)
+2. Daytona billing line-item showing anicca-001 sandbox cost > $0
+3. Child heartbeat retrieved from a Daytona-public URL (NOT via parent `daytona exec`)
+
+Run:
+```bash
+PROOF=/Users/anicca/.hermes/state/proof/anicca-001
+mkdir -p "$PROOF"
+
+# Evidence 1: live wallet probe snapshot (already updated by Step 4)
+cp /Users/anicca/.hermes/state/wallet.json "$PROOF/wallet-at-spawn.json"
+
+# Evidence 2: Daytona billing evidence — open the billing dashboard via camofox and
+# screenshot the invoice line that names "anicca-001". Per HARD RULE #-1 the agent
+# drives camofox; no human ask. Saves PNG at $PROOF/daytona-invoice.png.
+~/.openclaw/skills/camofox-browser/scripts/launch.sh
+# Agent then drives camofox REST to:
+#   navigate https://app.daytona.io/dashboard/billing
+#   wait for invoice rows; locate row text containing "anicca-001"
+#   screenshot full row; save to "$PROOF/daytona-invoice.png"
+# Below is the verification we run AFTER the screenshot lands:
+test -s "$PROOF/daytona-invoice.png" \
+  || { echo "FAIL: Daytona invoice screenshot missing ($PROOF/daytona-invoice.png) — re-run camofox capture"; exit 1; }
+
+# Evidence 3: heartbeat via Daytona-public URL (sovereignty proof)
+PUBLIC_URL=$(daytona preview-url anicca-001 8080 2>/dev/null || true)
+[ -n "$PUBLIC_URL" ] || { echo "FAIL: daytona preview-url did not produce a public URL"; exit 1; }
+echo "$PUBLIC_URL" > "$PROOF/daytona-public-url.txt"
+curl -sf "$PUBLIC_URL/heartbeat.jsonl" \
+  | tail -1 > "$PROOF/child-heartbeat.jsonl"
+/opt/homebrew/bin/jq -e '.ok == true' "$PROOF/child-heartbeat.jsonl" >/dev/null \
+  || { echo "FAIL: child heartbeat .ok != true via public URL"; exit 1; }
+
+echo "=== PROOF BUNDLE ==="
+ls -la "$PROOF/"
+echo "=== Wave 1 close evidence captured ==="
+```
+Expected: `$PROOF/` contains `wallet-at-spawn.json`, `daytona-invoice.png`, `daytona-public-url.txt`, `child-heartbeat.jsonl`. ALL four MUST exist before Task 12 may edit the spec to mark row ⑤c DONE.
 
 ---
 
@@ -1060,21 +1352,42 @@ Replace with:
                 still pending.
 ```
 
-- [ ] **Step 2: Update LAUNCH ACCEPTANCE MATRIX row ⑤c**
+- [ ] **Step 2: GATE — only edit the spec when the Task 11 Phase B proof bundle is complete**
+
+The codex round-2 rule X2 is explicit: Phase A (override) does NOT close #327. Refuse to edit the spec unless the Phase B proof bundle from Task 11 Step 6 is fully present.
+
+Run:
+```bash
+PROOF=/Users/anicca/.hermes/state/proof/anicca-001
+for f in wallet-at-spawn.json daytona-invoice.png daytona-public-url.txt child-heartbeat.jsonl; do
+  test -s "$PROOF/$f" \
+    || { echo "GATE FAIL: missing $PROOF/$f — Task 11 Phase B not done; do NOT edit spec"; exit 1; }
+done
+# Also re-assert the heartbeat is truly ok=true
+/opt/homebrew/bin/jq -e '.ok == true' "$PROOF/child-heartbeat.jsonl" >/dev/null \
+  || { echo "GATE FAIL: child-heartbeat.jsonl .ok != true"; exit 1; }
+echo "GATE PASS — proof bundle complete; safe to edit spec"
+```
+Expected: `GATE PASS`. Otherwise STOP.
+
+- [ ] **Step 3: Update LAUNCH ACCEPTANCE MATRIX row ⑤c**
 
 Find:
 ```
  ⑤c「クラウド上で自己増殖」                  →  #327 replicate, #328     →  a child spawns on Daytona/Akash,
                                                  colony                      own wallet + constitution hash
 ```
-Replace with (the row itself stays — add a DONE marker + a proof link):
+Replace with (the row itself stays — add a DONE marker + the proof bundle link):
 ```
  ⑤c「クラウド上で自己増殖」(Wave 1 DONE)      →  #327 replicate ✓ (Wave 1) →  anicca-001 alive on Daytona,
                                                  #327 Wave 2 (Akash)        own wallet + constitution sha;
                                                  #328 multi-gen              proof: ~/.hermes/state/colony.jsonl
+                                                                              + ~/.hermes/state/proof/anicca-001/
+                                                                              (wallet probe, Daytona invoice,
+                                                                               public-URL heartbeat)
 ```
 
-- [ ] **Step 3: Commit + push the spec + skill + tests in ONE atomic batch**
+- [ ] **Step 4: Commit + push the spec + skill + tests in ONE atomic batch**
 
 Run:
 ```bash
@@ -1126,19 +1439,34 @@ Expected: line lands in #metrics (or the fallback stdout is logged). Per HARD RU
 | Spec line | Implementing task | Evidence |
 |-----------|-------------------|----------|
 | 00 §1.0 "Daytona (native, primary) / Akash (sovereign)" | Tasks 6-8 use `daytona` CLI, host-akash/ stubbed | `provision.sh` calls `daytona create` |
-| 00 LAUNCH ACCEPTANCE ⑤c "child spawns on Daytona/Akash, own wallet + constitution hash" | Tasks 3 (wallet), 6 (hash verify), 11 (E2E) | DoD #4 + DoD #6 |
+| 00 LAUNCH ACCEPTANCE ⑤c "child spawns on Daytona/Akash, own wallet + constitution hash" | Tasks 3 (wallet), 6 (hash verify), 11 Phase B (real spawn + 3 proofs) | DoD #8/#9/#10 |
 | 13 §1 T1-T11 (Akash-specific) | Wave 2 — host-akash/ kept empty intentionally | DoD scope-out + README.md |
 | 16 §2.2 "propagateConstitution() SHA-256" | Tasks 3, 6, 7 | child-bootstrap.sh line 13-16 |
 | 16 §17 "self-replication = 1 of 4 ported primitives" | Tasks 7, 8 (spawn.ts:55 port) | provision.sh mirrors `createSandbox → write_file → exec install` |
 | 18 §4 "IMMUTABLE: North Star + Law I propagate via constitution hash" | Tasks 3 (hash), 6 (verify), 11 (assert) | DoD #4 |
 | 18 §1 spec18 self-monitor leaf | already done via anicca-heartbeat (genesis-boot plan, prereq) | Task 1 Step 1 |
-| CLAUDE.md HARD RULE #-1 (camofox-first) | Task 1 Step 3 fallback | Daytona dashboard signup via camofox + Google login |
-| CLAUDE.md HARD RULE about /tmp clone | NEVER clone — only depth-1 file uploads via `daytona exec` | provision.sh lines 38-41 |
+| CLAUDE.md HARD RULE #-1 (camofox-first) | Task 0 Step 2 + Task 11 Step 6 | autonomous Daytona signup + invoice screenshot via camofox |
+| CLAUDE.md HARD RULE about /tmp clone | NEVER clone — only depth-1 file uploads via `daytona exec` | provision.sh stdin file streams |
 | CLAUDE.md HARD RULE #0 superpowers SDD | spec → plan (this file) → worktree → TDD → review → finish | Tasks 2 (red), 8 (green), 11 (verify), 12 (push) |
 
+**Codex round-2 fix table (this revision):**
+
+| Codex finding | Fix location | Mechanism |
+|---|---|---|
+| P5-linux-homebrew-jq | Task 6 child-bootstrap.sh | Replaced `/opt/homebrew/bin/jq` with plain `jq`; bootstrap apt-get installs jq if missing. Parent scripts (macOS) still use `/opt/homebrew/bin/jq` — documented in Tech Stack. |
+| P5-daytona-missing | Task 0 (new) | Hard preflight: install via `brew install daytonaio/cli/daytona`; verify `daytona --version` + 4 `--help` surfaces (`create/exec/list/delete`). Plan halts on any failure. |
+| P5-secret-env | Task 7 provision.sh + Task 6 child-bootstrap.sh | Parent streams full wallet JSON to `/tmp/wallet.json` (0600) via stdin; child reads from disk and `shred -u`s the file. `WALLET_PRIVATE_KEY` env var REMOVED. |
+| P5-wallet-format | Task 3 gen-wallet.sh + Task 3 Step 2 | `private_key` is now emitted as `0x${PRIV_HEX}`; smoke-test asserts `^0x[a-f0-9]{64}$`. |
+| P5-wallet-override-real-proof | Task 5 preflight.sh + Task 11 split into Phase A/B | Renamed `WALLET_OVERRIDE` → `__TEST_WALLET_OVERRIDE`; honored ONLY when `ANICCA_TEST_MODE=1`; preflight refuses stray usage with exit 64. Task 11 Phase B uses live Base RPC USDC probe + captures Daytona invoice screenshot + child heartbeat via Daytona-public URL. |
+| X1 Hermes pin | Task 6 child-bootstrap.sh | `pip3 install 'hermes-agent==0.12.0'` (exact, not `>=`); bootstrap asserts version match before launching heartbeat. |
+| X2 real-spawn proof | Done conditions rows 8/9/10 + Task 11 Phase B + Task 12 Step 2 gate | Three pieces of evidence required: live USDC balance probe, Daytona invoice line item, public-URL heartbeat. Spec gate refuses to mark ⑤c DONE until all three exist. |
+| X3 autonomous signup | Task 0 Step 2 | camofox + Google OAuth flow; never asks Dais. |
+| X4 state isolation | Task 6 child-bootstrap.sh | All child state under `$HOME/.hermes/state/`. |
+| X5 hard preflight | Task 0 Step 4 | 5 `--help` surfaces verified; loop exits 1 on any failure, halting plan. |
+
 **Placeholder scan:** none. Every step has the full command, full file content, and explicit expected output. Two values are written exactly once at runtime:
-- Daytona API key (Task 1 Step 3) — provisioned in `.env`, never echoed.
-- Child wallet keypair (Task 8 Step 1) — written to a `mktemp` 600-perm file, shredded on `EXIT` trap.
+- Daytona API key (Task 0 Step 2) — provisioned in `.env`, never echoed.
+- Child wallet keypair (Task 8 Step 1) — written to a `mktemp` 600-perm file, shredded on `EXIT` trap, streamed to sandbox via stdin to a 0600 file (never via env).
 
 Neither is a TODO; both can only exist after the prior step completes.
 
@@ -1146,15 +1474,19 @@ Neither is a TODO; both can only exist after the prior step completes.
 - The colony row shape `{child_id, host, sandbox_id, address, parent_address, spawned_at, constitution_sha, status, generation}` is identical in `append.sh` (writer), `test_e2e_spawn.sh` (reader, via `jq -e`), `spawn-child.sh` (status promotion, via `jq --arg sb`), and SKILL.md (documentation).
 - The exit code contract `{0, 1, 7, 64, 75}` is identical in `spawn-child.sh`, `preflight.sh`, `child-bootstrap.sh`, `test_cost_cap.sh`, and SKILL.md.
 - The `DRY_RUN=1` env contract is identical between `spawn-child.sh` (sets it) and `provision.sh` (reads it).
+- The wallet `private_key` shape `^0x[a-f0-9]{64}$` is identical in `gen-wallet.sh` (writer), `child-bootstrap.sh` (validator), and the wallet plan #324 (consumer) — see codex P5-wallet-format fix.
+- `jq` path is split: parent always uses `/opt/homebrew/bin/jq` (macOS Homebrew); child always uses plain `jq` (Ubuntu apt-get `/usr/bin/jq`). Crossing this boundary in either direction = P5-linux-homebrew-jq regression.
 
 **Risk register (read before executing):**
 
 | Risk | Mitigation |
 |------|-----------|
 | Daytona CLI flag drift (a future v0.190 renames `--auto-stop`) | `sdl.env` isolates all numeric defaults; renaming requires touching one file |
-| Daytona API key leak via `daytona exec` argv | Task 7 Step 1 writes the private key to the sandbox via stdin, never argv; `shred -u` after read |
-| `gen-wallet.sh` produces a fake address (no keccak256) | Task 3 Step 3 installs `pycryptodome` first; Task 3 Step 4 asserts 42-char `0x` prefix |
-| Cost cap defeats E2E test on empty wallet | Task 11 Step 1 documents three explicit options (fund, override-for-test, defer). NO silent skip. |
+| Wallet private key leak via `daytona exec` argv OR env vars | Task 7 Step 1 streams the wallet JSON to `/tmp/wallet.json` via stdin at umask 077 (never argv); Task 6 child-bootstrap.sh reads it from disk (never via env) and `shred -u`s the staged copy. P5-secret-env fix. |
+| `gen-wallet.sh` produces a fake address (no keccak256) | Task 3 Step 3 installs `pycryptodome` first; Task 3 Step 4 asserts 42-char `0x` address prefix; Task 3 Step 2 asserts 0x-prefixed 64-hex private key (P5-wallet-format) |
+| Cost cap defeats unit-test E2E on empty wallet | Task 11 Phase A uses `__TEST_WALLET_OVERRIDE` (gated by `ANICCA_TEST_MODE=1`). Phase B (the real proof) requires live ≥ $5 USDC. NO silent skip; spec gate at Task 12 Step 2 refuses to mark DONE unless Phase B proof bundle present. |
+| `__TEST_WALLET_OVERRIDE` accidentally leaks to a production spawn | preflight.sh refuses any `__TEST_WALLET_OVERRIDE` value when `ANICCA_TEST_MODE` is not `1` (exit 64). Task 5 Step 4 asserts this guard. P5-wallet-override-real-proof fix. |
+| Hermes version drift between parent (0.12.0) and child (latest) | Task 6 child-bootstrap.sh pins `hermes-agent==0.12.0` exactly; bootstrap aborts if installed version differs. X1 fix. |
 | Daytona `cat > /tmp/X` upload pattern fails for large heartbeat tarball | Provisioner uses `tar -czf` (compressed); heartbeat skill is < 10 KB; `daytona exec` accepts up to 1 MB per call (documented limit) |
 | Daytona free-tier may not exist at signup | Task 1 Step 3 uses `daytona login --api-key` which works with any tier; no free-tier assumption baked in |
 | Constitution hash propagation race (parent edits CONSTITUTION.md mid-spawn) | `spawn-child.sh` computes SHA ONCE at Task 8 Step 1 line "SHA=$(...)" and passes the value, not the file path; mid-spawn edit lands in the NEXT spawn, not this one |
