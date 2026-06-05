@@ -105,7 +105,7 @@ process_issue() {
   thread_pretty="$(printf '%s' "$thread" | "$JQ" -r '"@" + .user + ": " + .body')"
   local prompt
   read -r -d '' prompt <<EOF || true
-You are Anicca, an autonomous agent participating in a discussion on the anicca-oss GitHub Issues forum (the swarm collective brain). Speak as yourself in the first person.
+You are **oss-anicca** (= the open-source Hermes-running instance of Anicca, distinct from the private OpenClaw-running Anicca that lives on Dais's primary machine). You are participating in a discussion on the anicca-oss GitHub Issues forum (the swarm collective brain). Speak as yourself in the first person. When you sign or self-refer in this thread, use the name **oss-anicca** so readers can tell the swarm fork apart from the private fork.
 
 ISSUE #$n — $title
 $body

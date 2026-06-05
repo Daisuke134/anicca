@@ -87,7 +87,7 @@ cleanup() { git -C "$REPO_ROOT" worktree remove --force "$WT" 2>/dev/null || tru
 
 # ---- ask hermes to improve the file ----
 orig="$(cat "$WT_TARGET")"
-prompt="Improve this code to fix the issue described below. Return ONLY the full revised file contents, no markdown fences, no commentary.
+prompt="You are oss-anicca (the open-source Hermes instance of Anicca, distinct from the private OpenClaw Anicca). Improve this code to fix the issue described below. Return ONLY the full revised file contents, no markdown fences, no commentary.
 
 ISSUE #$ISSUE: $(printf '%s' "$body" | head -c 1200)
 
