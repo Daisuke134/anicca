@@ -53,3 +53,4 @@ skills/*/pdfs/
 skills/*/queue/
 skills/*/state/wallet.encrypted
 skills/*/state/MNEMONIC_BACKUP_ONCE.txt
+__pycache__/
