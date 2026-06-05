@@ -12,6 +12,59 @@
 
 ---
 
+## 0.3. v4 → v5 diff (= cron rubric doctrine + report-only sweep)
+
+### Cron rubric (= Dais 2026-06-05 厳命)
+
+```
+ACTION                = ✅ KEEP    (= 外部に write / send / commit / publish / submit / disable)
+MONITOR + FIX branch  = ✅ KEEP    (= 検出 → 自分で fix → 「fix した」 報告)
+REPORT-ONLY           = 🔴 DELETE  (= 集計 → Slack post で終わり、 Dais 判断待ち = HARD RULE #18 違反)
+MONITOR without FIX   = 🟡 UPGRADE or DELETE
+DAEMON (on-load)      = ✅ KEEP    (= webhook / endpoint / voice bridge)
+```
+
+**例外**: `anicca-report` daily Gmail to Dais (= friend update tone のみ) — Dais 判断を求めない、 結果共有のみ。 他の Dais 宛 報告 cron は **すべて削除**。
+
+### Sweep 結果 (= 2026-06-05 実行済)
+
+- enabled cron: 150 → 140 (-10)
+- skill dir: -2 (`gmail-digest` + `skill-cull-analyzer`)
+- 削除 10 cron: latest-papers / opening-cafe-status-weekly / opening-cafe-prelaunch-content-daily / app-reviews-weekly-digest / mufg-epoc-watcher / anicca-corey-seo-audit-cron / anicca-goal-learner / anicca-morning-report / anicca-seo-brand-visibility-daily / oss-repo-observer-daily
+
+### anicca-report v2 expansion (= 唯一の Dais 宛 mail)
+
+`~/.openclaw/skills/anicca-report/scripts/report.py` v2 拡張 (2026-06-05):
+
+```diff
+   body sections:
+   - Headline (MRR / Net / Wallet / Status)
+-  - What I did today (lateness calls only)
++  - What I did (last 24h):
++    Mail: replied N / applied M / archived K (+ sample thread IDs)
++    Irreversible 3-vote counts
++    Lateness calls
+   - Runtime spend breakdown
+-  - Next 24h events (= Dais's gcal preview)
++  - What I'll do (next 24h):
++    📧 Mail / 🎞 Video / 📰 Article / 🏭 Factory / 📝 Apply / 🎵 Music / 🩺 Monitor / 🔧 Other
++    (= jobs.json の next 24h categorized)
++  - Goal progress to $10K MRR:
++    current$ / target$ / gap$ / months at current net
+```
+
+Data sources 追加:
+- `~/.openclaw/skills/anicca-inbox/state/inbox-ledger.jsonl`
+- `~/.openclaw/skills/anicca-inbox/data/apply-history.jsonl`
+- `~/.openclaw/cron/jobs.json` (= next 24h categorize)
+- `ANICCA_MRR_GOAL_USD` env (default $10000)
+
+### memory citation
+
+- `feedback_cron_rubric_monitor_must_have_fix_branch.md` (= 新規 doctrine)
+
+---
+
 ## 0.2. v3 → v4 diff (= money leech 発見と修正)
 
 ### v3 で間違った 3 つ
