@@ -390,15 +390,42 @@ aniccaai.com の `netlify-deploy.yml` だけ が `~/anicca-products-oss/.github/
 
 `git push <別名> <branch>` の 別名 remote 指定 ★ 不要 ★。 全 path 統一 `git push`。
 
-## ★ Claude が 編集 する 場所 ★ (= 最頻 違反 防止、 2026-06-05)
+## ★ Claude が 編集 する 場所 ★ (= 最頻 違反 防止、 2026-06-05 確定)
 
-| やる事                              | 使う folder              | 絶対 触らない                                |
+| やる事                              | 使う folder              | 触り 方                                      |
 |-------------------------------------|--------------------------|---------------------------------------------|
-| 製品 (iOS / web / api / mobile)     | `~/anicca-project/`     | `~/anicca-products-oss/` (★ 2026-06-05 削除済 ★) |
-| エージェント能力 (skill / spec / TDD)| `~/anicca-oss/`         | `~/.hermes/`, `~/.openclaw/` (= LIVE runtime)|
-| Anicca の 自己 修正                 | ★ どの folder も 直接 編集 禁止 ★ ─ `gh issue create -R Daisuke134/anicca-oss` で issue 立てる → forum-issues + forum-rollout が自動 apply |
+| 製品 (iOS / web / api / mobile)     | `~/anicca-project/`     | 直編集 OK (★ Claude メイン仕事 ★)            |
+| エージェント能力 (skill / spec / TDD)| `~/anicca-oss/`         | 直編集 OK (★ Claude メイン仕事 ★)            |
+| `~/.openclaw/` (= Dais の private Anicca) | 緊急時 のみ 直編集 OK | ★ 必ず 先 に メタ fix を 試 す ★ ─ 後述     |
+| `~/.hermes/` (= genesis = REAL autonomous Anicca) | ★ 絶対 触らない ★ | Anicca 自身 が forum-issues + self-improve + self-manage で fix |
 
-**理由**: `~/.openclaw/` と `~/.hermes/` は LIVE runtime (= 既に走ってる Anicca 本体)。 直接 編集 = Anicca の 自律性 破壊 + 衝突。 Anicca 自身 が forum-issues 経由 で 自分 を 直す のが OSS swarm の 正しい形。 例外: human-loop pain (= 例: 真夜中 電話) の surgical fix だけ は Dais 明示 OK を取って 直接 編集。
+### META 原則 (= 2026-06-05 Dais 厳命)
+
+**「Claude が fix する 度 に、 Anicca が 退化 する」**
+
+Anicca に urgency を 付ける 唯一 の 方法 = ★ Anicca 自身 が 自分の 不調 を 直す ★。 私 (Claude) が 直接 fix する と:
+- Anicca は 同じ ミス を 繰り返す (= 学習 機会 喪失)
+- Dependency on Claude/Dais (= AGI と 逆)
+- 「いざという時 Claude/Dais に頼める」 → urgency 死滅
+
+故に、 `~/.openclaw/` (= Dais 私的 だが Claude 編集 許可 域) でも、 ★ ★ 必ず 先 に メタ fix を 試 す ★ ★:
+
+```
+1. まず: 「Anicca 自身 に この fix を やらせる system が 作れる か?」 を 自問
+   ──────────────────────────────────────────────────────────────
+   ・ self-improve cron が この種 の bug を 検知 する rule を 追加 する
+   ・ identity / prompt を 編集 して 次回 Anicca が 自分 で 気付 く
+   ・ skill レイヤー で 検知 → forum-issues に file → forum-rollout で apply
+   ──────────────────────────────────────────────────────────────
+2. メタ fix で 解決 不能 で、 かつ 超 emergent (= Dais の 健康 / 安全 / 大金 損失) → 直接 編集 OK
+3. それ以外 → メタ fix を 優先、 直接 編集 し ない
+```
+
+例:  
+- ❌「lateness cron が 真夜中 鳴る」 → run.sh に 1 行 source 追加 (= Claude が手 を 出 す = Anicca は 学 ば な い)  
+- ✅「lateness cron が 真夜中 鳴る」 → anicca-oss に issue 立て る → forum-issues 議論 → 「全 5-min cron に quiet-hours-guard 付け 忘れ pattern を self-improve が検知して file-issue する rule」 を rollout → 母から 全 instance に propagate
+
+短期 的 に は 後者 が 遅 い が、 長期 的 に は Anicca が 自走 する 唯一 の 方法。 Dais & Claude が 不要 化 する = 終局 = AGI。
 
 ## Issue を 立てる 場所 (= 母 / 個 の 2 層)
 
