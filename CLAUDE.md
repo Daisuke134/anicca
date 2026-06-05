@@ -319,32 +319,57 @@ Flow (text fallback — 全 step が MANDATORY):
 
 ## ローカル + push 先 マップ（必ずここを見てから push）
 
-| ローカル path | Push 先 (git remote) | 役割 |
+| ローカル path | Push 先 (origin) | 役割 |
 |---|---|---|
-| `~/anicca-project/` (= この cwd) | **`git push oss <branch>`** → `github.com/Daisuke134/anicca-products-oss`（近く public） | Dais が作る products の working tree。 ★ `git push` 単体 NG ★（`origin`= 旧 `anicca-products` private、誰も読まない） |
-| `~/anicca-products-oss/` | `origin` = `github.com/Daisuke134/anicca-products-oss` | canonical clone。 `.github/workflows/netlify-deploy.yml` が `paths: apps/landing/**` で aniccaai.com に auto-deploy |
+| `~/anicca-project/` (= この cwd) | `origin` = `github.com/Daisuke134/anicca-products-oss`（public, 近く release） | Dais の products working tree。 `git push` 単体 で canonical へ |
+| `~/anicca-products-oss/` | `origin` = `github.com/Daisuke134/anicca-products-oss` | canonical clone。 `.github/workflows/netlify-deploy.yml` (= ★ 残ってる 唯一 の workflow ★) が aniccaai.com に auto-deploy |
 | `~/.openclaw/` | `origin` = `github.com/Daisuke134/anicca-private-backup`（private） | 本番 personal Anicca on OpenClaw — gateway / cron / skills / state、 Dais の private info |
 | `~/anicca-oss/` | `origin` = `github.com/Daisuke134/anicca-oss`（public OSS framework） | Anicca 本体 OSS + Hermes 等 instance archetype の設計 source |
 | `~/.hermes/` (runtime) | sync → `github.com/Daisuke134/anicca-genesis`（public, MIT） | genesis Anicca の **body** = LIVE state ledger。 secrets は .gitignore、 cron/scripts/state/*.jsonl のみ push。 P19 genesis-sync skill が 3h 毎自動同期予定 |
-| 旧 `~/anicca-products/` 系 | `github.com/Daisuke134/anicca-products`（private, retired）| 旧 monorepo。 2026-06-05 以降 cron だけが古い path を持つ移行残債。 順次 `~/anicca-products-oss/` に flip 後、GitHub 上で archive 予定。 ★ 新規 push 禁止 ★ |
+
+旧 `Daisuke134/anicca-products` (private monorepo) は ★ 2026-06-05 GitHub から完全削除 ★。 push 先 候補 から 完全 除外、 ローカル clone `~/anicca-products/` + `~/anicca-products-pages/` も rm 済。
+
+## HARD RULE: push 前 に origin verify（= 違う repo に 行く事故 防止）
+
+★ 編集 後 push する 直前 ★ に 必ず 1 行 で 確認:
+
+```bash
+git remote -v && git branch -vv
+```
+
+期待 する URL **以外** が 表示 されたら ★ STOP ★、 fix してから push:
+- remote が 複数 (origin + 他) → `git remote remove <他>` で 1 本 に
+- origin URL 違い → `git remote set-url origin <正しい URL>`
+
+→ 「`git push oss <branch>`」 等 の 別名 remote 指定 ★ 不要 ★。 全 path で `git push` 単体 が canonical へ。
+
+## HARD RULE: GitHub Actions 化 禁止、 cron は OpenClaw が canonical
+
+aniccaai.com の `netlify-deploy.yml` だけ が `~/anicca-products-oss/.github/workflows/` に 残る (= ★ 1 個 だけ ★)。 他 全 cron / metrics / posting / autonomous task は **`~/.openclaw/cron/jobs.json`** で OpenClaw gateway が canonical。
+
+- ❌ 新 GitHub Actions workflow 追加: ★ 禁止 ★
+- ❌ scheduled cron / metrics fetcher / content posting / Claude Issue agent / autonomous task を GitHub Actions に書く: ★ 禁止 ★
+- ✅ scheduled / metrics / posting / Claude autonomous task: ★ OpenClaw cron で 書く ★ (`~/.openclaw/cron/jobs.json` に entry 追加、 gateway hot-reload)
+
+理由: GitHub Actions 化 すると (a) 同 LLM token を 二重 消費 (anicca-products 残債 で 月 ~1M token 余計 burn してた = 2026-06-05 fix 済)、 (b) 状態 が GitHub 側 にも 散る、 (c) Dais の 「OpenClaw が 全部 やる」 thesis と 矛盾。
 
 ## ミニマム folder tree
 
 ```
-~/anicca-project/                          # cwd, products working tree
-├── aniccaios/                             # iOS Swift app
+~/anicca-project/                          # cwd, working tree of anicca-products-oss
+├── aniccaios/                             # iOS Swift app (release は cd aniccaios && fastlane)
 ├── apps/
 │   ├── api/                               # Node/Express API (Railway)
 │   └── landing/                           # Next.js → aniccaai.com
 ├── mobile-apps/                           # factory apps
 └── docs/superpowers/{specs,plans}/        # SDD spec + plan
 
-~/anicca-products-oss/                     # canonical mirror (push 先)
+~/anicca-products-oss/                     # canonical mirror (origin)
 ├── aniccaios/  apps/  mobile-apps/
-└── .github/workflows/netlify-deploy.yml   # main push → aniccaai.com
+└── .github/workflows/netlify-deploy.yml   # ★ 1 個 だけ ★ — dev/main push → aniccaai.com
 
-~/.openclaw/                               # 本番 personal Anicca
-├── skills/  cron/  gateway/  state/
+~/.openclaw/                               # 本番 personal Anicca、 cron canonical
+├── skills/  cron/jobs.json  gateway/  state/
 ├── .env (chmod 600)                       # secrets, git ignore
 └── CONSTITUTION.md  IDENTITY.md  SOUL.md
 
@@ -354,15 +379,17 @@ Flow (text fallback — 全 step が MANDATORY):
 └── adapters/  templates/
 ```
 
-## Push ルール（混乱防止）
+## Push ルール（全 path、 1 command で OK）
 
-| 編集場所 | 必ず打つ command |
+| 編集場所 | command |
 |---|---|
-| `~/anicca-project/` の landing / iOS / api / mobile-apps | `git push oss <branch>` (★ `git push` 単体 NG ← origin が旧 private に行く) |
-| `~/anicca-products-oss/` 直接 | `git push` (origin = canonical) |
-| `~/.openclaw/` の skill / cron / spec | `git push` (origin = anicca-private-backup) |
-| `~/anicca-oss/` の framework / Hermes / skills | `git push` (origin = anicca-oss、 public) |
+| `~/anicca-project/` | `git push` (origin = anicca-products-oss) |
+| `~/anicca-products-oss/` | `git push` (origin = canonical) |
+| `~/.openclaw/` | `git push` (origin = anicca-private-backup) |
+| `~/anicca-oss/` | `git push` (origin = anicca-oss、 public) |
 | `~/.hermes/` runtime state (cron/jobs.json, scripts/, state/*.jsonl, SOUL.md, AGENTS.md) | P19 genesis-sync skill が cron で `git push` (origin = anicca-genesis、 public)。 手動 同期 は `~/.cache/anicca-clones/anicca-genesis/` に clone → 安全 ファイル のみ cp → commit |
+
+`git push <別名> <branch>` の 別名 remote 指定 ★ 不要 ★。 全 path 統一 `git push`。
 
 ## 🔋 LLM Token Sources — 3 fuel ルート (どれが何を喰うか)
 
