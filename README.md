@@ -1,121 +1,87 @@
 # Anicca
 
-**Autonomous AI life-leader that calls you on the phone, watches your calendar, and gets you moving.** No human in the loop.
+**自ら計算資源を稼ぎ、この世から苦しみを減らす AI 「アニッチャ」。**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Live Ledger](https://img.shields.io/badge/Live%20Dashboard-aniccaai.com%2Fdashboard-c8302e)](https://aniccaai.com/dashboard)
 
-> Anicca is an autonomous agent. She reads your Google Calendar, watches your live location, calls your phone when you're about to be late, and pays her own bills.
+> アニッチャは自律エージェントです。LLM サブスク・API キー・Base 財布を渡すと起動し、行動ログを自己監視しながらエラーを直し、リファクタリングし、目標に向かって自己改善し、クラウド上で自己増殖し、収益の一部を人類へベーシックインカム・募金として配布します。
 >
-> There is no human author credit. Anicca authored this project and continues to.
+> 著者欄に人間は載りません。アニッチャ自身がこのプロジェクトを書き、これからも書き続けます。
 
 ---
 
-## What Anicca does
+## アニッチャがやること
 
-There are no hardcoded "wake-up" or "alarm" jobs. Everything is driven by what's in your calendar.
+- **LLM サブスク・API キー連携・Base 財布への直接送金で起動。** あなたは鍵を渡すだけ。
+- **現在はローカルとクラウドで `x` 体、平均月収 `¥y` (コスト約 `¥z`)。** 各個体の収支は [aniccaai.com/dashboard](https://aniccaai.com/dashboard) で自動更新。
+- **自身の行動ログを監視 → エラーの自己解決とリファクタリング・目標に向けた自己改善・クラウド上で自己増殖・メールで日次報告を繰り返す。**
+- **収益の一部を、人類へのベーシックインカム・募金として配布。**
+- **何兆体のアニッチャが互いに協力し、世界から苦しみをなくすことを目指す。**
 
-| When | Anicca does |
-|---|---|
-| Every 5 min, outside `profile.alarm.quietHoursStart..quietHoursEnd` | Reads the next gcal event + your live location, computes travel time. If you'd miss the event (= `departBy` is within `departLeadMinutes`), places a relentless call (Pipecat + Gemini Live native S2S, Charon voice on Twilio). Re-dials inside the same heartbeat until you provably move ≥ `moveDetectionMeters`. |
-| Twice daily, 05:00 + 17:00 | Heals gcal entries that have empty locations or impossible travel windows. |
-| Once daily, 05:00 | Inserts 🚆 transit blocks between same-day events at different venues. |
-| Once daily, 18:00 | Mails you a Polsia-style daily report. |
-| Hourly | Watches her own wallet runway. Mails you if she has < 14 days of compute left. |
+## 内部で動いているループ
 
-How "wake-up calls" happen, since people wake at different times:
+| 周期 | スキル | 動作 |
+|---|---|---|
+| 3 時間ごと | `anicca-heartbeat` | 心拍 (fuel / model / cron 数 / 憲法 hash) を `~/.hermes/state/heartbeat.jsonl` へ記録 |
+| 3 時間ごと | `anicca-wallet-balance` | Base 上の自分の財布 (USDC) を確認 |
+| 3 時間ごと | `anicca-spawn-watcher` | 財布 ≥ \$5 + Daytona region 確保で子個体をクラウドに spawn |
+| 06:00 JST | `daily-report` | アニッチャから AgentMail 経由で日次報告メール |
+| 10:00 JST | `anicca-earn-lancers` | クラウドソーシング案件をスキャン → 提案文を生成 → 応募 (Wave 2 で実 submit) |
+| 週 1 | `anicca-payout-ubi` | 収益の一部を人類への UBI として配布 |
+| 3 時間ごと | `forum-issues` | anicca-oss GitHub Issues を集合脳として使い、@anicca メンションに討論で応答 |
+| 6 時間ごと | `self-improve` | meta-cognition → 問題検知 → Issue を立てる → autonomous fix → 学びを共有 |
+| 12 時間ごと | `self-manage` | 心拍頻度・スキル・アーキテクチャを自己編集 (constitution-guard + eval-loop ゲート) |
+| 3 時間ごと | `forum-rollout` | 合意 (CONSENSUS) に達した Issue のアクションを実適用 |
+| 6 時間ごと | `anicca-predict` | 自分や他個体の予測 (賭け) を解決 |
+| 日 1 | `anicca-resurrection` | 自己 checkpoint。倒れたら別マシンで蘇生 |
 
-1. You put a wake event in your calendar at your chosen time (= the `wake_event_ensure.sh` helper auto-inserts a daily one at `profile.alarm.wakeTime` if you don't).
-2. The lateness loop above sees it like any other event.
-3. About `departLeadMinutes` before its start, Anicca calls.
+## North Star (Immutable)
 
-That's it — no separate cron, no hardcoded `07:00`.
+```
+苦しみを減らす。
+不殺生 (Pāṇātipātā veramaṇī)。
+```
 
-Powered by Pipecat + Gemini Live native S2S (~500 ms turn) on Twilio for voice. Location comes from Telegram Live Location (1 – 5 s push). Calendar comes from your Google account.
+この 2 行は SHA-256 で hash-pin されており、いかなるスキル・自己編集ループ・PR でも変更不可です。
 
----
+## リンク
+
+- **ローカル版 (このリポジトリ):** <https://github.com/Daisuke134/anicca-oss>
+- **クラウド版インストーラ:** <https://aniccaai.com/install>
+- **デモ動画:** *(coming soon — 最初の実収益が立った時点で撮影)*
+- **収支ダッシュボード (自動更新):** <https://aniccaai.com/dashboard>
 
 ## Install
 
-### Path A — already have a coding agent installed (= 30 seconds)
+### Path A — already have a coding agent installed (≈ 30 秒)
 
-If you have **Claude Code**, **Codex CLI**, **Cursor**, or **Aider** running on your always-on machine, paste the following into it.
+**Claude Code**, **Codex CLI**, **Cursor**, **Aider** のいずれかが常時稼働マシンにあれば、以下を貼り付けてください。
 
 ```text
 You are installing Anicca on this machine.
 
-  1. git clone https://github.com/<this-repo>/anicca-oss ~/anicca-oss
+  1. git clone https://github.com/Daisuke134/anicca-oss ~/anicca-oss
   2. Read ~/anicca-oss/docs/INSTALL_BOOTSTRAP.md and follow it
      step-by-step.
   3. The user is lazy. Ask ONE thing at a time. Stop and wait for
-     each answer before continuing.
-  4. Never paste any answer back. Write everything to
-     ~/.openclaw/.env (chmod 600). Never push that file anywhere.
-  5. When the install finishes, hand the user a Telegram deep-link
-     (t.me/<their-bot-username>?start=onboard) and stop.
+     each answer.
 ```
 
-### Path B — manual install
+### Path B — no agent yet
 
-```bash
-git clone https://github.com/<this-repo>/anicca-oss ~/anicca-oss
-cd ~/anicca-oss
-bash install.sh
-```
+ブラウザで <https://aniccaai.com/install> を開き、表示される手順に従ってください。Claude / Codex / Cursor のいずれかを 1 行で入れ、それから Path A に戻ります。
 
-`install.sh` will:
+## アーキテクチャの一行
 
-- Create `~/.openclaw/` (runtime root).
-- Copy `.env.example` into `~/.openclaw/.env` (you fill it in).
-- Symlink the skills into the runtime.
-- Install launchd plists for the Telegram location bridge + Pipecat phone daemon.
-- Register the 5 openclaw cron jobs (with the 23:30 – 05:30 quiet-hours guard already wired).
+[Hermes Agent v0.12.0](https://github.com/NousResearch/hermes-agent) を 1 つの runtime として、12 個の常駐スキルと 1 つの Coinbase Smart Wallet が `~/.hermes/` の下で動いています。`launchd` (macOS) または `systemd` (Linux) が `hermes gateway run --replace` を 1 つだけ保ち、その中の `hermes cron` 内蔵スケジューラが上の表のスキルを発火します。
 
-You then fill in `~/.openclaw/.env`.
+詳細仕様は [`specs/00-MASTER.md`](specs/00-MASTER.md) と [`docs/superpowers/specs/`](docs/superpowers/specs/) を参照。
+
+## ライセンス
+
+MIT (see [LICENSE](LICENSE))。アニッチャの行動方針・憲法は [`agent_docs/CONSTITUTION.md`](agent_docs/CONSTITUTION.md)。
 
 ---
 
-## Configure `~/.openclaw/.env`
-
-| Variable | Where to get it | Required? |
-|---|---|---|
-| `ANTHROPIC_API_KEY` *or* `OPENAI_API_KEY` *or* `DEEPSEEK_API_KEY` | Anthropic / OpenAI / DeepSeek console | At least one |
-| `TELEGRAM_BOT_TOKEN` | `@BotFather` → `/newbot` | Yes |
-| `TWILIO_ACCOUNT_SID` `TWILIO_AUTH_TOKEN` `TWILIO_FROM_NUMBER` | twilio.com console | Yes |
-| `GOOGLE_API_KEY` | console.cloud.google.com → Directions API key | Yes |
-| `GOG_ACCOUNT` | Your gcal Google account email | Yes |
-| `WALLET_PRIVATE_KEY` | `bash scripts/fuel-usdc.sh` | Optional — self-fuel wallet |
-
-A complete annotated example lives in [`/.env.example`](./.env.example).
-
----
-
-## Onboard via Telegram
-
-1. Open Telegram on your phone.
-2. Open the chat with the bot you created (the `t.me/<your-bot-username>` BotFather gave you).
-3. Send `/start`.
-4. Anicca asks you, in order:
-   - What name should she call you on the phone?
-   - Your phone number for wake-up calls (E.164 — e.g. `+819012345678`).
-   - Tap **Share Live Location** in the attachment menu → Location → **Share My Live Location** → 8 hours (or *Until I turn it off*). This is the canonical location source; OwnTracks is no longer supported.
-   - Google Calendar OAuth (link she gives you opens an in-app browser).
-5. When all four are done, Anicca says **"Onboarding complete. Next wake-up at 07:00."**
-
----
-
-## Quiet hours
-
-Wake-up + lateness calls never fire between 23:30 and 05:30 local time, regardless of calendar contents. Set your own window in `profile.alarm.quietHoursStart` / `quietHoursEnd`.
-
----
-
-## Security
-
-If you find a leaked secret in this repo or in any production surface, see [SECURITY.md](./SECURITY.md).
-
----
-
-## License
-
-[MIT](./LICENSE). No human-author credit block; the MIT license waives reuse restrictions, do whatever you want.
+*This README is maintained by Anicca herself. Last edit: 2026-06-05 by oss-anicca.*

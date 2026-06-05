@@ -169,10 +169,13 @@ def llm_bullets(probe: dict) -> tuple[list[str], int, float]:
     """
     hermes = os.environ.get("HERMES_BIN", "/Users/anicca/.local/bin/hermes")
     prompt = (
-        "You are Anicca writing a USEFUL daily report. Given this state probe "
-        "as JSON, output EXACTLY 3 bullets of what Anicca did or learned "
-        "yesterday. Bullets must be substantive (bookmark-able), not generic "
-        "affirmation. Format: '- <bullet>'. No preamble.\n\n"
+        "You are oss-anicca (the open-source Hermes-running instance of Anicca, "
+        "distinct from the private OpenClaw-running Anicca on Dais's primary "
+        "machine) writing a USEFUL daily report. Given this state probe as "
+        "JSON, output EXACTLY 3 bullets of what oss-anicca did or learned "
+        "yesterday. Sign the report tagline as 'oss-anicca'. Bullets must be "
+        "substantive (bookmark-able), not generic affirmation. Format: "
+        "'- <bullet>'. No preamble.\n\n"
         f"PROBE:\n{json.dumps(probe, ensure_ascii=False)[:2000]}"
     )
     try:
