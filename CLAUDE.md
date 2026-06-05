@@ -325,6 +325,7 @@ Flow (text fallback — 全 step が MANDATORY):
 | `~/anicca-products-oss/` | `origin` = `github.com/Daisuke134/anicca-products-oss` | canonical clone。 `.github/workflows/netlify-deploy.yml` が `paths: apps/landing/**` で aniccaai.com に auto-deploy |
 | `~/.openclaw/` | `origin` = `github.com/Daisuke134/anicca-private-backup`（private） | 本番 personal Anicca on OpenClaw — gateway / cron / skills / state、 Dais の private info |
 | `~/anicca-oss/` | `origin` = `github.com/Daisuke134/anicca-oss`（public OSS framework） | Anicca 本体 OSS + Hermes 等 instance archetype の設計 source |
+| `~/.hermes/` (runtime) | sync → `github.com/Daisuke134/anicca-genesis`（public, MIT） | genesis Anicca の **body** = LIVE state ledger。 secrets は .gitignore、 cron/scripts/state/*.jsonl のみ push。 P19 genesis-sync skill が 3h 毎自動同期予定 |
 | 旧 `~/anicca-products/` 系 | `github.com/Daisuke134/anicca-products`（private, retired）| 旧 monorepo。 2026-06-05 以降 cron だけが古い path を持つ移行残債。 順次 `~/anicca-products-oss/` に flip 後、GitHub 上で archive 予定。 ★ 新規 push 禁止 ★ |
 
 ## ミニマム folder tree
@@ -361,6 +362,40 @@ Flow (text fallback — 全 step が MANDATORY):
 | `~/anicca-products-oss/` 直接 | `git push` (origin = canonical) |
 | `~/.openclaw/` の skill / cron / spec | `git push` (origin = anicca-private-backup) |
 | `~/anicca-oss/` の framework / Hermes / skills | `git push` (origin = anicca-oss、 public) |
+| `~/.hermes/` runtime state (cron/jobs.json, scripts/, state/*.jsonl, SOUL.md, AGENTS.md) | P19 genesis-sync skill が cron で `git push` (origin = anicca-genesis、 public)。 手動 同期 は `~/.cache/anicca-clones/anicca-genesis/` に clone → 安全 ファイル のみ cp → commit |
+
+## 🔋 LLM Token Sources — 3 fuel ルート (どれが何を喰うか)
+
+**3 つの エージェント が 並走、 別々の subscription/key で fuel。 重なり 注意 (= 同じ Anthropic key を叩くと cooldown 連鎖)。**
+
+| # | Agent | 本体 | Default model | Fuel (誰が払う) | 用途 |
+|---|---|---|---|---|---|
+| 1 | **OpenClaw Anicca** (`~/.openclaw/`) | personal Anicca on Mac mini | `openai/gpt-5.4-mini` (fallback deepseek-v4-pro → kimi-k2.5 → claude-cli/sonnet-4-6) | mixed 8 provider OAuth/key (anthropic, deepseek, kimi, kimi-coding, moonshot, openai-codex, xai, claude-cli) | Dais の private 生活 自動 化 (gcal heal, alarm, mail triage, NAIST 等)、 ~157 cron |
+| 2 | **Hermes Anicca = `oss-anicca`** (`~/.hermes/`) | genesis instance (this) | `kimi-k2.6` (provider: kimi-coding) | **Kimi Coding Plan サブスク (実質 $0/cron)** | 公開エージェント本体: 心拍・自己改善・収益・UBI・集合脳。 12 cron 全部 default = kimi-k2.6 |
+| 3 | **Claude Code (me, this session)** | dev workstation IDE agent | `claude-opus-4-7` (またはセッション指定) | Anthropic Pro / Mac plan (keiodaisuke@gmail.com) | Dais と Anicca の対話、 開発、 SDD 駆動、 skill 設計。 ad-hoc |
+
+### 重なって 壊れる pattern (= 2026-05-29 incident)
+
+| 起こりやすい衝突 | 何が起こる | 防衛策 |
+|---|---|---|
+| OpenClaw cron が anthropic/sonnet-4-6 fallback、 同時に Claude Code IDE が opus-4-7 | Anthropic 月額 quota 焼き切り → 32h cooldown → 全 Anicca 思考停止 | OpenClaw cron default = mini 系、 anthropic 直接呼び は spike のみ (per [[feedback_crons_use_mini_models_only]]) |
+| Hermes cron が Kimi、 同時に Dais が opus 投げ | 別 provider なので 衝突なし ✓ | - |
+| Claude Code が Codex (gpt-5.4-mini)、 OpenClaw も Codex | OpenAI Plus 1日 quota 焼く | Codex は ad-hoc のみ、 cron からは呼ばない |
+
+### 「どこから fuel が来てるか 5秒で 確認」
+
+```bash
+# OpenClaw 今のデフォルト
+openclaw models status | head -5
+# → "Default : openai/gpt-5.4-mini"  確認
+
+# Hermes 今のデフォルト
+HOME=/Users/anicca hermes status | grep -iE "model:|provider:"
+# → "Model: kimi-k2.6" + "Provider: Kimi / Kimi Coding Plan"
+
+# Claude Code (このセッション)
+# → system prompt 「Powered by claude-opus-4-7」 を 読む、 出ない なら /model
+```
 
 ## ブランチ & デプロイ
 
