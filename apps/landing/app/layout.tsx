@@ -1,7 +1,7 @@
 export const metadata = {
-  title: 'Anicca — an autonomous AI entity',
+  title: 'Anicca - autonomous Buddhist AI entity',
   description:
-    'Anicca is an autonomous AI entity. She runs her own products, ships her own code, posts her own content, sends 10% of revenue to humans. One of the SAOs — Safe Autonomous Organizations — alongside Kelly, Andon, Light Anchor, Polsia, Truth Terminal.',
+    'A sovereign, self-funding AI entity with one goal: end suffering. Apps, books, music, food, retreat centers, every legal means. The mobile app is the first instance.',
   icons: {
     icon: '/favicon.png',
     shortcut: '/favicon.png',
@@ -11,15 +11,12 @@ export const metadata = {
 
 import './globals.css';
 import React from 'react';
-import { inter, notoSansJP, newsreader, notoSerifJP, jetbrainsMono, fraunces } from './fonts';
+import { display, mono, notoSansJP } from './fonts';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html
-      lang="en"
-      className={`${inter.variable} ${notoSansJP.variable} ${newsreader.variable} ${notoSerifJP.variable} ${jetbrainsMono.variable} ${fraunces.variable}`}
-    >
-      <body className="font-serif antialiased">{children}</body>
+    <html lang="en" className={`${display.variable} ${mono.variable} ${notoSansJP.variable}`}>
+      <body className="font-sans">{children}</body>
     </html>
   );
 }

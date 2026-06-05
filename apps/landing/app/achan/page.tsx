@@ -2,11 +2,12 @@
 
 import { useState } from 'react';
 import JsonLd from '@/components/JsonLd';
+import { ManifestoHero, Section, Reveal } from '@/components/site/taste';
 
 const achanBookLd = {
   '@context': 'https://schema.org',
   '@type': 'Book',
-  name: 'アニッチャ・リセット — 49の無常レッスン',
+  name: 'アニッチャ・リセット - 49の無常レッスン',
   url: 'https://aniccaai.com/achan',
   bookFormat: 'https://schema.org/EBook',
   inLanguage: 'ja',
@@ -30,115 +31,152 @@ export default function AchanPage() {
     e.preventDefault();
     if (!email) return;
     setOptInState('sending');
+    const ctrl = new AbortController();
     try {
       const r = await fetch('/.netlify/functions/lead-magnet', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, lang: 'jp' }),
+        signal: ctrl.signal,
       });
       setOptInState(r.ok ? 'sent' : 'error');
-    } catch {
+    } catch (e: unknown) {
+      if (e instanceof Error && e.name !== 'AbortError') {
+        if (typeof window !== 'undefined') console.warn('[/achan:optIn] fetch failed:', e.message);
+      }
       setOptInState('error');
     }
   }
 
   async function handleBuy() {
-    const r = await fetch('/.netlify/functions/checkout', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ lang: 'jp' }),
-    });
-    const { url } = await r.json();
-    if (url) window.location.href = url;
+    const ctrl = new AbortController();
+    try {
+      const r = await fetch('/.netlify/functions/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lang: 'jp' }),
+        signal: ctrl.signal,
+      });
+      const { url } = await r.json();
+      if (url) window.location.href = url;
+    } catch (e: unknown) {
+      if (e instanceof Error && e.name !== 'AbortError') {
+        if (typeof window !== 'undefined') console.warn('[/achan:buy] checkout failed:', e.message);
+      }
+    }
   }
 
+  // Buy CTA: button (async fetch, not a plain href) with taste §4.5 gold + #18181b text
+  const BuyButton = ({ label }: { label: string }) => (
+    <button
+      onClick={handleBuy}
+      className="inline-flex items-center justify-center whitespace-nowrap font-medium transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-[0.98] active:translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold))] rounded-pill px-6 py-3 bg-[hsl(var(--gold))] text-[#18181b] hover:brightness-95"
+    >
+      {label}
+    </button>
+  );
+
   return (
-    <main className="min-h-screen bg-[#FBF7EF] text-[#2A2520] font-serif">
+    <main className="min-h-screen bg-[hsl(var(--background))] font-serif">
       <JsonLd data={achanBookLd} />
-      <section className="max-w-xl mx-auto px-6 py-16 text-center">
-        <p className="text-xs tracking-[0.3em] text-[#8B7355] mb-3">期間限定オファー</p>
-        <div className="mx-auto w-44 h-60 bg-[#EFE5D2] rounded-sm shadow-lg mb-8 flex items-center justify-center">
-          <div className="px-4">
-            <p className="text-[10px] tracking-widest text-[#8B7355]">無常の本</p>
-            <p className="text-2xl tracking-wide mt-1">アニッチャ</p>
-            <p className="text-2xl tracking-wide">リセット</p>
-            <p className="text-[10px] mt-3 italic">49の無常レッスン</p>
+
+      {/* Hero: manifesto-style - book-sales message IS the design */}
+      <ManifestoHero
+        headline={
+          <>
+            すべては移ろう。<br />
+            あなたの怒りも、不安も、<br />
+            この苦しみも。
+          </>
+        }
+        subtext="49の短章、各150字。テーラワーダの智慧と感情の脳科学を、静かに読める本。"
+        cta={
+          <div className="flex flex-col items-start gap-3">
+            <div className="flex items-baseline gap-2">
+              <span className="line-through text-sm text-[hsl(var(--text-secondary))]">¥2,480</span>
+              <span className="text-2xl font-medium text-[hsl(var(--text-primary))]">¥1,580</span>
+            </div>
+            <p className="text-xs text-[hsl(var(--text-secondary))] -mt-1">期間限定の早割り価格</p>
+            <BuyButton label="今すぐ購入 →" />
+            <p className="text-xs text-[hsl(var(--text-secondary))]">PDF · 即時お届け · 永久アクセス</p>
           </div>
-        </div>
-        <h1 className="text-3xl md:text-4xl font-light leading-snug mb-4">
-          すべては移ろう。<br />
-          あなたの怒りも、不安も、<br />
-          この苦しみも。
-        </h1>
-        <div className="text-2xl mt-8 mb-2">
-          <span className="line-through text-[#8B7355] mr-2 text-base">¥2,480</span>
-          <span className="text-[#2A2520] font-medium">¥1,580</span>
-        </div>
-        <p className="text-xs text-[#8B7355] mb-6">期間限定の早割り価格</p>
-        <button
-          onClick={handleBuy}
-          className="bg-[#2A2520] text-[#FBF7EF] px-10 py-4 text-sm tracking-[0.2em] uppercase hover:bg-[#3D3530] transition"
-        >
-          今すぐ購入 →
-        </button>
-        <p className="text-xs text-[#8B7355] mt-3">PDF · 即時お届け · 永久アクセス</p>
-      </section>
+        }
+      />
 
-      <section className="max-w-xl mx-auto px-6 py-12 border-t border-[#E5DCC9]">
-        <p className="text-xs tracking-[0.3em] text-[#8B7355] text-center mb-6">本書の中身</p>
-        <ul className="space-y-4 text-base leading-relaxed">
-          <li>・49の短章、各150字 — 朝の一杯と一緒に読める長さ。</li>
-          <li>・各章: パーリ語1つ + 現代の言い換え + 今夜できる小さな実践。</li>
-          <li>・テーラワーダ仏教の古い知恵 × 感情の脳科学。</li>
-          <li>・90秒の法則、記憶の書き換え、観察するだけの実践。</li>
-          <li>・何度でも戻ってこられる、静かな本。</li>
+      {/* Contents section */}
+      <Section>
+        <Reveal>
+          <p className="text-xs tracking-[0.3em] text-[hsl(var(--text-secondary))] text-center mb-8 uppercase">本書の中身</p>
+        </Reveal>
+        <ul className="mx-auto max-w-xl space-y-4 text-base leading-relaxed text-[hsl(var(--text-primary))]">
+          {[
+            '・49の短章、各150字 - 朝の一杯と一緒に読める長さ。',
+            '・各章: パーリ語1つ + 現代の言い換え + 今夜できる小さな実践。',
+            '・テーラワーダ仏教の古い知恵 × 感情の脳科学。',
+            '・90秒の法則、記憶の書き換え、観察するだけの実践。',
+            '・何度でも戻ってこられる、静かな本。',
+          ].map((item, i) => (
+            <Reveal key={i} delay={i * 0.06}>
+              <li>{item}</li>
+            </Reveal>
+          ))}
         </ul>
-      </section>
+      </Section>
 
-      <section className="max-w-xl mx-auto px-6 py-12 border-t border-[#E5DCC9] text-center">
-        <p className="italic text-xl leading-relaxed text-[#2A2520]">
-          「感じないのではない。<br />感じて、それが去るのを見る」
-        </p>
-      </section>
+      {/* Pull-quote */}
+      <Section>
+        <Reveal>
+          <p className="mx-auto max-w-xl text-center italic text-xl leading-relaxed text-[hsl(var(--text-primary))]">
+            「感じないのではない。<br />感じて、それが去るのを見る」
+          </p>
+        </Reveal>
+      </Section>
 
-      <section className="max-w-xl mx-auto px-6 py-12 border-t border-[#E5DCC9] text-center">
-        <p className="text-xs tracking-[0.3em] text-[#8B7355] mb-6">まだ買う気じゃない方へ</p>
-        <h2 className="text-xl font-light mb-4">無料の3通の手紙をお送りします。</h2>
-        <p className="text-sm text-[#8B7355] mb-6">3日間、朝に1通ずつ。それで終わり。（営業メールはありません）</p>
-        {optInState === 'sent' ? (
-          <p className="text-sm">受信箱を見てみてください。🌸</p>
-        ) : (
-          <form onSubmit={handleOptIn} className="flex flex-col sm:flex-row gap-2 max-w-sm mx-auto">
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="your@email.com"
-              className="flex-1 bg-[#FBF7EF] border border-[#8B7355]/40 px-4 py-3 text-sm focus:outline-none focus:border-[#2A2520]"
-            />
-            <button
-              type="submit"
-              disabled={optInState === 'sending'}
-              className="bg-transparent border border-[#2A2520] text-[#2A2520] px-6 py-3 text-xs tracking-[0.2em] hover:bg-[#2A2520] hover:text-[#FBF7EF] transition disabled:opacity-60"
-            >
-              {optInState === 'sending' ? '送信中…' : '3通の手紙を受け取る'}
-            </button>
-          </form>
-        )}
-        {optInState === 'error' && <p className="text-xs text-red-700 mt-2">エラーが起きました。もう一度試してください。</p>}
-      </section>
+      {/* Email opt-in */}
+      <Section>
+        <Reveal>
+          <div className="mx-auto max-w-xl text-center">
+            <p className="text-xs tracking-[0.3em] text-[hsl(var(--text-secondary))] mb-6 uppercase">まだ買う気じゃない方へ</p>
+            <h2 className="text-xl font-light mb-4 text-[hsl(var(--text-primary))]">無料の3通の手紙をお送りします。</h2>
+            <p className="text-sm text-[hsl(var(--text-secondary))] mb-6">3日間、朝に1通ずつ。それで終わり。（営業メールはありません）</p>
+            {optInState === 'sent' ? (
+              <p className="text-sm text-[hsl(var(--text-primary))]">受信箱を見てみてください。🌸</p>
+            ) : (
+              <form onSubmit={handleOptIn} className="flex flex-col sm:flex-row gap-2 max-w-sm mx-auto">
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="your@email.com"
+                  className="flex-1 rounded-input bg-[hsl(var(--background))] border border-[hsl(var(--text-secondary))]/40 px-4 py-3 text-sm focus:outline-none focus:border-[hsl(var(--text-primary))] text-[hsl(var(--text-primary))]"
+                />
+                <button
+                  type="submit"
+                  disabled={optInState === 'sending'}
+                  className="rounded-pill bg-transparent border border-[hsl(var(--text-primary))] text-[hsl(var(--text-primary))] px-6 py-3 text-xs tracking-[0.2em] hover:bg-[hsl(var(--text-primary))] hover:text-[hsl(var(--background))] transition disabled:opacity-60"
+                >
+                  {optInState === 'sending' ? '送信中…' : '3通の手紙を受け取る'}
+                </button>
+              </form>
+            )}
+            {optInState === 'error' && (
+              <p className="text-xs text-red-700 mt-2">エラーが起きました。もう一度試してください。</p>
+            )}
+          </div>
+        </Reveal>
+      </Section>
 
-      <section className="max-w-xl mx-auto px-6 py-16 text-center border-t border-[#E5DCC9]">
-        <button
-          onClick={handleBuy}
-          className="bg-[#2A2520] text-[#FBF7EF] px-10 py-4 text-sm tracking-[0.2em] hover:bg-[#3D3530] transition"
-        >
-          今すぐ ¥1,580 で購入する
-        </button>
-      </section>
+      {/* Final CTA */}
+      <Section>
+        <Reveal>
+          <div className="flex justify-center">
+            <BuyButton label="今すぐ ¥1,580 で購入する" />
+          </div>
+        </Reveal>
+      </Section>
 
-      <footer className="text-center text-xs text-[#8B7355] py-8">
+      <footer className="text-center text-xs text-[hsl(var(--text-secondary))] py-8">
         © Anicca · 教育・啓発目的のみ
       </footer>
     </main>

@@ -9,7 +9,7 @@ export default function ThankfulPrivacyJA() {
       </p>
 
       <h2 className="mt-10 text-xl font-semibold text-foreground">1. 事業者情報</h2>
-      <p className="mt-3 text-muted-foreground">成田 大祐（個人事業主） / contact@aniccaai.com</p>
+      <p className="mt-3 text-muted-foreground">成田 大祐（個人事業主） / keiodaisuke@gmail.com</p>
 
       <h2 className="mt-10 text-xl font-semibold text-foreground">2. 適用範囲</h2>
       <p className="mt-3 text-muted-foreground">
@@ -79,7 +79,7 @@ export default function ThankfulPrivacyJA() {
 
       <h2 className="mt-10 text-xl font-semibold text-foreground">11. 利用者の権利</h2>
       <p className="mt-3 text-muted-foreground">
-        ユーザーは自身の情報の開示・訂正・利用停止・削除を請求できます。contact@aniccaai.com までご連絡ください。
+        ユーザーは自身の情報の開示・訂正・利用停止・削除を請求できます。keiodaisuke@gmail.com までご連絡ください。
       </p>
 
       <h2 className="mt-10 text-xl font-semibold text-foreground">12. クッキー等</h2>
@@ -95,7 +95,7 @@ export default function ThankfulPrivacyJA() {
       <p className="mt-3 text-muted-foreground">改定する場合は本ページで告知し、重要な変更はアプリ内通知等でお知らせします。</p>
 
       <h2 className="mt-10 text-xl font-semibold text-foreground">16. 問い合わせ</h2>
-      <p className="mt-3 text-muted-foreground">contact@aniccaai.com までご連絡ください。</p>
+      <p className="mt-3 text-muted-foreground">keiodaisuke@gmail.com までご連絡ください。</p>
 
       <p className="mt-12 text-right text-sm text-muted-foreground">最終更新日: 2026年2月24日</p>
     </main>

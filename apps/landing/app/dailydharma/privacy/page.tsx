@@ -1,21 +1,8 @@
-import JsonLd from '@/components/JsonLd';
-
 export const metadata = { title: 'Privacy Policy | Daily Dharma' };
-
-const ddPrivacyLd = {
-  '@context': 'https://schema.org',
-  '@type': 'WebPage',
-  name: 'Daily Dharma — Privacy Policy',
-  url: 'https://aniccaai.com/dailydharma/privacy',
-  description:
-    'Privacy policy for the Daily Dharma iOS app. App preferences and bookmarks are stored locally only; purchase data is processed by RevenueCat and Apple.',
-  publisher: { '@type': 'Organization', name: 'Anicca', url: 'https://aniccaai.com' },
-};
 
 export default function DailyDharmaPrivacy() {
   return (
     <main className="container mx-auto max-w-3xl px-4 py-24">
-      <JsonLd data={ddPrivacyLd} />
       <h1 className="text-3xl font-bold text-foreground">Privacy Policy</h1>
       <p className="mt-2 text-muted-foreground">Daily Dharma - Buddhist Wisdom App</p>
 
@@ -72,7 +59,7 @@ export default function DailyDharmaPrivacy() {
 
       <h2 className="mt-10 text-xl font-semibold text-foreground">8. Contact</h2>
       <p className="mt-3 text-muted-foreground">
-        If you have any questions about this Privacy Policy, please contact us at: <a href="mailto:contact@aniccaai.com" className="underline">contact@aniccaai.com</a>
+        If you have any questions about this Privacy Policy, please contact us at: <a href="mailto:keiodaisuke@gmail.com" className="underline">keiodaisuke@gmail.com</a>
       </p>
 
       <p className="mt-12 text-right text-sm text-muted-foreground">Last Updated: January 13, 2026</p>

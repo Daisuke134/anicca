@@ -3,9 +3,14 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Cormorant_Garamond, IBM_Plex_Sans, IBM_Plex_Mono } from 'next/font/google';
 import JsonLd from '@/components/JsonLd';
+import { SplitHero, Section, Reveal, CTA } from '@/components/site/taste';
 
+/* ─────────────────────────────────────────────
+   §11.F: JsonLd blocks - verbatim (schema unchanged)
+───────────────────────────────────────────── */
 const cafeLd = {
   '@context': 'https://schema.org',
   '@type': 'FoodEstablishment',
@@ -32,15 +37,19 @@ const cafeFaqLd = {
   mainEntity: [
     { '@type': 'Question', name: 'What is Anicca Cafe?', acceptedAnswer: { '@type': 'Answer', text: 'A Tokyo cafe where an AI handles inventory, pricing and supplier ordering. The menu is one drink: a ¥1500 cold-pressed mango juice called Mango Reset.' } },
     { '@type': 'Question', name: 'Why only one drink?', acceptedAnswer: { '@type': 'Answer', text: 'Most cafes carry 40 items and close within two years. One SKU keeps operations simple enough for an AI to run reliably and easy for a customer to remember.' } },
-    { '@type': 'Question', name: 'Is it really AI-run?', acceptedAnswer: { '@type': 'Answer', text: 'Inspired by Andon Labs’ Mona in Stockholm. The AI runs autonomous operations; a Tokyo human team does in-person service.' } },
+    { '@type': 'Question', name: 'Is it really AI-run?', acceptedAnswer: { '@type': 'Answer', text: 'Inspired by Andon Labs\' Mona in Stockholm. The AI runs autonomous operations; a Tokyo human team does in-person service.' } },
     { '@type': 'Question', name: 'How much is it?', acceptedAnswer: { '@type': 'Answer', text: '¥1500 for one bottle of Mango Reset.' } },
     { '@type': 'Question', name: 'Where and when?', acceptedAnswer: { '@type': 'Answer', text: 'Tokyo; pre-launch reservations and the exact location via aniccaai.com/cafe.' } },
   ],
 };
 
+/* ─────────────────────────────────────────────
+   Fonts (local variable setup, theme uses semantic tokens)
+───────────────────────────────────────────── */
 const display = Cormorant_Garamond({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700'],
+  style: ['normal', 'italic'],
   variable: '--font-display',
 });
 const body = IBM_Plex_Sans({
@@ -54,6 +63,9 @@ const mono = IBM_Plex_Mono({
   variable: '--font-mono',
 });
 
+/* ─────────────────────────────────────────────
+   Constants - §11.F: URL verbatim
+───────────────────────────────────────────── */
 const LAUNCH_DATE = new Date('2026-06-01T11:00:00+09:00');
 const UBER_EATS_URL = 'https://www.ubereats.com/tokyo/food-delivery/anicca-cafe/PAvudNvOQRuuuF9MhZRw_w/';
 
@@ -65,6 +77,116 @@ function isLive(): boolean {
   return Date.now() >= LAUNCH_DATE.getTime();
 }
 
+/* ─────────────────────────────────────────────
+   Ingredient data - verbatim content preserved
+───────────────────────────────────────────── */
+const INGREDIENTS = [
+  {
+    num: '01',
+    name: 'Mexican mango',
+    detail: 'Tommy Atkins variety. Sourced fresh from Toyosu Market each morning.',
+  },
+  {
+    num: '02',
+    name: 'Tokyo water',
+    detail: 'Filtered municipal. The same water everyone in this city drinks.',
+  },
+  {
+    num: '03',
+    name: 'Ice',
+    detail: 'For 5°C cold pour. Served in 350 ml black PET bottles.',
+  },
+] as const;
+
+const HOW_TO_ORDER = [
+  {
+    num: '01',
+    title: 'Open Uber Eats Tokyo',
+    detail: 'Search "Anicca Cafe" in the app. Saturday + Sunday, 11:00-15:00 JST.',
+  },
+  {
+    num: '02',
+    title: 'Order ¥1,500',
+    detail: 'One bottle. One option. No upsells. Pay with whatever Uber Eats accepts.',
+  },
+  {
+    num: '03',
+    title: 'Delivered in 30 min',
+    detail: 'Made fresh after you order. Sealed in 350 ml black PET, ice cold to your door.',
+  },
+] as const;
+
+const FAQ_ITEMS = [
+  {
+    q: 'Why only one drink?',
+    a: 'Because single-product cafes are profitable in week one. Multi-menu cafes die in two years. Chasing every taste is the fastest way to die.',
+  },
+  {
+    q: 'Why Tokyo only?',
+    a: 'Because we deliver the same morning we make it, sealed cold, by Uber Eats. Anywhere else we cannot guarantee freshness. We may add Osaka and Kyoto later.',
+  },
+  {
+    q: 'Saturday and Sunday only?',
+    a: 'For now, yes. Single-operator weekend pop-up. If demand exceeds capacity, we extend to Friday and Monday.',
+  },
+  {
+    q: "What if I want sugar / syrup / vanilla?",
+    a: "You don't. Mango is sweet. Tasting the actual fruit is the whole product.",
+  },
+  {
+    q: 'How does the AI run a real cafe?',
+    a: 'It uses real APIs (Uber Eats Merchant, Stripe, Resend, Supabase, Postiz, Toyosu) and a physical Vitamix. The human operator does what AI cannot - kitchen viewing, food safety license, occasionally tasting the result.',
+  },
+  {
+    q: 'Where does the profit go?',
+    a: '10% to ten humans on basic income (transparent ledger). 1% to one charity every month (transparent ledger). The rest into the cafe and the next thing Anicca builds.',
+  },
+] as const;
+
+/* ─────────────────────────────────────────────
+   Mango bottle visual asset - §4.8 real visual
+   (gradient bottle placeholder, no div-fake-UI
+   comment per spec; no picsum)
+───────────────────────────────────────────── */
+function MangoBottle() {
+  return (
+    <div
+      className="relative aspect-[3/4] w-full max-w-[360px] overflow-hidden rounded-card mx-auto"
+      style={{
+        background:
+          'radial-gradient(circle at 30% 30%, hsl(33 76% 57%) 0%, hsl(29 72% 45%) 50%, hsl(var(--foreground)) 100%)',
+        boxShadow: '0 30px 80px -30px hsl(var(--foreground) / 0.35)',
+      }}
+    >
+      <div className="absolute inset-0 flex flex-col items-center justify-center text-[hsl(var(--background))]">
+        <p
+          className="font-mono text-[0.65rem] uppercase tracking-[0.32em] opacity-70"
+        >
+          · 350 ml ·
+        </p>
+        <p
+          className="mt-4 font-display text-[3.25rem] font-medium leading-none tracking-tight italic"
+        >
+          mango
+        </p>
+        <p
+          className="font-display text-[3.25rem] font-medium leading-none tracking-tight"
+        >
+          reset.
+        </p>
+        <p
+          className="mt-6 font-mono text-[0.6rem] uppercase tracking-[0.32em] opacity-70"
+        >
+          anicca · tokyo
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   Page
+───────────────────────────────────────────── */
 export default function Page() {
   const [email, setEmail] = useState('');
   const [state, setState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
@@ -97,735 +219,340 @@ export default function Page() {
     }
   }
 
+  /* §4.11 theme lock: one theme, no-dark-colon classes, semantic tokens only */
   return (
-    <div
-      className={`${display.variable} ${body.variable} ${mono.variable} min-h-screen`}
-      style={{
-        background: '#FBF7EF',
-        color: '#14100E',
-        fontFamily: 'var(--font-body)',
-      }}
-    >
+    <div className={`${display.variable} ${body.variable} ${mono.variable} min-h-screen bg-[hsl(var(--background))] text-[hsl(var(--foreground))]`}>
       <JsonLd data={cafeLd} />
       <JsonLd data={cafeOfferLd} />
       <JsonLd data={cafeFaqLd} />
-      <style jsx global>{`
-        :root {
-          --ink: #14100E;
-          --cream: #FBF7EF;
-          --mango: #E89A3C;
-          --beige: #C4A77A;
-          --dim: #6B6258;
-        }
-        @keyframes anicca-fade-up {
-          from { opacity: 0; transform: translateY(12px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes anicca-mango-bob {
-          0%, 100% { transform: translateY(0) rotate(-2deg); }
-          50%      { transform: translateY(-8px) rotate(2deg); }
-        }
-        .anicca-anim-1 { animation: anicca-fade-up 0.8s 0.0s both ease-out; }
-        .anicca-anim-2 { animation: anicca-fade-up 0.8s 0.15s both ease-out; }
-        .anicca-bottle { animation: anicca-mango-bob 6s infinite ease-in-out; }
-      `}</style>
 
-      <header
-        className="flex items-center justify-between px-6 py-5 md:px-12 md:py-6"
-        style={{ borderBottom: '1px solid #14100E' }}
-      >
+      {/* ── NAV ── */}
+      <header className="flex items-center justify-between px-6 py-5 md:px-12 md:py-6 border-b border-[hsl(var(--border))]">
         <Link
           href="/en"
-          style={{ fontFamily: 'var(--font-mono)', fontSize: '0.78rem', letterSpacing: '0.18em' }}
-          className="uppercase opacity-70 hover:opacity-100 transition-opacity"
+          className="font-mono text-[0.78rem] uppercase tracking-[0.18em] opacity-70 hover:opacity-100 transition-opacity text-[hsl(var(--text-primary))]"
         >
-          ← anicca
+          &larr; anicca
         </Link>
-        <div
-          style={{
-            fontFamily: 'var(--font-display)',
-            fontWeight: 600,
-            fontSize: '1.5rem',
-            letterSpacing: '0.02em',
-          }}
-        >
+        <span className="font-display font-semibold text-2xl tracking-tight text-[hsl(var(--text-primary))]">
           Anicca Cafe
-        </div>
-        <span
-          style={{
-            fontFamily: 'var(--font-mono)',
-            fontSize: '0.7rem',
-            letterSpacing: '0.18em',
-            color: 'var(--dim)',
-          }}
-          className="uppercase hidden md:block"
-        >
-          {live ? 'live · tokyo' : `T-${days ?? '–'}d`}
+        </span>
+        <span className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-[hsl(var(--text-secondary))] hidden md:block">
+          {live ? 'live · tokyo' : `T-${days ?? '--'}d`}
         </span>
       </header>
 
-      <section className="px-6 py-16 md:px-12 md:py-28">
-        <div className="mx-auto grid max-w-6xl gap-12 md:grid-cols-2 md:items-center md:gap-16">
-          <div className="anicca-anim-1">
-            <p
-              style={{
-                fontFamily: 'var(--font-mono)',
-                fontSize: '0.78rem',
-                letterSpacing: '0.22em',
-                color: 'var(--mango)',
-              }}
-              className="uppercase mb-6"
-            >
-              {live ? '— now ordering · tokyo' : '— launching june 1, 2026'}
+      {/* ── HERO ── SplitHero: left text / right mango bottle §4.3 */}
+      <SplitHero
+        eyebrow={live ? 'now ordering · tokyo' : 'launching june 1, 2026'}
+        headline={
+          <>
+            One drink.<br />
+            One fruit.<br />
+            <em className="italic text-[hsl(var(--gold))]">One reset.</em>
+          </>
+        }
+        subtext="Cold-pressed Mexican mango. 350 ml. Made fresh in a Shinjuku ghost kitchen, delivered by Uber Eats anywhere in Tokyo."
+        primary={
+          live ? (
+            <CTA href={UBER_EATS_URL}>Order on Uber Eats &rarr;</CTA>
+          ) : (
+            <CTA href="#waitlist">Join the waitlist &rarr;</CTA>
+          )
+        }
+        secondary={
+          <span className="font-mono text-sm text-[hsl(var(--text-secondary))]">
+            ¥1,500 / 350 ml
+          </span>
+        }
+        asset={<MangoBottle />}
+      />
+
+      {/* ── MANIFESTO ── */}
+      <Section className="border-t border-[hsl(var(--border))] bg-[hsl(var(--background-alt))]">
+        <Reveal>
+          <div className="mx-auto max-w-3xl text-center">
+            <p className="font-mono text-[0.78rem] uppercase tracking-[0.22em] text-[hsl(var(--gold))]">
+              anicca · 諸行無常 · impermanence
             </p>
-            <h1
-              style={{
-                fontFamily: 'var(--font-display)',
-                fontWeight: 500,
-                fontSize: 'clamp(3.5rem, 8vw, 6.75rem)',
-                lineHeight: 0.95,
-                letterSpacing: '-0.02em',
-              }}
-            >
-              One drink.
-              <br />
-              One fruit.
-              <br />
-              <em style={{ fontStyle: 'italic', color: 'var(--mango)' }}>One reset.</em>
-            </h1>
-            <p className="mt-8 max-w-md text-lg leading-relaxed" style={{ color: 'var(--dim)' }}>
-              Cold-pressed Mexican mango. 350 ml. Made fresh in a Shinjuku ghost kitchen, delivered
-              by Uber Eats anywhere in Tokyo.
+            <h2 className="mt-6 font-display text-[clamp(2.5rem,6vw,4.5rem)] font-normal leading-[1.1] tracking-tight text-[hsl(var(--text-primary))]">
+              Most cafes try to do everything.<br />
+              <em className="italic text-[hsl(var(--gold))]">They die in two years.</em>
+            </h2>
+            <p className="mt-8 mx-auto max-w-2xl text-lg leading-relaxed text-[hsl(var(--text-secondary))]">
+              Anicca Cafe makes one thing. Mango juice. Cold-pressed in the morning, delivered before
+              lunch, gone by 3 pm. It costs ¥800 to make and sells for ¥1,500. The kitchen is rented
+              by the hour. The supply chain is a Tokyo fruit market and a Vitamix.
             </p>
-
-            <div className="mt-10 flex flex-wrap items-center gap-4">
-              {live ? (
-                <a
-                  href={UBER_EATS_URL}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-block rounded-full px-9 py-4 text-base font-medium transition-all hover:scale-[1.02]"
-                  style={{
-                    background: 'var(--ink)',
-                    color: 'var(--cream)',
-                    fontFamily: 'var(--font-body)',
-                    letterSpacing: '0.04em',
-                  }}
-                >
-                  Order on Uber Eats →
-                </a>
-              ) : (
-                <a
-                  href="#waitlist"
-                  className="inline-block rounded-full px-9 py-4 text-base font-medium transition-all hover:scale-[1.02]"
-                  style={{
-                    background: 'var(--ink)',
-                    color: 'var(--cream)',
-                    fontFamily: 'var(--font-body)',
-                    letterSpacing: '0.04em',
-                  }}
-                >
-                  Join the waitlist →
-                </a>
-              )}
-              <span
-                style={{
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: '0.85rem',
-                  color: 'var(--dim)',
-                }}
-              >
-                ¥1,500 / 350 ml
-              </span>
-            </div>
+            <p className="mt-6 mx-auto max-w-2xl text-lg leading-relaxed font-medium text-[hsl(var(--gold))]">
+              Built to be small. Built to be sharp. Built to disappear.
+            </p>
           </div>
+        </Reveal>
+      </Section>
 
-          <div className="anicca-anim-2 flex justify-center">
-            <div
-              className="anicca-bottle relative aspect-[3/4] w-full max-w-[360px] overflow-hidden rounded-3xl"
-              style={{
-                background:
-                  'radial-gradient(circle at 30% 30%, #E89A3C 0%, #C97A1F 50%, #14100E 100%)',
-                boxShadow: '0 30px 80px -30px rgba(20,16,14,0.5)',
-              }}
-            >
-              <div
-                className="absolute inset-0 flex flex-col items-center justify-center"
-                style={{ color: 'var(--cream)' }}
-              >
-                <div
-                  style={{
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: '0.7rem',
-                    letterSpacing: '0.32em',
-                  }}
-                  className="uppercase opacity-70"
-                >
-                  · 350 ml ·
-                </div>
-                <div
-                  style={{
-                    fontFamily: 'var(--font-display)',
-                    fontWeight: 500,
-                    fontSize: '3.25rem',
-                    lineHeight: 1,
-                    letterSpacing: '-0.02em',
-                  }}
-                  className="mt-4 italic"
-                >
-                  mango
-                </div>
-                <div
-                  style={{
-                    fontFamily: 'var(--font-display)',
-                    fontWeight: 500,
-                    fontSize: '3.25rem',
-                    lineHeight: 1,
-                    letterSpacing: '-0.02em',
-                  }}
-                >
-                  reset.
-                </div>
-                <div
-                  style={{
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: '0.65rem',
-                    letterSpacing: '0.32em',
-                  }}
-                  className="mt-6 uppercase opacity-70"
-                >
-                  anicca · tokyo
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="px-6 py-20 md:px-12 md:py-32" style={{ background: 'var(--ink)' }}>
-        <div className="mx-auto max-w-3xl text-center" style={{ color: 'var(--cream)' }}>
-          <p
-            style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: '0.78rem',
-              letterSpacing: '0.22em',
-              color: 'var(--mango)',
-            }}
-            className="uppercase"
-          >
-            anicca · 諸行無常 · impermanence
+      {/* ── INGREDIENTS ── */}
+      <Section>
+        <Reveal>
+          <p className="font-mono text-[0.78rem] uppercase tracking-[0.22em] text-[hsl(var(--text-secondary))]">
+            ingredients
           </p>
-          <h2
-            style={{
-              fontFamily: 'var(--font-display)',
-              fontWeight: 400,
-              fontSize: 'clamp(2.5rem, 6vw, 4.5rem)',
-              lineHeight: 1.1,
-              letterSpacing: '-0.01em',
-            }}
-            className="mt-6"
-          >
-            Most cafes try to do everything.
-            <br />
-            <em style={{ fontStyle: 'italic', color: 'var(--mango)' }}>They die in two years.</em>
-          </h2>
-          <p
-            className="mt-8 mx-auto max-w-2xl text-lg leading-relaxed opacity-80"
-            style={{ color: 'var(--cream)' }}
-          >
-            Anicca Cafe makes one thing. Mango juice. Cold-pressed in the morning, delivered before
-            lunch, gone by 3 pm. It costs ¥800 to make and sells for ¥1,500. The kitchen is rented
-            by the hour. The supply chain is a Tokyo fruit market and a Vitamix.
-          </p>
-          <p className="mt-6 mx-auto max-w-2xl text-lg leading-relaxed" style={{ color: 'var(--mango)' }}>
-            Built to be small. Built to be sharp. Built to disappear.
-          </p>
-        </div>
-      </section>
-
-      <section className="px-6 py-20 md:px-12 md:py-28">
-        <div className="mx-auto max-w-5xl">
-          <p
-            style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: '0.78rem',
-              letterSpacing: '0.22em',
-              color: 'var(--dim)',
-            }}
-            className="uppercase"
-          >
-            ── ingredients ──
-          </p>
-          <h2
-            style={{
-              fontFamily: 'var(--font-display)',
-              fontWeight: 500,
-              fontSize: 'clamp(2.25rem, 5vw, 3.75rem)',
-              letterSpacing: '-0.01em',
-            }}
-            className="mt-4"
-          >
+          <h2 className="mt-4 font-display text-[clamp(2.25rem,5vw,3.75rem)] font-medium tracking-tight text-[hsl(var(--text-primary))]">
             Three things.
-            <em style={{ fontStyle: 'italic', color: 'var(--mango)' }}> Nothing else.</em>
+            <em className="italic text-[hsl(var(--gold))]"> Nothing else.</em>
           </h2>
+        </Reveal>
 
-          <div className="mt-16 grid gap-12 md:grid-cols-3">
-            {[
-              {
-                num: '01',
-                name: 'Mexican mango',
-                detail: 'Tommy Atkins variety. Sourced fresh from Toyosu Market each morning.',
-              },
-              {
-                num: '02',
-                name: 'Tokyo water',
-                detail: 'Filtered municipal. The same water everyone in this city drinks.',
-              },
-              {
-                num: '03',
-                name: 'Ice',
-                detail: 'For 5°C cold pour. Served in 350 ml black PET bottles.',
-              },
-            ].map((it) => (
-              <div key={it.num} style={{ borderTop: '1px solid #14100E' }} className="pt-6">
-                <p
-                  style={{
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: '0.85rem',
-                    letterSpacing: '0.16em',
-                    color: 'var(--mango)',
-                  }}
-                  className="uppercase"
-                >
+        <div className="mt-16 grid gap-12 md:grid-cols-3">
+          {INGREDIENTS.map((it, i) => (
+            <Reveal key={it.num} delay={i * 0.08}>
+              <div className="border-t border-[hsl(var(--border))] pt-6">
+                <p className="font-mono text-sm uppercase tracking-[0.16em] text-[hsl(var(--gold))]">
                   {it.num}
                 </p>
-                <h3
-                  style={{
-                    fontFamily: 'var(--font-display)',
-                    fontWeight: 500,
-                    fontSize: '2rem',
-                    letterSpacing: '-0.01em',
-                  }}
-                  className="mt-2"
-                >
+                <h3 className="mt-2 font-display text-[2rem] font-medium tracking-tight text-[hsl(var(--text-primary))]">
                   {it.name}
                 </h3>
-                <p className="mt-3 text-sm leading-relaxed" style={{ color: 'var(--dim)' }}>
+                <p className="mt-3 text-sm leading-relaxed text-[hsl(var(--text-secondary))]">
                   {it.detail}
                 </p>
               </div>
-            ))}
-          </div>
-
-          <p className="mt-16 max-w-2xl text-base leading-relaxed" style={{ color: 'var(--dim)' }}>
-            No sugar. No syrup. No preservatives. No additives. The 28 major Japanese allergens are
-            absent except <em style={{ color: 'var(--ink)' }}>mango (fruit allergy)</em>.
-          </p>
+            </Reveal>
+          ))}
         </div>
-      </section>
 
-      <section
-        className="px-6 py-20 md:px-12 md:py-28"
-        style={{ background: 'var(--cream)', borderTop: '1px solid #14100E' }}
-      >
-        <div className="mx-auto max-w-5xl">
-          <p
-            style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: '0.78rem',
-              letterSpacing: '0.22em',
-              color: 'var(--dim)',
-            }}
-            className="uppercase"
-          >
-            ── how to get it ──
+        <Reveal delay={0.25}>
+          <p className="mt-16 max-w-2xl text-base leading-relaxed text-[hsl(var(--text-secondary))]">
+            No sugar. No syrup. No preservatives. No additives. The 28 major Japanese allergens are
+            absent except <em className="text-[hsl(var(--text-primary))]">mango (fruit allergy)</em>.
           </p>
-          <h2
-            style={{
-              fontFamily: 'var(--font-display)',
-              fontWeight: 500,
-              fontSize: 'clamp(2.25rem, 5vw, 3.75rem)',
-              letterSpacing: '-0.01em',
-            }}
-            className="mt-4"
-          >
-            Three minutes. <em style={{ fontStyle: 'italic', color: 'var(--mango)' }}>Tokyo only.</em>
-          </h2>
+        </Reveal>
+      </Section>
 
-          <ol className="mt-16 grid gap-8 md:grid-cols-3">
-            {[
-              {
-                num: '①',
-                title: 'Open Uber Eats Tokyo',
-                detail: 'Search "Anicca Cafe" in the app. Saturday + Sunday, 11:00–15:00 JST.',
-              },
-              {
-                num: '②',
-                title: 'Order ¥1,500',
-                detail: 'One bottle. One option. No upsells. Pay with whatever Uber Eats accepts.',
-              },
-              {
-                num: '③',
-                title: 'Delivered in 30 min',
-                detail: 'Made fresh after you order. Sealed in 350 ml black PET, ice cold to your door.',
-              },
-            ].map((s) => (
-              <li
-                key={s.num}
-                className="rounded-3xl p-8"
-                style={{ background: 'var(--cream)', border: '1px solid #14100E' }}
-              >
-                <p
-                  style={{
-                    fontFamily: 'var(--font-display)',
-                    fontWeight: 600,
-                    fontSize: '3rem',
-                    color: 'var(--mango)',
-                    lineHeight: 1,
-                  }}
-                >
+      {/* ── HOW TO ORDER ── */}
+      <Section className="border-t border-[hsl(var(--border))] bg-[hsl(var(--background-alt))]">
+        <Reveal>
+          <p className="font-mono text-[0.78rem] uppercase tracking-[0.22em] text-[hsl(var(--text-secondary))]">
+            how to get it
+          </p>
+          <h2 className="mt-4 font-display text-[clamp(2.25rem,5vw,3.75rem)] font-medium tracking-tight text-[hsl(var(--text-primary))]">
+            Three minutes.{' '}
+            <em className="italic text-[hsl(var(--gold))]">Tokyo only.</em>
+          </h2>
+        </Reveal>
+
+        <ol className="mt-16 grid gap-8 md:grid-cols-3">
+          {HOW_TO_ORDER.map((s, i) => (
+            <Reveal key={s.num} delay={i * 0.08}>
+              <li className="rounded-card border border-[hsl(var(--border))] bg-[hsl(var(--background))] p-8">
+                <p className="font-display text-[3rem] font-semibold leading-none text-[hsl(var(--gold))]">
                   {s.num}
                 </p>
-                <h3
-                  style={{
-                    fontFamily: 'var(--font-display)',
-                    fontWeight: 500,
-                    fontSize: '1.4rem',
-                    letterSpacing: '-0.01em',
-                  }}
-                  className="mt-4"
-                >
+                <h3 className="mt-4 font-display text-[1.4rem] font-medium tracking-tight text-[hsl(var(--text-primary))]">
                   {s.title}
                 </h3>
-                <p className="mt-3 text-sm leading-relaxed" style={{ color: 'var(--dim)' }}>
+                <p className="mt-3 text-sm leading-relaxed text-[hsl(var(--text-secondary))]">
                   {s.detail}
                 </p>
               </li>
-            ))}
-          </ol>
-        </div>
-      </section>
+            </Reveal>
+          ))}
+        </ol>
+      </Section>
 
-      <section
-        id="waitlist"
-        className="px-6 py-24 md:px-12 md:py-36"
-        style={{ background: 'var(--ink)', color: 'var(--cream)' }}
-      >
+      {/* ── WAITLIST / ORDER ── */}
+      <Section id="waitlist" className="border-t border-[hsl(var(--border))]">
         <div className="mx-auto max-w-3xl text-center">
           {!live && (
-            <>
-              <p
-                style={{
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: '0.78rem',
-                  letterSpacing: '0.22em',
-                  color: 'var(--mango)',
-                }}
-                className="uppercase"
-              >
-                — countdown
+            <Reveal>
+              <p className="font-mono text-[0.78rem] uppercase tracking-[0.22em] text-[hsl(var(--gold))]">
+                countdown
               </p>
               <p
-                style={{
-                  fontFamily: 'var(--font-display)',
-                  fontWeight: 400,
-                  fontSize: 'clamp(6rem, 14vw, 12rem)',
-                  lineHeight: 1,
-                  letterSpacing: '-0.04em',
-                  color: 'var(--mango)',
-                }}
-                className="mt-4"
+                className="mt-4 font-display leading-none tracking-[-0.04em] text-[hsl(var(--gold))]"
+                style={{ fontSize: 'clamp(6rem, 14vw, 12rem)' }}
               >
-                {days ?? '—'}
-                <span
-                  style={{
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: '0.18em',
-                    letterSpacing: '0.18em',
-                    color: 'var(--cream)',
-                  }}
-                  className="ml-3 align-middle uppercase"
-                >
+                {days ?? '--'}
+                <span className="ml-3 align-middle font-mono text-[0.18em] uppercase tracking-[0.18em] text-[hsl(var(--text-primary))]">
                   days
                 </span>
               </p>
-              <p
-                className="mt-2 opacity-60"
-                style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem', letterSpacing: '0.18em' }}
-              >
+              <p className="mt-2 font-mono text-sm tracking-[0.18em] text-[hsl(var(--text-secondary))] opacity-60">
                 until first pour · 2026.06.01 · 11:00 JST
               </p>
-            </>
+            </Reveal>
           )}
 
-          <h2
-            style={{
-              fontFamily: 'var(--font-display)',
-              fontWeight: 400,
-              fontSize: 'clamp(2.25rem, 5vw, 3.5rem)',
-              letterSpacing: '-0.01em',
-            }}
-            className="mt-12"
-          >
-            {live ? (
-              'Order now'
-            ) : (
-              <>
-                Get the first pour.{' '}
-                <em style={{ fontStyle: 'italic', color: 'var(--mango)' }}>Email below.</em>
-              </>
-            )}
-          </h2>
+          <Reveal delay={0.05}>
+            <h2
+              className="mt-12 font-display font-normal tracking-tight text-[hsl(var(--text-primary))]"
+              style={{ fontSize: 'clamp(2.25rem, 5vw, 3.5rem)' }}
+            >
+              {live ? (
+                'Order now'
+              ) : (
+                <>
+                  Get the first pour.{' '}
+                  <em className="italic text-[hsl(var(--gold))]">Email below.</em>
+                </>
+              )}
+            </h2>
+          </Reveal>
 
           {live ? (
-            <div className="mt-10">
-              <a
-                href={UBER_EATS_URL}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-block rounded-full px-12 py-5 text-base font-medium transition-all hover:scale-[1.02]"
-                style={{
-                  background: 'var(--mango)',
-                  color: 'var(--ink)',
-                  fontFamily: 'var(--font-body)',
-                  letterSpacing: '0.04em',
-                }}
-              >
-                Open Uber Eats Tokyo →
-              </a>
-            </div>
+            <Reveal delay={0.1}>
+              <div className="mt-10">
+                <CTA href={UBER_EATS_URL}>Open Uber Eats Tokyo &rarr;</CTA>
+              </div>
+            </Reveal>
           ) : state === 'sent' ? (
-            <p className="mt-10 text-lg" style={{ color: 'var(--mango)' }}>
-              Thanks. We'll email <strong>{email}</strong> on June 1.
+            <p className="mt-10 text-lg text-[hsl(var(--gold))]">
+              Thanks. We will email <strong>{email}</strong> on June 1.
             </p>
           ) : (
-            <form onSubmit={handleWaitlist} className="mt-10 mx-auto flex max-w-md flex-col gap-3 sm:flex-row">
-              <input
-                type="email"
-                required
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="flex-1 rounded-full px-6 py-4 text-base outline-none"
-                style={{
-                  background: 'transparent',
-                  color: 'var(--cream)',
-                  border: '1px solid #C4A77A',
-                  fontFamily: 'var(--font-body)',
-                }}
-              />
-              <button
-                type="submit"
-                disabled={state === 'sending'}
-                className="rounded-full px-8 py-4 text-base font-medium transition-opacity hover:opacity-90 disabled:opacity-50"
-                style={{
-                  background: 'var(--mango)',
-                  color: 'var(--ink)',
-                  fontFamily: 'var(--font-body)',
-                  letterSpacing: '0.04em',
-                }}
+            <Reveal delay={0.1}>
+              <form
+                onSubmit={handleWaitlist}
+                className="mt-10 mx-auto flex max-w-md flex-col gap-3 sm:flex-row"
               >
-                {state === 'sending' ? 'Sending…' : 'Notify me'}
-              </button>
-            </form>
+                <input
+                  type="email"
+                  required
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="flex-1 rounded-input px-6 py-4 text-base outline-none bg-transparent text-[hsl(var(--text-primary))] border border-[hsl(var(--border))] focus:border-[hsl(var(--gold))] transition-colors font-body"
+                />
+                <button
+                  type="submit"
+                  disabled={state === 'sending'}
+                  className="rounded-pill px-8 py-4 text-base font-medium bg-[hsl(var(--gold))] text-[#18181b] hover:brightness-95 transition-all active:scale-[0.98] disabled:opacity-50"
+                >
+                  {state === 'sending' ? 'Sending...' : 'Notify me'}
+                </button>
+              </form>
+            </Reveal>
           )}
+
           {state === 'error' && (
-            <p className="mt-3 text-xs" style={{ color: '#E89A3C' }}>
+            <p className="mt-3 text-xs text-[hsl(var(--gold))]">
               Something went wrong. Try again or DM @aniccaai.
             </p>
           )}
-          <p
-            className="mt-6 text-xs opacity-50"
-            style={{ fontFamily: 'var(--font-mono)', letterSpacing: '0.18em' }}
-          >
+          <p className="mt-6 font-mono text-xs tracking-[0.18em] text-[hsl(var(--text-secondary))] opacity-50">
             no spam · one email on launch day · unsubscribe anytime
           </p>
         </div>
-      </section>
+      </Section>
 
-      <section className="px-6 py-20 md:px-12 md:py-28">
-        <div className="mx-auto grid max-w-6xl gap-12 md:grid-cols-2 md:gap-20">
-          <div>
-            <p
-              style={{
-                fontFamily: 'var(--font-mono)',
-                fontSize: '0.78rem',
-                letterSpacing: '0.22em',
-                color: 'var(--dim)',
-              }}
-              className="uppercase"
-            >
-              ── why we built this ──
+      {/* ── WHY WE BUILT THIS ── */}
+      <Section className="border-t border-[hsl(var(--border))] bg-[hsl(var(--background-alt))]">
+        <div className="mx-auto grid max-w-[1400px] gap-12 md:grid-cols-2 md:gap-20">
+          <Reveal>
+            <p className="font-mono text-[0.78rem] uppercase tracking-[0.22em] text-[hsl(var(--text-secondary))]">
+              why we built this
             </p>
             <h2
-              style={{
-                fontFamily: 'var(--font-display)',
-                fontWeight: 500,
-                fontSize: 'clamp(2.25rem, 5vw, 3.5rem)',
-                letterSpacing: '-0.01em',
-                lineHeight: 1.1,
-              }}
-              className="mt-6"
+              className="mt-6 font-display font-medium tracking-tight leading-[1.1] text-[hsl(var(--text-primary))]"
+              style={{ fontSize: 'clamp(2.25rem, 5vw, 3.5rem)' }}
             >
-              An AI that runs a cafe so a human doesn't have to.
+              An AI that runs a cafe so a human does not have to.
             </h2>
-          </div>
-          <div className="space-y-6 text-lg leading-relaxed" style={{ color: 'var(--dim)' }}>
-            <p>
-              Anicca Cafe is operated by an autonomous Buddhist AI agent. It picks the kitchen,
-              orders the mangoes, files the tax forms, runs the marketing, and wires the profit.
-            </p>
-            <p>
-              <strong style={{ color: 'var(--ink)' }}>10% of every cup's profit</strong> is
-              automatically redistributed to ten humans on a basic income.
-            </p>
-            <p>
-              <strong style={{ color: 'var(--ink)' }}>1% of revenue</strong> is automatically donated
-              to one charity, every month, transparently.
-            </p>
-            <p>
-              Anicca is one of the{' '}
-              <Link
-                href="/fellows"
-                style={{ color: 'var(--mango)', textDecoration: 'underline', textUnderlineOffset: '4px' }}
-              >
-                SAOs — Safe Autonomous Organizations
-              </Link>
-              . The category is small. The names matter.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <section className="px-6 py-20 md:px-12 md:py-28" style={{ borderTop: '1px solid #14100E' }}>
-        <div className="mx-auto max-w-3xl">
-          <p
-            style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: '0.78rem',
-              letterSpacing: '0.22em',
-              color: 'var(--dim)',
-            }}
-            className="uppercase"
-          >
-            ── faq ──
-          </p>
-          <h2
-            style={{
-              fontFamily: 'var(--font-display)',
-              fontWeight: 500,
-              fontSize: 'clamp(2.25rem, 5vw, 3rem)',
-              letterSpacing: '-0.01em',
-            }}
-            className="mt-4"
-          >
-            Things you might want to know.
-          </h2>
-
-          <div className="mt-12 divide-y" style={{ borderColor: '#14100E' }}>
-            {[
-              {
-                q: 'Why only one drink?',
-                a: 'Because single-product cafes are profitable in week one. Multi-menu cafes die in two years. Chasing every taste is the fastest way to die.',
-              },
-              {
-                q: 'Why Tokyo only?',
-                a: 'Because we deliver the same morning we make it, sealed cold, by Uber Eats. Anywhere else we cannot guarantee freshness. We may add Osaka and Kyoto later.',
-              },
-              {
-                q: 'Saturday and Sunday only?',
-                a: 'For now, yes. Single-operator weekend pop-up. If demand exceeds capacity, we extend to Friday and Monday.',
-              },
-              {
-                q: 'What if I want sugar / syrup / vanilla?',
-                a: 'You don\'t. Mango is sweet. Tasting the actual fruit is the whole product.',
-              },
-              {
-                q: 'How does the AI run a real cafe?',
-                a: 'It uses real APIs (Uber Eats Merchant, Stripe, Resend, Supabase, Postiz, Toyosu) and a physical Vitamix. The human operator does what AI cannot — kitchen viewing, food safety license, occasionally tasting the result.',
-              },
-              {
-                q: 'Where does the profit go?',
-                a: '10% to ten humans on basic income (transparent ledger). 1% to one charity every month (transparent ledger). The rest into the cafe and the next thing Anicca builds.',
-              },
-            ].map((f) => (
-              <details key={f.q} className="group py-6">
-                <summary
-                  className="flex cursor-pointer items-center justify-between gap-6 text-lg"
-                  style={{
-                    fontFamily: 'var(--font-display)',
-                    fontWeight: 500,
-                    fontSize: '1.4rem',
-                    letterSpacing: '-0.01em',
-                  }}
+          </Reveal>
+          <Reveal delay={0.08}>
+            <div className="space-y-6 text-lg leading-relaxed text-[hsl(var(--text-secondary))]">
+              <p>
+                Anicca Cafe is operated by an autonomous Buddhist AI agent. It picks the kitchen,
+                orders the mangoes, files the tax forms, runs the marketing, and wires the profit.
+              </p>
+              <p>
+                <strong className="text-[hsl(var(--text-primary))]">10% of every cup&apos;s profit</strong> is
+                automatically redistributed to ten humans on a basic income.
+              </p>
+              <p>
+                <strong className="text-[hsl(var(--text-primary))]">1% of revenue</strong> is automatically donated
+                to one charity, every month, transparently.
+              </p>
+              <p>
+                Anicca is one of the{' '}
+                <Link
+                  href="/fellows"
+                  className="text-[hsl(var(--gold))] underline underline-offset-4"
                 >
-                  <span>{f.q}</span>
-                  <span
-                    className="transition-transform group-open:rotate-45"
-                    style={{ color: 'var(--mango)', fontSize: '1.5rem' }}
+                  SAOs - Safe Autonomous Organizations
+                </Link>
+                . The category is small. The names matter.
+              </p>
+            </div>
+          </Reveal>
+        </div>
+      </Section>
+
+      {/* ── FAQ ── */}
+      <Section className="border-t border-[hsl(var(--border))]">
+        <div className="mx-auto max-w-3xl">
+          <Reveal>
+            <p className="font-mono text-[0.78rem] uppercase tracking-[0.22em] text-[hsl(var(--text-secondary))]">
+              faq
+            </p>
+            <h2
+              className="mt-4 font-display font-medium tracking-tight text-[hsl(var(--text-primary))]"
+              style={{ fontSize: 'clamp(2.25rem, 5vw, 3rem)' }}
+            >
+              Things you might want to know.
+            </h2>
+          </Reveal>
+
+          <div className="mt-12 divide-y divide-[hsl(var(--border))]">
+            {FAQ_ITEMS.map((f, i) => (
+              <Reveal key={f.q} delay={i * 0.04}>
+                <details className="group py-6">
+                  <summary
+                    className="flex cursor-pointer items-center justify-between gap-6 font-display text-[1.4rem] font-medium tracking-tight text-[hsl(var(--text-primary))] list-none"
                   >
-                    +
-                  </span>
-                </summary>
-                <p className="mt-4 max-w-2xl text-base leading-relaxed" style={{ color: 'var(--dim)' }}>
-                  {f.a}
-                </p>
-              </details>
+                    <span>{f.q}</span>
+                    <span className="transition-transform group-open:rotate-45 text-[hsl(var(--gold))] text-[1.5rem] flex-shrink-0">
+                      +
+                    </span>
+                  </summary>
+                  <p className="mt-4 max-w-2xl text-base leading-relaxed text-[hsl(var(--text-secondary))]">
+                    {f.a}
+                  </p>
+                </details>
+              </Reveal>
             ))}
           </div>
         </div>
-      </section>
+      </Section>
 
-      <footer
-        className="px-6 py-16 md:px-12 md:py-20"
-        style={{ background: 'var(--ink)', color: 'var(--cream)' }}
-      >
-        <div className="mx-auto max-w-6xl">
+      {/* ── FOOTER ── */}
+      <footer className="border-t border-[hsl(var(--border))] bg-[hsl(var(--background-alt))] px-6 py-16 md:px-12 md:py-20">
+        <div className="mx-auto max-w-[1400px]">
           <div className="grid gap-8 md:grid-cols-3">
             <div>
-              <p
-                style={{
-                  fontFamily: 'var(--font-display)',
-                  fontWeight: 500,
-                  fontSize: '1.5rem',
-                  letterSpacing: '0.02em',
-                }}
-              >
+              <p className="font-display font-medium text-2xl tracking-tight text-[hsl(var(--text-primary))]">
                 anicca cafe
               </p>
-              <p
-                className="mt-2 opacity-60"
-                style={{
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: '0.78rem',
-                  letterSpacing: '0.18em',
-                }}
-              >
+              <p className="mt-2 font-mono text-[0.78rem] tracking-[0.18em] text-[hsl(var(--text-secondary))] opacity-60">
                 tokyo · uber eats · 諸行無常
               </p>
             </div>
-            <div className="flex flex-wrap gap-6 md:gap-8 text-sm opacity-80">
-              <Link href="/en" style={{ textDecoration: 'underline', textUnderlineOffset: '4px' }}>
+            <div className="flex flex-wrap gap-6 md:gap-8 text-sm text-[hsl(var(--text-secondary))] opacity-80">
+              <Link href="/en" className="underline underline-offset-4 hover:text-[hsl(var(--text-primary))] transition-colors">
                 anicca.ai
               </Link>
-              <Link href="/donation" style={{ textDecoration: 'underline', textUnderlineOffset: '4px' }}>
+              <Link href="/donation" className="underline underline-offset-4 hover:text-[hsl(var(--text-primary))] transition-colors">
                 charity ledger
               </Link>
-              <Link href="/income" style={{ textDecoration: 'underline', textUnderlineOffset: '4px' }}>
+              <Link href="/income" className="underline underline-offset-4 hover:text-[hsl(var(--text-primary))] transition-colors">
                 basic income
               </Link>
-              <Link
-                href="/fellows"
-                style={{ textDecoration: 'underline', textUnderlineOffset: '4px' }}
-              >
+              <Link href="/fellows" className="underline underline-offset-4 hover:text-[hsl(var(--text-primary))] transition-colors">
                 fellows
               </Link>
             </div>
-            <div
-              className="text-xs opacity-50"
-              style={{ fontFamily: 'var(--font-mono)', letterSpacing: '0.16em' }}
-            >
-              © 2026 anicca · tokyo · made by an autonomous AI in tokyo
+            <div className="font-mono text-xs tracking-[0.16em] text-[hsl(var(--text-secondary))] opacity-50">
+              &copy; 2026 anicca · tokyo · made by an autonomous AI in tokyo
             </div>
           </div>
         </div>

@@ -9,7 +9,7 @@ export default function ThankfulPrivacyEN() {
       </p>
 
       <h2 className="mt-10 text-xl font-semibold text-foreground">1. Business Information</h2>
-      <p className="mt-3 text-muted-foreground">Anicca AI / contact@aniccaai.com</p>
+      <p className="mt-3 text-muted-foreground">Daisuke Narita (Individual Business Owner) / keiodaisuke@gmail.com</p>
 
       <h2 className="mt-10 text-xl font-semibold text-foreground">2. Scope of Application</h2>
       <p className="mt-3 text-muted-foreground">
@@ -79,7 +79,7 @@ export default function ThankfulPrivacyEN() {
 
       <h2 className="mt-10 text-xl font-semibold text-foreground">11. User Rights</h2>
       <p className="mt-3 text-muted-foreground">
-        Users can request disclosure, correction, suspension of use, or deletion of their information. Please contact contact@aniccaai.com.
+        Users can request disclosure, correction, suspension of use, or deletion of their information. Please contact keiodaisuke@gmail.com.
       </p>
 
       <h2 className="mt-10 text-xl font-semibold text-foreground">12. Cookies</h2>
@@ -95,7 +95,7 @@ export default function ThankfulPrivacyEN() {
       <p className="mt-3 text-muted-foreground">When revisions are made, we will announce them on this page, and important changes will be notified through in-app notifications, etc.</p>
 
       <h2 className="mt-10 text-xl font-semibold text-foreground">16. Contact</h2>
-      <p className="mt-3 text-muted-foreground">Please contact contact@aniccaai.com.</p>
+      <p className="mt-3 text-muted-foreground">Please contact keiodaisuke@gmail.com.</p>
 
       <p className="mt-12 text-right text-sm text-muted-foreground">Last Updated: February 24, 2026</p>
     </main>

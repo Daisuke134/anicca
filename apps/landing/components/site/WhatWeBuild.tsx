@@ -21,7 +21,7 @@ export default function WhatWeBuild({ locale }: WhatWeBuildProps) {
             key={v.title}
             className="rounded-2xl border border-border bg-background p-6"
           >
-            <span className="inline-block rounded-full border border-gold/40 bg-gold/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-foreground">
+            <span className="inline-block rounded-pill border border-gold/40 bg-gold/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-foreground">
               {v.tag}
             </span>
             <h3 className="mt-4 text-xl font-bold text-foreground">{v.title}</h3>

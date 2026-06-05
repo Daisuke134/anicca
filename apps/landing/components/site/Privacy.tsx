@@ -16,7 +16,7 @@ export default function Privacy() {
         <div className="mt-10 grid gap-6 md:grid-cols-2">
           {items.map((i) => (
             <div key={i.title} className="flex gap-4">
-              <div className="mt-1 inline-flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold">✓</div>
+              <div className="mt-1 inline-flex h-8 w-8 items-center justify-center rounded-pill bg-primary text-primary-foreground font-bold">✓</div>
               <div>
                 <h3 className="font-semibold text-foreground">{i.title}</h3>
                 <p className="text-muted-foreground">{i.text}</p>

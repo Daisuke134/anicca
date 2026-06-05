@@ -1,13 +1,29 @@
 'use client';
 
+// TODO(§11.F-followup): migrate hardcoded labels into translations.empireDashboard.*
+// during the i18n consolidation sweep. Inline ternaries kept here to avoid
+// touching i18n.ts cross-section during the per-page redesign.
+
 import { useEffect, useRef, useState } from 'react';
+import { useReducedMotion } from 'framer-motion';
 import { translations, type Locale } from '@/lib/i18n';
+import { Section, Reveal } from '@/components/site/taste';
 
 function CountUp({ value, prefix = '', suffix = '', decimals = 0 }: { value: number; prefix?: string; suffix?: string; decimals?: number }) {
+  const reduce = useReducedMotion();
   const [display, setDisplay] = useState(value);
-  const prev = useRef(0);
+  const prev = useRef<number | null>(null);
 
   useEffect(() => {
+    if (reduce || prev.current === null) {
+      // First mount: render the real value immediately (ledger trust, §11.F)
+      // OR user prefers reduced motion: skip animation
+      prev.current = value;
+      setDisplay(value);
+      return;
+    }
+    if (prev.current === value) return;
+
     const start = prev.current;
     const delta = value - start;
     const duration = 1200;
@@ -28,9 +44,9 @@ function CountUp({ value, prefix = '', suffix = '', decimals = 0 }: { value: num
     prev.current = value;
 
     return () => cancelAnimationFrame(frame);
-  }, [value]);
+  }, [value, reduce]);
 
-  return <span>{`${prefix}${display.toFixed(decimals)}${suffix}`}</span>;
+  return <span className="font-mono tabular-nums">{`${prefix}${display.toFixed(decimals)}${suffix}`}</span>;
 }
 
 interface DashboardData {
@@ -46,10 +62,17 @@ export default function EmpireDashboard({ locale }: { locale: Locale }) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch('/dashboard.json')
-      .then((r) => (r.ok ? r.json() : Promise.reject('fetch failed')))
-      .then(setData)
-      .catch((e) => setError(String(e)));
+    const ctrl = new AbortController();
+    fetch('/dashboard.json', { signal: ctrl.signal })
+      .then((r) => {
+        if (!r.ok) throw new Error('fetch failed');
+        return r.json();
+      })
+      .then((j: DashboardData) => setData(j))
+      .catch((e: unknown) => {
+        if (e instanceof Error && e.name !== 'AbortError') setError(e.message);
+      });
+    return () => ctrl.abort();
   }, []);
 
   const offline = error || !data;
@@ -58,66 +81,96 @@ export default function EmpireDashboard({ locale }: { locale: Locale }) {
     ? new Date(data.updated_at).toLocaleString(en ? 'en-US' : 'ja-JP', {
         hour: '2-digit', minute: '2-digit', month: 'short', day: 'numeric',
       })
-    : '—';
+    : '--';
 
   return (
-    <section id="empire" className="relative bg-cream px-5 pb-20 pt-8">
-      <div className="mx-auto max-w-6xl">
-        <div className="editorial-rule mb-12" />
-        <div className="grid grid-cols-12 gap-x-6 gap-y-8">
-          <div className="col-span-12 md:col-span-3">
-            <p className="font-mono-ui text-[10px] uppercase tracking-[0.28em] text-mist">
-              II. {en ? 'The Empire' : '帝国'}
-            </p>
-            <h2 className="mt-3 font-display text-[34px] leading-tight text-ink sm:text-[42px]">
-              {en ? (
-                <>Live revenue,<br /><em className="text-mist">no theatre.</em></>
-              ) : (
-                <>ライブの売上、<br /><em className="text-mist">演出なし。</em></>
-              )}
-            </h2>
+    <Section id="empire" className="bg-[hsl(var(--background))]">
+      <Reveal>
+        {/* Section header */}
+        <div className="mb-12">
+          <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-muted-foreground">
+            II. {en ? 'The Empire' : '帝国'}
+          </p>
+          <h2 className="mt-3 font-display text-[34px] leading-tight text-foreground sm:text-[42px]">
+            {en ? (
+              <>Live revenue,<br /><em className="text-muted-foreground">no theatre.</em></>
+            ) : (
+              <>ライブの売上、<br /><em className="text-muted-foreground">演出なし。</em></>
+            )}
+          </h2>
+        </div>
+      </Reveal>
+
+      {/* Featured hero metrics - 3 tiles */}
+      <Reveal delay={0.08}>
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+
+          {/* Hero tile 1: MRR value */}
+          <div className="col-span-1 md:col-span-2 border border-border p-7 sm:p-10">
+            <div className="flex flex-wrap items-baseline justify-between gap-3">
+              <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+                {en ? 'Monthly Recurring Revenue' : '月次経常収益'}
+              </p>
+              <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                {en ? 'Updated' : '更新'} {updated}
+              </p>
+            </div>
+            <div className="mt-3 flex flex-wrap items-end gap-x-6 gap-y-2">
+              <p className="font-display text-[64px] leading-none tracking-tight text-foreground sm:text-[88px]">
+                {data ? <CountUp value={data.mrr.total_usd} prefix="$" decimals={2} /> : '--'}
+              </p>
+              <p className="font-mono text-[14px] text-muted-foreground">
+                / <span className="font-mono tabular-nums">${data?.goals.mrr_target.toLocaleString() ?? '--'}</span>{' '}
+                {en ? 'goal' : '目標'}
+              </p>
+            </div>
           </div>
 
-          <div className="col-span-12 md:col-span-9">
-            <div className="border border-bone bg-card p-7 sm:p-10">
-              <div className="flex flex-wrap items-baseline justify-between gap-3">
-                <p className="font-mono-ui text-[11px] uppercase tracking-[0.2em] text-mist">
-                  {en ? 'Monthly Recurring Revenue' : '月次経常収益'}
-                </p>
-                <p className="font-mono-ui text-[10px] uppercase tracking-[0.18em] text-mist">
-                  {en ? 'Updated' : '更新'} {updated}
-                </p>
-              </div>
-
-              <div className="mt-3 flex flex-wrap items-end gap-x-6 gap-y-2">
-                <p className="font-display text-[64px] leading-none tracking-tight text-ink sm:text-[88px]">
-                  {data ? <CountUp value={data.mrr.total_usd} prefix="$" decimals={2} /> : '—'}
-                </p>
-                <p className="font-mono-ui text-[14px] text-mist">
-                  / ${data?.goals.mrr_target.toLocaleString() ?? '—'} {en ? 'goal' : '目標'}
-                </p>
-              </div>
-
-              <div className="mt-6 h-[3px] w-full overflow-hidden bg-bone">
+          {/* Hero tile 2: progress toward goal */}
+          <div className="col-span-1 border border-border p-7 sm:p-10 flex flex-col justify-between">
+            <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+              {en ? 'Goal Progress' : '達成率'}
+            </p>
+            <div className="mt-6">
+              <p className="font-display text-[56px] leading-none tracking-tight text-foreground sm:text-[72px]">
+                <span className="font-mono tabular-nums">{mrrPct.toFixed(1)}</span>
+                <span className="font-mono text-[28px] text-muted-foreground">%</span>
+              </p>
+              <div className="mt-4 h-[3px] w-full overflow-hidden bg-muted">
                 <div
                   className="h-full bg-gold transition-all"
                   style={{ width: `${Math.max(0, Math.min(100, mrrPct))}%` }}
                 />
               </div>
-              <p className="mt-2 flex items-baseline justify-between font-mono-ui text-[11px] uppercase tracking-[0.18em] text-mist">
-                <span>{mrrPct.toFixed(1)}%</span>
-                <span>{en ? 'by' : '期日'} {data?.goals.mrr_deadline ?? '—'}</span>
-              </p>
-
-              {offline && (
-                <p className="mt-6 border-t border-bone pt-4 text-[14px] text-mist">
-                  {t.dashboardOffline}
-                </p>
-              )}
             </div>
           </div>
+
         </div>
-      </div>
-    </section>
+      </Reveal>
+
+      {/* Grouped chunks - supplemental rows */}
+      <Reveal delay={0.16}>
+        <div className="mt-2 border-t border-border">
+
+          {/* Deadline row */}
+          <div className="flex items-baseline justify-between py-4 border-b border-border">
+            <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+              {en ? 'Deadline' : '期日'}
+            </p>
+            <p className="font-mono tabular-nums text-[14px] text-foreground">
+              {en ? 'by ' : ''}{data?.goals.mrr_deadline ?? '--'}
+            </p>
+          </div>
+
+          {/* Offline notice */}
+          {offline && (
+            <div className="py-4">
+              <p className="text-[14px] text-muted-foreground">{t.dashboardOffline}</p>
+            </div>
+          )}
+
+        </div>
+      </Reveal>
+    </Section>
   );
 }

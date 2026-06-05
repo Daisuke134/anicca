@@ -73,7 +73,7 @@ const COPY: Record<Locale, Copy> = {
     ),
     heroLine2: <em className="not-italic text-gold/90">right now.</em>,
     heroSub:
-      "Anicca is a quiet companion on your phone. When the spiral starts — at 11:47pm, in line at the pharmacy, the second you open Instagram — a single line of kindness arrives. You don't have to open an app. It finds you.",
+      "Anicca is a quiet companion on your phone. When the spiral starts - at 11:47pm, in line at the pharmacy, the second you open Instagram - a single line of kindness arrives. You don't have to open an app. It finds you.",
     ctaPrimary: 'Download on the App Store',
     rating: '4.8',
     ratingMeta: 'App Store · Health & Fitness',
@@ -95,7 +95,7 @@ const COPY: Record<Locale, Copy> = {
       </>
     ),
     storyBody:
-      "The spiral does not wait. It comes at midnight, at red lights, in the bathroom mirror. By the time you remember to open the journaling app, the moment has passed. Anicca was built backwards: the affirmation arrives at the spiral. Not a habit, not a streak — a knock on the door.",
+      "The spiral does not wait. It comes at midnight, at red lights, in the bathroom mirror. By the time you remember to open the journaling app, the moment has passed. Anicca was built backwards: the affirmation arrives at the spiral. Not a habit, not a streak - a knock on the door.",
 
     notesEyebrow: 'II. A day with Anicca',
     notesHeading: (
@@ -105,7 +105,7 @@ const COPY: Record<Locale, Copy> = {
       </>
     ),
     notesBody:
-      "Anicca learns the shape of your day. She doesn't bother you when you're fine — she shows up when the wave comes.",
+      "Anicca learns the shape of your day. She doesn't bother you when you're fine - she shows up when the wave comes.",
     notes: [
       {
         time: '07:42',
@@ -131,12 +131,12 @@ const COPY: Record<Locale, Copy> = {
     showcase: [
       {
         title: 'Tell it what hurts',
-        body: 'Onboard in 90 seconds. Pick what you carry — anxiety, self-doubt, grief, late nights. Anicca calibrates to the exact shape of your weather.',
+        body: 'Onboard in 90 seconds. Pick what you carry - anxiety, self-doubt, grief, late nights. Anicca calibrates to the exact shape of your weather.',
         img: '/screenshots/en/onboarding.png',
       },
       {
         title: 'It arrives at the spiral',
-        body: 'Not a digest. Not a daily push at 8am. Anicca learns when your mind unravels and meets you there — once, briefly, gently.',
+        body: 'Not a digest. Not a daily push at 8am. Anicca learns when your mind unravels and meets you there - once, briefly, gently.',
         img: '/screenshots/en/notification.png',
       },
       {
@@ -218,8 +218,8 @@ const COPY: Record<Locale, Copy> = {
       price: '$9.99 / mo',
       sub: 'or $49.99 / year (save 58%)',
       bullets: [
-        'Unlimited cards (1–3 per day, learned)',
-        'Voice sessions — talk it out',
+        'Unlimited cards (1-3 per day, learned)',
+        'Voice sessions - talk it out',
         'Lock-screen widget',
         '13 themes incl. shadow work, manifestation, grief',
         'Cancel anytime, no questions',
@@ -232,11 +232,11 @@ const COPY: Record<Locale, Copy> = {
     faq: [
       {
         q: 'Is this religious?',
-        a: 'Anicca borrows one Pāli word — the Buddhist word for impermanence. The app is for anyone who wakes up tired. No belief required.',
+        a: 'Anicca borrows one Pāli word - the Buddhist word for impermanence. The app is for anyone who wakes up tired. No belief required.',
       },
       {
         q: 'Will I get notified all day?',
-        a: '1–3 notifications per day, max. You can pause everything from the lock-screen. Quiet hours are respected automatically.',
+        a: '1-3 notifications per day, max. You can pause everything from the lock-screen. Quiet hours are respected automatically.',
       },
       {
         q: 'Is my data shared?',
@@ -248,7 +248,7 @@ const COPY: Record<Locale, Copy> = {
       },
       {
         q: 'Can I use it offline?',
-        a: 'Yes. Your reading feed is cached on the device — open it without signal at the worst moment of the day.',
+        a: 'Yes. Your reading feed is cached on the device - open it without signal at the worst moment of the day.',
       },
       {
         q: 'Why is it AI-personalised?',
@@ -264,7 +264,7 @@ const COPY: Record<Locale, Copy> = {
       </>
     ),
     closeBody:
-      'Including the feeling you are sitting in right now. Anicca is the small voice that reminds you of that — at the exact hour you forget.',
+      'Including the feeling you are sitting in right now. Anicca is the small voice that reminds you of that - at the exact hour you forget.',
     closeCta: 'Download on the App Store',
     closeMeta: 'iOS 15+ · Free · Anicca Pro from $9.99 / mo',
     closeBack: '← back to anicca.ai',
@@ -279,9 +279,9 @@ const COPY: Record<Locale, Copy> = {
         今夜は<br />無理しなくて<br />いい
       </>
     ),
-    heroLine2: <em className="not-italic text-gold/90">— 大丈夫。</em>,
+    heroLine2: <em className="not-italic text-gold/90">大丈夫。</em>,
     heroSub:
-      'アニッチャ は、あなたのスマホに静かに住む同伴者。心が崩れ始めた瞬間 — 23:47、レジ待ちの列、Instagram を開いた瞬間 — 一言だけ、やさしさが届く。アプリを開く必要はない。向こうから来る。',
+      'アニッチャ は、あなたのスマホに静かに住む同伴者。心が崩れ始めた瞬間 23:47、レジ待ちの列、Instagram を開いた瞬間 一言だけ、やさしさが届く。アプリを開く必要はない。向こうから来る。',
     ctaPrimary: 'App Store で入手',
     rating: '4.8',
     ratingMeta: 'App Store · ヘルスケア / フィットネス',
@@ -296,7 +296,7 @@ const COPY: Record<Locale, Copy> = {
       </>
     ),
     storyBody:
-      'けれど、心の渦は待たない。真夜中、信号待ち、洗面台の鏡。ジャーナルアプリを開こうと思いついた頃には、もう波は過ぎている。アニッチャ は逆向きに作られた — 渦のほうに、アファメーション が届く。習慣でもストリークでもなく、ノックのように。',
+      'けれど、心の渦は待たない。真夜中、信号待ち、洗面台の鏡。ジャーナルアプリを開こうと思いついた頃には、もう波は過ぎている。アニッチャ は逆向きに作られた - 渦のほうに、アファメーション が届く。習慣でもストリークでもなく、ノックのように。',
 
     notesEyebrow: 'II. アニッチャ と過ごす一日',
     notesHeading: (
@@ -323,7 +323,7 @@ const COPY: Record<Locale, Copy> = {
     showcase: [
       {
         title: '何が痛むかを教えて',
-        body: '90 秒で初期設定。今あなたが抱えているもの — 不安、自己否定、悲しみ、夜更かし — を選ぶ。アニッチャ はあなたの天気の形に合わせる。',
+        body: '90 秒で初期設定。今あなたが抱えているもの（不安、自己否定、悲しみ、夜更かし）を選ぶ。アニッチャ はあなたの天気の形に合わせる。',
         img: '/screenshots/ja/onboarding.png',
       },
       {
@@ -388,7 +388,7 @@ const COPY: Record<Locale, Copy> = {
       sub: 'または ¥7,800 / 年 (58% off)',
       bullets: [
         '無制限のカード (1日 1〜3 枚、学習)',
-        'ボイスセッション — 声に出して話す',
+        'ボイスセッション - 声に出して話す',
         'ロック画面ウィジェット',
         '13 のテーマ (シャドウワーク、マニフェステーション、悲しみ等)',
         'いつでも解約、説明不要',
@@ -401,7 +401,7 @@ const COPY: Record<Locale, Copy> = {
     faq: [
       {
         q: '宗教ですか?',
-        a: 'パーリ語をひとつだけ借りています — 仏教の「無常」という言葉。アプリ自体は、疲れて目覚めるすべての人のためのものです。信仰は不要。',
+        a: 'パーリ語をひとつだけ借りています（仏教の「無常」という言葉）。アプリ自体は、疲れて目覚めるすべての人のためのものです。信仰は不要。',
       },
       {
         q: '一日中通知が来ますか?',
@@ -538,7 +538,7 @@ export default function AffirmationLanding({ locale }: { locale: Locale }) {
               <div className="relative">
                 <PhoneFrame
                   src={t.showcase[1].img}
-                  alt="Anicca app — incoming notification"
+                  alt="Anicca app - incoming notification"
                   variant="lockscreen"
                   width={280}
                   priority

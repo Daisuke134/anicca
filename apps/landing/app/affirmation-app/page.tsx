@@ -2,7 +2,7 @@ import AffirmationLanding from '@/components/affirmation/AffirmationLanding';
 import JsonLd from '@/components/JsonLd';
 
 export const metadata = {
-  title: 'Anicca — the affirmation app that finds you',
+  title: 'Anicca - the affirmation app that finds you',
   description:
     "Anicca is an iOS app that delivers a single line of kindness at the exact moment your mind starts to spiral. AI-personalised, Buddhist-rooted (Anicca = impermanence), proactive, free to download.",
 };

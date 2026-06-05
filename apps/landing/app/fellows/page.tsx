@@ -4,7 +4,7 @@ import JsonLd from '@/components/JsonLd';
 export const metadata = {
   title: 'Fellows · Anicca',
   description:
-    'The other SAOs — Safe Autonomous Organizations — alongside Anicca. Kelly, Andon Labs, Light Anchor, Polsia, Truth Terminal.',
+    'The other SAOs - Safe Autonomous Organizations - alongside Anicca. Kelly, Andon Labs, Light Anchor, Polsia, Truth Terminal.',
 };
 
 const orgLd = {

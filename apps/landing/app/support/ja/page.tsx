@@ -1,6 +1,6 @@
 export const metadata = {
-  title: 'サポート | アニッチャ',
-  description: 'アニッチャのヘルプ - 音声で習慣を整えるコーチ'
+  title: 'サポート | Anicca',
+  description: 'Aniccaのヘルプ - 音声で習慣を整えるコーチ'
 };
 
 export default function SupportJA() {
@@ -8,7 +8,7 @@ export default function SupportJA() {
     <main className="container mx-auto max-w-3xl px-4 py-24">
       <h1 className="text-3xl font-bold text-foreground">サポート</h1>
       <p className="mt-6 text-muted-foreground">
-        アニッチャについてお困りですか？お手伝いします。
+        Aniccaについてお困りですか？お手伝いします。
       </p>
 
       <section className="mt-10">
@@ -18,10 +18,10 @@ export default function SupportJA() {
         </p>
         <p className="mt-4">
           <a 
-            href="mailto:contact@aniccaai.com" 
+            href="mailto:keiodaisuke@gmail.com" 
             className="text-primary hover:underline font-medium"
           >
-            contact@aniccaai.com
+            keiodaisuke@gmail.com
           </a>
         </p>
         <p className="mt-2 text-sm text-muted-foreground">
@@ -33,18 +33,18 @@ export default function SupportJA() {
         <h2 className="text-xl font-semibold text-foreground">よくある質問</h2>
         <div className="mt-6 space-y-6">
           <div>
-            <h3 className="font-semibold text-foreground">アニッチャはどのように動作しますか？</h3>
+            <h3 className="font-semibold text-foreground">Aniccaはどのように動作しますか？</h3>
             <p className="mt-2 text-muted-foreground">
-              アニッチャは、リアルタイムの会話を通じてあなたを導く音声ベースの習慣形成コーチです。
-              起床時刻、トレーニングスケジュール、就寝習慣を設定してください。アニッチャは設定した時刻にリマインドし、
+              Aniccaは、リアルタイムの会話を通じてあなたを導く音声ベースの習慣形成コーチです。
+              起床時刻、トレーニングスケジュール、就寝習慣を設定してください。Aniccaは設定した時刻にリマインドし、
               音声会話を通じて良い習慣を築き、悪い習慣を断つお手伝いをします。
             </p>
           </div>
 
           <div>
-            <h3 className="font-semibold text-foreground">アニッチャにはどのような権限が必要ですか？</h3>
+            <h3 className="font-semibold text-foreground">Aniccaにはどのような権限が必要ですか？</h3>
             <p className="mt-2 text-muted-foreground">
-              アニッチャは音声会話のためにマイクアクセス、設定した時刻にリマインドを送信するために通知権限が必要です。
+              Aniccaは音声会話のためにマイクアクセス、設定した時刻にリマインドを送信するために通知権限が必要です。
               すべての権限はオンボーディング中にリクエストされます。
             </p>
           </div>
@@ -52,17 +52,17 @@ export default function SupportJA() {
           <div>
             <h3 className="font-semibold text-foreground">データはプライベートですか？</h3>
             <p className="mt-2 text-muted-foreground">
-              はい。アニッチャはプライバシー第一のアプローチを採用しています。音声データはリアルタイムで処理され、恒久保存されません。
+              はい。Aniccaはプライバシー第一のアプローチを採用しています。音声データはリアルタイムで処理され、恒久保存されません。
               プロフィールデータは安全に保存され、パーソナライズされたガイダンスを提供するためにのみ使用されます。
               詳細については、<a href="/privacy/ja" className="text-primary hover:underline">プライバシーポリシー</a>をご覧ください。
             </p>
           </div>
 
           <div>
-            <h3 className="font-semibold text-foreground">複数のデバイスでアニッチャを使用できますか？</h3>
+            <h3 className="font-semibold text-foreground">複数のデバイスでAniccaを使用できますか？</h3>
             <p className="mt-2 text-muted-foreground">
               はい。プロフィールと設定はアカウントを通じてデバイス間で同期されます。
-              同じアカウントでiOSとデスクトップ（Mac）の両方のデバイスでアニッチャを使用できます。
+              同じアカウントでiOSとデスクトップ（Mac）の両方のデバイスでAniccaを使用できます。
             </p>
           </div>
         </div>
@@ -81,8 +81,8 @@ export default function SupportJA() {
             <a href="/faq" className="text-primary hover:underline">FAQ</a>
           </li>
           <li>
-            <a href="/fellows/ja" className="text-primary hover:underline">
-              同類の SAO
+            <a href="https://github.com/Daisuke134/anicca.ai" className="text-primary hover:underline" target="_blank" rel="noreferrer">
+              GitHubリポジトリ
             </a>
           </li>
         </ul>

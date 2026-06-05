@@ -2,7 +2,7 @@ import AffirmationLanding from '@/components/affirmation/AffirmationLanding';
 import JsonLd from '@/components/JsonLd';
 
 export const metadata = {
-  title: 'アニッチャ — あなたを見つける アファメーション アプリ',
+  title: 'アニッチャ - あなたを見つける アファメーション アプリ',
   description:
     'アニッチャ は、心が崩れ始めた瞬間に、一行のやさしさを届ける iOS アプリ。AI でパーソナライズ、無常 (アニッチャ) を核にした、能動的に届くタイプ。ダウンロード無料。',
 };

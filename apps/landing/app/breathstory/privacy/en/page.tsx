@@ -1,4 +1,4 @@
-export const metadata = { title: 'Privacy Policy | BreathStory — Guided Breathing Stories' };
+export const metadata = { title: 'Privacy Policy | BreathStory - Guided Breathing Stories' };
 
 export default function BreathStoryPrivacyEN() {
   return (
@@ -9,7 +9,7 @@ export default function BreathStoryPrivacyEN() {
       </p>
 
       <h2 className="mt-10 text-xl font-semibold text-foreground">1. Business Information</h2>
-      <p className="mt-3 text-muted-foreground">Daisuke Narita (Individual Business Owner) / contact@aniccaai.com</p>
+      <p className="mt-3 text-muted-foreground">Daisuke Narita (Individual Business Owner) / keiodaisuke@gmail.com</p>
 
       <h2 className="mt-10 text-xl font-semibold text-foreground">2. Scope of Application</h2>
       <p className="mt-3 text-muted-foreground">
@@ -47,7 +47,7 @@ export default function BreathStoryPrivacyEN() {
       </p>
       <ul className="mt-3 list-disc pl-6 text-foreground space-y-2">
         <li>Apple (App Store billing and related platform services)</li>
-        <li>RevenueCat (subscription/entitlement management — receives anonymized purchase receipt only)</li>
+        <li>RevenueCat (subscription/entitlement management - receives anonymized purchase receipt only)</li>
       </ul>
       <p className="mt-3 text-muted-foreground">
         We do NOT use analytics SDKs, advertising networks, crash reporting services, or tracking frameworks.
@@ -77,7 +77,7 @@ export default function BreathStoryPrivacyEN() {
 
       <h2 className="mt-10 text-xl font-semibold text-foreground">11. User Rights</h2>
       <p className="mt-3 text-muted-foreground">
-        To remove all data: delete BreathStory from your device. For support-related data deletion, contact contact@aniccaai.com. Requests will be handled within a reasonable period.
+        To remove all data: delete BreathStory from your device. For support-related data deletion, contact keiodaisuke@gmail.com. Requests will be handled within a reasonable period.
       </p>
 
       <h2 className="mt-10 text-xl font-semibold text-foreground">12. Children</h2>
@@ -92,7 +92,7 @@ export default function BreathStoryPrivacyEN() {
 
       <h2 className="mt-10 text-xl font-semibold text-foreground">14. Contact</h2>
       <p className="mt-3 text-muted-foreground">
-        For questions or concerns about this policy, contact: contact@aniccaai.com
+        For questions or concerns about this policy, contact: keiodaisuke@gmail.com
       </p>
 
       <p className="mt-10 text-sm text-muted-foreground">Last updated: March 2026</p>

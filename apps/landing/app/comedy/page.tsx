@@ -76,7 +76,7 @@ const REGULARS: Regular[] = [
     cadence: 'WEEKLY · EN',
     cadence_jp: '毎週 · 英語',
     venue: 'Tokyo Comedy Bar',
-    city: 'Shibuya — Last Train (Fri/Sat 9pm) + Mic Spot (weekday 9pm)',
+    city: 'Shibuya - Last Train (Fri/Sat 9pm) + Mic Spot (weekday 9pm)',
     detail: 'English stand-up rooms. Sign-ups close Wednesday midnight. Plus drop-in mics: Thursdays at Titans Bar (Otsuka) and Sundays "Last Laugh" at TCB.',
   },
   {
@@ -84,7 +84,7 @@ const REGULARS: Regular[] = [
     cadence_jp: '毎週 · 日本語',
     venue: 'K-PRO ゲレロンステージ + 兄弟ライブ',
     city: '西新宿ナルゲキ · 新宿Fu- · 下北スラッシュ · なかの芸能小劇場',
-    detail: 'ピンネタ 2 分のバトル枠を週一で取りに行く。 K-PRO / 下北GRIP / U&C / nicorn 系で ¥1,000–2,000 のピン枠を回す。',
+    detail: 'ピンネタ 2 分のバトル枠を週一で取りに行く。 K-PRO / 下北GRIP / U&C / nicorn 系で ¥1,000-2,000 のピン枠を回す。',
   },
   {
     cadence: 'MONTHLY · EN',
@@ -195,7 +195,7 @@ export default function Page() {
 
       {/* hanko */}
       <div className="relative z-10 -mt-10 flex justify-end px-6 md:px-12">
-        <div className="flex h-20 w-20 -rotate-6 items-center justify-center rounded-md border-2 border-[#c8302e] bg-[#c8302e]/10 font-[family-name:var(--font-kanji)] text-base font-black text-[#c8302e]">
+        <div className="flex h-20 w-20 -rotate-6 items-center justify-center rounded-card border-2 border-[#c8302e] bg-[#c8302e]/10 font-[family-name:var(--font-kanji)] text-base font-black text-[#c8302e]">
           無常
         </div>
       </div>
@@ -304,7 +304,7 @@ export default function Page() {
           one koan.
         </h2>
         <p className="mt-6 max-w-2xl font-[family-name:var(--font-body)] text-base leading-relaxed text-[#f4f1ea]/70">
-          Every dawn the AI takes the day's koan and writes seven jokes around it — Ogiri, Skit JP/EN, Manzai, Konto,
+          Every dawn the AI takes the day's koan and writes seven jokes around it - Ogiri, Skit JP/EN, Manzai, Konto,
           Pin-neta, Flip-game. The human picks one, performs it, posts the recording. What survives the camera
           makes the live set.
         </p>
@@ -446,7 +446,7 @@ export default function Page() {
               href="https://aniccaai.com/en"
               className="inline-flex items-center justify-center border border-[#c8302e] bg-[#c8302e] px-8 py-4 font-[family-name:var(--font-mono)] text-xs uppercase tracking-[0.25em] text-[#0a0a0a] transition-all hover:bg-[#f4f1ea] hover:text-[#0a0a0a]"
             >
-              Subscribe — coming
+              Subscribe - coming
             </a>
             <a
               href="https://github.com/Daisuke134/anicca"
@@ -473,7 +473,7 @@ export default function Page() {
           </p>
           <p className="mt-6 font-[family-name:var(--font-body)] text-sm leading-relaxed text-[#f4f1ea]/65">
             Anicca is the open-source AI entity behind the bit. It scouts open mics, applies on the comedian's
-            behalf, books the cheapest direct flight, posts the cuts, and answers replies — in the time it would
+            behalf, books the cheapest direct flight, posts the cuts, and answers replies - in the time it would
             take him to refresh his email.
           </p>
           <p className="mt-3 font-[family-name:var(--font-kanji)] text-sm leading-relaxed text-[#f4f1ea]/60">

@@ -1,8 +1,11 @@
 'use client';
 
+// NOTE(§11.F): BigGive uses inline EN/JA ternaries (no i18n keys consumed).
+// translations.bigGive.* was orphaned and removed in the Tier A sweep.
+
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { translations, type Locale } from '@/lib/i18n';
+import { type Locale } from '@/lib/i18n';
+import { Section, Reveal, CTA } from '@/components/site/taste';
 
 interface BasicIncome {
   pool_usd: number;
@@ -11,68 +14,96 @@ interface BasicIncome {
   next_payout: string;
 }
 
+// §4.7: hero text elements = eyebrow + headline + subtext + CTA (=4, no fineprint micro-meta).
+// §9.F: decoration strip removed, fineprint micro-meta sentence removed.
+// §4.5: single CTA intent (Apply for Basic Income): one primary CTA only.
+// §9.G: em-dash zero. §4.4: shape-lock tokens. §4.11: no dark: overrides.
 export default function BigGive({ locale }: { locale: Locale }) {
-  const t = translations[locale].bigGive;
   const en = locale === 'en';
   const [bi, setBi] = useState<BasicIncome | null>(null);
 
   useEffect(() => {
-    fetch('/dashboard.json')
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => d && setBi(d.basic_income))
-      .catch(() => {});
+    const ctrl = new AbortController();
+    fetch('/dashboard.json', { signal: ctrl.signal })
+      .then((r) => {
+        if (!r.ok) throw new Error('failed');
+        return r.json();
+      })
+      .then((d) => {
+        if (d?.basic_income) setBi(d.basic_income);
+      })
+      .catch((e: unknown) => {
+        if (e instanceof Error && e.name !== 'AbortError') {
+          if (typeof window !== 'undefined') console.warn('[BigGive] dashboard fetch failed:', e.message);
+        }
+      });
+    return () => ctrl.abort();
   }, []);
 
   return (
-    <section id="basic-income" className="bg-cream px-5 py-28 sm:py-36">
-      <div className="mx-auto max-w-6xl">
-        <div className="grid grid-cols-12 gap-x-6 gap-y-10">
-          <div className="col-span-12 md:col-span-3">
-            <p className="font-mono-ui text-[10px] uppercase tracking-[0.28em] text-mist">
-              VI. {en ? 'Basic Income' : 'Basic Income'}
-            </p>
-            <h2 className="mt-3 font-display text-[34px] leading-tight text-ink sm:text-[44px]">
-              {en ? (
-                <>Ten percent <em className="text-gold">out</em>, <br />every month.</>
-              ) : (
-                <>毎月、稼ぎの <em className="text-gold">10%</em><br />を外へ。</>
-              )}
-            </h2>
+    <Section id="basic-income">
+      <div className="grid grid-cols-12 gap-x-6 gap-y-10">
+        {/* Left column: eyebrow + headline (§4.7 elements 1-2) */}
+        <Reveal className="col-span-12 md:col-span-3">
+          <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-[hsl(var(--text-secondary))]">
+            {/* TODO(§11.F-followup): i18n key */}
+            VI. {en ? 'Basic Income' : 'Basic Income'}
+          </p>
+          <h2 className="mt-3 font-display text-[34px] leading-tight text-[hsl(var(--text-primary))] sm:text-[44px]">
+            {en ? (
+              <>Ten percent <em className="text-[hsl(var(--gold))]">out</em>,<br />every month.</>
+            ) : (
+              <>毎月、稼ぎの <em className="text-[hsl(var(--gold))]">10%</em><br />を外へ。</>
+            )}
+          </h2>
+        </Reveal>
+
+        {/* Right column: subtext + stats + single CTA (§4.7 elements 3-4) */}
+        <Reveal delay={0.1} className="col-span-12 md:col-span-9">
+          {/* §4.7 element 3: subtext */}
+          <p className="max-w-2xl text-[19px] leading-[1.65] text-[hsl(var(--text-secondary))] sm:text-[21px]">
+            {en
+              ? 'Ten human beings receive a slice of every dollar Anicca earns. No work required. Connect Stripe and wait. The list is small on purpose. When one slot opens, the next person in queue moves up.'
+              : '私 アニッチャ が稼ぐ 1 ドルごとに、その一部が 10 人の人間に渡る。労働義務なし。Stripe を繋いで待つだけ。10 という数字は意図的に小さい。一つ枠が空けば、待機列の次の人が繰り上がる。'}
+          </p>
+
+          <div className="mt-10 grid grid-cols-1 gap-px border border-[hsl(var(--border))] bg-[hsl(var(--border))] sm:grid-cols-3">
+            <Stat
+              label={en ? "This month's pool" : '今月の原資'}
+              value={bi ? `$${bi.pool_usd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '$0.00'}
+            />
+            <Stat
+              label={en ? 'Spots filled' : '枠'}
+              value={bi ? `${bi.recipients}/10` : '0/10'}
+            />
+            <Stat
+              label={en ? 'Per person' : '1 人あたり'}
+              value={bi ? `$${bi.per_person_usd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '$0.00'}
+            />
           </div>
 
-          <div className="col-span-12 md:col-span-9">
-            <p className="max-w-2xl text-[19px] leading-[1.65] text-ink-soft sm:text-[21px]">
-              {en
-                ? 'Ten human beings receive a slice of every dollar Anicca earns. No work required. Connect Stripe and wait. The list is small on purpose — when one slot opens, the next person in queue moves up.'
-                : '私 アニッチャ が稼ぐ 1 ドルごとに、その一部が 10 人の人間に渡る。労働義務なし。Stripe を繋いで待つだけ。10 という数字は意図的に小さい。一つ枠が空けば、待機列の次の人が繰り上がる。'}
-            </p>
-
-            <div className="mt-10 grid grid-cols-1 gap-px border border-ink/15 bg-ink/15 sm:grid-cols-3">
-              <Stat label={t.poolLabel} value={bi ? `$${bi.pool_usd.toFixed(2)}` : '—'} />
-              <Stat label={t.spotsLabel} value={bi ? `${bi.recipients}/10` : '—'} />
-              <Stat label={t.perPersonLabel} value={bi ? `$${bi.per_person_usd.toFixed(2)}` : '—'} />
-            </div>
-
-            <Link
-              href="/income"
-              className="mt-10 inline-block bg-ink px-6 py-3 font-mono-ui text-[12px] uppercase tracking-[0.2em] text-cream transition-opacity hover:opacity-90"
-            >
-              {en ? 'Apply for Basic Income →' : 'Basic Income に応募 →'}
-            </Link>
-
-            <p className="mt-3 max-w-md text-[13px] text-mist">{t.fineprint}</p>
+          {/* §4.7 element 4: single CTA (§4.5 no duplicate intent, §11.F href preserved) */}
+          <div className="mt-10">
+            <CTA href="/income" variant="primary">
+              {en ? 'Apply for Basic Income' : 'Basic Income に応募'}
+            </CTA>
           </div>
-        </div>
+          {/* §9.F: fineprint micro-meta sentence removed */}
+        </Reveal>
       </div>
-    </section>
+    </Section>
   );
 }
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="bg-cream px-6 py-7">
-      <p className="font-mono-ui text-[10px] uppercase tracking-[0.22em] text-mist">{label}</p>
-      <p className="mt-3 font-display text-[40px] leading-none tracking-tight text-ink">{value}</p>
+    <div className="bg-[hsl(var(--background))] px-6 py-7">
+      <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[hsl(var(--text-secondary))]">
+        {label}
+      </p>
+      <p className="mt-3 font-mono tabular-nums text-[40px] leading-none tracking-tight text-[hsl(var(--text-primary))]">
+        {value}
+      </p>
     </div>
   );
 }

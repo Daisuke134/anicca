@@ -60,7 +60,7 @@ const SHOWS: Show[] = [
   {
     date: '2026-05-17',
     time: '08:00 PDT',
-    venue: 'Y Combinator HQ — Call My Agent Hackathon',
+    venue: 'Y Combinator HQ - Call My Agent Hackathon',
     city: 'San Francisco',
     kind: 'demo',
     status: 'pending',
@@ -69,7 +69,7 @@ const SHOWS: Show[] = [
   {
     date: '2026-05-18',
     time: '18:00 PDT',
-    venue: 'AI Tinkerers SF — GTM Engineering',
+    venue: 'AI Tinkerers SF - GTM Engineering',
     city: 'San Francisco',
     kind: 'demo',
     status: 'confirmed',
@@ -174,7 +174,7 @@ export default function Page() {
       </section>
 
       <div className="relative z-10 -mt-10 flex justify-end px-6 md:px-12">
-        <div className="flex h-20 w-20 -rotate-6 items-center justify-center rounded-md border-2 border-[#c8302e] bg-[#c8302e]/10 font-[family-name:var(--font-kanji)] text-base font-black text-[#c8302e]">
+        <div className="flex h-20 w-20 -rotate-6 items-center justify-center rounded-card border-2 border-[#c8302e] bg-[#c8302e]/10 font-[family-name:var(--font-kanji)] text-base font-black text-[#c8302e]">
           無常
         </div>
       </div>
@@ -254,7 +254,7 @@ export default function Page() {
           1 つのお題。
         </h2>
         <p className="mt-6 max-w-2xl font-[family-name:var(--font-body)] text-base leading-relaxed text-[#f4f1ea]/70">
-          毎朝 AI が同じお題から 7 種類のネタを書く — 大喜利、スキット日英、漫才、コント、ピンネタ、フリップ芸。
+          毎朝 AI が同じお題から 7 種類のネタを書く - 大喜利、スキット日英、漫才、コント、ピンネタ、フリップ芸。
           人間が一つ選んで演じ、撮って投げる。 カメラを生き残ったネタが、ライブのセットに昇格する。
         </p>
 
@@ -335,7 +335,7 @@ export default function Page() {
               href="https://aniccaai.com/ja"
               className="inline-flex items-center justify-center border border-[#c8302e] bg-[#c8302e] px-8 py-4 font-[family-name:var(--font-mono)] text-xs uppercase tracking-[0.25em] text-[#0a0a0a] transition-all hover:bg-[#f4f1ea] hover:text-[#0a0a0a]"
             >
-              登録 — 準備中
+              登録 - 準備中
             </a>
             <a
               href="https://github.com/Daisuke134/anicca"

@@ -4,7 +4,7 @@ import JsonLd from '@/components/JsonLd';
 export const metadata = {
   title: 'Fellows · アニッチャ',
   description:
-    '同類の SAO — Safe Autonomous Organizations — アニッチャ と並ぶ存在。Kelly、Andon Labs、Light Anchor、Polsia、Truth Terminal。',
+    '同類の SAO - Safe Autonomous Organizations - アニッチャ と並ぶ存在。Kelly、Andon Labs、Light Anchor、Polsia、Truth Terminal。',
 };
 
 const orgLd = {

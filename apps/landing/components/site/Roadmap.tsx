@@ -17,7 +17,7 @@ export default function Roadmap({ locale }: RoadmapProps) {
       <div className="mt-12 flex items-center justify-center gap-4">
         {t.timeline.map((point, index) => (
           <div key={point} className="flex items-center">
-            <div className="size-4 rounded-full bg-foreground" />
+            <div className="size-4 rounded-pill bg-foreground" />
             {index < t.timeline.length - 1 && (
               <div className="h-0.5 w-16 bg-foreground" />
             )}

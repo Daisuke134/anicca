@@ -1,5 +1,5 @@
 export const metadata = {
-  title: "Privacy Policy – BreathReset",
+  title: "Privacy Policy - BreathReset",
   description: "BreathReset Privacy Policy",
 };
 
@@ -13,7 +13,7 @@ export default function BreathResetPrivacyEN() {
         <h2 className="text-xl font-semibold mb-3">1. Information We Collect</h2>
         <p className="mb-3">BreathReset collects the following information to provide and improve our service:</p>
         <ul className="list-disc pl-6 space-y-2">
-          <li><strong>Usage Data:</strong> Session counts, streak days, and preferred breathing techniques — stored locally on your device using UserDefaults.</li>
+          <li><strong>Usage Data:</strong> Session counts, streak days, and preferred breathing techniques - stored locally on your device using UserDefaults.</li>
           <li><strong>Analytics:</strong> Anonymized event data (session started, paywall viewed, etc.) sent to Mixpanel for product improvement. Device ID is collected for analytics purposes only and is not linked to your identity.</li>
           <li><strong>Purchase Data:</strong> Subscription status managed by RevenueCat. We do not store payment details.</li>
         </ul>
@@ -33,8 +33,8 @@ export default function BreathResetPrivacyEN() {
         <h2 className="text-xl font-semibold mb-3">3. Data Sharing</h2>
         <p>We do not sell your personal data. We share anonymized analytics with:</p>
         <ul className="list-disc pl-6 mt-3 space-y-2">
-          <li><strong>Mixpanel</strong> — product analytics</li>
-          <li><strong>RevenueCat</strong> — subscription management</li>
+          <li><strong>Mixpanel</strong> - product analytics</li>
+          <li><strong>RevenueCat</strong> - subscription management</li>
         </ul>
       </section>
 

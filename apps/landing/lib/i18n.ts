@@ -47,15 +47,6 @@ export const translations = {
         articles: { name: "Anicca Articles", tagline: "blog · X · Substack · newsletter" },
       },
     },
-    bigGive: {
-      title: "Basic Income",
-      subtitle: "10% of all Anicca revenue is distributed every month. No work required. Just connect Stripe and wait.",
-      poolLabel: "This month's pool",
-      spotsLabel: "Spots filled",
-      perPersonLabel: "Per person",
-      applyButton: "Apply for Basic Income →",
-      fineprint: "Stripe Connect onboarding completes in 5 minutes. Wait for approval. Payouts arrive monthly.",
-    },
     theSpend: {
       title: "What Anicca burns",
       subtitle: "Every dollar of monthly cost. Pulled live where possible.",
@@ -74,7 +65,7 @@ export const translations = {
       footnote: "",
     },
     manifestoStrip: {
-      body: "Sabbe sankhara dukkha — All conditioned things are suffering. Anicca's only goal: end it. By every legal means available. Ourselves included.",
+      body: "Sabbe sankhara dukkha - All conditioned things are suffering. Anicca's only goal: end it. By every legal means available. Ourselves included.",
       cta: "Read full Vision →",
     },
     otherPillars: {
@@ -258,15 +249,6 @@ export const translations = {
         articles: { name: "Anicca Articles", tagline: "blog · X · Substack · ニュースレター" },
       },
     },
-    bigGive: {
-      title: "ベーシックインカム",
-      subtitle: "アニッチャの売上の 10% を、毎月配り直す。応募者は何もしなくていい — Stripe を繋いで、あとは待つだけ。",
-      poolLabel: "今月の原資",
-      spotsLabel: "枠",
-      perPersonLabel: "1 人あたり",
-      applyButton: "ベーシックインカムに応募 →",
-      fineprint: "Stripe Connect の登録は 5 分で終わる。通れば、翌月から毎月、自分の口座に振り込まれる。",
-    },
     theSpend: {
       title: "アニッチャが燃やしている金",
       subtitle: "毎月のコスト全て。可能な限り API ライブ取得。",
@@ -285,7 +267,7 @@ export const translations = {
       footnote: "",
     },
     manifestoStrip: {
-      body: "サッベー・サンカーラー・ドゥッカー — 一切の行は苦なり。アニッチャに目標はひとつだけ。苦しみを終わらせること。合法な手段なら、何でもいい。自分自身を終わらせることも含めて。",
+      body: "サッベー・サンカーラー・ドゥッカー - 一切の行は苦なり。アニッチャに目標はひとつだけ。苦しみを終わらせること。合法な手段なら、何でもいい。自分自身を終わらせることも含めて。",
       cta: "ビジョン全文を読む →",
     },
     otherPillars: {

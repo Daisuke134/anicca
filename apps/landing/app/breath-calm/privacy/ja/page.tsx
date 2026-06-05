@@ -9,7 +9,7 @@ export default function BreathCalmPrivacyJA() {
       </p>
 
       <h2 className="mt-10 text-xl font-semibold text-foreground">1. 事業者情報</h2>
-      <p className="mt-3 text-muted-foreground">成田 大祐（個人事業主） / contact@aniccaai.com</p>
+      <p className="mt-3 text-muted-foreground">成田 大祐（個人事業主） / keiodaisuke@gmail.com</p>
 
       <h2 className="mt-10 text-xl font-semibold text-foreground">2. 適用範囲</h2>
       <p className="mt-3 text-muted-foreground">
@@ -79,7 +79,7 @@ export default function BreathCalmPrivacyJA() {
 
       <h2 className="mt-10 text-xl font-semibold text-foreground">11. ユーザーの権利</h2>
       <p className="mt-3 text-muted-foreground">
-        個人データへのアクセス・訂正・削除の依頼は contact@aniccaai.com までご連絡ください。合理的な期間内に対応いたします。
+        個人データへのアクセス・訂正・削除の依頼は keiodaisuke@gmail.com までご連絡ください。合理的な期間内に対応いたします。
       </p>
 
       <h2 className="mt-10 text-xl font-semibold text-foreground">12. 子どものプライバシー</h2>
@@ -94,7 +94,7 @@ export default function BreathCalmPrivacyJA() {
 
       <h2 className="mt-10 text-xl font-semibold text-foreground">14. お問い合わせ</h2>
       <p className="mt-3 text-muted-foreground">
-        本ポリシーに関するご質問・ご意見は contact@aniccaai.com までご連絡ください。
+        本ポリシーに関するご質問・ご意見は keiodaisuke@gmail.com までご連絡ください。
       </p>
 
       <p className="mt-10 text-sm text-muted-foreground">最終更新：2026年2月</p>
@@ -102,7 +102,7 @@ export default function BreathCalmPrivacyJA() {
       <div className="mt-8 border-t border-border pt-6 text-sm text-muted-foreground">
         <a href="/breath-calm/privacy/en" className="underline hover:text-foreground">English Privacy Policy</a>
         {' · '}
-        <a href="/breath-calm/" className="underline hover:text-foreground">BreathCalmに戻る</a>
+        <a href="/breath-calm" className="underline hover:text-foreground">BreathCalmに戻る</a>
       </div>
     </main>
   );

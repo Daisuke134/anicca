@@ -18,10 +18,10 @@ export default function SupportEN() {
         </p>
         <p className="mt-4">
           <a 
-            href="mailto:contact@aniccaai.com" 
+            href="mailto:keiodaisuke@gmail.com" 
             className="text-primary hover:underline font-medium"
           >
-            contact@aniccaai.com
+            keiodaisuke@gmail.com
           </a>
         </p>
         <p className="mt-2 text-sm text-muted-foreground">
@@ -81,8 +81,8 @@ export default function SupportEN() {
             <a href="/faq" className="text-primary hover:underline">FAQ</a>
           </li>
           <li>
-            <a href="/fellows" className="text-primary hover:underline">
-              Fellow SAOs
+            <a href="https://github.com/Daisuke134/anicca.ai" className="text-primary hover:underline" target="_blank" rel="noreferrer">
+              GitHub Repository
             </a>
           </li>
         </ul>

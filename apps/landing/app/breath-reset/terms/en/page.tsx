@@ -1,5 +1,5 @@
 export const metadata = {
-  title: "Terms of Use – BreathReset",
+  title: "Terms of Use - BreathReset",
   description: "BreathReset Terms of Use",
 };
 

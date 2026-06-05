@@ -1,5 +1,5 @@
 export const metadata = {
-  title: "プライバシーポリシー – BreathReset",
+  title: "プライバシーポリシー - BreathReset",
   description: "BreathReset プライバシーポリシー",
 };
 
@@ -13,7 +13,7 @@ export default function BreathResetPrivacyJA() {
         <h2 className="text-xl font-semibold mb-3">1. 収集する情報</h2>
         <p className="mb-3">BreathResetは、サービスの提供と改善のために以下の情報を収集します：</p>
         <ul className="list-disc pl-6 space-y-2">
-          <li><strong>利用データ：</strong>セッション数、連続日数、好みの呼吸法 — お使いのデバイスのUserDefaultsにローカル保存されます。</li>
+          <li><strong>利用データ：</strong>セッション数、連続日数、好みの呼吸法 - お使いのデバイスのUserDefaultsにローカル保存されます。</li>
           <li><strong>分析データ：</strong>Mixpanelに送信される匿名のイベントデータ（セッション開始、ペイウォール表示など）。デバイスIDは分析目的のみで収集され、個人の特定には使用されません。</li>
           <li><strong>購入データ：</strong>RevenueCatが管理するサブスクリプションの状態。お支払い情報は保存しません。</li>
         </ul>
@@ -33,8 +33,8 @@ export default function BreathResetPrivacyJA() {
         <h2 className="text-xl font-semibold mb-3">3. 情報の共有</h2>
         <p>個人データを販売することはありません。匿名の分析データを以下と共有します：</p>
         <ul className="list-disc pl-6 mt-3 space-y-2">
-          <li><strong>Mixpanel</strong> — プロダクト分析</li>
-          <li><strong>RevenueCat</strong> — サブスクリプション管理</li>
+          <li><strong>Mixpanel</strong> - プロダクト分析</li>
+          <li><strong>RevenueCat</strong> - サブスクリプション管理</li>
         </ul>
       </section>
 

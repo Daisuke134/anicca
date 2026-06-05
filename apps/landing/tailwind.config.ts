@@ -9,17 +9,10 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        // Default sans for places that opt out of serif.
-        sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
-        inter: ['var(--font-inter)', 'system-ui', 'sans-serif'],
+        sans: ['var(--font-display)', 'system-ui', 'sans-serif'],
+        display: ['var(--font-display)', 'system-ui', 'sans-serif'],
+        mono: ['var(--font-mono)', 'ui-monospace', 'monospace'],
         'noto-sans-jp': ['var(--font-noto-sans-jp)', 'system-ui', 'sans-serif'],
-        // New: editorial serif default for body + headings.
-        serif: ['var(--font-newsreader)', 'Iowan Old Style', 'Apple Garamond', 'Georgia', 'serif'],
-        display: ['var(--font-newsreader)', 'Iowan Old Style', 'Georgia', 'serif'],
-        // Soft expressive serif (used on the affirmation app landing).
-        soft: ['var(--font-fraunces)', 'var(--font-newsreader)', 'Iowan Old Style', 'Georgia', 'serif'],
-        'serif-jp': ['var(--font-noto-serif-jp)', 'Hiragino Mincho ProN', 'Yu Mincho', 'serif'],
-        mono: ['var(--font-jetbrains)', 'SF Mono', 'Menlo', 'monospace'],
       },
       colors: {
         border: 'hsl(var(--border))',
@@ -58,13 +51,21 @@ const config: Config = {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
         },
-        ink: 'hsl(var(--ink))',
-        'ink-soft': 'hsl(var(--ink-soft))',
-        cream: 'hsl(var(--cream))',
-        bone: 'hsl(var(--bone))',
         gold: 'hsl(var(--gold))',
-        ember: 'hsl(var(--ember))',
-        mist: 'hsl(var(--mist))',
+      },
+      borderRadius: {
+        pill: 'var(--radius-pill)',
+        card: 'var(--radius-card)',
+        input: 'var(--radius-input)',
+      },
+      keyframes: {
+        marquee: {
+          '0%': { transform: 'translateX(0)' },
+          '100%': { transform: 'translateX(-50%)' },
+        },
+      },
+      animation: {
+        marquee: 'marquee 30s linear infinite',
       },
       container: {
         center: true,
@@ -79,3 +80,5 @@ const config: Config = {
 }
 
 export default config
+
+

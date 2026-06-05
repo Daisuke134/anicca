@@ -4,9 +4,9 @@ import Image from 'next/image';
 import JsonLd from '@/components/JsonLd';
 
 export const metadata = {
-  title: 'Anicca Fashion — wear the truth',
+  title: 'Anicca Fashion - wear the truth',
   description:
-    'Print-on-demand garments by Anicca, a Buddhist AI agent. One size (M). Cold-pressed branding. Ships worldwide in 7–12 days.',
+    'Print-on-demand garments by Anicca, a Buddhist AI agent. One size (M). Cold-pressed branding. Ships worldwide in 7-12 days.',
 };
 
 const fashionOrgLd = {
@@ -26,7 +26,7 @@ const fashionProductsLd = {
   itemListElement: [
     {
       '@type': 'Product',
-      name: 'Anicca Tee — Black',
+      name: 'Anicca Tee - Black',
       description:
         '"anicca" lowercase wordmark printed small on the left chest. Heather-free pure black. Unisex regular fit. Bella + Canvas 3001, 100% combed ring-spun cotton, 4.2 oz.',
       brand: { '@type': 'Brand', name: 'Anicca' },
@@ -40,7 +40,7 @@ const fashionProductsLd = {
     },
     {
       '@type': 'Product',
-      name: 'Anicca Hoodie — Black',
+      name: 'Anicca Hoodie - Black',
       description:
         '"anicca" lowercase wordmark printed small on the left chest. Heavyweight black pullover with front pouch pocket. Gildan 18500, 50% cotton / 50% polyester, 8.0 oz heavyweight blend.',
       brand: { '@type': 'Brand', name: 'Anicca' },
@@ -54,7 +54,7 @@ const fashionProductsLd = {
     },
     {
       '@type': 'Product',
-      name: 'Anicca Cap — Black',
+      name: 'Anicca Cap - Black',
       description:
         '"anicca" embroidered in white on the front. Adjustable strap back. Yupoong 7005, 100% cotton twill, 5-panel structured.',
       brand: { '@type': 'Brand', name: 'Anicca' },
@@ -86,7 +86,7 @@ interface FashionItem {
 const ITEMS: FashionItem[] = [
   {
     slug: 'tee-black',
-    title: 'Anicca Tee — Black',
+    title: 'Anicca Tee - Black',
     tagline: 'Lowercase wordmark · left chest',
     price_usd: 30,
     status: 'live',
@@ -100,7 +100,7 @@ const ITEMS: FashionItem[] = [
   },
   {
     slug: 'hoodie-black',
-    title: 'Anicca Hoodie — Black',
+    title: 'Anicca Hoodie - Black',
     tagline: 'Lowercase wordmark · left chest',
     price_usd: 50,
     status: 'live',
@@ -114,7 +114,7 @@ const ITEMS: FashionItem[] = [
   },
   {
     slug: 'cap-black',
-    title: 'Anicca Cap — Black',
+    title: 'Anicca Cap - Black',
     tagline: 'Embroidered wordmark · front',
     price_usd: 35,
     status: 'live',
@@ -167,7 +167,7 @@ const FAQ = [
   },
   {
     q: 'When does it actually ship?',
-    a: 'Each order is printed on demand at a Printful facility (US / EU / JP) within 5–7 business days, then delivered in 2–7 business days depending on country. Total: 7–12 business days from order to door.',
+    a: 'Each order is printed on demand at a Printful facility (US / EU / JP) within 5-7 business days, then delivered in 2-7 business days depending on country. Total: 7-12 business days from order to door.',
   },
   {
     q: 'How is it printed?',
@@ -175,7 +175,7 @@ const FAQ = [
   },
   {
     q: 'Can I return or exchange?',
-    a: 'Within 30 days of delivery, full refund or exchange — wrong fit, wrong colour, anything. You email contact@aniccaai.com and Anicca handles it.',
+    a: 'Within 30 days of delivery, full refund or exchange - wrong fit, wrong colour, anything. You email contact@aniccaai.com and Anicca handles it.',
   },
   {
     q: 'Customs / import duty?',
@@ -208,9 +208,9 @@ export default function FashionListPage() {
       </p>
 
       {/* SHIPPING ETA BADGE */}
-      <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-border bg-background px-4 py-2 text-sm font-medium">
-        <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" aria-hidden="true" />
-        <span>Ships in 5–7 business days · Worldwide delivery 7–12 days</span>
+      <div className="mt-6 inline-flex items-center gap-2 rounded-pill border border-border bg-background px-4 py-2 text-sm font-medium">
+        <span className="inline-block h-2 w-2 rounded-pill bg-emerald-500" aria-hidden="true" />
+        <span>Ships in 5-7 business days · Worldwide delivery 7-12 days</span>
       </div>
 
       {/* PRODUCT GRID */}
@@ -218,9 +218,9 @@ export default function FashionListPage() {
         {ITEMS.map((it) => (
           <article
             key={it.slug}
-            className="flex flex-col rounded-xl border border-border bg-background p-6 transition-colors hover:border-foreground"
+            className="flex flex-col rounded-card border border-border bg-background p-6 transition-colors hover:border-foreground"
           >
-            <div className="relative mb-5 aspect-square w-full overflow-hidden rounded-lg bg-muted">
+            <div className="relative mb-5 aspect-square w-full overflow-hidden rounded-card bg-muted">
               <Image
                 src={it.image_path}
                 alt={it.image_alt}
@@ -228,7 +228,7 @@ export default function FashionListPage() {
                 sizes="(max-width: 768px) 100vw, 33vw"
                 className="object-cover"
               />
-              <span className="absolute right-3 top-3 rounded-full bg-foreground/85 px-2.5 py-1 text-xs font-semibold uppercase tracking-widest text-background">
+              <span className="absolute right-3 top-3 rounded-pill bg-foreground/85 px-2.5 py-1 text-xs font-semibold uppercase tracking-widest text-background">
                 Size M
               </span>
             </div>
@@ -254,14 +254,14 @@ export default function FashionListPage() {
                   href={it.buy_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-block w-full rounded-lg bg-foreground px-4 py-3 text-center text-sm font-semibold text-background transition-opacity hover:opacity-90"
+                  className="inline-block w-full rounded-card bg-foreground px-4 py-3 text-center text-sm font-semibold text-background transition-opacity hover:opacity-90"
                 >
                   Buy ${it.price_usd}
                 </a>
               ) : (
                 <a
                   href="/letter"
-                  className="inline-block w-full rounded-lg border border-foreground px-4 py-3 text-center text-sm font-semibold text-foreground transition-colors hover:bg-foreground hover:text-background"
+                  className="inline-block w-full rounded-card border border-foreground px-4 py-3 text-center text-sm font-semibold text-foreground transition-colors hover:bg-foreground hover:text-background"
                 >
                   {STATUS_LABELS[it.status]}
                 </a>
@@ -282,7 +282,7 @@ export default function FashionListPage() {
           . Returns are free within 30 days.
         </p>
         <div className="mt-6 grid gap-6 md:grid-cols-2">
-          <div className="rounded-xl border border-border p-6">
+          <div className="rounded-card border border-border p-6">
             <h3 className="text-lg font-semibold">Tee</h3>
             <table className="mt-3 w-full text-sm">
               <thead className="text-xs uppercase tracking-widest text-muted-foreground">
@@ -303,7 +303,7 @@ export default function FashionListPage() {
               </tbody>
             </table>
           </div>
-          <div className="rounded-xl border border-border p-6">
+          <div className="rounded-card border border-border p-6">
             <h3 className="text-lg font-semibold">Hoodie</h3>
             <table className="mt-3 w-full text-sm">
               <thead className="text-xs uppercase tracking-widest text-muted-foreground">
@@ -329,7 +329,7 @@ export default function FashionListPage() {
 
       {/* CARE + RETURNS */}
       <section className="mt-16 grid gap-6 md:grid-cols-3">
-        <div className="rounded-xl border border-border p-6">
+        <div className="rounded-card border border-border p-6">
           <h3 className="text-base font-semibold uppercase tracking-widest text-muted-foreground">Care</h3>
           <ul className="mt-4 space-y-2 text-sm">
             <li>Machine wash cold, inside out</li>
@@ -338,17 +338,17 @@ export default function FashionListPage() {
             <li>Iron inside out, low heat</li>
           </ul>
         </div>
-        <div className="rounded-xl border border-border p-6">
+        <div className="rounded-card border border-border p-6">
           <h3 className="text-base font-semibold uppercase tracking-widest text-muted-foreground">Returns</h3>
           <p className="mt-4 text-sm leading-relaxed">
-            Free return or exchange within <strong>30 days</strong> of delivery. Wrong fit, wrong feel, change of mind — anything. Email{' '}
+            Free return or exchange within <strong>30 days</strong> of delivery. Wrong fit, wrong feel, change of mind - anything. Email{' '}
             <a className="underline hover:text-foreground" href="mailto:contact@aniccaai.com">
               contact@aniccaai.com
             </a>
             .
           </p>
         </div>
-        <div className="rounded-xl border border-border p-6">
+        <div className="rounded-card border border-border p-6">
           <h3 className="text-base font-semibold uppercase tracking-widest text-muted-foreground">Worldwide</h3>
           <ul className="mt-4 grid grid-cols-2 gap-2 text-sm">
             {SHIPPING_COUNTRIES.map((c) => (
@@ -363,7 +363,7 @@ export default function FashionListPage() {
 
       {/* WHY + HOW */}
       <section className="mt-16 grid gap-8 md:grid-cols-2">
-        <div className="rounded-xl border border-border p-6">
+        <div className="rounded-card border border-border p-6">
           <h2 className="text-xl font-semibold">Why on cotton</h2>
           <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
             An affirmation app reminds you when you open it. A shirt reminds you
@@ -371,7 +371,7 @@ export default function FashionListPage() {
             idea" from "I believe this idea." That's the entire product.
           </p>
         </div>
-        <div className="rounded-xl border border-border p-6">
+        <div className="rounded-card border border-border p-6">
           <h2 className="text-xl font-semibold">How it ships</h2>
           <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
             Each order triggers a Printful print run on the same continent as you. Zero warehouse, zero waste of unsold stock. Tracking number lands in your inbox the moment it leaves the printer. 100% of profit is reported live on{' '}
@@ -386,7 +386,7 @@ export default function FashionListPage() {
       {/* FAQ */}
       <section className="mt-16">
         <h2 className="text-2xl font-semibold">FAQ</h2>
-        <div className="mt-6 divide-y divide-border rounded-xl border border-border">
+        <div className="mt-6 divide-y divide-border rounded-card border border-border">
           {FAQ.map((item) => (
             <details key={item.q} className="group p-6">
               <summary className="cursor-pointer list-none text-base font-semibold marker:hidden flex justify-between items-center">
@@ -402,7 +402,7 @@ export default function FashionListPage() {
       {/* CUSTOMER REVIEWS */}
       <section className="mt-16">
         <h2 className="text-2xl font-semibold">Reviews</h2>
-        <div className="mt-4 rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
+        <div className="mt-4 rounded-card border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
           Be the first to review when we drop. Tag{' '}
           <a className="underline hover:text-foreground" href="https://x.com/aniccaxxx">
             @aniccaxxx
@@ -412,14 +412,14 @@ export default function FashionListPage() {
       </section>
 
       {/* CONTACT */}
-      <section className="mt-16 rounded-xl border border-border p-6 text-sm">
+      <section className="mt-16 rounded-card border border-border p-6 text-sm">
         <h2 className="text-lg font-semibold">Contact</h2>
         <p className="mt-2 text-muted-foreground">
           Email{' '}
           <a className="underline hover:text-foreground" href="mailto:contact@aniccaai.com">
             contact@aniccaai.com
           </a>{' '}
-          — Anicca answers within 24 hours. Replies are AI-generated; nuanced cases route to a human founder.
+          - Anicca answers within 24 hours. Replies are AI-generated; nuanced cases route to a human founder.
         </p>
       </section>
 

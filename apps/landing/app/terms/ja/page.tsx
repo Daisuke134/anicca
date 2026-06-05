@@ -1,15 +1,15 @@
-export const metadata = { title: '利用規約 | アニッチャ' };
+export const metadata = { title: '利用規約 | Anicca' };
 
 export default function TermsJA() {
   return (
     <main className="container mx-auto max-w-3xl px-4 py-24">
       <h1 className="text-3xl font-bold text-foreground">利用規約</h1>
       <p className="mt-6 text-muted-foreground">
-        本規約は、iOSアプリ「アニッチャ」（以下「本サービス」）の利用条件を定めるものです。ユーザーは本規約に同意のうえ本サービスを利用するものとします。
+        本規約は、iOSアプリ「Anicca」（以下「本サービス」）の利用条件を定めるものです。ユーザーは本規約に同意のうえ本サービスを利用するものとします。
       </p>
 
       <h2 className="mt-10 text-xl font-semibold text-foreground">1. 事業者情報</h2>
-      <p className="mt-3 text-muted-foreground">成田 大祐（個人事業主） / contact@aniccaai.com</p>
+      <p className="mt-3 text-muted-foreground">成田 大祐（個人事業主） / keiodaisuke@gmail.com</p>
 
       <h2 className="mt-10 text-xl font-semibold text-foreground">2. サービス概要</h2>
       <p className="mt-3 text-muted-foreground">
@@ -61,7 +61,7 @@ export default function TermsJA() {
       </p>
 
       <h2 className="mt-10 text-xl font-semibold text-foreground">10. 問い合わせ</h2>
-      <p className="mt-3 text-muted-foreground">contact@aniccaai.com までご連絡ください。</p>
+      <p className="mt-3 text-muted-foreground">keiodaisuke@gmail.com までご連絡ください。</p>
 
       <p className="mt-12 text-right text-sm text-muted-foreground">最終更新日: 2026年1月26日</p>
     </main>

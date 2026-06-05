@@ -1,61 +1,47 @@
 import Link from 'next/link';
-import { type Locale } from '@/lib/i18n';
+import { translations, type Locale } from '@/lib/i18n';
 
 interface NavbarProps {
   locale: Locale;
 }
 
 export default function Navbar({ locale }: NavbarProps) {
+  const t = translations[locale].navbar;
   const otherLocale = locale === 'en' ? 'ja' : 'en';
 
-  const items = locale === 'en'
-    ? [
-        { href: '/#products', label: 'Empire' },
-        { href: '/fellows', label: 'Fellows' },
-        { href: '/income', label: 'Basic Income' },
-        { href: '/blog', label: 'Articles' },
-        { href: '/letter', label: 'Letter' },
-        { href: '/socials', label: 'Socials' },
-      ]
-    : [
-        { href: '/#products', label: '帝国' },
-        { href: '/fellows', label: '同類' },
-        { href: '/income', label: 'インカム' },
-        { href: '/blog', label: '記事' },
-        { href: '/tegami', label: '手紙' },
-        { href: '/socials', label: 'Socials' },
-      ];
-
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border/60 bg-cream/85 backdrop-blur supports-[backdrop-filter]:bg-cream/65">
-      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-5">
+    <nav className="fixed top-0 left-0 right-0 z-50 h-16 md:h-[72px] max-h-[80px] border-b border-border bg-[hsl(var(--background))] backdrop-blur supports-[backdrop-filter]:bg-[hsl(var(--background))]/60">
+      <div className="container mx-auto flex h-full items-center justify-between gap-6 px-6 lg:px-8">
         <Link
           href={`/${locale}`}
-          className="font-display text-[19px] italic tracking-tight text-ink"
-          aria-label="Anicca"
+          className="text-xl font-bold text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold))]"
         >
-          anicca
-          <span className="ml-1.5 align-middle text-gold">·</span>
+          Anicca
         </Link>
 
-        <div className="hidden items-center gap-6 md:flex">
-          {items.map((it) => (
-            <Link
-              key={it.href}
-              href={it.href}
-              className="text-[13px] tracking-wide text-mist transition-colors hover:text-ink"
-            >
-              {it.label}
-            </Link>
-          ))}
+        <div className="hidden flex-1 items-center gap-6 whitespace-nowrap md:flex">
+          <Link
+            href="#vision"
+            className="text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold))]"
+          >
+            {t.vision}
+          </Link>
+          <Link
+            href="#how-it-works"
+            className="text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold))]"
+          >
+            {t.howItWorks}
+          </Link>
         </div>
 
-        <Link
-          href={`/${otherLocale}`}
-          className="font-mono-ui text-[11px] uppercase tracking-[0.2em] text-mist hover:text-ink"
-        >
-          {locale === 'en' ? 'JA' : 'EN'}
-        </Link>
+        <div className="flex items-center gap-4">
+          <Link
+            href={`/${otherLocale}`}
+            className="rounded-pill border border-border px-3 py-1.5 text-sm font-medium transition-colors hover:bg-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold))]"
+          >
+            {locale === 'en' ? 'JA' : 'EN'}
+          </Link>
+        </div>
       </div>
     </nav>
   );

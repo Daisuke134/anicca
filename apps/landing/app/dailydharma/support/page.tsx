@@ -1,23 +1,11 @@
-import JsonLd from '@/components/JsonLd';
-
 export const metadata = {
   title: 'Support | Daily Dharma',
   description: 'Get help with Daily Dharma - Buddhist Wisdom for Every Day'
 };
 
-const ddSupportLd = {
-  '@context': 'https://schema.org',
-  '@type': 'ContactPage',
-  name: 'Daily Dharma — Support',
-  url: 'https://aniccaai.com/dailydharma/support',
-  description: 'Support contact page for the Daily Dharma iOS app. Email contact@aniccaai.com for assistance.',
-  publisher: { '@type': 'Organization', name: 'Anicca', url: 'https://aniccaai.com' },
-};
-
 export default function DailyDharmaSupportEN() {
   return (
     <main className="container mx-auto max-w-3xl px-4 py-24">
-      <JsonLd data={ddSupportLd} />
       <h1 className="text-3xl font-bold text-foreground">Support</h1>
       <p className="mt-2 text-muted-foreground">Daily Dharma - Buddhist Wisdom App</p>
 
@@ -32,10 +20,10 @@ export default function DailyDharmaSupportEN() {
         </p>
         <p className="mt-4">
           <a
-            href="mailto:contact@aniccaai.com"
+            href="mailto:keiodaisuke@gmail.com"
             className="text-primary hover:underline font-medium"
           >
-            contact@aniccaai.com
+            keiodaisuke@gmail.com
           </a>
         </p>
         <p className="mt-2 text-sm text-muted-foreground">

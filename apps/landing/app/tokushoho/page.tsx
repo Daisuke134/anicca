@@ -29,7 +29,7 @@ export default function TokushohoPage() {
         </div>
         <div>
           <dt className="font-semibold text-foreground">メールアドレス</dt>
-          <dd className="mt-1 text-muted-foreground">contact@aniccaai.com（受付：24時間、原則2営業日以内に返信）</dd>
+          <dd className="mt-1 text-muted-foreground">keiodaisuke@gmail.com（受付：24時間、原則2営業日以内に返信）</dd>
         </div>
         <div>
           <dt className="font-semibold text-foreground">販売URL</dt>

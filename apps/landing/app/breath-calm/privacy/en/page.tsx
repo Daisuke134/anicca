@@ -9,7 +9,7 @@ export default function BreathCalmPrivacyEN() {
       </p>
 
       <h2 className="mt-10 text-xl font-semibold text-foreground">1. Business Information</h2>
-      <p className="mt-3 text-muted-foreground">Daisuke Narita (Individual Business Owner) / contact@aniccaai.com</p>
+      <p className="mt-3 text-muted-foreground">Daisuke Narita (Individual Business Owner) / keiodaisuke@gmail.com</p>
 
       <h2 className="mt-10 text-xl font-semibold text-foreground">2. Scope of Application</h2>
       <p className="mt-3 text-muted-foreground">
@@ -79,7 +79,7 @@ export default function BreathCalmPrivacyEN() {
 
       <h2 className="mt-10 text-xl font-semibold text-foreground">11. User Rights</h2>
       <p className="mt-3 text-muted-foreground">
-        You may request access to, correction of, or deletion of your personal data by contacting us at contact@aniccaai.com. Requests will be handled within a reasonable period.
+        You may request access to, correction of, or deletion of your personal data by contacting us at keiodaisuke@gmail.com. Requests will be handled within a reasonable period.
       </p>
 
       <h2 className="mt-10 text-xl font-semibold text-foreground">12. Children</h2>
@@ -94,7 +94,7 @@ export default function BreathCalmPrivacyEN() {
 
       <h2 className="mt-10 text-xl font-semibold text-foreground">14. Contact</h2>
       <p className="mt-3 text-muted-foreground">
-        For questions or concerns about this policy, contact: contact@aniccaai.com
+        For questions or concerns about this policy, contact: keiodaisuke@gmail.com
       </p>
 
       <p className="mt-10 text-sm text-muted-foreground">Last updated: February 2026</p>
@@ -102,7 +102,7 @@ export default function BreathCalmPrivacyEN() {
       <div className="mt-8 border-t border-border pt-6 text-sm text-muted-foreground">
         <a href="/breath-calm/privacy/ja" className="underline hover:text-foreground">日本語版プライバシーポリシー</a>
         {' · '}
-        <a href="/breath-calm/" className="underline hover:text-foreground">Back to BreathCalm</a>
+        <a href="/breath-calm" className="underline hover:text-foreground">Back to BreathCalm</a>
       </div>
     </main>
   );
