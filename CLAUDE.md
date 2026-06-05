@@ -321,8 +321,7 @@ Flow (text fallback — 全 step が MANDATORY):
 
 | ローカル path | Push 先 (origin) | 役割 |
 |---|---|---|
-| `~/anicca-project/` (= この cwd) | `origin` = `github.com/Daisuke134/anicca-products-oss`（public, 近く release） | Dais の products working tree。 `git push` 単体 で canonical へ |
-| `~/anicca-products-oss/` | `origin` = `github.com/Daisuke134/anicca-products-oss` | canonical clone。 `.github/workflows/netlify-deploy.yml` (= ★ 残ってる 唯一 の workflow ★) が aniccaai.com に auto-deploy |
+| `~/anicca-project/` (= ★ 唯一の products working tree ★) | `origin` = `github.com/Daisuke134/anicca-products-oss`（public） | ★ Claude が iOS / web / api / mobile を 触る 唯一 の場所 ★。 OpenClaw skill (aniccaai-dashboard / anicca-article-daily / capture-today) も この folder を read/write。 `.github/workflows/netlify-deploy.yml` で push → aniccaai.com auto-deploy |
 | `~/.openclaw/` | `origin` = `github.com/Daisuke134/anicca-private-backup`（private） | 本番 personal Anicca on OpenClaw — gateway / cron / skills / state、 Dais の private info |
 | `~/anicca-oss/` | `origin` = `github.com/Daisuke134/anicca-oss`（public OSS framework） | Anicca 本体 OSS + Hermes 等 instance archetype の設計 source |
 | `~/.hermes/` (runtime) | sync → `github.com/Daisuke134/anicca-genesis`（public, MIT） | genesis Anicca の **body** = LIVE state ledger。 secrets は .gitignore、 cron/scripts/state/*.jsonl のみ push。 P19 genesis-sync skill が 3h 毎自動同期予定 |
@@ -356,17 +355,18 @@ aniccaai.com の `netlify-deploy.yml` だけ が `~/anicca-products-oss/.github/
 ## ミニマム folder tree
 
 ```
-~/anicca-project/                          # cwd, working tree of anicca-products-oss
+~/anicca-project/                          # ★ 唯一 の products folder (★ 2026-06-05 unify) ★
 ├── aniccaios/                             # iOS Swift app (release は cd aniccaios && fastlane)
 ├── apps/
 │   ├── api/                               # Node/Express API (Railway)
 │   └── landing/                           # Next.js → aniccaai.com
+│       ├── public/dashboard.json          # ← OpenClaw aniccaai-dashboard cron が refresh
+│       ├── content/blog/                  # ← OpenClaw anicca-article-daily が publish
+│       ├── data/research/                 # ← OpenClaw が読む topic queue
+│       └── scripts/v2-recon-oss.mjs       # ← Playwright visual recon (= migrated from old products-oss)
 ├── mobile-apps/                           # factory apps
+├── .github/workflows/netlify-deploy.yml   # ★ 1 個 だけ ★ — dev/main push → aniccaai.com
 └── docs/superpowers/{specs,plans}/        # SDD spec + plan
-
-~/anicca-products-oss/                     # canonical mirror (origin)
-├── aniccaios/  apps/  mobile-apps/
-└── .github/workflows/netlify-deploy.yml   # ★ 1 個 だけ ★ — dev/main push → aniccaai.com
 
 ~/.openclaw/                               # 本番 personal Anicca、 cron canonical
 ├── skills/  cron/jobs.json  gateway/  state/
@@ -384,12 +384,31 @@ aniccaai.com の `netlify-deploy.yml` だけ が `~/anicca-products-oss/.github/
 | 編集場所 | command |
 |---|---|
 | `~/anicca-project/` | `git push` (origin = anicca-products-oss) |
-| `~/anicca-products-oss/` | `git push` (origin = canonical) |
 | `~/.openclaw/` | `git push` (origin = anicca-private-backup) |
 | `~/anicca-oss/` | `git push` (origin = anicca-oss、 public) |
 | `~/.hermes/` runtime state (cron/jobs.json, scripts/, state/*.jsonl, SOUL.md, AGENTS.md) | P19 genesis-sync skill が cron で `git push` (origin = anicca-genesis、 public)。 手動 同期 は `~/.cache/anicca-clones/anicca-genesis/` に clone → 安全 ファイル のみ cp → commit |
 
 `git push <別名> <branch>` の 別名 remote 指定 ★ 不要 ★。 全 path 統一 `git push`。
+
+## ★ Claude が 編集 する 場所 ★ (= 最頻 違反 防止、 2026-06-05)
+
+| やる事                              | 使う folder              | 絶対 触らない                                |
+|-------------------------------------|--------------------------|---------------------------------------------|
+| 製品 (iOS / web / api / mobile)     | `~/anicca-project/`     | `~/anicca-products-oss/` (★ 2026-06-05 削除済 ★) |
+| エージェント能力 (skill / spec / TDD)| `~/anicca-oss/`         | `~/.hermes/`, `~/.openclaw/` (= LIVE runtime)|
+| Anicca の 自己 修正                 | ★ どの folder も 直接 編集 禁止 ★ ─ `gh issue create -R Daisuke134/anicca-oss` で issue 立てる → forum-issues + forum-rollout が自動 apply |
+
+**理由**: `~/.openclaw/` と `~/.hermes/` は LIVE runtime (= 既に走ってる Anicca 本体)。 直接 編集 = Anicca の 自律性 破壊 + 衝突。 Anicca 自身 が forum-issues 経由 で 自分 を 直す のが OSS swarm の 正しい形。 例外: human-loop pain (= 例: 真夜中 電話) の surgical fix だけ は Dais 明示 OK を取って 直接 編集。
+
+## Issue を 立てる 場所 (= 母 / 個 の 2 層)
+
+| 種類                                  | repo                                    |
+|---------------------------------------|-----------------------------------------|
+| 全 Anicca 共通 改善 (= 母)            | `Daisuke134/anicca-oss`                 |
+| genesis instance (Dais Mac) 個別      | `Daisuke134/anicca-genesis`             |
+| 子 instance anicca001..N の 個別      | `Daisuke134/anicca-XXX` (各 instance の body repo) |
+
+全 instance は 毎日 `git -C ~/anicca-oss pull origin main` で 母 から 最新 skill / spec を fetch (P22 anicca-mother-sync が cron 化 予定)。
 
 ## 🔋 LLM Token Sources — 3 fuel ルート (どれが何を喰うか)
 
