@@ -315,11 +315,52 @@ Flow (text fallback — 全 step が MANDATORY):
 |------|-----|
 | Mac Mini | anicca-mac-mini-1（Tailscale: 100.99.82.95） |
 | MacBook SSH | `ssh cbns03@100.108.140.123` |
-| **anicca-oss** | github.com/Daisuke134/anicca-oss（**エージェント本体・全能力 skills**。clean・canonical。能力の設計/実装はここ） |
-| **anicca-products-oss** | github.com/Daisuke134/anicca-products-oss（**製品: iOS/web/alarm-SaaS/api**。clean・canonical） |
-| anicca-products | github.com/Daisuke134/anicca-products（旧製品 monorepo・private・履歴あり。この作業ディレクトリの origin。**エージェント能力の設計はここに push しない**） |
-| anicca / anicca-private-backup | 旧本体 `anicca` は漏洩引退。runtime(~/.openclaw)秘密は `anicca-private-backup`(private) |
 | VPS | 使わない（2026-02-18移行完了済み） |
+
+## ローカル + push 先 マップ（必ずここを見てから push）
+
+| ローカル path | Push 先 (git remote) | 役割 |
+|---|---|---|
+| `~/anicca-project/` (= この cwd) | **`git push oss <branch>`** → `github.com/Daisuke134/anicca-products-oss`（近く public） | Dais が作る products の working tree。 ★ `git push` 単体 NG ★（`origin`= 旧 `anicca-products` private、誰も読まない） |
+| `~/anicca-products-oss/` | `origin` = `github.com/Daisuke134/anicca-products-oss` | canonical clone。 `.github/workflows/netlify-deploy.yml` が `paths: apps/landing/**` で aniccaai.com に auto-deploy |
+| `~/.openclaw/` | `origin` = `github.com/Daisuke134/anicca-private-backup`（private） | 本番 personal Anicca on OpenClaw — gateway / cron / skills / state、 Dais の private info |
+| `~/anicca-oss/` | `origin` = `github.com/Daisuke134/anicca-oss`（public OSS framework） | Anicca 本体 OSS + Hermes 等 instance archetype の設計 source |
+| 旧 `~/anicca-products/` 系 | `github.com/Daisuke134/anicca-products`（private, retired）| 旧 monorepo。 2026-06-05 以降 cron だけが古い path を持つ移行残債。 順次 `~/anicca-products-oss/` に flip 後、GitHub 上で archive 予定。 ★ 新規 push 禁止 ★ |
+
+## ミニマム folder tree
+
+```
+~/anicca-project/                          # cwd, products working tree
+├── aniccaios/                             # iOS Swift app
+├── apps/
+│   ├── api/                               # Node/Express API (Railway)
+│   └── landing/                           # Next.js → aniccaai.com
+├── mobile-apps/                           # factory apps
+└── docs/superpowers/{specs,plans}/        # SDD spec + plan
+
+~/anicca-products-oss/                     # canonical mirror (push 先)
+├── aniccaios/  apps/  mobile-apps/
+└── .github/workflows/netlify-deploy.yml   # main push → aniccaai.com
+
+~/.openclaw/                               # 本番 personal Anicca
+├── skills/  cron/  gateway/  state/
+├── .env (chmod 600)                       # secrets, git ignore
+└── CONSTITUTION.md  IDENTITY.md  SOUL.md
+
+~/anicca-oss/                              # OSS framework + Hermes archetype
+├── skills/  identity/  runtime/  services/
+├── control-room/  install.sh
+└── adapters/  templates/
+```
+
+## Push ルール（混乱防止）
+
+| 編集場所 | 必ず打つ command |
+|---|---|
+| `~/anicca-project/` の landing / iOS / api / mobile-apps | `git push oss <branch>` (★ `git push` 単体 NG ← origin が旧 private に行く) |
+| `~/anicca-products-oss/` 直接 | `git push` (origin = canonical) |
+| `~/.openclaw/` の skill / cron / spec | `git push` (origin = anicca-private-backup) |
+| `~/anicca-oss/` の framework / Hermes / skills | `git push` (origin = anicca-oss、 public) |
 
 ## ブランチ & デプロイ
 
