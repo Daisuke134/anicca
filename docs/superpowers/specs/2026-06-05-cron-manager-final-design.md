@@ -691,4 +691,204 @@ RENAME or NO-OP for remaining crons: none.
 | 2026-06-05 22:00 | v3 cron-doctor-v3 (= R-1..R-15 bundling) |
 | 2026-06-05 23:30 | v3.1 cron-manager weekly (= 廃案、 weekly は遅すぎ) |
 | 2026-06-05 23:50 | v3.2 + finance + anomaly (= 別 cron 案、 廃案 = recursive comedy) |
-| **2026-06-05 24:00** | **★ final = this file ★** — 1 cron hourly + gpt-5.4 + agent fallback + wrapper 廃止 + iteration loop + guardrails (social/article 絶対不可侵) |
+| 2026-06-05 24:00 | v3.3 hourly + gpt-5.4 + wrapper 廃止 (= weekly よりマシだが Dais「5.4 で hourly は too much」 で再修正) |
+| **2026-06-06 00:30** | **★ FINAL FINAL = this version ★** — Dais "no human in loop AT ALL" 厳命 + 8 source 追加 search 完了。 6h cycle、 10 actions (= REWRITE_SKILL_CODE / QUARANTINE 追加)、 5 attempts (= Voyager pattern)、 learnings.md compound 学習、 **escalation 完全廃止** (= 真の zero-human) |
+
+---
+
+## 9. ★ v3.4 FINAL — Zero-human autonomous, 6h cycle (Dais 2026-06-06 verbatim 反映) ★
+
+### 9.1 設計変更点 (= v3.3 からの diff)
+
+| 項目 | v3.3 | **v3.4 (= final)** |
+|---|---|---|
+| schedule | `0 * * * *` (= 24/day) | **`0 */6 * * *` Asia/Tokyo** (= **4/day**) |
+| iteration cap | 3 attempts | **5 attempts** (Voyager pattern) |
+| 失敗時 (guardrail HIT) | `:rotating_light:` Slack で human escalate | **REWRITE_SKILL_CODE** → 失敗 → **QUARANTINE** (= monthly schedule に reduce、 後日 retry)。 human escalate は無し |
+| 失敗時 (非 guardrail) | archive | **archive** (= 変わらず) |
+| actions | 7 | **10** (= REWRITE_SKILL_CODE + QUARANTINE 追加) |
+| 学習 | なし | **`~/.openclaw/.learnings/cron-manager.md` に各 attempt outcome auto-append**、 次 fire で直近 50 entries read |
+| Token cost / 月 | hourly = $300-700 | **$360/mo** (= 4/day × gpt-5.4 × 150k tokens) |
+| 1 巡時間 (62 broken) | 半日 | **約 3 日** (= 20 cron-touches/day × 3 日) |
+
+### 9.2 10 actions (= 完全リスト)
+
+| # | action | trigger | command |
+|---|---|---|---|
+| 1 | KEEP | guardrail HIT + 偽 ok | log only |
+| 2 | FIX_PROMPT | message construct broken | `openclaw cron edit <id> --message <new>` |
+| 3 | REDUCE_FREQUENCY | 過剰 fire、 token waste | `openclaw cron edit <id> --cron <less>` |
+| 4 | INCREASE_FREQUENCY | demand observed | `openclaw cron edit <id> --cron <more>` |
+| 5 | DOWNGRADE_MODEL | task simple, expensive model overkill | `openclaw cron edit <id> --model openai-codex/gpt-5.4-mini` |
+| 6 | NARROW_SCOPE | message bloated | `openclaw cron edit <id> --message <shorter>` |
+| 7 | **REWRITE_SKILL_CODE** | attempt 4-5: prompt fix で直らない | `Write/Edit` で `~/.openclaw/skills/<x>/scripts/run.sh` を書換 (= Voyager 「agent writes/modifies code」 pattern) |
+| 8 | **QUARANTINE** | guardrail HIT + 5 attempts fail | `openclaw cron edit <id> --cron "0 5 1 * *"` (= 月 1 に reduce) + learnings.md に「next month retry」 記録 |
+| 9 | ARCHIVE | 非 guardrail + (30 日 stale OR 5 attempts fail) | `openclaw cron disable <id>` + `mv skill → .archive/` |
+| 10 | DELETE | archived 90 日 + 復活 0 | `openclaw cron rm <id>` + `rm -rf .archive/<x>` |
+
+### 9.3 Iteration loop (= Voyager + Codex CLI Stop hook 流)
+
+```python
+def manage_candidate(cand):
+    # Pre-flight: read learnings for similar past cases
+    learnings = read_recent_learnings("cron-manager.md", limit=50)
+    similar = grep_similar(learnings, cand.name)
+
+    for attempt in 1..5:
+        investigate(cand)              # cron runs / cron get / SKILL.md / tail jsonl
+        action = decide(cand, attempt, similar)
+        apply(action)
+
+        # Voyager-style binary verify (= "no subjective middle")
+        result = run("bash $SKILL_DIR/scripts/verify.sh <id>")
+
+        if result.exit == 0:
+            append_learning(f"GREEN attempt={attempt} action={action.name} cron={cand.name}")
+            return "fixed"
+        else:
+            append_learning(f"RED attempt={attempt} action={action.name} cron={cand.name} err={result.stderr[:200]}")
+
+    # 5 attempts all failed
+    if cand.guardrailed:
+        # NEVER escalate to human. Quarantine.
+        apply_action(QUARANTINE, cand)
+        append_learning(f"QUARANTINED cron={cand.name} reason=5_attempts_failed_but_guardrailed retry_at=next_month")
+        return "quarantined"
+    else:
+        apply_action(ARCHIVE, cand)
+        append_learning(f"ARCHIVED cron={cand.name} reason=5_attempts_failed")
+        return "archived"
+```
+
+### 9.4 learnings.md schema
+
+```
+# ~/.openclaw/.learnings/cron-manager.md
+
+## 2026-06-06 06:00 JST fire
+- GREEN attempt=1 action=FIX_PROMPT cron=anicca-heartbeat
+- GREEN attempt=2 action=REWRITE_SKILL_CODE cron=larry-trend-hunter-ja  (= attempt 1 FIX_PROMPT failed)
+- QUARANTINED cron=anicca-music-stockmusic reason=5_attempts_failed guardrail=true retry_at=2026-07-06
+- ARCHIVED cron=zombie-old-cron reason=5_attempts_failed_non_guardrail
+
+## 2026-06-06 12:00 JST fire
+- (skipping anicca-music-stockmusic — quarantined until 2026-07-06)
+- GREEN attempt=1 action=DOWNGRADE_MODEL cron=anicca-comedy-skit  (= referenced 06:00 GREEN pattern for similar)
+- ...
+```
+
+### 9.5 Schedule timeline (= 1 日)
+
+```
+JST       cron-manager fire        想定 work
+─────────────────────────────────────────────────────────────
+00:00     ★ fire #1 + finance ★    top 5 fix + Slack :money_with_wings: + :broom:
+06:00     ★ fire #2 ★              top 5 fix + Slack :broom:
+12:00     ★ fire #3 ★              top 5 fix + Slack :broom:
+18:00     ★ fire #4 ★              top 5 fix + Slack :broom:
+─────────────────────────────────────────────────────────────
+合計      4 fires/day              20 cron-touches/day
+```
+
+### 9.6 Updated --message for `openclaw cron add` (= v3.4 final)
+
+```bash
+openclaw cron add \
+  --name "anicca-cron-manager" \
+  --description "Autonomous cron lifecycle manager v3.4 — zero-human, 6h cycle, gpt-5.4 + agent fallback, 10 actions, 5-attempt Voyager iteration, learnings.md compound" \
+  --cron "0 */6 * * *" \
+  --tz "Asia/Tokyo" \
+  --session isolated \
+  --thinking medium \
+  --timeout-seconds 1500 \
+  --model "openai-codex/gpt-5.4" \
+  --no-deliver \
+  --message "$(cat <<'PROMPT'
+あなたは anicca-cron-manager v3.4 (= zero-human autonomous)。 6h ごと (= 00/06/12/18 JST) に走る。
+
+絶対ルール:
+1. human escalation 禁止 (= :rotating_light: で Dais 呼ばない)
+2. 全ての fix 試行後、 必ず openclaw cron run --wait --expect-final で実 fire verify
+3. 各 outcome を ~/.openclaw/.learnings/cron-manager.md に append
+4. 次 fire 開始時に同 file の直近 50 entries を read (= 過去の解決パターン参照)
+5. never-disable.txt の guardrail HIT cron は disable/archive/delete 禁止、 FIX のみ
+6. format error / context overflow は fallback しない (公式) ので message 短縮 or 別 model
+
+STEP 1 — learnings load:
+  exec_command: tail -200 ~/.openclaw/.learnings/cron-manager.md
+  (= 過去 24h 程度の outcome を context に取り込む)
+
+STEP 2 — filter:
+  exec_command: python3 $HOME/.openclaw/skills/anicca-cron-manager/scripts/filter.py
+  → top 5 error 状態 cron。 quarantined は skip
+
+STEP 3 — finance (00:00 fire のみ):
+  if 0 <= 現在 hour < 6:
+    exec_command: bash $HOME/.openclaw/skills/anicca-cron-manager/scripts/finance.sh
+
+STEP 4 — for each top 5 candidate:
+  for attempt in 1..5:
+    a. exec_command: openclaw cron runs --id <id> --limit 5
+    b. exec_command: openclaw cron get <id>
+    c. exec_command: cat ~/.openclaw/skills/<skill>/SKILL.md
+    d. exec_command: tail -50 ~/.openclaw/cron/runs/<name>.jsonl
+    e. exec_command: grep <name> ~/.openclaw/skills/anicca-cron-manager/data/never-disable.txt
+
+    decide 1 of 10 actions:
+      attempt 1-3: KEEP / FIX_PROMPT / REDUCE_FREQUENCY / INCREASE_FREQUENCY /
+                   DOWNGRADE_MODEL / NARROW_SCOPE
+      attempt 4-5: REWRITE_SKILL_CODE (= Write/Edit で scripts/run.sh 書換)
+      終端 (5 attempts fail):
+        if guardrailed: QUARANTINE (= --cron "0 5 1 * *" + learnings に retry_at 記録)
+        else:           ARCHIVE (= cron disable + mv skill → .archive/)
+
+    apply action via exec_command
+    VERIFY: exec_command: bash $HOME/.openclaw/skills/anicca-cron-manager/scripts/verify.sh <id>
+      exit 0 = GREEN → append learnings, break
+      exit 1 = RED → next attempt
+    Voyager note: attempt 4-5 の REWRITE_SKILL_CODE で agent は scripts/run.sh を Write/Edit。
+                  公式 (Codex Stop hook + AGENTS.md) 同 pattern。
+
+STEP 5 — summary:
+  Slack #metrics に :broom: cron-manager YYYY-MM-DD HH:00
+    examined=5 green=G red_quarantined=Q red_archived=A escalated=0 (= 常に 0)
+    per-cron 1 行 outcome
+
+絶対禁止:
+- 「shell tool が ない」 / 「MCP server が ない」 等 の 言い訳
+- Slack に :rotating_light: で human 呼ぶこと (= 即廃止、 quarantine か archive で自力解決)
+- guardrail HIT cron の disable/archive/delete
+- learnings.md への append 忘れ
+- verify.sh 走らせずに「fix 完了」 と言うこと
+PROMPT
+)"
+```
+
+### 9.7 効果再計算 (= 6h、 5 attempts、 learnings 学習)
+
+| metric | 値 |
+|---|---|
+| 1 fire 工数 | ≦ 5 candidates × ≦ 5 attempts = ≦ 25 cron operations |
+| token / fire | ≒ 200k (= read-heavy)、 mixed action |
+| token / day | ≒ 800k (= 4 fires) |
+| cost / day | ≒ $16 (= gpt-5.4 main) or ≒ $4 (= 大半が fallback mini に流れる場合) |
+| cost / month | **≒ $360** (上振れ) or **≒ $120** (下振れ) |
+| 62 broken 全件 1 巡 | ≒ 3 日 (= 20 cron-touches/day) |
+| 全 broken 解決 (= 全件 GREEN or QUARANTINE or ARCHIVE) | ≒ 1-2 週間 (= learnings.md compound で精度上がる) |
+| 1 ヶ月後 enabled cron 数 | 150 → **120** (= 30 件 archived) |
+| 3 ヶ月後 | 150 → **100** |
+| 1 年 stable | 150 → **80** |
+| 1 年 token cost | $1,455/mo → **$780-900/mo** + manager 自身 $200/mo = **net 約 $1,000/mo** (= −$450/mo) |
+
+### 9.8 Source 一覧 (= verbatim quote 引用済)
+
+- [Addy Osmani: Self-Improving Coding Agents](https://addyosmani.com/blog/self-improving-agents/) — stop conditions / learnings.md / compound
+- [Codex CLI TDD Workflow (Daniel Vaughan, Apr 2026)](https://codex.danielvaughan.com/2026/04/10/codex-cli-test-driven-development-workflow/) — Stop hook exit 2 retry / "until tests pass" 主義
+- [Mindstudio: Self-Improving AI Agent Feedback Loop](https://www.mindstudio.ai/blog/self-improving-ai-agent-feedback-loop) — learnings.md schema / binary pass/fail
+- [Voyager (NVIDIA, Minecraft skill library 2023)](https://arxiv.org/pdf/2305.16291) — 「check library before writing new code」 / iterative prompting with feedback
+- [SAGE / SkillRL (2026)](https://arxiv.org/pdf/2604.03964) — +8.9% goals / -59% tokens / recursive evolution
+- [TraceCoder (Multi-agent observe-analyze-repair)](https://arxiv.org/pdf/2604.02647) — runtime traces guided repair
+- [Hermes Curator official docs](https://hermes-agent.nousresearch.com/docs/user-guide/features/curator) — never auto-delete, archive 90d recovery
+- [Algomox: Self-Healing Infrastructure with Agentic AI](https://www.algomox.com/resources/blog/self_healing_infrastructure_with_agentic_ai/) — closed-loop pipeline、 MTTR 6.9 min benchmark
+- [Komodor: AI SRE for Autonomous Emergency Response](https://komodor.com/learn/ai-sre-for-autonomous-emergency-response/) — production graduated autonomy
+- [OpenClaw model-failover (公式)](https://docs.openclaw.ai/concepts/model-failover) — fallback trigger rules / format error 例外
