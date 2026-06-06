@@ -370,6 +370,114 @@ Public ranking page on `https://aniccaai.com/socials`:
 
 ---
 
+## Part O — Slideshow→Video skill (YouTube Shorts scaling)
+
+ffmpeg + 既存 slide image 6 枚 → 24 秒 mp4。 ✅ demo verified 2026-06-06。 `/tmp/larry-slideshow-demo.mp4` で確認済 (1080×1920, 2MB, H.264 yuv420p YouTube 互換)。
+
+### New skill: `~/.openclaw/skills/anicca-slideshow-to-video/`
+
+```
+scripts/
+  build.sh <run_dir> <music_file?> <out.mp4>   # ffmpeg concat + optional audio overlay
+  fetch-music.sh <niche>                        # royalty-free or DL via tiktok-api-dl
+  post-to-yt.sh <out.mp4> <yt_integration_id>   # Postiz YouTube publish
+```
+
+### Hook
+Larry / iam / reelclaw 投稿成功後 (post-skill in jobs.json) に hook:
+```
+ON larry-* SUCCESS:
+  build slideshow.mp4 from same slide images
+  post to YT Shorts integration (cmmzukbkw04ulp30yfvijrwio = @anicca-ai)
+```
+
+### Music
+- royalty-free clip 1 つ bundle (skill 内 `assets/music/affirmation-bg.mp3`)
+- 後で `musicdl` or `tiktok-api-dl` でバズ音源差替
+- TikTok 投稿は元々 audio 付き（TT API）→ YouTube 用にも同じ音源使えれば一貫性 +
+
+### Scale impact
+Larry 8 系統 × 3/日 = 24 / 日 × YT shorts publish = **+24 YT 投稿/日 = 168/週**
+→ 既存 reelclaw YT 7/日 = 49/週 + 168/週 = **217/週 ✓ 100/週/platform クリア**
+
+タスク #82–85 で実装。
+
+---
+
+## Part P — Cron run-verification on every patch (Dais 2026-06-06)
+
+「次の自然発火を待たず即 fire で検証」 = 失敗を Anicca が自分で見つけて自己修復する基本姿勢。
+
+### Workflow per patch (B1, B2, B3, C, D, E, F, I, etc.)
+```
+1. patch jobs.json / skill file
+2. openclaw cron run <job-id>           ← 即 fire
+3. check exit code + log (~/.openclaw/cron/runs/<run-id>.jsonl)
+4. if non-zero:
+   a. read error verbatim
+   b. patch root cause
+   c. goto 2
+5. camofox / Postiz API で実投稿目視 (account, hook, text fit, language match)
+6. mark task #completed in tasklist
+```
+
+### 削除されるべき antipattern
+- 「次の 8 am まで待つ」「3時間後の自然発火で見る」 = 違反 (HARD RULE #14 finish-job)
+- 失敗を Slack 通知だけして Anicca が後で見つける期待 = 違反 (Dais 監視 ≠ Anicca 監視)
+
+タスク #86 で全パッチに「即 fire 検証」step 義務化。
+
+---
+
+## Part Q — Dead-account daily mail (gog gmail、 Slack 廃止)
+
+Slack はノイズ多くて見落とすので **重要事項は Gmail 送信**。 ただし送信ルール:
+
+### 送信タイミング
+- 毎日 06:30 JST (anicca-account-health-daily cron in spec Part G3)
+- **dead account が 1 件もない日は mail を送らない** (no-op、 Dais の inbox 詰まらせない)
+
+### 送信条件 (per account)
+`zero-view-streaks.json` に `streak ≥ 3 days` の record → dead 判定 → Gmail 1 通にまとめて送信
+
+### Mail format (ASCII)
+```
+Subject: [Anicca] Please warm up or create new accounts (N dead today)
+
+The following accounts have 0 views consecutively. Pick warm-up OR new-account per row:
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ # │ @handle              │ posting               │ dead days │ new mail       │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ 1 │ @anicca.affirm.he    │ EN affirmation        │     5     │ tt-tt5@agent…  │
+│   │                      │ slideshow w/ maleface │           │ (key: stored   │
+│   │                      │                       │           │  in registry)  │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ 2 │ @anicca.kuchiguse.he │ JA mental-quote       │     7     │ tt-tt6@agent…  │
+│   │                      │ slideshow w/ maleface │           │                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ 3 │ honne_reveal         │ EN honne TT           │     3     │ tt-tt7@agent…  │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Action:
+  - If you want to WARM UP an existing account → reply "warmup #N" (Anicca pauses cron 7d, post as draft)
+  - If you want to CREATE NEW account → reply "new #N" (use the prepared mail above)
+    pw = Keiodaisuke1234! / 2FA OTP = Anicca が即読む
+
+Mails are pre-provisioned in registry (~/.openclaw/state/agentmail-pool.jsonl).
+On reply, Anicca walks you through TikTok signup + Postiz connect.
+```
+
+### Implementation
+- Cron 既存 `aniccaai-dashboard-refresh` (05:00 JST) → 拡張で `socials-latest.json` + dead 検出
+- 新サブステップ: dead 件数 > 0 なら上記 format で gog gmail send
+- 送信時、 各 dead row に対し fresh mail を pool から allocate (or provision daily if pool < 20)
+- Registry に `assigned_mail_for_next_replacement` フィールド追加
+
+タスク #87。
+
+---
+
 ## Part H — 4 new accounts (mail)
 
 AgentMail free tier is at inbox limit → use **Gmail aliases** (Dais authorized "alias, whatever"). 2FA auto-read via Gmail MCP. Ready immediately, no provisioning:
