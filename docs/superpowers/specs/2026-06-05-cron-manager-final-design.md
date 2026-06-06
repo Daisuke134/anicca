@@ -2485,6 +2485,221 @@ UUID=$(openclaw cron list --all --json | jq -r '.jobs[] | select(.name=="anicca-
 ═════════════════════════════════════════════════════════════════════════════
 ```
 
+### 15.20o ★★★ v9.4 — reviewer 3 blocker (B1/B2/B3) fix + 2 advisory (A1/A2) ★★★
+
+> v9.3 reviewer verdict: "NOT shippable. 3 real blockers + 2 advisories."
+> v9.4 で全 fix。 honest residual = ship-only `openclaw plugins registry --rebuild` 効果のみ。
+
+#### Reviewer fix matrix
+
+| ID | reviewer 指摘 | v9.4 fix |
+|---|---|---|
+| B1 | Patch G case 3 doctor --fix が memory verbatim「Phase 1 後 二度と」 違反 | ★ MANUAL_DOCTOR_FIX=1 env gate + Slack escalate ★ |
+| B2 | `grep -ic "conflict\|error\|fail"` "No errors found" header にも match | ★ `grep -icE '^(error\|fail\|conflict):'` anchor ★ |
+| B3 | SNAP_BEFORE reuse で strategy N の mutations が baseline 化 | ★ SNAP_ORIGINAL immutable、 各 AFTER を ORIGINAL と diff ★ |
+| A1 | `grep -oF -f` title が `-` 始まりで flag 誤認 | ★ `--` separator 追加 ★ |
+| A2 | `add_ignore` dedup byte-identical 要求 | ★ pre-add `git ls-files skills/*/state/` 確認 ★ |
+
+#### ★ Patch A v4 — fix.sh (= B3 immutable SNAP_ORIGINAL) ★
+
+```bash
+# 変更箇所のみ抜粋 (= 完全 fix.sh は v9.3 ベース、 snapshot logic だけ書換)
+
+# === Snapshot for diff-gated verify (v9.4: immutable SNAP_ORIGINAL) ===
+SNAP_ORIGINAL=$(mktemp)
+SNAP_AFTER=$(mktemp)
+trap 'rm -f "$SNAP_ORIGINAL" "$SNAP_AFTER"' EXIT
+
+snap_state() {
+  local target="$1"
+  {
+    [ -d "$HOME/.openclaw/skills/${CRON_NAME}" ] && \
+      find "$HOME/.openclaw/skills/${CRON_NAME}" -type f -exec md5 {} \; 2>/dev/null | sort
+    md5 "$HOME/.openclaw/.env" 2>/dev/null
+    openclaw cron get "$TARGET_UUID" 2>/dev/null | jq -c '.payload // {}'
+  } > "$target"
+}
+
+snap_state "$SNAP_ORIGINAL"   # ★ Take ONCE, never overwrite ★
+
+# Inside strategy loop:
+for STRATEGY in "${STRATEGIES[@]}"; do
+  ...
+  timeout "$WALLCLOCK_PER_STRATEGY" openclaw agent --local --model "$STRATEGY" --json -m "$TASK" 2>&1 | tail -200
+  
+  snap_state "$SNAP_AFTER"
+  # ★ Diff against ORIGINAL (immutable), not BEFORE ★
+  if cmp -s "$SNAP_ORIGINAL" "$SNAP_AFTER"; then
+    echo "NO FILE/CRON CHANGES vs ORIGINAL — strategy $STRATEGY did nothing"
+    continue
+  fi
+  echo "DIFF vs ORIGINAL detected after $STRATEGY"
+
+  VERIFY=$(openclaw cron run "$TARGET_UUID" --wait --wait-timeout 5m --expect-final 2>&1 || echo "exit_nonzero")
+  if echo "$VERIFY" | grep -qE '"status"\s*:\s*"ok"'; then
+    # success path same as v9.3
+    break
+  fi
+  # ★ NO snap_state "$SNAP_BEFORE" reset ★ — ORIGINAL stays as truth
+done
+```
+
+#### ★ Patch B v4 — Plugins doctor (= B2 anchor grep) ★
+
+```bash
+MGR=3f80c7fd-4cc6-444d-920a-134be3b570fd
+
+openclaw plugins doctor 2>&1 | tail -20
+openclaw plugins registry --rebuild 2>&1 | tail -10
+openclaw cron edit "$MGR" --light-context
+
+# B2 v4 fix: anchor grep to actual error lines (not headers)
+DOCTOR_NEEDED=$(openclaw plugins doctor 2>&1 | grep -icE '^(error|fail|conflict|broken):' || echo 0)
+if [ "$DOCTOR_NEEDED" -gt 0 ] && [ "${MANUAL_DOCTOR_FIX:-0}" = "1" ]; then
+  # B1 v4: env gate + memory honored
+  openclaw cron list --all --json 2>/dev/null | \
+    jq -r '.jobs[] | select(.payload.model) | .id + "\t" + .payload.model' > /tmp/cron-models.bak
+
+  openclaw doctor --fix 2>&1 | tail -5
+
+  # Re-apply with TAB separator (no greedy space issue)
+  while IFS=$'\t' read -r UUID MODEL; do
+    [ -n "$MODEL" ] && openclaw cron edit "$UUID" --model "$MODEL" 2>&1 | tail -1
+  done < /tmp/cron-models.bak
+elif [ "$DOCTOR_NEEDED" -gt 0 ]; then
+  # B1: Slack escalate instead of auto-doctor
+  [ -n "${SLACK_BOT_TOKEN:-}" ] && curl -sS -X POST -H "Authorization: Bearer ${SLACK_BOT_TOKEN}" \
+    -H "Content-Type: application/json" \
+    --data "$(jq -nc --arg c C091G3PKHL2 --arg t ":warning: plugins doctor reports issues. Run with MANUAL_DOCTOR_FIX=1 to apply 'openclaw doctor --fix' (memory warns: nukes model overrides)." '{channel:$c,text:$t}')" \
+    https://slack.com/api/chat.postMessage >/dev/null 2>&1
+fi
+```
+
+#### ★ Patch C v4 — freshness-gate (= A1 -- separator) ★
+
+```bash
+cat > ~/.openclaw/skills/anicca-article-daily/scripts/freshness-gate.sh << 'BASH'
+#!/usr/bin/env bash
+set -uo pipefail
+TITLE="$1"
+HIST="$HOME/.openclaw/skills/anicca-article-daily/state/account-history.jsonl"
+[ ! -f "$HIST" ] && { echo "OK no history"; exit 0; }
+TMP=$(mktemp); trap 'rm -f "$TMP"' EXIT
+printf '%s\n' "$TITLE" | tr ' ' '\n' | grep -v '^$' | sort -u > "$TMP"
+RECENT=$(tail -200 "$HIST" 2>/dev/null | jq -r '.title // ""' | tr '\n' ' ')
+# A1 fix: -- separator prevents title-starts-with-dash flag confusion
+OV=$(printf '%s' "$RECENT" | grep -oF -f "$TMP" -- 2>/dev/null | wc -l | tr -d ' ')
+TOT=$(wc -l < "$TMP" | tr -d ' ')
+R=$(( OV * 100 / (TOT + 1) ))
+[ "$R" -gt 30 ] && { echo "FAIL overlap=${R}%"; exit 1; }
+echo "OK overlap=${R}%"
+BASH
+chmod +x ~/.openclaw/skills/anicca-article-daily/scripts/freshness-gate.sh
+```
+
+#### ★ Patch D v4 — pre-add state cleanup (= A2 ls-files check) ★
+
+```bash
+cd ~/.openclaw
+
+# A2 fix: confirm no pre-tracked state log files leak
+LEAKED=$(git ls-files 'skills/*/state/' 2>/dev/null | head)
+if [ -n "$LEAKED" ]; then
+  echo "WARNING: pre-tracked state files found:"
+  echo "$LEAKED"
+  echo "Removing from index (keeping working tree):"
+  git rm --cached -r skills/*/state/ 2>&1 | tail -5
+fi
+
+# Then ensure .gitignore (idempotent)
+GI=.gitignore
+add_ignore() { grep -qFx "$1" "$GI" 2>/dev/null || echo "$1" >> "$GI"; }
+add_ignore ".env"
+add_ignore ".codex/auth.json"
+add_ignore ".config/gh/"
+add_ignore "*.sqlite"
+add_ignore "*.db"
+add_ignore "skills/*/state/"
+add_ignore "logs/"
+add_ignore "agents/*/agent/codex-home/"
+
+# Stage + commit + push (with no-op guard, unchanged from v9.3)
+git add skills/anicca-cron-manager/SKILL.md \
+        skills/anicca-cron-manager/scripts/ \
+        skills/anicca-cron-manager/data/manageable-crons.json \
+        skills/anicca-disk-janitor/ \
+        skills/anicca-reflect/ \
+        skills/anicca-daily-mail/ \
+        skills/anicca-article-daily/data/ai-entity-watch.json \
+        skills/anicca-article-daily/scripts/{fetch-ai-watch,extract-daily-lesson,freshness-gate,bookmark-gate}.sh \
+        skills/anicca-cron-doctor/data/audit-rules.json \
+        skills/anicca-life-manager/scripts/arrival.py \
+        workspace/HEARTBEAT.md workspace/self-curves.json \
+        .gitignore
+if ! git diff --cached --quiet; then
+  git commit -m "ship(v9.4): cron-manager + reviewer 3 blocker fix"
+  git push origin main
+fi
+```
+
+#### ★ Patch G v4 — E2E loop (= B1 doctor honored + B2 anchor + Slack escalate) ★
+
+```bash
+MGR=3f80c7fd-4cc6-444d-920a-134be3b570fd
+MAX_TRIES=3
+
+for try in $(seq 1 $MAX_TRIES); do
+  echo "=== try $try / $MAX_TRIES ==="
+  RESULT=$(openclaw cron run "$MGR" --wait --wait-timeout 25m --expect-final 2>&1)
+  echo "$RESULT" | tail -10
+
+  if echo "$RESULT" | grep -qE '"status"\s*:\s*"ok"'; then
+    echo "SUCCESS on try $try"
+    exit 0
+  fi
+
+  if echo "$RESULT" | grep -q "runtime-plugins"; then
+    case "$try" in
+      1) echo "MITIGATION: openclaw plugins registry --rebuild"
+         openclaw plugins registry --rebuild 2>&1 | tail -5
+         REBUILD_EC=$?
+         [ "$REBUILD_EC" -ne 0 ] && echo "WARNING: rebuild exit=$REBUILD_EC" ;;
+      2) echo "MITIGATION: openclaw cron edit $MGR --light-context"
+         openclaw cron edit "$MGR" --light-context ;;
+      3) echo "MITIGATION: Slack escalate (memory: doctor --fix forbidden post-Phase-1)"
+         # B1 v4: do NOT auto-run doctor --fix. Slack instead.
+         [ -n "${SLACK_BOT_TOKEN:-}" ] && curl -sS -X POST -H "Authorization: Bearer ${SLACK_BOT_TOKEN}" \
+           -H "Content-Type: application/json" \
+           --data "$(jq -nc --arg c C091G3PKHL2 --arg t ":sos: cron-manager 3-try exhausted. runtime-plugins stall persists. Memory forbids auto doctor --fix. Manual: \`MANUAL_DOCTOR_FIX=1 openclaw doctor --fix\` + re-apply model overrides from /tmp/cron-models.bak" '{channel:$c,text:$t}')" \
+           https://slack.com/api/chat.postMessage >/dev/null 2>&1
+         echo "Manual intervention required. See Slack." >&2 ;;
+    esac
+  else
+    echo "FAILURE not runtime-plugins. Aborting." >&2
+    exit 1
+  fi
+done
+
+echo "All $MAX_TRIES tries exhausted. Manual intervention required (see Slack)." >&2
+exit 1
+```
+
+#### v9.4 honest residual
+
+| ID | risk | status |
+|---|---|---|
+| All v9.2/v9.3 blockers | — | ★ FIXED ★ |
+| B1 doctor memory violation | — | ★ FIXED — env gate + Slack escalate ★ |
+| B2 grep brittle | — | ★ FIXED — `^(error\|fail\|conflict):` anchor ★ |
+| B3 baseline reuse | — | ★ FIXED — SNAP_ORIGINAL immutable ★ |
+| A1 grep -F dash | — | ★ FIXED — `--` separator ★ |
+| A2 state leak | — | ★ FIXED — `git ls-files` pre-check ★ |
+| **only remaining** | `openclaw plugins registry --rebuild` 効果 unknown | ★ ship-only、 fail なら Patch G case 1 → 2 → 3 で自動 mitigation ★ |
+
+honest residual count = **1** (= rebuild 効果、 ship 観測のみ resolve 可能)。
+
+---
+
 ### 15.20n ★★★ v9.3 — code-reviewer 8 ship-blocker 全 fix + CLI verified ★★★
 
 > v9.2 reviewer verdict: **DO NOT SHIP. 8 ship-blockers introduced.**
