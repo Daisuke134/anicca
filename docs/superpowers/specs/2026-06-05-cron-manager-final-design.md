@@ -2264,6 +2264,151 @@ self-improve cron が pattern A-E の 7 日勝率を update
 
 ---
 
+### 15.20f ★★★ v7.6 PIVOT — SEPARATE cron-manager + heartbeat (= 2026-06-07) ★★★
+
+> **Dais 2026-06-07 verbatim:**
+> "please stop putting everything into fucking heartbeat. The heartbeat is not gonna be
+>  able to do all of them. cron manager is gonna be different from the heartbeat, right?"
+
+#### 過去 architecture mistake 自己反省
+
+| version | mistake |
+|---|---|
+| v7.1 | 「heartbeat-as-orchestrator」 で Mode A/B 折込 → 詰めすぎ |
+| v7.3 | 「heartbeat-as-SWE-agent」 → 6 kind switch + 7 phase で更に詰めすぎ |
+| v7.4/v7.5 | sprawl 削減は OK だが SEPARATE architecture 未戻し |
+| v7.6 | ★ SEPARATE cron-manager + simpler heartbeat ★ (= 正答) |
+
+#### v7.6 SEPARATE architecture
+
+| component | scope | schedule | model | role |
+|---|---|---|---|---|
+| **anicca-cron-manager** (NEW) | INFRA HYGIENE | 0 */6 * * * | openai/gpt-5.4 FULL | cron fix + curator + over-scheduled |
+| **anicca-heartbeat** (= 既存改修) | ACTION | 0 3,9,15,21 * * * (offset 3h) | openai/gpt-5.4-mini | earn / content / experiment / reflect |
+
+#### cron-manager の中身 (= 既存 anicca-cron-doctor を INHERIT)
+
+★ rebuild しない、 既存 INHERIT する ★:
+- `~/.openclaw/skills/anicca-cron-doctor/scripts/phases.py` (= L1-L8 detector LOGIC)
+- `~/.openclaw/skills/anicca-cron-doctor/data/audit-rules.json` (= 既 never-disable guardrail)
+- `~/.openclaw/skills/anicca-cron-doctor/scripts/helpers/` (= cron_edit / token_budget 等)
+
+新規追加 (= NEW skill anicca-cron-manager で):
+- `scripts/run.sh` (= phases.py 走らせて tasks.json 生成、 + 新 FIX logic invoke)
+- `scripts/fix.sh` (= top priority ai-ready issue 取り、 root cause 分析、 patch、 verify)
+- `scripts/curator.sh` (= daily 03:00 fire のみ、 30/90日 transitions)
+- `scripts/over-scheduled.sh` (= weekly Sunday、 SKILL.md vs schedule mismatch 検出)
+
+#### cron-manager per-fire phase (= concrete instruction)
+
+```
+§1 SCAN     phases.py L1-L8 → /tmp/fix_tasks.json
+§2 READ     for each error: openclaw cron runs <UUID> --last 3 --json で 実 log
+§3 DIAGNOSE LLM reads SKILL.md + log VERBATIM → "root cause = X"
+§4 FIX      edit run.sh OR cron message OR env (= verify-before-completion)
+§5 VERIFY   openclaw cron run <UUID> --wait --wait-timeout 5m --expect-final
+            status=ok のみ "fixed" 認定 (= refusal-success bug 警戒)
+§6 REPORT   Slack: "✅ fixed: NAME / root cause / applied / status=ok"
+§7 NEXT     time + budget 残あれば §3 へ batch
+§8 CURATOR  (= daily 03:00 fire のみ) 30/90日 + audit-rules + never-disable
+```
+
+#### heartbeat 改修 (= ACTION focus、 cron 触らない)
+
+```
+§0 GATE     5戒 + lifeline
+§1 SENSE    tasks.json + cfo + gh issues (= label cron:* は SKIP)
+§2 PICK     find-next-task.py で 1 action task (NOT cron_fix)
+§3 ACT      execute (= earn / publish / experiment / reflect)
+§4 RECORD   experience-log
+§5 REPORT   Slack 1 line
+```
+
+#### coordination via gh issue label
+
+- `ai-ready` + `cron:NAME` → cron-manager 専属
+- `ai-ready` + `from-dais` → heartbeat 優先 pick
+- `ai-ready` + `earn` / `article` / `experiment` → heartbeat
+- `ai-ready` + `cornerstone:infra` → cron-manager
+
+#### Sleep window BP (= Firecrawl + Wikipedia + man.openbsd 確認)
+
+| 観点 | 結果 |
+|---|---|
+| 標準 cron で 02:30-05:30 部分時間 OFF 表現 | ★ 不可能 ★ (= hour 単位の comma + range のみ) |
+| 既 `quiet-hours-guard.sh` (= profile.alarm.quietHoursStart/End 駆動) | ★ 採用 ★ (= 23:30-05:30 default、 Dais editable) |
+| arrival-mail + lateness 両方 既 quiet-hours 使用 | verified ✅ |
+
+#### 10 cron DISABLE + 4 EDIT + 1 MERGE + 2 ADD
+
+```
+DISABLE × 10:
+  1. anicca-exec-guard
+  2. anicca-mail-triage
+  3. anicca-cron-doctor         (skill code は cron-manager に inherit、 cron だけ止め)
+  4. anicca-cron-auto-disable   (cron-manager curator に統合)
+  5. anicca-arrival-mail        (life-manager に merge)
+  6. monk-factory-en-recovery   (cron-manager が修復)
+  7. anicca-health              (heartbeat §1 SENSE 内 invoke)
+  8. anicca-earn-bounty         (heartbeat §3 kind=earn)
+  9. attention-tracker-6h       (heartbeat §3 kind=reflect)
+ 10. agentmemory-mcp-cleanup    (0 orphan + launchd 既存、 dead weight)
+
+EDIT × 4:
+  1. anicca-heartbeat: schedule 0 3,9,15,21 + model gpt-5.4-mini + timeout 600
+  2. naist-pull: hourly → 0 7,19
+  3. anicca-wallet-balance: 6h → daily
+  4. profile.alarm.quietHoursStart (optional Dais editable)
+
+MERGE × 1:
+  arrival.py → life-manager/scripts/
+  life-manager/scripts/run.sh 末尾追加 `python3 arrival.py`
+
+ADD × 2:
+  1. anicca-cron-manager  (NEW skill + cron 0 */6 + gpt-5.4 FULL + timeout 1500)
+  2. anicca-daily-mail    (NEW skill + cron 0 7,22 + mini)
+```
+
+#### cron-manager の 100% coverage 保証 (= Dais 質問への正直答え)
+
+```
+できる根拠:
+  1. 既 L3 refusal_retry mitigation 流用
+  2. gpt-5.4 FULL SWE-bench 70%+ 実績
+  3. openclaw cron run --wait --expect-final で deterministic verify
+  4. gh issue board persistent (= 失敗→次 fire retry)
+  5. cost cap $3/task で暴走防止
+
+できない risk (honest):
+  R-1 prompt steering → V8-15 ship 1 fire dry-run
+  R-2 LLM refusal → L3 既存 mitigation
+  R-3 long fix > 1500s → 次 fire retry
+  R-4 5連続失敗 → claude-assign label で Dais escalate
+      ★ ここが ONLY human-loop ★ (= 99% 自走、 1% edge で通知)
+
+100% coverage の 5 mechanism:
+  1. gh issue board persistent
+  2. cornerstone-first priority
+  3. ai-failed → 24h 後 ai-ready 自動回転
+  4. duplicate dedup `cron:NAME` label
+  5. snapshot before fix → rollback
+```
+
+#### Cost (= v7.6 全体)
+
+| component | 月 cost |
+|---|---|
+| anicca-cron-manager (4× gpt-5.4 FULL × $2) | $240 |
+| anicca-heartbeat (4× gpt-5.4-mini × $0.30) | $36 |
+| lateness 19h ON (= quiet-hours-guard) | $130 |
+| content cornerstone × 114 | $200 |
+| daily-mail + naist 2x + wallet daily + 他 | $10 |
+| ★ 合計 ★ | **$616/月** |
+
+vs 現状 $831 = **-$215/月 節約**、 vs v7.5 ($458-698) と同範囲
+
+---
+
 ### 15.20e ★★★ v7.5 PIVOT — Sprawl Consolidation (= 2026-06-07 Dais 激怒) ★★★
 
 > **Dais 2026-06-07 verbatim:**
