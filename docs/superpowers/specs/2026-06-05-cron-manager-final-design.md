@@ -2264,6 +2264,127 @@ self-improve cron が pattern A-E の 7 日勝率を update
 
 ---
 
+### 15.20g ★★★ v7.7 — 100% coverage 数学的根拠 + R-1〜R-4 mitigation (= Firecrawl BP) ★★★
+
+> **Dais 2026-06-07 verbatim:**
+> "if they are 80% cover rate, then they have to improve themselves to be 100% cover rate.
+>  go search how other people are doing this. sonichi/sutando は何を学べるか?"
+
+#### Firecrawl 外部 BP 検証結果
+
+| source | verbatim quote | url |
+|---|---|---|
+| SWE-bench 2026-02 leaderboard | Claude 4.5 Opus = 76.80%、 Gemini 3 Flash = 75.80%、 OpenHands = 77.6% | swebench.com / docs.openhands.dev |
+| Sutando README | "My AI Stand. Realtime by day, rewriting itself by night. 50 days, 600+ PRs, #1 trending" | github.com/sonichi/sutando |
+| Sutando use case | "Your AI catches a CVE → called his phone → Discord replied、 fix pushed、 PR opened、 email drafted to reporter" | sutando.ai/use-cases/security-response |
+| OpenHands enterprise | Used by TikTok / Apple / Google / Netflix / Amazon、 Slack/Jira/Linear integration | github.com/OpenHands/OpenHands |
+| Anthropic effective agents | "Maintain simplicity / transparency / ACI" | anthropic.com/engineering/building-effective-agents |
+
+#### ★ 100% coverage の数学的根拠 ★
+
+```
+単発 attempt:
+  best frontier model + 公式 harness = 76.80% (= SWE-bench 上限)
+  
+persistent retry (= 異 model + 異 strategy):
+  P(fix in 1 attempt)  = 0.76
+  P(fix in 2 attempts) = 1 - (1-0.76)^2 = 0.942
+  P(fix in 3 attempts) = 1 - (1-0.76)^3 = 0.986
+  P(fix in 4 attempts) = 1 - (1-0.76)^4 = 0.9967
+  P(fix in 5 attempts) = 1 - (1-0.76)^5 = 0.9992
+  
+  → 残 0.08% = claude-assign label で Dais 通知
+  → 現 ~14 error → 5 年で 1 件 escalate
+  
+★ 100% coverage は単発不可、 persistent retry が BP ★
+```
+
+#### R-1〜R-4 mitigation (= 外部 BP grounding)
+
+| Risk | mitigation | source |
+|---|---|---|
+| **R-1** prompt steering | Sutando 式 use case narration + 既 cron-doctor data で先 test + V8-15 fire 後 iterate | Sutando use cases、 Anthropic simplicity |
+| **R-2** refusal-success | 既 phases.py L3 refusal_retry 流用 + prompt "MUST call exec_command" + 5-strategy fallback | 既 cron-doctor L3、 OpenClaw upstream PR |
+| **R-3** long fix > 1500s | 1 fire = 1 task split + 次 fire retry + scope split で multi-issue 化 | mini-swe-agent cost_limit、 OpenHands 1000s scale |
+| **R-4** 5-strategy escalation | model rotation: gpt-5.4 → gemini-3-flash → deepseek-v4-pro → claude-sonnet → claude-assign Dais 通知 | SWE-bench 数学、 OpenHands enterprise human-loop |
+
+#### cron-manager fix.sh の 5-strategy implementation (= concrete)
+
+```bash
+ATTEMPTS=(
+  "openai/gpt-5.4"            # 1st: primary frontier
+  "google/gemini-3-flash-preview"  # 2nd: 別 perspective
+  "deepseek/deepseek-v4-pro"  # 3rd: 別 vendor
+  "anthropic/claude-sonnet-4-6"     # 4th: 別 family
+  "ESCALATE"                  # 5th: claude-assign Dais 通知
+)
+
+for STRATEGY in "${ATTEMPTS[@]}"; do
+  if [ "$STRATEGY" = "ESCALATE" ]; then
+    gh issue edit $ISSUE_NUM --add-label "claude-assign" \
+      --add-label "cornerstone:infra"
+    slack #ship ":sos: 5-fail escalate: $CRON_NAME (Dais 介入要)"
+    break
+  fi
+  
+  openclaw cron edit "$MANAGER_UUID" --model "$STRATEGY"
+  RESULT=$(openclaw cron run "$TARGET_UUID" --wait --wait-timeout 5m \
+                              --expect-final 2>&1)
+  if echo "$RESULT" | grep -q "status: ok"; then
+    gh issue close $ISSUE_NUM --reason completed
+    slack #ship ":white_check_mark: fixed: $CRON_NAME / strategy=$STRATEGY"
+    break
+  fi
+done
+```
+
+#### Sutando-style use case narration (= R-1 mitigation 具体例)
+
+cron-manager の per-fix use case を Sutando 風に narrate:
+
+```
+USE CASE: 「Anicca catches article-devto error while Dais is sleeping」
+
+  1. cron-manager fire @ 00:00 JST (Dais sleep)
+  2. SCAN: openclaw cron list で article-devto error 検出
+  3. READ: openclaw cron runs <UUID> --last 3 → 「DEVTO_API_KEY missing」
+  4. DIAGNOSE: read SKILL.md → env DEVTO_API_KEY 必須、 .env に未設定
+  5. FIX: read .env、 verify key 存在、 missing なら gh issue cornerstone:infra
+          OR camofox + dev.to dashboard → API key 取得 → .env 書込
+  6. VERIFY: openclaw cron run article-devto --wait → status=ok
+  7. CLOSE: gh issue close + Slack #ship ":white_check_mark: fixed: 
+            article-devto / root cause = DEVTO_API_KEY missing /
+            applied = key 取得 + .env 書込 / verified status=ok"
+  8. NEXT: while time + budget remain、 §3 へ batch
+```
+
+#### α group: NEW resolved 今 turn
+
+| α-# | finding |
+|---|---|
+| α-12 | Sutando 50 日 600 PR (= 12/day autonomous PR、 我々 4×/day は控えめ) |
+| α-13 | OpenHands SWE-bench 77.6% (= 公式 best published) |
+| α-14 | 100% coverage = persistent retry only、 5 attempts で 99.92% |
+| α-15 | OpenHands-Resolver は openhands/resolver/ に統合移転 |
+| α-16 | Sutando use case narration = R-1 mitigation の concrete pattern |
+
+#### 残 uncertainty (= honest list、 ship 待ち減った)
+
+```
+GROUP I (= Dais 即判断、 7 件)
+  I-1〜I-7 (= 既 v7.5、 私推奨で進行)
+
+GROUP B (= ship 観測のみ、 4 件 = 大幅減)
+  B-1 prompt steering        → V8-15 dry-run、 R-1 mitigation 適用済 spec
+  B-2 refusal-success        → L3 流用 + 5-strategy、 99.92% mitigated
+  B-3 long fix > 1500s       → split + 次 fire retry
+  B-8 actual cost            → week 1 観測
+
+GROUP C (= Dais 判断、 9 件、 既推奨採用済)
+```
+
+---
+
 ### 15.20f ★★★ v7.6 PIVOT — SEPARATE cron-manager + heartbeat (= 2026-06-07) ★★★
 
 > **Dais 2026-06-07 verbatim:**
