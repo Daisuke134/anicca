@@ -142,6 +142,16 @@ Fail → iterate/regenerate until pass, THEN post. Each content skill patched to
 3. Detect: lang-mismatch, repeated hooks, text overflow, **posting gap** (account silent > N days → catches honne-EN-type stalls).
 4. On detect → auto-file `gh issue` to `Daisuke134/anicca-oss` → forum-issues/forum-rollout self-applies. (No Dais in loop.)
 
+### G3. Account-Health self-loop (added 2026-06-06 per Dais)
+New cron `anicca-account-health-daily` (06:00 JST). Reads existing `~/.openclaw/state/content-metrics/zero-view-streaks.json` (threshold 100 views / streak 3 days / lookback 7d — already populated by `aniccaai-dashboard-refresh`). For each account with streak ≥ 3:
+1. camofox opens the live TikTok/IG/YT → classify cause: shadowban / login-expired / content-quality / hard-zero.
+2. Auto-act:
+   - shadowban → spawn warmup mini-cron (manual-style posts + comment replies) AND Slack pepper Dais with "create new <kind> account" + signup URL + ready Gmail alias.
+   - login-expired → Postiz re-connect via camofox + Google login env (no Dais).
+   - content-quality → bump the source skill's hook-generation variation (force LLM regen with new pattern jsonl pick).
+   - hard-zero ≥ 7d → disable the offending cron + Slack report.
+3. Goal: Dais never monitors. Anicca pepper only when a NEW account must be physically created.
+
 (Part G is large → build via full SDD: spec→plan→TDD→verify.)
 
 ---
