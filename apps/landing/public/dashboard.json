@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-06-05T20:01:58.222Z",
+  "updated_at": "2026-06-06T20:01:42.237Z",
   "mrr": {
     "total_usd": 27,
     "by_product": {
@@ -24,13 +24,13 @@
     "by_account": []
   },
   "views": {
-    "weekly_total": 3579,
-    "weekly_total_likes": 43,
-    "weekly_total_comments": 24,
-    "posts_count": 336,
-    "avg_views_per_post": 11,
+    "weekly_total": 1893,
+    "weekly_total_likes": 31,
+    "weekly_total_comments": 18,
+    "posts_count": 270,
+    "avg_views_per_post": 7,
     "target": 1000000,
-    "progress_pct": 0.4
+    "progress_pct": 0.2
   },
   "spend": {
     "total_usd": 548,
@@ -472,11 +472,11 @@
   "meta": {
     "rc_status": "ok",
     "fetcher_versions": {
-      "stripe": "2026-06-05T20:00:58.540Z",
-      "rc": "2026-06-05T20:00:58.868Z",
-      "postiz": "2026-06-05T20:01:58.174Z",
-      "followers": "2026-06-05T20:01:02.516Z",
-      "spend": "2026-06-05T20:00:59.074Z",
+      "stripe": "2026-06-06T20:00:51.894Z",
+      "rc": "2026-06-06T20:00:51.921Z",
+      "postiz": "2026-06-06T20:01:42.148Z",
+      "followers": "2026-06-06T20:00:55.502Z",
+      "spend": "2026-06-06T20:00:52.364Z",
       "socials": "2026-06-04T11:07:26.129738+00:00"
     }
   }
