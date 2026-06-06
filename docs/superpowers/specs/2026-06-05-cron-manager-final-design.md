@@ -2264,6 +2264,80 @@ self-improve cron が pattern A-E の 7 日勝率を update
 
 ---
 
+### 15.20e ★★★ v7.5 PIVOT — Sprawl Consolidation (= 2026-06-07 Dais 激怒) ★★★
+
+> **Dais 2026-06-07 verbatim:**
+> "this is too much, bro. these hourly crons are crazy. agentmemory MCP cleanup every 30
+>  min what the fuck. monk-factory-en-recovery — we have cron manager, why need this?
+>  attention tracker every 6h can be daily. wallet balance every 6h can be daily. naist
+>  pull every hour can be daily. anicca arrival mail — what even is this, should be
+>  merged into life-manager."
+
+#### 全 suspect cron 中身 verify 結果
+
+| cron | 役割 | v7.5 decision |
+|---|---|---|
+| anicca-arrival-mail */5 | Telegram Live Location 検出 + "I'm here" mail | ★ DELETE + merge into life-manager ★ |
+| anicca-lateness-heartbeat-shell */5 | Twilio call + 謝罪 mail + 全 event buffer | ★ KEEP as-is ★ (quiet-hours-guard 既存) |
+| agentmemory-mcp-cleanup */30 | hung MCP process kill (= active 稼働中) | ★ 30min → 0 */6 ★ |
+| naist-pull 0 * | NAIST academic mail triage | ★ 0 7,19 * * * (2x daily) ★ |
+| anicca-health 0 * | health-check.py self-diagnose | ★ DELETE → heartbeat §1 SENSE 内 invoke ★ |
+| anicca-earn-bounty 0 */2 | Algora/OnlyDust bounty scan | ★ DELETE → heartbeat §3 kind=earn ★ |
+| monk-factory-en-recovery 0 */2 | HeyGen stalled render retry | ★ DELETE — cron-manager が 直す ★ |
+| attention-tracker-6h 0 */6 | TikTok/X/IG engagement track | ★ DELETE → heartbeat §3 kind=reflect ★ |
+| anicca-wallet-balance 0 */6 | wallet balance check | ★ 0 6 * * * (daily) ★ |
+
+#### Updated DISABLE / EDIT / MERGE / ADD
+
+```
+DISABLE × 9:
+  - 4 sister: exec-guard, mail-triage, cron-doctor, cron-auto-disable
+  - 5 新規: arrival-mail, monk-factory-en-recovery, anicca-health,
+            anicca-earn-bounty, attention-tracker-6h
+
+EDIT × 4:
+  - anicca-heartbeat (= V8-9): schedule 0 */6, model gpt-5.4, timeout 1500
+  - agentmemory-mcp-cleanup: */30 → 0 */6
+  - naist-pull: 0 * → 0 7,19 * * *
+  - anicca-wallet-balance: 0 */6 → 0 6
+
+MERGE × 1:
+  - arrival-mail/scripts/arrival.py → life-manager/scripts/
+  - life-manager/run.sh 末尾に `python3 arrival.py` 追加
+
+ADD × 1:
+  - anicca-daily-mail (0 7,22)
+```
+
+#### cost 削減
+
+| component | 月 cost | delta vs v7.4 |
+|---|---|---|
+| arrival-mail DELETE | $0 | **-$86** |
+| agentmemory 30min→6h | $1 | -$13 |
+| naist hourly→2x daily | $1 | -$10 |
+| monk-factory-en-recovery DELETE | $0 | -$4 |
+| earn-bounty DELETE (= fold) | $0 | -$15 |
+| attention-tracker DELETE (= fold) | $0 | -$5 |
+| anicca-health DELETE (= fold) | $0 | -$10 |
+| wallet-balance 6h→daily | $1 | -$3 |
+| **v7.5 total saving** | | **-$146/月 (= v7.4 から更に)** |
+
+#### cron-manager (= heartbeat curator_pass) が今後 自動 fix する仕組み
+
+HEARTBEAT.md v3 §3 ACT case curator_pass に detect over-scheduled cron 追加:
+
+```
+For each cron, read SKILL.md description:
+  - "daily" suggested but schedule hourly/2h/6h → propose `openclaw cron edit --schedule`
+  - "periodic recovery" + cron-manager exists → propose DELETE
+  - "*/5" (= minutely): allow ONLY if skill.type=call OR type=physical-action
+
+Open gh issue cornerstone:infra で Dais 可視化 (= approval 不要、 record のみ)
+```
+
+---
+
 ### 15.20d ★★★ Verification Round 2 結果 (= 2026-06-07) ★★★
 
 5 件 verify、 重大発見 2 件:
