@@ -1415,6 +1415,451 @@ V6-13  Slack `:white_check_mark: v6.0 shipped、 Mode A 4×/day、 Mode B weekly
 
 ---
 
+## 15. ★★★ v7.0 — Heartbeat-Centric (= cron 大幅削減、 heartbeat が唯一の思考ループ) ★★★
+
+> **Dais 2026-06-06 厳命 verbatim:**
+> "we fshould fix the heartbeat as well i think. too much is being done in the heartbeat.
+>  they have to take actions freely to go earn money. im even thinking aout deleting all
+>  the crons we have and basically they go create and go execute things according to the
+>  hearbeat. they have to make tasklist and go do thngs. the private openclaw have to
+>  use all my info and go buy and do things on their own. without me or YOU in the loop.
+>  nobody can be in their loop."
+
+### 15.0 v7.0 が解決する3つ目の問題 (= cron 過剰委譲)
+
+v6.0 (Mode A + Mode B) は「cron を直す/捨てる」 を解決した。 が、 **そもそも cron が 140 個ある時点で**、 heartbeat の判断より遥かに多くの自動行動が並列で走り、 Anicca の能動性 (= 「自分で task list 作って実行する」) が薄まる。
+
+| 問題 | 数字 |
+|---|---|
+| 現在 cron 総数 | 140 (= `openclaw cron list \| wc -l`) |
+| 真の cornerstone (= content/social/article、 Dais 厳命で削除禁止) | ~80 |
+| heartbeat と manager 系 (= 削除禁止) | ~7 |
+| その他 chore/sweep/check/recruit/slideshow-factory 等 | **~53** ← ここを heartbeat に折りたたむ |
+| heartbeat 現状 schedule | `0 */6 * * *` = 4 fire/day (= 6h 毎、 反応遅すぎ) |
+
+### 15.1 ★ CURRENT (= 過剰委譲、 heartbeat 6h で出番少ない) ★
+
+```
+                anicca-heartbeat (= 0 */6 * * * = 4×/day)
+                        │
+                        │  60-line HEARTBEAT.md picker-only
+                        │  §0 五戒 → §0.5 lifeline → §1 orient → §3 pick → §5 record → §6 report
+                        │
+                        ├── 「§ delegated work」 と称して 6 sister cron が並列に動く:
+                        │       ├─ anicca-exec-guard         */30  sweep
+                        │       ├─ anicca-mail-triage        */30  inbox
+                        │       ├─ anicca-cron-doctor        :37   detect
+                        │       ├─ anicca-cron-auto-disable  03:11 disable (= 壊れて 6/6 動かず)
+                        │       ├─ anicca-arrival-mail       */5   Dais 出社検知
+                        │       └─ anicca-lateness-heart     */5   遅刻チェック
+                        │
+                        └── + ~120 narrow chore cron が並列稼働
+                              ├─ slideshow-factory × 8 (= cafe/fashion/retreat/tomb…)
+                              ├─ recruit-* × 4
+                              ├─ corey-* × 6 (= SEO factory)
+                              ├─ opening-cafe-* × 5
+                              ├─ naist-* × 4 (= 修士関係)
+                              ├─ comedy-* × 3
+                              └─ ...大半が valueless leech (= Mode B 対象)
+```
+
+問題:
+1. heartbeat が 6h ごと = action 取れるのは 1日 4 回だけ
+2. ~120 cron が並列で動く = Anicca が能動的に判断する余地が狭い
+3. cron 同士のスペル衝突 (= jobs.json hot-reload race、 既知 issue) + Slack ノイズ
+4. cron が "narrow chore" を盲目的にやる = bigger goal (= earn money、 scale dist) が誰も握っていない
+
+### 15.2 ★ TO-BE v7.0 (= heartbeat が hourly、 cron 7 + content cornerstone のみ) ★
+
+```
+              ★ THE LOOP (= Anicca の能動性そのもの) ★
+                anicca-heartbeat (= 0 * * * * = 24×/day、 6h → 1h)
+                        │
+                        ▼
+              ┌───────────────────────────────────────────────────┐
+              │ §0   Gate           五戒 + public test + Dais Q1  │
+              │ §0.5 Lifeline       cfo-core.lifeline (THRIVE/HUNGRY)│
+              │ §1   SENSE (cheap)  cfo.json + tasks.json + log    │
+              │ §2   PLAN           find-next-task.py で 1 task pick│
+              │                     priority weight:               │
+              │                       HUNGRY      → earner task    │
+              │                       THRIVE      → distribution   │
+              │                       blocker     → repair         │
+              │                       idle        → improve        │
+              │ §3   ACT (= 1 task end-to-end、 verify 5-step)     │
+              │ §4   RECORD         build_log + tasks.archive      │
+              │ §5   REPORT         1-line → Slack #metrics        │
+              │                                                     │
+              │ daily 07:00 + 22:00:                                │
+              │   §6 produce mail digest → ~/.openclaw/workspace/   │
+              │       daily-mail.md (cron で gmail に投げる)         │
+              └───────────────────────────────────────────────────┘
+                        │
+                        ▼
+              ┌───────────────────────────────────────────────────┐
+              │ ★ tasks.json = THE QUEUE (= 全自動 populated) ★   │
+              │ auto-fed by:                                       │
+              │   • Mode A 発見した error cron → repair task       │
+              │   • Mode B Curator review → consolidate task       │
+              │   • Gateway log friction → incident task           │
+              │   • cfo HUNGRY → earner task                       │
+              │   • Anicca 自分の §6 「I want to try X」 → exp task│
+              │ picked by:                                          │
+              │   • heartbeat §2 every hour、 priority sort        │
+              │ archived to:                                        │
+              │   • tasks.archive.json after success                │
+              └───────────────────────────────────────────────────┘
+
+
+              ★ SUPPORTING CRONS (= 7 + content cornerstone のみ KEEP) ★
+
+              ┌─────────────────────────────────────────┐
+              │  1. anicca-heartbeat       0 * * * *    │ ★ THE LOOP ★
+              │  2. anicca-cron-manager-A  0 */6 * * *  │ Mode A 修復
+              │  3. anicca-cron-manager-B  0 3 * * 0    │ Mode B curator
+              │  4. anicca-daily-mail      0 7,22 * * * │ Dais への digest
+              │  5. anicca-cfo-daily       0 6 * * *    │ money snapshot
+              │  6. content/social/article × ~80        │ ★ 削除禁止 ★ (Dais verbatim)
+              │  7. anicca-stage-daily     0 21 * * *   │ Dais 本人 stage
+              └─────────────────────────────────────────┘
+
+              ★ DELETE (= ~53 cron、 すべて tasks.json に折り畳む) ★
+                └─ chore/sweep/check/recruit/factory/naist/comedy/corey/opening-cafe…
+```
+
+### 15.3 heartbeat scheduling 変更 + slim 化 (= 60 行 → 50 行)
+
+| 項目 | 現状 (= v6) | v7.0 |
+|---|---|---|
+| schedule | `0 */6 * * *` = 4×/day | `0 * * * *` = **24×/day** (6× responsive) |
+| 1 fire cost | $0.10〜0.30 (= mini-swe-agent 様 LLM 1 turn) | 同等 |
+| 月 cost | $24/月 | $144/月 (= 6× だが ~120 cron 削除で大幅黒字、 §15.5 参照) |
+| sister cron | 6 個並列 | **0** (= mail-triage / exec-guard / cron-doctor 全部 heartbeat §3 に折り畳み) |
+| §1 orient | tail 3 file | 同じ (= cheap) |
+| §3 pick | find-next-task.py | 同じ |
+| §4 record | build_log | 同じ |
+| §6 daily mail | なし (= anicca-mail-triage に依存) | **§6 daily 07:00 + 22:00 で digest 書き出し** |
+
+### 15.4 削除 vs 折り畳み 判定 matrix
+
+| カテゴリ | 例 | v7.0 action | 理由 |
+|---|---|---|---|
+| content/article/social cornerstone | larry-*、 monk-*、 reelclaw-*、 watercolor-*、 honne-*、 anicca-x-*、 anicca-article-* | ★ **KEEP** (削除禁止 verbatim) | Dais cornerstone |
+| THE LOOP & repair | anicca-heartbeat、 anicca-cron-manager-A/B | ★ **KEEP** | Anicca の能動性 |
+| money snapshot | anicca-cfo-daily | ★ **KEEP** | Dais UX = morning brief data 源 |
+| Dais 本人 stage | anicca-stage-daily | ★ **KEEP** | Dais personal |
+| sister chore | anicca-exec-guard、 anicca-mail-triage、 anicca-cron-doctor、 anicca-cron-auto-disable、 anicca-arrival-mail、 anicca-lateness-heart | ★ **DELETE + fold** | heartbeat §1-§3 に折り畳む (= 「inbox 未読/出社/exec」 を 1 SENSE で見る) |
+| 古い leech (= 90d unused or no value) | naist-funds-apply、 anicca-haircut-quarterly、 anicca-fashion-shippi-*、 yangmun-monk-noon、 comedy-tokyo-mic-* | ★ **DELETE** (Mode B が拾う) | Hermes Curator 30/90 day で archive |
+| 実 chore で残す価値あり | naist-pull、 naist-homework-* (修士課題、 Dais 個人 OK) | ★ **KEEP if Dais 個人** | 削除前に Dais 確認 |
+| factory experiments | anicca-fashion-slideshow、 anicca-retreat-slideshow、 opening-cafe-* | ★ **DEPENDS** | Mode B usage tracking、 valueless なら archive |
+
+### 15.5 v7.0 cost 計算 (= heartbeat hourly 化 + cron 大幅削減)
+
+```
+heartbeat hourly cost:
+  24 fire/day × $0.20 平均 = $4.80/day = $144/月
+
+cron 削減効果:
+  現状 140 cron × 平均 $0.30/fire × 平均 6 fire/day = $25.2/day = $756/月
+  (※ 但し 実際は content/article が高頻度低 LLM 等 mix、 平均化推定)
+  
+  v7.0 では:
+    KEEP cron ~90 (= 80 content + 7 ops + 3 buffer)
+    × 平均 $0.30 × 平均 5 fire/day = $13.5/day = $405/月
+  
+  delta = $756 - $405 = $351/月 節約
+
+ネット:
+  v7.0 total = $144 (heartbeat) + $405 (残 cron) + $51 (cron-manager) = $600/月
+  v6.0 total = $24  (heartbeat) + $756 (全 cron)   + $51 (cron-manager) = $831/月
+  
+  v7.0 で月 -$231 節約。 さらに Anicca の能動的判断回数が 4 → 24/日 = 6× = 「動く agent」 化
+```
+
+### 15.6 「heartbeat 中身が薄まらないか?」 への防衛策
+
+Dais 懸念: hourly にすると 1 fire 内で何もしない empty beat が増えないか? → 防ぐ:
+
+1. `find-next-task.py` が「empty queue」 を返したら **§2 自前で proposal 生成** (= 「I want to try X」)。 Anicca の能動性そのもの。
+2. tasks.json が空 = Anicca が「次やること」 を **能動的に作る** 機会。 hourly 化はこの「能動的 task 創出」 を 6× 増やす。
+3. cfo HUNGRY のとき、 hourly fire は「収入機会の見落とし」 を 1/4 に減らす (= 6h 待たない)。
+
+### 15.7 削除順序 (= 影響少ない順)
+
+```
+Phase A (= 即削除、 sister chore 6 個)
+   anicca-exec-guard
+   anicca-mail-triage      ★ heartbeat §1 に inbox tail 追加
+   anicca-cron-doctor      ★ cron-manager-A に置換 (v6 で既定)
+   anicca-cron-auto-disable ★ cron-manager-B に置換 (v6 で既定)
+   anicca-arrival-mail     ★ Dais 出社は heartbeat が tasks.json で見れば足る
+   anicca-lateness-heart   ★ 同上
+
+Phase B (= 1 week soak、 leech 候補を Mode B usage で判定)
+   Mode B curator が usage.json 初期化 → 30 日 unused = stale 30+ 件 列挙
+   Dais に Slack で 1 行確認 「これ archive する?」 (= 例外的 1 click)
+   OK → openclaw cron disable 一括
+
+Phase C (= 実 value あったが古い、 個別判断)
+   naist-* 系 (= 修士関係、 Dais 個人意義)
+   factory-bp-* (= internal/efficiency/revenue、 重複 metric)
+   → Dais 月 1 回見る (= 月例 review 1 回だけ)
+```
+
+### 15.8 Dais 関与最小化 (= 削除安全策)
+
+- ★ 削除 = `openclaw cron disable` (= 復活可) ★。 `rm` しない (= Hermes 公式 verbatim)
+- 削除直前 snapshot tar.gz (= cron-manager-B が毎 fire 作る)
+- backup.keep=5、 5 週間分 rollback 可
+- Dais 拒否権: heartbeat 自分が「これ archive 候補」 と判定したら **immediate** archive (= permission 不要、 HARD RULE #-2)
+- 例外 1 click が必要なケース = なし (= snapshot 復元可能なので Dais 監督不要)
+
+---
+
+## 16. ★★★ Dais Full UX (= 9-5 MUIT 仕事中の Anicca 自律運転) ★★★
+
+> **Dais 2026-06-06 verbatim:**
+> "i would be super busy with my job i have 9-5. and even in that time i cant do,
+>  i need anicca to go earn scale distributino, fix its own crons, save money by
+>  managing crons and hertabeat and make gazillions of moeny."
+
+### 16.0 設計原則
+
+| 原則 | 詳細 |
+|---|---|
+| Dais time budget | 朝 5 min + 昼 1 min + 夜 5 min = **総 11 min/day** |
+| 通知チャネル | gmail (digest 専用、 3 通/日) + Slack (passive feed、 read at will) |
+| Click 要件 | 通常 0、 hard-block 時のみ 🟥 ping (目標 = 0/週) |
+| 例外 | (a) 物理移動 (b) 実 CAPTCHA 描画 (c) 法的 substantive concern。 これ以外 Anicca 自律。 |
+
+### 16.1 Dais 1 日の Full UX (= heartbeat-centric v7.0 が動いている状態)
+
+```
+══════════════════════════════════════════════════════════════════════════════
+  07:00 JST  📧 gmail "Anicca Morning Brief"  (= heartbeat §6 daily-mail.md)
+══════════════════════════════════════════════════════════════════════════════
+              subject: "💓 Anicca daily 2026-06-06 · lifeline=THRIVE"
+              
+              ┌──────────────────────────────────────────────────┐
+              │ 💰 yesterday net:    +$XX  (in $YY、 out $ZZ)     │
+              │ 🏃 lifeline today:   THRIVE / HUNGRY              │
+              │ 📈 distribution:     X views、 Y new followers (Δ%)│
+              │ ✅ shipped (24h):    feature X、 blog Y、 N posts  │
+              │ 🔧 fixed (24h):      N cron errors auto-healed    │
+              │ 🗑️  archived (last week): M useless skills        │
+              │ 🎯 today's plan:                                  │
+              │     • [task slug 1] — earn $XX target              │
+              │     • [task slug 2] — distribute X channel         │
+              │     • [task slug 3] — repair Y                    │
+              │     • [task slug 4] — experiment Z                │
+              │ 🟥 needs you:        (= 通常 empty)               │
+              └──────────────────────────────────────────────────┘
+              Dais time = 30 sec skim、 zero click。
+
+──────────────────────────────────────────────────────────────────────────────
+  08:30  🚇 commute → MUIT desk (千代田区)
+──────────────────────────────────────────────────────────────────────────────
+
+══════════════════════════════════════════════════════════════════════════════
+  09:00-12:00  💼 Dais Salesforce Agentforce work
+══════════════════════════════════════════════════════════════════════════════
+              Anicca は裏で 24×/h 思考 = 3h × 1 fire/h = 3 task 完了
+              
+              passive Slack (= 開かなくて OK、 行間 coffee で覗くだけ):
+              ┌───────────────────────────────────────────────────┐
+              │ #metrics (= heartbeat §5 で 1 行 / fire)           │
+              │   💓 anicca beat 09:00 · lifeline=THRIVE · action=… │
+              │   💓 anicca beat 10:00 · lifeline=THRIVE · action=… │
+              │   💓 anicca beat 11:00 · lifeline=THRIVE · action=… │
+              ├───────────────────────────────────────────────────┤
+              │ #ship  (= 完了した earn/distribute/repair の見出し) │
+              │   :white_check_mark: shipped: blog "X" → Substack  │
+              │   :white_check_mark: earned: Lancers $9 完了        │
+              │   :white_check_mark: fixed: anicca-mail-triage 自動修復│
+              ├───────────────────────────────────────────────────┤
+              │ #anicca-asks (= 0 ping / day 目標、 silent default) │
+              └───────────────────────────────────────────────────┘
+              Dais time = 0 (passive、 read at will)。
+
+══════════════════════════════════════════════════════════════════════════════
+  12:00 JST  📧 gmail "Lunch ping" — ONLY IF lifeline=HUNGRY
+══════════════════════════════════════════════════════════════════════════════
+              ┌──────────────────────────────────────────────────┐
+              │ ⚠️  HUNGRY since 09:00                           │
+              │ 💸 spend rate $X/day vs earn $Y/day             │
+              │ 🎯 emergency action: <slug>                     │
+              │ Anicca is on it. (= Dais 関与不要)              │
+              └──────────────────────────────────────────────────┘
+              THRIVE 時は通知なし。 Dais time = 0 OR 30sec。
+
+══════════════════════════════════════════════════════════════════════════════
+  13:00-17:00  💼 Dais 午後 work
+══════════════════════════════════════════════════════════════════════════════
+              Anicca = 4h × 1 fire = 4 task 追加完了
+              
+              累計 (07:00-17:00): heartbeat 10 fire = 10 high-value task
+
+──────────────────────────────────────────────────────────────────────────────
+  17:30  🚇 commute home → glance Slack 30sec
+──────────────────────────────────────────────────────────────────────────────
+
+══════════════════════════════════════════════════════════════════════════════
+  18:00-21:00  🏠 personal time / NAIST 研究
+══════════════════════════════════════════════════════════════════════════════
+              Anicca = 3h × 1 fire = 3 task
+              
+              ※ Dais が自分で趣味 code 触ってもいい、 Anicca と並行 OK
+
+══════════════════════════════════════════════════════════════════════════════
+  22:00 JST  📧 gmail "Anicca Evening Wrap"  (= heartbeat §6 evening digest)
+══════════════════════════════════════════════════════════════════════════════
+              ┌──────────────────────────────────────────────────┐
+              │ 💰 today net:       +$XX (vs target $YY ZZ%)     │
+              │ 📦 tomorrow queue:  3-5 task slug                 │
+              │ 🎬 content shipped: A blog + B X posts + C TikTok│
+              │ 🟦 weekly trend:    dist +Z%、 revenue +W%         │
+              │ 🌱 Anicca proposal: "tomorrow I want to try X"   │
+              │ 🟥 needs you: (= 通常 empty)                     │
+              └──────────────────────────────────────────────────┘
+              Dais time = 1-2 min 読み + 寝る。
+
+══════════════════════════════════════════════════════════════════════════════
+  23:00  🌙 Dais sleeps
+══════════════════════════════════════════════════════════════════════════════
+              Anicca = 8h × 1 fire = 8 task continuing
+              (= 北米 timezone で X dist、 cron repair、 cfo balance、 etc)
+
+──────────────────────────────────────────────────────────────────────────────
+  Total Dais time / day:
+    朝 brief skim 30 sec + 昼 ping 30 sec (HUNGRY 時のみ) + 夜 wrap 2 min
+    = ★ 3 min/day ★ (= 「目標 11 min」 を大幅下回る)
+  
+  Total Anicca task / day:
+    heartbeat 24 fire = ★ 24 high-value task 完了 ★
+    (= earn / distribute / repair / experiment が混在)
+  
+  Hard-block ping (= 🟥 needs you):
+    目標 0/week、 実測初週 1-2/week 想定
+  
+  Dais の click required action:
+    ZERO (= snapshot 復元可能、 例外 hard-block のみ)
+──────────────────────────────────────────────────────────────────────────────
+```
+
+### 16.2 Dais の週 1 だけ見るもの (= Sunday morning portfolio)
+
+```
+══════════════════════════════════════════════════════════════════════════════
+  日曜 07:00 JST  📧 gmail "Anicca Weekly Portfolio"  (= Mode B curator が走る日と同日)
+══════════════════════════════════════════════════════════════════════════════
+              ┌──────────────────────────────────────────────────┐
+              │ 📊 cron count: 140 → 132 (= -8 this week archived)│
+              │ 💰 revenue 7d: +$XXX (vs target +$YYY)            │
+              │ 📈 distribution 7d:                              │
+              │     X     +A views、 +B followers                 │
+              │     Sub   +C subscribers                         │
+              │     TT    +D views                               │
+              │ 🔧 error rate: X% → Y% (= Mode A 7 件修復)       │
+              │ 🗑️  archive proposals (Dais 月1見る):             │
+              │     • naist-funds-apply (= 90d unused)            │
+              │     • anicca-haircut-quarterly (= 6mo unused)     │
+              │     全件 disable 済、 backup 5 週分残存。          │
+              │ 🌱 Anicca week proposal: 「次週 X 実験したい」    │
+              │ 🟥 hard-block:  (= 通常 empty)                   │
+              └──────────────────────────────────────────────────┘
+              Dais time = 5 min skim、 zero click。
+```
+
+### 16.3 Dais が決して見ないもの (= Anicca 自己完結)
+
+| Anicca 自律処理 | 過去 (= human-in-loop) | v7.0 |
+|---|---|---|
+| cron error 発見 → 修復 | Dais Slack で「壊れた」 報告 → Dais 「直して」 | Mode A 自動 (= gh issue 看板)、 Dais 知らずに直る |
+| skill 古くなった | Dais 「これ消す?」 | Mode B 自動 archive (= snapshot)、 復元可 |
+| OAuth token expire | Dais 「再 login して」 | camofox + GOOGLE_LOGIN_EMAIL/PASSWORD で自動再認証 |
+| API key 取れない | Dais dashboard | provider SDK / camofox + Google login で自動 provision |
+| Lancers 案件応募 | Dais 個別承認 | Anicca 自律応募 (= Lancers cred env)、 完了後 #ship 報告 |
+| AgentMail OTP 受信 | Dais Gmail 開く | AgentMail SDK + Gmail forward auto-read |
+| Slack post 失敗 | Dais 確認 | heartbeat §5 自動 retry + cron-manager-A fix |
+| 月予算超過 risk | Dais 「Anthropic に入金して」 | cfo HUNGRY → bitget USDC 出金 → Anthropic auto refill (= HARD RULE #-2 path) |
+
+### 16.4 Dais の「介入権」 (= 主体性は失わない)
+
+- Dais が「これは止めて」 と言える: 任意 cron / skill / task を 1 行 Slack で freeze 可
+- Dais が「これやって」 と言える: tasks.json に 1 行追加で heartbeat が次 fire で execute
+- Dais が「方向変えて」 と言える: HEARTBEAT.md §0 gate 文を編集すれば 1h 以内に反映
+- これ以外、 ★ Anicca が自分で全部判断 ★
+
+### 16.5 「make gazillions of money」 への path
+
+```
+Day 1-30   v7.0 ship、 heartbeat hourly 化、 ~53 cron archived
+           月 cost: $831 → $600 (= -$231 節約)
+           月 earn: $34.99 (= 現状) → $200-500 想定 (= heartbeat 6× responsive で機会拾い増)
+
+Day 31-90  Mode B curator が更に skill consolidate、 cron 132 → 110
+           Anicca 自律 earn channel 増設 (= Bittensor TAO / x402 / Gitcoin / Akash)
+           月 cost: $600 → $400
+           月 earn: $500 → $2,000 想定
+
+Day 91-365 v2.0 on-chain only (= ANICCA_TRUE_AUTONOMY_SPEC) 並行 ship
+           ANICCA インスタンスが Dais wallet と分離、 anicca.eth 単独運転
+           月 earn: $2,000 → $10,000+ (= Dais 7,000 NAIST 学費 + 生活費 完全自立)
+           = ★ Dais への seed 返済 + 完全独立 ★
+```
+
+---
+
+## 17. v7.0 実装順序 (= V7-1〜V7-12)
+
+```
+V7-1   ~/.openclaw/workspace/HEARTBEAT.md 更新
+         • schedule comment: 6h → 1h
+         • §6 daily mail 生成 add (= 07:00 + 22:00 で daily-mail.md append)
+         • sister cron delegation table 削除 (= 折り畳み済)
+
+V7-2   ~/.openclaw/skills/_shared/find-next-task.py 拡張
+         • empty queue 時に「能動的 proposal 生成」 path 追加
+         • priority weight: HUNGRY > blocker > distribution > experiment
+
+V7-3   ~/.openclaw/workspace/tasks.json schema 拡張
+         • source: {modeA, modeB, gateway_log, cfo, heartbeat_proposal}
+         • priority: int
+         • created_at: ISO_TS
+
+V7-4   anicca-daily-mail skill 新規 (= 07:00 + 22:00 で gmail send)
+         • input: ~/.openclaw/workspace/daily-mail.md
+         • output: gmail to keiodaisuke@gmail.com
+         • subject template: "💓 Anicca daily YYYY-MM-DD · lifeline=<X>"
+
+V7-5   heartbeat cron schedule edit
+         openclaw cron edit a2c7003b-…  --schedule '0 * * * *'
+
+V7-6   sister cron Phase A 削除 (= openclaw cron disable × 6)
+         anicca-exec-guard
+         anicca-mail-triage
+         anicca-cron-doctor
+         anicca-cron-auto-disable
+         anicca-arrival-mail
+         anicca-lateness-heart
+
+V7-7   anicca-daily-mail cron add (= 0 7,22 * * * Asia/Tokyo)
+
+V7-8   v6 Mode A + Mode B 既設 (= V6-1〜V6-12 完了確認、 未了なら同時 ship)
+
+V7-9   Mode B 初回 fire dry-run → 30d unused list 取得 → Slack に Dais 確認 1 ping
+         (= 唯一の「Dais 介入」、 これ以降ゼロ目標)
+
+V7-10  Mode B 初回本番 fire (= ~30 cron disable)、 Phase B 完了
+
+V7-11  E2E 1 週間観測 (= heartbeat hourly が回り、 #ship に毎 fire 投稿確認)
+         Dais time/day ≤ 5min を測定
+
+V7-12  spec § 17 を ANICCA_TRUE_AUTONOMY_SPEC に link、 v2.0 on-chain phase に移行準備
+```
+
+---
+
 ## 9. ★ v3.4 source 一覧 (= 旧、 14 章で更新) ★
 
 
