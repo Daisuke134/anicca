@@ -53,3 +53,11 @@ setup() {
   # tmux -e MOSHI_PHONE=1 form OR set-environment form acceptable
   grep -qE "MOSHI_PHONE=1" "$TMUX_CALLS"
 }
+
+@test "phone strips inherited \$TMUX env var (socket collision regression)" {
+  # When invoked from inside an existing tmux session, $TMUX is the socket
+  # path. Phone must NOT pass that into the new tmux client (would fail with
+  # 'Socket operation on non-socket').
+  # We assert this by checking the script source uses 'env -u TMUX'.
+  grep -q 'env -u TMUX' "$PHONE_BIN"
+}

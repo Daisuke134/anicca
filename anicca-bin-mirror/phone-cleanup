@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Anicca v3.2 phone-cleanup — kill phone-* tmux sessions older than 7 days
+# AND with zero attached clients.
+#
+# Runs daily via ~/Library/LaunchAgents/local.phone-cleanup.plist.
+
+set -u
+
+TMUX_CMD="${TMUX_BIN:-/opt/homebrew/bin/tmux}"
+NOW=$(date +%s)
+CUTOFF_SECS=$((7 * 24 * 3600))
+
+env -u TMUX "$TMUX_CMD" ls -F '#{session_name}|#{session_created}|#{session_attached}' 2>/dev/null \
+  | awk -F'|' -v now="$NOW" -v cutoff="$CUTOFF_SECS" '
+      $1 ~ /^phone-[0-9]+$/ && $3 == "0" && (now - $2) > cutoff {
+        print $1
+      }' \
+  | while read -r name; do
+      echo "phone-cleanup: killing idle session $name (age >7d, 0 clients)"
+      env -u TMUX "$TMUX_CMD" kill-session -t "$name"
+    done

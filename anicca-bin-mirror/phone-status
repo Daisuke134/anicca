@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# Anicca v3.2 phone-status — human-friendly status of phone-* tmux sessions.
+# Shows: session name | age | attached clients | current pane command.
+
+set -u
+
+TMUX_CMD="${TMUX_BIN:-/opt/homebrew/bin/tmux}"
+NOW=$(date +%s)
+
+printf '%-30s  %-10s  %-8s  %s\n' "SESSION" "AGE" "CLIENTS" "CURRENT"
+
+env -u TMUX "$TMUX_CMD" ls -F '#{session_name}|#{session_created}|#{session_attached}|#{pane_current_command}' 2>/dev/null \
+  | awk -F'|' '$1 ~ /^phone-[0-9]+$/' \
+  | while IFS='|' read -r name created clients cmd; do
+      age=$((NOW - created))
+      d=$((age / 86400))
+      h=$(( (age % 86400) / 3600 ))
+      m=$(( (age % 3600) / 60 ))
+      if [ $d -gt 0 ]; then human="${d}d${h}h"
+      elif [ $h -gt 0 ]; then human="${h}h${m}m"
+      else human="${m}m"
+      fi
+      printf '%-30s  %-10s  %-8s  %s\n' "$name" "$human" "$clients" "$cmd"
+    done

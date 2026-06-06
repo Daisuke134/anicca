@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>local.phone-cleanup</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/anicca/bin/phone-cleanup</string>
+    </array>
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>4</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+    <key>StandardOutPath</key>
+    <string>/Users/anicca/.openclaw/logs/phone-cleanup.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/anicca/.openclaw/logs/phone-cleanup.err</string>
+</dict>
+</plist>

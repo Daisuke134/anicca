@@ -18,36 +18,41 @@
 
 set -euo pipefail
 
-TMUX="${TMUX_BIN:-/opt/homebrew/bin/tmux}"
+TMUX_CMD="${TMUX_BIN:-/opt/homebrew/bin/tmux}"
 START_DIR="$HOME/anicca-project"
+
+# CRITICAL: unset the inherited $TMUX env var before invoking tmux client.
+# Inside an existing tmux session, $TMUX is set to the SOCKET path; if we
+# don't strip it, the new tmux client tries to use it and fails with
+# "Socket operation on non-socket".
 
 case "${1:-}" in
   ls)
-    "$TMUX" ls 2>/dev/null | grep -E '^phone-[0-9]+:' || true
+    env -u TMUX "$TMUX_CMD" ls 2>/dev/null | grep -E '^phone-[0-9]+:' || true
     ;;
   kill)
     if [ -z "${2:-}" ]; then
       echo "usage: phone kill <session-name>" >&2
       exit 1
     fi
-    "$TMUX" kill-session -t "$2"
+    env -u TMUX "$TMUX_CMD" kill-session -t "$2"
     ;;
   last)
-    LAST=$("$TMUX" ls 2>/dev/null | grep -E '^phone-[0-9]+:' | sort -t- -k2 -n | tail -1 | cut -d: -f1)
+    LAST=$(env -u TMUX "$TMUX_CMD" ls 2>/dev/null | grep -E '^phone-[0-9]+:' | sort -t- -k2 -n | tail -1 | cut -d: -f1)
     if [ -z "$LAST" ]; then
       echo "phone: no running phone-* session" >&2
       exit 1
     fi
-    exec "$TMUX" attach -t "$LAST"
+    exec env -u TMUX "$TMUX_CMD" attach -t "$LAST"
     ;;
   "")
     SESSION="phone-$(date +%s)"
     # MOSHI_PHONE flag travels into the new shell via tmux -e (modern tmux ≥ 3.2)
-    exec "$TMUX" new-session -A -s "$SESSION" -c "$START_DIR" \
+    exec env -u TMUX "$TMUX_CMD" new-session -A -s "$SESSION" -c "$START_DIR" \
       -e MOSHI_PHONE=1 \
       -e OPENCLAW_CONTEXT=interactive
     ;;
   *)
-    exec "$TMUX" attach -t "$1"
+    exec env -u TMUX "$TMUX_CMD" attach -t "$1"
     ;;
 esac
