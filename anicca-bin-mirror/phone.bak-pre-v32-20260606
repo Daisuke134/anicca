@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# Anicca tmux phone helper — new tmux session per tap (Moshi mobile scroll)
+# `phone`        → new unique session in ~/anicca-project, attach
+# `phone ls`     → list all sessions
+# `phone <name>` → attach to a specific named session
+# `phone kill <name>` → kill a session
+
+TMUX=/opt/homebrew/bin/tmux
+START_DIR="$HOME/anicca-project"
+
+case "${1:-}" in
+  ls)
+    "$TMUX" ls 2>/dev/null
+    ;;
+  kill)
+    [ -z "${2:-}" ] && { echo "usage: phone kill <session-name>"; exit 1; }
+    "$TMUX" kill-session -t "$2"
+    ;;
+  "")
+    SESSION="phone-$(date +%s)"
+    exec "$TMUX" new-session -A -s "$SESSION" -c "$START_DIR"
+    ;;
+  *)
+    exec "$TMUX" attach -t "$1"
+    ;;
+esac
