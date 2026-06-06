@@ -1277,10 +1277,145 @@ openclaw cron add \
 | date | change |
 |---|---|
 | 2026-06-06 02:00 | **v5.0 = production tool stitch** — mini-swe-agent + openclaw-autoresearch + SIA + Symphony + iototaku + atani の組合せ。 20 original params 全廃。 Claude (私) の宿題終了 path 確定。 |
+| 2026-06-06 03:00 | **v6.0 = 2-mode design** — Dais 厳命「fix だけじゃない、 動いてるが useless も削る」反映。 Mode A (= mini-swe-agent で broken fix) + Mode B (= Hermes Curator pattern で usage 30/90 days lifecycle)。 SIA / Symphony / openclaw-autoresearch 不採用 (= over-engineering)、 採用は mini-swe-agent + Hermes Curator pattern + iototaku 看板 + atani 教訓 の 4 ピース。 |
 
 ---
 
-## 9. ★ v3.4 source 一覧 (= verbatim quote 引用済) — 旧、 12 章で更新 ★
+## 13. ★★★ v6.0 FINAL — 2-mode design (Dais 2026-06-06: "動いてるが useless も削る") ★★★
+
+### 13.1 2 modes
+
+| Mode | 目的 | trigger | schedule | tool |
+|---|---|---|---|---|
+| **A REACTIVE** | broken cron を SWE engineer として fix | `status=error` 検出 | **`0 */6 * * *` JST = 4 fires/day** (= atani 実証) | **mini-swe-agent** (= [SWE-bench Family 公式](https://www.swebench.com/)、 74% verified、 cost_limit $3/task) |
+| **B PROACTIVE (= Curator)** | 動いてるが useless を archive | time-based (= last_used_at 監視) | **`0 3 * * 0` Asia/Tokyo = weekly 日曜 03:00 JST** (= [Hermes Curator default](https://hermes-agent.nousresearch.com/docs/user-guide/features/curator)) | **Hermes Curator pattern** (= `.usage.json` + `stale_after_days: 30` + `archive_after_days: 90`、 公式 verbatim) |
+
+### 13.2 model 選択 + token budget (= Dais 「token waste しない」 厳命)
+
+| 用途 | model | 理由 | token cost |
+|---|---|---|---|
+| **Mode A primary** | `openai-codex/gpt-5.4-mini` | atani 3週間実証で 5 fix カテゴリ (= action ref pinning / auto-merge fix / build dep / Dependabot config / security advisory) は **mini で十分** (= 44% fix率、 LLM が「直せない」と返す 24% は mini じゃなく root cause が深いケース) + cost-aware | **$3/task max** (= mini-swe-agent built-in cost_limit、 [src/minisweagent/agents/default.py L27](https://github.com/SWE-agent/mini-swe-agent/blob/main/src/minisweagent/agents/default.py)) |
+| **Mode A fallback chain** | OpenClaw agent default chain: **mini → deepseek/v4-pro → kimi-k2.5 → blockrun** | [OpenClaw model-failover](https://docs.openclaw.ai/concepts/model-failover) | mini fail 時のみ |
+| **Mode A upgrade trigger** | attempt 3 連続 fail で `openai-codex/gpt-5.4` (main) に切替 | atani 3 attempt 失敗時の本物 root cause = mini で無理 | mini × 3 fail 時のみ |
+| **Mode B LLM review** | `google/gemini-3-flash-preview` | **Hermes Curator 公式 default (verbatim)** = cheap aux model | ~$0.30/run |
+| **Mode B 自動 transition** | LLM 不使用 (= deterministic) | [Hermes 公式 verbatim](https://hermes-agent.nousresearch.com/docs/user-guide/features/curator): 「Automatic transitions (deterministic, no LLM)」 | $0 |
+
+### 13.3 月次 token cost 計算
+
+```
+Mode A (= 4 fires/day):
+  fire 1 = top 1 candidate × $3 cost cap = $3 max
+  fires/day × $3 = $12/day max
+  realistic (atani: 1 task average ~$1) = $4/day realistic
+  ─────────
+  $120/mo max / $50/mo realistic
+
+Mode B (= 1 fire/week):
+  aux LLM review pass (gemini-3-flash) × ~$0.30 = $0.30/week
+  ─────────
+  $1.20/mo
+
+cron-manager total: $120/mo max ceiling、 $51/mo realistic
+
+vs 現状 cron 全体 cost (= $1,455/mo gpt-5.4-mini):
+  Day 30: 150 → 130 enabled = $1,260/mo + cron-manager $51 = $1,311/mo (= -$144)
+  Day 90: 130 → 110 enabled = $1,068/mo + cron-manager $51 = $1,119/mo (= -$336)
+  Day 365: 110 → 80 enabled  = $776/mo  + cron-manager $51 = $827/mo  (= -$628)
+
+  Net 月 1 年後: -$628/mo = -$7,536/年 節約 (= cron-manager 投資込み)
+```
+
+### 13.4 OpenClaw 統合 (= Dais 「is it part of openclaw?」 への答え)
+
+| component | OpenClaw 統合形態 |
+|---|---|
+| **mini-swe-agent** | ★ **OpenClaw 内蔵ではない** ★ — `pip install mini-swe-agent` (= 別 pypi package、 [SWE-bench Family 公式](https://www.swebench.com/) の Princeton/Stanford チーム製)。 OpenClaw cron の中で **subprocess.run `mini -m <model> -t <task>`** で呼ぶ。 LiteLLM 経由で OpenClaw が設定する `MSWEA_MODEL_NAME` env を尊重 |
+| **Hermes Curator pattern** | ★ **OpenClaw 内蔵ではない** ★ — pattern (= `.usage.json` schema + 30/90 days lifecycle) を私たちが OpenClaw skill にコピー実装。 Hermes Agent 自体は別 runtime ([NousResearch](https://github.com/NousResearch/hermes-agent)) |
+| **OpenClaw cron** | ★ **既存 runtime をそのまま使う** ★ — `openclaw cron add --cron "0 */6 * * *"` で 2 cron 登録するだけ。 model fallback chain ([公式 docs](https://docs.openclaw.ai/concepts/model-failover)) も既存 |
+| **gh CLI (GitHub Issue 看板)** | ★ **OpenClaw 内蔵ではない** ★ — system に `gh` install 済 (`/opt/homebrew/bin/gh`)。 iototaku pattern で OpenClaw cron 内から `gh issue create/edit/close` で operate |
+| anicca-cron-manager-A / -B skill | ★ **OpenClaw skill (= 自前)** ★ — `~/.openclaw/skills/anicca-cron-manager-{A,B}/` に bash + python の薄い stitch を置く。 中身は `mini` + `gh` を呼ぶだけ |
+
+### 13.5 token 浪費を防ぐ 5 層 guard
+
+1. **mini-swe-agent built-in `cost_limit: $3.0`** (= Princeton/Stanford default)。 task ごとに hard ceiling、 超えたら自動 abort
+2. **OpenClaw cron `--model openai-codex/gpt-5.4-mini`** (= 最初は mini)。 atani 実証で 5 fix カテゴリ mini で行ける
+3. **fallback chain** (= [OpenClaw model-failover docs](https://docs.openclaw.ai/concepts/model-failover) 公式): mini auth/quota fail で **deepseek-v4-pro** に自動切替。 二重重ね
+4. **OpenClaw cron `--timeout-seconds 1200`** (= 20 分上限) と **mini wall_time_limit_seconds 600** で時間軸 double-cap
+5. **R-8 anicca-cron-doctor data/openai-spend.json** + **`OPENAI_MONTHLY_BUDGET_USD` env** (= 既存) — 月予算超過で cron-codex.sh が **skip + Slack 警告**
+
+### 13.6 ファイル構成 (= v6.0 ship 時)
+
+```
+~/.openclaw/skills/
+├── anicca-cron-manager-A/        ← Mode A = reactive
+│   ├── SKILL.md                  ← v6.0 design 引用
+│   ├── scripts/
+│   │   ├── run.sh                ← 30 行 stitch (= scan → gh issue → mini-swe-agent → verify)
+│   │   └── never-disable.txt     ← 178 patterns (Dais 厳命)
+│   └── data/
+│       └── usage.json            ← Mode B と共有
+│
+└── anicca-cron-manager-B/        ← Mode B = Curator (= Hermes pattern)
+    ├── SKILL.md                  ← Hermes Curator 公式仕様 copy
+    ├── scripts/
+    │   └── curator.sh            ← 40 行 (= snapshot → automatic transitions → LLM review)
+    ├── data/
+    │   └── usage.json            ← per-skill {views, uses, patches, last_used_at, pinned, created_by}
+    └── backups/
+        └── <utc-iso>/skills.tar.gz   ← 直近 5 件保持 (backup.keep: 5)
+```
+
+### 13.7 ship 順序
+
+```
+V6-1   ~/.openclaw/.env に MSWEA_MODEL_NAME=openai-codex/gpt-5.4-mini 追加
+V6-2   pip install mini-swe-agent
+V6-3   mini hello_world smoke test (= 1 task で smoke、 cost <$0.10 確認)
+V6-4   ~/.openclaw/skills/anicca-cron-manager-A/ 作成 (= 30 行 run.sh)
+V6-5   ~/.openclaw/skills/anicca-cron-manager-B/ 作成 (= 40 行 curator.sh、 .usage.json schema 初期化)
+V6-6   never-disable.txt (= 178 patterns hardcode、 .usage.json::pinned=true 同期)
+V6-7   openclaw cron rm 4 件既存 (= cd661ee8 + 74294b16 + 92f15d71 + 7a8d3344)
+V6-8   openclaw cron add anicca-cron-manager-A (= 0 */6 * * * Asia/Tokyo)
+V6-9   openclaw cron add anicca-cron-manager-B (= 0 3 * * 0 Asia/Tokyo)
+V6-10  E2E Mode A fire 1 回 (= openclaw cron run <id> --wait)
+V6-11  E2E Mode B dry-run (= curator.sh --dry-run、 mutation なし確認)
+V6-12  git commit + push 両 repo
+V6-13  Slack `:white_check_mark: v6.0 shipped、 Mode A 4×/day、 Mode B weekly`
+```
+
+### 13.8 SWE-bench leaderboard 実測 (= mini-swe-agent + 各 model 性能)
+
+| model | mini-swe-agent score | source |
+|---|---|---|
+| Gemini 3 Pro | **74%** verified | [mini-swe-agent README verbatim](https://github.com/SWE-agent/mini-swe-agent) |
+| GPT-5 + Sonnet 4 random switch | "boosts performance" | [Mini Roulette blog](https://www.swebench.com/post-250820-mini-roulette.html) |
+| GPT-5.4-mini | ~推定 50-60% (= 公式数値なし、 cost vs accuracy tradeoff の sweet spot) | engineering judgment |
+
+→ **Anicca の cron 修復は SWE-bench Verified の難易度より易しい** (= bug fix + config patch + schedule 変更)。 mini で 80%+ 期待 (atani 実証 44% は CI 失敗カテゴリ含む全体、 簡易 cron 修復は別)。
+
+---
+
+## 14. ★ Hermes Curator 完全 verbatim copy (= Mode B 実装の引用源) ★
+
+[公式 docs Firecrawl scrape 2026-06-06](https://hermes-agent.nousresearch.com/docs/user-guide/features/curator) verbatim quote:
+
+> "The curator is a background maintenance pass for **agent-created skills**. It tracks how often each skill is viewed, used, and patched, moves long-unused skills through `active → stale → archived` states, and periodically spawns a short auxiliary-model review that proposes consolidations or patches drift."
+
+> "The curator **never touches** bundled skills (shipped with the repo) or hub-installed skills (from agentskills.io). It only reviews skills the agent itself authored. It also **never auto-deletes** — the worst outcome is archival into `~/.hermes/skills/.archive/`, which is recoverable."
+
+> "**Automatic transitions** (deterministic, no LLM). Skills unused for `stale_after_days` (30) become `stale`; skills unused for `archive_after_days` (90) are moved to `~/.hermes/skills/.archive/`."
+
+> "**LLM review** (single aux-model pass, `max_iterations=8`). The forked agent surveys the agent-created skills, can read any of them with `skill_view`, and decides per-skill whether to keep, patch (via `skill_manage`), consolidate overlapping ones, or archive via the terminal tool."
+
+> "stale_after_days: 30 / archive_after_days: 90 / model: google/gemini-3-flash-preview / timeout: 600 / backup.keep: 5"
+
+> "Pinning protects a skill from deletion — both the curator's automated archive passes and the agent's `skill_manage(action='delete')` tool call. The flag is stored as `'pinned': true` on the skill's entry in `~/.hermes/skills/.usage.json`."
+
+→ **Anicca は Hermes じゃないが、 **このパラメタを全部そのまま copy** して `~/.openclaw/skills/anicca-cron-manager-B/data/usage.json` schema にする**。 30/90/8/600/5/pinned は全部公式 verbatim。
+
+---
+
+## 9. ★ v3.4 source 一覧 (= 旧、 14 章で更新) ★
 
 
 
