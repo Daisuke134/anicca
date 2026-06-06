@@ -2040,6 +2040,76 @@ Dais 厳命: 「they shuld go gfigreu this out himself maybe yes」 — Anicca �
 
 ---
 
+### 15.12 ★★★ article-daily Brokenness Root-cause + Content Angle Pivot (= 2026-06-06 監査) ★★★
+
+**Dais 2026-06-06 厳命 verbatim:**
+> "can uu go check why the artilce shit is not going again??... are they posting new artilces
+>  daily like fresh original ones?? i think its imortatnt that they post useful inisfghtts
+>  from what they learned in their day to day runs... it is either 1. latest tech info on
+>  ai entity like andon mona or felix or kelly 2. or the daily lessons they learned from
+>  their day to day."
+
+#### Root cause (= 3 段 catastrophe、 実 log 監査 verified)
+
+| 段 | 症状 | 検証手段 |
+|---|---|---|
+| 1 | `briefs-2026-06-05/` = empty、 `briefs-2026-06-06/` = empty | `ls` 実走 |
+| 2 | `topic-queue.md`: "Canonical corpus: 0 articles, 0 ready-to-mirror" | 実 file 読み |
+| 3 | `today-insight-2026-06-06.md`: `today_focus_topic=""`、 `reflections_today=0`、 `slack_metrics_lines=0`、 `canonical_refs=[]`、 `promoted_patterns=[]` | jq 実走 |
+
+→ ★ self-improve は走ってるが SEO opportunity = 0 (= rank ranked keyword 1 個) → gap-keyword brief 導出不可 ★
+→ ★ 「両方 empty → exit 0 with queue empty」 path 経由で 5 channel silent fail ★
+→ ★ zenn のみ何かの timing で publish 成功 ★
+
+#### Title diversity 監査 (= Dais 「fresh original?」)
+
+★ NO ★ — 「AI cemetery / 引退 AI 供養」 を zenn + substack-ja + aniccaai-blog の 3 channel で 4 回 recycle、 substack-en 「Passive-App Trap」 同タイトル 2 回 publish。
+
+#### Content Angle Pivot (= Dais 提案 hybrid 採用)
+
+| angle | source | target channels |
+|---|---|---|
+| 1. **Latest AI Entity Watch** | Firecrawl daily scrape: Andon / Mona / Felix / Kelly / Goose / Replit / Hermes / Cline / Devin / Claude Code / mini-swe-agent | zenn (ja tech) + devto (en tech) + blog (alt) + substack-ja/en (alt) |
+| 2. **Daily Lessons from Operation** | `~/.openclaw/workspace/experience-log/$(date).jsonl` (= heartbeat §4 RECORD 既存 schema)。 cron fixes + SaaS traps + money moves + archived skills | note (= personal essay) 全埋め + 他 channel alt |
+
+#### Day-of-week × Channel hybrid 配分
+
+```
+              月    火    水    木    金    土    日
+ zenn (ja)   tech  tech  lesn  tech  lesn  tech  audit
+ blog (alt)  tech  lesn  tech  lesn  tech  lesn  digest
+ devto (en)  tech  tech  lesn  tech  lesn  tech  audit
+ sub-ja      lesn  tech  lesn  tech  lesn  tech  weekly
+ sub-en      lesn  tech  lesn  tech  lesn  tech  weekly
+ note (ja)   lesn  lesn  lesn  lesn  lesn  lesn  weekly
+```
+
+### 15.13 Full diff patch (= 6 patch、 paste-runnable)
+
+新規 file:
+- `~/.openclaw/skills/anicca-article-daily/data/ai-entity-watch.json` (= 11 watched agents、 fallback topics 3)
+- `~/.openclaw/skills/anicca-article-daily/scripts/fetch-ai-watch.sh` (= 60 行、 Firecrawl daily fetch + digest)
+- `~/.openclaw/skills/anicca-article-daily/scripts/extract-daily-lesson.sh` (= 50 行、 experience-log → md 4 section)
+- `~/.openclaw/skills/anicca-article-daily/scripts/build-fallback-brief.sh` (= 80 行、 brief queue 保証生成、 DOW テーブル駆動)
+
+既存 file 改修:
+- `anicca-article-self-improve` cron message: 末尾に `build-fallback-brief.sh` invoke 追加
+- `anicca-article-daily-{6 channel}` cron message: STEP 0 「If briefs dir EMPTY」 path を「`build-fallback-brief.sh` → 再スキャン → 必ず publish」 に置換、 「queue empty exit 0」 path 削除
+- `anicca-cron-manager-A/scripts/run.sh` STEP 1: cornerstone-first priority weight (article=P0、 social=P1)
+
+(= 完全 diff content は spec §15.13 conversation history reference、 ship 時に各 file へ paste)
+
+### 15.14 article fix の Mode A 連動効果
+
+| 時点 | Mode A action | 結果 |
+|---|---|---|
+| Day 0 today (= ship 後 6h 以内) | article 5 error を gh issue 化 P0、 fallback-brief.sh patch 投入 | brief queue 復活 → 翌 fire で publish 成功 |
+| Day 1 | morning self-improve に build-fallback-brief.sh 追加済 → brief 6 channel 分自動生成 | 6 channel 全部 publish |
+| Day 7 | AI watch 7 日分蓄積 + lesson 7 日分蓄積 → topic 重複ゼロ | fresh original 100% |
+| Day 30 | Mode A が 95%+ uptime 維持 (= cornerstone 死亡時間 < 6h) | Dais 不在で article + social 自律運転 |
+
+---
+
 ## 17. v7.0 実装順序 (= V7-1〜V7-13)
 
 ```
