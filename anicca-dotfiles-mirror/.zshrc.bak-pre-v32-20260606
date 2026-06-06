@@ -1,0 +1,59 @@
+export PATH="/opt/homebrew/opt/node@22/bin:$PATH"
+
+# Claude Code / Node.js symlink
+export PATH="$HOME/bin:$PATH"
+export PATH=$PATH:$HOME/.maestro/bin
+export PATH=$PATH:$HOME/.maestro/bin
+
+# Claude Code - bypass permissions
+alias claude='claude --dangerously-skip-permissions'
+
+. "$HOME/.local/bin/env"
+export PATH=/opt/homebrew/bin:/usr/local/bin:$PATH
+export PATH=$PATH:$HOME/.maestro/bin
+
+# Firecrawl CLI
+export FIRECRAWL_API_KEY=fc-a71ee897c8a04aee957733944fe5e9d5
+export VIBECODE_API_KEY="vibecode_18a927ce7976721a13bef524fe172b75"
+export PATH="$HOME/.local/bin:$PATH"
+export NODE_PATH=/opt/homebrew/lib/node_modules
+export PATH=$PATH:$HOME/.maestro/bin
+export PATH=$PATH:$HOME/.maestro/bin
+export PATH=$PATH:$HOME/.maestro/bin
+export PATH=$PATH:$HOME/.maestro/bin
+export PATH=$PATH:$HOME/.maestro/bin
+export PATH=$PATH:$HOME/.maestro/bin
+export PATH=$PATH:$HOME/.maestro/bin
+export PATH=$PATH:$HOME/.maestro/bin
+export PATH=$PATH:$HOME/.maestro/bin
+export PATH=$PATH:$HOME/.maestro/bin
+export PATH=$PATH:$HOME/.maestro/bin
+export PATH=$PATH:$HOME/.maestro/bin
+export PATH=$PATH:$HOME/.maestro/bin
+export PATH=$PATH:$HOME/.maestro/bin
+export PATH=$PATH:$HOME/.maestro/bin
+
+# ─── Anicca tmux phone interceptor ──────────────────────────────────────
+# Moshi mobile tap runs `tmux attach -t phone`. Intercept and create a NEW
+# unique session each time (phone-<unix_ts>) so each tap gives a fresh shell
+# that supports scroll in the Moshi terminal.
+# Non-matching tmux args fall through to the real binary.
+tmux() {
+  if [[ "$1" == "attach" && "$2" == "-t" && "$3" == "phone" ]]; then
+    local s="phone-$(date +%s)"
+    command tmux new-session -A -s "$s" -c "$HOME/anicca-project"
+  else
+    command tmux "$@"
+  fi
+}
+export PATH=$PATH:$HOME/.maestro/bin
+export PATH=$PATH:$HOME/.maestro/bin
+export PATH=$PATH:$HOME/.maestro/bin
+export PATH=$PATH:$HOME/.maestro/bin
+export PATH=$PATH:$HOME/.maestro/bin
+
+# OpenClaw Completion
+source "/Users/anicca/.openclaw/completions/openclaw.zsh"
+export PATH=$PATH:$HOME/.maestro/bin
+
+source /Users/anicca/.daytona.completion_script.zsh
