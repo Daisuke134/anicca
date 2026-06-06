@@ -7,6 +7,7 @@ interface FooterProps {
 
 export default function Footer({ locale }: FooterProps) {
   const t = translations[locale].footerV2;
+  if (!t) return null;
 
   return (
     <footer className="border-t border-[hsl(var(--hairline))] bg-background">

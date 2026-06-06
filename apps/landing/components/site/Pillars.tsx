@@ -7,6 +7,7 @@ interface PillarsProps {
 
 export default function Pillars({ locale }: PillarsProps) {
   const t = translations[locale].pillars;
+  if (!t) return null;
 
   return (
     <section className="section bg-[hsl(var(--background-alt))]">

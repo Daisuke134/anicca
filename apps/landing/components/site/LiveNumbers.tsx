@@ -85,6 +85,7 @@ function Row({ label, primary, meta }: RowProps) {
 
 export default function LiveNumbers({ locale }: LiveNumbersProps) {
   const t = translations[locale].liveNumbers;
+  if (!t) return null;
   const [data, setData] = useState<DashboardData | null>(null);
   const [error, setError] = useState<string | null>(null);
 

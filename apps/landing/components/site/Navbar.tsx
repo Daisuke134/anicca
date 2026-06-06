@@ -7,6 +7,7 @@ interface NavbarProps {
 
 export default function Navbar({ locale }: NavbarProps) {
   const t = translations[locale].nav;
+  if (!t) return null;
   const otherLocale = locale === 'en' ? 'ja' : 'en';
 
   const items = [

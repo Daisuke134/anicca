@@ -22,6 +22,7 @@ interface DashboardWithWriting {
 
 export default function RecentWriting({ locale }: RecentWritingProps) {
   const t = translations[locale].recentWriting;
+  if (!t) return null;
   const [items, setItems] = useState<WritingItem[]>(
     t.fallback as unknown as WritingItem[],
   );
