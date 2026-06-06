@@ -478,6 +478,108 @@ On reply, Anicca walks you through TikTok signup + Postiz connect.
 
 ---
 
+## Part T — IAM fresh-generation + screen-fit guard (Dais 2026-06-06)
+
+現状 5 IAM skill (color-en/ja, photo-en/ja, mantra-ja) は固定 7 affirmation rotation = NG。
+特に JA で 5 行 overflow → screen 外に text 切れ。
+
+### Fresh-gen flow (両言語、 必要時に応じて 1 ~ 7/日)
+```
+1. seed pool: ~/.openclaw/skills/anicca-iam-color-<lang>/scripts/build-slideshow.py の
+   IAM_TEMPLATE_B[_JA] (verified i.am app screenshot 由来 7 件)
+   + new ~/.openclaw/state/content-library/pattern-iam-<lang>.jsonl (バズ例追加)
+
+2. LLM prompt:
+   EN: "Generate 1 short 'I am' affirmation, 4-6 words, uppercase,
+        max 4 lines × 14 chars, no semicolons, present tense.
+        examples (verbatim style guide):
+        - I AM ENOUGH AS I AM.
+        - I CHOOSE PEACE TODAY.
+        - I SEE IT. I LIKE IT. I WANT IT. I GOT IT."
+   JA: "「私は」「私には」で始まる肯定 1 行、 max 5 行 × 7 chars/line。
+        examples:
+        - 私には光がある。
+        - 私は満たされている。
+        - 私はそのままで尊い。"
+
+3. word-count guard (build-slideshow.py 修正):
+   EN: total chars > 56 → reject → LLM 再生成 (3 retry)
+   JA: total chars > 35 → reject → 同上
+
+4. picks.json に items=[{text,lines}] 書込 → 既存 renderer
+
+5. append-to-history (account=iam-<lang>) で 14d anti-repeat
+```
+
+bg pastel palette は rotate のまま (Dais OK = pink/green/blue etc)。
+
+タスク #91 で実装。
+
+---
+
+## Part U — slideshow→video freshness (Dais 2026-06-06)
+
+要件: video 化する larry run は **1 時間前 〜 24 時間前** の最新を選ぶ。 同 video 反復防止。
+
+### build.sh 改修
+```diff
+- RUN_DIR=$(ls -td ~/.openclaw/workspace/tiktok-marketing/run-*/ ... 2>/dev/null | head -1)
++ RUN_DIR=$(find ~/.openclaw/workspace/tiktok-marketing -maxdepth 1 -type d \
++   \( -name 'run-*' -o -name 'afternoon-*' \) -mmin +60 -mmin -1440 \
++   -exec stat -f '%m %N' {} \; | sort -rn | head -1 | cut -d' ' -f2)
++ [ -z "$RUN_DIR" ] && { echo "no fresh run in 1h-24h window, skip"; exit 0; }
+```
+
+local archive (larry run dir 永続):
+- larry skill の cleanup 抑制
+- 7 日経過 dir のみ delete cron で掃除 (別タスク)
+
+タスク #92。
+
+---
+
+## Part V — 1.9.3 提出前 修正 (App Store)
+
+### 1. 無料トライアル撤去
+- subscription products から 3-day free trial 削除
+- App Store Connect CLI (asc) で subscription offerings 編集
+- 関連: monthly $9.99 / annual $49.99 だけ残す
+
+### 2. Paywall design 改修
+- 「Try 3 days for free」CTA → 「Subscribe」 / 「Continue」
+- copy 全 review (Anicca で何できるか強調)
+- A/B test 開始は別タスク
+
+### 3. Subtitle (キーワード羅列)
+- EN: "Affirmations, Calm & Self-Love" or "Affirmations · Sleep · Mindful · Calm"
+- JA: "自己肯定感・名言・瞑想・感謝・ポジティブ"
+
+### 4. submit flow
+1. asc metadata update subtitle + keywords
+2. version 1.9.3 create + binary attach (existing build)
+3. asc review submit
+
+タスク #93。
+
+---
+
+## Part W — Newsletter daily fix (1.9.3 提出後)
+
+Dais 報告: 私 mail で 1 通だけ受領、 daily 来ない。
+
+### 修正
+- daily-letter-sender cron 検証 (現 schedule + last run + error)
+- Day-N letter generation:
+  - 1 letter 分量 を 200 字 → 500-800 字 に拡張
+  - Anicca で何ができるか naturally introduce
+  - Cross-promo: Anicca-install / cemetery for AI / 他 product
+- subscriber テーブル + Resend API 連携 check
+- domain は verified `letters@aniccaai.com` 使用済 (前 session 確定)
+
+タスク #94。
+
+---
+
 ## Part H — 4 new accounts (mail)
 
 AgentMail free tier is at inbox limit → use **Gmail aliases** (Dais authorized "alias, whatever"). 2FA auto-read via Gmail MCP. Ready immediately, no provisioning:
