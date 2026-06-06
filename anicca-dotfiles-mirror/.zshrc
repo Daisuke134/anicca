@@ -33,6 +33,19 @@ export PATH=$PATH:$HOME/.maestro/bin
 export PATH=$PATH:$HOME/.maestro/bin
 export PATH=$PATH:$HOME/.maestro/bin
 
+# ─── Anicca v3.2 Moshi backward-compat shim ──────────────────────
+# Old Moshi tap sends `tmux attach -t phone` (per pre-v3.2 interceptor).
+# Route that to the new phone CLI so Dais doesn't have to reconfigure
+# his Moshi/Blink command. Any other tmux invocation falls through.
+tmux() {
+  if [[ "$1" == "attach" && "$2" == "-t" && "$3" == "phone" ]]; then
+    exec /Users/anicca/bin/phone
+  else
+    command tmux "$@"
+  fi
+}
+# ─────────────────────────────────────────────────────────────────
+
 # ─── Anicca v3.2 phone autostart ──────────────────────────────────
 # Runs only inside a tmux session created by `phone` (MOSHI_PHONE=1).
 # Replaces the shell with a fresh Claude (Opus 4.7) conversation.
