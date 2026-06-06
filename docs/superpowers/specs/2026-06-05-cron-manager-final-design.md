@@ -2264,6 +2264,49 @@ self-improve cron が pattern A-E の 7 日勝率を update
 
 ---
 
+### 15.20d ★★★ Verification Round 2 結果 (= 2026-06-07) ★★★
+
+5 件 verify、 重大発見 2 件:
+
+| V# | item | 結果 |
+|---|---|---|
+| V1 | openclaw cron edit hot-reload | ✅ PASS (= timeout 1200→1300→1200 round trip 即反映) |
+| V2 | gpt-5.4 model field 既存使用 | ★ ZERO precedent ★ heartbeat が初の explicit override、 ship 時要観測 |
+| V3 | ~/.openclaw/skills/.archive/ write | ✅ PASS |
+| V4 | ★ Slack 直 curl 不要 ★ | OpenClaw delivery.channel が final text 自動投稿 = HEARTBEAT.md v3 §5 大幅簡略化 |
+| V5 | model fallback chain | ✅ kimi-k2.5 → deepseek-v4-pro → claude-sonnet-4-6 |
+
+#### Spec patch fix (= V4 発見反映)
+
+★ **HEARTBEAT.md v3 §5 REPORT を簡略化** ★:
+- 旧 draft: `curl https://slack.com/api/chat.postMessage` + SLACK_BOT_TOKEN env source
+- ★ 新: ★ LLM が「1-line 最終 text を出力」 だけで OpenClaw が delivery.channel に自動投稿
+
+★ **§1 SENSE の jq path 修正** ★:
+- 旧 draft: `openclaw cron list --json | jq '.[] | ...'` (誤り)
+- ★ 新: ★ `openclaw cron list --json | jq '.jobs[] | ...'` (= 実 schema は `{jobs:[], total, ...}`)
+
+#### 残 uncertainty (= 6 件、 ship 観測でのみ verify 可能)
+
+| B# | item | mitigation |
+|---|---|---|
+| B-1 | HEARTBEAT.md v3 prompt steering | V8-15 1 fire dry-run、 freelance なら prompt iterate |
+| B-2 | refusal-as-success bug が gpt-5.4 full でも | --expect-final + 後追い check |
+| B-3 | timeoutSeconds=1500 超え long fix | 次 fire (1h 後) retry |
+| B-4 | gh api rate limit (= 24/h × N) | 5000/h 上限の 1% で問題なし、 ★ 受諾 ★ |
+| B-7 | 5 article 修復 = 5 fire = 5h | ★ 既受諾 ★ |
+| B-8 | gpt-5.4 full cost/fire 実測 | week 1 観測、 高すぎなら mini downgrade |
+
+#### C decisions (= 0.21 autonomous で確定、 私の推奨採用)
+
+| C# | 決定 |
+|---|---|
+| C-1 | **inline self-review** で ship、 month 1 観測後 catch 率低なら separate review cron |
+| C-2 | **ETA static `2026-09-01`** で ship、 V9 で dynamic 化 |
+| C-3 | **never-disable.txt = 完全一致 string + grep -qFx fail-closed**、 漏れ次第追加 |
+
+---
+
 ### 15.20b ★★★ v7.3 PIVOT — heartbeat-as-SWE-agent (= mini-swe-agent DROP) ★★★
 
 > **2026-06-06 14 uncertainty 実 verify 結果から、 mini-swe-agent 採用断念:**
