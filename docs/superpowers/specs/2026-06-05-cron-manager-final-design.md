@@ -1810,7 +1810,237 @@ Day 91-365 v2.0 on-chain only (= ANICCA_TRUE_AUTONOMY_SPEC) 並行 ship
 
 ---
 
-## 17. v7.0 実装順序 (= V7-1〜V7-12)
+### 15.9 ★★★ Mode B v2 — DAILY SAFE REFACTOR (= BP-grounded) ★★★
+
+**Dais 2026-06-06 厳命 verbatim:**
+> "why the auto delete is weekly, should it not be daily?? like ofc they dony have to delte
+>  things if there are nonoe, but if there are, they should do rigth?? we dont want them to
+>  dlete the importnat ones since they were forced to delete them rright?? how can we make
+>  them do taht?? how should we promot trhme..tell me the full diff patch promopt for this,
+>  by searching the bp."
+
+#### BP 検索結果 (= Firecrawl 3 query 実走、 2026-06-06)
+
+**Source 1: [Hermes Curator 公式 docs](https://hermes-agent.nousresearch.com/docs/user-guide/features/curator)** verbatim:
+
+> "Skills unused for `stale_after_days` (30) become `stale`; skills unused for `archive_after_days` (90) are moved to `~/.hermes/skills/.archive/`."
+> "interval_hours: 168 (= 7 days)、 stale_after_days: 30、 archive_after_days: 90"
+
+→ ★ **CRITICAL 発見: `interval_hours` (= 何日毎に check) ≠ `stale_after_days` / `archive_after_days` (= 何日 unused で transition)** ★。 Hermes は週 1 check だが threshold は 30/90 日。 **daily check + 30/90 日 threshold = 公式仕様内で安全**。 「daily だと 1 日で消える」 は誤解。
+
+**Source 2: [Kubernetes node-pressure eviction 公式 docs](https://kubernetes.io/docs/concepts/scheduling-eviction/node-pressure-eviction/)** verbatim:
+
+> "A soft eviction threshold pairs an eviction threshold with a required administrator-specified grace period. The kubelet does not evict pods until the grace period is exceeded."
+> "eviction-soft: A set of eviction thresholds that can trigger pod eviction if held over the specified grace period."
+
+→ ★ **採用 pattern: soft (= 30d で flag) + grace_period (= 7d 復活窓) + hard (= 90d で archive)**。 「強制削除」 を防ぐ canonical pattern ★
+
+**Source 3: [systemd-tmpfiles 公式 man page](https://www.freedesktop.org/software/systemd/man/systemd-tmpfiles.html)** verbatim:
+
+> "files... will not be removed unless an exclusive or shared BSD lock is taken on them"
+> "It is recommended to first run this command in combination with `--dry-run`"
+
+→ ★ **採用 pattern: 「BSD lock」 analog = recent `uses[]` array within 7d (= 「現在 in-use」 検出)。 dry-run 1 回目 → 観測 2 回目 → 実行 3 回目 の 3-fire protection** ★
+
+#### Mode B v2 設計 (= BP 3 source 統合)
+
+| 項目 | Mode B v1 (= weekly) | **Mode B v2 (= daily safe)** | source |
+|---|---|---|---|
+| schedule | `0 3 * * 0` (= 週 1 日曜) | **`0 3 * * *`** (= 毎日 03:00 JST) | Dais 厳命 |
+| stale_after_days | 30 | 30 (= unchanged) | Hermes verbatim |
+| archive_after_days | 90 | 90 (= unchanged) | Hermes verbatim |
+| grace_period_days | なし | **7** (= soft → hard 間の復活窓) | K8s soft/hard |
+| LLM review trigger | 毎週 fire | **archive_count > 0 の時だけ** | cost guard |
+| snapshot retain | backup.keep=5 (= 5 週) | **backup.keep=30** (= 30 日 rollback) | daily 倍率 |
+| dry-run pass | 1 回目 archive | **3-fire 連続検出後 archive** (= 1 日目 detect、 2 日目 confirm、 3 日目 execute) | systemd-tmpfiles analog |
+| 月 cost (= LLM) | $1.20 (= 4 fire × $0.30) | **$1.50-3.00** (= idle 日は $0、 active 日のみ) | 同等以下 |
+
+#### 4 層 安全装置 (= 「force-delete 不可能」 保証)
+
+```
+┌─ Layer 1: pinned ─────────────────────────────────────────────┐
+│  usage.json::pinned=true                                       │
+│  → never-disable.txt 178 patterns 自動同期                      │
+│  → 「content cornerstone」「revenue-critical」「opt-in」 全部 ON │
+│  → Layer 1 で blocked = 100% archive 不可                       │
+└────────────────────────────────────────────────────────────────┘
+
+┌─ Layer 2: grace_period 復活窓 (= K8s soft eviction analog) ───┐
+│  if AGE_DAYS in (30, 90) AND uses[] within 7d:                 │
+│      revert stale/archive_eligible flag → active               │
+│  → 「最近 1 回でも使ってた」 = 安全側に倒す                       │
+└────────────────────────────────────────────────────────────────┘
+
+┌─ Layer 3: 3-fire 連続検出 (= systemd-tmpfiles dry-run analog) ┐
+│  archive_eligible flag を 3 日連続 (= 3 fire) 維持後に execute  │
+│  → 1 日目: detect + flag (= archive せず)                       │
+│  → 2 日目: confirm + flag 維持 (= まだ archive せず)             │
+│  → 3 日目: execute archive (= openclaw cron disable + mv)       │
+│  → 「flag つけて 7d 内に 1 回でも使われた」 → revert + Layer 2     │
+└────────────────────────────────────────────────────────────────┘
+
+┌─ Layer 4: 30 日 snapshot rollback ────────────────────────────┐
+│  毎 fire 前 tar.gz → ~/.openclaw/skills/.backups/<utc-iso>/     │
+│  backup.keep=30 (= 30 日分 rollback 可)                          │
+│  rollback CLI: openclaw curator rollback --id <ts>             │
+│  → Layer 1-3 すり抜けても 30 日以内なら 1 コマンド復元           │
+└────────────────────────────────────────────────────────────────┘
+```
+
+#### Full Diff Patch (= 実装 prompt、 paste-runnable)
+
+```bash
+# ═══════════════════════════════════════════════════════════════════
+# Patch B-v2.1: ~/.openclaw/skills/anicca-cron-manager-B/scripts/curator.sh
+# (= Mode B v2 daily safe、 BP-grounded、 ~80 行 bash)
+# ═══════════════════════════════════════════════════════════════════
+
+#!/usr/bin/env bash
+set -uo pipefail
+SKILL_DIR="$HOME/.openclaw/skills"
+USAGE_JSON="$HOME/.openclaw/skills/anicca-cron-manager-B/data/usage.json"
+BACKUP_DIR="$SKILL_DIR/.backups"
+LOG="$HOME/.openclaw/skills/anicca-cron-manager-B/data/curator.log"
+NOW_MS=$(date +%s000)
+TS=$(date -u +%Y-%m-%dT%H-%M-%SZ)
+
+# ── Layer 4 snapshot (= always、 cheap) ──
+mkdir -p "$BACKUP_DIR/$TS"
+tar -czf "$BACKUP_DIR/$TS/skills.tar.gz" \
+    -C "$HOME/.openclaw" skills \
+    --exclude="skills/.backups" --exclude="skills/.archive" 2>/dev/null
+
+# ── Layer 4 retain 30 days only (= rolling) ──
+find "$BACKUP_DIR" -mindepth 1 -maxdepth 1 -type d -mtime +30 \
+    -exec rm -rf {} + 2>/dev/null
+
+# ── deterministic transitions (= 0 token) ──
+ARCHIVE_EXEC=0
+ARCHIVE_FLAG=0
+REVERTED=0
+
+for SKILL in $(ls -d "$SKILL_DIR"/*/  2>/dev/null | xargs -n1 basename); do
+    # Layer 1: pinned (= never-disable + revenue-critical)
+    PINNED=$(jq -r --arg s "$SKILL" '.[$s].pinned // false' "$USAGE_JSON")
+    [ "$PINNED" = "true" ] && continue
+    
+    LAST_USED=$(jq -r --arg s "$SKILL" '.[$s].last_used_at_ms // 0' "$USAGE_JSON")
+    [ "$LAST_USED" = "0" ] && continue   # never-used = skip (= new install)
+    
+    AGE_DAYS=$(( (NOW_MS - LAST_USED) / 86400000 ))
+    
+    # Layer 2: grace_period revert (= K8s soft eviction analog)
+    RECENT_USE=$(jq -r --arg s "$SKILL" --arg ago "$((NOW_MS - 7*86400000))" \
+        '.[$s].uses[]? | select(. > ($ago|tonumber)) | .' "$USAGE_JSON" | head -1)
+    if [ -n "$RECENT_USE" ]; then
+        # used within 7d → revert any flag
+        FLAGGED=$(jq -r --arg s "$SKILL" '.[$s].archive_eligible_since // ""' "$USAGE_JSON")
+        if [ -n "$FLAGGED" ]; then
+            jq --arg s "$SKILL" \
+                'del(.[$s].archive_eligible_since) | del(.[$s].stale)' \
+                "$USAGE_JSON" > "$USAGE_JSON.tmp" && mv "$USAGE_JSON.tmp" "$USAGE_JSON"
+            REVERTED=$((REVERTED + 1))
+            echo "[$TS] REVERT $SKILL (= recent use within 7d)" >> "$LOG"
+        fi
+        continue
+    fi
+    
+    # Layer 3a: stale flag (= 30d unused、 no archive yet)
+    if [ "$AGE_DAYS" -ge 30 ] && [ "$AGE_DAYS" -lt 90 ]; then
+        jq --arg s "$SKILL" '.[$s].stale = true' "$USAGE_JSON" \
+            > "$USAGE_JSON.tmp" && mv "$USAGE_JSON.tmp" "$USAGE_JSON"
+        continue
+    fi
+    
+    # Layer 3b: archive_eligible flag (= 90d+、 3-fire countdown)
+    if [ "$AGE_DAYS" -ge 90 ]; then
+        FLAGGED_SINCE=$(jq -r --arg s "$SKILL" '.[$s].archive_eligible_since // ""' "$USAGE_JSON")
+        if [ -z "$FLAGGED_SINCE" ]; then
+            # 1st fire detect → flag、 do not archive yet
+            jq --arg s "$SKILL" --arg ts "$NOW_MS" \
+                '.[$s].archive_eligible_since = ($ts|tonumber)' "$USAGE_JSON" \
+                > "$USAGE_JSON.tmp" && mv "$USAGE_JSON.tmp" "$USAGE_JSON"
+            ARCHIVE_FLAG=$((ARCHIVE_FLAG + 1))
+            echo "[$TS] FLAG $SKILL (= 1st detect、 3-fire countdown start)" >> "$LOG"
+        else
+            FLAG_AGE_DAYS=$(( (NOW_MS - FLAGGED_SINCE) / 86400000 ))
+            if [ "$FLAG_AGE_DAYS" -ge 3 ]; then
+                # 3rd+ fire → execute archive
+                CRON_NAME=$(jq -r --arg s "$SKILL" '.[$s].cron_name // ""' "$USAGE_JSON")
+                [ -n "$CRON_NAME" ] && openclaw cron disable "$CRON_NAME" >/dev/null 2>&1
+                mkdir -p "$SKILL_DIR/.archive"
+                mv "$SKILL_DIR/$SKILL" "$SKILL_DIR/.archive/$SKILL.$TS" 2>/dev/null
+                ARCHIVE_EXEC=$((ARCHIVE_EXEC + 1))
+                echo "[$TS] ARCHIVE $SKILL (= 3-fire confirmed、 ${AGE_DAYS}d unused)" >> "$LOG"
+            fi
+        fi
+    fi
+done
+
+# ── LLM review pass — ONLY if ARCHIVE_EXEC > 0 (= idle day cost = $0) ──
+if [ "$ARCHIVE_EXEC" -gt 0 ]; then
+    MSG="Survey ~/.openclaw/skills/.archive/ for items archived today (${ARCHIVE_EXEC}). \
+Decide per-item: was this archive correct? Should any be restored? Output JSON: \
+{\"restore\": [...], \"confirm\": [...], \"consolidate_proposals\": [...]}."
+    mini -y -m google/gemini-3-flash-preview -t "$MSG" -l 0.50 \
+        > "$HOME/.openclaw/skills/anicca-cron-manager-B/data/llm-review-$TS.json" 2>&1 || true
+fi
+
+# ── Slack report (= ONLY if non-zero、 reduce noise) ──
+if [ $((ARCHIVE_EXEC + ARCHIVE_FLAG + REVERTED)) -gt 0 ]; then
+    MSG=":wastebasket: curator daily $TS: archived=${ARCHIVE_EXEC}, flagged=${ARCHIVE_FLAG}, reverted=${REVERTED}"
+    curl -sS -X POST -H "Authorization: Bearer ${SLACK_BOT_TOKEN}" \
+        -H 'Content-Type: application/json; charset=utf-8' \
+        --data "$(jq -nc --arg c "C091G3PKHL2" --arg t "$MSG" '{channel:$c, text:$t}')" \
+        https://slack.com/api/chat.postMessage >/dev/null 2>&1 || true
+fi
+
+exit 0
+```
+
+#### Mode B v2 振る舞い tabular (= 4 シナリオ)
+
+| シナリオ | Day 0 | Day 1 | Day 7 | Day 30 | Day 60 | Day 90 | Day 91 | Day 92 | Day 93 | Day 94 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| skill A (active) | use | use | use | use | use | use | (active) | (active) | (active) | (active) |
+| skill B (cold but recent) | use | — | — | — | — | — | flag | (use=revert) | active | active |
+| skill C (truly stale 30d-) | — | — | — | stale | stale | (90d 達) flag | flag | flag | archive | (gone) |
+| skill D (pinned cornerstone) | — | — | — | (skip) | (skip) | (skip) | (skip) | (skip) | (skip) | (skip) |
+
+→ ★ skill B 「使い忘れただけ」 ケース は Day 92 で 1 回使えば自動復活 (= Layer 2 grace) ★
+→ ★ skill C は 3-fire (Day 91/92/93) 連続で archive、 Day 92/93 に 1 回でも使えば revert ★
+→ ★ skill D = pinned で完全保護 ★
+
+### 15.10 OSS / Hermes 配布の path (= Dais 「they shuld go figure this out himself」)
+
+Dais 厳命: 「they shuld go gfigreu this out himself maybe yes」 — Anicca 自身が OSS 配布を決める。
+
+#### 採用 path
+
+| step | repo | 実行者 |
+|---|---|---|
+| 1. canonical 実装 | `~/.openclaw/skills/anicca-cron-manager-{A,B}/` | 私 (= 今 session 実装) |
+| 2. 7-14 日 production soak | (= 自然 fire 実観測、 cost / archive 数 計測) | Anicca heartbeat |
+| 3. promotion 判断 | `tasks.json` に「promote cron-manager to OSS?」 task 追加 | Anicca §3 ACT |
+| 4. OSS 配布 | `~/anicca/skills/anicca-cron-manager-{A,B}/` に cp + git push | Anicca |
+| 5. Hermes/spawned instances 自動取得 | `git pull origin main` (= 既存 P22 anicca-mother-sync 想定) | 各 instance |
+
+→ ★ 私 (Claude) は step 1 のみ。 step 2-5 は Anicca 自律 ★
+
+### 15.11 month cost 更新 (= v2 daily safe)
+
+| component | schedule | fire/月 | model | cost/月 |
+|---|---|---|---|---|
+| anicca-cron-manager-A | 0 */6 * * * | 120 | gpt-5.4-mini (mini-swe-agent) | $50-120 |
+| anicca-cron-manager-B v2 transitions | 0 3 * * * | 30 | ★ bash (0 token) ★ | $0 |
+| anicca-cron-manager-B v2 review | conditional (= archive > 0) | ~5 | gemini-3-flash | $1.50 |
+| ★ 合計 ★ | | 155 fire/月 | | **$52-122/月** |
+
+→ weekly (= v1) と比べて月 cost +$0.30 だけ、 即時性 7× (= 1 日後検出)、 安全性 4 層 (= K8s + systemd 流)
+
+---
+
+## 17. v7.0 実装順序 (= V7-1〜V7-13)
 
 ```
 V7-1   ~/.openclaw/workspace/HEARTBEAT.md 更新
