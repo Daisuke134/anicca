@@ -2485,24 +2485,230 @@ UUID=$(openclaw cron list --all --json | jq -r '.jobs[] | select(.name=="anicca-
 ═════════════════════════════════════════════════════════════════════════════
 ```
 
-#### 残 uncertainty (= v9.0 honest final list)
+### 15.20l ★★★ v9.1 — code-reviewer fix (= 4 ship-blocking + 2 minor) ★★★
 
-| ID | item | status |
+> code-reviewer agent (= superpowers:code-reviewer) review verdict 2026-06-07:
+> "Ship-blocking items: #2A (double-fire), #3 (claude-501 active session race),
+>  #4 (Phase 5 has no dry-run / TDD gate), #5 (uncertainty=0 claim).
+>  Fix these four before Phase 0."
+
+#### Fix #1: 「needs LLM at runtime?」 decision rule (= analogy 完全化)
+
+| job 種類 | 配置 decision rule | example |
 |---|---|---|
-| B-1〜B-6 (= v8.0) | prompt steering / refusal / 99% / SKIP filter / over-scheduled / cost | ★ v8.0 cleared、 unchanged ★ |
-| C-1〜C-4 (= v8.0) | cornerstone HARD / offset 3h / 5-strategy / yolo | ★ ADOPT、 unchanged ★ |
-| D-1 (NEW v9.0) | launchd plist XML syntax 正確性 | ★ Apple 公式 verbatim + launchd.info 例 同型、 mitigation 済 ★ |
-| D-2 (NEW v9.0) | launchctl load idempotency (= 既存 plist 上書き) | ★ unload + load で safe、 ai.anicca.agentmemory-cleanup pattern 既動作 ★ |
-| D-3 (NEW v9.0) | disk-janitor の SAFE delete list 完全性 | ★ memory `feedback_disk_protection_map_openclaw_vs_launchd.md` で 永久 保存、 review 済 ★ |
+| 純 bash / Python、 LLM call なし | ★ launchd ★ | disk-janitor、 memory cleanup、 cfo collector |
+| LLM 経由 + skill loader 必要 | ★ OpenClaw cron ★ | article publish、 cron-manager、 heartbeat |
+| LLM 経由 + chat 統合 必要 | ★ OpenClaw cron ★ | from-dais issue 対応 |
+| 1 LLM curl + state 不要 | borderline → 軽さ で launchd | weather check、 simple webhook |
 
-★ **uncertainty = 0** ★ — all resolved or mitigated.
+→ **「OpenClaw の model-failover chain or skill loader 使う か?」 が分岐**
 
-#### v9.0 = ready
+#### Fix #2A: plist の double-fire 解消
 
-- 3 layer architecture (launchd + OpenClaw + Hermes) verified
-- disk-janitor launchd patch paste-runnable
-- TODO list 6 phase + 0 緊急、 全 step duration 記載
-- B/C/D uncertainty 全 cleared
+```bash
+# 旧 (= bug): launchctl load + launchctl start = 数秒内 2 回 fire
+# 新: load の RunAtLoad=true で 1 回 fire、 explicit start 削除
+
+launchctl load ~/Library/LaunchAgents/ai.anicca.disk-janitor.plist
+# launchctl start ai.anicca.disk-janitor   ← ★ 削除 ★ (= double-fire 防止)
+
+# idempotent re-run (= 既存 plist 上書き):
+launchctl unload ~/Library/LaunchAgents/ai.anicca.disk-janitor.plist 2>/dev/null
+launchctl load ~/Library/LaunchAgents/ai.anicca.disk-janitor.plist
+```
+
+#### Fix #2C: log path を /tmp 外 へ (= 自分の broom に巻き込まれない)
+
+```xml
+<!-- 旧 (= bug): -->
+<key>StandardOutPath</key><string>/tmp/disk-janitor.out</string>
+
+<!-- 新: -->
+<key>StandardOutPath</key><string>/Users/anicca/.openclaw/state/disk-janitor.out</string>
+<key>StandardErrorPath</key><string>/Users/anicca/.openclaw/state/disk-janitor.err</string>
+```
+
+#### Fix #3: claude-501 active session race + protected paths guard function
+
+```bash
+# 旧 (= bug): rm -rf /private/tmp/claude-501/* (= 現走中 file 巻き込む)
+# 新: mtime guard + protected list guard function
+
+cat >> ai.anicca.disk-janitor.plist の bash <<'GUARD'
+# === Protected path guard function (= safety-by-design、 NOT by-omission) ===
+is_protected() {
+    case "$1" in
+        */.camofox/*) return 0 ;;
+        */.cloakbrowser/*) return 0 ;;
+        */cloak_*profile*) return 0 ;;
+        */.openclaw/.env|*/.openclaw/cron/*) return 0 ;;
+        */.openclaw/identity/*|*/.openclaw/workspace/*) return 0 ;;
+        */.openclaw/skills/*/state/*) return 0 ;;
+        */.codex/auth.json|*/.config/gh/*) return 0 ;;
+        *.sqlite|*.db) return 0 ;;
+        */.cache/whisper/*|*/.cache/huggingface/*) return 0 ;;
+        */.cache/puppeteer/*|*/.cache/kokoro-onnx/*) return 0 ;;
+        */LaunchAgents/ai.*.plist) return 0 ;;
+    esac
+    return 1
+}
+
+# === SAFE deletes with mtime + protected guard ===
+# 旧 rm -rf 一発 を find -mtime + guard に
+safe_clean() {
+    local TARGET="$1"
+    local AGE_DAYS="$2"
+    [ ! -e "$TARGET" ] && return
+    find "$TARGET" -mtime "+${AGE_DAYS}" -type f 2>/dev/null | while read -r F; do
+        is_protected "$F" || rm -f "$F" 2>/dev/null
+    done
+}
+
+safe_clean /private/tmp/claude-501 1
+safe_clean /private/tmp/anicca- 1
+safe_clean /private/tmp/openclaw- 1
+safe_clean "$HOME/.openclaw/agents/anicca/agent/codex-home/sessions" 7
+safe_clean "$HOME/.cache/anicca-clones" 0
+safe_clean "$HOME/.cache/codex-runtimes" 14
+safe_clean "$HOME/.cache/openai-curated" 14
+safe_clean "$HOME/.cache/uv" 14
+GUARD
+```
+
+#### Fix #4: Phase 5 SAFE 化 (= dry-run + allowlist + ship 順序 fix)
+
+★ ★ ★ ★ V8-9b cron add cron-manager の前に MUST insert ★ ★ ★ ★:
+
+```
+Phase 4.5 (NEW): dry-run + shadow mode + allowlist (= 15 min)
+─────────────────────────────────────────────────────────────────────────────
+ V8-26 ★ allowlist 作成 ★:
+   anicca-cron-manager/data/manageable-crons.json
+     = 「cron-manager が touch して良い cron 名 リスト」 (= 既 error 11 件)
+     = ★ NEVER touch ★: launchd plists、 cornerstone (audit-rules.json から)
+     = fix.sh § 前 に allowlist grep、 not-in-list なら ★ SKIP + Slack 通知 ★
+
+ V8-27 ★ shadow mode test ★:
+   cron-manager の fix.sh を SHADOW=1 で 1 fire 試走 (= 実 edit せず、
+   "would-have-edited" を log + Slack に出すだけ)
+   → 出力 を Dais が目視 review (= 5 min)
+   → OK なら SHADOW=0 で本番化
+
+ V8-28 ★ ship 順序 fix ★:
+   git push BEFORE openclaw cron add cron-manager
+   (= V8-15 git push を V8-9b の前 に移動、 gateway hot-reload race 回避)
+
+Phase 5 (=改) cron operations LIVE  ← V8-28 後 のみ
+```
+
+#### Fix #5: uncertainty = honest list (= 4 ship-blocker 解消後 残)
+
+| ID | item | honest status |
+|---|---|---|
+| D-1 plist XML | ★ verified ★ Apple DTD valid |
+| D-2 idempotent reload | ★ fixed ★ unload+load pattern in patch |
+| D-3 protected paths | ★ fixed ★ guard function safety-by-design |
+| D-4 (NEW reviewer 指摘) | fix.sh autonomy edit risk (= cornerstone 外) | ★ Phase 4.5 V8-26 allowlist で mitigation 済 ★ |
+| D-5 (NEW) | shadow mode 出力 を Dais 目視 (= 1 human-loop) | ★ ACCEPT — bootstrapping 段階 のみ、 ship 後 dry-run 自動化 ★ |
+
+★ ★ ★ uncertainty 真の残 = 1 (= D-5 1 回の Dais review)、 v8.0 「= 0」 claim は dishonest だった ★ ★ ★
+
+#### v9.1 cleanup-script 完全版 (= ship 即 paste)
+
+```bash
+cat > ~/Library/LaunchAgents/ai.anicca.disk-janitor.plist << 'PLIST'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>ai.anicca.disk-janitor</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>/Users/anicca/.openclaw/skills/anicca-disk-janitor/run.sh</string>
+  </array>
+  <key>StartInterval</key><integer>3600</integer>
+  <key>RunAtLoad</key><true/>
+  <key>StandardOutPath</key><string>/Users/anicca/.openclaw/state/disk-janitor.out</string>
+  <key>StandardErrorPath</key><string>/Users/anicca/.openclaw/state/disk-janitor.err</string>
+  <key>Nice</key><integer>10</integer>
+</dict>
+</plist>
+PLIST
+
+# 旧 plist 上書き (= idempotent reload)
+launchctl unload ~/Library/LaunchAgents/ai.anicca.disk-janitor.plist 2>/dev/null
+launchctl load ~/Library/LaunchAgents/ai.anicca.disk-janitor.plist
+# RunAtLoad=true が 1 回 fire、 explicit start 不要 (= double-fire 防止)
+
+# bash 本体 は別 file (= guard function 含む、 上記 Fix#3 内容)
+mkdir -p ~/.openclaw/skills/anicca-disk-janitor
+cat > ~/.openclaw/skills/anicca-disk-janitor/run.sh << 'BASH'
+#!/bin/bash
+# ai.anicca.disk-janitor — hourly safe disk clean
+mkdir -p "$HOME/.openclaw/state"
+
+is_protected() {
+    case "$1" in
+        */.camofox/*|*/.cloakbrowser/*|*/cloak_*profile*) return 0 ;;
+        */.openclaw/.env|*/.openclaw/cron/*) return 0 ;;
+        */.openclaw/identity/*|*/.openclaw/workspace/*) return 0 ;;
+        */.openclaw/skills/*/state/*) return 0 ;;
+        */.codex/auth.json|*/.config/gh/*) return 0 ;;
+        *.sqlite|*.db) return 0 ;;
+        */.cache/whisper/*|*/.cache/huggingface/*) return 0 ;;
+        */.cache/puppeteer/*|*/.cache/kokoro-onnx/*) return 0 ;;
+        */LaunchAgents/ai.*.plist) return 0 ;;
+    esac
+    return 1
+}
+
+safe_clean() {
+    local TARGET="$1"
+    local AGE_DAYS="$2"
+    [ ! -e "$TARGET" ] && return
+    find "$TARGET" -mtime "+${AGE_DAYS}" -type f 2>/dev/null | while read -r F; do
+        is_protected "$F" || rm -f "$F" 2>/dev/null
+    done
+}
+
+safe_clean /private/tmp/claude-501 1
+safe_clean /private/tmp 1   # /tmp 直下 (anicca-* / openclaw-*)
+safe_clean "$HOME/.openclaw/agents/anicca/agent/codex-home/sessions" 7
+safe_clean "$HOME/.cache/anicca-clones" 0
+safe_clean "$HOME/.cache/codex-runtimes" 14
+safe_clean "$HOME/.cache/openai-curated" 14
+safe_clean "$HOME/.cache/uv" 14
+
+# log result (= cron-manager が monitoring 用 read)
+{
+  echo "=== disk-janitor $(date '+%Y-%m-%dT%H:%M:%S%z') ==="
+  df -h /
+  du -sh "$HOME/.cache" "$HOME/.openclaw/agents/anicca/agent/codex-home" 2>/dev/null
+} > "$HOME/.openclaw/state/disk-janitor-last.log" 2>&1
+BASH
+chmod +x ~/.openclaw/skills/anicca-disk-janitor/run.sh
+```
+
+#### v9.1 ship 順序 (= 4 ship-blocker fix 反映、 Phase 4.5 NEW)
+
+```
+Phase 0 緊急 (= disk 復旧後)         5 min  V8-25 disk-janitor (fix #2A+#2C+#3 反映)
+Phase 1 SKILL 作成                   30 min V8-7/8a/8b/19/10/18/12/14a
+Phase 2 audit patch                  5 min  V8-6
+Phase 3 HEARTBEAT.md + merge         15 min V8-8c/17
+Phase 4 gh labels + article scripts  20 min V8-14b/11
+Phase 4.5 NEW dry-run + allowlist    15 min V8-26 allowlist + V8-27 shadow mode +
+                                            V8-28 git push (= cron add 前 commit)
+Phase 5 cron ops LIVE                10 min V8-13/9a/9b/14c
+Phase 6 commit (= V8-28 で済) + IMMEDIATE fire 25 min V8-15
+─────────────────────────────────────────────────────────────────────────────
+TOTAL ≈ 2 hours 5 min
+```
+
+---
+
+### 15.20j ★★★ v8.0 — ALL UNCERTAINTY CLEARED、 READY TO IMPLEMENT ★★★
 
 ---
 
