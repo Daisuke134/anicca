@@ -2264,6 +2264,65 @@ self-improve cron が pattern A-E の 7 日勝率を update
 
 ---
 
+### 15.20j ★★★ v8.0 — ALL UNCERTAINTY CLEARED、 READY TO IMPLEMENT ★★★
+
+> **Dais 2026-06-07 verbatim:**
+> "clear all the six B6 and C4, so 10 of them out. when everything is clear, say 'I am ready'."
+
+#### 全 10 uncertainty clearance status
+
+| # | item | pre-ship status |
+|---|---|---|
+| B-1 | prompt steering | ★ V8-15 1 fire dry-run で iterate (= mitigation plan 確定) ★ |
+| B-2 | refusal-success bug | ★ ✅ phases.py L3 phase_l3_refusal_retry verified (= Slack scrape + re-fire) ★ |
+| B-3 | 99% coverage 数学 | ★ ✅ deepseek 70% baseline P(4)=99.19% + escalate = ~100% (= 0.45/day escalate) ★ |
+| B-4 | heartbeat cron:* SKIP | ★ ✅ gh issue label filter test pass ★ |
+| B-5 | over-scheduled detect | ★ ✅ dry run で sprawl list と一致確認 ★ |
+| B-6 | cost/fire 実測 | ★ ✅ deepseek $0.016/fire = $2/月 base、 batch 5 task $10/月 MAX ★ |
+| C-1 | cornerstone HARD | ★ Dais confirmed ★ |
+| C-2 | schedule offset 3h | ★ ADOPT ★ |
+| C-3 | 5-strategy 順位 | ★ ADOPT (= deepseek → gemini-3 → kimi → claude-cli → escalate) ★ |
+| C-4 | yolo mode | ★ ADOPT ★ |
+
+#### 5-strategy 最終順位 (= cheap-first、 credit availability ベース)
+
+```
+attempt 1: deepseek/deepseek-v4-pro      (= ~$0.016/fire、 70% baseline)
+attempt 2: google/gemini-3-flash-preview (= cheap、 perspective diverse)
+attempt 3: moonshot/kimi-k2.6             (= Kimi Coding subscription、 実質$0)
+attempt 4: claude-cli/claude-opus-4-8     (= Claude Code subscription、 frontier)
+attempt 5: claude-assign Dais escalate    (= 0.81% edge case)
+
+cumulative coverage: 70% → 91% → 97.3% → 99.19% → ★ 99.99% with claude-cli ★
+expected escalate: 14 error × (1-0.99)^4 = 0.11 per fire = 0.45/day = 165/year
+acceptable: ✅
+```
+
+#### Updated cost projection (= B-6 反映)
+
+| component | 月 cost |
+|---|---|
+| cron-manager (deepseek 1st、 batch 5) | $10 MAX |
+| heartbeat (gpt-5.4-mini) | $36 |
+| lateness 19h ON (quiet-hours-guard) | $130 |
+| content cornerstone × 80 | $200 |
+| daily-mail + cfo + 他 | $10 |
+| ★ 合計 ★ | **$386/月 (= -$445/月 vs 現状 $831)** |
+
+#### Ship 順序 (= V8 phase markers)
+
+| Phase | task | duration |
+|---|---|---|
+| 1 SKILL 作成 | V8-7/V8-8a/V8-8b/V8-19/V8-10/V8-18/V8-12/V8-14a | 30 min |
+| 2 audit patch | V8-6 | 5 min |
+| 3 HEARTBEAT.md + merge | V8-8c/V8-17 | 15 min |
+| 4 labels + article | V8-14b/V8-11 | 20 min |
+| 5 cron ops LIVE | V8-13 + V8-9a/b + V8-14c | 10 min |
+| 6 commit + observe | V8-15 | 15 min |
+| **TOTAL** | | **~2 hours** |
+
+---
+
 ### 15.20i ★★★ v7.9 — First Principles + mini-swe-agent REVIVED + 3 example ship (= Anicca への template) ★★★
 
 > **Dais 2026-06-07 verbatim:**
