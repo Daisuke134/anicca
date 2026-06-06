@@ -160,6 +160,20 @@ New cron `anicca-account-health-daily` (06:00 JST). Reads existing `~/.openclaw/
 
 **Goal:** Larry を ReelFarm 同等に進化させ、 ReelFarm 月額サブスク解約 (来月〜)。 既に skill 側は LLM body 生成済、 残りは ①固定フック化 ②CTA スライド追加 ③背景 1枚完全固定。
 
+### REVISED 2026-06-06 evening: 4 version × EN/JA = 8 系統 (各 3×/日)
+
+| ver | bg pattern | account |
+|---|---|---|
+| v1 | slide1=maleface.jpg, slides2-6=bedroom/slide2-6.jpg (variety) | EN=@aniccaen2 / JA=@anicchasan (既存) |
+| v2 | 全=maleface.jpg (static) | NEW EN/JA |
+| v3 | 全=sunset.jpg (static) | NEW EN/JA |
+| v4 | 全=femaleface.jpg (static) | NEW EN/JA |
+
+EN 全 ver: include_cta=true (7 slides), JA 全 ver: include_cta=false (6 slides, A/B用)。
+hook + body LLM-fresh + CTA は spec original の通り。 fixed-strings json 8 ファイル。
+
+新規 TikTok 垢 = 6 (larry v2/3/4 EN+JA) + 2 (iam EN/JA) + 1 (reelclaw EN videos) = **9 個**。
+
 ### Pattern (適用先: 既存 larry-en/ja + 新 mental-jp / morning-en の 4 垢全て)
 
 ```
