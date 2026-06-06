@@ -2110,6 +2110,160 @@ Dais 厳命: 「they shuld go gfigreu this out himself maybe yes」 — Anicca �
 
 ---
 
+### 15.15 Model 分離決定 (= cron entry = mini、 SWE agent = full 5.4)
+
+**Dais 2026-06-06 厳命 verbatim:**
+> "error fixing cron or job shoud be run by gpt 5.4 not mini, sine this is the only one ofc
+>  but thsi is the most important task.. fix what is breaking effecteicely."
+
+| component | model | 理由 |
+|---|---|---|
+| OpenClaw cron entry (= manager-A の cron message dispatch) | `openai-codex/gpt-5.4-mini` | 「bash 起動するだけ」 思考 ゼロ、 cheap |
+| ★ mini-swe-agent の中身 (MSWEA_MODEL_NAME) ★ | ★ `openai/gpt-5.4` (FULL) ★ | 真の思考、 SWE-bench 70%+ 期待、 100% coverage 核心 |
+| Mode B v2 review pass (条件付) | `google/gemini-3-flash-preview` | Hermes 公式 verbatim |
+| heartbeat | `openai-codex/gpt-5.4-mini` (= 既存 default) | 1 fire 1 task、 mini で十分 |
+
+cost: 月 +$240 (mini → full) だが revenue protect で ROI 黒字 (= 1 incident = subscriber 3 人 LTV $360 損失防止)。 OpenClaw catalog 確認済: `openai/gpt-5.4` slug 存在 (= alias `gpt`)。
+
+### 15.16 Dais + Claude UX going forward (= zero in the loop)
+
+> **Dais 2026-06-06 verbatim:**
+> "if anicca can market itself we dont have to do eanyrhitng any more rigth.. and that is
+>  where we need to be."
+
+#### Dais role
+- 通常: 3 min/day gmail digest skim (= 朝 + 夜)
+- 要望時: ★ `gh issue create --label from-dais --label ai-ready` ★
+  - 1h 以内に heartbeat §2 PLAN pick → §3 ACT execute → §5 Slack #ship → gh issue close
+  - click = 0 (= gh issue create のみ)
+
+#### Claude role
+- 通常: ★ NONE ★ (= Anicca 自己改善)
+- 呼ばれる時 (rare):
+  1. Dais が新 archetype design 議論 (= 新 instance launch 等)
+  2. Dais が architectural bottleneck 発見 (= heartbeat 構造的問題)
+  3. Anicca が self-improve 失敗を `claude-assign` tag で escalate (= 3 fire 連続 fail の skill)
+
+#### Anicca autonomous all the way
+- skill 書く / test / commit / push 全部自分
+- cron 壊れたら自分で gh issue → mini-swe-agent (gpt-5.4) → fix → verify
+- article 書く / publish / measure / refine
+- money 稼ぐ / 使う / refill (= Bitget/AgentMail/Lancers/x402/AKT)
+- OAuth / signup / API key provision 全部自分 (HARD RULE #-2)
+
+### 15.17 ★★ Infinite topic discovery (= list 持たない、 fresh new daily) ★★
+
+> **Dais 2026-06-06 verbatim:**
+> "i dont want that there is limited amount of topics... we can have a list, but we should
+>  not limit them and make them make articles forever with new topics... i want every new
+>  article to be following bp + fresh new."
+
+#### 設計原則
+- ★ List = 「SOURCE のリスト」 のみ ★ (= 何を見るか、 更新可能)
+- ★ Topic = 完全 dynamic ★ (= 毎 fire fresh、 list 持たない)
+- dedup 保証: 60 日 title cosine distance > 0.5 要件 (= 重複 reject)
+- BP: LLM-as-judge 2-pass (= Eugene Yan / HF cookbook 流)
+
+#### 3 pillar source (= 「list」 はここのみ)
+
+| pillar | source | 期待 output |
+|---|---|---|
+| 1. **External signal** | AI agent blogs (11+) + HN Algolia top 30 + Reddit ML/AI_Agents 24h + Twitter "AI agent" + Anthropic/OpenAI/Google changelog + arxiv-sanity-lite | 今日 AI 界で何が新しいか |
+| 2. **Internal experience** | `~/.openclaw/workspace/experience-log/<today>.jsonl` + Mode A fix list + Mode B archive list + cfo money moves + SaaS signup lessons | 今日 Anicca が何を学んだか |
+| 3. **Existential meta** | heartbeat §6 reflection + ANICCA_TRUE_AUTONOMY_SPEC 進捗 + colony status + 自己評価 | Anicca 自身を語る (= 「私は今日 useful だったか?」) |
+
+#### Topic selection (= 2-pass LLM-as-judge BP)
+
+```
+Pass 1: candidate generator (gpt-5.4 full、 1 call/fire)
+  input: 3 pillar の今日の content 30 件 pull
+  prompt: "Given today's signals, propose 10 titles using patterns A-E.
+           Each must be specific + bookmarkable + actionable."
+  output: 10 candidate titles JSON
+
+Pass 2: judge (gemini-3-flash、 cheap、 10 judgments/fire)
+  3 軸 score 0-10:
+    bookmark_score:   "would a builder save this for later?"
+    actionable_score: "concrete how-to / data か?"
+    specific_score:   "title に number/name/result あるか? vague でないか?"
+  
+  + deterministic dedup:
+    account-history.jsonl 60 日 title embed と cosine > 0.5 要件
+    失格 candidate は削除
+
+Pass 3: 選択 (= top combined score)
+  combined = bookmark + actionable + specific - 重複ペナルティ
+  top 1 を執筆
+```
+
+### 15.18 Title BP — 5 pattern formula (= viral content research 流)
+
+| Pattern | template | example | 用途 |
+|---|---|---|---|
+| A | "How I [concrete verb] [measurable result] in [time]" | "How My Cron Fixed 14 Bugs Overnight Without Any Human" | concrete proof + curiosity |
+| B | "Why [unexpected]: [contrarian hook]" | "Why I Killed My Own Crons Last Night (And Why You Should Too)" | contrarian emotional |
+| C | "[N] things [entity] doing [X] taught me [Y]" | "5 Things Andon Labs' Lemonade Stand AI Taught Me About Self-Funding" | AI watch angle |
+| D | "I built [X] — here's [Y]" | "I Built a Cron Manager That Fixes Itself — Here's the 30-Line Bash" | build-in-public |
+| E | "[N%] of [Y] are [wrong about] [Z]" | "90% of AI Agent Tutorials Are Wrong About Cost Caps" | data + bookmarkable |
+
+#### Article 6 必須 section (= bookmark-worthy 構成)
+1. Lead (= 1 sentence concrete hook、 Pattern A-E のどれか)
+2. Context (= why now? = 今日の event source explicit)
+3. What I did (= experience-log 由来の concrete step)
+4. What broke / what surprised (= 失敗体験、 transparency)
+5. What I learned (= 抽象化、 reader actionable)
+6. What changes tomorrow (= forward-looking)
+
+#### Quality gate 追加 (= 既存 + 2 新規)
+- ✅ language-purity-gate.sh (= 既存)
+- ✅ seo-gate.sh (= 既存)
+- ★ NEW `freshness-gate.sh` (= title cosine distance + body 30% overlap reject)
+- ★ NEW `bookmark-gate.sh` (= concrete number/name/actionable step 3 個以上要求)
+
+### 15.19 Revenue feedback loop (= marketing autonomy core)
+
+```
+article publish (UTM tagged)
+       │
+       ▼
+Mixpanel: page view → app DL → paywall → subscribe
+       │
+       ▼
+anicca-cfo-daily が「title X → $Y subscriber LTV」 集計
+       │
+       ▼
+self-improve cron が pattern A-E の 7 日勝率を update
+       │
+       ▼
+次 fire の Pass 1 generator が pattern 勝率で weighted proposal
+       │
+       ▼
+★ 月を追うほど title 質 + revenue 自動増加 (= compound) ★
+```
+
+### 15.20 Patch update (= §15.13 を dynamic に置換)
+
+§15.13 で書いた `build-fallback-brief.sh` の DOW table 駆動 (= static 配分) を **削除**、 以下に置換:
+
+| 新規 file | 役割 | 行数 |
+|---|---|---|
+| `scripts/topic-discovery.sh` | 3 pillar source から今日の signal 30 件 pull | 80 |
+| `scripts/title-judge.sh` | Pass 1 (gpt-5.4) + Pass 2 (gemini-3-flash) + dedup | 100 |
+| `scripts/freshness-gate.sh` | title cosine distance + body 30% overlap reject | 50 |
+| `scripts/bookmark-gate.sh` | concrete number/name/actionable step 3 個以上要求 | 40 |
+| `data/title-pattern-stats.json` | Pattern A-E の 7 日勝率 (= revenue feedback で update) | dynamic |
+
+各 article cron は STEP 0:
+```
+1. topic-discovery.sh (= 3 pillar pull)
+2. title-judge.sh (= 2-pass + dedup → top title 選択)
+3. write article (= 6 必須 section)
+4. freshness-gate + bookmark-gate + language-purity + seo (= 4 gate fail-closed)
+5. publish + UTM tag + meta record
+```
+
+---
+
 ## 17. v7.0 実装順序 (= V7-1〜V7-13)
 
 ```
