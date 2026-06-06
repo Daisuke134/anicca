@@ -622,6 +622,45 @@ X-4. 7 日連続成功 → ReelFarm キャンセル (22日 まで)
 
 ---
 
+## Part Y — 8 残不確実点 全消化 (Dais 2026-06-07 directive)
+
+| 旧不確実 | 消化結果 |
+|---|---|
+| 1-4. larry-en-1/ja-1/ja-v2 cron が旧 generate-slides.js 参照 | ✅ 18 cron message 一括更新済 (`build-from-fixed-strings.sh` call へ) |
+| 5. slideshow-video Postiz upload 未テスト | ✅ 実 mp4 upload 検証済 (path 返却確認、 upload id b40c54ed-…) |
+| 6. IAM bbox guard の cron 側 retry loop なし | ✅ 4 IAM cron message に 3-retry loop + fresh-gen prompt 追加 |
+| 7. ReelFarm-replace 10 cron 旧 helper 参照 | ✅ 1-4 と同時更新済 (10 message も新 helper call) |
+| 8. account-health cron 未登録 | ✅ `anicca-account-health-daily` (30 6 * * * JST) + `run.sh` script 登録 |
+
+### post-to-yt.sh verified flow (Dais 2026-06-07)
+```
+1. POST /public/v1/upload  (multipart file=@<mp4>)
+   → { id, path: "https://uploads.postiz.com/<hash>.mp4" }
+2. POST /public/v1/posts
+   { type:"now", date:ISO, posts:[{integration:{id}, value:[{content, image:[{path}]}], settings:{title}}] }
+   → YT_POST_ID
+```
+
+### account-health-daily 設計
+```
+1. zero-view-streaks.json 読込 (dashboard-refresh が前夜作成)
+2. streak ≥ 3 日 の dead 抽出
+3. 0 件 → no-op (Dais inbox 詰めない)
+4. 1+ 件 → agentmail-tt-pool.json から SPARE 1 個ずつ allocate
+5. Gmail ASCII 表 (handle / platform / dead_days / spare_mail) 送信
+6. 返信 `warmup #N` or `new #N <handle>` 受領で次 action
+```
+
+### 全 18+10 cron に同じテンプレ
+- 旧 generate-slides.js への参照削除
+- 新フロー: `picks.json (5 body)` → `build-from-fixed-strings.sh` → `post-to-tiktok.js --tt <id>`
+- 14d anti-repeat は account ごとに別 (per-account history)
+- fixed-strings json で per-account brand + bg 完全分離
+
+タスク #99 で certainty 完全達成。
+
+---
+
 ## Part H — 4 new accounts (mail)
 
 AgentMail free tier is at inbox limit → use **Gmail aliases** (Dais authorized "alias, whatever"). 2FA auto-read via Gmail MCP. Ready immediately, no provisioning:
