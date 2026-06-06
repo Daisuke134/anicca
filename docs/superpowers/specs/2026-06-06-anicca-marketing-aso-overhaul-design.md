@@ -156,6 +156,76 @@ New cron `anicca-account-health-daily` (06:00 JST). Reads existing `~/.openclaw/
 
 ---
 
+## Part I — ReelFarm-killer: Fixed-Hook + LLM-Body + Static-BG + CTA (Dais 2026-06-06)
+
+**Goal:** Larry を ReelFarm 同等に進化させ、 ReelFarm 月額サブスク解約 (来月〜)。 既に skill 側は LLM body 生成済、 残りは ①固定フック化 ②CTA スライド追加 ③背景 1枚完全固定。
+
+### Pattern (適用先: 既存 larry-en/ja + 新 mental-jp / morning-en の 4 垢全て)
+
+```
+slide 1   FIXED HOOK              (per-account constant string)
+slide 2-6 FRESH LLM-GENERATED     (clone-don't-template from pattern-larry-*.jsonl)
+slide 7   FIXED CTA               (per-account constant string)
+bg all 7  bedroom/slide1.jpg      (male face, static, identical across all 7 slides)
+```
+
+### Fixed strings
+
+| account-handle | language | slide-1 hook (固定) | slide-7 CTA (固定) |
+|---|---|---|---|
+| larry-en (既存 @aniccaen2) | EN | `5 affirmations to tell yourself every morning…` | `try anicca — words like these every day` |
+| larry-ja (既存 @anicchasan) | JA | `メンタルが強い人の口癖５選` | `毎日こんな言葉を、アニッチャで。` |
+| new mental-jp (MANUAL-5 改) | JA | `メンタルが強い人の口癖５選` | 同上 |
+| new morning-en (MANUAL-4 改) | EN | `5 affirmations to tell yourself every morning…` | 同上 |
+
+### Slide-2..6 LLM generation rule
+
+- 各 cron で 5 件の本文をフレッシュ生成（既存 larry の clone-don't-template フロー使用）。
+- 14d anti-repeat は **本文のみ**を index（フックは固定で除外）。
+- JA 例: `なんとかなる。` `今できることをやるだけ` 等、 短く強く。
+- EN 例: `i am allowed to start over` `i deserve gentleness from myself` 等。
+
+### Diff (larry cron message)
+
+```diff
+- STEP 2 — Generate 6 fresh slide texts (clone-don't-template) ...
++ STEP 2 — Generate 5 fresh BODY slide texts only (slide 2-6). Slide 1 and 7 are
++         FIXED strings (hook + CTA) read from /Users/anicca/.openclaw/skills/anicca-larry/
++         state/fixed-strings-<account>.json. Do not regenerate slide 1 or slide 7.
++         BODY texts: clone structure only from pattern-larry-<lang>.jsonl, fresh wording.
++         14d anti-repeat indexes BODY texts; the fixed hook is exempt.
+
+- Generate 6 slides ... using bedroom-themed assets in
+-   ~/.openclaw/workspace/tiktok-marketing/assets/6-slide-images/bedroom/.
++ Generate 7 slides. ALL 7 slides use the SAME background photo:
++   ~/.openclaw/workspace/tiktok-marketing/assets/6-slide-images/bedroom/slide1.jpg
++   (the male-by-fireplace image). No rotation, no random, identical bg across all 7.
++ Slide 1 text = fixed hook (above). Slide 7 text = fixed CTA. Slides 2-6 = fresh LLM body.
+```
+
+### Account naming (NOT "larry" — bot-like, user-unfriendly)
+
+The handle IS the brand. Replace MANUAL-4/5 names:
+
+| 旧 (廃) | 新 | フック・ブランド |
+|---|---|---|
+| `@anicca.larry.en` | **`@anicca.morning`** or `@morning.affirmations` | 5 affirmations to tell yourself every morning |
+| `@anicca.larry.jp` | **`@anicca.mental.jp`** or `@kuchiguse.jp` | メンタルが強い人の口癖５選 |
+
+### ReelFarm subscription kill-switch
+
+このパターン稼働 + 1週間 (TT_POST_ID 7日分連続) 達成後、 ReelFarm 月額キャンセル。 dashboard で cancel → confirm 課金停止。
+
+### Apply order within Part I
+
+I-1. fixed-strings json 4 ファイル作成 (per-account hook + CTA)
+I-2. larry skill の slide build を「slide 1 固定 / slide 2-6 LLM / slide 7 固定 / 全 bg = bedroom/slide1.jpg」へ patch
+I-3. 既存 larry-en/ja-1 で fire → camofox 目視 (slide 数 = 7, bg 一致, フック 固定)
+I-4. 新 mental-jp / morning-en 垢 connect 後、 cron 配線 + fire 検証
+I-5. ReelFarm cancel
+
+---
+
 ## Part H — 4 new accounts (mail)
 
 AgentMail free tier is at inbox limit → use **Gmail aliases** (Dais authorized "alias, whatever"). 2FA auto-read via Gmail MCP. Ready immediately, no provisioning:
