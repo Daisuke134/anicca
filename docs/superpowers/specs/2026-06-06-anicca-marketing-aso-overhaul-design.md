@@ -580,6 +580,48 @@ Dais 報告: 私 mail で 1 通だけ受領、 daily 来ない。
 
 ---
 
+## Part X — ReelFarm replacement (4 active accounts, $99/mo救済、 22日 期限)
+
+★ critical context (Dais 2026-06-06 verbatim):
+- ReelFarm subscription = $99/mo、 22日 で次回課金
+- 既存 4 active TT account が ReelFarm 経由で投稿中、 各 audience 既存
+- これらは 「新 9 垢の v2/v3/v4 とは別」、 同 content 違 account
+- 我々の cron で置換 → ReelFarm 解約 → save $99/mo
+
+### Replace targets (registry に永続化済)
+
+| account | Postiz ID | 現状 (ReelFarm) | 新 cron (our larry skill) | 投稿/日 |
+|---|---|---|---|---|
+| **anicca.jp** | cmp9sdev5012voh0y58qs45xc | JA sunset 3×/日 (main JA) | `larry-jp-sunset-reel-replace-{1,2,3}` | 3 |
+| **anicca.affirmation** | cmp9pedr700ttqh0yj8o57fog | EN female "5 affirmations…" | `larry-en-female-reel-replace-{1,2,3}` | 3 |
+| **anicca.jp4** | cmn8x8hdv028uqx0y4gdfse5t | JA male + slide7 CTA「アニッチャをダウンロード」 | `larry-ja-male-cta-reel-replace-{1,2}` | 2 |
+| **anicca_buddha** | cmp9txjdp01c8oh0yb6dhlarr | JA male (今日 ReelFarm 開始、 anicca.he と同内容) | `larry-ja-male-buddha-reel-replace-{1,2}` | 2 |
+
+### 新 cron 設計 (既存 v1-v4 とは別)
+
+- larry-jp-sunset-reel-replace-* (3) → fixed-strings-larry-ja-v3.json 流用 (sunset bg) で OK
+- larry-en-female-reel-replace-* (3) → fixed-strings-larry-en-v4.json 流用 (femaleface bg)
+- larry-ja-male-cta-reel-replace-* (2) → 新 fixed-strings-larry-ja-male-cta.json (CTA「アニッチャをダウンロード」必須)
+- larry-ja-male-buddha-reel-replace-* (2) → fixed-strings-larry-ja-v2.json 流用 (maleface bg、 anicca.he と同 content)
+
+### Apply order
+
+X-1. fixed-strings-larry-ja-male-cta.json 作成 (CTA 付き)
+X-2. 上記 10 cron 追加 (enabled:false で配置、 schedule 設定)
+X-3. larry skill 改修 (#67) 完了後、 enabled:true で fire 検証
+X-4. 7 日連続成功 → ReelFarm キャンセル (22日 まで)
+
+タスク #96-98。
+
+### 注意 (Dais 強調)
+
+- 新 9 垢の v2/v3/v4 cron と **別物** (同 content だが別 account)
+- 「v2 cron 1 つで 9 全部回す」 ではない
+- 各 account = 1 cron set (3×/日 or 2×/日)
+- Anicca は 全 TikTok account を把握しておく (= registry が SSOT)
+
+---
+
 ## Part H — 4 new accounts (mail)
 
 AgentMail free tier is at inbox limit → use **Gmail aliases** (Dais authorized "alias, whatever"). 2FA auto-read via Gmail MCP. Ready immediately, no provisioning:
