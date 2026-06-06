@@ -2264,6 +2264,97 @@ self-improve cron が pattern A-E の 7 日勝率を update
 
 ---
 
+### 15.20b ★★★ v7.3 PIVOT — heartbeat-as-SWE-agent (= mini-swe-agent DROP) ★★★
+
+> **2026-06-06 14 uncertainty 実 verify 結果から、 mini-swe-agent 採用断念:**
+>
+> **U-1 root cause verified:** mini-swe-agent は `prompt_toolkit.PromptSession` を import 時点で初期化、 stdin に tty が必須。 openclaw cron sandbox + Claude bash tool 両方 socket stdin (= 非 tty)、 OSError: [Errno 22] Invalid argument with kqueue + AttributeError NoneType.fileno() で **構造的に動作不能**。
+
+#### 解決: OpenClaw cron 自身が SWE agent
+
+| 観点 | 旧 v7.1 (= mini-swe-agent 依存) | ★ v7.3 (= OpenClaw 自身) ★ |
+|---|---|---|
+| SWE agent runtime | mini-swe-agent (= pipx install) | OpenClaw cron agent (= 既存) |
+| MSWEA_MODEL_NAME | 必要 (`openai/gpt-5.4`) | ★ 不要 (= cron model field 直接) ★ |
+| 6-step workflow | mini.yaml 公式 | HEARTBEAT.md v3 §3 ACT case 内 prompt |
+| cost cap | mini 内蔵 $3/task | OpenClaw `--timeout-seconds 1500` + model fallback |
+| tty 依存 | ✗ blocker | ✅ 不要 |
+| BP 適合 | indirect (subprocess) | direct (= Anthropic 「LLM in a loop」 verbatim) |
+
+→ ★ 結果: 私の以前の MSWEA 依存 design は全部 OpenClaw cron 自身で代替、 spec が劇的にシンプル化 ★
+
+#### 14 uncertainty 全解消
+
+| ID | 検証結果 | 解消 |
+|---|---|---|
+| U-1 | mini-swe-agent tty 必須、 structural blocker | mini-swe-agent DROP、 cron 自身が agent |
+| U-2 | 同 U-1 | 同上 |
+| U-3 | ✅ gh CLI Daisuke134 + full scopes | そのまま |
+| U-4 | ✅ `--wait` + `--wait-timeout` 実在 (help 末尾) | `openclaw cron run <UUID> --wait --wait-timeout 5m --expect-final` |
+| U-5 | heartbeat現状 0 */6 timeout=1200 | 0 * * * * + timeout=1500 (= 25 min、 hourly < 25min 衝突回避) |
+| U-6 | HEARTBEAT.md = workspace file (= jobs.json race なし) | file 直編集 + cron が毎 fire 読む |
+| U-7 | ✅ tasks.json schema {fix_tasks:[]} と master.tasks 双方 | find-next-task.py が両方対応済 |
+| U-8 | experience-log/ dir なし | `mkdir -p` で create、 heartbeat §4 で書く |
+| U-9 | ✅ openclaw cron edit | `openclaw cron edit <UUID> --model openai/gpt-5.4` |
+| U-10 | ✅ find-next-task.py 実在 (`anicca-core/scripts/`、 _shared/ ではない) | V8-3 で kind 推論拡張 |
+| U-11 | mini 同様 blocking | review は §3 ACT 内「self-review step」 として LLM 内発で実行 |
+| U-12 | never-disable.txt なし | 新規作成 (= ~80 行 pattern hardcode) |
+| U-13 | ✅ anicca-earn-bounty 既存 + SKILL.md 整備済 | earn kind で直接 invoke |
+| U-14 | ship B 採用 (= heartbeat 先、 article は heartbeat に自動拾わせる) | v7.3 で確定 |
+
+#### v7.3 アーキテクチャ (= 旧 v7.1 + mini-swe-agent DROP)
+
+```
+anicca-heartbeat (= 0 * * * * = hourly)
+  model: openai/gpt-5.4  (★ FULL、 heartbeat 自身が SWE agent ★)
+  timeoutSeconds: 1500   (= 25 min、 hourly < 25min 衝突回避 buffer)
+
+  §0   Gate (bash 1 行)         5戒 + public test + lifeline
+  §1   SENSE (bash 5 行 cheap)  tasks.json + gh issues + cron list error + cfo
+  §2   PLAN (LLM in-turn)        find-next-task.py で {kind, target} pick
+  §3   ACT (case kind 、 LLM が exec_command で実行)
+         cron_fix     → read skill + edit + verify + gh close
+         curator_pass → bash scripts/curator_pass.sh (= daily 03:00 のみ)
+         article      → bash scripts/run.sh --channel <ch> --phase publish
+         earn         → bash anicca-earn-bounty/scripts/run.sh
+         gh_dais      → gh issue view → execute as cron_fix or new skill
+         reflect      → bash anicca-reflect/scripts/reflect.sh
+  §4   RECORD (bash)             experience-log/<today>.jsonl + build_log
+  §5   REPORT (bash + curl)      Slack #metrics 1 行 + (22:00) daily-mail digest
+```
+
+#### Cost 更新 (= v7.3)
+
+| component | 月 cost |
+|---|---|
+| heartbeat (= 24 fire/day × $0.50 avg) | $360 |
+| content cornerstone × ~80 | $300 (= 既存) |
+| anicca-daily-mail (07,22) | $5 |
+| anicca-cfo-daily (06) | $5 |
+| anicca-stage-daily (21) | $5 |
+| **総 cost/月** | **~$675** |
+
+vs v7.1 ($600-900) と同等、 vs 現状 ($831) よりやや安。
+
+#### V8 tasklist 整理 (= v7.3 pivot 反映)
+
+| 旧 task | v7.3 status |
+|---|---|
+| V6-1 MSWEA_MODEL_NAME 追加 | ★ DELETE (= 不要) ★ |
+| V6-2 pipx install mini-swe-agent | ★ DELETE (= 廃止) ★ |
+| V6-3 mini smoke test | ★ DELETE ★ |
+| V6-10 E2E Mode A fire | ★ DELETE (= V8-5 と統合) ★ |
+| V7-22 Mode A 10 mechanism 完全実装 | ★ DEMOTE ★ → heartbeat §3 ACT case cron_fix の prompt 内に統合 |
+| V8-1 HEARTBEAT.md v2 → ★ v3 ★ | 内容更新 (= mini drop + case kind 直書き) |
+| V8-2 kind handler 5 個 | 維持 (= curator/article/earn/reflect/gh_dais) |
+| V8-3 find-next-task.py v2 | 維持 (= path = anicca-core/scripts/) |
+
+### 15.20c FULL DIFF PATCH (= 14 file レベル、 paste-runnable)
+
+(= 本 spec の上部「FULL DIFF PATCH」 セクション参照、 V8-6〜V8-14 として tasklist 化)
+
+---
+
 ### 15.20a ★★★ v7.1 PIVOT — heartbeat-as-orchestrator (= Mode A/B も折込) ★★★
 
 > **Dais 2026-06-06 厳命 verbatim:**
