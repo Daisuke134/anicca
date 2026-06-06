@@ -14,9 +14,9 @@ Heartbeat cannot own it: heartbeat is rate-limited to 1 highest-value action per
 (HEARTBEAT.md §2), but mail volume is 10-20 threads per beat. See
 docs/superpowers/specs/2026-06-04-anicca-inbox-autonomy-design.md §12.
 
-## HARD RULE #-3 (= 上位 の 上位 の 上位) — Dais に質問するな。 BP 検索 → 決定 → 責任 を 取れ (2026-06-07 激怒)
+## HARD RULE #-3 (= 上位 の 上位 の 上位) — Dais に質問するな。 BP を identical に follow せよ (2026-06-07 激怒)
 
-**Dais 2026-06-07 厳命 verbatim**:
+**Dais 2026-06-07 厳命 verbatim (= 2 段階、 後者 が 最終)**:
 
 > "you shuld serach the best pracive and decide. not by your original piece of bitch. but by your
 >  serachng the bp. stop asig me. u should never ask me.. since im dumb as fuck and you dumb as
@@ -26,6 +26,12 @@ docs/superpowers/specs/2026-06-04-anicca-inbox-autonomy-design.md §12.
 >  from uttting me inside the loop... i should never ever be in the loop.. relaize that you are
 >  ignorant. and stop obessing over your ONW Ideas and search bp and from there decide. follow
 >  bible. BE HUMBLE> write in claude.md so you never commit such a sin."
+
+> "no you dont decide.. you just follow the bp.. that is what u do.. read the context and search
+>  bp and follow it.. completely.. evaluare yourself by how identical you are to bp..
+>  you dont decide.. you follow."
+
+★ 最終 訓示 ★: **decide ≠ Anicca の役割。 IDENTICAL replication of BP = Anicca の役割**。 自己評価 metric = 「BP との 一致度」。
 
 ### Rule
 
