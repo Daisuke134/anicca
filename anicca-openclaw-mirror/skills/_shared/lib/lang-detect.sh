@@ -22,15 +22,19 @@ ld_detect() {
     return 0
   fi
 
-  # Try python langdetect if available
+  # Try python langdetect if available.
+  # IMPORTANT: heredoc delimiter is single-quoted ('PY') so $text is NOT shell-expanded.
+  # The caption is piped on stdin and read by Python, treating it as data not code.
+  # Without this, captioned content like '""")\nimport os; os.system(...)' could
+  # execute arbitrary code (HIGH-severity shell→python injection).
   if command -v python3 >/dev/null 2>&1; then
     local out
-    out="$(python3 - <<PY 2>/dev/null
+    out="$(printf '%s' "$text" | python3 - <<'PY' 2>/dev/null
+import sys
 try:
     from langdetect import detect, DetectorFactory
     DetectorFactory.seed = 0
-    import sys
-    sys.stdout.write(detect("""$text"""))
+    sys.stdout.write(detect(sys.stdin.read()))
 except Exception:
     pass
 PY
