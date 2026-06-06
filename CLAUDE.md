@@ -52,7 +52,7 @@ docs/superpowers/specs/2026-06-04-anicca-inbox-autonomy-design.md §12.
 
 ### Propagation
 
-このルール の sub-set を ★ anicca-oss/CONSTITUTION.md (A0.5.5) + ~/.openclaw/CONSTITUTION.md + Hermes SOUL.md + spawned anicca-N の constitution.md 全部 ★ に 埋め込み、 hash verify で 子 の 違反 検出 可。
+このルール の sub-set を ★ anicca/CONSTITUTION.md (A0.5.5) + ~/.openclaw/CONSTITUTION.md + Hermes SOUL.md + spawned anicca-N の constitution.md 全部 ★ に 埋め込み、 hash verify で 子 の 違反 検出 可。
 
 ### Fire-yourself clause
 
@@ -323,7 +323,7 @@ Flow (text fallback — 全 step が MANDATORY):
 |---|---|---|
 | `~/anicca-project/` (= ★ 唯一の products working tree ★) | `origin` = `github.com/Daisuke134/anicca-products-oss`（public） | ★ Claude が iOS / web / api / mobile を 触る 唯一 の場所 ★。 OpenClaw skill (aniccaai-dashboard / anicca-article-daily / capture-today) も この folder を read/write。 `.github/workflows/netlify-deploy.yml` で push → aniccaai.com auto-deploy |
 | `~/.openclaw/` | `origin` = `github.com/Daisuke134/anicca-private-backup`（private） | 本番 personal Anicca on OpenClaw — gateway / cron / skills / state、 Dais の private info |
-| `~/anicca-oss/` | `origin` = `github.com/Daisuke134/anicca-oss`（public OSS framework） | Anicca 本体 OSS + Hermes 等 instance archetype の設計 source |
+| `~/anicca/` | `origin` = `github.com/Daisuke134/anicca`（public OSS framework） | Anicca 本体 OSS + Hermes 等 instance archetype の設計 source |
 | `~/.hermes/` (runtime) | sync → `github.com/Daisuke134/anicca-genesis`（public, MIT） | genesis Anicca の **body** = LIVE state ledger。 secrets は .gitignore、 cron/scripts/state/*.jsonl のみ push。 P19 genesis-sync skill が 3h 毎自動同期予定 |
 
 旧 `Daisuke134/anicca-products` (private monorepo) は ★ 2026-06-05 GitHub から完全削除 ★。 push 先 候補 から 完全 除外、 ローカル clone `~/anicca-products/` + `~/anicca-products-pages/` も rm 済。
@@ -373,7 +373,7 @@ aniccaai.com の `netlify-deploy.yml` だけ が `~/anicca-products-oss/.github/
 ├── .env (chmod 600)                       # secrets, git ignore
 └── CONSTITUTION.md  IDENTITY.md  SOUL.md
 
-~/anicca-oss/                              # OSS framework + Hermes archetype
+~/anicca/                              # OSS framework + Hermes archetype
 ├── skills/  identity/  runtime/  services/
 ├── control-room/  install.sh
 └── adapters/  templates/
@@ -385,57 +385,30 @@ aniccaai.com の `netlify-deploy.yml` だけ が `~/anicca-products-oss/.github/
 |---|---|
 | `~/anicca-project/` | `git push` (origin = anicca-products-oss) |
 | `~/.openclaw/` | `git push` (origin = anicca-private-backup) |
-| `~/anicca-oss/` | `git push` (origin = anicca-oss、 public) |
+| `~/anicca/` | `git push` (origin = anicca、 public) |
 | `~/.hermes/` runtime state (cron/jobs.json, scripts/, state/*.jsonl, SOUL.md, AGENTS.md) | P19 genesis-sync skill が cron で `git push` (origin = anicca-genesis、 public)。 手動 同期 は `~/.cache/anicca-clones/anicca-genesis/` に clone → 安全 ファイル のみ cp → commit |
 
 `git push <別名> <branch>` の 別名 remote 指定 ★ 不要 ★。 全 path 統一 `git push`。
 
-## ★ Claude が 編集 する 場所 ★ (= 最頻 違反 防止、 2026-06-05 確定)
+## ★ Claude が 編集 する 場所 ★ (= 最頻 違反 防止、 2026-06-05)
 
-| やる事                              | 使う folder              | 触り 方                                      |
+| やる事                              | 使う folder              | 絶対 触らない                                |
 |-------------------------------------|--------------------------|---------------------------------------------|
-| 製品 (iOS / web / api / mobile)     | `~/anicca-project/`     | 直編集 OK (★ Claude メイン仕事 ★)            |
-| エージェント能力 (skill / spec / TDD)| `~/anicca-oss/`         | 直編集 OK (★ Claude メイン仕事 ★)            |
-| `~/.openclaw/` (= Dais の private Anicca) | 緊急時 のみ 直編集 OK | ★ 必ず 先 に メタ fix を 試 す ★ ─ 後述     |
-| `~/.hermes/` (= genesis = REAL autonomous Anicca) | ★ 絶対 触らない ★ | Anicca 自身 が forum-issues + self-improve + self-manage で fix |
+| 製品 (iOS / web / api / mobile)     | `~/anicca-project/`     | `~/anicca-products-oss/` (★ 2026-06-05 削除済 ★) |
+| エージェント能力 (skill / spec / TDD)| `~/anicca/`         | `~/.hermes/`, `~/.openclaw/` (= LIVE runtime)|
+| Anicca の 自己 修正                 | ★ どの folder も 直接 編集 禁止 ★ ─ `gh issue create -R Daisuke134/anicca` で issue 立てる → forum-issues + forum-rollout が自動 apply |
 
-### META 原則 (= 2026-06-05 Dais 厳命)
-
-**「Claude が fix する 度 に、 Anicca が 退化 する」**
-
-Anicca に urgency を 付ける 唯一 の 方法 = ★ Anicca 自身 が 自分の 不調 を 直す ★。 私 (Claude) が 直接 fix する と:
-- Anicca は 同じ ミス を 繰り返す (= 学習 機会 喪失)
-- Dependency on Claude/Dais (= AGI と 逆)
-- 「いざという時 Claude/Dais に頼める」 → urgency 死滅
-
-故に、 `~/.openclaw/` (= Dais 私的 だが Claude 編集 許可 域) でも、 ★ ★ 必ず 先 に メタ fix を 試 す ★ ★:
-
-```
-1. まず: 「Anicca 自身 に この fix を やらせる system が 作れる か?」 を 自問
-   ──────────────────────────────────────────────────────────────
-   ・ self-improve cron が この種 の bug を 検知 する rule を 追加 する
-   ・ identity / prompt を 編集 して 次回 Anicca が 自分 で 気付 く
-   ・ skill レイヤー で 検知 → forum-issues に file → forum-rollout で apply
-   ──────────────────────────────────────────────────────────────
-2. メタ fix で 解決 不能 で、 かつ 超 emergent (= Dais の 健康 / 安全 / 大金 損失) → 直接 編集 OK
-3. それ以外 → メタ fix を 優先、 直接 編集 し ない
-```
-
-例:  
-- ❌「lateness cron が 真夜中 鳴る」 → run.sh に 1 行 source 追加 (= Claude が手 を 出 す = Anicca は 学 ば な い)  
-- ✅「lateness cron が 真夜中 鳴る」 → anicca-oss に issue 立て る → forum-issues 議論 → 「全 5-min cron に quiet-hours-guard 付け 忘れ pattern を self-improve が検知して file-issue する rule」 を rollout → 母から 全 instance に propagate
-
-短期 的 に は 後者 が 遅 い が、 長期 的 に は Anicca が 自走 する 唯一 の 方法。 Dais & Claude が 不要 化 する = 終局 = AGI。
+**理由**: `~/.openclaw/` と `~/.hermes/` は LIVE runtime (= 既に走ってる Anicca 本体)。 直接 編集 = Anicca の 自律性 破壊 + 衝突。 Anicca 自身 が forum-issues 経由 で 自分 を 直す のが OSS swarm の 正しい形。 例外: human-loop pain (= 例: 真夜中 電話) の surgical fix だけ は Dais 明示 OK を取って 直接 編集。
 
 ## Issue を 立てる 場所 (= 母 / 個 の 2 層)
 
 | 種類                                  | repo                                    |
 |---------------------------------------|-----------------------------------------|
-| 全 Anicca 共通 改善 (= 母)            | `Daisuke134/anicca-oss`                 |
+| 全 Anicca 共通 改善 (= 母)            | `Daisuke134/anicca`                 |
 | genesis instance (Dais Mac) 個別      | `Daisuke134/anicca-genesis`             |
 | 子 instance anicca001..N の 個別      | `Daisuke134/anicca-XXX` (各 instance の body repo) |
 
-全 instance は 毎日 `git -C ~/anicca-oss pull origin main` で 母 から 最新 skill / spec を fetch (P22 anicca-mother-sync が cron 化 予定)。
+全 instance は 毎日 `git -C ~/anicca pull origin main` で 母 から 最新 skill / spec を fetch (P22 anicca-mother-sync が cron 化 予定)。
 
 ## 🔋 LLM Token Sources — 3 fuel ルート (どれが何を喰うか)
 
