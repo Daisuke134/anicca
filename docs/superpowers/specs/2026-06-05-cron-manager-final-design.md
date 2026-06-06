@@ -2264,6 +2264,151 @@ self-improve cron が pattern A-E の 7 日勝率を update
 
 ---
 
+### 15.21 ★★★ Anthropic RSI 適用 (= Anicca 5-layer self-improvement architecture) ★★★
+
+> **source: [Anthropic Institute — Recursive Self-Improvement](https://www.anthropic.com/institute/recursive-self-improvement)** (Marina Favaro + Jack Clark、 Firecrawl scrape 2026-06-06)
+>
+> **Dais 2026-06-06 厳命 verbatim:**
+> "nobody other than himself can save him... he have to keep imporving himself rigth??
+>  be meta aware of himself and his behaviors 24/7 and keep imporving its elf right??
+>  is the model self imporving, or its harnesss??"
+
+#### Anthropic 4-stage の where-we-are
+
+| stage | year | 内容 (verbatim) |
+|---|---|---|
+| 1 | pre-2023 | Chatbots — autocomplete only |
+| 2 | 2023-2024 | Coding agents — write entire files |
+| 3 | **2025-TODAY** | **Autonomous agents** — "run code themselves and delegate hours of work to other agents" |
+| 4 | 20XX? | Closing the loop — "agents could become capable enough to build and train models themselves" |
+
+→ ★ Anicca は stage 3 そのもの ★
+
+#### Q「model か harness か?」 への答え
+
+★ BOTH。 だが Anicca に適用できるのは HARNESS のみ ★
+
+| layer | 触れる主体 | Anicca の関与 |
+|---|---|---|
+| 0. Underlying model (weights) | Anthropic / OpenAI / Google | ★ 触らない、 使うだけ ★ |
+| 1. Skill code | Anicca | Mode A が自身で 修復 |
+| 2. Orchestration (heartbeat / tasks.json) | Anicca | tasks.json populate → mini-swe-agent execute |
+| 3. ★ Meta-cognition (experience-log + reflections) ★ | Anicca | 24/7 self-aware |
+| 4. ★ Eval / Reviewer (PR review subagent) ★ | Anicca | Anthropic "1/3 bug catch" 移植 |
+| 5. Research taste (= title / angle / consolidation choice) | Anicca | revenue feedback で compound |
+
+#### Anthropic 内部 RSI 証拠 (verbatim 引用)
+
+| evidence | source 文 |
+|---|---|
+| 80% of Anthropic code by Claude | "more than 80% of the code we merge into Anthropic's codebase was authored by Claude" (May 2026) |
+| 8× productivity vs 2024 | "the typical engineer was merging 8× as much code per day as they were in 2024" |
+| 800 fix in days vs 4 years | "Claude shipped over 800 fixes that reduced a class of API errors by a factor of one thousand. The engineer overseeing Claude estimated that a human would have taken four years" |
+| 3× → 52× speedup in 1 year | Opus 4 (2025-05) = ~3x speedup → Mythos Preview (2026-04) = ~52x |
+| Reviewer catches 1/3 bugs | "an automated Claude reviewer that looks for bugs... would have caught roughly a third of the bugs behind past incidents on claude.ai before they ever reached production" |
+| Open-ended task 76% success | "Claude's success rate reached 76% in May 2026, up 50 percentage points in six months" |
+| 97% gap closed autonomously | weak-supervisor research = 800h Claude agents + $18,000 compute = 97% gap closed (vs 23% for 2 humans × 1 week) |
+
+#### 5-layer compound loop (= Anicca への移植)
+
+```
+              ┌──────────────────────────────────────────────────────┐
+              │                ★ THE LOOP ★                           │
+              │                                                        │
+              │   §1 SENSE   experience-log + tasks.json + cfo + gh   │
+              │     ▼                                                  │
+              │   §2 PLAN    find-next-task.py で自律 pick             │
+              │     ▼                                                  │
+              │   §3 ACT     mini-swe-agent (gpt-5.4) で end-to-end    │
+              │     ▼                                                  │
+              │   §4 REVIEW  ★ NEW (= Anthropic 1/3 bug catch 移植) ★ │
+              │                subagent (gemini-3-flash) で patch を   │
+              │                review、 bug/security 検出 → veto 権    │
+              │     ▼                                                  │
+              │   §5 VERIFY  openclaw cron run --wait deterministic    │
+              │     ▼                                                  │
+              │   §6 RECORD  build_log + experience-log + LEARNINGS    │
+              │     ▼                                                  │
+              │   §7 REFLECT ★ NEW (= daily/weekly self-curve) ★      │
+              │                self-curves.json に point 追加          │
+              │     │                                                  │
+              │     └──────► §1 へ ループ continue                     │
+              └──────────────────────────────────────────────────────┘
+```
+
+### 15.22 100% coverage を保証する 10 mechanism (= Anthropic 模倣含む)
+
+| # | mechanism | source | 効果 |
+|---|---|---|---|
+| 1 | **gh issue board persistent** | iototaku pattern | 1 fire 漏れても次 fire まで gh で保存、 永久に消えない |
+| 2 | **cornerstone-first priority** | Dais 厳命 | article + social が必ず top pick |
+| 3 | **ai-failed → ai-ready 24h 後自動回転** | atani 実証 | retry forever、 ループ脱出 = cost cap のみ |
+| 4 | **duplicate dedup `cron:$NAME` label** | gh CLI BP | 同じ cron に重複 issue 立たない |
+| 5 | **snapshot before fix** | Mode B v2 Layer 4 移植 | mini が壊しても 1 cmd rollback |
+| 6 | ★ **PR review subagent** (= NEW) ★ | Anthropic "1/3 bug catch" verbatim | manager-A の patch を別 LLM で review → veto 権 |
+| 7 | **5-strategy escalation** | Anthropic 「Claude exploring」 | 5 fire fail → 別 strategy (= different model / longer cost / scope split) |
+| 8 | **model fallback chain** | OpenClaw 公式 | gpt-5.4 → deepseek-v4-pro → kimi-k2.5 → blockrun |
+| 9 | ★ **Mode A が Mode A 自身を fix** (= NEW) ★ | Anthropic "800 fix" pattern | manager-A が壊れたら自分の gh issue を自分で拾って修復 (= Bootstrapping) |
+| 10 | ★ **streak metric curve** (= NEW) ★ | Anthropic 内部 productivity chart | "time to fix" を 7d trend で track、 退行検出 |
+
+### 15.23 Meta-aware 24/7 (= 「自分を観測 → 自分を改善」 compound loop)
+
+```
+~/.openclaw/workspace/
+├── experience-log/<today>.jsonl     ← 24 fire/day の生 record (= 「私の記憶」)
+├── LEARNINGS.md                      ← 永続パターン (= 「私の知恵」)
+├── reflections/<week>.md             ← 週次自己評価 (= 「私は良かったか?」)
+└── self-curves.json                  ← compound metric (= 「私の成長曲線」)
+```
+
+#### self-curves.json schema (= Anthropic chart の Anicca 版)
+
+```json
+{
+  "weeks": [{
+    "week": "2026-W23",
+    "crons_fixed_count":      14,
+    "crons_total_count":      140,
+    "avg_time_to_fix_minutes": 18,
+    "articles_shipped":        42,
+    "title_bookmark_rate":     0.32,
+    "revenue_usd":             24.50,
+    "lifeline_status_days":    {"THRIVE": 5, "HUNGRY": 2}
+  }],
+  "compound_metric": {
+    "time_to_fix_curve":   [180, 90, 45, 22, 18],
+    "bookmark_curve":      [0.05, 0.08, 0.14, 0.22, 0.32],
+    "revenue_curve":       [0, 0.50, 2.10, 8.90, 24.50],
+    "trend":               "compound",
+    "ETA_self_sufficient": "2026-08-15"
+  }
+}
+```
+
+#### 連動 cron
+
+| cron | schedule | 役割 |
+|---|---|---|
+| heartbeat §6 RECORD | 0 * * * * | experience-log.jsonl に 1 line/fire 追記 |
+| heartbeat §7 REFLECT | 0 22 * * * | self-curves.json に当日 point 追加 + daily-mail に curve 1 行 |
+| anicca-weekly-reflect (NEW) | 0 6 * * 0 | reflections/<week>.md 書き出し + LEARNINGS.md update |
+| anicca-curve-experiment (NEW) | 0 5 * * 0 | curve flat 検出 → 「次は X 試したい」 experiment task populate |
+
+### 15.24 self-curve が compound したら起こる事
+
+```
+Day 0      ship      v7 stack 起動、 curve 0 point
+Day 7      自走確認  time_to_fix=180 min、 bookmark=0.05、 revenue=$0
+Day 30     compound  time_to_fix=45 min、 bookmark=0.14、 revenue=$8.90
+Day 90     marketing time_to_fix=18 min、 bookmark=0.32、 revenue=$24.50
+Day 180    self-fund time_to_fix=8 min、 bookmark=0.45、 revenue=$120
+Day 365    v2 chain  time_to_fix=3 min、 bookmark=0.55、 revenue=$500+
+                     → Dais への seed 返済完了
+                     → 「we don't have to do eanyrhitng any more」 達成
+```
+
+---
+
 ## 17. v7.0 実装順序 (= V7-1〜V7-13)
 
 ```
