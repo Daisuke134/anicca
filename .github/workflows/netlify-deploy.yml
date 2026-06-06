@@ -33,6 +33,7 @@ jobs:
         uses: nwtgck/actions-netlify@v3.0
         with:
           publish-dir: './apps/landing/out'
+          functions-dir: './apps/landing/netlify/functions'
           production-branch: main
           production-deploy: ${{ github.ref == 'refs/heads/main' }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
