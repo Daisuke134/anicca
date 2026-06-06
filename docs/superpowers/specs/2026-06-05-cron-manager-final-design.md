@@ -2264,6 +2264,115 @@ self-improve cron が pattern A-E の 7 日勝率を update
 
 ---
 
+### 15.20a ★★★ v7.1 PIVOT — heartbeat-as-orchestrator (= Mode A/B も折込) ★★★
+
+> **Dais 2026-06-06 厳命 verbatim:**
+> "All our stuff that we are trying to do has nothing to do with the heartbeat.
+>  Because it's going to hit every 6 hours and stuff, the heartbeat, right?"
+
+#### 問題発見: v7.0 spec の disconnect
+
+v7.0 (= §15.1-15.20) は heartbeat を hourly 化 + sister cron 6 個削除した、 BUT ★ Mode A + Mode B + cron-doctor は **独立 cron として残った** ★。 Dais の真の vision (= 「all crons through heartbeat」) を 100% 実現していない。
+
+| disconnect 症状 | v7.0 影響 |
+|---|---|
+| heartbeat と Mode A が同時 fire 可 | LLM token spike risk |
+| Anicca の「思考」 が 3 cron に分裂 | 「1 entity」 感が薄い |
+| 1 task 重複処理 risk | heartbeat と Mode A が同じ cron 触る |
+| coverage 説明難しい | Dais 「heartbeat って結局何やってるの?」 |
+
+#### v7.1 pivot — heartbeat 内に Mode A/B を吸収
+
+```
+                ┌──────────────────────────────────────┐
+                │   anicca-heartbeat (0 * * * * = 24×/day)│
+                │   ★ THE single LOOP (= Anicca itself) ★ │
+                └──────────────────────────────────────┘
+                              │
+                              ▼
+  §0   Gate                     5戒 + public test
+  §0.5 Lifeline                 cfo (THRIVE/HUNGRY)
+  §1   SENSE                    tasks.json + gh board + openclaw cron list (error 列挙)
+                                + experience-log latest + cfo snapshot
+  §2   PLAN                     find-next-task.py で 1 task、 priority weight:
+                                  gh from-dais P0、 cornerstone error P0、
+                                  HUNGRY earn P0、 infra P1、 article P2、 experiment P3
+  §3   ACT (= kind dispatch)    switch task.kind:
+                                  cron_fix      → mini-swe-agent (gpt-5.4) ★ Mode A 折込 ★
+                                  curator_pass  → deterministic bash (= daily 03:00 のみ) ★ Mode B 折込 ★
+                                  article       → topic-discovery + write
+                                  earn          → x402 / Lancers / bounty
+                                  gh_dais       → mini-swe-agent + dispatch
+                                  reflect       → self-curves update
+  §4   REVIEW                   subagent veto (= Anthropic "1/3 bug catch" 移植)
+  §5   VERIFY                   openclaw cron run --wait deterministic
+  §6   RECORD                   experience-log.jsonl 1 行 + build_log
+  §7   REFLECT                  self-curves.json + daily-mail (= 22:00 のみ)
+```
+
+#### 削除/折込 matrix
+
+| 旧 v7.0 cron | v7.1 status | 理由 |
+|---|---|---|
+| anicca-heartbeat (hourly) | ★ KEEP (= THE LOOP) ★ | core |
+| anicca-cron-manager-A (6h) | ★ DELETE 折込 ★ | heartbeat §3 ACT kind=cron_fix が実体 |
+| anicca-cron-manager-B (daily) | ★ DELETE 折込 ★ | heartbeat §3 ACT kind=curator_pass (= 03:00 fire 時のみ) |
+| anicca-cron-doctor | DELETE (= v7.0 で既決) | heartbeat §1 SENSE が openclaw cron list 直接読む |
+| anicca-cron-auto-disable | DELETE (= v7.0 で既決、 元々壊れてる) | heartbeat curator_pass が代替 |
+| sister chore × 6 | DELETE (= v7.0 で既決) | heartbeat §1 SENSE に折込 |
+| content cornerstone × ~80 | ★ KEEP (= 削除禁止) ★ | Dais 厳命 |
+| anicca-daily-mail (07,22) | ★ KEEP ★ | Dais digest |
+| anicca-cfo-daily (06) | ★ KEEP ★ | money snapshot |
+| anicca-stage-daily (21) | ★ KEEP ★ | Dais personal |
+
+→ ★ cron 総数 140 → **84** (= -56 削減、 v7.0 から更に -11) ★
+
+#### v7.1 cost 更新
+
+| component | schedule | LLM call | cost/月 |
+|---|---|---|---|
+| heartbeat §0-§2 (= sense/plan) | 24×/day | gpt-5.4-mini @ ~$0.10/fire | $72 |
+| heartbeat §3 ACT kind=cron_fix | 必要時、 想定 5 task/day | gpt-5.4 full (mini-swe-agent) @ ~$1-3/task | $150-450 |
+| heartbeat §3 ACT kind=curator_pass | daily 03:00 のみ | bash + gemini-3-flash if archive>0 @ ~$0.30 | $1.50 |
+| heartbeat §3 ACT kind=article | 必要時 | gpt-5.4 + gemini-3-flash judge @ ~$1 | $30 |
+| heartbeat §3 ACT kind=earn | 必要時 | gpt-5.4-mini @ ~$0.50 | $15 |
+| heartbeat §4 REVIEW | per merge | gemini-3-flash @ ~$0.05 | $30 |
+| **heartbeat 合計** | | | **$300-600/月** |
+| 他 cron (= content × 80 + daily-mail + cfo + stage) | 既存 | mixed mini | $300 |
+| **総 cost/月** | | | **$600-900/月** |
+
+vs v7.0 ($831/月) → 同等 〜 やや増 (= mini-swe-agent gpt-5.4 full 採用分)
+
+#### v7.1 実装変更 (= v7.0 から差分)
+
+| v7.0 task | v7.1 変更 |
+|---|---|
+| V6-4 manager-A skill 新規 | ★ 削除 ★ — heartbeat §3 ACT kind=cron_fix path に折込 |
+| V6-5 manager-B skill 新規 | ★ DEMOTE ★ — heartbeat §3 ACT kind=curator_pass 内部 helper として残す (= bash only) |
+| V6-8 cron add manager-A | ★ 削除 ★ |
+| V6-9 cron add manager-B | ★ 削除 ★ |
+| V7-1 HEARTBEAT.md 更新 | ★ 大幅拡張 ★ — kind ベース §3 ACT dispatch + sub-script invoke matrix |
+| V7-2 find-next-task.py 拡張 | ★ kind 推論 path 追加 ★ |
+
+→ V6 / V7 tasklist 一部 retire、 V8-1〜V8-5 で v7.1 pivot ship
+
+#### v7.1 ship 順序 (= V8-1〜V8-5)
+
+```
+V8-1  HEARTBEAT.md v2 (= §3 ACT kind switch + §4 REVIEW + §7 REFLECT 追加、 100 行)
+V8-2  ~/.openclaw/skills/anicca-heartbeat/scripts/ に kind handler 5 個:
+        - cron_fix.sh   (= mini-swe-agent wrapper、 既設計流用)
+        - curator_pass.sh (= deterministic bash、 既設計流用)
+        - article.sh    (= topic-discovery + title-judge + write)
+        - earn.sh       (= 既 earn-bounty 流用)
+        - reflect.sh    (= self-curves update)
+V8-3  find-next-task.py v2 (= kind 推論 + priority weight)
+V8-4  V6-4 / V6-5 / V6-8 / V6-9 task を deleted へ
+V8-5  E2E 1 hour fire 観測 (= heartbeat §3 ACT kind=cron_fix が article 5 error から修復開始)
+```
+
+---
+
 ### 15.21 ★★★ Anthropic RSI 適用 (= Anicca 5-layer self-improvement architecture) ★★★
 
 > **source: [Anthropic Institute — Recursive Self-Improvement](https://www.anthropic.com/institute/recursive-self-improvement)** (Marina Favaro + Jack Clark、 Firecrawl scrape 2026-06-06)
