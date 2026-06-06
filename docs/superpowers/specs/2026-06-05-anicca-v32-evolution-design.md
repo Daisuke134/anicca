@@ -64,67 +64,102 @@ The fix is structural, not procedural. **Skill code, not LLM discipline, enforce
 
 **Why current design**: Comment in shell config says "fresh shell that supports scroll in the Moshi terminal" — old Moshi version had a scroll bug with reattaching to existing tmux session with backscroll buffer. Tradeoff: scroll works, context dies every tap.
 
-### 3.2 Goal
+### 3.2 Goal (REVISED 2026-06-06 — Dais multi-session requirement)
 
 | Property | Target |
 |---|---|
-| Tap latency | ≤ 2 s from Moshi tap to "ready to type" |
-| Context restored | Last Claude Code conversation in `~/anicca-project` resumes automatically — no manual `claude -c` |
-| Disconnect tolerance | SSH idle, Wi-Fi→LTE switch, screen sleep — connection survives, conversation continues |
-| Scroll behavior | Moshi scroll continues to work |
-| Multiple devices | iPhone + MacBook can attach to same session simultaneously without race |
+| Tap latency | ≤ 2 s from Moshi tap to a usable Claude prompt |
+| Each tap = NEW independent session | A fresh `claude` process with a brand-new conversation UUID. No `--continue` by default — the previous conversation in this dir is NOT reloaded. Dais explicitly wants spawning, not resuming, as the dominant flow. |
+| Concurrency | Dais opens N Moshi tabs → N concurrent independent Claude sessions, all alive at the same time, all persistent on Mac Mini. Tab 1's typing does not leak into tab 2. |
+| Disconnect tolerance | Wi-Fi → LTE switch, sleep, idle — every running session stays alive, mosh roams transparently. Re-opening Moshi does not kill any other tab's session. |
+| Reattach | `phone ls` shows all live sessions on Mac Mini. `phone <name>` from a fresh tab reattaches to an existing one when Dais wants the old conversation back. |
+| Goal device topology | iPhone (Moshi, N tabs) + Mac Mini. MacBook becomes optional, not required. |
 
-### 3.3 Design — Recommended approach: **Mosh + named tmux session + `claude --continue` autostart**
+### 3.3 Design — REVISED approach: **Mosh + per-tap unique tmux session + per-session unique Claude UUID, no `--continue`**
 
 ```
-Moshi tap
-   │
-   ▼
-mosh keiodaisuke@100.99.82.95  ← UDP, survives roaming, no idle timeout
-   │
-   ▼
-tmux new-session -A -s phone -c ~/anicca-project
-   │  ("new OR attach" — same session "phone" reused)
-   │
-   ▼
-inside the new tmux session, .zshrc detects MOSHI_PHONE=1 → runs:
-   exec claude --name phone --continue --model claude-opus-4-7
-   │
-   ▼
-Claude Code resumes last conversation, ready to type
+Each Moshi tab is its own mosh connection.
+Each mosh connection spawns its own tmux session.
+Each tmux session spawns its own Claude conversation.
+All N coexist on Mac Mini, all survive disconnect.
+
+Tab 1                Tab 2                Tab 3
+[Moshi]              [Moshi]              [Moshi]
+  │                    │                    │
+  │ mosh UDP           │ mosh UDP           │ mosh UDP
+  ▼                    ▼                    ▼
+mosh-server #A      mosh-server #B      mosh-server #C
+  │                    │                    │
+  ▼                    ▼                    ▼
+~/bin/phone (no arg)   ~/bin/phone           ~/bin/phone
+  │                    │                    │
+  ▼                    ▼                    ▼
+SESSION=phone-<ts1>  SESSION=phone-<ts2>  SESSION=phone-<ts3>
+tmux new-session -s phone-<tsX> -c ~/anicca-project
+  │                    │                    │
+  ▼                    ▼                    ▼
+zshrc detects MOSHI_PHONE=1 + CLAUDE_AUTOSTARTED unset
+  │                    │                    │
+  ▼                    ▼                    ▼
+exec claude --name "phone-<tsX>" \
+            --session-id "$(uuidgen)" \
+            --model claude-opus-4-7 \
+            --max-budget-usd 10
+  │                    │                    │
+  ▼                    ▼                    ▼
+fresh Opus 4.7      fresh Opus 4.7      fresh Opus 4.7
+conversation A      conversation B      conversation C
+(independent)       (independent)       (independent)
 ```
 
-**Why mosh, not raw SSH**:
-- Raw SSH disconnects on Wi-Fi→LTE switch (Mac Mini side TCP keepalive needed; iPhone-side the carrier IP changes — connection dies)
-- Mosh uses UDP + state-sync protocol → handles roaming, intermittent connectivity, screen sleep transparently (verified per mosh.org)
-- `mosh-server` runs as the user, no privileged daemon; tmux on top, normal SSH login retained for auth
+**Why per-tap unique session, NOT named singleton**:
+- Dais explicitly wants N concurrent independent Claude conversations (e.g., one for ops, one for research, one for code).
+- A singleton `phone` session would force all tabs to share one Claude process — input from tab 1 visible to tab 2 (tmux broadcasts). Not what Dais wants.
+- Per-tap = `phone-<unix_ts>` (timestamp) keeps names unique and chronological for `phone ls`.
 
-**Why named `phone` session, not `phone-<ts>`**:
-- `tmux new-session -A -s phone` is idempotent: creates if absent, attaches if present
-- Multiple clients (iPhone + MacBook) can attach simultaneously — tmux already handles this
-- Cleanup is one session, not 50 timestamped ones
+**Why mosh, not raw SSH** (unchanged from earlier analysis):
+- Raw SSH disconnects on Wi-Fi → LTE switch (carrier IP change kills TCP).
+- Mosh uses UDP + state-sync → handles roaming, screen sleep, intermittent connectivity transparently (mosh.org official).
+- `mosh-server` runs per-user, no privileged daemon. SSH auth still gates the login.
 
-**Scroll problem solved by**:
-- Modern Moshi versions (≥ 1.4) honor tmux's alternate-screen sequences correctly. The 2024-era scroll bug is gone.
-- If scroll still breaks, fallback: keep `phone-<ts>` for the tmux layer but launch `claude --resume <fixed-session-name>` inside — Claude Code itself becomes the persistence layer instead of tmux.
+**Why `--session-id "$(uuidgen)"` instead of `--continue`**:
+- `claude --continue` reloads the most-recent conversation in `cwd` → every tab would resume the SAME conversation → not independent.
+- `claude --session-id <UUID>` (per cli-reference) starts a brand-new conversation with a known ID → independent + later resumable by ID.
+- Conversation transcripts persist under `~/.claude/projects/-Users-anicca-anicca-project/<uuid>.jsonl` → Dais can later `claude -r <uuid>` if he wants to revisit any specific tab.
+
+**Reattach to an old session**:
+- `phone ls` → tmux ls filtered to `phone-*` (shows all running tabs by timestamp)
+- `phone phone-1780812345` → reattaches the named tmux session (mosh + tmux already handle reconnection cleanly)
+- `phone kill phone-1780800000` → terminate a specific stale session
+
+**Scroll behavior**:
+- Modern Moshi (≥ 1.4) renders tmux alternate-screen correctly → scroll works in fresh per-tap sessions (the historical 2024 scroll bug only hit `tmux attach` on a session with backscroll history; new sessions are clean).
+- Verification: open 2 tabs simultaneously, scroll independently in each on iPhone.
 
 ### 3.4 Files touched
 
 | Path | Change |
 |---|---|
-| `/Users/anicca/bin/phone` | Replace body: `mosh ... -- tmux new-session -A -s phone ...` |
-| `~/.zshrc` | Remove the tmux interceptor function (lines marked "Anicca tmux phone interceptor"); add MOSHI_PHONE detection that auto-starts `claude --continue` |
+| `/Users/anicca/bin/phone` | Full rewrite for multi-session: no-arg = spawn `phone-<unix_ts>` (new tmux + new claude UUID); `phone ls` = list running phone-* sessions; `phone <name>` = reattach; `phone kill <name>` = terminate; `phone last` = reattach the most recent (convenience) |
+| `~/.zshrc` | Remove the existing tmux interceptor function (lines marked "Anicca tmux phone interceptor"). Add MOSHI_PHONE=1 + CLAUDE_AUTOSTARTED unset detection that runs `exec claude --name "$TMUX_SESSION" --session-id "$(uuidgen)" --model claude-opus-4-7 --max-budget-usd 10 OPENCLAW_CONTEXT=interactive` (the last is for subsystem ③ routing) |
 | `/etc/ssh/sshd_config` on Mac Mini | `ClientAliveInterval 60` + `ClientAliveCountMax 5` (defense in depth even with mosh) |
-| Moshi mobile app config | Change SSH command from `tmux attach -t phone` to `mosh-bootstrap` (a one-line wrapper that runs mosh) — only if Moshi can't run mosh natively |
-| New: `/Users/anicca/bin/phone-cleanup` | Daily cron, kills detached tmux sessions older than 7d (only orphaned ones, not `phone`) |
+| Mac Mini package | `brew install mosh` (one-time setup) |
+| iPhone client | Verify Moshi's mosh support; if absent, recommend Blink Shell or Termius (both have native mosh). This is the one step that needs Dais's physical iPhone action (App Store install) — pre HARD RULE #-2 exception (physical movement). |
+| Moshi mobile app config (or Blink/Termius) | Change SSH command from `tmux attach -t phone` to invoke `mosh user@host`. If Moshi cannot run mosh client directly, switch iOS terminal app. |
+| New: `/Users/anicca/bin/phone-cleanup` | Daily cron, kills `phone-*` tmux sessions that have been idle (no attached client) > 7d. Does NOT kill currently-attached sessions. |
+| New: `/Users/anicca/bin/phone-status` | Convenience: shows session count, model, budget remaining per active session (read from `~/.claude/projects/...`) |
 
 ### 3.5 Success criteria
 
-- [ ] Moshi tap → ≤ 2 s → previous Claude conversation visible, cursor ready
-- [ ] Lock iPhone for 10 min → unlock → conversation still alive, no reconnect prompt
-- [ ] Switch Wi-Fi → LTE mid-typing → no disconnect, typing resumes
-- [ ] `tmux ls` on Mac Mini shows exactly one `phone` session (not 50 timestamped ones)
-- [ ] MacBook `ssh anicca-mac-mini-1 -t 'tmux attach -t phone'` shares the same Claude session
+- [ ] Moshi tab 1 tap → ≤ 2 s → fresh Opus 4.7 conversation, cursor ready
+- [ ] Moshi tab 2 (new tab) tap → ≤ 2 s → SECOND fresh Opus 4.7 conversation, independent of tab 1 (different conversation UUID, different topic, no input bleed)
+- [ ] Moshi tab 3 same again → THIRD independent session
+- [ ] Lock iPhone 10 min while tab 2 was active → unlock → tab 2's conversation still alive, no reconnect prompt, scroll history intact
+- [ ] Switch Wi-Fi → LTE mid-typing in tab 2 → mosh roams, typing resumes in the same conversation
+- [ ] Force-quit Moshi → reopen → tabs gone from app UI but `phone ls` on Mac Mini shows all N sessions still running. `phone phone-<ts>` from a new tab reattaches.
+- [ ] `phone ls` after 1 day → all sessions Dais started today visible, with timestamps
+- [ ] No accidental conversation merging — Tab A's Claude `--session-id` ≠ Tab B's
+- [ ] (Future / MacBook optional) `ssh anicca-mac-mini-1 -t 'tmux attach -t phone-<ts>'` can attach from MacBook to the same session as a fallback path
 
 ### 3.6 Risks
 
@@ -277,31 +312,63 @@ Every posting skill, with no exceptions, must:
 
 ## 5. Subsystem ③ — Frontier Model Routing
 
-### 5.1 Current state
+### 5.1 Current state (VERIFIED 2026-06-06 via `jq ~/.openclaw/openclaw.json`)
 
 ```
-~/.openclaw/openclaw.json
-  agents.defaults.model.primary = "openai/gpt-5.4-mini"    ← chat inherits this too
-  agents.defaults.model.fallback = [
+~/.openclaw/openclaw.json   (live values)
+  agents.defaults.model.primary   = "moonshot/kimi-k2.5"   ← NOT gpt-5.4-mini
+  agents.defaults.model.fallbacks = [
+    "xai/grok-3-mini-fast",                                ← Dais never mentioned
     "deepseek/deepseek-v4-pro",
-    "moonshot/kimi-k2.5",
-    "claude-cli/claude-sonnet-4-6"
+    "claude-cli/claude-sonnet-4-6"                         ← expensive, last
   ]
+  heartbeat.isolatedSession=true, directPolicy=allow, NO model override
+  → heartbeat inherits primary = kimi-k2.5
 
-~/.openclaw/cron/jobs.json
-  150 jobs total, 4 jobs have explicit "model" override (none are frontier)
-  146 jobs inherit defaults.model.primary
+~/.openclaw/cron/jobs.json   (197 jobs total)
+  166 jobs        model = null  →  inherit primary = kimi-k2.5
+   15 jobs        model = "deepseek/deepseek-v4-pro"   (OK, cheap)
+   11 jobs        model = "openai/gpt-5.4-mini"        (OK, cheap)
+    5 jobs        model = "claude-sonnet-4-6" or "claude-cli/claude-sonnet-4-6"  ★ VIOLATION
+                  per memory `feedback_crons_use_mini_models_only`
+                  these 5 need audit + migrate to primary
+                  (job IDs: 4cfdfe32, 73d4a8c2, 94c788fe + 1 cli variant = 4-5 entries)
 
 Phone session
   starts `claude` with no --model flag
-  → inherits the bundle default (Sonnet 4.5 from Claude Code CLI), NOT openclaw config
-  → user reports feels like cron quality
+  → inherits Claude Code CLI bundle default (Sonnet 4.5/4.6), NOT openclaw config
+  → quality OK but expensive on Anthropic, AND not the frontier reasoning Dais wants
+
+Telegram / Slack direct-chat surfaces with Anicca
+  anicca-telegram-bot/ exists but SKILL.md state = "Scaffold only. Ready to install
+  when Dais provides bot token." → NOT LIVE.
+  slack-feedback-reader runs in heartbeat (kimi-k2.5).
+  → there is no live frontier-model chat surface today (subsystem ① phone Claude
+    Code is the closest thing — see Plan #10 future spec for true direct chat)
 
 doctor --fix
   per memory `feedback_openclaw_doctor_fix_rolls_back_cron_model_clears`:
-  this command rewrites job-level model overrides back to defaults.primary
-  Patch Y (143-job bulk clear) was wiped by ONE doctor --fix run
+  rewrites job-level overrides back to defaults.primary on every run.
+  Patch Y (143-job bulk clear) was wiped by ONE doctor --fix run on 2026-06-05.
+  → routing config MUST be defaults-side, not jobs-side, OR doctor must learn the new key
 ```
+
+### 5.1.1 Dais's stated target state (2026-06-06 voice memo verbatim)
+
+> "all the cron models should be as default GPT 500 for mini and then falling back to like
+>  Kimi or DeepSeq or Cloud Sonnet. Cloud Sonnet should be the last one because I don't
+>  want them to use that a lot."
+
+Interpreted (HARD RULE 0.20 — decide, don't ask):
+
+| Layer | Target value |
+|---|---|
+| `defaults.model.primary` | `openai/gpt-5.4-mini`  (swap from kimi-k2.5) |
+| `defaults.model.fallbacks` | `["moonshot/kimi-k2.5", "deepseek/deepseek-v4-pro", "claude-cli/claude-sonnet-4-6"]` |
+| Drop from fallbacks | `xai/grok-3-mini-fast` (Dais never mentioned, and primary swap reduces fallback pressure) |
+| 5 sonnet-override cron | Audit → migrate to primary (default behavior), OR justify in `MODEL_OVERRIDE_REGISTRY.md` if frontier genuinely needed |
+| Phone Claude Code (interactive chat) | `--model claude-opus-4-7` explicit on every `phone` invocation (see subsystem ①) — this is Dais's "direct chat with Anicca" surface for the v3.2 window, until Telegram bot ships (Plan #10 future) |
+| Telegram bot (when launched, Plan #10) | Anthropic API direct, Opus 4.7 |
 
 ### 5.2 Goal
 
@@ -313,28 +380,56 @@ doctor --fix
 
 Plus: **survive `doctor --fix`** — the routing config must not be the thing doctor rewrites.
 
-### 5.3 Design — Recommended approach: **Split defaults + env-var dispatch + doctor-aware structure**
+### 5.3 Design — REVISED: **Set sensible defaults + frontier opt-in only where Dais actually chats**
+
+Dais clarified 2026-06-06: he was not asking for a complex context-aware router. The real ask is (a) cron defaults set right (cheap, sonnet-last), and (b) the surfaces where he actually talks to Anicca (phone Claude Code now, Telegram bot future) use frontier explicitly.
 
 ```
-~/.openclaw/openclaw.json
+~/.openclaw/openclaw.json   (target)
   agents.defaults.model = {
-    "primary":     "deepseek/deepseek-v4-pro",   ← cron default (CHEAP)
-    "interactive": "claude-cli/claude-opus-4-7", ← chat default (FRONTIER)
-    "fallback":    [...unchanged...]
+    "primary":   "openai/gpt-5.4-mini",                    ← Dais target
+    "fallbacks": [
+      "moonshot/kimi-k2.5",
+      "deepseek/deepseek-v4-pro",
+      "claude-cli/claude-sonnet-4-6"                       ← LAST, rarely hit
+    ]
+    // optional, doctor-safe forward-compat:
+    // "interactive": "claude-cli/claude-opus-4-7"
+    // (only used if a future code path opts in; doctor --fix doesn't know
+    //  about this key so it survives)
   }
 
-cron-codex.sh wrapper (entry point for all crons)
-  exports OPENCLAW_CONTEXT=cron before calling codex/openclaw
+Cron / heartbeat / background skill (197 jobs)
+  → inherit defaults.model.primary = gpt-5.4-mini
+  → fallback chain: kimi → deepseek → sonnet
+  → NO interactive key needed (cron = default surface)
 
-phone session zshrc autostart (subsystem ①)
-  exports OPENCLAW_CONTEXT=interactive before calling claude
+Phone Claude Code (subsystem ① — Dais's current direct-chat surface)
+  ~/bin/phone wraps `claude --model claude-opus-4-7 --max-budget-usd 10`
+  → frontier reasoning at chat surface, explicit flag, doctor-safe (doctor
+    doesn't touch shell scripts)
 
-openclaw router (existing dispatcher)
-  reads OPENCLAW_CONTEXT
-    if "cron" → use defaults.model.primary
-    if "interactive" → use defaults.model.interactive
-    if unset → use defaults.model.primary (safe fallback to cheap)
+Telegram bot direct chat (Plan #10 future spec)
+  → Python listener calls Anthropic API with model=claude-opus-4-7 directly
+  → bypasses openclaw entirely for chat path (config-safe, billing-clear)
+
+Why this is simpler than the original §5.3 proposal:
+- No OPENCLAW_CONTEXT env var router (over-engineered for current need)
+- No openclaw binary modification (we'd have to rebuild + risk regression)
+- Each surface declares its own model at invocation time (CLI flag or SDK param)
+- doctor --fix can wipe job-level overrides all day — phone wrapper + Telegram
+  listener are untouched
 ```
+
+**5 sonnet-override cron audit checklist** (part of #6 execute):
+
+| Job ID prefix | Plan |
+|---|---|
+| 4cfdfe32 | Read cron message + skill, decide: does it really need frontier? If yes → register in MODEL_OVERRIDE_REGISTRY.md with rationale + switch to `deepseek/deepseek-v4-pro` (still strong, cheap). If no → remove override, let it inherit gpt-5.4-mini. |
+| 73d4a8c2 | Same audit |
+| 94c788fe | Same audit |
+| 4cfdfe32-cli-variant | Same audit |
+| (any 5th if discovered) | Same audit |
 
 **Why split keys on `agents.defaults.model`, not new top-level config**:
 - doctor --fix only knows to reset `agents.defaults.model.primary` (legacy behavior). New keys (`interactive`) are invisible to it → survive.
@@ -423,8 +518,10 @@ openclaw router (existing dispatcher)
        - Cost report → no Anthropic burn on cron
 ```
 
-**Why ③ before ①**: Phone session needs to know what model to start; design that contract first, then build the phone wrapper on top.
-**Why ② parallel to ③**: They touch disjoint files. Plan ③ touches `openclaw.json` + dispatcher; plan ② touches skills + new lib files.
+**Why ③ before ①**: Phone wrapper hardcodes `--model claude-opus-4-7`, which depends on the conceptual contract from ③ (chat = frontier). ③ also has the smallest blast radius (one config file + audit) so it's a good warm-up.
+**Why ② parallel to ③**: Disjoint files. ③ touches `openclaw.json` + 5 cron overrides; ② touches `_shared/lib/` + per-skill source-line additions.
+
+**REVISED execution order based on Dais's 2026-06-06 ask to validate phone first**: spec correction (#5) → plan all three in writing → execute ① first so Dais can validate multi-session on phone immediately → then ③ → then ②. This trades a small dependency cost (phone wrapper temporarily uses a hardcoded model string) for a fast user-visible win.
 
 ---
 
@@ -440,13 +537,19 @@ openclaw router (existing dispatcher)
 
 ---
 
-## 8. Out of scope (explicit non-goals)
+## 8. Out of scope (explicit non-goals) + named follow-up specs
 
-- Redesigning Moshi mobile app or replacing iOS terminal client without user consent
-- Switching cron model provider away from DeepSeek (HARD RULE — leave it)
-- Adding new posting platforms
-- Anicca v3.2 multi-profile colony (separate spec, separate effort)
+**Out of scope for this spec**:
+
+- Adding new posting platforms (X / TikTok / YouTube only for ② migration)
+- Anicca v3.2 multi-profile colony (separate effort, memory `feedback_anicca_multi_profile_per_instance_colony`)
 - Heartbeat autonomy redesign beyond the model swap
+- openclaw binary modifications (we adapt around it, not change it)
+
+**Named follow-up specs (queued, NOT in this spec)**:
+
+- `2026-MM-DD-anicca-direct-chat-surface-design.md` — Telegram bot launch + Anthropic API direct call + Claude Code subscription deprecation evaluation. Goal: Dais talks to Anicca on iPhone Telegram, not through Claude Code TUI. Triggered when ① is live and Dais wants to evaluate dropping Claude Code sub. Task #10 in TODO list.
+- Future: iOS terminal app evaluation if Moshi blocks mosh/multi-tab UX. (Likely path: switch to Blink Shell.)
 
 ---
 
@@ -463,8 +566,9 @@ openclaw router (existing dispatcher)
 
 - [x] No placeholders / TODOs in the body
 - [x] All three subsystems have: current state / goal / design / files touched / success criteria / risks
-- [x] Implementation order is explicit
+- [x] Implementation order is explicit (revised 2026-06-06 to put ① first per Dais)
 - [x] Out-of-scope is explicit
 - [x] Open questions are gathered at the bottom, not littered inline
-- [x] Aligned with HARD RULE #0 (SDD-first), 0.12 (verification), 0.14 (job not finished), 0.17 (single source of truth), `feedback_crons_use_mini_models_only`, `feedback_openclaw_doctor_fix_rolls_back_cron_model_clears`
+- [x] Aligned with HARD RULE #0 (SDD-first), 0.12 (verification), 0.14 (job not finished), 0.17 (single source of truth), 0.20 (minimize human loop), `feedback_crons_use_mini_models_only`, `feedback_openclaw_doctor_fix_rolls_back_cron_model_clears`
 - [x] Aligned with brainstorming skill: decomposed into independent subsystems, each ready for its own `writing-plans` cycle
+- [x] 2026-06-06 Q&A revisions applied: (a) §5.1 primary corrected to kimi-k2.5 from gpt-5.4-mini, (b) §5.1.1 Dais target state added, (c) §5.3 simplified (no env-router), (d) §3 phone design switched to per-tap independent multi-session, (e) §8 named Telegram direct-chat as follow-up spec, (f) §6 execution order revised to ① first
