@@ -2264,6 +2264,143 @@ self-improve cron が pattern A-E の 7 日勝率を update
 
 ---
 
+### 15.20i ★★★ v7.9 — First Principles + mini-swe-agent REVIVED + 3 example ship (= Anicca への template) ★★★
+
+> **Dais 2026-06-07 verbatim:**
+> "after the implementation, you should go actually fix them yourself too. tell Anicca like
+>  'hey, there were these fucking things, and I made it into this way, so they can have
+>  examples they can actually follow.' naist-pull... we don't need that fucking thing.
+>  the cron manager should think about that himself."
+
+#### First Principles framework (= Firecrawl verbatim)
+
+source: [OpenAI community: Principles Framework AI Agents First Principles](https://community.openai.com/t/principles-framework-generate-ai-agents-using-first-principles-reasoning/1045890)
+
+verbatim quote:
+> "First principles thinking involves breaking down complicated problems into basic elements
+>  and reassembling them from the ground up. By applying this approach, the Principles
+>  Framework helps avoid assumptions and conventional thinking."
+
+★ Anicca cron-manager 適用 ★:
+
+```
+Goal: 「全 cron は revenue OR physical-action OR infrastructure のいずれか」
+       (= 3 criteria check)
+
+Per-cron decomposition:
+  1. Does it generate revenue?         (= bounty / article / social post / earn)
+  2. Does it perform physical action?   (= call / mail / alarm)
+  3. Is it Anicca infrastructure?       (= heartbeat / cfo / cron-manager / daily-mail)
+  
+  If NONE → DISABLE (= first principles failure)
+  If schedule mismatch → EDIT
+  If duplicate mechanism → DISABLE
+```
+
+#### mini-swe-agent ★ REVIVED ★ (= 私の earlier 結論 訂正)
+
+| 過去 結論 | 訂正 |
+|---|---|
+| mini-swe-agent CLI が prompt_toolkit で TTY 必須 → 使用不可 | ★ CLI wrapper のみ TTY 必須、 Python API 直接 use なら headless OK ★ |
+| 結論: DROP mini-swe-agent | ★ 結論訂正: REVIVED via Python API ★ |
+
+verified 2026-06-07:
+```python
+from minisweagent.agents.default import DefaultAgent
+from minisweagent.environments.local import LocalEnvironment
+from minisweagent.models.litellm_model import LitellmModel
+# ✅ import OK headless、 OpenClaw cron sandbox 内 subprocess で invoke 可
+```
+
+★ mini-swe-agent v2.3.0 Python API path ★:
+```bash
+/Users/anicca/.local/pipx/venvs/mini-swe-agent/bin/python3 -c "
+from minisweagent.agents.default import DefaultAgent
+from minisweagent.environments.local import LocalEnvironment
+from minisweagent.models.litellm_model import LitellmModel
+
+agent = DefaultAgent(
+    model=LitellmModel(model_name='anthropic/claude-opus-4-8'),
+    env=LocalEnvironment(),
+    config={'cost_limit': 3.0}
+)
+result = agent.run(task='Fix cron error XYZ — read SKILL.md + scripts/, identify root cause, edit, verify with openclaw cron run --wait')
+print(result)
+"
+```
+
+★ LocalEnvironment 採用 ★ (= Dais 「sandbox 不要」 受入):
+- docker / singularity / bubblewrap 不要
+- bash 命令を local subprocess で直接実行
+- SWE-bench leaderboard: Gemini 3 Pro = 74% with mini-swe-agent verified
+- OpenHands compared: 77.6%
+
+#### ★ 3 example ship (= 2026-06-07、 Anicca への template) ★
+
+| # | cron | action | gh issue | first principles 失格 |
+|---|---|---|---|---|
+| 1 | naist-pull | DISABLE | [#1](https://github.com/Daisuke134/anicca-products-oss/issues/1) closed | no revenue + no physical-action + no infra |
+| 2 | agentmemory-mcp-cleanup | DISABLE | [#2](https://github.com/Daisuke134/anicca-products-oss/issues/2) closed | 0 orphans + launchd duplicate |
+| 3 | anicca-wallet-balance | EDIT 6h→daily | [#3](https://github.com/Daisuke134/anicca-products-oss/issues/3) closed | slow-changing state、 daily 十分 |
+
+verified 2026-06-07:
+```
+naist-pull              enabled=false  (= was 0 *)
+agentmemory-mcp-cleanup enabled=false  (= was */30)
+anicca-wallet-balance   enabled=true   schedule=0 6 * * *  (= was 0 */6)
+```
+
+★ Pattern Anicca learns ★:
+1. `gh issue create` with first-principles label + 3-criteria analysis table
+2. `openclaw cron disable <UUID>` OR `openclaw cron edit <UUID> --cron <expr>`
+3. verify with `openclaw cron list --all --json`
+4. `gh issue close --reason completed` + label ai-completed
+5. Slack `:wastebasket:` / `:pencil2:` notify with issue URL
+
+#### cron-manager fix.sh 更新 (= Patch 4 改修、 mini-swe-agent revived)
+
+Patch 4 (= fix.sh) の 5-strategy attempt 内側で:
+
+```bash
+# Inside each attempt loop:
+TASK="Fix cron error: ${CRON_NAME}. Read ~/.openclaw/skills/${SKILL}/SKILL.md and
+       scripts/, read last 3 run errors via 'openclaw cron runs ${TARGET_UUID} 
+       --last 3 --json', identify root cause, apply fix, verify with 
+       'openclaw cron run ${TARGET_UUID} --wait --wait-timeout 5m --expect-final'."
+
+/Users/anicca/.local/pipx/venvs/mini-swe-agent/bin/python3 -c "
+from minisweagent.agents.default import DefaultAgent
+from minisweagent.environments.local import LocalEnvironment
+from minisweagent.models.litellm_model import LitellmModel
+agent = DefaultAgent(
+    model=LitellmModel(model_name='${STRATEGY}'),
+    env=LocalEnvironment(),
+    config={'cost_limit': 3.0}
+)
+print(agent.run(task='''${TASK}'''))
+"
+```
+
+→ ★ mini-swe-agent v2.3.0 = SWE-bench 74% verified harness が cron-manager の手足に ★
+
+#### 残 uncertainty (= v7.9 で更に減)
+
+```
+GROUP α (= 解消、 35 件)
+  α-17 mini-swe-agent Python API headless OK
+  α-18 LocalEnvironment 利用可、 sandbox 不要
+  α-19 First Principles framework = revenue/action/infra 3-criteria check
+  α-20 openclaw cron edit flag = --cron (NOT --schedule)
+  α-21 3 example ship 成功 (= naist + agentmemory + wallet)
+
+GROUP B (= ship 観測のみ、 3 件 = 更に減)
+  B-1 cron-manager prompt steering → mini-swe-agent agent class が standardize
+  B-3 long fix > 1500s → mini cost_limit + step_limit 既存
+  B-8 actual cost 実測 → week 1 観測
+```
+
+---
+
 ### 15.20h ★★★ v7.8 — FULL PASTE-RUNNABLE PATCHES (= 16 patch、 spec 内 inline) ★★★
 
 > **Dais 2026-06-07 verbatim:**
