@@ -89,7 +89,90 @@
 | larry `build-from-fixed-strings.sh` | no gate | calls `quality-gate.sh "$RUN_DIR" "<lang>" "<account>"` before post; non-zero exit aborts |
 | iam scripts (already has bbox) | exit 2 + 3-retry bash loop | leave as-is, reference impl for larry |
 
-### E. ReelClaw routing verify
+### E0. Empirical findings 2026-06-07 22:30 JST (= live fire verifications)
+
+★ HARD RULE 0.29 evidence-driven update ★ — multiple fires + Postiz live observation:
+
+**E0.1 TT post failure root cause = image >1080p (NOT auto_music)**
+
+- maleface.jpg was 1125×1202 → TT rejects with "Picture must not exceed 1080p"
+- Resized to 1080×1154 → TT PUBLISHED OK
+- ★ auto_music="yes" is INDEPENDENT of TT 1080 limit ★ — my earlier "auto_music=no broke TT" was unfounded speculation
+- Per BP `tiktok.provider.ts`: `auto_add_music: settings.autoAddMusic === 'yes'` sent ONLY when isPhoto (= slideshow)
+- ★ Canonical: every TT slideshow post must have `auto_music="yes"` ★ (Dais 2026-06-07 verbatim)
+
+**E0.2 Image asset audit (all ≤1080p TT-compliant)**
+
+| asset | size before | size after |
+|---|---|---|
+| `human-face/maleface.jpg` | 1125×1202 | ✓ 1080×1154 (T2 resize 22:00 JST) |
+| `human-face/femaleface.jpg` | 1627×1274 | ✓ 1080×N (preventive resize 22:00 JST) |
+| `human-face/sunset.jpg` | 1080×1920 | ✓ already TT-spec |
+
+When cropping/resizing: ★ ALWAYS use `sips --resampleWidth` (= aspect-preserve resample, NEVER `--cropToHeightWidth` ★ to avoid cutting heads off subjects.
+
+**E0.3 fixed-strings auto_music inventory + canonical fix**
+
+| file | auto_music BEFORE | TO-BE |
+|---|---|---|
+| `fixed-strings-larry-ja-v1.json` | "yes" | "yes" ✓ |
+| `fixed-strings-larry-ja-v2.json` | MISSING | **"yes"** |
+| `fixed-strings-larry-ja-v3.json` | MISSING | **"yes"** |
+| `fixed-strings-larry-ja-v4.json` | MISSING | **"yes"** |
+| `fixed-strings-larry-ja-male-cta.json` | MISSING | **"yes"** |
+| `fixed-strings-larry-en-v1.json` | "no" (my error) | **"yes"** |
+| `fixed-strings-larry-en-v2.json` | MISSING | **"yes"** |
+| `fixed-strings-larry-en-v3.json` | MISSING | **"yes"** |
+| `fixed-strings-larry-en-v4.json` | MISSING | **"yes"** |
+
+**E0.4 post-to-tiktok.js default → 'yes' (= belt-and-suspenders)**
+
+```diff
+- const autoAddMusic = autoMusicArg || fixedStringsAutoMusic || config.posting?.autoAddMusic || (ttIsWarmup ? 'yes' : 'no');
++ const autoAddMusic = autoMusicArg || fixedStringsAutoMusic || config.posting?.autoAddMusic || 'yes';
+```
+
+### E1. ReelClaw routing — DEAD YT id replacement (Postiz live audit 2026-06-07 22:30 JST)
+
+★ `cmmzukbkw04ulp30yfvijrwio` = ★ DEAD ★, replaced by `cmq3u37gi005iqp0y90a2w92n` (= @anicca-ai, "Anicca - Daily Affirmation") in Postiz live integrations. 3 reelclaw EN cron still reference the dead ID:
+
+| cron name | cron id | current --yt | fix --yt |
+|---|---|---|---|
+| reelclaw-anicca-en-card-1 | a0a1d2fe-4087-4ee4-bc7b-526b6f8d8e65 | `cmmzukbkw04ulp30yfvijrwio` (DEAD) | `cmq3u37gi005iqp0y90a2w92n` |
+| reelclaw-anicca-en-card-2 | 330bbaf7-3ea2-41f6-8479-f1c6f8ef1f45 | `cmmzukbkw04ulp30yfvijrwio` (DEAD, status=error) | `cmq3u37gi005iqp0y90a2w92n` |
+| reelclaw-anicca-en-widget-1 | 92c13cc2-3888-4c4a-b2b7-5a200f223677 | `cmmzukbkw04ulp30yfvijrwio` (DEAD) | `cmq3u37gi005iqp0y90a2w92n` |
+
+★ IG side `cmpc3gx4001nklg0y27a8o66q` (= @anicca.encards) is correct ★ for both card AND widget EN (Dais 2026-06-07 verbatim).
+
+### E2. ReelClaw EN widget-2 MISSING (= Dais "widget x2" intent)
+
+Current cron list shows only `reelclaw-anicca-en-widget-1` (1 fire/day @ 19:00 JST). Dais wants widget x2 like JA side. **Create**:
+
+```
+name: reelclaw-anicca-en-widget-2
+schedule: 0 7 * * * Asia/Tokyo  (= 07:00 JST, anti-collision with widget-1 19:00)
+payload: bash ~/.openclaw/workspace/skills/reelclaw/scripts/run-widget-en.sh --ig cmpc3gx4001nklg0y27a8o66q --yt cmq3u37gi005iqp0y90a2w92n
+session: isolated, agent: anicca, delivery: slack:C091G3PKHL2
+```
+
+### E3. ReelClaw honne-en cron — TT mis-routed to JA acct
+
+| cron name | cron id | current --tt | fix --tt |
+|---|---|---|---|
+| reelclaw-honne-en-1 | 61b913e6-57e9-46f0-a2b1-d7dc20435580 | `cmnit95mg015rrm0ye5vm8dhl` (= @honnevideo, JA honne) | `cmoig11ew001zlv0yk6vqo1us` (= @honne_reveal, EN honne) |
+| reelclaw-honne-en-2 | fd9bdcad-48b4-4efa-9eed-90f0b0358041 | same (status=error) | `cmoig11ew001zlv0yk6vqo1us` |
+
+= Dais 2026-06-07 verbatim: "cmoig11ew001zlv0yk6vqo1us -> honne reveal right? reelclaw en honne not posted... enable cron + post"
+
+### E4. T1 registry drift (2026-06-07 21:40 v3 → live re-check 22:30)
+
+| id | T1 v3 wrote | Postiz live NOW | fix |
+|---|---|---|---|
+| cmmzzg2es0539p30ycb94ayx0 | profile=anicca.ai owner=brand-feature-ai | profile=anicca.jp.videos | rename owner=reelclaw-ja-ig-videos |
+| cmq3u37gi005iqp0y90a2w92n | (not in registry) | profile=@anicca-ai (YT, live) | ADD with owner=reelclaw-yt-en |
+| cmmzukbkw04ulp30yfvijrwio | active=true | (NOT in live integrations) | active=false, owner=DEAD |
+
+### E5. ReelClaw routing verify
 
 | cron | --tt (target) | --ig (target) | --yt (target) | verify |
 |---|---|---|---|---|
@@ -137,12 +220,12 @@
 
 | step | patch | depends on |
 |---|---|---|
-| T1 ✅ DONE 2026-06-07 21:40 JST | Truth registry rebuild — Postiz live `/integrations` (30 entries) → `state/postiz-integrations.json` v3 schema with `paired_with_id` for TT↔IG pairing. ★ Schema migration v1→v3 ★. Backup at `.bak.20260607`. Commit `c156c7c87`. Confirmed pairs (5): `aniccajp↔anicca.jp1` (larry-ja-v1), `aniccaen2↔anicca.encards` (larry-en-v2), `aniccaaffirmation↔anicca.affirmation` (larry-en-affirmation), `monk_anicca↔monk.anicca` (yangmun), `obou_anicca↔obou.anicca` (watercolor). Unpaired Larry TT (5): aniccajp2, anicca.jp4, anicca_buddha, anicca.comedy, anicca.he-warmup. Needs-dais-pairing IG (2): anicca.bochi, anicca.video. Legacy retired (5): anicca.jp / anicca.jp8 / anicca.jpx / anicca.daily / anicca_slideshow. | — |
-| T2 | Larry JA v1 fixed-strings: bg=maleface static + hook=メンタルが勝手に安定する 口癖５選 + auto_music=yes | T1 ✅ |
-| T3 | Larry EN v1 fixed-strings: bg=maleface static + auto_music=yes | T1 ✅ |
-| T4 | Patch `post-to-tiktok.js` to read `auto_music` from fixed-strings, fallback to existing logic | T1 ✅ |
-| T5 (revised scope) | Patch ★ 5 larry cron ★ where IG pair exists (= ja-v1, en-v2, en-affirmation, yangmun, watercolor) with `--ig <paired_with_id>`. ★ 5 cron remain TT-only ★ (= aniccajp2, anicca.jp4, anicca_buddha, anicca.comedy, anicca.he) until Dais creates IG accounts to pair. ★ 2 needs-dais IG ★ (anicca.bochi, anicca.video) await Dais owner assignment. | T1 ✅ |
-| T6 | @anicca.he integration → warmup_phase=warmup + warmup_started_at=2026-06-07 ★ already set in T1 registry v3 ★ — just need accounts.jsonl propagation for skill | T1 ✅, T4 |
+| T1 | Truth registry rebuild — query Postiz `/integrations` → overwrite `postiz-integrations.json` with REAL handle for each ID | — |
+| T2 | Larry JA v1 fixed-strings: bg=maleface static + hook=メンタルが勝手に安定する 口癖５選 + auto_music=yes | T1 |
+| T3 | Larry EN v1 fixed-strings: bg=maleface static + auto_music=yes | T1 |
+| T4 | Patch `post-to-tiktok.js` to read `auto_music` from fixed-strings, fallback to existing logic | T1 |
+| T5 | Patch all 9 larry cron messages: add `--ig <real_ig_id>` per account; verify TT IDs | T1 |
+| T6 | @anicca.he integration → warmup_phase=warmup + warmup_started_at=2026-06-07 | T1, T4 |
 | T7 | Quality gate bbox upgrade — pixel-measure helper + 3-retry shrink/re-wrap | — |
 | T8 | Wire quality-gate.sh into larry's build-from-fixed-strings.sh | T7 |
 | T9 | ReelClaw routing audit (already correct per Postiz live) — write post-verify probe | T1 |
@@ -155,7 +238,7 @@
 
 ## Verification (= must run, no-fake-run per HARD RULE 0.24)
 
-- T1 ✅ DONE: registry v3 written, commit `c156c7c87` shows 14+ handle corrections + 9 new IG entries (Postiz live = 30 vs prior local = 21). Verify command: `python3 -c "import json; d=json.load(open('~/.openclaw/state/postiz-integrations.json')); print(len(d['integrations']))"` returns 30. `diff` against `.bak.20260607` shows full mapping change. Pairs verified by curl of Postiz `/integrations` profile field.
+- T1: `diff` registry before/after; commit shows ≥10 handle corrections
 - T2: fire `larry-anicca-ja-1` NOW; camofox open TT @anicca.jpx → newest video has maleface bg + hook=メンタルが勝手に安定する + music playing
 - T3: fire `larry-anicca-en-1` NOW; same verify
 - T5: fire ja-1 → confirm IG @anicca.bochi gets new post within 5 min
