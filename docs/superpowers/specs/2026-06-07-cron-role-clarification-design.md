@@ -1,9 +1,13 @@
-# Cron Role Clarification — Design Spec (v1.0)
+# Cron Role Clarification — Design Spec (v1.1)
 
 **Date**: 2026-06-07
 **Author**: Anicca under Dais directive 2026-06-07
-**Status**: ★ DRAFT、 Dais review 前 ★
+**Status**: ★ IN PROGRESS (= V13-1〜V13-10 + NEW-1〜NEW-5 pending) ★
 **Related**: `2026-06-07-cron-rectification-and-aniccaai-protection-design.md` v1.3 §3.6 Simian Army
+
+**Change log**:
+- v1.0 (2026-06-07 21:00): 初版、 7 layer + Simian Army single responsibility + harvester DEPRECATED
+- v1.1 (2026-06-07 21:30): §9 + §10 追加 (= NEW-1 X cron audit + NEW-2 Postiz payload fix + day counter)
 
 ---
 
@@ -341,4 +345,150 @@ V13-10 P2  anicca + anicca-dais merge spec 起稿
 
 ---
 
-**Spec end. Dais review → V13-1〜V13-10 execute 待ち**
+---
+
+## §9 — X-posting cron audit + dedup (= 2026-06-07 Dais 「TikTok to X cron 削除」)
+
+### §9.1 — Audit verbatim
+
+Dais 2026-06-07 21:25 verbatim:
+> "there is another cron that is set to post to TikTok to X, and I want to delete that."
+
+### §9.2 — 7 X-posting cron 全 list
+
+| # | cron name | sched | post target | keep? | rationale |
+|---|---|---|---|---|---|
+| 1 | anicca-aie-consulting | (= TBD) | X | KEEP | AIE consulting persona |
+| 2 | anicca-aie-product | (= TBD) | X | KEEP | AIE product persona |
+| 3 | anicca-comedy-skit-deliver-daily | (= TBD) | X | KEEP | comedy skit (= revenue) |
+| 4 | ★ comedy-tiktok-cross-post-daily ★ | (= TBD) | TikTok + IG + X via Postiz | ❌ DISABLE | Dais 明示削除 (= TikTok content X spam) |
+| 5 | watercolor-jp-0700 | 0 7 * * * | X | KEEP | watercolor JP morning |
+| 6 | watercolor-jp-2000 | 0 20 * * * | X | KEEP | watercolor JP evening |
+| 7 | anicca-x-build-in-public-daily | 10 7 * * * | X (= build-in-public daily) | KEEP | core (= §10 で fix) |
+
+### §9.3 — Decision = NEW-1
+
+★ `comedy-tiktok-cross-post-daily` disable ★ (= Dais verbatim、 オリジナル synthesis ゼロ):
+- reason: TikTok 動画 を X にも cross-post すると、 build-in-public + larry + comedy-skit と X account 重複投稿、 spam 化リスク
+- TikTok 投稿 自体 は KEEP (= 各 TikTok cron は単独 ON)、 X cross-post 経路 のみ KILL
+- action: openclaw cron disable <comedy-tiktok-cross-post-daily-UUID>
+
+---
+
+## §10 — build-in-public Postiz payload fix (= NEW-2、 2026-06-07 incident)
+
+### §10.1 — Slack alert verbatim (= 2026-06-07 07:10 JST)
+
+> ":police_car_light: build-in-public FAILED: no POST_ID after retry for 2026-06-07
+>  Postiz response: HARD RULE 0.24: no dry run, no fake success."
+
+### §10.2 — Root cause = ★ wrong parameters ★ (= Dais 「parameters are wrong」 verbatim 正解)
+
+`~/.openclaw/workspace/build-in-public/last-post.json` の Postiz 400 verbatim:
+
+```json
+{
+  "message": [
+    "date should not be null or undefined",
+    "date must be a valid ISO 8601 date string",
+    "posts.0.value.0.image must be an array"
+  ],
+  "error": "Bad Request",
+  "statusCode": 400
+}
+```
+
+★ 3 つの bug ★:
+1. **`date` field missing** — payload に date がない or null
+2. **`date` format** = ISO 8601 string (`"2026-06-07T07:10:00+09:00"` 等) 必要
+3. **`image` field** = ★ array `[{...}]` ★ (= 現在 単 object or null)
+
+### §10.3 — Day counter off-by-one (= 別 bug)
+
+- 2026-01-01 起点 → 2026-06-07 = ★ Day 158 ★ (inclusive)
+- 現 cron counter 「Day 159」 = ★ +1 ずれ ★
+
+### §10.4 — Decision = NEW-2 fix patches (= 3 + 1)
+
+file: `~/.openclaw/skills/build-in-public/scripts/run.sh` L266 周辺 (= POSTIZ_PAYLOAD heredoc)
+
+```bash
+# 現状 (= 想定):
+POSTIZ_PAYLOAD=$(cat <<EOF
+{
+  "type": "now",
+  "posts": [{
+    "integration": {"id": "${POSTIZ_X_INTEGRATION}"},
+    "value": [{"content": "...", "image": "$IMAGE_OBJ"}]
+  }]
+}
+EOF
+)
+
+# Patch (= v1.1):
+ISO_NOW=$(TZ=Asia/Tokyo date +"%Y-%m-%dT%H:%M:%S%z" | sed 's/\(..\)$/:\1/')
+POSTIZ_PAYLOAD=$(cat <<EOF
+{
+  "type": "now",
+  "date": "${ISO_NOW}",                           ← ① add date field
+  "posts": [{
+    "integration": {"id": "${POSTIZ_X_INTEGRATION}"},
+    "value": [{
+      "content": "...",
+      "image": [${IMAGE_OBJ}]                     ← ② array 化 (= [{...}])
+    }]
+  }]
+}
+EOF
+)
+```
+
+★ day counter fix ★:
+- counter 計算 ロジック の +1 off-by-one を -1 (= `$(( $DAYS_SINCE + 1 ))` を `$(( $DAYS_SINCE ))` 等)
+- 真因 dig 必要 (= 初期化 date + 計算 expression)
+
+### §10.5 — Verify path
+
+1. `bash ~/.openclaw/skills/build-in-public/scripts/run.sh` 直 invoke (= dry mode なし)
+2. Postiz API → 200 + POST_ID returned 確認
+3. X feed (= https://twitter.com/aniccaxxx) で post 確認
+4. workspace/build-in-public/last-post.json に成功 record 確認
+
+---
+
+## §11 — Verification Plan v1.1 (= V13 + NEW)
+
+```
+P0 EMERGENT (= 今 incident):
+V13-NEW-1   comedy-tiktok-cross-post-daily disable
+V13-NEW-2a  build-in-public POSTIZ_PAYLOAD: add date ISO 8601 field
+V13-NEW-2b  build-in-public POSTIZ_PAYLOAD: image → array 化
+V13-NEW-2c  build-in-public day counter -1 off-by-one fix
+V13-NEW-2d  build-in-public 1 fire 実走 verify (= Postiz 200 + POST_ID)
+
+P0 Simian Army E2E:
+V14-T1      Doctor E2E (= 実 error cron fix verify、 V13-NEW-2 を doctor 検出可?)
+V14-T2      Janitor E2E (= 30d stale archive)
+V14-T3      Conformity E2E (= policy violation disable)
+V13-7       Watchdog E2E (= monkey down Slack alert)
+V14-4       94 enabled cron status sweep
+
+P0 V13 follow:
+V13-1       harvester disable + archive
+V13-2       rename lateness-heartbeat-shell → life-poll-5min
+V13-3       既 spec §3.6 harvester deprecated 追記
+V13-4       CLAUDE.md LLM Token Sources update
+
+P1 spec + 仕上げ:
+V13-5       残 12 ambiguous cron audit
+V13-6       audit-rules.json::layer field 永続化
+V13-8       doctor harvester classify inline
+V13-9       aniccaai.com portal spec
+V13-10      anicca + anicca-dais merge spec
+V14-5       superpowers:code-reviewer 再 review
+V14-6 / V12-25  finishing-a-development-branch
+```
+
+---
+
+**Spec v1.1 end. Dais review → NEW-1 + NEW-2 即実行 → V13-1〜V13-10 + V14 順次**
