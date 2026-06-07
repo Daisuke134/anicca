@@ -593,10 +593,23 @@ JIT bound:    5 added (4.7-slideshow / account-health / aie-consulting / aie-pro
   - LLM 5-strategy 不要 (= transient、 fast-path)
   - file: `~/.openclaw/skills/anicca-doctor-monkey/scripts/pattern-classifier.sh`
 
-- **V14-T1-F3**: ★ Doctor LLM cooldown handling ★
-  問題: provider 全部 cooldown → fallback chain exhausted
-  fix: TIMEOUT path 同等 で「LLM_COOLDOWN」 pattern 追加、 30 min sleep + retry
-  file: `~/.openclaw/skills/anicca-doctor-monkey/scripts/pattern-classifier.sh`
+- **V14-T1-F3**: ★ Doctor LLM cooldown handling ★ ✅ EXECUTED 2026-06-07
+
+  patches:
+  ① `pattern-classifier.sh`: 新 pattern 2 種 (`LLM_COOLDOWN`、 `RUNTIME_PLUGINS_STALL`)
+  ② `fix.sh`: 各 pattern に fast-path
+     - LLM_COOLDOWN: Slack notify + `sleep 1800` + 1 retry (= 30 min cooldown 待ち)
+     - RUNTIME_PLUGINS_STALL: 単 re-fire (= no LLM、 transient pattern と F2 で実証済)
+
+  **Unit test verification (= fresh evidence)**:
+  ```
+  ✅ T1: 'runtime-plugins stalled' → RUNTIME_PLUGINS_STALL
+  ✅ T2: 'All models failed cooldown rate_limit' → LLM_COOLDOWN
+  ✅ T3: 'job execution timed out' → TIMEOUT (preserved)
+  ✅ T4: 'TypeError undefined' → CODE_BUG (default fallback)
+  ```
+
+  commit 5213f57ff (= ~/.openclaw/ main-internal)
 
 ---
 
