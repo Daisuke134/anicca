@@ -740,10 +740,11 @@ openclaw `--system-event` payload type (= no agent turn) で対応可能性。
   - `delivery.mode = "none"` (= 結果 summarize 不要)
   → conformity-monkey lastRunStatus=ok 確認 済 (= 動作 中)
 
-- **V14-T2-F2 (= 新 follow-up)**: Janitor performance optimization
-  - 現問題: should_skip_cron が per-UUID `openclaw cron get` = 200 cron × 1-2s = 5+ min
-  - fix: inline metadata extraction from already-fetched JSON (= cron-lock.sh `get_last_modifier` を JSON 渡し版 に拡張)
-  - benefit: Janitor fire < 30s 完了、 cron-runner timeout 回避
+- **V14-T2-F2**: ★ ✅ EXECUTED 2026-06-07 ★ Janitor performance optimization
+  - 旧: should_skip_cron が per-UUID `openclaw cron get` + 4 separate jq subshells/cron = 200 cron × 1-2s = ★ 5+ min ★
+  - 新: cache cron-list 1 回 + jq @tsv 1 call/cron + inline provenance check + export -f
+  - **timing**: 5+ min → ★ 10 sec ★ (= **30x speed up**)
+  - verification: archived=0 disabled=0 skipped=0 = 0 真 30d stale (V14-4 一致 baseline)
 
 ---
 
