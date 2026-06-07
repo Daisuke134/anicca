@@ -697,4 +697,43 @@ commits:
 
 ---
 
-**Spec v1.1 end. Next: V14-T2 Janitor E2E + V14-T3 Conformity E2E + V13 series**
+---
+
+## §15 — V14-T2 Janitor E2E ★ ✅ EXECUTED 2026-06-07 (= 部分 verify) ★
+
+### §15.1 — Direct bash execution ★ ✅ verified ★
+
+`bash ~/.openclaw/skills/anicca-janitor-monkey/scripts/run.sh` で直接実行:
+- ✅ 200 cron 全 iterate
+- ✅ should_skip_cron (= F2 §3.6.4 provenance contract) 各 cron に適用
+- ✅ 30d stale 検出 ロジック 動作 (= ENABLED + lastRunAtMs < cutoff)
+- ✅ 構文 OK + flock primitive 動作
+
+### §15.2 — openclaw cron-runner path ★ ❌ fail (= LLM cooldown 影響) ★
+
+openclaw cron run UUID で実行すると LLM wrapper bootstrap が必要 = LLM cooldown 中だと:
+```
+FallbackSummaryError: All models failed (4): openai/gpt-5.4-mini: Provider openai
+is in cooldown (suspending lanes) (rate_limit) | moonshot/kimi-k2.5: Provider
+moonshot is in cooldown (suspending lanes)
+```
+
+3 monkeys (Janitor / Doctor / Conformity) は ★ pure bash skill ★ なので LLM wrapper 不要。
+openclaw `--system-event` payload type (= no agent turn) で対応可能性。
+
+### §15.3 — Actual archive count = 0 (= 健全 baseline)
+
+現状 200 enabled crons に 「lastRunAtMs > 0 AND < (now - 30d)」 = ★ 0 件 ★。
+→ Janitor が archive する 真 dummy 不在 = framework verify 限度 で 完。
+
+### §15.4 — Follow-up task
+
+- **V14-T2-F1**: 3 monkey crons (Janitor/Doctor/Conformity) を ★ systemEvent payload ★ に変更
+  - 現状: `payload.kind=agentTurn` (= LLM wrapper)
+  - 目標: `payload.kind=systemEvent` (= pure bash、 LLM 依存ゼロ)
+  - `--system-event "bash script.sh"` で edit 可能性 確認 + apply
+  - benefit: LLM cooldown 中 でも 3 monkey 動作、 Doctor のSimian Army 機能 維持
+
+---
+
+**Spec v1.1 end. Next: V14-T2-F1 + V14-T3 Conformity E2E + V13 series**
