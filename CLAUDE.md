@@ -403,8 +403,8 @@ Flow (text fallback — 全 step が MANDATORY):
 
 | ローカル path | Push 先 (origin) | 役割 |
 |---|---|---|
-| `~/anicca-project/` (= ★ 唯一の products working tree ★) | `origin` = `github.com/Daisuke134/anicca-products-oss`（public） | ★ Claude が iOS / web / api / mobile を 触る 唯一 の場所 ★。 OpenClaw skill (aniccaai-dashboard / anicca-article-daily / capture-today) も この folder を read/write。 `.github/workflows/netlify-deploy.yml` で push → aniccaai.com auto-deploy |
-| `~/.openclaw/` | `origin` = `github.com/Daisuke134/anicca-private-backup`（private） | 本番 personal Anicca on OpenClaw — gateway / cron / skills / state、 Dais の private info |
+| `~/anicca-project/` (= ★ 唯一の products working tree ★) | `origin` = `github.com/Daisuke134/anicca-products`（public） | ★ Claude が iOS / web / api / mobile を 触る 唯一 の場所 ★。 OpenClaw skill (aniccaai-dashboard / anicca-article-daily / capture-today) も この folder を read/write。 `.github/workflows/netlify-deploy.yml` で push → aniccaai.com auto-deploy |
+| `~/.openclaw/` | `origin` = `github.com/Daisuke134/anicca-dais`（private） | 本番 personal Anicca on OpenClaw — gateway / cron / skills / state、 Dais の private info |
 | `~/anicca/` | `origin` = `github.com/Daisuke134/anicca`（public OSS framework） | Anicca 本体 OSS + Hermes 等 instance archetype の設計 source |
 | `~/.hermes/` (runtime) | sync → `github.com/Daisuke134/anicca-genesis`（public, MIT） | genesis Anicca の **body** = LIVE state ledger。 secrets は .gitignore、 cron/scripts/state/*.jsonl のみ push。 P19 genesis-sync skill が 3h 毎自動同期予定 |
 
@@ -426,7 +426,7 @@ git remote -v && git branch -vv
 
 ## HARD RULE: GitHub Actions 化 禁止、 cron は OpenClaw が canonical
 
-aniccaai.com の `netlify-deploy.yml` だけ が `~/anicca-products-oss/.github/workflows/` に 残る (= ★ 1 個 だけ ★)。 他 全 cron / metrics / posting / autonomous task は **`~/.openclaw/cron/jobs.json`** で OpenClaw gateway が canonical。
+aniccaai.com の `netlify-deploy.yml` だけ が `~/anicca-products/.github/workflows/` に 残る (= ★ 1 個 だけ ★)。 他 全 cron / metrics / posting / autonomous task は **`~/.openclaw/cron/jobs.json`** で OpenClaw gateway が canonical。
 
 - ❌ 新 GitHub Actions workflow 追加: ★ 禁止 ★
 - ❌ scheduled cron / metrics fetcher / content posting / Claude Issue agent / autonomous task を GitHub Actions に書く: ★ 禁止 ★
@@ -465,8 +465,8 @@ aniccaai.com の `netlify-deploy.yml` だけ が `~/anicca-products-oss/.github/
 
 | 編集場所 | command |
 |---|---|
-| `~/anicca-project/` | `git push` (origin = anicca-products-oss) |
-| `~/.openclaw/` | `git push` (origin = anicca-private-backup) |
+| `~/anicca-project/` | `git push` (origin = anicca-products) |
+| `~/.openclaw/` | `git push` (origin = anicca-dais) |
 | `~/anicca/` | `git push` (origin = anicca、 public) |
 | `~/.hermes/` runtime state (cron/jobs.json, scripts/, state/*.jsonl, SOUL.md, AGENTS.md) | P19 genesis-sync skill が cron で `git push` (origin = anicca-genesis、 public)。 手動 同期 は `~/.cache/anicca-clones/anicca-genesis/` に clone → 安全 ファイル のみ cp → commit |
 
@@ -476,7 +476,7 @@ aniccaai.com の `netlify-deploy.yml` だけ が `~/anicca-products-oss/.github/
 
 | やる事                              | 使う folder              | 絶対 触らない                                |
 |-------------------------------------|--------------------------|---------------------------------------------|
-| 製品 (iOS / web / api / mobile)     | `~/anicca-project/`     | `~/anicca-products-oss/` (★ 2026-06-05 削除済 ★) |
+| 製品 (iOS / web / api / mobile)     | `~/anicca-project/`     | `~/anicca-products/` (★ 2026-06-05 削除済 ★) |
 | エージェント能力 (skill / spec / TDD)| `~/anicca/`         | `~/.hermes/`, `~/.openclaw/` (= LIVE runtime)|
 | Anicca の 自己 修正                 | ★ どの folder も 直接 編集 禁止 ★ ─ `gh issue create -R Daisuke134/anicca` で issue 立てる → forum-issues + forum-rollout が自動 apply |
 

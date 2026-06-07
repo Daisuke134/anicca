@@ -45,7 +45,7 @@ parent_plan: 2026-06-04-skill-trio-oss-and-monk-fix.md (Task C2)
 ## Out of scope (= ここで明示的に「やらない」)
 
 - naist v1 skill の rewrite / refactor (動いてる、 触らない)
-- naist の anicca-products / anicca-products-oss への merge
+- naist の anicca-products / anicca-products への merge
 - naist の X 投稿 (= academic integrity public risk)
 
 ## このファイルの役割

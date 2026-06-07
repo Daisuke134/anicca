@@ -47,7 +47,7 @@
 | 安全黒字 | サブスク 週$5.99×cap8/週。手残り=5.99×0.8=$4.79 vs 総コスト(API $0.12×8=$0.96 + sandbox $0.07×7=$0.49 = $1.45)＝**約3.3:1**(sandbox込)。cap40は赤字 |
 | token | `~/.openclaw/skills/capafy-publisher/config.json::access_token`(OTP不要) |
 | 検索 | JSON body `{"query":...}`。`--env claude_code` |
-| スキル所在 | LOCAL `~/.openclaw/skills/`（anicca-private-backupはバックアップで fetch元ではない） |
+| スキル所在 | LOCAL `~/.openclaw/skills/`（anicca-daisはバックアップで fetch元ではない） |
 
 ## 2. Git方針（恒久・Trunk-Based Development）
 

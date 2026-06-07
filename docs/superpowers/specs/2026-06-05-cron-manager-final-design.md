@@ -2727,7 +2727,7 @@ cat > ~/.openclaw/skills/anicca-cron-manager/scripts/fix.sh << 'FIXSH'
 set -uo pipefail
 set -a; source "$HOME/.openclaw/.env" 2>/dev/null; set +a
 
-REPO="Daisuke134/anicca-products-oss"
+REPO="Daisuke134/anicca-products"
 SKILL="$HOME/.openclaw/skills/anicca-cron-manager"
 ALLOWLIST="$SKILL/data/manageable-crons.json"
 SHADOW="${SHADOW:-0}"
@@ -3100,7 +3100,7 @@ honest residual = 1 (= `openclaw plugins registry --rebuild` の効果) — ship
 | ✅ deployed | audit-rules.json patch | self_heal_trio + mail_lateness updated |
 | ✅ deployed | arrival.py merge into life-manager | `~/.openclaw/skills/anicca-life-manager/scripts/arrival.py` |
 | ✅ deployed | allowlist | `~/.openclaw/skills/anicca-cron-manager/data/manageable-crons.json` |
-| ✅ deployed | gh labels × 11 | `Daisuke134/anicca-products-oss` repo labels |
+| ✅ deployed | gh labels × 11 | `Daisuke134/anicca-products` repo labels |
 | ✅ deployed | cron disable × 11 | exec-guard, mail-triage, cron-doctor, cron-auto-disable, arrival-mail, health, earn-bounty, attention-tracker-6h, anicca-disk-hourly, naist-pull, agentmemory-mcp-cleanup |
 | ❌ BLOCKED | E2E IMMEDIATE fire | 3× stalled at "runtime-plugins" phase, no LLM calls yet |
 | ❌ NOT IMPLEMENTED | real fix logic in fix.sh | currently just re-fires target cron, no LLM patches |
@@ -3119,7 +3119,7 @@ cat > ~/.openclaw/skills/anicca-cron-manager/scripts/fix.sh << 'FIXSH'
 set -uo pipefail
 set -a; source "$HOME/.openclaw/.env" 2>/dev/null; set +a
 
-REPO="Daisuke134/anicca-products-oss"
+REPO="Daisuke134/anicca-products"
 SKILL="$HOME/.openclaw/skills/anicca-cron-manager"
 ALLOWLIST="$SKILL/data/manageable-crons.json"
 SHADOW="${SHADOW:-0}"
@@ -3788,9 +3788,9 @@ print(result)
 
 | # | cron | action | gh issue | first principles 失格 |
 |---|---|---|---|---|
-| 1 | naist-pull | DISABLE | [#1](https://github.com/Daisuke134/anicca-products-oss/issues/1) closed | no revenue + no physical-action + no infra |
-| 2 | agentmemory-mcp-cleanup | DISABLE | [#2](https://github.com/Daisuke134/anicca-products-oss/issues/2) closed | 0 orphans + launchd duplicate |
-| 3 | anicca-wallet-balance | EDIT 6h→daily | [#3](https://github.com/Daisuke134/anicca-products-oss/issues/3) closed | slow-changing state、 daily 十分 |
+| 1 | naist-pull | DISABLE | [#1](https://github.com/Daisuke134/anicca-products/issues/1) closed | no revenue + no physical-action + no infra |
+| 2 | agentmemory-mcp-cleanup | DISABLE | [#2](https://github.com/Daisuke134/anicca-products/issues/2) closed | 0 orphans + launchd duplicate |
+| 3 | anicca-wallet-balance | EDIT 6h→daily | [#3](https://github.com/Daisuke134/anicca-products/issues/3) closed | slow-changing state、 daily 十分 |
 
 verified 2026-06-07:
 ```
@@ -3990,12 +3990,12 @@ emit "phase_start" "TRIAGE"
 jq -c '.fix_tasks[]' /tmp/cron-manager-tasks.json 2>/dev/null | while read -r TASK; do
   CRON_NAME=$(echo "$TASK" | jq -r '.target // .brief' | head -c 40)
   PRIO=$(echo "$TASK" | jq -r '.priority')
-  EXISTING=$(gh issue list -R Daisuke134/anicca-products-oss \
+  EXISTING=$(gh issue list -R Daisuke134/anicca-products \
                           --label "cron:${CRON_NAME}" --state open --json number \
                           | jq -r '.[0].number // empty' 2>/dev/null)
   if [ -z "$EXISTING" ]; then
     BODY=$(echo "$TASK" | jq -r '.brief')
-    gh issue create -R Daisuke134/anicca-products-oss \
+    gh issue create -R Daisuke134/anicca-products \
       --label "ai-ready" --label "cron:${CRON_NAME}" --label "${PRIO}" \
       --title "Fix cron error: ${CRON_NAME}" \
       --body "$BODY" 2>/dev/null
@@ -4041,7 +4041,7 @@ cat > ~/.openclaw/skills/anicca-cron-manager/scripts/fix.sh << 'EOF'
 # attempt 4: deepseek-v4-pro      (different vendor)
 # attempt 5: claude-assign         (Dais escalate)
 set -uo pipefail
-REPO="Daisuke134/anicca-products-oss"
+REPO="Daisuke134/anicca-products"
 MANAGER_UUID="${MANAGER_UUID:?must set MANAGER_UUID env}"
 COST_REMAINING="${MAX_FIX_COST_USD:-2.50}"   # per-fire budget
 
@@ -4222,7 +4222,7 @@ cat > ~/.openclaw/skills/anicca-cron-manager/scripts/over-scheduled.sh << 'EOF'
 #!/usr/bin/env bash
 # Weekly Sunday 03:00 — detect schedule mismatch vs SKILL.md
 set -uo pipefail
-REPO="Daisuke134/anicca-products-oss"
+REPO="Daisuke134/anicca-products"
 
 openclaw cron list --json | jq -c '.jobs[] | select(.enabled==true)' | while read -r J; do
   NAME=$(echo "$J" | jq -r '.name')
@@ -4318,7 +4318,7 @@ LIFE=$(jq -r '.lifeline.status' ~/.openclaw/skills/cfo-core/data/anicca-cfo.json
 tail -10 ~/.openclaw/ops/build_log.md
 TASKS=$(jq '.fix_tasks | length' ~/.openclaw/workspace/tasks.json 2>/dev/null || echo 0)
 # gh issues NOT labeled cron:*
-ACTION_ISSUES=$(gh issue list -R Daisuke134/anicca-products-oss \
+ACTION_ISSUES=$(gh issue list -R Daisuke134/anicca-products \
   --label ai-ready --json number,labels \
   --jq '[.[] | select(.labels|map(.name)|all(. != "cron:" and (. | startswith("cron:")|not)))] | length')
 ```
@@ -4425,7 +4425,7 @@ EOF
 #### PATCH 14: gh label scheme (= CLI)
 
 ```bash
-REPO=Daisuke134/anicca-products-oss
+REPO=Daisuke134/anicca-products
 for LABEL in from-dais:0xFFA500 from-anicca-self:0x0E8A16 from-claude:0x7057FF \
              claude-assign:0xB60205 \
              cornerstone:article:0xC2E0C6 cornerstone:social:0xC5DEF5 \

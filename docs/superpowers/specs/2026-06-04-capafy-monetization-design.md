@@ -20,7 +20,7 @@ Capafyに `anicca-life-manager` をsubmit → **reject**。理由は3点（verba
 
 Capafy審査基準 1.3.1–1.3.3: 全外部ネットワークリクエストはAgent Cardの宣言と対応必須・データ共有宣言は正確に・外部API欄＋Details明記必須。
 
-**目的**: ①rejectを解消しlife-managerを再submit（first money）②Capafy販売BPを軽量スキル化して販売 ③anicca-private-backupの全スキルをBPに沿って一括publish。
+**目的**: ①rejectを解消しlife-managerを再submit（first money）②Capafy販売BPを軽量スキル化して販売 ③anicca-daisの全スキルをBPに沿って一括publish。
 
 ---
 
@@ -144,7 +144,7 @@ publish-ship                          （validate・package・upload）
 - [ ] 目玉3-5本（monk-factory系・reelfarm・content-creator等）をE2E公開し、最低1本 paid order着金 or live listing確認
 
 ### 7.2 enumeration（訂正: スキルは LOCAL）
-スキルは既に LOCAL `~/.openclaw/skills/` に在る（anicca-private-backup はバックアップで fetch元ではない・gh api不要）。`~/.openclaw/skills/` を走査して列挙。詳細は master §3 [6]#14。
+スキルは既に LOCAL `~/.openclaw/skills/` に在る（anicca-dais はバックアップで fetch元ではない・gh api不要）。`~/.openclaw/skills/` を走査して列挙。詳細は master §3 [6]#14。
 
 ### 7.3 batch process（1個ずつE2E・HARD RULE並列禁止）
 ```

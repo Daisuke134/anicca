@@ -9,7 +9,7 @@
 
 ## §0 — Goal (= 1 文)
 
-Anicca が ★ 自身 の infra (= cron / OpenClaw / heartbeat) ★ と ★ Dais の products (= aniccaai.com + iOS apps) ★ を **完全 に 分離** し、 ① project-niche cron を heartbeat tasklist に 移管、 ② cron-manager の issue 先 を `anicca-products-oss` → `anicca-dais` に 移管、 ③ aniccaai.com への bot 編集 経路 を 物理的 に 遮断、 ④ repo rename を 全層 反映、 ⑤ aniccaai.com/blog 404 を taste skill 経由 で 修復 する。
+Anicca が ★ 自身 の infra (= cron / OpenClaw / heartbeat) ★ と ★ Dais の products (= aniccaai.com + iOS apps) ★ を **完全 に 分離** し、 ① project-niche cron を heartbeat tasklist に 移管、 ② cron-manager の issue 先 を `anicca-products` → `anicca-dais` に 移管、 ③ aniccaai.com への bot 編集 経路 を 物理的 に 遮断、 ④ repo rename を 全層 反映、 ⑤ aniccaai.com/blog 404 を taste skill 経由 で 修復 する。
 
 ---
 
@@ -87,8 +87,8 @@ Q6: 「There should be no cron that is specific to a certain project because the
 
 **3.1.1 GitHub side rename**
 ```bash
-gh repo rename Daisuke134/anicca-private-backup anicca-dais
-gh repo rename Daisuke134/anicca-products-oss   anicca-products
+gh repo rename anicca-dais --repo Daisuke134/anicca-private-backup --yes
+gh repo rename anicca-products --repo Daisuke134/anicca-products-oss --yes
 ```
 - GitHub auto-redirect で 旧 URL も 機能 (約 90 日)
 - default branch 維持: anicca-dais=`main-internal`, anicca-products=`dev`/`main`
@@ -109,7 +109,7 @@ REPO="Daisuke134/anicca-products-oss"
 REPO="Daisuke134/anicca-dais"
 ```
 - file: `~/.openclaw/skills/anicca-cron-manager/scripts/fix.sh:6`
-- HEARTBEAT.md §1 内 `Daisuke134/anicca-products-oss` も 同 置換
+- HEARTBEAT.md §1 内 `Daisuke134/anicca-products-oss` も 同 置換 (= 但 これは 「Dais の products に立つ Anicca 取扱 action ticket」 だった ので 移行先 検討 必要)
 
 **3.1.4 既存 violation issue 移行**
 ```
@@ -325,7 +325,7 @@ apps/landing/lib/blog.ts                 (= frontmatter parser + slug 取得)
 | 失敗 | 検出 | 対処 |
 |---|---|---|
 | pre-commit hook が誤って Dais commit を block | Dais commit 失敗 message | hook が author 判定 厳密 化 (= git config user.email も check) |
-| repo rename 後 旧 URL 残留 | grep -rl 「anicca-products-oss」 で >0 hit | sed 再走 + 例外 list 更新 |
+| repo rename 後 旧 URL 残留 | grep -rl 「anicca-products」 で >0 hit | sed 再走 + 例外 list 更新 |
 | issue 移行 後 products-oss に 新 issue 立つ | gh issue list で cron:* label 検出 | cron-manager fix.sh REPO 変数 verify (= unit test) |
 | watch-sweep 7 watcher 削除後、 project work 漏れ | tasks.json freq_hint 経過 task 増加 | heartbeat §2 PICK で P3 catch、 もし溢れ → Dais Slack 通知 |
 | blog page.tsx 生成後 也 404 | curl aniccaai.com/blog | Next.js cache clear + Netlify redeploy |
@@ -338,7 +338,7 @@ apps/landing/lib/blog.ts                 (= frontmatter parser + slug 取得)
 | Phase | Verify |
 |---|---|
 | 3.1 repo rename | `gh repo view Daisuke134/anicca-dais` + `gh repo view Daisuke134/anicca-products` 両方 200 OK |
-| 3.1 cron-manager REPO | `grep "anicca-products-oss" ~/.openclaw/skills/anicca-cron-manager/` → 0 hits |
+| 3.1 cron-manager REPO | `grep "anicca-products" ~/.openclaw/skills/anicca-cron-manager/` → 0 hits |
 | 3.1 issue migration | products-oss 上 cron:* label issue = 0 件、 anicca-dais 上 = 5 件 |
 | 3.2 cron disable | 6 cron 全 `enabled=false` openclaw cron list で verify |
 | 3.2 pre-commit | Anicca bot author で apps/landing/ touch → commit fail verify |
@@ -396,7 +396,7 @@ V12-25 ALL  finishing-a-development-branch (= 4 option + push)
 | 要素 | BP | 一致度 |
 |---|---|---|
 | spec format | superpowers brainstorming + writing-plans 7-section design | 100% |
-| repo rename 命名 | Dais verbatim 「anicca-private-backup -> anicca-dais」「anicca-product-oss -> anicca products」 | 100% (= anicca-products は 「product」 単数 を 「products」 複数 に展開) |
+| repo rename 命名 | Dais verbatim 「anicca-dais -> anicca-dais」「anicca-product-oss -> anicca products」 | 100% (= anicca-products は 「product」 単数 を 「products」 複数 に展開) |
 | cron-manager 先 | Dais verbatim 「private-backup/issues here rigth?? since this is the openclaw issues」 | 100% |
 | aniccaai.com 編集 禁止 | Dais verbatim 「he never edit the websit eit self」+「we used taste skills to edit and refine the site」 | 100% |
 | project-niche → tasklist | Dais verbatim 「should be on github issues / tasklist of the heartbeat」 | 100% |
