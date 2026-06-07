@@ -1,4 +1,4 @@
-# Cron Rectification + aniccaai.com Protection — Design Spec (v1.2)
+# Cron Rectification + aniccaai.com Protection — Design Spec (v1.3)
 
 **Date**: 2026-06-07
 **Author**: Anicca (= execution body) under Dais directive (= BP)
@@ -8,6 +8,7 @@
 - v1.0 (2026-06-07 早朝): 初版、 5 component (§3.1〜§3.5)
 - v1.1 (2026-06-07 18:30): §3.6 追加、 Netflix Simian Army 分離 (Dais 提起)
 - v1.2 (2026-06-07 19:00): self-review 反映 — placeholder/contradiction/ambig 全 解消
+- v1.3 (2026-06-07 19:30): superpowers:code-reviewer 5 BLOCKING + 6 MAJOR + 4 MINOR 全 反映 (= 1339fd5f レビュー応答)
 
 ---
 
@@ -172,49 +173,98 @@ for c in aniccaai-dashboard-refresh anicca-product-growth anicca-article-daily-b
 done
 ```
 
-**3.2.2 物理 ブロック (= pre-commit hook、 belt-and-suspenders)**
-```bash
-# ~/anicca-project/.git/hooks/pre-commit
-#!/bin/bash
-AUTHOR_NAME=$(git config user.name)
-TOUCHED_LANDING=$(git diff --cached --name-only | grep -c "^apps/landing/" || true)
-if [ "$AUTHOR_NAME" = "Anicca Agent" ] && [ "$TOUCHED_LANDING" -gt 0 ]; then
-  echo "★ HARD RULE 違反 ★: Anicca cron は aniccaai.com (apps/landing/) を編集禁止。"
-  echo "Dais 自身 OR taste skill (= manual invoke) のみ touch 可。"
-  exit 1
-fi
-exit 0
+**3.2.2 物理 ブロック (= 3 層 defense-in-depth、 reviewer BLOCKING #3 反映 v1.3)**
+
+★ v1.3 強化 ★: 1 key (= user.name) detection は git config 上書き で bypass 可 → 多 要素 check。
+
+```yaml
+# lefthook.yml の aniccaai-landing-guard
+aniccaai-landing-guard:
+  run: |
+    author_name=$(git config user.name)
+    author_email=$(git config user.email)
+    touched=$(git diff --cached --name-only | grep -c "^apps/landing/" || true)
+    [ "$touched" -eq 0 ] && exit 0
+    # Layer 1: name check
+    is_bot=0
+    [ "$author_name" = "Anicca Agent" ] && is_bot=1
+    # Layer 2: email check (= bot email pattern)
+    case "$author_email" in
+      *anicca*bot*|*anicca-agent*|*@anicca.ai|noreply@anthropic.com) is_bot=1;;
+    esac
+    # Layer 3: parent process check (= interactive shell or claude-cli)
+    pname=$(ps -o comm= -p $PPID 2>/dev/null | xargs basename)
+    case "$pname" in
+      bash|zsh|fish|claude|cursor|code|nvim|vim) : ;;  # interactive、 OK
+      *) is_bot=1 ;;                                   # daemon / cron / agent
+    esac
+    if [ "$is_bot" = "1" ]; then
+      echo "❌ HARD RULE 違反: Anicca cron は apps/landing/ 編集禁止"
+      echo "  name=$author_name email=$author_email parent=$pname"
+      git diff --cached --name-only | grep "^apps/landing/" | head -10 | sed 's/^/   /'
+      exit 1
+    fi
 ```
-- chmod +x
-- ★ Dais 本人 の commit は author=Dais で素通り ★
-- ★ taste skill は Dais 名義 で commit する ★
+
+★ Layer 4 (= server-side、 P2 future): GitHub Actions workflow `landing-guard.yml` で
+  pull-request author check。 Anicca bot account 直接 push 阻止 (= local hook bypass 防止)。 ★
+
+- ★ Dais 本人 (name=Daisuke Sato OR email=keiodaisuke@gmail.com OR parent=zsh/cursor) → 素通り ★
+- ★ taste skill = Dais の interactive shell 経由 invoke、 同様 素通り ★
 
 **3.2.3 保留 候補 (= keep but redirect):**
 - 「socials/*.jsonl ローカル data refresh」 = OK、 但し apps/landing/ に push しない、 state/socials/*.jsonl だけ書く
 - taste skill が manual invoke 時 に jsonl → /socials page 生成
 
+**3.2.4 §3.2.1 ↔ CLAUDE.md §0.19 矛盾 解消 (= reviewer BLOCKING #4)**
+
+CLAUDE.md §0.19 verbatim: 「article = Zenn/Dev.to/Substack/aniccaai.com/blog」 = aniccaai.com/blog が
+article cron の canonical channel 一覧 に 含まれてた。 が、 2026-06-07 Dais 厳命 で 「he never edit
+the websit eit self」 が 上書き。
+
+★ 解 ★: aniccaai.com/blog channel を article cron から ★ 完全 退出 ★:
+- `anicca-article-daily-blog` = 永久 disable (= NOT 一時、 §3.2.1 通り)
+- 残 article cron (devto/note/substack-ja/substack-en/zenn) は 継続 enabled
+- CLAUDE.md §0.19 の channel list は 別 spec で 「Zenn/Dev.to/Substack」 4 channel に更新
+  (= aniccaai.com/blog 削除、 sister spec `2026-06-XX-content-factory-channels-update.md` 待ち)
+- blog content (= content/blog/*.md) は taste skill 経由 で Dais 名義 で apps/landing/ に publish
+
+★ §3.2.1 + §0.19 + V12-15/16/17 (taste skill 経由 blog route 生成) で 全 整合 ★。
+
 ### §3.3 — P1 — Project-Niche Cron → Heartbeat Tasklist 移管
 
-**3.3.1 watch-sweep.sh から 7 watcher 削除**
-```
-削除 対象:
-  - opening-cafe-uber-poll        (cafe project niche)
-  - retreat-phase1-reply          (retreat project niche)
-  - retreat-phase2-triage         (retreat project niche)
-  - retreat-phase4-followup       (retreat project niche)
-  - politician-reply-watch        (politician project niche)
-  - naist-edu-portal-check        (NAIST 履修 niche = Dais 視認 で OK 確認 取れた、 でも cron 不要)
-  - tt-draft-graduator            (TT draft niche)
+**3.3.1 watch-sweep 分離 2 ファイル化 (= reviewer MAJOR 反映)**
 
-残す (= infrastructure 系):
-  - comedy-watch-replies          (= social reply、 infra)
-  - comedy-recruit-poll           (= social poll、 infra)
-  - account-burn-detector         (= SaaS account burn infra)
+★ Old: 単一 watch-sweep.sh が 10 watcher 雑混在 → 削除/維持 区別 不可、 将来 misread 危険 ★
+★ New: 2 ファイル分離 ★:
+
+```
+~/.openclaw/skills/_shared/
+├── watch-sweep.sh          (= old wrapper、 下記 2 ファイル invoke)
+├── watch-sweep-infra.sh    (= ★ KEEP ★、 hourly :47、 3 watcher のみ)
+│     - comedy-watch-replies         (social reply infra、 X mention monitor)
+│     - comedy-recruit-poll          (recruit infra)
+│     - account-burn-detector        (SaaS account burn infra)
+│
+└── watch-sweep-project.sh  (= ★ DELETED ★、 7 watcher は tasks.json へ移管)
+      - opening-cafe-uber-poll       → tasks.json project=opening-cafe freq=6h
+      - retreat-phase1-reply         → tasks.json project=retreat phase=1
+      - retreat-phase2-triage        → tasks.json project=retreat phase=2
+      - retreat-phase4-followup      → tasks.json project=retreat phase=4
+      - politician-reply-watch       → tasks.json project=politician
+      - naist-edu-portal-check       → tasks.json project=naist freq=24h
+      - tt-draft-graduator           → tasks.json project=tt-draft
 ```
 
-**3.3.2 tasks.json schema 拡張**
+- watch-sweep.sh は backward-compat thin wrapper として 残存 (= 既 cron entry 触らず)
+- 「将来 engineer が誤って infra watcher 削除」 防止 — infra ファイル は SKILL.md frontmatter で
+  `do_not_delete: true` + `pin_to_infra: true` 明示
+
+**3.3.2 tasks.json schema 拡張 (= bounded queue、 reviewer BLOCKING #2 反映)**
 ```json
 {
+  "_max_size": 100,
+  "_eviction_policy": "oldest_P3_stale_7d_drop_with_slack_notify",
   "fix_tasks": [
     {
       "id": "uuid",
@@ -222,12 +272,16 @@ exit 0
       "action": "poll uber status",
       "freq_hint": "6h",
       "last_run": "2026-06-07T00:00:00Z",
-      "priority": "P2"
+      "added_at": "2026-06-07T19:00:00Z",
+      "priority": "P3"
     }
   ]
 }
 ```
 - file: `~/.openclaw/workspace/tasks.json`
+- ★ insertion ★: 既 100 件 なら 「最古 P3 で last_run < now-7d」 を 1 件 drop + Slack notify
+  (= 「7 日 経って も catch されない project 」 = de facto 廃止候補、 Janitor が拾う)
+- ★ 7 日 stale 全件 drop 失敗 → reject insert + Slack alert + Janitor 次 fire で 「queue 飽和」 報告 ★
 
 **3.3.3 heartbeat §2 PICK 拡張**
 - HEARTBEAT.md §2 PICK priority 末尾 に:
@@ -264,7 +318,9 @@ SELECTED=$(for d in ~/.claude/skills/taste-skill ~/.claude/skills/taste-skill-v1
   NAME=$(awk '/^name:/{print $2; exit}' "$d/SKILL.md" 2>/dev/null)
   MTIME=$(stat -f %m "$d/SKILL.md" 2>/dev/null)
   echo "$MTIME $NAME $d"
-done | sort -rn | head -1 | awk '{print $3}')
+done | sort -k1,1rn -k3,3 | head -1 | awk '{print $3}')
+# ★ tiebreak (= reviewer MAJOR 反映) ★: mtime 降順 → mtime 同点 なら path lex 昇順
+# = 完全 deterministic、 fresh clone / tar restore でも 同 結果
 ```
 
 **3.4.3 生成 する route ファイル**
@@ -278,47 +334,96 @@ apps/landing/lib/blog.ts                 (= frontmatter parser + slug 取得)
 
 ### §3.5 — P2 — Doctor Monkey 100% Coverage 拡張 (= V12-29 で cron-manager から rename 後)
 
-**3.5.1 manageable-crons.json allowlist 戦略**
+**3.5.1 manageable-crons.json allowlist 戦略 (= reviewer MAJOR 反映、 v1.3 戦略 B invert)**
+
 - 現状: 11 cron の whitelist (= 33 error cron の 31 件 SKIP not-in-allowlist で touch されず)
-- 目標: 全 enabled cron (= 約 150) を カバー
-- 戦略 A: 「全 enabled - cornerstone」 = wildcard allow
-- 戦略 B: error 発生 時 動的 allow (= just-in-time)
-- ★ 決定: 戦略 A ★ (= simpler、 cornerstone 保護 は §3.5.2 が担保)
+- 目標: 全 enabled cron (= 約 150) の error を扱う、 但 cornerstone 死守
+
+★ v1.2 戦略 A (wildcard `allow_all_enabled: true` + blacklist) は reviewer が 「typo で
+  cornerstone 落ちる」 弱点 指摘 ★。 → v1.3 = ★ 戦略 B invert (JIT auto-allow) 採用 ★。
 
 ```json
 {
-  "_comment": "v1.2: wildcard allow、 NEVER_ALLOW patterns で safety",
-  "allow_all_enabled": true,
+  "_comment": "v1.3: explicit allowlist (= original safety net 維持)、 error 初発 で auto-append",
+  "_mode": "just_in_time",
+  "allow_explicit": [
+    "anicca-article-daily-blog", "anicca-article-daily-devto",
+    "anicca-article-daily-note", "anicca-article-daily-substack-en",
+    "anicca-article-daily-substack-ja",
+    "monk-factory-en-0800", "monk-factory-en-1400",
+    "mau-tiktok-en-morning", "watercolor-monk-noon",
+    "reelclaw-anicca-ja-wi-cron-20-18", "anicca-comedy-weekly-recap"
+  ],
+  "auto_append_on_first_error": true,
+  "auto_append_require_not_in_never_allow": true,
   "never_allow_patterns": [
-    "anicca-heartbeat",
-    "anicca-doctor-monkey",
-    "anicca-janitor-monkey",
-    "anicca-conformity-monkey",
-    "anicca-monkey-watchdog",
-    "anicca-daily-mail",
-    "anicca-lateness-heartbeat-shell",
-    "anicca-life-manager",
-    "anicca-fuel-broker",
-    "anicca-cold-email-reply",
-    "anicca-watch-sweep"
+    "anicca-heartbeat", "anicca-doctor-monkey", "anicca-janitor-monkey",
+    "anicca-conformity-monkey", "anicca-monkey-watchdog",
+    "anicca-daily-mail", "anicca-lateness-heartbeat-shell", "anicca-life-manager",
+    "anicca-fuel-broker", "anicca-cold-email-reply", "anicca-watch-sweep"
   ]
 }
 ```
 
-**3.5.2 audit-rules.json::guardrails_NEVER_DISABLE 拡張**
-- 既存 cornerstone (= social posting / article publisher) 維持
-- 追加 cornerstone (= 11 件):
-  - `anicca-heartbeat`            (= 主 心拍)
-  - `anicca-doctor-monkey`        (= self-heal infra)
-  - `anicca-janitor-monkey`       (= self-cleanup infra)
-  - `anicca-conformity-monkey`    (= self-policy infra)
-  - `anicca-monkey-watchdog`      (= meta monitor)
-  - `anicca-lateness-heartbeat-shell` (= 物理 call)
-  - `anicca-daily-mail`           (= Dais 日次 digest)
-  - `anicca-fuel-broker`          (= LLM key billing)
-  - `anicca-cold-email-reply`     (= deterministic mail reply)
-  - `anicca-watch-sweep`          (= comedy + account-burn 残 watcher)
-  - `anicca-life-manager`         (= Dais calling / schedule)
+★ 動作 ★:
+1. Doctor SCAN で error cron X 検出
+2. allow_explicit に X が 在る → process
+3. 不在 → never_allow_patterns 照合
+4. never_allow に 無い → ★ allow_explicit に auto-append + Slack notify ★ + process
+5. never_allow に 在る → SKIP + Slack notify (= 「cornerstone error」 = 真 emergency)
+
+★ 利点 ★: typo で cornerstone 落ちない (= 戦略 A の弱点 fix)、 31 SKIP も 1 error 経て 自動 covered。
+
+**3.5.2 audit-rules.json::guardrails_NEVER_DISABLE 拡張 (= reviewer BLOCKING #4 反映、 全面)**
+
+★ v1.2 は infra のみ 11 件 — reviewer 指摘「revenue/growth cornerstone 全 抜け」 ★。 v1.3 で 全網羅:
+
+```json
+{
+  "guardrails_NEVER_DISABLE": {
+    "infra (= 内部 守備)": [
+      "anicca-heartbeat",                  // 主 心拍 (rate-limited 1 action/beat)
+      "anicca-doctor-monkey",              // self-heal、 ex anicca-cron-manager
+      "anicca-janitor-monkey",             // useless cron disposal
+      "anicca-conformity-monkey",          // policy violation disable
+      "anicca-monkey-watchdog",            // meta monitor
+      "anicca-lateness-heartbeat-shell",   // 物理 call (= 遅刻 防止)
+      "anicca-daily-mail",                 // Dais 日次 digest (07/22 JST)
+      "anicca-fuel-broker",                // LLM key billing fuel guard
+      "anicca-cold-email-reply",           // deterministic mail reply (HR#6 exception)
+      "anicca-watch-sweep",                // = infra-only 3 watcher 残り後
+      "anicca-life-manager",               // Dais calling / schedule
+      "anicca-inbox",                      // = anicca-inbox heartbeat (mail autonomy)
+      "anicca-genesis-sync"                // Hermes body 3h sync (= 自走 永続性)
+    ],
+    "revenue/growth (= 収益 / 配信)": [
+      "anicca-article-daily-devto",        // Dev.to 配信 (= USEFUL CONTENT FACTORY §0.19)
+      "anicca-article-daily-note",         // note 配信
+      "anicca-article-daily-substack-ja",  // Substack JA
+      "anicca-article-daily-substack-en",  // Substack EN
+      "anicca-article-daily-zenn",         // Zenn (= 残 1 channel)
+      "anicca-x-direct",                   // X post (= @aniccaxxx)
+      "monk-factory-en-0800",              // EN slideshow 朝
+      "monk-factory-en-1400",              // EN slideshow 昼
+      "mau-tiktok-en-morning",             // TikTok EN
+      "watercolor-monk-noon",              // watercolor slideshow 昼
+      "reelclaw-anicca-ja-wi-cron-20-18",  // reelclaw JA WI
+      "anicca-comedy-weekly-recap",        // comedy recap (= revenue)
+      "comedy-recruit-poll",               // = X social posting infra (社員募集系)
+      "comedy-watch-replies"               // = X reply infra (social monitoring)
+    ],
+    "app store / paywall (= mobile 収益)": [
+      "aso-loop",                          // App Store Optimization
+      "screenshot-ab",                     // screenshot A/B
+      "paywall-ab"                         // paywall A/B
+    ]
+  }
+}
+```
+
+★ 数: 11 infra + 14 revenue + 3 app-store = ★ 28 cornerstone ★ (= v1.2 比 +17)。
+★ 「list に 漏れ た cornerstone を 後発 検出」 path: Janitor が 「disable しよう とした 瞬間
+  Doctor の state-change history に 直近 error fix あり → SKIP + Slack alert + add to NEVER_DISABLE 候補」 ★。
 
 **3.5.3 Error pattern match (= LLM 不要 fast-path、 5 分類)**
 
@@ -343,6 +448,23 @@ apps/landing/lib/blog.ts                 (= frontmatter parser + slug 取得)
 5. `ESCALATE`                  ← human assign (= 24h stale なら retry)
 
 ★ Dais 厳命 ★: 「we dont use that model 4.8 — anicca runs on gpt 5.4 mini」
+
+**3.5.5 Sonnet-4-6 budget breaker (= reviewer MINOR、 v1.3 反映)**
+
+claude-cli/sonnet-4-6 は Anthropic Pro plan 込み だが 「quota 焼き切り → 32h cooldown 全 Anicca
+思考停止」 incident (2026-05-29) の根因。 → ★ daily budget breaker ★:
+
+```bash
+# fix.sh: strategy 4 (sonnet-4-6) 実行 前 daily count check
+SONNET_DAILY_MAX=5
+SONNET_LOG="$HOME/.openclaw/state/doctor-monkey/sonnet-calls-$(date +%Y-%m-%d).log"
+SONNET_TODAY=$(wc -l < "$SONNET_LOG" 2>/dev/null || echo 0)
+if [ "$STRATEGY" = "claude-cli/sonnet-4-6" ] && [ "$SONNET_TODAY" -ge "$SONNET_DAILY_MAX" ]; then
+  echo "Sonnet daily budget exhausted ($SONNET_TODAY/$SONNET_DAILY_MAX). Skipping to ESCALATE."
+  STRATEGY=ESCALATE
+fi
+echo "$(date -Iseconds) $CRON_NAME" >> "$SONNET_LOG"
+```
 
 ---
 
@@ -442,29 +564,95 @@ URL: netflixtechblog.com/the-netflix-simian-army-16e57fbab116
 各 controller は 1 resource type のみ 管理 (= Pod / ReplicaSet / Deployment 別々)。
 「narrow responsibility, controlled blast radius」 が design principle。
 
-### §3.6.2 — Architecture (= 3 monkey + 1 watchdog)
+### §3.6.2 — Architecture (= 3 monkey + 1 launchd watchdog、 v1.3 reviewer BLOCKING #5 反映)
+
+★ v1.2 watchdog が openclaw cron だった → 循環依存 (= watchdog 死亡 検出 不能) ★
+★ v1.3 解 = ★ watchdog を launchd plist に out-of-band 設置 ★ (= disk-janitor と同 architecture、
+  既証明済)。 加 cross-monitor: Doctor が watchdog を 「特殊 cornerstone」 として扱う。
+
+★ Schedule 衝突 防止 (= reviewer MAJOR 反映) ★:
+
+```
+03:00  janitor-monkey         (= 30 日 stale archive、 早朝 disk空き作る)
+03:30  ── 30 分 隔離 ────────  (= janitor 完了待ち)
+04:00  monkey-watchdog        (= launchd、 全 3 monkey 24h fire 確認)
+06:30  doctor-monkey          (= 30 */6 = 06:30/12:30/18:30/00:30)
+12:30  doctor-monkey
+18:30  doctor-monkey
+00:30  doctor-monkey
+00:00  conformity-monkey      (= 0 */6 = 00:00/06:00/12:00/18:00)
+06:00  conformity-monkey
+12:00  conformity-monkey
+18:00  conformity-monkey
+```
 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
-│ anicca-janitor-monkey   (daily 03:00)                                 │
+│ anicca-janitor-monkey   (openclaw cron、 0 3 * * *)                   │
 │   ── useless / orphaned cron 削除 のみ                                │
 │   ── 30日 stale archive + project-niche heartbeat 移管                │
-│   ── 「first-principles 不該当」 → disable                           │
+│   ── 「first-principles (revenue/physical/infra) 不該当」 → disable  │
+│   ── ★ Doctor state-change author check ★ (= §3.6.4 contract):       │
+│      対象 cron の last_modified_by が "anicca-doctor-monkey" + 直近   │
+│      24h 内 → SKIP (= Doctor が 直そう としてる、 Janitor は触らない)  │
 ├──────────────────────────────────────────────────────────────────────┤
-│ anicca-conformity-monkey (6h)                                         │
+│ anicca-conformity-monkey (openclaw cron、 0 */6 * * *)                │
 │   ── policy violation cron 即 disable のみ                            │
 │   ── aniccaai.com 編集 (= apps/landing/ commit author=Anicca Agent)   │
-│   ── cornerstone 違反 trigger                                          │
+│   ── cornerstone NEVER_DISABLE 違反 trigger                            │
+│   ── ★ Doctor との 競合 防止 ★: cornerstone 検出 時、 Slack のみ alert │
+│      (= disable は しない、 cornerstone は §3.5.2 で守る)              │
 ├──────────────────────────────────────────────────────────────────────┤
-│ anicca-doctor-monkey    (6h、 = ex anicca-cron-manager rename)         │
-│   ── error cron heal のみ                                             │
+│ anicca-doctor-monkey    (openclaw cron、 30 */6 * * *、 = 6h offset)   │
+│   ── error cron heal のみ (= ex anicca-cron-manager rename)            │
 │   ── SCAN → pattern match → LLM 4-strategy → verify → close           │
+│   ── ★ Janitor archive check ★ (= §3.6.4 contract):                   │
+│      対象 cron が 24h 内 Janitor archive 済 → SKIP + issue 自動 close │
+│      (= 不要 だから archive された の を Doctor が resurrect しない)   │
 ├──────────────────────────────────────────────────────────────────────┤
-│ anicca-monkey-watchdog  (daily 04:00)                                 │
-│   ── 3 monkey 自身 を monitor                                          │
-│   ── 24h 内 1 fire 成功 ゼロ → Slack alert + 即 fire 試行              │
+│ anicca-monkey-watchdog  (launchd plist、 0 4 * * *、 out-of-band)      │
+│   ── 3 monkey 自身 を monitor (= out-of-band で 自己循環 回避)         │
+│   ── ~/Library/LaunchAgents/ai.anicca.monkey-watchdog.plist           │
+│   ── 24h 内 各 monkey が 1 fire 成功 ゼロ → Slack alert + 即 fire 試行 │
+│   ── ★ Doctor の cornerstone list に watchdog 自体 含む ★ (cross-mon) │
+│   ── reference: Netflix Atlas (= Simian Army を外部 monitor) pattern  │
 └──────────────────────────────────────────────────────────────────────┘
 ```
+
+### §3.6.4 — Coordination contract (= reviewer BLOCKING #1 反映、 新規)
+
+★ Janitor + Doctor の 同 cron への並列 write を 防ぐ provenance 規約 ★。
+
+**state metadata 拡張 (= cron payload に追加)**:
+```json
+{
+  "id": "uuid",
+  "name": "anicca-foo",
+  "enabled": false,
+  "last_modified_by": "anicca-janitor-monkey",
+  "last_modified_at": "2026-06-07T03:15:22Z",
+  "last_modified_reason": "30d stale archive"
+}
+```
+
+**Janitor rules**:
+- Read target cron の `last_modified_by`
+  - 値 = `"anicca-doctor-monkey"` + `last_modified_at` < 24h前 → ★ SKIP ★ (= Doctor が直そう としてる)
+  - 値 = `"Dais"` (manual edit) + `last_modified_at` < 7d 前 → ★ SKIP ★ (= 人間意思 尊重)
+  - その他 → 通常 archive
+
+**Doctor rules**:
+- Read target cron の `last_modified_by`
+  - 値 = `"anicca-janitor-monkey"` + `last_modified_at` < 24h 前 → ★ SKIP + issue 自動 close ★
+    (= Janitor が archive した cron を Doctor が resurrect しない)
+  - その他 → 通常 fix
+
+**Conformity rules**:
+- 常に `last_modified_by` を check (= 上 2 と同 ロジック)
+- cornerstone (= §3.5.2 NEVER_DISABLE) → ★ disable しない、 Slack alert のみ ★
+
+★ 全 monkey は cron 編集 前 に 必ず `last_modified_by` を 更新 ★ (= openclaw cron edit
+  に metadata field 追加 で 永続化)。 これで race condition 完全 解消。
 
 ### §3.6.3 — Verification tasks
 
