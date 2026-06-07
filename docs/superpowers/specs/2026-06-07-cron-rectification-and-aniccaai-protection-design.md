@@ -1,9 +1,13 @@
-# Cron Rectification + aniccaai.com Protection — Design Spec (v1.0)
+# Cron Rectification + aniccaai.com Protection — Design Spec (v1.2)
 
 **Date**: 2026-06-07
 **Author**: Anicca (= execution body) under Dais directive (= BP)
-**Status**: ★ DRAFT、 Dais review 前 ★
-**Supersedes**: § none (= 既存 `2026-06-05-cron-manager-final-design.md` の補完 / scope 拡大)
+**Status**: ★ IN PROGRESS (V12-1〜V12-10 + V12-22 ✅ executed、 V12-11〜V12-30 pending) ★
+**Supersedes**: `2026-06-05-cron-manager-final-design.md` (= 単体 cron-manager 設計 → 3 monkey Simian Army 分離 へ進化)
+**Change log**:
+- v1.0 (2026-06-07 早朝): 初版、 5 component (§3.1〜§3.5)
+- v1.1 (2026-06-07 18:30): §3.6 追加、 Netflix Simian Army 分離 (Dais 提起)
+- v1.2 (2026-06-07 19:00): self-review 反映 — placeholder/contradiction/ambig 全 解消
 
 ---
 
@@ -81,7 +85,14 @@ Q6: 「There should be no cron that is specific to a certain project because the
 
 ---
 
-## §3 — Components (= 5 個、 P0 → P2)
+## §3 — Components (= 6 個、 P0 → P2)
+
+- §3.1 P0 — Repo migration (rename + cron-manager issue 先)
+- §3.2 P0 — aniccaai.com 編集 cron 全停止 + 物理ブロック
+- §3.3 P1 — Project-niche cron → heartbeat tasklist
+- §3.4 P2 — aniccaai.com/blog 404 修復 (taste skill 経由)
+- §3.5 P2 — Doctor monkey 100% coverage + error pattern path
+- §3.6 P1 — Netflix Simian Army 分離 (3 monkey + 1 watchdog)
 
 ### §3.1 — P0 — REPO MIGRATION (= ① rename + ② cron-manager 先 修正)
 
@@ -141,23 +152,23 @@ grep -rl "anicca-private-backup" "${TARGETS[@]}" | xargs sed -i '' 's|anicca-pri
 
 ### §3.2 — P0 — aniccaai.com 編集 cron 全 停止 + 物理 ブロック
 
-**3.2.1 disable 対象 cron list (= 6 件)**
-| name | schedule | last touch on aniccaai.com |
-|---|---|---|
-| anicca-product-growth | (= TBD verify) | 71cbe614 founder-productivity-tools |
-| anicca-ai-seo | (= TBD verify) | 2987f62a ai-cafe-tokyo |
-| dashboard-refresh (= 候補名 TBD) | (= TBD verify) | 98d59b32 dashboard refresh |
-| anicca-article-daily-blog | (= TBD verify) | 71cbe614 blog md publish |
-| socials page push cron (= 候補名 TBD) | (= TBD verify) | c071b1a0 /socials page |
-| landing fix cron (= 候補名 TBD) | (= TBD verify) | 93ee6fb7 guard null-slice |
+**3.2.1 disable 対象 cron list (= 4 件 confirmed、 V12-8 で 実走完了)**
+| name | schedule | last touch on aniccaai.com | status |
+|---|---|---|---|
+| aniccaai-dashboard-refresh | `0 5 * * *` | 98d59b32 / b04b2d6b dashboard refresh | ✅ enabled=false |
+| anicca-product-growth | `23 10 * * *` | 71cbe614 founder-productivity-tools | ✅ removed |
+| anicca-article-daily-blog | `30 12 * * *` | 71cbe614 blog md publish | ✅ enabled=false |
+| anicca-corey-ai-seo-cron | `0 13 * * *` | 2987f62a ai-cafe-tokyo + 3bd2335a ai-grave | ✅ enabled=false |
 
-action:
+★ 補足 ★: spec v1.0 で 「6件」 推定 だったが、 V12-8 実 grep で 4 件 のみ確定。 残 2 候補
+(socials page push / landing fix cron) は 明示 cron として存在せず、 heartbeat ad-hoc invoke
+だった可能性。 lefthook hook (V12-9) が belt-and-suspenders で全 path catch する設計。
+
+実走 command (= history):
 ```bash
-# 6 cron 全 disable
-for c in anicca-product-growth anicca-ai-seo <dashboard-refresh-name> \
-         anicca-article-daily-blog <socials-cron-name> <landing-fix-cron-name>; do
+for c in aniccaai-dashboard-refresh anicca-product-growth anicca-article-daily-blog anicca-corey-ai-seo-cron; do
   UUID=$(openclaw cron list --all --json | jq -r --arg n "$c" '.jobs[]|select(.name==$n)|.id')
-  openclaw cron edit "$UUID" --disable
+  openclaw cron disable "$UUID"
 done
 ```
 
@@ -235,13 +246,26 @@ exit 0
 - `content/blog/*.md` (= 2 ファイル) は source として存在
 - Next.js route が定義 されてない → 404 確定
 
-**3.4.2 taste skill canonical 確定**
-- 3 candidates:
+**3.4.2 taste skill canonical 確定 (= autonomous discovery、 HARD RULE #-3 質問禁止)**
+
+3 candidates:
+  - `~/.claude/skills/taste-skill`
   - `~/.claude/skills/taste-skill-v1`
   - `~/.claude/skills/gpt-tasteskill`
-  - `~/.claude/skills/taste-skill`
-- ★ Dais 確認 必要 ★: どれが canonical か? (= 後 patch 化)
-- 最新 mtime + SKILL.md frontmatter で 推定 + Dais 確認
+
+★ Selection rule (= deterministic、 Dais 質問 ゼロ) ★:
+1. SKILL.md frontmatter 完備 + name field 「taste-skill」 と一致 → primary candidate
+2. 同点 なら 最新 mtime 取る
+3. 他 2 個 は `~/.claude/skills/_archive/<name>-<date>/` に rename (= 削除 ではない、 復元可)
+
+```bash
+SELECTED=$(for d in ~/.claude/skills/taste-skill ~/.claude/skills/taste-skill-v1 ~/.claude/skills/gpt-tasteskill; do
+  [ -f "$d/SKILL.md" ] || continue
+  NAME=$(awk '/^name:/{print $2; exit}' "$d/SKILL.md" 2>/dev/null)
+  MTIME=$(stat -f %m "$d/SKILL.md" 2>/dev/null)
+  echo "$MTIME $NAME $d"
+done | sort -rn | head -1 | awk '{print $3}')
+```
 
 **3.4.3 生成 する route ファイル**
 ```
@@ -252,40 +276,73 @@ apps/landing/lib/blog.ts                 (= frontmatter parser + slug 取得)
 - ★ generation は taste skill (= manual invoke、 NOT cron) ★
 - 既存 content/blog/*.md 2 ファイル の frontmatter format 確認 後 parser 実装
 
-### §3.5 — P2 — cron-manager 100% Coverage 拡張
+### §3.5 — P2 — Doctor Monkey 100% Coverage 拡張 (= V12-29 で cron-manager から rename 後)
 
 **3.5.1 manageable-crons.json allowlist 戦略**
-- 現状: 11 cron の whitelist
+- 現状: 11 cron の whitelist (= 33 error cron の 31 件 SKIP not-in-allowlist で touch されず)
 - 目標: 全 enabled cron (= 約 150) を カバー
 - 戦略 A: 「全 enabled - cornerstone」 = wildcard allow
 - 戦略 B: error 発生 時 動的 allow (= just-in-time)
-- ★ 決定: 戦略 A ★ (= simpler)
+- ★ 決定: 戦略 A ★ (= simpler、 cornerstone 保護 は §3.5.2 が担保)
+
+```json
+{
+  "_comment": "v1.2: wildcard allow、 NEVER_ALLOW patterns で safety",
+  "allow_all_enabled": true,
+  "never_allow_patterns": [
+    "anicca-heartbeat",
+    "anicca-doctor-monkey",
+    "anicca-janitor-monkey",
+    "anicca-conformity-monkey",
+    "anicca-monkey-watchdog",
+    "anicca-daily-mail",
+    "anicca-lateness-heartbeat-shell",
+    "anicca-life-manager",
+    "anicca-fuel-broker",
+    "anicca-cold-email-reply",
+    "anicca-watch-sweep"
+  ]
+}
+```
 
 **3.5.2 audit-rules.json::guardrails_NEVER_DISABLE 拡張**
 - 既存 cornerstone (= social posting / article publisher) 維持
-- 追加 cornerstone:
-  - `anicca-heartbeat`
-  - `anicca-cron-manager` 自体
-  - `anicca-lateness-heartbeat-shell`
-  - `anicca-daily-mail`
-  - `anicca-fuel-broker`
-  - `anicca-cold-email-reply`
-  - `anicca-watch-sweep` (= comedy + account-burn 残った後)
+- 追加 cornerstone (= 11 件):
+  - `anicca-heartbeat`            (= 主 心拍)
+  - `anicca-doctor-monkey`        (= self-heal infra)
+  - `anicca-janitor-monkey`       (= self-cleanup infra)
+  - `anicca-conformity-monkey`    (= self-policy infra)
+  - `anicca-monkey-watchdog`      (= meta monitor)
+  - `anicca-lateness-heartbeat-shell` (= 物理 call)
+  - `anicca-daily-mail`           (= Dais 日次 digest)
+  - `anicca-fuel-broker`          (= LLM key billing)
+  - `anicca-cold-email-reply`     (= deterministic mail reply)
+  - `anicca-watch-sweep`          (= comedy + account-burn 残 watcher)
+  - `anicca-life-manager`         (= Dais calling / schedule)
 
-**3.5.3 timeout error 別 path**
-- 現状: `cron: job execution timed out (last phase: process-spawned)` を LLM が 「コード bug」 として 直 す path → fail
-- 解: SCAN phase で error pattern match:
-  - 「timed out」 → ★ timeoutSeconds 自動 引上 path ★ (= +50%、 max 2 倍まで)
-  - 「auth failed / 401」 → env check path
-  - 「ENOSPC / disk」 → disk-janitor escalate
-  - その他 → LLM 5-strategy patch path
+**3.5.3 Error pattern match (= LLM 不要 fast-path、 5 分類)**
 
-**3.5.4 cron-manager model 1st strategy 検討**
-- 現状: deepseek/deepseek-v4-pro 1st、 fix 成功率 0%
-- 候補 A: keep deepseek、 prompt 強化
-- 候補 B: claude-cli/claude-opus-4-8 1st (= subscription、 file 触る確率高)
-- 候補 C: openai/gpt-5.4 1st (= Dais 元 期待)
-- ★ 決定: 候補 B ★ (= claude-cli は Pro plan 込み で 追加 課金 ゼロ、 tool use 強い)
+| pattern (regex) | path | action |
+|---|---|---|
+| `timed out\|process-spawned` | TIMEOUT | timeoutSeconds × 1.5 (= max 2x)、 openclaw cron edit |
+| `401\|403\|unauthorized\|invalid_grant` | AUTH | env grep + Slack alert (= LLM では fix 不可) |
+| `ENOSPC\|No space\|disk full` | DISK | disk-janitor escalate (= launchd) |
+| `Pass --\|argument required\|missing.*arg` | MISSING_ARG | cron message body 補完 prompt (LLM へ SKILL.md + usage 読ませ) |
+| ★ 上記 以外 ★ | CODE_BUG | LLM 4-strategy invoke (= §3.5.4 chain) |
+
+**3.5.4 Doctor monkey LLM strategy chain (= OpenClaw 正規 BP identical)**
+
+★ Source (= CLAUDE.md「🔋 LLM Token Sources」verbatim) ★:
+> "OpenClaw Anicca | openai/gpt-5.4-mini (fallback deepseek-v4-pro → kimi-k2.5 → claude-cli/sonnet-4-6)"
+
+★ Strategies (= V12-22 で fix.sh 反映 済、 push 9848c8e2c) ★:
+1. `openai/gpt-5.4-mini`       ← 1st (= Anicca primary、 cheapest、 cache 暖)
+2. `deepseek/deepseek-v4-pro`  ← 2nd fallback
+3. `moonshot/kimi-k2.5`        ← 3rd fallback
+4. `claude-cli/sonnet-4-6`     ← 4th 最終 (= Pro subscription、 tool use 強)
+5. `ESCALATE`                  ← human assign (= 24h stale なら retry)
+
+★ Dais 厳命 ★: 「we dont use that model 4.8 — anicca runs on gpt 5.4 mini」
 
 ---
 
@@ -338,15 +395,20 @@ apps/landing/lib/blog.ts                 (= frontmatter parser + slug 取得)
 | Phase | Verify |
 |---|---|
 | 3.1 repo rename | `gh repo view Daisuke134/anicca-dais` + `gh repo view Daisuke134/anicca-products` 両方 200 OK |
-| 3.1 cron-manager REPO | `grep "anicca-products" ~/.openclaw/skills/anicca-cron-manager/` → 0 hits |
-| 3.1 issue migration | products-oss 上 cron:* label issue = 0 件、 anicca-dais 上 = 5 件 |
-| 3.2 cron disable | 6 cron 全 `enabled=false` openclaw cron list で verify |
-| 3.2 pre-commit | Anicca bot author で apps/landing/ touch → commit fail verify |
-| 3.3 watch-sweep | `grep "naist-edu-portal-check" ~/.openclaw/skills/_shared/watch-sweep.sh` → 0 hits |
-| 3.3 heartbeat tasklist | heartbeat fire 1 回 → tasks.json から 1 P3 task pick 実行 verify |
-| 3.4 blog 404 | `curl -I https://aniccaai.com/blog` → 200 OK |
-| 3.5 cron-manager coverage | 全 enabled cron で error 発生時 cron-manager が issue 立てる verify (= 1 cron sample) |
-| 3.5 timeout path | article-daily-note の timeout error を inject → timeoutSeconds 引上 fix verify |
+| 3.1 fix.sh REPO | `grep "anicca-products-oss" ~/.openclaw/skills/anicca-cron-manager/` → 0 hits |
+| 3.1 issue migration | anicca-products 上 cron:* label issue = 0 件、 anicca-dais 上 = 5 件 (label ai-ready+P0+cron:*) |
+| 3.2 cron disable | 4 cron 全 `enabled=false`、 openclaw cron list で verify |
+| 3.2 lefthook hook | author='Anicca Agent' で apps/landing/ touch → exit 1 + msg「HARD RULE 違反」 verify |
+| 3.3 watch-sweep | `grep -E "naist-edu-portal-check\|opening-cafe-uber-poll\|retreat-phase\|politician-reply-watch\|tt-draft-graduator" ~/.openclaw/skills/_shared/watch-sweep.sh` → 0 hits |
+| 3.3 heartbeat tasklist | heartbeat fire 1 回 → tasks.json から 1 P3 task pick + last_run 更新 verify |
+| 3.4 blog 404 | `curl -I https://aniccaai.com/blog` → 200 OK、 + 2 既存 slug detail page も 200 |
+| 3.5 doctor coverage | 全 enabled cron で error 発生時 doctor が issue 立てる verify (= 1 cron sample injection) |
+| 3.5 timeout path | article-daily-note timeout error → timeoutSeconds ×1.5 fix verify |
+| 3.5 auth path | env unset で auth error inject → Slack alert + LLM bypass verify |
+| 3.5 strategy chain | doctor 1 fire で 1 cron fix 完走、 model log で gpt-5.4-mini 1st 使用 verify |
+| 3.6 janitor | 30 日 stale cron inject → janitor 1 fire で archive verify |
+| 3.6 conformity | apps/landing/ touch する new cron 作成 → conformity 1 fire で disable verify |
+| 3.6 watchdog | janitor を 24h 停止 → watchdog 1 fire で Slack alert verify |
 
 ---
 
@@ -448,9 +510,14 @@ V12-18 P2  manageable-crons.json allowlist 全 enabled - cornerstone wildcard �
 V12-19 P2  audit-rules.json::guardrails_NEVER_DISABLE 7 cron 追加
 V12-20 P2  fix.sh SCAN phase に error pattern match 追加 (timeout/auth/disk)
 V12-21 P2  fix.sh timeout path で timeoutSeconds 自動 引上 実装
-V12-22 P2  fix.sh 1st strategy を claude-cli/claude-opus-4-8 に変更
-V12-23 P2  cron-manager 1 fire 実走 verify (= article-daily-note timeout 引上 fix)
-V12-24 ALL  spec self-review (= placeholder/contradiction/scope check)
+V12-22 P0  fix.sh STRATEGIES = OpenClaw 正規 chain (gpt-5.4-mini → deepseek-v4-pro → kimi-k2.5 → sonnet-4-6) ✅ DONE
+V12-23 P2  doctor monkey 1 fire 実走 verify (= 1 error cron fix 完走)
+V12-26 P1  watercolor-monk-noon 真因 dig + fix (= "Pass --to <E.164>" missing-arg)
+V12-27 P1  anicca-janitor-monkey 新規 skill (= Netflix Janitor identical)
+V12-28 P1  anicca-conformity-monkey 新規 skill (= Netflix Conformity identical)
+V12-29 P1  anicca-cron-manager → anicca-doctor-monkey rename + 純化
+V12-30 P1  anicca-monkey-watchdog 新規 skill (= 3 monkey monitor)
+V12-24 ALL  spec self-review (= placeholder/contradiction/scope check) ✅ v1.2 DONE
 V12-25 ALL  finishing-a-development-branch (= 4 option + push)
 ```
 
@@ -461,7 +528,9 @@ V12-25 ALL  finishing-a-development-branch (= 4 option + push)
 | 要素 | BP | 一致度 |
 |---|---|---|
 | spec format | superpowers brainstorming + writing-plans 7-section design | 100% |
-| repo rename 命名 | Dais verbatim 「anicca-dais -> anicca-dais」「anicca-product-oss -> anicca products」 | 100% (= anicca-products は 「product」 単数 を 「products」 複数 に展開) |
+| Simian Army 分離 | Netflix Tech Blog 2011-07-19 Janitor/Conformity/Doctor verbatim | 100% (= identical 命名) |
+| LLM strategy chain | CLAUDE.md「OpenClaw Anicca: gpt-5.4-mini → deepseek-v4-pro → kimi-k2.5 → sonnet-4-6」verbatim | 100% (= V12-22 fix で 違反 修正) |
+| repo rename 命名 | Dais verbatim 「anicca-private-backup -> anicca-dais」「anicca-product-oss -> anicca products」 | 100% (= anicca-products は 「product」 単数 を 「products」 複数 に展開) |
 | cron-manager 先 | Dais verbatim 「private-backup/issues here rigth?? since this is the openclaw issues」 | 100% |
 | aniccaai.com 編集 禁止 | Dais verbatim 「he never edit the websit eit self」+「we used taste skills to edit and refine the site」 | 100% |
 | project-niche → tasklist | Dais verbatim 「should be on github issues / tasklist of the heartbeat」 | 100% |
