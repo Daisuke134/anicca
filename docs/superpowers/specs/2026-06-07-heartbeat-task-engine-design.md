@@ -130,23 +130,33 @@ Items needing your input:
 
 ## Sub-tasks (T17)
 
-| sub | task |
+| sub | task | depends on |
+|---|---|---|
+| T17a | Extend `~/.openclaw/skills/ops-heartbeat/SKILL.md` Phase 1 with ONE new gh-api call: `gh issue list -R Daisuke134/anicca-dais --label ai-ready --state open --json number,title,labels,body`. Merge into same queue the skill already builds. Existing SKILL.md description verbatim: `閉ループ ops のハートビート。proposals/steps を評価し次の step を生成する` — extension is one new source, no architectural rewrite. (Reviewer I5 fix.) | — |
+| T17b | Build `~/.openclaw/skills/anicca-morning-gmail/` skill + register cron `0 7 * * * Asia/Tokyo`. | T17a |
+| T17c | Delete 10 obsolete article crons by VERBATIM name (reviewer C1 fix): `anicca-article-daily-audit`, `anicca-article-daily-blog`, `anicca-article-daily-devto`, `anicca-article-daily-note`, `anicca-article-daily-substack-en`, `anicca-article-daily-substack-ja`, `anicca-article-daily-whitelist-learn`, `anicca-article-daily-zenn`, `anicca-article-self-improve`, `zenn-backlog-deploy`. | **T16a in article spec MUST land and verify-pass first** (reviewer C5+I6 fix) — heartbeat must dispatch the thesis-brief + reuse anicca-article-daily skill successfully BEFORE the old daily crons disappear, otherwise an article-day gap occurs. |
+| T17d | mission-worker dispatch table at `~/.openclaw/workspace/ops/dispatch.json`. Map issue labels (e.g. `cron:anicca-article-daily-zenn`) and task prefixes (`T1`→larry-reelclaw, `T16`→anicca-thesis-brief + anicca-article-daily, `T17`→ops-heartbeat) to invocations. | T17a |
+| T17e | Migrate spec tasks into anicca-dais issues. **MUST follow T1** (reviewer C5 fix): migrating before Postiz registry truth would encode stale handle labels into issue body. After T1 lands, `gh issue create` per task with `--label "ai-ready,<priority>,spec:<spec-filename>"` + body = task description + verification clause. | T1 (truth-correction), T17a |
+| T17f | Slack #metrics post format standardization in ops-heartbeat Phase 4 output: `✓ <task-id> <title> done — <outcome-1-line>` on success; `✗ <task-id> <title> failed: <reason> → issue #<N> on anicca-dais` on failure. | T17a |
+
+## Verification (= HARD RULE 0.24 fire-and-observe — reviewer I4 fix)
+
+- T17a: After extension, manually invoke `bash ~/.openclaw/skills/ops-heartbeat/scripts/run.sh --once-now` (or the entry point in the skill's actual run cmd; check SKILL.md). Observe stdout merged queue contains the 4 anicca-dais issues with correct priority sort. `cat ~/.openclaw/workspace/ops/steps.json | jq '.steps | length'` returns > 0.
+- T17b: After T17a verified, invoke `bash ~/.openclaw/skills/anicca-morning-gmail/scripts/run.sh --send-now`. Observe Gmail arrival within 60 seconds at keiodaisuke@gmail.com via `gog gmail search 'subject:Anicca morning report' --max 1 --since today`. Subject contains today's `YYYY-MM-DD`. Body contains "Yesterday" + "Today's queue" sections with at least 1 task each. Cron registration verified by `openclaw cron list --all | grep anicca-morning-gmail` returning the expression `0 7 * * * Asia/Tokyo`.
+- T17c: BEFORE deletion, capture the exact set: `openclaw cron list --all --json | jq -r '.jobs[].name' | grep -E "^(anicca-article-daily-(audit|blog|devto|note|substack-en|substack-ja|whitelist-learn|zenn)|anicca-article-self-improve|zenn-backlog-deploy)$"` returns exactly 10 names. AFTER deletion, same command returns 0 lines.
+- T17d: `cat ~/.openclaw/workspace/ops/dispatch.json | jq 'keys | length'` returns ≥ 5. `jq '. | to_entries[] | select(.value | type != "string")'` returns empty (= every mapping value is a string skill name).
+- T17e: `gh issue list -R Daisuke134/anicca-dais --state open --json number | jq 'length'` returns ≥ 20. Each migrated issue body grep returns `spec:2026-06-07-` matching one of the 3 spec filenames.
+- T17f: After invoking heartbeat once with both a success-task and a failing-task (use a known-failing migrated issue for the failure-case test), inspect Slack #metrics via local Slack channel log: assert one message starting `✓ ` and one starting `✗ ` with `→ issue #` reference.
+
+## Cross-spec ordering invariants (= reviewer C5 + I6 consolidation)
+
+| invariant | reason |
 |---|---|
-| T17a | Build / extend `~/.openclaw/skills/ops-heartbeat/SKILL.md` to add Phase: pull from anicca-dais open issues (`gh issue list -R Daisuke134/anicca-dais --label ai-ready --state open`). Currently only reads ops/* json. |
-| T17b | Build `~/.openclaw/skills/anicca-morning-gmail/` skill that reads last-24h heartbeat_state.json + tasks + open issues + sends Gmail at 07:00 JST. Register cron `0 7 * * * Asia/Tokyo` → calls this skill. |
-| T17c | Delete 10 anicca-article-daily-* crons (zenn/devto/substack-ja/en/note/blog/audit/self-improve/whitelist-learn + zenn-backlog-deploy). Heartbeat dispatches article-engine instead. |
-| T17d | mission-worker dispatch table — map issue labels and task prefixes to skills (= one source of truth in `~/.openclaw/workspace/ops/dispatch.json`). |
-| T17e | Migrate spec T1-T15 (marketing) + T16d-g (article) tasks into anicca-dais issues with proper labels so heartbeat finds them. |
-| T17f | Slack #metrics post format standardization (= "✓ <task> done" / "✗ <task> failed: <reason> → issue #N"). |
-
-## Verification (= no dry run)
-
-- T17a: `gh issue list -R Daisuke134/anicca-dais` returns ≥ 4 issues; next heartbeat fire reads them
-- T17b: 07:00 JST tomorrow, Gmail received at keiodaisuke@gmail.com with "Yesterday + Today" structure
-- T17c: `openclaw cron list --all | grep anicca-article-daily` returns 0 rows
-- T17d: dispatch.json valid JSON with ≥ 5 mappings
-- T17e: anicca-dais open issue count ≥ 20 (= T1-T15 + T16d-g migrated)
-- T17f: Slack #metrics shows ✓/✗ pattern next heartbeat fire
+| T17a MAY run in parallel with T1 (truth-correction) — no inter-dependency on Postiz registry | T17a only adds issue-source to merged queue, doesn't read handles |
+| T17b runs ONLY AFTER T17a | Morning Gmail summarizes heartbeat completed-array which requires heartbeat to be already pulling issues |
+| T17c runs ONLY AFTER T16a (article spec thesis-brief skill) is built AND verified by manual fire | Otherwise an article-day gap exists between deleting old daily crons and the heartbeat-dispatched thesis flow being operational |
+| T17e MUST follow T1 | Avoid encoding stale Postiz handles in migrated issue bodies |
+| T17f runs ONLY AFTER T17a | Output formatter sits inside the extended ops-heartbeat Phase 4 |
 
 ## BP-alignment self-score
 
