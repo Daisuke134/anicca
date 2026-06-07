@@ -387,70 +387,77 @@ Dais 2026-06-07 21:25 verbatim:
 > ":police_car_light: build-in-public FAILED: no POST_ID after retry for 2026-06-07
 >  Postiz response: HARD RULE 0.24: no dry run, no fake success."
 
-### §10.2 — Root cause = ★ wrong parameters ★ (= Dais 「parameters are wrong」 verbatim 正解)
+### §10.2 — Root cause (= dig 結果、 2026-06-07 update)
 
-`~/.openclaw/workspace/build-in-public/last-post.json` の Postiz 400 verbatim:
+★ ★ ★ 重要 訂正 ★ ★ ★:
 
-```json
-{
-  "message": [
-    "date should not be null or undefined",
-    "date must be a valid ISO 8601 date string",
-    "posts.0.value.0.image must be an array"
-  ],
-  "error": "Bad Request",
-  "statusCode": 400
-}
+`workspace/build-in-public/last-post.json` の 400 error は ★ 2026-05-14 の OLD entry ★ (= mtime 5/14)。 今 2026-06-07 の Slack alert 「no POST_ID」 は 別 原因:
+
+- script L262 ISO_NOW: `python3 -c "from datetime import datetime, timezone; print(datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.000Z'))"` ✅ 既 fix
+- script L269 `"date": "${ISO_NOW}"` ✅ 既 fix
+- script L274 `"image": []` (array) ✅ 既 fix
+- L264 comment: `# Postiz schema (verified 2026-06-07): requires 'date' ISO 8601 even with type=now, and 'posts.N.value.N.image' must be an array (empty [] OK).`
+
+★ 2026-06-07 の 真 root cause ★ = Dais verbatim:
+> "Oh no, actually it was posted. Yeah, the X was posted, and the reason we couldn't post the same thing was because we've already posted."
+
+= ★ Postiz duplicate detection ★ (= 既 投稿済 content を 再投稿 試行 → Postiz reject → POST_ID 空 → HARD RULE 0.24 fail-closed exit 1)。
+
+→ NEW-2a (date field) + NEW-2b (image array) = ★ コード 既修正済、 追加 patch 不要 ★
+→ Slack alert 自体 は 正しい 動作 (= HARD RULE 0.24 enforce 中)、 fix 対象 は idempotency:
+   build-in-public cron が 「今日 既 投稿済」 を 検出 → skip + 成功 報告 (= alert 出さない)
+
+### §10.3 — Day counter (= 「Day 159」 検証結果 = ★ 正解 ★)
+
+★ ★ ★ 重要 訂正 ★ ★ ★:
+
+script L166-178:
+```python
+# Step 4: Day N (Day 1 = 2025-12-31)
+start = date(2025, 12, 31)
+delta = (today - start).days + 1
 ```
 
-★ 3 つの bug ★:
-1. **`date` field missing** — payload に date がない or null
-2. **`date` format** = ISO 8601 string (`"2026-06-07T07:10:00+09:00"` 等) 必要
-3. **`image` field** = ★ array `[{...}]` ★ (= 現在 単 object or null)
+起点 = ★ 2025-12-31 ★ (= NOT 2026-01-01)
 
-### §10.3 — Day counter off-by-one (= 別 bug)
+2025-12-31 → 2026-06-07 inclusive = **Day 159** ✅ 正解
 
-- 2026-01-01 起点 → 2026-06-07 = ★ Day 158 ★ (inclusive)
-- 現 cron counter 「Day 159」 = ★ +1 ずれ ★
+Dais 「I think we started 1/1」 → 実 code 起点 は 12/31 (= 1 day 前)、 159 で 一致。
+→ NEW-2c day counter fix = ★ patch 不要 ★ (= code 既 正確)。
 
-### §10.4 — Decision = NEW-2 fix patches (= 3 + 1)
+### §10.4 — Decision (= dig 後 訂正、 2026-06-07)
 
-file: `~/.openclaw/skills/build-in-public/scripts/run.sh` L266 周辺 (= POSTIZ_PAYLOAD heredoc)
+NEW-2a/2b/2c は ★ 全 patch 不要 ★ (= code 既 正確)。
+
+残 real patch = ★ NEW-2e idempotency ★ (= 新規 task):
+- 検出: 今日 既 X に投稿済 (= Postiz API で 既存 post 検索 OR state/ で local check)
+- skip 動作: 成功 報告 + Slack alert 出さない
+- 真 fail (= 違う原因の 0 POST_ID) のみ HARD RULE 0.24 fire
+
+### §10.4-new — NEW-2e fix path (= idempotency check)
+
+file: `~/.openclaw/skills/build-in-public/scripts/run.sh` Step 6 直前 (= L255 周辺)
 
 ```bash
-# 現状 (= 想定):
-POSTIZ_PAYLOAD=$(cat <<EOF
-{
-  "type": "now",
-  "posts": [{
-    "integration": {"id": "${POSTIZ_X_INTEGRATION}"},
-    "value": [{"content": "...", "image": "$IMAGE_OBJ"}]
-  }]
-}
-EOF
-)
+# NEW-2e (= 2026-06-07): idempotency check (= duplicate detection)
+TODAY_ISO=$(TZ=Asia/Tokyo date +%Y-%m-%dT00:00:00.000Z)
+TOMORROW_ISO=$(TZ=Asia/Tokyo date -v+1d +%Y-%m-%dT00:00:00.000Z 2>/dev/null)
+EXISTING=$(curl -sf -H "Authorization: ${POSTIZ_API_KEY}" \
+  "https://api.postiz.com/public/v1/posts?startDate=${TODAY_ISO}&endDate=${TOMORROW_ISO}" 2>/dev/null | \
+  python3 -c "
+import json, sys
+try:
+    posts = json.loads(sys.stdin.read())
+    if isinstance(posts, list) and any('day ${DAY_N} of building anicca' in (p.get('content','') or '').lower() for p in posts):
+        print('FOUND')
+except: pass
+" 2>/dev/null)
 
-# Patch (= v1.1):
-ISO_NOW=$(TZ=Asia/Tokyo date +"%Y-%m-%dT%H:%M:%S%z" | sed 's/\(..\)$/:\1/')
-POSTIZ_PAYLOAD=$(cat <<EOF
-{
-  "type": "now",
-  "date": "${ISO_NOW}",                           ← ① add date field
-  "posts": [{
-    "integration": {"id": "${POSTIZ_X_INTEGRATION}"},
-    "value": [{
-      "content": "...",
-      "image": [${IMAGE_OBJ}]                     ← ② array 化 (= [{...}])
-    }]
-  }]
-}
-EOF
-)
+if [ "$EXISTING" = "FOUND" ]; then
+  log "Step 6 SKIP: today's build-in-public already posted (= idempotency)"
+  exit 0
+fi
 ```
-
-★ day counter fix ★:
-- counter 計算 ロジック の +1 off-by-one を -1 (= `$(( $DAYS_SINCE + 1 ))` を `$(( $DAYS_SINCE ))` 等)
-- 真因 dig 必要 (= 初期化 date + 計算 expression)
 
 ### §10.5 — Verify path
 
