@@ -30,7 +30,6 @@ export const translations = {
       viewsLabel: "views/wk",
       products: {
         affirmationApp: { name: "Anicca Mobile Apps", tagline: "iOS · the first Anicca instance" },
-        alarm: { name: "Anicca Alarm", tagline: "wake-up call + never-be-late agent · $9.99/mo" },
         letter: { name: "Anicca Letter", tagline: "daily impermanence newsletter" },
         music: { name: "Anicca Music", tagline: "ambient · Spotify" },
         comedy: { name: "Anicca Comedy", tagline: "AI-generated skits · TT/IG/X" },
@@ -232,7 +231,6 @@ export const translations = {
       viewsLabel: "ビュー/週",
       products: {
         affirmationApp: { name: "Anicca Mobile Apps", tagline: "iOS · 最初に作ったアニッチャ" },
-        alarm: { name: "Anicca Alarm", tagline: "起こし電話 + 遅刻防止エージェント · 月 $9.99" },
         letter: { name: "Anicca Letter", tagline: "毎日の無常ニュースレター" },
         music: { name: "Anicca Music", tagline: "アンビエント · Spotify" },
         comedy: { name: "Anicca Comedy", tagline: "AI 生成スキット · TT/IG/X" },
