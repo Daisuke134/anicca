@@ -375,3 +375,70 @@ If Dais wants ★ lo-fi/lazy only ★, need:
 
 Pending Dais decision.
 
+
+---
+
+## E12-E15 — 2026-06-08 visual asset bug audit (= Dais frame inspection findings)
+
+### E12. card-en video = widget content (= S1.5 fix was wrong direction)
+
+run-card-en.sh DEFAULT_FINAL/TEXT pointed at `widget-en-92c13cc2/reel-*.mp4` (= S1.5 fix). Widget video has BAKED overlay "Put affirmations on your lockscreen" (= widget hook). When card-en runs:
+- VIDEO: widget hook overlay (baked)
+- CAPTION: card hook from `hooks-en.json` (e.g. "5 affirmations to tell yourself every morning...")
+= MISMATCH.
+
+**Revert** P1: DEFAULT path → `anicca-project/work/reelclaw-card-en-a0a1d2fe/reel-*.mp4`. ASSET CREATION required = build EN card video with card hook overlay + Anicca card feature demo (NOT widget).
+
+Until asset ready: ★ DISABLE card-en 2 cron ★ (a0a1d2fe + 330bbaf7).
+
+### E13. honne-en video = 100% Japanese app demo
+
+`honne-ai/reel-final.mp4` frame extracts show:
+- "本音翻訳" (JA app title)
+- "メッセージを入力" (JA UI)
+- "別に怒ってないよ" (JA text)
+- "今日の無料翻訳: 残り2回" (JA quota)
+- "プレミアムへ" (JA CTA)
+
+Yet posts to @honne_reveal (EN acct) use `honne-hooks-en.json` (EN captions like "how is this / even legal"). = MISMATCH.
+
+**Fix** P3: ★ DISABLE honne-en 2 cron ★ (61b913e6 + fd9bdcad) until EN-overlay honne video created at `honne-ai/reel-final-en.mp4`.
+
+### E14. Larry font size = bit too big, occasional overflow
+
+`add-text-overlay.js`:
+- fontSize = 0.075 × img.width (= 81px on 1080)
+- maxWidth = 0.80 × img.width
+- No auto-shrink if wrap produces > 3 lines
+
+Long JA hooks (e.g. 5+ char names) can overflow to 4+ lines extending off-screen.
+
+**Fix** P2:
+- fontSize → 0.065 (= 70px on 1080)
+- Auto-shrink loop: if lines.length > 3, shrink 10% × 3 iters max
+
+### E15. Larry verified clean (= NO bugs)
+
+| check | result |
+|---|---|
+| 9 fixed-strings JSON `auto_music=yes` | ✓ verified |
+| 9 fixed-strings JSON `bg_file_all=maleface.jpg` (= v3 sunset for variety) | ✓ verified |
+| maleface.jpg = real headshot photo (NOT a generic) | ✓ verified |
+| post-to-tiktok.js global default 'yes' | ✓ E0.4 |
+| post-to-tiktok.js --fs reads JSON auto_music | ✓ T4 |
+
+Larry config is CLEAN. Only `add-text-overlay.js` font sizing needs P2 fix.
+
+### E16. Disable + re-enable matrix
+
+| cron | action | reason | re-enable when |
+|---|---|---|---|
+| reelclaw-anicca-en-card-1 (a0a1d2fe) | DISABLE | E12 widget content | reelclaw-card-en-a0a1d2fe/ EN asset built |
+| reelclaw-anicca-en-card-2 (330bbaf7) | DISABLE | E12 same | same |
+| reelclaw-honne-en-1 (61b913e6) | DISABLE | E13 JA video | honne-ai/reel-final-en.mp4 built |
+| reelclaw-honne-en-2 (fd9bdcad) | DISABLE | E13 same | same |
+| reelclaw-anicca-en-widget-1/2 | KEEP active | E15 widget asset is correct EN content | n/a |
+| reelclaw-anicca-ja-card-1/2/widget-1/2 | KEEP active | JA asset has JA content + JA hook = matched | n/a |
+| reelclaw-honne-ja-1 | KEEP active | JA video + JA caption = matched | n/a |
+| larry all (ja-1/v2/en-1) | KEEP active | E15 clean | n/a |
+
