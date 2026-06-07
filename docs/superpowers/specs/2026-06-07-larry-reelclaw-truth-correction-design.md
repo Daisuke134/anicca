@@ -261,3 +261,117 @@ session: isolated, agent: anicca, delivery: slack:C091G3PKHL2
 | HARD RULE 0.27 (no auto-publish without Dais OK for irreversible) | ✓ Capafy publish T14/T15 require Dais OK to fire |
 
 BP-alignment = 100% (no Anicca-original synthesis).
+
+---
+
+## E5-E9 — 2026-06-08 Dais clarifications + bug fix paths
+
+### E5. Dais 2026-06-08 verbatim acct mapping (= canonical)
+
+| Postiz ID | role per Dais verbatim | path/file |
+|---|---|---|
+| `cmn8y95rg02d2qx0y09bbk5pb` | @anicca.en (Daily Anicca Nudges) — **★ reelclaw EN card+widget canonical target ★** since 2026-05-26 ZERO posts | `~/.openclaw/state/POSTIZ_ACCOUNT_MAP.md §B` |
+| `cmpc3gx4001nklg0y27a8o66q` | @anicca.encards = **anicca.ios** per Dais — clipspal AI video EN content (= NOT for reelclaw) | same |
+| `cmmzzg2es0539p30ycb94ayx0` | @anicca.jp.videos — **★ NEW JA reelclaw IG target ★** (Dais relabeled) | same |
+| `cmmzujxpa04ujp30yxqpg1vci` | @anicca.bochi — JA cemetery, **NOT POSTING anymore** | same — no cron should route here |
+| `cmoig11ew001zlv0yk6vqo1us` | @honne_reveal — **reelclaw EN honne, NOT POSTED 1+ month, BLOCKING revenue** | same |
+| `cmq2aoena08bhqp0yx1epjcik` | @anicca.he — Larry ja-v2 warmup, **MUST POST as draft** | same |
+| `cmq3u37gi005iqp0y90a2w92n` | @anicca-ai NEW YT — reelclaw EN card+widget YT (post-E1) | same |
+
+### E6. run-card-en.sh JA video bug — EXACT diff
+
+```diff
+--- a/Users/anicca/.openclaw/workspace/skills/reelclaw/scripts/run-card-en.sh
++++ b/Users/anicca/.openclaw/workspace/skills/reelclaw/scripts/run-card-en.sh
+@@ -13,2 +13,2 @@
+-DEFAULT_FINAL="$HOME/.openclaw/workspace/workspace/reelclaw-ja-2/reel-final.mp4"
+-DEFAULT_TEXT="$HOME/.openclaw/workspace/workspace/reelclaw-ja-2/reel-text.mp4"
++DEFAULT_FINAL="$HOME/anicca-project/work/reelclaw-widget-en-92c13cc2/reel-final.mp4"
++DEFAULT_TEXT="$HOME/anicca-project/work/reelclaw-widget-en-92c13cc2/reel-text.mp4"
+```
+
+**Rationale**: dedicated reelclaw-card-en EN asset dir not yet generated; widget-en's EN-content video is the only English source available. Long-term: build dedicated card-en asset at `~/anicca-project/work/reelclaw-card-en-a0a1d2fe/`.
+
+### E7. EN reelclaw cron --ig migration: cmpc3gx4 → cmn8y95rg
+
+```diff
+4 cron payload patches (= each):
+   reelclaw-anicca-en-card-1 (a0a1d2fe-4087-4ee4-bc7b-526b6f8d8e65)
+   reelclaw-anicca-en-card-2 (330bbaf7-3ea2-41f6-8479-f1c6f8ef1f45)
+   reelclaw-anicca-en-widget-1 (92c13cc2-3888-4c4a-b2b7-5a200f223677)
+   reelclaw-anicca-en-widget-2 (2f330f58-b1fe-40ab-a2d2-95f5f5a6b557)
+
+- --ig cmpc3gx4001nklg0y27a8o66q
++ --ig cmn8y95rg02d2qx0y09bbk5pb
+```
+
+cmpc3gx4 returns to "anicca.ios = clipspal AI video EN content" sole-owner state (= no reelclaw competition).
+
+### E8. JA reelclaw cron --ig migration: DEAD cmnipef7g → cmmzzg2es
+
+```diff
+4 cron payload patches:
+   reelclaw-anicca-ja-card-1 (174f01dd-b2ae-413f-85f7-3b03236e3944)
+   reelclaw-anicca-ja-card-2 (a6ccfc01-42c8-4b5c-8c43-5713e90ee10d)
+   reelclaw-anicca-ja-widget-1 (b5b49526-a38c-49b8-9c13-2d8d51b97834)
+   reelclaw-anicca-ja-widget-2 (71957a9d-36bb-44f3-8fa6-078f72244fb4)
+
+- --ig cmnipef7g00oerm0y3dz4lamx
++ --ig cmmzzg2es0539p30ycb94ayx0
+```
+
+cmnipef7g is DEAD (= NOT in Postiz `/integrations`). cmmzzg2es = @anicca.jp.videos = Dais's new JA reelclaw IG target.
+
+### E9. ★ Card-widget 3h+ gap reschedule ★ (= Dais 2026-06-08 requirement)
+
+Current gaps:
+- EN: widget-1 (19:00) → card-2 (21:30) = **2h30m ❌** (< 3h)
+- JA: widget-2 (18:20) → card-2 (21:20) = **3h0m ⚠** (= borderline)
+
+New canonical schedule (= 4h gaps + EN/JA staggered for LLM burst avoidance):
+
+| time JST | EN cron | EN id | JA cron | JA id |
+|---|---|---|---|---|
+| 07:00 | reelclaw-en-widget-2 | 2f330f58 | — | — |
+| 08:00 | — | — | reelclaw-ja-widget-1 | b5b49526 |
+| 11:00 | reelclaw-en-card-1 | a0a1d2fe | — | — |
+| 12:00 | — | — | reelclaw-ja-card-1 | 174f01dd |
+| 15:00 | reelclaw-en-widget-1 | 92c13cc2 | — | — |
+| 16:00 | — | — | reelclaw-ja-widget-2 | 71957a9d |
+| 19:00 | reelclaw-en-card-2 | 330bbaf7 | — | — |
+| 20:00 | — | — | reelclaw-ja-card-2 | a6ccfc01 |
+
+**Reschedule commands** (= per cron):
+```
+openclaw cron edit 2f330f58-b1fe-40ab-a2d2-95f5f5a6b557 --cron "0 7 * * *" --tz Asia/Tokyo
+openclaw cron edit b5b49526-a38c-49b8-9c13-2d8d51b97834 --cron "0 8 * * *" --tz Asia/Tokyo
+openclaw cron edit a0a1d2fe-4087-4ee4-bc7b-526b6f8d8e65 --cron "0 11 * * *" --tz Asia/Tokyo
+openclaw cron edit 174f01dd-b2ae-413f-85f7-3b03236e3944 --cron "0 12 * * *" --tz Asia/Tokyo
+openclaw cron edit 92c13cc2-3888-4c4a-b2b7-5a200f223677 --cron "0 15 * * *" --tz Asia/Tokyo
+openclaw cron edit 71957a9d-36bb-44f3-8fa6-078f72244fb4 --cron "0 16 * * *" --tz Asia/Tokyo
+openclaw cron edit 330bbaf7-3ea2-41f6-8479-f1c6f8ef1f45 --cron "0 19 * * *" --tz Asia/Tokyo
+openclaw cron edit a6ccfc01-42c8-4b5c-8c43-5713e90ee10d --cron "0 20 * * *" --tz Asia/Tokyo
+```
+
+### E10. Card REAL / widget YT UNLISTED (= Dais 2026-06-08)
+
+Dais verbatim: "post the card as real and widget as a draft to the yt app i guess not public".
+
+Required:
+1. `post-video-to-youtube.sh` accept `--privacy <public|unlisted|private>` flag
+2. Widget cron payload pass `--yt-privacy unlisted`
+3. Card cron payload remains `--yt-privacy public` (= default)
+
+Pending Dais confirm: is same scheme wanted for TT (= card DIRECT_POST public, widget MEDIA_UPLOAD draft)? Or TT both public, YT only differentiated?
+
+### E11. Music ambient/lazy override
+
+Current: `auto_add_music="yes"` → TT auto-picks from their pool (= varies per post).
+
+If Dais wants ★ lo-fi/lazy only ★, need:
+1. Pre-render: ffmpeg attach own BGM to slide video before upload
+2. Disable TT auto-music (`auto_add_music="no"`)
+3. Music library at `~/.openclaw/workspace/tiktok-marketing/assets/music/lo-fi/`
+
+Pending Dais decision.
+
