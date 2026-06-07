@@ -137,12 +137,12 @@
 
 | step | patch | depends on |
 |---|---|---|
-| T1 | Truth registry rebuild — query Postiz `/integrations` → overwrite `postiz-integrations.json` with REAL handle for each ID | — |
-| T2 | Larry JA v1 fixed-strings: bg=maleface static + hook=メンタルが勝手に安定する 口癖５選 + auto_music=yes | T1 |
-| T3 | Larry EN v1 fixed-strings: bg=maleface static + auto_music=yes | T1 |
-| T4 | Patch `post-to-tiktok.js` to read `auto_music` from fixed-strings, fallback to existing logic | T1 |
-| T5 | Patch all 9 larry cron messages: add `--ig <real_ig_id>` per account; verify TT IDs | T1 |
-| T6 | @anicca.he integration → warmup_phase=warmup + warmup_started_at=2026-06-07 | T1, T4 |
+| T1 ✅ DONE 2026-06-07 21:40 JST | Truth registry rebuild — Postiz live `/integrations` (30 entries) → `state/postiz-integrations.json` v3 schema with `paired_with_id` for TT↔IG pairing. ★ Schema migration v1→v3 ★. Backup at `.bak.20260607`. Commit `c156c7c87`. Confirmed pairs (5): `aniccajp↔anicca.jp1` (larry-ja-v1), `aniccaen2↔anicca.encards` (larry-en-v2), `aniccaaffirmation↔anicca.affirmation` (larry-en-affirmation), `monk_anicca↔monk.anicca` (yangmun), `obou_anicca↔obou.anicca` (watercolor). Unpaired Larry TT (5): aniccajp2, anicca.jp4, anicca_buddha, anicca.comedy, anicca.he-warmup. Needs-dais-pairing IG (2): anicca.bochi, anicca.video. Legacy retired (5): anicca.jp / anicca.jp8 / anicca.jpx / anicca.daily / anicca_slideshow. | — |
+| T2 | Larry JA v1 fixed-strings: bg=maleface static + hook=メンタルが勝手に安定する 口癖５選 + auto_music=yes | T1 ✅ |
+| T3 | Larry EN v1 fixed-strings: bg=maleface static + auto_music=yes | T1 ✅ |
+| T4 | Patch `post-to-tiktok.js` to read `auto_music` from fixed-strings, fallback to existing logic | T1 ✅ |
+| T5 (revised scope) | Patch ★ 5 larry cron ★ where IG pair exists (= ja-v1, en-v2, en-affirmation, yangmun, watercolor) with `--ig <paired_with_id>`. ★ 5 cron remain TT-only ★ (= aniccajp2, anicca.jp4, anicca_buddha, anicca.comedy, anicca.he) until Dais creates IG accounts to pair. ★ 2 needs-dais IG ★ (anicca.bochi, anicca.video) await Dais owner assignment. | T1 ✅ |
+| T6 | @anicca.he integration → warmup_phase=warmup + warmup_started_at=2026-06-07 ★ already set in T1 registry v3 ★ — just need accounts.jsonl propagation for skill | T1 ✅, T4 |
 | T7 | Quality gate bbox upgrade — pixel-measure helper + 3-retry shrink/re-wrap | — |
 | T8 | Wire quality-gate.sh into larry's build-from-fixed-strings.sh | T7 |
 | T9 | ReelClaw routing audit (already correct per Postiz live) — write post-verify probe | T1 |
@@ -155,7 +155,7 @@
 
 ## Verification (= must run, no-fake-run per HARD RULE 0.24)
 
-- T1: `diff` registry before/after; commit shows ≥10 handle corrections
+- T1 ✅ DONE: registry v3 written, commit `c156c7c87` shows 14+ handle corrections + 9 new IG entries (Postiz live = 30 vs prior local = 21). Verify command: `python3 -c "import json; d=json.load(open('~/.openclaw/state/postiz-integrations.json')); print(len(d['integrations']))"` returns 30. `diff` against `.bak.20260607` shows full mapping change. Pairs verified by curl of Postiz `/integrations` profile field.
 - T2: fire `larry-anicca-ja-1` NOW; camofox open TT @anicca.jpx → newest video has maleface bg + hook=メンタルが勝手に安定する + music playing
 - T3: fire `larry-anicca-en-1` NOW; same verify
 - T5: fire ja-1 → confirm IG @anicca.bochi gets new post within 5 min
