@@ -560,10 +560,38 @@ JIT bound:    5 added (4.7-slideshow / account-health / aie-consulting / aie-pro
         deliveryStatus=not-requested (= mode=none で API call せず正常)
   ```
 
-- **V14-T1-F2**: ★ dig runtime-plugins stall ★ (= openclaw gateway level issue)
-  対象: daily-mail, fuel-broker, postiz-health, cold-email-reply 等 ~15 crons
-  approach: openclaw doctor で gateway 健全性 確認 + plugin install state check
-  may require: `openclaw gateway restart` or specific plugin reinstall
+- **V14-T1-F2**: ★ dig runtime-plugins stall ★ ✅ EXECUTED 2026-06-07
+
+  **Finding**: 「runtime-plugins stalled」 = ★ largely transient ★。 単 re-fire で 多く recovered。
+  **真因 2 subtypes** (= dig 結果):
+
+  ① **Delivery target malformed** (3 crons): `delivery.to = "C091G3PKHL2"` (raw、 `channel:` prefix なし) or `delivery.to = null`
+     fix: `openclaw cron edit <UUID> --to "channel:C091G3PKHL2" --best-effort-deliver`
+     対象: postiz-health-daily, account-health-daily, credit-monitor, config-canary-daily
+
+  ② **Transient gateway race** (= 残): `delivery` config 正しい が runtime-plugins phase stall
+     fix: ★ 単 re-fire ★ (= openclaw cron run --wait) で 自動回復
+     対象: fuel-broker, lateness-heartbeat-shell, 他
+
+  **Verification (= fresh evidence、 2026-06-07 batch fire)**:
+  ```
+  ✅ postiz-health-daily   error → ok (delivery.to channel: prefix fix + re-fire)
+  ✅ fuel-broker           error → ok (re-fire alone)
+  ✅ lateness-heartbeat    error → ok (re-fire alone)
+  ✅ conformity-monkey     error → ok (delivery.mode=none + re-fire)
+  ✅ doctor-monkey         error → ok (delivery.mode=none + re-fire)
+  ❌ daily-mail            timeout 45s (= 長 timeout 要 or 別問題)
+  ❌ cold-email-reply      timeout 45s (= 同上)
+  ❌ janitor-monkey        LLM cooldown (= V14-T1-F3 で 別 fix)
+
+  error cron 数: 37 → 32 (= -5 net resolved 1 session)
+  ```
+
+  **Implication for Doctor**: pattern-classifier に「RUNTIME_PLUGINS_STALL」 path 追加 推奨
+  - detect: lastError matches "runtime-plugins stalled before execution start"
+  - action: `openclaw cron run <UUID> --wait` 単 fire、 status=ok なら fixed、 else 真 incident escalate
+  - LLM 5-strategy 不要 (= transient、 fast-path)
+  - file: `~/.openclaw/skills/anicca-doctor-monkey/scripts/pattern-classifier.sh`
 
 - **V14-T1-F3**: ★ Doctor LLM cooldown handling ★
   問題: provider 全部 cooldown → fallback chain exhausted
