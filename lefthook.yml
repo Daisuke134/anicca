@@ -20,6 +20,21 @@ pre-commit:
         echo "$b" | grep -Eq '^dev$|^(feature|fix|chore|release|app-factory|docs|spec)/[a-z0-9._-]+$' || {
           echo "❌ branch名 '$b' が規約外。dev / feature/<x> / fix/<x> / chore/<x> / docs/<x> / app-factory/<x> を使う。"; exit 1; }
       fail_text: "branch名 規約違反"
+    aniccaai-landing-guard:
+      # Dais 2026-06-07 厳命: Anicca cron は aniccaai.com (apps/landing/) 編集禁止。
+      # Dais 本人 commit OR taste skill manual invoke (= Dais 名義) のみ通過。
+      # Spec: docs/superpowers/specs/2026-06-07-cron-rectification-and-aniccaai-protection-design.md §3.2
+      run: |
+        author="$(git config user.name)"
+        touched=$(git diff --cached --name-only | grep -c "^apps/landing/" || true)
+        if [ "$author" = "Anicca Agent" ] && [ "$touched" -gt 0 ]; then
+          echo "❌ HARD RULE 違反: Anicca cron は aniccaai.com (apps/landing/) 編集禁止。"
+          echo "   Dais 本人 OR taste skill (= ~/.claude/skills/taste-skill manual) のみ touch 可。"
+          echo "   Touched files:"
+          git diff --cached --name-only | grep "^apps/landing/" | head -10 | sed 's/^/     /'
+          exit 1
+        fi
+      fail_text: "Anicca cron は apps/landing/ 編集禁止 (= Dais の aniccaai.com 領域)"
 
 commit-msg:
   commands:
