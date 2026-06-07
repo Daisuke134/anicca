@@ -748,4 +748,27 @@ openclaw `--system-event` payload type (= no agent turn) で対応可能性。
 
 ---
 
-**Spec v1.1 end. Next: V14-T2-F1 + V14-T3 Conformity E2E + V13 series**
+---
+
+## §16 — V14-T3 Conformity E2E ★ ✅ EXECUTED 2026-06-07 ★
+
+### §16.1 — Test scenario
+
+policy violation simulation cron 作成: `conformity-e2e-test-violator`
+- message: `bash -c 'echo touching apps/landing/; ls /tmp 2>/dev/null'`
+- 含む: `apps/landing` (= LANDING_PATTERN match)
+- 期待: Conformity が disable する
+
+### §16.2 — Result (= fresh evidence)
+
+```
+timing:     3 seconds (= V14-T2-F2 perf 適用後、 Janitor 同 30x speedup)
+output:     "alert-cornerstone-violation: anicca-article-daily-note" (cornerstone保護動作)
+test cron:  enabled=true → ★ enabled=false ★ ✅ verified
+```
+
+✅ Conformity が policy violation 検出 + 自動 disable + cornerstone は alert のみ全 動作 確認。
+
+---
+
+**Spec v1.1 end. Next: V13 series + V14-5 reviewer**
