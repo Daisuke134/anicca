@@ -542,7 +542,10 @@ aniccaai.com   (Next.js on Netlify、 既存)
    /install        → paid SaaS LP (taste-skill v2 LP design §6)
    /oss            → install.sh self-host 隔離
    /alarm          → ★ 削除 (§12) ★
-   /app            → ★ 作らない ★
+   /app            → ★ 残す ★ (= existing iOS App Store redirect、
+                     `app/app/page.tsx` で `redirect('https://apps.apple.com/
+                     us/app/mindful-self-care-anicca/id6755129214')` —
+                     iOS Anicca legacy affirmation app surface、 触らない)
         │
         │  t.me/anicca_bot?start=<uuid>
         ▼
