@@ -8,6 +8,8 @@ on:
     paths:
       - 'apps/landing/**'
       - 'netlify.toml'
+      - '.github/workflows/netlify-deploy.yml'
+  workflow_dispatch:
 
 jobs:
   deploy:
