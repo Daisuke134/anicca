@@ -544,11 +544,21 @@ JIT bound:    5 added (4.7-slideshow / account-health / aie-consulting / aie-pro
 
 ### §12.4 — Follow-up tasks (= V14-T1 から派生、 新規)
 
-- **V14-T1-F1**: ★ Fix conformity-monkey Slack target format ★
-  bug: `openclaw message send --target "$SLACK_CHANNEL"` (= "C091G3PKHL2")
-  fix: `--target "channel:$SLACK_CHANNEL"` (= "channel:C091G3PKHL2")
-  file: `~/.openclaw/skills/anicca-conformity-monkey/scripts/run.sh`
-  also check: janitor-monkey + watchdog 同 pattern 使ってる か
+- **V14-T1-F1**: ★ Fix conformity-monkey Slack target format ★ ✅ EXECUTED 2026-06-07
+
+  真因 (= dig 後):
+  bug は script ではなく ★ cron entry の `delivery.mode = "announce"` ★ + `delivery.to` not set。
+  script は自前 curl で slack 投稿 してた = openclaw announce 不要。
+
+  fix: `openclaw cron edit <UUID> --no-deliver` で delivery.mode = "none" に変更。
+  対象 3 cron: anicca-conformity-monkey + anicca-janitor-monkey + anicca-doctor-monkey 全 同 announce mode だった、 全 fix。
+
+  **Verification fresh evidence (= conformity smoke fire)**:
+  ```
+  pre:  lastRunStatus=error, lastError="Delivering to Slack requires target..."
+  post: lastRunStatus=ok, lastError="", consecutiveErrors=0
+        deliveryStatus=not-requested (= mode=none で API call せず正常)
+  ```
 
 - **V14-T1-F2**: ★ dig runtime-plugins stall ★ (= openclaw gateway level issue)
   対象: daily-mail, fuel-broker, postiz-health, cold-email-reply 等 ~15 crons
