@@ -366,12 +366,17 @@ Dais 2026-06-07 21:25 verbatim:
 | 6 | watercolor-jp-2000 | 0 20 * * * | X | KEEP | watercolor JP evening |
 | 7 | anicca-x-build-in-public-daily | 10 7 * * * | X (= build-in-public daily) | KEEP | core (= §10 で fix) |
 
-### §9.3 — Decision = NEW-1
+### §9.3 — Decision = NEW-1 ★ ✅ EXECUTED 2026-06-07 ★
 
 ★ `comedy-tiktok-cross-post-daily` disable ★ (= Dais verbatim、 オリジナル synthesis ゼロ):
 - reason: TikTok 動画 を X にも cross-post すると、 build-in-public + larry + comedy-skit と X account 重複投稿、 spam 化リスク
 - TikTok 投稿 自体 は KEEP (= 各 TikTok cron は単独 ON)、 X cross-post 経路 のみ KILL
-- action: openclaw cron disable <comedy-tiktok-cross-post-daily-UUID>
+- action: openclaw cron disable `comedy-tiktok-cross-post-daily-1778242512055`
+
+**Verification (= fresh evidence、 2026-06-07)**:
+- pre-state: `enabled=true, sched=0 16 * * *, lastStatus=ok, lastRunAt=1780815629272`
+- post-state: `enabled=false` (verified via `openclaw cron list --all --json | jq`)
+- ★ TikTok 投稿 cron (= 別 entry) は別途 KEEP 確認 ★ (= cross-post経路 のみ kill)
 
 ---
 
