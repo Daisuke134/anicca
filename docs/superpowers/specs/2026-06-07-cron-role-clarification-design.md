@@ -664,4 +664,37 @@ commits:
 
 ---
 
-**Spec v1.1 end. Dais review → V14-2 ✅ + V14-T1 ✅ cluster done、 next: V13 series + V14-T2/T3**
+---
+
+## §14 — V14-4 全 enabled cron status sweep ★ ✅ EXECUTED 2026-06-07 ★
+
+### §14.1 — Ground truth (= 94 enabled cron)
+
+| status | count | % |
+|---|---|---|
+| ok | 59 | 63% |
+| error | 30 | 32% |
+| never | 5 | 5% |
+
+### §14.2 — Error 30 内訳 (= Doctor 自動 fix 可能性)
+
+| pattern | count | Doctor path | auto-fix? |
+|---|---|---|---|
+| RUNTIME_PLUGINS_STALL | 18 | F2 single re-fire | ✅ |
+| LLM_COOLDOWN | 5 | F3 sleep 30min + retry | ✅ |
+| TIMEOUT | 1 | TIMEOUT auto-bump | ✅ |
+| gateway restart | 1 | transient re-fire | ✅ |
+| script error | 2 | LLM 4-strategy | ⚠️ may fail |
+| Invalid request body | 1 | LLM 4-strategy | ⚠️ may fail |
+| runner-enter stalled | 2 | similar RUNTIME_PLUGINS_STALL | ✅ |
+
+★ Doctor auto-recoverable: 23+/30 = **77%** ★
+★ ESCALATE candidates: 7/30 = 23% ★
+
+### §14.3 — Never-run cron (= Janitor archive candidates、 5)
+
+5 cron lastRunAtMs=null = 一度も fire してない → 30d 経過してれば Janitor archive。
+
+---
+
+**Spec v1.1 end. Next: V14-T2 Janitor E2E + V14-T3 Conformity E2E + V13 series**
