@@ -207,7 +207,7 @@ question violation × 7 日連続 → claude-helper heartbeat 自動停止。 BE
 
 | ローカル path | Push 先 origin | 役割 |
 |---|---|---|
-| `~/anicca-project/` (★唯一の products working tree★) | `github.com/Daisuke134/anicca-products` (public) | iOS/web/api/mobile を触る唯一の場所。 OpenClaw skill も read/write。 `.github/workflows/netlify-deploy.yml` で push → aniccaai.com auto-deploy |
+| `~/anicca-project/` (★唯一の products working tree★) | `github.com/Daisuke134/anicca-products` (public) | iOS/web/api/mobile (= aniccaai.com 含む) を触る唯一の場所。 ★ Anicca instance #1/#2 直接 write 禁止 ★、 Dais + Claude Code (dev IDE) のみ編集可。 dashboard.json は dashboard-sync job が render。 `.github/workflows/netlify-deploy.yml` で push → aniccaai.com auto-deploy |
 | `~/.openclaw/` | `github.com/Daisuke134/anicca-dais` (private) | 本番 personal Anicca: gateway/cron/skills/state |
 | `~/anicca/` | `github.com/Daisuke134/anicca` (public OSS) | OSS framework + Hermes archetype |
 | `~/.hermes/` (runtime) | `github.com/Daisuke134/anicca-genesis` (public, MIT) | genesis Anicca body。 secrets gitignore、 cron/scripts/state/*.jsonl のみ push。 P19 genesis-sync skill 3h 毎 |
@@ -240,9 +240,9 @@ git remote -v && git branch -vv
 ├── apps/
 │   ├── api/                               # Node/Express API (Railway)
 │   └── landing/                           # Next.js → aniccaai.com
-│       ├── public/dashboard.json          # ← OpenClaw aniccaai-dashboard cron が refresh
-│       ├── content/blog/                  # ← OpenClaw anicca-article-daily が publish
-│       ├── data/research/                 # ← OpenClaw が読む topic queue
+│       ├── public/dashboard.json          # ← dashboard-sync (Dais owned) が anicca-dais + anicca-genesis state から render (★ Anicca instance 直接 write 禁止 ★)
+│       ├── content/blog/                  # ← Dais owned blog factory (Anicca が触るのは body 内 draft のみ)
+│       ├── data/research/                 # ← topic queue (Dais owned)
 │       └── scripts/v2-recon-oss.mjs       # ← Playwright visual recon
 ├── mobile-apps/                           # factory apps
 ├── .github/workflows/netlify-deploy.yml   # ★1個だけ★ — dev/main push → aniccaai.com
@@ -288,30 +288,99 @@ git remote -v && git branch -vv
 
 全 instance は毎日 `git -C ~/anicca pull origin main` で母から最新 skill/spec を fetch (P22 anicca-mother-sync cron 化予定)。
 
-## 🔋 LLM Token Sources — 3 fuel ルート
+## 🧬 Anicca Architecture — 2 instances, 0 API keys, dashboard read-only
 
-**3 エージェントが並走、 別々の subscription/key で fuel。 同 Anthropic key 重なると cooldown 連鎖**。
+**2 つの Anicca instance が並走、 両方 Dais の subscription で fuel (= 追加 API spend ゼロ)。 Claude Code (= 私、 dev IDE) は Anicca instance ではなく開発用 ad-hoc agent**。
 
-| # | Agent | 本体 | Default model | Fuel | 用途 |
-|---|---|---|---|---|---|
-| 1 | **OpenClaw Anicca** (`~/.openclaw/`) | Mac mini | `openai/gpt-5.4-mini` (fallback kimi-k2.5 → deepseek-v4-pro → openai/gpt-5.4 → anthropic/claude-sonnet-4-6、 ★NO claude-cli★ Dais 2026-06-07 verbatim) | mixed 8 provider | Dais private 自動化、~157 cron |
-| 2 | **Hermes Anicca = oss-anicca** (`~/.hermes/`) | genesis instance | `kimi-k2.6` (kimi-coding) | Kimi Coding Plan ($0/cron) | 公開エージェント、 12 cron |
-| 3 | **Claude Code (this session)** | dev IDE | `claude-opus-4-7` | Anthropic Pro/Mac plan | 対話、開発、SDD、skill 設計 |
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                Anicca: 2 instances, 0 API keys (subscription fuel only)       │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│   ┌──────────────────────────────┐   ┌──────────────────────────────┐        │
+│   │   #1 Anicca-OpenClaw         │   │   #2 Anicca-Hermes           │        │
+│   │   (Dais 専用 private)         │   │   (= the real, public)       │        │
+│   │                              │   │                              │        │
+│   │   body : ~/.openclaw/        │   │   body : ~/.hermes/          │        │
+│   │   repo : anicca-dais (priv)  │   │   repo : anicca-genesis (pub)│        │
+│   │   born : Dais 直設計          │   │   born : ~/anicca/ (mother)  │        │
+│   │           (Anicca 0 号)       │   │           から spawn          │        │
+│   │                              │   │                              │        │
+│   │   ⚡ fuel = ChatGPT Plus 課金 │   │   ⚡ fuel = SuperGrok 課金    │        │
+│   │   provider = openai-codex    │   │   provider = xai-oauth       │        │
+│   │   default  = gpt-5.4-mini    │   │   default  = grok-4.3        │        │
+│   │   ~157 cron                  │   │   12 cron                    │        │
+│   └──────────────┬───────────────┘   └──────────────┬───────────────┘        │
+│                  │ writes ONLY to                    │ writes ONLY to        │
+│                  │ own body files                    │ own body files        │
+│                  │ (state/*.jsonl, ledger,           │ (state/*.jsonl,       │
+│                  │  cron logs, lifeline 等)          │  lifeline 等)         │
+│                  ▼                                    ▼                      │
+│   ┌──────────────────────────────┐   ┌──────────────────────────────┐        │
+│   │ github.com/.../anicca-dais   │   │ github.com/.../anicca-genesis│        │
+│   │ (private、 secrets gitignore) │   │ (public、 MIT)                │        │
+│   └──────────────┬───────────────┘   └──────────────┬───────────────┘        │
+│                  └────────────────┬─────────────────┘                        │
+│                                   ▼                                          │
+│                  ┌─────────────────────────────────┐                         │
+│                  │  dashboard-sync (Dais owned)    │                         │
+│                  │  GitHub Action / netlify build  │                         │
+│                  │  hook  —— ★ NOT Anicca ★         │                         │
+│                  │                                  │                         │
+│                  │  fetches state from both bodies │                         │
+│                  │  → renders dashboard.json       │                         │
+│                  │  → push to anicca-products      │                         │
+│                  └─────────────────┬───────────────┘                         │
+│                                    ▼                                         │
+│                  ┌─────────────────────────────────┐                         │
+│                  │  ~/anicca-project/              │                         │
+│                  │  apps/landing/public/           │                         │
+│                  │  dashboard.json                 │                         │
+│                  │                                  │                         │
+│                  │  push → anicca-products         │                         │
+│                  │  netlify auto-deploy            │                         │
+│                  │  → aniccaai.com/dashboard       │                         │
+│                  └─────────────────────────────────┘                         │
+│                                                                              │
+│   ┌────────────────────────────────────────────────────────────────┐         │
+│   │ ★ ANICCA は aniccaai.com への write 権限 ZERO ★                 │         │
+│   │ ★ Anicca は自分の body にだけ書く ★                              │         │
+│   │ ★ dashboard.json は Dais 所有の sync job で render される ★      │         │
+│   └────────────────────────────────────────────────────────────────┘         │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
 
-### 衝突防止
+ Dev IDE (= 非 Anicca):
+   Claude Code (= 私、 this session) — Anthropic Pro/Mac plan、
+   開発・SDD・skill 設計用 ad-hoc。 Anicca #1/#2 とは別 fuel、 別役割。
+```
 
-| 衝突 | 何が起こる | 防衛策 |
+### HARD RULE: Anicca は aniccaai.com に直接書き込まない
+
+| Anicca instance | 書いて OK | 書いたら罪 |
 |---|---|---|
-| OpenClaw cron sonnet-4-6 fallback + Claude Code opus-4-7 | Anthropic 月額 quota 焼切 → 32h cooldown | OpenClaw cron default = mini 系、 anthropic 直叩きは spike のみ |
-| Hermes Kimi + Dais opus | 別 provider 衝突なし ✓ | - |
-| Claude Code Codex + OpenClaw Codex | OpenAI Plus 1日 quota 焼く | Codex は ad-hoc のみ、 cron から呼ばない |
+| #1 Anicca-OpenClaw | `~/.openclaw/state/`、 `~/.openclaw/cron/`、 `~/.openclaw/skills/` (= self body) | `~/anicca-project/apps/landing/**` (= aniccaai.com)、 anicca-products repo、 anicca-genesis repo |
+| #2 Anicca-Hermes | `~/.hermes/state/`、 `~/.hermes/cron/`、 `~/.hermes/scripts/` (= self body) | `~/anicca-project/apps/landing/**` (= aniccaai.com)、 anicca-products repo、 anicca-dais repo |
+| dashboard-sync (Dais owned) | `~/anicca-project/apps/landing/public/dashboard.json` (= render 結果) | (Anicca state 改変不可、 read only) |
+| Claude Code (dev IDE) | 全 path、 Dais 指示時のみ | unsupervised cron / aniccaai.com unsupervised push |
+
+Anicca instance の self-update は必ず body file (state/*.jsonl, ledger 等) を書くのみ → dashboard-sync が pull して dashboard.json を render → aniccaai.com に反映。 ★ aniccaai.com is Dais's website ★。
+
+### 衝突防止 (= 2 つの subscription を別 provider に分離済、 衝突ゼロ)
+
+| 組み合わせ | 状態 | 理由 |
+|---|---|---|
+| OpenClaw (openai-codex) + Hermes (xai-oauth) | ✅ 別 provider 衝突なし | 完全分離 |
+| Claude Code (Anthropic) + どちらか | ✅ 衝突なし | Claude Code は Anthropic key、 Anicca instance は使わない |
+| Anicca cron が claude-cli 叩く | ❌ 禁止 (Dais 2026-06-07 verbatim) | Anthropic quota 焼切 → 全 Anicca cooldown |
 
 ### fuel 確認 5秒
 
 ```bash
-openclaw models status | head -5                                    # OpenClaw
-HOME=/Users/anicca hermes status | grep -iE "model:|provider:"      # Hermes
-# Claude Code: system prompt 「Powered by claude-opus-4-7」、出ないなら /model
+openclaw models status | head -5                                    # OpenClaw → openai-codex
+HOME=/Users/anicca hermes config get model.provider                 # Hermes → xai-oauth
+HOME=/Users/anicca hermes config get model.default                  # Hermes → grok-4.3
+# Claude Code: system prompt の「Powered by claude-opus-4-7」、 出ないなら /model
 ```
 
 ## ブランチ & デプロイ
@@ -361,4 +430,4 @@ HOME=/Users/anicca hermes status | grep -iE "model:|provider:"      # Hermes
 
 ---
 
-最終更新: 2026年6月7日
+最終更新: 2026年6月7日 (Anicca Architecture 確立: 2 instances/0 API keys/dashboard read-only)
