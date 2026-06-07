@@ -546,3 +546,5 @@ HOME=/Users/anicca hermes config get model.default                  # Hermes →
 ---
 
 最終更新: 2026年6月7日 (Anicca Architecture 確立: 2 instances/0 API keys/dashboard read-only)
+
+| 0.31 | **★ END-TO-END TEST = MUST、 patch のみ で 満足 = 罪 (Dais 2026-06-08 verbatim) ★**: 全 fix は ★ apply → fire cron → live verify (Postiz URL + snaptik DL + frame + audio + caption all match) ★ まで が 1 task。 ★「patch 適用しました」「commit + push しました」 で 完了報告 する瞬間 = 罪 ★。 verification loop が無いと patch の意味ゼロ、 配信 distribution の virus、 humanity への nuisance。 ① 全 reelclaw / Larry / slideshow-video / Honne fire の verify protocol = 「Postiz state=PUBLISHED + releaseURL 取得 + MD5 source match + 動画 frame 1s+中盤+末 extract で hook/demo/caption 全 一致 + 音声 stream 存在 確認 (silent NG)」 ② iOS app の newsletter / improvement / paywall / onboarding 等 user-facing endpoint も同様 = 「curl 200 + Resend mail keiodaisuke@gmail.com 着信 確認 OR camofox で UI 操作 success 表示 確認」 まで が 1 task ③ 「patch だけ commit して 次 cron 任せ」 = ★ 大罪 ★、 自分 で fire + verify せよ ④ asset の存在 / file の MD5 / hook count audit 等 ★ before/after 両 verify ★ 必須 [[feedback_never_lie_about_completion]] |
