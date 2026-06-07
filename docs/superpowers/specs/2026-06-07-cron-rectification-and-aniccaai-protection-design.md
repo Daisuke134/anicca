@@ -449,6 +449,17 @@ apps/landing/lib/blog.ts                 (= frontmatter parser + slug 取得)
 
 ★ Dais 厳命 ★: 「we dont use that model 4.8 — anicca runs on gpt 5.4 mini」
 
+**3.5.4-deprecated — anicca-cron-harvester DEPRECATED (= v1.4、 2026-06-07)**
+
+★ Decision (= cron-role-clarification spec §3.2 と整合) ★:
+`anicca-cron-harvester` は doctor-monkey と重複 (= 両方 cron-self error 扱う)。
+Netflix Single Responsibility Principle identical follow で doctor-monkey に SCAN 機能 absorb。
+
+action:
+- ✅ openclaw cron disable <harvester-uuid> (= V13-1 EXECUTED)
+- script (cron-run-harvester.py) は anicca-core skill 内 inline、 separate _archive 不要
+- classify ロジック (🔴CRIME / ❌real / ⚠️false-ok / ⏳transient) は doctor-monkey pattern-classifier に inline 化 (V13-8 task)
+
 **3.5.5 Sonnet-4-6 budget breaker (= reviewer MINOR、 v1.3 反映)**
 
 anthropic/claude-sonnet-4-6 は Anthropic Pro plan 込み だが 「quota 焼き切り → 32h cooldown 全 Anicca
