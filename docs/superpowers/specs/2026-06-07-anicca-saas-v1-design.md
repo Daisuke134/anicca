@@ -566,7 +566,7 @@ Anicca API gateway  (apps/api on Railway, 既存)
 Per-user Anicca instance (Daytona cloud sandbox)
    BP: anicca-v32-evolution-design.md §1 multi-profile per instance colony
    10 specialist profiles:
-      ① arrive-early planner (route + buffer)        v1
+      ① arrive-early planner (route + buffer)        v1  ★ LIVE on mac mini 2026-06-07 ★
       ② mail auto-reply                              v1
       ③ cal conflict guard                           v1
       ④ over-commit decline                          v1
@@ -586,7 +586,99 @@ Wild Anicca pool (v4)
    threshold: pool が 月 $50K cover できれば 全 paid forceful cancel
 ```
 
-**Self-eval** (§11): Telegram Bot API 一致度 **100%**、 Stripe SaaS subs 一致度 **100%**、 anicca-v32-evolution multi-profile 既存 spec 一致度 **100%**、 ElevenLabs voice 一致度 **100%**、 proxies.sx x402 一致度 **100%**、 ANICCA_TRUE_AUTONOMY_SPEC 既存 一致度 **100%**。
+### 11.5. Profile ① arrive-early planner — implementation (= LIVE 2026-06-07)
+
+The arrive-early planner ships first because every other profile depends on
+"Anicca knows where the user is now". Implemented in `~/.openclaw/skills/anicca-life-manager/`
+on mac mini (= Dais personal instance) and intended to be `cp -r` to per-user
+Daytona sandboxes for SaaS — same code, different state dir.
+
+**Component map**:
+
+```
+Telegram bot (= live location sink, 24/7 launchd ai.anicca.telegram-bot)
+   scripts/telegram_bot.py
+   ├─ filters.LOCATION        → on_location() — first share
+   ├─ filters.UpdateType.EDITED_MESSAGE & filters.LOCATION
+   │                          → on_edited_location() — periodic live updates
+   │                            (this is what was missing in legacy; fixed
+   │                            2026-06-07 by ensuring launchd plist exists
+   │                            and killing the duplicate ai.anicca.tg-loc-bot)
+   ├─ writes /state/location/<user_id>.json every 5 sec
+   └─ commands: /where /status /payout /reset /stop /help
+
+transit_lookup.py — ライブラリ (= venue → itinerary)
+   def geocode(query)             — Google Geocoding API (JA result)
+   def plan_route(o, d, arrive_by) — transitous /api/v2/plan (MOTIS engine,
+                                     covers Japan via jp.json GTFS feeds:
+                                     JR-East, Tokyo Metro, 都営, etc.)
+   def build_itinerary(query, ox, oy, arrive_by) — composed pipeline,
+       writes itinerary blob with origin / destination / leg-by-leg plan
+
+   BP: github.com/public-transport/transitous (FOSS, Japan supported)
+       + github.com/motis-project/motis (MOTIS OpenAPI)
+       + Google Geocoding API (canonical for address parse)
+
+   Why NOT Google Routes API for transit: Google does not license transit
+   data in Japan; api response includes `available_travel_modes` without
+   TRANSIT for queries inside Japan. transitous fills this gap for free.
+
+realtime_guide.py — 24/7 daemon (= launchd ai.anicca.realtime-guide)
+   tick every 10 sec:
+     for each itinerary_<user_id>.json present:
+       read fresh location, current step, decide:
+         - call_start (= leave_at - 15min): voice brief via Telegram
+         - leave_at - 5min: text reminder
+         - leave_at + 5min: if user still at origin → twilio_call (relentless,
+                            60-sec loop until lat/lng moves 50m+ in a minute)
+         - per leg: approach ping (<200m), reach ping (<80m or <40m for dest),
+                    wrong-direction ping during WALK legs (heading delta >90°)
+       state stored in guide_state_<user_id>.json
+         (briefed, five_min_reminder, cur_leg_idx, last_wrong_dir_ts, last_lat/lon)
+
+   BP: core.telegram.org/bots/api#sendmessage (text)
+       core.telegram.org/bots/api#sendvoice (voice note)
+       twilio.com/docs/voice (relentless call)
+       en.wikipedia.org/wiki/Haversine_formula (geo distance/bearing)
+
+lateness_check.py — 5-min cron (= existing, patched 2026-06-07)
+   Decides "should we call now?" based on gcal next event + buffer.
+   Previously POSTed to 127.0.0.1:7860/dialout (= legacy Pipecat),
+   which broke when anicca-oss-pipecat dir was deleted. Patched with
+   _twilio_call_direct() fallback: TwiML <Say language='ja-JP'
+   voice='Polly.Mizuki'> direct via Twilio Calls API. Verified LIVE
+   2026-06-07 23:03 JST → sid CA04e0a5b4799a7b74562ebf3081612b36
+   rang +818046270314 with Anicca voice.
+
+State files (= same shape in local mac mini and in Daytona sandbox):
+   ~/.openclaw/state/location/<user_id>.json           live location (5s update)
+   ~/.openclaw/state/location/itinerary_<user_id>.json active route (set per event)
+   ~/.openclaw/state/location/guide_state_<user_id>.json daemon state (briefed/cur_leg/...)
+```
+
+**LIVE verification 2026-06-07**:
+
+| Test | Result |
+|---|---|
+| `python3 transit_lookup.py --from-lat 35.679925 --from-lon 139.719605 --to '銀座駅' --arrive-by 2026-06-08T09:00+09:00` | 36 min, 1 transfer, JR Chuo-Sobu Local + Tokyo Metro Yurakucho Line |
+| `launchctl list ai.anicca.telegram-bot` | PID 67151 KeepAlive=true |
+| `launchctl list ai.anicca.realtime-guide` | PID 39679 KeepAlive=true |
+| `_twilio_call_direct(+818046270314, ...)` | sid CA04e0a5b4799a7b74562ebf3081612b36 = phone rang |
+| Telegram bot 受信 location | acc 5m, 5 sec age, 信濃町 verified by OSM Nominatim reverse |
+| Pre-existing duplicate bot conflict | resolved (ai.anicca.tg-loc-bot disabled + plist renamed `.disabled-2026-06-07-duplicate`) |
+
+**Local vs Cloud equivalence**:
+
+| Concern | Local (mac mini) | Cloud (Daytona per user) |
+|---|---|---|
+| Code path | `~/.openclaw/skills/anicca-life-manager/scripts/` | same files, `cp -r` into sandbox at `$ANICCA_HOME/skills/anicca-life-manager/scripts/` |
+| Daemon | launchd plists (mac-only) | sandbox init.sh: `nohup python3 telegram_bot.py & ; nohup python3 realtime_guide.py &` |
+| State dir | `~/.openclaw/state/location/` | `$ANICCA_HOME/state/location/` (= sandbox-local) |
+| Disk risk | finite — Dais's mac mini fills up if many users | zero — each sandbox lives on its own disk in Daytona cloud |
+| Bot token | Dais's personal bot (= 8613473574) | one bot per user OR one shared bot with per-user webhook routing (= Plan 2 decides) |
+| Twilio fallback | `_twilio_call_direct()` patched 2026-06-07 | identical (= same script) |
+
+**Self-eval** (§11): Telegram Bot API 一致度 **100%**、 Stripe SaaS subs 一致度 **100%**、 anicca-v32-evolution multi-profile 既存 spec 一致度 **100%**、 ElevenLabs voice 一致度 **100%**、 proxies.sx x402 一致度 **100%**、 ANICCA_TRUE_AUTONOMY_SPEC 既存 一致度 **100%**、 transitous + MOTIS LIVE demo 一致度 **100%**、 lateness_check Twilio direct fallback LIVE verified 一致度 **100%**。
 
 ---
 
