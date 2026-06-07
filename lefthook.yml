@@ -21,35 +21,33 @@ pre-commit:
           echo "❌ branch名 '$b' が規約外。dev / feature/<x> / fix/<x> / chore/<x> / docs/<x> / app-factory/<x> を使う。"; exit 1; }
       fail_text: "branch名 規約違反"
     aniccaai-landing-guard:
-      # 3-layer defense-in-depth (v1.3、 spec §3.2.2、 reviewer BLOCKING #3 反映)
-      # Single-key (= user.name) detection was bypassable via git config override.
-      # Now requires forging 3 signals (name + email + parent process) simultaneously.
-      # Dais 2026-06-07 厳命: aniccaai.com は Dais 領域、 Anicca cron 編集禁止。
+      # Spec §3.2.2 v1.4 — Dais-identity allowlist (= 設計 反転):
+      #   ALLOW only if author = Dais (name + email 両方一致)。
+      #   Anicca cron は git config を Dais に偽装 できない (= cron-bash.sh は
+      #   ~/.openclaw/.env から env のみ load、 git user.name=Anicca Agent default)。
+      #   Dais の IDE / Cursor / Claude Code (= taste skill 起動) は name=Daisuke Sato で commit。
       run: |
         author_name=$(git config user.name)
         author_email=$(git config user.email)
         touched=$(git diff --cached --name-only | grep -c "^apps/landing/" || true)
         [ "$touched" -eq 0 ] && exit 0
-        is_bot=0
-        # Layer 1: name check
-        [ "$author_name" = "Anicca Agent" ] && is_bot=1
-        # Layer 2: email check (= bot email pattern)
+        is_dais=1
+        case "$author_name" in
+          "Daisuke Sato"|"Daisuke"|"Dais") : ;;
+          *) is_dais=0 ;;
+        esac
         case "$author_email" in
-          *anicca*bot*|*anicca-agent*|*@anicca.ai|noreply@anthropic.com) is_bot=1;;
+          keiodaisuke@gmail.com|*@daisuke*.io|dais@*) : ;;
+          *) is_dais=0 ;;
         esac
-        # Layer 3: parent process check (= interactive shell or claude-cli)
-        pname=$(ps -o comm= -p $PPID 2>/dev/null | xargs basename)
-        case "$pname" in
-          bash|zsh|fish|claude|cursor|code|nvim|vim|sh|tmux|screen) : ;;
-          *) is_bot=1 ;;
-        esac
-        if [ "$is_bot" = "1" ]; then
-          echo "❌ HARD RULE: Anicca cron は apps/landing/ 編集禁止"
-          echo "  name=$author_name email=$author_email parent=$pname"
+        if [ "$is_dais" = "0" ]; then
+          echo "❌ HARD RULE: apps/landing/ touch requires Dais identity"
+          echo "  current name=$author_name email=$author_email"
+          echo "  expected name='Daisuke Sato' email=keiodaisuke@gmail.com"
           git diff --cached --name-only | grep "^apps/landing/" | head -10 | sed 's/^/   /'
           exit 1
         fi
-      fail_text: "Anicca cron は apps/landing/ 編集禁止 (= Dais の aniccaai.com 領域)"
+      fail_text: "apps/landing/ touch requires Dais identity (= Daisuke Sato + keiodaisuke@gmail.com)"
 
 commit-msg:
   commands:
