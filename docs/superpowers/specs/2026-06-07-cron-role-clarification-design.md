@@ -515,4 +515,51 @@ V14-6 / V12-25  finishing-a-development-branch
 
 ---
 
-**Spec v1.1 end. Dais review → NEW-1 + NEW-2 即実行 → V13-1〜V13-10 + V14 順次**
+---
+
+## §12 — V14-T1 Doctor E2E result (= 2026-06-07 fresh fire 証拠)
+
+### §12.1 — Verdict
+
+★ ✅ Framework verified working ★ — JIT auto-append + triage + 4-strategy chain + ESCALATE 全 動作。
+★ ❌ LLM fix rate ≈ 0 ★ for current error universe — 主要 root cause が LLM 不可達 (= openclaw gateway issue + LLM cooldown + script bug)。
+
+### §12.2 — Evidence (= 2026-06-07 Doctor fire run b7438670)
+
+```
+pre-state:    37 error crons / 11 allow_explicit / 4 ai-ready issues
+post-state:   36 error crons / 16 allow_explicit / 4 issues (#4 ESCALATED)
+delta:        -1 error cron (= substack-en moved error → escalated)
+JIT bound:    5 added (4.7-slideshow / account-health / aie-consulting / aie-product / backlink-hn)
+```
+
+### §12.3 — 36 error cron root cause 3 分類
+
+| pattern | count | example crons | Doctor 可達? |
+|---|---|---|---|
+| `runtime-plugins stalled` | ~15 (= 推定) | daily-mail, fuel-broker, postiz-health, cold-email-reply | ❌ openclaw gateway issue |
+| `All models failed (rate_limit cooldown)` | ~5 (= 推定) | janitor-monkey | ❌ LLM provider exhausted、 retry/sleep 必要 |
+| `Slack target format wrong` | 1 | conformity-monkey | ✅ script bug、 fixable |
+| その他 | ~15 | substack-en (= 既 ESCALATED) | LLM 4-strategy 全 fail (= 真 incident) |
+
+### §12.4 — Follow-up tasks (= V14-T1 から派生、 新規)
+
+- **V14-T1-F1**: ★ Fix conformity-monkey Slack target format ★
+  bug: `openclaw message send --target "$SLACK_CHANNEL"` (= "C091G3PKHL2")
+  fix: `--target "channel:$SLACK_CHANNEL"` (= "channel:C091G3PKHL2")
+  file: `~/.openclaw/skills/anicca-conformity-monkey/scripts/run.sh`
+  also check: janitor-monkey + watchdog 同 pattern 使ってる か
+
+- **V14-T1-F2**: ★ dig runtime-plugins stall ★ (= openclaw gateway level issue)
+  対象: daily-mail, fuel-broker, postiz-health, cold-email-reply 等 ~15 crons
+  approach: openclaw doctor で gateway 健全性 確認 + plugin install state check
+  may require: `openclaw gateway restart` or specific plugin reinstall
+
+- **V14-T1-F3**: ★ Doctor LLM cooldown handling ★
+  問題: provider 全部 cooldown → fallback chain exhausted
+  fix: TIMEOUT path 同等 で「LLM_COOLDOWN」 pattern 追加、 30 min sleep + retry
+  file: `~/.openclaw/skills/anicca-doctor-monkey/scripts/pattern-classifier.sh`
+
+---
+
+**Spec v1.1 end. Dais review → V14-T1 完了、 F1/F2/F3 順次 execute 待ち**
