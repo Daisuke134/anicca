@@ -32,18 +32,21 @@ jobs:
       # 2026-06-07 V14-2 fix: replaced nwtgck/actions-netlify@v3.0 (= 5 連続 ISE)
       # with direct netlify-cli call (= validated via manual deploy locally)
       # Spec: 2026-06-07-cron-role-clarification-design.md §12.4 → V14-2
+      # Security: env vars for all template inputs (= injection防止)
       - name: Install Netlify CLI
         run: npm install -g netlify-cli@latest
 
       - name: Deploy to Netlify
         working-directory: apps/landing
-        run: |
-          IS_PROD="${{ github.ref == 'refs/heads/main' }}"
-          if [ "$IS_PROD" = "true" ]; then
-            netlify deploy --site "$NETLIFY_SITE_ID" --auth "$NETLIFY_AUTH_TOKEN" --dir=out --prod --no-build --message "Deploy from GHA prod - ${{ github.sha }}"
-          else
-            netlify deploy --site "$NETLIFY_SITE_ID" --auth "$NETLIFY_AUTH_TOKEN" --dir=out --no-build --message "Deploy from GHA preview - ${{ github.sha }}"
-          fi
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+          GHA_SHA: ${{ github.sha }}
+          GHA_REF: ${{ github.ref }}
+        run: |
+          set -euo pipefail
+          if [ "$GHA_REF" = "refs/heads/main" ]; then
+            netlify deploy --site "$NETLIFY_SITE_ID" --auth "$NETLIFY_AUTH_TOKEN" --dir=out --prod --no-build --message "Deploy from GHA prod - $GHA_SHA"
+          else
+            netlify deploy --site "$NETLIFY_SITE_ID" --auth "$NETLIFY_AUTH_TOKEN" --dir=out --no-build --message "Deploy from GHA preview - $GHA_SHA"
+          fi
