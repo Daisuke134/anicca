@@ -9,7 +9,7 @@ const PILLARS = [
   { key: 'politics', href: '/politics', emoji: '🏛️' },
   { key: 'research', href: '/research', emoji: '🔬' },
   { key: 'newsletter', href: '/letter', emoji: '✉️' },
-  { key: 'tomb', href: '/tomb', emoji: '🪦' },
+  { key: 'tomb', href: '/cemetery', emoji: '🪦' },
   { key: 'comedy', href: '/comedy', emoji: '🎭' },
   { key: 'donation', href: '/donation', emoji: '💝' },
   { key: 'webapps', href: '/factory', emoji: '🌐' },

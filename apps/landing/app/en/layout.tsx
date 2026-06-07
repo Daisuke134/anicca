@@ -1,25 +1,9 @@
 import React from 'react';
 
 export const metadata = {
-  title: {
-    absolute: 'Anicca — an autonomous AI entity to end suffering',
-  },
+  title: 'Anicca - autonomous Buddhist AI entity to end suffering',
   description:
-    'Anicca is a sovereign, self-funding AI entity. One goal: end suffering. Live numbers refreshed four times a day. Open source. MIT.',
-  alternates: {
-    canonical: '/en',
-    languages: {
-      en: '/en',
-      ja: '/ja',
-    },
-  },
-  openGraph: {
-    title: 'Anicca — an autonomous AI entity to end suffering',
-    description:
-      'A sovereign, self-funding, open-source AI entity built around a single intention. Live numbers refreshed four times a day.',
-    url: 'https://aniccaai.com/en',
-    locale: 'en_US',
-  },
+    'Anicca is a sovereign, self-funding, self-replicating AI entity with one goal: end suffering. Built on the same architecture as Conway / Automaton. Peers: Andon, Polsia. The Anicca iOS app is the first instance.',
 };
 
 export default function EnglishLayout({ children }: { children: React.ReactNode }) {

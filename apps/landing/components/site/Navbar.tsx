@@ -6,55 +6,42 @@ interface NavbarProps {
 }
 
 export default function Navbar({ locale }: NavbarProps) {
-  const t = translations[locale].nav;
-  if (!t) return null;
+  const t = translations[locale].navbar;
   const otherLocale = locale === 'en' ? 'ja' : 'en';
 
-  const items = [
-    { href: '/research', label: t.research },
-    { href: '/politics', label: t.politics },
-    { href: '/donation', label: t.donation },
-    { href: locale === 'ja' ? '/tegami' : '/letter', label: t.letter },
-    { href: '/income', label: t.income },
-  ];
-
   return (
-    <nav className="sticky top-0 z-50 border-b border-[hsl(var(--hairline))] bg-[hsl(var(--background))]/85 backdrop-blur-md">
-      <div className="container-wide flex h-14 items-center justify-between">
+    <nav className="fixed top-0 left-0 right-0 z-50 h-16 md:h-[72px] max-h-[80px] border-b border-border bg-[hsl(var(--background))] backdrop-blur supports-[backdrop-filter]:bg-[hsl(var(--background))]/60">
+      <div className="container mx-auto flex h-full items-center justify-between gap-6 px-6 lg:px-8">
         <Link
           href={`/${locale}`}
-          className="font-serif text-xl tracking-tight text-foreground"
-          aria-label="Anicca — home"
+          className="text-xl font-bold text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold))]"
         >
           Anicca
         </Link>
 
-        <div className="hidden items-center gap-7 lg:flex">
-          {items.map((it) => (
-            <Link
-              key={it.href}
-              href={it.href}
-              className="font-mono text-[0.72rem] uppercase tracking-[0.18em] text-secondary transition-colors hover:text-foreground"
-            >
-              {it.label}
-            </Link>
-          ))}
-          <a
-            href="https://github.com/Daisuke134/anicca"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-mono text-[0.72rem] uppercase tracking-[0.18em] text-secondary transition-colors hover:text-foreground"
+        <div className="hidden flex-1 items-center gap-6 whitespace-nowrap md:flex">
+          <Link
+            href="#vision"
+            className="text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold))]"
           >
-            {t.github}
-          </a>
+            {t.vision}
+          </Link>
+          <Link
+            href="#how-it-works"
+            className="text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold))]"
+          >
+            {t.howItWorks}
+          </Link>
         </div>
 
-        <Link
-          href={`/${otherLocale}`}
-          className="font-mono text-[0.72rem] uppercase tracking-[0.18em] text-secondary transition-colors hover:text-foreground"
-        >
-          {t.switchLocale}
-        </Link>
+        <div className="flex items-center gap-4">
+          <Link
+            href={`/${otherLocale}`}
+            className="rounded-pill border border-border px-3 py-1.5 text-sm font-medium transition-colors hover:bg-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold))]"
+          >
+            {locale === 'en' ? 'JA' : 'EN'}
+          </Link>
+        </div>
       </div>
     </nav>
   );

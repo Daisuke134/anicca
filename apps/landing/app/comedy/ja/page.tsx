@@ -3,6 +3,19 @@
 
 import Link from 'next/link';
 import { Anton, IBM_Plex_Sans, IBM_Plex_Mono, Noto_Serif_JP } from 'next/font/google';
+import JsonLd from '@/components/JsonLd';
+
+const comedyJaLd = {
+  '@context': 'https://schema.org',
+  '@type': 'CreativeWork',
+  name: 'アニッチャ お笑い',
+  url: 'https://aniccaai.com/comedy/ja',
+  genre: 'スタンドアップ・お笑い',
+  inLanguage: 'ja',
+  description:
+    'アニッチャによる東京・サンフランシスコでのお笑いライブとオープンマイク出演情報。大喜利・スキット・漫才・コント・ピンネタ・フリップ芸の各フォーマットで制作中。',
+  author: { '@type': 'Organization', name: 'Anicca', url: 'https://aniccaai.com' },
+};
 
 const display = Anton({
   subsets: ['latin'],
@@ -47,7 +60,7 @@ const SHOWS: Show[] = [
   {
     date: '2026-05-17',
     time: '08:00 PDT',
-    venue: 'Y Combinator HQ — Call My Agent Hackathon',
+    venue: 'Y Combinator HQ - Call My Agent Hackathon',
     city: 'San Francisco',
     kind: 'demo',
     status: 'pending',
@@ -56,7 +69,7 @@ const SHOWS: Show[] = [
   {
     date: '2026-05-18',
     time: '18:00 PDT',
-    venue: 'AI Tinkerers SF — GTM Engineering',
+    venue: 'AI Tinkerers SF - GTM Engineering',
     city: 'San Francisco',
     kind: 'demo',
     status: 'confirmed',
@@ -68,7 +81,7 @@ const FORMATS = [
   { label: '大喜利', label_en: 'Ogiri', desc: '同じお題に対して 30 答、毎朝 04:00 に AI が量産する。' },
   { label: 'スキット 日', label_en: 'Skit JP', desc: '60 秒の街角ネタ。 一人芝居でカメラ向きに撮る用。' },
   { label: 'スキット 英', label_en: 'Skit EN', desc: 'SF/LA で通じる 60 秒の英語ネタ。 同じ無常を西海岸口調で。' },
-  { label: '漫才', label_en: 'Manzai', desc: '90 秒の二人芝居。 ボケ＝Anicca、ツッコミ＝Dais。' },
+  { label: '漫才', label_en: 'Manzai', desc: '90 秒の二人芝居。ボケ＝アニッチャ、ツッコミ＝相方。' },
   { label: 'コント', label_en: 'Konto', desc: '90 秒の小道具コント。 寺の境内、SuicaIC、Slack 通知が舞台。' },
   { label: 'ピンネタ', label_en: 'Pin-neta', desc: '60 秒のピン芸。 一人で 2-3 キャラを演じ分ける。' },
   { label: 'フリップ芸', label_en: 'Flip-game', desc: 'フリップ 5-7 枚で前フリと裏切り。 視覚芸の基本形。' },
@@ -100,6 +113,7 @@ export default function Page() {
     <main
       className={`${display.variable} ${body.variable} ${mono.variable} ${kanji.variable} relative min-h-screen overflow-hidden bg-[#0a0a0a] text-[#f4f1ea] antialiased`}
     >
+      <JsonLd data={comedyJaLd} />
       <div
         aria-hidden
         className="pointer-events-none fixed inset-0 z-0 opacity-[0.06]"
@@ -114,7 +128,7 @@ export default function Page() {
           href="/ja"
           className="font-[family-name:var(--font-mono)] text-xs uppercase tracking-[0.25em] text-[#f4f1ea]/60 transition-colors hover:text-[#f4f1ea]"
         >
-          ← Anicca
+          ← アニッチャ
         </Link>
         <nav className="flex items-center gap-6 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.25em] text-[#f4f1ea]/60">
           <a href="#shows" className="transition-colors hover:text-[#f4f1ea]">出演</a>
@@ -160,7 +174,7 @@ export default function Page() {
       </section>
 
       <div className="relative z-10 -mt-10 flex justify-end px-6 md:px-12">
-        <div className="flex h-20 w-20 -rotate-6 items-center justify-center rounded-md border-2 border-[#c8302e] bg-[#c8302e]/10 font-[family-name:var(--font-kanji)] text-base font-black text-[#c8302e]">
+        <div className="flex h-20 w-20 -rotate-6 items-center justify-center rounded-card border-2 border-[#c8302e] bg-[#c8302e]/10 font-[family-name:var(--font-kanji)] text-base font-black text-[#c8302e]">
           無常
         </div>
       </div>
@@ -240,7 +254,7 @@ export default function Page() {
           1 つのお題。
         </h2>
         <p className="mt-6 max-w-2xl font-[family-name:var(--font-body)] text-base leading-relaxed text-[#f4f1ea]/70">
-          毎朝 AI が同じお題から 7 種類のネタを書く — 大喜利、スキット日英、漫才、コント、ピンネタ、フリップ芸。
+          毎朝 AI が同じお題から 7 種類のネタを書く - 大喜利、スキット日英、漫才、コント、ピンネタ、フリップ芸。
           人間が一つ選んで演じ、撮って投げる。 カメラを生き残ったネタが、ライブのセットに昇格する。
         </p>
 
@@ -321,7 +335,7 @@ export default function Page() {
               href="https://aniccaai.com/ja"
               className="inline-flex items-center justify-center border border-[#c8302e] bg-[#c8302e] px-8 py-4 font-[family-name:var(--font-mono)] text-xs uppercase tracking-[0.25em] text-[#0a0a0a] transition-all hover:bg-[#f4f1ea] hover:text-[#0a0a0a]"
             >
-              登録 — 準備中
+              登録 - 準備中
             </a>
             <a
               href="https://github.com/Daisuke134/anicca"

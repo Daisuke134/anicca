@@ -3,7 +3,7 @@ export const metadata = { title: 'プライバシーポリシー | CalmCortisol'
 export default function CalmCortisolPrivacyJA() {
   return (
     <main className="container mx-auto max-w-3xl px-4 py-24">
-      <h1 className="text-3xl font-bold text-foreground">プライバシーポリシー — CalmCortisol</h1>
+      <h1 className="text-3xl font-bold text-foreground">プライバシーポリシー - CalmCortisol</h1>
       <p className="mt-4 text-sm text-muted-foreground">最終更新日：2026年2月25日</p>
 
       <p className="mt-6 text-muted-foreground">
@@ -15,9 +15,9 @@ export default function CalmCortisolPrivacyJA() {
 
       <h2 className="mt-10 text-xl font-semibold text-foreground">2. 収集する情報</h2>
       <ul className="mt-3 list-disc pl-6 text-muted-foreground space-y-2">
-        <li>デバイス識別子 — アナリティクスおよび不正防止のために使用</li>
-        <li>アプリ使用イベント — 例：呼吸セッション完了、ペイウォールのインタラクション</li>
-        <li>サブスクリプションステータス — App Store / RevenueCat を通じて管理</li>
+        <li>デバイス識別子 - アナリティクスおよび不正防止のために使用</li>
+        <li>アプリ使用イベント - 例：呼吸セッション完了、ペイウォールのインタラクション</li>
+        <li>サブスクリプションステータス - App Store / RevenueCat を通じて管理</li>
       </ul>
 
       <h2 className="mt-10 text-xl font-semibold text-foreground">3. 収集しない情報</h2>
@@ -30,9 +30,9 @@ export default function CalmCortisolPrivacyJA() {
 
       <h2 className="mt-10 text-xl font-semibold text-foreground">4. 第三者サービス</h2>
       <ul className="mt-3 list-disc pl-6 text-muted-foreground space-y-2">
-        <li><strong>RevenueCat</strong> — サブスクリプション管理（購入履歴）</li>
-        <li><strong>Mixpanel</strong> — 匿名使用状況の分析</li>
-        <li><strong>Apple App Store</strong> — 決済処理</li>
+        <li><strong>RevenueCat</strong> - サブスクリプション管理（購入履歴）</li>
+        <li><strong>Mixpanel</strong> - 匿名使用状況の分析</li>
+        <li><strong>Apple App Store</strong> - 決済処理</li>
       </ul>
 
       <h2 className="mt-10 text-xl font-semibold text-foreground">5. データ保持期間</h2>

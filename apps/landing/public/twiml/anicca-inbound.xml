@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Play>https://aniccaai.com/audio/anicca-call-greeting.mp3</Play>
+  <Record maxLength="120" finishOnKey="#" playBeep="true" trim="trim-silence" recordingStatusCallback="https://aniccaai.com/api/twilio/recording" />
+  <Say voice="Polly.Joanna" language="en-US">Thank you. Goodbye.</Say>
+</Response>

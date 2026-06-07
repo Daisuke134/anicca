@@ -1,4 +1,4 @@
-export const metadata = { title: 'プライバシーポリシー | BreathStory — 呼吸ガイドストーリー' };
+export const metadata = { title: 'プライバシーポリシー | BreathStory - 呼吸ガイドストーリー' };
 
 export default function BreathStoryPrivacyJA() {
   return (
@@ -47,7 +47,7 @@ export default function BreathStoryPrivacyJA() {
       </p>
       <ul className="mt-3 list-disc pl-6 text-foreground space-y-2">
         <li>Apple（App Store課金および関連プラットフォームサービス）</li>
-        <li>RevenueCat（サブスクリプション管理 — 匿名化された購入レシートのみ受信）</li>
+        <li>RevenueCat（サブスクリプション管理 - 匿名化された購入レシートのみ受信）</li>
       </ul>
       <p className="mt-3 text-muted-foreground">
         分析SDK、広告ネットワーク、クラッシュレポートサービス、トラッキングフレームワークは使用しません。

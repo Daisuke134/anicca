@@ -2,151 +2,89 @@
 @tailwind components;
 @tailwind utilities;
 
-/*
- * Anicca — design system
- * --------------------------------------------------------------------------
- * Restraint over flourish. Editorial typography on near-paper white.
- * Black/white spine; one warm amber accent that whispers rather than shouts.
- * Native dark mode that honours the same restraint.
- * --------------------------------------------------------------------------
- */
-
+/* Anicca Landing Page Design System — taste-skill (off-white/off-black, brand gold preserved §11.C) */
 :root {
-  /* Surface */
-  --background:      0   0%   98.4%; /* #FAFAFA — warm paper */
-  --background-alt:  0   0%   100%;  /* pure white for cards on paper */
-  --foreground:      0   0%   8%;    /* #141414 — near-black, gentler than #000 */
+  /* surfaces: neutral off-white (warm-cream 禁止族回避 §4.2), 非 pure #fff §9.A */
+  --background: 0 0% 98%;            /* #fafafa */
+  --background-alt: 240 5% 96%;     /* #f4f4f5 */
+  --foreground: 240 6% 10%;         /* #18181b off-black, 非 #000 §9.A */
 
-  /* Type */
-  --text-primary:    0   0%   8%;
-  --text-secondary:  0   0%   38%;   /* zinc-600 vibe */
-  --text-muted:      0   0%   55%;
+  /* text */
+  --text-primary: 240 6% 10%;       /* #18181b */
+  --text-secondary: 240 4% 34%;     /* #52525b WCAG AA */
 
-  /* Hairline */
-  --hairline:        0   0%   90%;   /* #E5E5E5 */
+  /* brand accent (保持 §11.C, sat 59% < 80% §4.2) */
+  --gold: 43 59% 52%;               /* #c9a23f */
 
-  /* Single accent — patinated amber, not gold */
-  --gold:            36  72%  46%;
-  --amber:           36  72%  46%;
+  /* radius tokens (§4.4 shape lock: pill / 14 / 12) */
+  --radius-pill: 9999px;
+  --radius-card: 14px;
+  --radius-input: 12px;
 
-  /* shadcn tokens (kept for component compatibility) */
-  --muted:           0   0%   96%;
-  --muted-foreground: 0  0%   38%;
-  --card:            0   0%   100%;
-  --card-foreground: 0   0%   8%;
-  --popover:         0   0%   100%;
-  --popover-foreground: 0 0%  8%;
-  --primary:         0   0%   8%;
-  --primary-foreground: 0 0%  100%;
-  --secondary:       0   0%   96%;
-  --secondary-foreground: 0 0% 8%;
-  --accent:          0   0%   96%;
-  --accent-foreground: 0  0%  8%;
-  --destructive:     0   60%  48%;
-  --destructive-foreground: 0 0% 100%;
-  --border:          0   0%   90%;
-  --input:           0   0%   90%;
-  --ring:            0   0%   8%;
+  /* shadcn semantic tokens (accent は neutral hover surface のまま維持。gold は --gold/--ring) */
+  --muted: 240 5% 96%;
+  --muted-foreground: 240 4% 34%;
+  --card: 0 0% 98%;
+  --card-foreground: 240 6% 10%;
+  --popover: 0 0% 98%;
+  --popover-foreground: 240 6% 10%;
+  --primary: 240 6% 10%;
+  --primary-foreground: 0 0% 98%;
+  --secondary: 240 5% 96%;
+  --secondary-foreground: 240 6% 10%;
+  --accent: 240 5% 96%;
+  --accent-foreground: 240 6% 10%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 240 6% 90%;
+  --input: 240 6% 90%;
+  --ring: 43 59% 52%;               /* gold focus ring */
 }
 
-/*
- * Dark mode — preserved.
- * Same hairlines and accent, inverted surface.
- */
-.dark, [data-theme="dark"] {
-  --background:      0   0%   6%;    /* near-black canvas */
-  --background-alt:  0   0%   9%;
-  --foreground:      0   0%   95%;
-  --text-primary:    0   0%   95%;
-  --text-secondary:  0   0%   65%;
-  --text-muted:      0   0%   45%;
-  --hairline:        0   0%   16%;
-  --muted:           0   0%   12%;
-  --muted-foreground: 0  0%   60%;
-  --card:            0   0%   9%;
-  --card-foreground: 0   0%   95%;
-  --popover:         0   0%   9%;
-  --popover-foreground: 0 0%  95%;
-  --primary:         0   0%   95%;
-  --primary-foreground: 0 0%  6%;
-  --secondary:       0   0%   12%;
-  --secondary-foreground: 0 0% 95%;
-  --accent:          0   0%   12%;
-  --accent-foreground: 0  0%  95%;
-  --border:          0   0%   16%;
-  --input:           0   0%   16%;
-  --ring:            0   0%   95%;
+/* §6.C / §8 dark mode (mandatory). 非 pure #000 §9.A, brand fidelity 維持 §8.B */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: 240 6% 5%;         /* #0b0b0c off-black */
+    --background-alt: 240 5% 9%;     /* #161617 */
+    --foreground: 240 5% 96%;        /* #f4f4f5 off-white */
+    --text-primary: 240 5% 96%;
+    --text-secondary: 240 5% 65%;    /* #a1a1aa */
+    --gold: 43 56% 55%;              /* #cdaa4a dark hierarchy parity §8.B */
+    --muted: 240 5% 9%;
+    --muted-foreground: 240 5% 65%;
+    --card: 240 6% 7%;
+    --card-foreground: 240 5% 96%;
+    --popover: 240 6% 7%;
+    --popover-foreground: 240 5% 96%;
+    --primary: 240 5% 96%;
+    --primary-foreground: 240 6% 5%;
+    --secondary: 240 5% 9%;
+    --secondary-foreground: 240 5% 96%;
+    --accent: 240 5% 12%;
+    --accent-foreground: 240 5% 96%;
+    --border: 240 5% 18%;
+    --input: 240 5% 18%;
+    --ring: 43 56% 55%;
+  }
 }
 
 @layer base {
   html, body {
     height: 100%;
   }
-  html {
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    text-rendering: optimizeLegibility;
-  }
   body {
     margin: 0;
     background: hsl(var(--background));
     color: hsl(var(--foreground));
-    font-feature-settings: "ss01", "cv11";
   }
 
-  /* Display headings inherit serif by default in editorial regions. */
-  .display { font-family: var(--font-serif), ui-serif, Georgia, serif; }
-
+  /* Text utilities */
   h1, h2, h3, h4, h5, h6 {
     text-wrap: balance;
-    font-weight: 500;
   }
   p {
     text-wrap: pretty;
   }
-
-  /* Selection — quiet amber */
-  ::selection {
-    background: hsl(var(--amber) / 0.20);
-    color: hsl(var(--foreground));
-  }
-
-  /* Hairline used everywhere */
-  hr.hairline {
-    border: 0;
-    border-top: 1px solid hsl(var(--hairline));
-  }
 }
 
-@layer components {
-  /* Reusable underlined link with amber hover */
-  .link-quiet {
-    @apply underline decoration-1 underline-offset-[5px];
-    text-decoration-color: hsl(var(--hairline));
-    transition: text-decoration-color 200ms ease-out, color 200ms ease-out;
-  }
-  .link-quiet:hover {
-    text-decoration-color: hsl(var(--amber));
-    color: hsl(var(--foreground));
-  }
 
-  /* Section rhythm — 6rem/8rem vertical padding */
-  .section { @apply py-24 md:py-32; }
-  .section-tight { @apply py-16 md:py-20; }
-
-  /* Editorial container */
-  .container-prose { @apply mx-auto w-full max-w-prose px-6; }
-  .container-narrow { @apply mx-auto w-full max-w-narrow px-6; }
-  .container-content { @apply mx-auto w-full max-w-content px-6; }
-  .container-wide { @apply mx-auto w-full max-w-wide px-6 md:px-10; }
-
-  /* Eyebrow label — small caps, mono, used to mark sections */
-  .eyebrow {
-    @apply font-mono text-xs uppercase tracking-[0.2em] text-[hsl(var(--text-secondary))];
-  }
-}
-
-@layer utilities {
-  .text-secondary { color: hsl(var(--text-secondary)); }
-  .text-muted     { color: hsl(var(--text-muted)); }
-}

@@ -102,7 +102,7 @@ export default function BreathCalmPrivacyEN() {
       <div className="mt-8 border-t border-border pt-6 text-sm text-muted-foreground">
         <a href="/breath-calm/privacy/ja" className="underline hover:text-foreground">日本語版プライバシーポリシー</a>
         {' · '}
-        <a href="/breath-calm/" className="underline hover:text-foreground">Back to BreathCalm</a>
+        <a href="/breath-calm" className="underline hover:text-foreground">Back to BreathCalm</a>
       </div>
     </main>
   );

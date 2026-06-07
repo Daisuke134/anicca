@@ -4,6 +4,21 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Cormorant_Garamond, IBM_Plex_Sans, IBM_Plex_Mono } from 'next/font/google';
+import JsonLd from '@/components/JsonLd';
+
+const retreatBuildLd = {
+  '@context': 'https://schema.org',
+  '@type': 'DonateAction',
+  name: 'Build the Anicca Retreat Center',
+  url: 'https://aniccaai.com/retreat/build',
+  description:
+    'A campaign to raise ¥30M to buy land and build a permanent home for the sangha in the hills outside Tokyo. After one year of borrowed venues and twelve silent retreats hosted in rooms others let us use, this is the permanent home. No fee for sitters, ever. Funded by the swarm.',
+  recipient: {
+    '@type': 'Organization',
+    name: 'Anicca',
+    url: 'https://aniccaai.com',
+  },
+};
 
 const display = Cormorant_Garamond({
   subsets: ['latin'], weight: ['400', '500', '600', '700'], style: ['normal', 'italic'], variable: '--font-display',
@@ -75,6 +90,7 @@ export default function RetreatBuildPage() {
       className={`${display.variable} ${body.variable} ${mono.variable} min-h-screen`}
       style={{ background: '#F2EBDD', color: '#1B1410', fontFamily: 'var(--font-body)', fontWeight: 300 }}
     >
+      <JsonLd data={retreatBuildLd} />
       <style jsx global>{`
         :root { --ink: #1B1410; --paper: #F2EBDD; --terra: #8E3B1F; --moss: #4A5A3B; --dim: #6F635A; --rule: rgba(27, 20, 16, 0.18); }
         @keyframes rb-fade-up { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
@@ -128,7 +144,7 @@ export default function RetreatBuildPage() {
             className="rb-anim-3 mt-12 max-w-2xl"
             style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.2rem, 1.9vw, 1.55rem)', lineHeight: 1.55 }}
           >
-            One year of borrowed venues. Twelve silent retreats hosted in the rooms others let us use. Then — ¥30M to buy land and build a permanent home for the sangha, in the hills outside Tokyo. No fee for sitters, ever. Funded by the swarm. This is the swarm.
+            One year of borrowed venues. Twelve silent retreats hosted in the rooms others let us use. Then - ¥30M to buy land and build a permanent home for the sangha, in the hills outside Tokyo. No fee for sitters, ever. Funded by the swarm. This is the swarm.
           </p>
         </div>
       </section>
@@ -142,7 +158,7 @@ export default function RetreatBuildPage() {
           <div className="grid gap-8 md:grid-cols-[3fr_2fr] md:items-end">
             <div>
               <div style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(2.6rem, 6vw, 4.2rem)', fontWeight: 500, lineHeight: 1, letterSpacing: '-0.01em' }}>
-                {raised === null ? '—' : fmtJPY(raised)}
+                {raised === null ? '-' : fmtJPY(raised)}
               </div>
               <div className="mt-2" style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem', color: 'var(--dim)' }}>
                 of {fmtJPY(TARGET_JPY)} target · {donors.toLocaleString()} donors
@@ -173,7 +189,7 @@ export default function RetreatBuildPage() {
           </p>
           <div className="grid gap-12 md:grid-cols-3">
             {[
-              ['I',   '¥15M · Land',     'A 1,500–3,000㎡ plot within 1.5h of Tokyo. Chiba, Yamanashi, or Ibaraki, depending on what we find. Quiet, with trees.'],
+              ['I',   '¥15M · Land',     'A 1,500-3,000㎡ plot within 1.5h of Tokyo. Chiba, Yamanashi, or Ibaraki, depending on what we find. Quiet, with trees.'],
               ['II',  '¥10M · Building', 'Twelve sleeping cells (men & women separated), one meditation hall, one kitchen, one bathing room. Simple. Wooden. Built to last forty years.'],
               ['III', '¥5M · First year ops', 'Volunteer travel reimbursements, food, supplies, utilities for 12 retreats × 18 people. After year one, donations from sitters cover the rest.'],
             ].map(([n, h, p]) => (
@@ -226,7 +242,7 @@ export default function RetreatBuildPage() {
             ))}
           </div>
           <p className="mt-8 text-sm" style={{ color: 'var(--dim)', lineHeight: 1.7, maxWidth: '52ch' }}>
-            Stripe-hosted checkout. Cards, Apple Pay, Google Pay accepted. Receipts emailed. No fees deducted from your gift — Anicca pays Stripe's processing.
+            Stripe-hosted checkout. Cards, Apple Pay, Google Pay accepted. Receipts emailed. No fees deducted from your gift - Anicca pays Stripe's processing.
           </p>
         </div>
       </section>
@@ -247,7 +263,7 @@ export default function RetreatBuildPage() {
       <footer className="px-6 py-12 md:px-16" style={{ borderTop: '1px solid var(--rule)' }}>
         <div className="mx-auto flex max-w-5xl flex-col items-start justify-between gap-6 md:flex-row md:items-center">
           <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem' }}>
-            Anicca Retreats — built by the swarm, for everyone.
+            Anicca Retreats - built by the swarm, for everyone.
           </div>
           <div className="flex gap-6" style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', letterSpacing: '0.18em' }}>
             <a href="mailto:retreat@aniccaai.com" className="uppercase opacity-70 hover:opacity-100">retreat@aniccaai.com</a>

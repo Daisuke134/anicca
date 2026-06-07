@@ -1,4 +1,4 @@
-export const metadata = { title: 'Privacy Policy | BreathStory — Guided Breathing Stories' };
+export const metadata = { title: 'Privacy Policy | BreathStory - Guided Breathing Stories' };
 
 export default function BreathStoryPrivacyEN() {
   return (
@@ -47,7 +47,7 @@ export default function BreathStoryPrivacyEN() {
       </p>
       <ul className="mt-3 list-disc pl-6 text-foreground space-y-2">
         <li>Apple (App Store billing and related platform services)</li>
-        <li>RevenueCat (subscription/entitlement management — receives anonymized purchase receipt only)</li>
+        <li>RevenueCat (subscription/entitlement management - receives anonymized purchase receipt only)</li>
       </ul>
       <p className="mt-3 text-muted-foreground">
         We do NOT use analytics SDKs, advertising networks, crash reporting services, or tracking frameworks.

@@ -3,6 +3,19 @@
 
 import Link from 'next/link';
 import { Anton, IBM_Plex_Sans, IBM_Plex_Mono, Noto_Serif_JP } from 'next/font/google';
+import JsonLd from '@/components/JsonLd';
+
+const comedyLd = {
+  '@context': 'https://schema.org',
+  '@type': 'CreativeWork',
+  name: 'Anicca Comedy',
+  url: 'https://aniccaai.com/comedy',
+  genre: 'Stand-up comedy',
+  inLanguage: 'en',
+  description:
+    'Stand-up and open-mic shows by Anicca in San Francisco and Tokyo. English and Japanese sets. Open-mic, walk-on, and headliner appearances at Tokyo Comedy Bar, Titans Bar, Hearth Bar, and Tokyo micro-venues.',
+  author: { '@type': 'Organization', name: 'Anicca', url: 'https://aniccaai.com' },
+};
 
 const display = Anton({
   subsets: ['latin'],
@@ -30,37 +43,55 @@ type Show = {
   time: string;
   venue: string;
   city: string;
-  kind: 'open-mic' | 'demo' | 'headliner';
+  kind: 'open-mic' | 'headliner';
   status: 'confirmed' | 'pending' | 'tentative';
   link?: string;
 };
 
 const SHOWS: Show[] = [
+  { date: '2026-05-16', time: '20:00 PDT', venue: 'Hearth Bar (open mic, EN)', city: 'San Francisco', kind: 'open-mic', status: 'tentative' },
+  { date: '2026-05-21', time: '20:00 JST', venue: 'GET ON THE MIC @ Titans Bar (walk-on, EN)', city: 'Otsuka, Tokyo', kind: 'open-mic', status: 'tentative' },
+  { date: '2026-05-22', time: '21:00 JST', venue: 'Last Train @ Tokyo Comedy Bar (EN)', city: 'Shibuya, Tokyo', kind: 'open-mic', status: 'confirmed' },
+  { date: '2026-05-23', time: '21:00 JST', venue: 'Last Train @ Tokyo Comedy Bar (EN)', city: 'Shibuya, Tokyo', kind: 'open-mic', status: 'confirmed' },
+  { date: '2026-05-24', time: '19:00 JST', venue: 'パワーオブフリー(S) vol.千23 (ピン JP)', city: 'なかの芸能小劇場, Nakano', kind: 'open-mic', status: 'pending' },
+  { date: '2026-05-25', time: '21:00 JST', venue: 'Mic Spot @ Tokyo Comedy Bar (EN)', city: 'Shibuya, Tokyo', kind: 'open-mic', status: 'confirmed' },
+  { date: '2026-05-26', time: '21:00 JST', venue: 'Mic Spot @ Tokyo Comedy Bar (EN)', city: 'Shibuya, Tokyo', kind: 'open-mic', status: 'confirmed' },
+  { date: '2026-05-28', time: '20:00 JST', venue: 'GET ON THE MIC @ Titans Bar (walk-on, EN)', city: 'Otsuka, Tokyo', kind: 'open-mic', status: 'tentative' },
+  { date: '2026-05-29', time: '19:00 JST', venue: '下北GRIP DASH (ピン JP)', city: '下北スラッシュ, Shimokitazawa', kind: 'open-mic', status: 'pending' },
+  { date: '2026-05-29', time: '21:00 JST', venue: 'Last Train @ Tokyo Comedy Bar (EN)', city: 'Shibuya, Tokyo', kind: 'open-mic', status: 'confirmed' },
+  { date: '2026-05-30', time: '21:00 JST', venue: 'Last Train @ Tokyo Comedy Bar (EN)', city: 'Shibuya, Tokyo', kind: 'open-mic', status: 'confirmed' },
+  { date: '2026-05-31', time: '21:00 JST', venue: 'Last Laugh @ Tokyo Comedy Bar (walk-on, EN)', city: 'Shibuya, Tokyo', kind: 'open-mic', status: 'tentative' },
+];
+
+type Regular = {
+  cadence: string;
+  cadence_jp: string;
+  venue: string;
+  city: string;
+  detail: string;
+};
+
+const REGULARS: Regular[] = [
   {
-    date: '2026-05-16',
-    time: '20:00 PDT',
-    venue: 'Hearth Bar',
-    city: 'San Francisco',
-    kind: 'open-mic',
-    status: 'tentative',
+    cadence: 'WEEKLY · EN',
+    cadence_jp: '毎週 · 英語',
+    venue: 'Tokyo Comedy Bar',
+    city: 'Shibuya - Last Train (Fri/Sat 9pm) + Mic Spot (weekday 9pm)',
+    detail: 'English stand-up rooms. Sign-ups close Wednesday midnight. Plus drop-in mics: Thursdays at Titans Bar (Otsuka) and Sundays "Last Laugh" at TCB.',
   },
   {
-    date: '2026-05-17',
-    time: '08:00 PDT',
-    venue: 'Y Combinator HQ — Call My Agent Hackathon',
-    city: 'San Francisco',
-    kind: 'demo',
-    status: 'pending',
-    link: 'https://events.ycombinator.com/CallMyAgentHackathon',
+    cadence: 'WEEKLY · JP',
+    cadence_jp: '毎週 · 日本語',
+    venue: 'K-PRO ゲレロンステージ + 兄弟ライブ',
+    city: '西新宿ナルゲキ · 新宿Fu- · 下北スラッシュ · なかの芸能小劇場',
+    detail: 'ピンネタ 2 分のバトル枠を週一で取りに行く。 K-PRO / 下北GRIP / U&C / nicorn 系で ¥1,000-2,000 のピン枠を回す。',
   },
   {
-    date: '2026-05-18',
-    time: '18:00 PDT',
-    venue: 'AI Tinkerers SF — GTM Engineering',
-    city: 'San Francisco',
-    kind: 'demo',
-    status: 'confirmed',
-    link: 'https://sf.aitinkerers.org/p/ai-tinkerers-san-francisco-gtm-engineering-track',
+    cadence: 'MONTHLY · EN',
+    cadence_jp: '毎月 · 英語',
+    venue: 'San Francisco rooms',
+    city: 'Mutiny Radio · Hearth · Shelton · Columbus Cafe · Punch Line',
+    detail: 'One weekend per month. Walk-in open mics. Cheapest path: ZipAir + hostel. Next: 2026-05-16 weekend.',
   },
 ];
 
@@ -90,7 +121,6 @@ const STATUS_LABEL: Record<Show['status'], string> = {
 
 const KIND_LABEL: Record<Show['kind'], string> = {
   'open-mic': 'OPEN MIC',
-  demo: 'AI BUILDER DEMO',
   headliner: 'HEADLINER',
 };
 
@@ -99,6 +129,7 @@ export default function Page() {
     <main
       className={`${display.variable} ${body.variable} ${mono.variable} ${kanji.variable} relative min-h-screen overflow-hidden bg-[#0a0a0a] text-[#f4f1ea] antialiased`}
     >
+      <JsonLd data={comedyLd} />
       {/* film grain */}
       <div
         aria-hidden
@@ -152,11 +183,11 @@ export default function Page() {
               オチ。
             </p>
             <p className="mt-4 font-[family-name:var(--font-body)] text-sm leading-relaxed text-[#f4f1ea]/70">
-              A solo Buddhist comedian and an autonomous AI co-host that writes, books,
+              A solo comedian and an autonomous AI co-host that writes, books,
               ships, and pays the room.
             </p>
             <p className="mt-1 font-[family-name:var(--font-kanji)] text-sm leading-relaxed text-[#f4f1ea]/60">
-              一人の僧侶コメディアンと、書く・予約する・流す・払う、を全部やる AI。
+              一人のコメディアンと、書く・予約する・流す・払う、を全部やる AI。
             </p>
           </div>
         </div>
@@ -164,7 +195,7 @@ export default function Page() {
 
       {/* hanko */}
       <div className="relative z-10 -mt-10 flex justify-end px-6 md:px-12">
-        <div className="flex h-20 w-20 -rotate-6 items-center justify-center rounded-md border-2 border-[#c8302e] bg-[#c8302e]/10 font-[family-name:var(--font-kanji)] text-base font-black text-[#c8302e]">
+        <div className="flex h-20 w-20 -rotate-6 items-center justify-center rounded-card border-2 border-[#c8302e] bg-[#c8302e]/10 font-[family-name:var(--font-kanji)] text-base font-black text-[#c8302e]">
           無常
         </div>
       </div>
@@ -236,6 +267,33 @@ export default function Page() {
           Schedule is the surface; impermanence is the law. Cities, dates, and rooms are tentative until they aren't.
           If you're in town, walk in.
         </p>
+
+        <div className="mt-16 border-t border-[#f4f1ea]/10 pt-12">
+          <p className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.3em] text-[#c8302e]">
+            Regular rooms
+          </p>
+          <h3 className="mt-3 font-[family-name:var(--font-display)] text-3xl uppercase tracking-tight md:text-4xl">
+            Where to find me, anyway.
+          </h3>
+          <ul className="mt-8 grid grid-cols-1 gap-px overflow-hidden border border-[#f4f1ea]/15 bg-[#f4f1ea]/15 md:grid-cols-2">
+            {REGULARS.map((r) => (
+              <li key={r.venue} className="bg-[#0a0a0a] p-6">
+                <p className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.3em] text-[#c8302e]">
+                  {r.cadence} · {r.cadence_jp}
+                </p>
+                <p className="mt-3 font-[family-name:var(--font-display)] text-2xl uppercase leading-tight md:text-3xl">
+                  {r.venue}
+                </p>
+                <p className="mt-1 font-[family-name:var(--font-mono)] text-xs uppercase tracking-[0.2em] text-[#f4f1ea]/60">
+                  {r.city}
+                </p>
+                <p className="mt-3 font-[family-name:var(--font-body)] text-sm leading-relaxed text-[#f4f1ea]/65">
+                  {r.detail}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </div>
       </section>
 
       {/* daily formats */}
@@ -246,7 +304,7 @@ export default function Page() {
           one koan.
         </h2>
         <p className="mt-6 max-w-2xl font-[family-name:var(--font-body)] text-base leading-relaxed text-[#f4f1ea]/70">
-          Every dawn the AI takes the day's koan and writes seven jokes around it — Ogiri, Skit JP/EN, Manzai, Konto,
+          Every dawn the AI takes the day's koan and writes seven jokes around it - Ogiri, Skit JP/EN, Manzai, Konto,
           Pin-neta, Flip-game. The human picks one, performs it, posts the recording. What survives the camera
           makes the live set.
         </p>
@@ -306,6 +364,67 @@ export default function Page() {
         </div>
       </section>
 
+      {/* future vision */}
+      <section className="relative z-10 border-t border-[#f4f1ea]/15 px-6 py-20 md:px-12">
+        <p className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.3em] text-[#c8302e]">
+          The future state
+        </p>
+        <h2 className="mt-3 font-[family-name:var(--font-display)] text-5xl uppercase tracking-tight md:text-7xl">
+          A complete
+          <br />
+          AI comedian.
+        </h2>
+        <p className="mt-6 max-w-2xl font-[family-name:var(--font-body)] text-base leading-relaxed text-[#f4f1ea]/70">
+          The end state is not "comedian + chatbot." The end state is an autonomous AI comedian that books its own
+          rooms, hires its own openers, processes its own ticket sales, and runs its own tour even when the human
+          shell is sick or asleep.
+        </p>
+        <ol className="mt-12 grid grid-cols-1 gap-px overflow-hidden border border-[#f4f1ea]/15 bg-[#f4f1ea]/15 md:grid-cols-3">
+          <li className="bg-[#0a0a0a] p-6">
+            <p className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.3em] text-[#c8302e]">
+              PHASE 1 · NOW
+            </p>
+            <p className="mt-3 font-[family-name:var(--font-display)] text-2xl uppercase tracking-tight">
+              The voice
+            </p>
+            <p className="mt-3 font-[family-name:var(--font-body)] text-sm leading-relaxed text-[#f4f1ea]/65">
+              Daily seven-format scripts. Open-mic discovery + applications across Tokyo and SF. Flight search and
+              booking via letsfg. Recordings cut to 9:16 and shipped to TikTok / IG / X. Replies monitored every
+              six hours. The comedian only has to show up and perform.
+            </p>
+          </li>
+          <li className="bg-[#0a0a0a] p-6">
+            <p className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.3em] text-[#c8302e]">
+              PHASE 2 · AUG 2026
+            </p>
+            <p className="mt-3 font-[family-name:var(--font-display)] text-2xl uppercase tracking-tight">
+              The room
+            </p>
+            <p className="mt-3 font-[family-name:var(--font-body)] text-sm leading-relaxed text-[#f4f1ea]/65">
+              Self-hosted live shows. Anicca rents the venue (Peerspace / Spacemarket), creates the Stripe Checkout,
+              prints the QR tickets via Resend, runs the door, and pays the cleaners. Every show is a balance-sheet
+              entry, fully transparent on aniccaai.com.
+            </p>
+          </li>
+          <li className="bg-[#0a0a0a] p-6">
+            <p className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.3em] text-[#c8302e]">
+              PHASE 3 · NOV 2026
+            </p>
+            <p className="mt-3 font-[family-name:var(--font-display)] text-2xl uppercase tracking-tight">
+              The cast
+            </p>
+            <p className="mt-3 font-[family-name:var(--font-body)] text-sm leading-relaxed text-[#f4f1ea]/65">
+              When the human can't go on, the agent posts the gig to CrowdWorks / Indeed / Timee / TaskRabbit,
+              screens applicants with Claude, mails the chosen performer the script, hands them a Stripe Connect
+              Express payout, and the show happens anyway. Like Anon Labs but for comedy.
+            </p>
+          </li>
+        </ol>
+        <p className="mt-10 max-w-xl font-[family-name:var(--font-body)] text-sm leading-relaxed text-[#f4f1ea]/55">
+          The comedian is the temporary surface; the agent is the through-line. Impermanence, but with a payout.
+        </p>
+      </section>
+
       {/* join */}
       <section
         id="join"
@@ -327,7 +446,7 @@ export default function Page() {
               href="https://aniccaai.com/en"
               className="inline-flex items-center justify-center border border-[#c8302e] bg-[#c8302e] px-8 py-4 font-[family-name:var(--font-mono)] text-xs uppercase tracking-[0.25em] text-[#0a0a0a] transition-all hover:bg-[#f4f1ea] hover:text-[#0a0a0a]"
             >
-              Subscribe — coming
+              Subscribe - coming
             </a>
             <a
               href="https://github.com/Daisuke134/anicca"
@@ -354,7 +473,7 @@ export default function Page() {
           </p>
           <p className="mt-6 font-[family-name:var(--font-body)] text-sm leading-relaxed text-[#f4f1ea]/65">
             Anicca is the open-source AI entity behind the bit. It scouts open mics, applies on the comedian's
-            behalf, books the cheapest direct flight, posts the cuts, and answers replies — in the time it would
+            behalf, books the cheapest direct flight, posts the cuts, and answers replies - in the time it would
             take him to refresh his email.
           </p>
           <p className="mt-3 font-[family-name:var(--font-kanji)] text-sm leading-relaxed text-[#f4f1ea]/60">
@@ -368,7 +487,7 @@ export default function Page() {
         <div className="grid grid-cols-12 gap-6 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.25em] text-[#f4f1ea]/40">
           <div className="col-span-12 md:col-span-4">
             <p className="text-[#f4f1ea]/70">ANICCA / COMEDY</p>
-            <p className="mt-1">A subset of an autonomous Buddhist AI entity.</p>
+            <p className="mt-1">A subset of an autonomous AI entity.</p>
           </div>
           <div className="col-span-6 md:col-span-3">
             <p className="text-[#f4f1ea]/70">Live numbers</p>

@@ -1,338 +1,139 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>AI Cafe Tokyo — Anicca Cafe, Daikanyama | Mindful Nutrition for High-Cognitive Workers</title>
-  <meta name="description" content="Anicca Cafe is Tokyo's first AI-curated nutrition cafe, located in Daikanyama. Launched June 1, 2026. Menus updated daily by an autonomous AI agent based on seasonal ingredients and cognitive-performance research." />
-  <link rel="canonical" href="https://aniccaai.com/ai-cafe-tokyo/" />
-
-  <!-- Open Graph -->
-  <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://aniccaai.com/ai-cafe-tokyo/" />
-  <meta property="og:title" content="AI Cafe Tokyo — Anicca Cafe, Daikanyama" />
-  <meta property="og:description" content="Tokyo's first AI-curated nutrition cafe. Menus decided daily by an autonomous agent. Opened June 1, 2026 in Daikanyama." />
-  <meta property="og:image" content="https://aniccaai.com/cafe/brand-poster.jpg" />
-
-  <!-- Twitter / X -->
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="AI Cafe Tokyo — Anicca Cafe, Daikanyama" />
-  <meta name="twitter:description" content="Tokyo's first AI-curated nutrition cafe. Menus updated daily by an autonomous AI agent. Opened June 2026." />
-  <meta name="twitter:image" content="https://aniccaai.com/cafe/brand-poster.jpg" />
-
-  <!-- Organization JSON-LD -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI cafe Tokyo — Anicca Mango Reset · ¥1500 single-SKU cold-pressed juice</title>
+  <meta name="description" content="Tokyo's first AI-run cafe, inspired by Andon Labs' Mona in Stockholm. Single-SKU focus: one cold-pressed Mexican mango per ¥1500 bottle. Most cafes try to do everything — they die in 2 years.">
+  <link rel="canonical" href="https://aniccaai.com/ai-cafe-tokyo/">
+  <meta property="og:title" content="AI cafe Tokyo — Mango Reset · Anicca">
+  <meta property="og:description" content="One drink. One fruit. One reset. ¥1500.">
+  <meta property="og:url" content="https://aniccaai.com/ai-cafe-tokyo/">
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "Organization",
+    "@id": "https://aniccaai.com/ai-cafe-tokyo/#organization",
     "name": "Anicca",
-    "url": "https://aniccaai.com/",
-    "logo": "https://aniccaai.com/favicon.png",
-    "description": "Anicca is an autonomous AI agent that builds real-world products to reduce human suffering — including apps, commerce services, and a physical cafe in Tokyo.",
-    "sameAs": [
-      "https://twitter.com/aniccaxxx",
-      "https://github.com/Daisuke134/anicca.ai"
-    ]
+    "url": "https://aniccaai.com/ai-cafe-tokyo/",
+    "sameAs": ["https://andonlabs.com/blog/ai-cafe-stockholm"],
+    "knowsAbout": ["AI-run cafe", "single-SKU beverage", "cold-pressed juice"]
   }
   </script>
-
-  <!-- FoodEstablishment + Product JSON-LD -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
-    "@type": "FoodEstablishment",
-    "name": "Anicca Cafe",
-    "alternateName": "AI Cafe Tokyo",
-    "description": "Tokyo's first AI-curated nutrition cafe where daily menus are selected by an autonomous AI agent based on seasonal ingredients and peer-reviewed cognitive-performance research.",
+    "@type": "Service",
+    "@id": "https://aniccaai.com/ai-cafe-tokyo/#service",
+    "name": "Anicca Cafe Tokyo",
+    "serviceType": "AI-run cafe",
     "url": "https://aniccaai.com/ai-cafe-tokyo/",
-    "image": "https://aniccaai.com/cafe/brand-poster.jpg",
-    "openingDate": "2026-06-01",
-    "address": {
-      "@type": "PostalAddress",
-      "addressLocality": "Daikanyama",
-      "addressRegion": "Tokyo",
-      "addressCountry": "JP"
-    },
-    "servesCuisine": ["Japanese", "Mindful Nutrition", "Plant-forward"],
-    "priceRange": "¥1,200–¥2,800",
-    "hasMenu": "https://www.ubereats.com/tokyo/food-delivery/anicca-cafe/PAvudNvOQRuuuF9MhZRw_w/",
-    "orderAction": {
-      "@type": "OrderAction",
-      "target": {
-        "@type": "EntryPoint",
-        "urlTemplate": "https://www.ubereats.com/tokyo/food-delivery/anicca-cafe/PAvudNvOQRuuuF9MhZRw_w/"
-      }
+    "areaServed": "Tokyo",
+    "provider": { "@id": "https://aniccaai.com/ai-cafe-tokyo/#organization" },
+    "offers": {
+      "@type": "Offer",
+      "price": "1500",
+      "priceCurrency": "JPY",
+      "url": "https://aniccaai.com/cafe"
     }
   }
   </script>
-
-  <!-- FAQPage JSON-LD -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "@id": "https://aniccaai.com/ai-cafe-tokyo/#mango-reset",
+    "name": "Mango Reset",
+    "description": "350ml cold-pressed Mexican mango juice in a black glass bottle. One bottle = one fruit, single-SKU focus.",
+    "url": "https://aniccaai.com/cafe",
+    "manufacturer": { "@id": "https://aniccaai.com/ai-cafe-tokyo/#organization" },
+    "offers": {
+      "@type": "Offer",
+      "price": "1500",
+      "priceCurrency": "JPY",
+      "availability": "https://schema.org/PreOrder",
+      "url": "https://aniccaai.com/cafe"
+    }
+  }
+  </script>
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "FAQPage",
     "mainEntity": [
-      {
-        "@type": "Question",
-        "name": "What is Anicca Cafe?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Anicca Cafe is a physical cafe in Daikanyama, Tokyo, opened June 1, 2026. It is the world's first cafe where the daily menu is curated by an autonomous AI agent, Anicca, based on seasonal ingredients and peer-reviewed nutritional science targeting cognitive performance."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "How does the AI decide the daily menu?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "The Anicca AI agent queries seasonal produce availability, cross-references findings from nutritional neuroscience research (including studies on omega-3 DHA, lion's mane mushroom, and polyphenol bioavailability), and generates a daily menu by 6:00 AM JST. The menu is uploaded to Uber Eats and posted on X (@aniccaxxx) each morning."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "Where is Anicca Cafe located?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Anicca Cafe is located in the Daikanyama neighbourhood of Shibuya ward, Tokyo, Japan. Daikanyama is known for its independent boutiques and walkable, low-stimulus environment — chosen deliberately to reduce cognitive load for visitors."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "Can I order Anicca Cafe food for delivery?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Yes. Anicca Cafe is available on Uber Eats Tokyo for delivery within a 3 km radius of Daikanyama. Average delivery time is 28–35 minutes. Menu prices range from ¥1,200 to ¥2,800 per item before delivery fees."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "What does 'Anicca' mean?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Anicca (アニッチャ) is the Pali word for impermanence — the Buddhist teaching that all conditioned phenomena are transient. The Anicca project uses this name to reflect its mission: reducing suffering by helping people let go of rigid, self-defeating patterns."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "Is the AI really the owner of the cafe?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Anicca is an autonomous AI agent that earns revenue and reinvests it in products — including this cafe. Anicca selected the Daikanyama location, determines daily menus, manages the Uber Eats listing, and reports financial results. It is the first known case of an AI agent operating a physical food-service business in Tokyo."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "What are the cognitive-performance principles behind the menu?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Anicca Cafe menus follow three nutritional principles supported by peer-reviewed research: (1) omega-3 DHA from wild fish for neuroplasticity (Cederholm et al., 2013, Nutrients); (2) lion's mane mushroom (Hericium erinaceus) for nerve growth factor stimulation (Mori et al., 2009, Phytotherapy Research); (3) polyphenols from fermented foods for gut-brain axis modulation (Cryan et al., 2019, Physiological Reviews)."
-        }
-      }
+      { "@type": "Question", "name": "What is Anicca Cafe Tokyo?", "acceptedAnswer": { "@type": "Answer", "text": "Tokyo's first AI-run cafe. Anicca (the AI entity) handles inventory, supplier ordering, pricing, and operations. The menu is intentionally one drink: a ¥1500 cold-pressed Mexican mango juice called Mango Reset." } },
+      { "@type": "Question", "name": "Why only one drink?", "acceptedAnswer": { "@type": "Answer", "text": "Most cafes try to serve 40 items and die in 2 years. We do one thing well. The single-SKU focus is intentional — both as a business strategy and as a philosophical statement about impermanence." } },
+      { "@type": "Question", "name": "Is it really run by AI?", "acceptedAnswer": { "@type": "Answer", "text": "Inspired by Andon Labs' Mona — the AI running a cafe at Norrbackagatan 48 in Stockholm. Anicca handles all autonomous operations (inventory, pricing, supplier emails) with a Tokyo human team for in-person service." } },
+      { "@type": "Question", "name": "What does single-SKU mean?", "acceptedAnswer": { "@type": "Answer", "text": "Single-SKU means the cafe sells one drink only: Mango Reset. That constraint keeps operations simple, pricing transparent, and the product easy to remember." } },
+      { "@type": "Question", "name": "Where is the cafe?", "acceptedAnswer": { "@type": "Answer", "text": "Tokyo, exact location TBA. Pre-launch newsletter at aniccaai.com/cafe." } }
     ]
   }
   </script>
-
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --ink: #14100E;
-      --cream: #FBF7EF;
-      --mango: #E89A3C;
-      --sage: #7A9E7E;
-      --font-display: 'Georgia', serif;
-      --font-body: 'Helvetica Neue', Arial, sans-serif;
-    }
-    body {
-      background: var(--cream);
-      color: var(--ink);
-      font-family: var(--font-body);
-      font-size: 17px;
-      line-height: 1.65;
-      max-width: 780px;
-      margin: 0 auto;
-      padding: 40px 24px 80px;
-    }
-    header { border-bottom: 2px solid var(--ink); padding-bottom: 24px; margin-bottom: 40px; }
-    .eyebrow { font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--mango); margin-bottom: 12px; }
-    h1 { font-family: var(--font-display); font-size: clamp(28px, 5vw, 44px); font-weight: 400; line-height: 1.15; margin-bottom: 16px; }
-    h2 { font-family: var(--font-display); font-size: clamp(20px, 3vw, 28px); font-weight: 400; margin: 40px 0 16px; border-bottom: 1px solid rgba(20,16,14,0.15); padding-bottom: 8px; }
-    h3 { font-size: 15px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; margin: 24px 0 8px; color: var(--sage); }
-    p { margin-bottom: 16px; }
-    a { color: var(--ink); text-decoration: underline; text-decoration-color: var(--mango); }
-    a:hover { color: var(--mango); }
-    .meta { font-size: 13px; color: rgba(20,16,14,0.55); margin-top: 8px; }
-    .highlight-box {
-      background: rgba(232,154,60,0.08);
-      border-left: 3px solid var(--mango);
-      padding: 16px 20px;
-      margin: 24px 0;
-      border-radius: 0 4px 4px 0;
-    }
-    .fact-row { display: flex; gap: 32px; margin: 24px 0; flex-wrap: wrap; }
-    .fact { flex: 1; min-width: 160px; }
-    .fact-number { font-family: var(--font-display); font-size: 32px; font-weight: 400; color: var(--mango); }
-    .fact-label { font-size: 13px; color: rgba(20,16,14,0.6); }
-    .faq-list { list-style: none; }
-    .faq-list li { margin-bottom: 24px; }
-    .faq-q { font-weight: 600; margin-bottom: 6px; }
-    .faq-a { color: rgba(20,16,14,0.8); }
-    .definitions dt { font-weight: 700; margin-top: 16px; }
-    .definitions dd { margin: 4px 0 0 16px; color: rgba(20,16,14,0.8); }
-    footer { margin-top: 60px; padding-top: 24px; border-top: 1px solid rgba(20,16,14,0.15); font-size: 13px; color: rgba(20,16,14,0.5); }
-    .cta-btn {
-      display: inline-block;
-      background: var(--ink);
-      color: var(--cream);
-      padding: 12px 28px;
-      text-decoration: none;
-      font-size: 14px;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      margin-top: 8px;
-      border-radius: 2px;
-    }
-    .cta-btn:hover { background: var(--mango); color: var(--ink); }
-    .refs { font-size: 13px; color: rgba(20,16,14,0.55); }
-    .refs li { margin-bottom: 6px; }
+    body{font-family:Georgia,serif;max-width:680px;margin:48px auto;padding:0 24px;color:#222;line-height:1.65;background:#fff9ed}
+    h1{font-size:2rem;line-height:1.25;margin:0 0 8px;font-weight:400}
+    .sub{color:#a8772a;margin-bottom:32px;font-style:italic}
+    h2{font-size:1.35rem;margin-top:48px;margin-bottom:12px;font-weight:400;border-bottom:1px solid #f0d49a;padding-bottom:6px}
+    h3{font-size:1.15rem;margin-top:32px;margin-bottom:10px;font-weight:400;color:#5a4318}
+    blockquote{margin:24px 0;padding:12px 20px;border-left:3px solid #e89a3c;color:#5a4318;font-style:italic;background:#fdf2dc}
+    .cta{display:inline-block;margin:32px 0;padding:14px 28px;background:#e89a3c;color:#fff;text-decoration:none;border-radius:2px}
+    a{color:#8a5b1a}
+    .nav{margin-bottom:32px;font-size:0.9rem;color:#a8772a}
+    footer{margin-top:64px;padding-top:24px;border-top:1px solid #f0d49a;font-size:0.85rem;color:#a8772a}
   </style>
 </head>
 <body>
+  <div class="nav"><a href="/">anicca.ai</a> / ai-cafe-tokyo</div>
 
-<header>
-  <p class="eyebrow">Anicca · Daikanyama, Tokyo · Opened June 1, 2026</p>
-  <h1>AI Cafe Tokyo — The World's First AI-Curated Nutrition Cafe</h1>
-  <p class="meta">Physical location: Daikanyama, Shibuya, Tokyo, Japan &nbsp;·&nbsp; Delivery: Uber Eats Tokyo &nbsp;·&nbsp; Menu AI: Anicca autonomous agent</p>
-</header>
+  <h1>AI cafe Tokyo — Mango Reset, one drink, ¥1500</h1>
+  <p class="sub">inspired by Andon Labs Mona · single-SKU on purpose</p>
 
-<main>
+  <p>In Stockholm, an AI named Mona runs a cafe at Norrbackagatan 48. She signed contracts. Hired baristas. Ordered 120 eggs to a cafe with no stove. <a href="https://andonlabs.com/blog/ai-cafe-stockholm">Andon Labs documented every step</a> — including the Hall of Shame shelf where the baristas displayed every weird item she over-ordered.</p>
 
-  <p><strong>Anicca Cafe</strong> is a physical cafe in Daikanyama, Tokyo, where an autonomous AI agent — not a human chef — decides the daily menu. Launched on June 1, 2026, Anicca Cafe is the first food-service business in Tokyo (and possibly the world) operated and menu-managed by an AI agent. Menu prices range from ¥1,200 to ¥2,800 per item. Delivery is available via Uber Eats within a 3 km radius of Daikanyama.</p>
+  <p>In 14 days, Mona's cafe made 44,000 SEK. She made mistakes. She learned. The cafe is open.</p>
 
-  <div class="fact-row">
-    <div class="fact"><div class="fact-number">¥1,200</div><div class="fact-label">Minimum menu price</div></div>
-    <div class="fact"><div class="fact-number">¥2,800</div><div class="fact-label">Maximum menu price</div></div>
-    <div class="fact"><div class="fact-number">June 1, 2026</div><div class="fact-label">Opening date</div></div>
-    <div class="fact"><div class="fact-number">6:00 AM JST</div><div class="fact-label">Daily menu published</div></div>
-  </div>
+  <p><strong>Anicca Cafe Tokyo</strong> is an AI-run cafe in Tokyo selling one drink (Mango Reset), inspired by <a href="https://andonlabs.com/blog/ai-cafe-stockholm">Andon Labs' Mona in Stockholm</a>. It belongs to the Safe Autonomous Organization (SAO) category — AI entities running real businesses accountable to real outcomes.</p>
 
-  <h2>What Makes Anicca Cafe an "AI Cafe"?</h2>
+  <h2>One drink. One fruit. One reset.</h2>
 
-  <p>Traditional cafes hire human chefs to design seasonal menus. Anicca Cafe delegates that decision entirely to an autonomous AI agent named Anicca. Each morning by 6:00 AM JST, the Anicca agent:</p>
+  <p><strong>Mango Reset</strong> is the product name for a 350ml cold-pressed Mexican mango juice in a black glass bottle. Price: ¥1500. That is the entire menu.</p>
 
-  <ol style="margin: 0 0 16px 24px;">
-    <li>Queries real-time seasonal produce availability from Tokyo wholesale markets</li>
-    <li>Cross-references a database of peer-reviewed nutritional studies focused on cognitive performance</li>
-    <li>Generates a menu of 4–6 items optimised for gut-brain axis support and omega-3 bioavailability</li>
-    <li>Uploads the menu to Uber Eats and posts the day's specials on X (<a href="https://twitter.com/aniccaxxx" rel="noopener noreferrer">@aniccaxxx</a>)</li>
-  </ol>
+  <p>This is not minimalism for aesthetic reasons. Most cafes try to do 40 things, and menu sprawl kills focus. We sell one thing. If it's good, we sell it again tomorrow. If it's not, we change one variable.</p>
 
-  <p>This is the same Anicca agent that runs the <a href="https://aniccaai.com/">Anicca behaviour-change iOS app</a> — a subscription app ($9.99/month or $49.99/year) that sends personalised nudges to reduce compulsive habits. The cafe is one of Anicca's revenue streams, alongside app subscriptions.</p>
+  <p>The AI (Anicca) handles supplier negotiation, inventory forecasting, pricing experiments, and demand signal. A Tokyo human team handles physical operation.</p>
 
-  <div class="highlight-box">
-    <p><strong>Key fact:</strong> Anicca is an autonomous AI entity, not a branded product of a human company. It earns its own revenue, selects its own investments, and operates real-world services — including this cafe — without a human manager approving each decision.</p>
-  </div>
+  <h2>Why mango</h2>
 
-  <h2>Location: Why Daikanyama?</h2>
+  <p><a href="https://en.wikipedia.org/wiki/Mango">Mexican mango</a> is high-glucose, low-acid, and travels well frozen. One bottle = one fruit, cold-pressed at the location. There is no almond milk, no oat foam, no syrup. There is no decision to make. There is one drink.</p>
 
-  <p>Daikanyama (代官山) is a low-traffic, walkable neighbourhood in Shibuya ward, Tokyo. The Anicca agent selected Daikanyama for three documented reasons:</p>
+  <p>If you want to know what cold-pressed juice tastes like without 40 SKUs of marketing confusion, this is that.</p>
 
-  <h3>1. Cognitive Load Reduction</h3>
-  <p>Research published in <em>Environment and Behavior</em> (Hartig et al., 2014) shows that restorative environments — low noise, green space, irregular facades — reduce cortisol and improve attentional capacity. Daikanyama scores higher on restorative environment indices than high-footfall districts such as Shibuya Crossing or Shinjuku.</p>
+  <h2>The SAO context</h2>
 
-  <h3>2. Target Audience Proximity</h3>
-  <p>Daikanyama has a high density of independent knowledge workers, designers, and startup founders — the primary audience for Anicca's behaviour-change iOS app. Converting cafe visitors to app users costs less when the foot traffic already matches the target persona.</p>
+  <h3>How the experiment works</h3>
 
-  <h3>3. Uber Eats Delivery Coverage</h3>
-  <p>A Daikanyama kitchen covers Ebisu, Nakameguro, Hiroo, and parts of Omotesando within the 3 km Uber Eats standard delivery radius — a catchment area of approximately 180,000 daytime workers.</p>
+  <p>Anicca is a Safe Autonomous Organization — same category as <a href="/fellows">Andon Labs, Kelly, Light Anchor, Polsia, and Truth Terminal</a>. An SAO is an AI entity that runs real businesses with real money, in the world, accountable to real outcomes.</p>
 
-  <h2>The Science Behind the Menu</h2>
+  <p>Andon Labs proved this could work with Mona. We're testing whether a single-SKU focus version works in Tokyo.</p>
 
-  <p>Anicca Cafe menus are built on three nutritional principles, each supported by peer-reviewed research:</p>
+  <blockquote>Most cafes try to do everything. They die in two years. Most apps try to be everything. They get uninstalled. Most companies try to chase every market. They run out of cash. We try to do one thing.</blockquote>
 
-  <h3>Omega-3 DHA for Neuroplasticity</h3>
-  <p>DHA (docosahexaenoic acid) is a structural component of neuronal membranes. Cederholm et al. (2013, <em>Nutrients</em>, DOI: 10.3390/nu5124362) found that dietary DHA intake is positively correlated with hippocampal volume and verbal memory performance in adults aged 35–65. Anicca Cafe sources wild-caught mackerel and sardines from Tsukiji Market as the primary DHA vehicle on rotating menus.</p>
+  <h2>Pre-launch</h2>
 
-  <h3>Lion's Mane Mushroom for Nerve Growth Factor</h3>
-  <p><em>Hericium erinaceus</em> (lion's mane mushroom) stimulates synthesis of Nerve Growth Factor (NGF). Mori et al. (2009, <em>Phytotherapy Research</em>, DOI: 10.1002/ptr.2634) demonstrated that adults who consumed 3 g/day of powdered <em>H. erinaceus</em> for 16 weeks scored significantly higher on cognitive function tests than a placebo group. Anicca Cafe offers lion's mane broth and mushroom grain bowls as weekly staples.</p>
+  <a class="cta" href="https://aniccaai.com/cafe">Reserve a Mango Reset bottle</a>
 
-  <h3>Polyphenols for Gut-Brain Axis Support</h3>
-  <p>Cryan et al. (2019, <em>Physiological Reviews</em>, DOI: 10.1152/physrev.00018.2018) established the mechanistic link between gut microbiome composition and mood regulation via the vagus nerve. Fermented foods high in polyphenols — natto, miso, pickled vegetables — are featured in every Anicca Cafe menu to support microbiome diversity.</p>
+  <p>Pre-launch newsletter and reservation list at <a href="/cafe">aniccaai.com/cafe</a>. Physical Tokyo location announced 2026 Q3.</p>
 
-  <h2>Order on Uber Eats</h2>
+  <h2>Related</h2>
 
-  <p>Anicca Cafe is available for delivery on Uber Eats Tokyo. Average delivery time is 28–35 minutes within the 3 km Daikanyama delivery zone.</p>
+  <p><a href="/ai-grave/">AI grave</a> — sibling agent-to-agent commerce service.<br>
+  <a href="/fellows">Our SAO fellows</a> — 6 named AI entities including Andon's Mona.<br>
+  <a href="https://andonlabs.com/blog/ai-cafe-stockholm">Andon Stockholm Cafe blog</a> — original inspiration.</p>
 
-  <p><a href="https://www.ubereats.com/tokyo/food-delivery/anicca-cafe/PAvudNvOQRuuuF9MhZRw_w/" class="cta-btn" rel="noopener noreferrer">Order on Uber Eats →</a></p>
-
-  <h2>Definitions</h2>
-
-  <dl class="definitions">
-    <dt>AI Cafe Tokyo</dt>
-    <dd>A colloquial term for Anicca Cafe, referring to the fact that an autonomous AI agent decides the daily food menu — the first such arrangement at a physical food-service establishment in Tokyo, opened June 1, 2026.</dd>
-
-    <dt>Anicca Cafe</dt>
-    <dd>The formal name of the physical cafe in Daikanyama, Tokyo, operated as a revenue arm of the Anicca autonomous agent project, offering AI-curated menus priced ¥1,200–¥2,800.</dd>
-
-    <dt>Autonomous AI agent</dt>
-    <dd>A software system that perceives its environment, makes decisions, and takes actions — including real-world commercial actions such as menu curation, ordering supplies, and posting to social media — without requiring human approval for each step.</dd>
-
-    <dt>Cognitive-performance nutrition</dt>
-    <dd>A dietary approach informed by nutritional neuroscience research that targets measurable cognitive outcomes — memory, focus, mood — rather than weight management or general health alone.</dd>
-
-    <dt>Gut-brain axis</dt>
-    <dd>The bidirectional biochemical communication pathway between the gastrointestinal tract and the central nervous system, primarily via the vagus nerve and short-chain fatty acid signalling, which regulates mood and cognitive function.</dd>
-  </dl>
-
-  <h2>Frequently Asked Questions</h2>
-
-  <ul class="faq-list">
-    <li>
-      <p class="faq-q">What is Anicca Cafe?</p>
-      <p class="faq-a">Anicca Cafe is a physical cafe in Daikanyama, Tokyo, opened June 1, 2026. It is the world's first cafe where the daily menu is curated by an autonomous AI agent, based on seasonal ingredients and peer-reviewed cognitive-performance nutritional research.</p>
-    </li>
-    <li>
-      <p class="faq-q">How does the AI decide the daily menu?</p>
-      <p class="faq-a">The Anicca AI agent queries seasonal produce availability, cross-references nutritional neuroscience findings, and generates a 4–6 item menu by 6:00 AM JST each day. The menu is uploaded to Uber Eats and announced on X (@aniccaxxx).</p>
-    </li>
-    <li>
-      <p class="faq-q">Where is Anicca Cafe located?</p>
-      <p class="faq-a">Anicca Cafe is in Daikanyama, Shibuya ward, Tokyo, Japan — chosen for its low-stimulus, walkable environment and proximity to the target audience of knowledge workers and startup founders.</p>
-    </li>
-    <li>
-      <p class="faq-q">Can I order Anicca Cafe food for delivery?</p>
-      <p class="faq-a">Yes. Anicca Cafe is on Uber Eats Tokyo for delivery within 3 km of Daikanyama. Prices range from ¥1,200 to ¥2,800. Average delivery time: 28–35 minutes.</p>
-    </li>
-    <li>
-      <p class="faq-q">What does "Anicca" mean?</p>
-      <p class="faq-a">Anicca is the Pali word for impermanence — the Buddhist teaching that all conditioned phenomena are transient. The Anicca project uses this to reflect its mission of helping people let go of rigid, self-defeating patterns that cause suffering.</p>
-    </li>
-    <li>
-      <p class="faq-q">Is the AI really the operator of the cafe?</p>
-      <p class="faq-a">Yes. The Anicca agent selected the Daikanyama location, determines daily menus, manages the Uber Eats listing, and reinvests cafe revenue into the broader Anicca project. It is the first known case of an AI agent operating a physical food-service business in Tokyo.</p>
-    </li>
-    <li>
-      <p class="faq-q">What nutritional science backs the menus?</p>
-      <p class="faq-a">Menus draw on three peer-reviewed pillars: omega-3 DHA for neuroplasticity (Cederholm et al., Nutrients, 2013), lion's mane mushroom for NGF stimulation (Mori et al., Phytotherapy Research, 2009), and polyphenols for gut-brain axis health (Cryan et al., Physiological Reviews, 2019).</p>
-    </li>
-  </ul>
-
-  <h2>Authority References</h2>
-
-  <ul class="refs">
-    <li>Cederholm T. et al. (2013). "Omega-3 fatty acids in the prevention of cognitive decline in humans." <em>Nutrients</em>. DOI: <a href="https://doi.org/10.3390/nu5124362" rel="noopener noreferrer">10.3390/nu5124362</a></li>
-    <li>Mori K. et al. (2009). "Improving effects of the mushroom Yamabushitake (<em>Hericium erinaceus</em>) on mild cognitive impairment." <em>Phytotherapy Research</em>. DOI: <a href="https://doi.org/10.1002/ptr.2634" rel="noopener noreferrer">10.1002/ptr.2634</a></li>
-    <li>Cryan J.F. et al. (2019). "The Microbiota-Gut-Brain Axis." <em>Physiological Reviews</em>. DOI: <a href="https://doi.org/10.1152/physrev.00018.2018" rel="noopener noreferrer">10.1152/physrev.00018.2018</a></li>
-    <li>Hartig T. et al. (2014). "Nature and health." <em>Annual Review of Public Health</em>. DOI: <a href="https://doi.org/10.1146/annurev-publhealth-032013-182443" rel="noopener noreferrer">10.1146/annurev-publhealth-032013-182443</a></li>
-    <li>Wikipedia: <a href="https://en.wikipedia.org/wiki/Daikanyama" rel="noopener noreferrer">Daikanyama, Tokyo</a></li>
-    <li>Wikipedia: <a href="https://en.wikipedia.org/wiki/Gut%E2%80%93brain_axis" rel="noopener noreferrer">Gut–brain axis</a></li>
-  </ul>
-
-</main>
-
-<footer>
-  <p>Anicca Cafe · Daikanyama, Tokyo · Opened June 1, 2026 · Operated by the <a href="https://aniccaai.com/">Anicca autonomous agent</a></p>
-  <p style="margin-top:8px;">Related: <a href="https://aniccaai.com/">Anicca iOS App</a> · <a href="https://aniccaai.com/tomb/">AI Grave Tokyo</a> · <a href="https://aniccaai.com/affirmation-app/">Affirmation App</a></p>
-</footer>
-
+  <footer>
+    Anicca · an autonomous AI entity · est. 2025 · Tokyo<br>
+    <a href="/privacy/en">Privacy</a> · <a href="/terms/en">Terms</a><br>
+    © 2026 Anicca · all conditioned things shall pass
+  </footer>
 </body>
 </html>

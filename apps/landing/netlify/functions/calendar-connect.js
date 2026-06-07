@@ -1,0 +1,62 @@
+// Anicca Alarm — connect a subscriber's Google Calendar via Composio (managed OAuth).
+// GET ?token=<owntracks_token>  -> creates a Composio connection for user_id=token
+//   against the Google Calendar auth config, returns { redirect_url } for the
+//   one-click Google consent. After consent, saas_lateness reads their events live.
+// No ICS, no per-user OAuth app, no Google verification (Composio's app is verified).
+const COMPOSIO_API = "https://backend.composio.dev/api/v3";
+const COMPOSIO_KEY = process.env.COMPOSIO_API_KEY;
+const GCAL_AUTH_CONFIG = process.env.COMPOSIO_GCAL_AUTH_CONFIG; // ac_FIvQ1FI9Dukl
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+async function supaGetTokenPhone(token) {
+  const r = await fetch(
+    `${SUPABASE_URL}/rest/v1/subscriber_profiles?owntracks_token=eq.${encodeURIComponent(token)}&select=phone`,
+    { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
+  const d = await r.json();
+  return Array.isArray(d) && d[0] ? d[0].phone : null;
+}
+
+exports.handler = async (event) => {
+  if (!COMPOSIO_KEY || !GCAL_AUTH_CONFIG) return { statusCode: 500, body: "missing composio config" };
+  const token = (event.queryStringParameters || {}).token;
+  if (!token) return { statusCode: 400, body: "missing token" };
+
+  // user_id in Composio = the subscriber's phone (stable id). Resolve from token.
+  const userId = await supaGetTokenPhone(token);
+  if (!userId) return { statusCode: 404, body: "subscriber not found" };
+
+  try {
+    // Idempotent: if this user already has an ACTIVE Google Calendar connection, done.
+    const existing = await fetch(
+      `${COMPOSIO_API}/connected_accounts?user_ids=${encodeURIComponent(userId)}&toolkit_slugs=googlecalendar`,
+      { headers: { "x-api-key": COMPOSIO_KEY } });
+    const ej = await existing.json();
+    const active = (ej.items || []).find((i) => i.status === "ACTIVE");
+    if (active) {
+      await fetch(`${SUPABASE_URL}/rest/v1/subscriber_profiles?owntracks_token=eq.${encodeURIComponent(token)}`, {
+        method: "PATCH",
+        headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, "Content-Type": "application/json", Prefer: "return=minimal" },
+        body: JSON.stringify({ calendar_provider: "composio_gcal", updated_at: new Date().toISOString() }),
+      });
+      return { statusCode: 200, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ connected: true }) };
+    }
+    const r = await fetch(`${COMPOSIO_API}/connected_accounts`, {
+      method: "POST",
+      headers: { "x-api-key": COMPOSIO_KEY, "Content-Type": "application/json" },
+      body: JSON.stringify({ auth_config: { id: GCAL_AUTH_CONFIG }, connection: { user_id: userId } }),
+    });
+    const j = await r.json();
+    const redirect = j.redirect_url || j.redirect_uri || j?.connectionData?.val?.redirectUrl;
+    if (!redirect) return { statusCode: 502, body: JSON.stringify({ error: "no redirect", detail: j }) };
+    // mark intent (calendar connecting) — becomes truly active once they consent
+    await fetch(`${SUPABASE_URL}/rest/v1/subscriber_profiles?owntracks_token=eq.${encodeURIComponent(token)}`, {
+      method: "PATCH",
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, "Content-Type": "application/json", Prefer: "return=minimal" },
+      body: JSON.stringify({ calendar_provider: "composio_gcal", updated_at: new Date().toISOString() }),
+    });
+    return { statusCode: 200, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ redirect_url: redirect }) };
+  } catch (e) {
+    return { statusCode: 502, body: JSON.stringify({ error: String(e) }) };
+  }
+};
