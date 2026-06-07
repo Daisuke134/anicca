@@ -1341,7 +1341,7 @@ chmod +x ~/.openclaw/skills/anicca-doctor-monkey/scripts/sonnet-budget-check.sh
 In `fix.sh`, modify the strategy loop. Before `timeout "$WALLCLOCK_PER_STRATEGY" openclaw agent --local --model "$STRATEGY"`, add:
 
 ```bash
-  if [ "$STRATEGY" = "claude-cli/sonnet-4-6" ]; then
+  if [ "$STRATEGY" = "anthropic/claude-sonnet-4-6" ]; then
     BUDGET_STATE=$(bash "$SKILL/scripts/sonnet-budget-check.sh" || echo EXHAUSTED)
     if [ "$BUDGET_STATE" = "EXHAUSTED" ]; then
       echo "Sonnet daily budget exhausted ($SONNET_DAILY_MAX). Skipping to ESCALATE."

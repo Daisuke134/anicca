@@ -70,7 +70,7 @@ Data sources 追加:
 ### v3 で間違った 3 つ
 
 1. **「launchd 19 plist 削除」**を最重要 task 化していた → 実は **18 plist の内 16 件が pure-bash** で OpenClaw agentTurn cost = 0。 削除しても OpenClaw token は節約 されない (= agentmail-replier は別途 DeepSeek API 直叩きで paid だが launchd 起因ではない)。 真の問題は別。
-2. **「全 cron job を `claude-cli/sonnet-4-6` に swap」**案 → これは **sacred な Claude Code subscription を毎日 燃やす自殺案**。 Dais 厳命: 「sonnet は last resort、 codex 主力」。
+2. **「全 cron job を `anthropic/claude-sonnet-4-6` に swap」**案 → これは **sacred な Claude Code subscription を毎日 燃やす自殺案**。 Dais 厳命: 「sonnet は last resort、 codex 主力」。
 3. **launchd を OpenClaw cron に統合する Phase 2 epic** を 4 task 登録 → OpenClaw に shell-only kind 無い (= GitHub #18160 open) ので統合すると **逆に高くなる**。
 
 ### 真の money leech (= 修正対象、 2026-06-05 live data 確定)
@@ -81,7 +81,7 @@ Data sources 追加:
 | 内 dead model 指定 job | **143** (= deepseek/v4-pro 113 + moonshot/kimi-k2.5 30) |
 | 内 model 指定無 (= defaults 継承) | **8** |
 | 内 codex/gpt-5.4-mini 指定 | 2 |
-| 内 claude-cli/sonnet-4-6 指定 | 2 |
+| 内 anthropic/claude-sonnet-4-6 指定 | 2 |
 | sub-hourly 設定 job (= */N min) | **4** (= arrival */5 + lateness */5 + event-bot */15 + exec-guard */30) |
 | 真 duplicate | **要再確認** (= cron-cull 後 / anicca-cron-doctor 同名 2 件 別 schedule で 別目的可能性) |
 
@@ -95,7 +95,7 @@ Data sources 追加:
 -    "deepseek/deepseek-v4-pro"
 +    "deepseek/deepseek-v4-pro",
 +    "moonshot/kimi-k2.5",
-+    "claude-cli/claude-sonnet-4-6"
++    "anthropic/claude-sonnet-4-6"
    ]
 ```
 **primary 不変** (= `openai-codex/gpt-5.4-mini` Dais 主力)。 fallback 順序 = Dais 直命 `codex → deepseek → kimi → sonnet (LAST)`。
@@ -206,11 +206,11 @@ Cron store normalized at ~/.openclaw/cron/jobs.json.
 
 ### §14 / §4 model table 補注 (= reviewer iter 2 N1)
 
-**§14 と §4 Phase 3 に列挙されている `deepseek/deepseek-v4-pro` (Leader classify model) と `anthropic/claude-sonnet-4-6` (REPLY draft model) は "Patch X+H+Y 適用前 の レガシー値"**。 v4 適用後 の **effective model = `claude-cli/claude-sonnet-4-6`** (= codex primary → deepseek (402) → kimi (429) → claude-cli fallback chain で 着地)。 §14 を更新せず 注記 のみ で 履歴 維持。
+**§14 と §4 Phase 3 に列挙されている `deepseek/deepseek-v4-pro` (Leader classify model) と `anthropic/claude-sonnet-4-6` (REPLY draft model) は "Patch X+H+Y 適用前 の レガシー値"**。 v4 適用後 の **effective model = `anthropic/claude-sonnet-4-6`** (= codex primary → deepseek (402) → kimi (429) → claude-cli fallback chain で 着地)。 §14 を更新せず 注記 のみ で 履歴 維持。
 
 ### Circuit breaker risk (= reviewer iter 1 で追加)
 
-**全 provider 死亡 シナリオ**: codex 429 + deepseek 402 + kimi 429 全部 down 時、 全 cron + heartbeat が `claude-cli/sonnet-4-6` に着地 → subscription 1 日 5.6M token 焼く。
+**全 provider 死亡 シナリオ**: codex 429 + deepseek 402 + kimi 429 全部 down 時、 全 cron + heartbeat が `anthropic/claude-sonnet-4-6` に着地 → subscription 1 日 5.6M token 焼く。
 
 **現状 対策**: `concepts/model-failover.md` の 5-min probe cache が 1 session 内で 1 primary 1 回までに制限。 だが 155 session (= 1 job 1 session) なので全 session 同時 sonnet 着地 可能性 残る。
 
@@ -257,7 +257,7 @@ v2 spec §14 では `deepseek/deepseek-v4-pro` を Leader、 `anthropic/claude-s
 | `amazon-bedrock/anthropic.*` | Could not load credentials |
 
 **唯一動いた = `claude-cli/*`** (= Claude Code subscription 経由、 per-token billing 無し):
-- `claude-cli/claude-sonnet-4-6` — Leader + draft + IRREVERSIBLE vote 1
+- `anthropic/claude-sonnet-4-6` — Leader + draft + IRREVERSIBLE vote 1
 - `claude-cli/claude-opus-4-6` — IRREVERSIBLE vote 2
 - `claude-cli/claude-opus-4-7` — IRREVERSIBLE vote 3
 
@@ -293,7 +293,7 @@ if [ "$BUCKET" = "REPLY" ]; then VERDICT="REPLY"; fi
 | First real send 時刻 | **2026-06-04 23:41:47 JST** |
 | Thread | `19e9312c76f86d58` (test thread from `anicca-genesis@agentmail.to`) |
 | Leader 判定 | bucket=REPLY confidence=0.93 |
-| Draft model | `claude-cli/claude-sonnet-4-6` |
+| Draft model | `anthropic/claude-sonnet-4-6` |
 | Draft 内容 | 「6月15日（土）19:00〜の5分枠、ぜひ出演させていただきます。18:30のリハーサルにも参加いたします。 Anicca / contact@aniccaai.com」 |
 | Safety scan | ok |
 | Send 経路 | `gog gmail send --reply-to-message-id 19e9312c76f86d58 --body ...` |

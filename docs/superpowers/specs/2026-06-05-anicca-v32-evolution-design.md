@@ -320,7 +320,7 @@ Every posting skill, with no exceptions, must:
   agents.defaults.model.fallbacks = [
     "xai/grok-3-mini-fast",                                ← Dais never mentioned
     "deepseek/deepseek-v4-pro",
-    "claude-cli/claude-sonnet-4-6"                         ← expensive, last
+    "anthropic/claude-sonnet-4-6"                         ← expensive, last
   ]
   heartbeat.isolatedSession=true, directPolicy=allow, NO model override
   → heartbeat inherits primary = kimi-k2.5
@@ -329,7 +329,7 @@ Every posting skill, with no exceptions, must:
   166 jobs        model = null  →  inherit primary = kimi-k2.5
    15 jobs        model = "deepseek/deepseek-v4-pro"   (OK, cheap)
    11 jobs        model = "openai/gpt-5.4-mini"        (OK, cheap)
-    5 jobs        model = "claude-sonnet-4-6" or "claude-cli/claude-sonnet-4-6"  ★ VIOLATION
+    5 jobs        model = "claude-sonnet-4-6" or "anthropic/claude-sonnet-4-6"  ★ VIOLATION
                   per memory `feedback_crons_use_mini_models_only`
                   these 5 need audit + migrate to primary
                   (job IDs: 4cfdfe32, 73d4a8c2, 94c788fe + 1 cli variant = 4-5 entries)
@@ -364,7 +364,7 @@ Interpreted (HARD RULE 0.20 — decide, don't ask):
 | Layer | Target value |
 |---|---|
 | `defaults.model.primary` | `openai/gpt-5.4-mini`  (swap from kimi-k2.5) |
-| `defaults.model.fallbacks` | `["moonshot/kimi-k2.5", "deepseek/deepseek-v4-pro", "claude-cli/claude-sonnet-4-6"]` |
+| `defaults.model.fallbacks` | `["moonshot/kimi-k2.5", "deepseek/deepseek-v4-pro", "anthropic/claude-sonnet-4-6"]` |
 | Drop from fallbacks | `xai/grok-3-mini-fast` (Dais never mentioned, and primary swap reduces fallback pressure) |
 | 5 sonnet-override cron | Audit → migrate to primary (default behavior), OR justify in `MODEL_OVERRIDE_REGISTRY.md` if frontier genuinely needed |
 | Phone Claude Code (interactive chat) | `--model claude-opus-4-7` explicit on every `phone` invocation (see subsystem ①) — this is Dais's "direct chat with Anicca" surface for the v3.2 window, until Telegram bot ships (Plan #10 future) |
@@ -391,7 +391,7 @@ Dais clarified 2026-06-06: he was not asking for a complex context-aware router.
     "fallbacks": [
       "moonshot/kimi-k2.5",
       "deepseek/deepseek-v4-pro",
-      "claude-cli/claude-sonnet-4-6"                       ← LAST, rarely hit
+      "anthropic/claude-sonnet-4-6"                       ← LAST, rarely hit
     ]
     // optional, doctor-safe forward-compat:
     // "interactive": "claude-cli/claude-opus-4-7"

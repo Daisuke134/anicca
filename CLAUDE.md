@@ -294,7 +294,7 @@ git remote -v && git branch -vv
 
 | # | Agent | 本体 | Default model | Fuel | 用途 |
 |---|---|---|---|---|---|
-| 1 | **OpenClaw Anicca** (`~/.openclaw/`) | Mac mini | `openai/gpt-5.4-mini` (fallback deepseek-v4-pro → kimi-k2.5 → claude-cli/sonnet-4-6) | mixed 8 provider | Dais private 自動化、~157 cron |
+| 1 | **OpenClaw Anicca** (`~/.openclaw/`) | Mac mini | `openai/gpt-5.4-mini` (fallback deepseek-v4-pro → kimi-k2.5 → anthropic/claude-sonnet-4-6) | mixed 8 provider | Dais private 自動化、~157 cron |
 | 2 | **Hermes Anicca = oss-anicca** (`~/.hermes/`) | genesis instance | `kimi-k2.6` (kimi-coding) | Kimi Coding Plan ($0/cron) | 公開エージェント、 12 cron |
 | 3 | **Claude Code (this session)** | dev IDE | `claude-opus-4-7` | Anthropic Pro/Mac plan | 対話、開発、SDD、skill 設計 |
 

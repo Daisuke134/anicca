@@ -438,20 +438,20 @@ apps/landing/lib/blog.ts                 (= frontmatter parser + slug 取得)
 **3.5.4 Doctor monkey LLM strategy chain (= OpenClaw 正規 BP identical)**
 
 ★ Source (= CLAUDE.md「🔋 LLM Token Sources」verbatim) ★:
-> "OpenClaw Anicca | openai/gpt-5.4-mini (fallback deepseek-v4-pro → kimi-k2.5 → claude-cli/sonnet-4-6)"
+> "OpenClaw Anicca | openai/gpt-5.4-mini (fallback deepseek-v4-pro → kimi-k2.5 → anthropic/claude-sonnet-4-6)"
 
 ★ Strategies (= V12-22 で fix.sh 反映 済、 push 9848c8e2c) ★:
 1. `openai/gpt-5.4-mini`       ← 1st (= Anicca primary、 cheapest、 cache 暖)
 2. `deepseek/deepseek-v4-pro`  ← 2nd fallback
 3. `moonshot/kimi-k2.5`        ← 3rd fallback
-4. `claude-cli/sonnet-4-6`     ← 4th 最終 (= Pro subscription、 tool use 強)
+4. `anthropic/claude-sonnet-4-6`     ← 4th 最終 (= Pro subscription、 tool use 強)
 5. `ESCALATE`                  ← human assign (= 24h stale なら retry)
 
 ★ Dais 厳命 ★: 「we dont use that model 4.8 — anicca runs on gpt 5.4 mini」
 
 **3.5.5 Sonnet-4-6 budget breaker (= reviewer MINOR、 v1.3 反映)**
 
-claude-cli/sonnet-4-6 は Anthropic Pro plan 込み だが 「quota 焼き切り → 32h cooldown 全 Anicca
+anthropic/claude-sonnet-4-6 は Anthropic Pro plan 込み だが 「quota 焼き切り → 32h cooldown 全 Anicca
 思考停止」 incident (2026-05-29) の根因。 → ★ daily budget breaker ★:
 
 ```bash
@@ -459,7 +459,7 @@ claude-cli/sonnet-4-6 は Anthropic Pro plan 込み だが 「quota 焼き切り
 SONNET_DAILY_MAX=5
 SONNET_LOG="$HOME/.openclaw/state/doctor-monkey/sonnet-calls-$(date +%Y-%m-%d).log"
 SONNET_TODAY=$(wc -l < "$SONNET_LOG" 2>/dev/null || echo 0)
-if [ "$STRATEGY" = "claude-cli/sonnet-4-6" ] && [ "$SONNET_TODAY" -ge "$SONNET_DAILY_MAX" ]; then
+if [ "$STRATEGY" = "anthropic/claude-sonnet-4-6" ] && [ "$SONNET_TODAY" -ge "$SONNET_DAILY_MAX" ]; then
   echo "Sonnet daily budget exhausted ($SONNET_TODAY/$SONNET_DAILY_MAX). Skipping to ESCALATE."
   STRATEGY=ESCALATE
 fi
@@ -668,45 +668,62 @@ URL: netflixtechblog.com/the-netflix-simian-army-16e57fbab116
 ## §7 — Out of Scope
 
 - ★ `~/anicca-project` を `~/anicca-products` に local rename ★ (= breaking change 大、 別 spec 化)
-- ★ Hermes / oss-anicca side 同 ロジック 反映 ★ (= 別 cron-manager instance、 別 spec)
+- ★ Hermes / oss-anicca side 同 ロジック 反映 ★ (= sister spec 予定:
+  `docs/superpowers/specs/2026-06-XX-hermes-simian-army-design.md`、 v1.3 反映)
 - ★ Dais の Cursor / Claude Code IDE 設定 変更 ★ (= user space、 触らない)
 - ★ products-oss 上 既存 NON-cron issue ★ (= Dais 用 product issue、 触らない)
+- ★ CLAUDE.md §0.19 channel list 更新 ★ (= sister spec 予定:
+  `docs/superpowers/specs/2026-06-XX-content-factory-channels-update.md`、
+  aniccaai.com/blog 削除 + Zenn/Dev.to/Substack 4 channel 化、 §3.2.4 から forward-ref)
 
 ---
 
-## §8 — Verification Plan (= V<N>-1 〜 V<N>-25 task 化)
+## §8 — Verification Plan (= V12-1 〜 V12-30、 dependency arrow 付き v1.3)
+
+★ 実行 順序 (= reviewer MINOR 反映、 依存 明示) ★:
 
 ```
-V12-1  P0  gh repo rename × 2
-V12-2  P0  local origin url 更新 × 2
-V12-3  P0  cron-manager fix.sh REPO 変数 置換
-V12-4  P0  HEARTBEAT.md REPO 置換
-V12-5  P0  全 5 violation issue 移行 (products-oss → anicca-dais)
-V12-6  P0  grep + sed 全層 一発 置換 (CLAUDE.md / memory / docs / skills)
-V12-7  P0  push CLAUDE.md + memory 更新
-V12-8  P0  6 aniccaai.com 編集 cron 特定 + disable
-V12-9  P0  .git/hooks/pre-commit 設置 + test
-V12-10 P0  93ee6fb7 「guard null-slice」 EN locale 影響 verify + 必要 なら revert
-V12-11 P1  watch-sweep.sh から 7 watcher 削除
-V12-12 P1  tasks.json schema 拡張
-V12-13 P1  HEARTBEAT.md §2 に P3 project tasklist pick 追加
-V12-14 P1  heartbeat 1 fire 実走 verify (= P3 task pick)
-V12-15 P2  taste skill canonical 確定 (= Dais 確認 1 question)
-V12-16 P2  apps/landing/app/blog/page.tsx + [slug]/page.tsx 生成 (taste 経由)
-V12-17 P2  curl aniccaai.com/blog 200 verify
-V12-18 P2  manageable-crons.json allowlist 全 enabled - cornerstone wildcard 化
-V12-19 P2  audit-rules.json::guardrails_NEVER_DISABLE 7 cron 追加
-V12-20 P2  fix.sh SCAN phase に error pattern match 追加 (timeout/auth/disk)
-V12-21 P2  fix.sh timeout path で timeoutSeconds 自動 引上 実装
-V12-22 P0  fix.sh STRATEGIES = OpenClaw 正規 chain (gpt-5.4-mini → deepseek-v4-pro → kimi-k2.5 → sonnet-4-6) ✅ DONE
-V12-23 P2  doctor monkey 1 fire 実走 verify (= 1 error cron fix 完走)
-V12-26 P1  watercolor-monk-noon 真因 dig + fix (= "Pass --to <E.164>" missing-arg)
-V12-27 P1  anicca-janitor-monkey 新規 skill (= Netflix Janitor identical)
-V12-28 P1  anicca-conformity-monkey 新規 skill (= Netflix Conformity identical)
-V12-29 P1  anicca-cron-manager → anicca-doctor-monkey rename + 純化
-V12-30 P1  anicca-monkey-watchdog 新規 skill (= 3 monkey monitor)
-V12-24 ALL  spec self-review (= placeholder/contradiction/scope check) ✅ v1.2 DONE
-V12-25 ALL  finishing-a-development-branch (= 4 option + push)
+═════════ DONE (= push 済) ═════════
+V12-1  ✅ gh repo rename × 2
+V12-2  ✅ local origin url 更新 × 2
+V12-3  ✅ fix.sh REPO 変数 置換
+V12-4  ✅ HEARTBEAT.md REPO 置換
+V12-5  ✅ 5 violation issue 移行 (products → anicca-dais)
+V12-6  ✅ grep + sed 全層 置換 (CLAUDE.md / memory / docs / skills)
+V12-7  ✅ push CLAUDE.md + memory + spec
+V12-8  ✅ 4 aniccaai.com 編集 cron disable
+V12-9  ✅ lefthook hook 設置 + test (single layer、 v1.3 で 3 layer 強化 予定)
+V12-22 ✅ fix.sh STRATEGIES = OpenClaw 正規 chain
+V12-24 ✅ spec self-review (v1.2) + code-reviewer 反映 (v1.3)
+
+═════════ PHASE 1 (= P1 dep ordering) ═════════
+V12-12 ─→ V12-13 ─→ V12-14
+(tasks.json schema 拡張 → HEARTBEAT.md §2 PICK P3 → heartbeat 1 fire verify)
+
+V12-12 ─→ V12-11
+(schema 先 → 7 watcher を tasks.json へ移管 + watch-sweep 2 ファイル分離)
+
+V12-11 ─→ V12-27 (Janitor は tasks.json 既存 を 前提、 reviewer MINOR 反映)
+
+═════════ PHASE 2 (= P0 強化、 V12-9 v1.3 反映 + V12-26) ═════════
+V12-9 v1.3 (= lefthook hook 3-layer hardening)
+V12-26 watercolor-monk-noon 真因 dig + fix
+
+═════════ PHASE 3 (= P1 Simian Army 新規 4 skill) ═════════
+V12-29 ─→ V12-27 ─→ V12-28 ─→ V12-30
+(cron-manager → Doctor rename 先 → Janitor → Conformity → Watchdog 順)
+注: V12-30 watchdog は launchd plist (= 別 path、 openclaw cron ではない)
+
+═════════ PHASE 4 (= P2 強化) ═════════
+V12-18 ─→ V12-19 ─→ V12-20 ─→ V12-21 ─→ V12-23
+(allowlist JIT → NEVER_DISABLE 28 件 → error pattern → timeout 引上 → 1 fire verify)
+
+═════════ PHASE 5 (= P2 blog 404 修復) ═════════
+V12-15 ─→ V12-16 ─→ V12-17
+(taste skill canonical → blog route 生成 → curl 200 verify)
+
+═════════ PHASE 6 (= 完成) ═════════
+V12-25 finishing-a-development-branch (= 4 option + push)
 ```
 
 ---

@@ -9,7 +9,7 @@
 **Tech Stack:** jq, openclaw CLI, bash.
 
 **Pre-flight verified 2026-06-06**:
-- Current: `primary=moonshot/kimi-k2.5`, `fallbacks=[xai/grok-3-mini-fast, deepseek/deepseek-v4-pro, claude-cli/claude-sonnet-4-6]`
+- Current: `primary=moonshot/kimi-k2.5`, `fallbacks=[xai/grok-3-mini-fast, deepseek/deepseek-v4-pro, anthropic/claude-sonnet-4-6]`
 - 5 sonnet-override crons identified: x-buildinpublic-daily, x-engagement-quote, anicca-yt-long-en, anicca-yt-long-ja, anicca-mail-triage
 - cron-codex.sh dispatcher at `~/.openclaw/skills/_dispatcher/scripts/cron-codex.sh`
 
@@ -44,7 +44,7 @@ jq '.agents.defaults.model = {
   "fallbacks": [
     "moonshot/kimi-k2.5",
     "deepseek/deepseek-v4-pro",
-    "claude-cli/claude-sonnet-4-6"
+    "anthropic/claude-sonnet-4-6"
   ]
 }' ~/.openclaw/openclaw.json > ~/.openclaw/openclaw.json.new && \
 mv ~/.openclaw/openclaw.json.new ~/.openclaw/openclaw.json
@@ -69,7 +69,7 @@ mv ~/.openclaw/openclaw.json.new ~/.openclaw/openclaw.json
 
 ### Task 6: Confirm mail-triage stays on sonnet (registered exception)
 
-- [ ] `openclaw cron get d15ebeb3-0aa9-4d16-9e9a-c177453a96a4` — confirm model = `claude-cli/claude-sonnet-4-6`.
+- [ ] `openclaw cron get d15ebeb3-0aa9-4d16-9e9a-c177453a96a4` — confirm model = `anthropic/claude-sonnet-4-6`.
 - [ ] Verify presence in `MODEL_OVERRIDE_REGISTRY.md`.
 
 ### Task 7: Add `OPENCLAW_CONTEXT=cron` to cron-codex.sh
