@@ -350,6 +350,71 @@ apps/landing/lib/blog.ts                 (= frontmatter parser + slug 取得)
 
 ---
 
+## §3.6 — P1 — Netflix Simian Army 分離 (= Single Responsibility Principle、 2026-06-07 Dais 提起)
+
+### §3.6.1 — Why split?
+
+Dais 2026-06-07 verbatim:
+> 「should we separate the crown that actually disables crowns and also the
+>   one that fixes the crown errors? According to the best practice, search
+>   it and tell me. Search it because you don't know the answer.」
+
+★ BP (= Firecrawl で 実検索 verbatim、 私 の synthesis ではない) ★:
+
+**Netflix Tech Blog「The Netflix Simian Army」(2011-07-19)**
+URL: netflixtechblog.com/the-netflix-simian-army-16e57fbab116
+
+> "Conformity Monkey finds instances that don't adhere to best-practices and
+>  shuts them down."
+> 
+> "Doctor Monkey taps into health checks that run on each instance as well as
+>  monitors other external signs of health (e.g. CPU load) to detect unhealthy
+>  instances. Once unhealthy instances are detected, they are removed from
+>  service and after giving the service owners time to root-cause the problem,
+>  are eventually terminated."
+> 
+> "Janitor Monkey ensures that our cloud environment is running free of clutter
+>  and waste. It searches for unused resources and disposes of them."
+
+**Kubernetes Controller Pattern** (kubernetes.io/docs/concepts/architecture/controller/):
+各 controller は 1 resource type のみ 管理 (= Pod / ReplicaSet / Deployment 別々)。
+「narrow responsibility, controlled blast radius」 が design principle。
+
+### §3.6.2 — Architecture (= 3 monkey + 1 watchdog)
+
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│ anicca-janitor-monkey   (daily 03:00)                                 │
+│   ── useless / orphaned cron 削除 のみ                                │
+│   ── 30日 stale archive + project-niche heartbeat 移管                │
+│   ── 「first-principles 不該当」 → disable                           │
+├──────────────────────────────────────────────────────────────────────┤
+│ anicca-conformity-monkey (6h)                                         │
+│   ── policy violation cron 即 disable のみ                            │
+│   ── aniccaai.com 編集 (= apps/landing/ commit author=Anicca Agent)   │
+│   ── cornerstone 違反 trigger                                          │
+├──────────────────────────────────────────────────────────────────────┤
+│ anicca-doctor-monkey    (6h、 = ex anicca-cron-manager rename)         │
+│   ── error cron heal のみ                                             │
+│   ── SCAN → pattern match → LLM 4-strategy → verify → close           │
+├──────────────────────────────────────────────────────────────────────┤
+│ anicca-monkey-watchdog  (daily 04:00)                                 │
+│   ── 3 monkey 自身 を monitor                                          │
+│   ── 24h 内 1 fire 成功 ゼロ → Slack alert + 即 fire 試行              │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+### §3.6.3 — Verification tasks
+
+| ID | task |
+|----|------|
+| V12-27 | anicca-janitor-monkey 新規 skill 作成 |
+| V12-28 | anicca-conformity-monkey 新規 skill 作成 |
+| V12-29 | anicca-cron-manager → anicca-doctor-monkey rename + 純化 |
+| V12-30 | anicca-monkey-watchdog 新規 skill |
+
+---
+
 ## §7 — Out of Scope
 
 - ★ `~/anicca-project` を `~/anicca-products` に local rename ★ (= breaking change 大、 別 spec 化)
