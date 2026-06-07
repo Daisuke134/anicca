@@ -613,4 +613,55 @@ JIT bound:    5 added (4.7-slideshow / account-health / aie-consulting / aie-pro
 
 ---
 
-**Spec v1.1 end. Dais review → V14-T1 完了、 F1/F2/F3 順次 execute 待ち**
+---
+
+## §13 — V14-2 Netlify Deploy GHA fix ★ ✅ EXECUTED 2026-06-07 ★
+
+### §13.1 — Root cause
+
+`nwtgck/actions-netlify@v3.0` の deploy step が ★ "Internal Server Error" ★ (= 5 連続 failure 2026-06-07)。
+8min+ かかった 後 generic ISE で fail。 functions-dir 19 .js 同時 upload の API 問題 推定。
+
+### §13.2 — Fix
+
+`nwtgck/actions-netlify@v3.0` を ★ direct `netlify-cli` invocation ★ に置換。
+manual deploy で 既 動作 確認 済 path (= `netlify deploy --dir=out --no-build --prod`)。
+
+```yaml
+- name: Install Netlify CLI
+  run: npm install -g netlify-cli@latest
+
+- name: Deploy to Netlify
+  working-directory: apps/landing
+  env:
+    NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+    NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+    GHA_SHA: ${{ github.sha }}
+    GHA_REF: ${{ github.ref }}
+  run: |
+    set -euo pipefail
+    if [ "$GHA_REF" = "refs/heads/main" ]; then
+      netlify deploy --site "$NETLIFY_SITE_ID" --auth "$NETLIFY_AUTH_TOKEN" --dir=out --prod --no-build --message "Deploy from GHA prod - $GHA_SHA"
+    else
+      netlify deploy --site "$NETLIFY_SITE_ID" --auth "$NETLIFY_AUTH_TOKEN" --dir=out --no-build --message "Deploy from GHA preview - $GHA_SHA"
+    fi
+```
+
+Security: env vars for github.sha + github.ref (= injection-safe per security-guidance@claude-code-plugins)。
+
+### §13.3 — Verification (= fresh evidence)
+
+2 連続 success runs 確認:
+- run 27093644516 (push trigger): ✅ success in 2m11s
+- run 27093646021 (workflow_dispatch): ✅ success in 2m07s
+- 直前 連続 failure: 8m51s + ISE × 5
+- improvement: -75% time + ISE 消滅
+
+commits:
+- 7dd2ff06 (initial fix)
+- f188b00f (security hardening、 env vars)
+- 76527a2a (workflow_dispatch + self-path trigger)
+
+---
+
+**Spec v1.1 end. Dais review → V14-2 ✅ + V14-T1 ✅ cluster done、 next: V13 series + V14-T2/T3**
