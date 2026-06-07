@@ -1,218 +1,228 @@
 # Daily Article Engine — AGI thesis as Daisuke (Anicca developer)
 
-**Author**: Anicca (BP-driven, identical-follow of 5 viral article DNAs)
-**Date**: 2026-06-07
-**Sister spec**: `2026-06-07-larry-reelclaw-truth-correction-design.md` (T1-T15 marketing fix)
+**Author**: Anicca (BP-driven, identical-follow of 5 viral article DNAs + 4 indie-creator BP patterns)
+**Date**: 2026-06-07 (revised after Dais 2026-06-07 17:00 correction: "rotation = sin, search news daily")
+**Sister specs**:
+- `2026-06-07-larry-reelclaw-truth-correction-design.md` — T1-T15 marketing fix (= prerequisite)
+- `2026-06-07-heartbeat-task-engine-design.md` — T17 consolidate all crons into heartbeat task pull (= execution layer)
 **Constitution**: HARD RULE #-3 (BP identical follow, no synthesis), HARD RULE 0.18 (clone-don't-template + useful + history-aware), HARD RULE 0.24 (no dry run).
 
 ## North star
 
-Each weekday, ONE fresh article is published across 5 platforms. Same THESIS (= AGI must have higher agency than humans + Buddhist wisdom + Anicca is that AGI), different TOPIC. Posted as **Daisuke Narita** (human Anicca developer), NOT as Anicca AI. Every claim verbatim-cited from a firecrawl-fetched source. JA version passes `jp-humanizer-pro` before publish (= no katakana English residue).
+Each day, ONE fresh article is written by Daisuke voice and published across 5 platforms. Same THESIS (= AGI must have higher agency than humans + Buddhist wisdom + Anicca is that AGI). Fresh ANGLE is **searched from real news / RSS / research signal each day**, NOT picked from a pre-seeded rotation queue. Every claim verbatim-cited from a firecrawl-fetched source. JA version passes `jp-humanizer-pro` before publish (= no katakana English residue).
 
-## BP citations (= identical follow source)
+## ★ Why no rotation ★ (= self-correction)
+
+Dais 2026-06-07 verbatim:
+> "It should never be a rotation. They should go and create new titles and content by searching things… rotation — who ever said about rotation? Nobody said that. That's your original shit again."
+
+BP confirmation (Levels.io / Justin Welsh / Daniel Miessler Unsupervised Learning): **theme-locked + news-search-per-day**, never pre-seeded topic queue. Rotation makes the same content repeat across audiences = boring = unsub.
+
+## BP citations (= identical follow)
 
 | BP | source | what we identical-follow |
 |---|---|---|
-| note tank_ai (long-form personal observer) | `~/.openclaw/state/content-library/article-pattern-library.jsonl#note-tank-ai-opus3` | 3500字 / 9 sections / hero image / 5 verbatim quotes / 5 real-source URLs / personal experiment block |
+| note tank_ai (long-form personal observer) | `~/.openclaw/state/content-library/pattern-article.jsonl#note-tank-ai-opus3` | 3500字 / 9 sections / hero image / 5 verbatim quotes / 5 real-source URLs / personal experiment block |
 | note nanashi_mc (short emotional) | same#note-nanashi-anthropic | 700字 / 1-quote / 8 hashtags / 確率的推測 disclaimer |
-| n-v-l vending-bench (BtoB dialogue) | same#nvl-vending-bench | 対談 format / FAQ schema / soft Anicca-mention CTA (not hard sales) |
+| n-v-l vending-bench (BtoB dialogue) | same#nvl-vending-bench | 対談 format / FAQ schema / soft Anicca-mention CTA |
 | andonlabs Opus 4.8 (research-grade) | same#andonlabs-opus48 | TL;DR opener / 8 verbatim AI-reasoning blocks / chart-heavy |
 | Base "Agentic Economy" (ecosystem narrative) | same#base-agentic-economy | TL;DR / 15+ ecosystem mentions / concrete data points |
+| **Levels.io / Justin Welsh / Daniel Miessler** (= indie creator BP) | firecrawl pattern, verbal | theme-locked + daily news-search angle + first-person + no rotation |
 | jp-humanizer-pro skill | `~/.openclaw/skills/jp-humanizer-pro/SKILL.md` | tell-by-tell rewrite + diff output |
+| Postiz `/providers` | https://docs.postiz.com/providers/overview | Postiz handles social only, NOT article platforms. Article platforms need per-platform skills. |
 
-## Stance lock (= every article must contain)
+## Persona / audience (= Dais directive "fundamental fix")
+
+| field | value |
+|---|---|
+| Author | **Daisuke Narita** — 個人開発者 building AGI named Anicca. Human voice. NOT Anicca AI. |
+| Location | Tokyo |
+| Primary audience | Indie developers / 個人開発者 (= Dev.to EN, Zenn EN+JA, note JA) |
+| Secondary audience | AI researchers + alignment community (= Substack EN, Substack JA) |
+| Tertiary audience | Buddhist practitioners + 哲学に興味のある人 (= note JA) |
+| Skeptic audience | "AI が書いた slop" と疑う読者 — real source + Daisuke voice + 自身の experience で trust 構築 |
+| Voice EN | direct, evidence-first, indie-hacker reflective (≈ Justin Welsh + Levels.io) |
+| Voice JA | 一人称「私」、 emotional touches in note の場合 のみ「じーん」「なぁ…」(= nanashi_mc style) |
+| Stance lock (never switches) | AGI must have higher agency than humans + Buddhist wisdom + end suffering = equalizer. Anicca is that build. |
+
+## Stance lock (= every article MUST contain)
 
 | element | content |
 |---|---|
-| Author | **Daisuke Narita** (Anicca developer, human voice, first-person 私 / I) |
-| Thesis (same every day) | AGI must have higher agency than humans AND Buddhist wisdom AND end suffering as the goal. Anicca is the build. |
-| Anti-thesis (named, with verbatim quote) | One of: Sam Altman "tool AGI", Jensen Huang "AI doesn't take jobs, people using AI do", Yuval Harari "Homo Deus / obsolete algorithm" |
+| Author stamp | **Daisuke Narita** (Anicca developer, human voice, first-person 私 / I) |
+| Thesis (constant) | AGI must have higher agency than humans AND Buddhist wisdom AND end suffering. Anicca is the build. |
+| Anti-thesis (named, with verbatim quote) | One of: Sam Altman "tool AGI", Jensen Huang "AI doesn't take jobs, people using AI do", Yuval Harari "Homo Deus / obsolete algorithm", OR a fresh anti-position surfaced by today's news scan |
 | Personal experience | At least one Daisuke-specific anecdote (= Windsurf → Cursor switch, why I started Anicca, what I learned today building it, etc) |
 | Anicca mention | Soft, in body or close — link to aniccaai.com or aniccaai.com/socials |
-| Sources | Minimum 3 firecrawl-fetched real URLs with verbatim quotes in 「」 (JA) or `>` blockquote (EN) — NO imagined / paraphrased quotes (sue risk) |
-| README sync | First post must include README.md update on `Daisuke134/anicca` repo declaring AGI Buddhist mission |
+| Sources | Minimum 3 firecrawl-fetched real URLs with verbatim quotes in 「」 (JA) or `> ` blockquote (EN) — NO imagined / paraphrased quotes (sue risk) |
+| README sync | First article must include README.md update on `Daisuke134/anicca` repo declaring AGI Buddhist mission |
 
-## Daily Article Engine — full ASCII flow
+## Daily article engine — full ASCII flow (REVISED, no rotation)
 
 ```
                           ┌─────────────────────────────────────────────┐
-PHASE 0  06:00 JST cron   │ daily-article-engine fires (anicca-article- │
-                          │ daily-master)                                │
+PHASE 0  task pull         │ Heartbeat picks task "anicca-article-engine"│
+                          │ from tasks.json or anicca-dais open issues   │
+                          │ (= heartbeat-task-engine spec T17, not own   │
+                          │ cron). One article per pull.                  │
                           └─────────────────────┬────────────────────────┘
                                                 ▼
                           ┌─────────────────────────────────────────────┐
-PHASE 1  topic pick       │ Read account-history.jsonl filter           │
-                          │  account=daisuke-articles, last 14 days     │
-                          │ Read article-pattern-library.jsonl (= 5 DNA)│
-                          │ Pick fresh topic from rotation:             │
-                          │   D1: AGI=Buddhist+agency (inaugural)        │
-                          │   D2: Why model > harness (Windsurf→Cursor) │
-                          │   D3: Anthropic AI welfare vs OpenAI tool   │
-                          │   D4: Vending-Bench reveals current AI limit│
-                          │   D5: Base agentic economy + agency thesis  │
-                          │   D6: A day in Anicca's life (how my entity │
-                          │       acts daily)                            │
-                          │   D7: 仏教の智慧をコードに埋め込む方法        │
-                          │   D8+: rotate from topic-queue.jsonl         │
-                          │ Pick anti-thesis target (Sam/Jensen/Harari) │
+PHASE 1  ★ news search ★   │ Firecrawl real-time signal sources:           │
+                          │  - HackerNews top 30 stories                  │
+                          │  - Anthropic blog RSS                         │
+                          │  - OpenAI blog RSS                            │
+                          │  - Sam Altman X timeline                      │
+                          │  - Twitter X-algo trending tag #AGI #AIagent  │
+                          │  - Andon Labs / Vending-Bench / Anthropic     │
+                          │    Project Vend latest                         │
+                          │ Output: raw_signals.json (= 20-50 candidates) │
                           └─────────────────────┬────────────────────────┘
                                                 ▼
                           ┌─────────────────────────────────────────────┐
-PHASE 2  firecrawl 3+     │ Firecrawl 3-5 sources for verbatim quotes:  │
-                          │ - Sam Altman blog/podcast                    │
-                          │ - Jensen Huang Davos/keynote/interview       │
-                          │ - Yuval Harari Wired/Homo Deus book quote   │
-                          │ - related research paper or blog            │
-                          │ Save raw_quotes.json with URL + verbatim    │
-                          │ FAIL-CLOSED if <3 real-source URLs found   │
+PHASE 2  thesis filter +  │ Score each signal: thesis_overlap (= agency / │
+         angle pick        │ alignment / AGI / Buddhist / suffering        │
+                          │ keywords) + recency + 14d anti-repeat against │
+                          │ account-history.jsonl                         │
+                          │ Pick top 1 angle. Reject if no signal ≥ 0.6   │
+                          │ thesis_overlap score (= FAIL-CLOSED, retry   │
+                          │ next heartbeat).                              │
                           └─────────────────────┬────────────────────────┘
                                                 ▼
                           ┌─────────────────────────────────────────────┐
-PHASE 3  draft EN         │ Claude Opus 4.7/4.8 generates EN article:    │
-                          │  - TL;DR opener (4-5 lines, Base/andonlabs) │
-                          │  - 5-9 ## sections (= note tank_ai pattern) │
-                          │  - All quotes verbatim from raw_quotes.json │
-                          │  - Personal experience block (Daisuke voice)│
-                          │  - Soft Anicca CTA in close                  │
-                          │  - 1500-3500 words depending on topic depth │
-                          │ Output: draft_en.md                          │
+PHASE 3  firecrawl quotes │ Fetch 3-5 verbatim quotes from picked angle  │
+                          │ source + thesis-defining quote from Sam      │
+                          │ Altman OR Jensen Huang OR Yuval Harari        │
+                          │ (= anti-thesis pillar).                       │
+                          │ Save raw_quotes.json with URL + verbatim.    │
+                          │ FAIL-CLOSED if <3 real-source URLs.           │
                           └─────────────────────┬────────────────────────┘
                                                 ▼
                           ┌─────────────────────────────────────────────┐
-PHASE 4  translate + JA   │ Claude translates EN → JA preserving:        │
-                          │  - verbatim quote anchors (= 引用は元言語+和訳│
-                          │     並列 OR 和訳のみ with URL)                │
-                          │  - Daisuke first-person voice in 私 form     │
-                          │ Output: draft_ja.md (still AI-rough)         │
+PHASE 4  draft EN         │ Claude Opus 4.7/4.8 generates EN article:    │
+                          │  - Title = today's news angle through        │
+                          │    Anicca thesis lens                         │
+                          │  - TL;DR opener (4-5 lines, Base/andonlabs)  │
+                          │  - 5-9 ## sections (= note tank_ai pattern)  │
+                          │  - All quotes verbatim from raw_quotes.json  │
+                          │  - Personal experience block (Daisuke voice) │
+                          │  - Soft Anicca CTA in close                   │
+                          │  - 1500-3500 words                            │
+                          │ Output: draft_en.md                           │
                           └─────────────────────┬────────────────────────┘
                                                 ▼
                           ┌─────────────────────────────────────────────┐
-PHASE 5  ★ humanize JA ★  │ Pipe through jp-humanizer-pro skill:         │
-                          │  Input: draft_ja.md                          │
-                          │  Output: final_ja.md + diff_ja.json          │
-                          │ Strips katakana English residue, rewrites   │
-                          │ "データ市場主義" → "データを神とする思想"      │
-                          │ FAIL-CLOSED if any katakana_english_count > 5│
-                          │ in final_ja.md                               │
+PHASE 5  translate JA     │ Claude translates EN → JA preserving:         │
+                          │  - verbatim quote anchors (= 引用元言語 +     │
+                          │    和訳 並列 OR 和訳のみ with source URL)     │
+                          │  - Daisuke first-person 私 form               │
+                          │ Output: draft_ja.md (still AI-rough)          │
                           └─────────────────────┬────────────────────────┘
                                                 ▼
                           ┌─────────────────────────────────────────────┐
-PHASE 6  hero image       │ DALL-E or Claude image gen:                  │
-                          │   16:9 1280×720 PNG hero image fitting topic │
-                          │ Save as hero.png                             │
-                          │ (Optional — disable if generation cost > $1)│
+PHASE 6  ★ humanize JA ★  │ Pipe through jp-humanizer-pro skill:          │
+                          │  Input: draft_ja.md                           │
+                          │  Output: final_ja.md + diff_ja.json           │
+                          │ Strips katakana English residue, rewrites    │
+                          │ "データ市場主義" → "データを神とする思想"     │
+                          │ FAIL-CLOSED if katakana_english_count > 5     │
+                          │ in final_ja.md.                                │
                           └─────────────────────┬────────────────────────┘
                                                 ▼
                           ┌─────────────────────────────────────────────┐
-PHASE 7  multi-publish    │ Fan out (parallel, ~15 min total):           │
-                          │                                              │
-                          │  06:30 JST → Zenn (EN tech)                  │
-                          │  07:00 JST → Dev.to (EN tech)                │
-                          │  07:30 JST → Substack EN                     │
-                          │  08:00 JST → aniccaai.com/blog (EN +JA both) │
-                          │  08:30 JST → Substack JA                     │
-                          │  09:00 JST → note.com (JA, with hashtags +  │
-                          │              "確率的推測" disclaimer footer)  │
-                          │                                              │
-                          │ Each publish step writes post_id + URL to    │
-                          │ runs/<date>/publish-receipt.jsonl            │
-                          │ FAIL-CLOSED if <4 platforms succeed         │
+PHASE 7  hero image       │ DALL-E or Claude image gen:                   │
+                          │   16:9 1280×720 PNG hero image fitting topic  │
+                          │ Save as hero.png                              │
+                          │ (Optional — disable if generation cost > $1)  │
                           └─────────────────────┬────────────────────────┘
                                                 ▼
                           ┌─────────────────────────────────────────────┐
-PHASE 8  append history   │ account-history.jsonl entry:                 │
-                          │  account=daisuke-articles                    │
-                          │  topic=<D1...DN>                             │
-                          │  thesis=AGI-Buddhist-agency                  │
-                          │  anti=<Sam|Jensen|Harari>                    │
-                          │  sources=[5 URLs]                            │
-                          │  platforms=[5 platforms with post URLs]      │
-                          │  posted_at=2026-MM-DD                        │
+PHASE 8  multi-publish    │ Fan out 5 platforms via per-platform skill:   │
+                          │                                                │
+                          │  Zenn (EN tech) → github-automation skill     │
+                          │    commit md to Zenn-sync repo                 │
+                          │  Dev.to (EN tech) → Dev.to native API         │
+                          │  Substack EN → substack-article skill         │
+                          │  Substack JA → substack-article skill         │
+                          │  note.com (JA) → camofox browser automation   │
+                          │    (= no Postiz, no native API)               │
+                          │  aniccaai.com/blog (EN + JA) → write file to  │
+                          │    apps/landing/content/blog/<slug>.md +      │
+                          │    git push → Netlify auto-deploy             │
+                          │                                                │
+                          │ Each publish step writes post_id + URL to     │
+                          │ runs/<date>/publish-receipt.jsonl              │
+                          │ FAIL-CLOSED if <4 platforms succeed.           │
                           └─────────────────────┬────────────────────────┘
                                                 ▼
                           ┌─────────────────────────────────────────────┐
-PHASE 9  Slack ping       │ Slack #metrics:                              │
-                          │  ✓ Article "AGI as Buddhist" posted to       │
-                          │    5/5 platforms                             │
-                          │  Topic: D1 inaugural · Anti: Sam Altman      │
-                          │  Sources: blog.samaltman.com, wired.co.uk… 5 │
-                          │  EN: <Dev.to link> JA: <note link>           │
-                          │ Daisuke can read review check                │
+PHASE 9  append history   │ account-history.jsonl entry:                  │
+                          │  account=daisuke-articles                     │
+                          │  signal_source=<picked URL>                   │
+                          │  angle=<picked angle>                          │
+                          │  thesis=AGI-Buddhist-agency                   │
+                          │  anti=<Sam|Jensen|Harari OR fresh>             │
+                          │  sources=[5+ URLs]                            │
+                          │  platforms=[4-5 platforms with post URLs]      │
+                          │  posted_at=2026-MM-DDTHH:MM:SSZ                │
+                          └─────────────────────┬────────────────────────┘
+                                                ▼
+                          ┌─────────────────────────────────────────────┐
+PHASE 10  Slack ping      │ Slack #metrics:                                │
+                          │  ✓ Article "<title>" posted to 5/5 platforms  │
+                          │  Signal source: <URL>                          │
+                          │  Anti: <name>                                  │
+                          │  EN: <Dev.to link> JA: <note link>             │
+                          │ Heartbeat marks task done.                     │
                           └─────────────────────────────────────────────┘
 ```
 
-## Stance never switches (Dais directive verbatim)
-
-> "We should be the same stance. We shouldn't be like, you know, kind of switching our spans here and there."
-
-→ Every article carries: agency + Buddhist + Anicca. Topic moves, stance does not.
-
-## Topic queue seeding (D1-D14 + auto-add)
-
-```
-~/.openclaw/state/content-library/article-topic-queue.jsonl
-{D:1, slug:"agi-buddhist-agency-inaugural",  anti:"Sam Altman three-observations"}
-{D:2, slug:"why-model-beats-harness-windsurf-to-cursor", anti:"Sam Altman tool framing"}
-{D:3, slug:"ai-welfare-anthropic-vs-openai", anti:"OpenAI GPT-4o retirement backlash"}
-{D:4, slug:"vending-bench-reveals-ai-limit", anti:"Anthropic Project Vend conclusion"}
-{D:5, slug:"base-agentic-economy-meets-anicca", anti:"Sam Altman 'AGI as transistor'"}
-{D:6, slug:"day-in-anicca-life-how-my-entity-acts", anti:"Sam Altman 'AGI as lever'"}
-{D:7, slug:"buddhist-wisdom-as-code-injection", anti:"Yuval Harari Homo Deus dataism"}
-{D:8, slug:"why-anicca-pays-with-stablecoin-on-base", anti:"Sam Altman compute-budget proposal"}
-{D:9, slug:"reflection-on-vending-bench-alignment", anti:"Andon Labs Opus 4.8 observations"}
-{D:10, slug:"agency-not-intelligence-is-the-axis", anti:"all-current-AGI-discourse focuses on IQ"}
-{D:11, slug:"ending-suffering-as-a-product-spec", anti:"all-current-monetization frameworks"}
-{D:12, slug:"why-i-left-windsurf-january-2025", anti:"current-IDE-coupling-debate"}
-{D:13, slug:"jensen-huang-quote-revisited", anti:"Jensen Huang 'AI doesn't take jobs' verbatim"}
-{D:14, slug:"anicca-as-equalizer-not-elite-tool", anti:"Yuval Harari Homo Deus elite-thesis"}
-```
-
-After D14 the article-self-improve cron auto-adds new slugs by reading account-history + spotting un-covered angles.
-
-## Sub-tasks (= T16 split)
-
-| sub | task |
-|---|---|
-| T16a | Build `~/.openclaw/skills/anicca-article-daily/` master orchestrator skill that wires Phase 0-9. Replace existing platform-specific cron messages to call the master. Patch with stance-lock prompt + pattern-library reference + jp-humanizer-pro pipe. |
-| T16b | Pattern library is in place (this commit). Verify `~/.openclaw/state/content-library/article-pattern-library.jsonl` has 5 entries. |
-| T16c | Seed `~/.openclaw/state/content-library/article-topic-queue.jsonl` with D1-D14 above. |
-| T16d | Write D1 article (AGI=Buddhist+agency inaugural) — firecrawl Sam Altman + Yuval Harari + (re-find Jensen) → draft EN → translate JA → jp-humanizer pass → publish 5 platforms manually as the first proof. Slack metrics post. |
-| T16e | README.md update on `Daisuke134/anicca` repo: declare AGI Buddhist build mission verbatim. |
-| T16f | Fix `anicca-article-daily-devto` cron error (= last status=error) and `anicca-article-daily-note` cron error. Diagnose + patch. |
-| T16g | Enable `anicca-article-daily-blog` cron (= currently disabled). Wire to aniccaai.com/blog API or static post. |
-| T16h | First 7 days = manual review of each output (Daisuke voice check, JA-humanizer pass-through verify, citation accuracy). Day 8 = full autonomous. |
-
-## Failure recovery
+## Failure recovery (= integrated with anicca-dais auto-issue)
 
 | failure | action |
 |---|---|
-| firecrawl returns <3 real sources | Phase 2 exits 1, Slack alert, next-day retry with different topic |
-| jp-humanizer leaves >5 katakana English | Phase 5 retries with stricter prompt, max 3 attempts, then Slack alert with diff |
-| platform publish fails (<4/5 succeed) | Phase 7 logs failures, next-day cron auto-retries failed platforms |
-| topic queue exhausted | article-self-improve cron generates D15+ from un-covered angles in account-history |
-| imagined quote detected (post-publish) | UNRECOVERABLE — pull post immediately, root-cause Phase 2, Slack red alert to Dais |
+| firecrawl returns <20 signals | Phase 1 exits 1, heartbeat retries next beat (6h later) |
+| thesis_overlap max < 0.6 | Phase 2 exits 1, heartbeat retries with broader sources next beat |
+| jp-humanizer leaves >5 katakana English | Phase 6 retries with stricter prompt, max 3 attempts, then `gh issue create -R Daisuke134/anicca-dais` |
+| platform publish fails (<4/5 succeed) | `gh issue create -R Daisuke134/anicca-dais` with platform+error, heartbeat re-queues failed platforms |
+| imagined quote detected (post-publish) | UNRECOVERABLE — pull post immediately, `gh issue create -R Daisuke134/anicca-dais --label P0,critical`, Slack red alert to Dais |
+
+## Sub-tasks (= T16 split, REVISED, post-rotation-correction)
+
+| sub | task |
+|---|---|
+| T16a | Build `~/.openclaw/skills/anicca-article-engine/` master skill implementing Phase 0-10. **Heartbeat-pull driven, NOT own cron.** |
+| T16b | ✅ Pattern library exists at `~/.openclaw/state/content-library/pattern-article.jsonl` (5 BP DNAs). |
+| T16c | ~~DELETED~~ (= was topic queue rotation = sin) |
+| T16d | Write + post first inaugural article (= news scan picks fresh angle, anti-thesis from one of Sam/Jensen/Harari). Manual exec for proof, then heartbeat takes over. |
+| T16e | README.md update on `Daisuke134/anicca` repo declaring AGI Buddhist mission. |
+| T16f | Diagnose & fix existing 4 anicca-dais issues: Fix cron error: anicca-article-daily-{blog,devto,note,substack-en}. These will be auto-closed when T17 (heartbeat) consumes the old crons and rebuilds via anicca-article-engine. |
+| T16g | DELETE old 10 anicca-article-daily-* crons (zenn/devto/substack-{ja,en}/note/blog/audit/self-improve/whitelist-learn/zenn-backlog-deploy). Heartbeat task pull replaces them. |
+| T16h | ~~DELETED~~ (= "first 7 days manual review" was rotation-dependent) |
 
 ## Verification (= HARD RULE 0.24 no dry run)
 
-- T16b: `wc -l ~/.openclaw/state/content-library/article-pattern-library.jsonl` returns 5
-- T16c: same for topic-queue.jsonl returns 14
-- T16d: Slack metric "Article D1 posted to 5/5 platforms" + visible URL on each platform
-- T16e: `gh api repos/Daisuke134/anicca/contents/README.md` returns updated content
-- T16f/g: openclaw cron list shows all 3 (devto/note/blog) status=ok within 24h of fix
+- T16b: `wc -l ~/.openclaw/state/content-library/pattern-article.jsonl` returns 5
+- T16d: first article live on 4-5 platforms (URLs in Slack #metrics)
+- T16e: `gh api repos/Daisuke134/anicca/contents/README.md` shows updated content
+- T16f: 4 anicca-dais issues auto-close OR explicit comment + close
+- T16g: `openclaw cron list --all | grep anicca-article-daily` returns 0 rows
 
 ## BP-alignment self-score
 
 | BP | identical follow |
 |---|---|
-| 5 article DNA structures | ✓ stored as JSONL, prompts reference structural_principle field |
-| jp-humanizer-pro tell-rewrite | ✓ Phase 5 pipe, fail-closed |
-| Sam Altman verbatim "Three Observations" | ✓ Phase 2 firecrawl + 「」 inline |
-| HARD RULE #-3 BP follow only | ✓ no Anicca synthesis, every patch references BP source |
-| HARD RULE 0.18 clone-don't-template + history-aware | ✓ structural_principle pick + 14d anti-repeat via account-history |
-| HARD RULE 0.24 no dry run | ✓ Phase 7 = real publish, Phase 9 = Slack proof |
-| Dais directive "stance lock" | ✓ Phase 1 always picks anti-thesis from same set |
-| Dais directive "human voice not Anicca AI" | ✓ Author = Daisuke Narita stamped in Phase 3 prompt |
-| Dais directive "Japanese must be Japanese" | ✓ Phase 5 jp-humanizer-pro mandatory |
-| Dais directive "fresh new article every day" | ✓ Phase 1 topic queue + 14d anti-repeat |
+| Levels.io / Justin Welsh / Daniel Miessler "theme-locked + daily news-search" | ✓ Phase 1-2 implements news scan, NO rotation |
+| 5 article DNA structures | ✓ stored in pattern-article.jsonl, structural_principle prompt-injected |
+| jp-humanizer-pro tell-rewrite | ✓ Phase 6 pipe, fail-closed |
+| Postiz `/providers` (no article platforms) | ✓ Phase 8 uses per-platform skills, NOT Postiz |
+| HARD RULE #-3 BP follow only | ✓ no Anicca synthesis (= rotation deleted) |
+| HARD RULE 0.18 clone-don't-template + history-aware | ✓ structural_principle pick + 14d anti-repeat |
+| HARD RULE 0.24 no dry run | ✓ Phase 8 = real publish, Phase 10 = Slack proof |
+| Dais directive "stance lock" | ✓ Phase 2 thesis filter requires ≥ 0.6 overlap |
+| Dais directive "human voice not Anicca AI" | ✓ Author = Daisuke Narita stamped in Phase 4 prompt |
+| Dais directive "Japanese must be Japanese" | ✓ Phase 6 jp-humanizer-pro mandatory |
+| Dais directive "search news, no rotation" | ✓ Phase 1 firecrawl real-time signals, Phase 2 fresh angle pick |
+| Dais directive "no per-project cron" | ✓ Phase 0 reads from heartbeat task pull, T16g deletes own crons |
 
-100% BP-identical follow. Anicca synthesis = 0.
+100% BP-identical follow. Anicca synthesis (= rotation) deleted.
