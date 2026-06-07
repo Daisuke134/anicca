@@ -21,17 +21,32 @@ pre-commit:
           echo "❌ branch名 '$b' が規約外。dev / feature/<x> / fix/<x> / chore/<x> / docs/<x> / app-factory/<x> を使う。"; exit 1; }
       fail_text: "branch名 規約違反"
     aniccaai-landing-guard:
-      # Dais 2026-06-07 厳命: Anicca cron は aniccaai.com (apps/landing/) 編集禁止。
-      # Dais 本人 commit OR taste skill manual invoke (= Dais 名義) のみ通過。
-      # Spec: docs/superpowers/specs/2026-06-07-cron-rectification-and-aniccaai-protection-design.md §3.2
+      # 3-layer defense-in-depth (v1.3、 spec §3.2.2、 reviewer BLOCKING #3 反映)
+      # Single-key (= user.name) detection was bypassable via git config override.
+      # Now requires forging 3 signals (name + email + parent process) simultaneously.
+      # Dais 2026-06-07 厳命: aniccaai.com は Dais 領域、 Anicca cron 編集禁止。
       run: |
-        author="$(git config user.name)"
+        author_name=$(git config user.name)
+        author_email=$(git config user.email)
         touched=$(git diff --cached --name-only | grep -c "^apps/landing/" || true)
-        if [ "$author" = "Anicca Agent" ] && [ "$touched" -gt 0 ]; then
-          echo "❌ HARD RULE 違反: Anicca cron は aniccaai.com (apps/landing/) 編集禁止。"
-          echo "   Dais 本人 OR taste skill (= ~/.claude/skills/taste-skill manual) のみ touch 可。"
-          echo "   Touched files:"
-          git diff --cached --name-only | grep "^apps/landing/" | head -10 | sed 's/^/     /'
+        [ "$touched" -eq 0 ] && exit 0
+        is_bot=0
+        # Layer 1: name check
+        [ "$author_name" = "Anicca Agent" ] && is_bot=1
+        # Layer 2: email check (= bot email pattern)
+        case "$author_email" in
+          *anicca*bot*|*anicca-agent*|*@anicca.ai|noreply@anthropic.com) is_bot=1;;
+        esac
+        # Layer 3: parent process check (= interactive shell or claude-cli)
+        pname=$(ps -o comm= -p $PPID 2>/dev/null | xargs basename)
+        case "$pname" in
+          bash|zsh|fish|claude|cursor|code|nvim|vim|sh|tmux|screen) : ;;
+          *) is_bot=1 ;;
+        esac
+        if [ "$is_bot" = "1" ]; then
+          echo "❌ HARD RULE: Anicca cron は apps/landing/ 編集禁止"
+          echo "  name=$author_name email=$author_email parent=$pname"
+          git diff --cached --name-only | grep "^apps/landing/" | head -10 | sed 's/^/   /'
           exit 1
         fi
       fail_text: "Anicca cron は apps/landing/ 編集禁止 (= Dais の aniccaai.com 領域)"
