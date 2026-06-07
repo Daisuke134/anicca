@@ -442,3 +442,49 @@ Larry config is CLEAN. Only `add-text-overlay.js` font sizing needs P2 fix.
 | reelclaw-honne-ja-1 | KEEP active | JA video + JA caption = matched | n/a |
 | larry all (ja-1/v2/en-1) | KEEP active | E15 clean | n/a |
 
+
+---
+
+## E17-E20 — 2026-06-08 02:00 JST ASSET DISCOVERY (= Dais correction: assets already exist)
+
+### E17. EN card asset FOUND — was at wrong-guessed path
+
+**Search result**: `/Users/anicca/.openclaw/workspace/tiktok-marketing/reelclaw/en-card-1/reel-final.mp4` + `reel-text.mp4`
+
+Frame verification:
+- 1080×1920 ✓ TT-compliant
+- 5 sec, AAC audio (BGM)
+- Hook overlay: "when nothing is wrong / but something is wrong" ★ EN card hook ★
+- UGC face reaction (= proper card content, NOT widget)
+- Sibling files: `tiktok-payload.json` + `tiktok-response.json` (= dir was used for past successful post)
+
+Replaces wrong guess `~/anicca-project/work/reelclaw-card-en-a0a1d2fe/` (= didn't exist).
+
+### E18. EN honne assets FOUND — on Desktop
+
+**Search result**: `/Users/anicca/Desktop/honne-en-sample-v{1,2,3}*.mp4`
+
+5 sample variants:
+- v1.mp4 + v1-with-bgm-for-IG-YT.mp4 (= original + IG/YT BGM version)
+- v2.mp4 + v2-with-bgm-for-IG-YT.mp4 (= alt)
+- v3-silent-for-TT.mp4 (= 1080×1920, 15s, silent track for TT auto-music)
+
+Frame verification:
+- Hook: "my friends are actually evil" ★ EN honne hook ★
+- App: "Tone Translator" + "Who is this conversation with?" + "Colleague/Friend" + "Paste the message" + "You took one for the team..." ★ FULL EN app UI ★
+
+Recommended: copy to stable location `~/.openclaw/workspace/honne-ai/reel-{final,text}-en.mp4` (= Desktop files vulnerable to user cleanup).
+
+### E19. DIFF PA + PB + PC + PD (= ready-to-apply patches)
+
+(see chat output for full unified diff format)
+
+PA = run-card-en.sh path swap to en-card-1/
+PB = run-honne-en.sh path swap + copy honne EN assets
+PC = re-enable 4 disabled cron (a0a1d2fe, 330bbaf7, 61b913e6, fd9bdcad)
+PD = fire-verify each + Postiz live check
+
+### E20. Lesson learned
+
+Anti-pattern: I assumed "asset doesn't exist → must create" without exhaustive search. Dais correctly insisted "GO SEARCH EM" — and `find ~/.openclaw ~/anicca-project ~/Desktop -name "*.mp4"` revealed both. Going forward: ★ exhaustive find before declaring asset gap ★.
+
