@@ -641,20 +641,57 @@ realtime_guide.py — 24/7 daemon (= launchd ai.anicca.realtime-guide)
        twilio.com/docs/voice (relentless call)
        en.wikipedia.org/wiki/Haversine_formula (geo distance/bearing)
 
-lateness_check.py — 5-min cron (= existing, patched 2026-06-07)
+lateness_check.py — 5-min cron (= existing, repatched 2026-06-07 v2)
    Decides "should we call now?" based on gcal next event + buffer.
-   Previously POSTed to 127.0.0.1:7860/dialout (= legacy Pipecat),
-   which broke when anicca-oss-pipecat dir was deleted. Patched with
-   _twilio_call_direct() fallback: TwiML <Say language='ja-JP'
-   voice='Polly.Mizuki'> direct via Twilio Calls API. Verified LIVE
-   2026-06-07 23:03 JST → sid CA04e0a5b4799a7b74562ebf3081612b36
-   rang +818046270314 with Anicca voice.
+   Calls sutando phone-conversation /call endpoint with a Japanese
+   system_instruction built by _build_anicca_voice_prompt() that
+   embeds live GPS + active itinerary into the Gemini Live persona.
+
+sutando phone-conversation (= sonichi/sutando, OSS, TypeScript)
+   Path: ~/research/pipecat/sutando/skills/phone-conversation/
+   conversation-server.ts (= 97 KB, bodhi-realtime-agent + Gemini Live)
+   ─ POST /call {to, message} → Twilio Calls API + TwiML <Connect><Stream>
+   ─ Twilio Media Streams (mu-law 8kHz) ↔ pcm16k ↔ Gemini Live (ja-JP, Aoede)
+   ─ Bidirectional realtime voice: caller can interrupt mid-sentence
+   ─ Hang-up via Gemini's hang_up tool
+
+   launchd plists (= LIVE 2026-06-07):
+     ai.anicca.phone-tunnel       cloudflared quick tunnel on :3100
+                                   persists URL to anicca_phone_url.txt
+     ai.anicca.phone-conversation start.sh: load .env + read tunnel URL
+                                   → exec npx tsx conversation-server.ts
+
+   Verified LIVE 2026-06-07 23:39 JST → sid CAed75334932e222a4e122d4d5588ec95a
+   rang +818046270314 with location-aware Gemini Live conversation.
 
 State files (= same shape in local mac mini and in Daytona sandbox):
    ~/.openclaw/state/location/<user_id>.json           live location (5s update)
    ~/.openclaw/state/location/itinerary_<user_id>.json active route (set per event)
    ~/.openclaw/state/location/guide_state_<user_id>.json daemon state (briefed/cur_leg/...)
+   ~/.openclaw/state/anicca_phone_url.txt              cloudflared tunnel URL (= sutando WEBHOOK_BASE)
 ```
+
+### 11.5.1. Why sutando + Gemini Live (not Python Pipecat)
+
+Earlier draft proposed building a Python Pipecat outbound server from scratch
+using `pipecat-ai/pipecat-examples/twilio-chatbot/outbound`. That is a
+HARD RULE #17 violation (CLONE-DON'T-TEMPLATE) — sutando already implements
+exactly this pattern, in TypeScript, with a working /call endpoint, multi-call
+support, and a bodhi-realtime-agent VoiceSession lifecycle that handles
+reconnects, audio buffering, interruption, and Gemini Live tool execution.
+
+Decision: ★ clone sutando, do not re-implement ★. The only new code is
+`_build_anicca_voice_prompt()` (~30 lines) inside lateness_check.py that
+reads the existing state files and writes a Japanese system_instruction.
+
+BP cite:
+   - github.com/sonichi/sutando (= OSS, MIT)
+   - sutando/skills/phone-conversation/SKILL.md verbatim:
+     "Uses Twilio Media Streams for real-time bidirectional audio, piped to
+      Gemini Live for natural conversation. The caller can interrupt
+      mid-sentence — no waiting for the AI to finish speaking."
+   - docs.pipecat.ai/pipecat/features/gemini-live (= official Pipecat docs)
+   - daily.co/products/pipecat-cloud (= production hosted Pipecat for SaaS scale)
 
 **LIVE verification 2026-06-07**:
 
