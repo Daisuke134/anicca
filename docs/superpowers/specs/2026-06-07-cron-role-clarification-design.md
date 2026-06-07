@@ -434,7 +434,19 @@ NEW-2a/2b/2c は ★ 全 patch 不要 ★ (= code 既 正確)。
 - skip 動作: 成功 報告 + Slack alert 出さない
 - 真 fail (= 違う原因の 0 POST_ID) のみ HARD RULE 0.24 fire
 
-### §10.4-new — NEW-2e fix path (= idempotency check)
+### §10.4-new — NEW-2e fix path (= idempotency check) ★ ✅ EXECUTED 2026-06-07 ★
+
+**Verification (= fresh fire evidence)**:
+```
+[build-in-public 2026-06-07] Step 2a: morning Gmail body found at .../sent-2026-06-07.json
+[build-in-public 2026-06-07] tweet length: 245 char
+[build-in-public 2026-06-07] Step 5d: today (Day 159) already posted — idempotency skip, exit 0
+```
+
+✅ idempotency 動作 確認、 Slack alert 出ず、 exit 0 正常終了。
+push: `~/.openclaw/` commit 964c5de0f (= main-internal)
+
+
 
 file: `~/.openclaw/skills/build-in-public/scripts/run.sh` Step 6 直前 (= L255 周辺)
 
