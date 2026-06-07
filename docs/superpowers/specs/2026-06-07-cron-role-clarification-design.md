@@ -728,11 +728,22 @@ openclaw `--system-event` payload type (= no agent turn) で対応可能性。
 
 ### §15.4 — Follow-up task
 
-- **V14-T2-F1**: 3 monkey crons (Janitor/Doctor/Conformity) を ★ systemEvent payload ★ に変更
-  - 現状: `payload.kind=agentTurn` (= LLM wrapper)
-  - 目標: `payload.kind=systemEvent` (= pure bash、 LLM 依存ゼロ)
-  - `--system-event "bash script.sh"` で edit 可能性 確認 + apply
-  - benefit: LLM cooldown 中 でも 3 monkey 動作、 Doctor のSimian Army 機能 維持
+- **V14-T2-F1** ★ ❌ NOT POSSIBLE ★ — openclaw 制約:
+  ```
+  GatewayClientRequestError: invalid cron.update params:
+  isolated/current/session cron jobs require payload.kind="agentTurn"
+  ```
+  isolated session の monkey crons は payload.kind を強制 "agentTurn" (= LLM wrapper 必須)。
+
+  **既 適用済 mitigation**:
+  - `payload.lightContext = true` (= light context、 token 削減)
+  - `delivery.mode = "none"` (= 結果 summarize 不要)
+  → conformity-monkey lastRunStatus=ok 確認 済 (= 動作 中)
+
+- **V14-T2-F2 (= 新 follow-up)**: Janitor performance optimization
+  - 現問題: should_skip_cron が per-UUID `openclaw cron get` = 200 cron × 1-2s = 5+ min
+  - fix: inline metadata extraction from already-fetched JSON (= cron-lock.sh `get_last_modifier` を JSON 渡し版 に拡張)
+  - benefit: Janitor fire < 30s 完了、 cron-runner timeout 回避
 
 ---
 
