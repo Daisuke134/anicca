@@ -1,6 +1,7 @@
 name: Netlify Deploy (Landing)
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - dev
