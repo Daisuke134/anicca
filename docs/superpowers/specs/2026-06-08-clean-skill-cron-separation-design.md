@@ -259,6 +259,21 @@ cron path (= dispatcher + timeout + Slack logging + jobs.json state update) を 
 
 **Worst case 保険**: Dais 「all bad」 報告 が来たら → widget-en/v6.mp4 のみ 残し 他全 _bad/ 隔離 (= v6 だけ pool で 100% 確実)
 
+### FIX-W3 反転 update (= Dais §D17 2026-06-08 14:33 mail reply)
+
+**Dais 視覚 ID 結果** (= mail 19ea5adb reply):
+- ✅ **v0, v2, v5 = GOOD** (= 1 hook overlay) BUT font 小さい
+- 🟥 **v1, v3, v4, v6 = BAD** (= 2 hook overlay 同居: 例「Since you are always on your phone」 + 「Put affirmations on your lockscreen」)
+- 旧 私 の v0 = card content 推測 は **誤り** (= v0 は widget content 1-hook、 ただし font 小)
+
+**実行 (14:34)**:
+1. ✅ widget-en/_bad/v0-confirmed-card-content-md5-a4378bb6.mp4 → **widget-en/v0.mp4 復元**
+2. ✅ widget-en/{v1,v3,v4,v6}.mp4 → **widget-en/_bad/{v1,v3,v4,v6}-2hooks-merged.mp4** に隔離
+3. ✅ Pool = v0, v2, v5 (= 3 variant、 全 1-hook clean widget)
+4. ✅ openclaw cron run 92c13cc2 (runId 50) + 2f330f58 (runId 51) で 再 fire
+
+**Font 小問題 = 別 task #FIX-W4**: baked video text は overlay 後付け 不可 → 元 source 動画 から big font で re-bake 必要。 Dais source mp4 受領 待ち or ffmpeg drawtext で 既存 overlay 上に big text 重ね 検討
+
 ### FIX-K1 — AUTO-DISABLE-KILL 実行 済 (= Dais §D15 2026-06-08)
 
 **Dais verbatim**: 「THERE SHOULD BE NO CRONS THAT DISABLE CRONS ESPECIALLY SOCIAL MARKETING CRONS NONE OF THEM」
