@@ -219,6 +219,38 @@ cron path (= dispatcher + timeout + Slack logging + jobs.json state update) を 
 3. `openclaw cron run <CID>` → Slack `:white_check_mark:` 待ち
 4. Postiz list で state=PUBLISHED + releaseURL 取得 → spec §5 verify table append
 
+### FIX-W1 — WIDGET-EN-DOUBLE-HOOK 修正 (= Dais §D13 2026-06-08)
+
+**Dais verbatim**: 「since u always on phone and put affirmations on lockscreen is a separated two hooks. you have in one video. stop this. diffrent hooks for the wodget one en reelcllaw」
+
+**問題**: `~/.openclaw/workspace/reelclaw-assets/videos/widget-en/v*.mp4` の 1 動画 に 2 hook (= 「you always on phone」 + 「put affirmations on lockscreen」) が **同居 baked**。 hooks-en.json の reelclaw-widget family は 各 hook を 別 variant に 1:1 map すべき。
+
+**手順**:
+1. 各 widget-en/v0.mp4..v6.mp4 を 視覚 確認 (= ffmpeg frame extract で hook 文字 列 verify)
+2. 同居 動画 を 分離 or 再 bake (= ソース 動画 から 1 hook ずつ extract)
+3. hooks-en.json の reelclaw-widget family に video_id field 追加 (= variant ↔ hook 1:1 紐付け)
+4. `run-widget-en.sh` の random pick logic を 「pick hook → 対応 variant pick」 に変更 (= hook 主導)
+
+### FIX-W2 — EN-CARD-2 TT wire 2h DELAY (= Dais §D14 2026-06-08)
+
+**Dais verbatim**: 「reellcaw en tt accout dont exist yet we will make em in 2hs」
+
+**手順** (= 2h 後 Dais が account 用意 後):
+1. Dais が 新 TT account を Postiz UI で integration として 登録
+2. `~/.openclaw/state/scripts/refresh-postiz-map.sh` で 新 integration ID 取得 + POSTIZ_ACCOUNT_MAP.md 更新
+3. `openclaw cron edit 330bbaf7-3ea2-41f6-8479-f1c6f8ef1f45 --message '<NEW with --tt>'`
+4. `openclaw cron run` で fire verify
+
+### FIX-K1 — AUTO-DISABLE-KILL 実行 済 (= Dais §D15 2026-06-08)
+
+**Dais verbatim**: 「THERE SHOULD BE NO CRONS THAT DISABLE CRONS ESPECIALLY SOCIAL MARKETING CRONS NONE OF THEM」
+
+**実行 結果**:
+- `openclaw cron disable 1e3a4735-896f-4a11-9d58-7b2aa3243223` (= anicca-janitor-monkey) ✅ enabled: no
+- `openclaw cron disable e5761185-d50c-4753-8d34-1f959eba49c0` (= anicca-conformity-monkey) ✅ enabled: no
+- `openclaw cron disable 9ea4ceba-f01c-4a06-bf65-acde26854809` (= anicca-account-health-daily) ✅ 既 disable
+- `openclaw cron disable 7a8d3344-f71b-4548-8dfc-ee92bda9ece9` (= anicca-cron-auto-disable) ✅ 既 disable
+
 ### FIX5 — 1.9.3 iOS app E2E (= A2)
 
 A1 完走 後:
