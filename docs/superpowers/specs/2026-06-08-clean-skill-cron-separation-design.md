@@ -179,22 +179,45 @@ cron path (= dispatcher + timeout + Slack logging + jobs.json state update) を 
 
 合計 8 cron を **1 by 1** で `openclaw cron run`、 結果 を §5 verify table に append。
 
-### FIX4 — 既 error cron の 個別 fix (= last status error 7 件)
+### FIX4 — 14 cron BULK payload fix (= 真因 = model=None + OLD-DIRECT-PATH)
 
-audit U4 で error 報告:
-- larry-anicca-ja-v2-noon (= 14:00、 model=None?)
-- larry-anicca-ja-v2-evening (= 19:30、 同上)
-- reelclaw-anicca-ja-widget-2 (= 16:00、 stall)
-- reelclaw-anicca-ja-card-2 (= 20:00、 stall)
-- reelclaw-anicca-en-widget-2 (= 21:00、 stall)
-- reelclaw-anicca-en-widget-2 (= 07:00、 stall)
-- reelclaw-honne-en-2 (= 11:00、 model=None?)
+**真因 (= 2026-06-08 12:40 audit 判明)**:
 
-**手順** (= 1 cron ずつ):
-1. `openclaw cron get <id>` で payload + model 確認
-2. model=None なら `openclaw cron edit <id>` で model を 既存 ok cron と 揃える (= openai/gpt-5.4-mini or削除して dispatcher 経由のみ)
-3. message が 旧 path (`~/.openclaw/workspace/skills/...` 直接) なら dispatcher 経由に書き換え
-4. `openclaw cron run <id>` で 実 fire → success確認
+26 reelclaw+larry cron 中 **14 cron が model=None + OLD-DIRECT-PATH** (= dispatcher 通っていない 旧 1900-char message)。 これ が 全 stall / exit=124 / silent-fire の 真因。
+
+| 観点 | 状態 |
+|----|----|
+| シンボリック リンク `~/.openclaw/skills/reelclaw` → workspace/skills/reelclaw | ✅ 存在、 ファイル resolve OK |
+| symlink `~/.openclaw/skills/anicca-larry/scripts` → workspace/skills/larry/scripts | ✅ 存在 |
+| cron message 内 path | ❌ 14 cron で `~/.openclaw/workspace/skills/...` 直接 path (= dispatcher bypass) |
+| cron payload model | ❌ 29 cron で model=None (= isolated agent fail to start = stall) |
+
+**14 cron BULK fix target**:
+
+| cron id (head) | name | 新 message (= 全 ~140 char dispatcher) |
+|----|----|----|
+| `a4092e38` | larry-anicca-en-1 | `cron-bash.sh anicca-larry/scripts/run-account.sh --variant en-v1 --tt cmlt171eq04d9r00yzzceb6bw` |
+| `61d431fc` | larry-anicca-ja-1 | `cron-bash.sh anicca-larry/scripts/run-account.sh --variant ja-v1 --tt cmlrv8jq000hun60yy57eaptx` |
+| `57fb7dbc` | larry-anicca-ja-v2 | `cron-bash.sh anicca-larry/scripts/run-account.sh --variant ja-v2 --tt cmq2aoena08bhqp0yx1epjcik` |
+| `174f01dd` | reelclaw-anicca-ja-card-1 | `cron-bash.sh reelclaw/scripts/run-card-ja.sh --tt cmnhlk3ju058lpn0ytilqdpo0 --ig cmnipef7g00oerm0y3dz4lamx --yt cmn1oukj9012nnq0yqhouc3ib` |
+| `a6ccfc01` | reelclaw-anicca-ja-card-2 | (同上) |
+| `330bbaf7` | reelclaw-anicca-en-card-2 | `cron-bash.sh reelclaw/scripts/run-card-en.sh --tt cmlt171eq04d9r00yzzceb6bw --ig cmpc3gx4001nklg0y27a8o66q --yt cmmzukbkw04ulp30yfvijrwio` |
+| `b5b49526` | reelclaw-anicca-ja-widget-1 | `cron-bash.sh reelclaw/scripts/run-widget-ja.sh --tt cmnhlk3ju058lpn0ytilqdpo0 --ig cmnipef7g00oerm0y3dz4lamx --yt cmn1oukj9012nnq0yqhouc3ib` |
+| `71957a9d` | reelclaw-anicca-ja-widget-2 | (同上) |
+| `c6eaca79` | reelclaw-honne-ja-1 | `cron-bash.sh reelclaw/scripts/run-honne-ja.sh --tt cmnit95mg015rrm0ye5vm8dhl` |
+| `61b913e6` | reelclaw-honne-en-1 | `cron-bash.sh reelclaw/scripts/run-honne-en.sh --tt cmoig11ew001zlv0yk6vqo1us` |
+| `fd9bdcad` | reelclaw-honne-en-2 | (同上) |
+| `71e0e811` | larry-trend-hunter-ja | (model だけ 設定、 message は そのまま 短い dispatcher 既に 通している) |
+| `7a6230f8` | larry-trend-hunter-en | (同上) |
+| `26932ef8` | larry-strategy-updater | (model だけ 設定、 message は 別目的 = hookPool 更新 で そのまま) |
+
+**全 14 cron に: `openclaw cron edit <id> --model openai/gpt-5.4-mini` + 11 cron に message dispatcher 書き換え**。
+
+**手順 (= 1 cron ずつ `openclaw cron run` で verify、 手動 bash 禁止)**:
+1. `openclaw cron edit <CID> --model openai/gpt-5.4-mini`
+2. message 要書き換え cron は さらに `openclaw cron edit <CID> --message '<NEW>'`
+3. `openclaw cron run <CID>` → Slack `:white_check_mark:` 待ち
+4. Postiz list で state=PUBLISHED + releaseURL 取得 → spec §5 verify table append
 
 ### FIX5 — 1.9.3 iOS app E2E (= A2)
 
@@ -223,7 +246,8 @@ A1 完走 後:
 | 172 | A2 1.9.3 iOS app E2E — Dais iPhone 確認 (= FIX5) | 171 |
 | 179 | M8 verify — `openclaw cron run` で 8 cron fire + Postiz URL verify (= FIX3) | — |
 | 211 | NEW — run-account.sh POOLS hardcode 削除 + skip-empty logic (= FIX2 Dais §D11) | — |
-| 212 | NEW — 7 error cron 個別 fix (= FIX4) | — |
+| 212 | NEW — 8 cron `openclaw cron run` で fire + verify (= FIX3 Dais §D12) | — |
+| 213 | NEW — 14 cron BULK payload fix (= model=None + OLD-DIRECT-PATH 真因 = FIX4) | 211 |
 
 ---
 
