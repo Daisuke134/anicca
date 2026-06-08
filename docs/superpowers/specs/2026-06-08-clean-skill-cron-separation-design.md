@@ -265,8 +265,11 @@ A1 完走 後:
 
 | 日時 (JST) | cron name | cron id | exit | post id | release URL | Slack ok? |
 |----|----|----|----|----|----|----|
-| 2026-06-08 12:01 | reelclaw-anicca-ja-card-1 | 174f01dd | 0 | TT cmq4mkk1w0ajjmv0yk6xbdne7 / IG cmq4mkmjh / YT cmq4mmqlt | https://www.tiktok.com/@anicca.jp8 + https://www.instagram.com/reel/DZTyBfFj6b5/ + https://www.youtube.com/watch?v=Sle04fEUukA | ✅ |
-| (= FIX3 で 7 cron 順次 追加) | | | | | | |
+| 2026-06-08 12:01 | reelclaw-anicca-ja-card-1 | 174f01dd | 0 | TT cmq4mkk1w0ajjmv0yk6xbdne7 / IG cmq4mkmjh / YT cmq4mmqlt | https://www.tiktok.com/@anicca.jp8 + https://www.instagram.com/reel/DZTyBfFj6b5/ + https://www.youtube.com/watch?v=Sle04fEUukA | ✅ (cron 自走) |
+| 2026-06-08 13:54 | larry-anicca-ja-1 | 61d431fc | 0 | TT cmq4qksy3001emv0yv / IG cmq4qkt8x | https://www.tiktok.com/@anicca.jpx + https://www.instagram.com/p/DZT--MqkejZ/ | ✅ openclaw cron run (= exit=3 fix verified) |
+| 2026-06-08 14:00 | reelclaw-anicca-en-widget-2 (21:00) | 92c13cc2 | 0 | IG cmq4qs9l0001omv0ye / YT cmq4qudur0025mv0yz | https://www.instagram.com/reel/DZT_hfsiSny/ + https://www.youtube.com/watch?v=5X7022IzEKI | ✅ openclaw cron run |
+| 2026-06-08 14:08 | reelclaw-anicca-en-widget-2 (07:00) | 2f330f58 | 0 | IG cmq4r2yjp0031mv0yw / YT cmq4r52o9003hmv0y9 | https://www.instagram.com/reel/DZUAeAjD4uf/ + https://www.youtube.com/watch?v=3fxEnzzdkNA | ✅ openclaw cron run |
+| 2026-06-08 14:10 | reelclaw-anicca-en-card-1 | a0a1d2fe | (re-fire #2 進行中、 #1 stalled at runtime-plugins) | — | — | ⏳ |
 
 ---
 
