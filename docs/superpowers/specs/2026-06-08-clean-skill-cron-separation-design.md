@@ -241,6 +241,24 @@ cron path (= dispatcher + timeout + Slack logging + jobs.json state update) を 
 3. `openclaw cron edit 330bbaf7-3ea2-41f6-8479-f1c6f8ef1f45 --message '<NEW with --tt>'`
 4. `openclaw cron run` で fire verify
 
+### FIX-W3 — widget-en/v0.mp4 は CARD 内容 誤配置 (= Dais §D16 2026-06-08 14:08)
+
+**Dais verbatim**: 「the tile of the video is how to put affirmation on your lockscreen but the hook text and video is exactly usijg the card cta music and card hook and card demo. fix and run cron please very bad manner」
+
+**真因 (= 14:21 audit 判明)**:
+- FIRE #2 14:00 + FIRE #3 14:08 = 両方 widget-en/**v0.mp4** (md5 a4378bb6) を pick → posted **card 内容 を widget title で公開**
+- 同日 12:13 fire = widget-en/**v6.mp4** (md5 03f34bce) を pick → **正常 widget 内容**
+- v0.mp4 mtime = 08:49 だが 中身 は card (= mislabeled file)
+- v3.mp4 mtime = 10:10 (= 唯一 後発 modified、 内容 要 visual verify)
+
+**実行 済**:
+1. ✅ widget-en/v0.mp4 → `widget-en/_bad/v0-confirmed-card-content-md5-a4378bb6.mp4` に隔離
+2. ✅ 残 v1/v2/v3/v4/v5/v6 = 7 → 6 variant pool に縮小
+3. ✅ openclaw cron run 92c13cc2 + 2f330f58 再 fire (= manual runId 48 + 49)
+4. ⏳ v1-v5 内容 visual ID = Dais mail (gog gmail send msg 19ea5adb53b46536) 返信 待ち
+
+**Worst case 保険**: Dais 「all bad」 報告 が来たら → widget-en/v6.mp4 のみ 残し 他全 _bad/ 隔離 (= v6 だけ pool で 100% 確実)
+
 ### FIX-K1 — AUTO-DISABLE-KILL 実行 済 (= Dais §D15 2026-06-08)
 
 **Dais verbatim**: 「THERE SHOULD BE NO CRONS THAT DISABLE CRONS ESPECIALLY SOCIAL MARKETING CRONS NONE OF THEM」
