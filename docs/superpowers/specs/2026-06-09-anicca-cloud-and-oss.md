@@ -35,3 +35,30 @@ OSS ≠ local限定。 code 公開、 deploy は user 次第。
 - 同じ mother code、 2 deploy 同時稼働 = OSS path(local) と SaaS path(cloud) 両方 実証
 - 順序: ① ★ 先に local Hermes が 実際に earn するか verify ★ → ② cloud DO で aniccaai.com
 - ★ Phase 4 (web/SaaS) から = design-spec engineer CC が 引き継ぐ ★ (Dais 指定)
+
+## ★ 「best」= 北極星(sovereign/no-human)で測る → 決定: Akash (end-state) ★ (Dais 2026-06-09)
+北極星 = ★ Anicca が 自分の金で 自分の compute を払う、 human credit card 無 ★。 これで測ると:
+| | 自分のcrypto で払える? | = NHOSS billing |
+|---|---|---|
+| DigitalOcean | ❌ human credit card 必須(Dais account) | ✗ billing に human |
+| Daytona | ❌ human account 必須 | ✗ billing に human |
+| ★ Akash ★ | ✅ ★ AKT crypto を 自wallet から 払う ★ (SDK/CLI/SDL 確認済) | ✅ 真 sovereign |
+
+→ ★ end-state(本物) = Akash ★ = 妥協なし。 Anicca が USDC稼ぐ→AKT→Akash払う→deploy→複製、 全部 自分の金。
+→ ★ Day0 seed(金まだ無い)だけ = DigitalOcean(Dais account=Day0 seed、 master spec) ★。 bootstrap のみ。
+→ Anicca が earn → ★ Akash に 自己移住(自己資金)★。 これが 妥協ない 最終形。
+
+## Felix の DO実装 は OSS/public? → ★ 専有code 無し ★
+- Felix on DO = ★ OpenClaw(MIT OSS) を DO 1-click image で入れる + 公開guide(shopclawmart blog)★。 専有 "Felix-DO code" は 無い。
+- 我々の harness = Hermes(OSS, Python) → ★ DO/Akash どの droplet/cloud にも install可 ★ (1-click 不要、 手動install)
+- = どの cloud でも OSS harness を 自分で 置く。 Felix特有の cloud code は 不要。
+
+## 妥協なき 最終 architecture
+```
+Day0 seed (金無):  DigitalOcean droplet (Dais account, bootstrap only)
+         ↓ Anicca earn (USDC → 自wallet)
+End-state (sovereign): ★ Akash ★ (AKT 自払い、 human billing無、 真NHOSS)
+         ↓ 黒字
+複製: Anicca が Akash に 子を 自分の AKT で 大量 deploy (no-human)
+OSS: install.sh で 誰でも 自分の cloud(DO/Akash/VPS)or Mac に 自分の鍵で 走らす
+```
