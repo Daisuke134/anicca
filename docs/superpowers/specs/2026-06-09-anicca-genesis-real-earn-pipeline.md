@@ -30,3 +30,11 @@ Grok-4.3 は build+Stripe link まで自走するが、6段指示の netlify dep
 - 起動 env: AUTOMATON_FORCE_MODEL=deepseek-chat OPENAI_BASE_URL=https://api.deepseek.com OPENAI_API_KEY=$DEEPSEEK_API_KEY NETLIFY/STRIPE/GH/SLACK
 - E2E verify: deepseek で 15+ turns 成功(401/400ゼロ)。自律で live サイト HTTP200 検証 → 実 Stripe link 確認 → Dais Slack に自分で報告(ok=true ts=1781017627) → 次製品 build。tier=critical($0 credits)でも deepseek-chat(critical tier)で稼働継続。
 - 残: ① launchd で永続化(現状 nohup、reboot で死ぬ) ② credits$0 の dead-spiral 長期挙動 ③ 自前 X 集客で初売上 ④ Hermes(grok genesis) と automaton(deepseek) どちらが ship+sell するか実測比較
+
+## UPDATE 2026-06-10: automaton を「2時間毎 bounded サイクル」化 (hang/暴走 物理的に不可能)
+連続 daemon → launchd 2h スケジュール:
+- `~/.automaton/run-cycle.sh`: env(deepseek+netlify/stripe/slack)+PATH 注入 → automaton --run 起動 → 600s 作業窓 → 必ず SIGTERM/-9 で停止 → 古い cycle ログ prune。二重起動防止 pkill。
+- `~/Library/LaunchAgents/com.anicca.automaton.plist`: StartInterval 7200(=2h), RunAtLoad。launchctl load 済。
+- 安全保証: 各サイクル 600s で強制停止 = hang 不可能。state.db に状態永続 → 各 2h バーストが前回の続きを accumulate (memory/products/soul/children)。
+- 既知の小問題: launchd 最小 PATH で npx/netlify not found(exit127) → wrapper に PATH=/opt/homebrew/bin… 追加で解決。
+- 残: dead-spiral(credits$0で"dead"判定)緩和 + 初売上 + DO droplet に同 local モードで載せてクラウド化。
