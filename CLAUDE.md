@@ -510,6 +510,27 @@ HOME=/Users/anicca hermes config get model.default                  # Hermes →
 **Fastlane 必須**: xcodebuild 直接禁止。 `cd aniccaios && fastlane <lane>`
 **Greenlight**: `greenlight preflight <app_dir>` で CRITICAL=0 確認してから提出
 
+### git 運用 BP (= GitHub Flow。 出典: docs.github.com/en/get-started/using-github/github-flow「branch は main 1本 + 短命 feature branch、continuous deploy に最適」)
+
+**常時のホーム = `dev`**(開発 trunk)。 全作業は以下を verbatim follow:
+
+```
+1. git fetch && git checkout dev && git pull   ← ★必ず最新の origin/dev から開始★ (drift 防止)
+2. git checkout -b feature/<名前>              ← 機能は短命 branch (docs のみ dev 直可)
+3. 1編集 = 即 git add && commit && push        ← ★溜めない (HARD 0.00)★
+4. git push -u origin feature/<名前>
+5. gh pr create --base dev                     ← PR で dev へ merge
+6. merge → dev 自動 deploy (staging 検証)
+7. 良ければ dev → main (PR) → main 自動 deploy (本番)
+8. App Store 提出時のみ main から release/x.x.x
+```
+
+**鉄則** (2026-06-09 incident の教訓 = local dev が origin/dev と unrelated histories に乖離):
+- ★ commit/push 前に **必ず** `git fetch` して local が origin より遅れてないか確認 ★。 遅れたまま commit 禁止。
+- ★ 作業開始は **常に origin の最新から** ★。 古い local branch の上に積まない。
+- ★ 「全部ローカルで後で push」「一部 local 一部 GitHub」 = 乖離の原因 = 禁止 ★。
+- 自動強制 = **lefthook** (`lefthook.yml`、★8.3k git hooks manager): pre-push で drift 検知 + commit 即 push。 `lefthook install` 済を前提。
+
 ## プロジェクト概要
 
 **Anicca** = プロアクティブ行動変容エージェント (デジタル・ブッダ)
