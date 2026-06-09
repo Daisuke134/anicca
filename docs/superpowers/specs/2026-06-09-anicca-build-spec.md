@@ -236,3 +236,133 @@ CONTENT (並行、 手動、 Dais=editor)
 - U50. 1人目の 実 user = 誰? (Dais 自身? = local mode の dais instance?)
 
 ★ rule: 上記 全 U を 「解消済(調査+引用付き)」にしてから 実装着手。 未解消で go = spec-driven 違反。 ★
+
+## 7. UNCERTAINTIES — 完全版 (U51-U150、 全カテゴリ網羅)
+
+### A. RUNTIME / HERMES
+- U51. Hermes version pin? auto-update で 壊れるリスク?
+- U52. max_turns=30/session で earn loop 足りるか?
+- U53. session は restart跨いで 永続するか? (memory)
+- U54. external memory provider 設定 (hermes memory)?
+- U55. toolsets = 今 hermes-cli のみ。 必要 tool (exec/web/file/stripe) 足す方法?
+- U56. Hermes skill format = OpenClaw/Claude Code SKILL.md と 互換?
+- U57. gateway_timeout 1800 で 足りるか?
+- U58. Hermes が workspace context file を inject する 仕組み (= UB1 詳細)?
+- U59. cron は default model 使う? per-job override 可?
+- U60. sub-agent / parallel worker あるか?
+- U61. xai-oauth token expire する? auto-refresh?
+- U62. Grok rate-limited 時 fallback無し = stall。 どう扱う?
+- U63. api_max_retries=3 / restart_drain 挙動?
+
+### B. MODEL / LLM
+- U64. Grok 4 context window size? SOUL+MEMORY+HEARTBEAT+history 入るか?
+- U65. Grok の tool-calling 信頼性 (earn loop で 必須)?
+- U66. Grok サブスクの rate-limit (per hour/day)?
+- U67. Gemini Live (voice) = 別 key/account/quota?
+- U68. life text判断 = Grok / voice = Gemini。 分離OK?
+- U69. heartbeat 1回の token budget?
+
+### C. STRIPE
+- U70. ★ Stripe account = Anicca専用? Dais個人? KYC主体? ★
+- U71. env に STRIPE_* 鍵 ある? test/live どっち?
+- U72. SaaS sub に Stripe Connect 要る?
+- U73. JP消費税 / invoice 法令対応?
+- U74. payout先 (bank/Mercury)? Dais口座?
+- U75. webhook endpoint host 先 (apps/api Railway?)
+- U76. refund 処理?
+- U77. 一回課金(product) と sub($49.99) = 別 product?
+- U78. 通貨 (USD/JPY)?
+
+### D. PRODUCT (= 最初に売る物)
+- U79. ★ 最初の product の topic/中身? ★
+- U80. 誰が書く (Grok)? quality gate?
+- U81. format (PDF/Notion/Gumroad)?
+- U82. host/delivery (LP/Gumroad/Stripe)?
+- U83. LP build (Next.js)? deploy先?
+- U84. 購入後の 自動 delivery flow?
+- U85. legal: AI が product 売る ToS/liability?
+
+### E. EARN OTHER
+- U86. ClawWork loop → 実client: platform (Lancers/Upwork/Fiverr)? account? KYC?
+- U87. Lancers account (keiodaisuke+anicca) credential 生きてる?
+- U88. Algora/OnlyDust bounty = 残す/捨てる?
+- U89. x402 micropay = 残す?
+
+### F. LEDGER/METRIC
+- U90. subscription「spend」定義 (= UB3)?
+- U91. earn attribution (どの sale が どの action から)?
+- U92. ledger 保存形式/場所?
+- U93. 北極星 = earn>spend を どの horizon で 判定?
+
+### G. LIFE-MANAGER
+- U94. 既存 life-manager code (anicca-products branch) の 完成度?
+- U95. glob bug fix 済?
+- U96. Twilio account/番号/credits?
+- U97. Gemini Live key/quota?
+- U98. Google Maps/route API key?
+- U99. 位置 ingestion (iOS Shortcut setup / Telegram Live Location parse)?
+- U100. Calendar OAuth scope?
+- U101. 「何分前に出発」計算 logic (buffer/遅延)?
+- U102. voice latency/信頼性?
+- U103. multi-user = 各 user 専用 番号?
+- U104. daily email = どの address (AgentMail)?
+- U105. trust balance = 計算? LP copy だけ?
+- U106. 「遅刻時 関係者連絡, user承認」flow?
+- U107. 位置/calendar の privacy?
+- U108. user が 行動しない時の 再介入 logic (自己改善)?
+
+### H. CLOUD/SAAS
+- U109. ★ Daytona account/key/pricing/region? ★
+- U110. per-user sandbox: image/resource/cost-per-day?
+- U111. sandbox idle時 sleep? cost?
+- U112. credential 注入 per user (secure)?
+- U113. aniccaai.com/install LP build状態?
+- U114. @anicca_bot Telegram 登録? webhook?
+- U115. Stripe sub webhook → spawn (apps/api) 配線?
+- U116. user data 分離/privacy/GDPR?
+- U117. 100 user = 100 sandbox cost 試算?
+- U118. 自動解約 treasury 閾値?
+- U119. onboarding 正確 flow (name/phone/location/calendar 順)?
+- U120. calendar 空/event無し の user?
+- U121. cancel/refund flow?
+- U122. support/escalation?
+
+### I. MEMORY/SELF-HEAL
+- U123. 3-tier memory OSS源 (mem0/letta/?)
+- U124. decay 閾値 (hot/warm/cold 日数)?
+- U125. storage (SQLite/file)?
+- U126. Sentry account/DSN or log-based?
+- U127. Ralph loop 源?
+- U128. self-mod safety (自分を壊さない)?
+
+### J. REPO/OPS
+- U129. canonical repo (= UB4)?
+- U130. 編集flow (~/.hermes直 vs anicca-genesis sync)?
+- U131. CI/deploy?
+- U132. secrets管理 (.env per instance)?
+- U133. backup/rollback?
+- U134. monitoring/alert (slack)?
+- U135. Mac mini disk/cost?
+
+### K. SECURITY/SAFETY/LEGAL
+- U136. prompt injection (email/X inbound)?
+- U137. agent 支出上限 (wallet/Stripe drain 防止)?
+- U138. agent 投稿上限 (X spam → ban 防止)?
+- U139. X account 自動投稿 ban risk?
+- U140. 自律earn の tax/legal compliance (JP)?
+- U141. life-manager 失敗時 liability (電話漏れ→薬飲み忘れ)?
+- U142. user data privacy (位置/calendar/mail)?
+- U143. API ToS (X/Stripe/Lancers が AI自動化 許可?)
+- U144. 「no human in loop」vs「user承認」の 矛盾 整理?
+
+### L. CONTENT
+- U145. platform accounts (note/Zenn/Substack/X/TikTok/YT) 存在?
+- U146. TikTok 録画 tooling (screen record cost)?
+- U147. viral-writer skill 状態?
+- U148. JP vs EN 方針 / posting cadence?
+
+### M. IDENTITY/WALLET
+- U149. Anicca wallet (Base/Solana) funded? 要る?
+- U150. X @aniccaxxx access / AgentMail inbox / ERC-8004?
+
+★ 合計 150 uncertainty。 全て「解消済(調査+引用)」にしてから 実装。 ★
