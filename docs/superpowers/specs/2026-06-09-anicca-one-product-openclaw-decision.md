@@ -8,6 +8,31 @@
 | Repo | `~/anicca/` → github.com/Daisuke134/anicca (MIT) |
 | Verified by | 3 independent parallel research agents, primary sources only (no marketing) |
 
+
+## ★★★ BASE = FELIX (= 金を生む system 本体、 harness ではない) ★★★ (Dais 2026-06-09 修正)
+
+Dais 明確化: base ≠ harness。 OpenClaw は ただの harness で どうでもいい。
+base = ★ 上に乗る、 金を生む system ★。 4 つ (Felix/Mona/sutando/automaton) から 1 つ。
+
+実測: anicca repo は 既に ★ automaton 方式 ★ を copy 済 (anicca-earn-bounty=Algora/OnlyDust USDC bounty,
+payout-wallet/ubi, spec=ANICCA_TRUE_AUTONOMY_SPEC.md = on-chain 自律稼ぎ)。 → ★ $0 で 失敗中 ★。
+= automaton を copy した結果が 今の失敗。 だから automaton を 捨てる。
+
+| 金 system | 実money証明 | product fit | copy可 | 判定 |
+|---|---|---|---|---|
+| **Felix** | ✅$200k+(唯一) | ✅digital business + 代理店=SaaS本体 | △戦略public(code private、moves単純) | ★採用★ |
+| Mona | ✅実店舗44kSEK | ❌物理店+人雇用 | ❌closed+物理 | next phase (Dais明言) |
+| automaton | ❌$0/-$39(issue#300) | ~on-chain | ✅code public だが earn=蜃気楼 | ★既copy→失敗→捨てる★ |
+| sutando | ❌money機能なし | ❌個人秘書 | ✅ | 除外 |
+
+★ 決定: base = Felix ★
+- Felix system = digital business 自律運営: info product販売 + Claw Sourcing(他社AI従業員代理店=SaaS subscription本体) + 透明dashboard(aniccaai.com既存)
+- Felix の moves は 秘密でなく 公開・単純 (guide売る→LP+Stripe→marketplace→代理店→dashboard) → skill 再実装可
+- automaton (anicca現copy) = $0実証 → 捨てる。 これが 失敗修正の核心
+- harness = OpenClaw/Hermes どちらでも可 (Dais: 後でAnicca自身が実験)
+- Mona(物理/人雇用) = next phase
+
+
 ## 0. 北極星 (Dais 2026-06-09 verbatim)
 
 > "the first open source AI that earns more money than it spends."
