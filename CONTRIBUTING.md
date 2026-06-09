@@ -33,6 +33,23 @@ welcome under a few simple rules.
 5. CI: gitleaks + trufflehog run on every PR. Address findings before
    review.
 
+## Branch discipline (2026-06-09 lost-3074 incident — never repeat)
+
+trunk = `main`. Every branch ends in one of two states — **MERGED or DELETED**.
+"Create a branch and leave it" is forbidden: stale branches drift from `main`
+until histories diverge (the incident that cost a 3074-commit cleanup).
+
+1. Always start from the latest trunk: `git fetch && git checkout main && git pull`.
+   Never stack commits on a stale local branch.
+2. One meaningful edit = one `commit` + immediate `push`. Never hoard local
+   commits (= the root cause of local/GitHub divergence).
+3. Before pushing, `git status`; if `behind`, `pull` first.
+4. Finish a branch with `gh pr merge --merge --delete-branch` (merge AND delete
+   in one step — no leftover garbage branch). Abandoned branch → `git branch -D`
+   + delete the remote. Either way it does not survive as litter.
+5. Never commit runtime/agent mirrors (`*-mirror/`, dotfiles, openclaw state)
+   into this repo — that pollution was half of the 3074-commit mess.
+
 ## Pre-push eval gate (required for skill output)
 
 After cloning, run once:
