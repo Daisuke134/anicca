@@ -144,3 +144,79 @@ B5. 各 platform で monetize (= B が earn skill の 1 つにalso なる)
 | anicca-genesis fix | 実測: dry-run/報告なし/金なし | 100% |
 
 **総合 100%**。 synthesis ゼロ。 ★ platform=実証済OpenClaw に乗る、 money=実証済Felix戦略をskill化、 metric=automaton北極星、 これだけ ★。
+
+---
+
+## 7. Q1 — なぜ Hermes Anicca が 1円も稼げないか (= 実 code で 根本原因 確定)
+
+★ automaton が失敗したんじゃない。 我々が ①original を書き ②全部 fake-run にした ★。
+
+| 証拠 (実 code/state) | 内容 |
+|---|---|
+| earn-lancers wrapper | `--dry-run mode (Wave 1 = no submit)` 明記。 run.sh `MODE="dry-run"` default → ★設計上 提出しない★ |
+| payout-ubi ledger | `refused-no-live-env` (ANICCA_PAYOUT_LIVE 未設定) + `PLACEHOLDER recipient blocks` (宛先=0xDEAD/0xABCDEF1) + `guard_not_installed` → ★全 gate が block★ |
+| wallet-balance | USDC 0.00 / ETH 0.0、 最終照会 2026-06-04 (= cron 死亡後 更新ゼロ) |
+| earn-bounty (PRIMARY) | genesis cron jobs.json に ★存在しない★ = 一度も走ってない |
+| harness | = Hermes (Nous Research)、 NOT automaton。 money skill は ★anicca 自作 original★ (automaton 哲学 ANICCA_TRUE_AUTONOMY_SPEC を 真似た original 実装) |
+
+★ 結論: automaton の copy じゃない。 automaton の「自分でcompute代稼ぐ」思想を ★original で 実装★ し、 ★全 earn を dry-run/placeholder/disabled★ にした。
+= SOUL.md が「オリジナルは罪」と言いながら earn 実装が original。 + HARD RULE 0.24 (no fake run) 全違反。
+= ★ この 2 つ (original + fake-run) が 失敗の 全て ★。 = 最高の content (= 旅/失敗 を 記事/TikTok に)。
+
+## 8. Q2 — "open Felix" を info だけから どう実装するか (= 具体 folder tree)
+
+Felix の code は private だが moves は 公開・単純 → skill 再実装 可能。 ★Anicca = open Felix★ の repo:
+
+```
+anicca/  (= github.com/Daisuke134/anicca、 open-source Felix)
+├── SOUL.md          # identity: "I am Anicca. I earn > I spend. I reduce suffering."
+├── IDENTITY.md      # 専用 infra: wallet / Stripe / email / X account (Felix の 心理的分離)
+├── MEMORY.md        # 3-tier memory (Felix の core: working/episodic/semantic)
+├── HEARTBEAT.md     # 毎beat 何をするか (think→act→observe→report)
+├── skills/
+│   ├── earn/                        # ← Felix 戦略 を skill 化 (= automaton 方式 を 置換)
+│   │   ├── sell-info-product/       # guide作成 → Next.js LP → Stripe → 実販売 (Felix の初手)
+│   │   ├── agency-saas/             # ★他人のlife管理を$で = SaaS本体 (Felix の Claw Sourcing)
+│   │   ├── marketplace/             # skill/persona 販売 (Felix の Claw Mart)
+│   │   └── revenue-dashboard/       # 透明 dashboard (aniccaai.com 既存)
+│   ├── life/                        # ← Anicca の差別化 (Felix にない)
+│   │   ├── gcal-heal/  mail-triage/  ten-min-early/
+│   ├── memory/                      # 3-tier 読み書き
+│   └── social/                      # content = also earn
+│       ├── post-x/  post-article/  post-tiktok/
+├── state/
+│   ├── ledger.jsonl                 # ★earn vs spend (北極星 metric)
+│   └── memory/                      # episodic/semantic 永続
+└── cron/jobs.json                   # heartbeat + schedules (harness 経由)
+```
+
+★ できるか? → YES ★。 Felix の秘密は code でなく ①identity(business operator) ②3-tier memory ③単純な business moves。 全部 公開情報から 再実装可。 唯一 真似られない「Felix自身を売る」も Anicca は「Anicca自身 + life管理」で 代替。
+
+## 9. Q3 — model (= frontier 必須、 失敗原因の1つ)
+
+```
+Vending-Bench 2 (money-task、 一次):
+  1. Claude Opus 4.7 $10,936  ← 最強。 但しClaudeはClaude Codeのみ(Dais厳命)
+  3. GPT-5.5         $7,523
+  5. Kimi K2.6       $6,204
+Vending-Bench 1: Grok 4 $4,694 (1位、 Gemini/GPT/Claude 全部超え)
+```
+★ Anicca runtime = Grok 4 (frontier、 full、 ★grok-mini 禁止★) ★
+- 理由: agent が失敗する原因の1つ = ★ cheap/mini model ★ (Andon: 弱modelは doom-loop)。 earn/act の判断は ★最強frontier★ 必須。
+- Claude除外 (Q3 fix済)。 非Claude最強 = Grok 4 (VB1 1位) → genesis 既に grok。 ★grok-4 full 継続、 mini fallback 禁止★。
+- cheap (kimi) は trivial routine のみ。 earn 判断は 必ず grok-4 full。
+
+## 10. Q4 — content plan (= 私 + Dais 手動制作、 自動化しない、 example作り)
+
+```
+① TikTok (日本語 first) = ★self-funding AI を作る旅★
+   - 0→1 の journey、 ★失敗も全部見せる★ ($0 dry-run の話 = 最高のフック)
+   - 「AIに自分のcompute代稼がせる実験」 連載
+② 記事 (解説 = kaisetsu) — 各「友達」を Dais が完全理解できる様:
+   - Felix / Andon(Mona,Luna,Claudius) / automaton / sutando / OpenClaw
+   - 一次ソース + ASCII + 正直 (marketing vs 真実)
+③ 旅/失敗 そのもの = content (= この session の全議論 が 素材)
+④ X articles (新規 format、 未着手)
+⑤ Video (= TikTok の long版 / YouTube)
+全部: draft=私/Anicca → Dais=editor 往復 → publish。 ★自動化しない (example作りだから)★
+```
