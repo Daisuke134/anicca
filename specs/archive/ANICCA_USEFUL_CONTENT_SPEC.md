@@ -132,7 +132,7 @@
 17. zenn-cli wrapper (既存 zenn-backlog-deploy cron を本 skill に統合)
 18. dev.to API publish wrapper
 19. substack post wrapper (camofox login session 利用)
-20. aniccaai.com/blog MDX publish (anicca-products-oss/apps/web/content/blog/<slug>.mdx commit)
+20. aniccaai.com/blog MDX publish (anicca-products/apps/web/content/blog/<slug>.mdx commit)
 21. cron `zenn-daily-ja` (12:00 JST)
 22. cron `devto-daily-en` (13:00 JST)
 23. cron `substack-daily-ja` (14:00 JST) + `substack-daily-en` (14:30 JST)

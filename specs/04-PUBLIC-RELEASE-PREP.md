@@ -211,7 +211,7 @@ cd ~/anicca-oss
 git status                                         # MUST be clean (or stash)
 git push origin --all                              # MUST push current state to private mirror first
 git remote add private-mirror \
-  git@github.com:Daisuke134/anicca-private-backup.git 2>/dev/null
+  git@github.com:Daisuke134/anicca-dais.git 2>/dev/null
 git push private-mirror --mirror                   # FULL backup (all branches, tags)
 
 # 1. Curate — move 57 Dais-locked skills + .learnings + leak docs OUT
