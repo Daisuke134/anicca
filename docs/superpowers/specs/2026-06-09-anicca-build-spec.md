@@ -145,3 +145,22 @@ CONTENT (並行、 手動、 Dais=editor)
 - OpenClaw(Dais private) = 自前 engine、 サブスク対応 (private 側の選択肢)
 
 ★ 決定: engine = Hermes(genesis)。 Felix/automaton/sutando の engine は使わない。 中身(規律)だけ copy。 ★
+
+## 5. heartbeat copy元 + 2-loop + UX + original判定 (Dais 4Q 2026-06-09)
+
+### Q1: heartbeat 中身は どこから copy
+- ★ sutando `skills/proactive-loop/SKILL.md` を copy ★ (= 公開text、 番号付きloop完成品) + automaton guard (max-tools10/err5/loop3)。 ★ 自分で書く=original=罪、 やらない ★。 Felix の HEARTBEAT は $99内で 見えない→copyしない。
+
+### 2-loop 決定 (= 1 runtime, 2 loop)
+- LOOP1 LIFE (速い、 毎1-5分、 time/位置trigger): 既存 anicca-products life-manager (lateness_check+realtime_guide) + sutando voice(Charon 1行tweak)。 行動時刻に電話。
+- LOOP2 EARN+SELF (遅い、 毎30m-1h、 戦略): sutando proactive-loop + automaton guard。 think→act→observe → earn/self-heal。
+- 両方 同じ Hermes(genesis) 上。 cost-governor 跨ぐ。
+
+### Q3: UX 2系統 (同 code github.com/Daisuke134/anicca)
+- ① LOCAL (OSS): `git clone → ./install.sh`(名前/電話/位置/calendar/★自分のLLM鍵★) → `./start.sh`。 fuel=自分のサブスク、 compute=自分のMac、 $0。
+- ② SUBSCRIPTION (aniccaai.com/install): Telegram 1click → 名前/電話/位置(Live Location)/calendar(OAuth) → Apple Pay $49.99/mo 7日無料 → Stripe webhook → ★Daytona sandbox spawn★ → cloud起動。 fuel=我々の鍵(user設定ゼロ)、 compute=我々のDaytona。 ★ wild-Anicca が稼げたら 自動解約 ★。
+
+### Q4: original 判定 = 全module に named copy元必須
+- copy: heartbeat=sutando, guards=automaton, 魂=automaton, 稼ぐmove=Felix, survival-loop=ClawWork, memory/Ralph/Sentry=Felix, voice=sutando, runtime=Hermes, 理論=SSA paper, subscription/Daytona=saas-v1。
+- ★ 我々 固有(=唯一 copy元なし) ★: ①「稼ぐ(Felix)+人生管理(sutando)」を 1 agent に合体 ②Anicca=仏教 identity。 = engineering original でなく ★ product 組合せ ★。
+- ★ rule: 全 module に copy元の名前を付ける。 名前が付かない=original=罪=即停止して copy元探す。 ★
