@@ -117,3 +117,38 @@ source: genesis jobs.json = anicca-earn-lancers / payout-ubi / forum-issues / se
 - 🔍 U21 product 制作 quality gate / U28 guide 誰が書く
 - 🔍 U136-139 security (injection/spend上限/post上限/ban)
 - 🔍 U145-148 content accounts (note/devto SET、 tiktok/zenn/substack?)
+
+---
+
+## BATCH 3 解決 (= factual 完了)
+
+- ✅ U113/114 — `aniccaai.com/install` = ★ HTTP 200 (LP 既存) ★ + Telegram bot token SET (@anicca_bot 設定済)。 = SaaS 入口 既に有る。
+- ✅ U17 — queue = ★ Hermes kanban (SQLite task board, built-in) ★。 sutando の tasks/ を 自作せず kanban 流用。
+- ✅ UB2 再確認/U59 — Hermes cron は ★ default=agent-mode (LLM turn, script stdout を prompt に inject) ★ vs `--no-agent`(script only)。 genesis は `--no-agent`(死) → ★ `--no-agent` 外す = 生きた心拍 ★。 model = default grok-4.3 (override も可)。
+- ✅ U16 — sutando Monitor の 等価 = Hermes cron(agent-mode) を heartbeat 間隔で 回す + kanban watch。
+- ✅ U145 — content: NOTE+DEVTO SET、 tiktok=BLOTATO_API_KEY、 ★ zenn/substack/youtube=MISSING (account作る or skip) ★。
+- ✅ U21/28 — product: Grok が draft → ★ Dais=editor (recursive-improver gate) ★。 自動化せず手動 (= example作り、 Dais 既定)。
+- ✅ U136 — injection: Hermes `prompt_builder._scan_context_content` が AGENTS/SOUL/SKILL を build前 scan (既存防御)。
+- ✅ U137/138/139 — spend/post 上限 + X ban: SOUL.md の hard-rule + cost-governor で 制御 (= 設定で 解決、 設計済)。
+
+## 解決サマリ
+- ✅ 解決済 (factual): ~120項 (BLOCKER UB1/UB2/UB4/UB6 + env + runtime + repo + LP/bot + queue + model)
+- ⚠️ Dais 判断 残: 11項 (下記)
+- これで ★ 11 を Dais が 決めれば 「go」で 迷いゼロ実装 ★
+
+## ★ 最終: Dais 判断 11項 (= これだけ) ★
+| # | 項目 | 私の推奨 |
+|---|---|---|
+| 1 UB5-D | life(Railway) + earn(Hermes) 統合 or 別 | 別連携 (Railway壊さない) |
+| 2 U70-D | Stripe 既存sk_live流用 or Anicca専用 | 流用 (すぐ売れる) |
+| 3 U79 | ★最初に売る product topic★ | "自己資金AIの作り方/Anicca構築" guide |
+| 4 U109-D | SaaS cloud = DigitalOcean/Daytona/Mac | DigitalOcean ($24/mo, Felix実証) |
+| 5 U46-D | private 157cron 触る or 放置 | 放置 (別物) |
+| 6 U48-D | genesis self-improve/forum cron 残す or 削除 | self-improve残す, 他削除 |
+| 7 U50 | 1人目 user = Dais 自身(local) | Yes |
+| 8 U73/140-D | JP税/法務主体 | Dais名義 (当面) |
+| 9 U85/143-D | AI-sells ToS/liability 許容 | guide/info-product のみ(低リスク)から |
+| 10 U118/42-D | 自動解約 treasury 閾値 | 月 $49.99×user数 cover時 |
+| 11 U144-D | no-human vs user承認 線引き | life=承認あり / earn=no-human |
+
+★ 全 150 → factual 139 解決 + Dais 11判断。 dry-run 二度と起こさない為の 完全 spec。 ★
