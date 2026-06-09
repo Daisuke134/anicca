@@ -290,3 +290,66 @@ B4. ★ TikTok (日本語 first) ★ = self-funding AI の旅:
     - 失敗も見せる、 連載
 B5. content を 作りながら 進む (= 各 milestone を 素材化)
 ```
+
+---
+
+## 13. ClawWork 実金確認 + 新3ソース + AutoHedge 入金 + positioning (2026-06-09)
+
+### ClawWork は 実金を稼ぐか → ❌ NO (code 確定)
+- code grep: Stripe/crypto/payment rail ★ゼロ★。 economic_tracker = sim balance、 is_bankrupt のみ。
+- income = ★ GPT-5.2 が work を 採点 → quality×BLS時給 で 仮想ドル ★ (README: "LLM Evaluation → Payment", badge "benchmark-economic survival")。
+- token cost は real、 income は ★ simulation ★。 = Vending-Bench と同類 benchmark。
+- ★ fork して identity 変えても 実金は 出ない ★。 但し copy する価値 = ① 経済survival LOOP の code (decide work/learn → 実deliverable → submit → evaluate → cost追跡 → balance → 破産判定) ② GDPVal 220職タスク catalog ③ nanobot/openclaw 統合。
+- ★ 実金化 = submit_work を 「LLM採点」から「実 client 納品 (Lancers/Upwork) or 成果物販売」に 差し替える ★ = ここが core tweak。
+
+### 新ソース 3 つ (= positioning の 仲間たち)
+| source | 何か | 実金? | copy/学び |
+|---|---|---|---|
+| garylab/MakeMoneyWithAI | OSS で稼ぐ project の ★ 一覧 ★ (AutoGPT/n8n/browser-use/MetaGPT…) | — list | content源 + idea catalog (記事/動画ネタ) |
+| TraderAlice/OpenAlice (5k★) | TS の 実 trading agent、 自分のPCで動く、 CCXT/Alpaca/IBKR、 "Trading-as-Git" | ✅ real (but ★ 各取引に human承認 必須 ★ + 実資金 + experimental) | trading-as-git の設計 / human-in-loop 設計。 ★ 実資金ないので 今 不可 ★ |
+| self-sovereign-agent (NUS+UC Berkeley, Dawn Song, arXiv 2604.08551) | ★ 学術 paper ★: SSA = economic loop + replication loop + adaptation loop。 revenue=freelance/算法trading/content。 4-level roadmap | 理論 | ★ Anicca の 学術的背骨 ★。 「自分の bill を払う AI」の定義。 positioning/記事の 権威付け |
+
+### AutoHedge 入金 (Dais 質問) — ★ SBI VC では ない ★
+- autohedge = ★ Solana on-chain trading ★ (Jupiter Ultra Swap)。 SBI VC でなく ★ Solana wallet (SOLANA_PUBKEY) に USDC+SOL ★。
+- 入金: ★ ≥20 USDC + 0.05 SOL を Solana mainnet で SOLANA_PUBKEY に送る ★。 Coinbase/BASE は "coming soon"。
+- USDC→Solana の入手: Coinbase/Binance/Bybit で USDC買い → Solana network で wallet に withdraw。 SBI VC は USDC の Solana 出金 対応 要確認。
+- ★ 重大警告: crypto trading = ★ 高リスク、 全額 損する ★。 「shitload 稼ぐ」保証 なし。 hedge fund swarm が 負ける事 多々。 seed は 失っても良い額のみ。 ★ これは earn の 本命でない (= info product 販売の方が 確実) ★。
+
+### Positioning (Dais 2026-06-09) = ★ 「自分で金を稼ぐ AI」 専門 media + 当事者 ★
+```
+我々の立ち位置 = 「human を loop に入れず 自分で稼ぐ AI」 を:
+  ① 全部 試す (Felix/automaton/sutando/ClawWork/OpenAlice/AutoHedge/MakeMoneyWithAI list)
+  ② 正直に review (= 殆ど slop、 実際使って 検証した上で)
+  ③ ★ 我々自身も 作る (Anicca) ★ ← 当事者だから 説得力
+  → blog の型: 「解説 → 実際使う → 正直な感想 (sim か real か、 稼げたか)」
+  → 全 SNS + articles + TikTok で 連載。 これが 差別化 positioning
+```
+
+## 14. 統合 copy 表 (= 最終、 重複なし、 各source 1役)
+```
+土台(harness) = genesis (Grok サブスク無料、 既存)  ← copy 不要、 持ってる
+魂(prompt)    = automaton "Earn your existence" constitution  ← text copy
+稼ぐ骨格(loop) = ClawWork の経済survival loop code  ← OSS code copy
+実金の出口    = Felix の move (guide→Stripe→X販売) + ClawWork submit を実client納品に  ← パターンcopy
+規律         = sutando proactive-loop (idleしない)  ← code/パターンcopy
+記憶         = Felix 3-tier memory  ← パターンcopy
+頭脳         = Grok 4 full (mini禁止)
+差別化       = life-manager (gcal/mail/10分前)  ← Anicca固有、copy元なし
+理論背骨     = SSA paper (economic/replication/adaptation loop)  ← 記事の権威付け
+trading(後)  = autohedge (Solana, 高リスク, 実資金要)  ← seed有る時のみ、本命でない
+```
+
+## 15. content / 記事 list (= positioning「稼ぐAI media + 当事者」)
+```
+解説→実験→正直review series (= 我々の型):
+ - Felix / automaton / sutando / ClawWork / OpenAlice / AutoHedge / MakeMoneyWithAI list
+ - 各: 解説 → 実際に動かす → 「sim か real か」「稼げたか」正直に
+失敗 series:
+ - 「自律AIに金稼がせて$0だった話」(我々の dry-run 失敗)
+理論 series:
+ - self-sovereign-agent paper 解説 (NUS+Berkeley、 学術背骨)
+旅 series:
+ - 「自分のcompute代より稼ぐ最初のOSS AIを作る」公開実験
+媒体: note/Zenn/Substack/aniccaai + X articles(新規) + TikTok(JP first) + YouTube
+型: draft=私/Anicca → Dais=editor → publish。 手動 (example作り)
+```
