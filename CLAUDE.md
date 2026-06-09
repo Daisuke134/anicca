@@ -529,6 +529,8 @@ HOME=/Users/anicca hermes config get model.default                  # Hermes →
 - ★ commit/push 前に **必ず** `git fetch` して local が origin より遅れてないか確認 ★。 遅れたまま commit 禁止。
 - ★ 作業開始は **常に origin の最新から** ★。 古い local branch の上に積まない。
 - ★ 「全部ローカルで後で push」「一部 local 一部 GitHub」 = 乖離の原因 = 禁止 ★。
+- ★ branch の終着は **MERGED か DELETED の 2 択**。 「作って放置」 = 禁止 (= 2026-06-09 の 3074-commit ゴミ branch の原因)。 merge は `gh pr merge --merge --delete-branch` で ★ merge と同時に branch 削除 ★、 中止は `git branch -D` + remote 削除。 どちらも litter を残さない。
+- ★ openclaw/agent/dotfiles の mirror (`*-mirror/`, dotfiles, ~/.openclaw state) を **この製品 repo に commit するな** ★ (= 3074 汚染の半分。 製品 repo は iOS/web/api/landing のみ)。
 - 自動強制 = **lefthook** (`lefthook.yml`、★8.3k git hooks manager): pre-push で drift 検知 + commit 即 push。 `lefthook install` 済を前提。
 
 ## プロジェクト概要
