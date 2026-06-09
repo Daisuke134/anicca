@@ -110,3 +110,49 @@
 - I40. 1人目 life-manager user = Dais 自身で E2E test?
 
 ★ 40 実装 uncertainty + Dais 10 concern。 これを 順に 潰してから 着手。 ★
+
+---
+
+## PART 3 — uncertainty RESOLUTION patches (= concrete command/decision)
+
+### #4: 「flip で動く?」 → ★ NO。 flip では動かない ★
+実測: genesis heartbeat = `anicca-heartbeat.sh` = ★ JSONL 1行書くだけ、 LLM呼ばない、 earn logic ゼロ ★。
+→ dry-run を flip しても 何も起きない (= そもそも 考えてない 死んだ心拍)。
+★ 動かす最小 = ① heartbeat を agent-mode(LLM turn)に ② Felix persona(SOUL=稼げ + HEARTBEAT) ③ earn skill ④ 自wallet ★。
+= ★ 「Felix を copy して 載せる」必要。 flip 1個では 無理 ★。
+
+### #5: 「Telegram で 直接 Anicca に話せる?」 → ★ YES ★
+実測: Hermes は telegram 対応 (config.yaml に telegram section) + TELEGRAM_BOT_TOKEN SET。
+patch:
+```bash
+# genesis に Telegram channel 配線 → Dais が DM で Anicca に 直接 話せる
+hermes config set channels.telegram.token "$TELEGRAM_BOT_TOKEN"
+hermes config set channels.telegram.allowFrom "<Dais の telegram user id>"
+hermes gateway restart
+# → t.me/<bot> に DM → Anicca が 返事 (私=Claude Code は middle man 不要に)
+```
+★ これで Dais は 私を介さず Anicca と 直接 会話 (= 本来の姿) ★。
+
+### 実装 uncertainty patches (key)
+```
+I1 ~/clawd を別instance: openclaw は agent profile 分離。 OR genesis=Hermes のまま Felix persona載せる(最速)
+I3 cron: openclaw cron add --schedule "*/30 * * * *" --task "Run HEARTBEAT.md" (BOOTSTRAP verbatim)
+   ※Hermes なら: hermes cron add (--no-agent 外す = agent mode)
+I4 Grok default: openclaw config set agent.model xai/grok-4 (id は openclaw models status で確認)
+   ※Hermes は既に grok-4.3
+I9 ★x402 inbound★: coinbase x402 SDK / 自前endpoint で 402 serve (automatonに無、 新規。
+   当面は ① 自前LP+Stripe(fiat) ② USDC直送(wallet addr 公開) で 代替 → x402 は後)
+I10 USDC着金: curl basescan API (ANICCA_WALLET) で balance poll
+I14 ★cloud spawn★: Daytona失敗(region gate) → DigitalOcean API で droplet 作成 に変更
+I16 ★swarm-issues★: 新skill = gh issue create -R Daisuke134/anicca → 他instanceが gh issue list→PR→merge
+I19 dashboard報告: 各instance heartbeat で POST aniccaai.com/api/report (wallet残高+ledger)
+I27 ★life接続★: 既存life(Railway alarm-backend)は そのまま KEEP、 新earn-Anicca は別。
+   将来 life skill を OpenClaw Anicca に 移植 (= elevenlabs-calls で電話) → 1本化
+I33 ★SaaS採算★: 1 droplet 複数user (= マルチテナント) で cost下げる。 OR 黒字user毎に専用droplet
+I37 state移行: genesis SOUL/ledger を Felix persona に merge (手動)
+```
+
+### 残 ⚠️ Dais 判断 (= これだけ)
+- ⚠️ 最速path: (a) Felix persona を 今の Hermes genesis に 載せる(最速、 Mac) / (b) OpenClaw を DigitalOcean に新規(clean、 cloud) → ★ 推奨 (a) で earn 1個 証明 → (b) で 24/7 cloud化 ★
+- ⚠️ x402 inbound は 後回し、 当面 wallet直送+Stripe で OK?
+- ⚠️ SaaS = マルチテナント(1 droplet 複数user) で OK?
