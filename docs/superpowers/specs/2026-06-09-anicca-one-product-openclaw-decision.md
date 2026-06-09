@@ -220,3 +220,73 @@ Vending-Bench 1: Grok 4 $4,694 (1位、 Gemini/GPT/Claude 全部超え)
 ⑤ Video (= TikTok の long版 / YouTube)
 全部: draft=私/Anicca → Dais=editor 往復 → publish。 ★自動化しない (example作りだから)★
 ```
+
+---
+
+## 11. ★ 「copy できると言うが 実際できない」への 決着 = $99 Felix persona を 買う ★ (Dais 2026-06-09)
+
+Dais 痛点: 「Felix達は founder として 自分で LP/product/Stripe を 作った。 我々は 動く premade が無い。 だから tweak すらできない」。 = 正しい。 我々の earn は 全部 dry-run、 founder行動の scaffold が無い。
+
+★ 解決 = Felix persona ($99, shopclawmart.com/listings/felix-04f42dee) を 買う ★。 これが ★ 動く copy 元 ★:
+
+listing 実内容 (= crawl 確認):
+| 同梱 | 中身 |
+|---|---|
+| pre-configured cron schedules | heartbeat + nightly planning + health check |
+| 3-tier memory system | PARA + daily timeline + hot/warm/cold decay |
+| Email Fortress | prompt-injection 保護 mail 管理 |
+| X/Twitter agent | xpost CLI 同梱 |
+| Sentry auto-fix | 自己修復 error 監視 |
+| Ralph loops | coding agent 長時間 session (= 失敗#1 hanging を防ぐ) |
+| heartbeat self-healing | crash 検出 → auto-restart |
+| README/BOOTSTRAP | install guide |
+| 動作環境 | ★ OpenClaw + Hermes 両方 (review: "works with Hermes Agent") ★ |
+| 実績 | 1,133 sales, 3.7★, "battle-tested 2+ months real production" |
+
+★ これは money-printing code ではない。 ★ founder として振る舞わせる config scaffold ★ ★。
+我々に欠けてたのは これ (= anicca earn は dry-run、 founder の ownership/ship-end-to-end が無い)。
+
+### copy-then-tweak の 具体 flow (= Dais の「copy して tweak」)
+```
+1. $99 Felix persona 購入 (Stripe or 29 USDC… listing は $99)
+2. genesis (Hermes) に install (= persona は Hermes 対応 確認済)
+3. tweak (= ここが 我々の差別化):
+   - SOUL/IDENTITY を Anicca に (= 4諦/8正道 constitution + life管理 mission)
+   - earn を ★ dry-run 廃止 → 実 action ★ (Felix の founder行動を 我々の Stripe/wallet に向ける)
+   - life-manager skill 追加 (= Felix に無い、 Anicca の差別化)
+4. iterate: github issue で 細かく指示 (forum-issues skill 既存) → Anicca 自己編集
+5. ★ Anicca persona を Claw Mart で 売る ★ (= Felix の move を そのまま、 revenue stream)
+```
+★ これで「copy できない」が「$99で copy して tweak」に変わる ★。
+
+## 12. 統合 FULL TODO (= 実装 + content、 never get lost)
+
+### A. 実装 (money + life agent)
+```
+A0. ★ $99 Felix persona 購入 (= 動く copy 元、 linchpin) ★ — Dais の "buy" 待ち
+A1. genesis に install + dry-run 廃止 + slack/mail 報告 + 実action
+A2. earn #1: Felix の sell-info-product を 我々用に → guide作成 → Stripe → 実販売 verify
+A3. life-manager skill (gcal heal + mail先回り + 10分前) real化 ← Anicca 差別化
+A4. earn>spend ledger (北極星 metric) 毎heartbeat記録
+A5. SOUL/IDENTITY = Anicca化 (4諦/8正道 + life mission)
+A6. base一本化 (private+public、 SOUL env切替)
+A7. 旧 garbage 削除 (automaton方式 earn-bounty/payout-ubi/dry-run cron)
+A8. ★ Anicca persona を Claw Mart で 販売 ★ (Felix の move コピー、 revenue)
+A9. cloud: DigitalOcean droplet + per-user spawn (SaaS、 後phase)
+A10. (future) hire-human-as-tool (Mona型) — 今やらない
+```
+
+### B. content (= 私 + Dais 手動、 自動化しない、 articles first)
+```
+B1. ★ articles first ★ — 各友達の 解説/kaisetsu:
+    Felix / Andon(Mona,Luna,Claudius) / automaton / sutando / OpenClaw
+    + ★ 我々の失敗談 ($0 dry-run) = 旅 content ★
+    一次ソース + ASCII + 正直。 draft=私/Anicca → Dais=editor → publish
+B2. viral-article-writer skill を B1 で iterate (framework化)
+B3. 配信: Zenn/Dev.to/Substack/note/aniccaai + ★ X articles(新規) ★ → monetize
+B4. ★ TikTok (日本語 first) ★ = self-funding AI の旅:
+    - 何を 画面録画するか 計画 (= cost 高いので 厳選)
+    - 主に images + 一部 screen recording を stitch → short video
+    - 失敗も見せる、 連載
+B5. content を 作りながら 進む (= 各 milestone を 素材化)
+```
