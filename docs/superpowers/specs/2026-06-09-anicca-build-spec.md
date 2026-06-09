@@ -128,3 +128,20 @@ CONTENT (並行、 手動、 Dais=editor)
  K3. 理論: self-sovereign-agent paper 解説
  K4. 旅: 自己資金AIを作る公開実験 (TikTok JP first)
 ```
+
+## 4. heartbeat の 決定 (= engine vs 中身、 Dais 質問 2026-06-09)
+
+★ heartbeat = 2層 ★:
+| 層 | 決定 | 理由 |
+|---|---|---|
+| ENGINE (鳴らす土台) | ★ Hermes (genesis) ★ | 既に Grok サブスクで 無料稼働中。 載せ替えない |
+| 中身 (毎beat何する) | sutando + automaton を copy → HEARTBEAT.md | idleしない最高ROI(sutando) + think→act→observe+survival(automaton) |
+
+各 harness の真実:
+- Felix = ★ engine 無し ★ = OpenClaw の上の persona/config (Hermes でも動く)
+- automaton = 自前 engine だが ★ API key+USDC 必須 (OAuthサブスク非対応) ★ → 不可
+- sutando = 自前 engine だが ★ macOS 専用 (cloud不可) ★ → 不可
+- Hermes(genesis) = 自前 engine、 ★ Grok サブスク無料で 既に稼働 ★ → ★採用★
+- OpenClaw(Dais private) = 自前 engine、 サブスク対応 (private 側の選択肢)
+
+★ 決定: engine = Hermes(genesis)。 Felix/automaton/sutando の engine は使わない。 中身(規律)だけ copy。 ★
