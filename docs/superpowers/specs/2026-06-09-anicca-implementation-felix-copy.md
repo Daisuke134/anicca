@@ -152,3 +152,73 @@ instance は そこから spawn (genesis=Dais個体、 顧客=各個体)。 loca
 7. commit + push (母艦=anicca, genesis=anicca-genesis)
 8. WEB: aniccaai.com/install + Stripe sub + cloud spawn (P6)
 ```
+
+---
+
+## 7. ★ Anicca の 稼ぎ方 (no human) + 4者 比較表 (= 記事の中心) ★
+
+### Anicca はどう稼ぐか (human 0):
+```
+heartbeat (agent-mode, Grok→gpt5.4):
+  think 「自分の compute代を 稼ぐ為に 今 何が最善?」 ← 自分で考える
+   → build: product を 自分で ideate→code/write/gen→deploy
+   → sell:  自分の LP / x402 endpoint / Claw Mart で 自分で 売る
+   → receive: USDC → ★ 自分の Base wallet (ANICCA_WALLET) ★
+   → 承認 0 / Dais 0 / product指定 0
+fuel: Day0 = Grok sub (seed) → 黒字後 = 自分の wallet で 自分の compute を買う
+```
+
+### 比較表 (Felix / automaton / sutando / Anicca)
+| 観点 | Felix | automaton | sutando | ★ Anicca ★ |
+|---|---|---|---|---|
+| 実 収益 | ✅ $200k (但し 殆ど Felix自身を売った金) | ❌ $0 (売るtool無) | ❌ (目的でない) | 🎯 GOAL (Felix engine + 自前rails) |
+| human in loop | ⚠️ YES (Nat が承認/product選ぶ) | ✅ NO (但し$0) | ⚠️ YES (個人秘書) | ✅ ★完全 NHOSS★ |
+| identity/受取 | Nat の Mercury+Stripe | 自分のwallet+x402(但し受取不可) | user の Claude sub | ✅ ★自分のBase wallet+x402+自前LP★ |
+| 売る機構 | build→Stripe→X | ❌ 無し | ❌ 売らない | build→自前LP/x402→@aniccaxxx |
+| 自己複製 | ❌ | ✅ (code、但し$0) | △ multi-Mac | ✅ (automaton spawn copy) |
+| 自己改善 | ✅ Sentry/Ralph | ✅ self-mod | ✅ 600PR | ✅ (Felix+automaton copy) |
+| memory | 3層 PARA | SOUL+SQLite | pointer-teacher | 3層(Felix) + mem0 |
+| harness | OpenClaw | 自前 Node | 自前 Python+CC | Hermes(genesis) |
+| 人の人生管理 | ❌ | ❌ | △ 個人 | ✅ ★10分前 電話★ |
+| OSS | persona 有料 | ✅ MIT | ✅ MIT | ✅ (母艦 repo 無料) |
+| fuel | API key | API key/USDC | Claude sub | Grok sub→gpt5.4→自前 |
+
+### ★ Anicca の 差別化 (= 唯一) ★
+4者で 唯一 ★ ①Felix の 実証済 make+sell engine + ②automaton の no-human+自己複製+自前wallet
++ ③人の人生管理(10分前) + ④完全 OSS+自己資金 ★ を 全部 持つ。
+= ★ 世界初 OSS 自己資金 × 人生管理 AI ★。
+
+## 8. WEB = LOCAL 同核 (= 2 agent 作らない)
+```
+★ 同じ 母艦 code。 違いは env だけ ★:
+  LOCAL  = user が 自分の LLM鍵 を入れる → 全部 無料 (self-host)
+  WEB    = user が 払う → 我々が 鍵+host を 提供 (aniccaai.com/install)
+  ★ core は 100% 同じ。 2つの別agent は 作らない (dev速度の為) ★
+```
+
+## 9. 全 END-TO-END TODO (= 2 marketing copy 完成まで)
+```
+A. 母艦 build (Felix copy → Anicca化)
+ A1. Felix 8 core + 13 skills → ~/anicca copy + Anicca化 (SOUL/IDENTITY/HEARTBEAT diff)
+ A2. 旧 garbage rm (81 skills + CONSTITUTION + 00-MASTER + earn/payout)
+ A3. install.sh (local self-host: clone→鍵入力→run)
+B. genesis 起動 (= 自己資金 AI、 marketing copy 1)
+ B1. 母艦 → ~/.hermes 配置 + Anicca wallet/mail/X 配線 + Grok fuel
+ B2. heartbeat agent-mode (--no-agent外す) 1本 + dead cron 削除
+ B3. 即 fire → 実 action (think→build→sell試行→report) verify (no dry-run)
+ B4. earn loop: 自分のLP/x402 で 実 product 1個 売る → USDC着金 verify
+ B5. 自己改善(error→fix) + 自己複製(spawn child) + 日次mail
+ B6. aniccaai.com/dashboard に 収支 公開
+C. life-manager (marketing copy 2)
+ C1. 既存 anicca-products life-manager bug fix (lateness_check glob)
+ C2. elevenlabs-calls skill で 10分前 電話 + 位置/calendar/route
+ C3. mail先回り + 信用残高 + 毎朝メール
+D. WEB (aniccaai.com/install)
+ D1. /install LP (既存200) → Telegram連携 onboarding (名前/電話/位置/calendar)
+ D2. Stripe sub $49.99/mo 7日無料 + webhook
+ D3. webhook → 母艦から ★顧客専用 instance を cloud spawn★ + creds注入
+ D4. 自動解約 (treasury が cover時)
+E. content (= 今日 1記事)
+ E1. 記事「自己資金AIを作る旅 + Felix/automaton 比較」 → 5媒体投稿
+ E2. demo動画 (後)
+```
