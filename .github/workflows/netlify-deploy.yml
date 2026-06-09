@@ -1,7 +1,6 @@
 name: Netlify Deploy (Landing)
 
 on:
-  workflow_dispatch:
   push:
     branches:
       - dev
@@ -9,6 +8,8 @@ on:
     paths:
       - 'apps/landing/**'
       - 'netlify.toml'
+      - '.github/workflows/netlify-deploy.yml'
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -30,15 +31,24 @@ jobs:
         working-directory: apps/landing
         run: npm run build
 
+      # 2026-06-07 V14-2 fix: replaced nwtgck/actions-netlify@v3.0 (= 5 連続 ISE)
+      # with direct netlify-cli call (= validated via manual deploy locally)
+      # Spec: 2026-06-07-cron-role-clarification-design.md §12.4 → V14-2
+      # Security: env vars for all template inputs (= injection防止)
+      - name: Install Netlify CLI
+        run: npm install -g netlify-cli@latest
+
       - name: Deploy to Netlify
-        uses: nwtgck/actions-netlify@v3.0
-        with:
-          publish-dir: './apps/landing/out'
-          functions-dir: './apps/landing/netlify/functions'
-          production-branch: main
-          production-deploy: ${{ github.ref == 'refs/heads/main' }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          deploy-message: "Deploy from GitHub Actions - ${{ github.sha }}"
+        working-directory: apps/landing
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+          GHA_SHA: ${{ github.sha }}
+          GHA_REF: ${{ github.ref }}
+        run: |
+          set -euo pipefail
+          if [ "$GHA_REF" = "refs/heads/main" ]; then
+            netlify deploy --site "$NETLIFY_SITE_ID" --auth "$NETLIFY_AUTH_TOKEN" --dir=out --prod --no-build --message "Deploy from GHA prod - $GHA_SHA"
+          else
+            netlify deploy --site "$NETLIFY_SITE_ID" --auth "$NETLIFY_AUTH_TOKEN" --dir=out --no-build --message "Deploy from GHA preview - $GHA_SHA"
+          fi
