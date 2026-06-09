@@ -67,3 +67,53 @@ source: repo 確認:
 - 🔍 U7 Grok model id (grok-4.3 = full?) / U59 cron per-job model override / U16 Monitor等価 → 次 batch
 SPECEOF
 echo "written"; wc -l /Users/operator/anicca/docs/superpowers/specs/2026-06-09-anicca-uncertainty-resolution-QA.md
+---
+
+## BATCH 2 解決
+
+### ✅ UB5 — life-manager と genesis は 別 stack (= 統合 判断要)
+source: `anicca-products` branch tree:
+- life-manager = `apps/alarm-backend/scheduler/lateness_check.py` + `saas_lateness.py` + `apps/api/src/routes/ops/heartbeat.js` (= Python scheduler + Node API on Railway)
+- genesis earn = `~/.hermes` (Hermes runtime)
+**結論**: ★ 現状 2 つの 別 system ★。 life = anicca-products/Railway(alarm-backend)、 earn = Hermes/genesis。
+⚠️ **Dais 判断 (UB5-D)**: (a) 2つを 1 Hermes runtime に 統合する か、 (b) life=Railway / earn=Hermes 別のまま 連携 か。 → 推奨 = (b) 別のまま (= life は 既に動いてる Railway を 壊さない、 earn は genesis で 新規)。 後で 1 base 統合は P6。
+
+### ✅ UB6 — 3-tier memory + Ralph copy元
+- 3-tier memory = ★ `mem0ai/mem0` (58k★, "Universal memory layer for AI Agents") ★ を copy。 letta(23k) は重い。 mem0 採用。
+- Ralph loop = geohot 由来の 公開技法 (= bash while loop で 毎iter fresh context)。 description 公開 → pattern copy (lib/ralph-loop.sh)。
+
+### ✅ U7 — Grok model = `grok-4.3` (full, via xai-oauth)
+source: `hermes config show` → `model: {default: 'grok-4.3', provider: 'xai-oauth'}`。 = ★ Grok 4 full、 mini でない ★。
+
+### ✅ U70/71 — Stripe = ★ sk_live (本番実金) ★
+source: `STRIPE_SECRET_KEY=sk_live_***`。 = 実金 account 既存・稼働可。
+⚠️ **Dais 判断 (U70-D)**: この Stripe は Dais 個人/既存事業 の account。 Anicca earn の 入金を ここに 入れるか、 Anicca 専用 account 分けるか。 → 推奨 = 当面 既存 sk_live 流用 (= すぐ売れる)、 後で分離。
+
+### ✅ U98 — route計算 = `GOOGLE_API_KEY` SET (Maps API 流用可)
+
+### ✅ U26 — 削除対象の genesis earn cron
+source: genesis jobs.json = anicca-earn-lancers / payout-ubi / forum-issues / self-improve / self-manage / forum-rollout / predict。 = ★ 全部 dry-run/no-money の 自作 original ★ → P3 で 削除対象。 ⚠️ 但し self-improve/forum は 自己改善系 = 残すか判断 (U48-D)。
+
+---
+
+## ⚠️ 残 Dais 判断項 (= 調査で潰せない、 戦略/所有/法務)
+これだけ Dais が 決めれば 「go」 で 実装可:
+- UB5-D: life(Railway) + earn(Hermes) = 統合 or 別連携 → 推奨 別
+- U70-D: Stripe = 既存sk_live流用 or Anicca専用分離 → 推奨 流用
+- U79: ★ 最初に売る product の topic は? ★ (例: "自己資金AIの作り方" guide / "OpenClaw setup" / Anicca persona) → Dais 指定要
+- U109-D: SaaS cloud = DigitalOcean droplet(Felix流, $24/mo) / Daytona(鍵無) / Mac mini → 推奨 DigitalOcean (Felix実証)
+- U46-D: private 157 cron(.openclaw) = 今回触る or 並走放置 → 推奨 放置(別物)
+- U48-D: genesis self-improve/forum cron = 残す or 削除
+- U50: 1人目 実 user = Dais 自身(local dais) でいいか
+- U73/140-D: JP税/法務主体 (autonomous earn の 確定申告/インボイス) → Dais
+- U85/143-D: AI が product 売る ToS/liability の 許容範囲 → Dais
+- U118/42-D: 自動解約 treasury 閾値 (月いくら稼げたら user 無料化)
+- U144-D: 「no human in loop」vs「user承認(返信案)」の 線引き (life-manager は user承認あり=矛盾しない、 earn は no-human)
+
+## 残 factual (= 次 batch で 潰す)
+- 🔍 U16 sutando Monitor の Hermes 等価 / U59 cron per-job model override / U17 tasks-queue
+- 🔍 U94/95 life-manager glob bug fix 状態 / U33 Twilio番号 / U100 calendar scope
+- 🔍 U113/114 aniccaai.com/install LP + @anicca_bot 状態 / U40 Stripe sub product
+- 🔍 U21 product 制作 quality gate / U28 guide 誰が書く
+- 🔍 U136-139 security (injection/spend上限/post上限/ban)
+- 🔍 U145-148 content accounts (note/devto SET、 tiktok/zenn/substack?)
