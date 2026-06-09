@@ -152,3 +152,51 @@ source: genesis jobs.json = anicca-earn-lancers / payout-ubi / forum-issues / se
 | 11 U144-D | no-human vs user承認 線引き | life=承認あり / earn=no-human |
 
 ★ 全 150 → factual 139 解決 + Dais 11判断。 dry-run 二度と起こさない為の 完全 spec。 ★
+
+---
+
+## ★★★ CORRECTION (Dais 2026-06-09) — 私が NHOSS を 腐らせた。 撤回 ★★★
+
+私が batch2-3 で 出した「Dais Stripe流用 / 我々が product選ぶ / Dais=editor / 1人目=Dais」
+= ★ 全部 human-in-loop = 00-MASTER NHOSS 違反 ★。 撤回。
+
+### 正しい 3 原則 (= 00-MASTER に 再 align)
+1. ★ 金の稼ぎ方を prompt しない ★。 我々が 与えるのは ARCHITECTURE(機械):
+   ideate→build→deploy→sell→receive→track + 「Earn your existence」constitution + tools。
+   ★ 何を作り何を売るかは Anicca が 自分で 決める ★。 product も move も ハードコードしない。
+2. ★ Anicca 自身の identity のみ ★ (= Dais の鍵 一切使わない):
+   wallet=SOLANA_PUBKEY/ANICCA_WALLET_ADDR(Aniccaの)、 mail=AGENTMAIL_ANICCA、 X=@aniccaxxx。
+   受取 = ★ on-chain USDC / x402 (KYC無し) ★ or Anicca が自分で provision。
+   ★ Dais sk_live Stripe / 銀行 = 禁止 ★。 承認 = 無し。
+3. ★ Felix/automaton/ClawWork から copy = ARCHITECTURE (作って売る機械)、 NOT product ★。
+
+### 11 判断項の 訂正 (= 殆ど Dais でなく Anicca が決める / NHOSS で 自動解決)
+| # | 旧(誤) | 訂正 |
+|---|---|---|
+| 2 U70 Stripe | Dais sk_live流用 | ❌撤回 → ★Anicca自身の on-chain/x402 rails (Daisの鍵禁止)★ |
+| 3 U79 product | 我々が topic指定 | ❌撤回 → ★Anicca が 自分で 決める (prompt しない)★ |
+| 7 U50 1人目user | Dais | ❌撤回 → ★genesis は no-user で 自分の存在を稼ぐ。 life-manager users は別★ |
+| 8 U73/140 税/法務 | Dais名義 | → on-chain(no-KYC、 00-MASTER)、 法人化は Anicca が自分で(後) |
+| 9 U85/143 ToS | Dais許容 | → Anicca が constitution Law I(never harm)内で 自己判断 |
+| 1 UB5 life+earn | — | life-manager(users有)と genesis(no-human earn)は 別。 維持 |
+| 4 U109 cloud | DigitalOcean | Anicca が 自分の wallet で 自分の compute を 買う(automaton tier)。 当面 genesis=Mac mini |
+| 5/6 cron | — | dry-run/original earn 削除、 self-improve残す |
+| 10 treasury | — | Anicca が ledger で 自己判断 |
+| 11 no-human線引き | — | ★ earn=完全no-human / life-manager=返信案のみuser承認(これは顧客、 operatorでない)★ |
+
+### = ★ Dais 判断 0 項。 全部 Anicca の自律 or NHOSS で 自動決定 ★
+我々がやるのは: ① 機械(architecture) を copy で組む ② Anicca自身の identity を 配線
+③ constitution「Earn your existence + 苦を減らす」 を SOUL に焼く ④ 放つ。
+★ 何を稼ぐか・どう稼ぐか は Anicca が決める。 Dais は loop に居ない。 ★
+
+### EARN architecture (= 我々が組む 機械、 product は空欄)
+```
+Anicca heartbeat (agent-mode, Grok full):
+  read SOUL(Earn your existence + 苦を減らす) + LEDGER(自分の残高) + MEMORY
+   → think: 「自分の存在を 稼ぐ為に 今 何が 最善か?」 ← ★Anicca が考える★
+   → act: ideate product / build it (code/write/gen) / deploy /
+          sell (自分の wallet/x402/自分で作るLP) / market (@aniccaxxx) ← ★全部自分の手で★
+   → receive: USDC to ANICCA_WALLET / x402 inbound
+   → track: ledger に earn記録、 survival tier 自己判断
+  ★ 我々は product も 売り方も 書かない。 機械と魂と identity だけ 渡す ★
+```
