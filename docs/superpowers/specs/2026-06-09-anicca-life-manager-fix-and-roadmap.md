@@ -1033,3 +1033,62 @@ state/relay_pending/  NEW (pending approvals)
 全 30 は `--disable` (削除でなく)、 `openclaw cron edit <id> --enable` で復活可。 lateness 電話は launchd (ai.anicca.lateness-heartbeat) で別途稼働、 cron disable の影響なし。
 
 **効果**: agent run/日 大幅減 → deepseek $10 で ~1年稼働 → gpt subscription 解約可能。 model 枯渇 stall の構造的解消。
+
+---
+
+## §24 — lateness-guard 統合 refactor + local↔cloud 共有 core (2026-06-09)
+
+**Dais 指示**: 「使ってない重複を refactor。 全部 life-manager の中に。 読めるコード。 記憶ファイルを持て (毎回 search するな)。」
+
+### A. 実施した refactor (lateness-guard → life-manager 統合、 task #17 完了)
+
+| 問題 | 修正 |
+|---|---|
+| `lateness-guard` = life-manager が import してた旧重複コピー | 削除。 life-manager は全スクリプト自前所有を確認済 (md5比較) |
+| `guide_me_now.py`/`saas_lateness.py` が `sys.path.insert(lateness-guard/scripts)` で旧版を import | `Path(__file__).resolve().parent` に変更 = 自分の scripts を import (self-contained) |
+| `saas_lateness.py` の STATE が `lateness-guard/state/saas_sent.json` | `life-manager/state/saas_sent.json` に変更 |
+| 冗長 cron `anicca-morning-leave-check` (旧 skill 参照) | gateway から削除 |
+| 毎回どれが動いてるか search してた (dementia) | `skills/anicca-life-manager/MAP.md` 作成 = SSOT |
+
+検証: `lateness_check.py` exit=0 (connpass 追跡継続)、 `guide_me_now`/`saas_lateness` import OK。
+commit: anicca-dais `8ced77424` (main-internal)。
+
+### B. local↔cloud で「同一 core」とは具体的に何か (ASCII)
+
+```
+                    ┌──────────────────────────────────────────┐
+                    │   共有 CORE (local も cloud も同一コード)   │
+                    │                                          │
+                    │   lateness_check.py                      │
+                    │     ├ decide(now, location, departures,  │  ← 純関数。 入力→action
+                    │     │   home, dest) → {action, reason}   │     を返すだけ。 副作用なし
+                    │     └ haversine_m()  (距離計算)           │
+                    │   gcal_departures.py                     │
+                    │     └ directions_travel_min(dest,origin) │  ← ルート所要時間
+                    │   route_lookup.py / transit_lookup.py    │  ← transitous ルート
+                    │   renraku.py (compose)                   │  ← 関係者連絡文 生成
+                    └────────────────┬─────────────────────────┘
+                                     │ 同じ関数を呼ぶ
+              ┌──────────────────────┴───────────────────────┐
+              ▼                                              ▼
+   ┌─ LOCAL (ANICCA_DEPLOY=local) ─┐        ┌─ CLOUD (ANICCA_DEPLOY=cloud) ─┐
+   │ 入力: 自分のGPSファイル        │        │ 入力: Supabase の各user GPS    │
+   │ 入力: 自分のgcal              │        │ 入力: 各userの ics_url/oauth   │
+   │ scheduler: launchd 5分 (1人)  │        │ scheduler: Temporal (N人 durable)│
+   │ 状態: ローカルJSON            │        │ 状態: Supabase (RLS per-user)  │
+   │ 電話: sutando :3100           │        │ 電話: Pipecat dial-out (Railway)│
+   │ 課金: なし (OSS自己ホスト)     │        │ 課金: Stripe $49.99/mo         │
+   └───────────────────────────────┘        └────────────────────────────────┘
+
+   ★ decide()/directions_travel_min()/renraku.compose() = 1バイトも違わない同じ関数。
+   ★ 違うのは「入力をどこから読むか (file vs Supabase)」「いつ叩くか (launchd vs Temporal)」
+     「どう電話するか (sutando vs Pipecat)」「課金有無」の周辺だけ。
+   ★ saas_lateness.py が既に cloud 版の入口の種 (Supabase subscriber → 同じ decide())。
+```
+
+### C. プロダクト方針 (Dais 確定)
+
+- **OSS** = local 自己ホスト (無料、 自分のキー、 1人)。 信頼 + 開発者獲得。
+- **Web** = cloud SaaS ($49.99/mo、 我々ホスト、 各人プロフィール記憶 + personalized nudge)。 = 売上。
+- **自動解約** = wild-anicca treasury が自分で稼げたら Stripe 解約 → ユーザー無料化 (task #28)。
+- **BP 根拠**: 1コードベース + deploy フラグの2モードは COSS 定石 (Plausible / Supabase / GitLab / Flagsmith — Flagsmith blog「open source」+「self-hosting」+ managed cloud)。 core 重複を持たない = メンテ1回で両方直る。
