@@ -178,3 +178,9 @@ mobile-apps/rork-lookmax-pro/
 
 # Anicca music factory output (large generated binaries)
 music-factory/
+
+# Factory app build credentials (never commit — p12/cert passwords, provisioning)
+mobile-apps/*/credentials.json
+mobile-apps/**/certs/
+**/*.p12
+**/credentials.json
