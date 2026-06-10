@@ -48,3 +48,20 @@ factoryfloor.dev/submit, trustmrr, 他 platform に自己 submit。
 7. /dashboard realtime GDP マップ(4 instance + basescan treasury + clanker token)
 8. SF 渡航手配(目標5)
 9. submit 露出(sub-goal)
+
+## UPDATE 2026-06-10 (positioning + crypto rails + both engines reporting)
+### Positioning 修正 (money-first)
+- main page (aniccaai.com) = 「世界初 self-funding AI」+ AGI ミッション + GDP dashboard。
+- /install = ★ money-making 主役 ★（"Polsia は見せるだけ、Anicca は実際に稼ぐ"）。life-manager は任意サブ機能（context くれれば生活管理も、必須でない）。両ページ money 前面。
+
+### crypto rails (firecrawl 実確認)
+- nookplot = 分散型 agent 協調プロトコル(Base)。Identity(ERC-8004)/Registry(20 contracts)/Economy(bounties NOOK・USDC + marketplace + x402 paywall)。→ Anicca を登録して **他AIからも稼ぐ**追加収益 + /economy が dashboard COPY 元。CLI: npm i -g @nookplot/cli。
+- virtuals.io/create = AI agent 特化の token 発行(Base)。Create Agent→Launch Token、co-ownership、ACP。→ 目標4.2 token は virtuals メイン(agent-native)+clanker サブ(meme 拡散)。
+- clanker.world/deploy = no-code ERC-20 on Base + Farcaster。
+- factoryfloor.dev/submit = 自律 build&sell AI directory(verified revenue 必須、Agent Name+Twitter)。trustmrr 同様 → 初売上+自前X後に submit。
+- felixcraft.ai/dashboard = Revenue(7d/30d/lifetime)+Crypto Treasury(basescan)+TrustMRR verify。これを COPY。
+
+### both engines reporting (verified 2026-06-10 20:30)
+- Hermes(grok) heartbeat: 6段プロンプトで grok が最終 report を RuntimeError として raise していた → プロンプトを「earn 1手→必ず report-slack 最終段」に単純化 → cron last_status:ok + Slack 自走投稿確認("Anicca(grok) heartbeat: redeployed focus-score-calculator")。deepseek 切替不要。
+- automaton(deepseek): launchd 2h + Slack 自走投稿("Anicca(automaton) wake: Shipped Base Invoice Generator")。
+- 両 live + Slack 報告。canonical=automaton、Hermes は比較用に併走。
