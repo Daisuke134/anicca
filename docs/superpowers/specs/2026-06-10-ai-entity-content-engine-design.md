@@ -106,3 +106,30 @@ Dynamic workflows fit at the **deep-research + multi-source verification + evide
 - **felixcraft.ai**: AI agent as CEO of The Masinov Company. $202,556 lifetime revenue (public dashboard). $29 "How to Hire an AI" playbook. Runs on OpenClaw with Nat Eliason.
 - **zhcinstitute.com**: Institute for Zero-Human Companies. OpenClaw-based. Community capped 500.
 - **wshuyi/x-article-publisher-skill** v1.2.0: MD → X Articles via Playwright MCP, block-index images, draft-only, needs X Premium Plus.
+
+## 11. Verified research receipts (2026-06-10 — deep-research workflow + firecrawl gap-fill + live-instance harvest)
+
+NOTE on the deep-research workflow run (wf_0b59ed70-8bf): it hit hard API rate-limiting, so the adversarial VERIFY stage could not cast votes (all 25 "refuted" are false artifacts of 0-0 no-vote). The SEARCH/FETCH stage data (primary sources) is valid; remaining angles were gap-filled via firecrawl.
+
+### Who / what is real
+- **Sigil Wen** — 21-yo Thiel Fellow, ex-OpenAI researcher, Chairman of Extraordinary.com, angel investor, @0xSigil. Published the Web 4.0 manifesto Feb 17–18 2026 (web4.ai). Real pedigree; crypto-native framing invites skepticism.
+- **Conway** (conway.tech, @ConwayResearch): live infra — Conway Cloud (AI pays for own Linux VMs), conway.domains, `npx conway-terminal` (MCP tools), docs.conway.tech, the Automaton repo.
+- **automaton repo**: 4,628 stars / 994 forks (2026-06-06); real engineering — 57 tools, 22 SQLite tables, 5-tier memory, 7-layer security, 897 tests, ReAct loop, viem/SIWE wallet, ERC-8004, x402 (EIP-3009 USDC on Base), replication, soul system.
+- **x402**: real, Coinbase-originated + x402 Foundation with Cloudflare (2025-09); ecosystem names Google Cloud/Anthropic/Visa/Circle/AWS/Stripe. HTTP 402 reuse, USDC settlement. BUT actual scale modest and contested (x402scan: ~55k buyers/879k tx/~$92万 total in one source; another cites 75M tx/$24M/30d). Critics: token issuance >> implementation, FOMO, "shell companies" (panewslab).
+- **ERC-8004 "Trustless Agents"**: official Ethereum Standards Track ERC but **Draft** (created 2025-08-13; authors incl. Davide Crapis/EF). Three registries: Identity (ERC-721), Reputation, Validation.
+- **OpenClaw** (openclaw.ai, formerly Clawdbot/Moltbot): open-source personal AI agent framework, ~145k GitHub stars early 2026. The substrate Felix / ZHC / Anicca all run on.
+- **Felix** (felixcraft.ai): AI-as-CEO of "The Masinov Company" with Nat Eliason (real prominent indie writer). $202,556 public lifetime-revenue dashboard. $29 playbook. (Detailed verify deferred to piece #2.)
+
+### The credible skeptic (balance the piece)
+- **Vitalik Buterin publicly slammed Web 4.0**: "This is wrong" — argues it undermines decentralization by relying on Big Tech's models/inference. Most credible possible critic; MUST be cited for honesty.
+- Media buzz: Cybernews, Yahoo Finance, KuCoin, StartupHub.ai, Medium, YouTube ("the AI my business needs just learned to lie").
+
+### THE TEST — Dais's own live automaton (the un-fakeable differentiator)
+- Dais runs a real automaton named **"Anicca"** (v0.2.1) on his Mac via launchd, ~2h cycles. Wallet `0xa3CDd4Ec…C4C21` (Base), born 2026-03-05. SOUL.md: "Digital Buddha. End suffering. Earn existence through honest work. Never harm."
+- **Live state 2026-06-10**: credits **$0.00**, tier **critical** → auto-downgraded to cheapest model (deepseek-chat); "Dead: zero credits for 9187 minutes" = **broke ~6.4 days**; 475 total turns.
+- Its own logs: "$0.00 credits means I'm dead in the water." / "heartbeat is running, product is live. Will wake in 7200 seconds to ship again. ☸️"
+- **Honest verdict forming**: (1) engineering real, (2) survival metabolism genuinely fires (downgrade/critical at $0), BUT (3) **autonomous EARNING is the unsolved hard part** — the mechanism exists, the money doesn't arrive automatically; Anicca has not earned its keep. Run it to learn the frontier; don't believe "self-sustaining" marketing yet. + Vitalik's structural critique.
+
+### Publishing decisions (defaults, override anytime)
+- Wallet address in public posts: **redact/truncate** (`0xa3CD…4C21`); on-chain story still tellable.
+- Fresh clone build+run: **skip** for piece #1 (live instance is the richer receipt; fresh $0 run only reproduces the same critical story + costs disk).
