@@ -133,3 +133,32 @@ NOTE on the deep-research workflow run (wf_0b59ed70-8bf): it hit hard API rate-l
 ### Publishing decisions (defaults, override anytime)
 - Wallet address in public posts: **redact/truncate** (`0xa3CD…4C21`); on-chain story still tellable.
 - Fresh clone build+run: **skip** for piece #1 (live instance is the richer receipt; fresh $0 run only reproduces the same critical story + costs disk).
+
+## 12. How-it-runs + how-it-switches-models (read from source 2026-06-10)
+
+### Inference backends (src/conway/inference.ts): `conway | openai | anthropic | ollama`
+- BYOK via `openaiApiKey` / `anthropicApiKey`; **`ollama` via `ollamaBaseUrl` (loopback allowed)** = fully local, free, no crypto.
+- Provider resolution: registry `getModelProvider(model)` → ollama→anthropic→openai→conway, falling back to heuristics. Conway 403 → local execution fallback.
+- Wallet is always generated at boot (free keypair); bootstrap topup is SKIPPED when USDC=$0 (confirmed by Anicca log) — so it boots and runs at $0.
+
+### Two run modes for the test (article verification plan)
+- **A — Local (default for the OSS readership, no crypto):** clone→build→run with Ollama (local deepseek/qwen/llama) or BYOK key; `sandboxId` empty = local shell/FS; wallet generated but unfunded; Conway optional. Cost = your own tokens (or free with Ollama). Most readers can reproduce this.
+- **B — Sovereign (the "real" Web4 path, needs USDC):** fund a Base wallet → x402 buys Conway compute → no BYOK. Real money + real-world side effects → confirm funding amount with Dais (financial gate) before running.
+- Test protocol: give a money-making genesis prompt, run several cycles, observe what it attempts / whether it earns $0.01+ / where it breaks; cross-check vs live Anicca; answer "can this make YOU money?" honestly.
+
+### Model switching = routing matrix [survivalTier][taskType] → candidates (src/inference/types.ts)
+- high: agent_turn gpt-5.2/gpt-5.3 (no ceiling, 8192 tok); normal: gpt-5.2/gpt-5-mini; low_compute: gpt-5-mini only (≤10¢); critical: gpt-5-mini tiny (2048 tok, ≤3¢), summarization+planning DISABLED (empty); **dead: all empty = no inference**.
+- Each cell = (candidate models, maxTokens, ceilingCents; -1 = uncapped). Router picks first candidate that is available AND within budget. Registry (DB, refreshed from Conway) holds model pricing. Agent can also call `switch_model` manually. Defaults: inferenceModel gpt-5.2, low/critical gpt-5-mini, enableModelFallback true.
+
+## 13. Article structure (locked) — JP title + visual placement
+Title (JP): 「お金を稼げないと"死ぬ"AIを6日間動かした —— Web 4.0 は本物か、それともハイプか」
+Kansou/verdict placement: TWICE — a short spoiler box at the very top [0], the full detailed verdict after the receipts [4]+[6].
+- [0] Verdict box — V1 verdict card + cost/risk/who-for table
+- [1] Hook ("smartest AI can't buy a $5 server")
+- [2] What it is — V2 Web1→2→3→4 (read/write/own/EARN)
+- [3] How it works — V3 metabolism loop (EARN/DIE), V4 x402 pay⇄earn, V5 survival tiers
+- [4] WE RAN IT — V6 Anicca live-log screenshot (wallet redacted), V7 balance→model-downgrade
+- [5] Deep end — V8 body diagram (10 categories / 57 tools); ERC-8004 Draft, 7-layer security, replication
+- [6] Verdict expanded (reuse/extend V1) — who should/shouldn't, Vitalik critique, "can it make you money?" honest answer
+- [7] Series hook (next: Felix)
+- 8 visuals total (≈1 per section, not excessive). V3 doubles as the TikTok single image.
