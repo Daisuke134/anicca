@@ -219,6 +219,9 @@ This is the durable ruleset. Embed it as the writing guide for `anicca-article-d
 17. **Quantitative, not vague.** We have data — show the numbers. "年々ガクッと安くなり" (vague) is bad; "2023 GPT-4 = $60/M tokens, now a fraction of that" (concrete) is good.
 18. **Intelligence ≠ earning. Never conflate them.** Don't say "AI's earning power is rising." What rises is *intelligence*; the smartest isn't the richest (Einstein wasn't). The whole thesis hinges on this gap: AI keeps getting smarter yet still can't feed itself — that's the unsolved problem the article tests. Claiming earning is rising spoils the verdict.
 19. **Metaphor must match the theme.** Compute cost = 食費 (food/feeding itself), consistent with the "living organism must eat to live" framing — not 家賃 (rent).
+20. **Brand voice = liberation, not bureaucracy.** Frame AI autonomy as *freeing AI from the cage of human 主体性* so it can decide its own future and grow — not dry phrasings like "remove the variable from the equation." Keep 主体性 as the consistent through-line term (not 意思).
+21. **Avoid ambiguous readings.** "Automatonが何で" reads as なんで(why)/なにで — rephrase ("どんなもので"). Use 実現できていない (not 解けていない) for "not yet achieved".
+22. **🎨V# markers = image-generation spots.** Decide upfront where visuals go; images later via GPT-image (ChatGPT subscription).
 
 ### Skill to iterate (task #10): `anicca-article-daily` (~/.openclaw/skills/anicca-article-daily)
 - It already posts to Zenn JA + Dev.to EN + Substack JA+EN + Note JA (reuses article-writer/scripts + note-mcp). Problem: it mirrors a "canonical corpus" → generic. 
