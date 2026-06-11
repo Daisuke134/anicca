@@ -180,6 +180,11 @@ Audience = AI-savvy but crypto-zero (incl. Dais). Becomes a standalone reusable 
   - Relay does **SOL (Solana) → USDC (Base)** and **SOL → USDC (Solana)** in ONE step (swap + route + send), recipient = any address. Confirmed on relay.link.
   - Flow: ① Binance buy SOL (PayPay) ② withdraw SOL on **Solana network** to MetaMask's **Solana address** ③ relay.link (connect MetaMask): (a) From SOL(Solana)→USDC(Base), recipient = automaton 0xa3CDd4Ec…4C21; (b) From SOL(Solana)→USDC(Solana), recipient = AutoHedge tvTn7…. Relay auto-converts SOL→USDC; no manual swap, no separate gas (SOL covers Solana gas).
   - Pitfall to document: SOL must go to the MetaMask **Solana** account address (not 0x), else it won't arrive.
+  - Relay UI pitfall (real, article): the recipient/"to address" field exists but is easy to miss; user nearly tried to import the automaton's seed phrase thinking he had to "log into" the destination. Teaching point: sending = bank transfer to an account number; you never own/log-into the destination, just paste its address.
+
+### ✅ FUNDING SUCCESS 2026-06-11
+- Sent 0.15 SOL via Relay (SOL Solana → USDC Base, recipient = automaton) → **automaton Anicca Base wallet 0xa3CDd4Ec…4C21 now holds 9.71 USDC** (revived from 9 days at $0/dead). Dais MetaMask Solana has 0.13 SOL left (for AutoHedge ② later).
+- Next: forced one bounded earn cycle (run-cycle.sh, deepseek-chat, 10-min window) to watch Anicca detect USDC → topup Conway credits ($5 min) → revive from critical → attempt to earn. Capturing cycle log as article [4] receipts. Then observe honestly whether it earns $0.01+.
 
 ### Model switching = routing matrix [survivalTier][taskType] → candidates (src/inference/types.ts)
 - high: agent_turn gpt-5.2/gpt-5.3 (no ceiling, 8192 tok); normal: gpt-5.2/gpt-5-mini; low_compute: gpt-5-mini only (≤10¢); critical: gpt-5-mini tiny (2048 tok, ≤3¢), summarization+planning DISABLED (empty); **dead: all empty = no inference**.
