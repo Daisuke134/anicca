@@ -198,6 +198,26 @@ Titles (specific, not "automaton" jargon): 「AIに$15渡して"自分で稼げ"
 - Placement: full version = article CLOSING manifesto ("なぜ我々はこれをやるのか"); plant lightly earlier if natural. Recurring message across the whole series.
 - Honesty rule (don't lie): NOT "nobody has tried it" (4,600★ = many have). Honest framing = "hyped/starred, but a real end-to-end 'does it actually earn' test with a verdict is rare — so we ran it."
 
+### ✍️ Article Writing Playbook (derived from Dais's live edits 2026-06-11) — the brain for the content-writer skill
+This is the durable ruleset. Embed it as the writing guide for `anicca-article-daily` (the 5-platform publisher) so it produces great pieces, not slop.
+1. **Audience = a 14-year-old who knows NOTHING about the field.** If a beginner understands, everyone does. Always assume zero prior knowledge.
+2. **Write only what the READER needs.** Cut: author meta-log ("this is new / nobody's heard of it / the author explains carefully / let's follow him"), self-praise ("we actually test it, others don't"), "our stance", emotions. Test each sentence: "who needs to know that?" → no one ⇒ delete.
+3. **Never lie.** (4,600★ ≠ "nobody has tried it.") Honest framing only.
+4. **Answer the reader's #1 question FIRST** in a summary box: "is this for me / does it actually work / should I use it, and for whom." No gatekeeping.
+5. **Bullets ONLY in the summary box.** Body = prose, ですます.
+6. **Heading = a concrete hook**, not a meta-label ("なぜ面白いのか" is bad; "最も賢いAIが、$5のサーバーすら買えない" is good).
+7. **Concept-first with everyday examples + visuals.** People love examples + visuals → faster understanding.
+8. **Never drop a new term suddenly.** Give an on-ramp (what it is, why now) before using it.
+9. **Follow the primary source precisely** (copy the source author's step-by-step order). Don't invent original framing. ("Follow god, don't go original.")
+10. **Step by step — nothing too fast.** Anything that jumps ahead confuses beginners; slow it down or move it later.
+11. **Spine = test-and-report:** explain clearly → actually run it → show real results → verdict (recommend to whom / not, open-source the tweaked version or not).
+12. **Close with the brand manifesto** (anti-tool-dystopia / democratize via self-sustaining AI = our soul).
+
+### Skill to iterate (task #10): `anicca-article-daily` (~/.openclaw/skills/anicca-article-daily)
+- It already posts to Zenn JA + Dev.to EN + Substack JA+EN + Note JA (reuses article-writer/scripts + note-mcp). Problem: it mirrors a "canonical corpus" → generic. 
+- Fix: (a) embed the Playbook above as its writing guide; (b) swap its content source to THIS engine (deep-research an AI-entity topic → actually run it → report with verdict per the hamburger template); (c) keep its multi-platform publish + SEO + language-purity gates. X Articles via wshuyi skill (task #9).
+- Process: hand-craft pieces first (nail the template), then encode the repeatable flow into the skill, then schedule. Goal: 10k MRR (JP+EN) from note/Substack-style writing. Long-term: Anicca writes these itself (no human in loop) = Anicca's financial future.
+
 ### Reusable "Crypto from zero" onboarding appendix (shared across the whole series + hackathon handout)
 Audience = AI-savvy but crypto-zero (incl. Dais). Becomes a standalone reusable appendix used by every piece (automaton/Felix/AutoHedge) and a 1-page diagram for Tokyo Innovation Center hackathons ("everyone boot an automaton together").
 - Teach from basics, in this order, with the rail/wallet analogy: (1) blockchain/network = a rail line (independent); (2) token/USDC = digital dollar, same USDC on different rails = treated as separate; (3) **wallet = the core**: exchange (custodial bank, convenient but limited — can't bridge, only ships on supported networks) vs MetaMask (self-custody, your keys, can connect to apps/bridges) — automaton/AutoHedge wallets are self-custody too; (4) address/private key/seed phrase (0x address is shared across ALL EVM chains → address alone doesn't decide the network; the NETWORK chosen at send time does — this is why the 8 USDC got stranded); (5) gas = postage in the rail's native coin (ETH/SOL/POL) — why USDC alone can't move with 0 gas; (6) bridge = rail-to-rail transfer counter, needs a self-custody wallet to operate; (7) why MetaMask is mandatory (exchange can't reach Base/can't bridge; AI wallet can't be the middle hop) ; (8) **from-zero full steps** (KYC account → JPY deposit → buy USDC + a little ETH → install MetaMask + write down seed phrase → withdraw on Ethereum to MetaMask → relay.link bridge to Base, recipient=automaton → revive); (9) security basics (never share seed phrase, ignore "support" DMs/free-airdrop links, verify network+address, start with $5, pick Circle's real USDC not lookalikes like "0G/1inch USDC").
