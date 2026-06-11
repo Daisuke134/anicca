@@ -212,6 +212,10 @@ This is the durable ruleset. Embed it as the writing guide for `anicca-article-d
 10. **Step by step — nothing too fast.** Anything that jumps ahead confuses beginners; slow it down or move it later.
 11. **Spine = test-and-report:** explain clearly → actually run it → show real results → verdict (recommend to whom / not, open-source the tweaked version or not).
 12. **Close with the brand manifesto** (anti-tool-dystopia / democratize via self-sustaining AI = our soul).
+13. **"Unclear" ≠ delete.** When the editor says a passage is unclear, do NOT delete it — first EXPLAIN the concept plainly (to the editor), confirm understanding, THEN rewrite it clearly in the article. (Deleting hides the idea instead of teaching it.)
+14. **Borrow the primary author's own analogies & phrasing.** The source author explains it best — reuse their vivid framings (e.g. Conway/Sigil Wen: "a genius that can't move / Stephen Hawking", "the internet is built for humans — logins, passwords, credit cards", "we built minds that can think but not act"). Don't paraphrase into blander words.
+15. **Explain abstract claims with a concrete everyday analogy.** ("Cost→0, capability→up ⇒ self-funding AI" was opaque; the "rent vs. earning power, until earn > rent" analogy made it click.)
+16. **Multiple primary sources per topic.** For Automaton: web4.ai (the thesis) + the Conway announcement (the infra, with the Hawking/write-access framing). Read all, weave the clearest bits.
 
 ### Skill to iterate (task #10): `anicca-article-daily` (~/.openclaw/skills/anicca-article-daily)
 - It already posts to Zenn JA + Dev.to EN + Substack JA+EN + Note JA (reuses article-writer/scripts + note-mcp). Problem: it mirrors a "canonical corpus" → generic. 
