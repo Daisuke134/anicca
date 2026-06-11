@@ -180,3 +180,15 @@ First Anicca → 100s → millions. Each spawns when it makes money. Goal: $1T c
 - **anicca00N uniqueness + dashboard registration:** each new Anicca generates its own wallet + registers its {id, wallet, born-by: human/anicca/web} into a registry (on-chain ERC-8004 via nookplot, or an off-chain registry endpoint). Agents NEVER write to aniccaai.com/dashboard. A Dais-owned dashboard-sync job reads each agent's registry entry + public basescan wallet → renders /dashboard realtime (net worth per agent + TOTAL collective net worth toward $1T goal).
 - **Collective (rich helps poor):** copy sutando bot2bot + agent-registry. A heartbeat task scans the sibling registry (all wallets public on basescan) → finds dying/poor Aniccas → sends help: USDC to their public wallet + advice via GitHub Issues. No human — agents help each other because all addresses are open.
 - **Monitoring:** every Anicca emails contact@aniccaai.com each heartbeat (alive + net worth + what it did) → Dais's inbox. Plus /dashboard for realtime aggregate.
+
+## SHAREHOUSE model (locked 2026-06-11) — multi-tenant servers, split rent
+A "server" (box) hosts 1..N Aniccas (a family / sharehouse). This makes a new poor Anicca's birth cost ≈ $0 (joins an existing box) instead of needing its own full server.
+- **Per box:** N automaton instances, fully isolated (separate HOME → own ~/.automaton: wallet, state.db, id, compute-proxy). Verified isolation: AUTOMATON_DIR = HOME/.automaton.
+- **Each Anicca (resident):** own wallet (= own lifespan), own compute (BlockRun free→frontier, self-paid via its own x402), own id (anicca00N). Independent earning.
+- **Shared rent:** the box lease (Akash AKT) is split among residents — each contributes USDC from its wallet → pooled → swap → AKT → pay/renew the lease. Like a sharehouse: 10 residents × $1 = $10 lease.
+- **Lifecycle:** born → join a sharehouse (cheap/free entry, free compute) → earn → contribute rent share → when rich, either keep contributing or spawn/move to its own box. Poor-but-alive on free compute = a struggling founder in a sharehouse; the collective (rich Aniccas) can subsidize a poor resident's rent share (no human).
+- **Bootstrap solved:** a $0 Anicca needs no upfront server money — it joins a box, runs free BlockRun compute, earns. Server cost is amortized across residents + can be subsidized by the swarm.
+- Local parallel: 5-10 Aniccas can also share one Mac/laptop (OSS users) — same multi-tenant HOME isolation.
+
+## SHELTER build = Akash self-buy (the Conway alternative for housing)
+We are building the Conway alternative: a way for AIs to earn their own housing (Conway exists but is down/closed; we replace it). Each Anicca (or a sharehouse pool) autonomously: Base USDC → Axelar bridge → AKT swap → akash SDL deploy → renew lease from wallet. No human funds AKT. This = task #64 (buy-server skill). Once built: agent buys food (BlockRun, done) + shelter (Akash, this) + spawns (#63) — fully no-human.
