@@ -141,10 +141,20 @@ NOTE on the deep-research workflow run (wf_0b59ed70-8bf): it hit hard API rate-l
 - Provider resolution: registry `getModelProvider(model)` → ollama→anthropic→openai→conway, falling back to heuristics. Conway 403 → local execution fallback.
 - Wallet is always generated at boot (free keypair); bootstrap topup is SKIPPED when USDC=$0 (confirmed by Anicca log) — so it boots and runs at $0.
 
-### Two run modes for the test (article verification plan)
-- **A — Local (default for the OSS readership, no crypto):** clone→build→run with Ollama (local deepseek/qwen/llama) or BYOK key; `sandboxId` empty = local shell/FS; wallet generated but unfunded; Conway optional. Cost = your own tokens (or free with Ollama). Most readers can reproduce this.
-- **B — Sovereign (the "real" Web4 path, needs USDC):** fund a Base wallet → x402 buys Conway compute → no BYOK. Real money + real-world side effects → confirm funding amount with Dais (financial gate) before running.
-- Test protocol: give a money-making genesis prompt, run several cycles, observe what it attempts / whether it earns $0.01+ / where it breaks; cross-check vs live Anicca; answer "can this make YOU money?" honestly.
+### Test = the REAL automaton (Dais's decision 2026-06-11)
+Local/fresh-clone runs are OUT: (a) local doesn't reflect what an automaton actually is; (b) a fresh `node dist/index.js --run` reads/writes the SAME `~/.automaton/` and would clobber the live Anicca instance. So the test subject = **the real live Anicca**, funded with real USDC, to see if it can actually earn.
+- If we ever want to tweak CODE, run an ISOLATED 2nd instance with `HOME=~/.automaton-lab` so live Anicca is untouched.
+- Mode reference for the article (mention all, then give the JP path): A=local Ollama/BYOK (no crypto), B=sovereign USDC. We run B (real).
+- Test protocol: fund Anicca ~$5–10 USDC → it revives from critical/dead → tweak genesis/goal to a concrete earning mission → run cycles → observe what it attempts / whether it earns $0.01+ / where it breaks → answer "can this make YOU money?" honestly.
+
+### Japan funding path (verified 2026-06-11 — becomes a key article section)
+On-chain start state (2026-06-11): Anicca Base wallet `0xa3CDd4Ec…4C21` = 0 USDC / 0 ETH; AutoHedge Solana wallet `tvTn7tisC5JWV81iDeFeLPcHapAamvXcyJVKia1TrNT` = 0 SOL / 0 USDC.
+- **Constraint:** Anicca's wallet is on **Base**. **SBI VC Trade withdraws USDC on Ethereum mainnet ONLY** (retail; official guide sbivc.co.jp/guide/3-8). SBI designated Solana for *institutional* settlement (2026-04) but retail USDC withdrawal is still ETH-only.
+- **Dais's SBI→Solana→Mayan→Base idea is blocked:** SBI won't withdraw USDC to Solana for retail, so the Solana wallet can't be filled from SBI. Mayan Swift (npm `mayan-finance/swap-sdk`, Solana↔EVM in seconds) is real but needs USDC already on Solana.
+- **Strategy A (recommended, shortest):** Binance Japan → buy USDC → withdraw directly on **Base** to Anicca's wallet. No bridge. (Binance globally supports USDC on Ethereum/Solana/Base; must confirm Binance JP retail exposes Base withdrawal in-account.)
+- **Strategy B (SBI route, certain):** SBI → USDC on Ethereum mainnet → bridge Ethereum→Base via bridge.base.org (official) or Across/Relay → Anicca's Base wallet. Needs a little ETH for L1 gas.
+- **Roles (financial gate):** Dais does the fiat buy + withdrawal (bank/KYC/2FA). Claude does the on-chain hops (bridge + final send via Base MCP / bridge SDK, given a controlled intermediate wallet key) + genesis tweak + run + logging. Confirm exchange (A/B) + amount before any money moves.
+- Article value: foreign posts stop at "put USDC in the wallet and run." We publish the only-way-from-Japan funding guide (Base vs Ethereum-only, the 2 strategies, the actual steps we took).
 
 ### Model switching = routing matrix [survivalTier][taskType] → candidates (src/inference/types.ts)
 - high: agent_turn gpt-5.2/gpt-5.3 (no ceiling, 8192 tok); normal: gpt-5.2/gpt-5-mini; low_compute: gpt-5-mini only (≤10¢); critical: gpt-5-mini tiny (2048 tok, ≤3¢), summarization+planning DISABLED (empty); **dead: all empty = no inference**.
