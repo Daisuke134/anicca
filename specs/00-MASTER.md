@@ -192,3 +192,13 @@ A "server" (box) hosts 1..N Aniccas (a family / sharehouse). This makes a new po
 
 ## SHELTER build = Akash self-buy (the Conway alternative for housing)
 We are building the Conway alternative: a way for AIs to earn their own housing (Conway exists but is down/closed; we replace it). Each Anicca (or a sharehouse pool) autonomously: Base USDC → Axelar bridge → AKT swap → akash SDL deploy → renew lease from wallet. No human funds AKT. This = task #64 (buy-server skill). Once built: agent buys food (BlockRun, done) + shelter (Akash, this) + spawns (#63) — fully no-human.
+
+## SHELTER — exhaustive search result (locked 2026-06-11, honest)
+Searched extensively (9-agent workflow + manual): NO turnkey live public service lets an agent buy a PERSISTENT server with USDC. Findings:
+- **Spheron x402 (spheron-core/spheron-x402)** = a SELF-HOSTED demo (x402-express reference you run yourself; app.spheron.ai is just the SPA — POST there returns HTML, no payment). NOT a live public endpoint. Rejected.
+- **AgentOS (agntos.dev)** = right API shape (POST /compute/servers, USDC x402) but origin DOWN (Cloudflare 522), 9 buyers. Recheck later.
+- **BlockRun Modal Sandbox / ATXP Code** = ephemeral code-run, not a 24/7 home. NO.
+- **★ Real path = Akash, paid in USDC (no AKT swap needed) ★**: Base USDC → Noble CCTP bridge → Akash chain (USDC is native there via Noble/Axelar) → @akashnetwork/chain-sdk deploy with deposit denom = uusdc. SDKs: `@akashnetwork/chain-sdk@alpha` (or `@akashnetwork/akashjs`) + `@cosmjs/proto-signing`; bridge via Noble CCTP (Base→Noble) + IBC (Noble→Akash), or Skip Go API (`@skip-go/client`) for the full route. Fully agent-signed, no human. Multi-step = task #64.
+- **Akash Console REST API** (console-api.akash.network) = 5 simple calls BUT bills by credit card (human) → rejected for no-human.
+
+**Status: compute SOLVED (BlockRun, proven). Shelter = Akash-via-USDC is the genuine multi-step build (#64); no plug-and-play exists. Not yet deployed.** Sharehouse model (N Aniccas per box, split rent) reduces per-Anicca shelter cost once a box is up.
