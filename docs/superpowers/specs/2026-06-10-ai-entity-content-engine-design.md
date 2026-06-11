@@ -181,6 +181,14 @@ Titles (specific, not "automaton" jargon): 「AIに$15渡して"自分で稼げ"
 - First end-to-end run 2026-06-11 on GPT, SOL task, ~2 USDC cap (wallet holds 5.86 USDC = max loss). Capturing thesis→exec + whether it traded.
 - Anicca self-funding AutoHedge (no-human-in-loop) = not native (no external-USDC-send tool + cross-chain Base→Solana); needs a custom skill (future).
 - **LLM key reality 2026-06-11 (root cause of the "deepseek diversion"):** OpenAI key = insufficient_quota (dead), Anthropic key = credit too low (dead), **DeepSeek = the only funded key**. So GPT/Claude need Dais to add billing; everything runs on DeepSeek until then. AutoHedge agents (workers.py) switched gpt-4.1/gpt-4o-mini → deepseek/deepseek-chat. First GPT run failed on OpenAI 429 (no trade, no loss); re-running on DeepSeek. The automaton's proper path is Conway-routed inference paid from its USDC→credits (not direct LLM keys).
+- **GPT route found:** OpenClaw exposes a BlockRun OpenAI-compatible gateway at http://127.0.0.1:8402/v1 (models incl. openai/gpt-5.4). BUT BlockRun is pay-per-use USDC; its LLM-payment wallet 0x38160AdC0Db355Ef7507652A2e5f218245Fe9f06 (Base, ClawRouter) is EMPTY → premium/GPT requests fall back to a free model with a "wallet empty" warning injected (pollutes outputs). Fund it to unlock real GPT-5.4 for AutoHedge + automaton. ChatGPT flat subscription is NOT usable by LiteLLM (not an API).
+- **TWO wallets (article clarity):** AutoHedge TRADING wallet = Solana tvTn7… = 5.86 USDC (capital, intact). BlockRun LLM-PAYMENT wallet = Base 0x38160AdC… = empty. "Empty" = the latter, not the trading capital.
+- **Decision: AutoHedge runs on DeepSeek** (only funded direct API, ~1/10–1/20 GPT cost). GPT optional later via funding BlockRun.
+
+### AutoHedge daily report — WIRED 2026-06-11
+- Permanent home ~/autohedge (off ephemeral cache). Wrapper ~/autohedge/run-autohedge.sh: Solana USDC balance → run one cycle (DeepSeek) → re-check balance → P&L=delta → email keiodaisuke@gmail.com via gog. launchd ai.anicca.autohedge daily 09:00 JST. AutoHedge has NO built-in heartbeat (one-shot per invocation); launchd provides schedule. First DeepSeek run = HOLD (SOL short-term bearish), no trade, $0 loss.
+
+### Article plan (Dais 2026-06-11): #1 Automaton run FULLY end-to-end on Conway CLOUD (normalize off deepseek-local), experiment, gather all content, THEN write complete article → refine → publish. #2 AutoHedge (already DL'd + setup). Write finished pieces, not mid-progress fragments.
 
 ### Reusable "Crypto from zero" onboarding appendix (shared across the whole series + hackathon handout)
 Audience = AI-savvy but crypto-zero (incl. Dais). Becomes a standalone reusable appendix used by every piece (automaton/Felix/AutoHedge) and a 1-page diagram for Tokyo Innovation Center hackathons ("everyone boot an automaton together").
