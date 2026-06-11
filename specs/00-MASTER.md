@@ -47,7 +47,7 @@ Where self-improvement/roadmap live: 18 (self-improve+swarm), 03 (self-aware eva
 
 **P3 Cloud web-first (the money)**
 - [ ] aniccaai.com/install page: pitch (money-first) + Subscribe(Stripe $49.99) + local install cmd + /dashboard link
-- [ ] aniccaai.com/app: per-user login dashboard (Supabase auth) — earnings/spend/activity/today-plan/controls/reports. Polsia-style, but earns.
+- [ ] aniccaai.com/me: per-user login dashboard (Supabase auth) — earnings/spend/activity/today-plan/controls/reports. Polsia-style, but earns.
 - [ ] apps/api: Stripe webhook → DO API droplet spawn → automaton install + per-user config inject → connect → report aggregation to Supabase
 - [ ] Multi-channel report delivery: web + mail (then telegram/LINE/iMessage)
 - [ ] E2E self-test as a NEW subscriber: subscribe→droplet→dashboard→earns→verify user can net positive
@@ -64,7 +64,7 @@ Where self-improvement/roadmap live: 18 (self-improve+swarm), 03 (self-aware eva
 
 ## Life-data connection UX (locked 2026-06-11)
 Hybrid A (chosen by user-simplicity):
-- **aniccaai.com/app = each user's personal place (web).** Connect: name / Google OAuth (Calendar+Gmail) / phone number / home+work address. Each is a single toggle (connect/disconnect easily via UI). This is the DEFAULT, web-first.
+- **aniccaai.com/me = each user's personal place (web).** Connect: name / Google OAuth (Calendar+Gmail) / phone number / home+work address. Each is a single toggle (connect/disconnect easily via UI). This is the DEFAULT, web-first.
 - **Telegram = optional upgrade.** 24/7 live phone GPS location — boosts call accuracy + enables actions (e.g. flight booking). NOT a prerequisite.
 
 Call mechanism (port from ~/.openclaw life-manager, no real-time location required):
@@ -74,5 +74,10 @@ Call mechanism (port from ~/.openclaw life-manager, no real-time location requir
 4. Infer current location from the PREVIOUS event (no real-time GPS needed). Telegram live-location only sharpens "is he moving?" re-call logic.
 
 Dashboard pages (to build):
-- **aniccaai.com/app** (P3) = personal dashboard: YOUR Anicca's earnings/spend/activity/today-plan + data-connection toggles. The headline users care about = "how much my AI made", not their own data.
+- **aniccaai.com/me** (P3) = personal dashboard: YOUR Anicca's earnings/spend/activity/today-plan + data-connection toggles. The headline users care about = "how much my AI made", not their own data.
 - **aniccaai.com/dashboard** (P4) = public GDP map of all Aniccas (felixcraft-style).
+
+## Personal dashboard route + UI (locked 2026-06-11)
+- Route = **aniccaai.com/me** (NOT /app — /app is reserved for our mobile app). (/personal acceptable alt.)
+- UI priority top→bottom: (1) headline "Your Anicca earned $X this month" + net + "auto-cancels when self-funding", (2) live activity log, (3) today's plan/todo, (4) Connections (Google Calendar+Gmail / phone / address / live-location-via-Telegram) each a toggle (connect/disconnect easily), (5) Channel picker.
+- **Communication = configurable channel.** Default = mail (daily report + Anicca's clarifying questions, e.g. "is this your workplace?"). User can switch/add: Telegram / LINE / WhatsApp / Messenger / iMessage. Anicca sends reports + asks questions there; user replies there. Connecting Google whole (one OAuth = Calendar+Gmail+profile) is the easiest path.
