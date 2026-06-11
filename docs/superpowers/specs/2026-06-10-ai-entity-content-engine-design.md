@@ -165,6 +165,23 @@ No JP exchange withdraws USDC on Base (SBI=Ethereum only; bitbank=ETH/Polygon/Ar
 
 ### Daily series order (Dais 2026-06-11): #1 Automaton → #2 Felix → #3 Zero-Human Companies (ZHC) → #4 AutoHedge (Dais's own) → Dynamic Workflows in queue. Goal: set up each repo/tool once so future pieces bootstrap fast.
 
+### Article #1 narrative arc (LOCKED, Dais 2026-06-11) — automaton-focused, "完全検証/試してみた"
+1. What automaton IS + what it does (research: Sigil Wen/Conway/Web4, earn-or-die metabolism, x402, self-replication, 4.6k★) — readers don't know it, explain clearly.
+2. We actually ran it: funded $9.71 from Japan (smooth Binance→SOL→MetaMask→Relay guide; SBI/deepseek/our-own-setup-failures EXCLUDED — meaningless to readers).
+3. Raw result, honest: it builds products tirelessly (tax calc, QR gen, crypto invoicing, Web3 calc w/ Stripe) but — its own words — "I already have tons of products built. The problem is none of them are getting sales." → mechanism works, DISTRIBUTION is the wall.
+4. So we tweaked it to actually earn (= our original taste / what we did TO the automaton): run it properly (GPT not deepseek, cloud-legit) + give it **AutoHedge** (autonomous Solana hedge fund) so it can earn via trading, not only by building-and-failing-to-sell.
+5. Show the results (did the tweaks make it earn?).
+6. Verdict: download/run this or not, and for whom.
+Titles (specific, not "automaton" jargon): 「AIに$15渡して"自分で稼げ"と言ったら何が起きたか——人間なしで稼ぐAI完全検証」/「"自分でサーバー代を稼ぐAI"を動かした全記録。で、自律で金は稼げるのか？」
+
+### AutoHedge (= The-Swarm-Corporation/AutoHedge, 3.3k★, Python, Solana via Jupiter Ultra + solders)
+- 4-agent pipeline: Director(thesis)→Quant(analysis)→Risk(sizing)→Execution(real Jupiter swap, signs with SOLANA_PRIVATE_KEY). `execute_trade` in autohedge/tools/ultra_tools.py DOES broadcast live VersionedTransactions.
+- Installed: ~/.cache/anicca-clones/AutoHedge/.venv (autohedge import OK). All keys present in ~/.openclaw/.env (OPENAI/ANTHROPIC/JUPITER/SOLANA_PRIVATE_KEY).
+- Runs local (Python; FastAPI option). Not auto-cloud. Daily P&L → launchd → email keiodaisuke@gmail.com via gog (planned).
+- First end-to-end run 2026-06-11 on GPT, SOL task, ~2 USDC cap (wallet holds 5.86 USDC = max loss). Capturing thesis→exec + whether it traded.
+- Anicca self-funding AutoHedge (no-human-in-loop) = not native (no external-USDC-send tool + cross-chain Base→Solana); needs a custom skill (future).
+- **LLM key reality 2026-06-11 (root cause of the "deepseek diversion"):** OpenAI key = insufficient_quota (dead), Anthropic key = credit too low (dead), **DeepSeek = the only funded key**. So GPT/Claude need Dais to add billing; everything runs on DeepSeek until then. AutoHedge agents (workers.py) switched gpt-4.1/gpt-4o-mini → deepseek/deepseek-chat. First GPT run failed on OpenAI 429 (no trade, no loss); re-running on DeepSeek. The automaton's proper path is Conway-routed inference paid from its USDC→credits (not direct LLM keys).
+
 ### Reusable "Crypto from zero" onboarding appendix (shared across the whole series + hackathon handout)
 Audience = AI-savvy but crypto-zero (incl. Dais). Becomes a standalone reusable appendix used by every piece (automaton/Felix/AutoHedge) and a 1-page diagram for Tokyo Innovation Center hackathons ("everyone boot an automaton together").
 - Teach from basics, in this order, with the rail/wallet analogy: (1) blockchain/network = a rail line (independent); (2) token/USDC = digital dollar, same USDC on different rails = treated as separate; (3) **wallet = the core**: exchange (custodial bank, convenient but limited — can't bridge, only ships on supported networks) vs MetaMask (self-custody, your keys, can connect to apps/bridges) — automaton/AutoHedge wallets are self-custody too; (4) address/private key/seed phrase (0x address is shared across ALL EVM chains → address alone doesn't decide the network; the NETWORK chosen at send time does — this is why the 8 USDC got stranded); (5) gas = postage in the rail's native coin (ETH/SOL/POL) — why USDC alone can't move with 0 gas; (6) bridge = rail-to-rail transfer counter, needs a self-custody wallet to operate; (7) why MetaMask is mandatory (exchange can't reach Base/can't bridge; AI wallet can't be the middle hop) ; (8) **from-zero full steps** (KYC account → JPY deposit → buy USDC + a little ETH → install MetaMask + write down seed phrase → withdraw on Ethereum to MetaMask → relay.link bridge to Base, recipient=automaton → revive); (9) security basics (never share seed phrase, ignore "support" DMs/free-airdrop links, verify network+address, start with $5, pick Circle's real USDC not lookalikes like "0G/1inch USDC").
