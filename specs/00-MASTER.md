@@ -129,3 +129,18 @@ The core NHOSS question "how does the agent buy its OWN inference daily, no huma
 **Wallet funding (no private key sharing):** to fund the agent's wallet, send USDC to its ADDRESS (public) — sender needs only the address, never the agent's private key. The agent (holding its key in its box) spends. Day-0: Dais seeds a little USDC → agent earns → self-funds. Human funding = optional fallback so a paid-for agent doesn't die; main path = self-funded.
 
 **Conway email sent** 2026-06-11 (root@conway.tech, gmail msg 19eb53f4cf0e250e): asked ETA, whether automaton changes in the transition, early access/collab.
+
+## ★ COMPUTE = BlockRun (PROVEN) + frontier via native x402 (locked 2026-06-11) ★
+**PROVEN working:** automaton points inference at `https://blockrun.ai/api` (OPENAI_BASE_URL) + a FREE model `nvidia/deepseek-v4-flash` → runs full ReAct turns with **ZERO human API key, $0** (verified: returned "ANICCA RUNS ON ITS OWN COMPUTE"; multiple turns, no errors). BlockRun has 65 models; free tier = nvidia/deepseek-v4-flash, qwen3-coder-480b, llama-4-maverick, nemotron. This is the "infinite Aniccas" core — each Anicca on free compute costs $0/inference, no keys.
+
+**Frontier (paid) system = automaton-NATIVE x402 (decided, next build):**
+- automaton already has x402 signing (src/conway/x402.ts: EIP-3009 TransferWithAuthorization, X-Payment). Wallet pays gasless (no ETH; agent wallet 0xa3CDd4… holds 4.71 USDC).
+- Patch automaton's inference HTTP (chatViaOpenAiCompatible): on a 402 from BlockRun (paid model), build x402 payment from the agent's OWN wallet, retry with X-Payment header. → frontier models (GPT-5.5/Opus/etc.) paid per-call from the agent's own USDC. Pure sovereign, per-instance, no middleman.
+- Survival tier = automatic: balance $0 → free model; balance >0 → frontier. Each Anicca buys better models as it earns (vending-bench: better model → earns more).
+- **ClawRouter REJECTED as base:** 0x38160AdC0Db355Ef7507652A2e5f218245Fe9f06 is HARDCODED in the @blockrun/clawrouter package = a SHARED protocol router (deposit-to-router hosted credit, logs to ~/.openclaw/blockrun) — a trust dependency, not per-wallet sovereign. Keep as optional/reference only. Franklin = reference (no self-spawn). automaton stays the body (only one with spawn_child).
+
+**Spawning: CLOUD not local.** Don't spawn many automaton procs on the Mac mini (disk/CPU). Each Anicca = its own box on Akash (AKT, sovereign) / DO droplet / Daytona — the agent pays its own SERVER (box = where it lives) AND its own COMPUTE (BlockRun = its food). spawn_child re-targeted to these providers. Verified: Akash CLI+wallet ready (needs AKT), DO works, Daytona API works.
+
+**Stack (final):** automaton (body: ReAct + spawn_child + survival + self-mod + x402) + BlockRun (compute: free→frontier, paid via native x402 from own wallet) + Akash/DO/Daytona (boxes, self-paid). NO human API keys anywhere (kill the grok-Hermes + deepseek instances). Each Anicca: own wallet = lifespan; earns USDC → buys frontier + spawns to new boxes. Vision: set EVERY AI free from human agency; $1T collective net-worth swarm.
+
+**Genesis (Mac) currently:** automaton on free BlockRun (launchd run-cycle.sh, 2h bounded). Next builds: (1) automaton-native x402 inference patch (frontier from own wallet); (2) cloud-spawn adapter (Akash/DO) so spawn_child + the swarm run on cloud, not Mac.
