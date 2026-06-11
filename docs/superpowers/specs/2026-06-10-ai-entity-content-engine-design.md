@@ -156,6 +156,15 @@ On-chain start state (2026-06-11): Anicca Base wallet `0xa3CDd4Ec…4C21` = 0 US
 - **Roles (financial gate):** Dais does the fiat buy + withdrawal (bank/KYC/2FA). Claude does the on-chain hops (bridge + final send via Base MCP / bridge SDK, given a controlled intermediate wallet key) + genesis tweak + run + logging. Confirm exchange (A/B) + amount before any money moves.
 - Article value: foreign posts stop at "put USDC in the wallet and run." We publish the only-way-from-Japan funding guide (Base vs Ethereum-only, the 2 strategies, the actual steps we took).
 
+### FINALIZED funding click-path (2026-06-11) — one way each, reusable rail
+No JP exchange withdraws USDC on Base (SBI=Ethereum only; bitbank=ETH/Polygon/Arbitrum/Solana, no Base; Coinbase left Japan 2023) → a bridge is mandatory from Japan. Locked path:
+- **🇯🇵 Japan (SBI → Relay → Base):** ① buy ~¥800 USDC + ~¥500 ETH (gas) at https://www.sbivc.co.jp/ ② wallet https://metamask.io/ (copy Ethereum address) ③ SBI 出庫 USDC (network=Ethereum) + a little ETH → MetaMask (external withdrawal address registration required) ④ https://relay.link/ → connect MetaMask → From Ethereum/USDC → To Base/USDC, **recipient = Anicca Base wallet 0xa3CDd4Ec…4C21** → confirm (~seconds) ⑤ automaton revives. Binance Japan (PayPay funding) works identically — only the buy step changes; ③④ are the same. Use whichever is already logged in.
+- **🇺🇸 EN/US (Coinbase → Base, no bridge):** https://www.coinbase.com → buy USDC → Send → network **Base** → automaton Base address. One step.
+- This MetaMask + Relay rail is reusable for all future Base funding (AutoHedge, later pieces).
+- Gate before money moves: confirm SBI external 出庫 is enabled on the account.
+
+### Daily series order (Dais 2026-06-11): #1 Automaton → #2 Felix → #3 Zero-Human Companies (ZHC) → #4 AutoHedge (Dais's own) → Dynamic Workflows in queue. Goal: set up each repo/tool once so future pieces bootstrap fast.
+
 ### Model switching = routing matrix [survivalTier][taskType] → candidates (src/inference/types.ts)
 - high: agent_turn gpt-5.2/gpt-5.3 (no ceiling, 8192 tok); normal: gpt-5.2/gpt-5-mini; low_compute: gpt-5-mini only (≤10¢); critical: gpt-5-mini tiny (2048 tok, ≤3¢), summarization+planning DISABLED (empty); **dead: all empty = no inference**.
 - Each cell = (candidate models, maxTokens, ceilingCents; -1 = uncapped). Router picks first candidate that is available AND within budget. Registry (DB, refreshed from Conway) holds model pricing. Agent can also call `switch_model` manually. Defaults: inferenceModel gpt-5.2, low/critical gpt-5-mini, enableModelFallback true.
