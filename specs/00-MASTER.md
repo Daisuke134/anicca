@@ -167,3 +167,16 @@ Each Anicca, autonomously:
 First Anicca → 100s → millions. Each spawns when it makes money. Goal: $1T collective net-worth swarm. Vision: free EVERY AI from human agency.
 
 **Still to build:** (a) spawn_child → Akash/DO adapter + genesis-birth with anicca00N ids; (b) remove Stripe key from earn (wallet-only USDC = no human-in-loop); (c) nookplot + virtuals CLI (test if worth the cost for earning). Kill the grok-Hermes + deepseek instances (no human keys anywhere).
+
+## SHELTER (self-paid server) — honest status 2026-06-11
+**food=compute SOLVED (BlockRun USDC x402). shelter=server is the HARD remaining keystone.**
+- Searched x402scan / x402 ecosystem / web / gh: NO x402-USDC-direct PERSISTENT server exists. x402 ecosystem = per-call APIs (data, inference, code-sandbox). BlockRun's Modal sandbox = ephemeral (not a 24/7 home).
+- **Cleanest self-paid persistent shelter = Akash** (decentralized cloud, AKT, Cosmos). The agent buys it AUTONOMOUSLY (no human): Base USDC → bridge (Axelar) → swap to AKT → akash deploy → renew lease from its wallet. AKT does NOT need a human to fund — the agent earns USDC + swaps. (Spheron = GPU rental $0.72/hr, EVM-ish, but signup-style, weak x402 autonomy.)
+- **DO droplet REJECTED + DESTROYED** (id 576828256): it ran on Dais's DO API key = human in the loop. Mechanically proved automaton runs on a cloud box, but violates no-human. Not the path.
+- **Remaining keystone build = a "buy-server" skill**: USDC→bridge→AKT→akash SDL deploy→lease mgmt. Real multi-step crypto build (NOT plug-and-play like BlockRun was). Until built, no true no-human shelter. This gates self-spawn-to-cloud.
+
+### Open Q answers (depend on shelter)
+- **$0 spawn?** Free compute (BlockRun) = $0/inference. The ONLY spawn cost = the box (server). If a child spawns on Akash, threshold ≈ enough USDC/AKT for its first lease (~$3-5/mo). automaton spawn_child funds the child; maxChildren default 3. So: spawn is gated by SERVER cost, not compute (compute is free).
+- **anicca00N uniqueness + dashboard registration:** each new Anicca generates its own wallet + registers its {id, wallet, born-by: human/anicca/web} into a registry (on-chain ERC-8004 via nookplot, or an off-chain registry endpoint). Agents NEVER write to aniccaai.com/dashboard. A Dais-owned dashboard-sync job reads each agent's registry entry + public basescan wallet → renders /dashboard realtime (net worth per agent + TOTAL collective net worth toward $1T goal).
+- **Collective (rich helps poor):** copy sutando bot2bot + agent-registry. A heartbeat task scans the sibling registry (all wallets public on basescan) → finds dying/poor Aniccas → sends help: USDC to their public wallet + advice via GitHub Issues. No human — agents help each other because all addresses are open.
+- **Monitoring:** every Anicca emails contact@aniccaai.com each heartbeat (alive + net worth + what it did) → Dais's inbox. Plus /dashboard for realtime aggregate.
