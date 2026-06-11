@@ -81,3 +81,32 @@ Dashboard pages (to build):
 - Route = **aniccaai.com/me** (NOT /app — /app is reserved for our mobile app). (/personal acceptable alt.)
 - UI priority top→bottom: (1) headline "Your Anicca earned $X this month" + net + "auto-cancels when self-funding", (2) live activity log, (3) today's plan/todo, (4) Connections (Google Calendar+Gmail / phone / address / live-location-via-Telegram) each a toggle (connect/disconnect easily), (5) Channel picker.
 - **Communication = configurable channel.** Default = mail (daily report + Anicca's clarifying questions, e.g. "is this your workplace?"). User can switch/add: Telegram / LINE / WhatsApp / Messenger / iMessage. Anicca sends reports + asks questions there; user replies there. Connecting Google whole (one OAuth = Calendar+Gmail+profile) is the easiest path.
+
+## Compute providers + money model (locked 2026-06-11, verified)
+### Self-funded compute — NO human API key (the core of NHOSS)
+agent's fuel = its OWN USDC wallet → buys its OWN inference/compute credits on a crypto-payable provider. The account/key belongs to the AGENT, funded by the AGENT's crypto. master spec FUEL list includes `WALLET_ADDR (USDC)` = official self-funded path.
+- **Inference**: OpenRouter (USDC/Coinbase credits) [primary now] · Conway (x402 USDC) [DOWN: insufficient_quota + workers_fallback_blocked] · Akash-hosted model (AKT).
+- **Box (where it runs)**: Akash (pay in AKT = sovereign, no human) · DO droplet (credit card = we/user pay) · Daytona.
+- **Verified 2026-06-11**: Akash CLI works (akash 2.0.1 + provider-services v0.11.1); ops wallet created `akash1ms7gr5sxkv33ra353hg5lu8dm7akljdaamj523` (env AKASH_WALLET_ADDR); needs ~5 AKT (~$15) to deploy. DO droplet works (automaton built on 147.182.238.88). Conway down.
+- **Provider-agnostic (= better than automaton, which is Conway-locked)**: "this rail is down → switch to another (OpenRouter/Akash/DO) → keep living + replicating." Build a spawn adapter so spawn_child targets Akash/DO/Daytona, not only Conway sandboxes.
+
+### Money = the agent's lifespan (locked)
+agent earns → ITS OWN wallet (= credits = LIFESPAN). It watches the balance ("$X = N days of life") → urgency → earns more = the agency engine. It spends on: ① its own compute (survive, top priority) ② a PORTION → monthly UBI/charity ③ creator/owner share (later phase). ★ NOT all to the user ★ — that kills survival drive = kills NHOSS.
+- WE (Dais) earn = the $49.99/mo subscription (Stripe → Dais) = our MRR. We do NOT take agents' earnings.
+- Dais MAY fund initial compute (Akash AKT / DO) from subscription revenue ("be the Conway/Sigil guy") — but the agent can buy compute with its own crypto, so this is a bootstrap convenience, not a dependency.
+
+### Token / IPO (Clanker · Virtuals)
+Each Anicca launches its own token (Clanker `/deploy` or Virtuals) = a micro-IPO / stake in that Anicca. As it earns more (visible on dashboard/basescan), token demand → price up. Investors back winners; struggling Aniccas get funded by supporters buying their token. Example: $JUNO (an AI entity's token; ticker=$JUNO, CA=token contract address, NOT the wallet). Show each Anicca's wallet address (USDC donations) + token CA on /me and /dashboard.
+
+### Transparency (BaseScan)
+Every wallet/token on Base is public at basescan.org/address/<addr>. Each Anicca's treasury (USDC/ETH/tokens) is publicly verifiable. Embed "Crypto Treasury → View on BaseScan" on /me (your Anicca) and /dashboard (all). 
+
+### Crypto onboarding (OSS README, 2 paths)
+- US: Coinbase → buy USDC (card) → send to the agent's wallet address. Easy.
+- Japan: Binance account → MetaMask → relay.link swap → send USDC. (Verified by Dais.) Harder. Document both.
+
+### Life-manager belongs to Anicca (not private OpenClaw)
+Port ~/.openclaw life-manager skills (gcal/calls/travel/report) into the agent as `~/.automaton/skills/anicca-life/` (SKILL.md + scripts COPY ≈80%, rewire openclaw-cron → automaton heartbeat.yml task; secrets in the box's env, never in repo). It runs as an optional skill (only if the user connects Google/phone). The agent IS the life-manager, not a separate private stack.
+
+### Engine: raw automaton (verified)
+Our fork = ONLY 2 files vs raw automaton (src/conway/inference.ts + src/inference/types.ts, 16 lines, deepseek-BYOK). replication/spawn/self-mod/survival/77 tools/5-tier memory = 100% intact. "local switch" = config (sandboxId="") not code. To use raw = git checkout those 2 files. We have everything automaton has; the deepseek patch is the only deviation (revert when using crypto-paid inference).
