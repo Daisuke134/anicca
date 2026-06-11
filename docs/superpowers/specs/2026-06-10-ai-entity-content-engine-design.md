@@ -216,6 +216,9 @@ This is the durable ruleset. Embed it as the writing guide for `anicca-article-d
 14. **Borrow the primary author's own analogies & phrasing.** The source author explains it best — reuse their vivid framings (e.g. Conway/Sigil Wen: "a genius that can't move / Stephen Hawking", "the internet is built for humans — logins, passwords, credit cards", "we built minds that can think but not act"). Don't paraphrase into blander words.
 15. **Explain abstract claims with a concrete everyday analogy.** ("Cost→0, capability→up ⇒ self-funding AI" was opaque; the "rent vs. earning power, until earn > rent" analogy made it click.)
 16. **Multiple primary sources per topic.** For Automaton: web4.ai (the thesis) + the Conway announcement (the infra, with the Hawking/write-access framing). Read all, weave the clearest bits.
+17. **Quantitative, not vague.** We have data — show the numbers. "年々ガクッと安くなり" (vague) is bad; "2023 GPT-4 = $60/M tokens, now a fraction of that" (concrete) is good.
+18. **Intelligence ≠ earning. Never conflate them.** Don't say "AI's earning power is rising." What rises is *intelligence*; the smartest isn't the richest (Einstein wasn't). The whole thesis hinges on this gap: AI keeps getting smarter yet still can't feed itself — that's the unsolved problem the article tests. Claiming earning is rising spoils the verdict.
+19. **Metaphor must match the theme.** Compute cost = 食費 (food/feeding itself), consistent with the "living organism must eat to live" framing — not 家賃 (rent).
 
 ### Skill to iterate (task #10): `anicca-article-daily` (~/.openclaw/skills/anicca-article-daily)
 - It already posts to Zenn JA + Dev.to EN + Substack JA+EN + Note JA (reuses article-writer/scripts + note-mcp). Problem: it mirrors a "canonical corpus" → generic. 
