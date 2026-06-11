@@ -61,3 +61,18 @@ Where self-improvement/roadmap live: 18 (self-improve+swarm), 03 (self-aware eva
 - [ ] wallet funding (Dais) → x402 self-pay → sub auto-cancel-when-self-funding
 - [ ] virtuals/clanker token; factoryfloor.dev/trustmrr submit
 - [ ] goal 7: daily 1 article + 1 TikTok (1 image of key page + long caption; slideshow if needed; never video) via dynamic workflows
+
+## Life-data connection UX (locked 2026-06-11)
+Hybrid A (chosen by user-simplicity):
+- **aniccaai.com/app = each user's personal place (web).** Connect: name / Google OAuth (Calendar+Gmail) / phone number / home+work address. Each is a single toggle (connect/disconnect easily via UI). This is the DEFAULT, web-first.
+- **Telegram = optional upgrade.** 24/7 live phone GPS location — boosts call accuracy + enables actions (e.g. flight booking). NOT a prerequisite.
+
+Call mechanism (port from ~/.openclaw life-manager, no real-time location required):
+1. Connect Google Calendar (or build a virtual calendar by asking "where is your job/gym?" + geocode).
+2. Per event: compute transit time + 15-min leeway → write leave-by time onto the calendar.
+3. At leave-by time → place a call (elevenlabs+twilio): "leave NOW" (ADHD-direct, keep-promise, arrive early = trust).
+4. Infer current location from the PREVIOUS event (no real-time GPS needed). Telegram live-location only sharpens "is he moving?" re-call logic.
+
+Dashboard pages (to build):
+- **aniccaai.com/app** (P3) = personal dashboard: YOUR Anicca's earnings/spend/activity/today-plan + data-connection toggles. The headline users care about = "how much my AI made", not their own data.
+- **aniccaai.com/dashboard** (P4) = public GDP map of all Aniccas (felixcraft-style).
