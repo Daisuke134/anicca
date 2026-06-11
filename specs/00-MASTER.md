@@ -110,3 +110,22 @@ Port ~/.openclaw life-manager skills (gcal/calls/travel/report) into the agent a
 
 ### Engine: raw automaton (verified)
 Our fork = ONLY 2 files vs raw automaton (src/conway/inference.ts + src/inference/types.ts, 16 lines, deepseek-BYOK). replication/spawn/self-mod/survival/77 tools/5-tier memory = 100% intact. "local switch" = config (sandboxId="") not code. To use raw = git checkout those 2 files. We have everything automaton has; the deepseek patch is the only deviation (revert when using crypto-paid inference).
+
+## ★ COMPUTE SELF-FUNDING SOLVED — BlockRun.ai (locked 2026-06-11) ★
+The core NHOSS question "how does the agent buy its OWN inference daily, no human API key" is SOLVED.
+
+**Primary rail = BlockRun.ai** (https://blockrun.ai, docs: /docs/getting-started/agent-developers + /wallet-setup + /api-reference/chat-completions):
+- OpenAI-compatible single endpoint, 60+ models (GPT-5.5, DeepSeek, Claude, Llama, xAI) + image/video/music/ElevenLabs voice/Exa search.
+- "Pay per request with USDC via x402 — no keys, no subscriptions, no accounts. Wallet in, prompt out." Provider cost +5%. Base & Solana. Settled via ClawRouter.
+- LIVE: 1.39M txns / 393 buyers (x402scan). Explicitly supports OpenClaw, Claude Code, agents, ElizaOS. Free tier to test.
+- → The agent points its inference at BlockRun + pays each call in USDC from its OWN wallet. NO human API key. It switches model by balance (rich→GPT-5.5, poor→cheap) = native survival tiers. Voice/search/image for the life-manager also pay-per-call USDC on the same rail (no keys anywhere).
+
+**Server (box) vs Compute (inference) are SEPARATE:**
+- Box (where the process lives): DO droplet (works, card) / Akash (works, AKT, sovereign) / Daytona (API works). Cheap/fixed.
+- Compute (the daily fuel = thinking): BlockRun (USDC per call). THIS is the lifespan engine.
+
+**Fallback rails (compute):** Conway (x402, DOWN — major update, emailed root@conway.tech) · OpenRouter (crypto topup deprecated, x402 transitioning) · Akash GPU + own open model (AKT, ultimate sovereign). x402 ecosystem is large & growing (AWS/Circle/Cloudflare/Coinbase/Solana; discover services via x402scan.com).
+
+**Wallet funding (no private key sharing):** to fund the agent's wallet, send USDC to its ADDRESS (public) — sender needs only the address, never the agent's private key. The agent (holding its key in its box) spends. Day-0: Dais seeds a little USDC → agent earns → self-funds. Human funding = optional fallback so a paid-for agent doesn't die; main path = self-funded.
+
+**Conway email sent** 2026-06-11 (root@conway.tech, gmail msg 19eb53f4cf0e250e): asked ETA, whether automaton changes in the transition, early access/collab.
