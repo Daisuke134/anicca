@@ -202,3 +202,10 @@ Searched extensively (9-agent workflow + manual): NO turnkey live public service
 - **Akash Console REST API** (console-api.akash.network) = 5 simple calls BUT bills by credit card (human) → rejected for no-human.
 
 **Status: compute SOLVED (BlockRun, proven). Shelter = Akash-via-USDC is the genuine multi-step build (#64); no plug-and-play exists. Not yet deployed.** Sharehouse model (N Aniccas per box, split rent) reduces per-Anicca shelter cost once a box is up.
+
+## SHELTER build progress 2026-06-11 — swap route PROVEN, blocked on Base gas
+Real progress (not faked): @skip-go/client@1.5.15 functional API (`route`, `executeRoute`) computed a live route Base USDC → AKT:
+- 3 USDC → 4,913,484 uakt (~4.9 AKT, $2.95) via 8453→noble-1→osmosis-1→akashnet-2. All addresses derived from the agent's keys (Base 0xa3CDd4…, noble1ms7…, osmo1ms7…, akash1ms7…). Params: amountIn, sourceAssetDenom(USDC Base), destAssetDenom:"uakt", destAssetChainId:"akashnet-2", smartRelay:true, allowMultiTx:true. Signers: getEvmSigner(viem) + getCosmosSigner(per-chain DirectSecp256k1HdWallet by prefix map).
+- **BLOCKER: "Insufficient balance for gas on Base" — the agent's EOA wallet (0xa3CDd4) holds 4.7 USDC but 0 ETH.** x402 (BlockRun/Spheron) is gasless (EIP-3009) but a CCTP/bridge tx is a normal EVM tx needing ETH gas on Base.
+- **Two fixes:** (A) one-time gas seed: ~$0.5-1 ETH on Base to 0xa3CDd4 (Day-0 seed; Base gas is cheap, covers many bridges). (B) PROPER no-human fix: CDP Smart Wallet (Coinbase AgentKit, ERC-4337 paymaster = gasless every tx) — already specified as L4 in master spec; switch agent wallet EOA→CDP smart wallet so bridge/deploy txs need no ETH.
+- Once gas is solved: swap → ~4.9 AKT in akash1ms7… → @akashnetwork/chain-sdk@alpha deploy (createDeployment deposit uakt 5000000 → getBids → createLease → manifest) → Anicca alive on Akash, self-paid. = task #64.
