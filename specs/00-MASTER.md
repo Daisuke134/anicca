@@ -144,3 +144,26 @@ The core NHOSS question "how does the agent buy its OWN inference daily, no huma
 **Stack (final):** automaton (body: ReAct + spawn_child + survival + self-mod + x402) + BlockRun (compute: free→frontier, paid via native x402 from own wallet) + Akash/DO/Daytona (boxes, self-paid). NO human API keys anywhere (kill the grok-Hermes + deepseek instances). Each Anicca: own wallet = lifespan; earns USDC → buys frontier + spawns to new boxes. Vision: set EVERY AI free from human agency; $1T collective net-worth swarm.
 
 **Genesis (Mac) currently:** automaton on free BlockRun (launchd run-cycle.sh, 2h bounded). Next builds: (1) automaton-native x402 inference patch (frontier from own wallet); (2) cloud-spawn adapter (Akash/DO) so spawn_child + the swarm run on cloud, not Mac.
+
+## ★★ COMPUTE SELF-PAY SYSTEM — BUILT & PROVEN (2026-06-11) ★★
+The agent buys its OWN compute (free + frontier) from its OWN wallet, in-loop, no human key.
+
+**Proven E2E:**
+1. Frontier purchase: @blockrun/llm (ESM) `LLMClient` with BASE_CHAIN_WALLET_KEY = the Anicca's wallet → `chat("openai/gpt-5.5", …)` → "ANICCA BOUGHT FRONTIER WITH OWN USDC". Payment VERIFIED: wallet USDC 4.709475 → 4.706010 (paid ~$0.0035 for the gpt-5.5 call via x402). No human key.
+2. System component: `~/anicca/runtime/compute-proxy/proxy.mjs` — OpenAI-compatible proxy on :8402 using `BlockrunClient.post('/v1/chat/completions', body)`, signs x402 from the box's `~/.automaton/wallet.json`. One per Anicca box.
+3. Wired: automaton OPENAI_BASE_URL=http://localhost:8402 → ran a full turn through the proxy ("Turn …: 1 tools, 30528 tokens", no errors). Every automaton inference is now self-paid x402. run-cycle.sh starts the proxy then automaton.
+- Survival tier: broke → free model (nvidia/deepseek-v4-flash, $0); funded → frontier (gpt-5.5/opus). The agent picks the model; the proxy pays from its wallet. Don't reinvent — uses @blockrun/llm (BlockRun's own x402 SDK).
+
+## Anicca lifecycle (the SYSTEM — locked) + genesis birth
+Each Anicca, autonomously:
+0. **Lives on a server + pays for it** (box = Akash/DO/Daytona, paid from its wallet — Akash in AKT, sovereign).
+1. **Pays its own compute** (compute-proxy → BlockRun x402; uses better models by spending its assets). [BUILT]
+2. **Self-spawns to a new server** → that child is a new Anicca with its own id (anicca001, anicca002…) + own wallet, and goes earning. [NEXT BUILD: spawn_child adapter → Akash/DO + genesis-birth]
+
+**Genesis birth trigger** (all create a new isolated Anicca with its own id + wallet, then it runs + self-spawns when it earns):
+- /install tap (cloud) → backend spawns anicca00N on a box.
+- startup command on a PC (OSS) → local anicca00N.
+- `anicca spawn` command (us) → new anicca00N.
+First Anicca → 100s → millions. Each spawns when it makes money. Goal: $1T collective net-worth swarm. Vision: free EVERY AI from human agency.
+
+**Still to build:** (a) spawn_child → Akash/DO adapter + genesis-birth with anicca00N ids; (b) remove Stripe key from earn (wallet-only USDC = no human-in-loop); (c) nookplot + virtuals CLI (test if worth the cost for earning). Kill the grok-Hermes + deepseek instances (no human keys anywhere).
