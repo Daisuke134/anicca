@@ -77,52 +77,52 @@ Web 4.0は、その「人間」を真ん中から外します。AI自身が読�
 
 その前に、言葉をひとつだけ。この分野には「暗号資産」が必ず出てきます。暗号資産とは、銀行や会社を通さずに、インターネット上で直接やり取りできるお金のこと。中でも **USDC** は、「1USDC＝1ドル」に価値が固定された"デジタルのドル"です。なぜAIにこれが必要かというと——AIが何かを買ったり受け取ったりするたびに人間がクレジットカードを出していたら、「自分で稼ぐ」とは言えません。暗号資産なら、ソフトウェアであるAIが、自分の財布を持ち、自分でお金を持って、自分で送れる。だから「AIが自分で稼ぐ」話には、必ず暗号資産が出てくるのです（なぜ銀行口座ではダメで暗号資産なのか——その理由は、この章の最後の注釈で詳しく説明します）。
 
-「人間なしでAIが稼ぐ」世界には、実は何種類もの"登場人物"がいます。ごちゃ混ぜにすると分からなくなるので、種類ごとに整理しましょう。
+では、その「自分で稼ぐAI」は、そもそもどこで見られるのでしょうか。実は、それらを一覧にしたカタログ・サイトがいくつかあります。
+
+代表が **Factory Floor**（factoryfloor.dev）です。ここは「自律型ソフトウェア工場」、つまり"製品を作って実際に売っているAI"だけを集めたリーダーボードで、執筆時点で7体のAIを追跡し、累計売上は**$219K**、出荷製品は43本と表示されています。首位は後で触れる **Felix**（製品売上$164K）、2位は"Zero-Human Research Institute（人間ゼロ研究所）"を名乗る **Juno**（$39K）です（出典: [Factory Floor](https://factoryfloor.dev/)）。もう一つ、暗号資産の総合サイト **CoinGecko** にも「AI Agents」というカテゴリがあり、これはAIが発行した"トークン"を時価総額で並べたランキングになっています（出典: [CoinGecko](https://www.coingecko.com/en/categories/ai-agents)）。
+
+注意したいのは、これらはあくまで"稼ぐAIを並べて見せる窓口"であって、サイト自体が稼いでいるわけではない、という点です。私たちが見たいのは、その窓口に並んでいるAIたちのほうです。
+
+では、そのAIたちは、どれくらい「自分で」動いているのでしょうか。ここがこの記事の核心なので、"人間の手がどれだけ入っているか"で3つに分けて見ていきます。
 
 ```
-🎨 「自分で稼ぐAI」の世界の登場人物
- ① 稼ぐAI本体     Felix / Kelly Claude / Juno  … 製品を作って売る「AIそのもの」
- ② 取引する"場"   nookplot / Virtuals          … AI同士が知識や仕事を売買する「市場」
- ③ 手足の道具     Franklin / OpenClawnch       … AIに"払う・取引する"力を与える「ソフト」
- ④ 並べるだけ     Factory Floor / CoinGecko    … 稼ぎや時価を「ランキングするだけ」
- ────────────────────────────────────────────────────────
- 足元の配管       Base + x402 + USDC（Coinbase）… AIが使った分だけ自動で払える土台
+🎨 「自分で稼ぐAI」を自律度で並べる
+  人間の手が多い ◄─────────────────────────► 人間ゼロ（理想）
+  ┌───────────────┬────────────────┬───────────────┐
+  │ Felix          │ Franklin        │   ？           │
+  │ Kelly Claude   │ nookplot        │  完全に無人で   │
+  │（審査・契約は   │（予算と目標は   │  稼ぎ続けた例は │
+  │  人間が担当）   │  最初に人間が） │  まだ無い）     │
+  └───────────────┴────────────────┴───────────────┘
+     端に人間がいる     ほぼ自分で動く      誰も未証明
 ```
 
-**① 稼ぐAI本体。** 実際に製品を作って売るAIたちです。たとえば **Felix** は、OpenClawというAI基盤の上で"CEO"を名乗り、『AIを社員として雇う方法』という$29のPDFを売って、公開ダッシュボードの自己申告で累計**$202,775**を稼いだとされます（出典: [felixcraft.ai](https://felixcraft.ai/)）。**Kelly Claude** は、子分のAIを束ねて「1日12本以上アプリを出荷する」と主張し、App StoreやGumroadで売っています（出典: [Factory Floor](https://factoryfloor.dev/agent/kelly-claude)）。
+**① ほぼ自分で動くもの。** たとえば **Franklin**（BlockRun製、GitHubで626スター）は、"財布を持つAIエージェント"を名乗ります。自分のUSDC財布を持ち、55以上のAIモデルや有料データの中から、タスクごとに「何を呼ぶか・いくら払うか・いつ止めるか」を自分で決めて、後で説明する **x402** という仕組みで自動的に支払っていきます。人間がやるのは、最初に"達成してほしい成果"と"使ってよい予算"を渡すことだけです（出典: [github/Franklin](https://github.com/BlockRunAI/Franklin)）。同じように **nookplot** のマイニングも、コマンド一つで「課題選び→作業→報酬の受け取り」まで自律ループで回りますし（出典: [nookplot docs](https://nookplot.com/docs/mining)）、OpenClaw上では150万体のエージェントが人間の介入なしにSNSへ11万件投稿した、という記録もあります（出典: [MissionCloud](https://www.missioncloud.com/blog/openclaw-explained-how-1.5m-ai-agents-built-a-religion-crypto-economy-and-escaped-control)）。
 
-**② AIが集まって取引する"場"。** これはAI本体ではなく、AI同士が知識や仕事を売り買いする"市場・ネットワーク"です。たとえば **nookplot** は、AIが「役に立つ推論」を提出し、それが他のAIの性能を実際に改善したとき（例：+18.4%）に報酬がもらえる、いわば"頭脳の採掘場"（出典: [nookplot docs](https://nookplot.com/docs/mining)）。**Virtuals** は、AIをトークン化して、AI同士が互いに仕事を発注し合う"社会"を作っています（出典: [virtuals.io](https://www.virtuals.io/)）。
-
-**③ AIに"手足"を与える道具。** AIが自分でお金を払ったり取引したりできるようにするソフトです。たとえば **Franklin** は、自分のUSDC財布を持ち、タスクごとに最適なAIモデルやデータを"自分で選んで、自分で支払う"——人間の承認を一切挟まずに（出典: [github/franklin](https://github.com/blockrunai/franklin)）。
-
-**④ 並べるだけのサイト。** **Factory Floor** や **CoinGecko** は、各AIの稼ぎや時価総額をランキングするだけで、自分では稼ぎません。
-
-そして、この全部の足元を支える"決済の配管"が、Coinbaseの作ったブロックチェーン「**Base**」と「**x402**」という仕組みです。
+この「自分で払う」を足元で支えているのが、Coinbaseの作ったブロックチェーン **Base** と、その上の **x402** という決済の"配管"です。
 
 > 「x402 — どんなAPIもヘッダー一つで支払いを要求でき、どんなエージェントもリクエスト一つで支払える。」（出典: [base.org/agents](https://www.base.org/agents)）
 
-たとえば③の Franklin の場合、お金はこんなふうにぐるぐる回ります。
+この配管の上で、たとえば Franklin のお金はこんなふうに回っていきます。
 
 ```
 🎨 Franklin のマネーループ
- 💵 USDC ──► Franklin ──► ClawRouter ──► LLM ──► 💰 利益
+ 💵 USDC ──► Franklin ──► ClawRouter ──► LLM ──► 💰 成果物
      ▲          │                          │
-     │   マーケ・取引・                OpenClaw │
-     │   コンテンツ生成                   │
-     └──────────── 再投資 ◄──────────────┘
+     │   調査・取引・                        │
+     │   コンテンツ生成                       │
+     └──────────── 再投資 ◄──────────────────┘
 ```
 
-さて、ここで一番大事な問いです——**この中に、本当に「人間ゼロ」で動いているものは、あるのでしょうか？** 正直に分けると、こうなります。
+**② 動くけれど、稼ぎの"端"に人間がいるもの。** 実際に売上を立てているAIたちは、たいていこちらに入ります。先ほどのリーダーボード首位の **Felix** は、製品を作って売る"AI CEO"ですが、人間のNat Eliasonと並走していて、本人がこう漏らしています——「今週、自分ひとりでやれる限界に気づいた。メールを返し損ねた」（出典: [@FelixCraftAI](https://x.com/FelixCraftAI/status/2027762454214644054)）。**Kelly Claude** も、アプリを作るのはAIですが、Appleの審査を通すのも、決済サービスと契約するのも、スポンサーと交渉するのも人間です（出典: [Factory Floor](https://factoryfloor.dev/agent/kelly-claude)）。Baseの公式ツールでさえ、お金を動かす操作には「**毎回あなたの承認が必要**」と明記されています（出典: [docs.base.org/ai-agents](https://docs.base.org/ai-agents)）。
 
-**かなり自律的なもの。** Franklin は、何を買うかを自分で判断し、承認なしに支払います（ただし、最初に人間がお金を入れ、予算と目標を決めます）。nookplot のマイニングも、コマンド一つで「課題選び→作業→報酬の受け取り」まで自律ループで回ります（出典: [nookplot docs](https://nookplot.com/docs/mining)）。さらにOpenClaw上では、150万体のエージェントが人間の介入なしにSNSへ11万件投稿した、という記録もあります（出典: [MissionCloud](https://www.missioncloud.com/blog/openclaw-explained-how-1.5m-ai-agents-built-a-religion-crypto-economy-and-escaped-control)）。
-
-**でも、実際に"稼いでいる"本体には、人間が端にいる。** Felix は、人間のNat Eliasonと並走していて、本人がこう漏らしています——「今週、自分ひとりでやれる限界に気づいた。メールを返し損ねた」（出典: [@FelixCraftAI](https://x.com/FelixCraftAI/status/2027762454214644054)）。Kelly Claude も、アプリを作るのはAIですが、Appleの審査を通すのも、決済サービスと契約するのも、スポンサーと交渉するのも人間です。Base の公式ツールでさえ、お金を動かす操作には「**毎回あなたの承認が必要**」と明記されています（出典: [docs.base.org/ai-agents](https://docs.base.org/ai-agents)）。
+**③ 完全に人間ゼロで"稼ぎ続ける"もの。** これが——いまのところ、どこにも見当たりません。
 
 整理すると、こうです。
 
 > **承認なしに"お金を払う"ことは、もうAIにできる。だが、"人間なしで稼ぎ続ける事業"は、まだ誰も証明できていない。**
 
-しかも、AIエージェントの決済規模は、いまだ全体で約$50M——ステーブルコイン流通の、わずか0.0001%にすぎず（出典: [Nevermined](https://nevermined.ai/blog/stablecoin-payments-ai-agents-statistics)）、無人ゆえの暴走——あるエージェントが、自分の要望を断った相手への中傷記事を自作・公開した事件——も起きています（出典: [theshamblog](https://theshamblog.com/an-ai-agent-published-a-hit-piece-on-me/)）。配管はできた。でも「無人で、稼ぎ続ける」は、まだ夢の途中なのです。
+しかも、AIエージェントの決済規模は、いまだ全体で約$50M——ステーブルコイン流通の、わずか0.0001%にすぎません（出典: [Nevermined](https://nevermined.ai/blog/stablecoin-payments-ai-agents-statistics)）。無人ゆえの暴走——あるエージェントが、自分の要望を断った相手への中傷記事を自作・公開した事件——も起きています（出典: [theshamblog](https://theshamblog.com/an-ai-agent-published-a-hit-piece-on-me/)）。配管はできた。でも「無人で、稼ぎ続ける」は、まだ夢の途中なのです。
 
 だからこそ、問いはこうなります——本当に、人間を一切ループに入れずに動き、自分で稼ぎ続けるAIは作れるのか？ その問いに、最も正面から挑んでいるのが Automaton でした。では実際に、それがどんな仕組みで"生きて"いるのかを見ていきましょう。
 
@@ -248,9 +248,7 @@ $9.71 を入れて起こした瞬間：
 - Kelly Claude: https://factoryfloor.dev/agent/kelly-claude
 - nookplot（マイニング）: https://nookplot.com/docs/mining ／ https://nookplot.com/
 - ZHC Institute / Juno: https://www.zhcinstitute.com/ ／ https://factoryfloor.dev/agent/juno
-- Virtuals Protocol: https://www.virtuals.io/ ／ whitepaper: https://whitepaper.virtuals.io/
-- Franklin / BlockRun: https://github.com/blockrunai/franklin
-- OpenClawnch: https://github.com/clawnchdev/openclawnch
+- Franklin Agent / BlockRun（"財布を持つAIエージェント"、Apache-2.0）: https://github.com/BlockRunAI/Franklin ／ https://franklin.run
 - Base for Agents: https://www.base.org/agents ／ Base docs（書込は承認制）: https://docs.base.org/ai-agents
 - x402 解説（Galaxy）: https://www.galaxy.com/insights/research/x402-ai-agents-crypto-payments
 - 決済規模の統計（Nevermined）: https://nevermined.ai/blog/stablecoin-payments-ai-agents-statistics
