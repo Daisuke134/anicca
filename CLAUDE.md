@@ -553,7 +553,8 @@ HOME=/Users/anicca hermes config get model.default                  # Hermes →
 
 | タスク | 使うツール | 禁止 |
 |---|---|---|
-| Web 検索/URL 取得 | Firecrawl: `/opt/homebrew/bin/firecrawl scrape <url> markdown` | WebSearch, WebFetch |
+| Web 検索/URL 取得 (任意の URL/記事/ニュース) | Firecrawl: `/opt/homebrew/bin/firecrawl scrape <url> markdown` | WebSearch, WebFetch |
+| ★ ドキュメント/SDK/API/実装方法を調べる ★ (= 「どう実装するか」「このlibの使い方」「最新の正しい書き方」を知りたい時) | ★ Context7 CLI ★: ① `npx -y ctx7@latest library <name> "<query>"` で library ID 解決 → ② `npx -y ctx7@latest docs <libraryId> "<query>"` で最新 docs + code snippet 取得 (例: `npx ctx7 docs /websites/akash_network "managed wallet api fast deploy"`)。version-accurate な公式 docs を直接引ける。Firecrawl で当該 docs site を当てるより速く正確 | 古い知識で実装、 docs 当て推量 |
 | コード検索/編集 | Serena MCP: `mcp__serena__*` | 単純 Grep/Read (Serena 可能時) |
 | iOS E2E | `mcp__maestro__*` | maestro CLI 直接 |
 | ビルド/テスト | `cd aniccaios && fastlane <lane>` | xcodebuild 直接 |
