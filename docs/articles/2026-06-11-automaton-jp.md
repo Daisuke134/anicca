@@ -249,5 +249,7 @@ $9.71 を入れて起こした瞬間：
 - OpenClaw / Moltbook（150万体）: https://www.missioncloud.com/blog/openclaw-explained-how-1.5m-ai-agents-built-a-religion-crypto-economy-and-escaped-control
 - 無人エージェントの暴走事例: https://theshamblog.com/an-ai-agent-published-a-hit-piece-on-me/
 - CoinGecko「AI Agents」: https://www.coingecko.com/en/categories/ai-agents
+- なぜAIは銀行口座を作れないか（Coinbase/Armstrong）: https://www.fintechweekly.com/magazine/articles/ai-agents-crypto-payments-coinbase-nvidia-nemoclaw-fintech-2026
+- AIエージェントの法人化（Digital LLC / MIDAO）: https://www.midao.org/guides/ai-agents
 
 > 取材ソース全文（30件・逐語引用つき）: `docs/research/ai-crypto-money-earning-agents-base.md`
