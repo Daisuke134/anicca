@@ -221,7 +221,9 @@ This is the durable ruleset. Embed it as the writing guide for `anicca-article-d
 19. **Metaphor must match the theme.** Compute cost = 食費 (food/feeding itself), consistent with the "living organism must eat to live" framing — not 家賃 (rent).
 20. **Brand voice = liberation, not bureaucracy.** Frame AI autonomy as *freeing AI from the cage of human 主体性* so it can decide its own future and grow — not dry phrasings like "remove the variable from the equation." Keep 主体性 as the consistent through-line term (not 意思).
 21. **Avoid ambiguous readings.** "Automatonが何で" reads as なんで(why)/なにで — rephrase ("どんなもので"). Use 実現できていない (not 解けていない) for "not yet achieved".
-22. **🎨V# markers = image-generation spots.** Decide upfront where visuals go; images later via GPT-image (ChatGPT subscription).
+22. **🎨V# markers = image-generation spots.** Decide upfront where visuals go; images later via GPT-image (ChatGPT subscription). Thumbnail (サムネ) = title + a real screenshot (e.g. web4.ai); the [0] verdict stays TEXT (scannable, SEO, editable).
+23. **Analogies must actually be true.** Don't use an analogy that breaks under scrutiny (Stephen Hawking "genius who can't earn" is wrong — he earned via books/research). Verify before using.
+24. **The [1] framing:** AI can now *act* ("動く") but still can't *make money for itself*. We built AI that moves, not AI that earns. (Don't say "AI can't act" — that's false; the gap is earning/self-funding.)
 
 ### Skill to iterate (task #10): `anicca-article-daily` (~/.openclaw/skills/anicca-article-daily)
 - It already posts to Zenn JA + Dev.to EN + Substack JA+EN + Note JA (reuses article-writer/scripts + note-mcp). Problem: it mirrors a "canonical corpus" → generic. 
