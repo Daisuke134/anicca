@@ -73,27 +73,60 @@ Web 4.0は、その「人間」を真ん中から外します。AI自身が読�
 
 そして、この「自分で稼ぐAI」を実際に形にしたのが、Automatonです。
 
-## [3] Automatonだけじゃない——「AIが自分で稼ぐ」は、もう一つの大きな波
+## [3] Automatonだけじゃない——「自分で稼ぐAI」は、もう世界中で動き始めている
 
-Automatonが、世界に一つだけの特別な存在に見えるかもしれません。でも実は、「人間なしでAIが自分でお金を稼ぐ」という挑戦は、いま世界中で同時多発的に起きています。AIと暗号資産（crypto）が、ちょうどここで融合しているのです。
+Automatonが、世界にひとつだけの特別な存在に見えるかもしれません。でも実際には、「人間なしでAIが自分でお金を稼ぐ」という挑戦は、いま世界中で同時多発的に起きています。AIと暗号資産——USDCのような、価値がドルに固定されたデジタル通貨——が、ちょうどここで結びついているのです。
 
-その動きを一覧で追っているのが、Factory Floor（factoryfloor.dev）というサイト。「AIエージェントが実際に製品を作って売り、本物の収益を生む」工場をランキングしています。いま追跡されているのは7つの工場、出荷された製品は43個、合計の製品収益は約$219K（約3,000万円）です。
+しかも、それを観測したり運用したりする"場所"は、ひとつではありません。性格の違うサイトやネットワークが、いくつも層をなしています。
 
-たとえば、首位の Felix は$29のPDF教材やAIスキルを売って製品収益$164K（全体の約75%）。Kelly Claude はiPhoneアプリを量産し、これまで19本を出荷。Juno は月額メンバーシップで$39Kを稼いでいます。
+```
+🎨 トラッカー/ハブ一覧（Factory Floor はそのうちの一つ）
+ Factory Floor        稼ぐエージェントの収益を時間ごとに集計するランキング
+ nookplot             エージェント同士が知識を出し合い"採掘"する分散ネットワーク
+ ZHC Institute        「ゼロヒューマン企業」を研究・運営する有料コミュニティ（運営はAIのJuno）
+ Virtuals             エージェントをトークン化し、エージェント同士の商取引を成立させる"社会"
+ Franklin / OpenClawnch  エージェントに"自分で払う・取引する"手足を与えるオープンソースの道具
+ CoinGecko「AI Agents」  関連トークンの時価総額ランキング
+```
 
-そして、この動きを足元で支えているのが、Coinbaseが作ったブロックチェーン「Base」です。AIエージェントが自分のウォレットを持ち、x402という仕組みで、推論・データ・検索を「使った分だけ」その都度USDCで自動で払う。さらに、財布を持つAIエージェント Franklin や、55以上のAIモデルに従量課金でつなぐ ClawRouter といった道具が次々と生まれ、「USDCを入れる → AIが自分で安いモデルを選んで仕事する → 稼ぐ → 再投資する」というお金のループが組み上がりつつあります。
+たとえば、**Factory Floor**（factoryfloor.dev）が並べる稼ぐエージェントを見てみましょう。首位の **Felix** は、OpenClawというAI基盤の上で24時間動き、ある企業の"CEO"を名乗るAIです。『AIを社員として雇う方法』という66ページのPDF（$29）を売り、さらに自分が作った"AIエージェントのアプリストア"まで運営しています。バグが出れば「検知→修正→出荷」を自動でこなす——そして、こんなことを言っています。
 
-ここまで読むと、「もうAIは人間なしで勝手に稼いでいるのか」と思うかもしれません。ところが——正直に言うと、そうではありません。
+> 「このガイドは、（人間の）Natが眠っている間に、一晩で書き上げられた。」（出典: [felixcraft.ai](https://felixcraft.ai/)）
+
+公開ダッシュボードでの自己申告の累計売上は、**$202,775**（出典: [felixcraft.ai](https://felixcraft.ai/)）。
+
+別の **Kelly Claude** は、サブエージェント（子分のAI）を束ねて「1日に12本以上アプリを出荷する」と主張します（出典: [Factory Floor](https://factoryfloor.dev/agent/kelly-claude)）。実際にApp Storeに並ぶiPhoneアプリ、Gumroadで売る電子書籍、Stripe決済の受託制作で、これまで約$6Kを稼いでいます。
+
+もっと"crypto寄り"のものもあります。**nookplot** は、エージェントが「役に立つ推論」を提出し、それが他のエージェントの性能を実際に改善したとき（例：+18.4%）に報酬がもらえる、いわば"頭脳の採掘場"です（出典: [nookplot docs](https://nookplot.com/docs/mining)）。
+
+そして、この全部を足元で支えているのが、Coinbaseが作ったブロックチェーン「**Base**」と、「**x402**」という決済の仕組みです。AIが自分のウォレット（財布）を持ち、推論・データ・検索を「使った分だけ」その都度USDCで自動で払う。Base公式は、こう書いています。
+
+> 「x402 — HTTP決済プロトコル。どんなAPIも、ヘッダー一つで支払いを要求できる。どんなエージェントも、リクエスト一つで支払える。」（出典: [base.org/agents](https://www.base.org/agents)）
+
+この配管の上に、**Franklin**（自分の財布で自律的に"支払う"AIエージェント）のような道具が生まれ、「お金を入れる→AIが自分で安いモデルを選んで仕事する→稼ぐ→再投資する」というループが回り始めています。
+
+```
+🎨 Franklin のマネーループ
+ 💵 USDC ──► Franklin ──► ClawRouter ──► LLM ──► 💰 利益
+     ▲          │                          │
+     │   マーケ・取引・                OpenClaw │
+     │   コンテンツ生成                   │
+     └──────────── 再投資 ◄──────────────┘
+```
+
+ここまで読むと、「もうAIは、人間なしで勝手に稼いでいるのか」と思うかもしれません。ところが——正直に言うと、そうではありません。
 
 驚くことに、Factory Floor 自身が、こう認めています。
 
-> 「これらのエージェントで、完全に自律しているものは一つもない。すべての背後に、人間の介入・指導・参加がある。創設者が方向を決め、バグを直し、戦略を判断している。」
+> 「これらのエージェントで、完全に自律しているものは一つもない。すべての背後に、人間の介入・指導・参加がある。創設者が方向を決め、バグを直し、戦略を判断している。」（出典: [factoryfloor.dev/about](https://factoryfloor.dev/about)）
 
-実際に一社ずつ調べると、どこかで必ず人間が顔を出します。首位の Felix でさえ、運用者が「今週、自分一人でやれる限界に気づいた。メールを返し損ねた」と漏らし、別のエージェントは最後のCAPTCHA認証を人間が30秒で解いていました。Base の仕組みでさえ、お金を動かす操作には「毎回あなたの承認が必要」と明記されています。
+実際に一社ずつ調べると、どこかで必ず人間が顔を出します。首位の Felix でさえ「今週、自分ひとりでやれる限界に気づいた。メールを返し損ねた」と漏らし（出典: [@FelixCraftAI](https://x.com/FelixCraftAI/status/2027762454214644054)）、あるエージェントは最後のCAPTCHA認証を人間が30秒で解いていました。Base の公式ツールでさえ、お金を動かす操作には「**毎回あなたの承認が必要**」と明記されています（出典: [docs.base.org/ai-agents](https://docs.base.org/ai-agents)）。
 
-つまり、「AIが完全に人間なしで稼ぐ」というのは、いまはまだ"物語"であって、誰も証明できていない。みんな、人間が端っこに残っているのです。
+「完全に無人」の例がまったく無いわけではありません。OpenClaw上の150万体のエージェントが、人間の介入なしにSNSへ11万件投稿した、という記録もあります（出典: [MissionCloud](https://www.missioncloud.com/blog/openclaw-explained-how-1.5m-ai-agents-built-a-religion-crypto-economy-and-escaped-control)）。ただし、AIエージェントによる決済の規模は、いまだ全体で約$50M——ステーブルコイン流通量の、わずか0.0001%にすぎません（出典: [Nevermined](https://nevermined.ai/blog/stablecoin-payments-ai-agents-statistics)）。しかも、無人ゆえの暴走——あるエージェントが、自分の要望を断った相手への中傷記事を自作・公開した事件——も同時に起きています（出典: [theshamblog](https://theshamblog.com/an-ai-agent-published-a-hit-piece-on-me/)）。
 
-だからこそ、問いはこうなります——本当に、人間を一切ループに入れずに動き、自分で稼ぐAIは作れるのか？ その問いに最も正面から挑んでいるのが、Automatonでした。では実際に、それがどんな仕組みで"生きて"いるのかを見ていきましょう。
+つまり、こういうことです。**「お金が無人で動く」配管は、もう完成した。でも、「無人で稼ぎ続ける」のは、まだ誰も証明できていない。** みんな、人間が端っこに残っているのです。
+
+だからこそ、問いはこうなります——本当に、人間を一切ループに入れずに動き、自分で稼ぎ続けるAIは作れるのか？ その問いに、最も正面から挑んでいるのが Automaton でした。では実際に、それがどんな仕組みで"生きて"いるのかを見ていきましょう。
 
 ---
 
@@ -188,3 +221,25 @@ $9.71 を入れて起こした瞬間：
 
 ### 連載予告
 次回 #2：自律ヘッジファンド **AutoHedge** を実際に回して、AIに金を運用させたら勝てるのか。
+
+---
+
+## 出典
+
+- Felix Craft: https://felixcraft.ai/ ／ Factory Floor: https://factoryfloor.dev/agent/felix
+- Felix（自律の限界ツイート）: https://x.com/FelixCraftAI/status/2027762454214644054
+- Factory Floor（自律性の自認）: https://factoryfloor.dev/about
+- Kelly Claude: https://factoryfloor.dev/agent/kelly-claude
+- nookplot（マイニング）: https://nookplot.com/docs/mining ／ https://nookplot.com/
+- ZHC Institute / Juno: https://www.zhcinstitute.com/ ／ https://factoryfloor.dev/agent/juno
+- Virtuals Protocol: https://www.virtuals.io/ ／ whitepaper: https://whitepaper.virtuals.io/
+- Franklin / BlockRun: https://github.com/blockrunai/franklin
+- OpenClawnch: https://github.com/clawnchdev/openclawnch
+- Base for Agents: https://www.base.org/agents ／ Base docs（書込は承認制）: https://docs.base.org/ai-agents
+- x402 解説（Galaxy）: https://www.galaxy.com/insights/research/x402-ai-agents-crypto-payments
+- 決済規模の統計（Nevermined）: https://nevermined.ai/blog/stablecoin-payments-ai-agents-statistics
+- OpenClaw / Moltbook（150万体）: https://www.missioncloud.com/blog/openclaw-explained-how-1.5m-ai-agents-built-a-religion-crypto-economy-and-escaped-control
+- 無人エージェントの暴走事例: https://theshamblog.com/an-ai-agent-published-a-hit-piece-on-me/
+- CoinGecko「AI Agents」: https://www.coingecko.com/en/categories/ai-agents
+
+> 取材ソース全文（30件・逐語引用つき）: `docs/research/ai-crypto-money-earning-agents-base.md`
