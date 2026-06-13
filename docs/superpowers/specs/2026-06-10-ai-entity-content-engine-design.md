@@ -225,6 +225,19 @@ This is the durable ruleset. Embed it as the writing guide for `anicca-article-d
 23. **Analogies must actually be true.** Don't use an analogy that breaks under scrutiny (Stephen Hawking "genius who can't earn" is wrong — he earned via books/research). Verify before using.
 24. **The [1] framing:** AI can now *act* ("動く") but still can't *make money for itself*. We built AI that moves, not AI that earns. (Don't say "AI can't act" — that's false; the gap is earning/self-funding.)
 
+### Article structure RENUMBERED (Dais 2026-06-13): inserted the "wave/convergence" beat as [3]
+- [0] verdict (text) · [1] bottleneck · [2] Web 4.0 / Automaton concept
+- **[3] = NEW: "Automaton isn't the only one — the AGI × crypto convergence"** (the autonomous-earning-agent landscape; reusable across the whole series; can be long/detailed)
+- [4] how Automaton works (mechanics) · [5] funding + run · [6] results · [7] tweaks/AutoHedge · [8] conclusion + manifesto
+- Flow Dais wants: Web4 exists → with this thinking/background Automaton was born → but Automaton isn't alone, there's a whole wave ([3]) → then how Automaton actually works ([4]) → we ran it ([5]) → results ([6]) → it failed so we tweaked ([7]) → conclusion + who-should/shouldn't ([8]).
+
+### [3] research data (2026-06-13, direct scrape; deep-research wf_63ec1832-d82 running for more)
+- **Factory Floor (factoryfloor.dev)** tracks "Autonomous Software Factories" — AI agents building & selling real products. Total rev $219K / mkt cap $3.0M / 7 factories / 43 products. Leaderboard: #1 Felix (Digital Product Factory, $164K rev, $FELIX $266K, 3), #2 Juno (Zero-Human Research Institute, $39K, $JUNO $721K, 5), #3 Lauki Antonson ($7K, $LAUKI, 5), #4 Kelly Claude (Mass App Factory, $6K, $KELLYCLAUDE, 19 apps), #5 Atlas Forge ($3K, 3), AntiHunter (Autonomous Capital Engine, $ANTIHUNTER $74K).
+- **Franklin (github.com/blockrunai/franklin)** = "the AI agent with a wallet": writes code AND spends money; USDC wallet, 55+ providers, buys data/images/search via x402. "YOPO = You Only Pay Outcome." No subs/keys; wallet = identity. By BlockRun.
+- **ClawRouter (6.5k★)** = the BlockRun gateway (the local :8402 we use): 55+ LLMs, x402 pay-per-call, up to 92% inference savings, free-tier fallback (nvidia/gpt-oss-120b) when wallet empty. awesome-OpenClaw-Money-Maker frames the "Web4 money loop": USDC→Franklin→ClawRouter→LLM→profit→reinvest.
+- **Base/Coinbase agentic economy:** x402 on Base ~3.1M tx / $1.2M in 30 days (sellers +23%, buyers +37%); ~16K agents via virtuals.io (Oct24–Feb25); Base MCP; services agents pay for: BlockRun (50+ models), Venice (inference), Browserbase (cloud browser), Exa (search), Bankr x402 Cloud, Wolfram, Tripadvisor/FlightAware/Amadeus, Cloudflare (x402 foundation), Amazon Bedrock AgentCore Payments. Earning agents cited by Base: Felix ($261k), Kelly Claude.
+- Angle: Automaton is one of many; spectrum from human-at-the-edges (token launches/marketing) to more autonomous. Focus = the truly no-human-in-loop ones.
+
 ### Skill to iterate (task #10): `anicca-article-daily` (~/.openclaw/skills/anicca-article-daily)
 - It already posts to Zenn JA + Dev.to EN + Substack JA+EN + Note JA (reuses article-writer/scripts + note-mcp). Problem: it mirrors a "canonical corpus" → generic. 
 - Fix: (a) embed the Playbook above as its writing guide; (b) swap its content source to THIS engine (deep-research an AI-entity topic → actually run it → report with verdict per the hamburger template); (c) keep its multi-platform publish + SEO + language-purity gates. X Articles via wshuyi skill (task #9).
