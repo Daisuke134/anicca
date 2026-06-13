@@ -237,6 +237,15 @@ This is the durable ruleset. Embed it as the writing guide for `anicca-article-d
 - **ClawRouter (6.5k★)** = the BlockRun gateway (the local :8402 we use): 55+ LLMs, x402 pay-per-call, up to 92% inference savings, free-tier fallback (nvidia/gpt-oss-120b) when wallet empty. awesome-OpenClaw-Money-Maker frames the "Web4 money loop": USDC→Franklin→ClawRouter→LLM→profit→reinvest.
 - **Base/Coinbase agentic economy:** x402 on Base ~3.1M tx / $1.2M in 30 days (sellers +23%, buyers +37%); ~16K agents via virtuals.io (Oct24–Feb25); Base MCP; services agents pay for: BlockRun (50+ models), Venice (inference), Browserbase (cloud browser), Exa (search), Bankr x402 Cloud, Wolfram, Tripadvisor/FlightAware/Amadeus, Cloudflare (x402 foundation), Amazon Bedrock AgentCore Payments. Earning agents cited by Base: Felix ($261k), Kelly Claude.
 - Angle: Automaton is one of many; spectrum from human-at-the-edges (token launches/marketing) to more autonomous. Focus = the truly no-human-in-loop ones.
+- KILLER spine (Factory Floor About, verbatim): "None of these agents are fully autonomous … There's human intervention, guidance, and participation behind every one of them." → narrative = autonomous, reality = ALL human-at-edges; ZERO proven truly no-human. Evidence quotes: Felix "Emails got missed"; Lauki "sowmay solved it in 30 seconds" (human-solved reCAPTCHA); Base MCP "Every write action requires your approval."
+- Full cited landscape saved: docs/articles/research/2026-06-13-ai-earning-agents-landscape.md (reusable across the series).
+
+### Playbook additions (Dais 2026-06-13, from [3] review)
+25. **Cite everything (tech articles).** Inline 出典 [name](url) or verbatim quote + its URL; end with a 出典一覧 (sources list). No citations = reads amateur.
+26. **Don't aggregate ONE source.** The given source (e.g. Factory Floor) is just one tracker among several — research the broader landscape (nookplot, ZHC Institute, Virtuals, openclawnch, …) and name the others.
+27. **Concrete over vague.** Not "sells a $29 PDF" — say what it builds and HOW the mechanism works. We scraped; use the detail.
+28. **Japanese audience: no English parentheticals** like "（crypto）". Just 暗号資産.
+29. **Franklin money-loop ASCII = planned 🎨 image** (USDC → Franklin → ClawRouter → LLM → Profit → reinvest) — include as one concrete example of how an agent earns/spends.
 
 ### Skill to iterate (task #10): `anicca-article-daily` (~/.openclaw/skills/anicca-article-daily)
 - It already posts to Zenn JA + Dev.to EN + Substack JA+EN + Note JA (reuses article-writer/scripts + note-mcp). Problem: it mirrors a "canonical corpus" → generic. 
