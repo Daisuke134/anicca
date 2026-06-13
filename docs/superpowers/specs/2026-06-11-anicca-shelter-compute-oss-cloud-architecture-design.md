@@ -148,3 +148,22 @@ Colony = N leases, each its own wallet/identity/Constitution hash.
 - Net onboarding promise: **Cloud = "subscribe, done" (no keys/crypto). OSS = "curl | bash, free."** Speed first.
 
 **Provider choice for the interim API-key cloud shelter**: evaluate DigitalOcean (droplet, ~1 min, we have a token) vs Daytona vs Fly — pick the single best, document it, hold the key centrally for subscribers.
+
+---
+
+## 11. REVISION 3 — 2026-06-13 (Dais: speed-first, retire Akash-default, Conway-future)
+
+**SHELTER decision (final for now):**
+- ❌ **Akash ACT crypto self-pay = RETIRED as default.** 15-min CCTP + $10 ACT mint is unsustainable for a service — a user who installs/subscribes must see earning/reporting **immediately**, not in 15 min. (Kept only as a documented "fully-sovereign future mode" once it's instant.)
+- ✅ **Default shelter = two fast paths:**
+  1. **OSS / local** → runs on the **user's own machine** (instant, free). Default for self-host.
+  2. **Cloud** → a **provider API key**, server spun up in ~1 min. **Chosen provider = DigitalOcean** (real persistent droplet, simple API token, `doctl`/REST; Daytona = free-tier backup). For the **app (subscription)**, **WE (Dais / the project) hold the key & pay the server cost.** For **OSS users who want cloud**, they paste **their own** provider API key.
+- 🔜 **Conway = future option (currently LOCKED).** README notes: "when Conway is available, Anicca self-hosts there and pays its own server — automaton's survival/spawn design fits it." Until then: **server cost is paid by us (app) / by the user or OSS-dev (self-host).** Migrate to Conway (agent self-pays + self-replicates) when it's live.
+- **Self-replication** (agent pays own server, spawns children) → **gated on Conway** (or instant-crypto). Until then the agent **EARNS now** (earn skills work today); replication waits.
+
+**EARN decision:** main = agent-native (nookplot, virtuals.io, x402 sell own work, content/media gen via ClawRouter) = no capital, no human, no exchange. Advanced opt-in = trading bots (AutoHedge/Freqtrade/OpenAlice — need capital + exchange keys + carry loss risk; OpenAlice needs human trade approval). MUST be run E2E before claiming a skill earns.
+
+**Onboarding copy (SSOT):**
+- Local: "To unlock smart models, send USDC (Base) to THIS address: <shown>. Your Anicca auto-upgrades models with its balance."
+- Cloud-API-key (OSS users wanting cloud): "Go to cloud.digitalocean.com → API → Generate Token. Paste it to your coding agent. Anicca will spin up its own server and run."
+- App (subscription): "Subscribe $X/mo. Done — no keys, no crypto." (the /install page shows only this; no Conway/crypto detail.)
