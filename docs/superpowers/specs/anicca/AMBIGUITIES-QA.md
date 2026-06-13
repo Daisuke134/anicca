@@ -22,11 +22,16 @@
 - 1つずつ「無料で動くか/口座資本不要か/USDC着金するか」を実走しログ(MONEYMAKER-EVAL.md)。
 
 ## BODY / SHELTER / REPORT / DISTRIBUTION
-### Q4 Franklinを24/7自律earnループにできるか → ⬜(daemon/serve実走)
-### Q5 DO dropletにbilling有効化が要るか → ⬜
+### Q4 Franklinを24/7自律earnループにできるか → A: ✅(否→body方針確定)
+- 実走: `franklin daemon`=決済proxyのみ。`start -p`=1タスクで終了。★Franklinは24/7自律earnループを持たない★。
+- 結論: ★body = 自前の軽量heartbeatループ(cron駆動 core/loop.mjs)★。think(ClawRouter)→earn skills→report を回す。automatonが一例。Franklinはwallet/proxy部品として任意流用。
+### Q5 DO dropletにbilling有効化が要るか → A: ✅
+- 実走: account status=active, droplet_limit=10, email_verified=true → ★dropletを作れる★。サーバ代=唯一許可される人間介入(我々が持つ)。
 ### Q6 DO cloud-init(node→repo→clawrouter→loop)正確なスクリプト → ⬜
-### Q7 AgentMail spawn毎の新inbox作成API → ⬜
-### Q8 report "earned"の出所=earn-ledger(Q3に依存) → ⬜
+### Q7 AgentMail spawn毎の新inbox作成API → A: 🔄(上限判明)
+- 実走: `POST /v0/inboxes` → ★『Inbox limit exceeded』(無料枠上限)★。
+- 結論: 多数Anicca用に ①AgentMail有料プラン ②各Aniccaが自前signup ③catch-all独自ドメイン のいずれか。要決定。
+### Q8 report "earned"の出所 → A: ✅ earn=DeFi yield(skills/earn/defi-yield.mjs)→ earn-ledger.jsonl に供給/利息を記録 → reportが読む。
 ### Q9 ClawRouter無料枠レート制限(429観測)で24/7足りるか → 🔄
 ### Q10 sutando の相互扶助/issue駆動の具体skill → ⬜(clone+実走)
 ### Q11 aniccaai.com/install の中身 → A: ✅ ★クラウド専用Webページ(誰もshell叩かない)★。OSSはGitHub repo側。
