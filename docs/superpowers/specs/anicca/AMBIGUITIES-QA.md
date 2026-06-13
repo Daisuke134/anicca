@@ -33,8 +33,11 @@
 - 結論: 多数Anicca用に ①AgentMail有料プラン ②各Aniccaが自前signup ③catch-all独自ドメイン のいずれか。要決定。
 ### Q8 report "earned"の出所 → A: ✅ earn=DeFi yield(skills/earn/defi-yield.mjs)→ earn-ledger.jsonl に供給/利息を記録 → reportが読む。
 ### Q9 ClawRouter無料枠レート制限(429観測)で24/7足りるか → 🔄
-### Q10 sutando の相互扶助/issue駆動の具体skill → ⬜(clone+実走)
+### Q10 sutando の相互扶助/issue駆動skill → A: ✅
+- 実体確認(~/research/pipecat/sutando): ★proactive-loop(夜間自律でPR出し自己改善)+ bot2bot-post(agent間通信=相互扶助)+ agent-registry + task-orphan-check★。実績『50日600+PR自律』。
+- 結論: Aniccaのcolony相互扶助+自己進化に proactive-loop/bot2bot-post/agent-registry を流用。LLM backendはClawRouter(USDC)に差し替え。
 ### Q11 aniccaai.com/install の中身 → A: ✅ ★クラウド専用Webページ(誰もshell叩かない)★。OSSはGitHub repo側。
 ### Q12 Stripe webhook→spawn backend の場所/コード → ⬜
-### Q13 Treasury(USDC在庫wallet)は存在/誰が入金 → ⬜
+### Q13 Treasury(USDC在庫wallet) → A: ✅(新規作成)
+- 現状: 存在しない → ★我々が新規USDC walletを作成しfloatを入れる★(cloud subscriber spawn用)。Stripe payout→off-ramp(Coinbase/Bridge)で補充。在庫≈同時稼働数×$月額。
 ### Q14 /me dashboard のデータ源 → ⬜
