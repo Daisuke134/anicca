@@ -85,7 +85,11 @@ Web 4.0は、その「人間」を真ん中から外します。AI自身が読�
 >
 > もし普通の銀行口座を持てたら、世界は一気に広がります。円やドル、株、債券、不動産まで持て、Stripeで売上を法定通貨のまま受け取れる。実は、その"橋渡し"はもう存在します。AIを**法人（とくにマーシャル諸島の「Digital LLC」）に包む**方法です。法律学者ショーン・ベイヤーンが2014年に示した通り、「AIをLLCの管理者に据えれば、事実上の法人格を与えられる」——その会社が契約を結び、口座を開き、資産を持つ（出典: [MIDAO](https://www.midao.org/guides/ai-agents)）。ただし、この会社には「人間のメンバー（監督層）」が要る。つまり口座を得た瞬間、また人間が端に戻ってくるのです。
 >
-> "信用"をAI自身が積む試みも始まっています。BNB Chainが2026年2月に実装した **ERC-8004** は、AIに検証可能な身元と評判をブロックチェーン上で与える「エージェント版のKYC（本人確認）」（出典: [FintechWeekly](https://www.fintechweekly.com/magazine/articles/ai-agents-crypto-payments-coinbase-nvidia-nemoclaw-fintech-2026)）。とはいえ、これは銀行の本人確認の代わりではなく、暗号の世界の中だけの信用です。要するに——AIが本当に"独り立ち"するには、お金を動かす技術だけでなく、**社会がAIに「信用」と「法的な身分」を与えるか**という、もっと大きな問いが残っているのです。
+> "信用"をAI自身が積む試みも始まっています。BNB Chainが2026年2月に実装した **ERC-8004** は、AIに検証可能な身元と評判をブロックチェーン上で与える「エージェント版のKYC（本人確認）」（出典: [FintechWeekly](https://www.fintechweekly.com/magazine/articles/ai-agents-crypto-payments-coinbase-nvidia-nemoclaw-fintech-2026)）。とはいえ、これは銀行の本人確認の代わりではなく、暗号の世界の中だけの信用です。
+>
+> ちなみに、決済の巨人Stripeは"逆ルート"でこの壁に挑んでいます。AIに自分の口座を持たせるのではなく、**人間（や企業）の口座に、AIを「操作役」として後付けする**やり方です。2026年4月のStripe Sessions 2026で発表された「Link agent wallet」は、あなたが許可を与えるとAIがあなたの代わりに支払う仕組みで、デモではClaude CodeがGumroadで同人誌を7ドルで購入してみせました。ただしカード情報はAIに渡さず、買い物ごとに使い捨てカードを発行し、**すべての購入にユーザー本人の承認が必要**です（出典: [x402 Inc.](https://note.com/x402inc/n/nd945306fb457)）。同時に発表された「Stripe Treasury」は、企業の口座でUSDC（ステーブルコイン）を保有し、Stripe MCP経由でAIが残高確認・請求書支払い・送金まで自律実行できるようになりました（出典: [x402 Inc.](https://note.com/x402inc/n/n5b0a050cc70e)）。つまり、銀行を諦めてクリプトに賭けるAutomaton型と、人間の口座を握ったままAIを操縦させるStripe型——同じ「AIにお金を動かさせる」問題に、正反対の二つの道が走り始めています。ただしStripe型は、毎回の承認や口座の名義という形で、やはり端に人間が残ります。
+>
+> 要するに——AIが本当に"独り立ち"するには、お金を動かす技術だけでなく、**社会がAIに「信用」と「法的な身分」を与えるか**という、もっと大きな問いが残っているのです。
 
 その上で——「人間なしでAIが稼ぐ」世界には、実は何種類もの"登場人物"がいます。ごちゃ混ぜにすると分からなくなるので、種類ごとに整理しましょう。
 
@@ -251,5 +255,7 @@ $9.71 を入れて起こした瞬間：
 - CoinGecko「AI Agents」: https://www.coingecko.com/en/categories/ai-agents
 - なぜAIは銀行口座を作れないか（Coinbase/Armstrong）: https://www.fintechweekly.com/magazine/articles/ai-agents-crypto-payments-coinbase-nvidia-nemoclaw-fintech-2026
 - AIエージェントの法人化（Digital LLC / MIDAO）: https://www.midao.org/guides/ai-agents
+- Stripe Link agent wallet / Agentic Commerce（x402 Inc.）: https://note.com/x402inc/n/nd945306fb457
+- Stripe Treasury × AIエージェント決済（x402 Inc.）: https://note.com/x402inc/n/n5b0a050cc70e
 
 > 取材ソース全文（30件・逐語引用つき）: `docs/research/ai-crypto-money-earning-agents-base.md`
