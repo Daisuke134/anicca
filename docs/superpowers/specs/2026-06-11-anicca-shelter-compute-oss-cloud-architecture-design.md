@@ -129,3 +129,22 @@ Colony = N leases, each its own wallet/identity/Constitution hash.
 
 ## 9. Out of scope (now)
 - iOS app changes. Otonix/Privy browser flow (parked — wallet-gate). DO/Netlify via owner token (forbidden).
+
+
+---
+
+## 10. REVISION 2026-06-13 (Dais, first-principles pivot)
+
+**Two big calls:**
+
+### A. Core agent = Franklin (drop automaton)
+- The agent body is **Franklin** (`@blockrun/franklin`, "the AI agent with a wallet") + **ClawRouter** (compute). This IS the completed money loop (`USDC → Franklin → ClawRouter → LLM → Profit → reinvest`, per github.com/BlockRunAI/awesome-OpenClaw-Money-Maker). The `automaton` (Conway) is RETIRED — it was reinventing Franklin.
+- Anicca = Franklin core + our additions: `skills/life-manager`, `skills/shelter`, `skills/self` (spawn), `skills/report` (AgentMail), `skills/earn` (nookplot + the awesome-list money-makers).
+
+### B. Shelter = provider API key (fast), NOT 15-min Akash crypto mint (default)
+- Akash crypto path (USDC→AKT→ACT, ~15 min + $10 min mint) is too slow/painful for onboarding → **moved to an optional "fully-sovereign (advanced)" mode**, kept because it is proven.
+- **Default cloud shelter = a provider VM via API key**, spun up in ~1 min. Pick ONE best provider. Until **Conway** exists, **WE (Dais) hold the server API key / pay the server cost** for cloud subscribers. When Conway/own-crypto is ready & fast, each Anicca pays its own.
+- **OSS/local shelter = the person's own machine** (free) — the smoothest, default for self-host.
+- Net onboarding promise: **Cloud = "subscribe, done" (no keys/crypto). OSS = "curl | bash, free."** Speed first.
+
+**Provider choice for the interim API-key cloud shelter**: evaluate DigitalOcean (droplet, ~1 min, we have a token) vs Daytona vs Fly — pick the single best, document it, hold the key centrally for subscribers.

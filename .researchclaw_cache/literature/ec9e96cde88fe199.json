@@ -1,0 +1,1167 @@
+{
+  "query": "AI Entity GDP",
+  "source": "openalex",
+  "limit": 25,
+  "timestamp": 1778205404.684543,
+  "papers": [
+    {
+      "paper_id": "oalex-W3123748565",
+      "title": "Private Benefits of Control: An International Comparison",
+      "authors": [
+        {
+          "name": "Alexander Dyck",
+          "affiliation": "University of Chicago"
+        },
+        {
+          "name": "Luigi Zingales",
+          "affiliation": ""
+        }
+      ],
+      "year": 2004,
+      "abstract": "ABSTRACT We estimate private benefits of control in 39 countries using 393 controlling blocks sales. On average the value of control is 14 percent, but in some countries can be as low as \u22124 percent, in others as high a +65 percent. As predicted by theory, higher private benefits of control are associated with less developed capital markets, more concentrated ownership, and more privately negotiated privatizations. We also analyze what institutions are most important in curbing private benefits. We find evidence for both legal and extra\u2010legal mechanisms. In a multivariate analysis, however, media pressure and tax enforcement seem to be the dominating factors.",
+      "venue": "The Journal of Finance",
+      "citation_count": 2612,
+      "doi": "10.1111/j.1540-6261.2004.00642.x",
+      "arxiv_id": "",
+      "url": "https://doi.org/10.1111/j.1540-6261.2004.00642.x",
+      "source": "openalex",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "oalex-W2032305868",
+      "title": "Financial and Legal Constraints to Growth: Does Firm Size Matter?",
+      "authors": [
+        {
+          "name": "Thorsten Beck",
+          "affiliation": "Case Western Reserve University"
+        },
+        {
+          "name": "Asli Demirg\u00fc\u00e7\u2010Kunt",
+          "affiliation": ""
+        },
+        {
+          "name": "Vojislav Maksimovic",
+          "affiliation": "Case Western Reserve University"
+        }
+      ],
+      "year": 2005,
+      "abstract": "ABSTRACT Using a unique firm\u2010level survey database covering 54 countries, we investigate the effect of financial, legal, and corruption problems on firms' growth rates. Whether these factors constrain growth depends on firm size. It is consistently the smallest firms that are most constrained. Financial and institutional development weakens the constraining effects of financial, legal, and corruption obstacles and it is again the small firms that benefit the most. There is only a weak relation between firms' perception of the quality of the courts in their country and firm growth. We also provide evidence that the corruption of bank officials constrains firm growth.",
+      "venue": "The Journal of Finance",
+      "citation_count": 2420,
+      "doi": "10.1111/j.1540-6261.2005.00727.x",
+      "arxiv_id": "",
+      "url": "https://doi.org/10.1111/j.1540-6261.2005.00727.x",
+      "source": "openalex",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "oalex-W2969625533",
+      "title": "Artificial Intelligence (AI): Multidisciplinary perspectives on emerging challenges, opportunities, and agenda for research, practice and policy",
+      "authors": [
+        {
+          "name": "Yogesh K. Dwivedi",
+          "affiliation": "Swansea University"
+        },
+        {
+          "name": "Laurie Hughes",
+          "affiliation": "Swansea University"
+        },
+        {
+          "name": "Elvira Ismagilova",
+          "affiliation": "University of Bradford"
+        },
+        {
+          "name": "Gert Aarts",
+          "affiliation": "Swansea University"
+        },
+        {
+          "name": "Crispin Coombs",
+          "affiliation": "Loughborough University"
+        },
+        {
+          "name": "Tom Crick",
+          "affiliation": "Swansea University"
+        },
+        {
+          "name": "Yanqing Duan",
+          "affiliation": "University of Bedfordshire"
+        },
+        {
+          "name": "Rohita Dwivedi",
+          "affiliation": "Prin. L. N. Welingkar Institute of Management Development and Research"
+        },
+        {
+          "name": "John S. Edwards",
+          "affiliation": "Aston University"
+        },
+        {
+          "name": "Aled Eirug",
+          "affiliation": "Swansea University"
+        },
+        {
+          "name": "Vassilis Galanos",
+          "affiliation": "University of Edinburgh"
+        },
+        {
+          "name": "P. Vigneswara Ilavarasan",
+          "affiliation": "Indian Institute of Technology Delhi"
+        },
+        {
+          "name": "Marijn Janssen",
+          "affiliation": "Delft University of Technology"
+        },
+        {
+          "name": "Paul Jones",
+          "affiliation": "Swansea University"
+        },
+        {
+          "name": "Arpan Kumar Kar",
+          "affiliation": "Indian Institute of Technology Delhi"
+        },
+        {
+          "name": "Hatice Kizgin",
+          "affiliation": "University of Bradford"
+        },
+        {
+          "name": "Bianca Kronemann",
+          "affiliation": "Swansea University"
+        },
+        {
+          "name": "Banita Lal",
+          "affiliation": "University of Bedfordshire"
+        },
+        {
+          "name": "Biagio Lucini",
+          "affiliation": "Swansea University"
+        },
+        {
+          "name": "Rony Medaglia",
+          "affiliation": "Copenhagen Business School"
+        },
+        {
+          "name": "Kenneth Le Meunier\u2010FitzHugh",
+          "affiliation": "University of East Anglia"
+        },
+        {
+          "name": "Leslie Caroline Le Meunier-FitzHugh",
+          "affiliation": ""
+        },
+        {
+          "name": "Santosh K. Misra",
+          "affiliation": "University of East Anglia"
+        },
+        {
+          "name": "Emmanuel Mogaji",
+          "affiliation": "University of Greenwich"
+        },
+        {
+          "name": "Sujeet Kumar Sharma",
+          "affiliation": ""
+        },
+        {
+          "name": "Jang Bahadur Singh",
+          "affiliation": "Indian Institute of Management Tiruchirappalli"
+        },
+        {
+          "name": "Vishnupriya Raghavan",
+          "affiliation": ""
+        },
+        {
+          "name": "Ramakrishnan Raman",
+          "affiliation": "Symbiosis International University"
+        },
+        {
+          "name": "Nripendra P. Rana",
+          "affiliation": "University of Bradford"
+        },
+        {
+          "name": "Spyridon Samothrakis",
+          "affiliation": "University of Essex"
+        },
+        {
+          "name": "Jak Spencer",
+          "affiliation": "Training Programs in Epidemiology and Public Health Interventions Network"
+        },
+        {
+          "name": "Kuttimani Tamilmani",
+          "affiliation": "University of Bradford"
+        },
+        {
+          "name": "Annie Tubadji",
+          "affiliation": "University of the West of England"
+        },
+        {
+          "name": "Paul Walton",
+          "affiliation": "Capgemini (United Kingdom)"
+        },
+        {
+          "name": "Michael D. Williams",
+          "affiliation": "Swansea University"
+        }
+      ],
+      "year": 2019,
+      "abstract": "As far back as the industrial revolution, significant development in technical innovation has succeeded in transforming numerous manual tasks and processes that had been in existence for decades where humans had reached the limits of physical capacity. Artificial Intelligence (AI) offers this same transformative potential for the augmentation and potential replacement of human tasks and activities within a wide range of industrial, intellectual and social applications. The pace of change for this new AI technological age is staggering, with new breakthroughs in algorithmic machine learning and autonomous decision-making, engendering new opportunities for continued innovation. The impact of AI could be significant, with industries ranging from: finance, healthcare, manufacturing, retail, supply chain, logistics and utilities, all potentially disrupted by the onset of AI technologies. The study brings together the collective insight from a number of leading expert contributors to highlight the significant opportunities, realistic assessment of impact, challenges and potential research agenda posed by the rapid emergence of AI within a number of domains: business and management, government, public sector, and science and technology. This research offers significant and timely insight to AI technology and its impact on the future of industry and society in general, whilst recognising the societal and industrial influence on pace and direction of AI development.",
+      "venue": "International Journal of Information Management",
+      "citation_count": 3910,
+      "doi": "10.1016/j.ijinfomgt.2019.08.002",
+      "arxiv_id": "",
+      "url": "https://doi.org/10.1016/j.ijinfomgt.2019.08.002",
+      "source": "openalex",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "oalex-W4322576964",
+      "title": "On the Road to 6G: Visions, Requirements, Key Technologies, and Testbeds",
+      "authors": [
+        {
+          "name": "Cheng\u2010Xiang Wang",
+          "affiliation": "Purple Mountain Laboratories"
+        },
+        {
+          "name": "Xiaohu You",
+          "affiliation": "Purple Mountain Laboratories"
+        },
+        {
+          "name": "Xiqi Gao",
+          "affiliation": "Purple Mountain Laboratories"
+        },
+        {
+          "name": "Xiuming Zhu",
+          "affiliation": "Purple Mountain Laboratories"
+        },
+        {
+          "name": "Zixin Li",
+          "affiliation": "Purple Mountain Laboratories"
+        },
+        {
+          "name": "Chuan Zhang",
+          "affiliation": "Purple Mountain Laboratories"
+        },
+        {
+          "name": "Haiming Wang",
+          "affiliation": "Purple Mountain Laboratories"
+        },
+        {
+          "name": "Yongming Huang",
+          "affiliation": "Purple Mountain Laboratories"
+        },
+        {
+          "name": "Yunfei Chen",
+          "affiliation": "Durham University"
+        },
+        {
+          "name": "Harald Haas",
+          "affiliation": "University of Strathclyde"
+        },
+        {
+          "name": "John Thompson",
+          "affiliation": "University of Edinburgh"
+        },
+        {
+          "name": "Erik G. Larsson",
+          "affiliation": "Link\u00f6ping University"
+        },
+        {
+          "name": "Marco Di Renzo",
+          "affiliation": "Centre National de la Recherche Scientifique"
+        },
+        {
+          "name": "Wen Tong",
+          "affiliation": "Huawei Technologies (Canada)"
+        },
+        {
+          "name": "Peiying Zhu",
+          "affiliation": "Huawei Technologies (Canada)"
+        },
+        {
+          "name": "Xuemin Shen",
+          "affiliation": "University of Waterloo"
+        },
+        {
+          "name": "H. Vincent Poor",
+          "affiliation": "Princeton University"
+        },
+        {
+          "name": "Lajos Hanzo",
+          "affiliation": "University of Southampton"
+        }
+      ],
+      "year": 2023,
+      "abstract": "Fifth generation (5G) mobile communication systems have entered the stage of commercial deployment, providing users with new services, improved user experiences as well as a host of novel opportunities to various industries. However, 5G still faces many challenges. To address these challenges, international industrial, academic, and standards organizations have commenced research on sixth generation (6G) wireless communication systems. A series of white papers and survey papers have been published, which aim to define 6G in terms of requirements, application scenarios, key technologies, etc. Although ITU-R has been working on the 6G vision and it is expected to reach a consensus on what 6G will be by mid-2023, the related global discussions are still wide open and the existing literature has identified numerous open issues. This paper first provides a comprehensive portrayal of the 6G vision, technical requirements, and application scenarios, covering the current common understanding of 6G. Then, a critical appraisal of the 6G network architecture and key technologies is presented. Furthermore, existing testbeds and advanced 6G verification platforms are detailed for the first time. In addition, future research directions and open challenges are identified to stimulate the on-going global debate. Finally, lessons learned to date concerning 6G networks are discussed.",
+      "venue": "IEEE Communications Surveys & Tutorials",
+      "citation_count": 1878,
+      "doi": "10.1109/comst.2023.3249835",
+      "arxiv_id": "",
+      "url": "https://doi.org/10.1109/comst.2023.3249835",
+      "source": "openalex",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "oalex-W2114544510",
+      "title": "YAGO: A Large Ontology from Wikipedia and WordNet",
+      "authors": [
+        {
+          "name": "Fabian M. Suchanek",
+          "affiliation": "Max Planck Society"
+        },
+        {
+          "name": "Gjergji Kasneci",
+          "affiliation": "Max Planck Society"
+        },
+        {
+          "name": "Gerhard Weikum",
+          "affiliation": "Max Planck Society"
+        }
+      ],
+      "year": 2008,
+      "abstract": "",
+      "venue": "Journal of Web Semantics",
+      "citation_count": 900,
+      "doi": "10.1016/j.websem.2008.06.001",
+      "arxiv_id": "",
+      "url": "https://doi.org/10.1016/j.websem.2008.06.001",
+      "source": "openalex",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "oalex-W3123914693",
+      "title": "New Evidence and Perspectives on Mergers",
+      "authors": [
+        {
+          "name": "Gregor Andrade",
+          "affiliation": "Harvard University"
+        },
+        {
+          "name": "Mark L. Mitchell",
+          "affiliation": "Harvard University"
+        },
+        {
+          "name": "Erik Stafford",
+          "affiliation": "Harvard University"
+        }
+      ],
+      "year": 2001,
+      "abstract": "As in previous decades, merger activity clusters by industry during the 1990s. One particular kind of industry shock, deregulation, becomes a dominant factor, accountings for nearly half of the merger activity since the late 1980s. In contrast to the 1980s, mergers in the 1990s are mostly stock swaps, and hostile takeovers virtually disappear. Over our 1973 to 1998 sample period, the announcement-period stock market response to mergers is positive for the combined merging parties, suggesting that mergers create value on behalf of shareholders. Consistent with that, we find evidence of improved operating performance following mergers, relative to industry peers.",
+      "venue": "The Journal of Economic Perspectives",
+      "citation_count": 2716,
+      "doi": "10.1257/jep.15.2.103",
+      "arxiv_id": "",
+      "url": "https://doi.org/10.1257/jep.15.2.103",
+      "source": "openalex",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "oalex-W2170353571",
+      "title": "Informality and Development",
+      "authors": [
+        {
+          "name": "Rafael La Porta",
+          "affiliation": "Dartmouth College"
+        },
+        {
+          "name": "Andrei Shleifer",
+          "affiliation": "Harvard University Press"
+        }
+      ],
+      "year": 2014,
+      "abstract": "In developing countries, informal firms account for up to half of economic activity. They provide livelihood for billions of people. Yet their role in economic development remains controversial with some viewing informality as pent-up potential and others viewing informality as a parasitic organizational form that hinders economic growth. In this paper, we assess these perspectives. We argue that the evidence is most consistent with dual models, in which informality arises out of poverty and the informal and formal sectors are very different. It seems that informal firms have low productivity and produce low-quality products; and, consequently, they do not pose a threat to the formal firms. Economic growth comes from the formal sector, that is, from firms run by educated entrepreneurs and exhibiting much higher levels of productivity. The expansion of the formal sector leads to the decline of the informal sector in relative and eventually absolute terms. A few informal firms convert to formality, but more generally they disappear because they cannot compete with the much more-productive formal firms.",
+      "venue": "The Journal of Economic Perspectives",
+      "citation_count": 1371,
+      "doi": "10.1257/jep.28.3.109",
+      "arxiv_id": "",
+      "url": "https://doi.org/10.1257/jep.28.3.109",
+      "source": "openalex",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "oalex-W2773929027",
+      "title": "1 Blockchain\u2019s roles in meeting key supply chain management objectives",
+      "authors": [
+        {
+          "name": "Nir Kshetri",
+          "affiliation": "University of North Carolina at Greensboro"
+        }
+      ],
+      "year": 2017,
+      "abstract": "",
+      "venue": "International Journal of Information Management",
+      "citation_count": 2029,
+      "doi": "10.1016/j.ijinfomgt.2017.12.005",
+      "arxiv_id": "",
+      "url": "https://doi.org/10.1016/j.ijinfomgt.2017.12.005",
+      "source": "openalex",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "oalex-W3024362711",
+      "title": "Influences of the Industry 4.0 Revolution on the Human Capital Development and Consumer Behavior: A Systematic Review",
+      "authors": [
+        {
+          "name": "Violeta Sima",
+          "affiliation": "Petroleum & Gas University of Ploie\u015fti"
+        },
+        {
+          "name": "Ileana Georgiana Gheorghe",
+          "affiliation": "Petroleum & Gas University of Ploie\u015fti"
+        },
+        {
+          "name": "J. Subi\u0107",
+          "affiliation": "Institute of Agricultural Economics Belgrade"
+        },
+        {
+          "name": "Dumitru Nancu",
+          "affiliation": "Ovidius University"
+        }
+      ],
+      "year": 2020,
+      "abstract": "Automation and digitalization, as long-term evolutionary processes, cause significant effects, such as the transformation of occupations and job profiles, changes to employment forms, and a more significant role for the platform economy, generating challenges for social policy. This systematic literature review aims to provide an overview of the research to date related to influences of the Industry 4.0 Revolution on human capital development and consumer behavior. A search on the Web of Science identified 160 papers that met the inclusion criteria. The major objectives aimed to identify: the main types of influences of the Industry 4.0 Revolution on human capital development and consumer behavior; the main opportunities and challenges for new directions in education associated with shifting the work environment; and the drivers for human capital development and consumer behavior through the lenses of the Industry 4.0 Revolution. The results revealed some key aspects for the development of human capital: information, new jobs, the Internet, technology, training, education, new skills, automation, communication, innovativeness, professionals, productivity, artificial intelligence, digitalization, e-recruitment, and the Internet of Things, as well as the main drivers of consumer behavior: information, e-commerce, digitalization, the Internet of Things, e-distribution, technology, digitalization, automation, personalized, performance, artificial intelligence, behavior intention, e-shopping, and data mining.",
+      "venue": "Sustainability",
+      "citation_count": 755,
+      "doi": "10.3390/su12104035",
+      "arxiv_id": "",
+      "url": "https://doi.org/10.3390/su12104035",
+      "source": "openalex",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "oalex-W2146926552",
+      "title": "Small-molecule ligands bind to a distinct pocket in Ras and inhibit SOS-mediated nucleotide exchange activity",
+      "authors": [
+        {
+          "name": "Till Maurer",
+          "affiliation": ""
+        },
+        {
+          "name": "Lindsay S. Garrenton",
+          "affiliation": ""
+        },
+        {
+          "name": "Angela Oh",
+          "affiliation": ""
+        },
+        {
+          "name": "Keith Pitts",
+          "affiliation": "Toxicologie, Pharmacologie et Signalisation Cellulaire"
+        },
+        {
+          "name": "Daniel J. Anderson",
+          "affiliation": ""
+        },
+        {
+          "name": "Nicholas J. Skelton",
+          "affiliation": ""
+        },
+        {
+          "name": "Benjamin P. Fauber",
+          "affiliation": ""
+        },
+        {
+          "name": "Borlan Pan",
+          "affiliation": ""
+        },
+        {
+          "name": "Shiva Malek",
+          "affiliation": "Toxicologie, Pharmacologie et Signalisation Cellulaire"
+        },
+        {
+          "name": "David Stokoe",
+          "affiliation": ""
+        },
+        {
+          "name": "Mary J. C. Ludlam",
+          "affiliation": ""
+        },
+        {
+          "name": "Krista K. Bowman",
+          "affiliation": ""
+        },
+        {
+          "name": "Jiansheng Wu",
+          "affiliation": ""
+        },
+        {
+          "name": "Anthony M. Giannetti",
+          "affiliation": "Toxicologie, Pharmacologie et Signalisation Cellulaire"
+        },
+        {
+          "name": "Melissa A. Starovasnik",
+          "affiliation": ""
+        },
+        {
+          "name": "Ira Mellman",
+          "affiliation": ""
+        },
+        {
+          "name": "Peter K. Jackson",
+          "affiliation": ""
+        },
+        {
+          "name": "Joachim Rudolph",
+          "affiliation": ""
+        },
+        {
+          "name": "Weiru Wang",
+          "affiliation": ""
+        },
+        {
+          "name": "Guowei Fang",
+          "affiliation": ""
+        }
+      ],
+      "year": 2012,
+      "abstract": "The Ras gene is frequently mutated in cancer, and mutant Ras drives tumorigenesis. Although Ras is a central oncogene, small molecules that bind to Ras in a well-defined manner and exert inhibitory effects have not been uncovered to date. Through an NMR-based fragment screen, we identified a group of small molecules that all bind to a common site on Ras. High-resolution cocrystal structures delineated a unique ligand-binding pocket on the Ras protein that is adjacent to the switch I/II regions and can be expanded upon compound binding. Structure analysis predicts that compound-binding interferes with the Ras/SOS interactions. Indeed, selected compounds inhibit SOS-mediated nucleotide exchange and prevent Ras activation by blocking the formation of intermediates of the exchange reaction. The discovery of a small-molecule binding pocket on Ras with functional significance provides a new direction in the search of therapeutically effective inhibitors of the Ras oncoprotein.",
+      "venue": "Proceedings of the National Academy of Sciences",
+      "citation_count": 627,
+      "doi": "10.1073/pnas.1116510109",
+      "arxiv_id": "",
+      "url": "https://doi.org/10.1073/pnas.1116510109",
+      "source": "openalex",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "oalex-W3006889234",
+      "title": "Security and Privacy in Smart Farming: Challenges and Opportunities",
+      "authors": [
+        {
+          "name": "Maanak Gupta",
+          "affiliation": "Tennessee Technological University"
+        },
+        {
+          "name": "Mahmoud Abdelsalam",
+          "affiliation": "Manhattan University"
+        },
+        {
+          "name": "Sajad Khorsandroo",
+          "affiliation": "North Carolina Agricultural and Technical State University"
+        },
+        {
+          "name": "Sudip Mittal",
+          "affiliation": "University of North Carolina Wilmington"
+        }
+      ],
+      "year": 2020,
+      "abstract": "Internet of Things (IoT) and smart computing technologies have revolutionized every sphere of 21 <sup xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">st</sup> century humans. IoT technologies and the data driven services they offer were beyond imagination just a decade ago. Now, they surround us and influence a variety of domains such as automobile, smart home, healthcare, etc. In particular, the Agriculture and Farming industries have also embraced this technological intervention. Smart devices are widely used by a range of people from farmers to entrepreneurs. These technologies are used in a variety of ways, from finding real-time status of crops and soil moisture content to deploying drones to assist with tasks such as applying pesticide spray. However, the use of IoT and smart communication technologies introduce a vast exposure to cybersecurity threats and vulnerabilities in smart farming environments. Such cyber attacks have the potential to disrupt the economies of countries that are widely dependent on agriculture. In this paper, we present a holistic study on security and privacy in a smart farming ecosystem. The paper outlines a multi layered architecture relevant to the precision agriculture domain and discusses the security and privacy issues in this dynamic and distributed cyber physical environment. Further more, the paper elaborates on potential cyber attack scenarios and highlights open research challenges and future directions.",
+      "venue": "IEEE Access",
+      "citation_count": 564,
+      "doi": "10.1109/access.2020.2975142",
+      "arxiv_id": "",
+      "url": "https://doi.org/10.1109/access.2020.2975142",
+      "source": "openalex",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "oalex-W3040036651",
+      "title": "The use of digital technologies by small and medium enterprises during COVID-19: Implications for theory and practice",
+      "authors": [
+        {
+          "name": "\u0398\u03ac\u03bd\u03bf\u03c2 \u03a0\u03b1\u03c0\u03b1\u03b4\u03cc\u03c0\u03bf\u03c5\u03bb\u03bf\u03c2",
+          "affiliation": "University of Kent"
+        },
+        {
+          "name": "Konstantinos Baltas",
+          "affiliation": "University of Essex"
+        },
+        {
+          "name": "Maria Balta",
+          "affiliation": "University of Kent"
+        }
+      ],
+      "year": 2020,
+      "abstract": "",
+      "venue": "International Journal of Information Management",
+      "citation_count": 667,
+      "doi": "10.1016/j.ijinfomgt.2020.102192",
+      "arxiv_id": "",
+      "url": "https://doi.org/10.1016/j.ijinfomgt.2020.102192",
+      "source": "openalex",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "oalex-W3029168450",
+      "title": "e-Tourism beyond COVID-19: a call for transformative research",
+      "authors": [
+        {
+          "name": "Ulrike Gretzel",
+          "affiliation": "University of Southern California"
+        },
+        {
+          "name": "Matthias Fuchs",
+          "affiliation": "Mid Sweden University"
+        },
+        {
+          "name": "Rodolfo Baggio",
+          "affiliation": "National Research Tomsk State University"
+        },
+        {
+          "name": "Wolfram H\u00f6epken",
+          "affiliation": "University of Applied Sciences Ravensburg-Weingarten"
+        },
+        {
+          "name": "Rob Law",
+          "affiliation": "Hong Kong Polytechnic University"
+        },
+        {
+          "name": "Julia Neidhardt",
+          "affiliation": "TU Wien"
+        },
+        {
+          "name": "Juho Pesonen",
+          "affiliation": "University of Eastern Finland"
+        },
+        {
+          "name": "Markus Zanker",
+          "affiliation": "Free University of Bozen-Bolzano"
+        },
+        {
+          "name": "Zheng Xiang",
+          "affiliation": "Virginia Tech"
+        }
+      ],
+      "year": 2020,
+      "abstract": "This viewpoint article argues that the impacts of the novel coronavirus COVID-19 call for transformative e-Tourism research. We are at a crossroads where one road takes us to e-Tourism as it was before the crisis, whereas the other holds the potential to transform e-Tourism. To realize this potential, e-Tourism research needs to challenge existing paradigms and critically evaluate its ontological and epistemological foundations. In light of the paramount importance to rethink contemporary science, growth, and technology paradigms, we present six pillars to guide scholars in their efforts to transform e-Tourism through their research, including historicity, reflexivity, equity, transparency, plurality, and creativity. We conclude the paper with a call to the e-Tourism research community to embrace transformative research.",
+      "venue": "Information Technology & Tourism",
+      "citation_count": 565,
+      "doi": "10.1007/s40558-020-00181-3",
+      "arxiv_id": "",
+      "url": "https://doi.org/10.1007/s40558-020-00181-3",
+      "source": "openalex",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "oalex-W1567728793",
+      "title": "From World Banker to World Venture Capitalist: US External Adjustment and the Exorbitant Privilege",
+      "authors": [
+        {
+          "name": "Pierre\u2010Olivier Gourinchas",
+          "affiliation": "University of California, Berkeley"
+        },
+        {
+          "name": "H\u00e9l\u00e8ne Rey",
+          "affiliation": "National Bureau of Economic Research"
+        }
+      ],
+      "year": 2005,
+      "abstract": "Does the center country of the International Monetary System enjoy an \"exorbitant privilege\" that significantly weakens its external constraint as has been asserted in some European quarters? Using a newly constructed dataset, we perform a detailed analysis of the historical evolution of US external assets and liabilities at market value since 1952. We find strong evidence of a sizeable excess return of gross assets over gross liabilities. Interestingly, this excess return increased after the collapse of the Bretton Woods fixed exchange rate system. It is mainly due to a \"return discount\": within each class of assets, the total return (yields and capital gains) that the US has to pay to foreigners is smaller than the total return the US gets on its foreign assets. We also find evidence of a \"composition effect\": the US tends to borrow short and lend long. As financial globalization accelerated its pace, the US transformed itself from a World Banker into a World Venture Capitalist, investing greater amounts in high yield assets such as equity and FDI. We use these findings to cast some light on the sustainability of the current global imbalances.",
+      "venue": "National Bureau of Economic Research",
+      "citation_count": 461,
+      "doi": "10.3386/w11563",
+      "arxiv_id": "",
+      "url": "https://doi.org/10.3386/w11563",
+      "source": "openalex",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "oalex-W3043661845",
+      "title": "Physical distancing interventions and incidence of coronavirus disease 2019: natural experiment in 149 countries",
+      "authors": [
+        {
+          "name": "Nazrul Islam",
+          "affiliation": "University of Cambridge"
+        },
+        {
+          "name": "Stephen J. Sharp",
+          "affiliation": "University of Cambridge"
+        },
+        {
+          "name": "Gerardo Chowell",
+          "affiliation": "Georgia State University"
+        },
+        {
+          "name": "Sharmin Shabnam",
+          "affiliation": "Pennsylvania State University"
+        },
+        {
+          "name": "Ichiro Kawachi",
+          "affiliation": "Harvard University"
+        },
+        {
+          "name": "Ben Lacey",
+          "affiliation": "University of Oxford"
+        },
+        {
+          "name": "Joseph M. Massaro",
+          "affiliation": "Boston University"
+        },
+        {
+          "name": "Ralph B. D\u2019Agostino",
+          "affiliation": "Boston University"
+        },
+        {
+          "name": "Martin White",
+          "affiliation": "University of Cambridge"
+        }
+      ],
+      "year": 2020,
+      "abstract": "OBJECTIVE: To evaluate the association between physical distancing interventions and incidence of coronavirus disease 2019 (covid-19) globally. DESIGN: Natural experiment using interrupted time series analysis, with results synthesised using meta-analysis. SETTING: 149 countries or regions, with data on daily reported cases of covid-19 from the European Centre for Disease Prevention and Control and data on the physical distancing policies from the Oxford covid-19 Government Response Tracker. PARTICIPANTS: Individual countries or regions that implemented one of the five physical distancing interventions (closures of schools, workplaces, and public transport, restrictions on mass gatherings and public events, and restrictions on movement (lockdowns)) between 1 January and 30 May 2020. MAIN OUTCOME MEASURE: Incidence rate ratios (IRRs) of covid-19 before and after implementation of physical distancing interventions, estimated using data to 30 May 2020 or 30 days post-intervention, whichever occurred first. IRRs were synthesised across countries using random effects meta-analysis. RESULTS: On average, implementation of any physical distancing intervention was associated with an overall reduction in covid-19 incidence of 13% (IRR 0.87, 95% confidence interval 0.85 to 0.89; n=149 countries). Closure of public transport was not associated with any additional reduction in covid-19 incidence when the other four physical distancing interventions were in place (pooled IRR with and without public transport closure was 0.85, 0.82 to 0.88; n=72, and 0.87, 0.84 to 0.91; n=32, respectively). Data from 11 countries also suggested similar overall effectiveness (pooled IRR 0.85, 0.81 to 0.89) when school closures, workplace closures, and restrictions on mass gatherings were in place. In terms of sequence of interventions, earlier implementation of lockdown was associated with a larger reduction in covid-19 incidence (pooled IRR 0.86, 0.84 to 0.89; n=105) compared with a delayed implementation of lockdown after other physical distancing interventions were in place (pooled IRR 0.90, 0.87 to 0.94; n=41). CONCLUSIONS: Physical distancing interventions were associated with reductions in the incidence of covid-19 globally. No evidence was found of an additional effect of public transport closure when the other four physical distancing measures were in place. Earlier implementation of lockdown was associated with a larger reduction in the incidence of covid-19. These findings might support policy decisions as countries prepare to impose or lift physical distancing measures in current or future epidemic waves.",
+      "venue": "BMJ",
+      "citation_count": 665,
+      "doi": "10.1136/bmj.m2743",
+      "arxiv_id": "",
+      "url": "https://doi.org/10.1136/bmj.m2743",
+      "source": "openalex",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "oalex-W3122444308",
+      "title": "The Granular Origins of Aggregate Fluctuations",
+      "authors": [
+        {
+          "name": "Xavier Gabaix",
+          "affiliation": "Boston University"
+        }
+      ],
+      "year": 2009,
+      "abstract": "This paper proposes that idiosyncratic firm-level fluctuations can explain an important part of aggregate shocks, and provide a microfoundation for aggregate productivity shocks. Existing research has focused on using aggregate shocks to explain business cycles, arguing that individual firm shocks average out in aggregate. I show that this argument breaks down if the distribution of firm sizes is fat-tailed, as documented empirically. The idiosyncratic movements of the largest 100 firms in the US appear to explain about one third of variations in output and the Solow residual. This \"granular\" hypothesis suggests new directions for macroeconomic research, in particular that macroeconomic questions can be clarified by looking at the behavior of large firms. This paper's ideas and analytical results may also be useful to think about the fluctuations of other economic aggregates, such as exports or the trade balance.",
+      "venue": "National Bureau of Economic Research",
+      "citation_count": 505,
+      "doi": "10.3386/w15286",
+      "arxiv_id": "",
+      "url": "https://doi.org/10.3386/w15286",
+      "source": "openalex",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "oalex-W4313176049",
+      "title": "AI-Digital Engine of Artificial Economic and Knowledge Type by a Matsui\u2019s Progressive Loop Approach",
+      "authors": [
+        {
+          "name": "Masayuki Matsui",
+          "affiliation": "Kanagawa University"
+        }
+      ],
+      "year": 2022,
+      "abstract": "Based on numbers, data, information signals, and science, humankind has developed an artificial language tools and artifacts. At intangible artifacts, we first compared ordered queuing vs. flow number methods to visualize cumulative processes for such entities as big data, and showed the anatomy (Carnott-like cycle) of ellipse-cross type at the economics (engine) vs. reliability(handle) of body map by using this progressive-loop method at GDP case in Matsui (2022). Next, we discussed a few methods and examples of virtual engines of economic and knowledge systems by Matsui\u2019s equation & ME (M-equation) approach. Finally, formulation types of AI-like matrix engine (square matrix or correlation table) and Matsui\u2019s matrix approach are graphically given at a white box of SW (middle initiative) base, and would contribute to a knowledge-based and digital society.",
+      "venue": "Theoretical Economics Letters",
+      "citation_count": 2,
+      "doi": "10.4236/tel.2022.125069",
+      "arxiv_id": "",
+      "url": "https://doi.org/10.4236/tel.2022.125069",
+      "source": "openalex",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "oalex-W4399134144",
+      "title": "Accelerating healthcare innovation: the role of Artificial intelligence and digital health technologies in critical path institute\u2019s public\u2010private partnerships",
+      "authors": [
+        {
+          "name": "Jagdeep T. Podichetty",
+          "affiliation": "Critical Path Institute"
+        },
+        {
+          "name": "Sakshi Sardar",
+          "affiliation": "Critical Path Institute"
+        },
+        {
+          "name": "Nick Henscheid",
+          "affiliation": "Critical Path Institute"
+        },
+        {
+          "name": "Grace V Lee",
+          "affiliation": "Critical Path Institute"
+        },
+        {
+          "name": "Judith Abrams",
+          "affiliation": "Critical Path Institute"
+        },
+        {
+          "name": "Wes Anderson",
+          "affiliation": "Critical Path Institute"
+        },
+        {
+          "name": "Shu Chin",
+          "affiliation": "Critical Path Institute"
+        },
+        {
+          "name": "Klaus Romero",
+          "affiliation": "Critical Path Institute"
+        }
+      ],
+      "year": 2024,
+      "abstract": "Artificial Intelligence (AI) and Digital Health Technologies (DHTs) are radically transforming drug development. The FDA and EMA have formulated guidance documents for their use in clinical trials. A pressing need exists for a harmonized approach to assess and implement AI and DHT methodologies as Drug Development Tools (DDTs). As a neutral entity leading public-private partnerships, The Critical Path Institute has the competencies and infrastructure to address AI and DHTs' pivotal roles in drug development. The integration of multi-modal data and sophisticated analytics algorithms, such as AI, to propel advancements in drug development and support regulatory decision-making is experiencing a notable surge.1 Both the US FDA and EMA have initiated the formulation of recommendations for best practices concerning the application of AI algorithms in regulatory submissions.2 Adding to this landscape, the recent executive order on AI safety and security issued by the Biden administration is poised to significantly impact the utilization of AI in drug development.3 This order specifically targets the establishment of standards for AI, safeguarding privacy, advancing equity, fostering innovation and competition, and strengthening American leadership globally. Within the highly regulated realm of drug development, a clear and pressing need arises for a harmonized and actionable approach to rigorously assess and implement AI and DHT methodologies for DDTs. The emphasis should specifically address the use of AI in drug development, in distinction from its application in Software as a Medical Device (SaMD), 501(k) clearance of devices, Clinical Decision Support, and drug discovery. Public-private partnerships (PPPs) such as C-Path, Pharma IQ consortia, and other professional societies are uniquely positioned to empower the implementation of AI and DHT in drug development. As such, C-Path emerges as a distinctive and well-equipped entity to meet the regulators' needs in the context of AI in drug development. C-Path has not only demonstrated a proven track record in developing regulatory-endorsed DDTs, such as clinical trial simulation/enrichment tools (https://t1d-cte.c-path.org/), but has also adeptly navigated the intricate landscape of regulatory processes and fostered collaboration between industry, academia, and regulatory agencies over the past 18 years. Positioned as a neutral entity that champions multi-stakeholder collaborations and public\u2013private partnerships within drug development, C-Path operates based on five core competencies that form the bedrock of its impactful contributions to the field. Firstly, data management and standards play a pivotal role in ensuring the quality, integrity, and interoperability of data, facilitating effective collaboration and informed decision-making (https://c-path.org/programs/dcc/). As a result, C-Path has seen a significant growth in total data contributed over the last few years. C-Path currently has 694,401 subject-level clinical records from 425 studies and 13,190 subject-level nonclinical records from 153 studies. Secondly, modeling and analytics contribute to the institute's ability to harness the power of computational approaches, enabling predictive modeling and data-driven insights (https://c-path.org/programs/quantmed/). Thirdly, biomarkers, a cornerstone competency, involve the identification and validation of biological indicators that aid in understanding disease mechanisms, optimizing clinical trial design, and enhancing patient stratification (https://c-path.org/programs/bmdr/). Fourth, clinical outcome assessments focus on evaluating the impact of interventions from the patient's perspective, providing valuable insights into treatment efficacy and patient-reported outcomes (https://c-path.org/programs/proc/). Lastly, regulatory science encompasses the expertise required to navigate the complex regulatory landscape, ensuring that C-Path's initiatives align seamlessly with evolving regulatory standards (https://c-path.org/programs/regsci/). Within C-Path's Quantitative Medicine (QuantMed) Program, which embodies the Model-Informed Drug Development (MIDD) and quantitative analytics core competency, C-Path has developed a range of internal lines of expertise, including unique approaches to real-world data (RWD) and DHTs such as algorithmic literacy. This solid foundation uniquely equips C-Path to respond to the call for action. This perspective paper aims to illuminate how C-Path's distinctive position and core competencies can be harnessed effectively to employ AI in drug development (Figure 1). The organization's extensive experience in building trust among diverse stakeholders, spanning industry, government, academia, and patient advocacy groups, underscores its capability to drive impactful and collaborative advancements in the field. AI is positioned to transform the drug development lifecycle, bringing forth enhanced efficiency, accuracy, and innovation. Concurrently, DHTs contribute to real-time patient monitoring, enriching the understanding of drug responses. C-Path, particularly through its QuantMed Program, has been actively engaged in the field of AI in drug development and clinical pharmacology since 2017. The organization has cultivated expertise in evaluating model and algorithm performance and assessing the credibility of AI methods across diverse application domains.4 Demonstrating ongoing leadership, C-Path continues to drive AI implementation in drug development through initiatives in education, training, and mentorship while pressing for the need for strong oversight and safety measures in such implementation into the drug development lifecycle.5 At C-Path, there are multiple ongoing projects across several diseases that are employing AI to address unmet needs. Within the CDRC, as depicted in Figure 1, in a PPP model we leverage RWD to evaluate the off-label use of drugs for new indications, an end-to-end data and analytics pipeline has been constructed through an Amazon Web Services (AWS) cloud architecture that includes a natural language processing (NLP), with Large Language Models (LLMs), pipeline for structuring free-text data and clustering analysis to search for treatment patterns within the CURE-ID platform. In the type 1 diabetes (T1D) consortium, C-Path\u2019 QuantMed program has developed a Clinical Trial Enrichment Graphical User Interface (https://t1d-cte.c-path.org/). The user or sponsor can utilize the interactive dashboard to define the characteristics of trial participants, enabling the prediction of the mean probability of a T1D diagnosis within that specific trial group. To safeguard data privacy and facilitate open-source accessibility, a generative model based on deep learning was employed to create a cohort of synthetic subjects. Within Parkinson's disease, C-Path's Digital Drug Development Tools (3DT) consortium seeks to better interpret and utilize DHTs in a variety of scenarios through studies such as WATCH-PD.6 These initiatives entail the proficient handling of large volumes of DHT data. The process includes skillfully managing data deidentification and transfer capabilities while the study is in progress, ensuring patient privacy and security. This holistic approach underscores the present integration of AI and DHTs to advance understanding and treatment strategies for Parkinson's disease. However, while these examples demonstrate C-Path's expertise, there are a multitude of challenges and applications the drug industry faces concerning AI/ML and DHTs. C-Path's unique position provides significant value to the realm of AI and DHTs, leveraging the pre-competitive, collaborative, and interdisciplinary approaches necessary to understand the proper use of these tools at various stages in the drug development pipeline. This is achieved through the development of transparent and comprehensive evidentiary support frameworks designed to harness the maximum potential of these technologies while emphasizing clarity for the nuances and implications of their use, including safety, ethics, and appropriate usage. These frameworks include the metadata-based decision tool for identifying opportunities for DHT use and existing evidentiary support levels, the activity identification and verification framework for developing human activity recognition algorithms to assess data quality, and the algorithmic literacy framework for comprehending and assessing algorithm usage with respect to the intended context of use.7, 8 An example of where these tools have been leveraged was as a part of Critical Path for Parkinson's (CPP's) consortium's 3DT initiative, where the role of wearable sensors for measuring motor symptoms of Parkinson's Disease was assessed and documented. Furthermore, C-Path is an optimal collaborator for future endeavors in AI and health care due to their extensive datasets and technical proficiency in both disease and regulatory domains. Functioning as a trusted partner and platform provider, C-Path actively facilitates consortia, respecting patient safety and security through meticulous data management practices. With a demonstrated history of creating open-source and user-friendly software, exemplified by the FDA-funded Rare Disease Cures Accelerator-Data and Analytics Platform (RDCA-DAP) initiative, C-Path emerges as a reliable and innovative player in shaping the future landscape of AI in health care. C-Path's endeavors in innovation and future-focused strategies are encapsulated in the scalable technologies and solutions developed by our team. They support the entire spectrum of algorithm development and assessment, emphasizing process validation, algorithmic literacy, and adherence to regulatory guidance. This approach creates a dynamic sandbox for responsible, safe, and rapid AI development. Algorithms are crafted using a risk-based approach with clearly defined optimization objectives with strict adherence to good development practices (GDP). Leveraging a library of basic functionality, we facilitate the rapid assembly of data analysis pipelines, promoting the generation of RWE. The use of dashboards will aid in the collection and documentation of validation. Looking forward, C-Path envisions broader integration of AI in healthcare workflows, enhancing productivity with automated tasks and interconnected data pipelines, with scalability reaching beyond our organization, magnified by open-source dissemination. This evolution ensures continuous validation of data pipelines for reliability in light of new scientific insights. The future of AI in drug development is characterized by diverse model complexities and input-data modalities. Transparency and explainability remain core principles, supported by interpretability modules affirming AI's validated state across privacy, security, and data domains. Assembling validated AI pipelines will become increasingly seamless, illustrated by optical character recognition translating doctor's notes for database querying using natural language processing and retrieval augmented generation algorithms. In summary, this perspective paper underscores C-Path's crucial role in advancing AI/ML and DHTs in drug development. There is an urgent call for a unified approach to assess and implement these methodologies for DDTs, and C-Path is uniquely positioned to address this need. Through collaboration and innovation, C-Path pioneers the application of AI/ML and DHTs in health care, emphasizing privacy and security. Stakeholders are encouraged to continue partnering with C-Path for ongoing progress and innovation at the intersection of AI/ML, DHTs, and health care. The Critical Path Institute is supported by the Food and Drug Administration (FDA) of the Department of Health and Human Services (HHS) and is 54% funded by the FDA/HHS, totaling $19,436,549, and 46% funded by non-government source(s), totaling $16,373,368. The contents are those of the author(s) and do not necessarily represent the official views of, nor an endorsement by, FDA/HHS or the US Government. The authors declared no competing interests for this work. AI tools were employed for drafting assistance and improving overall readability and language.",
+      "venue": "Clinical and Translational Science",
+      "citation_count": 5,
+      "doi": "10.1111/cts.13851",
+      "arxiv_id": "",
+      "url": "https://doi.org/10.1111/cts.13851",
+      "source": "openalex",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "oalex-W2988293491",
+      "title": "The Chinese approach to artificial intelligence: an analysis of policy, ethics, and regulation",
+      "authors": [
+        {
+          "name": "Huw Roberts",
+          "affiliation": "University of Oxford"
+        },
+        {
+          "name": "Josh Cowls",
+          "affiliation": "Turing Institute"
+        },
+        {
+          "name": "Jessica Morley",
+          "affiliation": "University of Oxford"
+        },
+        {
+          "name": "Mariarosaria Taddeo",
+          "affiliation": "Turing Institute"
+        },
+        {
+          "name": "Vincent Wang",
+          "affiliation": "University of Oxford"
+        },
+        {
+          "name": "Luciano Floridi",
+          "affiliation": "Turing Institute"
+        }
+      ],
+      "year": 2020,
+      "abstract": "Abstract In July 2017, China\u2019s State Council released the country\u2019s strategy for developing artificial intelligence (AI), entitled \u2018New Generation Artificial Intelligence Development Plan\u2019 (\u65b0\u4e00\u4ee3\u4eba\u5de5\u667a\u80fd\u53d1\u5c55\u89c4\u5212). This strategy outlined China\u2019s aims to become the world leader in AI by 2030, to monetise AI into a trillion-yuan (ca. 150 billion dollars) industry, and to emerge as the driving force in defining ethical norms and standards for AI. Several reports have analysed specific aspects of China\u2019s AI policies or have assessed the country\u2019s technical capabilities. Instead, in this article, we focus on the socio-political background and policy debates that are shaping China\u2019s AI strategy. In particular, we analyse the main strategic areas in which China is investing in AI and the concurrent ethical debates that are delimiting its use. By focusing on the policy backdrop, we seek to provide a more comprehensive and critical understanding of China\u2019s AI policy by bringing together debates and analyses of a wide array of policy documents.",
+      "venue": "AI & Society",
+      "citation_count": 501,
+      "doi": "10.1007/s00146-020-00992-2",
+      "arxiv_id": "",
+      "url": "https://doi.org/10.1007/s00146-020-00992-2",
+      "source": "openalex",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "oalex-W4414472335",
+      "title": "A Machine Learning and Econometric Framework for Credibility-Aware AI Adoption Measurement and Macroeconomic Impact Assessment in the Energy Sector",
+      "authors": [
+        {
+          "name": "Adriana AnaMaria Davidescu",
+          "affiliation": "National Institute for Research and Development in Environmental Protection"
+        },
+        {
+          "name": "Marina-Diana Agafi\u0163ei",
+          "affiliation": "National Institute for Research and Development in Environmental Protection"
+        },
+        {
+          "name": "Mihai Gheorghe",
+          "affiliation": "Bucharest University of Economic Studies"
+        },
+        {
+          "name": "Vasile Alecsandru Strat",
+          "affiliation": "Bucharest University of Economic Studies"
+        }
+      ],
+      "year": 2025,
+      "abstract": "Artificial intelligence (AI) adoption in strategic sectors such as energy is often framed in optimistic narratives, yet its actual economic contribution remains under-quantified. This study proposes a novel, multi-stage methodology at the intersection of machine learning, statistics, and big data analytics to bridge this gap. First, we construct a media-derived AI Adoption Score using natural language processing (NLP) techniques, including dictionary-based keyword extraction, sentiment analysis, and zero-shot classification, applied to a large corpus of firm-related news and scientific publications. To enhance reliability, we introduce a Misinformation Bias Score (MBS)\u2014developed via zero-shot classification and named entity recognition\u2014to penalise speculative or biased reporting, yielding a credibility-adjusted adoption metric. Using these scores, we classify firms and apply a Fixed Effects Difference-in-Differences (FE DiD) econometric model to estimate the causal effect of AI adoption on turnover. Finally, we scale firm-level results to the macroeconomic level via a Leontief Input\u2013Output model, quantifying direct, indirect, and induced contributions to GDP and employment. Results show that AI adoption in Romania\u2019s energy sector accounts for up to 42.8% of adopter turnover, contributing 3.54% to national GDP in 2023 and yielding a net employment gain of over 65,000 jobs, despite direct labour displacement. By integrating machine learning-based text analytics, statistical causal inference, and big data-driven macroeconomic modelling, this study delivers a replicable framework for measuring credible AI adoption and its economy-wide impacts, offering valuable insights for policymakers and researchers in digital transformation, energy economics, and sustainable development.",
+      "venue": "Mathematics",
+      "citation_count": 1,
+      "doi": "10.3390/math13193075",
+      "arxiv_id": "",
+      "url": "https://doi.org/10.3390/math13193075",
+      "source": "openalex",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "oalex-W3153075376",
+      "title": "Pancreatic Adenocarcinoma, Version 2.2021, NCCN Clinical Practice Guidelines in Oncology",
+      "authors": [
+        {
+          "name": "Margaret A. Tempero",
+          "affiliation": "UCSF Helen Diller Family Comprehensive Cancer Center"
+        },
+        {
+          "name": "Mokenge P. Malafa",
+          "affiliation": "Moffitt Cancer Center"
+        },
+        {
+          "name": "Mahmoud M. Al-Hawary",
+          "affiliation": "University of Michigan\u2013Ann Arbor"
+        },
+        {
+          "name": "Stephen W. Behrman",
+          "affiliation": "University of Tennessee Health Science Center"
+        },
+        {
+          "name": "Al B. Benson",
+          "affiliation": "Robert H. Lurie Comprehensive Cancer Center of Northwestern University"
+        },
+        {
+          "name": "Dana B. Cardin",
+          "affiliation": "Vanderbilt-Ingram Cancer Center"
+        },
+        {
+          "name": "E. Gabriela Chiorean",
+          "affiliation": "Seattle Cancer Care Alliance"
+        },
+        {
+          "name": "Vincent Chung",
+          "affiliation": "City Of Hope National Medical Center"
+        },
+        {
+          "name": "Brian G. Czito",
+          "affiliation": "Cancer Institute (WIA)"
+        },
+        {
+          "name": "Marco Del Chiaro",
+          "affiliation": "University of Colorado Denver"
+        },
+        {
+          "name": "Mary Dillhoff",
+          "affiliation": "The Ohio State University Comprehensive Cancer Center \u2013 Arthur G. James Cancer Hospital and Richard J. Solove Research Institute"
+        },
+        {
+          "name": "Timothy R. Donahue",
+          "affiliation": "UCLA Jonsson Comprehensive Cancer Center"
+        },
+        {
+          "name": "Efrat Dotan",
+          "affiliation": "Fox Chase Cancer Center"
+        },
+        {
+          "name": "Cristina R. Ferrone",
+          "affiliation": "Massachusetts General Hospital"
+        },
+        {
+          "name": "Christos Fountzilas",
+          "affiliation": ""
+        },
+        {
+          "name": "Jeffrey M. Hardacre",
+          "affiliation": "University Hospitals Seidman Cancer Center"
+        },
+        {
+          "name": "William G. Hawkins",
+          "affiliation": "Jewish Hospital"
+        },
+        {
+          "name": "Kelsey Klute",
+          "affiliation": "Susan Thompson Buffett Foundation"
+        },
+        {
+          "name": "Andrew H. Ko",
+          "affiliation": "UCSF Helen Diller Family Comprehensive Cancer Center"
+        },
+        {
+          "name": "John W. Kunstman",
+          "affiliation": "Smilow Cancer Hospital"
+        },
+        {
+          "name": "Noelle K. LoConte",
+          "affiliation": "University of Wisconsin Carbone Cancer Center"
+        },
+        {
+          "name": "Andrew M. Lowy",
+          "affiliation": "University of California, San Diego"
+        },
+        {
+          "name": "Cassadie Moravek",
+          "affiliation": "Pancreatic Cancer Action Network"
+        },
+        {
+          "name": "Eric K. Nakakura",
+          "affiliation": "UCSF Helen Diller Family Comprehensive Cancer Center"
+        },
+        {
+          "name": "Amol Narang",
+          "affiliation": "Sidney Kimmel Comprehensive Cancer Center"
+        },
+        {
+          "name": "Jorge Obando",
+          "affiliation": "Cancer Institute (WIA)"
+        },
+        {
+          "name": "Patricio M. Polanco",
+          "affiliation": "Harold C. Simmons Comprehensive Cancer Center"
+        },
+        {
+          "name": "Sushanth Reddy",
+          "affiliation": "University of Colorado Cancer Center"
+        },
+        {
+          "name": "Marsha Reyngold",
+          "affiliation": "Memorial Sloan Kettering Cancer Center"
+        },
+        {
+          "name": "Courtney L. Scaife",
+          "affiliation": "University of Utah"
+        },
+        {
+          "name": "Jeanne Shen",
+          "affiliation": "Stanford Cancer Institute"
+        },
+        {
+          "name": "Charles M. Vollmer",
+          "affiliation": "University of Pennsylvania"
+        },
+        {
+          "name": "Robert A. Wolff",
+          "affiliation": "The University of Texas MD Anderson Cancer Center"
+        },
+        {
+          "name": "Brian M. Wolpin",
+          "affiliation": "Dana-Farber Brigham Cancer Center"
+        },
+        {
+          "name": "Beth Lynn",
+          "affiliation": ""
+        },
+        {
+          "name": "Giby V. George",
+          "affiliation": ""
+        }
+      ],
+      "year": 2021,
+      "abstract": "Pancreatic cancer is the fourth leading cause of cancer-related death among men and women in the United States. A major challenge in treatment remains patients' advanced disease at diagnosis. The NCCN Guidelines for Pancreatic Adenocarcinoma provides recommendations for the diagnosis, evaluation, treatment, and follow-up for patients with pancreatic cancer. Although survival rates remain relatively unchanged, newer modalities of treatment, including targeted therapies, provide hope for improving patient outcomes. Sections of the manuscript have been updated to be concordant with the most recent update to the guidelines. This manuscript focuses on the available systemic therapy approaches, specifically the treatment options for locally advanced and metastatic disease.",
+      "venue": "Journal of the National Comprehensive Cancer Network",
+      "citation_count": 1244,
+      "doi": "10.6004/jnccn.2021.0017",
+      "arxiv_id": "",
+      "url": "https://doi.org/10.6004/jnccn.2021.0017",
+      "source": "openalex",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "oalex-W2917612571",
+      "title": "Blockchain Technology Implementation in Logistics",
+      "authors": [
+        {
+          "name": "Edvard Tijan",
+          "affiliation": "University of Rijeka"
+        },
+        {
+          "name": "Sa\u0161a Aksentijevi\u0107",
+          "affiliation": ""
+        },
+        {
+          "name": "Katarina Ivani\u0107",
+          "affiliation": "University of Rijeka"
+        },
+        {
+          "name": "Mladen Jardas",
+          "affiliation": "University of Rijeka"
+        }
+      ],
+      "year": 2019,
+      "abstract": "This paper researches decentralized data storage represented by blockchain technology and the possibility of its development in sustainable logistics and supply chain management. Although the benefits of blockchain technology have been most widely researched in the financial sector, major challenges in logistics, such as order delay, damage to goods, errors, and multiple data entry can also be minimized by introducing blockchain technology. This paper presents a comprehensive review of the current and rising trends of blockchain technology usage in logistics and supply chain management.",
+      "venue": "Sustainability",
+      "citation_count": 478,
+      "doi": "10.3390/su11041185",
+      "arxiv_id": "",
+      "url": "https://doi.org/10.3390/su11041185",
+      "source": "openalex",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "oalex-W2395785611",
+      "title": "Mapping global patterns of drought risk: An empirical framework based on sub-national estimates of hazard, exposure and vulnerability",
+      "authors": [
+        {
+          "name": "Hugo Carr\u00e3o",
+          "affiliation": "Joint Research Centre"
+        },
+        {
+          "name": "Gustavo Naumann",
+          "affiliation": "Joint Research Centre"
+        },
+        {
+          "name": "Paulo Barbosa",
+          "affiliation": "Joint Research Centre"
+        }
+      ],
+      "year": 2016,
+      "abstract": "A global map of drought risk has been elaborated at the sub-national administrative level. The motivation for this study is the observation that little research and no concerted efforts have been made at the global level to provide a consistent and equitable drought risk management framework for multiple regions, population groups and economic sectors. Drought risk is assessed for the period 2000-2014 and is based on the product of three independent determinants: hazard, exposure and vulnerability. Drought hazard is derived from a non-parametric analysis of historical precipitation deficits at the 0.5dd; drought exposure is based on a non-parametric aggregation of gridded indicators of population and livestock densities, crop cover and water stress; and drought vulnerability is computed as the arithmetic composite of high level factors of social, economic and infrastructural indicators, collected at both the national and sub-national levels. The performance evaluation of the proposed models underlines their statistical robustness and emphasizes an empirical resemblance between the geographic patterns of potential drought impacts and previous results presented in the literature. Our findings support the idea that drought risk is driven by an exponential growth of regional exposure, while hazard and vulnerability exhibit a weaker relationship with the geographic distribution of risk values. Drought risk is lower for remote regions, such as tundras and tropical forests, and higher for populated areas and regions extensively exploited for crop production and livestock farming, such as South-Central Asia, Southeast of South America, Central Europe and Southeast of the United States. As climate change projections foresee an increase of drought frequency and intensity for these regions, then there is an aggravated risk for global food security and potential for civil conflict in the medium- to long-term. Since most agricultural regions show high infrastructural vulnerability to drought, then regional adaption to climate change may begin through implementing and fostering the widespread use of irrigation and rainwater harvesting systems. In this context, reduction in drought risk may also benefit from diversifying regional economies on different sectors of activity and reducing the dependence of their GDP on agriculture.",
+      "venue": "Global Environmental Change",
+      "citation_count": 486,
+      "doi": "10.1016/j.gloenvcha.2016.04.012",
+      "arxiv_id": "",
+      "url": "https://doi.org/10.1016/j.gloenvcha.2016.04.012",
+      "source": "openalex",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "oalex-W2624652951",
+      "title": "Single-molecule analysis of ligand efficacy in \u03b22AR\u2013G-protein activation",
+      "authors": [
+        {
+          "name": "G. Glenn Gregorio",
+          "affiliation": "Cornell University"
+        },
+        {
+          "name": "Matthieu Masureel",
+          "affiliation": "Stanford University"
+        },
+        {
+          "name": "Daniel Hilger",
+          "affiliation": "Stanford University"
+        },
+        {
+          "name": "Daniel S. Terry",
+          "affiliation": "Cornell University"
+        },
+        {
+          "name": "Manuel F. Juette",
+          "affiliation": "Cornell University"
+        },
+        {
+          "name": "Hong Zhao",
+          "affiliation": "Cornell University"
+        },
+        {
+          "name": "Zhou Zhou",
+          "affiliation": "Weill Cornell Medicine"
+        },
+        {
+          "name": "Jose Manuel Perez\u2010Aguilar",
+          "affiliation": "Cornell University"
+        },
+        {
+          "name": "M. Hauge",
+          "affiliation": "New York State Psychiatric Institute"
+        },
+        {
+          "name": "Signe Mathiasen",
+          "affiliation": "Columbia University"
+        },
+        {
+          "name": "Jonathan A. Javitch",
+          "affiliation": "New York Psychoanalytic Society and Institute"
+        },
+        {
+          "name": "Harel Weinstein",
+          "affiliation": "Weill Cornell Medicine"
+        },
+        {
+          "name": "Brian K. Kobilka",
+          "affiliation": "Stanford University"
+        },
+        {
+          "name": "Scott C. Blanchard",
+          "affiliation": "Cornell University"
+        }
+      ],
+      "year": 2017,
+      "abstract": "",
+      "venue": "Nature",
+      "citation_count": 355,
+      "doi": "10.1038/nature22354",
+      "arxiv_id": "",
+      "url": "https://doi.org/10.1038/nature22354",
+      "source": "openalex",
+      "_bibtex_override": ""
+    },
+    {
+      "paper_id": "oalex-W2246394597",
+      "title": "Rethinking the financial network",
+      "authors": [
+        {
+          "name": "Andrew Haldane",
+          "affiliation": ""
+        }
+      ],
+      "year": 2013,
+      "abstract": "On 16 November 2002, the first official case of Severe Acute Respiratory Syndrome (SARS) was recorded in Guangdong Province, China. Panic ensued. Uncertainty about its causes and contagious consequences brought many neighbouring economies across Asia to a standstill. Hotel occupancy rates in Hong Kong fell from over 80 % to less than 15 %, while among Beijing\u2019s 5-star hotels occupancy rates fell below 2 %.",
+      "venue": "",
+      "citation_count": 580,
+      "doi": "10.1007/978-3-658-02248-8_17",
+      "arxiv_id": "",
+      "url": "https://doi.org/10.1007/978-3-658-02248-8_17",
+      "source": "openalex",
+      "_bibtex_override": ""
+    }
+  ]
+}

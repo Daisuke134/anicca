@@ -1,0 +1,152 @@
+{
+  "phase": 0,
+  "phase_name": "location_discover",
+  "started_at": "2026-05-09T21:30:00+09:00",
+  "last_updated_at": "2026-05-09T22:05:00+09:00",
+  "executor": "Claude Code (manual run, Step 1 of 5-step workflow)",
+  "from_account": "keiodaisuke@gmail.com",
+  "outreach_summary": {
+    "emails_sent_total": 5,
+    "form_submissions_total": 0,
+    "form_submissions_partial": 1,
+    "responses_received": 0
+  },
+  "candidates": [
+    {
+      "id": "jva-da-chiba",
+      "name": "日本ヴィパッサナー協会 ダンマーディッチャ (千葉)",
+      "type": "collaboration_partner",
+      "address": "〒299-4413 千葉県長生郡睦沢町上之郷 785-3",
+      "website": "https://adicca.dhamma.org/ja/the-chiba-centre/",
+      "contact_email": "info@jva-da.org",
+      "contact_tel": "0475-40-3611",
+      "purpose": "discourse 使用許諾 + 運営アドバイス",
+      "outreach": {
+        "method": "gmail_direct",
+        "sent_at": "2026-05-09T21:32:00+09:00",
+        "message_id": "19e0cc536f9cbe7b",
+        "subject": "【ご相談】Anicca Retreats — ヴィパッサナー瞑想 × 物理リトリートセンター運営について"
+      },
+      "status": "sent_awaiting_reply"
+    },
+    {
+      "id": "jva-bhanu-kyoto",
+      "name": "日本ヴィパッサナー協会 ダンマバーヌ (京都)",
+      "type": "collaboration_partner",
+      "address": "〒622-0324 京都府船井郡京丹波町八田岩上奥 2-1",
+      "website": "https://bhanu.dhamma.org/ja/the-kyoto-centre/",
+      "contact_email": "info@bhanu.dhamma.org",
+      "contact_tel": "0771-86-0765",
+      "purpose": "discourse 使用許諾 + 運営アドバイス",
+      "outreach": {
+        "method": "gmail_direct",
+        "sent_at": "2026-05-09T21:32:30+09:00",
+        "message_id": "19e0cc53fa7397b0",
+        "subject": "【ご相談】Anicca Retreats — ヴィパッサナー瞑想 × 物理リトリートセンター運営について"
+      },
+      "status": "sent_awaiting_reply"
+    },
+    {
+      "id": "shonan-village-center",
+      "name": "湘南国際村センター",
+      "address": "〒240-0198 神奈川県三浦郡葉山町上山口 1560-39",
+      "website": "https://www.shonan-village.co.jp/",
+      "contact_form": "https://www.shonan-village.co.jp/mailform_jp",
+      "contact_tel": "046-855-1800",
+      "type": "research_conference_center",
+      "purpose": "11 日 18 名 (12 参加 + 6 staff) silent retreat 会場借用",
+      "outreach": [
+        {
+          "method": "gmail_direct (heuristic info@)",
+          "sent_at": "2026-05-09T22:00:00+09:00",
+          "message_id": "19e0ccba0339bedd",
+          "subject": "【ご相談】Anicca Retreats — 10日間 silent meditation retreat 会場借用",
+          "note": "info@shonan-village.co.jp 宛て (heuristic). bounce 監視必要"
+        },
+        {
+          "method": "camofox_form (mailform_jp)",
+          "submitted_at": null,
+          "status": "60% filled, e14/e15/radios timeout — 次 iteration で完了 or web manual",
+          "filled_fields": ["e12 空き状況", "e13 その他", "e16 Email", "e18 会社", "e23 利用目的", "e24 開始日", "e25 終了日", "e26 部屋数 6", "e27 人数 18"],
+          "missing_fields": ["e14 名前", "e15 フリガナ", "e29 相部屋 radio", "e31 食事予定 radio", "e36 同意 checkbox"]
+        }
+      ],
+      "status": "email_sent_form_partial"
+    },
+    {
+      "id": "niye-nyc-yoyogi",
+      "name": "国立オリンピック記念青少年総合センター (代々木)",
+      "address": "東京都渋谷区代々木神園町 3-1",
+      "website": "https://nyc.niye.go.jp/",
+      "contact_tel": "03-3469-2525",
+      "type": "national_youth_education_facility",
+      "purpose": "11 日 18 名 silent retreat 会場借用 — 都心過ぎて静粛性次第",
+      "outreach": {
+        "method": "gmail_direct (heuristic info@)",
+        "sent_at": "2026-05-09T22:00:30+09:00",
+        "message_id": "19e0ccbaae4782d7",
+        "subject": "【ご相談】Anicca Retreats — 10日間 silent meditation retreat 会場借用",
+        "note": "info@nyc.niye.go.jp 宛て (heuristic). bounce 監視必要"
+      },
+      "status": "sent_awaiting_reply"
+    },
+    {
+      "id": "niye-headquarters",
+      "name": "国立青少年教育振興機構 本部 (御殿場・赤城・代々木いずれか紹介依頼)",
+      "address": "東京都渋谷区代々木神園町 3-1 (NYC 内)",
+      "website": "https://www.niye.go.jp/",
+      "type": "national_youth_education_facility_headquarters",
+      "purpose": "御殿場・赤城・代々木の中で 11 日 18 名 silent retreat 適合施設の紹介依頼",
+      "outreach": {
+        "method": "gmail_direct (heuristic info@)",
+        "sent_at": "2026-05-09T22:01:00+09:00",
+        "message_id": "19e0ccbb549ec170",
+        "subject": "【ご相談】Anicca Retreats — 10日間 silent meditation retreat 会場借用 (御殿場・赤城・代々木いずれか)",
+        "note": "info@niye.go.jp 宛て (heuristic). bounce 監視必要"
+      },
+      "status": "sent_awaiting_reply"
+    }
+  ],
+  "deferred_pipeline": [
+    {
+      "id": "niye-akagi",
+      "name": "国立赤城青少年交流の家 (前橋)",
+      "reason": "大規模改修「老朽化再生事業」による新規申込一時停止中"
+    },
+    {
+      "id": "niye-gotemba-direct",
+      "name": "国立中央青少年交流の家 (御殿場) 直接",
+      "reason": "DNS NXDOMAIN — 公式 URL 確定できず。NIYE 本部経由で確認 (上記 niye-headquarters メール参照)"
+    },
+    {
+      "id": "sotozen-navi-kanto-temples",
+      "name": "曹洞宗 sotozen-navi.com 関東圏 坐禅可寺院 (5 件)",
+      "reason": "1,157 件 directory に 関東 filter pattern 未確定 + email 公開寺院 detail 取得が時間要"
+    },
+    {
+      "id": "spacemarket-kanto-12guest",
+      "name": "Spacemarket / Airbnb 関東 12+ 名 一棟貸し",
+      "reason": "Spacemarket 検索 URL pattern が変更されたため再調査必要"
+    }
+  ],
+  "lessons_learned_v1": [
+    "✅ Goenka 公式 (jva-da / bhanu) への collab 打診 = 直接 Gmail で問題なく送信可能",
+    "✅ heuristic info@ pattern (info@shonan-village.co.jp / info@nyc.niye.go.jp / info@niye.go.jp) は 5/9 中に bounce return で生死確認できる",
+    "❌ camofox 一部 ref (e14/e15/radios) で `action timed out after 30000ms` 発生 — フォーム element の attached state issue。snapshot の ref と form 内部 state が乖離。次 iteration で fresh tab + 個別 click → focus → type sequence で再試行",
+    "❌ Google search CAPTCHA + camofox stealth でも CAPTCHA — 検索エンジン経由は脱出困難。公式 directory (sotozen-navi / shukubo / NIYE) 直接 source 優先",
+    "⚠️ niye.go.jp 本部 root 403 + gotemba.niye.go.jp DNS NXDOMAIN — 御殿場の正式 URL は別 domain or 本部経由で取得",
+    "📚 曹洞宗 sotozen-navi.com に 1,157 件坐禅可寺院 directory あり (cate=10, pref filter URL pattern 未確定 — 次 iteration で確定)",
+    "📚 湘南国際村 form は 26+ field の複雑構成。camofox で半自動化可能だが、initial fill 後の radio + 同意 checkbox 部分は ref refresh 後の再 click 必要",
+    "📚 大規模 venue は contact form ベース、個人/小規模 venue は email 直接の傾向"
+  ],
+  "next_iteration_actions": [
+    "Step 1 残り: 湘南国際村 form を fresh tab で再試行 + 提出確認 screenshot",
+    "Step 1 残り: sotozen-navi 関東 filter pattern 確定 + 5 寺院抽出 + email 取得 + Gmail 送信",
+    "Step 1 残り: bounce 監視 (heuristic email 3 件) → 24h 内に bounce log 確認",
+    "Step 1 残り: Gmail INBOX 監視 → reply check (1h 毎)",
+    "Step 2: skill 化開始 — `~/.openclaw/skills/anicca-retreat-factory/scripts/lib/{gmail.sh, camofox.sh, sotozen-source.sh, niye-source.sh, slack.sh}` + `phase0-location-discover.sh` 実装",
+    "Step 3: skill 経由で同手順を idempotent 再実行 (state.json 既存 candidate skip + 新規のみ outreach)",
+    "Step 4: today cron 1 回テスト",
+    "Step 5: monthly cron `retreat-location-discover-monthly` 月初 9 JST 登録"
+  ]
+}
