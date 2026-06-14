@@ -307,3 +307,10 @@ Kansou/verdict placement: TWICE — a short spoiler box at the very top [0], the
 - [6] Verdict expanded (reuse/extend V1) — who should/shouldn't, Vitalik critique, "can it make you money?" honest answer
 - [7] Series hook (next: Felix)
 - 8 visuals total (≈1 per section, not excessive). V3 doubles as the TikTok single image.
+
+### Playbook additions (Dais 2026-06-14, [3] 4th review)
+44. **When SHOWING a block to Dais, NEVER abbreviate.** No "前回どおり" / "…前半は省略…". Paste the ENTIRE block including full footnotes, every time. Abbreviating = not doing the requested job.
+45. **Never reference footnotes from the body.** Don't write "記事末に補足しました". People who want depth read the footnotes anyway; pointing at them is clutter. Footnotes stand alone.
+46. **Cut redundant parentheticals in visuals/tables.** "（まだ誰も未到達）" "（まさに挑戦中）" repeat what the prose says = noise. Keep ASCII cells lean.
+47. **Grammar: 「カードもあなた自身」is wrong** (card ≠ you). Write "使うカードもあなたのものだから". Read each clause for subject/object correctness.
+48. **Table/section titles must name the THING plainly.** "どれくらい人間に頼っているか" → "自律的に稼ぐとされるAIエージェント". Axis = 人間がループにいる ◄─► 人間ゼロ.
