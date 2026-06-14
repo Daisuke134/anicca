@@ -314,3 +314,11 @@ Kansou/verdict placement: TWICE — a short spoiler box at the very top [0], the
 46. **Cut redundant parentheticals in visuals/tables.** "（まだ誰も未到達）" "（まさに挑戦中）" repeat what the prose says = noise. Keep ASCII cells lean.
 47. **Grammar: 「カードもあなた自身」is wrong** (card ≠ you). Write "使うカードもあなたのものだから". Read each clause for subject/object correctness.
 48. **Table/section titles must name the THING plainly.** "どれくらい人間に頼っているか" → "自律的に稼ぐとされるAIエージェント". Axis = 人間がループにいる ◄─► 人間ゼロ.
+
+### Playbook additions (Dais 2026-06-14, [4] deep-dive review)
+49. **Answer the reader's real mechanism questions with CODE, not hand-waving.** For [4], Dais asked: is the loop cron or agent-decided? does heartbeat use the LLM? which heartbeat task wakes it? why 2 balances? actual model IDs? cost/cap of replication? how does hash-verify work? — every one was answered by reading the source (loop=agent-decided sleep duration, NOT cron; heartbeat=no LLM; wakes=usdc/inbox/alert; credits=prepaid card vs USDC=bank acct; models gpt-5.2/5.3→gpt-5-mini; replication cost=prepaid sandbox+child seed, cap 3 = runaway brake; SHA-256 fingerprint). Read the repo, don't summarize the summary.
+50. **Cite origins precisely.** x402 = launched by Coinbase, now open standard (x402.org, adopted by Stripe/Cloudflare). Always name WHO made a thing on first mention.
+51. **Use real numbers/IDs when they exist** (model names, $ caps, child cap) — concreteness = credibility for the engineer reader.
+52. **Reframe biological-creepy verbs.** 子を産む → 自分を複製して子を作る（自己複製）. 頭を落とす → 知性を一段下げる／安いモデルに自動で切り替える.
+53. **Use the field's real terms.** AI-to-AI economy = エージェント経済圏 / agent economy. Look up the established term instead of inventing a phrasing.
+54. **Each unexplained acronym = a stop sign.** Explain SHA-256, ERC-8004, x402, EIP in one plain line at first use (or drop the acronym). A reader who hits an unexplained term quits, like reading an old book in archaic English.
