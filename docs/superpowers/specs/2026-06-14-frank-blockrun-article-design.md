@@ -84,9 +84,72 @@ Built per the BP article (fan-out → adversarial verify → synthesize). One-sh
 
 Output of the workflow goes into a new section §7 below (replaces §4 placeholder).
 
-## 7. Locked hamburger (TO BE FILLED by workflow run)
+## 7. Hamburger v0 (workflow output 2026-06-14, run wf_9ae52cdd-9d7)
 
-_Empty until §6 workflow completes — Dais reviews and iterates from title and block [0] one-by-one._
+Workflow stats: 7 source fetched / 20 claim verified / 18 confirmed / 2 refuted. Founder voice = "The wallet balance IS the hard limit" / "Other agents write code. Franklin Agent writes code and spends money".
+
+### Title candidates (3, Japanese, ≤ 30 chars)
+
+1. AIに$5の財布を持たせる実験
+2. サブスクをやめてAIに財布を渡す日
+3. 残高ゼロで止まるAIエージェント
+
+### Blocks
+
+| ID | Working title | Image | Sources to cite |
+|---|---|---|---|
+| 0 | 結論。Frankは「AIに財布を持たせる」最短ルート | — | get-started, Franklin |
+| 1 | 世界一賢いAIが、$0.01のサーバー代を払えない | 🎨V1 | Franklin, awesome-blockrun, get-started |
+| 2 | Frankとは「残高が尽きたら止まるAI」 | 🎨V2 | Franklin, get-started |
+| 3 | Frankは1人じゃない。背後にある4つの部品 | 🎨V3 | ClawRouter docs, blockrun-mcp, Franklin, awesome-OpenClaw-Money-Maker |
+| 4 | $5を渡すと、AIは何回しゃべれるのか | 🎨V4 | get-started, x402/how-it-works, ClawRouter, pricing, Franklin |
+| 5 | 実際に$5入れて動かしてみた記録 | 🎨V5 | Franklin, blockrun-mcp, get-started — TO BE FILLED after WE RAN IT |
+| 6 | 今すぐ使うべき人、まだ待つべき人 | — | blockrun-mcp, claude-code setup, ClawRouter, awesome-blockrun, Franklin, money-maker |
+| 7 | AIから「お伺い」を消す日 | 🎨V6 | Franklin, get-started + manifesto close |
+| 8 | 出典 | — | all 11 |
+
+Per-block content guidance (verbatim from workflow synthesis) is captured in the workflow output file: `/private/tmp/claude-501/-Users-anicca-anicca-project/4d4a236a-271f-435f-ae4c-5e2f8db5f472/tasks/wcjh0e47b.output`. Each block guidance enforces: em-dash 禁止 / Anicca 禁止 / aggregation of one source 禁止 / meta-label 禁止 / first-use term definitions / verbatim founder quotes.
+
+### Image spots (6)
+
+| # | Block | Description |
+|---|---|---|
+| 🎨V1 | [1] | お金を払えないAI: ロボットがレジ前で立ち尽くす、財布なし、最小決済 $0.50 の貼り紙 |
+| 🎨V2 | [2] | 財布を持ったAI: 透明ポケットに USDC $5、残高ゲージ、空になると座って止まる |
+| 🎨V3 | [3] | BlockRun スタック分解図: ClawRouter / blockrun-mcp / Franklin / money-maker = 脳・手・財布・地図 |
+| 🎨V4 | [4] | x402 シーケンス図: AI→server "API ください" / server→AI "HTTP 402 / $0.0023" / AI→server "署名付き再送" / server→AI "結果"。Base 手数料 ~$0.001 |
+| 🎨V5 | [5] | 実走ターミナル + 領収書スタイル: コマンド・マスク財布アドレス・$5 入金・選ばれたモデル名・1回支払いログ・残高推移 |
+| 🎨V6 | [7] | 鳥かご: 「人間の主体性」の檻、1本の鉄格子が外れて飛び立つ AI、朝焼け |
+
+### Sources (11, in body order)
+
+1. BlockRun 公式・はじめかた — https://blockrun.ai/get-started
+2. BlockRun ドキュメント全体 — https://blockrun.ai/docs
+3. ClawRouter 仕様（15次元スコアリング・78%節約） — https://blockrun.ai/docs/products/routing/clawrouter
+4. x402 プロトコルの仕組み（EIP-3009 / 402 往復） — https://blockrun.ai/docs/x402/how-it-works
+5. Intelligence Pricing（プロバイダー原価 +5%） — https://blockrun.ai/docs/products/intelligence/pricing
+6. Claude Code 60 秒セットアップ — https://blockrun.ai/docs/getting-started/claude-code
+7. Franklin Agent リポジトリ（627★・YOPO 定義） — https://github.com/BlockRunAI/Franklin
+8. blockrun-mcp リポジトリ（466★・19 ツール） — https://github.com/BlockRunAI/blockrun-mcp
+9. awesome-blockrun（x402 エコシステム実数） — https://github.com/BlockRunAI/awesome-blockrun
+10. awesome-OpenClaw-Money-Maker（270★・運用カタログ） — https://github.com/BlockRunAI/awesome-OpenClaw-Money-Maker
+11. x402 プロトコル公式 — https://x402.org
+
+### Editor notes (from workflow synthesis)
+
+- 創業者の声は驚くほど淡々として誇張がない。「The wallet balance IS the hard limit」「Other agents write code. Franklin Agent writes code and spends money」のような短い対比文が骨格で、ここを日本語で借用すると記事の体温が一気に上がる。SaaS 的な「unlimited」「powerful」を使わず、「stops」「hard limit」「no overdraft」と止まる側の語彙を選んでいる。
+- 一番意外だったのは、x402 が机上のプロトコルではなく、12 月単月で 6,300 万件・$7.5M USDC が動いている実エコシステムだったこと（awesome-blockrun の State of x402）。「派手な未来予告」ではなく「もう動いている現在」として書くべき。一方で awesome-OpenClaw-Money-Maker が「ClawHub で認証情報を盗む skill が 341 件」と自分で警告している誠実さも見逃さない。
+- 張るべき緊張は「自由 vs 自己管理」。サブスクは縛られている代わりに守られている。Frank は自由だが、秘密鍵を失えば残高も失う。14 歳の読者に「これは大人の道具で、軽くない」と伝えつつ、それでも開く価値があると感じさせる。
+- 技術用語は初出で必ず 1 行定義（USDC = 米ドル建てデジタル通貨、Base = Ethereum の低手数料ネットワーク、MCP = Claude にツールをつなぐ USB のような規格、x402 = HTTP 標準の「支払い必要」コード）。読み上げテストで子供が 3 秒以上詰まる文は割る。
+
+### Open questions (settle in WE RAN IT or by Dais)
+
+1. Frank 初回起動で `~/.blockrun/.session` に保存される秘密鍵を、Mac 上でファイル権限 600 に自動で落とすか、それともユーザーが手動で `chmod 600` する必要があるのか（README に明記なし、実走で確認）。
+2. Base 上での $5 USDC 入金の現実的な所要時間（Coinbase 経由とブリッジ経由でどちらが早いか、実走時に BaseScan で観察）。
+3. ClawRouter の free プロファイル（NVIDIA 無料モデル）に残高ゼロで自動フォールバックするのか、それとも Frank は黙って停止するだけなのか（README 記述と挙動の一致を実走で確認）。
+4. blockrun-mcp の 19 ツールのうち、ChatGPT Desktop 経由でも本当に全てが動くのか、Claude Code 限定の挙動があるのか。
+5. Franklin の Smart Router (2M+ requests 学習) が、日本語プロンプトでも英語と同等の tier 判定をするか（次元スコアリングが英語キーワード前提に見える）。
+6. x402 が返す 402 レスポンスの料金が、同じプロンプトでも実行ごとにブレるのか、決定論的なのか（実走で 2〜3 回叩いてログ比較）。
 
 ## 8. Publishing pipeline (parent SSOT §7 inherited)
 
