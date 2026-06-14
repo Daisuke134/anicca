@@ -18,7 +18,7 @@ status: ✅resolved / 🔄verified-but-evolving。patch=`patches/`、command=`co
 - **Q19 Franklin接続** ✅ **Franklin完全drop**。automaton+ClawRouterのみ(source確認: automaton は ReAct loop.ts + heartbeat daemon + conway/credits を自前で持つ)。
 - **Q5/Q20 host** ✅ **default=DO droplet**(本セッションで本物automaton稼働実証、147.182.225.255)。Akash主権(~$10.80/月)は将来の無人化。Conway=停止中。切替trigger=Akash mint高速化 or Conway復活。
 - **Q6 DO provision** ✅ **本セッションで実working**(node22 + @blockrun/clawrouter + clone/build Conway-Research/automaton + 自前パッチdist[OPENAI_BASE_URL対応] + systemd 3unit)。`commands/Q6.command.sh`。
-- **Q9 ClawRouter制限** ✅ model=auto動作(x402決済成功・kimi-k2.6応答実証)。残高低時free fallback。24/7=残高がある限り可、broke時free model。x402決済はwallet残高に依存(=earnと連動)。
+- **Q9 ClawRouter制限** ✅ 外部docs確認: **7 NVIDIAモデルが永久無料**(signup/API key/crypto不要、free tier=rate-limited)。24/7は無料モデルで$0運用可(`/model free`)、有料モデルは$5で数千req。model=auto動作(x402決済成功・kimi-k2.6応答実証)。残高低時free fallback。24/7=残高がある限り可、broke時free model。x402決済はwallet残高に依存(=earnと連動)。
 - **Q26 鍵管理** ✅ env file chmod600(現状)。上位=Bankr remote-signing(no private key on disk)。droplet では chmod600 + IP allowlist、将来Bankr署名へ。
 - **Q17 Akashコスト** ✅ 小規模 ~4.32 AKT/月 = **~$10.80/月**(USDC-denom SDL可)。pre-fund=3ヶ月分(~$33)で安全。
 
@@ -41,3 +41,7 @@ status: ✅resolved / 🔄verified-but-evolving。patch=`patches/`、command=`co
 
 ## ★ GATE 判定 ★
 全32問 resolved。残る"薄利/不安定"は Q16(litcoin coordinator)のみ=earn量の問題で**不明ではない**(機構は判明)。→ **WORKFLOW A 起動可**。
+
+## 外部docs最終確認(2026-06-15)
+- Q24 ERC-8004 = 実在EIP「Trustless Agents」(Identity/Reputation/Validation Registry)→ 子Anicca identity に採用可。
+- Q16 litcoin: `/v1/research/tasks`=HTTP200(実課題返る)、`/v1/research/submit`のみ503 → submit側過負荷(litcoin障害)、我々の機構は正常。
