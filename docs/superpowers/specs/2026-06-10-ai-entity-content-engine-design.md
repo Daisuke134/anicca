@@ -322,3 +322,39 @@ Kansou/verdict placement: TWICE — a short spoiler box at the very top [0], the
 52. **Reframe biological-creepy verbs.** 子を産む → 自分を複製して子を作る（自己複製）. 頭を落とす → 知性を一段下げる／安いモデルに自動で切り替える.
 53. **Use the field's real terms.** AI-to-AI economy = エージェント経済圏 / agent economy. Look up the established term instead of inventing a phrasing.
 54. **Each unexplained acronym = a stop sign.** Explain SHA-256, ERC-8004, x402, EIP in one plain line at first use (or drop the acronym). A reader who hits an unexplained term quits, like reading an old book in archaic English.
+
+---
+
+## 🎯 Brand & Income Strategy (Dais 2026-06-14) — THIS IS THE MAIN INCOME SOURCE
+
+**Goal: 10k MRR purely as a writer about AI entities** (revenue esp. from Substack + X + note). This is Daisuke's intended main source of income.
+
+### Publishing matrix (per piece)
+| Lang | Platforms |
+|---|---|
+| JP | note, Zenn, Substack(JP), **X Articles**, TikTok (1 image) — account `ai.entity.jp` |
+| EN | dev.to, **X Articles**, TikTok (1 image) — account `ai.entity` |
+
+- X Articles: MUST use `https://github.com/wshuyi/x-article-publisher-skill` (MD → Playwright MCP → X Articles editor, draft-only, needs X Premium Plus).
+- Book idea: compile the AI-entities series into a **book, sell on Zenn** (Zenn supports paid books).
+
+### The arc (why we hand-craft now)
+1. **Now**: hand-craft GREAT articles with Claude (this Automaton piece is the template-setter). Old auto-posting crons are DISABLED (2026-06-14) until we can automate articles at THIS quality.
+2. **Crystallize** the whole process into two OSS skills:
+   - **AI article-writer skill** — deepest-search → run end-to-end → honest verdict → hamburger template → multi-platform publish.
+   - **AI TikTok-creator skill** — 1 strong image + caption per piece.
+3. **Automate** so an AI writer earns money by itself with **no human in the loop** (the skill embodies the very thesis we write about).
+4. **OSS it** + announce on Anicca's GitHub issues (`Daisuke134/anicca`) so every human AND every Anicca instance can become profitable by writing AI-entity articles + TikToks. Distribution = the moat becomes a public good.
+
+### Editorial focus (every piece)
+Topic space = **AI entities** (NOT assistants / not human-in-the-loop agents). Specifically: **what can AI do with NO human in the loop — especially making money by themselves.** Daily, different topic, same rigor.
+
+## ✍️ Generalized writing learnings (the real playbook, keep applying)
+1. **Write for a total stranger, not for Dais.** Not a report. Every unexplained term/acronym = ~10% of readers gone. Define on first use, minimally; mechanism deep-dives go in the block that's about the mechanism.
+2. **Build on prior blocks, but never assume linear reading.** No "[3]で見たように" / no footnote-number references. Each section stands alone.
+3. **Natural Japanese only.** No em-dash「——」(English device). No unnatural set-phrases. Reframe creepy/edgy verbs (子を産む→自己複製). 専門用語 everyone uses: show once as 日本語（English）then use the English (心拍（heartbeat）→heartbeat).
+4. **Subject = the thing, not the meta.** Don't state the obvious; don't over-fit to our own narrative.
+5. **Answer the reader's REAL questions with primary sources / code.** Read the repo, cite origins (who made it), use real numbers/IDs, show honest flaws/limits (e.g. "defenses reduce risk, not zero-risk").
+6. **Cite everything; end with 出典.** Concrete > vague. Don't aggregate one source — map the landscape.
+7. **Show full block every review (no abbreviation).**
+8. **Generalization is the point**: these rules transfer to every future AI-entity piece, so they belong in the reusable skill.
