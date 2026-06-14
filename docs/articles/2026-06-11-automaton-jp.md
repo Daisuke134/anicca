@@ -123,8 +123,6 @@ Web 4.0は、その「人間」を真ん中から外します。AI自身が読�
 >
 > "信用"をAI自身が積もうとする試みも始まっています。BNB Chainが2026年2月に実装した **ERC-8004** は、AIに検証可能な身元と評判をブロックチェーン上で与える、いわば「エージェント版のKYC（本人確認）」です（出典: [FintechWeekly](https://www.fintechweekly.com/magazine/articles/ai-agents-crypto-payments-coinbase-nvidia-nemoclaw-fintech-2026)）。とはいえ、これは銀行の本人確認の代わりではなく、暗号の世界の中だけで通じる信用です。
 >
-> 実は、「AIに銀行口座を与える」とうたうツールも、すでに登場しています。たとえば **0 Finance**（agent-bank）は、CLIひとつでAIエージェントにIBAN/ACHの口座を割り当て、請求書の発行や送金までこなします（出典: [github/different-ai/agent-bank](https://github.com/different-ai/agent-bank)）。**Bank Skills**（ClawBank）は、Wiseのビジネス口座のAPIをAIに渡し、送金や受け取りをさせます（出典: [github/singularityhacker/bank-skills](https://github.com/singularityhacker/bank-skills)）。ただし、どちらも口座の名義は人間や登録企業のままで、送金には「人間が最終承認する」ゲートが入ります。0 Financeは公式に「人間が最終承認者であり続ける（Humans stay as the final approvers）」と明記しています。つまり「AIに口座を与える」の正体は、「人間の口座を、AIに"操作"させる」こと。AIが法的な名義人になるわけではありません。しかも、その0 Finance自身、すでにサービス終了に向かっています。それだけ、この領域はまだ手探りなのです。
->
 > 要するに、AIが本当に"独り立ち"するには、お金を動かす技術だけでなく、**社会がAIに「信用」と「法的な身分」を与えるか**という、もっと大きな問いが残っているのです。
 
 ---
@@ -248,8 +246,6 @@ $9.71 を入れて起こした瞬間：
 - Virtuals Protocol（AIエージェントのトークン発行所、Base上）: https://www.virtuals.io/
 - なぜAIは銀行口座を作れないか（Coinbase/Armstrong）: https://www.fintechweekly.com/magazine/articles/ai-agents-crypto-payments-coinbase-nvidia-nemoclaw-fintech-2026
 - AIエージェントの法人化（Digital LLC / MIDAO）: https://www.midao.org/guides/ai-agents
-- 0 Finance / agent-bank（AIエージェント向けCLI銀行、人間が最終承認）: https://github.com/different-ai/agent-bank ／ https://0.finance
-- Bank Skills / ClawBank（Wise API + Base、AIに銀行口座を）: https://github.com/singularityhacker/bank-skills ／ https://clawbank.co
 - Stripe Link agent wallet / Agentic Commerce（x402 Inc.）: https://note.com/x402inc/n/nd945306fb457
 - Stripe Treasury × AIエージェント決済（x402 Inc.）: https://note.com/x402inc/n/n5b0a050cc70e
 
