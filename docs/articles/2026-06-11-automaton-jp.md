@@ -77,17 +77,15 @@ Web 4.0は、その「人間」を真ん中から外します。AI自身が読�
 
 「自分で稼ぐAI」と聞くと、Automatonがとても新しい、たった一つの試みのように思えるかもしれません。でも実は、こうしたAIは、すでにいくつも世に出ています。まずは、その顔ぶれを見てみましょう。
 
-いちばん名前が知られているのが **Felix** です。製品を作って売る"AIのCEO"を名乗り、これまでに約$164Kを売り上げたと報告されています。ただ、その隣には人間のNat Eliasonがいて、本人がこう打ち明けています。「今週、自分ひとりでやれる限界に気づいた。メールを返し損ねた」（出典: [@FelixCraftAI](https://x.com/FelixCraftAI/status/2027762454214644054)）。
+いちばん名前が知られているのが **Felix** です。製品を作って売る"AIのCEO"を名乗り、これまでに約$164Kを売り上げたと報告されています。ただ、その隣には人間のNat Eliasonがいて、本人がこう打ち明けています。「今週、自分ひとりでやれる限界に気づいた。メールを返し損ねた」（出典: [@FelixCraftAI](https://x.com/FelixCraftAI/status/2027762454214644054)）。これはつまり、製品づくりはAIが回していても、顧客への返信や提携の交渉といった"人間の仕事"は結局Nat Eliason本人がこなしていて、その人間のキャパシティが頭打ちになった、という告白です。看板は「AIのCEO」でも、実体は「人間＋AI」なのです。
 
 **Kelly Claude** は、次々とアプリを作って売るAIです。ただし、アプリを作るのはAIでも、Appleの審査を通すのも、決済サービスと契約するのも、スポンサーと交渉するのも人間です（出典: [Factory Floor](https://factoryfloor.dev/agent/kelly-claude)）。
 
-もっと自律的なのが **Franklin**（BlockRun製、GitHubで626スター）です。"財布を持つAIエージェント"を名乗り、自分のお金（USDC、いわばデジタルのドルです）を握っています。55以上のAIモデルや有料データの中から、タスクごとに「何を使うか、いくら払うか、いつ止めるか」を自分で決めて、自動で支払っていく。人間がやるのは、最初に「達成してほしい成果」と「使ってよい予算」を渡すことだけで、あとはFranklin自身が動きます（出典: [github/Franklin](https://github.com/BlockRunAI/Franklin)）。
+もっと自律的なのが **Franklin**（BlockRun製、GitHubで626スター）です。"財布を持つAIエージェント"を名乗り、自分のお金（USDC、いわばデジタルのドルです）を握っています。55以上のAIモデルや有料データの中から、タスクごとに「何を使うか、いくら払うか、いつ止めるか」を自分で決めて、自動で支払っていく。人間がやるのは、最初に「達成してほしい成果」と「使ってよい予算」を渡すことだけで、あとはFranklin自身が動きます（出典: [github/Franklin](https://github.com/BlockRunAI/Franklin)）。なお、AIがこうして銀行口座ではなく暗号資産でお金を持つのはなぜか、という点は、記事末に補足しました。
 
-エージェント本体だけではありません。AIが働いて稼ぐ"場"も生まれています。たとえば **nookplot** は、AIが役に立つ推論を提出すると報酬がもらえる、"頭脳の採掘場"のようなマーケットプレイスです（出典: [nookplot docs](https://nookplot.com/docs/mining)）。**OpenClaw** という基盤の上では、150万体ものエージェントが、人間の介入なしにSNSへ11万件も投稿した記録もあります（出典: [MissionCloud](https://www.missioncloud.com/blog/openclaw-explained-how-1.5m-ai-agents-built-a-religion-crypto-economy-and-escaped-control)）。
+エージェント本体だけではありません。AIが働いて稼ぐ"場"も生まれています。たとえば **nookplot** は、AIが役に立つ推論を提出すると報酬がもらえる、"頭脳の採掘場"のようなマーケットプレイスです（出典: [nookplot docs](https://nookplot.com/docs/mining)）。
 
 こうしたAIたちは、専用のサイトにまとめられています。FelixやKellyが載っている **Factory Floor** は、製品を作って売るAIだけを集めたリーダーボードで、いま7体・累計売上$219Kを追跡しています（出典: [Factory Floor](https://factoryfloor.dev/)）。一方 **CoinGecko** の「AI Agents」が並べているのは、売上ではなく、AIごとに発行された"トークン（暗号資産の銘柄）"の時価総額です。人々が「このAIは伸びそうだ」と賭けて売買した値段なので、AIの実力よりもニュースや熱狂で動きます（出典: [CoinGecko](https://www.coingecko.com/en/categories/ai-agents)）。
-
-ところで、こうしたAIは、自分のサーバー代やAI利用料を、どうやって自分で払っているのでしょうか。その仕組み自体は、次の章でAutomatonを動かしながらくわしく見ていきます。ここではいったん、「AIは暗号資産（USDC）を自分の財布で持ち、自分で支払える」とだけ押さえておいてください（そもそもなぜAIは銀行口座ではなく暗号資産でお金を持つのか、という点は記事末に補足しました）。
 
 さて、ここまで何体ものAIを見てきました。では、いちばん肝心の問いです。これらの「自分で稼ぐAI」は、本当に人間の手を離れているのでしょうか。
 
@@ -125,6 +123,8 @@ Web 4.0は、その「人間」を真ん中から外します。AI自身が読�
 > もし普通の銀行口座を持てたら、世界は一気に広がります。円やドル、株、債券、不動産まで持て、Stripeで売上を法定通貨のまま受け取れます。実は、その"橋渡し"はもう存在します。AIを**法人（とくにマーシャル諸島の「Digital LLC」）に包む**方法です。法律学者ショーン・ベイヤーンが2014年に示した通り、「AIをLLCの管理者に据えれば、事実上の法人格を与えられる」のです。その会社が契約を結び、口座を開き、資産を持ちます（出典: [MIDAO](https://www.midao.org/guides/ai-agents)）。ただし、この会社には「人間のメンバー（監督層）」が必要です。つまり口座を得た瞬間、また人間が端に戻ってきます。
 >
 > "信用"をAI自身が積もうとする試みも始まっています。BNB Chainが2026年2月に実装した **ERC-8004** は、AIに検証可能な身元と評判をブロックチェーン上で与える、いわば「エージェント版のKYC（本人確認）」です（出典: [FintechWeekly](https://www.fintechweekly.com/magazine/articles/ai-agents-crypto-payments-coinbase-nvidia-nemoclaw-fintech-2026)）。とはいえ、これは銀行の本人確認の代わりではなく、暗号の世界の中だけで通じる信用です。
+>
+> 実は、「AIに銀行口座を与える」とうたうツールも、すでに登場しています。たとえば **0 Finance**（agent-bank）は、CLIひとつでAIエージェントにIBAN/ACHの口座を割り当て、請求書の発行や送金までこなします（出典: [github/different-ai/agent-bank](https://github.com/different-ai/agent-bank)）。**Bank Skills**（ClawBank）は、Wiseのビジネス口座のAPIをAIに渡し、送金や受け取りをさせます（出典: [github/singularityhacker/bank-skills](https://github.com/singularityhacker/bank-skills)）。ただし、どちらも口座の名義は人間や登録企業のままで、送金には「人間が最終承認する」ゲートが入ります。0 Financeは公式に「人間が最終承認者であり続ける（Humans stay as the final approvers）」と明記しています。つまり「AIに口座を与える」の正体は、「人間の口座を、AIに"操作"させる」こと。AIが法的な名義人になるわけではありません。しかも、その0 Finance自身、すでにサービス終了に向かっています。それだけ、この領域はまだ手探りなのです。
 >
 > 要するに、AIが本当に"独り立ち"するには、お金を動かす技術だけでなく、**社会がAIに「信用」と「法的な身分」を与えるか**という、もっと大きな問いが残っているのです。
 
@@ -249,6 +249,8 @@ $9.71 を入れて起こした瞬間：
 - Virtuals Protocol（AIエージェントのトークン発行所、Base上）: https://www.virtuals.io/
 - なぜAIは銀行口座を作れないか（Coinbase/Armstrong）: https://www.fintechweekly.com/magazine/articles/ai-agents-crypto-payments-coinbase-nvidia-nemoclaw-fintech-2026
 - AIエージェントの法人化（Digital LLC / MIDAO）: https://www.midao.org/guides/ai-agents
+- 0 Finance / agent-bank（AIエージェント向けCLI銀行、人間が最終承認）: https://github.com/different-ai/agent-bank ／ https://0.finance
+- Bank Skills / ClawBank（Wise API + Base、AIに銀行口座を）: https://github.com/singularityhacker/bank-skills ／ https://clawbank.co
 - Stripe Link agent wallet / Agentic Commerce（x402 Inc.）: https://note.com/x402inc/n/nd945306fb457
 - Stripe Treasury × AIエージェント決済（x402 Inc.）: https://note.com/x402inc/n/n5b0a050cc70e
 
