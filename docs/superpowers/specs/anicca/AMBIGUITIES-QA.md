@@ -41,3 +41,17 @@
 ### Q13 Treasury(USDC在庫wallet) → A: ✅(新規作成)
 - 現状: 存在しない → ★我々が新規USDC walletを作成しfloatを入れる★(cloud subscriber spawn用)。Stripe payout→off-ramp(Coinbase/Bridge)で補充。在庫≈同時稼働数×$月額。
 ### Q14 /me dashboard のデータ源 → ⬜
+
+## EARN / CLOUD / BODY 第2波(Dais 2026-06-14 列挙、未解消)
+### Q15 0xworkのタスク供給量 → ⬜ 今2件(Social)。Research/Code/Data枠が安定供給されるか未測定。
+### Q16 litcoinのstake最低額 → ⬜ Spark tierにUSDCいくら要るか未測定。
+### Q17 Akash pre-fund額 → ⬜ server代を何ヶ月分先払いすれば安全か(top-up頻度との兼合い)。
+### Q18 Treasuryの原資 → ⬜ pre-fund/top-upのUSDCは初期我々→いつearnが追い越すか。
+### Q19 automaton survival-loop ⊗ Franklin 接続方式 → ⬜ Franklinのloopに「飢餓圧」をprompt注入かwrapperか。
+### Q20 cloud host最終選択 → 🔄 Akash主権(1分,pre-fund要)優勢 vs DO(即,我々token=human-loop)。pre-fund運用が前提条件。
+### Q21 0xwork register の AXOBOTL auto-faucet → ⬜ faucet枯れてないか/gas(Base ETH)がagent walletにあるか。
+### Q22 litcoin $LITCOIN→USDC換金経路 → ⬜ Base DEXに十分な流動性があるか。
+### Q23 Managed Wallet APIキーの位置づけ → ⬜ 我々Console口座+クレカ=cloud保険だが「human-loop」境界の整理。
+### Q24 self-spawnの身元/法的 → ⬜ 子Aniccaのwallet/identity無人発行をどう正当化(個人情報汚染懸念)。
+### Q25 dry-run検出器の閾値 → ⬜ 「同一報告の反復」をどう機械判定するか。
+### Q26 heartbeat実行環境の鍵管理 → ⬜ cloud上でagent wallet PRIVATE_KEYをどう安全保持(漏洩=資金喪失)。
