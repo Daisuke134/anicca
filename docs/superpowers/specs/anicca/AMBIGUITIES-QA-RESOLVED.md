@@ -9,7 +9,7 @@ status: ✅resolved / 🔄verified-but-evolving。patch=`patches/`、command=`co
 - **Q3 AutoHedge** ✅ EXA+JUPITER key+Solana資本要 → no-capital不可 → shelve。
 - **Q3c 他money-maker** ✅ Freqtrade/Hummingbot=CEX-KYC、OpenBB=研究端末(非earner)、Artemis=MEV資本+2024停滞、Polymarket/agents=archived、GOAT SDK=DeFi資本要 → **全部no-capital不可、drop**。現役earnは litcoin research-mine のみ(薄利)。
 - **Q15 0xwork供給** ✅ stake=10,000 AXOBOTL×$0.0515=**$515** + faucet停止 + 適タスク0(2件ともSocial)→ **shelve**(資本来たら再検討)。
-- **Q16 litcoin** 🔄 自前Bankr wallet 0x162394で **research-mine 機構E2E動作**(実task取得→ClawRouter無料computeで解答→submit)。comprehension faucet=tx revert(0x0)、comprehension mine=410、research submit=coordinator 503/504 + 無料モデル解が未採用。**no-capital earnの本命だが薄利+coordinator不安定**。loop-until-doneで着金待ち。
+- **Q16 litcoin** 🔄 自前Bankr wallet 0x162394で **research-mine 機構E2E動作**(実task取得→ClawRouter無料computeで実コーディング課題[bcb-lru-cache等]を解答→submit)。★実測(18 round, 25分): 0 LITCOIN着金。原因=litcoin coordinator `/v1/research/submit` が**持続的に503(Server busy=litcoin側サーバーダウン)**で submit を受け付けない★。= 機構は完全に判明(=ambiguity解消)、着金できないのは**litcoinのインフラ障害**(我々の問題でない、復旧待ち)。comprehension faucet=tx revert(0x0)、comprehension mine=410。**no-capital earnの本命だが薄利+coordinator現在ダウン**。→ earn着金は WORKFLOW A P2 の loop-until-done unit(litcoin復旧 or 別earn or seed投入で解決)。
 - **Q21 AXOBOTL faucet** ✅ 停止中。0xwork shelveの根拠。
 - **Q22 LITCOIN→USDC** ✅ token=`0x316ffb9c875f900AdCF04889E415cC86b564EBa3`(Base)、価格$0.0000007、MCAP$712K、**24h出来高$48.2K=実流動性あり**(bankr.bot/launches or DEXで売却可)。33.2K researcher競合・emission24.2M/日 → 1 minerの取り分は極小。換金は可能だが薄利。`commands/Q22.command.sh`。
 
