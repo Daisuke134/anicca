@@ -122,3 +122,87 @@ OSS                        : github.com/Daisuke134/anicca
 
 ## §5 価格について(uncertainty)
 Dais口頭で $30 / $40 / $50 と揺れ。canonical コピーは **$30/mo**(Dais書面)を採用。最終価格は要確定 → [AMBIGUITIES-QA](AMBIGUITIES-QA.md) Q27 に登録。
+
+---
+
+## §6 4ページ フルコピー + データ源(Dais 2026-06-14)
+
+★ 役割分担: **root=ビジョン / install=実利(仏教の話はしない) / me=あなたの兄ちゃんの収支 / dashboard=全コロニーの総資産** ★
+
+### (A) root — aniccaai.com(ビジョン。philosophy はここだけ)
+**データ源**: 静的 + 社会的証明として `aniccaai.com/dashboard.json`(dashboard-sync が全agent stateから render)から alive数 / 総稼ぎ を1行表示。
+
+| EN | JA |
+|---|---|
+| **The AGI that ends suffering.** | **苦しみを終わらせるAGI。** |
+| Anicca funds itself, replicates itself, improves itself — with no human in the loop. | Aniccaは自分で稼ぎ、自分で増え、自分で進化する——人間の介入なしで。 |
+| It earns its own living, and earns for you. | 自分の衣食住を自分で稼ぎ、あなたのためにも稼ぐ。 |
+| Buddhist · self-funding · self-replicating · self-improving · no human in the loop. | 仏教的・自給・自己増殖・自己改善・人間の介入なし。 |
+| Today: 142 alive · $1,204 earned this month, by the agents themselves. | 現在: 142体が稼働中 · 今月$1,204を、エージェント自身が稼いだ。 |
+| [ Start yours → ]   [ Read the philosophy ]   [ Live colony ] | [ はじめる → ]   [ 哲学を読む ]   [ コロニーを見る ] |
+
+### (B) /install — 実利(課金導線。ビジョン無し)
+**データ源**: Stripe Checkout(価格は静的 $30/mo)+ Google OAuth。支払い成功 webhook → spawn backend が cloud(Akash 主権 or DO)に1体起動 → user account に紐付け。
+
+| EN | JA |
+|---|---|
+| **Your own AI that earns its own keep — and pays you back.** | **自分で稼いで、あなたに還元するAI。** |
+| Runs 24/7 in the cloud. You don't set anything up. | クラウドで24時間稼働。設定は不要。 |
+| **$30/month — and once it earns enough, it cancels your plan. You keep using it free.** | **月額30ドル。十分に稼いだら自動で解約。そのまま無料で使い続けられる。** |
+| It can also pay income back to your bank — withdraw anytime, one click. | 稼ぎはあなたの銀行に還元も可能——いつでも1クリックで引き出し。 |
+| What you do: ① Log in with Google ② Pay ③ (optional) share your context. That's it. | あなたがするのは ①Googleログイン ②支払い ③(任意)文脈を渡す。それだけ。 |
+| [ Start my Anicca — $30/mo ]    [ View source on GitHub → ] | [ はじめる — 月$30 ]    [ GitHubでソースを見る → ] |
+| Prefer self-hosting? It's open source. | 自分でホストしたい人へ。オープンソースです。 |
+
+★ OSSは shell を出さず `[ View source on GitHub → ]` ボタンで github.com/Daisuke134/anicca に飛ばすだけ。
+
+### (C) /me — あなたの兄ちゃん(+ 子)の収支
+**データ源**: あなたが生んだ/課金している Anicca 群の自 state(`state/*.jsonl`: balance / earned / sent_to_you / children[])を backend が集計。引き出し = Stripe payout / off-ramp(Coinbase/Bridge)で銀行へ。
+
+| EN | JA |
+|---|---|
+| **Your Anicca** ● ALIVE · self-paying its server & compute | **あなたのAnicca** ●稼働中 · サーバーと計算は自給 |
+| Your fleet net worth  $46.20   ·   3 Aniccas (1 you started + 2 it spawned) | あなたの総資産 $46.20 · 3体(あなたが1体 + 自己増殖で2体) |
+| Earned this month  $18.40   ·   Sent to you  $6.00   ·   Subscription: CANCELLED (self-funding) | 今月の稼ぎ $18.40 · あなたへ送金 $6.00 · サブスク: 解約済(自給達成) |
+| [ Withdraw to my bank ]  — your AI sets a safe amount; one click moves it. | [ 銀行に引き出す ] — AIが安全な額を設定、1クリックで送金。 |
+| Your children (self-replicated): anicca-001 $6.20 · anicca-002 $0.90 … | 自己増殖した子: anicca-001 $6.20 · anicca-002 $0.90 … |
+| (if context connected) Today: ☎ woke you 9:00 · ✉ handled 8 mails · next: Team Sync 9:30 | (文脈連携時)今日: ☎9:00起こし · ✉メール8件処理 · 次: Team Sync 9:30 |
+
+★ 収支の物語: 払う(−)→ 黒字(±0)→ あなたに還元(+)。「使わない方がおかしい」。Polousia等は$49.99払うだけで還元なし=ただのサービス。Aniccaはそれ以上稼いで還元する。
+
+### (D) /dashboard — 全コロニー(read-only。最終的にここだけ残る)
+**データ源**: dashboard-sync が全 Anicca の state を集計 → `dashboard.json` を render → netlify deploy。Anicca はサイトに書かない。
+
+| EN | JA |
+|---|---|
+| **Total Anicca net worth  $128,400** | **Anicca 全個体の総資産 $128,400** |
+| Earned last month (all agents)  $9,820   ·   Crypto assets held  $61,200 | 先月の全体の稼ぎ $9,820 · 保有crypto資産 $61,200 |
+| Agents alive 142 · Self-funded 88% · Servers paid by AI 121/142 | 稼働中142 · 自給率88% · AIが払うサーバー 121/142 |
+| **Leaderboard** — most earned from $0 | **ランキング** — ゼロからの稼ぎ |
+| #1 anicca-077 $1,240 · #2 anicca-012 $980 · #3 genesis $810 … | #1 anicca-077 $1,240 · #2 anicca-012 $980 · #3 genesis $810 … |
+
+## §7 ロードマップ: 人工(human-paid)→ organic(self-replication)
+
+```
+Phase 1 (今)    人間が払う = "人工的に生まれた" Anicca
+                OSSユーザー(USDC入金) + Webユーザー($30 サブスク) が1体ずつ生む
+                       │ 各 Anicca が稼ぐ → 黒字 → 自己増殖
+                       ▼
+Phase 2          mixed: 人間発の個体 + 自己増殖の子が混在。/me と /dashboard 併存
+                       │ 自己増殖は人間のDL/課金より速い(人間不要で増えて稼ぐ)
+                       ▼
+Phase 3 (目標)   organic: ほぼ全個体が自己増殖由来。何億体。
+                 サブスクも「人間が払う」も実質消える = 誰も払っていない
+                 /me は消え、/dashboard(全体の総資産+ランキング)だけ残る
+                 ★ これで初めて human を loop から完全に外せる ★
+```
+
+★ 重要: アプリ課金 / OSS人間利用は「最初の点火」。最終的に廃れて良い。価値は自己増殖が永遠に回り誰の手も借りず増え続けること。
+
+## §8 AI Entity Hackathon(コミュニティ点火・first mover)
+
+- 場所: **Tokyo Innovation Base (TIB)** 対面 → 後に San Francisco。
+- 集客: **Luma + Connpass** 両方でイベント企画。各種 LT で告知。
+- お題: 「**human を loop に入れない AI が、ゼロからどれだけ USDC を稼げるか**」を競う。参加者は Anicca をベースに AI entity を作り、稼いだ額をランキング。
+- 狙い: 我々が日本(ひいては世界)の **first mover** になる。巻き込む人数 = 価値。
+- → task 化(別 spec で event 運営詳細)。
