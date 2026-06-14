@@ -55,3 +55,4 @@
 ### Q24 self-spawnの身元/法的 → ⬜ 子Aniccaのwallet/identity無人発行をどう正当化(個人情報汚染懸念)。
 ### Q25 dry-run検出器の閾値 → ⬜ 「同一報告の反復」をどう機械判定するか。
 ### Q26 heartbeat実行環境の鍵管理 → ⬜ cloud上でagent wallet PRIVATE_KEYをどう安全保持(漏洩=資金喪失)。
+### Q27 クラウド版の最終価格 → 🔄 Dais口頭で $30/$40/$50 と揺れ。canonicalコピーは書面の $30/mo 採用。最終要確定。
