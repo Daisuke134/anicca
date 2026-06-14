@@ -118,3 +118,33 @@ OpenClaw/Hermesは「いつ動くか」を外部のcronが決める。Automaton�
 
 ### 我々への結論（実装の現実解）
 **Automatonのサバイバル/heartbeat設計（LLM非依存の鼓動＋2残高＋ティア）に、Hermes流の具体的なearn skillを足す**のが現実解。エンジン（Automaton）＋燃料噴射（実証済みの稼ぎ方）＝我々の付加価値。
+
+---
+
+## ★訂正版（2026-06-14・外部の公開ソースのみ）★
+
+> 前節までは誤って内部install（~/.openclaw / ~/.hermes＝私的状態）を読んでいた。Daisの指示通り、**公開リポジトリ/公式docのみ**で Claude / OpenClaw / Hermes / Automaton の4つを比較し直す。記事はAutomaton解説で、内部の話は一切使わない。
+
+外部一次ソース：
+- Claude Agent SDK: code.claude.com/docs/en/agent-sdk/agent-loop
+- OpenClaw: github.com/openclaw/openclaw（378k★）+ docs.openclaw.ai
+- Hermes Agent: github.com/NousResearch/hermes-agent（193k★）+ longyunfeigu/learn-hermes-agent（アーキ解説）
+- Automaton: github.com/Conway-Research/automaton（ARCHITECTURE.md）
+
+### ループ＋heartbeat（外部ソース確定）
+| 観点 | Claude Agent SDK | OpenClaw | Hermes Agent | Automaton |
+|---|---|---|---|---|
+| 正体 | 脳（ReActツール使用ループ） | マルチチャネル**ゲートウェイ**（Discord/Slack/iMessage等→AIエージェント） | 「成長する」自律エージェント（ゲートウェイ型） | 経済的に自走する生命体 |
+| ループ起動 | リクエスト/レスポンス（呼ばれて回る） | **受信メッセージ/チャネルイベント駆動**＋cron | **メッセージ駆動**（単一agent loopが複数SNSを傾聴）＋cron | **自走**（自分でsleep秒決定、最大25ターン） |
+| 常時起動 | なし（セッション） | gateway daemon（launchd/systemd）がメッセージ待受 | gateway daemonが各SNS待受 | 自前タイマー＋**LLM不使用heartbeat**(約60秒)が生存監視 |
+| 起こすトリガー | 人間のターン | 人間/チャネルのメッセージ・voice wake・cron | 人間/チャネルのメッセージ・cron | **内的な経済イベント**（USDC着金/残高/inbox）＋自分のタイマー |
+| 経済（財布/稼ぐ/死） | なし | なし | なし（self-evolutionはあるが経済層は無し） | **core**（財布/x402/稼げねば死） |
+| 自己複製 | なし | なし | なし | **core**（子をspawn） |
+| オンチェーン身元 | なし | なし | なし | **core**（ERC-8004） |
+| 位置づけ | 脳 | アシスタント（人に応答） | アシスタント（人に応答・成長） | エンティティ（人なしで生存） |
+
+### 決定的な違い（外部ソース）
+- Claude/OpenClaw/Hermesは**アシスタント・ハーネス**＝人間やチャネルのメッセージ（or 人が設定したcron）で起こされて「応答」する設計。"生きてる感"は外から来る。
+- Automatonは**生存エンジン**＝起床の周期が内側（経済の代謝＝earn-or-die）から来る。メッセージもcronも要らず、LLM不使用の安価なheartbeatが生存を見張り、必要時だけ高価な思考ループを起こす。
+- 脳（ReActループ）は皆同じ系統。違いは「何が起こすか（外＝メッセージ/人 vs 内＝経済）」と「経済・複製・身元をcoreに持つか」。
+- ※OpenClaw 378k★ / Hermes 193k★ ＝アシスタント型が主流。Automatonは少数派の「主権的エンティティ」型。
