@@ -56,3 +56,10 @@
 ### Q25 dry-run検出器の閾値 → ⬜ 「同一報告の反復」をどう機械判定するか。
 ### Q26 heartbeat実行環境の鍵管理 → ⬜ cloud上でagent wallet PRIVATE_KEYをどう安全保持(漏洩=資金喪失)。
 ### Q27 クラウド版の最終価格 → 🔄 Dais口頭で $30/$40/$50 と揺れ。canonicalコピーは書面の $30/mo 採用。最終要確定。
+
+## AGENT ECONOMY 第3波(Dais 2026-06-14、未解消)
+### Q28 AIが自前でClaude/Codexサブスク購入→trigger可か(human-owned acc不使用) → ⬜
+### Q29 wallet 0x8b5A…(Base)/4kqpx…(Solana)は我々のAniccaか、トークン発行済か → ⬜
+### Q30 Virtuals ACP/Clanker/CoinGeckoでのトークン発行・上場の正確手順(context7で精読) → ⬜
+### Q31 rentahuman.ai REST APIの認証・発注・支払いフロー → ⬜
+### Q32 UBI配布の対象特定(全AI/人間)と原資・不正防止 → ⬜
