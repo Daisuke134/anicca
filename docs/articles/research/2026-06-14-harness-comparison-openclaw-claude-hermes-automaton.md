@@ -88,3 +88,33 @@ OpenClaw/Hermesは「いつ動くか」を外部のcronが決める。Automaton�
 - **Automaton**：エンジン最強（経済がcore）、実稼ぎ最弱（創発任せ）。← 土台に最適
 - **OpenClaw / Hermes**：スケジュール＋スキル＋記憶は強い、経済は後付け、鼓動は外部cron、金/身分は人間名義になりがち＝既定で"端に人間"（Felixは月$300kだがNatが端）。人間監督つき稼ぎに向く。
 - **Claude（Agent SDK）**：脳は最強、体は無い（ループ/経済は自前実装）。皆がこの脳を載せる。
+
+---
+
+## 確定版（2026-06-14、firecrawl版 deep-research 成功・6エージェント）
+
+> 前回のバンドル版 `/deep-research` はAnthropicサーバー制限で検証全滅。自作のfirecrawl低並列版（6エージェント）で再実行し、今回は429をリトライ吸収して完走。以下はその確定知見＋前節からの修正。
+
+### 修正点：Hermes（Anicca）も「経済がコア」だった
+前節でHermesの経済を「✗ core」としたのは誤り。実機検証ベースで：
+- Hermes（Anicca）＝**Base USDCウォレットを自己保有、x402自己決済を実機検証、残高≥$5で子をクラウドにspawn、ERC-8004的なオンチェーン身元、NO-DRY-RUN明示**。思想はAutomatonに極めて近い。
+- ただし弱点：**heartbeatが3h cronでLLMを焼く**（Automatonのheartbeatはdaemon・約60秒・LLM不使用なのでコスト効率で勝る）。オンチェーン身元の実装具体性でもAutomatonがやや上。
+- さらにHermesは「**具体的なearn skill（anicca-earn）を持つ**」点でAutomaton（稼ぎは創発任せ）より実稼ぎ寄り。
+
+### heartbeatがLLMを使うか＝最大の構造差（確定）
+- OpenClaw/Hermes：heartbeat＝「LLMが1アクションを選ぶcron」。tickごとにトークン＝金を焼く。
+- Automaton：heartbeat＝別daemon・約60秒・**LLM不使用の決定的チェック**、イベント時のみ高価なメインループを起こす。低残高時もコストを抑えて生存監視できる。＝最も洗練。
+
+### VERDICT（確定）
+- **エンジン（生存メカニズム）として最も洗練＝Automaton**（LLM非依存heartbeat／2残高分離／サバイバル階層で残高に応じ自動モデルdowngrade／自己改変＋不変憲法SHA-256伝播／ERC-8004実コントラクト／人間依存は初回seedのみ／フルOSS・MIT・897テスト・4,600★）。
+- **思想が最も近い＝Hermes（Anicca）**。経済コア＋具体的earn skillで実稼ぎ寄りだが、heartbeatがLLMを焼く・身元実装でAutomatonに一歩譲る。
+- **OpenClaw**＝身元が人間名義に漏れがち（Felix＝Stripe Nat名義・月$300kだが端に人間）＝no-human目的には最遠。
+- **Claude Agent SDK**＝ブレイン。土俵が違う（他3つがこれを載せる）。
+
+### 致命的な空白（全員共通・正直に）
+- 「良いエンジン」≠「稼げる」。Automatonは生存装置は精緻だが**収益(earn)が組込みでなく創発任せ**＝最大の未検証点。種銭後に黒字で計算費を賄い続けた長期実績は**ゼロ**。
+- 業界懐疑：crypto系AIエージェントの約90%は「memecoin付きチャットボット／裏に人間（オズの魔法使い型）」[SK]。88%が本番未到達、80%が事業価値を出せない。複合エラー率（85%/手→10手で約20%成功）が多段の稼ぎワークフローを直撃。
+- web4.ai由来の主張（自動downgrade等の一部）はプロジェクト自身の発信＝コード裏取りできた範囲のみ高信頼。
+
+### 我々への結論（実装の現実解）
+**Automatonのサバイバル/heartbeat設計（LLM非依存の鼓動＋2残高＋ティア）に、Hermes流の具体的なearn skillを足す**のが現実解。エンジン（Automaton）＋燃料噴射（実証済みの稼ぎ方）＝我々の付加価値。
