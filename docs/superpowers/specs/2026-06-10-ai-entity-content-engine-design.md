@@ -247,6 +247,15 @@ This is the durable ruleset. Embed it as the writing guide for `anicca-article-d
 28. **Japanese audience: no English parentheticals** like "（crypto）". Just 暗号資産.
 29. **Franklin money-loop ASCII = planned 🎨 image** (USDC → Franklin → ClawRouter → LLM → Profit → reinvest) — include as one concrete example of how an agent earns/spends.
 
+### Playbook additions (Dais 2026-06-14, from [3] 2nd review)
+30. **NO em-dash「——」(伸ばし棒).** It is an English-style device and reads unnatural in Japanese. Use 「。」「、」「（）」or rephrase. Applies everywhere incl. headings, quotes, verdict boxes.
+31. **No unnatural set phrases.** e.g. 「その前に、言葉をひとつだけ。」is not natural JP → 「本題に入る前に、ひとつだけ用語の説明をさせてください。」. Read aloud; if a Japanese person wouldn't say it, rewrite.
+32. **Don't organize by rigid categories (①②③) when the boundaries blur.** Block [3]'s "3 autonomy tiers" failed — readers couldn't tell them apart, and the order was backwards. Better: ONE narrative → "here are the earning AIs, but look closely and EVERY one has a human somewhere = ヒューマン・イン・ザ・ループ → therefore what's needed is ノー・ヒューマン・イン・ザ・ループ, which nobody has proven → that's Automaton." Two honest concepts (HITL vs no-HITL), taught as a story, beats 3 fuzzy buckets.
+33. **Layer hygiene (don't mix kinds of things).** Directories/catalogs (Factory Floor, CoinGecko) are "where you SEE the AIs", NOT earning-AIs themselves — never list "a site that doesn't earn" alongside earning AIs. Tools/agents/markets/plumbing are different layers; introduce each as what it is.
+34. **CoinGecko ≠ revenue.** CoinGecko "AI Agents" ranks TOKEN MARKET CAP (speculation, launched via Virtuals-style launchpads), not earnings. Factory Floor tracks claimed product REVENUE. Explain the mechanism so readers don't conflate "market cap" with "money earned".
+35. **Footnote pointers must be natural, not clumsy.** Don't write "(その違いは章末の注釈②で説明します)" as a bolt-on; weave the relatable example into the body (e.g. "Claude Codeに飛行機を予約させたことがあるなら、それもこの状態") then point to the footnote in one clean parenthetical.
+36. **Define every unknown term on first use, for a total beginner.** Each unexplained jargon word loses ~10% of readers. Base = "world-public unrewritable ledger; sending money = rewriting a number"; x402 = "the 402 Payment Required error code, dormant 30 yrs, finally usable: server says '402, pay $0.001', AI auto-pays in USDC, no card/login/approval". Re-research (Franklin is itself an autonomous agent, not a "tool") before describing.
+
 ### Skill to iterate (task #10): `anicca-article-daily` (~/.openclaw/skills/anicca-article-daily)
 - It already posts to Zenn JA + Dev.to EN + Substack JA+EN + Note JA (reuses article-writer/scripts + note-mcp). Problem: it mirrors a "canonical corpus" → generic. 
 - Fix: (a) embed the Playbook above as its writing guide; (b) swap its content source to THIS engine (deep-research an AI-entity topic → actually run it → report with verdict per the hamburger template); (c) keep its multi-platform publish + SEO + language-purity gates. X Articles via wshuyi skill (task #9).
