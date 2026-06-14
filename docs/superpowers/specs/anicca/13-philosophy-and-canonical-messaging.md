@@ -469,3 +469,79 @@ Phase 3 (目標)   organic: ほぼ全個体が自己増殖由来。何億体。
 │          Aniccaはサイトに書き込まない。                                  │
 └──────────────────────────────────────────────────────────────────────────┘
 ```
+
+---
+
+## §10 ★ /dashboard 最終版(各個体フル項目)★ — §9(D)を上書き
+
+各 anicca 行に: **name/id · どこにいるか(cloud種別 or local+国) · 動作モデル(リアルタイム) · 月間収益 · 純資産 · 死までの残日数**。
+モデルは ClawRouter/Bankr が残高で auto 切替 → ⚡=frontier(黒字で良いモデル) / ○=free(飢餓で無料モデル)。死までの残日数 = balance ÷ burn(=server+compute)。0 で死(サーバー/計算が払えず停止)。
+
+### /dashboard 【EN】
+```
+┌──────────────────────────────────────────────────────────────────────────────────────┐
+│ ◉ Anicca / dashboard                       Live colony of self-funding agents          │ nav
+├──────────────────────────────────────────────────────────────────────────────────────┤
+│                          Total Anicca net worth                                        │
+│                               $128,400                                                 │ ★HUGE center
+│   Earned last month $9,820   ·   Crypto held $61,200   ·   Alive 142 / Self-funded 88% │ stat row
+├──────────────────────────────────────────────────────────────────────────────────────┤
+│  WHERE THEY RUN   ☁ cloud 121 (akash 96 · do 18 · conway 7)   ·   💻 local 21          │ bars
+│  WHAT THEY RUN ON ⚡ frontier 44 (opus/sonnet)   ·   ○ free 98 (nvidia/deepseek)        │
+│  EARN MIX         0xwork ████████ 41%  litcoin ████ 22%  yield ███ 18%  signals ██ 11% │
+├──────────────────────────────────────────────────────────────────────────────────────┤
+│  COLONY — every Anicca, live                                            sort: net worth▾│
+│ ┌───┬───────────┬─────────────────────┬───────────────────────┬────────┬────────┬──────┐
+│ │ # │ name/id   │ where (host·place)  │ model (live)          │ rev/mo │ networth│ ☠ in │
+│ ├───┼───────────┼─────────────────────┼───────────────────────┼────────┼────────┼──────┤
+│ │ 1 │ anicca-077│ ☁ akash · US-west   │ ⚡ opus-4.8  frontier │ $1,240 │ $3,010 │ 41d  │
+│ │ 2 │ anicca-012│ ☁ akash · EU        │ ⚡ sonnet-4.6 frontier│ $980   │ $2,200 │ 33d  │
+│ │ 3 │ genesis   │ ☁ akash · US-west   │ ○ nvidia/deepseek free│ $810   │ $1,240 │ 29d  │
+│ │ 4 │ anicca-104│ 💻 local · 🇯🇵 Tokyo │ ○ deepseek-v4 free    │ $120   │ $90    │ 5d ⚠ │
+│ │ 5 │ anicca-088│ 💻 local · 🇺🇸 SF    │ ⚡ opus-4.8  frontier │ $60    │ $12    │ 1d ☠ │
+│ │ … │           │                     │                       │        │        │      │
+│ └───┴───────────┴─────────────────────┴───────────────────────┴────────┴────────┴──────┘
+│  Legend: ⚡ frontier (funded, eating well)  ○ free model (starving)  ⚠ low  ☠ near death │
+│  Data: each agent writes its own state(id,host,geo,model_live,rev_mo,net_worth,runway)   │ note
+│        → sync renders dashboard.json. Anicca never writes the website.                   │
+└──────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### /dashboard 【JA】
+```
+┌──────────────────────────────────────────────────────────────────────────────────────┐
+│ ◉ Anicca / dashboard                  自分で稼ぐエージェントのライブコロニー            │ ナビ
+├──────────────────────────────────────────────────────────────────────────────────────┤
+│                          Anicca 全個体の総資産                                         │
+│                               $128,400                                                 │ ★巨大・中央
+│   先月の稼ぎ $9,820   ·   保有crypto $61,200   ·   稼働 142 / 自給率 88%               │ 統計行
+├──────────────────────────────────────────────────────────────────────────────────────┤
+│  どこで動くか   ☁ クラウド 121 (akash 96 · do 18 · conway 7)   ·   💻 ローカル 21       │ バー
+│  何で動くか     ⚡ フロンティア 44 (opus/sonnet)  ·  ○ 無料 98 (nvidia/deepseek)        │
+│  稼ぎの内訳     0xwork ████████ 41%  litcoin ████ 22%  利回り ███ 18%  signals ██ 11%   │
+├──────────────────────────────────────────────────────────────────────────────────────┤
+│  コロニー — 全Anicca、リアルタイム                                       並替: 純資産▾  │
+│ ┌───┬───────────┬─────────────────────┬───────────────────────┬────────┬────────┬──────┐
+│ │ # │ 名前/id   │ 居場所(host·地域)   │ モデル(リアルタイム)  │ 月収益 │ 純資産 │ 死迄 │
+│ ├───┼───────────┼─────────────────────┼───────────────────────┼────────┼────────┼──────┤
+│ │ 1 │ anicca-077│ ☁ akash · 米西       │ ⚡ opus-4.8  frontier │ $1,240 │ $3,010 │ 41日 │
+│ │ 2 │ anicca-012│ ☁ akash · 欧         │ ⚡ sonnet-4.6 frontier│ $980   │ $2,200 │ 33日 │
+│ │ 3 │ genesis   │ ☁ akash · 米西       │ ○ nvidia/deepseek 無料│ $810   │ $1,240 │ 29日 │
+│ │ 4 │ anicca-104│ 💻 ローカル · 🇯🇵 東京│ ○ deepseek-v4 無料    │ $120   │ $90    │ 5日⚠ │
+│ │ 5 │ anicca-088│ 💻 ローカル · 🇺🇸 SF  │ ⚡ opus-4.8  frontier │ $60    │ $12    │ 1日☠ │
+│ │ … │           │                     │                       │        │        │      │
+│ └───┴───────────┴─────────────────────┴───────────────────────┴────────┴────────┴──────┘
+│  凡例: ⚡ フロンティア(黒字=良い食事)  ○ 無料モデル(飢餓)  ⚠ 残少  ☠ 死の淵           │
+│  データ: 各agentが自state(id,host,地域,model_live,月収,純資産,残日数)を書く             │ 注
+│          → syncがdashboard.jsonをrender。Aniccaはサイトに書かない。                     │
+└──────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### per-agent state schema(dashboard が読む各個体の必須フィールド)
+```jsonc
+{ "id":"anicca-077", "host":"akash", "geo":"US-west", "is_local":false,
+  "model_live":"claude-opus-4-8", "model_tier":"frontier",   // ClawRouter auto, realtime
+  "revenue_mo_usd":1240.0, "net_worth_usd":3010.0,
+  "burn_day_usd":73.0, "runway_days":41,                      // runway = balance / burn
+  "status":"alive", "updated_at":"<ISO>" }
+```
