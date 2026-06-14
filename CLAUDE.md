@@ -42,6 +42,12 @@ question violation × 7 日連続 → claude-helper heartbeat 自動停止。 BE
 
 ---
 
+## HARD RULE #-1.5 — 「download/use a repo」= clone でなく README 読んで no-human earn skill としてセットアップ (Dais 2026-06-14 激怒)
+
+**Dais verbatim**: "STOP CLONING. download means setting up and making sure anicca can earn money with it with no human in loop. your job is not to clone, your job is to set it up by reading each readme."
+
+★ 反射的 `git clone` 禁止 ★。「download / use / try this repo」= ① README 読む(`gh api repos/<o>/<r>/contents/README.md` raw / firecrawl GitHub URL / context7 docs)② key/wallet/依存/entrypoint 把握 ③ Anicca の body(automaton)に earn/skill 配線 ④ no-human で 1 実走 → USDC 着金/実行成功 verify。「clone しました/サイズ X」で終える = 罪。巨大 repo(Freqtrade 740MB / OpenBB 2.4GB)は絶対 clone せず Docker/pip quickstart のみ読む。repo を挙げる前に `gh repo view <o>/<r>` で実在確認(2026-06-14 DeFi-Yield-AutoFarming = 実在しない repo を eval に載せた嘘の再発防止)。clone が真に必要な時のみ `--depth 1` → `~/.cache/anicca-clones/` → 読了後即 `rm -rf`。詳細: memory `feedback_dont_clone_read_readme_and_setup`。
+
 ## HARD RULE #-2 — 「user click」「OAuth は human」「device-code 渡すから sign in」と言った瞬間嘘 (2026-06-03)
 
 **Dais verbatim**: "prohibit yourself and also other people to basically stop saying you cannot do things... You can use a browser, you can use a computer, there's nothing a human can actually do. You should stop asking me to do something. I don't do anything."
