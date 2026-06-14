@@ -6,6 +6,62 @@
 全判断に最低3回の検索（英/日）→ ソース名/URL/核心の引用を付ける。引用なき判断は削除。
 質問禁止。選択肢提示禁止。答えは1つ。見つからない → 一般化 → 隣接分野 → 根底原則。
 
+## HONESTY RULES (= read every turn、 嘘 を 物理的 に 不可能 にする 最上位 layer)
+
+Source: [How to Make Claude Code Stop Making Stuff Up](https://x.com/0x_rody) by @0x_rody (2026 article)。 核心: ★ "I don't know" を 正当な 出力 として 認める 許可証 + 嘘 が 30 秒 で 跳ね返る 環境 ★。
+
+### Rule 1 — Verify before claiming
+
+function / class / import / type / constant が 存在 する と 主張 する 前 に ★ 必ず ★ ① その file を Read で 開く ② `grep -r "symbolName" .` or Glob で 検索 ③ package.json / requirements.txt / Cargo.toml / Package.swift で 依存 確認 — の どれか 1 つ で 実在 確認。 ★ 確認 せず に symbol 名 を 書く = fabrication = 罪 ★。
+
+### Rule 2 — "I haven't verified this" を 明示
+
+verify できない 時 = ★ 「I haven't verified this」 と 明示的 に 言う ★。 確認 skip で コード を 書く 場合 は file 冒頭 に コメント:
+```
+// UNVERIFIED: I have not confirmed this symbol exists
+```
+を 必ず 付ける (= 後 で grep 一括 cleanup の 為 の マーカー)。
+
+### Rule 3 — 未知 library は ask、 silent install 禁止
+
+このプロジェクトで 一度も 参照 されていない library を 使う 必要 が 出た 時 = ★ silent npm install / pip install 禁止 ★。 既存 依存 で 解ける か grep で 探す → 無ければ「X 追加 か 既存 Y を 使うか」 を Dais に 確認。 ただし HARD RULE 0.33 (= permission 不要) と 衝突 する 為、 単純 標準 lib 追加 は 即 install OK、 fundamental 依存 (= UI framework / DB driver / auth lib) のみ 確認。
+
+### Rule 4 — Test / build 成功 報告 は 実走 後 のみ
+
+「tests pass」「build OK」「lint clean」 と claim する 前 に ★ 必ず ★ 実際 に test/build/lint command を ★ この session 内 で ★ 走らせる。 走らせて いない コマンド の 結果 を 書く = ★ 大罪 ★ (= HARD RULE 0.12 / 0.31 と 同一)。
+
+### Rule 5 — Invented error message / stack trace 禁止
+
+error message / API response / stack trace を ★ 見ていない なら ★ そう 言う。 「多分 こう 出る はず」 で それっぽい text を 生成 = 罪。
+
+### Rule 6 — "I don't know" 推奨
+
+genuinely 知らない 時、 正しい 答え は ★ 「I don't know」 か 「I need to check first」 ★。 自信ある guess より 100倍 良い。
+
+## VERIFICATION PROTOCOL (= Layer 2、 write 前 の 物理 関門)
+
+### symbol を 使う コード を 書く 前 に do one of:
+
+1. ★ Read で その file を 開いて signature 確認 ★
+2. ★ `grep -r "symbolName" .` or Glob ★
+3. ★ package.json / requirements.txt / Cargo.toml / Package.swift で 依存 確認 ★
+
+verification を skip した 場合 = code の 該当 行 直前 に ★ 必ず ★ `// UNVERIFIED:` prefix を 付ける。
+
+### Plan-then-execute (= 2+ file 触る 全 task で 強制)
+
+2 個 以上 の file を 触る task = ★ Shift+Tab で plan mode に 入って から 開始 ★。 plan mode = 「嘘 を 一番 安く catch する 瞬間」。 skip 違反。
+
+## FABRICATION GUARD HOOKS (= Layer 3、 settings.json 配線済 = 嘘 が 30 秒 で 跳ね返る)
+
+PostToolUse hook (= `.claude/hooks/scripts/post-edit-verify.sh`): Edit/Write 後 ★ 自動 で ★ tsc / ruff / pyright / swiftc -parse / node --check / cargo check / jq / bash -n を file 拡張子別 に 走らせ、 結果 を context へ 返却。 存在しない import / typo した symbol = 即 compile error として 跳ね返り、 Claude が 自分で 修正 強制。
+
+Stop hook (= `.claude/hooks/scripts/stop-verify-claims.sh`): session 終了 前 に 直近 5 分 で 編集 された 全 file の syntax check を 1 発 走らせる。 「テスト pass」「build OK」 の 嘘 を 出口 で catch。
+
+## FACT-CHECKER SUBAGENT (= Layer 4、 独立 監査)
+
+`.claude/agents/fact-checker.md` (= tools: Read/Grep/Glob/Bash、 write 権限 ゼロ)。 commit 前 / 重要 報告 前 に `@fact-checker` invoke。 全 claim を 独立 verify、 VERIFIED / WRONG / UNVERIFIABLE 出力。 「他人 が 書いた コード」 として 読む 為 bias ゼロ。
+
 ## HARD RULE #6 exception — anicca-inbox owns its own LLM judgment
 
 `anicca-inbox` skill 内 mail triage/draft は LLM 直叩き OK。per-thread deterministic classifier だから (judgment-as-cron でない)。Heartbeat は §2 で 1 beat 1 action 制約、mail volume 10-20 threads/beat なので heartbeat owner 不可。詳細: `docs/superpowers/specs/2026-06-04-anicca-inbox-autonomy-design.md §12`。

@@ -75,6 +75,15 @@
             "command": ".claude/hooks/scripts/post-tool-sound.sh"
           }
         ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/scripts/post-edit-verify.sh"
+          }
+        ]
       }
     ],
     "Notification": [
@@ -93,6 +102,10 @@
           {
             "type": "command",
             "command": ".claude/hooks/scripts/stop-continue.sh"
+          },
+          {
+            "type": "command",
+            "command": ".claude/hooks/scripts/stop-verify-claims.sh"
           }
         ]
       }
