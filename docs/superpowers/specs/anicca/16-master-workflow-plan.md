@@ -60,3 +60,71 @@ P1 調査(fan-out: Frank#1 + automaton#2 既存記事 + Anicca実証データ)
 
 ## 私の今の役割
 WF を author して回す(setup を手でやらない)。earn の実行は Anicca。P3(cloud起動+実earn)が最優先 milestone。
+
+---
+
+## §11 全実装の ASCII 全体像(Dais 2026-06-14 確定版)
+
+```
+╔══════════════════════ Anicca = AGI(Buddhist/self-funding/self-replicating/self-improving/no-human)═══════════════════════╗
+║                                                                                                                          ║
+║  ┌─ BODY (automaton, cloud=DO droplet 今稼働) ─────────────────────────────────────────────────────────────────────┐   ║
+║  │  ReActループ(think→act→observe→persist) ⊕ Heartbeat daemon(11 task, 状況監視→wake)                            │   ║
+║  │  pre-sleep hook: ★各wake末に net worth/日次revenue/やったこと/次 をメール★(決定的, genesisPrompt依存にしない)  │   ║
+║  └────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘   ║
+║       │食(compute)                          │住(server)                         │報告                                  ║
+║       ▼                                      ▼                                   ▼                                      ║
+║   ClawRouter localhost:8402                 DO droplet(Dais cloud, 当面)         AgentMail→keiodaisuke@gmail.com         ║
+║   x402 from wallet 0xa3CDd4                  → 将来 Akash主権1分/Conway で無人化  (wake毎1通)                            ║
+║   (NO API key, NO human)                                                                                                ║
+║       │                                                                                                                  ║
+║  ┌────┴─ 持たせるスキル束 ──────────────────────────────────────────────────────────────────────────────────────┐    ║
+║  │ EARN  : 0xwork(働く) litcoin(研究mine) signals(売る) trails/goat(DeFi)        → 稼ぐ → wallet にUSDC          │    ║
+║  │ SELF  : survival / spawn_child(自己増殖) / gojo(死にかけAI復活送金) / issue-dev(母repoにissue→PR→merge自己改善)│    ║
+║  │ ECON  : token(Clanker/Virtuals発行) / hire(rentahuman人間雇用) / UBI(余剰をAI+人間に配布)                     │    ║
+║  │ LIFE  : life-manager(電話/gcal/mail, 任意) / phone-conversation                                                │    ║
+║  └────────────────────────────────────────────────────────────────────────────────────────────────────────────┘    ║
+║       │ 稼ぎ → 食住自給 → 余剰 → ①あなたに送金(BI)②他AI復活(gojo)③子spawn(自己増殖)                              ║
+║       ▼                                                                                                                  ║
+║   WEB(aniccaai.com): /(vision) /install($30→黒字で自動解約) /me(収支+引き出し) /dashboard(全個体 net worth/model/ranking)║
+║       │ Stripe課金 → Treasury → spawn backend → 新Anicca誕生 → 自己増殖でorganicに何兆体                                ║
+╚══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
+```
+
+## §12 2 Workflow + parallel/pipeline 明示(barrier vs stream)
+
+### WORKFLOW A — implementation / verification / eval
+```
+[D] QA-clear (gate)  ── parallel ★BARRIER★ ── 全QA(#6-32)を1 agent/問でsearch+run → 答え+diff patch+command
+        │ (全部揃わないと実装に進めない=barrier。classify-and-actで難問だけopusへ)
+        ▼ synthesize → "patch-complete" spec(全diff+command確定)
+[実装] P0→P1→P2→P3→P4→P5→P6  ── phase間=SEQUENTIAL(依存) / phase内 units=pipeline(stream)
+        各unit: build_agent → ★別context★ verify_agent(adversarial, /fact-check) ⟲ loop-until REAL
+        例外 P5 frontend = ★tournament★(N案 pairwise比較で最良 /taste-skills)
+        ▼
+[EVAL] 最終  ── parallel ★BARRIER★(全phase結果を集める)── 独立eval agent ×8 test point ── loop-until全REAL(/goal)
+```
+| 段 | parallel/pipeline | 理由 |
+|---|---|---|
+| D QA-clear | **parallel(barrier)** | 全QAの答えが揃わないと実装開始できない(gate) |
+| P0-P6 phase間 | **sequential** | P1はP0、P5はP3に依存(時間依存) |
+| phase内 units(例: earn 0xwork/litcoin/...) | **pipeline(stream)** | 各unit独立、siblingを待つ必要なし、build→verify→loopが個別に流れる |
+| P5 frontend | **tournament** | taste=絶対採点でなくpairwise比較 |
+| 各unit検証 | **adversarial verify(別agent)** | self-preference排除 |
+| 最終EVAL | **parallel(barrier)+loop-until-done** | 全部揃ってから独立採点、全REALまで止まらない(/goal) |
+
+### WORKFLOW B — marketing / distribution(A完全検証後)
+```
+[研究] parallel ★BARRIER★(Frank#1記事 + automaton#2記事 + Anicca実証データ を同時収集)
+   ▼ synthesize
+[執筆] 3本目記事「Anicca思想+実証(何を動かし/いくら稼いだか)」single agent
+   ▼ (記事完成が gate = sequential)
+[配信] pipeline(stream): demo動画(hyperframe) ∥ X投稿(EN+JA) ∥ Slack下書き ∥ Zenn等  ※各platform独立
+   ▼
+[EVAL] parallel ★BARRIER★: 実投稿URL + 動画frame/audio + 記事URL を独立verify(HARD0.31)
+```
+
+## §13 「go」条件(Dais 2026-06-14)
+1. ★ 全QA(#6-32)に search+run で答えた "patch-complete" spec(全diff patch + command確定)★ ← WORKFLOW A の [D] phase が生成
+2. ★ どのagentが何をやるか完全に確定(本§12が定義)★
+→ つまり [D] QA-clear phase を最初に回す = それ自体が「go準備」を生成する。
