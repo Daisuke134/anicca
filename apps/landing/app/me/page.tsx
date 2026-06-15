@@ -87,7 +87,11 @@ const GATE0_WAKE = {
   tx: '0xc4f2df3e445acaff01bd004f8503d41582d8acb12a55bf27797d5aea066f721d',
   date: '2026-06-16',
 };
-const GATE0_MET = GATE0_WAKE.status === '0x1' && GATE0_WAKE.netUsdc > 0;
+// GATE-0 = a real EXTERNAL-revenue wake (earned from outside, earn > cost). An ETH→USDC swap is
+// asset liquidation (converting our own ETH), NOT external earning — it does NOT meet GATE-0.
+// Director correction 2026-06-16: do not claim "GATE-0 MET" on a swap on the live site (HARD 0.24/0.31).
+const GATE0_EXTERNAL = !/swap|liquidat/i.test(`${GATE0_WAKE.source} ${GATE0_WAKE.task}`);
+const GATE0_MET = GATE0_EXTERNAL && GATE0_WAKE.status === '0x1' && GATE0_WAKE.netUsdc > 0;
 
 const ACTIVITY_LOG = [
   {
@@ -166,10 +170,14 @@ export default function Page() {
         <Reveal>
           <Card className="border-emerald-500/40 bg-[hsl(var(--surface-elevated))]">
             <div className="flex items-center justify-between gap-3">
-              <CardLabel>GATE-0 — 初の黒字 wake（実 on-chain）</CardLabel>
-              {GATE0_MET && (
+              <CardLabel>GATE-0 — 初の実 on-chain wake（外部収益はまだ）</CardLabel>
+              {GATE0_MET ? (
                 <span className="inline-flex items-center gap-1.5 rounded-pill bg-emerald-500/15 px-3 py-1 text-xs font-semibold text-emerald-400">
                   <StatusDot status="alive" /> GATE-0 MET
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 rounded-pill bg-amber-500/15 px-3 py-1 text-xs font-semibold text-amber-400">
+                  <StatusDot status="warning" /> GATE-0 未達（swap = 自資産換金、外部収益ではない）
                 </span>
               )}
             </div>
