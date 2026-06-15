@@ -36,7 +36,11 @@ set -a
 [ -f "$HOME/.openclaw/.env" ] && . "$HOME/.openclaw/.env"
 set +a
 
-STATE_DIR="${ANICCA_STATE_DIR:-$HOME/.hermes/state}"
+# Durable state dir (fail-closed: refuse /tmp — the 2026-06 E2E lost children.jsonl to tmp-clean).
+STATE_DIR="$("$NODE" -e '
+  const { resolveStateDir } = require(process.argv[1] + "/lib/state-path");
+  process.stdout.write(resolveStateDir({ env: process.env, home: process.env.HOME }));
+' "$SKILL_DIR" 2>&1)" || { echo "self/spawn: $STATE_DIR" >&2; exit 1; }
 COLONY="$STATE_DIR/children.jsonl"
 WALLET_JSON="${ANICCA_WALLET_JSON:-$STATE_DIR/wallet.json}"
 
@@ -142,6 +146,18 @@ case "$HOST" in
   *) echo "self/spawn: unknown host '$HOST'" >&2; exit 64 ;;
 esac
 [ -n "$PROVIDER_ID" ] || { echo "self/spawn: provider provisioning failed (host=$HOST) — exit 1, ledger row left provisioning" >&2; exit 1; }
+
+# 5) finalize the colony row to active + record the child's first-wake intent = earn (not telemetry-only).
+#    On the droplet, automaton.service boots with AUTOMATON_GOAL=earn (cloud-init), so the child's own
+#    wake discovers + executes earn before it ever reports. We persist that intent so the colony ledger
+#    proves earn-on-wake on disk (durable STATE_DIR, never /tmp).
+FINAL_ROW="$(printf '%s' "$ROW" | "$JQ" -c \
+  --arg pid "$PROVIDER_ID" \
+  '. + {status:"active", provider_id:$pid, wake_action:"earn", earn_on_wake:true}')"
+"$NODE" -e '
+  const { appendChild } = require(process.argv[1] + "/lib/ledger");
+  appendChild(process.argv[2], JSON.parse(process.argv[3]));
+' "$SKILL_DIR" "$COLONY" "$FINAL_ROW"
 
 echo "CHILD_ID=${CHILD_ID}"
 echo "CHILD_WALLET=${CHILD_WALLET}"
