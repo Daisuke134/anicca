@@ -19,7 +19,7 @@ exports.handler = async (event) => {
   // extract id (for the per-id monotonic lookup) without trusting it — verify binds it to the bytes
   let id;
   try { id = JSON.parse(message).id; } catch { return { statusCode: 400, body: "bad_json" }; }
-  if (typeof id !== "string") return { statusCode: 400, body: "schema" };
+  if (typeof id !== "string" || !/^0x[a-fA-F0-9]{40}$/.test(id)) return { statusCode: 400, body: "schema" };
 
   const cfg = { url, key };
   const lastTs = await getLastTs(id, cfg);
