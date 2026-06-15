@@ -201,3 +201,9 @@ server.key
 
 # fastlane deliver artifact (env dump, never commit)
 aniccaios/AppStoreInfo.plist
+
+# repo-cruft-cleanup: build artifacts + scratch (bloat worktrees -> ENOSPC)
+work/
+*.ipa
+*.dSYM.zip
+**/build/
