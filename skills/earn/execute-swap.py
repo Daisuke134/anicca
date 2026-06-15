@@ -66,9 +66,10 @@ def min_out(quoted, bps):
     return (int(quoted) * (10000 - bps)) // 10000
 
 
-def usdc_balance(w, addr):
+def usdc_balance(w, addr, block="latest"):
+    # block-pinned read: pass a block number to dodge RPC "latest" lag right after a swap mines.
     data = "0x" + USDC_SEL_BALANCEOF + _aw(addr)
-    res = w.eth.call({"to": Web3.to_checksum_address(USDC), "data": data})
+    res = w.eth.call({"to": Web3.to_checksum_address(USDC), "data": data}, block)
     return int(res.hex() or "0", 16)
 
 
@@ -120,7 +121,6 @@ def main():
                           "need": eth_in + min_reserve}))
         sys.exit(3)
 
-    before = usdc_balance(w, me)
     quoted = quote_out(w, amount_in, fee)
     amount_out_min = min_out(quoted, slippage_bps)
     data = build_exact_input_single_data(WETH, USDC, fee, me, amount_in, amount_out_min)
@@ -148,7 +148,11 @@ def main():
 
     rcpt = w.eth.wait_for_transaction_receipt(txh, timeout=180)
     status = "0x1" if int(rcpt["status"]) == 1 else "0x0"
-    after = usdc_balance(w, me)
+    blk = int(rcpt["blockNumber"])
+    # Pin both reads to the swap's block boundary so the delta is THIS tx's effect alone,
+    # immune to RPC "latest" lag and to other concurrent wallet txs (e.g. the report skill).
+    before = usdc_balance(w, me, blk - 1)
+    after = usdc_balance(w, me, blk)
     gross = (after - before) / 1e6
     gas_used = int(rcpt["gasUsed"])
     eff_price = int(rcpt.get("effectiveGasPrice", gp))
