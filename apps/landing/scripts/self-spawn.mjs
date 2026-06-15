@@ -20,8 +20,9 @@ const require = createRequire(import.meta.url);
 const here = path.dirname(fileURLToPath(import.meta.url));
 const LIB = path.join(here, "..", "netlify", "functions", "_lib", "spawn");
 
-const { decideSpawn } = require(path.join(LIB, "spawn-gate.js"));
+const { effectiveDecision } = require(path.join(LIB, "spawn-decision.js"));
 const { readChildren, appendChild, nextChildId } = require(path.join(LIB, "children-ledger.js"));
+const { resolveStateDir, assertDurable } = require(path.join(LIB, "state-path.js"));
 const { newChildWallet, assertDistinct } = require(path.join(LIB, "child-wallet.js"));
 const { createInbox } = require(path.join(LIB, "agentmail.js"));
 const { buildChildTelemetry } = require(path.join(LIB, "child-telemetry.js"));
@@ -31,13 +32,17 @@ const { createDroplet } = require(path.join(LIB, "..", "spawn-droplet.js"));
 // ---- args
 const args = process.argv.slice(2);
 const DRY = args.includes("--dry-run");
+// Founder-authorized FIRST birth: overrides ONLY the balance gate (rate-limit + cap still bind), so the
+// colony's very first child can be born to prove the pipeline LIVE while a broke parent can never spawn
+// itself autonomously. Used exactly once for the genesis-birth proof.
+const FORCE = args.includes("--force-genesis-birth");
 let HOST = process.env.ANICCA_SPAWN_HOST || "do";
 for (const a of args) if (a.startsWith("--host=")) HOST = a.slice("--host=".length);
 
-// ---- config (env-driven; absence is reported, never faked)
-const STATE_DIR = process.env.ANICCA_STATE_DIR || path.join(process.env.HOME || ".", ".hermes", "state");
-const COLONY = process.env.ANICCA_CHILDREN_JSONL || path.join(STATE_DIR, "children.jsonl");
-const WALLET_JSON = process.env.ANICCA_WALLET_JSON || path.join(STATE_DIR, "wallet.json");
+// ---- config (durable, fail-closed: a tmp state dir is refused so children.jsonl/wallet.json never vanish)
+const STATE_DIR = resolveStateDir();
+const COLONY = assertDurable(process.env.ANICCA_CHILDREN_JSONL || path.join(STATE_DIR, "children.jsonl"));
+const WALLET_JSON = assertDurable(process.env.ANICCA_WALLET_JSON || path.join(STATE_DIR, "wallet.json"));
 const TELEMETRY_URL = process.env.TELEMETRY_URL || "https://aniccaai.com/.netlify/functions/telemetry";
 const GEO = process.env.ANICCA_GEO || "US";
 
@@ -78,9 +83,9 @@ async function main() {
   const { address: parentWallet, balance } = readParent();
   const children = readChildren(COLONY);
   const now = Date.now();
-  const decision = decideSpawn({ balanceUsdc: balance, children, now });
+  const decision = effectiveDecision({ balanceUsdc: balance, children, now, force: FORCE });
 
-  console.log(JSON.stringify({ phase: "gate", host: HOST, balance, children: children.length, decision }));
+  console.log(JSON.stringify({ phase: "gate", host: HOST, balance, children: children.length, force: FORCE, decision }));
 
   if (DRY) { console.log("self-spawn: --dry-run — no side effects."); return 0; }
   if (!decision.eligible) { console.log(`self-spawn: dormant (${decision.reason}); nothing spawned.`); return 0; }
