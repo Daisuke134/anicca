@@ -100,20 +100,25 @@ async function buildAndVerify(s) {
       `You are the BUILDER for subsystem "${s.key}" (track ${s.track}). Spec section: ${s.spec} ` +
       `(read docs/superpowers/specs/anicca/27 + 26 + the telemetry plan as the proven template). ` +
       (feedback ? `The adversarial verifier REJECTED the prior attempt — fix exactly these gaps: ${feedback}. ` : '') +
-      `Follow SDD + TDD + every CLAUDE.md HARD RULE. Branch off main, implement, write/run tests, commit, ` +
-      `and for web/functions deploy via PR->main (main has the --functions GHA). Run a real self_test and report it. ` +
-      `Collision rule (HARD): you may ADD your own new files (your route page, your skill file) but you must NOT edit ` +
-      `the shared files install.sh / the landing nav component / skills-lock.json — Foundation already pre-wired EVERY ` +
-      `subsystem's nav link + registry slot, so you never need to. If you think you need to touch a shared file, stop and report it as a gap.`,
+      `Follow SDD + TDD + every CLAUDE.md HARD RULE. Branch off main, implement, write/run tests, commit, open a PR. ` +
+      `★ CRITICAL HANDOFF (root-cause fix): after your self_test passes, MERGE your PR to main yourself ` +
+      `(\`gh pr merge <n> --merge --delete-branch\`; branch name prefix must be feature/|fix/|chore/|docs/|spec/) ` +
+      `and for web/functions WAIT for the Netlify/main deploy to go green — because the separate verifier checks the ` +
+      `MERGED+LIVE state on main/aniccaai.com, NOT your unmerged branch. A branch that is not merged reads as "missing" ` +
+      `and fails verification. Report the merge commit + the live URL in self_test. ` +
+      `Collision rule (HARD): you may ADD your own new files but must NOT edit shared files (install.sh / landing nav / ` +
+      `skills/registry.json) — Foundation already pre-wired every nav link + registry slot. Replace ONLY the body of your ` +
+      `reserved placeholder route page (app/me, app/life-manager). If you think you need a shared-file edit, stop and report it as a gap.`,
       { label: `build:${s.key}`, phase: 'Build', schema: BUILD, model: s.model, isolation: 'worktree' }
     )
     if (!build) { feedback = 'builder died'; log(`${s.key}: builder died (iter ${i + 1})`); continue }
     const v = await agent(
-      `You are an ADVERSARIAL VERIFIER. You did NOT write this and must not trust the builder. ` +
+      `You are an ADVERSARIAL VERIFIER. You did NOT write this and must not trust the builder. The builder has ALREADY ` +
+      `MERGED to main and deployed — so check the LIVE/MERGED reality (main branch + aniccaai.com), NOT a feature branch. ` +
       `Rubric — EVERY point must hold with FRESH LIVE evidence you gather yourself (no mock, HARD RULE 0.31): ${s.rubric} ` +
-      `Artifact: branch=${build.branch}, files=${JSON.stringify(build.files)}, builder_self_test=${build.self_test}. ` +
-      `Actively try to REFUTE that it works. Return pass=true ONLY if you personally reproduced live evidence for every rubric point; ` +
-      `otherwise pass=false and list concrete gaps.`,
+      `Artifact: merged_branch=${build.branch}, files=${JSON.stringify(build.files)}, builder_self_test=${build.self_test}. ` +
+      `Actively try to REFUTE that it works (curl the live URL, read the file on main, run the tx/call). Return pass=true ONLY ` +
+      `if you personally reproduced live evidence for every rubric point on the merged/live state; otherwise pass=false + concrete gaps.`,
       { label: `verify:${s.key}`, phase: 'Build', schema: VERDICT, model: 'opus' }
     )
     if (v && v.pass) { log(`${s.key}: LIVE-green (iter ${i + 1})`); return { subsystem: s.key, track: s.track, pass: true, evidence: v.evidence } }
@@ -124,27 +129,21 @@ async function buildAndVerify(s) {
 }
 
 // =============================================================================================
-// PHASE 1 — Foundation (sequential, 1 builder + 1 verifier). Trunk is already reconciled/clean.
+// PHASE 1 — Foundation. ALREADY BUILT + MERGED + LIVE (2026-06-16): ~/anicca registry.json (9 slots)
+// + registry-driven install.sh (PR #22 merged), and landing LaunchNav + /install /me /dashboard
+// /life-manager all return 200 on aniccaai.com (PR #24 merged, Netlify build emitted ○ /me ○ /life-manager).
+// So we only LIVE-VERIFY it (no rebuild) — the director merged it after the first run's branch/main
+// handoff bug. The Build phase now uses the merge-to-main handoff (builders merge; verifiers check live).
 // =============================================================================================
 phase('Foundation')
-const foundation = await agent(
-  `Foundation builder: on the unified clean trunk (main), OWN 100% of the shared-file content so the parallel ` +
-  `subsystem builders never need to touch a shared file (structural collision-prevention, not prose): ` +
-  `(1) ~/anicca/install.sh skeleton + skills-lock.json registry with EVERY slot pre-declared (earn, self/spawn, ` +
-  `self/issue-dev, life/travel, life/call, life/ask, life/notify, report, economy/ubi); ` +
-  `(2) apps/landing app layout + nav with EVERY route link pre-wired (/install /me /dashboard /life-manager); ` +
-  `(3) confirm telemetry+dashboard-sync are already live (do NOT rebuild them). Branch off main, commit, PR->main. Report files + self_test.`,
-  { label: 'foundation', phase: 'Foundation', schema: BUILD, model: 'opus', isolation: 'worktree' }
-)
 const foundationOk = await agent(
-  `Adversarial verifier (you did not build it): confirm install.sh skeleton + skills registry exist with the 4 slots, ` +
-  `landing nav links the 4 routes, and aniccaai.com/.netlify/functions/dashboard-sync returns 200. Files=${foundation ? JSON.stringify(foundation.files) : 'none'}. ` +
-  `pass only with fresh evidence.`,
+  `Adversarial verifier (independent): confirm the foundation is LIVE on main — (1) ~/anicca/skills/registry.json has 9 slots and install.sh is registry-driven; ` +
+  `(2) curl https://aniccaai.com/{install,me,dashboard,life-manager} all return 200; (3) /.netlify/functions/dashboard-sync returns 200. pass only with fresh evidence.`,
   { label: 'verify:foundation', phase: 'Foundation', schema: VERDICT, model: 'opus' }
 )
 if (!foundationOk || !foundationOk.pass) {
   log('Foundation not green — escalate to Dais before fan-out (shared scaffold must be solid first).')
-  return { stopped: 'foundation', foundation, foundationOk }
+  return { stopped: 'foundation', foundationOk }
 }
 
 // =============================================================================================
