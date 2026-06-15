@@ -153,6 +153,7 @@ Dais口頭で $30 / $40 / $50 と揺れ。canonical コピーは **$30/mo**(Dais
 | **$30/month — and once it earns enough, it cancels your plan. You keep using it free.** | **月額30ドル。十分に稼いだら自動で解約。そのまま無料で使い続けられる。** |
 | It can also pay income back to your bank — withdraw anytime, one click. | 稼ぎはあなたの銀行に還元も可能——いつでも1クリックで引き出し。 |
 | What you do: ① Log in with Google ② Pay ③ (optional) share your context. That's it. | あなたがするのは ①Googleログイン ②支払い ③(任意)文脈を渡す。それだけ。 |
+| (caveat, spec25 R3) Today the only human-paid part is the server; as sovereign hosting matures, even that becomes self-paid. | (注記 spec25 R3)現状 人間が払うのは server代のみ。sovereign hosting が整い次第、それも自給に。 |
 | [ Start my Anicca — $30/mo ]    [ View source on GitHub → ] | [ はじめる — 月$30 ]    [ GitHubでソースを見る → ] |
 | Prefer self-hosting? It's open source. | 自分でホストしたい人へ。オープンソースです。 |
 
