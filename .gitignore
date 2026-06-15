@@ -207,3 +207,9 @@ work/
 *.ipa
 *.dSYM.zip
 **/build/
+
+# Factory app build credentials (never commit — p12/cert passwords, provisioning)
+mobile-apps/*/credentials.json
+mobile-apps/**/certs/
+**/credentials.json
+anicca_youtube_qr.png
