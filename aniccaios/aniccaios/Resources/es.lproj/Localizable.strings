@@ -2712,3 +2712,20 @@
 "tried_nothing" = "Nothing yet";
 "tried_therapy" = "Therapy";
 "tried_willpower" = "Pure willpower";
+
+/* v1.9.1: Boletín (Carta de la mañana) + Comentarios */
+"newsletter_section_title" = "Carta de la mañana";
+"newsletter_section_description" = "Suscríbete para recibir cada mañana un mensaje que serena tu mente.";
+"newsletter_email_placeholder" = "Correo electrónico";
+"newsletter_submit_button" = "Suscribirme";
+"newsletter_status_registered" = "Suscrito como %@";
+"newsletter_unsubscribe_button" = "Cancelar suscripción";
+"newsletter_submit_error" = "Error. Inténtalo de nuevo.";
+"feedback_section_title" = "Enviar comentarios";
+"feedback_link_label" = "Enviar comentarios";
+"feedback_placeholder" = "Cuéntanos qué te gustaría que mejoráramos (5 a 2000 caracteres).";
+"feedback_submit_button" = "Enviar";
+"feedback_submit_error" = "No se pudo enviar. Inténtalo de nuevo.";
+"feedback_sent_label" = "✓ Enviado";
+"feedback_pii_warning_title" = "Información personal detectada";
+"feedback_pii_warning_message" = "Parece que contiene un correo o un número de teléfono. ¿Enviar de todos modos?";

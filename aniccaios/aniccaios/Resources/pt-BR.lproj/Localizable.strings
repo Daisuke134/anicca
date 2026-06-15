@@ -2652,3 +2652,20 @@
 "tried_therapy" = "Therapy";
 "tried_willpower" = "Pure willpower";
 "widget_description" = "Daily wisdom for your growth";
+
+/* v1.9.1: Newsletter (Carta da manhã) + Feedback */
+"newsletter_section_title" = "Carta da manhã";
+"newsletter_section_description" = "Inscreva-se para receber todas as manhãs uma mensagem que acalma a mente.";
+"newsletter_email_placeholder" = "Endereço de e-mail";
+"newsletter_submit_button" = "Inscrever-se";
+"newsletter_status_registered" = "Inscrito como %@";
+"newsletter_unsubscribe_button" = "Cancelar inscrição";
+"newsletter_submit_error" = "Falha. Tente novamente.";
+"feedback_section_title" = "Enviar feedback";
+"feedback_link_label" = "Enviar feedback";
+"feedback_placeholder" = "Conte o que você gostaria que melhorássemos (5 a 2000 caracteres).";
+"feedback_submit_button" = "Enviar";
+"feedback_submit_error" = "Falha ao enviar. Tente novamente.";
+"feedback_sent_label" = "✓ Enviado";
+"feedback_pii_warning_title" = "Informações pessoais detectadas";
+"feedback_pii_warning_message" = "Parece conter um e-mail ou número de telefone. Enviar mesmo assim?";
