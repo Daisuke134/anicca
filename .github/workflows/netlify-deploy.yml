@@ -48,7 +48,7 @@ jobs:
         run: |
           set -euo pipefail
           if [ "$GHA_REF" = "refs/heads/main" ]; then
-            netlify deploy --site "$NETLIFY_SITE_ID" --auth "$NETLIFY_AUTH_TOKEN" --dir=out --prod --no-build --message "Deploy from GHA prod - $GHA_SHA"
+            netlify deploy --site "$NETLIFY_SITE_ID" --auth "$NETLIFY_AUTH_TOKEN" --dir=out --functions=netlify/functions --prod --no-build --message "Deploy from GHA prod - $GHA_SHA"
           else
-            netlify deploy --site "$NETLIFY_SITE_ID" --auth "$NETLIFY_AUTH_TOKEN" --dir=out --no-build --message "Deploy from GHA preview - $GHA_SHA"
+            netlify deploy --site "$NETLIFY_SITE_ID" --auth "$NETLIFY_AUTH_TOKEN" --dir=out --functions=netlify/functions --no-build --message "Deploy from GHA preview - $GHA_SHA"
           fi
