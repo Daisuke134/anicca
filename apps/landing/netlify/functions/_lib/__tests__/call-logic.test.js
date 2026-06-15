@@ -13,6 +13,10 @@ const {
   buildTwilioMediaFrame,
   buildCallPrompt,
   buildConnectStreamTwiml,
+  LIVE_MODEL,
+  geminiLiveWsUrl,
+  buildGeminiTurn,
+  parseGeminiAudio,
 } = require("../call-logic");
 
 // ── 1. μ-law encode(decode(x)) is the identity for every byte (G.711) ─────────
@@ -153,4 +157,40 @@ test("buildConnectStreamTwiml emits a Connect+Stream TwiML and XML-escapes the u
   assert.ok(xml.includes("<Stream "), "Stream noun");
   assert.ok(xml.includes('url="wss://x.example/ws?a=1&amp;b=2"'), "url present and & escaped");
   assert.ok(!xml.includes("a=1&b=2"), "raw ampersand must be escaped");
+});
+
+// ── 13. Live model default (the wire-bug fix) ─────────────────────────────────
+test("buildGeminiSetup defaults to the verified-working live model when none given", () => {
+  const m = buildGeminiSetup({ voiceName: "Charon", systemInstruction: "" });
+  // NOT the dead gemini-2.0-flash-live-001 that the bidi API rejects with CLOSE 1008.
+  assert.strictEqual(m.setup.model, `models/${LIVE_MODEL}`);
+  assert.notStrictEqual(m.setup.model, "models/gemini-2.0-flash-live-001");
+  assert.ok(/native-audio/.test(LIVE_MODEL), "live model is a native-audio bidi model");
+});
+
+// ── 14. Gemini Live websocket URL ─────────────────────────────────────────────
+test("geminiLiveWsUrl builds the BidiGenerateContent wss endpoint with the key", () => {
+  const url = geminiLiveWsUrl("AIza-KEY/with+chars");
+  assert.ok(url.startsWith("wss://generativelanguage.googleapis.com/ws/"), "wss host");
+  assert.ok(url.includes("GenerativeService.BidiGenerateContent"), "bidi method");
+  assert.ok(url.includes("key=AIza-KEY%2Fwith%2Bchars"), "key url-encoded");
+});
+
+// ── 15. Opening-turn message shape ────────────────────────────────────────────
+test("buildGeminiTurn wraps text as a complete user turn", () => {
+  const t = buildGeminiTurn("time to leave");
+  assert.strictEqual(t.clientContent.turns[0].role, "user");
+  assert.strictEqual(t.clientContent.turns[0].parts[0].text, "time to leave");
+  assert.strictEqual(t.clientContent.turnComplete, true);
+});
+
+// ── 16. Audio extraction from server messages ─────────────────────────────────
+test("parseGeminiAudio pulls inlineData audio chunks and ignores non-audio messages", () => {
+  const withAudio = {
+    serverContent: { modelTurn: { parts: [{ inlineData: { data: "QUJD" } }, { text: "hi" }] } },
+  };
+  assert.deepStrictEqual(parseGeminiAudio(withAudio), ["QUJD"]);
+  assert.deepStrictEqual(parseGeminiAudio({ setupComplete: {} }), []);
+  assert.deepStrictEqual(parseGeminiAudio({}), []);
+  assert.deepStrictEqual(parseGeminiAudio(null), []);
 });
