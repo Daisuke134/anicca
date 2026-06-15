@@ -18,7 +18,11 @@
 #   Swap: EARN_SWAP_ETH (0.0003), EARN_SLIPPAGE_BPS (100), EARN_MIN_ETH_RESERVE (0.0005).
 set -u
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-[ -f /opt/anicca.env ] && . /opt/anicca.env || true
+# Env discovery: droplet ships /opt/anicca.env; local bodies keep the wallet key in the
+# OpenClaw/clawd env. Source the first that exists so the loop finds the signing key anywhere.
+for ENVF in /opt/anicca.env "$HOME/.openclaw/.env" "$HOME/clawd/.env"; do
+  [ -f "$ENVF" ] && { set -a; . "$ENVF"; set +a; break; }
+done
 PKVAR="${PKVAR:-BLOCKRUN_WALLET_KEY}"
 LEDGER="${EARN_LEDGER:-$HERE/state/earn-ledger.jsonl}"
 WAKE="${WAKE_ID:-$(date -u +%s)}"
