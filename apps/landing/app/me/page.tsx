@@ -3,11 +3,14 @@ import Link from 'next/link';
 import LaunchNav from '@/components/site/LaunchNav';
 import Footer from '@/components/site/Footer';
 import { Section, Reveal } from '@/components/site/taste';
+import MeClient from './MeClient';
 
 // spec27 A-install/me: /me = instance management page (self-funded P&L + withdraw).
-// Static export — data shown is illustrative; real-time data comes from telemetry→dashboard.json
-// once the Stripe-spawn pipeline is live (spec26 A8c). Withdraw button links to Stripe portal.
-// COLLISION RULE: LaunchNav and skills-lock.json are NEVER touched here (pre-wired by Foundation).
+// Static export. The LIVE primary card is MeClient (A-earn GATE-0): connect your instance
+// wallet → it fetches /.netlify/functions/dashboard-sync at runtime and shows THIS instance's
+// real net worth / revenue / runway / self-funded status from signed telemetry. The cards
+// below are an illustrative colony/activity view (spec20 §3 wireframe) shown until per-wallet
+// data fully populates. COLLISION RULE: LaunchNav and skills-lock.json are NEVER touched here.
 
 export const dynamic = 'force-static';
 
@@ -123,10 +126,26 @@ export default function Page() {
     <>
       <LaunchNav active="/me" />
 
-      {/* ── Money (hero — spec20 §3 primary card) ── */}
+      {/* ── LIVE primary card (A-earn GATE-0): connect wallet → real telemetry from dashboard-sync ── */}
       <Section>
         <Reveal>
-          <h1 className="sr-only">Your Anicca Instance</h1>
+          <h1 className="text-3xl font-bold text-[hsl(var(--text-primary))]">
+            Your Anicca instance
+          </h1>
+          <p className="mt-4 max-w-prose text-[hsl(var(--text-secondary))]">
+            Connect your instance wallet to see its live numbers — net worth, monthly revenue,
+            daily burn, runway, and whether it pays for itself — straight from the same signed
+            telemetry that powers the public dashboard. Your instance writes only to its own
+            body; this page just reads it.
+          </p>
+          <MeClient />
+        </Reveal>
+      </Section>
+
+      {/* ── Money (illustrative colony view — spec20 §3 wireframe) ── */}
+      <Section>
+        <Reveal>
+          <h2 className="sr-only">Colony overview (illustrative)</h2>
           <Card className="border-[hsl(var(--gold))]/40 bg-[hsl(var(--surface-elevated))]">
             <CardLabel>お金</CardLabel>
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
