@@ -60,6 +60,30 @@ async function initializeServer() {
     };
     scheduleNext();
   }
+
+  // v1.9.1 newsletter: daily 08:30 JST (23:30 UTC) — per-subscriber resend.emails.send loop
+  // (v5.1 pivot: no Segments/Broadcasts since restricted API key only allows emails.send)
+  {
+    const { sendDailyNewsletter } = await import('./routes/mobile/newsletter.js');
+    let newsletterRan = null;  // YYYY-MM-DD-of-last-run, prevents double-fire if interval skews
+    setInterval(async () => {
+      const now = new Date();
+      // 23:30 UTC = 08:30 JST. Check minute window [28, 32] to catch interval jitter.
+      if (now.getUTCHours() !== 23) return;
+      if (now.getUTCMinutes() < 28 || now.getUTCMinutes() > 32) return;
+
+      const today = now.toISOString().slice(0, 10);
+      if (newsletterRan === today) return;
+      newsletterRan = today;
+
+      try {
+        const result = await sendDailyNewsletter();
+        console.log(`[newsletter] daily send: ${result.sent}/${result.total || 0}`);
+      } catch (e) {
+        console.error('newsletter daily send failed', e);
+      }
+    }, 60_000);  // check every minute
+  }
 }
 
 const app = express();
