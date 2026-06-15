@@ -62,7 +62,7 @@
       "track": "B",
       "dir": "skills/life/ask",
       "entrypoint": "ask.js",
-      "status": "declared",
+      "status": "live",
       "spec": "26 B-ask / 27 B-ask",
       "summary": "When duration/place unknown, email Dais a question (AgentMail/Gmail) and backfill the gcal 'where' from the reply (inbound webhook driven).",
       "owner": "wf-b:ask"
