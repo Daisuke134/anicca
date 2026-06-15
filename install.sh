@@ -1,33 +1,30 @@
 #!/usr/bin/env bash
-# anicca-oss install — bootstraps the personal-life-leader stack into
-# ~/.openclaw on the user's machine. Idempotent: safe to re-run.
+# anicca install — bootstraps the Anicca automaton body into a runtime root on
+# the user's always-on machine. Idempotent: safe to re-run. Self-host / OSS path.
 #
-# What this script does:
-#   1. Verify required system deps (python3, gog, jq, git)
-#   2. Detect or scaffold ~/.openclaw runtime root + ~/.openclaw/.env
-#   3. Copy template profile + .env if missing (= NEVER overwrite user data)
-#   4. Sync the life-manager skill bundle into ~/.openclaw/skills/
-#   5. Register the 7 cron entries via openclaw cron CLI
-#   6. Print "what to do next" so the user can finish on Telegram
+# Registry-driven: every capability lives as a SLOT in skills/registry.json
+# (the SSOT). This script reads that registry and syncs each declared/live slot
+# into $ANICCA_HOME/skills/<slot>/ — so adding a capability is "drop a dir +
+# declare a slot", never "edit install.sh". (Foundation collision-prevention.)
 #
-# What this script does NOT do:
-#   - Ask for API keys (that is the external coding-agent's job per spec §10.E)
-#   - Start the Telegram bot (the user runs /start themselves)
-#   - Touch any data outside ~/.openclaw and ~/Library/LaunchAgents
+# What this does:
+#   1. Verify system deps (git, jq, node, python3)
+#   2. Scaffold the runtime root ($ANICCA_HOME) + .env from template (never overwrite)
+#   3. Sync skills/_shared (if present)
+#   4. Sync EVERY slot from skills/registry.json into the runtime body
+#   5. Print "what's next" (fuel key + first wake)
+#
+# What this does NOT do:
+#   - Ask for API keys / private keys (handled out of band — see .env.example)
+#   - Broadcast any on-chain tx or start earning (the automaton loop does that)
+#   - Touch anything outside $ANICCA_HOME
 
 set -euo pipefail
-trap 'echo "[install] ❌ failed on line $LINENO. nothing destructive, re-run safe."' ERR
+trap 'echo "[install] FAILED on line $LINENO. nothing destructive — re-run is safe."' ERR
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ANICCA_HOME="${ANICCA_HOME:-$HOME/.openclaw}"
-SKILLS_TO_INSTALL=(
-  anicca-life-manager
-  anicca-travel-fill
-  anicca-gcal-heal
-  anicca-report
-  anicca-fuel-broker
-  anicca-schedule-template
-)
+ANICCA_HOME="${ANICCA_HOME:-$HOME/.anicca}"
+REGISTRY="$REPO_ROOT/skills/registry.json"
 
 cyan(){ printf "\033[36m%s\033[0m\n" "$*"; }
 green(){ printf "\033[32m%s\033[0m\n" "$*"; }
@@ -35,181 +32,114 @@ yellow(){ printf "\033[33m%s\033[0m\n" "$*"; }
 red(){ printf "\033[31m%s\033[0m\n" "$*"; }
 
 cyan "================================================================"
-cyan "  Anicca OSS install — personal life-leader mode"
+cyan "  Anicca install — self-host automaton body"
 cyan "  Repo root  : $REPO_ROOT"
 cyan "  Runtime    : $ANICCA_HOME"
+cyan "  Registry   : $REGISTRY"
 cyan "================================================================"
 echo
 
 # ─── 1. system deps ────────────────────────────────────────────────────
-cyan "[1/6] checking system deps…"
-for bin in python3 git jq; do
+cyan "[1/5] checking system deps…"
+for bin in git jq; do
   if ! command -v "$bin" >/dev/null 2>&1; then
     red "  ✗ $bin missing — install it first then re-run."
     exit 2
   fi
   green "  ✓ $bin"
 done
-if ! command -v openclaw >/dev/null 2>&1; then
-  yellow "  ⚠ openclaw CLI not in PATH — cron registration will be skipped."
-  yellow "    Install: npm install -g openclaw   (or brew install openclaw)"
-  HAS_OPENCLAW=0
-else
-  green "  ✓ openclaw"
-  HAS_OPENCLAW=1
-fi
-if ! command -v gog >/dev/null 2>&1; then
-  yellow "  ⚠ gog CLI not in PATH — Google Calendar / Gmail will not work."
-  yellow "    Install: see github.com/the user134/gog"
-fi
+for bin in node python3; do
+  if command -v "$bin" >/dev/null 2>&1; then
+    green "  ✓ $bin"
+  else
+    yellow "  ⚠ $bin not in PATH — some slots (life/* need node, report needs python3) will be inert until installed."
+  fi
+done
 echo
 
-# ─── 2. runtime root ───────────────────────────────────────────────────
-cyan "[2/6] preparing runtime root…"
-mkdir -p "$ANICCA_HOME"/{skills,state/location,identity,logs}
+# ─── 2. runtime root + env ─────────────────────────────────────────────
+cyan "[2/5] preparing runtime root…"
+mkdir -p "$ANICCA_HOME"/{skills,state,identity,logs}
 green "  ✓ $ANICCA_HOME"
 
 if [ ! -f "$ANICCA_HOME/.env" ]; then
   if [ -f "$REPO_ROOT/.env.example" ]; then
     cp "$REPO_ROOT/.env.example" "$ANICCA_HOME/.env"
-    chmod 600 "$ANICCA_HOME/.env"
-    yellow "  ✎ created $ANICCA_HOME/.env from template — fill it in."
   else
-    touch "$ANICCA_HOME/.env"
-    chmod 600 "$ANICCA_HOME/.env"
-    yellow "  ✎ created empty $ANICCA_HOME/.env — add your keys."
+    : > "$ANICCA_HOME/.env"
   fi
+  chmod 600 "$ANICCA_HOME/.env"
+  yellow "  ✎ created $ANICCA_HOME/.env — fill in 1 fuel key + wallet before first wake."
 else
   green "  ✓ $ANICCA_HOME/.env  (preserved)"
-fi
-
-if [ ! -f "$ANICCA_HOME/identity/profile.json" ]; then
-  if [ -f "$REPO_ROOT/identity/profile.example.json" ]; then
-    cp "$REPO_ROOT/identity/profile.example.json" "$ANICCA_HOME/identity/profile.json"
-    yellow "  ✎ created $ANICCA_HOME/identity/profile.json from template — fill it in."
-  fi
-else
-  green "  ✓ $ANICCA_HOME/identity/profile.json  (preserved)"
 fi
 echo
 
 # ─── 3. shared lib ─────────────────────────────────────────────────────
-cyan "[3/6] syncing _shared lib…"
+cyan "[3/5] syncing _shared lib…"
 if [ -d "$REPO_ROOT/skills/_shared" ]; then
   mkdir -p "$ANICCA_HOME/skills/_shared"
-  rsync -a --delete \
-    --exclude='state/' --exclude='__pycache__/' \
+  rsync -a --delete --exclude='state/' --exclude='__pycache__/' \
     "$REPO_ROOT/skills/_shared/" "$ANICCA_HOME/skills/_shared/"
   green "  ✓ _shared synced"
 else
-  yellow "  ⚠ $REPO_ROOT/skills/_shared not in repo — skipping (legacy clone?)"
+  yellow "  ⚠ skills/_shared not in repo — skipping."
 fi
 echo
 
-# ─── 4. skill bundle ───────────────────────────────────────────────────
-cyan "[4/6] syncing life-manager skill bundle…"
-for skill in "${SKILLS_TO_INSTALL[@]}"; do
-  src="$REPO_ROOT/skills/$skill"
+# ─── 4. registry-driven slot sync ──────────────────────────────────────
+cyan "[4/5] syncing skills from registry…"
+if [ ! -f "$REGISTRY" ]; then
+  red "  ✗ registry not found at $REGISTRY — cannot sync slots."
+  exit 3
+fi
+# iterate over every slot key; sync its dir; report status. Foundation pre-declares
+# all slots, so every builder's capability gets installed the moment its files land.
+SLOT_KEYS=$(jq -r '.slots | keys[]' "$REGISTRY")
+SYNCED=0; DECLARED_ONLY=0
+while IFS= read -r slot; do
+  [ -z "$slot" ] && continue
+  dir=$(jq -r --arg k "$slot" '.slots[$k].dir' "$REGISTRY")
+  status=$(jq -r --arg k "$slot" '.slots[$k].status' "$REGISTRY")
+  entry=$(jq -r --arg k "$slot" '.slots[$k].entrypoint' "$REGISTRY")
+  src="$REPO_ROOT/$dir"
+  dst="$ANICCA_HOME/$dir"
   if [ ! -d "$src" ]; then
-    yellow "  ⚠ $skill not in repo — skip"
+    yellow "  ⚠ $slot — dir $dir missing in repo, skip"
     continue
   fi
-  dst="$ANICCA_HOME/skills/$skill"
   mkdir -p "$dst"
-  rsync -a --delete \
-    --exclude='state/' --exclude='__pycache__/' \
-    "$src/" "$dst/"
+  rsync -a --delete --exclude='state/' --exclude='__pycache__/' "$src/" "$dst/"
   mkdir -p "$dst/state"
-  green "  ✓ $skill"
-done
-echo
-
-# ─── 4.5  launchd plists from templates ────────────────────────────────
-cyan "[4.5/6] installing launchd plists from templates…"
-TEMPLATES_DIR="$REPO_ROOT/templates"
-LA_DIR="$HOME/Library/LaunchAgents"
-mkdir -p "$LA_DIR"
-for plist in ai.anicca.tg-loc-bot ai.anicca.pipecat-phone; do
-  src="$TEMPLATES_DIR/${plist}.plist"
-  dst="$LA_DIR/${plist}.plist"
-  if [ ! -f "$src" ]; then
-    yellow "  ⚠ $src missing — skip"
-    continue
-  fi
-  if [ -f "$dst" ]; then
-    green "  ✓ $plist already installed"
-    continue
-  fi
-  sed -e "s|__HOME__|$HOME|g" \
-      -e "s|__ANICCA_HOME__|$ANICCA_HOME|g" \
-      "$src" > "$dst"
-  if launchctl bootstrap "gui/$(id -u)" "$dst" >/dev/null 2>&1; then
-    green "  ✎ installed + bootstrapped $plist"
+  if [ "$status" = "live" ]; then
+    green "  ✓ $slot  [live]  -> $dir/$entry"
+    SYNCED=$((SYNCED+1))
   else
-    yellow "  ⚠ installed $plist but bootstrap failed (= may already be loaded)"
+    yellow "  • $slot  [$status]  (reserved, entrypoint $entry pending)"
+    DECLARED_ONLY=$((DECLARED_ONLY+1))
   fi
-done
+done <<< "$SLOT_KEYS"
+echo
+green "  synced $SYNCED live slot(s), $DECLARED_ONLY reserved slot(s)."
 echo
 
-# ─── 5. cron registration ──────────────────────────────────────────────
-cyan "[5/6] registering openclaw cron entries…"
-if [ "$HAS_OPENCLAW" -eq 0 ]; then
-  yellow "  ⚠ skipped (= openclaw CLI absent)"
-else
-  declare -a CRONS=(
-    "anicca-life-manager|*/5 * * * *|bash ~/.openclaw/skills/anicca-life-manager/scripts/run.sh"
-    "anicca-gcal-heal|*/15 * * * *|bash ~/.openclaw/skills/anicca-gcal-heal/scripts/run.sh"
-    "anicca-travel-fill|0 */3 * * *|bash ~/.openclaw/skills/anicca-travel-fill/scripts/run.sh"
-    "anicca-fuel-broker|17 * * * *|bash ~/.openclaw/skills/anicca-fuel-broker/scripts/run.sh"
-    "anicca-report-daily|0 18 * * *|bash ~/.openclaw/skills/anicca-report/scripts/run.sh"
-    "anicca-report-weekly|0 9 * * 1|bash ~/.openclaw/skills/anicca-report/scripts/run.sh --weekly"
-    "anicca-schedule-template|0 4 * * *|bash ~/.openclaw/skills/anicca-schedule-template/scripts/run.sh"
-  )
-  EXISTING=$(openclaw cron list 2>/dev/null | awk '{print $2}' | sort -u || true)
-  for line in "${CRONS[@]}"; do
-    NAME=$(echo "$line" | cut -d'|' -f1)
-    SCHED=$(echo "$line" | cut -d'|' -f2)
-    CMD=$(echo "$line" | cut -d'|' -f3)
-    if echo "$EXISTING" | grep -qx "$NAME"; then
-      green "  ✓ $NAME already registered"
-      continue
-    fi
-    if openclaw cron create --name "$NAME" --cron "$SCHED" \
-         --message "exec で次を実行: $CMD" >/dev/null 2>&1; then
-      green "  ✎ created $NAME ($SCHED)"
-    else
-      yellow "  ⚠ $NAME create failed — please add manually"
-    fi
-  done
-fi
-echo
-
-# ─── 6. summary ────────────────────────────────────────────────────────
-cyan "[6/6] done."
+# ─── 5. summary ────────────────────────────────────────────────────────
+cyan "[5/5] done."
 echo
 green "What's next:"
-cat <<'EOM'
-  1. Verify your ~/.openclaw/.env has every key from the README table:
-       TELEGRAM_BOT_TOKEN   GOOGLE_API_KEY   GEMINI_API_KEY
-       TWILIO_ACCOUNT_SID   TWILIO_AUTH_TOKEN   TWILIO_PHONE_NUMBER
-       GOG_ACCOUNT          GOG_KEYRING_PASSWORD
-       1 FUEL (= ANTHROPIC_API_KEY | OPENAI_API_KEY | DEEPSEEK_API_KEY | KIMI_API_KEY | WALLET_ADDR)
+cat <<EOM
+  1. Fill $ANICCA_HOME/.env with at least:
+       1 FUEL  (ANTHROPIC_API_KEY | OPENAI_API_KEY | DEEPSEEK_API_KEY | a ClawRouter WALLET key)
+       WALLET  (a funded Base wallet privkey for earn + telemetry signing)
+  2. Optional Life Manager keys: GEMINI_API_KEY, TWILIO_*, GOOGLE_API_KEY, AGENTMAIL_API_KEY.
+  3. Start the automaton loop (your runner of choice). On each wake it reads
+     $ANICCA_HOME/skills and runs the live slots; the report slot POSTs signed
+     telemetry to https://aniccaai.com so your instance shows up on /dashboard.
 
-  2. Verify your ~/.openclaw/identity/profile.json has at least:
-       identity.name, identity.homeAddress, identity.phone
-       alarm.wakeTime (default 07:00), alarm.quietHoursStart/End
+  Slots are declared in skills/registry.json. To enable a reserved slot, drop its
+  implementation into its dir and flip status to "live" — no install.sh edit.
 
-  3. Start the Telegram Live-Location bot:
-       launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/ai.anicca.tg-loc-bot.plist
-     If the plist doesn't exist yet, see docs/INSTALL_BOOTSTRAP.md.
-
-  4. Open Telegram on your iPhone → your bot → /start. Share Live
-     Location. Anicca takes over from there.
-
-  5. Next morning around your wake time, you should get a phone call.
-     If not, tail ~/.openclaw/skills/anicca-life-manager/state/run.log
-
-  Repo: https://github.com/the user134/anicca-oss
+  Repo: https://github.com/Daisuke134/anicca
 EOM
 echo
-green "anicca-oss install complete."
+green "anicca install complete."
