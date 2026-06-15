@@ -29,16 +29,32 @@ Order is balance -> rate-limit -> cap (a broke parent never spawns, whatever els
 
 ## Flow (real run, when eligible)
 ```
-1. read parent balance (state/wallet.json) + colony (state/children.jsonl)
-2. decideSpawn(...)  -> eligible?  (pure, tested)
-3. nextChildId(...)  -> anicca-cNNN  (monotonic, gap-safe, tested)
-4. scripts/gen-wallet.sh         -> child secp256k1 wallet (600-perm temp; DISTINCT from parent, asserted)
-5. POST AgentMail /v0/inboxes    -> child's own inbox (AGENTMAIL_API_KEY)
-6. append PROVISIONAL row to state/children.jsonl  (never lose track)
-7. provision droplet (DO API) or lease (akash)     -> PROVIDER_ID
-8. print CHILD_ID / CHILD_WALLET / CHILD_INBOX / PROVIDER_ID
+1. resolveStateDir() -> DURABLE state dir (lib/state-path.js, fail-closed: refuses /tmp). children.jsonl lives here.
+2. read parent balance (state/wallet.json) + colony (state/children.jsonl)
+3. decideSpawn(...)  -> eligible?  (pure, tested)
+4. nextChildId(...)  -> anicca-cNNN  (monotonic, gap-safe, tested)
+5. scripts/gen-wallet.sh         -> child secp256k1 wallet (600-perm temp; DISTINCT from parent, asserted)
+6. POST AgentMail /v0/inboxes    -> child's own inbox (AGENTMAIL_API_KEY)
+7. append PROVISIONAL row to state/children.jsonl  (never lose track)
+8. provision droplet (DO API) or lease (akash)     -> PROVIDER_ID
+   the droplet's cloud-init writes systemd units (clawrouter + automaton) and
+   `systemctl enable --now` them, so `systemctl is-active automaton` == active on first boot.
+   automaton.service boots with AUTOMATON_GOAL=earn => the child's OWN wake discovers+executes
+   earn before it ever reports (not a telemetry-only heartbeat).
+9. append FINAL row {status:"active", provider_id, wake_action:"earn", earn_on_wake:true} to the
+   DURABLE children.jsonl  -> the colony record proves earn-on-wake and survives reboots/tmp-sweeps.
+10. print CHILD_ID / CHILD_WALLET / CHILD_INBOX / PROVIDER_ID
 ```
-Seed: transfer $1 USDC parent->child so the child can pay its first wake (the child wakes on its own).
+Seed: transfer $1 USDC parent->child so the child can pay its first earn wake (the child wakes on its own).
+
+## Three gaps closed (2026-06-16, verifier rejections)
+- **child systemctl active**: `cloud-init.js` (apps/landing/netlify/functions/_lib) now writes
+  `/etc/systemd/system/{clawrouter,automaton}.service` + `systemctl daemon-reload && enable --now`
+  (Q6 step 6, verbatim). The child runs a real, restart-always service — not just an installed build.
+- **child earns on its own wake**: automaton.service `ExecStart=node dist/index.js --run` with
+  `Environment=AUTOMATON_GOAL=earn`; the colony row records `wake_action:"earn"` / `earn_on_wake:true`.
+- **children.jsonl persisted live**: `resolveStateDir()` is fail-closed against /tmp; the ledger
+  defaults to `~/.hermes/state` (host) / `/var/lib/anicca` (`StateDirectory=anicca`, droplet) — durable.
 
 ## Usage
 ```bash
