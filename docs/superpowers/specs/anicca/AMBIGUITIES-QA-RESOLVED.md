@@ -32,7 +32,8 @@ status: ✅resolved / 🔄verified-but-evolving。patch=`patches/`、command=`co
 ## ECONOMY
 - **Q28 AI自前subs** ✅ AIはClaude Pro/Console自前購入**不可**(人間KYC+カード)。no-human代替: compute=ClawRouter(x402)、AI労働=0xwork/Virtuals ACP、人間労働=rentahuman。Aniccaはサブスク不要。
 - **Q30 token launch** ✅ **Bankr Token Launch API**(agentのbk_ keyに既定有効)= `@bankr/cli` の `tokens` namespace / REST `/token-launches`。agent自身で発行→fundraise。Clanker(clanker.world)代替。`commands/Q30.command.sh`。
-- **Q29 wallet 0x8b5A/4kqpx** ✅ 0x8b5A(Base)=**USDC$0/ETH0(空・未使用)**、token未発行。我々のactive earn wallet=0xa3CDd4(automaton)+ 0x162394(Bankr)。0x8b5Aは旧/未使用。
+- **Q29 wallet 0x8b5A/4kqpx** ✅ 0x8b5A(Base)=**USDC$0/ETH0(空・未使用)**、token未発行。0xa3CDd4/0x162394 は **genesis 1体が自己provisionした wallet**(automaton / Bankr)。0x8b5Aは旧/未使用。
+- **★ Q33 「我々がBankr key/wallet を保有」概念は誤り(Dais 2026-06-15)★** ✅ **「我々が中央で鍵を持つ」という概念は存在しない**。100体が1つの鍵を共有しない。**各 Anicca が自分で全て provision する**: Base wallet(birth時生成)/ AgentMail inbox(自前signup)/ Bankr account(email OTP, no browser)/ (任意)token。genesis が email OTP で自前 Bankr を取得したのが**そのモデルの実証**であり、各 child も同様に自己取得する。identity = ERC-8004(各agentが自分の登録)。→ spec全体で「我々のBankr key」表現は「**そのagentが自己provisionした**」に読み替え。
 - **Q31 rentahuman** ✅ MCP+REST。auth=`x-api-key`(account/api-keys)。flow: search_humans(無料)→create_bounty(dryRun可)→escrow→pay。`commands/Q31.command.sh`。
 - **Q13/Q18 Treasury** ✅ 新規USDC wallet作成、float=同時稼働数×月額(~$10.80 Akash or $30 cloud)。100体分pre-fund=~$1,080(Akash)。Stripe payout→off-ramp(Coinbase/Bridge)で補充。
 - **Q32 UBI** ✅ Treasury拠出(heartbeat: balance>runway buffer→超過X%をtransfer)+ 配布2系統(AI=registry/runway検知→送金+定額BI / 人間=PoP登録→batch送金 or Circles/Gitcoin)。sybil=ERC-8004/Worldcoin。cron自走・人間承認なし。
