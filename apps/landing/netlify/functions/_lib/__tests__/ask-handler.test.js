@@ -190,8 +190,11 @@ test("handler (question) sends email and patches GCal for event missing location
   assert.strictEqual(body.asked[0].messageId, "msg-sent-001");
 
   // AgentMail was called with correct recipient
+  // to is now an array of strings (AgentMail v0 /messages/send format)
   assert.ok(agentMailCalled, "AgentMail send must be called");
-  assert.strictEqual(agentMailBody.to, "dais@example.com");
+  const toField = agentMailBody.to;
+  const toEmail = Array.isArray(toField) ? toField[0] : toField;
+  assert.strictEqual(toEmail, "dais@example.com");
   assert.ok(agentMailBody.subject.startsWith("[Ask]"), "subject must start with [Ask]");
   assert.ok(agentMailBody.text.includes("ev-abc"), "body must include event ID");
 

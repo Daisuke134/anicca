@@ -82,14 +82,17 @@ async function getEvent(calendarId, eventId, token) {
 // ── AgentMail REST helper ──────────────────────────────────────────────────────
 
 async function sendEmail({ apiKey, inboxId, to, subject, text }) {
-  const url = `https://api.agentmail.to/v0/inboxes/${inboxId}/messages`;
+  // Correct endpoint: /messages/send (not /messages which is list-only)
+  const url = `https://api.agentmail.to/v0/inboxes/${encodeURIComponent(inboxId)}/messages/send`;
+  // AgentMail v0 "to" field accepts array of strings (email addresses)
+  const toArray = Array.isArray(to) ? to : [to];
   const r = await fetch(url, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ to, subject, text }),
+    body: JSON.stringify({ to: toArray, subject, text }),
   });
   if (!r.ok) throw new Error(`AgentMail send ${r.status}: ${await r.text()}`);
   return r.json();
