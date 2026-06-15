@@ -78,7 +78,7 @@ async function saveAgentMailDraft({ inboxId, apiKey, to, subject, body }) {
  * Send an email directly via AgentMail (not a draft).
  */
 async function sendAgentMailEmail({ inboxId, apiKey, to, subject, body }) {
-  const url = `https://api.agentmail.to/v0/inboxes/${encodeURIComponent(inboxId)}/messages`;
+  const url = `https://api.agentmail.to/v0/inboxes/${encodeURIComponent(inboxId)}/messages/send`;
   const r = await fetch(url, {
     method: "POST",
     headers: {
