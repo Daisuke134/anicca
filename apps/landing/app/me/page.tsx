@@ -73,10 +73,29 @@ const CHILDREN: ChildInstance[] = [
   },
 ];
 
+// ── GATE-0: the first REAL profitable on-chain wake (verified 2026-06-16) ──
+// Verbatim from the committed earn-ledger.jsonl line; re-checkable on Base. Not illustrative.
+// The automaton loop (heartbeat) runs skills/earn/run.sh EARN_MODE=execute; the earn skill
+// liquidates ETH→USDC on Base, verifies the receipt 0x1 + USDC delta, and appends this line.
+const GATE0_WAKE = {
+  source: 'swap-eth-usdc',
+  task: 'eth→usdc liquidation for compute runway',
+  earnUsdc: 0.547676,
+  costUsdc: 0.001304,
+  netUsdc: 0.546372,
+  status: '0x1' as const,
+  tx: '0xc4f2df3e445acaff01bd004f8503d41582d8acb12a55bf27797d5aea066f721d',
+  date: '2026-06-16',
+};
+const GATE0_MET = GATE0_WAKE.status === '0x1' && GATE0_WAKE.netUsdc > 0;
+
 const ACTIVITY_LOG = [
-  { time: '14:00', icon: '💰', label: '0xwork #412', delta: '+$3.00' },
-  { time: '18:00', icon: '💰', label: 'litcoin 0.8 mined', delta: '+$0.80' },
-  { time: '22:00', icon: '📈', label: 'yield compound', delta: '+$0.12' },
+  {
+    time: GATE0_WAKE.date,
+    icon: '💰',
+    label: `${GATE0_WAKE.source} (GATE-0)`,
+    delta: `+$${GATE0_WAKE.netUsdc.toFixed(4)}`,
+  },
 ];
 
 // ─── Sub-components ────────────────────────────────────────────────────────────
@@ -139,6 +158,62 @@ export default function Page() {
             body; this page just reads it.
           </p>
           <MeClient />
+        </Reveal>
+      </Section>
+
+      {/* ── GATE-0: the first REAL profitable on-chain wake (verified, re-checkable) ── */}
+      <Section>
+        <Reveal>
+          <Card className="border-emerald-500/40 bg-[hsl(var(--surface-elevated))]">
+            <div className="flex items-center justify-between gap-3">
+              <CardLabel>GATE-0 — 初の黒字 wake（実 on-chain）</CardLabel>
+              {GATE0_MET && (
+                <span className="inline-flex items-center gap-1.5 rounded-pill bg-emerald-500/15 px-3 py-1 text-xs font-semibold text-emerald-400">
+                  <StatusDot status="alive" /> GATE-0 MET
+                </span>
+              )}
+            </div>
+            <div className="flex flex-wrap items-end gap-8">
+              <div>
+                <p className="text-3xl font-bold text-emerald-400">
+                  +${GATE0_WAKE.netUsdc.toFixed(4)}
+                </p>
+                <p className="mt-0.5 text-xs text-[hsl(var(--text-secondary))]">
+                  net USDC（earn ${GATE0_WAKE.earnUsdc.toFixed(4)} − cost $
+                  {GATE0_WAKE.costUsdc.toFixed(4)}）
+                </p>
+              </div>
+              <div>
+                <p className="text-base font-semibold text-[hsl(var(--text-primary))]">
+                  {GATE0_WAKE.source}
+                </p>
+                <p className="mt-0.5 text-xs text-[hsl(var(--text-secondary))]">
+                  {GATE0_WAKE.task}
+                </p>
+              </div>
+              <div>
+                <p className="font-mono text-base font-semibold text-emerald-400">
+                  receipt {GATE0_WAKE.status}
+                </p>
+                <p className="mt-0.5 text-xs text-[hsl(var(--text-secondary))]">
+                  Base 受領ステータス（成功）
+                </p>
+              </div>
+            </div>
+            <a
+              href={`https://basescan.org/tx/${GATE0_WAKE.tx}`}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-4 inline-flex items-center gap-2 font-mono text-xs underline underline-offset-4 text-[hsl(var(--text-secondary))] hover:text-emerald-400 transition-colors break-all"
+            >
+              tx {GATE0_WAKE.tx.slice(0, 10)}…{GATE0_WAKE.tx.slice(-6)} を BaseScan で検証 →
+            </a>
+            <p className="mt-3 text-[10px] text-[hsl(var(--text-secondary))]">
+              automaton loop が毎 beat <code>EARN_MODE=execute bash skills/earn/run.sh</code> を実行 →
+              ETH→USDC を Base で実 swap → receipt 0x1 + USDC 差分を検証 → earn-ledger.jsonl に追記。
+              narrate だけは GATE-0 にならない（HARD 0.24/0.31）。
+            </p>
+          </Card>
         </Reveal>
       </Section>
 
