@@ -250,7 +250,7 @@ async function saveAgentMailDraft({ to, subject, body }) {
  * @returns {Promise<{ id: string }>}
  */
 async function sendAgentMailEmail({ to, subject, body }) {
-  const url = `${AGENTMAIL_BASE}/inboxes/${encodeURIComponent(AGENTMAIL_INBOX_ID)}/messages`;
+  const url = `${AGENTMAIL_BASE}/inboxes/${encodeURIComponent(AGENTMAIL_INBOX_ID)}/messages/send`;
   const r = await fetch(url, {
     method: "POST",
     headers: amHeaders(),
