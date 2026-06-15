@@ -134,7 +134,7 @@ export default function Page() {
         </div>
       </Section>
 
-      <Footer />
+      <Footer locale="en" />
     </>
   );
 }
