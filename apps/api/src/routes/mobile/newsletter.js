@@ -73,6 +73,23 @@ router.delete('/subscribers/:deviceId', async (req, res) => {
   }
 });
 
+// GET unsubscribe — the link embedded in daily emails. Mail clients open links
+// with GET, so this must be a GET (not the in-app DELETE). Idempotent: always
+// returns a 200 HTML confirmation page so prefetch/scanners never leak state or 404.
+router.get('/unsubscribe/:deviceId', async (req, res) => {
+  const { deviceId } = req.params;
+  try {
+    await prisma.newsletter_subscribers.updateMany({
+      where: { deviceId },
+      data: { optedOutAt: new Date() }
+    });
+  } catch (e) {
+    console.error('[newsletter] unsubscribe (GET) failed', e);
+  }
+  res.set('Content-Type', 'text/html; charset=utf-8');
+  return res.send('<!doctype html><meta charset="utf-8"><div style="font-family:-apple-system,sans-serif;max-width:420px;margin:48px auto;text-align:center;color:#333"><p>配信を停止しました。</p><p>You have been unsubscribed.</p></div>');
+});
+
 // Daily sender — invoked by setInterval in server.js OR by external cron.
 // per-subscriber emails.send (no Segments/Broadcasts).
 export async function sendDailyNewsletter() {
@@ -158,7 +175,7 @@ function subjectFor(locale, quote) {
 function renderHtml(locale, quote, deviceId) {
   const greeting = locale === 'ja' ? 'おはようございます。' : 'Good morning.';
   const unsubLine = locale === 'ja' ? '配信停止' : 'Unsubscribe';
-  const unsubURL = `https://anicca-proxy-production.up.railway.app/api/mobile/newsletter/subscribers/${encodeURIComponent(deviceId)}`;
+  const unsubURL = `https://anicca-proxy-production.up.railway.app/api/mobile/newsletter/unsubscribe/${encodeURIComponent(deviceId)}`;
   return `<div style="font-family:-apple-system,BlinkMacSystemFont,sans-serif;max-width:480px;margin:0 auto;padding:24px">
   <p style="color:#888;font-size:14px">${greeting}</p>
   <blockquote style="font-size:18px;line-height:1.5;color:#333;border-left:3px solid #ccc;padding-left:16px;margin:24px 0">
