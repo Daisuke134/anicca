@@ -160,35 +160,59 @@ import { canonicalMessage, verifyTelemetry } from "../verify";
 const pk = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"; // test key
 const acct = privateKeyToAccount(pk);
 
-function payload(ts: number) {
-  return { id: acct.address, ts, host: "akash", geo: "US", model_live: "x", model_tier: "free",
-    net_worth_usd: 1, revenue_mo_usd: 0, burn_day_usd: 0.1, runway_days: 10, status: "alive" } as const;
+// verifyTelemetry takes the VERBATIM signed message string (not a re-serialized object).
+// The route never re-stringifies — this kills cross-language number-format divergence
+// (JS "5" vs python "5.0", "1e-05" vs "0.00001") that would 401 every whole-number balance.
+function obj(ts: number, over: Record<string, unknown> = {}) {
+  return { id: acct.address.toLowerCase(), ts, host: "akash", geo: "US", model_live: "x", model_tier: "free",
+    net_worth_usd: 1, revenue_mo_usd: 0, burn_day_usd: 0.1, runway_days: 10, status: "alive", ...over };
 }
 
-describe("verifyTelemetry", () => {
-  it("accepts a fresh, correctly-signed, monotonic payload", async () => {
-    const now = Math.floor(Date.now() / 1000); const p = payload(now);
-    const sig = await acct.signMessage({ message: canonicalMessage(p) });
-    const r = await verifyTelemetry(p, sig, { now, lastTs: 0 });
+describe("verifyTelemetry (verbatim message)", () => {
+  it("accepts a fresh, correctly-signed, monotonic message", async () => {
+    const now = Math.floor(Date.now() / 1000); const msg = canonicalMessage(obj(now) as any);
+    const sig = await acct.signMessage({ message: msg });
+    const r = await verifyTelemetry(msg, sig, { now, lastTs: 0 });
     expect(r.ok).toBe(true);
+    if (r.ok) expect(r.payload.id).toBe(acct.address.toLowerCase());
+  });
+  it("accepts python-style whole-number floats (5.0 / 0.0) — the production bug class", async () => {
+    // python round(5.0,4) → json.dumps emits "5.0"; verbatim verify must accept it (re-stringify would 401)
+    const now = Math.floor(Date.now() / 1000);
+    const msg = `{"id":"${acct.address.toLowerCase()}","ts":${now},"host":"akash","geo":"US","model_live":"x","model_tier":"free","net_worth_usd":5.0,"revenue_mo_usd":0.0,"burn_day_usd":0,"runway_days":10,"status":"alive"}`;
+    const sig = await acct.signMessage({ message: msg });
+    const r = await verifyTelemetry(msg, sig, { now, lastTs: 0 });
+    expect(r.ok).toBe(true);
+    if (r.ok) { expect(r.payload.net_worth_usd).toBe(5); expect(r.payload.revenue_mo_usd).toBe(0); }
+  });
+  it("rejects malformed json", async () => {
+    const r = await verifyTelemetry("{not json", "0x00" as any, { now: 1, lastTs: 0 });
+    expect(r.ok).toBe(false); if (!r.ok) expect(r.reason).toBe("bad_json");
+  });
+  it("rejects a schema violation", async () => {
+    const msg = JSON.stringify({ id: "nope" });
+    const sig = await acct.signMessage({ message: msg });
+    const r = await verifyTelemetry(msg, sig, { now: 1, lastTs: 0 });
+    expect(r.ok).toBe(false); if (!r.ok) expect(r.reason).toBe("schema");
   });
   it("rejects a wrong signer", async () => {
-    const now = Math.floor(Date.now() / 1000); const p = payload(now);
-    const sig = await acct.signMessage({ message: canonicalMessage(p) });
-    const r = await verifyTelemetry({ ...p, id: "0x000000000000000000000000000000000000dEaD" }, sig, { now, lastTs: 0 });
-    expect(r.ok).toBe(false); expect(r.reason).toBe("signer_mismatch");
+    const now = Math.floor(Date.now() / 1000);
+    const msg = canonicalMessage(obj(now, { id: "0x000000000000000000000000000000000000dead" }) as any);
+    const sig = await acct.signMessage({ message: msg }); // signed by acct, but id claims the dead addr
+    const r = await verifyTelemetry(msg, sig, { now, lastTs: 0 });
+    expect(r.ok).toBe(false); if (!r.ok) expect(r.reason).toBe("signer_mismatch");
   });
   it("rejects a stale ts (>60s old)", async () => {
-    const now = Math.floor(Date.now() / 1000); const p = payload(now - 120);
-    const sig = await acct.signMessage({ message: canonicalMessage(p) });
-    const r = await verifyTelemetry(p, sig, { now, lastTs: 0 });
-    expect(r.ok).toBe(false); expect(r.reason).toBe("stale");
+    const now = Math.floor(Date.now() / 1000); const msg = canonicalMessage(obj(now - 120) as any);
+    const sig = await acct.signMessage({ message: msg });
+    const r = await verifyTelemetry(msg, sig, { now, lastTs: 0 });
+    expect(r.ok).toBe(false); if (!r.ok) expect(r.reason).toBe("stale");
   });
   it("rejects a replay (ts <= lastTs)", async () => {
-    const now = Math.floor(Date.now() / 1000); const p = payload(now);
-    const sig = await acct.signMessage({ message: canonicalMessage(p) });
-    const r = await verifyTelemetry(p, sig, { now, lastTs: now });
-    expect(r.ok).toBe(false); expect(r.reason).toBe("replay");
+    const now = Math.floor(Date.now() / 1000); const msg = canonicalMessage(obj(now) as any);
+    const sig = await acct.signMessage({ message: msg });
+    const r = await verifyTelemetry(msg, sig, { now, lastTs: now });
+    expect(r.ok).toBe(false); if (!r.ok) expect(r.reason).toBe("replay");
   });
 });
 ```
@@ -203,10 +227,13 @@ Expected: FAIL — cannot find module `../verify`.
 Create `apps/landing/lib/telemetry/verify.ts`:
 ```ts
 import { recoverMessageAddress } from "viem";
-import type { TelemetryPayload } from "./schema";
+import { TelemetrySchema, type TelemetryPayload } from "./schema";
 
+// CLIENT-SIDE format helper only. The ROUTE/verifier never calls this on inbound data —
+// it verifies the VERBATIM message bytes the client signed (see verifyTelemetry). Re-serializing
+// a parsed payload would diverge across languages (JS JSON.stringify(5.0)==="5" but python
+// json.dumps(5.0)==="5.0") and 401 every whole-number balance. So we sign+recover over raw bytes.
 export function canonicalMessage(p: TelemetryPayload): string {
-  // deterministic, signed by the instance wallet
   return JSON.stringify({
     id: p.id, ts: p.ts, host: p.host, geo: p.geo, model_live: p.model_live,
     model_tier: p.model_tier, net_worth_usd: p.net_worth_usd, revenue_mo_usd: p.revenue_mo_usd,
@@ -214,25 +241,32 @@ export function canonicalMessage(p: TelemetryPayload): string {
   });
 }
 
+// Verifies the exact string the client signed. Parses it for schema + checks, but recovers the
+// signer from `message` verbatim — no re-stringification anywhere in the trust path.
 export async function verifyTelemetry(
-  p: TelemetryPayload, signature: `0x${string}`,
+  message: string, signature: `0x${string}`,
   ctx: { now: number; lastTs: number }
-): Promise<{ ok: true } | { ok: false; reason: string }> {
+): Promise<{ ok: true; payload: TelemetryPayload } | { ok: false; reason: string }> {
+  let raw: unknown;
+  try { raw = JSON.parse(message); } catch { return { ok: false, reason: "bad_json" }; }
+  const parsed = TelemetrySchema.safeParse(raw);
+  if (!parsed.success) return { ok: false, reason: "schema" };
+  const p = parsed.data;
   if (p.ts > ctx.now + 5) return { ok: false, reason: "future" };
   if (ctx.now - p.ts > 60) return { ok: false, reason: "stale" };
   if (p.ts <= ctx.lastTs) return { ok: false, reason: "replay" };
   let signer: string;
-  try { signer = await recoverMessageAddress({ message: canonicalMessage(p), signature }); }
+  try { signer = await recoverMessageAddress({ message, signature }); }
   catch { return { ok: false, reason: "bad_signature" }; }
   if (signer.toLowerCase() !== p.id.toLowerCase()) return { ok: false, reason: "signer_mismatch" };
-  return { ok: true };
+  return { ok: true, payload: p };
 }
 ```
 
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `cd apps/landing && npx vitest run lib/telemetry/__tests__/verify.test.ts`
-Expected: PASS (4 tests).
+Expected: PASS (7 tests — incl. python-style `5.0`/`0.0` acceptance + bad_json + schema).
 
 - [ ] **Step 5: Commit**
 
@@ -357,26 +391,37 @@ vi.mock("@/lib/telemetry/store", () => ({
 }));
 import { POST } from "../route";
 
+// Body is { message: <verbatim signed string>, signature }. The route verifies the exact bytes.
 function req(body: any) { return new Request("http://x/api/telemetry", { method: "POST", body: JSON.stringify(body) }); }
+function objStr(over: Record<string, unknown> = {}) {
+  const now = Math.floor(Date.now() / 1000);
+  return canonicalMessage({ id: acct.address.toLowerCase(), ts: now, host: "akash", geo: "US", model_live: "x",
+    model_tier: "free", net_worth_usd: 1, revenue_mo_usd: 0, burn_day_usd: 0.1, runway_days: 10, status: "alive", ...over } as any);
+}
 
 describe("POST /api/telemetry", () => {
   beforeEach(() => { lastTs = 0; upserted.length = 0; });
-  it("202 on a valid signed fresh payload", async () => {
-    const now = Math.floor(Date.now() / 1000);
-    const p = { id: acct.address, ts: now, host: "akash", geo: "US", model_live: "x", model_tier: "free", net_worth_usd: 1, revenue_mo_usd: 0, burn_day_usd: 0.1, runway_days: 10, status: "alive" };
-    const signature = await acct.signMessage({ message: canonicalMessage(p as any) });
-    const res = await POST(req({ payload: p, signature }));
+  it("202 on a valid signed fresh message", async () => {
+    const message = objStr();
+    const signature = await acct.signMessage({ message });
+    const res = await POST(req({ message, signature }));
     expect(res.status).toBe(202); expect(upserted.length).toBe(1);
+    expect(upserted[0].id).toBe(acct.address.toLowerCase());
   });
   it("401 on signer mismatch", async () => {
-    const now = Math.floor(Date.now() / 1000);
-    const p = { id: "0x000000000000000000000000000000000000dEaD", ts: now, host: "a", geo: "U", model_live: "x", model_tier: "free", net_worth_usd: 1, revenue_mo_usd: 0, burn_day_usd: 0.1, runway_days: 10, status: "alive" };
-    const signature = await acct.signMessage({ message: canonicalMessage(p as any) });
-    const res = await POST(req({ payload: p, signature }));
+    const message = objStr({ id: "0x000000000000000000000000000000000000dead" });
+    const signature = await acct.signMessage({ message }); // signed by acct, id claims dead addr
+    const res = await POST(req({ message, signature }));
     expect(res.status).toBe(401);
   });
   it("400 on schema violation", async () => {
-    const res = await POST(req({ payload: { id: "nope" }, signature: "0x00" }));
+    const message = JSON.stringify({ id: "nope" });
+    const signature = await acct.signMessage({ message });
+    const res = await POST(req({ message, signature }));
+    expect(res.status).toBe(400);
+  });
+  it("400 on missing message/signature", async () => {
+    const res = await POST(req({ signature: "0x00" }));
     expect(res.status).toBe(400);
   });
 });
@@ -391,33 +436,40 @@ Expected: FAIL — cannot find module `../route`.
 
 Create `apps/landing/app/api/telemetry/route.ts`:
 ```ts
-import { TelemetrySchema } from "@/lib/telemetry/schema";
 import { verifyTelemetry } from "@/lib/telemetry/verify";
 import { telemetryClient, getLastTs, upsertInstance } from "@/lib/telemetry/store";
+
+// 400-class reasons (caller error) vs 401-class (auth/replay). Keeps the signing-bytes contract
+// (verify reads the verbatim message) — the route NEVER re-serializes the payload.
+const BAD_REQUEST = new Set(["bad_json", "schema"]);
 
 export async function POST(req: Request) {
   let body: any;
   try { body = await req.json(); } catch { return Response.json({ error: "bad_json" }, { status: 400 }); }
-  const parsed = TelemetrySchema.safeParse(body?.payload);
-  if (!parsed.success) return Response.json({ error: "schema" }, { status: 400 });
-  const p = parsed.data; const signature = body?.signature as `0x${string}`;
-  if (!signature) return Response.json({ error: "no_sig" }, { status: 400 });
+  const message = body?.message; const signature = body?.signature as `0x${string}`;
+  if (typeof message !== "string" || typeof signature !== "string") {
+    return Response.json({ error: "bad_request" }, { status: 400 });
+  }
+  // extract id (for the per-id monotonic lookup) without trusting it — verify binds it to the bytes
+  let id: unknown;
+  try { id = JSON.parse(message)?.id; } catch { return Response.json({ error: "bad_json" }, { status: 400 }); }
+  if (typeof id !== "string") return Response.json({ error: "schema" }, { status: 400 });
   const c = telemetryClient();
-  const lastTs = await getLastTs(c, p.id);
+  const lastTs = await getLastTs(c, id);
   const now = Math.floor(Date.now() / 1000);
-  const v = await verifyTelemetry(p, signature, { now, lastTs });
-  if (!v.ok) return Response.json({ error: v.reason }, { status: 401 });
-  await upsertInstance(c, p);
+  const v = await verifyTelemetry(message, signature, { now, lastTs });
+  if (!v.ok) return Response.json({ error: v.reason }, { status: BAD_REQUEST.has(v.reason) ? 400 : 401 });
+  await upsertInstance(c, v.payload);
   return Response.json({ ok: true }, { status: 202 });
 }
 ```
 
-(If `@/` alias not configured, use relative `../../../lib/telemetry/...` paths; confirm `tsconfig.json` `paths` includes `@/*` → `./*`.)
+(`@/` alias is guaranteed by Task 1's `vite-tsconfig-paths` plugin + `tsconfig.json` `paths` `@/*` → `./*`.)
 
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `cd apps/landing && npx vitest run app/api/telemetry/__tests__/route.test.ts`
-Expected: PASS (3 tests).
+Expected: PASS (4 tests).
 
 - [ ] **Step 5: Commit**
 
@@ -515,47 +567,57 @@ git commit -m "feat(telemetry): dashboard-sync aggregate (totals + leaderboard, 
 
 ---
 
-## Task 7: Cross-language signing golden-vector test (key-order footgun → RED test, review-fix #5)
+## Task 7: Whole-number-float regression test (the prod-only 401 bug → RED test, review-fix #5)
 
 **Files:**
 - Test: `apps/landing/lib/telemetry/__tests__/golden.test.ts`
 
-The python `json.dumps(...,separators=(',',':'))` (Task 8) and TS `canonicalMessage` (`JSON.stringify`) must emit byte-identical strings (same key order, no whitespace) or signatures fail with 401 and no other test catches it. This pins it.
+**Why this exists (review round 3, verified empirically):** a previous design re-serialized the parsed payload to recover the signer. But `JSON.stringify(5.0)==="5"` while python `json.dumps(5.0)==="5.0"` (and `1e-05` vs `0.00001`) — so the instant the genesis wallet held a whole-dollar balance or `REV=0.0`, python signed `...,"net_worth_usd":5.0,...` and the route re-stringified `...,"net_worth_usd":5,...` → different bytes → `recoverMessageAddress` returned a different signer → **401 on every whole-number balance**, passing all unit/smoke tests and failing only in production. Fix: verify the **verbatim** message bytes (Task 3). This test pins that the verbatim path accepts python's `5.0`/`0.0` output — turning the actual bug into a RED-then-GREEN regression.
 
-- [ ] **Step 1: Write the golden test (fails until verify.ts key order matches the frozen vector)**
+- [ ] **Step 1: Write the regression test (the exact failure mode, verbatim-verified)**
 
 ```ts
 import { describe, it, expect } from "vitest";
-import { canonicalMessage } from "../verify";
-const P = { id: "0xa3cdd4ec6b94f01826aaf90a6d5538a2aa8c4c21", ts: 1781450000, host: "akash", geo: "US",
-  model_live: "auto", model_tier: "free", net_worth_usd: 0.0059, revenue_mo_usd: 0, burn_day_usd: 0, runway_days: 999, status: "alive" } as const;
-// FROZEN canonical string — Task 8 python must produce byte-identical output for the same object.
-const EXPECTED = '{"id":"0xa3cdd4ec6b94f01826aaf90a6d5538a2aa8c4c21","ts":1781450000,"host":"akash","geo":"US","model_live":"auto","model_tier":"free","net_worth_usd":0.0059,"revenue_mo_usd":0,"burn_day_usd":0,"runway_days":999,"status":"alive"}';
-describe("golden vector", () => {
-  it("canonicalMessage matches the frozen cross-language string", () => {
-    expect(canonicalMessage(P as any)).toBe(EXPECTED);
+import { privateKeyToAccount } from "viem/accounts";
+import { verifyTelemetry } from "../verify";
+
+const acct = privateKeyToAccount("0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d");
+
+describe("whole-number float regression (prod-only 401 bug)", () => {
+  it("verbatim verify accepts a python-style message with 5.0 / 0.0", async () => {
+    const now = Math.floor(Date.now() / 1000);
+    // EXACTLY what python json.dumps(...,separators=(',',':')) emits for whole-dollar balances:
+    const msg = `{"id":"${acct.address.toLowerCase()}","ts":${now},"host":"akash","geo":"US","model_live":"auto","model_tier":"free","net_worth_usd":5.0,"revenue_mo_usd":0.0,"burn_day_usd":0,"runway_days":999,"status":"alive"}`;
+    const sig = await acct.signMessage({ message: msg });
+    const r = await verifyTelemetry(msg, sig, { now, lastTs: 0 });
+    expect(r.ok).toBe(true);
+  });
+  it("PROOF the old design was broken: re-stringifying drops the .0 (would 401)", () => {
+    // documents WHY we verify verbatim: parse→stringify is lossy for whole-number floats
+    expect(JSON.stringify(JSON.parse('{"net_worth_usd":5.0,"revenue_mo_usd":0.0}')))
+      .toBe('{"net_worth_usd":5,"revenue_mo_usd":0}'); // 5.0→5, 0.0→0 → different signed bytes
   });
 });
 ```
 
-- [ ] **Step 2: Run → if FAIL, fix verify.ts key order to match EXPECTED; if PASS, the order is pinned**
+- [ ] **Step 2: Run → PASS (verbatim verify is byte-faithful; the proof case documents the avoided bug)**
 
 Run: `cd apps/landing && npx vitest run lib/telemetry/__tests__/golden.test.ts`
-Expected: PASS (verify.ts in Task 3 already emits this order). If a future field reorder breaks it → RED here.
+Expected: PASS (2 tests).
 
-- [ ] **Step 3: Verify python produces the same bytes (cross-language check, run once)**
+- [ ] **Step 3: Confirm python actually emits the trailing `.0` (run once — this is the real-world input)**
 
 Run:
 ```bash
-python3 -c "import json;p={'id':'0xa3cdd4ec6b94f01826aaf90a6d5538a2aa8c4c21','ts':1781450000,'host':'akash','geo':'US','model_live':'auto','model_tier':'free','net_worth_usd':0.0059,'revenue_mo_usd':0,'burn_day_usd':0,'runway_days':999,'status':'alive'};print(json.dumps(p,separators=(',',':')))"
+python3 -c "import json;print(json.dumps({'net_worth_usd':round(5.0,4),'revenue_mo_usd':round(0.0,4)},separators=(',',':')))"
 ```
-Expected: prints EXACTLY the EXPECTED string above (byte-identical). If not, fix Task 8's python dict order.
+Expected: prints `{"net_worth_usd":5.0,"revenue_mo_usd":0.0}` — proving the client really sends `5.0`/`0.0`, which the verbatim route accepts and a re-stringifying route would have rejected.
 
 - [ ] **Step 4: Commit**
 
 ```bash
 git add apps/landing/lib/telemetry/__tests__/golden.test.ts
-git commit -m "test(telemetry): cross-language signing golden vector (pins TS/python canonical order)"
+git commit -m "test(telemetry): whole-number-float regression (verbatim verify accepts python 5.0/0.0)"
 ```
 
 ---
@@ -576,11 +638,13 @@ Expected: prints the real var (e.g. `BLOCKRUN_WALLET_KEY=`). Use that exact name
 
 - [ ] **Step 2: Create the canonical report+telemetry script**
 
-Create `~/anicca/skills/report/anicca-report.sh` (and scp to `/opt/anicca-report.sh`). `$W/$ETH/$USDC/$REV` are computed here (self-contained — does not rely on prior session's script):
+Create `~/anicca/skills/report/anicca-report.sh` (and scp to `/opt/anicca-report.sh`). `$W/$ETH/$USDC/$REV` are computed here (self-contained — does not rely on prior session's script). **Set `PKVAR` to the exact var name Step 1 printed** (default `BLOCKRUN_WALLET_KEY`); the heredoc reads it indirectly so no second edit is needed:
 ```bash
 #!/usr/bin/env bash
 set -u
 . /opt/anicca.env
+PKVAR=BLOCKRUN_WALLET_KEY                 # <-- replace with the exact name Step 1 printed, if different
+SIGNKEY="${!PKVAR}"                       # indirect expansion: value of the var named by $PKVAR
 W=0xa3CDd4Ec6b94F01826Aaf90a6d5538A2Aa8C4C21
 LOG=/var/log/anicca-daemon.log
 DID="${1:-$(grep -oE "\[TOOL\] [a-z_]+" "$LOG" 2>/dev/null | tail -5 | sed "s/\[TOOL\] //" | tr "\n" "," | sed "s/,$//")}"; DID="${DID:-monitoring}"
@@ -594,19 +658,24 @@ REV=$(python3 -c "print(round($USDC - $(cat "$BASE"),4))")
 curl -s --max-time 20 -X POST "https://api.agentmail.to/v0/inboxes/anicca-genesis@agentmail.to/messages/send" \
   -H "Authorization: Bearer $AGENTMAIL_API_KEY" -H "Content-Type: application/json" \
   -d "$(python3 -c "import json;print(json.dumps({'to':['keiodaisuke@gmail.com','contact@aniccaai.com'],'subject':f'Anicca wake net \$$USDC','text':f'NET WORTH \$$USDC USDC (+$ETH ETH)\nREVENUE TODAY \$$REV\nDID $DID\nNEXT $NEXT'}))")" >/dev/null 2>&1
-# --- telemetry (signed, wallet=$PKVAR confirmed in Step 1) ---
+# --- telemetry: sign the VERBATIM message string and POST it as {message,signature} ---
+# burn_day_usd/runway_days/status are PLACEHOLDERS until the earn/burn meter lands (spec25 R4) — the
+# route stores them as-is; /dashboard must label the runway/self-funded columns as estimated until then.
 TS=$(date -u +%s)
-PAYLOAD=$(python3 -c "import json;print(json.dumps({'id':'$(echo $W|tr A-F a-f)','ts':$TS,'host':'akash','geo':'US','model_live':'auto','model_tier':'free','net_worth_usd':$USDC,'revenue_mo_usd':$REV,'burn_day_usd':0,'runway_days':999,'status':'alive'},separators=(',',':')))")
-SIG=$(PAYLOAD="$PAYLOAD" python3 - <<'PY'
-import os; from eth_account import Account; from eth_account.messages import encode_defunct
-print(Account.sign_message(encode_defunct(text=os.environ["PAYLOAD"]), private_key=os.environ["BLOCKRUN_WALLET_KEY"]).signature.hex())
+MSG=$(python3 -c "import json;print(json.dumps({'id':'$(echo $W|tr A-F a-f)','ts':$TS,'host':'akash','geo':'US','model_live':'auto','model_tier':'free','net_worth_usd':$USDC,'revenue_mo_usd':$REV,'burn_day_usd':0,'runway_days':999,'status':'alive'},separators=(',',':')))")
+SIG=$(MSG="$MSG" SIGNKEY="$SIGNKEY" python3 - <<'PY'
+import os
+from eth_account import Account; from eth_account.messages import encode_defunct
+s = Account.sign_message(encode_defunct(text=os.environ["MSG"]), private_key=os.environ["SIGNKEY"]).signature.hex()
+print(s if s.startswith("0x") else "0x"+s)        # viem recoverMessageAddress requires 0x prefix
 PY
 )
+BODY=$(MSG="$MSG" SIG="$SIG" python3 -c "import json,os;print(json.dumps({'message':os.environ['MSG'],'signature':os.environ['SIG']}))")
 curl -s --max-time 15 -X POST "https://aniccaai.com/api/telemetry" -H "Content-Type: application/json" \
-  -d "{\"payload\":$PAYLOAD,\"signature\":\"$SIG\"}" >/dev/null 2>&1
+  -d "$BODY" >/dev/null 2>&1
 echo "report+telemetry $TS" >> /var/log/anicca-report.log
 ```
-(Replace `BLOCKRUN_WALLET_KEY` with `$PKVAR` from Step 1 if different. The payload `id` is lowercased to match the route's `id.toLowerCase()`.)
+(The signed `MSG` is sent VERBATIM as the `message` field — the route recovers the signer from these exact bytes, so python's `5.0`/`0.0` whole-number output is accepted, not 401'd. The `id` is lowercased to match the route's `id.toLowerCase()`.)
 
 - [ ] **Step 3: Commit canonical + scp to droplet**
 
@@ -631,19 +700,23 @@ Wait for the Netlify build to go green.
 
 - [ ] **Step 2: SMOKE — locally-signed test payload → 202**
 
-Run (signs with the test key, hits the live route):
+Run (signs with the test key, uses a WHOLE-DOLLAR balance `5.0` to actually exercise the prod bug class, hits the live route):
 ```bash
 python3 - <<'PY'
 import json,time,urllib.request
 from eth_account import Account; from eth_account.messages import encode_defunct
 acct=Account.from_key("0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d")
-p={'id':acct.address.lower(),'ts':int(time.time()),'host':'test','geo':'US','model_live':'x','model_tier':'free','net_worth_usd':1,'revenue_mo_usd':0,'burn_day_usd':0,'runway_days':10,'status':'alive'}
-msg=json.dumps(p,separators=(',',':')); sig=Account.sign_message(encode_defunct(text=msg),private_key=acct.key).signature.hex()
-req=urllib.request.Request("https://aniccaai.com/api/telemetry",data=json.dumps({'payload':p,'signature':sig}).encode(),headers={'Content-Type':'application/json'})
+# round(5.0,4)=5.0 → json.dumps emits "5.0": the exact whole-number case that a re-stringifying route would 401
+p={'id':acct.address.lower(),'ts':int(time.time()),'host':'test','geo':'US','model_live':'x','model_tier':'free','net_worth_usd':round(5.0,4),'revenue_mo_usd':round(0.0,4),'burn_day_usd':0,'runway_days':10,'status':'alive'}
+msg=json.dumps(p,separators=(',',':'))           # this exact string is signed AND sent verbatim
+s=Account.sign_message(encode_defunct(text=msg),private_key=acct.key).signature.hex()
+sig=s if s.startswith("0x") else "0x"+s
+body=json.dumps({'message':msg,'signature':sig}).encode()
+req=urllib.request.Request("https://aniccaai.com/api/telemetry",data=body,headers={'Content-Type':'application/json'})
 print("status", urllib.request.urlopen(req).status)
 PY
 ```
-Expected: `status 202`. (If 401 → signing/key-order mismatch → re-check Task 7 golden test. If 500 → Supabase env not set.)
+Expected: `status 202` — and because it posts a whole-dollar `5.0`, a 202 here proves the verbatim-bytes contract works end-to-end (the bug round 3 found cannot recur). (If 401 → signing path mismatch. If 500 → Supabase env not set.)
 
 - [ ] **Step 3: REAL E2E — genesis instance posts → dashboard reflects real net worth**
 
@@ -664,11 +737,12 @@ git add -A && git commit -m "test(telemetry): E2E PASS — live instance signed 
 ---
 
 ## Self-Review
-- **Spec coverage:** §2 telemetry (23) + G1 (25: Supabase, EIP-191, ts freshness, monotonic) + "透明公開" success criterion → Tasks 2-7. ✅ Replay/nonce (note1) = Task 3 stale/replay tests. ✅
-- **Placeholders:** none — every step has runnable code/commands + expected output.
-- **Type consistency:** `TelemetryPayload` (schema.ts) used across verify/store/route; `canonicalMessage` key order must equal the python `json.dumps` order in Task 7 (called out explicitly).
-- **Gaps:** Supabase project + env (`SUPABASE_URL`, `SUPABASE_SERVICE_KEY`) provisioning is an ops prerequisite (Dais infra, C1 carve-out) — note as a pre-Task-4 ops step, not code.
-- **E2E:** Task 7 Step 2 = real instance → signed POST → dashboard-sync reflects real on-chain net worth. Not a mock.
+- **Spec coverage:** §2 telemetry (23) + G1 (25: Supabase, EIP-191, ts freshness, monotonic) + "透明公開" success criterion → Tasks 2–6. ✅ Replay/nonce (note1) = Task 3 stale/replay tests. ✅
+- **Placeholders:** none — every step has runnable code/commands + expected output. `burn_day_usd/runway_days/status` in Task 8 are explicitly labeled estimates until the earn/burn meter lands (spec25 R4).
+- **Type consistency:** `TelemetryPayload` (schema.ts) used across verify/store/route. `verifyTelemetry(message, signature, ctx)` takes the verbatim string and returns `{ok, payload}`; route stores `v.payload` (never re-serializes).
+- **Signing-bytes contract (review round 3):** the route verifies the VERBATIM signed message, not a re-stringified object → no cross-language number-format divergence (`5`/`5.0`, `1e-05`/`0.00001`). Pinned by Task 3's whole-number test + Task 7 regression.
+- **Gaps:** Supabase project + env (`SUPABASE_URL`, `SUPABASE_SERVICE_KEY`) provisioning is an ops prerequisite (Dais infra, C1 carve-out) — Task 9 pre-req, not code.
+- **E2E:** Task 9 Step 3 = real genesis instance → signed POST → dashboard-sync reflects real on-chain net worth. Not a mock. Task 9 Step 2 smoke uses a whole-dollar `5.0` to prove the bug class is closed.
 
 ## Pre-req (ops, Dais infra)
 Create a Supabase project; set `SUPABASE_URL` + `SUPABASE_SERVICE_KEY` in the landing app env (Netlify) and `aniccaai.com` reachable. (C1 carve-out: this is Dais-owned funnel/infra.)
