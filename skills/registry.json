@@ -71,9 +71,9 @@
       "track": "B",
       "dir": "skills/life/notify",
       "entrypoint": "notify.js",
-      "status": "declared",
+      "status": "live",
       "spec": "26 B-notify / 27 B-notify",
-      "summary": "Lateness detected -> email Dais a draft (AgentMail Drafts) 'send to Y? reply to approve' -> on approve webhook, send to the counterpart. Mail-only, no Telegram required.",
+      "summary": "Lateness detected -> email Dais a draft (AgentMail Drafts) 'send to Y? reply to approve' -> on approve webhook, send to the counterpart. Mail-only, no Telegram required. Netlify function at aniccaai.com/.netlify/functions/life-notify (env: AGENTMAIL_INBOX_ID, AGENTMAIL_API_KEY, OWNER_EMAIL set 2026-06-16).",
       "owner": "wf-b:notify"
     },
     "economy/ubi": {
