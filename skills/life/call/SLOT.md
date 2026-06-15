@@ -1,6 +1,11 @@
-# Slot: `life/call`  (status: declared)
+# Slot: `life/call`  (status: live)
 
 Reserved by **Foundation** for builder **wf-b:call**. Spec: 26 B-call / 27 B-call.
+
+**Implemented (2026-06-16):** `call.js` (Twilio Media Streams <-> Gemini Live Charon
+bridge + outbound dial) + `call-logic.js` (pure μ-law<->PCM transcode + wire shapes,
+TDD-mirrored from `apps/landing/netlify/functions/_lib/call-logic.js`, 14 node:test cases).
+Registry slot flipped to `live`. Real-dial E2E to +818046270314 is the verifier's job.
 
 This directory is the ONLY place that builder edits. The slot is pre-declared in
 `skills/registry.json` and pre-wired everywhere (install.sh reads the registry;

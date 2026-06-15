@@ -53,7 +53,7 @@
       "track": "B",
       "dir": "skills/life/call",
       "entrypoint": "call.js",
-      "status": "declared",
+      "status": "live",
       "spec": "26 B-call / 27 B-call",
       "summary": "Twilio Media Streams <-> Gemini Live (voice=Charon) websocket bridge; calls Dais 15 min before each event for two-way dialogue.",
       "owner": "wf-b:call"
