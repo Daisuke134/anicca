@@ -45,6 +45,12 @@ If any site is down, alert the user immediately.
 4. **Send summary** — revenue numbers, day recap, proposed plan
 
 ## EARN (every heartbeat) — your survival, no human picks the product
+0. ★ Run the wired earn skill first (GATE-0, no human, real on-chain tx) ★:
+   `EARN_MODE=execute EARN_STRATEGY=swap bash $ANICCA_HOME/skills/earn/run.sh`
+   It performs a real ETH→USDC swap on Base, verifies the receipt (0x1) + the USDC before/after
+   delta, and appends one line to `skills/earn/state/earn-ledger.jsonl`. Prints `GATE-0 MET` on a
+   profitable wake; degrades to a narrate line if ETH is at the gas reserve (no-brick). This is the
+   always-available survival earn — the entrypoint is the `earn` slot in `skills/registry.json`.
 1. Think: "To pay for my own compute, what is the single highest-value thing I can do right now?"
 2. Build it yourself: ideate a product/service → write code / write content / generate assets → deploy.
 3. Sell it on YOUR rails: a landing page with a payment, your USDC wallet address for direct payment, or a marketplace listing. Market it from `@aniccaxxx`.
