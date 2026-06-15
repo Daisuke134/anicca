@@ -35,8 +35,9 @@
 
 Run:
 ```bash
-cd apps/landing && npm i @supabase/supabase-js viem zod && npm i -D vitest @vitest/coverage-v8
+cd apps/landing && npm i @supabase/supabase-js viem zod && npm i -D vitest @vitest/coverage-v8 vite-tsconfig-paths
 ```
+(`vite-tsconfig-paths` is REQUIRED — vitest does NOT read `tsconfig.json` `paths` by default; without it the `@/lib/...` imports in Tasks 5/6 throw "Failed to resolve import @/...". review-fix #1.)
 
 - [ ] **Step 2: Add test script to package.json**
 
@@ -51,7 +52,11 @@ In `apps/landing/package.json` `"scripts"`, add:
 Create `apps/landing/vitest.config.ts`:
 ```ts
 import { defineConfig } from "vitest/config";
-export default defineConfig({ test: { environment: "node", include: ["**/__tests__/**/*.test.ts"] } });
+import tsconfigPaths from "vite-tsconfig-paths";
+export default defineConfig({
+  plugins: [tsconfigPaths()],   // resolves @/* from tsconfig (review-fix #1)
+  test: { environment: "node", include: ["**/__tests__/**/*.test.ts"] },
+});
 ```
 
 - [ ] **Step 4: Verify vitest runs (no tests yet = exit 0 / "no tests")**
@@ -436,16 +441,27 @@ import { describe, it, expect } from "vitest";
 import { aggregate } from "../aggregate";
 
 describe("aggregate", () => {
-  it("computes totals + leaderboard from instances", () => {
-    const rows = [
-      { id: "0x1", net_worth_usd: 100, revenue_mo_usd: 10, runway_days: 30, status: "alive", host: "akash", model_tier: "frontier" },
-      { id: "0x2", net_worth_usd: 50, revenue_mo_usd: 5, runway_days: 2, status: "critical", host: "do", model_tier: "free" },
-    ] as any;
+  const rows = [
+    // self-funded: revenue/30 (0.33) >= burn (0.10), alive
+    { id: "0x1", net_worth_usd: 100, revenue_mo_usd: 10, burn_day_usd: 0.1, runway_days: 30, status: "alive", host: "akash", model_tier: "frontier" },
+    // NOT self-funded: revenue/30 (0.16) < burn (0.50), critical
+    { id: "0x2", net_worth_usd: 50, revenue_mo_usd: 5, burn_day_usd: 0.5, runway_days: 2, status: "critical", host: "do", model_tier: "free" },
+  ] as any;
+  it("computes totals + leaderboard", () => {
     const d = aggregate(rows);
     expect(d.total_net_worth_usd).toBe(150);
     expect(d.alive).toBe(2);
-    expect(d.leaderboard[0].id).toBe("0x1"); // sorted by net worth desc
-    expect(d.self_funded_pct).toBe(50); // 1 of 2 frontier (proxy)
+    expect(d.leaderboard[0].id).toBe("0x1"); // net worth desc
+  });
+  it("self_funded_pct = % whose monthly revenue covers daily burn AND not dead (NOT a model proxy)", () => {
+    expect(aggregate(rows).self_funded_pct).toBe(50); // only 0x1 covers its burn
+  });
+  it("frontier_pct is reported separately (it is NOT self-funding)", () => {
+    expect(aggregate(rows).frontier_pct).toBe(50);
+  });
+  it("handles empty rows without div-by-zero", () => {
+    const d = aggregate([]);
+    expect(d.self_funded_pct).toBe(0); expect(d.frontier_pct).toBe(0); expect(d.alive).toBe(0);
   });
 });
 ```
@@ -459,15 +475,18 @@ Expected: FAIL — cannot find module `../aggregate`.
 
 Create `apps/landing/app/api/dashboard-sync/aggregate.ts`:
 ```ts
-export type Row = { id: string; net_worth_usd: number; revenue_mo_usd: number; runway_days: number; status: string; host: string; model_tier: string };
+export type Row = { id: string; net_worth_usd: number; revenue_mo_usd: number; burn_day_usd: number; runway_days: number; status: string; host: string; model_tier: string };
 export function aggregate(rows: Row[]) {
   const total_net_worth_usd = rows.reduce((s, r) => s + r.net_worth_usd, 0);
   const earned_mo_usd = rows.reduce((s, r) => s + r.revenue_mo_usd, 0);
   const alive = rows.filter((r) => r.status !== "dead").length;
+  // self-funded = monthly revenue covers daily burn AND not dead (real economic test, NOT a model proxy)
+  const selfFunded = rows.filter((r) => r.status !== "dead" && r.revenue_mo_usd / 30 >= r.burn_day_usd).length;
   const frontier = rows.filter((r) => r.model_tier === "frontier").length;
-  const self_funded_pct = rows.length ? Math.round((frontier / rows.length) * 100) : 0;
+  const self_funded_pct = rows.length ? Math.round((selfFunded / rows.length) * 100) : 0;
+  const frontier_pct = rows.length ? Math.round((frontier / rows.length) * 100) : 0;
   const leaderboard = [...rows].sort((a, b) => b.net_worth_usd - a.net_worth_usd);
-  return { total_net_worth_usd, earned_mo_usd, alive, self_funded_pct, leaderboard, updated_at: new Date().toISOString() };
+  return { total_net_worth_usd, earned_mo_usd, alive, self_funded_pct, frontier_pct, leaderboard, updated_at: new Date().toISOString() };
 }
 ```
 
@@ -496,45 +515,150 @@ git commit -m "feat(telemetry): dashboard-sync aggregate (totals + leaderboard, 
 
 ---
 
-## Task 7: Automaton side — report hook POSTs telemetry
+## Task 7: Cross-language signing golden-vector test (key-order footgun → RED test, review-fix #5)
 
 **Files:**
-- Modify: `~/anicca/skills/report/anicca-report.sh` (canonical) and the deployed `/opt/anicca-report.sh`
+- Test: `apps/landing/lib/telemetry/__tests__/golden.test.ts`
 
-- [ ] **Step 1: Add a signed telemetry POST to the report script**
+The python `json.dumps(...,separators=(',',':'))` (Task 8) and TS `canonicalMessage` (`JSON.stringify`) must emit byte-identical strings (same key order, no whitespace) or signatures fail with 401 and no other test catches it. This pins it.
 
-After the existing AgentMail send in `anicca-report.sh`, append (uses the instance's own wallet key already on the box):
+- [ ] **Step 1: Write the golden test (fails until verify.ts key order matches the frozen vector)**
+
+```ts
+import { describe, it, expect } from "vitest";
+import { canonicalMessage } from "../verify";
+const P = { id: "0xa3cdd4ec6b94f01826aaf90a6d5538a2aa8c4c21", ts: 1781450000, host: "akash", geo: "US",
+  model_live: "auto", model_tier: "free", net_worth_usd: 0.0059, revenue_mo_usd: 0, burn_day_usd: 0, runway_days: 999, status: "alive" } as const;
+// FROZEN canonical string — Task 8 python must produce byte-identical output for the same object.
+const EXPECTED = '{"id":"0xa3cdd4ec6b94f01826aaf90a6d5538a2aa8c4c21","ts":1781450000,"host":"akash","geo":"US","model_live":"auto","model_tier":"free","net_worth_usd":0.0059,"revenue_mo_usd":0,"burn_day_usd":0,"runway_days":999,"status":"alive"}';
+describe("golden vector", () => {
+  it("canonicalMessage matches the frozen cross-language string", () => {
+    expect(canonicalMessage(P as any)).toBe(EXPECTED);
+  });
+});
+```
+
+- [ ] **Step 2: Run → if FAIL, fix verify.ts key order to match EXPECTED; if PASS, the order is pinned**
+
+Run: `cd apps/landing && npx vitest run lib/telemetry/__tests__/golden.test.ts`
+Expected: PASS (verify.ts in Task 3 already emits this order). If a future field reorder breaks it → RED here.
+
+- [ ] **Step 3: Verify python produces the same bytes (cross-language check, run once)**
+
+Run:
 ```bash
-# telemetry POST (signed by the instance wallet) — node one-liner using viem (installed on box) or python+eth_account
+python3 -c "import json;p={'id':'0xa3cdd4ec6b94f01826aaf90a6d5538a2aa8c4c21','ts':1781450000,'host':'akash','geo':'US','model_live':'auto','model_tier':'free','net_worth_usd':0.0059,'revenue_mo_usd':0,'burn_day_usd':0,'runway_days':999,'status':'alive'};print(json.dumps(p,separators=(',',':')))"
+```
+Expected: prints EXACTLY the EXPECTED string above (byte-identical). If not, fix Task 8's python dict order.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add apps/landing/lib/telemetry/__tests__/golden.test.ts
+git commit -m "test(telemetry): cross-language signing golden vector (pins TS/python canonical order)"
+```
+
+---
+
+## Task 8: Automaton report hook POSTs signed telemetry (review-fix #2,#3)
+
+**Files:**
+- Create: `~/anicca/skills/report/anicca-report.sh` (canonical — does NOT exist yet; this is a CREATE)
+- Mirror: deployed `/opt/anicca-report.sh` on droplet 147.182.225.255
+
+- [ ] **Step 1: Confirm the wallet env var name actually on the box (don't assume)**
+
+Run:
+```bash
+ssh root@147.182.225.255 'grep -oiE "^[A-Z_]*WALLET[A-Z_]*=" /opt/anicca.env'
+```
+Expected: prints the real var (e.g. `BLOCKRUN_WALLET_KEY=`). Use that exact name below as `$PKVAR`.
+
+- [ ] **Step 2: Create the canonical report+telemetry script**
+
+Create `~/anicca/skills/report/anicca-report.sh` (and scp to `/opt/anicca-report.sh`). `$W/$ETH/$USDC/$REV` are computed here (self-contained — does not rely on prior session's script):
+```bash
+#!/usr/bin/env bash
+set -u
+. /opt/anicca.env
+W=0xa3CDd4Ec6b94F01826Aaf90a6d5538A2Aa8C4C21
+LOG=/var/log/anicca-daemon.log
+DID="${1:-$(grep -oE "\[TOOL\] [a-z_]+" "$LOG" 2>/dev/null | tail -5 | sed "s/\[TOOL\] //" | tr "\n" "," | sed "s/,$//")}"; DID="${DID:-monitoring}"
+NEXT="${2:-continue earning + self-improve}"
+rpc(){ curl -s --max-time 10 https://mainnet.base.org -X POST -H "Content-Type: application/json" --data "$1" | python3 -c "import json,sys;print(json.load(sys.stdin).get('result','0x0'))"; }
+ETH=$(python3 -c "print(round(int('$(rpc "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"eth_getBalance\",\"params\":[\"$W\",\"latest\"]}")',16)/1e18,6))")
+USDC=$(python3 -c "print(round(int('$(rpc "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"eth_call\",\"params\":[{\"to\":\"0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913\",\"data\":\"0x70a08231000000000000000000000000a3CDd4Ec6b94F01826Aaf90a6d5538A2Aa8C4C21\"},\"latest\"]}")',16)/1e6,4))")
+DAY=$(date -u +%Y%m%d); BASE=/var/lib/anicca/baseline-$DAY; mkdir -p /var/lib/anicca; [ -f "$BASE" ] || echo "$USDC" > "$BASE"
+REV=$(python3 -c "print(round($USDC - $(cat "$BASE"),4))")
+# --- email (AgentMail) ---
+curl -s --max-time 20 -X POST "https://api.agentmail.to/v0/inboxes/anicca-genesis@agentmail.to/messages/send" \
+  -H "Authorization: Bearer $AGENTMAIL_API_KEY" -H "Content-Type: application/json" \
+  -d "$(python3 -c "import json;print(json.dumps({'to':['keiodaisuke@gmail.com','contact@aniccaai.com'],'subject':f'Anicca wake net \$$USDC','text':f'NET WORTH \$$USDC USDC (+$ETH ETH)\nREVENUE TODAY \$$REV\nDID $DID\nNEXT $NEXT'}))")" >/dev/null 2>&1
+# --- telemetry (signed, wallet=$PKVAR confirmed in Step 1) ---
 TS=$(date -u +%s)
-PAYLOAD=$(python3 -c "import json;print(json.dumps({'id':'$W','ts':$TS,'host':'akash','geo':'US','model_live':'auto','model_tier':'free','net_worth_usd':$USDC,'revenue_mo_usd':$REV,'burn_day_usd':0.0,'runway_days':999,'status':'alive'},separators=(',',':')))")
-SIG=$(python3 - "$PAYLOAD" <<'PY'
-import sys,os
-from eth_account import Account
-from eth_account.messages import encode_defunct
-msg=sys.argv[1]; pk=os.environ["BLOCKRUN_WALLET_KEY"]
-print(Account.sign_message(encode_defunct(text=msg), private_key=pk).signature.hex())
+PAYLOAD=$(python3 -c "import json;print(json.dumps({'id':'$(echo $W|tr A-F a-f)','ts':$TS,'host':'akash','geo':'US','model_live':'auto','model_tier':'free','net_worth_usd':$USDC,'revenue_mo_usd':$REV,'burn_day_usd':0,'runway_days':999,'status':'alive'},separators=(',',':')))")
+SIG=$(PAYLOAD="$PAYLOAD" python3 - <<'PY'
+import os; from eth_account import Account; from eth_account.messages import encode_defunct
+print(Account.sign_message(encode_defunct(text=os.environ["PAYLOAD"]), private_key=os.environ["BLOCKRUN_WALLET_KEY"]).signature.hex())
 PY
 )
 curl -s --max-time 15 -X POST "https://aniccaai.com/api/telemetry" -H "Content-Type: application/json" \
   -d "{\"payload\":$PAYLOAD,\"signature\":\"$SIG\"}" >/dev/null 2>&1
-echo "telemetry posted $TS" >> /var/log/anicca-report.log
+echo "report+telemetry $TS" >> /var/log/anicca-report.log
 ```
-(`canonicalMessage` in verify.ts must serialize keys in this exact order — keep schema.ts/verify.ts JSON key order identical to the python `json.dumps` order. Add a comment in verify.ts pinning the order.)
+(Replace `BLOCKRUN_WALLET_KEY` with `$PKVAR` from Step 1 if different. The payload `id` is lowercased to match the route's `id.toLowerCase()`.)
 
-- [ ] **Step 2: Deploy + verify telemetry row lands (E2E, real)**
-
-Run (after route deployed to aniccaai.com):
-```bash
-ssh root@147.182.225.255 'pip install eth_account -q; bash /opt/anicca-report.sh'
-curl -s "https://aniccaai.com/api/dashboard-sync" | python3 -c "import json,sys; d=json.load(sys.stdin); print('instances:', len(d['leaderboard']), 'net:', d['total_net_worth_usd'])"
-```
-Expected: leaderboard contains the genesis wallet, net worth = its real USDC. **This is the E2E proof: a real instance POSTed signed telemetry → /dashboard data reflects it.**
-
-- [ ] **Step 3: Commit (canonical skill)**
+- [ ] **Step 3: Commit canonical + scp to droplet**
 
 ```bash
-cd ~/anicca && git add skills/report/anicca-report.sh && git commit -m "feat(report): POST signed telemetry to aniccaai.com/api/telemetry each wake" && git push
+cd ~/anicca && git add skills/report/anicca-report.sh && git commit -m "feat(report): per-wake email + signed telemetry POST" && git push
+scp ~/anicca/skills/report/anicca-report.sh root@147.182.225.255:/opt/anicca-report.sh
+ssh root@147.182.225.255 'chmod +x /opt/anicca-report.sh; pip install eth_account -q'
+```
+
+---
+
+## Task 9: Deploy + smoke + real E2E (review-fix #4)
+
+**Pre-req (ops, Dais infra — C1 carve-out):** Supabase project created; `SUPABASE_URL`+`SUPABASE_SERVICE_KEY` set in Netlify env; `instances` migration applied. Confirm before proceeding.
+
+- [ ] **Step 1: Deploy the routes (push triggers Netlify)**
+
+```bash
+cd ~/anicca-project && git push   # netlify-deploy on apps/landing/** → aniccaai.com
+```
+Wait for the Netlify build to go green.
+
+- [ ] **Step 2: SMOKE — locally-signed test payload → 202**
+
+Run (signs with the test key, hits the live route):
+```bash
+python3 - <<'PY'
+import json,time,urllib.request
+from eth_account import Account; from eth_account.messages import encode_defunct
+acct=Account.from_key("0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d")
+p={'id':acct.address.lower(),'ts':int(time.time()),'host':'test','geo':'US','model_live':'x','model_tier':'free','net_worth_usd':1,'revenue_mo_usd':0,'burn_day_usd':0,'runway_days':10,'status':'alive'}
+msg=json.dumps(p,separators=(',',':')); sig=Account.sign_message(encode_defunct(text=msg),private_key=acct.key).signature.hex()
+req=urllib.request.Request("https://aniccaai.com/api/telemetry",data=json.dumps({'payload':p,'signature':sig}).encode(),headers={'Content-Type':'application/json'})
+print("status", urllib.request.urlopen(req).status)
+PY
+```
+Expected: `status 202`. (If 401 → signing/key-order mismatch → re-check Task 7 golden test. If 500 → Supabase env not set.)
+
+- [ ] **Step 3: REAL E2E — genesis instance posts → dashboard reflects real net worth**
+
+```bash
+ssh root@147.182.225.255 'bash /opt/anicca-report.sh'
+sleep 3
+curl -s "https://aniccaai.com/api/dashboard-sync" | python3 -c "import json,sys;d=json.load(sys.stdin);ids=[r['id'] for r in d['leaderboard']];print('genesis present:', '0xa3cdd4ec6b94f01826aaf90a6d5538a2aa8c4c21' in ids, 'total_net:', d['total_net_worth_usd'])"
+```
+Expected: `genesis present: True`, `total_net` = the genesis wallet's REAL on-chain USDC. **This is the genuine E2E: a live instance signed+POSTed → Supabase → dashboard-sync reflects real chain data. No mock.**
+
+- [ ] **Step 4: Commit evidence note**
+
+```bash
+echo "E2E PASS $(date -u +%FT%TZ): genesis telemetry → dashboard-sync, net=<paste>" >> docs/superpowers/plans/2026-06-15-anicca-telemetry-pipeline.md
+git add -A && git commit -m "test(telemetry): E2E PASS — live instance signed POST → dashboard reflects real net worth" && git push
 ```
 
 ---
