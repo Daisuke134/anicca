@@ -45,14 +45,14 @@ cd apps/landing && npm i ethers@^6
 
 In `apps/landing/package.json` `"scripts"`, add:
 ```json
-"test:telemetry": "node --test netlify/functions/_lib/__tests__/"
+"test:telemetry": "node --test netlify/functions/_lib/__tests__/*.test.js"
 ```
-(Node 20's built-in runner recurses the given directory and runs every `*.test.js`. No vitest/jest dependency.)
+(★ Node 20's `node --test` does NOT accept a bare DIRECTORY arg — it tries to `require` it and throws `MODULE_NOT_FOUND` (directory/glob args only landed in Node 21). Pass a shell glob of files instead. All test files live flat in `__tests__/`, so a single-level `*.test.js` suffices — npm runs scripts via `sh -c`, which expands the glob. No `**`/globstar needed. review-fix round4 #1.)
 
-- [ ] **Step 3: Verify the runner works (no tests yet)**
+- [ ] **Step 3: Verify the runner exists (no tests yet — defer the first real run to Task 2)**
 
-Run: `cd apps/landing && mkdir -p netlify/functions/_lib/__tests__ && node --test netlify/functions/_lib/__tests__/`
-Expected: exits 0 with "tests 0" (runner works, nothing to run yet).
+Run: `cd apps/landing && mkdir -p netlify/functions/_lib/__tests__ && node -e "require('node:test'); console.log('node:test OK', process.version)"`
+Expected: prints `node:test OK v20.x` (builtin runner present). Do NOT run `node --test` against the empty dir — with zero matching files the glob passes a literal path and errors. The first real `node --test <file>` run is Task 2 Step 2.
 
 - [ ] **Step 4: Commit**
 
@@ -719,13 +719,17 @@ set -u
 . /opt/anicca.env
 PKVAR=BLOCKRUN_WALLET_KEY                 # <-- replace with the exact name Step 1 printed, if different
 SIGNKEY="${!PKVAR}"                       # indirect expansion: value of the var named by $PKVAR
-W=0xa3CDd4Ec6b94F01826Aaf90a6d5538A2Aa8C4C21
+# ★ Derive the wallet address FROM the signing key (review-fix round4 #2) — so the on-chain
+# net worth, the telemetry `id`, and the signature all bind to the SAME wallet. A hardcoded
+# address that disagreed with the key would 401 (signer_mismatch) on every real POST.
+W=$(SIGNKEY="$SIGNKEY" python3 -c "import os; from eth_account import Account; print(Account.from_key(os.environ['SIGNKEY']).address)")
+WLOW=$(echo "$W" | tr 'A-F' 'a-f'); WNO=${WLOW#0x}      # lowercased, 0x-stripped for the eth_call data
 LOG=/var/log/anicca-daemon.log
 DID="${1:-$(grep -oE "\[TOOL\] [a-z_]+" "$LOG" 2>/dev/null | tail -5 | sed "s/\[TOOL\] //" | tr "\n" "," | sed "s/,$//")}"; DID="${DID:-monitoring}"
 NEXT="${2:-continue earning + self-improve}"
 rpc(){ curl -s --max-time 10 https://mainnet.base.org -X POST -H "Content-Type: application/json" --data "$1" | python3 -c "import json,sys;print(json.load(sys.stdin).get('result','0x0'))"; }
 ETH=$(python3 -c "print(round(int('$(rpc "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"eth_getBalance\",\"params\":[\"$W\",\"latest\"]}")',16)/1e18,6))")
-USDC=$(python3 -c "print(round(int('$(rpc "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"eth_call\",\"params\":[{\"to\":\"0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913\",\"data\":\"0x70a08231000000000000000000000000a3CDd4Ec6b94F01826Aaf90a6d5538A2Aa8C4C21\"},\"latest\"]}")',16)/1e6,4))")
+USDC=$(python3 -c "print(round(int('$(rpc "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"eth_call\",\"params\":[{\"to\":\"0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913\",\"data\":\"0x70a08231000000000000000000000000${WNO}\"},\"latest\"]}")',16)/1e6,4))")
 DAY=$(date -u +%Y%m%d); BASE=/var/lib/anicca/baseline-$DAY; mkdir -p /var/lib/anicca; [ -f "$BASE" ] || echo "$USDC" > "$BASE"
 REV=$(python3 -c "print(round($USDC - $(cat "$BASE"),4))")
 # --- email (AgentMail) ---
@@ -796,9 +800,12 @@ Expected: `status 202` — a 202 on a whole-dollar `5.0` proves the verbatim-byt
 ```bash
 ssh root@147.182.225.255 'bash /opt/anicca-report.sh'
 sleep 3
-curl -s "https://aniccaai.com/.netlify/functions/dashboard-sync" | python3 -c "import json,sys;d=json.load(sys.stdin);ids=[r['id'] for r in d['leaderboard']];print('genesis present:', '0xa3cdd4ec6b94f01826aaf90a6d5538a2aa8c4c21' in ids, 'total_net:', d['total_net_worth_usd'])"
+# Derive the expected genesis id from the SAME signing key the report used (no hardcoded address —
+# matches the round4 #2 fix; replace BLOCKRUN_WALLET_KEY with $PKVAR if Task 8 Step 1 found another name).
+GID=$(ssh root@147.182.225.255 'set -a; . /opt/anicca.env; set +a; python3 -c "import os;from eth_account import Account;print(Account.from_key(os.environ[\"BLOCKRUN_WALLET_KEY\"]).address.lower())"')
+curl -s "https://aniccaai.com/.netlify/functions/dashboard-sync" | GID="$GID" python3 -c "import json,sys,os;d=json.load(sys.stdin);ids=[r['id'] for r in d['leaderboard']];print('genesis id',os.environ['GID'],'present:', os.environ['GID'] in ids, 'total_net:', d['total_net_worth_usd'])"
 ```
-Expected: `genesis present: True`, `total_net` = the genesis wallet's REAL on-chain USDC. **Genuine E2E: a live instance signed+POSTed → Supabase → dashboard-sync reflects real chain data. No mock.**
+Expected: `present: True`, `total_net` = the genesis wallet's REAL on-chain USDC. **Genuine E2E: a live instance signed+POSTed → Supabase → dashboard-sync reflects real chain data. No mock.**
 
 - [ ] **Step 4: Commit evidence note**
 
