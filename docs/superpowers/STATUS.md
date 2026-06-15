@@ -5,7 +5,10 @@
 > invisible across sessions — this file is how the next agent (or you, post-compaction) knows exactly
 > where things stand, what's verified, and what's next. Treat it like a handover note between humans.
 
-**Last updated:** 2026-06-15 (telemetry pipeline E2E-verified against real Supabase)
+**Last updated:** 2026-06-16 — ★ PREP COMPLETE / LAUNCH WORKFLOW READY ★
+
+> ✅ dev↔main reconciled (one trunk). ✅ Telemetry pipeline LIVE on aniccaai.com. ✅ `docs/superpowers/workflows/anicca-launch.workflow.js` + spec 26/27 written and **code-reviewer VERDICT: READY** (1 blocker + 4 majors found & fixed, re-confirmed clean). To launch: Claude runs `Workflow({scriptPath:'docs/superpowers/workflows/anicca-launch.workflow.js'})` on Dais's go → agents self-build Foundation→[A∥B]→E2E(real Charon call to Dais)→Distribute(articles human-in-loop). GATE-0 (1 profitable wake / earn) is still the true money-loop blocker, built inside the workflow's earn subsystem.
+ 2026-06-15 (telemetry pipeline E2E-verified against real Supabase)
 **Branch:** dev · **Repos:** products=`~/anicca-project`→anicca-products, mother=`~/anicca`→anicca, live runtime=`~/.openclaw` (private) & `~/.hermes`
 
 ---
