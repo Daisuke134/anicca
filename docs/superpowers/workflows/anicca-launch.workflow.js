@@ -87,7 +87,7 @@ const B = [
 // under it, stop and escalate rather than blow 5-10x past the cap. No target -> Infinity, so the
 // max-3 loop + concurrency are the bound.
 const RESERVE = 80_000
-const budgetLow = () => budget.total !== null && budget.remaining() < RESERVE
+const budgetLow = () => typeof budget !== 'undefined' && budget !== null && budget.total !== null && budget.remaining() < RESERVE
 
 // ----------------------------- loop-until-LIVE-green helper -----------------------------------
 // builder (worktree) -> SEPARATE adversarial verifier (rubric+artifact only) -> loop, max 3,
