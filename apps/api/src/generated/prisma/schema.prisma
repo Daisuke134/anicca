@@ -160,6 +160,7 @@ model NudgeDelivery {
   timezone         String
   lang             String
   variantIndex     Int       @map("variant_index")
+  quoteId          String?   @map("quote_id")
   messageTitle     String    @map("message_title")
   messageBody      String    @map("message_body")
   messageDetail    String    @map("message_detail")
@@ -673,4 +674,42 @@ model OpsReaction {
   @@index([status])
   @@index([createdAt(sort: Desc)])
   @@map("ops_reactions")
+}
+
+// v1.9.1: newsletter signup + daily affirmation email pipeline
+model newsletter_subscribers {
+  id         BigInt    @id @default(autoincrement())
+  email      String
+  locale     String    @default("en")
+  deviceId   String    @unique @map("device_id")
+  optInAt    DateTime  @default(now()) @map("opt_in_at") @db.Timestamptz
+  optedOutAt DateTime? @map("opted_out_at") @db.Timestamptz
+  lastSentAt DateTime? @map("last_sent_at") @db.Timestamptz
+
+  @@index([email])
+  @@map("newsletter_subscribers")
+}
+
+// v1.9.1: in-app feedback form
+model feedback_log {
+  id         BigInt   @id @default(autoincrement())
+  text       String
+  locale     String   @default("en")
+  appUserId  String?  @map("app_user_id")
+  appVersion String?  @map("app_version")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([createdAt])
+  @@map("feedback_log")
+}
+
+// v1.9.1: Resend dead-letter queue (3-retry failures)
+model failed_resend_calls {
+  id          BigInt   @id @default(autoincrement())
+  callType    String   @map("call_type")
+  payloadJson Json     @map("payload_json")
+  error       String
+  attemptedAt DateTime @default(now()) @map("attempted_at") @db.Timestamptz
+
+  @@map("failed_resend_calls")
 }

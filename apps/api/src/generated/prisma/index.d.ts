@@ -188,6 +188,21 @@ export type OpsTriggerRule = $Result.DefaultSelection<Prisma.$OpsTriggerRulePayl
  * 
  */
 export type OpsReaction = $Result.DefaultSelection<Prisma.$OpsReactionPayload>
+/**
+ * Model newsletter_subscribers
+ * 
+ */
+export type newsletter_subscribers = $Result.DefaultSelection<Prisma.$newsletter_subscribersPayload>
+/**
+ * Model feedback_log
+ * 
+ */
+export type feedback_log = $Result.DefaultSelection<Prisma.$feedback_logPayload>
+/**
+ * Model failed_resend_calls
+ * 
+ */
+export type failed_resend_calls = $Result.DefaultSelection<Prisma.$failed_resend_callsPayload>
 
 /**
  * ##  Prisma Client ʲˢ
@@ -661,6 +676,36 @@ export class PrismaClient<
     * ```
     */
   get opsReaction(): Prisma.OpsReactionDelegate<ExtArgs>;
+
+  /**
+   * `prisma.newsletter_subscribers`: Exposes CRUD operations for the **newsletter_subscribers** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more Newsletter_subscribers
+    * const newsletter_subscribers = await prisma.newsletter_subscribers.findMany()
+    * ```
+    */
+  get newsletter_subscribers(): Prisma.newsletter_subscribersDelegate<ExtArgs>;
+
+  /**
+   * `prisma.feedback_log`: Exposes CRUD operations for the **feedback_log** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more Feedback_logs
+    * const feedback_logs = await prisma.feedback_log.findMany()
+    * ```
+    */
+  get feedback_log(): Prisma.feedback_logDelegate<ExtArgs>;
+
+  /**
+   * `prisma.failed_resend_calls`: Exposes CRUD operations for the **failed_resend_calls** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more Failed_resend_calls
+    * const failed_resend_calls = await prisma.failed_resend_calls.findMany()
+    * ```
+    */
+  get failed_resend_calls(): Prisma.failed_resend_callsDelegate<ExtArgs>;
 }
 
 export namespace Prisma {
@@ -1136,7 +1181,10 @@ export namespace Prisma {
     OpsEvent: 'OpsEvent',
     OpsPolicy: 'OpsPolicy',
     OpsTriggerRule: 'OpsTriggerRule',
-    OpsReaction: 'OpsReaction'
+    OpsReaction: 'OpsReaction',
+    newsletter_subscribers: 'newsletter_subscribers',
+    feedback_log: 'feedback_log',
+    failed_resend_calls: 'failed_resend_calls'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -1152,7 +1200,7 @@ export namespace Prisma {
 
   export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, ClientOptions = {}> = {
     meta: {
-      modelProps: "token" | "refreshToken" | "mobileProfile" | "userSubscription" | "subscriptionEvent" | "monthlyVcGrant" | "profile" | "userSetting" | "pushToken" | "nudgeDelivery" | "nudgeDeliverySend" | "userTrait" | "nudgeEvent" | "nudgeOutcome" | "feelingSession" | "banditModel" | "userTypeEstimate" | "typeStats" | "hookCandidate" | "tiktokPost" | "wisdomPattern" | "xPost" | "notificationSchedule" | "agentPost" | "agentAuditLog" | "memoryItem" | "initiative" | "researchItem" | "opsProposal" | "opsMission" | "opsMissionStep" | "opsEvent" | "opsPolicy" | "opsTriggerRule" | "opsReaction"
+      modelProps: "token" | "refreshToken" | "mobileProfile" | "userSubscription" | "subscriptionEvent" | "monthlyVcGrant" | "profile" | "userSetting" | "pushToken" | "nudgeDelivery" | "nudgeDeliverySend" | "userTrait" | "nudgeEvent" | "nudgeOutcome" | "feelingSession" | "banditModel" | "userTypeEstimate" | "typeStats" | "hookCandidate" | "tiktokPost" | "wisdomPattern" | "xPost" | "notificationSchedule" | "agentPost" | "agentAuditLog" | "memoryItem" | "initiative" | "researchItem" | "opsProposal" | "opsMission" | "opsMissionStep" | "opsEvent" | "opsPolicy" | "opsTriggerRule" | "opsReaction" | "newsletter_subscribers" | "feedback_log" | "failed_resend_calls"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -3603,6 +3651,216 @@ export namespace Prisma {
           count: {
             args: Prisma.OpsReactionCountArgs<ExtArgs>
             result: $Utils.Optional<OpsReactionCountAggregateOutputType> | number
+          }
+        }
+      }
+      newsletter_subscribers: {
+        payload: Prisma.$newsletter_subscribersPayload<ExtArgs>
+        fields: Prisma.newsletter_subscribersFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.newsletter_subscribersFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$newsletter_subscribersPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.newsletter_subscribersFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$newsletter_subscribersPayload>
+          }
+          findFirst: {
+            args: Prisma.newsletter_subscribersFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$newsletter_subscribersPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.newsletter_subscribersFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$newsletter_subscribersPayload>
+          }
+          findMany: {
+            args: Prisma.newsletter_subscribersFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$newsletter_subscribersPayload>[]
+          }
+          create: {
+            args: Prisma.newsletter_subscribersCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$newsletter_subscribersPayload>
+          }
+          createMany: {
+            args: Prisma.newsletter_subscribersCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.newsletter_subscribersCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$newsletter_subscribersPayload>[]
+          }
+          delete: {
+            args: Prisma.newsletter_subscribersDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$newsletter_subscribersPayload>
+          }
+          update: {
+            args: Prisma.newsletter_subscribersUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$newsletter_subscribersPayload>
+          }
+          deleteMany: {
+            args: Prisma.newsletter_subscribersDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.newsletter_subscribersUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.newsletter_subscribersUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$newsletter_subscribersPayload>
+          }
+          aggregate: {
+            args: Prisma.Newsletter_subscribersAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateNewsletter_subscribers>
+          }
+          groupBy: {
+            args: Prisma.newsletter_subscribersGroupByArgs<ExtArgs>
+            result: $Utils.Optional<Newsletter_subscribersGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.newsletter_subscribersCountArgs<ExtArgs>
+            result: $Utils.Optional<Newsletter_subscribersCountAggregateOutputType> | number
+          }
+        }
+      }
+      feedback_log: {
+        payload: Prisma.$feedback_logPayload<ExtArgs>
+        fields: Prisma.feedback_logFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.feedback_logFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$feedback_logPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.feedback_logFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$feedback_logPayload>
+          }
+          findFirst: {
+            args: Prisma.feedback_logFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$feedback_logPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.feedback_logFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$feedback_logPayload>
+          }
+          findMany: {
+            args: Prisma.feedback_logFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$feedback_logPayload>[]
+          }
+          create: {
+            args: Prisma.feedback_logCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$feedback_logPayload>
+          }
+          createMany: {
+            args: Prisma.feedback_logCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.feedback_logCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$feedback_logPayload>[]
+          }
+          delete: {
+            args: Prisma.feedback_logDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$feedback_logPayload>
+          }
+          update: {
+            args: Prisma.feedback_logUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$feedback_logPayload>
+          }
+          deleteMany: {
+            args: Prisma.feedback_logDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.feedback_logUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.feedback_logUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$feedback_logPayload>
+          }
+          aggregate: {
+            args: Prisma.Feedback_logAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateFeedback_log>
+          }
+          groupBy: {
+            args: Prisma.feedback_logGroupByArgs<ExtArgs>
+            result: $Utils.Optional<Feedback_logGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.feedback_logCountArgs<ExtArgs>
+            result: $Utils.Optional<Feedback_logCountAggregateOutputType> | number
+          }
+        }
+      }
+      failed_resend_calls: {
+        payload: Prisma.$failed_resend_callsPayload<ExtArgs>
+        fields: Prisma.failed_resend_callsFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.failed_resend_callsFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$failed_resend_callsPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.failed_resend_callsFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$failed_resend_callsPayload>
+          }
+          findFirst: {
+            args: Prisma.failed_resend_callsFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$failed_resend_callsPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.failed_resend_callsFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$failed_resend_callsPayload>
+          }
+          findMany: {
+            args: Prisma.failed_resend_callsFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$failed_resend_callsPayload>[]
+          }
+          create: {
+            args: Prisma.failed_resend_callsCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$failed_resend_callsPayload>
+          }
+          createMany: {
+            args: Prisma.failed_resend_callsCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.failed_resend_callsCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$failed_resend_callsPayload>[]
+          }
+          delete: {
+            args: Prisma.failed_resend_callsDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$failed_resend_callsPayload>
+          }
+          update: {
+            args: Prisma.failed_resend_callsUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$failed_resend_callsPayload>
+          }
+          deleteMany: {
+            args: Prisma.failed_resend_callsDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.failed_resend_callsUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.failed_resend_callsUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$failed_resend_callsPayload>
+          }
+          aggregate: {
+            args: Prisma.Failed_resend_callsAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateFailed_resend_calls>
+          }
+          groupBy: {
+            args: Prisma.failed_resend_callsGroupByArgs<ExtArgs>
+            result: $Utils.Optional<Failed_resend_callsGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.failed_resend_callsCountArgs<ExtArgs>
+            result: $Utils.Optional<Failed_resend_callsCountAggregateOutputType> | number
           }
         }
       }
@@ -12503,6 +12761,7 @@ export namespace Prisma {
     timezone: string | null
     lang: string | null
     variantIndex: number | null
+    quoteId: string | null
     messageTitle: string | null
     messageBody: string | null
     messageDetail: string | null
@@ -12525,6 +12784,7 @@ export namespace Prisma {
     timezone: string | null
     lang: string | null
     variantIndex: number | null
+    quoteId: string | null
     messageTitle: string | null
     messageBody: string | null
     messageDetail: string | null
@@ -12547,6 +12807,7 @@ export namespace Prisma {
     timezone: number
     lang: number
     variantIndex: number
+    quoteId: number
     messageTitle: number
     messageBody: number
     messageDetail: number
@@ -12581,6 +12842,7 @@ export namespace Prisma {
     timezone?: true
     lang?: true
     variantIndex?: true
+    quoteId?: true
     messageTitle?: true
     messageBody?: true
     messageDetail?: true
@@ -12603,6 +12865,7 @@ export namespace Prisma {
     timezone?: true
     lang?: true
     variantIndex?: true
+    quoteId?: true
     messageTitle?: true
     messageBody?: true
     messageDetail?: true
@@ -12625,6 +12888,7 @@ export namespace Prisma {
     timezone?: true
     lang?: true
     variantIndex?: true
+    quoteId?: true
     messageTitle?: true
     messageBody?: true
     messageDetail?: true
@@ -12734,6 +12998,7 @@ export namespace Prisma {
     timezone: string
     lang: string
     variantIndex: number
+    quoteId: string | null
     messageTitle: string
     messageBody: string
     messageDetail: string
@@ -12775,6 +13040,7 @@ export namespace Prisma {
     timezone?: boolean
     lang?: boolean
     variantIndex?: boolean
+    quoteId?: boolean
     messageTitle?: boolean
     messageBody?: boolean
     messageDetail?: boolean
@@ -12799,6 +13065,7 @@ export namespace Prisma {
     timezone?: boolean
     lang?: boolean
     variantIndex?: boolean
+    quoteId?: boolean
     messageTitle?: boolean
     messageBody?: boolean
     messageDetail?: boolean
@@ -12821,6 +13088,7 @@ export namespace Prisma {
     timezone?: boolean
     lang?: boolean
     variantIndex?: boolean
+    quoteId?: boolean
     messageTitle?: boolean
     messageBody?: boolean
     messageDetail?: boolean
@@ -12854,6 +13122,7 @@ export namespace Prisma {
       timezone: string
       lang: string
       variantIndex: number
+      quoteId: string | null
       messageTitle: string
       messageBody: string
       messageDetail: string
@@ -13267,6 +13536,7 @@ export namespace Prisma {
     readonly timezone: FieldRef<"NudgeDelivery", 'String'>
     readonly lang: FieldRef<"NudgeDelivery", 'String'>
     readonly variantIndex: FieldRef<"NudgeDelivery", 'Int'>
+    readonly quoteId: FieldRef<"NudgeDelivery", 'String'>
     readonly messageTitle: FieldRef<"NudgeDelivery", 'String'>
     readonly messageBody: FieldRef<"NudgeDelivery", 'String'>
     readonly messageDetail: FieldRef<"NudgeDelivery", 'String'>
@@ -38525,6 +38795,2774 @@ export namespace Prisma {
 
 
   /**
+   * Model newsletter_subscribers
+   */
+
+  export type AggregateNewsletter_subscribers = {
+    _count: Newsletter_subscribersCountAggregateOutputType | null
+    _avg: Newsletter_subscribersAvgAggregateOutputType | null
+    _sum: Newsletter_subscribersSumAggregateOutputType | null
+    _min: Newsletter_subscribersMinAggregateOutputType | null
+    _max: Newsletter_subscribersMaxAggregateOutputType | null
+  }
+
+  export type Newsletter_subscribersAvgAggregateOutputType = {
+    id: number | null
+  }
+
+  export type Newsletter_subscribersSumAggregateOutputType = {
+    id: bigint | null
+  }
+
+  export type Newsletter_subscribersMinAggregateOutputType = {
+    id: bigint | null
+    email: string | null
+    locale: string | null
+    deviceId: string | null
+    optInAt: Date | null
+    optedOutAt: Date | null
+    lastSentAt: Date | null
+  }
+
+  export type Newsletter_subscribersMaxAggregateOutputType = {
+    id: bigint | null
+    email: string | null
+    locale: string | null
+    deviceId: string | null
+    optInAt: Date | null
+    optedOutAt: Date | null
+    lastSentAt: Date | null
+  }
+
+  export type Newsletter_subscribersCountAggregateOutputType = {
+    id: number
+    email: number
+    locale: number
+    deviceId: number
+    optInAt: number
+    optedOutAt: number
+    lastSentAt: number
+    _all: number
+  }
+
+
+  export type Newsletter_subscribersAvgAggregateInputType = {
+    id?: true
+  }
+
+  export type Newsletter_subscribersSumAggregateInputType = {
+    id?: true
+  }
+
+  export type Newsletter_subscribersMinAggregateInputType = {
+    id?: true
+    email?: true
+    locale?: true
+    deviceId?: true
+    optInAt?: true
+    optedOutAt?: true
+    lastSentAt?: true
+  }
+
+  export type Newsletter_subscribersMaxAggregateInputType = {
+    id?: true
+    email?: true
+    locale?: true
+    deviceId?: true
+    optInAt?: true
+    optedOutAt?: true
+    lastSentAt?: true
+  }
+
+  export type Newsletter_subscribersCountAggregateInputType = {
+    id?: true
+    email?: true
+    locale?: true
+    deviceId?: true
+    optInAt?: true
+    optedOutAt?: true
+    lastSentAt?: true
+    _all?: true
+  }
+
+  export type Newsletter_subscribersAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which newsletter_subscribers to aggregate.
+     */
+    where?: newsletter_subscribersWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of newsletter_subscribers to fetch.
+     */
+    orderBy?: newsletter_subscribersOrderByWithRelationInput | newsletter_subscribersOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: newsletter_subscribersWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` newsletter_subscribers from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` newsletter_subscribers.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned newsletter_subscribers
+    **/
+    _count?: true | Newsletter_subscribersCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: Newsletter_subscribersAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: Newsletter_subscribersSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: Newsletter_subscribersMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: Newsletter_subscribersMaxAggregateInputType
+  }
+
+  export type GetNewsletter_subscribersAggregateType<T extends Newsletter_subscribersAggregateArgs> = {
+        [P in keyof T & keyof AggregateNewsletter_subscribers]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateNewsletter_subscribers[P]>
+      : GetScalarType<T[P], AggregateNewsletter_subscribers[P]>
+  }
+
+
+
+
+  export type newsletter_subscribersGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: newsletter_subscribersWhereInput
+    orderBy?: newsletter_subscribersOrderByWithAggregationInput | newsletter_subscribersOrderByWithAggregationInput[]
+    by: Newsletter_subscribersScalarFieldEnum[] | Newsletter_subscribersScalarFieldEnum
+    having?: newsletter_subscribersScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: Newsletter_subscribersCountAggregateInputType | true
+    _avg?: Newsletter_subscribersAvgAggregateInputType
+    _sum?: Newsletter_subscribersSumAggregateInputType
+    _min?: Newsletter_subscribersMinAggregateInputType
+    _max?: Newsletter_subscribersMaxAggregateInputType
+  }
+
+  export type Newsletter_subscribersGroupByOutputType = {
+    id: bigint
+    email: string
+    locale: string
+    deviceId: string
+    optInAt: Date
+    optedOutAt: Date | null
+    lastSentAt: Date | null
+    _count: Newsletter_subscribersCountAggregateOutputType | null
+    _avg: Newsletter_subscribersAvgAggregateOutputType | null
+    _sum: Newsletter_subscribersSumAggregateOutputType | null
+    _min: Newsletter_subscribersMinAggregateOutputType | null
+    _max: Newsletter_subscribersMaxAggregateOutputType | null
+  }
+
+  type GetNewsletter_subscribersGroupByPayload<T extends newsletter_subscribersGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<Newsletter_subscribersGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof Newsletter_subscribersGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], Newsletter_subscribersGroupByOutputType[P]>
+            : GetScalarType<T[P], Newsletter_subscribersGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type newsletter_subscribersSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    email?: boolean
+    locale?: boolean
+    deviceId?: boolean
+    optInAt?: boolean
+    optedOutAt?: boolean
+    lastSentAt?: boolean
+  }, ExtArgs["result"]["newsletter_subscribers"]>
+
+  export type newsletter_subscribersSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    email?: boolean
+    locale?: boolean
+    deviceId?: boolean
+    optInAt?: boolean
+    optedOutAt?: boolean
+    lastSentAt?: boolean
+  }, ExtArgs["result"]["newsletter_subscribers"]>
+
+  export type newsletter_subscribersSelectScalar = {
+    id?: boolean
+    email?: boolean
+    locale?: boolean
+    deviceId?: boolean
+    optInAt?: boolean
+    optedOutAt?: boolean
+    lastSentAt?: boolean
+  }
+
+
+  export type $newsletter_subscribersPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "newsletter_subscribers"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      id: bigint
+      email: string
+      locale: string
+      deviceId: string
+      optInAt: Date
+      optedOutAt: Date | null
+      lastSentAt: Date | null
+    }, ExtArgs["result"]["newsletter_subscribers"]>
+    composites: {}
+  }
+
+  type newsletter_subscribersGetPayload<S extends boolean | null | undefined | newsletter_subscribersDefaultArgs> = $Result.GetResult<Prisma.$newsletter_subscribersPayload, S>
+
+  type newsletter_subscribersCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<newsletter_subscribersFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: Newsletter_subscribersCountAggregateInputType | true
+    }
+
+  export interface newsletter_subscribersDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['newsletter_subscribers'], meta: { name: 'newsletter_subscribers' } }
+    /**
+     * Find zero or one Newsletter_subscribers that matches the filter.
+     * @param {newsletter_subscribersFindUniqueArgs} args - Arguments to find a Newsletter_subscribers
+     * @example
+     * // Get one Newsletter_subscribers
+     * const newsletter_subscribers = await prisma.newsletter_subscribers.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends newsletter_subscribersFindUniqueArgs>(args: SelectSubset<T, newsletter_subscribersFindUniqueArgs<ExtArgs>>): Prisma__newsletter_subscribersClient<$Result.GetResult<Prisma.$newsletter_subscribersPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one Newsletter_subscribers that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {newsletter_subscribersFindUniqueOrThrowArgs} args - Arguments to find a Newsletter_subscribers
+     * @example
+     * // Get one Newsletter_subscribers
+     * const newsletter_subscribers = await prisma.newsletter_subscribers.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends newsletter_subscribersFindUniqueOrThrowArgs>(args: SelectSubset<T, newsletter_subscribersFindUniqueOrThrowArgs<ExtArgs>>): Prisma__newsletter_subscribersClient<$Result.GetResult<Prisma.$newsletter_subscribersPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first Newsletter_subscribers that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {newsletter_subscribersFindFirstArgs} args - Arguments to find a Newsletter_subscribers
+     * @example
+     * // Get one Newsletter_subscribers
+     * const newsletter_subscribers = await prisma.newsletter_subscribers.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends newsletter_subscribersFindFirstArgs>(args?: SelectSubset<T, newsletter_subscribersFindFirstArgs<ExtArgs>>): Prisma__newsletter_subscribersClient<$Result.GetResult<Prisma.$newsletter_subscribersPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first Newsletter_subscribers that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {newsletter_subscribersFindFirstOrThrowArgs} args - Arguments to find a Newsletter_subscribers
+     * @example
+     * // Get one Newsletter_subscribers
+     * const newsletter_subscribers = await prisma.newsletter_subscribers.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends newsletter_subscribersFindFirstOrThrowArgs>(args?: SelectSubset<T, newsletter_subscribersFindFirstOrThrowArgs<ExtArgs>>): Prisma__newsletter_subscribersClient<$Result.GetResult<Prisma.$newsletter_subscribersPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more Newsletter_subscribers that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {newsletter_subscribersFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all Newsletter_subscribers
+     * const newsletter_subscribers = await prisma.newsletter_subscribers.findMany()
+     * 
+     * // Get first 10 Newsletter_subscribers
+     * const newsletter_subscribers = await prisma.newsletter_subscribers.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const newsletter_subscribersWithIdOnly = await prisma.newsletter_subscribers.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends newsletter_subscribersFindManyArgs>(args?: SelectSubset<T, newsletter_subscribersFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$newsletter_subscribersPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a Newsletter_subscribers.
+     * @param {newsletter_subscribersCreateArgs} args - Arguments to create a Newsletter_subscribers.
+     * @example
+     * // Create one Newsletter_subscribers
+     * const Newsletter_subscribers = await prisma.newsletter_subscribers.create({
+     *   data: {
+     *     // ... data to create a Newsletter_subscribers
+     *   }
+     * })
+     * 
+     */
+    create<T extends newsletter_subscribersCreateArgs>(args: SelectSubset<T, newsletter_subscribersCreateArgs<ExtArgs>>): Prisma__newsletter_subscribersClient<$Result.GetResult<Prisma.$newsletter_subscribersPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many Newsletter_subscribers.
+     * @param {newsletter_subscribersCreateManyArgs} args - Arguments to create many Newsletter_subscribers.
+     * @example
+     * // Create many Newsletter_subscribers
+     * const newsletter_subscribers = await prisma.newsletter_subscribers.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends newsletter_subscribersCreateManyArgs>(args?: SelectSubset<T, newsletter_subscribersCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many Newsletter_subscribers and returns the data saved in the database.
+     * @param {newsletter_subscribersCreateManyAndReturnArgs} args - Arguments to create many Newsletter_subscribers.
+     * @example
+     * // Create many Newsletter_subscribers
+     * const newsletter_subscribers = await prisma.newsletter_subscribers.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many Newsletter_subscribers and only return the `id`
+     * const newsletter_subscribersWithIdOnly = await prisma.newsletter_subscribers.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends newsletter_subscribersCreateManyAndReturnArgs>(args?: SelectSubset<T, newsletter_subscribersCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$newsletter_subscribersPayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a Newsletter_subscribers.
+     * @param {newsletter_subscribersDeleteArgs} args - Arguments to delete one Newsletter_subscribers.
+     * @example
+     * // Delete one Newsletter_subscribers
+     * const Newsletter_subscribers = await prisma.newsletter_subscribers.delete({
+     *   where: {
+     *     // ... filter to delete one Newsletter_subscribers
+     *   }
+     * })
+     * 
+     */
+    delete<T extends newsletter_subscribersDeleteArgs>(args: SelectSubset<T, newsletter_subscribersDeleteArgs<ExtArgs>>): Prisma__newsletter_subscribersClient<$Result.GetResult<Prisma.$newsletter_subscribersPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one Newsletter_subscribers.
+     * @param {newsletter_subscribersUpdateArgs} args - Arguments to update one Newsletter_subscribers.
+     * @example
+     * // Update one Newsletter_subscribers
+     * const newsletter_subscribers = await prisma.newsletter_subscribers.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends newsletter_subscribersUpdateArgs>(args: SelectSubset<T, newsletter_subscribersUpdateArgs<ExtArgs>>): Prisma__newsletter_subscribersClient<$Result.GetResult<Prisma.$newsletter_subscribersPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more Newsletter_subscribers.
+     * @param {newsletter_subscribersDeleteManyArgs} args - Arguments to filter Newsletter_subscribers to delete.
+     * @example
+     * // Delete a few Newsletter_subscribers
+     * const { count } = await prisma.newsletter_subscribers.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends newsletter_subscribersDeleteManyArgs>(args?: SelectSubset<T, newsletter_subscribersDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more Newsletter_subscribers.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {newsletter_subscribersUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many Newsletter_subscribers
+     * const newsletter_subscribers = await prisma.newsletter_subscribers.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends newsletter_subscribersUpdateManyArgs>(args: SelectSubset<T, newsletter_subscribersUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one Newsletter_subscribers.
+     * @param {newsletter_subscribersUpsertArgs} args - Arguments to update or create a Newsletter_subscribers.
+     * @example
+     * // Update or create a Newsletter_subscribers
+     * const newsletter_subscribers = await prisma.newsletter_subscribers.upsert({
+     *   create: {
+     *     // ... data to create a Newsletter_subscribers
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the Newsletter_subscribers we want to update
+     *   }
+     * })
+     */
+    upsert<T extends newsletter_subscribersUpsertArgs>(args: SelectSubset<T, newsletter_subscribersUpsertArgs<ExtArgs>>): Prisma__newsletter_subscribersClient<$Result.GetResult<Prisma.$newsletter_subscribersPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of Newsletter_subscribers.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {newsletter_subscribersCountArgs} args - Arguments to filter Newsletter_subscribers to count.
+     * @example
+     * // Count the number of Newsletter_subscribers
+     * const count = await prisma.newsletter_subscribers.count({
+     *   where: {
+     *     // ... the filter for the Newsletter_subscribers we want to count
+     *   }
+     * })
+    **/
+    count<T extends newsletter_subscribersCountArgs>(
+      args?: Subset<T, newsletter_subscribersCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], Newsletter_subscribersCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a Newsletter_subscribers.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {Newsletter_subscribersAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends Newsletter_subscribersAggregateArgs>(args: Subset<T, Newsletter_subscribersAggregateArgs>): Prisma.PrismaPromise<GetNewsletter_subscribersAggregateType<T>>
+
+    /**
+     * Group by Newsletter_subscribers.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {newsletter_subscribersGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends newsletter_subscribersGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: newsletter_subscribersGroupByArgs['orderBy'] }
+        : { orderBy?: newsletter_subscribersGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, newsletter_subscribersGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetNewsletter_subscribersGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the newsletter_subscribers model
+   */
+  readonly fields: newsletter_subscribersFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for newsletter_subscribers.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__newsletter_subscribersClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the newsletter_subscribers model
+   */ 
+  interface newsletter_subscribersFieldRefs {
+    readonly id: FieldRef<"newsletter_subscribers", 'BigInt'>
+    readonly email: FieldRef<"newsletter_subscribers", 'String'>
+    readonly locale: FieldRef<"newsletter_subscribers", 'String'>
+    readonly deviceId: FieldRef<"newsletter_subscribers", 'String'>
+    readonly optInAt: FieldRef<"newsletter_subscribers", 'DateTime'>
+    readonly optedOutAt: FieldRef<"newsletter_subscribers", 'DateTime'>
+    readonly lastSentAt: FieldRef<"newsletter_subscribers", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * newsletter_subscribers findUnique
+   */
+  export type newsletter_subscribersFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the newsletter_subscribers
+     */
+    select?: newsletter_subscribersSelect<ExtArgs> | null
+    /**
+     * Filter, which newsletter_subscribers to fetch.
+     */
+    where: newsletter_subscribersWhereUniqueInput
+  }
+
+  /**
+   * newsletter_subscribers findUniqueOrThrow
+   */
+  export type newsletter_subscribersFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the newsletter_subscribers
+     */
+    select?: newsletter_subscribersSelect<ExtArgs> | null
+    /**
+     * Filter, which newsletter_subscribers to fetch.
+     */
+    where: newsletter_subscribersWhereUniqueInput
+  }
+
+  /**
+   * newsletter_subscribers findFirst
+   */
+  export type newsletter_subscribersFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the newsletter_subscribers
+     */
+    select?: newsletter_subscribersSelect<ExtArgs> | null
+    /**
+     * Filter, which newsletter_subscribers to fetch.
+     */
+    where?: newsletter_subscribersWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of newsletter_subscribers to fetch.
+     */
+    orderBy?: newsletter_subscribersOrderByWithRelationInput | newsletter_subscribersOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for newsletter_subscribers.
+     */
+    cursor?: newsletter_subscribersWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` newsletter_subscribers from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` newsletter_subscribers.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of newsletter_subscribers.
+     */
+    distinct?: Newsletter_subscribersScalarFieldEnum | Newsletter_subscribersScalarFieldEnum[]
+  }
+
+  /**
+   * newsletter_subscribers findFirstOrThrow
+   */
+  export type newsletter_subscribersFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the newsletter_subscribers
+     */
+    select?: newsletter_subscribersSelect<ExtArgs> | null
+    /**
+     * Filter, which newsletter_subscribers to fetch.
+     */
+    where?: newsletter_subscribersWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of newsletter_subscribers to fetch.
+     */
+    orderBy?: newsletter_subscribersOrderByWithRelationInput | newsletter_subscribersOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for newsletter_subscribers.
+     */
+    cursor?: newsletter_subscribersWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` newsletter_subscribers from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` newsletter_subscribers.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of newsletter_subscribers.
+     */
+    distinct?: Newsletter_subscribersScalarFieldEnum | Newsletter_subscribersScalarFieldEnum[]
+  }
+
+  /**
+   * newsletter_subscribers findMany
+   */
+  export type newsletter_subscribersFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the newsletter_subscribers
+     */
+    select?: newsletter_subscribersSelect<ExtArgs> | null
+    /**
+     * Filter, which newsletter_subscribers to fetch.
+     */
+    where?: newsletter_subscribersWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of newsletter_subscribers to fetch.
+     */
+    orderBy?: newsletter_subscribersOrderByWithRelationInput | newsletter_subscribersOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing newsletter_subscribers.
+     */
+    cursor?: newsletter_subscribersWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` newsletter_subscribers from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` newsletter_subscribers.
+     */
+    skip?: number
+    distinct?: Newsletter_subscribersScalarFieldEnum | Newsletter_subscribersScalarFieldEnum[]
+  }
+
+  /**
+   * newsletter_subscribers create
+   */
+  export type newsletter_subscribersCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the newsletter_subscribers
+     */
+    select?: newsletter_subscribersSelect<ExtArgs> | null
+    /**
+     * The data needed to create a newsletter_subscribers.
+     */
+    data: XOR<newsletter_subscribersCreateInput, newsletter_subscribersUncheckedCreateInput>
+  }
+
+  /**
+   * newsletter_subscribers createMany
+   */
+  export type newsletter_subscribersCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many newsletter_subscribers.
+     */
+    data: newsletter_subscribersCreateManyInput | newsletter_subscribersCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * newsletter_subscribers createManyAndReturn
+   */
+  export type newsletter_subscribersCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the newsletter_subscribers
+     */
+    select?: newsletter_subscribersSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many newsletter_subscribers.
+     */
+    data: newsletter_subscribersCreateManyInput | newsletter_subscribersCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * newsletter_subscribers update
+   */
+  export type newsletter_subscribersUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the newsletter_subscribers
+     */
+    select?: newsletter_subscribersSelect<ExtArgs> | null
+    /**
+     * The data needed to update a newsletter_subscribers.
+     */
+    data: XOR<newsletter_subscribersUpdateInput, newsletter_subscribersUncheckedUpdateInput>
+    /**
+     * Choose, which newsletter_subscribers to update.
+     */
+    where: newsletter_subscribersWhereUniqueInput
+  }
+
+  /**
+   * newsletter_subscribers updateMany
+   */
+  export type newsletter_subscribersUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update newsletter_subscribers.
+     */
+    data: XOR<newsletter_subscribersUpdateManyMutationInput, newsletter_subscribersUncheckedUpdateManyInput>
+    /**
+     * Filter which newsletter_subscribers to update
+     */
+    where?: newsletter_subscribersWhereInput
+  }
+
+  /**
+   * newsletter_subscribers upsert
+   */
+  export type newsletter_subscribersUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the newsletter_subscribers
+     */
+    select?: newsletter_subscribersSelect<ExtArgs> | null
+    /**
+     * The filter to search for the newsletter_subscribers to update in case it exists.
+     */
+    where: newsletter_subscribersWhereUniqueInput
+    /**
+     * In case the newsletter_subscribers found by the `where` argument doesn't exist, create a new newsletter_subscribers with this data.
+     */
+    create: XOR<newsletter_subscribersCreateInput, newsletter_subscribersUncheckedCreateInput>
+    /**
+     * In case the newsletter_subscribers was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<newsletter_subscribersUpdateInput, newsletter_subscribersUncheckedUpdateInput>
+  }
+
+  /**
+   * newsletter_subscribers delete
+   */
+  export type newsletter_subscribersDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the newsletter_subscribers
+     */
+    select?: newsletter_subscribersSelect<ExtArgs> | null
+    /**
+     * Filter which newsletter_subscribers to delete.
+     */
+    where: newsletter_subscribersWhereUniqueInput
+  }
+
+  /**
+   * newsletter_subscribers deleteMany
+   */
+  export type newsletter_subscribersDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which newsletter_subscribers to delete
+     */
+    where?: newsletter_subscribersWhereInput
+  }
+
+  /**
+   * newsletter_subscribers without action
+   */
+  export type newsletter_subscribersDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the newsletter_subscribers
+     */
+    select?: newsletter_subscribersSelect<ExtArgs> | null
+  }
+
+
+  /**
+   * Model feedback_log
+   */
+
+  export type AggregateFeedback_log = {
+    _count: Feedback_logCountAggregateOutputType | null
+    _avg: Feedback_logAvgAggregateOutputType | null
+    _sum: Feedback_logSumAggregateOutputType | null
+    _min: Feedback_logMinAggregateOutputType | null
+    _max: Feedback_logMaxAggregateOutputType | null
+  }
+
+  export type Feedback_logAvgAggregateOutputType = {
+    id: number | null
+  }
+
+  export type Feedback_logSumAggregateOutputType = {
+    id: bigint | null
+  }
+
+  export type Feedback_logMinAggregateOutputType = {
+    id: bigint | null
+    text: string | null
+    locale: string | null
+    appUserId: string | null
+    appVersion: string | null
+    createdAt: Date | null
+  }
+
+  export type Feedback_logMaxAggregateOutputType = {
+    id: bigint | null
+    text: string | null
+    locale: string | null
+    appUserId: string | null
+    appVersion: string | null
+    createdAt: Date | null
+  }
+
+  export type Feedback_logCountAggregateOutputType = {
+    id: number
+    text: number
+    locale: number
+    appUserId: number
+    appVersion: number
+    createdAt: number
+    _all: number
+  }
+
+
+  export type Feedback_logAvgAggregateInputType = {
+    id?: true
+  }
+
+  export type Feedback_logSumAggregateInputType = {
+    id?: true
+  }
+
+  export type Feedback_logMinAggregateInputType = {
+    id?: true
+    text?: true
+    locale?: true
+    appUserId?: true
+    appVersion?: true
+    createdAt?: true
+  }
+
+  export type Feedback_logMaxAggregateInputType = {
+    id?: true
+    text?: true
+    locale?: true
+    appUserId?: true
+    appVersion?: true
+    createdAt?: true
+  }
+
+  export type Feedback_logCountAggregateInputType = {
+    id?: true
+    text?: true
+    locale?: true
+    appUserId?: true
+    appVersion?: true
+    createdAt?: true
+    _all?: true
+  }
+
+  export type Feedback_logAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which feedback_log to aggregate.
+     */
+    where?: feedback_logWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of feedback_logs to fetch.
+     */
+    orderBy?: feedback_logOrderByWithRelationInput | feedback_logOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: feedback_logWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` feedback_logs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` feedback_logs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned feedback_logs
+    **/
+    _count?: true | Feedback_logCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: Feedback_logAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: Feedback_logSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: Feedback_logMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: Feedback_logMaxAggregateInputType
+  }
+
+  export type GetFeedback_logAggregateType<T extends Feedback_logAggregateArgs> = {
+        [P in keyof T & keyof AggregateFeedback_log]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateFeedback_log[P]>
+      : GetScalarType<T[P], AggregateFeedback_log[P]>
+  }
+
+
+
+
+  export type feedback_logGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: feedback_logWhereInput
+    orderBy?: feedback_logOrderByWithAggregationInput | feedback_logOrderByWithAggregationInput[]
+    by: Feedback_logScalarFieldEnum[] | Feedback_logScalarFieldEnum
+    having?: feedback_logScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: Feedback_logCountAggregateInputType | true
+    _avg?: Feedback_logAvgAggregateInputType
+    _sum?: Feedback_logSumAggregateInputType
+    _min?: Feedback_logMinAggregateInputType
+    _max?: Feedback_logMaxAggregateInputType
+  }
+
+  export type Feedback_logGroupByOutputType = {
+    id: bigint
+    text: string
+    locale: string
+    appUserId: string | null
+    appVersion: string | null
+    createdAt: Date
+    _count: Feedback_logCountAggregateOutputType | null
+    _avg: Feedback_logAvgAggregateOutputType | null
+    _sum: Feedback_logSumAggregateOutputType | null
+    _min: Feedback_logMinAggregateOutputType | null
+    _max: Feedback_logMaxAggregateOutputType | null
+  }
+
+  type GetFeedback_logGroupByPayload<T extends feedback_logGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<Feedback_logGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof Feedback_logGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], Feedback_logGroupByOutputType[P]>
+            : GetScalarType<T[P], Feedback_logGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type feedback_logSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    text?: boolean
+    locale?: boolean
+    appUserId?: boolean
+    appVersion?: boolean
+    createdAt?: boolean
+  }, ExtArgs["result"]["feedback_log"]>
+
+  export type feedback_logSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    text?: boolean
+    locale?: boolean
+    appUserId?: boolean
+    appVersion?: boolean
+    createdAt?: boolean
+  }, ExtArgs["result"]["feedback_log"]>
+
+  export type feedback_logSelectScalar = {
+    id?: boolean
+    text?: boolean
+    locale?: boolean
+    appUserId?: boolean
+    appVersion?: boolean
+    createdAt?: boolean
+  }
+
+
+  export type $feedback_logPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "feedback_log"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      id: bigint
+      text: string
+      locale: string
+      appUserId: string | null
+      appVersion: string | null
+      createdAt: Date
+    }, ExtArgs["result"]["feedback_log"]>
+    composites: {}
+  }
+
+  type feedback_logGetPayload<S extends boolean | null | undefined | feedback_logDefaultArgs> = $Result.GetResult<Prisma.$feedback_logPayload, S>
+
+  type feedback_logCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<feedback_logFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: Feedback_logCountAggregateInputType | true
+    }
+
+  export interface feedback_logDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['feedback_log'], meta: { name: 'feedback_log' } }
+    /**
+     * Find zero or one Feedback_log that matches the filter.
+     * @param {feedback_logFindUniqueArgs} args - Arguments to find a Feedback_log
+     * @example
+     * // Get one Feedback_log
+     * const feedback_log = await prisma.feedback_log.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends feedback_logFindUniqueArgs>(args: SelectSubset<T, feedback_logFindUniqueArgs<ExtArgs>>): Prisma__feedback_logClient<$Result.GetResult<Prisma.$feedback_logPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one Feedback_log that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {feedback_logFindUniqueOrThrowArgs} args - Arguments to find a Feedback_log
+     * @example
+     * // Get one Feedback_log
+     * const feedback_log = await prisma.feedback_log.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends feedback_logFindUniqueOrThrowArgs>(args: SelectSubset<T, feedback_logFindUniqueOrThrowArgs<ExtArgs>>): Prisma__feedback_logClient<$Result.GetResult<Prisma.$feedback_logPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first Feedback_log that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {feedback_logFindFirstArgs} args - Arguments to find a Feedback_log
+     * @example
+     * // Get one Feedback_log
+     * const feedback_log = await prisma.feedback_log.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends feedback_logFindFirstArgs>(args?: SelectSubset<T, feedback_logFindFirstArgs<ExtArgs>>): Prisma__feedback_logClient<$Result.GetResult<Prisma.$feedback_logPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first Feedback_log that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {feedback_logFindFirstOrThrowArgs} args - Arguments to find a Feedback_log
+     * @example
+     * // Get one Feedback_log
+     * const feedback_log = await prisma.feedback_log.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends feedback_logFindFirstOrThrowArgs>(args?: SelectSubset<T, feedback_logFindFirstOrThrowArgs<ExtArgs>>): Prisma__feedback_logClient<$Result.GetResult<Prisma.$feedback_logPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more Feedback_logs that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {feedback_logFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all Feedback_logs
+     * const feedback_logs = await prisma.feedback_log.findMany()
+     * 
+     * // Get first 10 Feedback_logs
+     * const feedback_logs = await prisma.feedback_log.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const feedback_logWithIdOnly = await prisma.feedback_log.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends feedback_logFindManyArgs>(args?: SelectSubset<T, feedback_logFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$feedback_logPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a Feedback_log.
+     * @param {feedback_logCreateArgs} args - Arguments to create a Feedback_log.
+     * @example
+     * // Create one Feedback_log
+     * const Feedback_log = await prisma.feedback_log.create({
+     *   data: {
+     *     // ... data to create a Feedback_log
+     *   }
+     * })
+     * 
+     */
+    create<T extends feedback_logCreateArgs>(args: SelectSubset<T, feedback_logCreateArgs<ExtArgs>>): Prisma__feedback_logClient<$Result.GetResult<Prisma.$feedback_logPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many Feedback_logs.
+     * @param {feedback_logCreateManyArgs} args - Arguments to create many Feedback_logs.
+     * @example
+     * // Create many Feedback_logs
+     * const feedback_log = await prisma.feedback_log.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends feedback_logCreateManyArgs>(args?: SelectSubset<T, feedback_logCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many Feedback_logs and returns the data saved in the database.
+     * @param {feedback_logCreateManyAndReturnArgs} args - Arguments to create many Feedback_logs.
+     * @example
+     * // Create many Feedback_logs
+     * const feedback_log = await prisma.feedback_log.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many Feedback_logs and only return the `id`
+     * const feedback_logWithIdOnly = await prisma.feedback_log.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends feedback_logCreateManyAndReturnArgs>(args?: SelectSubset<T, feedback_logCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$feedback_logPayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a Feedback_log.
+     * @param {feedback_logDeleteArgs} args - Arguments to delete one Feedback_log.
+     * @example
+     * // Delete one Feedback_log
+     * const Feedback_log = await prisma.feedback_log.delete({
+     *   where: {
+     *     // ... filter to delete one Feedback_log
+     *   }
+     * })
+     * 
+     */
+    delete<T extends feedback_logDeleteArgs>(args: SelectSubset<T, feedback_logDeleteArgs<ExtArgs>>): Prisma__feedback_logClient<$Result.GetResult<Prisma.$feedback_logPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one Feedback_log.
+     * @param {feedback_logUpdateArgs} args - Arguments to update one Feedback_log.
+     * @example
+     * // Update one Feedback_log
+     * const feedback_log = await prisma.feedback_log.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends feedback_logUpdateArgs>(args: SelectSubset<T, feedback_logUpdateArgs<ExtArgs>>): Prisma__feedback_logClient<$Result.GetResult<Prisma.$feedback_logPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more Feedback_logs.
+     * @param {feedback_logDeleteManyArgs} args - Arguments to filter Feedback_logs to delete.
+     * @example
+     * // Delete a few Feedback_logs
+     * const { count } = await prisma.feedback_log.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends feedback_logDeleteManyArgs>(args?: SelectSubset<T, feedback_logDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more Feedback_logs.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {feedback_logUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many Feedback_logs
+     * const feedback_log = await prisma.feedback_log.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends feedback_logUpdateManyArgs>(args: SelectSubset<T, feedback_logUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one Feedback_log.
+     * @param {feedback_logUpsertArgs} args - Arguments to update or create a Feedback_log.
+     * @example
+     * // Update or create a Feedback_log
+     * const feedback_log = await prisma.feedback_log.upsert({
+     *   create: {
+     *     // ... data to create a Feedback_log
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the Feedback_log we want to update
+     *   }
+     * })
+     */
+    upsert<T extends feedback_logUpsertArgs>(args: SelectSubset<T, feedback_logUpsertArgs<ExtArgs>>): Prisma__feedback_logClient<$Result.GetResult<Prisma.$feedback_logPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of Feedback_logs.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {feedback_logCountArgs} args - Arguments to filter Feedback_logs to count.
+     * @example
+     * // Count the number of Feedback_logs
+     * const count = await prisma.feedback_log.count({
+     *   where: {
+     *     // ... the filter for the Feedback_logs we want to count
+     *   }
+     * })
+    **/
+    count<T extends feedback_logCountArgs>(
+      args?: Subset<T, feedback_logCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], Feedback_logCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a Feedback_log.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {Feedback_logAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends Feedback_logAggregateArgs>(args: Subset<T, Feedback_logAggregateArgs>): Prisma.PrismaPromise<GetFeedback_logAggregateType<T>>
+
+    /**
+     * Group by Feedback_log.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {feedback_logGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends feedback_logGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: feedback_logGroupByArgs['orderBy'] }
+        : { orderBy?: feedback_logGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, feedback_logGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetFeedback_logGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the feedback_log model
+   */
+  readonly fields: feedback_logFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for feedback_log.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__feedback_logClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the feedback_log model
+   */ 
+  interface feedback_logFieldRefs {
+    readonly id: FieldRef<"feedback_log", 'BigInt'>
+    readonly text: FieldRef<"feedback_log", 'String'>
+    readonly locale: FieldRef<"feedback_log", 'String'>
+    readonly appUserId: FieldRef<"feedback_log", 'String'>
+    readonly appVersion: FieldRef<"feedback_log", 'String'>
+    readonly createdAt: FieldRef<"feedback_log", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * feedback_log findUnique
+   */
+  export type feedback_logFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the feedback_log
+     */
+    select?: feedback_logSelect<ExtArgs> | null
+    /**
+     * Filter, which feedback_log to fetch.
+     */
+    where: feedback_logWhereUniqueInput
+  }
+
+  /**
+   * feedback_log findUniqueOrThrow
+   */
+  export type feedback_logFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the feedback_log
+     */
+    select?: feedback_logSelect<ExtArgs> | null
+    /**
+     * Filter, which feedback_log to fetch.
+     */
+    where: feedback_logWhereUniqueInput
+  }
+
+  /**
+   * feedback_log findFirst
+   */
+  export type feedback_logFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the feedback_log
+     */
+    select?: feedback_logSelect<ExtArgs> | null
+    /**
+     * Filter, which feedback_log to fetch.
+     */
+    where?: feedback_logWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of feedback_logs to fetch.
+     */
+    orderBy?: feedback_logOrderByWithRelationInput | feedback_logOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for feedback_logs.
+     */
+    cursor?: feedback_logWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` feedback_logs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` feedback_logs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of feedback_logs.
+     */
+    distinct?: Feedback_logScalarFieldEnum | Feedback_logScalarFieldEnum[]
+  }
+
+  /**
+   * feedback_log findFirstOrThrow
+   */
+  export type feedback_logFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the feedback_log
+     */
+    select?: feedback_logSelect<ExtArgs> | null
+    /**
+     * Filter, which feedback_log to fetch.
+     */
+    where?: feedback_logWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of feedback_logs to fetch.
+     */
+    orderBy?: feedback_logOrderByWithRelationInput | feedback_logOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for feedback_logs.
+     */
+    cursor?: feedback_logWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` feedback_logs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` feedback_logs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of feedback_logs.
+     */
+    distinct?: Feedback_logScalarFieldEnum | Feedback_logScalarFieldEnum[]
+  }
+
+  /**
+   * feedback_log findMany
+   */
+  export type feedback_logFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the feedback_log
+     */
+    select?: feedback_logSelect<ExtArgs> | null
+    /**
+     * Filter, which feedback_logs to fetch.
+     */
+    where?: feedback_logWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of feedback_logs to fetch.
+     */
+    orderBy?: feedback_logOrderByWithRelationInput | feedback_logOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing feedback_logs.
+     */
+    cursor?: feedback_logWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` feedback_logs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` feedback_logs.
+     */
+    skip?: number
+    distinct?: Feedback_logScalarFieldEnum | Feedback_logScalarFieldEnum[]
+  }
+
+  /**
+   * feedback_log create
+   */
+  export type feedback_logCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the feedback_log
+     */
+    select?: feedback_logSelect<ExtArgs> | null
+    /**
+     * The data needed to create a feedback_log.
+     */
+    data: XOR<feedback_logCreateInput, feedback_logUncheckedCreateInput>
+  }
+
+  /**
+   * feedback_log createMany
+   */
+  export type feedback_logCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many feedback_logs.
+     */
+    data: feedback_logCreateManyInput | feedback_logCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * feedback_log createManyAndReturn
+   */
+  export type feedback_logCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the feedback_log
+     */
+    select?: feedback_logSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many feedback_logs.
+     */
+    data: feedback_logCreateManyInput | feedback_logCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * feedback_log update
+   */
+  export type feedback_logUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the feedback_log
+     */
+    select?: feedback_logSelect<ExtArgs> | null
+    /**
+     * The data needed to update a feedback_log.
+     */
+    data: XOR<feedback_logUpdateInput, feedback_logUncheckedUpdateInput>
+    /**
+     * Choose, which feedback_log to update.
+     */
+    where: feedback_logWhereUniqueInput
+  }
+
+  /**
+   * feedback_log updateMany
+   */
+  export type feedback_logUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update feedback_logs.
+     */
+    data: XOR<feedback_logUpdateManyMutationInput, feedback_logUncheckedUpdateManyInput>
+    /**
+     * Filter which feedback_logs to update
+     */
+    where?: feedback_logWhereInput
+  }
+
+  /**
+   * feedback_log upsert
+   */
+  export type feedback_logUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the feedback_log
+     */
+    select?: feedback_logSelect<ExtArgs> | null
+    /**
+     * The filter to search for the feedback_log to update in case it exists.
+     */
+    where: feedback_logWhereUniqueInput
+    /**
+     * In case the feedback_log found by the `where` argument doesn't exist, create a new feedback_log with this data.
+     */
+    create: XOR<feedback_logCreateInput, feedback_logUncheckedCreateInput>
+    /**
+     * In case the feedback_log was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<feedback_logUpdateInput, feedback_logUncheckedUpdateInput>
+  }
+
+  /**
+   * feedback_log delete
+   */
+  export type feedback_logDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the feedback_log
+     */
+    select?: feedback_logSelect<ExtArgs> | null
+    /**
+     * Filter which feedback_log to delete.
+     */
+    where: feedback_logWhereUniqueInput
+  }
+
+  /**
+   * feedback_log deleteMany
+   */
+  export type feedback_logDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which feedback_logs to delete
+     */
+    where?: feedback_logWhereInput
+  }
+
+  /**
+   * feedback_log without action
+   */
+  export type feedback_logDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the feedback_log
+     */
+    select?: feedback_logSelect<ExtArgs> | null
+  }
+
+
+  /**
+   * Model failed_resend_calls
+   */
+
+  export type AggregateFailed_resend_calls = {
+    _count: Failed_resend_callsCountAggregateOutputType | null
+    _avg: Failed_resend_callsAvgAggregateOutputType | null
+    _sum: Failed_resend_callsSumAggregateOutputType | null
+    _min: Failed_resend_callsMinAggregateOutputType | null
+    _max: Failed_resend_callsMaxAggregateOutputType | null
+  }
+
+  export type Failed_resend_callsAvgAggregateOutputType = {
+    id: number | null
+  }
+
+  export type Failed_resend_callsSumAggregateOutputType = {
+    id: bigint | null
+  }
+
+  export type Failed_resend_callsMinAggregateOutputType = {
+    id: bigint | null
+    callType: string | null
+    error: string | null
+    attemptedAt: Date | null
+  }
+
+  export type Failed_resend_callsMaxAggregateOutputType = {
+    id: bigint | null
+    callType: string | null
+    error: string | null
+    attemptedAt: Date | null
+  }
+
+  export type Failed_resend_callsCountAggregateOutputType = {
+    id: number
+    callType: number
+    payloadJson: number
+    error: number
+    attemptedAt: number
+    _all: number
+  }
+
+
+  export type Failed_resend_callsAvgAggregateInputType = {
+    id?: true
+  }
+
+  export type Failed_resend_callsSumAggregateInputType = {
+    id?: true
+  }
+
+  export type Failed_resend_callsMinAggregateInputType = {
+    id?: true
+    callType?: true
+    error?: true
+    attemptedAt?: true
+  }
+
+  export type Failed_resend_callsMaxAggregateInputType = {
+    id?: true
+    callType?: true
+    error?: true
+    attemptedAt?: true
+  }
+
+  export type Failed_resend_callsCountAggregateInputType = {
+    id?: true
+    callType?: true
+    payloadJson?: true
+    error?: true
+    attemptedAt?: true
+    _all?: true
+  }
+
+  export type Failed_resend_callsAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which failed_resend_calls to aggregate.
+     */
+    where?: failed_resend_callsWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of failed_resend_calls to fetch.
+     */
+    orderBy?: failed_resend_callsOrderByWithRelationInput | failed_resend_callsOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: failed_resend_callsWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` failed_resend_calls from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` failed_resend_calls.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned failed_resend_calls
+    **/
+    _count?: true | Failed_resend_callsCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: Failed_resend_callsAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: Failed_resend_callsSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: Failed_resend_callsMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: Failed_resend_callsMaxAggregateInputType
+  }
+
+  export type GetFailed_resend_callsAggregateType<T extends Failed_resend_callsAggregateArgs> = {
+        [P in keyof T & keyof AggregateFailed_resend_calls]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateFailed_resend_calls[P]>
+      : GetScalarType<T[P], AggregateFailed_resend_calls[P]>
+  }
+
+
+
+
+  export type failed_resend_callsGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: failed_resend_callsWhereInput
+    orderBy?: failed_resend_callsOrderByWithAggregationInput | failed_resend_callsOrderByWithAggregationInput[]
+    by: Failed_resend_callsScalarFieldEnum[] | Failed_resend_callsScalarFieldEnum
+    having?: failed_resend_callsScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: Failed_resend_callsCountAggregateInputType | true
+    _avg?: Failed_resend_callsAvgAggregateInputType
+    _sum?: Failed_resend_callsSumAggregateInputType
+    _min?: Failed_resend_callsMinAggregateInputType
+    _max?: Failed_resend_callsMaxAggregateInputType
+  }
+
+  export type Failed_resend_callsGroupByOutputType = {
+    id: bigint
+    callType: string
+    payloadJson: JsonValue
+    error: string
+    attemptedAt: Date
+    _count: Failed_resend_callsCountAggregateOutputType | null
+    _avg: Failed_resend_callsAvgAggregateOutputType | null
+    _sum: Failed_resend_callsSumAggregateOutputType | null
+    _min: Failed_resend_callsMinAggregateOutputType | null
+    _max: Failed_resend_callsMaxAggregateOutputType | null
+  }
+
+  type GetFailed_resend_callsGroupByPayload<T extends failed_resend_callsGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<Failed_resend_callsGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof Failed_resend_callsGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], Failed_resend_callsGroupByOutputType[P]>
+            : GetScalarType<T[P], Failed_resend_callsGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type failed_resend_callsSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    callType?: boolean
+    payloadJson?: boolean
+    error?: boolean
+    attemptedAt?: boolean
+  }, ExtArgs["result"]["failed_resend_calls"]>
+
+  export type failed_resend_callsSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    callType?: boolean
+    payloadJson?: boolean
+    error?: boolean
+    attemptedAt?: boolean
+  }, ExtArgs["result"]["failed_resend_calls"]>
+
+  export type failed_resend_callsSelectScalar = {
+    id?: boolean
+    callType?: boolean
+    payloadJson?: boolean
+    error?: boolean
+    attemptedAt?: boolean
+  }
+
+
+  export type $failed_resend_callsPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "failed_resend_calls"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      id: bigint
+      callType: string
+      payloadJson: Prisma.JsonValue
+      error: string
+      attemptedAt: Date
+    }, ExtArgs["result"]["failed_resend_calls"]>
+    composites: {}
+  }
+
+  type failed_resend_callsGetPayload<S extends boolean | null | undefined | failed_resend_callsDefaultArgs> = $Result.GetResult<Prisma.$failed_resend_callsPayload, S>
+
+  type failed_resend_callsCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<failed_resend_callsFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: Failed_resend_callsCountAggregateInputType | true
+    }
+
+  export interface failed_resend_callsDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['failed_resend_calls'], meta: { name: 'failed_resend_calls' } }
+    /**
+     * Find zero or one Failed_resend_calls that matches the filter.
+     * @param {failed_resend_callsFindUniqueArgs} args - Arguments to find a Failed_resend_calls
+     * @example
+     * // Get one Failed_resend_calls
+     * const failed_resend_calls = await prisma.failed_resend_calls.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends failed_resend_callsFindUniqueArgs>(args: SelectSubset<T, failed_resend_callsFindUniqueArgs<ExtArgs>>): Prisma__failed_resend_callsClient<$Result.GetResult<Prisma.$failed_resend_callsPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one Failed_resend_calls that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {failed_resend_callsFindUniqueOrThrowArgs} args - Arguments to find a Failed_resend_calls
+     * @example
+     * // Get one Failed_resend_calls
+     * const failed_resend_calls = await prisma.failed_resend_calls.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends failed_resend_callsFindUniqueOrThrowArgs>(args: SelectSubset<T, failed_resend_callsFindUniqueOrThrowArgs<ExtArgs>>): Prisma__failed_resend_callsClient<$Result.GetResult<Prisma.$failed_resend_callsPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first Failed_resend_calls that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {failed_resend_callsFindFirstArgs} args - Arguments to find a Failed_resend_calls
+     * @example
+     * // Get one Failed_resend_calls
+     * const failed_resend_calls = await prisma.failed_resend_calls.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends failed_resend_callsFindFirstArgs>(args?: SelectSubset<T, failed_resend_callsFindFirstArgs<ExtArgs>>): Prisma__failed_resend_callsClient<$Result.GetResult<Prisma.$failed_resend_callsPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first Failed_resend_calls that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {failed_resend_callsFindFirstOrThrowArgs} args - Arguments to find a Failed_resend_calls
+     * @example
+     * // Get one Failed_resend_calls
+     * const failed_resend_calls = await prisma.failed_resend_calls.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends failed_resend_callsFindFirstOrThrowArgs>(args?: SelectSubset<T, failed_resend_callsFindFirstOrThrowArgs<ExtArgs>>): Prisma__failed_resend_callsClient<$Result.GetResult<Prisma.$failed_resend_callsPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more Failed_resend_calls that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {failed_resend_callsFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all Failed_resend_calls
+     * const failed_resend_calls = await prisma.failed_resend_calls.findMany()
+     * 
+     * // Get first 10 Failed_resend_calls
+     * const failed_resend_calls = await prisma.failed_resend_calls.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const failed_resend_callsWithIdOnly = await prisma.failed_resend_calls.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends failed_resend_callsFindManyArgs>(args?: SelectSubset<T, failed_resend_callsFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$failed_resend_callsPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a Failed_resend_calls.
+     * @param {failed_resend_callsCreateArgs} args - Arguments to create a Failed_resend_calls.
+     * @example
+     * // Create one Failed_resend_calls
+     * const Failed_resend_calls = await prisma.failed_resend_calls.create({
+     *   data: {
+     *     // ... data to create a Failed_resend_calls
+     *   }
+     * })
+     * 
+     */
+    create<T extends failed_resend_callsCreateArgs>(args: SelectSubset<T, failed_resend_callsCreateArgs<ExtArgs>>): Prisma__failed_resend_callsClient<$Result.GetResult<Prisma.$failed_resend_callsPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many Failed_resend_calls.
+     * @param {failed_resend_callsCreateManyArgs} args - Arguments to create many Failed_resend_calls.
+     * @example
+     * // Create many Failed_resend_calls
+     * const failed_resend_calls = await prisma.failed_resend_calls.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends failed_resend_callsCreateManyArgs>(args?: SelectSubset<T, failed_resend_callsCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many Failed_resend_calls and returns the data saved in the database.
+     * @param {failed_resend_callsCreateManyAndReturnArgs} args - Arguments to create many Failed_resend_calls.
+     * @example
+     * // Create many Failed_resend_calls
+     * const failed_resend_calls = await prisma.failed_resend_calls.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many Failed_resend_calls and only return the `id`
+     * const failed_resend_callsWithIdOnly = await prisma.failed_resend_calls.createManyAndReturn({ 
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends failed_resend_callsCreateManyAndReturnArgs>(args?: SelectSubset<T, failed_resend_callsCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$failed_resend_callsPayload<ExtArgs>, T, "createManyAndReturn">>
+
+    /**
+     * Delete a Failed_resend_calls.
+     * @param {failed_resend_callsDeleteArgs} args - Arguments to delete one Failed_resend_calls.
+     * @example
+     * // Delete one Failed_resend_calls
+     * const Failed_resend_calls = await prisma.failed_resend_calls.delete({
+     *   where: {
+     *     // ... filter to delete one Failed_resend_calls
+     *   }
+     * })
+     * 
+     */
+    delete<T extends failed_resend_callsDeleteArgs>(args: SelectSubset<T, failed_resend_callsDeleteArgs<ExtArgs>>): Prisma__failed_resend_callsClient<$Result.GetResult<Prisma.$failed_resend_callsPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one Failed_resend_calls.
+     * @param {failed_resend_callsUpdateArgs} args - Arguments to update one Failed_resend_calls.
+     * @example
+     * // Update one Failed_resend_calls
+     * const failed_resend_calls = await prisma.failed_resend_calls.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends failed_resend_callsUpdateArgs>(args: SelectSubset<T, failed_resend_callsUpdateArgs<ExtArgs>>): Prisma__failed_resend_callsClient<$Result.GetResult<Prisma.$failed_resend_callsPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more Failed_resend_calls.
+     * @param {failed_resend_callsDeleteManyArgs} args - Arguments to filter Failed_resend_calls to delete.
+     * @example
+     * // Delete a few Failed_resend_calls
+     * const { count } = await prisma.failed_resend_calls.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends failed_resend_callsDeleteManyArgs>(args?: SelectSubset<T, failed_resend_callsDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more Failed_resend_calls.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {failed_resend_callsUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many Failed_resend_calls
+     * const failed_resend_calls = await prisma.failed_resend_calls.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends failed_resend_callsUpdateManyArgs>(args: SelectSubset<T, failed_resend_callsUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one Failed_resend_calls.
+     * @param {failed_resend_callsUpsertArgs} args - Arguments to update or create a Failed_resend_calls.
+     * @example
+     * // Update or create a Failed_resend_calls
+     * const failed_resend_calls = await prisma.failed_resend_calls.upsert({
+     *   create: {
+     *     // ... data to create a Failed_resend_calls
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the Failed_resend_calls we want to update
+     *   }
+     * })
+     */
+    upsert<T extends failed_resend_callsUpsertArgs>(args: SelectSubset<T, failed_resend_callsUpsertArgs<ExtArgs>>): Prisma__failed_resend_callsClient<$Result.GetResult<Prisma.$failed_resend_callsPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of Failed_resend_calls.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {failed_resend_callsCountArgs} args - Arguments to filter Failed_resend_calls to count.
+     * @example
+     * // Count the number of Failed_resend_calls
+     * const count = await prisma.failed_resend_calls.count({
+     *   where: {
+     *     // ... the filter for the Failed_resend_calls we want to count
+     *   }
+     * })
+    **/
+    count<T extends failed_resend_callsCountArgs>(
+      args?: Subset<T, failed_resend_callsCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], Failed_resend_callsCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a Failed_resend_calls.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {Failed_resend_callsAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends Failed_resend_callsAggregateArgs>(args: Subset<T, Failed_resend_callsAggregateArgs>): Prisma.PrismaPromise<GetFailed_resend_callsAggregateType<T>>
+
+    /**
+     * Group by Failed_resend_calls.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {failed_resend_callsGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends failed_resend_callsGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: failed_resend_callsGroupByArgs['orderBy'] }
+        : { orderBy?: failed_resend_callsGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, failed_resend_callsGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetFailed_resend_callsGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the failed_resend_calls model
+   */
+  readonly fields: failed_resend_callsFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for failed_resend_calls.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__failed_resend_callsClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the failed_resend_calls model
+   */ 
+  interface failed_resend_callsFieldRefs {
+    readonly id: FieldRef<"failed_resend_calls", 'BigInt'>
+    readonly callType: FieldRef<"failed_resend_calls", 'String'>
+    readonly payloadJson: FieldRef<"failed_resend_calls", 'Json'>
+    readonly error: FieldRef<"failed_resend_calls", 'String'>
+    readonly attemptedAt: FieldRef<"failed_resend_calls", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * failed_resend_calls findUnique
+   */
+  export type failed_resend_callsFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the failed_resend_calls
+     */
+    select?: failed_resend_callsSelect<ExtArgs> | null
+    /**
+     * Filter, which failed_resend_calls to fetch.
+     */
+    where: failed_resend_callsWhereUniqueInput
+  }
+
+  /**
+   * failed_resend_calls findUniqueOrThrow
+   */
+  export type failed_resend_callsFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the failed_resend_calls
+     */
+    select?: failed_resend_callsSelect<ExtArgs> | null
+    /**
+     * Filter, which failed_resend_calls to fetch.
+     */
+    where: failed_resend_callsWhereUniqueInput
+  }
+
+  /**
+   * failed_resend_calls findFirst
+   */
+  export type failed_resend_callsFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the failed_resend_calls
+     */
+    select?: failed_resend_callsSelect<ExtArgs> | null
+    /**
+     * Filter, which failed_resend_calls to fetch.
+     */
+    where?: failed_resend_callsWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of failed_resend_calls to fetch.
+     */
+    orderBy?: failed_resend_callsOrderByWithRelationInput | failed_resend_callsOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for failed_resend_calls.
+     */
+    cursor?: failed_resend_callsWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` failed_resend_calls from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` failed_resend_calls.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of failed_resend_calls.
+     */
+    distinct?: Failed_resend_callsScalarFieldEnum | Failed_resend_callsScalarFieldEnum[]
+  }
+
+  /**
+   * failed_resend_calls findFirstOrThrow
+   */
+  export type failed_resend_callsFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the failed_resend_calls
+     */
+    select?: failed_resend_callsSelect<ExtArgs> | null
+    /**
+     * Filter, which failed_resend_calls to fetch.
+     */
+    where?: failed_resend_callsWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of failed_resend_calls to fetch.
+     */
+    orderBy?: failed_resend_callsOrderByWithRelationInput | failed_resend_callsOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for failed_resend_calls.
+     */
+    cursor?: failed_resend_callsWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` failed_resend_calls from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` failed_resend_calls.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of failed_resend_calls.
+     */
+    distinct?: Failed_resend_callsScalarFieldEnum | Failed_resend_callsScalarFieldEnum[]
+  }
+
+  /**
+   * failed_resend_calls findMany
+   */
+  export type failed_resend_callsFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the failed_resend_calls
+     */
+    select?: failed_resend_callsSelect<ExtArgs> | null
+    /**
+     * Filter, which failed_resend_calls to fetch.
+     */
+    where?: failed_resend_callsWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of failed_resend_calls to fetch.
+     */
+    orderBy?: failed_resend_callsOrderByWithRelationInput | failed_resend_callsOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing failed_resend_calls.
+     */
+    cursor?: failed_resend_callsWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` failed_resend_calls from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` failed_resend_calls.
+     */
+    skip?: number
+    distinct?: Failed_resend_callsScalarFieldEnum | Failed_resend_callsScalarFieldEnum[]
+  }
+
+  /**
+   * failed_resend_calls create
+   */
+  export type failed_resend_callsCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the failed_resend_calls
+     */
+    select?: failed_resend_callsSelect<ExtArgs> | null
+    /**
+     * The data needed to create a failed_resend_calls.
+     */
+    data: XOR<failed_resend_callsCreateInput, failed_resend_callsUncheckedCreateInput>
+  }
+
+  /**
+   * failed_resend_calls createMany
+   */
+  export type failed_resend_callsCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many failed_resend_calls.
+     */
+    data: failed_resend_callsCreateManyInput | failed_resend_callsCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * failed_resend_calls createManyAndReturn
+   */
+  export type failed_resend_callsCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the failed_resend_calls
+     */
+    select?: failed_resend_callsSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * The data used to create many failed_resend_calls.
+     */
+    data: failed_resend_callsCreateManyInput | failed_resend_callsCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * failed_resend_calls update
+   */
+  export type failed_resend_callsUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the failed_resend_calls
+     */
+    select?: failed_resend_callsSelect<ExtArgs> | null
+    /**
+     * The data needed to update a failed_resend_calls.
+     */
+    data: XOR<failed_resend_callsUpdateInput, failed_resend_callsUncheckedUpdateInput>
+    /**
+     * Choose, which failed_resend_calls to update.
+     */
+    where: failed_resend_callsWhereUniqueInput
+  }
+
+  /**
+   * failed_resend_calls updateMany
+   */
+  export type failed_resend_callsUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update failed_resend_calls.
+     */
+    data: XOR<failed_resend_callsUpdateManyMutationInput, failed_resend_callsUncheckedUpdateManyInput>
+    /**
+     * Filter which failed_resend_calls to update
+     */
+    where?: failed_resend_callsWhereInput
+  }
+
+  /**
+   * failed_resend_calls upsert
+   */
+  export type failed_resend_callsUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the failed_resend_calls
+     */
+    select?: failed_resend_callsSelect<ExtArgs> | null
+    /**
+     * The filter to search for the failed_resend_calls to update in case it exists.
+     */
+    where: failed_resend_callsWhereUniqueInput
+    /**
+     * In case the failed_resend_calls found by the `where` argument doesn't exist, create a new failed_resend_calls with this data.
+     */
+    create: XOR<failed_resend_callsCreateInput, failed_resend_callsUncheckedCreateInput>
+    /**
+     * In case the failed_resend_calls was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<failed_resend_callsUpdateInput, failed_resend_callsUncheckedUpdateInput>
+  }
+
+  /**
+   * failed_resend_calls delete
+   */
+  export type failed_resend_callsDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the failed_resend_calls
+     */
+    select?: failed_resend_callsSelect<ExtArgs> | null
+    /**
+     * Filter which failed_resend_calls to delete.
+     */
+    where: failed_resend_callsWhereUniqueInput
+  }
+
+  /**
+   * failed_resend_calls deleteMany
+   */
+  export type failed_resend_callsDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which failed_resend_calls to delete
+     */
+    where?: failed_resend_callsWhereInput
+  }
+
+  /**
+   * failed_resend_calls without action
+   */
+  export type failed_resend_callsDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the failed_resend_calls
+     */
+    select?: failed_resend_callsSelect<ExtArgs> | null
+  }
+
+
+  /**
    * Enums
    */
 
@@ -38676,6 +41714,7 @@ export namespace Prisma {
     timezone: 'timezone',
     lang: 'lang',
     variantIndex: 'variantIndex',
+    quoteId: 'quoteId',
     messageTitle: 'messageTitle',
     messageBody: 'messageBody',
     messageDetail: 'messageDetail',
@@ -39100,6 +42139,42 @@ export namespace Prisma {
   };
 
   export type OpsReactionScalarFieldEnum = (typeof OpsReactionScalarFieldEnum)[keyof typeof OpsReactionScalarFieldEnum]
+
+
+  export const Newsletter_subscribersScalarFieldEnum: {
+    id: 'id',
+    email: 'email',
+    locale: 'locale',
+    deviceId: 'deviceId',
+    optInAt: 'optInAt',
+    optedOutAt: 'optedOutAt',
+    lastSentAt: 'lastSentAt'
+  };
+
+  export type Newsletter_subscribersScalarFieldEnum = (typeof Newsletter_subscribersScalarFieldEnum)[keyof typeof Newsletter_subscribersScalarFieldEnum]
+
+
+  export const Feedback_logScalarFieldEnum: {
+    id: 'id',
+    text: 'text',
+    locale: 'locale',
+    appUserId: 'appUserId',
+    appVersion: 'appVersion',
+    createdAt: 'createdAt'
+  };
+
+  export type Feedback_logScalarFieldEnum = (typeof Feedback_logScalarFieldEnum)[keyof typeof Feedback_logScalarFieldEnum]
+
+
+  export const Failed_resend_callsScalarFieldEnum: {
+    id: 'id',
+    callType: 'callType',
+    payloadJson: 'payloadJson',
+    error: 'error',
+    attemptedAt: 'attemptedAt'
+  };
+
+  export type Failed_resend_callsScalarFieldEnum = (typeof Failed_resend_callsScalarFieldEnum)[keyof typeof Failed_resend_callsScalarFieldEnum]
 
 
   export const SortOrder: {
@@ -39904,6 +42979,7 @@ export namespace Prisma {
     timezone?: StringFilter<"NudgeDelivery"> | string
     lang?: StringFilter<"NudgeDelivery"> | string
     variantIndex?: IntFilter<"NudgeDelivery"> | number
+    quoteId?: StringNullableFilter<"NudgeDelivery"> | string | null
     messageTitle?: StringFilter<"NudgeDelivery"> | string
     messageBody?: StringFilter<"NudgeDelivery"> | string
     messageDetail?: StringFilter<"NudgeDelivery"> | string
@@ -39927,6 +43003,7 @@ export namespace Prisma {
     timezone?: SortOrder
     lang?: SortOrder
     variantIndex?: SortOrder
+    quoteId?: SortOrderInput | SortOrder
     messageTitle?: SortOrder
     messageBody?: SortOrder
     messageDetail?: SortOrder
@@ -39954,6 +43031,7 @@ export namespace Prisma {
     timezone?: StringFilter<"NudgeDelivery"> | string
     lang?: StringFilter<"NudgeDelivery"> | string
     variantIndex?: IntFilter<"NudgeDelivery"> | number
+    quoteId?: StringNullableFilter<"NudgeDelivery"> | string | null
     messageTitle?: StringFilter<"NudgeDelivery"> | string
     messageBody?: StringFilter<"NudgeDelivery"> | string
     messageDetail?: StringFilter<"NudgeDelivery"> | string
@@ -39977,6 +43055,7 @@ export namespace Prisma {
     timezone?: SortOrder
     lang?: SortOrder
     variantIndex?: SortOrder
+    quoteId?: SortOrderInput | SortOrder
     messageTitle?: SortOrder
     messageBody?: SortOrder
     messageDetail?: SortOrder
@@ -40007,6 +43086,7 @@ export namespace Prisma {
     timezone?: StringWithAggregatesFilter<"NudgeDelivery"> | string
     lang?: StringWithAggregatesFilter<"NudgeDelivery"> | string
     variantIndex?: IntWithAggregatesFilter<"NudgeDelivery"> | number
+    quoteId?: StringNullableWithAggregatesFilter<"NudgeDelivery"> | string | null
     messageTitle?: StringWithAggregatesFilter<"NudgeDelivery"> | string
     messageBody?: StringWithAggregatesFilter<"NudgeDelivery"> | string
     messageDetail?: StringWithAggregatesFilter<"NudgeDelivery"> | string
@@ -42080,6 +45160,183 @@ export namespace Prisma {
     processedAt?: DateTimeNullableWithAggregatesFilter<"OpsReaction"> | Date | string | null
   }
 
+  export type newsletter_subscribersWhereInput = {
+    AND?: newsletter_subscribersWhereInput | newsletter_subscribersWhereInput[]
+    OR?: newsletter_subscribersWhereInput[]
+    NOT?: newsletter_subscribersWhereInput | newsletter_subscribersWhereInput[]
+    id?: BigIntFilter<"newsletter_subscribers"> | bigint | number
+    email?: StringFilter<"newsletter_subscribers"> | string
+    locale?: StringFilter<"newsletter_subscribers"> | string
+    deviceId?: StringFilter<"newsletter_subscribers"> | string
+    optInAt?: DateTimeFilter<"newsletter_subscribers"> | Date | string
+    optedOutAt?: DateTimeNullableFilter<"newsletter_subscribers"> | Date | string | null
+    lastSentAt?: DateTimeNullableFilter<"newsletter_subscribers"> | Date | string | null
+  }
+
+  export type newsletter_subscribersOrderByWithRelationInput = {
+    id?: SortOrder
+    email?: SortOrder
+    locale?: SortOrder
+    deviceId?: SortOrder
+    optInAt?: SortOrder
+    optedOutAt?: SortOrderInput | SortOrder
+    lastSentAt?: SortOrderInput | SortOrder
+  }
+
+  export type newsletter_subscribersWhereUniqueInput = Prisma.AtLeast<{
+    id?: bigint | number
+    deviceId?: string
+    AND?: newsletter_subscribersWhereInput | newsletter_subscribersWhereInput[]
+    OR?: newsletter_subscribersWhereInput[]
+    NOT?: newsletter_subscribersWhereInput | newsletter_subscribersWhereInput[]
+    email?: StringFilter<"newsletter_subscribers"> | string
+    locale?: StringFilter<"newsletter_subscribers"> | string
+    optInAt?: DateTimeFilter<"newsletter_subscribers"> | Date | string
+    optedOutAt?: DateTimeNullableFilter<"newsletter_subscribers"> | Date | string | null
+    lastSentAt?: DateTimeNullableFilter<"newsletter_subscribers"> | Date | string | null
+  }, "id" | "deviceId">
+
+  export type newsletter_subscribersOrderByWithAggregationInput = {
+    id?: SortOrder
+    email?: SortOrder
+    locale?: SortOrder
+    deviceId?: SortOrder
+    optInAt?: SortOrder
+    optedOutAt?: SortOrderInput | SortOrder
+    lastSentAt?: SortOrderInput | SortOrder
+    _count?: newsletter_subscribersCountOrderByAggregateInput
+    _avg?: newsletter_subscribersAvgOrderByAggregateInput
+    _max?: newsletter_subscribersMaxOrderByAggregateInput
+    _min?: newsletter_subscribersMinOrderByAggregateInput
+    _sum?: newsletter_subscribersSumOrderByAggregateInput
+  }
+
+  export type newsletter_subscribersScalarWhereWithAggregatesInput = {
+    AND?: newsletter_subscribersScalarWhereWithAggregatesInput | newsletter_subscribersScalarWhereWithAggregatesInput[]
+    OR?: newsletter_subscribersScalarWhereWithAggregatesInput[]
+    NOT?: newsletter_subscribersScalarWhereWithAggregatesInput | newsletter_subscribersScalarWhereWithAggregatesInput[]
+    id?: BigIntWithAggregatesFilter<"newsletter_subscribers"> | bigint | number
+    email?: StringWithAggregatesFilter<"newsletter_subscribers"> | string
+    locale?: StringWithAggregatesFilter<"newsletter_subscribers"> | string
+    deviceId?: StringWithAggregatesFilter<"newsletter_subscribers"> | string
+    optInAt?: DateTimeWithAggregatesFilter<"newsletter_subscribers"> | Date | string
+    optedOutAt?: DateTimeNullableWithAggregatesFilter<"newsletter_subscribers"> | Date | string | null
+    lastSentAt?: DateTimeNullableWithAggregatesFilter<"newsletter_subscribers"> | Date | string | null
+  }
+
+  export type feedback_logWhereInput = {
+    AND?: feedback_logWhereInput | feedback_logWhereInput[]
+    OR?: feedback_logWhereInput[]
+    NOT?: feedback_logWhereInput | feedback_logWhereInput[]
+    id?: BigIntFilter<"feedback_log"> | bigint | number
+    text?: StringFilter<"feedback_log"> | string
+    locale?: StringFilter<"feedback_log"> | string
+    appUserId?: StringNullableFilter<"feedback_log"> | string | null
+    appVersion?: StringNullableFilter<"feedback_log"> | string | null
+    createdAt?: DateTimeFilter<"feedback_log"> | Date | string
+  }
+
+  export type feedback_logOrderByWithRelationInput = {
+    id?: SortOrder
+    text?: SortOrder
+    locale?: SortOrder
+    appUserId?: SortOrderInput | SortOrder
+    appVersion?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type feedback_logWhereUniqueInput = Prisma.AtLeast<{
+    id?: bigint | number
+    AND?: feedback_logWhereInput | feedback_logWhereInput[]
+    OR?: feedback_logWhereInput[]
+    NOT?: feedback_logWhereInput | feedback_logWhereInput[]
+    text?: StringFilter<"feedback_log"> | string
+    locale?: StringFilter<"feedback_log"> | string
+    appUserId?: StringNullableFilter<"feedback_log"> | string | null
+    appVersion?: StringNullableFilter<"feedback_log"> | string | null
+    createdAt?: DateTimeFilter<"feedback_log"> | Date | string
+  }, "id">
+
+  export type feedback_logOrderByWithAggregationInput = {
+    id?: SortOrder
+    text?: SortOrder
+    locale?: SortOrder
+    appUserId?: SortOrderInput | SortOrder
+    appVersion?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    _count?: feedback_logCountOrderByAggregateInput
+    _avg?: feedback_logAvgOrderByAggregateInput
+    _max?: feedback_logMaxOrderByAggregateInput
+    _min?: feedback_logMinOrderByAggregateInput
+    _sum?: feedback_logSumOrderByAggregateInput
+  }
+
+  export type feedback_logScalarWhereWithAggregatesInput = {
+    AND?: feedback_logScalarWhereWithAggregatesInput | feedback_logScalarWhereWithAggregatesInput[]
+    OR?: feedback_logScalarWhereWithAggregatesInput[]
+    NOT?: feedback_logScalarWhereWithAggregatesInput | feedback_logScalarWhereWithAggregatesInput[]
+    id?: BigIntWithAggregatesFilter<"feedback_log"> | bigint | number
+    text?: StringWithAggregatesFilter<"feedback_log"> | string
+    locale?: StringWithAggregatesFilter<"feedback_log"> | string
+    appUserId?: StringNullableWithAggregatesFilter<"feedback_log"> | string | null
+    appVersion?: StringNullableWithAggregatesFilter<"feedback_log"> | string | null
+    createdAt?: DateTimeWithAggregatesFilter<"feedback_log"> | Date | string
+  }
+
+  export type failed_resend_callsWhereInput = {
+    AND?: failed_resend_callsWhereInput | failed_resend_callsWhereInput[]
+    OR?: failed_resend_callsWhereInput[]
+    NOT?: failed_resend_callsWhereInput | failed_resend_callsWhereInput[]
+    id?: BigIntFilter<"failed_resend_calls"> | bigint | number
+    callType?: StringFilter<"failed_resend_calls"> | string
+    payloadJson?: JsonFilter<"failed_resend_calls">
+    error?: StringFilter<"failed_resend_calls"> | string
+    attemptedAt?: DateTimeFilter<"failed_resend_calls"> | Date | string
+  }
+
+  export type failed_resend_callsOrderByWithRelationInput = {
+    id?: SortOrder
+    callType?: SortOrder
+    payloadJson?: SortOrder
+    error?: SortOrder
+    attemptedAt?: SortOrder
+  }
+
+  export type failed_resend_callsWhereUniqueInput = Prisma.AtLeast<{
+    id?: bigint | number
+    AND?: failed_resend_callsWhereInput | failed_resend_callsWhereInput[]
+    OR?: failed_resend_callsWhereInput[]
+    NOT?: failed_resend_callsWhereInput | failed_resend_callsWhereInput[]
+    callType?: StringFilter<"failed_resend_calls"> | string
+    payloadJson?: JsonFilter<"failed_resend_calls">
+    error?: StringFilter<"failed_resend_calls"> | string
+    attemptedAt?: DateTimeFilter<"failed_resend_calls"> | Date | string
+  }, "id">
+
+  export type failed_resend_callsOrderByWithAggregationInput = {
+    id?: SortOrder
+    callType?: SortOrder
+    payloadJson?: SortOrder
+    error?: SortOrder
+    attemptedAt?: SortOrder
+    _count?: failed_resend_callsCountOrderByAggregateInput
+    _avg?: failed_resend_callsAvgOrderByAggregateInput
+    _max?: failed_resend_callsMaxOrderByAggregateInput
+    _min?: failed_resend_callsMinOrderByAggregateInput
+    _sum?: failed_resend_callsSumOrderByAggregateInput
+  }
+
+  export type failed_resend_callsScalarWhereWithAggregatesInput = {
+    AND?: failed_resend_callsScalarWhereWithAggregatesInput | failed_resend_callsScalarWhereWithAggregatesInput[]
+    OR?: failed_resend_callsScalarWhereWithAggregatesInput[]
+    NOT?: failed_resend_callsScalarWhereWithAggregatesInput | failed_resend_callsScalarWhereWithAggregatesInput[]
+    id?: BigIntWithAggregatesFilter<"failed_resend_calls"> | bigint | number
+    callType?: StringWithAggregatesFilter<"failed_resend_calls"> | string
+    payloadJson?: JsonWithAggregatesFilter<"failed_resend_calls">
+    error?: StringWithAggregatesFilter<"failed_resend_calls"> | string
+    attemptedAt?: DateTimeWithAggregatesFilter<"failed_resend_calls"> | Date | string
+  }
+
   export type TokenCreateInput = {
     userId: string
     provider: string
@@ -42814,6 +46071,7 @@ export namespace Prisma {
     timezone: string
     lang: string
     variantIndex: number
+    quoteId?: string | null
     messageTitle: string
     messageBody: string
     messageDetail: string
@@ -42837,6 +46095,7 @@ export namespace Prisma {
     timezone: string
     lang: string
     variantIndex: number
+    quoteId?: string | null
     messageTitle: string
     messageBody: string
     messageDetail: string
@@ -42860,6 +46119,7 @@ export namespace Prisma {
     timezone?: StringFieldUpdateOperationsInput | string
     lang?: StringFieldUpdateOperationsInput | string
     variantIndex?: IntFieldUpdateOperationsInput | number
+    quoteId?: NullableStringFieldUpdateOperationsInput | string | null
     messageTitle?: StringFieldUpdateOperationsInput | string
     messageBody?: StringFieldUpdateOperationsInput | string
     messageDetail?: StringFieldUpdateOperationsInput | string
@@ -42883,6 +46143,7 @@ export namespace Prisma {
     timezone?: StringFieldUpdateOperationsInput | string
     lang?: StringFieldUpdateOperationsInput | string
     variantIndex?: IntFieldUpdateOperationsInput | number
+    quoteId?: NullableStringFieldUpdateOperationsInput | string | null
     messageTitle?: StringFieldUpdateOperationsInput | string
     messageBody?: StringFieldUpdateOperationsInput | string
     messageDetail?: StringFieldUpdateOperationsInput | string
@@ -42906,6 +46167,7 @@ export namespace Prisma {
     timezone: string
     lang: string
     variantIndex: number
+    quoteId?: string | null
     messageTitle: string
     messageBody: string
     messageDetail: string
@@ -42928,6 +46190,7 @@ export namespace Prisma {
     timezone?: StringFieldUpdateOperationsInput | string
     lang?: StringFieldUpdateOperationsInput | string
     variantIndex?: IntFieldUpdateOperationsInput | number
+    quoteId?: NullableStringFieldUpdateOperationsInput | string | null
     messageTitle?: StringFieldUpdateOperationsInput | string
     messageBody?: StringFieldUpdateOperationsInput | string
     messageDetail?: StringFieldUpdateOperationsInput | string
@@ -42950,6 +46213,7 @@ export namespace Prisma {
     timezone?: StringFieldUpdateOperationsInput | string
     lang?: StringFieldUpdateOperationsInput | string
     variantIndex?: IntFieldUpdateOperationsInput | number
+    quoteId?: NullableStringFieldUpdateOperationsInput | string | null
     messageTitle?: StringFieldUpdateOperationsInput | string
     messageBody?: StringFieldUpdateOperationsInput | string
     messageDetail?: StringFieldUpdateOperationsInput | string
@@ -45326,6 +48590,195 @@ export namespace Prisma {
     processedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
+  export type newsletter_subscribersCreateInput = {
+    id?: bigint | number
+    email: string
+    locale?: string
+    deviceId: string
+    optInAt?: Date | string
+    optedOutAt?: Date | string | null
+    lastSentAt?: Date | string | null
+  }
+
+  export type newsletter_subscribersUncheckedCreateInput = {
+    id?: bigint | number
+    email: string
+    locale?: string
+    deviceId: string
+    optInAt?: Date | string
+    optedOutAt?: Date | string | null
+    lastSentAt?: Date | string | null
+  }
+
+  export type newsletter_subscribersUpdateInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    email?: StringFieldUpdateOperationsInput | string
+    locale?: StringFieldUpdateOperationsInput | string
+    deviceId?: StringFieldUpdateOperationsInput | string
+    optInAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    optedOutAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastSentAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type newsletter_subscribersUncheckedUpdateInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    email?: StringFieldUpdateOperationsInput | string
+    locale?: StringFieldUpdateOperationsInput | string
+    deviceId?: StringFieldUpdateOperationsInput | string
+    optInAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    optedOutAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastSentAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type newsletter_subscribersCreateManyInput = {
+    id?: bigint | number
+    email: string
+    locale?: string
+    deviceId: string
+    optInAt?: Date | string
+    optedOutAt?: Date | string | null
+    lastSentAt?: Date | string | null
+  }
+
+  export type newsletter_subscribersUpdateManyMutationInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    email?: StringFieldUpdateOperationsInput | string
+    locale?: StringFieldUpdateOperationsInput | string
+    deviceId?: StringFieldUpdateOperationsInput | string
+    optInAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    optedOutAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastSentAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type newsletter_subscribersUncheckedUpdateManyInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    email?: StringFieldUpdateOperationsInput | string
+    locale?: StringFieldUpdateOperationsInput | string
+    deviceId?: StringFieldUpdateOperationsInput | string
+    optInAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    optedOutAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastSentAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type feedback_logCreateInput = {
+    id?: bigint | number
+    text: string
+    locale?: string
+    appUserId?: string | null
+    appVersion?: string | null
+    createdAt?: Date | string
+  }
+
+  export type feedback_logUncheckedCreateInput = {
+    id?: bigint | number
+    text: string
+    locale?: string
+    appUserId?: string | null
+    appVersion?: string | null
+    createdAt?: Date | string
+  }
+
+  export type feedback_logUpdateInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    text?: StringFieldUpdateOperationsInput | string
+    locale?: StringFieldUpdateOperationsInput | string
+    appUserId?: NullableStringFieldUpdateOperationsInput | string | null
+    appVersion?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type feedback_logUncheckedUpdateInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    text?: StringFieldUpdateOperationsInput | string
+    locale?: StringFieldUpdateOperationsInput | string
+    appUserId?: NullableStringFieldUpdateOperationsInput | string | null
+    appVersion?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type feedback_logCreateManyInput = {
+    id?: bigint | number
+    text: string
+    locale?: string
+    appUserId?: string | null
+    appVersion?: string | null
+    createdAt?: Date | string
+  }
+
+  export type feedback_logUpdateManyMutationInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    text?: StringFieldUpdateOperationsInput | string
+    locale?: StringFieldUpdateOperationsInput | string
+    appUserId?: NullableStringFieldUpdateOperationsInput | string | null
+    appVersion?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type feedback_logUncheckedUpdateManyInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    text?: StringFieldUpdateOperationsInput | string
+    locale?: StringFieldUpdateOperationsInput | string
+    appUserId?: NullableStringFieldUpdateOperationsInput | string | null
+    appVersion?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type failed_resend_callsCreateInput = {
+    id?: bigint | number
+    callType: string
+    payloadJson: JsonNullValueInput | InputJsonValue
+    error: string
+    attemptedAt?: Date | string
+  }
+
+  export type failed_resend_callsUncheckedCreateInput = {
+    id?: bigint | number
+    callType: string
+    payloadJson: JsonNullValueInput | InputJsonValue
+    error: string
+    attemptedAt?: Date | string
+  }
+
+  export type failed_resend_callsUpdateInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    callType?: StringFieldUpdateOperationsInput | string
+    payloadJson?: JsonNullValueInput | InputJsonValue
+    error?: StringFieldUpdateOperationsInput | string
+    attemptedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type failed_resend_callsUncheckedUpdateInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    callType?: StringFieldUpdateOperationsInput | string
+    payloadJson?: JsonNullValueInput | InputJsonValue
+    error?: StringFieldUpdateOperationsInput | string
+    attemptedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type failed_resend_callsCreateManyInput = {
+    id?: bigint | number
+    callType: string
+    payloadJson: JsonNullValueInput | InputJsonValue
+    error: string
+    attemptedAt?: Date | string
+  }
+
+  export type failed_resend_callsUpdateManyMutationInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    callType?: StringFieldUpdateOperationsInput | string
+    payloadJson?: JsonNullValueInput | InputJsonValue
+    error?: StringFieldUpdateOperationsInput | string
+    attemptedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type failed_resend_callsUncheckedUpdateManyInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    callType?: StringFieldUpdateOperationsInput | string
+    payloadJson?: JsonNullValueInput | InputJsonValue
+    error?: StringFieldUpdateOperationsInput | string
+    attemptedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type StringFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel>
     in?: string[] | ListStringFieldRefInput<$PrismaModel>
@@ -45995,6 +49448,7 @@ export namespace Prisma {
     timezone?: SortOrder
     lang?: SortOrder
     variantIndex?: SortOrder
+    quoteId?: SortOrder
     messageTitle?: SortOrder
     messageBody?: SortOrder
     messageDetail?: SortOrder
@@ -46022,6 +49476,7 @@ export namespace Prisma {
     timezone?: SortOrder
     lang?: SortOrder
     variantIndex?: SortOrder
+    quoteId?: SortOrder
     messageTitle?: SortOrder
     messageBody?: SortOrder
     messageDetail?: SortOrder
@@ -46044,6 +49499,7 @@ export namespace Prisma {
     timezone?: SortOrder
     lang?: SortOrder
     variantIndex?: SortOrder
+    quoteId?: SortOrder
     messageTitle?: SortOrder
     messageBody?: SortOrder
     messageDetail?: SortOrder
@@ -47499,6 +50955,109 @@ export namespace Prisma {
     status?: SortOrder
     createdAt?: SortOrder
     processedAt?: SortOrder
+  }
+
+  export type newsletter_subscribersCountOrderByAggregateInput = {
+    id?: SortOrder
+    email?: SortOrder
+    locale?: SortOrder
+    deviceId?: SortOrder
+    optInAt?: SortOrder
+    optedOutAt?: SortOrder
+    lastSentAt?: SortOrder
+  }
+
+  export type newsletter_subscribersAvgOrderByAggregateInput = {
+    id?: SortOrder
+  }
+
+  export type newsletter_subscribersMaxOrderByAggregateInput = {
+    id?: SortOrder
+    email?: SortOrder
+    locale?: SortOrder
+    deviceId?: SortOrder
+    optInAt?: SortOrder
+    optedOutAt?: SortOrder
+    lastSentAt?: SortOrder
+  }
+
+  export type newsletter_subscribersMinOrderByAggregateInput = {
+    id?: SortOrder
+    email?: SortOrder
+    locale?: SortOrder
+    deviceId?: SortOrder
+    optInAt?: SortOrder
+    optedOutAt?: SortOrder
+    lastSentAt?: SortOrder
+  }
+
+  export type newsletter_subscribersSumOrderByAggregateInput = {
+    id?: SortOrder
+  }
+
+  export type feedback_logCountOrderByAggregateInput = {
+    id?: SortOrder
+    text?: SortOrder
+    locale?: SortOrder
+    appUserId?: SortOrder
+    appVersion?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type feedback_logAvgOrderByAggregateInput = {
+    id?: SortOrder
+  }
+
+  export type feedback_logMaxOrderByAggregateInput = {
+    id?: SortOrder
+    text?: SortOrder
+    locale?: SortOrder
+    appUserId?: SortOrder
+    appVersion?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type feedback_logMinOrderByAggregateInput = {
+    id?: SortOrder
+    text?: SortOrder
+    locale?: SortOrder
+    appUserId?: SortOrder
+    appVersion?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type feedback_logSumOrderByAggregateInput = {
+    id?: SortOrder
+  }
+
+  export type failed_resend_callsCountOrderByAggregateInput = {
+    id?: SortOrder
+    callType?: SortOrder
+    payloadJson?: SortOrder
+    error?: SortOrder
+    attemptedAt?: SortOrder
+  }
+
+  export type failed_resend_callsAvgOrderByAggregateInput = {
+    id?: SortOrder
+  }
+
+  export type failed_resend_callsMaxOrderByAggregateInput = {
+    id?: SortOrder
+    callType?: SortOrder
+    error?: SortOrder
+    attemptedAt?: SortOrder
+  }
+
+  export type failed_resend_callsMinOrderByAggregateInput = {
+    id?: SortOrder
+    callType?: SortOrder
+    error?: SortOrder
+    attemptedAt?: SortOrder
+  }
+
+  export type failed_resend_callsSumOrderByAggregateInput = {
+    id?: SortOrder
   }
 
   export type StringFieldUpdateOperationsInput = {
@@ -48973,6 +52532,7 @@ export namespace Prisma {
     timezone: string
     lang: string
     variantIndex: number
+    quoteId?: string | null
     messageTitle: string
     messageBody: string
     messageDetail: string
@@ -48995,6 +52555,7 @@ export namespace Prisma {
     timezone: string
     lang: string
     variantIndex: number
+    quoteId?: string | null
     messageTitle: string
     messageBody: string
     messageDetail: string
@@ -49064,6 +52625,7 @@ export namespace Prisma {
     timezone?: StringFieldUpdateOperationsInput | string
     lang?: StringFieldUpdateOperationsInput | string
     variantIndex?: IntFieldUpdateOperationsInput | number
+    quoteId?: NullableStringFieldUpdateOperationsInput | string | null
     messageTitle?: StringFieldUpdateOperationsInput | string
     messageBody?: StringFieldUpdateOperationsInput | string
     messageDetail?: StringFieldUpdateOperationsInput | string
@@ -49086,6 +52648,7 @@ export namespace Prisma {
     timezone?: StringFieldUpdateOperationsInput | string
     lang?: StringFieldUpdateOperationsInput | string
     variantIndex?: IntFieldUpdateOperationsInput | number
+    quoteId?: NullableStringFieldUpdateOperationsInput | string | null
     messageTitle?: StringFieldUpdateOperationsInput | string
     messageBody?: StringFieldUpdateOperationsInput | string
     messageDetail?: StringFieldUpdateOperationsInput | string
@@ -50842,6 +54405,18 @@ export namespace Prisma {
      * @deprecated Use OpsReactionDefaultArgs instead
      */
     export type OpsReactionArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = OpsReactionDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use newsletter_subscribersDefaultArgs instead
+     */
+    export type newsletter_subscribersArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = newsletter_subscribersDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use feedback_logDefaultArgs instead
+     */
+    export type feedback_logArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = feedback_logDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use failed_resend_callsDefaultArgs instead
+     */
+    export type failed_resend_callsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = failed_resend_callsDefaultArgs<ExtArgs>
 
   /**
    * Batch Payload for updateMany & deleteMany & createMany

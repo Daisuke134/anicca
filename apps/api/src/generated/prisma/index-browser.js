@@ -233,6 +233,7 @@ exports.Prisma.NudgeDeliveryScalarFieldEnum = {
   timezone: 'timezone',
   lang: 'lang',
   variantIndex: 'variantIndex',
+  quoteId: 'quoteId',
   messageTitle: 'messageTitle',
   messageBody: 'messageBody',
   messageDetail: 'messageDetail',
@@ -581,6 +582,33 @@ exports.Prisma.OpsReactionScalarFieldEnum = {
   processedAt: 'processedAt'
 };
 
+exports.Prisma.Newsletter_subscribersScalarFieldEnum = {
+  id: 'id',
+  email: 'email',
+  locale: 'locale',
+  deviceId: 'deviceId',
+  optInAt: 'optInAt',
+  optedOutAt: 'optedOutAt',
+  lastSentAt: 'lastSentAt'
+};
+
+exports.Prisma.Feedback_logScalarFieldEnum = {
+  id: 'id',
+  text: 'text',
+  locale: 'locale',
+  appUserId: 'appUserId',
+  appVersion: 'appVersion',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.Failed_resend_callsScalarFieldEnum = {
+  id: 'id',
+  callType: 'callType',
+  payloadJson: 'payloadJson',
+  error: 'error',
+  attemptedAt: 'attemptedAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -647,7 +675,10 @@ exports.Prisma.ModelName = {
   OpsEvent: 'OpsEvent',
   OpsPolicy: 'OpsPolicy',
   OpsTriggerRule: 'OpsTriggerRule',
-  OpsReaction: 'OpsReaction'
+  OpsReaction: 'OpsReaction',
+  newsletter_subscribers: 'newsletter_subscribers',
+  feedback_log: 'feedback_log',
+  failed_resend_calls: 'failed_resend_calls'
 };
 
 /**
