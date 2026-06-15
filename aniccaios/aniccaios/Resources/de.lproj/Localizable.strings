@@ -2652,3 +2652,20 @@
 "tried_therapy" = "Therapy";
 "tried_willpower" = "Pure willpower";
 "widget_description" = "Daily wisdom for your growth";
+
+/* v1.9.1: Newsletter (Morgenbrief) + Feedback */
+"newsletter_section_title" = "Morgenbrief";
+"newsletter_section_description" = "Abonniere und erhalte jeden Morgen eine beruhigende Nachricht in dein Postfach.";
+"newsletter_email_placeholder" = "E-Mail-Adresse";
+"newsletter_submit_button" = "Abonnieren";
+"newsletter_status_registered" = "Angemeldet als %@";
+"newsletter_unsubscribe_button" = "Abmelden";
+"newsletter_submit_error" = "Fehlgeschlagen. Bitte versuche es erneut.";
+"feedback_section_title" = "Feedback senden";
+"feedback_link_label" = "Feedback senden";
+"feedback_placeholder" = "Sag uns, was wir verbessern sollen (5 bis 2000 Zeichen).";
+"feedback_submit_button" = "Senden";
+"feedback_submit_error" = "Senden fehlgeschlagen. Bitte versuche es erneut.";
+"feedback_sent_label" = "✓ Gesendet";
+"feedback_pii_warning_title" = "Persönliche Daten erkannt";
+"feedback_pii_warning_message" = "Das scheint eine E-Mail-Adresse oder Telefonnummer zu enthalten. Trotzdem senden?";

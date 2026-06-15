@@ -142,6 +142,27 @@ describe('DELETE /api/mobile/newsletter/subscribers/:deviceId', () => {
   });
 });
 
+describe('GET /api/mobile/newsletter/unsubscribe/:deviceId (email link)', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('returns 200 HTML and sets optedOutAt (GET, for mail clients)', async () => {
+    prismaMocks.newsletter_subscribers.updateMany.mockResolvedValueOnce({ count: 1 });
+    const res = await request(app).get('/api/mobile/newsletter/unsubscribe/dev-mail');
+    expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toMatch(/text\/html/);
+    expect(res.text).toMatch(/unsubscribed|配信を停止/);
+    const arg = prismaMocks.newsletter_subscribers.updateMany.mock.calls[0][0];
+    expect(arg.where).toEqual({ deviceId: 'dev-mail' });
+    expect(arg.data.optedOutAt).toBeInstanceOf(Date);
+  });
+
+  it('still returns 200 (no leak) even if DB throws', async () => {
+    prismaMocks.newsletter_subscribers.updateMany.mockRejectedValueOnce(new Error('db down'));
+    const res = await request(app).get('/api/mobile/newsletter/unsubscribe/dev-err');
+    expect(res.status).toBe(200);
+  });
+});
+
 describe('sendDailyNewsletter()', () => {
   beforeEach(() => vi.clearAllMocks());
 

@@ -2708,3 +2708,20 @@
 "theme_sky_dawn" = "スカイ・ドーン";
 "theme_rose_petal" = "ローズ・ペタル";
 "quote_copied" = "コピーしました";
+
+/* v1.9.1: Newsletter (毎朝の手紙) + Feedback (改善してほしいこと) */
+"newsletter_section_title" = "毎朝の手紙";
+"newsletter_section_description" = "登録すると、毎朝1通、心が整う言葉をメールでお届けします。";
+"newsletter_email_placeholder" = "メールアドレス";
+"newsletter_submit_button" = "登録する";
+"newsletter_status_registered" = "%@ に登録済み";
+"newsletter_unsubscribe_button" = "配信を停止";
+"newsletter_submit_error" = "送信に失敗しました。もう一度お試しください。";
+"feedback_section_title" = "改善してほしいこと";
+"feedback_link_label" = "フィードバックを送る";
+"feedback_placeholder" = "ご意見・ご要望をお聞かせください（5〜2000文字）。";
+"feedback_submit_button" = "送信";
+"feedback_submit_error" = "送信に失敗しました。もう一度お試しください。";
+"feedback_sent_label" = "✓ 送信しました";
+"feedback_pii_warning_title" = "個人情報の確認";
+"feedback_pii_warning_message" = "メールアドレスや電話番号が含まれているようです。このまま送信しますか？";
