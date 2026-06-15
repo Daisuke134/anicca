@@ -86,8 +86,12 @@ test('page has children (self-spawned) section', () => {
 
 test('page has activity log section', () => {
   assert.ok(src.includes('行動ログ'), 'Missing activity log label');
-  assert.ok(src.includes('0xwork'), 'Missing 0xwork activity entry');
-  assert.ok(src.includes('litcoin'), 'Missing litcoin activity entry');
+  // Real GATE-0 earn source (swap-eth-usdc) — committed to main via d707e999.
+  // The prior test checked for 0xwork/litcoin which were planned but never landed;
+  // those entries were superseded by the real on-chain swap-eth-usdc earn in the
+  // GATE-0 wake (commits 16bcd89b/d707e999). The test now matches merged reality.
+  assert.ok(src.includes('swap-eth-usdc'), 'Missing swap-eth-usdc earn source (real GATE-0)');
+  assert.ok(src.includes('GATE-0'), 'Missing GATE-0 label in activity log section');
 });
 
 test('page has life context section', () => {
