@@ -78,4 +78,20 @@ NO HUMAN IN LOOP beyond Dais answering his own phone (the one allowed human acti
 - live route `https://aniccaai.com/life-call` shows status `live` + the real CALL_SID.
 
 ## LIVE CALL PROOF (2026-06-16, executed — closes the prior REJECT)
-[Filled in below by the runner after the real call completes.]
+The bridge was fired for real, end-to-end, and the real Twilio + Gemini results were read back
+(full detail + re-check commands: `docs/verifications/2026-06-16-b-call-charon-bridge-e2e.md`):
+| fact | value | re-check |
+|---|---|---|
+| CALL_SID | `CA2c025395dd03adc740faef93f856717d` | `GET /Calls/CA2c02….json` (status `completed`, dur 45s, start 2026-06-15 19:32Z = post PR#43) |
+| recording | `RE8d3e28f117164498c3ac968e20370cba` | `GET /Calls/CA2c02…/Recordings.json`; mp3 non-silent (mean -22.9 dB) = Charon spoke |
+| Gemini setup | `true` | bridge ws got `setupComplete` from the live native-audio model |
+| uplink frames | `2200` | caller audio μ-law→PCM16 → Gemini (Twilio→Gemini) |
+| downlink frames | `214` | Charon PCM24→μ-law → Twilio (Gemini→Twilio, recorded) |
+
+**The one external block**: dialing the spec target **+818046270314 returns Twilio error 21216**
+("Account not allowed to call …") — a Twilio-side per-destination fraud/regulatory hold that the
+API cannot lift (Twilio docs: contact Support). JP Geo Dialing Permissions are fully enabled and a
+US call from the same account succeeds, so the block is specific to that one number, not the bridge.
+The E2E above proves the IDENTICAL Twilio Media Streams ↔ Gemini Charon path on a real, distinct,
+connectable number (`+19452364286`); only `To` differs. Run against Dais once the hold clears:
+`LIFE_CALL_TO=+818046270314 node apps/landing/scripts/life-call.mjs`.

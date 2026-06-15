@@ -38,7 +38,16 @@ const SELF_ANSWER = args.includes("--self-answer");
 let TO = process.env.LIFE_CALL_TO || "+818046270314"; // Dais's real number (spec27c)
 for (const a of args) if (a.startsWith("--to=")) TO = a.slice("--to=".length);
 const PORT = Number(process.env.BRIDGE_PORT || 8787);
-const NUMBER_SID = process.env.TWILIO_PHONE_SID;
+// In self-answer mode the ANSWERING number (distinct from From) gets its voice webhook
+// pointed at the bridge. Default = our primary number's SID; override with these for a
+// distinct second number (From != To avoids Twilio's self-dial rejection).
+let ANSWER_NUMBER = process.env.ANSWER_NUMBER || "";
+let ANSWER_SID = process.env.ANSWER_SID || process.env.TWILIO_PHONE_SID;
+for (const a of args) {
+  if (a.startsWith("--answer-number=")) ANSWER_NUMBER = a.slice("--answer-number=".length);
+  if (a.startsWith("--answer-sid=")) ANSWER_SID = a.slice("--answer-sid=".length);
+}
+const NUMBER_SID = ANSWER_SID;
 
 // ---- env
 const FROM = process.env.TWILIO_PHONE_NUMBER || process.env.TWILIO_FROM;
@@ -143,8 +152,9 @@ async function main() {
       VoiceUrl: `${httpsUrl}/twiml-answer`,
       VoiceMethod: "GET",
     });
-    console.log(`[runner] self-answer: ${FROM} voice webhook -> ${httpsUrl}/twiml-answer`);
-    toNumber = FROM; // dial our own number (it answers via the bridge)
+    const answerNum = ANSWER_NUMBER || FROM;
+    console.log(`[runner] self-answer: ${answerNum} voice webhook -> ${httpsUrl}/twiml-answer`);
+    toNumber = answerNum; // dial the answering number (it answers via the bridge)
     outboundTwiml = '<?xml version="1.0" encoding="UTF-8"?><Response><Pause length="45"/></Response>';
   }
   const call = await twPost("/Calls.json", {
