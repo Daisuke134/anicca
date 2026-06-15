@@ -28,10 +28,11 @@
 
 ---
 
-## Task 1: Deps + test script
+## Task 1: Deps + CJS marker + test script
 
 **Files:**
 - Modify: `apps/landing/package.json`
+- Create/commit: `apps/landing/netlify/functions/package.json` (`{"type":"commonjs"}`)
 
 - [ ] **Step 1: Add the ethers runtime dep (needed by verify + by the signing in tests)**
 
@@ -40,6 +41,14 @@ Run:
 cd apps/landing && npm i ethers@^6
 ```
 (`ethers` v6 ships dual CJS/ESM, so the CommonJS Netlify Functions can `require('ethers')`. viem is ESM-only and would break `require` — do NOT use it here.)
+
+- [ ] **Step 1.5: ★ Commit the CJS marker (LOAD-BEARING) — `apps/landing/package.json` is `"type":"module"` ★**
+
+The landing app is an ESM package (`"type":"module"`), so every `.js` under it is ESM by default — and the Netlify Functions + every `node:test` file use CommonJS `require`/`exports`. Without a `{"type":"commonjs"}` override in the functions dir, `node --test` throws `ReferenceError: require is not defined in ES module scope` (empirically reproduced — with the file: `pass 1`; without it: `pass 0`). Create + COMMIT it:
+```bash
+printf '{"type":"commonjs"}\n' > apps/landing/netlify/functions/package.json
+```
+(Netlify's esbuild bundler also honors this; the existing committed functions are CJS too.)
 
 - [ ] **Step 2: Add a test script to package.json**
 
