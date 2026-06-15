@@ -84,7 +84,14 @@ export default async function Page() {
   return (
     <main style={{ background: '#0a0a0a', color: '#f4f1ea', minHeight: '100vh', fontFamily: 'IBM Plex Sans, sans-serif', padding: '40px 24px' }}>
       <div style={{ maxWidth: 960, margin: '0 auto' }}>
-        <a href="/" style={{ color: '#f4f1ea', opacity: 0.6, textDecoration: 'none', fontSize: 12, letterSpacing: 4, textTransform: 'uppercase' }}>← anicca</a>
+        {/* Foundation: pre-wired launch nav (all 4 routes reachable, inline dark theme). */}
+        <nav aria-label="Anicca launch navigation" style={{ display: 'flex', gap: 20, fontSize: 12, letterSpacing: 4, textTransform: 'uppercase' }}>
+          <a href="/" style={{ color: '#f4f1ea', opacity: 0.6, textDecoration: 'none' }}>← anicca</a>
+          <a href="/install" style={{ color: '#f4f1ea', opacity: 0.6, textDecoration: 'none' }}>Install</a>
+          <a href="/me" style={{ color: '#f4f1ea', opacity: 0.6, textDecoration: 'none' }}>Me</a>
+          <a href="/dashboard" aria-current="page" style={{ color: '#f4f1ea', opacity: 1, textDecoration: 'underline', textUnderlineOffset: 4 }}>Dashboard</a>
+          <a href="/life-manager" style={{ color: '#f4f1ea', opacity: 0.6, textDecoration: 'none' }}>Life Manager</a>
+        </nav>
         <h1 style={{ fontSize: 56, fontWeight: 900, marginTop: 24 }}>Dashboard</h1>
         <p style={{ opacity: 0.6, fontSize: 14 }}>
           Live · {updated ? new Date(updated).toLocaleString('ja-JP') : '?'}
