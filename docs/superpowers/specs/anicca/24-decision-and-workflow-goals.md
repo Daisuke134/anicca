@@ -54,7 +54,9 @@ private OpenClaw からは life-manager を剥がす(OpenClaw = aniccaios scalin
 | C4 | X(EN+JA)投稿 + Slack下書き | 投稿URL×2 |
 | EVAL | 全 live + frame/audio verify(HARD0.31)| eval-report |
 
-## §5 起動条件 & 順序
-- GATE-0(WF-A前): ①server稼働✅ ②実earn着金❌(seed or 別経路で解決中)③毎wake報告✅ ④repo+spawn一部。
-- 順序: WF-A(自給body)→ WF-B(life-manager, 独立)→ WF-C(両検証後)。WF-A と WF-B は infra が別なので並行可。
-- 各 WF: builder ≠ verifier ≠ eval ≠ Dais gate。1 phase ずつ evidence→Dais承認→次。
+## §5 起動条件 & 順序(spec25 review 反映)
+- ★ WF-A 起動 hard gate = **1 profitable wake**(1回の wake で earn > cost の実 tx を1件 verify)+ telemetry/spawn interface 実体化 ★。GATE-0: ①server稼働✅ ②**1 profitable wake ❌(最優先)** ③毎wake報告(happy-path✅, error-sleep要verify)④repo+spawn一部。
+- ★ MVP scope(WF-A)= A1 + A2 + A3(profitable wake)+ A4(spawn) + A8(/install /me /dashboard + telemetry + Stripe spawn + cancel→destroy)★。
+- ★ A5 gojo / A7 coordinate / A10 economy(ubi/token/hire)= **post-earn roadmap**(2体以上の稼ぐagent前提)→ MVP scope外。★
+- ★ WF-B = **別product track**(self-funding thesis を担わない port+telephony+web-app)→ WF-A launch を block しない。★ B3(Patter初の connected-call evidence)未達。
+- 順序: WF-A(MVP)→ WF-B(並行可・別infra)→ WF-C(両検証後)。各 WF: builder ≠ verifier ≠ eval ≠ Dais gate。1 phase ずつ evidence→Dais承認→次。

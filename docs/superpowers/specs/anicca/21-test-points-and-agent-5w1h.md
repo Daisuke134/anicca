@@ -5,6 +5,8 @@ Dais 2026-06-15。★ 絶望的に抜けていた「テスト観点」を網羅�
 ## §0 ルール
 - 実装agent = 指定 spec/file を元に実装。verify agent = 指定 test points を**全部 PASS するまで** loop。両者 別context。各 phase 末に evidence pack → Dais gate。
 - test point = 「入力 → 期待される実 side-effect(ground truth)」。narrate不可。
+- ★ verifier loop の上限(spec25 G6)= **max 3 iteration** ★。3回で未PASS → **blocked として Dais にescalate**(runtime外部障害 or 要判断 = 無限loop防止)。
+- ★ build-time vs runtime(spec25 C3)★: Dais human gate / 検証用の応答(WF-B「電話に出る」等)は **build-time の検証手段**であり、製品の **runtime no-human保証** とは別。test point は runtime挙動を測る。
 
 ## §1 LIFE-MANAGER 完全仕様(任意だが全機能必須・bundle in /install)
 **機構**: Google Calendar + Gmail 連携(OAuth)。

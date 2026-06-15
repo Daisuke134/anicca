@@ -14,7 +14,7 @@ Dais 2026-06-14 厳命。私(Claude)が犯した汚染を記録し、二度と�
 ## §2 Constitution(不変・no human in the loop except server)
 | # | ルール |
 |---|---|
-| 1 | ★ 人間所有の API キー・Stripe アカウント・Netlify・aniccaai.com を **絶対使わない** ★。それらは Dais のもの。Anicca が**自分で**同等を取得(自分の signup/identity)するなら可 |
+| 1 | ★ **agent body**(automaton/wallet/skills の runtime)が 人間所有の API キー・Stripe・Netlify・aniccaai.com を **持つ/使う**のは禁止 ★。Anicca が自分で同等を取得するなら可。**carve-out(spec25 C1)**: 取得funnel(Stripe Checkout)+ cloud shelter(DO/我々のConsole)+ 配布サイト(aniccaai.com/Netlify)+ life-manager の Google Maps/Calendar key は **Dais所有の infra layer** として許可。= 「no human in loop」は **runtime の agent body** に適用、build/課金funnel/server代は別レイヤ。 |
 | 2 | compute = **ClawRouter(localhost:8402, x402)** を自 wallet `0xa3CDd4` から。API キー無し |
 | 3 | earn = **与えた earn skill のみ**(`github.com/BlockRunAI/awesome-OpenClaw-Money-Maker` + BankrBot skills: 0xWork / LITCOIN / DeFi yield / prediction)。自 wallet・KYC無し・人間鍵無し |
 | 4 | ★ NO DRY RUN ★。fake で生産的に見せない。実 payment/tx/side-effect が無ければ「起きていない」 |

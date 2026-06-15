@@ -127,6 +127,8 @@ Dais口頭で $30 / $40 / $50 と揺れ。canonical コピーは **$30/mo**(Dais
 
 ## §6 4ページ フルコピー + データ源(Dais 2026-06-14)
 
+> ★ PLACEHOLDER(spec25 R4)★: §6/§9 の全数字($128,400 / 142 alive / $1,204 / 41d 等)は **レイアウト例の DUMMY**。実装 + /dashboard は **実データのみ表示**(HARD0.24: ダミーを live site / LT / hackathon に出すの禁止)。実状態 = genesis 1体・$0 earned。
+
 ★ 役割分担: **root=ビジョン / install=実利(仏教の話はしない) / me=あなたの兄ちゃんの収支 / dashboard=全コロニーの総資産** ★
 
 ### (A) root — aniccaai.com(ビジョン。philosophy はここだけ)
