@@ -1,0 +1,71 @@
+# lefthook.yml — Trunk-Based Development guardrails (Anicca)
+# Policy: dev = 唯一の作業trunk / main = 本番(PR経由のみ) / release/* = App Store用(ship後削除)
+# Refs: https://trunkbaseddevelopment.com/ , https://github.com/evilmartians/lefthook
+# 注意: local hookは `--no-verify` で回避可=助言層。main の最終強制は GitHub ruleset(要Pro)。
+
+pre-commit:
+  parallel: true
+  commands:
+    no-commit-to-protected:
+      run: |
+        b="$(git rev-parse --abbrev-ref HEAD)"
+        case "$b" in
+          main|master|release/*)
+            echo "❌ '$b' への直接コミット禁止。dev か feature/<name> で作業し PR してください。"; exit 1 ;;
+        esac
+      fail_text: "protected branch への直接コミット"
+    valid-branch-name:
+      run: |
+        b="$(git rev-parse --abbrev-ref HEAD)"
+        echo "$b" | grep -Eq '^dev$|^(feature|fix|chore|release|app-factory|docs|spec)/[a-z0-9._-]+$' || {
+          echo "❌ branch名 '$b' が規約外。dev / feature/<x> / fix/<x> / chore/<x> / docs/<x> / app-factory/<x> を使う。"; exit 1; }
+      fail_text: "branch名 規約違反"
+    aniccaai-landing-guard:
+      # Spec §3.2.2 v1.4 — Dais-identity allowlist (= 設計 反転):
+      #   ALLOW only if author = Dais (name + email 両方一致)。
+      #   Anicca cron は git config を Dais に偽装 できない (= cron-bash.sh は
+      #   ~/.openclaw/.env から env のみ load、 git user.name=Anicca Agent default)。
+      #   Dais の IDE / Cursor / Claude Code (= taste skill 起動) は name=Daisuke Sato で commit。
+      run: |
+        author_name=$(git config user.name)
+        author_email=$(git config user.email)
+        touched=$(git diff --cached --name-only | grep -c "^apps/landing/" || true)
+        [ "$touched" -eq 0 ] && exit 0
+        is_dais=1
+        case "$author_name" in
+          "Daisuke Sato"|"Daisuke"|"Dais") : ;;
+          *) is_dais=0 ;;
+        esac
+        case "$author_email" in
+          keiodaisuke@gmail.com|*@daisuke*.io|dais@*) : ;;
+          *) is_dais=0 ;;
+        esac
+        if [ "$is_dais" = "0" ]; then
+          echo "❌ HARD RULE: apps/landing/ touch requires Dais identity"
+          echo "  current name=$author_name email=$author_email"
+          echo "  expected name='Daisuke Sato' email=keiodaisuke@gmail.com"
+          git diff --cached --name-only | grep "^apps/landing/" | head -10 | sed 's/^/   /'
+          exit 1
+        fi
+      fail_text: "apps/landing/ touch requires Dais identity (= Daisuke Sato + keiodaisuke@gmail.com)"
+
+commit-msg:
+  commands:
+    commitlint:
+      run: |
+        if [ -x node_modules/.bin/commitlint ]; then node_modules/.bin/commitlint --edit {1};
+        else echo "ℹ commitlint 未install (任意): npm i -D @commitlint/cli @commitlint/config-conventional"; fi
+      fail_text: "Conventional Commits 違反 (feat:/fix:/chore:/docs:...)"
+
+pre-push:
+  parallel: true
+  commands:
+    no-push-to-protected:
+      run: |
+        while read -r l ls remote rs; do
+          case "$remote" in
+            refs/heads/main|refs/heads/master|refs/heads/release/*)
+              echo "❌ '$remote' への直接push禁止。feature branch から PR してください。"; exit 1 ;;
+          esac
+        done
+      fail_text: "protected branch は PR-only"
