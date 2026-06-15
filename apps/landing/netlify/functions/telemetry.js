@@ -16,10 +16,13 @@ exports.handler = async (event) => {
   if (typeof message !== "string" || typeof signature !== "string") {
     return { statusCode: 400, body: "bad_request" };
   }
-  // extract id (for the per-id monotonic lookup) without trusting it — verify binds it to the bytes
+  // extract id (for the per-id monotonic lookup) without trusting it — verify binds it to the bytes.
+  // Validate the wallet-address shape BEFORE the id reaches the Supabase REST query: id is
+  // attacker-controlled and used in getLastTs's URL before signature verification, so a non-address
+  // string could inject PostgREST query syntax. Reject anything that isn't a 0x+40-hex address.
   let id;
   try { id = JSON.parse(message).id; } catch { return { statusCode: 400, body: "bad_json" }; }
-  if (typeof id !== "string") return { statusCode: 400, body: "schema" };
+  if (typeof id !== "string" || !/^0x[a-fA-F0-9]{40}$/.test(id)) return { statusCode: 400, body: "schema" };
 
   const cfg = { url, key };
   const lastTs = await getLastTs(id, cfg);
