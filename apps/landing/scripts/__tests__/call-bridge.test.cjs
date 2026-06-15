@@ -113,3 +113,77 @@ test("geminiSetupForEvent: Charon voice, live model, event-aware prompt", () => 
   assert.ok(/native-audio/.test(setup.setup.model), "live native-audio model");
   assert.ok(setup.setup.systemInstruction.parts[0].text.includes("伊藤歯科"), "event title in prompt");
 });
+
+// ── 8. Telnyx start frame captures stream_id as the internal streamSid ─────────
+const { routeTelnyxMessage, buildTelnyxMediaFrame } = require("../call-bridge.cjs");
+test("routeTelnyxMessage: start frame records stream_id into streamSid", () => {
+  const state = {};
+  const sent = [];
+  const kind = routeTelnyxMessage(
+    {
+      event: "start",
+      stream_id: "TX-STREAM-1",
+      start: { call_control_id: "v2:CC", media_format: { encoding: "PCMU", sample_rate: 8000 } },
+    },
+    state,
+    (o) => sent.push(o)
+  );
+  assert.strictEqual(kind, "start");
+  assert.strictEqual(state.streamSid, "TX-STREAM-1");
+  assert.strictEqual(state.callControlId, "v2:CC");
+  assert.strictEqual(sent.length, 0);
+});
+
+// ── 9. Telnyx media frame -> transcoded Gemini realtimeInput ───────────────────
+test("routeTelnyxMessage: media frame forwards a Gemini audio input", () => {
+  const state = { streamSid: "TX-STREAM-1" };
+  const sent = [];
+  const payload = Buffer.alloc(160, 0xff).toString("base64");
+  const kind = routeTelnyxMessage(
+    { event: "media", stream_id: "TX-STREAM-1", media: { track: "inbound", payload } },
+    state,
+    (o) => sent.push(o)
+  );
+  assert.strictEqual(kind, "media");
+  assert.strictEqual(state.inFrames, 1);
+  assert.strictEqual(sent[0].realtimeInput.audio.mimeType, "audio/pcm;rate=16000");
+});
+
+// ── 10. Gemini audio -> Telnyx frame (stream_id) via the Telnyx frame builder ──
+test("routeGeminiMessage with Telnyx frame builder emits a stream_id media frame", () => {
+  const state = { streamSid: "TX-STREAM-1" };
+  const sent = [];
+  const pcm = Buffer.alloc(240 * 2);
+  for (let i = 0; i < 240; i++) pcm.writeInt16LE(((i * 53) % 2000) - 1000, i * 2);
+  const msg = {
+    serverContent: { modelTurn: { parts: [{ inlineData: { data: pcm.toString("base64") } }] } },
+  };
+  const r = routeGeminiMessage(msg, state, (o) => sent.push(o), buildTelnyxMediaFrame);
+  assert.strictEqual(r.kind, "audio");
+  assert.strictEqual(r.frames, 1);
+  assert.strictEqual(sent[0].event, "media");
+  assert.strictEqual(sent[0].stream_id, "TX-STREAM-1");
+  assert.ok(sent[0].media.payload, "carries transcoded μ-law payload");
+});
+
+// ── 11. Telnyx bidirectional round-trip through two fake sockets ───────────────
+test("Telnyx bridge moves audio BOTH ways through fake sockets", () => {
+  const state = { streamSid: "TX-2" };
+  const toGemini = [];
+  const toTelnyx = [];
+  routeTelnyxMessage(
+    { event: "media", stream_id: "TX-2", media: { payload: Buffer.alloc(160, 0x7f).toString("base64") } },
+    state,
+    (o) => toGemini.push(o)
+  );
+  const pcm = Buffer.alloc(480 * 2);
+  routeGeminiMessage(
+    { serverContent: { modelTurn: { parts: [{ inlineData: { data: pcm.toString("base64") } }] } } },
+    state,
+    (o) => toTelnyx.push(o),
+    buildTelnyxMediaFrame
+  );
+  assert.ok(toGemini.length >= 1, "Dais audio reached Gemini (uplink)");
+  assert.ok(toTelnyx.length >= 1, "Charon audio reached Telnyx (downlink)");
+  assert.strictEqual(toTelnyx[0].stream_id, "TX-2");
+});

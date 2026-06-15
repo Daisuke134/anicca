@@ -17,6 +17,9 @@ const {
   geminiLiveWsUrl,
   buildGeminiTurn,
   parseGeminiAudio,
+  buildTelnyxMediaFrame,
+  parseTelnyxStart,
+  telnyxDialBody,
 } = require("../call-logic");
 
 // ── 1. μ-law encode(decode(x)) is the identity for every byte (G.711) ─────────
@@ -193,4 +196,45 @@ test("parseGeminiAudio pulls inlineData audio chunks and ignores non-audio messa
   assert.deepStrictEqual(parseGeminiAudio({ setupComplete: {} }), []);
   assert.deepStrictEqual(parseGeminiAudio({}), []);
   assert.deepStrictEqual(parseGeminiAudio(null), []);
+});
+
+// ── 17. Telnyx outbound media frame uses stream_id (not streamSid) ─────────────
+test("buildTelnyxMediaFrame: event=media, stream_id, base64 payload", () => {
+  const f = buildTelnyxMediaFrame("32DE0DEA", "QUJD");
+  assert.strictEqual(f.event, "media");
+  assert.strictEqual(f.stream_id, "32DE0DEA");
+  assert.strictEqual(f.media.payload, "QUJD");
+  assert.strictEqual(f.media.streamSid, undefined, "Telnyx uses stream_id not streamSid");
+});
+
+// ── 18. parseTelnyxStart pulls stream_id + call_control_id ─────────────────────
+test("parseTelnyxStart: extracts stream_id and call_control_id from start frame", () => {
+  const start = {
+    event: "start",
+    stream_id: "STREAM-1",
+    start: { call_control_id: "v2:CCID", media_format: { encoding: "PCMU", sample_rate: 8000 } },
+  };
+  const r = parseTelnyxStart(start);
+  assert.strictEqual(r.streamId, "STREAM-1");
+  assert.strictEqual(r.callControlId, "v2:CCID");
+  // non-start / null are safe
+  assert.deepStrictEqual(parseTelnyxStart({ event: "media" }), {});
+  assert.deepStrictEqual(parseTelnyxStart(null), {});
+});
+
+// ── 19. telnyxDialBody requests bidirectional RTP PCMU streaming ───────────────
+test("telnyxDialBody: outbound /v2/calls body with bidirectional rtp + PCMU", () => {
+  const b = telnyxDialBody({
+    connectionId: "2982013078364751402",
+    to: "+818046270314",
+    from: "+14322234204",
+    streamUrl: "wss://x.trycloudflare.com/ws",
+  });
+  assert.strictEqual(b.connection_id, "2982013078364751402");
+  assert.strictEqual(b.to, "+818046270314");
+  assert.strictEqual(b.from, "+14322234204");
+  assert.strictEqual(b.stream_url, "wss://x.trycloudflare.com/ws");
+  assert.strictEqual(b.stream_track, "both_tracks");
+  assert.strictEqual(b.stream_bidirectional_mode, "rtp");
+  assert.strictEqual(b.stream_bidirectional_codec, "PCMU");
 });

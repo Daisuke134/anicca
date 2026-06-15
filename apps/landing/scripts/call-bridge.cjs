@@ -25,6 +25,8 @@ const {
   buildGeminiTurn,
   parseGeminiAudio,
   buildTwilioMediaFrame,
+  buildTelnyxMediaFrame,
+  parseTelnyxStart,
   buildCallPrompt,
   twilioMuLawToGeminiPcm16,
   geminiPcm24ToTwilioMuLaw,
@@ -59,14 +61,48 @@ function routeTwilioMessage(msg, state, geminiSend) {
 }
 
 /**
+ * Handle one parsed Telnyx Media Streaming message. Mutates `state` (streamSid),
+ * forwards transcoded audio into the Gemini socket via `geminiSend`. Telnyx uses the
+ * same μ-law payloads as Twilio; only the frame field names differ (`stream_id`).
+ * @param {object} msg - parsed Telnyx frame ({event, start?, media?, stream_id?})
+ * @param {object} state - { streamSid, inFrames }
+ * @param {(o:object)=>void} geminiSend - send a JSON message to Gemini
+ * @returns {string} the event kind handled ("start"|"media"|"stop"|"connected"|"mark"|"dtmf"|"other")
+ */
+function routeTelnyxMessage(msg, state, geminiSend) {
+  const event = msg && msg.event;
+  if (event === "start") {
+    const s = parseTelnyxStart(msg);
+    if (s.streamId) state.streamSid = s.streamId; // unify on streamSid internally
+    if (s.callControlId) state.callControlId = s.callControlId;
+    return "start";
+  }
+  if (event === "media" && msg.media && msg.media.payload) {
+    const pcm16b64 = twilioMuLawToGeminiPcm16(msg.media.payload);
+    geminiSend(buildGeminiAudioInput(pcm16b64));
+    state.inFrames = (state.inFrames || 0) + 1;
+    return "media";
+  }
+  if (event === "stop") return "stop";
+  if (event === "connected") return "connected";
+  if (event === "mark") return "mark";
+  if (event === "dtmf") return "dtmf";
+  return "other";
+}
+
+/**
  * Handle one parsed Gemini Live server message. For each audio chunk, transcode to
- * μ-law and forward a Twilio media frame via `twilioSend`.
+ * μ-law and forward a provider media frame via `providerSend`. The `frameFor`
+ * builder maps (streamId, μ-law-b64) → the provider's wire frame (Twilio or Telnyx),
+ * so the same Charon-audio path serves both carriers.
  * @param {object} msg - parsed Gemini server message
  * @param {object} state - { streamSid, outFrames, setupComplete }
- * @param {(o:object)=>void} twilioSend - send a JSON message to Twilio
+ * @param {(o:object)=>void} providerSend - send a JSON message to the caller's carrier
+ * @param {(streamId:string,b64MuLaw:string)=>object} [frameFor] - frame builder (default Twilio)
  * @returns {{kind:string, frames:number}} kind + #frames emitted
  */
-function routeGeminiMessage(msg, state, twilioSend) {
+function routeGeminiMessage(msg, state, providerSend, frameFor) {
+  const buildFrame = frameFor || buildTwilioMediaFrame;
   if (msg && msg.setupComplete) {
     state.setupComplete = true;
     return { kind: "setupComplete", frames: 0 };
@@ -75,7 +111,7 @@ function routeGeminiMessage(msg, state, twilioSend) {
   let frames = 0;
   for (const b64Pcm24 of chunks) {
     const mu = geminiPcm24ToTwilioMuLaw(b64Pcm24);
-    twilioSend(buildTwilioMediaFrame(state.streamSid, mu));
+    providerSend(buildFrame(state.streamSid, mu));
     frames += 1;
   }
   state.outFrames = (state.outFrames || 0) + frames;
@@ -97,23 +133,34 @@ function geminiSetupForEvent(event, model) {
 
 module.exports = {
   routeTwilioMessage,
+  routeTelnyxMessage,
   routeGeminiMessage,
   geminiSetupForEvent,
+  buildTelnyxMediaFrame,
 };
 
 // ── Network shell (only runs when invoked directly) ───────────────────────────
 
 function parseArgs(argv) {
-  const a = { health: false, port: Number(process.env.PORT) || 8787, event: null };
+  const a = {
+    health: false,
+    port: Number(process.env.PORT) || 8787,
+    event: null,
+    provider: process.env.BRIDGE_PROVIDER || "twilio",
+  };
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === "--health") a.health = true;
     else if (argv[i] === "--port") a.port = Number(argv[++i]);
     else if (argv[i] === "--event") a.event = JSON.parse(argv[++i]);
+    else if (argv[i] === "--provider") a.provider = String(argv[++i] || "twilio").toLowerCase();
   }
   return a;
 }
 
-function startServer({ port, event }) {
+function startServer({ port, event, provider }) {
+  const isTelnyx = String(provider).toLowerCase() === "telnyx";
+  const routeCarrier = isTelnyx ? routeTelnyxMessage : routeTwilioMessage;
+  const carrierFrameFor = isTelnyx ? buildTelnyxMediaFrame : buildTwilioMediaFrame;
   // Lazy-require ws so --health works without it being needed.
   const WebSocket = require("ws");
   const apiKey = process.env.GEMINI_API_KEY;
@@ -149,13 +196,13 @@ function startServer({ port, event }) {
   });
   const wss = new WebSocket.Server({ server, path: "/ws" });
 
-  wss.on("connection", (twilioWs) => {
-    console.log("[bridge] Twilio connected");
+  wss.on("connection", (carrierWs) => {
+    console.log(`[bridge] carrier connected provider=${isTelnyx ? "telnyx" : "twilio"}`);
     const state = { streamSid: null, inFrames: 0, outFrames: 0, setupComplete: false };
 
     const gemini = new WebSocket(geminiLiveWsUrl(apiKey));
-    const twilioSend = (o) => {
-      if (twilioWs.readyState === WebSocket.OPEN) twilioWs.send(JSON.stringify(o));
+    const carrierSend = (o) => {
+      if (carrierWs.readyState === WebSocket.OPEN) carrierWs.send(JSON.stringify(o));
     };
     const geminiSend = (o) => {
       if (gemini.readyState === WebSocket.OPEN) gemini.send(JSON.stringify(o));
@@ -172,7 +219,7 @@ function startServer({ port, event }) {
       } catch {
         return;
       }
-      const r = routeGeminiMessage(msg, state, twilioSend);
+      const r = routeGeminiMessage(msg, state, carrierSend, carrierFrameFor);
       if (r.kind === "setupComplete") {
         console.log("[bridge] EVENT setupComplete");
         // Kick Charon to speak the opening line immediately.
@@ -183,14 +230,14 @@ function startServer({ port, event }) {
     gemini.on("error", (e) => console.error("[bridge] gemini err", e.message));
     gemini.on("close", () => console.log("[bridge] gemini closed"));
 
-    twilioWs.on("message", (data) => {
+    carrierWs.on("message", (data) => {
       let msg;
       try {
         msg = JSON.parse(data.toString());
       } catch {
         return;
       }
-      const kind = routeTwilioMessage(msg, state, geminiSend);
+      const kind = routeCarrier(msg, state, geminiSend);
       if (kind === "start") console.log(`[bridge] EVENT twilio_start sid=${state.streamSid}`);
       if (kind === "media" && state.inFrames % 100 === 0)
         console.log(`[bridge] EVENT twilio_media frames=${state.inFrames}`);
@@ -201,8 +248,8 @@ function startServer({ port, event }) {
         } catch {}
       }
     });
-    twilioWs.on("close", () => {
-      console.log(`[bridge] Twilio closed in=${state.inFrames} out=${state.outFrames}`);
+    carrierWs.on("close", () => {
+      console.log(`[bridge] carrier closed in=${state.inFrames} out=${state.outFrames}`);
       try {
         gemini.close();
       } catch {}
