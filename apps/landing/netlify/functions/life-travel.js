@@ -1,18 +1,22 @@
 // life-travel.js — Netlify function for B-travel (spec27 WF-B B-travel).
 //
-// Triggered by Anicca's heartbeat (schedule-derived trigger, spec27 §2 patch).
+// Triggered by POST from Anicca's heartbeat (schedule-derived trigger, spec27 §2 patch).
 // Reads the user's primary GCal, calls Google Maps Directions for travel time,
 // and inserts "[Travel] <event>" blocks before any event that is missing one.
 //
 // Pattern mirrors telemetry.js — handler validates env, delegates to pure logic.
+//
+// Auth: accepts GOOGLE_CALENDAR_TOKEN (static short-lived) OR
+//       GOOGLE_REFRESH_TOKEN + GOOGLE_CLIENT_ID + GOOGLE_CLIENT_SECRET
+//       (auto-refreshed via OAuth2 endpoint — see _lib/gcal-token.js).
 
 const { detectMissingTravelBlocks, buildTravelBlock } = require("./_lib/travel-logic");
+const { getAccessToken } = require("./_lib/gcal-token");
 
 // ── GCal REST helpers ──────────────────────────────────────────────────────────
 
 /**
  * Fetch today's events from a Google Calendar using the REST API.
- * Uses GOOGLE_CALENDAR_TOKEN (OAuth2 access token, refreshed by the heartbeat).
  */
 async function listTodayEvents(calendarId, token) {
   const now = new Date();
@@ -83,12 +87,16 @@ exports.handler = async (event) => {
   // Only POST (triggered by heartbeat)
   if (event.httpMethod !== "POST") return { statusCode: 405, body: "method not allowed" };
 
-  const token = process.env.GOOGLE_CALENDAR_TOKEN;
+  let token;
+  try {
+    token = await getAccessToken();
+  } catch (err) {
+    return { statusCode: 500, body: `auth_error: ${err.message}` };
+  }
+
   const mapsKey = process.env.GOOGLE_MAPS_API_KEY;
   const origin = process.env.HOME_ADDRESS || "Tokyo, Japan";
   const calendarId = process.env.GCAL_ID || "primary";
-
-  if (!token) return { statusCode: 500, body: "missing GOOGLE_CALENDAR_TOKEN" };
 
   let events;
   try {
