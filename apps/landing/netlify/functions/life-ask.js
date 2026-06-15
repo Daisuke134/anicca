@@ -3,24 +3,33 @@
 // TWO endpoints in one handler (distinguished by `action` query param or body field):
 //
 //   POST /.netlify/functions/life-ask?action=question
-//     Triggered by Anicca's heartbeat (schedule-derived trigger, spec27 §2 patch).
+//     Triggered by Anicca's heartbeat cron (daily 06:00 JST / 21:00 UTC via netlify.toml schedule).
 //     1. Reads today's GCal events (using gcal-token.js for OAuth2).
 //     2. Finds events with no `location` field (via ask-logic.detectMissingLocations).
-//     3. Sends a question email to Dais via AgentMail for each missing location.
+//     3. Sends a question email to Dais via AgentMail using the DEDICATED B-ask inbox
+//        (LIFE_ASK_INBOX_ID = anicca-life-ask@agentmail.to) to avoid quota contention
+//        with the high-frequency "Anicca wake" report emails in the genesis inbox.
 //     4. Patches the GCal event with anicca_ask_pending=true to avoid duplicate asks.
 //     Returns { ok, asked: [{ eventId, eventTitle, messageId }] }.
 //
 //   POST /.netlify/functions/life-ask?action=reply
-//     Triggered by AgentMail inbound webhook (message.received event).
+//     Triggered by AgentMail inbound webhook (webhook_id ep_3FBcXGwrcP575GjLm46jCMj2TYr,
+//     client_id b-ask-reply-webhook) on message.received for the anicca-life-ask inbox.
 //     Body: { message: { id, subject, body, threadId, ... } }
-//     1. Matches the inbound reply to a pending GCal event (via Event ID in the email body).
-//     2. Parses the location from the reply body (via ask-logic.parseLocationFromReply).
-//     3. PATCHes the GCal event with the resolved location + clears pending flag.
+//     1. Ignores non-[Ask] subject messages (returns 200 no-op) so the webhook can safely
+//        receive all message.received events without polluting logs.
+//     2. Matches the inbound reply to a pending GCal event (via Event ID in the email body).
+//     3. Parses the location from the reply body (via ask-logic.parseLocationFromReply).
+//     4. PATCHes the GCal event with the resolved location + clears pending flag.
 //     Returns { ok, eventId, location }.
 //
-// Pattern mirrors life-travel.js (proven template).
-// Auth: GOOGLE_CALENDAR_TOKEN or GOOGLE_REFRESH_TOKEN+CLIENT_ID+CLIENT_SECRET
-// AgentMail: AGENTMAIL_API_KEY + AGENTMAIL_INBOX_ID + DAIS_EMAIL
+// Env vars:
+//   GOOGLE_CALENDAR_TOKEN or GOOGLE_REFRESH_TOKEN+CLIENT_ID+CLIENT_SECRET (GCal auth)
+//   AGENTMAIL_API_KEY                — AgentMail API key (shared across inboxes)
+//   LIFE_ASK_INBOX_ID                — DEDICATED B-ask inbox (anicca-life-ask@agentmail.to)
+//                                      Fallback: AGENTMAIL_INBOX_ID (genesis, may hit 429)
+//   DAIS_EMAIL                       — recipient email for location questions
+//   GCAL_ID                          — Google Calendar ID (default: "primary")
 
 "use strict";
 
@@ -159,6 +168,12 @@ async function handleReply(body, token, calendarId) {
   const replyBody = message?.body || message?.text || "";
   const replySubject = message?.subject || "";
 
+  // Ignore non-[Ask] messages: the AgentMail webhook fires for ALL inbound mail.
+  // Return 200 no-op so the webhook endpoint is idempotent for unrelated messages.
+  if (!replySubject.includes("[Ask]") && !replyBody.includes("Event ID:")) {
+    return { statusCode: 200, body: JSON.stringify({ ok: true, skipped: "not_an_ask_reply" }) };
+  }
+
   // Extract Event ID from the reply body (embedded by buildQuestionBody)
   const eventIdMatch = replyBody.match(/Event ID:\s*([^\s\r\n]+)/);
   if (!eventIdMatch) {
@@ -182,6 +197,10 @@ async function handleReply(body, token, calendarId) {
   try {
     existingEvent = await getEvent(calendarId, eventId, token);
   } catch (err) {
+    // 404 = event no longer exists (deleted/cancelled after ask was sent) — not a server error
+    if (err.message && err.message.includes("404")) {
+      return { statusCode: 404, body: `event_not_found: ${eventId}` };
+    }
     return { statusCode: 502, body: `gcal_get_error: ${err.message}` };
   }
 
@@ -233,11 +252,16 @@ exports.handler = async (event) => {
 
   // Default: action=question
   const apiKey = process.env.AGENTMAIL_API_KEY;
-  const inboxId = process.env.AGENTMAIL_INBOX_ID;
+  // LIFE_ASK_INBOX_ID = dedicated B-ask inbox (anicca-life-ask@agentmail.to).
+  // Avoid AGENTMAIL_INBOX_ID (genesis) which is saturated by high-frequency
+  // "Anicca wake" report emails and hits 429 daily limit (verifier gap #1).
+  const inboxId =
+    process.env.LIFE_ASK_INBOX_ID ||
+    process.env.AGENTMAIL_INBOX_ID;
   const daisEmail = process.env.DAIS_EMAIL || "keiodaisuke@gmail.com";
 
   if (!apiKey || !inboxId) {
-    return { statusCode: 500, body: "missing AGENTMAIL_API_KEY or AGENTMAIL_INBOX_ID" };
+    return { statusCode: 500, body: "missing AGENTMAIL_API_KEY or LIFE_ASK_INBOX_ID" };
   }
 
   try {
