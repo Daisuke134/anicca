@@ -342,6 +342,99 @@ test("handler reads action=question from JSON body when not in querystring", asy
 
 // ── Test 11: OAuth2 refresh token path works in question flow ─────────────────
 
+// ── Test NEW-A: LIFE_ASK_INBOX_ID takes priority over AGENTMAIL_INBOX_ID ──────
+
+test("handler (question) uses LIFE_ASK_INBOX_ID when set (avoids genesis 429)", async () => {
+  process.env.GOOGLE_CALENDAR_TOKEN = "tok-static";
+  process.env.AGENTMAIL_API_KEY = "am-key";
+  // Dedicated B-ask inbox — should be used in preference to genesis inbox
+  process.env.LIFE_ASK_INBOX_ID = "anicca-life-ask@agentmail.to";
+  process.env.AGENTMAIL_INBOX_ID = "anicca-genesis@agentmail.to"; // genesis (flooded)
+  process.env.DAIS_EMAIL = "dais@example.com";
+
+  const events = [{ id: "ev-x", summary: "Team Meeting", start: { dateTime: "2026-06-17T10:00:00+09:00" }, end: { dateTime: "2026-06-17T11:00:00+09:00" } }];
+
+  let usedInboxId = null;
+
+  globalThis.fetch = async (url, opts) => {
+    if (url.includes("calendar/v3") && (!opts || opts.method !== "PATCH")) {
+      return { ok: true, json: async () => ({ items: events }) };
+    }
+    if (url.includes("calendar/v3") && opts?.method === "PATCH") {
+      return { ok: true, json: async () => ({}) };
+    }
+    if (url.includes("agentmail.to")) {
+      // Extract inboxId from the URL: /v0/inboxes/{inboxId}/messages/send
+      const match = url.match(/\/inboxes\/([^/]+)\/messages\/send/);
+      usedInboxId = match ? decodeURIComponent(match[1]) : null;
+      return { ok: true, json: async () => ({ id: "msg-001" }) };
+    }
+    throw new Error(`unexpected fetch: ${url}`);
+  };
+
+  const { handler } = require(HANDLER_PATH);
+  const res = await handler(buildEvent("POST", "question"));
+
+  assert.strictEqual(res.statusCode, 200);
+  // Must have used the dedicated B-ask inbox, not the flooded genesis inbox
+  assert.strictEqual(usedInboxId, "anicca-life-ask@agentmail.to",
+    "question handler must use LIFE_ASK_INBOX_ID, not AGENTMAIL_INBOX_ID");
+});
+
+// ── Test NEW-B: reply handler returns 200 no-op for non-[Ask] messages ─────────
+
+test("handler (reply) returns 200 no-op when message has no [Ask] subject or Event ID", async () => {
+  process.env.GOOGLE_CALENDAR_TOKEN = "tok-static";
+
+  globalThis.fetch = async () => {
+    throw new Error("GCal should not be called for non-ask messages");
+  };
+
+  const { handler } = require(HANDLER_PATH);
+  const res = await handler({
+    httpMethod: "POST",
+    queryStringParameters: { action: "reply" },
+    body: JSON.stringify({
+      message: {
+        id: "msg-wake-report",
+        subject: "Anicca wake — net $0.0059 / rev $0.0",
+        body: "Anicca is awake and earning.",
+      },
+    }),
+  });
+
+  assert.strictEqual(res.statusCode, 200);
+  const body = JSON.parse(res.body);
+  assert.ok(body.ok, "non-ask messages must return ok:true");
+  assert.strictEqual(body.skipped, "not_an_ask_reply", "must indicate it was skipped");
+});
+
+// ── Test NEW-C: reply handler returns 404 when GCal event not found (not 502) ──
+
+test("handler (reply) returns 404 (not 502) when GCal event ID not found", async () => {
+  process.env.GOOGLE_CALENDAR_TOKEN = "tok-static";
+
+  globalThis.fetch = async (url, opts) => {
+    if (url.includes("calendar/v3") && (!opts || opts.method === undefined)) {
+      // Simulate GCal 404 for unknown event
+      return {
+        ok: false,
+        status: 404,
+        text: async () => JSON.stringify({ error: { code: 404, message: "Not Found" } }),
+      };
+    }
+    throw new Error(`unexpected fetch: ${url}`);
+  };
+
+  const { handler } = require(HANDLER_PATH);
+  const replyBody = "信濃町駅\n\n---\nEvent ID: ev-deleted-or-unknown";
+  const res = await handler(buildReplyEvent(replyBody));
+
+  // Expect 404 not 502
+  assert.strictEqual(res.statusCode, 404, "deleted/unknown event must return 404, not 502");
+  assert.ok(res.body.includes("event_not_found"), "body must include event_not_found");
+});
+
 test("handler (question) uses OAuth2 refresh token when GOOGLE_CALENDAR_TOKEN absent", async () => {
   delete process.env.GOOGLE_CALENDAR_TOKEN;
   process.env.GOOGLE_REFRESH_TOKEN = "rtoken-xyz";
