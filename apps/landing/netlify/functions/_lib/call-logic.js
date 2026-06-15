@@ -247,6 +247,64 @@ function buildTwilioMediaFrame(streamSid, b64MuLaw) {
   return { event: "media", streamSid, media: { payload: b64MuLaw } };
 }
 
+// ── Telnyx Media Streaming wire messages ──────────────────────────────────────
+//
+// Telnyx forks call media to a ws (Call Control `stream_url`) and sends the same
+// connected→start→media→stop lifecycle as Twilio, with base64 PCMU (μ-law 8kHz)
+// payloads. Field names differ: the stream id is top-level `stream_id` (not
+// `media.streamSid`), and the start frame's `start.media_format.encoding` is "PCMU".
+// To play Charon back, send a `media` frame with `stream_id` + base64 μ-law payload.
+// Source: ctx7 /websites/developers_telnyx (voice/programmable-voice/media-streaming,
+// api-reference/websockets/stream-call-media-over-websocket).
+
+/**
+ * Build an outbound Telnyx Media Streaming `media` frame (Charon → caller).
+ * @param {string} streamId - the Telnyx stream_id from the start frame
+ * @param {string} b64MuLaw - μ-law 8kHz base64 payload (no RTP/file header)
+ * @returns {object} { event:"media", stream_id, media:{ payload } }
+ */
+function buildTelnyxMediaFrame(streamId, b64MuLaw) {
+  return { event: "media", stream_id: streamId, media: { payload: b64MuLaw } };
+}
+
+/**
+ * Extract the stream_id (and call_control_id) from a Telnyx `start` frame.
+ * Null-safe; returns {} for non-start or malformed frames.
+ * @param {object} msg - parsed Telnyx ws frame
+ * @returns {{streamId?:string, callControlId?:string}}
+ */
+function parseTelnyxStart(msg) {
+  if (!msg || msg.event !== "start") return {};
+  const streamId = msg.stream_id || (msg.start && msg.start.stream_id) || "";
+  const callControlId = (msg.start && msg.start.call_control_id) || "";
+  const out = {};
+  if (streamId) out.streamId = streamId;
+  if (callControlId) out.callControlId = callControlId;
+  return out;
+}
+
+/**
+ * Build the JSON body for `POST /v2/calls` (Telnyx Call Control outbound dial)
+ * that ALSO requests bidirectional RTP media streaming to our bridge ws.
+ * @param {object} o
+ * @param {string} o.connectionId - Telnyx call-control connection_id
+ * @param {string} o.to - E.164 destination (e.g. +818046270314)
+ * @param {string} o.from - E.164 originator (our Telnyx number)
+ * @param {string} o.streamUrl - public wss:// of the bridge (the /ws path)
+ * @returns {object} request body
+ */
+function telnyxDialBody({ connectionId, to, from, streamUrl }) {
+  return {
+    connection_id: connectionId,
+    to,
+    from,
+    stream_url: streamUrl,
+    stream_track: "both_tracks",
+    stream_bidirectional_mode: "rtp",
+    stream_bidirectional_codec: "PCMU",
+  };
+}
+
 // ── Charon's call script (system instruction) ─────────────────────────────────
 
 /**
@@ -331,6 +389,9 @@ module.exports = {
   buildGeminiSetup,
   buildGeminiAudioInput,
   buildTwilioMediaFrame,
+  buildTelnyxMediaFrame,
+  parseTelnyxStart,
+  telnyxDialBody,
   buildCallPrompt,
   buildConnectStreamTwiml,
   xmlEscape,

@@ -39,7 +39,7 @@ const FEATURES: {
     label: 'B-call',
     headline: '15-min phone call before every event',
     body:
-      'Gemini Live (voice: Charon, male) bridges over Twilio. Anicca dials your number 15 minutes before each event, says "Next is Dentist at 10:00 — leave now, walk time 18 min, via Omotesando Exit A3." Two-way voice: you can ask follow-ups.',
+      'Gemini Live (voice: Charon, male) bridges over your carrier’s media stream. Anicca dials your number 15 minutes before each event, says "Next is Dentist at 10:00 — leave now, walk time 18 min, via Omotesando Exit A3." Two-way voice: you can ask follow-ups. The bridge is provider-agnostic — it routes over Twilio by default and over Telnyx for Japan (+81) numbers, since the same μ-law↔PCM transcode and Charon socket serve both carriers.',
     status: 'coming',
   },
   {
