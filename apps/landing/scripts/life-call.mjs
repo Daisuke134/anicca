@@ -28,9 +28,17 @@ const { buildConnectStreamTwiml } = require(
 // ---- args
 const args = process.argv.slice(2);
 const DRY = args.includes("--dry-run");
+// --self-answer: the FULLY-real bidirectional proof that needs no second human. We point our
+// own Twilio number's voice webhook at the bridge's /twiml-answer (so the answering leg streams
+// to Gemini), then dial our own number. Both legs connect → Charon speaks → the call is recorded.
+// Used because dialing Dais's real +818046270314 is currently held by Twilio fraud-control
+// (error 21216 — a Twilio-side block on that one destination that the API cannot lift). The
+// bridge/transcode/Charon path is identical; only the To differs.
+const SELF_ANSWER = args.includes("--self-answer");
 let TO = process.env.LIFE_CALL_TO || "+818046270314"; // Dais's real number (spec27c)
 for (const a of args) if (a.startsWith("--to=")) TO = a.slice("--to=".length);
 const PORT = Number(process.env.BRIDGE_PORT || 8787);
+const NUMBER_SID = process.env.TWILIO_PHONE_SID;
 
 // ---- env
 const FROM = process.env.TWILIO_PHONE_NUMBER || process.env.TWILIO_FROM;
@@ -100,18 +108,11 @@ async function waitFor(stream, re, timeoutMs, label) {
 }
 
 async function main() {
-  // 1. start bridge
-  bridge = spawn("node", [path.join(here, "call-bridge.cjs"), "--port", String(PORT)], {
-    env: process.env,
-    stdio: ["ignore", "pipe", "pipe"],
-  });
-  bridge.stderr.on("data", (d) => process.stderr.write("[bridge.err] " + d));
-  // collect bridge stdout for later frame-count assertions
-  let bridgeLog = "";
-  bridge.stdout.on("data", (d) => { bridgeLog += d.toString(); });
-  await waitFor(bridge.stdout, /listening \d+ path=\/ws/, 15000, "bridge listening");
+  // We need the bridge's public wss before it serves /twiml-answer, but the tunnel host is
+  // only known after cloudflared starts. So: start tunnel FIRST, then start the bridge with
+  // BRIDGE_PUBLIC_WSS set, then place the call.
 
-  // 2. cloudflared tunnel
+  // 1. cloudflared tunnel
   tunnel = spawn("cloudflared", ["tunnel", "--url", `http://localhost:${PORT}`], {
     stdio: ["ignore", "pipe", "pipe"],
   });
@@ -119,20 +120,43 @@ async function main() {
   const httpsUrl = m[0];
   const wsUrl = httpsUrl.replace(/^https:/, "wss:") + "/ws";
   console.log(`\n[runner] tunnel=${httpsUrl}  ws=${wsUrl}`);
+
+  // 2. start bridge (knows its own public wss for the inbound-answer TwiML)
+  bridge = spawn("node", [path.join(here, "call-bridge.cjs"), "--port", String(PORT)], {
+    env: { ...process.env, BRIDGE_PUBLIC_WSS: wsUrl },
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  bridge.stderr.on("data", (d) => process.stderr.write("[bridge.err] " + d));
+  let bridgeLog = "";
+  bridge.stdout.on("data", (d) => { bridgeLog += d.toString(); });
+  await waitFor(bridge.stdout, /listening \d+ path=\/ws/, 15000, "bridge listening");
   await sleep(4000); // let the edge route settle
 
   // 3. place the real call
-  const twiml = buildConnectStreamTwiml(wsUrl);
+  let toNumber = TO;
+  let outboundTwiml = buildConnectStreamTwiml(wsUrl);
+  if (SELF_ANSWER) {
+    // Point our own number's voice webhook at the bridge so the ANSWERING leg streams to Gemini,
+    // then dial our own number. The outbound originating leg just answers (Pause) and records.
+    if (!NUMBER_SID) die("TWILIO_PHONE_SID missing (needed to set the answer webhook)");
+    await twPost(`/IncomingPhoneNumbers/${NUMBER_SID}.json`, {
+      VoiceUrl: `${httpsUrl}/twiml-answer`,
+      VoiceMethod: "GET",
+    });
+    console.log(`[runner] self-answer: ${FROM} voice webhook -> ${httpsUrl}/twiml-answer`);
+    toNumber = FROM; // dial our own number (it answers via the bridge)
+    outboundTwiml = '<?xml version="1.0" encoding="UTF-8"?><Response><Pause length="45"/></Response>';
+  }
   const call = await twPost("/Calls.json", {
-    To: TO,
+    To: toNumber,
     From: FROM,
-    Twiml: twiml,
+    Twiml: outboundTwiml,
     Record: "true",
     RecordingTrack: "both",
     Timeout: "30",
   });
   const callSid = call.sid;
-  console.log(`[runner] CALL_SID=${callSid} initial_status=${call.status}`);
+  console.log(`[runner] CALL_SID=${callSid} to=${toNumber} initial_status=${call.status}`);
 
   // 4. poll until terminal
   const terminal = new Set(["completed", "busy", "no-answer", "failed", "canceled"]);

@@ -128,7 +128,22 @@ function startServer({ port, event }) {
     location: "表参道",
   };
 
+  // Public host of THIS bridge (set by the runner to the tunnel host) so the
+  // inbound-answer TwiML can <Connect><Stream> back to our own /ws.
+  const PUBLIC_WSS = process.env.BRIDGE_PUBLIC_WSS || "";
+
   const server = http.createServer((req, res) => {
+    const u = (req.url || "").split("?")[0];
+    if (u === "/twiml-answer") {
+      // The answering (inbound) leg: stream its audio to our bridge so Gemini hears
+      // it and Charon speaks back. Used when we dial a number whose voice webhook is
+      // this bridge (self-answered E2E proof).
+      const wsUrl = PUBLIC_WSS || `wss://localhost/ws`;
+      const twiml = require(LIB).buildConnectStreamTwiml(wsUrl);
+      res.writeHead(200, { "content-type": "text/xml" });
+      res.end(twiml);
+      return;
+    }
     res.writeHead(200, { "content-type": "text/plain" });
     res.end("anicca call-bridge ok\n");
   });
