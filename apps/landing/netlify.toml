@@ -6,3 +6,10 @@
   for = "/private"
   [headers.values]
     X-Robots-Tag = "noindex, nofollow"
+
+# B-travel scheduled trigger — runs every morning at 06:00 JST (21:00 UTC)
+# Reads Dais's Google Calendar, inserts [Travel] blocks before events missing one.
+# Required env: GOOGLE_REFRESH_TOKEN, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
+# Optional env: GOOGLE_MAPS_API_KEY (defaults 20min), HOME_ADDRESS, GCAL_ID
+[functions."life-travel"]
+  schedule = "0 21 * * *"
