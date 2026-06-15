@@ -40,8 +40,8 @@ status: ✅resolved / 🔄verified-but-evolving。patch=`patches/`、command=`co
 - **Q23 Managed key** ✅ cloud版shelter=我々のConsole key+クレカ(=「我々が server代を払う」許可境界内)。sovereign=agent自前(Akash USDC-denom)。
 - **Q25 dry-run検出** ✅ eval-agent rubric: ①tx hash/URL/MD5/message_id の実evidence有 ②報告textが前回と差分有(同一反復=fake) ③message_idがagent processから(私/人間送信は無効) ④on-chain状態が報告と一致。
 
-## ★ GATE 判定 ★
-全32問 resolved。残る"薄利/不安定"は Q16(litcoin coordinator)のみ=earn量の問題で**不明ではない**(機構は判明)。→ **WORKFLOW A 起動可**。
+## ★ GATE 判定(spec25 review で改訂)★
+全32問の**設計上の不明**は resolved。だが ★ WORKFLOW A 起動の hard gate = 「1回の wake で earn が cost を上回る実 tx(net+)を1件 verify」(= 1 profitable wake)★。earn 未達の現状では **起動不可**(旧記載「起動可」は spec25 C2 で撤回)。+ telemetry/spawn の interface 実体化(spec25 G1/G2)も前提。
 
 ## 外部docs最終確認(2026-06-15)
 - Q24 ERC-8004 = 実在EIP「Trustless Agents」(Identity/Reputation/Validation Registry)→ 子Anicca identity に採用可。
