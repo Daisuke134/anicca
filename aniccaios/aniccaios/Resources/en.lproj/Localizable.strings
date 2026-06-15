@@ -2692,3 +2692,20 @@
 "theme_sky_dawn" = "Sky Dawn";
 "theme_rose_petal" = "Rose Petal";
 "quote_copied" = "Copied";
+
+/* v1.9.1: Newsletter (Morning Letter) + Feedback */
+"newsletter_section_title" = "Morning Letter";
+"newsletter_section_description" = "Subscribe to receive one calming message in your inbox every morning.";
+"newsletter_email_placeholder" = "Email address";
+"newsletter_submit_button" = "Subscribe";
+"newsletter_status_registered" = "Subscribed as %@";
+"newsletter_unsubscribe_button" = "Unsubscribe";
+"newsletter_submit_error" = "Failed. Please try again.";
+"feedback_section_title" = "Send Feedback";
+"feedback_link_label" = "Send feedback";
+"feedback_placeholder" = "Tell us what you'd like us to improve (5–2000 characters).";
+"feedback_submit_button" = "Send";
+"feedback_submit_error" = "Failed to send. Please try again.";
+"feedback_sent_label" = "✓ Sent";
+"feedback_pii_warning_title" = "Personal info detected";
+"feedback_pii_warning_message" = "This looks like it contains an email or phone number. Send anyway?";
