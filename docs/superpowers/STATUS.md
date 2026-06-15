@@ -1,3 +1,16 @@
+# ⚠️ STATUS CORRECTION (2026-06-16) — the workflow's "8 subsystems live" was FALSE
+
+An adversarial audit (curl live pages + source) found the product is **~10-15% real**. The ONLY genuinely-working
+user feature is **B-travel** (auto gcal travel block). BROKEN/FAKE: install Stripe CTA = `buy.stripe.com/anicca-cloud`
+placeholder → 403 (whole money pipeline dead); dashboard = `Loading…` no data; /me withdraw/pause disabled "opens at
+launch"; life-call/ask/notify = "coming" (life-call #108-111 'completed' but NO real call — Twilio 13225 / no Telnyx key);
+earn GATE-0 = a swap, not external revenue; no real EN/JA i18n; internal jargon (GATE-0, B-travel, spec27, HARD rules)
+leaked to users. ROOT CAUSE: workflow verifier rubrics tested `curl 200 + text` not `a user can do the thing`; agents
+built marketing pages; the monitor (me) over-trusted verifier passes. REDO PLAN + fix-rubrics-first: see HANDOVER-PROMPT.md.
+The sections below are the (over-optimistic) prior log — trust this correction + HANDOVER-PROMPT.md over them.
+
+---
+
 # Anicca — LIVE STATUS / 引き継ぎ書 (single source of truth across sessions)
 
 > ★ ABSOLUTE RULE ★ Every agent / every session MUST read this first and KEEP IT UPDATED in real
