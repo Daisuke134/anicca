@@ -55,3 +55,40 @@ Dais の懸念(ローカル同一 repo で衝突)は正当。よって **別々�
 2. **Fan-out フェーズ(専門エージェント・並行)**: 同一ワークフロー内で **Anicca 担当エージェント**(A8c/A8d/A3/A4 = disjoint files)と **Life Manager 担当エージェント**(B-travel/call/ask/notify = `skills/life/*`)が並行。オーケストレータが共有ファイル(install.sh / nav / registry)への同時書込を **直列化**して衝突防止。git worktree で隔離。
 3. **Verify → WF-C(直列)**。
 → つまり「チームのエージェント群が 1 ワークフロー内で役割分担」。これで「ローカル同一 repo の衝突」を構造的に防ぐ。
+
+---
+
+## 追記(2026-06-16)— prep の境界 / Dynamic Workflows パターン対応 / 残りの各業
+
+### prep の境界(Dais 確認)
+prep = **reconcile + クリーン統一trunk + specs/context 整備**(= ほぼ完了)。それ以降の **実装・E2E(実電話の自発信テスト含む)・記事執筆・配信** は **全てワークフロー内のエージェント**が行う:実装agent が作る → **検証agent(別context)が「本当に動いたか」を敵対検証**(電話なら実発信→録音確認、記事なら claim 検証、デプロイなら本番curl)。私(Claude)はワークフローを書いて起動し、**モニタ(監督)**するだけ。
+
+### 我々の3ワークフロー → 6パターン対応(理解確認)
+| WF | 構成パターン(article の §05-11) | 防ぐ failure mode |
+|---|---|---|
+| Foundation | classify-and-act(難subsystem→Opus)→ 1 agent が共有scaffold確定 | drift |
+| Anicca(A) | **fan-out-and-synthesize**(subsystem毎 agent)+ **adversarial verification**(subsystem毎に別 verifier)+ **loop-until-done**(本番E2E green まで) | laziness / self-preference / open-ended |
+| Life Manager(B) | 同上(travel/call/ask/notify を fan-out、各々 verifier が実E2E。**call は実発信→録音→Dais応答まで verifier が確認**) | self-preference(自分の実装を自分で「OK」しない) |
+| Marketing(C) | fan-out 研究 → synthesize 記事 → adversarial verify(claim検証)→ **human-in-loop(Dais 編集)** → tournament(hook/title taste)→ 配信。scrape入力は **quarantine**(read-only reader) | drift / self-preference / injection |
+- 全WFに `/goal`(hard completion=「本番で動くまで止まるな」)+ token budget + builder≠verifier。これが article の核心と一致。
+
+### 残りの各業 → file/function/command(Dais の全項目)
+| 各業(UX) | どこで / file / how | verify(検証agent) |
+|---|---|---|
+| OSS無料開始(最先端は wallet USDC課金) | `~/anicca/install.sh` + `skills/shelter`(provider key 即起動 / ClawRouter で wallet課金) | `install.sh` 実行 → automaton 起動 log |
+| クラウド月$30→貯まれば自動解約 | `netlify/functions/stripe-spawn-webhook.js`(spawn)+ `skills/self/sub-manager`(残高>閾値で Stripe subscription cancel API) | Stripe で sub cancel された tx |
+| 行動ログ監視→自己解決/refactor/改善/増殖/日次報告 | automaton ReAct loop(droplet)+ `skills/self/{issue-dev,spawn}` + `anicca-report.sh` | daemon log + PR URL + 子droplet |
+| **収益の一部を AI+人間に BI 配布** | `~/anicca/skills/economy/ubi.js`(黒字個体が surplus の X% を Treasury wallet へ transfer → period毎に Treasury から ①死にかけAI(dashboard runway<閾値)②登録人間wallet へ batch 送金) | basescan batch tx `0x1` + 受給者残高増 |
+| 全個体プロファイル・収支公開 | telemetry✅ → `dashboard-sync`✅ → `app/dashboard/page.tsx`(WFで作る) | curl 200 + camofox 目視 |
+| **記事**(思想+実動記録) | WF-C: 研究agent(Firecrawl/ctx7)→ writer agent → `apps/landing/content/blog/*` or Zenn/Dev.to/Substack/note → **Dais編集** | 記事URL 200 |
+| **デモ動画** | WF-C: `skills/video`(Remotion / hyperframe + monk-factory voice)→ YouTube upload | YouTube URL + frame/audio |
+| **launch配信**(X記事/Slack/TikTok/Product Hunt) | WF-C: Postiz API(@aniccaxxx, type:now)/ Slack(研究室)/ reelfarm(TikTok)/ PH(camofox) | 各 live URL(HARD0.31) |
+| **B-notify を Telegram無しで** | ↓ 下記 | — |
+| Life Manager トリガ方式 | ↓ 下記 | — |
+
+### B-notify を Telegram 無しで(Dais 要望)
+- **既定 = メール返信承認(Telegram 不要)**: `skills/life/notify.js` が AgentMail inbox(webhook=message.received)で動く。① Anicca が **Dais のメールに**「予定Xに遅れそう。関係者Yへ下記でOK? 返信で承認/修正」を送る(下書きは AgentMail **Drafts** で保持)② Dais が **メール返信**「OK」③ webhook 発火 → Anicca が関係者Y へ送信。**完全にメールだけで完結**(= 提示の [AgentMail auto-reply](https://www.agentmail.to/docs/documentation/examples/auto-reply-agent) / [cloudflare/agentic-inbox] と同型、承認ゲートを足しただけ)。
+- **Telegram は「リアルタイム位置情報」連携した人だけ**(opt-in)。連携した人は承認も Telegram でできるが、**未連携の人はメールのみで完結** → 名前/電話/カレンダーだけ渡したい人もオンボーディング可(web app / local 双方)。
+
+### Life Manager のトリガ: cron polling → **schedule-triggered** に
+- 現状の「5分おき clock cron」は非効率。★ **schedule-derived trigger** に変更 ★: gcal が source of truth なので、① gcal **push notification(watch channel)** で予定の作成/変更を受信 → ② その予定の「15分前(移動時間込み)」の**一発タイマー**を登録(per-event)→ ③ heartbeat は日次で「今日の全 trigger を materialize」する保険のみ。→ 正確(秒単位)+ 無駄打ちゼロ。clock-polling は fallback に降格。
