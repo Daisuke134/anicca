@@ -52,7 +52,7 @@
 ## A と B の重なり(1.7 の答え)— ★ 1 ワークフロー・専門エージェント ★
 Dais の懸念(ローカル同一 repo で衝突)は正当。よって **別々の並行ワークフローにしない**。**1つの統合ワークフロー**にし、その中で:
 1. **Foundation フェーズ(直列・最初)**: dev↔main reconcile + 共有 scaffold(`~/anicca` skill framework / install.sh / landing layout・nav / skills registry)を **1 エージェントが確定**。
-2. **Fan-out フェーズ(専門エージェント・並行)**: 同一ワークフロー内で **Anicca 担当エージェント**(A8c/A8d/A3/A4 = disjoint files)と **Life Manager 担当エージェント**(B-travel/call/ask/notify = `skills/life/*`)が並行。オーケストレータが共有ファイル(install.sh / nav / registry)への同時書込を **直列化**して衝突防止。git worktree で隔離。
+2. **Fan-out フェーズ(専門エージェント・並行)**: 同一ワークフロー内で **Anicca 担当エージェント**(A8c/A8d/A3/A4 = disjoint files)と **Life Manager 担当エージェント**(B-travel/call/ask/notify = `skills/life/*`)が並行。★衝突防止は runtime mutex ではなく構造で担保★: **Foundation が共有ファイル(install.sh / landing nav / skills-lock.json)の中身を 100% 先行確定し、全 subsystem の nav link + registry slot を pre-wire** する。以降の builder は **自分の新規ファイルへ append-only**、共有ファイルは触らない(触る必要が出たら gap として停止報告)。git worktree で隔離。
 3. **Verify → WF-C(直列)**。
 → つまり「チームのエージェント群が 1 ワークフロー内で役割分担」。これで「ローカル同一 repo の衝突」を構造的に防ぐ。
 
