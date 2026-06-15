@@ -5,6 +5,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import JsonLd from '@/components/JsonLd';
 import Navbar from '@/components/site/Navbar';
+import LaunchNav from '@/components/site/LaunchNav';
 import Footer from '@/components/site/Footer';
 import { SplitHero, Section, Reveal, CTA } from '@/components/site/taste';
 
@@ -59,6 +60,7 @@ export default function Page() {
   return (
     <>
       <JsonLd data={installLd} />
+      <LaunchNav active="/install" />
       <Navbar locale="en" />
 
       <SplitHero
