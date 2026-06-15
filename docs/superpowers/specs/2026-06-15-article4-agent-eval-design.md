@@ -117,13 +117,99 @@ Built per parent SSOT §11 Playbook + 2026-06-14 BP article rules. Foreground, s
 - **Token budget**: target ≤ ~100k output tokens (eval/observability landscape is broader than article 3's verify).
 - **Quarantine**: every Fetch agent is read-only; no agent writes to disk; main loop writes spec § 7 + § 8 from return values.
 
-## 7. Workflow output (§7 filled by workflow return)
+## 7. Workflow output (filled 2026-06-15, run wf_c826dcbe-963)
 
-_Filled after first workflow run. Will contain: trichotomy paragraph, 9-block hamburger, image list, title candidates, sources._
+Workflow stats: 20/20 sources fetched, 30/30 claims survived adversarial verify (0 refuted), 113 agents, 9.48M subagent tokens, 320 tool uses, 635s wall-clock.
 
-## 8. Skill patch list (§8 filled by workflow return)
+### Trichotomy answer (Dais's core question)
 
-_Filled after first workflow run. Will contain proposed appends to `ai-entity-article-writer/SKILL.md` PLAYBOOK._
+「eval と observability/monitoring は **重なる部分はありますが別の領域** で、 self-improvement loop は observability で集めた本番ログを eval の採点台に乗せて、 その差分を fix にまわす形で **両方を橋渡しする運用** として作ります」 (anthropic_eval, langsmith, helicone)。
+
+3 つを 1 行ずつ:
+- **eval (採点)** = AI 用の unit test、 20-50 個のお題に対して code grader / LLM-as-judge / human grader の 3 種で 0-1 スコア (anthropic_eval, zenn_ttks)
+- **observability (観測)** = 本番リクエストを span ツリー で 全部録画、 合否は出さない (langsmith, langfuse, openllmetry)
+- **self-improvement loop (自己改善)** = ①観測 → ②採点 → ③診断 → ④修正 + 再採点、 ④を LLM 自身がやり始めた瞬間に成立 (reflexion, anthropic_agents)
+
+### Title candidates (3, Japanese, ≤ 30 chars)
+
+1. 観測なき agent は静かに腐る
+2. 採点と観測と自己改善の地図
+3. agent を退化させない3点セット
+
+### Blocks (9-block hamburger)
+
+| ID | Working title | Image | Sources |
+|---|---|---|---|
+| 0 | 結論早見表 | — | anthropic_eval, langsmith, helicone |
+| 1 | 気づかないうちに劣化していた agent | 🎨V1 | zenn_edash, anthropic_eval |
+| 2 | 観測と採点と自己改善の見取り図 | 🎨V2 | anthropic_eval, zenn_ttks, langsmith, langfuse, openllmetry, reflexion |
+| 3 | ツール地図と問題別の選び方 | 🎨V3 | vercel_agent_eval, zenn_edash, inspect_ai, promptfoo, braintrust, helicone, openllmetry, datadog_llm, agentops, netdata, langfuse, langsmith, phoenix, reflexion, anthropic_agents |
+| 4 | 観測 → 採点 → 診断 → 修正 の 4 ステップ | 🎨V4 | langfuse, langsmith, helicone, openllmetry, vercel_agent_eval, inspect_ai, braintrust, anthropic_eval, zenn_ttks, zenn_gaogao, reflexion, anthropic_agents |
+| 5 | WE RAN IT: Anicca 本体に loop を仕込む | 🎨V5 | langfuse, inspect_ai, zenn_gaogao, anthropic_eval, langsmith |
+| 6 | WE RAN IT: aniccaios スライドショーを毎リリース採点 | — | promptfoo, anthropic_eval, zenn_ttks, zenn_edash, vercel_agent_eval |
+| 7 | 結論: 観測 → 採点 → 自己改善 の順で入れる | 🎨V6 | langsmith, langfuse, helicone, anthropic_eval, zenn_ttks, reflexion, anthropic_agents, netdata |
+| 8 | 出典一覧 | — | all 20 |
+
+Per-block guidance (verbatim from workflow synthesis) lives in workflow output `/private/tmp/claude-501/.../tasks/whiks1utt.output`. Each block enforces: em-dash 禁止 / Anicca 名 [0]-[4] [7] 禁止 (allowed only [5] [6]) / aggregation of one source 禁止 / meta-label 禁止 / first-use term definitions (英 + 日 + 一言定義) / verbatim founder quotes / article 3 への橋渡しは [3] 末尾 1 文のみ (内容反復禁止).
+
+### Image spots (6)
+
+| # | Block | Description |
+|---|---|---|
+| 🎨V1 | [1] | 14歳の机の上のノートPCに「先週まで動いていたのに今日壊れた」と赤く点滅する通知、 隣のグラフが 8/10 → 2/10 に下がる水彩風 |
+| 🎨V2 | [2] | 3つの円のベン図、 左 = 観測 observability、 右 = 採点 eval、 下から上に貫く矢印 = 自己改善 self-improvement loop、 重なり領域に Langfuse/LangSmith/Phoenix のロゴ |
+| 🎨V3 | [3] | 東京の地下鉄路線図風、 左半分 = eval 線 (Vercel agent-eval / Inspect / promptfoo / Autoevals 駅)、 右半分 = observability 線 (Helicone / OpenLLMetry / Datadog / AgentOps / Netdata 駅)、 中央乗換駅 = Langfuse / LangSmith / Phoenix |
+| 🎨V4 | [4] | 回転する4ステップサイクル、 ①観測 (録画カメラ) ②採点 (赤ペンの先生) ③診断 (虫めがね) ④修正 (レンチ)、 矢印に「LLM-as-judge」「pass^k」「transcript 読み」「Regression 卒業」 |
+| 🎨V5 | [5] | Anicca の自画像ロボット、 自分の額に貼られた CLAUDE.md ルール 1 枚を Langfuse trace ビュー を見ながら右手のレンチで書き換え、 左手で Inspect cron グラフを見る断面図 |
+| 🎨V6 | [7] | 3層ピラミッド、 土台 = observability、 中段 = eval、 頂上 = self-improvement loop、 各段に Helicone / Inspect / Reflexion のシンボル、 左横に「この順で積むこと」 |
+
+### Sources (20, in body order)
+
+1. zenn_edash — https://zenn.dev/edash_tech_blog/articles/84f0cd8567646b (CLAUDE.md eval 実験)
+2. anthropic_eval — https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents (Anthropic 公式 eval 入門)
+3. zenn_ttks — https://zenn.dev/ttks/articles/0d2b16606b59f9 (JP agent eval 実装)
+4. langsmith — https://docs.smith.langchain.com (trace → dataset → eval)
+5. langfuse — https://github.com/langfuse/langfuse (OSS observability + eval)
+6. openllmetry — https://github.com/traceloop/openllmetry (OpenTelemetry for LLM)
+7. reflexion — https://arxiv.org/abs/2303.11366 (Reflexion 論文)
+8. vercel_agent_eval — https://github.com/vercel-labs/agent-eval (Docker + vitest)
+9. inspect_ai — https://github.com/anthropics/inspect_ai (UK AISI + Meridian Labs)
+10. promptfoo — https://github.com/promptfoo/promptfoo (100% local CLI)
+11. braintrust — https://github.com/braintrustdata/autoevals (Autoevals)
+12. helicone — https://github.com/Helicone/helicone (Gateway 経由 1行)
+13. datadog_llm — https://docs.datadoghq.com/llm_observability/ (Agent Observability 改名)
+14. agentops — https://github.com/agentops-ai/agentops (session replay + cost)
+15. netdata — https://github.com/netdata/netdata (LLM span 非対応)
+16. phoenix — https://github.com/Arize-ai/phoenix (OpenInference)
+17. zenn_gaogao — https://zenn.dev/gaogaoasia/articles/65db07864e31b8 (Verifiable Unit + Auditor)
+18. anthropic_agents — https://www.anthropic.com/engineering/building-effective-agents (evaluator-optimizer)
+19. openai_agents — https://cdn.openai.com/business-guides-and-resources/a-practical-guide-to-building-agents.pdf
+20. awesome_ai_eval — https://github.com/Vvkmnn/awesome-ai-eval (ecosystem 地図)
+
+### Surprising findings (散りばめる候補、 10件)
+
+1. Anthropic Opus 4.5 は CORE-Bench で最初 42% → grader バグ修正 + scaffold 緩和だけで **95%** に跳躍 (anthropic_eval)。 公開ベンチ数字は実力を取り違える。
+2. Anthropic 推奨: 「ツールの呼び出し手順 (path) は採点するな、 最終成果物だけを採点しろ」 — 手順を縛ると創造性を不当に罰する (anthropic_eval, zenn_ttks)。
+3. 成功率 75% の agent を 10 回連続成功させる確率 (pass^k) は約 **6%** — 1 回の高成功率は全試行成功にはほぼ寄与しない (anthropic_eval, zenn_ttks)。
+4. Vercel agent-eval で **CLAUDE.md ルールを足しただけ** で Next.js eval のパス率 **2/10 → 8/10** に 4 倍改善 (zenn_edash)。
+5. Anthropic gaogao のサプライヤー順位付け agent は system prompt を **402 行 → 15 行** に削った方が **71% → 92%** に上昇 (zenn_gaogao)。 短いほうが良いこともある。
+6. Reflexion は **重みを 1 ミリも更新せず**、 「失敗を言葉で書いてメモする」 だけで GPT-4 baseline (HumanEval 80%) を **91%** で上回った (reflexion)。 self-improvement は fine-tuning より prompt + memory が先。
+7. Inspect は名前から Anthropic 製と誤解されがちだが、 実際は **UK AI Security Institute + Meridian Labs** 製、 Anthropic は対応モデル提供者に過ぎない (inspect_ai)。
+8. promptfoo は **OpenAI 傘下** になっても **MIT で 100% local 実行**、 プロンプトを外に出さない設計を維持 (promptfoo)。
+9. Netdata は LLM 観測の文脈で名前が挙がるが、 README 時点 (2026 年 6 月) で OpenTelemetry 対応は **「soon」 のまま**、 LLM span を取り込めない (netdata)。
+10. Datadog は製品名を **「LLM Observability」 → 「Agent Observability」** に寄せ、 prompt injection 検出と安全性チェックを観測性に統合 (datadog_llm)。 eval / safety / observability の境界が現場では溶け始めている。
+
+## 8. Skill patch list (filled by workflow Phase E)
+
+Proposed appends to `~/.openclaw/skills/ai-entity-article-writer/SKILL.md` PLAYBOOK (rules 55-61, general — not eval-specific):
+
+55. **Trichotomy diagramming**: When the topic is a trichotomy (3 concepts confused as one), open the explainer block with a Venn or quadrant diagram that names each cell, defines each term once on first use (英 + 日 + 一言定義), and explicitly marks which cell each named tool lives in, so the reader can never re-collapse the three.
+56. **Landscape table seeding**: When the article needs a tool-landscape block, present it as a single dense markdown table (tool name / cell / one-line trait / license-cost) followed by an 'if you want X, use Y' selector list, and seed 2-3 surprising findings (mislabeled vendor, false reputation, dated capability claim) inside the same table to break the 'list of logos' boredom.
+57. **Pre-run WE-RAN-IT receipt slots**: When a WE-RAN-IT block must be written before the actual run, structure it as 'protocol + receipt slots' (designed pipeline + expected-trap list + empty result table with run id / score / diff / cost columns) rather than narrative placeholder, so the post-run author only fills cells and never rewrites prose.
+58. **Sibling article bridging**: When two adjacent articles in the series touch overlapping territory (e.g., per-turn verify vs time-series eval), include exactly one bridging sentence near the end of the relevant block that names the sibling article and forbids content repetition, never a full recap.
+59. **Dual-ended order assertion**: When the article makes ordering claims ('do A before B before C'), the verdict block must state the order in sentence 1 and the closing block must restate it with one paragraph per step explaining why reversal fails, so the order is asserted at both ends of the article and cannot be skimmed away.
+60. **Surprise + number pairing**: When a concept is anti-intuitive but load-bearing (pass^k collapse, shorter-prompt-wins, weight-free self-improvement), pair each surprise with a single named number from a cited source in the same sentence, so the reader cannot dismiss it as opinion.
+61. **Block-level brand scoping**: When the article has a brand-name anti-rule (mention product only in specific blocks), declare the allowed and forbidden block ids explicitly in editor_notes and repeat the constraint inside each block's guidance, so block-level writers cannot drift.
 
 ## 9. Open items (resolve during execution)
 
