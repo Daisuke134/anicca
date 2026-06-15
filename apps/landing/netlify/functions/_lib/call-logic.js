@@ -21,6 +21,27 @@
 const MULAW_BIAS = 0x84; // 132
 const MULAW_CLIP = 32635;
 
+// The model id the live bidi API actually accepts (verified by a real ws handshake
+// 2026-06-16: gemini-2.0-flash-live-001 returns "CLOSE 1008 … not supported for
+// bidiGenerateContent", while this native-audio model returns setupComplete + real
+// Charon PCM24 audio). Bridges default to this.
+const LIVE_MODEL = "gemini-2.5-flash-native-audio-preview-09-2025";
+
+/**
+ * Build the Gemini Live websocket URL (BidiGenerateContent) for an API key.
+ * Source (ctx7 /websites/ai_google_dev_gemini-api, live-api/get-started-websocket):
+ *   wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=...
+ * @param {string} apiKey
+ * @returns {string} wss:// url
+ */
+function geminiLiveWsUrl(apiKey) {
+  return (
+    "wss://generativelanguage.googleapis.com/ws/" +
+    "google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent" +
+    `?key=${encodeURIComponent(apiKey || "")}`
+  );
+}
+
 // ── G.711 μ-law (single sample) ───────────────────────────────────────────────
 
 /**
@@ -155,7 +176,8 @@ function geminiPcm24ToTwilioMuLaw(b64Pcm24) {
  * @returns {object} { setup: {...} }
  */
 function buildGeminiSetup({ model, voiceName, systemInstruction }) {
-  const modelPath = String(model || "").startsWith("models/") ? model : `models/${model}`;
+  const m = model || LIVE_MODEL; // default to the verified-working live model
+  const modelPath = String(m).startsWith("models/") ? m : `models/${m}`;
   return {
     setup: {
       model: modelPath,
@@ -179,6 +201,38 @@ function buildGeminiAudioInput(b64Pcm16) {
   return {
     realtimeInput: { audio: { data: b64Pcm16, mimeType: "audio/pcm;rate=16000" } },
   };
+}
+
+/**
+ * Build a clientContent turn (text) to kick off Charon's opening line once the
+ * call connects (Gemini sometimes waits for the first turn before speaking).
+ * @param {string} text
+ * @returns {object} { clientContent: { turns:[...], turnComplete:true } }
+ */
+function buildGeminiTurn(text) {
+  return {
+    clientContent: {
+      turns: [{ role: "user", parts: [{ text: String(text || "") }] }],
+      turnComplete: true,
+    },
+  };
+}
+
+/**
+ * Extract base64 PCM24 audio chunks from a parsed Gemini Live server message.
+ * Returns [] for non-audio messages (setupComplete, text, toolCall, etc).
+ * @param {object} msg - parsed JSON server message
+ * @returns {string[]} base64 PCM24 audio payloads (in order)
+ */
+function parseGeminiAudio(msg) {
+  const parts = (msg && msg.serverContent && msg.serverContent.modelTurn &&
+    msg.serverContent.modelTurn.parts) || [];
+  const out = [];
+  for (const p of parts) {
+    const d = p && p.inlineData && p.inlineData.data;
+    if (d) out.push(d);
+  }
+  return out;
 }
 
 // ── Twilio wire messages ──────────────────────────────────────────────────────
@@ -263,6 +317,10 @@ function buildConnectStreamTwiml(wsUrl) {
 }
 
 module.exports = {
+  LIVE_MODEL,
+  geminiLiveWsUrl,
+  buildGeminiTurn,
+  parseGeminiAudio,
   muLawDecodeSample,
   muLawEncodeSample,
   muLawBufToPcm16,
