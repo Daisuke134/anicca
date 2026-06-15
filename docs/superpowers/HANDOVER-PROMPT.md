@@ -29,10 +29,13 @@ reports to its owner (Dais = Daisuke Sato, keiodaisuke@gmail.com) each wake, and
 - **Disk hygiene:** check `df -h /` at session start; the Mac fills up. Clean `~/.cache`, `~/Library/Caches`, Xcode DerivedData, unused simulators yourself — never put Dais in the disk loop.
 - **Push constantly** (HARD 0.00): one meaningful edit → `git add <files> && commit && push`. Never leave the tree dirty across turns.
 
-## Current live state (snapshot — verify against STATUS.md, it may be newer)
-- Telemetry pipeline ✅ LIVE on aniccaai.com (functions + Supabase `instances` table + genesis droplet posting real net worth each wake). `/dashboard-sync` returns real aggregated P&L.
-- GATE-0 for WF-A launch = **1 profitable wake (earn > cost, 1 real tx)** — still ❌. This is the true money-loop blocker.
-- Credentials are in `~/.openclaw/.env` (Supabase, Netlify, BLOCKRUN_WALLET_KEY, AgentMail, DigitalOcean). Genesis droplet: `root@147.182.225.255`.
+## Current live state (2026-06-16 — verify against STATUS.md, it may be newer)
+- **dev↔main reconciled → ONE TRUNK** (main canonical; new work branches off main → clean PRs; backups in backup/dev-20260616). The old unrelated-histories problem is RESOLVED.
+- **Telemetry pipeline LIVE** on aniccaai.com (functions + Supabase `instances` + genesis droplet posting real net worth each wake). `/dashboard-sync` returns real P&L.
+- **Launch workflow READY**: `docs/superpowers/workflows/anicca-launch.workflow.js` + specs `26`/`27` were written and passed superpowers code-reviewer (VERDICT: READY). It builds Foundation→[Anicca∥LifeManager]→E2E(real Charon call)→Distribute(research; articles human-in-loop). Run with `Workflow({scriptPath:'docs/superpowers/workflows/anicca-launch.workflow.js'})`.
+- **Role**: Claude is the DIRECTOR/MONITOR of the workflow's agents, not a player. The workflow's builder agents do the work; verifier agents check live (no mock). Only article copy is human-in-loop (Dais edits).
+- **GATE-0** = 1 profitable wake (earn > cost, 1 real tx) — still the true money-loop blocker, built inside the workflow's earn subsystem.
+- Credentials in `~/.openclaw/.env`; genesis droplet `root@147.182.225.255`.
 
 ---
 
