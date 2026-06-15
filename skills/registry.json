@@ -1,0 +1,89 @@
+{
+  "$schema": "https://aniccaai.com/schema/skills-registry.v1.json",
+  "version": 1,
+  "description": "Anicca capability registry (SSOT). install.sh reads this to sync every skill slot into the runtime body. Foundation pre-declares EVERY slot so parallel subsystem builders only ADD files inside their slot's dir and NEVER edit this registry. A slot with status \"declared\" is reserved (dir scaffolded, entrypoint stubbed); a builder flips it to \"live\" once its real implementation + E2E verify land.",
+  "runtime_root": "~/.anicca",
+  "slots": {
+    "report": {
+      "track": "core",
+      "dir": "skills/report",
+      "entrypoint": "anicca-report.sh",
+      "status": "live",
+      "spec": "26 A2 / 27 A-telemetry",
+      "summary": "Per-wake report: emails Dais 4 fields (AgentMail) + POSTs EIP-191 signed telemetry to aniccaai.com/.netlify/functions/telemetry.",
+      "owner": "foundation"
+    },
+    "earn": {
+      "track": "A",
+      "dir": "skills/earn",
+      "entrypoint": "run.sh",
+      "status": "declared",
+      "spec": "26 A3 / 27 A-earn (GATE-0)",
+      "summary": "Earn discovery + execution (0xwork / litcoin) wired into the automaton loop; appends earn-ledger.jsonl. 1 profitable wake = the real launch gate.",
+      "owner": "wf-a:earn"
+    },
+    "self/spawn": {
+      "track": "A",
+      "dir": "skills/self/spawn",
+      "entrypoint": "run.sh",
+      "status": "declared",
+      "spec": "26 A4 / 27 A-self-spawn",
+      "summary": "Self-replication: birth a child instance on DO/Akash with its own wallet + AgentMail inbox; no parent instruction needed for the child's first earn wake.",
+      "owner": "wf-a:self-spawn"
+    },
+    "self/issue-dev": {
+      "track": "A",
+      "dir": "skills/self/issue-dev",
+      "entrypoint": "run.sh",
+      "status": "declared",
+      "spec": "26 'self-solve/refactor/improve' / 27 WF-A",
+      "summary": "Self-improvement: read behaviour log → open issue → branch → PR against own repo (issue-driven dev loop).",
+      "owner": "wf-a:self-spawn"
+    },
+    "life/travel": {
+      "track": "B",
+      "dir": "skills/life/travel",
+      "entrypoint": "travel.js",
+      "status": "declared",
+      "spec": "26 B-travel / 27 B-travel",
+      "summary": "Read gcal + Google Maps Directions → auto-insert a travel block before every event so all events sit in gcal with travel time included.",
+      "owner": "wf-b:travel"
+    },
+    "life/call": {
+      "track": "B",
+      "dir": "skills/life/call",
+      "entrypoint": "call.js",
+      "status": "declared",
+      "spec": "26 B-call / 27 B-call",
+      "summary": "Twilio Media Streams <-> Gemini Live (voice=Charon) websocket bridge; calls Dais 15 min before each event for two-way dialogue.",
+      "owner": "wf-b:call"
+    },
+    "life/ask": {
+      "track": "B",
+      "dir": "skills/life/ask",
+      "entrypoint": "ask.js",
+      "status": "declared",
+      "spec": "26 B-ask / 27 B-ask",
+      "summary": "When duration/place unknown, email Dais a question (AgentMail/Gmail) and backfill the gcal 'where' from the reply (inbound webhook driven).",
+      "owner": "wf-b:ask"
+    },
+    "life/notify": {
+      "track": "B",
+      "dir": "skills/life/notify",
+      "entrypoint": "notify.js",
+      "status": "declared",
+      "spec": "26 B-notify / 27 B-notify",
+      "summary": "Lateness detected -> email Dais a draft (AgentMail Drafts) 'send to Y? reply to approve' -> on approve webhook, send to the counterpart. Mail-only, no Telegram required.",
+      "owner": "wf-b:notify"
+    },
+    "economy/ubi": {
+      "track": "A",
+      "dir": "skills/economy/ubi",
+      "entrypoint": "ubi.js",
+      "status": "declared",
+      "spec": "27 §3 UBI",
+      "summary": "contribute() surplus X% to Treasury; distributeAI() rescue+flat basic income to alive/dying agents; distributeHuman() periodic USDC batch to allowlist. Post-earn roadmap; mechanism fixed.",
+      "owner": "wf-a:earn"
+    }
+  }
+}
