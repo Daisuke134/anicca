@@ -48,6 +48,17 @@ test("400 on schema violation", async () => {
   assert.strictEqual(res.statusCode, 400);
   global.fetch = origFetch;
 });
+test("400 on a non-address id (PostgREST injection) — rejected BEFORE any DB query", async () => {
+  let fetchCalled = false;
+  const saved = global.fetch;
+  global.fetch = async () => { fetchCalled = true; return { ok: true, json: async () => [] }; };
+  const message = JSON.stringify({ id: "0xabc&select=*", ts: 1, host: "a" });
+  const signature = await w.signMessage(message);
+  const res = await handler(ev({ message, signature }));
+  assert.strictEqual(res.statusCode, 400);
+  assert.strictEqual(fetchCalled, false); // never reached getLastTs's URL
+  global.fetch = saved;
+});
 test("400 on missing message/signature", async () => {
   const res = await handler(ev({ signature: "0x00" }));
   assert.strictEqual(res.statusCode, 400);

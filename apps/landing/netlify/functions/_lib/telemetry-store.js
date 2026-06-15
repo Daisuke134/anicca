@@ -5,7 +5,8 @@ function headers(key) {
 }
 
 async function getLastTs(id, { url, key, f = fetch }) {
-  const r = await f(`${url}/rest/v1/instances?id=eq.${id.toLowerCase()}&select=ts`, { headers: headers(key) });
+  // URL-encode the id (defense in depth — the handler already validates the address shape).
+  const r = await f(`${url}/rest/v1/instances?id=eq.${encodeURIComponent(id.toLowerCase())}&select=ts`, { headers: headers(key) });
   if (!r.ok) throw new Error(`supabase ${r.status} ${await r.text()}`);
   const rows = await r.json();
   return Array.isArray(rows) && rows[0] ? rows[0].ts : 0;
