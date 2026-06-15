@@ -1,9 +1,13 @@
 // anicca-launch.workflow.js — Dynamic Workflow body for the Anicca + Life Manager launch.
 // Bible: "How to master Dynamic Workflows — 6 patterns, 14 steps" (Anthropic engineers).
 // Patterns used: classify-and-act (per-agent model) · fan-out-and-synthesize · adversarial
-// verification (builder≠verifier, separate context, rubric+artifact only) · loop-until-done
-// (/goal: keep going until LIVE-green, max 3) · tournament (article hook taste) · quarantine
-// (read-only researchers; actors never see raw scraped HTML) · explicit token budget.
+// verification (builder≠verifier, separate context, rubric+artifact only) · loop-until-LIVE-green
+// (max 3 iterations then ESCALATE to Dais, spec25 G6) · tournament (article hook taste, gated) ·
+// quarantine (read-only researchers; actors never see raw scraped HTML).
+// Token budget: respects the turn's global `budget` (set by the user's "+Nk" directive). Before each
+// expensive loop/phase it checks budget.remaining() and escalates instead of blowing past the cap
+// (bible: "always cap"). If no target is set (budget.total === null), the max-3 loop + the ~16
+// concurrency limit are the bound.
 // Spec: docs/superpowers/specs/anicca/27-launch-workflow-and-ubi.md  + 26-implementation-map.md
 // SAVE THIS (bible §14): once green, persist to ~/.claude/workflows + ship as a Skill (template, not verbatim).
 //
@@ -78,18 +82,29 @@ const B = [
     rubric: '~/anicca/skills/life/notify.js: on late-risk, Anicca emails Dais a draft "OK to send to <stakeholder>? reply to approve" (held as AgentMail Draft); Dais email reply "OK" triggers the actual send to the stakeholder. Fully email — NO Telegram required. Show the approval round-trip.' },
 ]
 
-// ----------------------------- loop-until-LIVE-green helper (/goal) ---------------------------
-// builder (worktree) -> SEPARATE adversarial verifier (rubric+artifact only) -> loop, max 3.
+// ----------------------------- token-budget guard (bible §12: always cap) ---------------------
+// Reserve so we never start an expensive opus pair we can't afford. If a target was set and we're
+// under it, stop and escalate rather than blow 5-10x past the cap. No target -> Infinity, so the
+// max-3 loop + concurrency are the bound.
+const RESERVE = 80_000
+const budgetLow = () => budget.total !== null && budget.remaining() < RESERVE
+
+// ----------------------------- loop-until-LIVE-green helper -----------------------------------
+// builder (worktree) -> SEPARATE adversarial verifier (rubric+artifact only) -> loop, max 3,
+// then ESCALATE (spec25 G6). Stops early if the token budget runs low.
 async function buildAndVerify(s) {
   let feedback = ''
   for (let i = 0; i < 3; i++) {
+    if (budgetLow()) { log(`${s.key}: budget low (${Math.round(budget.remaining() / 1000)}k left) — escalate, not exceeding cap`); return { subsystem: s.key, track: s.track, pass: false, feedback: 'token budget exhausted' } }
     const build = await agent(
       `You are the BUILDER for subsystem "${s.key}" (track ${s.track}). Spec section: ${s.spec} ` +
       `(read docs/superpowers/specs/anicca/27 + 26 + the telemetry plan as the proven template). ` +
       (feedback ? `The adversarial verifier REJECTED the prior attempt — fix exactly these gaps: ${feedback}. ` : '') +
       `Follow SDD + TDD + every CLAUDE.md HARD RULE. Branch off main, implement, write/run tests, commit, ` +
       `and for web/functions deploy via PR->main (main has the --functions GHA). Run a real self_test and report it. ` +
-      `Touch ONLY this subsystem's files (disjoint set); never edit install.sh / landing nav / skills registry (Foundation owns those).`,
+      `Collision rule (HARD): you may ADD your own new files (your route page, your skill file) but you must NOT edit ` +
+      `the shared files install.sh / the landing nav component / skills-lock.json — Foundation already pre-wired EVERY ` +
+      `subsystem's nav link + registry slot, so you never need to. If you think you need to touch a shared file, stop and report it as a gap.`,
       { label: `build:${s.key}`, phase: 'Build', schema: BUILD, model: s.model, isolation: 'worktree' }
     )
     if (!build) { feedback = 'builder died'; log(`${s.key}: builder died (iter ${i + 1})`); continue }
@@ -113,10 +128,12 @@ async function buildAndVerify(s) {
 // =============================================================================================
 phase('Foundation')
 const foundation = await agent(
-  `Foundation builder: on the unified clean trunk (main), establish the SHARED scaffold both tracks depend on, ` +
-  `so the parallel subsystem agents never collide: (1) ~/anicca/install.sh skeleton + skills registry (skills-lock.json) ` +
-  `with EARN/SELF/LIFE/REPORT slots, (2) apps/landing app layout + nav linking /install /me /dashboard /life-manager, ` +
-  `(3) confirm telemetry+dashboard-sync are live. Branch off main, commit, PR->main. Report files + self_test.`,
+  `Foundation builder: on the unified clean trunk (main), OWN 100% of the shared-file content so the parallel ` +
+  `subsystem builders never need to touch a shared file (structural collision-prevention, not prose): ` +
+  `(1) ~/anicca/install.sh skeleton + skills-lock.json registry with EVERY slot pre-declared (earn, self/spawn, ` +
+  `self/issue-dev, life/travel, life/call, life/ask, life/notify, report, economy/ubi); ` +
+  `(2) apps/landing app layout + nav with EVERY route link pre-wired (/install /me /dashboard /life-manager); ` +
+  `(3) confirm telemetry+dashboard-sync are already live (do NOT rebuild them). Branch off main, commit, PR->main. Report files + self_test.`,
   { label: 'foundation', phase: 'Foundation', schema: BUILD, model: 'opus', isolation: 'worktree' }
 )
 const foundationOk = await agent(
@@ -143,6 +160,7 @@ if (failed.length) {
   return { stopped: 'build', built, failed }
 }
 log(`All ${built.length} subsystems LIVE-green. Proceeding to full E2E.`)
+if (budgetLow()) { log(`budget low before E2E (${Math.round(budget.remaining() / 1000)}k left) — escalate, do not exceed cap`); return { stopped: 'budget-before-e2e', built } }
 
 // =============================================================================================
 // PHASE 3 — E2E (one opus verifier runs the whole live chain end-to-end, incl. the real call).
@@ -189,10 +207,15 @@ const claimChecks = await parallel(drafts.map((d) =>
     { label: `claimcheck:${d.title.slice(0, 20)}`, phase: 'Distribute', schema: VERDICT, model: 'opus' })
 )).then((r) => r.filter(Boolean))
 
-// HUMAN-IN-LOOP gate: the workflow STOPS here with the drafts. Dais edits/approves OUTSIDE the WF,
-// then a separate (gated) distribute step posts to Postiz(X)/Slack/TikTok(reelfarm)/Product Hunt +
-// builds the demo video (skills/video, Remotion). We do NOT auto-publish unreviewed copy.
-log('Drafts ready + claim-checked. PAUSE for Dais edit/approval before any publish (human-in-loop). Distribution + demo video run as a gated follow-up once approved.')
+// HUMAN-IN-LOOP gate: the workflow STOPS here with the drafts. The demo video, the hook/title
+// tournament, and all posting are DELIBERATELY out of this run — they depend on the approved article
+// framing (you cannot post links to unpublished articles, and the video narrates the final copy).
+// They run as `gated_followup` below once Dais approves: a separate workflow does
+//   tournament(hook/title, pairwise) -> demo video (skills/video, Remotion + YouTube, frame/audio verify)
+//   -> distribute (Postiz/X article, Slack lab, reelfarm/TikTok, Product Hunt via camofox) -> link verify.
+// We do NOT auto-publish unreviewed copy (human-in-loop) and we do NOT silently drop the video — it is
+// an explicit, named follow-up phase.
+log('Drafts ready + claim-checked. PAUSE for Dais edit/approval (human-in-loop). Then run the gated follow-up: tournament -> demo video -> distribute.')
 
 return {
   foundation: foundationOk?.pass,
@@ -200,5 +223,5 @@ return {
   e2e: e2e?.pass,
   drafts: drafts.map((d) => ({ path: d.path, title: d.title })),
   claimChecks,
-  next: 'Dais edits articles -> approve -> gated distribute (Postiz/Slack/TikTok/PH) + demo video',
+  gated_followup: ['Dais edits + approves articles', 'tournament: hook/title pairwise', 'demo video (Remotion -> YouTube, frame/audio verify)', 'distribute: Postiz/X + Slack + reelfarm/TikTok + Product Hunt', 'verify every live URL (HARD 0.31)'],
 }

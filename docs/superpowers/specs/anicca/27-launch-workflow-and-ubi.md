@@ -8,7 +8,7 @@
 - **使うパターン(§05-13)**: classify-and-act(難subsystem→Opus, 軽→Sonnet)/ fan-out-and-synthesize(subsystem毎 agent)/ **adversarial verification(builder≠verifier、別context、rubricのみ)** / **loop-until-done + `/goal`(本番で動くまで止まらない)** / tournament(記事 hook/title の taste)/ **quarantine(scrape入力は read-only reader → actor は raw を見ない)**。
 - **3 failure mode を構造で潰す(§02)**: laziness=subsystem毎完遂 / self-preference=実装と検証は別agent(★電話は実装agentが発信し、別の検証agentが実発信→録音→Dais応答で確認★)/ drift=隔離context + `/goal`。
 - **token budget(§12)**: `budget` で各 phase に上限。No-budget で 5-10× 膨張を防ぐ。
-- **parallel vs pipeline(§04)**: subsystem 群は **pipeline**(build→verify を item毎に独立 stream、barrier 不要)。Foundation 後の A/B 全体は barrier(全 green を待って E2E)。
+- **parallel vs pipeline(§04)**: subsystem 群は **`parallel()`(barrier)** で回す。理由 = E2E は「A/B の全 subsystem が LIVE-green」を待つ **hard barrier** なので、全部揃うまで進めない。各 item 内部で build→adversarial verify→loop(max3)を回す。`pipeline()`(stream)は **Distribute の research→draft→claim-check** のような barrier 不要な所だけに使う。
 - **save as skill(§14)**: 動いたら `~/.claude/workflows` に保存 + Skill 化(`SKILL.md` で template として参照)。canonical source = repo の `docs/superpowers/workflows/`。
 
 ## §2 各業の詳細(3-4 文)
