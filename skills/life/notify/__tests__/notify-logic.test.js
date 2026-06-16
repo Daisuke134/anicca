@@ -186,3 +186,40 @@ test("extractApproval returns false for non-approvals", () => {
   assert.strictEqual(extractApproval(""), false);
   assert.strictEqual(extractApproval("send tomorrow instead"), false);
 });
+
+// ── gog-transport approval helpers (life-notify patch rev3) ────────────────────
+
+const os = require("node:os");
+const fsp = require("node:fs");
+const pathp = require("node:path");
+const { approvalToken, tokenFromSubject, appendPending, findPending, markSent } = require("../notify");
+
+test("approvalToken -> tokenFromSubject round-trips through a Re: subject", () => {
+  const tok = approvalToken("LunchTest:bob@example.com");
+  assert.match(tok, /^AN-[0-9A-F]{8}$/);
+  const subject = `Re: [Anicca] Late alert for "LunchTest" — reply OK to notify [${tok}]`;
+  assert.strictEqual(tokenFromSubject(subject), tok);
+});
+
+test("tokenFromSubject returns null when no token present", () => {
+  assert.strictEqual(tokenFromSubject("Re: random subject"), null);
+  assert.strictEqual(tokenFromSubject(""), null);
+});
+
+test("findPending/markSent: find before send, null after (idempotency)", () => {
+  // Isolate the JSONL path for the test via a temp HOME.
+  const tmp = fsp.mkdtempSync(pathp.join(os.tmpdir(), "notify-test-"));
+  const prevHome = process.env.HOME;
+  process.env.HOME = tmp;            // pendingPath() derives from HOME at call time
+  try {
+    const tok = "AN-DEADBEEF";
+    appendPending({ token: tok, to: "bob@example.com", subject: "s", body: "b", sent: false, ts: 1 });
+    const found = findPending(tok);
+    assert.ok(found && found.to === "bob@example.com");   // found while sent:false
+    markSent(tok);
+    assert.strictEqual(findPending(tok), null);           // flipped sent:true -> not re-findable
+  } finally {
+    process.env.HOME = prevHome;
+    fsp.rmSync(tmp, { recursive: true, force: true });
+  }
+});
