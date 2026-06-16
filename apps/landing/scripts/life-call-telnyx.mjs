@@ -152,6 +152,19 @@ async function main() {
     console.error("[runner] record_start err:", e.message);
   }
 
+  // 4b. Contingency: if the bridge has not logged a Telnyx `start` frame a few seconds after dial,
+  //     the dial-params stream did not auto-start — explicitly request it (docs: answer/streaming_start).
+  await sleep(6000);
+  if (!/twilio_start/.test(bridgeLog)) {
+    try {
+      const { telnyxStreamingStartBody } = require(
+        path.join(here, "..", "netlify", "functions", "_lib", "call-logic.js"));
+      await txPost(`/calls/${encodeURIComponent(ccid)}/actions/streaming_start`,
+        telnyxStreamingStartBody({ streamUrl: wsUrl }));
+      console.log("[runner] streaming_start contingency sent");
+    } catch (e) { console.error("[runner] streaming_start err:", e.message); }
+  }
+
   // 5. let the call run; the bridge logs uplink/downlink frames as audio flows.
   //    We give it up to ~50s of conversation (Dais answers, Charon speaks, Dais replies).
   for (let i = 0; i < 18; i++) {

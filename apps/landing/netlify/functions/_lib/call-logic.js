@@ -259,12 +259,32 @@ function buildTwilioMediaFrame(streamSid, b64MuLaw) {
 
 /**
  * Build an outbound Telnyx Media Streaming `media` frame (Charon → caller).
- * @param {string} streamId - the Telnyx stream_id from the start frame
+ * Telnyx's documented bidirectional send-back shape is `{event:"media",media:{payload}}` with NO
+ * stream_id (one bidirectional stream per call; Telnyx routes by the socket). Verified:
+ * developers.telnyx.com/docs/voice/programmable-voice/media-streaming "Sending RTP stream".
+ * @param {string} _streamId - accepted for call-site symmetry with buildTwilioMediaFrame; unused
  * @param {string} b64MuLaw - μ-law 8kHz base64 payload (no RTP/file header)
- * @returns {object} { event:"media", stream_id, media:{ payload } }
+ * @returns {object} { event:"media", media:{ payload } }
  */
-function buildTelnyxMediaFrame(streamId, b64MuLaw) {
-  return { event: "media", stream_id: streamId, media: { payload: b64MuLaw } };
+function buildTelnyxMediaFrame(_streamId, b64MuLaw) {
+  return { event: "media", media: { payload: b64MuLaw } };
+}
+
+/**
+ * Body for `POST /v2/calls/{ccid}/actions/streaming_start` — the contingency used only if a
+ * dial-params stream does not auto-start on answer. Same stream config as the dial body.
+ * Verified: media-streaming "It can be requested using answer and streaming_start commands".
+ * @param {object} o
+ * @param {string} o.streamUrl - public wss of the bridge /ws
+ * @returns {object} request body
+ */
+function telnyxStreamingStartBody({ streamUrl }) {
+  return {
+    stream_url: streamUrl,
+    stream_track: "both_tracks",
+    stream_bidirectional_mode: "rtp",
+    stream_bidirectional_codec: "PCMU",
+  };
 }
 
 /**
@@ -392,6 +412,7 @@ module.exports = {
   buildTelnyxMediaFrame,
   parseTelnyxStart,
   telnyxDialBody,
+  telnyxStreamingStartBody,
   buildCallPrompt,
   buildConnectStreamTwiml,
   xmlEscape,
