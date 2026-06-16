@@ -19,15 +19,15 @@ The sections below are the (over-optimistic) prior log — trust this correction
 |---|---|---|---|---|---|
 | install-me (CTA + /me de-theatre/jargon) | ✅ rev3 | ✅ PASS (caught 7th jargon site :199) | ✅ PR#54 `7fd7ea00` + PR#55 copy polish → main | ✅ **camofox click→buy.stripe.com checkout=true · /me jargon=0 · honest badge ×2 · integrity const intact** | ✅ **DONE 2026-06-16** |
 | ↳ /me "Colony overview (illustrative)" fake #s ($6/$18.40/$46.20) | — | — | — | — | KNOWN follow-up: not jargon (labeled illustrative) but should become real telemetry or be removed (own patch) |
-| stripe-spawn (webhook VERIFY + droplet E2E) | ✅ rev2 | — | — | — | NEXT-ish (webhook live; needs E2E droplet test) |
+| stripe-spawn (webhook VERIFY + droplet E2E) | ✅ rev2 | ⚠️ ok=false→VERIFY ok | webhook already live (PR-history) | ⚠️ webhook verified live (GET=405, bad-sig=400, 30 unit tests pass) · **droplet E2E DEFERRED**: needs `STRIPE_SPAWN_WEBHOOK_SECRET` (whsec_) to sign a test sub-event; Netlify CLI can't list/get it → retrieve via camofox Stripe Dashboard (reveal signing secret) then run apps/landing/scripts/stripe-spawn-live-e2e.mjs | **WEBHOOK VERIFIED; full droplet E2E pending whsec_** |
 | dashboard (build-time prerender real #s) | ✅ rev2 | ✅ PASS | ✅ PR#56 `eaff8d9a`→main | ✅ **Loading=0 · served HTML shows real $5.01 / Bodies / Self-funded · matches dashboard-sync** | ✅ **DONE 2026-06-16** |
 | ↳ dashboard test-fixture row (`host:"test"` = $5 of $5.01) | — | — | — | — | KNOWN follow-up: delete from Supabase `instances` so total = real genesis $0.01 |
 | earn (GATE-0 external, 0xwork, ~/clawd) | ✅ rev2 | ✅ PASS (classifier chokepoint closes swap false-green) | — | — | IMPLEMENTING · seed self-serve: 0xwork init faucet wallet |
 | life-travel (4 travel.js bug fixes) | ✅ rev2 | ✅ PASS | ✅ ~/anicca `c4ed1b8` (travel.js hardened; registry stays declared) | ✅ **live python cron verified: 15 real gcal IDs, 13 runs exit=0 · node --check pass** | ✅ **DONE 2026-06-16** (live feature works; OSS port hardened) |
-| life-call (Telnyx connected call) | ✅ rev2 | — | — | — | pending · ext: TELNYX key (camofox self-serve) + Dais answers phone (B2) |
-| life-ask (gog local round-trip + duration) | ✅ rev2 | — | — | — | pending · ext: GCal/inbox env keys |
-| life-notify (gog poll approval + cron reconcile) | ✅ rev2 | — | — | — | pending |
-| life-webapp (connect-calendar app) | ✅ rev2 | — | — | — | pending · ext-blocker: Composio V0 live ACTIVE connection |
+| life-call (Telnyx connected call) | ✅ rev2 | ✅ **PASS** (apply-ready; hand-apply not git-apply) | — | — | IMPLEMENT-NEXT (the 電話 milestone) · self-serve TELNYX key (camofox) + B2 Dais answers/relays OTP · after earn (serialize ~/anicca) |
+| life-ask (gog local round-trip + duration) | ✅ rev3 | ✅ PASS (r2: schedule removed, GCal env CONFIRMED set in Netlify, gog cmds fixed) | — | — | READY to implement (env confirmed) |
+| life-notify (gog poll approval + cron reconcile) | ✅ rev3 | ✅ PASS (r3: lazy pendingPath + require.main guard; tests 4/4) | — | — | READY to implement |
+| life-webapp (connect-calendar app) | ✅ rev2 | ✅ PASS (use saas_lateness.py envelope; de-risked) | — | — | READY · ext: Composio V0 live ACTIVE calendar connection to confirm events envelope |
 | self-spawn | — | — | — | — | NO PATCH YET (wave 3) |
 | ubi | — | — | — | — | NO PATCH YET (wave 3) |
 | auto-cancel + daily-report | — | — | — | — | NO PATCH YET (wave 3) |
