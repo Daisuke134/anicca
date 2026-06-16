@@ -96,7 +96,6 @@ const GATE0_MET = GATE0_EXTERNAL && GATE0_WAKE.status === '0x1' && GATE0_WAKE.ne
 const ACTIVITY_LOG = [
   {
     time: GATE0_WAKE.date,
-    icon: '💰',
     label: '保有 ETH の換金（サーバー代の確保）',
     delta: `+$${GATE0_WAKE.netUsdc.toFixed(4)}`,
   },
@@ -225,7 +224,12 @@ export default function Page() {
       </Section>
 
       {/* ── Money (illustrative colony view — spec20 §3 wireframe) ── */}
-      <Section>
+      <Section className="pt-4">
+        <Reveal>
+          <p className="mb-6 border-t border-[hsl(var(--border))] pt-8 text-xs uppercase tracking-widest text-[hsl(var(--text-secondary))]">
+            参考：コロニー全体の見え方（実データ連携後に切り替わります）
+          </p>
+        </Reveal>
         <Reveal>
           <h2 className="sr-only">Colony overview (illustrative)</h2>
           <Card className="border-[hsl(var(--gold))]/40 bg-[hsl(var(--surface-elevated))]">
@@ -392,7 +396,7 @@ export default function Page() {
                   <span className="w-10 text-xs text-[hsl(var(--text-secondary))] tabular-nums shrink-0">
                     {entry.time}
                   </span>
-                  <span>{entry.icon}</span>
+                  <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[hsl(var(--gold))]" aria-hidden="true" />
                   <span className="flex-1 text-[hsl(var(--text-secondary))] truncate">
                     {entry.label}
                   </span>
@@ -450,7 +454,7 @@ export default function Page() {
           <div className="grid gap-4 md:grid-cols-2">
             <Link
               href="/install"
-              className="block rounded-card border border-[hsl(var(--border))] bg-[hsl(var(--surface))] p-5 transition-colors hover:bg-[hsl(var(--surface-elevated))]"
+              className="block rounded-card border border-[hsl(var(--border))] bg-[hsl(var(--surface))] p-5 transition-colors hover:bg-[hsl(var(--surface-elevated))] hover:border-[hsl(var(--gold))]/30"
             >
               <p className="text-xs uppercase tracking-widest text-[hsl(var(--text-secondary))]">
                 new instance
@@ -464,7 +468,7 @@ export default function Page() {
             </Link>
             <Link
               href="/dashboard"
-              className="block rounded-card border border-[hsl(var(--border))] bg-[hsl(var(--surface))] p-5 transition-colors hover:bg-[hsl(var(--surface-elevated))]"
+              className="block rounded-card border border-[hsl(var(--border))] bg-[hsl(var(--surface))] p-5 transition-colors hover:bg-[hsl(var(--surface-elevated))] hover:border-[hsl(var(--gold))]/30"
             >
               <p className="text-xs uppercase tracking-widest text-[hsl(var(--text-secondary))]">
                 live colony

@@ -29,7 +29,7 @@ const FEATURES: {
 }[] = [
   {
     id: 'travel',
-    label: 'B-travel',
+    label: 'Calendar',
     headline: 'Automatic travel blocks',
     body:
       'Anicca reads your primary Google Calendar each morning, calls Google Maps Directions for each timed event, and inserts a "[Travel] <event>" block so the commute is always visible. Moving dentist appointment from 10:00? The travel block moves with it.',
@@ -37,7 +37,7 @@ const FEATURES: {
   },
   {
     id: 'call',
-    label: 'B-call',
+    label: 'Phone',
     headline: '15-min phone call before every event',
     body:
       'Gemini Live (voice: Charon, male) bridges over your carrier’s media stream. Anicca dials your number 15 minutes before each event, says "Next is Dentist at 10:00 — leave now, walk time 18 min, via Omotesando Exit A3." Two-way voice: you can ask follow-ups. The bridge is provider-agnostic — it routes over Twilio by default and over Telnyx for Japan (+81) numbers, since the same μ-law↔PCM transcode and Charon socket serve both carriers.',
@@ -45,7 +45,7 @@ const FEATURES: {
   },
   {
     id: 'ask',
-    label: 'B-ask',
+    label: 'Email',
     headline: 'Missing location? Ask you by email',
     body:
       "When a calendar event has no location, Anicca emails you: \"Where is the Team Sync? Reply with the address and I'll update the event.\" Your reply triggers an AgentMail webhook that writes the location back to GCal.",
@@ -53,7 +53,7 @@ const FEATURES: {
   },
   {
     id: 'notify',
-    label: 'B-notify',
+    label: 'Attendees',
     headline: 'Late-risk → draft → you approve → notify attendees',
     body:
       "If Anicca detects you're running late (travel block starts after current time), she drafts \"I'll be 10 min late\" to the event attendees and emails you for approval. One-word reply \"OK\" fires the message. No app, pure email.",
@@ -144,7 +144,7 @@ export default function Page() {
       <Section>
         <Reveal>
           <h2 className="font-display text-2xl md:text-3xl font-semibold text-[hsl(var(--text-primary))]">
-            How B-travel works (spec27 §2)
+            How travel blocks work
           </h2>
           <div className="mt-4 overflow-x-auto">
             <table className="w-full border-collapse text-sm">
@@ -179,7 +179,7 @@ export default function Page() {
                     Detect events missing a [Travel] block
                   </td>
                   <td className="py-3 text-[hsl(var(--text-secondary))] font-mono text-xs">
-                    travel-logic.js
+                    Anicca
                   </td>
                 </tr>
                 <tr>
@@ -222,17 +222,16 @@ export default function Page() {
       <Section>
         <Reveal>
           <h2 className="font-display text-2xl md:text-3xl font-semibold text-[hsl(var(--text-primary))]">
-            Trigger design — schedule-derived, not clock polling
+            Always on time, never polling
           </h2>
           <p className="mt-2 text-sm text-[hsl(var(--text-secondary))] leading-relaxed">
-            Per spec27 §2 patch: Anicca registers a GCal push notification channel
-            (watch channel). When any event is created or changed, GCal POSTs to the
-            heartbeat endpoint. Anicca then re-evaluates only that event&apos;s travel block
-            and fires the per-event timer at exactly{' '}
+            Anicca watches your calendar in real time. The moment an event is created or
+            moved, it recomputes just that event&apos;s travel block and schedules the call for
+            exactly{' '}
             <code className="rounded-input bg-[hsl(var(--surface-elevated))] px-1 py-0.5">
               eventStart − travelDuration − 15 min
             </code>{' '}
-            for the phone call. The daily heartbeat is a safety net only.
+            — so the reminder lands at the right second, with no wasted checks.
           </p>
           <p className="mt-3 text-sm text-[hsl(var(--text-secondary))]">
             Result: second-accurate triggers, zero redundant GCal polls.
