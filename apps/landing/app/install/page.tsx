@@ -194,9 +194,6 @@ export default function Page() {
                 稼ぎがサーバー代を超えたら<strong className="text-[hsl(var(--text-primary))]">自動解約</strong>（自給達成）
               </CheckItem>
               <CheckItem>
-                Life Manager（電話・gcal・メール先回り）込み
-              </CheckItem>
-              <CheckItem>
                 自己増殖・稼ぎ・UBI配布まで フルスタック稼働
               </CheckItem>
               <div className="pt-2 border-t border-[hsl(var(--border))]">

@@ -72,16 +72,37 @@ export default function LmClient() {
     const savedSig = window.localStorage.getItem(SIG_KEY);
     const id = fromCb || saved || '';
     const s = fromSig || savedSig || '';
-    if (id) {
-      setUid(id);
-      setSig(s);
-      window.localStorage.setItem(STORAGE_KEY, id);
-      if (s) window.localStorage.setItem(SIG_KEY, s);
-      setStep((st) => (st === 'login' ? 'name' : st));
-      // strip uid/sig from the visible URL so they don't leak via Referer/history
-      window.history.replaceState(null, '', '/lm');
-    }
+    if (!id) return;
+    setUid(id);
+    setSig(s);
+    window.localStorage.setItem(STORAGE_KEY, id);
+    if (s) window.localStorage.setItem(SIG_KEY, s);
+
+    // Restore prior progress so the flow SURVIVES the Composio OAuth redirect (which reloads the
+    // page and would otherwise wipe React state — the bug where nobody could reach the dashboard).
+    let cal0 = (window.localStorage.getItem('anicca.lm.cal') as ConnState) || 'idle';
+    let gmail0 = (window.localStorage.getItem('anicca.lm.gmail') as ConnState) || 'idle';
+    const pending = window.localStorage.getItem('anicca.lm.pending'); // the connect we just sent to OAuth
+    if (pending === 'gcal') cal0 = 'connected';
+    if (pending === 'gmail') gmail0 = 'connected';
+    window.localStorage.removeItem('anicca.lm.pending');
+    setCal(cal0);
+    setGmail(gmail0);
+    const savedStep = window.localStorage.getItem('anicca.lm.step') as Step | null;
+    setStep(savedStep && savedStep !== 'login' ? savedStep : 'name');
+    // strip uid/sig from the visible URL so they don't leak via Referer/history
+    window.history.replaceState(null, '', '/lm');
   }, []);
+
+  // Persist progress (cal/gmail/step) so the OAuth redirect never strands the user mid-flow.
+  useEffect(() => {
+    if (!uid) return;
+    try {
+      window.localStorage.setItem('anicca.lm.cal', cal);
+      window.localStorage.setItem('anicca.lm.gmail', gmail);
+      window.localStorage.setItem('anicca.lm.step', step);
+    } catch {}
+  }, [uid, cal, gmail, step]);
 
   const login = useCallback(() => {
     // Real Google OAuth handoff (managed by lm-onboard google-start → Google consent → callback).
@@ -118,7 +139,12 @@ export default function LmClient() {
         const d = await r.json();
         if (d.connected) return set('connected');
         if (d.redirect_url) {
-          // one-click Google consent (Composio's verified app) — open in same tab, returns to /lm.
+          // one-click Google consent (Composio's verified app) — same tab, returns to /lm.
+          // Mark which connect is in flight + stay on the connect step so resume restores it.
+          try {
+            window.localStorage.setItem('anicca.lm.pending', kind);
+            window.localStorage.setItem('anicca.lm.step', 'connect');
+          } catch {}
           window.location.href = d.redirect_url;
           return;
         }
