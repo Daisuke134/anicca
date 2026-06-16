@@ -17,10 +17,26 @@ ETH=$(python3 -c "print(round(int('$(rpc "{\"jsonrpc\":\"2.0\",\"id\":1,\"method
 USDC=$(python3 -c "print(round(int('$(rpc "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"eth_call\",\"params\":[{\"to\":\"0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913\",\"data\":\"0x70a08231000000000000000000000000${WNO}\"},\"latest\"]}")',16)/1e6,4))")
 DAY=$(date -u +%Y%m%d); BASE=/var/lib/anicca/baseline-$DAY; mkdir -p /var/lib/anicca; [ -f "$BASE" ] || echo "$USDC" > "$BASE"
 REV=$(python3 -c "print(round($USDC - $(cat "$BASE"),4))")
-# --- email (AgentMail) ---
-curl -s --max-time 20 -X POST "https://api.agentmail.to/v0/inboxes/anicca-genesis@agentmail.to/messages/send" \
-  -H "Authorization: Bearer $AGENTMAIL_API_KEY" -H "Content-Type: application/json" \
-  -d "$(python3 -c "import json;print(json.dumps({'to':['keiodaisuke@gmail.com','contact@aniccaai.com'],'subject':f'Anicca wake net \$$USDC','text':f'NET WORTH \$$USDC USDC (+$ETH ETH)\nREVENUE TODAY \$$REV\nDID $DID\nNEXT $NEXT'}))")" >/dev/null 2>&1
+# --- email: prefer the USER's own Gmail via Composio (Dais 2026-06-16: all connections via
+#     Composio). Falls back to AgentMail when the user has no ACTIVE Composio gmail connection. ---
+SUBJECT="Anicca wake net \$$USDC"
+EMAILBODY="NET WORTH \$$USDC USDC (+$ETH ETH)
+REVENUE TODAY \$$REV
+DID $DID
+NEXT $NEXT"
+SENT_VIA_COMPOSIO=0
+if [ -n "${COMPOSIO_API_KEY:-}" ] && [ -n "${ANICCA_REPORT_USER_ID:-}" ] && command -v node >/dev/null 2>&1; then
+  if ANICCA_REPORT_TO="${ANICCA_REPORT_TO:-keiodaisuke@gmail.com}" \
+     node "$(dirname "$0")/lib/send-report.mjs" "$SUBJECT" "$EMAILBODY" >>/var/log/anicca-report.log 2>&1; then
+    SENT_VIA_COMPOSIO=1
+  fi
+fi
+if [ "$SENT_VIA_COMPOSIO" = 0 ]; then
+  # Fallback: AgentMail (the owner's inbox), unchanged.
+  curl -s --max-time 20 -X POST "https://api.agentmail.to/v0/inboxes/anicca-genesis@agentmail.to/messages/send" \
+    -H "Authorization: Bearer $AGENTMAIL_API_KEY" -H "Content-Type: application/json" \
+    -d "$(python3 -c "import json;print(json.dumps({'to':['keiodaisuke@gmail.com','contact@aniccaai.com'],'subject':f'Anicca wake net \$$USDC','text':f'NET WORTH \$$USDC USDC (+$ETH ETH)\nREVENUE TODAY \$$REV\nDID $DID\nNEXT $NEXT'}))")" >/dev/null 2>&1
+fi
 # --- telemetry: sign the VERBATIM message string and POST it as {message,signature} ---
 # burn_day_usd/runway_days/status are PLACEHOLDERS until the earn/burn meter lands (spec25 R4).
 TS=$(date -u +%s)
