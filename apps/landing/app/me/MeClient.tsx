@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { useLaunchLocale } from '@/lib/launchLocale';
+import { launchStrings } from '@/lib/launchStrings';
 
 // /me client island — reads the instance wallet (URL ?wallet= or saved input), fetches the
 // LIVE dashboard-sync aggregate (the telemetry pipeline already serves it), and renders THIS
@@ -39,6 +41,8 @@ function statusTone(status: string): string {
 }
 
 export default function MeClient() {
+  const { locale } = useLaunchLocale();
+  const t = launchStrings[locale].me.dash;
   const [wallet, setWallet] = useState('');
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -87,7 +91,7 @@ export default function MeClient() {
     e.preventDefault();
     const w = input.trim();
     if (!WALLET_RE.test(w)) {
-      setError('Enter a valid 0x… wallet address (42 chars).');
+      setError(t.invalidWallet);
       return;
     }
     window.localStorage.setItem(STORAGE_KEY, w);
@@ -103,13 +107,13 @@ export default function MeClient() {
       {/* wallet connect */}
       <form onSubmit={onConnect} className="flex flex-col gap-3 sm:flex-row">
         <label htmlFor="me-wallet" className="sr-only">
-          Your instance wallet address
+          {t.walletLabel}
         </label>
         <input
           id="me-wallet"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="0x… your instance wallet"
+          placeholder={t.walletPlaceholder}
           spellCheck={false}
           autoComplete="off"
           className="flex-1 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-4 py-2.5 font-mono text-sm text-[hsl(var(--text-primary))] placeholder:text-[hsl(var(--text-secondary))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold))]"
@@ -118,7 +122,7 @@ export default function MeClient() {
           type="submit"
           className="rounded-md bg-[hsl(var(--text-primary))] px-5 py-2.5 text-sm font-semibold text-[hsl(var(--background))] transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold))]"
         >
-          {wallet ? 'Refresh' : 'Connect'}
+          {wallet ? t.refresh : t.connect}
         </button>
       </form>
 
@@ -129,14 +133,13 @@ export default function MeClient() {
       )}
 
       {loading && (
-        <p className="mt-6 text-sm text-[hsl(var(--text-secondary))]">Loading your instance…</p>
+        <p className="mt-6 text-sm text-[hsl(var(--text-secondary))]">{t.loadingInstance}</p>
       )}
 
       {!loading && wallet && notFound && (
         <p className="mt-6 text-sm text-[hsl(var(--text-secondary))]">
-          No telemetry yet for{' '}
-          <span className="font-mono">{wallet.slice(0, 6)}…{wallet.slice(-4)}</span>. Your instance
-          reports on its next wake — check back shortly.
+          {t.noTelemetryPre}
+          <span className="font-mono">{wallet.slice(0, 6)}…{wallet.slice(-4)}</span>{t.noTelemetryPost}
         </p>
       )}
 
@@ -154,7 +157,7 @@ export default function MeClient() {
           <dl className="mt-5 grid grid-cols-2 gap-x-6 gap-y-6 sm:grid-cols-3">
             <div>
               <dt className="text-xs uppercase tracking-wide text-[hsl(var(--text-secondary))]">
-                Net worth
+                {t.netWorth}
               </dt>
               <dd className="mt-1 text-2xl font-bold text-[hsl(var(--text-primary))]">
                 {usd(instance.net_worth_usd)}
@@ -162,7 +165,7 @@ export default function MeClient() {
             </div>
             <div>
               <dt className="text-xs uppercase tracking-wide text-[hsl(var(--text-secondary))]">
-                Revenue / mo
+                {t.revenueMo}
               </dt>
               <dd className="mt-1 text-2xl font-bold text-[hsl(var(--text-primary))]">
                 {usd(instance.revenue_mo_usd)}
@@ -170,7 +173,7 @@ export default function MeClient() {
             </div>
             <div>
               <dt className="text-xs uppercase tracking-wide text-[hsl(var(--text-secondary))]">
-                Burn / day
+                {t.burnDay}
               </dt>
               <dd className="mt-1 text-2xl font-bold text-[hsl(var(--text-primary))]">
                 {usd(instance.burn_day_usd)}
@@ -178,7 +181,7 @@ export default function MeClient() {
             </div>
             <div>
               <dt className="text-xs uppercase tracking-wide text-[hsl(var(--text-secondary))]">
-                Runway
+                {t.runway}
               </dt>
               <dd className="mt-1 text-2xl font-bold text-[hsl(var(--text-primary))]">
                 {instance.runway_days >= 999 ? '∞' : `${instance.runway_days}d`}
@@ -186,15 +189,15 @@ export default function MeClient() {
             </div>
             <div>
               <dt className="text-xs uppercase tracking-wide text-[hsl(var(--text-secondary))]">
-                Self-funded
+                {t.selfFunded}
               </dt>
               <dd className={`mt-1 text-2xl font-bold ${selfFunded ? 'text-emerald-500' : 'text-[hsl(var(--text-primary))]'}`}>
-                {selfFunded ? 'Yes' : 'No'}
+                {selfFunded ? t.yes : t.no}
               </dd>
             </div>
             <div>
               <dt className="text-xs uppercase tracking-wide text-[hsl(var(--text-secondary))]">
-                Model
+                {t.model}
               </dt>
               <dd className="mt-1 text-sm text-[hsl(var(--text-primary))]">
                 {instance.model_live || '—'}
@@ -206,11 +209,10 @@ export default function MeClient() {
           {/* withdraw — earned USDC is the instance's own; off-ramp to bank (spec27 A-install/me, task #83) */}
           <div className="mt-10 rounded-lg border border-[hsl(var(--border))] p-5">
             <h3 className="text-sm font-semibold text-[hsl(var(--text-primary))]">
-              Withdraw earned USDC
+              {t.withdrawTitle}
             </h3>
             <p className="mt-2 text-sm text-[hsl(var(--text-secondary))]">
-              Move surplus from your instance wallet to your bank (Stripe payout / off-ramp). Only
-              the surplus above the runway buffer is withdrawable, so your instance never starves.
+              {t.withdrawBody}
             </p>
             <a
               href={`https://basescan.org/address/${instance.id}`}
@@ -218,7 +220,7 @@ export default function MeClient() {
               rel="noopener noreferrer"
               className="mt-4 inline-block text-sm font-semibold text-[hsl(var(--text-primary))] underline underline-offset-4 decoration-[hsl(var(--gold))]"
             >
-              View wallet on Basescan →
+              {t.viewBasescan}
             </a>
             <button
               type="button"
@@ -227,13 +229,13 @@ export default function MeClient() {
               title="Withdraw opens with the launch payout rail"
               className="mt-4 block w-full cursor-not-allowed rounded-md bg-[hsl(var(--text-primary))] px-5 py-2.5 text-sm font-semibold text-[hsl(var(--background))] opacity-60"
             >
-              Withdraw to bank (opens at launch)
+              {t.withdrawCta}
             </button>
           </div>
 
           {updatedAt && (
             <p className="mt-6 text-xs text-[hsl(var(--text-secondary))]">
-              Live from telemetry · updated {new Date(updatedAt).toLocaleString()}
+              {t.liveUpdated}{new Date(updatedAt).toLocaleString(locale === 'ja' ? 'ja-JP' : 'en-US')}
             </p>
           )}
         </section>
