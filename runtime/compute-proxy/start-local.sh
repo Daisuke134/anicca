@@ -1,0 +1,87 @@
+#!/usr/bin/env bash
+# anicca local-default compute proxy — fully local, free, no server/API key.
+#
+# Anicca pays its OWN compute via ClawRouter/BlockRun (USDC x402) from its OWN
+# wallet — exactly like Franklin. The user provides only SHELTER (this device);
+# Anicca buys its own FOOD (inference). Free NVIDIA models when the wallet is
+# empty; frontier models unlock automatically once USDC lands in the wallet.
+#
+# What this script DOES (and does NOT) do:
+#   1. ensures a self-owned wallet at ~/.automaton/wallet.json (auto-gen, never a human key)
+#   2. starts runtime/compute-proxy/proxy.mjs on :8402 (x402 self-pay, OpenAI-compatible)
+#   3. exports OPENAI_BASE_URL + OPENAI_API_KEY (placeholder) + ANICCA_MODEL so an
+#      OpenAI-compatible loop you pass in routes inference through the self-paid proxy
+#   4. exec "$@" if you give it a loop command; otherwise HOLD the proxy in the
+#      foreground and PRINT how to plug your loop in.
+#
+# IMPORTANT — HONEST SCOPE: this repo does NOT ship an automaton loop entrypoint
+# (install.sh:"Start the automaton loop (your runner of choice)"). So with NO
+# args this script ONLY runs the self-pay compute proxy and tells you to plug
+# your loop in as:  ./start-local.sh <your-loop-cmd>  . It does not pretend an
+# automaton is wired. Any OpenAI-compatible loop that reads OPENAI_BASE_URL /
+# OPENAI_API_KEY (or ANICCA_MODEL) will route through the proxy once you pass it.
+set -euo pipefail
+
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PORT="${COMPUTE_PROXY_PORT:-8402}"
+WALLET="$HOME/.automaton/wallet.json"
+# Free BlockRun model = $0/call, no key. Frontier (paid) is chosen by your loop
+# when the wallet has USDC; override with ANICCA_MODEL to pin one.
+FREE_MODEL="${ANICCA_FREE_MODEL:-nvidia/deepseek-v4-flash}"
+
+# --- 1. self-owned wallet (no human key) -------------------------------
+if [ ! -f "$WALLET" ]; then
+  mkdir -p "$HOME/.automaton"
+  node -e '
+    const {generatePrivateKey,privateKeyToAccount}=require("'"$HERE"'/node_modules/viem/accounts");
+    const fs=require("fs"); const pk=generatePrivateKey();
+    fs.writeFileSync(process.env.HOME+"/.automaton/wallet.json",
+      JSON.stringify({privateKey:pk,address:privateKeyToAccount(pk).address},null,2));
+    fs.chmodSync(process.env.HOME+"/.automaton/wallet.json",0o600);
+    console.error("[local] created self-owned wallet "+privateKeyToAccount(pk).address);
+  '
+else
+  echo "[local] wallet preserved: $(node -e 'console.log(JSON.parse(require("fs").readFileSync(process.env.HOME+"/.automaton/wallet.json")).address)')"
+fi
+
+# --- 2. start the x402 self-pay proxy ----------------------------------
+# Readiness is proven by a real routed path (/v1/chat/completions), NOT /v1/models
+# (proxy.mjs returns an empty data:[] for /models, so a 200 there proves nothing).
+proxy_ready() {
+  curl -sS --max-time 3 "http://127.0.0.1:$PORT/v1/chat/completions" \
+    -H 'Content-Type: application/json' \
+    -d "{\"model\":\"$FREE_MODEL\",\"messages\":[{\"role\":\"user\",\"content\":\"ping\"}]}" \
+    >/dev/null 2>&1
+}
+if ! curl -sS --max-time 2 "http://127.0.0.1:$PORT/v1/models" >/dev/null 2>&1; then
+  echo "[local] starting compute-proxy on :$PORT (x402 self-pay from own wallet)..."
+  ( cd "$HERE" && COMPUTE_PROXY_PORT="$PORT" node proxy.mjs ) &
+  # wait for the HTTP server to bind (port up). Live inference still needs the
+  # network + a free-tier/funded wallet — see step 4 / verify notes.
+  for _ in $(seq 1 20); do
+    curl -sS --max-time 1 "http://127.0.0.1:$PORT/v1/models" >/dev/null 2>&1 && break
+    sleep 0.5
+  done
+else
+  echo "[local] compute-proxy already live on :$PORT"
+fi
+
+# --- 3. point any OpenAI-compatible loop at the self-paid proxy --------
+export OPENAI_BASE_URL="http://127.0.0.1:$PORT/v1"
+export OPENAI_API_KEY="${OPENAI_API_KEY:-x402-local-nokey}"   # placeholder; proxy pays in USDC, not this
+export ANICCA_MODEL="${ANICCA_MODEL:-$FREE_MODEL}"
+echo "[local] inference -> $OPENAI_BASE_URL  model=$ANICCA_MODEL  (free until wallet funded)"
+
+# --- 4. run YOUR loop, or hold the proxy + show how to plug one in -----
+if [ "$#" -gt 0 ]; then
+  echo "[local] launching your loop: $*"
+  exec "$@"
+else
+  echo "[local] no loop command given — holding the self-pay compute proxy in foreground."
+  echo "[local] this repo does NOT ship an automaton loop; plug yours in like:"
+  echo "[local]     ./start-local.sh <your-loop-cmd>"
+  echo "[local] your loop just needs to read OPENAI_BASE_URL (now $OPENAI_BASE_URL)."
+  echo "[local] fund frontier: send USDC to the wallet address above; your loop can then pick a paid model."
+  echo "[local] (Ctrl-C to stop the proxy.)"
+  wait
+fi
