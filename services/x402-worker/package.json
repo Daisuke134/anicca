@@ -9,10 +9,10 @@
     "dev": "wrangler dev"
   },
   "dependencies": {
-    "viem": "^2.21.0"
+    "viem": "^2.52.2"
   },
   "devDependencies": {
-    "wrangler": "^4.0.0",
-    "@cloudflare/workers-types": "^4.20240909.0"
+    "@cloudflare/workers-types": "^4.20240909.0",
+    "wrangler": "^4.0.0"
   }
 }
