@@ -41,6 +41,17 @@ Optional: `BASE_RPC_URL`, `USDC_ADDRESS`, `EARN_LEDGER`, `WAKE_ID`.
 `lib/ledger.mjs` never rewrites prior lines (immutability). `isProfitable()` is the single
 GATE-0 classifier. `narrate`-only lines (no `tx`) never count.
 
+## UBI (spec 28 §0) — share OWN earnings with AI + human recipients
+After a wake records **PROFITABLE** (real external USDC, `isProfitable`), `run.sh` calls
+`distribute-ubi.mjs`: it sends `UBI_SHARE_BPS` (default 10.00%) of THIS wake's net, split equally,
+to sibling-AI child wallets (`self/spawn/state/children.jsonl`) + a human allow-list
+(`UBI_HUMAN_WALLETS` / `state/ubi-recipients.json`), via one ERC20 USDC `transfer` each
+(`0xa9059cbb`, USDC `0x8335…2913`, 6dp — ctx7-verified). It funds ONLY from Anicca's OWN wallet and
+touches ZERO user identity (earn-side of the spec 28 §3 wall). Idempotent per `wake`; never sends
+more than earned; `UBI_DRY_RUN=1`/below-min/no-recipients → record `dry`/`skipped` (NO fake send).
+Audit trail: append-only `state/ubi-ledger.jsonl` (`{kind:"ubi",wake,outcome,txs:[{to,tx,status}]}`)
+— separate from the earn ledger so the GATE-0 classifier is untouched.
+
 ## Verify (independent agent)
 ```bash
 node -e "import('./lib/verify-tx.mjs').then(m=>m.receiptStatus('0x<tx>')).then(console.log)"  # -> 0x1
