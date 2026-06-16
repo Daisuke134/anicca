@@ -32,7 +32,7 @@ The sections below are the (over-optimistic) prior log — trust this correction
 | ubi | — | — | — | — | NO PATCH YET (wave 3) |
 | auto-cancel + daily-report | — | — | — | — | NO PATCH YET (wave 3) |
 | i18n /en /ja + jargon-strip sitewide | — | — | — | — | NO PATCH YET (wave 3) |
-| mother-repo ~/anicca Hermes cleanup (#23) | — | — | — | — | NO PATCH YET |
+| mother-repo ~/anicca Hermes cleanup (#23) | n/a | n/a | ✅ ~/anicca `2d53088`→main | ✅ **17 specs updated to automaton reality** (07/16 marked SUPERSEDED; Hermes→automaton; found real reversed-decision spec16→00-MASTER; no live spec claims runtime=Hermes) | ✅ **DONE 2026-06-16** |
 
 **Genuine human touchpoints (Dais agreed):** answering the phone when life-call fires (もしもし) + the Telnyx D60 number-verify (Telnyx calls his handset). Everything else = agent self-serve (camofox / wallet / keys in ~/.openclaw/.env).
 
