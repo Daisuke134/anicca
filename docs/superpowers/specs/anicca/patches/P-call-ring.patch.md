@@ -30,6 +30,7 @@
 | bridge routes Telnyx both ways with tested transcode | `apps/landing/scripts/call-bridge.cjs:72-91` `routeTelnyxMessage`, `:104-119` `routeGeminiMessage(...,buildTelnyxMediaFrame)` |
 | runner places the real call + records + accounts frames | `apps/landing/scripts/life-call-telnyx.mjs:112-216` (tunnel → bridge → `/v2/calls` → `record_start` → poll → recording fetch) |
 | no `streaming_start` contingency exists | `grep -n "streaming_start" call-logic.js call-bridge.cjs life-call-telnyx.mjs` → 0 hits |
+| **live test #17 asserts the OLD `stream_id`** | `__tests__/call-logic.test.js:201-208` `assert.strictEqual(f.stream_id,"32DE0DEA")` — Diff 1 removes `stream_id`, so this test MUST be rewritten (Diff 2), not just appended to, or `node --test` fails |
 
 ## §3 Diffs
 
@@ -77,20 +78,38 @@ diff --git a/apps/landing/netlify/functions/_lib/call-logic.js b/apps/landing/ne
 
 (and add `telnyxStreamingStartBody` to `module.exports` alongside `buildTelnyxMediaFrame`, `telnyxDialBody`.)
 
-### Diff 2 — `call-logic.test.js`: assert the documented outbound shape (node:test)
+### Diff 2 — `call-logic.test.js`: REPLACE existing test #17 (asserts the old stream_id) + add streaming_start test
+
+> ⚠ The live test at `call-logic.test.js:201-208` currently asserts `f.stream_id === "32DE0DEA"`. Diff 1 removes
+> `stream_id`, so this test MUST be **rewritten** (not just appended) or `node --test` fails (§5 step 1). Also add
+> `telnyxStreamingStartBody` to the test file's `require(...)` destructure.
 
 ```diff
+diff --git a/apps/landing/netlify/functions/_lib/__tests__/call-logic.test.js b/apps/landing/netlify/functions/_lib/__tests__/call-logic.test.js
+--- a/apps/landing/netlify/functions/_lib/__tests__/call-logic.test.js
++++ b/apps/landing/netlify/functions/_lib/__tests__/call-logic.test.js
+@@
+-// ── 17. Telnyx outbound media frame uses stream_id (not streamSid) ─────────────
+-test("buildTelnyxMediaFrame: event=media, stream_id, base64 payload", () => {
+-  const f = buildTelnyxMediaFrame("32DE0DEA", "QUJD");
+-  assert.strictEqual(f.event, "media");
+-  assert.strictEqual(f.stream_id, "32DE0DEA");
+-  assert.strictEqual(f.media.payload, "QUJD");
+-  assert.strictEqual(f.media.streamSid, undefined, "Telnyx uses stream_id not streamSid");
+-});
++// ── 17. Telnyx outbound media frame = documented {event:media,media:{payload}} (NO stream_id) ──
 +test("buildTelnyxMediaFrame matches Telnyx docs shape (no stream_id)", () => {
 +  const f = buildTelnyxMediaFrame("ignored", "QUJD");
-+  assert.equal(f.event, "media");
-+  assert.equal(f.media.payload, "QUJD");
-+  assert.ok(!("stream_id" in f), "outbound frame must omit stream_id per docs");
++  assert.strictEqual(f.event, "media");
++  assert.strictEqual(f.media.payload, "QUJD");
++  assert.ok(!("stream_id" in f), "outbound frame must omit stream_id per Telnyx docs");
 +});
++// ── 17b. streaming_start contingency body ──
 +test("telnyxStreamingStartBody carries rtp+PCMU+both_tracks", () => {
 +  const b = telnyxStreamingStartBody({ streamUrl: "wss://x/ws" });
-+  assert.equal(b.stream_bidirectional_mode, "rtp");
-+  assert.equal(b.stream_bidirectional_codec, "PCMU");
-+  assert.equal(b.stream_track, "both_tracks");
++  assert.strictEqual(b.stream_bidirectional_mode, "rtp");
++  assert.strictEqual(b.stream_bidirectional_codec, "PCMU");
++  assert.strictEqual(b.stream_track, "both_tracks");
 +});
 ```
 

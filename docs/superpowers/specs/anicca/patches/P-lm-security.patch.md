@@ -27,6 +27,8 @@
    {`aniccaai.com`,`www.aniccaai.com`,`localhost`,`127.0.0.1`}; anything else falls back to `https://aniccaai.com/lm`.
    Applied to `q.return` (google-start) and `q.state` (google-callback) so neither can redirect off-site.
 3. New env `LM_UID_SECRET` (32+ random bytes) in `~/.openclaw/.env` (chmod 600, never committed) + Netlify env.
+4. **Normalize + strip on every redirect** (reviewer B1+B2): `safeReturn` clears userinfo (`user:pass@`) and deletes any caller-supplied `uid`/`sig` from `return`/`state`, then emits a reconstructed URL — so the only `uid`/`sig` that reaches the browser is the server-minted pair (kills session-fixation), and the raw attacker string is never echoed into `Location:` (kills userinfo-confusion redirect).
+5. **Persist `sig` client-side** (reviewer B3): `LmClient` stores `sig` in localStorage (`SIG_KEY`) so it survives reload, threads it through BOTH save POSTs + gmail-connect, and `history.replaceState`s it out of the visible URL (kills Referer/history leak).
 
 ## §3 Diffs
 
@@ -57,11 +59,19 @@ diff --git a/apps/landing/netlify/functions/lm-onboard.js b/apps/landing/netlify
 +  const b = Buffer.from(expected);
 +  return a.length === b.length && crypto.timingSafeEqual(a, b);
 +}
-+// Only allow redirects back to our own hosts (open-redirect fix).
++// Allow redirects to our own hosts ONLY, and emit a NORMALIZED url with userinfo cleared and any
++// caller-supplied uid/sig stripped. This defeats (B2) the `https://evil.com@aniccaai.com` userinfo
++// confusion (we never echo the raw input) AND (B1) session-fixation where an attacker threads their
++// own uid/sig through `return` (URLSearchParams.get returns the FIRST occurrence, so a pre-seeded
++// uid would win over the freshly minted one). After stripping, the server-minted pair is the only one.
 +function safeReturn(url) {
 +  try {
 +    const u = new URL(String(url));
-+    if ((u.protocol === "https:" || u.protocol === "http:") && ALLOWED_HOSTS.has(u.hostname)) return u.toString();
++    if ((u.protocol === "https:" || u.protocol === "http:") && ALLOWED_HOSTS.has(u.hostname)) {
++      u.username = ""; u.password = "";                          // B2: drop user:pass@
++      u.searchParams.delete("uid"); u.searchParams.delete("sig"); // B1: drop injected identity
++      return u.toString();                                        // reconstructed, never the raw input
++    }
 +  } catch {}
 +  return "https://aniccaai.com/lm";
 +}
@@ -127,22 +137,55 @@ diff --git a/apps/landing/netlify/functions/gmail-connect.js b/apps/landing/netl
 +  if (!verifyUid(uid, q.sig)) return { statusCode: 403, body: "bad uid signature" };
 ```
 
-### Diff 3 — `LmClient.tsx`: carry `sig` alongside `uid` on gmail-connect + save calls
+### Diff 3 — `LmClient.tsx`: thread + PERSIST `sig` at ALL sites (read, gmail-connect, 2× save)
+
+> Live-read confirmed the exact sites (apps/landing/app/lm/LmClient.tsx): state `:56`, resume effect
+> `:65-75` (today persists ONLY `uid`), `saveName` `:84-97`, `connect` `:99-124`, `savePhone` `:126-140`.
+> Because the server now REQUIRES `sig`, it must persist across reload (localStorage) and ride BOTH save
+> POSTs + gmail-connect, or the legit flow 403s (reviewer B3). There are **two** save sites, not one.
 
 ```diff
-@@ wherever LmClient reads uid from the URL and calls the functions
--  const uid = params.get("uid");
-+  const uid = params.get("uid");
-+  const sig = params.get("sig");
-@@ gmail connect
--  fetch(`/.netlify/functions/gmail-connect?uid=${encodeURIComponent(uid)}`)
-+  fetch(`/.netlify/functions/gmail-connect?uid=${encodeURIComponent(uid)}&sig=${encodeURIComponent(sig)}`)
-@@ save
--  body: JSON.stringify({ uid, name, phone })
-+  body: JSON.stringify({ uid, sig, name, phone })
+diff --git a/apps/landing/app/lm/LmClient.tsx b/apps/landing/app/lm/LmClient.tsx
+--- a/apps/landing/app/lm/LmClient.tsx
++++ b/apps/landing/app/lm/LmClient.tsx
+@@ state
+   const [uid, setUid] = useState<string>('');
++  const [sig, setSig] = useState<string>('');
+@@ resume effect (:65-75)
+     const params = new URLSearchParams(window.location.search);
+     const fromCb = params.get('uid');
++    const fromSig = params.get('sig');
+     const saved = window.localStorage.getItem(STORAGE_KEY);
++    const savedSig = window.localStorage.getItem(SIG_KEY);
+     const id = fromCb || saved || '';
++    const s = fromSig || savedSig || '';
+     if (id) {
+       setUid(id);
++      setSig(s);
+       window.localStorage.setItem(STORAGE_KEY, id);
++      if (s) window.localStorage.setItem(SIG_KEY, s);
+       setStep((s) => (s === 'login' ? 'name' : s));
++      // strip uid/sig from the visible URL so they don't leak via Referer/history (reviewer N2)
++      window.history.replaceState(null, '', '/lm');
+     }
+   }, []);
+@@ saveName body (:91) + deps (:97)
+-        body: JSON.stringify({ uid, name: name.trim() }),
++        body: JSON.stringify({ uid, sig, name: name.trim() }),
+-  }, [name, uid]);
++  }, [name, uid, sig]);
+@@ connect fetch (:107) — sig required by gmail-connect, harmless/ignored by calendar-connect (unchanged) + deps (:123)
+-          `/.netlify/functions/${fn}?uid=${encodeURIComponent(uid)}`,
++          `/.netlify/functions/${fn}?uid=${encodeURIComponent(uid)}&sig=${encodeURIComponent(sig)}`,
+-    [uid],
++    [uid, sig],
+@@ savePhone body (:134) + deps (:140)
+-        body: JSON.stringify({ uid, phone: phone.trim() }),
++        body: JSON.stringify({ uid, sig, phone: phone.trim() }),
+-  }, [phone, uid]);
++  }, [phone, uid, sig]);
 ```
-
-(Exact `LmClient.tsx` lines confirmed at apply time with `grep -n "uid" apps/landing/app/lm/LmClient.tsx`; the three call-sites get `sig` threaded through. This keeps the diff honest — LmClient is read live before editing.)
+Add `const SIG_KEY = 'anicca_lm_sig';` next to the existing `STORAGE_KEY` const.
 
 ## §4 Run commands
 ```bash
@@ -157,7 +200,7 @@ curl -s "/.netlify/functions/lm-onboard?action=google-callback&state=https://evi
 
 ## §5 Acceptance (HARD 0.31)
 1. `npm run build` green (static export unaffected).
-2. node:test (or live curl) proves: forged/blank `sig` → **403** on gmail-connect + save; `state=https://evil.com` → redirect to `https://aniccaai.com/lm` (no off-site).
+2. node:test (or live curl) proves ALL of: forged/blank `sig` → **403** on gmail-connect + save; `state=https://evil.com` → `https://aniccaai.com/lm`; `state=https://evil.com@aniccaai.com/lm` → emitted host is `aniccaai.com` with userinfo removed (B2); `return=https://aniccaai.com/lm?uid=lm_attacker&sig=X` → the final return URL contains ONLY the server-minted uid/sig, attacker's stripped (B1).
 3. A real `/lm` onboarding round-trip still completes (google-start → Composio consent → callback → gcal+Gmail connected) with a VALID signed uid — no regression to the working flow.
 4. PR #61 unblocked.
 
