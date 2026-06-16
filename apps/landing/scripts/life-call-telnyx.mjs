@@ -139,23 +139,25 @@ async function main() {
   const legId = call.data.call_leg_id;
   console.log(`[runner] CALL_CONTROL_ID=${ccid}\n[runner] CALL_SESSION_ID=${sessionId} to=${TO}`);
 
-  // 4. start a recording for this call (mp3, both channels)
+  // 4. Wait for the call to be ANSWERED. The bridge logs `twilio_start` when Telnyx opens the media
+  //    stream, which (verified live 2026-06-16) happens on answer via the dial-params — record_start and
+  //    streaming_start both 422 with "Call not answered yet" (90034) if issued before this point.
   let recStarted = false;
-  try {
-    await txPost(`/calls/${encodeURIComponent(ccid)}/actions/record_start`, {
-      format: "mp3",
-      channels: "single",
-    });
-    recStarted = true;
-    console.log("[runner] record_start ok");
-  } catch (e) {
-    console.error("[runner] record_start err:", e.message);
+  let answered = false;
+  for (let i = 0; i < 25; i++) { // up to ~50s of ringing
+    if (/twilio_start/.test(bridgeLog)) { answered = true; break; }
+    await sleep(2000);
   }
-
-  // 4b. Contingency: if the bridge has not logged a Telnyx `start` frame a few seconds after dial,
-  //     the dial-params stream did not auto-start — explicitly request it (docs: answer/streaming_start).
-  await sleep(6000);
-  if (!/twilio_start/.test(bridgeLog)) {
+  if (answered) {
+    // 4a. answered → the dial-params stream auto-started; now start the recording (mp3).
+    try {
+      await txPost(`/calls/${encodeURIComponent(ccid)}/actions/record_start`, { format: "mp3", channels: "single" });
+      recStarted = true;
+      console.log("[runner] record_start ok (post-answer)");
+    } catch (e) { console.error("[runner] record_start err:", e.message); }
+  } else {
+    // 4b. Contingency: still no stream after ringing — the dial-params stream did not auto-start;
+    //     explicitly request it (docs: answer/streaming_start).
     try {
       const { telnyxStreamingStartBody } = require(
         path.join(here, "..", "netlify", "functions", "_lib", "call-logic.js"));
