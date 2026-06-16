@@ -146,6 +146,7 @@ async function buildAndVerify(s, gaps) {
     const build = await agent(
       `BUILDER for subsystem "${s.key}" (track ${s.track}). ${RULES} ` +
       `Spec: ${s.spec} (read docs/superpowers/specs/anicca/27 + 26 + the telemetry-pipeline plan as the proven template). ` +
+      `★ A REVIEWED, revised real-diff patch for "${s.key}" likely exists at docs/superpowers/specs/anicca/patches/${s.key}.patch.md — if it does, APPLY IT as your implementation: produce the REAL git diff against live code, honoring its diffs + commands + integrity constraints; do NOT re-derive from scratch. For skill subsystems (earn / life-*), the LIVE runtime is ~/clawd (a non-symlink COPY of ~/anicca) + ~/.hermes/cron — you MUST apply to ~/clawd AND ~/anicca and fix the jobs.json target, because editing only ~/anicca does NOT change the running loop. ` +
       `Close EXACTLY these audited gaps — each includes RAW evidence of the current broken state:\n${JSON.stringify(gaps, null, 1)}\n` +
       (feedback ? `The reviewer/verifier REJECTED the prior attempt — fix exactly: ${feedback}. ` : '') +
       `Read the LIVE code at each path, write a REAL applicable diff (NOT a sketch), follow SDD+TDD, run the tests. ` +
@@ -162,7 +163,7 @@ async function buildAndVerify(s, gaps) {
       `Review the UNMERGED PR #${build.pr} (branch ${build.branch}) diff for SPEC-COMPLIANCE against this rubric: ${s.rubric} ` +
       `Artifact: files=${JSON.stringify(build.files)}, builder_self_test=${build.self_test}. Read the diff; try to find the weakest case. ` +
       `ok=false with concrete blocking[] if ANYTHING is a façade / placeholder URL / disabled button / "coming" / mock / not spec-compliant. ok=true only if the diff genuinely makes a real user able to do the thing.`,
-      { label: `review:${s.key}`, phase: 'Build', schema: REVIEW, model: 'opus' }
+      { label: `review:${s.key}`, phase: 'Build', schema: REVIEW, model: 'opus', agentType: 'superpowers:code-reviewer' }
     )
     if (!review || !review.ok) { feedback = review ? review.blocking.join('; ') : 'reviewer died'; log(`${s.key}: review rejected iter ${i + 1} — ${feedback}`); continue }
 
