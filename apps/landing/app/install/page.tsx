@@ -122,7 +122,7 @@ export default function Page() {
               recommended
               cta={
                 <CTA
-                  href="https://buy.stripe.com/anicca-cloud"
+                  href="https://buy.stripe.com/cNi7sL0dEdVI0iI7ki2880U"
                   variant="primary"
                 >
                   Googleでログイン / $30/月で始める →

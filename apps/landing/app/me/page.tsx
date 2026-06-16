@@ -97,7 +97,7 @@ const ACTIVITY_LOG = [
   {
     time: GATE0_WAKE.date,
     icon: '💰',
-    label: `${GATE0_WAKE.source} (GATE-0)`,
+    label: 'ETH→USDC 換金（compute runway 用）',
     delta: `+$${GATE0_WAKE.netUsdc.toFixed(4)}`,
   },
 ];
@@ -170,14 +170,14 @@ export default function Page() {
         <Reveal>
           <Card className="border-emerald-500/40 bg-[hsl(var(--surface-elevated))]">
             <div className="flex items-center justify-between gap-3">
-              <CardLabel>GATE-0 — 初の実 on-chain wake（外部収益はまだ）</CardLabel>
+              <CardLabel>初の実 on-chain 稼働（外部収益はこれから）</CardLabel>
               {GATE0_MET ? (
                 <span className="inline-flex items-center gap-1.5 rounded-pill bg-emerald-500/15 px-3 py-1 text-xs font-semibold text-emerald-400">
-                  <StatusDot status="alive" /> GATE-0 MET
+                  <StatusDot status="alive" /> 外部収益 達成
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1.5 rounded-pill bg-amber-500/15 px-3 py-1 text-xs font-semibold text-amber-400">
-                  <StatusDot status="warning" /> GATE-0 未達（swap = 自資産換金、外部収益ではない）
+                  <StatusDot status="warning" /> 外部収益はまだ（自資産の換金のみ）
                 </span>
               )}
             </div>
@@ -193,10 +193,10 @@ export default function Page() {
               </div>
               <div>
                 <p className="text-base font-semibold text-[hsl(var(--text-primary))]">
-                  {GATE0_WAKE.source}
+                  ETH→USDC 換金
                 </p>
                 <p className="mt-0.5 text-xs text-[hsl(var(--text-secondary))]">
-                  {GATE0_WAKE.task}
+                  compute runway 確保のための換金
                 </p>
               </div>
               <div>
@@ -217,9 +217,8 @@ export default function Page() {
               tx {GATE0_WAKE.tx.slice(0, 10)}…{GATE0_WAKE.tx.slice(-6)} を BaseScan で検証 →
             </a>
             <p className="mt-3 text-[10px] text-[hsl(var(--text-secondary))]">
-              automaton loop が毎 beat <code>EARN_MODE=execute bash skills/earn/run.sh</code> を実行 →
-              ETH→USDC を Base で実 swap → receipt 0x1 + USDC 差分を検証 → earn-ledger.jsonl に追記。
-              narrate だけは GATE-0 にならない（HARD 0.24/0.31）。
+              あなたの個体が Base 上で実際に取引し、成功レシート（0x1）と USDC 差分を検証した上で記録した実績です。
+              文章だけの主張ではなく、すべてオンチェーンで再確認できます。
             </p>
           </Card>
         </Reveal>
@@ -441,24 +440,7 @@ export default function Page() {
             >
               Aniccaと話す
             </a>
-            <button
-              type="button"
-              disabled
-              className="inline-flex items-center gap-2 rounded-pill border border-[hsl(var(--border))] bg-[hsl(var(--surface))] px-5 py-2.5 text-sm font-medium text-[hsl(var(--text-secondary))] cursor-not-allowed opacity-60"
-            >
-              一時停止
-            </button>
-            <button
-              type="button"
-              disabled
-              className="inline-flex items-center gap-2 rounded-pill border border-[hsl(var(--border))] bg-[hsl(var(--surface))] px-5 py-2.5 text-sm font-medium text-[hsl(var(--text-secondary))] cursor-not-allowed opacity-60"
-            >
-              日次報告
-            </button>
           </div>
-          <p className="mt-3 text-xs text-[hsl(var(--text-secondary))]">
-            一時停止 · 日次報告は Stripe 課金後に有効化されます。
-          </p>
         </Reveal>
       </Section>
 
