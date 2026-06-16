@@ -48,6 +48,7 @@ const GOG_KEYRING_PASSWORD = process.env.GOG_KEYRING_PASSWORD || ENV.GOG_KEYRING
 const MAPS_KEY = process.env.GOOGLE_API_KEY_DIRECTIONS || ENV.GOOGLE_API_KEY_DIRECTIONS || "";
 const HOME_ADDRESS = process.env.HOME_ADDRESS || ENV.HOME_ADDRESS || "新宿区南元町15-27";
 const HORIZON_DAYS = parseInt(process.env.TRAVEL_HORIZON_DAYS || "1", 10);
+const EVENT_TZ = process.env.TRAVEL_EVENT_TZ || ENV.TRAVEL_EVENT_TZ || "Asia/Tokyo";
 const DRY_RUN = process.argv.includes("--dry-run");
 
 // ── GCal via gog CLI ────────────────────────────────────────────────────────
@@ -102,7 +103,10 @@ function insertEvent({ summary, startIso, endIso, description }) {
       "--summary", summary,
       "--from", startIso,
       "--to", endIso,
+      "--start-timezone", EVENT_TZ,
+      "--end-timezone", EVENT_TZ,
       "--description", description,
+      "--event-color", TRAVEL_COLOR_ID,
     ], { env: gogEnv(), timeout: 30000 }).toString();
 
     const d = JSON.parse(raw);
@@ -143,6 +147,8 @@ function detectMissingTravelBlocks(events) {
     if (!e.start || !e.start.dateTime) return false; // skip all-day events
     if (isTravelBlock(summary)) return false;
     if (coveredTitles.has(summary)) return false;
+    // location≠home-only: an event with no explicit location can't be travelled to
+    if (!(e.location && e.location.trim())) return false;
     return true;
   });
 }
@@ -159,22 +165,21 @@ function detectMissingTravelBlocks(events) {
 async function getTravelDurationSec(origin, destination) {
   if (!destination || !MAPS_KEY) return DEFAULT_TRAVEL_SEC;
 
-  const url =
-    `https://maps.googleapis.com/maps/api/directions/json` +
-    `?origin=${encodeURIComponent(origin)}` +
-    `&destination=${encodeURIComponent(destination)}` +
-    `&mode=transit` +
-    `&key=${encodeURIComponent(MAPS_KEY)}`;
-
-  try {
-    const r = await fetch(url);
-    if (!r.ok) return DEFAULT_TRAVEL_SEC;
-    const body = await r.json();
-    const leg = body?.routes?.[0]?.legs?.[0];
-    return leg?.duration?.value || DEFAULT_TRAVEL_SEC;
-  } catch {
-    return DEFAULT_TRAVEL_SEC;
+  for (const mode of ["transit", "driving"]) {
+    const params = new URLSearchParams({ origin, destination, mode, key: MAPS_KEY });
+    if (mode === "transit") params.set("departure_time", "now");
+    try {
+      const r = await fetch(`https://maps.googleapis.com/maps/api/directions/json?${params}`);
+      if (!r.ok) continue;
+      const body = await r.json();
+      if (body.status !== "OK") continue;
+      let sec = body?.routes?.[0]?.legs?.[0]?.duration?.value;
+      if (!sec) continue;
+      if (mode === "driving") sec = Math.round(sec * 1.4); // JP transit ≈ driving×1.4
+      return sec;
+    } catch { /* try next mode */ }
   }
+  return DEFAULT_TRAVEL_SEC;
 }
 
 // ── Main ────────────────────────────────────────────────────────────────────
@@ -215,8 +220,10 @@ async function main() {
     console.log(`[travel] inserted "${summary}" (${Math.round(durationSec / 60)} min) → id=${id}`);
   }
 
-  const out = { ok: true, checked: events.length, inserted: results };
+  const errors = results.filter((r) => r.id === "error").length;
+  const out = { ok: errors === 0, checked: events.length, inserted: results, errors };
   console.log(JSON.stringify(out, null, 2));
+  if (errors > 0) process.exitCode = 1; // HARD RULE 0.24: broken run must not look clean
   return out;
 }
 
