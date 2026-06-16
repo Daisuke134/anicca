@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "next dev",
+    "prebuild": "node scripts/gen-dashboard-snapshot.mjs",
     "build": "next build",
     "start": "next start",
     "export": "next export",
