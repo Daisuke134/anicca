@@ -59,8 +59,8 @@ the earn ledger, so the GATE-0 classifier is untouched). Never blocks/bricks the
 | **split** | equal split of the UBI pool across `(AI + human)` recipients; floor per recipient; dust (remainder) stays in Anicca's wallet | deterministic, testable. |
 | **cadence** | per profitable wake (event-driven), gated by a **min pool** `UBI_MIN_POOL_USDC` default `0.10` | below min pool → record `skipped:below_min` (no tx), so we never spam dust txs whose gas > value. |
 | **idempotency** | key = funding line `wake`; before sending, scan `ubi-ledger.jsonl` for a `done`/`skipped` row with that `wake` → if present, **no-op** | a re-run of the same wake (cron retry, crash-resume) never double-pays. |
-| **never-overspend guard** | executor reads live wallet USDC `balanceOf` (`usdc.mjs`) immediately before sending; aborts if `pool > balance` | even with a stale ledger, can't send more than Anicca holds. |
-| **dry-run** | `UBI_DRY_RUN=1` (or no recipients / pool below min) → compute + log the plan, send NOTHING, record `dry`/`skipped` | lets the wake stay green pre-recipients without faking a transfer. |
+| **never-overspend guard** | the bridge reads live wallet USDC `balanceOf` (`usdc.mjs`, injectable `opts.balanceFn`) before planning AND `execute-ubi.py` re-reads it immediately before sending; both abort if `pool > balance` | even with a stale ledger, can't send more than Anicca holds. **The live read is SKIPPED in dry-run** (B3) so dry-run is fully offline/deterministic; the executor's pre-send re-check keeps real sends safe. |
+| **dry-run** | `UBI_DRY_RUN=1` (or no recipients / pool below min) → compute + log the plan, send NOTHING (and make NO RPC call), record `dry`/`skipped` | lets the wake stay green pre-recipients without faking a transfer or touching the network. |
 
 **Honesty / fallback (spec 28 iron-law, HARD 0.24/0.31):** the headline claim is TRUE only once a **real on-chain UBI
 `transfer` tx (status 0x1)** has been verified. Until then the launch copy is the truthful soft form — *"a fixed share
@@ -281,13 +281,20 @@ new file mode 100644
 +  const humanWallets = await readHumanWallets();
 +  const recipients = buildRecipients({ childWallets, humanWallets, sender });
 +  const ubiLines = await readLedger(opts.ubiLedger || UBI_LEDGER);
-+  // live balance for the overspend guard (best-effort; null => guard skipped, executor re-checks).
++  const dryRun = process.env.UBI_DRY_RUN === "1";
++  // live balance for the overspend guard (best-effort; null => guard skipped, executor re-checks
++  // before any real send). In dry-run we SKIP the live RPC read entirely so dry-run is fully
++  // offline + deterministic — a real send re-verifies balance anyway, so safety is unchanged.
++  // opts.balanceFn (injectable, default usdc.mjs usdcBalance) lets a test stub the balance.
++  const balanceFn = opts.balanceFn || usdcBalance;
 +  let walletBalanceUsdc = null;
-+  try { walletBalanceUsdc = sender ? await usdcBalance(sender) : null; } catch { /* offline-safe */ }
++  if (!dryRun && sender) {
++    try { walletBalanceUsdc = await balanceFn(sender); } catch { /* offline-safe */ }
++  }
 +  const cfg = {
 +    shareBps: parseInt(process.env.UBI_SHARE_BPS || "1000", 10),
 +    minPoolUsdc: Number(process.env.UBI_MIN_POOL_USDC || "0.10"),
-+    dryRun: process.env.UBI_DRY_RUN === "1",
++    dryRun,
 +    walletBalanceUsdc,
 +  };
 +  const plan = planUbi({ fundingLine, recipients, cfg, ubiLines });
@@ -556,11 +563,13 @@ new file mode 100644
 --- /dev/null
 +++ b/skills/earn/__tests__/distribute-ubi.test.js
 @@
-+// node:test — the bridge wiring: proves the two reviewer-found data-contract fixes.
++// node:test — the bridge wiring: proves the data-contract fixes, fully OFFLINE + deterministic.
 +// (1) B1/B2: a run.sh-shape line (earn_usdc/cost_usdc, NO net_usdc) is re-derived via deriveLine
 +//     so isProfitable passes — without this the dry plan would be 'funding_not_profitable'.
 +// (2) N1: sibling-AI recipients are read from children.jsonl rows' `wallet` field (not childWallet).
-+// Filesystem-isolated + UBI_DRY_RUN=1 so NOTHING is sent on-chain.
++// (3) B3: in dry-run the bridge SKIPS the live RPC balance read, so the test passes ONLINE too
++//     (no network; the fake wallet's real balance would otherwise be 0 -> insufficient_balance).
++// UBI_DRY_RUN=1 so NOTHING is sent on-chain; the overspend test injects opts.balanceFn (no RPC).
 +import { test } from "node:test";
 +import assert from "node:assert/strict";
 +import { promises as fs } from "node:fs";
@@ -587,6 +596,24 @@ new file mode 100644
 +  assert.equal(line.outcome, "dry");
 +  assert.equal(line.recipients, 1);              // the child `wallet` was picked up (N1 fixed)
 +  assert.ok(line.pool_usdc > 0);                 // net_usdc derived from earn/cost (B1/B2 fixed)
++  await fs.rm(dir, { recursive: true, force: true });
++});
++
++test("B3: NON-dry-run threads opts.balanceFn into the overspend guard (no RPC) — pool>balance skips", async () => {
++  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "ubi-"));
++  const childrenFile = path.join(dir, "children.jsonl");
++  const ubiLedger = path.join(dir, "ubi-ledger.jsonl");
++  await fs.writeFile(childrenFile, JSON.stringify({ child_id: "anicca-c001", wallet: CHILD, status: "active" }) + "\n");
++  const rawLine = { wallet: SELF, source: "0xwork", task: "t1", earn_usdc: 1.0, cost_usdc: 0, tx: "0x" + "a".repeat(64), status: "0x1", external: true, wake: "w-overspend" };
++  delete process.env.UBI_DRY_RUN;                // real path -> the live-balance guard is active
++  process.env.UBI_MIN_POOL_USDC = "0.0001";
++  delete process.env.UBI_HUMAN_WALLETS;
++  // inject a balance BELOW the 0.1 USDC pool via opts.balanceFn — deterministic, no Base RPC call,
++  // and no executor reached (skipped never spawns python). Proves the bridge wires balanceFn correctly.
++  const { line, sent } = await distribute(rawLine, { childrenFile, ubiLedger, balanceFn: async () => 0 });
++  assert.equal(sent, false);
++  assert.equal(line.outcome, "skipped");
++  assert.equal(line.reason, "insufficient_balance");
 +  await fs.rm(dir, { recursive: true, force: true });
 +});
 ```
@@ -619,11 +646,11 @@ node --test lib/__tests__/transfer.test.js __tests__/ubi.test.js __tests__/distr
 node --test __tests__/*.test.js lib/__tests__/*.test.js     # full earn suite stays green (no regression)
 
 # 2) dry-run the bridge against the EXACT run.sh 0xwork $JSON shape — earn_usdc/cost_usdc + external, NO
-#    net_usdc (deriveLine must fill it). NO on-chain send; records a 'dry' line:
+#    net_usdc (deriveLine must fill it). Dry-run makes NO RPC call (B3), so this is fully offline:
 UBI_DRY_RUN=1 UBI_MIN_POOL_USDC=0.0001 UBI_HUMAN_WALLETS=0x3333333333333333333333333333333333333333 \
-  node distribute-ubi.mjs '{"wallet":"0xSELF","source":"0xwork","task":"t1","earn_usdc":1.0,"cost_usdc":0,"tx":"0xaaaa","status":"0x1","external":true,"wake":"w-dry"}'
+  node distribute-ubi.mjs '{"wallet":"0x9999999999999999999999999999999999999999","source":"0xwork","task":"t1","earn_usdc":1.0,"cost_usdc":0,"tx":"0xaaaa","status":"0x1","external":true,"wake":"w-dry"}'
 tail -1 state/ubi-ledger.jsonl     # -> {"kind":"ubi","wake":"w-dry","outcome":"dry","pool_usdc":0.1,...}
-#   (if this prints outcome:"skipped" reason:"funding_not_profitable", the deriveLine fix regressed.)
+#   (skipped/funding_not_profitable => deriveLine regressed; skipped/insufficient_balance => B3 regressed.)
 
 # 3) LIVE (real money, only after GATE-0): the next real external wake auto-fires distribute_ubi from run.sh.
 #    To force a real distribution from a known profitable line (small amount), point at the real children.jsonl:
@@ -632,11 +659,14 @@ EARN_MODE=execute EARN_STRATEGY=0xwork ./run.sh      # on PROFITABLE -> distribu
 
 ## §5 E2E acceptance (HARD 0.24 / 0.31 — real on-chain evidence, no mock as headline)
 
-1. **Pure unit gate:** `node --test lib/__tests__/transfer.test.js __tests__/ubi.test.js` green; the
-   `buildTransferData` test reproduces the ctx7-verified `0xa9059cbb…004c4b40` calldata byte-for-byte; full
-   earn suite still green (no GATE-0 regression).
-2. **Dry-run gate:** step-2 above records a `dry` line and sends NOTHING (no tx hash) — proves the path is wired
-   without faking a transfer.
+1. **Pure unit + bridge gate (offline, deterministic — must pass ONLINE too):**
+   `node --test lib/__tests__/transfer.test.js __tests__/ubi.test.js __tests__/distribute-ubi.test.js` green; the
+   `buildTransferData` test reproduces the ctx7-verified `0xa9059cbb…004c4b40` calldata byte-for-byte; the
+   `distribute-ubi` tests prove (a) deriveLine fills `net_usdc` from a run.sh-shape line → `dry`, (b) the child
+   `wallet` field is the AI recipient, (c) B3 — dry-run makes no RPC call so it passes online, and the overspend
+   guard is exercised via injected `opts.balanceFn` (no Base RPC); full earn suite still green (no GATE-0 regression).
+2. **Dry-run gate:** step-2 above records a `dry` line and sends NOTHING (no tx hash, no RPC call) — proves the path
+   is wired without faking a transfer or touching the network (B3-safe).
 3. **REAL on-chain distribution (the headline truth):** a profitable external wake fires `distribute_ubi`, and
    `execute-ubi.py` lands **at least one real USDC `transfer` tx to a recipient with receipt status `0x1`**.
    Evidence required: (a) the **tx hash** on basescan.org showing a USDC Transfer FROM Anicca's wallet TO the
