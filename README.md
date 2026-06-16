@@ -54,6 +54,34 @@
 
 ## Install
 
+### 既定 = 完全ローカル + 無料 (サーバー鍵・API キー不要) ★Franklin 方式★
+
+Anicca は **自分の計算資源を自分で払います** — ClawRouter / BlockRun に USDC を
+x402 で都度支払い (人間の API キー不要)。あなたが渡すのは「この端末 (= 住処)」
+だけ。財布が空なら **無料の NVIDIA モデル ($0)**、USDC が入れば自動で frontier に
+昇格します (Franklin と同じ "wallet = identity"、`runtime/compute-proxy/`)。
+
+```bash
+git clone https://github.com/Daisuke134/anicca ~/anicca && cd ~/anicca
+./install.sh                                   # runtime root + skills を同期
+cd runtime/compute-proxy && npm install        # 一度だけ (@blockrun/llm + viem)
+./start-local.sh                               # 自前 wallet 自動生成 → 自己決済プロキシ起動
+```
+
+`start-local.sh` は `http://127.0.0.1:8402/v1` に OpenAI 互換の **自己決済コンピュート
+プロキシ**を立て、`~/.automaton/wallet.json` の自前 wallet から **毎推論を USDC で自己
+決済**します。frontier を使いたければ表示された wallet アドレスに USDC を送るだけです。
+
+> **注 (正直な範囲):** このリポジトリには automaton ループ本体は **同梱されていません**
+> (`install.sh` も「automaton ループはあなたの runner で起動」と明記)。`start-local.sh` は
+> **コンピュートプロキシだけ**を起動します。あなたのループは `./start-local.sh <your-loop-cmd>`
+> として差し込んでください — `OPENAI_BASE_URL` を読む OpenAI 互換ループなら自動でプロキシ経由に
+> なります。引数なしで実行すると、プロキシを保持したまま差し込み方を表示します。**BYOK は任意** —
+> `ANTHROPIC_API_KEY` 等を `.env` に置けばそちらも使えますが、既定の無料ローカル動作には不要です。
+
+> **Life Manager はローカルスキル**として同梱済 (`skills/anicca-life-manager/` +
+> `skills/life/*`)。openclaw / hermes / claude-code 単体でも同じスキルとして動きます。
+
 ### Path A — already have a coding agent installed (≈ 30 秒)
 
 **Claude Code**, **Codex CLI**, **Cursor**, **Aider** のいずれかが常時稼働マシンにあれば、以下を貼り付けてください。
@@ -71,6 +99,14 @@ You are installing Anicca on this machine.
 ### Path B — no agent yet
 
 ブラウザで <https://aniccaai.com/install> を開き、表示される手順に従ってください。Claude / Codex / Cursor のいずれかを 1 行で入れ、それから Path A に戻ります。
+
+## Cloud (FUTURE — not active yet)
+
+<!-- ROADMAP / NOT WIRED: the same body runs on a cloud droplet once Conway is
+available, where Anicca ALSO pays its own SERVER cost (not just compute) from its
+own wallet — removing the last human-in-the-loop (paying for shelter). Until
+Conway/Akash sovereign-deploy lands, the DEFAULT and only no-key path is LOCAL
+(above). Do not document this as live. -->
 
 ## アーキテクチャの一行
 
