@@ -165,7 +165,11 @@ Same shape for every task class: `fix-the-cron.md`, `route-ubi-recipient.md`,
     No duplicate rubric definitions — one source of truth per task class.     
 ```
 
-### § 2.3 The 6 Hermes moves (= verbatim from the article, mapped to our skills)
+### § 2.3 The 6 eval-loop moves (= verbatim from the Nous "Hermes" eval-loop article, mapped to our skills)
+
+> Note: "Hermes" here = the source **article** on eval loops (`hermes-agent.nousresearch.com`), cited for
+> its methodology. It is NOT a statement about Anicca's runtime — the runtime is the **automaton** (see
+> `00-MASTER.md` / `16-RUNTIME-CODE-TRUTH.md`). These moves are implemented as automaton skills.
 
 | Hermes move | Anicca skill | What it owns |
 |---|---|---|

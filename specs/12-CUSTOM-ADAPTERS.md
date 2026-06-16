@@ -31,7 +31,7 @@ camofox can run both stealth and visible (= verified, README correction recorded
 | `adapters/custom/README.md` | how to invoke each |
 
 Each `adapters/custom/<name>/` contains:
-- `SKILL.md` (= Hermes/OpenClaw skill frontmatter for registry)
+- `SKILL.md` (= standard skill frontmatter for the automaton skill registry)
 - `index.ts` or `index.py` (= main module)
 - `scripts/run.sh` (= CLI entry)
 - `tests/e2e.ts` (= verification harness)
@@ -53,7 +53,7 @@ Each `adapters/custom/<name>/` contains:
 | 12.T5 | Coconala: same 4 sub-tasks (session / send / read / bid) | same DoD per sub-task |
 | 12.T6 | Bland.ai: `outbound_call(to, script, voice)` via REST + webhook receiver | 1 real test call to Dais's phone, hangup after greeting |
 | 12.T7 | AgentMail thin wrapper: `send(inbox, to, subject, text)` + `receive(inbox, since)` + `subscribe_webhook(url)` | unit test passes, no duplication with spec 10 import-side |
-| 12.T8 | SKILL.md frontmatter for each adapter (= Hermes/OpenClaw can register them) | `hermes skill list` shows 4 adapters |
+| 12.T8 | SKILL.md frontmatter for each adapter (= the automaton skill registry can register them) | registry lists 4 adapters |
 | 12.T9 | tests/e2e.ts per adapter sends 1 real msg as final verify | 4 messages delivered, recorded in `state/adapter-test-log.jsonl` |
 
 ## § 3. Dependencies
@@ -71,7 +71,7 @@ Each `adapters/custom/<name>/` contains:
 | G2 | Coconala DM delivered to live test thread |
 | G3 | Bland.ai test call placed + completed with audible greeting |
 | G4 | AgentMail wrapper send/receive E2E |
-| G5 | All 4 adapters registered in Hermes skill registry |
+| G5 | All 4 adapters registered in the automaton skill registry |
 | G6 | All session.json files chmod 600 + gitignored |
 
 ## § 5. Anti-goals

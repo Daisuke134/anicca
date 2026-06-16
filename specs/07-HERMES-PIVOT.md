@@ -1,15 +1,31 @@
-# 07 — HERMES PIVOT
+# 07 — HERMES PIVOT  ⚠️ SUPERSEDED BY AUTOMATON (historical pivot doc)
 
-> ✅ **VINDICATED + REFINED (2026-06-04):** After reading all 3 runtimes at source + a real
-> boot (see **`16-RUNTIME-CODE-TRUTH.md`** + `00-MASTER.md` § 1.0, both AUTHORITATIVE on
-> substrate), this spec's CORE thesis is CONFIRMED: **L3 = Hermes** (BYOK-native, Daytona
-> host, Kimi brain). The earlier "fake/suspect" flag was UNFAIR. What this spec MISSED, now
-> fixed in § 1.0: instead of dropping automaton entirely, we PORT automaton's 4 MIT primitives
-> (wallet / x402-in+out / self-replication / constitution) into Hermes **skills** — Hermes
-> lacks exactly those. Net: Hermes = the one runtime; automaton = the reference we port from.
-> Where § 3 below says "L4 = Coinbase AgentKit" — that becomes the **wallet skill** (CDP/viem),
-> not a separate layer. Hosts: Daytona (native) / Akash (sovereign) / Conway (optional).
+> 🛑 **SUPERSEDED — DO NOT BUILD FROM THIS FILE (kept for history only).**
+> This doc proposed pivoting the runtime to **Hermes Agent** (NousResearch). That pivot was
+> **reversed**. The current, shipped architecture is the **Conway automaton** body — its ReAct loop
+> (think→act→observe→persist) + heartbeat daemon — run directly, NOT Hermes. Reason (`00-MASTER.md`,
+> locked 2026-06-11): *"Engine = Conway automaton (TS), run in local-mode … automaton already has the 4
+> NHOSS primitives native (wallet, x402, spawn_child, constitution) — the master spec's 'port into
+> Hermes' is satisfied by using automaton directly (don't reinvent). NOT a double-brain. Hermes(grok)
+> kept only as one comparison instance."*
+>
+> **What is still true / portable from this doc:** the L4 **Coinbase AgentKit CDP Smart Wallet** idea
+> (now realised as automaton's native wallet + the x402 self-pay path), the USDC-x402 compute thesis
+> (now **ClawRouter / BlockRun**, see `runtime/compute-proxy/` + `THESIS.md`), Daytona/Akash as
+> cloud-spawn hosts, and the colony / self-replication design (now automaton `spawn_child`).
+>
+> **What is dead:** "Hermes is L3 the runtime", "1 Hermes daemon hosts 10 specialist profiles", the
+> `hermes daemon` / `hermes profile` / `hermes secrets` boot commands, and the `~/.hermes/profiles/…`
+> per-profile layout. The live runtime root is `~/.anicca` (`skills/registry.json`); on the genesis Mac
+> the legacy runtime directory is still *named* `~/.hermes/`, but the agent/loop running inside it is the
+> **automaton**, not a Hermes daemon. "10 specialist profiles per instance" is NOT the shipped model —
+> one automaton instance runs one ReAct + heartbeat loop with a skill registry.
+>
+> Everything below this banner is the original 2026-06-03 Hermes proposal, preserved as a record of the
+> path considered and rejected. For the current architecture read `THESIS.md`, `HEARTBEAT.md`,
+> `00-MASTER.md`, and `16-RUNTIME-CODE-TRUTH.md` (OUTCOME UPDATE banner).
 
+> _(Original 2026-06-03 banner — historical, describes the rejected Hermes pivot:)_
 > Deep-dive on the v3.1 substrate decision: Layer 3 RUNTIME swaps from Conway
 > automaton fork to **Hermes Agent** (NousResearch, MIT); Layer 4 SERVICE swaps
 > from "Virtuals Protocol everything" to **Coinbase AgentKit CDP Smart Wallet**

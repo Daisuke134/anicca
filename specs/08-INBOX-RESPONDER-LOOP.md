@@ -1,5 +1,14 @@
 # 08 — Inbox Responder Loop (= the part NO OSS does end-to-end)
 
+> ⚠️ **RUNTIME NOTE (current):** This spec (DRAFT 2026-06-03, also flagged ARCHIVED-WITHIN-A-DAY in the
+> README) names a **Hermes Agent daemon** as the 24/7 runtime + FTS5 memory + skill registry. That
+> runtime choice was **reversed** — the current body is the **Conway automaton** (ReAct loop +
+> heartbeat daemon), runtime root `~/.anicca` (`skills/registry.json`). Read every "Hermes daemon /
+> `~/.local/bin/hermes` / `~/.hermes/state.db` / Hermes scheduler / Hermes FTS5 memory" below as
+> "**the automaton runtime** (loop + heartbeat + its memory/skill store)". The inbox-loop *design*
+> (event ingest → context-aware reply → durable multi-step state → 24h followup → learn-from-outcome)
+> stands; only the runtime label is stale. See `00-MASTER.md` / `16-RUNTIME-CODE-TRUTH.md`.
+
 > **The race Dais demanded an answer for** (2026-06-03):
 > *"Are you saying that automaton, Letta, Eliza, Virtuals, AgentKit — none
 > of them have the skill to flexibly reply to emails and actually take

@@ -24,12 +24,12 @@ The previous spec hinted "Akash funding needs Dais wallet click." Per A0.5.5 tha
 
 | Path | Purpose |
 |---|---|
-| `deploy/akash/Dockerfile.hermes` | Hermes Python 3.11 container |
+| `deploy/akash/Dockerfile.automaton` | automaton (Node/TS) runtime container |
 | `deploy/akash/sdl.yaml` | Akash SDL: 1 vCPU / 2GB RAM / 10GB storage |
 | `deploy/akash/cert.sh` | Akash certificate creation |
 | `deploy/akash/deploy.sh` | end-to-end deploy script |
 | `deploy/akash/README.md` | cost notes + rotation policy |
-| `skills/spawn-child/SKILL.md` | OpenClaw/Hermes-compatible skill frontmatter |
+| `skills/spawn-child/SKILL.md` | standard skill frontmatter (automaton skill registry) |
 | `skills/spawn-child/scripts/spawn.sh` | invoked by heartbeat at spawn threshold |
 | `skills/spawn-child/scripts/wallet-factory.ts` | AgentKit smart-account factory call |
 | `skills/spawn-child/scripts/inbox-factory.ts` | AgentMail `inboxes.create()` for new child |
@@ -51,7 +51,7 @@ The previous spec hinted "Akash funding needs Dais wallet click." Per A0.5.5 tha
 | 13.T1 | `akash` CLI install via Homebrew + create wallet (programmatic, no UI) | `akash keys list` shows new key |
 | 13.T2 | Acquire AKT: route Anicca's USDC → Coinbase swap → AKT (programmatic; alt: Osmosis IBC if direct swap unavailable) | wallet balance > 5 AKT |
 | 13.T3 | Akash certificate (`akash tx cert generate client` + `publish`) | tx hash recorded |
-| 13.T4 | Build + push Hermes image to Docker Hub or GHCR | `docker pull` works from cold |
+| 13.T4 | Build + push automaton runtime image to Docker Hub or GHCR | `docker pull` works from cold |
 | 13.T5 | Write SDL + `akash tx deployment create` | provider bid accepted, deployment active |
 | 13.T6 | `wallet-factory.ts`: AgentKit ERC-4337 smart-account factory generates anicca-002 wallet | tx hash + addr returned |
 | 13.T7 | `inbox-factory.ts`: SDK creates `anicca-002@agentmail.to` (custom address if available, else auto-assigned) | inbox visible in `client.inboxes.list()` |
@@ -82,7 +82,7 @@ The previous spec hinted "Akash funding needs Dais wallet click." Per A0.5.5 tha
 
 - Not a static Akash deployment (= must be re-deployable + auto-renewable when lease expires)
 - Not multi-tenant (= each Anicca instance = 1 Akash deployment)
-- Not GPU (= Hermes runs fine on 1 vCPU)
+- Not GPU (= the automaton runtime runs fine on 1 vCPU)
 
 ## § 6. Spawn threshold (= when does spec 13 fire in production?)
 
