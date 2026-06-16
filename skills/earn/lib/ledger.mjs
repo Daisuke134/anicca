@@ -24,13 +24,28 @@ export function deriveLine(o) {
   // tx/status only present for executed (on-chain) earns; absent for narrate/discovery.
   if (o.tx) line.tx = o.tx;
   if (o.status) line.status = o.status;
+  if (o.external === true) line.external = true; // set only after external-payout assertion
   return line;
 }
 
-// GATE-0 truth: a profitable wake needs a positive net AND a confirmed (0x1) tx receipt.
-// narrate-only lines (no tx hash / no status) NEVER count, no matter the claimed net.
+// A swap (Anicca trading its own ETH for its own USDC) is net-zero asset rotation and is NOT
+// earning. GATE-0 requires EXTERNAL revenue: an inbound USDC transfer to our wallet from a
+// counterparty (0xwork escrow, x402 payer). The classifier therefore demands:
+//   tx present  &&  status 0x1  &&  net_usdc > 0  &&  external == true  &&  source not a swap.
+// `external` is set ONLY by run.sh after asserting an inbound USDC Transfer whose `from` is an
+// approved external payer (see oxwork.isExternalPayout / x402 settle proof). A swap line can
+// never set external:true, so no env var (EARN_STRATEGY=swap) can re-open false-green.
+const SWAP_SOURCES = new Set(["swap-eth-usdc", "swap", "swap-usdc-eth"]);
+
+// GATE-0 truth: a profitable wake needs a positive net, a confirmed (0x1) tx receipt, AND
+// proven external revenue. narrate-only lines (no tx hash / no status) NEVER count; swap lines
+// (asset rotation) NEVER count; any line without external:true NEVER counts.
 export function isProfitable(line) {
-  return Boolean(line && line.tx && line.status === "0x1" && Number(line.net_usdc) > 0);
+  if (!line || !line.tx || line.status !== "0x1") return false;
+  if (!(Number(line.net_usdc) > 0)) return false;
+  if (SWAP_SOURCES.has(String(line.source))) return false; // asset rotation is never GATE-0
+  if (line.external !== true) return false; // require proven external inbound
+  return true;
 }
 
 // Append a single line (creating the file + parent dir on first write). Append-only.
