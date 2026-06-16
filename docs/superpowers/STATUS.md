@@ -28,7 +28,7 @@ The sections below are the (over-optimistic) prior log — trust this correction
 | life-ask (gog local round-trip + duration) | ✅ rev3 | ✅ PASS | ✅ ~/anicca `c42d427` + PR#58 main `a740f0d0` (netlify.toml schedule removed; 64/0 tests) | ✅ **LIVE E2E: question mail → Dais inbox · reply 渋谷ヒカリエ8F/90分 → gcal updated (loc+dur) · duration-only guard · throwaway events deleted** | ✅ **DONE 2026-06-16** (prod needs Dais reply + Netlify GCal env) |
 | life-notify (gog poll approval + cron reconcile) | ✅ rev3 | ✅ PASS | ✅ ~/anicca `b1585c1` + ~/.openclaw `91a96f8a` (un-gated cron disabled, 2 new added; 20/20 tests) | ✅ **LIVE E2E: scan→5 real approval mails to Dais inbox w/ [AN-] tokens · poll matched "OK" reply → held notice sent to +notifytest · idempotent** | ✅ **DONE 2026-06-16** (prod needs Dais's real "OK" reply = designed approval gate) |
 | life-webapp (connect-calendar app) | ✅ rev2 | ✅ PASS (use saas_lateness.py envelope; de-risked) | — | — | READY · ext: Composio V0 live ACTIVE calendar connection to confirm events envelope |
-| self-spawn | — | — | — | — | NO PATCH YET (wave 3) |
+| self-spawn (自己増殖) | n/a | n/a | ✅ ~/anicca `a195c7f` (cloud-init + telemetry + akash; 26/26 tests) | ✅ **LIVE: real test child born — distinct wallet 0xac3aaf49… · own inbox anicca-vtest001@agentmail.to · DO droplet 577986258 · telemetry 202 · dashboard alive→5 → then destroyed (no orphan)** | ✅ **DONE 2026-06-16** (spawn capability real; child's earning = same demand-gated GATE-0) |
 | ubi | — | — | — | — | NO PATCH YET (wave 3) |
 | auto-cancel + daily-report | — | — | — | — | NO PATCH YET (wave 3) |
 | i18n /en /ja + jargon-strip sitewide | — | — | — | — | NO PATCH YET (wave 3) |
