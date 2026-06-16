@@ -17,7 +17,7 @@ The sections below are the (over-optimistic) prior log — trust this correction
 
 | subsystem | patch | superpowers re-review | applied→main | camofox LIVE verified | state |
 |---|---|---|---|---|---|
-| install-me (CTA + /me de-theatre/jargon) | ✅ rev2 | ⏳ in review | — | — | **REVIEWING** |
+| install-me (CTA + /me de-theatre/jargon) | ✅ rev3 | ✅ PASS (re-review found 7th jargon site :199 → fixed) | ✅ PR#54→main `7fd7ea00` (9 edits, integrity regex preserved) | ⏳ Netlify deploying | **APPLIED → verifying** |
 | stripe-spawn (webhook VERIFY + droplet E2E) | ✅ rev2 | — | — | — | pending |
 | dashboard (build-time prerender real #s) | ✅ rev2 | — | — | — | pending |
 | earn (GATE-0 external, 0xwork, ~/clawd) | ✅ rev2 | — | — | — | pending · ext-blocker: seed wallet (0xwork init faucet / small AXOBOTL+ETH) |
