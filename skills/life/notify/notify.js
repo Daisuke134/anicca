@@ -63,7 +63,56 @@ const GOG_ACCOUNT = process.env.GOG_ACCOUNT || ENV.GOG_ACCOUNT || "redacted@exam
 const GOG_KEYRING_PASSWORD = process.env.GOG_KEYRING_PASSWORD || ENV.GOG_KEYRING_PASSWORD || "";
 const GCAL_ID = process.env.GCAL_ID || ENV.GCAL_ID || "primary";
 
+// Transport: "agentmail" (default, legacy) or "gog" (Gmail via gog CLI — spec mandate).
+const NOTIFY_TRANSPORT = (process.env.NOTIFY_TRANSPORT || ENV.NOTIFY_TRANSPORT || "agentmail").toLowerCase();
+// Safety: when set, EVERY stakeholder send is redirected here (round-trip test without
+// emailing a real third party). Approval email to OWNER is unaffected.
+const NOTIFY_TEST_STAKEHOLDER = process.env.NOTIFY_TEST_STAKEHOLDER || ENV.NOTIFY_TEST_STAKEHOLDER || "";
+
+// Durable store of pending approvals for the gog path (token -> {to,subject,body}).
+// Computed lazily so tests can isolate it via a temp HOME.
+function pendingPath() {
+  return path.join(process.env.HOME || "/root", ".openclaw", "state", "life-notify-pending.jsonl");
+}
+
 // ── Pure logic (mirrors notify-logic.js in the Netlify function) ─────────────
+
+// Short, mailbox-searchable token embedded in the approval email subject so a
+// later reply (which Gmail prefixes with "Re: <subject>") can be matched back.
+function approvalToken(seed) {
+  return "AN-" + require("crypto").createHash("sha1")
+    .update(String(seed) + ":" + Date.now()).digest("hex").slice(0, 8).toUpperCase();
+}
+
+// Extract an AN-XXXXXXXX token from a (reply) subject line, or null.
+function tokenFromSubject(subject) {
+  const m = (subject || "").match(/\[(AN-[0-9A-F]{8})\]/);
+  return m ? m[1] : null;
+}
+
+function appendPending(rec, p = pendingPath()) {
+  fs.mkdirSync(path.dirname(p), { recursive: true });
+  fs.appendFileSync(p, JSON.stringify(rec) + "\n");
+}
+
+function findPending(token, p = pendingPath()) {
+  if (!fs.existsSync(p)) return null;
+  const lines = fs.readFileSync(p, "utf8").trim().split("\n").filter(Boolean);
+  for (const l of lines) {
+    try { const r = JSON.parse(l); if (r.token === token && !r.sent) return r; } catch {}
+  }
+  return null;
+}
+
+function markSent(token, p = pendingPath()) {
+  if (!fs.existsSync(p)) return;
+  const lines = fs.readFileSync(p, "utf8").trim().split("\n").filter(Boolean);
+  const out = lines.map((l) => {
+    try { const r = JSON.parse(l); if (r.token === token) r.sent = true; return JSON.stringify(r); }
+    catch { return l; }
+  });
+  fs.writeFileSync(p, out.join("\n") + "\n");
+}
 
 /**
  * Returns true if a GCal event summary is an auto-inserted travel block.
@@ -215,6 +264,41 @@ function listTodayEvents() {
   return Array.isArray(d) ? d : (d.events || d.items || []);
 }
 
+// ── gog Gmail transport (verified gog 0.17.0 shapes) ─────────────────────────
+
+// Send one email via `gog gmail send` (the spec-mandated transport).
+function gogGmailSend({ to, subject, body }) {
+  execFileSync(GOG_BIN, [
+    "gmail", "send",
+    "--account", GOG_ACCOUNT,
+    "--to", to,
+    "--subject", subject,
+    "--body", body,
+  ], { env: gogEnv(), timeout: 60000 });
+}
+
+// Search threads. NOTE: query is a POSITIONAL arg; returns { threads:[{id,subject,from,...}] }.
+function gogGmailSearch(query) {
+  const raw = execFileSync(GOG_BIN, [
+    "gmail", "search", query,
+    "-j",
+    "--account", GOG_ACCOUNT,
+  ], { env: gogEnv(), timeout: 60000 }).toString();
+  const d = JSON.parse(raw);
+  return Array.isArray(d.threads) ? d.threads : [];
+}
+
+// Fetch a thread's body via `gog gmail get <id>` -> { body, headers, message, unsubscribe }.
+function gogGmailBody(threadId) {
+  const raw = execFileSync(GOG_BIN, [
+    "gmail", "get", threadId,
+    "-j",
+    "--account", GOG_ACCOUNT,
+  ], { env: gogEnv(), timeout: 60000 }).toString();
+  const d = JSON.parse(raw);
+  return typeof d.body === "string" ? d.body : "";
+}
+
 // ── AgentMail REST helpers ─────────────────────────────────────────────────
 
 /** Headers for all AgentMail REST calls */
@@ -282,9 +366,11 @@ async function getAgentMailDraft(draftId) {
 
 async function runScan() {
   // Validate required env
-  if (!AGENTMAIL_API_KEY) throw new Error("AGENTMAIL_API_KEY is required");
-  if (!AGENTMAIL_INBOX_ID) throw new Error("AGENTMAIL_INBOX_ID is required");
   if (!OWNER_EMAIL) throw new Error("OWNER_EMAIL is required");
+  if (NOTIFY_TRANSPORT !== "gog") {
+    if (!AGENTMAIL_API_KEY) throw new Error("AGENTMAIL_API_KEY is required");
+    if (!AGENTMAIL_INBOX_ID) throw new Error("AGENTMAIL_INBOX_ID is required");
+  }
 
   const events = listTodayEvents();
   const nowMs = Date.now();
@@ -303,7 +389,25 @@ async function runScan() {
     const attendeeEmails = attendees.map((a) => a.email).filter(Boolean);
     const draftTo = attendeeEmails.length > 0 ? attendeeEmails.join(",") : OWNER_EMAIL;
 
+    const stakeholderTo = NOTIFY_TEST_STAKEHOLDER || draftTo;   // G5 safety redirect
     const draftBody = buildAttendeeDraft({ eventSummary: ev.summary, minutesLate });
+
+    if (NOTIFY_TRANSPORT === "gog") {
+      const token = approvalToken(ev.summary + stakeholderTo);
+      appendPending({ token, to: stakeholderTo, subject: `Update re "${ev.summary}"`, body: draftBody, sent: false, ts: Date.now() });
+      const subject = `[Anicca] Late alert for "${ev.summary}" — reply OK to notify [${token}]`;
+      const body = [
+        `You appear to be running late for: "${ev.summary}".`,
+        ``, `Anicca will send the following to: ${stakeholderTo}`,
+        ``, `──────────`, draftBody, `──────────`,
+        ``, `Reply "OK" to this email to approve and send.`,
+        `Approval token: ${token}`,
+      ].join("\n");
+      gogGmailSend({ to: OWNER_EMAIL, subject, body });   // approval email to Dais via Gmail
+      alerted.push({ event: ev.summary, token, minutesLate, transport: "gog" });
+      continue;
+    }
+    // else: legacy AgentMail path (unchanged below)
 
     let draft;
     try {
@@ -388,23 +492,50 @@ async function runWebhook(args) {
   console.log(JSON.stringify({ ok: true, approved: true, sent: sentCount }));
 }
 
+// ── Poll mode (gog path — closes G1: Dais replies OK → stakeholder gets mail) ──
+
+async function runPoll() {
+  // Replies arrive as "Re: [Anicca] Late alert ... [AN-XXXX]" from OWNER.
+  // gog gmail search => threads[]; body must be fetched per-thread via gog gmail get.
+  const threads = gogGmailSearch(
+    'from:' + OWNER_EMAIL + ' subject:"[Anicca] Late alert" newer_than:1d'
+  );
+  const sent = [];
+  for (const t of threads) {
+    const tok = tokenFromSubject(t.subject || "");
+    if (!tok) continue;
+    const pending = findPending(tok);
+    if (!pending) continue;                       // unknown or already sent
+    const body = gogGmailBody(t.id);              // per-thread body fetch (no snippet on list)
+    if (!extractApproval(body)) continue;         // require "OK" in the reply body
+    gogGmailSend({ to: pending.to, subject: pending.subject, body: pending.body });
+    markSent(tok);
+    sent.push({ token: tok, to: pending.to });
+  }
+  console.log(JSON.stringify({ ok: true, mode: "poll", sent }));
+}
+
 // ── Main ──────────────────────────────────────────────────────────────────────
 
-const [, , mode = "scan", ...rest] = process.argv;
-
-(async () => {
-  try {
-    if (mode === "webhook") {
-      await runWebhook(rest);
-    } else {
-      await runScan();
+// Only run the CLI when executed directly; importing for tests must not scan/poll.
+if (require.main === module) {
+  const [, , mode = "scan", ...rest] = process.argv;
+  (async () => {
+    try {
+      if (mode === "webhook") {
+        await runWebhook(rest);
+      } else if (mode === "poll") {
+        await runPoll();
+      } else {
+        await runScan();
+      }
+      process.exit(0);
+    } catch (err) {
+      console.error("[notify] fatal:", err.message);
+      process.exit(1);
     }
-    process.exit(0);
-  } catch (err) {
-    console.error("[notify] fatal:", err.message);
-    process.exit(1);
-  }
-})();
+  })();
+}
 
 module.exports = {
   isTravelBlock,
@@ -414,4 +545,9 @@ module.exports = {
   buildAttendeeDraft,
   buildApprovalEmail,
   extractApproval,
+  approvalToken,
+  tokenFromSubject,
+  appendPending,
+  findPending,
+  markSent,
 };
