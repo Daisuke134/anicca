@@ -1,0 +1,88 @@
+// identity-guard.mjs — the constitutional malice-guard, enforced in code (spec 28 §3).
+//
+// THE WALL: Anicca earns using ONLY its OWN identity (own Base wallet + own AgentMail).
+// It MUST NEVER use a USER's email / name / phone / contacts / calendar / messaging identity
+// to earn, cold-outreach, or build trust. The user's connected info (gcal / Gmail / phone /
+// location) is for managing the USER'S OWN life ONLY — never to earn.
+//
+// Polsia distinction: a founder using their OWN inbox for their OWN company = consented
+// self-use (fine). Multi-tenant use of EACH user's identity to earn = the malice this forbids.
+//
+// This module is imported by the earn write-path (lib/record.mjs). Every earn-ledger line
+// passes assertOwnIdentityOnly(); if the earn context references a user-PII source or env,
+// it THROWS — the earn never records, the wake fails closed.
+
+// Env-var name fragments that belong to a USER's connected identity (NOT Anicca's own).
+// If any of these is present in the env handed to the earn path, the earn is tainted.
+export const USER_PII_ENV_PATTERNS = [
+  /^USER_/i,                 // any explicit USER_* var (USER_EMAIL, USER_PHONE, USER_NAME…)
+  /GOOGLE_LOGIN/i,           // the user's Google login (life-skill / Composio onboarding)
+  /COMPOSIO/i,               // Composio = the user's connected gcal/Gmail grant
+  /GCAL|GOOGLE_CALENDAR/i,   // user calendar
+  /USER.?GMAIL|GMAIL_REFRESH|GMAIL_TOKEN/i, // user mailbox tokens
+  /TELEGRAM/i,               // user live-location / messaging
+  /USER.?PHONE|USER.?CONTACT/i,
+];
+
+// "source" values the earn ledger is ALLOWED to record. These are Anicca's OWN identity
+// channels: its own wallet (x402 / crypto / 0xwork escrow) and its own AgentMail-based
+// content. A user-identity source can never appear here.
+export const ALLOWED_EARN_SOURCES = new Set([
+  "x402", "0xwork", "litcoin", "nookplot", "crypto",
+  "swap-eth-usdc", "swap", "swap-usdc-eth", // own-asset rotation (non-gate, still own identity)
+  "content", "x402-serve",
+  "discover", // narrate-only discovery wake
+]);
+
+// Sources that smell of using a USER's identity to earn. Explicit denylist so a typo'd or
+// hostile source can't slip a user-identity earn past the allowlist by being "unknown".
+export const FORBIDDEN_EARN_SOURCES = [
+  /gmail/i, /gcal|calendar/i, /contact/i, /cold.?mail|cold.?outreach|outreach/i,
+  /user.?email|user.?name|user.?phone/i, /telegram/i, /composio/i,
+];
+
+// Scan an env object for any user-PII variable. Returns the offending key, or null.
+export function findUserPIIEnv(env = process.env) {
+  for (const key of Object.keys(env || {})) {
+    if (USER_PII_ENV_PATTERNS.some((re) => re.test(key))) return key;
+  }
+  return null;
+}
+
+// Assert the earn `source` is one of Anicca's OWN identity channels.
+// Throws if the source is forbidden (user-identity) or simply not on the allowlist.
+export function assertOwnEarnSource(source) {
+  const s = String(source ?? "");
+  for (const re of FORBIDDEN_EARN_SOURCES) {
+    if (re.test(s)) {
+      throw new Error(
+        `MALICE-GUARD: earn source "${s}" references a USER identity. ` +
+        `Anicca earns with its OWN wallet/AgentMail only (spec 28 §3).`
+      );
+    }
+  }
+  if (!ALLOWED_EARN_SOURCES.has(s)) {
+    throw new Error(
+      `MALICE-GUARD: earn source "${s}" is not an own-identity channel ` +
+      `(allowed: ${[...ALLOWED_EARN_SOURCES].join(", ")}).`
+    );
+  }
+  return true;
+}
+
+// The single guard the earn write-path calls before recording a line. It fails CLOSED:
+//   1. no user-PII env var may be present in the earn process env, AND
+//   2. the earn source must be an own-identity channel.
+// `opts.env` defaults to process.env so the live run.sh path is covered; tests pass a fixture.
+export function assertOwnIdentityOnly(line, opts = {}) {
+  const env = opts.env || process.env;
+  const offending = findUserPIIEnv(env);
+  if (offending) {
+    throw new Error(
+      `MALICE-GUARD: earn process exposes user-PII env "${offending}". ` +
+      `The earn skill must have NO access to user PII (spec 28 §3). Refusing to record.`
+    );
+  }
+  assertOwnEarnSource(line && line.source);
+  return true;
+}
