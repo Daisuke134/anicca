@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import snapshot from "./_snapshot.json";
 
 // Metadata is exported from a separate layout or via static export approach
 // (app/dashboard/layout.tsx) — cannot use export const metadata in "use client".
@@ -30,9 +31,12 @@ type DashboardData = {
 };
 
 export default function DashboardPage() {
-  const [data, setData] = useState<DashboardData | null>(null);
+  // Build-time snapshot seeds the static HTML so curl / crawlers / no-JS clients
+  // see REAL numbers immediately. The client useEffect then refreshes to live.
+  const seed = (snapshot as DashboardData | null) ?? null;
+  const [data, setData] = useState<DashboardData | null>(seed);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(seed === null);
 
   useEffect(() => {
     let cancelled = false;
@@ -41,15 +45,17 @@ export default function DashboardPage() {
         const res = await fetch("/.netlify/functions/dashboard-sync");
         if (!res.ok) throw new Error(`dashboard-sync returned ${res.status}`);
         const json = await res.json();
-        if (!cancelled) setData(json);
+        if (!cancelled) { setData(json); setError(null); }
       } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : "fetch error");
+        // If we already have seed data, keep showing it; only surface error when we have nothing.
+        if (!cancelled && !data) setError(e instanceof Error ? e.message : "fetch error");
       } finally {
         if (!cancelled) setLoading(false);
       }
     }
     load();
     return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -112,6 +118,11 @@ function DashboardBody({ data }: { data: DashboardData }) {
   );
 }
 
+function humanModel(live?: string, tier?: string): string {
+  if (!live || live === "x" || live === "auto") return tier === "free" ? "Free model" : "Auto";
+  return live;
+}
+
 function InstanceCard({ row, rank }: { row: InstanceRow; rank: number }) {
   const selfFunded = row.status !== "dead" && row.revenue_mo_usd / 30 >= row.burn_day_usd;
   return (
@@ -119,9 +130,8 @@ function InstanceCard({ row, rank }: { row: InstanceRow; rank: number }) {
       <div style={{ display: "grid", gridTemplateColumns: "auto 1fr auto", gap: 16, alignItems: "flex-start" }}>
         <div style={{ fontSize: 24, opacity: 0.3, fontWeight: 900, minWidth: 32 }}>#{rank}</div>
         <div>
-          <p style={{ fontSize: 10, letterSpacing: 3, textTransform: "uppercase", opacity: 0.5 }}>{row.id}</p>
-          <p style={{ fontSize: 18, marginTop: 4 }}>{row.host} · {row.geo ?? "?"}</p>
-          <p style={{ fontSize: 12, opacity: 0.6, marginTop: 2 }}>{row.model_live ?? "—"} ({row.model_tier ?? "?"})</p>
+          <p style={{ fontSize: 18, marginTop: 4 }}>{row.host} · {row.geo ?? "—"}</p>
+          <p style={{ fontSize: 12, opacity: 0.6, marginTop: 2 }}>{humanModel(row.model_live, row.model_tier)}</p>
         </div>
         <StatusBadge status={row.status} />
       </div>
