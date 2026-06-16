@@ -52,9 +52,64 @@ if [ "$MODE" = "discover" ]; then
 fi
 
 # execute mode.
-STRATEGY="${EARN_STRATEGY:-swap}"
+# GATE-0 default = EXTERNAL revenue (0xwork). Swap is demoted to a non-gate runway fallback ONLY:
+# a swap is net-zero asset rotation (Anicca's own ETH -> its own USDC), so the classifier
+# (lib/ledger.mjs isProfitable) now rejects it. No EARN_STRATEGY value can mint GATE-0 from a swap.
+STRATEGY="${EARN_STRATEGY:-0xwork}"
 
-# --- strategy=swap: run.sh performs the real on-chain earn itself (no preset tx) -------------
+# --- strategy=0xwork: REAL EXTERNAL REVENUE (a poster's escrow pays USDC to our wallet) -------
+if [ "$STRATEGY" = "0xwork" ] && [ -z "${EARN_TX:-}" ]; then
+  RES=$(OXWORK_PKVAR="$PKVAR" PKVAR="$PKVAR" python3 "$HERE/execute-0xwork.py" 2>/dev/null)
+  echo "[earn] 0xwork result: $RES"
+  PAYTX=$(printf '%s' "$RES" | python3 -c "import json,sys
+try: d=json.load(sys.stdin)
+except Exception: d={}
+print(d.get('payout_tx','') or '')" 2>/dev/null)
+  TASKID=$(printf '%s' "$RES" | python3 -c "import json,sys
+try: d=json.load(sys.stdin)
+except Exception: d={}
+print(d.get('task_id','') or 'claimed-awaiting-approval')" 2>/dev/null)
+  if [ -z "$PAYTX" ]; then
+    # No external payout this wake (no task / claimed+submitted awaiting poster approval).
+    # Record NARRATE — never GATE-0 (no external:true). Honest residual.
+    JSON=$(python3 -c "import json; print(json.dumps({'wallet':'${WLOW:-unknown}','source':'0xwork','task':'$TASKID','earn_usdc':0,'cost_usdc':0,'wake':'$WAKE'}))")
+    OUT=$(record_line "$JSON")
+    echo "[earn] 0xwork narrate (no external payout yet) -> $OUT"
+    exit 0
+  fi
+  # Assert the payout is an EXTERNAL inbound USDC transfer (from=taskPool) BEFORE recording GATE-0.
+  RECEIPT=$(curl -s "${BASE_RPC_URL:-https://mainnet.base.org}" -H 'content-type: application/json' \
+    -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"eth_getTransactionReceipt\",\"params\":[\"$PAYTX\"]}")
+  EXT=$(printf '%s' "$RECEIPT" | node -e "let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',async()=>{try{const r=JSON.parse(s).result;const o=await import('$HERE/lib/oxwork.mjs');console.log(await o.isExternalPayout(r,'$WLOW'))}catch(e){console.log('false')}})")
+  if [ "$EXT" != "true" ]; then
+    echo "[earn] REJECT: $PAYTX is not an external 0xwork payout (from!=taskPool or no USDC transfer to us) — NOT GATE-0"
+    exit 1
+  fi
+  STATUS=$(node -e "import('$HERE/lib/verify-tx.mjs').then(m=>m.receiptStatus('$PAYTX')).then(s=>console.log(s||'null')).catch(()=>console.log('null'))")
+  BEFORE=$(printf '%s' "$RES" | python3 -c "import json,sys;print(json.load(sys.stdin).get('before_usdc',0))" 2>/dev/null)
+  AFTER=$(node -e "import('$HERE/lib/usdc.mjs').then(m=>m.usdcBalance('$WLOW')).then(b=>console.log(b)).catch(()=>console.log('$BEFORE'))")
+  AMT=$(node -e "console.log(Math.max(0,($AFTER)-($BEFORE)))")
+  # external:true is what unlocks isProfitable() — set ONLY here, after the assertion passed.
+  JSON=$(python3 -c "import json; print(json.dumps({'wallet':'${WLOW:-unknown}','source':'0xwork','task':'$TASKID','earn_usdc':float('$AMT'),'cost_usdc':0,'tx':'$PAYTX','status':'$STATUS','external':True,'wake':'$WAKE'}))")
+  OUT=$(record_line "$JSON")
+  echo "[earn] 0xwork recorded -> $OUT"
+  if [ "$OUT" = "PROFITABLE" ]; then
+    echo "[earn] GATE-0 MET: external revenue wake recorded (net>0, status 0x1, external inbound)."
+    exit 0
+  fi
+  echo "[earn] 0xwork wake recorded but NOT profitable (status=$STATUS). Not GATE-0."
+  exit 0
+fi
+
+# --- strategy=x402: SAME-WAKE EXTERNAL fallback (sell Anicca's own output; instant settle) -----
+# When 0xwork has no doable task this wake, sell a delivered artifact via x402 (04-earn.md
+# "x402 sell own work"). x402 settles instantly — no poster-approval wait — so a wake can still
+# close GATE-0. A payer streams USDC to our wallet for the artifact; the payout tx is an inbound
+# USDC Transfer (from = payer, not self). EARN_STRATEGY=x402 -> execute-x402-sell.py prints
+# {payout_tx,...}; the SAME isExternalPayout assertion + external:true gate applies before GATE-0.
+# (execute-x402-sell.py is the next executor to land; until then 0xwork is the live external path.)
+
+# --- strategy=swap: run.sh performs a NET-ZERO asset rotation (runway fallback, NEVER GATE-0) -
 if [ "$STRATEGY" = "swap" ] && [ -z "${EARN_TX:-}" ]; then
   RES=$(PKVAR="$PKVAR" python3 "$HERE/execute-swap.py" 2>/dev/null)
   echo "[earn] swap result: $RES"
@@ -80,11 +135,9 @@ print(d.get('error') or d.get('abort') or '')" 2>/dev/null)
   JSON=$(python3 -c "import json; print(json.dumps({'wallet':'${WLOW:-unknown}','source':'$EARN_SOURCE','task':'''$EARN_TASK''','earn_usdc':float('$EARN_AMOUNT'),'cost_usdc':float('$COST'),'tx':'$EARN_TX','status':'$STATUS','wake':'$WAKE'}))")
   OUT=$(record_line "$JSON")
   echo "[earn] recorded -> $OUT"
-  if [ "$OUT" = "PROFITABLE" ]; then
-    echo "[earn] GATE-0 MET: profitable wake recorded (net>0, status 0x1)."
-    exit 0
-  fi
-  echo "[earn] swap wake recorded but NOT profitable (status=$STATUS). Not GATE-0."
+  # A swap line carries NO 'external' flag, so isProfitable() returns false by construction.
+  # OUT is always NARRATE here: a swap is asset rotation (runway top-up), NEVER GATE-0.
+  echo "[earn] swap wake recorded as NARRATE (asset rotation, not external revenue). Not GATE-0."
   exit 0
 fi
 

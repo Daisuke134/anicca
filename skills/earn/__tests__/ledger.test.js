@@ -20,12 +20,17 @@ test("deriveLine computes net_usdc = earn - cost and stamps ts", () => {
   assert.ok(l.ts > 0);
 });
 
-test("isProfitable true only when net>0 AND status 0x1 (narrate-only never counts)", () => {
-  assert.equal(isProfitable({ net_usdc: 0.1, status: "0x1", tx: "0x1" }), true);
-  assert.equal(isProfitable({ net_usdc: 0.1, status: "0x0", tx: "0x1" }), false); // reverted tx
-  assert.equal(isProfitable({ net_usdc: -0.1, status: "0x1", tx: "0x1" }), false); // loss
+test("isProfitable true only for EXTERNAL revenue: net>0 AND status 0x1 AND external:true AND not a swap", () => {
+  // external 0xwork/x402 inbound — the only GATE-0-eligible shape.
+  assert.equal(isProfitable({ source: "0xwork", net_usdc: 0.1, status: "0x1", tx: "0x1", external: true }), true);
+  assert.equal(isProfitable({ source: "0xwork", net_usdc: 0.1, status: "0x0", tx: "0x1", external: true }), false); // reverted tx
+  assert.equal(isProfitable({ source: "0xwork", net_usdc: -0.1, status: "0x1", tx: "0x1", external: true }), false); // loss
   assert.equal(isProfitable({ net_usdc: 0.1 }), false); // narrate-only (no tx/status)
-  assert.equal(isProfitable({ net_usdc: 0.1, status: "0x1" }), false); // no tx hash
+  assert.equal(isProfitable({ source: "0xwork", net_usdc: 0.1, status: "0x1", external: true }), false); // no tx hash
+  // swaps are asset rotation — NEVER GATE-0, even with a real 0x1 tx and positive net.
+  assert.equal(isProfitable({ source: "swap-eth-usdc", net_usdc: 0.1, status: "0x1", tx: "0x1" }), false);
+  // any line missing external:true is rejected (the false-green guard).
+  assert.equal(isProfitable({ source: "0xwork", net_usdc: 0.1, status: "0x1", tx: "0x1" }), false);
 });
 
 test("appendLedger is append-only: prior line is byte-identical after a second append", async () => {
