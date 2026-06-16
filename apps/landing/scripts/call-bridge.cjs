@@ -79,6 +79,10 @@ function routeTelnyxMessage(msg, state, geminiSend) {
     return "start";
   }
   if (event === "media" && msg.media && msg.media.payload) {
+    // Only feed the caller's (inbound) audio to Gemini. In both_tracks the outbound track is
+    // Charon's own playback; forwarding it back creates an echo/feedback loop.
+    const track = msg.media.track;
+    if (track && track !== "inbound") return "media-skip";
     const pcm16b64 = twilioMuLawToGeminiPcm16(msg.media.payload);
     geminiSend(buildGeminiAudioInput(pcm16b64));
     state.inFrames = (state.inFrames || 0) + 1;

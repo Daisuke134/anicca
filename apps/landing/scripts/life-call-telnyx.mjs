@@ -88,6 +88,19 @@ if (DRY) {
 if (!API) die("TELNYX_API_KEY missing in env");
 if (!process.env.GEMINI_API_KEY) die("GEMINI_API_KEY missing in env");
 
+// G5 preflight: refuse to dial on an empty Telnyx balance (a mid-call cutoff is a fake "connected").
+// JSON path confirmed against the live /v2/balance payload (Commands §0 prints the raw shape first):
+//   { "data": { "balance": "5.00", "currency": "USD", "available_credit": "...", ... } }
+// `data.balance` is a STRING → Number() coerces it. NOTE: --dry-run exits BEFORE this block
+// (the `if (DRY) … process.exit(0)` above), so the preflight only gates a REAL run.
+{
+  const bal = await txGet("/balance").catch((e) => die("balance check failed: " + e.message));
+  const usd = Number(bal && bal.data && bal.data.balance);
+  console.log(`[runner] telnyx balance=$${isFinite(usd) ? usd.toFixed(2) : "?"} currency=${bal?.data?.currency || "?"}`);
+  if (!isFinite(usd)) die(`unexpected /v2/balance shape: ${JSON.stringify(bal)}`); // path-mismatch fail-loud
+  if (usd < 0.50) die(`telnyx balance too low ($${usd}); top up before dialing`);
+}
+
 let bridge, tunnel;
 function cleanup() {
   try { bridge && bridge.kill("SIGTERM"); } catch {}
@@ -180,18 +193,35 @@ async function main() {
 
   // 6. hang up (best effort) + fetch the recording for this call session
   try { await txPost(`/calls/${encodeURIComponent(ccid)}/actions/hangup`, {}); } catch {}
-  await sleep(4000);
+
+  // G7: carrier-truth status + duration (do NOT infer "connected" from bridge log strings).
+  let callStatus = "unknown";
+  try {
+    const c = await txGet(`/calls/${encodeURIComponent(ccid)}`);
+    callStatus = (c.data && (c.data.status || c.data.state)) || callStatus;
+  } catch (e) { console.error("[runner] call status fetch err:", e.message); }
+
   let recUrl = "";
   let recId = "";
-  try {
-    const recs = await txGet(`/recordings?filter[call_session_id]=${encodeURIComponent(sessionId)}`);
-    const r = (recs.data && recs.data[0]) || null;
-    if (r) {
-      recId = r.id;
-      recUrl = (r.download_urls && (r.download_urls.mp3 || r.download_urls.wav)) || "";
+  let recDurSec = 0;
+  // G8: Telnyx finalizes recordings ASYNCHRONOUSLY after hangup — a single 4s wait false-fails the
+  // recDurSec<3 gate. Poll /v2/recordings until a recording with download_urls + duration appears
+  // (up to ~30s: 10 × 3s). A genuinely-connected call will surface here once Telnyx flushes the mp3.
+  for (let i = 0; i < 10; i++) {
+    await sleep(3000);
+    try {
+      const recs = await txGet(`/recordings?filter[call_session_id]=${encodeURIComponent(sessionId)}`);
+      const r = (recs.data && recs.data[0]) || null;
+      if (r && (r.download_urls && (r.download_urls.mp3 || r.download_urls.wav))) {
+        recId = r.id;
+        recUrl = r.download_urls.mp3 || r.download_urls.wav;
+        recDurSec = Number(r.duration_millis ? r.duration_millis / 1000 : r.recording_duration || 0) || 0;
+        if (recDurSec > 0) break; // recording finalized with a real duration → done waiting
+      }
+    } catch (e) {
+      console.error("[runner] recording fetch err:", e.message);
     }
-  } catch (e) {
-    console.error("[runner] recording fetch err:", e.message);
+    process.stdout.write(`[rec-poll ${i}] recId=${recId || "-"} dur=${recDurSec}s\n`);
   }
 
   // bridge frame accounting (same log strings as the Twilio runner)
@@ -210,6 +240,8 @@ async function main() {
     CALL_LEG_ID: legId,
     TO,
     FROM,
+    CALL_STATUS: callStatus,
+    RECORDING_DURATION_SEC: recDurSec,
     RECORDING_STARTED: recStarted,
     RECORDING_ID: recId,
     RECORDING_URL: recUrl,
@@ -223,8 +255,9 @@ async function main() {
   // success requires the carrier media stream to have started (Dais's leg connected)
   // and Charon to have spoken at least one downlink frame.
   if (!ccid) process.exit(1);
-  if (!startedOk || Number(lastOut) <= 0) {
-    console.error("[runner] no media stream / no Charon audio — exiting non-zero");
+  // G7/G8: carrier-truth gate — the stream started, Charon spoke, AND the recording is non-trivial.
+  if (!startedOk || Number(lastOut) <= 0 || recDurSec < 3) {
+    console.error(`[runner] FAIL streamStarted=${startedOk} downlink=${lastOut} recDur=${recDurSec}s — exiting non-zero`);
     process.exit(2);
   }
   process.exit(0);
