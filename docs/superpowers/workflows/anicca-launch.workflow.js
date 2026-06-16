@@ -225,7 +225,7 @@ while (open.length && round < MAX_ROUNDS) {
     `Gather REAL evidence by USING the product: open the live page in camofox and click controls, curl EVERY CTA, grep the served HTML for "Loading"/"coming"/jargon, run the command/tx. ` +
     `Return EVERY gap between spec and live reality, each with RAW live_evidence of the broken state. If it genuinely fully works for a real user, return gaps:[].`,
     { label: `audit:${s.key}`, phase: 'Audit', schema: AUDIT, model: 'opus' }
-  ))).filter(Boolean)
+  )))).filter(Boolean)
   const gapsBy = Object.fromEntries(ledgers.map((l) => [l.subsystem, l.gaps || []]))
   const stillOpen = open.filter((s) => (gapsBy[s.key] || []).length > 0)
   const totalGaps = stillOpen.reduce((n, s) => n + (gapsBy[s.key] || []).length, 0)
