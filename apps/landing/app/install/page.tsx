@@ -173,14 +173,14 @@ export default function Page() {
             <ColumnCard
               emoji="☁"
               label="CLOUD"
-              sublabel="製品メイン・推奨 — Googleログイン→1分で誕生"
+              sublabel="製品メイン・推奨 — 無料でログイン→1分で誕生"
               recommended
               cta={
                 <CTA
-                  href="https://buy.stripe.com/cNi7sL0dEdVI0iI7ki2880U"
+                  href="/me"
                   variant="primary"
                 >
-                  Googleでログイン / $30/月で始める →
+                  Get started free →
                 </CTA>
               }
             >
@@ -201,8 +201,8 @@ export default function Page() {
               </CheckItem>
               <div className="pt-2 border-t border-[hsl(var(--border))]">
                 <p className="text-xs text-[hsl(var(--text-secondary))]">
-                  <strong className="text-[hsl(var(--text-primary))]">$30/月</strong>
-                  {' '}— 黒字化後に自動解約。クレカ不要のGoogle Payも可。
+                  <strong className="text-[hsl(var(--text-primary))]">無料で開始</strong>
+                  {' '}— 3日間トライアル。$5/月（無料枠モデル）or $30/月（フロンティアモデル＝より稼ぐ）。
                 </p>
               </div>
             </ColumnCard>
