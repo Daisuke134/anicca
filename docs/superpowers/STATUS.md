@@ -26,7 +26,7 @@ The sections below are the (over-optimistic) prior log — trust this correction
 | life-travel (4 travel.js bug fixes) | ✅ rev2 | ✅ PASS | ✅ ~/anicca `c4ed1b8` (travel.js hardened; registry stays declared) | ✅ **live python cron verified: 15 real gcal IDs, 13 runs exit=0 · node --check pass** | ✅ **DONE 2026-06-16** (live feature works; OSS port hardened) |
 | life-call (Telnyx connected call) | ✅ rev2 | ✅ **PASS** (apply-ready; hand-apply not git-apply) | — | — | IMPLEMENT-NEXT (the 電話 milestone) · self-serve TELNYX key (camofox) + B2 Dais answers/relays OTP · after earn (serialize ~/anicca) |
 | life-ask (gog local round-trip + duration) | ✅ rev3 | ✅ PASS (r2: schedule removed, GCal env CONFIRMED set in Netlify, gog cmds fixed) | — | — | READY to implement (env confirmed) |
-| life-notify (gog poll approval + cron reconcile) | ✅ rev3 | ✅ PASS (r3: lazy pendingPath + require.main guard; tests 4/4) | — | — | READY to implement |
+| life-notify (gog poll approval + cron reconcile) | ✅ rev3 | ✅ PASS | ✅ ~/anicca `b1585c1` + ~/.openclaw `91a96f8a` (un-gated cron disabled, 2 new added; 20/20 tests) | ✅ **LIVE E2E: scan→5 real approval mails to Dais inbox w/ [AN-] tokens · poll matched "OK" reply → held notice sent to +notifytest · idempotent** | ✅ **DONE 2026-06-16** (prod needs Dais's real "OK" reply = designed approval gate) |
 | life-webapp (connect-calendar app) | ✅ rev2 | ✅ PASS (use saas_lateness.py envelope; de-risked) | — | — | READY · ext: Composio V0 live ACTIVE calendar connection to confirm events envelope |
 | self-spawn | — | — | — | — | NO PATCH YET (wave 3) |
 | ubi | — | — | — | — | NO PATCH YET (wave 3) |
