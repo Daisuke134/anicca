@@ -36,6 +36,29 @@ Control app `2982013078364751402` (FROM `+14322234204`), Gemini Live voice = **C
   `record_start`; the `streaming_start` contingency only fires if no stream appears after ringing. The next
   run captures a non-silent mp3.
 
+## Quality fix — Charon now ANSWERS the user (session `4545c5ce-697f-11f1-9964-02420a210420`)
+
+The first answered call had Charon talking but not cleanly answering Dais. The both-side transcript
+(added via `inputAudioTranscription`/`outputAudioTranscription`, firecrawl-verified) exposed the cause:
+with `stream_track:"both_tracks"`, **Charon's OWN outbound audio was streamed back into the bridge and
+sent to Gemini as user input** — Gemini heard itself ("You need directions or anything else?" appeared
+in the USER transcript) and got confused. **Fix: `stream_track:"inbound_track"`** (only the caller's
+audio reaches Gemini). Re-verified live — clean, responsive two-way:
+
+```
+CHARON: …at 09:45 — time to leave now. Do you need directions or anything else?
+USER:   What is your name?
+CHARON: My name is Anicca.
+USER:   Yeah, what is OnePlus 7?
+CHARON: (answers)
+USER:   Okay, this is working now. Thank you so much.   ← Dais's in-call confirmation
+CHARON: You're very welcome. Have a good day!
+USER:   It's working thank you.
+```
+
+Dais confirmed **in the call** that it works. RECORDING_STARTED:true, BRIDGE_STREAM_STARTED:true,
+DOWNLINK 323 (Charon), UPLINK 1600 (Dais). Task #2 quality-complete.
+
 ## Repro
 ```bash
 cd apps/landing && set -a; . ~/.openclaw/.env; set +a
