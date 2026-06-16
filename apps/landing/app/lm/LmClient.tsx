@@ -1,12 +1,17 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { useLaunchLocale } from '@/lib/launchLocale';
+import { launchStrings } from '@/lib/launchStrings';
 
 // /lm onboarding island (spec28 P-lm-separate). Static-export safe: every call runs at
 // runtime in the browser, nothing is server-rendered per-user (mirrors app/me/MeClient.tsx).
 // Flow: Google login → ask name → connect gcal + Gmail (Composio managed OAuth) → ask phone
-// → ready → dashboard. NO trial, $20/mo. UX taste: design-taste-frontend +
-// nextlevelbuilder/ui-ux-pro-max-skill (premium, EN-only locale surface, no AI-slop).
+// → ready → dashboard. NO trial, $20/mo.
+//
+// spec29 + Dais 2026-06-16: copy is fully localized EN/JA via launchStrings[locale]. The
+// OAuth-survival logic (localStorage cal/gmail/step persistence, redirect resume, the
+// connect/save fetches) is UNCHANGED — only the visible strings are swapped.
 //
 // REAL connectors:
 //   gcal  → /.netlify/functions/calendar-connect (EXISTING, returns {redirect_url}|{connected})
@@ -27,11 +32,11 @@ const SIG_KEY = 'anicca.lm.sig';
 type Step = 'login' | 'name' | 'connect' | 'phone' | 'pay' | 'dashboard';
 type ConnState = 'idle' | 'connecting' | 'connected' | 'error';
 
-function StepDots({ step }: { step: Step }) {
+function StepDots({ step, ariaLabel }: { step: Step; ariaLabel: string }) {
   const order: Step[] = ['login', 'name', 'connect', 'phone', 'pay', 'dashboard'];
   const idx = order.indexOf(step);
   return (
-    <div className="flex items-center gap-2" aria-label={`step ${idx + 1} of ${order.length}`}>
+    <div className="flex items-center gap-2" aria-label={ariaLabel}>
       {order.map((s, i) => (
         <span
           key={s}
@@ -53,6 +58,8 @@ function Shell({ children }: { children: React.ReactNode }) {
 }
 
 export default function LmClient() {
+  const { locale } = useLaunchLocale();
+  const t = launchStrings[locale].lm;
   const [step, setStep] = useState<Step>('login');
   const [uid, setUid] = useState<string>('');
   const [sig, setSig] = useState<string>('');
@@ -113,7 +120,7 @@ export default function LmClient() {
 
   const saveName = useCallback(async () => {
     setErr('');
-    if (!name.trim()) return setErr('Please enter your name.');
+    if (!name.trim()) return setErr(t.name.error);
     try {
       await fetch(SAVE_URL, {
         method: 'POST',
@@ -122,9 +129,9 @@ export default function LmClient() {
       });
       setStep('connect');
     } catch (e) {
-      setErr('Could not save. Try again.');
+      setErr(t.name.saveError);
     }
-  }, [name, uid, sig]);
+  }, [name, uid, sig, t]);
 
   const connect = useCallback(
     async (kind: 'gcal' | 'gmail') => {
@@ -149,19 +156,18 @@ export default function LmClient() {
           return;
         }
         set('error');
-        setErr(d.error || 'Connection failed.');
+        setErr(d.error || t.connect.error);
       } catch (e) {
         set('error');
-        setErr('Connection failed.');
+        setErr(t.connect.error);
       }
     },
-    [uid, sig],
+    [uid, sig, t],
   );
 
   const savePhone = useCallback(async () => {
     setErr('');
-    if (!PHONE_RE.test(phone.trim()))
-      return setErr('Enter a valid phone number in E.164 form, e.g. +818012345678.');
+    if (!PHONE_RE.test(phone.trim())) return setErr(t.phone.error);
     try {
       await fetch(SAVE_URL, {
         method: 'POST',
@@ -170,29 +176,27 @@ export default function LmClient() {
       });
       setStep('pay');
     } catch (e) {
-      setErr('Could not save. Try again.');
+      setErr(t.phone.saveError);
     }
-  }, [phone, uid, sig]);
+  }, [phone, uid, sig, t]);
 
   // ── render ───────────────────────────────────────────────────────────────────
   return (
     <div className="space-y-6">
-      <StepDots step={step} />
+      <StepDots step={step} ariaLabel={t.stepAria(['login', 'name', 'connect', 'phone', 'pay', 'dashboard'].indexOf(step) + 1, 6)} />
 
       {step === 'login' && (
         <Shell>
           <h2 className="font-display text-xl font-semibold text-[hsl(var(--text-primary))]">
-            Sign in to start
+            {t.login.title}
           </h2>
-          <p className="mt-2 text-sm text-[hsl(var(--text-secondary))]">
-            Life Manager keeps you on time by phone and email. $20/mo, no trial.
-          </p>
+          <p className="mt-2 text-sm text-[hsl(var(--text-secondary))]">{t.login.body}</p>
           <button
             type="button"
             onClick={login}
             className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-pill bg-[hsl(var(--gold))] px-6 py-3 text-sm font-semibold text-[#18181b] transition-all hover:brightness-95 active:scale-[0.98]"
           >
-            Continue with Google
+            {t.login.button}
           </button>
         </Shell>
       )}
@@ -200,12 +204,12 @@ export default function LmClient() {
       {step === 'name' && (
         <Shell>
           <h2 className="font-display text-xl font-semibold text-[hsl(var(--text-primary))]">
-            What should Anicca call you?
+            {t.name.title}
           </h2>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Your name"
+            placeholder={t.name.placeholder}
             className="mt-5 w-full rounded-input border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-4 py-3 text-sm text-[hsl(var(--text-primary))] outline-none focus:border-[hsl(var(--gold))]"
           />
           <button
@@ -213,7 +217,7 @@ export default function LmClient() {
             onClick={saveName}
             className="mt-5 inline-flex w-full items-center justify-center rounded-pill bg-[hsl(var(--gold))] px-6 py-3 text-sm font-semibold text-[#18181b] transition-all hover:brightness-95 active:scale-[0.98]"
           >
-            Continue
+            {t.name.button}
           </button>
         </Shell>
       )}
@@ -221,14 +225,12 @@ export default function LmClient() {
       {step === 'connect' && (
         <Shell>
           <h2 className="font-display text-xl font-semibold text-[hsl(var(--text-primary))]">
-            Connect your calendar &amp; email
+            {t.connect.title}
           </h2>
-          <p className="mt-2 text-sm text-[hsl(var(--text-secondary))]">
-            One-click, managed OAuth via Composio. Anicca reads events and sends asks/late-notices.
-          </p>
+          <p className="mt-2 text-sm text-[hsl(var(--text-secondary))]">{t.connect.body}</p>
           <div className="mt-5 space-y-3">
-            <ConnectRow label="Google Calendar" state={cal} onClick={() => connect('gcal')} />
-            <ConnectRow label="Gmail" state={gmail} onClick={() => connect('gmail')} />
+            <ConnectRow label={t.connect.calendar} state={cal} strings={t.connect} onClick={() => connect('gcal')} />
+            <ConnectRow label={t.connect.gmail} state={gmail} strings={t.connect} onClick={() => connect('gmail')} />
           </div>
           <button
             type="button"
@@ -236,7 +238,7 @@ export default function LmClient() {
             onClick={() => setStep('phone')}
             className="mt-6 inline-flex w-full items-center justify-center rounded-pill bg-[hsl(var(--gold))] px-6 py-3 text-sm font-semibold text-[#18181b] transition-all hover:brightness-95 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
           >
-            Continue
+            {t.connect.button}
           </button>
         </Shell>
       )}
@@ -244,16 +246,14 @@ export default function LmClient() {
       {step === 'phone' && (
         <Shell>
           <h2 className="font-display text-xl font-semibold text-[hsl(var(--text-primary))]">
-            Your phone number
+            {t.phone.title}
           </h2>
-          <p className="mt-2 text-sm text-[hsl(var(--text-secondary))]">
-            Anicca calls 15 minutes before each event with route guidance.
-          </p>
+          <p className="mt-2 text-sm text-[hsl(var(--text-secondary))]">{t.phone.body}</p>
           <input
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             inputMode="tel"
-            placeholder="+818012345678"
+            placeholder={t.phone.placeholder}
             className="mt-5 w-full rounded-input border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-4 py-3 text-sm text-[hsl(var(--text-primary))] outline-none focus:border-[hsl(var(--gold))]"
           />
           <button
@@ -261,7 +261,7 @@ export default function LmClient() {
             onClick={savePhone}
             className="mt-5 inline-flex w-full items-center justify-center rounded-pill bg-[hsl(var(--gold))] px-6 py-3 text-sm font-semibold text-[#18181b] transition-all hover:brightness-95 active:scale-[0.98]"
           >
-            Continue
+            {t.phone.button}
           </button>
         </Shell>
       )}
@@ -269,21 +269,23 @@ export default function LmClient() {
       {step === 'pay' && (
         <Shell>
           <h2 className="font-display text-xl font-semibold text-[hsl(var(--text-primary))]">
-            You&apos;re set, {name || 'friend'}.
+            {t.pay.titlePrefix}
+            {name || t.pay.titleFallback}.
           </h2>
           <p className="mt-2 text-sm text-[hsl(var(--text-secondary))]">
-            Subscribe to activate 24/7 management. <strong className="text-[hsl(var(--text-primary))]">$20/mo, no trial.</strong>
+            {t.pay.bodyPre}
+            <strong className="text-[hsl(var(--text-primary))]">{t.pay.bodyStrong}</strong>
           </p>
           {STRIPE_LM_URL ? (
             <a
               href={`${STRIPE_LM_URL}?client_reference_id=${encodeURIComponent(uid)}`}
               className="mt-6 inline-flex w-full items-center justify-center rounded-pill bg-[hsl(var(--gold))] px-6 py-3 text-sm font-semibold text-[#18181b] transition-all hover:brightness-95 active:scale-[0.98]"
             >
-              Subscribe — $20/mo
+              {t.pay.button}
             </a>
           ) : (
             <p className="mt-6 rounded-input border border-[hsl(var(--border))] bg-[hsl(var(--surface-elevated))] px-4 py-3 text-center text-xs text-[hsl(var(--text-secondary))]">
-              Checkout is being finalized — we&apos;ll email you the secure $20/mo link shortly.
+              {t.pay.notReady}
             </p>
           )}
           <button
@@ -291,7 +293,7 @@ export default function LmClient() {
             onClick={() => setStep('dashboard')}
             className="mt-3 inline-flex w-full items-center justify-center text-xs text-[hsl(var(--text-secondary))] underline underline-offset-4"
           >
-            See my dashboard
+            {t.pay.seeDashboard}
           </button>
         </Shell>
       )}
@@ -300,26 +302,23 @@ export default function LmClient() {
         <div className="space-y-4">
           <div className="rounded-card border border-[hsl(var(--border))] bg-[hsl(var(--surface))] p-6">
             <p className="text-xs uppercase tracking-widest text-[hsl(var(--gold))]">
-              your life manager
+              {t.dashboard.eyebrow}
             </p>
             <p className="mt-1 text-lg font-semibold text-[hsl(var(--text-primary))]">
-              {name || 'You'} — connected
+              {name || t.dashboard.you} {t.dashboard.connectedSuffix}
             </p>
             <div className="mt-3 flex flex-wrap gap-2 text-xs">
-              <Pill ok={cal === 'connected'}>Calendar</Pill>
-              <Pill ok={gmail === 'connected'}>Gmail</Pill>
-              <Pill ok={!!phone}>Phone</Pill>
+              <Pill ok={cal === 'connected'}>{t.dashboard.pills.calendar}</Pill>
+              <Pill ok={gmail === 'connected'}>{t.dashboard.pills.gmail}</Pill>
+              <Pill ok={!!phone}>{t.dashboard.pills.phone}</Pill>
             </div>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
-            <SkillCard title="Travel blocks" desc="Travel time auto-inserted before every event." />
-            <SkillCard title="15-min calls" desc="Anicca calls before each event with route guidance." />
-            <SkillCard title="Location asks" desc="Missing location? Anicca emails you; your reply updates the event." />
-            <SkillCard title="Late-notice" desc="Running late? Anicca drafts an attendee note; you approve, it sends." />
+            {t.dashboard.skills.map((s) => (
+              <SkillCard key={s.title} title={s.title} desc={s.desc} liveBadge={t.dashboard.liveBadge} />
+            ))}
           </div>
-          <p className="text-xs text-[hsl(var(--text-secondary))]">
-            All four run 24/7 on Anicca&apos;s server. Live per-event telemetry lands here next.
-          </p>
+          <p className="text-xs text-[hsl(var(--text-secondary))]">{t.dashboard.footnote}</p>
         </div>
       )}
 
@@ -331,10 +330,12 @@ export default function LmClient() {
 function ConnectRow({
   label,
   state,
+  strings,
   onClick,
 }: {
   label: string;
   state: ConnState;
+  strings: { stateConnected: string; stateConnecting: string; stateConnect: string };
   onClick: () => void;
 }) {
   const connected = state === 'connected';
@@ -351,7 +352,11 @@ function ConnectRow({
     >
       <span>{label}</span>
       <span className="text-xs">
-        {connected ? 'connected ✓' : state === 'connecting' ? 'connecting…' : 'connect →'}
+        {connected
+          ? strings.stateConnected
+          : state === 'connecting'
+            ? strings.stateConnecting
+            : strings.stateConnect}
       </span>
     </button>
   );
@@ -371,12 +376,12 @@ function Pill({ ok, children }: { ok: boolean; children: React.ReactNode }) {
   );
 }
 
-function SkillCard({ title, desc }: { title: string; desc: string }) {
+function SkillCard({ title, desc, liveBadge }: { title: string; desc: string; liveBadge: string }) {
   return (
     <div className="rounded-card border border-[hsl(var(--border))] bg-[hsl(var(--surface))] p-4">
       <div className="flex items-center gap-2">
         <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-400 border border-emerald-500/20">
-          live
+          {liveBadge}
         </span>
         <p className="text-sm font-semibold text-[hsl(var(--text-primary))]">{title}</p>
       </div>

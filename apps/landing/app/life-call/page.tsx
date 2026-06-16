@@ -1,5 +1,4 @@
-import LaunchNav from '@/components/site/LaunchNav';
-import Footer from '@/components/site/Footer';
+import LaunchFrame from '@/components/site/LaunchFrame';
 import { SplitHero, Section, Reveal, CTA } from '@/components/site/taste';
 
 // B-call (spec27c WF-B) — Gemini Charon bidirectional phone bridge.
@@ -36,9 +35,7 @@ const STEPS: { n: string; what: string; api: string }[] = [
 
 export default function Page() {
   return (
-    <>
-      <LaunchNav active="/life-manager" />
-
+    <LaunchFrame active="/life-manager">
       <SplitHero
         headline="Anicca calls you"
         subtext="15 minutes before every event, Anicca phones you and talks — two-way — in Gemini's Charon voice over Twilio. No app to open, no button to press. Just answer."
@@ -134,7 +131,6 @@ export default function Page() {
         </div>
       </Section>
 
-      <Footer locale="en" />
-    </>
+    </LaunchFrame>
   );
 }

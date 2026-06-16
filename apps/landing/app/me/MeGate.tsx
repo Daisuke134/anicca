@@ -4,10 +4,16 @@
 // instance telemetry — they see a Google login wall. Logged-in users see THEIR own
 // instance (spawn CTA + the real MeClient wallet dashboard). The old public
 // "illustrative" /me ($6/$18.40 fake numbers, 3 hard-coded children) is removed.
+//
+// spec29 + Dais 2026-06-16: copy is fully localized EN/JA via launchStrings[locale].
+// The gate logic (configured / ready / session) is UNCHANGED — localization only swaps
+// the visible strings; the page stays PRIVATE.
 
 import { useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { getSession, onAuthChange, signInWithGoogle, signOut, supabase } from '@/lib/auth';
+import { useLaunchLocale } from '@/lib/launchLocale';
+import { launchStrings } from '@/lib/launchStrings';
 import MeClient from './MeClient';
 
 // Real Stripe Payment Links (spec28 §0): $30/mo frontier already exists; $5/mo free-tier
@@ -23,12 +29,16 @@ function Tier({
   blurb,
   href,
   highlight,
+  trialCta,
+  currentPlan,
 }: {
   name: string;
   price: string;
   blurb: string;
   href?: string;
   highlight?: boolean;
+  trialCta: string;
+  currentPlan: string;
 }) {
   return (
     <div
@@ -46,16 +56,18 @@ function Tier({
           href={href}
           className="mt-4 inline-flex w-full items-center justify-center rounded-pill bg-[hsl(var(--gold))] px-4 py-2 text-sm font-semibold text-[#18181b] transition-all hover:brightness-95"
         >
-          3日間無料で試す →
+          {trialCta}
         </a>
       ) : (
-        <p className="mt-4 text-xs text-emerald-400">現在のプラン（無料）</p>
+        <p className="mt-4 text-xs text-emerald-400">{currentPlan}</p>
       )}
     </div>
   );
 }
 
 export default function MeGate() {
+  const { locale } = useLaunchLocale();
+  const t = launchStrings[locale].me;
   const [session, setSession] = useState<Session | null>(null);
   const [ready, setReady] = useState(false);
   const configured = typeof window !== 'undefined' && !!supabase();
@@ -80,35 +92,34 @@ export default function MeGate() {
     return (
       <div className="mt-10 max-w-md rounded-card border border-[hsl(var(--border))] bg-[hsl(var(--surface))] p-6">
         <p className="text-sm text-[hsl(var(--text-secondary))]">
-          ログインは準備中です。<code>NEXT_PUBLIC_SUPABASE_URL</code> /{' '}
-          <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code> が未設定のためサインインできません。
+          {t.notConfiguredPre}
+          <code>{t.notConfiguredCode1}</code>
+          {t.notConfiguredMid}
+          <code>{t.notConfiguredCode2}</code>
+          {t.notConfiguredPost}
         </p>
       </div>
     );
   }
 
   if (!ready) {
-    return <p className="mt-10 text-sm text-[hsl(var(--text-secondary))]">読み込み中…</p>;
+    return <p className="mt-10 text-sm text-[hsl(var(--text-secondary))]">{t.loading}</p>;
   }
 
   // ── ANONYMOUS — login wall. NEVER render instance telemetry here. ──
   if (!session) {
     return (
       <div className="mt-10 max-w-md rounded-card border border-[hsl(var(--border))] bg-[hsl(var(--surface))] p-8 text-center">
-        <h2 className="text-xl font-semibold text-[hsl(var(--text-primary))]">
-          あなたのAniccaにログイン
-        </h2>
-        <p className="mt-3 text-sm text-[hsl(var(--text-secondary))]">
-          Googleアカウントでログインすると、あなた専用のAnicca個体（純資産・収益・稼働ログ・自給率）が表示されます。
-        </p>
+        <h2 className="text-xl font-semibold text-[hsl(var(--text-primary))]">{t.wallTitle}</h2>
+        <p className="mt-3 text-sm text-[hsl(var(--text-secondary))]">{t.wallBody}</p>
         <button
           type="button"
           onClick={() => void signInWithGoogle()}
           className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-pill bg-[hsl(var(--text-primary))] px-5 py-3 text-sm font-semibold text-[hsl(var(--background))] transition-opacity hover:opacity-90"
         >
-          Googleでログイン
+          {t.wallButton}
         </button>
-        <p className="mt-4 text-xs text-[hsl(var(--text-secondary))]">無料 · クレカ不要で開始</p>
+        <p className="mt-4 text-xs text-[hsl(var(--text-secondary))]">{t.wallNote}</p>
       </div>
     );
   }
@@ -119,14 +130,14 @@ export default function MeGate() {
     <div className="mt-8">
       <div className="flex items-center justify-between gap-4">
         <p className="text-sm text-[hsl(var(--text-secondary))]">
-          ログイン中: <span className="text-[hsl(var(--text-primary))]">{email}</span>
+          {t.loggedInAs}: <span className="text-[hsl(var(--text-primary))]">{email}</span>
         </p>
         <button
           type="button"
           onClick={() => void signOut()}
           className="text-xs underline underline-offset-4 text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--text-primary))]"
         >
-          ログアウト
+          {t.signOut}
         </button>
       </div>
 
@@ -136,27 +147,35 @@ export default function MeGate() {
       {/* Pricing tiers — free (current) / $5 free-tier / $30 frontier. 3-day trial on paid. */}
       <div className="mt-12">
         <h3 className="text-sm font-semibold uppercase tracking-widest text-[hsl(var(--text-secondary))]">
-          稼ぎを伸ばす（24/7いつでも）
+          {t.tiersTitle}
         </h3>
         <div className="mt-4 grid gap-4 sm:grid-cols-3">
-          <Tier name="Free" price="$0" blurb="ログインで誕生。無料枠モデルで稼働。" />
           <Tier
-            name="Plus"
-            price="$5/月"
-            blurb="無料枠モデルをクラウドで常時稼働。"
-            href={PAY_5 || undefined}
+            name={t.tiers.free.name}
+            price="$0"
+            blurb={t.tiers.free.blurb}
+            trialCta={t.trialCta}
+            currentPlan={t.currentPlan}
           />
           <Tier
-            name="Pro"
-            price="$30/月"
-            blurb="フロンティアモデル＝より多く稼ぐ。鍵込み。"
+            name={t.tiers.plus.name}
+            price={t.tiers.plus.price}
+            blurb={t.tiers.plus.blurb}
+            href={PAY_5 || undefined}
+            trialCta={t.trialCta}
+            currentPlan={t.currentPlan}
+          />
+          <Tier
+            name={t.tiers.pro.name}
+            price={t.tiers.pro.price}
+            blurb={t.tiers.pro.blurb}
             href={PAY_30}
             highlight
+            trialCta={t.trialCta}
+            currentPlan={t.currentPlan}
           />
         </div>
-        <p className="mt-3 text-xs text-[hsl(var(--text-secondary))]">
-          有料プランは3日間無料トライアル。いつでも開始・解約できます。
-        </p>
+        <p className="mt-3 text-xs text-[hsl(var(--text-secondary))]">{t.tiersFootnote}</p>
       </div>
     </div>
   );
