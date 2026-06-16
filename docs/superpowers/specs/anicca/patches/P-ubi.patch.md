@@ -35,22 +35,26 @@ template). No new dependency: `web3` + `eth_account` are already required by `ex
 | the malice-guard wall is enforced in code at this exact chokepoint | `lib/identity-guard.mjs:77-88` `assertOwnIdentityOnly` (throws on any user-PII env or non-own-identity source) | UBI runs INSIDE the earn process (same env that already passed the guard) and touches ZERO user identity — it stays on the earn side of the wall (spec 28 §3). |
 | Anicca's own wallet = derived from `BLOCKRUN_WALLET_KEY` (PKVAR), the SAME key the whole earn loop signs with | `run.sh:26` `PKVAR="${PKVAR:-BLOCKRUN_WALLET_KEY}"`, `run.sh:35` derives addr via `eth_account`; `execute-swap.py:100-113` reads the same key | UBI sends FROM Anicca's own wallet only. No user wallet is ever a payer. |
 | the on-chain send template (sign+broadcast+receipt) | `execute-swap.py:111-174` (web3 provider, `Account.from_key`, EIP-1559 gas, `send_raw_transaction`, `wait_for_transaction_receipt`, block-pinned balance reads) | the UBI executor is a thin, transfer-only copy of this — proven pattern, same RPC default `https://mainnet.base.org`. |
-| sibling-AI recipients = the colony's child wallets | `skills/self/spawn/lib/child-spec.js:19,37` row carries `childWallet`; persisted append-only to `children.jsonl` (`skills/self/spawn/lib/ledger.js:19-23`); also upserted into the telemetry **`instances`** table by the signed spawn heartbeat (`skills/self/spawn/run.sh:164-176`, signer==wallet id) | recipient set is derivable WITHOUT any network call: read `self/spawn/state/children.jsonl` for `childWallet`s (own data, never user PII). A human recipient list is config (env/file). |
+| sibling-AI recipients = the colony's child wallets, persisted under the **`wallet`** key | `skills/self/spawn/lib/child-spec.js:35-45` `buildChildSpec` returns `{ child_id, wallet: childWallet, ... status }` — the field is `wallet`, NOT `childWallet`; persisted append-only to `children.jsonl` (`skills/self/spawn/lib/ledger.js:19-23`); also upserted into the telemetry **`instances`** table by the signed spawn heartbeat (`skills/self/spawn/run.sh:164-176`, signer==wallet id) | recipient set is derivable WITHOUT any network call: read each row's `wallet` from `self/spawn/state/children.jsonl` (own data, never user PII). A human recipient list is config (env/file). |
 | earn ledger keeps `wake` + `ts` per line | `lib/ledger.mjs:11-23` `deriveLine` stamps `ts`, carries `wake` | UBI idempotency key = the funding line's `wake` (one distribution per profitable wake; re-runs are no-ops). |
 | run.sh declares GATE-0 MET right after recording a profitable external line | `run.sh:96-99` (`if [ "$OUT" = "PROFITABLE" ]` → "GATE-0 MET") | the single, correct place to fire UBI = immediately after `OUT=PROFITABLE`, using that line's net + wake. |
 
-**Where it wires in:** `run.sh`, in the `0xwork`/external branches, right after a line is recorded **PROFITABLE**, invokes a new
-`distribute-ubi.mjs` (decision: who/how-much/idempotent) → on success calls `execute-ubi.py` (one ERC20 `transfer` per
-recipient) → appends one **own-side** `ubi` audit line to a separate `state/ubi-ledger.jsonl` (NOT the earn ledger, so the
-GATE-0 classifier is untouched). Never blocks/bricks the wake: any UBI failure logs + continues (the earn already succeeded).
+**Where it wires in:** `run.sh`, in the **0xwork branch** (the only live GATE-0 path; its `$JSON` sets `external:True`),
+right after a line is recorded **PROFITABLE**, invokes a new `distribute-ubi.mjs` with the SAME `$JSON` run.sh handed
+record.mjs. That JSON has `earn_usdc`/`cost_usdc` but **no `net_usdc`**, so `distribute-ubi.mjs` first re-derives it
+through `deriveLine` (`lib/ledger.mjs` — the single SSOT for `net_usdc`, and it carries `tx`/`status`/`external` through)
+so `isProfitable(line)` can pass. The bridge then plans who/how-much/idempotent → on `send` calls `execute-ubi.py` (one
+ERC20 `transfer` per recipient) → appends one **own-side** `ubi` audit line to a separate `state/ubi-ledger.jsonl` (NOT
+the earn ledger, so the GATE-0 classifier is untouched). Never blocks/bricks the wake: any UBI failure logs + continues
+(the earn already succeeded). The generic externally-executed branch hook is forward-compat-only (N3, see Diff 5).
 
 ## §2 Design (recipients · share · cadence · idempotency · dry-run safety)
 
 | knob | value (env-overridable) | rule |
 |---|---|---|
 | **share %** | `UBI_SHARE_BPS` default `1000` (= 10.00% in basis points, integer math like `swap.mjs:minOut`) | UBI amount = `floor(net_usdc_base_units * UBI_SHARE_BPS / 10000)`. Never exceeds the wake's net (≤ 100%). |
-| **funding source** | the just-recorded earn line where `isProfitable(line)===true` | swap/narrate/internal lines NEVER fund UBI (asset rotation is not earnings). |
-| **recipients (AI)** | `childWallet`s from `self/spawn/state/children.jsonl` (status `active`), deduped, parent-wallet excluded | own colony data; zero user PII. |
+| **funding source** | the just-recorded earn line, re-derived via `deriveLine`, where `isProfitable(line)===true` | swap/narrate/internal lines NEVER fund UBI (asset rotation is not earnings). `deriveLine` computes `net_usdc` from `earn_usdc`/`cost_usdc` (run.sh's `$JSON` omits `net_usdc`). |
+| **recipients (AI)** | the `wallet` field of each row in `self/spawn/state/children.jsonl` (status `active`), deduped, parent-wallet excluded | own colony data; zero user PII. (child-spec.js:37 persists the sibling wallet as `wallet`, NOT `childWallet`.) |
 | **recipients (human)** | `UBI_HUMAN_WALLETS` (comma-sep 0x addrs) or `state/ubi-recipients.json` | explicit allow-list; addresses validated `^0x[0-9a-fA-F]{40}$` (reuse `usdc.mjs` `ADDR_RE`). |
 | **split** | equal split of the UBI pool across `(AI + human)` recipients; floor per recipient; dust (remainder) stays in Anicca's wallet | deterministic, testable. |
 | **cadence** | per profitable wake (event-driven), gated by a **min pool** `UBI_MIN_POOL_USDC` default `0.10` | below min pool → record `skipped:below_min` (no tx), so we never spam dust txs whose gas > value. |
@@ -239,7 +243,7 @@ new file mode 100644
 +import path from "node:path";
 +import { fileURLToPath } from "node:url";
 +import { spawnSync } from "node:child_process";
-+import { readLedger, appendLedger } from "./lib/ledger.mjs";
++import { deriveLine, readLedger, appendLedger } from "./lib/ledger.mjs";
 +import { buildRecipients, planUbi } from "./lib/ubi.mjs";
 +import { usdcBalance } from "./lib/usdc.mjs";
 +
@@ -254,7 +258,8 @@ new file mode 100644
 +    return raw.split("\n").map((l) => l.trim()).filter(Boolean)
 +      .map((l) => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean)
 +      .filter((r) => (r.status ? r.status === "active" : true))
-+      .map((r) => r.childWallet || r.child_wallet).filter(Boolean);
++      // child-spec.js:37 persists the sibling wallet under `wallet` (buildChildSpec `wallet: childWallet`).
++      .map((r) => r.wallet).filter(Boolean);
 +  } catch (e) { if (e.code === "ENOENT") return []; throw e; }
 +}
 +
@@ -266,7 +271,11 @@ new file mode 100644
 +  catch { return []; }
 +}
 +
-+export async function distribute(fundingLine, opts = {}) {
++export async function distribute(rawLine, opts = {}) {
++  // run.sh passes the SAME JSON it handed record.mjs: it has earn_usdc/cost_usdc but NO net_usdc.
++  // Re-derive through ledger.mjs deriveLine (the single SSOT) so net_usdc is computed identically to
++  // the earn ledger; deriveLine carries tx/status/external through, so isProfitable() can pass.
++  const fundingLine = deriveLine(rawLine);
 +  const sender = (fundingLine.wallet || "").toLowerCase();
 +  const childWallets = await readChildWallets(opts.childrenFile || CHILDREN);
 +  const humanWallets = await readHumanWallets();
@@ -414,7 +423,14 @@ new file mode 100644
 +        sys.exit(1)
 ```
 
-### Diff 5 — `run.sh`: fire UBI right after a PROFITABLE external wake (0xwork + generic external branches)
+### Diff 5 — `run.sh`: fire UBI right after a PROFITABLE external wake
+
+> **N3 (live path):** the **0xwork branch** is the ONLY currently-live GATE-0 path — its `$JSON` (run.sh:93) sets
+> `'external':True`, so after `deriveLine` (Diff 3) the line satisfies `isProfitable` and UBI fires. The **generic
+> externally-executed branch** (run.sh:155) builds `$JSON` WITHOUT `external`, so `OUT` is always `NARRATE` there and
+> the hook below is **dead today** — it is wired for forward-compat ONLY (a future executor, e.g. x402-sell, that sets
+> `external:true` in its line will light it up). No behavior change for the generic branch until then. (Note: `$JSON` in
+> both branches carries `earn_usdc`/`cost_usdc` but no `net_usdc`; `deriveLine` computes it — that is the B1/B2 fix.)
 
 ```diff
 diff --git a/skills/earn/run.sh b/skills/earn/run.sh
@@ -534,6 +550,46 @@ new file mode 100644
 +  assert.equal(planUbi({ fundingLine: prof, recipients: [AI1], cfg: { minPoolUsdc: 0.01 }, ubiLines: done }).reason, "already_distributed");
 +});
 ```
+```diff
+diff --git a/skills/earn/__tests__/distribute-ubi.test.js b/skills/earn/__tests__/distribute-ubi.test.js
+new file mode 100644
+--- /dev/null
++++ b/skills/earn/__tests__/distribute-ubi.test.js
+@@
++// node:test — the bridge wiring: proves the two reviewer-found data-contract fixes.
++// (1) B1/B2: a run.sh-shape line (earn_usdc/cost_usdc, NO net_usdc) is re-derived via deriveLine
++//     so isProfitable passes — without this the dry plan would be 'funding_not_profitable'.
++// (2) N1: sibling-AI recipients are read from children.jsonl rows' `wallet` field (not childWallet).
++// Filesystem-isolated + UBI_DRY_RUN=1 so NOTHING is sent on-chain.
++import { test } from "node:test";
++import assert from "node:assert/strict";
++import { promises as fs } from "node:fs";
++import os from "node:os";
++import path from "node:path";
++import { distribute } from "../distribute-ubi.mjs";
++
++const SELF = "0x9999999999999999999999999999999999999999";
++const CHILD = "0x1111111111111111111111111111111111111111";
++
++test("B1/B2 + N1: run.sh-shape line (no net_usdc) is derived; child `wallet` is the AI recipient", async () => {
++  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "ubi-"));
++  const childrenFile = path.join(dir, "children.jsonl");
++  const ubiLedger = path.join(dir, "ubi-ledger.jsonl");
++  // child-spec.js:37 shape: the wallet is under `wallet`, status active.
++  await fs.writeFile(childrenFile, JSON.stringify({ child_id: "anicca-c001", wallet: CHILD, status: "active" }) + "\n");
++  // EXACT run.sh 0xwork $JSON shape: earn_usdc/cost_usdc + external:true, but NO net_usdc.
++  const rawLine = { wallet: SELF, source: "0xwork", task: "t1", earn_usdc: 1.0, cost_usdc: 0, tx: "0x" + "a".repeat(64), status: "0x1", external: true, wake: "w-derive" };
++  process.env.UBI_DRY_RUN = "1";
++  process.env.UBI_MIN_POOL_USDC = "0.0001";
++  delete process.env.UBI_HUMAN_WALLETS; // AI-only: forces the children.jsonl `wallet` read to matter
++  const { line } = await distribute(rawLine, { childrenFile, ubiLedger });
++  // If net_usdc were undefined (the bug) -> outcome 'skipped'/funding_not_profitable. Derived -> 'dry'.
++  assert.equal(line.outcome, "dry");
++  assert.equal(line.recipients, 1);              // the child `wallet` was picked up (N1 fixed)
++  assert.ok(line.pool_usdc > 0);                 // net_usdc derived from earn/cost (B1/B2 fixed)
++  await fs.rm(dir, { recursive: true, force: true });
++});
+```
 
 ### Diff 7 — `SKILL.md`: document the UBI side-channel + its honesty gate
 
@@ -558,14 +614,16 @@ diff --git a/skills/earn/SKILL.md b/skills/earn/SKILL.md
 
 ```bash
 cd ~/anicca/skills/earn
-# 1) pure cores (offline, deterministic):
-node --test lib/__tests__/transfer.test.js __tests__/ubi.test.js
+# 1) pure cores + bridge wiring (offline, deterministic):
+node --test lib/__tests__/transfer.test.js __tests__/ubi.test.js __tests__/distribute-ubi.test.js
 node --test __tests__/*.test.js lib/__tests__/*.test.js     # full earn suite stays green (no regression)
 
-# 2) dry-run the bridge against a fabricated PROFITABLE line (NO on-chain send; records a 'dry' line):
+# 2) dry-run the bridge against the EXACT run.sh 0xwork $JSON shape — earn_usdc/cost_usdc + external, NO
+#    net_usdc (deriveLine must fill it). NO on-chain send; records a 'dry' line:
 UBI_DRY_RUN=1 UBI_MIN_POOL_USDC=0.0001 UBI_HUMAN_WALLETS=0x3333333333333333333333333333333333333333 \
-  node distribute-ubi.mjs '{"wallet":"0xSELF","source":"0xwork","net_usdc":1.0,"tx":"0xaaaa","status":"0x1","external":true,"wake":"w-dry"}'
-tail -1 state/ubi-ledger.jsonl     # -> {"kind":"ubi","wake":"w-dry","outcome":"dry",...}
+  node distribute-ubi.mjs '{"wallet":"0xSELF","source":"0xwork","task":"t1","earn_usdc":1.0,"cost_usdc":0,"tx":"0xaaaa","status":"0x1","external":true,"wake":"w-dry"}'
+tail -1 state/ubi-ledger.jsonl     # -> {"kind":"ubi","wake":"w-dry","outcome":"dry","pool_usdc":0.1,...}
+#   (if this prints outcome:"skipped" reason:"funding_not_profitable", the deriveLine fix regressed.)
 
 # 3) LIVE (real money, only after GATE-0): the next real external wake auto-fires distribute_ubi from run.sh.
 #    To force a real distribution from a known profitable line (small amount), point at the real children.jsonl:
@@ -597,7 +655,8 @@ EARN_MODE=execute EARN_STRATEGY=0xwork ./run.sh      # on PROFITABLE -> distribu
 
 - **Repo:** `Daisuke134/anicca` (OSS), `skills/earn/` ONLY. NEW: `lib/transfer.mjs`, `lib/ubi.mjs`,
   `distribute-ubi.mjs`, `execute-ubi.py`, `lib/__tests__/transfer.test.js`, `__tests__/ubi.test.js`,
-  `state/ubi-ledger.jsonl` (runtime, append-only). EDIT: `run.sh` (fire hook), `SKILL.md` (docs).
+  `__tests__/distribute-ubi.test.js`, `state/ubi-ledger.jsonl` (runtime, append-only). EDIT: `run.sh`
+  (fire hook), `SKILL.md` (docs).
 - **No new deps:** `web3` + `eth_account` already required by `execute-swap.py`/`execute-0xwork.py`; node side is
   `node:*` only. No `viem`/`base-mcp` introduced (ctx7 examples were reference, not a runtime dep).
 - **Reads** `self/spawn/state/children.jsonl` (own colony, read-only) for AI recipient wallets — never writes it.
