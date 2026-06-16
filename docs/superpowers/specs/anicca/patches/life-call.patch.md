@@ -6,8 +6,10 @@ Date: 2026-06-16. Spec: `docs/superpowers/specs/anicca/27c-call-design.md` +
 `docs/superpowers/specs/2026-06-16-life-call-telnyx-charon-design.md`.
 
 > **This patch does NOT place a call, apply, commit, or push.** It is the grounded change set
-> + the exact commands to place a REAL connected call and verify it once the single external
-> blocker (Telnyx D60 number-verification) is cleared and `TELNYX_API_KEY` exists in env.
+> + the exact commands to place a REAL connected call and verify it. The agent self-serves the
+> `TELNYX_API_KEY` (camofox Telnyx-portal login on the provisioned Google OAuth session); the
+> **only** genuinely-human blocker is B2 — Dais relaying the Telnyx D60 number-verification code
+> spoken to his physical handset (he is the callee anyway).
 
 ---
 
@@ -15,7 +17,7 @@ Date: 2026-06-16. Spec: `docs/superpowers/specs/anicca/27c-call-design.md` +
 
 | # | gap (spec claim vs reality) | RAW evidence | severity |
 |---|---|---|---|
-| G1 | **`TELNYX_API_KEY` is NOT in `~/.openclaw/.env`.** The whole Telnyx default path (`call/call.js` → `life-call-telnyx.mjs`) dies on the first guard. | `grep -oE '^[A-Z_]*TELNYX[A-Z_]*' ~/.openclaw/.env` → `NO TELNYX* keys`. Runner: `life-call-telnyx.mjs:88` `if (!API) die("TELNYX_API_KEY missing in env")` where `const API = process.env.TELNYX_API_KEY` (line 45). | **BLOCKER** |
+| G1 | **`TELNYX_API_KEY` is NOT in `~/.openclaw/.env`** — but this is **agent-self-serve**, NOT a Dais task. The Telnyx default path (`call/call.js` → `life-call-telnyx.mjs`) dies on the first guard until the agent mints a V2 key in the Telnyx portal (camofox + the already-provisioned Google OAuth session, HARD #-2/0.30 — "there is nothing a human can do"). | `grep -oE '^[A-Z_]*TELNYX[A-Z_]*' ~/.openclaw/.env` → `NO TELNYX* keys`. Runner: `life-call-telnyx.mjs:88` `if (!API) die("TELNYX_API_KEY missing in env")` where `const API = process.env.TELNYX_API_KEY` (line 45). camofox live (`curl localhost:9377 → 200`); `GOOGLE_LOGIN_EMAIL` + `GOOGLE_LOGIN_PASSWORD` present in env. | **BLOCKER** (agent-self-serve) |
 | G2 | **The disputed "proof" `CA2c025395dd03adc740faef93f856717d` is NOT a real call to Dais.** 27c-call-design.md §"LIVE CALL PROOF" presents it as proof; it was a Twilio **self-answer to a US number `+19452364286`**, not +818046270314. The verifier already rejected the offload. | `27c-call-design.md:80-97` — "only `To` differs … US call from the same account succeeds". `2026-06-16-…-telnyx-e2e.md:3-6` confirms "no REAL call to Dais's number +818046270314 ever connected". **This patch never cites that SID as proof.** | **HIGH** (false-proof risk) |
 | G3 | **Twilio +818046270314 is permanently blocked (err 21216).** Account+destination fraud hold; lifts only via async Support ticket. Not a code gap. | `…-telnyx-e2e.md:15` `POST /Calls.json To=+818046270314 ×3 → {code:21216, 400}`; `27c-call-design.md:91-94`. Also err 13225/21216 family is the JP fraud-control block named in the task. | HIGH (external) |
 | G4 | **Telnyx is wired but blocked by D60 trial gate** — outbound to an unverified destination returns Telnyx err 10010 / level D60. | `…-telnyx-e2e.md:46-48` verbatim: `Telnyx POST /calls 403 {"errors":[{"code":10010,"detail":"Can not make calls to non-verified numbers at this account level D60…"}],"telnyx_error":{"error_code":"D60"}}`. | **BLOCKER** (external, one-time) |
@@ -32,17 +34,34 @@ Present and OK (no gap): `cloudflared` (`/opt/homebrew/bin/cloudflared`), `ws` (
 
 Four changes. (1) provision the key, (2) add a balance preflight, (3) honor Telnyx `media.track` to stop echo, (4) read real carrier status + recording duration so the runner's success is carrier-truth not log-grep.
 
-### D1 — provision `TELNYX_API_KEY` (env only; no code)
+### D1 — provision `TELNYX_API_KEY` (agent-self-serve via camofox; env-only, no code)
 
-`~/.openclaw/.env` (chmod 600, gitignored) — add ONE line (value from the Telnyx portal API Keys page,
-account that owns connection_id `2982013078364751402` / number `+14322234204`):
+The agent mints the key itself — **no Dais step here** (browser order camofox > cloakbrowser >
+agent-browser > playwright-cli, HARD 0.30; Google OAuth session already provisioned, HARD #-2):
+
+```bash
+# 1. camofox open the Telnyx portal API Keys page (Google OAuth session persists in default sessionKey)
+TAB=$(curl -sS -X POST http://localhost:9377/tabs \
+  -H 'Content-Type: application/json' \
+  -d '{"url":"https://portal.telnyx.com/#/app/api-keys","userId":"anicca","sessionKey":"telnyx"}' | jq -r .tabId)
+# 2. if a login wall shows, click "Sign in with Google" (account = GOOGLE_LOGIN_EMAIL, already consented).
+#    Confirm the logged-in account owns connection_id 2982013078364751402 / number +14322234204.
+# 3. click "Create API Key" → snapshot to read the freshly-minted V2 key string (shown once).
+# 4. write it to env (chmod 600, gitignored — NEVER commit):
+#    printf 'TELNYX_API_KEY=%s\n' "<KEY...>" >> ~/.openclaw/.env   (idempotent: dedupe if a prior key exists)
+```
+
+Result — `~/.openclaw/.env` gains ONE line (value never printed to chat/commit):
 
 ```
-TELNYX_API_KEY=KEY...            # Telnyx V2 API key (Bearer). NEVER commit. names-only here.
+TELNYX_API_KEY=KEY...            # Telnyx V2 API key (Bearer). agent-minted. NEVER commit.
 # optional explicit overrides (else the runner defaults are used):
 # TELNYX_CONNECTION_ID=2982013078364751402
 # TELNYX_PHONE_NUMBER=+14322234204
 ```
+
+Self-verify the key works before relying on it: `curl -sS https://api.telnyx.com/v2/balance
+-H "Authorization: Bearer $TELNYX_API_KEY" -o /dev/null -w '%{http_code}\n'` → `200`.
 
 ### D2 — `life-call-telnyx.mjs`: balance preflight + carrier-truth status/recording
 
@@ -55,19 +74,24 @@ TELNYX_API_KEY=KEY...            # Telnyx V2 API key (Bearer). NEVER commit. nam
  if (!process.env.GEMINI_API_KEY) die("GEMINI_API_KEY missing in env");
 +
 +// G5 preflight: refuse to dial on an empty Telnyx balance (a mid-call cutoff is a fake "connected").
++// JSON path confirmed against the live /v2/balance payload (Commands §0 prints the raw shape first):
++//   { "data": { "balance": "5.00", "currency": "USD", "available_credit": "...", ... } }
++// `data.balance` is a STRING → Number() coerces it. NOTE: --dry-run exits BEFORE this block
++// (the `if (DRY) … process.exit(0)` at line 76-85), so the preflight only gates a REAL run.
 +{
 +  const bal = await txGet("/balance").catch((e) => die("balance check failed: " + e.message));
 +  const usd = Number(bal && bal.data && bal.data.balance);
-+  console.log(`[runner] telnyx balance=$${isFinite(usd) ? usd.toFixed(2) : "?"}`);
-+  if (!isFinite(usd) || usd < 0.50) die(`telnyx balance too low ($${usd}); top up before dialing`);
++  console.log(`[runner] telnyx balance=$${isFinite(usd) ? usd.toFixed(2) : "?"} currency=${bal?.data?.currency || "?"}`);
++  if (!isFinite(usd)) die(`unexpected /v2/balance shape: ${JSON.stringify(bal)}`); // path-mismatch fail-loud
++  if (usd < 0.50) die(`telnyx balance too low ($${usd}); top up before dialing`);
 +}
 @@
    // 6. hang up (best effort) + fetch the recording for this call session
    try { await txPost(`/calls/${encodeURIComponent(ccid)}/actions/hangup`, {}); } catch {}
-   await sleep(4000);
+-  await sleep(4000);
 +
 +  // G7: carrier-truth status + duration (do NOT infer "connected" from bridge log strings).
-+  let callStatus = "unknown", callDurSec = 0;
++  let callStatus = "unknown";
 +  try {
 +    const c = await txGet(`/calls/${encodeURIComponent(ccid)}`);
 +    callStatus = (c.data && (c.data.status || c.data.state)) || callStatus;
@@ -76,17 +100,27 @@ TELNYX_API_KEY=KEY...            # Telnyx V2 API key (Bearer). NEVER commit. nam
    let recUrl = "";
    let recId = "";
 +  let recDurSec = 0;
-   try {
-     const recs = await txGet(`/recordings?filter[call_session_id]=${encodeURIComponent(sessionId)}`);
-     const r = (recs.data && recs.data[0]) || null;
-     if (r) {
-       recId = r.id;
-       recUrl = (r.download_urls && (r.download_urls.mp3 || r.download_urls.wav)) || "";
-+      recDurSec = Number(r.duration_millis ? r.duration_millis / 1000 : r.recording_duration || 0) || 0;
++  // G8: Telnyx finalizes recordings ASYNCHRONOUSLY after hangup — a single 4s wait false-fails the
++  // recDurSec<3 gate. Poll /v2/recordings until a recording with download_urls + duration appears
++  // (up to ~30s: 10 × 3s). A genuinely-connected call will surface here once Telnyx flushes the mp3.
++  for (let i = 0; i < 10; i++) {
++    await sleep(3000);
+     try {
+       const recs = await txGet(`/recordings?filter[call_session_id]=${encodeURIComponent(sessionId)}`);
+       const r = (recs.data && recs.data[0]) || null;
+-    if (r) {
++      if (r && (r.download_urls && (r.download_urls.mp3 || r.download_urls.wav))) {
+         recId = r.id;
+-      recUrl = (r.download_urls && (r.download_urls.mp3 || r.download_urls.wav)) || "";
++        recUrl = r.download_urls.mp3 || r.download_urls.wav;
+         recDurSec = Number(r.duration_millis ? r.duration_millis / 1000 : r.recording_duration || 0) || 0;
++        if (recDurSec > 0) break; // recording finalized with a real duration → done waiting
+       }
+     } catch (e) {
+       console.error("[runner] recording fetch err:", e.message);
      }
-   } catch (e) {
-     console.error("[runner] recording fetch err:", e.message);
-   }
++    process.stdout.write(`[rec-poll ${i}] recId=${recId || "-"} dur=${recDurSec}s\n`);
++  }
 @@
    console.log("\n==== B-call (Telnyx) RESULT ====");
    console.log(JSON.stringify({
@@ -180,9 +214,13 @@ All run from `/Users/anicca/anicca-project`. They have real side effects — run
 cd /Users/anicca/anicca-project
 set -a; . ~/.openclaw/.env; set +a
 
-# 0. preflight (no side effects): auth + balance + JP whitelist + dry-run dial body
-curl -sS https://api.telnyx.com/v2/balance -H "Authorization: Bearer $TELNYX_API_KEY" | jq '.data.balance'
+# 0. preflight (no side effects). FIRST confirm the live /v2/balance JSON shape so the D2 gate's
+#    `data.balance` path is verified against a REAL payload (NOT assumed), THEN extract the field:
+curl -sS https://api.telnyx.com/v2/balance -H "Authorization: Bearer $TELNYX_API_KEY" | jq '.data'
+#    expected: {"balance":"5.00","currency":"USD","available_credit":...} → confirm .data.balance exists
+curl -sS https://api.telnyx.com/v2/balance -H "Authorization: Bearer $TELNYX_API_KEY" | jq -r '.data.balance'
 node apps/landing/scripts/life-call-telnyx.mjs --dry-run      # prints dialBody, exit 0, ZERO side effects
+#    (NOTE: --dry-run exits before the balance preflight; the gate only runs on the real call below)
 
 # 1. tests green THIS session (HARD 0.31 — never claim pass without running)
 node --test apps/landing/netlify/functions/_lib/__tests__/call-logic.test.js \
@@ -243,10 +281,11 @@ back from the **carrier API** (not the runner's self-report, not the disputed Tw
 
 | # | blocker | exact action | who/cost |
 |---|---|---|---|
-| B1 | **`TELNYX_API_KEY` absent from `~/.openclaw/.env`** (confirmed: `grep` → no TELNYX keys). Without it every real run dies at `life-call-telnyx.mjs:88`. | Log into the Telnyx portal that owns connection `2982013078364751402` / number `+14322234204` → **API Keys → create V2 key** → add `TELNYX_API_KEY=KEY...` to `~/.openclaw/.env` (chmod 600). | Dais, ~2 min, **$0** |
-| B2 | **Telnyx D60 trial gate** — outbound to unverified destinations = err 10010 (RAW: telnyx-e2e.md:46-48). | Run the 2-step verify (Commands §2): Telnyx **calls Dais's handset**, he relays the spoken code → `--submit --code <CODE>`. Code is delivered ONLY to the physical phone (genuine device-OTP, CLAUDE.md HARD #-1) — Dais is the callee, the one allowed human action. | Dais (answer + relay code), ~3 min, **$0** |
-| B3 | **Telnyx balance $5.00** — fine for one short JP call (PSTN-to-JP ≈ a few ¢/min), but a positive balance must exist at run time; D2 preflight refuses < $0.50. | Optionally top up the Telnyx account a few dollars to be safe; otherwise the $5 balance covers a 1-min proof call. | Dais, optional, **~$5** |
+| B1 | **`TELNYX_API_KEY` absent from `~/.openclaw/.env`** (confirmed: `grep` → no TELNYX keys). Without it every real run dies at `life-call-telnyx.mjs:88`. **This is AGENT-SELF-SERVE — not a Dais task.** | The AGENT mints it (Diff D1): camofox the Telnyx portal API-keys page on the provisioned Google OAuth session (HARD #-2/0.30) → confirm the account owns connection `2982013078364751402` / number `+14322234204` → Create V2 key → append `TELNYX_API_KEY=KEY...` to `~/.openclaw/.env` (chmod 600) → self-verify `GET /v2/balance` → 200. | **agent**, ~3 min, **$0** |
+| B2 | **Telnyx D60 trial gate** — outbound to unverified destinations = err 10010 (RAW: telnyx-e2e.md:46-48). **The ONLY genuinely-human step.** | Run the 2-step verify (Commands §2): Telnyx **calls Dais's handset**, he relays the spoken code → `--submit --code <CODE>`. Code is delivered ONLY to the physical phone (genuine device-OTP, CLAUDE.md HARD #-1) — Dais is the callee, the one allowed human action. | Dais (answer + relay code), ~3 min, **$0** |
+| B3 | **Telnyx balance $5.00** — fine for one short JP call (PSTN-to-JP ≈ a few ¢/min), but a positive balance must exist at run time; D2 preflight refuses < $0.50. | Agent confirms balance live (Commands §0); $5 covers a 1-min proof call. Top-up only if it later runs dry. | agent-check; top-up Dais, optional, **~$5** |
 | B4 | (Avoid) **Twilio err 21216 / 13225** on +818046270314 — async Support ticket only, days. **Do NOT use the Twilio path for the proof**; Telnyx (B1+B2) is the cheap, same-day route. | — | n/a — skip Twilio |
 
-Once B1 + B2 are done (≈5 min, $0), run Commands §3–§5 unattended (Dais just answers his phone) to
-produce the carrier-verified proof that satisfies all Acceptance items.
+The agent self-serves B1 + B3; only **B2 requires Dais** (relay the OTP spoken to his handset, ≈3 min, $0).
+After B2, run Commands §3–§5 unattended (Dais just answers his phone) to produce the carrier-verified
+proof that satisfies all Acceptance items.

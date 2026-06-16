@@ -160,18 +160,21 @@ The status line (`page.tsx` L68–70) already reads `loading ? "Loading…" : er
 -          <p style={{ fontSize: 12, opacity: 0.6, marginTop: 2 }}>{row.model_live ?? "—"} ({row.model_tier ?? "?"})</p>
 +          <p style={{ fontSize: 18, marginTop: 4 }}>{row.host} · {row.geo ?? "—"}</p>
 +          <p style={{ fontSize: 12, opacity: 0.6, marginTop: 2 }}>{humanModel(row.model_live, row.model_tier)}</p>
-+          <p style={{ fontSize: 10, letterSpacing: 2, opacity: 0.35, marginTop: 4, wordBreak: "break-all" }}>{row.id.slice(0, 6)}…{row.id.slice(-4)}</p>
 ```
 
-(Raw 0x hex moves from the prominent top line to a dimmed short-form `0x7099…79c8` sub-line; the model column no longer prints `x`/`auto`.)
+Removes the raw `0x…` hex top line (it was `row.id`, the EIP-191 signer/instance id — NOT a wallet) and the raw `x`/`auto` model string. **No new hex sub-line is added**: the existing `InstanceCard` already renders the short-form wallet at `page.tsx` L138–149 (`row.wallet_addr` → `0x7099…79c8`, linked to basescan), so adding a `row.id.slice(...)` line would duplicate a hex string on the card (and `row.id` ≠ `wallet_addr` semantically). The card now shows: `host · geo`, humanized model, and the existing wallet short-form block only.
 
-### Diff 5 — `apps/landing/.gitignore` add generated snapshot (NEW or append)
+### Diff 5 — commit a `null` placeholder snapshot, do NOT gitignore it
 
+`apps/landing/app/dashboard/_snapshot.json` (NEW, committed and tracked):
+
+```json
+null
 ```
-app/dashboard/_snapshot.json
-```
 
-Commit a placeholder `app/dashboard/_snapshot.json` containing `null` so the import resolves on a clean checkout / before `prebuild` runs; `prebuild` overwrites it. (TypeScript: ensure `resolveJsonModule` is on in `tsconfig.json` — verify; if absent, add `"resolveJsonModule": true`.)
+**Do NOT add this file to `.gitignore`.** It must be a committed, tracked file containing literal `null` so that `import snapshot from "./_snapshot.json"` resolves on a clean `git clone` AND on any build that does not run `prebuild`. `prebuild` (Diff 2) overwrites it with live data at deploy time; the tracked source can stay `null` (it is only a fallback seed, so leaving it `null` in git is correct and harmless). Gitignoring it would delete the file from a fresh checkout and break `next build`'s import — the exact failure this placeholder exists to prevent.
+
+(TypeScript: ensure `resolveJsonModule` is on in `tsconfig.json` — verify; if absent, add `"resolveJsonModule": true`.)
 
 ---
 
@@ -187,9 +190,11 @@ cd ../anicca-dashboard/apps/landing
 #   app/dashboard/page.tsx edits, app/dashboard/_snapshot.json placeholder=null, .gitignore)
 
 # --- local build verify: static HTML must contain real numbers, not only "Loading…" ---
+# NOTE: next.config.mjs has no `trailingSlash`, so `output: 'export'` emits out/dashboard.html
+#       (NOT out/dashboard/index.html). Verified live this session.
 npm run build
-grep -o 'TOTAL NET WORTH\|Loading…\|Group P' out/dashboard/index.html | sort -u   # expect Group P&L present
-node -e "const h=require('fs').readFileSync('out/dashboard/index.html','utf8'); if(/Loading…/.test(h) && !/Net Worth|Group P/i.test(h)){console.error('FAIL: still Loading-only');process.exit(1)} console.log('OK: HTML has rendered body')"
+grep -o 'Total Net Worth\|Loading…\|Group P' out/dashboard.html | sort -u   # expect Group P&L present
+node -e "const h=require('fs').readFileSync('out/dashboard.html','utf8'); if(/Loading…/.test(h) && !/Net Worth|Group P/i.test(h)){console.error('FAIL: still Loading-only');process.exit(1)} console.log('OK: HTML has rendered body')"
 
 # --- commit + PR → main (deploy) ---
 cd /Users/anicca/anicca-dashboard

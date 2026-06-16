@@ -37,10 +37,11 @@ Spec source — `docs/superpowers/specs/anicca/14-ui-wireframes-all.md` line 177
 
 5. **Travel-block logic is TDD-verified and reusable for display.** `apps/landing/netlify/functions/_lib/travel-logic.js` exports `detectMissingTravelBlocks(events)`, `buildTravelBlock({calendarId,eventTitle,eventStart,durationSec})`, plus `isTravelBlock(summary)` / `travelBlockTitle(title)` (line 114 `module.exports`). `life-travel.js` already wires GCal REST + Maps Directions around it.
 
-6. **Per-user event READ needs a new function.** `calendar-connect.js` only *creates* the connection; the event read for `life-travel.js` uses a **global** `GOOGLE_REFRESH_TOKEN` (Dais's own calendar — `_lib/gcal-token.js`), not the per-user Composio connection. So a self-serve user who connects via Composio has **no** way to read their events back for display. **This patch adds `life-schedule.js`** which reads events through the user's Composio connection via the canonical REST execute endpoint.
-   - Composio v3 execute endpoint (ctx7 `/websites/composio_dev`, `postToolsExecuteByToolSlug`): `POST https://backend.composio.dev/api/v3.1/tools/execute/{toolSlug}` with header `x-api-key`, body `{ "user_id": "<phone>", "arguments": {...} }`. Tool slug `GOOGLECALENDAR_EVENTS_LIST` (calendarId=`primary`, timeMin/timeMax = today).
+6. **Per-user event READ needs a new function.** `calendar-connect.js` only *creates* the connection; the event read for `life-travel.js` uses a **global** `GOOGLE_REFRESH_TOKEN` (Dais's own calendar — `_lib/gcal-token.js`), not the per-user Composio connection. So a self-serve user who connects via Composio has **no** way to read their events back for display. **This patch adds `life-schedule.js`** which reads events through the user's Composio connection via the REST execute endpoint.
+   - Composio execute endpoint — uses the SAME base as the proven sibling `calendar-connect.js:6` = `https://backend.composio.dev/api/v3` (**NOT v3.1**): `POST {COMPOSIO_API}/tools/execute/{toolSlug}` with header `x-api-key`, body `{ "user_id": "<phone>", "arguments": {...} }`.
+   - ⚠️ **The exact tool slug, its required args, and the response envelope are UNVERIFIED.** ctx7 docs for `GOOGLECALENDAR_EVENTS_LIST` list `eventId` as Required and do NOT list `singleEvents`/`orderBy`; the documented execute response is `{ data: <…>, successful: true }`, NOT a top-level `data.items` object. Therefore the V0 live probe (Commands → V0) is a **hard prerequisite** that must run against a live ACTIVE connection FIRST to (a) confirm the correct list slug — matching whatever the proven `saas_lateness` reader uses — and the args it accepts, and (b) lock the real `data` path before `life-schedule.js` is trusted. D4 below is written defensively, but its slug + arg set + parser are PROVISIONAL until V0 locks them.
 
-7. **Profile schema supports it.** `subscriber_profiles` already has the needed columns (grep of `netlify/functions/*.js`): `name`, `phone`, `wake_time`, `home_address`, `home_lat`, `home_lon`, `owntracks_token`, `calendar_provider`, `ics_url`, `stakeholders`, `status`. No migration required — onboarding inserts/merges by `phone` (the Composio `user_id`).
+7. **Profile insert MUST NOT write `owntracks_token`.** That column is a **DB-side default** (gen_random_uuid). NO existing function writes it on insert — `alarm-demo.js:100`, `webhook.js`, and `alarm-profile.js:44` all insert/merge by `phone` ONLY (plus other fields) and then `select=owntracks_token` to read the DB-generated value back. Supplying our own value diverges the format and may collide with a DB trigger. `subscriber_profiles` otherwise has the needed columns (grep of `netlify/functions/*.js`): `name`, `phone`, `wake_time`, `home_address`, `home_lat`, `home_lon`, `owntracks_token`, `calendar_provider`, `ics_url`, `stakeholders`, `status`. No migration required — onboarding merges by `phone` (the Composio `user_id`) exactly like `alarm-demo.js`, then reads the token back.
 
 ---
 
@@ -187,6 +188,20 @@ Hero CTA + cards (replace `primary` CTA and the `.map` render):
 
 Also **delete** the two jargon sections — "How B-travel works (spec27 §2)" table (page.tsx ~146-222) and "Trigger design — schedule-derived, not clock polling" (~224-243) — and rewrite the "Getting started" `<ol>` (~245-297) to the three plain steps: **1. Connect your calendar · 2. Tell Anicca where home is · 3. See your day, travel time already added** (links: step 1 → `/life-manager/start`). Replace the bottom "Install Anicca / Colony dashboard" dual-CTA's first card with `href="/life-manager/start"` → "Connect your calendar / See your real schedule in under a minute."
 
+### D1b — `apps/landing/app/life-manager/page.tsx` — strip jargon from `metadata.description` (line 15) and the hero asset (line 97)
+
+Both survive D1 and **render** (description in `<head>`, hero card on-screen) → they would FAIL the V1 jargon grep ("Gemini", "Charon"). Rewrite both to plain language:
+
+```diff
+@@ metadata (line ~14-16)
+   description:
+-    'Anicca as your life manager: reads your Google Calendar, auto-inserts travel time blocks before every event via Google Maps Directions, and calls you 15 minutes before each appointment with Gemini Charon voice. No app to open.',
++    'Anicca is your life manager: it reads your calendar, adds travel time before every event, calls you before you need to leave, and tells people when you run late. Connect your calendar in one tap.',
+@@ hero asset (line ~97)
+-            <p className="text-[hsl(var(--text-secondary))]">08:40 — wake-up call (Charon)</p>
++            <p className="text-[hsl(var(--text-secondary))]">08:40 — Morning call from Anicca</p>
+```
+
 ### D2 — NEW `apps/landing/app/life-manager/start/page.tsx` — onboarding + live schedule (client component, clones `/alarm/setup`)
 
 ```tsx
@@ -310,11 +325,12 @@ export default function Start() {
 
 ```js
 // life-onboard.js — self-serve Life Manager onboarding.
-// POST { name, phone, home_address? } -> upsert subscriber_profiles by phone,
-//        return { token } (owntracks_token = stable per-user id reused for calendar-connect).
+// POST { name, phone, home_address? } -> merge subscriber_profiles by phone, then
+//        read back the DB-generated owntracks_token and return { token }.
+// Mirrors alarm-demo.js:100 + alarm-profile.js:44 EXACTLY: insert WITHOUT owntracks_token
+// (it is a DB default — gen_random_uuid), then GET ...&select=owntracks_token.
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const crypto = require("crypto");
 
 async function supa(method, path, body, extra) {
   const r = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
@@ -333,27 +349,52 @@ exports.handler = async (event) => {
   const phone = (b.phone || "").trim();
   if (!/^\+?\d{8,15}$/.test(phone.replace(/[^\d+]/g, ""))) return { statusCode: 400, body: "invalid phone" };
 
-  const token = crypto.randomBytes(16).toString("hex");
-  await supa("POST", "subscriber_profiles?on_conflict=phone",
-    { phone, name: (b.name || "").trim() || null, home_address: b.home_address || null,
-      owntracks_token: token, status: "active", updated_at: new Date().toISOString() },
+  // Build the profile EXACTLY like alarm-demo.js: phone + optional fields only.
+  // NEVER set owntracks_token here — let the DB default generate it.
+  const profile = { phone, status: "active", updated_at: new Date().toISOString() };
+  if ((b.name || "").trim()) profile.name = b.name.trim();
+  if (b.home_address) profile.home_address = b.home_address;
+
+  await supa("POST", "subscriber_profiles?on_conflict=phone", profile,
     { Prefer: "resolution=merge-duplicates,return=minimal" });
-  // read back the canonical token (existing row keeps its original token)
+
+  // Read back the DB-generated token (existing row keeps its original token).
   const { data } = await supa("GET", `subscriber_profiles?phone=eq.${encodeURIComponent(phone)}&select=owntracks_token`);
   const row = Array.isArray(data) && data[0] ? data[0] : {};
-  return { statusCode: 200, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token: row.owntracks_token || token }) };
+  if (!row.owntracks_token) return { statusCode: 500, body: "no token issued" };
+  return { statusCode: 200, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token: row.owntracks_token }) };
 };
 ```
 
 ### D4 — NEW `apps/landing/netlify/functions/life-schedule.js` — read user's events via their Composio connection
+
+> ⚠️ **PROVISIONAL — the tool slug `FIND_EVENT_LIST_SLUG`, its args, and the `extractItems()` envelope below are placeholders that V0 (mandatory, runs FIRST) replaces with the values proven against a live ACTIVE connection.** Base URL is `/api/v3` (matches `calendar-connect.js:6`), NOT v3.1. Do NOT apply this file until V0 has locked the three unknowns into it.
 
 ```js
 // life-schedule.js — read a user's Google Calendar events (today) through their
 // Composio managed connection and tag auto-inserted [Travel] blocks for display.
 // GET ?phone=<e164>  ->  { events: [{ summary, startIso, isTravel }] }
 const { isTravelBlock } = require("./_lib/travel-logic");
-const COMPOSIO_API = "https://backend.composio.dev/api/v3.1"; // execute endpoint (ctx7: postToolsExecuteByToolSlug)
+// SAME base as calendar-connect.js:6 — /api/v3 (NOT v3.1).
+const COMPOSIO_API = "https://backend.composio.dev/api/v3";
 const COMPOSIO_KEY = process.env.COMPOSIO_API_KEY;
+
+// ⚠️ LOCKED BY V0: replace with the exact list-action slug the proven saas_lateness
+//    reader uses, and the exact arg set it accepts (do NOT assume singleEvents/orderBy).
+const EVENTS_SLUG = process.env.COMPOSIO_GCAL_LIST_SLUG || "FIND_EVENT_LIST_SLUG";
+
+// ⚠️ LOCKED BY V0: Composio wraps tool output as { data, successful, error }, where
+//    `data` may be a string OR an object, and the events array may sit at data.items,
+//    data.response_data.items, data.event_list, etc. extractItems probes the known
+//    candidates; V0 pins the real path so this stops being a guess.
+function extractItems(data) {
+  if (!data) return [];
+  if (typeof data === "string") { try { data = JSON.parse(data); } catch { return []; } }
+  return (
+    data.items || data.events || data.event_list ||
+    data?.response_data?.items || data?.data?.items || []
+  );
+}
 
 exports.handler = async (event) => {
   if (!COMPOSIO_KEY) return { statusCode: 500, body: "missing composio config" };
@@ -366,17 +407,18 @@ exports.handler = async (event) => {
 
   try {
     // Composio user_id == subscriber phone (same convention as calendar-connect.js).
-    const r = await fetch(`${COMPOSIO_API}/tools/execute/GOOGLECALENDAR_EVENTS_LIST`, {
+    // arguments: minimal time-window set; V0 confirms which keys this slug accepts.
+    const r = await fetch(`${COMPOSIO_API}/tools/execute/${EVENTS_SLUG}`, {
       method: "POST",
       headers: { "x-api-key": COMPOSIO_KEY, "Content-Type": "application/json" },
       body: JSON.stringify({
         user_id: phone,
-        arguments: { calendarId: "primary", timeMin: dayStart, timeMax: dayEnd, singleEvents: true, orderBy: "startTime", maxResults: 50 },
+        arguments: { calendarId: "primary", timeMin: dayStart, timeMax: dayEnd, maxResults: 50 },
       }),
     });
     const j = await r.json();
     if (!r.ok || j.successful === false) return { statusCode: 502, body: JSON.stringify({ error: "composio_exec", detail: j.error || j }) };
-    const items = j?.data?.items || j?.data?.response_data?.items || [];
+    const items = extractItems(j.data);
     const events = items.map((ev) => ({
       summary: ev.summary || "(no title)",
       startIso: ev.start?.dateTime || ev.start?.date || null,
@@ -389,7 +431,7 @@ exports.handler = async (event) => {
 };
 ```
 
-> Note: `GOOGLECALENDAR_EVENTS_LIST` response shape (`j.data.items` vs `j.data.response_data.items`) MUST be confirmed against one live execute call (see Commands → step V0) before relying on the parse. The travel blocks themselves are inserted by the existing daemon-side `life-travel` skill; this function only reads + tags them for the web view.
+> The travel blocks themselves are inserted by the existing daemon-side `life-travel` skill; this function only reads + tags them for the web view. The slug/args/envelope above are PROVISIONAL until V0 locks them.
 
 ---
 
@@ -423,15 +465,25 @@ gh pr create --base dev --title "life-webapp: working /life-manager app" --body 
 
 ### VERIFY (live, agent-browser — fire after deploy)
 ```bash
-# V0 — confirm Composio execute shape ONCE (pick a phone with an ACTIVE connection):
-curl -s -X POST "https://backend.composio.dev/api/v3.1/tools/execute/GOOGLECALENDAR_EVENTS_LIST" \
+# V0 — MANDATORY PREREQUISITE, run BEFORE writing life-schedule.js's final form.
+# (a) Discover the correct GCal list slug Composio exposes for this account:
+curl -s "https://backend.composio.dev/api/v3/tools?toolkit_slugs=googlecalendar" \
+  -H "x-api-key: $COMPOSIO_API_KEY" | jq -r '.items[].slug' | grep -iE "event|find|list"
+# (b) Execute the chosen slug against a phone with an ACTIVE connection, dump the FULL
+#     envelope (NOT just .data|keys) so the real items path + arg acceptance is locked:
+curl -s -X POST "https://backend.composio.dev/api/v3/tools/execute/<SLUG_FROM_A>" \
   -H "x-api-key: $COMPOSIO_API_KEY" -H "Content-Type: application/json" \
-  -d '{"user_id":"<e164>","arguments":{"calendarId":"primary","maxResults":3}}' | jq '.data | keys'
+  -d '{"user_id":"<e164>","arguments":{"calendarId":"primary","timeMin":"<ISO>","timeMax":"<ISO>","maxResults":3}}' \
+  | jq '{successful, error, data_type: (.data|type), data}'
+# -> set EVENTS_SLUG / COMPOSIO_GCAL_LIST_SLUG + fix extractItems()'s real path in D4 before deploy.
 
-# V1 — no "coming" badges, no jargon on the landing page:
+# V1 — no "coming" badges, no jargon on the landing page (covers D1 + D1b):
 /opt/homebrew/bin/agent-browser open "https://aniccaai.com/life-manager/"
-/opt/homebrew/bin/agent-browser snapshot | grep -iE "coming|μ-law|Charon socket|spec27|AgentMail|travel-logic|anicca_travel_block|\.openclaw" \
+# include hero "Charon"/"Gemini" + provider names that must be gone after D1/D1b:
+/opt/homebrew/bin/agent-browser snapshot | grep -iE "coming|μ-law|Charon|Gemini|Twilio|Telnyx|spec27|AgentMail|travel-logic|anicca_travel_block|\.openclaw" \
   && echo "FAIL: jargon/coming present" || echo "PASS: clean"
+# also check rendered <head> description is clean (curl, since snapshot omits meta):
+curl -sL "https://aniccaai.com/life-manager/" | grep -iE "Gemini|Charon" && echo "FAIL: meta jargon" || echo "PASS: meta clean"
 /opt/homebrew/bin/agent-browser snapshot | grep -i "Connect your calendar" && echo "PASS: CTA present"
 
 # V2 — onboarding collects the 4 fields + connect works end to end:
@@ -451,14 +503,16 @@ curl -s -X POST "https://backend.composio.dev/api/v3.1/tools/execute/GOOGLECALEN
 | A1 | A real user can connect a Google Calendar and **see their schedule** with travel blocks rendered | V2: after Composio consent, `/life-manager/start?phone=…` shows the day's events; `[Travel]` rows render in emerald (`isTravel` from `travel-logic.isTravelBlock`) |
 | A2 | Onboarding **collects name / phone / calendar / location** | V2: form shows Name, Phone, Home address inputs + "Connect Google Calendar" button; `life-onboard.js` persists name/phone/home_address to `subscriber_profiles`, calendar via `calendar-connect.js` |
 | A3 | **No "coming" badges** anywhere on `/life-manager/` | V1: `grep -i coming` over live snapshot returns nothing |
-| A4 | **No internal jargon** (μ-law, Charon socket, spec27, AgentMail, travel-logic, extended-property, ~/.openclaw) | V1: jargon grep returns nothing; copy is plain-language outcomes |
+| A4 | **No internal jargon** (μ-law, Charon, Gemini, Twilio, Telnyx, spec27, AgentMail, travel-logic, extended-property, ~/.openclaw) anywhere on the page OR in the rendered `<head>` description | V1: both the agent-browser snapshot grep AND the `curl … <head>` grep return nothing; copy is plain-language outcomes |
 | A5 | Primary CTA leads to the working app, not "Install Anicca" | V1: "Connect your calendar" link → `/life-manager/start` (HTTP 200) |
 
 ---
 
 ## Open questions
 
-1. **Composio `GOOGLECALENDAR_EVENTS_LIST` response envelope** — must run V0 once against a live ACTIVE connection to lock the `j.data.items` vs `j.data.response_data.items` path before trusting the parser (flagged inline in D4).
-2. **`subscriber_profiles.name` column** — referenced in existing functions' grep output, but confirm it is non-null-safe for self-serve insert (alarm flow inserts via Stripe webhook; this inserts directly). If `name` is absent, drop it from the D3 insert (it is non-load-bearing for the connect flow).
-3. **Phone as Composio `user_id` for non-paying users** — `calendar-connect.js` resolves `user_id` from `owntracks_token`→`phone`; D3 sets both so the existing function works unchanged. Confirm no uniqueness/RLS constraint on `subscriber_profiles` blocks a no-Stripe insert.
-4. **Dependencies (B-call / B-ask / B-notify)** are separate patches (`life-travel`/`call`, `life-ask`, `life-notify` functions already exist as daemon-side skills). This patch presents them as outcomes of the connected daemon, NOT as in-browser features — it does not implement the phone bridge or mail webhooks.
+1. **Composio GCal list slug + args + response envelope (the one real unknown).** The slug (`GOOGLECALENDAR_EVENTS_LIST` is NOT confirmed — ctx7 flags `eventId` Required and omits `singleEvents`/`orderBy`), the args it accepts, and the items path inside `{data,successful}` must ALL be locked by V0 (mandatory, runs first via the `tools?toolkit_slugs=googlecalendar` discovery + a live execute dump). `life-schedule.js` is parameterized (`EVENTS_SLUG` / `extractItems`) so V0's findings drop in cleanly. **Until V0 runs, D4 must not be applied.**
+2. **Dependencies (B-call / B-ask / B-notify)** are separate patches (`life-travel`/`call`, `life-ask`, `life-notify` functions already exist as daemon-side skills). This patch presents them as outcomes of the connected daemon, NOT as in-browser features — it does not implement the phone bridge or mail webhooks.
+
+_Resolved during review (no longer open):_
+- ~~`owntracks_token` insert~~ — FIXED: D3 no longer writes it; it merges by `phone` only and reads the DB-generated token back, exactly mirroring `alarm-demo.js:100` + `alarm-profile.js:44`. This also dissolves the prior "name null-safety" and "no-Stripe insert RLS" worries, since D3 is now byte-for-byte the proven `alarm-demo` insert shape (which already inserts directly, without Stripe, and merges by phone).
+- ~~Composio base `/api/v3.1`~~ — FIXED: D4 now uses `/api/v3`, matching the proven sibling `calendar-connect.js:6`.

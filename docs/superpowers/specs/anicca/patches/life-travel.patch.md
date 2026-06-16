@@ -2,7 +2,8 @@
 
 **Author:** patch-author subagent · **Date:** 2026-06-16
 **Subsystem:** Anicca Life Manager — B-travel
-**Mother repo:** `/Users/anicca/anicca` (branch `main`)
+**Mother repo:** `/Users/anicca/anicca` (branch `main`) — skill source `skills/life/travel/travel.js`
+**Spec repo:** `/Users/anicca/anicca-project/docs/superpowers/specs/anicca/` — canonical B-travel spec
 **Status of this patch:** NOT applied / NOT committed / NOT pushed (author-only).
 
 ---
@@ -21,12 +22,27 @@ So this is **verify + hardening**, not a rewrite — but the hardening target is
 live Python)**, and the mother-repo **A (`travel.js`) needs to be brought up to parity**
 so the public/OSS slot reflects the algorithm that actually works.
 
+### Spec read (canonical B-travel requirement — verified, raw quotes)
+- `docs/superpowers/specs/anicca/27-launch-workflow-and-ubi.md:25` (B-travel, verbatim):
+  > 「**B-travel**: heartbeat が gcal を読み、各予定の前に Google Maps Directions 所要時間ぶんの「移動ブロック」を gcal へ自動 insert(家→歯科を 9:40-10:00 等)。起床/就寝/仕事/瞑想の全遷移に適用し、全予定が移動込みで gcal に乗る。検証 agent = テスト予定作成→移動ブロックが gcal に出現を目視。」
+- `docs/superpowers/specs/anicca/26-implementation-map.md:29` (implementation map row):
+  > 「B-travel | 全予定の前に移動時間を gcal 自動 insert | `~/anicca/skills/life/travel.js`(gcal API 読込 → Google Maps Directions 所要 → 前に移動ブロック作成) | テスト予定作成 → gcal に移動ブロック出現(目視)」
+  Also `:71` — "Life Manager(B)… travel/call/ask/notify を fan-out、各々 verifier が実E2E".
+- `docs/superpowers/specs/anicca/07-life-manager.md` (parent goal): proactively design the
+  owner's ideal life — location-aware, gcal; acceptance = a real call/notification fires
+  before a gcal event, verified.
+
+This spec pins four requirements the audit checks against: (1) Maps Directions for the
+duration, (2) block applies to **all transitions** (起床/就寝/仕事/瞑想), (3) inserted
+**before** each event so every event sits in gcal with travel included, (4) verification =
+create a test event → travel block appears (目視). `travel.js` is the named entrypoint;
+the live Python is the runtime that actually fulfils the spec today.
+
 ### Files read (raw evidence)
 - `skills/life/travel/travel.js` (mother, 238 lines) — the "declared" Node impl
 - `skills/life/travel/SLOT.md` — `status: declared`, "No behaviour yet"
 - `skills/registry.json:43-51` — `"life/travel" … "status": "declared"`, spec `"26 B-travel / 27 B-travel"`
-- `specs/07-HERMES-PIVOT.md:180,719,944,962,1045` — only mentions `anicca-travel-fill` as a private companion cron; **no B-travel detail section**
-- `_archive_2026-06-09/skills-old/anicca-travel-fill/SKILL.md` — the original north-star algorithm (adjacent pairs / location resolution / 500m skip / idempotent state)
+- `_archive_2026-06-09/skills-old/anicca-travel-fill/SKILL.md` — original north-star algorithm (adjacent pairs / location resolution / 500m skip / idempotent state); supplements the spec with the concrete pairing algorithm
 - `~/.openclaw/skills/anicca-travel-fill/scripts/travel_fill.py` (LIVE, 325 lines) — the real working impl
 - `~/.openclaw/skills/anicca-travel-fill/scripts/run.sh` — live entrypoint the cron calls
 - `~/.openclaw/skills/anicca-travel-fill/state/travel_filled.json` — 15 real inserted event IDs
@@ -34,21 +50,16 @@ so the public/OSS slot reflects the algorithm that actually works.
 - `~/.openclaw/cron/jobs.json:3919-3940` — cron `anicca-travel-fill`, `expr "0 5 * * *"`, runs `cron-bash.sh anicca-travel-fill/scripts/run.sh`
 - `gog calendar create --help` / `gog calendar events list --help` (Build 0.17.0) — confirms flag contract
 
-### Spec-path correction (open question for caller)
-The prompt cited `docs/superpowers/specs/anicca/27-launch-workflow-and-ubi.md` and
-`07-life-manager.md`. **Neither exists.** `docs/superpowers/specs/anicca/` did not exist
-at all (I created `patches/` under it for this file). The real specs are flat under
-`/Users/anicca/anicca/specs/` (`07-HERMES-PIVOT.md` etc.), and the only B-travel
-requirement detail survives in the **archived** SKILL.md. Registry calls the spec
-`"26 B-travel / 27 B-travel"` but specs 26/27 are not present in the repo.
-
 ---
 
 ## Gaps
 
-Required behavior is taken from the archived SKILL.md algorithm (the canonical B-travel
-spec) and the registry summary: *"Read gcal + Google Maps Directions → auto-insert a
-travel block before every event so all events sit in gcal with travel time included."*
+Required behavior is taken from the **canonical spec** `27-launch-workflow-and-ubi.md:25`
+("各予定の前に Google Maps Directions 所要時間ぶんの移動ブロックを gcal へ自動 insert…
+全予定が移動込みで gcal に乗る…検証 agent = テスト予定作成→移動ブロック出現を目視") +
+`26-implementation-map.md:29` (entrypoint `skills/life/travel.js`), with the concrete
+adjacent-pair / location-resolution algorithm supplied by the archived
+`anicca-travel-fill/SKILL.md`.
 
 | # | Requirement (spec / RAW source) | A: `travel.js` (mother) | B: `travel_fill.py` (live) | Severity |
 |---|----------------------------------|--------------------------|-----------------------------|----------|
@@ -75,6 +86,14 @@ travel block before every event so all events sit in gcal with travel time inclu
 ---
 
 ## Diff
+
+> ⚠️ **The diff hunk headers below are ILLUSTRATIVE SKETCHES, not `git apply`-ready
+> patches.** Context lines and `@@ … @@` markers are abbreviated for review (e.g.
+> `@@ const HOME_ADDRESS = ...`). Before applying, each hunk MUST be re-derived against
+> the **actual current line numbers** of `skills/life/travel/travel.js` (238 lines as
+> read) — generate the real unified diff with `git diff` after hand-editing, do not pipe
+> these blocks into `git apply`. The *intent and changed lines* are exact; only the
+> surrounding context/offsets need real re-derivation.
 
 **Decision: hardening, not rewrite.** B (live Python) is correct and proven; only G9/G10
 apply to it and are observability-grade. A (`travel.js`) has real correctness bugs (G3,
@@ -303,13 +322,13 @@ for A (tz bug, driving fallback, location gate, fail-loud) + honesty note for SL
 Patch is verify+hardening as predicted, NOT a rewrite.
 
 **Open questions for caller:**
-- **O1 (spec paths):** the two spec docs named in the prompt don't exist, and `specs/26`,
-  `specs/27` aren't in the repo. Where is the canonical B-travel spec? (I used the
-  archived SKILL.md + registry as the spec source.)
-- **O2 (live hardening):** G9/G10 fixes to `travel_fill.py` must be applied directly to
+- **O1 (live hardening):** G9/G10 fixes to `travel_fill.py` must be applied directly to
   `~/.openclaw/...` (runtime store, worktree-exempt). Out of scope for a mother-repo patch
   — confirm you want a separate live patch.
-- **O3 (full parity):** should A (`travel.js`) be brought to FULL parity with B
+- **O2 (full parity):** should A (`travel.js`) be brought to FULL parity with B
   (adjacent-pair origin resolution, geocode + haversine distance gate, routine-at-home
   resolution, persisted `travel_filled.json`)? This patch does the minimal safe subset;
   full port is a larger follow-up before flipping registry `status:"live"`.
+- **O3 (impl ↔ spec divergence):** spec `26:29` names the entrypoint `skills/life/travel.js`
+  (flat) but the actual file is `skills/life/travel/travel.js` (dir slot). Cosmetic, but
+  worth reconciling in the spec or registry so the path is unambiguous.
