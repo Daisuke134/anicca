@@ -282,6 +282,17 @@ After:
             </p>
 ```
 
+**Edit 7 — the `{GATE0_WAKE.task}` render site (`:199`)** — replace the raw English const render with a hard-coded JP label (the const at `:82` stays UNTOUCHED for the `:93` boolean):
+
+Before:
+```tsx
+                  {GATE0_WAKE.task}
+```
+After:
+```tsx
+                  compute runway 確保のための換金
+```
+
 > Post-edit integrity check (must hold): `GATE0_WAKE.source` still === `'swap-eth-usdc'` and `GATE0_WAKE.task` still contains `'liquidation'` → `/swap|liquidat/i.test(...)` === `true` → `GATE0_EXTERNAL === false` → `GATE0_MET === false` → the `:178-182` branch (the now-de-jargoned "未達" badge) renders, NOT the "MET" branch. No false external-revenue claim. Verify command #6 below asserts this.
 
 ---
@@ -338,7 +349,7 @@ curl -sS -X DELETE "http://localhost:9377/tabs/$TAB?userId=anicca&sessionKey=$KE
 #     {"host":"buy.stripe.com","title":"anicca","hasCheckout":true}  — confirms the link renders checkout.)
 
 # 4) /me has NO disabled theatre and NO jargon
-curl -sL "https://aniccaai.com/me/" | grep -ioE '(GATE-0|swap-eth|spec27|HARD 0\.24|EARN_MODE|earn-ledger|skills/earn|一時停止|日次報告|有効化されます|disabled)' | sort | uniq -c
+curl -sL "https://aniccaai.com/me/" | grep -ioE '(GATE-0|swap-eth|liquidation|compute runway|eth→usdc|spec27|HARD 0\.24|EARN_MODE|earn-ledger|skills/earn|一時停止|日次報告|有効化されます|disabled)' | sort | uniq -c
 #   EXPECT: empty (0 matches)
 
 # 5) /install jargon stays clean

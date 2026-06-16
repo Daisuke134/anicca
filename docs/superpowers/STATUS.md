@@ -11,6 +11,31 @@ The sections below are the (over-optimistic) prior log — trust this correction
 
 ---
 
+# ★ APPLY PROGRESS SHEET (2026-06-16, me-direct) — UPDATE EVERY TIME A SUBSYSTEM MOVES ★
+
+> Flow per subsystem: **patch (grounded) → superpowers:code-reviewer PASS → apply real diff → PR→main→deploy → camofox/agent-browser LIVE verify → mark ✅ here + commit.** Patches at `docs/superpowers/specs/anicca/patches/<key>.patch.md` (all 9 committed: wave1 `bdbe7206`, wave2 `8fb70453`, rev2 `498a846a`). First adversarial review = all 9 ok=false → all revised (rev2). Now: re-review-to-pass → implement.
+
+| subsystem | patch | superpowers re-review | applied→main | camofox LIVE verified | state |
+|---|---|---|---|---|---|
+| install-me (CTA + /me de-theatre/jargon) | ✅ rev2 | ⏳ in review | — | — | **REVIEWING** |
+| stripe-spawn (webhook VERIFY + droplet E2E) | ✅ rev2 | — | — | — | pending |
+| dashboard (build-time prerender real #s) | ✅ rev2 | — | — | — | pending |
+| earn (GATE-0 external, 0xwork, ~/clawd) | ✅ rev2 | — | — | — | pending · ext-blocker: seed wallet (0xwork init faucet / small AXOBOTL+ETH) |
+| life-travel (4 travel.js bug fixes) | ✅ rev2 | — | — | — | pending · (live=openclaw python cron) |
+| life-call (Telnyx connected call) | ✅ rev2 | — | — | — | pending · ext: TELNYX key (camofox self-serve) + Dais answers phone (B2) |
+| life-ask (gog local round-trip + duration) | ✅ rev2 | — | — | — | pending · ext: GCal/inbox env keys |
+| life-notify (gog poll approval + cron reconcile) | ✅ rev2 | — | — | — | pending |
+| life-webapp (connect-calendar app) | ✅ rev2 | — | — | — | pending · ext-blocker: Composio V0 live ACTIVE connection |
+| self-spawn | — | — | — | — | NO PATCH YET (wave 3) |
+| ubi | — | — | — | — | NO PATCH YET (wave 3) |
+| auto-cancel + daily-report | — | — | — | — | NO PATCH YET (wave 3) |
+| i18n /en /ja + jargon-strip sitewide | — | — | — | — | NO PATCH YET (wave 3) |
+| mother-repo ~/anicca Hermes cleanup (#23) | — | — | — | — | NO PATCH YET |
+
+**Genuine human touchpoints (Dais agreed):** answering the phone when life-call fires (もしもし) + the Telnyx D60 number-verify (Telnyx calls his handset). Everything else = agent self-serve (camofox / wallet / keys in ~/.openclaw/.env).
+
+---
+
 # Anicca — LIVE STATUS / 引き継ぎ書 (single source of truth across sessions)
 
 > ★ ABSOLUTE RULE ★ Every agent / every session MUST read this first and KEEP IT UPDATED in real
