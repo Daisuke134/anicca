@@ -9,11 +9,22 @@ const COMPOSIO_KEY = process.env.COMPOSIO_API_KEY;
 const GMAIL_AUTH_CONFIG = process.env.COMPOSIO_GMAIL_AUTH_CONFIG; // ac_… (Gmail auth config id)
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const crypto = require("crypto");
+const LM_UID_SECRET = process.env.LM_UID_SECRET || "";
+function verifyUid(uid, sig) {
+  if (!LM_UID_SECRET || !uid || !sig) return false;
+  const expected = crypto.createHmac("sha256", LM_UID_SECRET).update(uid).digest("base64url");
+  const a = Buffer.from(String(sig));
+  const b = Buffer.from(expected);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
 
 exports.handler = async (event) => {
   if (!COMPOSIO_KEY || !GMAIL_AUTH_CONFIG) return { statusCode: 500, body: "missing composio config" };
-  const uid = (event.queryStringParameters || {}).uid;
+  const q = event.queryStringParameters || {};
+  const uid = q.uid;
   if (!uid) return { statusCode: 400, body: "missing uid" };
+  if (!verifyUid(uid, q.sig)) return { statusCode: 403, body: "bad uid signature" };
 
   try {
     // Idempotent: if this user already has an ACTIVE Gmail connection, done.

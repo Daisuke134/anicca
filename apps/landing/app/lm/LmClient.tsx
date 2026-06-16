@@ -22,6 +22,7 @@ const SAVE_URL = '/.netlify/functions/lm-onboard?action=save';
 const STRIPE_LM_URL = process.env.NEXT_PUBLIC_STRIPE_LM_URL || '';
 const PHONE_RE = /^\+?[1-9]\d{7,14}$/;
 const STORAGE_KEY = 'anicca.lm.uid';
+const SIG_KEY = 'anicca.lm.sig';
 
 type Step = 'login' | 'name' | 'connect' | 'phone' | 'pay' | 'dashboard';
 type ConnState = 'idle' | 'connecting' | 'connected' | 'error';
@@ -54,6 +55,7 @@ function Shell({ children }: { children: React.ReactNode }) {
 export default function LmClient() {
   const [step, setStep] = useState<Step>('login');
   const [uid, setUid] = useState<string>('');
+  const [sig, setSig] = useState<string>('');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [cal, setCal] = useState<ConnState>('idle');
@@ -65,12 +67,19 @@ export default function LmClient() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const fromCb = params.get('uid');
+    const fromSig = params.get('sig');
     const saved = window.localStorage.getItem(STORAGE_KEY);
+    const savedSig = window.localStorage.getItem(SIG_KEY);
     const id = fromCb || saved || '';
+    const s = fromSig || savedSig || '';
     if (id) {
       setUid(id);
+      setSig(s);
       window.localStorage.setItem(STORAGE_KEY, id);
-      setStep((s) => (s === 'login' ? 'name' : s));
+      if (s) window.localStorage.setItem(SIG_KEY, s);
+      setStep((st) => (st === 'login' ? 'name' : st));
+      // strip uid/sig from the visible URL so they don't leak via Referer/history
+      window.history.replaceState(null, '', '/lm');
     }
   }, []);
 
@@ -88,13 +97,13 @@ export default function LmClient() {
       await fetch(SAVE_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ uid, name: name.trim() }),
+        body: JSON.stringify({ uid, sig, name: name.trim() }),
       });
       setStep('connect');
     } catch (e) {
       setErr('Could not save. Try again.');
     }
-  }, [name, uid]);
+  }, [name, uid, sig]);
 
   const connect = useCallback(
     async (kind: 'gcal' | 'gmail') => {
@@ -104,7 +113,7 @@ export default function LmClient() {
       setErr('');
       try {
         const r = await fetch(
-          `/.netlify/functions/${fn}?uid=${encodeURIComponent(uid)}`,
+          `/.netlify/functions/${fn}?uid=${encodeURIComponent(uid)}&sig=${encodeURIComponent(sig)}`,
         );
         const d = await r.json();
         if (d.connected) return set('connected');
@@ -120,7 +129,7 @@ export default function LmClient() {
         setErr('Connection failed.');
       }
     },
-    [uid],
+    [uid, sig],
   );
 
   const savePhone = useCallback(async () => {
@@ -131,13 +140,13 @@ export default function LmClient() {
       await fetch(SAVE_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ uid, phone: phone.trim() }),
+        body: JSON.stringify({ uid, sig, phone: phone.trim() }),
       });
       setStep('pay');
     } catch (e) {
       setErr('Could not save. Try again.');
     }
-  }, [phone, uid]);
+  }, [phone, uid, sig]);
 
   // ── render ───────────────────────────────────────────────────────────────────
   return (

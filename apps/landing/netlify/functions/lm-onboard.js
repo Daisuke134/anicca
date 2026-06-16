@@ -11,6 +11,36 @@ const COMPOSIO_KEY = process.env.COMPOSIO_API_KEY;
 const GCAL_AUTH_CONFIG = process.env.COMPOSIO_GCAL_AUTH_CONFIG; // reuse the verified Google app
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const crypto = require("crypto");
+const LM_UID_SECRET = process.env.LM_UID_SECRET || "";
+const ALLOWED_HOSTS = new Set(["aniccaai.com", "www.aniccaai.com", "localhost", "127.0.0.1"]);
+
+// Sign/verify the server-minted uid so later calls can't forge identity (IDOR fix).
+function signUid(uid) {
+  return crypto.createHmac("sha256", LM_UID_SECRET).update(uid).digest("base64url");
+}
+function verifyUid(uid, sig) {
+  if (!LM_UID_SECRET || !uid || !sig) return false;
+  const expected = signUid(uid);
+  const a = Buffer.from(String(sig));
+  const b = Buffer.from(expected);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+// Allow redirects to our own hosts ONLY; emit a normalized URL with userinfo cleared and any
+// caller-supplied uid/sig stripped (defeats userinfo-confusion open redirect + session fixation).
+function safeReturn(url) {
+  try {
+    const u = new URL(String(url));
+    if ((u.protocol === "https:" || u.protocol === "http:") && ALLOWED_HOSTS.has(u.hostname)) {
+      u.username = "";
+      u.password = "";
+      u.searchParams.delete("uid");
+      u.searchParams.delete("sig");
+      return u.toString();
+    }
+  } catch {}
+  return "https://aniccaai.com/lm";
+}
 
 const json = (code, obj) => ({
   statusCode: code,
@@ -37,8 +67,10 @@ exports.handler = async (event) => {
 
   if (action === "google-start") {
     if (!COMPOSIO_KEY || !GCAL_AUTH_CONFIG) return { statusCode: 500, body: "missing composio config" };
+    if (!LM_UID_SECRET) return json(500, { error: "missing LM_UID_SECRET" });
     // Mint a stable uid for this onboarding session and start a Google (Composio) connection.
     const uid = "lm_" + (globalThis.crypto?.randomUUID?.() || Date.now().toString(36));
+    const sig = signUid(uid);
     const r = await fetch(`${COMPOSIO_API}/connected_accounts`, {
       method: "POST",
       headers: { "x-api-key": COMPOSIO_KEY, "Content-Type": "application/json" },
@@ -48,17 +80,15 @@ exports.handler = async (event) => {
     const redirect = j.redirect_url || j.redirect_uri || j?.connectionData?.val?.redirectUrl;
     if (!redirect) return json(502, { error: "no redirect", detail: j });
     await upsertUser({ uid }).catch(() => {});
-    const ret = q.return || "https://aniccaai.com/lm";
-    // Append uid so the browser returns to /lm already logged-in (Composio redirects to its
-    // configured callback; we forward uid via the state-bearing return URL).
-    const dest = `${redirect}${redirect.includes("?") ? "&" : "?"}state=${encodeURIComponent(
-      ret + (ret.includes("?") ? "&" : "?") + "uid=" + uid,
-    )}`;
+    // safeReturn strips any caller-supplied uid/sig so the server-minted pair is the only one.
+    const ret = safeReturn(q.return || "https://aniccaai.com/lm");
+    const retWithId = ret + (ret.includes("?") ? "&" : "?") + "uid=" + uid + "&sig=" + encodeURIComponent(sig);
+    const dest = `${redirect}${redirect.includes("?") ? "&" : "?"}state=${encodeURIComponent(retWithId)}`;
     return { statusCode: 302, headers: { Location: dest }, body: "" };
   }
 
   if (action === "google-callback") {
-    const back = q.state || "https://aniccaai.com/lm";
+    const back = safeReturn(q.state || "https://aniccaai.com/lm");
     return { statusCode: 302, headers: { Location: back }, body: "" };
   }
 
@@ -66,8 +96,9 @@ exports.handler = async (event) => {
     if (!SUPABASE_URL || !SUPABASE_KEY) return json(500, { error: "missing supabase config" });
     let body;
     try { body = JSON.parse(event.body || "{}"); } catch { return json(400, { error: "bad json" }); }
-    const { uid, name, phone } = body;
+    const { uid, sig, name, phone } = body;
     if (!uid) return json(400, { error: "missing uid" });
+    if (!verifyUid(uid, sig)) return json(403, { error: "bad uid signature" });
     const row = { uid };
     if (typeof name === "string") row.name = name.slice(0, 120);
     if (typeof phone === "string") row.phone = phone.slice(0, 20);
