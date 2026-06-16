@@ -459,9 +459,11 @@ of them (Inbox Zero) solves the part v1 of this spec waved away.
    │                      ★ Anicca v3 inbox-responder stack ★                              │    
    ├──────────────────────────────────────────────────────────────────────────────────────┤    
    │                                                                                      │    
-   │  L3.a daemon orchestrator   ★ Hermes Agent v0.12+ ★ (already installed)                │    
-   │       ~/.local/bin/hermes — 24/7 background process, FTS5 memory, skill registry      │    
-   │       Source: https://github.com/NousResearch/hermes-agent                            │    
+   │  L3.a daemon orchestrator   ★ Conway automaton ★ (current runtime)                     │    
+   │       automaton ReAct loop (think→act→observe→persist) + heartbeat daemon —            │    
+   │       24/7 background process, own memory + skill registry, runtime root ~/.anicca     │    
+   │       (this slot originally named Hermes Agent v0.12; that runtime was reversed —      │    
+   │        see 00-MASTER / 16-RUNTIME-CODE-TRUTH)                                           │    
    │                                                                                      │    
    │  L3.b email-loop reference   ★ Inbox Zero (fork) ★                                     │    
    │       Repo: https://github.com/elie222/inbox-zero  (AGPL, 11k+ stars, 2026-06-02 act) │    
@@ -514,8 +516,8 @@ After forking Inbox Zero + installing Mastra + Composio, the gap is:
 
 5. **Self-improvement edge** (= 100 LOC) — at the end of each Mastra graph
    completion, compare `actual outcome vs predicted outcome` and write a
-   delta into Hermes FTS5 memory as a "learning". Next graph instance reads
-   the FTS5 result of similar past graphs at the entry node.
+   delta into the automaton runtime's memory store as a "learning". Next graph
+   instance reads similar past graphs at the entry node.
 
 Total ≈ **600 LOC** of glue. NOT a from-scratch system. NOT a new framework.
 Fork + wire 4 mature OSS + bridge them.
@@ -526,7 +528,7 @@ Fork + wire 4 mature OSS + bridge them.
 |---|---|
 | Inbox Zero only | Has Reply Zero + AI Assistant but NO multi-step project state machine. Treats each thread independently. |
 | Mastra only | Has durable workflows but NO Gmail watch, NO reply tracker, NO email-specific rule engine. |
-| Hermes only | Has daemon + memory but NO Gmail-specific watcher, NO project state machine. |
+| automaton runtime only | Has the daemon loop + memory but NO Gmail-specific watcher, NO project state machine. |
 | Composio only | Has adapters but NO orchestration, NO state, NO triggers. |
 | n8n only | Polling-based Gmail (not push), no agent autonomy primitives, workflow editing is GUI not git-native. |
 | Suna (Kortix) only | Git-as-org is interesting but no email-specific layer, requires sandbox-per-session (heavy). |

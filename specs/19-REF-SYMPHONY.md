@@ -62,27 +62,27 @@ schedules; the agent does the work + updates the ticket.
  symphony concept     →  Anicca instantiation
  ─────────────────────────────────────────────────────────────────────────────
  issue tracker(Linear)→  GitHub Issues on github.com/Daisuke134/anicca-oss (Integration adapter swapped)
- coding-agent         →  a Hermes-Anicca session (run_agent.py) spawned per issue
+ coding-agent         →  an automaton-Anicca session spawned per issue
  WORKFLOW.md (policy) →  anicca-oss/WORKFLOW.md = Anicca's per-issue prompt + constitution + DoD + eval-gate
  per-issue workspace  →  a Daytona sandbox (or local dir) per issue — isolated
- orchestrator poll    →  Hermes cron ticks → reads open issues → dispatches (bounded concurrency)
+ orchestrator poll    →  automaton heartbeat ticks → reads open issues → dispatches (bounded concurrency)
  proof-of-work        →  tests + eval-loop score(≥0.7) + PR → agent updates the issue + opens PR
  handoff state        →  "Human Review" (Dais) OR auto-close when eval+CI pass (no human)
  ADOPTION: port SPEC.md's 6 layers; reuse the Elixir ref OR re-implement the Coordination+Execution
-           layers as a Hermes skill (forum-issues skill, spec 18 task #334). symphony's SPEC.md is
-           explicitly "implement in a language of your choice" — we implement the orchestrator in
-           Hermes/Python and keep WORKFLOW.md in anicca-oss.
+           layers as an automaton skill (forum-issues skill, spec 18 task #334). symphony's SPEC.md is
+           explicitly "implement in a language of your choice" — we implement the orchestrator as an
+           automaton skill and keep WORKFLOW.md in anicca-oss.
 ```
 
 ## § 6. ASCII — symphony engine driving the Anicca forum
 ```
-  anicca-oss GitHub Issues ──poll(cron)──► ORCHESTRATOR (Hermes) ──dispatch (concurrency cap)──┐
+  anicca-oss GitHub Issues ──poll(heartbeat)──► ORCHESTRATOR (automaton) ──dispatch (concurrency cap)──┐
      ▲  (agent writes back: comment, PR link, close)                                          │
      │                                                                                        ▼
      │                                              per-issue WORKSPACE (Daytona sandbox, isolated)
      │                                                         │  build prompt = issue + WORKFLOW.md
      │                                                         ▼
-     │                                              Hermes-Anicca session runs the work
+     │                                              automaton-Anicca session runs the work
      │                                                         │  proof: tests + eval≥0.7 + PR
      └─────────────────────────────────────────────────────────┘  → handoff(Human Review) OR auto-close
   reconciliation: issue state changed → stop ineligible runs · retries w/ exp backoff · terminal → clean workspace

@@ -104,7 +104,7 @@ const client = new AgentMail({ apiKey: process.env.AGENTMAIL_API_KEY! });
 const TARGETS = [
   "anicca-001-claude",
   "anicca-001-openclaw",
-  "anicca-001-hermes",
+  "anicca-001-automaton",
 ];
 for (const username of TARGETS) {
   try {

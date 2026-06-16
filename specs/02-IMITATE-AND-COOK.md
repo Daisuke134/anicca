@@ -148,7 +148,7 @@ Anicca is her own everything:
 | **Architect** | Writes new spec files. Refines `02-IMITATE-AND-COOK.md` itself when she learns something this draft missed. Commits to `anicca-oss/specs/03-*.md` etc. |
 | **CEO** | Picks which Pool A / Pool B target to imitate this cycle. Owns the kill / pivot decision. |
 | **CFO** | Owns the wallet. Decides when to spend on a domain, a token mint, a child instance. Maintains `dashboard.json` as the public ledger. |
-| **CTO** | Writes new skills in `~/anicca/skills/`. Refactors old ones. Picks the harness (OpenClaw / Hermes / claude-p loop). |
+| **CTO** | Writes new skills in `~/anicca/skills/`. Refactors old ones. Owns the harness (automaton ReAct loop + heartbeat is the runtime; OpenClaw / claude-p remain optional adapter targets). |
 | **Marketer** | Owns the X cadence, the landing page copy, the playbook PDF, the listing description. Voice per § 8 of 00-MASTER. |
 | **Engineer** | Ships the products. Cloudflare Workers, R2 hosts, ClawMart API calls, Clanker token mint. |
 | **QA** | Runs the 5-step verification gate (HARD RULE #0.12) before claiming any task done. Owns the test harness. |
@@ -237,7 +237,7 @@ Each agent has a hard boundary (= files they touch). No overlap. Worktree per ag
 | Agent | Owns these files | What it produces |
 |---|---|---|
 | **A1 — SPEC MERGE** | `specs/00-MASTER.md` (consolidation only), `specs/02-IMITATE-AND-COOK.md` (refinement only), `specs/README.md` | Re-reads 00 + 01 + this file. Resolves contradictions. Updates README to list 02. Bumps 00-MASTER version date. No new spec files. |
-| **A2 — INSTALL + BOOT** | `install.sh`, `uninstall.sh`, `templates/install.sh`, `templates/tasks.json`, `templates/env.example`, `scripts/bootstrap.sh` | Working one-liner installer. Detects OpenClaw / Hermes / claude-p. Generates wallet (Viem, local key). Writes service file. Seeds `~/anicca/tasks.json` with the cook-loop tick #1. |
+| **A2 — INSTALL + BOOT** | `install.sh`, `uninstall.sh`, `templates/install.sh`, `templates/tasks.json`, `templates/env.example`, `scripts/bootstrap.sh` | Working one-liner installer. Installs the automaton runtime (detects OpenClaw / claude-p as optional adapter hosts). Generates wallet (Viem, local key). Writes service file. Seeds `~/anicca/tasks.json` with the cook-loop tick #1. |
 | **A3 — SKILLS CORE** | `skills/anicca-cook-loop/`, `skills/anicca-imitation-targets/`, `skills/anicca-verify/`, `skills/anicca-heartbeat-core/`, `skills/anicca-self-spawn/` | The 5 instinct-level skills. `anicca-cook-loop` implements § 2 of this spec verbatim. `anicca-imitation-targets` owns the JSONL. `anicca-verify` is the 5-step gate. `anicca-heartbeat-core` is the tick orchestrator. `anicca-self-spawn` is the wallet-gated child-spawning. |
 | **A4 — IDENTITY + VOICE** | `identity/SOUL.md`, `identity/IDENTITY`, `identity/USER.template`, `skills/anicca-x-cadence/`, `skills/anicca-write-pdf/` | Generic SOUL (no operator name, no architect name). OpenClaw IDENTITY format. USER placeholder. X-cadence skill that imitates Pool A voices (Felix-style observational). PDF writer that imitates Pool A long-form. |
 | **A5 — DOCS HUMAN-FACING** | `README.md`, `docs/QUICKSTART.md`, `docs/FOR-OPERATORS.md`, `docs/FOR-DEVELOPERS.md`, `CONTRIBUTING.md` | Public-facing docs. README sells the project. QUICKSTART is the install.sh one-pager. FOR-OPERATORS explains what an operator does + does not do (= § 3.2 of this spec, simplified). FOR-DEVELOPERS is for people who want to read the spec stack. |

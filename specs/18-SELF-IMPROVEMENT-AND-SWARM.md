@@ -5,7 +5,7 @@
 | Spec ID | 18 |
 | Status | ★ AUTHORITATIVE for the autonomy+collective layer (2026-06-04) |
 | Author | Claude (researched 4 reference repos at source/docs per Dais) |
-| Depends on | `16-RUNTIME-CODE-TRUTH.md` (Hermes runtime + ported skills) + `00-MASTER.md` § 1.0 |
+| Depends on | `16-RUNTIME-CODE-TRUTH.md` (runtime comparison; note: the runtime locked to the **automaton**, not Hermes — see its OUTCOME UPDATE) + `00-MASTER.md` § 1.0 |
 
 > **Dais 2026-06-04 (verbatim core):** "結局何より大事なのが自己改善。誰もこれを突破できてないからこそ
 > AIは人間から卒業していかない。… 兄っちゃん自体が自分で自分を、全てを管理できたら、僕らがアーキテクチャを
