@@ -14,7 +14,7 @@ async function tmpLedger() {
 test("record() appends a profitable line and flags it PROFITABLE", async () => {
   const f = await tmpLedger();
   const { line, profitable } = await record(
-    JSON.stringify({ wallet: "0xa", source: "x402", task: "sell", earn_usdc: 0.5, cost_usdc: 0.1, tx: "0xfeed", status: "0x1", wake: "w1" }),
+    JSON.stringify({ wallet: "0xa", source: "x402", task: "sell", earn_usdc: 0.5, cost_usdc: 0.1, tx: "0xfeed", status: "0x1", external: true, wake: "w1" }),
     f
   );
   assert.equal(line.net_usdc, 0.4);
