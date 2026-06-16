@@ -6,6 +6,7 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { deriveLine, isProfitable, appendLedger } from "./ledger.mjs";
+import { assertOwnIdentityOnly } from "./identity-guard.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_LEDGER = path.join(__dirname, "..", "state", "earn-ledger.jsonl");
@@ -13,6 +14,9 @@ const DEFAULT_LEDGER = path.join(__dirname, "..", "state", "earn-ledger.jsonl");
 export async function record(jsonStr, ledgerPath = DEFAULT_LEDGER) {
   const input = JSON.parse(jsonStr);
   const line = deriveLine(input);
+  // MALICE-GUARD (spec 28 §3): fail CLOSED before any earn line is recorded —
+  // no user-PII env may be present and the source must be an own-identity channel.
+  assertOwnIdentityOnly(line);
   await appendLedger(ledgerPath, line);
   const profitable = isProfitable(line);
   return { line, profitable };
