@@ -97,7 +97,7 @@ const ACTIVITY_LOG = [
   {
     time: GATE0_WAKE.date,
     icon: '💰',
-    label: 'ETH→USDC 換金（compute runway 用）',
+    label: '保有 ETH の換金（サーバー代の確保）',
     delta: `+$${GATE0_WAKE.netUsdc.toFixed(4)}`,
   },
 ];
@@ -193,10 +193,10 @@ export default function Page() {
               </div>
               <div>
                 <p className="text-base font-semibold text-[hsl(var(--text-primary))]">
-                  ETH→USDC 換金
+                  保有 ETH を USDC に換金
                 </p>
                 <p className="mt-0.5 text-xs text-[hsl(var(--text-secondary))]">
-                  compute runway 確保のための換金
+                  サーバー代を賄うための換金
                 </p>
               </div>
               <div>
