@@ -23,7 +23,7 @@ The sections below are the (over-optimistic) prior log — trust this correction
 | dashboard (build-time prerender real #s) | ✅ rev2 | ✅ PASS | ✅ PR#56 `eaff8d9a`→main | ✅ **Loading=0 · served HTML shows real $5.01 / Bodies / Self-funded · matches dashboard-sync** | ✅ **DONE 2026-06-16** |
 | ↳ dashboard test-fixture row (`host:"test"` = $5 of $5.01) | — | — | — | — | KNOWN follow-up: delete from Supabase `instances` so total = real genesis $0.01 |
 | earn (GATE-0 external, 0xwork, ~/clawd) | ✅ rev2 | ✅ PASS (classifier chokepoint closes swap false-green) | — | — | IMPLEMENTING · seed self-serve: 0xwork init faucet wallet |
-| life-travel (4 travel.js bug fixes) | ✅ rev2 | ✅ PASS | — | — | IMPLEMENTING (apply travel.js fixes; live python cron already works, 15 gcal IDs) |
+| life-travel (4 travel.js bug fixes) | ✅ rev2 | ✅ PASS | ✅ ~/anicca `c4ed1b8` (travel.js hardened; registry stays declared) | ✅ **live python cron verified: 15 real gcal IDs, 13 runs exit=0 · node --check pass** | ✅ **DONE 2026-06-16** (live feature works; OSS port hardened) |
 | life-call (Telnyx connected call) | ✅ rev2 | — | — | — | pending · ext: TELNYX key (camofox self-serve) + Dais answers phone (B2) |
 | life-ask (gog local round-trip + duration) | ✅ rev2 | — | — | — | pending · ext: GCal/inbox env keys |
 | life-notify (gog poll approval + cron reconcile) | ✅ rev2 | — | — | — | pending |
