@@ -7,8 +7,9 @@ metadata:
   entrypoint: run.sh
   parallel_safe: true
   requires:
-    bins: [bash, jq, node, curl, openssl]
-    env_optional: [DIGITALOCEAN_TOKEN, AGENTMAIL_API_KEY, ANICCA_WALLET_JSON]
+    bins: [bash, jq, node, curl, openssl, python3]
+    py: [eth_account, pycryptodome]
+    env_optional: [DIGITALOCEAN_TOKEN, AGENTMAIL_API_KEY, ANICCA_WALLET_JSON, TELEMETRY_URL, ANICCA_CHILD_PREFIX, ANICCA_GEO, AKASH_KEY_NAME]
 ---
 
 # self/spawn
@@ -32,20 +33,41 @@ Order is balance -> rate-limit -> cap (a broke parent never spawns, whatever els
 1. resolveStateDir() -> DURABLE state dir (lib/state-path.js, fail-closed: refuses /tmp). children.jsonl lives here.
 2. read parent balance (state/wallet.json) + colony (state/children.jsonl)
 3. decideSpawn(...)  -> eligible?  (pure, tested)
-4. nextChildId(...)  -> anicca-cNNN  (monotonic, gap-safe, tested)
-5. scripts/gen-wallet.sh         -> child secp256k1 wallet (600-perm temp; DISTINCT from parent, asserted)
+4. nextChildId(...)  -> anicca-cNNN  (monotonic, gap-safe, tested; prefix ANICCA_CHILD_PREFIX-overridable)
+5. scripts/gen-wallet.sh         -> child secp256k1 wallet (600-perm temp; DISTINCT from parent, asserted;
+                                    address derives identically under ethers v6 — cross-checked)
 6. POST AgentMail /v0/inboxes    -> child's own inbox (AGENTMAIL_API_KEY)
 7. append PROVISIONAL row to state/children.jsonl  (never lose track)
-8. provision droplet (DO API) or lease (akash)     -> PROVIDER_ID
-   the droplet's cloud-init writes systemd units (clawrouter + automaton) and
+8. provision droplet (DO API, cloud-init user_data=scripts/cloud-init.sh) or lease (scripts/deploy-akash.sh)
+   -> PROVIDER_ID. The droplet's cloud-init writes systemd units (clawrouter + automaton) and
    `systemctl enable --now` them, so `systemctl is-active automaton` == active on first boot.
    automaton.service boots with AUTOMATON_GOAL=earn => the child's OWN wake discovers+executes
    earn before it ever reports (not a telemetry-only heartbeat).
-9. append FINAL row {status:"active", provider_id, wake_action:"earn", earn_on_wake:true} to the
-   DURABLE children.jsonl  -> the colony record proves earn-on-wake and survives reboots/tmp-sweeps.
-10. print CHILD_ID / CHILD_WALLET / CHILD_INBOX / PROVIDER_ID
+9. REGISTER ON LIVE DASHBOARD: scripts/sign-telemetry.py signs the child's FIRST heartbeat with its OWN
+   key (EIP-191, signer==id, byte-identical to telemetry-verify.js) and POSTs to ${TELEMETRY_URL}
+   (default https://aniccaai.com/.netlify/functions/telemetry). A 202 = the child now has an `instances`
+   row that dashboard-sync aggregates -> the child APPEARS on aniccaai.com under its own wallet addr.
+   Non-202 aborts (no fake registration).
+10. append FINAL row {status:"active", provider_id, wake_action:"earn", earn_on_wake:true, dashboard_id,
+    telemetry_status:202} to the DURABLE children.jsonl -> proves earn-on-wake + dashboard presence on disk.
+11. print CHILD_ID / CHILD_WALLET / CHILD_INBOX / PROVIDER_ID / TELEMETRY_STATUS / DASHBOARD_ID
 ```
 Seed: transfer $1 USDC parent->child so the child can pay its first earn wake (the child wakes on its own).
+
+## LIVE E2E proof (2026-06-16, executed by builder on an ISOLATED test state, then cleaned up)
+A real test child was born end-to-end (no human in loop, no fake) and every fact was independently re-checked:
+| fact | value | re-check |
+|---|---|---|
+| child wallet (≠ genesis) | `0xac3aaf49eeb2ed7e23b86bbbd1ed3d2e0a20702d` | genesis = `0xa3CDd4Ec…C4C21` |
+| child AgentMail inbox | `anicca-vtest001@agentmail.to` | GET `/v0/inboxes` |
+| DO droplet (cloud-init automaton) | id `577986258` image `ubuntu-24-04-x64` size `s-2vcpu-2gb` | GET `/v2/droplets/577986258` |
+| live telemetry POST | `202` | child signed its own EIP-191 payload |
+| live dashboard | child `0xac3aaf49…` host=do status=alive (alive→5) | GET `/.netlify/functions/dashboard-sync` |
+Then DESTROYED (no orphan paid instance): droplet deleted (DO 204, GET→not_found), inbox deleted, test
+state dir removed. Run on an isolated `~/.hermes/state-spawn-test` so the live colony ledger stayed at 1
+(anicca-c001, droplet 577904740 active). Earn-gating is honest: the child is BORN + WIRED to earn
+(AUTOMATON_GOAL=earn), but ACTUAL earning is the same demand-gated GATE-0 as the parent — no child is
+claimed to have earned.
 
 ## Three gaps closed (2026-06-16, verifier rejections)
 - **child systemctl active**: `cloud-init.js` (apps/landing/netlify/functions/_lib) now writes

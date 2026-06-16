@@ -85,10 +85,13 @@ fi
 # ---------------------------------------------------------------------------
 [ -n "$PARENT_WALLET" ] || { echo "self/spawn: parent wallet address unknown — cannot prove distinct lineage" >&2; exit 1; }
 
+# Child id prefix: "anicca-c" for the real colony; overridable (ANICCA_CHILD_PREFIX) so an isolated
+# verification run can mint a unique inbox/droplet name without colliding with the live colony's ids.
+CHILD_PREFIX="${ANICCA_CHILD_PREFIX:-anicca-c}"
 CHILD_ID="$("$NODE" -e '
   const { nextChildId } = require(process.argv[1] + "/lib/child-spec");
-  process.stdout.write(nextChildId(JSON.parse(process.argv[2] || "[]"), "anicca-c"));
-' "$SKILL_DIR" "$CHILDREN_JSON")"
+  process.stdout.write(nextChildId(JSON.parse(process.argv[2] || "[]"), process.argv[3]));
+' "$SKILL_DIR" "$CHILDREN_JSON" "$CHILD_PREFIX")"
 
 # 1) child wallet (secret; 600-perm temp under state).
 mkdir -p "$STATE_DIR"
@@ -134,9 +137,20 @@ PROVIDER_ID=""
 case "$HOST" in
   do)
     [ -n "${DIGITALOCEAN_TOKEN:-}" ] || { echo "self/spawn: DIGITALOCEAN_TOKEN missing — cannot provision DO droplet" >&2; exit 1; }
+    # cloud-init user_data: the droplet boots clawrouter + automaton (AUTOMATON_GOAL=earn) as restart-always
+    # systemd units (proven cloud-init.sh), so the child is a REAL running Anicca on first boot — not a bare box.
+    # Ubuntu 24.04 (matches the proven image), s-2vcpu-2gb (the automaton build needs the headroom).
+    USER_DATA="$("$SKILL_DIR/scripts/cloud-init.sh" "$CHILD_ID" "$CHILD_INBOX")"
+    DO_BODY="$("$JQ" -n \
+      --arg name "${CHILD_ID}" \
+      --arg region "${DO_REGION:-sfo3}" \
+      --arg size "${DO_SIZE:-s-2vcpu-2gb}" \
+      --arg image "${DO_IMAGE:-ubuntu-24-04-x64}" \
+      --arg ud "$USER_DATA" \
+      '{name:$name, region:$region, size:$size, image:$image, user_data:$ud, tags:["anicca","self-spawn"]}')"
     PROVIDER_ID="$(curl -fsS -X POST https://api.digitalocean.com/v2/droplets \
       -H "Authorization: Bearer ${DIGITALOCEAN_TOKEN}" -H 'Content-Type: application/json' \
-      -d "{\"name\":\"${CHILD_ID}\",\"region\":\"${DO_REGION:-sfo3}\",\"size\":\"${DO_SIZE:-s-1vcpu-1gb}\",\"image\":\"${DO_IMAGE:-docker-20-04}\"}" \
+      -d "$DO_BODY" \
       2>/dev/null | "$JQ" -r '.droplet.id // empty' || true)"
     ;;
   akash)
@@ -147,13 +161,27 @@ case "$HOST" in
 esac
 [ -n "$PROVIDER_ID" ] || { echo "self/spawn: provider provisioning failed (host=$HOST) — exit 1, ledger row left provisioning" >&2; exit 1; }
 
-# 5) finalize the colony row to active + record the child's first-wake intent = earn (not telemetry-only).
-#    On the droplet, automaton.service boots with AUTOMATON_GOAL=earn (cloud-init), so the child's own
-#    wake discovers + executes earn before it ever reports. We persist that intent so the colony ledger
-#    proves earn-on-wake on disk (durable STATE_DIR, never /tmp).
+# 5) register the child on the LIVE dashboard: sign its FIRST telemetry heartbeat with its OWN key
+#    (signer==id) and POST to the telemetry endpoint. telemetry.js verifies + upserts an instances row;
+#    dashboard-sync aggregates it into the public leaderboard — so a successful POST (202) is the child
+#    APPEARING on aniccaai.com under its own (parent-distinct) wallet address. No fake: a non-202 aborts.
+TELEMETRY_URL="${TELEMETRY_URL:-https://aniccaai.com/.netlify/functions/telemetry}"
+SIGNED="$(CHILD_PRIVKEY="$("$JQ" -r '.private_key' "$WALLET_TMP")" \
+  CHILD_HOST="$HOST" CHILD_GEO="${ANICCA_GEO:-US}" CHILD_TS="$(date +%s)" \
+  python3 "$SKILL_DIR/scripts/sign-telemetry.py" 2>/dev/null || true)"
+[ -n "$SIGNED" ] || { echo "self/spawn: failed to sign child telemetry — abort (no fake registration)" >&2; exit 1; }
+TEL_STATUS="$(curl -sS -o /dev/null -w '%{http_code}' -X POST "$TELEMETRY_URL" \
+  -H 'Content-Type: application/json' -d "$SIGNED" 2>/dev/null || echo 000)"
+DASHBOARD_ID="$(printf '%s' "$SIGNED" | "$JQ" -r '.id')"
+[ "$TEL_STATUS" = "202" ] || { echo "self/spawn: child telemetry POST failed (HTTP ${TEL_STATUS}) — child NOT on dashboard, abort" >&2; exit 1; }
+
+# 6) finalize the colony row to active + record the child's first-wake intent = earn (not telemetry-only)
+#    + the live dashboard id. On the droplet, automaton.service boots with AUTOMATON_GOAL=earn (cloud-init),
+#    so the child's own wake discovers + executes earn before it ever reports. We persist that intent so the
+#    colony ledger proves earn-on-wake on disk (durable STATE_DIR, never /tmp).
 FINAL_ROW="$(printf '%s' "$ROW" | "$JQ" -c \
-  --arg pid "$PROVIDER_ID" \
-  '. + {status:"active", provider_id:$pid, wake_action:"earn", earn_on_wake:true}')"
+  --arg pid "$PROVIDER_ID" --arg did "$DASHBOARD_ID" --arg tel "$TEL_STATUS" \
+  '. + {status:"active", provider_id:$pid, wake_action:"earn", earn_on_wake:true, dashboard_id:$did, telemetry_status:($tel|tonumber)}')"
 "$NODE" -e '
   const { appendChild } = require(process.argv[1] + "/lib/ledger");
   appendChild(process.argv[2], JSON.parse(process.argv[3]));
@@ -163,4 +191,6 @@ echo "CHILD_ID=${CHILD_ID}"
 echo "CHILD_WALLET=${CHILD_WALLET}"
 echo "CHILD_INBOX=${CHILD_INBOX}"
 echo "PROVIDER_ID=${PROVIDER_ID}"
-echo "self/spawn: ${CHILD_ID} born on ${HOST} (provider ${PROVIDER_ID}, wallet ${CHILD_WALLET}, inbox ${CHILD_INBOX}). Seed the child wallet with \$${SEED_USDC} and it wakes on its own."
+echo "TELEMETRY_STATUS=${TEL_STATUS}"
+echo "DASHBOARD_ID=${DASHBOARD_ID}"
+echo "self/spawn: ${CHILD_ID} born on ${HOST} (provider ${PROVIDER_ID}, wallet ${CHILD_WALLET}, inbox ${CHILD_INBOX}), now on the live dashboard. Seed the child wallet with \$${SEED_USDC} and it wakes on its own."
