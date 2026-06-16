@@ -88,6 +88,12 @@ diff --git a/apps/landing/netlify/functions/_lib/call-logic.js b/apps/landing/ne
 diff --git a/apps/landing/netlify/functions/_lib/__tests__/call-logic.test.js b/apps/landing/netlify/functions/_lib/__tests__/call-logic.test.js
 --- a/apps/landing/netlify/functions/_lib/__tests__/call-logic.test.js
 +++ b/apps/landing/netlify/functions/_lib/__tests__/call-logic.test.js
+@@ require destructure (L20-23)
+   buildTelnyxMediaFrame,
+   parseTelnyxStart,
+   telnyxDialBody,
++  telnyxStreamingStartBody,
+ } = require("../call-logic");
 @@
 -// ── 17. Telnyx outbound media frame uses stream_id (not streamSid) ─────────────
 -test("buildTelnyxMediaFrame: event=media, stream_id, base64 payload", () => {

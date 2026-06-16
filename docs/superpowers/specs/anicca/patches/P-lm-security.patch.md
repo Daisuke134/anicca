@@ -185,7 +185,7 @@ diff --git a/apps/landing/app/lm/LmClient.tsx b/apps/landing/app/lm/LmClient.tsx
 -  }, [phone, uid]);
 +  }, [phone, uid, sig]);
 ```
-Add `const SIG_KEY = 'anicca_lm_sig';` next to the existing `STORAGE_KEY` const.
+Add `const SIG_KEY = 'anicca.lm.sig';` next to the existing `STORAGE_KEY` (`'anicca.lm.uid'`) const — dot convention to match.
 
 ## §4 Run commands
 ```bash
