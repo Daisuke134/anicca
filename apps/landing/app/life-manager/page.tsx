@@ -2,10 +2,11 @@ import LaunchNav from '@/components/site/LaunchNav';
 import Footer from '@/components/site/Footer';
 import { SplitHero, Section, Reveal, CTA } from '@/components/site/taste';
 
-// B-travel (spec27 WF-B) — Life Manager landing page.
-// Replaces Foundation placeholder. Collision rule: ONLY replaces body; LaunchNav +
-// Footer are imported as-is, not modified. Skill lives at ~/anicca/skills/life/travel.js.
-// Logic module: netlify/functions/_lib/travel-logic.js (TDD-verified, 12 tests pass).
+// spec28 P-lm-separate: this is the MARKETING page for the SEPARATE cloud product `/lm`
+// ($20/mo, no trial). Its "Get started" CTA routes to /lm (NOT /install — for cloud they
+// are DIFFERENT products). UX taste: design-taste-frontend + nextlevelbuilder/ui-ux-pro-max-skill.
+// Collision rule: ONLY the body changes; LaunchNav + Footer imported as-is. Skill logic:
+// netlify/functions/_lib/{travel,ask,call,notify}-logic.js + python crons anicca-{travel-fill,life-ask,life-notify-*}.
 
 export const dynamic = 'force-static';
 
@@ -17,7 +18,7 @@ export const metadata = {
 
 // ── Feature table data ────────────────────────────────────────────────────────
 
-type FeatureStatus = 'live' | 'coming';
+type FeatureStatus = 'live';
 
 const FEATURES: {
   id: string;
@@ -40,7 +41,7 @@ const FEATURES: {
     headline: '15-min phone call before every event',
     body:
       'Gemini Live (voice: Charon, male) bridges over your carrier’s media stream. Anicca dials your number 15 minutes before each event, says "Next is Dentist at 10:00 — leave now, walk time 18 min, via Omotesando Exit A3." Two-way voice: you can ask follow-ups. The bridge is provider-agnostic — it routes over Twilio by default and over Telnyx for Japan (+81) numbers, since the same μ-law↔PCM transcode and Charon socket serve both carriers.',
-    status: 'coming',
+    status: 'live',
   },
   {
     id: 'ask',
@@ -48,7 +49,7 @@ const FEATURES: {
     headline: 'Missing location? Ask you by email',
     body:
       "When a calendar event has no location, Anicca emails you: \"Where is the Team Sync? Reply with the address and I'll update the event.\" Your reply triggers an AgentMail webhook that writes the location back to GCal.",
-    status: 'coming',
+    status: 'live',
   },
   {
     id: 'notify',
@@ -56,19 +57,16 @@ const FEATURES: {
     headline: 'Late-risk → draft → you approve → notify attendees',
     body:
       "If Anicca detects you're running late (travel block starts after current time), she drafts \"I'll be 10 min late\" to the event attendees and emails you for approval. One-word reply \"OK\" fires the message. No app, pure email.",
-    status: 'coming',
+    status: 'live',
   },
 ];
 
 const STATUS_BADGE: Record<FeatureStatus, string> = {
   live: 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20',
-  coming:
-    'bg-[hsl(var(--surface-elevated))] text-[hsl(var(--text-secondary))] border border-[hsl(var(--border))]',
 };
 
 const STATUS_LABEL: Record<FeatureStatus, string> = {
   live: 'live',
-  coming: 'coming',
 };
 
 export default function Page() {
@@ -78,10 +76,10 @@ export default function Page() {
 
       <SplitHero
         headline="Life Manager"
-        subtext="Anicca reads your calendar, inserts travel time, calls you before every event, and handles late-notice — all by phone and email. No app to open."
+        subtext="A dedicated cloud product: Anicca reads your calendar, inserts travel time, calls you before every event, and handles late-notice — all by phone and email. $20/mo, no app to open."
         primary={
-          <CTA href="/install" variant="primary">
-            Install Anicca
+          <CTA href="/lm" variant="primary">
+            Get started — $20/mo
           </CTA>
         }
         secondary={
@@ -112,8 +110,8 @@ export default function Page() {
             Four skills, one goal — never be late
           </h2>
           <p className="mt-2 text-sm text-[hsl(var(--text-secondary))]">
-            Life Manager is a set of skills inside your local Anicca daemon. Each
-            skill runs autonomously on your machine; no cloud subscription required.
+            Life Manager is a dedicated cloud product. Anicca runs these four skills
+            24/7 on its own server and manages your calendar by phone and email — $20/mo.
           </p>
         </Reveal>
 
@@ -250,47 +248,18 @@ export default function Page() {
           <ol className="mt-4 list-decimal space-y-3 pl-6 text-sm text-[hsl(var(--text-primary))]">
             <li>
               <a
-                href="/install"
+                href="/lm"
                 className="underline underline-offset-4 hover:text-[hsl(var(--text-secondary))] transition-colors"
               >
-                Install Anicca
+                Start onboarding
               </a>{' '}
-              on your always-on machine (Mac Mini, Linux server, or cloud VM).
+              — sign in with Google.
             </li>
+            <li>Connect Google Calendar and Gmail (one-click, managed OAuth via Composio).</li>
+            <li>Add your phone number so Anicca can call you 15 min before each event.</li>
             <li>
-              During onboarding, grant Google Calendar OAuth when Anicca asks. She
-              stores the refresh token in{' '}
-              <code className="rounded-input bg-[hsl(var(--surface-elevated))] px-1 py-0.5">
-                ~/.openclaw/.env
-              </code>{' '}
-              with{' '}
-              <code className="rounded-input bg-[hsl(var(--surface-elevated))] px-1 py-0.5">
-                chmod 600
-              </code>
-              .
-            </li>
-            <li>
-              (Optional) Set{' '}
-              <code className="rounded-input bg-[hsl(var(--surface-elevated))] px-1 py-0.5">
-                HOME_ADDRESS
-              </code>{' '}
-              in{' '}
-              <code className="rounded-input bg-[hsl(var(--surface-elevated))] px-1 py-0.5">
-                ~/.openclaw/.env
-              </code>{' '}
-              for accurate transit times. Without it, Anicca defaults to a 20-minute
-              travel buffer.
-            </li>
-            <li>
-              Add a Google Maps API key as{' '}
-              <code className="rounded-input bg-[hsl(var(--surface-elevated))] px-1 py-0.5">
-                GOOGLE_MAPS_API_KEY
-              </code>{' '}
-              for real Directions lookups (free tier covers ~200 req/day).
-            </li>
-            <li>
-              Open Google Calendar tomorrow morning — your commute blocks will already
-              be there.
+              Subscribe — <strong className="text-[hsl(var(--text-primary))]">$20/mo, no trial</strong>.
+              Open Google Calendar tomorrow morning; your commute blocks are already there.
             </li>
           </ol>
         </Reveal>
@@ -300,17 +269,17 @@ export default function Page() {
         <Reveal>
           <div className="grid gap-4 md:grid-cols-2">
             <a
-              href="/install"
+              href="/lm"
               className="block rounded-card border border-[hsl(var(--gold))]/30 bg-[hsl(var(--surface))] p-5 transition-colors hover:bg-[hsl(var(--surface-elevated))]"
             >
               <p className="text-xs uppercase tracking-widest text-[hsl(var(--gold))]">
                 get started
               </p>
               <p className="mt-2 text-base font-semibold text-[hsl(var(--text-primary))]">
-                Install Anicca
+                Life Manager — $20/mo
               </p>
               <p className="mt-1 text-xs text-[hsl(var(--text-secondary))]">
-                One prompt into Claude Code or Cursor. Anicca is live in 30 seconds.
+                Google login → connect calendar + Gmail → add phone → done.
               </p>
             </a>
             <a

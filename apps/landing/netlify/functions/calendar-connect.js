@@ -19,12 +19,33 @@ async function supaGetTokenPhone(token) {
 
 exports.handler = async (event) => {
   if (!COMPOSIO_KEY || !GCAL_AUTH_CONFIG) return { statusCode: 500, body: "missing composio config" };
-  const token = (event.queryStringParameters || {}).token;
-  if (!token) return { statusCode: 400, body: "missing token" };
+  const qs = event.queryStringParameters || {};
+  const token = qs.token;
+  const uid = qs.uid;
+  if (!token && !uid) return { statusCode: 400, body: "missing token or uid" };
 
-  // user_id in Composio = the subscriber's phone (stable id). Resolve from token.
-  const userId = await supaGetTokenPhone(token);
+  // Two callers, two stable ids:
+  //   ?token=<owntracks_token> → Anicca Alarm (/install); Composio user_id = subscriber phone
+  //     resolved from subscriber_profiles, and we mark that table.
+  //   ?uid=<lm_user_id>        → Life Manager (/lm); Composio user_id = uid itself (the lm_users
+  //     primary key), and we mark lm_users. No subscriber row exists for /lm users, so this branch
+  //     must NOT go through subscriber_profiles (that path 404s for a raw uid).
+  const isLm = !token && !!uid;
+  const userId = isLm ? uid : await supaGetTokenPhone(token);
   if (!userId) return { statusCode: 404, body: "subscriber not found" };
+
+  // Marks the connecting/connected provider on whichever table owns this user.
+  const markProvider = async () => {
+    if (!SUPABASE_URL || !SUPABASE_KEY) return;
+    const url = isLm
+      ? `${SUPABASE_URL}/rest/v1/lm_users?uid=eq.${encodeURIComponent(uid)}`
+      : `${SUPABASE_URL}/rest/v1/subscriber_profiles?owntracks_token=eq.${encodeURIComponent(token)}`;
+    await fetch(url, {
+      method: "PATCH",
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, "Content-Type": "application/json", Prefer: "return=minimal" },
+      body: JSON.stringify({ calendar_provider: "composio_gcal", updated_at: new Date().toISOString() }),
+    }).catch(() => {});
+  };
 
   try {
     // Idempotent: if this user already has an ACTIVE Google Calendar connection, done.
@@ -34,11 +55,7 @@ exports.handler = async (event) => {
     const ej = await existing.json();
     const active = (ej.items || []).find((i) => i.status === "ACTIVE");
     if (active) {
-      await fetch(`${SUPABASE_URL}/rest/v1/subscriber_profiles?owntracks_token=eq.${encodeURIComponent(token)}`, {
-        method: "PATCH",
-        headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, "Content-Type": "application/json", Prefer: "return=minimal" },
-        body: JSON.stringify({ calendar_provider: "composio_gcal", updated_at: new Date().toISOString() }),
-      });
+      await markProvider();
       return { statusCode: 200, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ connected: true }) };
     }
     const r = await fetch(`${COMPOSIO_API}/connected_accounts`, {
@@ -50,11 +67,7 @@ exports.handler = async (event) => {
     const redirect = j.redirect_url || j.redirect_uri || j?.connectionData?.val?.redirectUrl;
     if (!redirect) return { statusCode: 502, body: JSON.stringify({ error: "no redirect", detail: j }) };
     // mark intent (calendar connecting) — becomes truly active once they consent
-    await fetch(`${SUPABASE_URL}/rest/v1/subscriber_profiles?owntracks_token=eq.${encodeURIComponent(token)}`, {
-      method: "PATCH",
-      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, "Content-Type": "application/json", Prefer: "return=minimal" },
-      body: JSON.stringify({ calendar_provider: "composio_gcal", updated_at: new Date().toISOString() }),
-    });
+    await markProvider();
     return { statusCode: 200, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ redirect_url: redirect }) };
   } catch (e) {
     return { statusCode: 502, body: JSON.stringify({ error: String(e) }) };
