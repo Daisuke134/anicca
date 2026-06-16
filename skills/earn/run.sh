@@ -20,8 +20,16 @@ set -u
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Env discovery: droplet ships /opt/anicca.env; local bodies keep the wallet key in the
 # OpenClaw/clawd env. Source the first that exists so the loop finds the signing key anywhere.
+# Allowlist ONLY the vars the earn path needs — never expose user-PII env (gmail/gcal/composio/
+# google-login) to the earn process, or identity-guard.mjs (malice-guard) fails closed and HALTS.
+# Reconciled against every env var read by run.sh + execute-0xwork.py (verified 2026-06-16).
+EARN_ALLOW="BLOCKRUN_WALLET_KEY PKVAR OXWORK_PKVAR BASE_RPC_URL USDC_ADDRESS EARN_MODE EARN_STRATEGY EARN_TX EARN_SOURCE EARN_AMOUNT EARN_COST EARN_TASK EARN_LEDGER WAKE_ID OXWORK_API OXWORK_CAPS OXWORK_DELIVER OXWORK_POLL_SECS OXWORK_ANY_CATEGORY OXWORK_TASK_ID AUTO_CANCEL_USDC SUB_ID SELF_CANCEL_TOKEN ANICCA_API_BASE"
 for ENVF in /opt/anicca.env "$HOME/.openclaw/.env" "$HOME/clawd/.env"; do
-  [ -f "$ENVF" ] && { set -a; . "$ENVF"; set +a; break; }
+  [ -f "$ENVF" ] || continue
+  while IFS= read -r kv; do
+    k="${kv%%=*}"
+    case " $EARN_ALLOW " in *" $k "*) export "$kv" ;; esac
+  done < <(grep -E '^[A-Z_]+=' "$ENVF")
 done
 PKVAR="${PKVAR:-BLOCKRUN_WALLET_KEY}"
 LEDGER="${EARN_LEDGER:-$HERE/state/earn-ledger.jsonl}"
