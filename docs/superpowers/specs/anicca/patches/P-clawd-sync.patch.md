@@ -30,7 +30,11 @@ diff --git a/skills/earn/run.sh b/skills/earn/run.sh
 -done
 +# Allowlist ONLY the vars the earn path needs — never expose user-PII env (gmail/gcal/composio/
 +# google-login) to the earn process, or identity-guard.mjs (malice-guard) fails closed and halts.
-+EARN_ALLOW="BLOCKRUN_WALLET_KEY PKVAR BASE_RPC_URL EARN_MODE EARN_STRATEGY EARN_TX OXWORK_PKVAR AUTO_CANCEL_USDC SUB_ID SELF_CANCEL_SECRET ANICCA_API_BASE"
++# Reconciled against EVERY env var read by run.sh + execute-0xwork.py (verified 2026-06-16):
++#   run.sh: PKVAR BASE_RPC_URL EARN_MODE EARN_STRATEGY EARN_TX EARN_SOURCE EARN_AMOUNT EARN_COST EARN_TASK EARN_LEDGER WAKE_ID
++#   execute-0xwork.py: BASE_RPC_URL USDC_ADDRESS OXWORK_PKVAR PKVAR BLOCKRUN_WALLET_KEY OXWORK_API OXWORK_CAPS OXWORK_DELIVER OXWORK_POLL_SECS OXWORK_ANY_CATEGORY OXWORK_TASK_ID
++#   P-auto-cancel instance-side: AUTO_CANCEL_USDC SUB_ID SELF_CANCEL_TOKEN ANICCA_API_BASE
++EARN_ALLOW="BLOCKRUN_WALLET_KEY PKVAR OXWORK_PKVAR BASE_RPC_URL USDC_ADDRESS EARN_MODE EARN_STRATEGY EARN_TX EARN_SOURCE EARN_AMOUNT EARN_COST EARN_TASK EARN_LEDGER WAKE_ID OXWORK_API OXWORK_CAPS OXWORK_DELIVER OXWORK_POLL_SECS OXWORK_ANY_CATEGORY OXWORK_TASK_ID AUTO_CANCEL_USDC SUB_ID SELF_CANCEL_TOKEN ANICCA_API_BASE"
 +for ENVF in /opt/anicca.env "$HOME/.openclaw/.env" "$HOME/clawd/.env"; do
 +  [ -f "$ENVF" ] || continue
 +  while IFS= read -r kv; do
@@ -48,17 +52,22 @@ diff --git a/skills/earn/run.sh b/skills/earn/run.sh
 cd ~/anicca && git add skills/earn/run.sh && git commit -m "earn: allowlist env (malice-guard safe)" && git push
 # 2. THEN mirror the three applied OSS skills into the live body ~/clawd:
 rsync -a ~/anicca/skills/earn/        ~/clawd/skills/earn/         # incl. identity-guard + allowlisted run.sh
-rsync -a ~/anicca/skills/life/locate/ ~/clawd/skills/life/locate/  # P-lm-local-calling
-rsync -a ~/anicca/runtime/compute-proxy/ ~/clawd/runtime/compute-proxy/ 2>/dev/null || true  # P-oss-local proxy+start-local
-# 3. wire registry/cron for life/locate (the local LM calling slot) in ~/clawd's registry
+mkdir -p ~/clawd/skills/life ~/clawd/runtime
+rsync -a ~/anicca/skills/life/locate/ ~/clawd/skills/life/locate/  # P-lm-local-calling (source verified: skills/life/locate/locate.js)
+# compute-proxy source is verified present (runtime/compute-proxy/{proxy.mjs,start-local.sh,package.json}); do NOT mask a missing source:
+test -f ~/anicca/runtime/compute-proxy/start-local.sh || { echo "FATAL: compute-proxy source missing"; exit 1; }
+rsync -a ~/anicca/runtime/compute-proxy/ ~/clawd/runtime/compute-proxy/  # P-oss-local proxy+start-local
+# 3. register life/locate: add a slot to the registry, mirroring the existing life/* entries
+#    (~/anicca/skills/registry.json:43-72 has life/travel|call|ask|notify, each {dir:"skills/life/<x>"}).
+#    Add: "life/locate": { "dir": "skills/life/locate", ... } to BOTH ~/anicca/skills/registry.json and ~/clawd's registry.
 # 4. verify the earn loop still runs a real wake AFTER sync (next section)
 ```
 
 ## §4 Acceptance (HARD 0.31 — verify earn NOT halted)
 1. After sync, run one earn beat in the live body: `EARN_MODE=execute bash ~/clawd/skills/earn/run.sh` → exits 0, writes an `earn-ledger.jsonl` line, identity-guard does NOT throw.
 2. `node -e "require('~/clawd/skills/earn/lib/identity-guard.mjs')"` style guard test passes with the allowlisted env (no COMPOSIO/GOOGLE_LOGIN visible).
-3. `life/locate` registered + a dry cadence tick logs the 15/14/13+5 schedule (no real call in the dry test).
-4. compute-proxy boots in the live body (`start-local.sh` health) — P-oss-local live.
+3. `life/locate` slot added to the registry (`grep -q "life/locate" ~/clawd/.../registry*` → present) + a dry cadence tick run directly (`node ~/clawd/skills/life/locate/locate.js --dry` or the cadence fn) logs the 15/14/13+5 schedule (no real call in the dry test).
+4. compute-proxy source confirmed present (`test -f ~/anicca/runtime/compute-proxy/start-local.sh`) then boots in the live body (`bash ~/clawd/runtime/compute-proxy/start-local.sh` health check) — P-oss-local live. No `|| true` masking.
 
 ## §5 Boundaries
 `~/anicca/skills/earn/run.sh` (allowlist) is the only `~/anicca` code change; the rest is rsync of already-reviewed+applied OSS skills into `~/clawd` + registry wiring. No products-repo change. Runtime store = main-direct (HARD #0 exception).

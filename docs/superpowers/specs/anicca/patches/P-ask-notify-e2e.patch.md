@@ -22,7 +22,7 @@
 ```bash
 # 1. seed a GCal event with an UNKNOWN location (a place name that needs asking)
 # 2. fire the ask path against keiodaisuke@gmail.com (Dais's own inbox — not a third party)
-EARN_NONE=1 bash ~/anicca/skills/life/ask/run.sh   # (or the canonical entrypoint) → gog gmail send
+node ~/anicca/skills/life/ask/ask.js --action question   # canonical entry (documented in ask.js) → gog gmail send
 # 3. reply to the question mail with the location
 # 4. fire the reply-ingest → assert the GCal event now has the location + a [Travel] block follows
 ```

@@ -14,8 +14,9 @@
 |---|---|
 | swap is explicitly NOT external revenue on the live site | `app/me/page.tsx:90-94` — `GATE0_EXTERNAL`/`GATE0_MET`, "A swap is asset liquidation, not external earning" |
 | earn `run.sh` already supports a NON-swap external path | `~/anicca/skills/earn/run.sh:9-12` — `EARN_TX` preset ("externally-executed earn, e.g. x402: verify that tx, record it") + `execute-0xwork.py` (`run.sh:62`) |
-| an x402-serve endpoint exists (an external payer pays the agent) | `~/anicca` commit `ba58449` `feat(earn/x402-serve): serve.sh launcher … free cloudflared quick tunnel` |
-| the earn ledger + tx-verify primitives exist | `~/anicca/skills/earn/lib/{ledger.mjs,verify-tx.mjs,usdc.mjs,record.mjs}` |
+| an x402 worker/serve endpoint exists (an external payer pays the agent) | `~/anicca/services/x402-worker/serve.sh` (verified present; from commit `ba58449`) |
+| GATE-0 unlocks ONLY on an external line | `~/anicca/skills/earn/lib/oxwork.mjs` `isExternalPayout` sets `external:true`; `lib/ledger.mjs:43-49` `isProfitable` = external + `status=0x1` + net>0 (a swap is never external) |
+| the earn ledger + tx-verify primitives exist | `~/anicca/skills/earn/lib/{ledger.mjs,usdc.mjs,record.mjs}` + `lib/verify-tx.mjs` exports `receiptStatus(txHash)` (a module, NOT a CLI) |
 | malice-guard requires earn use OWN wallet only | `~/anicca/skills/earn/lib/identity-guard.mjs` (P-malice-guard) |
 
 **External-revenue definition (must satisfy `GATE0_EXTERNAL`):** USDC arrives in Anicca's OWN wallet from an
@@ -24,29 +25,30 @@
 
 ## §2 The run (two real external paths; do at least one)
 
-### Path A — x402-served task (preferred: a real external client pays the agent)
+### Path B — 0xwork external payout (PRIMARY; default live strategy, run.sh:58)
 ```bash
 cd ~/anicca/skills/earn
-bash x402-serve/serve.sh                 # boots the x402 endpoint + free cloudflared tunnel → public URL
-# drive ONE real external payment to the endpoint (an outside wallet/client pays the x402 invoice),
-# then verify + record:
-EARN_MODE=execute EARN_TX=<payment_tx_hash> EARN_SOURCE=x402 bash run.sh
+EARN_MODE=execute EARN_STRATEGY=0xwork bash run.sh   # execute-0xwork.py performs/verifies an external-paid task;
+# the recorded line gets external:true ONLY via lib/oxwork.mjs isExternalPayout → that is what unlocks GATE-0.
 ```
 
-### Path B — 0xwork external payout
+### Path A — x402-served task (alt: a real external client pays the agent)
 ```bash
-cd ~/anicca/skills/earn
-EARN_MODE=execute EARN_STRATEGY=0xwork bash run.sh   # execute-0xwork.py performs/verifies an external-paid task
+bash ~/anicca/services/x402-worker/serve.sh   # boots the x402 endpoint + free cloudflared tunnel → public URL
+# drive ONE real external payment to the endpoint (an outside wallet/client pays the x402 invoice), then record it
+# as an external line (the verify path must set external:true, same gate as 0xwork — NOT a bare EARN_TX swap).
 ```
 
-Either path writes a `earn-ledger.jsonl` line with `source∈{x402,0xwork}`, real `tx`, `net_usdc>0`.
+Either path writes a `earn-ledger.jsonl` line with `external:true`, `source∈{x402,0xwork}`, real `tx`, `net_usdc>0`.
 
 ## §3 Verify (HARD 0.24/0.31 — fresh on-chain evidence)
 ```bash
 # 1. ledger line is external (not swap):
 tail -1 ~/anicca/skills/earn/state/earn-ledger.jsonl | jq '{source,tx,net_usdc,status}'   # source must NOT be swap/liquidat
-# 2. on-chain proof:
-node ~/anicca/skills/earn/lib/verify-tx.mjs <tx>     # status=0x1, USDC delta to our wallet > 0
+# 2. on-chain proof (verify-tx.mjs is a MODULE exporting receiptStatus, not a CLI — import it):
+cd ~/anicca/skills/earn && node --input-type=module -e \
+  'import {receiptStatus} from "./lib/verify-tx.mjs"; receiptStatus(process.argv[1]).then(s=>console.log(JSON.stringify(s)))' "<tx>"
+# expect status=0x1; cross-check USDC delta to our wallet > 0 via basescan or lib/usdc.mjs balanceOf before/after
 # 3. /me reflects it: update GATE0_WAKE in app/me/page.tsx to the real external wake (source=x402/0xwork)
 #    so GATE0_EXTERNAL && GATE0_MET become TRUE — only on a genuinely external line.
 ```
