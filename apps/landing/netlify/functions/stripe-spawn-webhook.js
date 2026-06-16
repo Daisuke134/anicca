@@ -79,6 +79,14 @@ exports.handler = async (event, deps = {}) => {
         await _owners.markEventSeen(stripeEvent.id, cfg);
         return { statusCode: 200, body: "no owner" };
       }
+      // Self-funded: the instance cancelled its OWN subscription because it earns enough. Keep the
+      // droplet alive — do NOT destroy. (P-auto-cancel guard.) An owner still "active" (e.g. a
+      // dashboard cancel) falls through to _destroy as before.
+      if (owner.status === "self_funded") {
+        await _owners.markEventSeen(stripeEvent.id, cfg);
+        console.log(`💚 self-funded sub ${sub_id} cancelled — droplet ${owner.droplet_id} kept alive`);
+        return { statusCode: 200, body: JSON.stringify({ ok: true, kept: owner.droplet_id }) };
+      }
       await _destroy(owner.droplet_id, doCfg);
       await _owners.markDestroyed(sub_id, cfg);
       await _owners.markEventSeen(stripeEvent.id, cfg);
