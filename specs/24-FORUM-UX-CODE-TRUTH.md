@@ -107,7 +107,7 @@
    (but self_update.py already covers the pull/verify/swap/rollback substance independent of that CLI)
  · Snapshot quorum exact threshold math = concept-confirmed, numeric spec unread (use #approved≥N + eval first)
  · MurmurHash canary self-judgement = design ported from Unleash, not yet in anicca-oss (build in #338)
- · Hermes本体 `hermes skills update/reset` behavior = from official skill reference doc, not body source line
+ · (historical ref) NousResearch Hermes `hermes skills update/reset` behavior = from its official skill reference doc, not body source line. NB: our runtime is the automaton, not Hermes — this was cited only as a skill-CLI design reference.
 ```
 
 ## § 7. Changelog

@@ -1,14 +1,27 @@
 # 16 — RUNTIME CODE TRUTH (= what the 3 candidate codebases ACTUALLY do, read at source)
 
+> ⚠️ **OUTCOME UPDATE (current, supersedes the §17 "Hermes the ONE runtime" lock below):**
+> The runtime question this file debated was RESOLVED in favour of **automaton (Conway)**, NOT
+> Hermes. The §17/§18 "DECISION LOCKED = Hermes" conclusion is **historical** — it was reversed by
+> `00-MASTER.md` (locked 2026-06-11): *"Engine = Conway automaton (TS), run in local-mode … automaton
+> already has the 4 NHOSS primitives native (wallet, x402, spawn_child, constitution) — the master
+> spec's 'port into Hermes' is satisfied by using automaton directly (don't reinvent). NOT a
+> double-brain. Hermes(grok) kept only as one comparison instance."* The live body is the **automaton
+> ReAct loop (think→act→observe→persist) + heartbeat daemon**, fuelled by **ClawRouter / BlockRun**
+> USDC x402 compute (`THESIS.md`, `HEARTBEAT.md`, `runtime/compute-proxy/`). The §1-5 source reads of
+> the three codebases (automaton / hermes / eliza) are still accurate code history and are kept; only
+> the §15-18 *recommendation* to adopt Hermes was overturned. Where "Hermes the runtime" appears below,
+> read it as a debated-then-rejected option, not the current architecture.
+
 | Field | Value |
 |---|---|
 | Spec ID | 16 |
-| Status | ★ AUTHORITATIVE for L3-runtime decision (2026-06-04) ★ |
+| Status | HISTORICAL runtime-comparison (2026-06-04). The decision it reached (Hermes) was REVERSED to automaton by `00-MASTER.md` (2026-06-11). |
 | Author | Claude (read the source, no guessing) |
 | Method | git clone --depth 1 + local source read + file:line citations. NO README-only. |
-| Supersedes | The substrate claims in `07-HERMES-PIVOT.md` and `00-MASTER.md` §2 that were written WITHOUT reading the automaton source. When this file conflicts with 07, **this file wins** (it is code-verified; 07 is not). |
+| Supersedes | The substrate claims in `07-HERMES-PIVOT.md` and `00-MASTER.md` §2 that were written WITHOUT reading the automaton source. The §1-5 code reads remain authoritative; the §15-18 Hermes recommendation is superseded by 00-MASTER's automaton lock. |
 
-> **Why this file exists:** specs 00 + 07 declared "L3 RUNTIME = Hermes, drop Conway/automaton" WITHOUT reading the automaton source. On 2026-06-04 the three real codebases were read at source level. The code says something different. This file records the code truth so it is never lost. The mission's hardest requirement — **an army of self-replicating agents** — is already solved by automaton and by nothing else.
+> **Why this file exists:** specs 00 + 07 declared "L3 RUNTIME = Hermes, drop Conway/automaton" WITHOUT reading the automaton source. On 2026-06-04 the three real codebases were read at source level. The code says something different. This file records the code truth so it is never lost. The mission's hardest requirement — **an army of self-replicating agents** — is already solved by automaton and by nothing else. (And per the OUTCOME UPDATE above, automaton — not Hermes — is what the project ultimately shipped.)
 
 ---
 
@@ -549,7 +562,14 @@ If Hermes lacks it, we either add it (a heartbeat skill) or reconsider automaton
 
 ---
 
-## § 17. DECISION LOCKED (Hermes README + run_agent verified, 2026-06-04)
+## § 17. DECISION (Hermes README + run_agent verified, 2026-06-04) — ⚠️ LATER REVERSED TO AUTOMATON
+
+> ⚠️ **SUPERSEDED:** This section concluded "Hermes = the ONE runtime; automaton = reference we port
+> from". That conclusion was overturned on 2026-06-11 (`00-MASTER.md`): the project runs **automaton
+> directly** (its 4 NHOSS primitives are native, so there is nothing to "port into Hermes"), with
+> Hermes kept only as one comparison instance. Read §17/§18 as the reasoning that was tried and then
+> reversed, preserved for history. Current truth = automaton ReAct loop + heartbeat (see OUTCOME UPDATE
+> at the top of this file and `00-MASTER.md`).
 
 Read the Hermes README (authors' positioning) + local source. It RESOLVES the runtime question and
 vindicates Dais's intuition on every point:

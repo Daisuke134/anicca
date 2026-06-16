@@ -68,7 +68,7 @@ README architecture (verbatim shape):
  heartbeat + resume-session       →  liveness + restart recovery (pairs with sutando registry, spec 22).
  ADOPTION: agent-swarm is the REFERENCE ARCHITECTURE for the whole spec 18 system (intake → lead →
    isolated worker → shared rated memory → compound). We do NOT run its TS stack; we re-implement the
-   same shape on Hermes: symphony (spec 19) = the orchestrator/intake, swarms (spec 21) = the lead→worker
+   same shape on the automaton runtime: symphony (spec 19) = the orchestrator/intake, swarms (spec 21) = the lead→worker
    topology, the shared brain = our memory + eval-rater, MiroFish (spec 20) = predict, sutando (spec 22)
    = resurrection. agent-swarm proves the END-TO-END loop runs as a real product — it de-risks spec 18.
 ```
@@ -87,4 +87,4 @@ README architecture (verbatim shape):
 ```
 
 ## § 5. Changelog
-| 2026-06-04 | Read source (README Lead→worker(Docker)→shared-brain compounding; github/task-reactions 👀 on issue; agentmail email-intake; commands/worker runAgent; be/memory SQLite+OpenAI-embeds + raters/registry rated learnings; seed-scripts task-failure-audit + context-gathering; heartbeat; resume-session). Adoption: agent-swarm = the END-TO-END reference architecture for spec 18 (intake→lead→isolated worker→shared rated memory→compound+rollout); re-implemented on Hermes via symphony(19)+swarms(21)+memory/eval-rater+MiroFish(20)+sutando(22). De-risks spec 18 by proving the loop runs as a real product. |
+| 2026-06-04 | Read source (README Lead→worker(Docker)→shared-brain compounding; github/task-reactions 👀 on issue; agentmail email-intake; commands/worker runAgent; be/memory SQLite+OpenAI-embeds + raters/registry rated learnings; seed-scripts task-failure-audit + context-gathering; heartbeat; resume-session). Adoption: agent-swarm = the END-TO-END reference architecture for spec 18 (intake→lead→isolated worker→shared rated memory→compound+rollout); re-implemented on the automaton runtime via symphony(19)+swarms(21)+memory/eval-rater+MiroFish(20)+sutando(22). De-risks spec 18 by proving the loop runs as a real product. |

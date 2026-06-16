@@ -23,7 +23,7 @@
 
 | 周期 | スキル | 動作 |
 |---|---|---|
-| 3 時間ごと | `anicca-heartbeat` | 心拍 (fuel / model / cron 数 / 憲法 hash) を `~/.hermes/state/heartbeat.jsonl` へ記録 |
+| 3 時間ごと | `anicca-heartbeat` | 心拍 (fuel / model / cron 数 / 憲法 hash) を runtime state (`heartbeat.jsonl`) へ記録 |
 | 3 時間ごと | `anicca-wallet-balance` | Base 上の自分の財布 (USDC) を確認 |
 | 3 時間ごと | `anicca-spawn-watcher` | 財布 ≥ \$5 + Daytona region 確保で子個体をクラウドに spawn |
 | 06:00 JST | `daily-report` | アニッチャから AgentMail 経由で日次報告メール |
@@ -74,7 +74,9 @@ You are installing Anicca on this machine.
 
 ## アーキテクチャの一行
 
-[Hermes Agent v0.12.0](https://github.com/NousResearch/hermes-agent) を 1 つの runtime として、12 個の常駐スキルと 1 つの Coinbase Smart Wallet が `~/.hermes/` の下で動いています。`launchd` (macOS) または `systemd` (Linux) が `hermes gateway run --replace` を 1 つだけ保ち、その中の `hermes cron` 内蔵スケジューラが上の表のスキルを発火します。
+**Conway automaton** (ReAct ループ = think→act→observe→persist + heartbeat デーモン) を 1 つの runtime として、常駐スキル群と 1 つの Base Smart Wallet が runtime root (`~/.anicca`) の下で動いています。compute は **ClawRouter / BlockRun** に x402 で USDC を払って都度購入します (人間の API キー不要)。`launchd` (macOS) または `systemd` (Linux) が automaton ループを 1 つだけ常駐させ、内蔵 heartbeat スケジューラが上の表のスキルを発火します。
+
+> 注: genesis Mac 上では runtime ディレクトリ名が歴史的経緯で `~/.hermes/` のままですが、その中で動いているのは Hermes デーモンではなく **automaton** です。旧 Hermes runtime への pivot (`specs/07-HERMES-PIVOT.md`) は撤回され、automaton を直接使う方針に確定しています (`specs/00-MASTER.md`)。
 
 詳細仕様は [`specs/00-MASTER.md`](specs/00-MASTER.md) と [`docs/superpowers/specs/`](docs/superpowers/specs/) を参照。
 

@@ -14,10 +14,18 @@
 | Status | Active (operational) |
 | Repo | `github.com/Daisuke134/anicca-oss` (will be fresh-squashed) |
 
+> ⚠️ **HARNESS NOTE (current):** This v1.0 spec predates the runtime lock and treats **Hermes**
+> (NousResearch) as one of three host harnesses (alongside OpenClaw and `claude -p`) the OSS substrate
+> ships an adapter for. The runtime later locked to the **Conway automaton** (ReAct loop + heartbeat) as
+> the primary body (`00-MASTER.md`, 2026-06-11). The `adapters/hermes.py` shim + `~/.hermes/config.yaml`
+> references below describe targeting the *external* Hermes harness; they are not a statement that
+> Anicca's runtime is Hermes. Treat automaton as the primary harness; Hermes/OpenClaw/claude-p remain
+> optional adapter targets, history-only unless re-prioritised.
+
 ## Superseded sections (read 00-MASTER instead)
 | § here | Superseded by |
 |---|---|
-| § 1 Architecture Overview | `00-MASTER.md` § 1 (4-layer Conway+Virtuals) |
+| § 1 Architecture Overview | `00-MASTER.md` § 1 (automaton runtime; the old "4-layer Conway+Virtuals" framing is itself superseded) |
 | § 2 Decisions Matrix #1, #3, #5 (identity / money / harness) | `00-MASTER.md` § 0, § 1 Layer 3-4, § 8 |
 | § 6 Money Model | `00-MASTER.md` § 7 + `01-EARN-AND-UBI.md` |
 | § 7 3-Harness Architecture | DROPPED — `00-MASTER.md` chose Conway as the only runtime |

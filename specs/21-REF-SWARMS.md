@@ -62,10 +62,10 @@ is a CATALOG of prebuilt orchestration "structs" (architectures) — pick the to
    for ALL Anicca (spec 18 §2 roll-out)     harmlessness dim = constitution gate)
  forum: discussion among agents          →  groupchat / multi_agent_debates / deep_discussion
  eval-loop judge panel (spec 16 §C)      →  council_as_judge (4-dim) instead of single judge
- scheduled swarm                         →  cron_job (or Hermes cron)
+ scheduled swarm                         →  cron_job (or the automaton heartbeat)
  ADOPTION: `pip install swarms`; Anicca's swarm-exec skill (spec 18 #337) wraps the needed structs.
-   Hermes runs the agents; swarms provides the TOPOLOGY layer on top. Interops with x402/MCP/skills
-   so it composes with the wallet/x402 skills.
+   The automaton runtime runs the agents; swarms provides the TOPOLOGY layer on top. Interops with
+   x402/MCP/skills so it composes with the wallet/x402 skills.
 ```
 
 ## § 5. ASCII — swarms topologies in the colony
@@ -73,7 +73,7 @@ is a CATALOG of prebuilt orchestration "structs" (architectures) — pick the to
  LEAD ANICCA (director)  ──auto_swarm_builder designs team──►  ┌ worker: earn-on-Lancers
    plan → orders → collect reports                              ├ worker: x402-server
    (HierarchicalSwarm)                                          └ worker: research (concurrent_workflow)
-                                                                       │ each = Hermes agent, max_loops=auto
+                                                                       │ each = automaton agent, max_loops=auto
  FORUM DECISION (spec 18 §2):  proposal ──► majority_voting (N Anicca vote)
                                           + council_as_judge (accuracy/helpfulness/HARMLESSNESS/coherence)
                                           → consensus → roll-out to all
