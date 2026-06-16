@@ -20,9 +20,10 @@ The sections below are the (over-optimistic) prior log — trust this correction
 | install-me (CTA + /me de-theatre/jargon) | ✅ rev3 | ✅ PASS (caught 7th jargon site :199) | ✅ PR#54 `7fd7ea00` + PR#55 copy polish → main | ✅ **camofox click→buy.stripe.com checkout=true · /me jargon=0 · honest badge ×2 · integrity const intact** | ✅ **DONE 2026-06-16** |
 | ↳ /me "Colony overview (illustrative)" fake #s ($6/$18.40/$46.20) | — | — | — | — | KNOWN follow-up: not jargon (labeled illustrative) but should become real telemetry or be removed (own patch) |
 | stripe-spawn (webhook VERIFY + droplet E2E) | ✅ rev2 | — | — | — | NEXT-ish (webhook live; needs E2E droplet test) |
-| dashboard (build-time prerender real #s) | ✅ rev2 | — | — | — | pending |
-| earn (GATE-0 external, 0xwork, ~/clawd) | ✅ rev2 | — | — | — | pending · ext-blocker: seed wallet (0xwork init faucet / small AXOBOTL+ETH) |
-| life-travel (4 travel.js bug fixes) | ✅ rev2 | — | — | — | pending · (live=openclaw python cron) |
+| dashboard (build-time prerender real #s) | ✅ rev2 | ✅ PASS | ✅ PR#56 `eaff8d9a`→main | ✅ **Loading=0 · served HTML shows real $5.01 / Bodies / Self-funded · matches dashboard-sync** | ✅ **DONE 2026-06-16** |
+| ↳ dashboard test-fixture row (`host:"test"` = $5 of $5.01) | — | — | — | — | KNOWN follow-up: delete from Supabase `instances` so total = real genesis $0.01 |
+| earn (GATE-0 external, 0xwork, ~/clawd) | ✅ rev2 | ✅ PASS (classifier chokepoint closes swap false-green) | — | — | IMPLEMENTING · seed self-serve: 0xwork init faucet wallet |
+| life-travel (4 travel.js bug fixes) | ✅ rev2 | ✅ PASS | — | — | IMPLEMENTING (apply travel.js fixes; live python cron already works, 15 gcal IDs) |
 | life-call (Telnyx connected call) | ✅ rev2 | — | — | — | pending · ext: TELNYX key (camofox self-serve) + Dais answers phone (B2) |
 | life-ask (gog local round-trip + duration) | ✅ rev2 | — | — | — | pending · ext: GCal/inbox env keys |
 | life-notify (gog poll approval + cron reconcile) | ✅ rev2 | — | — | — | pending |
