@@ -14,14 +14,12 @@
 [functions."life-travel"]
   schedule = "0 21 * * *"
 
-# B-ask scheduled trigger — runs daily at 06:00 JST (21:00 UTC).
-# Scans today's GCal events for missing location, emails Dais via the DEDICATED
-# B-ask inbox (LIFE_ASK_INBOX_ID = anicca-life-ask@agentmail.to) to avoid the
-# daily 429 quota contention with high-frequency "Anicca wake" report emails.
-# The action=reply path is driven by AgentMail webhook ep_3FBcXGwrcP575GjLm46jCMj2TYr
-# (client_id b-ask-reply-webhook) which POSTs to this function when Dais replies.
-# Required env: GOOGLE_REFRESH_TOKEN, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
-#               AGENTMAIL_API_KEY, LIFE_ASK_INBOX_ID (= anicca-life-ask@agentmail.to)
-# Optional env: DAIS_EMAIL (default: keiodaisuke@gmail.com), GCAL_ID
-[functions."life-ask"]
-  schedule = "0 21 * * *"
+# B-ask: NO Netlify schedule. The daily question round is driven by the LOCAL
+# cron job "anicca-life-ask" (~/.openclaw/cron/jobs.json, 06:00 JST) which runs
+# node ~/anicca/skills/life/ask/ask.js --action question. That local sender does
+# the `gog gmail send` (gog can't run in a Netlify lambda) and calls this function
+# at ?action=question (GCal-read-only) + ?action=mark-asked.
+# The ?action=reply path is driven by the AgentMail inbound webhook
+# ep_3FBcXGwrcP575GjLm46jCMj2TYr (client_id b-ask-reply-webhook).
+# Required env (this function): GOOGLE_REFRESH_TOKEN, GOOGLE_CLIENT_ID,
+#                               GOOGLE_CLIENT_SECRET (or GOOGLE_CALENDAR_TOKEN), GCAL_ID.
