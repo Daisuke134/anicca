@@ -66,7 +66,7 @@ rsync -a ~/anicca/runtime/compute-proxy/ ~/clawd/runtime/compute-proxy/  # P-oss
 ## §4 Acceptance (HARD 0.31 — verify earn NOT halted)
 1. After sync, run one earn beat in the live body: `EARN_MODE=execute bash ~/clawd/skills/earn/run.sh` → exits 0, writes an `earn-ledger.jsonl` line, identity-guard does NOT throw.
 2. `node -e "require('~/clawd/skills/earn/lib/identity-guard.mjs')"` style guard test passes with the allowlisted env (no COMPOSIO/GOOGLE_LOGIN visible).
-3. `life/locate` slot added to the registry (`grep -q "life/locate" ~/clawd/.../registry*` → present) + a dry cadence tick run directly (`node ~/clawd/skills/life/locate/locate.js --dry` or the cadence fn) logs the 15/14/13+5 schedule (no real call in the dry test).
+3. `life/locate` slot added to the registry (`grep -q "life/locate" ~/clawd/.../registry*` → present) + a dry cadence tick run directly (`node ~/clawd/skills/life/locate/locate.js --dry-run --mode schedule`, the actual flags per locate.js:32) logs the 15/14/13+5 schedule (no real call in the dry test).
 4. compute-proxy source confirmed present (`test -f ~/anicca/runtime/compute-proxy/start-local.sh`) then boots in the live body (`bash ~/clawd/runtime/compute-proxy/start-local.sh` health check) — P-oss-local live. No `|| true` masking.
 
 ## §5 Boundaries
