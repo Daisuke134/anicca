@@ -41,6 +41,14 @@ record_line() { # $1 = json
   node "$HERE/lib/record.mjs" "$1" "$LEDGER"
 }
 
+# distribute_ubi: after a PROFITABLE external wake, send a share of THIS wake's net to AI+human
+# recipients (own wallet only). Fail-soft: never bricks the wake (the earn already succeeded).
+# $1 = the SAME earn-line JSON we just recorded PROFITABLE.
+distribute_ubi() {
+  UBI_OUT=$(node "$HERE/distribute-ubi.mjs" "$1" 2>/dev/null || true)
+  echo "[earn] ubi -> ${UBI_OUT:-noop}"
+}
+
 if [ "$MODE" = "discover" ]; then
   # Discovery wake: the agent found candidates but executed nothing on-chain yet.
   # Record a narrate line so the ledger shows the wake happened. NEVER counts as GATE-0.
@@ -95,6 +103,7 @@ print(d.get('task_id','') or 'claimed-awaiting-approval')" 2>/dev/null)
   echo "[earn] 0xwork recorded -> $OUT"
   if [ "$OUT" = "PROFITABLE" ]; then
     echo "[earn] GATE-0 MET: external revenue wake recorded (net>0, status 0x1, external inbound)."
+    distribute_ubi "$JSON"
     exit 0
   fi
   echo "[earn] 0xwork wake recorded but NOT profitable (status=$STATUS). Not GATE-0."
@@ -159,6 +168,7 @@ echo "[earn] recorded -> $OUT"
 # 3) GATE-0: only a confirmed, net-positive wake is a real launch gate.
 if [ "$OUT" = "PROFITABLE" ]; then
   echo "[earn] GATE-0 MET: profitable wake recorded (net>0, status 0x1)."
+  distribute_ubi "$JSON"
   exit 0
 fi
 echo "[earn] wake recorded but NOT profitable (status=$STATUS). Not GATE-0."
