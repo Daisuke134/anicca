@@ -24,6 +24,7 @@ const {
   buildGeminiAudioInput,
   buildGeminiTurn,
   parseGeminiAudio,
+  parseGeminiTranscripts,
   buildTwilioMediaFrame,
   buildTelnyxMediaFrame,
   parseTelnyxStart,
@@ -225,6 +226,10 @@ function startServer({ port, event, provider }) {
         // Kick Charon to speak the opening line immediately.
         geminiSend(buildGeminiTurn("Begin the call now with your opening line."));
       }
+      // Surface both-side transcripts so call quality (did Charon answer the user?) is auditable.
+      const t = parseGeminiTranscripts(msg);
+      if (t.input) console.error(`[transcript] USER: ${t.input}`);
+      if (t.output) console.error(`[transcript] CHARON: ${t.output}`);
       if (r.frames) console.log(`[bridge] EVENT gemini_audio frames=${state.outFrames}`);
     });
     gemini.on("error", (e) => console.error("[bridge] gemini err", e.message));

@@ -188,8 +188,26 @@ function buildGeminiSetup({ model, voiceName, systemInstruction }) {
         },
       },
       systemInstruction: { parts: [{ text: systemInstruction || "" }] },
+      // Transcribe BOTH sides so we can read what Gemini heard from the user (input) and what Charon
+      // said (output). Server returns serverContent.inputTranscription.text / outputTranscription.text.
+      // Verified: ai.google.dev/gemini-api/docs/live-guide (firecrawl 2026-06-16).
+      inputAudioTranscription: {},
+      outputAudioTranscription: {},
     },
   };
+}
+
+/**
+ * Extract input/output transcription text from a parsed Gemini Live server message.
+ * @param {object} msg - parsed JSON server message
+ * @returns {{input?:string, output?:string}} present keys carry transcript text
+ */
+function parseGeminiTranscripts(msg) {
+  const sc = (msg && msg.serverContent) || {};
+  const out = {};
+  if (sc.inputTranscription && sc.inputTranscription.text) out.input = sc.inputTranscription.text;
+  if (sc.outputTranscription && sc.outputTranscription.text) out.output = sc.outputTranscription.text;
+  return out;
 }
 
 /**
@@ -281,7 +299,7 @@ function buildTelnyxMediaFrame(_streamId, b64MuLaw) {
 function telnyxStreamingStartBody({ streamUrl }) {
   return {
     stream_url: streamUrl,
-    stream_track: "both_tracks",
+    stream_track: "inbound_track",
     stream_bidirectional_mode: "rtp",
     stream_bidirectional_codec: "PCMU",
   };
@@ -319,7 +337,7 @@ function telnyxDialBody({ connectionId, to, from, streamUrl }) {
     to,
     from,
     stream_url: streamUrl,
-    stream_track: "both_tracks",
+    stream_track: "inbound_track",
     stream_bidirectional_mode: "rtp",
     stream_bidirectional_codec: "PCMU",
   };
@@ -399,6 +417,7 @@ module.exports = {
   geminiLiveWsUrl,
   buildGeminiTurn,
   parseGeminiAudio,
+  parseGeminiTranscripts,
   muLawDecodeSample,
   muLawEncodeSample,
   muLawBufToPcm16,

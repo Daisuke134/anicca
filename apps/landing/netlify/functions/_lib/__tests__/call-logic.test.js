@@ -207,11 +207,11 @@ test("buildTelnyxMediaFrame matches Telnyx docs shape (no stream_id)", () => {
   assert.ok(!("stream_id" in f), "outbound frame must omit stream_id per Telnyx docs");
 });
 // ── 17b. streaming_start contingency body ──
-test("telnyxStreamingStartBody carries rtp+PCMU+both_tracks", () => {
+test("telnyxStreamingStartBody carries rtp+PCMU+inbound_track", () => {
   const b = telnyxStreamingStartBody({ streamUrl: "wss://x/ws" });
   assert.strictEqual(b.stream_bidirectional_mode, "rtp");
   assert.strictEqual(b.stream_bidirectional_codec, "PCMU");
-  assert.strictEqual(b.stream_track, "both_tracks");
+  assert.strictEqual(b.stream_track, "inbound_track");
 });
 
 // ── 18. parseTelnyxStart pulls stream_id + call_control_id ─────────────────────
@@ -241,7 +241,7 @@ test("telnyxDialBody: outbound /v2/calls body with bidirectional rtp + PCMU", ()
   assert.strictEqual(b.to, "+818046270314");
   assert.strictEqual(b.from, "+14322234204");
   assert.strictEqual(b.stream_url, "wss://x.trycloudflare.com/ws");
-  assert.strictEqual(b.stream_track, "both_tracks");
+  assert.strictEqual(b.stream_track, "inbound_track");
   assert.strictEqual(b.stream_bidirectional_mode, "rtp");
   assert.strictEqual(b.stream_bidirectional_codec, "PCMU");
 });
