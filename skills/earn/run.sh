@@ -31,6 +31,12 @@ for ENVF in /opt/anicca.env "$HOME/.openclaw/.env" "$HOME/clawd/.env"; do
     case " $EARN_ALLOW " in *" $k "*) export "$kv" ;; esac
   done < <(grep -E '^[A-Z_]+=' "$ENVF")
 done
+# Defense-in-depth: UNSET any inherited user-PII env (a contaminated parent may have exported it) so
+# identity-guard.mjs (malice-guard) stays green regardless of how run.sh is invoked. Mirrors
+# USER_PII_ENV_PATTERNS in skills/earn/lib/identity-guard.mjs.
+for piivar in $(env | cut -d= -f1 | grep -iE 'GOOGLE_LOGIN|COMPOSIO|GCAL|GOOGLE_CALENDAR|GMAIL_REFRESH|GMAIL_TOKEN|USER.?GMAIL|TELEGRAM|^USER_|USER.?PHONE|USER.?CONTACT' 2>/dev/null); do
+  unset "$piivar" 2>/dev/null || true
+done
 PKVAR="${PKVAR:-BLOCKRUN_WALLET_KEY}"
 LEDGER="${EARN_LEDGER:-$HERE/state/earn-ledger.jsonl}"
 WAKE="${WAKE_ID:-$(date -u +%s)}"
