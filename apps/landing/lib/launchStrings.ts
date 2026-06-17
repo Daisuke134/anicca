@@ -239,23 +239,23 @@ export const launchStrings = {
     lifeManager: {
       metaTitle: 'Life Manager — Anicca',
       metaDesc:
-        'Anicca as your life manager: reads your Google Calendar, auto-inserts travel time blocks before every event via Google Maps Directions, and calls you 15 minutes before each appointment with Gemini Charon voice. No app to open.',
+        'Anicca as your life manager: it manages your whole day — wake, sleep, work, commute, meditation. Reads your Google Calendar, auto-inserts travel time before every event, and calls you 15, 10 and 5 minutes before you need to leave — each call more urgent than the last. No app to open.',
       heroHeadline: 'Life Manager',
       heroSubtext:
-        'A dedicated cloud product: Anicca reads your calendar, inserts travel time, calls you before every event, and handles late-notice — all by phone and email. $20/mo, no app to open.',
+        'Anicca manages your whole life so you are never 寝坊・夜更かし・遅刻・連絡漏れ again. It reads your calendar, inserts travel time, and calls you 15 / 10 / 5 minutes before every event — escalating each time — then handles late-notice for you. All by phone and email. $20/mo, no app to open.',
       heroPrimary: 'Get started — $20/mo',
       heroSecondary: 'See how it works',
       asset: {
-        wake: '08:40 — wake-up call (Charon)',
-        travel1: '09:40 — [Travel] Team Sync → 20 min',
-        sync: '10:00 — Team Sync',
-        travel2: '11:40 — [Travel] Lunch → 8 min',
-        lunch: '11:48 — Lunch with Kato',
-        caption: 'All inserted automatically by Anicca ↑',
+        wake: '09:25 — call −15 min · heads-up: "Team Sync soon"',
+        travel1: '09:30 — call −10 min · firmer: "time to move"',
+        sync: '09:35 — call −5 min · urgent: "leave NOW or you’re late"',
+        travel2: '09:40 — [Travel] Team Sync → 20 min',
+        lunch: '10:00 — Team Sync',
+        caption: 'Three escalating calls before every event ↑',
       },
-      featuresTitle: 'Four skills, one goal — never be late',
+      featuresTitle: 'Four skills, one job — you’re never late again',
       featuresIntro:
-        'Life Manager is a dedicated cloud product. Anicca runs these four skills 24/7 on its own server and manages your calendar by phone and email — $20/mo.',
+        'Life Manager manages your WHOLE life — wake, sleep, remote meeting, commute, meditation, work. Every event gets reminded, every time, no filter. Anicca runs these four skills 24/7 on its own server and manages your calendar by phone and email — $20/mo.',
       liveLabel: 'live',
       features: [
         {
@@ -267,8 +267,8 @@ export const launchStrings = {
         {
           id: 'call',
           label: 'Phone',
-          headline: '15-min phone call before every event',
-          body: 'Gemini Live (voice: Charon, male) bridges over your carrier’s media stream. Anicca dials your number 15 minutes before each event: "Next is Dentist at 10:00 — leave now, walk time 18 min, via Omotesando Exit A3." Two-way voice: you can ask follow-ups. The bridge is provider-agnostic — Twilio by default, Telnyx for Japan (+81) numbers, since the same μ-law↔PCM transcode and Charon socket serve both carriers.',
+          headline: 'Escalating calls at 15 / 10 / 5 min — for every event',
+          body: 'Anicca calls your real number three times before you need to leave, and each call is harsher than the last: 15 min = heads-up ("Team Sync is coming up"), 10 min = firmer ("you need to move"), 5 min = urgent ("leave NOW or you’ll be late"). It speaks the event, the location and the route, in the language of your phone’s country. The voice bridge runs on Telnyx (the working runner that rang Dais) with Gemini Live — Twilio is the fallback. It covers EVERY event — wake, sleep, work, commute, meditation — never filtered.',
         },
         {
           id: 'ask',
@@ -297,17 +297,17 @@ export const launchStrings = {
       travelNotePre: 'Travel blocks are idempotent — re-running the skill never duplicates them. A block is detected by its "[Travel]" prefix and the ',
       travelNoteCode: 'anicca_travel_block',
       travelNotePost: ' extended property.',
-      onTimeTitle: 'Always on time, never polling',
+      onTimeTitle: 'Schedule-based triggers, never polling',
       onTimeBodyPre:
-        'Anicca watches your calendar in real time. The moment an event is created or moved, it recomputes just that event’s travel block and schedules the call for exactly ',
-      onTimeBodyCode: 'eventStart − travelDuration − 15 min',
-      onTimeBodyPost: ' — so the reminder lands at the right second, with no wasted checks.',
-      onTimeResult: 'Result: second-accurate triggers, zero redundant GCal polls.',
+        'A thin planner reads your calendar every few minutes and, for each event, registers three one-shot calls at exactly ',
+      onTimeBodyCode: 'leaveTime − 15 / − 10 / − 5 min',
+      onTimeBodyPost: ' (leaveTime = the [Travel] block start if the event has a location, else the event start). Each job auto-deletes after it fires.',
+      onTimeResult: 'Result: three second-accurate calls per event, escalating in urgency — and zero wasted polling.',
       gettingStartedTitle: 'Getting started',
       gettingStartedSteps: [
-        { link: 'Start onboarding', rest: ' — sign in with Google.' },
+        { link: 'Start onboarding', rest: ' — sign in with Google, tell Anicca your name.' },
         { link: '', rest: 'Connect Google Calendar and Gmail (one-click, managed OAuth via Composio).' },
-        { link: '', rest: 'Add your phone number so Anicca can call you 15 min before each event.' },
+        { link: '', rest: 'Add your phone number so Anicca can call you 15, 10 and 5 min before every event. Optionally share live location.' },
         {
           link: '',
           restPre: 'Subscribe — ',
@@ -317,10 +317,10 @@ export const launchStrings = {
       ],
       cardGetStartedEyebrow: 'get started',
       cardGetStartedTitle: 'Life Manager — $20/mo',
-      cardGetStartedDesc: 'Google login → connect calendar + Gmail → add phone → done.',
-      cardColonyEyebrow: 'live ledger',
-      cardColonyTitle: 'Colony dashboard',
-      cardColonyDesc: 'All Anicca instances — revenue, spend, runway, status.',
+      cardGetStartedDesc: 'Google login → name → connect calendar + Gmail → add phone → optional location → done.',
+      cardColonyEyebrow: 'open source',
+      cardColonyTitle: 'Life Manager Skill (OSS)',
+      cardColonyDesc: 'The same skill, free — drop it into any AI you run yourself. On GitHub.',
     },
   },
 
@@ -555,23 +555,23 @@ export const launchStrings = {
     lifeManager: {
       metaTitle: 'ライフマネージャー — Anicca',
       metaDesc:
-        'Anicca があなたのライフマネージャーに。Google カレンダーを読み、Google マップの経路から移動時間ブロックを各予定の前に自動挿入し、各予定の 15 分前に Gemini Charon の声で電話します。アプリを開く必要はありません。',
+        'Anicca があなたのライフマネージャーに。起床・就寝・仕事・通勤・瞑想まで、一日まるごと管理します。Google カレンダーを読み、各予定の前に移動時間を自動挿入し、出発の 15 分・10 分・5 分前に電話 — 近づくほど口調が強くなります。アプリを開く必要はありません。',
       heroHeadline: 'ライフマネージャー',
       heroSubtext:
-        '専用のクラウド製品。Anicca がカレンダーを読み、移動時間を入れ、各予定の前に電話し、遅刻連絡まで対応します — すべて電話とメールで。月 $20、開くアプリはありません。',
+        'Anicca が人生まるごと管理して、二度と寝坊・夜更かし・遅刻・連絡漏れをさせません。カレンダーを読み、移動時間を入れ、各予定の 15 分・10 分・5 分前に電話 — そのたびに口調を強めて — 遅刻連絡まで代わりに対応します。すべて電話とメールで。月 $20、開くアプリはありません。',
       heroPrimary: 'はじめる — 月 $20',
       heroSecondary: '仕組みを見る',
       asset: {
-        wake: '08:40 — 起こし電話（Charon）',
-        travel1: '09:40 — [移動] チームシンク → 20 分',
-        sync: '10:00 — チームシンク',
-        travel2: '11:40 — [移動] ランチ → 8 分',
-        lunch: '11:48 — 加藤さんとランチ',
-        caption: 'すべて Anicca が自動で挿入 ↑',
+        wake: '09:25 — 15分前の電話 · 軽く「もうすぐチームシンク」',
+        travel1: '09:30 — 10分前の電話 · 強め「そろそろ動いて」',
+        sync: '09:35 — 5分前の電話 · 緊急「今すぐ出ないと遅刻」',
+        travel2: '09:40 — [移動] チームシンク → 20 分',
+        lunch: '10:00 — チームシンク',
+        caption: 'どの予定の前にも、段階的な 3 回の電話 ↑',
       },
-      featuresTitle: '4 つのスキル、ひとつの目標 — 遅刻しない',
+      featuresTitle: '4 つのスキル、ひとつの仕事 — もう遅刻しない',
       featuresIntro:
-        'ライフマネージャーは専用のクラウド製品です。Anicca がこの 4 つのスキルを自分のサーバー上で 24/7 動かし、電話とメールであなたのカレンダーを管理します — 月 $20。',
+        'ライフマネージャーは人生をまるごと管理します — 起床・就寝・リモート会議・通勤・瞑想・仕事。すべての予定を、毎回、フィルターなしでリマインド。Anicca がこの 4 つのスキルを自分のサーバー上で 24/7 動かし、電話とメールでカレンダーを管理します — 月 $20。',
       liveLabel: '稼働中',
       features: [
         {
@@ -583,8 +583,8 @@ export const launchStrings = {
         {
           id: 'call',
           label: '電話',
-          headline: '各予定の 15 分前に電話',
-          body: 'Gemini Live（声: Charon、男性）が通信キャリアのメディアストリーム上で橋渡しします。各予定の 15 分前に Anicca があなたの番号に電話し、「次は 10:00 の歯医者です — 今出てください。徒歩 18 分、表参道 A3 出口経由」と伝えます。双方向の音声で、追加の質問もできます。橋渡しはキャリア非依存 — 既定は Twilio、日本（+81）の番号は Telnyx で、同じ μ-law↔PCM 変換と Charon ソケットが両方を担います。',
+          headline: '15 分・10 分・5 分前に、段階的な電話 — どの予定にも',
+          body: '出発が必要になる前に Anicca があなたの実番号へ 3 回電話し、近づくほど口調が強くなります。15 分前 = 予告「もうすぐチームシンク」、10 分前 = 強め「そろそろ動いて」、5 分前 = 緊急「今すぐ出ないと遅刻」。予定名・場所・行き方を、あなたの電話の国の言語で伝えます。音声橋渡しは Telnyx（実際に Dais を鳴らした実績ある runner）+ Gemini Live で動き、Twilio はフォールバック。起床・就寝・仕事・通勤・瞑想 — すべての予定をカバー、フィルターなし。',
         },
         {
           id: 'ask',
@@ -613,17 +613,17 @@ export const launchStrings = {
       travelNotePre: '移動ブロックは冪等です — スキルを再実行しても重複しません。ブロックは「[移動]」のプレフィックスと ',
       travelNoteCode: 'anicca_travel_block',
       travelNotePost: ' 拡張プロパティで識別されます。',
-      onTimeTitle: 'いつも時間どおり、ポーリングなし',
+      onTimeTitle: 'スケジュール起動、ポーリングなし',
       onTimeBodyPre:
-        'Anicca はあなたのカレンダーをリアルタイムで見ています。予定が作られたり動いたりした瞬間に、その予定の移動ブロックだけを再計算し、電話を ',
-      onTimeBodyCode: 'eventStart − travelDuration − 15 min',
-      onTimeBodyPost: ' ちょうどに予約します — リマインダーは秒単位で正しく届き、無駄なチェックはありません。',
-      onTimeResult: '結果: 秒単位で正確なトリガー、GCal への無駄なポーリングはゼロ。',
+        '軽量なプランナーが数分ごとにカレンダーを読み、各予定について 3 本のワンショット電話を ',
+      onTimeBodyCode: '出発時刻 − 15 / − 10 / − 5 分',
+      onTimeBodyPost: ' ちょうどに登録します（出発時刻 = 場所がある予定なら [移動] ブロック開始、なければ予定開始）。各ジョブは発火後に自動削除されます。',
+      onTimeResult: '結果: 予定ごとに段階的な 3 本の電話を秒単位で正確に。無駄なポーリングはゼロ。',
       gettingStartedTitle: 'はじめかた',
       gettingStartedSteps: [
-        { link: 'オンボーディングを開始', rest: ' — Google でログイン。' },
+        { link: 'オンボーディングを開始', rest: ' — Google でログイン、名前を伝える。' },
         { link: '', rest: 'Google カレンダーと Gmail を接続（Composio のマネージド OAuth でワンクリック）。' },
-        { link: '', rest: '電話番号を登録すれば、各予定の 15 分前に Anicca が電話できます。' },
+        { link: '', rest: '電話番号を登録すれば、各予定の 15 分・10 分・5 分前に Anicca が電話できます。任意で現在位置も連携。' },
         {
           link: '',
           restPre: 'サブスクに登録 — ',
@@ -633,10 +633,10 @@ export const launchStrings = {
       ],
       cardGetStartedEyebrow: 'はじめる',
       cardGetStartedTitle: 'ライフマネージャー — 月 $20',
-      cardGetStartedDesc: 'Google ログイン → カレンダー + Gmail を接続 → 電話番号を登録 → 完了。',
-      cardColonyEyebrow: 'ライブ台帳',
-      cardColonyTitle: 'コロニー ダッシュボード',
-      cardColonyDesc: '全 Anicca 個体 — 収益・支出・残命・ステータス。',
+      cardGetStartedDesc: 'Google ログイン → 名前 → カレンダー + Gmail を接続 → 電話番号を登録 → 任意で位置情報 → 完了。',
+      cardColonyEyebrow: 'オープンソース',
+      cardColonyTitle: 'ライフマネージャー スキル（OSS）',
+      cardColonyDesc: '同じスキルを無料で — 自分で動かすどの AI にも組み込める。GitHub にあります。',
     },
   },
 } as const;

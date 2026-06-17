@@ -12,12 +12,12 @@ export const dynamic = 'force-static';
 export const metadata = {
   title: 'Life Manager — Anicca',
   description:
-    'Anicca as your life manager: reads your Google Calendar, auto-inserts travel time blocks before every event via Google Maps Directions, and calls you 15 minutes before each appointment with Gemini Charon voice. No app to open.',
+    'Anicca manages your whole life — wake, sleep, work, commute, meditation. It reads your Google Calendar, auto-inserts travel time before every event, and calls you 15 / 10 / 5 minutes before you need to leave, each call more urgent than the last. No app to open.',
 };
 
 export default function Page() {
   return (
-    <LaunchFrame active="/life-manager">
+    <LaunchFrame>
       <LifeManagerBody />
     </LaunchFrame>
   );

@@ -15,11 +15,10 @@ import { launchStrings } from '@/lib/launchStrings';
 // Accept-Language). It MUST render inside a <LaunchLocaleProvider> (provided by
 // <LaunchFrame>).
 
+// spec31 §D / spec30 §2: public launch nav shows ONLY /install. /me is private
+// (post-login redirect only); /dashboard removed; /life-manager moved under /dais.
 const ROUTE_KEYS = [
   { href: '/install', key: 'install' },
-  { href: '/me', key: 'me' },
-  { href: '/dashboard', key: 'dashboard' },
-  { href: '/life-manager', key: 'lifeManager' },
 ] as const;
 
 const LINK_CLASS =

@@ -13,6 +13,7 @@ import {
   DemoVideo,
   BasicIncomeNote,
   VisionBand,
+  TheBet,
 } from '@/components/site/v2';
 
 const SITE_URL = 'https://aniccaai.com';
@@ -123,6 +124,7 @@ export default function Page() {
       <JsonLd data={softwareApplicationLd} />
       <Navbar locale={locale} />
       <Hero locale={locale} />
+      <TheBet locale={locale} />
       {/* Section 1 manifesto removed (Manifesto.tsx no longer used here) */}
       <SelfFundingTriad locale={locale} />
       <LiveLedgerStrip locale={locale} />
