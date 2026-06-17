@@ -106,6 +106,56 @@ The §10 steps are **mostly sequential + share the same repos** (`apps/landing`,
 - **Within a step = parallel ONLY on non-overlapping files**, orchestrated by ONE driver (agent teams: me managing + agents reporting back) — NOT uncoordinated separate sessions on the same files. e.g. the LM step splits into (a) Telnyx/Gemini call loop, (b) onboarding UI, (c) Composio gcal/gmail wiring, (d) travel-time logic — different files, safe to parallelize; I integrate.
 - Separate CC sessions (Dais pastes prompts) = fine ONLY for a fully isolated repo/worktree; otherwise coordinated agent teams is better.
 
+## §12 JP/US fiat ramp — CORRECTED (Dais checked the apps 2026-06-17; SBI dropped = too slow)
+**SBI VC Trade is REMOVED** — Dais confirmed it takes ~1 day to land in the bank = too slow. JP rail = **Binance Japan + PayPay + Solana**.
+- 🇯🇵 **JP — invest (human → anicca)**: PayPay money → **Binance** (buy Solana) → send SOL → MetaMask → swap+send **USDC to anicca Base wallet** (relay.link/Jupiter).
+- 🇯🇵 **JP — get (anicca → Dais)**: anicca sends **USDC or SOL → Binance deposit address** (`0xdbadbf75802f89b378cde71ab9cb9df014ab9d45`) → on Binance sell → send **Solana → PayPay** (Binance JP app supports PayPay out). Daily-capable.
+- 🇺🇸 **US — both ways = trivial, all Base USDC**: human sends **USDC (Base) → anicca wallet**; anicca sends **USDC (Base) → user's Base wallet** directly. No exchange hop. Daily.
+- This how-to (JP Binance/PayPay/SOL + US direct-Base) ships as `apps/landing/content/how-to-cash-out.{en,ja}.md` and is linked from aniccaai.com.
+
+## §13 /dais — Dais's products = "where the money comes from" (the revenue sources, all of them)
+/dais lists ALL of Dais's revenue products (not just LM + iOS). Grouped:
+- **Flagship**: Anicca iOS (App Store, RevenueCat subs) · Life Manager (web sub + OSS skill).
+- **Anicca Web Apps** (weekly small useful tools): PDF Insight (clear-pdf-converter.com) · GlowUp AI (iglowup-ai.lovable.app) · Lookmax · Honne.
+- **Mobile factory apps**: breath-calm · calmcortisol · daily-dhamma · desk-stretch · sleep-ritual · stretch-flow · vagus-reset · thankful-gratitude · lookmax-pro (+ the dated `mobile-apps/*-app` batch).
+- **(ideal future)** Anicca UBI → Dais's wallet (the no-human-in-loop source).
+This replaces the scattered per-app routes in the user-facing nav; the individual pages stay but are surfaced under /dais.
+
+## §14 PATCHES + exact commands (banked — implement in the right STEP, do NOT run yet)
+### P-ubi-claim — Crossmint email/phone → USDC (cat 1,2,3,5)
+```bash
+# .env: CROSSMINT_API_KEY=sk_production_xxx
+curl -s -X POST https://www.crossmint.com/api/2022-06-09/wallets \
+  -H "X-API-KEY: $CROSSMINT_API_KEY" -H "Content-Type: application/json" \
+  -d '{"type":"evm-smart-wallet","config":{"adminSigner":{"type":"email","email":"grandpa@example.com"}}}'
+curl -s -X POST "https://www.crossmint.com/api/2022-06-09/wallets/0xANICCA/transactions" \
+  -H "X-API-KEY: $CROSSMINT_API_KEY" -H "Content-Type: application/json" \
+  -d '{"params":{"calls":[{"to":"0xRECIP","value":"0","data":"<erc20 transfer USDC>"}],"chain":"base"}}'
+```
+`~/anicca/skills/ubi/lib/claim.mjs` (NEW): `sendUbiClaim({email,amountUsdc})` = create email-wallet → `transferUsdcBase` (existing `lib/usdc.mjs`).
+### P-ubi-offramp — Bridge (bank/card) + Kotani (mobile money)
+```bash
+curl -s -X POST https://api.bridge.xyz/v0/transfers -H "Api-Key: $BRIDGE_API_KEY" -H "Content-Type: application/json" \
+  -d '{"amount":"20.00","source":{"payment_rail":"base","currency":"usdc"},"destination":{"payment_rail":"ach","currency":"usd","external_account_id":"<recip>"}}'
+curl -s -X POST https://api.kotanipay.com/api/v3/customer/mobile-money -H "Authorization: Bearer $KOTANI_API_KEY" \
+  -d '{"phoneNumber":"+254...","network":"Safaricom","countryCode":"KE"}'
+curl -s -X POST https://api.kotanipay.com/api/v3/offramp -H "Authorization: Bearer $KOTANI_API_KEY" \
+  -d '{"chain":"BASE","token":"USDC","fiatCurrency":"KES","amount":20,"customerKey":"<key>","callbackUrl":"https://aniccaai.com/.netlify/functions/ubi-webhook"}'
+```
+### P-akash-fast — Console API + WARM POOL (15min → ~instant)
+```bash
+export CONSOLE_API_KEY="..."   # console-api.akash.network
+npx tsx deploy.ts              # create→waitForBids→lease (no chain client)
+```
+`~/anicca/cloud/spawn.mjs`: pre-lease N slim-image containers at boot → USDC arrival = assign from pool (no re-provision).
+### P-ubi-daily — daily payout (Base ~$0.04/tx, 365/yr ≈ $15/recipient)
+```jsonc
+// ~/.openclaw/cron/jobs.json
+{ "id":"ubi-daily", "schedule":"0 9 * * *",
+  "cmd":"node ~/anicca/skills/ubi/distribute-ubi.mjs --daily --split starter=10,ubi=10" }
+```
+### P-jp-ramp — how-to content (§12) → `apps/landing/content/how-to-cash-out.{en,ja}.md`
+
 ## §7 Revenue model (Dais's 10k/mo, no salary, to quit the job)
 | source | target | human-in-loop? |
 |---|---|---|
