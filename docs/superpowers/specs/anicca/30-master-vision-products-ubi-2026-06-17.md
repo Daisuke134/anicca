@@ -187,6 +187,20 @@ Build ONE workstream at a time (finish + E2E before the next — BP `finishing-a
 S1 using-superpowers · S2 brainstorming(spec) · S3 writing-plans(LITERAL diffs file/line/+-) · S4 using-git-worktrees · S5 test-driven-development + verification-before-completion(E2E no-mock) + systematic-debugging · S6 requesting-code-review(picture-perfect, pre+post impl) · S7 receiving-code-review · S8 finishing-a-development-branch(merge+push).
 Order: STEP1 LM-local → STEP2 LM-web → STEP3 aniccaai.com → STEP4 anicca local+cloud → STEP5 UBI → STEP6 marketing. A **patch = literal file/line/+- diff** (never prose/design/ascii) — see [[feedback_patch_is_literal_diff_and_sdd_grounding_flow]].
 
+## §17 VSDD — the VERIFICATION gate (the missing piece, mandatory in EVERY workstream, sequential or parallel)
+Research (sc30gsw VCSDD / dollspace-gay VSDD gist / jam0824 test-process, read 2026-06-17). The problem we keep hitting = **"AI slop"**: code that LOOKS correct (passes shallow review) but has spec mismatches / untested edge cases / "works because a cron exists." Superpowers already gives SDD(brainstorming) + TDD + verification-before-completion + requesting-code-review — that is MOST of VSDD. What we were running too loosely = the **adversarial verification gate**. Make it MANDATORY + structured:
+
+- **VDD adversary gate (binary PASS/FAIL, evidence-only)** — between writing-plans→TDD (review the literal diffs) AND after implementation (review the code + E2E). Spawn a **fresh-context** `superpowers:code-reviewer` agent (separate context, reads only from disk, cannot be steered by the builder's conversation). It must produce per-dimension **PASS/FAIL with concrete evidence (file:line)** across: ① Spec Fidelity ② Edge-Case Coverage ③ Implementation Correctness ④ Structural Integrity ⑤ Verification Readiness. It may NOT say "looks good." Loop fix→re-review until all PASS. (This is exactly what caught the 4 scope bugs in the call diff + the "nothing actually works" audit — now it is a required gate, not optional.)
+- **Structured no-mock E2E** (jam0824 pattern) — every flow as a numbered test with goal + steps + expected, run for real (real gcal/phone/mail/browser), looped until green. "done" = E2E green + adversary PASS. NEVER "a cron exists ⇒ works."
+- **Coherence** — when a requirement changes, update the spec + every downstream artifact in the same turn (we already do this via spec+task SSOT, HARD 0.32).
+
+The per-slice / per-workstream loop becomes:
+```
+real literal diff → ADVERSARY review (binary PASS/FAIL + evidence) → fix → TDD(RED→GREEN)
+  → ADVERSARY review of code → structured no-mock E2E (real) → all PASS ⇒ done → next
+```
+This gate is identical whether work runs one-by-one (me) or in parallel (separate sessions / agent-teams) — it goes into EVERY prompt. Agent-teams' own honest lesson (sc30gsw): the value is the *structured pattern + anti-patterns*, not the automation — so the discipline (this gate), not the team mechanism, is what removes slop.
+
 ## §7 Revenue model (Dais's 10k/mo, no salary, to quit the job)
 | source | target | human-in-loop? |
 |---|---|---|
