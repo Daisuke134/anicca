@@ -45,13 +45,12 @@ function productsRoot() {
   return path.join(home, "anicca-project");
 }
 
-/** Map a provider name to its products-repo runner script. */
+/** Map a provider name to its in-repo runner (consolidated into skills/life/call/lib). */
 function runnerFor(provider) {
-  const root = productsRoot();
-  const scripts = path.join(root, "apps", "landing", "scripts");
+  const lib = path.join(__dirname, "lib");
   return String(provider).toLowerCase() === "twilio"
-    ? path.join(scripts, "life-call.mjs")
-    : path.join(scripts, "life-call-telnyx.mjs"); // default: Telnyx (+81 / Dais)
+    ? path.join(lib, "runner-twilio.mjs")
+    : path.join(lib, "runner-telnyx.mjs"); // default: Telnyx (+81 / Dais)
 }
 
 /**
@@ -67,6 +66,8 @@ function placeCall(opts = {}) {
   const runner = runnerFor(provider);
   const args = [runner];
   if (opts.to) args.push(`--to=${opts.to}`);
+  if (opts.event) args.push(`--event=${JSON.stringify(opts.event)}`);
+  if (opts.urgency) args.push(`--urgency=${opts.urgency}`);
   if (opts.dryRun) args.push("--dry-run");
   const r = spawnSync("node", args, { stdio: "inherit", env: process.env });
   return r.status == null ? 1 : r.status;
@@ -83,6 +84,8 @@ if (require.main === module) {
     else if (argv[i].startsWith("--provider=")) opts.provider = argv[i].split("=")[1];
     else if (argv[i] === "--to") opts.to = argv[++i];
     else if (argv[i].startsWith("--to=")) opts.to = argv[i].split("=")[1];
+    else if (argv[i].startsWith("--event=")) opts.event = JSON.parse(argv[i].slice("--event=".length));
+    else if (argv[i].startsWith("--urgency=")) opts.urgency = argv[i].slice("--urgency=".length);
   }
   process.exit(placeCall(opts));
 }
