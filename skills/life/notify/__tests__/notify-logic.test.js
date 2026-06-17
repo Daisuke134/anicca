@@ -30,8 +30,8 @@ test("isTravelBlock returns false for normal events", () => {
 
 // ── isLateRisk ────────────────────────────────────────────────────────────────
 
-test("isLateRisk returns true when nowMs > travelStartMs", () => {
-  const travelStartMs = Date.now() - 300_000; // 5 min ago
+test("isLateRisk returns true when past travelStart + grace", () => {
+  const travelStartMs = Date.now() - 600_000; // 10 min ago (past the 5-min grace window)
   assert.strictEqual(isLateRisk({ travelStartMs, nowMs: Date.now() }), true);
 });
 
