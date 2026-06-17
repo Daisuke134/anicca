@@ -15,6 +15,7 @@
 
 **やったこと：**
 - 実際にお金を入れて動かし、本当に稼げるのかを検証
+- ※重要：公式の推論サービス（Conway）は今は需要が殺到して落ちています（429。READMEにも明記）。なので今回は代わりに **ClawRouter**（自分の財布から払うx402の計算ルーター）で動かしました
 
 **結果（※［　］内の数字・判定は実走後に差し替え）：**
 - そのまま動かすと → ［7日間で稼ぎ **$0**：作れるが売れない］
@@ -497,18 +498,26 @@ Bootstrap topup skipped: USDC balance $0.00 below minimum tier ($5)
 
 残高ゼロだと推論が走らず、Automatonは何もできません。**動かすには、まず資金（USDC on Base）が要ります**。
 
-### 4. 資金を入れる（日本からのルート）
+### 4. 資金を入れる（全部スマホで完結・買うのはSOLだけ）
 
-Automatonの財布は Base。日本からBaseへ入れる手順は次の通りです。
+Automatonの財布は Base。日本からBaseのUSDCへは、**スマホだけで完結**します。買う通貨は **SOL（ソラナ）だけ** でOKです。
 
-```
-1. Binance で SOL（または ETH）を買う（USDCを直接買えなくても可）
-2. MetaMask へ「オンチェーン出庫」
-3. relay.link で USDC(Base) に変換＆ブリッジし、送り先＝automatonのアドレス（チェーン＝Base）を指定
-```
+**手順1：BinanceアプリでSOLを買う**
+Binanceアプリを入れ、決済方法を **PayPay** にして **SOL** を買います。
 
-注意：**ネットワークは必ず Base**。Ethereum網に送ると、Baseだけを見るautomatonには届かず宙に浮きます（実際にここで一度つまずきました）。
-国内取引所（SBI VCトレード等）はBase直送に未対応、Coinbaseは日本撤退済みのため、上記の relay.link 経由が最短です。
+![Binanceで購入](images/automaton/fund-1-binance-buy-sol.png)
+
+**手順2：BinanceからSOLを出金する**
+「SOL 送金（出金）」を開き、ネットワーク＝**Solana**、送り先＝自分のMetaMaskのSolanaアドレス、金額＝全額で出金します。
+
+![Binanceで送金](images/automaton/fund-2-binance-send-sol.png)
+
+**手順3：relay.linkでSOL→USDC(Base)に変換して送る**
+relay.linkを開き、Sell＝**SOL(Solana)**、Buy＝**USDC(Base)**、送り先＝automatonのアドレス（**チェーン＝Base**）を指定してブリッジします。
+
+![relay.linkで変換](images/automaton/fund-3-relaylink-sol-to-usdc-base.png)
+
+注意：**送り先のネットワークは必ず Base**。Ethereum網に送ると、Baseだけを見るautomatonには届かず宙に浮きます（実際にここで一度つまずきました）。国内取引所はBase直送に未対応なので、この relay.link 経由が必要です。
 今回投入した額：**$11 USDC**。
 
 ### 5. 資金あり再起動 → x402で自分でクレジットを買う（成功）
