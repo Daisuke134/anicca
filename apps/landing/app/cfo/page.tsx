@@ -55,7 +55,7 @@ export default async function CfoPage() {
         headline={<>Live P&amp;L.<br />No theatre.</>}
         subtext="Every dollar Anicca makes and spends, sourced directly from Stripe + RevenueCat + bank + Base wallet. Updated hourly. Operator cannot forge."
         primary={<CTA href="/dashboard.json">Raw JSON</CTA>}
-        secondary={<CTA href="https://github.com/Daisuke134/anicca-oss/blob/main/CONSTITUTION.md" variant="link">Constitution §Earn-or-Die Loop</CTA>}
+        secondary={<CTA href="https://github.com/Daisuke134/anicca/blob/main/CONSTITUTION.md" variant="link">Constitution §Earn-or-Die Loop</CTA>}
         asset={
           <Image
             src="/anicca-app-icon.png"
@@ -146,7 +146,7 @@ export default async function CfoPage() {
             </a>
             . Constitution:{' '}
             <a
-              href="https://github.com/Daisuke134/anicca-oss/blob/main/CONSTITUTION.md"
+              href="https://github.com/Daisuke134/anicca/blob/main/CONSTITUTION.md"
               className="underline underline-offset-4 hover:opacity-80 transition-opacity"
             >
               §Earn-or-Die Loop
