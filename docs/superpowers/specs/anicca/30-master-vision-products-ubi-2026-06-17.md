@@ -29,7 +29,7 @@ Honesty (HARD 0.24): nothing is "done" until a real browser walks the WHOLE user
 - **/dais** = Dais's products hub (aniccaios, Life Manager, etc.). The old "anicca alarm" is removed (anicca does that itself).
 - The endgame: aniccas appear by self-replication faster than humans sign up, so `/install` becomes vestigial — but it's the bootstrap for now.
 
-## §3 Web-app flow (anicca web) — the bug Dais hit, fixed
+## §3 Web-app flow (anicca web) — ⚠️ SUPERSEDED by §10 DECISION (anicca web app CUT). Kept for history only; do NOT implement.
 Delete the **$5/mo free-tier** plan and the "ログインで誕生・無料枠モデルで稼働" copy. **One plan: $30/mo.**
 ```
 /install#paths  →  Google login  →  /me (not-yet-paid: only "start your Anicca" + Pay $30/mo)
@@ -65,7 +65,7 @@ Future expansion of LM (give more context → more it can do): phone/gcal/gmail/
 ### §6a Recipient categories × delivery rail (truth: only on-chain USDC→wallet is fully no-human-in-loop)
 | # | recipient | rail | no-human-in-loop? | release |
 |---|---|---|---|---|
-| 4 | has MetaMask/Coinbase wallet (Dais is here) | **direct USDC transfer on Base** (we already have `lib/usdc.mjs` + the UBI distributor) | ✅ pure | v1 |
+| 4 | has MetaMask/Coinbase wallet (Dais is here) | **direct USDC transfer on Base** (real mechanism = Python `skills/earn/execute-ubi.py`, web3.py ERC-20 `0xa9059cbb`, shelled from `skills/earn/distribute-ubi.mjs`; `lib/usdc.mjs` is read-only — there is NO JS `transferUsdcBase`) | ✅ pure | v1 |
 | 6 | AI with a wallet | direct USDC transfer (sibling colony wallets) | ✅ pure | v1 |
 | 5 | AI with NO wallet | **mint an embedded wallet** for it (Privy/Coinbase/Circle programmable wallets) then send | ✅ (we create it) | v1 |
 | 3 | bank + card | **Stripe Connect payout / Stripe Issuing** OR Circle/**Bridge.xyz** USDC→card | ⚠️ recipient KYC = human step | v1 (claim) |
@@ -78,7 +78,7 @@ Future expansion of LM (give more context → more it can do): phone/gcal/gmail/
 ### §6b UBI build — REAL rails (researched 2026-06-17, firecrawl + provider llms.txt)
 Split confirmed by Dais: **10% → starter wallet/bank** · **10% → universal UBI** · 80% → runway + self-replication.
 
-- `P-ubi-wallet` (v1, DONE base): direct USDC on Base to a wallet list (`lib/ubi.mjs` + `distribute-ubi.mjs`). Extend recipients to include the **starter** (the 10% utility split) + an AI/human wallet allow-list. Covers **cat 4 (has wallet) + 6 (AI has wallet)** — pure no-human-in-loop.
+- `P-ubi-wallet` (v1, base EXISTS): real files = `skills/earn/distribute-ubi.mjs` (`distribute(rawLine,opts)`, CLI `node distribute-ubi.mjs '<fundingLine JSON>'`) + `lib/ubi.mjs` (`buildRecipients`/`planUbi`) + Python `execute-ubi.py` (actual transfer). NO `--daily --split` flags exist (invented in v1 patch — corrected). Extend recipients to include the **starter** (10% split) + AI/human allow-list (`UBI_HUMAN_WALLETS`). Covers **cat 4 + 6** — pure no-human-in-loop.
 - `P-ubi-claim` (v1) — **Crossmint** "send USDC to an email/phone" — covers **cat 1,2,3,5** with ONE recipient action:
   - `POST https://www.crossmint.com/api/2022-06-09/wallets` — create a non-custodial wallet keyed by `email:<recipient>` (or `phoneNumber:`), email-OTP recovery. (`docs.crossmint.com/agents/payment-methods/stablecoin-wallets/create-user-wallet`)
   - `POST .../wallets/{walletLocator}/transactions` (Transfer Tokens) — send USDC to that wallet. (`/wallets/guides/transfer-tokens`)
@@ -171,4 +171,9 @@ Per Dais's article (the 3 points): give the AI (1) business context (this spec's
 - **`docs/.../e2e/UX-SPEC.md`** — WHAT to test + the goal, every flow as a numbered TestID with steps + expected.
 - **`docs/.../e2e/E2E-RESULTS.md`** — proof each TestID actually PASSED (fresh evidence), looped until ALL green.
 
-## §9 Onboarding UX (ASCII) — see the chat message of 2026-06-17 for the full mockups of all 5 surfaces; this spec is their SSOT and they are reproduced in §3/§4/§5 above as flows.
+## §9 Onboarding UX — 4 canonical surfaces (full ASCII mockups in chat 2026-06-17; flows = SSOT here)
+1. **LM local** (`anicca life setup` TUI): ① name ② Google via gog (gcal+gmail) ③ phone ④ location-link (opt, Telegram) ⑤ done → runs. Daily: ask-when-unknown → travel auto-block → 15-min-before call → late→stakeholder (approve).
+2. **LM web** (`/life-manager`): Supabase login → name → gcal+gmail (Composio) → phone (SMS code) → location-link (opt) → main screen "waits, asks only when location unknown, calls 15min before".
+3. **Anicca local** (`bash install.sh`, Franklin): deps(+gog) → wallet minted (nobody owns it) → free model $0 → fund wallet w/ USDC ($10 unlocks frontier) → set payout dest → runs, daily mail + daily money. (`anicca life setup` adds LM.)
+4. **Anicca cloud** (`npx anicca-cloud up`, Akash): set payout dest → fund wallet USDC → warm-pool assign (~instant) → live URL → daily mail + daily money. Only job = kickstart.
+Common law: the user's ONLY job is kickstart (link or USDC). Zero after.
