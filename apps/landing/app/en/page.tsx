@@ -106,8 +106,8 @@ const softwareApplicationLd = {
   name: 'Anicca OSS',
   applicationCategory: 'DeveloperApplication',
   operatingSystem: 'macOS, Linux',
-  url: 'https://github.com/Daisuke134/anicca-oss',
-  description: 'Open-source autonomous AI entity. Self-funding via LLM subscription, API key, or Base wallet. Daily email report. Self-replicating on cloud.',
+  url: 'https://github.com/Daisuke134/anicca',
+  description: 'Open-source autonomous AI entity. It pays for its own compute with USDC sent to a Base wallet it controls. Daily email report. Self-replicating on cloud.',
   publisher: { '@type': 'Organization', name: 'Anicca', url: SITE_URL },
 };
 

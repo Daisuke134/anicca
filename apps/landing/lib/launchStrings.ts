@@ -164,13 +164,13 @@ export const launchStrings = {
     },
 
     lm: {
-      metaTitle: 'Life Manager — Get started',
+      metaTitle: 'Life Manager: Get started',
       metaDesc:
-        'Life Manager by Anicca: connect your Google Calendar and Gmail, add your phone, and Anicca keeps you on time by call and email. $20/mo, no trial.',
+        'Life Manager: connect your Google Calendar and Gmail, add your phone, and it keeps you on time by call and email. $20/mo, no trial.',
       eyebrow: 'Life Manager · $20/mo · no trial',
       heroTitle: 'Never be late again.',
       heroBody:
-        'Sign in, connect your calendar and email, add your phone — Anicca handles travel time, calls, location asks, and late-notices. 24/7, by phone and email.',
+        'Sign in, connect your calendar and email, add your phone. Life Manager then handles travel time, calls, location asks, and late-notices. 24/7, by phone and email.',
       stepAria: (i: number, n: number) => `step ${i} of ${n}`,
       login: {
         title: 'Sign in to start',
@@ -178,7 +178,7 @@ export const launchStrings = {
         button: 'Continue with Google',
       },
       name: {
-        title: 'What should Anicca call you?',
+        title: 'What should it call you?',
         placeholder: 'Your name',
         button: 'Continue',
         error: 'Please enter your name.',
@@ -186,7 +186,7 @@ export const launchStrings = {
       },
       connect: {
         title: 'Connect your calendar & email',
-        body: 'One-click, managed OAuth via Composio. Anicca reads events and sends asks / late-notices.',
+        body: 'One click via Composio. Life Manager reads your events and sends the asks and late-notices.',
         calendar: 'Google Calendar',
         gmail: 'Gmail',
         button: 'Continue',
@@ -197,7 +197,7 @@ export const launchStrings = {
       },
       phone: {
         title: 'Your phone number',
-        body: 'Anicca calls 15 minutes before each event with route guidance.',
+        body: 'Life Manager calls 15 minutes before each event with route guidance.',
         placeholder: '+818012345678',
         button: 'Continue',
         error: 'Enter a valid phone number in E.164 form, e.g. +818012345678.',
@@ -208,31 +208,31 @@ export const launchStrings = {
         titleFallback: 'friend',
         bodyPre: 'Subscribe to activate 24/7 management. ',
         bodyStrong: '$20/mo, no trial.',
-        button: 'Subscribe — $20/mo',
+        button: 'Subscribe for $20/mo',
         notReady:
-          'Checkout is being finalized — we’ll email you the secure $20/mo link shortly.',
+          'Checkout is being finalized. We’ll email you the secure $20/mo link shortly.',
         seeDashboard: 'See my dashboard',
       },
       dashboard: {
         eyebrow: 'your life manager',
-        connectedSuffix: '— connected',
+        connectedSuffix: ', connected',
         you: 'You',
         pills: { calendar: 'Calendar', gmail: 'Gmail', phone: 'Phone' },
         skills: [
-          { title: 'Travel blocks', desc: 'Travel time auto-inserted before every event.' },
-          { title: '15-min calls', desc: 'Anicca calls before each event with route guidance.' },
+          { title: 'Travel blocks', desc: 'Travel time goes in before every event.' },
+          { title: '15-min calls', desc: 'It calls before each event with route guidance.' },
           {
             title: 'Location asks',
-            desc: 'Missing location? Anicca emails you; your reply updates the event.',
+            desc: 'No location? It emails you, and your reply updates the event.',
           },
           {
             title: 'Late-notice',
-            desc: 'Running late? Anicca drafts an attendee note; you approve, it sends.',
+            desc: 'Running late? It drafts a note to the attendees and sends once you approve.',
           },
         ],
         liveBadge: 'live',
         footnote:
-          'All four run 24/7 on Anicca’s server. Live per-event telemetry lands here next.',
+          'All four run 24/7 on its own server. Live per-event telemetry lands here next.',
       },
     },
 
@@ -480,21 +480,21 @@ export const launchStrings = {
     },
 
     lm: {
-      metaTitle: 'ライフマネージャー — はじめる',
+      metaTitle: 'ライフマネージャー：はじめる',
       metaDesc:
-        'Anicca のライフマネージャー。Google カレンダーと Gmail をつなぎ、電話番号を登録すれば、電話とメールで遅刻を防ぎます。月 $20、トライアルなし。',
+        'ライフマネージャー。Google カレンダーと Gmail をつなぎ、電話番号を登録すれば、電話とメールで遅刻を防ぐ。月 $20、トライアルなし。',
       eyebrow: 'ライフマネージャー · 月 $20 · トライアルなし',
       heroTitle: 'もう、遅刻しない。',
       heroBody:
-        'ログインして、カレンダーとメールをつなぎ、電話番号を登録するだけ。移動時間の確保、電話、場所の確認、遅刻連絡まで Anicca が引き受けます。24/7、電話とメールで。',
+        'ログインして、カレンダーとメールをつなぎ、電話番号を登録するだけ。移動時間の確保も、電話も、場所の確認も、遅刻連絡も、ライフマネージャーが引き受ける。24/7、電話とメールで。',
       stepAria: (i: number, n: number) => `ステップ ${i} / ${n}`,
       login: {
         title: 'ログインして始める',
-        body: 'ライフマネージャーが、電話とメールで遅刻を防ぎます。月 $20、トライアルなし。',
+        body: 'ライフマネージャーが、電話とメールで遅刻を防ぐ。月 $20、トライアルなし。',
         button: 'Google で続ける',
       },
       name: {
-        title: 'Anicca はあなたを何と呼べばいい？',
+        title: 'あなたを何と呼べばいい？',
         placeholder: 'お名前',
         button: '続ける',
         error: 'お名前を入力してください。',
@@ -502,7 +502,7 @@ export const launchStrings = {
       },
       connect: {
         title: 'カレンダーとメールをつなぐ',
-        body: 'Composio のマネージド OAuth でワンクリック接続。Anicca が予定を読み、確認や遅刻連絡を送ります。',
+        body: 'Composio でワンクリック接続。ライフマネージャーが予定を読んで、確認や遅刻連絡を送る。',
         calendar: 'Google カレンダー',
         gmail: 'Gmail',
         button: '続ける',
@@ -513,7 +513,7 @@ export const launchStrings = {
       },
       phone: {
         title: '電話番号',
-        body: '各予定の 15 分前に、ルートを案内する電話をかけます。',
+        body: '各予定の 15 分前に、ルートを案内する電話をかける。',
         placeholder: '+818012345678',
         button: '続ける',
         error: 'E.164 形式の有効な電話番号を入力してください（例: +818012345678）。',
@@ -524,31 +524,31 @@ export const launchStrings = {
         titleFallback: 'あなた',
         bodyPre: 'サブスクで 24/7 の管理を有効化。',
         bodyStrong: '月 $20、トライアルなし。',
-        button: 'サブスクに登録 — 月 $20',
+        button: 'サブスクに登録（月 $20）',
         notReady:
-          '決済を準備中です — 安全な月 $20 のリンクをまもなくメールでお送りします。',
+          '決済を準備中です。安全な月 $20 のリンクをまもなくメールでお送りします。',
         seeDashboard: 'ダッシュボードを見る',
       },
       dashboard: {
         eyebrow: 'あなたのライフマネージャー',
-        connectedSuffix: '— 接続済み',
+        connectedSuffix: '、接続済み',
         you: 'あなた',
         pills: { calendar: 'カレンダー', gmail: 'Gmail', phone: '電話' },
         skills: [
-          { title: '移動時間の確保', desc: '各予定の前に、移動時間を自動で挿入します。' },
-          { title: '15 分前の電話', desc: '各予定の前に、ルートを案内する電話をかけます。' },
+          { title: '移動時間の確保', desc: '各予定の前に、移動時間を自動で入れる。' },
+          { title: '15 分前の電話', desc: '各予定の前に、ルートを案内する電話をかける。' },
           {
             title: '場所の確認',
-            desc: '場所が未入力なら、Anicca がメールで確認。返信するだけで予定を更新します。',
+            desc: '場所が未入力なら、メールで確認する。返信すれば予定を更新する。',
           },
           {
             title: '遅刻連絡',
-            desc: '遅れそうなとき、出席者への一言を Anicca が下書き。あなたが承認すれば送信します。',
+            desc: '遅れそうなとき、出席者への一言を下書きする。あなたが承認すれば送る。',
           },
         ],
         liveBadge: '稼働中',
         footnote:
-          '4 つすべてが Anicca のサーバー上で 24/7 稼働。予定ごとのライブ・テレメトリは近日ここに表示されます。',
+          '4 つすべてが自分のサーバーで 24/7 動く。予定ごとのライブ・テレメトリは近日ここに表示。',
       },
     },
 
