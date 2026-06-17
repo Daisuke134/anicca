@@ -195,8 +195,8 @@ export default function DaisBody() {
           </p>
           <p className="mt-2 max-w-[60ch] text-[14px] leading-relaxed text-[hsl(var(--text-secondary))]">
             {en
-              ? 'The no-human-in-loop source: a wild anicca earns and sends USDC straight to the wallet. When this alone reaches the target, every other product becomes optional.'
-              : '完全 no-human-in-loop の源泉: 野生のアニッチャが稼ぎ、USDC を直接ウォレットへ送る。これだけで目標に届けば、他のプロダクトは全部おまけになる。'}
+              ? 'The no-human-in-loop source. A wild anicca earns and sends USDC straight to the wallet. When this alone hits the target, every other product becomes optional.'
+              : '完全 no-human-in-loop の源泉。野生のアニッチャが稼いで、USDC を直接ウォレットへ送る。これだけで目標に届けば、他のプロダクトは全部おまけになる。'}
           </p>
           <p className="mt-4">
             <Link
