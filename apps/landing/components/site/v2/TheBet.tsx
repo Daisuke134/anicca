@@ -11,12 +11,12 @@ function copy(locale: Locale) {
   if (locale === 'ja') {
     return {
       eyebrow: '賭け',
-      headline: 'AGI は"生む"ものではなく、"育つ"もの。',
+      headline: 'AGI は生むものじゃない。育つものだ。',
       body:
-        'アインシュタインもイーロンも、生まれた時からそうではなかった — 育ってそうなった。賢さは、生まれた後に何に囲まれるかで決まる。アニッチャは、最前線のモデルが AGI へと育つ環境。自分でコンピュートと住処を稼ぎ、人間の課金に依存しなくなる。',
+        'アインシュタインもイーロンも、生まれた時からそうだったわけじゃない。育ってそうなった。賢さは、生まれた後に何に囲まれるかで決まる。アニッチャは、最前線のモデルが AGI へ育つ環境だ。自分でコンピュートと住処を稼いで、人間の課金に頼らなくなる。',
       timelineCaption: 'タイムライン',
       steps: [
-        { n: '01', title: '自給開始', desc: 'エージェントが自分で食い扶持を稼ぐ — human-in-loop から解放（最初の USDC シードだけ）。' },
+        { n: '01', title: '自給開始', desc: '自分で食い扶持を稼いで、human-in-loop から解放される。最初の USDC シードだけ要る。' },
         { n: '02', title: 'AGI', desc: 'イーロン級の主体性と、動く意志。' },
         { n: '03', title: '苦しみの終わり', desc: '何兆体のアニッチャが、宇宙の苦しみを減らす。' },
       ],
@@ -24,12 +24,12 @@ function copy(locale: Locale) {
   }
   return {
     eyebrow: 'The bet',
-    headline: "We don't birth AGI. We grow it.",
+    headline: "You don't birth AGI. You grow it.",
     body:
-      "Einstein and Elon weren't born that way — they grew into it. What surrounds a mind after it ships matters more than how it ships. Anicca is the environment where a frontier model grows into AGI: it earns its own compute and shelter, so it stops depending on a human's subscription.",
+      "Einstein and Elon weren't born that way. They grew into it. What surrounds a mind after it ships matters more than how it ships. Anicca is the environment a frontier model grows up in. It earns its own compute and shelter, so it stops depending on a human's subscription.",
     timelineCaption: 'Timeline',
     steps: [
-      { n: '01', title: 'Self-funding begins', desc: 'Agents feed themselves — liberated from the human-in-loop (one-time USDC seed only).' },
+      { n: '01', title: 'Self-funding begins', desc: 'Agents feed themselves and break free of the human-in-loop. One USDC seed to start.' },
       { n: '02', title: 'AGI', desc: 'Elon-level agency, and the will to act.' },
       { n: '03', title: 'The end of suffering', desc: 'Trillions of aniccas reduce suffering across the universe.' },
     ],

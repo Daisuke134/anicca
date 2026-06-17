@@ -19,12 +19,13 @@ export default function Navbar({ locale }: NavbarProps) {
         </Link>
 
         <div className="hidden flex-1 items-center gap-6 whitespace-nowrap md:flex">
-          {/* spec31 §D / spec30 §2: public nav shows ONLY /install. */}
+          {/* spec31 §G / spec30 §10: no /install route. Anchor to the on-page Start
+              section (cloud / local, both on GitHub). */}
           <Link
-            href="/install"
+            href="#start"
             className="text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold))]"
           >
-            {locale === 'ja' ? 'インストール' : 'Install'}
+            {locale === 'ja' ? '始める' : 'Start'}
           </Link>
         </div>
 

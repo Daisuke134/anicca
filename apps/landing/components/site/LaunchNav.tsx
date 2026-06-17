@@ -15,11 +15,10 @@ import { launchStrings } from '@/lib/launchStrings';
 // Accept-Language). It MUST render inside a <LaunchLocaleProvider> (provided by
 // <LaunchFrame>).
 
-// spec31 §D / spec30 §2: public launch nav shows ONLY /install. /me is private
-// (post-login redirect only); /dashboard removed; /life-manager moved under /dais.
-const ROUTE_KEYS = [
-  { href: '/install', key: 'install' },
-] as const;
+// spec31 §G / spec30 §10: no anicca web app, no /install, no /me login. The launch
+// surfaces (/lm /life-manager /dais /how-to-cash-out) share only the brand + locale
+// toggle; "getting started" lives on the home (#start → GitHub).
+const ROUTE_KEYS: ReadonlyArray<{ href: string; key: 'install' | 'me' | 'dashboard' | 'lifeManager' }> = [];
 
 const LINK_CLASS =
   'text-sm text-[hsl(var(--text-secondary))] transition-colors hover:text-[hsl(var(--text-primary))] ' +

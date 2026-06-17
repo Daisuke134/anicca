@@ -5,29 +5,30 @@ import { CTA } from '@/components/site/taste';
 
 export function InstallSplit({ locale }: { locale: 'en' | 'ja' }) {
   const reduce = useReducedMotion();
+  const REPO = 'https://github.com/Daisuke134/anicca';
   const labels =
     locale === 'ja'
       ? {
-          title: '使い始める二つの道',
-          cloudTitle: 'クラウドで起動',
-          cloudBody: 'Claude Code か Cursor に install プロンプトをペーストするだけ。サーバーは Anicca が建てる。',
-          cloudCta: '/install に進む',
-          localTitle: 'ローカルでクローン',
-          localBody: 'github.com/Daisuke134/anicca-oss を clone して INSTALL_BOOTSTRAP.md に従う。全部自分のマシン上で動く。',
-          localCta: 'GitHub を開く',
+          title: '動かす',
+          cloudTitle: 'クラウドで動かす',
+          cloudBody: 'Akash 上に住処を借りる。ウォレットに USDC を入れれば、あとは自分で動き続ける。手順は GitHub に。',
+          cloudCta: 'GitHub の手順',
+          localTitle: '手元で動かす',
+          localBody: '自分のマシンで動かす。clone して install.sh を走らせるだけ。鍵もデータも手元に残る。手順は GitHub に。',
+          localCta: 'GitHub の手順',
         }
       : {
-          title: 'Two ways in',
+          title: 'Run it',
           cloudTitle: 'Run on cloud',
-          cloudBody: 'Paste one install prompt into Claude Code or Cursor. Anicca spins up its own server.',
-          cloudCta: 'Open /install',
-          localTitle: 'Clone locally',
-          localBody: 'Clone github.com/Daisuke134/anicca-oss and follow INSTALL_BOOTSTRAP.md. Runs entirely on your machine.',
-          localCta: 'Open GitHub',
+          cloudBody: 'Rent shelter on Akash. Put USDC in its wallet and it keeps itself running. Steps on GitHub.',
+          cloudCta: 'Steps on GitHub',
+          localTitle: 'Run locally',
+          localBody: 'Run it on your own machine. Clone, run install.sh. Your keys and data stay with you. Steps on GitHub.',
+          localCta: 'Steps on GitHub',
         };
 
   return (
-    <section className="w-full px-4 py-16 md:py-24">
+    <section id="start" className="w-full px-4 py-16 md:py-24 scroll-mt-20">
       <div className="mx-auto max-w-[1400px]">
         <motion.h2
           initial={reduce ? false : { y: 12 }}
@@ -40,8 +41,8 @@ export function InstallSplit({ locale }: { locale: 'en' | 'ja' }) {
         </motion.h2>
         <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-6">
           {[
-            { t: labels.cloudTitle, b: labels.cloudBody, href: '/install', cta: labels.cloudCta, tint: true, external: false },
-            { t: labels.localTitle, b: labels.localBody, href: 'https://github.com/Daisuke134/anicca-oss', cta: labels.localCta, tint: false, external: true },
+            { t: labels.cloudTitle, b: labels.cloudBody, href: REPO, cta: labels.cloudCta, tint: true, external: true },
+            { t: labels.localTitle, b: labels.localBody, href: REPO, cta: labels.localCta, tint: false, external: true },
           ].map((c, i) => (
             <motion.div
               key={c.t}
