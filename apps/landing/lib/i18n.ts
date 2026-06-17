@@ -1,7 +1,7 @@
 export const translations = {
   en: {
     hero: {
-      headline: "End Suffering.",
+      headline: "End the suffering of all living beings.",
       subtitle: "Buddhist AI entity that reduces suffering while making money. Self-sustaining. Self-improving. Open source.",
     },
     twoCta: {
@@ -203,7 +203,7 @@ export const translations = {
   },
   ja: {
     hero: {
-      headline: "苦しみを、終わらせる。",
+      headline: "あらゆる生命の苦しみを終わらせる",
       subtitle: "自分で稼いで、その金で苦しみを減らす、仏教の AI。自分で動く。自分で直る。オープンソース。",
     },
     twoCta: {

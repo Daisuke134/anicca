@@ -22,6 +22,15 @@ export default function Footer({ locale }: FooterProps) {
             <p className="font-bold text-foreground">Anicca</p>
 
             <div className="mt-4 flex flex-wrap justify-center gap-4 text-sm text-muted-foreground">
+              {/* spec31 §D/§E: surface /dais hub + cash-out guide (not in top nav) */}
+              <Link href="/dais" className={LINK_CLASS}>
+                {locale === 'ja' ? 'Dais のプロダクト' : "Dais's products"}
+              </Link>
+              <span aria-hidden="true">|</span>
+              <Link href="/how-to-cash-out" className={LINK_CLASS}>
+                {locale === 'ja' ? '現金化ガイド' : 'How to cash out'}
+              </Link>
+              <span aria-hidden="true">|</span>
               {/* §11.F legal link hrefs + labels preserved */}
               <Link href={`/privacy/${locale}`} className={LINK_CLASS}>
                 {t.privacy}

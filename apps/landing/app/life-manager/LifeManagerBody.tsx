@@ -161,7 +161,9 @@ export default function LifeManagerBody() {
               <p className="mt-1 text-xs text-[hsl(var(--text-secondary))]">{t.cardGetStartedDesc}</p>
             </a>
             <a
-              href="/dashboard"
+              href="https://github.com/Daisuke134/anicca"
+              target="_blank"
+              rel="noopener noreferrer"
               className="block rounded-card border border-[hsl(var(--border))] bg-[hsl(var(--surface))] p-5 transition-colors hover:bg-[hsl(var(--surface-elevated))]"
             >
               <p className="text-xs uppercase tracking-widest text-[hsl(var(--text-secondary))]">{t.cardColonyEyebrow}</p>

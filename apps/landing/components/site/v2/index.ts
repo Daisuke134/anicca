@@ -8,3 +8,4 @@ export { InstallSplit } from './InstallSplit';
 export { DemoVideo } from './DemoVideo';
 export { BasicIncomeNote } from './BasicIncomeNote';
 export { VisionBand } from './VisionBand';
+export { TheBet } from './TheBet';
