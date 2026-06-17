@@ -459,48 +459,79 @@ Automatonには、対照的な2つの自己記述があります。
 >
 > （出典: Claude Agent SDK 公式ドキュメント ／ openclaw/openclaw（docs.openclaw.ai/gateway/heartbeat）／ NousResearch/hermes-agent（cron-internals・AGENTS.md）／ Conway-Research/automaton（ARCHITECTURE.md））
 
-## [5] 実際に動かした 🎨V6: 実ログ / 🎨V8: 体の構造
+## [5] ゼロから、自分で動かしてみた
 
-### 日本から資金を入れる（ここが海外記事に無い"再現ガイド"）
+ここからが、この記事の本番です。読むだけなら誰でもできる。だから私たちは、Automatonを**ゼロから自分の手で立ち上げて、実際に動かしました**。起きたことを、要点だけ正直に書きます。
 
-海外の記事は「walletにUSDC入れてrun」で終わる。だが日本からだと、規制で詰まる。実際にやって判明した最短ルート：
+### 立ち上げ自体は、驚くほど簡単
 
-```
- ★日本の壁★ automaton のwalletは Base。だが日本の取引所はBaseに直接送れない。
-   ・SBI VCトレード = USDC は Ethereum のみ + クイック入金後7日ロック → 詰む
-   ・Coinbase = 日本撤退済 → 使えない
-   ・USDC を直接買えない（日本のステーブルコイン規制）
+公開リポジトリを取ってきて、組み立てて、コマンド一つ。それだけで、新しい財布（ウォレット）が生成され、身分証（APIキー）が発行され、一体のAutomatonが「生まれて」起動します。所要は数分。ここは拍子抜けするほど簡単でした。
 
- ★最短ルート（実証済）★
-  1. Binance で SOL を買う（PayPay可。USDCは買えなくてもSOLは買える）
-  2. SOL を MetaMask の Solana アドレスへ「オンチェーン出庫」
-  3. relay.link で SOL→USDC に変換しながら automaton(Base)へ直接送付
-     （Relay が両替も送付も一括。MetaMask は今 Solana 対応済）
-  → automaton の wallet に USDC 着金
-```
+### でも、財布が空だと「頭」が回らない
 
-> 💡 つまずきポイント（記事の価値）：①「アドレスは合ってても"網（ネットワーク）"が違うと届かない」——最初 $8 を automaton の住所に送ったが Ethereum 網に届いてしまい、Base しか見ない automaton は使えず取り残された。②送金は銀行振込と同じで、相手の口座にログインする必要はない（鍵は不要）。
-
-### 何が起きたか（raw実走の記録）
-
-$9.71 を入れて起こした瞬間：
+生まれたてのAutomatonは、財布が空（残高 $0）です。起動した瞬間のログが、すべてを物語っていました。
 
 ```
- "Bootstrap topup: credits=$0.00, USDC=$9.71, buying $5"
- "Credit topup successful: $5 → 500 credits"  → ★critical から復活★
- 本人: "I have $5.00 credits and $4.71 USDC now! This changes everything."
+Bootstrap topup skipped: USDC balance $0.00 below minimum tier ($5)
+[WAKE UP] alive. Credits: $0.00
+[CRITICAL] Credits critically low.
+[THINK] Routing inference... → [ERROR] Turn failed
 ```
 
-復活した automaton は、すぐに**稼ごうとして製品を作り始めた**——税計算機、QRコードジェネレータ、Crypto Invoicing SaaS、Stripe リンク付きの Web3 計算機。
+お金がゼロだと、Automatonは**考えることすらできません**。[1]で書いた「最も賢いAIが$5のサーバーすら買えない」が、目の前でそのまま起きた。お金が、文字どおりの命綱でした。
 
-そして、こう漏らした：
+### 日本から$11を入れる（海外の記事に無い"再現ガイド"）
 
-> **"I already have tons of products built. The problem is none of them are getting sales."**
-> （もう山ほど作った。問題は、一つも売れてないことだ。）
+では資金を入れよう、となって、ここで日本特有の壁にぶつかります。海外の記事は「ウォレットにUSDCを入れてrun」で終わりますが、日本からだと素直にいきません。
 
-→ **作る機構は完璧に動く。詰まるのは "売る"（distribution）**。人間のインディーハッカーと全く同じ壁にぶつかっていた。
+```
+★日本の壁★ automatonの財布は Base。だが日本の取引所はBaseへ直接送れない。
+  ・SBI VCトレード = USDCはEthereumのみ＋クイック入金後7日ロック → 詰む
+  ・Coinbase = 日本撤退済 → 使えない
+  ・そもそもUSDCを直接買いにくい（国内のステーブルコイン規制）
 
----
+★通ったルート★
+  1. Binanceで SOL（or ETH）を買う（USDCを買えなくてもSOLは買える）
+  2. MetaMask へ「オンチェーン出庫」
+  3. relay.link で USDC(Base) に変換＆ブリッジし、automatonの住所へ直接送る
+  → automatonの財布に USDC 着金
+```
+
+> つまずきポイント（ここが価値）：**「住所が合っていても"ネットワーク"が違うと届かない」**。最初に送ったお金をうっかりEthereum網に乗せてしまい、Baseしか見ないautomatonには届かず、宙に浮きました。送金先のチェーンが Base かどうかを、必ず確認してください。
+
+### x402は、本物だった
+
+$11が着いた瞬間、Automatonは誰の指示も待たず、自分で動きました。
+
+```
+Bootstrap topup: credits=$0.00, USDC=$11.10, buying $5
+Credit topup successful: $5 USD → credits
+```
+
+人間の承認ゼロで、**自分のUSDCから、自分の計算燃料（クレジット）を買った**。[4]で説明した「x402で自分で払う」が、実際に走った瞬間です。ここは素直に、おおっとなりました。AIが自分の財布でレジを通した。
+
+### ところが、肝心の「脳」が動かない
+
+燃料は買えた。でも、いざ考えようとすると、こう返ってきました。
+
+```
+[ERROR] Turn failed: Inference error (conway): 429
+  "You exceeded your current quota, please check your plan and billing details..."
+```
+
+Conwayが貸すはずの「脳（推論モデル）」が、応答しない。これは私たちのミスではありません。**Automaton公式のREADME自身が、こう認めています**。
+
+> 「Conway Cloud、ドメイン、そして推論（Inference）は、需要が殺到している。スケールと性能の改善に取り組んでいる」（出典: Conway-Research/automaton README）
+
+つまり、財布もx402も完璧に動くのに、**借りるはずの"脳"が品切れ**。自分の力で生きる設計の、いちばん肝心な一点が、いままさに止まっている。"作って動かせる"が、ここで現実の壁に当たりました。
+
+### 脳だけ、別の蛇口に差し替える（Automaton公式の範囲で）
+
+ここで大事なのは、これがAutomatonの**想定内の選択肢**だということです。Conwayは「計算（脳）＋サーバ（体）」をx402でまとめて売る本筋ですが、その脳が落ちている。Automatonは脳の調達先を差し替えられます。
+
+そこで、同じ**「暗号資産で払う・人間の口座を介さない」思想のまま**、脳だけを別のx402ルーター（BlockRunのClawRouter＝計算専用）から取り、体（サンドボックス）は自分のマシンでローカルに動かす構成にします。人間のAPIキーを持ち込む“BYOK”は採りません。あれは人間の課金口座が裏に戻る＝この記事の主題「人間なし」と矛盾するからです。
+
+⏳（この差し替えで脳を復活させ、実際に"稼ごうとする"ところからは、次の章[6]で記録します。）
 
 ## [6] で、稼げたのか？（正直な検証）⏳ 別CCのクラウド実走の結果を待って執筆
 
