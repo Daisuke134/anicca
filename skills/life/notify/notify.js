@@ -63,6 +63,17 @@ const GOG_ACCOUNT = process.env.GOG_ACCOUNT || ENV.GOG_ACCOUNT || "redacted@exam
 const GOG_KEYRING_PASSWORD = process.env.GOG_KEYRING_PASSWORD || ENV.GOG_KEYRING_PASSWORD || "";
 const GCAL_ID = process.env.GCAL_ID || ENV.GCAL_ID || "primary";
 
+// Late detection: a grace window so we don't nag the instant the travel block starts, plus a real
+// motion gate (if the user already left home, they are NOT late). Falls back to grace+clock when
+// no live location is available.
+const GRACE_MS = Number(process.env.LIFE_LATE_GRACE_MIN || ENV.LIFE_LATE_GRACE_MIN || 5) * 60000;
+const HOME = {
+  lat: Number(process.env.HOME_LAT || ENV.HOME_LAT || 35.67988),
+  lon: Number(process.env.HOME_LON || ENV.HOME_LON || 139.723692),
+};
+let locate = null;
+try { locate = require("../locate/locate"); } catch { /* motion gate optional */ }
+
 // Transport: "agentmail" (default, legacy) or "gog" (Gmail via gog CLI — spec mandate).
 const NOTIFY_TRANSPORT = (process.env.NOTIFY_TRANSPORT || ENV.NOTIFY_TRANSPORT || "agentmail").toLowerCase();
 // Safety: when set, EVERY stakeholder send is redirected here (round-trip test without
@@ -128,8 +139,9 @@ function isTravelBlock(summary) {
  * @param {{ travelStartMs: number, nowMs: number }} opts
  * @returns {boolean}
  */
-function isLateRisk({ travelStartMs, nowMs }) {
-  return nowMs > travelStartMs;
+function isLateRisk({ travelStartMs, nowMs, graceMs = GRACE_MS, moved = false }) {
+  if (moved) return false;                       // they already left → not late, never nag
+  return nowMs > travelStartMs + graceMs;        // only after the grace window, not the instant it starts
 }
 
 /**
@@ -160,7 +172,13 @@ function detectLateRiskEvents(events, nowMs) {
     if (!travelBlock) continue;
 
     const travelStartMs = new Date(travelBlock.start.dateTime).getTime();
-    if (isLateRisk({ travelStartMs, nowMs })) {
+    // real motion gate: if a fresh live location shows the user already left home, they're not late
+    let moved = false;
+    try {
+      const live = locate && locate.readLiveLocation ? locate.readLiveLocation() : null;
+      moved = !!(live && locate.hasMoved(HOME, live));
+    } catch { /* no live location → fall back to grace+clock */ }
+    if (isLateRisk({ travelStartMs, nowMs, moved })) {
       risks.push({ event: e, travelEvent: travelBlock, isLate: true });
     }
   }
@@ -232,10 +250,9 @@ function extractApproval(replyBody) {
   if (typeof replyBody !== "string") return false;
   const trimmed = replyBody.trim();
   const lower = trimmed.toLowerCase();
-  if (lower === "ok" || lower.startsWith("ok!") || lower.startsWith("ok,") || lower.startsWith("ok ")) {
-    return true;
-  }
-  if (trimmed === "はい" || trimmed.startsWith("はい")) return true;
+  // accept a realistic approval vocabulary (EN + JA), at the start of the reply
+  if (/^(ok\b|okay\b|yes\b|yep\b|go\b|sure\b|approve)/.test(lower)) return true;
+  if (/^(はい|うん|いいよ|了解|承知|送って|送信|おk|オッケー|オーケー|ヨシ|よし|お願い)/.test(trimmed)) return true;
   return false;
 }
 
