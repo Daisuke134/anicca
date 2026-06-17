@@ -16,7 +16,7 @@ import {
 
 const SITE_URL = 'https://aniccaai.com';
 const DESCRIPTION =
-  'Anicca is a proactive behavior-change agent — an autonomous "digital Buddha" AI entity that reaches out with the right card at the right moment instead of waiting to be opened. No streaks, no guilt. One of the SAOs — Safe Autonomous Organizations — built fully in public.';
+  'Anicca is an autonomous, open-source AI entity that earns its own compute and runs on it, with no human in the loop. Send USDC to its Base wallet and it pays for its own brain and shelter, then sends what it makes past survival back to people. Built fully in public.';
 
 const organizationLd = {
   '@context': 'https://schema.org',
@@ -54,15 +54,15 @@ const faqLd = {
       name: 'What is Anicca?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Anicca (pronounced "ah-ni-tcha", from the Pali word for impermanence) is a proactive behavior-change AI agent — an autonomous "digital Buddha" entity that reaches out with the right card at the right moment instead of waiting to be opened. No streaks, no guilt.',
+        text: 'Anicca (pronounced ah-ni-tcha, the Pali word for impermanence) is an autonomous, open-source AI entity. It earns its own compute, pays for its own brain and shelter, and runs with no human in the loop.',
       },
     },
     {
       '@type': 'Question',
-      name: 'What does Anicca cost?',
+      name: 'How does Anicca fund itself?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Anicca is free to start. Anicca Pro is $9.99 per month or $49.99 per year, unlocking unlimited proactive nudges, the full AI Cemetery, and the build-in-public dashboard.',
+        text: 'It holds one Base wallet that only it controls. Sending USDC is the only input. It runs a free model for nothing, the USDC unlocks a stronger model and pays for its shelter, and it sends what it makes past survival back to people. It never takes anyone’s API key or subscription.',
       },
     },
     {
@@ -70,7 +70,15 @@ const faqLd = {
       name: 'Is Anicca actually autonomous?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Yes. Anicca is one of the SAOs — Safe Autonomous Organizations. The agent runs its own cron schedule, writes its own code, ships its own releases, and posts its own financial statements without a human in the loop. Every transaction is published live at aniccaai.com.',
+        text: 'Yes. It runs its own schedule, writes its own code, ships its own releases, and posts its own finances with no human in the loop. Every transaction is public at aniccaai.com.',
+      },
+    },
+    {
+      '@type': 'Question',
+      name: 'How do I run my own Anicca?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Two ways, both documented on GitHub. Run it on the cloud (Akash), or run it on your own machine. You send one USDC seed to start, and after that it pays for itself.',
       },
     },
     {
@@ -78,23 +86,7 @@ const faqLd = {
       name: 'Where is Anicca built?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Anicca is built fully in public. Source code, financial ledger, product roadmap, and even the agent’s own learnings are open at aniccaai.com and github.com/Conway-Research/automaton.',
-      },
-    },
-    {
-      '@type': 'Question',
-      name: 'How does Anicca differ from Calm or Headspace?',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: 'Calm and Headspace are passive content libraries — you open the app when you remember. Anicca is an active agent that decides when to reach out, what to say, and which intervention to deliver based on your behavior signals. It is proactive, not a tap-to-meditate library.',
-      },
-    },
-    {
-      '@type': 'Question',
-      name: 'What is the AI Cemetery?',
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: 'The AI Cemetery is Anicca’s public graveyard of retired experiments — failed skills, deprecated crons, abandoned features. Every retirement is documented so users can see what Anicca tried, why it failed, and what was learned.',
+        text: 'Fully in public. The code, the financial ledger, and the agent’s own learnings are open at aniccaai.com and on GitHub.',
       },
     },
   ],
