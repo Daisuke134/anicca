@@ -36,15 +36,6 @@
 const path = require("path");
 const { spawnSync } = require("child_process");
 
-// Resolve the products-repo working tree from env (ANICCA_PRODUCTS) or the conventional
-// sibling checkout. This skill body stays tiny; the heavy, tested code lives in products.
-function productsRoot() {
-  const env = process.env.ANICCA_PRODUCTS;
-  if (env) return env;
-  const home = process.env.HOME || require("os").homedir();
-  return path.join(home, "anicca-project");
-}
-
 /** Map a provider name to its in-repo runner (consolidated into skills/life/call/lib). */
 function runnerFor(provider) {
   const lib = path.join(__dirname, "lib");
@@ -73,7 +64,7 @@ function placeCall(opts = {}) {
   return r.status == null ? 1 : r.status;
 }
 
-module.exports = { placeCall, runnerFor, productsRoot };
+module.exports = { placeCall, runnerFor };
 
 // CLI: parse --provider/--to/--dry-run and place the call.
 if (require.main === module) {
