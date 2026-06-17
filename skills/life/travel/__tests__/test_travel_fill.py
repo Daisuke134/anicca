@@ -51,6 +51,29 @@ def test_enqueue_ask_dedupes_same_event_reason():
         assert len(rows) == 1
 
 
+def test_pair_decision_unknown_prev_asks_PREV_not_curr():
+    # the unknown one is PREV → must ask about prev, not curr (the wrong-event bug)
+    assert tf.pair_decision(None, "unknown", "渋谷", "explicit") == ("ask_prev", "unknown_location")
+
+
+def test_pair_decision_unknown_curr_asks_curr():
+    assert tf.pair_decision("自宅", "explicit", None, "unknown") == ("ask_curr", "unknown_location")
+
+
+def test_pair_decision_both_known_ok():
+    assert tf.pair_decision("自宅", "explicit", "渋谷", "geocoded") == ("ok", None)
+
+
+def test_enqueue_ask_tolerates_corrupt_line():
+    with tempfile.TemporaryDirectory() as d:
+        q = Path(d) / "life-ask-queue.jsonl"
+        q.write_text('{"eventId":"a"  CORRUPT half line\n')  # a crashed half-write
+        ev = {"id": "b", "summary": "x"}
+        tf.enqueue_ask(ev, "no_route", queue_path=q)  # must not raise on the corrupt line
+        rows = [l for l in q.read_text().splitlines() if l.strip()]
+        assert any('"eventId": "b"' in l for l in rows)
+
+
 if __name__ == "__main__":
     import traceback
     fns = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
