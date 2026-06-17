@@ -75,11 +75,36 @@ Future expansion of LM (give more context → more it can do): phone/gcal/gmail/
 | 8 | aliens / off-earth | symbolic **cosmic-fund escrow** / broadcast until a rail exists | n/a (honest placeholder) | v2 |
 **Honest core:** wallets (4,6) + we-mint-wallet (5) = truly no-human-in-loop. Anything touching fiat/identity (1,2,3) needs a one-time recipient action (claim/KYC) = a human bridge. Full universality (no-bank, no-phone, no-wallet) ultimately needs a claim step or a human/NGO distributor — state this, don't fake "reaches literally everyone with zero action."
 
-### §6b UBI build (commands/patches)
-- `P-ubi-wallet` (v1): direct USDC to a recipient wallet list (DONE — `lib/ubi.mjs` + `distribute-ubi.mjs`, anicca repo). Extend the recipient set to include the **starter wallet** (utility split) + human/AI allow-list.
-- `P-ubi-claim` (v1): send a **claim link** (email/phone) → mint an embedded wallet (Circle/Privy/Coinbase) → recipient claims. Covers 1,2,3,5 with one action.
-- `P-ubi-offramp` (v1): USDC→bank/card via **Circle Payments / Bridge.xyz**; USDC→mobile-money via **Kotani/Fonbnk**. Recipient provides destination once.
-- `P-ubi-broadcast` (v2): animals (sanctuary earmark) + aliens (cosmic escrow). Plan now, ship next week.
+### §6b UBI build — REAL rails (researched 2026-06-17, firecrawl + provider llms.txt)
+Split confirmed by Dais: **10% → starter wallet/bank** · **10% → universal UBI** · 80% → runway + self-replication.
+
+- `P-ubi-wallet` (v1, DONE base): direct USDC on Base to a wallet list (`lib/ubi.mjs` + `distribute-ubi.mjs`). Extend recipients to include the **starter** (the 10% utility split) + an AI/human wallet allow-list. Covers **cat 4 (has wallet) + 6 (AI has wallet)** — pure no-human-in-loop.
+- `P-ubi-claim` (v1) — **Crossmint** "send USDC to an email/phone" — covers **cat 1,2,3,5** with ONE recipient action:
+  - `POST https://www.crossmint.com/api/2022-06-09/wallets` — create a non-custodial wallet keyed by `email:<recipient>` (or `phoneNumber:`), email-OTP recovery. (`docs.crossmint.com/agents/payment-methods/stablecoin-wallets/create-user-wallet`)
+  - `POST .../wallets/{walletLocator}/transactions` (Transfer Tokens) — send USDC to that wallet. (`/wallets/guides/transfer-tokens`)
+  - recipient gets an email → claims via email-OTP → wallet is theirs (hold, or off-ramp). Header `X-API-KEY` (server key; staging USDXM token for QA). **cat 5 (AI no wallet)** = identical: mint wallet, hand the agent the signer.
+- `P-ubi-offramp` (v1) — fiat for the unbanked/banked:
+  - **Bridge.xyz** (Stripe-owned) USDC→**bank** (virtual accounts: USD/EUR/MXN local bank details) + USDC→**card** (Visa stablecoin-backed). `apidocs.bridge.xyz/api-reference`. → **cat 2,3**. Recipient KYC once.
+  - **Kotani Pay** USDC(Base)→**mobile money** (M-Pesa etc., no bank): `POST /reference/mobilemoneycustomercontroller_createcustomer` (by phone) → `POST /reference/offrampcontroller_createofframp` (auto-refund on fail after 5min). → **cat 1**. BASE USDC confirmed supported.
+- `P-ubi-broadcast` (v2, next week): **cat 7 animals** = earmarked USDC to a sanctuary/caretaker org wallet (a verified shelter's Crossmint/Stripe). **cat 8 aliens** = honest cosmic-fund escrow (hold USDC in a labeled wallet until a rail exists). Plan now, ship next week.
+
+**Honest core (state this, don't fake):** cat 4,6 = pure no-human-in-loop. cat 5 = we mint, still no-human. cat 1,2,3 = one recipient action (email claim / phone / KYC) — a human bridge. "Reaches literally everyone with zero action" is impossible; the email/phone claim link (Crossmint) is the closest universal rail.
+
+## §10 BUILD ORDER (Dais 2026-06-17 — step by step, finish ONE before the next, E2E each, no slop)
+1. **Life Manager — LOCAL first.** Make it actually run Dais's life so he's never late (寝坊/夜更かし/遅刻/連絡漏れ卒業). name+phone+gcal+(opt)location → auto-register travel time on every event → ask when location unknown → **call 15min before the next event (incl travel) in his language, guide the route, prompt action** → if late, contact stakeholder after he approves the reply draft. Reuse the WORKING Telnyx+Gemini call (task #2 done) + `life-ask/life-notify/life-travel`. **E2E = it calls Dais's real number and he acts on it.**
+2. **Life Manager — WEB app** (same experience for everyone) → **LAUNCH on X + Slack** (copy drafted). aniccaai.com/life-manager + OSS "Life Manager Skill" (drops into any AI).
+3. **aniccaai.com rebuild** — vision copy + path routing + messages, per §0/§2 (/dais hub, remove alarm).
+4. **Anicca — LOCAL (Franklin-style) + CLOUD (akash CLI).** Put **$10 in each**, measure real earnings. **NO /install, NO anicca web app** (see DECISION). → article on anicca + post X/Slack → make a **Luma/connpass "make-money hackathon" site** + post on X → **demo video (Japanese) for AI Tinkerers Tokyo TOMORROW** — a real DEMO, not a presentation.
+5. **UBI** (§6) wired into the earning anicca once it earns.
+
+### DECISION 2026-06-17 — Anicca WEB APP = likely CUT (Dais leaning no)
+The web-app logic (Stripe → Dais's bank → auto-forward to a fresh Base wallet → a new anicca is born) is **strange + has human-in-loop + an ownership problem** (no anicca should be owned/controlled by anybody). If we hand the user USDC instead, they'd rationally just use the **OSS one-command self-spawn** (put USDC in, it's theirs, nobody owns it). So the clean path = **OSS self-spawn only** for anicca; the web app likely does NOT ship. (Tasks #23/#24 = parked pending Dais's final call.) Revenue then = LM subs + articles + aniccaios + (ideal) anicca UBI to Dais's wallet — NOT an anicca web subscription.
+
+## §11 PARALLELIZATION — agent teams vs separate sessions (honest)
+The §10 steps are **mostly sequential + share the same repos** (`apps/landing`, `~/anicca`), so fanning agents across steps = merge conflicts = slop. Rule:
+- **Across steps = SEQUENTIAL.** Finish + E2E one before the next.
+- **Within a step = parallel ONLY on non-overlapping files**, orchestrated by ONE driver (agent teams: me managing + agents reporting back) — NOT uncoordinated separate sessions on the same files. e.g. the LM step splits into (a) Telnyx/Gemini call loop, (b) onboarding UI, (c) Composio gcal/gmail wiring, (d) travel-time logic — different files, safe to parallelize; I integrate.
+- Separate CC sessions (Dais pastes prompts) = fine ONLY for a fully isolated repo/worktree; otherwise coordinated agent teams is better.
 
 ## §7 Revenue model (Dais's 10k/mo, no salary, to quit the job)
 | source | target | human-in-loop? |
