@@ -277,6 +277,16 @@ def plan_action(kind, travel_min):
     return ("insert", travel_min)
 
 
+def pair_decision(prev_addr, prev_kind, curr_addr, curr_kind):
+    """Which event (if any) needs an ASK before we can route prev→curr.
+    Asks about the ACTUALLY-unknown event (fixes asking about curr when prev was the unknown one)."""
+    if not prev_addr or prev_kind == "unknown":
+        return ("ask_prev", "unknown_location")
+    if not curr_addr or curr_kind == "unknown":
+        return ("ask_curr", "unknown_location")
+    return ("ok", None)
+
+
 def enqueue_ask(event, reason, queue_path=None):
     """Queue a question to the user (the ask subsystem mails it). Dedup by (eventId, reason)."""
     import time
@@ -296,8 +306,13 @@ def enqueue_ask(event, reason, queue_path=None):
                 return  # already queued
     row = {"eventId": eid, "summary": (event or {}).get("summary", ""),
            "reason": reason, "ts": int(time.time())}
-    with q.open("a") as f:
-        f.write(json.dumps(row, ensure_ascii=False) + "\n")
+    try:
+        with q.open("a") as f:
+            f.write(json.dumps(row, ensure_ascii=False) + "\n")
+            f.flush()
+            os.fsync(f.fileno())
+    except OSError as e:
+        print(f"[fill] enqueue_ask write failed: {e}", file=sys.stderr)
 
 
 def main():
@@ -318,17 +333,24 @@ def main():
         if key in state:
             summary["skipped_existing"] += 1
             continue
-        prev_addr, _ = resolve_event_location(prev)
+        prev_addr, prev_kind = resolve_event_location(prev)
         curr_addr, kind = resolve_event_location(curr)
-        if not (prev_addr and curr_addr) or kind == "unknown":
-            enqueue_ask(curr, "unknown_location")  # ASK, never silently skip
+        verdict, ask_reason = pair_decision(prev_addr, prev_kind, curr_addr, kind)
+        if verdict != "ok":
+            enqueue_ask(prev if verdict == "ask_prev" else curr, ask_reason)  # ask the RIGHT event
+            state[key] = "asked"  # record so we don't re-geocode / re-ask every run (cleared on reply)
             summary["skipped_unknown"] += 1
             continue
         p_geo = geocode(prev_addr)
         c_geo = geocode(curr_addr)
         d = haversine_m(p_geo, c_geo) or 0
         if d < MIN_DIST_M:
-            summary["skipped_same_loc"] += 1
+            if kind == "geocoded":  # a coarse title-geocode near prev is not proof of co-location → ask
+                enqueue_ask(curr, "uncertain_location")
+                state[key] = "asked"
+                summary["skipped_unknown"] += 1
+            else:
+                summary["skipped_same_loc"] += 1
             continue
         gap_min = (curr["start"] - prev["end"]).total_seconds() / 60
         if gap_min < MIN_GAP_MIN:
@@ -343,6 +365,7 @@ def main():
         action, reason = plan_action(kind, travel_min)
         if action == "ask":
             enqueue_ask(curr, reason)  # route unknown → ASK, never guess a fixed 45 min
+            state[key] = "asked"  # don't re-call Directions every run; cleared on reply
             summary["skipped_unknown"] += 1
             continue
         travel_min = min(travel_min, int(gap_min))
