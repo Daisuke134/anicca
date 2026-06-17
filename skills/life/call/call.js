@@ -73,7 +73,14 @@ function placeCall(opts = {}) {
   if (opts.event) args.push(`--event=${JSON.stringify(opts.event)}`);
   if (opts.urgency) args.push(`--urgency=${opts.urgency}`);
   if (opts.dryRun) args.push("--dry-run");
-  const r = spawnSync("node", args, { stdio: "inherit", env: process.env });
+  // Capture the runner's full output to a log so a GATEWAY-context call is debuggable
+  // (the gateway exec doesn't surface stdout). Also tee to our own stdout.
+  const logPath = path.join(process.env.HOME || "/root", ".openclaw", "state", "life-call.log");
+  let logFd = null;
+  try { fs.mkdirSync(path.dirname(logPath), { recursive: true }); logFd = fs.openSync(logPath, "a"); } catch { /* logging optional */ }
+  if (logFd != null) fs.writeSync(logFd, `\n===== ${new Date().toISOString()} call to=${opts.to || "default"} urgency=${opts.urgency || "-"} PATH=${process.env.PATH || ""} TELNYX=${process.env.TELNYX_API_KEY ? "y" : "n"} GEMINI=${process.env.GEMINI_API_KEY ? "y" : "n"} =====\n`);
+  const r = spawnSync("node", args, { stdio: ["ignore", logFd != null ? logFd : "inherit", logFd != null ? logFd : "inherit"], env: process.env });
+  if (logFd != null) { try { fs.writeSync(logFd, `===== exit ${r.status} =====\n`); fs.closeSync(logFd); } catch { /* */ } }
   return r.status == null ? 1 : r.status;
 }
 
