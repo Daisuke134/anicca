@@ -53,13 +53,15 @@ function buildQuestionEmail(row) {
     `「${s}」${why}。\nこの予定はどこで行われますか？ 駅名や住所をこのメールに返信してください。\n\nEvent ID: ${row.eventId}`;
   return { subject, body };
 }
+const GREETING = /^(はい|うん|ok|okay|yes|了解|わかりました|承知|ありがとう|どうも|thanks?|thank you)[!！。.、,\s]*$/i;
 function parseReply(subject, body) {
   const m = /\[ASK-([^\]]+)\]/.exec(subject || "");
   if (!m) return null;
   let location = "";
   for (const line of (body || "").split("\n")) {
     const t = line.trim();
-    if (!t || t.startsWith(">") || /^On .*wrote:/.test(t) || /^Event ID:/.test(t)) continue;
+    if (!t || t.startsWith(">") || /^On .*wrote:/.test(t) || /^Event ID:/i.test(t)) continue;
+    if (GREETING.test(t)) continue; // skip a top-posted greeting ("はい！") — take the real answer line
     location = t; break;
   }
   return { eventId: m[1], location };
@@ -82,18 +84,27 @@ function gogSearchReplyThreads() {
 function gogGetBody(id) {
   try {
     const out = execFileSync(GOG_BIN, ["gmail", "get", id, "-j", "--account", GOG_ACCOUNT], { env: gogEnv(), encoding: "utf8", timeout: 30000 });
-    const d = JSON.parse(out); return { subject: d.subject || "", body: d.body || d.snippet || "" };
+    const d = JSON.parse(out);
+    const subject = (d.headers && (d.headers.subject || d.headers.Subject)) || d.subject || "";
+    return { subject, body: d.body || "" };
   } catch { return { subject: "", body: "" }; }
 }
+const CAL_ID = process.env.LIFE_CAL_ID || ENV.GCAL_ID || "primary";
 function setEventLocation(eventId, location) {
-  execFileSync(GOG_BIN, ["calendar", "update", eventId, "--location", location, "-j", "--account", GOG_ACCOUNT],
-    { env: gogEnv(), encoding: "utf8", timeout: 30000 });
+  try {  // gog calendar update needs <calendarId> <eventId> — two positionals
+    execFileSync(GOG_BIN, ["calendar", "update", CAL_ID, eventId, "--location", location, "-j", "--account", GOG_ACCOUNT],
+      { env: gogEnv(), encoding: "utf8", timeout: 30000 });
+    return true;
+  } catch (e) { console.error("[ask] setEventLocation failed:", e.message); return false; }
 }
+function baseId(id) { return String(id || "").split("_")[0]; }  // strip recurring-event _2026..Z suffix
 function clearTravelState(eventId) {
   let s; try { s = JSON.parse(fs.readFileSync(TRAVEL_STATE, "utf8")); } catch { return; }
+  const b = baseId(eventId);
   let changed = false;
   for (const k of Object.keys(s)) {
-    if (k.includes(eventId) && s[k] === "asked") { delete s[k]; changed = true; } // re-process now that we know the place
+    if (s[k] !== "asked") continue;  // only clear ASK-records (not inserted-block ids)
+    if (k.split("|").some((h) => h === eventId || baseId(h) === b)) { delete s[k]; changed = true; }
   }
   if (changed) fs.writeFileSync(TRAVEL_STATE, JSON.stringify(s, null, 2));
 }
@@ -104,42 +115,39 @@ function writeQueue(rows) {
 
 function runQuestions({ dryRun = false } = {}) {
   const rows = loadQueue();
-  let sent = 0;
+  const sentIds = new Map();
   for (const r of rows) {
     if (r.asked) continue;
     const { subject, body } = buildQuestionEmail(r);
     if (dryRun) { console.log("[ask] would mail:", subject); continue; }
-    const id = gogSend({ to: DAIS_EMAIL, subject, body });
-    r.asked = true; r.messageId = id; sent++;
+    sentIds.set(r.eventId, gogSend({ to: DAIS_EMAIL, subject, body }));
   }
-  if (!dryRun) writeQueue(rows);
-  console.log(JSON.stringify({ action: "question", queued: rows.length, sent }));
-  return sent;
+  if (!dryRun && sentIds.size) {  // re-read to MERGE any rows travel appended meanwhile (no overwrite-race)
+    const fresh = loadQueue();
+    for (const r of fresh) if (sentIds.has(r.eventId)) { r.asked = true; r.messageId = sentIds.get(r.eventId); }
+    writeQueue(fresh);
+  }
+  console.log(JSON.stringify({ action: "question", queued: rows.length, sent: sentIds.size }));
+  return sentIds.size;
 }
 function runPoll({ dryRun = false } = {}) {
   const threads = gogSearchReplyThreads();
-  const rows = loadQueue();
-  const queuedIds = new Set(rows.map((r) => r.eventId));
+  const queuedIds = new Set(loadQueue().map((r) => r.eventId));
+  const resolved = new Set();
   let registered = 0;
-  for (const th of threads) {
+  for (const th of threads) {  // single pass per thread (no double gogGetBody)
     const { subject, body } = gogGetBody(th.id);
     const r = parseReply(subject || th.subject, body);
     if (!r || !r.location || !queuedIds.has(r.eventId)) continue;
     if (dryRun) { console.log("[ask] would register:", r.eventId, "→", r.location); continue; }
-    setEventLocation(r.eventId, r.location);
-    clearTravelState(r.eventId);
-    registered++;
+    if (setEventLocation(r.eventId, r.location)) { clearTravelState(r.eventId); resolved.add(r.eventId); registered++; }
   }
-  if (!dryRun && registered) {
-    const done = new Set();
-    for (const th of threads) { const { subject, body } = gogGetBody(th.id); const r = parseReply(subject || th.subject, body); if (r && r.location) done.add(r.eventId); }
-    writeQueue(rows.filter((r) => !done.has(r.eventId))); // drop resolved
-  }
+  if (!dryRun && resolved.size) writeQueue(loadQueue().filter((r) => !resolved.has(r.eventId)));  // re-read to merge appends
   console.log(JSON.stringify({ action: "poll", threads: threads.length, registered }));
   return registered;
 }
 
-module.exports = { loadQueue, buildQuestionEmail, parseReply, runQuestions, runPoll };
+module.exports = { loadQueue, buildQuestionEmail, parseReply, runQuestions, runPoll, baseId };
 
 if (require.main === module) {
   const args = process.argv.slice(2);
