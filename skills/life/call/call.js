@@ -43,7 +43,7 @@ const { spawnSync } = require("child_process");
   try {
     const p = path.join(process.env.HOME || "/root", ".openclaw", ".env");
     for (const line of fs.readFileSync(p, "utf8").split("\n")) {
-      const m = line.match(/^([A-Z_][A-Z0-9_]*)=(.*)$/);
+      const m = line.match(/^(?:export\s+)?([A-Z_][A-Z0-9_]*)=(.*)$/);  // handle `export KEY=val` (TELNYX uses it)
       if (m && process.env[m[1]] === undefined) process.env[m[1]] = m[2].replace(/^["']|["']$/g, "");
     }
   } catch { /* env file optional */ }
