@@ -40,8 +40,8 @@ export default function Page() {
         headline="Anicca calls you"
         subtext="15 minutes before every event, Anicca phones you and talks — two-way — in Gemini's Charon voice over Twilio. No app to open, no button to press. Just answer."
         primary={
-          <CTA href="/install" variant="primary">
-            Install Anicca
+          <CTA href="https://github.com/Daisuke134/anicca" variant="primary">
+            Get Anicca on GitHub
           </CTA>
         }
         secondary={

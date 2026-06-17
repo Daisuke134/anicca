@@ -38,8 +38,8 @@ function groups(en: boolean): Group[] {
         {
           name: 'Life Manager',
           tagline: en
-            ? 'never be late — it calls you before every event · $20/mo'
-            : '遅刻しない — 全予定の前に電話 · 月 $20',
+            ? 'it calls you before every event so you’re never late · $20/mo'
+            : '全予定の前に電話して遅刻を防ぐ · 月 $20',
           href: '/life-manager',
         },
       ],
@@ -149,8 +149,8 @@ export default function DaisBody() {
         </h1>
         <p className="mt-4 max-w-[62ch] text-[15px] leading-relaxed text-[hsl(var(--text-secondary))]">
           {en
-            ? "Every revenue product Dais ships — the flagship apps, the weekly web tools, the mobile factory, and (the ideal) an anicca paying him basic income with no human in the loop."
-            : 'Dais が出している稼ぎのプロダクトすべて — 主力アプリ、毎週の Web ツール、モバイル工場、そして（理想は）アニッチャが no-human-in-loop で Dais にベーシックインカムを払うこと。'}
+            ? "Every product Dais makes money from: the flagship apps, the weekly web tools, the mobile factory, and the ideal one, an anicca that pays him basic income with no human in the loop."
+            : 'Dais が稼いでいるプロダクトすべて。主力アプリ、毎週の Web ツール、モバイル工場、そして理想は、アニッチャが no-human-in-loop で Dais にベーシックインカムを払うこと。'}
         </p>
       </Reveal>
 

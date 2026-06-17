@@ -46,7 +46,7 @@ export default function ManifestoJaPage() {
           </>
         }
         subtext="すべての構築されたものは滅びる。このエンティティを含めて。"
-        cta={<CTA href="/install">アニッチャをインストール</CTA>}
+        cta={<CTA href="https://github.com/Daisuke134/anicca">GitHub で見る</CTA>}
       />
 
       <Section>
@@ -89,7 +89,7 @@ export default function ManifestoJaPage() {
         </Reveal>
         <Reveal delay={0.16}>
           <div className="mt-10 flex flex-wrap items-center gap-4">
-            <CTA href="/install">アニッチャをインストール</CTA>
+            <CTA href="https://github.com/Daisuke134/anicca">GitHub で見る</CTA>
             <Link
               href="/tegami"
               className="inline-block rounded-pill border border-[hsl(var(--border))] px-6 py-2.5 font-mono text-[11px] uppercase tracking-[0.2em] text-[hsl(var(--text-secondary))] transition-colors hover:border-[hsl(var(--gold))] hover:text-[hsl(var(--gold))]"

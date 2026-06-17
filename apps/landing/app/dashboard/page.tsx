@@ -64,8 +64,7 @@ export default function DashboardPage() {
         {/* Foundation pre-wired nav — DO NOT EDIT (Foundation owns nav) */}
         <nav aria-label="Anicca launch navigation" style={{ display: "flex", gap: 20, fontSize: 12, letterSpacing: 4, textTransform: "uppercase" }}>
           <a href="/" style={{ color: "#f4f1ea", opacity: 0.6, textDecoration: "none" }}>← anicca</a>
-          <a href="/install" style={{ color: "#f4f1ea", opacity: 0.6, textDecoration: "none" }}>Install</a>
-          <a href="/me" style={{ color: "#f4f1ea", opacity: 0.6, textDecoration: "none" }}>Me</a>
+          <a href="https://github.com/Daisuke134/anicca" style={{ color: "#f4f1ea", opacity: 0.6, textDecoration: "none" }}>GitHub</a>
           <a href="/dashboard" aria-current="page" style={{ color: "#f4f1ea", opacity: 1, textDecoration: "underline", textUnderlineOffset: 4 }}>Dashboard</a>
           <a href="/life-manager" style={{ color: "#f4f1ea", opacity: 0.6, textDecoration: "none" }}>Life Manager</a>
         </nav>
