@@ -28,6 +28,18 @@ test("parseReply returns null when no token present", () => {
   assert.equal(A.parseReply("random subject", "hi"), null);
 });
 
+test("parseReply skips a top-posted greeting and takes the real answer", () => {
+  const subject = "Re: [Anicca] 場所を教えてください: 仕事 [ASK-evt9]";
+  const body = "はい！\n渋谷ヒカリエ\n\n> Event ID: evt9";
+  const r = A.parseReply(subject, body);
+  assert.equal(r.location, "渋谷ヒカリエ"); // not "はい！"
+});
+
+test("baseId strips the recurring-event suffix", () => {
+  assert.equal(A.baseId("abc_20260604T140000Z"), "abc");
+  assert.equal(A.baseId("plain"), "plain");
+});
+
 test("loadQueue dedups by eventId keeping the latest", () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "askq-"));
   const q = path.join(dir, "life-ask-queue.jsonl");
