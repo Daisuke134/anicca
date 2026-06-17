@@ -17,7 +17,7 @@ export const metadata = {
 
 export default function Page() {
   return (
-    <LaunchFrame active="/life-manager">
+    <LaunchFrame>
       <LifeManagerBody />
     </LaunchFrame>
   );

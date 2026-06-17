@@ -13,7 +13,7 @@ export default function CashOutBody({ htmlEn, htmlJa }: { htmlEn: string; htmlJa
   return (
     <Section className="pt-24">
       <article
-        className="cashout-prose mx-auto max-w-3xl"
+        className="mx-auto max-w-3xl"
         dangerouslySetInnerHTML={{ __html: html }}
       />
     </Section>
