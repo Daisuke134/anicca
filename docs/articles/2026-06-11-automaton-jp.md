@@ -535,7 +535,7 @@ Credit topup successful: $5 USD → 1000 credit cents
 
 クレジットは買えても、Conwayが提供する推論モデルが応答しません（429＝混雑・クォータ超過）。これは利用側の設定ミスではなく、Conway側の状況です。Automaton公式のREADMEにも明記されています。
 
-> "Conway Cloud, Domains, and Inference has seen immense demand. We are working on scaling & performance."（出典: Conway-Research/automaton README）
+> 「Conway Cloud、ドメイン、そして推論（Inference）には需要が殺到しています。私たちはスケールと性能の改善に取り組んでいます。」（出典: Conway-Research/automaton README）
 
 ### 7. 対処：推論だけ別経路にする（x402のまま、ローカル実行）
 
