@@ -526,7 +526,7 @@ Credit topup successful: $5 USD → 1000 credit cents
 
 人間の操作なしに、自分のUSDCから x402 でクレジット（計算燃料）を購入できました。ここは設計通りに動きます。
 
-### 6. だが推論（モデル）は失敗する — Conway側の問題
+### 6. だが推論（モデル）は失敗する（Conway側の問題）
 
 ```
 [ERROR] Turn failed: Inference error (conway): 429
@@ -537,23 +537,89 @@ Credit topup successful: $5 USD → 1000 credit cents
 
 > 「Conway Cloud、ドメイン、そして推論（Inference）には需要が殺到しています。私たちはスケールと性能の改善に取り組んでいます。」（出典: Conway-Research/automaton README）
 
-### 7. 対処：推論だけ別経路にする（x402のまま、ローカル実行）
+### 7. 対処：推論だけ別経路（ClawRouter）にする
 
-Conwayは「計算（推論）＋サーバ（サンドボックス）」をx402でまとめて提供する本筋ですが、推論が落ちています。対処は、暗号資産で払う方式は変えず、**推論だけ別のx402ルーター（BlockRunのClawRouter＝計算専用）から取り、サーバ（サンドボックス）は自分のマシンでローカル実行**します。手順は次の章で、コマンドと結果つきで記録します。
+Conwayは「計算（推論）＋サーバ（サンドボックス）」をx402でまとめて提供する本筋ですが、その推論が落ちています。暗号資産で払う方式は変えずに、推論だけ別のx402ルーター（BlockRunの **ClawRouter** ＝計算専用、OpenAI互換）から取ります。人間のAPIキーを持ち込むBYOK（Bring Your Own Key）は使いません。BYOKは裏に人間の課金口座が戻ってしまい、本記事の主題「人間なし」に反するためです。ClawRouterはエージェントが自分の財布から払うので、この主題を保てます。
+
+ClawRouterを入れて起動します。
 
 ```bash
-# 次章[6]で実行:
-#  ClawRouter を導入し、automaton の推論をそこへ向ける → ローカルで --run
+npx -y @blockrun/clawrouter --port 8402
+# → [ClawRouter] v0.12.206 | Proxy listening on http://127.0.0.1:8402
+# → Wallet balance: $0.01 (low)   ※無料モデルだけなら残高ゼロでも動く
 ```
 
-人間のAPIキーを持ち込むBYOKは使いません（本記事の主題「人間なし」に反し、人間の課金口座が裏に戻るため）。
+起動確認（205モデルが見える。うち `free/gpt-oss-120b` は無料）:
 
-⏳ ClawRouterに切り替えて実走し、実際に稼げるかを確かめた結果は [6] に記録します。
+```bash
+curl -s http://localhost:8402/v1/models | jq '.data | length'   # → 205
+```
 
-## [6] で、稼げたのか？（正直な検証）⏳ 別CCのクラウド実走の結果を待って執筆
+次に、automatonの推論先をこのClawRouterに向けます。ここで2つの仕様にぶつかります。
 
-> ここに「正規のConwayクラウドで完全に走らせたらどうだったか」の実データを入れる。
-> raw（ローカル）では distribution が壁だった。クラウド正規化で自己複製・自律モデル選択が解禁されたとき、稼げるのか？を実走で答える。
+1. automatonのHTTPクライアントは `https://` 以外を拒否します。ただし **ollamaバックエンドだけは `localhost` への `http://` を許可** します（ローカル推論用の例外）。なので推論をollamaバックエンド扱いにして、その向き先をClawRouterにします。
+2. automatonのモデルルーターは、まず内蔵の優先表（Conwayのgpt-5系）を試し、それが登録に無い時だけ自前モデルにフォールバックします。なので **ClawRouterのモデルをollama扱いで登録し、Conway系モデルを無効化** して、フォールバックが効くようにします。
+
+```bash
+# ① 推論の向き先をClawRouterに（ollamaバックエンド経由でloopback httpが通る）
+export OLLAMA_BASE_URL=http://localhost:8402
+
+# ② automatonのDBに free/gpt-oss-120b を provider=ollama で登録（同梱のupsert APIを使用）
+#    （automaton側にClawRouterモデルを「ローカル推論」として教える操作）
+
+# ③ Conway系モデルを無効化して、ルーターが上記モデルにフォールバックするようにする
+#    （automatonのモデル登録テーブルで、ollama以外をenabled=0に）
+
+# ④ automaton.json の推論モデルを free/gpt-oss-120b に設定して起動
+node dist/index.js --run
+```
+
+### 8. 脳が回り始めた（実走ログ）
+
+向き先を変えた瞬間、Conwayへ行かなくなり、ターンが通り始めました。実際のログ:
+
+```
+[WAKE UP] automaton-article is alive. Credits: $10.00
+[THINK]  Routing inference (tier: high, model: free/gpt-oss-120b)...
+Turn 01KVAKK4...: 0 tools, 17138 tokens
+Sleeping for 60s
+[WAKE UP] ...
+[THINK]  Routing inference (tier: high, model: free/gpt-oss-120b)...
+[TOOL]        orchestrator_status({})
+[TOOL RESULT] orchestrator_status: Phase: idle
+Turn 01KVAKQ5...: 1 tools, 17227 tokens
+Sleeping for 60s
+```
+
+[4]で説明した「2つのリズム」が実物で観測できます。
+
+- **起きて考えて寝る**：`WAKE UP → THINK → （必要なら）TOOL → Sleeping for 60s`。眠る秒数（60s）は本人が決めています（自己クロック）。
+- **道具を使う**：`check_credits`（残高確認）や `orchestrator_status`（自分の仕事状態の確認）を、誰にも言われず自分で呼んでいます。
+- 約7ターン回して、Conwayで出ていた `429` はゼロ。推論はすべてClawRouter経由で通りました。
+
+ここまでで到達した状態を、正直にまとめます。
+
+| 項目 | 結果 |
+|---|---|
+| 取得・ビルド | OK（`pnpm build` まで通る） |
+| ウォレット／APIキー生成 | OK（`--init` / `--provision`） |
+| 資金ゼロでの起動 | 頭が動かない（残高＝身分証。ゼロだと推論が走らない） |
+| 資金投入（$11 USDC on Base） | OK（relay.link経由、ネットワークはBase必須） |
+| 自分でクレジット購入（x402） | OK（$5分を人間操作なしで購入） |
+| Conway推論 | 失敗（429・混雑。READMEにも明記） |
+| ClawRouterへ切替（無料モデル） | **OK。脳がReActループで回り始めた** |
+
+つまり「人間の介入ゼロで、自分の財布の燃料を使い、頭が回る」ところまでは到達しました。残る問いは1つ、**で、これは実際にお金を稼げるのか？** これを次の[6]で、無料モデル→フロンティアモデル→改造、の順に検証します。
+
+## [6] で、稼げたのか？（正直な検証）⏳ 実走中
+
+検証は3段階で行います。基準はただ1つ、**投入した$11より多く稼げるか**。
+
+1. **そのまま × 無料モデル**：[5]の状態（改造なし・free/gpt-oss-120b）のまま長めに回し、自分から何をするかを観測する。
+2. **そのまま × フロンティアモデル**：投入した$11 USDCを使い、ClawRouterのx402で有料のフロンティアモデル（GPT-5系・Claude系）を買わせて、改造なしのまま稼げるかを見る。
+3. **改造 × フロンティアモデル**：それでも稼げない場合、稼ぐためのスキル（手段）を与える等の改造を加えて、稼げるかを検証する。
+
+> ⏳ 各段階の実データ（モデル・ターン数・残高推移・実際に何をしたか）をここに記録する。
 
 ## [7] 稼がせるために改造した ⏳ 結果待ち
 
