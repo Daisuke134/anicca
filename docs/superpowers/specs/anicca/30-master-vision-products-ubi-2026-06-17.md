@@ -156,6 +156,36 @@ npx tsx deploy.ts              # create→waitForBids→lease (no chain client)
 ```
 ### P-jp-ramp — how-to content (§12) → `apps/landing/content/how-to-cash-out.{en,ja}.md`
 
+## §15 Life Manager LOCAL — the product promise, corrected design, bullet→code→E2E map (Dais 2026-06-17)
+**Product promise (verbatim, the 5 bullets — every one MUST work + be E2E-verified):**
+1. 名前・電話番号・Googleカレンダー・任意で現在位置の連携で簡単スタート。
+2. あらゆる予定（起床・就寝・仕事・瞑想など）に対して、移動時間を自動登録。
+3. 場所がわからなければ質問→返信すれば自律的に登録完了。
+4. 次の予定（移動含む）の **15分前**に電話でかけてきて、具体的な行き方をガイド・行動を促してくれる。
+5. 予定に遅れそうな場合は関係者へ、返信先・返信案を承認後に連絡。
+アプリ版 aniccaai.com/life-manager · OSS: Life Manager Skill はどの AI にも入れられる。
+
+**CORRECTED design (supersedes §9.1 / the v1 loop.js polling patch):**
+- **ALL events get calls** (起床/就寝/仕事/瞑想/移動 — everything), not only travel-needed.
+- **Reminders = 15/14/13/10/5 min before** the LEAVE time (= [Travel] block start if the event has a location, else the event start).
+- **Schedule-based triggers, NOT a polling cron.** OpenClaw supports `openclaw cron add --at <ISO> --delete-after-run` (verified). A daily **planner** reads today's gcal → for each event×offset registers a one-shot `--at` job that runs `call.js placeCall` → auto-deletes after firing. gcal-driven, zero polling.
+- Call code = the WORKING Telnyx runner `apps/landing/scripts/life-call-telnyx.mjs` (same code that rang Dais; NOT Twilio). Skill home `~/anicca/skills/life/`. Scheduler host = OpenClaw gateway (`~/.openclaw`).
+
+**bullet → code → E2E goal (each bullet's verifying test):**
+| # | code (real) | status | E2E TestID + goal (no-mock) |
+|---|---|---|---|
+| 1 onboarding | env/profile (Dais set); product `setup.js` = TODO | works for Dais | LM-E1: `anicca life setup` writes name/phone/gcal/location → profile readable |
+| 2 travel auto | `travel/travel.js` (cron `anicca-travel-fill`) | LIVE | LM-E2: real located event → `[Travel]` block inserted in gcal with correct leave time |
+| 3 ask-unknown | `ask/ask.js` (cron `anicca-life-ask`) | LIVE | LM-E3: event w/o location → question mail sent → reply → event marked/registered |
+| 4 **call 15/14/13/10/5** | `planner.js` (NEW) + `call.js`→telnyx | **BUILDING (#30-36)** | LM-E4: test event +16min → 5 `--at` jobs registered → **Dais's real phone rings at each of −15/−14/−13/−10/−5** (Telnyx call-id + audio + auto-delete) |
+| 5 late→stakeholder | `notify/notify.js` (cron scan+poll) | LIVE | LM-E5: travel block already started → approval mail to Dais → "OK" reply → stakeholder mail sent |
+Honest: bullets 2/3/5 are LIVE (cron-wired) but need a fresh E2E pass; bullet 4 (the calls) is the active build; bullet 1 product-onboarding is deferred (Dais already configured via env).
+
+## §16 DEV PROCESS — every workstream runs the FULL superpowers 8-stage flow (no skipping = no slop)
+Build ONE workstream at a time (finish + E2E before the next — BP `finishing-a-development-branch`). Per workstream:
+S1 using-superpowers · S2 brainstorming(spec) · S3 writing-plans(LITERAL diffs file/line/+-) · S4 using-git-worktrees · S5 test-driven-development + verification-before-completion(E2E no-mock) + systematic-debugging · S6 requesting-code-review(picture-perfect, pre+post impl) · S7 receiving-code-review · S8 finishing-a-development-branch(merge+push).
+Order: STEP1 LM-local → STEP2 LM-web → STEP3 aniccaai.com → STEP4 anicca local+cloud → STEP5 UBI → STEP6 marketing. A **patch = literal file/line/+- diff** (never prose/design/ascii) — see [[feedback_patch_is_literal_diff_and_sdd_grounding_flow]].
+
 ## §7 Revenue model (Dais's 10k/mo, no salary, to quit the job)
 | source | target | human-in-loop? |
 |---|---|---|
