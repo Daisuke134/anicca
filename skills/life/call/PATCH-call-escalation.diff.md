@@ -72,13 +72,27 @@
 -    location: "表参道",
 -  };
 +  // The event Charon talks about. NO fake default — a real call MUST carry a real event.
-+  if (!event && !a.health) { console.error("[bridge] no --event; refusing a fake call"); process.exit(1); }
++  if (!event) { console.error("[bridge] no --event; refusing a fake call"); process.exit(1); }
 +  const callEvent = event;
 ```
+REVIEW-FIX 4d: line 135 lives in `geminiSetupForEvent(event, model)` (NOT startServer) — `callEvent`/`urgency`
+are out of scope there → would ReferenceError. Thread urgency THROUGH that function instead:
 ```diff
-# at the Gemini setup call site (~line 135):
+# geminiSetupForEvent (~line 131): add urgency param; buildCallPrompt uses its own in-scope params
+-function geminiSetupForEvent(event, model) {
++function geminiSetupForEvent(event, urgency, model) {
+   return buildGeminiSetup({
+     model: model || LIVE_MODEL,
+     voiceName: "Charon",
 -    systemInstruction: buildCallPrompt(event),
-+    systemInstruction: buildCallPrompt(callEvent, urgency),
++    systemInstruction: buildCallPrompt(event, urgency),
+   });
+ }
+```
+```diff
+# the call site inside startServer (~line 218) where callEvent + urgency ARE in scope:
+-  geminiSend(geminiSetupForEvent(callEvent));
++  geminiSend(geminiSetupForEvent(callEvent, urgency));
 ```
 
 ## HUNK 5 — apps/landing/netlify/functions/_lib/call-logic.js  (buildCallPrompt escalating tone)
@@ -133,7 +147,30 @@
 -      dial({ dryRun, reason: `T-${d.offsetMin}min${d.emergency ? " EMERGENCY" : ""}` });
 +      dial({ dryRun, event: opts.event, urgency: toneFor(d.offsetMin), reason: `T-${d.offsetMin}min` });
 ```
-(`runScheduleLoop` already receives `opts`; thread `opts.event` from the `--event` CLI arg in locate.js `main`.)
+REVIEW-FIX 6 Gap 1+2: `opts.event` is never populated (parseArgs lacks `--event`; main passes neither loop
+an event) → with the dentist default gone, the bridge would `exit(1)` and NEVER dial. Add these:
+```diff
+# locate.js parseArgs (~268-277): add --event
+     else if (argv[i] === "--mode") opts.mode = argv[++i];
+     else if (argv[i] === "--event-start") opts.eventStartMs = Date.parse(argv[++i]);
++    else if (argv[i] === "--event") opts.event = JSON.parse(argv[++i]);
++    else if (argv[i].startsWith("--event=")) opts.event = JSON.parse(argv[i].slice("--event=".length));
+     else if (argv[i] === "--dry-run") opts.dryRun = true;
+```
+```diff
+# locate.js main (~279-295): pass event into BOTH loops
+-    const r = await runScheduleLoop({ dryRun, eventStartMs });
++    const r = await runScheduleLoop({ dryRun, eventStartMs, event: opts.event });
+...
+-    const r = await runLiveLocationLoop({ dryRun });
++    const r = await runLiveLocationLoop({ dryRun, event: opts.event });
+```
+```diff
+# locate.js runLiveLocationLoop dial (~223): also name the event (not generic); firm tone while not moving
+-      dial({ dryRun, reason: `not-moving (attempt ${attempts + 1})` });
++      dial({ dryRun, event: opts.event, urgency: "firm", reason: `not-moving (attempt ${attempts + 1})` });
+```
+After these, NO path calls `placeCall({})` generic → no bridge refusal → the call always names the real event.
 
 ## NOT in this slice (separate reviewed diffs follow): P1 travel search→ask spine, P4 planner.js
 ## scheduler (gcal→--at), P2 ask Gmail-poll, P5 notify motion-gate, P0 consolidate into anicca.
