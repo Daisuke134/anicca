@@ -165,11 +165,12 @@ npx tsx deploy.ts              # create→waitForBids→lease (no chain client)
 5. 予定に遅れそうな場合は関係者へ、返信先・返信案を承認後に連絡。
 アプリ版 aniccaai.com/life-manager · OSS: Life Manager Skill はどの AI にも入れられる。
 
-**CORRECTED design (supersedes §9.1 / the v1 loop.js polling patch):**
-- **ALL events get calls** (起床/就寝/仕事/瞑想/移動 — everything), not only travel-needed.
-- **Reminders = 15/14/13/10/5 min before** the LEAVE time (= [Travel] block start if the event has a location, else the event start).
-- **Schedule-based triggers, NOT a polling cron.** OpenClaw supports `openclaw cron add --at <ISO> --delete-after-run` (verified). A daily **planner** reads today's gcal → for each event×offset registers a one-shot `--at` job that runs `call.js placeCall` → auto-deletes after firing. gcal-driven, zero polling.
-- Call code = the WORKING Telnyx runner `apps/landing/scripts/life-call-telnyx.mjs` (same code that rang Dais; NOT Twilio). Skill home `~/anicca/skills/life/`. Scheduler host = OpenClaw gateway (`~/.openclaw`).
+**CORRECTED design v2 (Dais 2026-06-17 — supersedes everything above; I was wrong to ever propose filtering):**
+- **EVERY schedule gets reminded, EACH TIME. NO FILTER, NO eligibility gate.** Life Manager manages the WHOLE life: wake, sleep, remote meeting, train-to-work, meditation, work — every gcal event. The agent is RESPONSIBLE for the user not 寝坊/夜更かし/遅刻/連絡漏れ. Calling for "every event including sleep" IS the intent. Never filter again.
+- **Reminders = 15 / 10 / 5 min before** the LEAVE time (= [Travel] block start if the event has a location, else the event start). 3 reminders.
+- **ESCALATING tone**: the closer the time, the harsher/hastier the call. 15 = heads-up (aware); 10 = firmer ("you need to move"); 5 = urgent/harsh ("leave NOW or you'll be late"). → the call MUST receive the **event + the offset/urgency** so `buildCallPrompt(event, urgency)` speaks the right event ("next event is X at Y, it's at Z, time to leave") and the right urgency.
+- **Schedule-based triggers, NOT polling.** `openclaw cron add --at <ISO> --delete-after-run` (verified). A thin planner (every 10 min) reads gcal → for each event×offset[15,10,5] still in the future, registers a one-shot `--at` job that runs `call.js --event '<json>' --urgency <off>` → auto-deletes after firing.
+- **Threading (the real scope)**: planner.js → `call.js --event <json> --urgency <off>` → `life-call-telnyx.mjs` (passes event+urgency) → `call-bridge.cjs` → `buildCallPrompt(event, urgency)` (`call-logic.js:367`, extend to take urgency). Call code = the WORKING Telnyx runner (same that rang Dais; NOT Twilio). Skill home `~/anicca/skills/life/` (repo github.com/Daisuke134/anicca). Scheduler host = OpenClaw gateway (`~/.openclaw`).
 
 **bullet → code → E2E goal (each bullet's verifying test):**
 | # | code (real) | status | E2E TestID + goal (no-mock) |
