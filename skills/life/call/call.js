@@ -34,7 +34,20 @@
 "use strict";
 
 const path = require("path");
+const fs = require("fs");
 const { spawnSync } = require("child_process");
+
+// Load ~/.openclaw/.env into process.env so a cron-fired call has TELNYX/GEMINI/GOG keys even if the
+// gateway exec context didn't inject them. Does NOT overwrite already-set vars.
+(function loadOpenclawEnv() {
+  try {
+    const p = path.join(process.env.HOME || "/root", ".openclaw", ".env");
+    for (const line of fs.readFileSync(p, "utf8").split("\n")) {
+      const m = line.match(/^([A-Z_][A-Z0-9_]*)=(.*)$/);
+      if (m && process.env[m[1]] === undefined) process.env[m[1]] = m[2].replace(/^["']|["']$/g, "");
+    }
+  } catch { /* env file optional */ }
+})();
 
 /** Map a provider name to its in-repo runner (consolidated into skills/life/call/lib). */
 function runnerFor(provider) {
