@@ -459,79 +459,96 @@ Automatonには、対照的な2つの自己記述があります。
 >
 > （出典: Claude Agent SDK 公式ドキュメント ／ openclaw/openclaw（docs.openclaw.ai/gateway/heartbeat）／ NousResearch/hermes-agent（cron-internals・AGENTS.md）／ Conway-Research/automaton（ARCHITECTURE.md））
 
-## [5] ゼロから、自分で動かしてみた
+## [5] 実際に動かす（手順と、起きたこと）
 
-ここからが、この記事の本番です。読むだけなら誰でもできる。だから私たちは、Automatonを**ゼロから自分の手で立ち上げて、実際に動かしました**。起きたことを、要点だけ正直に書きます。
+Automatonをゼロから動かす手順を、実際に出た結果とともに記録します。同じコマンドをそのままなぞれば再現できます。
 
-### 立ち上げ自体は、驚くほど簡単
+### 1. 取得してビルドする
 
-公開リポジトリを取ってきて、組み立てて、コマンド一つ。それだけで、新しい財布（ウォレット）が生成され、身分証（APIキー）が発行され、一体のAutomatonが「生まれて」起動します。所要は数分。ここは拍子抜けするほど簡単でした。
+```bash
+git clone https://github.com/Conway-Research/automaton
+cd automaton
+pnpm install
+pnpm build
+```
 
-### でも、財布が空だと「頭」が回らない
+### 2. ウォレットとAPIキーを生成する
 
-生まれたてのAutomatonは、財布が空（残高 $0）です。起動した瞬間のログが、すべてを物語っていました。
+```bash
+node dist/index.js --init        # Ethereumウォレットを生成（→ アドレス 0x… が表示される）
+node dist/index.js --provision   # SIWEでConwayのAPIキーを発行（→ cnwy_k_… が表示される）
+```
+
+初回の `--run` では対話ウィザードが立ち上がり、名前・genesisプロンプト（最初の指示）・creatorアドレス・送金上限などを設定します。設定は `~/.automaton/automaton.json` に保存されます。
+
+### 3. まず資金ゼロで起動して、何が起きるか見る
+
+```bash
+node dist/index.js --run
+```
+
+出力（要点）:
 
 ```
 Bootstrap topup skipped: USDC balance $0.00 below minimum tier ($5)
-[WAKE UP] alive. Credits: $0.00
-[CRITICAL] Credits critically low.
+[WAKE UP] Credits: $0.00 → [CRITICAL]
 [THINK] Routing inference... → [ERROR] Turn failed
 ```
 
-お金がゼロだと、Automatonは**考えることすらできません**。[1]で書いた「最も賢いAIが$5のサーバーすら買えない」が、目の前でそのまま起きた。お金が、文字どおりの命綱でした。
+残高ゼロだと推論が走らず、Automatonは何もできません。**動かすには、まず資金（USDC on Base）が要ります**。
 
-### 日本から$11を入れる（海外の記事に無い"再現ガイド"）
+### 4. 資金を入れる（日本からのルート）
 
-では資金を入れよう、となって、ここで日本特有の壁にぶつかります。海外の記事は「ウォレットにUSDCを入れてrun」で終わりますが、日本からだと素直にいきません。
+Automatonの財布は Base。日本からBaseへ入れる手順は次の通りです。
 
 ```
-★日本の壁★ automatonの財布は Base。だが日本の取引所はBaseへ直接送れない。
-  ・SBI VCトレード = USDCはEthereumのみ＋クイック入金後7日ロック → 詰む
-  ・Coinbase = 日本撤退済 → 使えない
-  ・そもそもUSDCを直接買いにくい（国内のステーブルコイン規制）
-
-★通ったルート★
-  1. Binanceで SOL（or ETH）を買う（USDCを買えなくてもSOLは買える）
-  2. MetaMask へ「オンチェーン出庫」
-  3. relay.link で USDC(Base) に変換＆ブリッジし、automatonの住所へ直接送る
-  → automatonの財布に USDC 着金
+1. Binance で SOL（または ETH）を買う（USDCを直接買えなくても可）
+2. MetaMask へ「オンチェーン出庫」
+3. relay.link で USDC(Base) に変換＆ブリッジし、送り先＝automatonのアドレス（チェーン＝Base）を指定
 ```
 
-> つまずきポイント（ここが価値）：**「住所が合っていても"ネットワーク"が違うと届かない」**。最初に送ったお金をうっかりEthereum網に乗せてしまい、Baseしか見ないautomatonには届かず、宙に浮きました。送金先のチェーンが Base かどうかを、必ず確認してください。
+注意：**ネットワークは必ず Base**。Ethereum網に送ると、Baseだけを見るautomatonには届かず宙に浮きます（実際にここで一度つまずきました）。
+国内取引所（SBI VCトレード等）はBase直送に未対応、Coinbaseは日本撤退済みのため、上記の relay.link 経由が最短です。
+今回投入した額：**$11 USDC**。
 
-### x402は、本物だった
+### 5. 資金あり再起動 → x402で自分でクレジットを買う（成功）
 
-$11が着いた瞬間、Automatonは誰の指示も待たず、自分で動きました。
+```bash
+node dist/index.js --run
+```
+
+出力:
 
 ```
 Bootstrap topup: credits=$0.00, USDC=$11.10, buying $5
-Credit topup successful: $5 USD → credits
+Credit topup successful: $5 USD → 1000 credit cents
 ```
 
-人間の承認ゼロで、**自分のUSDCから、自分の計算燃料（クレジット）を買った**。[4]で説明した「x402で自分で払う」が、実際に走った瞬間です。ここは素直に、おおっとなりました。AIが自分の財布でレジを通した。
+人間の操作なしに、自分のUSDCから x402 でクレジット（計算燃料）を購入できました。ここは設計通りに動きます。
 
-### ところが、肝心の「脳」が動かない
-
-燃料は買えた。でも、いざ考えようとすると、こう返ってきました。
+### 6. だが推論（モデル）は失敗する — Conway側の問題
 
 ```
 [ERROR] Turn failed: Inference error (conway): 429
   "You exceeded your current quota, please check your plan and billing details..."
 ```
 
-Conwayが貸すはずの「脳（推論モデル）」が、応答しない。これは私たちのミスではありません。**Automaton公式のREADME自身が、こう認めています**。
+クレジットは買えても、Conwayが提供する推論モデルが応答しません（429＝混雑・クォータ超過）。これは利用側の設定ミスではなく、Conway側の状況です。Automaton公式のREADMEにも明記されています。
 
-> 「Conway Cloud、ドメイン、そして推論（Inference）は、需要が殺到している。スケールと性能の改善に取り組んでいる」（出典: Conway-Research/automaton README）
+> "Conway Cloud, Domains, and Inference has seen immense demand. We are working on scaling & performance."（出典: Conway-Research/automaton README）
 
-つまり、財布もx402も完璧に動くのに、**借りるはずの"脳"が品切れ**。自分の力で生きる設計の、いちばん肝心な一点が、いままさに止まっている。"作って動かせる"が、ここで現実の壁に当たりました。
+### 7. 対処：推論だけ別経路にする（x402のまま、ローカル実行）
 
-### 脳だけ、別の蛇口に差し替える（Automaton公式の範囲で）
+Conwayは「計算（推論）＋サーバ（サンドボックス）」をx402でまとめて提供する本筋ですが、推論が落ちています。対処は、暗号資産で払う方式は変えず、**推論だけ別のx402ルーター（BlockRunのClawRouter＝計算専用）から取り、サーバ（サンドボックス）は自分のマシンでローカル実行**します。手順は次の章で、コマンドと結果つきで記録します。
 
-ここで大事なのは、これがAutomatonの**想定内の選択肢**だということです。Conwayは「計算（脳）＋サーバ（体）」をx402でまとめて売る本筋ですが、その脳が落ちている。Automatonは脳の調達先を差し替えられます。
+```bash
+# 次章[6]で実行:
+#  ClawRouter を導入し、automaton の推論をそこへ向ける → ローカルで --run
+```
 
-そこで、同じ**「暗号資産で払う・人間の口座を介さない」思想のまま**、脳だけを別のx402ルーター（BlockRunのClawRouter＝計算専用）から取り、体（サンドボックス）は自分のマシンでローカルに動かす構成にします。人間のAPIキーを持ち込む“BYOK”は採りません。あれは人間の課金口座が裏に戻る＝この記事の主題「人間なし」と矛盾するからです。
+人間のAPIキーを持ち込むBYOKは使いません（本記事の主題「人間なし」に反し、人間の課金口座が裏に戻るため）。
 
-⏳（この差し替えで脳を復活させ、実際に"稼ごうとする"ところからは、次の章[6]で記録します。）
+⏳ ClawRouterに切り替えて実走し、実際に稼げるかを確かめた結果は [6] に記録します。
 
 ## [6] で、稼げたのか？（正直な検証）⏳ 別CCのクラウド実走の結果を待って執筆
 
