@@ -1,13 +1,11 @@
 import Navbar from '@/components/site/Navbar';
 import Hero from '@/components/site/Hero';
-import TheEmpireProducts from '@/components/site/TheEmpireProducts';
 import Fellows from '@/components/site/Fellows';
 import ManifestoStrip from '@/components/site/ManifestoStrip';
 import Footer from '@/components/site/Footer';
 import JsonLd from '@/components/JsonLd';
 import {
   SelfFundingTriad,
-  LiveLedgerStrip,
   SelfImproveLoop,
   InstallSplit,
   DemoVideo,
@@ -125,14 +123,14 @@ export default function Page() {
       <Navbar locale={locale} />
       <Hero locale={locale} />
       <TheBet locale={locale} />
-      {/* Section 1 manifesto removed (Manifesto.tsx no longer used here) */}
+      {/* spec31 §A2 / spec30 §2: home = vision + how-to-start ONLY.
+          Products grid (TheEmpireProducts) now lives ONLY on /dais;
+          colony Live ledger (LiveLedgerStrip → /dashboard) removed. */}
       <SelfFundingTriad locale={locale} />
-      <LiveLedgerStrip locale={locale} />
       <SelfImproveLoop locale={locale} />
       <InstallSplit locale={locale} />
       <DemoVideo locale={locale} />
       <BasicIncomeNote locale={locale} />
-      <TheEmpireProducts locale={locale} />
       <VisionBand locale={locale} />
       <Fellows locale={locale} />
       <ManifestoStrip locale={locale} />
