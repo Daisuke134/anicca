@@ -27,7 +27,8 @@ FILE: /Users/anicca/anicca/skills/life/planner.js  (create, full content)
 ```js
 #!/usr/bin/env node
 // skills/life/planner.js — schedule-based call planner (replaces polling). A thin cron runs this
-// every 10 min (07–23 JST); it does NOT call. It reads today's gcal events and, for EVERY timed event,
+// every 10 min (07–23 JST); it does NOT call. It reads today + horizon gcal events (so an early
+// next-morning wake-up is registered by tonight's last run), and, for EVERY timed event,
 // for each offset [15,14,13,10,5] whose fire time is still in the FUTURE, registers a one-shot
 // `openclaw cron add --at <fireISO> --delete-after-run` job that places the Charon call at that exact
 // minute. Idempotent by deterministic job name → re-runs never double-register. LEAVE time = the
@@ -71,24 +72,28 @@ function registerAt(name, fireIso, dryRun) {
 }
 
 function plan({ nowMs = Date.now(), dryRun = false } = {}) {
-  const events = listEvents();
+  const events = listEvents();             // today + TRAVEL_HORIZON_DAYS (covers early next-morning events)
   const existing = existingJobNames();
   let added = 0;
   for (const ev of events) {
-    const summary = (ev.summary || "").trim();
-    if (isTravelBlock(summary)) continue;            // skip the [Travel] blocks themselves
-    if (!ev.start || !ev.start.dateTime) continue;   // skip all-day events
-    const leaveMs = leaveTimeMs(ev, events);
-    if (leaveMs == null) continue;
-    const day = new Date(leaveMs).toISOString().slice(0, 10);
-    for (const off of OFFSETS) {
-      const fireMs = leaveMs - off * 60_000;
-      if (fireMs <= nowMs) continue;                 // offset already passed → no past --at
-      const name = `life-call-${day}-${safeName(summary)}-${off}`;
-      if (existing.has(name)) continue;              // idempotent: already scheduled
-      registerAt(name, new Date(fireMs).toISOString(), dryRun);
-      added++;
-    }
+    try {
+      const summary = (ev.summary || "").trim();
+      if (isTravelBlock(summary)) continue;            // skip the [Travel] blocks themselves
+      if (!ev.start || !ev.start.dateTime) continue;   // skip all-day events
+      const leaveMs = leaveTimeMs(ev, events);
+      if (leaveMs == null) continue;
+      // FIX1: name keyed on the leave INSTANT (YYYYMMDDHHMM), not just the ASCII slug — so two
+      // same-slug JP events on one day (e.g. [NAIST]…#5 ×2) no longer collapse to one name.
+      const stamp = new Date(leaveMs).toISOString().slice(0, 16).replace(/[-:T]/g, "");
+      for (const off of OFFSETS) {
+        const fireMs = leaveMs - off * 60_000;
+        if (fireMs <= nowMs) continue;                 // offset already passed → no past --at
+        const name = `life-call-${stamp}-${safeName(summary)}-${off}`;
+        if (existing.has(name)) continue;              // idempotent: already scheduled
+        registerAt(name, new Date(fireMs).toISOString(), dryRun);
+        added++;
+      }
+    } catch (e) { console.error("[plan] skip", (ev.summary || "").slice(0, 40), e.message); } // one bad event must not starve the rest
   }
   console.log(`[plan] ${events.length} events scanned, ${added} call job(s) registered`);
   return added;
