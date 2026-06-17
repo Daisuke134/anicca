@@ -129,8 +129,9 @@ async function waitFor(stream, re, timeoutMs, label) {
 }
 
 async function main() {
-  // 1. cloudflared tunnel
-  tunnel = spawn("cloudflared", ["tunnel", "--url", `http://localhost:${PORT}`], {
+  // 1. cloudflared tunnel — absolute path so it resolves even when the gateway PATH lacks /opt/homebrew/bin
+  const CLOUDFLARED = process.env.CLOUDFLARED_BIN || "/opt/homebrew/bin/cloudflared";
+  tunnel = spawn(CLOUDFLARED, ["tunnel", "--url", `http://localhost:${PORT}`], {
     stdio: ["ignore", "pipe", "pipe"],
   });
   const m = await waitFor(tunnel.stderr, /https:\/\/[a-z0-9-]+\.trycloudflare\.com/, 40000, "tunnel url");
@@ -140,7 +141,7 @@ async function main() {
 
   // 2. start the bridge in Telnyx mode (Telnyx frame shapes both ways)
   bridge = spawn(
-    "node",
+    process.execPath,  // absolute node — resolves regardless of the gateway's PATH
     [path.join(here, "call-bridge.cjs"), "--port", String(PORT), "--provider", "telnyx",
       ...(EVENT_JSON ? ["--event", EVENT_JSON] : []),
       ...(URGENCY ? ["--urgency", URGENCY] : [])],
