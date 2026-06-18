@@ -58,6 +58,12 @@ Not me running it in a session (that's fake). A real persistent system:
 - Cashout reverse = same API USDC(Base)→SOL(Solana)→Binance→sell→PayPay.
 - Optional full-auto: Binance withdrawal API (key with withdraw perm + whitelisted address) → anicca pulls SOL too. JP Binance API support = to confirm.
 
+
+### SOL->USDC E2E PASS (real, 2026-06-18)
+Dais sent 0.019 SOL -> anicca Solana Cio2JKPP… -> sol-to-usdc.py swapped 0.014 SOL via relay.link -> Base USDC +~0.95 (7.18->8.06). Solana tx 5b6mYv4UH9KZxnLjXR6QBaRA7d4v9vXrKnUaqceYrqv2ZxcWFEtnZxu4x6C62y5ymrkr94CmsSPuM5EqDdVQVz3y (confirmed, err=None), relay status=success. Solana balance 0.005 left.
+BUG FIXED: relay Solana instruction `data` is HEX (not base64) -> my _is_b64 misdetected -> Custom error 101 on first attempt (tx 4XH2AgFB failed, SOL safe). hex decode = fixed -> works.
+So: Binance(SOL-only) -> anicca Solana -> auto USDC on Base = PROVEN. anicca currency = USDC.
+
 ## What "done" must mean (no more lies)
 A path is done ONLY when a real person, on a named website, taps named buttons, and ends with money
 they can SPEND (in their wallet they control, or yen/USD in their bank / PayPay) — verified by that
