@@ -1,5 +1,22 @@
 # 31 — TRACK A: aniccaai.com rebuild (apps/landing only) — impl spec (Dais 2026-06-17)
 
+## ROUND 3 corrections (Dais 2026-06-18) — landing fixes + README + dashboard truth
+| # | correction | files / scope | status |
+|---|---|---|---|
+| R3-1 | **README of github.com/Daisuke134/anicca must be EXTREMELY clear + actually work.** Two real paths: run on cloud, run locally. Separate, anchored, step-by-step. (Separate repo `~/anicca` — own track.) | `~/anicca` README + setup | pending audit |
+| R3-2 | **/dais must list ALL Dais products again** — the empire/content products my §13 rebuild dropped MUST come back: Letter, Music, Comedy, Cemetery, Fashion, Cafe, Retreats, Donation, Socials, Books, Politics, Research, Articles — ALONGSIDE Flagship (iOS + LM) + Web Apps + Mobile factory + UBI. alarm still excluded. NO fake MRR numbers. | `app/dais/DaisBody.tsx` | DO NOW |
+| R3-3 | **THE BET reframe — do NOT say "you don't birth AGI, you grow it."** Many paths exist: a model can be *born* AGI, *grown* into one, or *become* one. Frontier labs (Anthropic/OpenAI) work on birthing it. Our bet = **grow** deployed models into AGI (faster, under-explored), THEN merge that dojo back into how models are made so future models are **born** AGI — done WITH the frontier labs. Don't deny birthing; position growing as our path now + birthing as the endgame. | `components/site/v2/TheBet.tsx`, `lib/i18n.ts` | DO NOW |
+| R3-4 | **Delete fake MRR.** The "$27 MRR" is iOS-app revenue, NOT the anicca entity's. An anicca's real net worth/revenue is ~0 now. Do not present iOS $ as anicca revenue anywhere. | LedgerWidget / dashboard data | pending audit |
+| R3-5 | **Fix wrong link destinations.** "Receive basic income" currently sends users to the iOS app; links across the site go to wrong places. Audit + point each to the right place. | home + components | pending audit |
+| R3-6 | **LM page: remove ALL technical jargon.** No "GCal REST v3", "Maps Directions API", "[Travel] block", "anicca_travel_block", no formulas. Plain user-experience language only. | `lib/launchStrings.ts` lifeManager, `app/life-manager/LifeManagerBody.tsx` | DO NOW |
+| R3-7 | **LM "Skill (OSS)" card just links to the repo = bad.** Remove it (or make it a real "get the skill" experience, not a raw repo link). | `app/life-manager/LifeManagerBody.tsx` + lifeManager strings | DO NOW |
+| R3-8 | **No negative pricing language** — remove "no trial" everywhere. | lifeManager + lm strings | DO NOW |
+| R3-9 | **Home "Run on cloud / Run locally" CTAs must deep-link to the specific README setup sections**, not the repo root. | `components/site/v2/InstallSplit.tsx` (depends on R3-1 anchors) | after R3-1 |
+| R3-10 | **Home must NOT advertise Life Manager / hosted web app** — LM is a separate Dais product, not part of anicca. Remove any LM/hosted mentions from the home. | home components | pending audit |
+| R3-11 | **/dashboard must be REAL, real-time** — it shows the whole anicca colony's net worth + who's alive. Confirm it is real (not faked); if faked, fix the data pipeline or stop presenting it as real. | `app/dashboard/*`, dashboard.json pipeline | pending audit |
+
+
+
 Implements TRACK A of the §16 build. Scope = `~/anicca-project/apps/landing/**` ONLY. Do NOT touch
 `~/anicca`, the LM onboarding app logic, or `netlify/functions/life-*`. Grounded in
 `30-master-vision-products-ubi-2026-06-17.md` §0, §2, §13, §15, §16, §17.
