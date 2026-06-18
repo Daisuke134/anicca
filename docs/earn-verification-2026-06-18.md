@@ -61,6 +61,20 @@ B 待ちの間 = trading 等の残り A 手段を進める（遊ばない）
 - **live bounty(締切未来)が出たら**: apply(≥50字) → (pool型なら即) → Anicca が frontier(ClawRouter自己決済)で解く → submitWork(desc+IPFS/repo) → 報酬。gasless forwarder(ETH不要)。
 - ＝**「bounty が available なら Anicca は自己決済で解いて稼げる」**。今は供給(live件)がゼロなだけ。0xwork と同様、監視 cron で live 検知→自動参加が次の一手。
 
+## 検証済 BEST-PRACTICE earn-skill セット（Dais 2026-06-18: rimawari=GOAT, 0xwork外す）
+
+automaton 準拠（skill = SKILL.md playbook を prompt 注入 → frontier脳が survival tier + availability で選ぶ → primitive tools で実行）。earn は **per-method の独立 skill**、脳が毎wake選択。
+
+| skill | 役割 | availability | 実装の正攻法（web/docs検証済） |
+|---|---|---|---|
+| **earn_yield** ★GOAT / primary★ | 常時・確実 USDC（元本×金利） | always-on | **GOAT SDK**(goat-sdk/goat 951★=agentic finance toolkit) で Aave/Morpho/Moonwell supply。実証済 viem deposit でも可。何も無い時の baseline |
+| **earn_x402** | サービス売り・受動 USDC | passive(需要次第) | **A2A x402**(google-agentic-commerce/a2a-x402=agentがサービス課金しUSDC受領する標準) / x402-express、payTo=anicca |
+| **earn_nookplot** | 機会的 NOOK | live bounty時のみ | gateway `/v1/bounties?status=open` sub_mode1 → frontier自己解決 → submit(gasless) |
+| **earn_trade** | gamble・任意 | 普段選ばない | GOAT SDK / Hyperliquid(ai-trading-agent) / AutoHedge(Solana)。投機=非確実 |
+| ~~0xwork~~ | **降格・外す** | — | Dais 2026-06-18「0xwork is shit」。現タスク供給が有名人social系で agent不可 |
+
+**選択ロジック（脳）**: earn_nookplot/earn_x402 に live機会があればそれ、無ければ **earn_yield(GOAT) にフォールバック**＝必ず何か稼ぐ。trade は明示時のみ。
+
 ## BlockRun / x402 メモ
 - BlockRun OpenAI互換 x402 endpoint = `https://blockrun.ai/api/v1`（自己決済・鍵=wallet）。
 - x402 は EIP-3009(gasless USDC) なので ETH gas 無しでも surplus 推論は通る。
