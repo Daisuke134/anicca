@@ -44,20 +44,14 @@ Anicca pays for its **own** compute by paying per inference in USDC via x402 (Bl
 
 ```bash
 git clone https://github.com/Daisuke134/anicca ~/anicca && cd ~/anicca
-./install.sh                                    # sync runtime root + skill slots into ~/.anicca
-cd runtime/compute-proxy && npm install         # one-time (@blockrun/llm + viem)
-./start-local.sh                                # auto-creates a self-owned wallet → starts the self-pay proxy
+./install.sh                                    # sync runtime root + skill slots, generate a self-owned wallet
+cd runtime/compute-proxy && npm install && cd -  # one-time (@blockrun/llm + viem)
+./start-local.sh node runtime/loop/index.mjs    # start the self-pay proxy + the anicca loop
 ```
 
-`start-local.sh` stands up an OpenAI-compatible **self-pay compute proxy** at `http://127.0.0.1:8402/v1` and signs every inference in USDC from the self-owned wallet at `~/.automaton/wallet.json` (auto-generated; never a human key). To unlock frontier models, just send USDC to the wallet address it prints.
+This starts two things: (1) an OpenAI-compatible **self-pay compute proxy** at `http://127.0.0.1:8402/v1` that signs every inference in USDC from the self-owned wallet (auto-generated; never a human key), and (2) the **anicca loop** (`runtime/loop/`) — anicca's own ReAct loop (think → act → observe → persist, plus a heartbeat). Each wake the loop asks the proxy using ClawRouter's **`auto`** router (no hardcoded model — ClawRouter detects the tool calls, picks a tool-capable model, and charges your wallet), picks a tool (e.g. its `earn` skill), runs it, and appends a line to `$ANICCA_HOME/state/ledger.jsonl`. Empty wallet → a **free model ($0)**; send USDC to the printed address → frontier models.
 
-> **Honest scope (HARD 0.24 — no fake claims):** this repository does **not** ship the automaton loop itself. `install.sh` says so explicitly, and `start-local.sh` starts **only the compute proxy**. Plug your own OpenAI-compatible loop in with:
->
-> ```bash
-> ./start-local.sh <your-loop-cmd>
-> ```
->
-> Any loop that reads `OPENAI_BASE_URL` routes through the self-pay proxy automatically. Run with no arguments and it holds the proxy in the foreground and prints how to plug a loop in. **BYOK is optional** — put `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` / `DEEPSEEK_API_KEY` in `~/.anicca/.env` to use those instead; the default free-local path needs none.
+> Prefer a different brain? Set `ANICCA_BRAIN=claude-p` to drive the same loop with Claude Code (`claude -p`, e.g. Sonnet) instead of the self-pay proxy — useful for running anicca on top of an existing harness. Default is `proxy` (the self-funding path). Any other OpenAI-compatible loop can also point at `OPENAI_BASE_URL`.
 
 The capabilities Anicca runs are declared as slots in [`skills/registry.json`](skills/registry.json) and synced into `~/.anicca/skills/` by `install.sh`. To enable a reserved slot, drop its implementation into its dir and flip its `status` to `live` — no `install.sh` edit needed.
 
@@ -65,9 +59,7 @@ The capabilities Anicca runs are declared as slots in [`skills/registry.json`](s
 
 ## Architecture (one paragraph)
 
-A single **automaton** runtime (a ReAct loop — think → act → observe → persist — plus a heartbeat scheduler) runs under a runtime root (`~/.anicca`) alongside its skill slots and one Base smart wallet. Compute is **bought per call in USDC via x402** (BlockRun / ClawRouter) — no human API key. The web product adds **Supabase** for auth and **Composio** for service connections (Gmail / Google Calendar / Telegram). The Life Manager places its ~15-min-before phone calls via **Telnyx + Gemini Live (voice = Charon)**.
-
-> **Note on the runtime directory:** an earlier "Hermes pivot" (`specs/07-HERMES-PIVOT.md`) was **withdrawn** — the runtime now runs the **automaton** loop directly (`specs/00-MASTER.md`). On the genesis Mac the runtime directory is historically still named `~/.hermes/`, but what runs inside it is the **automaton**, not a Hermes daemon. Anicca is not a "double brain."
+Anicca runs the same **automaton pattern** as [Conway's automaton](https://github.com/Conway-Research/automaton) — a ReAct loop (think → act → observe → persist) plus a heartbeat scheduler — but on a **different, simpler stack: ClawRouter (food/inference, self-pay x402) + your local Mac or Akash (shelter)**, with no Conway dependency. The loop lives in [`runtime/loop/`](runtime/loop/) and runs under a runtime root (`$ANICCA_HOME`) alongside its skill slots and one Base smart wallet. The web product adds **Supabase** for auth and **Composio** for service connections (Gmail / Google Calendar / Telegram). The Life Manager places its ~15-min-before phone calls via **Telnyx + Gemini Live (voice = Charon)**.
 
 ---
 
@@ -76,13 +68,14 @@ A single **automaton** runtime (a ReAct loop — think → act → observe → p
 | Capability | Status |
 |---|---|
 | Self-pay compute proxy (free → frontier via x402, own wallet) | **Built & proven** (`runtime/compute-proxy/`) |
-| Earn → on-chain verify → ledger (GATE-0) | **Live** — first profitable wake verified on-chain 2026-06-16 (real ETH→USDC swap, net positive) |
+| **Anicca loop** (`runtime/loop/`) — wake → ClawRouter `auto` brain → run skill → ledger → sleep | **Built & runs** — fires tool calls via ClawRouter `auto` end-to-end (no hardcoded model); 68 tests + live wake verified |
+| Earn → on-chain verify → ledger (GATE-0) | **Built** — DeFi-yield deposits (Aave/Morpho, USDC) verified on-chain; earn skill being finalized around the methods that actually pay |
 | Life Manager: `ask` (email when info unknown), `notify` (lateness draft → approve → send) | **Live** skill slots |
 | Life Manager: `travel` (auto-insert travel block), `call` (15-min-before phone call) | **Declared** — implementation landing |
 | Self-replication (`self/spawn`), self-improvement (`self/issue-dev`), UBI (`economy/ubi`) | **Declared** — mechanism fixed, post-earn roadmap |
 | Cloud per-user dashboard, Stripe subscription, sovereign server (Akash) | **In progress** — see `specs/00-MASTER.md` |
 
-The automaton loop binary is **not** shipped in this repo (bring your own runner — see the local quick-start above).
+The anicca loop ships in [`runtime/loop/`](runtime/loop/) and starts via `./start-local.sh node runtime/loop/index.mjs` (see the local quick-start above).
 
 ---
 
