@@ -68,8 +68,14 @@ fi
 # --- 3. point any OpenAI-compatible loop at the self-paid proxy --------
 export OPENAI_BASE_URL="http://127.0.0.1:$PORT/v1"
 export OPENAI_API_KEY="${OPENAI_API_KEY:-x402-local-nokey}"   # placeholder; proxy pays in USDC, not this
-export ANICCA_MODEL="${ANICCA_MODEL:-$FREE_MODEL}"
-echo "[local] inference -> $OPENAI_BASE_URL  model=$ANICCA_MODEL  (free until wallet funded)"
+# Use ClawRouter's `auto` router by default (no hardcoded model); ANICCA_MODEL can pin one.
+export ANICCA_MODEL="${ANICCA_MODEL:-auto}"
+# The loop requires ANICCA_HOME (no default) — derive it the same way install.sh does.
+export ANICCA_HOME="${ANICCA_HOME:-$HOME/.anicca}"
+# Expose the self-owned wallet address so the loop can read its balance (tier selection).
+export ANICCA_WALLET_ADDRESS="${ANICCA_WALLET_ADDRESS:-$(node -e 'try{console.log(JSON.parse(require("fs").readFileSync(process.env.HOME+"/.automaton/wallet.json")).address)}catch(e){process.exit(0)}')}"
+echo "[local] inference -> $OPENAI_BASE_URL  model=$ANICCA_MODEL  (ClawRouter auto; free until wallet funded)"
+echo "[local] ANICCA_HOME=$ANICCA_HOME  wallet=$ANICCA_WALLET_ADDRESS"
 
 # --- 4. run YOUR loop, or hold the proxy + show how to plug one in -----
 if [ "$#" -gt 0 ]; then
