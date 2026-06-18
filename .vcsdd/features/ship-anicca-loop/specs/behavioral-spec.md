@@ -350,6 +350,48 @@ self-pay proxy.
 
 ---
 
+### REQ-011: Pluggable Brain Backend (self-pay proxy | claude-p)
+
+**EARS**: WHEN the loop performs the THINK step of a wake, THE SYSTEM SHALL
+obtain the model's response from one of two interchangeable brain backends,
+selected by the `ANICCA_BRAIN` env var, WITHOUT changing any other part of the
+wake lifecycle (REQ-001) or the earn-detection contract (REQ-003).
+
+| `ANICCA_BRAIN` | Backend | How the brain is invoked | Who pays compute |
+|----------------|---------|--------------------------|------------------|
+| `proxy` (default) | self-pay compute proxy | HTTP POST to `OPENAI_BASE_URL` (`http://127.0.0.1:8402/v1/chat/completions`), signed per-call in USDC via x402/ClawRouter from the agent's own wallet (REQ-002 tiering applies) | the anicca itself (its wallet) |
+| `claude-p` | Claude Code headless | spawn `claude -p <prompt> --output-format json --model "$ANICCA_BRAIN_MODEL"` (default model `claude-sonnet-4-6`; Opus is too expensive for a 24/7 loop) and read the JSON result as the THINK output | the operator's Claude subscription |
+
+**Rationale (v2 — any harness can run an anicca)**: the loop is brain-agnostic so
+the SAME loop + earn skill can run on a self-funding wallet (proxy) OR on top of
+an existing harness like Claude Code (`claude-p`). This is how a Claude Code (or
+any frontier-model harness) instance can itself "become an anicca": it reasons
+with its own subscription while still earning USDC and paying for shelter/food
+on-chain. The brain backend is the ONLY thing that differs; tools, earn
+detection, ledger, survival economics are identical.
+
+**Edge Cases**:
+- `ANICCA_BRAIN=claude-p` but `claude` binary not found: log a one-line ledger
+  error and fall back to `proxy` (never brick); if proxy is also unreachable,
+  write a `narrate` line and sleep.
+- `claude -p` returns non-JSON / non-zero exit: treat as a failed THINK (same as
+  a malformed proxy response under REQ-001) — narrate + continue, never claim an
+  earn.
+- Neither backend forwards the private key to the child (REQ-004 still holds for
+  the `claude -p` subprocess env).
+
+**Acceptance Criteria**:
+- With `ANICCA_BRAIN=proxy`, the THINK step issues exactly one HTTP request to
+  `OPENAI_BASE_URL` and zero `claude` subprocesses.
+- With `ANICCA_BRAIN=claude-p`, the THINK step spawns exactly one `claude -p`
+  subprocess with `--model "$ANICCA_BRAIN_MODEL"` and the wake otherwise follows
+  REQ-001 identically (same parse → execute → persist → sleep path).
+- The earn-detection logic (REQ-003 `isProfitable()` on the ledger line) produces
+  identical results regardless of which brain backend was used.
+- `claude -p` child env contains no `*_WALLET_KEY` / `*_PRIVATE_KEY` (REQ-004).
+
+---
+
 ## Non-Functional Requirements
 
 | ID    | Category    | Requirement                                                                       |
