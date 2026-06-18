@@ -86,7 +86,7 @@ def main():
         ixs.append(Instruction(
             program_id=Pubkey.from_string(ix["programId"]),
             accounts=[AccountMeta(Pubkey.from_string(a["pubkey"]), a["isSigner"], a["isWritable"]) for a in ix["keys"]],
-            data=base64.b64decode(ix["data"]) if _is_b64(ix["data"]) else bytes.fromhex(ix["data"].replace("0x", "")),
+            data=bytes.fromhex(ix["data"][2:] if ix["data"].startswith("0x") else ix["data"]),  # relay Solana ix.data = hex
         ))
 
     # address lookup tables
