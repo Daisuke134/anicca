@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Anicca — live treasury</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root{ --bg:#07070a; --ink:#f4f4f6; --dim:#8a8a96; --line:rgba(255,255,255,.08);
+         --up:#3ad29f; --pulse:#c8302e; --card:rgba(255,255,255,.025); }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--bg);color:var(--ink);font-family:"Geist",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  body{overflow-x:hidden;min-height:100vh;position:relative}
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+    background:radial-gradient(1200px 700px at 50% -10%, rgba(200,48,46,.10), transparent 60%),
+               radial-gradient(900px 600px at 90% 110%, rgba(58,210,159,.06), transparent 55%);}
+  body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.04;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
+  .wrap{position:relative;z-index:1;max-width:1280px;margin:0 auto;padding:0 28px}
+  nav{display:flex;align-items:center;justify-content:space-between;padding:30px 0 10px}
+  .brand{display:flex;align-items:center;gap:12px;font-weight:700;letter-spacing:-.01em}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--up);box-shadow:0 0 12px var(--up);animation:bp 1.8s infinite}
+  @keyframes bp{0%,100%{opacity:1}50%{opacity:.35}}
+  .nav-meta{font-family:"Geist Mono";font-size:12px;color:var(--dim)}
+  header{padding:64px 0 40px;text-align:center}
+  header h1{font-size:clamp(2.4rem,5vw,4.4rem);font-weight:700;letter-spacing:-.03em;line-height:1.02;max-width:62rem;margin:0 auto}
+  header p{color:var(--dim);margin-top:18px;font-size:clamp(1rem,1.4vw,1.15rem);max-width:40rem;margin-inline:auto}
+  .agents{display:grid;grid-template-columns:1fr 1fr;gap:22px;padding:30px 0 80px}
+  @media(max-width:820px){.agents{grid-template-columns:1fr}}
+  .card{position:relative;border:1px solid var(--line);border-radius:20px;background:var(--card);
+    padding:30px 30px 26px;overflow:hidden;backdrop-filter:blur(6px)}
+  .card.soon{opacity:.55}
+  .chead{display:flex;align-items:center;justify-content:space-between;margin-bottom:26px}
+  .cname{font-weight:600;font-size:1.15rem;letter-spacing:-.01em}
+  .chost{font-family:"Geist Mono";font-size:11px;color:var(--dim);margin-top:4px}
+  .status{font-family:"Geist Mono";font-size:11px;display:flex;align-items:center;gap:7px;
+    padding:5px 11px;border:1px solid var(--line);border-radius:99px;color:var(--up)}
+  .status.off{color:var(--dim)}
+  .status .s{width:7px;height:7px;border-radius:50%;background:currentColor;box-shadow:0 0 9px currentColor}
+  .nw{font-family:"Geist Mono";font-weight:500;font-size:clamp(2.6rem,5.2vw,3.8rem);letter-spacing:-.04em;line-height:1}
+  .nwlabel{font-family:"Geist Mono";font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.14em;margin-bottom:10px}
+  .earn{margin-top:14px;font-family:"Geist Mono";font-size:13px;color:var(--up)}
+  .earn.neg{color:var(--pulse)}
+  .breakdown{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:26px}
+  .bd{border:1px solid var(--line);border-radius:12px;padding:12px 13px}
+  .bd .k{font-family:"Geist Mono";font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.1em}
+  .bd .v{font-family:"Geist Mono";font-size:15px;margin-top:6px}
+  .logwrap{margin:10px 0 90px}
+  .logtitle{font-family:"Geist Mono";font-size:12px;color:var(--dim);letter-spacing:.12em;text-transform:uppercase;margin-bottom:14px}
+  .log{border:1px solid var(--line);border-radius:16px;background:rgba(0,0,0,.25);height:300px;overflow:hidden;position:relative}
+  .logscroll{padding:16px 20px;font-family:"Geist Mono";font-size:12.5px;line-height:1.9}
+  .row{display:flex;gap:16px;color:var(--dim);border-bottom:1px solid rgba(255,255,255,.04);padding:5px 0;animation:fin .5s ease}
+  @keyframes fin{from{opacity:0;transform:translateY(4px)}to{opacity:1}}
+  .row .t{color:#5d5d68;min-width:78px}
+  .row .k{min-width:92px}
+  .row .k.wake{color:#8ab4ff}.row .k.yield{color:var(--up)}.row .k.narrate{color:var(--dim)}
+  .row .k.shutdown,.row .k.wake_error,.row .k.loop_detect{color:#e0a04d}
+  .row .m{color:#c8c8d0;flex:1}
+  footer{padding:40px 0 60px;border-top:1px solid var(--line);color:var(--dim);font-family:"Geist Mono";font-size:11px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <nav>
+    <div class="brand"><span class="dot"></span> Anicca</div>
+    <div class="nav-meta" id="clock">live</div>
+  </nav>
+
+  <header>
+    <h1>An autonomous agent paying its own way.</h1>
+    <p>Live treasury and activity of Anicca instances earning USDC on Base with no human in the loop.</p>
+  </header>
+
+  <section class="agents" id="agents"></section>
+
+  <div class="logwrap">
+    <div class="logtitle">live activity — streamed from the agent's own ledger</div>
+    <div class="log"><div class="logscroll" id="log"></div></div>
+  </div>
+
+  <footer>
+    <span>Base mainnet · read-only · public wallets verifiable on basescan</span>
+    <span id="last">connecting…</span>
+  </footer>
+</main>
+
+<script>
+const fmtUsd = (n)=> "$"+(n??0).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtT = (ts)=> new Date(ts*1000).toLocaleTimeString("en-US",{hour12:false});
+let nwAnim = {};
+
+function agentCard(a){
+  const nw = a.netWorth || {total:0,liquid:0,aave:0,morpho:0,moonwell:0};
+  const earn = a.earnedSinceStart||0;
+  return `<div class="card ${a.online?'':'soon'}">
+    <div class="chead">
+      <div><div class="cname">${a.name}</div><div class="chost">${a.host} · ${a.wallet.slice(0,6)}…${a.wallet.slice(-4)}</div></div>
+      <div class="status ${a.online?'':'off'}"><span class="s"></span>${a.online?'earning':'offline'}</div>
+    </div>
+    <div class="nwlabel">net worth</div>
+    <div class="nw" data-id="${a.id}" data-v="${nw.total}">${fmtUsd(nw.total)}</div>
+    <div class="earn ${earn<0?'neg':''}">${earn>=0?'+':''}${earn.toFixed(6)} USDC since start · yield accruing</div>
+    <div class="breakdown">
+      <div class="bd"><div class="k">liquid</div><div class="v">${fmtUsd(nw.liquid)}</div></div>
+      <div class="bd"><div class="k">Aave</div><div class="v">${fmtUsd(nw.aave)}</div></div>
+      <div class="bd"><div class="k">Morpho</div><div class="v">${fmtUsd(nw.morpho)}</div></div>
+      <div class="bd"><div class="k">Moonwell</div><div class="v">${fmtUsd(nw.moonwell)}</div></div>
+    </div>
+  </div>`;
+}
+function cloudPlaceholder(){
+  return `<div class="card soon">
+    <div class="chead"><div><div class="cname">Anicca / Cloud</div><div class="chost">Akash · self-replicating</div></div>
+    <div class="status off"><span class="s"></span>deploying</div></div>
+    <div class="nwlabel">net worth</div><div class="nw">—</div>
+    <div class="earn" style="color:var(--dim)">coming online on Akash</div>
+    <div class="breakdown"><div class="bd"><div class="k">liquid</div><div class="v">—</div></div>
+    <div class="bd"><div class="k">Aave</div><div class="v">—</div></div>
+    <div class="bd"><div class="k">Morpho</div><div class="v">—</div></div>
+    <div class="bd"><div class="k">Moonwell</div><div class="v">—</div></div></div>
+  </div>`;
+}
+function render(state){
+  const host = document.getElementById("agents");
+  let html = (state.agents||[]).map(agentCard).join("");
+  if((state.agents||[]).length < 2) html += cloudPlaceholder();
+  host.innerHTML = html;
+  // count-up animation on net worth
+  document.querySelectorAll(".nw[data-id]").forEach(el=>{
+    const target = parseFloat(el.dataset.v)||0; const id = el.dataset.id;
+    const from = nwAnim[id] ?? target; nwAnim[id]=target;
+    const t0=performance.now();
+    (function step(t){ const p=Math.min(1,(t-t0)/700); const v=from+(target-from)*(1-Math.pow(1-p,3));
+      el.textContent=fmtUsd(v); if(p<1)requestAnimationFrame(step); })(t0);
+  });
+  // live log (merge all agents' ledgers, newest last)
+  const rows=[];
+  (state.agents||[]).forEach(a=>(a.log||[]).forEach(l=>rows.push(l)));
+  rows.sort((x,y)=>(x.ts||0)-(y.ts||0));
+  const logEl=document.getElementById("log");
+  logEl.innerHTML = rows.slice(-60).map(l=>{
+    const kind=(l.kind||"·"); const m = l.slot?`run_skill ${l.slot}`:(l.task||l.source||"");
+    const extra = l.deposited_usdc?` +${l.deposited_usdc} USDC→yield`:(l.model?` · ${l.model}`:"");
+    return `<div class="row"><span class="t">${fmtT(l.ts)}</span><span class="k ${kind}">${kind}</span><span class="m">${m}${extra}</span></div>`;
+  }).join("");
+  logEl.scrollTop = logEl.scrollHeight;
+  document.getElementById("last").textContent = "updated "+fmtT(state.ts);
+}
+// SSE: the server streams; the page never asks the human to refresh.
+try{
+  const es=new EventSource("/events");
+  es.onmessage=(e)=>render(JSON.parse(e.data));
+  es.onerror=()=>{ fetch("/api/state").then(r=>r.json()).then(render).catch(()=>{}); };
+}catch(e){ setInterval(()=>fetch("/api/state").then(r=>r.json()).then(render),4000); }
+setInterval(()=>document.getElementById("clock").textContent=new Date().toLocaleTimeString("en-US",{hour12:false}),1000);
+</script>
+</body>
+</html>
