@@ -43,6 +43,11 @@ else
   echo "[local] wallet preserved: $(node -e 'console.log(JSON.parse(require("fs").readFileSync(process.env.HOME+"/.automaton/wallet.json")).address)')"
 fi
 
+# --- 1b. self-owned Solana wallet (fund via Binance SOL -> auto-swap to USDC) --
+# Lets anyone top anicca up from Binance (which in many regions only sells SOL):
+# send SOL here, the funding daemon swaps it to USDC on Base. No human key, no deps.
+node "$HERE/ensure-solana-wallet.mjs" || echo "[local] WARN: solana wallet gen skipped"
+
 # --- 2. start the x402 self-pay proxy ----------------------------------
 # Readiness is proven by a real routed path (/v1/chat/completions), NOT /v1/models
 # (proxy.mjs returns an empty data:[] for /models, so a 200 there proves nothing).
