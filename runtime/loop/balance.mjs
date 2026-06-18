@@ -39,6 +39,11 @@ export async function fetchUsdcBalance(address, config) {
     return Number.isFinite(parsed) ? parsed : NaN;
   }
 
+  // Validate the address before building any RPC call (no wallet → caller keeps prior tier).
+  if (typeof address !== 'string' || !/^0x[0-9a-fA-F]{40}$/.test(address)) {
+    throw new Error(`invalid wallet address: ${String(address)}`);
+  }
+
   // TTL cache check
   const ttlS = Number(config.BALANCE_CACHE_TTL_S ?? 300);
   const now = Date.now();
