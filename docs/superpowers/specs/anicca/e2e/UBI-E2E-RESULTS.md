@@ -27,6 +27,12 @@ REMAINING for wallet: a real human submitting THEIR own address + seeing it in t
 - **FIX needed (Crossmint console, ~2 min):** crossmint.com/console → project → the client key → add allowed origin `https://aniccaai.com` (+ localhost for dev) → enable **Email** login method. Then re-run this E2E (login as keiodaisuke → OTP via Gmail → see the $0.50 in wallet 0x9557…).
 - So email PATH = page done, but NOT usable until the Crossmint client-key origin/email config is set. NOT claiming email done.
 
+### UPDATE (2026-06-18, after Dais added aniccaai.com origin + rights to the client key)
+- ✅ **Login now WORKS**: camofox → /income/wallet → sign in → email keiodaisuke@gmail.com → "Check your email" → OTP **293740** read from Gmail (gog) → entered → authenticated, the post-login "Your wallet" panel renders. The origin/email-method fix unblocked OTP. Auth half PROVEN.
+- ❌ **Wallet provisioning errors**: `useWallet()` returns `status: "error"` (no `error.message` surfaced). The wallet address + balance do NOT load, so the $0.50 (server-created wallet 0x9557…) can't be shown/withdrawn yet.
+- Likely cause: the client SDK `createOnLogin={{chain:"base",signer:{type:"email"}}}` conflicts with the wallet already created via the SERVER API (2022-06-09, owner email + adminSigner email) → get-or-create mismatch. Next: align the SDK wallet config with the server-created one (or provision via the SDK's own flow), surface the real error, retest until balance shows + a withdraw tx fires.
+- Honest: email path = auth proven, wallet-view/withdraw NOT yet. One narrow SDK-config bug remains.
+
 ## What "done" must mean (no more lies)
 A path is done ONLY when a real person, on a named website, taps named buttons, and ends with money
 they can SPEND (in their wallet they control, or yen/USD in their bank / PayPay) — verified by that
