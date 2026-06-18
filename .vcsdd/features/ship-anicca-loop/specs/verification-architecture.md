@@ -60,6 +60,7 @@
 | PROP-020  | The observation string AND the serialised loop-ledger line produced after any `run_skill earn` call do NOT contain a 64-hex private-key pattern (`/0x[0-9a-fA-F]{64}/`) | 1    | true     | node:test      | REQ-004  |
 | PROP-021  | **isProfitable() earn classifier**: (a) a mock earn-ledger line with `{tx:"0xabc…",status:"0x1",net_usdc:"1.5",external:true,wake:WAKE_ID}` → loop records `{kind:"wake",profitable:true}`; (b) a line with no `tx` field (discover) → `profitable:false`; (c) a line with `status:"0x0"` (failed tx) → `profitable:false`; (d) a line with `external:false` (swap rotation) → `profitable:false`; (e) `run.sh` exits 0 but no line matching `WAKE_ID` in earn-ledger → `profitable:false`. Exit code 0 alone NEVER produces `profitable:true`. | 2    | true     | node:test (integration) | REQ-003  |
 | PROP-022  | **No orphan child process after SIGTERM**: spin up `index.mjs` with a mock skill that sleeps 30 s; send SIGTERM to the loop while the skill is running; assert (a) `ledger.jsonl` ends with `kind:"shutdown"`, (b) the skill child process PID is no longer present in the OS process table within 6 s (5 s kill window + 1 s margin), (c) loop exits with code 0. Also exercises the 5 s child-kill timeout path (`behavioral-spec.md:222-223`): a child that does not die within 5 s of receiving SIGTERM is force-killed (SIGKILL). | 2    | true     | node:test (integration) | REQ-006  |
+| PROP-023  | **Pluggable brain backend (REQ-011)**: (a) with `ANICCA_BRAIN=proxy` the THINK step makes exactly one HTTP call to `OPENAI_BASE_URL` and spawns zero `claude` subprocesses; (b) with `ANICCA_BRAIN=claude-p` the THINK step spawns exactly one `claude -p` subprocess carrying `--model "$ANICCA_BRAIN_MODEL"` and makes zero proxy HTTP calls; (c) the `claude -p` child env passes `scrubPrivateKeys` (no `*_WALLET_KEY`/`*_PRIVATE_KEY`); (d) given an identical mock THINK output, `isProfitable()` on the resulting ledger line is identical for both backends; (e) `ANICCA_BRAIN=claude-p` with `claude` binary absent → falls back to `proxy`, never crashes. | 2    | true     | node:test (integration) | REQ-011  |
 
 ---
 
@@ -126,6 +127,7 @@ Formal model checking (TLA+, Kani) is out of scope for this sprint.
 | REQ-007   | PROP-007, PROP-014                                     |
 | REQ-008   | PROP-017                                               |
 | REQ-009   | PROP-011, PROP-012                                     |
+| REQ-011   | PROP-023                                               |
 | REQ-010   | Covered by Phase 2 smoke-test (not a unit prop)        |
 
 ---
