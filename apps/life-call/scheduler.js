@@ -8,7 +8,7 @@
 "use strict";
 
 const crypto = require("crypto");
-const { fetchNextEvent } = require("./lib/events.js");
+const { fetchUpcomingEvents } = require("./lib/events.js");
 const { placeCall } = require("./lib/dial.js");
 
 // HMAC over the per-call context so the persistent /ws bridge can prove a connection was minted by
@@ -70,13 +70,16 @@ async function tick() {
   const users = await supaUsers();
   const now = Date.now();
   for (const u of users) {
-    let ev;
+    let events;
     try {
-      ev = await fetchNextEvent(u.uid, { nowMs: now, horizonH: 2 });
+      events = await fetchUpcomingEvents(u.uid, { nowMs: now, horizonH: 2 });
     } catch {
       continue;
     }
-    if (!ev || isHelperBlock(ev.summary)) continue;
+    // Soonest REAL commitment — skip Anicca's own inserted [Travel]/[PENDING]/[APPLIED] blocks
+    // (don't stop at the single soonest event; a helper block must not mask a real one behind it).
+    const ev = (events || []).find((e) => !isHelperBlock(e.summary));
+    if (!ev) continue;
     const mins = (ev.startMs - now) / 60000;
     if (mins < DUE_LO_MIN || mins > DUE_HI_MIN) continue;
 
