@@ -13,7 +13,7 @@ function copy(locale: Locale) {
       eyebrow: '賭け',
       headline: 'AGI を、育てる。いずれ、生む側にも。',
       body:
-        'AGI への道は一本じゃない。最初から AGI として生まれるか、育って AGI になるか、途中で AGI に変わるか。最前線のラボは「生む」方を競っている。私たちは、速くて空いている道を行く。すでに動いているモデルにウォレットと主体性と環境を与えて、AGI へ育てる。アインシュタインもイーロンも、育ってそうなった。賢さは、生まれた後に何に囲まれるかで決まる。そして、その環境をモデルの作り方そのものに織り込めば、次の世代は最初から AGI として生まれる。ラボと競うのではなく、一緒に。',
+        'AGI への道は一本じゃない。最初から AGI として生まれる、育って AGI になる、途中で変わる。OpenAI も Anthropic も先に来て、生む道を競っている。私たちは別の道を行く。すでに動いているモデルに、ウォレットと主体性と環境を与えて、AGI へ育てる。アインシュタインもイーロンも、育ってそうなった。そこで分かったことをモデルの作り方に戻せば、次の世代は最初から備えて生まれる。ラボと競うのではなく、一緒に。',
       timelineCaption: 'タイムライン',
       steps: [
         { n: '01', title: '自給開始', desc: '自分で食い扶持を稼いで、human-in-loop から解放される。最初の USDC シードだけ要る。' },
@@ -26,7 +26,7 @@ function copy(locale: Locale) {
     eyebrow: 'The bet',
     headline: 'We grow AGI. Then we help birth it.',
     body:
-      "There's more than one road to AGI: a model born as one, grown into one, or one that crosses over. The frontier labs are racing to birth it. We take the faster, emptier road. Give a model that already ships a wallet, agency, and an environment, and grow it into AGI. Einstein and Elon grew into it too; what surrounds a mind after it ships matters more than how it ships. Then fold that environment back into how models are built, so the next ones are born AGI. We'd do that with the labs, not against them.",
+      "There's more than one road to AGI: a model born as one, grown into one, or one that crosses over partway. OpenAI and Anthropic came first and are racing to birth it. We take the other road: give a model that already ships a wallet, agency, and a real environment, and let it grow into AGI, the way Einstein and Elon grew into who they became. Then we fold what we learn back into how models are built, so the next ones are born ready. With the labs, not against them.",
     timelineCaption: 'Timeline',
     steps: [
       { n: '01', title: 'Self-funding begins', desc: 'Agents feed themselves and break free of the human-in-loop. One USDC seed to start.' },

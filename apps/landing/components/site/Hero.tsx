@@ -15,8 +15,8 @@ export default function Hero({ locale }: HeroProps) {
   const t = translations[locale].hero;
   const subtext =
     locale === 'ja'
-      ? '自分でコンピュートを稼いで動く AI。稼ぎの余りは、人にそのまま配る。'
-      : 'An AI that earns its own compute and runs on it. Whatever it makes past survival goes back to people.';
+      ? '自分でコンピュート代を稼いで動く AI。自分の分を払って、残ったぶんを人に送る。'
+      : 'An AI that earns its own compute. After it covers itself, it sends what is left to people.';
   // spec32: most people benefit via UBI, not by running one → "Receive basic income"
   // is the PRIMARY/top CTA; running an anicca yourself is the secondary path.
   const primaryLabel = locale === 'ja' ? 'ベーシックインカムを受け取る' : 'Receive basic income';
