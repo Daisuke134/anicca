@@ -10,7 +10,9 @@ Source of truth for current code: `~/anicca/skills/life/` (read in full for each
 
 ## WS1 — Transport adapter (the ONLY local↔cloud difference)
 
-**Goal**: every consumer (planner / ask / notify / travel) talks to `calendar.*` / `mail.*`, never `gog` directly. `LIFE_TRANSPORT=gog` (local, user keys) | `composio` (cloud, we manage keys). Same core code both sides.
+**Goal**: every consumer (planner / ask / notify / travel) talks to `calendar.*` / `mail.*`, never `gog` directly. `LIFE_TRANSPORT=gog` (local, user keys) | `composio` (cloud, we manage keys). Same core code both sides. **Invariant = argv-EQUIVALENT** (not literally byte-identical): the adapter appends `--account` last uniformly; gog flags are order-independent (verified gog 0.17.0, see adapter comment).
+
+**Caveat (Finding 9)**: WS1-v1 migrates only `planner.js` + `ask-local.js`. `notify.js` + `travel_fill.py` keep their own gog calls until WS1-v2 → so `LIFE_TRANSPORT=composio` is NOT end-to-end selectable until WS1-v2 lands (a half-cloud state is reachable but unused). Local `gog` path is fully consistent throughout.
 
 **Files in WS1**: NEW `adapters/transport.js`; edit `planner.js`, `ask/ask-local.js`, `notify/notify.js` (JS). Python sibling `travel/travel_fill.py` = WS1b (separate diff, same interface in Python).
 
@@ -29,7 +31,10 @@ const { execFileSync } = require("node:child_process");
 // LOCAL implementation: wraps the verified `gog` CLI shapes (gog 0.17.0).
 function gogTransport({ bin = "/opt/homebrew/bin/gog", account, keyring = "", calId = "primary" } = {}) {
   const env = () => ({ ...process.env, GOG_KEYRING_PASSWORD: keyring, GOG_ACCOUNT: account });
-  // every gog call ends with --account <account> (matches current call sites verbatim)
+  // every gog call ends with --account <account>. NOTE: this is argv-EQUIVALENT, not byte-identical:
+  // the adapter appends --account last uniformly, whereas current call sites place it mid-argv on
+  // `calendar list` and `gmail send`. gog flags are order-independent — VERIFIED on gog 0.17.0:
+  //   `gog calendar events list -j --from today --all-pages --max 1 --account <acct>` → exit 0 + valid JSON.
   const run = (args, timeout = 60000) =>
     execFileSync(bin, [...args, "--account", account], { env: env(), encoding: "utf8", timeout });
   return {
