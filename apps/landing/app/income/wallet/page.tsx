@@ -21,7 +21,7 @@ const USDC_BASE = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
 
 function Panel() {
   const auth = useCrossmintAuth() as any;
-  const { wallet, status } = useWallet();
+  const { wallet, status, error } = useWallet() as any;
   const [balance, setBalance] = useState<string>('');
   const [to, setTo] = useState('');
   const [amount, setAmount] = useState('');
@@ -73,6 +73,7 @@ function Panel() {
       <p className="mt-2 break-all font-mono text-xs text-[hsl(var(--text-secondary))]">
         {wallet?.address || `status: ${status}`}
       </p>
+      {error && <p className="mt-1 break-all text-xs text-red-400">err: {String(error?.message || error)}</p>}
 
       <button onClick={refresh} className="mt-4 rounded-card border border-[hsl(var(--border))] px-4 py-2 text-sm text-[hsl(var(--text-primary))]">
         Show balance
