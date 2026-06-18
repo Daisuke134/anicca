@@ -9,7 +9,6 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const os = require("node:os");
-const { execFileSync } = require("node:child_process");
 
 const HOME = process.env.HOME || os.homedir();
 function loadEnv() {
@@ -23,14 +22,17 @@ function loadEnv() {
   return out;
 }
 const ENV = loadEnv();
-const GOG_BIN = "/opt/homebrew/bin/gog";
 const GOG_ACCOUNT = process.env.GOG_ACCOUNT || ENV.GOG_ACCOUNT || "keiodaisuke@gmail.com";
 const DAIS_EMAIL = process.env.DAIS_EMAIL || ENV.DAIS_EMAIL || "keiodaisuke@gmail.com";
 const QUEUE = process.env.LIFE_ASK_QUEUE || path.join(HOME, ".openclaw", "state", "life-ask-queue.jsonl");
 const TRAVEL_STATE = path.join(HOME, ".openclaw", "skills", "anicca-travel-fill", "state", "travel_filled.json");
-function gogEnv() {
-  return { ...process.env, GOG_KEYRING_PASSWORD: process.env.GOG_KEYRING_PASSWORD || ENV.GOG_KEYRING_PASSWORD || "", GOG_ACCOUNT };
-}
+const CAL_ID = process.env.LIFE_CAL_ID || ENV.GCAL_ID || "primary";
+const { makeTransport } = require("../adapters/transport");
+const T = makeTransport({
+  account: GOG_ACCOUNT,
+  keyring: process.env.GOG_KEYRING_PASSWORD || ENV.GOG_KEYRING_PASSWORD || "",
+  calId: CAL_ID,
+});
 
 // ── pure (unit-tested) ─────────────────────────────────────────────────────────
 function loadQueue(p) {
@@ -68,34 +70,14 @@ function parseReply(subject, body) {
 }
 
 // ── side-effecting (E2E) ───────────────────────────────────────────────────────
-function gogSend({ to, subject, body }) {
-  const out = execFileSync(GOG_BIN, ["gmail", "send", "--account", GOG_ACCOUNT, "--to", to, "--subject", subject, "--body", body, "--json"],
-    { env: gogEnv(), encoding: "utf8", timeout: 30000 });
-  try { const j = JSON.parse(out); return j.id || j.messageId || ""; } catch { return ""; }
-}
+function gogSend({ to, subject, body }) { return T.mail.send({ to, subject, body }); }
 function gogSearchReplyThreads() {
-  try {
-    const out = execFileSync(GOG_BIN, ["gmail", "search", `from:${DAIS_EMAIL} subject:"[ASK-" newer_than:7d`, "-j", "--account", GOG_ACCOUNT],
-      { env: gogEnv(), encoding: "utf8", timeout: 30000 });
-    const d = JSON.parse(out);
-    return (d.threads || d.messages || d || []).map((t) => ({ id: t.id, subject: t.subject || "" }));
-  } catch { return []; }
+  try { return T.mail.search(`from:${DAIS_EMAIL} subject:"[ASK-" newer_than:7d`); } catch { return []; }
 }
-function gogGetBody(id) {
-  try {
-    const out = execFileSync(GOG_BIN, ["gmail", "get", id, "-j", "--account", GOG_ACCOUNT], { env: gogEnv(), encoding: "utf8", timeout: 30000 });
-    const d = JSON.parse(out);
-    const subject = (d.headers && (d.headers.subject || d.headers.Subject)) || d.subject || "";
-    return { subject, body: d.body || "" };
-  } catch { return { subject: "", body: "" }; }
-}
-const CAL_ID = process.env.LIFE_CAL_ID || ENV.GCAL_ID || "primary";
+function gogGetBody(id) { try { return T.mail.getBody(id); } catch { return { subject: "", body: "" }; } }
 function setEventLocation(eventId, location) {
-  try {  // gog calendar update needs <calendarId> <eventId> — two positionals
-    execFileSync(GOG_BIN, ["calendar", "update", CAL_ID, eventId, "--location", location, "-j", "--account", GOG_ACCOUNT],
-      { env: gogEnv(), encoding: "utf8", timeout: 30000 });
-    return true;
-  } catch (e) { console.error("[ask] setEventLocation failed:", e.message); return false; }
+  try { return T.calendar.updateLocation(eventId, location); }
+  catch (e) { console.error("[ask] setEventLocation failed:", e.message); return false; }
 }
 function baseId(id) { return String(id || "").split("_")[0]; }  // strip recurring-event _2026..Z suffix
 function clearTravelState(eventId) {
