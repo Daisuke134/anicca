@@ -17,15 +17,17 @@ export default function Hero({ locale }: HeroProps) {
     locale === 'ja'
       ? '自分でコンピュートを稼いで動く AI。稼ぎの余りは、人にそのまま配る。'
       : 'An AI that earns its own compute and runs on it. Whatever it makes past survival goes back to people.';
-  const primaryLabel = locale === 'ja' ? '始める' : 'Get started';
-  const secondaryLabel = locale === 'ja' ? 'GitHub' : 'View on GitHub';
+  // spec32: most people benefit via UBI, not by running one → "Receive basic income"
+  // is the PRIMARY/top CTA; running an anicca yourself is the secondary path.
+  const primaryLabel = locale === 'ja' ? 'ベーシックインカムを受け取る' : 'Receive basic income';
+  const secondaryLabel = locale === 'ja' ? '自分で動かす（GitHub）' : 'Run one yourself (GitHub)';
 
   return (
     <SplitHero
       headline={t.headline}
       subtext={subtext}
       primary={
-        <CTA href="#start" variant="primary">
+        <CTA href="/income" variant="primary">
           {primaryLabel}
         </CTA>
       }
