@@ -8,7 +8,7 @@ Source of truth for current code: `~/anicca/skills/life/` (read in full for each
 
 ---
 
-## WS1 — Transport adapter (the ONLY local↔cloud difference)
+## WS1 — Transport adapter (the ONLY local↔cloud difference)  ✅ REVIEW PASSED (code-reviewer ok:true, 2026-06-18, after argv-equivalent doc fix + gog 0.17.0 empirical proof)
 
 **Goal**: every consumer (planner / ask / notify / travel) talks to `calendar.*` / `mail.*`, never `gog` directly. `LIFE_TRANSPORT=gog` (local, user keys) | `composio` (cloud, we manage keys). Same core code both sides. **Invariant = argv-EQUIVALENT** (not literally byte-identical): the adapter appends `--account` last uniformly; gog flags are order-independent (verified gog 0.17.0, see adapter comment).
 
