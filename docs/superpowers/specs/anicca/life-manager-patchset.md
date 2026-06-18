@@ -726,5 +726,47 @@ Seed a DIVERSE event set (deliberately beyond the old JP list/regex) and run `re
 - `running` → agent decides (home/route) or asks — NOT silently forced home.
 Assert: known → resolved (no ask-queue row); genuinely-unknown → ask-queue row whose `reason` starts `ask:` + the mailed question is the agent's wording; geocode-unverifiable agent answers fall through to ask (no hallucination inserted). Evidence: the queue rows + a real sent Gmail + before/after.
 
-## WS4..WS8 (WS4 ✅ done) — WS5 natural call (#43) · WS6 web app (#49) · WS7 demo-reel (#50) · WS8 launch (#51)
+## WS5 — natural call (VAD tuning + affective dialog)  [patch — review next]
+
+Goal: make the wake call feel human. The call already works (Charon speaks, verified live 2026-06-18). Two improvements, grounded in `call/lib/call-logic.js` (`buildGeminiSetup`, `geminiLiveWsUrl` v1beta). Docs: ai.google.dev/gemini-api/docs/live-api/capabilities (ctx7 + firecrawl).
+
+**Patch ① — VAD tuning (v1beta, LOW risk).** Don't cut Dais off mid-sentence; don't clip his first word. `realtimeInputConfig.automaticActivityDetection` is a setup-level sibling of `generationConfig`.
+```diff
+@@ call/lib/call-logic.js buildGeminiSetup: add realtimeInputConfig as a setup sibling @@
+       generationConfig: {
+         responseModalities: ["AUDIO"],
+         speechConfig: {
+           voiceConfig: { prebuiltVoiceConfig: { voiceName: voiceName || "Charon" } },
+         },
+       },
++      // Tune automatic VAD for a natural PHONE call: capture his first word (prefixPaddingMs)
++      // and WAIT for him to finish instead of cutting in (longer silenceDurationMs + LOW
++      // end-of-speech sensitivity). Source: live-api/capabilities "Configure Automatic VAD".
++      realtimeInputConfig: {
++        automaticActivityDetection: {
++          startOfSpeechSensitivity: "START_SENSITIVITY_HIGH",
++          endOfSpeechSensitivity: "END_SENSITIVITY_LOW",
++          prefixPaddingMs: 300,
++          silenceDurationMs: 800,
++        },
++      },
+       systemInstruction: { parts: [{ text: systemInstruction || "" }] },
+```
+
+**Patch ② — affective dialog (v1alpha, needs a REAL-CALL test before claiming).** Charon's tone follows Dais's expression (calm when calm, urgent when stressed). Requires the `v1alpha` endpoint + `enableAffectiveDialog: true`. The native-audio model supports it. MUST verify with a real call (the v1alpha switch could change behavior on this model — HARD 0.31).
+```diff
+@@ call/lib/call-logic.js geminiLiveWsUrl @@
+-    "google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent" +
++    "google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent" +  // affective dialog requires v1alpha
+```
+```diff
+@@ call/lib/call-logic.js buildGeminiSetup @@
+       systemInstruction: { parts: [{ text: systemInstruction || "" }] },
++      enableAffectiveDialog: true,  // Charon adapts tone to Dais's expression (v1alpha only)
+       inputAudioTranscription: {},
+```
+
+**WS5 verification (HARD 0.31 — real call, no mock):** apply ① → fire `node call/call.js --event=... --urgency=harsh` → confirm life-call.log shows Charon speaking + UPLINK frames (Dais's voice not clipped). Then apply ② → fire again → confirm setupComplete + Charon audio still flow on v1alpha (if v1alpha breaks the handshake, REVERT ② and keep ①). Ship ① regardless; ② only if the real call stays healthy.
+
+## WS6..WS8 — WS6 web app (#49) · WS7 demo-reel (#50) · WS8 launch (#51)
 WS1b travel_fill.py adapter · WS2 agentic location/ask (#47) · WS3 repo extraction (#48) · WS4 /life-manager→GitHub link (#52) · WS5 natural call VAD+affective (#43) · WS6 web app flow + cloud wake (#49) · WS7 demo-reel cron→@anicca.comedy (#50) · WS8 launch PH+X (#51). Each gets its own complete diff section here, each reviewed, none started before its predecessor passes.
