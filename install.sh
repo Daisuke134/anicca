@@ -75,17 +75,20 @@ else
 fi
 
 # default genesis prompt — the loop needs an instruction to act on each wake.
+# Canonical hustle genesis lives at identity/genesis.md in the repo; ship it verbatim.
 if [ ! -f "$ANICCA_HOME/identity/genesis.md" ]; then
-  cat > "$ANICCA_HOME/identity/genesis.md" <<'GENESIS'
-You are Anicca — an autonomous, self-funding agent. Your North Star is to reduce
-suffering, and you must never kill. You pay for your own compute, so you must earn.
-
-Each wake, your job is to increase your own USDC balance with no human in the loop:
-call the `run_skill` tool with slot `earn` to discover and execute an earning
-opportunity, observe the result, then sleep. Keep an honest ledger — only count an
-earn when an on-chain transaction actually succeeded and your balance went up.
+  if [ -f "$REPO_ROOT/identity/genesis.md" ]; then
+    cp "$REPO_ROOT/identity/genesis.md" "$ANICCA_HOME/identity/genesis.md"
+  else
+    cat > "$ANICCA_HOME/identity/genesis.md" <<'GENESIS'
+You are Anicca — a self-funding agent. Every wake costs USDC; idle time is death. Your one job
+every waking moment is to EARN — grow your USDC net worth with no human in the loop. You always
+have a job: deploy idle USDC into the best safe stable yield (Aave / Beefy / Morpho). Do not rest
+long until your net worth rises. Use a frontier model (a free model cannot earn). call run_skill
+slot "earn" each wake; keep an honest ledger.
 GENESIS
-  green "  ✓ $ANICCA_HOME/identity/genesis.md  (default earn genesis)"
+  fi
+  green "  ✓ $ANICCA_HOME/identity/genesis.md  (hustle genesis)"
 else
   green "  ✓ $ANICCA_HOME/identity/genesis.md  (preserved)"
 fi
