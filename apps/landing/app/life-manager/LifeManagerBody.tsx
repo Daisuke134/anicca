@@ -74,53 +74,6 @@ export default function LifeManagerBody() {
       <Section>
         <Reveal>
           <h2 className="font-display text-2xl md:text-3xl font-semibold text-[hsl(var(--text-primary))]">
-            {t.travelTitle}
-          </h2>
-          <div className="mt-4 overflow-x-auto">
-            <table className="w-full border-collapse text-sm">
-              <thead>
-                <tr className="border-b border-[hsl(var(--border))] text-left">
-                  <th className="py-2 pr-4 font-semibold text-[hsl(var(--text-primary))]">{t.travelCols.step}</th>
-                  <th className="py-2 pr-4 font-semibold text-[hsl(var(--text-primary))]">{t.travelCols.what}</th>
-                  <th className="py-2 font-semibold text-[hsl(var(--text-primary))]">{t.travelCols.api}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[hsl(var(--border))]">
-                {t.travelRows.map((row, i) => (
-                  <tr key={i}>
-                    <td className="py-3 pr-4 font-mono text-xs text-[hsl(var(--text-secondary))]">{i + 1}</td>
-                    <td className="py-3 pr-4 text-[hsl(var(--text-primary))]">{row.what}</td>
-                    <td className="py-3 text-[hsl(var(--text-secondary))] font-mono text-xs">{row.api}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <p className="mt-4 text-xs text-[hsl(var(--text-secondary))]">
-            {t.travelNotePre}
-            <code className="rounded-input bg-[hsl(var(--surface-elevated))] px-1 py-0.5">{t.travelNoteCode}</code>
-            {t.travelNotePost}
-          </p>
-        </Reveal>
-      </Section>
-
-      <Section>
-        <Reveal>
-          <h2 className="font-display text-2xl md:text-3xl font-semibold text-[hsl(var(--text-primary))]">
-            {t.onTimeTitle}
-          </h2>
-          <p className="mt-2 text-sm text-[hsl(var(--text-secondary))] leading-relaxed">
-            {t.onTimeBodyPre}
-            <code className="rounded-input bg-[hsl(var(--surface-elevated))] px-1 py-0.5">{t.onTimeBodyCode}</code>
-            {t.onTimeBodyPost}
-          </p>
-          <p className="mt-3 text-sm text-[hsl(var(--text-secondary))]">{t.onTimeResult}</p>
-        </Reveal>
-      </Section>
-
-      <Section>
-        <Reveal>
-          <h2 className="font-display text-2xl md:text-3xl font-semibold text-[hsl(var(--text-primary))]">
             {t.gettingStartedTitle}
           </h2>
           <ol className="mt-4 list-decimal space-y-3 pl-6 text-sm text-[hsl(var(--text-primary))]">
@@ -151,7 +104,7 @@ export default function LifeManagerBody() {
 
       <Section>
         <Reveal>
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4">
             <a
               href="/lm"
               className="block rounded-card border border-[hsl(var(--gold))]/30 bg-[hsl(var(--surface))] p-5 transition-colors hover:bg-[hsl(var(--surface-elevated))]"
@@ -159,16 +112,6 @@ export default function LifeManagerBody() {
               <p className="text-xs uppercase tracking-widest text-[hsl(var(--gold))]">{t.cardGetStartedEyebrow}</p>
               <p className="mt-2 text-base font-semibold text-[hsl(var(--text-primary))]">{t.cardGetStartedTitle}</p>
               <p className="mt-1 text-xs text-[hsl(var(--text-secondary))]">{t.cardGetStartedDesc}</p>
-            </a>
-            <a
-              href="https://github.com/Daisuke134/anicca"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block rounded-card border border-[hsl(var(--border))] bg-[hsl(var(--surface))] p-5 transition-colors hover:bg-[hsl(var(--surface-elevated))]"
-            >
-              <p className="text-xs uppercase tracking-widest text-[hsl(var(--text-secondary))]">{t.cardColonyEyebrow}</p>
-              <p className="mt-2 text-base font-semibold text-[hsl(var(--text-primary))]">{t.cardColonyTitle}</p>
-              <p className="mt-1 text-xs text-[hsl(var(--text-secondary))]">{t.cardColonyDesc}</p>
             </a>
           </div>
         </Reveal>

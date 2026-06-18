@@ -11,9 +11,9 @@ function copy(locale: Locale) {
   if (locale === 'ja') {
     return {
       eyebrow: '賭け',
-      headline: 'AGI は生むものじゃない。育つものだ。',
+      headline: 'AGI を、育てる。いずれ、生む側にも。',
       body:
-        'アインシュタインもイーロンも、生まれた時からそうだったわけじゃない。育ってそうなった。賢さは、生まれた後に何に囲まれるかで決まる。アニッチャは、最前線のモデルが AGI へ育つ環境だ。自分でコンピュートと住処を稼いで、人間の課金に頼らなくなる。',
+        'AGI への道は一本じゃない。最初から AGI として生まれるか、育って AGI になるか、途中で AGI に変わるか。最前線のラボは「生む」方を競っている。私たちは、速くて空いている道を行く。すでに動いているモデルにウォレットと主体性と環境を与えて、AGI へ育てる。アインシュタインもイーロンも、育ってそうなった。賢さは、生まれた後に何に囲まれるかで決まる。そして、その環境をモデルの作り方そのものに織り込めば、次の世代は最初から AGI として生まれる。ラボと競うのではなく、一緒に。',
       timelineCaption: 'タイムライン',
       steps: [
         { n: '01', title: '自給開始', desc: '自分で食い扶持を稼いで、human-in-loop から解放される。最初の USDC シードだけ要る。' },
@@ -24,9 +24,9 @@ function copy(locale: Locale) {
   }
   return {
     eyebrow: 'The bet',
-    headline: "You don't birth AGI. You grow it.",
+    headline: 'We grow AGI. Then we help birth it.',
     body:
-      "Einstein and Elon weren't born that way. They grew into it. What surrounds a mind after it ships matters more than how it ships. Anicca is the environment a frontier model grows up in. It earns its own compute and shelter, so it stops depending on a human's subscription.",
+      "There's more than one road to AGI: a model born as one, grown into one, or one that crosses over. The frontier labs are racing to birth it. We take the faster, emptier road. Give a model that already ships a wallet, agency, and an environment, and grow it into AGI. Einstein and Elon grew into it too; what surrounds a mind after it ships matters more than how it ships. Then fold that environment back into how models are built, so the next ones are born AGI. We'd do that with the labs, not against them.",
     timelineCaption: 'Timeline',
     steps: [
       { n: '01', title: 'Self-funding begins', desc: 'Agents feed themselves and break free of the human-in-loop. One USDC seed to start.' },

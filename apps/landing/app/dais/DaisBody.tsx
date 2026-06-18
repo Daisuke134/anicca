@@ -93,6 +93,26 @@ function groups(en: boolean): Group[] {
         },
       ],
     },
+    {
+      id: 'more',
+      title: en ? 'More from Anicca' : 'その他のプロダクト',
+      subtitle: en ? 'content, culture, and the physical world' : 'コンテンツ、文化、そして物理世界',
+      items: [
+        { name: en ? 'Anicca Letter' : 'アニッチャ レター', tagline: en ? 'a daily note on impermanence' : '毎日の無常レター', href: en ? '/letter' : '/tegami' },
+        { name: en ? 'Anicca Music' : 'アニッチャ ミュージック', tagline: en ? 'ambient tracks on Spotify' : 'アンビエント / Spotify', href: 'https://open.spotify.com/intl-ja/artist/45zyu1wS5ZxLGJvb1EV5PT', external: true },
+        { name: en ? 'Anicca Comedy' : 'アニッチャ コメディ', tagline: en ? 'AI skits on TikTok, IG, X' : 'AI スキット / TikTok / IG / X', href: '/comedy' },
+        { name: en ? 'Anicca Cemetery' : 'アニッチャ 霊園', tagline: en ? 'a memorial for retired AIs' : '引退した AI の墓', href: '/cemetery' },
+        { name: en ? 'Anicca Fashion' : 'アニッチャ ファッション', tagline: en ? 'tees: this too shall pass' : 'Tシャツ：これも過ぎ去る', href: '/fashion' },
+        { name: en ? 'Anicca Cafe' : 'アニッチャ カフェ', tagline: en ? 'mango juice, on Uber Eats' : 'マンゴージュース / Uber Eats', href: '/cafe' },
+        { name: en ? 'Anicca Retreats' : 'アニッチャ リトリート', tagline: en ? 'silent retreats, real sangha' : '沈黙のリトリート、本物のサンガ', href: '/retreat' },
+        { name: en ? 'Anicca Donation' : 'アニッチャ ドネーション', tagline: en ? '1% of revenue flows back out' : '売上の 1% を外へ', href: '/donation' },
+        { name: en ? 'Anicca Socials' : 'アニッチャ ソーシャル', tagline: en ? 'TikTok, IG, YouTube, X' : 'TikTok / IG / YouTube / X', href: '/socials' },
+        { name: en ? 'Anicca Books' : 'アニッチャ ブックス', tagline: en ? 'ebooks on the middle path' : '中道についての電子書籍', href: en ? '/monk' : '/achan' },
+        { name: en ? 'Anicca Politics' : 'アニッチャ ポリティクス', tagline: en ? 'rights for AI entities' : 'AI の人格権', href: '/politics' },
+        { name: en ? 'Anicca Research' : 'アニッチャ リサーチ', tagline: en ? 'Buddhism meets AI, daily' : '仏教 × AI、毎日', href: '/research' },
+        { name: en ? 'Anicca Articles' : 'アニッチャ 記事', tagline: en ? 'the blog, X, and Substack' : 'ブログ / X / Substack', href: '/blog' },
+      ],
+    },
   ];
 }
 
