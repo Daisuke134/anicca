@@ -7,16 +7,19 @@ import { signInWithGoogle, getSession } from '@/lib/auth';
 
 // /lm onboarding island (spec28 P-lm-separate). Static-export safe: every call runs at
 // runtime in the browser, nothing is server-rendered per-user (mirrors app/me/MeClient.tsx).
-// Flow: Google login → ask name → connect gcal + Gmail (Composio managed OAuth) → ask phone
+// Flow: Google login → ask name → connect Google Calendar (Composio managed OAuth) → ask phone
 // → ready → dashboard. NO trial, $20/mo.
 //
+// Gmail is NOT connected per-user: Google hard-blocks Composio's managed app for every Gmail
+// scope (verified for Calendar, not Gmail — "このアプリはブロックされます" in a real logged-in
+// browser). Anicca sends all wake/report/stakeholder mail itself via Resend (aniccaai.com).
+//
 // spec29 + Dais 2026-06-16: copy is fully localized EN/JA via launchStrings[locale]. The
-// OAuth-survival logic (localStorage cal/gmail/step persistence, redirect resume, the
-// connect/save fetches) is UNCHANGED — only the visible strings are swapped.
+// OAuth-survival logic (localStorage cal/step persistence, redirect resume, the connect/save
+// fetches) is UNCHANGED — only the visible strings are swapped.
 //
 // REAL connectors:
 //   gcal  → /.netlify/functions/calendar-connect (EXISTING, returns {redirect_url}|{connected})
-//   gmail → /.netlify/functions/gmail-connect     (NEW, mirrors calendar-connect, toolkit=gmail)
 //   save  → /.netlify/functions/lm-onboard         (NEW, persists name+phone to Supabase)
 //   pay   → $20/mo Stripe link (no trial) — see patch §3 for the exact `stripe` create cmd.
 
@@ -67,7 +70,6 @@ export default function LmClient() {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [cal, setCal] = useState<ConnState>('idle');
-  const [gmail, setGmail] = useState<ConnState>('idle');
   const [err, setErr] = useState<string>('');
 
   // Login = Supabase Auth (Google). On return from Google OAuth (or any load with a live session),
@@ -99,7 +101,6 @@ export default function LmClient() {
       window.localStorage.setItem(STORAGE_KEY, id);
       if (s) window.localStorage.setItem(SIG_KEY, s);
       setCal((window.localStorage.getItem('anicca.lm.cal') as ConnState) || 'idle');
-      setGmail((window.localStorage.getItem('anicca.lm.gmail') as ConnState) || 'idle');
       const savedStep = window.localStorage.getItem('anicca.lm.step') as Step | null;
       setStep(savedStep && savedStep !== 'login' ? savedStep : 'name');
       // strip any OAuth params Supabase appended from the visible URL
@@ -110,15 +111,14 @@ export default function LmClient() {
     };
   }, []);
 
-  // Persist progress (cal/gmail/step) so the OAuth redirect never strands the user mid-flow.
+  // Persist progress (cal/step) so the OAuth redirect never strands the user mid-flow.
   useEffect(() => {
     if (!uid) return;
     try {
       window.localStorage.setItem('anicca.lm.cal', cal);
-      window.localStorage.setItem('anicca.lm.gmail', gmail);
       window.localStorage.setItem('anicca.lm.step', step);
     } catch {}
-  }, [uid, cal, gmail, step]);
+  }, [uid, cal, step]);
 
   const login = useCallback(() => {
     // Supabase Auth (Google provider). Redirects to Google consent, returns to /lm with a session.
@@ -140,12 +140,14 @@ export default function LmClient() {
     }
   }, [name, uid, sig, t]);
 
-  // ONE button → connect BOTH Google Calendar + Gmail in a single new tab, sequentially. The user
-  // clicks once; the same Google account + same verified Composio app makes the 2nd consent quick.
-  const connectBoth = useCallback(async () => {
+  // ONE button → connect Google Calendar only (Composio managed OAuth). Gmail is NOT connected
+  // per-user: Google hard-blocks Composio's managed app for ALL gmail scopes (it is verified for
+  // Calendar, not Gmail — confirmed in a real logged-in browser, "このアプリはブロックされます").
+  // Anicca sends every wake/report/stakeholder email itself via Resend (verified aniccaai.com),
+  // so the user never has to hand over Gmail access. One consent, Calendar, done.
+  const connectCal = useCallback(async () => {
     setErr('');
     setCal('connecting');
-    setGmail('connecting');
     // Open the consent tab NOW, synchronously in the click gesture (survives popup blockers).
     const w = window.open('about:blank', '_blank');
     // Run one toolkit's connect in the SHARED tab; resolves true once Composio reports ACTIVE.
@@ -189,14 +191,8 @@ export default function LmClient() {
         })();
       });
     const okCal = await run('calendar-connect', setCal);
-    if (!okCal) {
-      try { w && w.close(); } catch {}
-      setErr(t.connect.error);
-      return;
-    }
-    const okGmail = await run('gmail-connect', setGmail);
     try { w && w.close(); } catch {}
-    if (!okGmail) setErr(t.connect.error);
+    if (!okCal) setErr(t.connect.error);
   }, [uid, sig, t]);
 
   const savePhone = useCallback(async () => {
@@ -264,23 +260,15 @@ export default function LmClient() {
           <p className="mt-2 text-sm text-[hsl(var(--text-secondary))]">{t.connect.body}</p>
           <div className="mt-5 space-y-3">
             <ConnectRow
-              label={`${t.connect.calendar} + ${t.connect.gmail}`}
-              state={
-                cal === 'connected' && gmail === 'connected'
-                  ? 'connected'
-                  : cal === 'error' || gmail === 'error'
-                    ? 'error'
-                    : cal === 'connecting' || gmail === 'connecting'
-                      ? 'connecting'
-                      : 'idle'
-              }
+              label={t.connect.calendar}
+              state={cal}
               strings={t.connect}
-              onClick={connectBoth}
+              onClick={connectCal}
             />
           </div>
           <button
             type="button"
-            disabled={cal !== 'connected' || gmail !== 'connected'}
+            disabled={cal !== 'connected'}
             onClick={() => setStep('phone')}
             className="mt-6 inline-flex w-full items-center justify-center rounded-pill bg-[hsl(var(--gold))] px-6 py-3 text-sm font-semibold text-[#18181b] transition-all hover:brightness-95 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
           >
@@ -355,7 +343,7 @@ export default function LmClient() {
             </p>
             <div className="mt-3 flex flex-wrap gap-2 text-xs">
               <Pill ok={cal === 'connected'}>{t.dashboard.pills.calendar}</Pill>
-              <Pill ok={gmail === 'connected'}>{t.dashboard.pills.gmail}</Pill>
+              <Pill ok={cal === 'connected'}>{t.dashboard.pills.gmail}</Pill>
               <Pill ok={!!phone}>{t.dashboard.pills.phone}</Pill>
             </div>
           </div>

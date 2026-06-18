@@ -835,3 +835,29 @@ WS6b `lm-events.js` (per-user Composio calendar fetch) · WS6c `life-call` sched
 ## ✅ LOCAL through-flow E2E CLOSED (2026-06-18, real gcal+Gmail, no-mock)
 Seeded 2 real events → agentic resolve (A→渋谷 resolved / B→ask) → real question email → real reply → poll wrote B.location=六本木ヒルズ to real gcal → travel inserted 🚆 block with real 13-min directions (16:17, ending B's 16:30) → call verified separately (Charon spoke). **E2E caught a real bug**: same-account reply poll mis-took the bot's own question as the location → fixed parseReply to skip `？/?` lines (life-manager eb0acdb), ask 6/6 green, re-poll wrote the correct answer. Test artifacts cleaned up.
 Bonus infra fixes found+fixed by E2E: `ws` module missing in the moved repo (live calls were broken) + legacy Geocoding/Directions API disabled (wired LIFE_MAPS_KEY).
+
+---
+
+## WS6a DECISION (2026-06-18) — per-user Gmail OAuth DROPPED; Calendar-only connect + Resend send
+
+**Problem (verified, not assumed):** Composio's *managed* Gmail OAuth app is hard-blocked by Google
+for **every** Gmail scope — including the most minimal sensitive scope `gmail.send`. Reproduced in a
+real logged-in camofox session at `accounts.google.com/signin/oauth/warning`:
+> このアプリはブロックされます — Google によりこのアクセスはブロックされました (no "Advanced/続行" link).
+
+Root cause: Composio's managed app is Google-verified for **Calendar** (sensitive) but **not for Gmail**.
+Composio's own guide (`composio.dev/auth/googleapps`) states Gmail requires *your own* OAuth client +
+test users / verification. Dais forbids a custom Google app ("no jimae / no originals") AND requires
+Composio. The only configuration satisfying *all three* constraints (Composio + no own-app + actually
+works) is to **not request any per-user Gmail scope at all**.
+
+**Decision:** The `/lm` onboarding connects **Google Calendar only** (Composio managed = no block).
+Anicca sends every wake summary, daily report, location-ask, and stakeholder-lateness email **itself**
+via **Resend** (verified domain `aniccaai.com`, `RESEND_API_KEY` already set on Netlify). The ask-reply
+loop already reads via the AgentMail inbound webhook (`life-ask.js action=reply`), never the user's
+Gmail. So the user never hands over Gmail access — strictly better privacy, and it removes the block.
+
+**Changes:** `app/lm/LmClient.tsx` — `connectBoth`→`connectCal` (Calendar only), one ConnectRow,
+button gated on `cal==='connected'`, removed the `gmail` React state. `gmail-connect.js` stays in the
+repo (dead for /lm) but is no longer called by the onboarding. Netlify `COMPOSIO_GMAIL_AUTH_CONFIG`
+is now unused by the flow.
