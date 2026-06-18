@@ -18,7 +18,16 @@ Conclusion: the SEND rail is real and verified on-chain. Demo's "sign up → rea
 - `POST https://aniccaai.com/.netlify/functions/income-signup {"email":...,"method":"email"}` → `{"ok":true,"recorded":true}` (real Supabase insert, status=queued, wallet+method in notes).
 - Demo path: signup recorded in prod → payout sent locally via execute-ubi (UBI-E1, proven). Full auto form→send watcher = STAGE 2.
 
-## UBI-E2 — email (Crossmint) — pending
+## UBI-E2 — email (Crossmint) — ✅ PASS (2026-06-18)
+Proves: a person with ONLY an email receives real USDC (no wallet/crypto knowledge). Dais accesses via email login.
+- Crossmint server key in `~/.openclaw/.env::CROSSMINT_API_KEY` (gitignored, NOT in repo).
+- Created email-owned smart wallet: `POST https://www.crossmint.com/api/2025-06-09/wallets` body `{"chainType":"evm","owner":"email:keiodaisuke@gmail.com","config":{"adminSigner":{"type":"email","email":"keiodaisuke@gmail.com"}}}` → address **0x9557737Cf1640fA71845af33dD7018adcd4c5aD9** (owner email:keiodaisuke@gmail.com).
+- anicca sent real $0.50 USDC (execute-ubi, anicca key): **tx 0x421f0307d6e36f15e960f6e802cac65fe3122b8d06d4e4f955d907c76ebaa677, status 0x1**.
+- Verify: Transfer log → to 0x9557…ad9, amount 0.5 ; balanceOf (lowercase) = **0.50** ✓. (NOTE: an earlier balanceOf read 0.0 due to a MIXED-CASE address in my eth_call calldata — node match needs lowercase; fixed + re-verified. Not a payment issue.)
+- Dais verifies: sign in at crossmint.com with keiodaisuke@gmail.com → sees the $0.50 on Base; can hold or off-ramp.
+
+## UBI-E3/E4 — bank/card (Stripe+Bridge) — BLOCKED today (honest)
+Bridge.xyz requires business KYB onboarding (multi-day) before USDC→bank/card payouts. Stripe Connect onboarding is live (income-apply.js) but the USDC→fiat leg (Bridge) cannot be completed in hours. Not faked. Pending KYB.
 ## UBI-E3/E4 — bank/card (Stripe+Bridge) — pending
 ## UBI-E5 — creator daily payout — pending
 ## UBI-E6 — mobile (Kotani sandbox) — pending
