@@ -20,6 +20,13 @@ Not just a raw send: the whole product flow, verified by me.
 Recipient key saved /tmp/ubi-wallet-e2e.json (fresh, I control). For a real human they paste their own address; the PATH is proven. Watcher is idempotent (only status=queued).
 REMAINING for wallet: a real human submitting THEIR own address + seeing it in their own wallet app (trivial; same path).
 
+## UBI-E2-PAGE — email access/withdraw page — built+live, OTP BLOCKED on Crossmint config (2026-06-18)
+- Built `/income/wallet` (Crossmint SDK v4.2.11: CrossmintProvider + Auth + Wallet, email-OTP login → balance → wallet.send withdraw → ExportPrivateKeyButton). Local build green (96 pages). Deployed to prod (PR #89). client key wired via NEXT_PUBLIC_CROSSMINT_CLIENT_KEY (GHA secret + .env.local, NOT committed).
+- VERIFIED live: page renders (not config-fallback); camofox opened it, clicked sign-in, the Crossmint modal rendered INLINE (no iframe), accepted keiodaisuke@gmail.com, Submit fired.
+- **BLOCKER (honest):** OTP send returns "Failed to send email. Please try again or contact support." Repeated. A patched window.fetch captured ZERO crossmint calls → the auth request is rejected at origin/config before sending, OR uses non-fetch transport. Most likely cause: the **client key (ck_production…) is not authorized for origin aniccaai.com and/or Email login method is not enabled** in the Crossmint console (server-key wallet creation worked because server keys are not origin-scoped).
+- **FIX needed (Crossmint console, ~2 min):** crossmint.com/console → project → the client key → add allowed origin `https://aniccaai.com` (+ localhost for dev) → enable **Email** login method. Then re-run this E2E (login as keiodaisuke → OTP via Gmail → see the $0.50 in wallet 0x9557…).
+- So email PATH = page done, but NOT usable until the Crossmint client-key origin/email config is set. NOT claiming email done.
+
 ## What "done" must mean (no more lies)
 A path is done ONLY when a real person, on a named website, taps named buttons, and ends with money
 they can SPEND (in their wallet they control, or yen/USD in their bank / PayPay) — verified by that
