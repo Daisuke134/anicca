@@ -1,0 +1,314 @@
+{
+  "featureName": "ship-anicca-loop",
+  "mode": "lean",
+  "language": "typescript",
+  "currentPhase": "1b",
+  "phaseHistory": [
+    {
+      "from": "init",
+      "to": "1a",
+      "timestamp": "2026-06-18T06:50:18.111Z",
+      "reason": "Begin behavioral specification for the ReAct automaton loop"
+    },
+    {
+      "from": "1a",
+      "to": "1b",
+      "timestamp": "2026-06-18T06:52:22.893Z",
+      "reason": "Behavioral spec complete, moving to verification architecture"
+    }
+  ],
+  "iterations": {
+    "1a": 1,
+    "1b": 1
+  },
+  "proofObligations": [],
+  "traceability": {
+    "epicId": "VCSDD-ship-anicca-loop-1781765291339",
+    "beads": [
+      {
+        "beadId": "BEAD-001",
+        "type": "spec-requirement",
+        "artifactPath": ".vcsdd/features/ship-anicca-loop/specs/behavioral-spec.md",
+        "status": "draft",
+        "linkedBeads": [],
+        "createdAt": "2026-06-18T06:52:17.625Z",
+        "createdInPhase": "1a",
+        "externalId": "REQ-001-single-wake-lifecycle"
+      },
+      {
+        "beadId": "BEAD-002",
+        "type": "spec-requirement",
+        "artifactPath": ".vcsdd/features/ship-anicca-loop/specs/behavioral-spec.md",
+        "status": "draft",
+        "linkedBeads": [],
+        "createdAt": "2026-06-18T06:52:17.625Z",
+        "createdInPhase": "1a",
+        "externalId": "REQ-002-survival-tier-model-selection"
+      },
+      {
+        "beadId": "BEAD-003",
+        "type": "spec-requirement",
+        "artifactPath": ".vcsdd/features/ship-anicca-loop/specs/behavioral-spec.md",
+        "status": "draft",
+        "linkedBeads": [],
+        "createdAt": "2026-06-18T06:52:17.625Z",
+        "createdInPhase": "1a",
+        "externalId": "REQ-003-tool-execution-earn-skill"
+      },
+      {
+        "beadId": "BEAD-004",
+        "type": "spec-requirement",
+        "artifactPath": ".vcsdd/features/ship-anicca-loop/specs/behavioral-spec.md",
+        "status": "draft",
+        "linkedBeads": [],
+        "createdAt": "2026-06-18T06:52:17.625Z",
+        "createdInPhase": "1a",
+        "externalId": "REQ-004-private-key-isolation"
+      },
+      {
+        "beadId": "BEAD-005",
+        "type": "spec-requirement",
+        "artifactPath": ".vcsdd/features/ship-anicca-loop/specs/behavioral-spec.md",
+        "status": "draft",
+        "linkedBeads": [],
+        "createdAt": "2026-06-18T06:52:17.625Z",
+        "createdInPhase": "1a",
+        "externalId": "REQ-005-loop-detect-idle-guard"
+      },
+      {
+        "beadId": "BEAD-006",
+        "type": "spec-requirement",
+        "artifactPath": ".vcsdd/features/ship-anicca-loop/specs/behavioral-spec.md",
+        "status": "draft",
+        "linkedBeads": [],
+        "createdAt": "2026-06-18T06:52:17.625Z",
+        "createdInPhase": "1a",
+        "externalId": "REQ-006-graceful-shutdown-sigterm"
+      },
+      {
+        "beadId": "BEAD-007",
+        "type": "spec-requirement",
+        "artifactPath": ".vcsdd/features/ship-anicca-loop/specs/behavioral-spec.md",
+        "status": "draft",
+        "linkedBeads": [],
+        "createdAt": "2026-06-18T06:52:17.625Z",
+        "createdInPhase": "1a",
+        "externalId": "REQ-007-ledger-immutability"
+      },
+      {
+        "beadId": "BEAD-008",
+        "type": "spec-requirement",
+        "artifactPath": ".vcsdd/features/ship-anicca-loop/specs/behavioral-spec.md",
+        "status": "draft",
+        "linkedBeads": [],
+        "createdAt": "2026-06-18T06:52:17.625Z",
+        "createdInPhase": "1a",
+        "externalId": "REQ-008-cloud-portability"
+      },
+      {
+        "beadId": "BEAD-009",
+        "type": "spec-requirement",
+        "artifactPath": ".vcsdd/features/ship-anicca-loop/specs/behavioral-spec.md",
+        "status": "draft",
+        "linkedBeads": [],
+        "createdAt": "2026-06-18T06:52:17.625Z",
+        "createdInPhase": "1a",
+        "externalId": "REQ-009-config-env"
+      },
+      {
+        "beadId": "BEAD-010",
+        "type": "spec-requirement",
+        "artifactPath": ".vcsdd/features/ship-anicca-loop/specs/behavioral-spec.md",
+        "status": "draft",
+        "linkedBeads": [],
+        "createdAt": "2026-06-18T06:52:17.625Z",
+        "createdInPhase": "1a",
+        "externalId": "REQ-010-start-local-integration"
+      },
+      {
+        "beadId": "BEAD-011",
+        "type": "verification-property",
+        "artifactPath": ".vcsdd/features/ship-anicca-loop/specs/verification-architecture.md",
+        "status": "draft",
+        "linkedBeads": [],
+        "createdAt": "2026-06-18T06:53:26.394Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-001:selectTier(0)===broke"
+      },
+      {
+        "beadId": "BEAD-012",
+        "type": "verification-property",
+        "artifactPath": ".vcsdd/features/ship-anicca-loop/specs/verification-architecture.md",
+        "status": "draft",
+        "linkedBeads": [],
+        "createdAt": "2026-06-18T06:53:26.394Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-002:selectTier(0.5)===lean"
+      },
+      {
+        "beadId": "BEAD-013",
+        "type": "verification-property",
+        "artifactPath": ".vcsdd/features/ship-anicca-loop/specs/verification-architecture.md",
+        "status": "draft",
+        "linkedBeads": [],
+        "createdAt": "2026-06-18T06:53:26.394Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-003:selectTier(5.0)===funded"
+      },
+      {
+        "beadId": "BEAD-014",
+        "type": "verification-property",
+        "artifactPath": ".vcsdd/features/ship-anicca-loop/specs/verification-architecture.md",
+        "status": "draft",
+        "linkedBeads": [],
+        "createdAt": "2026-06-18T06:53:26.394Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-004:selectTier(NaN|Inf)===broke"
+      },
+      {
+        "beadId": "BEAD-015",
+        "type": "verification-property",
+        "artifactPath": ".vcsdd/features/ship-anicca-loop/specs/verification-architecture.md",
+        "status": "draft",
+        "linkedBeads": [],
+        "createdAt": "2026-06-18T06:53:26.394Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-005:scrubPrivateKeys removes _WALLET_KEY"
+      },
+      {
+        "beadId": "BEAD-016",
+        "type": "verification-property",
+        "artifactPath": ".vcsdd/features/ship-anicca-loop/specs/verification-architecture.md",
+        "status": "draft",
+        "linkedBeads": [],
+        "createdAt": "2026-06-18T06:53:26.394Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-006:scrubPrivateKeys is idempotent"
+      },
+      {
+        "beadId": "BEAD-017",
+        "type": "verification-property",
+        "artifactPath": ".vcsdd/features/ship-anicca-loop/specs/verification-architecture.md",
+        "status": "draft",
+        "linkedBeads": [],
+        "createdAt": "2026-06-18T06:53:26.394Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-007:formatRecord produces valid JSON"
+      },
+      {
+        "beadId": "BEAD-018",
+        "type": "verification-property",
+        "artifactPath": ".vcsdd/features/ship-anicca-loop/specs/verification-architecture.md",
+        "status": "draft",
+        "linkedBeads": [],
+        "createdAt": "2026-06-18T06:53:26.394Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-008:isLooping detects window of identical actions"
+      },
+      {
+        "beadId": "BEAD-019",
+        "type": "verification-property",
+        "artifactPath": ".vcsdd/features/ship-anicca-loop/specs/verification-architecture.md",
+        "status": "draft",
+        "linkedBeads": [],
+        "createdAt": "2026-06-18T06:53:26.394Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-009:isLooping false when window < threshold"
+      },
+      {
+        "beadId": "BEAD-020",
+        "type": "verification-property",
+        "artifactPath": ".vcsdd/features/ship-anicca-loop/specs/verification-architecture.md",
+        "status": "draft",
+        "linkedBeads": [],
+        "createdAt": "2026-06-18T06:53:26.394Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-010:parseToolCall returns null for malformed"
+      },
+      {
+        "beadId": "BEAD-021",
+        "type": "verification-property",
+        "artifactPath": ".vcsdd/features/ship-anicca-loop/specs/verification-architecture.md",
+        "status": "draft",
+        "linkedBeads": [],
+        "createdAt": "2026-06-18T06:53:26.394Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-011:loadConfig: env wins over dotenv"
+      },
+      {
+        "beadId": "BEAD-022",
+        "type": "verification-property",
+        "artifactPath": ".vcsdd/features/ship-anicca-loop/specs/verification-architecture.md",
+        "status": "draft",
+        "linkedBeads": [],
+        "createdAt": "2026-06-18T06:53:26.394Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-012:loadConfig: skips malformed lines"
+      },
+      {
+        "beadId": "BEAD-023",
+        "type": "verification-property",
+        "artifactPath": ".vcsdd/features/ship-anicca-loop/specs/verification-architecture.md",
+        "status": "draft",
+        "linkedBeads": [],
+        "createdAt": "2026-06-18T06:53:26.394Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-013:SIGTERM produces shutdown ledger line"
+      },
+      {
+        "beadId": "BEAD-024",
+        "type": "verification-property",
+        "artifactPath": ".vcsdd/features/ship-anicca-loop/specs/verification-architecture.md",
+        "status": "draft",
+        "linkedBeads": [],
+        "createdAt": "2026-06-18T06:53:26.394Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-014:10 wakes yields exactly 10 ledger lines"
+      },
+      {
+        "beadId": "BEAD-025",
+        "type": "verification-property",
+        "artifactPath": ".vcsdd/features/ship-anicca-loop/specs/verification-architecture.md",
+        "status": "draft",
+        "linkedBeads": [],
+        "createdAt": "2026-06-18T06:53:26.394Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-015:non-zero skill exit does not crash loop"
+      },
+      {
+        "beadId": "BEAD-026",
+        "type": "verification-property",
+        "artifactPath": ".vcsdd/features/ship-anicca-loop/specs/verification-architecture.md",
+        "status": "draft",
+        "linkedBeads": [],
+        "createdAt": "2026-06-18T06:53:26.394Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-016:loop-detect suppresses inference call"
+      },
+      {
+        "beadId": "BEAD-027",
+        "type": "verification-property",
+        "artifactPath": ".vcsdd/features/ship-anicca-loop/specs/verification-architecture.md",
+        "status": "draft",
+        "linkedBeads": [],
+        "createdAt": "2026-06-18T06:53:26.394Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-017:no macOS-only syscalls in runtime/loop"
+      },
+      {
+        "beadId": "BEAD-028",
+        "type": "verification-property",
+        "artifactPath": ".vcsdd/features/ship-anicca-loop/specs/verification-architecture.md",
+        "status": "draft",
+        "linkedBeads": [],
+        "createdAt": "2026-06-18T06:53:26.394Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-018:scrubPrivateKeys always removes BLOCKRUN_WALLET_KEY"
+      }
+    ]
+  },
+  "gates": {},
+  "sprintCount": 0,
+  "createdAt": "2026-06-18T06:48:11.338Z",
+  "updatedAt": "2026-06-18T06:53:26.395Z"
+}

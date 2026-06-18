@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "features": {
+    "ship-anicca-loop": {
+      "status": "active",
+      "createdAt": "2026-06-18T06:48:11.338Z",
+      "mode": "lean",
+      "language": "typescript",
+      "currentPhase": "1b",
+      "updatedAt": "2026-06-18T06:52:22.894Z"
+    }
+  },
+  "activeFeature": "ship-anicca-loop"
+}
