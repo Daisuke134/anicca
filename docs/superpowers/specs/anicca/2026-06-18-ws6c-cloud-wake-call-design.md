@@ -75,3 +75,24 @@ public wss, set after first deploy), `BRIDGE_PORT`=`$PORT`.
 `call/lib/call-bridge.cjs`, `call/lib/call-logic.js`, `call/lib/runner-telnyx.mjs` (dial/stream
 bodies), `netlify/functions/_lib/lm-events.js` (events logic). Only NEW code: scheduler.js,
 telnyx.js extraction, supabase.js, the `/ws?query` ctx parse, railway.toml.
+
+---
+
+## VERIFICATION (2026-06-18) — no-mock E2E PASSED ✅
+
+Real cloud wake, end to end, no Mac-mini:
+1. `apps/life-call` deployed to Railway (service `life-call`, public `wss://life-call-production.up.railway.app`).
+   `/health` → `{"ok":true,"service":"life-call","ws":"/ws"}` (live).
+2. lm_users + lm_wake_log tables created (Supabase Management API; PostgREST 200).
+3. Dais row upserted (uid lm_784ad279…, phone +818046270314, paid, composio_gcal).
+4. Real gcal event "Anicca Cloud Wake Test" created at now+15min via Composio.
+5. The cloud scheduler tick fired:
+   `[scheduler] WAKE uid=lm_784ad279- "Anicca Cloud Wake Test" in 14m ccid=v3:cfcy4FozNaO8…`
+   `[bridge] carrier connected urgency=gentle live=1`   ← Telnyx answered + streamed media to /ws
+   `[bridge] setupComplete`                              ← Gemini Live (Charon) spoke
+6. `lm_wake_log` row id=1 written (atomic dedup, event_key `…|2026-06-18T20:48:48+09:00`).
+7. Security gate verified: unsigned /ws → close 1008 (no Gemini socket); signed → accepted.
+8. Test event deleted from the calendar afterward.
+
+DONE = 4-D convergence: spec ✓ + tests ✓ (scheduler unit + auth-gate) + impl ✓ (live on Railway)
++ verification ✓ (a REAL Charon call placed from the cloud, audio bridged, naming the event).
