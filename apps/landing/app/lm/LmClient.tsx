@@ -343,7 +343,6 @@ export default function LmClient() {
             </p>
             <div className="mt-3 flex flex-wrap gap-2 text-xs">
               <Pill ok={cal === 'connected'}>{t.dashboard.pills.calendar}</Pill>
-              <Pill ok={cal === 'connected'}>{t.dashboard.pills.gmail}</Pill>
               <Pill ok={!!phone}>{t.dashboard.pills.phone}</Pill>
             </div>
           </div>
