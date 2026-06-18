@@ -11,7 +11,6 @@ import json
 import math
 import os
 import re
-import subprocess
 import sys
 import urllib.parse
 import urllib.request
@@ -20,6 +19,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path.home() / ".openclaw" / "skills" / "_shared"))
 import anicca_profile as prof  # noqa: E402
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "adapters"))
+import transport as _t  # noqa: E402
 
 JST = timezone(timedelta(hours=9))
 ENV = (Path.home() / ".openclaw" / ".env").read_text()
@@ -105,23 +106,19 @@ def resolve_event_location(event):
     return None, "unknown"
 
 
+CAL = _t.make_transport(
+    account=env("GOG_ACCOUNT") or prof.google_account(),
+    keyring=env("GOG_KEYRING_PASSWORD"),
+).calendar
+
+
 def fetch_events(days):
-    acct = env("GOG_ACCOUNT") or prof.google_account()
     to = (datetime.now(JST) + timedelta(days=days)).strftime("%Y-%m-%d")
-    out = subprocess.run(
-        ["/opt/homebrew/bin/gog", "calendar", "events", "list", "-j",
-         "--account", acct, "--from", "today", "--to", to,
-         "--all-pages", "--max", "250"],
-        capture_output=True, text=True,
-        env={**os.environ, "GOG_KEYRING_PASSWORD": env("GOG_KEYRING_PASSWORD"),
-             "GOG_ACCOUNT": acct},
-        timeout=60,
-    )
-    if out.returncode != 0:
-        print(f"[fill] gog failed: {out.stderr[:200]}", file=sys.stderr)
+    try:
+        items = CAL.list(frm="today", to=to, max=250)
+    except Exception as e:
+        print(f"[fill] gog failed: {e}", file=sys.stderr)
         return []
-    d = json.loads(out.stdout)
-    items = d if isinstance(d, list) else d.get("events", d.get("items", []))
     rows = []
     for e in items:
         s = e.get("start", {})
@@ -221,26 +218,11 @@ def short_name(addr):
 def insert_travel_event(start_dt, end_dt, src, dst, dst_addr):
     summary = f"🚆 移動 {short_name(src)}→{short_name(dst)}"
     desc = "Auto-inserted by anicca-travel-fill. Adjust if route is wrong."
-    acct = env("GOG_ACCOUNT") or prof.google_account()
-    out = subprocess.run(
-        ["/opt/homebrew/bin/gog", "calendar", "create", "primary", "-j",
-         "--account", acct,
-         "--summary", summary,
-         "--from", start_dt.isoformat(),
-         "--to", end_dt.isoformat(),
-         "--location", dst_addr,
-         "--description", desc],
-        capture_output=True, text=True,
-        env={**os.environ, "GOG_KEYRING_PASSWORD": env("GOG_KEYRING_PASSWORD"),
-             "GOG_ACCOUNT": acct},
-        timeout=30,
-    )
-    if out.returncode != 0:
-        print(f"[fill] insert failed: {out.stderr[:200]}", file=sys.stderr)
-        return None
     try:
-        return json.loads(out.stdout)["event"]["id"]
-    except Exception:
+        return CAL.create(summary=summary, frm=start_dt.isoformat(), to=end_dt.isoformat(),
+                          location=dst_addr, description=desc)
+    except Exception as e:
+        print(f"[fill] insert failed: {e}", file=sys.stderr)
         return None
 
 
