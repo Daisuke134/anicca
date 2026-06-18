@@ -726,7 +726,8 @@ Seed a DIVERSE event set (deliberately beyond the old JP list/regex) and run `re
 - `running` → agent decides (home/route) or asks — NOT silently forced home.
 Assert: known → resolved (no ask-queue row); genuinely-unknown → ask-queue row whose `reason` starts `ask:` + the mailed question is the agent's wording; geocode-unverifiable agent answers fall through to ask (no hallucination inserted). Evidence: the queue rows + a real sent Gmail + before/after.
 
-## WS5 — natural call (VAD tuning + affective dialog)  [patch — review next]
+## WS5 — natural call  ✅ REVIEW PASSED (ok:true) + IMPLEMENTED & VERIFIED (2026-06-18, life-manager 5bac15b)
+_Patch① VAD tuning SHIPPED: real WS handshake → setupComplete ✅ + live Charon call (UPLINK frames, not clipped). Patch② affective dialog DROPPED — `enableAffectiveDialog` is rejected as "Unknown name at 'setup'" (CLOSE 1007) on BOTH v1beta and v1alpha raw WS (SDK-only field; not available on our raw BidiGenerateContent path). Real handshake test caught it — patch alone would have been a false claim._
 
 Goal: make the wake call feel human. The call already works (Charon speaks, verified live 2026-06-18). Two improvements, grounded in `call/lib/call-logic.js` (`buildGeminiSetup`, `geminiLiveWsUrl` v1beta). Docs: ai.google.dev/gemini-api/docs/live-api/capabilities (ctx7 + firecrawl).
 
