@@ -56,6 +56,8 @@
 | PROP-016  | After LOOP_DETECT_WINDOW identical actions, the inference HTTP call is NOT made                     | 2    | true     | node:test (integration) | REQ-005  |
 | PROP-017  | No import / shell invocation in `runtime/loop/` references macOS-only commands                      | 0    | true     | grep audit     | REQ-008  |
 | PROP-018  | `scrubPrivateKeys` never allows `BLOCKRUN_WALLET_KEY` through regardless of env shape               | 1    | true     | node:test      | REQ-004  |
+| PROP-019  | When `balance.mjs` throws (RPC timeout / network error), the loop retains the last-known tier and does not crash; the new ledger line contains the previous model name, not an error tier | 2    | true     | node:test (integration) | REQ-002  |
+| PROP-020  | The observation string AND the serialised loop-ledger line produced after any `run_skill earn` call do NOT contain a 64-hex private-key pattern (`/0x[0-9a-fA-F]{64}/`) | 1    | true     | node:test      | REQ-004  |
 
 ---
 
@@ -68,10 +70,11 @@
 
 ### Tier 1 — Property tests with `node:test` (pure-core functions only)
 
-All `PROP-001` through `PROP-012` and `PROP-018`.
+`PROP-001` through `PROP-012`, `PROP-018`, and `PROP-020`.
 
-These are purely functional transforms with no I/O. Each test file imports the pure module, passes
-inputs, and asserts outputs. No mocks, no fixtures, no network. Fast (< 50 ms per test).
+These are purely functional transforms with no I/O (PROP-020 is pure regex
+matching over a string). Each test file imports the pure module, passes inputs,
+and asserts outputs. No mocks, no fixtures, no network. Fast (< 50 ms per test).
 
 Test file locations (to be written in Phase 2a):
 ```
@@ -85,7 +88,7 @@ runtime/loop/__tests__/config.test.mjs
 
 ### Tier 2 — Integration tests with `node:test` + mock HTTP
 
-`PROP-013` through `PROP-016`.
+`PROP-013` through `PROP-016` and `PROP-019`.
 
 These tests spin up the full `index.mjs` entry point in a child process with:
 - `OPENAI_BASE_URL` pointing to an in-process mock HTTP server (no network).
@@ -110,18 +113,18 @@ Formal model checking (TLA+, Kani) is out of scope for this sprint.
 
 ## Coverage Mapping (REQ → PROP)
 
-| REQ       | PROP obligations                                  |
-|-----------|---------------------------------------------------|
-| REQ-001   | PROP-010, PROP-014                                |
-| REQ-002   | PROP-001, PROP-002, PROP-003, PROP-004            |
-| REQ-003   | PROP-015                                          |
-| REQ-004   | PROP-005, PROP-006, PROP-018                      |
-| REQ-005   | PROP-008, PROP-009, PROP-016                      |
-| REQ-006   | PROP-013                                          |
-| REQ-007   | PROP-007, PROP-014                                |
-| REQ-008   | PROP-017                                          |
-| REQ-009   | PROP-011, PROP-012                                |
-| REQ-010   | Covered by Phase 2 smoke-test (not a unit prop)   |
+| REQ       | PROP obligations                                       |
+|-----------|--------------------------------------------------------|
+| REQ-001   | PROP-010, PROP-014                                     |
+| REQ-002   | PROP-001, PROP-002, PROP-003, PROP-004, PROP-019       |
+| REQ-003   | PROP-015, PROP-020                                     |
+| REQ-004   | PROP-005, PROP-006, PROP-018, PROP-020                 |
+| REQ-005   | PROP-008, PROP-009, PROP-016                           |
+| REQ-006   | PROP-013                                               |
+| REQ-007   | PROP-007, PROP-014                                     |
+| REQ-008   | PROP-017                                               |
+| REQ-009   | PROP-011, PROP-012                                     |
+| REQ-010   | Covered by Phase 2 smoke-test (not a unit prop)        |
 
 ---
 
