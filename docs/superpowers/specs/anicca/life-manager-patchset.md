@@ -771,3 +771,7 @@ Goal: make the wake call feel human. The call already works (Charon speaks, veri
 
 ## WS6..WS8 — WS6 web app (#49) · WS7 demo-reel (#50) · WS8 launch (#51)
 WS1b travel_fill.py adapter · WS2 agentic location/ask (#47) · WS3 repo extraction (#48) · WS4 /life-manager→GitHub link (#52) · WS5 natural call VAD+affective (#43) · WS6 web app flow + cloud wake (#49) · WS7 demo-reel cron→@anicca.comedy (#50) · WS8 launch PH+X (#51). Each gets its own complete diff section here, each reviewed, none started before its predecessor passes.
+
+## ✅ LOCAL through-flow E2E CLOSED (2026-06-18, real gcal+Gmail, no-mock)
+Seeded 2 real events → agentic resolve (A→渋谷 resolved / B→ask) → real question email → real reply → poll wrote B.location=六本木ヒルズ to real gcal → travel inserted 🚆 block with real 13-min directions (16:17, ending B's 16:30) → call verified separately (Charon spoke). **E2E caught a real bug**: same-account reply poll mis-took the bot's own question as the location → fixed parseReply to skip `？/?` lines (life-manager eb0acdb), ask 6/6 green, re-poll wrote the correct answer. Test artifacts cleaned up.
+Bonus infra fixes found+fixed by E2E: `ws` module missing in the moved repo (live calls were broken) + legacy Geocoding/Directions API disabled (wired LIFE_MAPS_KEY).
