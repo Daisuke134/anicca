@@ -1,0 +1,15 @@
+{
+  "name": "anicca-life-call",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Life Manager cloud wake-call service: persistent Gemini-Charon bridge + T-15min scheduler (Railway)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test/scheduler.test.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "engines": { "node": ">=18" }
+}
