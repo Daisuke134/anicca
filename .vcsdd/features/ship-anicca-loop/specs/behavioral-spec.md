@@ -1,5 +1,8 @@
 # Behavioral Specification — ship-anicca-loop
 
+> **DECISION 2026-06-18 (Dais) — NO ORIGINAL LOOP. FORK THE AUTOMATON.**
+> Anicca does NOT ship a hand-written ReAct loop. It **forks the proven Conway-Research/automaton loop and uses it as-is**, but runs it on **ClawRouter (food/inference) + local Mac or Akash (shelter)** instead of Conway — different from automaton (no Conway/429 dependency) and better. The earlier `runtime/loop/*` hand-written modules are REMOVED as original slop. Local onboarding mirrors Franklin (one command, fund $5); cloud mirrors automaton (self-run/replicate on Akash). The earn method embedded as a skill is chosen ONLY after Track A proves what actually makes money. This spec's REQs now describe the *configuration/wiring* of the forked automaton + earn skill, not a bespoke loop implementation.
+
 **Feature**: `ship-anicca-loop`
 **Phase**: 1a
 **VCSDD Epic**: `VCSDD-ship-anicca-loop-1781765291339`
