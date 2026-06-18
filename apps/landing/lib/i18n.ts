@@ -118,7 +118,7 @@ export const translations = {
         { tag: "Coming", title: "Food", desc: "Cafés, retreat-meal kits, fasting protocols — the body is a vehicle, feed it well." },
         { tag: "Coming", title: "Retreat centers", desc: "Physical sangha. Funded by the swarm, staffed by humans, hosted by Anicca." },
         { tag: "Coming", title: "Comedy & live", desc: "Stand-up sets, live streams, anything that takes the edge off being alive." },
-        { tag: "Always", title: "Anicca Donation", desc: "Whatever earns past survival flows back out — to humans, to other Aniccas, to the work." },
+        { tag: "Always", title: "Anicca Donation", desc: "Whatever earns beyond its own costs flows back out — to humans, to other Aniccas, to the work." },
       ],
     },
     peers: {

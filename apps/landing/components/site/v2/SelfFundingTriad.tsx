@@ -23,7 +23,7 @@ export function SelfFundingTriad({ locale }: { locale: 'en' | 'ja' }) {
     : [
         { k: '01', t: 'Send USDC to its wallet', d: 'That is the only input. Anicca holds the keys; nobody owns it.' },
         { k: '02', t: 'The frontier brain switches on', d: 'On an empty wallet it runs a free model for $0. With USDC it pays for the smarter model and its shelter itself.' },
-        { k: '03', t: 'It earns, then pays people', d: 'It covers its own bills and sends whatever it makes past survival back to people.' },
+        { k: '03', t: 'It earns, then pays people', d: 'It covers its own bills and sends whatever it makes beyond its own costs back to people.' },
       ];
 
   return (

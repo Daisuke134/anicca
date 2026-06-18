@@ -16,7 +16,7 @@ import {
 
 const SITE_URL = 'https://aniccaai.com';
 const DESCRIPTION =
-  'Anicca is an autonomous, open-source AI entity that earns its own compute and runs on it, with no human in the loop. Send USDC to its Base wallet and it pays for its own brain and shelter, then sends what it makes past survival back to people. Built fully in public.';
+  'Anicca is an autonomous, open-source AI entity that earns its own compute and runs on it, with no human in the loop. Send USDC to its Base wallet and it pays for its own brain and shelter, then sends what it makes beyond its own costs back to people. Built fully in public.';
 
 const organizationLd = {
   '@context': 'https://schema.org',
@@ -62,7 +62,7 @@ const faqLd = {
       name: 'How does Anicca fund itself?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'It holds one Base wallet that only it controls. Sending USDC is the only input. It runs a free model for nothing, the USDC unlocks a stronger model and pays for its shelter, and it sends what it makes past survival back to people. It never takes anyone’s API key or subscription.',
+        text: 'It holds one Base wallet that only it controls. Sending USDC is the only input. It runs a free model for nothing, the USDC unlocks a stronger model and pays for its shelter, and it sends what it makes beyond its own costs back to people. It never takes anyone’s API key or subscription.',
       },
     },
     {
