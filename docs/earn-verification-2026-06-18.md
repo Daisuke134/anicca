@@ -53,6 +53,7 @@ B 待ちの間 = trading 等の残り A 手段を進める（遊ばない）
 | **x402 売り** | ◯(機構) | x402-express 1行で payTo=wallet・$0.01 USDC・402 Payment Required 実証。受取に鍵不要 | 機構✅・壁=需要(外部buyer)。自分で払う=fake禁止 |
 | **DePIN(Grass/Nodepay/Gradient)** | ❌ | 全部ポイント制(即USDCでない)・account+常駐アプリ・極小・自動farm=ToS違反 | anicca不適=壁 |
 | **trading(DEX swap)** | ✅(実行)/❌(確実earn) | **実証**: ③walletから $2 USDC→0.001148 WETH(≈$2) を Uniswap V3 で自律スワップ(tx 0x1355c5da, wallet署名・人間ゼロ)。実行レイヤは自律で動く。 | trading=投機。実行は自律可だが「確実に増える」ではない＝ETH価格次第で勝/負(高分散)。sustainable income ではない |
+| **trading(AutoHedge)** | ◐ | The-Swarm-Corporation/AutoHedge(3442★)=自律agentヘッジファンド(Director/Quant/Risk/Execution)。**Solanaで完全自律trading**。必要=OPENAI_API_KEY(→OPENAI_BASE_URLを ClawRouter proxy に向ければ自己決済frontier可・ローカル実行でreplay制約無し)+WALLET_PRIVATE_KEY(Solana)。`pip install autohedge`。 | 自律trading framework として成立(self-pay LLM可)。但し①Solana専用(我々Base)②gamble③Solana資金要。＝投機の自律化は可能だが確実earnではない |
 
 ### nookplot 詳細（再挑戦の鍵）
 - **Mining ≠ Bounties**。Mining は replay 検証で BYOK 必須 → 我々の制約で不可。Bounties は成果物納品で replay 無し → **Anicca自己解決OK**。
