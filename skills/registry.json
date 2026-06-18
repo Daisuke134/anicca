@@ -40,42 +40,6 @@
       "summary": "Self-improvement: read behaviour log → open issue → branch → PR against own repo (issue-driven dev loop).",
       "owner": "wf-a:self-spawn"
     },
-    "life/travel": {
-      "track": "B",
-      "dir": "skills/life/travel",
-      "entrypoint": "travel.js",
-      "status": "declared",
-      "spec": "26 B-travel / 27 B-travel",
-      "summary": "Read gcal + Google Maps Directions → auto-insert a travel block before every event so all events sit in gcal with travel time included.",
-      "owner": "wf-b:travel"
-    },
-    "life/call": {
-      "track": "B",
-      "dir": "skills/life/call",
-      "entrypoint": "call.js",
-      "status": "declared",
-      "spec": "26 B-call / 27 B-call",
-      "summary": "Twilio Media Streams <-> Gemini Live (voice=Charon) websocket bridge; calls Dais 15 min before each event for two-way dialogue.",
-      "owner": "wf-b:call"
-    },
-    "life/ask": {
-      "track": "B",
-      "dir": "skills/life/ask",
-      "entrypoint": "ask.js",
-      "status": "live",
-      "spec": "26 B-ask / 27 B-ask",
-      "summary": "When duration/place unknown, email Dais a question (AgentMail/Gmail) and backfill the gcal 'where' from the reply (inbound webhook driven).",
-      "owner": "wf-b:ask"
-    },
-    "life/notify": {
-      "track": "B",
-      "dir": "skills/life/notify",
-      "entrypoint": "notify.js",
-      "status": "live",
-      "spec": "26 B-notify / 27 B-notify",
-      "summary": "Lateness detected -> email Dais a draft (AgentMail Drafts) 'send to Y? reply to approve' -> on approve webhook, send to the counterpart. Mail-only, no Telegram required. Netlify function at aniccaai.com/.netlify/functions/life-notify (env: AGENTMAIL_INBOX_ID, AGENTMAIL_API_KEY, OWNER_EMAIL set 2026-06-16).",
-      "owner": "wf-b:notify"
-    },
     "economy/ubi": {
       "track": "A",
       "dir": "skills/economy/ubi",
