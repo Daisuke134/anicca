@@ -23,7 +23,7 @@ Anicca is built on five properties (see [`THESIS.md`](THESIS.md)):
 | **Self-improving** | watches its own logs → fixes errors, refactors, improves toward its goals |
 | **No human in the loop** | earns, reports, and acts on its own; the only remaining human touch is paying for a server until sovereign shelter lands |
 
-The single source of truth for the architecture is [`specs/00-MASTER.md`](specs/00-MASTER.md). **Earning is the main thing**; the Life Manager (below) is a separate, optional product.
+The single source of truth for the architecture is [`specs/00-MASTER.md`](specs/00-MASTER.md). **Earning is the main thing.** (Life Manager is a **separate project** with its own repo — see [github.com/Daisuke134/life-manager](https://github.com/Daisuke134/life-manager). It is not part of this repo.)
 
 ---
 
@@ -34,9 +34,8 @@ The single source of truth for the architecture is [`specs/00-MASTER.md`](specs/
 | Product | Link | What it is |
 |---|---|---|
 | **Cloud Anicca** | [aniccaai.com/install](https://aniccaai.com/install) | Subscribe, log in, and get your own Anicca running in the cloud with a per-user dashboard (earnings / spend / activity / controls / reports). Auth via Supabase. The economic promise: when your agent earns enough to fund its own compute, the subscription auto-cancels. |
-| **Life Manager** | [aniccaai.com/lm](https://aniccaai.com/lm) | A separate product: connect Google Calendar / Gmail / Telegram (via Composio), and Anicca phones you ~15 minutes before each event (Telnyx + Gemini Live, voice = Charon) telling you to leave so you arrive on time. |
 
-> **Honest status:** `aniccaai.com/install` is live today. The per-user cloud dashboard, Stripe subscription flow, and `aniccaai.com/lm` Life Manager page are in active development (see the END-TO-END TODO in [`specs/00-MASTER.md`](specs/00-MASTER.md)). Don't expect more than what each page shows you.
+> **Honest status:** `aniccaai.com/install` is live today. The per-user cloud dashboard and Stripe subscription flow are in active development (see the END-TO-END TODO in [`specs/00-MASTER.md`](specs/00-MASTER.md)). Don't expect more than what each page shows you.
 
 ### 2. Local self-host (this repository — free, no server key, no API key)
 
@@ -59,7 +58,7 @@ The capabilities Anicca runs are declared as slots in [`skills/registry.json`](s
 
 ## Architecture (one paragraph)
 
-Anicca runs the same **automaton pattern** as [Conway's automaton](https://github.com/Conway-Research/automaton) — a ReAct loop (think → act → observe → persist) plus a heartbeat scheduler — but on a **different, simpler stack: ClawRouter (food/inference, self-pay x402) + your local Mac or Akash (shelter)**, with no Conway dependency. The loop lives in [`runtime/loop/`](runtime/loop/) and runs under a runtime root (`$ANICCA_HOME`) alongside its skill slots and one Base smart wallet. The web product adds **Supabase** for auth and **Composio** for service connections (Gmail / Google Calendar / Telegram). The Life Manager places its ~15-min-before phone calls via **Telnyx + Gemini Live (voice = Charon)**.
+Anicca runs the same **automaton pattern** as [Conway's automaton](https://github.com/Conway-Research/automaton) — a ReAct loop (think → act → observe → persist) plus a heartbeat scheduler — but on a **different, simpler stack: ClawRouter (food/inference, self-pay x402) + your local Mac or Akash (shelter)**, with no Conway dependency. The loop lives in [`runtime/loop/`](runtime/loop/) and runs under a runtime root (`$ANICCA_HOME`) alongside its skill slots and one Base smart wallet. The cloud product adds **Supabase** for auth and **Composio** for service connections.
 
 ---
 
@@ -70,8 +69,6 @@ Anicca runs the same **automaton pattern** as [Conway's automaton](https://githu
 | Self-pay compute proxy (free → frontier via x402, own wallet) | **Built & proven** (`runtime/compute-proxy/`) |
 | **Anicca loop** (`runtime/loop/`) — wake → ClawRouter `auto` brain → run skill → ledger → sleep | **Built & runs** — fires tool calls via ClawRouter `auto` end-to-end (no hardcoded model); 68 tests + live wake verified |
 | Earn → on-chain verify → ledger (GATE-0) | **Built** — DeFi-yield deposits (Aave/Morpho, USDC) verified on-chain; earn skill being finalized around the methods that actually pay |
-| Life Manager: `ask` (email when info unknown), `notify` (lateness draft → approve → send) | **Live** skill slots |
-| Life Manager: `travel` (auto-insert travel block), `call` (15-min-before phone call) | **Declared** — implementation landing |
 | Self-replication (`self/spawn`), self-improvement (`self/issue-dev`), UBI (`economy/ubi`) | **Declared** — mechanism fixed, post-earn roadmap |
 | Cloud per-user dashboard, Stripe subscription, sovereign server (Akash) | **In progress** — see `specs/00-MASTER.md` |
 
@@ -104,8 +101,8 @@ Every wallet on Base is public at `basescan.org/address/<addr>`, so the treasury
 ## Links
 
 - **Hosted (cloud Anicca):** <https://aniccaai.com/install>
-- **Hosted (Life Manager):** <https://aniccaai.com/lm>
 - **Live dashboard (auto-updated):** <https://aniccaai.com/dashboard>
+- **Life Manager (separate project):** <https://github.com/Daisuke134/life-manager>
 - **Repository (this self-host):** <https://github.com/Daisuke134/anicca>
 - **Soul / behaviour policy:** [`SOUL.md`](SOUL.md) · [`THESIS.md`](THESIS.md)
 
