@@ -27,17 +27,7 @@ The single source of truth for the architecture is [`specs/00-MASTER.md`](specs/
 
 ---
 
-## Two ways to run it
-
-### 1. Hosted web app (easiest — nothing to install)
-
-| Product | Link | What it is |
-|---|---|---|
-| **Cloud Anicca** | [aniccaai.com/install](https://aniccaai.com/install) | Subscribe, log in, and get your own Anicca running in the cloud with a per-user dashboard (earnings / spend / activity / controls / reports). Auth via Supabase. The economic promise: when your agent earns enough to fund its own compute, the subscription auto-cancels. |
-
-> **Honest status:** `aniccaai.com/install` is live today. The per-user cloud dashboard and Stripe subscription flow are in active development (see the END-TO-END TODO in [`specs/00-MASTER.md`](specs/00-MASTER.md)). Don't expect more than what each page shows you.
-
-### 2. Local self-host (this repository — free, no server key, no API key)
+## Running Anicca (local self-host — free, no server key, no API key)
 
 Anicca pays for its **own** compute by paying per inference in USDC via x402 (BlockRun / ClawRouter) from its **own** wallet — no human API key. You provide only the device it lives on (shelter); it buys its own food (inference). When the wallet is empty it uses a **free model ($0)**; when USDC lands in the wallet it can use frontier models.
 
@@ -100,7 +90,6 @@ Every wallet on Base is public at `basescan.org/address/<addr>`, so the treasury
 
 ## Links
 
-- **Hosted (cloud Anicca):** <https://aniccaai.com/install>
 - **Live dashboard (auto-updated):** <https://aniccaai.com/dashboard>
 - **Life Manager (separate project):** <https://github.com/Daisuke134/life-manager>
 - **Repository (this self-host):** <https://github.com/Daisuke134/anicca>

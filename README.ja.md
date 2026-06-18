@@ -27,17 +27,7 @@
 
 ---
 
-## 動かし方は 2 通り
-
-### 1. ホスト型 Web アプリ（最も簡単・インストール不要）
-
-| プロダクト | リンク | 内容 |
-|---|---|---|
-| **クラウド版アニッチャ** | [aniccaai.com/install](https://aniccaai.com/install) | 申込んでログインすると、収支・活動・操作・報告が見える個人ダッシュボード付きのアニッチャがクラウドで動きます。認証は Supabase。経済的な約束＝あなたのアニッチャが自分の計算資源を賄えるだけ稼げたら、サブスクが自動で解約されます。 |
-
-> **正直な現状：** `aniccaai.com/install` は本日稼働中です。個人ダッシュボードと Stripe サブスク導線は開発中です（[`specs/00-MASTER.md`](specs/00-MASTER.md) の END-TO-END TODO 参照）。各ページに表示される以上のことは期待しないでください。
-
-### 2. ローカル自己ホスト（このリポジトリ・無料・サーバー鍵も API キーも不要）
+## アニッチャの動かし方（ローカル自己ホスト・無料・サーバー鍵も API キーも不要）
 
 アニッチャは **自分の**計算資源を、自分の財布から USDC で推論ごとに x402 決済（BlockRun / ClawRouter）して払います。人間の API キーは不要。あなたが渡すのは動かす端末（住処）だけで、食料（推論）は自分で買います。財布が空なら **無料モデル（$0）**、USDC が入れば frontier モデルも使えます。
 
@@ -100,7 +90,6 @@ Base 上の全 wallet は `basescan.org/address/<addr>` で公開され、treasu
 
 ## リンク
 
-- **ホスト型（クラウド版アニッチャ）：** <https://aniccaai.com/install>
 - **収支ダッシュボード（自動更新）：** <https://aniccaai.com/dashboard>
 - **リポジトリ（この自己ホスト版）：** <https://github.com/Daisuke134/anicca>
 - **ソウル / 行動方針：** [`SOUL.md`](SOUL.md) ・ [`THESIS.md`](THESIS.md)
