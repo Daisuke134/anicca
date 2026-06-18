@@ -92,6 +92,27 @@ exports.handler = async (event) => {
     return { statusCode: 302, headers: { Location: back }, body: "" };
   }
 
+  if (action === "exchange" && event.httpMethod === "POST") {
+    // Verify a Supabase access token (Supabase Auth is the login), derive a stable uid from the
+    // Supabase user id, sign it. The backend keeps its uid+sig contract; the uid is now anchored
+    // to the real Supabase user — Composio is only the post-login gcal/gmail data connection.
+    if (!SUPABASE_URL || !SUPABASE_KEY) return json(500, { error: "missing supabase config" });
+    if (!LM_UID_SECRET) return json(500, { error: "missing LM_UID_SECRET" });
+    let xb;
+    try { xb = JSON.parse(event.body || "{}"); } catch { return json(400, { error: "bad json" }); }
+    const token = xb.access_token || "";
+    if (!token) return json(400, { error: "missing access_token" });
+    const ur = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      headers: { Authorization: `Bearer ${token}`, apikey: SUPABASE_KEY },
+    });
+    if (!ur.ok) return json(401, { error: "invalid session" });
+    const u = await ur.json().catch(() => null);
+    if (!u || !u.id) return json(401, { error: "invalid session" });
+    const uid = "lm_" + u.id; // deterministic per Supabase user
+    await upsertUser({ uid }).catch(() => {});
+    return json(200, { uid, sig: signUid(uid) });
+  }
+
   if (action === "save" && event.httpMethod === "POST") {
     if (!SUPABASE_URL || !SUPABASE_KEY) return json(500, { error: "missing supabase config" });
     let body;

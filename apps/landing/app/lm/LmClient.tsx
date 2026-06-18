@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useLaunchLocale } from '@/lib/launchLocale';
 import { launchStrings } from '@/lib/launchStrings';
+import { signInWithGoogle, getSession } from '@/lib/auth';
 
 // /lm onboarding island (spec28 P-lm-separate). Static-export safe: every call runs at
 // runtime in the browser, nothing is server-rendered per-user (mirrors app/me/MeClient.tsx).
@@ -19,7 +20,7 @@ import { launchStrings } from '@/lib/launchStrings';
 //   save  → /.netlify/functions/lm-onboard         (NEW, persists name+phone to Supabase)
 //   pay   → $20/mo Stripe link (no trial) — see patch §3 for the exact `stripe` create cmd.
 
-const GOOGLE_LOGIN_URL = '/.netlify/functions/lm-onboard?action=google-start';
+const EXCHANGE_URL = '/.netlify/functions/lm-onboard?action=exchange';
 const SAVE_URL = '/.netlify/functions/lm-onboard?action=save';
 // Fail closed: NEVER ship a hardcoded/placeholder payment link. The Subscribe button is
 // only rendered when a REAL Stripe link is injected at build time via NEXT_PUBLIC_STRIPE_LM_URL.
@@ -69,36 +70,44 @@ export default function LmClient() {
   const [gmail, setGmail] = useState<ConnState>('idle');
   const [err, setErr] = useState<string>('');
 
-  // Resume: if Google login redirected back with ?uid=… (set by lm-onboard google-callback),
-  // or a uid is saved, skip the login step.
+  // Login = Supabase Auth (Google). On return from Google OAuth (or any load with a live session),
+  // exchange the Supabase access token for a signed uid, then restore in-session progress. The
+  // persistent Supabase session (not localStorage) is the source of truth for "logged in".
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const fromCb = params.get('uid');
-    const fromSig = params.get('sig');
-    const saved = window.localStorage.getItem(STORAGE_KEY);
-    const savedSig = window.localStorage.getItem(SIG_KEY);
-    const id = fromCb || saved || '';
-    const s = fromSig || savedSig || '';
-    if (!id) return;
-    setUid(id);
-    setSig(s);
-    window.localStorage.setItem(STORAGE_KEY, id);
-    if (s) window.localStorage.setItem(SIG_KEY, s);
-
-    // Restore prior progress so the flow SURVIVES the Composio OAuth redirect (which reloads the
-    // page and would otherwise wipe React state — the bug where nobody could reach the dashboard).
-    let cal0 = (window.localStorage.getItem('anicca.lm.cal') as ConnState) || 'idle';
-    let gmail0 = (window.localStorage.getItem('anicca.lm.gmail') as ConnState) || 'idle';
-    const pending = window.localStorage.getItem('anicca.lm.pending'); // the connect we just sent to OAuth
-    if (pending === 'gcal') cal0 = 'connected';
-    if (pending === 'gmail') gmail0 = 'connected';
-    window.localStorage.removeItem('anicca.lm.pending');
-    setCal(cal0);
-    setGmail(gmail0);
-    const savedStep = window.localStorage.getItem('anicca.lm.step') as Step | null;
-    setStep(savedStep && savedStep !== 'login' ? savedStep : 'name');
-    // strip uid/sig from the visible URL so they don't leak via Referer/history
-    window.history.replaceState(null, '', '/lm');
+    let cancelled = false;
+    (async () => {
+      let id = window.localStorage.getItem(STORAGE_KEY) || '';
+      let s = window.localStorage.getItem(SIG_KEY) || '';
+      const session = await getSession();
+      if (session?.access_token) {
+        try {
+          const r = await fetch(EXCHANGE_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ access_token: session.access_token }),
+          });
+          const d = await r.json();
+          if (d.uid && d.sig) {
+            id = d.uid;
+            s = d.sig;
+          }
+        } catch {}
+      }
+      if (cancelled || !id) return;
+      setUid(id);
+      setSig(s);
+      window.localStorage.setItem(STORAGE_KEY, id);
+      if (s) window.localStorage.setItem(SIG_KEY, s);
+      setCal((window.localStorage.getItem('anicca.lm.cal') as ConnState) || 'idle');
+      setGmail((window.localStorage.getItem('anicca.lm.gmail') as ConnState) || 'idle');
+      const savedStep = window.localStorage.getItem('anicca.lm.step') as Step | null;
+      setStep(savedStep && savedStep !== 'login' ? savedStep : 'name');
+      // strip any OAuth params Supabase appended from the visible URL
+      window.history.replaceState(null, '', '/lm');
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Persist progress (cal/gmail/step) so the OAuth redirect never strands the user mid-flow.
@@ -112,10 +121,8 @@ export default function LmClient() {
   }, [uid, cal, gmail, step]);
 
   const login = useCallback(() => {
-    // Real Google OAuth handoff (managed by lm-onboard google-start → Google consent → callback).
-    window.location.href = `${GOOGLE_LOGIN_URL}&return=${encodeURIComponent(
-      window.location.origin + '/lm',
-    )}`;
+    // Supabase Auth (Google provider). Redirects to Google consent, returns to /lm with a session.
+    void signInWithGoogle();
   }, []);
 
   const saveName = useCallback(async () => {
@@ -139,25 +146,45 @@ export default function LmClient() {
       const fn = kind === 'gcal' ? 'calendar-connect' : 'gmail-connect';
       set('connecting');
       setErr('');
+      // Open the consent tab NOW, synchronously inside the click gesture, so popup blockers
+      // (Safari especially) don't kill it. We navigate it once the redirect URL returns.
+      const w = window.open('about:blank', '_blank');
+      const base = `/.netlify/functions/${fn}?uid=${encodeURIComponent(uid)}&sig=${encodeURIComponent(sig)}`;
       try {
-        const r = await fetch(
-          `/.netlify/functions/${fn}?uid=${encodeURIComponent(uid)}&sig=${encodeURIComponent(sig)}`,
-        );
-        const d = await r.json();
-        if (d.connected) return set('connected');
+        const d = await (await fetch(base)).json();
+        if (d.connected) {
+          try { w && w.close(); } catch {}
+          return set('connected');
+        }
         if (d.redirect_url) {
-          // one-click Google consent (Composio's verified app) — same tab, returns to /lm.
-          // Mark which connect is in flight + stay on the connect step so resume restores it.
-          try {
-            window.localStorage.setItem('anicca.lm.pending', kind);
-            window.localStorage.setItem('anicca.lm.step', 'connect');
-          } catch {}
-          window.location.href = d.redirect_url;
+          // Composio's verified-app consent opens in the NEW TAB; the user stays on /lm.
+          if (w) w.location.href = d.redirect_url;
+          else window.location.href = d.redirect_url; // fallback if the popup was blocked
+          // Poll status-only (&check=1 never mints a fresh OAuth) until the connection is ACTIVE.
+          const t0 = Date.now();
+          const poll = setInterval(async () => {
+            if (Date.now() - t0 > 180000) {
+              clearInterval(poll);
+              set('error');
+              setErr(t.connect.error);
+              return;
+            }
+            try {
+              const dd = await (await fetch(`${base}&check=1`)).json();
+              if (dd.connected) {
+                clearInterval(poll);
+                try { w && w.close(); } catch {}
+                set('connected');
+              }
+            } catch {}
+          }, 3000);
           return;
         }
+        try { w && w.close(); } catch {}
         set('error');
         setErr(d.error || t.connect.error);
       } catch (e) {
+        try { w && w.close(); } catch {}
         set('error');
         setErr(t.connect.error);
       }

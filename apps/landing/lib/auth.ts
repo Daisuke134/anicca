@@ -48,8 +48,11 @@ export function onAuthChange(cb: (s: Session | null) => void): () => void {
 export async function signInWithGoogle(): Promise<void> {
   const c = supabase();
   if (!c) throw new Error('auth not configured');
+  // Return to the CURRENT path (so /lm comes back to /lm, /me to /me). Each path must be
+  // allowlisted in Supabase → Auth → URL Configuration → Redirect URLs.
+  const path = typeof window !== 'undefined' ? window.location.pathname : '/me';
   const redirectTo =
-    typeof window !== 'undefined' ? `${window.location.origin}/me` : 'https://aniccaai.com/me';
+    typeof window !== 'undefined' ? `${window.location.origin}${path}` : 'https://aniccaai.com/me';
   await c.auth.signInWithOAuth({ provider: 'google', options: { redirectTo } });
 }
 

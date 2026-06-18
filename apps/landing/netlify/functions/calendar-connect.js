@@ -58,6 +58,11 @@ exports.handler = async (event) => {
       await markProvider();
       return { statusCode: 200, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ connected: true }) };
     }
+    // Status-only poll (the new-tab connect UI polls with &check=1): never mint a fresh OAuth,
+    // else each poll spawns a duplicate Composio connection. Just report not-yet-connected.
+    if (qs.check) {
+      return { statusCode: 200, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ connected: false }) };
+    }
     const r = await fetch(`${COMPOSIO_API}/connected_accounts`, {
       method: "POST",
       headers: { "x-api-key": COMPOSIO_KEY, "Content-Type": "application/json" },
