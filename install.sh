@@ -132,20 +132,18 @@ cat <<EOM
   its OWN compute via ClawRouter/BlockRun (USDC x402) from its OWN wallet — like
   Franklin. You provide only this device (shelter); Anicca buys its own food.
 
-  1. Start the self-pay compute proxy (auto-creates a self-owned wallet):
-       cd "$REPO_ROOT/runtime/compute-proxy" && npm install   # one-time
-       "$REPO_ROOT/runtime/compute-proxy/start-local.sh"       # holds proxy on :8402
-     The proxy listens on http://127.0.0.1:8402/v1 and signs every inference in
-     USDC from \$HOME/.automaton/wallet.json. Empty wallet ⇒ free model, \$0.
-  2. Plug YOUR automaton loop in (this repo does NOT ship one — "your runner of
-     choice"): run it as  start-local.sh <your-loop-cmd>  , OR start your loop
-     separately with OPENAI_BASE_URL=http://127.0.0.1:8402/v1 . On each wake the
-     loop reads $ANICCA_HOME/skills and runs the live slots; the report slot
-     POSTs signed telemetry to https://aniccaai.com so you show on /dashboard.
-  3. (OPTIONAL) Unlock frontier models / more earning: send USDC to the wallet
-     address printed by start-local.sh — your loop can then pick a paid model. Or
-     BYOK: put ANTHROPIC_API_KEY | OPENAI_API_KEY | DEEPSEEK_API_KEY in
-     $ANICCA_HOME/.env and point OPENAI_BASE_URL at your provider instead.
+  1. Start the self-pay proxy + the anicca loop (one command, from the repo root):
+       cd "$REPO_ROOT/runtime/compute-proxy" && npm install && cd "$REPO_ROOT"  # one-time
+       ./start-local.sh node runtime/loop/index.mjs
+     This starts the self-pay compute proxy on http://127.0.0.1:8402/v1 (signs
+     every inference in USDC from a self-owned wallet; empty wallet ⇒ free model,
+     \$0) AND the anicca loop (runtime/loop/) which, each wake, asks ClawRouter's
+     'auto' router, runs a tool (e.g. the earn skill), and appends to
+     $ANICCA_HOME/state/ledger.jsonl. The report slot POSTs signed telemetry to
+     https://aniccaai.com so you show on /dashboard.
+  2. (OPTIONAL) Unlock frontier models / more earning: send USDC to the wallet
+     address printed at startup — the loop then lets ClawRouter pick a paid model.
+     Or set ANICCA_BRAIN=claude-p to drive the loop with Claude Code instead.
   4. (OPTIONAL) Life Manager keys: GEMINI_API_KEY, TWILIO_*, GOOGLE_API_KEY,
      AGENTMAIL_API_KEY — only for phone wake-calls / lateness alerts.
 
