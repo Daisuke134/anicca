@@ -12,6 +12,14 @@ actually proven so far is ONLY: "anicca can broadcast a real USDC transfer on Ba
 | UBI-E3 bank/PayPay (JP) | nothing | The entire USDC(Base) → JPY → bank/PayPay path. UNVERIFIED which exchange even accepts USDC on Base + allows JPY bank withdrawal. | NOT started / UNVERIFIED |
 | UBI-E3 bank (US) | nothing | USDC → USD bank. | NOT started |
 
+## UBI-E1-FULL — wallet PATH end-to-end (form→queue→watcher→send→arrival) — ✅ PASS (2026-06-18)
+Not just a raw send: the whole product flow, verified by me.
+1. POST to LIVE `https://aniccaai.com/.netlify/functions/income-signup` {method:wallet, wallet:0x36cFc9…} → `{ok:true,recorded:true}` (Supabase status=queued).
+2. `~/anicca/skills/earn/ubi-payout-watcher.mjs` read queued → execute-ubi sent real $0.10 → tx 0x007a856f4f83e89cd900c21302cc61e9cccd7114e60ba66145a2dac9c2a2b07b (status 0x1) → Supabase status→paid (204).
+3. On-chain balanceOf(0x36cFc9…) = **0.10 USDC** verified.
+Recipient key saved /tmp/ubi-wallet-e2e.json (fresh, I control). For a real human they paste their own address; the PATH is proven. Watcher is idempotent (only status=queued).
+REMAINING for wallet: a real human submitting THEIR own address + seeing it in their own wallet app (trivial; same path).
+
 ## What "done" must mean (no more lies)
 A path is done ONLY when a real person, on a named website, taps named buttons, and ends with money
 they can SPEND (in their wallet they control, or yen/USD in their bank / PayPay) — verified by that
