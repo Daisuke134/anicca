@@ -236,6 +236,42 @@ export default function Page() {
         </Reveal>
       </Section>
 
+      {/* How you actually get it — per recipient, named site + steps */}
+      <Section>
+        <Reveal>
+          <h2 className="font-display text-2xl text-[hsl(var(--text-primary))] sm:text-3xl">How you actually get it</h2>
+          <p className="mt-3 max-w-[60ch] text-[15px] leading-relaxed text-[hsl(var(--text-secondary))]">
+            Pick the one that fits you. No crypto knowledge needed for the email or bank way.
+          </p>
+          <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3 md:[grid-auto-flow:dense]">
+            <div className="rounded-card border border-[hsl(var(--border))] bg-[hsl(var(--surface-elevated))] p-6">
+              <p className="font-mono text-[12px] text-[hsl(var(--gold))]">Crypto wallet · works today</p>
+              <p className="mt-3 text-[15px] leading-relaxed text-[hsl(var(--text-secondary))]">
+                Enter your Base address above. Anicca sends real USDC in seconds. See it in your own
+                wallet app or on basescan.org. Cash out through your own exchange whenever you like.
+              </p>
+            </div>
+            <div className="rounded-card border border-[hsl(var(--border))] p-6">
+              <p className="font-mono text-[12px] text-[hsl(var(--gold))]">Email · no wallet needed</p>
+              <p className="mt-3 text-[15px] leading-relaxed text-[hsl(var(--text-secondary))]">
+                Enter your email. Anicca makes a wallet tied to that email and sends there. Come back to{' '}
+                <Link href="/income/wallet" className="text-[hsl(var(--gold))] underline">aniccaai.com/income/wallet</Link>,
+                sign in with the same email, type the code from your inbox, and your money is right there
+                to keep or move out.
+              </p>
+            </div>
+            <div className="rounded-card border border-[hsl(var(--border))] p-6">
+              <p className="font-mono text-[12px] text-[hsl(var(--gold))]">Bank or PayPay · rolling out</p>
+              <p className="mt-3 text-[15px] leading-relaxed text-[hsl(var(--text-secondary))]">
+                Sign up now and choose your country. When the rail opens, Anicca turns its dollars into
+                your local currency and deposits it to your bank or PayPay — like a normal transfer,
+                nothing to install. Grandparents welcome.
+              </p>
+            </div>
+          </div>
+        </Reveal>
+      </Section>
+
       {/* Why this works */}
       <Section>
         <Reveal>
