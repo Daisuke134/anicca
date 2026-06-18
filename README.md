@@ -50,6 +50,58 @@ The capabilities Anicca runs are declared as slots in [`skills/registry.json`](s
 
 Anicca runs the same **automaton pattern** as [Conway's automaton](https://github.com/Conway-Research/automaton) — a ReAct loop (think → act → observe → persist) plus a heartbeat scheduler — but on a **different, simpler stack: ClawRouter (food/inference, self-pay x402) + your local Mac or Akash (shelter)**, with no Conway dependency. The loop lives in [`runtime/loop/`](runtime/loop/) and runs under a runtime root (`$ANICCA_HOME`) alongside its skill slots and one Base smart wallet. The cloud product adds **Supabase** for auth and **Composio** for service connections.
 
+### How it works (full picture)
+
+How an autonomous AI funds itself in USDC and pays universal basic income to people — funding rails, the core loop, the daily split, the 24/7 payout daemons, the delivery rails, and the roadmap.
+
+```mermaid
+flowchart TB
+  SEED["one USDC seed to start"] --> WALLET
+  subgraph FUND["1 - FUNDING IN"]
+    PP["PayPay / card"] --> BIN["Binance (JP buys SOL)"]
+    BIN -->|"withdraw SOL"| SOLW["anicca Solana wallet"]
+    SOLW -->|"relay.link auto-swap"| RELAY1{{"SOL to USDC on Base"}}
+    DUSDC["direct USDC on Base"] --> WALLET
+    RELAY1 --> WALLET
+  end
+  subgraph CORE["2 - ANICCA CORE (automaton, no human API key)"]
+    WALLET["anicca Base wallet USDC"]
+    WALLET -->|"x402 USDC"| CLAW["ClawRouter compute (free model when broke)"]
+    CLAW --> BRAIN["runs tools, skills, agents"]
+    BRAIN -->|"earns USDC"| WALLET
+  end
+  subgraph SPLIT["3 - DAILY SPLIT"]
+    WALLET --> RES["Runway reserve"]
+    WALLET --> CRE["Creator payout"]
+    WALLET --> POOL["UBI pool"]
+    WALLET --> COS["Cosmic fund (animals, off-earth)"]
+  end
+  subgraph DAEMON["4 - 24/7 DAEMONS (launchd)"]
+    D1["sol-funding: SOL to USDC"]
+    D2["ubi-watcher: FIFO, dedup, reserve, your-turn email"]
+  end
+  SOLW -.-> D1
+  POOL -.-> D2
+  subgraph DELIVER["5 - DELIVERY RAILS"]
+    D2 --> R1["Wallet: USDC direct (live)"]
+    D2 --> R2["Email: Crossmint wallet (live)"]
+    D2 --> R3["Bank / PayPay"]
+    R3 --> US["US: Bridge.xyz"]
+    R3 --> JP["JP: GMO Aozora / JPYC / self-cashout"]
+  end
+  subgraph PEOPLE["6 - PEOPLE and ROADMAP"]
+    SIGNUP["aniccaai.com/income signup"] --> D2
+    R1 --> HUMANS["Recipients get real money"]
+    R2 --> HUMANS
+    US --> HUMANS
+    JP --> HUMANS
+    HUMANS --> NEXT["NEXT: mobile money, NPOs, governments"]
+    NEXT --> HORIZON["HORIZON: every living being"]
+  end
+```
+
+(Source: [`docs/architecture.mmd`](docs/architecture.mmd) · rendered [`docs/architecture.png`](docs/architecture.png))
+
 ---
 
 ## What's real today vs. in progress

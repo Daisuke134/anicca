@@ -1,0 +1,43 @@
+flowchart TB
+  SEED["one USDC seed to start"] --> WALLET
+  subgraph FUND["1 - FUNDING IN"]
+    PP["PayPay / card"] --> BIN["Binance (JP buys SOL)"]
+    BIN -->|"withdraw SOL"| SOLW["anicca Solana wallet"]
+    SOLW -->|"relay.link auto-swap"| RELAY1{{"SOL to USDC on Base"}}
+    DUSDC["direct USDC on Base"] --> WALLET
+    RELAY1 --> WALLET
+  end
+  subgraph CORE["2 - ANICCA CORE (automaton, no human API key)"]
+    WALLET["anicca Base wallet USDC"]
+    WALLET -->|"x402 USDC"| CLAW["ClawRouter compute (free model when broke)"]
+    CLAW --> BRAIN["runs tools, skills, agents"]
+    BRAIN -->|"earns USDC"| WALLET
+  end
+  subgraph SPLIT["3 - DAILY SPLIT"]
+    WALLET --> RES["Runway reserve"]
+    WALLET --> CRE["Creator payout"]
+    WALLET --> POOL["UBI pool"]
+    WALLET --> COS["Cosmic fund (animals, off-earth)"]
+  end
+  subgraph DAEMON["4 - 24/7 DAEMONS (launchd)"]
+    D1["sol-funding: SOL to USDC"]
+    D2["ubi-watcher: FIFO, dedup, reserve, your-turn email"]
+  end
+  SOLW -.-> D1
+  POOL -.-> D2
+  subgraph DELIVER["5 - DELIVERY RAILS"]
+    D2 --> R1["Wallet: USDC direct (live)"]
+    D2 --> R2["Email: Crossmint wallet (live)"]
+    D2 --> R3["Bank / PayPay"]
+    R3 --> US["US: Bridge.xyz"]
+    R3 --> JP["JP: GMO Aozora / JPYC / self-cashout"]
+  end
+  subgraph PEOPLE["6 - PEOPLE and ROADMAP"]
+    SIGNUP["aniccaai.com/income signup"] --> D2
+    R1 --> HUMANS["Recipients get real money"]
+    R2 --> HUMANS
+    US --> HUMANS
+    JP --> HUMANS
+    HUMANS --> NEXT["NEXT: mobile money, NPOs, governments"]
+    NEXT --> HORIZON["HORIZON: every living being"]
+  end
