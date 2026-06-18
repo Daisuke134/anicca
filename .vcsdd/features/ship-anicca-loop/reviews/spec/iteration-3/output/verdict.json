@@ -1,0 +1,61 @@
+{
+  "verdict": "PASS",
+  "feature": "ship-anicca-loop",
+  "phase": "1c",
+  "iteration": 3,
+  "reviewedBy": "adversary",
+  "reviewType": "spec",
+  "priorFindingsCheck": [
+    {
+      "priorFinding": "iter2 spec_fidelity #1 — internal path contradiction: REQ-001/REQ-009/Purity-Boundary hard-coded ~/.anicca paths (genesis, ledger, .env) while REQ-008 forbids hard-coding ~/.anicca",
+      "status": "RESOLVED",
+      "evidence": "All operational path literals now derive from ANICCA_HOME. behavioral-spec.md:47 genesis = '$ANICCA_HOME/identity/genesis.md'; lines 52 + 35 ledger = '$ANICCA_HOME/state/ledger.jsonl'; line 299 .env = '$ANICCA_HOME/.env'; verification-architecture.md:33 dotenv.mjs = 'fs.readFile of $ANICCA_HOME/.env (path derived from ANICCA_HOME env var, never hard-coded)'. A repo-wide grep over specs/ for ~/.anicca|~/.automaton|~/.hermes returns matches ONLY at behavioral-spec.md:277 (an 'e.g.' example enumeration of acceptable ANICCA_HOME values), and lines 278, 292-293, 302 — every one a NEGATIVE assertion ('never hard-codes', 'no hard-coded ... literals; all paths derive from ANICCA_HOME'). Zero remaining ~/.anicca/identity, ~/.anicca/state, or ~/.anicca/.env operative path literals. REQ-008 acceptance (line 292-293) is now internally consistent with REQ-001/REQ-009/Purity-Boundary."
+    },
+    {
+      "priorFinding": "iter2 spec_fidelity #2 — under-specified earn-line correlation: no stated key for picking the NEW earn-ledger line (tail vs WAKE_ID); concurrent/stale line could be mis-classified",
+      "status": "RESOLVED",
+      "evidence": "behavioral-spec.md:128-136 ('Earn-ledger correlation key (WAKE_ID)') now states the loop forwards WAKE_ID (current wake ULID) to run.sh, run.sh stores it as the 'wake' field of every appended line, and the loop locates the new line by selecting line.wake === WAKE_ID, explicitly forbidding tail/last-by-position selection (line 133-134) and defining the no-match fallback to non-profitable narrate (line 135-136). Grounded in real source: run.sh:42 'WAKE=\"${WAKE_ID:-$(date -u +%s)}\"' and run.sh:70 writes 'wake':'$WAKE' on the discover line (and every record_line path via lib/record.mjs at run.sh:54-55). The earn-ledger path contract is pinned to run.sh:41 'LEDGER=\"${EARN_LEDGER:-$HERE/state/earn-ledger.jsonl}\"' (behavioral-spec.md:123-125), matching the cited default exactly."
+    },
+    {
+      "priorFinding": "iter2 verification_readiness #1 — central never-claim-unverified-earn invariant (isProfitable gate) had NO proof obligation; REQ-003 mapped only to PROP-015 + PROP-020",
+      "status": "RESOLVED",
+      "evidence": "verification-architecture.md:61 PROP-021 ('isProfitable() earn classifier') asserts all five required cases: (a) tx+0x1+net>0+external=true+wake=WAKE_ID -> profitable:true; (b) no tx (discover) -> false; (c) status 0x0 -> false; (d) external:false (swap) -> false; (e) exit 0 with no WAKE_ID-matching line -> false; plus 'Exit code 0 alone NEVER produces profitable:true'. These match the real classifier skills/earn/lib/ledger.mjs:43-49 (tx && status==='0x1' && net_usdc>0 && external===true). PROP-021 is mapped under REQ-003 in the REQ->PROP table at verification-architecture.md:123 (REQ-003 | PROP-015, PROP-020, PROP-021)."
+    },
+    {
+      "priorFinding": "iter2 verification_readiness #2 — REQ-006 SIGTERM-during-running-skill no-orphan-process post-condition + 5s child-kill timeout path were unverified (PROP-013 only checked last ledger line kind)",
+      "status": "RESOLVED",
+      "evidence": "verification-architecture.md:62 PROP-022 ('No orphan child process after SIGTERM') spins up index.mjs with a mock skill that sleeps 30s, sends SIGTERM while it runs, and asserts (a) ledger ends with kind:'shutdown', (b) the skill child PID is absent from the OS process table within 6s (5s kill window + 1s margin), (c) loop exits 0 — and explicitly exercises the 5s child-kill -> SIGKILL force path (behavioral-spec.md:222-223 / REQ-006 edge case line 234). Mapped under REQ-006 at verification-architecture.md:126 (REQ-006 | PROP-013, PROP-022)."
+    }
+  ],
+  "dimensions": {
+    "spec_fidelity": {
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        { "type": "file", "location": "specs/behavioral-spec.md:128-136", "description": "REQ-003 earn-ledger correlation key (line.wake === WAKE_ID) is stated, forbids tail selection, defines no-match fallback; verified against real run.sh:41,42,54-55,70 and lib/ledger.mjs:43-49." },
+        { "type": "file", "location": "specs/behavioral-spec.md:47,52,35,299", "description": "All operative ledger/genesis/.env paths derive from $ANICCA_HOME; no residual ~/.anicca operative literals (grep confirmed only negative assertions + one e.g. example remain)." },
+        { "type": "file", "location": "specs/behavioral-spec.md:353-391", "description": "REQ-011 + PROP-023 reviewed: brain backend is the ONLY varying element; earn detection (REQ-003) and key isolation (REQ-004) explicitly preserved across both backends; acceptance criteria enumerate proxy(1 HTTP/0 claude) and claude-p(1 claude/0 HTTP) and identical isProfitable() result." }
+      ]
+    },
+    "verification_readiness": {
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        { "type": "file", "location": "specs/verification-architecture.md:61", "description": "PROP-021 proves the never-claim-unverified-earn invariant (5 cases incl. exit-0-alone-never-profitable), matching ledger.mjs:43-49; mapped under REQ-003." },
+        { "type": "file", "location": "specs/verification-architecture.md:62", "description": "PROP-022 proves SIGTERM no-orphan-process + 5s SIGKILL timeout path; mapped under REQ-006." },
+        { "type": "file", "location": "specs/verification-architecture.md:63,130", "description": "PROP-023 proves REQ-011 backend pluggability: (a) proxy=1 HTTP/0 claude, (b) claude-p=1 claude --model/0 HTTP, (c) claude-p child env passes scrubPrivateKeys (REQ-004), (d) identical isProfitable() across backends (REQ-003), (e) missing claude binary -> fallback to proxy. Mapped under REQ-011 in REQ->PROP table (line 130)." }
+      ]
+    }
+  },
+  "req011Consistency": {
+    "vsReq001": "REQ-011 line 355-358 + acceptance line 387-388 explicitly carve the THINK step out and require the wake to 'otherwise follow REQ-001 identically (parse -> execute -> persist -> sleep)'. Internally consistent. NOTE (non-blocking): REQ-001's own EARS prose (line 48-49) still reads as if THINK is always an HTTP proxy call and was not softened to 'via the selected brain backend'; an implementer must read REQ-011 to learn THINK is pluggable. No contradiction, but a cross-reference would tighten it.",
+    "vsReq003": "CONSISTENT. Acceptance line 389-390 + PROP-023(d) assert isProfitable() on the earn-ledger line is identical regardless of backend; earn detection is filesystem-driven and brain-independent.",
+    "vsReq004": "CONSISTENT and VERIFIED. Edge case line 380-381 + acceptance line 391 + PROP-023(c) require the claude -p child env to pass scrubPrivateKeys. NOTE (non-blocking): REQ-004's authoritative EARS (line 179-182) is scoped to 'WHEN the loop spawns a skill subprocess'; the brain (claude -p) subprocess is not a 'skill subprocess', so the key-scrub obligation for it lives only in REQ-011 prose + PROP-023(c), not in REQ-004's EARS clause. Coverage is complete via PROP-023(c); broadening REQ-004's EARS to 'any subprocess (skill or brain)' would remove the cross-reference dependency.",
+    "propMapped": "PROP-023 present at verification-architecture.md:63 and mapped to REQ-011 at line 130 of the REQ->PROP table."
+  },
+  "nonBlockingNotes": [
+    "behavioral-spec.md:139-144 reproduces isProfitable() with four conditions (tx + status 0x1 + net_usdc>0 + external===true) but omits the real classifier's fifth guard SWAP_SOURCES rejection (skills/earn/lib/ledger.mjs:46). Non-blocking because the spec delegates to the real imported function (behavioral-spec.md:126) and swap lines can never set external:true (ledger.mjs:37), so the omitted guard is logically subsumed by external===true. The inline block is a summary, not an independent reimplementation contract.",
+    "REQ-001 EARS prose and REQ-004 EARS scope ('skill subprocess') were not updated when REQ-011 introduced the brain subprocess; the gaps are fully covered by REQ-011 prose + PROP-023, so they are documentation-tightening items, not implementability blockers."
+  ],
+  "overallNote": "All four iteration-2 findings (two spec_fidelity, two verification_readiness) are confirmed RESOLVED with file:line evidence grounded in the real skills/earn/run.sh and lib/ledger.mjs sources. The new REQ-011 (Pluggable Brain Backend) + PROP-023 are internally consistent: the brain backend is the only varying element, earn detection (REQ-003) and private-key isolation (REQ-004) are explicitly preserved and verified across both backends, and PROP-023 is mapped under REQ-011 in the REQ->PROP table. Two non-blocking documentation-tightening notes recorded (un-broadened REQ-001/REQ-004 EARS scopes; summary isProfitable block omits the subsumed SWAP guard). Spec is approvable."
+}

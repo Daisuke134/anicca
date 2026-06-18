@@ -217,17 +217,17 @@ test('PROP-013: SIGTERM produces shutdown kind as last ledger line', { timeout: 
   let exited = false;
   proc.on('exit', () => { exited = true; });
 
-  // Wait for at least 1 wake
+  // Wait for at least 1 wake, then SIGTERM, then wait for exit before reading
   try {
     await waitForLines(ledgerPath, 1, 10000);
     proc.kill('SIGTERM');
-    // Wait for exit
+    // Wait for the process to fully exit (ensures shutdown line is flushed)
     await new Promise((resolve) => {
       const t = setTimeout(() => { proc.kill('SIGKILL'); resolve(); }, 5000);
       proc.on('exit', () => { clearTimeout(t); resolve(); });
     });
-    // Allow FS flush
-    await new Promise(r => setTimeout(r, 300));
+    // Extra buffer for OS FS flush
+    await new Promise(r => setTimeout(r, 500));
 
     const lines = readLedger(ledgerPath);
     assert.ok(lines.length > 0, 'Should have at least one ledger line');

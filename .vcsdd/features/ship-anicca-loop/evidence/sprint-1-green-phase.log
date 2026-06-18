@@ -1,0 +1,92 @@
+target-feature-tests: PASS
+regression-baseline: PASS
+
+=== runtime/loop unit + integration tests (63 tests) ===
+
+✔ PROP-011: process.env wins over .env file values (0.713625ms)
+✔ PROP-011: .env value used when env var absent (0.0735ms)
+✔ PROP-012: malformed .env line skipped, valid lines parsed (0.099958ms)
+✔ PROP-012: entirely malformed .env does not crash (0.057292ms)
+✔ PROP-011/012: defaults applied when nothing set (0.056458ms)
+✔ PROP-011: ANICCA_HOME absent yields empty/null home path (0.04625ms)
+✔ PROP-012: .env with # comments and blank lines parsed correctly (0.047959ms)
+✔ PROP-005: removes BLOCKRUN_WALLET_KEY (0.744041ms)
+✔ PROP-005: removes MY_PRIVATE_KEY (0.066583ms)
+✔ PROP-005: removes WALLET_PRIV_KEY (0.042875ms)
+✔ PROP-005: removes all matching keys from mixed env (0.05475ms)
+✔ PROP-006: scrubPrivateKeys is idempotent (0.633833ms)
+✔ PROP-006: does not mutate original env (0.041708ms)
+✔ PROP-018: BLOCKRUN_WALLET_KEY always removed (0.069375ms)
+✔ PROP-020: wallet address (0x + 40 hex) is NOT scrubbed (0.042458ms)
+✔ PROP-020: private key pattern (0x + 64 hex) detected in observation string (0.178041ms)
+✔ PROP-020: wallet address survives redactPrivateKeyPatterns (0.11075ms)
+✔ PROP-014: 10 consecutive wakes yield exactly 10 ledger lines (265.475125ms)
+✔ PROP-013: SIGTERM produces shutdown kind as last ledger line (612.767833ms)
+✔ PROP-015: skill that exits non-zero does not crash the loop (262.210625ms)
+✔ PROP-016: after LOOP_DETECT_WINDOW identical actions, inference is NOT called (410.918209ms)
+✔ PROP-019: when balance RPC fails, loop retains previous tier and does not crash (154.873833ms)
+✔ PROP-021(a): profitable earn line -> loop records profitable:true (809.795167ms)
+✔ PROP-021(b): discover line (no tx) -> profitable:false (612.520584ms)
+✔ PROP-021(e): exit 0 with no matching WAKE_ID in earn-ledger -> profitable:false (507.043333ms)
+✔ PROP-022: SIGTERM while skill runs kills child within 5s, exit code 0 (7552.222209ms)
+✔ PROP-023(a): ANICCA_BRAIN=proxy makes HTTP call, no claude subprocess (104.084167ms)
+✔ PROP-023(e): ANICCA_BRAIN=claude-p with missing claude binary falls back to proxy (103.76475ms)
+✔ PROP-007: formatRecord returns valid JSON string with newline (1.182459ms)
+✔ PROP-007: formatRecord output round-trips JSON.parse without error (0.07225ms)
+✔ PROP-007: required fields ts, wake_id, kind, sleep_s present in output (0.046833ms)
+✔ PROP-007: extra fields are preserved in JSON output (0.046042ms)
+✔ PROP-007: handles empty string fields without throwing (0.079875ms)
+✔ PROP-008: returns true when last 3 entries are identical (0.712583ms)
+✔ PROP-008: true when last 3 identical even with different earlier entries (0.055291ms)
+✔ PROP-008: window of 1 detects immediately on first repeated call (0.040875ms)
+✔ PROP-008: false when args differ between identical slots (0.058208ms)
+✔ PROP-009: returns false when fewer than window entries (0.041ms)
+✔ PROP-009: returns false for empty array (0.0325ms)
+✔ PROP-009: single entry with window=3 returns false (0.054166ms)
+✔ PROP-009: window=0 always returns false (disabled) (0.033417ms)
+✔ PROP-009: different slots in window -> false (0.052417ms)
+✔ PROP-009: exactly window-1 identical entries returns false (0.074625ms)
+✔ PROP-010: parses well-formed run_skill tool call (3.1095ms)
+✔ PROP-010: text-only response returns null (0.179084ms)
+✔ PROP-010: empty tool_calls array returns null (0.088625ms)
+✔ PROP-010: malformed JSON arguments returns null (0.067541ms)
+✔ PROP-010: null response returns null (0.047125ms)
+✔ PROP-010: undefined response returns null (0.909708ms)
+✔ PROP-010: missing choices returns null (0.068833ms)
+✔ PROP-010: sleep tool call parsed correctly (0.071916ms)
+✔ PROP-010: claude -p JSON output with tool_calls in result (0.0865ms)
+✔ PROP-001: selectTier(0) returns broke tier with free model (0.652125ms)
+✔ PROP-001: selectTier(0) uses ANICCA_FREE_MODEL env override (0.052791ms)
+✔ PROP-002: selectTier(0.5) returns lean tier with lean model (0.040375ms)
+✔ PROP-002: selectTier(1.00) is still lean (boundary) (0.038125ms)
+✔ PROP-003: selectTier(5.0) returns funded tier with funded model (0.045125ms)
+✔ PROP-003: selectTier(1.01) returns funded (0.049083ms)
+✔ PROP-004: selectTier(NaN) returns broke (0.037541ms)
+✔ PROP-004: selectTier(Infinity) returns broke (0.034208ms)
+✔ PROP-004: selectTier(-Infinity) returns broke (0.045791ms)
+✔ PROP-004: selectTier(-0.5) returns broke (0.071875ms)
+✔ PROP-002/003: LEAN_TIER_THRESHOLD env override shifts boundary (0.050292ms)
+ℹ tests 63
+ℹ suites 0
+ℹ pass 63
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 11513.115
+
+=== regression baseline (skills/earn/__tests__/ledger.test.js, 5 tests) ===
+
+✔ deriveLine computes net_usdc = earn - cost and stamps ts (0.590375ms)
+✔ isProfitable true only for EXTERNAL revenue: net>0 AND status 0x1 AND external:true AND not a swap (0.064083ms)
+✔ appendLedger is append-only: prior line is byte-identical after a second append (2.595417ms)
+✔ readLedger parses every JSONL line into objects (0.714417ms)
+✔ readLedger returns [] for a missing file (no throw) (0.741666ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 65.915417
