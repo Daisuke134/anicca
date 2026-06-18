@@ -1,7 +1,0 @@
-{
-  "recipients": [
-    {"address": "0x000000000000000000000000000000000000dEaD", "weight": 100, "label": "PLACEHOLDER", "allow_live": false}
-  ],
-  "payout_percent": 10,
-  "reserve_months": 3
-}

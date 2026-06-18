@@ -1,7 +1,0 @@
-{
-  "recipients": [
-    {"address": "0x000000000000000000000000000000000ABCDEF1", "weight": 100, "label": "test-sink", "allow_live": true}
-  ],
-  "payout_percent": 10,
-  "reserve_months": 3
-}
