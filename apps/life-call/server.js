@@ -12,6 +12,7 @@
 "use strict";
 
 const http = require("http");
+const crypto = require("crypto");
 const { URL } = require("url");
 const WebSocket = require("ws");
 const {
@@ -29,24 +30,37 @@ const { startScheduler } = require("./scheduler.js");
 
 const PORT = Number(process.env.PORT) || 8788;
 const GEMINI_KEY = process.env.GEMINI_API_KEY;
+const DEBUG_TRANSCRIPTS = process.env.DEBUG_TRANSCRIPTS === "1";
+const MAX_CONCURRENT = Number(process.env.MAX_CONCURRENT_CALLS) || 8;
+const VALID_URGENCY = new Set(["gentle", "firm", "harsh"]);
+let liveCalls = 0;
 
-// Build a GCal-shaped event ({summary,start:{dateTime},location}) + urgency from the /ws query.
-// This is the per-call context — each Telnyx media stream carries its own, so a persistent
-// multi-call bridge never leaks one caller's event into another's prompt.
+// Build a GCal-shaped event ({summary,start:{dateTime},location}) + urgency from the /ws query —
+// AND authenticate it. Each Telnyx media stream carries its own signed context; an unsigned or
+// tampered connection is rejected before any Gemini socket opens (no budget drain, no prompt
+// injection). Returns null when the HMAC (over summary|dateTime|location|urgency, keyed by
+// LM_CALL_SECRET) does not verify.
 function ctxFromReq(req) {
   let q;
   try {
     q = new URL(req.url, "http://x").searchParams;
   } catch {
-    q = new URLSearchParams();
+    return null;
   }
-  const event = {
-    summary: q.get("summary") || "",
-    start: { dateTime: q.get("dateTime") || "" },
-    location: q.get("location") || "",
-  };
-  const urgency = q.get("urgency") || "gentle";
-  return { event, urgency };
+  const summary = (q.get("summary") || "").slice(0, 200);
+  const dateTime = (q.get("dateTime") || "").slice(0, 40);
+  const location = (q.get("location") || "").slice(0, 200);
+  let urgency = q.get("urgency") || "gentle";
+  if (!VALID_URGENCY.has(urgency)) urgency = "gentle";
+  const sig = q.get("sig") || "";
+
+  const secret = process.env.LM_CALL_SECRET || "";
+  const expected = crypto.createHmac("sha256", secret).update([summary, dateTime, location, urgency].join("\n")).digest("base64url");
+  const a = Buffer.from(sig);
+  const b = Buffer.from(expected);
+  if (!secret || a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
+
+  return { event: { summary, start: { dateTime }, location }, urgency };
 }
 
 const server = http.createServer((req, res) => {
@@ -68,8 +82,21 @@ wss.on("connection", (carrierWs, req) => {
     try { carrierWs.close(); } catch {}
     return;
   }
-  const { event, urgency } = ctxFromReq(req);
-  console.log(`[bridge] carrier connected event="${event.summary}" urgency=${urgency}`);
+  // Auth gate: reject unsigned/tampered upgrades BEFORE opening a Gemini socket (cost + injection).
+  const ctx = ctxFromReq(req);
+  if (!ctx) {
+    console.error("[bridge] rejected unauthenticated /ws connection");
+    try { carrierWs.close(1008, "unauthorized"); } catch {}
+    return;
+  }
+  if (liveCalls >= MAX_CONCURRENT) {
+    console.error(`[bridge] at capacity (${liveCalls}/${MAX_CONCURRENT}) — rejecting`);
+    try { carrierWs.close(1013, "busy"); } catch {}
+    return;
+  }
+  liveCalls++;
+  const { event, urgency } = ctx;
+  console.log(`[bridge] carrier connected urgency=${urgency} live=${liveCalls}`);
   const state = { streamSid: null, inFrames: 0, outFrames: 0, setupComplete: false };
 
   const gemini = new WebSocket(geminiLiveWsUrl(GEMINI_KEY));
@@ -88,9 +115,11 @@ wss.on("connection", (carrierWs, req) => {
       console.log("[bridge] setupComplete");
       geminiSend(buildGeminiTurn("Begin the call now with your opening line."));
     }
-    const t = parseGeminiTranscripts(msg);
-    if (t.input) console.error(`[transcript] USER: ${t.input}`);
-    if (t.output) console.error(`[transcript] CHARON: ${t.output}`);
+    if (DEBUG_TRANSCRIPTS) {
+      const t = parseGeminiTranscripts(msg); // PII (user speech) — off unless explicitly enabled
+      if (t.input) console.error(`[transcript] USER: ${t.input}`);
+      if (t.output) console.error(`[transcript] CHARON: ${t.output}`);
+    }
   });
   gemini.on("error", (e) => console.error("[bridge] gemini err", e.message));
   gemini.on("close", () => console.log("[bridge] gemini closed"));
@@ -101,10 +130,14 @@ wss.on("connection", (carrierWs, req) => {
     const kind = routeTelnyxMessage(msg, state, geminiSend);
     if (kind === "stop") { try { gemini.close(); } catch {} }
   });
+  let released = false;
+  const release = () => { if (!released) { released = true; liveCalls = Math.max(0, liveCalls - 1); } };
   carrierWs.on("close", () => {
-    console.log(`[bridge] carrier closed in=${state.inFrames} out=${state.outFrames}`);
+    release();
+    console.log(`[bridge] carrier closed in=${state.inFrames} out=${state.outFrames} live=${liveCalls}`);
     try { gemini.close(); } catch {}
   });
+  carrierWs.on("error", release);
 });
 
 server.listen(PORT, () => {

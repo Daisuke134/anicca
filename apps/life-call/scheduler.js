@@ -7,8 +7,17 @@
 //   lm_wake_log (Supabase)     — dedup: one call per (uid, event start), survives restarts
 "use strict";
 
+const crypto = require("crypto");
 const { fetchNextEvent } = require("./lib/events.js");
 const { placeCall } = require("./lib/dial.js");
+
+// HMAC over the per-call context so the persistent /ws bridge can prove a connection was minted by
+// THIS scheduler (not a stranger draining the Gemini budget) AND that the prompt context wasn't
+// tampered in transit. server.js recomputes the same MAC and rejects on mismatch.
+function signCtx(parts) {
+  const secret = process.env.LM_CALL_SECRET || "";
+  return crypto.createHmac("sha256", secret).update(parts.join("\n")).digest("base64url");
+}
 
 const TICK_MS = 60 * 1000;
 const DUE_LO_MIN = 13; // fire when the event starts in [13,15] min — the 60s tick hits the window once
@@ -48,12 +57,12 @@ async function claimWake(uid, eventKey) {
 
 function buildStreamUrl(ev, urgency) {
   const base = (process.env.PUBLIC_WSS || "").replace(/\/$/, "");
-  const qs = new URLSearchParams({
-    summary: ev.summary || "",
-    dateTime: ev.startIso || "",
-    location: ev.location || "",
-    urgency: urgency || "gentle",
-  });
+  const summary = ev.summary || "";
+  const dateTime = ev.startIso || "";
+  const location = ev.location || "";
+  const urg = urgency || "gentle";
+  const sig = signCtx([summary, dateTime, location, urg]); // authenticates the bridge upgrade
+  const qs = new URLSearchParams({ summary, dateTime, location, urgency: urg, sig });
   return `${base}/ws?${qs.toString()}`;
 }
 
