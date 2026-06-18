@@ -176,7 +176,7 @@ export const launchStrings = {
       cardGetStartedDesc: 'Sign in with Google, give your name, connect Calendar and Gmail, add your phone, share location if you want. Done.',
       cardColonyEyebrow: 'open source',
       cardColonyTitle: 'Life Manager Skill (OSS)',
-      cardColonyDesc: 'The same skill, free. Drop it into any AI you run yourself. On GitHub.',
+      cardColonyDesc: 'The same skill, free — run it locally on your own OpenClaw. Clone the repo, add your keys, done. On GitHub.',
     },
   },
 
@@ -348,7 +348,7 @@ export const launchStrings = {
       cardGetStartedDesc: 'Google でログイン、名前を伝え、カレンダーと Gmail をつなぎ、電話番号を登録。位置情報は任意。これで完了。',
       cardColonyEyebrow: 'オープンソース',
       cardColonyTitle: 'ライフマネージャー スキル（OSS）',
-      cardColonyDesc: '同じスキルを無料で。自分で動かす AI に組み込める。GitHub にある。',
+      cardColonyDesc: '同じスキルを無料で — 自分の OpenClaw でローカル実行。リポジトリを clone して鍵を入れるだけ。GitHub にある。',
     },
   },
 } as const;

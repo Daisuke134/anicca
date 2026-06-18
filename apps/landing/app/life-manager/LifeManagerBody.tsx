@@ -104,7 +104,7 @@ export default function LifeManagerBody() {
 
       <Section>
         <Reveal>
-          <div className="grid gap-4">
+          <div className="grid gap-4 md:grid-cols-2">
             <a
               href="/lm"
               className="block rounded-card border border-[hsl(var(--gold))]/30 bg-[hsl(var(--surface))] p-5 transition-colors hover:bg-[hsl(var(--surface-elevated))]"
@@ -112,6 +112,16 @@ export default function LifeManagerBody() {
               <p className="text-xs uppercase tracking-widest text-[hsl(var(--gold))]">{t.cardGetStartedEyebrow}</p>
               <p className="mt-2 text-base font-semibold text-[hsl(var(--text-primary))]">{t.cardGetStartedTitle}</p>
               <p className="mt-1 text-xs text-[hsl(var(--text-secondary))]">{t.cardGetStartedDesc}</p>
+            </a>
+            <a
+              href="https://github.com/Daisuke134/life-manager"
+              target="_blank"
+              rel="noreferrer"
+              className="block rounded-card border border-[hsl(var(--border))] bg-[hsl(var(--surface))] p-5 transition-colors hover:bg-[hsl(var(--surface-elevated))]"
+            >
+              <p className="text-xs uppercase tracking-widest text-[hsl(var(--text-secondary))]">{t.cardColonyEyebrow}</p>
+              <p className="mt-2 text-base font-semibold text-[hsl(var(--text-primary))]">{t.cardColonyTitle}</p>
+              <p className="mt-1 text-xs text-[hsl(var(--text-secondary))]">{t.cardColonyDesc}</p>
             </a>
           </div>
         </Reveal>
