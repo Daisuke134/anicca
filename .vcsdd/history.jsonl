@@ -1,3 +1,7 @@
 {"timestamp":"2026-06-18T06:48:11.340Z","event":"feature_created","featureName":"ship-anicca-loop","mode":"lean","language":"typescript"}
 {"timestamp":"2026-06-18T06:50:18.113Z","event":"phase_transition","featureName":"ship-anicca-loop","from":"init","to":"1a","iteration":1,"phase":"1a"}
 {"timestamp":"2026-06-18T06:52:22.895Z","event":"phase_transition","featureName":"ship-anicca-loop","from":"1a","to":"1b","iteration":1,"phase":"1b"}
+{"timestamp":"2026-06-18T06:57:31.176Z","event":"gate_recorded","featureName":"ship-anicca-loop","phase":"1c","verdict":"FAIL","reviewedBy":"adversary"}
+{"timestamp":"2026-06-18T07:04:37.634Z","event":"gate_recorded","featureName":"ship-anicca-loop","phase":"1c","verdict":"FAIL","reviewedBy":"adversary"}
+{"timestamp":"2026-06-18T07:07:04.294Z","event":"bead_created","featureName":"ship-anicca-loop","beadId":"BEAD-031","type":"verification-property","phase":"1b","externalId":"PROP-021:isProfitable-earn-classifier"}
+{"timestamp":"2026-06-18T07:07:04.296Z","event":"bead_created","featureName":"ship-anicca-loop","beadId":"BEAD-032","type":"verification-property","phase":"1b","externalId":"PROP-022:no-orphan-child-process-after-sigterm"}

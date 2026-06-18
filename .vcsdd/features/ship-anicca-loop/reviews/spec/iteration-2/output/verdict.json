@@ -1,0 +1,68 @@
+{
+  "verdict": "FAIL",
+  "feature": "ship-anicca-loop",
+  "phase": "1c",
+  "iteration": 2,
+  "reviewedBy": "adversary",
+  "reviewType": "spec",
+  "priorFindingsCheck": [
+    {
+      "priorFinding": "iter1 spec_fidelity #1 — REQ-003 did not match real earn contract (env vars + invented earn_execute/earn_discover outcomes)",
+      "status": "RESOLVED",
+      "evidence": "behavioral-spec.md:105-114 enumerates EARN_MODE/EARN_STRATEGY(0xwork)/EARN_TX/EARN_SOURCE/EARN_AMOUNT/EARN_COST/EARN_TASK/WAKE_ID matching skills/earn/run.sh:26 (EARN_ALLOW) + run.sh:43,80,83. Invented action:'earn_execute'/'earn_discover' outcomes removed; behavioral-spec.md:137-138 now states the loop ledger kind is the loop's own classification, not run.sh's internal labels."
+    },
+    {
+      "priorFinding": "iter1 spec_fidelity #2 — exit-code-0 invariant absent; loop could claim earn on a narrate line",
+      "status": "RESOLVED",
+      "evidence": "behavioral-spec.md:119-138 states 'exit code is NOT sufficient', lists the exit-0 cases (discover/0xwork-narrate/swap/profitable) matching run.sh:73,100,124,164,189, and requires reading the new earn-ledger line + applying isProfitable() = tx + status==='0x1' + net_usdc>0 + external===true (matches skills/earn/lib/ledger.mjs:43-49). behavioral-spec.md:161-162 acceptance: 'exit code 0 alone ... NEVER causes the loop to record a profitable wake.'"
+    },
+    {
+      "priorFinding": "iter1 verification_readiness — RPC-failure 'stay on previous tier, no crash' had no PROP and was unmapped in REQ->PROP table",
+      "status": "RESOLVED",
+      "evidence": "verification-architecture.md:59 PROP-019 covers balance.mjs throw -> retains last-known tier, does not crash, new ledger line carries previous model name (matches behavioral-spec.md:85-86,94). Mapped in REQ->PROP table at verification-architecture.md:119 (REQ-002 -> ...,PROP-019)."
+    }
+  ],
+  "dimensions": {
+    "spec_fidelity": {
+      "verdict": "FAIL",
+      "findings": [
+        {
+          "severity": "major",
+          "category": "requirement_mismatch",
+          "evidence": "specs/behavioral-spec.md:24,34,47,52,267 vs specs/verification-architecture.md:33 vs behavioral-spec.md:300",
+          "issue": "REQ-008 (lines 263-282) is the new SSOT for paths: 'no default expansion ... callers must set ANICCA_HOME ... The loop never hard-codes ~/.anicca', and the config table at line 300 sets ANICCA_HOME = '(required — no default)'. But the rest of the spec was NOT reconciled to this. REQ-001 still hard-codes the genesis path '~/.anicca/identity/genesis.md' (line 47) and the ledger path '~/.anicca/state/ledger.jsonl' (lines 52, 35), REQ-009 hard-codes loading '~/.anicca/.env' (line 288), the Purity Boundary still names '~/.anicca/state/ledger.jsonl' (line 35), and verification-architecture.md:33 states dotenv.mjs does 'fs.readFile of ~/.anicca/.env'. These literal ~/.anicca paths directly contradict REQ-008's acceptance criterion (line 282: 'no hard-coded ~/.anicca ... literals; all paths derive from ANICCA_HOME'). An implementer cannot satisfy both REQ-001/REQ-009 (read ~/.anicca/...) and REQ-008 (never hard-code ~/.anicca) — the spec is internally contradictory and therefore not unambiguously implementable."
+        },
+        {
+          "severity": "major",
+          "category": "requirement_mismatch",
+          "evidence": "specs/behavioral-spec.md:123-124,148-150 vs skills/earn/run.sh:41,55 vs skills/earn/lib/ledger.mjs:43-49",
+          "issue": "REQ-003 says the loop reads 'the NEW ledger line that run.sh appended to state/earn-ledger.jsonl' and applies isProfitable() (lines 123-125). But the spec never specifies HOW the loop obtains that single new line. run.sh writes to EARN_LEDGER (run.sh:41, default $HERE/state/earn-ledger.jsonl) via record.mjs (run.sh:55). The spec gives no contract for (a) which earn-ledger path the loop reads (it must match run.sh's EARN_LEDGER, which the loop is NOT shown to set), (b) how the loop identifies the line as 'new' (by WAKE_ID match? by tail? by line-count delta before/after?). isProfitable() (ledger.mjs:43-49) operates on one line object, so the loop must isolate exactly the line run.sh just wrote. Without a stated correlation key (e.g. match earn-ledger line.wake === WAKE_ID forwarded at run.sh:42), a concurrent or stale line could be mis-classified as the current wake's result. This is an under-specified earn-detection contract, the exact class of ambiguity Phase 1c must eliminate."
+        }
+      ]
+    },
+    "verification_readiness": {
+      "verdict": "FAIL",
+      "findings": [
+        {
+          "severity": "major",
+          "category": "verification_tool_mismatch",
+          "evidence": "specs/verification-architecture.md:60,73,120-121 vs specs/behavioral-spec.md:155-157,182-187,123-125",
+          "issue": "The most load-bearing new invariant — 'never claim earn without isProfitable() true on the real earn-ledger line' (behavioral-spec.md:155-157) — has NO proof obligation. PROP-020 (verification-architecture.md:60) only proves the 64-hex key-leak property over the observation/ledger string (REQ-004). REQ-003 in the REQ->PROP table (verification-architecture.md:120) maps ONLY to PROP-015 (skill-exit-nonzero) + PROP-020 (key leak). There is NO PROP asserting: (i) a profitable earn-ledger line (tx+0x1+net>0+external) -> loop records profitable:true, (ii) a narrate/discover/swap line (or exit 0 with no new line) -> loop records profitable:false, (iii) exit 0 alone never yields profitable:true (the acceptance at behavioral-spec.md:161-162). The classification logic the loop must implement around isProfitable() is asserted in prose but is unverifiable as written, so the central anti-false-earn invariant cannot be proven."
+        },
+        {
+          "severity": "major",
+          "category": "test_coverage",
+          "evidence": "specs/verification-architecture.md:53,90-99 vs specs/behavioral-spec.md:174-177,229",
+          "issue": "REQ-006 SIGTERM-during-running-skill-subprocess (behavioral-spec.md:174-177: SIGTERM child, wait up to 5s, exit) and its acceptance 'No orphan child processes remain' (line 229) remain unverified. PROP-013 (verification-architecture.md:53) only asserts the last ledger line is kind:'shutdown'; no PROP asserts the no-orphan-process post-condition or exercises the 5s child-kill timeout path, and the integration strategy (verification-architecture.md:90-99) spins up index.mjs against a mock HTTP server but never spawns a real long-running child to drive this branch. This was raised in iteration 1 and is still unaddressed; orphan-process leakage is a real cloud/durability hazard left unprovable."
+        }
+      ]
+    }
+  },
+  "newCriticalScan": {
+    "keyLeakage": "REQ-004 (behavioral-spec.md:166-187) now scrubs env (PROP-005/018) AND scans the observation + full serialized ledger line for /0x[0-9a-fA-F]{64}/ (PROP-020, verification-architecture.md:60). Adequate at spec level.",
+    "cloudPortability": "REQ-008 portability intent is sound (ANICCA_WALLET_ADDRESS env, no key derivation, ANICCA_HOME-rooted paths, no macOS syscalls/PROP-017) BUT is contradicted by residual ~/.anicca literals elsewhere — see spec_fidelity finding #1.",
+    "noHumanInLoop": "Loop boots and runs without human intervention (Overview line 14-18); earn determination is fully mechanical via isProfitable(). No human gate introduced.",
+    "neverClaimUnverifiedEarn": "Prose contract is correct (isProfitable() gate) but has NO proof obligation — see verification_readiness finding #1. Spec asserts the invariant; the verification architecture does not prove it."
+  },
+  "overallNote": "Three iteration-1 findings are confirmed RESOLVED with file:line evidence. The spec is NOT approvable: it has an internal path contradiction (REQ-001/REQ-009/Purity-Boundary hard-code ~/.anicca while REQ-008 forbids it), an under-specified earn-line correlation contract (no WAKE_ID/tail key for picking the new earn-ledger line), and the central never-claim-unverified-earn + SIGTERM-no-orphan invariants have no proof obligation in verification-architecture.md."
+}

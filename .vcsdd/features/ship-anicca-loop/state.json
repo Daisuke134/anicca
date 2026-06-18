@@ -50,7 +50,9 @@
         "type": "spec-requirement",
         "artifactPath": ".vcsdd/features/ship-anicca-loop/specs/behavioral-spec.md",
         "status": "draft",
-        "linkedBeads": [],
+        "linkedBeads": [
+          "BEAD-031"
+        ],
         "createdAt": "2026-06-18T06:52:17.625Z",
         "createdInPhase": "1a",
         "externalId": "REQ-003-tool-execution-earn-skill"
@@ -80,7 +82,9 @@
         "type": "spec-requirement",
         "artifactPath": ".vcsdd/features/ship-anicca-loop/specs/behavioral-spec.md",
         "status": "draft",
-        "linkedBeads": [],
+        "linkedBeads": [
+          "BEAD-032"
+        ],
         "createdAt": "2026-06-18T06:52:17.625Z",
         "createdInPhase": "1a",
         "externalId": "REQ-006-graceful-shutdown-sigterm"
@@ -324,19 +328,43 @@
         "createdAt": "2026-06-18T07:00:08.751Z",
         "createdInPhase": "1b",
         "externalId": "PROP-020:observation and ledger line contain no 64-hex private key"
+      },
+      {
+        "beadId": "BEAD-031",
+        "type": "verification-property",
+        "artifactPath": ".vcsdd/features/ship-anicca-loop/specs/verification-architecture.md",
+        "status": "draft",
+        "linkedBeads": [
+          "BEAD-003"
+        ],
+        "createdAt": "2026-06-18T07:07:04.293Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-021:isProfitable-earn-classifier"
+      },
+      {
+        "beadId": "BEAD-032",
+        "type": "verification-property",
+        "artifactPath": ".vcsdd/features/ship-anicca-loop/specs/verification-architecture.md",
+        "status": "draft",
+        "linkedBeads": [
+          "BEAD-006"
+        ],
+        "createdAt": "2026-06-18T07:07:04.296Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-022:no-orphan-child-process-after-sigterm"
       }
     ]
   },
   "gates": {
     "1c": {
       "verdict": "FAIL",
-      "timestamp": "2026-06-18T06:57:31.175Z",
+      "timestamp": "2026-06-18T07:04:37.632Z",
       "reviewedBy": "adversary",
       "adversaryVerdict": "FAIL",
-      "adversaryReviewedAt": "2026-06-18T06:57:31.175Z"
+      "adversaryReviewedAt": "2026-06-18T07:04:37.632Z"
     }
   },
   "sprintCount": 0,
   "createdAt": "2026-06-18T06:48:11.338Z",
-  "updatedAt": "2026-06-18T07:00:08.751Z"
+  "updatedAt": "2026-06-18T07:07:04.296Z"
 }
