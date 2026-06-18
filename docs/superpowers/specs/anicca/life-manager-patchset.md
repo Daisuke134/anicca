@@ -194,5 +194,223 @@ Also drop the now-unused `execFileSync` import at line 12 IF no other use remain
 
 ---
 
+## WS1b — Python adapter (travel_fill.py) + notify.js migration  [completes WS1; reviewed next]
+
+Completes the adapter migration so ALL four consumers go through the transport boundary. Same invariant: argv-EQUIVALENT (gog order-independent, verified gog 0.17.0). Grounded in full reads of `travel/travel_fill.py` (gog at :111 list, :225 create) and `notify/notify.js` (gog at :269 list, :287 send, :298 search, :309 getBody).
+
+**Intentional argv ADDITIONS when notify migrates (pre-flagged by reviewer Finding 10, safe):**
+- `mail.send` adds `--json` (notify's old send omitted it). notify ignores the return → harmless.
+- `calendar.list` adds `--max 250` (notify's old list omitted --max). A single-day window never exceeds 250 → safe cap.
+
+### WS1b.1 — NEW FILE `~/anicca/skills/life/adapters/transport.py`
+
+```python
+"""Life Manager transport adapter — Python sibling of adapters/transport.js.
+LIFE_TRANSPORT=gog (local, user keys) | composio (cloud, wired in #49).
+Consumers call calendar.list/create — never subprocess gog directly. argv-EQUIVALENT
+to current call sites (gog flags order-independent, verified gog 0.17.0)."""
+import json
+import os
+import subprocess
+
+GOG_BIN = "/opt/homebrew/bin/gog"
+
+
+class _GogCalendar:
+    def __init__(self, account, keyring):
+        self.account = account
+        self._env = {**os.environ, "GOG_KEYRING_PASSWORD": keyring or "", "GOG_ACCOUNT": account}
+
+    def _run(self, args, timeout=60):
+        return subprocess.run([GOG_BIN, *args, "--account", self.account],
+                              capture_output=True, text=True, env=self._env, timeout=timeout)
+
+    def list(self, frm="today", to=None, max=250):
+        args = ["calendar", "events", "list", "-j", "--from", frm, "--all-pages", "--max", str(max)]
+        if to:
+            args += ["--to", to]
+        out = self._run(args)
+        if out.returncode != 0:
+            raise RuntimeError(f"gog list failed: {out.stderr[:200]}")
+        d = json.loads(out.stdout)
+        return d if isinstance(d, list) else d.get("events", d.get("items", []))
+
+    def create(self, summary, frm, to, location, description, calendar="primary"):
+        out = self._run(["calendar", "create", calendar, "-j",
+                         "--summary", summary, "--from", frm, "--to", to,
+                         "--location", location, "--description", description], timeout=30)
+        if out.returncode != 0:
+            raise RuntimeError(f"gog create failed: {out.stderr[:200]}")
+        try:
+            return json.loads(out.stdout)["event"]["id"]
+        except Exception:
+            return None
+
+
+class _NyiCalendar:
+    def list(self, *a, **k):
+        raise RuntimeError("composio transport not wired yet (#49 web app)")
+
+    def create(self, *a, **k):
+        raise RuntimeError("composio transport not wired yet (#49 web app)")
+
+
+def make_transport(account, keyring="", kind=None):
+    kind = (kind or os.environ.get("LIFE_TRANSPORT", "gog")).lower()
+    cal = _NyiCalendar() if kind == "composio" else _GogCalendar(account, keyring)
+    return type("Transport", (), {"calendar": cal})()
+```
+
+### WS1b.2 — `travel/travel_fill.py` (rewire fetch_events + insert_travel_event)
+
+```diff
+@@ travel_fill.py lines 21-22: after the prof import, build the adapter @@
+ sys.path.insert(0, str(Path.home() / ".openclaw" / "skills" / "_shared"))
+ import anicca_profile as prof  # noqa: E402
++sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "adapters"))
++import transport as _t  # noqa: E402
++CAL = _t.make_transport(
++    account=env("GOG_ACCOUNT") or prof.google_account(),
++    keyring=env("GOG_KEYRING_PASSWORD"),
++).calendar
+```
+(Note: `env(...)`/`prof` are defined below this import in current file order; build CAL lazily — see corrected placement: move the `CAL = ...` construction to just before `fetch_events()` so `env`/`prof` exist. The import line stays at top; the `CAL = make_transport(...)` line goes immediately above `def fetch_events`.)
+
+```diff
+@@ travel_fill.py lines 108-124: fetch_events uses CAL.list @@
+ def fetch_events(days):
+-    acct = env("GOG_ACCOUNT") or prof.google_account()
+     to = (datetime.now(JST) + timedelta(days=days)).strftime("%Y-%m-%d")
+-    out = subprocess.run(
+-        ["/opt/homebrew/bin/gog", "calendar", "events", "list", "-j",
+-         "--account", acct, "--from", "today", "--to", to,
+-         "--all-pages", "--max", "250"],
+-        capture_output=True, text=True,
+-        env={**os.environ, "GOG_KEYRING_PASSWORD": env("GOG_KEYRING_PASSWORD"),
+-             "GOG_ACCOUNT": acct},
+-        timeout=60,
+-    )
+-    if out.returncode != 0:
+-        print(f"[fill] gog failed: {out.stderr[:200]}", file=sys.stderr)
+-        return []
+-    d = json.loads(out.stdout)
+-    items = d if isinstance(d, list) else d.get("events", d.get("items", []))
++    try:
++        items = CAL.list(frm="today", to=to, max=250)
++    except Exception as e:
++        print(f"[fill] gog failed: {e}", file=sys.stderr)
++        return []
+     rows = []
+     for e in items:
+```
+
+```diff
+@@ travel_fill.py lines 221-244: insert_travel_event uses CAL.create @@
+ def insert_travel_event(start_dt, end_dt, src, dst, dst_addr):
+     summary = f"🚆 移動 {short_name(src)}→{short_name(dst)}"
+     desc = "Auto-inserted by anicca-travel-fill. Adjust if route is wrong."
+-    acct = env("GOG_ACCOUNT") or prof.google_account()
+-    out = subprocess.run(
+-        ["/opt/homebrew/bin/gog", "calendar", "create", "primary", "-j",
+-         "--account", acct,
+-         "--summary", summary,
+-         "--from", start_dt.isoformat(),
+-         "--to", end_dt.isoformat(),
+-         "--location", dst_addr,
+-         "--description", desc],
+-        capture_output=True, text=True,
+-        env={**os.environ, "GOG_KEYRING_PASSWORD": env("GOG_KEYRING_PASSWORD"),
+-             "GOG_ACCOUNT": acct},
+-        timeout=30,
+-    )
+-    if out.returncode != 0:
+-        print(f"[fill] insert failed: {out.stderr[:200]}", file=sys.stderr)
+-        return None
+-    try:
+-        return json.loads(out.stdout)["event"]["id"]
+-    except Exception:
+-        return None
++    try:
++        return CAL.create(summary=summary, frm=start_dt.isoformat(), to=end_dt.isoformat(),
++                          location=dst_addr, description=desc)
++    except Exception as e:
++        print(f"[fill] insert failed: {e}", file=sys.stderr)
++        return None
+```
+After this, `import subprocess` (line 14) is unused in travel_fill.py → remove it (the adapter owns subprocess). Verify no other subprocess use remains (grep: only :111 and :225 today → both gone).
+
+### WS1b.3 — `notify/notify.js` (rewire to the WS1 JS adapter)
+
+```diff
+@@ notify.js: after the GOG consts (lines 61-63), build the adapter @@
+ const GOG_KEYRING_PASSWORD = process.env.GOG_KEYRING_PASSWORD || ENV.GOG_KEYRING_PASSWORD || "";
++const { makeTransport } = require("../adapters/transport");
++const T = makeTransport({ bin: GOG_BIN, account: GOG_ACCOUNT, keyring: GOG_KEYRING_PASSWORD });
+```
+
+```diff
+@@ notify.js lines 261-317: replace gogEnv + 4 gog fns with adapter-backed wrappers @@
+-function gogEnv() {
+-  return { ...process.env, GOG_KEYRING_PASSWORD, GOG_ACCOUNT };
+-}
+-function listTodayEvents() {
+-  const today = new Date().toISOString().slice(0, 10);
+-  const raw = execFileSync(GOG_BIN, [
+-    "calendar", "events", "list",
+-    "-j",
+-    "--account", GOG_ACCOUNT,
+-    "--from", today,
+-    "--to", today,
+-    "--all-pages",
+-  ], { env: gogEnv(), timeout: 60000 }).toString();
+-
+-  const d = JSON.parse(raw);
+-  return Array.isArray(d) ? d : (d.events || d.items || []);
+-}
++function listTodayEvents() {
++  const today = new Date().toISOString().slice(0, 10);
++  return T.calendar.list({ from: today, to: today, max: 250 });   // +--max 250 (safe; 1-day window)
++}
+-function gogGmailSend({ to, subject, body }) {
+-  execFileSync(GOG_BIN, [
+-    "gmail", "send",
+-    "--account", GOG_ACCOUNT,
+-    "--to", to,
+-    "--subject", subject,
+-    "--body", body,
+-  ], { env: gogEnv(), timeout: 60000 });
+-}
++function gogGmailSend({ to, subject, body }) { T.mail.send({ to, subject, body }); }  // +--json (return ignored)
+-function gogGmailSearch(query) {
+-  const raw = execFileSync(GOG_BIN, [
+-    "gmail", "search", query,
+-    "-j",
+-    "--account", GOG_ACCOUNT,
+-  ], { env: gogEnv(), timeout: 60000 }).toString();
+-  const d = JSON.parse(raw);
+-  return Array.isArray(d.threads) ? d.threads : [];
+-}
++function gogGmailSearch(query) { return T.mail.search(query); }   // [{id,subject}]; callers use .id only
+-function gogGmailBody(threadId) {
+-  const raw = execFileSync(GOG_BIN, [
+-    "gmail", "get", threadId,
+-    "-j",
+-    "--account", GOG_ACCOUNT,
+-  ], { env: gogEnv(), timeout: 60000 }).toString();
+-  const d = JSON.parse(raw);
+-  return typeof d.body === "string" ? d.body : "";
+-}
++function gogGmailBody(threadId) { return T.mail.getBody(threadId).body; }  // unwrap to STRING (prior contract)
+```
+Caller-contract checks (must hold): `listTodayEvents()` returns event items[] (unchanged); `gogGmailSearch` callers use `t.id` only (adapter returns `{id,subject}` — OK); `gogGmailBody` callers expect a STRING (wrapper returns `.body` — OK); `gogGmailSend` return ignored (OK). After patch, confirm `execFileSync` is STILL imported/used elsewhere in notify.js? If the 4 fns were its only users, remove the import; otherwise keep. (Verify with grep before applying.)
+
+### WS1b verification (no-mock, BY OpenClaw)
+- `python3 -m pytest`/`node --test` on travel + notify test files → unchanged green (pure fns untouched).
+- `LIFE_TRANSPORT=gog python3 travel/travel_fill.py` via `openclaw cron run` → real gcal list through adapter, prints summary JSON.
+- `LIFE_TRANSPORT=composio python3 travel/travel_fill.py` → raises NYI (selector proven, no silent fake).
+- `LIFE_TRANSPORT=gog node notify/notify.js --poll` → real Gmail search/get/send through adapter.
+
+---
+
 ## WS2..WS8 — written + reviewed in order AFTER WS1 ok:true
 WS1b travel_fill.py adapter · WS2 agentic location/ask (#47) · WS3 repo extraction (#48) · WS4 /life-manager→GitHub link (#52) · WS5 natural call VAD+affective (#43) · WS6 web app flow + cloud wake (#49) · WS7 demo-reel cron→@anicca.comedy (#50) · WS8 launch PH+X (#51). Each gets its own complete diff section here, each reviewed, none started before its predecessor passes.
