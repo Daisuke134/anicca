@@ -579,7 +579,8 @@ def google_account():
 - composio throws (JS+Py). 34/34 unit tests green from new location.
 - OpenClaw executor E2E: fire `anicca-life-plan` (rewired) → real gcal → regenerates life-call crons at new path.
 
-## WS2 — AGENTIC location/ask (generalize beyond fixed lists/regex)  [patch — review next]
+## WS2 — AGENTIC location/ask  ✅ REVIEW PASSED (ok:true, 2 rounds) + IMPLEMENTED & VERIFIED (2026-06-18, anicca life-manager 272bb7a)
+_Real-Gemini VDD: Sleep/瞑想/朝食→home · Team Sync/1on1→work · 六本木ヒルズ/スタバ渋谷→geocode-verified · ジム/running→natural ASK = 7 resolved/2 asked. Infra fix: legacy Geocoding/Directions API was disabled → wired the purpose-built key via LIFE_MAPS_KEY. 9+6 tests green._
 
 Dais: people write schedules infinitely many ways — `ROUTINE_AT_HOME_PATTERNS` (fixed JP list) + `ADDR_PATTERNS` (rigid regex) won't generalize. Replace the deterministic MIDDLE of resolution with an LLM that maps an event to a known place (home/work/history) or, when genuinely unknown, crafts a user-specific question. Keep deterministic the safe edges: explicit `event.location` (fast) and a geocode CHECK on the agent's answer (so a hallucinated place can't slip through — never guess). Self-contained: uses the existing `GEMINI_API_KEY` (works local AND cloud). Cheap: only called for non-explicit events.
 
