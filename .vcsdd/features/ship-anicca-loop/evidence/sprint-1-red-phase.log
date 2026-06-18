@@ -1,0 +1,181 @@
+new-feature-tests: FAIL
+regression-baseline: PASS
+
+=== NEW FEATURE TESTS (RED phase) ===
+node:internal/modules/esm/resolve:275
+    throw new ERR_MODULE_NOT_FOUND(
+          ^
+
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/Users/operator/anicca/runtime/loop/config.mjs' imported from /Users/operator/anicca/runtime/loop/__tests__/config.test.mjs
+    at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+    at moduleResolve (node:internal/modules/esm/resolve:865:10)
+    at defaultResolve (node:internal/modules/esm/resolve:991:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:713:20)
+    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:730:38)
+    at ModuleLoader.resolveSync (node:internal/modules/esm/loader:759:52)
+    at #resolve (node:internal/modules/esm/loader:695:17)
+    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:615:35)
+    at ModuleJob.syncLink (node:internal/modules/esm/module_job:160:33)
+    at ModuleJob.link (node:internal/modules/esm/module_job:245:17) {
+  code: 'ERR_MODULE_NOT_FOUND',
+  url: 'file:///Users/operator/anicca/runtime/loop/config.mjs'
+}
+
+Node.js v25.6.1
+✖ runtime/loop/__tests__/config.test.mjs (70.532833ms)
+node:internal/modules/esm/resolve:275
+    throw new ERR_MODULE_NOT_FOUND(
+          ^
+
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/Users/operator/anicca/runtime/loop/env-filter.mjs' imported from /Users/operator/anicca/runtime/loop/__tests__/env-filter.test.mjs
+    at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+    at moduleResolve (node:internal/modules/esm/resolve:865:10)
+    at defaultResolve (node:internal/modules/esm/resolve:991:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:713:20)
+    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:730:38)
+    at ModuleLoader.resolveSync (node:internal/modules/esm/loader:759:52)
+    at #resolve (node:internal/modules/esm/loader:695:17)
+    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:615:35)
+    at ModuleJob.syncLink (node:internal/modules/esm/module_job:160:33)
+    at ModuleJob.link (node:internal/modules/esm/module_job:245:17) {
+  code: 'ERR_MODULE_NOT_FOUND',
+  url: 'file:///Users/operator/anicca/runtime/loop/env-filter.mjs'
+}
+
+Node.js v25.6.1
+✖ runtime/loop/__tests__/env-filter.test.mjs (71.067ms)
+node:internal/modules/esm/resolve:275
+    throw new ERR_MODULE_NOT_FOUND(
+          ^
+
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/Users/operator/anicca/runtime/loop/ledger-record.mjs' imported from /Users/operator/anicca/runtime/loop/__tests__/ledger-record.test.mjs
+    at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+    at moduleResolve (node:internal/modules/esm/resolve:865:10)
+    at defaultResolve (node:internal/modules/esm/resolve:991:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:713:20)
+    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:730:38)
+    at ModuleLoader.resolveSync (node:internal/modules/esm/loader:759:52)
+    at #resolve (node:internal/modules/esm/loader:695:17)
+    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:615:35)
+    at ModuleJob.syncLink (node:internal/modules/esm/module_job:160:33)
+    at ModuleJob.link (node:internal/modules/esm/module_job:245:17) {
+  code: 'ERR_MODULE_NOT_FOUND',
+  url: 'file:///Users/operator/anicca/runtime/loop/ledger-record.mjs'
+}
+
+Node.js v25.6.1
+✖ runtime/loop/__tests__/ledger-record.test.mjs (66.737584ms)
+node:internal/modules/esm/resolve:275
+    throw new ERR_MODULE_NOT_FOUND(
+          ^
+
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/Users/operator/anicca/runtime/loop/loop-detect.mjs' imported from /Users/operator/anicca/runtime/loop/__tests__/loop-detect.test.mjs
+    at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+    at moduleResolve (node:internal/modules/esm/resolve:865:10)
+    at defaultResolve (node:internal/modules/esm/resolve:991:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:713:20)
+    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:730:38)
+    at ModuleLoader.resolveSync (node:internal/modules/esm/loader:759:52)
+    at #resolve (node:internal/modules/esm/loader:695:17)
+    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:615:35)
+    at ModuleJob.syncLink (node:internal/modules/esm/module_job:160:33)
+    at ModuleJob.link (node:internal/modules/esm/module_job:245:17) {
+  code: 'ERR_MODULE_NOT_FOUND',
+  url: 'file:///Users/operator/anicca/runtime/loop/loop-detect.mjs'
+}
+
+Node.js v25.6.1
+✖ runtime/loop/__tests__/loop-detect.test.mjs (67.916ms)
+node:internal/modules/esm/resolve:275
+    throw new ERR_MODULE_NOT_FOUND(
+          ^
+
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/Users/operator/anicca/runtime/loop/parse-tool-call.mjs' imported from /Users/operator/anicca/runtime/loop/__tests__/parse-tool-call.test.mjs
+    at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+    at moduleResolve (node:internal/modules/esm/resolve:865:10)
+    at defaultResolve (node:internal/modules/esm/resolve:991:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:713:20)
+    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:730:38)
+    at ModuleLoader.resolveSync (node:internal/modules/esm/loader:759:52)
+    at #resolve (node:internal/modules/esm/loader:695:17)
+    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:615:35)
+    at ModuleJob.syncLink (node:internal/modules/esm/module_job:160:33)
+    at ModuleJob.link (node:internal/modules/esm/module_job:245:17) {
+  code: 'ERR_MODULE_NOT_FOUND',
+  url: 'file:///Users/operator/anicca/runtime/loop/parse-tool-call.mjs'
+}
+
+Node.js v25.6.1
+✖ runtime/loop/__tests__/parse-tool-call.test.mjs (67.243791ms)
+node:internal/modules/esm/resolve:275
+    throw new ERR_MODULE_NOT_FOUND(
+          ^
+
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/Users/operator/anicca/runtime/loop/tier.mjs' imported from /Users/operator/anicca/runtime/loop/__tests__/tier.test.mjs
+    at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+    at moduleResolve (node:internal/modules/esm/resolve:865:10)
+    at defaultResolve (node:internal/modules/esm/resolve:991:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:713:20)
+    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:730:38)
+    at ModuleLoader.resolveSync (node:internal/modules/esm/loader:759:52)
+    at #resolve (node:internal/modules/esm/loader:695:17)
+    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:615:35)
+    at ModuleJob.syncLink (node:internal/modules/esm/module_job:160:33)
+    at ModuleJob.link (node:internal/modules/esm/module_job:245:17) {
+  code: 'ERR_MODULE_NOT_FOUND',
+  url: 'file:///Users/operator/anicca/runtime/loop/tier.mjs'
+}
+
+Node.js v25.6.1
+✖ runtime/loop/__tests__/tier.test.mjs (68.6875ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 0
+ℹ fail 6
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 77.052791
+
+✖ failing tests:
+
+test at runtime/loop/__tests__/config.test.mjs:1:1
+✖ runtime/loop/__tests__/config.test.mjs (70.532833ms)
+  'test failed'
+
+test at runtime/loop/__tests__/env-filter.test.mjs:1:1
+✖ runtime/loop/__tests__/env-filter.test.mjs (71.067ms)
+  'test failed'
+
+test at runtime/loop/__tests__/ledger-record.test.mjs:1:1
+✖ runtime/loop/__tests__/ledger-record.test.mjs (66.737584ms)
+  'test failed'
+
+test at runtime/loop/__tests__/loop-detect.test.mjs:1:1
+✖ runtime/loop/__tests__/loop-detect.test.mjs (67.916ms)
+  'test failed'
+
+test at runtime/loop/__tests__/parse-tool-call.test.mjs:1:1
+✖ runtime/loop/__tests__/parse-tool-call.test.mjs (67.243791ms)
+  'test failed'
+
+test at runtime/loop/__tests__/tier.test.mjs:1:1
+✖ runtime/loop/__tests__/tier.test.mjs (68.6875ms)
+  'test failed'
+
+=== REGRESSION BASELINE ===
+✔ deriveLine computes net_usdc = earn - cost and stamps ts (0.6415ms)
+✔ isProfitable true only for EXTERNAL revenue: net>0 AND status 0x1 AND external:true AND not a swap (0.079708ms)
+✔ appendLedger is append-only: prior line is byte-identical after a second append (3.283166ms)
+✔ readLedger parses every JSONL line into objects (1.015833ms)
+✔ readLedger returns [] for a missing file (no throw) (0.807042ms)
+✔ record() appends a profitable line and flags it PROFITABLE (3.398ms)
+✔ record() narrate-only (no tx) is NOT profitable (0.696834ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 66.554791
