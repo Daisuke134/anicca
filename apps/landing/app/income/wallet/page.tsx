@@ -106,7 +106,7 @@ export default function WalletAccessPage() {
   return (
     <CrossmintProvider apiKey={CLIENT_KEY}>
       <CrossmintAuthProvider loginMethods={['email']}>
-        <CrossmintWalletProvider createOnLogin={{ chain: 'base', signer: { type: 'email' } }}>
+        <CrossmintWalletProvider createOnLogin={{ chain: 'base', recovery: { type: 'email' } }}>
           <Panel />
         </CrossmintWalletProvider>
       </CrossmintAuthProvider>
