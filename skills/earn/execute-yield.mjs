@@ -20,8 +20,12 @@ const RPC = process.env.BASE_RPC_URL || "https://mainnet.base.org";
 const USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
 const AAVE_POOL = "0xA238Dd80C259a72e81d7e4664a9801593F98d1c5"; // Aave v3 Pool, Base
 const AUSDC = "0x4e65fE4DbA92790696d040ac24Aa414708F5c0AB";     // aBasUSDC
-const RESERVE = Math.round(parseFloat(process.env.YIELD_RESERVE_USDC || "0.5") * 1e6);
-const MIN_DEPLOY = Math.round(parseFloat(process.env.YIELD_MIN_DEPLOY_USDC || "0.5") * 1e6);
+// Reserve must keep enough LIQUID USDC for compute: ClawRouter `auto` pays per-inference x402
+// from liquid USDC, so a frontier model is only affordable while liquid stays funded. Only the
+// SURPLUS above this runway buffer is deployed into yield. (Earlier $0.5 starved compute → the
+// loop fell back to a free model despite a funded wallet.)
+const RESERVE = Math.round(parseFloat(process.env.YIELD_RESERVE_USDC || "5") * 1e6);
+const MIN_DEPLOY = Math.round(parseFloat(process.env.YIELD_MIN_DEPLOY_USDC || "1") * 1e6);
 
 function out(o) { process.stdout.write(JSON.stringify(o) + "\n"); }
 
