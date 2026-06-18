@@ -72,11 +72,22 @@ async function pass() {
   const res = await sb('recipients?status=eq.queued&select=id,email,notes');
   if (!res.ok) throw new Error('supabase read ' + res.status);
   const rows = await res.json();
+  // DEDUP GUARD (anti-drain): never pay an email or wallet that was already paid.
+  const paidRes = await sb('recipients?status=eq.paid&select=email,notes');
+  const paidRows = paidRes.ok ? await paidRes.json() : [];
+  const paidEmails = new Set(paidRows.map((p) => (p.email || '').toLowerCase()).filter(Boolean));
+  const paidWallets = new Set(paidRows.map((p) => ((p.notes || '').match(WALLET_RE) || [])[1]).filter(Boolean));
   let paid = 0;
   for (const r of rows) {
     const notes = r.notes || '';
     const method = (notes.match(METHOD_RE) || [])[1];
     if (method !== 'wallet' && method !== 'email') continue; // bank/card handled elsewhere
+    const wAddr = (notes.match(WALLET_RE) || [])[1];
+    if (paidEmails.has((r.email || '').toLowerCase()) || (wAddr && paidWallets.has(wAddr))) {
+      await sb(`recipients?id=eq.${r.id}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ status: 'duplicate' }) });
+      console.log(`SKIP duplicate ${method} ${r.email}`);
+      continue;
+    }
     try {
       let to;
       if (method === 'wallet') {
