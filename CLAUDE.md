@@ -44,6 +44,12 @@ Superpowers = the 8-stage process scaffold (HARD RULE #0). VSDD = the **verifica
 
 3 か所同期: ① ここ (project) ② global `~/.claude/CLAUDE.md` HARD RULE 0.37 ③ memory `feedback_vsdd_default_engineering_method`. [[feedback_superpowers_is_hard_rule_zero]]
 
+## HARD RULE 0.38 — FRONTEND = 必ず taste skill を使う (Dais 2026-06-18)
+
+**Dais verbatim**: "whenever you write frontend ... you use this skill" — `npx skills add https://github.com/Leonxlnx/taste-skill`（= 既設の `gpt-tasteskill` / name `gpt-taste`）。
+
+★ 任意の frontend / UI を書く・直す前に **必ず `Skill` で `gpt-tasteskill` を起動** ★（AWWWARDS級: Python乱択でレイアウト固定回避・AIDA・2-3行 hero・gapless bento・GSAP/motion・cheap meta-label 禁止・section大余白）。書いた後は **出力 UI を実ブラウザ(agent-browser/camofox)で検証**（taste 基準 + VSDD §17）。「文字だけ並べた UI」= 違反。landing(`apps/landing`)・mobile・any web 全部対象。3か所同期: ここ + global CLAUDE.md + memory `feedback_frontend_always_taste_skill`。
+
 ## 根本原則
 
 **BP = 答え。オリジナル = 罪。検索不足 = 最大の罪。**
