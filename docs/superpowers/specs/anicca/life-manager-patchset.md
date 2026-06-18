@@ -579,5 +579,136 @@ def google_account():
 - composio throws (JS+Py). 34/34 unit tests green from new location.
 - OpenClaw executor E2E: fire `anicca-life-plan` (rewired) → real gcal → regenerates life-call crons at new path.
 
-## WS2 / WS4..WS8 — written + reviewed in order AFTER WS3 ok:true
+## WS2 — AGENTIC location/ask (generalize beyond fixed lists/regex)  [patch — review next]
+
+Dais: people write schedules infinitely many ways — `ROUTINE_AT_HOME_PATTERNS` (fixed JP list) + `ADDR_PATTERNS` (rigid regex) won't generalize. Replace the deterministic MIDDLE of resolution with an LLM that maps an event to a known place (home/work/history) or, when genuinely unknown, crafts a user-specific question. Keep deterministic the safe edges: explicit `event.location` (fast) and a geocode CHECK on the agent's answer (so a hallucinated place can't slip through — never guess). Self-contained: uses the existing `GEMINI_API_KEY` (works local AND cloud). Cheap: only called for non-explicit events.
+
+Repo now lives at `~/life-manager/` (github.com/Daisuke134/life-manager). Grounded against `travel/travel_fill.py` `resolve_event_location` + `geocode`, and `ask/ask-local.js` `buildQuestionEmail`/`enqueue_ask`.
+
+### WS2.1 — NEW FILE `agent/resolve.py`
+```python
+"""Agentic location resolver — generalizes to ANY user's phrasing (no fixed lists/regex).
+Uses Gemini (existing GEMINI_API_KEY) to map an event to a known place or craft a question.
+Self-contained: stdlib + GEMINI_API_KEY only. Runs local AND cloud."""
+import json
+import os
+import sys
+import urllib.request
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+import config as C  # noqa: E402
+
+GEMINI_MODEL = os.environ.get("LIFE_RESOLVE_MODEL", "gemini-2.5-flash")
+
+
+def _gemini(prompt):
+    key = C.env("GEMINI_API_KEY")
+    if not key:
+        return None
+    url = (f"https://generativelanguage.googleapis.com/v1beta/models/"
+           f"{GEMINI_MODEL}:generateContent?key={key}")
+    body = json.dumps({
+        "contents": [{"parts": [{"text": prompt}]}],
+        "generationConfig": {"responseMimeType": "application/json", "temperature": 0},
+    }).encode()
+    req = urllib.request.Request(url, data=body, headers={"Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=20) as r:
+            d = json.loads(r.read().decode())
+        txt = d["candidates"][0]["content"]["parts"][0]["text"]
+        return json.loads(txt)
+    except Exception:
+        return None
+
+
+def agentic_resolve(event, known):
+    """known = {home, work, history:[{summary,location}]}.
+    Returns {location: <str|None>, question: <str|None>}. Never fabricates: if not
+    confident, location=None and a natural user-language question is returned."""
+    prompt = (
+        "You place a calendar event at a PHYSICAL location for a travel-time calculator.\n"
+        f"Known places: home={known.get('home') or '?'}; work={known.get('work') or '?'}.\n"
+        f"Recently resolved events: {json.dumps((known.get('history') or [])[:8], ensure_ascii=False)}\n"
+        f"Event summary: {json.dumps(event.get('summary', ''), ensure_ascii=False)}\n"
+        f"Event description: {json.dumps((event.get('description') or '')[:200], ensure_ascii=False)}\n\n"
+        "If you can CONFIDENTLY infer where it happens (a known place, or an unambiguous public "
+        "venue/address a maps geocoder will find), return {\"location\": \"<place or address>\"}.\n"
+        "Otherwise return {\"location\": null, \"question\": \"<one short, natural question in the "
+        "user's language asking exactly where this event takes place>\"}. NEVER guess."
+    )
+    out = _gemini(prompt) or {}
+    loc = out.get("location")
+    loc = loc.strip() if isinstance(loc, str) and loc.strip() else None
+    q = out.get("question")
+    q = q.strip() if isinstance(q, str) and q.strip() else None
+    return {"location": loc, "question": q}
+```
+
+### WS2.2 — `travel/travel_fill.py` rewire `resolve_event_location` (drop fixed list/regex middle)
+```diff
+@@ travel_fill.py: import the resolver near the config import @@
+ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+ import config as C  # noqa: E402
++sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "agent"))
++import resolve as _ag  # noqa: E402
+```
+```diff
+@@ replace the body of resolve_event_location (keep explicit + geocode-verify; agent does the middle) @@
+ def resolve_event_location(event):
+     loc = (event or {}).get("location") or ""
+     if loc.strip():
+         return loc.strip(), "explicit"
+-    if is_routine_at_home(event.get("summary", "")):
+-        return C.home_address(), "home_routine"
+-    extracted = (
+-        extract_address_from_text(event.get("summary", ""))
+-        or extract_address_from_text(event.get("description", ""))
+-    )
+-    if extracted:
+-        return extracted, "summary_extracted"
+-    title = (event.get("summary") or "").strip()
+-    if title and geocode(title):
+-        return title, "geocoded"
+-    return None, "unknown"
++    known = {"home": C.home_address(), "work": C.env("LIFE_WORK_ADDRESS"), "history": []}
++    r = _ag.agentic_resolve(event, known)
++    if r.get("location") and geocode(r["location"]):   # geocode-verify → no hallucinated place slips through
++        return r["location"], "agent"
++    # unknown → ask, carrying the agent's crafted question (if any) for ask-local to mail verbatim
++    return None, ("ask:" + r["question"] if r.get("question") else "unknown")
+```
+`is_routine_at_home` / `ROUTINE_AT_HOME_PATTERNS` / `ADDR_PATTERNS` / `extract_address_from_text` become dead → DELETE (coding-style: no unused). `enqueue_ask` already stores `reason`; the `"ask:<question>"` reason carries the wording.
+
+### WS2.3 — `ask/ask-local.js` use the agent's question when present
+```diff
+@@ buildQuestionEmail: prefer the agent-crafted question over the fixed template @@
+ function buildQuestionEmail(row) {
+   const s = (row.summary || "予定").trim();
+-  const why = row.reason === "no_route" ? "の移動経路が分かりませんでした" : "の場所が分かりませんでした";
+   const subject = `[Anicca] 場所を教えてください: ${s} [ASK-${row.eventId}]`;
+-  const body =
+-    `「${s}」${why}。\nこの予定はどこで行われますか？ 駅名や住所をこのメールに返信してください。\n\nEvent ID: ${row.eventId}`;
++  const agentQ = typeof row.reason === "string" && row.reason.startsWith("ask:") ? row.reason.slice(4) : "";
++  const why = row.reason === "no_route" ? "の移動経路が分かりませんでした" : "の場所が分かりませんでした";
++  const ask = agentQ || `「${s}」${why}。\nこの予定はどこで行われますか？ 駅名や住所をこのメールに返信してください。`;
++  const body = `${ask}\n\nEvent ID: ${row.eventId}`;
+   return { subject, body };
+ }
+```
+(Python `enqueue_ask` writes `reason` into the queue row verbatim → JS reads `row.reason`. The `ask:` prefix is the contract.)
+
+### WS2.4 — config: new optional `LIFE_WORK_ADDRESS` + `LIFE_RESOLVE_MODEL`
+Add to `.env.example`. `LIFE_WORK_ADDRESS` lets daily commute events resolve without asking; unset → the agent asks once.
+
+### WS2 verification (vcsdd VDD — real Gemini, no mock)
+Seed a DIVERSE event set (deliberately beyond the old JP list/regex) and run `resolve_event_location` for each via OpenClaw:
+- `Sleep 23:00` → home (known place) — no ask.
+- `Team Sync` with `LIFE_WORK_ADDRESS` set → work — no ask.
+- `ジムで筋トレ` (gym, no fixed pattern) → ask with a sensible JP question.
+- `client at 六本木` → either geocodes 六本木 or asks.
+- `running` → agent decides (home/route) or asks — NOT silently forced home.
+Assert: known → resolved (no ask-queue row); genuinely-unknown → ask-queue row whose `reason` starts `ask:` + the mailed question is the agent's wording; geocode-unverifiable agent answers fall through to ask (no hallucination inserted). Evidence: the queue rows + a real sent Gmail + before/after.
+
+## WS4..WS8 (WS4 ✅ done) — WS5 natural call (#43) · WS6 web app (#49) · WS7 demo-reel (#50) · WS8 launch (#51)
 WS1b travel_fill.py adapter · WS2 agentic location/ask (#47) · WS3 repo extraction (#48) · WS4 /life-manager→GitHub link (#52) · WS5 natural call VAD+affective (#43) · WS6 web app flow + cloud wake (#49) · WS7 demo-reel cron→@anicca.comedy (#50) · WS8 launch PH+X (#51). Each gets its own complete diff section here, each reviewed, none started before its predecessor passes.
