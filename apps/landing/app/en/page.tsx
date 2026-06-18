@@ -12,6 +12,7 @@ import {
   BasicIncomeNote,
   VisionBand,
   TheBet,
+  HowDiagram,
 } from '@/components/site/v2';
 
 const SITE_URL = 'https://aniccaai.com';
@@ -115,6 +116,7 @@ export default function Page() {
       <Navbar locale={locale} />
       <Hero locale={locale} />
       <TheBet locale={locale} />
+      <HowDiagram locale={locale} />
       {/* spec31 §A2 / spec30 §2: home = vision + how-to-start ONLY.
           Products grid (TheEmpireProducts) now lives ONLY on /dais;
           colony Live ledger (LiveLedgerStrip → /dashboard) removed. */}
