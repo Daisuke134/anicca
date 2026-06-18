@@ -13,6 +13,11 @@ FOUNDATION GATE. Proves anicca can send real USDC autonomously (its own key), re
 
 Conclusion: the SEND rail is real and verified on-chain. Demo's "sign up → real money arrives" is feasible via this path. No fake.
 
+## UBI-E1b — /income signup path (live prod) — ✅ PASS (2026-06-18)
+- /income rebuilt LIVE: apply above fold, email/wallet/bank/card, full UBI copy + roadmap, iOS logo removed. Home hero top CTA "Receive basic income" → /income (verified curl).
+- `POST https://aniccaai.com/.netlify/functions/income-signup {"email":...,"method":"email"}` → `{"ok":true,"recorded":true}` (real Supabase insert, status=queued, wallet+method in notes).
+- Demo path: signup recorded in prod → payout sent locally via execute-ubi (UBI-E1, proven). Full auto form→send watcher = STAGE 2.
+
 ## UBI-E2 — email (Crossmint) — pending
 ## UBI-E3/E4 — bank/card (Stripe+Bridge) — pending
 ## UBI-E5 — creator daily payout — pending
