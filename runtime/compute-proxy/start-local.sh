@@ -14,12 +14,11 @@
 #   4. exec "$@" if you give it a loop command; otherwise HOLD the proxy in the
 #      foreground and PRINT how to plug your loop in.
 #
-# IMPORTANT — HONEST SCOPE: this repo does NOT ship an automaton loop entrypoint
-# (install.sh:"Start the automaton loop (your runner of choice)"). So with NO
-# args this script ONLY runs the self-pay compute proxy and tells you to plug
-# your loop in as:  ./start-local.sh <your-loop-cmd>  . It does not pretend an
-# automaton is wired. Any OpenAI-compatible loop that reads OPENAI_BASE_URL /
-# OPENAI_API_KEY (or ANICCA_MODEL) will route through the proxy once you pass it.
+# Anicca SHIPS its loop at runtime/loop/index.mjs. Pass it as the loop command:
+#   ./start-local.sh node runtime/loop/index.mjs
+# With NO args this script only holds the self-pay proxy in the foreground and
+# prints how to start the loop. Any OpenAI-compatible loop that reads
+# OPENAI_BASE_URL / OPENAI_API_KEY (or ANICCA_MODEL) routes through the proxy.
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -78,9 +77,9 @@ if [ "$#" -gt 0 ]; then
   exec "$@"
 else
   echo "[local] no loop command given — holding the self-pay compute proxy in foreground."
-  echo "[local] this repo does NOT ship an automaton loop; plug yours in like:"
-  echo "[local]     ./start-local.sh <your-loop-cmd>"
-  echo "[local] your loop just needs to read OPENAI_BASE_URL (now $OPENAI_BASE_URL)."
+  echo "[local] start the anicca loop with:"
+  echo "[local]     ./start-local.sh node runtime/loop/index.mjs   (from the repo root)"
+  echo "[local] (or attach any OpenAI-compatible loop that reads OPENAI_BASE_URL=$OPENAI_BASE_URL)"
   echo "[local] fund frontier: send USDC to the wallet address above; your loop can then pick a paid model."
   echo "[local] (Ctrl-C to stop the proxy.)"
   wait
