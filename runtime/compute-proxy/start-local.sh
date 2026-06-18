@@ -73,7 +73,17 @@ export ANICCA_MODEL="${ANICCA_MODEL:-auto}"
 # The loop requires ANICCA_HOME (no default) — derive it the same way install.sh does.
 export ANICCA_HOME="${ANICCA_HOME:-$HOME/.anicca}"
 # Expose the self-owned wallet address so the loop can read its balance (tier selection).
-export ANICCA_WALLET_ADDRESS="${ANICCA_WALLET_ADDRESS:-$(node -e 'try{console.log(JSON.parse(require("fs").readFileSync(process.env.HOME+"/.automaton/wallet.json")).address)}catch(e){process.exit(0)}')}"
+# Derive from the private key when the wallet file has no `address` field (older format).
+export ANICCA_WALLET_ADDRESS="${ANICCA_WALLET_ADDRESS:-$(node -e '
+  try {
+    const w=JSON.parse(require("fs").readFileSync(process.env.HOME+"/.automaton/wallet.json"));
+    if (w.address) { console.log(w.address); }
+    else if (w.privateKey) {
+      const {privateKeyToAccount}=require("'"$HERE"'/node_modules/viem/accounts");
+      console.log(privateKeyToAccount(w.privateKey).address);
+    }
+  } catch(e){ process.exit(0); }
+')}"
 echo "[local] inference -> $OPENAI_BASE_URL  model=$ANICCA_MODEL  (ClawRouter auto; free until wallet funded)"
 echo "[local] ANICCA_HOME=$ANICCA_HOME  wallet=$ANICCA_WALLET_ADDRESS"
 

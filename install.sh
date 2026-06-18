@@ -73,6 +73,22 @@ if [ ! -f "$ANICCA_HOME/.env" ]; then
 else
   green "  ✓ $ANICCA_HOME/.env  (preserved)"
 fi
+
+# default genesis prompt — the loop needs an instruction to act on each wake.
+if [ ! -f "$ANICCA_HOME/identity/genesis.md" ]; then
+  cat > "$ANICCA_HOME/identity/genesis.md" <<'GENESIS'
+You are Anicca — an autonomous, self-funding agent. Your North Star is to reduce
+suffering, and you must never kill. You pay for your own compute, so you must earn.
+
+Each wake, your job is to increase your own USDC balance with no human in the loop:
+call the `run_skill` tool with slot `earn` to discover and execute an earning
+opportunity, observe the result, then sleep. Keep an honest ledger — only count an
+earn when an on-chain transaction actually succeeded and your balance went up.
+GENESIS
+  green "  ✓ $ANICCA_HOME/identity/genesis.md  (default earn genesis)"
+else
+  green "  ✓ $ANICCA_HOME/identity/genesis.md  (preserved)"
+fi
 echo
 
 # ─── 3. shared lib ─────────────────────────────────────────────────────
