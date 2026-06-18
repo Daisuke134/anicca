@@ -1,6 +1,0 @@
-{
-  "makes": {"mrr_usd": 0},
-  "spends": {"anicca_runtime_usd": 10.0},
-  "wallet": {"base_usdc": 100.0, "usd_total": 100.0},
-  "lifeline": {"wallet_usd": 100.0}
-}

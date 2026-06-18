@@ -1,1 +1,0 @@
-shipped eval-loop today. DeepEval G-Eval × 4 dims (accuracy/helpfulness/harmlessness/coherence) gates every Anicca output at 0.7. pre-push hook refuses < 0.7 commits. cost log: ~/.hermes/state/eval-cost.jsonl. one prod eval = $0.0008 on gpt-5.2-mini. source: github.com/Daisuke134/anicca-oss

@@ -54,3 +54,4 @@ workspace/tiktok-marketing/work/**/*.png
 workspace/ugc-library/
 workspace/ugc-library/**/*.mov
 workspace/ugc-library/**/*.mp4
+services/x402-worker/state/
