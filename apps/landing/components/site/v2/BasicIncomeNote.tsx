@@ -15,7 +15,7 @@ export function BasicIncomeNote({ locale }: { locale: 'en' | 'ja' }) {
           cta: 'ベーシックインカムを受け取る',
         }
       : {
-          body: 'Whatever it makes past survival goes back to people every month. No conditions on the receiving end.',
+          body: 'Whatever it makes beyond its own costs goes back to people every month. No conditions on the receiving end.',
           cta: 'Receive basic income',
         };
 
