@@ -77,7 +77,7 @@ fi
 # GATE-0 default = EXTERNAL revenue (0xwork). Swap is demoted to a non-gate runway fallback ONLY:
 # a swap is net-zero asset rotation (Anicca's own ETH -> its own USDC), so the classifier
 # (lib/ledger.mjs isProfitable) now rejects it. No EARN_STRATEGY value can mint GATE-0 from a swap.
-STRATEGY="${EARN_STRATEGY:-0xwork}"
+STRATEGY="${EARN_STRATEGY:-yield}"
 
 # --- strategy=0xwork: REAL EXTERNAL REVENUE (a poster's escrow pays USDC to our wallet) -------
 if [ "$STRATEGY" = "0xwork" ] && [ -z "${EARN_TX:-}" ]; then
@@ -161,6 +161,33 @@ print(d.get('error') or d.get('abort') or '')" 2>/dev/null)
   # A swap line carries NO 'external' flag, so isProfitable() returns false by construction.
   # OUT is always NARRATE here: a swap is asset rotation (runway top-up), NEVER GATE-0.
   echo "[earn] swap wake recorded as NARRATE (asset rotation, not external revenue). Not GATE-0."
+  exit 0
+fi
+
+# --- strategy=yield: GOAT earner — deploy idle USDC into DeFi yield (Aave v3) ---------------
+# The agent's reliable, always-available earner. Net worth grows via accrual (aUSDC balance),
+# withdrawable any time. NOT external revenue (kind:yield, external:false) -> never GATE-0;
+# it is honest capital deployment at the market lending rate. When other earners have no live
+# opportunity, the loop falls back here so a wake always does something productive.
+if [ "$STRATEGY" = "yield" ] && [ -z "${EARN_TX:-}" ]; then
+  RES=$(PKVAR="$PKVAR" node "$HERE/execute-yield.mjs" 2>/dev/null)
+  echo "[earn] yield result: $RES"
+  ABORT=$(printf '%s' "$RES" | python3 -c "import json,sys
+try: d=json.load(sys.stdin)
+except Exception: d={}
+print(d.get('abort') or d.get('error') or '')" 2>/dev/null)
+  if [ -n "$ABORT" ]; then
+    JSON=$(python3 -c "import json; print(json.dumps({'wallet':'${WLOW:-unknown}','source':'yield-aave-v3','task':'yield-skipped:$ABORT','earn_usdc':0,'cost_usdc':0,'wake':'$WAKE'}))")
+    OUT=$(record_line "$JSON")
+    echo "[earn] yield skipped ($ABORT) -> NARRATE -> $OUT"
+    exit 0
+  fi
+  YTX=$(printf '%s' "$RES" | python3 -c "import json,sys;print(json.load(sys.stdin).get('tx',''))")
+  YSTATUS=$(printf '%s' "$RES" | python3 -c "import json,sys;print(json.load(sys.stdin).get('status',''))")
+  YAMT=$(printf '%s' "$RES" | python3 -c "import json,sys;print(json.load(sys.stdin).get('deposited_usdc',0))")
+  JSON=$(python3 -c "import json; print(json.dumps({'wallet':'${WLOW:-unknown}','source':'yield-aave-v3','task':'deploy idle USDC to Aave v3 yield','kind':'yield','deposited_usdc':float('$YAMT'),'earn_usdc':0,'cost_usdc':0,'tx':'$YTX','status':'$YSTATUS','external':False,'wake':'$WAKE'}))")
+  OUT=$(record_line "$JSON")
+  echo "[earn] yield deployed \$$YAMT to Aave v3 (tx=$YTX status=$YSTATUS) -> $OUT"
   exit 0
 fi
 
