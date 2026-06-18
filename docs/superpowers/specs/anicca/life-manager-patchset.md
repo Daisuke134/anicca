@@ -4,6 +4,12 @@ Dais 2026-06-18: "write the complete line by line +- patches… then get reviewe
 
 Rule: **one workstream at a time, COMPLETE real diffs grounded in current code, code-reviewer → ok:true, THEN next.** No mega-fake dump. Dependency order: WS1 (adapter) defines the file boundaries every later patch builds on.
 
+### STATUS
+- **WS1 + WS1b — ✅ IMPLEMENTED & VERIFIED (2026-06-18)**. Reviewed ok:true ×2. anicca commit `52f0851`.
+  - 34/34 unit tests green (planner 4, ask 6, notify-logic 20, motion-gate 4; travel pytest 9).
+  - **OpenClaw gateway E2E** (live runtime, no-mock): `gog planner real gcal → {"action":"plan","events":28}`; composio selector throws "not wired yet (#49)" in BOTH JS and Python (no silent fake). Log: `~/.openclaw/state/ws1-adapter-e2e.log`.
+- WS2..WS8 — pending (next: WS2 agentic location/ask).
+
 Source of truth for current code: `~/anicca/skills/life/` (read in full for each diff).
 
 ---
