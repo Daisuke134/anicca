@@ -50,6 +50,14 @@ Not me running it in a session (that's fake). A real persistent system:
 - Files committed to anicca repo: skills/earn/{ubi-payout-watcher.mjs, ubi-watcher-daemon.sh, com.anicca.ubi-watcher.plist}.
 - Next safety before public: FIFO queue + personhood gate (#35/#36) so it scales without one person draining the pool.
 
+## Solana → USDC funding rail (Binance only sells SOL) — relay.link, dry-verified 2026-06-18
+- anicca's currency = USDC (x402 compute + earnings are USDC, not SOL). SOL is only transport in/out of Binance.
+- anicca Solana wallet generated: **Cio2JKPPFKSi55v6WycQbHXd51mL1bgAaTwc69FTpK1A** (key ANICCA_SOLANA_KEY in ~/.openclaw/.env, gitignored; address in ~/.openclaw/state/). Emailed to Dais to fund.
+- relay.link API DRY quote VERIFIED: 0.05 SOL (Solana 792703809) → **3.504768 USDC** (Base 8453) to anicca, ~1.41% fee, ~3s, 1 tx step. (POST api.relay.link/quote; recipient must be lowercase EVM addr.)
+- Executor built: `~/anicca/skills/earn/sol-to-usdc.py` (solders) — detect SOL → quote → build/sign tx from relay instructions+ALTs → submit to Solana RPC → poll /intents/status. Loads + reads balance OK; build/sign/submit UNVERIFIED until real SOL arrives (then one real run confirms + fixes).
+- Cashout reverse = same API USDC(Base)→SOL(Solana)→Binance→sell→PayPay.
+- Optional full-auto: Binance withdrawal API (key with withdraw perm + whitelisted address) → anicca pulls SOL too. JP Binance API support = to confirm.
+
 ## What "done" must mean (no more lies)
 A path is done ONLY when a real person, on a named website, taps named buttons, and ends with money
 they can SPEND (in their wallet they control, or yen/USD in their bank / PayPay) — verified by that
