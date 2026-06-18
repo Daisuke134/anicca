@@ -1,0 +1,1 @@
+{ "reviewType": "spec", "iteration": 2, "artifactsToReview": ["specs/behavioral-spec.md", "specs/verification-architecture.md"], "reviewDimensions": ["spec_fidelity", "verification_readiness"] }

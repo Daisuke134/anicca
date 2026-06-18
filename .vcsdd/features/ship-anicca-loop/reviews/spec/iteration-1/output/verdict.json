@@ -1,0 +1,59 @@
+{
+  "verdict": "FAIL",
+  "feature": "ship-anicca-loop",
+  "phase": "1c",
+  "reviewedBy": "adversary",
+  "reviewType": "spec",
+  "dimensions": {
+    "spec_fidelity": {
+      "verdict": "FAIL",
+      "findings": [
+        {
+          "severity": "critical",
+          "evidence": "specs/behavioral-spec.md:98-120 vs skills/earn/run.sh:80",
+          "issue": "REQ-003 (Tool Execution — Earn Skill) does not match the REAL earn contract it must drive. run.sh:80 defaults EARN_STRATEGY=0xwork (external revenue) and consumes EARN_MODE/EARN_STRATEGY/EARN_TX/EARN_SOURCE/EARN_AMOUNT/EARN_COST/EARN_TASK/WAKE_ID env vars (run.sh:7-18,26). REQ-003:101-104 only says the loop forwards 'the earn env vars' with zero enumeration of which vars set discover vs execute mode, so the loop is unimplementable without guessing the contract. REQ-003 also invents outcomes action:'earn_execute' / action:'earn_discover' (lines 115-118) that do NOT exist in the real ledger, which emits PROFITABLE/NARRATE and records external/net_usdc/status (skills/earn/lib/ledger.mjs:11-49). Spec fidelity to the shipped skill is broken."
+        },
+        {
+          "severity": "critical",
+          "evidence": "specs/behavioral-spec.md:117-118 vs skills/earn/run.sh:73,100,124,164,189",
+          "issue": "The stated critical invariant 'no earn claimed without on-chain-verified tx (0x1 + USDC delta)' is ABSENT from the loop spec. REQ-003 acceptance treats a 'successful earn wake' (line 117-118) as run.sh exit 0 — but run.sh exits 0 for discover (line 73), 0xwork-no-payout narrate (line 100), non-profitable (line 124), swap narrate (line 164), and any recorded line (line 189). isProfitable() in lib/ledger.mjs:43-49 requires tx + status 0x1 + net_usdc>0 + external:true, none of which the loop spec requires the loop to read before recording a 'wake'/'earn_execute' ledger line. The spec lets the loop claim earn on a narrate line — direct violation of invariant #2."
+        },
+        {
+          "severity": "major",
+          "evidence": "specs/behavioral-spec.md:23-24,34,45-52 vs README.md:52 vs skills/earn/run.sh:40,47-51",
+          "issue": "Wallet sourcing is contradictory/underspecified. The Purity Boundary (line 34) and REQ-002 read USDC balance from 'Base RPC or cached value', and REQ-001 (lines 45-52) loads the 'wallet address' into context, but the spec NEVER states where the loop obtains the wallet address. README.md:52 says the wallet is auto-generated at ~/.automaton/wallet.json, whereas the earn skill derives the address from BLOCKRUN_WALLET_KEY (run.sh:40,47-51). REQ-004 forbids the loop from ever touching the private key, so the loop cannot derive the address the way run.sh does, yet no spec sentence gives it an alternate address source. This ambiguity blocks unambiguous Phase-1c implementation."
+        },
+        {
+          "severity": "major",
+          "evidence": "specs/behavioral-spec.md:215 vs README.md:52,70",
+          "issue": "REQ-008 portability says wallet/ledger paths derive from process.env.HOME || os.homedir() and ANICCA_HOME defaults to ~/.anicca (line 239), but the shipped runtime home is ~/.automaton (README.md:52) for the wallet and historically ~/.hermes on genesis (README.md:70). The spec hard-codes ~/.anicca as the single home while the real artifacts live under at least two other roots, so 'operate identically with zero code changes' (REQ-008) is unverifiable against the actual filesystem layout the loop must integrate with."
+        }
+      ]
+    },
+    "verification_readiness": {
+      "verdict": "FAIL",
+      "findings": [
+        {
+          "severity": "critical",
+          "evidence": "specs/verification-architecture.md:45,58 vs specs/behavioral-spec.md:140-141 vs skills/earn/run.sh:55,103-105 + behavioral-spec.md:103",
+          "issue": "Private-key-isolation verification (invariant #1) has a coverage hole. PROP-005/PROP-018 only prove scrubPrivateKeys() strips regex-matched keys from the spawn env (env-filter.mjs). But REQ-003:103 captures the skill's combined stdout+stderr as the observation, and REQ-001:51-52 appends that observation context to the ledger. NO proof obligation scans the observation string OR the full serialized ledger line for a leaked 64-hex private key — the only check (behavioral-spec.md:140-141) inspects a single named field 'wallet_key', which the loop never writes. A skill that echoes the key to stdout would persist it to ledger.jsonl undetected. The 'NEVER leaks to ledger' invariant is asserted but not provable."
+        },
+        {
+          "severity": "critical",
+          "evidence": "specs/verification-architecture.md:44,116 vs specs/behavioral-spec.md:85-86,94",
+          "issue": "Invariant #6 (survival-tier robust to RPC failure) is not provable. PROP-004 only covers NaN/Infinity passed to the PURE selectTier(). REQ-002's load-bearing edge case 'balance read fails (RPC timeout): remain on previous tier ... do NOT crash' (behavioral-spec.md:85-86) is STATEFUL effectful-shell behavior (balance.mjs TTL cache + last-tier memory) with ZERO proof obligation. The matching acceptance criterion (behavioral-spec.md:94, 'balance-read error does NOT change the model') is unmapped in the REQ->PROP coverage table (verification-architecture.md:116, which lists only PROP-001..004). The most safety-critical RPC-failure path is untested as specified."
+        },
+        {
+          "severity": "major",
+          "evidence": "specs/verification-architecture.md:124,55 vs specs/behavioral-spec.md:55-57,120,194",
+          "issue": "Invariant #3 (loop never bricks on a single failed wake) lacks an automated obligation for the failure modes that actually brick a loop. PROP-015 covers only skill-exit-nonzero. There is NO PROP for proxy-down with all 3 retries failing (REQ-001:55-57), disk-full on append (REQ-007:194), or balance-RPC timeout (REQ-002). REQ-010's end-to-end 'first ledger line within 60s' is explicitly demoted to a non-prop Phase-2 smoke test (verification-architecture.md:124). The 'never bricks' acceptance (behavioral-spec.md:120) thus has no fault-injection integration test that drives a proxy/disk/RPC failure and asserts the loop continues to the next wake."
+        },
+        {
+          "severity": "major",
+          "evidence": "specs/verification-architecture.md:53,90-96,137-138 vs specs/behavioral-spec.md:174-177",
+          "issue": "REQ-006 SIGTERM-during-skill-subprocess (behavioral-spec.md:174-177: SIGTERM child, wait 5s, no orphans) is not covered by any proof obligation. PROP-013 only asserts the last ledger line is kind:shutdown; no PROP asserts the 'No orphan child processes remain' acceptance (behavioral-spec.md:183) or the 5s child-kill timeout path. Orphan-process leakage — a real durability/cloud-portability hazard — is unverifiable. The integration strategy (verification-architecture.md:90-96) never spawns a real long-running child to exercise this branch."
+        }
+      ]
+    }
+  }
+}

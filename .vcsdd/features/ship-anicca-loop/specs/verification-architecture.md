@@ -30,7 +30,7 @@
 | `runtime/loop/balance.mjs`             | Base RPC call for USDC balance, with TTL cache.                   | REQ-002               |
 | `runtime/loop/skill-runner.mjs`        | `child_process.spawn` with timeout + env scrub.                   | REQ-003, REQ-004      |
 | `runtime/loop/ledger.mjs`              | `fs.appendFile` (O_APPEND) to `ledger.jsonl`.                     | REQ-007               |
-| `runtime/loop/dotenv.mjs`              | `fs.readFile` of `~/.anicca/.env`, feeds pure `loadConfig`.       | REQ-009               |
+| `runtime/loop/dotenv.mjs`              | `fs.readFile` of `$ANICCA_HOME/.env` (path derived from `ANICCA_HOME` env var, never hard-coded), feeds pure `loadConfig`. | REQ-009               |
 
 ---
 
@@ -58,6 +58,8 @@
 | PROP-018  | `scrubPrivateKeys` never allows `BLOCKRUN_WALLET_KEY` through regardless of env shape               | 1    | true     | node:test      | REQ-004  |
 | PROP-019  | When `balance.mjs` throws (RPC timeout / network error), the loop retains the last-known tier and does not crash; the new ledger line contains the previous model name, not an error tier | 2    | true     | node:test (integration) | REQ-002  |
 | PROP-020  | The observation string AND the serialised loop-ledger line produced after any `run_skill earn` call do NOT contain a 64-hex private-key pattern (`/0x[0-9a-fA-F]{64}/`) | 1    | true     | node:test      | REQ-004  |
+| PROP-021  | **isProfitable() earn classifier**: (a) a mock earn-ledger line with `{tx:"0xabc…",status:"0x1",net_usdc:"1.5",external:true,wake:WAKE_ID}` → loop records `{kind:"wake",profitable:true}`; (b) a line with no `tx` field (discover) → `profitable:false`; (c) a line with `status:"0x0"` (failed tx) → `profitable:false`; (d) a line with `external:false` (swap rotation) → `profitable:false`; (e) `run.sh` exits 0 but no line matching `WAKE_ID` in earn-ledger → `profitable:false`. Exit code 0 alone NEVER produces `profitable:true`. | 2    | true     | node:test (integration) | REQ-003  |
+| PROP-022  | **No orphan child process after SIGTERM**: spin up `index.mjs` with a mock skill that sleeps 30 s; send SIGTERM to the loop while the skill is running; assert (a) `ledger.jsonl` ends with `kind:"shutdown"`, (b) the skill child process PID is no longer present in the OS process table within 6 s (5 s kill window + 1 s margin), (c) loop exits with code 0. Also exercises the 5 s child-kill timeout path (`behavioral-spec.md:222-223`): a child that does not die within 5 s of receiving SIGTERM is force-killed (SIGKILL). | 2    | true     | node:test (integration) | REQ-006  |
 
 ---
 
@@ -88,7 +90,7 @@ runtime/loop/__tests__/config.test.mjs
 
 ### Tier 2 — Integration tests with `node:test` + mock HTTP
 
-`PROP-013` through `PROP-016` and `PROP-019`.
+`PROP-013` through `PROP-016`, `PROP-019`, `PROP-021`, and `PROP-022`.
 
 These tests spin up the full `index.mjs` entry point in a child process with:
 - `OPENAI_BASE_URL` pointing to an in-process mock HTTP server (no network).
@@ -117,10 +119,10 @@ Formal model checking (TLA+, Kani) is out of scope for this sprint.
 |-----------|--------------------------------------------------------|
 | REQ-001   | PROP-010, PROP-014                                     |
 | REQ-002   | PROP-001, PROP-002, PROP-003, PROP-004, PROP-019       |
-| REQ-003   | PROP-015, PROP-020                                     |
+| REQ-003   | PROP-015, PROP-020, PROP-021                           |
 | REQ-004   | PROP-005, PROP-006, PROP-018, PROP-020                 |
 | REQ-005   | PROP-008, PROP-009, PROP-016                           |
-| REQ-006   | PROP-013                                               |
+| REQ-006   | PROP-013, PROP-022                                     |
 | REQ-007   | PROP-007, PROP-014                                     |
 | REQ-008   | PROP-017                                               |
 | REQ-009   | PROP-011, PROP-012                                     |
