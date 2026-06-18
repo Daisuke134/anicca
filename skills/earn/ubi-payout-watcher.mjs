@@ -68,8 +68,35 @@ function payWallet(to, amountBase) {
   return tx;
 }
 
+const RESERVE_BASE = parseInt(process.env.UBI_RESERVE_BASE || '1000000', 10); // keep $1 runway
+const ANICCA_BASE_ADDR = 'a3cdd4ec6b94f01826aaf90a6d5538a2aa8c4c21';
+const USDC_BASE_ADDR = '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913';
+
+async function aniccaUsdcBase() {
+  const r = await fetch('https://mainnet.base.org', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_call', params: [{ to: USDC_BASE_ADDR, data: '0x70a08231000000000000000000000000' + ANICCA_BASE_ADDR }, 'latest'] }),
+  });
+  const j = await r.json();
+  return j.result && j.result !== '0x' ? parseInt(j.result, 16) : 0;
+}
+
+function yourTurnEmail(email, method, usd) {
+  // "your turn" email — best-effort, never blocks payout.
+  try {
+    execFileSync('gog', ['gmail', 'send', '--account', 'redacted@example.invalid', '--to', email,
+      '--subject', "Your basic income arrived",
+      '--body', `Anicca just sent you $${usd} (USDC on Base). ${method === 'email'
+        ? 'Sign in at https://aniccaai.com/income/wallet with this email to see and use it.'
+        : 'Check your wallet or basescan.org.'} More comes as Anicca earns more.`],
+      { stdio: 'ignore', timeout: 30000 });
+  } catch (e) { /* email is best-effort */ }
+}
+
 async function pass() {
-  const res = await sb('recipients?status=eq.queued&select=id,email,notes');
+  // FIFO: oldest signups first (a queue/right, not a lottery).
+  const res = await sb('recipients?status=eq.queued&select=id,email,notes,applied_at&order=applied_at.asc.nullslast');
   if (!res.ok) throw new Error('supabase read ' + res.status);
   const rows = await res.json();
   // DEDUP GUARD (anti-drain): never pay an email or wallet that was already paid.
@@ -78,6 +105,7 @@ async function pass() {
   const paidEmails = new Set(paidRows.map((p) => (p.email || '').toLowerCase()).filter(Boolean));
   const paidWallets = new Set(paidRows.map((p) => ((p.notes || '').match(WALLET_RE) || [])[1]).filter(Boolean));
   let paid = 0;
+  let bal = await aniccaUsdcBase(); // reserve floor: stop before draining below runway
   for (const r of rows) {
     const notes = r.notes || '';
     const method = (notes.match(METHOD_RE) || [])[1];
@@ -96,7 +124,12 @@ async function pass() {
       } else {
         to = await crossmintEmailWallet(r.email); // email → their Crossmint wallet
       }
+      if (bal - STIPEND_BASE < RESERVE_BASE) {
+        console.log(`RESERVE floor reached (bal $${bal / 1e6}); ${r.email} stays queued (their turn comes when funds grow)`);
+        break; // FIFO: leave the rest queued, pay them next cycle when topped up
+      }
       const tx = payWallet(to, STIPEND_BASE);
+      bal -= tx.amount_base;
       await sb(`recipients?id=eq.${r.id}`, {
         method: 'PATCH',
         headers: { Prefer: 'return=minimal' },
@@ -104,6 +137,7 @@ async function pass() {
       });
       paid++;
       console.log(`PAID ${method} ${r.email} -> ${to} $${tx.amount_base / 1e6} tx=${tx.tx}`);
+      if (r.email) yourTurnEmail(r.email, method, tx.amount_base / 1e6);
     } catch (e) {
       console.error(`FAIL ${method} ${r.email}: ${e.message}`);
     }
