@@ -23,6 +23,12 @@ function loadEnv() {
 const ENV = loadEnv();
 const GOG_BIN = "/opt/homebrew/bin/gog";
 const GOG_ACCOUNT = process.env.GOG_ACCOUNT || ENV.GOG_ACCOUNT || "redacted@example.invalid";
+const { makeTransport } = require("./adapters/transport");
+const CAL = makeTransport({
+  bin: GOG_BIN,
+  account: GOG_ACCOUNT,
+  keyring: process.env.GOG_KEYRING_PASSWORD || ENV.GOG_KEYRING_PASSWORD || "",
+}).calendar;
 const OPENCLAW = process.env.OPENCLAW_BIN || "openclaw";
 const AGENT = process.env.LIFE_AGENT_ID || "anicca";
 const CALL_JS = path.join(__dirname, "call", "call.js");
@@ -43,15 +49,11 @@ function leaveTimeMs(ev, all) {
 }
 
 // ── side-effecting ─────────────────────────────────────────────────────────────
-function gogEnv() { return { ...process.env, GOG_KEYRING_PASSWORD: process.env.GOG_KEYRING_PASSWORD || ENV.GOG_KEYRING_PASSWORD || "", GOG_ACCOUNT }; }
 function listEvents() {
   const to = new Date(Date.now() + HORIZON_DAYS * 864e5).toISOString().slice(0, 10);
-  let out = "";
-  try {
-    out = execFileSync(GOG_BIN, ["calendar", "events", "list", "-j", "--account", GOG_ACCOUNT, "--from", "today", "--to", to, "--all-pages", "--max", "250"], { env: gogEnv(), encoding: "utf8", timeout: 60000 });
-  } catch (e) { console.error("[plan] gog list failed:", e.message); return []; }
-  let d; try { d = JSON.parse(out); } catch { return []; }
-  const items = Array.isArray(d) ? d : (d.events || d.items || []);
+  let items;
+  try { items = CAL.list({ from: "today", to, max: 250 }); }
+  catch (e) { console.error("[plan] gog list failed:", e.message); return []; }
   return items.map((e) => ({ id: e.id, summary: e.summary || "", location: e.location || "", start: e.start || {}, end: e.end || {} }));
 }
 function existingJobNames() {

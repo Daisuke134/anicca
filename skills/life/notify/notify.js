@@ -34,7 +34,6 @@
 
 "use strict";
 
-const { execFileSync } = require("child_process");
 const path = require("path");
 const fs = require("fs");
 
@@ -62,6 +61,8 @@ const OWNER_EMAIL = process.env.OWNER_EMAIL || ENV.OWNER_EMAIL || ENV.GOG_ACCOUN
 const GOG_ACCOUNT = process.env.GOG_ACCOUNT || ENV.GOG_ACCOUNT || "redacted@example.invalid";
 const GOG_KEYRING_PASSWORD = process.env.GOG_KEYRING_PASSWORD || ENV.GOG_KEYRING_PASSWORD || "";
 const GCAL_ID = process.env.GCAL_ID || ENV.GCAL_ID || "primary";
+const { makeTransport } = require("../adapters/transport");
+const T = makeTransport({ bin: GOG_BIN, account: GOG_ACCOUNT, keyring: GOG_KEYRING_PASSWORD, calId: GCAL_ID });
 
 // Late detection: a grace window so we don't nag the instant the travel block starts, plus a real
 // motion gate (if the user already left home, they are NOT late). Falls back to grace+clock when
@@ -258,63 +259,14 @@ function extractApproval(replyBody) {
 
 // ── GCal via gog CLI ─────────────────────────────────────────────────────────
 
-function gogEnv() {
-  return { ...process.env, GOG_KEYRING_PASSWORD, GOG_ACCOUNT };
-}
-
-/**
- * List today's events from GCal via gog CLI.
- * @returns {Array<object>} GCal event items
- */
+// All GCal/Gmail I/O goes through the Life Manager transport adapter (local=gog / cloud=composio).
 function listTodayEvents() {
   const today = new Date().toISOString().slice(0, 10);
-  const raw = execFileSync(GOG_BIN, [
-    "calendar", "events", "list",
-    "-j",
-    "--account", GOG_ACCOUNT,
-    "--from", today,
-    "--to", today,
-    "--all-pages",
-  ], { env: gogEnv(), timeout: 60000 }).toString();
-
-  const d = JSON.parse(raw);
-  return Array.isArray(d) ? d : (d.events || d.items || []);
+  return T.calendar.list({ from: today, to: today, max: 250 });  // +--max 250 (safe; 1-day window)
 }
-
-// ── gog Gmail transport (verified gog 0.17.0 shapes) ─────────────────────────
-
-// Send one email via `gog gmail send` (the spec-mandated transport).
-function gogGmailSend({ to, subject, body }) {
-  execFileSync(GOG_BIN, [
-    "gmail", "send",
-    "--account", GOG_ACCOUNT,
-    "--to", to,
-    "--subject", subject,
-    "--body", body,
-  ], { env: gogEnv(), timeout: 60000 });
-}
-
-// Search threads. NOTE: query is a POSITIONAL arg; returns { threads:[{id,subject,from,...}] }.
-function gogGmailSearch(query) {
-  const raw = execFileSync(GOG_BIN, [
-    "gmail", "search", query,
-    "-j",
-    "--account", GOG_ACCOUNT,
-  ], { env: gogEnv(), timeout: 60000 }).toString();
-  const d = JSON.parse(raw);
-  return Array.isArray(d.threads) ? d.threads : [];
-}
-
-// Fetch a thread's body via `gog gmail get <id>` -> { body, headers, message, unsubscribe }.
-function gogGmailBody(threadId) {
-  const raw = execFileSync(GOG_BIN, [
-    "gmail", "get", threadId,
-    "-j",
-    "--account", GOG_ACCOUNT,
-  ], { env: gogEnv(), timeout: 60000 }).toString();
-  const d = JSON.parse(raw);
-  return typeof d.body === "string" ? d.body : "";
-}
+function gogGmailSend({ to, subject, body }) { T.mail.send({ to, subject, body }); }  // +--json (return ignored)
+function gogGmailSearch(query) { return T.mail.search(query); }  // [{id,subject}]; callers use .id/.subject
+function gogGmailBody(threadId) { return T.mail.getBody(threadId).body; }  // unwrap to STRING (prior contract)
 
 // ── AgentMail REST helpers ─────────────────────────────────────────────────
 
