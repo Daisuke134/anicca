@@ -35,14 +35,23 @@ function recentLog(n = 20) {
   } catch { return []; }
 }
 
+function lastModel() {
+  const lines = recentLog(20);
+  for (let i = lines.length - 1; i >= 0; i--) if (lines[i].model) return lines[i].model;
+  return "auto";
+}
+const FREE_RE = /nvidia|flash|qwen|free|oss|gpt-oss/i;
+
 async function post() {
   try {
     const nw = await netWorth();
     const total = +(nw.liquid + nw.aave + nw.morpho + nw.moonwell).toFixed(2);
     const ts = Math.floor(Date.now() / 1000);
+    const model = lastModel();
+    const tier = FREE_RE.test(model) ? "free" : "frontier";
     const msg = JSON.stringify({
       id: acct.address.toLowerCase(), ts, host: NAME, geo: "JP",
-      model_live: "auto", model_tier: "free",
+      model_live: model, model_tier: tier,
       net_worth_usd: total, revenue_mo_usd: 0, burn_day_usd: 0, runway_days: 999, status: "alive",
       breakdown: nw, log: recentLog(20),
     });
