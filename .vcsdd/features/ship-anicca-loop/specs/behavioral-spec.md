@@ -98,10 +98,44 @@ Tier table (amounts in USDC, thresholds configurable via env):
 ### REQ-003: Tool Execution — Earn Skill
 
 **EARS**: WHEN the model's tool call is `run_skill` with argument
-`{"slot":"earn"}`, THE SYSTEM SHALL spawn `~/.anicca/skills/earn/run.sh` as a
-child process with the earn env vars forwarded, capture stdout + stderr
-(combined), wait for exit, and return the combined output as the observation
-string.
+`{"slot":"earn"}`, THE SYSTEM SHALL spawn `skills/earn/run.sh` (resolved
+relative to `ANICCA_HOME`) as a child process with the following env vars
+forwarded (and no others beyond the scrubbed base env — see REQ-004):
+
+| Env var          | Controls                                             | Default      |
+|------------------|------------------------------------------------------|--------------|
+| `EARN_MODE`      | `discover` (narrate only) or `execute` (on-chain)   | `discover`   |
+| `EARN_STRATEGY`  | `0xwork` (external revenue) or `swap` (rotation)    | `0xwork`     |
+| `EARN_TX`        | Pre-verified tx hash (externally-executed earn)      | unset        |
+| `EARN_SOURCE`    | Revenue source tag (e.g. `x402`, `0xwork`)          | unset        |
+| `EARN_AMOUNT`    | Gross USDC earned (string float)                     | unset        |
+| `EARN_COST`      | Cost USDC (string float)                             | unset        |
+| `EARN_TASK`      | Task identifier string                               | unset        |
+| `WAKE_ID`        | ULID of the current wake                             | current ULID |
+
+The loop captures stdout + stderr combined, waits for exit, and returns the
+combined output as the observation string.
+
+**Earn-result determination (critical invariant — exit code is NOT sufficient)**:
+`run.sh` exits 0 for discover wakes, 0xwork-narrate wakes (no external payout
+yet), swap-rotation wakes, and profitable wakes alike. The loop MUST NOT infer
+an earn from the exit code alone. Instead, after `run.sh` exits 0, the loop
+reads the NEW ledger line that `run.sh` appended to `state/earn-ledger.jsonl`
+(the earn skill's own ledger, separate from the loop ledger) and applies
+`isProfitable()` from `skills/earn/lib/ledger.mjs`:
+
+```
+isProfitable(line) === true
+  iff line.tx is present
+  AND line.status === "0x1"
+  AND Number(line.net_usdc) > 0
+  AND line.external === true
+```
+
+Only when `isProfitable()` returns true for the new earn-ledger line does the
+loop record a profitable wake. Any other outcome (discover, narrate, swap) is
+recorded as a non-profitable wake. The loop ledger's `kind` field reflects the
+loop's own classification, not `run.sh`'s internal labels.
 
 **Edge Cases**:
 - `run.sh` exits non-zero: observation includes the exit code and stderr text;
@@ -111,13 +145,21 @@ string.
 - `run.sh` produces no output within `SKILL_TIMEOUT_S` (default 120): kill the
   process, observation is `"earn skill timeout"`, ledger records
   `{kind:"skill_timeout"}`.
-- The earn skill itself is in discover mode (exits 0, prints discover line):
-  observation is the stdout text; ledger records `{kind:"wake", action:"earn_discover"}`.
+- `run.sh` exits 0 but the earn-ledger has no new line (disk error or path
+  mismatch): the loop treats the result as a narrate (non-profitable) wake and
+  continues; it does NOT crash.
+- `run.sh` exits 0 and the new earn-ledger line has no `tx` field (discover or
+  narrate): `isProfitable()` returns false; loop records a non-profitable wake.
 
 **Acceptance Criteria**:
-- A successful earn wake appends a ledger line with `kind:"wake"` and `action:"earn_execute"`.
+- A profitable wake is one where the new earn-ledger line satisfies
+  `isProfitable()` (`tx` present + `status==="0x1"` + `net_usdc>0` +
+  `external===true`). Only then does the loop record `{kind:"wake",profitable:true}`.
+- A discover wake (no tx) appends a loop ledger line with `{kind:"wake",profitable:false}`.
 - A timed-out skill run never leaves a zombie process.
 - The loop continues to the next sleep after any skill error (never bricks).
+- exit code 0 alone (without a matching profitable earn-ledger line) NEVER causes
+  the loop to record a profitable wake.
 
 ---
 
@@ -137,8 +179,12 @@ environment.
 **Acceptance Criteria**:
 - Unit test: given `process.env.BLOCKRUN_WALLET_KEY = "0xdeadbeef"`, the
   env object passed to `spawn` does NOT contain `BLOCKRUN_WALLET_KEY`.
-- The ledger never contains the string `"0x"` followed by 64 hex characters in
-  the `wallet_key` field (the wallet ADDRESS is fine; the private key is not).
+- The full observation string (combined stdout + stderr captured from `run.sh`)
+  MUST NOT contain a 64-hex-character private-key pattern (`/0x[0-9a-fA-F]{64}/`).
+  If detected, the loop redacts the observation before appending to `ledger.jsonl`
+  and logs a warning to stderr.
+- The serialised JSON of every loop ledger line MUST NOT contain a 64-hex private-key
+  pattern. (The wallet address — a 40-hex `0x…` string — is permitted.)
 
 ---
 
@@ -206,19 +252,34 @@ lines.
 
 **EARS**: WHEN the loop is started on a Linux host (e.g. Akash, Docker), THE
 SYSTEM SHALL operate identically to macOS with zero code changes — only env vars
-or `~/.anicca/.env` differ.
+or the `.env` file path differ.
+
+**Wallet address sourcing**: The loop MUST NOT read or derive the wallet private
+key (that is REQ-004's exclusion). The loop obtains the wallet address from
+`ANICCA_WALLET_ADDRESS` env var (set by the install script or operator). If
+`ANICCA_WALLET_ADDRESS` is unset, the loop uses `"unknown"` as the address and
+logs a warning; it does not derive the address from the private key.
+
+**Path resolution**: All file paths (ledger, identity, skills) derive from
+`ANICCA_HOME` (env var, no default expansion performed by the loop itself —
+callers must set `ANICCA_HOME` to the correct absolute path, e.g.
+`/root/.automaton`, `~/.hermes`, or `~/.anicca`). The `.env` file is loaded
+from `$ANICCA_HOME/.env`. The loop never hard-codes `~/.anicca`.
 
 **Edge Cases**:
 - `launchd` is absent: the loop MUST be startable via a plain `node` command or
   a shell script without macOS-specific process supervision.
-- `HOME` is set to a non-standard path (e.g. `/root`): wallet and ledger paths
-  derive from `process.env.HOME || os.homedir()`.
+- `HOME` is set to a non-standard path (e.g. `/root`) and `ANICCA_HOME` is
+  unset: the loop logs an error and exits non-zero rather than guessing a path.
 
 **Acceptance Criteria**:
 - The loop has zero imports or shell invocations that are macOS-only
   (`osascript`, `pbcopy`, `launchd`, `open`, `say`, etc.).
 - Running `node runtime/loop/index.mjs` (or the compiled entry) inside a
-  minimal `node:20-alpine` Docker image passes a smoke test without error.
+  minimal `node:20-alpine` Docker image with `ANICCA_HOME=/tmp/test` passes a
+  smoke test without error.
+- The loop source contains no hard-coded `~/.anicca`, `~/.automaton`, or
+  `~/.hermes` path literals; all paths derive from `ANICCA_HOME`.
 
 ---
 
@@ -236,7 +297,7 @@ Configurable knobs (all have defaults):
 | `ANICCA_FREE_MODEL`    | `nvidia/deepseek-v4-flash`      | string  |
 | `ANICCA_LEAN_MODEL`    | `deepseek/deepseek-r1-0528`     | string  |
 | `ANICCA_FUNDED_MODEL`  | `openai/gpt-4o-mini`            | string  |
-| `ANICCA_HOME`          | `~/.anicca`                     | path    |
+| `ANICCA_HOME`          | _(required — no default)_       | path    |
 | `SLEEP_BASE_S`         | `120`                           | seconds |
 | `SLEEP_ERROR_S`        | `60`                            | seconds |
 | `SLEEP_LOOP_DETECT_S`  | `300`                           | seconds |

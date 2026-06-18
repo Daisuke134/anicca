@@ -304,11 +304,39 @@
         "createdAt": "2026-06-18T06:53:26.394Z",
         "createdInPhase": "1b",
         "externalId": "PROP-018:scrubPrivateKeys always removes BLOCKRUN_WALLET_KEY"
+      },
+      {
+        "beadId": "BEAD-029",
+        "type": "verification-property",
+        "artifactPath": ".vcsdd/features/ship-anicca-loop/specs/verification-architecture.md",
+        "status": "draft",
+        "linkedBeads": [],
+        "createdAt": "2026-06-18T07:00:08.750Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-019:RPC-failure stays on previous tier, no crash"
+      },
+      {
+        "beadId": "BEAD-030",
+        "type": "verification-property",
+        "artifactPath": ".vcsdd/features/ship-anicca-loop/specs/verification-architecture.md",
+        "status": "draft",
+        "linkedBeads": [],
+        "createdAt": "2026-06-18T07:00:08.751Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-020:observation and ledger line contain no 64-hex private key"
       }
     ]
   },
-  "gates": {},
+  "gates": {
+    "1c": {
+      "verdict": "FAIL",
+      "timestamp": "2026-06-18T06:57:31.175Z",
+      "reviewedBy": "adversary",
+      "adversaryVerdict": "FAIL",
+      "adversaryReviewedAt": "2026-06-18T06:57:31.175Z"
+    }
+  },
   "sprintCount": 0,
   "createdAt": "2026-06-18T06:48:11.338Z",
-  "updatedAt": "2026-06-18T06:53:26.395Z"
+  "updatedAt": "2026-06-18T07:00:08.751Z"
 }
