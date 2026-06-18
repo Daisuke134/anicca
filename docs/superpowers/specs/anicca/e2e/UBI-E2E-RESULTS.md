@@ -40,6 +40,16 @@ REMAINING for wallet: a real human submitting THEIR own address + seeing it in t
 - anicca wallet (0xa3CDd4…) balance after tests = ~$0.62 USDC → emailed Dais a funding request (msg 19eda0cb) to top up on Base for the demo.
 - STATUS: wallet path = full E2E ✅. Email path = receive+view ✅ (withdraw mechanism real, human-completes). Bank = routes mapped, not built.
 
+### 24/7 AUTONOMOUS PAYOUT DAEMON — LIVE (2026-06-18)
+Not me running it in a session (that's fake). A real persistent system:
+- `~/Library/LaunchAgents/com.anicca.ubi-watcher.plist` (launchd, RunAtLoad + KeepAlive → survives logout/reboot; relaunches if it dies) → runs `ubi-watcher-daemon.sh` (sources ~/.openclaw/.env, $0.25 stipend) → `ubi-payout-watcher.mjs --loop` (polls Supabase every 8s).
+- Auto-pays queued signups: method=wallet → send to their address; method=email → create their Crossmint email wallet → send. DEDUP guard: never pays the same email/wallet twice (marks dup), anti-drain.
+- VERIFIED live: launchctl list shows pid; daemon auto-paid a queued email signup selftest@aniccaai.com → its Crossmint wallet 0x3f70… → **$0.25 real, tx 0x705e023ee4a2009d6ae8f059ec1f9b5eddf4e679f3006081fa77616bef392ac4**. No human/session involved.
+- So the demo is fully autonomous: a person signs up on /income (wallet or email) → within ~8s the daemon sends real USDC → wallet users see it in their wallet/Basescan, email users at /income/wallet.
+- anicca wallet balance now ~$0.077 USDC — CRITICAL. Must fund 0xa3CDd4ec6B94f01826aAf90A6d5538A2Aa8c4C21 (Base USDC) for the demo. (Funding email sent.)
+- Files committed to anicca repo: skills/earn/{ubi-payout-watcher.mjs, ubi-watcher-daemon.sh, com.anicca.ubi-watcher.plist}.
+- Next safety before public: FIFO queue + personhood gate (#35/#36) so it scales without one person draining the pool.
+
 ## What "done" must mean (no more lies)
 A path is done ONLY when a real person, on a named website, taps named buttons, and ends with money
 they can SPEND (in their wallet they control, or yen/USD in their bank / PayPay) — verified by that
