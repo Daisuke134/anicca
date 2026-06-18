@@ -140,57 +140,64 @@ export default function LmClient() {
     }
   }, [name, uid, sig, t]);
 
-  const connect = useCallback(
-    async (kind: 'gcal' | 'gmail') => {
-      const set = kind === 'gcal' ? setCal : setGmail;
-      const fn = kind === 'gcal' ? 'calendar-connect' : 'gmail-connect';
-      set('connecting');
-      setErr('');
-      // Open the consent tab NOW, synchronously inside the click gesture, so popup blockers
-      // (Safari especially) don't kill it. We navigate it once the redirect URL returns.
-      const w = window.open('about:blank', '_blank');
-      const base = `/.netlify/functions/${fn}?uid=${encodeURIComponent(uid)}&sig=${encodeURIComponent(sig)}`;
-      try {
-        const d = await (await fetch(base)).json();
-        if (d.connected) {
-          try { w && w.close(); } catch {}
-          return set('connected');
-        }
-        if (d.redirect_url) {
-          // Composio's verified-app consent opens in the NEW TAB; the user stays on /lm.
-          if (w) w.location.href = d.redirect_url;
-          else window.location.href = d.redirect_url; // fallback if the popup was blocked
-          // Poll status-only (&check=1 never mints a fresh OAuth) until the connection is ACTIVE.
-          const t0 = Date.now();
-          const poll = setInterval(async () => {
-            if (Date.now() - t0 > 180000) {
-              clearInterval(poll);
-              set('error');
-              setErr(t.connect.error);
+  // ONE button → connect BOTH Google Calendar + Gmail in a single new tab, sequentially. The user
+  // clicks once; the same Google account + same verified Composio app makes the 2nd consent quick.
+  const connectBoth = useCallback(async () => {
+    setErr('');
+    setCal('connecting');
+    setGmail('connecting');
+    // Open the consent tab NOW, synchronously in the click gesture (survives popup blockers).
+    const w = window.open('about:blank', '_blank');
+    // Run one toolkit's connect in the SHARED tab; resolves true once Composio reports ACTIVE.
+    const run = (fn: string, set: (s: ConnState) => void) =>
+      new Promise<boolean>((resolve) => {
+        const base = `/.netlify/functions/${fn}?uid=${encodeURIComponent(uid)}&sig=${encodeURIComponent(sig)}`;
+        (async () => {
+          try {
+            const d = await (await fetch(base)).json();
+            if (d.connected) {
+              set('connected');
+              return resolve(true);
+            }
+            if (d.redirect_url) {
+              if (w) w.location.href = d.redirect_url;
+              else window.location.href = d.redirect_url; // fallback if the popup was blocked
+              const t0 = Date.now();
+              const poll = setInterval(async () => {
+                if (Date.now() - t0 > 180000) {
+                  clearInterval(poll);
+                  set('error');
+                  return resolve(false);
+                }
+                try {
+                  const dd = await (await fetch(`${base}&check=1`)).json();
+                  if (dd.connected) {
+                    clearInterval(poll);
+                    set('connected');
+                    resolve(true);
+                  }
+                } catch {}
+              }, 3000);
               return;
             }
-            try {
-              const dd = await (await fetch(`${base}&check=1`)).json();
-              if (dd.connected) {
-                clearInterval(poll);
-                try { w && w.close(); } catch {}
-                set('connected');
-              }
-            } catch {}
-          }, 3000);
-          return;
-        }
-        try { w && w.close(); } catch {}
-        set('error');
-        setErr(d.error || t.connect.error);
-      } catch (e) {
-        try { w && w.close(); } catch {}
-        set('error');
-        setErr(t.connect.error);
-      }
-    },
-    [uid, sig, t],
-  );
+            set('error');
+            resolve(false);
+          } catch {
+            set('error');
+            resolve(false);
+          }
+        })();
+      });
+    const okCal = await run('calendar-connect', setCal);
+    if (!okCal) {
+      try { w && w.close(); } catch {}
+      setErr(t.connect.error);
+      return;
+    }
+    const okGmail = await run('gmail-connect', setGmail);
+    try { w && w.close(); } catch {}
+    if (!okGmail) setErr(t.connect.error);
+  }, [uid, sig, t]);
 
   const savePhone = useCallback(async () => {
     setErr('');
@@ -256,8 +263,20 @@ export default function LmClient() {
           </h2>
           <p className="mt-2 text-sm text-[hsl(var(--text-secondary))]">{t.connect.body}</p>
           <div className="mt-5 space-y-3">
-            <ConnectRow label={t.connect.calendar} state={cal} strings={t.connect} onClick={() => connect('gcal')} />
-            <ConnectRow label={t.connect.gmail} state={gmail} strings={t.connect} onClick={() => connect('gmail')} />
+            <ConnectRow
+              label={`${t.connect.calendar} + ${t.connect.gmail}`}
+              state={
+                cal === 'connected' && gmail === 'connected'
+                  ? 'connected'
+                  : cal === 'error' || gmail === 'error'
+                    ? 'error'
+                    : cal === 'connecting' || gmail === 'connecting'
+                      ? 'connecting'
+                      : 'idle'
+              }
+              strings={t.connect}
+              onClick={connectBoth}
+            />
           </div>
           <button
             type="button"
