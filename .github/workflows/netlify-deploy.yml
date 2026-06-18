@@ -39,6 +39,7 @@ jobs:
           NEXT_PUBLIC_STRIPE_LM_URL: ${{ secrets.NEXT_PUBLIC_STRIPE_LM_URL }}
           NEXT_PUBLIC_STRIPE_LINK_30: ${{ secrets.NEXT_PUBLIC_STRIPE_LINK_30 }}
           NEXT_PUBLIC_STRIPE_LINK_5: ${{ secrets.NEXT_PUBLIC_STRIPE_LINK_5 }}
+          NEXT_PUBLIC_CROSSMINT_CLIENT_KEY: ${{ secrets.NEXT_PUBLIC_CROSSMINT_CLIENT_KEY }}
 
       # 2026-06-07 V14-2 fix: replaced nwtgck/actions-netlify@v3.0 (= 5 連続 ISE)
       # with direct netlify-cli call (= validated via manual deploy locally)
