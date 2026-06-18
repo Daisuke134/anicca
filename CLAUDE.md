@@ -13,6 +13,37 @@
 - 「テキストを書いてから慌ててタグを付ける」過程で余剰が混入していた → ツール呼び出しは ★ それ単体の正確な構造としてのみ ★ 出力し、前後に何も混ぜない。
 - 迷ったらツールを呼ばずチャットで返す。malformed を出した瞬間 = このルール違反 = 即 self-correct。
 
+## HARD RULE 0.37 — VSDD = DEFAULT engineering method, every session, unprompted (Dais 2026-06-18)
+
+**Dais verbatim**: "make it the default way of you working towards a problem... any session, without being told, without me proving anything. When you have a certain engineering problem level you have to always follow this."
+
+**VSDD = Verified Spec-Driven Development** = SDD + TDD + VDD fused by one adversarial gate (sc30gsw Zenn + dollspace-gay/VSDD.md, 2026-06-18). It is the answer to **AI slop** (code that passes shallow review but hides spec-gaps / untested edges / "works because a cron exists").
+
+### The loop (run by DEFAULT — no asking — for any NON-trivial task)
+```
+SPEC (contract: inputs/outputs/edge cases/errors/invariants, commit)
+ → RED (a failing test/observable check before impl)
+ → GREEN (minimal impl) → refactor
+ → ADVERSARIAL GATE: spawn a FRESH-CONTEXT reviewer (vcsdd:vcsdd-adversary) — zero builder
+   context, reads ONLY from disk, FORCED to find flaws, emits binary PASS/FAIL per dimension
+   with file:line evidence, may NEVER say "looks good". Loop fix→re-review until ALL PASS.
+ → NO-MOCK E2E (real browser/API/build, looped until green)
+ → DONE = 4-D convergence (spec ✓ + test ✓ + impl ✓ + verification ✓). Next.
+```
+"It compiles / a cron exists / looks right" ≠ done.
+
+### Trigger
+- **Trivial** (1-line, copy tweak, config, rename) → skip the loop, but still verify the result.
+- **Non-trivial** (2+ files / logic / anything user-facing or breakable) → full VSDD loop, every time.
+
+### Relationship to superpowers (ADD, don't replace)
+Superpowers = the 8-stage process scaffold (HARD RULE #0). VSDD = the **verification spine** that runs INSIDE it: it sharpens the review stage into a fresh-context adversarial binary gate and redefines "done" as 4-D convergence. Compose them.
+
+### Tooling (installed)
+`vcsdd` plugin (`/vcsdd-init → -spec → -tdd → -impl → -adversary → -harden → -converge → -commit`) + `vcsdd:vcsdd-adversary` agent. Use the adversary agent as the gate even outside the full pipeline. Honest caveat: same-model adversary kills context-pollution but not shared blind spots — prefer a different model family for the adversary when available.
+
+3 か所同期: ① ここ (project) ② global `~/.claude/CLAUDE.md` HARD RULE 0.37 ③ memory `feedback_vsdd_default_engineering_method`. [[feedback_superpowers_is_hard_rule_zero]]
+
 ## 根本原則
 
 **BP = 答え。オリジナル = 罪。検索不足 = 最大の罪。**
