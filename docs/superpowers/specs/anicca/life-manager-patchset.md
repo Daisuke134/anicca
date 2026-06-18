@@ -420,7 +420,8 @@ Caller-contract checks (must hold): `listTodayEvents()` returns event items[] (u
 
 ---
 
-## WS3 — SELF-CONTAINED single repo (zero ~/.openclaw / anicca_profile dependency)
+## WS3 — SELF-CONTAINED single repo  ✅ REVIEW PASSED (ok:true) + IMPLEMENTED & VERIFIED (2026-06-18) → github.com/Daisuke134/life-manager (private; public after WS3b de-personalization)
+_43/43 tests green from new repo · self-contained E2E (ran from /tmp + temp .env → 28 real gcal, 0 writes to ~/.openclaw) · live cron rewired (plan+ask → new path; 51 old call crons deleted, 45 regenerated on life-manager w/ env-forward) · skills/life removed from anicca + registry (0 refs)._
 
 Dais 2026-06-18: "everything of Life Manager in ONE repo. OpenClaw is just an executor, nothing else. no dependency. confined in one clean repo. so people can manage their life anywhere — local OR cloud (cloud = paid sub)."
 
