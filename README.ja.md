@@ -44,20 +44,14 @@
 
 ```bash
 git clone https://github.com/Daisuke134/anicca ~/anicca && cd ~/anicca
-./install.sh                                    # runtime root + スキルスロットを ~/.anicca に同期
-cd runtime/compute-proxy && npm install         # 一度だけ（@blockrun/llm + viem）
-./start-local.sh                                # 自前 wallet を自動生成 → 自己決済プロキシ起動
+./install.sh                                    # runtime root + スキルスロット同期、自前 wallet 生成
+cd runtime/compute-proxy && npm install && cd -  # 一度だけ（@blockrun/llm + viem）
+./start-local.sh node runtime/loop/index.mjs    # 自己決済プロキシ + アニッチャのループを起動
 ```
 
-`start-local.sh` は `http://127.0.0.1:8402/v1` に OpenAI 互換の **自己決済コンピュートプロキシ**を立て、`~/.automaton/wallet.json` の自前 wallet（自動生成・人間の鍵では決してない）から毎推論を USDC で自己決済します。frontier モデルを使いたければ、表示された wallet アドレスに USDC を送るだけです。
+これで 2 つが起動します。(1) `http://127.0.0.1:8402/v1` の OpenAI 互換 **自己決済コンピュートプロキシ**（自前 wallet＝自動生成・人間の鍵では決してない、から毎推論を USDC で自己決済）と、(2) **アニッチャのループ**（[`runtime/loop/`](runtime/loop/)＝think → act → observe → persist の ReAct ループ＋heartbeat）。ループは毎 wake、ClawRouter の **`auto`** ルーター（モデルをハードコードせず、ClawRouter がツール呼び出しを検知して tool-calling 可能なモデルへ自動ルート＋wallet から課金）でプロキシに問い合わせ、ツール（例：`earn` スキル）を選んで実行し、`$ANICCA_HOME/state/ledger.jsonl` に 1 行追記します。wallet が空なら **無料モデル（$0）**、USDC を送れば frontier モデル。
 
-> **正直なスコープ（HARD 0.24 — 偽りの主張なし）：** このリポジトリには automaton ループ本体は **同梱されていません**。`install.sh` にも明記されており、`start-local.sh` は **コンピュートプロキシだけ**を起動します。あなた自身の OpenAI 互換ループを以下で差し込んでください。
->
-> ```bash
-> ./start-local.sh <your-loop-cmd>
-> ```
->
-> `OPENAI_BASE_URL` を読むループなら自動で自己決済プロキシ経由になります。引数なしで実行するとプロキシを前面で保持し、差し込み方を表示します。**BYOK は任意** — `~/.anicca/.env` に `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` / `DEEPSEEK_API_KEY` を置けばそちらも使えますが、既定の無料ローカル動作には不要です。
+> 別の頭脳を使いたい場合は `ANICCA_BRAIN=claude-p` で同じループを Claude Code（`claude -p`、例：Sonnet）で駆動できます（既存ハーネスの上でアニッチャを動かす用途）。既定は `proxy`（自己資金の道）。他の OpenAI 互換ループも `OPENAI_BASE_URL` に向ければ動きます。
 
 アニッチャが実行する各能力は [`skills/registry.json`](skills/registry.json) にスロットとして宣言され、`install.sh` が `~/.anicca/skills/` に同期します。予約済みスロットを有効化するには、実装をそのディレクトリに置いて `status` を `live` にするだけ（`install.sh` の編集は不要）。
 
@@ -65,9 +59,7 @@ cd runtime/compute-proxy && npm install         # 一度だけ（@blockrun/llm +
 
 ## アーキテクチャ（一段落）
 
-1 つの **automaton** runtime（ReAct ループ＝think → act → observe → persist ＋ heartbeat スケジューラ）が runtime root（`~/.anicca`）配下で、スキルスロット群と 1 つの Base Smart Wallet とともに動きます。計算資源は **x402 で USDC を都度払って購入**（BlockRun / ClawRouter）— 人間の API キー不要。Web プロダクトでは認証に **Supabase**、サービス接続（Gmail / Google カレンダー / Telegram）に **Composio** を使います。Life Manager の約 15 分前の電話は **Telnyx + Gemini Live（ボイス＝Charon）** で発信します。
-
-> **runtime ディレクトリ名について：** かつての「Hermes pivot」（`specs/07-HERMES-PIVOT.md`）は **撤回**され、runtime は **automaton** ループを直接動かす方針に確定しています（`specs/00-MASTER.md`）。genesis Mac 上では runtime ディレクトリ名が歴史的経緯で `~/.hermes/` のままですが、その中で動いているのは Hermes デーモンではなく **automaton** です。アニッチャは「二重脳」ではありません。
+アニッチャは [Conway の automaton](https://github.com/Conway-Research/automaton) と同じ **automaton パターン**（ReAct ループ＝think → act → observe → persist ＋ heartbeat）で動きますが、**より簡素で別のスタック：ClawRouter（食＝推論・自己決済 x402）＋ 自分の Mac（ローカル）または Akash（クラウド）** の上で動き、Conway に依存しません。ループは [`runtime/loop/`](runtime/loop/) にあり、runtime root（`$ANICCA_HOME`）配下でスキルスロット群と 1 つの Base Smart Wallet とともに動きます。Web プロダクトでは認証に **Supabase**、サービス接続（Gmail / Google カレンダー / Telegram）に **Composio**。Life Manager の約 15 分前の電話は **Telnyx + Gemini Live（ボイス＝Charon）** で発信します。
 
 ---
 
@@ -76,13 +68,14 @@ cd runtime/compute-proxy && npm install         # 一度だけ（@blockrun/llm +
 | 能力 | 状態 |
 |---|---|
 | 自己決済コンピュートプロキシ（自前 wallet で free → frontier、x402） | **実装済・実証済**（`runtime/compute-proxy/`） |
-| 稼ぐ → オンチェーン検証 → 台帳記録（GATE-0） | **稼働中** — 初の黒字 wake を 2026-06-16 にオンチェーン検証（実 ETH→USDC swap、純益プラス） |
+| **アニッチャのループ**（`runtime/loop/`）＝wake → ClawRouter `auto` 頭脳 → スキル実行 → 台帳 → sleep | **実装済・稼働** — ClawRouter `auto` でツール呼び出しを end-to-end 発火（モデル非ハードコード）。68 テスト＋live wake 検証済 |
+| 稼ぐ → オンチェーン検証 → 台帳記録（GATE-0） | **実装済** — DeFi 利回り入金（Aave/Morpho、USDC）をオンチェーン検証。earn スキルは「実際に稼げる手段」中心に最終調整中 |
 | Life Manager：`ask`（情報不明時にメールで質問）/ `notify`（遅刻ドラフト → 承認 → 送信） | **稼働中**のスキルスロット |
 | Life Manager：`travel`（移動ブロック自動挿入）/ `call`（15 分前の電話） | **宣言済** — 実装着地予定 |
 | 自己増殖（`self/spawn`）/ 自己改善（`self/issue-dev`）/ UBI（`economy/ubi`） | **宣言済** — 機構は確定、稼ぎの後のロードマップ |
 | クラウド個人ダッシュボード / Stripe サブスク / 自前サーバー（Akash） | **開発中** — `specs/00-MASTER.md` 参照 |
 
-automaton ループ本体は **このリポジトリには同梱されていません**（自分の runner を持ち込む — 上のローカル手順参照）。
+アニッチャのループは [`runtime/loop/`](runtime/loop/) に同梱されており、`./start-local.sh node runtime/loop/index.mjs` で起動します（上のローカル手順参照）。
 
 ---
 
