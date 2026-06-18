@@ -65,15 +65,19 @@ exports.handler = async (event) => {
     };
   }
 
-  try {
-    const v = await verifyPayment(txHash);
-    if (!v.ok) return { statusCode: 402, body: JSON.stringify({ error: 'payment not verified', reason: v.reason }) };
-    return {
-      statusCode: 200,
-      headers: { 'Content-Type': 'application/json', 'x-payment-response': txHash },
-      body: JSON.stringify({ echo: text, paid: v.amountBase / 1e6 + ' USDC', from: v.from, paidTx: txHash }),
-    };
-  } catch (e) {
-    return { statusCode: 500, body: JSON.stringify({ error: String(e.message) }) };
-  }
+  // SECURITY: accepting a raw on-chain txHash is INSECURE for a paid endpoint —
+  // tx hashes are public, so anyone who reads the chain could replay someone else's
+  // payment to get content (no payer-identity binding, no replay/nonce, no finality).
+  // The correct x402 'exact' scheme binds payment to the request via an EIP-712 signed
+  // PaymentPayload + USDC transferWithAuthorization (nonce/payTo/value/resource), verified
+  // by a facilitator. Until that is wired, we NEVER serve via the txHash path.
+  void verifyPayment; // primitive kept for verifying anicca's OWN incoming payments, not third-party auth
+  return {
+    statusCode: 402,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      error: 'secure x402 settlement not yet enabled',
+      detail: 'This route will accept an EIP-712 signed x402 PaymentPayload (transferWithAuthorization). Raw txHash is not accepted (forgeable/replayable).',
+    }),
+  };
 };
