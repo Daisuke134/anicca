@@ -678,7 +678,22 @@ def agentic_resolve(event, known):
 +    # unknown → ask, carrying the agent's crafted question (if any) for ask-local to mail verbatim
 +    return None, ("ask:" + r["question"] if r.get("question") else "unknown")
 ```
-`is_routine_at_home` / `ROUTINE_AT_HOME_PATTERNS` / `ADDR_PATTERNS` / `extract_address_from_text` become dead → DELETE (coding-style: no unused). `enqueue_ask` already stores `reason`; the `"ask:<question>"` reason carries the wording.
+`is_routine_at_home` / `ROUTINE_AT_HOME_PATTERNS` / `ADDR_PATTERNS` / `extract_address_from_text` become dead → DELETE all four in one commit (review-confirmed: used only inside the replaced body + each other; `import re` stays — still used by `short_name`).
+
+**WS2.2b — `pair_decision` MUST propagate the `ask:` sentinel (review Finding 1, BLOCKING fix).** Without this, `pair_decision` overwrites the agent's reason with the hardcoded `"unknown_location"` BEFORE `enqueue_ask` sees it, so WS2.3 is unreachable. Fix:
+```diff
+ def pair_decision(prev_addr, prev_kind, curr_addr, curr_kind):
+-    if not prev_addr or prev_kind == "unknown":
+-        return ("ask_prev", "unknown_location")
+-    if not curr_addr or curr_kind == "unknown":
+-        return ("ask_curr", "unknown_location")
++    if not prev_addr or prev_kind == "unknown" or str(prev_kind).startswith("ask:"):
++        return ("ask_prev", prev_kind if str(prev_kind).startswith("ask:") else "unknown_location")
++    if not curr_addr or curr_kind == "unknown" or str(curr_kind).startswith("ask:"):
++        return ("ask_curr", curr_kind if str(curr_kind).startswith("ask:") else "unknown_location")
+     return ("ok", None)
+```
+Now the `("ask_prev"/"ask_curr", "ask:<q>")` reason reaches `enqueue_ask(..., ask_reason)` → the queue row's `reason` carries the agent's question → ask-local mails it verbatim (WS2.3). The other ask reasons (`"unknown_location"`, `"no_route"`, `"uncertain_location"`) are unchanged → fixed-template fallback still applies.
 
 ### WS2.3 — `ask/ask-local.js` use the agent's question when present
 ```diff
