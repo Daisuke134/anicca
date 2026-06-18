@@ -194,7 +194,7 @@ Also drop the now-unused `execFileSync` import at line 12 IF no other use remain
 
 ---
 
-## WS1b — Python adapter (travel_fill.py) + notify.js migration  [completes WS1; reviewed next]
+## WS1b — Python adapter (travel_fill.py) + notify.js migration  ✅ REVIEW PASSED (code-reviewer ok:true, 2026-06-18; 2 NON-BLOCKING clarity items folded in: CAL placement split into Hunk A/B, execFileSync removal made definitive)
 
 Completes the adapter migration so ALL four consumers go through the transport boundary. Same invariant: argv-EQUIVALENT (gog order-independent, verified gog 0.17.0). Grounded in full reads of `travel/travel_fill.py` (gog at :111 list, :225 create) and `notify/notify.js` (gog at :269 list, :287 send, :298 search, :309 getBody).
 
@@ -263,21 +263,23 @@ def make_transport(account, keyring="", kind=None):
 
 ### WS1b.2 — `travel/travel_fill.py` (rewire fetch_events + insert_travel_event)
 
+Hunk A — top of file: add the adapter import ONLY (no construction here — `env`/`prof` aren't defined at module top yet).
 ```diff
-@@ travel_fill.py lines 21-22: after the prof import, build the adapter @@
+@@ travel_fill.py lines 21-22: after the prof import @@
  sys.path.insert(0, str(Path.home() / ".openclaw" / "skills" / "_shared"))
  import anicca_profile as prof  # noqa: E402
 +sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "adapters"))
 +import transport as _t  # noqa: E402
+```
+
+Hunk B — immediately ABOVE `def fetch_events` (line 108): build CAL HERE, where `env()` and `prof` already exist (this is the correct placement; do NOT put it at module top → NameError).
+```diff
+@@ travel_fill.py line 108: directly above `def fetch_events` @@
 +CAL = _t.make_transport(
 +    account=env("GOG_ACCOUNT") or prof.google_account(),
 +    keyring=env("GOG_KEYRING_PASSWORD"),
 +).calendar
-```
-(Note: `env(...)`/`prof` are defined below this import in current file order; build CAL lazily — see corrected placement: move the `CAL = ...` construction to just before `fetch_events()` so `env`/`prof` exist. The import line stays at top; the `CAL = make_transport(...)` line goes immediately above `def fetch_events`.)
-
-```diff
-@@ travel_fill.py lines 108-124: fetch_events uses CAL.list @@
++
  def fetch_events(days):
 -    acct = env("GOG_ACCOUNT") or prof.google_account()
      to = (datetime.now(JST) + timedelta(days=days)).strftime("%Y-%m-%d")
@@ -402,7 +404,7 @@ After this, `import subprocess` (line 14) is unused in travel_fill.py → remove
 -}
 +function gogGmailBody(threadId) { return T.mail.getBody(threadId).body; }  // unwrap to STRING (prior contract)
 ```
-Caller-contract checks (must hold): `listTodayEvents()` returns event items[] (unchanged); `gogGmailSearch` callers use `t.id` only (adapter returns `{id,subject}` — OK); `gogGmailBody` callers expect a STRING (wrapper returns `.body` — OK); `gogGmailSend` return ignored (OK). After patch, confirm `execFileSync` is STILL imported/used elsewhere in notify.js? If the 4 fns were its only users, remove the import; otherwise keep. (Verify with grep before applying.)
+Caller-contract checks (must hold): `listTodayEvents()` returns event items[] (unchanged); `gogGmailSearch` callers use `t.id` only (adapter returns `{id,subject}` — OK); `gogGmailBody` callers expect a STRING (wrapper returns `.body` — OK); `gogGmailSend` return ignored (OK). **`execFileSync` removal (DEFINITIVE)**: grep confirms notify.js used `execFileSync` ONLY in the 4 replaced fns (`:271/:288/:299/:310`) — after this rewire it is unused, so REMOVE the import `const { execFileSync } = require("child_process");` at notify.js:37. (Reviewer-verified: no other use.)
 
 ### WS1b verification (no-mock, BY OpenClaw)
 - `python3 -m pytest`/`node --test` on travel + notify test files → unchanged green (pure fns untouched).
