@@ -32,7 +32,7 @@ self-chosen sleep schedule calibrated to wallet balance.
 - HTTP call to the compute proxy (`/v1/chat/completions`).
 - Subprocess execution of `skills/earn/run.sh` (and any other skill entrypoint).
 - Wallet USDC balance read (Base RPC or cached value).
-- `~/.anicca/state/ledger.jsonl` append.
+- `$ANICCA_HOME/state/ledger.jsonl` append (path derived from `ANICCA_HOME` env var).
 - `process.exit` on SIGTERM after state flush.
 - `sleep` (timer, OS-level).
 
@@ -44,12 +44,12 @@ self-chosen sleep schedule calibrated to wallet balance.
 
 **EARS**: WHEN the automaton wakes, THE SYSTEM SHALL load the current context
 (wallet address, USDC balance, last 20 ledger lines, genesis prompt from
-`~/.anicca/identity/genesis.md`), construct a system prompt + tool definitions,
+`$ANICCA_HOME/identity/genesis.md`), construct a system prompt + tool definitions,
 call the compute proxy at `OPENAI_BASE_URL` (defaulting to
 `http://127.0.0.1:8402/v1`) with a single chat-completions request, parse the
 model's response to extract at most one tool call per wake, execute that tool
 call, collect its output as the observation, append one ledger record to
-`~/.anicca/state/ledger.jsonl`, choose sleep seconds, sleep, then repeat.
+`$ANICCA_HOME/state/ledger.jsonl`, choose sleep seconds, sleep, then repeat.
 
 **Edge Cases**:
 - Proxy not yet up at wake time: retry the HTTP call up to 3 times with 2 s
@@ -120,9 +120,20 @@ combined output as the observation string.
 `run.sh` exits 0 for discover wakes, 0xwork-narrate wakes (no external payout
 yet), swap-rotation wakes, and profitable wakes alike. The loop MUST NOT infer
 an earn from the exit code alone. Instead, after `run.sh` exits 0, the loop
-reads the NEW ledger line that `run.sh` appended to `state/earn-ledger.jsonl`
-(the earn skill's own ledger, separate from the loop ledger) and applies
-`isProfitable()` from `skills/earn/lib/ledger.mjs`:
+reads the NEW ledger line that `run.sh` appended to `$ANICCA_HOME/skills/earn/state/earn-ledger.jsonl`
+(the earn skill's own ledger — path equal to the `EARN_LEDGER` env var forwarded
+to `run.sh`, which defaults to `$HERE/state/earn-ledger.jsonl` inside `run.sh:41`)
+and applies `isProfitable()` from `skills/earn/lib/ledger.mjs`.
+
+**Earn-ledger correlation key (WAKE_ID)**: The loop forwards `WAKE_ID` (the
+current wake's ULID) to `skills/earn/run.sh` as an env var (see `run.sh:42`:
+`WAKE="${WAKE_ID:-…}"`). `run.sh` stores this value as the `wake` field of
+every ledger line it appends. After `run.sh` exits, the loop locates the
+new ledger line by reading `earn-ledger.jsonl` and selecting the line where
+`line.wake === WAKE_ID`. The loop MUST NOT use the last line by position
+(tail), as concurrent invocations or previous stale lines could be
+misidentified. If no line with `line.wake === WAKE_ID` is found, the loop
+treats the result as a non-profitable (narrate) wake and continues.
 
 ```
 isProfitable(line) === true
@@ -285,9 +296,11 @@ from `$ANICCA_HOME/.env`. The loop never hard-codes `~/.anicca`.
 
 ### REQ-009: Config via Env / `.env` File
 
-**EARS**: WHEN the loop starts, THE SYSTEM SHALL load `~/.anicca/.env` (if
+**EARS**: WHEN the loop starts, THE SYSTEM SHALL load `$ANICCA_HOME/.env` (if
 present) using a minimal dotenv parser, merging it into `process.env` without
-overwriting already-set variables (process env wins).
+overwriting already-set variables (process env wins). The path is always derived
+from `ANICCA_HOME`; the loop never hard-codes `~/.anicca` or any other literal
+home-relative path.
 
 Configurable knobs (all have defaults):
 
