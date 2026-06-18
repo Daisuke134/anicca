@@ -1,7 +1,7 @@
 # Behavioral Specification — ship-anicca-loop
 
-> **DECISION 2026-06-18 (Dais) — NO ORIGINAL LOOP. FORK THE AUTOMATON.**
-> Anicca does NOT ship a hand-written ReAct loop. It **forks the proven Conway-Research/automaton loop and uses it as-is**, but runs it on **ClawRouter (food/inference) + local Mac or Akash (shelter)** instead of Conway — different from automaton (no Conway/429 dependency) and better. The earlier `runtime/loop/*` hand-written modules are REMOVED as original slop. Local onboarding mirrors Franklin (one command, fund $5); cloud mirrors automaton (self-run/replicate on Akash). The earn method embedded as a skill is chosen ONLY after Track A proves what actually makes money. This spec's REQs now describe the *configuration/wiring* of the forked automaton + earn skill, not a bespoke loop implementation.
+> **DECISION 2026-06-18 (Dais) — ANICCA ≠ AUTOMATON. Anicca runs on ClawRouter + local/Akash.**
+> The Conway automaton runs on **Conway**. **Anicca is different (and better): it runs the same automaton PATTERN (ReAct loop + heartbeat + self-owned wallet) on `ClawRouter` (food/inference, self-pay x402) + `local Mac` (local) or `Akash` (cloud) — no Conway dependency, so no 429.** Therefore Anicca HAS its OWN loop (`runtime/loop/`) — it is NOT deleted and NOT "original slop"; it is anicca's engine. The job is to **FIX it so it actually fires tools and earns on ClawRouter** (the current bug: it only `narrate`s because the brain wasn't emitting OpenAI `tool_calls` and the tier model ids weren't ClawRouter-served). Onboarding: local mirrors Franklin (one command, fund $5); cloud mirrors automaton (self-run/replicate on Akash). The earn method embedded as the earn skill is chosen ONLY after Track A proves what actually makes money. "No original slop" = the loop must WORK (fire tools + earn), not be janky — not "don't have a loop".
 
 **Feature**: `ship-anicca-loop`
 **Phase**: 1a
