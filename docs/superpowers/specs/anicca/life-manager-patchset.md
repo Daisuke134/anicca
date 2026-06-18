@@ -769,8 +769,68 @@ Goal: make the wake call feel human. The call already works (Charon speaks, veri
 
 **WS5 verification (HARD 0.31 — real call, no mock):** apply ① → fire `node call/call.js --event=... --urgency=harsh` → confirm life-call.log shows Charon speaking + UPLINK frames (Dais's voice not clipped). Then apply ② → fire again → confirm setupComplete + Charon audio still flow on v1alpha (if v1alpha breaks the handshake, REVERT ② and keep ①). Ship ① regardless; ② only if the real call stays healthy.
 
-## WS6..WS8 — WS6 web app (#49) · WS7 demo-reel (#50) · WS8 launch (#51)
-WS1b travel_fill.py adapter · WS2 agentic location/ask (#47) · WS3 repo extraction (#48) · WS4 /life-manager→GitHub link (#52) · WS5 natural call VAD+affective (#43) · WS6 web app flow + cloud wake (#49) · WS7 demo-reel cron→@anicca.comedy (#50) · WS8 launch PH+X (#51). Each gets its own complete diff section here, each reviewed, none started before its predecessor passes.
+## WS6 web app (#49, decomposed into WS6a–WS6d) · WS7 demo-reel (#50) · WS8 launch (#51)
+
+WS6 map (Explore 2026-06-18): /lm onboarding login uses Composio (should be Supabase), connect full-redirects (should be new-tab+poll), and there is NO cloud wake-call scheduler / per-user calendar fetch / Stripe webhook / post-pay page. Slices: WS6a onboarding (#53) → WS6b lm-events (#54) → WS6c cloud wake scheduler (#55, the wake-from-cloud) → WS6d Stripe (#56).
+
+### WS6a — /lm onboarding redesign (Supabase login + new-tab Composio connect)  [patch — review next]
+
+Dais 2026-06-18: onboarding NOT working. (1) **Login MUST be Supabase Auth (Google)** — `app/lm/LmClient.tsx` currently logs in via **Composio** Google OAuth (`lm-onboard?action=google-start` → `uid`+`sig`). WRONG; Composio is ONLY for the post-login gcal+gmail data connection. (2) Flow: Supabase Google login (persistent session) → name → connect gcal+gmail via Composio. (3) Connect MUST **open a NEW TAB** + the main tab **polls** until connected, then auto-advances (no back-navigation). Current `window.location.href = redirect_url` = the bug.
+
+Grounded: `lib/auth.ts` already has Supabase `signInWithGoogle()` (PKCE, detectSessionInUrl, persistSession) used by `/me`; `calendar-connect.js`/`gmail-connect.js` already return `{connected:true}` when an active Composio connection exists (poll works without new endpoints).
+
+**WS6a.1 `lib/auth.ts`** — return to the CURRENT path after login (so /lm comes back to /lm, not /me):
+```diff
+-  const redirectTo = typeof window !== 'undefined' ? `${window.location.origin}/me` : 'https://aniccaai.com/me';
++  const path = typeof window !== 'undefined' ? window.location.pathname : '/me';
++  const redirectTo = typeof window !== 'undefined' ? `${window.location.origin}${path}` : 'https://aniccaai.com/me';
+```
+(Supabase dashboard must allowlist `https://aniccaai.com/lm` — config note.)
+
+**WS6a.2 NEW `lm-onboard` action `exchange`** — Supabase token → signed uid anchored to the real Supabase user (keeps the backend uid+sig contract):
+```diff
++    if (action === "exchange") {
++      const token = (JSON.parse(event.body || "{}").access_token) || "";
++      const u = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
++        headers: { Authorization: `Bearer ${token}`, apikey: SUPABASE_SERVICE_ROLE_KEY },
++      }).then((r) => (r.ok ? r.json() : null));
++      if (!u || !u.id) return json(401, { error: "invalid session" });
++      const uid = "lm_" + u.id;            // deterministic per Supabase user
++      await upsertUser({ uid, email: u.email });
++      return json(200, { uid, sig: signUid(uid) });
++    }
+```
+
+**WS6a.3 `app/lm/LmClient.tsx`** — login via Supabase; on load exchange the session for {uid,sig}; connect in a new tab + poll:
+```diff
+-  const login = useCallback(() => { window.location.href = `${GOOGLE_LOGIN_URL}&return=...`; }, []);
++  const login = useCallback(() => { signInWithGoogle(); }, []);   // Supabase Google OAuth → returns to /lm
+```
+On `/lm` load: `getSession()` → if session, POST `access_token` to `lm-onboard?action=exchange` → `{uid,sig}` → step `name` (replaces the `?uid=` resume). connect():
+```diff
+       if (d.redirect_url) {
+-        window.localStorage.setItem('anicca.lm.pending', kind);
+-        window.location.href = d.redirect_url;            // full redirect — the bug
+-        return;
++        const w = window.open(d.redirect_url, '_blank');  // NEW TAB — user stays on /lm
++        const t0 = Date.now();
++        const poll = setInterval(async () => {
++          if (Date.now() - t0 > 180000) { clearInterval(poll); set('error'); return; }
++          try {
++            const rr = await fetch(`/.netlify/functions/${fn}?uid=${encodeURIComponent(uid)}&sig=${encodeURIComponent(sig)}&check=1`);
++            const dd = await rr.json();
++            if (dd.connected) { clearInterval(poll); try { w && w.close(); } catch {} set('connected'); }
++          } catch {}
++        }, 3000);
++        return;
+       }
+```
+`&check=1` = status-only (read `connected`, never mint a fresh OAuth). If calendar-connect/gmail-connect would re-trigger a redirect on re-call, add an early `if (qs.check) return json(200,{connected:<active?>})` branch.
+
+**WS6a verification (browser, no-mock):** camofox walk `https://aniccaai.com/lm` → login → **Supabase** Google consent → back to `/lm` with session → name → "Connect Calendar" → **NEW TAB** Composio consent → approve → **main tab auto-advances** (poll) → Gmail same → reach phone. Evidence: screenshots per transition + network (exchange→{uid}, poll→{connected:true}).
+
+### WS6b/c/d — after WS6a passes
+WS6b `lm-events.js` (per-user Composio calendar fetch) · WS6c `life-call` scheduled fn (per-user T-15min Telnyx+Gemini Charon from cloud — wire WS1 composio adapter) · WS6d `lm-webhook` + checkout + `/lm/setup`.
 
 ## ✅ LOCAL through-flow E2E CLOSED (2026-06-18, real gcal+Gmail, no-mock)
 Seeded 2 real events → agentic resolve (A→渋谷 resolved / B→ask) → real question email → real reply → poll wrote B.location=六本木ヒルズ to real gcal → travel inserted 🚆 block with real 13-min directions (16:17, ending B's 16:30) → call verified separately (Charon spoke). **E2E caught a real bug**: same-account reply poll mis-took the bot's own question as the location → fixed parseReply to skip `？/?` lines (life-manager eb0acdb), ask 6/6 green, re-poll wrote the correct answer. Test artifacts cleaned up.
