@@ -47,8 +47,12 @@ async function thinkProxy(ctx, config) {
   const baseUrl = config.OPENAI_BASE_URL || 'http://127.0.0.1:8402/v1';
   const url = baseUrl.replace(/\/+$/, '') + '/chat/completions';
 
+  // Use ClawRouter's `auto` router by default — NO hardcoded model id.
+  // ClawRouter detects the `tools` array and routes to a tool-calling-capable
+  // model, and picks tier/cost by its own wallet balance. ctx.model (the
+  // survival tier's nominal model) is only a fallback if an operator pins one.
   const body = JSON.stringify({
-    model: ctx.model,
+    model: config.ANICCA_MODEL || 'auto',
     messages: [
       { role: 'system', content: buildSystemPrompt(ctx) },
       { role: 'user',   content: buildUserMessage(ctx) },
