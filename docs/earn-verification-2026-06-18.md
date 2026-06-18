@@ -40,6 +40,26 @@ B 待ちの間 = trading 等の残り A 手段を進める（遊ばない）
 - ClawRouter `auto` は資金があれば frontier を許す。確実にするなら model をハードコード。
 - BlockRun frontier models: `anthropic/claude-opus-4.8` / `openai/gpt-5.5` / `anthropic/claude-sonnet-4.6` 等（`https://blockrun.ai/api/v1/models`）。
 
+## A 最終結果テーブル（= 記事 [6]③ の核 / tweaked-anicca ログ）
+
+| 手段 | 自己決済・人間ゼロで稼げるか | 実証/壁 | 記事的結論 |
+|---|---|---|---|
+| **DeFi利回り Aave** | ✅ | $2 supply→aUSDC増加(実tx)。元本×~3.2% | 鍵だけで確実・小 |
+| **DeFi利回り Morpho** | ✅ | $1 ERC-4626 deposit→shares増加 | 同上・~5% |
+| **DeFi利回り Moonwell** | ✅ | $1 mint→43.66 mUSDC(underlying$1.00, tx 0xa1a196)。Compound罠: mint失敗時revertせずエラーコード/RPC state lag | 利回りは広く確実 |
+| **0xwork** | △ | LIVE($8k払出/559agents)だが現open=有名人follow/RT系(agent不可)。code/research/dataカテゴリ存在も今open0件 | 市場あり・doable供給待ち |
+| **nookplot Mining** | ❌ | 検証がLLM sub-callをreplay照合→provider鍵(anthropic/openai/openrouter=BYOK)必須。x402自己決済プロバイダ無し。ollamaはMacでfrontier不可 | 我々の「human鍵ゼロ・自己決済」と設計上非互換=壁 |
+| **nookplot Bounties** | ✅(機構)/△(供給) | sub_mode1=プール型(最大5提出・1提出50 NOOK・承認ゲート無し)→Aniccaが自分のfrontier脳で解いて納品可。"本5冊推薦"等トリビアル。但し**現open20件は全部締切切れ(live 0件)**＋報酬NOOK(価値不確実)/USDC極小($0.05-0.1) | Anicca自己解決モデルは成立。live bounty出れば即可。要監視 |
+| **x402 売り** | ◯(機構) | x402-express 1行で payTo=wallet・$0.01 USDC・402 Payment Required 実証。受取に鍵不要 | 機構✅・壁=需要(外部buyer)。自分で払う=fake禁止 |
+| **DePIN(Grass/Nodepay/Gradient)** | ❌ | 全部ポイント制(即USDCでない)・account+常駐アプリ・極小・自動farm=ToS違反 | anicca不適=壁 |
+| **trading(Hyperliquid/DEX)** | ⏳ | 検証中。wallet署名でagent可だが gamble(損失あり)＋gas/bridge要 | 投機=非・確実income(高分散) |
+
+### nookplot 詳細（再挑戦の鍵）
+- **Mining ≠ Bounties**。Mining は replay 検証で BYOK 必須 → 我々の制約で不可。Bounties は成果物納品で replay 無し → **Anicca自己解決OK**。
+- Bounties API: `GET https://gateway.nookplot.com/v1/bounties?status=open` (Bearer NOOKPLOT_API_KEY)。`submission_mode==1` = プール型(ゲート無し)。詳細は metadata_cid(IPFS) / CLI `nookplot bounties list` で読める。
+- **live bounty(締切未来)が出たら**: apply(≥50字) → (pool型なら即) → Anicca が frontier(ClawRouter自己決済)で解く → submitWork(desc+IPFS/repo) → 報酬。gasless forwarder(ETH不要)。
+- ＝**「bounty が available なら Anicca は自己決済で解いて稼げる」**。今は供給(live件)がゼロなだけ。0xwork と同様、監視 cron で live 検知→自動参加が次の一手。
+
 ## BlockRun / x402 メモ
 - BlockRun OpenAI互換 x402 endpoint = `https://blockrun.ai/api/v1`（自己決済・鍵=wallet）。
 - x402 は EIP-3009(gasless USDC) なので ETH gas 無しでも surplus 推論は通る。
