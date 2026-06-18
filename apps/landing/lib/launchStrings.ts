@@ -22,15 +22,15 @@ export const launchStrings = {
     lm: {
       metaTitle: 'Life Manager: Get started',
       metaDesc:
-        'Life Manager: connect your Google Calendar and Gmail, add your phone, and it keeps you on time by call and email. $20/mo, no trial.',
-      eyebrow: 'Life Manager · $20/mo · no trial',
+        'Life Manager: connect your Google Calendar and Gmail, add your phone, and it keeps you on time by call and email. $20/mo.',
+      eyebrow: 'Life Manager · $20/mo',
       heroTitle: 'Never be late again.',
       heroBody:
         'Sign in, connect your calendar and email, add your phone. Life Manager then handles travel time, calls, location asks, and late-notices. 24/7, by phone and email.',
       stepAria: (i: number, n: number) => `step ${i} of ${n}`,
       login: {
         title: 'Sign in to start',
-        body: 'Life Manager keeps you on time by phone and email. $20/mo, no trial.',
+        body: 'Life Manager keeps you on time by phone and email. $20/mo.',
         button: 'Continue with Google',
       },
       name: {
@@ -63,7 +63,7 @@ export const launchStrings = {
         titlePrefix: 'You’re set, ',
         titleFallback: 'friend',
         bodyPre: 'Subscribe to activate 24/7 management. ',
-        bodyStrong: '$20/mo, no trial.',
+        bodyStrong: '$20/mo.',
         button: 'Subscribe for $20/mo',
         notReady:
           'Checkout is being finalized. We’ll email you the secure $20/mo link shortly.',
@@ -105,7 +105,7 @@ export const launchStrings = {
         wake: '09:25 · call, 15 min before · "Team Sync soon"',
         travel1: '09:30 · call, 10 min before · "time to move"',
         sync: '09:35 · call, 5 min before · "leave now or you’re late"',
-        travel2: '09:40 · [Travel] Team Sync, 20 min',
+        travel2: '09:40 · travel to Team Sync, 20 min',
         lunch: '10:00 · Team Sync',
         caption: 'Three calls before every event, each one sharper ↑',
       },
@@ -118,7 +118,7 @@ export const launchStrings = {
           id: 'travel',
           label: 'Calendar',
           headline: 'It blocks out your travel time',
-          body: 'Every morning Life Manager reads your Google Calendar, checks Google Maps for each timed event, and drops a "[Travel]" block in front of it, so your commute is always on the calendar. Move a 10:00 dentist appointment and the travel block moves with it.',
+          body: 'Every morning Life Manager looks at your day and adds a travel-time block before each event, so your commute is always on the calendar. Move a 10:00 dentist appointment and the travel time moves with it.',
         },
         {
           id: 'call',
@@ -167,7 +167,7 @@ export const launchStrings = {
         {
           link: '',
           restPre: 'Subscribe: ',
-          restStrong: '$20/mo, no trial',
+          restStrong: '$20/mo',
           restPost: '. Open Google Calendar tomorrow morning and your travel blocks are already there.',
         },
       ],
@@ -194,15 +194,15 @@ export const launchStrings = {
     lm: {
       metaTitle: 'ライフマネージャー：はじめる',
       metaDesc:
-        'ライフマネージャー。Google カレンダーと Gmail をつなぎ、電話番号を登録すれば、電話とメールで遅刻を防ぐ。月 $20、トライアルなし。',
-      eyebrow: 'ライフマネージャー · 月 $20 · トライアルなし',
+        'ライフマネージャー。Google カレンダーと Gmail をつなぎ、電話番号を登録すれば、電話とメールで遅刻を防ぐ。月 $20。',
+      eyebrow: 'ライフマネージャー · 月 $20',
       heroTitle: 'もう、遅刻しない。',
       heroBody:
         'ログインして、カレンダーとメールをつなぎ、電話番号を登録するだけ。移動時間の確保も、電話も、場所の確認も、遅刻連絡も、ライフマネージャーが引き受ける。24/7、電話とメールで。',
       stepAria: (i: number, n: number) => `ステップ ${i} / ${n}`,
       login: {
         title: 'ログインして始める',
-        body: 'ライフマネージャーが、電話とメールで遅刻を防ぐ。月 $20、トライアルなし。',
+        body: 'ライフマネージャーが、電話とメールで遅刻を防ぐ。月 $20。',
         button: 'Google で続ける',
       },
       name: {
@@ -235,7 +235,7 @@ export const launchStrings = {
         titlePrefix: '準備完了です、',
         titleFallback: 'あなた',
         bodyPre: 'サブスクで 24/7 の管理を有効化。',
-        bodyStrong: '月 $20、トライアルなし。',
+        bodyStrong: '月 $20。',
         button: 'サブスクに登録（月 $20）',
         notReady:
           '決済を準備中です。安全な月 $20 のリンクをまもなくメールでお送りします。',
@@ -277,7 +277,7 @@ export const launchStrings = {
         wake: '09:25 · 15 分前の電話 ·「もうすぐチームシンク」',
         travel1: '09:30 · 10 分前の電話 ·「そろそろ動いて」',
         sync: '09:35 · 5 分前の電話 ·「今すぐ出ないと遅刻」',
-        travel2: '09:40 · [移動] チームシンク 20 分',
+        travel2: '09:40 · チームシンクへの移動 20 分',
         lunch: '10:00 · チームシンク',
         caption: 'どの予定の前にも 3 回。近づくほど急かす ↑',
       },
@@ -290,7 +290,7 @@ export const launchStrings = {
           id: 'travel',
           label: 'カレンダー',
           headline: '移動時間を、勝手に押さえる',
-          body: '毎朝、ライフマネージャーが Google カレンダーを読んで、時刻のある予定ごとに Google マップで経路を調べ、予定の前に「[移動]」ブロックを入れる。これで通勤がいつもカレンダーに乗る。10:00 の歯医者をずらせば、移動ブロックも一緒に動く。',
+          body: '毎朝、ライフマネージャーがその日の予定を見て、それぞれの前に移動時間のブロックを入れる。これで通勤がいつもカレンダーに乗る。10:00 の歯医者をずらせば、移動時間も一緒に動く。',
         },
         {
           id: 'call',
@@ -339,7 +339,7 @@ export const launchStrings = {
         {
           link: '',
           restPre: '登録する：',
-          restStrong: '月 $20、トライアルなし',
+          restStrong: '月 $20',
           restPost: '。翌朝カレンダーを開けば、移動ブロックはもう入っている。',
         },
       ],
