@@ -420,5 +420,163 @@ Caller-contract checks (must hold): `listTodayEvents()` returns event items[] (u
 
 ---
 
-## WS2..WS8 — written + reviewed in order AFTER WS1 ok:true
+## WS3 — SELF-CONTAINED single repo (zero ~/.openclaw / anicca_profile dependency)
+
+Dais 2026-06-18: "everything of Life Manager in ONE repo. OpenClaw is just an executor, nothing else. no dependency. confined in one clean repo. so people can manage their life anywhere — local OR cloud (cloud = paid sub)."
+
+**Grounded dependency inventory (grep of the staged tree ~/life-manager):**
+| dep | files:line |
+|---|---|
+| `~/.openclaw/.env` | planner.js:19, ask-local.js:15, notify.js:47, call/call.js:44, travel_fill.py:26, travel.js:35 |
+| `~/.openclaw/state/*` | ask-local.js:27 (ask-queue), notify.js:87 (notify-pending), call/call.js:78 (call.log), locate.js:46 (location), travel_fill.py:250 (ask-queue) |
+| `~/.openclaw/skills/anicca-travel-fill/state` | ask-local.js:28 (travel_filled) — also INCONSISTENT with travel_fill.py state path (pre-existing bug; fixed by unifying on DATA_DIR) |
+| `anicca_profile` (prof.*) | travel_fill.py:21,95,110 — the only hard external import |
+| `/opt/homebrew/bin/gog` | transport.js:9, transport.py:9, planner.js:24, notify.js:43, travel.js:32 |
+| `openclaw` / `cloudflared` bin | planner.js:32, runner-telnyx.mjs:133 |
+
+**Keystone = repo-local `config.{js,py}`** (same idea as the adapter): ONE place resolves env, data dir, profile, bins. Nothing reaches into `~/.openclaw`. Defaults are repo-portable; everything overridable by env (so cloud injects its own).
+- env: `LIFE_ENV_FILE` → else repo-local `./.env` → else process.env.
+- data dir: `LIFE_DATA_DIR` → else `~/.life-manager/` (NOT ~/.openclaw). All state files live here.
+- profile: `LIFE_HOME_ADDRESS` / `LIFE_GOOGLE_ACCOUNT` / `LIFE_OWNER_EMAIL` / `LIFE_PHONE` (replaces anicca_profile).
+- bins: `GOG_BIN` (default `gog` on PATH), `LIFE_SCHEDULER_BIN` (default `openclaw` — the executor), `CLOUDFLARED_BIN`.
+
+### WS3.1 — NEW FILE `config.js` (repo root)
+```js
+"use strict";
+// Self-contained config for Life Manager. ONE place resolves env, data dir, profile, bins.
+// No dependency on ~/.openclaw or any host layout — runs anywhere (local OR cloud).
+const fs = require("node:fs");
+const path = require("node:path");
+const os = require("node:os");
+
+function loadEnv() {
+  const out = {};
+  const file = process.env.LIFE_ENV_FILE || path.join(__dirname, ".env");
+  let raw = ""; try { raw = fs.readFileSync(file, "utf8"); } catch { return out; }
+  for (const line of raw.split("\n")) {
+    const m = line.match(/^(?:export\s+)?([A-Z_][A-Z0-9_]*)=(.*)$/);
+    if (m) out[m[1]] = m[2].replace(/^["']|["']$/g, "");
+  }
+  return out;
+}
+const ENV = loadEnv();
+function env(k, d = "") { return process.env[k] || ENV[k] || d; }
+
+const DATA_DIR = process.env.LIFE_DATA_DIR || path.join(os.homedir(), ".life-manager");
+function dataPath(...p) {
+  const f = path.join(DATA_DIR, ...p);
+  fs.mkdirSync(path.dirname(f), { recursive: true });
+  return f;
+}
+const profile = {
+  account: () => env("GOG_ACCOUNT") || env("LIFE_GOOGLE_ACCOUNT"),
+  ownerEmail: () => env("LIFE_OWNER_EMAIL") || env("GOG_ACCOUNT") || env("LIFE_GOOGLE_ACCOUNT"),
+  homeAddress: () => env("LIFE_HOME_ADDRESS"),
+  phone: () => env("LIFE_PHONE"),
+  calId: () => env("LIFE_CAL_ID") || env("GCAL_ID", "primary"),
+};
+const bins = {
+  gog: () => env("GOG_BIN", "gog"),
+  scheduler: () => env("LIFE_SCHEDULER_BIN", "openclaw"),
+  cloudflared: () => env("CLOUDFLARED_BIN", "cloudflared"),
+};
+module.exports = { ENV, env, DATA_DIR, dataPath, profile, bins };
+```
+
+### WS3.2 — NEW FILE `config.py` (repo root)
+```python
+"""Self-contained config for Life Manager (Python sibling of config.js).
+No dependency on ~/.openclaw or anicca_profile — runs anywhere (local OR cloud)."""
+import os
+from pathlib import Path
+
+_ROOT = Path(__file__).resolve().parent
+
+
+def _load_env():
+    out = {}
+    f = Path(os.environ.get("LIFE_ENV_FILE", _ROOT / ".env"))
+    try:
+        raw = f.read_text()
+    except OSError:
+        return out
+    import re
+    for line in raw.splitlines():
+        m = re.match(r"^(?:export\s+)?([A-Z_][A-Z0-9_]*)=(.*)$", line)
+        if m:
+            out[m.group(1)] = m.group(2).strip().strip('"').strip("'")
+    return out
+
+
+ENV = _load_env()
+
+
+def env(k, d=""):
+    return os.environ.get(k) or ENV.get(k, d)
+
+
+DATA_DIR = Path(os.environ.get("LIFE_DATA_DIR", Path.home() / ".life-manager"))
+
+
+def data_path(*p):
+    f = DATA_DIR.joinpath(*p)
+    f.parent.mkdir(parents=True, exist_ok=True)
+    return f
+
+
+def home_address():
+    return env("LIFE_HOME_ADDRESS")
+
+
+def google_account():
+    return env("GOG_ACCOUNT") or env("LIFE_GOOGLE_ACCOUNT")
+```
+
+### WS3.3 — per-file rewires (replace inline host deps with config)
+| file | current | → becomes |
+|---|---|---|
+| planner.js:17-23 | inline `loadEnv()` reading `~/.openclaw/.env` | `const C = require("./config"); const ENV = C.ENV;` (drop inline loader) |
+| planner.js:24 | `GOG_BIN="/opt/homebrew/bin/gog"` | `const GOG_BIN = C.bins.gog();` |
+| planner.js:32 | `OPENCLAW=...|| "openclaw"` | `const OPENCLAW = C.bins.scheduler();` |
+| ask-local.js:14-24 | inline loadEnv `~/.openclaw/.env` | `const C = require("./config")` (ask/ is a subdir → `require("../config")`) |
+| ask-local.js:27 | QUEUE `~/.openclaw/state/life-ask-queue.jsonl` | `C.dataPath("life-ask-queue.jsonl")` |
+| ask-local.js:28 | TRAVEL_STATE `~/.openclaw/skills/anicca-travel-fill/state/travel_filled.json` | `C.dataPath("travel_filled.json")` (now unified with travel_fill) |
+| notify.js:45-57 | inline loadEnv | `const C = require("../config")` |
+| notify.js:87 | pending `~/.openclaw/state/life-notify-pending.jsonl` | `C.dataPath("life-notify-pending.jsonl")` |
+| notify.js:43 | GOG_BIN homebrew | `C.bins.gog()` |
+| notify.js OWNER_EMAIL | `~/.openclaw` account | `C.profile.ownerEmail()` |
+| locate.js:46 | location `~/.openclaw/state/location` | `C.dataPath("location")` (require `../config`) |
+| call/call.js:42-50 | loadOpenclawEnv | `const C = require("../config")` (keeps merging into process.env for the runner) |
+| call/call.js:78 | log `~/.openclaw/state/life-call.log` | `C.dataPath("life-call.log")` |
+| travel/travel_fill.py:20-21 | `sys.path … _shared` + `import anicca_profile as prof` | `import config as C` (add `sys.path.insert(0, parent)`) — DELETE anicca_profile |
+| travel/travel_fill.py:26 | `ENV = (~/.openclaw/.env).read_text()` + `env()` regex | use `C.env(...)` |
+| travel/travel_fill.py:95 | `prof.home_address()` | `C.home_address()` |
+| travel/travel_fill.py:110 | `prof.google_account()` | `C.google_account()` |
+| travel/travel_fill.py:250 | ASK_QUEUE `~/.openclaw/state/...` | `C.data_path("life-ask-queue.jsonl")` |
+| travel/travel_fill.py STATE_FILE | skill-local `../state/travel_filled.json` | `C.data_path("travel_filled.json")` (unify) |
+| adapters/transport.js:9 | `bin="/opt/homebrew/bin/gog"` | `bin = process.env.GOG_BIN || "gog"` |
+| adapters/transport.py:9 | `GOG_BIN="/opt/homebrew/bin/gog"` | `GOG_BIN = os.environ.get("GOG_BIN","gog")` |
+| call/lib/runner-telnyx.mjs:133 | cloudflared homebrew | already `process.env.CLOUDFLARED_BIN || ...` — change fallback to `"cloudflared"` |
+
+### WS3.4 — dead-code removal (coding-style: delete unused)
+- `travel/travel.js` — superseded by `travel_fill.py` (the wired one); its own gog/env path. Confirm not referenced by any cron, then DELETE (don't ship two travel impls).
+
+### WS3.5 — repo hygiene + portability
+- Add `SKILL.md` (OpenClaw manifest), `README.md` (EN+JA: install into OpenClaw, env vars, local vs cloud), `.env.example` (all LIFE_* + provider keys), `.gitignore` (`.env`, `node_modules`, `__pycache__`, `state/`).
+- `call/lib` needs `ws`; document `cd call/lib && npm i` in README/install.
+
+### WS3.6 — extraction + rewire (executor only) — AFTER code is self-contained + reviewed
+1. `gh repo create Daisuke134/life-manager --public` (or private until de-personalized; flip after).
+2. push the self-contained tree.
+3. Rewire the live OpenClaw crons (executor) — change exec path `$HOME/anicca/skills/life/X` → `$HOME/life-manager/X`, inject config via env (`LIFE_DATA_DIR`, `LIFE_ENV_FILE=$HOME/.openclaw/.env` for Dais's local so keys/profile resolve). Static crons: `anicca-life-plan`, `anicca-life-ask`, `anicca-life-notify-scan`, `anicca-life-notify-poll`. The `life-call-*` crons are regenerated by planner (new `__dirname`) → delete stale + re-run plan.
+4. `git rm -r skills/life` from anicca repo; commit + push.
+
+### WS3.7 — verification (vcsdd E2E, proves ZERO ~/.openclaw dependency)
+- Run from the clean repo with a TEMP data dir and NO ~/.openclaw access path:
+  `LIFE_DATA_DIR=/tmp/lm-test LIFE_ENV_FILE=/tmp/lm-test/.env GOG_BIN=$(command -v gog) node ~/life-manager/planner.js --dry-run` → lists real gcal, writes state ONLY under /tmp/lm-test (assert nothing written to ~/.openclaw).
+- `grep -rn "\.openclaw\|anicca_profile" ~/life-manager` (excl node_modules) → **0 hits** = self-contained proven.
+- composio throws (JS+Py). 34/34 unit tests green from new location.
+- OpenClaw executor E2E: fire `anicca-life-plan` (rewired) → real gcal → regenerates life-call crons at new path.
+
+## WS2 / WS4..WS8 — written + reviewed in order AFTER WS3 ok:true
 WS1b travel_fill.py adapter · WS2 agentic location/ask (#47) · WS3 repo extraction (#48) · WS4 /life-manager→GitHub link (#52) · WS5 natural call VAD+affective (#43) · WS6 web app flow + cloud wake (#49) · WS7 demo-reel cron→@anicca.comedy (#50) · WS8 launch PH+X (#51). Each gets its own complete diff section here, each reviewed, none started before its predecessor passes.
