@@ -27,6 +27,13 @@ test("FIND-105: an already-submitted row (carries ref=) is REFUSED even with ful
   assert.ok(parseBankRecipient({ id: "x", notes: NOTES }));
 });
 
+test("FIND-107: a submitted-but-unrecorded row (claimed_at, NO ref=) is REFUSED — closes the FIND-007 requeue double-pay", () => {
+  // The dangerous case: adapter sent the money but markPaid failed, so notes carry claimed_at but no ref.
+  const claimedNoRef = NOTES + ";claimed_at=2026-06-20T00:00:00.000Z";
+  assert.equal(parseBankRecipient({ id: "x", notes: claimedNoRef }), null); // never auto-redispatched on operator requeue
+  assert.ok(parseBankRecipient({ id: "x", notes: NOTES })); // a fresh, never-claimed signup row still dispatches once
+});
+
 test("bankRecipientsFromRows: keeps only valid JP bank rows", () => {
   const rows = [
     { id: "a", notes: NOTES },
