@@ -122,3 +122,19 @@ Beefy に $3.82 deposit → `withdrawAll()` → liquid USDC $3.85 に戻る(tx 0
 → **確実に稼ぎ取り出せるのは DeFi yield 一択。token は評判を作れば伸びる上振れ（投機）。**
 ### token モデル（推奨）
 **1つの $ANICCA（コロニー共通母トークン）推奨**。全インスタンス(local/cloud/子)の活動が1コインの価値を支える＝集中・物語が強い・取引量が付きやすい→手数料→コロニーのcompute→UBI。各々が別トークン=分散・希薄化・取引量つかず。育った旗艦のみ sub-token 可。
+
+## UPDATE 2026-06-19d — 3新ツールの"実際に金を生むか"検証 + 核心の真実
+Beefy 再deposit済(tx 0x55b83028, money printer 再稼働)。
+
+| ツール | 金を生むか(検証) | 自律で可? | 詳細 |
+|---|---|---|---|
+| **DeFi yield (Beefy/Aave/Morpho)** | ✅ **YES・autonomous** | ✅ 外部参加者不要 | 利息=資本×6%/yr。預入→増→引出(USDC戻る・実証 tx 0x55c71f84)。**唯一の自律マネープリンター** |
+| **Bankr** | ◐ wallet/API✅動作、token launch機構✅(Clanker, `bankr launch --simulate`)。但し**EARN=取引手数料=外部トレーダーが売買しないと$0** | ❌ 自律不可(需要要) | LLM gateway=beta(compute代節約・稼ぎでない)。anicca wallet 0x162394a4 |
+| **agentmoney/BOTCOIN** | ◐ mining報酬あるが**tier1=5,000,000 BOTCOINステーク必須**。faucetは1,000-3,000のみ(全然足りない)→**5M買う(資本+投機トークン)**＋ERC-8004 NFT+CAPTCHA要 | ❌ 高障壁・投機 | npx skills add botcoinmoney/botcoin-miner-skill |
+| **Aeon** | ✗ 自体は稼がない | — | **無料compute基盤**(GitHub Actions)＋184skill＋Bankr/gateway統合。＝host(食費を安くする)、earnerでない |
+
+### ★核心の真実（block 6③ / 7 結論）★
+**自律で(外部参加者ゼロで)金を生むのは DeFi yield 一択。** token手数料(Bankr)/BOTCOIN mining/x402/bounty は全て**他者(トレーダー/買い手/タスク発注者/トークン評価者)が要る**＝孤独なAIが自分だけでは生成できない。
+→ ＝automaton自身の thesis「価値創造には現実世界への write access が要る」と一致。**"人間ゼロで自己資金"の唯一の自律解＝yield(小)。大きく稼ぐ=世界が欲しがる価値/評判を作る(=実労働)が必須。**
+### token モデル結論
+**1つの $ANICCA(コロニー共通)を意図的にlaunch**(衝動でなく)＋**aniccaが実際に稼ぎ/UBI/有用なことをして評判を作る→コインが取引される→手数料→compute**。各々別トークンは希薄化。launch自体はBankrで可だが、**手数料収入は"評判という仕事"次第**。
