@@ -26,7 +26,7 @@ export const launchStrings = {
       eyebrow: 'Life Manager · $20/mo',
       heroTitle: 'Never be late again.',
       heroBody:
-        'Sign in, connect your Google Calendar, add your phone. Life Manager then handles travel time, calls, location asks, and late-notices. 24/7, by phone and email.',
+        'Sign in, connect your Google Calendar and Gmail, add your phone. Life Manager then handles travel time, calls, location asks, late-notices, and your mail. 24/7, by phone and email.',
       stepAria: (i: number, n: number) => `step ${i} of ${n}`,
       login: {
         title: 'Sign in to start',
@@ -41,8 +41,8 @@ export const launchStrings = {
         saveError: 'Could not save. Try again.',
       },
       connect: {
-        title: 'Connect your Google Calendar',
-        body: 'One click via Composio. Life Manager reads your events; it emails you the asks and late-notices itself.',
+        title: 'Connect Calendar + Gmail',
+        body: 'One click via Composio — one Google screen. Life Manager reads your calendar and your mail, asks you when something is unclear, and acts with your approval.',
         calendar: 'Google Calendar',
         gmail: 'Gmail',
         button: 'Continue',
@@ -194,11 +194,11 @@ export const launchStrings = {
     lm: {
       metaTitle: 'ライフマネージャー：はじめる',
       metaDesc:
-        'ライフマネージャー。Google カレンダーをつなぎ、電話番号を登録すれば、電話とメールで遅刻を防ぐ。月 $20。',
+        'ライフマネージャー。Google カレンダーと Gmail をつなぎ、電話番号を登録すれば、電話とメールで遅刻を防ぎ、メールも捌く。月 $20。',
       eyebrow: 'ライフマネージャー · 月 $20',
       heroTitle: 'もう、遅刻しない。',
       heroBody:
-        'ログインして、Google カレンダーをつなぎ、電話番号を登録するだけ。移動時間の確保も、電話も、場所の確認も、遅刻連絡も、ライフマネージャーが引き受ける。24/7、電話とメールで。',
+        'ログインして、Google カレンダーと Gmail をつなぎ、電話番号を登録するだけ。移動時間の確保も、電話も、場所の確認も、遅刻連絡も、メール対応も、ライフマネージャーが引き受ける。24/7、電話とメールで。',
       stepAria: (i: number, n: number) => `ステップ ${i} / ${n}`,
       login: {
         title: 'ログインして始める',
@@ -213,8 +213,8 @@ export const launchStrings = {
         saveError: '保存できませんでした。もう一度お試しください。',
       },
       connect: {
-        title: 'Google カレンダーをつなぐ',
-        body: 'Composio でワンクリック接続。ライフマネージャーが予定を読んで、確認や遅刻連絡をメールで送る。',
+        title: 'カレンダー + Gmail をつなぐ',
+        body: 'Composio でワンクリック接続(Google の画面は1枚)。ライフマネージャーが予定とメールを読み、不明点はあなたに聞き、承認を得て動く。',
         calendar: 'Google カレンダー',
         gmail: 'Gmail',
         button: '続ける',

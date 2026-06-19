@@ -12,7 +12,7 @@ export const dynamic = 'force-static';
 export const metadata = {
   title: 'Life Manager — Get started',
   description:
-    'Life Manager by Anicca: connect your Google Calendar, add your phone, and Anicca keeps you on time by call and email. $20/mo, no trial.',
+    'Life Manager by Anicca: connect your Google Calendar and Gmail, add your phone, and Anicca keeps you on time by call and email and handles your mail. $20/mo.',
 };
 
 export default function Page() {
