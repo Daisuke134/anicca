@@ -142,6 +142,25 @@ echo
 green "  synced $SYNCED live slot(s), $DECLARED_ONLY reserved slot(s)."
 echo
 
+# ─── 4.5. supervised, self-updating daemon (Anicca stands on its own) ──
+cyan "[4.5] installing self-running daemon (KeepAlive + self-update)..."
+chmod +x "$REPO_ROOT/runtime/anicca-daemon.sh" 2>/dev/null || true
+if [ "$(uname)" = "Darwin" ]; then
+  PLIST="$HOME/Library/LaunchAgents/com.anicca.daemon.plist"
+  mkdir -p "$HOME/Library/LaunchAgents"
+  sed -e "s#__REPO__#$REPO_ROOT#g" -e "s#__ANICCA_HOME__#$ANICCA_HOME#g" \
+    "$REPO_ROOT/runtime/com.anicca.daemon.plist.template" > "$PLIST"
+  launchctl unload "$PLIST" 2>/dev/null || true
+  if launchctl load -w "$PLIST" 2>/dev/null; then
+    green "  ✓ launchd daemon loaded (com.anicca.daemon) — Anicca runs itself, restarts on crash, survives reboot, self-updates from the mother."
+  else
+    cyan "  ! launchctl load failed; load it yourself: launchctl load -w $PLIST"
+  fi
+else
+  green "  Linux/cloud: run runtime/anicca-daemon.sh under systemd (Restart=always) or Docker (restart: always) — see skills/self/spawn/scripts/cloud-init.sh."
+fi
+echo
+
 # ─── 5. summary ────────────────────────────────────────────────────────
 cyan "[5/5] done."
 echo
