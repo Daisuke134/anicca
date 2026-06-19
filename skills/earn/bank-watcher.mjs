@@ -42,6 +42,7 @@ export async function bankWatcherPass({ readBankRecipients, getBalance, claim, r
     return { outcome: "skipped", reason: plan.reason, paid: [], failed: [] };
   }
 
+  const rawById = new Map(claimed.map((r) => [r.id, r.raw])); // FIND-103: carry original notes to markPaid
   const groups = groupByProvider(plan.transfers);
   const paid = [];
   const failed = [];
@@ -63,7 +64,7 @@ export async function bankWatcherPass({ readBankRecipients, getBalance, claim, r
     // re-queue or double-count — the row simply stays 'processing' and the reconciliation poll resolves it.
     for (const t of transfers) {
       try {
-        await markPaid(t.to, { provider, amount: t.amount, currency: t.currency, res });
+        await markPaid(t.to, { provider, amount: t.amount, currency: t.currency, res, raw: rawById.get(t.to) });
         paid.push(t.to);
       } catch {
         failed.push(t.to); // submitted but not recorded -> stays 'processing' -> reconcileStuck/pollCompletions
