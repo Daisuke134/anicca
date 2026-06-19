@@ -7,6 +7,7 @@
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const { validateJpBank, buildBankNotes } = require('./_jp-bank.js');
 
 const WALLET_RE = /^0x[0-9a-fA-F]{40}$/;
 
@@ -46,10 +47,20 @@ exports.handler = async (event) => {
     return { statusCode: 400, body: JSON.stringify({ error: 'valid Base wallet (0x…40 hex) required' }) };
   }
 
+  // JP bank: validate Zengin destination (4/3/7 digits + 半角カナ) and store in notes for the watcher.
+  let notes = `method=${method};wallet=${method === 'wallet' ? wallet : ''}`;
+  if (method === 'bank' && (body.country || '').toLowerCase() === 'jp') {
+    const v = validateJpBank(body.bank || {});
+    if (!v.valid) {
+      return { statusCode: 400, body: JSON.stringify({ error: 'invalid bank details', details: v.errors }) };
+    }
+    notes = buildBankNotes(v.bank);
+  }
+
   const ins = await supabaseInsert('recipients', {
     email,
     reason: 'basic income signup',
-    notes: `method=${method};wallet=${method === 'wallet' ? wallet : ''}`,
+    notes,
     status: 'queued',
   });
   // Tolerate duplicate / constraint errors — never block the user's UX. We log status.
