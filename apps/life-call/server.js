@@ -131,7 +131,10 @@ const server = http.createServer((req, res) => {
   // pending location ask and routed to the calendar.
   if (path === "/telegram") {
     if (req.method !== "POST") { res.writeHead(405); res.end("method"); return; }
-    const ok = !LM_TG_SECRET || (req.headers["x-telegram-bot-api-secret-token"] === LM_TG_SECRET);
+    // Fail CLOSED: no secret configured → reject. Constant-time compare to avoid timing leaks.
+    const hdr = String(req.headers["x-telegram-bot-api-secret-token"] || "");
+    const ok = LM_TG_SECRET.length > 0 && hdr.length === LM_TG_SECRET.length &&
+      crypto.timingSafeEqual(Buffer.from(hdr), Buffer.from(LM_TG_SECRET));
     if (!ok) { res.writeHead(401); res.end("unauthorized"); return; }
     (async () => {
       try {
