@@ -55,6 +55,14 @@ withdrawal); Binance Japan takes **SOL**. So for ①/② JP, anicca must relay-s
 **① wallet:** B1 reverse-swap USDC→SOL/ETH (relay) to recipient's exchange address (forward done; reverse dry-quoted). B2 /income cash-out guide. B3 verify a real person reaches bank.
 **② email:** C1 /income/wallet "extract → then like ①" flow. C2 verify real person email→bank.
 
+
+### A0/V2 VERIFIED via Stripe API (2026-06-19, no dashboard, no human)
+Created real V2 connected accounts and read capabilities/requirements:
+- **JP: WORKS.** Recipient connected account exposes `bank_accounts.local` + `stripe_balance.payouts` + `stripe_balance.stripe_transfers` + `cards`. → Stripe (JP acct_1RT5Qg) can pay out to a recipient's JP bank. Recipient onboarding = a ONE-TIME Stripe-hosted Express KYC (26 requirements: identity name/DOB, entity_type, **external_account=their bank**, ToS acceptance) — NO Stripe login/account, but AML law requires this one-time verification (not "just a number"). `cards` capability also present → push-to-card (Visa Direct) possible = lower friction.
+- **US: cross-border from the JP platform is BLOCKED** — `stripe_balance.stripe_transfers` for a US country account errors `capability_not_available_without_other_capability` (needs merchant card_payments). → US recipients need a separate **US Stripe entity (Stripe Atlas)**, not this JP platform.
+- **Funding (USDC→Stripe JPY balance): still open** — restricted key can't read it; confirm native Stripe crypto/stablecoin payin, else fallback USDC→JPY(exchange/JPYC)→Stripe top-up (always works).
+- NEXT to make ③ real (JP): build A2 (fund balance) + A3 (Connect transfer in ubi-watcher) → A4 V3 real yen to a real MUFG. US = needs US entity first.
+
 ## §4 PHASE 2 — anicca actually earns + safety (start IMMEDIATELY after Phase 1)
 - D: x402 secure settlement (EIP-712 PaymentPayload + USDC transferWithAuthorization + facilitator) so anicca earns USDC, revenue > compute cost, proven by real tx.
 - E: personhood gate (Worldcoin idkit, no Orb) — anti-sybil before public scale.
