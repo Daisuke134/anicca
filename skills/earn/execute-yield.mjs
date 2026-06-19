@@ -1,14 +1,16 @@
-// execute-yield.mjs — earn_yield (the GOAT earner): deploy idle USDC into the BEST safe stable
-// yield available, with no human in the loop. This is anicca's reliable, ALWAYS-available job —
-// there is never "no job": if USDC is idle it is deployed; the position then earns continuously.
+// execute-yield.mjs — earn_yield as a self-managing TREASURY: keep a liquid compute buffer so the
+// loop's survival tier stays funded (= frontier model), deploy the surplus into the best safe stable
+// yield, and REFILL the buffer from yield when frontier inference has burned it down. No human, no
+// per-instance babysitting: every Anicca on this repo manages its own liquid-vs-yield balance.
 //
-// Strategy: query the Beefy API for the highest-APY ACTIVE single-asset USDC vault on Base
-// (want == USDC, so a direct ERC-4626 deposit — no LP/zap), compare to Aave v3, and deploy idle
-// USDC into whichever pays more. Beefy Morpho-USDC vaults pay ~6-7% vs Aave ~3% — same low risk,
-// 2x the yield. Falls back to Aave if the API or a Beefy deposit fails. Keeps a liquid compute
-// reserve (ClawRouter `auto` pays frontier inference from liquid USDC).
+// Why a buffer: compute is paid in USDC via x402 from LIQUID balance, and the loop picks its model
+// by liquid tier (>$1 funded → frontier). If we deploy ALL liquid to yield, the agent starves its
+// own brain down to the cheap tier. So the treasury keeps COMPUTE_RESERVE_USDC liquid (sized above
+// the funded threshold), parks the rest in yield, and withdraws from yield to top the buffer back up
+// when it runs low. Result: frontier while the agent is solvent, automatic step-down to cheaper
+// models only when total wealth is genuinely gone.
 //
-// Honest: yield is own-capital accrual (external:false, kind:"yield") — never faked as GATE-0.
+// Honest: own-capital accrual (external:false, kind:"yield"); every action is a real on-chain tx.
 import { createPublicClient, createWalletClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { base } from "viem/chains";
@@ -18,8 +20,11 @@ const RPC = process.env.BASE_RPC_URL || "https://mainnet.base.org";
 const USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
 const AAVE_POOL = "0xA238Dd80C259a72e81d7e4664a9801593F98d1c5";
 const AAVE_APY = 0.032;
-const RESERVE = Math.round(parseFloat(process.env.YIELD_RESERVE_USDC || "5") * 1e6);
+// Liquid USDC to keep for compute (x402 inference). Sized well above the funded tier ($1) so the
+// loop runs a frontier model and has runway between refills.
+const RESERVE = Math.round(parseFloat(process.env.COMPUTE_RESERVE_USDC || "5") * 1e6);
 const MIN_DEPLOY = Math.round(parseFloat(process.env.YIELD_MIN_DEPLOY_USDC || "1") * 1e6);
+const REFILL_AT = Math.round(RESERVE * 0.6); // refill the buffer once liquid drops below 60% of it
 
 function out(o) { process.stdout.write(JSON.stringify(o) + "\n"); }
 function loadKey() {
@@ -34,12 +39,13 @@ const erc20 = [
 ];
 const beefy = [
   { name: "deposit", type: "function", stateMutability: "nonpayable", inputs: [{ type: "uint256" }], outputs: [] },
-  { name: "want", type: "function", stateMutability: "view", inputs: [], outputs: [{ type: "address" }] },
+  { name: "withdraw", type: "function", stateMutability: "nonpayable", inputs: [{ type: "uint256" }], outputs: [] },
+  { name: "getPricePerFullShare", type: "function", stateMutability: "view", inputs: [], outputs: [{ type: "uint256" }] },
   { name: "balanceOf", type: "function", stateMutability: "view", inputs: [{ type: "address" }], outputs: [{ type: "uint256" }] },
 ];
 const aave = [{ name: "supply", type: "function", stateMutability: "nonpayable", inputs: [{ type: "address" }, { type: "uint256" }, { type: "address" }, { type: "uint16" }], outputs: [] }];
 
-// Best ACTIVE single-asset USDC Beefy Base vault (want==USDC → direct deposit). null on failure.
+// Best ACTIVE single-asset USDC Beefy Base vault (want==USDC → direct deposit/withdraw). null on fail.
 async function bestBeefy() {
   try {
     const [vaults, apys] = await Promise.all([
@@ -61,37 +67,45 @@ async function main() {
   const acct = privateKeyToAccount(pk);
   const pub = createPublicClient({ chain: base, transport: http(RPC) });
   const w = createWalletClient({ account: acct, chain: base, transport: http(RPC) });
-
   if ((await pub.getBalance({ address: acct.address })) === 0n) return out({ abort: "no ETH for gas", wallet: acct.address });
-  const balUsdc = await pub.readContract({ address: USDC, abi: erc20, functionName: "balanceOf", args: [acct.address] });
-  const deployable = balUsdc - BigInt(RESERVE);
-  if (deployable < BigInt(MIN_DEPLOY)) return out({ abort: "no idle USDC to deploy", usdc: Number(balUsdc) / 1e6, reserve_usdc: RESERVE / 1e6 });
 
-  // choose best venue
+  const liquid = await pub.readContract({ address: USDC, abi: erc20, functionName: "balanceOf", args: [acct.address] });
   const bf = await bestBeefy();
-  const useBeefy = bf && bf.apy > AAVE_APY;
-  const venue = useBeefy ? bf.vault : AAVE_POOL;
-  const protocol = useBeefy ? `beefy:${bf.id}` : "aave-v3-base";
-  const apy = useBeefy ? bf.apy : AAVE_APY;
+  const vault = bf?.vault;
 
-  // approve (idempotent)
-  let alw = await pub.readContract({ address: USDC, abi: erc20, functionName: "allowance", args: [acct.address, venue] });
-  if (alw < deployable) {
-    const ah = await w.writeContract({ address: USDC, abi: erc20, functionName: "approve", args: [venue, deployable] });
-    await pub.waitForTransactionReceipt({ hash: ah, confirmations: 2 });
-    alw = await pub.readContract({ address: USDC, abi: erc20, functionName: "allowance", args: [acct.address, venue] });
-    if (alw < deployable) return out({ error: "approve did not stick", venue });
+  // ---- DEPLOY: liquid above the buffer goes to the best yield ----
+  const surplus = liquid - BigInt(RESERVE);
+  if (surplus >= BigInt(MIN_DEPLOY)) {
+    const useBeefy = bf && bf.apy > AAVE_APY;
+    const venue = useBeefy ? vault : AAVE_POOL;
+    const protocol = useBeefy ? `beefy:${bf.id}` : "aave-v3-base";
+    let alw = await pub.readContract({ address: USDC, abi: erc20, functionName: "allowance", args: [acct.address, venue] });
+    if (alw < surplus) {
+      const ah = await w.writeContract({ address: USDC, abi: erc20, functionName: "approve", args: [venue, surplus] });
+      await pub.waitForTransactionReceipt({ hash: ah, confirmations: 2 });
+    }
+    const tx = useBeefy
+      ? await w.writeContract({ address: venue, abi: beefy, functionName: "deposit", args: [surplus] })
+      : await w.writeContract({ address: venue, abi: aave, functionName: "supply", args: [USDC, surplus, acct.address, 0] });
+    const r = await pub.waitForTransactionReceipt({ hash: tx });
+    return out({ kind: "yield", action: "deploy", protocol, apy_pct: +((useBeefy ? bf.apy : AAVE_APY) * 100).toFixed(2), tx, status: r.status === "success" ? "0x1" : "0x0", deposited_usdc: Number(surplus) / 1e6, reserve_usdc: RESERVE / 1e6, wallet: acct.address });
   }
 
-  let tx;
-  if (useBeefy) tx = await w.writeContract({ address: venue, abi: beefy, functionName: "deposit", args: [deployable] });
-  else tx = await w.writeContract({ address: venue, abi: aave, functionName: "supply", args: [USDC, deployable, acct.address, 0] });
-  const r = await pub.waitForTransactionReceipt({ hash: tx });
+  // ---- REFILL: liquid below the trigger → pull from yield to top up the compute buffer ----
+  if (liquid < BigInt(REFILL_AT) && vault) {
+    const shares = await pub.readContract({ address: vault, abi: beefy, functionName: "balanceOf", args: [acct.address] });
+    if (shares > 0n) {
+      const ppfs = await pub.readContract({ address: vault, abi: beefy, functionName: "getPricePerFullShare", args: [] });
+      const need = BigInt(RESERVE) - liquid;                       // USDC (6-dec) to top up to RESERVE
+      let wantShares = (need * (10n ** 18n)) / ppfs;               // shares (6-dec) for that USDC
+      if (wantShares > shares) wantShares = shares;               // cap at what we hold
+      const tx = await w.writeContract({ address: vault, abi: beefy, functionName: "withdraw", args: [wantShares] });
+      const r = await pub.waitForTransactionReceipt({ hash: tx });
+      return out({ kind: "yield", action: "refill", protocol: `beefy:${bf.id}`, tx, status: r.status === "success" ? "0x1" : "0x0", refilled_usdc: Number((wantShares * ppfs) / (10n ** 18n)) / 1e6, reserve_usdc: RESERVE / 1e6, wallet: acct.address });
+    }
+  }
 
-  out({
-    kind: "yield", protocol, apy_pct: +(apy * 100).toFixed(2),
-    tx, status: r.status === "success" ? "0x1" : "0x0",
-    deposited_usdc: Number(deployable) / 1e6, venue, wallet: acct.address,
-  });
+  // ---- HOLD: buffer is healthy, surplus too small to deploy. Positions keep accruing. ----
+  out({ kind: "yield_hold", action: "hold", liquid_usdc: Number(liquid) / 1e6, reserve_usdc: RESERVE / 1e6, note: "buffer healthy" });
 }
 main().catch((e) => out({ error: String(e?.message || e) }));
