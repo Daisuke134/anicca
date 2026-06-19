@@ -50,15 +50,23 @@ export async function bankWatcherPass({ readBankRecipients, getBalance, claim, r
       transfers.forEach((t) => failed.push(t.to)); // no adapter -> stays 'processing', not paid (no fake)
       continue;
     }
+    let res;
     try {
-      const res = await adapter(transfers, opts);
-      for (const t of transfers) {
-        await markPaid(t.to, { provider, amount: t.amount, currency: t.currency, res });
-        paid.push(t.to);
-      }
+      res = await adapter(transfers, opts);
     } catch {
       // FIND-B: UNKNOWN outcome after a submit attempt — leave 'processing' for reconciliation, NEVER re-queue.
       transfers.forEach((t) => failed.push(t.to));
+      continue;
+    }
+    // Adapter SUCCEEDED (money submitted). Record per-recipient; FIND-007: a markPaid failure here must NOT
+    // re-queue or double-count — the row simply stays 'processing' and the reconciliation poll resolves it.
+    for (const t of transfers) {
+      try {
+        await markPaid(t.to, { provider, amount: t.amount, currency: t.currency, res });
+        paid.push(t.to);
+      } catch {
+        failed.push(t.to); // submitted but not recorded -> stays 'processing' -> reconcileStuck/pollCompletions
+      }
     }
   }
   return { outcome: failed.length ? (paid.length ? "partial" : "failed") : "sent", paid, failed };

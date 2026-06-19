@@ -11,6 +11,7 @@
 // first) — gated no-fake (returns {gated} without a token).
 //
 // Invariant (資金決済法): own-funds 給付 only.
+import { createHash } from "node:crypto";
 import { bankWatcherPass } from "./bank-watcher.mjs";
 import { bankRecipientsFromRows } from "./lib/bank-recipients.mjs";
 import { buildBulkTransferRequest, submitBulkTransfer, API_BASE } from "./gmo-furikomi.mjs";
@@ -41,11 +42,39 @@ export function claimedFromRows(rows) {
 }
 
 // deterministic idempotency key for a batch (FIND-B defense): same recipients+amounts => same key.
+// FIND-006: sha256 (not a 32-bit hash) to make collisions cryptographically negligible. GMO honoring the
+// x-idempotency-key header is UNVERIFIED until a live token; the primary defense is no-auto-requeue.
 export function idempotencyKey(transfers = []) {
   const sig = transfers.map((t) => `${t.to}:${t.amount}`).sort().join("|");
-  let h = 0;
-  for (let i = 0; i < sig.length; i++) { h = (h * 31 + sig.charCodeAt(i)) | 0; }
-  return `anicca-ubi-${(h >>> 0).toString(36)}`;
+  return `anicca-ubi-${createHash("sha256").update(sig).digest("hex").slice(0, 32)}`;
+}
+
+// FIND-002/D: the submit ref is stored inside notes ("...;ref=R1"); parse it back for the completion poll.
+export function parseRef(notes) {
+  const m = String(notes || "").match(/(?:^|;)ref=([^;]+)/);
+  return m ? m[1] : null;
+}
+
+// FIND-004: testable CAS core. patchQueued(id) -> rows PostgREST returned (1 row IFF we flipped queued).
+export async function claimWith(patchQueued, ids = []) {
+  const claimed = [];
+  for (const id of ids) {
+    const rows = await patchQueued(id);
+    if (claimedFromRows(rows)) claimed.push(id);
+  }
+  return claimed;
+}
+
+// FIND-003: flag rows stuck in 'processing' beyond a threshold to 'needs_review' (operator path) — NEVER
+// auto-pay/requeue without GMO confirmation. deps injected for unit test.
+export async function reconcileStuck({ readProcessing, flagNeedsReview, olderThanMs = 1800000, now }) {
+  const rows = await readProcessing();
+  const flagged = [];
+  for (const r of rows || []) {
+    const ts = r.ts ? Date.parse(r.ts) : NaN;
+    if (Number.isFinite(ts) && now - ts >= olderThanMs) { await flagNeedsReview(r.id); flagged.push(r.id); }
+  }
+  return { flagged };
 }
 
 export function todayYmd(d = new Date()) {
@@ -85,17 +114,57 @@ async function readBankRecipients() {
 
 // FIND-A: atomic CAS — PATCH guarded by &status=eq.queued; row returned only if WE flipped it.
 async function claim(ids) {
-  const claimed = [];
-  for (const id of ids) {
+  return claimWith(async (id) => {
     const res = await sb(`recipients?id=eq.${id}&status=eq.queued`, { method: "PATCH", headers: { Prefer: "return=representation" }, body: JSON.stringify(buildClaimPatch()) });
-    if (!res.ok) { console.error(`[bank-watcher] claim CAS failed ${id}: HTTP ${res.status}`); continue; }
-    const rows = await res.json().catch(() => []);
-    if (claimedFromRows(rows)) claimed.push(id);
-  }
-  return claimed;
+    if (!res.ok) { console.error(`[bank-watcher] claim CAS failed ${id}: HTTP ${res.status}`); return []; }
+    return res.json().catch(() => []);
+  }, ids);
 }
 async function release(ids) {
   for (const id of ids) await sb(`recipients?id=eq.${id}`, { method: "PATCH", headers: { Prefer: "return=minimal" }, body: JSON.stringify(buildReleasePatch()) });
+}
+
+// FIND-002/D live wiring: read 'submitted' rows + their ref, query GMO completion, promote paid / requeue.
+async function readSubmitted() {
+  const res = await sb("recipients?status=eq.submitted&select=id,notes");
+  const rows = await res.json().catch(() => []);
+  return (Array.isArray(rows) ? rows : []).map((r) => ({ id: r.id, ref: parseRef(r.notes) })).filter((r) => r.ref);
+}
+async function queryStatus(ref) { // GMO bulktransfer/status — UNVERIFIED endpoint/shape until live token
+  const token = process.env.GMO_AOZORA_ACCESS_TOKEN;
+  if (!token || !ref) return "pending";
+  try {
+    const res = await fetch(`${API_BASE}/bulktransfer/status?apptransferNo=${encodeURIComponent(ref)}`, { headers: { Authorization: `Bearer ${token}`, "x-access-token": token, Accept: "application/json" } });
+    if (!res.ok) return "pending";
+    const j = await res.json();
+    const s = String(j.status || j.transferStatus || "").toLowerCase();
+    if (/complete|done|success|完了/.test(s)) return "completed";
+    if (/fail|error|reject|失敗|却下/.test(s)) return "failed";
+    return "pending";
+  } catch { return "pending"; }
+}
+async function markCompleted(id) { await sb(`recipients?id=eq.${id}`, { method: "PATCH", headers: { Prefer: "return=minimal" }, body: JSON.stringify({ status: "paid" }) }); }
+async function requeue(id) { await sb(`recipients?id=eq.${id}`, { method: "PATCH", headers: { Prefer: "return=minimal" }, body: JSON.stringify({ status: "queued" }) }); }
+
+// FIND-D: completion-poll pass (cron: promote submitted->paid, requeue GMO-confirmed failures).
+export async function pollPass() {
+  if (!process.env.GMO_AOZORA_ACCESS_TOKEN) return { outcome: "gated", reason: "no_token" };
+  if (!SUPABASE_URL || !SUPABASE_KEY) return { outcome: "gated", reason: "no_supabase" };
+  return pollCompletions({ readSubmitted, queryStatus, markPaid: markCompleted, requeue });
+}
+
+// FIND-003: operator reconcile — flag 'processing' rows older than threshold to 'needs_review'.
+export async function reconcilePass() {
+  if (!SUPABASE_URL || !SUPABASE_KEY) return { outcome: "gated", reason: "no_supabase" };
+  return reconcileStuck({
+    readProcessing: async () => {
+      const res = await sb("recipients?status=eq.processing&select=id,applied_at");
+      const rows = await res.json().catch(() => []);
+      return (Array.isArray(rows) ? rows : []).map((r) => ({ id: r.id, ts: r.applied_at }));
+    },
+    flagNeedsReview: async (id) => { await sb(`recipients?id=eq.${id}`, { method: "PATCH", headers: { Prefer: "return=minimal" }, body: JSON.stringify({ status: "needs_review" }) }); },
+    now: Date.now(),
+  });
 }
 async function markPaid(id, info) {
   const res = await sb(`recipients?id=eq.${id}`, { method: "PATCH", headers: { Prefer: "return=minimal" }, body: JSON.stringify(buildSubmittedPatch(info)) });
@@ -144,5 +213,7 @@ export async function pass() {
 }
 
 if (process.argv[1] && process.argv[1].endsWith("bank-payout-watcher.mjs")) {
-  pass().then((r) => console.log(JSON.stringify(r))).catch((e) => { console.error("bank-watcher error:", e.message); process.exit(0); });
+  const cmd = process.argv[2] || "pass"; // pass | poll | reconcile
+  const fn = cmd === "poll" ? pollPass : cmd === "reconcile" ? reconcilePass : pass;
+  fn().then((r) => console.log(JSON.stringify(r))).catch((e) => { console.error("bank-watcher error:", e.message); process.exit(0); });
 }
