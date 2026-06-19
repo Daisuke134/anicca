@@ -14,7 +14,7 @@ const DEFAULTS = {
   OPENAI_BASE_URL:      'http://127.0.0.1:8402/v1',
   ANICCA_FREE_MODEL:    'nvidia/deepseek-v4-flash',
   ANICCA_LEAN_MODEL:    'deepseek/deepseek-r1-0528',
-  ANICCA_FUNDED_MODEL:  'openai/gpt-4o-mini',
+  ANICCA_FUNDED_MODEL:  'anthropic/claude-opus-4.8',
   SLEEP_BASE_S:         120,
   SLEEP_ERROR_S:        60,
   SLEEP_LOOP_DETECT_S:  300,
