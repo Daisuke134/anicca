@@ -198,3 +198,13 @@ THE 4 REMAINING (to make real yen land in a real MUFG = A4/V3):
 3. WIRE bankWatcherPass TO SUPABASE — readBankRecipients = fetch recipients?status=queued + bankRecipientsFromRows(parseBankRecipient); getPool = our JPY balance; markPaid = update recipient status; adapters = gmo-furikomi.submitBulkTransfer(token). Then run a pass.
 4. A4 VERIFY — sandbox first (GMO submitBulkTransfer → 振込完了 status), then PRODUCTION (法人 #52 account) → real yen in a real MUFG + real USD in a US bank. = DONE per §0 binding rule.
 GATES: token=Dais signup (eKYC-free) or Rain reply; production payout=法人 (#52, 個人=AML freeze); funding=SBI/exchange/Rain.
+
+### ③ bank chain — VCSDD adversarial hardening (5 rounds, 2026-06-19→20)
+A fresh-context adversary reviewed the chain 5× (maker≠checker). Each round found real bugs; all money-safety bugs fixed + tested (earn suite 45/45):
+- R1: accountType→accountTypeCode misdelivery (FIND-001); orphan bank row (FIND-004); accepted≠完了 (FIND-005).
+- R2: concurrent-pass double-pay (FIND-A, atomic CAS claim); post-acceptance double-pay (FIND-B, no auto-requeue + idempotency key); dead balance guard (FIND-C, getBalance reads real 残高照会); fullwidth-space validator gap (FIND-F).
+- R3: completion poll not wired (FIND-D, pollPass); ref mismatch (parseRef); no operator path (reconcilePass); deleted un-hardened runBankPayout (FIND-005); sha256 idempotency (FIND-006); markPaid-fail-after-success stays processing (FIND-007).
+- R4: CRITICAL auto-requeue double-pay via unverified queryStatus (FIND-100) → 'failed' now goes to needs_review, NEVER auto-requeue; stuck-row aging on claimed_at not applied_at (FIND-101).
+- R5: operator re-queue parseability (FIND-103, submitted notes preserve bank fields); NULL claimed_at flagging; composed seam tests (FIND-102).
+R5 verdict: moneySafetyConvergence MET — NO critical/high double-pay, money-loss, or money-reversal path remains.
+KNOWN LIMITATION (FIND-104, live-API-gated, cannot resolve without a token): queryStatus (GMO bulktransfer/status) is UNVERIFIED + batch-granular — a batch-level verdict is applied to all rows sharing an apptransferNo. When the live GMO token arrives, confirm the status endpoint shape AND whether per-item (not just batch) status is available; until then 'failed'→needs_review (human-gated) makes batch-granularity safe (no auto-money-movement). The 残高照会 balance endpoint path is likewise UNVERIFIED until the token.
