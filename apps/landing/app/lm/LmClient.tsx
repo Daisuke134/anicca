@@ -202,7 +202,7 @@ export default function LmClient() {
       setErr(t.connect.error);
       return;
     }
-    const okGmail = await run('gmail-connect', setGmail);
+    const okGmail = await run('unipile-connect', setGmail);
     try { w && w.close(); } catch {}
     if (!okGmail) setErr(t.connect.error);
   }, [uid, sig, t]);
