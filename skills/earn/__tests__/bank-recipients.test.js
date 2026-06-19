@@ -20,6 +20,13 @@ test("parseBankRecipient: returns null for non-bank or incomplete rows", () => {
   assert.equal(parseBankRecipient({ id: "x", notes: "method=bank;country=us" }), null); // non-JP future rail
 });
 
+test("FIND-105: an already-submitted row (carries ref=) is REFUSED even with full valid bank fields (no double-pay)", () => {
+  const submitted = NOTES + ";submitted;provider=gmo;amount=19870;currency=JPY;ref=G1";
+  assert.equal(parseBankRecipient({ id: "x", notes: submitted }), null); // ref= present => never auto-redispatched
+  // sanity: WITHOUT the ref it would parse (so the guard is the ref, not the extra tokens)
+  assert.ok(parseBankRecipient({ id: "x", notes: NOTES }));
+});
+
 test("bankRecipientsFromRows: keeps only valid JP bank rows", () => {
   const rows = [
     { id: "a", notes: NOTES },
