@@ -28,7 +28,7 @@ export function assembleContext({ walletAddress, balanceUsdc, tier, model, recen
     walletAddress: walletAddress || 'unknown',
     balanceUsdc: typeof balanceUsdc === 'number' ? balanceUsdc : 0,
     tier: tier || 'broke',
-    model: model || 'nvidia/deepseek-v4-flash',
+    model: model || 'free/gpt-oss-120b',
     recentLedgerLines: Array.isArray(recentLedgerLines) ? recentLedgerLines.slice(-20) : [],
     genesisPrompt: genesisPrompt || '',
     wakeId: wakeId || '',
