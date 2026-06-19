@@ -46,9 +46,8 @@ node "$REPO/runtime/dashboard/telemetry-poster.mjs" >>"$LOGDIR/poster.log" 2>&1 
 # 4. brain endpoint + model the loop should use -------------------------------------------------
 export OPENAI_BASE_URL="http://127.0.0.1:$PORT/v1"
 export OPENAI_API_KEY="${OPENAI_API_KEY:-x402-local}"
-# derive the wallet address from the JSON "address" field (NOT a bare 0x-grep — that would match the
-# first 40 hex of the 64-char privateKey and pick the wrong/non-address). python3 is ESM-safe.
-export ANICCA_WALLET_ADDRESS="${ANICCA_WALLET_ADDRESS:-$(python3 -c "import json,os;print(json.load(open(os.path.expanduser('~/.automaton/wallet.json'))).get('address',''))" 2>/dev/null)}"
+# derive the wallet address (viem, from the privateKey) via the helper, run where viem resolves.
+export ANICCA_WALLET_ADDRESS="${ANICCA_WALLET_ADDRESS:-$(cd "$REPO/runtime/compute-proxy" && node "$REPO/runtime/wallet-address.mjs" 2>/dev/null)}"
 
 log "exec loop (model tiers from config; funded=$(node -e 'import("'"$REPO"'/runtime/loop/config.mjs").then(m=>console.log(m.loadConfig(process.env,"").ANICCA_FUNDED_MODEL)).catch(()=>console.log("?"))' 2>/dev/null))"
 # 5. run the loop in the foreground — its exit (crash/shutdown) ends this script; supervisor restarts.
