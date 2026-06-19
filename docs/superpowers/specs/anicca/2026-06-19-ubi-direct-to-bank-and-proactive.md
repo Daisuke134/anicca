@@ -63,6 +63,15 @@ Created real V2 connected accounts and read capabilities/requirements:
 - **Funding (USDC→Stripe JPY balance): still open** — restricted key can't read it; confirm native Stripe crypto/stablecoin payin, else fallback USDC→JPY(exchange/JPYC)→Stripe top-up (always works).
 - NEXT to make ③ real (JP): build A2 (fund balance) + A3 (Connect transfer in ubi-watcher) → A4 V3 real yen to a real MUFG. US = needs US entity first.
 
+
+### ③ bank-direct — RAIL DECISION = FERN (deep research, 2026-06-19)
+Researched the full USDC→fiat-bank payout option space for a JAPAN-based operator paying JP+US banks, API, no-human. RANK:
+- **#1 FERN (fernhq.com) — CHOSEN.** Only verified single API that off-ramps USDC(Base) → BOTH a Japanese bank (JPY/Zengin, T+0) AND a US bank (USD). Operator can be Japan-based (NO US entity). API: Customer → Payment Account (recipient bank, once) → Quote → Transaction (from anicca's Base USDC); Fern hosts recipient KYC; 150+ countries; webhooks. CAVEAT: API in PRIVATE BETA — confirm prod readiness, JPY/Zengin limits, fees, SLA with Fern. Onboarding = NOT self-serve (dashboard.fernhq.com is login-only, /signup 404) → request access via hello@fernhq.com. ACTION TAKEN: access-request email sent 2026-06-19 (msg 19edf1e6) — awaiting pre-prod key.
+- #2 US-leg only (no JPY): Conduit / Brale / BVNK / Sphere / Iron — USDC(Base)→USD bank, clean API, but none pays JP.
+- Stripe Global Payouts: pays US + 90 countries BUT **not Japan**, and **platform must be US/UK** (needs Stripe Atlas). Bridge.xyz: excludes Japan (operator AND recipient). Circle CPN: FI-only, no self-serve. Crossmint: US-leg, JP unverified.
+- JP-local DIY fallback: JPYC (第二種資金移動業 関東財務局長第00099号; JPYC EX redeems JPYC→JPY 1:1 fee-free BUT manual web flow, ~¥1M/day cap, NO API, runs on Eth/Polygon/Avax/Kaia NOT Base) + GMO Aozora 振込API (OAuth2/REST, needs 法人口座+KYB) for the final JPY leg. Not turnkey today.
+NEXT: on Fern access → build Customer/PaymentAccount/Quote/Transaction + verify real yen to a real MUFG (A4). If Fern beta slow → US leg via Conduit/Brale now + JP via JPYC+GMO DIY.
+
 ## §4 PHASE 2 — anicca actually earns + safety (start IMMEDIATELY after Phase 1)
 - D: x402 secure settlement (EIP-712 PaymentPayload + USDC transferWithAuthorization + facilitator) so anicca earns USDC, revenue > compute cost, proven by real tx.
 - E: personhood gate (Worldcoin idkit, no Orb) — anti-sybil before public scale.
