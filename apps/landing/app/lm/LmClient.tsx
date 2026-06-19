@@ -143,69 +143,58 @@ export default function LmClient() {
     }
   }, [name, uid, sig, t]);
 
-  // ONE button → connect BOTH Google Calendar AND Gmail (Composio managed OAuth), back-to-back in
-  // a single tab. The earlier "Gmail is blocked" was self-inflicted: our gmail auth config requested
-  // gmail.modify PLUS 9 People-API scopes (contacts/birthday/phone…). Per Composio's own docs the
-  // block fires when you request scopes BEYOND the verified defaults — so we now use a CLEAN config
-  // (ac_FIw4w_MtD_9v) that requests ONLY gmail.modify, exactly like gcal requests only calendar.
-  // Same Google account → the 2nd consent is one quick tap. Gmail = read + reply + send on the
-  // user's behalf (the real "ask, read the reply, register" loop; future Slack/Discord/etc same way).
-  const connectBoth = useCallback(async () => {
-    setErr('');
-    setCal('connecting');
-    setGmail('connecting');
-    // Open the consent tab NOW, synchronously in the click gesture (survives popup blockers).
-    const w = window.open('about:blank', '_blank');
-    // Run one toolkit's connect in the SHARED tab; resolves true once Composio reports ACTIVE.
-    const run = (fn: string, set: (s: ConnState) => void) =>
-      new Promise<boolean>((resolve) => {
-        const base = `/.netlify/functions/${fn}?uid=${encodeURIComponent(uid)}&sig=${encodeURIComponent(sig)}`;
-        (async () => {
-          try {
-            const d = await (await fetch(base)).json();
-            if (d.connected) {
-              set('connected');
-              return resolve(true);
-            }
-            if (d.redirect_url) {
-              if (w) w.location.href = d.redirect_url;
-              else window.location.href = d.redirect_url; // fallback if the popup was blocked
-              const t0 = Date.now();
-              const poll = setInterval(async () => {
-                if (Date.now() - t0 > 180000) {
-                  clearInterval(poll);
-                  set('error');
-                  return resolve(false);
-                }
-                try {
-                  const dd = await (await fetch(`${base}&check=1`)).json();
-                  if (dd.connected) {
-                    clearInterval(poll);
-                    set('connected');
-                    resolve(true);
-                  }
-                } catch {}
-              }, 3000);
-              return;
-            }
-            set('error');
-            resolve(false);
-          } catch {
-            set('error');
-            resolve(false);
+  // TWO separate buttons / TWO connections — clearer UX than one button firing two consents back to
+  // back. Calendar = Composio (clean sensitive scope, no warning). Gmail = Unipile (their Google-
+  // verified app → no "App is blocked", no Google submission by us; read+reply+send + future
+  // Slack/Discord/etc through the same Unipile account). Each opens its OWN consent tab.
+  const runConnect = useCallback(
+    (fn: string, set: (s: ConnState) => void) => {
+      set('connecting');
+      // Open the consent tab NOW, synchronously in the click gesture (survives popup blockers).
+      const w = window.open('about:blank', '_blank');
+      const base = `/.netlify/functions/${fn}?uid=${encodeURIComponent(uid)}&sig=${encodeURIComponent(sig)}`;
+      (async () => {
+        try {
+          const d = await (await fetch(base)).json();
+          if (d.connected) {
+            set('connected');
+            try { w && w.close(); } catch {}
+            return;
           }
-        })();
-      });
-    const okCal = await run('calendar-connect', setCal);
-    if (!okCal) {
-      try { w && w.close(); } catch {}
-      setErr(t.connect.error);
-      return;
-    }
-    const okGmail = await run('unipile-connect', setGmail);
-    try { w && w.close(); } catch {}
-    if (!okGmail) setErr(t.connect.error);
-  }, [uid, sig, t]);
+          if (d.redirect_url) {
+            if (w) w.location.href = d.redirect_url;
+            else window.location.href = d.redirect_url; // fallback if the popup was blocked
+            const t0 = Date.now();
+            const poll = setInterval(async () => {
+              if (Date.now() - t0 > 180000) {
+                clearInterval(poll);
+                set('error');
+                try { w && w.close(); } catch {}
+                return;
+              }
+              try {
+                const dd = await (await fetch(`${base}&check=1`)).json();
+                if (dd.connected) {
+                  clearInterval(poll);
+                  set('connected');
+                  try { w && w.close(); } catch {}
+                }
+              } catch {}
+            }, 3000);
+            return;
+          }
+          set('error');
+          try { w && w.close(); } catch {}
+        } catch {
+          set('error');
+          try { w && w.close(); } catch {}
+        }
+      })();
+    },
+    [uid, sig]
+  );
+  const connectCal = useCallback(() => { setErr(''); runConnect('calendar-connect', setCal); }, [runConnect]);
+  const connectGmail = useCallback(() => { setErr(''); runConnect('unipile-connect', setGmail); }, [runConnect]);
 
   const savePhone = useCallback(async () => {
     setErr('');
@@ -280,23 +269,21 @@ export default function LmClient() {
           <p className="mt-2 text-sm text-[hsl(var(--text-secondary))]">{t.connect.body}</p>
           <div className="mt-5 space-y-3">
             <ConnectRow
-              label={`${t.connect.calendar} + ${t.connect.gmail}`}
-              state={
-                cal === 'connected' && gmail === 'connected'
-                  ? 'connected'
-                  : cal === 'error' || gmail === 'error'
-                    ? 'error'
-                    : cal === 'connecting' || gmail === 'connecting'
-                      ? 'connecting'
-                      : 'idle'
-              }
+              label={t.connect.calendar}
+              state={cal}
               strings={t.connect}
-              onClick={connectBoth}
+              onClick={connectCal}
+            />
+            <ConnectRow
+              label={t.connect.gmail}
+              state={gmail}
+              strings={t.connect}
+              onClick={connectGmail}
             />
           </div>
           <button
             type="button"
-            disabled={cal !== 'connected'}
+            disabled={cal !== 'connected' || gmail !== 'connected'}
             onClick={() => setStep('phone')}
             className="mt-6 inline-flex w-full items-center justify-center rounded-pill bg-[hsl(var(--gold))] px-6 py-3 text-sm font-semibold text-[#18181b] transition-all hover:brightness-95 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
           >

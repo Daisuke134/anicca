@@ -41,8 +41,8 @@ export const launchStrings = {
         saveError: 'Could not save. Try again.',
       },
       connect: {
-        title: 'Connect Calendar + Gmail',
-        body: 'One click via Composio — one Google screen. Life Manager reads your calendar and your mail, asks you when something is unclear, and acts with your approval.',
+        title: 'Connect Calendar & Gmail',
+        body: 'Connect each below. Life Manager reads your calendar and your mail, asks you when something is unclear, and acts only with your approval.',
         calendar: 'Google Calendar',
         gmail: 'Gmail',
         button: 'Continue',
@@ -213,8 +213,8 @@ export const launchStrings = {
         saveError: '保存できませんでした。もう一度お試しください。',
       },
       connect: {
-        title: 'カレンダー + Gmail をつなぐ',
-        body: 'Composio でワンクリック接続(Google の画面は1枚)。ライフマネージャーが予定とメールを読み、不明点はあなたに聞き、承認を得て動く。',
+        title: 'カレンダーと Gmail をつなぐ',
+        body: '下のそれぞれを接続。ライフマネージャーが予定とメールを読み、不明点はあなたに聞き、承認を得てから動く。',
         calendar: 'Google カレンダー',
         gmail: 'Gmail',
         button: '続ける',
