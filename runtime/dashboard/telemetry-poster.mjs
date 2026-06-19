@@ -20,17 +20,25 @@ const pub = createPublicClient({ chain: base, transport: http("https://base-rpc.
 const ABI = [{ name: "balanceOf", type: "function", stateMutability: "view", inputs: [{ type: "address" }], outputs: [{ type: "uint256" }] }];
 const U = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", A = "0x4e65fE4DbA92790696d040ac24Aa414708F5c0AB",
       M = "0xEdc817A28E8B93B03976FBd4a3dDBc9f7D176c22", V = "0xbeef0e0834849aCC03f0089F01f4F1Eeb06873C9",
-      BF = "0x83152eE78d8f20Bba134A5FF000D551355Ce3996"; // Beefy morpho-gauntlet-frontier USDC vault
+      BF = "0x83152eE78d8f20Bba134A5FF000D551355Ce3996", // Beefy morpho-gauntlet-frontier USDC vault
+      WETH = "0x4200000000000000000000000000000000000006"; // blue-chip ETH investment leg
 const bal = (t, w) => pub.readContract({ address: t, abi: ABI, functionName: "balanceOf", args: [w] }).then(Number);
+async function ethPrice() {
+  try { const r = await fetch("https://api.coinbase.com/v2/prices/ETH-USD/spot"); return Number((await r.json()).data.amount) || 0; } catch { return 0; }
+}
 
 async function netWorth() {
-  const [l, a, mt, ms, bfsh] = await Promise.all([bal(U, acct.address), bal(A, acct.address), bal(M, acct.address), bal(V, acct.address), bal(BF, acct.address)]);
+  const [l, a, mt, ms, bfsh, weth, nativeEth, ep] = await Promise.all([
+    bal(U, acct.address), bal(A, acct.address), bal(M, acct.address), bal(V, acct.address), bal(BF, acct.address),
+    bal(WETH, acct.address), pub.getBalance({ address: acct.address }).then(Number), ethPrice(),
+  ]);
   const ex = Number(await pub.readContract({ address: M, abi: [{ name: "exchangeRateStored", type: "function", stateMutability: "view", inputs: [], outputs: [{ type: "uint256" }] }], functionName: "exchangeRateStored" }));
   const mo = Number(await pub.readContract({ address: V, abi: [{ name: "convertToAssets", type: "function", stateMutability: "view", inputs: [{ type: "uint256" }], outputs: [{ type: "uint256" }] }], functionName: "convertToAssets", args: [BigInt(ms)] }));
-  // Beefy: shares * getPricePerFullShare / 1e18 = underlying USDC
   const ppfs = Number(await pub.readContract({ address: BF, abi: [{ name: "getPricePerFullShare", type: "function", stateMutability: "view", inputs: [], outputs: [{ type: "uint256" }] }], functionName: "getPricePerFullShare" }).catch(() => 0));
   const usd = (x) => x / 1e6;
-  return { liquid: usd(l), aave: usd(a), morpho: usd(mo), moonwell: (mt * ex / 1e18) / 1e6, beefy: (bfsh * ppfs / 1e18) / 1e6 };
+  // blue-chip leg: WETH + native ETH (gas+investment) valued at spot ETH price
+  const bluechip = ((weth + nativeEth) / 1e18) * ep;
+  return { liquid: usd(l), aave: usd(a), morpho: usd(mo), moonwell: (mt * ex / 1e18) / 1e6, beefy: (bfsh * ppfs / 1e18) / 1e6, bluechip };
 }
 
 function recentLog(n = 20) {
@@ -51,7 +59,7 @@ const FREE_RE = /nvidia|flash|qwen|free|oss|gpt-oss/i;
 async function post() {
   try {
     const nw = await netWorth();
-    const total = +(nw.liquid + nw.aave + nw.morpho + nw.moonwell + (nw.beefy || 0)).toFixed(2);
+    const total = +(nw.liquid + nw.aave + nw.morpho + nw.moonwell + (nw.beefy || 0) + (nw.bluechip || 0)).toFixed(2);
     const ts = Math.floor(Date.now() / 1000);
     const model = lastModel();
     const tier = FREE_RE.test(model) ? "free" : "frontier";
