@@ -171,3 +171,11 @@ TO UNBLOCK (Dais, one-time): enable **Global Payouts** in the Stripe dashboard (
 - DECISION FORK (await Rain reply first): (A) if Rain allows a JP operator → integrate Rain for JP+US, NO US entity needed. (B) if not → form a US entity (Stripe Atlas, ~$500, Dais identity/EIN) → unlocks Circle/Brale/Stripe US leg + Rain US; JP leg still via Rain. Don't spend on Atlas until Rain answers.
 - PARALLEL IDEA (not bank, but real spendable JP value TODAY, no bank-KYB): crypto→gift-card/PayPay via API (e.g. Bitrefill) — unverified, research next if desired.
 - Meanwhile ①wallet + ②email (Crossmint) payout = verified working (UBI deliverable to crypto-capable recipients now).
+
+### Entity decision — REAL UBI needs a 法人 (corporate), not 個人 (verified 2026-06-19, 資金決済法)
+- 個人 (personal) account for mass payouts to many strangers = AML freeze risk (personal accounts are personal-use; business-like repeated transfers get flagged/frozen) + low limits. → only for SANDBOX TEST.
+- 法人 (corporate) account = the right vehicle for mass grants/benefits (like payroll/refunds/grants); GMO 振込API is built for corporate bulk transfers.
+- **資金移動業 (Funds Transfer Business) license NOT needed**: 為替取引/資金移動業 (資金決済法, FSA) = transmitting OTHERS' funds as an intermediary (a remittance service). We GIVE our OWN earned surplus to recipients = 贈与/給付 (gift/grant), not intermediating third-party funds → not 為替取引 → no registration. (Source: ja.wikipedia 資金移動業 — "為替取引すなわち資金を移動することを業として"; the regulated act is moving funds between/for others.) CRITICAL invariant: anicca must always GIVE its OWN money — never "take from A to send to B" (that would trigger the license).
+- Need: form a company (法人登記) → 法人 bank account. Fastest/cheapest JP = 合同会社 (~¥60k, 1-2 wks) or 株式会社. Global = US entity (Stripe Atlas, #47). JP UBI → JP 法人; global → US entity.
+- Tax: recipients may have 一時所得/贈与 considerations; we expense it. Tax matter, NOT licensing.
+- PLAN: NOW = 個人 account → sunabar 振込API sandbox test (prove API). PRODUCTION = JP 法人 + 法人 account → bulk 振込 fan-out (own-funds grant = legal, no license). Ties to #47 entity.
