@@ -6,11 +6,14 @@ import { privateKeyToAccount } from "viem/accounts";
 import { createPublicClient, http } from "viem";
 import { base } from "viem/chains";
 import fs from "fs";
+import { assignIdentity } from "../identity.mjs";
 
 const HOME = process.env.HOME;
 const pk = JSON.parse(fs.readFileSync(HOME + "/.automaton/wallet.json")).privateKey;
 const acct = privateKeyToAccount(pk.startsWith("0x") ? pk : "0x" + pk);
-const NAME = process.env.ANICCA_NAME || "anicca-local";   // display name / number (spawned: anicca001, bob, ...)
+// Unique-by-construction identity: explicit ANICCA_NAME wins, else a guaranteed-unique handle derived
+// from this instance's wallet address (collision-impossible across spawns; auto-registers on first POST).
+const NAME = process.env.ANICCA_NAME || (await assignIdentity(acct.address)).name;
 const LEDGER = (process.env.ANICCA_HOME || HOME + "/.anicca") + "/state/ledger.jsonl";
 
 const pub = createPublicClient({ chain: base, transport: http("https://base-rpc.publicnode.com") });
