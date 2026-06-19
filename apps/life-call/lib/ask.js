@@ -30,56 +30,107 @@ async function unipile(method, path, body, token, dsn) {
   return { ok: r.ok, json: await r.json().catch(() => ({})) };
 }
 
-// One Gemini JSON call. Returns the parsed object, or {} on any failure (caller treats as "unsure").
-async function gemini(prompt, geminiKey) {
+// Raw Gemini generateContent. Key goes in the x-goog-api-key HEADER, never the URL (so it can't leak
+// into logs/referrers). Returns the parsed response, or {} on failure.
+async function geminiRaw(body, geminiKey) {
   try {
-    const r = await fetch(`${GEMINI}?key=${geminiKey}`, {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { responseMimeType: "application/json", temperature: 0 },
-      }),
+    const r = await fetch(GEMINI, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": geminiKey },
+      body: JSON.stringify(body),
     });
-    const j = await r.json();
-    const text = j?.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
-    return JSON.parse(text);
+    return await r.json();
   } catch { return {}; }
 }
+// One-shot JSON call (no tools) — for tasks that are a single judgment, not a search.
+async function geminiJson(prompt, geminiKey) {
+  const j = await geminiRaw({
+    contents: [{ role: "user", parts: [{ text: prompt }] }],
+    generationConfig: { responseMimeType: "application/json", temperature: 0 },
+  }, geminiKey);
+  try { return JSON.parse(j?.candidates?.[0]?.content?.parts?.[0]?.text || "{}"); } catch { return {}; }
+}
 
-// Grounding: real candidate places for a title (so the model picks a real address, never invents one).
-async function placesCandidates(title, mapsKey) {
-  if (!mapsKey || !title) return [];
+// TOOL: Google Places Text Search. The AGENT calls this itself — possibly several times with different
+// queries — to find a venue. Returns candidate {name, address}.
+// NOTE: this legacy endpoint requires the key as a query param (no header alternative; the v1 API that
+// supports header-auth is not enabled on this GCP project). The key is a Maps-restricted browser key,
+// not a secret credential, and we never log this URL — see SECURITY note at the call site.
+async function placesSearch(query, mapsKey) {
+  if (!mapsKey || !query) return [];
   try {
-    const r = await fetch(`https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(title)}&language=ja&key=${mapsKey}`);
+    const r = await fetch(`https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&language=ja&key=${mapsKey}`);
     const j = await r.json();
-    return (j.results || []).slice(0, 4).map((p) => ({ name: p.name, address: p.formatted_address }));
+    return (j.results || []).slice(0, 5).map((p) => ({ name: p.name || "", address: p.formatted_address || "" }));
   } catch { return []; }
 }
 
-// AGENTIC: decide the address for an event, or null (= ask the user).
+// The agent's two tools: it searches Places (as many queries as it wants), then submits its verdict.
+const RESOLVE_TOOLS = [{
+  functionDeclarations: [
+    {
+      name: "places_search",
+      description: "Search Google Places for a real-world venue and get its exact address. Use it (try query variations: bare name, name+area, English/Japanese) to find where an event takes place.",
+      parameters: { type: "OBJECT", properties: { query: { type: "STRING", description: "Place name or keywords, e.g. '松竹芸能養成所 東京' or 'JETRO Innovation Garden 赤坂'." } }, required: ["query"] },
+    },
+    {
+      name: "submit_answer",
+      description: "Submit your final decision once you've searched enough.",
+      parameters: {
+        type: "OBJECT",
+        properties: {
+          confident: { type: "BOOLEAN", description: "true if you found the real venue; false if the title is a person/vague activity and the user must be asked." },
+          location: { type: "STRING", description: "The exact formatted_address from a places_search result. Empty when confident=false." },
+        },
+        required: ["confident"],
+      },
+    },
+  ],
+}];
+
+// AGENTIC: the model uses the places_search TOOL itself to find the venue (no spoon-fed candidates),
+// then submit_answer. Returns the address, or null (= ask the user). This is the agent doing the
+// search a human would do, instead of bothering them.
 async function agentResolveLocation(event, { home, mapsKey, geminiKey }) {
-  const candidates = await placesCandidates(event.summary || "", mapsKey);
-  const out = await gemini(
-    `You resolve the real-world location of a personal calendar event. Decide ONLY if you are confident.
+  const contents = [{
+    role: "user",
+    parts: [{ text:
+`You are Life Manager. Resolve WHERE this calendar event happens so it can be filled into the user's
+calendar WITHOUT bothering them. Use places_search to look it up (more than once if needed). Only when
+searching genuinely can't identify a real venue (the title is a person's name, or a vague activity like
+"lunch"/"1on1") do you give up — then call submit_answer with confident=false. When you find it, call
+submit_answer with confident=true and the exact address from a search result.
+
 Event title: ${JSON.stringify(event.summary || "")}
 Start: ${JSON.stringify((event.start || {}).dateTime || "")}
-User's home address: ${JSON.stringify(home || "")}
-Real place candidates from Google Places (use ONLY these for the address — never invent one):
-${JSON.stringify(candidates)}
-
-If the title clearly names a real venue/place that matches one candidate (e.g. a school, office, shop,
-station, restaurant), return that candidate's address. If the title is a person, a vague activity, or
-you cannot confidently match a candidate, return null (we'll ask the user).
-Reply as JSON: {"location": "<exact candidate address>" | null}`,
-    geminiKey,
-  );
-  return typeof out.location === "string" && out.location.trim() ? out.location.trim() : null;
+User's home address: ${JSON.stringify(home || "")}` }],
+  }];
+  for (let turn = 0; turn < 5; turn++) {
+    const j = await geminiRaw({ contents, tools: RESOLVE_TOOLS, generationConfig: { temperature: 0 } }, geminiKey);
+    const parts = j?.candidates?.[0]?.content?.parts || [];
+    const calls = parts.filter((p) => p.functionCall).map((p) => p.functionCall);
+    if (!calls.length) return null;
+    contents.push({ role: "model", parts });
+    const responses = [];
+    for (const c of calls) {
+      if (c.name === "submit_answer") {
+        const a = c.args || {};
+        return a.confident && a.location && String(a.location).trim() ? String(a.location).trim() : null;
+      }
+      if (c.name === "places_search") {
+        const res = await placesSearch((c.args || {}).query || "", mapsKey);
+        responses.push({ functionResponse: { name: "places_search", response: { results: res } } });
+      }
+    }
+    contents.push({ role: "user", parts: responses });
+  }
+  return null; // ran out of turns → ask
 }
 
-// AGENTIC: read a reply against the pending events; return {eventId, location} or null.
+// Reading a reply is a single judgment, not a search — one JSON call (deterministic enough, no tools).
 async function agentMatchReply(replyText, pending, geminiKey) {
   if (!pending.length) return null;
-  const out = await gemini(
+  const out = await geminiJson(
     `A user replied to an email asking where one of their events takes place. Match the reply to the
 correct event and extract the location they gave. Ignore quoted/original text.
 Pending events (id → title):
