@@ -3,6 +3,11 @@ aniccaios/
 apps/landing/
 apps/alarm-backend/
 .worktrees/
+.git/
+.codegraph/
+.agents/
+.serena/
+**/*.sock
 **/node_modules/
 **/DerivedData/
 **/.next/
