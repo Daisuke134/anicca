@@ -6,7 +6,7 @@
 //
 // Invariant (資金決済法): we transfer OUR OWN funds as 給付 (own JPY balance → recipients). Never intermediate.
 
-const API_BASE = process.env.GMO_AOZORA_API_BASE || "https://api.gmo-aozora.com/ganb/api/personal/v1";
+export const API_BASE = process.env.GMO_AOZORA_API_BASE || "https://api.gmo-aozora.com/ganb/api/personal/v1";
 
 // accountTypeCode: "1"=普通(ordinary), "2"=当座(checking), "4"=貯蓄
 // transfers: [{ to, amount(JPY int), bank:{ bankCode, branchCode, accountTypeCode?, accountNumber, beneficiaryName } }]
@@ -45,10 +45,15 @@ export function buildBulkTransferRequest({ accountId, remitterName, transferDesi
 // LIVE submit — UNVERIFIED until GMO_AOZORA_ACCESS_TOKEN (OAuth2) + a real/sandbox account.
 export async function submitBulkTransfer(request, token, base = API_BASE) {
   if (!token) throw new Error("GMO OAuth2 access token required (gmo dev portal / sunabar). UNVERIFIED until real token.");
+  // FIND-B: send the idempotency key as a header (out of the JSON body so GMO won't reject an unknown field)
+  // so a retry of the SAME batch is de-duped server-side. Defense-in-depth atop the no-auto-requeue policy.
+  const { idempotencyKey, ...body } = request;
+  const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json", "x-access-token": token };
+  if (idempotencyKey) headers["x-idempotency-key"] = idempotencyKey;
   const res = await fetch(`${base}/bulktransfer/request`, {
     method: "POST",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", "x-access-token": token },
-    body: JSON.stringify(request),
+    headers,
+    body: JSON.stringify(body),
   });
   const json = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(`GMO bulktransfer ${res.status}: ${JSON.stringify(json).slice(0, 300)}`);

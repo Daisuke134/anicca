@@ -26,7 +26,8 @@ test("FULL CHAIN: queued JP bank rows → GMO bulk transfer + only valid recipie
   const marked = [];
   const out = await bankWatcherPass({
     readBankRecipients: async () => bankRecipientsFromRows(rows),
-    getPool: async () => 40000,
+    claim: async (ids) => ids, // atomic claim wins all in this single-pass test
+    getBalance: async () => 40000,
     markPaid: async (id, info) => marked.push({ id, info }),
     adapters: { gmo },
     opts: { feePerTransfer: 130 },
@@ -51,7 +52,8 @@ test("FULL CHAIN: no valid bank rows → idle, GMO never called, nobody marked",
   const gmo = makeGmoAdapter({ accountId: "A", remitterName: "X", transferDesignatedDate: "20260620", token: "T", submit: async () => { called = true; } });
   const out = await bankWatcherPass({
     readBankRecipients: async () => bankRecipientsFromRows([{ id: "e", notes: "method=email;wallet=" }]),
-    getPool: async () => 40000,
+    claim: async (ids) => ids,
+    getBalance: async () => 40000,
     markPaid: async () => {},
     adapters: { gmo },
   });
