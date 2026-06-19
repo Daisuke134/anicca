@@ -28,6 +28,12 @@ const {
 } = require("./lib/call-logic.js");
 const { startScheduler, startTravelLoop, startAskLoop, buildStreamUrl } = require("./scheduler.js");
 const { placeCall } = require("./lib/dial.js");
+const { parseUpdate, sendMessage, startReply } = require("./lib/telegram.js");
+const { resolveTelegramReply } = require("./lib/telegram-reply.js");
+
+const LM_TG_TOKEN = process.env.LM_TELEGRAM_BOT_TOKEN || "";
+const LM_TG_SECRET = process.env.LM_TELEGRAM_WEBHOOK_SECRET || "";
+const PUBLIC_BASE = process.env.PUBLIC_BASE || "https://aniccaai.com";
 
 const LM_UID_SECRET = process.env.LM_UID_SECRET || "";
 function verifyUid(uid, sig) {
@@ -116,6 +122,37 @@ const server = http.createServer((req, res) => {
       } catch (e) {
         return reply(502, { error: String(e) });
       }
+    })();
+    return;
+  }
+  // POST /telegram — the Life Manager bot webhook. Telegram echoes our secret in a header; reject
+  // anything that doesn't match (so strangers can't post fake updates). /start hands the user to the
+  // web onboarding (deep-linked with their chat id); any other text is treated as a reply to a
+  // pending location ask and routed to the calendar.
+  if (path === "/telegram") {
+    if (req.method !== "POST") { res.writeHead(405); res.end("method"); return; }
+    // Fail CLOSED: no secret configured → reject. Constant-time compare to avoid timing leaks.
+    const hdr = String(req.headers["x-telegram-bot-api-secret-token"] || "");
+    const ok = LM_TG_SECRET.length > 0 && hdr.length === LM_TG_SECRET.length &&
+      crypto.timingSafeEqual(Buffer.from(hdr), Buffer.from(LM_TG_SECRET));
+    if (!ok) { res.writeHead(401); res.end("unauthorized"); return; }
+    (async () => {
+      try {
+        const update = JSON.parse((await readBody(req)) || "{}");
+        const u = parseUpdate(update);
+        if (u && LM_TG_TOKEN) {
+          if (u.isStart) {
+            const r = startReply(u.chatId, PUBLIC_BASE);
+            await sendMessage(LM_TG_TOKEN, u.chatId, r.text, r.extra);
+          } else if (u.text) {
+            const res2 = await resolveTelegramReply(u.chatId, u.text);
+            await sendMessage(LM_TG_TOKEN, u.chatId,
+              res2.filled ? `✅ Got it — set “${res2.event}” to ${res2.location}.`
+                          : "Thanks! I’ll use that. (If it was about an event location, make sure to reply to my question.)");
+          }
+        }
+      } catch (e) { console.error("[telegram] err", e.message); }
+      res.writeHead(200); res.end("ok"); // always 200 fast so Telegram doesn't retry
     })();
     return;
   }

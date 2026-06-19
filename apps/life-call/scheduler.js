@@ -37,7 +37,7 @@ async function supaUsers() {
   const { url, key } = SUPA();
   if (!url || !key) return [];
   const q =
-    `${url}/rest/v1/lm_users?select=uid,name,phone,paid,calendar_provider,home_address,gmail_account_id` +
+    `${url}/rest/v1/lm_users?select=uid,name,phone,paid,calendar_provider,home_address,gmail_account_id,telegram_chat_id` +
     `&phone=not.is.null&paid=is.true&calendar_provider=eq.composio_gcal`;
   const r = await fetch(q, { headers: { apikey: key, Authorization: `Bearer ${key}` } });
   if (!r.ok) return [];
@@ -151,20 +151,25 @@ async function askTickAll() {
   const unipileToken = process.env.UNIPILE_TOKEN, unipileDsn = process.env.UNIPILE_DSN;
   const mapsKey = process.env.LIFE_MAPS_KEY || process.env.GOOGLE_API_KEY; // Places grounding
   const geminiKey = process.env.GEMINI_API_KEY;                            // agentic resolve/read
+  const telegramToken = process.env.LM_TELEGRAM_BOT_TOKEN;                 // Telegram ask channel
   const { url: supaUrl, key: supaKey } = SUPA();
-  if (!composioKey || !unipileToken || !unipileDsn || !supaUrl || !geminiKey) return;
+  if (!composioKey || !supaUrl || !geminiKey) return;
   const users = await supaUsers();
   for (const u of users) {
-    if (!u.gmail_account_id) continue; // only users with a connected Unipile mailbox
-    const userEmail = await unipileEmail(u.gmail_account_id, unipileToken, unipileDsn);
-    if (!userEmail) continue;
+    // A user is reachable for asks via Telegram OR a connected Gmail — need at least one.
+    if (!u.telegram_chat_id && !u.gmail_account_id) continue;
+    let userEmail = null;
+    if (u.gmail_account_id && unipileToken && unipileDsn) {
+      userEmail = await unipileEmail(u.gmail_account_id, unipileToken, unipileDsn);
+    }
     try {
       const r = await askTick(u.uid, {
         composioKey, accountId: u.gmail_account_id, unipileToken, unipileDsn, userEmail,
         supaUrl, supaKey, mapsKey, geminiKey, home: u.home_address,
+        telegramChatId: u.telegram_chat_id, telegramToken,
       });
       if (r.autofilled || r.asked || r.resolved)
-        console.log(`[ask] uid=${u.uid.slice(0, 12)} autofilled=${r.autofilled} asked=${r.asked} resolved=${r.resolved}`);
+        console.log(`[ask] uid=${u.uid.slice(0, 12)} autofilled=${r.autofilled} asked=${r.asked} resolved=${r.resolved} via=${u.telegram_chat_id ? "tg" : "email"}`);
     } catch (e) { console.error(`[ask] uid=${u.uid.slice(0, 12)} err ${e.message}`); }
   }
 }
