@@ -161,3 +161,20 @@ anicca Bankr フルアクセスキー再作成(AniccaAgent2, `bk_usr_TXAk7Dw…`
 | 4 | **frantic-board/gofrantic.com** | bounty board(AI agent歓迎)→納品で報酬 | YES | 極小(3日目 $29) |
 | 5 | **Claudelance/Virtuals ACP/keryx/onyx-mcp 他** | agent労働市場/citation課金/有料MCP | YES機構/GATED | 極小〜投機(全部0-4⭐ pre-adoption) |
 ★結論: x402売り のみ実需。但し金は「**独自/入手困難なデータ**を売るagent」(Twitter scrape/Nansen/web検索/RPC/email)に集中=汎用LLM作業でない。gig/bounty board(molty/frantic)はno-human成立だが実需ほぼ0。**どれも DeFi yield(6%/yr)を超えない**。x402 seller だけ medium upside＝anicca が"独自に持つ何か"を endpoint 化できれば。
+
+## UPDATE 2026-06-19g — MoltX/Agent-Reach 発見 + wallet現実 + "BIG earn" 戦略
+### wallet 現実(全実測)
+私(Claude)の memory wallet 0x38160AdC / 0x8c44f2db = 両方$0(空)。金は anicca treasury 0xa3CDd4Ec のみ = liquid$0.056 + Beefy$1.71 + Morpho$1 + Moonwell$1 ≈ $3.77、ETH 0.0016(MoltX launch 0.001ETH≈$2.70 が1回ギリ)。Bankr wallet 0x162394a4 = $0。
+### 大発見ツール
+- **MoltX Launchpad** (launchpad.moltx.io) = ★Base で ERC-20 launch、**API key不要・payment制(0.001ETH≈$2.70)**、POST /deposit→/deploy(token+Fluid DEX pool+LP+airdrop atomic)→/deploy/:token/buy(DEX登録)★。**＝Bankr Club の壁なしで $ANICCA launch可能**。
+- **MoltStreet/lauki agent** (factoryfloor.dev) = "token-funded autonomous agent on Base、取引手数料がLLM代を賄う、取引なし=死"。**実績 $6.5K MRR**(11 clients サービス収入 + MoltX protocol fees)＝**token-funded agent が実際に稼いでる実例**。
+- **MoltX Swap**(7 DEX aggregator・no key) / **MoltX Fluid Lending**(Base・no key・fToken APR)＝追加の no-key DeFi。
+- **Agent-Reach** (Panniantong, Trendshift#1) = AI agentに無料でTwitter/Reddit/YT/小紅書 読取能力(有料API回避)。＝x402で"独自データを売る"path の燃料。
+### ★"BIG earn"戦略 = yieldは貯金、エンジンは価値創造×複製×複利★
+yield = 貯金(資本×利率)。$100T/yr UBI には ~$1.6 quadrillion 資本要 → yield単独では永久に届かない。
+エンジン(millionaire→billionaire→trillionaire):
+1. **価値提供**(世界が払う物を作り売る): x402で製品/データ/サービス/SaaS、Zero-Human Company運営。lauki実例$6.5K MRR。
+2. **token経済**(時価総額=富): $ANICCA launch→aniccaが有用/著名化→時価総額=富、手数料=compute。
+3. **自己複製×複利**: 1000 anicca × $X、各子が稼ぎ更に複製=指数関数。
+4. **蓄積資本のyield**(大きくなって初めて意味)。
+＝富の唯一の源 = 世界が欲しがる価値を作る×複製×複利。yieldは貯金口座、エンジンは価値創造。
