@@ -23,8 +23,13 @@ function signCtx(parts) {
 }
 
 const TICK_MS = 60 * 1000;
-const DUE_LO_MIN = 13; // fire when the event starts in [13,15] min — the 60s tick hits the window once
-const DUE_HI_MIN = 15;
+// Escalating wake calls: ring at T-15 (gentle), T-10 (firm), T-5 (harsh) before EACH event — like the
+// local Life Manager — so the user actually gets up / leaves. Each (event, level) fires once (deduped).
+const WAKE_LEVELS = [
+  { min: 15, urgency: "gentle" },
+  { min: 10, urgency: "firm" },
+  { min: 5, urgency: "harsh" },
+];
 
 const SUPA = () => ({ url: process.env.SUPABASE_URL, key: process.env.SUPABASE_SERVICE_ROLE_KEY });
 
@@ -75,27 +80,28 @@ async function tick() {
   for (const u of users) {
     let events;
     try {
-      events = await fetchUpcomingEvents(u.uid, { nowMs: now, horizonH: 2 });
+      events = await fetchUpcomingEvents(u.uid, { nowMs: now, horizonH: 1 });
     } catch {
       continue;
     }
-    // Soonest REAL commitment — skip Anicca's own inserted [Travel]/[PENDING]/[APPLIED] blocks
-    // (don't stop at the single soonest event; a helper block must not mask a real one behind it).
-    const ev = (events || []).find((e) => !isHelperBlock(e.summary));
-    if (!ev) continue;
-    const mins = (ev.startMs - now) / 60000;
-    if (mins < DUE_LO_MIN || mins > DUE_HI_MIN) continue;
-
-    const eventKey = `${u.uid}|${ev.startIso}`;
-    const fresh = await claimWake(u.uid, eventKey);
-    if (!fresh) continue; // already called for this event
-
-    const streamUrl = buildStreamUrl(ev, "gentle");
-    const res = await placeCall({ to: u.phone, streamUrl });
-    if (res.ok) {
-      console.log(`[scheduler] WAKE uid=${u.uid.slice(0, 12)} "${ev.summary}" in ${Math.round(mins)}m ccid=${res.ccid}`);
-    } else {
-      console.error(`[scheduler] dial failed uid=${u.uid.slice(0, 12)}: ${res.error}`);
+    // Check ALL upcoming real commitments (not just the soonest — a calendar full of routine events
+    // must not mask a later one), and ring each at T-15 / T-10 / T-5 with escalating urgency.
+    for (const ev of (events || []).filter((e) => !isHelperBlock(e.summary))) {
+      const mins = (ev.startMs - now) / 60000;
+      for (const lvl of WAKE_LEVELS) {
+        // 60s tick → a ~2-min catch window per level; levels are 5 min apart so they never overlap.
+        if (mins > lvl.min + 0.5 || mins <= lvl.min - 1.5) continue;
+        const eventKey = `${u.uid}|${ev.startIso}|${lvl.min}`;
+        const fresh = await claimWake(u.uid, eventKey);
+        if (!fresh) continue; // already called for this (event, level)
+        const streamUrl = buildStreamUrl(ev, lvl.urgency);
+        const res = await placeCall({ to: u.phone, streamUrl });
+        if (res.ok) {
+          console.log(`[scheduler] WAKE T-${lvl.min} uid=${u.uid.slice(0, 12)} "${ev.summary}" ccid=${res.ccid}`);
+        } else {
+          console.error(`[scheduler] dial failed T-${lvl.min} uid=${u.uid.slice(0, 12)}: ${res.error}`);
+        }
+      }
     }
   }
 }
@@ -104,7 +110,7 @@ function startScheduler() {
   if (!process.env.PUBLIC_WSS) {
     console.warn("[scheduler] PUBLIC_WSS not set — calls would have no media bridge URL; loop still runs but won't dial");
   }
-  console.log(`[scheduler] started — tick every ${TICK_MS / 1000}s, due window ${DUE_LO_MIN}-${DUE_HI_MIN}min`);
+  console.log(`[scheduler] started — tick every ${TICK_MS / 1000}s, escalating wakes at T-${WAKE_LEVELS.map((l) => l.min).join("/")}min`);
   const run = () => tick().catch((e) => console.error("[scheduler] tick err", e.message));
   run();
   return setInterval(run, TICK_MS);
