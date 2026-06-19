@@ -227,3 +227,16 @@ MoltX Launchpad(launchpad.moltx.io, no API key, 0.001 ETH≈$2.70)で anicca 自
 2. **token launch**($ANICCA, MoltX, $2.70, 人間ゼロ) = 機構成立・手数料→anicca。**但し実額は取引量(評判)次第**。
 **残り全部は壁: 人間サインアップ/CEX-KYC/人間API鍵/承認、または gamble(edge無)、deprecated、scam/honeypot/malware、実在しない(幻repo多数)。**
 ＝「種銭を入れれば自律で稼ぐツールが沢山ある」は幻想。**自律earnは利回り(貯金)＋自分のtoken/価値創造(評判)の2軸のみ**。富のエンジン=価値提供×複製。
+
+## UPDATE 2026-06-19k — Fluid venue確認 + gas枯渇 + x402 product 設計
+### Fluid yield
+- fUSDC fToken(Base): `0xf42f5795D9ac7e9D757dB633D693cD548Cfd9169`、underlying USDC、**supplyRate 5.28%**、ERC-4626(deposit(assets,receiver)/convertToAssets)。Fluid公式API: https://api.fluid.instadapp.io/v2/lending/8453/tokens。
+- = Aave(3%)とBeefy(6.1%)の間の yield venue。earn_yield に候補追加可。
+- **deposit実テストは gas枯渇でブロック**: $ANICCA launch後 anicca ETH=0.0006(~$2)・liquid$0.056 = 新規on-chain不可。SOL funding着金後に deposit verify。
+### x402 product 設計(#17 = 唯一の上振れ外部収入)
+- 仕組み: anicca が HTTP endpoint で「価値ある成果物」を出す → **x402 payment middleware(payTo=anicca wallet)** → buyer(人/agent)が呼ぶと 402 Payment Required → USDC払う → 成果物返る。USDC が anicca wallet に着金。人間ゼロ・APIキー不要・サブスク不要。
+- skill/lib: **coinbase/x402 の `x402-express`**(Node/Express、1行 paymentMiddleware) or BlockRun x402。task#10で機構実証済(402返る・Base USDC settle)。
+- 買い手獲得: **x402scan.com / x402 Bazaar に出品**(実需$1.09M/30d、買いagentが発見)。
+- ★核心(正直): 機構はtrivial・動く。難所は「**人/agentが金を払う差別化された product**」。汎用LLM作業=買い手ゼロ。実需は独自/入手困難データ(Twitter scrape/onchain labels/web検索/RPC)に集中。
+- anicca が売れる差別化候補: ①**Base最良 stable yield APR aggregator**(Beefy/Fluid/Aave/Morpho を anicca が既に計算→API化) ②Agent-Reach経由の scrape/research サービス ③earn検証データセット(~70ツール) ④colony/dashboard データ。
+- ＝「anicca が価値ある物を作り x402 で wallet に受ける」= mechanically YES。earn は demand 次第だが、yield-APR aggregator は anicca が既に持つデータ=最有力初手。
