@@ -15,10 +15,13 @@ export function parseNotes(notes) {
 export function parseBankRecipient(row = {}) {
   const kv = parseNotes(row.notes);
   if (kv.method !== 'bank') return null;
-  // FIND-105 (dispatch-boundary dedupe): a row carrying a GMO submit ref was ALREADY sent once. Never
-  // auto-redispatch it (that is double-pay) even if a human flips it back to 'queued'. Deliberate re-send
-  // requires the operator to explicitly clear ref= first — an intentional action, not an accidental requeue.
-  if (kv.ref) return null;
+  // FIND-105/107 (dispatch-boundary dedupe): NEVER auto-redispatch a row that has already entered the
+  // irreversible dispatch boundary. Two markers prove it did: `ref=` (GMO accepted + recorded) AND
+  // `claimed_at=` (claim flipped it to 'processing' BEFORE the adapter call — so even a submit whose
+  // markPaid later failed, leaving no ref=, is caught here). A fresh queued signup row has NEITHER, so it
+  // dispatches exactly once. Deliberate re-send requires an operator to explicitly clear BOTH markers —
+  // an intentional action, never an accidental status flip back to 'queued'.
+  if (kv.ref || kv.claimed_at) return null;
   if ((kv.country || '').toLowerCase() === 'jp') {
     if (!kv.bankCode || !kv.branchCode || !kv.accountNumber || !kv.beneficiaryName) return null;
     return {
