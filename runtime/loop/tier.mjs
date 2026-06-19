@@ -12,7 +12,7 @@
 
 const DEFAULT_FREE_MODEL   = 'nvidia/deepseek-v4-flash';
 const DEFAULT_LEAN_MODEL   = 'deepseek/deepseek-r1-0528';
-const DEFAULT_FUNDED_MODEL = 'openai/gpt-4o-mini';
+const DEFAULT_FUNDED_MODEL = 'anthropic/claude-opus-4.8';
 const DEFAULT_LEAN_THRESHOLD = 1.00;
 
 /**
