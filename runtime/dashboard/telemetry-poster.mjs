@@ -56,10 +56,23 @@ function lastModel() {
 }
 const FREE_RE = /nvidia|flash|qwen|free|oss|gpt-oss/i;
 
+let lastGood = null;
+const sumNw = (x) => +(x.liquid + x.aave + x.morpho + x.moonwell + (x.beefy || 0) + (x.bluechip || 0)).toFixed(2);
+
 async function post() {
   try {
-    const nw = await netWorth();
-    const total = +(nw.liquid + nw.aave + nw.morpho + nw.moonwell + (nw.beefy || 0) + (nw.bluechip || 0)).toFixed(2);
+    let nw = await netWorth();
+    let total = sumNw(nw);
+    // GLITCH GUARD: on-chain position reads (morpho/moonwell/bluechip) occasionally return 0 on a
+    // transient RPC hiccup, collapsing net worth to liquid-only (false-alarm $0.05/$1.42). A real
+    // change can't halve a positions-heavy wallet in one 2-min cycle — so on a >50% collapse, re-read
+    // once, and if still collapsed, keep the last good value instead of posting the glitch.
+    if (lastGood && total < lastGood.total * 0.5) {
+      nw = await netWorth();
+      total = sumNw(nw);
+      if (total < lastGood.total * 0.5) { nw = lastGood.nw; total = lastGood.total; }
+    }
+    lastGood = { nw, total };
     const ts = Math.floor(Date.now() / 1000);
     const model = lastModel();
     const tier = FREE_RE.test(model) ? "free" : "frontier";
