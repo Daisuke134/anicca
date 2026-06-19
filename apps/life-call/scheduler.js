@@ -12,6 +12,7 @@ const { fetchUpcomingEvents } = require("./lib/events.js");
 const { placeCall } = require("./lib/dial.js");
 const { fillTravel } = require("./lib/travel.js");
 const { askTick } = require("./lib/ask.js");
+const { onboardNudgeAll } = require("./lib/telegram-onboard.js");
 
 // HMAC over the per-call context so the persistent /ws bridge can prove a connection was minted by
 // THIS scheduler (not a stranger draining the Gemini budget) AND that the prompt context wasn't
@@ -180,4 +181,21 @@ function startAskLoop() {
   return setInterval(run, ASK_TICK_MS);
 }
 
-module.exports = { startScheduler, startTravelLoop, startAskLoop, tick, travelTick, askTickAll, isHelperBlock, buildStreamUrl };
+// ── Interactive Telegram onboarding nudge (every 2 min) — guide linked users to their next step ────
+const ONBOARD_TICK_MS = 2 * 60 * 1000;
+async function onboardTick() {
+  const token = process.env.LM_TELEGRAM_BOT_TOKEN;
+  const base = process.env.PUBLIC_BASE || "https://aniccaai.com";
+  const { url: supaUrl, key: supaKey } = SUPA();
+  if (!token || !supaUrl) return;
+  const sent = await onboardNudgeAll({ token, base, supaUrl, supaKey });
+  if (sent) console.log(`[onboard] nudged ${sent} Telegram user(s) to their next step`);
+}
+function startOnboardLoop() {
+  console.log(`[onboard] started — every ${ONBOARD_TICK_MS / 60000}min (interactive Telegram guidance)`);
+  const run = () => onboardTick().catch((e) => console.error("[onboard] tick err", e.message));
+  run();
+  return setInterval(run, ONBOARD_TICK_MS);
+}
+
+module.exports = { startScheduler, startTravelLoop, startAskLoop, startOnboardLoop, tick, travelTick, askTickAll, onboardTick, isHelperBlock, buildStreamUrl };
