@@ -26,7 +26,30 @@ const {
   buildGeminiTurn,
   parseGeminiTranscripts,
 } = require("./lib/call-logic.js");
-const { startScheduler } = require("./scheduler.js");
+const { startScheduler, buildStreamUrl } = require("./scheduler.js");
+const { placeCall } = require("./lib/dial.js");
+
+const LM_UID_SECRET = process.env.LM_UID_SECRET || "";
+function verifyUid(uid, sig) {
+  if (!LM_UID_SECRET || !uid || !sig) return false;
+  const expected = crypto.createHmac("sha256", LM_UID_SECRET).update(uid).digest("base64url");
+  const a = Buffer.from(String(sig)), b = Buffer.from(expected);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+async function phoneForUid(uid) {
+  const url = process.env.SUPABASE_URL, key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) return null;
+  const r = await fetch(`${url}/rest/v1/lm_users?uid=eq.${encodeURIComponent(uid)}&select=phone`,
+    { headers: { apikey: key, Authorization: `Bearer ${key}` } });
+  const d = await r.json().catch(() => []);
+  return Array.isArray(d) && d[0] ? d[0].phone : null;
+}
+function readBody(req) {
+  return new Promise((resolve) => {
+    let b = ""; req.on("data", (c) => { b += c; if (b.length > 1e5) req.destroy(); });
+    req.on("end", () => resolve(b)); req.on("error", () => resolve(""));
+  });
+}
 
 const PORT = Number(process.env.PORT) || 8788;
 const GEMINI_KEY = process.env.GEMINI_API_KEY;
@@ -68,6 +91,32 @@ const server = http.createServer((req, res) => {
   if (path === "/health" || path === "/") {
     res.writeHead(200, { "content-type": "application/json" });
     res.end(JSON.stringify({ ok: true, service: "life-call", ws: "/ws" }));
+    return;
+  }
+  // POST /test-call {uid,sig} — the dashboard "Call me now" button. Auth'd by the same HMAC uid+sig
+  // the /lm app already holds; we look up the user's phone and place an immediate Charon call so they
+  // hear, right then, that the wake calls work. CORS-open for aniccaai.com (the static /lm page).
+  if (path === "/test-call") {
+    res.setHeader("Access-Control-Allow-Origin", "https://aniccaai.com");
+    res.setHeader("Access-Control-Allow-Headers", "content-type");
+    res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+    if (req.method === "OPTIONS") { res.writeHead(204); res.end(); return; }
+    if (req.method !== "POST") { res.writeHead(405); res.end("method"); return; }
+    (async () => {
+      const reply = (code, obj) => { res.writeHead(code, { "content-type": "application/json" }); res.end(JSON.stringify(obj)); };
+      try {
+        const body = JSON.parse((await readBody(req)) || "{}");
+        if (!verifyUid(body.uid, body.sig)) return reply(403, { error: "bad uid signature" });
+        const phone = await phoneForUid(body.uid);
+        if (!phone) return reply(400, { error: "no phone on file" });
+        const ev = { summary: "Anicca — test call", startIso: new Date().toISOString(), location: "" };
+        const streamUrl = buildStreamUrl(ev, "gentle");
+        const result = await placeCall({ to: phone, streamUrl });
+        return reply(result.ok ? 200 : 502, result);
+      } catch (e) {
+        return reply(502, { error: String(e) });
+      }
+    })();
     return;
   }
   res.writeHead(404);

@@ -25,6 +25,9 @@ import { signInWithGoogle, getSession } from '@/lib/auth';
 
 const EXCHANGE_URL = '/.netlify/functions/lm-onboard?action=exchange';
 const SAVE_URL = '/.netlify/functions/lm-onboard?action=save';
+// The cloud wake service places the "call me now" test call (the same service that runs the real
+// T-15min wakes), authenticated by the user's HMAC uid+sig.
+const TEST_CALL_URL = 'https://life-call-production.up.railway.app/test-call';
 // Fail closed: NEVER ship a hardcoded/placeholder payment link. The Subscribe button is
 // only rendered when a REAL Stripe link is injected at build time via NEXT_PUBLIC_STRIPE_LM_URL.
 // If the env is unset, the button is hidden and the user sees a truthful "checkout not ready" note.
@@ -96,6 +99,7 @@ export default function LmClient() {
   const [name, setName] = useState('');
   const [dial, setDial] = useState('81'); // JP default
   const [natNum, setNatNum] = useState(''); // national number (digits only)
+  const [callState, setCallState] = useState<'idle' | 'calling' | 'done' | 'error'>('idle');
   const [cal, setCal] = useState<ConnState>('idle');
   const [gmail, setGmail] = useState<ConnState>('idle');
   const [err, setErr] = useState<string>('');
@@ -225,6 +229,21 @@ export default function LmClient() {
   );
   const connectCal = useCallback(() => { setErr(''); runConnect('calendar-connect', setCal); }, [runConnect]);
   const connectGmail = useCallback(() => { setErr(''); runConnect('unipile-connect', setGmail); }, [runConnect]);
+
+  const testCall = useCallback(async () => {
+    setCallState('calling');
+    try {
+      const r = await fetch(TEST_CALL_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uid, sig }),
+      });
+      const d = await r.json().catch(() => ({}));
+      setCallState(r.ok && d.ok ? 'done' : 'error');
+    } catch {
+      setCallState('error');
+    }
+  }, [uid, sig]);
 
   const savePhone = useCallback(async () => {
     setErr('');
@@ -408,6 +427,20 @@ export default function LmClient() {
               <Pill ok={gmail === 'connected'}>{t.dashboard.pills.gmail}</Pill>
               <Pill ok={!!natNum}>{t.dashboard.pills.phone}</Pill>
             </div>
+            <button
+              type="button"
+              onClick={testCall}
+              disabled={callState === 'calling'}
+              className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-pill border border-[hsl(var(--gold))] px-6 py-3 text-sm font-semibold text-[hsl(var(--gold))] transition-all hover:bg-[hsl(var(--gold))] hover:text-[#18181b] active:scale-[0.98] disabled:opacity-50"
+            >
+              {callState === 'calling'
+                ? t.dashboard.callBtn.calling
+                : callState === 'done'
+                  ? t.dashboard.callBtn.done
+                  : callState === 'error'
+                    ? t.dashboard.callBtn.error
+                    : t.dashboard.callBtn.idle}
+            </button>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             {t.dashboard.skills.map((s) => (

@@ -74,6 +74,7 @@ export const launchStrings = {
         connectedSuffix: ', connected',
         you: 'You',
         pills: { calendar: 'Calendar', gmail: 'Gmail', phone: 'Phone' },
+        callBtn: { idle: '📞 Call me now (test)', calling: 'Calling you…', done: '✓ Calling — pick up!', error: 'Could not call. Check your number.' },
         skills: [
           { title: 'Travel blocks', desc: 'Travel time goes in before every event.' },
           { title: '15-min calls', desc: 'It calls before each event with route guidance.' },
@@ -246,6 +247,7 @@ export const launchStrings = {
         connectedSuffix: '、接続済み',
         you: 'あなた',
         pills: { calendar: 'カレンダー', gmail: 'Gmail', phone: '電話' },
+        callBtn: { idle: '📞 今すぐ電話させる（テスト）', calling: '発信中…', done: '✓ 発信しました。出てください！', error: '発信できませんでした。番号を確認してください。' },
         skills: [
           { title: '移動時間の確保', desc: '各予定の前に、移動時間を自動で入れる。' },
           { title: '15 分前の電話', desc: '各予定の前に、ルートを案内する電話をかける。' },
