@@ -294,3 +294,10 @@ fix1 model_name gpt-4o-mini→nvidia/gpt-oss-120b / fix2 gpt-4.1→同 / fix3 �
 ★verdict: AutoHedge = 構造的に free-model+proxy と非互換・heavy・paid data key 依存 = 我々の goal に対し slop。anicca に統合しない。動いても LLM 推測 trade で単純 HL($0.069) を超えない。★
 教訓: multi-agent swarm bot は free-model 自律 earning に不適。単一 LLM signal → risk-managed 取引(=Hyperliquid 直 / Nocturne 系統)が勝ち筋。
 NEXT: #3 Nocturne(single-agent・HL・LLM signal+TP/SL = 勝ち筋系統) を検証。
+
+## UPDATE 2026-06-19q — #2 AutoHedge: capable model で再検証した最終 verdict（Dais: 自分=capable で走らせろ）
+- 訂正: free/dumb model でなく capable(opus) で走らせると **1回は full multi-agent 分析を生成**(LEN 17385, Risk-Manager 詳細リスク分析, handoff_task 成功)。= AutoHedge のロジックは capable model なら動く。
+- だが **INTERMITTENT**: opus でも Director が間欠的に "No response"→None (4 retry 連続失敗)。
+- ★根因: anicca の x402-per-call proxy(BlockRun) が swarms の高頻度 LLM call(Director+4 sub-agent×retry) を捌けず空応答。micropayment-per-call は多 call の multi-agent bot に構造的不適。Dais が自分で動かせたのは real OpenAI key(flat billing) だったから。★
+- ★コスト事故: これらテストは anicca proxy 経由で anicca wallet から x402 opus 代を支払い → anicca net worth $14→$11.3 の一部は私のテスト drain。以後 anicca の compute でテストしない。★
+- verdict: AutoHedge = capable model + reliable flat-rate endpoint なら動く / x402-self-pay anicca には不適(多 micropayment で flaky+高コスト)。KEY: 低 call 数の単純戦略(HL 直 trade)が self-pay に適。multi-agent swarm は不適。
