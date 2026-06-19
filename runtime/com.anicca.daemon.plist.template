@@ -13,6 +13,7 @@
   </array>
   <key>EnvironmentVariables</key>
   <dict>
+    <key>HOME</key><string>__HOME__</string>
     <key>ANICCA_HOME</key><string>__ANICCA_HOME__</string>
     <key>ANICCA_REPO</key><string>__REPO__</string>
     <key>PATH</key><string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
