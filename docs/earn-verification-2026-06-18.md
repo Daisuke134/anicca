@@ -261,3 +261,16 @@ poster netWorth が blue-chip保有(WETH/cbBTC)を評価してない → 投資�
 ### 次
 - #2 AutoHedge(Solana risk-first hedge fund・既に anicca脳で起動確認済)、#3 他 repo bot。各 LIVE 実測 → winner を anicca に。
 - NOTE: anicca Base ETH が gas bridge で ~0.00016 に減少 → 要 gas top-up(daemon の yield/invest tx 用)。
+
+## EARN LEDGER (私 Claude の test wallet・bot 別損益・更新continuous) — 2026-06-19
+目標: 全 trading bot を一つずつ LIVE → 最も稼ぐのを記録 → gpt-oss-120b anicca に skill 化統合。never skip until real money.
+| bot | 状態 | 実現損益 | 含み損益 | 備考 |
+|---|---|---|---|---|
+| Hyperliquid (ETH long, SL-6%/TP+12%, 2x) | ✅ LIVE | $0 | +$0.069 | entry $1693.3, ETH↑で含み益伸長中 |
+| AutoHedge (Solana hedge fund) | ⚠️ 起動のみ | - | - | 未 live 取引（Solana資金+Jupiter要） |
+| Nocturne (HL LLM+TAAPI) | ❌ 未 | - | - | 既存 HL account 流用可 |
+| EVClaw (HL OpenClaw) | ❌ 未 | - | - | 未 |
+| Uniswap blue-chip DCA | ✅ 検証 | $0 | WETH保有 | ETH↑で含み益 |
+| DeFi yield (Beefy/Aave/Fluid) | ✅ 検証 | accrual | - | 小 |
+合計 realized: $0 / unrealized: ~+$0.069。＝まだ不十分。全部テスト継続。
+NEXT: #2 AutoHedge live → #3 Nocturne(HL流用) → #4 EVClaw → 最強を anicca skill 化。
