@@ -31,7 +31,9 @@ const { placeCall } = require("./lib/dial.js");
 const { parseUpdate, sendMessage } = require("./lib/telegram.js");
 const { resolveTelegramReply } = require("./lib/telegram-reply.js");
 const { sendStage, rowByChatId, setStage, handleOnboardingText } = require("./lib/telegram-onboard.js");
+const { classifyLate, sendLateNotice } = require("./lib/notify.js");
 const SUPA_URL = process.env.SUPABASE_URL, SUPA_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const COMPOSIO_KEY = process.env.COMPOSIO_API_KEY, UNIPILE_TOKEN = process.env.UNIPILE_TOKEN, UNIPILE_DSN = process.env.UNIPILE_DSN;
 
 const LM_TG_TOKEN = process.env.LM_TELEGRAM_BOT_TOKEN || "";
 const LM_TG_SECRET = process.env.LM_TELEGRAM_WEBHOOK_SECRET || "";
@@ -153,10 +155,23 @@ const server = http.createServer((req, res) => {
             // Native steps (name/phone) capture the typed value; web steps re-nudge; "done" → reply.
             const result = await handleOnboardingText(u.chatId, u.text, row, opts);
             if (result === "done") {
-              const res2 = await resolveTelegramReply(u.chatId, u.text);
-              await sendMessage(LM_TG_TOKEN, u.chatId,
-                res2.filled ? `✅ Got it — set “${res2.event}” to ${res2.location}.`
-                            : "Thanks! If that was an event location, reply to my question and I'll add it.");
+              // Onboarded → a free-text message is either "I'm running late …" (notify a stakeholder)
+              // or a reply to a location ask. Classify, then route.
+              const late = await classifyLate(u.text, GEMINI_KEY);
+              if (late.isLate) {
+                const n = await sendLateNotice(row.uid, u.text, {
+                  composioKey: COMPOSIO_KEY, geminiKey: GEMINI_KEY, unipileToken: UNIPILE_TOKEN,
+                  unipileDsn: UNIPILE_DSN, accountId: row.gmail_account_id, userName: row.name, etaMinutes: late.etaMinutes,
+                });
+                await sendMessage(LM_TG_TOKEN, u.chatId,
+                  n.sent ? `✅ Let <b>${n.to}</b> know you're ${n.etaMinutes ? `~${n.etaMinutes} min ` : ""}late to “${n.event}”.`
+                         : "I couldn't find an upcoming event with someone to notify. Which meeting did you mean?");
+              } else {
+                const res2 = await resolveTelegramReply(u.chatId, u.text);
+                await sendMessage(LM_TG_TOKEN, u.chatId,
+                  res2.filled ? `✅ Got it — set “${res2.event}” to ${res2.location}.`
+                              : "Thanks! If that was an event location, reply to my question and I'll add it.");
+              }
             }
           }
         }
