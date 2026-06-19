@@ -69,14 +69,13 @@ test("FIND-103: reconcileStuck flags NULL/unparseable claimed_at processing rows
   assert.deepEqual(out.flagged.sort(), ["bad", "nots"]); // both flagged, neither silently dropped
 });
 
-test("FIND-103/102 seam: submitted notes preserve bank fields (operator re-queue stays parseable) + ref", () => {
+test("FIND-105 seam: a submitted row (ref=) is REFUSED by parseBankRecipient (no auto-redispatch) yet ref stays pollable", () => {
   const raw = "method=bank;country=jp;bankCode=0005;branchCode=001;accountType=2;accountNumber=1234567;beneficiaryName=ﾀﾅｶ ﾀﾛｳ;claimed_at=2026-06-20T00:00:00.000Z";
   const patch = buildSubmittedPatch({ provider: "gmo", amount: 19870, currency: "JPY", res: { apptransferNo: "G1" }, raw });
   assert.equal(patch.status, "submitted");
-  assert.equal(parseRef(patch.notes), "G1");                 // ref survives for the completion poll
-  const back = parseBankRecipient({ id: "u1", notes: patch.notes });
-  assert.ok(back && back.bank.bankCode === "0005");          // a re-queued needs_review row is still parseable
-  assert.equal(back.bank.accountType, "2");                  // incl. non-普通 type
+  assert.equal(parseRef(patch.notes), "G1");                              // completion poll still finds the ref
+  assert.equal(parseBankRecipient({ id: "u1", notes: patch.notes }), null); // FIND-105: ref= => refused, never re-dispatched (no double-pay)
+  assert.ok(/bankCode=0005/.test(patch.notes));                           // bank fields preserved textually for operator audit
 });
 
 test("todayYmd: YYYYMMDD zero-padded", () => {

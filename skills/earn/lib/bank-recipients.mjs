@@ -15,6 +15,10 @@ export function parseNotes(notes) {
 export function parseBankRecipient(row = {}) {
   const kv = parseNotes(row.notes);
   if (kv.method !== 'bank') return null;
+  // FIND-105 (dispatch-boundary dedupe): a row carrying a GMO submit ref was ALREADY sent once. Never
+  // auto-redispatch it (that is double-pay) even if a human flips it back to 'queued'. Deliberate re-send
+  // requires the operator to explicitly clear ref= first — an intentional action, not an accidental requeue.
+  if (kv.ref) return null;
   if ((kv.country || '').toLowerCase() === 'jp') {
     if (!kv.bankCode || !kv.branchCode || !kv.accountNumber || !kv.beneficiaryName) return null;
     return {
