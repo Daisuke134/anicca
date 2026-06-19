@@ -82,7 +82,7 @@ let isProfitable;
 
 // ── State ─────────────────────────────────────────────────────────────────────
 
-let currentTier = { tier: 'broke', model: config.ANICCA_FREE_MODEL || 'nvidia/deepseek-v4-flash' };
+let currentTier = { tier: 'broke', model: config.ANICCA_FREE_MODEL || 'free/gpt-oss-120b' };
 let recentActions = [];
 let shuttingDown = false;
 let currentChildKiller = null; // called to kill in-flight skill on SIGTERM
