@@ -26,7 +26,7 @@ const {
   buildGeminiTurn,
   parseGeminiTranscripts,
 } = require("./lib/call-logic.js");
-const { startScheduler, buildStreamUrl } = require("./scheduler.js");
+const { startScheduler, startTravelLoop, buildStreamUrl } = require("./scheduler.js");
 const { placeCall } = require("./lib/dial.js");
 
 const LM_UID_SECRET = process.env.LM_UID_SECRET || "";
@@ -191,5 +191,6 @@ wss.on("connection", (carrierWs, req) => {
 
 server.listen(PORT, () => {
   console.log(`[life-call] listening ${PORT} ws=/ws`);
-  startScheduler(); // begin the 60s wake loop once the bridge is up
+  startScheduler();   // begin the 60s wake loop once the bridge is up
+  startTravelLoop();  // begin the 30min travel-block auto-fill loop
 });

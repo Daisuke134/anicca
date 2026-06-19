@@ -10,6 +10,7 @@
 const crypto = require("crypto");
 const { fetchUpcomingEvents } = require("./lib/events.js");
 const { placeCall } = require("./lib/dial.js");
+const { fillTravel } = require("./lib/travel.js");
 
 // HMAC over the per-call context so the persistent /ws bridge can prove a connection was minted by
 // THIS scheduler (not a stranger draining the Gemini budget) AND that the prompt context wasn't
@@ -35,7 +36,7 @@ async function supaUsers() {
   const { url, key } = SUPA();
   if (!url || !key) return [];
   const q =
-    `${url}/rest/v1/lm_users?select=uid,name,phone,paid,calendar_provider` +
+    `${url}/rest/v1/lm_users?select=uid,name,phone,paid,calendar_provider,home_address` +
     `&phone=not.is.null&paid=is.true&calendar_provider=eq.composio_gcal`;
   const r = await fetch(q, { headers: { apikey: key, Authorization: `Bearer ${key}` } });
   if (!r.ok) return [];
@@ -107,4 +108,27 @@ function startScheduler() {
   return setInterval(run, TICK_MS);
 }
 
-module.exports = { startScheduler, tick, isHelperBlock, buildStreamUrl };
+// ── Travel auto-fill (every 30 min) — keep today+7d filled with [Travel] blocks ─────────────────
+const TRAVEL_TICK_MS = 30 * 60 * 1000;
+async function travelTick() {
+  const apiKey = process.env.COMPOSIO_API_KEY;
+  const mapsKey = process.env.LIFE_MAPS_KEY || process.env.GOOGLE_API_KEY;
+  if (!apiKey || !mapsKey) return;
+  const users = await supaUsers();
+  for (const u of users) {
+    try {
+      const r = await fillTravel(u.uid, { apiKey, mapsKey, home: u.home_address });
+      if (r.inserted) console.log(`[travel] uid=${u.uid.slice(0, 12)} inserted=${r.inserted} checked=${r.checked}`);
+    } catch (e) {
+      console.error(`[travel] uid=${u.uid.slice(0, 12)} err ${e.message}`);
+    }
+  }
+}
+function startTravelLoop() {
+  console.log(`[travel] started — every ${TRAVEL_TICK_MS / 60000}min, horizon 7d`);
+  const run = () => travelTick().catch((e) => console.error("[travel] tick err", e.message));
+  run();
+  return setInterval(run, TRAVEL_TICK_MS);
+}
+
+module.exports = { startScheduler, startTravelLoop, tick, travelTick, isHelperBlock, buildStreamUrl };
