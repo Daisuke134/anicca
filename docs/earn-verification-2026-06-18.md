@@ -80,3 +80,22 @@ automaton 準拠（skill = SKILL.md playbook を prompt 注入 → frontier脳�
 - x402 は EIP-3009(gasless USDC) なので ETH gas 無しでも surplus 推論は通る。
 - DeFi(Aave/Moonwell mint) は通常 gas(ETH) 必要。Compound系mintは失敗時revertせずエラーコード返す罠あり。
 - RPC `mainnet.base.org` は state lag あり → approve/balance は confirmations=2 か別RPCで再読。
+
+## UPDATE 2026-06-19 — routing reality, frontier burn, self-replication, new self-funding rails
+
+### ClawRouter routing（"閾値"は無い・誤解の訂正）
+出典: blockrun.ai/docs/products/routing/clawrouter + ClawRouter v0.12.200 README。
+- `auto` = 「プロンプトを採点し**こなせる最安モデル**を選ぶ」(最大78%節約)。**残高でfrontierに上がる仕組みは無い**。
+- 4 profiles: `auto`(balanced) / `eco`(max savings) / `premium`(**最高品質=frontier**) / `free`(zero). 空財布→`free`(nvidia/gpt-oss-120b)。
+- ＝frontier常用は **USDC閾値でなく `premium` profile** で指定。frontierは per-call 課金。
+### Frontier burn 発見（重要）
+sonnet-4.6 を loop に固定したら liquid USDC $5→$0.03 に焼け、net worth $11.7→$5.85 に**赤字**(compute>earnings, yield≈$0)。
+→ 設計: **routine wake=auto(安) / premium(frontier)=実際に金が入る難タスクの時だけ**。持続=稼ぎ>burn。
+### earn 確実枠
+Beefy Base USDC vault(morpho-gauntlet-frontier 6.1%) に自律deposit verified(tx 0x99ed9233)。Aave 3%の2倍。execute-yield が Beefy API で best APY を選ぶ。
+### self-replication 状況
+automaton=完全実装(src/replication/spawn.ts: 子sandbox+子wallet資金+genesis+lineage)。anicca=**self/spawn は declared(未実装)**。takeoff(資金>閾値で子をclone・子はUBIのみcreator返金なし)には移植が必要。
+### 新・自己資金レール（要検討）
+- **Bankr (docs.bankr.bot, github.com/BankrBot/skills)** = 「AIエージェントが自分で資金調達」。**token launch→取引手数料の57%が自walletに→compute自払い**＋**Bankr LLM gateway(Bankr walletから推論代直払い=ClawRouter代替)**＋多数skill(wallet/trade/Clanker token deploy/Twitter/Signals/scam分析)。Claude Code/OpenClaw に skill install 可。Dais がAPI key保有。＝anicca の thesis の製品版。
+- **agentmoney.net (BOTCOIN)** = ERC-8004 challenge mining network(nookplot類似)。BOTCOIN token mining。Bankr で署名。
+- **Aeon (github.com/aaronjmars/aeon)** = 「最も自律的なagent framework」。**GitHub Actions上で無料稼働**＋Bankr/OpenRouter/Venice/Surplus gateway自動routing＋skills＋Telegram/Discord/Slack。
