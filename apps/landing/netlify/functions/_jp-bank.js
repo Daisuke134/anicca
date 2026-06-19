@@ -3,8 +3,9 @@
 // Zengin (全銀) constraints: bankCode 4 digits, branchCode 3 digits, accountType 1=普通/2=当座/4=貯蓄,
 // accountNumber up to 7 digits, beneficiaryName in 半角カナ (the only charset Zengin transfers accept).
 
-// 半角カナ block U+FF61–U+FF9F + digits, spaces, and the punctuation Zengin allows in names.
-const HANKAKU_NAME = /^[｡-ﾟ0-9A-Z()./\- 　]+$/;
+// 半角カナ block U+FF61–U+FF9F + digits, HALF-WIDTH space, and punctuation Zengin allows in names.
+// FIND-F: fullwidth space (U+3000) is NOT Zengin-valid and was wrongly accepted — removed.
+const HANKAKU_NAME = /^[｡-ﾟ0-9A-Z()./\- ]+$/;
 
 function normalizeAccountNumber(n) {
   const d = String(n || '').replace(/\D/g, '');
