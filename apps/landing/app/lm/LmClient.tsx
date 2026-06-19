@@ -33,6 +33,32 @@ const PHONE_RE = /^\+?[1-9]\d{7,14}$/;
 const STORAGE_KEY = 'anicca.lm.uid';
 const SIG_KEY = 'anicca.lm.sig';
 
+// Country dial-code picker (like every other site): select country → +code auto-prefixed → type the
+// rest → we store E.164. Curated to the common markets; ordered with JP first (our first users).
+const COUNTRIES: { c: string; n: string; d: string; f: string }[] = [
+  { c: 'JP', n: 'Japan', d: '81', f: '🇯🇵' },
+  { c: 'US', n: 'United States', d: '1', f: '🇺🇸' },
+  { c: 'GB', n: 'United Kingdom', d: '44', f: '🇬🇧' },
+  { c: 'CA', n: 'Canada', d: '1', f: '🇨🇦' },
+  { c: 'AU', n: 'Australia', d: '61', f: '🇦🇺' },
+  { c: 'DE', n: 'Germany', d: '49', f: '🇩🇪' },
+  { c: 'FR', n: 'France', d: '33', f: '🇫🇷' },
+  { c: 'IN', n: 'India', d: '91', f: '🇮🇳' },
+  { c: 'SG', n: 'Singapore', d: '65', f: '🇸🇬' },
+  { c: 'KR', n: 'South Korea', d: '82', f: '🇰🇷' },
+  { c: 'CN', n: 'China', d: '86', f: '🇨🇳' },
+  { c: 'HK', n: 'Hong Kong', d: '852', f: '🇭🇰' },
+  { c: 'TW', n: 'Taiwan', d: '886', f: '🇹🇼' },
+  { c: 'BR', n: 'Brazil', d: '55', f: '🇧🇷' },
+  { c: 'MX', n: 'Mexico', d: '52', f: '🇲🇽' },
+  { c: 'ES', n: 'Spain', d: '34', f: '🇪🇸' },
+  { c: 'IT', n: 'Italy', d: '39', f: '🇮🇹' },
+  { c: 'NL', n: 'Netherlands', d: '31', f: '🇳🇱' },
+  { c: 'AE', n: 'UAE', d: '971', f: '🇦🇪' },
+  { c: 'ID', n: 'Indonesia', d: '62', f: '🇮🇩' },
+  { c: 'PH', n: 'Philippines', d: '63', f: '🇵🇭' },
+];
+
 type Step = 'login' | 'name' | 'connect' | 'phone' | 'pay' | 'dashboard';
 type ConnState = 'idle' | 'connecting' | 'connected' | 'error';
 
@@ -68,7 +94,8 @@ export default function LmClient() {
   const [uid, setUid] = useState<string>('');
   const [sig, setSig] = useState<string>('');
   const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
+  const [dial, setDial] = useState('81'); // JP default
+  const [natNum, setNatNum] = useState(''); // national number (digits only)
   const [cal, setCal] = useState<ConnState>('idle');
   const [gmail, setGmail] = useState<ConnState>('idle');
   const [err, setErr] = useState<string>('');
@@ -198,12 +225,15 @@ export default function LmClient() {
 
   const savePhone = useCallback(async () => {
     setErr('');
-    if (!PHONE_RE.test(phone.trim())) return setErr(t.phone.error);
+    // Build E.164 from the picked dial code + the typed national number (strip non-digits, drop a
+    // leading 0 which is a domestic trunk prefix not used in international format).
+    const phone = `+${dial}${natNum.replace(/\D/g, '').replace(/^0+/, '')}`;
+    if (!PHONE_RE.test(phone)) return setErr(t.phone.error);
     try {
       const r = await fetch(SAVE_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ uid, sig, phone: phone.trim() }),
+        body: JSON.stringify({ uid, sig, phone }),
       });
       // Bug fix: the save used to advance to 'pay' even on a 403/502 (silent fail) — the phone
       // never persisted yet the UI moved on, so the number looked "not connected". Only advance
@@ -217,7 +247,7 @@ export default function LmClient() {
     } catch (e) {
       setErr(t.phone.saveError);
     }
-  }, [phone, uid, sig, t]);
+  }, [dial, natNum, uid, sig, t]);
 
   // ── render ───────────────────────────────────────────────────────────────────
   return (
@@ -298,13 +328,27 @@ export default function LmClient() {
             {t.phone.title}
           </h2>
           <p className="mt-2 text-sm text-[hsl(var(--text-secondary))]">{t.phone.body}</p>
-          <input
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            inputMode="tel"
-            placeholder={t.phone.placeholder}
-            className="mt-5 w-full rounded-input border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-4 py-3 text-sm text-[hsl(var(--text-primary))] outline-none focus:border-[hsl(var(--gold))]"
-          />
+          <div className="mt-5 flex gap-2">
+            <select
+              value={dial}
+              onChange={(e) => setDial(e.target.value)}
+              aria-label="Country code"
+              className="rounded-input border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-2 py-3 text-sm text-[hsl(var(--text-primary))] outline-none focus:border-[hsl(var(--gold))]"
+            >
+              {COUNTRIES.map((c) => (
+                <option key={c.c} value={c.d}>
+                  {c.f} +{c.d}
+                </option>
+              ))}
+            </select>
+            <input
+              value={natNum}
+              onChange={(e) => setNatNum(e.target.value)}
+              inputMode="tel"
+              placeholder={t.phone.placeholder}
+              className="w-full rounded-input border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-4 py-3 text-sm text-[hsl(var(--text-primary))] outline-none focus:border-[hsl(var(--gold))]"
+            />
+          </div>
           <button
             type="button"
             onClick={savePhone}
@@ -359,7 +403,7 @@ export default function LmClient() {
             <div className="mt-3 flex flex-wrap gap-2 text-xs">
               <Pill ok={cal === 'connected'}>{t.dashboard.pills.calendar}</Pill>
               <Pill ok={gmail === 'connected'}>{t.dashboard.pills.gmail}</Pill>
-              <Pill ok={!!phone}>{t.dashboard.pills.phone}</Pill>
+              <Pill ok={!!natNum}>{t.dashboard.pills.phone}</Pill>
             </div>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
