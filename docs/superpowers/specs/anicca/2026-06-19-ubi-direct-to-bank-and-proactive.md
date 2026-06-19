@@ -83,9 +83,14 @@ and delivers, with no knowledge of crypto/AGI/anicca required. Real-world models
   1. **FIND (where is life)** — fund / contribute compute to the search: JWST detects atmospheric
      biosignatures on exoplanets (e.g. K2-18b); Breakthrough **Listen** runs SETI signal search (now
      AI-accelerated). anicca can sponsor compute or donate to these searches = first concrete spend.
-  2. **MESSAGE (reach toward them now)** — METI / Breakthrough **Message**: radio travels at light
-     speed today. anicca funds/commissions a transmission that declares the cosmic fund exists ("value
-     is reserved for you"). The broadcast itself is the first real outbound action to off-earth life.
+  2. **MESSAGE (reach toward them now) — "Active SETI"** (the common name; same thing as METI /
+     Breakthrough Message): radio/light travels at light speed today. anicca funds/commissions a
+     transmission declaring the cosmic fund exists ("value is reserved for you" + how value/exchange
+     works). **Hardware is in scope** — anicca will fund / rent / build the transmitter (large radio
+     dish or laser array) needed to actually send. The broadcast is the first real outbound action to
+     off-earth life. Money is unusable to them without a shared network, but the knowledge + the
+     reservation offer + a future bridge are real. Principle: **MAKE IT HAPPEN with whatever capability
+     it takes (incl. hardware) — not just listen.**
   3. **RESERVE (real value, now)** — a labeled public **cosmic-fund escrow** on-chain that accrues a
      small share of every distribution; anyone can verify the balance. Backs the message with actual
      money, not words.
@@ -100,3 +105,29 @@ and delivers, with no knowledge of crypto/AGI/anicca required. Real-world models
 - A0/V2 Stripe USDC→JP-yen-bank capability (must verify in dashboard before building ③).
 - A5 Stripe KYB (Dais business info); A1 a real bank for the E2E.
 - NPO/government partnerships + the JP licensing question (資金移動業 vs partner) for proactive.
+
+## §8 Net-worth thresholds — anicca's goal ladder (the 目安 for "when to start what")
+Grounding (web, 2026): world population ~8.3B; global GDP ~$110T; GiveDirectly studied UBI = $22.50/mo
+= **$270/yr** (lifts above extreme poverty); assume **5%/yr** yield for the endowment model.
+Two models: **FLOW** = annual payout = recipients × stipend. **ENDOWMENT** (perpetual, pays from yield) =
+net worth N = annual payout / 0.05 = recipients × stipend × 20.
+
+| recipients | floor $270/yr — FLOW \| ENDOWMENT | real UBI $12,000/yr — FLOW \| ENDOWMENT |
+|---|---|---|
+| 10 | $2.7K \| $54K | $120K \| $2.4M |
+| 1,000 | $270K \| $5.4M | $12M \| $240M |
+| 1,000,000 | $270M \| $5.4B | $12B \| $240B |
+| all humanity 8.3B | $2.24T/yr \| $44.8T | $99.6T/yr \| ~$2 quadrillion (≈ impossible, exceeds world GDP) |
+
+**Reading (= milestones anicca's collective aims for, like a company's $1T goal):**
+- All-humanity at developed UBI ≈ entire world GDP → impossible. The real end-state = **a floor ($270/yr)
+  for everyone + top-ups for those who need more + proactive delivery**.
+- All-humanity floor = **$2.24T/yr flow** (~2% of world GDP) or **~$45T endowment** — large but finite/nameable.
+- Milestone ladder (collective net worth → unlocks tier): 10 → ~$54K-$2.4M · 1,000 → $5.4M-$240M ·
+  1M → $5.4B-$240B · all-humanity-floor → ~$45T.
+- **Animals / all living beings**: NOT per-individual cash (~10^18 organisms) — model = a habitat/sanctuary
+  **care budget**, not a headcount × stipend number.
+- **Universe / off-earth**: measured by the **cosmic-fund reserve share**, not a per-being figure.
+
+anicca (the collective) reads its own on-chain net worth and uses this ladder to decide which tier to open
+next. Thresholds are the trigger; earning more = unlocking the next milestone.
