@@ -1,0 +1,39 @@
+// bank-recipients.mjs — parse a recipients.notes string (the `key=val;` format written by the landing
+// income-signup _jp-bank.buildBankNotes) into a bankWatcherPass recipient. Closes the round-trip:
+// /income form → income-signup (validate+store notes) → here (parse) → bankWatcherPass → gmo-furikomi.
+
+export function parseNotes(notes) {
+  const kv = {};
+  for (const part of String(notes || '').split(';')) {
+    const i = part.indexOf('=');
+    if (i > 0) kv[part.slice(0, i).trim()] = part.slice(i + 1).trim();
+  }
+  return kv;
+}
+
+// row: { id, notes } from Supabase recipients. Returns a bank recipient or null (not a JP bank row).
+export function parseBankRecipient(row = {}) {
+  const kv = parseNotes(row.notes);
+  if (kv.method !== 'bank') return null;
+  if ((kv.country || '').toLowerCase() === 'jp') {
+    if (!kv.bankCode || !kv.branchCode || !kv.accountNumber || !kv.beneficiaryName) return null;
+    return {
+      id: row.id,
+      provider: 'gmo',
+      currency: 'JPY',
+      bank: {
+        bankCode: kv.bankCode,
+        branchCode: kv.branchCode,
+        accountType: kv.accountType || '1',
+        accountNumber: kv.accountNumber,
+        beneficiaryName: kv.beneficiaryName,
+      },
+    };
+  }
+  return null; // non-JP bank rows: future rails (Rain/etc.)
+}
+
+// map a list of recipient rows → bank recipients (drops non-bank / incomplete).
+export function bankRecipientsFromRows(rows = []) {
+  return rows.map(parseBankRecipient).filter(Boolean);
+}
