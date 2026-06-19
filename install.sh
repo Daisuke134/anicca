@@ -148,7 +148,7 @@ chmod +x "$REPO_ROOT/runtime/anicca-daemon.sh" 2>/dev/null || true
 if [ "$(uname)" = "Darwin" ]; then
   PLIST="$HOME/Library/LaunchAgents/com.anicca.daemon.plist"
   mkdir -p "$HOME/Library/LaunchAgents"
-  sed -e "s#__REPO__#$REPO_ROOT#g" -e "s#__ANICCA_HOME__#$ANICCA_HOME#g" \
+  sed -e "s#__REPO__#$REPO_ROOT#g" -e "s#__ANICCA_HOME__#$ANICCA_HOME#g" -e "s#__HOME__#$HOME#g" \
     "$REPO_ROOT/runtime/com.anicca.daemon.plist.template" > "$PLIST"
   launchctl unload "$PLIST" 2>/dev/null || true
   if launchctl load -w "$PLIST" 2>/dev/null; then

@@ -46,7 +46,8 @@ node "$REPO/runtime/dashboard/telemetry-poster.mjs" >>"$LOGDIR/poster.log" 2>&1 
 # 4. brain endpoint + model the loop should use -------------------------------------------------
 export OPENAI_BASE_URL="http://127.0.0.1:$PORT/v1"
 export OPENAI_API_KEY="${OPENAI_API_KEY:-x402-local}"
-export ANICCA_WALLET_ADDRESS="${ANICCA_WALLET_ADDRESS:-$(node -e 'try{const w=JSON.parse(require("fs").readFileSync(process.env.HOME+"/.automaton/wallet.json"));console.log(w.address||"")}catch{process.exit(0)}')}"
+# derive the wallet address robustly with grep (no node/ESM/require pitfalls, no env deps)
+export ANICCA_WALLET_ADDRESS="${ANICCA_WALLET_ADDRESS:-$(grep -oE '0x[a-fA-F0-9]{40}' "$HOME/.automaton/wallet.json" 2>/dev/null | head -1)}"
 
 log "exec loop (model tiers from config; funded=$(node -e 'import("'"$REPO"'/runtime/loop/config.mjs").then(m=>console.log(m.loadConfig(process.env,"").ANICCA_FUNDED_MODEL)).catch(()=>console.log("?"))' 2>/dev/null))"
 # 5. run the loop in the foreground — its exit (crash/shutdown) ends this script; supervisor restarts.
