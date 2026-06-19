@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { makeGmoAdapter, buildSubmittedPatch, buildClaimPatch, buildReleasePatch, claimedFromRows, claimWith, parseRef, parseClaimedAt, reconcileStuck, idempotencyKey, pollCompletions, todayYmd } from "../bank-payout-watcher.mjs";
+import { parseBankRecipient } from "../lib/bank-recipients.mjs";
 
 test("makeGmoAdapter: builds GMO request, stamps idempotency key, calls submit with token", async () => {
   let captured = null;
@@ -56,6 +57,26 @@ test("FIND-100 pollCompletions: completed->paid, failed->needs_review (NEVER aut
 test("FIND-101 parseClaimedAt: extracts claimed_at from notes; null when absent", () => {
   assert.equal(parseClaimedAt("method=bank;country=jp;bankCode=0005;claimed_at=2026-06-19T10:00:00.000Z"), "2026-06-19T10:00:00.000Z");
   assert.equal(parseClaimedAt("method=bank;country=jp"), null);
+});
+
+test("FIND-103: reconcileStuck flags NULL/unparseable claimed_at processing rows (anomalous, not dropped)", async () => {
+  const flagged = [];
+  const out = await reconcileStuck({
+    readProcessing: async () => [{ id: "nots", ts: null }, { id: "bad", ts: "not-a-date" }],
+    flagNeedsReview: async (id) => flagged.push(id),
+    now: 1_000_000_000_000,
+  });
+  assert.deepEqual(out.flagged.sort(), ["bad", "nots"]); // both flagged, neither silently dropped
+});
+
+test("FIND-103/102 seam: submitted notes preserve bank fields (operator re-queue stays parseable) + ref", () => {
+  const raw = "method=bank;country=jp;bankCode=0005;branchCode=001;accountType=2;accountNumber=1234567;beneficiaryName=ﾀﾅｶ ﾀﾛｳ;claimed_at=2026-06-20T00:00:00.000Z";
+  const patch = buildSubmittedPatch({ provider: "gmo", amount: 19870, currency: "JPY", res: { apptransferNo: "G1" }, raw });
+  assert.equal(patch.status, "submitted");
+  assert.equal(parseRef(patch.notes), "G1");                 // ref survives for the completion poll
+  const back = parseBankRecipient({ id: "u1", notes: patch.notes });
+  assert.ok(back && back.bank.bankCode === "0005");          // a re-queued needs_review row is still parseable
+  assert.equal(back.bank.accountType, "2");                  // incl. non-普通 type
 });
 
 test("todayYmd: YYYYMMDD zero-padded", () => {

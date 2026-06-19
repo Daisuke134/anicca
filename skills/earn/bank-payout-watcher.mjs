@@ -31,7 +31,10 @@ function sb(path, opts = {}) {
 // FIND-005: accepted (200 + apptransferNo) is NOT 振込完了. status='submitted' + persist ref for the poll.
 export function buildSubmittedPatch(info = {}) {
   const ref = info.res && (info.res.apptransferNo || info.res.applyNo) ? `;ref=${info.res.apptransferNo || info.res.applyNo}` : "";
-  return { status: "submitted", notes: `submitted;provider=${info.provider};amount=${info.amount};currency=${info.currency}${ref}` };
+  // FIND-103: preserve the original bank notes so a needs_review row a human re-queues is still parseable by
+  // parseBankRecipient (otherwise the operator-recovery re-queue would silently drop the row).
+  const base = info.raw ? `${info.raw};` : "";
+  return { status: "submitted", notes: `${base}submitted;provider=${info.provider};amount=${info.amount};currency=${info.currency}${ref}` };
 }
 export const buildClaimPatch = () => ({ status: "processing" });   // FIND-A: queued -> processing (atomic via filter)
 export const buildReleasePatch = () => ({ status: "queued" });     // only on pre-dispatch skip (nothing sent)
@@ -78,7 +81,11 @@ export async function reconcileStuck({ readProcessing, flagNeedsReview, olderTha
   const flagged = [];
   for (const r of rows || []) {
     const ts = r.ts ? Date.parse(r.ts) : NaN;
-    if (Number.isFinite(ts) && now - ts >= olderThanMs) { await flagNeedsReview(r.id); flagged.push(r.id); }
+    // FIND-103: a 'processing' row with NULL/unparseable claimed_at is itself anomalous (claim never stamped
+    // it, or it predates the stamp) — flag it too rather than silently dropping it. Fresh, validly-stamped
+    // in-flight rows (ts within the window) are the ONLY ones left alone.
+    const aged = Number.isFinite(ts) ? now - ts >= olderThanMs : true;
+    if (aged) { await flagNeedsReview(r.id); flagged.push(r.id); }
   }
   return { flagged };
 }
