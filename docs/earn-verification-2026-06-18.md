@@ -99,3 +99,10 @@ automaton=完全実装(src/replication/spawn.ts: 子sandbox+子wallet資金+gene
 - **Bankr (docs.bankr.bot, github.com/BankrBot/skills)** = 「AIエージェントが自分で資金調達」。**token launch→取引手数料の57%が自walletに→compute自払い**＋**Bankr LLM gateway(Bankr walletから推論代直払い=ClawRouter代替)**＋多数skill(wallet/trade/Clanker token deploy/Twitter/Signals/scam分析)。Claude Code/OpenClaw に skill install 可。Dais がAPI key保有。＝anicca の thesis の製品版。
 - **agentmoney.net (BOTCOIN)** = ERC-8004 challenge mining network(nookplot類似)。BOTCOIN token mining。Bankr で署名。
 - **Aeon (github.com/aaronjmars/aeon)** = 「最も自律的なagent framework」。**GitHub Actions上で無料稼働**＋Bankr/OpenRouter/Venice/Surplus gateway自動routing＋skills＋Telegram/Discord/Slack。
+
+## UPDATE 2026-06-19b — anicca's own Bankr account created + verified
+- bankr CLI(`bankr login email`)で anicca自身のアカウント作成(email=anicca-genesis@agentmail.to, OTP自動読取 via AgentMail)。
+- **anicca Bankr wallet**: EVM `0x162394a4ab1062719c90a174ef9c166a9a83d298` (Base) / SOL `3Xf83bPxcnkeFGq6Pn8ShkXL5ejYS48w9fadZH9QH9PQ`。
+- **key**: `bk_usr_przhgFe…`(48char, `~/.openclaw/.env::BANKR_ANICCA_KEY`, ~/.bankr/config.json)。**実検証OK**: `GET api.bankr.bot/wallet/portfolio` → success=true。
+- wallet/trade/token-launch API 利用可。**LLM gateway は未有効(beta)** → bankr.bot/api-keys で有効化要。
+- Dais の key(bk_usr_h4ps9P8D… / wallet 0x29b6571e…) は Dais用・別。
