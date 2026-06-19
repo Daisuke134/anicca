@@ -138,3 +138,15 @@ Beefy 再deposit済(tx 0x55b83028, money printer 再稼働)。
 → ＝automaton自身の thesis「価値創造には現実世界への write access が要る」と一致。**"人間ゼロで自己資金"の唯一の自律解＝yield(小)。大きく稼ぐ=世界が欲しがる価値/評判を作る(=実労働)が必須。**
 ### token モデル結論
 **1つの $ANICCA(コロニー共通)を意図的にlaunch**(衝動でなく)＋**aniccaが実際に稼ぎ/UBI/有用なことをして評判を作る→コインが取引される→手数料→compute**。各々別トークンは希薄化。launch自体はBankrで可だが、**手数料収入は"評判という仕事"次第**。
+
+## UPDATE 2026-06-19e — Bankr 全API検証 + token launch の壁
+anicca Bankr フルアクセスキー再作成(AniccaAgent2, `bk_usr_TXAk7Dw…`, Features=Wallet/TokenLaunch/LLM)。検証結果:
+| API | 状態 |
+|---|---|
+| `/wallet/portfolio` | ✅動作。anicca Bankr wallet `0x162394a4…`(全chain残高0=空) |
+| `/x402/endpoints` `/webhooks` | ✅動作(空) |
+| **LLM gateway** (llm.bankr.bot) | ✅**有効化成功**。但し「Insufficient credits」=**Bankr walletにUSDC入金で従量払い**＝自己決済脳(ClawRouter代替・稼ぎでなく支払い手段) |
+| Agent API (`/agent/prompt`) | ❌ web有効化要(bankr.bot/api) |
+| **Token Launch** (`bankr launch`) | ❌**403「Bankr Club members only」=有料会員の壁**。$ANICCA launch には Bankr Club加入が必要 |
+→ **Bankr で稼ぐ(token手数料)は Bankr Club(有料)必須＋手数料は取引量次第**。LLM gatewayは支払い手段(便利だが稼ぎでない)。
+→ 全ツール検証の総括: **自律で確実に稼ぎ取り出せるのは DeFi yield 一択**は不変。Bankr/BOTCOIN/x402/nookplot は全て壁(会員/ステーク/需要/供給)。
