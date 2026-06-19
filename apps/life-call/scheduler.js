@@ -11,6 +11,7 @@ const crypto = require("crypto");
 const { fetchUpcomingEvents } = require("./lib/events.js");
 const { placeCall } = require("./lib/dial.js");
 const { fillTravel } = require("./lib/travel.js");
+const { askTick } = require("./lib/ask.js");
 
 // HMAC over the per-call context so the persistent /ws bridge can prove a connection was minted by
 // THIS scheduler (not a stranger draining the Gemini budget) AND that the prompt context wasn't
@@ -36,7 +37,7 @@ async function supaUsers() {
   const { url, key } = SUPA();
   if (!url || !key) return [];
   const q =
-    `${url}/rest/v1/lm_users?select=uid,name,phone,paid,calendar_provider,home_address` +
+    `${url}/rest/v1/lm_users?select=uid,name,phone,paid,calendar_provider,home_address,gmail_account_id` +
     `&phone=not.is.null&paid=is.true&calendar_provider=eq.composio_gcal`;
   const r = await fetch(q, { headers: { apikey: key, Authorization: `Bearer ${key}` } });
   if (!r.ok) return [];
@@ -131,4 +132,41 @@ function startTravelLoop() {
   return setInterval(run, TRAVEL_TICK_MS);
 }
 
-module.exports = { startScheduler, startTravelLoop, tick, travelTick, isHelperBlock, buildStreamUrl };
+// ── Ask/reply loop (every 20 min) — email the user about events missing a location, read replies ──
+const ASK_TICK_MS = 20 * 60 * 1000;
+const unipileEmailCache = new Map();
+async function unipileEmail(accountId, token, dsn) {
+  if (unipileEmailCache.has(accountId)) return unipileEmailCache.get(accountId);
+  try {
+    const r = await fetch(`https://${dsn}/api/v1/accounts/${encodeURIComponent(accountId)}`,
+      { headers: { "X-API-KEY": token, accept: "application/json" } });
+    const a = await r.json();
+    const email = a && a.name && a.name.includes("@") ? a.name : null;
+    if (email) unipileEmailCache.set(accountId, email);
+    return email;
+  } catch { return null; }
+}
+async function askTickAll() {
+  const composioKey = process.env.COMPOSIO_API_KEY;
+  const unipileToken = process.env.UNIPILE_TOKEN, unipileDsn = process.env.UNIPILE_DSN;
+  const { url: supaUrl, key: supaKey } = SUPA();
+  if (!composioKey || !unipileToken || !unipileDsn || !supaUrl) return;
+  const users = await supaUsers();
+  for (const u of users) {
+    if (!u.gmail_account_id) continue; // only users with a connected Unipile mailbox
+    const userEmail = await unipileEmail(u.gmail_account_id, unipileToken, unipileDsn);
+    if (!userEmail) continue;
+    try {
+      const r = await askTick(u.uid, { composioKey, accountId: u.gmail_account_id, unipileToken, unipileDsn, userEmail, supaUrl, supaKey });
+      if (r.asked || r.resolved) console.log(`[ask] uid=${u.uid.slice(0, 12)} asked=${r.asked} resolved=${r.resolved}`);
+    } catch (e) { console.error(`[ask] uid=${u.uid.slice(0, 12)} err ${e.message}`); }
+  }
+}
+function startAskLoop() {
+  console.log(`[ask] started — every ${ASK_TICK_MS / 60000}min`);
+  const run = () => askTickAll().catch((e) => console.error("[ask] tick err", e.message));
+  run();
+  return setInterval(run, ASK_TICK_MS);
+}
+
+module.exports = { startScheduler, startTravelLoop, startAskLoop, tick, travelTick, askTickAll, isHelperBlock, buildStreamUrl };
