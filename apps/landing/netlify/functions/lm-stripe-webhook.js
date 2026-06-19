@@ -4,21 +4,25 @@
 // customer.subscription.deleted → flip paid=false. Stripe signature is verified manually (no SDK):
 // signed_payload = "<t>.<rawBody>", HMAC-SHA256 with STRIPE_LM_WEBHOOK_SECRET, compared to the v1 sig.
 const crypto = require("crypto");
-const WH_SECRET = process.env.STRIPE_LM_WEBHOOK_SECRET || "";
+// Accept BOTH the live and the test webhook signing secret so sandbox (test-mode) payments flip paid
+// too — without the test secret a test checkout never marks the user paid. Try each; one must match.
+const WH_SECRETS = [process.env.STRIPE_LM_WEBHOOK_SECRET, process.env.STRIPE_LM_WEBHOOK_SECRET_TEST].filter(Boolean);
 const STRIPE_SECRET = process.env.STRIPE_SECRET_KEY || "";
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 function verifyStripe(rawBody, sigHeader) {
-  if (!WH_SECRET || !sigHeader) return false;
+  if (!WH_SECRETS.length || !sigHeader) return false;
   const parts = Object.fromEntries(sigHeader.split(",").map((kv) => kv.split("=")));
   const t = parts.t, v1 = parts.v1;
   if (!t || !v1) return false;
   // Reject replays older than 5 minutes.
   if (Math.abs(Date.now() / 1000 - Number(t)) > 300) return false;
-  const expected = crypto.createHmac("sha256", WH_SECRET).update(`${t}.${rawBody}`).digest("hex");
-  const a = Buffer.from(v1), b = Buffer.from(expected);
-  return a.length === b.length && crypto.timingSafeEqual(a, b);
+  return WH_SECRETS.some((secret) => {
+    const expected = crypto.createHmac("sha256", secret).update(`${t}.${rawBody}`).digest("hex");
+    const a = Buffer.from(v1), b = Buffer.from(expected);
+    return a.length === b.length && crypto.timingSafeEqual(a, b);
+  });
 }
 
 async function setPaid(uid, paid) {
