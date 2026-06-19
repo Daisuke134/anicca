@@ -23,7 +23,7 @@ export function buildBulkTransferRequest({ accountId, remitterName, transferDesi
       itemId: String(i + 1),
       beneficiaryBankCode: b.bankCode,
       beneficiaryBranchCode: b.branchCode,
-      accountTypeCode: b.accountTypeCode || "1", // default 普通
+      accountTypeCode: b.accountType || b.accountTypeCode || "1", // accept accountType (from parseBankRecipient) or accountTypeCode; default 普通
       accountNumber: b.accountNumber,
       beneficiaryName: b.beneficiaryName,        // 半角カナ per Zengin
       transferAmount: String(t.amount),

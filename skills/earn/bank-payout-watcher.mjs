@@ -19,10 +19,16 @@ function sb(path, opts = {}) {
   });
 }
 
-// PATCH body to mark a recipient paid (no-fake: only called after a succeeded rail).
-export function buildPaidPatch(info = {}) {
-  return { status: "paid", notes: `paid;provider=${info.provider};amount=${info.amount};currency=${info.currency}` };
+// PATCH body when a rail ACCEPTED the transfer. FIND-005: GMO bulktransfer is async — a 200 +
+// apptransferNo means ACCEPTED, not 振込完了. So status='submitted' (honest), not 'paid'. A later poll of
+// bulktransfer/status promotes 'submitted'→'paid'. The apptransferNo is persisted for that poll + audit.
+export function buildSubmittedPatch(info = {}) {
+  const ref = info.res && (info.res.apptransferNo || info.res.applyNo) ? `;ref=${info.res.apptransferNo || info.res.applyNo}` : "";
+  return { status: "submitted", notes: `submitted;provider=${info.provider};amount=${info.amount};currency=${info.currency}${ref}` };
 }
+// FIND-002 idempotency: claim 'processing' BEFORE submit; revert to 'queued' only on a FAILED rail.
+export const buildClaimPatch = () => ({ status: "processing" });
+export const buildRevertPatch = () => ({ status: "queued" });
 
 // today YYYYMMDD (live script context; not the workflow sandbox). Optional override for tests/determinism.
 export function todayYmd(d = new Date()) {
@@ -43,12 +49,18 @@ async function readBankRecipients() {
   return bankRecipientsFromRows(Array.isArray(rows) ? rows : []);
 }
 
-async function markPaid(id, info) {
-  await sb(`recipients?id=eq.${id}`, { method: "PATCH", headers: { Prefer: "return=minimal" }, body: JSON.stringify(buildPaidPatch(info)) });
+async function patchRecipient(id, body, label) {
+  const res = await sb(`recipients?id=eq.${id}`, { method: "PATCH", headers: { Prefer: "return=minimal" }, body: JSON.stringify(body) });
+  if (!res.ok) console.error(`[bank-watcher] ${label} PATCH failed for ${id}: HTTP ${res.status}`); // FIND-002/005: never swallow
+  return res.ok;
 }
+async function markPaid(id, info) { return patchRecipient(id, buildSubmittedPatch(info), "submitted"); }
+async function claim(ids) { for (const id of ids) await patchRecipient(id, buildClaimPatch(), "claim"); }
+async function revert(id) { return patchRecipient(id, buildRevertPatch(), "revert"); }
 
 async function getPool() {
-  // JPY pool available to distribute. Live: our GMO 法人/sandbox account balance (残高照会API). For now env.
+  // FIND-003: in production this MUST be the real GMO 残高照会API balance, not env. env is a dev cap only;
+  // bankWatcherPass also passes balance=pool so planBankFanout's guard rejects any spend > this pool.
   return parseInt(process.env.GMO_JPY_POOL || "0", 10);
 }
 
@@ -63,7 +75,7 @@ export async function pass() {
     token,
   });
   const opts = { reserve: parseInt(process.env.BANK_RESERVE_JPY || "0", 10), feePerTransfer: parseInt(process.env.GMO_FEE_JPY || "130", 10) };
-  return bankWatcherPass({ readBankRecipients, getPool, markPaid, adapters: { gmo }, opts });
+  return bankWatcherPass({ readBankRecipients, getPool, markPaid, claim, revert, adapters: { gmo }, opts });
 }
 
 if (process.argv[1] && process.argv[1].endsWith("bank-payout-watcher.mjs")) {

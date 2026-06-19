@@ -26,6 +26,14 @@ test("buildBulkTransferRequest: respects explicit accountTypeCode (当座=2)", (
   assert.equal(req.bulkTransfers[0].accountTypeCode, "2");
 });
 
+test("FIND-001 regression: accountType from parseBankRecipient flows to GMO accountTypeCode (not silently 普通)", () => {
+  // parseBankRecipient emits bank.accountType (NOT accountTypeCode). Must not default to "1".
+  const t = tx(10000); t.bank.accountType = "2"; // 当座, as a parsed recipient carries it
+  delete t.bank.accountTypeCode;
+  const req = buildBulkTransferRequest({ accountId: "A1", remitterName: "X", transferDesignatedDate: "20260620", transfers: [t] });
+  assert.equal(req.bulkTransfers[0].accountTypeCode, "2"); // was "1" before the fix
+});
+
 test("buildBulkTransferRequest: throws on missing header fields", () => {
   assert.throws(() => buildBulkTransferRequest({ remitterName: "X", transferDesignatedDate: "20260620", transfers: [tx(1000)] }), /accountId/);
   assert.throws(() => buildBulkTransferRequest({ accountId: "A1", remitterName: "X", transferDesignatedDate: "20260620", transfers: [] }), /transfers required/);
