@@ -35,8 +35,12 @@ fi
 #    pays x402 from the wallet for PAID models, but our tiers pin a free model, so routine compute = $0.
 ensure_brain() {
   command -v clawrouter >/dev/null 2>&1 || npm install -g @blockrun/clawrouter >/dev/null 2>&1 || true
-  # ClawRouter needs BLOCKRUN_WALLET_KEY (anicca's own wallet) to start; it only spends it for PAID models.
-  local KEY; KEY=$(node -e 'const w=require(process.env.HOME+"/.automaton/wallet.json");const k=w.privateKey;process.stdout.write(k.startsWith("0x")?k:"0x"+k)' 2>/dev/null)
+  # The :8402 ClawRouter is SHARED with the OpenClaw gateway (openclaw.json baseUrl :8402), and
+  # ClawRouter is :8402-only (no port split). So it MUST run on the OpenClaw instance's OWN wallet —
+  # OpenClaw's many 'auto' (paid) crons then drain OpenClaw's wallet, not this self-paying anicca.
+  # This loop pins a FREE model, so it costs $0 regardless of which wallet ClawRouter holds.
+  local KEY; KEY=$(grep -E '^BLOCKRUN_WALLET_KEY=' "$HOME/.openclaw/.env" 2>/dev/null | head -1 | cut -d= -f2- | tr -d '"'"'"' ')
+  if [ -z "$KEY" ]; then KEY=$(node -e 'const w=require(process.env.HOME+"/.automaton/wallet.json");const k=w.privateKey;process.stdout.write(k.startsWith("0x")?k:"0x"+k)' 2>/dev/null); fi
   BLOCKRUN_WALLET_KEY="$KEY" clawrouter >>"$LOGDIR/clawrouter.log" 2>&1 &
   for _ in $(seq 1 30); do curl -sf "http://127.0.0.1:$PORT/v1/models" >/dev/null 2>&1 && break; sleep 0.5; done
 }
