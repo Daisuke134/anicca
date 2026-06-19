@@ -76,6 +76,22 @@ test("FIND-C: real balance drives the plan — below reserve -> skipped + claime
   assert.deepEqual(released.sort(), ["a", "b"]); // safe: nothing dispatched
 });
 
+test("FIND-007: adapter SUCCEEDS but markPaid THROWS -> recipient stays 'processing' (not paid, not requeued)", async () => {
+  const released = [];
+  const out = await bankWatcherPass({
+    readBankRecipients: async () => [r("a"), r("b")],
+    claim: claimAll,
+    getBalance: async () => 9000,
+    markPaid: async (id) => { if (id === "b") throw new Error("supabase 500 after GMO accepted"); },
+    release: async (ids) => released.push(...ids),
+    adapters: { gmo: async () => ({ apptransferNo: "G1" }) }, // money submitted for both
+  });
+  assert.equal(out.outcome, "partial");
+  assert.deepEqual(out.paid, ["a"]);            // a recorded
+  assert.deepEqual(out.failed, ["b"]);          // b submitted but record failed -> stays processing
+  assert.deepEqual(released, []);               // CRITICAL: b is NOT re-queued (money already sent)
+});
+
 test("bankWatcherPass: all rails ok -> sent, per-amount from real balance", async () => {
   const marked = [];
   const out = await bankWatcherPass({
