@@ -184,3 +184,17 @@ TO UNBLOCK (Dais, one-time): enable **Global Payouts** in the Stripe dashboard (
 - GMO 開発者ポータル account creation (api.gmo-aozora.com/ganb/developer #/SUSR0102) requires ONLY: userID, password, email, companyName, (optional postCode/address/tel/businessContent), ruleconfirmed. **needAccount=false (NO bank account number), NO captcha.** → a sunabar SANDBOX token is obtainable WITHOUT a GMO bank account / eKYC. eKYC is needed ONLY for PRODUCTION (法人/個人 real account) — NOT for the sandbox API test. (This corrects the earlier "sunabar needs an account" reading.)
 - Creds generated + stored: ~/.openclaw/.env GMO_DEV_PORTAL_USERID=aniccaubi + GMO_DEV_PORTAL_PASSWORD. Company=Anicca, addr=東京都新宿区南元町15-27, tel=08046270314.
 - BLOCKER (mechanical, not a gate): the dev-portal is an automation-hostile SPA — fields fill + persist, ruleconfirmed checks, but the 登録 button vanishes under synthetic click and isn't exposed via snapshot. Refresh leaves it in a no-button state. NEXT: complete via a fresh camofox session with native /type keystrokes (SPA model-aware) OR one manual 登録 click → email-verify (read from Gmail) → log in → get sunabar sandbox token → submitBulkTransfer REAL sandbox E2E (the actual proof; code already built+tested in ~/anicca/skills/earn/gmo-furikomi.mjs).
+
+### ③ bank-direct — BUILD STATUS + 4 REMAINING TO A4 (real yen in real MUFG) — 2026-06-19
+DONE + VERIFIED (real, not dry):
+- Distribution logic: planBankFanout + runBankPayout + bankWatcherPass + gmo-furikomi (GMO 一括振込API, fields vs official SDK). 29/29 earn tests.
+- Recipient-side JP bank collection: /income shows Zengin fields on bank+jp (browser-verified render); income-signup validates (_jp-bank.js 4/4) + stores to recipients.notes; parseBankRecipient round-trips (3/3, contract pinned). LIVE E2E: real POST invalid→400+details, valid→200 recorded:true in Supabase.
+- /transparency live; A1 onboarding verified.
+- GMO sunabar sandbox = NO eKYC (email-only dev-portal signup, no captcha). Creds stored. Signup steps emailed to Dais.
+
+THE 4 REMAINING (to make real yen land in a real MUFG = A4/V3):
+1. RAIL TOKEN — get a working OAuth token. GMO path: Dais's 2-min dev-portal signup (eKYC-free) → anicca does app-registration + OAuth2 + sunabar sandbox token. (OR Rain key if #48 replies → bundles convert+payout.)
+2. A2 FUNDING — convert anicca's USDC(Base) → JPY into our account (SBI VC Prime [#49 contacted] / exchange / Rain bundles). The own-funds 給付 leg.
+3. WIRE bankWatcherPass TO SUPABASE — readBankRecipients = fetch recipients?status=queued + bankRecipientsFromRows(parseBankRecipient); getPool = our JPY balance; markPaid = update recipient status; adapters = gmo-furikomi.submitBulkTransfer(token). Then run a pass.
+4. A4 VERIFY — sandbox first (GMO submitBulkTransfer → 振込完了 status), then PRODUCTION (法人 #52 account) → real yen in a real MUFG + real USD in a US bank. = DONE per §0 binding rule.
+GATES: token=Dais signup (eKYC-free) or Rain reply; production payout=法人 (#52, 個人=AML freeze); funding=SBI/exchange/Rain.
