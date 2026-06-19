@@ -135,11 +135,15 @@ exports.handler = async (event) => {
     if (!SUPABASE_URL || !SUPABASE_KEY) return json(500, { error: "missing supabase config" });
     let body;
     try { body = JSON.parse(event.body || "{}"); } catch { return json(400, { error: "bad json" }); }
-    const { uid, sig, tg } = body;
+    const { uid, sig, tg, name } = body;
     if (!uid) return json(400, { error: "missing uid" });
     if (!verifyUid(uid, sig)) return json(403, { error: "bad uid signature" });
     if (!/^\d{1,20}$/.test(String(tg || ""))) return json(400, { error: "bad tg id" });
-    const r = await upsertUser({ uid, telegram_chat_id: String(tg) });
+    // The Telegram bot collects the name in-chat and carries it in the deep link (?name=) — persist it
+    // here so the two channels share one row. Don't overwrite an existing name with an empty one.
+    const row = { uid, telegram_chat_id: String(tg) };
+    if (typeof name === "string" && name.trim()) row.name = name.trim().slice(0, 120);
+    const r = await upsertUser(row);
     if (!r.ok) return json(502, { error: "save failed", status: r.status });
     return json(200, { ok: true });
   }

@@ -2,30 +2,48 @@
 "use strict";
 const { test } = require("node:test");
 const assert = require("node:assert");
-const { computeStage, stageMessage } = require("./telegram-onboard.js");
+const { computeStage, stageMessage, isNativeStage, normalizePhone } = require("./telegram-onboard.js");
 
-const base = { telegram_chat_id: "123", calendar_provider: "composio_gcal", gmail_account_id: "g", phone: "+81", paid: true };
+const full = { telegram_chat_id: "1", name: "Dais", calendar_provider: "composio_gcal", gmail_account_id: "g", phone: "+81", paid: true };
 
-test("null row → calendar (first step)", () => assert.equal(computeStage(null), "calendar"));
-test("linked, no calendar → calendar", () => assert.equal(computeStage({ ...base, calendar_provider: null, paid: false }), "calendar"));
-test("calendar done, no gmail → gmail", () => assert.equal(computeStage({ ...base, gmail_account_id: null, paid: false }), "gmail"));
-test("gmail done, no phone → phone", () => assert.equal(computeStage({ ...base, phone: null, paid: false }), "phone"));
-test("phone done, not paid → pay", () => assert.equal(computeStage({ ...base, paid: false }), "pay"));
-test("paid → done", () => assert.equal(computeStage(base), "done"));
-test("paid overrides missing fields → done", () => assert.equal(computeStage({ telegram_chat_id: "1", paid: true }), "done"));
+test("null row → name (first step, asked in chat)", () => assert.equal(computeStage(null), "name"));
+test("row without name → name", () => assert.equal(computeStage({ ...full, name: null, paid: false }), "name"));
+test("name set, no calendar → calendar", () => assert.equal(computeStage({ ...full, calendar_provider: null, paid: false }), "calendar"));
+test("calendar set, no gmail → gmail", () => assert.equal(computeStage({ ...full, gmail_account_id: null, paid: false }), "gmail"));
+test("gmail set, no phone → phone", () => assert.equal(computeStage({ ...full, phone: null, paid: false }), "phone"));
+test("phone set, not paid → pay", () => assert.equal(computeStage({ ...full, paid: false }), "pay"));
+test("all set + paid → done", () => assert.equal(computeStage(full), "done"));
+test("order is strict: missing name beats everything", () => assert.equal(computeStage({ ...full, name: null }), "name"));
 
-test("each stage message has the right button link except done", () => {
-  for (const stage of ["calendar", "gmail", "phone", "pay"]) {
-    const m = stageMessage(stage, "999", "https://aniccaai.com");
-    assert.ok(m.text.length > 0, `${stage} has text`);
-    assert.equal(m.extra.reply_markup.inline_keyboard[0][0].url, "https://aniccaai.com/lm?tg=999");
-  }
-  const done = stageMessage("done", "999", "https://aniccaai.com");
-  assert.equal(done.extra, undefined);
-  assert.ok(/all set/i.test(done.text));
+test("name + phone are NATIVE (typed in chat); calendar/gmail/pay are not", () => {
+  assert.ok(isNativeStage("name"));
+  assert.ok(isNativeStage("phone"));
+  assert.ok(!isNativeStage("calendar"));
+  assert.ok(!isNativeStage("gmail"));
+  assert.ok(!isNativeStage("pay"));
 });
 
-test("acknowledgement copy: gmail stage acknowledges calendar; pay acknowledges phone", () => {
+test("name/phone messages have NO button (native ask); calendar/gmail/pay have a button", () => {
+  assert.equal(stageMessage("name", "1", "x").extra, undefined);
+  assert.equal(stageMessage("phone", "1", "x").extra, undefined);
+  for (const s of ["calendar", "gmail", "pay"]) {
+    assert.equal(stageMessage(s, "9", "https://aniccaai.com").extra.reply_markup.inline_keyboard[0][0].url, "https://aniccaai.com/lm?tg=9");
+  }
+});
+
+test("name message asks for the name", () => assert.ok(/what'?s your name/i.test(stageMessage("name", "1", "x").text)));
+test("gmail acknowledges calendar; pay acknowledges phone", () => {
   assert.ok(/Calendar connected/i.test(stageMessage("gmail", "1", "x").text));
   assert.ok(/Phone saved/i.test(stageMessage("pay", "1", "x").text));
+});
+
+test("normalizePhone: valid forms", () => {
+  assert.equal(normalizePhone("+818012345678"), "+818012345678");
+  assert.equal(normalizePhone("08012345678"), "+8012345678"); // strips leading 0, prefixes +
+  assert.equal(normalizePhone("+1 (415) 555-2671"), "+14155552671");
+});
+test("normalizePhone: junk → null", () => {
+  assert.equal(normalizePhone("hello"), null);
+  assert.equal(normalizePhone("123"), null);
+  assert.equal(normalizePhone(""), null);
 });
