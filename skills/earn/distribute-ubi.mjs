@@ -58,6 +58,8 @@ export async function distribute(rawLine, opts = {}) {
   }
   const cfg = {
     shareBps: parseInt(process.env.UBI_SHARE_BPS || "1000", 10),
+    creatorWallet: process.env.UBI_CREATOR_WALLET || null,
+    creatorShareBps: parseInt(process.env.UBI_CREATOR_SHARE_BPS || "0", 10),
     minPoolUsdc: Number(process.env.UBI_MIN_POOL_USDC || "0.10"),
     dryRun,
     walletBalanceUsdc,

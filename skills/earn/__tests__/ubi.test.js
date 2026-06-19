@@ -39,3 +39,19 @@ test("idempotency: a wake already distributed is a no-op", () => {
   assert.equal(alreadyDone(done, "w1"), true);
   assert.equal(planUbi({ fundingLine: prof, recipients: [AI1], cfg: { minPoolUsdc: 0.01 }, ubiLines: done }).reason, "already_distributed");
 });
+test("planUbi: CREATOR bucket pays the operator a distinct share, separate from the UBI pool", () => {
+  const CREATOR = "0x" + "c".repeat(40);
+  const plan = planUbi({ fundingLine: prof, recipients: [AI1], cfg: { minPoolUsdc: 0.0001, creatorWallet: CREATOR, creatorShareBps: 1000 } });
+  const c = plan.transfers.find((t) => t.bucket === "creator");
+  const u = plan.transfers.find((t) => t.bucket === "ubi");
+  assert.ok(c && c.to === CREATOR, "creator gets a transfer");
+  assert.ok(u && u.to === AI1, "UBI pool still pays recipients");
+  assert.equal(c.amount_base, plan.creator_base, "creator amount = creator_base");
+});
+test("planUbi: creator paid even with no UBI recipients (creator-only)", () => {
+  const CREATOR = "0x" + "d".repeat(40);
+  const plan = planUbi({ fundingLine: prof, recipients: [], cfg: { minPoolUsdc: 0.0001, creatorWallet: CREATOR, creatorShareBps: 1000 } });
+  assert.notEqual(plan.outcome, "skipped");
+  assert.equal(plan.transfers.length, 1);
+  assert.equal(plan.transfers[0].bucket, "creator");
+});
