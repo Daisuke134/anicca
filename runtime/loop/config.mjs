@@ -12,11 +12,13 @@
 
 const DEFAULTS = {
   OPENAI_BASE_URL:      'http://127.0.0.1:8402/v1',
-  // Best FREE model (verified available on BlockRun free tier 2026-06-19). gpt-oss-120b = OpenAI's
-  // open model, strong agentic tool-use — the cost-free brain so an Anicca earns with $0 compute.
-  // This is the long-run default: prepared skills (yield/invest/x402) + a free model = pure profit.
-  ANICCA_FREE_MODEL:    'blockrun/free/gpt-oss-120b',
-  ANICCA_LEAN_MODEL:    'blockrun/free/mistral-large-3-675b', // fallback free heavyweight (675B)
+  // FREE brain = nvidia/gpt-oss-120b — BlockRun's documented DEFAULT free model (README: "default free
+  // model", 128K), OpenAI's open 120B. Verified live via the raw-BlockRun proxy: clean agentic tool-use
+  // (valid JSON tool call, 1676ms, resp model matches). $0 forever — the cost-free brain so prepared
+  // skills (yield/invest/x402) + a free model = pure profit. The `nvidia/` prefix works on the raw API
+  // directly (the `free/` prefix would need ClawRouter; not required since nvidia/gpt-oss-120b works).
+  ANICCA_FREE_MODEL:    'nvidia/gpt-oss-120b',
+  ANICCA_LEAN_MODEL:    'nvidia/gpt-oss-120b',                 // best free model for both free tiers
   ANICCA_FUNDED_MODEL:  'anthropic/claude-opus-4.8',          // only when surplus funds a frontier decision
   SLEEP_BASE_S:         120,
   SLEEP_ERROR_S:        60,

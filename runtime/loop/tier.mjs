@@ -10,8 +10,8 @@
  * PROP-004: NaN / Infinity / -Infinity / negative → { tier: 'broke', ... }
  */
 
-const DEFAULT_FREE_MODEL   = 'blockrun/free/gpt-oss-120b';
-const DEFAULT_LEAN_MODEL   = 'blockrun/free/mistral-large-3-675b';
+const DEFAULT_FREE_MODEL   = 'nvidia/gpt-oss-120b';   // BlockRun's documented default free model (verified working)
+const DEFAULT_LEAN_MODEL   = 'nvidia/gpt-oss-120b';
 const DEFAULT_FUNDED_MODEL = 'anthropic/claude-opus-4.8';
 const DEFAULT_LEAN_THRESHOLD = 1.00;
 
