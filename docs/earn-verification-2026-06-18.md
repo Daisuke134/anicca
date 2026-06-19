@@ -287,3 +287,10 @@ patch: workers.py の model_name(gpt-4o-mini/gpt-4.1=無効BlockRun id→"No res
 | Hyperliquid 直(SDK・SL/TP) | ✅ 動く・稼ぐ | +$0.069 含み |
 | AutoHedge | ❌ sub-agent fail | $0 |
 | Nocturne / EVClaw | 未テスト | - |
+
+## UPDATE 2026-06-19p — #2 AutoHedge: 4回 fix した最終 verdict（諦めずに root-cause まで）
+fix1 model_name gpt-4o-mini→nvidia/gpt-oss-120b / fix2 gpt-4.1→同 / fix3 壊れた exa_search tool 除去 / fix4 swarms check_model_supports_utilities の FC ブロックを patch(gpt-oss は実際 FC 可)。
+→ なお Director が handoff_task でなく exa_search(key無し=無効) を呼び max_loops=1 で停止。free model は swarms multi-agent handoff を駆動しきれない + 市場データ key(EXA/POLYGON/MASSIVE) 必須 + opus でも sub-agent(Quant/Risk) は "No response"→None。
+★verdict: AutoHedge = 構造的に free-model+proxy と非互換・heavy・paid data key 依存 = 我々の goal に対し slop。anicca に統合しない。動いても LLM 推測 trade で単純 HL($0.069) を超えない。★
+教訓: multi-agent swarm bot は free-model 自律 earning に不適。単一 LLM signal → risk-managed 取引(=Hyperliquid 直 / Nocturne 系統)が勝ち筋。
+NEXT: #3 Nocturne(single-agent・HL・LLM signal+TP/SL = 勝ち筋系統) を検証。
