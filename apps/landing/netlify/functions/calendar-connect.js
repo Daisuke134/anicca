@@ -71,8 +71,10 @@ exports.handler = async (event) => {
     const j = await r.json();
     const redirect = j.redirect_url || j.redirect_uri || j?.connectionData?.val?.redirectUrl;
     if (!redirect) return { statusCode: 502, body: JSON.stringify({ error: "no redirect", detail: j }) };
-    // mark intent (calendar connecting) — becomes truly active once they consent
-    await markProvider();
+    // Do NOT mark calendar_provider here — minting the OAuth is not the same as connecting. We mark it
+    // ONLY when the connection is truly ACTIVE (the check=1 poll above detects consent + marks). This
+    // keeps the Telegram bot's onboarding stage truthful — it never says "✅ Calendar connected!" until
+    // the user has actually consented.
     return { statusCode: 200, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ redirect_url: redirect }) };
   } catch (e) {
     return { statusCode: 502, body: JSON.stringify({ error: String(e) }) };
