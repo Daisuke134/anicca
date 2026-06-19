@@ -12,9 +12,12 @@
 
 const DEFAULTS = {
   OPENAI_BASE_URL:      'http://127.0.0.1:8402/v1',
-  ANICCA_FREE_MODEL:    'nvidia/deepseek-v4-flash',
-  ANICCA_LEAN_MODEL:    'deepseek/deepseek-r1-0528',
-  ANICCA_FUNDED_MODEL:  'anthropic/claude-opus-4.8',
+  // Best FREE model (verified available on BlockRun free tier 2026-06-19). gpt-oss-120b = OpenAI's
+  // open model, strong agentic tool-use — the cost-free brain so an Anicca earns with $0 compute.
+  // This is the long-run default: prepared skills (yield/invest/x402) + a free model = pure profit.
+  ANICCA_FREE_MODEL:    'blockrun/free/gpt-oss-120b',
+  ANICCA_LEAN_MODEL:    'blockrun/free/mistral-large-3-675b', // fallback free heavyweight (675B)
+  ANICCA_FUNDED_MODEL:  'anthropic/claude-opus-4.8',          // only when surplus funds a frontier decision
   SLEEP_BASE_S:         120,
   SLEEP_ERROR_S:        60,
   SLEEP_LOOP_DETECT_S:  300,
