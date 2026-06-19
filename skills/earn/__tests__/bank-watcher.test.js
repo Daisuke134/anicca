@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { bankWatcherPass } from "../bank-watcher.mjs";
 
 const r = (id, provider = "gmo") => ({ id, provider, currency: "JPY", bank: { bankCode: "0005", branchCode: "001", accountNumber: "1234567", beneficiaryName: "ﾅ" } });
-const claimAll = async (ids) => ids; // default: we win the claim on all
+const claimAll = async (recs) => recs.map((r) => r.id); // claim receives recipient objects, returns claimed ids
 
 test("bankWatcherPass: idle when no bank recipients (no balance read, no pay)", async () => {
   let balanceRead = false;
@@ -16,7 +16,7 @@ test("FIND-A atomic claim: ONLY the subset claim() returns is dispatched + paid 
   const marked = [];
   const out = await bankWatcherPass({
     readBankRecipients: async () => [r("a"), r("b"), r("c")],
-    claim: async (ids) => ids.filter((id) => id !== "b"), // 'b' already flipped by another pass -> not ours
+    claim: async (recs) => recs.filter((r) => r.id !== "b").map((r) => r.id), // 'b' already flipped by another pass
     getBalance: async () => 9000,
     markPaid: async (id) => marked.push(id),
     adapters: { gmo: async () => ({ apptransferNo: "G1" }) },

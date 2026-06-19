@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { makeGmoAdapter, buildSubmittedPatch, buildClaimPatch, buildReleasePatch, claimedFromRows, claimWith, parseRef, reconcileStuck, idempotencyKey, pollCompletions, todayYmd } from "../bank-payout-watcher.mjs";
+import { makeGmoAdapter, buildSubmittedPatch, buildClaimPatch, buildReleasePatch, claimedFromRows, claimWith, parseRef, parseClaimedAt, reconcileStuck, idempotencyKey, pollCompletions, todayYmd } from "../bank-payout-watcher.mjs";
 
 test("makeGmoAdapter: builds GMO request, stamps idempotency key, calls submit with token", async () => {
   let captured = null;
@@ -38,19 +38,24 @@ test("FIND-B idempotencyKey: deterministic + order-independent (same batch -> sa
   assert.notEqual(idempotencyKey(a), idempotencyKey([{ to: "u1", amount: 101 }, { to: "u2", amount: 200 }]));
 });
 
-test("FIND-D pollCompletions: completed->paid, failed->requeue, else pending", async () => {
-  const paid = [], requeued = [];
+test("FIND-100 pollCompletions: completed->paid, failed->needs_review (NEVER auto-requeue), else pending", async () => {
+  const paid = [], review = [];
   const out = await pollCompletions({
     readSubmitted: async () => [{ id: "a", ref: "R1" }, { id: "b", ref: "R2" }, { id: "c", ref: "R3" }],
     queryStatus: async (ref) => ({ R1: "completed", R2: "failed", R3: "processing" }[ref]),
     markPaid: async (id) => paid.push(id),
-    requeue: async (id) => requeued.push(id),
+    flagNeedsReview: async (id) => review.push(id),
   });
   assert.deepEqual(out.done, ["a"]);
-  assert.deepEqual(out.failed, ["b"]);
+  assert.deepEqual(out.review, ["b"]); // failed -> review, NOT re-queued (no auto-resend of irreversible money)
   assert.deepEqual(out.pending, ["c"]);
   assert.deepEqual(paid, ["a"]);
-  assert.deepEqual(requeued, ["b"]);
+  assert.deepEqual(review, ["b"]);
+});
+
+test("FIND-101 parseClaimedAt: extracts claimed_at from notes; null when absent", () => {
+  assert.equal(parseClaimedAt("method=bank;country=jp;bankCode=0005;claimed_at=2026-06-19T10:00:00.000Z"), "2026-06-19T10:00:00.000Z");
+  assert.equal(parseClaimedAt("method=bank;country=jp"), null);
 });
 
 test("todayYmd: YYYYMMDD zero-padded", () => {
