@@ -12,7 +12,7 @@
 
 const DEFAULT_FREE_MODEL   = 'nvidia/gpt-oss-120b';   // BlockRun's documented default free model (verified working)
 const DEFAULT_LEAN_MODEL   = 'nvidia/gpt-oss-120b';
-const DEFAULT_FUNDED_MODEL = 'anthropic/claude-opus-4.8';
+const DEFAULT_FUNDED_MODEL = 'nvidia/gpt-oss-120b';  // cost-free even when funded — stop the x402 compute burn
 const DEFAULT_LEAN_THRESHOLD = 1.00;
 
 /**
