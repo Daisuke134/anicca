@@ -7,10 +7,11 @@
 
 const COMPOSIO = "https://backend.composio.dev/api/v3";
 
-function isoNaiveTokyo(ms) {
-  // Composio CREATE_EVENT wants a naive local datetime + a timezone field.
-  const d = new Date(ms + 9 * 3600 * 1000); // shift to JST wall clock
-  return d.toISOString().replace(/\.\d{3}Z$/, "").replace("Z", "");
+function isoNaiveUTC(ms) {
+  // Timezone-agnostic: pass the UTC wall clock paired with timezone:"UTC" (set in createTravelBlock).
+  // Google stores the correct ABSOLUTE instant and shows it in each user's own timezone — so this
+  // works for a user in Tokyo, New York, or anywhere, with no hardcoded offset.
+  return new Date(ms).toISOString().replace(/\.\d{3}Z$/, "").replace("Z", "");
 }
 function isTravel(summary) {
   const s = summary || "";
@@ -48,7 +49,7 @@ async function listEvents7d(uid, apiKey, nowMs) {
 async function directionsMinutes(src, dst, mapsKey) {
   if (!mapsKey || !src || !dst) return null;
   for (const mode of ["transit", "driving"]) {
-    const p = new URLSearchParams({ origin: src, destination: dst, mode, language: "ja", key: mapsKey });
+    const p = new URLSearchParams({ origin: src, destination: dst, mode, key: mapsKey });
     if (mode === "transit") p.set("departure_time", "now");
     try {
       const r = await fetch(`https://maps.googleapis.com/maps/api/directions/json?${p}`);
@@ -70,9 +71,9 @@ async function createTravelBlock(uid, apiKey, leaveMs, arriveMs, fromName, toNam
     user_id: uid,
     arguments: {
       summary: `[Travel] 🚆 ${shortName(fromName)}→${shortName(toName)}`,
-      start_datetime: isoNaiveTokyo(leaveMs),
+      start_datetime: isoNaiveUTC(leaveMs),
       event_duration_hour: hours, event_duration_minutes: Math.min(59, minutes),
-      calendar_id: "primary", timezone: "Asia/Tokyo", location: dstAddr,
+      calendar_id: "primary", timezone: "UTC", location: dstAddr,
       description: "Auto-inserted by Anicca Life Manager — adjust if the route is wrong.",
     },
   });

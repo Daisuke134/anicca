@@ -59,7 +59,10 @@ async function geminiJson(prompt, geminiKey) {
 async function placesSearch(query, mapsKey) {
   if (!mapsKey || !query) return [];
   try {
-    const r = await fetch(`https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&language=ja&key=${mapsKey}`);
+    // No hardcoded language/region — this must work for ANY user worldwide. Places returns each
+    // venue's address in its own locale; the agent adds geographic context (the user's home city) to
+    // its query itself when it needs to disambiguate.
+    const r = await fetch(`https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&key=${mapsKey}`);
     const j = await r.json();
     return (j.results || []).slice(0, 5).map((p) => ({ name: p.name || "", address: p.formatted_address || "" }));
   } catch { return []; }

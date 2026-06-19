@@ -23,3 +23,13 @@
 # ep_3FBcXGwrcP575GjLm46jCMj2TYr (client_id b-ask-reply-webhook).
 # Required env (this function): GOOGLE_REFRESH_TOKEN, GOOGLE_CLIENT_ID,
 #                               GOOGLE_CLIENT_SECRET (or GOOGLE_CALENDAR_TOKEN), GCAL_ID.
+
+# Live agent pages: any /anicca-<name> resolves to the client view, which loads THAT agent's
+# real-time net worth + streaming activity log from dashboard-sync by name. Targeted to the
+# anicca-* namespace so /, /dashboard and other routes are untouched. Static files are served
+# first; this only handles instance names not pre-built (new/renamed), so every agent's live
+# page always works without a rebuild.
+[[redirects]]
+  from = "/anicca-*"
+  to = "/agent/index.html"
+  status = 200

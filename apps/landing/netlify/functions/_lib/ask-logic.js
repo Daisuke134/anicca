@@ -102,8 +102,10 @@ function detectMissingInfo(events) {
  */
 function buildQuestionBody(event) {
   const title = (event.summary || "").trim() || "(no title)";
+  // Show the time in the EVENT's own timezone (Google provides start.timeZone) — never a hardcoded
+  // zone — so it reads correctly for a user anywhere in the world.
   const when = event.start?.dateTime
-    ? new Date(event.start.dateTime).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" })
+    ? new Date(event.start.dateTime).toLocaleString(undefined, event.start.timeZone ? { timeZone: event.start.timeZone } : undefined)
     : "日時不明";
   const kind = detectAskKind(event);
   const wants = [];
