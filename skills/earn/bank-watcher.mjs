@@ -38,7 +38,9 @@ export async function bankWatcherPass({ readBankRecipients, getBalance, claim, r
   // FIND-C: guard against the REAL balance. balance flows into the planner's insufficient_balance guard.
   const plan = planBankFanout({ pool: balance, recipients: claimed, opts: { ...opts, balance } });
   if (plan.outcome !== "send") {
-    await release(claimed.map((r) => r.id)); // nothing dispatched -> safe to return to the queue
+    // FIND-109: pass full recipients so release restores their original notes (strips claimed_at) — a
+    // legitimately-skipped recipient must remain payable on a later pass, not be poisoned by the guard.
+    await release(claimed);
     return { outcome: "skipped", reason: plan.reason, paid: [], failed: [] };
   }
 

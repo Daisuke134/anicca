@@ -48,7 +48,7 @@ test("FIND-B: adapter FAILURE leaves recipient 'processing' (NOT re-queued) — 
     claim: claimAll,
     getBalance: async () => 9000,
     markPaid: async (id) => marked.push(id),
-    release: async (ids) => released.push(...ids),
+    release: async (recs) => released.push(...recs.map((r) => r.id)),
     adapters: { gmo: async () => ({ apptransferNo: "G1" }), rain: async () => { throw new Error("timeout — maybe accepted"); } },
   });
   assert.equal(out.outcome, "partial");
@@ -66,7 +66,7 @@ test("FIND-C: real balance drives the plan — below reserve -> skipped + claime
     claim: claimAll,
     getBalance: async () => 500, // real GMO balance
     markPaid: async () => {},
-    release: async (ids) => released.push(...ids),
+    release: async (recs) => released.push(...recs.map((r) => r.id)),
     adapters: { gmo: async () => { submitted = true; } },
     opts: { reserve: 1000 },
   });
@@ -83,7 +83,7 @@ test("FIND-007: adapter SUCCEEDS but markPaid THROWS -> recipient stays 'process
     claim: claimAll,
     getBalance: async () => 9000,
     markPaid: async (id) => { if (id === "b") throw new Error("supabase 500 after GMO accepted"); },
-    release: async (ids) => released.push(...ids),
+    release: async (recs) => released.push(...recs.map((r) => r.id)),
     adapters: { gmo: async () => ({ apptransferNo: "G1" }) }, // money submitted for both
   });
   assert.equal(out.outcome, "partial");
