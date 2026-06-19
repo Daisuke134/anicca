@@ -139,3 +139,11 @@ net worth N = annual payout / 0.05 = recipients × stipend × 20.
 
 anicca (the collective) reads its own on-chain net worth and uses this ladder to decide which tier to open
 next. Thresholds are the trigger; earning more = unlocking the next milestone.
+
+### ③ bank-direct — THE VERIFIED WAY (ctx7 Stripe docs + live probe, 2026-06-19)
+Mechanism (Stripe Global Payouts, v2, Stripe-Version 2026-05-27.preview):
+1. Recipient account: POST /v2/core/accounts with configuration.recipient.capabilities.bank_accounts.local.requested=true (+ identity.country jp/us). Recipient completes Stripe-hosted KYC+bank once (A1 verified: real onboarding URL). cards.requested = push-to-card option.
+2. anicca funding: POST /v2/money_management/financial_accounts {type:storage, holds_currencies:[usdc]} → holds anicca's earned USDC.
+3. Payout: POST /v2/money_management/outbound_payments from anicca's balance → recipient account, converting USD↔USDC↔local currency → lands in recipient's LOCAL BANK (bank_accounts.local). Works US + Japan. Alt: Global Payouts "Send to Link" — recipient gets it in a Link account (USD stablecoin) and withdraws to their local fiat bank or wallet (by email, no per-recipient KYB by us).
+GATE (live probe on anicca Stripe acct_1RT5Qg): **"You must have Global Payouts enabled"** — Global Payouts is NOT enabled on the account; and money_management needs a properly-scoped key. ENABLE = Stripe Dashboard application + KYB (Dais's business). This is an account-level activation, NOT API-bypassable.
+TO UNBLOCK (Dais, one-time): enable **Global Payouts** in the Stripe dashboard (dashboard.stripe.com → apply for Global Payouts / Stablecoin money management) + provide a full/properly-scoped secret key. THEN anicca: create financial account → fund with USDC → outbound_payment to recipients' JP/US banks. Verify = real yen in a real MUFG (A4).
