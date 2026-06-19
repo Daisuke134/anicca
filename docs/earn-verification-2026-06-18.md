@@ -106,3 +106,19 @@ automaton=完全実装(src/replication/spawn.ts: 子sandbox+子wallet資金+gene
 - **key**: `bk_usr_przhgFe…`(48char, `~/.openclaw/.env::BANKR_ANICCA_KEY`, ~/.bankr/config.json)。**実検証OK**: `GET api.bankr.bot/wallet/portfolio` → success=true。
 - wallet/trade/token-launch API 利用可。**LLM gateway は未有効(beta)** → bankr.bot/api-keys で有効化要。
 - Dais の key(bk_usr_h4ps9P8D… / wallet 0x29b6571e…) は Dais用・別。
+
+## UPDATE 2026-06-19c — EXTRACTABILITY verified + earn-tool reality + token model
+### yield は extractable（最重要・UBI可能の証明）
+Beefy に $3.82 deposit → `withdrawAll()` → liquid USDC $3.85 に戻る(tx 0x55c71f84154190501a4994a78c8f0a4352cc074a5fa85955fb6232d99ddd3285, beefy shares→0)。
+＝預ける→増える(6%/yr)→引き出す→USDC戻る ＝ net worth は本物で**いつでも取出可→UBI払える**。
+### 「稼げる」検証の正直な結論（block 6③ の核）
+| tool | 稼ぐ? | extractable? | 検証 |
+|---|---|---|---|
+| **DeFi yield (Beefy/Aave/Morpho)** | ✅ 6%/yr 確実(小) | ✅ withdraw→USDC戻る | **唯一の検証済・信頼できる・取出可 earner** |
+| Bankr token | ◐ 投機的(取引量次第) | (手数料) | wallet/API動作✅だが「稼ぐ」は売買が起きないと$0=評判という仕事が要る |
+| Bankr LLM gateway | (節約) | — | beta未有効(compute代をwalletから直払い=コスト削減) |
+| nookplot/0xwork | △ | — | live案件供給ゲート |
+| trading | ❌(gamble) | — | 勝/負=確実earnでない |
+→ **確実に稼ぎ取り出せるのは DeFi yield 一択。token は評判を作れば伸びる上振れ（投機）。**
+### token モデル（推奨）
+**1つの $ANICCA（コロニー共通母トークン）推奨**。全インスタンス(local/cloud/子)の活動が1コインの価値を支える＝集中・物語が強い・取引量が付きやすい→手数料→コロニーのcompute→UBI。各々が別トークン=分散・希薄化・取引量つかず。育った旗艦のみ sub-token 可。
