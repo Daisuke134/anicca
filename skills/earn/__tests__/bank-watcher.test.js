@@ -27,6 +27,42 @@ test("bankWatcherPass: pays + marks ONLY recipients whose rail succeeded", async
   assert.equal(marked[0].info.amount, 3000);            // 9000/3
 });
 
+test("bankWatcherPass: claims BEFORE submit + reverts ONLY failed rails (FIND-002 idempotency)", async () => {
+  const order = [];
+  const claimed = [];
+  const reverted = [];
+  const adapters = {
+    gmo: async () => { order.push("gmo-submit"); return { ok: 1 }; },
+    rain: async () => { order.push("rain-submit"); throw new Error("rain 500"); },
+  };
+  const out = await bankWatcherPass({
+    readBankRecipients: async () => [r("a", "gmo"), r("b", "rain")],
+    getPool: async () => 9000,
+    markPaid: async () => {},
+    claim: async (ids) => { order.push("claim"); claimed.push(...ids); },
+    revert: async (id) => { reverted.push(id); },
+    adapters,
+  });
+  assert.equal(order[0], "claim");                 // claim happens BEFORE any submit
+  assert.deepEqual(claimed.sort(), ["a", "b"]);    // all claimed before dispatch
+  assert.deepEqual(reverted, ["b"]);               // only the failed rail (rain) reverted to queued
+  assert.equal(out.paid.length, 1);                // gmo recipient paid
+});
+
+test("bankWatcherPass: balance guard is WIRED + active (FIND-003) — explicit balance below spend skips", async () => {
+  let submitted = false;
+  const out = await bankWatcherPass({
+    readBankRecipients: async () => [r("a"), r("b")],
+    getPool: async () => 9000,
+    markPaid: async () => {},
+    adapters: { gmo: async () => { submitted = true; } },
+    opts: { balance: 100 },                          // explicit balance < spend → guard must fire
+  });
+  assert.equal(out.outcome, "skipped");
+  assert.equal(out.reason, "insufficient_balance");
+  assert.equal(submitted, false);
+});
+
 test("bankWatcherPass: skipped plan (pool below reserve) marks nobody", async () => {
   let markedAny = false;
   const out = await bankWatcherPass({

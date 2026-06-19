@@ -8,9 +8,13 @@
 import { planBankFanout, groupByProvider } from "./lib/bank-fanout.mjs";
 
 // adapters: { gmo: async (transfers, opts) => result, rain: ..., fern: ... }
-export async function runBankPayout({ pool, recipients = [], opts = {}, adapters = {} } = {}) {
+// beforeDispatch(transfers): optional hook run AFTER planning, BEFORE any adapter call — lets the caller
+// "claim" recipients (mark processing) so a later mark-paid failure can't leave them re-payable (idempotency).
+export async function runBankPayout({ pool, recipients = [], opts = {}, adapters = {}, beforeDispatch } = {}) {
   const plan = planBankFanout({ pool, recipients, opts });
   if (plan.outcome !== "send") return { outcome: plan.outcome, reason: plan.reason, plan, results: [] };
+
+  if (typeof beforeDispatch === "function") await beforeDispatch(plan.transfers);
 
   const groups = groupByProvider(plan.transfers);
   const results = [];

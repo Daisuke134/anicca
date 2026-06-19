@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { makeGmoAdapter, buildPaidPatch, todayYmd } from "../bank-payout-watcher.mjs";
+import { makeGmoAdapter, buildSubmittedPatch, buildClaimPatch, buildRevertPatch, todayYmd } from "../bank-payout-watcher.mjs";
 
 test("makeGmoAdapter: builds the GMO BulkTransfer request from fan-out transfers + calls submit with the token", async () => {
   let captured = null;
@@ -17,10 +17,15 @@ test("makeGmoAdapter: builds the GMO BulkTransfer request from fan-out transfers
   assert.equal(captured.req.bulkTransfers[0].transferAmount, "20000");
 });
 
-test("buildPaidPatch: marks status=paid with provider/amount/currency in notes", () => {
-  assert.deepEqual(buildPaidPatch({ provider: "gmo", amount: 20000, currency: "JPY" }), {
-    status: "paid", notes: "paid;provider=gmo;amount=20000;currency=JPY",
+test("buildSubmittedPatch: status=submitted (accepted≠完了) + persists apptransferNo (FIND-005)", () => {
+  assert.deepEqual(buildSubmittedPatch({ provider: "gmo", amount: 20000, currency: "JPY", res: { apptransferNo: "G1" } }), {
+    status: "submitted", notes: "submitted;provider=gmo;amount=20000;currency=JPY;ref=G1",
   });
+});
+
+test("claim/revert patches: processing before submit, queued on failed rail (FIND-002)", () => {
+  assert.deepEqual(buildClaimPatch(), { status: "processing" });
+  assert.deepEqual(buildRevertPatch(), { status: "queued" });
 });
 
 test("todayYmd: formats YYYYMMDD (zero-padded)", () => {
