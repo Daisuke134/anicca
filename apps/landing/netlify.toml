@@ -7,12 +7,12 @@
   [headers.values]
     X-Robots-Tag = "noindex, nofollow"
 
-# B-travel scheduled trigger — runs every morning at 06:00 JST (21:00 UTC)
-# Reads Dais's Google Calendar, inserts [Travel] blocks before events missing one.
-# Required env: GOOGLE_REFRESH_TOKEN, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
-# Optional env: GOOGLE_MAPS_API_KEY (defaults 20min), HOME_ADDRESS, GCAL_ID
-[functions."life-travel"]
-  schedule = "0 21 * * *"
+# B-travel RETIRED (2026-06-19): the cloud life-call travel loop (apps/life-call, every 30min) is now
+# the single travel system. The legacy B-travel lacked the same-location guard and inserted bogus
+# [Travel] blocks before at-home activities (home→home). Schedule removed so it never runs again.
+# (function file kept only for history; not scheduled.)
+# [functions."life-travel"]
+#   schedule = "0 21 * * *"   # ← disabled; do not re-enable (use the cloud loop)
 
 # B-ask: NO Netlify schedule. The daily question round is driven by the LOCAL
 # cron job "anicca-life-ask" (~/.openclaw/cron/jobs.json, 06:00 JST) which runs

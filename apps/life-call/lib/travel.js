@@ -17,6 +17,22 @@ function isTravel(summary) {
   const s = summary || "";
   return s.startsWith("[Travel]") || s.includes("🚆 移動");
 }
+
+// PURE travel decision (no network) — the single source of truth for "does this event need a
+// [Travel] block, and from where". Unit-tested so the home→home guard can never silently regress.
+// Returns { insert: boolean, origin: string|null, reason: string }.
+function travelDecision(ev, prev, home) {
+  const norm = (s) => (s || "").replace(/\s+/g, "").toLowerCase();
+  if (!ev || isTravel(ev.summary) || !((ev.location || "").trim())) {
+    return { insert: false, origin: null, reason: "helper-or-no-location" };
+  }
+  // Origin = previous event's location if it ends within 90 min before this one (back-to-back); else home.
+  const origin = prev && prev.location && prev.endMs && (ev.startMs - prev.endMs) <= 90 * 60000
+    ? prev.location : home;
+  if (!origin) return { insert: false, origin: null, reason: "no-origin" }; // home unknown → ask-loop handles it
+  if (norm(origin) === norm(ev.location)) return { insert: false, origin, reason: "same-location" }; // home→home etc.
+  return { insert: true, origin, reason: "travel-needed" };
+}
 function shortName(addr) {
   return (addr || "").split(/[,、]/)[0].slice(0, 18) || "?";
 }
@@ -94,15 +110,10 @@ async function fillTravel(uid, { apiKey, mapsKey, home, nowMs = Date.now(), buff
     const ev = events[i];
     if (isTravel(ev.summary) || !ev.location) continue;
     checked++;
-    // Origin: previous event's location if it ends within 90 min before this one; else home.
-    const prev = events[i - 1];
-    const origin = prev && prev.location && prev.endMs && ev.startMs - prev.endMs <= 90 * 60000
-      ? prev.location : home;
-    if (!origin) { skipped++; continue; } // home unknown → leave for the ask-loop
-    // No travel needed when the event is at the same place you're starting from (e.g. an at-home
-    // event when origin is home). Compare normalized (trim/lowercase) — avoids home→home noise.
-    const norm = (s) => (s || "").replace(/\s+/g, "").toLowerCase();
-    if (norm(origin) === norm(ev.location)) { skipped++; continue; }
+    // Single source of truth for the skip/insert decision (home→home, no-origin, etc.).
+    const decision = travelDecision(ev, events[i - 1], home);
+    if (!decision.insert) { skipped++; continue; }
+    const origin = decision.origin;
     // Dedup: a [Travel] block already sitting in the gap right before this event?
     const dup = events.some((e) => isTravel(e.summary) && e.endMs && e.endMs <= ev.startMs && e.endMs > ev.startMs - 3 * 3600000);
     if (dup) { skipped++; continue; }
@@ -117,4 +128,4 @@ async function fillTravel(uid, { apiKey, mapsKey, home, nowMs = Date.now(), buff
   return { inserted, checked, skipped };
 }
 
-module.exports = { fillTravel, directionsMinutes, isTravel };
+module.exports = { fillTravel, directionsMinutes, isTravel, travelDecision };
