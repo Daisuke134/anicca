@@ -14,6 +14,7 @@
 
 const COMPOSIO = "https://backend.composio.dev/api/v3";
 const GEMINI = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
+const { sendMessage: tgSend } = require("./telegram.js");
 
 async function composio(tool, args, key) {
   const r = await fetch(`${COMPOSIO}/tools/execute/${tool}`, {
@@ -202,16 +203,24 @@ async function askTick(uid, opts) {
       autofilled++;
       continue;
     }
-    const { Subject, Body } = buildAsk(event); // simple, model-free template for the email itself
-    const sent = await unipile("POST", "/api/v1/emails", {
-      account_id: accountId, to: [{ identifier: userEmail }], subject: Subject, body: Body,
-    }, unipileToken, unipileDsn);
-    if (sent.ok) { await markAsked(uid, event.id, supaUrl, supaKey); asked++; }
+    // ASK: prefer Telegram when the user linked it (replies come back via the /telegram webhook);
+    // otherwise email from their own Gmail via Unipile.
+    if (opts.telegramChatId && opts.telegramToken) {
+      const r = await tgSend(opts.telegramToken, opts.telegramChatId,
+        `📍 Where is “${event.summary || "your event"}”? Just reply here and I’ll add it to your calendar.`);
+      if (r && r.ok) { await markAsked(uid, event.id, supaUrl, supaKey); asked++; }
+    } else if (accountId && unipileToken) {
+      const { Subject, Body } = buildAsk(event); // simple, model-free template for the email itself
+      const sent = await unipile("POST", "/api/v1/emails", {
+        account_id: accountId, to: [{ identifier: userEmail }], subject: Subject, body: Body,
+      }, unipileToken, unipileDsn);
+      if (sent.ok) { await markAsked(uid, event.id, supaUrl, supaKey); asked++; }
+    }
   }
 
-  // READ replies: agentically match each reply to a pending event + extract the location.
+  // READ replies (EMAIL users only — Telegram replies arrive via the webhook, not here).
   const pending = events.filter((e) => needsLocation(e) && already.has(e.id));
-  if (pending.length) {
+  if (pending.length && accountId && unipileToken && !opts.telegramChatId) {
     const inbox = await unipile("GET", `/api/v1/emails?account_id=${encodeURIComponent(accountId)}&limit=15`, null, unipileToken, unipileDsn);
     for (const m of (inbox.json.items) || []) {
       if (!/^Re:/i.test(m.subject || "")) continue;

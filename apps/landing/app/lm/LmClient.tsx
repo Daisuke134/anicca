@@ -25,6 +25,7 @@ import { signInWithGoogle, getSession } from '@/lib/auth';
 
 const EXCHANGE_URL = '/.netlify/functions/lm-onboard?action=exchange';
 const SAVE_URL = '/.netlify/functions/lm-onboard?action=save';
+const TG_LINK_URL = '/.netlify/functions/lm-onboard?action=telegram-link';
 // The cloud wake service places the "call me now" test call (the same service that runs the real
 // T-15min wakes), authenticated by the user's HMAC uid+sig.
 const TEST_CALL_URL = 'https://life-call-production.up.railway.app/test-call';
@@ -134,6 +135,18 @@ export default function LmClient() {
       if (s) window.localStorage.setItem(SIG_KEY, s);
       setCal((window.localStorage.getItem('anicca.lm.cal') as ConnState) || 'idle');
       setGmail((window.localStorage.getItem('anicca.lm.gmail') as ConnState) || 'idle');
+      // Telegram deep-link (/lm?tg=<chat_id>): stash the chat id (survives the Google redirect via
+      // localStorage), then bind it to this row once we have a signed uid so the cloud loops can
+      // message the user on Telegram.
+      const tgParam = new URLSearchParams(window.location.search).get('tg');
+      if (tgParam && /^\d{1,20}$/.test(tgParam)) window.localStorage.setItem('anicca.lm.tg', tgParam);
+      const tg = window.localStorage.getItem('anicca.lm.tg');
+      if (tg && s) {
+        fetch(TG_LINK_URL, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ uid: id, sig: s, tg }),
+        }).then(() => window.localStorage.removeItem('anicca.lm.tg')).catch(() => {});
+      }
       // Returning from Stripe (?paid=1) → straight to the dashboard. The lm-stripe-webhook flips
       // paid=true server-side; this just lands the user on the right screen immediately.
       const paidReturn = new URLSearchParams(window.location.search).get('paid') === '1';

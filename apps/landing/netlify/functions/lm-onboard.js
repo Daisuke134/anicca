@@ -128,5 +128,21 @@ exports.handler = async (event) => {
     return json(200, { ok: true });
   }
 
+  if (action === "telegram-link" && event.httpMethod === "POST") {
+    // The Telegram /start deep-link sends the user to /lm?tg=<chat_id>; once they're authenticated
+    // (uid+sig), the page calls this to bind their Telegram chat to their lm_users row so the cloud
+    // loops can message them on Telegram. HMAC-gated so nobody can bind a stranger's chat.
+    if (!SUPABASE_URL || !SUPABASE_KEY) return json(500, { error: "missing supabase config" });
+    let body;
+    try { body = JSON.parse(event.body || "{}"); } catch { return json(400, { error: "bad json" }); }
+    const { uid, sig, tg } = body;
+    if (!uid) return json(400, { error: "missing uid" });
+    if (!verifyUid(uid, sig)) return json(403, { error: "bad uid signature" });
+    if (!/^\d{1,20}$/.test(String(tg || ""))) return json(400, { error: "bad tg id" });
+    const r = await upsertUser({ uid, telegram_chat_id: String(tg) });
+    if (!r.ok) return json(502, { error: "save failed", status: r.status });
+    return json(200, { ok: true });
+  }
+
   return json(400, { error: "unknown action" });
 };
