@@ -28,14 +28,21 @@ if [ -d "$REPO/.git" ]; then
     && log "self-updated to $(git -C "$REPO" rev-parse --short HEAD)" \
     || log "self-update skipped (offline or diverged)"
 fi
-# keep proxy deps present (no-op once installed)
-( cd "$REPO/runtime/compute-proxy" && npm install --silent --no-audit --no-fund >/dev/null 2>&1 ) || true
-
-# 2. brain: start the self-pay compute proxy if it is not already answering ----------------------
+# 2. brain: start ClawRouter (the real BlockRun router) on :8402 if not already answering.
+#    Why ClawRouter, not the old compute-proxy: ClawRouter routes the nvidia/* FREE models with ZERO
+#    payment (verified: 3 free calls = $0.0000 USDC delta), while the old raw br.post proxy charged
+#    ~$0.02 x402 PER CALL even for "free" models — bleeding the treasury ~$0.6/hr. ClawRouter still
+#    pays x402 from the wallet for PAID models, but our tiers pin a free model, so routine compute = $0.
+ensure_brain() {
+  command -v clawrouter >/dev/null 2>&1 || npm install -g @blockrun/clawrouter >/dev/null 2>&1 || true
+  # ClawRouter needs BLOCKRUN_WALLET_KEY (anicca's own wallet) to start; it only spends it for PAID models.
+  local KEY; KEY=$(node -e 'const w=require(process.env.HOME+"/.automaton/wallet.json");const k=w.privateKey;process.stdout.write(k.startsWith("0x")?k:"0x"+k)' 2>/dev/null)
+  BLOCKRUN_WALLET_KEY="$KEY" clawrouter >>"$LOGDIR/clawrouter.log" 2>&1 &
+  for _ in $(seq 1 30); do curl -sf "http://127.0.0.1:$PORT/v1/models" >/dev/null 2>&1 && break; sleep 0.5; done
+}
 if ! curl -sf "http://127.0.0.1:$PORT/v1/models" >/dev/null 2>&1; then
-  log "starting compute-proxy on :$PORT"
-  COMPUTE_PROXY_PORT="$PORT" node "$REPO/runtime/compute-proxy/proxy.mjs" >>"$LOGDIR/proxy.log" 2>&1 &
-  for _ in $(seq 1 20); do curl -sf "http://127.0.0.1:$PORT/v1/models" >/dev/null 2>&1 && break; sleep 0.5; done
+  log "starting ClawRouter on :$PORT (free models = \$0, paid via wallet x402)"
+  ensure_brain
 fi
 
 # 3. telemetry poster: one instance (kill any stale one first so the dashboard never doubles) -----
