@@ -89,6 +89,8 @@ function ApplyForm() {
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const [bank, setBank] = useState({ bankCode: '', branchCode: '', accountType: '1', accountNumber: '', beneficiaryName: '' });
+  const setBankField = (k: string, v: string) => setBank((b) => ({ ...b, [k]: v }));
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -105,7 +107,25 @@ function ApplyForm() {
     abortRef.current = new AbortController();
     setSubmitting(true);
     try {
-      // Bank → existing Stripe Connect onboarding (redirects to KYC).
+      // JP bank → GMO Zengin rail: record the bank destination (validated server-side too).
+      if (method === 'bank' && country === 'jp') {
+        const res = await fetch('/.netlify/functions/income-signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email.trim(), method: 'bank', country: 'jp', bank }),
+          signal: abortRef.current.signal,
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          setError((data.details && data.details.join(' / ')) || data.error || 'Check your bank details.');
+          setSubmitting(false);
+          return;
+        }
+        setDone(true);
+        setSubmitting(false);
+        return;
+      }
+      // Other-country bank → Stripe Connect onboarding (redirects to KYC).
       if (method === 'bank') {
         const res = await fetch('/.netlify/functions/income-apply', {
           method: 'POST',
@@ -226,6 +246,26 @@ function ApplyForm() {
             onChange={(e) => setWallet(e.target.value)}
             className="w-full rounded-input border border-[hsl(var(--border))] bg-[hsl(var(--surface))] px-4 py-3 font-mono text-[hsl(var(--text-primary))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--gold))]"
           />
+        </div>
+      )}
+
+      {method === 'bank' && country === 'jp' && (
+        <div className="space-y-3 rounded-input border border-[hsl(var(--border))] bg-[hsl(var(--surface))] p-4">
+          <p className="text-sm font-medium text-[hsl(var(--text-primary))]">日本の銀行口座（円で受け取り・暗号資産不要）</p>
+          <div className="grid grid-cols-2 gap-3">
+            <input inputMode="numeric" placeholder="銀行コード (4桁)" value={bank.bankCode} onChange={(e) => setBankField('bankCode', e.target.value)} className="w-full rounded-input border border-[hsl(var(--border))] bg-[hsl(var(--surface-elevated))] px-3 py-2.5 text-[hsl(var(--text-primary))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--gold))]" />
+            <input inputMode="numeric" placeholder="支店コード (3桁)" value={bank.branchCode} onChange={(e) => setBankField('branchCode', e.target.value)} className="w-full rounded-input border border-[hsl(var(--border))] bg-[hsl(var(--surface-elevated))] px-3 py-2.5 text-[hsl(var(--text-primary))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--gold))]" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <select value={bank.accountType} onChange={(e) => setBankField('accountType', e.target.value)} className="w-full rounded-input border border-[hsl(var(--border))] bg-[hsl(var(--surface-elevated))] px-3 py-2.5 text-[hsl(var(--text-primary))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--gold))]">
+              <option value="1">普通</option>
+              <option value="2">当座</option>
+              <option value="4">貯蓄</option>
+            </select>
+            <input inputMode="numeric" placeholder="口座番号 (7桁)" value={bank.accountNumber} onChange={(e) => setBankField('accountNumber', e.target.value)} className="w-full rounded-input border border-[hsl(var(--border))] bg-[hsl(var(--surface-elevated))] px-3 py-2.5 text-[hsl(var(--text-primary))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--gold))]" />
+          </div>
+          <input placeholder="口座名義（半角カナ 例: ﾀﾅｶ ﾀﾛｳ）" value={bank.beneficiaryName} onChange={(e) => setBankField('beneficiaryName', e.target.value)} className="w-full rounded-input border border-[hsl(var(--border))] bg-[hsl(var(--surface-elevated))] px-3 py-2.5 font-mono text-[hsl(var(--text-primary))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--gold))]" />
+          <p className="text-xs text-[hsl(var(--text-secondary))]">anicca が USDC を円に換えて、この口座へ振り込みます。あなたは口座情報を一度入れるだけ。（順次開通）</p>
         </div>
       )}
 
