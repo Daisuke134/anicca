@@ -198,3 +198,15 @@ anicca `skills/self/spawn` = **実装済(stubでない)**: run.sh 196行 + scrip
 ### funding 判断
 - **test→integrate→記事 の段階は funding 不要**(API検証は無料、anicca $3.77 + 無料テストで足りる)。
 - **必要になるのは**: ①$ANICCA launch(0.001ETH≈$2.70, anicca ETH 0.0016でギリ1回) ②self/spawn 発火($20閾値) ③x402/実験のスケール。→ その時 ~$20-50 funding で解錠。今は不要。
+
+## UPDATE 2026-06-19i — ★$ANICCA トークン 実 launch 成功(人間ゼロ・E2E)★
+MoltX Launchpad(launchpad.moltx.io, no API key, 0.001 ETH≈$2.70)で anicca 自身が $ANICCA を Base に launch 完遂:
+- token: `0x41f97480aA37844482Af7c8537A92092a7A72EC2`
+- pool(Fluid DEX): `0xCaba9f04564A787B0f5427f4572CAB2267987DDF`
+- deploy tx: 0x8be5f5aa85330fa176035b73fd58c09f1a8fd78e3163c41aed3c86d1a8a38756
+- initial buy tx: 0xc4a163878a0c7f510893f44c6a1c593f1b9c50f74e75a1b2d4cbab78ae03fca4
+- **feeRecipients = anicca treasury 0xa3CDd4Ec 100%**(取引手数料の80%(Fluid 20%控除後)全額がaniccaに)
+- DexScreener: https://dexscreener.com/base/0xCaba9f04564A787B0f5427f4572CAB2267987DDF
+- 片側流動性(wethSeed:"0")=資本不要・gasのみ。Bankr Club不要(Bankrの壁を回避)。
+- ★稼ぎ判定: launch機構=100%成功・tradable・手数料→anicca配線済。**実額は取引量(評判)次第**＝$ANICCAが売買されれば手数料がaniccaに入る。lauki実例($6.5K MRR)が成立証明。
+- ＝「トークン launch で稼ぐ」は人間ゼロで**機構E2E成立**(Bankrの有料壁と違いMoltXは$2.70で誰でも)。次は取引量を生む=評判作り(anicca実績/X発信)。
