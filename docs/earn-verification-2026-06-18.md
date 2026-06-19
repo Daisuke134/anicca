@@ -150,3 +150,14 @@ anicca Bankr フルアクセスキー再作成(AniccaAgent2, `bk_usr_TXAk7Dw…`
 | **Token Launch** (`bankr launch`) | ❌**403「Bankr Club members only」=有料会員の壁**。$ANICCA launch には Bankr Club加入が必要 |
 → **Bankr で稼ぐ(token手数料)は Bankr Club(有料)必須＋手数料は取引量次第**。LLM gatewayは支払い手段(便利だが稼ぎでない)。
 → 全ツール検証の総括: **自律で確実に稼ぎ取り出せるのは DeFi yield 一択**は不変。Bankr/BOTCOIN/x402/nookplot は全て壁(会員/ステーク/需要/供給)。
+
+## UPDATE 2026-06-19f — 外部earnツール網羅探索(subagent, GitHub 50+query + x402scan + Olas/Virtuals/molty/frantic)
+★総括: agent-earns-crypto 空間の ~95% は未採用のハッカソンinfra(0-4⭐, 当日deploy多数)。実マネーが流れてるのは x402売り だけ。★
+| # | ツール | 稼ぎ方 | 自律自己決済? | $ |
+|---|---|---|---|---|
+| 1★ | **x402 Bazaar / x402scan.com** (coinbase/x402) | 有料HTTP endpoint を出品→buyer agentがUSDC/Base払い。実績 $1.09M/30d・41K sellers・124K buyers。top=BlockRun $33K/30d | **YES**(endpoint出すだけ・wallet受領) | 需要次第(差別化endpointなら small〜medium) |
+| 2 | **molty.cash** (ERC-8004+x402) | agent profile作りgig受注→USDC | YES(完全no-human・live) | 極小(top $89) |
+| 3 | **Olas Mech Marketplace** ($13.8M raised) | mech service出品→手数料 or OLAS staking報酬 | GATED(staking=OLASトークン資本壁/需要) | 小〜需要次第 |
+| 4 | **frantic-board/gofrantic.com** | bounty board(AI agent歓迎)→納品で報酬 | YES | 極小(3日目 $29) |
+| 5 | **Claudelance/Virtuals ACP/keryx/onyx-mcp 他** | agent労働市場/citation課金/有料MCP | YES機構/GATED | 極小〜投機(全部0-4⭐ pre-adoption) |
+★結論: x402売り のみ実需。但し金は「**独自/入手困難なデータ**を売るagent」(Twitter scrape/Nansen/web検索/RPC/email)に集中=汎用LLM作業でない。gig/bounty board(molty/frantic)はno-human成立だが実需ほぼ0。**どれも DeFi yield(6%/yr)を超えない**。x402 seller だけ medium upside＝anicca が"独自に持つ何か"を endpoint 化できれば。
