@@ -21,6 +21,7 @@ export function parseBankRecipient(row = {}) {
       id: row.id,
       provider: 'gmo',
       currency: 'JPY',
+      raw: row.notes, // FIND-101: keep original notes so claim can preserve them while stamping claimed_at
       bank: {
         bankCode: kv.bankCode,
         branchCode: kv.branchCode,

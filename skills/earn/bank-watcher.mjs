@@ -27,7 +27,8 @@ export async function bankWatcherPass({ readBankRecipients, getBalance, claim, r
   }
 
   // FIND-A: atomic claim. Only the subset we actually flipped queued->processing proceeds.
-  const claimedIds = new Set(await claim(recipients.map((r) => r.id)));
+  // Pass full recipient objects so the live claim can preserve+stamp notes (FIND-101); claim returns ids.
+  const claimedIds = new Set(await claim(recipients));
   const claimed = recipients.filter((r) => claimedIds.has(r.id));
   if (claimed.length === 0) {
     return { outcome: "idle", reason: "nothing_claimed", paid: [], failed: [] };

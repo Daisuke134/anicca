@@ -8,7 +8,7 @@ const NOTES = "method=bank;country=jp;bankCode=0005;branchCode=001;accountType=1
 test("parseBankRecipient: round-trips the income-signup JP bank notes into a watcher recipient", () => {
   const r = parseBankRecipient({ id: "u1", notes: NOTES });
   assert.deepEqual(r, {
-    id: "u1", provider: "gmo", currency: "JPY",
+    id: "u1", provider: "gmo", currency: "JPY", raw: NOTES,
     bank: { bankCode: "0005", branchCode: "001", accountType: "1", accountNumber: "1234567", beneficiaryName: "ﾀﾅｶ ﾀﾛｳ" },
   });
 });
