@@ -22,9 +22,9 @@ const DEFAULTS = {
   // tier ($14->$10.5) while yield earned ~$0 — net-negative. A free brain + earning skills = the only
   // way a self-paying agent stays net-positive at small capital. (Frontier is for capable instances on
   // flat-rate billing, e.g. Claude on a subscription — NOT a self-paying Anicca burning x402 per wake.)
-  ANICCA_FREE_MODEL:    'nvidia/gpt-oss-120b',
-  ANICCA_LEAN_MODEL:    'nvidia/gpt-oss-120b',
-  ANICCA_FUNDED_MODEL:  'nvidia/gpt-oss-120b',                 // cost-free even when funded — stop the burn
+  ANICCA_FREE_MODEL:    'free/gpt-oss-120b',
+  ANICCA_LEAN_MODEL:    'free/gpt-oss-120b',
+  ANICCA_FUNDED_MODEL:  'free/gpt-oss-120b',                   // ClawRouter free path = verified $0 (no x402)
   SLEEP_BASE_S:         120,
   SLEEP_ERROR_S:        60,
   SLEEP_LOOP_DETECT_S:  300,
