@@ -26,7 +26,7 @@ test("FULL CHAIN: queued JP bank rows → GMO bulk transfer + only valid recipie
   const marked = [];
   const out = await bankWatcherPass({
     readBankRecipients: async () => bankRecipientsFromRows(rows),
-    claim: async (ids) => ids, // atomic claim wins all in this single-pass test
+    claim: async (recs) => recs.map((r) => r.id), // atomic claim wins all in this single-pass test
     getBalance: async () => 40000,
     markPaid: async (id, info) => marked.push({ id, info }),
     adapters: { gmo },

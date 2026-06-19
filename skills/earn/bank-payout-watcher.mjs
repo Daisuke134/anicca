@@ -54,13 +54,19 @@ export function parseRef(notes) {
   const m = String(notes || "").match(/(?:^|;)ref=([^;]+)/);
   return m ? m[1] : null;
 }
+// FIND-101: claim stamps claimed_at into notes; reconcile keys on THIS (a real claim time), not applied_at.
+export function parseClaimedAt(notes) {
+  const m = String(notes || "").match(/(?:^|;)claimed_at=([^;]+)/);
+  return m ? m[1] : null;
+}
 
-// FIND-004: testable CAS core. patchQueued(id) -> rows PostgREST returned (1 row IFF we flipped queued).
-export async function claimWith(patchQueued, ids = []) {
+// FIND-004: testable CAS core. items may be ids OR recipient objects ({id,...}); patchQueued(item) -> rows
+// PostgREST returned (1 row IFF we flipped queued). Returns the claimed items' ids.
+export async function claimWith(patchQueued, items = []) {
   const claimed = [];
-  for (const id of ids) {
-    const rows = await patchQueued(id);
-    if (claimedFromRows(rows)) claimed.push(id);
+  for (const item of items) {
+    const rows = await patchQueued(item);
+    if (claimedFromRows(rows)) claimed.push(item && item.id !== undefined ? item.id : item);
   }
   return claimed;
 }
@@ -90,18 +96,21 @@ export function makeGmoAdapter({ accountId, remitterName, transferDesignatedDate
   };
 }
 
-// FIND-D: completion poll — promote 'submitted'->'paid' (or requeue) using GMO bulktransfer/status.
-// deps injected so the state machine is unit-tested without a live token.
-export async function pollCompletions({ readSubmitted, queryStatus, markPaid, requeue }) {
+// FIND-D: completion poll — promote 'submitted'->'paid' on confirmed completion.
+// FIND-100 (critical): a 'failed' verdict from the UNVERIFIED queryStatus must NEVER auto-requeue an
+// irreversible transfer (that re-introduces the double-pay lever). 'completed'->markPaid is safe
+// (idempotent, sends no money); 'failed'->flagNeedsReview for a human/operator to confirm with GMO before
+// any re-send. 'pending' is left as-is. deps injected so the state machine is unit-tested without a token.
+export async function pollCompletions({ readSubmitted, queryStatus, markPaid, flagNeedsReview }) {
   const rows = await readSubmitted();
-  const done = [], failed = [], pending = [];
+  const done = [], review = [], pending = [];
   for (const row of rows || []) {
     const st = await queryStatus(row.ref);
     if (st === "completed") { await markPaid(row.id); done.push(row.id); }
-    else if (st === "failed") { await requeue(row.id); failed.push(row.id); }
+    else if (st === "failed") { await flagNeedsReview(row.id); review.push(row.id); } // NO auto-requeue
     else pending.push(row.id);
   }
-  return { done, failed, pending };
+  return { done, review, pending };
 }
 
 // ---- live Supabase + GMO wiring -------------------------------------------------------------------
@@ -113,12 +122,15 @@ async function readBankRecipients() {
 }
 
 // FIND-A: atomic CAS — PATCH guarded by &status=eq.queued; row returned only if WE flipped it.
-async function claim(ids) {
-  return claimWith(async (id) => {
-    const res = await sb(`recipients?id=eq.${id}&status=eq.queued`, { method: "PATCH", headers: { Prefer: "return=representation" }, body: JSON.stringify(buildClaimPatch()) });
-    if (!res.ok) { console.error(`[bank-watcher] claim CAS failed ${id}: HTTP ${res.status}`); return []; }
+// FIND-101: also stamp claimed_at into notes (preserving the original bank notes) so reconcile can age rows.
+async function claim(recipients) {
+  const nowIso = new Date().toISOString();
+  return claimWith(async (r) => {
+    const notes = `${r.raw || ""};claimed_at=${nowIso}`.replace(/^;/, "");
+    const res = await sb(`recipients?id=eq.${r.id}&status=eq.queued`, { method: "PATCH", headers: { Prefer: "return=representation" }, body: JSON.stringify({ ...buildClaimPatch(), notes }) });
+    if (!res.ok) { console.error(`[bank-watcher] claim CAS failed ${r.id}: HTTP ${res.status}`); return []; }
     return res.json().catch(() => []);
-  }, ids);
+  }, recipients);
 }
 async function release(ids) {
   for (const id of ids) await sb(`recipients?id=eq.${id}`, { method: "PATCH", headers: { Prefer: "return=minimal" }, body: JSON.stringify(buildReleasePatch()) });
@@ -144,13 +156,14 @@ async function queryStatus(ref) { // GMO bulktransfer/status — UNVERIFIED endp
   } catch { return "pending"; }
 }
 async function markCompleted(id) { await sb(`recipients?id=eq.${id}`, { method: "PATCH", headers: { Prefer: "return=minimal" }, body: JSON.stringify({ status: "paid" }) }); }
-async function requeue(id) { await sb(`recipients?id=eq.${id}`, { method: "PATCH", headers: { Prefer: "return=minimal" }, body: JSON.stringify({ status: "queued" }) }); }
+async function flagNeedsReview(id) { await sb(`recipients?id=eq.${id}`, { method: "PATCH", headers: { Prefer: "return=minimal" }, body: JSON.stringify({ status: "needs_review" }) }); }
 
-// FIND-D: completion-poll pass (cron: promote submitted->paid, requeue GMO-confirmed failures).
+// FIND-D: completion-poll pass (cron: promote submitted->paid; FIND-100: GMO-reported failures go to
+// needs_review for a human, NEVER auto-requeue an irreversible transfer).
 export async function pollPass() {
   if (!process.env.GMO_AOZORA_ACCESS_TOKEN) return { outcome: "gated", reason: "no_token" };
   if (!SUPABASE_URL || !SUPABASE_KEY) return { outcome: "gated", reason: "no_supabase" };
-  return pollCompletions({ readSubmitted, queryStatus, markPaid: markCompleted, requeue });
+  return pollCompletions({ readSubmitted, queryStatus, markPaid: markCompleted, flagNeedsReview });
 }
 
 // FIND-003: operator reconcile — flag 'processing' rows older than threshold to 'needs_review'.
@@ -158,9 +171,9 @@ export async function reconcilePass() {
   if (!SUPABASE_URL || !SUPABASE_KEY) return { outcome: "gated", reason: "no_supabase" };
   return reconcileStuck({
     readProcessing: async () => {
-      const res = await sb("recipients?status=eq.processing&select=id,applied_at");
+      const res = await sb("recipients?status=eq.processing&select=id,notes");
       const rows = await res.json().catch(() => []);
-      return (Array.isArray(rows) ? rows : []).map((r) => ({ id: r.id, ts: r.applied_at }));
+      return (Array.isArray(rows) ? rows : []).map((r) => ({ id: r.id, ts: parseClaimedAt(r.notes) }));
     },
     flagNeedsReview: async (id) => { await sb(`recipients?id=eq.${id}`, { method: "PATCH", headers: { Prefer: "return=minimal" }, body: JSON.stringify({ status: "needs_review" }) }); },
     now: Date.now(),
