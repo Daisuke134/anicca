@@ -138,14 +138,23 @@ export default function LmClient() {
       // Telegram deep-link (/lm?tg=<chat_id>): stash the chat id (survives the Google redirect via
       // localStorage), then bind it to this row once we have a signed uid so the cloud loops can
       // message the user on Telegram.
-      const tgParam = new URLSearchParams(window.location.search).get('tg');
+      const sp = new URLSearchParams(window.location.search);
+      const tgParam = sp.get('tg');
       if (tgParam && /^\d{1,20}$/.test(tgParam)) window.localStorage.setItem('anicca.lm.tg', tgParam);
+      // The Telegram bot collects the name in-chat and passes it via ?name= — stash + persist it so
+      // the two channels share one row (and the user skips re-typing their name on the web form).
+      const nameParam = sp.get('name');
+      if (nameParam && nameParam.trim()) window.localStorage.setItem('anicca.lm.tgname', nameParam.trim().slice(0, 120));
       const tg = window.localStorage.getItem('anicca.lm.tg');
       if (tg && s) {
+        const tgname = window.localStorage.getItem('anicca.lm.tgname') || '';
         fetch(TG_LINK_URL, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ uid: id, sig: s, tg }),
-        }).then(() => window.localStorage.removeItem('anicca.lm.tg')).catch(() => {});
+          body: JSON.stringify({ uid: id, sig: s, tg, name: tgname }),
+        }).then(() => {
+          window.localStorage.removeItem('anicca.lm.tg');
+          window.localStorage.removeItem('anicca.lm.tgname');
+        }).catch(() => {});
       }
       // Returning from Stripe (?paid=1) → straight to the dashboard. The lm-stripe-webhook flips
       // paid=true server-side; this just lands the user on the right screen immediately.

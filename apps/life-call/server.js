@@ -30,7 +30,7 @@ const { startScheduler, startTravelLoop, startAskLoop, startOnboardLoop, buildSt
 const { placeCall } = require("./lib/dial.js");
 const { parseUpdate, sendMessage } = require("./lib/telegram.js");
 const { resolveTelegramReply } = require("./lib/telegram-reply.js");
-const { sendStage, rowByChatId, setStage, computeStage } = require("./lib/telegram-onboard.js");
+const { sendStage, rowByChatId, setStage, handleOnboardingText } = require("./lib/telegram-onboard.js");
 const SUPA_URL = process.env.SUPABASE_URL, SUPA_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const LM_TG_TOKEN = process.env.LM_TELEGRAM_BOT_TOKEN || "";
@@ -144,18 +144,15 @@ const server = http.createServer((req, res) => {
         const u = parseUpdate(update);
         if (u && LM_TG_TOKEN) {
           const row = await rowByChatId(u.chatId, SUPA_URL, SUPA_KEY); // null until they link via /lm
-          const stage = computeStage(row);
+          const opts = { token: LM_TG_TOKEN, base: PUBLIC_BASE, supaUrl: SUPA_URL, supaKey: SUPA_KEY };
           if (u.isStart) {
-            // Guided onboarding: send the user's CURRENT step (calendar if not yet linked).
+            // Guided onboarding: send the user's CURRENT step (asks for name first if brand-new).
             const announced = await sendStage(LM_TG_TOKEN, u.chatId, row, PUBLIC_BASE);
             if (row) await setStage(row.uid, announced, SUPA_URL, SUPA_KEY);
           } else if (u.text) {
-            if (stage !== "done") {
-              // Still onboarding → any message gets a nudge to the current step (interactive guidance).
-              const announced = await sendStage(LM_TG_TOKEN, u.chatId, row, PUBLIC_BASE);
-              if (row) await setStage(row.uid, announced, SUPA_URL, SUPA_KEY);
-            } else {
-              // Fully set up → free text is a reply to a location ask.
+            // Native steps (name/phone) capture the typed value; web steps re-nudge; "done" → reply.
+            const result = await handleOnboardingText(u.chatId, u.text, row, opts);
+            if (result === "done") {
               const res2 = await resolveTelegramReply(u.chatId, u.text);
               await sendMessage(LM_TG_TOKEN, u.chatId,
                 res2.filled ? `✅ Got it — set “${res2.event}” to ${res2.location}.`
