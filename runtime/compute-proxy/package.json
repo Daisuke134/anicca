@@ -11,6 +11,6 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "@blockrun/llm": "^3.2.3"
+    "@blockrun/llm": "^3.3.0"
   }
 }
