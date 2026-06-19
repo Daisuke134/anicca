@@ -164,6 +164,14 @@ print(d.get('error') or d.get('abort') or '')" 2>/dev/null)
   exit 0
 fi
 
+# --- GAS FLOOR: never gas-stall. A wallet with USDC but zero native ETH cannot send ANY tx. Before
+# the tx-doing legs, ensure a minimum ETH balance (self-restored by unwrapping a little WETH, or
+# swapping a bit of USDC) so every Anicca can always act.
+if [ "$STRATEGY" = "yield" ] && [ -z "${EARN_TX:-}" ]; then
+  GRES=$(PKVAR="$PKVAR" node "$HERE/ensure-gas.mjs" 2>/dev/null)
+  echo "[earn] gas check: $GRES"
+fi
+
 # --- INVESTING leg (3rd earning way): risk-managed blue-chip DCA into ETH, capped at a target % of
 # investable capital (never the compute buffer, never leverage). Runs as part of the portfolio pass
 # before yield, so each wake maintains: compute buffer (liquid) + blue-chip target + yield floor.
