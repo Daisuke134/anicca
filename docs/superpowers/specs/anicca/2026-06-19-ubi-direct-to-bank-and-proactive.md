@@ -79,14 +79,22 @@ and delivers, with no knowledge of crypto/AGI/anicca required. Real-world models
 - **Animals**: a floor of care, delivered through the **sanctuaries / caretakers** who feed and shelter
   them. anicca funds the humans who act on animals' behalf (the only working rail). Earmarked, on-chain
   verifiable.
-- **Off-earth / aliens (honest, experimental, but real action now)**: there is no delivery rail to
-  off-earth life. So anicca does the only honest thing: **a labeled public "cosmic fund" escrow** that
-  accumulates a small share of earnings now, visible on-chain, **held until a rail exists** (verified
-  contact, a delivery method, even a probe/broadcast). Plus a standing commitment + value-bearing
-  broadcast intent (METI/SETI-style messaging of the fund's existence). We can't pay an alien today; we
-  reserve real money + declare the intent so the promise ("every living being") is backed by funds, not
-  words. Anicca = first UBI in the universe; we move toward off-earth delivery with every capability we
-  have, as soon as we can.
+- **Off-earth / aliens — think bigger, 4 concrete stages (we DO each as capability allows):**
+  1. **FIND (where is life)** — fund / contribute compute to the search: JWST detects atmospheric
+     biosignatures on exoplanets (e.g. K2-18b); Breakthrough **Listen** runs SETI signal search (now
+     AI-accelerated). anicca can sponsor compute or donate to these searches = first concrete spend.
+  2. **MESSAGE (reach toward them now)** — METI / Breakthrough **Message**: radio travels at light
+     speed today. anicca funds/commissions a transmission that declares the cosmic fund exists ("value
+     is reserved for you"). The broadcast itself is the first real outbound action to off-earth life.
+  3. **RESERVE (real value, now)** — a labeled public **cosmic-fund escrow** on-chain that accrues a
+     small share of every distribution; anyone can verify the balance. Backs the message with actual
+     money, not words.
+  4. **DELIVER (eventually)** — Breakthrough **Starshot**: gram-scale light-sail probes toward Alpha
+     Centauri at ~20% light speed. The eventual physical-delivery vehicle. anicca contributes toward
+     interstellar delivery tech as it matures.
+  Honest: we cannot hand money to an alien today. But FIND+MESSAGE+RESERVE are real actions we start
+  now; DELIVER is the horizon. Anicca = first UBI in the universe (inference: none has reached us), and
+  it is the first to set aside value AND broadcast intent to ALL life — not merely search or message.
 
 ## §7 Open / human gates
 - A0/V2 Stripe USDC→JP-yen-bank capability (must verify in dashboard before building ③).
