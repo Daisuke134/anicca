@@ -26,8 +26,10 @@ function travelDecision(ev, prev, home) {
   if (!ev || isTravel(ev.summary) || !((ev.location || "").trim())) {
     return { insert: false, origin: null, reason: "helper-or-no-location" };
   }
-  // Origin = previous event's location if it ends within 90 min before this one (back-to-back); else home.
-  const origin = prev && prev.location && prev.endMs && (ev.startMs - prev.endMs) <= 90 * 60000
+  // Origin = previous event's location if it ends within [0,90] min before this one (back-to-back) AND
+  // the previous event is a REAL event (not one of Anicca's own [Travel] helper blocks); else home.
+  const gap = prev && prev.endMs ? ev.startMs - prev.endMs : Infinity;
+  const origin = prev && prev.location && !isTravel(prev.summary) && gap >= 0 && gap <= 90 * 60000
     ? prev.location : home;
   if (!origin) return { insert: false, origin: null, reason: "no-origin" }; // home unknown → ask-loop handles it
   if (norm(origin) === norm(ev.location)) return { insert: false, origin, reason: "same-location" }; // home→home etc.

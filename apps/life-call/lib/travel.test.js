@@ -55,3 +55,21 @@ test("prev far (>90min gap) → origin falls back to home → home→home skip",
   const ev = { summary: "😴 Sleep", location: HOME, startMs: ms(18) }; // 6h after prev
   assert.equal(travelDecision(ev, prev, HOME).reason, "same-location");
 });
+
+test("null/undefined ev → skip (no crash)", () => {
+  assert.equal(travelDecision(null, null, HOME).insert, false);
+  assert.equal(travelDecision(undefined, null, HOME).insert, false);
+});
+
+test("same-venue back-to-back (prev location == ev location, != home) → skip", () => {
+  const prev = { location: "渋谷ヒカリエ", endMs: ms(13) };
+  const ev = { summary: "打ち合わせ2", location: "渋谷ヒカリエ", startMs: ms(14) };
+  assert.equal(travelDecision(ev, prev, HOME).reason, "same-location");
+});
+
+test("prev is a [Travel] helper block → not used as origin (falls back to home)", () => {
+  const prev = { summary: "[Travel] 🚆 A→B", location: "somewhere-else", endMs: ms(17) };
+  const ev = { summary: "😴 Sleep", location: HOME, startMs: ms(18) };
+  // origin must NOT leak from the [Travel] block; falls back to home → home→home skip
+  assert.equal(travelDecision(ev, prev, HOME).reason, "same-location");
+});
