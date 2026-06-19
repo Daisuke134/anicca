@@ -1,18 +1,19 @@
-// lib/ask.js — cloud ask/reply loop. For events missing a location, email the user (FROM their own
-// Gmail, via Unipile) "where is this?", then read their reply (Unipile inbox) and write the location
-// onto the event (Composio gcal). The "ask, read the reply, register" loop, omni-channel-ready.
+// lib/ask.js — AGENTIC ask/reply loop for event locations. NO regex heuristics, NO string-match
+// confidence — an LLM (Gemini) reasons about everything (decision #47: agentic, not hardcoded):
 //
-//   SEND phase: list next-48h events, detect those missing a location and not already pending,
-//     send the question (Event ID embedded), mark the event anicca_ask_pending so we don't re-ask.
-//   READ phase: scan the last 2 days of inbox, match replies by "Event ID: <id>", parse the location,
-//     PATCH the event location, clear the pending flag.
+//   RESOLVE  : for each event missing a location, Gemini decides the real place + address (grounded
+//              on a Google Places search so it can't hallucinate a street number), or says "ask".
+//   ASK      : only when Gemini can't determine it (e.g. "Coffee with Mai" — a person, no venue) do
+//              we email the user (via Unipile, from their own Gmail).
+//   READ     : Gemini reads inbound replies + the list of pending events and returns {eventId,
+//              location} — no regex parsing of quoted threads.
+//
+// Dedup is the one deterministic part (a Supabase lm_ask_log row per asked event) — that's bookkeeping,
+// not judgment.
 "use strict";
 
-const {
-  detectMissingInfo, buildQuestionBody, buildQuestionSubject, parseLocationFromReply,
-} = require("./ask-logic.js");
-
 const COMPOSIO = "https://backend.composio.dev/api/v3";
+const GEMINI = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 
 async function composio(tool, args, key) {
   const r = await fetch(`${COMPOSIO}/tools/execute/${tool}`, {
@@ -21,13 +22,77 @@ async function composio(tool, args, key) {
   });
   return r.json().catch(() => ({}));
 }
-
 async function unipile(method, path, body, token, dsn) {
   const r = await fetch(`https://${dsn}${path}`, {
     method, headers: { "X-API-KEY": token, "Content-Type": "application/json", accept: "application/json" },
     body: body ? JSON.stringify(body) : undefined,
   });
   return { ok: r.ok, json: await r.json().catch(() => ({})) };
+}
+
+// One Gemini JSON call. Returns the parsed object, or {} on any failure (caller treats as "unsure").
+async function gemini(prompt, geminiKey) {
+  try {
+    const r = await fetch(`${GEMINI}?key=${geminiKey}`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { responseMimeType: "application/json", temperature: 0 },
+      }),
+    });
+    const j = await r.json();
+    const text = j?.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
+    return JSON.parse(text);
+  } catch { return {}; }
+}
+
+// Grounding: real candidate places for a title (so the model picks a real address, never invents one).
+async function placesCandidates(title, mapsKey) {
+  if (!mapsKey || !title) return [];
+  try {
+    const r = await fetch(`https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(title)}&language=ja&key=${mapsKey}`);
+    const j = await r.json();
+    return (j.results || []).slice(0, 4).map((p) => ({ name: p.name, address: p.formatted_address }));
+  } catch { return []; }
+}
+
+// AGENTIC: decide the address for an event, or null (= ask the user).
+async function agentResolveLocation(event, { home, mapsKey, geminiKey }) {
+  const candidates = await placesCandidates(event.summary || "", mapsKey);
+  const out = await gemini(
+    `You resolve the real-world location of a personal calendar event. Decide ONLY if you are confident.
+Event title: ${JSON.stringify(event.summary || "")}
+Start: ${JSON.stringify((event.start || {}).dateTime || "")}
+User's home address: ${JSON.stringify(home || "")}
+Real place candidates from Google Places (use ONLY these for the address — never invent one):
+${JSON.stringify(candidates)}
+
+If the title clearly names a real venue/place that matches one candidate (e.g. a school, office, shop,
+station, restaurant), return that candidate's address. If the title is a person, a vague activity, or
+you cannot confidently match a candidate, return null (we'll ask the user).
+Reply as JSON: {"location": "<exact candidate address>" | null}`,
+    geminiKey,
+  );
+  return typeof out.location === "string" && out.location.trim() ? out.location.trim() : null;
+}
+
+// AGENTIC: read a reply against the pending events; return {eventId, location} or null.
+async function agentMatchReply(replyText, pending, geminiKey) {
+  if (!pending.length) return null;
+  const out = await gemini(
+    `A user replied to an email asking where one of their events takes place. Match the reply to the
+correct event and extract the location they gave. Ignore quoted/original text.
+Pending events (id → title):
+${JSON.stringify(pending.map((p) => ({ id: p.id, title: p.summary })))}
+Reply text:
+${JSON.stringify((replyText || "").slice(0, 2000))}
+
+Reply as JSON: {"eventId": "<id from the list>" | null, "location": "<place/address they gave>" | null}.
+Use null for both if the reply doesn't clearly answer a location question.`,
+    geminiKey,
+  );
+  if (out && out.eventId && out.location) return { eventId: String(out.eventId), location: String(out.location) };
+  return null;
 }
 
 async function listEvents48h(uid, key, nowMs) {
@@ -40,15 +105,18 @@ async function listEvents48h(uid, key, nowMs) {
   }, key);
   return ((j.data || {}).items) || [];
 }
-
 async function patchEvent(uid, eventId, patch, key) {
   return composio("GOOGLECALENDAR_PATCH_EVENT", {
     user_id: uid, arguments: { calendar_id: "primary", event_id: eventId, ...patch },
   }, key);
 }
+function needsLocation(ev) {
+  const s = (ev.summary || "").trim();
+  if (s.startsWith("[Travel]") || s.startsWith("[Ask]")) return false;
+  if (!((ev.start || {}).dateTime)) return false;
+  return !((ev.location || "").trim());
+}
 
-// Dedup via Supabase lm_ask_log (GOOGLECALENDAR_PATCH_EVENT can't set extendedProperties, so we
-// can't flag the event itself). One row per (uid, event_id) we've asked about.
 async function askedSet(uid, supaUrl, supaKey) {
   const r = await fetch(`${supaUrl}/rest/v1/lm_ask_log?uid=eq.${encodeURIComponent(uid)}&select=event_id`,
     { headers: { apikey: supaKey, Authorization: `Bearer ${supaKey}` } });
@@ -63,40 +131,56 @@ async function markAsked(uid, eventId, supaUrl, supaKey) {
   }).catch(() => {});
 }
 
-// Returns { asked, resolved }.
+// Returns { autofilled, asked, resolved }.
 async function askTick(uid, opts) {
-  const { composioKey, accountId, unipileToken, unipileDsn, userEmail, supaUrl, supaKey } = opts;
+  const { composioKey, accountId, unipileToken, unipileDsn, userEmail, supaUrl, supaKey, mapsKey, geminiKey } = opts;
   const nowMs = opts.nowMs || Date.now();
-  let asked = 0, resolved = 0;
+  let autofilled = 0, asked = 0, resolved = 0;
   const events = await listEvents48h(uid, composioKey, nowMs);
   const already = await askedSet(uid, supaUrl, supaKey);
 
-  // SEND: events missing location we haven't already asked about.
-  const missing = detectMissingInfo(events).filter((m) => m.kind.location && !already.has(m.event.id));
-  for (const { event } of missing) {
+  // For each event missing a location we haven't handled: agentic resolve, then ask only if unsure.
+  for (const event of events.filter((e) => needsLocation(e) && !already.has(e.id))) {
+    const found = await agentResolveLocation(event, { home: opts.home, mapsKey, geminiKey });
+    if (found) {
+      await patchEvent(uid, event.id, { location: found }, composioKey);
+      await markAsked(uid, event.id, supaUrl, supaKey);
+      autofilled++;
+      continue;
+    }
+    const { Subject, Body } = buildAsk(event); // simple, model-free template for the email itself
     const sent = await unipile("POST", "/api/v1/emails", {
-      account_id: accountId, to: [{ identifier: userEmail }],
-      subject: buildQuestionSubject(event), body: buildQuestionBody(event), // body embeds "Event ID: <id>"
+      account_id: accountId, to: [{ identifier: userEmail }], subject: Subject, body: Body,
     }, unipileToken, unipileDsn);
     if (sent.ok) { await markAsked(uid, event.id, supaUrl, supaKey); asked++; }
   }
 
-  // READ: scan recent inbox for replies carrying an Event ID + a location → write location to the event.
-  const inbox = await unipile("GET", `/api/v1/emails?account_id=${encodeURIComponent(accountId)}&limit=20`, null, unipileToken, unipileDsn);
-  for (const m of (inbox.json.items) || []) {
-    const text = m.body_plain || m.body || m.snippet || "";
-    const idMatch = text.match(/Event ID:\s*([^\s\r\n]+)/);
-    if (!idMatch) continue;
-    const eventId = idMatch[1].trim();
-    if (!eventId || eventId === "unknown" || !already.has(eventId)) continue; // only events we asked
-    const location = parseLocationFromReply(text);
-    if (!location) continue;
-    const ev = events.find((e) => e.id === eventId);
-    if (!ev || (ev.location || "").trim()) continue; // already has a location
-    await patchEvent(uid, eventId, { location }, composioKey); // PATCH accepts location
-    resolved++;
+  // READ replies: agentically match each reply to a pending event + extract the location.
+  const pending = events.filter((e) => needsLocation(e) && already.has(e.id));
+  if (pending.length) {
+    const inbox = await unipile("GET", `/api/v1/emails?account_id=${encodeURIComponent(accountId)}&limit=15`, null, unipileToken, unipileDsn);
+    for (const m of (inbox.json.items) || []) {
+      if (!/^Re:/i.test(m.subject || "")) continue;
+      const text = m.body_plain || m.body || m.snippet || "";
+      const match = await agentMatchReply(text, pending, geminiKey);
+      if (!match) continue;
+      const ev = pending.find((e) => e.id === match.eventId);
+      if (!ev) continue;
+      await patchEvent(uid, ev.id, { location: match.location }, composioKey);
+      resolved++;
+    }
   }
-  return { asked, resolved };
+  return { autofilled, asked, resolved };
 }
 
-module.exports = { askTick };
+// The ask EMAIL is a fixed template (no judgment needed — just a courteous prompt). The Event title +
+// id go in so a human reply is natural; the model does the reading on the way back.
+function buildAsk(event) {
+  const title = event.summary || "your event";
+  return {
+    Subject: `[Ask] 場所を教えて — ${title}`,
+    Body: `Anicca より確認です。\n\n予定「${title}」の場所がまだ設定されていません。どこで行われますか？ この메일にそのまま返信してください（店名・住所どちらでもOK）。Anicca がカレンダーに反映します。\n\n--- Event ID: ${event.id || "unknown"}`,
+  };
+}
+
+module.exports = { askTick, agentResolveLocation, agentMatchReply };

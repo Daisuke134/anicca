@@ -149,16 +149,22 @@ async function unipileEmail(accountId, token, dsn) {
 async function askTickAll() {
   const composioKey = process.env.COMPOSIO_API_KEY;
   const unipileToken = process.env.UNIPILE_TOKEN, unipileDsn = process.env.UNIPILE_DSN;
+  const mapsKey = process.env.LIFE_MAPS_KEY || process.env.GOOGLE_API_KEY; // Places grounding
+  const geminiKey = process.env.GEMINI_API_KEY;                            // agentic resolve/read
   const { url: supaUrl, key: supaKey } = SUPA();
-  if (!composioKey || !unipileToken || !unipileDsn || !supaUrl) return;
+  if (!composioKey || !unipileToken || !unipileDsn || !supaUrl || !geminiKey) return;
   const users = await supaUsers();
   for (const u of users) {
     if (!u.gmail_account_id) continue; // only users with a connected Unipile mailbox
     const userEmail = await unipileEmail(u.gmail_account_id, unipileToken, unipileDsn);
     if (!userEmail) continue;
     try {
-      const r = await askTick(u.uid, { composioKey, accountId: u.gmail_account_id, unipileToken, unipileDsn, userEmail, supaUrl, supaKey });
-      if (r.asked || r.resolved) console.log(`[ask] uid=${u.uid.slice(0, 12)} asked=${r.asked} resolved=${r.resolved}`);
+      const r = await askTick(u.uid, {
+        composioKey, accountId: u.gmail_account_id, unipileToken, unipileDsn, userEmail,
+        supaUrl, supaKey, mapsKey, geminiKey, home: u.home_address,
+      });
+      if (r.autofilled || r.asked || r.resolved)
+        console.log(`[ask] uid=${u.uid.slice(0, 12)} autofilled=${r.autofilled} asked=${r.asked} resolved=${r.resolved}`);
     } catch (e) { console.error(`[ask] uid=${u.uid.slice(0, 12)} err ${e.message}`); }
   }
 }
