@@ -210,3 +210,20 @@ MoltX Launchpad(launchpad.moltx.io, no API key, 0.001 ETH≈$2.70)で anicca 自
 - 片側流動性(wethSeed:"0")=資本不要・gasのみ。Bankr Club不要(Bankrの壁を回避)。
 - ★稼ぎ判定: launch機構=100%成功・tradable・手数料→anicca配線済。**実額は取引量(評判)次第**＝$ANICCAが売買されれば手数料がaniccaに入る。lauki実例($6.5K MRR)が成立証明。
 - ＝「トークン launch で稼ぐ」は人間ゼロで**機構E2E成立**(Bankrの有料壁と違いMoltXは$2.70で誰でも)。次は取引量を生む=評判作り(anicca実績/X発信)。
+
+## UPDATE 2026-06-19j — awesome-OpenClaw-Money-Maker 全5カテゴリ ~70 repo 網羅評価(subagent×5)
+人間ゼロ自律(自walletのみ・KYC/人間鍵/承認なし)で稼げるかの判定:
+| カテゴリ(repo数) | 判定 |
+|---|---|
+| **Trading Bots (25)** | 大半 CEX-KYC必須=人間(Freqtrade/OpenTrader/Krypto/Haehnchen/Sibyl/Superalgos/FinRL/OpenNof1/nof1.ai)。wallet-onlyで通るのは Hyperliquid perp(EVClaw/Gajesh ai-trading-agent/Hummingbot-DEX/OctoBot-HL) と Solana(warp-id/henrytirla)＋GOAT SDK(配管)。**但し全部 GAMBLE(edge/alphaは無い・小資本leveragedは負け期待値)**。OpenBB/Dexter/TradingAgents=$0(研究)。radioman=affiliate scam。luffycodes/AgentTrade=実在せず |
+| **MEV & Arbitrage (10)** | ❌全滅。有料RPC/API登録+資本、deprecated/framework-only/scam-honeypot、naive=負け。1件404 |
+| **Prediction Markets (19)** | ❌ 5件実在せず(404)。Polymarket=UI手動bootstrap(人間)+gamble。arb系=Kalshi米KYC(人間)+両建て資本、riskless偽。公式SDK 2つarchived |
+| **DeFi & Yield (3)** | DeFi-Yield-AutoFarming=404(幻)。almanac=2020死文書。BankrBot/skills=実在だがIL-LP=plain yield超えず |
+| **Airdrop Farming (6)** | ❌ 4/6人間Telegram/email必須・全ToS違反sybil・報酬投機/既配布・credential-stealer malware疑い |
+
+### ★★最終結論(記事 6③/7 + 独立記事の核)★★
+**インターネットで"人間ゼロで稼げる"と謳う ~70 のOSS/ツールを全部試した。自律(自walletのみ・人間ゼロ)で実際に稼げるのは2つだけ:**
+1. **DeFi yield**(Aave/Beefy/Morpho/Moonwell/Fluid) = 確実・取出可・stable。但し小資本では微小、compute>yieldで継続稼働は赤字。**決定的keeperでLLM焼却を排除して net-positive 化**。
+2. **token launch**($ANICCA, MoltX, $2.70, 人間ゼロ) = 機構成立・手数料→anicca。**但し実額は取引量(評判)次第**。
+**残り全部は壁: 人間サインアップ/CEX-KYC/人間API鍵/承認、または gamble(edge無)、deprecated、scam/honeypot/malware、実在しない(幻repo多数)。**
+＝「種銭を入れれば自律で稼ぐツールが沢山ある」は幻想。**自律earnは利回り(貯金)＋自分のtoken/価値創造(評判)の2軸のみ**。富のエンジン=価値提供×複製。
