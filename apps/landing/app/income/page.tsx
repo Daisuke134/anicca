@@ -25,6 +25,61 @@ const incomeLd = {
 
 const WALLET_RE = /^0x[0-9a-fA-F]{40}$/;
 
+// Per-country routing: the recipient picks their country, and the receive options
+// adapt to the rail that actually reaches a bank there. anicca converts its USDC
+// behind the scenes; the recipient only ever gives a bank/email — never touches crypto.
+type CountryRail = {
+  label: string;
+  currency: string;
+  bankTitle: string;
+  bankNote: string;
+  emailNote: string;
+  recommend: 'email' | 'bank';
+};
+const COUNTRY_RAILS: Record<string, CountryRail> = {
+  jp: {
+    label: 'Japan',
+    currency: 'JPY',
+    bankTitle: 'Your Japanese bank (MUFG, Yucho, any bank)',
+    bankNote:
+      'Real yen to your bank by Zengin transfer — like a normal furikomi, nothing to install. You give your account number once. Rolling out.',
+    emailNote:
+      'Receive to an email wallet today; for now cash out to a JP bank yourself via an exchange. Bank-direct (no crypto) is rolling out.',
+    recommend: 'bank',
+  },
+  us: {
+    label: 'United States',
+    currency: 'USD',
+    bankTitle: 'Your US bank (ACH)',
+    bankNote:
+      'US dollars straight to your bank account. You give routing + account number once. Rolling out.',
+    emailNote:
+      'Receive by email, then cash out to your US bank in-app — no exchange needed. Rolling out.',
+    recommend: 'bank',
+  },
+  other: {
+    label: 'Other country',
+    currency: 'your local currency',
+    bankTitle: 'Your local bank (global payout)',
+    bankNote:
+      'Local currency to a bank in 160+ countries. You give your bank details once. Rolling out.',
+    emailNote:
+      'Receive by email or wallet today; bank-direct in your country opens as rails come online.',
+    recommend: 'email',
+  },
+};
+const COUNTRY_OPTIONS: { value: string; label: string }[] = [
+  { value: 'jp', label: 'Japan' },
+  { value: 'us', label: 'United States' },
+  { value: 'gb', label: 'United Kingdom' },
+  { value: 'ca', label: 'Canada' },
+  { value: 'au', label: 'Australia' },
+  { value: 'other', label: 'Another country' },
+];
+function railFor(country: string): CountryRail {
+  return COUNTRY_RAILS[country] ?? COUNTRY_RAILS.other;
+}
+
 function ApplyForm() {
   const [email, setEmail] = useState('');
   const [method, setMethod] = useState<'email' | 'wallet' | 'bank'>('email');
@@ -126,19 +181,36 @@ function ApplyForm() {
         />
       </div>
 
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor="bi-country" className="text-sm font-medium text-[hsl(var(--text-primary))]">Where do you live?</label>
+        <select
+          id="bi-country"
+          value={country}
+          onChange={(e) => setCountry(e.target.value)}
+          className="w-full rounded-input border border-[hsl(var(--border))] bg-[hsl(var(--surface))] px-4 py-3 text-[hsl(var(--text-primary))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--gold))]"
+        >
+          {COUNTRY_OPTIONS.map((c) => (
+            <option key={c.value} value={c.value}>{c.label}</option>
+          ))}
+        </select>
+        <p className="text-xs text-[hsl(var(--text-secondary))]">
+          We route you to the best way to reach a bank in {railFor(country).label} — you only ever give a bank or email, never touch crypto.
+        </p>
+      </div>
+
       <fieldset className="space-y-2">
         <legend className="text-sm font-medium text-[hsl(var(--text-primary))]">How to receive</legend>
         <label className="flex items-start gap-2 text-sm text-[hsl(var(--text-secondary))]">
+          <input type="radio" name="method" checked={method === 'bank'} onChange={() => setMethod('bank')} className="mt-1" />
+          <span><strong className="text-[hsl(var(--text-primary))]">Bank account ({railFor(country).currency}){railFor(country).recommend === 'bank' ? ' — recommended' : ''}.</strong> {railFor(country).bankNote} {railFor(country).bankTitle}.</span>
+        </label>
+        <label className="flex items-start gap-2 text-sm text-[hsl(var(--text-secondary))]">
           <input type="radio" name="method" checked={method === 'email'} onChange={() => setMethod('email')} className="mt-1" />
-          <span><strong className="text-[hsl(var(--text-primary))]">Email — simplest (recommended).</strong> Nothing else needed. We set up receipt and email you; cash out to a bank later if you want.</span>
+          <span><strong className="text-[hsl(var(--text-primary))]">Email{railFor(country).recommend === 'email' ? ' — recommended' : ''}.</strong> {railFor(country).emailNote}</span>
         </label>
         <label className="flex items-start gap-2 text-sm text-[hsl(var(--text-secondary))]">
           <input type="radio" name="method" checked={method === 'wallet'} onChange={() => setMethod('wallet')} className="mt-1" />
-          <span><strong className="text-[hsl(var(--text-primary))]">Crypto wallet — instant.</strong> Paste a USDC (Base) address; money arrives in seconds.</span>
-        </label>
-        <label className="flex items-start gap-2 text-sm text-[hsl(var(--text-secondary))]">
-          <input type="radio" name="method" checked={method === 'bank'} onChange={() => setMethod('bank')} className="mt-1" />
-          <span><strong className="text-[hsl(var(--text-primary))]">Bank account.</strong> Receive your local currency. One quick identity check.</span>
+          <span><strong className="text-[hsl(var(--text-primary))]">Crypto wallet — instant.</strong> Paste a USDC (Base) address; money arrives in seconds. For people who know crypto.</span>
         </label>
       </fieldset>
 
@@ -154,24 +226,6 @@ function ApplyForm() {
             onChange={(e) => setWallet(e.target.value)}
             className="w-full rounded-input border border-[hsl(var(--border))] bg-[hsl(var(--surface))] px-4 py-3 font-mono text-[hsl(var(--text-primary))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--gold))]"
           />
-        </div>
-      )}
-
-      {method === 'bank' && (
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="bi-country" className="text-sm font-medium text-[hsl(var(--text-primary))]">Country</label>
-          <select
-            id="bi-country"
-            value={country}
-            onChange={(e) => setCountry(e.target.value)}
-            className="w-full rounded-input border border-[hsl(var(--border))] bg-[hsl(var(--surface))] px-4 py-3 text-[hsl(var(--text-primary))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--gold))]"
-          >
-            <option value="jp">Japan</option>
-            <option value="us">United States</option>
-            <option value="gb">United Kingdom</option>
-            <option value="ca">Canada</option>
-            <option value="au">Australia</option>
-          </select>
         </div>
       )}
 
