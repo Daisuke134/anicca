@@ -162,3 +162,12 @@ TO UNBLOCK (Dais, one-time): enable **Global Payouts** in the Stripe dashboard (
 - Fern integration SCAFFOLD BUILT: `~/anicca/skills/earn/fern-payout.mjs` (commit 5b44e38) — createCustomer(+KYC link) → createBankPaymentAccount(EXTERNAL_BANK_ACCOUNT, JPY/USD) → createQuote(USDC/BASE→bank) → createTransaction(quoteId); base api.fernhq.com; auth Bearer FERN_API_KEY. self-check passes (no key). UNVERIFIED until FERN_API_KEY + a real fiat-to-bank transaction (A4).
 - Access: Fern private beta; request email sent to hello@fernhq.com (msg 19edf1e6, 2026-06-19). BLOCKER = awaiting pre-prod API key.
 - ON KEY ARRIVAL: set FERN_API_KEY → register anicca's Base USDC as Fern source payment account → run payoutToBank() for a test recipient → VERIFY real yen lands in a real MUFG (A4). Then wire into ubi-watcher 'bank' method (creator+UBI buckets already there).
+
+### ③ bank-direct — LIVE-VERIFIED FINDINGS (2026-06-19, touched each, not docs)
+- Fern: DEAD (app.fernhq.com = "no longer active" → acquired by Rain rain.xyz). Removed as option.
+- Brale (US leg): signup REAL + self-serve (Google OAuth worked, org created), BUT the API/keys screen is GATED behind business verification requiring **TIN/EIN (US tax id) + US address** → a Japan operator with no US EIN is blocked even for testnet keys. = US-entity-gated.
+- VERIFIED REALITY: there is NO self-serve path to a real bank payout. Every rail needs either a US entity (EIN) or a sales/KYB gate. (Not giving up — confirmed by touching, per always-verify / HARD 0.37.)
+- JP leg (the GOAL, MUFG/JPY): ONLY Rain (ex-Fern) documents Base USDC→JP bank JPY/Zengin via API. Sales-gated; JP-operator eligibility UNVERIFIED. ACTION: emailed fernproduct@rain.xyz (msg 19edf384, 2026-06-19) asking (1) can a Japan-based operator integrate? (2) is JPY/Zengin offramp live in production? — these gate everything.
+- DECISION FORK (await Rain reply first): (A) if Rain allows a JP operator → integrate Rain for JP+US, NO US entity needed. (B) if not → form a US entity (Stripe Atlas, ~$500, Dais identity/EIN) → unlocks Circle/Brale/Stripe US leg + Rain US; JP leg still via Rain. Don't spend on Atlas until Rain answers.
+- PARALLEL IDEA (not bank, but real spendable JP value TODAY, no bank-KYB): crypto→gift-card/PayPay via API (e.g. Bitrefill) — unverified, research next if desired.
+- Meanwhile ①wallet + ②email (Crossmint) payout = verified working (UBI deliverable to crypto-capable recipients now).
