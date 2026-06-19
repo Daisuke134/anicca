@@ -17,9 +17,14 @@ const DEFAULTS = {
   // (valid JSON tool call, 1676ms, resp model matches). $0 forever — the cost-free brain so prepared
   // skills (yield/invest/x402) + a free model = pure profit. The `nvidia/` prefix works on the raw API
   // directly (the `free/` prefix would need ClawRouter; not required since nvidia/gpt-oss-120b works).
+  // ALL tiers use the $0 free model so Anicca NEVER burns compute on routine wakes (cost-free thesis:
+  // free model + prepared skills = pure profit). Paid frontier was draining the treasury on the funded
+  // tier ($14->$10.5) while yield earned ~$0 — net-negative. A free brain + earning skills = the only
+  // way a self-paying agent stays net-positive at small capital. (Frontier is for capable instances on
+  // flat-rate billing, e.g. Claude on a subscription — NOT a self-paying Anicca burning x402 per wake.)
   ANICCA_FREE_MODEL:    'nvidia/gpt-oss-120b',
-  ANICCA_LEAN_MODEL:    'nvidia/gpt-oss-120b',                 // best free model for both free tiers
-  ANICCA_FUNDED_MODEL:  'anthropic/claude-opus-4.8',          // only when surplus funds a frontier decision
+  ANICCA_LEAN_MODEL:    'nvidia/gpt-oss-120b',
+  ANICCA_FUNDED_MODEL:  'nvidia/gpt-oss-120b',                 // cost-free even when funded — stop the burn
   SLEEP_BASE_S:         120,
   SLEEP_ERROR_S:        60,
   SLEEP_LOOP_DETECT_S:  300,
