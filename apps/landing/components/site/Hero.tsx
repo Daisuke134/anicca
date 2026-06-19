@@ -36,7 +36,14 @@ export default function Hero({ locale }: HeroProps) {
           {secondaryLabel}
         </CTA>
       }
-      asset={<LedgerWidget locale={locale} />}
+      asset={
+        <a href="/dashboard" className="group block transition-opacity hover:opacity-90" aria-label="Live dashboard">
+          <LedgerWidget locale={locale} />
+          <span className="mt-3 inline-flex items-center gap-1 text-[13px] text-[hsl(var(--gold))] underline underline-offset-4">
+            {locale === 'ja' ? 'ライブの数字を見る → aniccaai.com/dashboard' : 'See the live numbers → aniccaai.com/dashboard'}
+          </span>
+        </a>
+      }
     />
   );
 }
