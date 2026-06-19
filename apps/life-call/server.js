@@ -190,7 +190,7 @@ wss.on("connection", (carrierWs, req) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`[life-call] listening ${PORT} ws=/ws`);
+  console.log(`[life-call] listening ${PORT} ws=/ws build=agentic-ask-worldwide-v2`);
   startScheduler();   // begin the 60s wake loop once the bridge is up
   startTravelLoop();  // begin the 30min travel-block auto-fill loop
   startAskLoop();     // begin the 20min ask/reply (location) loop
