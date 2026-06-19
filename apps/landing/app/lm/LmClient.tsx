@@ -288,7 +288,7 @@ export default function LmClient() {
           </div>
           <button
             type="button"
-            disabled={cal !== 'connected' || gmail !== 'connected'}
+            disabled={cal !== 'connected'}
             onClick={() => setStep('phone')}
             className="mt-6 inline-flex w-full items-center justify-center rounded-pill bg-[hsl(var(--gold))] px-6 py-3 text-sm font-semibold text-[#18181b] transition-all hover:brightness-95 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
           >
