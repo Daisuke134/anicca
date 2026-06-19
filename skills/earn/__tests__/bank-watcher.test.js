@@ -2,77 +2,89 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { bankWatcherPass } from "../bank-watcher.mjs";
 
-const r = (id, provider = "gmo") => ({ id, provider, currency: "JPY", bank: { bankCode: "0005", branchCode: "001", accountNumber: "1", beneficiaryName: "ﾅ" } });
+const r = (id, provider = "gmo") => ({ id, provider, currency: "JPY", bank: { bankCode: "0005", branchCode: "001", accountNumber: "1234567", beneficiaryName: "ﾅ" } });
+const claimAll = async (ids) => ids; // default: we win the claim on all
 
-test("bankWatcherPass: idle when no bank recipients (no pool read, no pay)", async () => {
-  let pooled = false;
-  const out = await bankWatcherPass({ readBankRecipients: async () => [], getPool: async () => { pooled = true; return 9000; }, markPaid: async () => {}, adapters: {} });
+test("bankWatcherPass: idle when no bank recipients (no balance read, no pay)", async () => {
+  let balanceRead = false;
+  const out = await bankWatcherPass({ readBankRecipients: async () => [], getBalance: async () => { balanceRead = true; return 9000; }, claim: claimAll, markPaid: async () => {}, adapters: {} });
   assert.equal(out.outcome, "idle");
-  assert.equal(out.paid.length, 0);
+  assert.equal(balanceRead, false);
 });
 
-test("bankWatcherPass: pays + marks ONLY recipients whose rail succeeded", async () => {
+test("FIND-A atomic claim: ONLY the subset claim() returns is dispatched + paid (concurrent pass took 'b')", async () => {
   const marked = [];
-  const adapters = { gmo: async () => ({ apptransferNo: "G1" }), rain: async () => { throw new Error("rain down"); } };
   const out = await bankWatcherPass({
-    readBankRecipients: async () => [r("a", "gmo"), r("b", "rain"), r("c", "gmo")],
-    getPool: async () => 9000,
-    markPaid: async (id, info) => marked.push({ id, info }),
-    adapters,
+    readBankRecipients: async () => [r("a"), r("b"), r("c")],
+    claim: async (ids) => ids.filter((id) => id !== "b"), // 'b' already flipped by another pass -> not ours
+    getBalance: async () => 9000,
+    markPaid: async (id) => marked.push(id),
+    adapters: { gmo: async () => ({ apptransferNo: "G1" }) },
   });
-  assert.equal(out.outcome, "partial");                 // gmo ok, rain failed
-  assert.deepEqual(out.paid.sort(), ["a", "c"]);        // only gmo recipients marked
-  assert.ok(!out.paid.includes("b"));                   // rain failed → NOT marked (no fake)
-  assert.equal(marked.length, 2);
-  assert.equal(marked[0].info.amount, 3000);            // 9000/3
+  assert.equal(out.outcome, "sent");
+  assert.deepEqual(out.paid.sort(), ["a", "c"]);
+  assert.ok(!marked.includes("b")); // never double-submitted
 });
 
-test("bankWatcherPass: claims BEFORE submit + reverts ONLY failed rails (FIND-002 idempotency)", async () => {
-  const order = [];
-  const claimed = [];
-  const reverted = [];
-  const adapters = {
-    gmo: async () => { order.push("gmo-submit"); return { ok: 1 }; },
-    rain: async () => { order.push("rain-submit"); throw new Error("rain 500"); },
-  };
-  const out = await bankWatcherPass({
-    readBankRecipients: async () => [r("a", "gmo"), r("b", "rain")],
-    getPool: async () => 9000,
-    markPaid: async () => {},
-    claim: async (ids) => { order.push("claim"); claimed.push(...ids); },
-    revert: async (id) => { reverted.push(id); },
-    adapters,
-  });
-  assert.equal(order[0], "claim");                 // claim happens BEFORE any submit
-  assert.deepEqual(claimed.sort(), ["a", "b"]);    // all claimed before dispatch
-  assert.deepEqual(reverted, ["b"]);               // only the failed rail (rain) reverted to queued
-  assert.equal(out.paid.length, 1);                // gmo recipient paid
-});
-
-test("bankWatcherPass: balance guard is WIRED + active (FIND-003) — explicit balance below spend skips", async () => {
+test("FIND-A: nothing_claimed -> idle (a concurrent pass claimed them all)", async () => {
   let submitted = false;
   const out = await bankWatcherPass({
-    readBankRecipients: async () => [r("a"), r("b")],
-    getPool: async () => 9000,
+    readBankRecipients: async () => [r("a")],
+    claim: async () => [],
+    getBalance: async () => 9000,
     markPaid: async () => {},
     adapters: { gmo: async () => { submitted = true; } },
-    opts: { balance: 100 },                          // explicit balance < spend → guard must fire
   });
-  assert.equal(out.outcome, "skipped");
-  assert.equal(out.reason, "insufficient_balance");
+  assert.equal(out.outcome, "idle");
+  assert.equal(out.reason, "nothing_claimed");
   assert.equal(submitted, false);
 });
 
-test("bankWatcherPass: skipped plan (pool below reserve) marks nobody", async () => {
-  let markedAny = false;
+test("FIND-B: adapter FAILURE leaves recipient 'processing' (NOT re-queued) — release only on skip", async () => {
+  const released = [];
+  const marked = [];
   const out = await bankWatcherPass({
-    readBankRecipients: async () => [r("a")],
-    getPool: async () => 500,
-    markPaid: async () => { markedAny = true; },
-    adapters: { gmo: async () => ({}) },
+    readBankRecipients: async () => [r("a", "gmo"), r("b", "rain")],
+    claim: claimAll,
+    getBalance: async () => 9000,
+    markPaid: async (id) => marked.push(id),
+    release: async (ids) => released.push(...ids),
+    adapters: { gmo: async () => ({ apptransferNo: "G1" }), rain: async () => { throw new Error("timeout — maybe accepted"); } },
+  });
+  assert.equal(out.outcome, "partial");
+  assert.deepEqual(out.paid, ["a"]);
+  assert.deepEqual(out.failed, ["b"]);
+  assert.deepEqual(released, []); // CRITICAL: never auto-requeue an unknown-outcome bank transfer
+  assert.ok(!marked.includes("b"));
+});
+
+test("FIND-C: real balance drives the plan — below reserve -> skipped + claimed released (nothing sent)", async () => {
+  const released = [];
+  let submitted = false;
+  const out = await bankWatcherPass({
+    readBankRecipients: async () => [r("a"), r("b")],
+    claim: claimAll,
+    getBalance: async () => 500, // real GMO balance
+    markPaid: async () => {},
+    release: async (ids) => released.push(...ids),
+    adapters: { gmo: async () => { submitted = true; } },
     opts: { reserve: 1000 },
   });
   assert.equal(out.outcome, "skipped");
   assert.equal(out.reason, "below_reserve");
-  assert.equal(markedAny, false);
+  assert.equal(submitted, false);
+  assert.deepEqual(released.sort(), ["a", "b"]); // safe: nothing dispatched
+});
+
+test("bankWatcherPass: all rails ok -> sent, per-amount from real balance", async () => {
+  const marked = [];
+  const out = await bankWatcherPass({
+    readBankRecipients: async () => [r("a"), r("b")],
+    claim: claimAll,
+    getBalance: async () => 9000,
+    markPaid: async (id, info) => marked.push(info.amount),
+    adapters: { gmo: async () => ({ apptransferNo: "G1" }) },
+  });
+  assert.equal(out.outcome, "sent");
+  assert.equal(marked[0], 4500); // 9000 / 2
 });

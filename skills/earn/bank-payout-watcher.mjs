@@ -1,13 +1,19 @@
-// bank-payout-watcher.mjs — LIVE daemon entry for ③ JP bank-direct. Wires bankWatcherPass to real
-// Supabase (recipients) + the GMO 一括振込 adapter. Mirrors ubi-payout-watcher.mjs but for method=bank.
-// Pure pieces (makeGmoAdapter, buildPaidPatch) are unit-tested; the live pass() needs Supabase env +
-// GMO_AOZORA_ACCESS_TOKEN (sandbox sunabar first) — gated, no-fake (returns 'gated' without a token).
+// bank-payout-watcher.mjs — LIVE daemon entry for ③ JP bank-direct. Wires the SAFE bankWatcherPass to real
+// Supabase (recipients) + the GMO 一括振込 adapter. Hardened against the adversary's double-pay findings:
+//   - FIND-A: claim() is an ATOMIC compare-and-swap (PATCH ...&status=eq.queued, return=representation) —
+//     returns ONLY ids we actually flipped, so concurrent passes can't both submit the same recipient.
+//   - FIND-B: on adapter failure bankWatcherPass leaves rows 'processing' (no auto-requeue). makeGmoAdapter
+//     also stamps a deterministic idempotency key so a manual retry of the SAME batch can be de-duped.
+//   - FIND-C: getBalance() reads the REAL GMO 残高照会 balance (token-gated), not just an env cap.
+//   - FIND-D: pollCompletions() promotes 'submitted'→'paid' (or requeues) from GMO bulktransfer/status.
+//   - FIND-005: markPaid sets 'submitted' (accepted ≠ 振込完了) + persists the ref.
+// Pure pieces are unit-tested; live pass() needs Supabase env + GMO_AOZORA_ACCESS_TOKEN (sunabar sandbox
+// first) — gated no-fake (returns {gated} without a token).
 //
-// Invariant (資金決済法): own-funds 給付 only — anicca sends its OWN JPY.
-
+// Invariant (資金決済法): own-funds 給付 only.
 import { bankWatcherPass } from "./bank-watcher.mjs";
 import { bankRecipientsFromRows } from "./lib/bank-recipients.mjs";
-import { buildBulkTransferRequest, submitBulkTransfer } from "./gmo-furikomi.mjs";
+import { buildBulkTransferRequest, submitBulkTransfer, API_BASE } from "./gmo-furikomi.mjs";
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -19,29 +25,57 @@ function sb(path, opts = {}) {
   });
 }
 
-// PATCH body when a rail ACCEPTED the transfer. FIND-005: GMO bulktransfer is async — a 200 +
-// apptransferNo means ACCEPTED, not 振込完了. So status='submitted' (honest), not 'paid'. A later poll of
-// bulktransfer/status promotes 'submitted'→'paid'. The apptransferNo is persisted for that poll + audit.
+// ---- pure helpers (unit-tested) -------------------------------------------------------------------
+
+// FIND-005: accepted (200 + apptransferNo) is NOT 振込完了. status='submitted' + persist ref for the poll.
 export function buildSubmittedPatch(info = {}) {
   const ref = info.res && (info.res.apptransferNo || info.res.applyNo) ? `;ref=${info.res.apptransferNo || info.res.applyNo}` : "";
   return { status: "submitted", notes: `submitted;provider=${info.provider};amount=${info.amount};currency=${info.currency}${ref}` };
 }
-// FIND-002 idempotency: claim 'processing' BEFORE submit; revert to 'queued' only on a FAILED rail.
-export const buildClaimPatch = () => ({ status: "processing" });
-export const buildRevertPatch = () => ({ status: "queued" });
+export const buildClaimPatch = () => ({ status: "processing" });   // FIND-A: queued -> processing (atomic via filter)
+export const buildReleasePatch = () => ({ status: "queued" });     // only on pre-dispatch skip (nothing sent)
 
-// today YYYYMMDD (live script context; not the workflow sandbox). Optional override for tests/determinism.
+// FIND-A: a CAS PATCH returns the row IFF it was still 'queued' when WE patched it. 1 row => we claimed it.
+export function claimedFromRows(rows) {
+  return Array.isArray(rows) && rows.length === 1;
+}
+
+// deterministic idempotency key for a batch (FIND-B defense): same recipients+amounts => same key.
+export function idempotencyKey(transfers = []) {
+  const sig = transfers.map((t) => `${t.to}:${t.amount}`).sort().join("|");
+  let h = 0;
+  for (let i = 0; i < sig.length; i++) { h = (h * 31 + sig.charCodeAt(i)) | 0; }
+  return `anicca-ubi-${(h >>> 0).toString(36)}`;
+}
+
 export function todayYmd(d = new Date()) {
   return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
 }
 
-// GMO adapter factory — token + submit injected (submit defaults to the real API; tests pass a mock).
+// GMO adapter factory — token + submit injected (tests pass a mock). Stamps the idempotency key.
 export function makeGmoAdapter({ accountId, remitterName, transferDesignatedDate, token, submit = submitBulkTransfer }) {
   return async (transfers) => {
     const req = buildBulkTransferRequest({ accountId, remitterName, transferDesignatedDate, transfers });
+    req.idempotencyKey = idempotencyKey(transfers); // FIND-B: dedupe a same-batch retry
     return submit(req, token);
   };
 }
+
+// FIND-D: completion poll — promote 'submitted'->'paid' (or requeue) using GMO bulktransfer/status.
+// deps injected so the state machine is unit-tested without a live token.
+export async function pollCompletions({ readSubmitted, queryStatus, markPaid, requeue }) {
+  const rows = await readSubmitted();
+  const done = [], failed = [], pending = [];
+  for (const row of rows || []) {
+    const st = await queryStatus(row.ref);
+    if (st === "completed") { await markPaid(row.id); done.push(row.id); }
+    else if (st === "failed") { await requeue(row.id); failed.push(row.id); }
+    else pending.push(row.id);
+  }
+  return { done, failed, pending };
+}
+
+// ---- live Supabase + GMO wiring -------------------------------------------------------------------
 
 async function readBankRecipients() {
   const res = await sb("recipients?status=eq.queued&select=id,notes&order=applied_at.asc.nullslast");
@@ -49,33 +83,64 @@ async function readBankRecipients() {
   return bankRecipientsFromRows(Array.isArray(rows) ? rows : []);
 }
 
-async function patchRecipient(id, body, label) {
-  const res = await sb(`recipients?id=eq.${id}`, { method: "PATCH", headers: { Prefer: "return=minimal" }, body: JSON.stringify(body) });
-  if (!res.ok) console.error(`[bank-watcher] ${label} PATCH failed for ${id}: HTTP ${res.status}`); // FIND-002/005: never swallow
+// FIND-A: atomic CAS — PATCH guarded by &status=eq.queued; row returned only if WE flipped it.
+async function claim(ids) {
+  const claimed = [];
+  for (const id of ids) {
+    const res = await sb(`recipients?id=eq.${id}&status=eq.queued`, { method: "PATCH", headers: { Prefer: "return=representation" }, body: JSON.stringify(buildClaimPatch()) });
+    if (!res.ok) { console.error(`[bank-watcher] claim CAS failed ${id}: HTTP ${res.status}`); continue; }
+    const rows = await res.json().catch(() => []);
+    if (claimedFromRows(rows)) claimed.push(id);
+  }
+  return claimed;
+}
+async function release(ids) {
+  for (const id of ids) await sb(`recipients?id=eq.${id}`, { method: "PATCH", headers: { Prefer: "return=minimal" }, body: JSON.stringify(buildReleasePatch()) });
+}
+async function markPaid(id, info) {
+  const res = await sb(`recipients?id=eq.${id}`, { method: "PATCH", headers: { Prefer: "return=minimal" }, body: JSON.stringify(buildSubmittedPatch(info)) });
+  if (!res.ok) console.error(`[bank-watcher] submitted PATCH failed ${id}: HTTP ${res.status}`); // never swallow
   return res.ok;
 }
-async function markPaid(id, info) { return patchRecipient(id, buildSubmittedPatch(info), "submitted"); }
-async function claim(ids) { for (const id of ids) await patchRecipient(id, buildClaimPatch(), "claim"); }
-async function revert(id) { return patchRecipient(id, buildRevertPatch(), "revert"); }
 
-async function getPool() {
-  // FIND-003: in production this MUST be the real GMO 残高照会API balance, not env. env is a dev cap only;
-  // bankWatcherPass also passes balance=pool so planBankFanout's guard rejects any spend > this pool.
-  return parseInt(process.env.GMO_JPY_POOL || "0", 10);
+// FIND-C: real available balance from GMO 残高照会. UNVERIFIED endpoint shape until a live token confirms it;
+// env GMO_JPY_POOL is a DEV-ONLY override (logged) — never the production source of truth.
+async function getBalance() {
+  const token = process.env.GMO_AOZORA_ACCESS_TOKEN;
+  const accountId = process.env.GMO_AOZORA_ACCOUNT_ID;
+  if (token && accountId) {
+    try {
+      // UNVERIFIED: confirm path + response field against GMO docs on first live token.
+      const res = await fetch(`${API_BASE}/accounts/${accountId}/balances`, { headers: { Authorization: `Bearer ${token}`, Accept: "application/json" } });
+      if (res.ok) {
+        const j = await res.json();
+        const bal = parseInt(j.balance ?? j.availableBalance ?? (j.balances && j.balances[0] && j.balances[0].balance), 10);
+        if (Number.isInteger(bal)) return bal;
+      }
+      console.error(`[bank-watcher] balance fetch unexpected (HTTP ${res.status}) — refusing env fallback for safety`);
+      return 0; // FIND-C: do NOT silently distribute against an env cap if the real balance is unknown
+    } catch (e) {
+      console.error(`[bank-watcher] balance fetch error: ${e.message} — returning 0 (no spend)`);
+      return 0;
+    }
+  }
+  const dev = parseInt(process.env.GMO_JPY_POOL_DEV || "0", 10);
+  if (dev) console.error("[bank-watcher] DEV balance from GMO_JPY_POOL_DEV — NOT a real balance");
+  return dev;
 }
 
 export async function pass() {
   const token = process.env.GMO_AOZORA_ACCESS_TOKEN;
-  if (!token) { console.error("[bank-watcher] no GMO_AOZORA_ACCESS_TOKEN — gated (sandbox/prod token required)"); return { outcome: "gated", reason: "no_token" }; }
+  if (!token) { console.error("[bank-watcher] no GMO_AOZORA_ACCESS_TOKEN — gated"); return { outcome: "gated", reason: "no_token" }; }
   if (!SUPABASE_URL || !SUPABASE_KEY) { console.error("[bank-watcher] missing Supabase env"); return { outcome: "gated", reason: "no_supabase" }; }
   const gmo = makeGmoAdapter({
     accountId: process.env.GMO_AOZORA_ACCOUNT_ID,
-    remitterName: process.env.GMO_REMITTER_NAME || "ｱﾆﾂﾁﬔ",
+    remitterName: process.env.GMO_REMITTER_NAME || "ｱﾆﾂﾁﾔ",
     transferDesignatedDate: todayYmd(),
     token,
   });
   const opts = { reserve: parseInt(process.env.BANK_RESERVE_JPY || "0", 10), feePerTransfer: parseInt(process.env.GMO_FEE_JPY || "130", 10) };
-  return bankWatcherPass({ readBankRecipients, getPool, markPaid, claim, revert, adapters: { gmo }, opts });
+  return bankWatcherPass({ readBankRecipients, getBalance, claim, release, markPaid, adapters: { gmo }, opts });
 }
 
 if (process.argv[1] && process.argv[1].endsWith("bank-payout-watcher.mjs")) {
