@@ -452,7 +452,7 @@ export default function LmClient() {
             <button
               type="button"
               onClick={testCall}
-              disabled={callState === 'calling'}
+              disabled={callState === 'calling' || !natNum}
               className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-pill border border-[hsl(var(--gold))] px-6 py-3 text-sm font-semibold text-[hsl(var(--gold))] transition-all hover:bg-[hsl(var(--gold))] hover:text-[#18181b] active:scale-[0.98] disabled:opacity-50"
             >
               {callState === 'calling'
