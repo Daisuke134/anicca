@@ -130,9 +130,12 @@ export default function LmClient() {
       if (s) window.localStorage.setItem(SIG_KEY, s);
       setCal((window.localStorage.getItem('anicca.lm.cal') as ConnState) || 'idle');
       setGmail((window.localStorage.getItem('anicca.lm.gmail') as ConnState) || 'idle');
+      // Returning from Stripe (?paid=1) → straight to the dashboard. The lm-stripe-webhook flips
+      // paid=true server-side; this just lands the user on the right screen immediately.
+      const paidReturn = new URLSearchParams(window.location.search).get('paid') === '1';
       const savedStep = window.localStorage.getItem('anicca.lm.step') as Step | null;
-      setStep(savedStep && savedStep !== 'login' ? savedStep : 'name');
-      // strip any OAuth params Supabase appended from the visible URL
+      setStep(paidReturn ? 'dashboard' : savedStep && savedStep !== 'login' ? savedStep : 'name');
+      // strip any OAuth/Stripe params from the visible URL
       window.history.replaceState(null, '', '/lm');
     })();
     return () => {
