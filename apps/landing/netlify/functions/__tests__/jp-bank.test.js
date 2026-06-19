@@ -21,6 +21,7 @@ test('validateJpBank: rejects bad bankCode / branchCode / accountType / number /
   assert.match(validateJpBank({ ...good, accountType: '9' }).errors[0], /accountType/);
   assert.match(validateJpBank({ ...good, accountNumber: '' }).errors[0], /accountNumber/);
   assert.equal(validateJpBank({ ...good, beneficiaryName: '田中太郎' }).valid, false); // 全角 rejected (Zengin needs 半角ｶﾅ)
+  assert.equal(validateJpBank({ ...good, beneficiaryName: 'ﾀﾅｶ　ﾀﾛｳ' }).valid, false); // FIND-F: fullwidth space (U+3000) rejected
 });
 
 test('buildBankNotes: serializes to the watcher key=val notes format', () => {
