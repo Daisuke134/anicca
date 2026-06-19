@@ -25,6 +25,13 @@ test("claim/release patches", () => {
   assert.deepEqual(buildReleasePatch(), { status: "queued" });
 });
 
+test("FIND-109: release restores original notes (strips claimed_at) so a skipped recipient stays payable", () => {
+  const raw = "method=bank;country=jp;bankCode=0005;branchCode=001;accountType=1;accountNumber=1234567;beneficiaryName=ﾀﾅｶ ﾀﾛｳ";
+  const patch = buildReleasePatch(raw);
+  assert.deepEqual(patch, { status: "queued", notes: raw }); // claimed_at gone -> clean
+  assert.ok(parseBankRecipient({ id: "x", notes: patch.notes })); // re-dispatchable on a later pass (no guard hit)
+});
+
 test("FIND-A claimedFromRows: 1 returned row = we won the CAS; 0 or >1 = not ours", () => {
   assert.equal(claimedFromRows([{ id: "a" }]), true);
   assert.equal(claimedFromRows([]), false);           // another pass already flipped it

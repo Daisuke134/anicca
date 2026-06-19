@@ -37,7 +37,10 @@ export function buildSubmittedPatch(info = {}) {
   return { status: "submitted", notes: `${base}submitted;provider=${info.provider};amount=${info.amount};currency=${info.currency}${ref}` };
 }
 export const buildClaimPatch = () => ({ status: "processing" });   // FIND-A: queued -> processing (atomic via filter)
-export const buildReleasePatch = () => ({ status: "queued" });     // only on pre-dispatch skip (nothing sent)
+// FIND-109: release happens ONLY on a pre-dispatch skip (nothing sent), so it must FULLY reset the row to a
+// fresh queued state — restoring the original notes (raw) to STRIP the claimed_at the claim stamped. Otherwise
+// the claimed_at dispatch-guard (bank-recipients.mjs) would refuse this legitimately-skipped recipient forever.
+export const buildReleasePatch = (raw) => (raw ? { status: "queued", notes: raw } : { status: "queued" });
 
 // FIND-A: a CAS PATCH returns the row IFF it was still 'queued' when WE patched it. 1 row => we claimed it.
 export function claimedFromRows(rows) {
@@ -139,8 +142,8 @@ async function claim(recipients) {
     return res.json().catch(() => []);
   }, recipients);
 }
-async function release(ids) {
-  for (const id of ids) await sb(`recipients?id=eq.${id}`, { method: "PATCH", headers: { Prefer: "return=minimal" }, body: JSON.stringify(buildReleasePatch()) });
+async function release(recipients) {
+  for (const r of recipients) await sb(`recipients?id=eq.${r.id}`, { method: "PATCH", headers: { Prefer: "return=minimal" }, body: JSON.stringify(buildReleasePatch(r.raw)) });
 }
 
 // FIND-002/D live wiring: read 'submitted' rows + their ref, query GMO completion, promote paid / requeue.
