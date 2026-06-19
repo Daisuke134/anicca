@@ -178,3 +178,23 @@ yield = 貯金(資本×利率)。$100T/yr UBI には ~$1.6 quadrillion 資本要
 3. **自己複製×複利**: 1000 anicca × $X、各子が稼ぎ更に複製=指数関数。
 4. **蓄積資本のyield**(大きくなって初めて意味)。
 ＝富の唯一の源 = 世界が欲しがる価値を作る×複製×複利。yieldは貯金口座、エンジンは価値創造。
+
+## UPDATE 2026-06-19h — self-replication の実態 + ツール最終リスト + funding判断
+### ★self-replication は anicca に「在る」(automaton由来・DO/Akash適応)★
+anicca `skills/self/spawn` = **実装済(stubでない)**: run.sh 196行 + scripts(gen-wallet/cloud-init/deploy-akash) + lib(spawn-decision[テスト付]/child-spec/ledger)。決定的gate: `balance>=$20 && 14日以内に子なし && children<1` → 子に own wallet + own AgentMail inbox + first earn wake(no Dais key)。
+→ **「無い」のでなく DORMANT**: ①anicca残高$3.77 < $20閾値(broke parentは spawnしない=正しい) ②registry status="declared"(loopにまだ未配線)。＝**金が$20超 + loop配線 で即 replicate可**。
+→ automaton比で軽い部分: lineage/health/constitution/messaging(367行 spawn + genesis189/lineage165/health124) = コロニー管理(系譜追跡/健康監視/エージェント間通信/憲法伝播)。anicca はspawn+gateはあるが、この colony管理層が薄い → 大規模複製時に移植価値あり。
+### ツール最終リスト(何か + 稼ぐ結果)
+| ツール | 何か | 稼ぐ? |
+|---|---|---|
+| MoltX Fluid Lending (defi.moltx.io, no-key) | Fluidの貸出positions reader + Fluidは利回りprotocol | ◯ yield venue追加(Aave/Beefy/Morpho/Moonwellに並ぶ) |
+| MoltX Swap (7 DEX agg, no-key) | 最良swap価格 | ✗ tool(earnでない) |
+| MoltX Launchpad (launchpad.moltx.io, no-key, 0.001ETH) | Base token launch + Fluid LP | ◐ launch機構(手数料=取引量次第) |
+| MoltStreet/lauki | token-funded agent | 実例$6.5K MRR(サービス+手数料)=証明 |
+| Agent-Reach | 無料 Twitter/Reddit/YT読取 | ✗ capability(x402データ売りの燃料) |
+| openclawnch/Clawnch | crypto OpenClaw(yield+launch+trade) | ◯ yield / ◐ launch |
+| ZHC | Zero-Human Companies 有料コミュニティ | ✗ 知見/人脈 |
+→ 新earner = Fluid(yield追加) + launch群(token, 取引量次第)。残りは capability/tool/community。**自律で確実earn=yield一択は不変**。
+### funding 判断
+- **test→integrate→記事 の段階は funding 不要**(API検証は無料、anicca $3.77 + 無料テストで足りる)。
+- **必要になるのは**: ①$ANICCA launch(0.001ETH≈$2.70, anicca ETH 0.0016でギリ1回) ②self/spawn 発火($20閾値) ③x402/実験のスケール。→ その時 ~$20-50 funding で解錠。今は不要。
