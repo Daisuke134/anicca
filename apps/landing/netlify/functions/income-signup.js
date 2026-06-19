@@ -48,8 +48,13 @@ exports.handler = async (event) => {
   }
 
   // JP bank: validate Zengin destination (4/3/7 digits + 半角カナ) and store in notes for the watcher.
+  // FIND-004: method=bank MUST carry country=jp + valid bank — otherwise reject (no orphan queued row
+  // that every watcher silently drops). Non-JP bank uses income-apply (Stripe), not this endpoint.
   let notes = `method=${method};wallet=${method === 'wallet' ? wallet : ''}`;
-  if (method === 'bank' && (body.country || '').toLowerCase() === 'jp') {
+  if (method === 'bank') {
+    if ((body.country || '').toLowerCase() !== 'jp') {
+      return { statusCode: 400, body: JSON.stringify({ error: 'bank payout is JP-only here; send country=jp with bank details (other countries use income-apply)' }) };
+    }
     const v = validateJpBank(body.bank || {});
     if (!v.valid) {
       return { statusCode: 400, body: JSON.stringify({ error: 'invalid bank details', details: v.errors }) };
