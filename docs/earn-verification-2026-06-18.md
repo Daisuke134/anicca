@@ -274,3 +274,16 @@ poster netWorth が blue-chip保有(WETH/cbBTC)を評価してない → 投資�
 | DeFi yield (Beefy/Aave/Fluid) | ✅ 検証 | accrual | - | 小 |
 合計 realized: $0 / unrealized: ~+$0.069。＝まだ不十分。全部テスト継続。
 NEXT: #2 AutoHedge live → #3 Nocturne(HL流用) → #4 EVClaw → 最強を anicca skill 化。
+
+## UPDATE 2026-06-19o — #2 AutoHedge LIVE 検証結果（自分で run）
+patch: workers.py の model_name(gpt-4o-mini/gpt-4.1=無効BlockRun id→"No response"の根因)を openai/nvidia/gpt-oss-120b に置換。
+結果: Trading-Director は動く(handoff 委譲・reasoning 出力)が、★Quant-Analyst + Risk-Manager sub-agent が "No response"→"None"★(free gpt-oss-120b でも frontier opus でも同様)。= swarms の multi-agent tool-call handoff が anicca proxy 経路で機能しない → 使える trade 判断を出せない。
+判定: ❌ AutoHedge = clean earner でない(friction-heavy・sub-agent fail・proxy 非互換)。anicca に統合しない。
+### 浮かび上がった核心 insight（記事 + anicca 統合の指針）
+★ 重い multi-agent bot(AutoHedge) = slop/friction。実際に動いて稼いだ($0.069) のは「単純な risk-managed HL 取引(LLM signal→低レバ+SL/TP)を SDK 直」★。
+→ anicca に encode すべきは AutoHedge でなく「単純 HL trader skill」(LLM が long/short 判断→小サイズ+SL/TP)。次 #3 Nocturne(HL LLM+TAAPI) も同系統なので、勝てば単純 HL trader として skill 化。
+### 現 ledger
+| bot | 判定 | 損益 |
+| Hyperliquid 直(SDK・SL/TP) | ✅ 動く・稼ぐ | +$0.069 含み |
+| AutoHedge | ❌ sub-agent fail | $0 |
+| Nocturne / EVClaw | 未テスト | - |
