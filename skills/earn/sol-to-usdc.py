@@ -28,7 +28,9 @@ from solders.message import MessageV0
 from solders.transaction import VersionedTransaction
 from solders.address_lookup_table_account import AddressLookupTableAccount
 
-ANICCA_BASE = "0xa3cdd4ec6b94f01826aaf90a6d5538a2aa8c4c21"
+# Reusable swap skill: recipient + signing key are env-configurable so ANY wallet (Anicca's, a test
+# wallet, a child's) can bridge SOL -> USDC(Base). Defaults to Anicca's wallet for backward compat.
+ANICCA_BASE = os.environ.get("SWAP_RECIPIENT", "0xa3cdd4ec6b94f01826aaf90a6d5538a2aa8c4c21").lower()
 USDC_BASE = "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913"
 SOL_NATIVE = "11111111111111111111111111111111"
 SOLANA = 792703809
@@ -53,7 +55,7 @@ def get(url):
 
 
 def main():
-    kp = Keypair.from_base58_string(os.environ["ANICCA_SOLANA_KEY"])
+    kp = Keypair.from_base58_string(os.environ.get("SWAP_SOLANA_KEY") or os.environ["ANICCA_SOLANA_KEY"])
     me = str(kp.pubkey())
 
     bal = rpc("getBalance", [me])["value"]
