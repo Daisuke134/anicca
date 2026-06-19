@@ -26,10 +26,12 @@ const {
   buildGeminiTurn,
   parseGeminiTranscripts,
 } = require("./lib/call-logic.js");
-const { startScheduler, startTravelLoop, startAskLoop, buildStreamUrl } = require("./scheduler.js");
+const { startScheduler, startTravelLoop, startAskLoop, startOnboardLoop, buildStreamUrl } = require("./scheduler.js");
 const { placeCall } = require("./lib/dial.js");
-const { parseUpdate, sendMessage, startReply } = require("./lib/telegram.js");
+const { parseUpdate, sendMessage } = require("./lib/telegram.js");
 const { resolveTelegramReply } = require("./lib/telegram-reply.js");
+const { sendStage, rowByChatId, setStage, computeStage } = require("./lib/telegram-onboard.js");
+const SUPA_URL = process.env.SUPABASE_URL, SUPA_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const LM_TG_TOKEN = process.env.LM_TELEGRAM_BOT_TOKEN || "";
 const LM_TG_SECRET = process.env.LM_TELEGRAM_WEBHOOK_SECRET || "";
@@ -141,14 +143,24 @@ const server = http.createServer((req, res) => {
         const update = JSON.parse((await readBody(req)) || "{}");
         const u = parseUpdate(update);
         if (u && LM_TG_TOKEN) {
+          const row = await rowByChatId(u.chatId, SUPA_URL, SUPA_KEY); // null until they link via /lm
+          const stage = computeStage(row);
           if (u.isStart) {
-            const r = startReply(u.chatId, PUBLIC_BASE);
-            await sendMessage(LM_TG_TOKEN, u.chatId, r.text, r.extra);
+            // Guided onboarding: send the user's CURRENT step (calendar if not yet linked).
+            const announced = await sendStage(LM_TG_TOKEN, u.chatId, row, PUBLIC_BASE);
+            if (row) await setStage(row.uid, announced, SUPA_URL, SUPA_KEY);
           } else if (u.text) {
-            const res2 = await resolveTelegramReply(u.chatId, u.text);
-            await sendMessage(LM_TG_TOKEN, u.chatId,
-              res2.filled ? `✅ Got it — set “${res2.event}” to ${res2.location}.`
-                          : "Thanks! I’ll use that. (If it was about an event location, make sure to reply to my question.)");
+            if (stage !== "done") {
+              // Still onboarding → any message gets a nudge to the current step (interactive guidance).
+              const announced = await sendStage(LM_TG_TOKEN, u.chatId, row, PUBLIC_BASE);
+              if (row) await setStage(row.uid, announced, SUPA_URL, SUPA_KEY);
+            } else {
+              // Fully set up → free text is a reply to a location ask.
+              const res2 = await resolveTelegramReply(u.chatId, u.text);
+              await sendMessage(LM_TG_TOKEN, u.chatId,
+                res2.filled ? `✅ Got it — set “${res2.event}” to ${res2.location}.`
+                            : "Thanks! If that was an event location, reply to my question and I'll add it.");
+            }
           }
         }
       } catch (e) { console.error("[telegram] err", e.message); }
@@ -231,4 +243,5 @@ server.listen(PORT, () => {
   startScheduler();   // begin the 60s wake loop once the bridge is up
   startTravelLoop();  // begin the 30min travel-block auto-fill loop
   startAskLoop();     // begin the 20min ask/reply (location) loop
+  startOnboardLoop(); // begin the 2min interactive Telegram onboarding nudge
 });
