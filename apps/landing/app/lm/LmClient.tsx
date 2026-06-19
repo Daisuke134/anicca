@@ -211,11 +211,19 @@ export default function LmClient() {
     setErr('');
     if (!PHONE_RE.test(phone.trim())) return setErr(t.phone.error);
     try {
-      await fetch(SAVE_URL, {
+      const r = await fetch(SAVE_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ uid, sig, phone: phone.trim() }),
       });
+      // Bug fix: the save used to advance to 'pay' even on a 403/502 (silent fail) — the phone
+      // never persisted yet the UI moved on, so the number looked "not connected". Only advance
+      // when the backend actually confirms the upsert; otherwise surface the error and stay put.
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok || !d.ok) {
+        setErr(t.phone.saveError);
+        return;
+      }
       setStep('pay');
     } catch (e) {
       setErr(t.phone.saveError);
