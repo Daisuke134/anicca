@@ -50,27 +50,44 @@ export function planUbi({ fundingLine, recipients, cfg = {}, ubiLines = [] }) {
   if (alreadyDone(ubiLines, wake)) {
     return { outcome: "skipped", reason: "already_distributed", wake, transfers: [] };
   }
+  // CREATOR bucket (the operator who runs this anicca) — distinct from the UBI pool.
+  // creatorWallet + creatorShareBps are per-anicca config (autonomous: the automaton may set them).
+  const creatorWallet = (typeof cfg.creatorWallet === "string" && ADDR_RE.test(cfg.creatorWallet)
+    && norm(cfg.creatorWallet) !== norm(fundingLine.wallet || "")) ? cfg.creatorWallet : null;
+  const creatorShareBps = Number.isInteger(cfg.creatorShareBps) ? cfg.creatorShareBps : 0;
+  const creatorBase = creatorWallet && creatorShareBps > 0
+    ? shareBaseUnits(fundingLine.net_usdc, creatorShareBps) : 0n;
+  const haveCreator = creatorBase > 0n;
+
   const poolBase = shareBaseUnits(fundingLine.net_usdc, shareBps);
   const poolUsdc = Number(poolBase) / 1e6;
-  if (poolUsdc < minPoolUsdc) {
-    return { outcome: "skipped", reason: "below_min_pool", wake, pool_usdc: poolUsdc, transfers: [] };
+  const poolPayable = poolUsdc >= minPoolUsdc && !!recipients && recipients.length > 0;
+  // skip entirely only if NEITHER a creator payment NOR a payable pool exists.
+  if (!poolPayable && !haveCreator) {
+    const reason = poolUsdc < minPoolUsdc ? "below_min_pool" : "no_recipients";
+    return { outcome: "skipped", reason, wake, pool_usdc: poolUsdc, transfers: [] };
   }
-  if (!recipients || recipients.length === 0) {
-    return { outcome: "skipped", reason: "no_recipients", wake, pool_usdc: poolUsdc, transfers: [] };
-  }
-  // never overspend: if the live wallet balance can't cover the pool, abort (no partial spend).
-  if (cfg.walletBalanceUsdc != null && toBaseUnits(cfg.walletBalanceUsdc) < poolBase) {
+  // never overspend: live balance must cover creator + pool TOGETHER (no partial spend).
+  const totalBase = creatorBase + (poolPayable ? poolBase : 0n);
+  if (cfg.walletBalanceUsdc != null && toBaseUnits(cfg.walletBalanceUsdc) < totalBase) {
     return { outcome: "skipped", reason: "insufficient_balance", wake, pool_usdc: poolUsdc, transfers: [] };
   }
-  const { per, dust } = splitPool(poolBase, recipients.length);
-  if (per <= 0n) {
+  const transfers = [];
+  if (haveCreator) transfers.push({ to: creatorWallet, amount_base: creatorBase.toString(), bucket: "creator" });
+  let per = 0n, dust = 0n;
+  if (poolPayable) {
+    ({ per, dust } = splitPool(poolBase, recipients.length));
+    if (per > 0n) for (const to of recipients) transfers.push({ to, amount_base: per.toString(), bucket: "ubi" });
+  }
+  if (transfers.length === 0) {
     return { outcome: "skipped", reason: "per_recipient_zero", wake, pool_usdc: poolUsdc, transfers: [] };
   }
-  const transfers = recipients.map((to) => ({ to, amount_base: per.toString() }));
   return {
     outcome: cfg.dryRun ? "dry" : "send",
     wake,
     share_bps: shareBps,
+    creator_share_bps: creatorShareBps,
+    creator_base: creatorBase.toString(),
     pool_usdc: poolUsdc,
     pool_base: poolBase.toString(),
     per_base: per.toString(),
