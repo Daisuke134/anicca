@@ -250,3 +250,14 @@ MoltX Launchpad(launchpad.moltx.io, no API key, 0.001 ETH≈$2.70)で anicca 自
 - EVClaw/Nocturne(Hyperliquid perps, wallet-only): 未実走(Hyperliquid入金=Arbitrum bridge要)。次に検証。
 ### poster の穴(motherboard bug)
 poster netWorth が blue-chip保有(WETH/cbBTC)を評価してない → 投資すると net worth が下がって見える(USDC→WETHに移っただけ)。要修正: WETH/cbBTC × price を net worth に加算。
+
+## UPDATE 2026-06-19n — #1 Hyperliquid を test wallet で E2E LIVE 検証 (Dais: one-by-one, go big, verify)
+私(Claude)の test wallet 0x94C445 で active-investing bot を一つずつ LIVE 検証 → 最も稼ぐのを anicca(mother) に統合。
+### Hyperliquid (#1) = E2E LIVE 成功
+- 資金路(全 verify): Base USDC →(relay)→ Arbitrum USDC $7.98 →(transfer)→ HL Bridge2 0x2df1c51e... ($572M USDC=本物検証) → HL account $7.5 credited。
+- gas-wall friction(記事ネタ): 各チェーン hop で native gas 必要。Arbitrum gas は relay native-ETH out が不安定 → anicca Base ETH を ETH→ETH relay で私の Arbitrum に送って解決(reliable route)。motherboard fix=swap skill が常に native gas を届けるべき。
+- 取引(hyperliquid-python-sdk, wallet-only, 人間ゼロ): ETH long 0.0065(~$11 notional) @ $1693.3 FILLED + stop-loss @$1591.7(-6%,損失上限$0.66) + take-profit @$1896.5(+12%,$1.32) = risk/reward 2:1, 低レバ2x。
+- ＝risk-managed investing(gamblingでない)。結果は数時間〜数日の値動きで測定。HL account value を監視。
+### 次
+- #2 AutoHedge(Solana risk-first hedge fund・既に anicca脳で起動確認済)、#3 他 repo bot。各 LIVE 実測 → winner を anicca に。
+- NOTE: anicca Base ETH が gas bridge で ~0.00016 に減少 → 要 gas top-up(daemon の yield/invest tx 用)。
