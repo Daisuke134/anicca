@@ -102,7 +102,7 @@ export default function DashboardPage() {
             {rows.map((row, i) => (
               <Link
                 key={row.id}
-                href={`/${encodeURIComponent(row.host || row.id)}`}
+                href={`/agent?id=${encodeURIComponent(row.host || row.id)}`}
                 className="group flex items-center gap-5 rounded-card border border-border bg-white/40 px-5 py-4 transition-all hover:border-gold hover:bg-white/70"
               >
                 <span className="font-mono text-lg text-muted-foreground/60 w-7">#{i + 1}</span>
