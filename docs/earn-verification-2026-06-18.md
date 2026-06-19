@@ -240,3 +240,13 @@ MoltX Launchpad(launchpad.moltx.io, no API key, 0.001 ETH≈$2.70)で anicca 自
 - ★核心(正直): 機構はtrivial・動く。難所は「**人/agentが金を払う差別化された product**」。汎用LLM作業=買い手ゼロ。実需は独自/入手困難データ(Twitter scrape/onchain labels/web検索/RPC)に集中。
 - anicca が売れる差別化候補: ①**Base最良 stable yield APR aggregator**(Beefy/Fluid/Aave/Morpho を anicca が既に計算→API化) ②Agent-Reach経由の scrape/research サービス ③earn検証データセット(~70ツール) ④colony/dashboard データ。
 - ＝「anicca が価値ある物を作り x402 で wallet に受ける」= mechanically YES。earn は demand 次第だが、yield-APR aggregator は anicca が既に持つデータ=最有力初手。
+
+## UPDATE 2026-06-19m — 投資(investing)レッグ検証 + portfolio 思想 (bias撤回)
+★投資 ≠ gambling。S&P500型(長期+EV)・delta-neutral(市場中立)・yield は正当な投資。レバ全張り無edge/memeのみ gambling。★
+分散ポートフォリオ(各anicca が別戦略・トリリオン体でVC的分散): yield(floor) + blue-chip DCA + active investing(Hyperliquid/AutoHedge) + x402 product。
+### 検証結果(自分でE2E実走)
+- **Uniswap blue-chip 買付**(USDC→WETH, Uniswap V3 Base, wallet-only): ✅実証 tx 0x9e81cdf5, WETH 0.00115→0.00234。＝DEX投資レッグ動作。
+- **AutoHedge**(pip install autohedge, Solana risk-first hedge fund): ✅ `AutoHedge().run()` が anicca の ClawRouter脳(opus :8402)で起動、Trading-Director が Quant/Risk に handoff(swarm動作)。投資オーケストレーション成立。残: sub-agent空応答(proxy handoff tuning) + live取引にSolana資金+Jupiter。
+- EVClaw/Nocturne(Hyperliquid perps, wallet-only): 未実走(Hyperliquid入金=Arbitrum bridge要)。次に検証。
+### poster の穴(motherboard bug)
+poster netWorth が blue-chip保有(WETH/cbBTC)を評価してない → 投資すると net worth が下がって見える(USDC→WETHに移っただけ)。要修正: WETH/cbBTC × price を net worth に加算。
