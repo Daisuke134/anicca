@@ -331,3 +331,10 @@ Wallet/DeFi(Aave/Lido/Yearn yield)/Market Data/Token Launch(clawnch_launch)/Bank
 - 動作✅: 4 DEX aggregator(okx-v6/odos-v2/kyber-v1/0x-v2)を1 callで比較→各々 calldata 返却。BEST=kyber-v1: 1 USDC→0.000585 WETH(≈$0.998, spread~0.2%)。
 - 判定: **動く「実行ツール(swap 層)」**。directional earner でなく、全 swap を最良価格で執行(slippage 節約)するユーティリティ。anicca が yield rebalance / 稼いだトークン→USDC 変換で使う。
 - 正直: quote+calldata は verify、実 on-chain swap は未実行(quote のみ)。
+
+## 1c/1d trade bot 検証 2026-06-20
+- **Nocturne**: ❌ 実在しない(gh 0件/web 0件)。私の記録の未検証名。破棄(幻覚 repo 禁止)。
+- **EVClaw** (Degenapetrader/EVClaw 39⭐ Python): 実在✅ "OpenClaw AI Trading Agent, based on EVPlus.AI data"。HL entry/exit を OpenClaw agent(LLM)が判断 + EVPlus.AI 外部データ + 15m/1h 決定論的安全check。依存重い(OpenClaw cron + EVPlus.AI データ=要 key 懸念 + bootstrap)。
+- 判定: **核心は hl-trade(検証済 +$0.085)と同パターン**。EVClaw=その重い外部データ版。抽出価値 = **delegated signer**(HYPERLIQUID_AGENT_PRIVATE_KEY=取引専用鍵, main 鍵を晒さない安全) + 外部データ signal の発想 → hl-trade に取り込む(軽量・local+cloud)。
+- 他に実在: xlev-v/Hyperliquid-Trading-Bot(79⭐ 3戦略), Supurr-App/Hyperliquid-Supurr-Skill(agent skill)。
+- ★trade pillar の本命 = hl-trade skill。bot を丸ごと入れるより、各 anicca が自分の判断で hl-trade を使う(HARD RULE #0)方が多様性=富★
