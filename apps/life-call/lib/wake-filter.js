@@ -45,18 +45,35 @@ function departureMs(ev, allEvents) {
   return best ? best.startMs : start;
 }
 
+// Origin for the inline leave-time computation: the PREVIOUS real venue if the user is going back-to-back
+// from it (it ends within 90 min before this event), else home. Mirrors travel.js travelDecision so the
+// inline fallback can't under-estimate a far-previous-venue leg (the residual the gate flagged). Returns
+// null if neither origin is known (caller then can't compute → conservative event-start).
+function originFor(ev, allEvents, home) {
+  let prev = null;
+  for (const e of allEvents || []) {
+    if (!e || isHelperBlock(e.summary) || !(e.location || "").trim() || !Number.isFinite(e.endMs)) continue;
+    if (e.endMs <= ev.startMs && (prev === null || e.endMs > prev.endMs)) prev = e; // latest real event before ev
+  }
+  const gap = prev ? ev.startMs - prev.endMs : Infinity;
+  if (prev && gap >= 0 && gap <= 90 * 60000) return prev.location; // back-to-back → come from prev venue
+  return home || null;
+}
+
 // Never-late departure resolver. If a [Travel] block exists → use it. If NOT (the travel loop runs only
 // every 30 min, or the event was added late, or leaveMs was already past when travel ran), compute the
-// leave time INLINE so a must-travel event still wakes before departure instead of (wrongly) anchoring
-// to event start. directionsFn is injected (the real travel.js directionsMinutes) so this stays testable.
+// leave time INLINE — from the back-to-back previous venue when there is one, else home — so a
+// must-travel event still wakes before departure instead of (wrongly) anchoring to event start.
+// directionsFn is injected (the real travel.js directionsMinutes) so this stays testable.
 async function resolveDeparture(ev, allEvents, { home, mapsKey, nowMs = Date.now(), bufferMin = 5, directionsFn } = {}) {
   const blockDep = departureMs(ev, allEvents);
   if (blockDep !== ev.startMs) return blockDep;           // a travel block already pins the leave time
-  if (!home || !ev.location || typeof directionsFn !== "function") return ev.startMs;
+  const origin = originFor(ev, allEvents, home);
+  if (!origin || !ev.location || typeof directionsFn !== "function") return ev.startMs;
   let mins = null;
-  try { mins = await directionsFn(home, ev.location, mapsKey, ev.startMs, nowMs); } catch { mins = null; }
+  try { mins = await directionsFn(origin, ev.location, mapsKey, ev.startMs, nowMs); } catch { mins = null; }
   if (mins == null) return ev.startMs;                    // can't compute → conservative event-start
   return ev.startMs - (mins + bufferMin) * 60000;         // wake before the inline-computed leave time
 }
 
-module.exports = { isHelperBlock, shouldWake, departureMs, resolveDeparture };
+module.exports = { isHelperBlock, shouldWake, departureMs, resolveDeparture, originFor };

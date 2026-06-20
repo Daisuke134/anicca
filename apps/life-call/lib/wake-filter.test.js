@@ -3,7 +3,7 @@
 "use strict";
 const { test } = require("node:test");
 const assert = require("node:assert");
-const { isHelperBlock, shouldWake, departureMs, resolveDeparture } = require("./wake-filter.js");
+const { isHelperBlock, shouldWake, departureMs, resolveDeparture, originFor } = require("./wake-filter.js");
 
 const HOME = "新宿区南元町15-27";
 const at = (h) => Date.parse(`2026-06-21T${String(h).padStart(2, "0")}:00:00+09:00`);
@@ -121,4 +121,31 @@ test("resolveDeparture: directionsFn throws → event-start (never crash the tic
   const ev = { summary: "打合せ", location: "渋谷", startMs: at(14) };
   const dep = await resolveDeparture(ev, [ev], { home: HOME, directionsFn: async () => { throw new Error("boom"); } });
   assert.equal(dep, at(14));
+});
+
+// ── inline fallback origin-awareness (the residual the gate flagged) ──────────────────────────────────
+test("originFor: back-to-back prev venue (gap ≤90min) → prev location, not home", () => {
+  const prev = { summary: "前の打合せ", location: "横浜", startMs: at(12), endMs: at(13) };
+  const ev = { summary: "次", location: "渋谷", startMs: at(14) }; // 60min after prev
+  assert.equal(originFor(ev, [prev, ev], HOME), "横浜");
+});
+test("originFor: prev far in time (>90min gap) → home", () => {
+  const prev = { summary: "朝の用事", location: "横浜", startMs: at(8), endMs: at(9) };
+  const ev = { summary: "次", location: "渋谷", startMs: at(14) }; // 5h after prev
+  assert.equal(originFor(ev, [prev, ev], HOME), HOME);
+});
+test("originFor: a [Travel] helper is never used as origin", () => {
+  const helper = { summary: "[Travel] 🚆", location: "どこか", startMs: at(13), endMs: at(13.5) };
+  const ev = { summary: "次", location: "渋谷", startMs: at(14) };
+  assert.equal(originFor(ev, [helper, ev], HOME), HOME);
+});
+test("resolveDeparture: back-to-back → inline uses PREV venue as origin (not home)", async () => {
+  const prev = { summary: "前", location: "横浜", startMs: at(12), endMs: at(13) };
+  const ev = { summary: "次", location: "渋谷", startMs: at(14) };
+  let originSeen = null;
+  const dep = await resolveDeparture(ev, [prev, ev], {
+    home: HOME, bufferMin: 5, directionsFn: async (src) => { originSeen = src; return 40; },
+  });
+  assert.equal(originSeen, "横浜");                 // computed FROM the previous venue, not home
+  assert.equal(dep, at(14) - (40 + 5) * 60000);     // leave 45min before = never-late from the far venue
 });
