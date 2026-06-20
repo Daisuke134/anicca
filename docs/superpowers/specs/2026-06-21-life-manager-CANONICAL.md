@@ -201,7 +201,10 @@ Pay: Stripe $20/mo (LIVE link + sandbox test link, webhook dual-secret live+test
 3. **#70 WS6n — users without Google Calendar.** Add Outlook (Composio) + agentic "tell me your schedule" chat fallback.
 4. **#61 WS6h / #67 #68 — full fresh-user E2E.** Web: incognito /lm (login→connect→phone→sandbox pay→dashboard);
    Telegram: /start (name→calendar→gmail→phone→pay→done). Dais confirms.
-5. New — **GitHub→Railway auto-deploy** for life-call (today manual `railway up`; caused "old code deployed" pain).
+5. ~~**#73 GitHub→Railway auto-deploy**~~ ✅ **DONE + VERIFIED 2026-06-21** — life-call service source =
+   Daisuke134/anicca-products, rootDirectory apps/life-call, watchPatterns apps/life-call/**, 1 deploy
+   trigger (main). Wired via Railway GraphQL (serviceInstanceUpdate). Proven: push→live in ~180s, NO
+   `railway up`. (Deploy is now a plain `git push`; `railway up` only needed for out-of-band hotfixes.)
 6. **#45/#50 — demo-reel:** call transcript + screenshot → reelclaw → daily @anicca.comedy (TikTok/X).
 7. **#51 — LAUNCH: Product Hunt + X.** Ship the product publicly. (Needs #71+#69 done first so new users aren't spammed/late.)
 8. **#29 — STEP2:** Dais dogfoods on web; manage everyone's life.
