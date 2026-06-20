@@ -64,22 +64,66 @@ async function listEvents7d(uid, apiKey, nowMs) {
   })).filter((e) => Number.isFinite(e.startMs));
 }
 
-async function directionsMinutes(src, dst, mapsKey) {
+// ── #71 Routes API helpers (pure, unit-tested in travel-routes.test.js) ──────────────────────────
+// DRIVE now uses Routes API computeRoutes with TRAFFIC_AWARE_OPTIMAL — REAL traffic, so the old ×1.4
+// fudge is GONE. TRANSIT stays on legacy Directions: VERIFIED 2026-06-21 that Routes API TRANSIT
+// returns no routes for our key/region (empty {} even between major stations), while legacy transit
+// works. departureTime ≈ event start so we get the traffic the user will actually hit (never-late bias).
+function parseDurationSeconds(s) {
+  const m = /^(\d+)s$/.exec(String(s || "").trim());
+  return m ? Number(m[1]) : null;
+}
+function minutesFromSeconds(sec) {
+  if (!Number.isFinite(sec)) return null;
+  return Math.max(5, Math.round(sec / 60));
+}
+function buildDriveBody(src, dst, departIso) {
+  return {
+    origin: { address: src }, destination: { address: dst },
+    travelMode: "DRIVE", routingPreference: "TRAFFIC_AWARE_OPTIMAL", departureTime: departIso,
+  };
+}
+function clampDepartIso(departAtMs, nowMs) {
+  // Routes API rejects a departureTime in the past → floor to now+60s.
+  const ms = Math.max(Number(departAtMs) || 0, (Number(nowMs) || 0) + 60000);
+  return new Date(ms).toISOString().replace(/\.\d{3}Z$/, "Z");
+}
+
+async function routesDriveMinutes(src, dst, mapsKey, departAtMs, nowMs) {
+  const body = JSON.stringify(buildDriveBody(src, dst, clampDepartIso(departAtMs, nowMs)));
+  try {
+    const r = await fetch("https://routes.googleapis.com/directions/v2:computeRoutes", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": mapsKey,
+        "X-Goog-FieldMask": "routes.duration",
+      },
+      body,
+    });
+    if (!r.ok) return null;
+    const j = await r.json();
+    const sec = parseDurationSeconds((((j.routes || [])[0]) || {}).duration);
+    return sec == null ? null : minutesFromSeconds(sec);
+  } catch { return null; }
+}
+
+async function legacyTransitMinutes(src, dst, mapsKey) {
+  const p = new URLSearchParams({ origin: src, destination: dst, mode: "transit", departure_time: "now", key: mapsKey });
+  try {
+    const r = await fetch(`https://maps.googleapis.com/maps/api/directions/json?${p}`);
+    const j = await r.json();
+    if (j.status !== "OK") return null;
+    return minutesFromSeconds(j.routes[0].legs[0].duration.value);
+  } catch { return null; }
+}
+
+// Transit first (Tokyo-style), then traffic-aware drive. departAtMs ≈ event start. floor 5 min.
+async function directionsMinutes(src, dst, mapsKey, departAtMs = Date.now(), nowMs = Date.now()) {
   if (!mapsKey || !src || !dst) return null;
-  for (const mode of ["transit", "driving"]) {
-    const p = new URLSearchParams({ origin: src, destination: dst, mode, key: mapsKey });
-    if (mode === "transit") p.set("departure_time", "now");
-    try {
-      const r = await fetch(`https://maps.googleapis.com/maps/api/directions/json?${p}`);
-      const j = await r.json();
-      if (j.status !== "OK") continue;
-      const sec = j.routes[0].legs[0].duration.value;
-      let mins = Math.max(5, Math.round(sec / 60));
-      if (mode === "driving") mins = Math.round(mins * 1.4);
-      return mins;
-    } catch { /* try next mode */ }
-  }
-  return null;
+  const transit = await legacyTransitMinutes(src, dst, mapsKey);
+  if (transit != null) return transit;
+  return routesDriveMinutes(src, dst, mapsKey, departAtMs, nowMs);
 }
 
 async function createTravelBlock(uid, apiKey, leaveMs, arriveMs, fromName, toName, dstAddr) {
@@ -119,7 +163,7 @@ async function fillTravel(uid, { apiKey, mapsKey, home, nowMs = Date.now(), buff
     // Dedup: a [Travel] block already sitting in the gap right before this event?
     const dup = events.some((e) => isTravel(e.summary) && e.endMs && e.endMs <= ev.startMs && e.endMs > ev.startMs - 3 * 3600000);
     if (dup) { skipped++; continue; }
-    const mins = await directionsMinutes(origin, ev.location, mapsKey);
+    const mins = await directionsMinutes(origin, ev.location, mapsKey, ev.startMs, nowMs);
     if (mins == null) { skipped++; continue; }
     const arriveMs = ev.startMs;
     const leaveMs = arriveMs - (mins + bufferMin) * 60000;
@@ -130,4 +174,8 @@ async function fillTravel(uid, { apiKey, mapsKey, home, nowMs = Date.now(), buff
   return { inserted, checked, skipped };
 }
 
-module.exports = { fillTravel, directionsMinutes, isTravel, travelDecision };
+module.exports = {
+  fillTravel, directionsMinutes, isTravel, travelDecision,
+  // #71 pure helpers (unit-tested)
+  parseDurationSeconds, minutesFromSeconds, buildDriveBody, clampDepartIso,
+};
