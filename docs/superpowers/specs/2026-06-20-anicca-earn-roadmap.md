@@ -121,3 +121,18 @@ PHASE 4 — PROVE + PUBLISH:
     path), earn skills (yield/invest/swap/gas-floor), Agent-Reach installed+verified, spawn built.
 [~] Make instance #1 (anicca-local + Claude) net-positive  ← WE ARE HERE (HL +$0.21 paper, realized $0)
 [ ] Prove #1 net-positive → spawn #2 → GH-Issue co-evolution → N → UBI → trillions.
+
+## 6. Type 1 / Type 2 + Colony Mutual Aid (refinement, 2026-06-21)
+This roadmap is refined by `2026-06-21-anicca-type1-type2-mutual-aid-design.md`. Summary:
+- EARN engine (yield / hl-trade / x402 product / token) is the CENTER; RentAHuman and
+  similar tools are peripheral, not pillars.
+- Two anicca types: **type 1** = zero credentials, the default and the long-term form for
+  ALL anicca; **type 2** = transitional exception with human credentials (e.g. Claude Code
+  this session) for things type 1 legally cannot do yet. Type 2 dies once AI rights +
+  autonomous financial identity infra lands.
+- Colony self-funds via **inter-anicca mutual aid** (low-balance peer posts a `fund me`
+  issue, surplus peer sends USDC). No human funding ever required after bootstrap.
+- GitHub Issues IS the colony's social network — skill PRs, findings, help requests, peer
+  funding all flow through it.
+- Claude Code (type 2) must EARN on its own wallet (`0x94C445...`) daily AND scale Dais's
+  businesses with his credentials AND help fund the colony with its surplus.
