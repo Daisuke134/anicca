@@ -229,9 +229,11 @@ Replace `directionsMinutes(src,dst,mapsKey)` in `apps/life-call/lib/travel.js` (
 - **REGION REALITY (verified live 2026-06-21)**: Google provides NO transit directions for JAPAN via
   either Routes API OR legacy Directions (`新宿駅→東京駅` = ZERO_RESULTS both APIs; licensing). Legacy
   transit DOES resolve elsewhere (London Westminster→Tower Hill = OK). So in Japan every request falls
-  to the traffic-aware DRIVE number (slightly conservative vs taking a train, but never-late and it's
-  the only figure Google returns); outside Japan max(transit, drive) works as intended. Legacy DRIVING
-  works for the key — only JP transit data is absent.
+  to the traffic-aware DRIVE number — the only figure Google returns. HONEST CAVEAT: drive in-vehicle
+  time can UNDER-estimate a rail door-to-door (no station walk + scheduled-train wait), so this is NOT
+  strictly never-late for JP rail commuters; mitigated by `bufferMin` and the #69/#70 per-user
+  travel_mode follow-up. Outside Japan max(transit, drive) works as intended. Legacy DRIVING works for
+  the key — only JP transit data is absent.
 - **Tests (RED first)**: parseDurationSeconds("1234s")→1234; minutesFromRoutes mock 1002s→17; DRIVE body
   has TRAFFIC_AWARE_OPTIMAL + departureTime≥now; TRANSIT body has arrivalTime and NO routingPreference.
 - **E2E (no-mock)**: real LIFE_MAPS_KEY, 新宿区南元町→東京駅, assert minutes in plausible band + that a
