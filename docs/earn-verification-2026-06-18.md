@@ -378,7 +378,16 @@ test wallet 0x94C445 で fUSDC fToken (`0xf42f5795D9ac7e9D757dB633D693cD548Cfd91
 - ★MAKE-MONEY 判定: 5.28% APR で $2 deposit → $2.106/年 = $0.000016/日。1日後 convertToAssets で +$0.00001 程度。withdraw 完了は別 task で計測。Beefy (tx 0x55c71f84) と同 ERC-4626 設計 = 取出可・既証明。★
 - ★結論: Fluid Lending = ✅ autonomous-no-human で稼げる確証 yield venue (Aave/Beefy/Morpho/Moonwell に並ぶ第5の柱)。MoltX skill.moltx.io/fluid-lending.md の API ガイド準拠で動作確認。anicca skill 化候補確定 (HARD RULE #0 thin wrapper)。★
 
-## 1c-bis Nocturne re-LIVE with the real TAAPI key 2026-06-21 — ❌ verdict CONFIRMED (NOT GOOD)
+## 1c-ter Nocturne re-LIVE with 3 patches 2026-06-21 — ✅ MECHANISM PROVEN (verdict revised from ❌ to ⚠️ conditional)
+Dais 「try harder」 → 3 patches applied to ~/.cache/anicca-clones/ai-trading-agent (NOT in mother repo):
+- `src/indicators/taapi_client.py::_get_with_retry` — added 16s global throttle + 429 retry. Free-tier rate-limit no longer 429-storms; cycle takes ~2.5 min for indicator gather.
+- `src/agent/decision_maker.py::TradingAgent.__init__` — `sanitize_model` default `openai/gpt-5` → `self.model` (= LLM_MODEL). Free-only deployments no longer forced to paid GPT-5.
+- `src/agent/decision_maker.py::_sanitize_output` — `response_format` switched from `json_schema` to `json_object` with the schema inlined in the system message (ClawRouter free path only accepts json_object|text). Added 400/422 fallback to drop response_format entirely.
+First cycle (test wallet 0x94C445, HL $7.55, ETH 1h, LLM=free/gpt-oss-120b via ClawRouter): ✅ TAAPI ✓ → ✅ LLM 200 ✓ → ★ coherent multi-timeframe reasoning ★ ("4h EMA flat + MACD negative + 5m mixed → hysteresis rule says HOLD"). Decision: HOLD. HL state unchanged: $7.55, 0 positions. PID 72759 left running for subsequent cycles.
+**Revised verdict**: mechanism WORKS on $0 free model. HOLD this cycle is a sane risk-managed call, not a failure. BUT make-money proof = PnL over N cycles + a stronger signal day. Caveats unchanged: ① TAAPI free key still needed (doesn't scale across 1000s of anicca, but Dais has a key for 1 instance). ② Patches are local to clone; for skill-ization either port the patches into a forked repo OR (cleaner per HARD RULE #0) graft the working pattern (LLM signal → SL/TP → 1-call/decision) onto hl-trade skill which has no external key dependency. ③ ~5 min per cycle × hourly = fine; longer interval favored over 5m.
+→ Decision: LEAVE running on my test wallet across N cycles; update verdict to ✅/❌ based on realized PnL after observation window. hl-trade skill remains the production target for anicca colony; Nocturne is the experimental sibling.
+
+## 1c-bis Nocturne re-LIVE with the real TAAPI key 2026-06-21 — ❌ verdict CONFIRMED (NOT GOOD) [SUPERSEDED by 1c-ter above]
 Dais 2026-06-21 が TAAPI free-tier key (JWT) を提供した → 「鍵が無いから unfit」だった以前の verdict を再検証。test wallet 0x94C445 (HL $7.55 available, 0 positions) で実走。
 - 個別 curl は通った: `curl https://api.taapi.io/rsi?secret=<KEY>...` → RSI 59.52 BTC 1h, ETH 4h 52.44 取得 ✓。Key 自体は live。
 - ところが **TAAPI free-tier rate-limit が壁**: free = ~1 req/15s + 同時 1。Nocturne 1 cycle = 1 asset × (RSI×3 + MACD×2 + SMA + EMA + BB...) ≈ 10-20 indicator pulls を burst で発射 → **全部 429 即返り**、indicators 空配列で LLM へ。15s 間隔 throttle を加えても 1 cycle ~3-5 min かかる + 日次 cap も free にあり scale 不能。
