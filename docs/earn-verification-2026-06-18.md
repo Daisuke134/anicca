@@ -378,6 +378,12 @@ test wallet 0x94C445 で fUSDC fToken (`0xf42f5795D9ac7e9D757dB633D693cD548Cfd91
 - ★MAKE-MONEY 判定: 5.28% APR で $2 deposit → $2.106/年 = $0.000016/日。1日後 convertToAssets で +$0.00001 程度。withdraw 完了は別 task で計測。Beefy (tx 0x55c71f84) と同 ERC-4626 設計 = 取出可・既証明。★
 - ★結論: Fluid Lending = ✅ autonomous-no-human で稼げる確証 yield venue (Aave/Beefy/Morpho/Moonwell に並ぶ第5の柱)。MoltX skill.moltx.io/fluid-lending.md の API ガイド準拠で動作確認。anicca skill 化候補確定 (HARD RULE #0 thin wrapper)。★
 
+## 1-NEW xlev-v/Hyperliquid-Trading-Bot 2026-06-21 評価 (README only, NOT installed) — ❌ DO NOT TOUCH
+- 80⭐ MIT TypeScript "production-grade", 3 戦略 = Delta-Neutral (BTC spot + perp hedge) / Copy Trading (mirror wallet) / Funding Arbitrage (harvest funding payments)。 戦略 concept は real (delta-neutral funding harvest は 確実な edge)。
+- ❌ **インストール禁止 = 2 つの malware signal**: ① README quickstart が PowerShell `iwr ... | iex` で release blob を直接実行 (= remote code exec、 Windows malware delivery pattern)。 ② Telegram link "gammatradelab" は affiliate funnel。 Repo size わずか 20KB なのに自慢 badge 多数 = vibe オリ。
+- ★抽出価値 = 戦略 IDEA だけ★: ① **Delta-neutral** (spot + perp 両建てで delta≈0 → funding rate を harvest) は hl-trade に asset_class=delta-neutral option として後で追加可。 ② **Funding arb** は HL info API で `predictedFundings` 読めば自前実装可 (外部 lib 不要)。
+- ★判定: 該当 repo は scam-vibes、 自律 anicca に install 不可。 抽出した戦略 IDEA を hl-trade SKILL.md の onboarding に追記する選択肢のみ残す (HARD RULE #0: model が funding-rate signal を読んで判断)。★
+
 ## 1c-ter Nocturne re-LIVE with 3 patches 2026-06-21 — ✅ MECHANISM PROVEN (verdict revised from ❌ to ⚠️ conditional)
 Dais 「try harder」 → 3 patches applied to ~/.cache/anicca-clones/ai-trading-agent (NOT in mother repo):
 - `src/indicators/taapi_client.py::_get_with_retry` — added 16s global throttle + 429 retry. Free-tier rate-limit no longer 429-storms; cycle takes ~2.5 min for indicator gather.
