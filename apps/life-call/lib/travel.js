@@ -5,7 +5,7 @@
 // Idempotent: never inserts a second [Travel] for an event that already has one.
 "use strict";
 
-const COMPOSIO = "https://backend.composio.dev/api/v3";
+const { getCalendar } = require("./transport/index.js");
 
 function isoNaiveUTC(ms) {
   // Timezone-agnostic: pass the UTC wall clock paired with timezone:"UTC" (set in createTravelBlock).
@@ -39,23 +39,12 @@ function shortName(addr) {
   return (addr || "").split(/[,、]/)[0].slice(0, 18) || "?";
 }
 
-async function listEvents7d(uid, apiKey, nowMs) {
-  const body = JSON.stringify({
-    user_id: uid,
-    arguments: {
-      calendarId: "primary", singleEvents: true, orderBy: "startTime",
-      timeMin: new Date(nowMs).toISOString().replace(/\.\d{3}Z$/, "Z"),
-      timeMax: new Date(nowMs + 7 * 86400 * 1000).toISOString().replace(/\.\d{3}Z$/, "Z"),
-    },
+async function listEvents7d(uid, apiKey, nowMs, calendar) {
+  const cal = calendar || getCalendar({ apiKey });
+  const items = await cal.listEventsRaw(uid, {
+    timeMin: new Date(nowMs).toISOString().replace(/\.\d{3}Z$/, "Z"),
+    timeMax: new Date(nowMs + 7 * 86400 * 1000).toISOString().replace(/\.\d{3}Z$/, "Z"),
   });
-  let j;
-  try {
-    const r = await fetch(`${COMPOSIO}/tools/execute/GOOGLECALENDAR_EVENTS_LIST`, {
-      method: "POST", headers: { "x-api-key": apiKey, "Content-Type": "application/json" }, body });
-    j = await r.json();
-  } catch { return []; }
-  if (!j || !j.successful) return [];
-  const items = (j.data || {}).items || [];
   return items.map((e) => ({
     summary: e.summary || "",
     location: e.location || "",
@@ -136,31 +125,25 @@ async function directionsMinutes(src, dst, mapsKey, departAtMs = Date.now(), now
   return cands.length ? Math.max(...cands) : null;
 }
 
-async function createTravelBlock(uid, apiKey, leaveMs, arriveMs, fromName, toName, dstAddr) {
+async function createTravelBlock(uid, apiKey, leaveMs, arriveMs, fromName, toName, dstAddr, calendar) {
+  const cal = calendar || getCalendar({ apiKey });
   const hours = Math.floor((arriveMs - leaveMs) / 3600000);
   const minutes = Math.round(((arriveMs - leaveMs) % 3600000) / 60000);
-  const body = JSON.stringify({
-    user_id: uid,
-    arguments: {
-      summary: `[Travel] 🚆 ${shortName(fromName)}→${shortName(toName)}`,
-      start_datetime: isoNaiveUTC(leaveMs),
-      event_duration_hour: hours, event_duration_minutes: Math.min(59, minutes),
-      calendar_id: "primary", timezone: "UTC", location: dstAddr,
-      description: "Auto-inserted by Anicca Life Manager — adjust if the route is wrong.",
-    },
+  const j = await cal.createEvent(uid, {
+    summary: `[Travel] 🚆 ${shortName(fromName)}→${shortName(toName)}`,
+    start_datetime: isoNaiveUTC(leaveMs),
+    event_duration_hour: hours, event_duration_minutes: Math.min(59, minutes),
+    calendar_id: "primary", timezone: "UTC", location: dstAddr,
+    description: "Auto-inserted by Anicca Life Manager — adjust if the route is wrong.",
   });
-  try {
-    const r = await fetch(`${COMPOSIO}/tools/execute/GOOGLECALENDAR_CREATE_EVENT`, {
-      method: "POST", headers: { "x-api-key": apiKey, "Content-Type": "application/json" }, body });
-    const j = await r.json();
-    return !!j.successful;
-  } catch { return false; }
+  return !!(j && j.successful);
 }
 
 // Returns { inserted, checked, skipped }. home = lm_users.home_address (may be null → first-of-day
 // located events are skipped this run and should be handled by the ask-loop separately).
-async function fillTravel(uid, { apiKey, mapsKey, home, nowMs = Date.now(), bufferMin = 5 } = {}) {
-  const events = await listEvents7d(uid, apiKey, nowMs);
+async function fillTravel(uid, { apiKey, mapsKey, home, nowMs = Date.now(), bufferMin = 5, calendar } = {}) {
+  const cal = calendar || getCalendar({ apiKey });
+  const events = await listEvents7d(uid, apiKey, nowMs, cal);
   let inserted = 0, checked = 0, skipped = 0;
   for (let i = 0; i < events.length; i++) {
     const ev = events[i];
