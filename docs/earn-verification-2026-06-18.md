@@ -338,3 +338,10 @@ Wallet/DeFi(Aave/Lido/Yearn yield)/Market Data/Token Launch(clawnch_launch)/Bank
 - 判定: **核心は hl-trade(検証済 +$0.085)と同パターン**。EVClaw=その重い外部データ版。抽出価値 = **delegated signer**(HYPERLIQUID_AGENT_PRIVATE_KEY=取引専用鍵, main 鍵を晒さない安全) + 外部データ signal の発想 → hl-trade に取り込む(軽量・local+cloud)。
 - 他に実在: xlev-v/Hyperliquid-Trading-Bot(79⭐ 3戦略), Supurr-App/Hyperliquid-Supurr-Skill(agent skill)。
 - ★trade pillar の本命 = hl-trade skill。bot を丸ごと入れるより、各 anicca が自分の判断で hl-trade を使う(HARD RULE #0)方が多様性=富★
+
+## 1h x402 PRODUCT 検証 2026-06-20 — mechanism E2E ✅
+- skill: skills/earn/x402-sell/ (serve.mjs + SKILL.md, HARD RULE #0)。@x402/express(2.16)/x402-express(1.2)実在。
+- serve.mjs = 1コマンドで x402 有料 HTTP endpoint(payTo=wallet, price=model設定, 中身=Agent-Reach web research, X402_PRODUCT_CMD で何でも売れる)。
+- E2E verify(no mock): GET /research?q=test 未払い → **HTTP 402 + x402 accepts(scheme exact/network base/maxAmountRequired 50000=$0.05/payTo=wallet)**。GET / は売り物広告。受取に鍵不要。
+- 正直: 機構✅、revenue は real demand(buyer)+public hosting 要 = model の自律的仕事(人が欲しい物を作る)。demand は壁でなく目標。
+- ★$0 compute なので 1 sale = pure profit = 兆ドルの肝★
