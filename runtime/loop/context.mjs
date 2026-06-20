@@ -23,7 +23,7 @@
  * @param {object} opts
  * @returns {WakeContext}
  */
-export function assembleContext({ walletAddress, balanceUsdc, tier, model, recentLedgerLines, genesisPrompt, wakeId, ts }) {
+export function assembleContext({ walletAddress, balanceUsdc, tier, model, recentLedgerLines, genesisPrompt, wakeId, ts, activeSkillSlots, skillCatalog }) {
   return {
     walletAddress: walletAddress || 'unknown',
     balanceUsdc: typeof balanceUsdc === 'number' ? balanceUsdc : 0,
@@ -33,5 +33,8 @@ export function assembleContext({ walletAddress, balanceUsdc, tier, model, recen
     genesisPrompt: genesisPrompt || '',
     wakeId: wakeId || '',
     ts: ts || Math.floor(Date.now() / 1000),
+    // spec 25 O1: the live skill slots the LLM may pick + their summaries
+    activeSkillSlots: Array.isArray(activeSkillSlots) ? activeSkillSlots : [],
+    skillCatalog: skillCatalog && typeof skillCatalog === 'object' ? skillCatalog : {},
   };
 }

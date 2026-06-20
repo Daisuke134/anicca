@@ -13,6 +13,7 @@ import https from 'node:https';
 import http from 'node:http';
 import { spawn } from 'node:child_process';
 import { buildSystemPrompt, buildUserMessage, getToolDefinitions } from './prompt.mjs';
+// spec 25 O1: expose each live skill as a pickable tool (enum on run_skill.slot).
 import { scrubPrivateKeys } from './env-filter.mjs';
 
 const MAX_RETRIES = 3;
@@ -58,7 +59,7 @@ async function thinkProxy(ctx, config) {
       { role: 'system', content: buildSystemPrompt(ctx) },
       { role: 'user',   content: buildUserMessage(ctx) },
     ],
-    tools: getToolDefinitions(),
+    tools: getToolDefinitions(ctx.activeSkillSlots),
     tool_choice: 'auto',
     max_tokens: 512,
   });
