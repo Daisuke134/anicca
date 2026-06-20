@@ -46,6 +46,101 @@ README claims the local↔cloud diff is "isolated to `adapters/transport.{js,py}
 cloud (apps/life-call) has its OWN ask/travel/notify/scheduler JS (duplicated logic) — so today it is
 TWO partly-overlapping codebases. The shared part is only the call bridge.
 
+## DETAILED ASCII — function/endpoint level (verified from code 2026-06-21)
+
+### ① LOCAL  ~/life-manager/  (repo Daisuke134/life-manager, OSS, BYOK)
+```
+ openclaw cron (~/.openclaw) ── every ~10min ──▶ planner.js  (the brain; does NOT call)
+   │  • CAL.list({from:"today",to:+HORIZON_DAYS,max:250})  via adapters/transport.js
+   │      └─ LIFE_TRANSPORT=gog → gogTransport(): `gog calendar events list -j --account <acct>`
+   │  • for EVERY timed event × OFFSETS[15,10,5] whose fire-time is future:
+   │      toneFor(off): 15→calm  10→firm  5→harsh
+   │      leaveTimeMs(ev,all): if a 🚆移動/[Travel] block ENDS at event.start → use its start
+   │      register one-shot:  openclaw cron add --at <iso> --delete-after-run --tools exec
+   │        --message "node call/call.js --event=<json> --urgency=<tone>"
+   ▼ (at the exact minute the one-shot fires)
+ call/call.js  placeCall() ─ runnerFor(provider): default runner-telnyx.mjs ─┐
+                                                                              ▼
+   runner-telnyx.mjs:  call-bridge.cjs --provider telnyx                 (env: TELNYX_API_KEY,
+     → cloudflared quick tunnel  (PUBLIC wss, URL ROTATES each run)       GEMINI_API_KEY)
+     → POST api.telnyx.com/v2/calls  { stream_url: wss://<tunnel>,
+          stream_bidirectional_mode:rtp, codec:PCMU, stream_track:both_tracks }
+            │
+            ▼  Telnyx dials +<YOUR_E164>  ─ media stream (PCMU 8k) ⇄
+ ┌──────────── SHARED CORE  call-bridge.cjs + call-logic.js ────────────┐
+ │  Telnyx media frames  ⇄  Gemini Live native-audio (model gemini-2.x  │
+ │  live, voice = Charon).  call-logic.js = system prompt (names the    │
+ │  event + urgency tone), VAD, affective-dialog, places_search tool.   │
+ └──────────────────────────────────────────────────────────────────────┘
+ SIDE SKILLS (same repo, local cron):
+   travel/travel_fill.py  → Directions → write 🚆移動 block to gcal (gog)
+   ask/ask-local.js       → unknown location → gog Gmail send Q → poll reply → write back
+   notify/notify.js       → late (motion gate) → approval → gog Gmail to attendees
+   locate/locate.js       → Telegram Live Location share → LIFE_DATA_DIR/location/<id>.json
+   agent/resolve.py       → Gemini maps event→place or crafts question (no regex, worldwide)
+```
+
+### ② CLOUD  apps/life-call/  (Railway, multi-tenant, managed keys, the LIVE paid product)
+```
+ server.js  :8080   build=agentic-ask-worldwide-v2   ── on boot starts 4 loops ──┐
+   ├ GET  /health , /                → {ok, service:"life-call", ws:"/ws"}        │
+   ├ POST /test-call {uid,sig}       → dashboard "Call me now" (HMAC uid+sig)     │
+   ├ WSS  /ws  (?ev=…&urgency=…&sig) → Telnyx media ⇄ Gemini (SHARED CORE)        │
+   └ POST /telegram (secret header)  → parseUpdate → onboarding / TG reply        │
+        ▼                  ▼                  ▼                       ▼
+  scheduler.js        travel loop         ask loop              onboard loop
+  startScheduler()    startTravelLoop()   startAskLoop()        startOnboardLoop()
+  tick() 60s          travelTick() 30min  askTick() 20min       2min
+   │                   │                   │                     │
+   │ supaUsers(): GET Supabase lm_users    │                     └ telegram-onboard.js:
+   │   ?phone=not.is.null & paid=is.true   │                        nudge each TG user to
+   │   & calendar_provider=eq.composio_gcal│                        their next step
+   │                   │                   │
+   │ events.js: Composio GOOGLECALENDAR_   │ travel.js:           ask.js (AGENTIC):
+   │   EVENTS_LIST (per-user OAuth)        │  travelDecision(ev,  agentResolveLocation()
+   │                   │                    │  prev,home) → Direc-  = Gemini fn-calling
+   │ for ev × WAKE_LEVELS[{15,gentle},     │  tions API minutes    places_search loop
+   │   {10,firm},{5,harsh}]:               │  → Composio PATCH/    → unresolved? send via
+   │   eventKey=`uid|startIso|min`         │  CREATE [Travel] block Telegram(if chat_id)
+   │   claimWake() → lm_wake_log (dedup,   │  (home→home guarded)   else Unipile email
+   │     fail = already fired, skip)        │  ⚠ STATIC duration    → reply read by Gemini
+   │   buildStreamUrl(ev,urgency) (signed)  │     = #71 accuracy bug → agentMatchReply →
+   │   dial.js placeCall({to,streamUrl})    │                        Composio PATCH event
+   ▼                                                              notify.js: "I'm late" →
+  dial.js → POST api.telnyx.com/v2/calls  stream_url=wss://<railway>/ws            classifyLate→pick
+   → Telnyx dials user ⇄ /ws ⇄ ┌─ SHARED CORE call-bridge.cjs + call-logic.js ─┐  event+attendee→
+                               │  (BYTE-IDENTICAL to local; supports Telnyx AND │  Unipile email
+                               │   Twilio frame shapes) ⇄ Gemini Live Charon    │  from user's Gmail
+                               └────────────────────────────────────────────────┘
+```
+
+### ③ WEB  apps/landing/  (Next.js → aniccaai.com /lm, Netlify functions)
+```
+ /lm  LmClient.tsx   Step: login → calendar → gmail → phone → pay → dashboard
+   │  (localStorage anicca.lm.step survives the OAuth redirect; strips ?paid=/?code= from URL)
+   ├ login     → lm-onboard?action=google-start → Google OAuth → exchange → uid
+   ├ calendar  → calendar-connect (Composio gcal OAuth) → marks calendar_provider=composio_gcal
+   │              ONLY when the connection is ACTIVE
+   ├ gmail     → unipile-connect (Unipile, NO Google submission)
+   ├ phone     → save +<dial><national> to lm_users
+   ├ pay       → buy.stripe.com $20/mo (NEXT_PUBLIC_STRIPE_LM_URL; hidden if unset)
+   │              → lm-stripe-webhook.js (dual secret: live + test) → set paid=true → ?paid=1
+   └ dashboard → testCall() (gated on a saved phone) → POST life-call /test-call
+ Telegram parity:  @LifeManagerBotbot  ── webhook ──▶ life-call POST /telegram
+   • /start deep-link  → row by chat_id, native name/phone asked IN CHAT (telegram-onboard.js)
+   • lm-onboard?action=telegram-link  saves telegram_chat_id (+ ?name= deep-link carry)
+```
+
+### DATA (Supabase) + KEYS
+```
+ lm_users : uid · name · phone · paid · calendar_provider(composio_gcal) · gmail_account_id(Unipile)
+            · home_address · telegram_chat_id · tg_onboard_stage
+ lm_wake_log : (uid,event_key) UNIQUE  ← claimWake() dedup so each (event,level) calls once
+ lm_ask_log  : ask/reply audit
+ Keys: LOCAL = your own (gog keychain, your GEMINI/TELNYX).  CLOUD = managed (Composio, Unipile,
+       one TELNYX + one GEMINI we pay for, Stripe live+test, Supabase service role).
+```
+
 ## Cloud runtime detail (apps/life-call on Railway, the live product)
 server.js → /health, /test-call, /ws (Telnyx↔Gemini), /telegram (bot webhook). On boot starts 4 loops:
 - ⏰ scheduler 60s — ALL upcoming real events × T-15/10/5, escalating urgency, dedup per (uid,event,level).
