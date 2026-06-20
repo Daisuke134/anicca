@@ -196,15 +196,8 @@ Pay: Stripe $20/mo (LIVE link + sandbox test link, webhook dual-secret live+test
   build=wake-importance-filter-v3. ★ Both launch blockers (#71 accuracy + #69 spam) now CLEAR. ★
 
 ## REMAINING TODO (canonical, launch-ordered)
-1. **#71 WS6o — Routes API migration (ACCURACY / never-late, ~launch-blocker).** travel.js reads
-   Directions STATIC `duration` (ignores traffic) for driving + ×1.4 fudge → underestimates in rush
-   hour → user late. Our key ALREADY supports Routes API (computeRoutes TRAFFIC_AWARE worked). Migrate
-   to `routes.googleapis.com/directions/v2:computeRoutes`, `routingPreference: TRAFFIC_AWARE_OPTIMAL`
-   (= Google-Maps-grade), `trafficModel: PESSIMISTIC` (bias to leave early); transit → `arrivalTime`=event start.
-2. **#69 WS6m — wake/travel importance filter (~launch-blocker).** Today = ALL events × 15/10/5 = 27
-   calls/day for a busy calendar = users churn day 1. Default: only events you must TRAVEL to (real
-   location ≠ home); routine/no-location = skip (per-user `wake_policy: travel-only|all-events`). Travel:
-   skip if the user already has a buffer/their own travel block before the event.
+1. ~~**#71 WS6o — Routes API migration**~~ ✅ **DONE + DEPLOYED 2026-06-21** (traffic-aware DRIVE, max(transit,drive), gate 6/6, live).
+2. ~~**#69 WS6m — wake/travel importance filter**~~ ✅ **DONE + DEPLOYED 2026-06-21** (travel-only + leave-anchor, gate 6/6, live). ★ both launch blockers clear ★
 3. **#70 WS6n — users without Google Calendar.** Add Outlook (Composio) + agentic "tell me your schedule" chat fallback.
 4. **#61 WS6h / #67 #68 — full fresh-user E2E.** Web: incognito /lm (login→connect→phone→sandbox pay→dashboard);
    Telegram: /start (name→calendar→gmail→phone→pay→done). Dais confirms.
