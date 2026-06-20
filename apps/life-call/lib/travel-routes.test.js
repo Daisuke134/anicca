@@ -3,7 +3,27 @@
 "use strict";
 const { test } = require("node:test");
 const assert = require("node:assert");
-const { parseDurationSeconds, minutesFromSeconds, buildDriveBody, clampDepartIso } = require("./travel.js");
+const { parseDurationSeconds, minutesFromSeconds, buildDriveBody, clampDepartIso, directionsMinutes } = require("./travel.js");
+
+// ── fetch-injection helpers for the never-late ordering tests ────────────────────────────────────
+// Route by URL: legacy Directions (transit) vs Routes API (drive). Each test supplies the two bodies.
+function stubFetch({ transit, drive, capture } = {}) {
+  const orig = global.fetch;
+  global.fetch = async (url, opts) => {
+    const u = String(url);
+    if (capture) capture(u, opts);
+    if (u.includes("maps.googleapis.com/maps/api/directions")) {
+      return { ok: true, json: async () => transit };
+    }
+    if (u.includes("routes.googleapis.com")) {
+      return { ok: true, json: async () => drive };
+    }
+    throw new Error("unexpected url " + u);
+  };
+  return () => { global.fetch = orig; };
+}
+const transitOK = (mins) => ({ status: "OK", routes: [{ legs: [{ duration: { value: mins * 60 } }] }] });
+const driveOK = (mins) => ({ routes: [{ duration: `${mins * 60}s` }] });
 
 test('parseDurationSeconds("812s") → 812', () => {
   assert.equal(parseDurationSeconds("812s"), 812);
@@ -50,4 +70,50 @@ test("clampDepartIso: past depart bumped to now+60s (Routes rejects past departu
   const now = Date.parse("2026-06-21T00:00:00Z");
   const past = Date.parse("2026-06-20T00:00:00Z");
   assert.equal(clampDepartIso(past, now), "2026-06-21T00:01:00Z");
+});
+
+// ── NEVER-LATE ordering (fix 1+2 from the adversarial gate) ──────────────────────────────────────
+test("both modes resolve → directionsMinutes returns the LARGER (never-late, not transit-first)", async () => {
+  const restore = stubFetch({ transit: transitOK(12), drive: driveOK(45) });
+  try {
+    const now = Date.parse("2026-06-21T00:00:00Z");
+    const future = Date.parse("2026-06-21T09:00:00Z");
+    assert.equal(await directionsMinutes("A", "B", "k", future, now), 45); // 45 (drive), NOT 12 (transit)
+  } finally { restore(); }
+});
+
+test("transit returns empty routes[] → null path, drive used (no crash)", async () => {
+  const restore = stubFetch({ transit: { status: "OK", routes: [] }, drive: driveOK(30) });
+  try {
+    const now = Date.parse("2026-06-21T00:00:00Z");
+    assert.equal(await directionsMinutes("A", "B", "k", now + 3600000, now), 30);
+  } finally { restore(); }
+});
+
+test("transit anchors arrival_time to EVENT start (not departure_time=now) for a future event", async () => {
+  let transitUrl = "";
+  const restore = stubFetch({
+    transit: transitOK(20), drive: driveOK(10),
+    capture: (u) => { if (u.includes("/maps/api/directions")) transitUrl = u; },
+  });
+  try {
+    const now = Date.parse("2026-06-21T00:00:00Z");
+    const eventStart = Date.parse("2026-06-21T09:00:00Z");
+    await directionsMinutes("A", "B", "k", eventStart, now);
+    assert.ok(transitUrl.includes(`arrival_time=${Math.floor(eventStart / 1000)}`), "must carry event-start arrival_time");
+    assert.ok(!transitUrl.includes("departure_time=now"), "must NOT use departure_time=now for a future event");
+  } finally { restore(); }
+});
+
+test("neither mode resolves → null (caller asks)", async () => {
+  const restore = stubFetch({ transit: { status: "ZERO_RESULTS" }, drive: {} });
+  try {
+    const now = Date.parse("2026-06-21T00:00:00Z");
+    assert.equal(await directionsMinutes("A", "B", "k", now + 3600000, now), null);
+  } finally { restore(); }
+});
+
+test("missing key/src/dst → null without any fetch", async () => {
+  assert.equal(await directionsMinutes("", "B", "k"), null);
+  assert.equal(await directionsMinutes("A", "B", ""), null);
 });

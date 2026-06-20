@@ -216,13 +216,22 @@ Replace `directionsMinutes(src,dst,mapsKey)` in `apps/life-call/lib/travel.js` (
   `X-Goog-FieldMask: routes.duration`, body `{origin:{address},destination:{address},travelMode:"DRIVE",
   routingPreference:"TRAFFIC_AWARE_OPTIMAL", departureTime:<future ISO>}`. Read `routes[0].duration`
   ("1234s"). **Remove the ×1.4 fudge** — traffic is now real.
-- **TRANSIT**: body `{...travelMode:"TRANSIT", arrivalTime:<event start ISO>}` (NO routingPreference/
-  trafficModel on TRANSIT — API rejects them). Read `routes[0].duration`.
-- **Order**: try TRANSIT first (arriveBy=event start) then DRIVE (departAt clamped to ≥ now+60s, since
-  Routes rejects past departureTime); take whichever returns. Floor 5 min. Return integer minutes.
-- **Fallback**: on non-200 / missing duration → return null (caller skips, ask-loop handles).
-- **Invariant (never-late)**: prefer the LARGER of transit/drive when both resolve? No — keep current
-  "transit then drive, first hit wins" to match existing behavior; the accuracy win is traffic-aware drive.
+- **TRANSIT**: VERIFIED 2026-06-21 that Routes API TRANSIT (`computeRoutes` travelMode:"TRANSIT")
+  returns NO routes for our key/region (empty `{}` even between major stations). So TRANSIT stays on
+  **legacy Directions** `maps/api/directions/json?mode=transit`, anchored to the event via
+  `arrival_time=<event start unix seconds>` (NOT `departure_time=now` — the event is hours/days out, so
+  "now" traffic/schedule would under-estimate). Read `routes[0].legs[0].duration.value`.
+- **Order / never-late invariant**: query BOTH transit and traffic-aware drive, then return the LARGER
+  of the two (we don't yet know the user's mode → assume the slower so we NEVER under-estimate). Floor
+  5 min. Return null only if NEITHER resolves (caller then asks). [TODO #69/#70: per-user travel_mode
+  pref → trust the chosen mode instead of max().]
+- **Fallback**: non-200 / empty routes / missing duration / network throw → that mode returns null.
+- **REGION REALITY (verified live 2026-06-21)**: Google provides NO transit directions for JAPAN via
+  either Routes API OR legacy Directions (`新宿駅→東京駅` = ZERO_RESULTS both APIs; licensing). Legacy
+  transit DOES resolve elsewhere (London Westminster→Tower Hill = OK). So in Japan every request falls
+  to the traffic-aware DRIVE number (slightly conservative vs taking a train, but never-late and it's
+  the only figure Google returns); outside Japan max(transit, drive) works as intended. Legacy DRIVING
+  works for the key — only JP transit data is absent.
 - **Tests (RED first)**: parseDurationSeconds("1234s")→1234; minutesFromRoutes mock 1002s→17; DRIVE body
   has TRAFFIC_AWARE_OPTIMAL + departureTime≥now; TRANSIT body has arrivalTime and NO routingPreference.
 - **E2E (no-mock)**: real LIFE_MAPS_KEY, 新宿区南元町→東京駅, assert minutes in plausible band + that a

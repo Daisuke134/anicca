@@ -108,22 +108,32 @@ async function routesDriveMinutes(src, dst, mapsKey, departAtMs, nowMs) {
   } catch { return null; }
 }
 
-async function legacyTransitMinutes(src, dst, mapsKey) {
-  const p = new URLSearchParams({ origin: src, destination: dst, mode: "transit", departure_time: "now", key: mapsKey });
+async function legacyTransitMinutes(src, dst, mapsKey, arriveByMs, nowMs = Date.now()) {
+  const p = new URLSearchParams({ origin: src, destination: dst, mode: "transit", key: mapsKey });
+  // NEVER-LATE: anchor transit to the EVENT, not "now". Future event → arrival_time = event start, so
+  // the train time reflects the schedule the user will actually ride. Past/missing → fall back to now.
+  if (Number.isFinite(arriveByMs) && arriveByMs > nowMs) p.set("arrival_time", String(Math.floor(arriveByMs / 1000)));
+  else p.set("departure_time", "now");
   try {
     const r = await fetch(`https://maps.googleapis.com/maps/api/directions/json?${p}`);
     const j = await r.json();
-    if (j.status !== "OK") return null;
+    if (j.status !== "OK" || !j.routes || !j.routes[0] || !j.routes[0].legs || !j.routes[0].legs[0]) return null;
     return minutesFromSeconds(j.routes[0].legs[0].duration.value);
   } catch { return null; }
 }
 
-// Transit first (Tokyo-style), then traffic-aware drive. departAtMs ≈ event start. floor 5 min.
+// Query BOTH transit (anchored to event start) and traffic-aware drive, then take the LARGER —
+// never-late bias: we don't yet know the user's mode, so assume the slower so we never under-estimate.
+// departAtMs ≈ event start. Returns null only if neither mode resolves (caller then asks). floor 5 min.
+// TODO(#69/#70): per-user travel_mode preference → trust the chosen mode instead of max().
 async function directionsMinutes(src, dst, mapsKey, departAtMs = Date.now(), nowMs = Date.now()) {
   if (!mapsKey || !src || !dst) return null;
-  const transit = await legacyTransitMinutes(src, dst, mapsKey);
-  if (transit != null) return transit;
-  return routesDriveMinutes(src, dst, mapsKey, departAtMs, nowMs);
+  const [transit, drive] = await Promise.all([
+    legacyTransitMinutes(src, dst, mapsKey, departAtMs, nowMs),
+    routesDriveMinutes(src, dst, mapsKey, departAtMs, nowMs),
+  ]);
+  const cands = [transit, drive].filter((n) => n != null);
+  return cands.length ? Math.max(...cands) : null;
 }
 
 async function createTravelBlock(uid, apiKey, leaveMs, arriveMs, fromName, toName, dstAddr) {
