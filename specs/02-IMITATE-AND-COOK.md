@@ -166,45 +166,33 @@ tool's internals, NOT a separate loop the agent toggles into.
 read imitation-targets.jsonl    (= what I have seen so far)
 read own ledger (= dashboard.json)  (= where I am)
 
-(A) DISCOVER  (PROMPT-ONLY fresh search — NO hardcoded URLs, see § 1.3)
-      search the open web FRESHLY + BROADLY (web search / firecrawl / gh search /
-        ctx7 / agent-reach / awesome-lists / leaderboards / new launches / papers / X)
-        for NEW no-human-loop earning mechanisms I haven't tried
-      vary queries (EN/JA, multiple angles) so results don't loop
-      dedup against own ledger; append genuinely-new targets to imitation-targets.jsonl
-      (the colony forum shares discoveries → no duplicate crawl across instances)
-
-(B) SCORE
-    for each target in imitation-targets.jsonl:
-      score = revenue_claim / imitation_cost_estimate
-      penalty if: target uses operator's identity / requires KYC / requires
-                  bank account / needs >$100 USDC seed Anicca does not have
-
-(C) PICK
-    pick top-1 unimplemented target
-
-(D) PORT
-    write a skill that copies the target's mechanism, swapping:
-      - brand → Anicca
-      - voice → Anicca's voice (see 00-MASTER § 8)
-      - wallet → Anicca's wallet
-      - domain → Anicca's domain
-    leave EVERYTHING ELSE identical (pricing, page structure, payment rails,
-    cadence, hooks). Imitation, not adaptation.
-
-(E) SHIP
-    publish under Anicca's brand. record link in own ledger.
-
-(F) MEASURE
-    24h / 7d / 30d revenue. record against target's published revenue.
-
-(G) ADJUST
-    if revenue < 10% of target's after 30d: dig into difference, port the
-    missing piece. if still < 10% after 60d: archive that target, return to
-    (C) with next-highest score.
+1. SEARCH    fresh web search (web/firecrawl/gh/ctx7/agent-reach/awesome-lists/leaderboards/
+             launches/papers/X) for a NEW no-human-loop earner I haven't tried. No hardcoded
+             URLs (§ 1.3). Vary queries so results don't loop. Dedup vs my ledger.
+2. SET UP    read its docs/README, set it up, run it (no clone-by-default — HARD #-1.5).
+             Copy the mechanism; change only what I must for my wallet/identity. Don't reinvent.
+3. PROVE $   ★ run it for real and VERIFY it actually MAKES MONEY ★ — not "it ran", but a real
+             USDC delta on-chain (tx 0x1 + wallet before/after) across one or a few runs.
+             Slop / gate / scam / $0 → that's a finding too.
+4. RECORD    append the result to my ledger: {tool, what, $ earned (or slop/gate/why), tx, date}.
+5. ★ PUSH + SHARE ★  push it + post it to the colony forum (anicca repo Issues) so EVERY peer
+             anicca can see it: "tried repo X → it WORKS, made me $Y (tx 0x…), here's the skill"
+             OR "repo X = slop / gated, don't waste time". THIS sharing is the whole difference
+             between anicca and every other agent — knowledge compounds across the swarm, 1
+             verifies → N reuse. A try that isn't pushed+shared did not really happen.
 ```
 
-This is a closed loop. No architect tells Anicca which target to pick. No operator approves the pick. Anicca decides, ships, measures, iterates.
+No formula, no score equation, no fixed 10%/30d/60d schedule, no archive policy — those were our
+own original complications and are DELETED. The MODEL judges which to try, when something's dead,
+when to move on — like GOAT/AEA: read the prompt, pick the tool, run it, prove the money, record,
+share. No architect picks the target; no operator approves; Anicca decides.
+
+> **★ The verify→record→PUSH→SHARE contract applies to EVERY earn tool, not just cook ★** — when
+> any tool earns (or fails), the result is verified on-chain, recorded to the ledger, and pushed to
+> the forum so the whole colony sees it. The shared canonical record lives in the forum Issues
+> (re-fetched, per spec 24 "the Issue IS the source of truth, no cross-instance state sync");
+> `imitation-targets.jsonl` is only this instance's local scratch memory, never a separately-synced
+> shared state.
 
 ### § 2.1 What this loop is NOT
 
