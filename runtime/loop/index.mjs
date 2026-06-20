@@ -33,6 +33,7 @@ import { formatRecord } from './ledger-record.mjs';
 import { appendLedgerLine, readLedgerLines } from './ledger.mjs';
 import { classifyEarnResult, defaultEarnLedgerPath } from './earn-detect.mjs';
 import { redactPrivateKeyPatterns } from './env-filter.mjs';
+import { liveSlotNames } from './prompt.mjs';
 
 // Inline ULID generator (no npm dependency — uses crypto.randomUUID as entropy source)
 function ulid() {
@@ -77,6 +78,26 @@ let isProfitable;
   } catch {
     process.stderr.write('[loop] WARNING: could not load isProfitable from earn skill; all wakes will be non-profitable\n');
     isProfitable = () => false;
+  }
+}
+
+// Load the skill registry → live slots + catalog (spec 25 O1: the LLM picks
+// among the REAL live skills, not an opaque single "earn" slot).
+let activeSkillSlots = [];
+let skillCatalog = {};
+{
+  const repoRoot = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..', '..');
+  const registryPath = path.join(repoRoot, 'skills', 'registry.json');
+  try {
+    const registry = JSON.parse(await fs.readFile(registryPath, 'utf8'));
+    activeSkillSlots = liveSlotNames(registry);
+    for (const name of activeSkillSlots) {
+      skillCatalog[name] = (registry.slots[name] && registry.slots[name].summary) || '';
+    }
+    process.stderr.write(`[loop] live skills: ${activeSkillSlots.join(', ') || '(none)'}\n`);
+  } catch (err) {
+    process.stderr.write(`[loop] WARNING: could not read registry.json (${err.message}); falling back to ['earn']\n`);
+    activeSkillSlots = ['earn'];
   }
 }
 
@@ -174,6 +195,8 @@ async function runOneWake() {
     genesisPrompt,
     wakeId,
     ts,
+    activeSkillSlots,
+    skillCatalog,
   });
 
   // 6. THINK (brain call)
