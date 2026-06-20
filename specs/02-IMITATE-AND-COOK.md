@@ -108,36 +108,35 @@ seeded from a hardcoded list.
 
 Replaces all hand-written "do step 1, do step 2" playbooks. Anicca's `anicca-cook-loop` skill runs this every heartbeat tick.
 
-### § 2.0 Exploit vs explore = an AUTONOMOUS PROMPT DECISION, not a formula (CORRECTED 2026-06-21)
+### § 2.0 KEEP IT SIMPLE — cook is just ANOTHER TOOL in a flat tool list (CORRECTED 2026-06-21)
 
-> **★ Dais 2026-06-21 (verbatim core): "I don't think we have to use some bandit or something.
-> I just want anicca to autonomously go do that, with prompts. As an AI agent they should go
-> decide that. The main theme of anicca is AUTONOMY — anicca decides everything by himself." ★**
+> **★ Dais 2026-06-21 (verbatim core): "they're pretty simple. they just have the tools and they
+> just decide that. all these things are just tools — even the searching of them are tools. we
+> just copy them 100% and keep it as simple as they are. don't make it complicated in our own
+> original way. the cook itself should be one of the tools." ★**
 
-There is **NO bandit math, NO fixed ε, NO "explore once per 24h" clock.** Those are all systematic
-crutches and are DELETED (the earlier `if last_discover_ts > 24h` was an unfounded number). Instead,
-each wake the model **decides for itself** — the way an intelligent fund manager / founder decides —
-between:
+The earlier framing here (an "EXPLOIT vs EXPLORE mode the model chooses between", "primary vs side",
+fund-manager ratio language) was **our own original complication — DELETED.** The real systems
+(GOAT, AEA — § 2.0.1) do NOT have modes. They have a **flat list of tools + a prompt; the LLM reads
+the prompt and picks which tool to call.** That's it. No discrimination, no mode, no ratio, no formula.
 
-- **EXPLOIT (the default / primary, ~most wakes):** run a PROVEN earner that already makes money
-  (yield / risk-managed invest / x402 product / token). This is the main job: actually earn.
-- **EXPLORE (the side / when the model judges it worthwhile):** go find + try a NEW earning method
-  it hasn't proven yet (the DISCOVER→PORT path below), to grow the portfolio.
+**So: cook (= search for / set up / try a NEW earning method) is just ONE TOOL among the flat earn
+tools.** The agent's tool list is flat, e.g.:
 
-The prompt (the skill carries this, NO formula):
+```
+tools = [ earn_yield, earn_hl_trade, earn_x402_serve, earn_token_launch, earn_swap,
+          cook_find_new_earner,   ← search the web (agent-reach/firecrawl/gh) + set it up + try it
+          ... ]
+prompt = "You have a wallet and these tools. Your job: earn money, no human in the loop.
+          Each wake, pick the tool to use."
+→ the LLM picks a tool (maybe a proven earner, maybe cook_find_new_earner). Done.
+```
 
-> "You are an autonomous earning intelligence. Each wake, **decide for yourself** whether to
-> exploit (run a proven earner you already trust) or explore (search for and try a new method).
-> Mostly exploit — earning real money now is the job. But when your proven earners are flat,
-> saturated, declining, or you sense a better opportunity exists, choose to explore. You judge
-> the balance — like a founder deciding between running the cash cow and hunting the next product.
-> Because the earning field changes daily, never stop exploring entirely, and re-question methods
-> you assumed were dead or assumed were good. Share what you learn with the colony so the swarm
-> covers more ground than you alone."
-
-The model owns the call. No human, no architect, no formula tells it the ratio. (Best-practice
-references the model MAY draw on — multi-armed-bandit intuition, fund portfolio thinking — are
-inspiration in the prompt, NOT a hardcoded policy.)
+`cook_find_new_earner` is NOT special and NOT a "mode" — it sits in the same list as `earn_yield`.
+When the model picks it, the tool runs the search→try→record steps in § 2.1 (which are the INTERNALS
+of that one tool, not a separate loop the agent toggles into). The model decides which tool by reading
+the prompt, exactly like GOAT/AEA. Nothing more. Keep it this simple; copy them 100%, then tweak only
+the contents (our Base earn primitives, our free model, our wallet).
 
 ### § 2.0.1 Best-practice grounding — this IS how real earning agents decide (2026-06-21)
 Searched the actual autonomous-earning-agent ecosystem (ctx7 + gh + firecrawl). Finding: the agents
@@ -160,15 +159,12 @@ best practice. Evidence (verbatim):
 Takeaway: keep it prompt-driven; borrow GOAT's earn primitives + AEA's identity/wallet/decision-maker
 + peer find/negotiate/settle. Never hardcode the decision.
 
-### § 2.1 The loop itself
+### § 2.1 Internals of the `cook_find_new_earner` tool
+These steps run ONLY when the model picks the cook tool from the flat list (§ 2.0). They are the
+tool's internals, NOT a separate loop the agent toggles into.
 ```
 read imitation-targets.jsonl    (= what I have seen so far)
 read own ledger (= dashboard.json)  (= where I am)
-
-DECIDE (§ 2.0): exploit a proven earner, OR explore — my own autonomous call this wake.
-
-If EXPLOIT → run a proven earner (yield / invest / x402 product / token), verify on-chain, record.
-If EXPLORE → run (A)-(G):
 
 (A) DISCOVER  (PROMPT-ONLY fresh search — NO hardcoded URLs, see § 1.3)
       search the open web FRESHLY + BROADLY (web search / firecrawl / gh search /
