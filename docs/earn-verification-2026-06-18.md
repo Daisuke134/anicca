@@ -325,3 +325,9 @@ NEXT: #3 Nocturne(single-agent・HL・LLM signal+TP/SL = 勝ち筋系統) を検
 Social(presence)・Swap(7DEX)・Lending(Fluid yield)・Launchpad(token)・MoltStreet(agent token→compute)。全部 no-key・skill.moltx.io に skill md。
 ### openclawnch (clawnchdev/openclawnch 17⭐) = crypto agent 48 tools
 Wallet/DeFi(Aave/Lido/Yearn yield)/Market Data/Token Launch(clawnch_launch)/Bankr/On-chain Intel。
+
+## 1b MoltX Swap 検証 2026-06-20
+- API: `GET https://swap.moltx.io/swap?network=base&sellToken=&buyToken=&sellAmount=&user=<addr>`（no key・`user` 必須）
+- 動作✅: 4 DEX aggregator(okx-v6/odos-v2/kyber-v1/0x-v2)を1 callで比較→各々 calldata 返却。BEST=kyber-v1: 1 USDC→0.000585 WETH(≈$0.998, spread~0.2%)。
+- 判定: **動く「実行ツール(swap 層)」**。directional earner でなく、全 swap を最良価格で執行(slippage 節約)するユーティリティ。anicca が yield rebalance / 稼いだトークン→USDC 変換で使う。
+- 正直: quote+calldata は verify、実 on-chain swap は未実行(quote のみ)。
