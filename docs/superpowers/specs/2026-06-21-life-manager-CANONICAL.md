@@ -188,6 +188,12 @@ Pay: Stripe $20/mo (LIVE link + sandbox test link, webhook dual-secret live+test
   max(); ×1.4 fudge gone. VSDD adversary gate PASS (6/6, round 2). 26 unit tests. Live: life-call
   `/health` build=routes-api-traffic-aware-v1. (Railway CLI re-auth + `railway up`; auto-deploy still
   manual → #73.)
+- **#69 wake/travel importance filter DONE + DEPLOYED 2026-06-21** ✅ — scheduler wakes ONLY for events
+  you must travel to (travel-only default + per-user wake_policy; routines/at-home skipped) and anchors
+  15/10/5 to DEPARTURE (the [Travel] block, or an origin-aware inline directionsMinutes when no block
+  yet). 6h horizon, tolerance window, supaUsers fail-safe, wake_policy migration applied. Real-calendar
+  E2E: 20 commitments → 4 wakes. VSDD gate PASS 6/6 (round 2 + residual closed). 54 tests. Live
+  build=wake-importance-filter-v3. ★ Both launch blockers (#71 accuracy + #69 spam) now CLEAR. ★
 
 ## REMAINING TODO (canonical, launch-ordered)
 1. **#71 WS6o — Routes API migration (ACCURACY / never-late, ~launch-blocker).** travel.js reads
