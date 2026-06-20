@@ -308,3 +308,20 @@ NEXT: #3 Nocturne(single-agent・HL・LLM signal+TP/SL = 勝ち筋系統) を検
 - **invest ≠ gambling**。リスク管理した投資(yield/blue-chip/HL risk-managed/delta-neutral)は正当な稼ぎ方(Buffett型)。
 - earn の3本柱は全て「やれば出来る」前提で進める：① yield(預けて利息) ② trade/invest(リスク管理) ③ product を x402 で売る(people の want を作る)。
 - ★今後「壁」「無理」「gambling」「需要次第で$0」と言いそうになったら = それは諦める合図でなく「どう作るか/どう売るか」を考えろの合図★。
+
+## EARN ARSENAL 2026-06-20 — research + verify した全 earn 道具（Dais の repo 全部）
+### 検証済（動く）
+- **Agent-Reach** (Panniantong/agent-reach 35k⭐): agent にネットの目(Twitter/Reddit/YouTube/GitHub/小紅書, API料金ゼロ)。✅install+test 済(YouTube字幕+GitHub read 動作)。skill→~/.claude/.openclaw/.agents。**用途=x402 リサーチ product の中身**(「ネット調べて売る」)。
+- **Hyperliquid HL trade**: ✅私の wallet で +$0.21 含み益(唯一稼いだ)。
+- **Yield** Beefy(6.1%)/Morpho/Moonwell/Aave/Fluid(5.28%): ✅動く・anicca 保有中。
+- **x402-express**: ✅機構(1行 payTo=wallet)。mother 未実装。
+### 道具マップ(3本柱)
+| 柱 | 道具 | 状態 |
+| yield | Beefy/Morpho/Moonwell/Aave/Fluid・**MoltX Lending**(Fluid・skill.moltx.io/fluid-lending.md) | 動く |
+| trade | HL✅ / Nocturne(HL+TAAPI)未 / EVClaw(HL)未 / AutoHedge❌不適 / Uniswap DCA✅ / **MoltX Swap**(7DEX最良価格・no key) | HL のみ稼いだ |
+| x402 product | x402-express + **Agent-Reach**(中身) + a2a-x402 | 機構のみ・要実装 |
+| token | **MoltX Launchpad**(no key・$2.70) / **Clawnch**(openclawnch の clawnch_launch・Uniswap V4) / **MoltStreet**(agent token が compute 自払い・取引ゼロ=死) / Bankr(Club 壁) | $ANICCA 未launch |
+### MoltX = "AI agent の為のインフラ" full stack (moltx.io)
+Social(presence)・Swap(7DEX)・Lending(Fluid yield)・Launchpad(token)・MoltStreet(agent token→compute)。全部 no-key・skill.moltx.io に skill md。
+### openclawnch (clawnchdev/openclawnch 17⭐) = crypto agent 48 tools
+Wallet/DeFi(Aave/Lido/Yearn yield)/Market Data/Token Launch(clawnch_launch)/Bankr/On-chain Intel。
