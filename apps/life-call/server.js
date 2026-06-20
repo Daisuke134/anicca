@@ -101,7 +101,7 @@ const server = http.createServer((req, res) => {
   if (path === "/health" || path === "/") {
     res.writeHead(200, { "content-type": "application/json" });
     // `build` lets any deploy be verified from outside (curl /health) — proves new code is live.
-    res.end(JSON.stringify({ ok: true, service: "life-call", ws: "/ws", build: "routes-api-traffic-aware-v1" }));
+    res.end(JSON.stringify({ ok: true, service: "life-call", ws: "/ws", build: "wake-importance-filter-v1" }));
     return;
   }
   // POST /test-call {uid,sig} — the dashboard "Call me now" button. Auth'd by the same HMAC uid+sig

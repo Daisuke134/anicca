@@ -60,11 +60,15 @@ async function fetchUpcomingEvents(uid, opts = {}) {
     const startMs = Date.parse(raw);
     if (Number.isNaN(startMs)) continue;
     if (startMs < nowMs || startMs > horizonMs) continue;
+    const endRaw = (e.end || {}).dateTime;       // for the leave-time anchor (#69): match a [Travel]
+    const endMs = endRaw ? Date.parse(endRaw) : NaN; // block whose endMs === a later event's startMs
     out.push({
       summary: e.summary || "予定",
       location: e.location || null,
       startMs,
       startIso: raw,
+      endMs: Number.isNaN(endMs) ? null : endMs,
+      endIso: endRaw || null,
     });
   }
   out.sort((a, b) => a.startMs - b.startMs);

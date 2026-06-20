@@ -9,6 +9,7 @@
 
 const crypto = require("crypto");
 const { fetchUpcomingEvents } = require("./lib/events.js");
+const { shouldWake, departureMs, isHelperBlock } = require("./lib/wake-filter.js");
 const { placeCall } = require("./lib/dial.js");
 const { fillTravel } = require("./lib/travel.js");
 const { askTick } = require("./lib/ask.js");
@@ -33,17 +34,13 @@ const WAKE_LEVELS = [
 
 const SUPA = () => ({ url: process.env.SUPABASE_URL, key: process.env.SUPABASE_SERVICE_ROLE_KEY });
 
-// Anicca's own inserted helper blocks are not real commitments — never wake someone for them.
-function isHelperBlock(summary) {
-  const s = summary || "";
-  return s.startsWith("[Travel]") || s.includes("[PENDING]") || s.includes("[APPLIED]");
-}
+// isHelperBlock now lives in lib/wake-filter.js (shared with the importance filter + leave anchor).
 
 async function supaUsers() {
   const { url, key } = SUPA();
   if (!url || !key) return [];
   const q =
-    `${url}/rest/v1/lm_users?select=uid,name,phone,paid,calendar_provider,home_address,gmail_account_id,telegram_chat_id` +
+    `${url}/rest/v1/lm_users?select=uid,name,phone,paid,calendar_provider,home_address,gmail_account_id,telegram_chat_id,wake_policy` +
     `&phone=not.is.null&paid=is.true&calendar_provider=eq.composio_gcal`;
   const r = await fetch(q, { headers: { apikey: key, Authorization: `Bearer ${key}` } });
   if (!r.ok) return [];
@@ -80,14 +77,18 @@ async function tick() {
   for (const u of users) {
     let events;
     try {
-      events = await fetchUpcomingEvents(u.uid, { nowMs: now, horizonH: 1 });
+      // 3h horizon: long-travel events (and their [Travel] blocks) must be visible when we wake 15 min
+      // before the DEPARTURE, which can be well over an hour before the event itself.
+      events = await fetchUpcomingEvents(u.uid, { nowMs: now, horizonH: 3 });
     } catch {
       continue;
     }
-    // Check ALL upcoming real commitments (not just the soonest — a calendar full of routine events
-    // must not mask a later one), and ring each at T-15 / T-10 / T-5 with escalating urgency.
-    for (const ev of (events || []).filter((e) => !isHelperBlock(e.summary))) {
-      const mins = (ev.startMs - now) / 60000;
+    // #69 importance filter: only wake for events the user must TRAVEL to (per their wake_policy),
+    // and anchor the 15/10/5 levels to DEPARTURE (the [Travel] block start), not the event start —
+    // so a 30-min-travel event is called before they must leave, not after.
+    for (const ev of (events || []).filter((e) => shouldWake(e, u.home_address, u.wake_policy))) {
+      const depMs = departureMs(ev, events);
+      const mins = (depMs - now) / 60000;
       for (const lvl of WAKE_LEVELS) {
         // 60s tick → a ~2-min catch window per level; levels are 5 min apart so they never overlap.
         if (mins > lvl.min + 0.5 || mins <= lvl.min - 1.5) continue;

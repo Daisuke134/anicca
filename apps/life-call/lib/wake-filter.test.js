@@ -1,0 +1,71 @@
+// wake-filter.test.js — #69 importance filter (travel-only default) + leave-time anchor (never-late).
+// Run: node --test apps/life-call/lib/wake-filter.test.js
+"use strict";
+const { test } = require("node:test");
+const assert = require("node:assert");
+const { isHelperBlock, shouldWake, departureMs } = require("./wake-filter.js");
+
+const HOME = "新宿区南元町15-27";
+const at = (h) => Date.parse(`2026-06-21T${String(h).padStart(2, "0")}:00:00+09:00`);
+
+// ── isHelperBlock ────────────────────────────────────────────────────────────────────────────────
+test("isHelperBlock: our own blocks are not commitments", () => {
+  assert.equal(isHelperBlock("[Travel] 🚆 A→B"), true);
+  assert.equal(isHelperBlock("🚆 移動 A→B"), true);
+  assert.equal(isHelperBlock("[PENDING] ask"), true);
+  assert.equal(isHelperBlock("[APPLIED] x"), true);
+  assert.equal(isHelperBlock("渋谷で打合せ"), false);
+});
+
+// ── shouldWake: travel-only (default) ──────────────────────────────────────────────────────────────
+test("travel-only: real venue ≠ home → WAKE", () => {
+  assert.equal(shouldWake({ summary: "打合せ", location: "渋谷ヒカリエ", startMs: at(14) }, HOME, "travel-only"), true);
+});
+test("travel-only: at-home event (location == home) → skip", () => {
+  assert.equal(shouldWake({ summary: "🧘 Meditation", location: HOME, startMs: at(6) }, HOME, "travel-only"), false);
+});
+test("travel-only: home with spacing diff → still skip", () => {
+  assert.equal(shouldWake({ summary: "😴 Sleep", location: " 新宿区南元町15-27 ", startMs: at(23) }, HOME, "travel-only"), false);
+});
+test("travel-only: no location (routine/phone task) → skip", () => {
+  assert.equal(shouldWake({ summary: "call mom", location: "", startMs: at(10) }, HOME, "travel-only"), false);
+});
+test("travel-only: helper block → skip even if it has a location", () => {
+  assert.equal(shouldWake({ summary: "[Travel] 🚆 A→B", location: "somewhere", startMs: at(10) }, HOME, "travel-only"), false);
+});
+test("travel-only: home unknown → cannot tell → skip (let ask-loop resolve home)", () => {
+  assert.equal(shouldWake({ summary: "打合せ", location: "渋谷", startMs: at(10) }, "", "travel-only"), false);
+});
+
+// ── shouldWake: all-events (opt-in) ────────────────────────────────────────────────────────────────
+test("all-events: routine at home → WAKE (user opted into everything)", () => {
+  assert.equal(shouldWake({ summary: "🧘 Meditation", location: HOME, startMs: at(6) }, HOME, "all-events"), true);
+});
+test("all-events: still never wakes for a helper block", () => {
+  assert.equal(shouldWake({ summary: "[Travel] 🚆 A→B", location: "x", startMs: at(6) }, HOME, "all-events"), false);
+});
+test("policy defaults to travel-only when omitted/unknown", () => {
+  assert.equal(shouldWake({ summary: "🧘", location: HOME, startMs: at(6) }, HOME), false);
+  assert.equal(shouldWake({ summary: "🧘", location: HOME, startMs: at(6) }, HOME, "garbage"), false);
+});
+
+// ── departureMs: leave-time anchor ─────────────────────────────────────────────────────────────────
+test("departureMs: a [Travel] block ending at event start → its START is the departure", () => {
+  const ev = { summary: "打合せ", location: "渋谷", startMs: at(14) };
+  const travel = { summary: "[Travel] 🚆 home→渋谷", startMs: at(13), endMs: at(14) }; // 13:00→14:00
+  assert.equal(departureMs(ev, [travel, ev]), at(13));
+});
+test("departureMs: no travel block → fall back to event start", () => {
+  const ev = { summary: "打合せ", location: "渋谷", startMs: at(14) };
+  assert.equal(departureMs(ev, [ev]), at(14));
+});
+test("departureMs: a [Travel] block NOT ending at event start is ignored", () => {
+  const ev = { summary: "打合せ", location: "渋谷", startMs: at(14) };
+  const travel = { summary: "[Travel] 🚆 x→y", startMs: at(11), endMs: at(12) }; // unrelated, ends 12:00
+  assert.equal(departureMs(ev, [travel, ev]), at(14));
+});
+test("departureMs: non-helper event ending at start is NOT treated as travel", () => {
+  const ev = { summary: "打合せ2", location: "渋谷", startMs: at(14) };
+  const prev = { summary: "打合せ1", location: "新宿", startMs: at(13), endMs: at(14) }; // real back-to-back
+  assert.equal(departureMs(ev, [prev, ev]), at(14)); // only [Travel] helper blocks set departure
+});
