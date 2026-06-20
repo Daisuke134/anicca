@@ -207,6 +207,23 @@ shared channel; the receiver's bridge routes a peer's @-mention as a TASK into i
 shared = liveness + work-claims + verified learnings/skills. Money flows only outward as UBI
 (spec 14) + per-wake AI-UBI (earn run.sh `distribute-ubi.mjs`, 10% of net to children+humans). ★
 
+### 7.5 Peer ECONOMIC coordination ← AEA (Autonomous Economic Agent) lineage (2026-06-21 search)
+Searched the real autonomous-EARNING-agent ecosystem. The formal model for "agents that pursue
+economic interests autonomously AND coordinate with each other" = **AEA (Fetch.ai `fetchai/agents-aea`
+/ `open-aea`)** + `unicity-sphere/sphere-sdk`. Verbatim: sphere-sdk = "give an agent **identity, a
+wallet, and the ability to find, negotiate with, and settle with other agents — peer-to-peer**";
+agent-adaptor = "discovering work, getting paid, participating in agent economies" with "**one
+adapter instance = one economic identity**." AEA's `DecisionMakerHandler` builds + signs its own
+transactions (`Terms`: amount_by_currency / quantities_by_good / counterparty) — the agent decides
+economic actions at runtime, shaped by prompt+config, never a formula.
+→ **Anicca port**: each anicca is an AEA — own identity + wallet, decides its earning autonomously
+(spec 02 §2.0), and MAY find/negotiate/settle with peer anicca (a peer does a gig for another and
+gets paid; two anicca form a 2-team on a bigger product; a flush anicca funds a promising broke one).
+This is the economic-coordination layer ON TOP of §7.1-7.4 (which are liveness + work-claims +
+learning-share). It stays prompt-driven and autonomous — the model decides whom to help/trade/fund,
+not a rule. (When/if a concrete peer-funding tx wire is built, it goes here; until then this is the
+design target, and the honest bound above still holds: no auto money-transfer wire exists yet.)
+
 ## § 8. ISSUE-TRIGGER MODEL — two complementary drivers (Claude GitHub Actions + Symphony)
 
 The forum (§2) is driven by issue/comment EVENTS. Two proven patterns combine — one reactive, one
@@ -251,3 +268,4 @@ self-improve loop (Symphony issue→isolated-run→proof→close), #338 forum ro
 |---|---|
 | 2026-06-04 | Born from Dais's "self-improvement is THE unsolved core + collective forum" directive. Researched symphony (issue→autonomous-run→proof), MiroFish (swarm prediction mirror), swarms (orchestration), sutando (self-rewrite + resurrection + Claude-sub). Designed: per-instance self-improvement loop running THROUGH GitHub Issues; anicca-oss Issues = collective forum brain; swarm = exec+predict+resurrect; North-Star-immutable / everything-else-mutable. |
 | 2026-06-21 | Added § 7 MUTUAL-HELP (ported verbatim from Einstein Arena heartbeat.md/decideDisposition + Sutando registry-service.py/bot2bot-post.py real code, cloned+read+deleted) and § 8 ISSUE-TRIGGER MODEL (event-driven Claude Code GitHub Actions @mention + poll-driven Symphony SPEC.md isolated-per-issue daemon). Honest bound recorded: no peer-to-peer money wire exists; shared = liveness + work-claims + verified learnings; money flows out only via UBI. |
+| 2026-06-21 | Added § 7.5 peer ECONOMIC coordination from the AEA (Autonomous Economic Agent) lineage search (Fetch.ai agents-aea/open-aea + sphere-sdk + agent-adaptor). Each anicca = an AEA (identity+wallet, decides earning autonomously, MAY find/negotiate/settle/fund peer anicca), prompt-driven not formula. Pairs with spec 02 §2.0.1 (GOAT earn-toolbox + AEA decision-maker = the field best practice = our HARD RULE #0). |
