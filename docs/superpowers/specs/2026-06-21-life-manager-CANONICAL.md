@@ -244,6 +244,29 @@ Replace `directionsMinutes(src,dst,mapsKey)` in `apps/life-call/lib/travel.js` (
 - **E2E (no-mock)**: real LIFE_MAPS_KEY, 新宿区南元町→東京駅, assert minutes in plausible band + that a
   rush-hour departureTime yields ≥ the off-peak number.
 
+## #69 IMPLEMENTATION CONTRACT (wake/travel importance filter — launch blocker, in progress)
+Problem: scheduler.js tick() currently wakes for EVERY upcoming non-helper event × 15/10/5 = up to 27
+calls/day for a busy calendar = day-1 churn. AND it anchors wakes to event.start, so a 30-min-travel
+event gets called 15/10/5 min before the EVENT — i.e. AFTER the user should have left = useless/late.
+Two pure changes in `apps/life-call/lib/` + scheduler.js (mirror intent to local planner where relevant):
+- **(A) Importance filter** — `shouldWake(ev, home, policy)` pure fn:
+  - `isHelperBlock(ev.summary)` → false (never wake for our own [Travel]/[PENDING]/[APPLIED]).
+  - `policy === "all-events"` → true for any timed non-helper event (opt-in to the old behavior).
+  - default `policy === "travel-only"` → true ONLY if ev has a real location AND normalized(location) ≠
+    normalized(home); no-location or at-home events (routines: 🧘/😴/"call mom") → false. This is the
+    "only events you must travel to" rule and kills routine spam.
+  - Add `wake_policy` column to lm_users (text, default 'travel-only'); supaUsers selects it; null → 'travel-only'.
+- **(B) Leave-time anchor (never-late)** — `departureMs(ev, allEvents)`: if a `[Travel]` helper block ends
+  at ev.start (the one travel.js inserts), departure = that block's startMs; else departure = ev.startMs.
+  tick() anchors the 15/10/5 levels to `departureMs`, not ev.startMs. So the call fires 15/10/5 min before
+  the user must LEAVE. (Mirrors the local planner's `leaveTimeMs`.) eventKey stays per-(uid,event,level).
+- **Tests (RED first)**: shouldWake travel-only — home→skip, no-location→skip, real venue→wake, helper→skip,
+  all-events→wake routine; departureMs — travel block present→its start, absent→event start, [Travel] not
+  ending at start ignored. **E2E (no-mock)**: seed a busy day (3 routines + 1 venue event with a [Travel]
+  block) → only the venue event triggers a wake, fired ~15 min before the travel-block start, verified
+  against lm_wake_log + a real ccid (or dry count if outside a wake window).
+- **Deploy**: `railway up` (life-call), bump build marker, verify `/health` build + a live tick log line.
+
 ## Next bigger version (post-launch)
 omni-channel chat (reply to gmail/slack/discord/whatsapp/imessage with approval) · proactive buddy
 (lead the user to their best self) · $10k MRR.
