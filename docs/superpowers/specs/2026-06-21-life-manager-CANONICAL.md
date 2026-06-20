@@ -183,6 +183,11 @@ Pay: Stripe $20/mo (LIVE link + sandbox test link, webhook dual-secret live+test
 - Travel home→home noise fixed (11 unit tests + E2E). ✅ Notify classify+pick verified. ✅
 - Telegram onboarding deployed: name/phone native in chat, bot guides each step (name-save E2E). ✅
 - Calendar reconnect via camofox (Composio OAuth) restored. ✅
+- **#71 Routes API traffic-aware travel time DONE + DEPLOYED 2026-06-21** ✅ — cloud + local both query
+  traffic-aware DRIVE (computeRoutes TRAFFIC_AWARE_OPTIMAL) + transit anchored to event start, return
+  max(); ×1.4 fudge gone. VSDD adversary gate PASS (6/6, round 2). 26 unit tests. Live: life-call
+  `/health` build=routes-api-traffic-aware-v1. (Railway CLI re-auth + `railway up`; auto-deploy still
+  manual → #73.)
 
 ## REMAINING TODO (canonical, launch-ordered)
 1. **#71 WS6o — Routes API migration (ACCURACY / never-late, ~launch-blocker).** travel.js reads
