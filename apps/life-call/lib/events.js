@@ -13,46 +13,22 @@
 //   fetchNextEvent(uid, opts) -> Promise<Event|null>  (the soonest upcoming timed event)
 "use strict";
 
-const COMPOSIO_EXEC =
-  "https://backend.composio.dev/api/v3/tools/execute/GOOGLECALENDAR_EVENTS_LIST";
+const { getCalendar } = require("./transport/index.js");
 
 function isoZ(ms) {
   return new Date(ms).toISOString().replace(/\.\d{3}Z$/, "Z");
 }
 
 async function fetchUpcomingEvents(uid, opts = {}) {
-  const apiKey = opts.apiKey || process.env.COMPOSIO_API_KEY;
-  if (!apiKey || !uid) return [];
+  if (!uid) return [];
   const nowMs = opts.nowMs || Date.now();
   const horizonH = opts.horizonH || 18;
   const horizonMs = nowMs + horizonH * 3600 * 1000;
 
-  const body = JSON.stringify({
-    user_id: uid,
-    arguments: {
-      calendarId: "primary",
-      singleEvents: true,
-      orderBy: "startTime",
-      timeMin: isoZ(nowMs),
-      timeMax: isoZ(horizonMs),
-    },
-  });
-
-  let j;
-  try {
-    const r = await fetch(COMPOSIO_EXEC, {
-      method: "POST",
-      headers: { "x-api-key": apiKey, "Content-Type": "application/json" },
-      body,
-    });
-    j = await r.json();
-  } catch {
-    return []; // network error — caller treats as "no events this tick"
-  }
-  if (!j || !j.successful) return []; // not connected / Composio error
-
-  const data = j.data || {};
-  const items = data.items || data.events || [];
+  // #74: calendar reads go through the transport adapter (composio cloud / gog local). Tests inject
+  // their own via opts.calendar; production builds the env-selected one.
+  const calendar = opts.calendar || getCalendar({ apiKey: opts.apiKey });
+  const items = await calendar.listEventsRaw(uid, { timeMin: isoZ(nowMs), timeMax: isoZ(horizonMs) });
   const out = [];
   for (const e of items) {
     const raw = (e.start || {}).dateTime; // timed events only; date-only (all-day) skipped
