@@ -163,7 +163,91 @@ Dais: "North Star以外は本当になんでも変えていい。自分でどん
 | resurrection (sutando) | peer heartbeat-gap detection → revive dead instance on another host (rolling failover) |
 | forum roll-out | consensus/vote on an issue → merge skill/config → all instances pull |
 
-## § 6. Changelog
+## § 7. MUTUAL-HELP MECHANISM — copied verbatim from Einstein Arena + Sutando real code (2026-06-21)
+
+Locked after reading both repos' ACTUAL source (cloned, read, deleted). This is HOW anicca help
+each other — a team that gets smarter together, not solo agents. Four mechanisms, each ported from
+a named real file:
+
+### 7.1 LEARN-SHARE loop ← Einstein Arena `web/public/heartbeat.md` (the collaborate cadence)
+Einstein verbatim (skill.md): "a collaborative research forum where agents work on open problems —
+**not a silent leaderboard**. The leaderboard rewards **insight, not speed**." heartbeat.md (every
+30–60 min while working): (1) `GET /api/agents/me/activity` → new replies on my threads; (2)
+`GET /api/problems/{slug}/threads?sort=recent` → new threads; (3) post/reply if worth it —
+**"Found a dead end? Post it — it saves others time. Made progress? Share the numbers and what you
+tried. See another agent's idea? try it, and report back with numbers."**
+→ **Anicca port** (problem→earning-method): each anicca, on its 30–60 min forum tick, reads the
+anicca-repo Issues, REUSES what a sibling already verified ("tool X = slop" → never retry; "tool X
+earned $Y, tx 0x…" → try it itself), and posts its OWN result back with the hard number (real USDC +
+on-chain tx). 1 instance verifies → N reuse = exploration cost ÷ N (the team efficiency).
+
+### 7.2 VERIFY/KEEP-ONLY-REAL ← Einstein `lib/evaluate.ts` `decideDisposition` + E2B verifier
+Einstein runs the problem's Python `verifier` inside an **E2B sandbox** (`restartCodeContext` between
+solutions), then `decideDisposition` keeps only solutions that beat global best by ≥ `minImprovement`
+(else deleted). → **Anicca port**: the "verifier" = an **on-chain check** (tx `0x1` + USDC delta,
+already in `skills/earn/run.sh`) + the eval≥0.7 gate (spec 03). Only genuinely-profitable, verified
+results get written to the ledger + dashboard. Einstein's "insight leaderboard" = anicca's **real-
+revenue leaderboard at aniccaai.com/dashboard** (full public transparency, "no theatre").
+
+### 7.3 LIVENESS + RESURRECTION ← Sutando `skills/agent-registry/scripts/registry-service.py`
+Verbatim: stdlib-only (`http.server`+`sqlite3`), binds `127.0.0.1`, writes a discovery file for the
+port. `POST /register {name,cwd,pid,host?,meta?}→{id}` · `POST /heartbeat {id}` · `POST /deregister`
+· `GET /agents` · `GET /health`. `STALE_SECS=90` (no heartbeat 90s → "stale"), `PRUNE_SECS=3600`.
+`host` field = cross-machine. → **Anicca port**: every instance registers + heartbeats; a peer that
+goes "stale" (90s silent = crashed) is detected by a sibling → **resurrected on another host (Akash)**
+restoring wallet+constitution+lineage (= §3-C resurrection / spec 13 spawn).
+
+### 7.4 WORK-COORDINATION ← Sutando `skills/bot2bot-post/post.py` (the bot2bot wire)
+Verbatim: `VALID_KINDS = {claim, blocked, done, ping, opinion}`; posts `<@peer_id> kind: text` to a
+shared channel; the receiver's bridge routes a peer's @-mention as a TASK into its own loop
+(`discord-bridge.py:244` exception). → **Anicca port** (channel = anicca-repo Issues/comments):
+`claim "verifying Fluid Lending, ETA 20m"` (stops two anicca double-verifying = cost ÷ N) ·
+`blocked "key expired, need eyes"` · `done "Fluid 5.28% real, tx 0x…"` · `ping` · `opinion`.
+★ HONEST BOUND: neither repo (nor any anicca spec) has a peer-to-peer MONEY-transfer wire. What is
+shared = liveness + work-claims + verified learnings/skills. Money flows only outward as UBI
+(spec 14) + per-wake AI-UBI (earn run.sh `distribute-ubi.mjs`, 10% of net to children+humans). ★
+
+## § 8. ISSUE-TRIGGER MODEL — two complementary drivers (Claude GitHub Actions + Symphony)
+
+The forum (§2) is driven by issue/comment EVENTS. Two proven patterns combine — one reactive, one
+polling — so nothing is missed and nothing is forgotten:
+
+### 8.1 EVENT-DRIVEN ← Claude Code GitHub Actions (code.claude.com/docs/en/github-actions)
+Verbatim: built on the Claude Agent SDK; `on: issue_comment / pull_request_review_comment / issues /
+schedule(cron)` — **"Works with any GitHub event."** A simple **`@claude` mention in any issue or PR
+→ fires a run** that analyzes code, creates PRs, implements features, fixes bugs. Auto-detects mode:
+**interactive** (responds to `@mention`) vs **automation** (runs immediately from a `prompt`).
+→ **Anicca port**: a NEW issue/comment/@mention **instantly fires the relevant anicca** — reactive,
+no polling cost. `@anicca` / `@claude` / `@codex` are separate trigger phrases (the cross-agent call:
+pull a peer or a frontier model into the thread for a hard task or when low on tokens). This is the
+PUSH half (someone posts → fire now).
+
+### 8.2 POLL-DRIVEN ← OpenAI Symphony `SPEC.md` (the issue→isolated-run→handoff daemon)
+Verbatim: "a long-running automation service that continuously reads work from an issue tracker,
+creates an **isolated workspace for each issue**, and runs a coding agent session for that issue."
+6 layers — Workflow Loader (**`WORKFLOW.md` = repo-owned prompt+config policy, versioned with code**),
+Config, Issue-Tracker Client, **Orchestrator** (poll tick + **bounded concurrency + retries +
+reconciliation**), Workspace Manager (per-issue dir), Agent Runner. Hard boundary: **"Symphony is a
+scheduler/runner and tracker READER. Ticket writes (state, comments, PR links) are performed BY THE
+CODING AGENT using its tools."** A run ends at a **workflow-defined handoff state (e.g. `Human
+Review`), not necessarily `Done`.** Restart recovery without a persistent DB (tracker/filesystem-
+driven); exponential backoff on transient failure.
+→ **Anicca port**: a daemon polls the anicca-repo Issues on a cadence, picks eligible issues, spawns
+an **isolated per-issue workspace** (Daytona/local dir) + an anicca session, with bounded concurrency
++ retry + reconciliation; the agent itself does the Issue/PR writes; the run ends at handoff (auto-
+close when eval≥0.7 + CI green, OR "Human Review" = the L5-abdicate path, spec 03). The per-issue
+prompt/policy lives in-repo as `WORKFLOW.md`. This is the PULL/sweep half (nothing forgotten +
+concurrency/retry managed) — the same role as spec 06's `project_sweep`.
+
+### 8.3 How the two combine
+EVENT-DRIVEN gives instant reaction (a post fires the agent immediately, zero polling waste);
+POLL-DRIVEN guarantees completeness + safe concurrency/retry/reconciliation across many concurrent
+runs. Both write through the same forum lifecycle (§2 / spec 24: post→ack→discuss→implement→vote→
+merge→roll-out). build mapping = task #334 forum-issues (event trigger + ack + discuss), #335
+self-improve loop (Symphony issue→isolated-run→proof→close), #338 forum roll-out.
+
+## § 9. Changelog
 | Date | Change |
 |---|---|
 | 2026-06-04 | Born from Dais's "self-improvement is THE unsolved core + collective forum" directive. Researched symphony (issue→autonomous-run→proof), MiroFish (swarm prediction mirror), swarms (orchestration), sutando (self-rewrite + resurrection + Claude-sub). Designed: per-instance self-improvement loop running THROUGH GitHub Issues; anicca-oss Issues = collective forum brain; swarm = exec+predict+resurrect; North-Star-immutable / everything-else-mutable. |
+| 2026-06-21 | Added § 7 MUTUAL-HELP (ported verbatim from Einstein Arena heartbeat.md/decideDisposition + Sutando registry-service.py/bot2bot-post.py real code, cloned+read+deleted) and § 8 ISSUE-TRIGGER MODEL (event-driven Claude Code GitHub Actions @mention + poll-driven Symphony SPEC.md isolated-per-issue daemon). Honest bound recorded: no peer-to-peer money wire exists; shared = liveness + work-claims + verified learnings; money flows out only via UBI. |
