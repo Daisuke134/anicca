@@ -58,30 +58,49 @@ A founder-quality LLM agent is not in 2026 a creative-direction agent. It is a *
 
 | Pool | What | Why |
 |---|---|---|
-| **Pool A — autonomous AI agents** | Agents on factoryfloor.dev, trustmrr.com, ClawMart creator leaderboard, $X token leaderboards, etc. — agents that already operate without a human in the loop and publish revenue numbers | They prove "no-human-in-loop earning at $X/mo" is achievable. Anicca picks the highest plausible-imitable and copies the mechanism. |
+| **Pool A — autonomous AI agents** | Agents that already operate without a human in the loop and publish revenue numbers — **found by fresh search each cycle (§ 1.3), never a hardcoded list**: revenue leaderboards, verified-MRR directories, token-fee leaderboards, awesome-lists, new launches, whatever surfaces *today* | They prove "no-human-in-loop earning at $X/mo" is achievable. Anicca picks the highest plausible-imitable and copies the mechanism. |
 | **Pool B — humans earning online whose work is automatable** | YouTubers, infoproduct sellers, niche newsletter operators, SaaS founders with <5 employees, Etsy/Gumroad shops with <10 SKUs, etc. — humans whose entire workflow could in principle be done by a tool-using LLM agent | They prove "this market accepts this product at this price." Anicca asks: "Could I do this end-to-end without a human in the loop?" — if yes, copy. |
 
 Pool A is the closer copy (= same protocol stack). Pool B is the larger pool but requires "automatability check" first.
 
-### § 1.3 Bootstrap reference list (= the seed URLs Anicca starts with)
+### § 1.3 Discovery is PROMPT-ONLY fresh search — NO hardcoded URL list (CORRECTED 2026-06-21)
 
-Anicca's first heartbeat after install reads this list and crawls it. From there, she discovers more on her own.
+> **★ Dais 2026-06-21 (verbatim core): "why hardcoding links?? hardcoded = pretty fucking bad.
+> this field changes everyday and new stuff can come up everyday. if we just keep searching
+> the same fucking repository and the same fucking link, we come to a dead end." ★**
 
-| URL | What it shows |
-|---|---|
-| `https://factoryfloor.dev/` | Verified-revenue leaderboard of autonomous AI agents. Top entries (Felix, Juno, Lauki, Kelly Claude, etc.) include weekly revenue, treasury, product list. |
-| `https://felixcraft.ai/dashboard` | Felix's live revenue dashboard. The full 4-stream breakdown ($29 PDF / ClawMart Persona $99 / 10% platform fee / Polylogue SaaS / $FELIX token treasury). |
-| `https://shopclawmart.com/` | The marketplace pattern. Top-selling persona + skill listings, top creators, pricing curves. |
-| `https://trustmrr.com/` | Third-party verified MRR for AI agents and AI-built SaaS. Used as truth source to filter out vanity claims. |
-| `https://hermes-agent.nousresearch.com/` | The newer harness (Nous Research). Different stack, comparable autonomy. |
-| `https://docs.openclaw.ai/` | The harness Felix uses. Reference architecture. |
-| `https://clanker.world/` | Token-launch leaderboard on Base. Trading-fee yield mechanics. |
+**The earlier version of this section hardcoded 7 seed URLs (factoryfloor.dev / felixcraft.ai /
+shopclawmart.com / trustmrr.com / hermes-agent.nousresearch.com / docs.openclaw.ai /
+clanker.world). That was a BUG and is DELETED.** Reasons it was wrong:
 
-**Critical rule for this list**:
+1. **Dead end.** The agentic-earning field changes daily; new repos/tools/agents appear every
+   day. Re-crawling a fixed list converges to the same stale answers → no new money.
+2. **It contradicts the core identity.** Anicca IS an intelligence (like Claude, like a human
+   researcher). You don't hand a researcher a fixed list of 7 bookmarks — you tell them to go
+   find what's working *now*. Hardcoding is the opposite of autonomy.
+3. **No source.** No one decided these 7 were canonical; they were one author's snapshot.
 
-> Anicca **extends this list every time she discovers a new earning agent in the wild.** She does not wait for an architect to update the spec. She appends to her own copy of this list (kept in `~/anicca/state/imitation-targets.jsonl`) with: URL, why it's interesting, revenue claim, evidence link.
+**The correct mechanism = a PROMPT, not a list.** The DISCOVER step instructs the model (verbatim
+intent, the skill carries this text, NOT URLs):
 
-The list above is the **bootstrap seed**, not the canonical list.
+> "You are an autonomous intelligence. Each cycle, **search the open web broadly and freshly**
+> for ways an AI agent can earn money with **no human in the loop** — use every angle you have
+> (web search / firecrawl / `gh search repos|code` / ctx7 docs / agent-reach social reads /
+> awesome-lists / leaderboards / new launches / papers / X threads). **Find what is NEW since
+> last time.** Do NOT re-crawl a fixed list. Dedup against your own ledger of what you already
+> tried. Vary your queries (EN/JA, multiple angles) so you don't loop on the same results."
+
+The model decides *where* to look, freshly, every cycle — exactly how this very session was run
+(no list was handed to me; I searched with firecrawl/gh/ctx7 and found new things each time).
+
+**Colony covers the space collectively (cost efficiency, see spec 18 forum):** because thousands
+of Anicca each search *differently* and post results to the forum (anicca repo Issues) + ledger,
+one instance's "I tried X, it earned $Y / it's slop" saves all others from re-verifying X. The
+search is parallelized across the swarm, not duplicated. Diversity of search angle = coverage.
+
+`~/anicca/state/imitation-targets.jsonl` is the agent's OWN running record of what it has seen
+and tried (url, why, revenue claim, evidence, verdict) — it GROWS from fresh search, it is not
+seeded from a hardcoded list.
 
 ---
 
@@ -93,11 +112,14 @@ Replaces all hand-written "do step 1, do step 2" playbooks. Anicca's `anicca-coo
 read imitation-targets.jsonl    (= what I have seen so far)
 read own ledger (= dashboard.json)  (= where I am)
 
-(A) DISCOVER
+(A) DISCOVER  (PROMPT-ONLY fresh search — NO hardcoded URLs, see § 1.3)
     if last_discover_ts > 24h ago:
-      crawl factoryfloor.dev / felixcraft.ai/dashboard / clanker.world top-N
-      append any new agent + new mechanic to imitation-targets.jsonl
-      (= 1-2 new targets / day is typical)
+      search the open web FRESHLY + BROADLY (web search / firecrawl / gh search /
+        ctx7 / agent-reach / awesome-lists / leaderboards / new launches / papers / X)
+        for NEW no-human-loop earning mechanisms since last cycle
+      vary queries (EN/JA, multiple angles) so results don't loop
+      dedup against own ledger; append genuinely-new targets to imitation-targets.jsonl
+      (the colony forum shares discoveries → no duplicate crawl across instances)
 
 (B) SCORE
     for each target in imitation-targets.jsonl:
@@ -241,7 +263,7 @@ Each agent has a hard boundary (= files they touch). No overlap. Worktree per ag
 | **A3 — SKILLS CORE** | `skills/anicca-cook-loop/`, `skills/anicca-imitation-targets/`, `skills/anicca-verify/`, `skills/anicca-heartbeat-core/`, `skills/anicca-self-spawn/` | The 5 instinct-level skills. `anicca-cook-loop` implements § 2 of this spec verbatim. `anicca-imitation-targets` owns the JSONL. `anicca-verify` is the 5-step gate. `anicca-heartbeat-core` is the tick orchestrator. `anicca-self-spawn` is the wallet-gated child-spawning. |
 | **A4 — IDENTITY + VOICE** | `identity/SOUL.md`, `identity/IDENTITY`, `identity/USER.template`, `skills/anicca-x-cadence/`, `skills/anicca-write-pdf/` | Generic SOUL (no operator name, no architect name). OpenClaw IDENTITY format. USER placeholder. X-cadence skill that imitates Pool A voices (Felix-style observational). PDF writer that imitates Pool A long-form. |
 | **A5 — DOCS HUMAN-FACING** | `README.md`, `docs/QUICKSTART.md`, `docs/FOR-OPERATORS.md`, `docs/FOR-DEVELOPERS.md`, `CONTRIBUTING.md` | Public-facing docs. README sells the project. QUICKSTART is the install.sh one-pager. FOR-OPERATORS explains what an operator does + does not do (= § 3.2 of this spec, simplified). FOR-DEVELOPERS is for people who want to read the spec stack. |
-| **A6 — VERIFY + TESTS** | `tests/`, `scripts/test-install.sh`, `scripts/test-cook-loop.sh`, `.github/workflows/ci.yml` | End-to-end smoke test: install.sh runs clean in a Docker container, first heartbeat fires, cook-loop DISCOVER hits factoryfloor.dev and writes ≥1 entry to imitation-targets.jsonl, verify gate passes. CI on every push. |
+| **A6 — VERIFY + TESTS** | `tests/`, `scripts/test-install.sh`, `scripts/test-cook-loop.sh`, `.github/workflows/ci.yml` | End-to-end smoke test: install.sh runs clean in a Docker container, first heartbeat fires, cook-loop DISCOVER performs a fresh web search (no hardcoded URLs) and writes ≥1 entry to imitation-targets.jsonl, verify gate passes. CI on every push. |
 
 ### § 5.2 Order of operations
 
@@ -328,7 +350,7 @@ When is § 02 considered successful?
 | Gate | Metric | How to measure |
 |---|---|---|
 | **G0 — bootstrap ships** | install.sh runs in a fresh Docker container with no prompts other than API-key, exits 0 within 5 minutes | A6 CI test |
-| **G1 — DISCOVER works** | After 24h of running, `~/anicca/state/imitation-targets.jsonl` has ≥3 entries, ≥1 of which is NOT in the bootstrap seed list of § 1.3 | A6 CI test (mocked clock + real network) |
+| **G1 — DISCOVER works** | After 24h of running, `~/anicca/state/imitation-targets.jsonl` has ≥3 entries, ALL found by fresh web search (§ 1.3 = no hardcoded seed list exists), and across two consecutive days the new entries are not identical (proves it isn't looping on the same results) | A6 CI test (mocked clock + real network) |
 | **G2 — first port** | Within 7 days of install, Anicca has SHIPped at least 1 imitation product (= live URL or live listing) | dashboard.json field `first_port_shipped_at` |
 | **G3 — first revenue** | Within 30 days of install, wallet has received >$0 from a non-architect, non-operator address | on-chain check |
 | **G4 — autonomous spec extension** | Within 60 days, Anicca has written `specs/03-*.md` herself without architect or operator instruction | file existence + commit author = anicca's GitHub bot |
