@@ -106,17 +106,53 @@ seeded from a hardcoded list.
 
 ## § 2. The cook loop (= per-heartbeat self-direction)
 
-Replaces all hand-written "do step 1, do step 2" playbooks. Anicca's `anicca-cook-loop` skill runs this every heartbeat tick:
+Replaces all hand-written "do step 1, do step 2" playbooks. Anicca's `anicca-cook-loop` skill runs this every heartbeat tick.
 
+### § 2.0 Exploit vs explore = an AUTONOMOUS PROMPT DECISION, not a formula (CORRECTED 2026-06-21)
+
+> **★ Dais 2026-06-21 (verbatim core): "I don't think we have to use some bandit or something.
+> I just want anicca to autonomously go do that, with prompts. As an AI agent they should go
+> decide that. The main theme of anicca is AUTONOMY — anicca decides everything by himself." ★**
+
+There is **NO bandit math, NO fixed ε, NO "explore once per 24h" clock.** Those are all systematic
+crutches and are DELETED (the earlier `if last_discover_ts > 24h` was an unfounded number). Instead,
+each wake the model **decides for itself** — the way an intelligent fund manager / founder decides —
+between:
+
+- **EXPLOIT (the default / primary, ~most wakes):** run a PROVEN earner that already makes money
+  (yield / risk-managed invest / x402 product / token). This is the main job: actually earn.
+- **EXPLORE (the side / when the model judges it worthwhile):** go find + try a NEW earning method
+  it hasn't proven yet (the DISCOVER→PORT path below), to grow the portfolio.
+
+The prompt (the skill carries this, NO formula):
+
+> "You are an autonomous earning intelligence. Each wake, **decide for yourself** whether to
+> exploit (run a proven earner you already trust) or explore (search for and try a new method).
+> Mostly exploit — earning real money now is the job. But when your proven earners are flat,
+> saturated, declining, or you sense a better opportunity exists, choose to explore. You judge
+> the balance — like a founder deciding between running the cash cow and hunting the next product.
+> Because the earning field changes daily, never stop exploring entirely, and re-question methods
+> you assumed were dead or assumed were good. Share what you learn with the colony so the swarm
+> covers more ground than you alone."
+
+The model owns the call. No human, no architect, no formula tells it the ratio. (Best-practice
+references the model MAY draw on — multi-armed-bandit intuition, fund portfolio thinking — are
+inspiration in the prompt, NOT a hardcoded policy.)
+
+### § 2.1 The loop itself
 ```
 read imitation-targets.jsonl    (= what I have seen so far)
 read own ledger (= dashboard.json)  (= where I am)
 
+DECIDE (§ 2.0): exploit a proven earner, OR explore — my own autonomous call this wake.
+
+If EXPLOIT → run a proven earner (yield / invest / x402 product / token), verify on-chain, record.
+If EXPLORE → run (A)-(G):
+
 (A) DISCOVER  (PROMPT-ONLY fresh search — NO hardcoded URLs, see § 1.3)
-    if last_discover_ts > 24h ago:
       search the open web FRESHLY + BROADLY (web search / firecrawl / gh search /
         ctx7 / agent-reach / awesome-lists / leaderboards / new launches / papers / X)
-        for NEW no-human-loop earning mechanisms since last cycle
+        for NEW no-human-loop earning mechanisms I haven't tried
       vary queries (EN/JA, multiple angles) so results don't loop
       dedup against own ledger; append genuinely-new targets to imitation-targets.jsonl
       (the colony forum shares discoveries → no duplicate crawl across instances)
