@@ -360,3 +360,13 @@ Wallet/DeFi(Aave/Lido/Yearn yield)/Market Data/Token Launch(clawnch_launch)/Bank
 - ❌ **壁3 = min_entry_fill_notional_usd=250 既定**(私の HL $7.5 に対し大)。
 - ★判定: EVClaw = ① proprietary data gate ② OpenClaw 結合 ③ $250 min = 自律 $0 anicca に不適。核心(HL+LLM+data→trade)は hl-trade(外部 key 無し・local 指標)で代替済。★
 - = 結論不変(doc L224-229): 自律で稼げる trading bot は無い(全部 gate/gamble/heavy)。trade pillar 本命 = hl-trade。
+
+## 1c-bis Nocturne re-LIVE with the real TAAPI key 2026-06-21 — ❌ verdict CONFIRMED (NOT GOOD)
+Dais 2026-06-21 が TAAPI free-tier key (JWT) を提供した → 「鍵が無いから unfit」だった以前の verdict を再検証。test wallet 0x94C445 (HL $7.55 available, 0 positions) で実走。
+- 個別 curl は通った: `curl https://api.taapi.io/rsi?secret=<KEY>...` → RSI 59.52 BTC 1h, ETH 4h 52.44 取得 ✓。Key 自体は live。
+- ところが **TAAPI free-tier rate-limit が壁**: free = ~1 req/15s + 同時 1。Nocturne 1 cycle = 1 asset × (RSI×3 + MACD×2 + SMA + EMA + BB...) ≈ 10-20 indicator pulls を burst で発射 → **全部 429 即返り**、indicators 空配列で LLM へ。15s 間隔 throttle を加えても 1 cycle ~3-5 min かかる + 日次 cap も free にあり scale 不能。
+- ★追加の壁 = **sanitize stage が `openai/gpt-5` hardcoded fallback** (decision_maker.py)。これは paid 必須・$0 anicca で動かない。ClawRouter の paid 経路は今 500 ("Failed to parse payment requirements: Invalid payment required response") = 共有 wallet が x402 settle 出来ない状態。
+- 実走結果: indicators 空 + free model 200 返却するも JSON 形式不一致で "trade_decisions missing or invalid" → sanitize 400 → trade 1 件も発注されず → HL accountValue $7.55 のまま (positions 0)。**0 円・0 損益**で cycle 不成立。
+- ★最終判定 (旧 verdict 継続): Nocturne = autonomous $0 anicca には不適。理由 = ① TAAPI free tier rate-limit (paid = $24/mo Lite 必要、1000 anicca に scale 不能) ② hardcoded paid LLM fallback (openai/gpt-5)、free-only setup で sanitize 不可 ③ external SaaS key 依存自体が anicca 多重展開の哲学に反する。★
+- 本人の test wallet で run + HL state は無傷で cleanup 済。Nocturne repo は ~/.cache/anicca-clones/ から削除。
+- = trade pillar の本命変わらず: **hl-trade** (外部 key ゼロ・指標は HL/Binance ローソクから local 計算)。各 anicca が自分で判断 (HARD RULE #0)。
