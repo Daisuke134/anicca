@@ -25,6 +25,20 @@ _PATCH_EVENT (ask, telegram-reply). MAIL: Unipile send + inbox (ask, notify).
    `~/life-manager` wrapper that runs the same Node app with LIFE_TRANSPORT=gog. 6. retire travel_fill.py
    + resolve.py; OSS repo vendors lib/.
 
+## Progress (2026-06-21)
+- ✅ **Slice 1 (foundation)** — `lib/transport/{index,calendar-composio}.js`; `events.js` reads via
+  `getCalendar()`. 5 tests; full suite green; real 72h fetch identical (21 events). Auto-deployed clean
+  (build=conv74-slice1). Composio default → live unchanged.
+- ✅ **Slice 2 (travel)** — `travel.js` listEvents7d + createTravelBlock via the adapter. THE proven
+  2-language duplication point is now adapter-based on cloud. 59/59 tests; real read (58 items).
+  Auto-deployed (build=conv74-slice2).
+- ⏳ **Slice 3** — `ask.js` + `telegram-reply.js` + `notify.js`: calendar list/patch via adapter, and a
+  MAIL adapter (`mail-composio.js` wrapping Unipile send + inbox). Same mechanical pattern, low risk.
+- ⏳ **Slice 4** — `calendar-gog.js` + `mail-gog.js` (local BYOK) behind LIFE_TRANSPORT=gog.
+- ⏳ **Slice 5** — thin `~/life-manager` wrapper that runs THIS Node app with LIFE_TRANSPORT=gog +
+  cloudflared (single user); retire `travel_fill.py` + `resolve.py`; OSS repo vendors `lib/`. ← the slice
+  that touches Dais's live LOCAL caller → do on his machine with a real local call E2E.
+
 ## Safety invariant
 Every slice keeps Composio as the DEFAULT transport (no env set → composio) so the live cloud caller is
 unchanged until the gog adapter is proven. Verify each slice with the existing tests + a real tick log
