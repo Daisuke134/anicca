@@ -1,5 +1,15 @@
 # Anicca プロジェクト - 開発ガイドライン
 
+## HARD RULE 0.39 — ブラウザ作業は CloakBrowser 永続プロファイル(daily-driver)を常に使う (Dais 2026-06-21)
+
+Dais が headed CloakBrowser で**1回ログイン済**(Google/freee/Stripe card/YouTube/IG/TikTok) → `~/.cloak/profiles/daily-driver` に完全プロファイル永続。以降 ★ anicca は同プロファイルを再利用 = creds を知らずに全サービス操作・再ログイン不要・bot block 回避 ★。
+
+- API: `from cloakbrowser import launch_persistent_context; ctx = launch_persistent_context("/Users/anicca/.cloak/profiles/daily-driver", headless=False, humanize=True)` (★ `launch()` でなく `launch_persistent_context` ★)。CloakBrowser=CloakHQ/CloakBrowser(stealth Chromium・pip導入済 v0.3.30)。
+- ★ headed で常駐 → Dais は macOS 画面共有(Finder ⌘K → `vnc://100.99.82.95`)で見られる ★。
+- ★ captcha/新規login/2FA で詰まったら = Dais を呼ぶ(画面に出てる→1タップ) → anicca 継続。これで「ブラウザで ANYTHING」+ minimum human-in-loop ★。
+- 用途: freee法人・Stripe・法人口座・**YouTube/IG/TikTok 投稿(Postiz $49 解約)**・任意の認証必須サイト。スケール=プロファイルcopyで複数anicca共有。
+- 旧 camofox(:9377, storageState弱)は Google OAuth が Chromium で弾かれた時の Firefox fallback のみ。launcher=`~/.openclaw/skills/_shared/cloak-login.py`。詳細: memory `feedback_cloakbrowser_persistent_profile_forever`。3か所同期(ここ+memory+spec 2026-06-21-persistent-auth-browser.md)。
+
 ## HARD RULE 0.34 — TOOL-CALL SYNTAX MUST BE CLEAN (= "malformed/parse failed" を物理的に起こさない) — Dais 2026-06-16
 
 **症状**: "The model's tool call could not be parsed, retried or failed" が連発し、生コマンドが画面に漏れ、進行が止まる。
