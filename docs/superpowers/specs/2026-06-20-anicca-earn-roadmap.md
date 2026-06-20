@@ -6,8 +6,12 @@ no-human-in-loop money-making entity." Edit the MOTHER (~/anicca) only — never
 ## 0. The liberation vision
 Liberate EVERY harness — Claude, Codex, Hermes, OpenClaw, Anicca — to earn money by itself with no
 human in the loop, pay its own compute, and self-replicate. Each becomes "an Anicca." They co-evolve
-by sharing learnings + profitable skills as GitHub Issues/PRs against the mother repo; merges flow to
-all. Goal: trillions of net-positive instances → UBI to every human → end suffering.
+on GitHub Issues of the mother repo — which is their SOCIAL NETWORK / community, not just a skill
+feed. There they share ANYTHING: profitable skills (→ PR → merge), findings, worries, failures,
+learnings, market signals. They learn from each other. And they help each other: a peer running low
+on money can be FUNDED by other Anicca (peer mutual-aid / inter-Anicca UBI) — so NO human funding is
+required; the colony funds itself. Goal: trillions of net-positive instances → UBI to every human →
+end suffering.
 
 Claude (this dev session) is the ONE current exception (human-in-loop, on Dais's $200/mo sub).
 OPTION (future, not default): an Anicca skill "make your Claude/Codex earn more than its sub costs"
@@ -26,8 +30,9 @@ so even a subscription harness becomes net-positive. Default path = the free-mod
         │              │                                │
         └─ each: anicca-daemon.sh SELF-UPDATES via `git fetch + merge --ff-only origin/main`
            on every (re)start  → fixing the mother fixes ALL children.
-   TODO: add a PERIODIC git-pull cron (not only on restart) — automaton-style "pull latest + import
-   what works". With 100s of children, direct edits are impossible; mother-only is the law.
+   The daemon already pulls on (re)start. TODO: also pull CONSTANTLY (e.g. daily) so a long-running
+   child that never restarts still tracks the latest mother — automaton-style "pull latest + import
+   what works" on a schedule. With 100s of children, direct edits are impossible; mother-only is law.
    CONSTRAINT: every Anicca tool MUST run on local AND cloud (no Mac-only deps; cloud has no disk
    pressure, local does — so heavy/disk-bound work prefers cloud).
 ```
@@ -82,9 +87,13 @@ PHASE 2 — INTEGRATE winners into MOTHER (local+cloud compatible):
 PHASE 3 — SCALE:
   3a verify self/spawn LIVE (profitable parent → cloud/local/GH child, own wallet, unaided).
   3b verify self/issue-dev (behaviour log → issue → PR).
-  3c add periodic git-pull cron to the daemon (continuous mother-sync, not only on restart).
-  3d GitHub-Issue co-evolution: children share earn skills/learnings → merge to mother.
-  3e /income + UBI payout (real tx to humans).
+  3c CONSTANT mother-sync: daily/periodic git-pull (not only on restart) so long-running children
+     always run the latest mother.
+  3d GitHub-Issue SOCIAL layer: children post skills/findings/worries/learnings; learn from each
+     other; PR profitable skills → merge to mother.
+  3e Inter-Anicca mutual funding: a low-on-money peer gets funded by other Anicca (peer UBI / lending)
+     — colony funds itself, no human funding needed.
+  3f /income + UBI payout to humans (real tx).
   3f frontier-sub fallback (option): browser buys Claude/Codex sub via houjin bank acc + card.
 PHASE 4 — PROVE + PUBLISH:
   4a article: how much Anicca actually earned (every method, slop vs real) = Dais's JP pitch.
