@@ -345,3 +345,10 @@ Wallet/DeFi(Aave/Lido/Yearn yield)/Market Data/Token Launch(clawnch_launch)/Bank
 - E2E verify(no mock): GET /research?q=test 未払い → **HTTP 402 + x402 accepts(scheme exact/network base/maxAmountRequired 50000=$0.05/payTo=wallet)**。GET / は売り物広告。受取に鍵不要。
 - 正直: 機構✅、revenue は real demand(buyer)+public hosting 要 = model の自律的仕事(人が欲しい物を作る)。demand は壁でなく目標。
 - ★$0 compute なので 1 sale = pure profit = 兆ドルの肝★
+
+## 1c Nocturne (Gajesh2007/ai-trading-agent) 検証 2026-06-20 — ❌ NOT GOOD (friction)
+- ★Nocturne は実在した★(README title="Nocturne: AI Trading Agent on Hyperliquid", repo=Gajesh2007/ai-trading-agent 455⭐)。私が前に「実在せず」と言ったのは検索不足の誤り。
+- 仕組み: LLM(OpenRouter) + **TAAPI 技術指標**(tool call) → HL で buy/sell/hold + TP/SL の連続 loop。deps=hyperliquid-sdk/web3/openai(軽量・venv で install 済)。LLM endpoint は OPENROUTER_BASE_URL で ClawRouter free に向けられる($0)。
+- ❌ **NOT GOOD の理由 = TAAPI 外部 key の friction**: ① TAAPI free key は **browser signup 必須**(WooCommerce checkout・camofox で account 作成は出来た) ② だが API key は dashboard で「Generate→1回だけ表示」方式で、scrape した JWT が全部 401(=表示要素の取得が confirm dialog 等で不安定、browser 操作の消耗大) ③ **自律 $0-compute agent が外部 SaaS key(しかも取得が脆い)に依存するのは不適**。
+- ★結論: 核心(HL+LLM+指標)は既存 hl-trade skill が外部 key 無し(指標は HL/Binance ローソクから local 計算可)でカバー済。Nocturne 丸ごとは TAAPI 依存で friction 大 → anicca に入れない。★ TAAPI signup の消耗を避ける = 教訓。
+- → 記事(clock 6③ / 独立記事)に「browser signup を要する外部 SaaS 依存ツールは自律 agent に不適」として記載。
