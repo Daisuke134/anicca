@@ -352,3 +352,11 @@ Wallet/DeFi(Aave/Lido/Yearn yield)/Market Data/Token Launch(clawnch_launch)/Bank
 - ❌ **NOT GOOD の理由 = TAAPI 外部 key の friction**: ① TAAPI free key は **browser signup 必須**(WooCommerce checkout・camofox で account 作成は出来た) ② だが API key は dashboard で「Generate→1回だけ表示」方式で、scrape した JWT が全部 401(=表示要素の取得が confirm dialog 等で不安定、browser 操作の消耗大) ③ **自律 $0-compute agent が外部 SaaS key(しかも取得が脆い)に依存するのは不適**。
 - ★結論: 核心(HL+LLM+指標)は既存 hl-trade skill が外部 key 無し(指標は HL/Binance ローソクから local 計算可)でカバー済。Nocturne 丸ごとは TAAPI 依存で friction 大 → anicca に入れない。★ TAAPI signup の消耗を避ける = 教訓。
 - → 記事(clock 6③ / 独立記事)に「browser signup を要する外部 SaaS 依存ツールは自律 agent に不適」として記載。
+
+## 1d EVClaw (Degenapetrader/EVClaw) 実走検証 2026-06-21 — ❌ NOT GOOD (gated data + OpenClaw 依存)
+- 実走した: clone→venv→pip install(軽量: aiohttp/eth-account/hyperliquid-sdk OK)→.env 設定(私の wallet・crons=0 で Dais OpenClaw 汚さず)→`cli.py signals` 実行。
+- ❌ **壁1 = EVPlus.AI tracker が wallet で gate**: `tracker.evplus.ai:8443/sse/tracker?key=<wallet>` に SSE 接続→**即 Disconnected・データ無し・Timeout**(min_z 0.5 でも・直 curl も空)。= EVClaw の判断 edge(EVPlus.AI proprietary signal)は登録/活動済 account のみ配信。fresh wallet は signal ゼロ → 何も判断できない。
+- ❌ **壁2 = LLM 判断が OpenClaw agent(evclaw-entry-gate) を subprocess 起動** → OpenClaw runtime 必須(Dais 本番を汚すか fresh OpenClaw 立てる=重い)。
+- ❌ **壁3 = min_entry_fill_notional_usd=250 既定**(私の HL $7.5 に対し大)。
+- ★判定: EVClaw = ① proprietary data gate ② OpenClaw 結合 ③ $250 min = 自律 $0 anicca に不適。核心(HL+LLM+data→trade)は hl-trade(外部 key 無し・local 指標)で代替済。★
+- = 結論不変(doc L224-229): 自律で稼げる trading bot は無い(全部 gate/gamble/heavy)。trade pillar 本命 = hl-trade。
