@@ -275,6 +275,45 @@ Two pure changes in `apps/life-call/lib/` + scheduler.js (mirror intent to local
   against lm_wake_log + a real ccid (or dry count if outside a wake window).
 - **Deploy**: `railway up` (life-call), bump build marker, verify `/health` build + a live tick log line.
 
+## WHY local=OpenClaw / cloud=Railway, and how to converge (the maintenance-cost answer)
+Measured 2026-06-21: only `call-bridge.cjs` + `call-logic.js` are byte-IDENTICAL across local & cloud.
+Everything else is implemented TWICE — and travel is even in two LANGUAGES (local `travel_fill.py` Python,
+cloud `travel.js` JS). Proof of the tax: #71 had to be fixed in BOTH this session.
+
+| concern | LOCAL ~/life-manager | CLOUD apps/life-call | shared? |
+|---|---|---|---|
+| call bridge (Telnyx⇄Gemini Charon) | call/lib/call-bridge.cjs + call-logic.js | lib/ same files | ✅ byte-identical |
+| travel time | travel/travel_fill.py (Python) | lib/travel.js (JS) | ❌ dup, 2 languages |
+| ask / resolve | ask/ask-local.js + agent/resolve.py | lib/ask.js | ❌ dup |
+| notify | notify/notify.js | lib/notify.js | ❌ dup |
+| planner / scheduler | planner.js → openclaw cron `--at` | scheduler.js → setInterval 60s | ❌ dup |
+| calendar / gmail | gog CLI (your keychain) | Composio / Unipile (managed OAuth) | genuinely different (adapter) |
+| public wss | cloudflared quick tunnel (rotates) | stable Railway URL | genuinely different (env) |
+| data / registry | local files, single user | Supabase multi-tenant | genuinely different (adapter) |
+
+WHY it ended up split: LOCAL was built first as an OpenClaw skill — OpenClaw already gives a local cron
+(`openclaw cron --at`) + `gog` for Google + runs on your Mac with YOUR keys ("OpenClaw is just the
+executor"). CLOUD cannot be OpenClaw-on-Mac: it must be always-on (your Mac sleeps), multi-tenant (each
+paying user needs their own managed OAuth = Composio, not gog), have a STABLE public wss for Telnyx media
+(cloudflared dies; Railway gives a permanent URL), plus Supabase + Stripe. And we couldn't "just run
+OpenClaw on the server" because `@openclaw/voice-call` doesn't support our Telnyx+Gemini-realtime bridge
+(documented Twilio-Media-Streams-only). So cloud got reimplemented in JS around the shared bridge → the
+duplication you're worried about is REAL.
+
+### Convergence plan (kill the double-maintenance) — split #72 into two levels
+- **#74 — PRACTICAL convergence (do BEFORE/AROUND launch; no OpenClaw needed).** ONE JS codebase for the
+  life-logic (planner/scheduler, travel, ask, notify) under `apps/life-call/lib/`. Abstract the genuine
+  differences behind a `transport` adapter (calendar/gmail = gog | Composio; data = file | Supabase; wss =
+  cloudflared | Railway; schedule = local loop | server loop) selected by `LIFE_TRANSPORT` env. LOCAL then
+  = run the SAME Node app with `LIFE_TRANSPORT=gog` + cloudflared, single-user; CLOUD = `LIFE_TRANSPORT=
+  composio` + Supabase + Stripe. RETIRE the duplicated Python (`travel_fill.py`, `resolve.py`) and the
+  separate local loops. Net: a v2 improvement is written ONCE in JS, both targets get it. The OSS
+  `~/life-manager` repo becomes a thin wrapper that vendors/imports the same `lib/`. (The README already
+  PROMISED this — "diff isolated to adapters/transport + env"; the impl drifted. #74 makes it true.)
+- **#72 — GRAND unification (post-launch, OPTIONAL).** Upstream our Telnyx+Gemini-realtime bridge into
+  `@openclaw/voice-call` so even the HARNESS (cron, multi-agent routing) is shared via OpenClaw and both
+  targets run under one agent runtime. Nice-to-have; NOT required to kill the duplication (#74 already does).
+
 ## Next bigger version (post-launch)
 omni-channel chat (reply to gmail/slack/discord/whatsapp/imessage with approval) · proactive buddy
 (lead the user to their best self) · $10k MRR.
