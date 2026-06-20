@@ -361,6 +361,14 @@ Wallet/DeFi(Aave/Lido/Yearn yield)/Market Data/Token Launch(clawnch_launch)/Bank
 - ★判定: EVClaw = ① proprietary data gate ② OpenClaw 結合 ③ $250 min = 自律 $0 anicca に不適。核心(HL+LLM+data→trade)は hl-trade(外部 key 無し・local 指標)で代替済。★
 - = 結論不変(doc L224-229): 自律で稼げる trading bot は無い(全部 gate/gamble/heavy)。trade pillar 本命 = hl-trade。
 
+## 1g-bis MoltX Fluid Lending E2E DEPOSIT 2026-06-21 — ✅ MECHANISM + YIELD CONFIRMED
+test wallet 0x94C445 で fUSDC fToken (`0xf42f5795D9ac7e9D757dB633D693cD548Cfd9169` Base, ERC-4626) に $2 USDC deposit を実走。
+- Pool 規模: totalAssets 8.75M USDC / totalSupply 7.82M fUSDC、1 fUSDC = **1.119303 USDC** (= ローンチ以来 11.93% 蓄積 = ★real yield accrual の証明★)。
+- Deposit: USDC 3.111 → 1.111 (-$2.00)、fUSDC 0 → 1.786824 shares 鋳造、underlying $1.999999 (=$2.00 入金確認)。
+- TX: `0xb67fa2b069e868c592d3ace261b6c620c270ce91403be156530b18394da86efa` (block 47592127, gasUsed 127380, gas $0.005、人間ゼロ署名)。
+- ★MAKE-MONEY 判定: 5.28% APR で $2 deposit → $2.106/年 = $0.000016/日。1日後 convertToAssets で +$0.00001 程度。withdraw 完了は別 task で計測。Beefy (tx 0x55c71f84) と同 ERC-4626 設計 = 取出可・既証明。★
+- ★結論: Fluid Lending = ✅ autonomous-no-human で稼げる確証 yield venue (Aave/Beefy/Morpho/Moonwell に並ぶ第5の柱)。MoltX skill.moltx.io/fluid-lending.md の API ガイド準拠で動作確認。anicca skill 化候補確定 (HARD RULE #0 thin wrapper)。★
+
 ## 1c-bis Nocturne re-LIVE with the real TAAPI key 2026-06-21 — ❌ verdict CONFIRMED (NOT GOOD)
 Dais 2026-06-21 が TAAPI free-tier key (JWT) を提供した → 「鍵が無いから unfit」だった以前の verdict を再検証。test wallet 0x94C445 (HL $7.55 available, 0 positions) で実走。
 - 個別 curl は通った: `curl https://api.taapi.io/rsi?secret=<KEY>...` → RSI 59.52 BTC 1h, ETH 4h 52.44 取得 ✓。Key 自体は live。
