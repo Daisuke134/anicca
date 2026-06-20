@@ -3,7 +3,7 @@
 "use strict";
 const { test } = require("node:test");
 const assert = require("node:assert");
-const { isHelperBlock, shouldWake, departureMs } = require("./wake-filter.js");
+const { isHelperBlock, shouldWake, departureMs, resolveDeparture } = require("./wake-filter.js");
 
 const HOME = "新宿区南元町15-27";
 const at = (h) => Date.parse(`2026-06-21T${String(h).padStart(2, "0")}:00:00+09:00`);
@@ -68,4 +68,57 @@ test("departureMs: non-helper event ending at start is NOT treated as travel", (
   const ev = { summary: "打合せ2", location: "渋谷", startMs: at(14) };
   const prev = { summary: "打合せ1", location: "新宿", startMs: at(13), endMs: at(14) }; // real back-to-back
   assert.equal(departureMs(ev, [prev, ev]), at(14)); // only [Travel] helper blocks set departure
+});
+
+// ── departureMs tolerance window (travel.js caps duration at 59min → endMs can be ~1min before start) ──
+test("departureMs: block ending 1min BEFORE start (59min cap) still matches", () => {
+  const ev = { summary: "打合せ", location: "渋谷", startMs: at(14) };
+  const block = { summary: "[Travel] 🚆", startMs: at(13), endMs: at(14) - 60000 }; // ends 13:59
+  assert.equal(departureMs(ev, [block, ev]), at(13));
+});
+test("departureMs: block ending 30s AFTER start (echo drift) still matches", () => {
+  const ev = { summary: "打合せ", location: "渋谷", startMs: at(14) };
+  const block = { summary: "[Travel] 🚆", startMs: at(13), endMs: at(14) + 30000 };
+  assert.equal(departureMs(ev, [block, ev]), at(13));
+});
+test("departureMs: block ending 5min before start is OUTSIDE the window → ignored", () => {
+  const ev = { summary: "打合せ", location: "渋谷", startMs: at(14) };
+  const block = { summary: "[Travel] 🚆", startMs: at(13), endMs: at(14) - 5 * 60000 };
+  assert.equal(departureMs(ev, [block, ev]), at(14));
+});
+test("departureMs: with two candidate blocks, the LATEST-starting is chosen", () => {
+  const ev = { summary: "打合せ", location: "渋谷", startMs: at(14) };
+  const early = { summary: "[Travel] 🚆 stale", startMs: at(12), endMs: at(14) };
+  const late = { summary: "[Travel] 🚆 fresh", startMs: at(13), endMs: at(14) };
+  assert.equal(departureMs(ev, [early, late, ev]), at(13));
+});
+
+// ── resolveDeparture: never-late inline fallback when NO travel block exists yet ──────────────────────
+test("resolveDeparture: travel block present → uses block start (no directions call)", async () => {
+  const ev = { summary: "打合せ", location: "渋谷", startMs: at(14) };
+  const block = { summary: "[Travel] 🚆", startMs: at(13), endMs: at(14) };
+  let called = false;
+  const dep = await resolveDeparture(ev, [block, ev], { home: HOME, directionsFn: async () => { called = true; return 99; } });
+  assert.equal(dep, at(13));
+  assert.equal(called, false); // block present → never hits the network
+});
+test("resolveDeparture: NO block → computes leave inline = start - (travel+buffer)", async () => {
+  const ev = { summary: "打合せ", location: "渋谷", startMs: at(14) };
+  const dep = await resolveDeparture(ev, [ev], { home: HOME, bufferMin: 5, directionsFn: async () => 30 });
+  assert.equal(dep, at(14) - (30 + 5) * 60000); // 13:25 — woken before the real leave, not at event start
+});
+test("resolveDeparture: NO block + directions returns null → conservative event-start", async () => {
+  const ev = { summary: "打合せ", location: "渋谷", startMs: at(14) };
+  const dep = await resolveDeparture(ev, [ev], { home: HOME, directionsFn: async () => null });
+  assert.equal(dep, at(14));
+});
+test("resolveDeparture: NO block + no directionsFn/home → event-start (no crash)", async () => {
+  const ev = { summary: "打合せ", location: "渋谷", startMs: at(14) };
+  assert.equal(await resolveDeparture(ev, [ev], {}), at(14));
+  assert.equal(await resolveDeparture(ev, [ev], { home: HOME }), at(14));
+});
+test("resolveDeparture: directionsFn throws → event-start (never crash the tick)", async () => {
+  const ev = { summary: "打合せ", location: "渋谷", startMs: at(14) };
+  const dep = await resolveDeparture(ev, [ev], { home: HOME, directionsFn: async () => { throw new Error("boom"); } });
+  assert.equal(dep, at(14));
 });

@@ -1,5 +1,5 @@
 // lib/wake-filter.js — #69 wake/travel importance filter (kills routine spam) + leave-time anchor
-// (never-late). PURE, unit-tested in wake-filter.test.js. Used by scheduler.js tick().
+// (never-late). PURE/injectable, unit-tested in wake-filter.test.js. Used by scheduler.js tick().
 "use strict";
 
 // Anicca's own inserted blocks are not real commitments — never wake someone for them.
@@ -12,30 +12,51 @@ const norm = (s) => (s || "").replace(/\s+/g, "").toLowerCase();
 
 // Should we place a wake call for this event?
 //   travel-only (default): only events you must TRAVEL to — a real location that isn't home. Routines
-//     (no location, or at home) are skipped → no 27-calls-a-day spam. Home unknown → skip (can't judge;
-//     the ask-loop resolves home first).
+//     (no location, or at home) are skipped → no 27-calls-a-day spam. Home unknown → skip.
 //   all-events: any timed non-helper event (opt-in to the original behavior).
-// Helper blocks are never woken for under any policy.
-function shouldWake(ev, home, policy = "travel-only") {
+function shouldWake(ev, home, policy) {
   if (!ev || isHelperBlock(ev.summary)) return false;
-  if (policy === "all-events") return true;
+  const p = policy === "all-events" ? "all-events" : "travel-only"; // null/garbage → safe default
+  if (p === "all-events") return true;
   const loc = norm(ev.location);
   if (!loc) return false;            // no location → routine / phone task → no travel
   if (!norm(home)) return false;     // home unknown → can't tell travel vs at-home → skip
   return loc !== norm(home);         // travel only when the venue differs from home
 }
 
-// Leave-time anchor: if travel.js inserted a [Travel] block that ENDS exactly at this event's start,
-// the user must LEAVE at that block's start — so wakes anchor there, not at event start (else a
-// 30-min-travel event would be called only after the user already had to leave). No matching block →
-// event start. Only [Travel] HELPER blocks count (a real back-to-back meeting is not a departure).
+// Tolerance window for matching a [Travel] block to its event: travel.js caps block duration at 59 min
+// (Composio event_duration_minutes ≤ 59), so a ~59.6-min travel can end up to ~1 min BEFORE event start;
+// Composio echo / seconds drift can also shift it. Accept a block ending in [start-2min, start+1min].
+const DEP_LO = 120000; // 2 min before event start
+const DEP_HI = 60000;  // 1 min after
+
+// Leave-time anchor (pure, block-based): the LATEST [Travel] helper block ending ~at this event's start
+// marks the departure. No matching block → event start (the caller's inline fallback then refines it).
 function departureMs(ev, allEvents) {
   if (!ev) return null;
   const start = ev.startMs;
-  const block = (allEvents || []).find(
-    (e) => e && isHelperBlock(e.summary) && Number.isFinite(e.endMs) && e.endMs === start && Number.isFinite(e.startMs)
-  );
-  return block ? block.startMs : start;
+  let best = null;
+  for (const e of allEvents || []) {
+    if (!e || !isHelperBlock(e.summary) || !Number.isFinite(e.endMs) || !Number.isFinite(e.startMs)) continue;
+    if (e.endMs >= start - DEP_LO && e.endMs <= start + DEP_HI) {
+      if (best === null || e.startMs > best.startMs) best = e; // latest such block = the immediate leg
+    }
+  }
+  return best ? best.startMs : start;
 }
 
-module.exports = { isHelperBlock, shouldWake, departureMs };
+// Never-late departure resolver. If a [Travel] block exists → use it. If NOT (the travel loop runs only
+// every 30 min, or the event was added late, or leaveMs was already past when travel ran), compute the
+// leave time INLINE so a must-travel event still wakes before departure instead of (wrongly) anchoring
+// to event start. directionsFn is injected (the real travel.js directionsMinutes) so this stays testable.
+async function resolveDeparture(ev, allEvents, { home, mapsKey, nowMs = Date.now(), bufferMin = 5, directionsFn } = {}) {
+  const blockDep = departureMs(ev, allEvents);
+  if (blockDep !== ev.startMs) return blockDep;           // a travel block already pins the leave time
+  if (!home || !ev.location || typeof directionsFn !== "function") return ev.startMs;
+  let mins = null;
+  try { mins = await directionsFn(home, ev.location, mapsKey, ev.startMs, nowMs); } catch { mins = null; }
+  if (mins == null) return ev.startMs;                    // can't compute → conservative event-start
+  return ev.startMs - (mins + bufferMin) * 60000;         // wake before the inline-computed leave time
+}
+
+module.exports = { isHelperBlock, shouldWake, departureMs, resolveDeparture };

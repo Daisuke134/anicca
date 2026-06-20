@@ -9,9 +9,9 @@
 
 const crypto = require("crypto");
 const { fetchUpcomingEvents } = require("./lib/events.js");
-const { shouldWake, departureMs, isHelperBlock } = require("./lib/wake-filter.js");
+const { shouldWake, resolveDeparture, isHelperBlock } = require("./lib/wake-filter.js");
 const { placeCall } = require("./lib/dial.js");
-const { fillTravel } = require("./lib/travel.js");
+const { fillTravel, directionsMinutes } = require("./lib/travel.js");
 const { askTick } = require("./lib/ask.js");
 const { onboardNudgeAll } = require("./lib/telegram-onboard.js");
 
@@ -39,10 +39,13 @@ const SUPA = () => ({ url: process.env.SUPABASE_URL, key: process.env.SUPABASE_S
 async function supaUsers() {
   const { url, key } = SUPA();
   if (!url || !key) return [];
-  const q =
-    `${url}/rest/v1/lm_users?select=uid,name,phone,paid,calendar_provider,home_address,gmail_account_id,telegram_chat_id,wake_policy` +
-    `&phone=not.is.null&paid=is.true&calendar_provider=eq.composio_gcal`;
-  const r = await fetch(q, { headers: { apikey: key, Authorization: `Bearer ${key}` } });
+  const base = `${url}/rest/v1/lm_users?phone=not.is.null&paid=is.true&calendar_provider=eq.composio_gcal`;
+  const cols = "uid,name,phone,paid,calendar_provider,home_address,gmail_account_id,telegram_chat_id";
+  const hdr = { apikey: key, Authorization: `Bearer ${key}` };
+  // FAIL-SAFE: try WITH wake_policy; if the column is missing (PostgREST 400) fall back to the base
+  // columns rather than returning [] — a missing column must NOT silently disable wakes fleet-wide.
+  let r = await fetch(`${base}&select=${cols},wake_policy`, { headers: hdr });
+  if (!r.ok) r = await fetch(`${base}&select=${cols}`, { headers: hdr }); // wake_policy → undefined → travel-only
   if (!r.ok) return [];
   return r.json().catch(() => []);
 }
@@ -77,17 +80,21 @@ async function tick() {
   for (const u of users) {
     let events;
     try {
-      // 3h horizon: long-travel events (and their [Travel] blocks) must be visible when we wake 15 min
-      // before the DEPARTURE, which can be well over an hour before the event itself.
-      events = await fetchUpcomingEvents(u.uid, { nowMs: now, horizonH: 3 });
+      // 6h horizon: a long-travel event AND its [Travel] block must both be visible at the moment we
+      // wake 15 min before DEPARTURE, which can be hours before the event itself.
+      events = await fetchUpcomingEvents(u.uid, { nowMs: now, horizonH: 6 });
     } catch {
       continue;
     }
     // #69 importance filter: only wake for events the user must TRAVEL to (per their wake_policy),
-    // and anchor the 15/10/5 levels to DEPARTURE (the [Travel] block start), not the event start —
-    // so a 30-min-travel event is called before they must leave, not after.
+    // and anchor the 15/10/5 levels to DEPARTURE (leave time), not the event start — so a 30-min-travel
+    // event is called before they must leave. resolveDeparture uses the [Travel] block if present, else
+    // computes the leave time inline (never-late even before the 30-min travel loop inserts the block).
+    const mapsKey = process.env.LIFE_MAPS_KEY || process.env.GOOGLE_API_KEY;
     for (const ev of (events || []).filter((e) => shouldWake(e, u.home_address, u.wake_policy))) {
-      const depMs = departureMs(ev, events);
+      const depMs = await resolveDeparture(ev, events, {
+        home: u.home_address, mapsKey, nowMs: now, bufferMin: 5, directionsFn: directionsMinutes,
+      });
       const mins = (depMs - now) / 60000;
       for (const lvl of WAKE_LEVELS) {
         // 60s tick → a ~2-min catch window per level; levels are 5 min apart so they never overlap.

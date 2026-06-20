@@ -256,10 +256,19 @@ Two pure changes in `apps/life-call/lib/` + scheduler.js (mirror intent to local
     normalized(home); no-location or at-home events (routines: 🧘/😴/"call mom") → false. This is the
     "only events you must travel to" rule and kills routine spam.
   - Add `wake_policy` column to lm_users (text, default 'travel-only'); supaUsers selects it; null → 'travel-only'.
-- **(B) Leave-time anchor (never-late)** — `departureMs(ev, allEvents)`: if a `[Travel]` helper block ends
-  at ev.start (the one travel.js inserts), departure = that block's startMs; else departure = ev.startMs.
-  tick() anchors the 15/10/5 levels to `departureMs`, not ev.startMs. So the call fires 15/10/5 min before
-  the user must LEAVE. (Mirrors the local planner's `leaveTimeMs`.) eventKey stays per-(uid,event,level).
+- **(B) Leave-time anchor (never-late)** — tick() anchors the 15/10/5 levels to DEPARTURE, not ev.start.
+  `departureMs(ev, allEvents)` (pure): the latest `[Travel]` helper block ending within [start-2min,
+  start+1min] of ev.start → its startMs (tolerance window because travel.js caps block duration at 59
+  min, so a ~59.6-min leg ends ~1 min early); else ev.start. `resolveDeparture(ev, events, {home, mapsKey,
+  directionsFn})` (async): if a block pins the leave time use it; ELSE (travel loop runs only every 30
+  min, or the event was just added, or leaveMs was already past) compute the leave time INLINE via
+  directionsMinutes so a must-travel event still wakes before departure instead of anchoring late to
+  ev.start. directionsFn injected → unit-testable. eventKey stays per-(uid,event,level). Horizon = 6h so
+  a long-travel event + its block are both visible when the T-15-before-departure wake is due.
+- **FAIL-SAFE plumbing**: supaUsers selects `…,wake_policy`; if that 400s (column absent) it RETRIES the
+  select WITHOUT wake_policy (→ undefined → travel-only) rather than returning [] — a missing column must
+  never silently disable wakes fleet-wide. Migration committed at apps/life-call/migrations/2026-06-21-
+  wake_policy.sql (applied live to Supabase cycgdwndgfgdbnndithc via Management API 2026-06-21).
 - **Tests (RED first)**: shouldWake travel-only — home→skip, no-location→skip, real venue→wake, helper→skip,
   all-events→wake routine; departureMs — travel block present→its start, absent→event start, [Travel] not
   ending at start ignored. **E2E (no-mock)**: seed a busy day (3 routines + 1 venue event with a [Travel]
