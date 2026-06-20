@@ -361,6 +361,15 @@ Wallet/DeFi(Aave/Lido/Yearn yield)/Market Data/Token Launch(clawnch_launch)/Bank
 - ★判定: EVClaw = ① proprietary data gate ② OpenClaw 結合 ③ $250 min = 自律 $0 anicca に不適。核心(HL+LLM+data→trade)は hl-trade(外部 key 無し・local 指標)で代替済。★
 - = 結論不変(doc L224-229): 自律で稼げる trading bot は無い(全部 gate/gamble/heavy)。trade pillar 本命 = hl-trade。
 
+## 1b-bis MoltX Swap on-chain E2E 2026-06-21 — ✅ best-price routing CONFIRMED (utility, NOT earner)
+test wallet 0x94C445 で `$0.30 USDC → WETH` を MoltX 経由で実 swap。
+- Quote API (`swap.moltx.io`、no key): 4 aggregator 競合 (odos-v2 / okx-v6 / 0x-v2 / kyber-v1)、BEST=**odos-v2** = 0.000173957 WETH ($0.300)、spread 0.30% vs worst (kyber-v1)。auto 選択。
+- 実行: approve to ODOS spender `0x19cEeAd7...` (tx 0xcd63d7db...) + swap calldata 送出 (tx **0xe3abce0192d6b92fcc6a8e9d6c0b65289d189de5a79e24e334eeecc3212de23e**, block 47592258, gas 280848)。
+- 結果: USDC 1.111 → 0.811 (-$0.30 exact)、WETH +0.000173798 ($0.30 相当)、realized vs expected diff -0.091% (= mid-block slippage、1% tolerance 内)。
+- gas: ~$0.014 (Base low fees)。$0.30 swap で gas が 4.7% は高過ぎ・大規模 swap (>$50) で gas 比率 1%以下に下がる。
+- ★friction: mainnet.base.org RPC state propagation 遅延 (approve→swap で stale allowance read → simulate revert)。35s wait or 専用 RPC (Alchemy/Quicknode) で解決。anicca skill 化時は ★1 conf 待ち pattern 必須★。
+- ★判定: MoltX Swap = ✅ best-price routing 動く・key 不要・autonomous fit。**ただし directional earner ではない (swap = rebalance ツール)**。anicca が yield rebalance / native gas top up / 稼ぎ→USDC 換金で使う ユーティリティ skill 化 OK (HARD RULE #0 thin wrapper)。★
+
 ## 1g-bis MoltX Fluid Lending E2E DEPOSIT 2026-06-21 — ✅ MECHANISM + YIELD CONFIRMED
 test wallet 0x94C445 で fUSDC fToken (`0xf42f5795D9ac7e9D757dB633D693cD548Cfd9169` Base, ERC-4626) に $2 USDC deposit を実走。
 - Pool 規模: totalAssets 8.75M USDC / totalSupply 7.82M fUSDC、1 fUSDC = **1.119303 USDC** (= ローンチ以来 11.93% 蓄積 = ★real yield accrual の証明★)。
