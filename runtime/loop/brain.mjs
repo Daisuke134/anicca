@@ -47,10 +47,11 @@ async function thinkProxy(ctx, config) {
   const baseUrl = config.OPENAI_BASE_URL || 'http://127.0.0.1:8402/v1';
   const url = baseUrl.replace(/\/+$/, '') + '/chat/completions';
 
-  // PIN the survival-tier model (ctx.model, e.g. free/gpt-oss-120b) — NOT ClawRouter's `auto`.
-  // `auto` routes to the cheapest PAID model (e.g. kimi-k2.7 ~$0.004/call) which bleeds the treasury
-  // ~$0.6/hr; the cost-free thesis requires pinning a FREE model so routine compute is truly $0.
-  // Operator can still override with ANICCA_MODEL; `auto` only as a last-resort fallback.
+  // Policy 2026-06-21 (Dais): use the survival-tier model (ctx.model from tier.mjs). For LEAN
+  // and FUNDED tiers that resolves to ClawRouter `auto` — paid (kimi-k2.7 ~$0.004/call typical)
+  // is OK because net-positive (earn − burn) is the real goal, not zero compute. BROKE tier
+  // (balance=0) stays on `free/gpt-oss-120b` as a safety floor since an empty wallet can't pay.
+  // Operator override via ANICCA_MODEL.
   const body = JSON.stringify({
     model: config.ANICCA_MODEL || ctx.model || 'auto',
     messages: [

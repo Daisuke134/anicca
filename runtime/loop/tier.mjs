@@ -10,9 +10,14 @@
  * PROP-004: NaN / Infinity / -Infinity / negative → { tier: 'broke', ... }
  */
 
-const DEFAULT_FREE_MODEL   = 'free/gpt-oss-120b';    // ClawRouter free path = verified $0 (no x402 per call)
-const DEFAULT_LEAN_MODEL   = 'free/gpt-oss-120b';
-const DEFAULT_FUNDED_MODEL = 'free/gpt-oss-120b';    // cost-free even when funded — no x402 compute burn
+// Policy 2026-06-21 (Dais): net-positive > $0-compute. Use ClawRouter `auto` (balanced 74-100%
+// savings, x402 per-call paid for non-trivial prompts, kimi-k2.7 ~$0.004/call typical) so the
+// model can actually reason about earn decisions. The hardcoded free/gpt-oss-120b kept earn
+// trivial-only; we accept paid compute as long as net = earn − burn > 0. Broke tier still falls
+// back to free as a safety floor: when liquid USDC is 0 the wallet cannot settle x402 anyway.
+const DEFAULT_FREE_MODEL   = 'free/gpt-oss-120b';    // broke (balance=0): can't pay → free floor
+const DEFAULT_LEAN_MODEL   = 'auto';                 // lean (≤$1): paid OK for non-trivial
+const DEFAULT_FUNDED_MODEL = 'auto';                 // funded (>$1): paid OK for non-trivial
 const DEFAULT_LEAN_THRESHOLD = 1.00;
 
 /**
