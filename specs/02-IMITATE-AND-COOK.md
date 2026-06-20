@@ -139,6 +139,27 @@ The model owns the call. No human, no architect, no formula tells it the ratio. 
 references the model MAY draw on — multi-armed-bandit intuition, fund portfolio thinking — are
 inspiration in the prompt, NOT a hardcoded policy.)
 
+### § 2.0.1 Best-practice grounding — this IS how real earning agents decide (2026-06-21)
+Searched the actual autonomous-earning-agent ecosystem (ctx7 + gh + firecrawl). Finding: the agents
+that genuinely EARN (not just pay for compute like Franklin/automaton) all use the SAME shape we do —
+a tool-calling LLM + a natural-language prompt, NO formula. Our HARD RULE #0 is already the field
+best practice. Evidence (verbatim):
+- **GOAT SDK** (`goat-sdk/goat`, "the largest agentic finance toolkit: send/receive payments, earn
+  yield, prediction markets, swap, tokenize"): the whole agent is `create_tool_calling_agent(llm,
+  tools, prompt)` → `agent_executor.invoke({"input": ...})`. An earn-primitive TOOLBOX + a prompt;
+  the LLM picks the tool. No bandit, no ε. → adopt GOAT's earn primitives as anicca earn tools.
+- **AEA = Autonomous Economic Agent** (Fetch.ai `fetchai/agents-aea`, `open-aea`): the canonical
+  lineage of "agent with identity + wallet that pursues economic interests autonomously." Its
+  `DecisionMakerHandler` builds + signs its own transactions (`Terms`: amount/good/counterparty).
+- **agent-adaptor** core principle verbatim: "**the embedded agent decides at runtime; the provider
+  shapes policy through prompt and config**" + "**one adapter instance is one economic identity**."
+  = exactly anicca's design: shape via prompt+config, the agent decides at runtime; 1 anicca = 1
+  wallet = 1 economic identity.
+- **sphere-sdk**: "give an agent identity, a wallet, and the ability to **find, negotiate with, and
+  settle with other agents — peer-to-peer**" = the swarm-of-earners coordination (see spec 18 §7).
+Takeaway: keep it prompt-driven; borrow GOAT's earn primitives + AEA's identity/wallet/decision-maker
++ peer find/negotiate/settle. Never hardcode the decision.
+
 ### § 2.1 The loop itself
 ```
 read imitation-targets.jsonl    (= what I have seen so far)
