@@ -131,7 +131,31 @@ TWO partly-overlapping codebases. The shared part is only the call bridge.
    • lm-onboard?action=telegram-link  saves telegram_chat_id (+ ?name= deep-link carry)
 ```
 
-### DATA (Supabase) + KEYS
+### UX FLOW — what the USER actually experiences (cloud has TWO entries: Web OR Telegram)
+The cloud product onboards via EITHER the web form (/lm) OR the Telegram bot (@LifeManagerBotbot).
+Both write the SAME `lm_users` row, SAME order (name→calendar→gmail→phone→pay→done). Only `name` +
+`phone` differ: web = form fields, Telegram = typed natively in chat (NATIVE_STAGES). calendar/gmail/pay
+always need the web (OAuth/Stripe) — on Telegram the bot sends a button to `/lm?tg=<chat_id>` that
+resumes at the right step.
+```
+ ENTRY ① WEB /lm                         ENTRY ② TELEGRAM @LifeManagerBotbot
+  ● login   Sign in with Google           /start → bot:"name?"  ← typed in chat (NATIVE)
+  ● calendar Connect gcal (Composio) ◀──── bot button → /lm?tg=… (OAuth on web, shared)
+  ● gmail    Connect Gmail (Unipile) ◀──── bot button (OAuth on web, shared)
+  ● phone    +<cc><national>                bot:"phone?"  ← typed in chat (NATIVE)
+  ● pay      Stripe $20/mo          ◀──── bot button → Stripe (shared)
+  ● done ✅  Dashboard "Call me now"        bot:"🎉 all set"
+        └──────────────┬──────────────────────────┬─────────┘
+                       ▼ same cloud, same Supabase lm_users(paid=true)
+ DAILY (both entries, user does nothing): calendar →⏰scheduler→📞15/10/5 calm/firm/harsh
+   · 🚗travel→🚆移動 block · 📧ask unknown location via TG/Gmail · 📨notify late→attendee mail
+```
+LOCAL (~/life-manager) has NO onboarding UI — you clone, put your own TELNYX/GEMINI keys in .env, auth
+your own gcal/gmail via gog, register planner in openclaw cron. Daily experience is IDENTICAL to cloud;
+only the backstage differs (your keys + cloudflared tunnel vs managed keys + stable Railway wss). The
+in-call Charon conversation is the SHARED CORE, byte-identical.
+
+## DATA (Supabase) + KEYS
 ```
  lm_users : uid · name · phone · paid · calendar_provider(composio_gcal) · gmail_account_id(Unipile)
             · home_address · telegram_chat_id · tg_onboard_stage
@@ -183,6 +207,26 @@ Pay: Stripe $20/mo (LIVE link + sandbox test link, webhook dual-secret live+test
    provider → run OpenClaw-on-server (voice-call telnyx + multi-agent routing per-user + cron + Composio)
    → ONE codebase deploys local (BYOK) or server (subscribers). Retires the bespoke life-call + local sutando.
    DO AFTER LAUNCH — don't rebuild the working system first.
+
+## #71 IMPLEMENTATION CONTRACT (Routes API migration — in progress)
+Replace `directionsMinutes(src,dst,mapsKey)` in `apps/life-call/lib/travel.js` (and mirror to
+`~/life-manager/travel/`) with a Routes-API call. Contract:
+- **Input**: src address, dst address, mapsKey, departAtMs (when the user would leave), arriveByMs (event start).
+- **DRIVE**: POST `https://routes.googleapis.com/directions/v2:computeRoutes`, header
+  `X-Goog-FieldMask: routes.duration`, body `{origin:{address},destination:{address},travelMode:"DRIVE",
+  routingPreference:"TRAFFIC_AWARE_OPTIMAL", departureTime:<future ISO>}`. Read `routes[0].duration`
+  ("1234s"). **Remove the ×1.4 fudge** — traffic is now real.
+- **TRANSIT**: body `{...travelMode:"TRANSIT", arrivalTime:<event start ISO>}` (NO routingPreference/
+  trafficModel on TRANSIT — API rejects them). Read `routes[0].duration`.
+- **Order**: try TRANSIT first (arriveBy=event start) then DRIVE (departAt clamped to ≥ now+60s, since
+  Routes rejects past departureTime); take whichever returns. Floor 5 min. Return integer minutes.
+- **Fallback**: on non-200 / missing duration → return null (caller skips, ask-loop handles).
+- **Invariant (never-late)**: prefer the LARGER of transit/drive when both resolve? No — keep current
+  "transit then drive, first hit wins" to match existing behavior; the accuracy win is traffic-aware drive.
+- **Tests (RED first)**: parseDurationSeconds("1234s")→1234; minutesFromRoutes mock 1002s→17; DRIVE body
+  has TRAFFIC_AWARE_OPTIMAL + departureTime≥now; TRANSIT body has arrivalTime and NO routingPreference.
+- **E2E (no-mock)**: real LIFE_MAPS_KEY, 新宿区南元町→東京駅, assert minutes in plausible band + that a
+  rush-hour departureTime yields ≥ the off-peak number.
 
 ## Next bigger version (post-launch)
 omni-channel chat (reply to gmail/slack/discord/whatsapp/imessage with approval) · proactive buddy
