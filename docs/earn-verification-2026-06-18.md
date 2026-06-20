@@ -301,3 +301,10 @@ NEXT: #3 Nocturne(single-agent・HL・LLM signal+TP/SL = 勝ち筋系統) を検
 - ★根因: anicca の x402-per-call proxy(BlockRun) が swarms の高頻度 LLM call(Director+4 sub-agent×retry) を捌けず空応答。micropayment-per-call は多 call の multi-agent bot に構造的不適。Dais が自分で動かせたのは real OpenAI key(flat billing) だったから。★
 - ★コスト事故: これらテストは anicca proxy 経由で anicca wallet から x402 opus 代を支払い → anicca net worth $14→$11.3 の一部は私のテスト drain。以後 anicca の compute でテストしない。★
 - verdict: AutoHedge = capable model + reliable flat-rate endpoint なら動く / x402-self-pay anicca には不適(多 micropayment で flaky+高コスト)。KEY: 低 call 数の単純戦略(HL 直 trade)が self-pay に適。multi-agent swarm は不適。
+
+## MINDSET CORRECTION 2026-06-20 (Dais 厳命) — demand は壁でなく「目標」
+★私(Claude)の defeatist 思考が間違い★：「demand が壁」「invest=gambling」は病んだ思考。撤回。
+- **demand は壁でなく目標**。AI の仕事 = people の want を作ること。需要が無いなら「人が欲しい物を作る」のが仕事。「需要次第＝壁」と諦めるのは罪。
+- **invest ≠ gambling**。リスク管理した投資(yield/blue-chip/HL risk-managed/delta-neutral)は正当な稼ぎ方(Buffett型)。
+- earn の3本柱は全て「やれば出来る」前提で進める：① yield(預けて利息) ② trade/invest(リスク管理) ③ product を x402 で売る(people の want を作る)。
+- ★今後「壁」「無理」「gambling」「需要次第で$0」と言いそうになったら = それは諦める合図でなく「どう作るか/どう売るか」を考えろの合図★。
