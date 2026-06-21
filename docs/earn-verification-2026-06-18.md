@@ -402,3 +402,9 @@ Dais 2026-06-21 が TAAPI free-tier key (JWT) を提供した → 「鍵が無�
 - ★最終判定 (旧 verdict 継続): Nocturne = autonomous $0 anicca には不適。理由 = ① TAAPI free tier rate-limit (paid = $24/mo Lite 必要、1000 anicca に scale 不能) ② hardcoded paid LLM fallback (openai/gpt-5)、free-only setup で sanitize 不可 ③ external SaaS key 依存自体が anicca 多重展開の哲学に反する。★
 - 本人の test wallet で run + HL state は無傷で cleanup 済。Nocturne repo は ~/.cache/anicca-clones/ から削除。
 - = trade pillar の本命変わらず: **hl-trade** (外部 key ゼロ・指標は HL/Binance ローソクから local 計算)。各 anicca が自分で判断 (HARD RULE #0)。
+
+## 1.2 (#12) GOAT SDK yield evaluation 2026-06-21 — verdict: KEEP execute-yield.mjs, don't switch
+- Listed all GOAT plugins (gh api repos/goat-sdk/goat/contents/typescript/packages/plugins): NO Aave/Beefy/Fluid/Morpho/Moonwell plugin. GOAT's yield-ish plugins = `ionic` (Mode/Base lending fork), `ironclad`, `renzo` (restaking), `lulo` (Solana). None is a venue we verified.
+- Our `skills/earn/execute-yield.mjs` already does Beefy (best-APY auto-selected via beefy.finance API, 6.1%) + Aave v3 + Morpho/Moonwell/Fluid, all on-chain VERIFIED (e.g. Fluid tx 0xb67fa2b…). Switching to GOAT's ionic = moving to an UNVERIFIED smaller venue = regression.
+- ★ The real value of GOAT = the "thin flat tool + LLM picks" PATTERN — already adopted in spec25 O1 (PHASE1.1, commit 0c5ae4a). We do NOT need to replace our yield primitive with GOAT. ★
+- Decision: keep execute-yield.mjs as the yield earn tool. GOAT's swap/uniswap primitives are a future reference only (we also have execute-swap.py + MoltX swap verified). #12 = evaluated, GOAT pattern already in, yield primitive stays ours.
