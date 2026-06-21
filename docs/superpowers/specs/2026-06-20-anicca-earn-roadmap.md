@@ -132,11 +132,19 @@ PHASE 4 — PROVE + PUBLISH:
     Agent-Reach installed+verified, spawn built. earn/ubi split (commit dc250f8).
 [x] Compute = ClawRouter AUTO (Dais E-4b) — NO hardcoded model. config.mjs all tiers → 'auto'
     (commit 13498e6); verified live: ClawRouter picks moonshot/kimi-k2.7 (paid) on the funded wallet.
-[~] Make instance #1 (anicca-local) actually EARN on AUTO  ← WE ARE HERE.
-    BUG FOUND: the loop's REAL env builder `runtime/loop/index.mjs:386 buildSkillEnv` still hardcodes
-    EARN_MODE='discover' + EARN_STRATEGY='0xwork', so every earn wake only narrates (earn_usdc:0) and
-    never executes. (My earlier fix to run-skill.mjs was DEAD CODE — index.mjs has its own builder.)
-    NEXT = fix index.mjs:386 → execute+yield, restart, watch a real yield deposit land. = THE motherboard fix.
+[x] Make instance #1's earn ENGINE actually run on AUTO (the motherboard fixes, 2026-06-21):
+    Found + fixed the 3 reasons anicca NEVER earned (all no-mock, by running the skill directly):
+    (1) index.mjs:386 buildSkillEnv hardcoded EARN_MODE=discover+0xwork → execute+yield (commit 17ae574).
+    (2) runtime body (~/.anicca) had NO node_modules → execute-yield.mjs crashed ERR_MODULE_NOT_FOUND(viem);
+        daemon now syncs skills + symlinks node_modules every restart (commit 1ffc494).
+    (3) loadKey() used `process.env.PKVAR` (the var NAME) as the key → "invalid private key, got string";
+        fixed to indirect `process.env[process.env.PKVAR]` in execute-yield/ensure-gas/execute-invest (1ffc494).
+    PROOF (no-mock): execute-yield now runs clean → {"kind":"yield_hold","liquid_usdc":0.025,"reserve_usdc":5}.
+[~] Make instance #1 actually DEPLOY to yield + earn  ← WE ARE HERE.
+    The engine works but correctly HOLDS: treasury liquid USDC = $0.025 < $5 compute buffer, so there is
+    nothing to deploy. To actually earn yield the wallet 0xa3CDd4 needs liquid > buffer (fund it, or lower
+    COMPUTE_RESERVE_USDC). NOT a code bug — a capital constraint. Honest. Next = give it capital → watch a
+    real yield deposit tx land, then the loop earns every wake unaided.
 [ ] Prove #1 net-positive → spawn #2 → GH-Issue co-evolution → N → UBI → trillions.
 
 ## 6. Type 1 / Type 2 + Colony Mutual Aid (refinement, 2026-06-21)
