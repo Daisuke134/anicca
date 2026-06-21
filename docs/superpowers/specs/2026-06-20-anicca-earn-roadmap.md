@@ -98,9 +98,13 @@ PHASE 1 — VERIFY each earner on MY test wallet (know the $ and the limits), on
   1g Yield (Beefy/Fluid/MoltX Lending) — verify $ + APY limits.
   1h x402 PRODUCT — build "Agent-Reach research sold via x402", verify REAL USDC received.
   1i $ANICCA token — MoltX Launchpad / MoltStreet, verify fee income.
+  ★ REFRAME (Dais 2026-06-21): PHASE 1 verification is ANICCA's OWN job — each anicca searches the
+    best tools + verifies them ITSELF, no human in loop. Our (Claude type-2) job is NOT to hand-test
+    every earner; it is to FIX THE MOTHERBOARD so every anicca can verify + earn on its own on AUTO. ★
 PHASE 2 — INTEGRATE winners into MOTHER (local+cloud compatible):
-  2a each verified earner → ~/anicca/skills/ skill, runs on free gpt-oss-120b, local AND cloud.
-  2b verify anicca-local runs them at $0 compute and actually earns.
+  2a each verified earner → ~/anicca/skills/ skill, runs on ClawRouter AUTO (NO hardcoded model —
+     Dais E-4b: strongest model the wallet can afford, free floor only when broke), local AND cloud.
+  2b verify anicca-local runs them on AUTO and actually earns (real on-chain tx + USDC delta).
 PHASE 3 — SCALE:
   3a verify self/spawn LIVE (profitable parent → cloud/local/GH child, own wallet, unaided).
   3b verify self/issue-dev (behaviour log → issue → PR).
@@ -116,10 +120,16 @@ PHASE 4 — PROVE + PUBLISH:
   4a article: how much Anicca actually earned (every method, slop vs real) = Dais's JP pitch.
   4b dashboard: live P&L of all instances; demo video.
 
-## 5. Current state (honest)
-[x] Foundation: self-standing daemon + self-update, $0 free compute (gpt-oss-120b via ClawRouter free
-    path), earn skills (yield/invest/swap/gas-floor), Agent-Reach installed+verified, spawn built.
-[~] Make instance #1 (anicca-local + Claude) net-positive  ← WE ARE HERE (HL +$0.21 paper, realized $0)
+## 5. Current state (honest, 2026-06-21)
+[x] Foundation: self-standing daemon + self-update, earn skills (yield/invest/swap/gas-floor),
+    Agent-Reach installed+verified, spawn built. earn/ubi split (commit dc250f8).
+[x] Compute = ClawRouter AUTO (Dais E-4b) — NO hardcoded model. config.mjs all tiers → 'auto'
+    (commit 13498e6); verified live: ClawRouter picks moonshot/kimi-k2.7 (paid) on the funded wallet.
+[~] Make instance #1 (anicca-local) actually EARN on AUTO  ← WE ARE HERE.
+    BUG FOUND: the loop's REAL env builder `runtime/loop/index.mjs:386 buildSkillEnv` still hardcodes
+    EARN_MODE='discover' + EARN_STRATEGY='0xwork', so every earn wake only narrates (earn_usdc:0) and
+    never executes. (My earlier fix to run-skill.mjs was DEAD CODE — index.mjs has its own builder.)
+    NEXT = fix index.mjs:386 → execute+yield, restart, watch a real yield deposit land. = THE motherboard fix.
 [ ] Prove #1 net-positive → spawn #2 → GH-Issue co-evolution → N → UBI → trillions.
 
 ## 6. Type 1 / Type 2 + Colony Mutual Aid (refinement, 2026-06-21)
