@@ -102,7 +102,7 @@ async function post() {
       // REAL numbers now: realised revenue + per-source breakdown + cost (compute is $0 on a free model,
       // so burn ≈ gas/fees from cost_usdc). No more hardcoded 0.
       net_worth_usd: total, revenue_mo_usd: earn.revenue, burn_day_usd: earn.cost, runway_days: 999,
-      revenue_by_source: earn.bySource, status: "alive",
+      status: "alive",
       breakdown: nw, log: recentLog(20),
     });
     const signature = await acct.signMessage({ message: msg });
