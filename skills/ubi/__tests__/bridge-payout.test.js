@@ -30,12 +30,28 @@ test("mapTransferStatus: success->paid, failure->needs_review, else pending", ()
   assert.equal(mapTransferStatus('awaiting_funds'),'pending');
   assert.equal(mapTransferStatus(undefined),'pending');
 });
-test("submitTransfer: POST /transfers with Api-Key + Idempotency-Key + amount guard", async () => {
+test("submitTransfer: Idempotency-Key derives from referenceId, NOT amount (FIND-001/002)", async () => {
   let cap=null; const fetchImpl=async(u,o)=>{cap={u,o};return{ok:true,json:async()=>({id:'tr_1',state:'awaiting_funds'})};};
-  const body=buildTransferRequest(base);
-  const r=await submitTransfer(body,{apiKey:'sk',fetchImpl});
+  const r=await submitTransfer(buildTransferRequest(base),{apiKey:'sk',fetchImpl});
   assert.equal(r.id,'tr_1'); assert.equal(cap.u,`${API_BASE}/transfers`);
-  assert.equal(cap.o.headers['Api-Key'],'sk'); assert.ok(cap.o.headers['Idempotency-Key']);
+  assert.equal(cap.o.headers['Api-Key'],'sk');
+  assert.equal(cap.o.headers['Idempotency-Key'],'bridge-payout-u1'); // value = key(referenceId), not amount
+});
+test("submitTransfer: same amount+recipient, DIFFERENT referenceId -> DIFFERENT keys (no dropped repeat UBI)", async () => {
+  const keys=[]; const fetchImpl=async(u,o)=>{keys.push(o.headers['Idempotency-Key']);return{ok:true,json:async()=>({id:'x'})};};
+  await submitTransfer(buildTransferRequest({...base,referenceId:'period1'}),{apiKey:'sk',fetchImpl});
+  await submitTransfer(buildTransferRequest({...base,referenceId:'period2'}),{apiKey:'sk',fetchImpl});
+  assert.notEqual(keys[0],keys[1]);
+});
+test("submitTransfer: missing referenceId in body -> throws (no amount-fallback collision)", async () => {
+  await assert.rejects(submitTransfer({amount:'5',on_behalf_of:'c'},{apiKey:'sk',fetchImpl:async()=>({ok:true,json:async()=>({})})}),/referenceId required/);
+});
+test("assertPayableAmount: rejects above ceiling (FIND-004)", () => {
+  assert.throws(()=>assertPayableAmount('200000','x',100000),/exceeds max/);
+  assert.doesNotThrow(()=>assertPayableAmount('50','x',100000));
+});
+test("mapTransferStatus: terminal failures -> needs_review (FIND-005)", () => {
+  for (const s of ['reversed','charged_back','declined','rejected','reclaimed','expired']) assert.equal(mapTransferStatus(s),'needs_review');
 });
 test("submitTransfer: throws on non-ok with body (no false-ok); rejects bad amount", async () => {
   const f=async()=>({ok:false,status:422,text:async()=>'bad external_account'});
