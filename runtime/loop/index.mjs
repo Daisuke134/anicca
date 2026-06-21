@@ -312,6 +312,10 @@ async function runOneWake() {
     sleep_s: sleepS,
     model: currentTier.model,
     slot,
+    // OBSERVABILITY: log the model's decided args (strategy + params) so we can SEE what it chose each
+    // wake — without this the wake line had no `args`, which read as "the model decided nothing" when it
+    // actually did. Empty object when the model passed none.
+    ...(args && Object.keys(args).length ? { args } : {}),
     ...(kind === 'wake' ? { profitable } : {}),
     ...(skillResult.exitCode != null ? { exit_code: skillResult.exitCode } : {}),
   };
