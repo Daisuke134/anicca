@@ -313,9 +313,18 @@ duplication you're worried about is REAL.
   separate local loops. Net: a v2 improvement is written ONCE in JS, both targets get it. The OSS
   `~/life-manager` repo becomes a thin wrapper that vendors/imports the same `lib/`. (The README already
   PROMISED this — "diff isolated to adapters/transport + env"; the impl drifted. #74 makes it true.)
-- **#72 — GRAND unification (post-launch, OPTIONAL).** Upstream our Telnyx+Gemini-realtime bridge into
-  `@openclaw/voice-call` so even the HARNESS (cron, multi-agent routing) is shared via OpenClaw and both
-  targets run under one agent runtime. Nice-to-have; NOT required to kill the duplication (#74 already does).
+- **#72 — GRAND unification = run ONE OpenClaw app local OR server (Dais's ideal). The single concrete
+  blocker (verified 2026-06-21 from the installed plugin SKILL.md):** `@openclaw/voice-call` supports
+  Telnyx/Twilio/Plivo BUT only in a TURN-BASED TTS model (initiate_call/speak_to_user/continue_call =
+  "say this message, wait for reply"). It has NO realtime full-duplex media bridge. Our product's killer
+  feature is the opposite: Telnyx raw RTP (PCMU 8k) ⇄ Gemini Live native-audio (Charon) = a natural,
+  barge-in, sub-second conversation (call-bridge.cjs + call-logic.js). Dropping onto OpenClaw as-is would
+  regress the magic to a robocall. So #72 path = (1) #74 transport adapter [PREREQUISITE — needed for
+  OpenClaw too], (2) upstream call-bridge.cjs into @openclaw/voice-call as a "realtime" provider mode (the
+  missing piece), (3) then one OpenClaw agent/skill deploys LOCAL (your Mac, gog, you) OR SERVER (cloud
+  box, Composio, Supabase, Stripe, multi-tenant) — same code, different place. NOTE: cloud is NEVER
+  "OpenClaw on your Mac" (Mac sleeps, gog is single-account) — cloud = OpenClaw on a SERVER. #74 is step 1
+  of this staircase, NOT a throwaway: do #74 now (fix-once, low-risk), launch, then #72 step 2 after.
 
 ## Next bigger version (post-launch)
 omni-channel chat (reply to gmail/slack/discord/whatsapp/imessage with approval) · proactive buddy
