@@ -15,6 +15,25 @@ const acct = privateKeyToAccount(pk.startsWith("0x") ? pk : "0x" + pk);
 // from this instance's wallet address (collision-impossible across spawns; auto-registers on first POST).
 const NAME = process.env.ANICCA_NAME || (await assignIdentity(acct.address)).name;
 const LEDGER = (process.env.ANICCA_HOME || HOME + "/.anicca") + "/state/ledger.jsonl";
+const EARN_LEDGER = (process.env.ANICCA_HOME || HOME + "/.anicca") + "/skills/earn/state/earn-ledger.jsonl";
+
+// REAL realised earnings (no hardcoded 0): read the earn ledger and sum earn_usdc / cost_usdc, both in
+// total and per-source, so the live page can show WHICH tool earned HOW MUCH. revenue/burn were
+// hardcoded 0 before — that is why the dashboard showed $0 earned despite real positions.
+function earnings() {
+  let revenue = 0, cost = 0; const bySource = {};
+  try {
+    for (const line of fs.readFileSync(EARN_LEDGER, "utf8").trim().split("\n")) {
+      if (!line) continue;
+      let o; try { o = JSON.parse(line); } catch { continue; }
+      const e = Number(o.earn_usdc || 0), c = Number(o.cost_usdc || 0);
+      revenue += e; cost += c;
+      const s = o.source || "unknown";
+      bySource[s] = +(((bySource[s] || 0) + e)).toFixed(6);
+    }
+  } catch { /* no ledger yet */ }
+  return { revenue: +revenue.toFixed(6), cost: +cost.toFixed(6), bySource };
+}
 
 const pub = createPublicClient({ chain: base, transport: http("https://base-rpc.publicnode.com") });
 const ABI = [{ name: "balanceOf", type: "function", stateMutability: "view", inputs: [{ type: "address" }], outputs: [{ type: "uint256" }] }];
@@ -76,10 +95,14 @@ async function post() {
     const ts = Math.floor(Date.now() / 1000);
     const model = lastModel();
     const tier = FREE_RE.test(model) ? "free" : "frontier";
+    const earn = earnings();
     const msg = JSON.stringify({
       id: acct.address.toLowerCase(), ts, host: NAME, geo: "JP",
       model_live: model, model_tier: tier,
-      net_worth_usd: total, revenue_mo_usd: 0, burn_day_usd: 0, runway_days: 999, status: "alive",
+      // REAL numbers now: realised revenue + per-source breakdown + cost (compute is $0 on a free model,
+      // so burn ≈ gas/fees from cost_usdc). No more hardcoded 0.
+      net_worth_usd: total, revenue_mo_usd: earn.revenue, burn_day_usd: earn.cost, runway_days: 999,
+      revenue_by_source: earn.bySource, status: "alive",
       breakdown: nw, log: recentLog(20),
     });
     const signature = await acct.signMessage({ message: msg });
