@@ -16,7 +16,9 @@ import { privateKeyToAccount } from "viem/accounts";
 import { base } from "viem/chains";
 import fs from "fs";
 
-const RPC = process.env.BASE_RPC_URL || "https://mainnet.base.org";
+// Default to a reliable Base RPC — mainnet.base.org flaked intermittently and silently dropped
+// deposits (the loop logged "deploy" but no tx landed). Operator can still override via BASE_RPC_URL.
+const RPC = process.env.BASE_RPC_URL || "https://base.llamarpc.com";
 const USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
 const AAVE_POOL = "0xA238Dd80C259a72e81d7e4664a9801593F98d1c5";
 const AAVE_APY = 0.032;
