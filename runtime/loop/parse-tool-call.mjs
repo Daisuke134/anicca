@@ -91,10 +91,29 @@ function extractFirstToolCall(response) {
   if (!message) return null;
 
   const toolCalls = message.tool_calls;
-  if (!Array.isArray(toolCalls) || toolCalls.length === 0) return null;
+  if (Array.isArray(toolCalls) && toolCalls.length > 0) {
+    const tc = toolCalls[0];
+    if (tc?.function?.name) return tc;
+  }
 
-  const tc = toolCalls[0];
-  if (!tc?.function?.name) return null;
+  // SCAVENGE (copied from BlockRunAI/Franklin src/agent/llm.ts isRoleplayedJsonToolCallText +
+  // repair/scavenge.ts): free models like glm-4.7 often emit the tool call as TEXT content instead of
+  // the tool_calls field — e.g. {"type":"function","name":"run_skill","parameters":{...}} or
+  // {"name":"run_skill","arguments":{...}}. Recover it so the model's decision is not lost.
+  return scavengeRoleplayedToolCall(message.content);
+}
 
-  return tc;
+function scavengeRoleplayedToolCall(content) {
+  if (typeof content !== 'string') return null;
+  const trimmed = content.trim();
+  if (!trimmed.startsWith('{') || !trimmed.endsWith('}')) return null;
+  let parsed;
+  try { parsed = JSON.parse(trimmed); } catch { return null; }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+  const name = typeof parsed.name === 'string' ? parsed.name
+    : (typeof parsed.function === 'string' ? parsed.function : null);
+  if (!name) return null;
+  // the call's arguments may be under `parameters` or `arguments`
+  const callArgs = parsed.parameters ?? parsed.arguments ?? {};
+  return { function: { name, arguments: callArgs } };
 }
