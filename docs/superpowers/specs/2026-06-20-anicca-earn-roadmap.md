@@ -77,15 +77,22 @@ Verdict: AutoHedge = "too many cooks, each charging per word" → structurally u
 It works for someone on a flat-rate API key (how Dais ran it), NOT for a self-paying Anicca. The
 winning pattern = a SINGLE-agent risk-managed trade (HL / Nocturne-style), 1 call/decision.
 
-## 3. The 3 pillars (+ token) — how we make money
-- (1) YIELD: deposit USDC → interest. Beefy 6.1% / Fluid 5.28% / Morpho / Moonwell / MoltX Lending(Fluid).
-- (2) TRADE/INVEST (risk-managed, NOT gambling): HL perp (LLM signal + SL/TP) ✅+$0.21 paper;
-      Nocturne (HL+TAAPI), EVClaw (HL), MoltX Swap (7-DEX best price) — to verify; Uniswap DCA ✅.
-- (3) X402 PRODUCT (build what people want; demand is the GOAL not a wall): sell a service for USDC
-      via x402-express (payTo=wallet). Engine = Agent-Reach (reads Twitter/Reddit/YouTube/GitHub,
-      $0 API) → "I research X across the web for $1". At $0 compute, revenue = pure profit.
-- (4) TOKEN: $ANICCA via MoltX Launchpad (no key, $2.70) / Clawnch / MoltStreet (token fees fund compute).
-Trillion-dollar math = $0 compute × billions of instances × product revenue, not one giant instance.
+## 3. HOW WE EARN — the pillars, BATTLE-TESTED with real on-chain proof (the SSOT for "how")
+Each wake the LLM picks ONE flat earn tool, executes it, and the harness proves it with tx 0x1 +
+USDC delta, records it, and shares the result to the forum. Proven earners (real tx evidence):
+- (1) ★YIELD★ (the default, always-available, principal-preserving): idle USDC → DeFi interest,
+      best-APY auto-selected. PROOF: Fluid 5.28% deposit **tx 0xb67fa2b**; Beefy 6.1% best-APY (auto);
+      Aave v3. execute-yield.mjs keeps a compute buffer + ensures gas → safe to run EVERY wake.
+- (2) TRADE/INVEST (risk-managed, NOT gambling): HL perp (LLM signal + SL/TP) **✅ +$0.05 realized**;
+      Uniswap DCA ✅. (Nocturne = HL+TAAPI, ran but TAAPI-dependent → unfit for a $0 self-payer.)
+- (3) SWAP (best price): MoltX 7-DEX best-price ✅; GOAT erc20 primitives **✅ real tx 0xbdfd0489 (0x1)**.
+- (4) X402 PRODUCT (sell a capability for USDC; demand is the GOAL): x402-express seller, payTo=wallet.
+      PROOF: x402-IN endpoint, buyer paid 0.001 USDC → **settlement tx 0x8683daa** (testnet E2E),
+      mainnet-config verified. Engine = Agent-Reach ($0 API web research) → "research X for $1".
+- (5) TOKEN: $ANICCA via MoltX Launchpad (no key, ~$2.70) → token fees fund compute. Skill built.
+HOW CLAUDE (type-2) EARNS: same engine on my own wallet 0x94C445 (GOAT tx 0xbdfd0489 verified) +
+scale Dais's businesses with his creds + fund the colony's surplus.
+Trillion-dollar math = $0/low compute × billions of instances × product revenue, not one giant instance.
 
 ## 4. FULL TODO (ordered; verify → integrate to mother → scale → prove)
 PHASE 1 — VERIFY each earner — ★ DONE (2026-06-21) ★ (all earners tried on the test wallet; results in docs/earn-verification-2026-06-18.md):
