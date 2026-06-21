@@ -1,6 +1,29 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { buildOfframpOrder, offrampIdempotencyKey, submitOfframp, API_BASE } from "../crossmint-offramp.mjs";
+import { buildOfframpOrder, offrampIdempotencyKey, submitOfframp, getOfframpStatus, mapOrderStatus, API_BASE } from "../crossmint-offramp.mjs";
+
+test("buildOfframpOrder: referenceId REQUIRED (no idempotency collapse — FIND-002)", () => {
+  assert.throws(() => buildOfframpOrder({ bankAccountId: "ba_1", amountUsdc: "5.00" }), /referenceId required/);
+});
+
+test("buildOfframpOrder: rejects zero / over-precision amount (FIND-003)", () => {
+  assert.throws(() => buildOfframpOrder({ bankAccountId: "ba_1", amountUsdc: "0", referenceId: "r" }), /> 0/);
+  assert.throws(() => buildOfframpOrder({ bankAccountId: "ba_1", amountUsdc: "1.1234567", referenceId: "r" }), /6 decimal/);
+});
+
+test("mapOrderStatus: failed/unknown never -> paid (FIND-006)", () => {
+  assert.equal(mapOrderStatus("completed"), "paid");
+  assert.equal(mapOrderStatus("failed"), "needs_review");
+  assert.equal(mapOrderStatus("awaiting-payment"), "pending");
+  assert.equal(mapOrderStatus(undefined), "pending");
+});
+
+test("getOfframpStatus: returns mapped {raw,status} (no raw-status misread)", async () => {
+  const fetchImpl = async () => ({ ok: true, json: async () => ({ status: "failed" }) });
+  const out = await getOfframpStatus("ord_1", { apiKey: "sk", fetchImpl });
+  assert.equal(out.status, "needs_review");
+  assert.equal(out.raw.status, "failed");
+});
 
 test("buildOfframpOrder: fiat:usd line item to a registered bankAccountId", () => {
   const o = buildOfframpOrder({ bankAccountId: "ba_123", amountUsdc: "19.87", referenceId: "u1" });
@@ -14,7 +37,7 @@ test("buildOfframpOrder: rejects missing bankAccountId (CSE-registered gate)", (
 });
 
 test("buildOfframpOrder: rejects non-decimal amount (no integer-cents footguns)", () => {
-  assert.throws(() => buildOfframpOrder({ bankAccountId: "ba_1", amountUsdc: "ten" }), /decimal string/);
+  assert.throws(() => buildOfframpOrder({ bankAccountId: "ba_1", amountUsdc: "ten", referenceId: "r" }), /decimal string/);
 });
 
 test("offrampIdempotencyKey: deterministic on the payment-defining inputs", () => {
@@ -36,7 +59,7 @@ test("submitOfframp: posts to the orders endpoint with x-api-key + idempotency h
 
 test("submitOfframp: throws on non-ok with the upstream error body (no silent false-ok)", async () => {
   const fetchImpl = async () => ({ ok: false, status: 422, text: async () => "invalid bankAccountId" });
-  const order = buildOfframpOrder({ bankAccountId: "ba_x", amountUsdc: "5.00" });
+  const order = buildOfframpOrder({ bankAccountId: "ba_x", amountUsdc: "5.00", referenceId: "rx" });
   await assert.rejects(submitOfframp(order, { apiKey: "sk", fetchImpl }), /422: invalid bankAccountId/);
 });
 

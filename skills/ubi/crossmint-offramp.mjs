@@ -17,11 +17,22 @@ export const API_BASE =
   ENV === "production" ? "https://www.crossmint.com" : "https://staging.crossmint.com";
 const ORDERS_PATH = "/api/2022-06-09/orders";
 
+// Pure: validate a USDC amount string — positive, decimal, <=6 dp. Blocks zero-value "paid" lines
+// and over-precision truncation (VCSDD FIND-003).
+export function assertPayableAmount(amount, label = "amount") {
+  const s = String(amount);
+  if (!/^\d+(\.\d+)?$/.test(s)) throw new Error(`${label}: must be a decimal string`);
+  if (Number(s) <= 0) throw new Error(`${label}: must be > 0`);
+  if ((s.split(".")[1] || "").length > 6) throw new Error(`${label}: max 6 decimal places (USDC)`);
+}
+
 // Pure: build the offramp (withdrawal) order body. amountUsdc is a decimal string ("19.87").
-// Deterministic idempotency from (bankAccountId, amount, ref) so a retry never double-sends.
+// referenceId is REQUIRED so the idempotency key is always payment-unique — two distinct payouts to
+// the same bank+amount must NOT collapse to one (VCSDD FIND-002).
 export function buildOfframpOrder({ bankAccountId, amountUsdc, referenceId }) {
   if (!bankAccountId) throw new Error("crossmint-offramp: bankAccountId required (CSE-registered)");
-  if (!/^\d+(\.\d+)?$/.test(String(amountUsdc))) throw new Error("crossmint-offramp: amountUsdc must be a decimal string");
+  if (!referenceId) throw new Error("crossmint-offramp: referenceId required (payment-unique idempotency)");
+  assertPayableAmount(amountUsdc, "crossmint-offramp: amountUsdc");
   return {
     // UNVERIFIED: exact withdrawal line-item nesting — docs confirm currencyLocator 'fiat:usd' +
     // amount + bankAccountId via the Create-Order API; verify field placement with a live CSE account.
@@ -31,9 +42,20 @@ export function buildOfframpOrder({ bankAccountId, amountUsdc, referenceId }) {
   };
 }
 
-// Pure: deterministic idempotency key (order-independent on the inputs that define the payment).
+// Pure: deterministic idempotency key. referenceId is required so distinct payouts never collide
+// (VCSDD FIND-002) — no "0" fallback.
 export function offrampIdempotencyKey({ bankAccountId, amountUsdc, referenceId }) {
-  return `anicca-offramp-${bankAccountId}-${amountUsdc}-${referenceId || "0"}`;
+  if (!referenceId) throw new Error("crossmint-offramp: referenceId required for idempotency");
+  return `anicca-offramp-${bankAccountId}-${amountUsdc}-${referenceId}`;
+}
+
+// Pure: map a Crossmint order status -> our ledger status. Money-safety: failure/unknown is NEVER
+// reported as paid; failure -> needs_review (a human confirms, no auto-resend) (VCSDD FIND-006).
+export function mapOrderStatus(orderStatus) {
+  const s = String(orderStatus || "").toLowerCase();
+  if (s === "completed" || s === "success" || s === "succeeded" || s === "paid") return "paid";
+  if (s === "failed" || s === "cancelled" || s === "rejected" || s === "expired") return "needs_review";
+  return "pending"; // awaiting-payment / in-progress / unknown -> keep polling, never assume paid
 }
 
 // Live: submit the offramp order. Injectable fetch for tests.
@@ -55,12 +77,14 @@ export async function submitOfframp(order, { apiKey, fetchImpl = fetch } = {}) {
   return res.json(); // { orderId, ... }
 }
 
-// Live: poll an offramp order's status. Returns the raw order object (caller maps status).
+// Live: poll an offramp order's status. Returns { raw, status } where status is mapped to our
+// ledger vocab (paid / needs_review / pending) — never let a caller misread a pending order as paid.
 export async function getOfframpStatus(orderId, { apiKey, fetchImpl = fetch } = {}) {
   if (!orderId) throw new Error("crossmint-offramp: orderId required");
   const res = await fetchImpl(`${API_BASE}${ORDERS_PATH}/${orderId}`, {
     headers: { "x-api-key": apiKey },
   });
   if (!res.ok) throw new Error(`crossmint-offramp status ${res.status}`);
-  return res.json();
+  const data = await res.json();
+  return { raw: data, status: mapOrderStatus(data?.status ?? data?.phase) };
 }
