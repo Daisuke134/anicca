@@ -1,4 +1,5 @@
 import express from 'express';
+import rateLimit from 'express-rate-limit';
 import { verifyPersonhood } from '../../services/personhood/worldid.js';
 import { makeNullifierStore } from '../../services/personhood/nullifierStore.js';
 
@@ -9,7 +10,11 @@ import { makeNullifierStore } from '../../services/personhood/nullifierStore.js'
 const router = express.Router();
 const ACTION = process.env.WORLDCOIN_ACTION || 'claim-ubi';
 
-router.post('/verify', async (req, res) => {
+// Rate limit: each verify hits Worldcoin's upstream before the dedup short-circuits, so cap the
+// flood surface (VCSDD FIND-003). 20 req / 5 min per IP — generous for a real human claim.
+const verifyLimiter = rateLimit({ windowMs: 5 * 60 * 1000, max: 20, standardHeaders: true, legacyHeaders: false });
+
+router.post('/verify', verifyLimiter, async (req, res) => {
   const { proof, merkle_root, nullifier_hash, verification_level, recipient } = req.body || {};
   if (!recipient) return res.status(400).json({ ok: false, reason: 'recipient_required' });
   try {
