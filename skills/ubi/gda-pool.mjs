@@ -15,9 +15,19 @@
 // it runs only from anicca's own wallet (own-funds), never a user key.
 import { encodeFunctionData, isAddress, getAddress } from "viem";
 
+// UNVERIFIED (pre-prod confirm on Base before any real distribute): the GDAv1Forwarder address is
+// documented as deterministic across networks, but MUST be confirmed deployed at this address on
+// Base mainnet — a wrong address would send a real-funds tx to a non-contract/wrong target.
 export const GDA_FORWARDER = "0x6DA13Bde224A05a288748d857b9e7DDEffd1dE08";
 
-// minimal GDAv1Forwarder ABI (the three calls we use).
+// Max int96 (Superfluid flow rates are int96 wei/sec). A rate at/above this overflows/misencodes —
+// reject it (defense-in-depth on a money-moving stream, symmetric to the bridge amount ceiling).
+export const MAX_INT96 = (2n ** 95n) - 1n;
+
+// UNVERIFIED: hand-written ("minimal") GDAv1Forwarder ABI — confirm tuple order + types + outputs
+// against the live contract before prod (a type/order mismatch reverts on-chain = fail-closed, but
+// must be verified, not assumed). Token args below MUST be the USDCx Super Token (the Super-Token
+// wrapper of USDC on Base, BASE_USDCX_ADDRESS) — NOT plain USDC; wrap USDC->USDCx before distributing.
 export const GDA_FORWARDER_ABI = [
   { type: "function", name: "createPool", stateMutability: "nonpayable",
     inputs: [
@@ -67,8 +77,11 @@ export function buildUpdateMemberUnitsCall({ pool, member, units }) {
 }
 
 // Pure: calldata to stream USDCx to the pool at requestedFlowRate (wei/sec, int96). flowRate>0; 0 stops.
+// token MUST be the USDCx Super Token (UNVERIFIED that the caller passes USDCx not plain USDC — a
+// pure builder can't check on-chain; the runtime caller must pass BASE_USDCX_ADDRESS).
 export function buildDistributeFlowCall({ token, from, pool, flowRatePerSec }) {
   if (typeof flowRatePerSec !== "bigint" || flowRatePerSec < 0n) throw new Error("gda: flowRatePerSec must be a non-negative bigint (wei/sec)");
+  if (flowRatePerSec > MAX_INT96) throw new Error("gda: flowRatePerSec exceeds int96 max (overflow guard)"); // FIND-B02
   return encodeFunctionData({
     abi: GDA_FORWARDER_ABI, functionName: "distributeFlow",
     args: [requireAddr(token, "token(USDCx)"), requireAddr(from, "from"), requireAddr(pool, "pool"), flowRatePerSec, "0x"],
