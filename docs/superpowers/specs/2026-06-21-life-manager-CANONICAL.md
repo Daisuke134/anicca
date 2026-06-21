@@ -239,6 +239,15 @@ Pay: Stripe $20/mo (LIVE link + sandbox test link, webhook dual-secret live+test
     - **#67/#68** Telegram full E2E (ask/notify deliver + read replies; interactive /start onboarding) —
       agent can do this solo on the live @LifeManagerBotbot. ← DOING NEXT.
     - **#63** Telegram onboarding parity with web — close after #67/#68.
+  ✅ **#67/#68 VERIFIED LIVE (solo) 2026-06-21**: @LifeManagerBotbot (id 8834419975) webhook → life-call
+  /telegram is wired (secret ok, 0 pending, no errors). Posted signed /start + name updates to the live
+  webhook → HTTP 200, state machine correct: null row → "name" prompt; typing a name (for an unlinked
+  chat) carries it via `/lm?tg=<chat>&name=<name>` and the ROW IS CREATED ON THE WEB calendar-connect
+  step (by design — OAuth/Stripe need web), NOT by the Telegram handler. So no row from a chat that never
+  reaches web = correct, not a bug. Telegram onboarding LOGIC is launch-ready; the only unverified piece
+  is the same human-gate as #61-b: a real Telegram user doing /start + a fresh Google for the gcal connect.
+  ★ BOTH web and Telegram onboarding converge on ONE human-gate: a fresh Google account's Composio gcal
+  connect (agent can't create Google accounts) → Dais dogfoods on a 2nd Google, or the first real user. ★
 - **#61** (incl #67/#68) — full fresh-paid-user cloud E2E: web incognito /lm (login→connect→phone→sandbox
   pay→dashboard) + Telegram /start (name→calendar→gmail→phone→pay→done), no manual seeding. Dais confirms.
 - **#70** — users without Google Calendar: Outlook (Composio) + agentic "tell me your schedule" chat fallback.
