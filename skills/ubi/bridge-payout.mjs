@@ -14,12 +14,14 @@ const ENV = process.env.BRIDGE_ENV === 'production' ? 'production' : 'sandbox';
 export const API_BASE = ENV === 'production' ? 'https://api.bridge.xyz/v0' : 'https://api.sandbox.bridge.xyz/v0';
 const TRANSFERS_PATH = '/transfers';
 
-// Pure: USDC amount string — positive, decimal, <=6dp. Blocks $0 "paid" lines + over-precision.
-export function assertPayableAmount(amount, label = 'amount') {
+// Pure: USDC amount string — positive, decimal, <=6dp, and <= a sane ceiling (defense-in-depth so a
+// miscomputed huge payout can't be submitted — VCSDD FIND-004). maxUsdc default 100000.
+export function assertPayableAmount(amount, label = 'amount', maxUsdc = 100000) {
   const s = String(amount);
   if (!/^\d+(\.\d+)?$/.test(s)) throw new Error(`${label}: must be a decimal string`);
   if (Number(s) <= 0) throw new Error(`${label}: must be > 0`);
   if ((s.split('.')[1] || '').length > 6) throw new Error(`${label}: max 6 decimal places (USDC)`);
+  if (Number(s) > maxUsdc) throw new Error(`${label}: exceeds max ${maxUsdc} per transfer`);
 }
 
 // Pure: deterministic idempotency key from referenceId — a retry of the SAME payout reuses it.
@@ -32,7 +34,8 @@ export function bridgeIdempotencyKey(referenceId) {
 export function mapTransferStatus(bridgeStatus) {
   const s = String(bridgeStatus || '').toLowerCase();
   if (s === 'payment_processed' || s === 'completed' || s === 'paid' || s === 'funds_received') return 'paid';
-  if (s === 'returned' || s === 'refunded' || s === 'canceled' || s === 'cancelled' || s === 'error' || s === 'failed') return 'needs_review';
+  // all terminal-failure states -> needs_review (never leave a dead transfer polling forever — FIND-005)
+  if (['returned', 'refunded', 'canceled', 'cancelled', 'error', 'failed', 'reversed', 'charged_back', 'declined', 'rejected', 'reclaimed', 'expired'].includes(s)) return 'needs_review';
   return 'pending'; // awaiting_funds / in_review / processing / unknown -> keep polling, never assume paid
 }
 
@@ -43,6 +46,11 @@ export function buildTransferRequest({ referenceId, amountUsdc, customerId, exte
   if (!externalAccountId) throw new Error('bridge: externalAccountId (registered bank) required');
   assertPayableAmount(amountUsdc, 'bridge: amountUsdc');
   return {
+    // referenceId is the payment-unique key carried INTO the body so submitTransfer derives the
+    // Idempotency-Key from it (NOT from amount) — two periods of the same fixed UBI to the same
+    // recipient have DIFFERENT referenceIds, so the 2nd is NOT deduped/dropped (VCSDD FIND-001).
+    referenceId,
+    client_reference_id: referenceId, // Bridge's documented per-transfer reference (UNVERIFIED field name; harmless if ignored)
     on_behalf_of: customerId,
     amount: String(amountUsdc),
     // UNVERIFIED: confirm the Base-USDC source token + crypto-source shape against a live Bridge account.
@@ -55,11 +63,17 @@ export function buildTransferRequest({ referenceId, amountUsdc, customerId, exte
 export async function submitTransfer(body, { apiKey, fetchImpl = fetch } = {}) {
   if (!apiKey) throw new Error('bridge: BRIDGE_API_KEY required');
   assertPayableAmount(body?.amount, 'bridge: amount'); // defense-in-depth at the live boundary
+  // Idempotency-Key derives STRICTLY from referenceId (the payment-unique id) — no amount fallback,
+  // so distinct payouts never collide (FIND-001). Throws if absent.
+  const idemKey = bridgeIdempotencyKey(body?.referenceId);
   const res = await fetchImpl(`${API_BASE}${TRANSFERS_PATH}`, {
     method: 'POST',
     headers: {
+      // UNVERIFIED (pre-prod confirm vs live Bridge): (a) auth header name `Api-Key` vs Authorization
+      // Bearer; (b) idempotency is an HTTP HEADER `Idempotency-Key` vs a body field — if Bridge expects
+      // a body field, this header is ignored and retries double-pay. Confirm both before real money.
       'Api-Key': apiKey,
-      'Idempotency-Key': bridgeIdempotencyKey(body?.on_behalf_of && body?.destination?.external_account_id ? `${body.on_behalf_of}-${body.destination.external_account_id}-${body.amount}` : body?.amount),
+      'Idempotency-Key': idemKey,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(body),
