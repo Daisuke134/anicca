@@ -49,7 +49,7 @@ signing gate, LLM picks.** "Give the model primitives + a prompt; let it decide"
 | O6 | GATE-0 second-pass classifier (re-reads ledger, correlates WAKE_ID, stamps profitable) | `index.mjs:254-269`, `earn-detect.mjs` (whole file) | skill returns its own verified $ result; loop just records it; delete earn-detect.mjs + classify block |
 | O7 | naming ceremony "GATE-0 / pillars / spouts / tiers / narrate" baked into code | `run.sh:5,77,114`; `registry.json:21`; `hl-trade/SKILL.md:8` "TRADE pillar"; `x402-sell/SKILL.md:5` "X402 PRODUCT pillar" | treat every earn as "a tool call that produced verified USDC"; flatten the 5 pillars/spouts into flat tools; drop GATE-0/pillar vocab from code (docs may keep it) |
 | O8 ★the differentiator★ | verify→record→**SHARE**: the SHARE is ABSENT in runtime. We verify on-chain (`run.sh:103-116`) + record (`earn-ledger.jsonl`) but NEVER push to the colony forum. SKILL.md *tells the model* to share (`hl-trade/SKILL.md:39`, `x402-sell/SKILL.md:36`) but no tool/loop step does it | `runtime/loop/*` (grep: no forum/share path) | add a thin `share` tool (post earn-line to anicca-repo Issues); auto-call after a verified record. Closes verify→record→SHARE (= task #45) |
-| O9 | UBI distribution embedded as a side-effect inside the earn tool | `run.sh:58-64,118-120,239`, `distribute-ubi.mjs` | UBI = its own thin tool/policy the LLM (or a separate scheduled policy) invokes; the earn tool only earns |
+| O9 ★not-a-build★ | UBI is co-located INSIDE `skills/earn/` (mixed with earn = INFLOW) and called as a side-effect by run.sh — single-responsibility violation. **NOTE: the UBI mechanism is already BUILT + VERIFIED by another CC** (`distribute-ubi.mjs`, `execute-ubi.py`, `ubi-watcher.mjs`, `ubi-payout-watcher.mjs`, `bank-payout-watcher.mjs` (VCSDD adversary-converged FIND-A..D), `gmo-furikomi.mjs`, `lib/ubi.mjs`, `lib/bank-fanout.mjs`, `lib/bank-recipients.mjs`). The `economy/ubi` registry slot is only a `SLOT.md` stub (declared, empty). | all in `skills/earn/`; `run.sh:58-64,118-120,239` calls `distribute-ubi.mjs` | ★ FIX = SEPARATE, not build: MOVE the verified UBI files out of `skills/earn/` into `skills/ubi/` (OUTFLOW); earn CALLS ubi cross-skill ("earn → distribute a share"); the ONLY coupling point is that call. Promote shared libs (`transfer/ledger/identity-guard/record/usdc/verify-tx`) to `skills/_shared/lib/`. Flip the registry slot to `ubi` `status:"live"`. Consolidate the OLD `~/.openclaw/skills/anicca-payout-wallet/` (exists, separate, read-only — never edited) onto mother's `skills/ubi/` as canonical. ★ |
 | O10 | loop-detect idle guard (3 identical actions→sleep) — original addition | `index.mjs:156-165`, `loop-detect.mjs` | acceptable thin safety rail; keep or move to generic middleware (minor) |
 
 ### Already CORRECT (thin, flat, model-decides — keep as the template)
@@ -72,7 +72,8 @@ identity + ONE wallet (sole signer, isolated gate)
 
 ## § 4. Fix tasks
 O1/O4/O5/O6/O7 → "flatten runtime to thin tools" task. O2/O3 → "drop tiers, single model" task.
-O8 → task #45 (verify→record→SHARE). O9 → "UBI as its own tool" task. O10 → minor/optional.
+O8 → task #45 (verify→record→SHARE) ✅DONE. O9 → SEPARATE the already-built UBI out of earn into
+skills/ubi/ (move, not build — task #48). O10 → minor/optional.
 See the task list (#46+).
 
 ## § 5. Changelog
