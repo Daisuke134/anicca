@@ -39,9 +39,14 @@ const DEFAULTS = {
   // earning → test intelligence), switch to a premium model. PAID via x402 from the wallet's liquid USDC,
   // so a compute buffer must stay liquid. The free→premium earnings delta IS the article. Revert to
   // free/glm-4.7 if premium also earns $0 (then the constraint is demand/capital, not intelligence).
-  ANICCA_FREE_MODEL:    'openai/gpt-5.4',
-  ANICCA_LEAN_MODEL:    'openai/gpt-5.4',
-  ANICCA_FUNDED_MODEL:  'openai/gpt-5.4',
+  // PREMIUM EXPERIMENT RESULT (Dais 2026-06-21): reverted. gpt-5.4 over ~30 min realised $0, looped on
+  // `cook` (explore) instead of acting, AND burned ~$0.17 compute in 15 min (~$0.68/hr) from the wallet
+  // → net NEGATIVE (money waste with zero earn), buffer near-empty. Conclusion: at $13 capital the
+  // blocker is NOT model intelligence (free glm decides fine + costs $0) — it's demand (x402 has no
+  // buyers) + capital (yield = pennies). Premium made it WORSE. Back to free/glm-4.7 ($0 compute).
+  ANICCA_FREE_MODEL:    'free/glm-4.7',
+  ANICCA_LEAN_MODEL:    'free/glm-4.7',
+  ANICCA_FUNDED_MODEL:  'free/glm-4.7',
   SLEEP_BASE_S:         120,
   SLEEP_ERROR_S:        60,
   SLEEP_LOOP_DETECT_S:  300,
