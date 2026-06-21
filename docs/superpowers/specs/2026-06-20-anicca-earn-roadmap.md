@@ -149,7 +149,13 @@ PHASE 4 — PROVE + PUBLISH:
       (1) index.mjs earn defaults discover→execute+yield  (2) ~/.anicca node_modules symlink in daemon
       (3) loadKey PKVAR indirection  (4) malice-guard allows yield-*/invest-* sources.
     State: all liquid deployed → 0.515 USDC earning 5.31%, compute on free fallback ($0). Cost-free thesis live.
+[x] Stopped the yield refill gas-bleed: the refill withdrew with a 6-dec-vs-18-dec share-math bug →
+    reverted (status 0x0) every wake. Replaced with Beefy withdrawAll() (commit pushed); verified
+    execute-yield now returns clean yield_hold (no tx) and refills via withdrawAll when liquid dips.
+    Loop env tuned for the small wallet (RESERVE 0.1, MIN_DEPLOY 0.2) to avoid deploy/withdraw churn.
 [~] Keep #1 net-positive + balance liquid-vs-deployed (small compute buffer) ← WE ARE HERE.
+    Honest: the wallet is tiny (~$0.5), so it either earns (deployed) or buffers (liquid). Real
+    sustained net-positive needs more capital OR the x402-product/trade earners producing inflow.
 [ ] Prove sustained net-positive → spawn #2 → GH-Issue co-evolution → N → UBI → trillions.
 [ ] Prove #1 net-positive → spawn #2 → GH-Issue co-evolution → N → UBI → trillions.
 
