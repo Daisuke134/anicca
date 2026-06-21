@@ -12,6 +12,10 @@
 // shape for the withdrawal line item is marked UNVERIFIED where the public docs were incomplete —
 // confirm against a real CSE-provided bankAccountId before first production send.
 
+// LIVE-VERIFIED 2026-06-21: the endpoint + x-api-key auth are REAL (a prod GET to /orders
+// authenticated and returned the key's scopes). Two real gates surfaced: (1) the current
+// CROSSMINT_API_KEY is wallets-scoped only — the offramp needs a key with orders.create/orders.read
+// scope (add in the Crossmint console); (2) each recipient bankAccountId must be CSE-registered.
 const ENV = process.env.CROSSMINT_ENV === "production" ? "production" : "staging";
 export const API_BASE =
   ENV === "production" ? "https://www.crossmint.com" : "https://staging.crossmint.com";
