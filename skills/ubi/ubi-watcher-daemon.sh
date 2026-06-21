@@ -6,4 +6,4 @@ set -a
 set +a
 export UBI_STIPEND_BASE="${UBI_STIPEND_BASE:-250000}"   # $0.25 per recipient
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
-exec /opt/homebrew/bin/node "$HOME/anicca/skills/earn/ubi-payout-watcher.mjs" --loop
+exec /opt/homebrew/bin/node "$HOME/anicca/skills/ubi/ubi-payout-watcher.mjs" --loop
