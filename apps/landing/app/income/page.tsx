@@ -92,6 +92,7 @@ function ApplyForm() {
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [verified, setVerified] = useState(false);
+  const [worldProof, setWorldProof] = useState<unknown>(null);
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const [bank, setBank] = useState({ bankCode: '', branchCode: '', accountType: '1', accountNumber: '', beneficiaryName: '' });
@@ -121,7 +122,7 @@ function ApplyForm() {
         const res = await fetch('/.netlify/functions/income-signup', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: email.trim(), method: 'bank', country: 'jp', bank }),
+          body: JSON.stringify({ email: email.trim(), method: 'bank', country: 'jp', bank, worldid: worldProof }),
           signal: abortRef.current.signal,
         });
         const data = await res.json().catch(() => ({}));
@@ -159,6 +160,7 @@ function ApplyForm() {
           email: email.trim(),
           method,
           wallet: method === 'wallet' ? wallet.trim() : undefined,
+          worldid: worldProof,
         }),
         signal: abortRef.current.signal,
       });
@@ -205,7 +207,7 @@ function ApplyForm() {
           required
           placeholder="you@example.com"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={(e) => { setEmail(e.target.value); if (verified) { setVerified(false); setWorldProof(null); } }}
           className="w-full rounded-input border border-[hsl(var(--border))] bg-[hsl(var(--surface))] px-4 py-3 text-[hsl(var(--text-primary))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--gold))]"
         />
       </div>
@@ -305,7 +307,7 @@ function ApplyForm() {
                 throw new Error(d.reason === 'already_claimed' ? 'This person has already claimed an income.' : (d.reason || 'Verification failed.'));
               }
             }}
-            onSuccess={() => { setVerified(true); setError(null); }}
+            onSuccess={(result) => { setWorldProof(result); setVerified(true); setError(null); }}
           >
             {({ open }) => (
               <button

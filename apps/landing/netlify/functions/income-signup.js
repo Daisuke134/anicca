@@ -8,6 +8,14 @@
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const { validateJpBank, buildBankNotes } = require('./_jp-bank.js');
+const { verifyAndClaim, supabaseNullifierInsert } = require('./_lib/worldid.js');
+
+// World ID personhood gate (authoritative, server-enforced — VCSDD FIND-001). When WORLDCOIN_APP_ID
+// is set, a signup MUST carry a valid World ID proof bound to this email, and the nullifier is
+// atomically claimed (one human = one queued recipient) BEFORE the record is written. Unset = staged
+// no-op (waitlist works ungated until configured).
+const WORLDCOIN_APP_ID = process.env.WORLDCOIN_APP_ID;
+const WORLDCOIN_ACTION = process.env.WORLDCOIN_ACTION || 'claim-ubi';
 
 const WALLET_RE = /^0x[0-9a-fA-F]{40}$/;
 
@@ -60,6 +68,22 @@ exports.handler = async (event) => {
       return { statusCode: 400, body: JSON.stringify({ error: 'invalid bank details', details: v.errors }) };
     }
     notes = buildBankNotes(v.bank);
+  }
+
+  // Authoritative personhood gate: verify the World ID proof (bound to THIS email as signal) and
+  // atomically claim the nullifier before recording. Rejects bots, duplicates, and relayed proofs.
+  if (WORLDCOIN_APP_ID) {
+    const gate = await verifyAndClaim({
+      proof: body.worldid,
+      signal: email,
+      appId: WORLDCOIN_APP_ID,
+      action: WORLDCOIN_ACTION,
+      insert: supabaseNullifierInsert(SUPABASE_URL, SUPABASE_SERVICE),
+    });
+    if (!gate.ok) {
+      const status = gate.status === 409 ? 409 : gate.status === 403 ? 403 : gate.status === 400 ? 400 : 422;
+      return { statusCode: status, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ error: gate.reason === 'already_claimed' ? 'This person has already claimed an income.' : gate.reason || 'personhood verification failed' }) };
+    }
   }
 
   const ins = await supabaseInsert('recipients', {
