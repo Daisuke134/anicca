@@ -223,6 +223,13 @@ Pay: Stripe $20/mo (LIVE link + sandbox test link, webhook dual-secret live+test
   REQUIRES a real local phone-call E2E on Dais's Mac before flipping.
 
 ### 🚀 LAUNCH readiness
+- **#61 IN PROGRESS — two launch blockers found + fixed 2026-06-21:** (1) `/lm` Subscribe button was
+  HIDDEN — `NEXT_PUBLIC_STRIPE_LM_URL` was unset; the build runs in GitHub Actions (`secrets.*`), so the
+  fix was a GH Actions secret (sandbox link, Dais's choice) + rebuild → pay button now renders. (2) the
+  deployed lm-stripe-webhook had `STRIPE_LM_WEBHOOK_SECRET` (live) but NOT `STRIPE_LM_WEBHOOK_SECRET_TEST`
+  → sandbox/test-mode checkouts would 400 on signature → paid never flips. Fixed: set the test secret in
+  Netlify site env (anicca2) + redeploy. Remaining for #61: verify webhook→paid flip live, then full
+  new-user onboarding (the one human-gated piece = a fresh Google account for the real Composio connect).
 - **#61** (incl #67/#68) — full fresh-paid-user cloud E2E: web incognito /lm (login→connect→phone→sandbox
   pay→dashboard) + Telegram /start (name→calendar→gmail→phone→pay→done), no manual seeding. Dais confirms.
 - **#70** — users without Google Calendar: Outlook (Composio) + agentic "tell me your schedule" chat fallback.
