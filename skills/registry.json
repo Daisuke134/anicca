@@ -17,9 +17,9 @@
       "track": "A",
       "dir": "skills/earn",
       "entrypoint": "run.sh",
-      "status": "live",
+      "status": "declared",
       "spec": "26 A3 / 27 A-earn (GATE-0)",
-      "summary": "Earn discovery + execution wired into the loop. EARN_MODE=execute EARN_STRATEGY=swap performs a real ETH->USDC swap on Base (no human), verifies receipt 0x1 + USDC delta, appends earn-ledger.jsonl. GATE-0 MET 2026-06-16 (tx 0xc4f2df3e, +0.546372 USDC net).",
+      "summary": "(retired \u2014 split into yield/hl_trade/x402_sell/token_launch)",
       "owner": "wf-a:earn"
     },
     "self/spawn": {
@@ -57,6 +57,42 @@
       "spec": "02 cook-loop",
       "summary": "EXPLORE: web-search for a NEW earner; surface real candidate URLs; the model decides what to try. args.query = your curiosity.",
       "owner": "wf-a:earn"
+    },
+    "yield": {
+      "track": "A",
+      "dir": "skills/earn",
+      "entrypoint": "run.sh",
+      "status": "live",
+      "spec": "PATCH6",
+      "owner": "wf-a:earn",
+      "summary": "Park idle USDC in best-APY vault (Beefy6.1%->Fluid). SET-AND-FORGET: do ONCE when you have idle cash, NOT every wake."
+    },
+    "hl_trade": {
+      "track": "A",
+      "dir": "skills/earn",
+      "entrypoint": "run.sh",
+      "status": "live",
+      "spec": "PATCH6",
+      "owner": "wf-a:earn",
+      "summary": "Open/close a Hyperliquid perp = active trading edge. args coin/side/size_usd/sl_pct/tp_pct or {action:close,coin}."
+    },
+    "x402_sell": {
+      "track": "A",
+      "dir": "skills/earn",
+      "entrypoint": "run.sh",
+      "status": "live",
+      "spec": "PATCH6",
+      "owner": "wf-a:earn",
+      "summary": "Run+advertise paid x402 product (sell research for USDC). THE recurring $0-capital earner; build demand."
+    },
+    "token_launch": {
+      "track": "A",
+      "dir": "skills/earn",
+      "entrypoint": "run.sh",
+      "status": "live",
+      "spec": "PATCH6",
+      "owner": "wf-a:earn",
+      "summary": "Launch/manage $ANICCA token (MoltX ~$2.70). args {launch:true,name,symbol}."
     }
   }
 }
