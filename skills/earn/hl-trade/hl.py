@@ -36,7 +36,10 @@ except Exception as e:
 
 
 def _key():
-    k = os.environ.get("PKVAR") or os.environ.get("BLOCKRUN_WALLET_KEY")
+    # PKVAR names the env var that HOLDS the key (e.g. "BLOCKRUN_WALLET_KEY") — resolve it INDIRECTLY.
+    # os.environ.get("PKVAR") would return the var NAME string, not the key → "Non-hexadecimal digit".
+    pkvar = os.environ.get("PKVAR")
+    k = (os.environ.get(pkvar) if pkvar else None) or os.environ.get("BLOCKRUN_WALLET_KEY")
     if not k:
         k = json.load(open(os.path.expanduser("~/.automaton/wallet.json")))["privateKey"]
     return k if k.startswith("0x") else "0x" + k
