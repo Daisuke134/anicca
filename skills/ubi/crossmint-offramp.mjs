@@ -38,7 +38,7 @@ export function buildOfframpOrder({ bankAccountId, amountUsdc, referenceId }) {
     // amount + bankAccountId via the Create-Order API; verify field placement with a live CSE account.
     recipient: { bankAccountId },
     lineItems: [{ currencyLocator: "fiat:usd", amount: String(amountUsdc) }],
-    metadata: referenceId ? { referenceId } : undefined,
+    metadata: { referenceId }, // referenceId is required above — always present (VCSDD NEW-004)
   };
 }
 
@@ -61,6 +61,8 @@ export function mapOrderStatus(orderStatus) {
 // Live: submit the offramp order. Injectable fetch for tests.
 export async function submitOfframp(order, { apiKey, fetchImpl = fetch } = {}) {
   if (!apiKey) throw new Error("crossmint-offramp: CROSSMINT_API_KEY required");
+  // defense-in-depth: validate the amount at the live boundary too (VCSDD NEW-002).
+  assertPayableAmount(order?.lineItems?.[0]?.amount, "crossmint-offramp: amountUsdc");
   const res = await fetchImpl(`${API_BASE}${ORDERS_PATH}`, {
     method: "POST",
     headers: { "x-api-key": apiKey, "Content-Type": "application/json",
@@ -80,6 +82,7 @@ export async function submitOfframp(order, { apiKey, fetchImpl = fetch } = {}) {
 // Live: poll an offramp order's status. Returns { raw, status } where status is mapped to our
 // ledger vocab (paid / needs_review / pending) — never let a caller misread a pending order as paid.
 export async function getOfframpStatus(orderId, { apiKey, fetchImpl = fetch } = {}) {
+  if (!apiKey) throw new Error("crossmint-offramp: CROSSMINT_API_KEY required");
   if (!orderId) throw new Error("crossmint-offramp: orderId required");
   const res = await fetchImpl(`${API_BASE}${ORDERS_PATH}/${orderId}`, {
     headers: { "x-api-key": apiKey },

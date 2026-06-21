@@ -66,3 +66,12 @@ test("submitOfframp: throws on non-ok with the upstream error body (no silent fa
 test("submitOfframp: requires apiKey", async () => {
   await assert.rejects(submitOfframp({}, {}), /CROSSMINT_API_KEY required/);
 });
+
+test("submitOfframp: validates amount at the live boundary too (NEW-002)", async () => {
+  const order = { recipient: { bankAccountId: "ba_1" }, lineItems: [{ currencyLocator: "fiat:usd", amount: "0" }], metadata: { referenceId: "r" } };
+  await assert.rejects(submitOfframp(order, { apiKey: "sk", fetchImpl: async () => ({ ok: true, json: async () => ({}) }) }), /> 0/);
+});
+
+test("getOfframpStatus: requires apiKey (no 'x-api-key: undefined') (NEW-003)", async () => {
+  await assert.rejects(getOfframpStatus("ord_1", { fetchImpl: async () => ({ ok: true, json: async () => ({}) }) }), /CROSSMINT_API_KEY required/);
+});
