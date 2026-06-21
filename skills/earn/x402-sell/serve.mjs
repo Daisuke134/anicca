@@ -39,9 +39,10 @@ function payTo() {
 const PRICE = process.env.X402_PRICE || "$0.02";
 const NETWORK = process.env.X402_NETWORK || "base";
 const PORT = Number(process.env.X402_PORT || 8403);
-// default product = Agent-Reach web research (the model can sell anything by overriding this)
+// default product = web-research brief via research-product.sh (firecrawl search, $0 input cost).
+// (The old `agent-reach format --json --query {q}` is broken — that CLI now only supports `format xhs`.)
 const PRODUCT_CMD = process.env.X402_PRODUCT_CMD ||
-  'agent-reach format --json --query {q}';
+  `bash ${new URL('./research-product.sh', import.meta.url).pathname} {q}`;
 
 const app = express();
 
