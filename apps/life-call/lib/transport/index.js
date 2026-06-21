@@ -5,25 +5,25 @@
 
 const { makeComposioCalendar } = require("./calendar-composio.js");
 const { makeUnipileMail } = require("./mail-unipile.js");
+const { makeGogCalendar } = require("./calendar-gog.js");
+const { makeGogMail } = require("./mail-gog.js");
+
+// Resolve the transport kind, failing LOUD on an unrecognized LIFE_TRANSPORT rather than silently
+// defaulting (a typo'd env must not quietly route a local BYOK box at the cloud provider).
+function resolveKind(opts) {
+  const kind = (process.env.LIFE_TRANSPORT || opts.kind || "composio").toLowerCase();
+  if (kind !== "composio" && kind !== "gog") {
+    throw new Error(`Unknown LIFE_TRANSPORT="${kind}" (expected "composio" or "gog")`);
+  }
+  return kind;
+}
 
 function getCalendar(opts = {}) {
-  const kind = (process.env.LIFE_TRANSPORT || opts.kind || "composio").toLowerCase();
-  switch (kind) {
-    // case "gog": return makeGogCalendar(opts); // slice 4
-    case "composio":
-    default:
-      return makeComposioCalendar(opts);
-  }
+  return resolveKind(opts) === "gog" ? makeGogCalendar(opts) : makeComposioCalendar(opts);
 }
 
 function getMail(opts = {}) {
-  const kind = (process.env.LIFE_TRANSPORT || opts.kind || "composio").toLowerCase();
-  switch (kind) {
-    // case "gog": return makeGogMail(opts); // slice 4 (local gog Gmail)
-    case "composio":
-    default:
-      return makeUnipileMail(opts); // cloud mail provider is Unipile
-  }
+  return resolveKind(opts) === "gog" ? makeGogMail(opts) : makeUnipileMail(opts);
 }
 
 module.exports = { getCalendar, getMail };
