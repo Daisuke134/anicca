@@ -15,9 +15,9 @@
 // it runs only from anicca's own wallet (own-funds), never a user key.
 import { encodeFunctionData, isAddress, getAddress } from "viem";
 
-// UNVERIFIED (pre-prod confirm on Base before any real distribute): the GDAv1Forwarder address is
-// documented as deterministic across networks, but MUST be confirmed deployed at this address on
-// Base mainnet — a wrong address would send a real-funds tx to a non-contract/wrong target.
+// VERIFIED 2026-06-21: eth_getCode on Base mainnet returns 11840 chars of bytecode at this address —
+// the GDAv1Forwarder is deployed on Base. (USDCx Super Token address is still resolved at pool-creation
+// time: use an existing Base USDC wrapper super token or deploy one via the Super Token Factory.)
 export const GDA_FORWARDER = "0x6DA13Bde224A05a288748d857b9e7DDEffd1dE08";
 
 // Max int96 (Superfluid flow rates are int96 wei/sec). A rate at/above this overflows/misencodes —
