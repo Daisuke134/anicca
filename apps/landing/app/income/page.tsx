@@ -3,9 +3,13 @@
 
 import { useState, useRef } from 'react';
 import Link from 'next/link';
+import { IDKitWidget, VerificationLevel } from '@worldcoin/idkit';
 import JsonLd from '@/components/JsonLd';
 import { Section } from '@/components/site/taste/Section';
 import { Reveal } from '@/components/site/taste/Reveal';
+
+const WORLD_APP_ID = (process.env.NEXT_PUBLIC_WORLDCOIN_APP_ID || '') as `app_${string}`;
+const WORLD_ACTION = 'claim-ubi';
 
 // spec32: /income = the front door for "receive basic income". Apply ABOVE THE FOLD,
 // email-first (simplest), wallet = instant (today's demo), bank = local currency.
@@ -87,6 +91,7 @@ function ApplyForm() {
   const [country, setCountry] = useState('jp');
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+  const [verified, setVerified] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const [bank, setBank] = useState({ bankCode: '', branchCode: '', accountType: '1', accountNumber: '', beneficiaryName: '' });
@@ -101,6 +106,10 @@ function ApplyForm() {
     }
     if (method === 'wallet' && !WALLET_RE.test(wallet.trim())) {
       setError('Enter a valid Base wallet address (0x…40 hex).');
+      return;
+    }
+    if (WORLD_APP_ID && !verified) {
+      setError('Confirm you are a unique person first — so the income reaches real people, once each.');
       return;
     }
     abortRef.current?.abort();
@@ -269,11 +278,53 @@ function ApplyForm() {
         </div>
       )}
 
+      {WORLD_APP_ID && (verified ? (
+        <div className="flex items-center gap-3 rounded-input border border-[hsl(var(--gold))]/40 bg-[hsl(var(--surface))] px-4 py-3 transition-all duration-500">
+          <span aria-hidden className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[hsl(var(--gold))] text-[12px] font-bold text-[#18181b]">✓</span>
+          <span className="text-sm text-[hsl(var(--text-primary))]">Verified — one income, one person. You're confirmed unique.</span>
+        </div>
+      ) : (
+        <div className="rounded-input border border-[hsl(var(--border))] bg-[hsl(var(--surface))] p-4">
+          <p className="text-sm font-medium text-[hsl(var(--text-primary))]">Confirm you're a unique person</p>
+          <p className="mt-1.5 text-xs leading-relaxed text-[hsl(var(--text-secondary))]">
+            So the income reaches real people — once each, no bots, no duplicates. Private: we only learn that you're unique, never who you are. No Orb needed.
+          </p>
+          <IDKitWidget
+            app_id={WORLD_APP_ID}
+            action={WORLD_ACTION}
+            signal={email.trim().toLowerCase()}
+            verification_level={VerificationLevel.Device}
+            handleVerify={async (proof) => {
+              const res = await fetch('/.netlify/functions/personhood-verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ proof, signal: email.trim().toLowerCase() }),
+              });
+              if (!res.ok) {
+                const d = await res.json().catch(() => ({}));
+                throw new Error(d.reason === 'already_claimed' ? 'This person has already claimed an income.' : (d.reason || 'Verification failed.'));
+              }
+            }}
+            onSuccess={() => { setVerified(true); setError(null); }}
+          >
+            {({ open }) => (
+              <button
+                type="button"
+                onClick={() => { if (!email.includes('@')) { setError('Enter your email first, then verify.'); return; } open(); }}
+                className="mt-3 inline-flex items-center gap-2 rounded-pill border border-[hsl(var(--gold))]/50 bg-[hsl(var(--surface-elevated))] px-5 py-2.5 text-sm font-semibold text-[hsl(var(--text-primary))] transition-all duration-300 hover:border-[hsl(var(--gold))] hover:brightness-110 active:scale-[0.98]"
+              >
+                Verify with World ID
+              </button>
+            )}
+          </IDKitWidget>
+        </div>
+      ))}
+
       {error && <p className="text-sm text-[hsl(var(--destructive))]">{error}</p>}
 
       <button
         type="submit"
-        disabled={submitting}
+        disabled={submitting || (Boolean(WORLD_APP_ID) && !verified)}
         className="w-full rounded-pill bg-[hsl(var(--gold))] px-6 py-3 font-semibold text-[#18181b] transition-all duration-300 hover:brightness-95 active:scale-[0.98] disabled:opacity-50"
       >
         {submitting ? 'Sending…' : 'Receive basic income →'}
