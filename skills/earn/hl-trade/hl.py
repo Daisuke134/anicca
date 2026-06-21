@@ -116,10 +116,21 @@ def cmd_open(args):
 
 def cmd_close(args):
     w, info, ex = _clients()
+    # capture the position's unrealised PnL BEFORE closing — that becomes the realised PnL.
+    pnl = 0.0
+    try:
+        pre = info.user_state(w.address)
+        for ap in pre.get("assetPositions", []):
+            p = ap.get("position", {})
+            if p.get("coin") == args.coin:
+                pnl = round(float(p.get("unrealizedPnl", 0) or 0), 4)
+    except Exception:
+        pass
     r = ex.market_close(args.coin)
     time.sleep(2)
     st = info.user_state(w.address)
     print(json.dumps({"closed": args.coin, "result": r.get("status"),
+                      "closed_pnl_usd": pnl,
                       "account_value_usd": round(float(st["marginSummary"]["accountValue"]), 4)}, indent=2))
 
 

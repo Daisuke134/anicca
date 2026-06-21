@@ -139,7 +139,7 @@ export function buildUserMessage(ctx) {
   return [
     `Wake ${ctx.wakeId}: liquid $${ctx.balanceUsdc.toFixed(4)}${pos} (tier ${ctx.tier}).`,
     `Decide the single most productive action right now and call run_skill with BOTH slot AND args:`,
-    `  - earn — pass args.strategy (yield | hl | x402 | token | 0xwork) + any params (e.g. hl: coin/side/size_usd/sl_pct/tp_pct).`,
+    `  - earn — pass args.strategy (yield | hl | x402 | token | 0xwork) + params. hl: coin/side/size_usd/sl_pct/tp_pct to OPEN, or {strategy:"hl",action:"close",coin:"ETH"} to REALISE an open position. Manage what you hold: if a position shows profit or hit its risk, close it.`,
     `  - cook — explore a NEW earner; pass args.query (your curiosity).`,
     `  - self/issue-dev — if you notice you're broken/stuck, file a bug to fix yourself.`,
     `Do NOT repeat the same action every wake — vary by your situation. Always include args, never call earn empty.`,

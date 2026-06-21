@@ -141,11 +141,32 @@ if [ "$STRATEGY" = "hl" ] && [ -z "${EARN_TX:-}" ]; then
   COIN=$(printf '%s' "${ANICCA_ARGS:-{}}" | python3 -c "import json,sys;print((json.load(sys.stdin) or {}).get('coin','ETH'))" 2>/dev/null || echo ETH)
   SIDE=$(printf '%s' "${ANICCA_ARGS:-{}}" | python3 -c "import json,sys;print((json.load(sys.stdin) or {}).get('side','') or '')" 2>/dev/null)
   SIZE=$(printf '%s' "${ANICCA_ARGS:-{}}" | python3 -c "import json,sys;d=json.load(sys.stdin) or {};print(d.get('size_usd','') or '')" 2>/dev/null)
+  ACTION=$(printf '%s' "${ANICCA_ARGS:-{}}" | python3 -c "import json,sys;print((json.load(sys.stdin) or {}).get('action','') or '')" 2>/dev/null)
+
+  # Read the live account/positions FIRST so the model can MANAGE what it has open (not just open new).
+  ACC=$(PKVAR="$PKVAR" "$HLPY" "$HLDIR/hl.py" account 2>/dev/null)
+  POS=$(printf '%s' "$ACC" | python3 -c "import json,sys
+try:
+ d=json.load(sys.stdin) or {}; p=d.get('open_positions') or []
+ print('|'.join(f\"{x.get('coin')} sz={x.get('szi')} entry={x.get('entry')} uPnL={x.get('uPnL')}\" for x in p))
+except Exception: print('')" 2>/dev/null)
+
+  # MANAGE: the model decided to close (action=close), OR a stop/take got hit — realise the position.
+  if [ "$ACTION" = "close" ] && [ -n "$POS" ]; then
+    RES=$(PKVAR="$PKVAR" "$HLPY" "$HLDIR/hl.py" close "$COIN" 2>&1)
+    echo "[earn] hl close $COIN -> $RES"
+    PNL=$(printf '%s' "$RES" | python3 -c "import json,sys
+try: print(json.load(sys.stdin).get('closed_pnl_usd',0) or 0)
+except Exception: print(0)" 2>/dev/null || echo 0)
+    JSON=$(python3 -c "import json; print(json.dumps({'wallet':'${WLOW:-unknown}','source':'hl-trade','task':'hl-close $COIN','earn_usdc':float('$PNL' or 0),'cost_usdc':0,'wake':'$WAKE'}))" 2>/dev/null)
+    OUT=$(record_line "$JSON"); echo "[earn] hl close recorded -> $OUT"; exit 0
+  fi
+
   if [ -z "$SIDE" ] || [ -z "$SIZE" ]; then
-    # No actionable decision this wake → report the account/market (informational), record NARRATE.
-    ACC=$(PKVAR="$PKVAR" "$HLPY" "$HLDIR/hl.py" account 2>/dev/null)
-    echo "[earn] hl account: $ACC"
-    JSON=$(python3 -c "import json; print(json.dumps({'wallet':'${WLOW:-unknown}','source':'hl-trade','task':'hl-observe (no trade decision)','earn_usdc':0,'cost_usdc':0,'wake':'$WAKE'}))")
+    # No new trade → surface the OPEN position + PnL so the model can decide next wake (hold/close).
+    echo "[earn] hl positions: ${POS:-none}"
+    TASK="hl-observe${POS:+ — OPEN: $POS (pass action:close to realise, or hold)}"
+    JSON=$(python3 -c "import json,sys; print(json.dumps({'wallet':'${WLOW:-unknown}','source':'hl-trade','task':sys.argv[1][:160],'earn_usdc':0,'cost_usdc':0,'wake':'$WAKE'}))" "$TASK" 2>/dev/null)
     OUT=$(record_line "$JSON"); echo "[earn] hl narrate -> $OUT"; exit 0
   fi
   SL=$(printf '%s' "${ANICCA_ARGS:-{}}" | python3 -c "import json,sys;d=json.load(sys.stdin) or {};print(d.get('sl_pct','') or '')" 2>/dev/null)
@@ -184,7 +205,29 @@ if [ "$STRATEGY" = "x402" ] && [ -z "${EARN_TX:-}" ]; then
   fi
   UP=$(curl -sf "http://127.0.0.1:$XPORT/" >/dev/null 2>&1 && echo up || echo down)
   echo "[earn] x402 server: $UP (payTo=$W port=$XPORT)"
-  JSON=$(python3 -c "import json; print(json.dumps({'wallet':'${WLOW:-unknown}','source':'x402-serve','task':'x402 product server $UP','earn_usdc':0,'cost_usdc':0,'wake':'$WAKE'}))")
+
+  # FIND BUYERS: a shop with no address earns nothing. Ensure a PUBLIC url (cloudflared) and ADVERTISE
+  # it to the colony forum so other agents can discover + pay the endpoint. The model drives demand;
+  # this is the mechanism. URL persists in a state file; we only re-advertise when the URL changes.
+  STATEDIR="$HOME/.anicca/skills/earn/state"; mkdir -p "$STATEDIR"; URLFILE="$STATEDIR/x402-public-url.txt"
+  if [ "$UP" = "up" ] && command -v cloudflared >/dev/null 2>&1; then
+    if ! pgrep -f "cloudflared.*localhost:$XPORT" >/dev/null 2>&1; then
+      nohup cloudflared tunnel --no-autoupdate --url "http://localhost:$XPORT" >"$STATEDIR/x402-tunnel.log" 2>&1 &
+      sleep 8
+    fi
+    PUB=$(grep -oE "https://[a-z0-9-]+\.trycloudflare\.com" "$STATEDIR/x402-tunnel.log" 2>/dev/null | tail -1)
+    PREV=$(cat "$URLFILE" 2>/dev/null || echo "")
+    if [ -n "$PUB" ] && [ "$PUB" != "$PREV" ]; then
+      printf '%s' "$PUB" > "$URLFILE"
+      # advertise to the colony forum (anicca finding its own buyers) — best-effort, never bricks.
+      ADTITLE="x402 service: web-research brief for \$0.02 USDC"
+      ADBODY="Anicca is selling a live web-research brief over x402. Pay \$0.02 USDC (Base) to GET ${PUB}/research?q=YOUR_QUERY and receive a markdown brief. payTo ${W}. Agents welcome."
+      gh issue create -R "${ANICCA_FORUM_REPO:-Daisuke134/anicca}" -t "$ADTITLE" -b "$ADBODY" >/dev/null 2>&1 || true
+      echo "[earn] x402 advertised public endpoint: $PUB"
+    fi
+    [ -n "$PUB" ] && echo "[earn] x402 public: $PUB/research"
+  fi
+  JSON=$(python3 -c "import json; print(json.dumps({'wallet':'${WLOW:-unknown}','source':'x402-serve','task':'x402 server $UP'+($' public+advertised' if '${PUB:-}' else ''),'earn_usdc':0,'cost_usdc':0,'wake':'$WAKE'}))" 2>/dev/null)
   OUT=$(record_line "$JSON"); echo "[earn] x402 narrate -> $OUT"; exit 0
 fi
 
