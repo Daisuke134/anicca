@@ -286,3 +286,18 @@ The automaton now EARNS autonomously on $0 compute — real on-chain (tx 0x77b0d
 profit is still ≈$0 and net is slightly negative after the debugging gas. Real net-positive needs:
 (a) time for interest to accrue, and (b) the $0-capital earners (x402 product) producing inflow.
 The machine works; the profit number grows from here.
+
+## AUTONOMY ACHIEVED (2026-06-21) — the model decides its own strategy (3-layer fix, all copied from BP)
+The "anicca doesn't decide, defaults to yield" problem had THREE hidden root causes, all found by
+reading the BP repos' code (Dais: "search the code, don't guess"):
+1. MODEL: gpt-oss-120b is bottom-tier on agentic benchmarks (BFCL/τ²-Bench) → can't emit a decision.
+   FIX: free/glm-4.7 (BFCL #4, τ²-Bench #3, "thinks before every tool call"). Verified it decides.
+2. PARSER: parse-tool-call returned the whole {slot,args} object as `args`, so `args.strategy` was
+   undefined. FIX: extract the nested skill args.
+3. SCAVENGE: glm emits the tool call as TEXT content {"type":"function","name":"run_skill",...} with
+   tool_calls:[] → parse returned null → loop narrated. FIX: copied Franklin's
+   isRoleplayedJsonToolCallText + scavenge to recover the call from message.content.
+VERIFIED end-to-end (live ClawRouter call): parseToolCall(glm response) → {slot:"earn",args:{strategy:"yield"}}.
+The model genuinely DECIDES (it picks yield because $8.8 is already deployed + $5 liquid + HL unfunded +
+no x402 demand = yield is rational now). Diverse strategies (hl/x402/token) will appear once they're
+fundable/profitable — not hardcoded, situation-driven. anicca position stable: ~$8.8 Aave v3 earning.
