@@ -97,10 +97,16 @@ async function main() {
     const useBeefy = bf && bf.apy > AAVE_APY;
     const venue = useBeefy ? vault : AAVE_POOL;
     const protocol = useBeefy ? `beefy:${bf.id}` : "aave-v3-base";
+    // Approve the MAX (uint256) — the universal DeFi pattern (Uniswap/GOAT/every integration). The old
+    // approve(surplus) re-approved the EXACT amount every deposit; with auto-nonce + a fallback RPC the
+    // approve didn't reliably confirm before the deposit, so allowance < surplus → transferFrom REVERTED
+    // (status 0x0, gas burned in a retry storm). A one-time max approve means allowance is always
+    // sufficient → no re-approve race → deposits stop reverting.
+    const MAX_UINT = (1n << 256n) - 1n;
     let alw = await pub.readContract({ address: USDC, abi: erc20, functionName: "allowance", args: [acct.address, venue] });
     if (alw < surplus) {
-      const ah = await w.writeContract({ address: USDC, abi: erc20, functionName: "approve", args: [venue, surplus] });
-      await pub.waitForTransactionReceipt({ hash: ah, confirmations: 2 });
+      const ah = await w.writeContract({ address: USDC, abi: erc20, functionName: "approve", args: [venue, MAX_UINT] });
+      await pub.waitForTransactionReceipt({ hash: ah, confirmations: 1 });
     }
     const tx = useBeefy
       ? await w.writeContract({ address: venue, abi: beefy, functionName: "deposit", args: [surplus] })
