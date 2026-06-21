@@ -150,6 +150,21 @@ if [ "$STRATEGY" = "hl" ] && [ -z "${EARN_TX:-}" ]; then
   fi
   SL=$(printf '%s' "${ANICCA_ARGS:-{}}" | python3 -c "import json,sys;d=json.load(sys.stdin) or {};print(d.get('sl_pct','') or '')" 2>/dev/null)
   TP=$(printf '%s' "${ANICCA_ARGS:-{}}" | python3 -c "import json,sys;d=json.load(sys.stdin) or {};print(d.get('tp_pct','') or '')" 2>/dev/null)
+  # FUND-HL: if the HL account can't cover this trade, fund it from Base USDC (relay). fund-hl.mjs has an
+  # economic guard — it REFUSES to bridge when the ~fixed ~$1.2 fee would be a high % of the amount, so a
+  # too-small wallet just gets a "needs more capital" note instead of burning money. Anicca funds itself.
+  HLBAL=$(PKVAR="$PKVAR" "$HLPY" "$HLDIR/hl.py" account 2>/dev/null | python3 -c "import json,sys
+try: print(float((json.load(sys.stdin) or {}).get('withdrawable',0) or 0))
+except Exception: print(0)" 2>/dev/null || echo 0)
+  if python3 -c "import sys;sys.exit(0 if float('$HLBAL')<float('$SIZE') else 1)" 2>/dev/null; then
+    echo "[earn] hl balance \$$HLBAL < trade \$$SIZE → attempting self-fund (relay Base→HL, economic-guarded)"
+    FUND=$(FUND_HL_USDC="$SIZE" PKVAR="$PKVAR" node "$HLDIR/fund-hl.mjs" 2>&1 | tail -1)
+    echo "[earn] fund-hl: $FUND"
+    if printf '%s' "$FUND" | grep -q '"funded": *false'; then
+      JSON=$(python3 -c "import json,sys; print(json.dumps({'wallet':'${WLOW:-unknown}','source':'hl-trade','task':'hl-fund-skipped: '+json.loads('''$FUND''').get('reason','?'),'earn_usdc':0,'cost_usdc':0,'wake':'$WAKE'}))" 2>/dev/null)
+      OUT=$(record_line "$JSON"); echo "[earn] hl fund skipped -> $OUT"; exit 0
+    fi
+  fi
   ARGS=(open "$COIN" "$SIDE" "$SIZE"); [ -n "$SL" ] && ARGS+=(--sl "$SL"); [ -n "$TP" ] && ARGS+=(--tp "$TP")
   RES=$(PKVAR="$PKVAR" "$HLPY" "$HLDIR/hl.py" "${ARGS[@]}" 2>&1)
   echo "[earn] hl open result: $RES"
