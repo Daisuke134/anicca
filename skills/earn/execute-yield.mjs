@@ -94,7 +94,11 @@ async function main() {
   // ---- DEPLOY: liquid above the buffer goes to the best yield ----
   const surplus = liquid - BigInt(RESERVE);
   if (surplus >= BigInt(MIN_DEPLOY)) {
-    const useBeefy = bf && bf.apy > AAVE_APY;
+    // Default venue = Aave v3 (simple supply(), ~250k predictable gas, never the deep-strategy revert).
+    // The Beefy Morpho-gauntlet vault deposit costs ~1.5M gas and reverted intermittently (status 0x0)
+    // — a gas-heavy strategy that's fragile under the loop. Reliable 3.2% beats a reverting 5.35%.
+    // Set YIELD_PREFER_BEEFY=1 to opt back into the higher-APY Beefy vault.
+    const useBeefy = process.env.YIELD_PREFER_BEEFY === "1" && bf && bf.apy > AAVE_APY;
     const venue = useBeefy ? vault : AAVE_POOL;
     const protocol = useBeefy ? `beefy:${bf.id}` : "aave-v3-base";
     // Approve the MAX (uint256) — the universal DeFi pattern (Uniswap/GOAT/every integration). The old
