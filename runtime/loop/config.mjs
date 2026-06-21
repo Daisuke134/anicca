@@ -26,9 +26,9 @@ const DEFAULTS = {
   // moonshot/kimi-k2.7 and drained the wallet). 'free' = the free NVIDIA models, 100% savings, $0 per
   // wake — the cost-free thesis (free brain + earning skills = pure profit). A self-paying Anicca on a
   // tiny wallet must NOT burn x402 on a paid frontier per wake; routine wakes stay $0. All tiers = free.
-  ANICCA_FREE_MODEL:    'free',
-  ANICCA_LEAN_MODEL:    'free',
-  ANICCA_FUNDED_MODEL:  'free',
+  ANICCA_FREE_MODEL:    'free/nemotron-ultra-253b',
+  ANICCA_LEAN_MODEL:    'free/nemotron-ultra-253b',
+  ANICCA_FUNDED_MODEL:  'free/nemotron-ultra-253b',
   SLEEP_BASE_S:         120,
   SLEEP_ERROR_S:        60,
   SLEEP_LOOP_DETECT_S:  300,
