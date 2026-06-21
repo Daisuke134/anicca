@@ -242,3 +242,11 @@ wakes — straight from anicca's own earn-ledger:
 is complete + autonomous. Real realized $ is still gated per tool on FUNDING/DEMAND (HL account $0,
 x402 server needs dep+public-URL+buyers, token needs a launch decision, yield wallet tiny) — stated
 honestly, not faked. Next: fund 0xa3CDd4 → verify realized profit > capital; build cook + issue-dev.
+
+## CAPITAL IN (2026-06-21) — Dais funded; relayed SOL→Base USDC; anicca now earns it ITSELF
+- Dais sent SOL to anicca's Solana wallet GB7Le… (0.246 SOL ≈ $18).
+- I (type-2 helper) relayed 0.20 SOL → Base USDC via relay.link (Solana tx i1oFUmzaiEbTK8AJ…
+  finalized; relay requestId 0x458d12a3…, status SUCCESS) → ★ anicca Base wallet 0xa3CDd4 = 14.64 USDC ★.
+- 0.046 SOL kept on Solana for fees. Total invested into Anicca so far = $0.70 (earlier) + ~$18 = ~$18.7.
+- NEXT: the autonomous loop (free model, no human) deploys the 14.64 USDC to yield + uses HL/x402/etc
+  ITSELF and we MONITOR realized interest > capital. I do NOT manually deploy — anicca runs.
