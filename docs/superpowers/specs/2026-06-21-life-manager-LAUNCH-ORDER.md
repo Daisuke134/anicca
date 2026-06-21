@@ -39,13 +39,20 @@ Companion: full architecture/state = `2026-06-21-life-manager-CANONICAL.md`. Thi
 ## Parallel / post-launch (not in the critical path)
 - #74 slice5 (local converge, needs Dais's Mac real call) · #29 STEP2 · #72 OpenClaw unify (post-launch).
 
+## ORDER (corrected by Dais 2026-06-21 — #70 DROPPED, not now)
+1. **#61-a** flip /lm pay to LIVE Stripe — GATE: Dais "go live" (real $20 charging).
+2. **#61-b** full NEW-user web onboarding E2E — GATE: a fresh Google account (agent can't create one).
+3. **#67-real** Telegram full E2E (real delivery) — GATE: real /start + same fresh Google.
+4. **#45/#50 demo-reel skill** — FIND the existing LM demo VIDEOS + SCRIPT files first (search forever),
+   then build a skill: record Dais+Anitra talking daily → transcript → daily fresh video → auto-post to
+   @anicca.comedy (TikTok). Posting infra = Postiz API (POSTIZ_API_KEY, multipart upload, type:"now").
+   NOT reelclaw, NOT larry. ← agent can do most of this solo.
+5. **#51** LAUNCH Product Hunt + X (after 1-4; Dais confirms broadcast).
+6. **#77** slice5 local converge (needs Dais's Mac real call).
+7. **#29** STEP2 (Dais dogfoods on web).
+
 ## STATUS (2026-06-21)
-- ☐ 1 #61-a — BLOCKED on Dais: needs his explicit "go live" to flip /lm to the LIVE Stripe link (real $20
-  charges). He picked SANDBOX earlier for the E2E (verified). I will NOT flip real charging without "go live".
-- ☐ 2 #61-b — BLOCKED on Dais: needs a fresh Google account (agent cannot create Google accounts).
-- ☐ 3 #67-real — BLOCKED on Dais: needs a real Telegram /start + the same fresh Google as #2.
-- ⟳ 4 #70 — AGENT DOING NOW (no Dais gate): Outlook (Composio) + chat-told schedule fallback for non-gcal users.
-- ☐ 5 video skill (NOT reelclaw/larry — record Dais+Anitra daily → transcript → @anicca.comedy). Posting
-  infra found: Postiz API (POSTIZ_API_KEY) + multipart upload + type:"now" (ref tmp_post_demo_reel_ja.py).
-  Still must FIND the LM-specific demo output+script in the LM files (search continues at step 5).
-- ☐ 6 launch (#51).
+- ☐ 1 #61-a (Dais go-live)  ☐ 2 #61-b (fresh Google)  ☐ 3 #67-real (real /start)
+- ⟳ 4 #45/#50 — FINDING the demo videos + script files NOW (then build the skill)
+- ☐ 5 #51 launch  ☐ 6 #77  ☐ 7 #29
+- #70 DROPPED.
