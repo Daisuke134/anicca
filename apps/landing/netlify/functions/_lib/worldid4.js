@@ -35,6 +35,10 @@ async function verifyV4(idkitResponse, rpId, { fetchImpl = fetch } = {}) {
     });
   } catch { return { ok: false, status: 500, reason: 'verify_network_error' }; }
   if (!res.ok) return { ok: false, status: res.status === 400 ? 403 : 502, reason: 'verification_failed' };
+  // Don't trust HTTP 2xx alone — require the body to assert success:true (VCSDD FIND-003: a 200 with a
+  // failure payload must NOT pass). The v4 endpoint returns { success: true, nullifier, ... } on success.
+  const data = await res.json().catch(() => null);
+  if (!data || data.success !== true) return { ok: false, status: 403, reason: 'verification_failed' };
   return { ok: true };
 }
 
