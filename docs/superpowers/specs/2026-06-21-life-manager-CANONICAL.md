@@ -195,25 +195,44 @@ Pay: Stripe $20/mo (LIVE link + sandbox test link, webhook dual-secret live+test
   E2E: 20 commitments → 4 wakes. VSDD gate PASS 6/6 (round 2 + residual closed). 54 tests. Live
   build=wake-importance-filter-v3. ★ Both launch blockers (#71 accuracy + #69 spam) now CLEAR. ★
 
-## REMAINING TODO (canonical, launch-ordered)
-1. ~~**#71 WS6o — Routes API migration**~~ ✅ **DONE + DEPLOYED 2026-06-21** (traffic-aware DRIVE, max(transit,drive), gate 6/6, live).
-2. ~~**#69 WS6m — wake/travel importance filter**~~ ✅ **DONE + DEPLOYED 2026-06-21** (travel-only + leave-anchor, gate 6/6, live). ★ both launch blockers clear ★
-3. **#70 WS6n — users without Google Calendar.** Add Outlook (Composio) + agentic "tell me your schedule" chat fallback.
-4. **#61 WS6h / #67 #68 — full fresh-user E2E.** Web: incognito /lm (login→connect→phone→sandbox pay→dashboard);
-   Telegram: /start (name→calendar→gmail→phone→pay→done). Dais confirms.
-5. ~~**#73 GitHub→Railway auto-deploy**~~ ✅ **DONE + VERIFIED 2026-06-21** — life-call service source =
-   Daisuke134/anicca-products, rootDirectory apps/life-call, watchPatterns apps/life-call/**, 1 deploy
-   trigger (main). Wired via Railway GraphQL (serviceInstanceUpdate). Proven: push→live in ~180s, NO
-   `railway up`. (Deploy is now a plain `git push`; `railway up` only needed for out-of-band hotfixes.)
-6. **#45/#50 — demo-reel:** call transcript + screenshot → reelclaw → daily @anicca.comedy (TikTok/X).
-7. **#51 — LAUNCH: Product Hunt + X.** Ship the product publicly. (Needs #71+#69 done first so new users aren't spammed/late.)
-8. **#29 — STEP2:** Dais dogfoods on web; manage everyone's life.
-9. **#72 WS6p (post-launch) — UNIFY onto OpenClaw.** OpenClaw's `@openclaw/voice-call` plugin supports
-   Telnyx + Gemini Live realtime BUT realtime full-duplex is documented Twilio-Media-Streams-only —
-   so our Telnyx+Gemini-Live bridge is the missing piece. Plan: upstream our bridge as a Telnyx-realtime
-   provider → run OpenClaw-on-server (voice-call telnyx + multi-agent routing per-user + cron + Composio)
-   → ONE codebase deploys local (BYOK) or server (subscribers). Retires the bespoke life-call + local sutando.
-   DO AFTER LAUNCH — don't rebuild the working system first.
+## REMAINING TODO (canonical, launch-ordered — full tasklist, mirrors the task tool)
+### ✅ DONE + LIVE (2026-06-21)
+- ~~**#71** Routes API traffic-aware travel~~ ✅ gate 6/6, live (build=routes-api-traffic-aware-v1).
+- ~~**#69** wake/travel importance filter + leave-anchor~~ ✅ gate 6/6, live. ★ both launch blockers clear ★
+- ~~**#73** GitHub→Railway auto-deploy~~ ✅ verified: `git push` → live ~180s, no `railway up`.
+- ~~**#74 slice1** events.js → getCalendar() adapter~~ ✅ deployed (Composio still default).
+- ~~**#74 slice2** travel.js → getCalendar() adapter~~ ✅ deployed (the proven 2-language dup point).
+
+### 🔄 #74 CONVERGENCE — remaining (makes local == cloud architecture; Composio STAYS, just consolidated)
+- **#75 slice3** — ask.js + notify.js + telegram-reply.js → getCalendar() + new mail adapter (Unipile).
+  Consolidate the 5-file raw Composio coupling into calendar-composio.js + mail-composio.js. Composio
+  remains the cloud provider + default → live caller unchanged. Finishes the CLOUD side of the adapter.
+- **#76 slice4** — calendar-gog.js + mail-gog.js: the LOCAL adapter (BYOK via gog CLI), selected by
+  LIFE_TRANSPORT=gog. No Composio locally — local reads YOUR own gcal/gmail via gog.
+- **#77 slice5** — local runs the SAME `node server.js` (LIFE_TRANSPORT=gog + cloudflared, launchd),
+  app's own scheduler loop replaces openclaw cron --at; OpenClaw removed from the LM architecture
+  (at most a launcher); retire travel_fill.py + resolve.py. ALL 3 layers then identical local↔cloud.
+  REQUIRES a real local phone-call E2E on Dais's Mac before flipping.
+
+### 🚀 LAUNCH readiness
+- **#61** (incl #67/#68) — full fresh-paid-user cloud E2E: web incognito /lm (login→connect→phone→sandbox
+  pay→dashboard) + Telegram /start (name→calendar→gmail→phone→pay→done), no manual seeding. Dais confirms.
+- **#70** — users without Google Calendar: Outlook (Composio) + agentic "tell me your schedule" chat fallback.
+- **#45/#50** — demo-reel pipeline: ① real-call material (transcript + ring + dashboard shot) → ② reelclaw
+  9:16 render → ③ daily fresh (no rotation) → ④ auto-post TikTok/IG/X (@anicca.comedy) + releaseURL verify
+  → ⑤ account-history ledger.
+- **#51 — LAUNCH: Product Hunt + X.** Public/irreversible → Dais confirms before broadcasting. (After #61.)
+- **#29 — STEP2:** Dais dogfoods on web; manage everyone's life.
+
+### 🔭 Post-launch (optional, the grand ideal)
+- **#72 — UNIFY onto OpenClaw.** Upstream call-bridge.cjs into @openclaw/voice-call as a realtime provider
+  (the missing piece — voice-call is turn-based TTS today), then run ONE OpenClaw app local (gog) OR
+  server (Composio, multi-tenant). #74 is the prerequisite step-1 of this staircase. Don't rebuild the
+  working system first.
+
+### Adjacent (non-LM, later)
+- **#12** marketing article/video/hackathon · **#22** E2E harness (UX-SPEC + browser-use loop) · **#25**
+  OSS anicca automaton loop + README · **#27** aniccaai.com IA redesign · **#28** UBI rails.
 
 ## #71 IMPLEMENTATION CONTRACT (Routes API migration — in progress)
 Replace `directionsMinutes(src,dst,mapsKey)` in `apps/life-call/lib/travel.js` (and mirror to
