@@ -43,7 +43,16 @@ Companion: full architecture/state = `2026-06-21-life-manager-CANONICAL.md`. Thi
 1. **#61-a** flip /lm pay to LIVE Stripe — GATE: Dais "go live" (real $20 charging).
 2. **#61-b** full NEW-user web onboarding E2E — GATE: a fresh Google account (agent can't create one).
 3. **#67-real** Telegram full E2E (real delivery) — GATE: real /start + same fresh Google.
-4. **#45/#50 demo-reel skill** — FIND the existing LM demo VIDEOS + SCRIPT files first (search forever),
+4. **#45/#50 demo-reel skill** — ★ FOUND the existing demo OUTPUT (verified by transcript 2026-06-21):
+   `~/Desktop/anicca_wake_promo_v1.mp4` (52s) + `anicca_wake_promo_v2.mp4` (34.7s) = Anicca/Charon voice
+   wake-call demo (JA). v2 transcript: "ダイス、聞こえてる? 8時7分、またやっちまったって後悔する苦しみ、
+   今日で終わりにしよう。さあ起きるぞ … 面白さより堅実だ。今すぐ行動しろ。立て。顔笑ってこい … 苦しみを
+   終わらせるためだ。寝坊して自己嫌悪に陥る毎日を、今日で終わりにする". This IS the format. Posting infra =
+   Postiz API (POSTIZ_API_KEY). Remotion skill = `skills/remotion`. The #12 product-demo storyboard =
+   `docs/superpowers/specs/anicca/marketing/demo-video-plan.md` (separate, Dais-go for upload). NEXT for
+   #45/#50: build a skill that takes a real Charon wake-call recording → transcript (whisper) → captioned
+   reel → daily auto-post to @anicca.comedy. NOT reelclaw, NOT larry. ── ORIGINAL note kept below ──
+   FIND the existing LM demo VIDEOS + SCRIPT files first (search forever),
    then build a skill: record Dais+Anitra talking daily → transcript → daily fresh video → auto-post to
    @anicca.comedy (TikTok). Posting infra = Postiz API (POSTIZ_API_KEY, multipart upload, type:"now").
    NOT reelclaw, NOT larry. ← agent can do most of this solo.
