@@ -34,11 +34,25 @@ export function parseToolCall(rawResponse) {
   if (!toolCall) return null;
 
   try {
-    const args = typeof toolCall.function.arguments === 'string'
+    const parsed = typeof toolCall.function.arguments === 'string'
       ? JSON.parse(toolCall.function.arguments)
       : toolCall.function.arguments;
 
-    const slot = args.slot ?? toolCall.function.name;
+    const slot = parsed.slot ?? toolCall.function.name;
+
+    // The run_skill schema is { slot, args } — the SKILL's args (e.g. {strategy:"hl",coin:"ETH"}) live
+    // under parsed.args. The old code returned the WHOLE parsed object as args, so a downstream
+    // `args.strategy` read undefined and the model's decision was lost (→ yield default). Extract the
+    // nested args; fall back to parsed-minus-slot for models that flatten params at the top level.
+    let args;
+    if (parsed && typeof parsed.args === 'object' && parsed.args !== null) {
+      args = parsed.args;
+    } else if (parsed && typeof parsed === 'object') {
+      const { slot: _slot, ...rest } = parsed;
+      args = rest;
+    } else {
+      args = {};
+    }
     return { slot, args };
   } catch {
     return null;
