@@ -270,12 +270,24 @@ print(d.get('abort') or d.get('error') or '')" 2>/dev/null)
     echo "[earn] yield skipped ($ABORT) -> NARRATE -> $OUT"
     exit 0
   fi
-  YTX=$(printf '%s' "$RES" | python3 -c "import json,sys;print(json.load(sys.stdin).get('tx',''))")
-  YSTATUS=$(printf '%s' "$RES" | python3 -c "import json,sys;print(json.load(sys.stdin).get('status',''))")
-  YAMT=$(printf '%s' "$RES" | python3 -c "import json,sys;print(json.load(sys.stdin).get('deposited_usdc',0))")
-  JSON=$(python3 -c "import json; print(json.dumps({'wallet':'${WLOW:-unknown}','source':'yield-aave-v3','task':'deploy idle USDC to Aave v3 yield','kind':'yield','deposited_usdc':float('$YAMT'),'earn_usdc':0,'cost_usdc':0,'tx':'$YTX','status':'$YSTATUS','external':False,'wake':'$WAKE'}))")
+  # Record the ACTUAL result execute-yield returned — never a hardcoded "deploy" line. A hold (no tx)
+  # was being logged as a fake "deploy idle USDC to Aave v3" with tx='' (misleading ledger). Now the
+  # source/task/tx mirror what really happened: deploy <protocol> tx / refill <protocol> tx / hold (no tx).
+  JSON=$(printf '%s' "$RES" | python3 -c "
+import json,sys
+try: d=json.load(sys.stdin)
+except Exception: d={}
+kind=d.get('kind'); action=d.get('action'); proto=d.get('protocol','')
+W='${WLOW:-unknown}'; WAKE='$WAKE'
+if kind=='yield_hold' or action=='hold':
+    print(json.dumps({'wallet':W,'source':'yield','task':'hold (buffer healthy, position accruing)','kind':'yield_hold','earn_usdc':0,'cost_usdc':0,'liquid_usdc':d.get('liquid_usdc',0),'wake':WAKE}))
+else:
+    src='yield-'+(proto.split(':')[0] if proto else 'defi'); src='yield-beefy-morpho' if 'morpho' in proto else ('yield-aave-v3' if 'aave' in proto else src)
+    amt=d.get('deposited_usdc') or d.get('refilled_usdc') or 0
+    print(json.dumps({'wallet':W,'source':src,'task':(action or 'deploy')+' '+proto,'kind':'yield','deposited_usdc':float(amt),'earn_usdc':0,'cost_usdc':0,'tx':d.get('tx',''),'status':d.get('status',''),'external':False,'wake':WAKE}))
+" 2>/dev/null)
   OUT=$(record_line "$JSON")
-  echo "[earn] yield deployed \$$YAMT to Aave v3 (tx=$YTX status=$YSTATUS) -> $OUT"
+  echo "[earn] yield $(printf '%s' "$RES" | python3 -c "import json,sys;d=json.load(sys.stdin);print(d.get('action') or d.get('kind'),d.get('tx','') or '')" 2>/dev/null) -> $OUT"
   exit 0
 fi
 
