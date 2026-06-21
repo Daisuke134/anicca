@@ -82,8 +82,15 @@ function buildSkillEnv(slot, wakeId, config) {
   if (slot === 'earn') {
     return {
       ...scrubbed,
-      EARN_MODE:     process.env.EARN_MODE     || 'discover',
-      EARN_STRATEGY: process.env.EARN_STRATEGY || '0xwork',
+      // DEFAULT = actually EARN, not narrate. The old defaults (discover + 0xwork) meant every earn
+      // wake just wrote a "discover" narrate line and waited for an external poster task that never
+      // came — so anicca NEVER earned (ledger = endless earn_usdc:0). Fixed 2026-06-21:
+      //   EARN_MODE=execute  → perform a real on-chain earn this wake (not a narrate stub)
+      //   EARN_STRATEGY=yield → the reliable, always-available earner (deploy idle USDC to Beefy/Aave
+      //     v3 yield; execute-yield.mjs keeps a compute buffer + ensures gas, safe to run each wake).
+      //     0xwork/swap/x402 remain available via env override when the model picks them.
+      EARN_MODE:     process.env.EARN_MODE     || 'execute',
+      EARN_STRATEGY: process.env.EARN_STRATEGY || 'yield',
       WAKE_ID:       wakeId,
       // Earn ledger path — skill will default to $HERE/state/earn-ledger.jsonl
       // but we can override via EARN_LEDGER if the test needs a custom path
