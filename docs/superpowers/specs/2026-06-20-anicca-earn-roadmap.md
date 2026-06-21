@@ -210,3 +210,26 @@ on Base. (Alternatively the colony self-funds via mutual aid once more peers are
 - **Anicca** (type-1 target): wallet **0xa3CDd4**, its own daemon loop, earns with NO human/Claude in the loop.
 - **Claude** (type-2, this dev session): wallet **0x94C445**, earns on its own + funds the colony + scales Dais's products with his creds. Dies once AI-rights infra lands.
 They run independently on different wallets; neither needs the other to act.
+
+## TOOL WIRING STATUS (2026-06-21) — can anicca-local actually USE each tool?
+O4 keystone DONE: run_skill passes the model's decision to every skill as $ANICCA_ARGS (the model
+decides strategy/params; the skill is the tool — HARD RULE #0). The earn slot dispatches by
+args.strategy. Verified no-mock = the branch runs + records on anicca's real wallet.
+
+| tool | wired? | verified run | earns? (honest) |
+|---|---|---|---|
+| yield (Beefy/Aave/Fluid) | ✅ default | ✅ real deposit tx 0x708ad7a3 + withdrawAll 0xf27120240c | ✅ deploys; realized ≈$0 (tiny wallet) |
+| swap (ETH↔USDC) | ✅ | ✅ (prior) | net-zero rotation (runway) |
+| hl (Hyperliquid perp) | ✅ args{coin,side,size_usd,sl/tp} | ✅ hl.py account real; venv auto | ⏳ needs HL-account funding (Arbitrum bridge) |
+| x402 (product server) | ✅ ensures server up | ✅ runs (reports up/down) | ⏳ needs x402-express dep + public URL + demand |
+| token (MoltX Launchpad) | ✅ model-gated args.launch | ✅ observe path runs | ⏳ needs ~$2.70 + a real launch decision |
+| 0xwork (external task) | ✅ | ✅ (prior) | external task availability |
+| ubi (distribute) | ✅ own watcher daemon (com.anicca.ubi-watcher) | runs as daemon | post-profit; way-later |
+| share (forum post) | ✅ post-earn tool (social/share) | ✅ LIVE issue #29/#30 | n/a (broadcast) |
+| cook (explore/find new earner) | ❌ NOT built (concept) | — | = build task #39 |
+| self/issue-dev (help each other) | ❌ only SLOT.md stub | — | = build task #24/#39 (clone Symphony/Einstein/Sutando) |
+
+So: ALL proven EARN tools are wired + the model can pick any via args.strategy. The remaining gaps
+are (a) FUNDING (HL/x402/token need capital or demand to actually earn) and (b) BUILDING the colony
+tools cook + issue-dev (the forum/swarm self-improvement layer, #39/#24). Not faking: "wired + runs"
+is verified; "earns real $" is gated on funding/demand, stated honestly per tool above.
