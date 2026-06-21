@@ -35,7 +35,7 @@ mint a GATE-0 "profit" — only genuinely external revenue counts. This is enfor
 ## Money-safety (shared with ubi, via ../_shared/lib)
 - `identity-guard.mjs` fails CLOSED if any user-PII env (gmail/gcal/google-login) leaks into the earn
   process — own-funds only. The `EARN_ALLOW` allowlist in `run.sh` is the minimal env surface.
-- `verify-tx.mjs` requires receipt `0x1`; `usdc.mjs` confirms a real before/after balance delta.
+- `verify-tx.mjs` reports the receipt status; the `0x1` requirement is enforced by `ledger.mjs isProfitable()` + `run.sh`. `usdc.mjs` confirms a real before/after balance delta.
 - `ledger.mjs` never rewrites prior lines (immutable); `isProfitable()` is the single source of truth
   for "did this wake actually make money."
 
@@ -44,7 +44,7 @@ mint a GATE-0 "profit" — only genuinely external revenue counts. This is enfor
 cd ~/anicca/skills/earn
 tail -1 state/earn-ledger.jsonl                  # the recorded wake
 # net_usdc>0 AND a tx hash -> open https://basescan.org/tx/<hash> -> Status: Success
-EARN_STRATEGY=discover bash run.sh               # safe dry wake (no tx) -> NARRATE, exit 0
+EARN_MODE=discover bash run.sh                   # safe dry wake (no tx) -> NARRATE, exit 0 (discover is the default MODE)
 ```
 
 ## Relationship to ubi
