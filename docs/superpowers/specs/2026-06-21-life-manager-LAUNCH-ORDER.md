@@ -61,7 +61,11 @@ Companion: full architecture/state = `2026-06-21-life-manager-CANONICAL.md`. Thi
 7. **#29** STEP2 (Dais dogfoods on web).
 
 ## STATUS (2026-06-21)
-- ☐ 1 #61-a (Dais go-live)  ☐ 2 #61-b (fresh Google)  ☐ 3 #67-real (real /start)
-- ⟳ 4 #45/#50 — FINDING the demo videos + script files NOW (then build the skill)
-- ☐ 5 #51 launch  ☐ 6 #77  ☐ 7 #29
-- #70 DROPPED.
+- ✅ 1 #61-a DONE+VERIFIED — /lm pay flipped to LIVE Stripe (buy.stripe.com/…2880v), bundle confirms real
+  $20/mo charging. (Dais said go live.)
+- ☐ 2 #61-b (fresh Google)  ☐ 3 #67-real (real /start) — both still Dais-gated.
+- ⟳ 4 #45/#50 — skill BUILT (~/.openclaw/skills/life-manager-video/make-reel.sh): whisper JA SRT → ffmpeg
+  caption burn → 1080x1920 reel. First output (anicca_wake_promo_v2-captioned.mp4) SELF-VERIFIED (frame:
+  phone-UI 'Anicca' + burned captions; audio ok; 34.7s) + EMAILED to keiodaisuke@gmail.com (id
+  19ee97ed85104557). AWAITING Dais approval → then wire 2×/day @anicca.comedy cron + a daily-call capture source.
+- ☐ 5 #51 launch  ☐ 6 #77  ☐ 7 #29.  #70 DROPPED.
