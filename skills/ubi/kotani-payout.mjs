@@ -15,12 +15,28 @@ export const API_BASE =
   ENV === "production" ? "https://api.kotanipay.io" : "https://sandbox-api.kotanipay.io";
 const OFFRAMP_PATH = "/api/v3/offramp";
 
+// Pure: validate a USDC amount string — positive, decimal, <=6 dp (USDC precision). Shared guard
+// against zero-value "paid" ledger lines and over-precision truncation (VCSDD FIND-003).
+export function assertPayableAmount(amount, label = "amount") {
+  const s = String(amount);
+  if (!/^\d+(\.\d+)?$/.test(s)) throw new Error(`${label}: must be a decimal string`);
+  if (Number(s) <= 0) throw new Error(`${label}: must be > 0`);
+  if ((s.split(".")[1] || "").length > 6) throw new Error(`${label}: max 6 decimal places (USDC)`);
+}
+
+// Pure: deterministic idempotency key from referenceId (the payment-unique id). A retry of the SAME
+// payout reuses it; distinct payouts differ (VCSDD FIND-001).
+export function kotaniIdempotencyKey(referenceId) {
+  if (!referenceId) throw new Error("kotani: referenceId required for idempotency");
+  return `kotani-offramp-${referenceId}`;
+}
+
 // Pure: build the offramp request body. cryptoAmount is a decimal string of USDC ("19.87").
 export function buildOfframpRequest({ referenceId, cryptoAmount, fiatCurrency, customerKey, fiatWalletId, senderAddress }) {
   if (!referenceId) throw new Error("kotani: referenceId required (idempotency + refund tracking)");
   if (!customerKey) throw new Error("kotani: customerKey required (recipient mobile-money customer)");
   if (!fiatWalletId) throw new Error("kotani: fiatWalletId required (KOTANI_FIAT_WALLET_ID)");
-  if (!/^\d+(\.\d+)?$/.test(String(cryptoAmount))) throw new Error("kotani: cryptoAmount must be a decimal string");
+  assertPayableAmount(cryptoAmount, "kotani: cryptoAmount");
   if (!fiatCurrency) throw new Error("kotani: fiatCurrency required (e.g. 'KES')");
   return {
     referenceId,
@@ -49,7 +65,9 @@ export async function submitOfframp(reqBody, { apiKey, fetchImpl = fetch } = {})
   const res = await fetchImpl(`${API_BASE}${OFFRAMP_PATH}`, {
     method: "POST",
     // UNVERIFIED: confirm header name (Authorization Bearer vs x-api-key) against a live Kotani key.
-    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json",
+               // idempotency: a network-timeout retry of the same payout must not double-send (FIND-001).
+               "x-idempotency-key": kotaniIdempotencyKey(reqBody?.referenceId) },
     body: JSON.stringify(reqBody),
   });
   if (!res.ok) {
