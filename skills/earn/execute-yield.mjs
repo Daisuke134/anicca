@@ -43,6 +43,7 @@ const erc20 = [
 const beefy = [
   { name: "deposit", type: "function", stateMutability: "nonpayable", inputs: [{ type: "uint256" }], outputs: [] },
   { name: "withdraw", type: "function", stateMutability: "nonpayable", inputs: [{ type: "uint256" }], outputs: [] },
+  { name: "withdrawAll", type: "function", stateMutability: "nonpayable", inputs: [], outputs: [] },
   { name: "getPricePerFullShare", type: "function", stateMutability: "view", inputs: [], outputs: [{ type: "uint256" }] },
   { name: "balanceOf", type: "function", stateMutability: "view", inputs: [{ type: "address" }], outputs: [{ type: "uint256" }] },
 ];
@@ -94,17 +95,18 @@ async function main() {
     return out({ kind: "yield", action: "deploy", protocol, apy_pct: +((useBeefy ? bf.apy : AAVE_APY) * 100).toFixed(2), tx, status: r.status === "success" ? "0x1" : "0x0", deposited_usdc: Number(surplus) / 1e6, reserve_usdc: RESERVE / 1e6, wallet: acct.address });
   }
 
-  // ---- REFILL: liquid below the trigger → pull from yield to top up the compute buffer ----
+  // ---- REFILL: liquid below the trigger → pull the position back to liquid to top up the buffer ----
+  // Uses Beefy's withdrawAll() (no args) — NOT a computed partial withdraw(shares). The old partial
+  // path mixed 6-dec USDC `need` with 18-dec mooShares, producing a wrong share amount that REVERTED
+  // (status 0x0) every wake = a recurring gas bleed. withdrawAll exits the whole position in one robust
+  // call; the next wake redeploys the surplus above RESERVE, so the buffer is restored cleanly.
   if (liquid < BigInt(REFILL_AT) && vault) {
     const shares = await pub.readContract({ address: vault, abi: beefy, functionName: "balanceOf", args: [acct.address] });
     if (shares > 0n) {
-      const ppfs = await pub.readContract({ address: vault, abi: beefy, functionName: "getPricePerFullShare", args: [] });
-      const need = BigInt(RESERVE) - liquid;                       // USDC (6-dec) to top up to RESERVE
-      let wantShares = (need * (10n ** 18n)) / ppfs;               // shares (6-dec) for that USDC
-      if (wantShares > shares) wantShares = shares;               // cap at what we hold
-      const tx = await w.writeContract({ address: vault, abi: beefy, functionName: "withdraw", args: [wantShares] });
+      const tx = await w.writeContract({ address: vault, abi: beefy, functionName: "withdrawAll", args: [] });
       const r = await pub.waitForTransactionReceipt({ hash: tx });
-      return out({ kind: "yield", action: "refill", protocol: `beefy:${bf.id}`, tx, status: r.status === "success" ? "0x1" : "0x0", refilled_usdc: Number((wantShares * ppfs) / (10n ** 18n)) / 1e6, reserve_usdc: RESERVE / 1e6, wallet: acct.address });
+      const liq2 = await pub.readContract({ address: USDC, abi: erc20, functionName: "balanceOf", args: [acct.address] });
+      return out({ kind: "yield", action: "refill", protocol: `beefy:${bf.id}`, tx, status: r.status === "success" ? "0x1" : "0x0", refilled_usdc: Number(liq2 - liquid) / 1e6, reserve_usdc: RESERVE / 1e6, wallet: acct.address });
     }
   }
 
