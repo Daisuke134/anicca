@@ -62,6 +62,10 @@ const beefy = [
   { name: "balanceOf", type: "function", stateMutability: "view", inputs: [{ type: "address" }], outputs: [{ type: "uint256" }] },
 ];
 const aave = [{ name: "supply", type: "function", stateMutability: "nonpayable", inputs: [{ type: "address" }, { type: "uint256" }, { type: "address" }, { type: "uint16" }], outputs: [] }];
+// Fluid fUSDC, ERC4626 (deposit(assets,receiver)), 5.36% — addr/iface from docs/earn-verification-2026-06-18.md:233.
+const FLUID = "0xf42f5795D9ac7e9D757dB633D693cD548Cfd9169";
+const FLUID_APY = 0.0536;
+const erc4626 = [{ name: "deposit", type: "function", stateMutability: "nonpayable", inputs: [{ type: "uint256" }, { type: "address" }], outputs: [{ type: "uint256" }] }];
 
 // Best ACTIVE single-asset USDC Beefy Base vault (want==USDC → direct deposit/withdraw). null on fail.
 async function bestBeefy() {
@@ -94,13 +98,14 @@ async function main() {
   // ---- DEPLOY: liquid above the buffer goes to the best yield ----
   const surplus = liquid - BigInt(RESERVE);
   if (surplus >= BigInt(MIN_DEPLOY)) {
-    // Default venue = Aave v3 (simple supply(), ~250k predictable gas, never the deep-strategy revert).
-    // The Beefy Morpho-gauntlet vault deposit costs ~1.5M gas and reverted intermittently (status 0x0)
-    // — a gas-heavy strategy that's fragile under the loop. Reliable 3.2% beats a reverting 5.35%.
-    // Set YIELD_PREFER_BEEFY=1 to opt back into the higher-APY Beefy vault.
-    const useBeefy = process.env.YIELD_PREFER_BEEFY === "1" && bf && bf.apy > AAVE_APY;
-    const venue = useBeefy ? vault : AAVE_POOL;
-    const protocol = useBeefy ? `beefy:${bf.id}` : "aave-v3-base";
+    // AUTO highest-APY, NO opt-in (money trees used by default — Dais 2026-06-21). Beefy ~6.1% #1
+    // (proven earner: $3.82→$3.85 withdraw, tx 0x55c71f84) → Fluid 5.36% #2 (clean ERC4626) → Aave 3.2%
+    // #3. Selection shape from AEA strategy.py:413/485 (enumerate→gate→best), collapsed to a code-side
+    // best-APY pick. The old code defaulted to Aave with Beefy behind an opt-in that was never set.
+    let venue, protocol, apy, depositKind;
+    if (bf && bf.apy >= FLUID_APY) { venue = vault; protocol = `beefy:${bf.id}`; apy = bf.apy; depositKind = "beefy"; }
+    else if (FLUID_APY >= AAVE_APY) { venue = FLUID; protocol = "fluid-fusdc"; apy = FLUID_APY; depositKind = "erc4626"; }
+    else { venue = AAVE_POOL; protocol = "aave-v3-base"; apy = AAVE_APY; depositKind = "aave"; }
     // Approve the MAX (uint256) — the universal DeFi pattern (Uniswap/GOAT/every integration). The old
     // approve(surplus) re-approved the EXACT amount every deposit; with auto-nonce + a fallback RPC the
     // approve didn't reliably confirm before the deposit, so allowance < surplus → transferFrom REVERTED
@@ -112,11 +117,29 @@ async function main() {
       const ah = await w.writeContract({ address: USDC, abi: erc20, functionName: "approve", args: [venue, MAX_UINT] });
       await pub.waitForTransactionReceipt({ hash: ah, confirmations: 1 });
     }
-    const tx = useBeefy
-      ? await w.writeContract({ address: venue, abi: beefy, functionName: "deposit", args: [surplus] })
+    // Beefy's nested Morpho-Gauntlet deposit uses ~1.37M gas (verified tx 0x0a133483); viem's auto
+    // estimate under-provisioned it → out-of-gas → revert (status 0x0). Pin an explicit 2.5M gas so the
+    // monster tx never runs out. This is THE Beefy fix — confirmed: with gas:2.5M it lands (shares > 0).
+    let tx = depositKind === "beefy"
+      ? await w.writeContract({ address: venue, abi: beefy, functionName: "deposit", args: [surplus], gas: 2_500_000n })
+      : depositKind === "erc4626"
+      ? await w.writeContract({ address: venue, abi: erc4626, functionName: "deposit", args: [surplus, acct.address] })
       : await w.writeContract({ address: venue, abi: aave, functionName: "supply", args: [USDC, surplus, acct.address, 0] });
-    const r = await pub.waitForTransactionReceipt({ hash: tx });
-    return out({ kind: "yield", action: "deploy", protocol, apy_pct: +((useBeefy ? bf.apy : AAVE_APY) * 100).toFixed(2), tx, status: r.status === "success" ? "0x1" : "0x0", deposited_usdc: Number(surplus) / 1e6, reserve_usdc: RESERVE / 1e6, wallet: acct.address });
+    let r = await pub.waitForTransactionReceipt({ hash: tx });
+    // Beefy's gauntlet vault deposit REVERTS live (~1.5M gas, status 0x0 — verified 2026-06-21). Fall
+    // back to the reliable Fluid ERC4626 (5.36%, ~identical APY, verified real deposit tx 0x901047bf):
+    // a reverting 5.37% earns $0, a working 5.36% earns. Beefy is tried first, Fluid guarantees the earn.
+    if (r.status !== "success" && depositKind === "beefy") {
+      venue = FLUID; protocol = "fluid-fusdc"; apy = FLUID_APY; depositKind = "erc4626";
+      const alwF = await pub.readContract({ address: USDC, abi: erc20, functionName: "allowance", args: [acct.address, FLUID] });
+      if (alwF < surplus) {
+        const ah2 = await w.writeContract({ address: USDC, abi: erc20, functionName: "approve", args: [FLUID, (1n << 256n) - 1n] });
+        await pub.waitForTransactionReceipt({ hash: ah2, confirmations: 1 });
+      }
+      tx = await w.writeContract({ address: FLUID, abi: erc4626, functionName: "deposit", args: [surplus, acct.address] });
+      r = await pub.waitForTransactionReceipt({ hash: tx });
+    }
+    return out({ kind: "yield", action: "deploy", protocol, apy_pct: +(apy * 100).toFixed(2), tx, status: r.status === "success" ? "0x1" : "0x0", deposited_usdc: Number(surplus) / 1e6, reserve_usdc: RESERVE / 1e6, wallet: acct.address });
   }
 
   // ---- REFILL: liquid below the trigger → pull the position back to liquid to top up the buffer ----
