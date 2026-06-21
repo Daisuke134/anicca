@@ -3,13 +3,17 @@
 
 import { useState, useRef } from 'react';
 import Link from 'next/link';
-import { IDKitWidget, VerificationLevel } from '@worldcoin/idkit';
+import { QRCodeSVG } from 'qrcode.react';
 import JsonLd from '@/components/JsonLd';
 import { Section } from '@/components/site/taste/Section';
 import { Reveal } from '@/components/site/taste/Reveal';
 
+// World ID 4.0 personhood gate. The gate renders only when BOTH app_id + rp_id are configured.
 const WORLD_APP_ID = (process.env.NEXT_PUBLIC_WORLDCOIN_APP_ID || '') as `app_${string}`;
+const WORLD_RP_ID = process.env.NEXT_PUBLIC_WORLDCOIN_RP_ID || '';
+const WORLD_ENV = (process.env.NEXT_PUBLIC_WORLDCOIN_ENV || 'production') as 'production' | 'staging';
 const WORLD_ACTION = 'claim-ubi';
+const GATE_ON = Boolean(WORLD_APP_ID && WORLD_RP_ID);
 
 // spec32: /income = the front door for "receive basic income". Apply ABOVE THE FOLD,
 // email-first (simplest), wallet = instant (today's demo), bank = local currency.
@@ -92,7 +96,9 @@ function ApplyForm() {
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [verified, setVerified] = useState(false);
-  const [worldProof, setWorldProof] = useState<unknown>(null);
+  const [idkitResp, setIdkitResp] = useState<unknown>(null);
+  const [connectUrl, setConnectUrl] = useState<string | null>(null);
+  const [verifying, setVerifying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const [bank, setBank] = useState({ bankCode: '', branchCode: '', accountType: '1', accountNumber: '', beneficiaryName: '' });
@@ -109,7 +115,7 @@ function ApplyForm() {
       setError('Enter a valid Base wallet address (0x…40 hex).');
       return;
     }
-    if (WORLD_APP_ID && !verified) {
+    if (GATE_ON && !verified) {
       setError('Confirm you are a unique person first — so the income reaches real people, once each.');
       return;
     }
@@ -122,7 +128,7 @@ function ApplyForm() {
         const res = await fetch('/.netlify/functions/income-signup', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: email.trim(), method: 'bank', country: 'jp', bank, worldid: worldProof }),
+          body: JSON.stringify({ email: email.trim(), method: 'bank', country: 'jp', bank, idkitResponse: idkitResp }),
           signal: abortRef.current.signal,
         });
         const data = await res.json().catch(() => ({}));
@@ -160,7 +166,7 @@ function ApplyForm() {
           email: email.trim(),
           method,
           wallet: method === 'wallet' ? wallet.trim() : undefined,
-          worldid: worldProof,
+          idkitResponse: idkitResp,
         }),
         signal: abortRef.current.signal,
       });
@@ -176,6 +182,49 @@ function ApplyForm() {
       if ((err as Error).name === 'AbortError') return;
       setError(String(err));
       setSubmitting(false);
+    }
+  }
+
+  // World ID 4.0 verify: sign the request server-side, open the connect flow (QR / World App),
+  // poll until the user finishes, then carry the IDKit response into the signup (server re-verifies).
+  async function startVerify() {
+    if (!email.includes('@')) { setError('Enter your email first, then verify.'); return; }
+    setError(null);
+    setVerifying(true);
+    try {
+      const { IDKit, orbLegacy } = await import('@worldcoin/idkit-core');
+      const rpSig = await fetch('/.netlify/functions/rp-signature', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: WORLD_ACTION }),
+      }).then((r) => r.json());
+      if (!rpSig?.sig) throw new Error('Could not start verification.');
+      const request = await IDKit.request({
+        app_id: WORLD_APP_ID,
+        action: WORLD_ACTION,
+        rp_context: {
+          rp_id: WORLD_RP_ID,
+          nonce: rpSig.nonce,
+          created_at: rpSig.created_at,
+          expires_at: rpSig.expires_at,
+          signature: rpSig.sig,
+        },
+        allow_legacy_proofs: true,
+        environment: WORLD_ENV,
+      }).preset(orbLegacy({ signal: email.trim().toLowerCase() }));
+      setConnectUrl(request.connectorURI);
+      // pollUntilCompletion resolves to { success, result } — forward the inner `result` (it carries
+      // `responses` with the nullifier + signal_hash) to the server, which re-verifies it at v4/verify.
+      const response = await request.pollUntilCompletion();
+      if (!response?.success || !response.result) throw new Error('Verification did not complete.');
+      setIdkitResp(response.result);
+      setVerified(true);
+      setConnectUrl(null);
+    } catch (err) {
+      setError((err as Error)?.message || 'Verification failed. Try again.');
+      setConnectUrl(null);
+    } finally {
+      setVerifying(false);
     }
   }
 
@@ -207,7 +256,7 @@ function ApplyForm() {
           required
           placeholder="you@example.com"
           value={email}
-          onChange={(e) => { setEmail(e.target.value); if (verified) { setVerified(false); setWorldProof(null); } }}
+          onChange={(e) => { setEmail(e.target.value); if (verified || idkitResp) { setVerified(false); setIdkitResp(null); setConnectUrl(null); } }}
           className="w-full rounded-input border border-[hsl(var(--border))] bg-[hsl(var(--surface))] px-4 py-3 text-[hsl(var(--text-primary))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--gold))]"
         />
       </div>
@@ -280,7 +329,7 @@ function ApplyForm() {
         </div>
       )}
 
-      {WORLD_APP_ID && (verified ? (
+      {GATE_ON && (verified ? (
         <div className="flex items-center gap-3 rounded-input border border-[hsl(var(--gold))]/40 bg-[hsl(var(--surface))] px-4 py-3 transition-all duration-500">
           <span aria-hidden className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[hsl(var(--gold))] text-[12px] font-bold text-[#18181b]">✓</span>
           <span className="text-sm text-[hsl(var(--text-primary))]">Verified — one income, one person. You're confirmed unique.</span>
@@ -291,34 +340,24 @@ function ApplyForm() {
           <p className="mt-1.5 text-xs leading-relaxed text-[hsl(var(--text-secondary))]">
             So the income reaches real people — once each, no bots, no duplicates. Private: we only learn that you're unique, never who you are. No Orb needed.
           </p>
-          <IDKitWidget
-            app_id={WORLD_APP_ID}
-            action={WORLD_ACTION}
-            signal={email.trim().toLowerCase()}
-            verification_level={VerificationLevel.Device}
-            handleVerify={async (proof) => {
-              const res = await fetch('/.netlify/functions/personhood-verify', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ proof, signal: email.trim().toLowerCase() }),
-              });
-              if (!res.ok) {
-                const d = await res.json().catch(() => ({}));
-                throw new Error(d.reason === 'already_claimed' ? 'This person has already claimed an income.' : (d.reason || 'Verification failed.'));
-              }
-            }}
-            onSuccess={(result) => { setWorldProof(result); setVerified(true); setError(null); }}
-          >
-            {({ open }) => (
-              <button
-                type="button"
-                onClick={() => { if (!email.includes('@')) { setError('Enter your email first, then verify.'); return; } open(); }}
-                className="mt-3 inline-flex items-center gap-2 rounded-pill border border-[hsl(var(--gold))]/50 bg-[hsl(var(--surface-elevated))] px-5 py-2.5 text-sm font-semibold text-[hsl(var(--text-primary))] transition-all duration-300 hover:border-[hsl(var(--gold))] hover:brightness-110 active:scale-[0.98]"
-              >
-                Verify with World ID
-              </button>
-            )}
-          </IDKitWidget>
+          {connectUrl ? (
+            <div className="mt-3 flex flex-col items-center gap-3">
+              <div className="rounded-input bg-white p-3">
+                <QRCodeSVG value={connectUrl} size={168} />
+              </div>
+              <p className="text-xs text-[hsl(var(--text-secondary))]">Scan with World App — waiting for you to confirm…</p>
+              <a href={connectUrl} target="_blank" rel="noopener noreferrer" className="text-xs font-medium text-[hsl(var(--gold))] underline">Open World App on this device</a>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={startVerify}
+              disabled={verifying}
+              className="mt-3 inline-flex items-center gap-2 rounded-pill border border-[hsl(var(--gold))]/50 bg-[hsl(var(--surface-elevated))] px-5 py-2.5 text-sm font-semibold text-[hsl(var(--text-primary))] transition-all duration-300 hover:border-[hsl(var(--gold))] hover:brightness-110 active:scale-[0.98] disabled:opacity-50"
+            >
+              {verifying ? 'Starting…' : 'Verify with World ID'}
+            </button>
+          )}
         </div>
       ))}
 
@@ -326,7 +365,7 @@ function ApplyForm() {
 
       <button
         type="submit"
-        disabled={submitting || (Boolean(WORLD_APP_ID) && !verified)}
+        disabled={submitting || (GATE_ON && !verified)}
         className="w-full rounded-pill bg-[hsl(var(--gold))] px-6 py-3 font-semibold text-[#18181b] transition-all duration-300 hover:brightness-95 active:scale-[0.98] disabled:opacity-50"
       >
         {submitting ? 'Sending…' : 'Receive basic income →'}
