@@ -22,14 +22,13 @@ const DEFAULTS = {
   // tier ($14->$10.5) while yield earned ~$0 — net-negative. A free brain + earning skills = the only
   // way a self-paying agent stays net-positive at small capital. (Frontier is for capable instances on
   // flat-rate billing, e.g. Claude on a subscription — NOT a self-paying Anicca burning x402 per wake.)
-  // Model = ClawRouter 'auto' (Dais 2026-06-21 E-4b: net-positive > $0-compute; NO hardcoded model).
-  // ClawRouter 'auto' routes to the strongest model the wallet can afford and falls back to a free
-  // model when the balance can't pay — so a self-paying anicca reasons well when funded and never
-  // bricks when broke. The earn skills now actually execute (yield), so paid compute is justified by
-  // real earning. No model is pinned anywhere; the router decides per wake from price + balance.
-  ANICCA_FREE_MODEL:    'auto',
-  ANICCA_LEAN_MODEL:    'auto',
-  ANICCA_FUNDED_MODEL:  'auto',
+  // Model = ClawRouter 'free' profile (Dais 2026-06-21: "auto is fucked up" — it picked PAID
+  // moonshot/kimi-k2.7 and drained the wallet). 'free' = the free NVIDIA models, 100% savings, $0 per
+  // wake — the cost-free thesis (free brain + earning skills = pure profit). A self-paying Anicca on a
+  // tiny wallet must NOT burn x402 on a paid frontier per wake; routine wakes stay $0. All tiers = free.
+  ANICCA_FREE_MODEL:    'free',
+  ANICCA_LEAN_MODEL:    'free',
+  ANICCA_FUNDED_MODEL:  'free',
   SLEEP_BASE_S:         120,
   SLEEP_ERROR_S:        60,
   SLEEP_LOOP_DETECT_S:  300,
