@@ -157,13 +157,41 @@ if [ "$STRATEGY" = "hl" ] && [ -z "${EARN_TX:-}" ]; then
   OUT=$(record_line "$JSON"); echo "[earn] hl recorded -> $OUT"; exit 0
 fi
 
-# --- strategy=x402: SAME-WAKE EXTERNAL fallback (sell Anicca's own output; instant settle) -----
-# When 0xwork has no doable task this wake, sell a delivered artifact via x402 (04-earn.md
-# "x402 sell own work"). x402 settles instantly — no poster-approval wait — so a wake can still
-# close GATE-0. A payer streams USDC to our wallet for the artifact; the payout tx is an inbound
-# USDC Transfer (from = payer, not self). EARN_STRATEGY=x402 -> execute-x402-sell.py prints
-# {payout_tx,...}; the SAME isExternalPayout assertion + external:true gate applies before GATE-0.
-# (execute-x402-sell.py is the next executor to land; until then 0xwork is the live external path.)
+# --- strategy=x402: ensure the x402 PRODUCT server is up so buyers can pay USDC (passive earner) ----
+# x402-sell/serve.mjs is a persistent HTTP server (402 Payment Required → USDC to our wallet). A wake
+# "uses" this tool by ensuring the server is running; real revenue then arrives as buyers hit it (needs
+# a public URL + demand = the model's job to create). Records NARRATE (the act of keeping the shop open).
+if [ "$STRATEGY" = "x402" ] && [ -z "${EARN_TX:-}" ]; then
+  XPORT="${X402_PORT:-8403}"
+  if ! curl -sf "http://127.0.0.1:$XPORT/" >/dev/null 2>&1; then
+    X402_PAYTO="$W" X402_PORT="$XPORT" nohup node "$HERE/x402-sell/serve.mjs" >/dev/null 2>&1 &
+    sleep 2
+  fi
+  UP=$(curl -sf "http://127.0.0.1:$XPORT/" >/dev/null 2>&1 && echo up || echo down)
+  echo "[earn] x402 server: $UP (payTo=$W port=$XPORT)"
+  JSON=$(python3 -c "import json; print(json.dumps({'wallet':'${WLOW:-unknown}','source':'x402-serve','task':'x402 product server $UP','earn_usdc':0,'cost_usdc':0,'wake':'$WAKE'}))")
+  OUT=$(record_line "$JSON"); echo "[earn] x402 narrate -> $OUT"; exit 0
+fi
+
+# --- strategy=token: launch / manage Anicca's own token (MoltX Launchpad) — model-gated -----------
+# Costs ~$2.70 (0.001 ETH) + creates a REAL token, so it only acts when the model explicitly decides
+# (ANICCA_ARGS {"strategy":"token","launch":true,"name":"...","symbol":"...","image":"<url>"}). Otherwise
+# it reports the deposit address (read-only) and narrates. Token fees later fund compute.
+if [ "$STRATEGY" = "token" ] && [ -z "${EARN_TX:-}" ]; then
+  TLPY="python3"
+  WANT=$(printf '%s' "${ANICCA_ARGS:-{}}" | python3 -c "import json,sys;print(str((json.load(sys.stdin) or {}).get('launch','')).lower())" 2>/dev/null)
+  if [ "$WANT" = "true" ]; then
+    NAME=$(printf '%s' "${ANICCA_ARGS:-{}}" | python3 -c "import json,sys;print((json.load(sys.stdin) or {}).get('name','ANICCA'))" 2>/dev/null)
+    SYM=$(printf '%s' "${ANICCA_ARGS:-{}}" | python3 -c "import json,sys;print((json.load(sys.stdin) or {}).get('symbol','ANICCA'))" 2>/dev/null)
+    RES=$(PKVAR="$PKVAR" "$TLPY" "$HERE/token-launch/launchpad.py" deposit 2>&1)
+    echo "[earn] token deposit/launch ($NAME/$SYM): $RES"
+    JSON=$(python3 -c "import json; print(json.dumps({'wallet':'${WLOW:-unknown}','source':'token','task':'token-launch $SYM','earn_usdc':0,'cost_usdc':0,'wake':'$WAKE'}))")
+  else
+    echo "[earn] token: no launch decision (set args.launch=true to create)"
+    JSON=$(python3 -c "import json; print(json.dumps({'wallet':'${WLOW:-unknown}','source':'token','task':'token-observe','earn_usdc':0,'cost_usdc':0,'wake':'$WAKE'}))")
+  fi
+  OUT=$(record_line "$JSON"); echo "[earn] token narrate -> $OUT"; exit 0
+fi
 
 # --- strategy=swap: run.sh performs a NET-ZERO asset rotation (runway fallback, NEVER GATE-0) -
 if [ "$STRATEGY" = "swap" ] && [ -z "${EARN_TX:-}" ]; then
