@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { parseToolCall } from '../parse-tool-call.mjs';
 
 // PROP-010: well-formed tool call object -> { slot, args }
+// args is the SKILL's args, NOT the run_skill wrapper. {slot:'earn'} alone → args {} (no skill params).
 test('PROP-010: parses well-formed run_skill tool call', () => {
   const response = {
     choices: [{
@@ -17,7 +18,31 @@ test('PROP-010: parses well-formed run_skill tool call', () => {
   const result = parseToolCall(response);
   assert.ok(result !== null);
   assert.equal(result.slot, 'earn');
-  assert.deepEqual(result.args, { slot: 'earn' });
+  assert.deepEqual(result.args, {}); // slot is the wrapper, not a skill arg
+});
+
+// PROP-010: nested {slot, args:{...}} → the SKILL's args are the nested object (the model's decision)
+test('PROP-010: extracts nested skill args (the model decision)', () => {
+  const response = {
+    choices: [{ message: { tool_calls: [{
+      function: { name: 'run_skill', arguments: JSON.stringify({ slot: 'earn', args: { strategy: 'hl', coin: 'ETH' } }) }
+    }] } }]
+  };
+  const result = parseToolCall(response);
+  assert.equal(result.slot, 'earn');
+  assert.deepEqual(result.args, { strategy: 'hl', coin: 'ETH' });
+});
+
+// PROP-010: flattened {slot, strategy} → args is everything but slot
+test('PROP-010: flattened params (slot + strategy at top level)', () => {
+  const response = {
+    choices: [{ message: { tool_calls: [{
+      function: { name: 'run_skill', arguments: JSON.stringify({ slot: 'earn', strategy: 'x402' }) }
+    }] } }]
+  };
+  const result = parseToolCall(response);
+  assert.equal(result.slot, 'earn');
+  assert.deepEqual(result.args, { strategy: 'x402' });
 });
 
 // PROP-010: text-only response (no tool call) -> null
