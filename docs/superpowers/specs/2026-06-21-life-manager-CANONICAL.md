@@ -211,8 +211,12 @@ Pay: Stripe $20/mo (LIVE link + sandbox test link, webhook dual-secret live+test
 - **#75 slice3** — ask.js + notify.js + telegram-reply.js → getCalendar() + new mail adapter (Unipile).
   Consolidate the 5-file raw Composio coupling into calendar-composio.js + mail-composio.js. Composio
   remains the cloud provider + default → live caller unchanged. Finishes the CLOUD side of the adapter.
-- **#76 slice4** — calendar-gog.js + mail-gog.js: the LOCAL adapter (BYOK via gog CLI), selected by
-  LIFE_TRANSPORT=gog. No Composio locally — local reads YOUR own gcal/gmail via gog.
+- ~~**#76 slice4** calendar-gog.js + mail-gog.js (LOCAL BYOK adapter)~~ ✅ DONE — gog 0.17.0 CLI
+  (events list/create/update + gmail send/search/get), same interface, selected by LIFE_TRANSPORT=gog.
+  Composio-dialect args translated to gog flags; argv flag-smuggling hardened (positionals reject /^-/,
+  option values glued `--flag=value`); getCalendar/getMail fail-loud on unknown env. 71/71 tests + real
+  gog E2E (15 events, gcal shape matches). Cloud stays composio (default) → live unchanged.
+  ★ The whole transport adapter layer (composio + unipile + gog) now EXISTS — local can run the same JS. ★
 - **#77 slice5** — local runs the SAME `node server.js` (LIFE_TRANSPORT=gog + cloudflared, launchd),
   app's own scheduler loop replaces openclaw cron --at; OpenClaw removed from the LM architecture
   (at most a launcher); retire travel_fill.py + resolve.py. ALL 3 layers then identical local↔cloud.
