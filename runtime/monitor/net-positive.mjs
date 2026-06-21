@@ -44,5 +44,7 @@ const out = {
     ? 'NET POSITIVE — anicca earns more than it spends (realised).'
     : 'not yet net-positive (realised). Open positions (HL/yield) accrue unrealised; close/accrue to realise.',
 };
-console.log(JSON.stringify(out, null, 2));
+// compact single-line JSON so it embeds cleanly in the net-positive.jsonl log; pipe to `python -m
+// json.tool` for a pretty view. (Pretty multi-line output broke the cron's one-line wrapper.)
+console.log(process.argv.includes('--pretty') ? JSON.stringify(out, null, 2) : JSON.stringify(out));
 process.exit(net > 0 ? 0 : 1);
