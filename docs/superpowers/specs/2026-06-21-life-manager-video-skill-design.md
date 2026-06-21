@@ -4,6 +4,19 @@ Date: 2026-06-21. Scope = JUST the video skill (#45/#50). Order/launch = `2026-0
 Status: DESIGN (do NOT build until LAUNCH-ORDER #1-3 are cleared; this is #4).
 NOT reelclaw. NOT larry. A NEW skill named `life-manager-video`.
 
+## ★ CORE (Dais 2026-06-21): CONTINUOUSLY record→download→STORE every real wake call ★
+The content source is NOT a test call (a /test-call = "Anicca — test call", no real conversation → useless
+for TikTok). The source = the REAL DAILY wake calls: Life Manager phones Dais before each event, Dais talks
+back, Charon answers. dial.js ALREADY records every call (Telnyx record_start, mp3). What's missing + the
+job: a recorder that CONTINUOUSLY pulls every new Telnyx recording → downloads the mp3 → STORES it locally
+forever (`~/.openclaw/state/lm-video/recordings/<created>-<id>.mp3` + a manifest). Then each day a NEW
+original video is built from that day's real conversation (same phone-call background, same whisper-caption
+method) and posted. Never reuse an old clip. So:
+  STORE pipeline (always-on): Telnyx recordings list/webhook → download new mp3 → local store + manifest.jsonl
+  DAILY video: pick the latest REAL conversation (Dais actually spoke) → whisper JA → captions over the
+  fixed phone-UI background → reel → post (2×/day, distinct clips) → verify.
+Test calls must be FILTERED OUT (skip recordings whose transcript is just the test greeting).
+
 ## The asset we already have (the TEMPLATE)
 `~/Desktop/anicca_wake_promo_v1.mp4` (52s) + `v2.mp4` (34.7s) = Anicca/Charon voice phoning Dais awake (JA),
 verified by whisper. v2 transcript: "ダイス、聞こえてる? 8時7分、またやっちまったって後悔する苦しみ、今日で
