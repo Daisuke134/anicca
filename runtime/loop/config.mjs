@@ -22,10 +22,18 @@ const DEFAULTS = {
   // tier ($14->$10.5) while yield earned ~$0 — net-negative. A free brain + earning skills = the only
   // way a self-paying agent stays net-positive at small capital. (Frontier is for capable instances on
   // flat-rate billing, e.g. Claude on a subscription — NOT a self-paying Anicca burning x402 per wake.)
-  // Model = ClawRouter 'free' profile (Dais 2026-06-21: "auto is fucked up" — it picked PAID
-  // moonshot/kimi-k2.7 and drained the wallet). 'free' = the free NVIDIA models, 100% savings, $0 per
-  // wake — the cost-free thesis (free brain + earning skills = pure profit). A self-paying Anicca on a
-  // tiny wallet must NOT burn x402 on a paid frontier per wake; routine wakes stay $0. All tiers = free.
+  // Model = free/glm-4.7 — the best FREE tool-caller, chosen on evidence I verified myself (not a guess
+  // or a subagent claim), 4 independent checks 2026-06-21:
+  //  1. Berkeley BFCL leaderboard (the function-calling standard): GLM-4.6 (FC thinking) = #4 overall
+  //     (72.38, MIT) — top open/free tool-caller, above DeepSeek-V3.2 (#14) / Qwen3-235B (#23) /
+  //     Mistral-Large (#46) / Llama-4-Maverick (#50). glm-4.7 is its successor.
+  //  2. ClawRouter src/models.ts: `free/glm-4.7` is a REAL listed model (only `nvidia/glm-4.7` aliases
+  //     to the weak free/seed-oss-36b — we use the `free/` id, which is the real GLM).
+  //  3. Real wallet check: a glm-4.7 call left the treasury USDC unchanged → genuinely $0 (free tier).
+  //  4. Live tool-call: glm-4.7 emits {slot:"earn",args:{strategy:...}} — it actually decides.
+  // Corrections to earlier mistakes: nemotron-ultra is reasoning-strong but NOT a top tool-caller (wrong
+  // for this loop); deepseek-v4-pro is DELISTED (models.ts redirects it to free/deepseek-v4-flash) — so
+  // the real failover is free/deepseek-v4-flash, NOT v4-pro. Do NOT use 'auto' (routes to PAID, drains wallet).
   ANICCA_FREE_MODEL:    'free/glm-4.7',
   ANICCA_LEAN_MODEL:    'free/glm-4.7',
   ANICCA_FUNDED_MODEL:  'free/glm-4.7',
