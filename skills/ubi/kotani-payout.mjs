@@ -55,13 +55,19 @@ export function buildOfframpRequest({ referenceId, cryptoAmount, fiatCurrency, c
 export function mapOfframpStatus(kotaniStatus) {
   const s = String(kotaniStatus || "").toUpperCase();
   if (s === "SUCCESSFUL" || s === "SUCCESS" || s === "COMPLETED") return "paid";
-  if (s === "FAILED" || s === "CANCELLED" || s === "REJECTED") return "needs_review";
+  // ALL terminal-non-success states escalate to needs_review (a human re-dispatches deliberately).
+  // Includes EXPIRED/REVERSED/REFUNDED (the auto-refund leg): the recipient got NO fiat, so the
+  // payout is NOT done — never leave it stuck in "pending" forever (VCSDD NEW-001).
+  if (["FAILED", "CANCELLED", "CANCELED", "REJECTED", "EXPIRED", "REVERSED", "REFUNDED", "REFUND"].includes(s)) return "needs_review";
   return "pending"; // PENDING / PROCESSING / unknown -> keep polling, never assume paid
 }
 
 // Live: submit the offramp request. Injectable fetch for tests.
 export async function submitOfframp(reqBody, { apiKey, fetchImpl = fetch } = {}) {
   if (!apiKey) throw new Error("kotani: KOTANI_API_KEY required");
+  // defense-in-depth: validate at the live network boundary too, not only in buildOfframpRequest,
+  // so a hand-built body can't POST a malformed amount (VCSDD NEW-002).
+  assertPayableAmount(reqBody?.cryptoAmount, "kotani: cryptoAmount");
   const res = await fetchImpl(`${API_BASE}${OFFRAMP_PATH}`, {
     method: "POST",
     // UNVERIFIED: confirm header name (Authorization Bearer vs x-api-key) against a live Kotani key.
@@ -79,6 +85,7 @@ export async function submitOfframp(reqBody, { apiKey, fetchImpl = fetch } = {})
 
 // Live: poll an offramp's status by referenceId.
 export async function getOfframpStatus(referenceId, { apiKey, fetchImpl = fetch } = {}) {
+  if (!apiKey) throw new Error("kotani: KOTANI_API_KEY required");
   if (!referenceId) throw new Error("kotani: referenceId required");
   const res = await fetchImpl(`${API_BASE}${OFFRAMP_PATH}/status/${referenceId}`, {
     headers: { Authorization: `Bearer ${apiKey}` },

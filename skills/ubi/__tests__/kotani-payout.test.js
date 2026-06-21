@@ -51,6 +51,20 @@ test("mapOfframpStatus: success->paid, failure->needs_review (never auto-resend)
   assert.equal(mapOfframpStatus(undefined), "pending"); // unknown never reads as paid
 });
 
+test("mapOfframpStatus: terminal EXPIRED/REVERSED/REFUNDED -> needs_review, not stuck pending (NEW-001)", () => {
+  assert.equal(mapOfframpStatus("EXPIRED"), "needs_review");
+  assert.equal(mapOfframpStatus("REVERSED"), "needs_review");
+  assert.equal(mapOfframpStatus("refunded"), "needs_review");
+});
+
+test("getOfframpStatus: requires apiKey (no 'Bearer undefined') (NEW-003)", async () => {
+  await assert.rejects(getOfframpStatus("u1", { fetchImpl: async () => ({ ok: true, json: async () => ({}) }) }), /KOTANI_API_KEY required/);
+});
+
+test("submitOfframp: validates amount at the live boundary too (NEW-002)", async () => {
+  await assert.rejects(submitOfframp({ referenceId: "u1", cryptoAmount: "0" }, { apiKey: "k", fetchImpl: async () => ({ ok: true, json: async () => ({}) }) }), /> 0/);
+});
+
 test("submitOfframp: POSTs to /api/v3/offramp with auth + body", async () => {
   let captured = null;
   const fetchImpl = async (url, opts) => { captured = { url, opts }; return { ok: true, json: async () => ({ referenceId: "u1", status: "PENDING" }) }; };
