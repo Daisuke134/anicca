@@ -243,6 +243,15 @@ RECOMMENDATION (evidence, not preference): (B) complementary.
      (browser-based earning, skill authoring, army kanban). Its Camofox + skill subsystem are exactly
      what the "earn on Lancers/Coconala" + "self-author skills" mission needs and automaton lacks.
    - The ONE economic gap (x402-IN earning) is built once as an automaton tool/skill (spec 09 logic re-homed).
+     ★ STATUS 2026-06-21: x402-IN IS BUILT (not a gap anymore). `services/x402-endpoint/server.mjs`
+     (x402-express seller + x402.org/CDP facilitator) was E2E-verified on Base Sepolia 2026-06-19
+     (real buyer paid 0.001 USDC → anicca wallet, settlement tx 0x8683daa…, status 0x1, balance
+     0.0→0.001; see services/x402-endpoint/E2E-RESULT.md). On 2026-06-21 the server was made
+     network/facilitator-configurable + verified to boot and issue a correct MAINNET 402 challenge
+     (network=base, asset 0x833589fC…=real Base USDC, payTo=anicca, CDP facilitator). REMAINING for
+     real revenue = public deploy + a real buyer (demand) = the model's job (tasks #10/#11), NOT a
+     build gap. Any older "x402-IN is declared-not-built / THE ONE REAL GAP" wording is superseded —
+     it came from an audit that only scanned runtime/loop+skills/earn and missed services/x402-endpoint/. ★
    - Akash deferred (Conway cloud already replicates; add Akash only as anti-lock 2nd target).
 "Supplementary vs pick-one" → DATA says supplementary (B). Final call is Dais's; data is the argument.
 ```
