@@ -39,6 +39,7 @@ export const ALLOWED_EARN_SOURCES = new Set([
   "hl-trade", "hl", // own-wallet Hyperliquid perp (own identity, own funds)
   "token-launch", "token", // own token launch (own identity)
   "content", "x402-serve",
+  "cook", // own-identity web exploration (no funds moved)
   "discover", // narrate-only discovery wake
 ]);
 

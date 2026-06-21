@@ -37,7 +37,7 @@
       "entrypoint": "run.sh",
       "status": "declared",
       "spec": "26 'self-solve/refactor/improve' / 27 WF-A",
-      "summary": "Self-improvement: read behaviour log → open issue → branch → PR against own repo (issue-driven dev loop).",
+      "summary": "Self-improvement: read behaviour log \u2192 open issue \u2192 branch \u2192 PR against own repo (issue-driven dev loop).",
       "owner": "wf-a:self-spawn"
     },
     "economy/ubi": {
@@ -45,8 +45,17 @@
       "dir": "skills/economy/ubi",
       "entrypoint": "ubi.js",
       "status": "declared",
-      "spec": "27 §3 UBI",
+      "spec": "27 \u00a73 UBI",
       "summary": "contribute() surplus X% to Treasury; distributeAI() rescue+flat basic income to alive/dying agents; distributeHuman() periodic USDC batch to allowlist. Post-earn roadmap; mechanism fixed.",
+      "owner": "wf-a:earn"
+    },
+    "cook": {
+      "track": "A",
+      "dir": "skills/cook",
+      "entrypoint": "run.sh",
+      "status": "live",
+      "spec": "02 cook-loop",
+      "summary": "EXPLORE: web-search for a NEW earner; surface real candidate URLs; the model decides what to try. args.query = your curiosity.",
       "owner": "wf-a:earn"
     }
   }
