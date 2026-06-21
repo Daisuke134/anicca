@@ -192,7 +192,7 @@ function ApplyForm() {
     setError(null);
     setVerifying(true);
     try {
-      const { IDKit, orbLegacy } = await import('@worldcoin/idkit-core');
+      const { IDKit, deviceLegacy } = await import('@worldcoin/idkit-core');
       const rpSig = await fetch('/.netlify/functions/rp-signature', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -211,7 +211,7 @@ function ApplyForm() {
         },
         allow_legacy_proofs: true,
         environment: WORLD_ENV,
-      }).preset(orbLegacy({ signal: email.trim().toLowerCase() }));
+      }).preset(deviceLegacy({ signal: email.trim().toLowerCase() }));
       setConnectUrl(request.connectorURI);
       // pollUntilCompletion resolves to { success, result } — forward the inner `result` (it carries
       // `responses` with the nullifier + signal_hash) to the server, which re-verifies it at v4/verify.

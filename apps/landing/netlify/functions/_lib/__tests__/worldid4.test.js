@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const { verifyV4, verifyAndClaimV4, extractNullifier, responseSignalHash } = require('../worldid4.js');
 
 const resp = (over = {}) => ({ protocol_version: '4.0', action: 'claim-ubi', responses: [{ identifier: 'orb', signal_hash: '0xABC', nullifier: '0xDEAD', ...over }] });
-const okFetch = async () => ({ ok: true });
+const okFetch = async () => ({ ok: true, json: async () => ({ success: true, nullifier: '0xdead' }) });
 const okVerify = async () => ({ ok: true });
 
 test('extractNullifier: valid hex lowercased; malformed -> null', () => {
@@ -30,6 +30,11 @@ test('verifyV4: missing rpId / invalid response -> fail (never ok)', async () =>
 test('verifyV4: non-ok 400 -> 403 verification_failed; network throw -> fail-closed', async () => {
   assert.equal((await verifyV4(resp(), 'rp_1', { fetchImpl: async () => ({ ok: false, status: 400 }) })).status, 403);
   assert.equal((await verifyV4(resp(), 'rp_1', { fetchImpl: async () => { throw new Error('net'); } })).reason, 'verify_network_error');
+});
+
+test('verifyV4: HTTP 200 but body success!==true -> NOT ok (FIND-003 no false-allow)', async () => {
+  assert.equal((await verifyV4(resp(), 'rp_1', { fetchImpl: async () => ({ ok: true, json: async () => ({ success: false }) }) })).ok, false);
+  assert.equal((await verifyV4(resp(), 'rp_1', { fetchImpl: async () => ({ ok: true, json: async () => { throw new Error('bad'); } }) })).ok, false);
 });
 
 test('verifyAndClaimV4: ok + insert 2xx -> ok + nullifier', async () => {
