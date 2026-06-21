@@ -25,7 +25,7 @@ const FEE = 500;
 
 function out(o) { process.stdout.write(JSON.stringify(o) + "\n"); }
 function loadKey() {
-  const k = process.env.PKVAR || process.env.BLOCKRUN_WALLET_KEY;
+  const k = (process.env.PKVAR && process.env[process.env.PKVAR]) || process.env.BLOCKRUN_WALLET_KEY;
   if (k) return k.startsWith("0x") ? k : "0x" + k;
   try { const w = JSON.parse(fs.readFileSync(process.env.HOME + "/.automaton/wallet.json", "utf8")); return w.privateKey.startsWith("0x") ? w.privateKey : "0x" + w.privateKey; } catch { return null; }
 }

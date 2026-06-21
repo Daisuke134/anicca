@@ -28,6 +28,17 @@ if [ -d "$REPO/.git" ]; then
     && log "self-updated to $(git -C "$REPO" rev-parse --short HEAD)" \
     || log "self-update skipped (offline or diverged)"
 fi
+# 1b. SYNC skills + DEPS into the runtime body so the loop runs the LATEST mother skills WITH their
+#     node deps. The loop spawns skills from $ANICCA_HOME/skills, but git deps (viem etc.) live in
+#     $REPO/node_modules. Without this, execute-yield.mjs etc. crash with ERR_MODULE_NOT_FOUND and
+#     anicca silently never earns. On cloud REPO==ANICCA_HOME so these are no-ops. (motherboard fix 2026-06-21)
+if [ -d "$REPO/skills" ] && [ "$REPO" != "$ANICCA_HOME" ]; then
+  command -v rsync >/dev/null 2>&1 \
+    && rsync -a --exclude='state/' --exclude='__pycache__' --exclude='node_modules' "$REPO/skills/" "$ANICCA_HOME/skills/" 2>/dev/null \
+    && log "synced skills $REPO/skills -> $ANICCA_HOME/skills"
+  [ -d "$REPO/node_modules" ] && ln -sfn "$REPO/node_modules" "$ANICCA_HOME/node_modules" \
+    && log "linked node_modules for skill deps"
+fi
 # 2. brain: start ClawRouter (the real BlockRun router) on :8402 if not already answering.
 #    Why ClawRouter, not the old compute-proxy: ClawRouter routes the nvidia/* FREE models with ZERO
 #    payment (verified: 3 free calls = $0.0000 USDC delta), while the old raw br.post proxy charged

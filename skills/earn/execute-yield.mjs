@@ -28,7 +28,10 @@ const REFILL_AT = Math.round(RESERVE * 0.6); // refill the buffer once liquid dr
 
 function out(o) { process.stdout.write(JSON.stringify(o) + "\n"); }
 function loadKey() {
-  const k = process.env.PKVAR || process.env.BLOCKRUN_WALLET_KEY;
+  // PKVAR names the env var that HOLDS the key (e.g. "BLOCKRUN_WALLET_KEY") — resolve it INDIRECTLY.
+  // The old `process.env.PKVAR` used the var NAME as the key string → "invalid private key, got string"
+  // and earn silently failed (no yield ever deployed). run.sh always passes PKVAR, so this was fatal.
+  const k = (process.env.PKVAR && process.env[process.env.PKVAR]) || process.env.BLOCKRUN_WALLET_KEY;
   if (k) return k.startsWith("0x") ? k : "0x" + k;
   try { const w = JSON.parse(fs.readFileSync(process.env.HOME + "/.automaton/wallet.json", "utf8")); return w.privateKey.startsWith("0x") ? w.privateKey : "0x" + w.privateKey; } catch { return null; }
 }
