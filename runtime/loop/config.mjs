@@ -34,9 +34,14 @@ const DEFAULTS = {
   // Corrections to earlier mistakes: nemotron-ultra is reasoning-strong but NOT a top tool-caller (wrong
   // for this loop); deepseek-v4-pro is DELISTED (models.ts redirects it to free/deepseek-v4-flash) — so
   // the real failover is free/deepseek-v4-flash, NOT v4-pro. Do NOT use 'auto' (routes to PAID, drains wallet).
-  ANICCA_FREE_MODEL:    'free/glm-4.7',
-  ANICCA_LEAN_MODEL:    'free/glm-4.7',
-  ANICCA_FUNDED_MODEL:  'free/glm-4.7',
+  // PREMIUM EXPERIMENT (Dais 2026-06-21): all tools work (no system error) + anicca actively picks
+  // x402_sell/hl/cook on free glm-4.7, yet realised earn = $0. Per Dais's rule (tools work + still not
+  // earning → test intelligence), switch to a premium model. PAID via x402 from the wallet's liquid USDC,
+  // so a compute buffer must stay liquid. The free→premium earnings delta IS the article. Revert to
+  // free/glm-4.7 if premium also earns $0 (then the constraint is demand/capital, not intelligence).
+  ANICCA_FREE_MODEL:    'openai/gpt-5.4',
+  ANICCA_LEAN_MODEL:    'openai/gpt-5.4',
+  ANICCA_FUNDED_MODEL:  'openai/gpt-5.4',
   SLEEP_BASE_S:         120,
   SLEEP_ERROR_S:        60,
   SLEEP_LOOP_DETECT_S:  300,
