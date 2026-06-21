@@ -48,6 +48,20 @@ verified by whisper. v2 transcript: "ダイス、聞こえてる? 8時7分、ま
             mp4 to keiodaisuke@gmail.com for his approval BEFORE the auto-post cron goes live.
 ```
 
+## BUILD STATUS (2026-06-21)
+- ✅ **STORE pipeline** — `~/.openclaw/skills/life-manager-video/store-recordings.py` downloads every
+  Telnyx wake-call mp3 → `~/.openclaw/state/lm-video/recordings/` + manifest.jsonl. 34 backfilled.
+  Continuous cron `lm-video-store-recordings` every 2h. (Today's MECA call recording not yet in Telnyx —
+  appears after processing; the cron catches it.)
+- ✅ **make-reel.sh** (mp4 → whisper SRT → ffmpeg caption burn → 1080×1920) — proven on the old promo.
+- ⏳ **audio→reel generator** — NEXT: stored mp3 (real call) + fixed phone-UI background (showwaves
+  waveform + "Anicca" caller) + burned captions → reel. (make-reel currently needs an mp4; add an
+  mp3→reel path.)
+- ⏳ **categorize** — transcribe each stored call → tag UTILITY (Charon nudges, user acts) vs BLOOPER
+  (no answer / confusion, e.g. the 歯医者 call where Dais didn't respond). Post both kinds.
+- ⏳ **post cron** — 2×/day to @anicca.comedy via Postiz (resolve integration id once) + verify POST_ID.
+- ⚠️ in-call wording: Charon must NEVER say "test" (Dais) — every call is real + postable.
+
 ## Build steps (when we reach #4) — each: code → test → no-mock E2E (a real post) → verify → push
 1. **capture**: pick + wire the recording source (Telnyx call recording is the least-invasive — flip the
    wake call's `record` param, fetch the recording URL after hangup). Save audio + meta locally.
