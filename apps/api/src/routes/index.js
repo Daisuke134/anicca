@@ -11,6 +11,9 @@ import refreshAuthRouter from './auth/refresh.js';
 // Billing
 import billingRouter from './billing/index.js';
 
+// #36: World ID personhood sybil gate for UBI claims
+import personhoodRouter from './personhood/index.js';
+
 // Admin (internal API for TikTok agent / GitHub Actions)
 import adminTiktokRouter from './admin/tiktok.js';
 import adminHookCandidatesRouter from './admin/hookCandidates.js';
@@ -39,6 +42,8 @@ router.use('/auth/apple', appleAuthRouter);
 router.use('/auth/refresh', refreshAuthRouter);
 
 router.use('/billing', billingRouter);
+
+router.use('/personhood', personhoodRouter);
 
 // Admin API (requireInternalAuth on each router + rate limit 30 req/min)
 const adminLimiter = rateLimit({ windowMs: 60 * 1000, max: 30 });
