@@ -132,5 +132,16 @@ export function getToolDefinitions(slots) {
  * @returns {string}
  */
 export function buildUserMessage(ctx) {
-  return `Wake ${ctx.wakeId}: balance=$${ctx.balanceUsdc.toFixed(4)} tier=${ctx.tier}. Choose your action.`;
+  // Richer + directive: a terse "choose your action" made glm-4.7 emit run_skill with NO args (so it
+  // fell to the yield default and loop-detected). The model decides fine when the message explicitly
+  // asks for the strategy + reminds it of all the slots. This is a SYSTEM fix, not a model upgrade.
+  const pos = ctx.positionsSummary ? `, positions: ${ctx.positionsSummary}` : '';
+  return [
+    `Wake ${ctx.wakeId}: liquid $${ctx.balanceUsdc.toFixed(4)}${pos} (tier ${ctx.tier}).`,
+    `Decide the single most productive action right now and call run_skill with BOTH slot AND args:`,
+    `  - earn — pass args.strategy (yield | hl | x402 | token | 0xwork) + any params (e.g. hl: coin/side/size_usd/sl_pct/tp_pct).`,
+    `  - cook — explore a NEW earner; pass args.query (your curiosity).`,
+    `  - self/issue-dev — if you notice you're broken/stuck, file a bug to fix yourself.`,
+    `Do NOT repeat the same action every wake — vary by your situation. Always include args, never call earn empty.`,
+  ].join('\n');
 }
