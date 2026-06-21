@@ -95,3 +95,8 @@ export async function sendGdaCall(calldata, { sendTx } = {}) {
   if (typeof sendTx !== "function") throw new Error("gda: sendTx (own-wallet sender) required");
   return sendTx({ to: GDA_FORWARDER, data: calldata });
 }
+
+// LIVE UBI POOL (created 2026-06-21 on Base, tx 0xcb161a69061714c9af47f5c730eada1eb5a12e60addaa13fa9faa225f6ca2189):
+// token=USDCx 0xD04383398dD2426297da660F9CCA3d439AF9ce1b, admin=anicca 0xa3CDd4Ec6b94F01826Aaf90a6d5538A2Aa8C4C21.
+export const UBI_GDA_POOL = "0xEF0702A57bd465E77e048DCAFC6F532B761988d0";
+export const BASE_USDCX = "0xD04383398dD2426297da660F9CCA3d439AF9ce1b";
