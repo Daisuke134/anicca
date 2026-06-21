@@ -4,15 +4,26 @@
 "use strict";
 
 const { makeComposioCalendar } = require("./calendar-composio.js");
+const { makeUnipileMail } = require("./mail-unipile.js");
 
 function getCalendar(opts = {}) {
   const kind = (process.env.LIFE_TRANSPORT || opts.kind || "composio").toLowerCase();
   switch (kind) {
-    // case "gog": return makeGogCalendar(opts); // slice 5
+    // case "gog": return makeGogCalendar(opts); // slice 4
     case "composio":
     default:
       return makeComposioCalendar(opts);
   }
 }
 
-module.exports = { getCalendar };
+function getMail(opts = {}) {
+  const kind = (process.env.LIFE_TRANSPORT || opts.kind || "composio").toLowerCase();
+  switch (kind) {
+    // case "gog": return makeGogMail(opts); // slice 4 (local gog Gmail)
+    case "composio":
+    default:
+      return makeUnipileMail(opts); // cloud mail provider is Unipile
+  }
+}
+
+module.exports = { getCalendar, getMail };

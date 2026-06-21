@@ -12,24 +12,9 @@
 // not judgment.
 "use strict";
 
-const COMPOSIO = "https://backend.composio.dev/api/v3";
 const GEMINI = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 const { sendMessage: tgSend } = require("./telegram.js");
-
-async function composio(tool, args, key) {
-  const r = await fetch(`${COMPOSIO}/tools/execute/${tool}`, {
-    method: "POST", headers: { "x-api-key": key, "Content-Type": "application/json" },
-    body: JSON.stringify({ user_id: args.user_id, arguments: args.arguments }),
-  });
-  return r.json().catch(() => ({}));
-}
-async function unipile(method, path, body, token, dsn) {
-  const r = await fetch(`https://${dsn}${path}`, {
-    method, headers: { "X-API-KEY": token, "Content-Type": "application/json", accept: "application/json" },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  return { ok: r.ok, json: await r.json().catch(() => ({})) };
-}
+const { getCalendar, getMail } = require("./transport/index.js");
 
 // Raw Gemini generateContent. Key goes in the x-goog-api-key HEADER, never the URL (so it can't leak
 // into logs/referrers). Returns the parsed response, or {} on failure.
@@ -151,19 +136,13 @@ Use null for both if the reply doesn't clearly answer a location question.`,
 }
 
 async function listEvents48h(uid, key, nowMs) {
-  const j = await composio("GOOGLECALENDAR_EVENTS_LIST", {
-    user_id: uid, arguments: {
-      calendarId: "primary", singleEvents: true, orderBy: "startTime",
-      timeMin: new Date(nowMs).toISOString().replace(/\.\d{3}Z$/, "Z"),
-      timeMax: new Date(nowMs + 48 * 3600 * 1000).toISOString().replace(/\.\d{3}Z$/, "Z"),
-    },
-  }, key);
-  return ((j.data || {}).items) || [];
+  return getCalendar({ apiKey: key }).listEventsRaw(uid, {
+    timeMin: new Date(nowMs).toISOString().replace(/\.\d{3}Z$/, "Z"),
+    timeMax: new Date(nowMs + 48 * 3600 * 1000).toISOString().replace(/\.\d{3}Z$/, "Z"),
+  });
 }
 async function patchEvent(uid, eventId, patch, key) {
-  return composio("GOOGLECALENDAR_PATCH_EVENT", {
-    user_id: uid, arguments: { calendar_id: "primary", event_id: eventId, ...patch },
-  }, key);
+  return getCalendar({ apiKey: key }).patchEvent(uid, { calendar_id: "primary", event_id: eventId, ...patch });
 }
 function needsLocation(ev) {
   const s = (ev.summary || "").trim();
@@ -211,18 +190,16 @@ async function askTick(uid, opts) {
       if (r && r.ok) { await markAsked(uid, event.id, supaUrl, supaKey); asked++; }
     } else if (accountId && unipileToken) {
       const { Subject, Body } = buildAsk(event); // simple, model-free template for the email itself
-      const sent = await unipile("POST", "/api/v1/emails", {
-        account_id: accountId, to: [{ identifier: userEmail }], subject: Subject, body: Body,
-      }, unipileToken, unipileDsn);
-      if (sent.ok) { await markAsked(uid, event.id, supaUrl, supaKey); asked++; }
+      const ok = await getMail({ accountId, token: unipileToken, dsn: unipileDsn }).send(userEmail, Subject, Body);
+      if (ok) { await markAsked(uid, event.id, supaUrl, supaKey); asked++; }
     }
   }
 
   // READ replies (EMAIL users only — Telegram replies arrive via the webhook, not here).
   const pending = events.filter((e) => needsLocation(e) && already.has(e.id));
   if (pending.length && accountId && unipileToken && !opts.telegramChatId) {
-    const inbox = await unipile("GET", `/api/v1/emails?account_id=${encodeURIComponent(accountId)}&limit=15`, null, unipileToken, unipileDsn);
-    for (const m of (inbox.json.items) || []) {
+    const inboxItems = await getMail({ accountId, token: unipileToken, dsn: unipileDsn }).listInbox({ limit: 15 });
+    for (const m of inboxItems) {
       if (!/^Re:/i.test(m.subject || "")) continue;
       const text = m.body_plain || m.body || m.snippet || "";
       const match = await agentMatchReply(text, pending, geminiKey);

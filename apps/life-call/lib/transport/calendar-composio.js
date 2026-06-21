@@ -21,13 +21,13 @@ function makeComposioCalendar({ apiKey } = {}) {
     kind: "composio",
     ready: () => !!key,
     // Raw Google Calendar items (each consumer maps to its own shape) for [timeMin, timeMax] (ISO Z).
-    async listEventsRaw(uid, { timeMin, timeMax } = {}) {
+    async listEventsRaw(uid, { timeMin, timeMax, maxResults } = {}) {
       if (!key || !uid) return [];
+      const args = { calendarId: "primary", singleEvents: true, orderBy: "startTime", timeMin, timeMax };
+      if (maxResults) args.maxResults = maxResults;
       let j;
       try {
-        j = await exec("GOOGLECALENDAR_EVENTS_LIST", uid, {
-          calendarId: "primary", singleEvents: true, orderBy: "startTime", timeMin, timeMax,
-        }, key);
+        j = await exec("GOOGLECALENDAR_EVENTS_LIST", uid, args, key);
       } catch { return []; }
       if (!j || !j.successful) return [];
       const d = j.data || {};

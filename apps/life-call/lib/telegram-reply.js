@@ -6,16 +6,7 @@
 "use strict";
 
 const { agentMatchReply } = require("./ask.js");
-
-const COMPOSIO = "https://backend.composio.dev/api/v3";
-
-async function composio(tool, uid, args, key) {
-  const r = await fetch(`${COMPOSIO}/tools/execute/${tool}`, {
-    method: "POST", headers: { "x-api-key": key, "Content-Type": "application/json" },
-    body: JSON.stringify({ user_id: uid, arguments: args }),
-  });
-  return r.json().catch(() => ({}));
-}
+const { getCalendar } = require("./transport/index.js");
 
 async function userByChatId(chatId) {
   const url = process.env.SUPABASE_URL, key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -43,19 +34,19 @@ async function resolveTelegramReply(chatId, text) {
   if (!user || user.calendar_provider !== "composio_gcal") return out;
 
   const now = Date.now();
-  const j = await composio("GOOGLECALENDAR_EVENTS_LIST", user.uid, {
-    calendarId: "primary", singleEvents: true, orderBy: "startTime", maxResults: 50,
+  const items = await getCalendar({ apiKey: composioKey }).listEventsRaw(user.uid, {
     timeMin: new Date(now).toISOString().replace(/\.\d{3}Z$/, "Z"),
     timeMax: new Date(now + 7 * 86400 * 1000).toISOString().replace(/\.\d{3}Z$/, "Z"),
-  }, composioKey);
-  const pending = (((j.data || {}).items) || []).filter(needsLocation);
+    maxResults: 50,
+  });
+  const pending = items.filter(needsLocation);
   if (!pending.length) return out;
 
   const match = await agentMatchReply(text, pending.map((e) => ({ id: e.id, summary: e.summary })), geminiKey);
   if (!match) return out;
   const ev = pending.find((e) => e.id === match.eventId);
   if (!ev) return out;
-  await composio("GOOGLECALENDAR_PATCH_EVENT", user.uid, { calendar_id: "primary", event_id: ev.id, location: match.location }, composioKey);
+  await getCalendar({ apiKey: composioKey }).patchEvent(user.uid, { calendar_id: "primary", event_id: ev.id, location: match.location });
   return { filled: true, event: ev.summary || "your event", location: match.location };
 }
 
