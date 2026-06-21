@@ -33,7 +33,7 @@ for ENVF in /opt/anicca.env "$HOME/.openclaw/.env" "$HOME/clawd/.env"; do
 done
 # Defense-in-depth: UNSET any inherited user-PII env (a contaminated parent may have exported it) so
 # identity-guard.mjs (malice-guard) stays green regardless of how run.sh is invoked. Mirrors
-# USER_PII_ENV_PATTERNS in skills/earn/lib/identity-guard.mjs.
+# USER_PII_ENV_PATTERNS in skills/_shared/lib/identity-guard.mjs.
 for piivar in $(env | cut -d= -f1 | grep -iE 'GOOGLE_LOGIN|COMPOSIO|GCAL|GOOGLE_CALENDAR|GMAIL_REFRESH|GMAIL_TOKEN|USER.?GMAIL|TELEGRAM|^USER_|USER.?PHONE|USER.?CONTACT' 2>/dev/null); do
   unset "$piivar" 2>/dev/null || true
 done
