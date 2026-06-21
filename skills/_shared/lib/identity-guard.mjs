@@ -30,6 +30,12 @@ export const USER_PII_ENV_PATTERNS = [
 export const ALLOWED_EARN_SOURCES = new Set([
   "x402", "0xwork", "litcoin", "nookplot", "crypto",
   "swap-eth-usdc", "swap", "swap-usdc-eth", // own-asset rotation (non-gate, still own identity)
+  // own-wallet DeFi yield + investing (deploy own idle USDC into own positions — own identity).
+  // execute-yield.mjs emits source "yield-<protocol>" (e.g. yield-beefy-morpho, yield-aave-v3) and
+  // execute-invest.mjs "invest-eth-dca"; without these the guard rejected real yield earns (the
+  // deposit happened on-chain but couldn't be recorded). Added 2026-06-21.
+  "yield", "yield-aave-v3", "yield-beefy-morpho", "yield-beefy", "yield-fluid", "yield-morpho",
+  "yield-moonwell", "invest-eth-dca",
   "content", "x402-serve",
   "discover", // narrate-only discovery wake
 ]);
