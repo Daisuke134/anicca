@@ -86,10 +86,21 @@ export function getToolDefinitions(slots) {
       type: 'function',
       function: {
         name: 'run_skill',
-        description: 'Execute one skill. Pick the skill you decide is most productive this wake.',
+        description: 'Execute one skill. Pick the skill you decide is most productive this wake. ' +
+          'Use `args` to pass YOUR decision to the skill (HARD RULE #0: the skill is the tool, YOU ' +
+          'decide the strategy) — e.g. for earn: {"strategy":"yield"|"swap"|"hl"|"x402"|"token"}; ' +
+          'for an HL trade: {"strategy":"hl","coin":"ETH","side":"long","size_usd":20,"sl_pct":3,"tp_pct":6}; ' +
+          'for x402: {"strategy":"x402","sell":"...","price":"$1"}. The skill reads these via $ANICCA_ARGS.',
         parameters: {
           type: 'object',
-          properties: { slot: slotProp },
+          properties: {
+            slot: slotProp,
+            args: {
+              type: 'object',
+              description: 'Your decision for this skill (strategy + parameters). Passed to the skill as $ANICCA_ARGS (JSON). Optional; the skill has a safe default if omitted.',
+              additionalProperties: true,
+            },
+          },
           required: ['slot'],
         },
       },
