@@ -7,6 +7,14 @@ update as items move.
 
 ---
 
+## A — PROGRESS (2026-06-21, executed)
+- **A2 Crossmint** ✅ LIVE-VERIFIED: prod /orders endpoint + x-api-key auth are real (key authenticated, scopes returned). Gaps found: current key is wallets-scoped (needs orders.create scope, add in console) + recipient banks need CSE registration. Noted in crossmint-offramp.mjs.
+- **A4 #59 法人印** ✅ DONE — already purchased on Amazon (order 503-6400036-5967047), engraving specified at order. (Was wrongly listed as pending.)
+- **A5 Proactive UBI** ✅ ALREADY BUILT — distribute-ubi.mjs (split+send after a profitable wake, no-fake, fail-soft) + ubi-watcher + ubi-payout-watcher + bank-watcher (SAFE-BY-DEFAULT, double-pay-guarded). No redundant build needed.
+- **A6 GDA orchestration** ✅ BUILT+TESTED — gda-distribute.mjs (planDistribution: verified recipients -> equal-unit pool members -> USDCx stream; refuses empty pool; 6 tests). Forwarder Base-verified.
+- **A1 Bridge live-verify** ⏳ rail code VSDD-done; account signup is Google-OAuth/magic-link (fiddly headless) — sandbox-verify pending an account; Bridge PRODUCTION needs KYB (entity) anyway, so low marginal value until #52/#47.
+- **A3 Stripe Atlas** ⏳ fundamentally needs Dais: incorporating a company requires the founder's e-signature on the incorporation docs + ~$500 payment + passport/ID + equity decision. Anicca can fill company name/type/address from profile up to the signature step; the signature/payment/ID = Dais (it is his legal+financial act, not refusable-away).
+
 ## A. ANICCA DOES RIGHT NOW — no Dais action required (start immediately)
 
 | # | Task | What "done" means | Dais-touch? |
