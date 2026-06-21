@@ -3,11 +3,12 @@
 // and NO other AI in the loop. One step: relay.link bridges Base USDC → Hyperliquid (chain 1337), the
 // deposit credits Anicca's HL trading balance. Then hl.py can open a real perp.
 //
-// ECONOMIC GUARD (the honest part): the Base→HL deposit has a ~fixed ~$1.2 relay/bridge cost, so small
-// amounts bleed 30-40% (verified: $3 in → $1.78 out, fee $1.22 = 40%). Bridging tiny capital would just
-// burn money. So fund-hl REFUSES to bridge unless the fee is under MAX_FEE_PCT of the amount — i.e. it
-// only funds HL once Anicca has enough capital for it to make sense (~$40+ → fee <3%). Below that it
-// records why and does nothing. This is "don't fake / don't waste real money", enforced in code.
+// ECONOMIC GUARD (corrected): the Base→HL deposit has a ~fixed ~$1.2 relay cost, but this is a ONE-TIME
+// ENTRY fee — once funded, Anicca trades on HL repeatedly with NO further bridge cost, so the fee
+// AMORTIZES over every future trade. The earlier "30-40% per trade" framing was wrong (it's a one-time
+// deposit, not recurring). So the guard only blocks ABSURDLY tiny deposits where even a one-time $1.2 is
+// silly (e.g. funding $2). Default HL_MAX_FEE_PCT=20 → allows ~$6+ deposits; below that it records
+// "needs more capital". This keeps "don't waste money" without giving up on HL when real capital exists.
 //
 // Env: FUND_HL_USDC (amount to bridge, default from caller), PKVAR (env var NAME holding the key),
 //      HL_MAX_FEE_PCT (default 5). Prints JSON result; never throws uncaught (fails closed).
@@ -17,7 +18,7 @@ import { base } from 'viem/chains';
 
 const USDC_BASE = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
 const HL_USDC = '0x00000000000000000000000000000000'; // relay's "USDC (Perps)" on chain 1337
-const MAX_FEE_PCT = Number(process.env.HL_MAX_FEE_PCT || 5);
+const MAX_FEE_PCT = Number(process.env.HL_MAX_FEE_PCT || 20); // one-time entry fee; amortizes over trades
 const RPCS = ['https://base.llamarpc.com', 'https://base-rpc.publicnode.com', 'https://base.drpc.org', 'https://1rpc.io/base', 'https://mainnet.base.org'];
 
 function loadKey() {
