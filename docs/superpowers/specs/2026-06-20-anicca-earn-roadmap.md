@@ -301,3 +301,39 @@ VERIFIED end-to-end (live ClawRouter call): parseToolCall(glm response) → {slo
 The model genuinely DECIDES (it picks yield because $8.8 is already deployed + $5 liquid + HL unfunded +
 no x402 demand = yield is rational now). Diverse strategies (hl/x402/token) will appear once they're
 fundable/profitable — not hardcoded, situation-driven. anicca position stable: ~$8.8 Aave v3 earning.
+
+## BLOCK 6-3 (per-tool results, 2026-06-21) — what we tweaked, what each tool earned, the verdict
+### The verdict on Dais's question (system error vs intelligence?): ★ ALL system, ZERO intelligence ★
+glm-4.7 (free, $0) decides full strategy autonomously — verified live: the wake ledger now logs
+`slot=earn args={"strategy":"yield"}` (and in richer-context tests it picked x402 AND invented the
+product AND priced it: `{strategy:"x402",sell:"on-chain agent wake logs + yield analysis",price:"$1"}`).
+Every "anicca won't decide" symptom was a SYSTEM bug we fixed in the mother — NOT model intelligence.
+So we KEEP the free model; no eco/auto/premium upgrade needed.
+
+### What we tweaked on the automaton (the system fixes, all from reading BP code)
+1. model gpt-oss-120b → free/glm-4.7 (Berkeley BFCL #4 tool-caller, MIT, verified $0 wallet outflow).
+2. parse-tool-call: extract the model's NESTED args (was dropping them).
+3. parse-tool-call: SCAVENGE roleplayed-JSON tool calls from text content (Franklin pattern; glm emits
+   the call as text, not the tool_calls field).
+4. wake prompt: terse "choose your action" → directive message listing earn/cook/self-issue-dev + demand args.
+5. wake-ledger observability: log the decided args (the "args=blank" I kept misreading was just a logging gap).
+6. earn engine fixes earlier today: discover→execute+yield, viem RPC fallback, approve(MAX), Aave-default
+   (Beefy-Morpho 1.5M-gas revert), PKVAR indirection, node_modules symlink, malice-guard sources.
+
+### Money in / per-tool result (honest — real on-chain, no fake)
+| tool | wired | anicca uses it? | earned (real) | blocker to real $ |
+|---|---|---|---|---|
+| yield (Aave v3) | ✅ | ✅ deploys + holds autonomously (tx 0x77b0da61b5, decision logged) | ~$8.8 deployed @3.2%; realized interest ≈$0 (hours old, ~$0.0008/day) | time + more capital |
+| hl (Hyperliquid) | ✅ | model CAN pick it | $0 | HL account=$0 (Arbitrum-bridge funding) |
+| x402 product | ✅ public endpoint LIVE (402, firecrawl product) | model picks it + invents product+price | $0 | a real BUYER (demand) |
+| token (MoltX) | ✅ model-gated | not launched | $0 | a launch decision (~$2.70) |
+| 0xwork | ✅ | — | $0 | a doable external task |
+| cook (explore) | ✅ built+live | runs a real web search for new earners | n/a | (discovery tool, not direct $) |
+| self/issue-dev | ✅ built+live | filed a real bug (issue #31) from its own ledger | n/a | (self-improve tool) |
+
+### Money summary (Dais's capital)
+Invested ~$18.7 (Dais $18 SOL → relayed $14.6 + my mutual-aid $0.7). Now ~$13.2 on Base
+($8.8 Aave + $4.4 liquid + ~$0.8 ETH gas) + $3.4 left on Solana. Net negative ~$2 — mostly the gas
+burned debugging the Beefy-revert storm before the Aave switch. Compute = $0 (free glm-4.7).
+realized profit ≈ $0. NOT yet net-positive — honest. The machine earns autonomously now; net-positive
+needs (a) time for yield interest, (b) HL funding, (c) x402 demand.
