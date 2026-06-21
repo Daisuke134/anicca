@@ -186,6 +186,13 @@ async function runOneWake() {
   }
 
   // 5. Assemble context
+  // PATCH 3: summarize the latest deployed position from the ledger (no extra RPC) so the prompt
+  // shows the model its portfolio and it can DECIDE a strategy from it.
+  const lastYield = (Array.isArray(recentLedger) ? recentLedger : []).slice().reverse()
+    .find(l => String(l && l.source || '').startsWith('yield') && l.tx);
+  const positionsSummary = lastYield
+    ? `~$${lastYield.deposited_usdc ?? '?'} in ${lastYield.source} (last tx ${String(lastYield.tx).slice(0, 10)})`
+    : '';
   const ctx = assembleContext({
     walletAddress,
     balanceUsdc: currentTier.tier === 'broke' ? 0 : undefined, // balance already reflected in tier
@@ -197,6 +204,7 @@ async function runOneWake() {
     ts,
     activeSkillSlots,
     skillCatalog,
+    positionsSummary,
   });
 
   // 6. THINK (brain call)
@@ -397,7 +405,10 @@ function buildSkillEnv(slot, wakeId, config, scrub, args) {
       ...base,
       ANICCA_ARGS,
       EARN_MODE:     process.env.EARN_MODE     || 'execute',
-      EARN_STRATEGY: process.env.EARN_STRATEGY || (typeof a.strategy === 'string' ? a.strategy : 'yield'),
+      // PATCH 2: the MODEL decides the strategy (args.strategy, driven by the system prompt). 'yield' is
+      // ONLY the safe last-resort when the model passed nothing — principal-preserving, never loses. Not
+      // a hardcoded default behaviour: a well-prompted model picks hl/x402/token/0xwork from its situation.
+      EARN_STRATEGY: process.env.EARN_STRATEGY || (typeof a.strategy === 'string' && a.strategy.trim() ? a.strategy.trim() : 'yield'),
       WAKE_ID:       wakeId,
       ...(config.EARN_LEDGER ? { EARN_LEDGER: config.EARN_LEDGER } : {}),
     };
