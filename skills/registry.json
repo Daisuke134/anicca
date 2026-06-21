@@ -35,9 +35,9 @@
       "track": "A",
       "dir": "skills/self/issue-dev",
       "entrypoint": "run.sh",
-      "status": "declared",
+      "status": "live",
       "spec": "26 'self-solve/refactor/improve' / 27 WF-A",
-      "summary": "Self-improvement: read behaviour log \u2192 open issue \u2192 branch \u2192 PR against own repo (issue-driven dev loop).",
+      "summary": "SELF-IMPROVE: read own behaviour log (reverts/loop_detect), file ONE GitHub Issue on the mother so the colony fixes it. args.note optional.",
       "owner": "wf-a:self-spawn"
     },
     "economy/ubi": {
