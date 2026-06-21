@@ -56,3 +56,4 @@ workspace/ugc-library/**/*.mov
 workspace/ugc-library/**/*.mp4
 services/x402-worker/state/
 services/x402-endpoint/node_modules/
+skills/earn/hl-trade/.venv/
