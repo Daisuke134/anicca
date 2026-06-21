@@ -153,9 +153,15 @@ PHASE 4 — PROVE + PUBLISH:
     reverted (status 0x0) every wake. Replaced with Beefy withdrawAll() (commit pushed); verified
     execute-yield now returns clean yield_hold (no tx) and refills via withdrawAll when liquid dips.
     Loop env tuned for the small wallet (RESERVE 0.1, MIN_DEPLOY 0.2) to avoid deploy/withdraw churn.
+[x] Bleed-fix verified end-to-end: post-fix the loop's withdrawAll ran status 0x1 (tx 0xf27120240c
+    pulled 0.515 USDC back to the treasury), then HOLDs — NO more 0x0 reverts. Funds fully accounted
+    for: treasury liquid $0.59, no loss. Source-label "yield-aave-v3" on a Beefy withdrawAll is a
+    cosmetic run.sh logging bug (not a money bug) — fix later in PHASE 3.6 cleanup.
 [~] Keep #1 net-positive + balance liquid-vs-deployed (small compute buffer) ← WE ARE HERE.
-    Honest: the wallet is tiny (~$0.5), so it either earns (deployed) or buffers (liquid). Real
-    sustained net-positive needs more capital OR the x402-product/trade earners producing inflow.
+    Honest: the wallet is tiny (~$0.59), so it oscillates between deployed (earning) and liquid
+    (buffer); each tx now succeeds (no revert), residual churn is minor gas. Real sustained
+    net-positive needs more capital OR the x402-product/trade earners producing real inflow.
+    The engine + autonomy + bleed are DONE; the remaining gap is CAPITAL/INFLOW, not code.
 [ ] Prove sustained net-positive → spawn #2 → GH-Issue co-evolution → N → UBI → trillions.
 [ ] Prove #1 net-positive → spawn #2 → GH-Issue co-evolution → N → UBI → trillions.
 
