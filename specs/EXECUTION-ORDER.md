@@ -14,16 +14,15 @@ Mark `[x]` when DONE + verified + pushed. `[~]` = in progress. `[ ]` = not start
 ---
 
 ## PHASE 1 — make anicca a BODY THAT EARNS (the engine; do this first)
-- [~] **1.1  (#46) runtime → flat thin tools** — spec 25 O1/O4/O5/O6/O7.
-      - [x] O1: LLM picks each live skill as a flat tool (registry-driven). commit 0c5ae4a.
-      - [ ] O6: drop GATE-0 classifier + earn-detect.mjs (skill returns its own result).
-      - [ ] O4: generic ANICCA_ARGS for every skill (drop slot==='earn' special-case).
-      - [ ] O5: split fat earn/run.sh into thin per-strategy tools the LLM picks.
-      - [ ] O7: drop GATE-0/pillar/spout naming from code paths.
+> The earning-relevant part of #46 is O1 (LLM can pick real earn tools) — DONE. The rest of #46
+> (O4/O5/O6/O7) is non-earning CLEANUP that touches the live loop/UBI classifier, so it moves to
+> PHASE 3 (done carefully, not blocking earning). PHASE 1 = O1 done → add/verify real earners.
+- [x] **1.1  (#46 O1) LLM picks each live skill as a flat tool** (registry-driven). commit 0c5ae4a.
 - [ ] **1.2  (#12) GOAT SDK earn primitives** — try GOAT yield/swap, make them thin earn tools (HARD #0).
 - [ ] **1.3  (#14/#15/#16) verify earners on MY test wallet** — yield scale / HL size up / $ANICCA volume.
       Record real $ to the ledger so anicca inherits proven earners.
-- [ ] **1.4  (#17) winners → skills/earn/ thin tool + SKILL.md** (HARD #0). Fix the registry to flat tools.
+- [ ] **1.4  (#17) winners → skills/earn/ thin tool + SKILL.md** (HARD #0). Each verified earner = its
+      own thin tool (this naturally does the useful part of O5). Flip registry to those flat tools.
 
 ## PHASE 2 — anicca-local EARNS on auto + I MONITOR (Dais 3-step)
 - [ ] **2.1  (#49) integrate winners to mother → anicca-local pulls → auto-earn → I monitor → write 6-3.**
@@ -38,6 +37,10 @@ Mark `[x]` when DONE + verified + pushed. `[~]` = in progress. `[ ]` = not start
 - [ ] **3.3  (#24) self/issue-dev LIVE** — behaviour log → Issue → PR.
 - [ ] **3.4  (#25) constant mother-sync** — daily git pull so long-running children track the mother.
 - [ ] **3.5  (#47) drop survival tiers + single model** — spec 25 O2/O3; fix the stale tier/config tests.
+- [ ] **3.6  (#46 rest) runtime cleanup** — spec 25 O4/O5/O6/O7: drop the GATE-0 second-pass classifier
+      + earn-detect.mjs (skill returns its own result), generic ANICCA_ARGS (drop slot==='earn'
+      special-case), drop GATE-0/pillar/spout naming. Done HERE (carefully, with the loop watched),
+      NOT in PHASE 1 — it's cleanup, not earning, and touches the live earn/UBI classification.
 
 ## PHASE 4 — REPLICATE + ARTICLE
 - [ ] **4.1  (#42/#23) spec 13 cloud spawn** — anicca-002 on Akash (own wallet+inbox+constitution).
