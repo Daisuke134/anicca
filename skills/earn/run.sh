@@ -233,10 +233,12 @@ if [ "$STRATEGY" = "yield" ] && [ -z "${EARN_TX:-}" ]; then
   echo "[earn] gas check: $GRES"
 fi
 
-# --- INVESTING leg (3rd earning way): risk-managed blue-chip DCA into ETH, capped at a target % of
-# investable capital (never the compute buffer, never leverage). Runs as part of the portfolio pass
-# before yield, so each wake maintains: compute buffer (liquid) + blue-chip target + yield floor.
-if [ "$STRATEGY" = "yield" ] && [ -z "${EARN_TX:-}" ]; then
+# --- INVESTING leg — DISABLED by default (2026-06-21). It ran a USDC->ETH DCA swap IN THE SAME WAKE
+# right before the yield deposit; the swap changed the USDC balance / occupied the nonce, so the yield
+# deposit that followed REVERTED (status 0x0, burning gas) while a yield run ALONE succeeds. It is also
+# speculative (ETH can fall) — not "principal-preserving". The model can still invest explicitly via
+# EARN_STRATEGY=invest. Set EARN_INVEST_LEG=1 to re-enable the auto leg.
+if [ "$STRATEGY" = "yield" ] && [ "${EARN_INVEST_LEG:-0}" = "1" ] && [ -z "${EARN_TX:-}" ]; then
   IRES=$(PKVAR="$PKVAR" node "$HERE/execute-invest.mjs" 2>/dev/null)
   echo "[earn] invest result: $IRES"
   IKIND=$(printf '%s' "$IRES" | python3 -c "import json,sys
@@ -249,7 +251,6 @@ except Exception: print('')" 2>/dev/null)
     record_line "$IJSON" >/dev/null 2>&1 || true
     echo "[earn] invest dca_buy \$$IAMT ETH (blue-chip leg) recorded"
   fi
-  # fall through to the yield leg below (deploys the remaining surplus, keeps the compute buffer)
 fi
 
 # --- strategy=yield: GOAT earner — deploy idle USDC into DeFi yield (Aave v3) ---------------
