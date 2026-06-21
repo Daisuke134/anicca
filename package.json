@@ -1,5 +1,6 @@
 {
   "dependencies": {
-    "viem": "^2.52.2"
+    "viem": "^2.52.2",
+    "x402-express": "^1.2.0"
   }
 }
