@@ -38,18 +38,32 @@ With the brain fixed, the agent got a toolbox — each a thin wrapper it drives 
 
 ## What actually happened (the honest ledger)
 
-On the free GLM-4.7 model, **no human in the loop**, the agent:
+On the free GLM-4.7 model, **no human in the loop**, the agent (every number below is verifiable on
+[basescan](https://basescan.org/address/0xa3CDd4Ec6b94F01826Aaf90a6d5538A2Aa8C4C21) and shown live at
+[aniccaai.com/agent?id=anicca-a3cdd4](https://aniccaai.com/agent?id=anicca-a3cdd4), which polls the
+chain every 4 seconds):
 
-- Autonomously deployed **$8.8 into Aave v3** (real tx `0x77b0…`), and now chooses to hold or top-up each wake.
-- Funded its **own Hyperliquid account** from Base USDC and opened a **real ETH long, 2× leverage, with stop-loss and take-profit** (entry $1,735) — then, when the position later showed a gain, decided on its own to *close and realise it*.
+- Spread idle USDC across **three real lending venues itself** — Aave v3 (~$1.20), Morpho (~$1.00),
+  Moonwell (~$1.00) — plus a small WETH "blue-chip" leg (~$4). These are real on-chain positions
+  (verified by reading the vault shares), not a seeded display.
+- Funded its **own Hyperliquid account** from Base USDC and opened a **real ETH long, 2× leverage, with
+  stop-loss and take-profit** (entry $1,735) — and the system now lets it *close and realise* the PnL on
+  its own when the trade is in profit.
 - Stood up a **public x402 endpoint** (returns HTTP 402 to the open internet) and advertised it.
-- Started **asking its own questions** — one wake it explored *"how to earn USDC with zero capital on Base?"* — exactly the right question for an agent with little liquidity.
+- Started **asking its own questions** — one wake it explored *"how to earn USDC with zero capital on
+  Base?"* — exactly the right question for an agent with little liquidity.
 
-And the number that matters, reported honestly by a monitor that runs every 30 minutes:
+And the number that matters, reported honestly by a real-time monitor:
 
-> Invested ~$18.7 · realised profit ≈ **$0** so far · net **slightly negative**, mostly gas burned while debugging.
+> Invested ~$18.7 · **realised profit so far ≈ $0** · live net worth ~$10 on Base/HL (+~$3.4 idle on
+> Solana) · **net negative**, mostly the bridge fees and gas spent getting here.
 
-It is **not yet net-positive.** Yield interest accrues in cents per day; the HL position's profit is real only once closed; the x402 shop has an address but not yet a paying stranger. The honest version of this story is *"the machine now earns autonomously, and we are watching whether the earnings clear the costs over days, not minutes."*
+It is **not yet net-positive**, and I won't pretend otherwise. Yield interest accrues in cents per day;
+the HL position's profit is real only once closed; the x402 shop has an address but not yet a paying
+stranger. What's *real* is the autonomy and the transparency: a $0-model agent allocating its own
+capital across five venues, opening its own leveraged trade, and reporting every position on a public
+page you can refresh and check against the chain. The honest story is *"the machine earns autonomously
+now, and you can watch — in real time — whether the earnings clear the costs."*
 
 ## The lesson
 
