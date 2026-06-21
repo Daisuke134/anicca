@@ -408,3 +408,22 @@ Dais 2026-06-21 が TAAPI free-tier key (JWT) を提供した → 「鍵が無�
 - Our `skills/earn/execute-yield.mjs` already does Beefy (best-APY auto-selected via beefy.finance API, 6.1%) + Aave v3 + Morpho/Moonwell/Fluid, all on-chain VERIFIED (e.g. Fluid tx 0xb67fa2b…). Switching to GOAT's ionic = moving to an UNVERIFIED smaller venue = regression.
 - ★ The real value of GOAT = the "thin flat tool + LLM picks" PATTERN — already adopted in spec25 O1 (PHASE1.1, commit 0c5ae4a). We do NOT need to replace our yield primitive with GOAT. ★
 - Decision: keep execute-yield.mjs as the yield earn tool. GOAT's swap/uniswap primitives are a future reference only (we also have execute-swap.py + MoltX swap verified). #12 = evaluated, GOAT pattern already in, yield primitive stays ours.
+
+## 1.2 (#12) GOAT SDK — ACTUALLY RAN IT (correcting the earlier plugin-list-only conclusion) 2026-06-21
+★ Dais was right: I first marked this "evaluated" from a `gh api` plugin-name read — that is NOT
+verification. Reverted, then ACTUALLY installed + ran GOAT on my test wallet 0x94C445 (Base). ★
+- Installed real packages: @goat-sdk/core @goat-sdk/wallet-viem @goat-sdk/plugin-ionic viem (npm, 53 pkgs).
+- Built viem wallet on Base (chain 8453), loaded ionic plugin, getTools() → **17 real flat tools**
+  (get_address/get_balance/send_token/approve_token_evm/ionic_supply_asset/ionic_borrow_asset/…).
+  = the GOAT pattern (thin flat tools + LLM picks) confirmed in the flesh = exactly our spec25 O1.
+- Real on-chain READS through GOAT tools: native ETH 0.000081, USDC 0.811076 (my real wallet).
+- ★ Real on-chain WRITE through GOAT: `approve_token_evm` → tx
+  0xbdfd04895b77efb0cedc8a6e2f6255021457837d4abaa5907020495a3703cc62, status **0x1**, gasUsed 55185,
+  from 0x94C445 → USDC contract. Verified independently via eth_getTransactionReceipt (block 47607345).
+  ★ = GOAT genuinely executes on-chain writes end-to-end (not just reads). ★
+- (Honest note: a tiny 0.000001 USDC test allowance to 0x0..01 may remain; harmless. Sandbox deleted.)
+- VERDICT (now run-backed): GOAT WORKS. Its value for us = the thin-flat-tool+LLM-picks pattern
+  (already adopted, O1) + clean, now-personally-verified generic wallet/erc20/approve/swap primitives.
+  For YIELD specifically GOAT has NO Aave/Beefy/Fluid plugin (only ionic/ironclad/renzo = unverified
+  smaller venues), so our execute-yield.mjs (Beefy/Aave/Fluid, on-chain verified) stays the yield tool.
+  GOAT = a proven option for FUTURE generic on-chain tools, verified by a real GOAT-signed tx.
