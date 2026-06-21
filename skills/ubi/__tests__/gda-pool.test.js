@@ -23,6 +23,7 @@ test("buildDistributeFlowCall: bigint flowRate ok; negative/non-bigint rejected"
   assert.ok(buildDistributeFlowCall({ token: A, from: B, pool: A, flowRatePerSec: 0n }).startsWith("0x")); // 0 = stop
   assert.throws(() => buildDistributeFlowCall({ token: A, from: B, pool: A, flowRatePerSec: -1n }), /non-negative bigint/);
   assert.throws(() => buildDistributeFlowCall({ token: A, from: B, pool: A, flowRatePerSec: 1000 }), /non-negative bigint/);
+  assert.throws(() => buildDistributeFlowCall({ token: A, from: B, pool: A, flowRatePerSec: 2n ** 96n }), /int96 max/); // FIND-B02 overflow guard
 });
 test("sendGdaCall: sends to the forwarder; requires sendTx + calldata", async () => {
   let cap = null;
