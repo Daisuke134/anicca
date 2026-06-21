@@ -43,14 +43,23 @@ export function isDuplicateNullifier(seen, hash) {
   return !!(seen && hash && (typeof seen.has === 'function' ? seen.has(hash) : false));
 }
 
-// Live: verify a proof, then dedup the nullifier via an injected async store {has(hash), add(hash)}.
+// Live: verify a proof, then dedup the nullifier via a REQUIRED async store {has(hash), add(hash)}.
 // Returns { allowed, nullifier_hash?, reason? }. Never throws on a normal deny — only on misconfig.
-export async function verifyPersonhood({ proofBundle, appId = APP_ID, action = ACTION, store, fetchImpl = fetch }) {
+//
+// `signal` is REQUIRED and MUST be the SERVER-KNOWN per-claim binding (the payout recipient address),
+// passed by the route — NEVER taken from the client proof bundle. This binds the proof to a specific
+// recipient so a valid proof cannot be relayed/front-run to a different payout (security review #3).
+// Production: signal_hash MUST be derived with @worldcoin/idkit-core `hashToField(signal)` to match
+// the frontend IDKit; a mismatch fails the Worldcoin verify (fail-closed). See buildVerifyBody.
+export async function verifyPersonhood({ proofBundle, signal, appId = APP_ID, action = ACTION, store, fetchImpl = fetch }) {
   if (!appId) throw new Error('worldid: WORLDCOIN_APP_ID required (set env)');
+  if (!store) throw new Error('worldid: dedup store required (sybil gate must NOT fail open)'); // security #2
+  if (signal == null || signal === '') throw new Error('worldid: signal required (server-bound recipient)'); // security #3
   if (!isAcceptedLevel(proofBundle?.verification_level)) {
     return { allowed: false, reason: 'level_too_low' };
   }
-  const body = buildVerifyBody({ ...proofBundle, action });
+  // signal is the server-supplied binding; any client-supplied proofBundle.signal is overridden.
+  const body = buildVerifyBody({ ...proofBundle, action, signal });
   const res = await fetchImpl(`${VERIFY_BASE}/${appId}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -62,10 +71,19 @@ export async function verifyPersonhood({ proofBundle, appId = APP_ID, action = A
   if (!mapped.ok) return { allowed: false, reason: mapped.reason };
 
   // proof is valid — enforce one-human-one-recipient on the nullifier (sybil gate).
+  // The DB-level UNIQUE constraint on nullifier_hash is the ATOMIC guard: the has() pre-check is
+  // only a fast path; the real race-closer is add() throwing a unique-violation under concurrency
+  // (TOCTOU) — which we treat as already_claimed. A non-durable / failed add must NEVER fall through
+  // to allowed:true (VCSDD FIND-001/FIND-002). REQUIRED of the production store: a unique index on
+  // nullifier_hash so a duplicate insert rejects.
   const hash = body.nullifier_hash;
-  if (store) {
-    if (await store.has(hash)) return { allowed: false, reason: 'already_claimed', nullifier_hash: hash };
+  if (await store.has(hash)) return { allowed: false, reason: 'already_claimed', nullifier_hash: hash };
+  try {
     await store.add(hash);
+  } catch (e) {
+    // unique-constraint violation = a concurrent claim won the race, OR the write failed:
+    // either way this claim is NOT durably the unique recipient -> deny, never allow.
+    return { allowed: false, reason: 'already_claimed', nullifier_hash: hash };
   }
   return { allowed: true, nullifier_hash: hash };
 }
