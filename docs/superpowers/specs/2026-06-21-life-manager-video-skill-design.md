@@ -27,8 +27,12 @@ verified by whisper. v2 transcript: "ダイス、聞こえてる? 8時7分、ま
 ⑤ VERIFY    (HARD 0.31 / 0.24) Postiz returns releaseURL → poll the post state=PUBLISHED + fetch the
             public URL; extract a frame (caption visible) + confirm the audio stream exists (silent = fail).
             Append to a ledger ~/.openclaw/state/lm-video/history.jsonl (date, url, transcript hash).
-⑥ CRON      OpenClaw cron daily, a bit AFTER the morning wake call (e.g. 09:30 JST) so today's call exists.
-            Fresh content every day because the source is that day's real conversation. No rotation.
+⑥ CRON      OpenClaw cron — TWICE a day (Dais 2026-06-21): e.g. 09:30 JST (after the morning wake call)
+            + 21:00 JST (evening). Each post = a DIFFERENT real clip/segment so the two daily posts are
+            distinct. Fresh every day because the source is that day's real conversation. No rotation.
+            FIRST DELIVERABLE (Dais's explicit ask): make ONE video NOW from today's/yesterday's real
+            Dais×Anicca transcript using this skill, self-verify (frame+audio+captions), then EMAIL the
+            mp4 to keiodaisuke@gmail.com for his approval BEFORE the auto-post cron goes live.
 ```
 
 ## Build steps (when we reach #4) — each: code → test → no-mock E2E (a real post) → verify → push
