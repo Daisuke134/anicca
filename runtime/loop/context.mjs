@@ -23,10 +23,13 @@
  * @param {object} opts
  * @returns {WakeContext}
  */
-export function assembleContext({ walletAddress, balanceUsdc, tier, model, recentLedgerLines, genesisPrompt, wakeId, ts, activeSkillSlots, skillCatalog }) {
+export function assembleContext({ walletAddress, balanceUsdc, tier, model, recentLedgerLines, genesisPrompt, wakeId, ts, activeSkillSlots, skillCatalog, positionsSummary }) {
   return {
     walletAddress: walletAddress || 'unknown',
     balanceUsdc: typeof balanceUsdc === 'number' ? balanceUsdc : 0,
+    // PATCH 3: surface deployed positions (yield/HL/etc) so the model can DECIDE a strategy from its
+    // actual portfolio, not default. Empty string when the bootstrap didn't read positions.
+    positionsSummary: typeof positionsSummary === 'string' ? positionsSummary : '',
     tier: tier || 'broke',
     model: model || 'free/gpt-oss-120b',
     recentLedgerLines: Array.isArray(recentLedgerLines) ? recentLedgerLines.slice(-20) : [],
