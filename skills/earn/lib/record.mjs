@@ -5,8 +5,8 @@
 //   prints "PROFITABLE" / "NARRATE" on stdout for the shell to branch on.
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { deriveLine, isProfitable, appendLedger } from "./ledger.mjs";
-import { assertOwnIdentityOnly } from "./identity-guard.mjs";
+import { deriveLine, isProfitable, appendLedger } from "../../_shared/lib/ledger.mjs";
+import { assertOwnIdentityOnly } from "../../_shared/lib/identity-guard.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_LEDGER = path.join(__dirname, "..", "state", "earn-ledger.jsonl");

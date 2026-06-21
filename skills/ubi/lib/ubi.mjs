@@ -5,8 +5,8 @@
 // CONSTITUTIONAL WALL (spec 28 §3): UBI distributes ONLY Anicca's OWN earnings to recipient WALLETS.
 // Inputs are wallet addresses + numbers — NEVER a user email/name/phone/calendar. This module has no
 // access to, and no parameter for, any user identity. It is the earn-side of the wall by construction.
-import { isProfitable } from "./ledger.mjs";
-import { shareBaseUnits, splitPool, toBaseUnits } from "./transfer.mjs";
+import { isProfitable } from "../../_shared/lib/ledger.mjs";
+import { shareBaseUnits, splitPool, toBaseUnits } from "../../_shared/lib/transfer.mjs";
 
 const ADDR_RE = /^0x[0-9a-fA-F]{40}$/;
 const norm = (a) => String(a).toLowerCase();

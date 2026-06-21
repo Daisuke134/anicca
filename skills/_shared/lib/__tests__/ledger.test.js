@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { promises as fs } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { deriveLine, isProfitable, appendLedger, readLedger } from "../lib/ledger.mjs";
+import { deriveLine, isProfitable, appendLedger, readLedger } from "../ledger.mjs";
 
 async function tmpFile() {
   const d = await fs.mkdtemp(path.join(os.tmpdir(), "earn-ledger-"));

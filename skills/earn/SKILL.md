@@ -16,7 +16,7 @@ profitable wake is verified on-chain.
 1. The automaton loop invokes `run.sh` each wake.
 2. **discover** mode (default): records a narrate line (no tx) so the ledger shows the wake. Never GATE-0.
 3. **execute** mode: the agent did an on-chain earn this wake → `run.sh` verifies the receipt
-   (`lib/verify-tx.mjs` → `eth_getTransactionReceipt` → `0x1`), records the line with the derived
+   (`../_shared/lib/verify-tx.mjs` → `eth_getTransactionReceipt` → `0x1`), records the line with the derived
    `net_usdc`, and only declares **GATE-0 MET** when net>0 AND status is `0x1`.
 
 ## Entrypoint
@@ -38,12 +38,12 @@ Optional: `BASE_RPC_URL`, `USDC_ADDRESS`, `EARN_LEDGER`, `WAKE_ID`.
 {"ts":...,"wallet":"0x..","source":"x402","task":"...","earn_usdc":0.5,"cost_usdc":0.05,
  "net_usdc":0.45,"tx":"0x..","status":"0x1","wake":"..."}
 ```
-`lib/ledger.mjs` never rewrites prior lines (immutability). `isProfitable()` is the single
+`../_shared/lib/ledger.mjs` never rewrites prior lines (immutability). `isProfitable()` is the single
 GATE-0 classifier. `narrate`-only lines (no `tx`) never count.
 
 ## UBI (spec 28 §0) — share OWN earnings with AI + human recipients
 After a wake records **PROFITABLE** (real external USDC, `isProfitable`), `run.sh` calls
-`distribute-ubi.mjs`: it sends `UBI_SHARE_BPS` (default 10.00%) of THIS wake's net, split equally,
+`../ubi/distribute-ubi.mjs`: it sends `UBI_SHARE_BPS` (default 10.00%) of THIS wake's net, split equally,
 to sibling-AI child wallets (`self/spawn/state/children.jsonl`) + a human allow-list
 (`UBI_HUMAN_WALLETS` / `state/ubi-recipients.json`), via one ERC20 USDC `transfer` each
 (`0xa9059cbb`, USDC `0x8335…2913`, 6dp — ctx7-verified). It funds ONLY from Anicca's OWN wallet and
@@ -54,8 +54,8 @@ Audit trail: append-only `state/ubi-ledger.jsonl` (`{kind:"ubi",wake,outcome,txs
 
 ## Verify (independent agent)
 ```bash
-node -e "import('./lib/verify-tx.mjs').then(m=>m.receiptStatus('0x<tx>')).then(console.log)"  # -> 0x1
-node -e "import('./lib/usdc.mjs').then(m=>m.usdcBalance('0x<wallet>')).then(console.log)"      # before/after delta>0
+node -e "import('../_shared/lib/verify-tx.mjs').then(m=>m.receiptStatus('0x<tx>')).then(console.log)"  # -> 0x1
+node -e "import('../_shared/lib/usdc.mjs').then(m=>m.usdcBalance('0x<wallet>')).then(console.log)"      # before/after delta>0
 node --test __tests__/*.test.js                                                                # 17/17
 ```
 Acceptance: wallet USDC `after-before>0` for the wake + a ledger line whose Base receipt is `0x1`.

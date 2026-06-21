@@ -1,7 +1,7 @@
 // node:test — verify-tx: read a Base receipt status over JSON-RPC (injectable fetch).
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { receiptStatus } from "../lib/verify-tx.mjs";
+import { receiptStatus } from "../verify-tx.mjs";
 
 function fakeFetch(result) {
   return async () => ({ ok: true, json: async () => ({ jsonrpc: "2.0", id: 1, result }) });

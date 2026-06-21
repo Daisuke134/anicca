@@ -1,7 +1,7 @@
 // node:test — usdc: read a wallet's USDC balance over Base RPC (balanceOf) + delta.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { usdcBalance, delta } from "../lib/usdc.mjs";
+import { usdcBalance, delta } from "../usdc.mjs";
 
 function fakeFetch(hexResult) {
   return async () => ({ ok: true, json: async () => ({ result: hexResult }) });

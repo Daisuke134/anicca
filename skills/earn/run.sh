@@ -59,7 +59,7 @@ record_line() { # $1 = json
 # recipients (own wallet only). Fail-soft: never bricks the wake (the earn already succeeded).
 # $1 = the SAME earn-line JSON we just recorded PROFITABLE.
 distribute_ubi() {
-  UBI_OUT=$(node "$HERE/distribute-ubi.mjs" "$1" 2>/dev/null || true)
+  UBI_OUT=$(node "$HERE/../ubi/distribute-ubi.mjs" "$1" 2>/dev/null || true)
   echo "[earn] ubi -> ${UBI_OUT:-noop}"
 }
 
@@ -107,9 +107,9 @@ print(d.get('task_id','') or 'claimed-awaiting-approval')" 2>/dev/null)
     echo "[earn] REJECT: $PAYTX is not an external 0xwork payout (from!=taskPool or no USDC transfer to us) — NOT GATE-0"
     exit 1
   fi
-  STATUS=$(node -e "import('$HERE/lib/verify-tx.mjs').then(m=>m.receiptStatus('$PAYTX')).then(s=>console.log(s||'null')).catch(()=>console.log('null'))")
+  STATUS=$(node -e "import('$HERE/../_shared/lib/verify-tx.mjs').then(m=>m.receiptStatus('$PAYTX')).then(s=>console.log(s||'null')).catch(()=>console.log('null'))")
   BEFORE=$(printf '%s' "$RES" | python3 -c "import json,sys;print(json.load(sys.stdin).get('before_usdc',0))" 2>/dev/null)
-  AFTER=$(node -e "import('$HERE/lib/usdc.mjs').then(m=>m.usdcBalance('$WLOW')).then(b=>console.log(b)).catch(()=>console.log('$BEFORE'))")
+  AFTER=$(node -e "import('$HERE/../_shared/lib/usdc.mjs').then(m=>m.usdcBalance('$WLOW')).then(b=>console.log(b)).catch(()=>console.log('$BEFORE'))")
   AMT=$(node -e "console.log(Math.max(0,($AFTER)-($BEFORE)))")
   # external:true is what unlocks isProfitable() — set ONLY here, after the assertion passed.
   JSON=$(python3 -c "import json; print(json.dumps({'wallet':'${WLOW:-unknown}','source':'0xwork','task':'$TASKID','earn_usdc':float('$AMT'),'cost_usdc':0,'tx':'$PAYTX','status':'$STATUS','external':True,'wake':'$WAKE'}))")
@@ -225,7 +225,7 @@ fi
 COST="${EARN_COST:-0}"
 
 # 1) on-chain receipt status (0x1 = success).
-STATUS=$(node -e "import('$HERE/lib/verify-tx.mjs').then(m=>m.receiptStatus(process.argv[1])).then(s=>console.log(s===null?'null':s)).catch(e=>{console.error(e.message);process.exit(1)})" "$EARN_TX")
+STATUS=$(node -e "import('$HERE/../_shared/lib/verify-tx.mjs').then(m=>m.receiptStatus(process.argv[1])).then(s=>console.log(s===null?'null':s)).catch(e=>{console.error(e.message);process.exit(1)})" "$EARN_TX")
 echo "[earn] tx=$EARN_TX status=$STATUS source=$EARN_SOURCE"
 
 # 2) record the line (record.mjs derives net + classifies profitable).
