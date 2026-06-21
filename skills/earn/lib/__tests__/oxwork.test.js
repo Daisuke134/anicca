@@ -1,7 +1,7 @@
 // node:test — 0xwork external-revenue helpers + GATE-0 classifier (swap-guard + external proof).
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { isProfitable } from "../ledger.mjs";
+import { isProfitable } from "../../../_shared/lib/ledger.mjs";
 import { pickTask, isExternalPayout } from "../oxwork.mjs";
 
 const TASKPOOL = "0xF404aFdbA46e05Af7B395FB45c43e66dB549C6D2";

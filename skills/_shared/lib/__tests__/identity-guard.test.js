@@ -6,7 +6,7 @@ import {
   assertOwnIdentityOnly,
   assertOwnEarnSource,
   findUserPIIEnv,
-} from "../lib/identity-guard.mjs";
+} from "../identity-guard.mjs";
 
 test("own-identity earn sources pass the guard", () => {
   for (const source of ["x402", "0xwork", "content", "x402-serve", "crypto"]) {

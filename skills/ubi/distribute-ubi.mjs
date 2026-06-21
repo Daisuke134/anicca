@@ -8,9 +8,9 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
-import { deriveLine, readLedger, appendLedger } from "./lib/ledger.mjs";
+import { deriveLine, readLedger, appendLedger } from "../_shared/lib/ledger.mjs";
 import { buildRecipients, planUbi } from "./lib/ubi.mjs";
-import { usdcBalance } from "./lib/usdc.mjs";
+import { usdcBalance } from "../_shared/lib/usdc.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const UBI_LEDGER = process.env.UBI_LEDGER || path.join(__dirname, "state", "ubi-ledger.jsonl");
