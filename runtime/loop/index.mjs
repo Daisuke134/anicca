@@ -292,7 +292,7 @@ async function runOneWake() {
     kind = 'skill_timeout';
   } else if (skillResult.exitCode !== 0) {
     kind = 'skill_error';
-  } else if (slot === 'earn') {
+  } else if (['earn', 'yield', 'hl_trade', 'x402_sell', 'token_launch'].includes(slot)) {
     // Only classify earn from the earn-ledger line (exit code 0 alone is NOT sufficient)
     const earnLedgerPath = defaultEarnLedgerPath(config);
     const { profitable: p } = await classifyEarnResult(wakeId, earnLedgerPath, isProfitable);
@@ -341,8 +341,13 @@ async function runSkillWithKillRef(slot, args, wakeId, config, killRef) {
 
   // Resolve skill path
   let skillPath;
-  if (slot === 'earn' && config.ANICCA_EARN_SKILL) {
+  // PATCH 6: the earn action slots (yield/hl_trade/x402_sell/token_launch) all run the one earn skill;
+  // the slot names the strategy (mapped in buildSkillEnv). `earn` stays as the back-compat fat tool.
+  const EARN_SLOT_DIRS = ['earn', 'yield', 'hl_trade', 'x402_sell', 'token_launch'];
+  if (EARN_SLOT_DIRS.includes(slot) && config.ANICCA_EARN_SKILL) {
     skillPath = config.ANICCA_EARN_SKILL;
+  } else if (EARN_SLOT_DIRS.includes(slot)) {
+    skillPath = path.join(ANICCA_HOME, 'skills', 'earn', 'run.sh');
   } else {
     skillPath = path.join(ANICCA_HOME, 'skills', slot.replace('/', path.sep), 'run.sh');
   }
@@ -402,17 +407,16 @@ function buildSkillEnv(slot, wakeId, config, scrub, args) {
   // skills keep a safe default when args is absent.
   const a = (args && typeof args === 'object') ? args : {};
   const ANICCA_ARGS = JSON.stringify(a);
-  if (slot === 'earn') {
-    // The model can pick the earn strategy via args.strategy (yield|swap|hl|x402|token|0xwork);
-    // default = yield (reliable, principal-preserving). EARN_MODE=execute → actually earn, not narrate.
+  // PATCH 6: each earn ACTION is its own slot now — the SLOT names the strategy (yield/hl/x402/token).
+  // `earn` stays as the back-compat fat tool that reads args.strategy.
+  const EARN_SLOTS = { earn: null, yield: 'yield', hl_trade: 'hl', x402_sell: 'x402', token_launch: 'token' };
+  if (slot in EARN_SLOTS) {
     return {
       ...base,
       ANICCA_ARGS,
       EARN_MODE:     process.env.EARN_MODE     || 'execute',
-      // PATCH 2: the MODEL decides the strategy (args.strategy, driven by the system prompt). 'yield' is
-      // ONLY the safe last-resort when the model passed nothing — principal-preserving, never loses. Not
-      // a hardcoded default behaviour: a well-prompted model picks hl/x402/token/0xwork from its situation.
-      EARN_STRATEGY: process.env.EARN_STRATEGY || (typeof a.strategy === 'string' && a.strategy.trim() ? a.strategy.trim() : 'yield'),
+      // The slot decides the strategy; fat `earn` falls back to args.strategy, then yield (safe last resort).
+      EARN_STRATEGY: process.env.EARN_STRATEGY || EARN_SLOTS[slot] || (typeof a.strategy === 'string' && a.strategy.trim() ? a.strategy.trim() : 'yield'),
       WAKE_ID:       wakeId,
       ...(config.EARN_LEDGER ? { EARN_LEDGER: config.EARN_LEDGER } : {}),
     };
