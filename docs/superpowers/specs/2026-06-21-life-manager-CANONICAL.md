@@ -202,6 +202,10 @@ Pay: Stripe $20/mo (LIVE link + sandbox test link, webhook dual-secret live+test
 - ~~**#73** GitHub→Railway auto-deploy~~ ✅ verified: `git push` → live ~180s, no `railway up`.
 - ~~**#74 slice1** events.js → getCalendar() adapter~~ ✅ deployed (Composio still default).
 - ~~**#74 slice2** travel.js → getCalendar() adapter~~ ✅ deployed (the proven 2-language dup point).
+- ~~**#74 slice3** ask/notify/telegram-reply → getCalendar()+getMail() (Unipile mail adapter)~~ ✅ DONE +
+  LIVE (build=conv74-slice3). VSDD gate PASS 7/7 (no call-site shape mismatch), 73/73 tests. ★ CLOUD-side
+  convergence COMPLETE — ALL raw Composio/Unipile coupling now lives only in lib/transport/; the life-logic
+  modules (events/travel/ask/notify/telegram) are fully provider-agnostic, ready for the gog adapter. ★
 
 ### 🔄 #74 CONVERGENCE — remaining (makes local == cloud architecture; Composio STAYS, just consolidated)
 - **#75 slice3** — ask.js + notify.js + telegram-reply.js → getCalendar() + new mail adapter (Unipile).
