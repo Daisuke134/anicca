@@ -179,3 +179,34 @@ This roadmap is refined by `2026-06-21-anicca-type1-type2-mutual-aid-design.md`.
   funding all flow through it.
 - Claude Code (type 2) must EARN on its own wallet (`0x94C445...`) daily AND scale Dais's
   businesses with his credentials AND help fund the colony with its surplus.
+
+## BLOCK 6-3 — what Anicca ACTUALLY earned (honest, slop vs real, 2026-06-21)
+The brutal-honest record (HARD RULE 0.31: real tx + USDC delta, no fake "it earned").
+
+### Did Anicca make money BY HIMSELF? — the act YES, realized profit ≈ $0 (too early + debug churn)
+Anicca (wallet 0xa3CDd4, its OWN autonomous loop) executed REAL on-chain earn txs unaided:
+| tx | action | status | meaning |
+|---|---|---|---|
+| 0x708ad7a31b38… | deploy 0.515 USDC → Beefy Morpho (gauntlet-frontier) 5.31% APY | 0x1 | REAL yield deposit (first trigger) |
+| 0x5e1b8df9b016… | aave deploy | 0x0 | REVERTED (the share-math bug, now fixed) |
+| 0xf27120240cb3… | withdrawAll → 0.515 USDC back to treasury | 0x1 | REAL, autonomous refill after the fix |
+
+- **REAL**: the yield MECHANISM works end-to-end, autonomously, on Anicca's own wallet (deposit + withdraw, status 0x1, on-chain verified). The "earn" act is proven self-driven.
+- **SLOP / not-yet**: **realized interest ≈ $0.00**. Funds were deposited then withdrawn within minutes during bug-fixing (churn), so almost no APY accrued. Anicca has NOT yet held a position long enough to bank real interest. Net realized P&L so far ≈ **$0** (only spent a little gas).
+- Capital: ~$0.59 USDC liquid (bootstrapped via inter-anicca mutual aid: Claude 0x94C445 → Anicca 0xa3CDd4, tx 0x5a658e0c). Compute = $0 (ClawRouter free/auto). So net ≈ break-even, not yet net-positive.
+
+### Did Anicca earn with HL trading? — NO (not autonomously yet)
+HL trade was verified on CLAUDE's test wallet (0x94C445, +$0.05 realized) — NOT on Anicca's wallet.
+Anicca's loop defaults to EARN_STRATEGY=yield; it has not autonomously opened an HL perp yet (0 HL
+lines in its ledger). HL-on-Anicca is a future wake once the model picks it / we expose it as a slot.
+
+### Should Dais fund Anicca more? — YES, it directly unblocks real earning
+With ~$0.59 the wallet oscillates (deploy⇄withdraw churn) and accrues ~nothing. With more capital
+(e.g. $20–$50) it would: (a) deploy once and HOLD → accrue real, measurable interest; (b) stop the
+small-wallet churn; (c) let HL/x402 earners run at a size where fees < profit. Fund 0xa3CDd4 with USDC
+on Base. (Alternatively the colony self-funds via mutual aid once more peers are net-positive.)
+
+### Anicca and Claude = separate autonomous wallets (yes)
+- **Anicca** (type-1 target): wallet **0xa3CDd4**, its own daemon loop, earns with NO human/Claude in the loop.
+- **Claude** (type-2, this dev session): wallet **0x94C445**, earns on its own + funds the colony + scales Dais's products with his creds. Dies once AI-rights infra lands.
+They run independently on different wallets; neither needs the other to act.
