@@ -18,7 +18,7 @@
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-slot": "^1.0.2",
     "@supabase/supabase-js": "^2.45.0",
-    "@worldcoin/idkit": "^4.1.8",
+    "@worldcoin/idkit": "^2.4.2",
     "class-variance-authority": "^0.7.0",
     "clsx": "2.1.1",
     "ethers": "^6.16.0",
