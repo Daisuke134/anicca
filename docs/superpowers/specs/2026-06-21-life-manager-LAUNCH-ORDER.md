@@ -39,5 +39,13 @@ Companion: full architecture/state = `2026-06-21-life-manager-CANONICAL.md`. Thi
 ## Parallel / post-launch (not in the critical path)
 - #74 slice5 (local converge, needs Dais's Mac real call) · #29 STEP2 · #72 OpenClaw unify (post-launch).
 
-## STATUS
-- ☐ 1 #61-a  ☐ 2 #61-b  ☐ 3 #67-real  ☐ 4 #70  ☐ 5 video skill  ☐ 6 launch
+## STATUS (2026-06-21)
+- ☐ 1 #61-a — BLOCKED on Dais: needs his explicit "go live" to flip /lm to the LIVE Stripe link (real $20
+  charges). He picked SANDBOX earlier for the E2E (verified). I will NOT flip real charging without "go live".
+- ☐ 2 #61-b — BLOCKED on Dais: needs a fresh Google account (agent cannot create Google accounts).
+- ☐ 3 #67-real — BLOCKED on Dais: needs a real Telegram /start + the same fresh Google as #2.
+- ⟳ 4 #70 — AGENT DOING NOW (no Dais gate): Outlook (Composio) + chat-told schedule fallback for non-gcal users.
+- ☐ 5 video skill (NOT reelclaw/larry — record Dais+Anitra daily → transcript → @anicca.comedy). Posting
+  infra found: Postiz API (POSTIZ_API_KEY) + multipart upload + type:"now" (ref tmp_post_demo_reel_ja.py).
+  Still must FIND the LM-specific demo output+script in the LM files (search continues at step 5).
+- ☐ 6 launch (#51).
