@@ -388,8 +388,15 @@ function buildSkillEnv(slot, wakeId, config, scrub) {
   if (slot === 'earn') {
     return {
       ...base,
-      EARN_MODE:     process.env.EARN_MODE     || 'discover',
-      EARN_STRATEGY: process.env.EARN_STRATEGY || '0xwork',
+      // DEFAULT = actually EARN, not narrate. Old defaults (discover + 0xwork) made every earn wake
+      // write a "discover" narrate line and wait for an external poster task that never came — so
+      // anicca NEVER earned (ledger = endless earn_usdc:0). Fixed 2026-06-21 (THE motherboard fix):
+      //   EARN_MODE=execute  → perform a real on-chain earn this wake
+      //   EARN_STRATEGY=yield → reliable, always-available earner (idle USDC → Beefy/Aave v3;
+      //     execute-yield.mjs keeps a compute buffer + ensures gas, safe each wake).
+      // The model can still override via env when it wants swap/0xwork/x402.
+      EARN_MODE:     process.env.EARN_MODE     || 'execute',
+      EARN_STRATEGY: process.env.EARN_STRATEGY || 'yield',
       WAKE_ID:       wakeId,
       ...(config.EARN_LEDGER ? { EARN_LEDGER: config.EARN_LEDGER } : {}),
     };
