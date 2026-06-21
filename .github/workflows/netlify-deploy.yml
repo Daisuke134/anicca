@@ -40,6 +40,8 @@ jobs:
           NEXT_PUBLIC_STRIPE_LINK_30: ${{ secrets.NEXT_PUBLIC_STRIPE_LINK_30 }}
           NEXT_PUBLIC_STRIPE_LINK_5: ${{ secrets.NEXT_PUBLIC_STRIPE_LINK_5 }}
           NEXT_PUBLIC_CROSSMINT_CLIENT_KEY: ${{ secrets.NEXT_PUBLIC_CROSSMINT_CLIENT_KEY }}
+          # #36 World ID personhood gate (public app_id, inlined into the IDKitWidget at build time)
+          NEXT_PUBLIC_WORLDCOIN_APP_ID: ${{ secrets.NEXT_PUBLIC_WORLDCOIN_APP_ID }}
 
       # 2026-06-07 V14-2 fix: replaced nwtgck/actions-netlify@v3.0 (= 5 連続 ISE)
       # with direct netlify-cli call (= validated via manual deploy locally)
