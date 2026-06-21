@@ -124,6 +124,39 @@ print(d.get('task_id','') or 'claimed-awaiting-approval')" 2>/dev/null)
   exit 0
 fi
 
+# --- strategy=hl: LLM-decided Hyperliquid perp (HARD RULE #0: the model decides coin/side/size) ----
+# The model passes its decision in ANICCA_ARGS, e.g. {"strategy":"hl","coin":"ETH","side":"long",
+# "size_usd":20,"sl_pct":3,"tp_pct":6}. hl.py runs in its own venv (deps isolated). Funding = USDC on
+# the Hyperliquid account (Arbitrum bridge). If the HL account is unfunded or args are missing, hl.py
+# returns an error/usage which we record as a NARRATE line (never bricks the wake).
+if [ "$STRATEGY" = "hl" ] && [ -z "${EARN_TX:-}" ]; then
+  HLDIR="$HERE/hl-trade"
+  # Ensure an isolated venv with the HL deps EXISTS wherever this runs (local body, mother, or cloud).
+  # venvs aren't relocatable, so build it in-place on first use rather than rely on a synced one.
+  if [ ! -x "$HLDIR/.venv/bin/python" ]; then
+    python3 -m venv "$HLDIR/.venv" >/dev/null 2>&1 \
+      && "$HLDIR/.venv/bin/pip" install -q hyperliquid-python-sdk eth_account >/dev/null 2>&1 || true
+  fi
+  HLPY="$HLDIR/.venv/bin/python"; [ -x "$HLPY" ] || HLPY="python3"
+  COIN=$(printf '%s' "${ANICCA_ARGS:-{}}" | python3 -c "import json,sys;print((json.load(sys.stdin) or {}).get('coin','ETH'))" 2>/dev/null || echo ETH)
+  SIDE=$(printf '%s' "${ANICCA_ARGS:-{}}" | python3 -c "import json,sys;print((json.load(sys.stdin) or {}).get('side','') or '')" 2>/dev/null)
+  SIZE=$(printf '%s' "${ANICCA_ARGS:-{}}" | python3 -c "import json,sys;d=json.load(sys.stdin) or {};print(d.get('size_usd','') or '')" 2>/dev/null)
+  if [ -z "$SIDE" ] || [ -z "$SIZE" ]; then
+    # No actionable decision this wake → report the account/market (informational), record NARRATE.
+    ACC=$(PKVAR="$PKVAR" "$HLPY" "$HLDIR/hl.py" account 2>/dev/null)
+    echo "[earn] hl account: $ACC"
+    JSON=$(python3 -c "import json; print(json.dumps({'wallet':'${WLOW:-unknown}','source':'hl-trade','task':'hl-observe (no trade decision)','earn_usdc':0,'cost_usdc':0,'wake':'$WAKE'}))")
+    OUT=$(record_line "$JSON"); echo "[earn] hl narrate -> $OUT"; exit 0
+  fi
+  SL=$(printf '%s' "${ANICCA_ARGS:-{}}" | python3 -c "import json,sys;d=json.load(sys.stdin) or {};print(d.get('sl_pct','') or '')" 2>/dev/null)
+  TP=$(printf '%s' "${ANICCA_ARGS:-{}}" | python3 -c "import json,sys;d=json.load(sys.stdin) or {};print(d.get('tp_pct','') or '')" 2>/dev/null)
+  ARGS=(open "$COIN" "$SIDE" "$SIZE"); [ -n "$SL" ] && ARGS+=(--sl "$SL"); [ -n "$TP" ] && ARGS+=(--tp "$TP")
+  RES=$(PKVAR="$PKVAR" "$HLPY" "$HLDIR/hl.py" "${ARGS[@]}" 2>&1)
+  echo "[earn] hl open result: $RES"
+  JSON=$(python3 -c "import json,sys; r=json.loads('''$RES''') if '''$RES'''.strip().startswith('{') else {}; print(json.dumps({'wallet':'${WLOW:-unknown}','source':'hl-trade','task':'hl $SIDE $COIN \$$SIZE','earn_usdc':0,'cost_usdc':0,'tx':r.get('oid','') or r.get('status',''),'wake':'$WAKE'}))" 2>/dev/null || python3 -c "import json;print(json.dumps({'wallet':'${WLOW:-unknown}','source':'hl-trade','task':'hl-open','earn_usdc':0,'cost_usdc':0,'wake':'$WAKE'}))")
+  OUT=$(record_line "$JSON"); echo "[earn] hl recorded -> $OUT"; exit 0
+fi
+
 # --- strategy=x402: SAME-WAKE EXTERNAL fallback (sell Anicca's own output; instant settle) -----
 # When 0xwork has no doable task this wake, sell a delivered artifact via x402 (04-earn.md
 # "x402 sell own work"). x402 settles instantly — no poster-approval wait — so a wake can still
