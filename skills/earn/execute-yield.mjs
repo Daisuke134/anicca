@@ -11,14 +11,26 @@
 // models only when total wealth is genuinely gone.
 //
 // Honest: own-capital accrual (external:false, kind:"yield"); every action is a real on-chain tx.
-import { createPublicClient, createWalletClient, http } from "viem";
+import { createPublicClient, createWalletClient, http, fallback } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { base } from "viem/chains";
 import fs from "fs";
 
-// Default to a reliable Base RPC — mainnet.base.org flaked intermittently and silently dropped
-// deposits (the loop logged "deploy" but no tx landed). Operator can still override via BASE_RPC_URL.
-const RPC = process.env.BASE_RPC_URL || "https://base.llamarpc.com";
+// EVERY public Base RPC flakes intermittently (mainnet.base.org timeouts, llamarpc 521, drpc 500) —
+// that silently dropped deposits (the loop logged "deploy" but no tx landed). Use a viem fallback
+// transport across several RPCs so a single one being down never breaks an earn. BASE_RPC_URL (if set)
+// is tried FIRST, then the public pool.
+const RPC_LIST = [
+  ...(process.env.BASE_RPC_URL ? [process.env.BASE_RPC_URL] : []),
+  "https://mainnet.base.org",
+  "https://base-rpc.publicnode.com",
+  "https://base.drpc.org",
+  "https://base.llamarpc.com",
+  "https://1rpc.io/base",
+  "https://base.meowrpc.com",
+];
+const TRANSPORT = fallback(RPC_LIST.map((u) => http(u, { timeout: 12_000, retryCount: 2 })));
+const RPC = RPC_LIST[0]; // kept for any log/back-compat references
 const USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
 const AAVE_POOL = "0xA238Dd80C259a72e81d7e4664a9801593F98d1c5";
 const AAVE_APY = 0.032;
@@ -71,8 +83,8 @@ async function main() {
   const pk = loadKey();
   if (!pk) return out({ abort: "no wallet key" });
   const acct = privateKeyToAccount(pk);
-  const pub = createPublicClient({ chain: base, transport: http(RPC) });
-  const w = createWalletClient({ account: acct, chain: base, transport: http(RPC) });
+  const pub = createPublicClient({ chain: base, transport: TRANSPORT });
+  const w = createWalletClient({ account: acct, chain: base, transport: TRANSPORT });
   if ((await pub.getBalance({ address: acct.address })) === 0n) return out({ abort: "no ETH for gas", wallet: acct.address });
 
   const liquid = await pub.readContract({ address: USDC, abi: erc20, functionName: "balanceOf", args: [acct.address] });
