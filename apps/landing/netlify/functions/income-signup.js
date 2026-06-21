@@ -8,16 +8,15 @@
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const { validateJpBank, buildBankNotes } = require('./_jp-bank.js');
-const { verifyAndClaim, supabaseNullifierInsert } = require('./_lib/worldid.js');
+const { verifyAndClaimV4, hashSignalHex, supabaseNullifierInsert } = require('./_lib/worldid4.js');
 
-// World ID personhood gate (authoritative, server-enforced — VCSDD FIND-001). When WORLDCOIN_APP_ID
-// is set, a signup MUST carry a valid World ID proof bound to this email, and the nullifier is
-// atomically claimed (one human = one queued recipient) BEFORE the record is written. Unset = staged
-// no-op (waitlist works ungated until configured).
-// DEPLOY PARITY (VCSDD round-2 NEW-002): this server var WORLDCOIN_APP_ID MUST be set TOGETHER with
-// the client var NEXT_PUBLIC_WORLDCOIN_APP_ID. If only the client one is set, the UI demands
-// verification while the server records everyone ungated (silent fail-open). Set both, or neither.
-const WORLDCOIN_APP_ID = process.env.WORLDCOIN_APP_ID;
+// World ID 4.0 personhood gate (authoritative, server-enforced). When WORLDCOIN_RP_ID is set, a signup
+// MUST carry a valid 4.0 IDKit response (body.idkitResponse), verified at developer.world.org/api/v4/
+// verify/{rp_id}, signal-bound to THIS email, and the nullifier atomically claimed BEFORE the record is
+// written. Unset = staged no-op (waitlist ungated until configured).
+// DEPLOY PARITY: WORLDCOIN_RP_ID (server) must be set together with the frontend NEXT_PUBLIC_WORLDCOIN_*
+// build vars; else UI demands verification while server records ungated (silent fail-open). Set both/neither.
+const WORLDCOIN_RP_ID = process.env.WORLDCOIN_RP_ID;
 const WORLDCOIN_ACTION = process.env.WORLDCOIN_ACTION || 'claim-ubi';
 
 const WALLET_RE = /^0x[0-9a-fA-F]{40}$/;
@@ -73,14 +72,16 @@ exports.handler = async (event) => {
     notes = buildBankNotes(v.bank);
   }
 
-  // Authoritative personhood gate: verify the World ID proof (bound to THIS email as signal) and
-  // atomically claim the nullifier before recording. Rejects bots, duplicates, and relayed proofs.
-  if (WORLDCOIN_APP_ID) {
-    const gate = await verifyAndClaim({
-      proof: body.worldid,
-      signal: email,
-      appId: WORLDCOIN_APP_ID,
+  // Authoritative personhood gate (World ID 4.0): verify the IDKit response at the Portal v4 endpoint,
+  // enforce it was signal-bound to THIS email, and atomically claim the nullifier before recording.
+  // Rejects bots, duplicates, and relayed proofs. Fail-closed.
+  if (WORLDCOIN_RP_ID) {
+    const expectedSignalHash = await hashSignalHex(email);
+    const gate = await verifyAndClaimV4({
+      idkitResponse: body.idkitResponse,
+      rpId: WORLDCOIN_RP_ID,
       action: WORLDCOIN_ACTION,
+      expectedSignalHash,
       insert: supabaseNullifierInsert(SUPABASE_URL, SUPABASE_SERVICE),
     });
     if (!gate.ok) {
