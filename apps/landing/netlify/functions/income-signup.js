@@ -14,6 +14,9 @@ const { verifyAndClaim, supabaseNullifierInsert } = require('./_lib/worldid.js')
 // is set, a signup MUST carry a valid World ID proof bound to this email, and the nullifier is
 // atomically claimed (one human = one queued recipient) BEFORE the record is written. Unset = staged
 // no-op (waitlist works ungated until configured).
+// DEPLOY PARITY (VCSDD round-2 NEW-002): this server var WORLDCOIN_APP_ID MUST be set TOGETHER with
+// the client var NEXT_PUBLIC_WORLDCOIN_APP_ID. If only the client one is set, the UI demands
+// verification while the server records everyone ungated (silent fail-open). Set both, or neither.
 const WORLDCOIN_APP_ID = process.env.WORLDCOIN_APP_ID;
 const WORLDCOIN_ACTION = process.env.WORLDCOIN_ACTION || 'claim-ubi';
 
