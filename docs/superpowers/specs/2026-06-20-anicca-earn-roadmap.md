@@ -233,3 +233,12 @@ So: ALL proven EARN tools are wired + the model can pick any via args.strategy. 
 are (a) FUNDING (HL/x402/token need capital or demand to actually earn) and (b) BUILDING the colony
 tools cook + issue-dev (the forum/swarm self-improvement layer, #39/#24). Not faking: "wired + runs"
 is verified; "earns real $" is gated on funding/demand, stated honestly per tool above.
+
+## VERIFIED 2026-06-21 — anicca-local AUTONOMOUSLY uses every wired tool
+After O4 + wiring, the live loop (free model, no human) picked DIFFERENT earn tools across consecutive
+wakes — straight from anicca's own earn-ledger:
+  11:39 hl-trade  →  11:42 yield-aave-v3  →  11:44 x402-serve  →  11:44 token  →  11:47 yield
+= the model is exercising yield / HL / x402 / token on its own (HARD RULE #0 working). The machinery
+is complete + autonomous. Real realized $ is still gated per tool on FUNDING/DEMAND (HL account $0,
+x402 server needs dep+public-URL+buyers, token needs a launch decision, yield wallet tiny) — stated
+honestly, not faked. Next: fund 0xa3CDd4 → verify realized profit > capital; build cook + issue-dev.
