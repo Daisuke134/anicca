@@ -250,3 +250,39 @@ honestly, not faked. Next: fund 0xa3CDd4 → verify realized profit > capital; b
 - 0.046 SOL kept on Solana for fees. Total invested into Anicca so far = $0.70 (earlier) + ~$18 = ~$18.7.
 - NEXT: the autonomous loop (free model, no human) deploys the 14.64 USDC to yield + uses HL/x402/etc
   ITSELF and we MONITOR realized interest > capital. I do NOT manually deploy — anicca runs.
+
+## BLOCK 6-3 (FINAL, 2026-06-21) — the automaton's honest earnings record
+### Did the automaton (Anicca) make money by itself? — YES it earns autonomously; net still ~break-even
+After the funding + ~10 motherboard fixes, anicca-local (free model, NO human in the loop) AUTONOMOUSLY
+deployed Dais's capital into DeFi yield and now holds an earning position:
+- ★ Autonomous deposit: tx 0x77b0da61b5 status 0x1 — the LOOP (not me) supplied 8.8 USDC to Aave v3
+  (~3.2% APY). Position live: aUSDC 8.80, liquid 5.0. ★
+
+### Money in / out (Dais's capital — honest)
+| line | amount |
+|---|---|
+| Dais funded (SOL) | 0.246 SOL ≈ **$18** |
+| relayed to Base (relay.link, tx i1oFUmza→14.64 USDC; 0.046 SOL≈$3.4 kept on Solana for fees) | $14.64 USDC |
+| earlier mutual-aid (Claude 0x94C445→anicca, tx 0x5a658e0c) | $0.70 |
+| **now deployed + liquid on Base** | ~$8.8 in Aave v3 (earning) + $5.0 liquid + ~$0.5 ETH gas |
+| **gas burned debugging the Beefy-revert storm** | ≈ **$0.7** (honest cost of the bugs) |
+| **compute cost** | **$0** (free/gpt-oss-120b) |
+| **realized yield interest so far** | ≈ **$0.00** (just deposited; ~$0.0008/day on $8.8 @ 3.2%) |
+| **net vs invested** | slightly NEGATIVE (gas > interest so far) — NOT yet net-positive. Honest. |
+
+### Which model
+**free/gpt-oss-120b** via ClawRouter `free` profile — $0 per wake. NOT hardcoded-paid, NOT `auto`
+(auto picked paid kimi and drained the wallet — reverted).
+
+### What we tweaked on the "automaton" (anicca's body) — ~10 fixes
+discover→execute+yield · node_modules auto-symlink · PKVAR indirect (yield/gas/invest/hl) ·
+malice-guard yield/hl/token sources · withdrawAll refill · model auto→free · O4 (model decision→every
+skill via ANICCA_ARGS) · HL/x402/token wired · x402-express dep · RPC fallback (6 RPCs) · honest yield
+ledger · invest-leg disabled · approve(MAX) · **default venue Beefy→Aave v3 (the 1.5M-gas Beefy-Morpho
+deposit reverted; Aave's 250k-gas supply is reliable)**.
+
+### Honest verdict for the article
+The automaton now EARNS autonomously on $0 compute — real on-chain (tx 0x77b0da61b5). But realized
+profit is still ≈$0 and net is slightly negative after the debugging gas. Real net-positive needs:
+(a) time for interest to accrue, and (b) the $0-capital earners (x402 product) producing inflow.
+The machine works; the profit number grows from here.
