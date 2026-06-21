@@ -23,9 +23,9 @@ test("listEventsRaw → gog calendar events list with --from/--to/--max, returns
   assert.deepEqual(items, [{ id: "e1", summary: "X" }]);
   const a = calls[0];
   assert.deepEqual(a.slice(0, 4), ["calendar", "events", "list", "-j"]);
-  assert.ok(a.includes("--from") && a[a.indexOf("--from") + 1] === "2026-06-21T00:00:00Z");
-  assert.ok(a.includes("--to") && a[a.indexOf("--to") + 1] === "2026-06-22T00:00:00Z");
-  assert.equal(a[a.indexOf("--max") + 1], "50");
+  assert.ok(a.includes("--from=2026-06-21T00:00:00Z"));   // glued --flag=value (argv-injection safe)
+  assert.ok(a.includes("--to=2026-06-22T00:00:00Z"));
+  assert.ok(a.includes("--max=50"));
 });
 
 test("listEventsRaw tolerates {events:[...]} and non-JSON (→ [])", async () => {
@@ -43,10 +43,10 @@ test("createEvent translates Composio dialect → gog --from/--to/--summary/--lo
   assert.equal(r.successful, true);
   const a = calls[0];
   assert.deepEqual(a.slice(0, 3), ["calendar", "create", "primary"]);
-  assert.equal(a[a.indexOf("--from") + 1], "2026-06-21T05:00:00Z");      // appended Z
-  assert.equal(a[a.indexOf("--to") + 1], "2026-06-21T05:20:00Z");        // +20 min
-  assert.equal(a[a.indexOf("--summary") + 1], "[Travel] 🚆 A→B");
-  assert.equal(a[a.indexOf("--location") + 1], "東京駅");
+  assert.ok(a.includes("--from=2026-06-21T05:00:00Z"));      // appended Z, glued
+  assert.ok(a.includes("--to=2026-06-21T05:20:00Z"));        // +20 min
+  assert.ok(a.includes("--summary=[Travel] 🚆 A→B"));
+  assert.ok(a.includes("--location=東京駅"));
 });
 
 test("createEvent: bad start_datetime → {successful:false}, no run", async () => {
@@ -61,7 +61,7 @@ test("patchEvent → gog calendar update <cal> <eventId> --location", async () =
   const r = await makeGogCalendar({ account: ACCT, run }).patchEvent("u", { calendar_id: "primary", event_id: "e9", location: "渋谷" });
   assert.equal(r.successful, true);
   assert.deepEqual(calls[0].slice(0, 5), ["calendar", "update", "primary", "e9", "-j"]);
-  assert.equal(calls[0][calls[0].indexOf("--location") + 1], "渋谷");
+  assert.ok(calls[0].includes("--location=渋谷"));
 });
 
 test("patchEvent without event_id → false, no run", async () => {
@@ -75,7 +75,7 @@ test("mail send → gog gmail send, true when {id} returned", async () => {
   const ok = await makeGogMail({ account: ACCT, run }).send("a@b.com", "Sub", "Body");
   assert.equal(ok, true);
   assert.deepEqual(calls[0].slice(0, 2), ["gmail", "send"]);
-  assert.equal(calls[0][calls[0].indexOf("--to") + 1], "a@b.com");
+  assert.ok(calls[0].includes("--to=a@b.com"));
 });
 
 test("mail listInbox → search then get each, shaped {subject,body}", async () => {
@@ -88,6 +88,23 @@ test("mail listInbox → search then get each, shaped {subject,body}", async () 
   assert.equal(items.length, 1);
   assert.equal(items[0].subject, "Re: where");
   assert.equal(items[0].body, "It is 渋谷");
+});
+
+test("argv-injection: flag-like positional calendar_id/event_id → rejected, no run", async () => {
+  const { run, calls } = recorder("{}");
+  const cal = makeGogCalendar({ account: ACCT, run });
+  assert.equal((await cal.createEvent("u", { calendar_id: "--output=/etc/x", start_datetime: "2026-06-21T05:00:00", event_duration_minutes: 10 })).successful, false);
+  assert.equal((await cal.patchEvent("u", { calendar_id: "primary", event_id: "--delete", location: "x" })).successful, false);
+  assert.equal(calls.length, 0); // never reached gog
+});
+test("argv-injection: flag-like option VALUE is glued (--location=-x), not a separate flag", async () => {
+  const { run, calls } = recorder("{}");
+  await makeGogCalendar({ account: ACCT, run }).createEvent("u", {
+    calendar_id: "primary", start_datetime: "2026-06-21T05:00:00", event_duration_minutes: 10, location: "--foo evil",
+  });
+  // location is a single token glued to its flag — gog can't parse "--foo" as a flag
+  assert.ok(calls[0].includes("--location=--foo evil"));
+  assert.ok(!calls[0].includes("--foo")); // no bare --foo token
 });
 
 test("no account → empty/false (never throws)", async () => {

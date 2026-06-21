@@ -21,8 +21,9 @@ function makeGogMail({ bin, account, keyring, run } = {}) {
     ready: () => !!acct,
     async send(to, subject, body) {
       if (!acct || !to) return false;
+      // glued --flag=value form so a leading "-" in any value can't be parsed by gog as a flag.
       try {
-        const out = exec(["gmail", "send", "--to", to, "--subject", subject || "", "--body", body || "", "--json"]);
+        const out = exec(["gmail", "send", `--to=${to}`, `--subject=${subject || ""}`, `--body=${body || ""}`, "--json"]);
         const j = JSON.parse(out);
         return !!(j && (j.id || j.messageId));
       } catch { return false; }
@@ -32,11 +33,12 @@ function makeGogMail({ bin, account, keyring, run } = {}) {
       if (!acct) return [];
       let hits = [];
       try {
-        const d = JSON.parse(exec(["gmail", "search", "newer_than:2d", "-j", "--max", String(limit)]));
+        const d = JSON.parse(exec(["gmail", "search", "newer_than:2d", "-j", `--max=${limit}`]));
         hits = (d.threads || d.messages || (Array.isArray(d) ? d : [])).map((t) => ({ id: t.id, subject: t.subject || "" }));
       } catch { return []; }
       const out = [];
       for (const h of hits) {
+        if (!h.id || /^-/.test(String(h.id))) continue; // positional id can't be flag-like
         try {
           const m = JSON.parse(exec(["gmail", "get", h.id, "-j"]));
           const subject = (m.headers && (m.headers.subject || m.headers.Subject)) || m.subject || h.subject || "";
