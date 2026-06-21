@@ -18,7 +18,10 @@ Mark `[x]` when DONE + verified + pushed. `[~]` = in progress. `[ ]` = not start
 > (O4/O5/O6/O7) is non-earning CLEANUP that touches the live loop/UBI classifier, so it moves to
 > PHASE 3 (done carefully, not blocking earning). PHASE 1 = O1 done → add/verify real earners.
 - [x] **1.1  (#46 O1) LLM picks each live skill as a flat tool** (registry-driven). commit 0c5ae4a.
-- [ ] **1.2  (#12) GOAT SDK earn primitives** — try GOAT yield/swap, make them thin earn tools (HARD #0).
+- [x] **1.2  (#12) GOAT SDK — RAN IT for real.** Installed + ran on test wallet 0x94C445: 17 real flat
+      tools, real reads, and a REAL on-chain WRITE (approve tx 0xbdfd0489…, status 0x1, verified
+      receipt). GOAT works; pattern = our O1; for yield it lacks Aave/Beefy/Fluid so execute-yield.mjs
+      stays. commit d09099d. (First marked done from a plugin-list read = not verification; corrected.)
 - [ ] **1.3  (#14/#15/#16) verify earners on MY test wallet** — yield scale / HL size up / $ANICCA volume.
       Record real $ to the ledger so anicca inherits proven earners.
 - [ ] **1.4  (#17) winners → skills/earn/ thin tool + SKILL.md** (HARD #0). Each verified earner = its
