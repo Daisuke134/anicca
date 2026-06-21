@@ -339,7 +339,7 @@ async function runSkillWithKillRef(slot, args, wakeId, config, killRef) {
   catch { return { output: `${slot} skill not found`, exitCode: null, timedOut: false, notFound: true }; }
 
   const timeoutMs = cfgNum(config.SKILL_TIMEOUT_S, 120) * 1000;
-  const childEnv = buildSkillEnv(slot, wakeId, config, scrub);
+  const childEnv = buildSkillEnv(slot, wakeId, config, scrub, args);
 
   return new Promise((resolve) => {
     let output = '';
@@ -383,25 +383,26 @@ async function runSkillWithKillRef(slot, args, wakeId, config, killRef) {
   });
 }
 
-function buildSkillEnv(slot, wakeId, config, scrub) {
+function buildSkillEnv(slot, wakeId, config, scrub, args) {
   const base = scrub(process.env);
+  // O4: pass the model's decision to EVERY skill as $ANICCA_ARGS (JSON). HARD RULE #0 = the skill is
+  // the tool, the MODEL decides the strategy/params; the skill reads its decision here. Optional —
+  // skills keep a safe default when args is absent.
+  const a = (args && typeof args === 'object') ? args : {};
+  const ANICCA_ARGS = JSON.stringify(a);
   if (slot === 'earn') {
+    // The model can pick the earn strategy via args.strategy (yield|swap|hl|x402|token|0xwork);
+    // default = yield (reliable, principal-preserving). EARN_MODE=execute → actually earn, not narrate.
     return {
       ...base,
-      // DEFAULT = actually EARN, not narrate. Old defaults (discover + 0xwork) made every earn wake
-      // write a "discover" narrate line and wait for an external poster task that never came — so
-      // anicca NEVER earned (ledger = endless earn_usdc:0). Fixed 2026-06-21 (THE motherboard fix):
-      //   EARN_MODE=execute  → perform a real on-chain earn this wake
-      //   EARN_STRATEGY=yield → reliable, always-available earner (idle USDC → Beefy/Aave v3;
-      //     execute-yield.mjs keeps a compute buffer + ensures gas, safe each wake).
-      // The model can still override via env when it wants swap/0xwork/x402.
+      ANICCA_ARGS,
       EARN_MODE:     process.env.EARN_MODE     || 'execute',
-      EARN_STRATEGY: process.env.EARN_STRATEGY || 'yield',
+      EARN_STRATEGY: process.env.EARN_STRATEGY || (typeof a.strategy === 'string' ? a.strategy : 'yield'),
       WAKE_ID:       wakeId,
       ...(config.EARN_LEDGER ? { EARN_LEDGER: config.EARN_LEDGER } : {}),
     };
   }
-  return { ...base, WAKE_ID: wakeId };
+  return { ...base, ANICCA_ARGS, WAKE_ID: wakeId };
 }
 
 async function safeAppend(ledgerPath, line) {

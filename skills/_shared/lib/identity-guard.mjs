@@ -36,6 +36,8 @@ export const ALLOWED_EARN_SOURCES = new Set([
   // deposit happened on-chain but couldn't be recorded). Added 2026-06-21.
   "yield", "yield-aave-v3", "yield-beefy-morpho", "yield-beefy", "yield-fluid", "yield-morpho",
   "yield-moonwell", "invest-eth-dca",
+  "hl-trade", "hl", // own-wallet Hyperliquid perp (own identity, own funds)
+  "token-launch", "token", // own token launch (own identity)
   "content", "x402-serve",
   "discover", // narrate-only discovery wake
 ]);
