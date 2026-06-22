@@ -1,5 +1,23 @@
 # Anicca プロジェクト - 開発ガイドライン
 
+## HARD RULE 0.40 — ~/.openclaw (anicca-dais) の trunk は `main-internal`。`main` に runtime 作業を commit するな (Dais 2026-06-22)
+
+`~/.openclaw` = LIVE runtime、push 先 = **github.com/Daisuke134/anicca-dais**(private)。この repo は **無関係な2履歴**を持つ:
+
+| branch | 中身 | 扱い |
+|---|---|---|
+| **`main-internal`** ★TRUNK★ | LIVE runtime(~76k files: skills/cron/state)。履歴に secret(.env/profile.json)が含まれるので pre-push secret-guard が `main` への push を**拒否** → ここに隔離。 | ★ runtime 作業は全てここに統合 ★ |
+| `main` | secret-free な OSS 輸出ビュー(public anicca の雛形、~694 files)。main-internal と**無関係履歴**。 | runtime 作業を置くな。live store で `git checkout main` 禁止(gateway の tree が雛形に化けて壊れる) |
+
+**鉄則(全エージェント・例外なし)**:
+1. ★ trunk = `main-internal`。runtime 作業を `main` に commit するな ★(`main` への commit は orphan 化 → gateway が main-internal に戻った瞬間 WIPE。2026-06-22 に1セッション分消失)。
+2. ベストプラクティス flow: `git checkout main-internal` → `git checkout -b feature/<name>` → 作業 → `git checkout main-internal && git merge --no-ff feature/<name>` → `git push origin main-internal`(新 commit のみ scan → secret 無し → 通る)→ feature 削除。
+3. `git push origin main` は**禁止**(secret-guard が阻止)。`--no-verify` で**回避するな**(.env を GitHub に漏らす)。
+4. `~/.openclaw` で `git worktree` 禁止(gateway は単一 checkout path を読む)。secret-guard が config 無しで error る時は `git checkout origin/main -- .gitleaks.toml` で復元(bypass しない)。
+5. gateway は working tree を読むので feature branch は短命に、merge は素早く。
+
+詳細 = `~/.openclaw/CLAUDE.md`(canonical) + memory `feedback_openclaw_trunk_is_main_internal`。3か所が食い違ったら `~/.openclaw/CLAUDE.md` が `~/.openclaw` について勝つ。
+
 ## HARD RULE 0.39 — ブラウザ作業は CloakBrowser 永続プロファイル(daily-driver)を常に使う (Dais 2026-06-21)
 
 Dais が headed CloakBrowser で**1回ログイン済**(Google/freee/Stripe card/YouTube/IG/TikTok) → `~/.cloak/profiles/daily-driver` に完全プロファイル永続。以降 ★ anicca は同プロファイルを再利用 = creds を知らずに全サービス操作・再ログイン不要・bot block 回避 ★。
