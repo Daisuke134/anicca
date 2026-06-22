@@ -105,6 +105,9 @@ let skillCatalog = {};
 
 let currentTier = { tier: 'broke', model: config.ANICCA_FREE_MODEL || 'free/gpt-oss-120b' };
 let recentActions = [];
+// When a loop is detected, the repeated slot is parked here and FORBIDDEN on the next wake (then cleared
+// once the model picks something else) — this is what actually breaks the cook/x402 spin (Dais 2026-06-22).
+let avoidSlot = null;
 let shuttingDown = false;
 let currentChildKiller = null; // called to kill in-flight skill on SIGTERM
 
@@ -174,12 +177,18 @@ async function runOneWake() {
     recentLedger = all.slice(-20);
   } catch {}
 
-  // 4. Loop-detect check (REQ-005)
+  // 4. Loop-detect check (REQ-005). Sleeping alone did NOT break the loop — the model just re-picked the
+  // same slot+args next wake (cook×19 / x402×10 with identical args, observed 2026-06-22). So when a loop
+  // is detected we (a) remember the repeated slot, (b) RESET the action history so the detector doesn't
+  // instantly re-fire on stale entries, and (c) sleep briefly — then the NEXT wake's prompt FORBIDS that
+  // slot, forcing the model to diversify (try a different earn path / actually act on what it found).
   const loopWindow = cfgNum(config.LOOP_DETECT_WINDOW, 3);
   if (loopWindow > 0 && isLooping(recentActions, loopWindow)) {
-    process.stderr.write(`[loop] Loop detected (${loopWindow} identical actions) — sleeping\n`);
+    avoidSlot = recentActions[recentActions.length - 1]?.slot || null;
+    process.stderr.write(`[loop] Loop detected on '${avoidSlot}' — forbidding it next wake to force diversification\n`);
+    recentActions = [];
     const sleepS = cfgNum(config.SLEEP_LOOP_DETECT_S, 300);
-    const record = formatRecord({ ts, wake_id: wakeId, kind: 'loop_detect', sleep_s: sleepS });
+    const record = formatRecord({ ts, wake_id: wakeId, kind: 'loop_detect', slot: avoidSlot, sleep_s: sleepS });
     await safeAppend(LEDGER_PATH, record);
     await sleepSecs(sleepS);
     return;
@@ -205,6 +214,8 @@ async function runOneWake() {
     activeSkillSlots,
     skillCatalog,
     positionsSummary,
+    avoidSlot,
+    recentSlots: recentActions.map((a) => a.slot),
   });
 
   // 6. THINK (brain call)
@@ -263,7 +274,9 @@ async function runOneWake() {
     return;
   }
 
-  // 8. Execute skill
+  // 8. Execute skill. The model picked a slot — if it's not the forbidden one, the diversification worked,
+  // so clear the avoid flag.
+  if (slot !== avoidSlot) avoidSlot = null;
   recentActions.push({ slot, args: args || {} });
   const windowBuf = Math.max(loopWindow * 2, 10);
   if (recentActions.length > windowBuf) {
