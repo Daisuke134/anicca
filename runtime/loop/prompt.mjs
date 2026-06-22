@@ -167,12 +167,24 @@ export function buildUserMessage(ctx) {
   // can see its own pattern and change course.
   const recent = Array.isArray(ctx.recentSlots) && ctx.recentSlots.length
     ? `Recent actions: [${ctx.recentSlots.join(', ')}].` : '';
+  // Outcome-aware diversification: count how often each slot was used recently. If one dominates (≥3),
+  // tell the model EXPLICITLY it's over-using it for no realised gain, and steer it to an untried path —
+  // even before loop_detect fires. A weak model needs this spelled out (Dais 2026-06-22: "not in a loop,
+  // earning in different ways"). The per-action ledger `result` (now recorded) lets it see what it found.
+  const counts = (ctx.recentSlots || []).reduce((m, s) => (m[s] = (m[s] || 0) + 1, m), {});
+  const over = Object.entries(counts).filter(([, n]) => n >= 3).map(([s]) => s);
+  const ALL = ['yield', 'hl_trade', 'x402_sell', 'token_launch', 'cook'];
+  const untried = ALL.filter((s) => !counts[s]);
+  const overuse = over.length
+    ? `⚠️ You've used [${over.join(', ')}] heavily this session for $0 realised. Do NOT repeat them now. ${untried.length ? `Try a path you have NOT tried: [${untried.join(', ')}].` : 'Switch to a different earn path.'} Concretely: deploy idle cash to yield, open or CLOSE an hl trade to realise PnL, or act on what cook already found. Diversify — don't spin one slot.`
+    : '';
   const avoid = ctx.avoidSlot
     ? `⛔ You just repeated '${ctx.avoidSlot}' with no new result or earnings — it is FORBIDDEN this wake. Pick a DIFFERENT slot. If you keep exploring (cook) without acting, instead BUILD/sell what you already found, or try a different earn path (hl trade you can close for profit, yield idle cash, a new x402 product). Do something that can realise money.`
     : '';
   return [
     `Wake ${ctx.wakeId}: liquid $${ctx.balanceUsdc.toFixed(4)}${pos} (tier ${ctx.tier}).`,
     recent,
+    overuse,
     avoid,
     `Decide the single most productive action right now and call run_skill with BOTH slot AND args:`,
     `  - earn — pass args.strategy (yield | hl | x402 | token | 0xwork) + params. hl: coin/side/size_usd/sl_pct/tp_pct to OPEN, or {strategy:"hl",action:"close",coin:"ETH"} to REALISE an open position. Manage what you hold: if a position shows profit or hit its risk, close it.`,
