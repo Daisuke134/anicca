@@ -63,14 +63,21 @@ async function claimWake(uid, eventKey) {
   return r.status === 201; // 201 = inserted (first time); 409 = duplicate (already called)
 }
 
-function buildStreamUrl(ev, urgency) {
+// Pick the call language from the user's phone number: +81 (Japan) → Japanese, everyone else → English
+// (Dais 2026-06-22). lm_users has no locale column, so the dialing country code IS the locale signal.
+function langForPhone(phone) {
+  return String(phone || "").replace(/[^\d+]/g, "").startsWith("+81") ? "ja" : "en";
+}
+
+function buildStreamUrl(ev, urgency, lang) {
   const base = (process.env.PUBLIC_WSS || "").replace(/\/$/, "");
   const summary = ev.summary || "";
   const dateTime = ev.startIso || "";
   const location = ev.location || "";
   const urg = urgency || "gentle";
-  const sig = signCtx([summary, dateTime, location, urg]); // authenticates the bridge upgrade
-  const qs = new URLSearchParams({ summary, dateTime, location, urgency: urg, sig });
+  const lg = lang === "ja" ? "ja" : "en";
+  const sig = signCtx([summary, dateTime, location, urg, lg]); // authenticates the bridge upgrade (incl lang)
+  const qs = new URLSearchParams({ summary, dateTime, location, urgency: urg, lang: lg, sig });
   return `${base}/ws?${qs.toString()}`;
 }
 
@@ -102,7 +109,7 @@ async function tick() {
         const eventKey = `${u.uid}|${ev.startIso}|${lvl.min}`;
         const fresh = await claimWake(u.uid, eventKey);
         if (!fresh) continue; // already called for this (event, level)
-        const streamUrl = buildStreamUrl(ev, lvl.urgency);
+        const streamUrl = buildStreamUrl(ev, lvl.urgency, langForPhone(u.phone));
         const res = await placeCall({ to: u.phone, streamUrl });
         if (res.ok) {
           console.log(`[scheduler] WAKE T-${lvl.min} uid=${u.uid.slice(0, 12)} "${ev.summary}" ccid=${res.ccid}`);
@@ -212,4 +219,4 @@ function startOnboardLoop() {
   return setInterval(run, ONBOARD_TICK_MS);
 }
 
-module.exports = { startScheduler, startTravelLoop, startAskLoop, startOnboardLoop, tick, travelTick, askTickAll, onboardTick, isHelperBlock, buildStreamUrl };
+module.exports = { startScheduler, startTravelLoop, startAskLoop, startOnboardLoop, tick, travelTick, askTickAll, onboardTick, isHelperBlock, buildStreamUrl, langForPhone };

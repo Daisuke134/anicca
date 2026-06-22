@@ -54,9 +54,9 @@ export const launchStrings = {
       phone: {
         title: 'Your phone number',
         body: 'Life Manager calls 15 minutes before each event with route guidance.',
-        placeholder: '+818012345678',
+        placeholder: '8012345678',
         button: 'Continue',
-        error: 'Enter a valid phone number in E.164 form, e.g. +818012345678.',
+        error: 'Enter a valid phone number for the selected country.',
         saveError: 'Could not save. Try again.',
       },
       pay: {
@@ -227,9 +227,9 @@ export const launchStrings = {
       phone: {
         title: '電話番号',
         body: '各予定の 15 分前に、ルートを案内する電話をかける。',
-        placeholder: '+818012345678',
+        placeholder: '09012345678',
         button: '続ける',
-        error: 'E.164 形式の有効な電話番号を入力してください（例: +818012345678）。',
+        error: '選択した国の有効な電話番号を入力してください。',
         saveError: '保存できませんでした。もう一度お試しください。',
       },
       pay: {

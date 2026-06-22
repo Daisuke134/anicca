@@ -26,7 +26,7 @@ const {
   buildGeminiTurn,
   parseGeminiTranscripts,
 } = require("./lib/call-logic.js");
-const { startScheduler, startTravelLoop, startAskLoop, startOnboardLoop, buildStreamUrl } = require("./scheduler.js");
+const { startScheduler, startTravelLoop, startAskLoop, startOnboardLoop, buildStreamUrl, langForPhone } = require("./scheduler.js");
 const { placeCall, startRecording } = require("./lib/dial.js");
 const { parseUpdate, sendMessage } = require("./lib/telegram.js");
 const { resolveTelegramReply } = require("./lib/telegram-reply.js");
@@ -85,15 +85,17 @@ function ctxFromReq(req) {
   const location = (q.get("location") || "").slice(0, 200);
   let urgency = q.get("urgency") || "gentle";
   if (!VALID_URGENCY.has(urgency)) urgency = "gentle";
+  let lang = q.get("lang");
+  if (lang !== "ja" && lang !== "en") lang = "en"; // call language follows the user (JP→ja, else en)
   const sig = q.get("sig") || "";
 
   const secret = process.env.LM_CALL_SECRET || "";
-  const expected = crypto.createHmac("sha256", secret).update([summary, dateTime, location, urgency].join("\n")).digest("base64url");
+  const expected = crypto.createHmac("sha256", secret).update([summary, dateTime, location, urgency, lang].join("\n")).digest("base64url");
   const a = Buffer.from(sig);
   const b = Buffer.from(expected);
   if (!secret || a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
 
-  return { event: { summary, start: { dateTime }, location }, urgency };
+  return { event: { summary, start: { dateTime }, location }, urgency, lang };
 }
 
 const server = http.createServer((req, res) => {
@@ -120,16 +122,18 @@ const server = http.createServer((req, res) => {
         if (!verifyUid(body.uid, body.sig)) return reply(403, { error: "bad uid signature" });
         const phone = await phoneForUid(body.uid);
         if (!phone) return reply(400, { error: "no phone on file" });
+        // Demo language follows the user's phone country (Dais 2026-06-22): +81 → Japanese, else English.
+        const lang = langForPhone(phone);
         // Caller may pass a REAL event (summary/location/urgency) so the call + its recording are
-        // postable content — NEVER hardcode "test" (Charon reads the summary aloud). Default = a real
-        // morning nudge, not a "test" label.
+        // postable content — NEVER hardcode "test" (the assistant reads the summary aloud). Default = a
+        // real morning nudge in the USER's language, not a "test" label.
         const ev = {
-          summary: (body.summary || "次の予定").toString().slice(0, 200),
+          summary: (body.summary || (lang === "ja" ? "次のご予定" : "your next appointment")).toString().slice(0, 200),
           startIso: body.dateTime || new Date(Date.now() + 15 * 60000).toISOString(),
           location: (body.location || "").toString().slice(0, 200),
         };
         const urgency = ["gentle", "firm", "harsh"].includes(body.urgency) ? body.urgency : "gentle";
-        const streamUrl = buildStreamUrl(ev, urgency);
+        const streamUrl = buildStreamUrl(ev, urgency, lang);
         const result = await placeCall({ to: phone, streamUrl });
         return reply(result.ok ? 200 : 502, result);
       } catch (e) {
@@ -214,7 +218,7 @@ wss.on("connection", (carrierWs, req) => {
     return;
   }
   liveCalls++;
-  const { event, urgency } = ctx;
+  const { event, urgency, lang } = ctx;
   console.log(`[bridge] carrier connected urgency=${urgency} live=${liveCalls}`);
   const state = { streamSid: null, inFrames: 0, outFrames: 0, setupComplete: false };
 
@@ -224,7 +228,7 @@ wss.on("connection", (carrierWs, req) => {
 
   gemini.on("open", () => {
     console.log("[bridge] Gemini connected");
-    geminiSend(geminiSetupForEvent(event, urgency)); // per-call Charon prompt
+    geminiSend(geminiSetupForEvent(event, urgency, lang)); // per-call prompt (language follows the user)
   });
   gemini.on("message", (data) => {
     let msg;

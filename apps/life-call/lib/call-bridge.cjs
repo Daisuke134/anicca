@@ -128,11 +128,11 @@ function routeGeminiMessage(msg, state, providerSend, frameFor) {
  * @param {object} event - GCal-shaped event
  * @param {string} [model]
  */
-function geminiSetupForEvent(event, urgency, model) {
+function geminiSetupForEvent(event, urgency, lang, model) {
   return buildGeminiSetup({
     model: model || LIVE_MODEL,
     voiceName: "Charon",
-    systemInstruction: buildCallPrompt(event, urgency),
+    systemInstruction: buildCallPrompt(event, urgency, lang),
   });
 }
 
