@@ -48,6 +48,23 @@ verified by whisper. v2 transcript: "ダイス、聞こえてる? 8時7分、ま
             mp4 to keiodaisuke@gmail.com for his approval BEFORE the auto-post cron goes live.
 ```
 
+## ★ CAPTION STYLE = monk-factory real-time word-synced jimaku (Dais 2026-06-21) — NOT static SRT ★
+Static burned SRT was WRONG. The original `anicca_wake_promo_v2.mp4` was made with the ai-monk-factory
+real-time-transcription method (`~/.openclaw/skills/anicca-monk-factory-v3/scripts/burn-captions.sh` +
+`build_ass.py`): whisper `--word_timestamps` → an `.ass` of small word-synced chunks, CENTER, white text
+with ONE YELLOW keyword (the promo's "8時7分" was yellow), heavy font (TikTok Sans Display Black 90),
+Alignment=5, outline 3. life-manager-video MUST reuse this exact engine (JA-adapted: phrase chunks, no
+uppercase) burned over the phone-call UI background so it matches the promo Dais perfected. Replace the
+static make-reel-from-audio caption step with build_ass.py word-synced .ass.
+
+## DEPLOY + RECORDING BUGS TO FIX FIRST (B, Dais 2026-06-21)
+- **Deploy**: Railway serves STALE code — deployments report SUCCESS but /health stays on an old marker
+  (slice4) even though the latest commit (real-event /test-call patch) is on origin/main. `railway up`
+  fails (github-source conflict); serviceInstanceDeployV2 returned a deploy id but live didn't update. FIX
+  before any call (else /test-call still says the hardcoded "test").
+- **Recording**: no Telnyx recordings since 2026-06-18 — record_start (dial.js, `.catch(()=>{})` swallows
+  errors) isn't capturing recent calls. FIX + verify a fresh call records before relying on it for content.
+
 ## BUILD STATUS (2026-06-21)
 - ✅ **STORE pipeline** — `~/.openclaw/skills/life-manager-video/store-recordings.py` downloads every
   Telnyx wake-call mp3 → `~/.openclaw/state/lm-video/recordings/` + manifest.jsonl. 34 backfilled.
