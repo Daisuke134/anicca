@@ -54,7 +54,12 @@ exports.handler = async (event) => {
       headers: { "X-API-KEY": UNIPILE_TOKEN, "Content-Type": "application/json" },
       body: JSON.stringify({
         type: "create",
-        providers: ["GOOGLE"],
+        // Offer EVERY email provider, not just Gmail. GOOGLE = Gmail OAuth, OUTLOOK = Microsoft,
+        // MAIL = generic IMAP/SMTP (any other mailbox — custom domains, AgentMail, Fastmail, etc.).
+        // Why: a Google ACCOUNT without a Gmail mailbox (e.g. agentmail.to / Workspace-without-Gmail)
+        // makes the Gmail API return 400 FAILED_PRECONDITION, leaving the user stuck on "connecting…"
+        // forever (verified E2E 2026-06-22). With MAIL, those users connect their real inbox over IMAP.
+        providers: ["GOOGLE", "OUTLOOK", "MAIL"],
         api_url: `https://${UNIPILE_DSN}`,
         expiresOn,
         name: uid, // Unipile echoes this to notify_url so we can match the account to the user
