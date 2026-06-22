@@ -129,10 +129,10 @@ async function main() {
       ? await w.writeContract({ address: venue, abi: erc4626, functionName: "deposit", args: [surplus, acct.address] })
       : await w.writeContract({ address: venue, abi: aave, functionName: "supply", args: [USDC, surplus, acct.address, 0] });
     let r = await pub.waitForTransactionReceipt({ hash: tx });
-    // Beefy's gauntlet vault deposit REVERTS live (~1.5M gas, status 0x0 — verified 2026-06-21). Fall
-    // back to the reliable Fluid ERC4626 (5.36%, ~identical APY, verified real deposit tx 0x901047bf):
-    // a reverting 5.37% earns $0, a working 5.36% earns. Beefy is tried first, Fluid guarantees the earn.
-    if (r.status !== "success" && depositKind === "beefy") {
+    // ANY venue that reverts (Beefy gauntlet OOG, OR Aave v3 supply revert observed 2026-06-22 — S1) falls
+    // back to the reliable Fluid ERC4626 (5.36%, verified real deposit tx 0x901047bf): a reverting deposit
+    // earns $0, a working Fluid one earns. Fluid itself has no fallback (it IS the reliable floor).
+    if (r.status !== "success" && venue !== FLUID) {
       venue = FLUID; protocol = "fluid-fusdc"; apy = FLUID_APY; depositKind = "erc4626";
       const alwF = await pub.readContract({ address: USDC, abi: erc20, functionName: "allowance", args: [acct.address, FLUID] });
       if (alwF < surplus) {

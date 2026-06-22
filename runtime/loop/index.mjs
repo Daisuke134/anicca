@@ -70,12 +70,20 @@ try {
 // repo_root = dirname(dirname(dirname(this file))) since this file is at runtime/loop/index.mjs
 let isProfitable;
 {
+  // S2 FIX (2026-06-22): the earn skill (+ its node_modules) lives in ANICCA_HOME (synced by the daemon),
+  // NOT in the code repo — the old repoRoot path resolved to ~/anicca/skills/earn/lib/ledger.mjs which
+  // does not exist there → ERR_MODULE_NOT_FOUND → isProfitable=()=>false on EVERY boot, so no wake could
+  // ever be classified profitable. Resolve from ANICCA_HOME first (where the file + viem actually are),
+  // fall back to the code repo for dev.
   const repoRoot = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..', '..');
-  const earnLedgerPath = path.join(repoRoot, 'skills', 'earn', 'lib', 'ledger.mjs');
-  try {
-    const m = await import(earnLedgerPath);
-    isProfitable = m.isProfitable;
-  } catch {
+  const candidates = [
+    path.join(ANICCA_HOME, 'skills', 'earn', 'lib', 'ledger.mjs'),
+    path.join(repoRoot, 'skills', 'earn', 'lib', 'ledger.mjs'),
+  ];
+  for (const p of candidates) {
+    try { const m = await import(p); if (typeof m.isProfitable === 'function') { isProfitable = m.isProfitable; break; } } catch { /* try next */ }
+  }
+  if (!isProfitable) {
     process.stderr.write('[loop] WARNING: could not load isProfitable from earn skill; all wakes will be non-profitable\n');
     isProfitable = () => false;
   }
