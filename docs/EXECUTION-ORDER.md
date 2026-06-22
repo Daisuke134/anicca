@@ -49,8 +49,10 @@ ClawRouter profiles: free (100% savings, $0) · auto (74-100%) · eco (95-100%) 
 - ☐ 5.1 1% of MRR / surplus → charity-match or human payout, no human click
 
 ## PHASE 6 — CONTENT (publish, honest, with the live dashboard as proof)
-- ☐ 6.1 automaton article — PUBLISH today (honest: free model, autonomous, live dashboard, realised $
-       so far, watch it climb). File: docs/articles/2026-06-21-automaton-pays-for-itself.md
+- ◐ 6.1 automaton article — DRAFT updated with block 6-3 (verified free+premium results: $0 realised /
+       351 wakes / 68.7h; both free & premium = $0, bottleneck = capital+demand+plumbing, not model).
+       File: docs/articles/2026-06-21-automaton-pays-for-itself.md. Remaining: optional clean premium
+       window (B2) → publish (PHASE E). Free observation (B1) = DONE: $0 realised across all 10 tools.
 - ☐ 6.2 takeoff article — our definition of takeoff (self-funding + self-spawning, no human), citing
        lesswrong + ai-2027, + the UBI vision
 - ☐ 6.3 block 6-3 — per-tool realised earnings table once Phase 2 has real numbers
