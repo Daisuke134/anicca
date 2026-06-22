@@ -86,16 +86,17 @@ function revenueBySource(nw, earnBySource) {
   return { bySource: out, total };
 }
 
-// Daily / monthly revenue = change in total P&L over the period. We baseline the FIRST reading of each
-// day/month and report the delta since — so deposits/withdrawals (P&L-neutral) don't distort it.
+// Daily / monthly revenue, defined so the numbers ADD UP with the per-source breakdown (Dais 2026-06-22:
+// "+$0.0007 today but ETH invest −$0.0079 makes no sense"):
+//   monthly = totalPnl EXACTLY = Σ revenue_by_source  → the breakdown always sums to the monthly figure.
+//   daily   = totalPnl − (totalPnl at the first reading today) → "how much P&L moved today" (a delta).
+// So "this month −$0.0079" matches "ETH invest −$0.0079", and "today +$0.0007" is just today's tick.
 function periodRevenue(totalPnl) {
-  const d = new Date();
-  const day = d.toISOString().slice(0, 10), month = d.toISOString().slice(0, 7);
+  const day = new Date().toISOString().slice(0, 10);
   let snap = {}; try { snap = JSON.parse(fs.readFileSync(PNL_SNAP, "utf8")); } catch { /* first run */ }
   if (!snap.day || snap.day.date !== day) snap.day = { date: day, pnl: totalPnl };
-  if (!snap.month || snap.month.ym !== month) snap.month = { ym: month, pnl: totalPnl };
   try { fs.mkdirSync(PNL_SNAP.slice(0, PNL_SNAP.lastIndexOf("/")), { recursive: true }); fs.writeFileSync(PNL_SNAP, JSON.stringify(snap)); } catch { /* best effort */ }
-  return { daily: +(totalPnl - snap.day.pnl).toFixed(6), monthly: +(totalPnl - snap.month.pnl).toFixed(6) };
+  return { daily: +(totalPnl - snap.day.pnl).toFixed(6), monthly: +totalPnl.toFixed(6) };
 }
 
 function recentLog(n = 20) {
