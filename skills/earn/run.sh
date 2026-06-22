@@ -198,8 +198,10 @@ fi
 # "uses" this tool by ensuring the server is running; real revenue then arrives as buyers hit it (needs
 # a public URL + demand = the model's job to create). Records NARRATE (the act of keeping the shop open).
 if [ "$STRATEGY" = "x402" ] && [ -z "${EARN_TX:-}" ]; then
-  XPORT="${X402_PORT:-8403}"
-  if ! curl -sf "http://127.0.0.1:$XPORT/" >/dev/null 2>&1; then
+  # :8403 is held by the OLD spec-09 echo endpoint (ai.anicca.x402-endpoint launchd) — the research
+  # PRODUCT server couldn't bind there, so /research 404'd (system bug found 2026-06-22). Use 8404.
+  XPORT="${X402_PORT:-8404}"
+  if ! curl -sf "http://127.0.0.1:$XPORT/research?q=ping" >/dev/null 2>&1; then
     X402_PAYTO="$W" X402_PORT="$XPORT" nohup node "$HERE/x402-sell/serve.mjs" >/dev/null 2>&1 &
     sleep 2
   fi
