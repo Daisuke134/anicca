@@ -67,12 +67,14 @@ After every step: mark it here + commit + push.
    CAVEATS (honest): the spoken "Hi Daisuke" greeting was NOT captured (record-on-answer starts a beat after the
    opening line; name is code-threaded + unit-tested but not heard on tape) → re-verify the name on the next
    real call. Dais also noted the call felt unresponsive (didn't answer his off-topic Q) = call-quality, see L6.
-6. ◑ **L6 (#83) [NEW]** — call responsiveness. ROOT CAUSE: the system prompt over-anchored on the event, so
+6. ✅ **L6 (#83)** — DONE+VERIFIED 2026-06-22. ROOT CAUSE: the system prompt over-anchored on the event, so
    the model deflected to the schedule and ignored the user's questions (Dais: "feels weird / not responding").
-   FIX 2026-06-22 (`buildCallPrompt`, both EN+JA): added a strong conversational instruction — "ALWAYS respond
-   directly to whatever the user says/asks (one short sentence, even off-topic), then steer back; never ignore
-   or repeat; if they go quiet, wait a beat." Build `converse-v1`. PENDING: real-call verification (needs Dais
-   to talk to it and confirm it now answers) — verify on the next test call.
+   FIX (`buildCallPrompt`, both EN+JA): strong conversational instruction — "ALWAYS respond directly to whatever
+   the user says/asks (one short sentence, even off-topic), then steer back; never ignore or repeat; if they go
+   quiet, wait a beat." Build `converse-v1`, deployed. **VERIFIED LIVE by Dais** on a real converse-v1 call:
+   "I just answered it, it's much better now… the response is good enough."
+
+### PHASE 1 COMPLETE ✅ — per-user call language (EN/JA, /lm toggle), Dais=EN, address-by-name, responsive conversation. All 6 verified.
 
 ### PHASE 2 — Finish #61-b NEW-user web E2E
 6. ☐ **E1** — A3 continue (daisukenarita53): enter phone → Stripe **SANDBOX** pay (charges nobody) → reach dashboard.
