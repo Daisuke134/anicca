@@ -23,10 +23,13 @@
  * @param {object} opts
  * @returns {WakeContext}
  */
-export function assembleContext({ walletAddress, balanceUsdc, tier, model, recentLedgerLines, genesisPrompt, wakeId, ts, activeSkillSlots, skillCatalog, positionsSummary }) {
+export function assembleContext({ walletAddress, balanceUsdc, tier, model, recentLedgerLines, genesisPrompt, wakeId, ts, activeSkillSlots, skillCatalog, positionsSummary, reserveUsdc }) {
   return {
     walletAddress: walletAddress || 'unknown',
     balanceUsdc: typeof balanceUsdc === 'number' ? balanceUsdc : 0,
+    // the instance's OWN compute buffer (deploy floor) — same source as execute-yield's RESERVE. Used to
+    // steer "replenish first" when liquid drops below it. Per-instance via env; never hardcoded per agent.
+    reserveUsdc: typeof reserveUsdc === 'number' ? reserveUsdc : (Number(process.env.COMPUTE_RESERVE_USDC) || 5),
     // PATCH 3: surface deployed positions (yield/HL/etc) so the model can DECIDE a strategy from its
     // actual portfolio, not default. Empty string when the bootstrap didn't read positions.
     positionsSummary: typeof positionsSummary === 'string' ? positionsSummary : '',
