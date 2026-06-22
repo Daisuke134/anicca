@@ -15,7 +15,9 @@
 // @returns true iff the deposit verifiably landed (record cost-basis only then)
 export function depositLanded({ statusOk, liqBefore, liqAfter, surplus }) {
   if (!statusOk) return false;
+  if (BigInt(surplus) <= 0n) return false; // nothing to deposit → never "landed" (avoids moved>=0 trivially true)
   const moved = BigInt(liqBefore) - BigInt(liqAfter);
+  if (moved <= 0n) return false; // liquid did not drop (or rose) → no deposit happened
   // require ≥99% of the intended amount left the wallet (1% tolerance for dust/rounding only)
   return moved >= (BigInt(surplus) * 99n) / 100n;
 }

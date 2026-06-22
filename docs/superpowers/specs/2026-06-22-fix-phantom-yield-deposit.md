@@ -29,8 +29,16 @@
 ## GREEN (implementation)
 - Add `export function depositLanded(...)` (pure) + wire main() to gate `recordDeposit` on it; when a
   deposit "succeeds" but money didn't move, DO NOT record + emit `{phantom:true}` in the output line.
-- One-time reconcile: rewrite cost-basis.json (live ~/.anicca + mother ~/anicca) from on-chain balances
-  (drop morpho; set moonwell/aave/fluid/bluechip to true values).
+  depositLanded also rejects surplus<=0 and moved<=0 (no trivial pass).
+- One-time reconcile (CORRECTED per adversary 2026-06-22): cost-basis = PRINCIPAL (what was deposited),
+  NOT current value — do NOT overwrite it with on-chain value (that would zero all unrealised P&L). The
+  ONLY action is to DROP keys whose on-chain position is zero/dust (no real position): drop `morpho`
+  (on-chain = 4 wei dust ≈ $0 vs a phantom $1 basis). KEEP aave/moonwell/fluid/bluechip principal — they
+  have real on-chain positions. beefy has no cost-basis key and on-chain 0 → correctly absent.
+- Evidence committed to disk: `state/cost-basis-onchain-proof.json` — balanceOf via CONSENSUS across
+  multiple RPCs (a single RPC is unreliable: it intermittently returns 0x/garbage — proven 2026-06-22,
+  llamarpc flipped morpho/fluid). Consensus (3-4 working RPCs): morpho=4 wei, beefy=0, aave/moonwell/
+  fluid/bluechip > 0.
 
 ## Verify (4-D done)
 - test passes (the phantom case returns false), execute-yield records delta-gated basis, cost-basis.json

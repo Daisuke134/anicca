@@ -30,11 +30,13 @@ test("basis floors at 0 — never negative (excess withdrawal = realised profit 
 });
 
 test("seedIfEmpty only sets untracked venues, never overwrites", () => {
-  seedIfEmpty({ beefy: 99, fluid: 0.45, morpho: 1.0 });
+  // use real writable venues (VENUE_KEY in execute-yield only ever writes aave/fluid/beefy) — do NOT
+  // seed `morpho`, which has no deposit path and was the phantom key removed in fix #8.
+  seedIfEmpty({ beefy: 99, fluid: 0.45, moonwell: 1.0 });
   const o = readCostBasis();
   assert.equal(o.beefy, 1.5, "existing beefy basis preserved");
   assert.equal(o.fluid, 0.45, "new venue seeded");
-  assert.equal(o.morpho, 1.0, "new venue seeded");
+  assert.equal(o.moonwell, 1.0, "new venue seeded");
 });
 
 test("ignores garbage input", () => {
