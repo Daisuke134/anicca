@@ -8,7 +8,16 @@ type Breakdown = { liquid?: number; aave?: number; morpho?: number; moonwell?: n
 type Row = {
   id: string; host: string; geo?: string; model_live?: string; model_tier?: string;
   net_worth_usd: number; revenue_mo_usd: number; burn_day_usd: number; runway_days: number;
+  daily_revenue_usd?: number; monthly_revenue_usd?: number; revenue_by_source?: Record<string, number>;
   status: string; breakdown?: Breakdown; log?: LogLine[]; ts?: number;
+};
+
+// Dashboard shows REVENUE (earned/lost per stream), not parked balances. Format a signed P&L number:
+// green +$, red −$, hide dust below a tenth-of-a-cent. Dais 2026-06-22: "if it's losing money, minus."
+function fmtRev(v: number): string { return `${v >= 0 ? "+" : "−"}$${Math.abs(v).toFixed(4)}`; }
+const SOURCE_LABEL: Record<string, string> = {
+  aave: "Aave", morpho: "Morpho", moonwell: "Moonwell", beefy: "Beefy", fluid: "Fluid",
+  bluechip: "ETH invest", x402: "x402 sales", hl: "HL trading", token: "Token fees",
 };
 
 export default function AgentClient({ id: rawId }: { id: string }) {
@@ -36,8 +45,11 @@ export default function AgentClient({ id: rawId }: { id: string }) {
 
   useEffect(() => { if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight; }, [row?.log]);
 
-  const bd = row?.breakdown || {};
   const log = [...(row?.log || [])].sort((a, b) => (a.ts || 0) - (b.ts || 0));
+  // per-source revenue (earned/lost), dust hidden, biggest magnitude first
+  const revSources = Object.entries(row?.revenue_by_source || {})
+    .filter(([, v]) => Math.abs(v) >= 0.0001)
+    .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]));
 
   return (
     <main className="min-h-screen bg-background text-foreground">
@@ -70,11 +82,24 @@ export default function AgentClient({ id: rawId }: { id: string }) {
               <div className="font-mono text-6xl md:text-7xl font-medium tracking-tight text-gold">${row.net_worth_usd.toFixed(2)}</div>
             </div>
 
-            <section className="mt-10 grid grid-cols-2 gap-px overflow-hidden rounded-card border border-border bg-border sm:grid-cols-4">
-              <Cell label="Liquid" value={`$${(bd.liquid ?? 0).toFixed(2)}`} />
-              <Cell label="Aave" value={`$${(bd.aave ?? 0).toFixed(2)}`} />
-              <Cell label="Morpho" value={`$${(bd.morpho ?? 0).toFixed(2)}`} />
-              <Cell label="Moonwell" value={`$${(bd.moonwell ?? 0).toFixed(2)}`} />
+            {/* Daily + monthly revenue — what people actually care about: is it making money? */}
+            <section className="mt-8 grid grid-cols-2 gap-px overflow-hidden rounded-card border border-border bg-border">
+              <Cell label="Revenue today" value={fmtRev(row.daily_revenue_usd ?? 0)} signed={row.daily_revenue_usd ?? 0} />
+              <Cell label="Revenue this month" value={fmtRev(row.monthly_revenue_usd ?? 0)} signed={row.monthly_revenue_usd ?? 0} />
+            </section>
+
+            {/* Per-source revenue: how much earned/lost in each stream (green up, red down) */}
+            <section className="mt-8">
+              <p className="mb-3 font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Revenue by source</p>
+              {revSources.length === 0 ? (
+                <div className="rounded-card border border-border bg-white/40 p-4 font-mono text-[12px] text-muted-foreground">No measurable revenue yet — positions deployed, P&amp;L still ~$0.</div>
+              ) : (
+                <div className="grid grid-cols-2 gap-px overflow-hidden rounded-card border border-border bg-border sm:grid-cols-3">
+                  {revSources.map(([src, v]) => (
+                    <Cell key={src} label={SOURCE_LABEL[src] || src} value={fmtRev(v)} signed={v} />
+                  ))}
+                </div>
+              )}
             </section>
 
             <section className="mt-10">
@@ -95,7 +120,7 @@ export default function AgentClient({ id: rawId }: { id: string }) {
             </section>
 
             <p className="mt-10 font-mono text-[11px] text-muted-foreground">
-              status {row.status} · runway {row.runway_days}d · earned/mo ${row.revenue_mo_usd.toFixed(2)} · burn/day ${row.burn_day_usd.toFixed(2)}
+              status {row.status} · {(!row.model_live || row.model_live === "auto") ? (row.model_tier === "free" ? "free model" : "auto") : row.model_live} · burn/day ${row.burn_day_usd.toFixed(2)}
             </p>
           </>
         )}
@@ -111,11 +136,13 @@ function kindColor(k?: string): string {
   return "#8a8a8a";
 }
 
-function Cell({ label, value }: { label: string; value: string }) {
+function Cell({ label, value, signed }: { label: string; value: string; signed?: number }) {
+  // green when making money, red when losing, neutral for plain values (signed undefined)
+  const color = signed === undefined ? "" : signed > 0 ? "text-[#3a9d6e]" : signed < 0 ? "text-[#c0392b]" : "text-muted-foreground";
   return (
     <div className="bg-background p-4">
       <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">{label}</p>
-      <p className="font-mono mt-1.5 text-lg font-medium tracking-tight">{value}</p>
+      <p className={`font-mono mt-1.5 text-lg font-medium tracking-tight ${color}`}>{value}</p>
     </div>
   );
 }
