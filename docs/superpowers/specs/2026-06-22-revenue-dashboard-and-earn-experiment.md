@@ -1,0 +1,47 @@
+# SPEC — Revenue dashboard + free/premium earn experiment + automaton article (2026-06-22)
+
+The single ordered plan. Read this + docs/patch.md + docs/REFERENCE-REPOS.md. Do PHASES in order.
+Context: we are writing the automaton article (block 6-3) = "what happens when you give an autonomous
+agent earning skills + advice, on a FREE model vs a PREMIUM model — how much did it earn per tool?"
+
+## The dashboard must show REVENUE, not deposited balances (Dais 2026-06-22)
+Nobody cares how much is parked in a vault. People care: **is it making money?** So every dashboard
+(general aniccaai.com/dashboard + per-agent aniccaai.com/agent?id=X) shows, NOT hardcoded (each agent
+earns differently):
+- **Net worth** — total USD the agent holds (wallet + all positions). [top]
+- **Daily revenue** — net earned TODAY across all streams (can be NEGATIVE). [top]
+- **Monthly revenue** — net earned this calendar month (MRR-style, can be negative). [top]
+- **Per-source revenue breakdown** — for each stream the agent is actually using, how much earned/lost
+  (e.g. yield +$0.01, hl −$0.14, x402 +$0.02). Negative shown in red. Only streams with non-zero P&L;
+  idle/never-used streams are hidden. Revenue = current value − cost basis (mark-to-market), NOT balance.
+
+## PHASE A — make the dashboard show real per-stream revenue
+- ☐ A1 cost-basis tracking: `skills/earn/state/cost-basis.json` {venue: net_deposited_usd}; update on every
+     deposit (+) and withdraw (−) in execute-yield.mjs + fund-hl.mjs. (Revenue can't be computed without it.)
+- ☐ A2 telemetry-poster.mjs: compute per-source P&L = on-chain current value − cost basis (yield venues),
+     HL realised+unrealised PnL, x402 sales (from earn-ledger). Post: net_worth_usd, daily_revenue_usd,
+     monthly_revenue_usd, revenue_by_source{venue: pnl}. All can be negative.
+- ☐ A3 Supabase: add columns daily_revenue_usd, monthly_revenue_usd, revenue_by_source (jsonb). (The
+     missing revenue_by_source column is what 502'd earlier.)
+- ☐ A4 AgentClient.tsx + general dashboard: top row = Net worth / Daily revenue / Monthly revenue;
+     replace the balance cells with per-source REVENUE cells (green +, red −, hide zero streams).
+- ☐ A5 verify in a real browser (camofox) that the page shows revenue (incl. negative), matches on-chain.
+
+## PHASE B — the earn experiment (free → premium), the article's data
+Prereq (done): all tools work + the agent knows how to use them (per-action tools + senior tips).
+- ☐ B1 FREE mode (free/glm-4.7): /loop monitors 20–30 wakes. If an error appears → fix the mother + rerun.
+     If no error but no earn → keep observing. Record per-tool realised P&L.
+- ☐ B2 switch to PREMIUM (a frontier model): monitor 20–30 wakes. Record per-tool realised P&L.
+- ☐ B3 revert to FREE (we run on free by default — premium was a measured experiment).
+- ☐ B4 goal: at least one stream shows a real surplus (≥ a few cents), OR an honest loss — both are
+     publishable. Capital is the lever (yield scales with $); honest if it stays pennies at $13.
+
+## PHASE C — write + publish
+- ☐ C1 block 6-3 (~/anicca/specs/06-...): per-tool × {free, premium} realised P&L table + the WHY analysis
+     (2 system bugs found+fixed: cook 0-candidates, x402 404; rest = capital/demand) + the learnings.
+- ☐ C2 finish + publish the automaton article (docs/articles/2026-06-21-automaton-pays-for-itself.md):
+     "we gave it skills + advice; here is free-mode vs premium-mode earnings per tool; here is what we
+     tweaked and why." Honest numbers, the live dashboard as proof.
+
+## Sync rule
+Every code change → sync to ~/.anicca (the live experiment instance) + commit + push. The /loop tracks earnings.
