@@ -30,9 +30,11 @@ print(q)
 " 2>/dev/null)
 echo "[cook] exploring: $QUERY"
 
-# Real web search via firecrawl (the project's canonical web tool) — bring back live candidates + URLs.
-RESULTS=$(/opt/homebrew/bin/firecrawl scrape "https://www.google.com/search?q=$(python3 -c "import urllib.parse,sys;print(urllib.parse.quote(sys.argv[1]))" "$QUERY earn USDC agent github")" markdown 2>/dev/null \
-  | grep -oE "https://github.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+" | grep -viE "google|search" | sort -u | head -5)
+# Use firecrawl's SEARCH API — scraping google/ddg directly is bot-blocked and returned ZERO candidates
+# (system bug found 2026-06-22, 22 wakes × 0 results). `firecrawl search` returns real result URLs.
+RESULTS=$(/opt/homebrew/bin/firecrawl search "$QUERY earn USDC agent github" 2>/dev/null \
+  | grep -oE "https://github.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+|https://[a-z0-9.-]+\.[a-z]{2,}/[^ )]*" \
+  | grep -viE "google|/search|duckduckgo" | sort -u | head -6)
 [ -z "$RESULTS" ] && RESULTS="(no fresh candidates this wake; try a different query)"
 echo "[cook] candidates:"; printf '%s\n' "$RESULTS" | sed 's/^/  - /'
 
