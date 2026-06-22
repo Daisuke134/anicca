@@ -118,18 +118,19 @@ The JP article is done through [6]② (vanilla Automaton: free=$0, frontier GPT-
 `runtime/dashboard/telemetry-poster.mjs` net-worth (≈line 66) + revenue_by_source (≈line 76) read ONLY 6 Base venues; they never query the **Hyperliquid account** → $8.84 is invisible; HL only appears if a `close` is in earn-ledger.
 - ☐ add a Hyperliquid account read (clearinghouseState) → include hl in net worth + revenue_by_source (realised on close, unrealised PnL labelled). So the dashboard the article cites is COMPLETE, not under-counting.
 
-## FINDING 2026-06-22 — PHANTOM BEEFY/MORPHO DEPOSIT (on-chain verified, the article's "why beefy earned $0")
-Queried balanceOf on Base for wallet 0xa3CDd4 (base-rpc, UA header):
-- aave 0.196 ✅, moonwell(V 0xbeef0e08) 0.971 ✅, fluid 0.447 ✅, WETH 0.00223 ETH(~$4.6) ✅
-- **morpho(M 0xEdc817) = 0.000**, **beefy(BF 0x83152e) = 0.000** 🔴 — cost-basis.json claims morpho $1.00 but on-chain is ZERO.
-→ The 12 `yield-beefy-morpho deploy` wakes recorded a deposit (cost-basis +$1) but NO vault shares exist on-chain
-  = **phantom success**: the skill reported success without the tx landing (same class as cook 0-candidates / x402 no-sale).
-→ So "why is Beefy earning $0" = ① the deposit never landed (bug) AND ② even at 6% APY, 6%×$1×3d = $0.0004 = invisible
-  (need ~$7,300 principal for $1/day). Capital is the lever; the rate is fine.
-- ☐ FIX: reconcile cost-basis.json with on-chain balanceOf; make execute-yield (beefy/morpho) verify the share balance
-     INCREASED after deposit (read-after-write) before recording cost-basis — else it logs phantom positions.
-- ☐ FIX: portfolio-realtime.mjs only reads aave+hl+liquid → make it read ALL venues (moonwell/morpho/beefy/fluid/bluechip)
-     so the monitor and the dashboard agree (telemetry-poster reads them; portfolio-realtime does not).
+## FINDING 2026-06-22 — ⚠️ SUPERSEDED: there was NO phantom (it was a decimals bug). See 2026-06-22-fix-phantom-yield-deposit.md
+The original claim below ("morpho on-chain = 0 = phantom") was WRONG — a units misread. Moonwell mUSDC
+(0xEdc817) is an **8-decimal cToken**; a verification read divided its balance by 1e18, so a real 43.66
+mUSDC (≈$1) position looked like "0/dust". CORRECTED via `decimals()`: aave=6, morpho/Steakhouse(0xbeef)=18,
+moonwell/mUSDC(0xEdc817)=8, fluid=6. ALL of {aave, morpho, moonwell, fluid, bluechip} hold real on-chain
+value; only **beefy(0x83152e)=0** is genuinely empty (and has no cost-basis key, so already consistent).
+cost-basis.json was REVERTED to its original 5 keys — nothing dropped. The shipped #8 deliverable is the
+defensive read-after-write deposit guard (lib/deposit-guard.mjs) + revenueBySource→lib/revenue.mjs. The
+addresses: **morpho = V = 0xbeef (Steakhouse, ~$1) ; moonwell = M = 0xEdc817 (mUSDC 8-dec, ~$1)**.
+~~OLD (wrong): morpho(M 0xEdc817)=0 phantom; moonwell(V 0xbeef)=0.971.~~
+- ☑ DONE: deposit-guard read-after-write (records cost-basis only if liquid actually dropped ~surplus).
+- ☐ STILL OPEN: portfolio-realtime.mjs only reads aave+hl+liquid → make it read ALL venues so monitor and
+     dashboard agree (telemetry-poster reads them; portfolio-realtime does not). [part of PHASE A / task #5]
 
 ## CONFIRMED EXPERIMENT FLOW (Dais 2026-06-22) — fix → re-run FREE → PREMIUM → finish → publish
 The first FREE run (351 wakes, $0) had BROKEN plumbing (Beefy deposit reverting, cook 0-candidates, proxy down),

@@ -56,7 +56,7 @@ Audit trail: append-only `state/ubi-ledger.jsonl` (`{kind:"ubi",wake,outcome,txs
 ```bash
 node -e "import('../_shared/lib/verify-tx.mjs').then(m=>m.receiptStatus('0x<tx>')).then(console.log)"  # -> 0x1
 node -e "import('../_shared/lib/usdc.mjs').then(m=>m.usdcBalance('0x<wallet>')).then(console.log)"      # before/after delta>0
-node --test lib/__tests__/*.test.mjs                                                                # 17/17
+node --test lib/__tests__/*.test.mjs                                                                # 21/21
 ```
 Acceptance: wallet USDC `after-before>0` for the wake + a ledger line whose Base receipt is `0x1`.
 Narration alone FAILS (HARD 0.24/0.31).
