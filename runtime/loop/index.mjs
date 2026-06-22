@@ -171,8 +171,10 @@ async function runOneWake() {
   }
 
   // 2. Fetch USDC balance (failure → keep prior tier, REQ-002)
+  let liquidUsdc = 0;
   try {
     const balance = await fetchUsdcBalance(walletAddress, config);
+    liquidUsdc = typeof balance === 'number' ? balance : 0;
     currentTier = selectTier(balance, config);
   } catch (err) {
     process.stderr.write(`[loop] Balance fetch failed: ${err.message} — keeping tier=${currentTier.tier}\n`);
@@ -212,7 +214,7 @@ async function runOneWake() {
     : '';
   const ctx = assembleContext({
     walletAddress,
-    balanceUsdc: currentTier.tier === 'broke' ? 0 : undefined, // balance already reflected in tier
+    balanceUsdc: liquidUsdc, // REAL liquid (was broke?0:undefined → always 0, so the buffer steer saw $0 for everyone)
     tier: currentTier.tier,
     model: currentTier.model,
     recentLedgerLines: recentLedger,

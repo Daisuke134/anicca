@@ -189,8 +189,7 @@ export function buildUserMessage(ctx) {
   // itself at ~$0 and can fund inference. The agent still decides the action (HARD RULE #0). The numbers
   // are the instance's own (its liquid + its reserve) — nothing hardcoded per agent.
   const reserve = typeof ctx.reserveUsdc === 'number' ? ctx.reserveUsdc : 5;
-  const hasHl = /\bhl\b|hyperliquid|perp|long|short/i.test(ctx.positionsSummary || '');
-  const lowLiquid = liquidityDirective(ctx.balanceUsdc, reserve, hasHl);
+  const lowLiquid = liquidityDirective(ctx.balanceUsdc, reserve);
   return [
     `Wake ${ctx.wakeId}: liquid $${ctx.balanceUsdc.toFixed(4)}${pos} (tier ${ctx.tier}).`,
     lowLiquid,

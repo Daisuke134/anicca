@@ -19,7 +19,10 @@ const HOME = process.env.HOME;
 const EARN = process.env.ANICCA_EARN_YIELD || path.join(HOME, "anicca/skills/earn/execute-yield.mjs");
 const LEDGER = (process.env.ANICCA_HOME || path.join(HOME, ".anicca")) + "/state/ledger.jsonl";
 const INTERVAL_S = parseInt(process.env.YIELD_KEEP_INTERVAL_S || "21600", 10); // 6h — yield is passive
-const RESERVE = process.env.YIELD_RESERVE_USDC || "1"; // keep $1 liquid for gas-adjacent ops
+// ONE source of truth for the compute buffer — same var execute-yield + the wake-prompt liquidity steer
+// read (COMPUTE_RESERVE_USDC, default $5). The old YIELD_RESERVE_USDC=$1 was INERT (execute-yield reads
+// COMPUTE_RESERVE_USDC) and disagreed with the $5 the agent is told to defend — unify so they never fight.
+const RESERVE = process.env.COMPUTE_RESERVE_USDC || "5";
 
 function log(obj) {
   try { fs.mkdirSync(path.dirname(LEDGER), { recursive: true }); } catch {}
@@ -29,7 +32,7 @@ function log(obj) {
 function runEarn() {
   return new Promise((resolve) => {
     let out = "";
-    const p = spawn("node", [EARN], { env: { ...process.env, YIELD_RESERVE_USDC: RESERVE } });
+    const p = spawn("node", [EARN], { env: { ...process.env, COMPUTE_RESERVE_USDC: RESERVE } });
     p.stdout.on("data", (d) => (out += d));
     p.stderr.on("data", () => {});
     p.on("close", () => {

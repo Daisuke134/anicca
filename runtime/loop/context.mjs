@@ -23,10 +23,14 @@
  * @param {object} opts
  * @returns {WakeContext}
  */
-export function assembleContext({ walletAddress, balanceUsdc, tier, model, recentLedgerLines, genesisPrompt, wakeId, ts, activeSkillSlots, skillCatalog, positionsSummary, reserveUsdc }) {
+export function assembleContext({ walletAddress, balanceUsdc, tier, model, recentLedgerLines, genesisPrompt, wakeId, ts, activeSkillSlots, skillCatalog, positionsSummary, reserveUsdc, avoidSlot, recentSlots }) {
   return {
     walletAddress: walletAddress || 'unknown',
     balanceUsdc: typeof balanceUsdc === 'number' ? balanceUsdc : 0,
+    // loop-break + diversification signals — index.mjs passes these; without them here they were DROPPED,
+    // so the FORBID-this-slot / over-use steers never fired in production (the live agent kept looping).
+    avoidSlot: avoidSlot || null,
+    recentSlots: Array.isArray(recentSlots) ? recentSlots : [],
     // the instance's OWN compute buffer (deploy floor) — same source as execute-yield's RESERVE. Used to
     // steer "replenish first" when liquid drops below it. Per-instance via env; never hardcoded per agent.
     reserveUsdc: typeof reserveUsdc === 'number' ? reserveUsdc : (Number(process.env.COMPUTE_RESERVE_USDC) || 5),

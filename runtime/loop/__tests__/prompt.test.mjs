@@ -11,14 +11,16 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { getToolDefinitions, buildSystemPrompt, liveSlotNames, buildUserMessage } from '../prompt.mjs';
+import { assembleContext } from '../context.mjs';
 
 // #7 AUT: low-liquid → the wake message must steer "replenish first" so the agent never strands itself.
-const baseCtx = (over) => ({ wakeId: 'W', balanceUsdc: 0.06, tier: 'broke', positionsSummary: 'HL ETH long 2x', reserveUsdc: 5, recentSlots: [], ...over });
+const baseCtx = (over) => ({ wakeId: 'W', balanceUsdc: 0.06, tier: 'broke', reserveUsdc: 5, recentSlots: [], ...over });
 
 test('buildUserMessage: liquid below the instance buffer → REPLENISH-FIRST directive present', () => {
   const m = buildUserMessage(baseCtx());
   assert.match(m, /BELOW COMPUTE BUFFER/);
-  assert.match(m, /close/i, 'steers to close the HL position it holds');
+  assert.match(m, /close/i);
+  assert.match(m, /withdraw/i);
 });
 
 test('buildUserMessage: healthy liquid (>= buffer) → no low-liquid directive', () => {
@@ -26,9 +28,25 @@ test('buildUserMessage: healthy liquid (>= buffer) → no low-liquid directive',
   assert.doesNotMatch(m, /BELOW COMPUTE BUFFER/);
 });
 
-test('buildUserMessage: low liquid + NO position → steer to withdraw yield (not close)', () => {
-  const m = buildUserMessage(baseCtx({ positionsSummary: '' }));
-  assert.match(m, /withdraw/i);
+// REAL-PATH regression (FIND-001/006): the directive must reflect the REAL liquid that flows through
+// assembleContext — not a hand-built ctx. A funded $12 agent must NOT be told it's stranded; a $0.06
+// agent MUST be. This catches index.mjs passing broke?0:undefined (which made everyone look like $0).
+test('assembleContext → buildUserMessage: REAL low balance triggers the directive', () => {
+  const ctx = assembleContext({ wakeId: 'W', balanceUsdc: 0.06, tier: 'broke', reserveUsdc: 5, recentSlots: [] });
+  assert.match(buildUserMessage(ctx), /BELOW COMPUTE BUFFER.*\$0\.06/s);
+});
+
+test('assembleContext → buildUserMessage: REAL healthy balance does NOT trigger the directive', () => {
+  const ctx = assembleContext({ wakeId: 'W', balanceUsdc: 12, tier: 'funded', reserveUsdc: 5, recentSlots: [] });
+  assert.doesNotMatch(buildUserMessage(ctx), /BELOW COMPUTE BUFFER/);
+});
+
+test('assembleContext keeps avoidSlot + recentSlots (FIND-005: they were being dropped)', () => {
+  const ctx = assembleContext({ wakeId: 'W', balanceUsdc: 1, avoidSlot: 'cook', recentSlots: ['cook', 'cook', 'cook'] });
+  assert.equal(ctx.avoidSlot, 'cook');
+  assert.deepEqual(ctx.recentSlots, ['cook', 'cook', 'cook']);
+  const m = buildUserMessage(ctx);
+  assert.match(m, /FORBIDDEN/); // the avoid steer now actually fires
 });
 
 
