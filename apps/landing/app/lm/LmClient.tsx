@@ -140,8 +140,20 @@ export default function LmClient() {
       setSig(s);
       window.localStorage.setItem(STORAGE_KEY, id);
       if (s) window.localStorage.setItem(SIG_KEY, s);
-      setCal((window.localStorage.getItem('anicca.lm.cal') as ConnState) || 'idle');
-      setGmail((window.localStorage.getItem('anicca.lm.gmail') as ConnState) || 'idle');
+      // Restore connect state. If a reload caught a connection mid-flight ('connecting'), the poll that
+      // would have resolved it died with the previous page — so re-check the REAL status (check=1) and
+      // resolve to 'connected'/'idle' instead of leaving the button stuck on "接続中…" forever (E3 fix).
+      const restoreConn = (key: string, fn: string, set: (st: ConnState) => void) => {
+        const saved = (window.localStorage.getItem(key) as ConnState) || 'idle';
+        if (saved !== 'connecting') { set(saved); return; }
+        set('connecting');
+        fetch(`/.netlify/functions/${fn}?uid=${encodeURIComponent(id)}&sig=${encodeURIComponent(s)}&check=1`)
+          .then((r) => r.json())
+          .then((d) => set(d && d.connected ? 'connected' : 'idle'))
+          .catch(() => set('idle'));
+      };
+      restoreConn('anicca.lm.cal', 'calendar-connect', setCal);
+      restoreConn('anicca.lm.gmail', 'unipile-connect', setGmail);
       // Telegram deep-link (/lm?tg=<chat_id>): stash the chat id (survives the Google redirect via
       // localStorage), then bind it to this row once we have a signed uid so the cloud loops can
       // message the user on Telegram.
