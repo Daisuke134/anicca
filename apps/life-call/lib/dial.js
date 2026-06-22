@@ -48,10 +48,23 @@ async function placeCall({ to, streamUrl }) {
   const ccid = call && call.data && call.data.call_control_id;
   if (!ccid) return { ok: false, error: "no call_control_id" };
 
-  // Record (mp3) + ensure streaming starts (contingency — bidirectional stream is in the dial body,
-  // but streaming_start is a safe no-op if already streaming).
-  txPost(`/calls/${encodeURIComponent(ccid)}/actions/record_start`, { format: "mp3", channels: "single" }).catch(() => {});
+  // NOTE: do NOT record_start here — the call is still RINGING (not answered), so Telnyx rejects
+  // record_start ("call is not in a valid state"). Recording is started by the bridge the moment the
+  // media `start` frame arrives (= call answered). See startRecording() + the server.js start handler.
   return { ok: true, ccid };
 }
 
-module.exports = { placeCall, telnyxStreamingStartBody, balanceUsd };
+// Start mp3 recording on an ANSWERED call. Telnyx record_start requires the call to be active
+// (media streaming) — fire this from the bridge's Telnyx `start` frame, NOT right after dial.
+// Returns { ok:true } or { ok:false, error } so the caller can LOG it (never silently swallowed).
+async function startRecording(ccid) {
+  if (!ccid) return { ok: false, error: "no ccid" };
+  try {
+    await txPost(`/calls/${encodeURIComponent(ccid)}/actions/record_start`, { format: "mp3", channels: "single" });
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: String(e.message || e) };
+  }
+}
+
+module.exports = { placeCall, startRecording, telnyxStreamingStartBody, balanceUsd };

@@ -27,7 +27,7 @@ const {
   parseGeminiTranscripts,
 } = require("./lib/call-logic.js");
 const { startScheduler, startTravelLoop, startAskLoop, startOnboardLoop, buildStreamUrl } = require("./scheduler.js");
-const { placeCall } = require("./lib/dial.js");
+const { placeCall, startRecording } = require("./lib/dial.js");
 const { parseUpdate, sendMessage } = require("./lib/telegram.js");
 const { resolveTelegramReply } = require("./lib/telegram-reply.js");
 const { sendStage, rowByChatId, setStage, handleOnboardingText } = require("./lib/telegram-onboard.js");
@@ -101,7 +101,7 @@ const server = http.createServer((req, res) => {
   if (path === "/health" || path === "/") {
     res.writeHead(200, { "content-type": "application/json" });
     // `build` lets any deploy be verified from outside (curl /health) — proves new code is live.
-    res.end(JSON.stringify({ ok: true, service: "life-call", ws: "/ws", build: "conv74-slice4-gog-adapter" }));
+    res.end(JSON.stringify({ ok: true, service: "life-call", ws: "/ws", build: "record-on-answer-v1" }));
     return;
   }
   // POST /test-call {uid,sig} — the dashboard "Call me now" button. Auth'd by the same HMAC uid+sig
@@ -247,6 +247,15 @@ wss.on("connection", (carrierWs, req) => {
     let msg;
     try { msg = JSON.parse(data.toString()); } catch { return; }
     const kind = routeTelnyxMessage(msg, state, geminiSend);
+    // Call is ANSWERED the moment the media `start` frame arrives → record_start is valid NOW
+    // (firing it right after dial fails: the call was still ringing). Once per call; log result.
+    if (kind === "start" && state.callControlId && !state.recordStarted) {
+      state.recordStarted = true;
+      startRecording(state.callControlId).then((r) => {
+        if (r.ok) console.log(`[bridge] recording started ccid=${state.callControlId}`);
+        else console.error(`[bridge] record_start FAILED: ${r.error}`);
+      });
+    }
     if (kind === "stop") { try { gemini.close(); } catch {} }
   });
   let released = false;
