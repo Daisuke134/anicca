@@ -77,15 +77,16 @@ function langForUser(u) {
   return c === "ja" || c === "en" ? c : langForPhone(u && u.phone);
 }
 
-function buildStreamUrl(ev, urgency, lang) {
+function buildStreamUrl(ev, urgency, lang, name) {
   const base = (process.env.PUBLIC_WSS || "").replace(/\/$/, "");
   const summary = ev.summary || "";
   const dateTime = ev.startIso || "";
   const location = ev.location || "";
   const urg = urgency || "gentle";
   const lg = lang === "ja" ? "ja" : "en";
-  const sig = signCtx([summary, dateTime, location, urg, lg]); // authenticates the bridge upgrade (incl lang)
-  const qs = new URLSearchParams({ summary, dateTime, location, urgency: urg, lang: lg, sig });
+  const nm = String(name || "").replace(/[\r\n]/g, " ").slice(0, 60); // address the user by name on the call
+  const sig = signCtx([summary, dateTime, location, urg, lg, nm]); // authenticates the bridge upgrade (lang + name)
+  const qs = new URLSearchParams({ summary, dateTime, location, urgency: urg, lang: lg, name: nm, sig });
   return `${base}/ws?${qs.toString()}`;
 }
 
@@ -117,7 +118,7 @@ async function tick() {
         const eventKey = `${u.uid}|${ev.startIso}|${lvl.min}`;
         const fresh = await claimWake(u.uid, eventKey);
         if (!fresh) continue; // already called for this (event, level)
-        const streamUrl = buildStreamUrl(ev, lvl.urgency, langForUser(u));
+        const streamUrl = buildStreamUrl(ev, lvl.urgency, langForUser(u), u.name);
         const res = await placeCall({ to: u.phone, streamUrl });
         if (res.ok) {
           console.log(`[scheduler] WAKE T-${lvl.min} uid=${u.uid.slice(0, 12)} "${ev.summary}" ccid=${res.ccid}`);

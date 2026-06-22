@@ -52,7 +52,11 @@ After every step: mark it here + commit + push.
    else `langForPhone(phone)`; supaUsers select adds `call_language`; tick uses `langForUser(u)`. server.js
    `userForUid` fetches phone+call_language+name; `/test-call` lang = call_language else phone. Build bumped to
    `call-language-v1`. node assertions PASS (explicit choice overrides phone; null → phone fallback).
-4. ☐ **L4 (#81)** — `buildCallPrompt` addresses the user BY NAME in the chosen language.
+4. ✅ **L4 (#81)** — DONE 2026-06-22 (code; deploys with L3). `name` threaded + HMAC-SIGNED through
+   buildStreamUrl→ctxFromReq (signed array now summary|dateTime|location|urgency|lang|name) →
+   geminiSetupForEvent→buildCallPrompt(event,urgency,lang,name). EN: "Hi Daisuke, this is your Life
+   Manager…"; JA: "太郎さん、こんにちは。ライフマネージャーです…". Build `call-lang-name-v1`. node assertions PASS
+   (name greeting EN+JA, no-name fallback, HMAC round-trips with name signed).
 5. ☐ **L5 (#82)** — set Dais `call_language='en'`; fire a real call; VERIFY via recording transcript: 100%
    English, addresses "Daisuke", reads next event, never "Anicca".
 

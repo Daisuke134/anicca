@@ -375,13 +375,14 @@ function formatTime(dateTime) {
  * @param {object} event - GCal-shaped event { summary, start:{dateTime}, location }
  * @returns {string}
  */
-function buildCallPrompt(event, urgency, lang) {
+function buildCallPrompt(event, urgency, lang, name) {
   const e = event || {};
   const time = formatTime(e.start && e.start.dateTime);
   const location = (e.location || "").toString().trim();
+  const who = String(name || "").replace(/[\r\n]/g, " ").trim().slice(0, 60); // address the user by name
   // Language follows the USER (Dais 2026-06-22): Japan/JA → speak Japanese, everyone else → English,
   // for EVERY call (wake + demo). The assistant is the user's "Life Manager" and must NEVER claim to be
-  // "Anicca" (it isn't). Default to English for any unknown locale.
+  // "Anicca" (it isn't). Default to English for any unknown locale. Address the user by name when known.
   const ja = String(lang || "").toLowerCase() === "ja";
 
   if (ja) {
@@ -390,15 +391,19 @@ function buildCallPrompt(event, urgency, lang) {
       urgency === "harsh" ? "緊急で強めに。今すぐ出ないと遅刻します。雑談なしで強く促してください。" :
       urgency === "firm"  ? "しっかりと。もう本当に出る時間です。動いてもらってください。" :
                             "やわらかく、そろそろ出発の時間だと伝えてください。";
+    const jaOpen = who
+      ? `最初の一言: 「${who}さん、こんにちは。ライフマネージャーです。次のご予定は${title}${time ? ` ${time}` : ""}。そろそろ出発の時間です。」`
+      : `最初の一言: 「こんにちは、ライフマネージャーです。次のご予定は${title}${time ? ` ${time}` : ""}。そろそろ出発の時間です。」`;
     return [
       "あなたはユーザーのライフマネージャーで、電話で話しかけています。落ち着いて簡潔に。",
+      who ? `ユーザーの名前は「${who}」です。「${who}さん」と名前で呼びかけてください。` : "",
       "自然に、短く話してください。双方向の通話です。相手の返答に答えてください。",
       "★ 自分を「アニッチャ」「Anicca」とは絶対に名乗らないでください。あなたはライフマネージャーです。★",
       `ユーザーの次の予定は「${title}」${time ? ` ${time}` : ""} です。`,
       location ? `場所は ${location} です。` : "",
       tone,
       "そのあと、道順や行き方が必要か尋ねてください。",
-      `最初の一言: 「こんにちは、ライフマネージャーです。次のご予定は${title}${time ? ` ${time}` : ""}。そろそろ出発の時間です。」`,
+      jaOpen,
       "★ 100% 日本語で話してください。★",
     ].filter(Boolean).join(" ");
   }
@@ -408,15 +413,19 @@ function buildCallPrompt(event, urgency, lang) {
     urgency === "harsh" ? "Be urgent and firm. They must leave RIGHT NOW or they will be late — push them hard, no small talk." :
     urgency === "firm"  ? "Be firm. It is really time to go now — get them moving." :
                           "Gently let them know it's about time to head out.";
+  const enOpen = who
+    ? `Open with: "Hi ${who}, this is your Life Manager. Your next event is ${title}${time ? ` at ${time}` : ""} — time to leave now."`
+    : `Open with: "Hi, this is your Life Manager. Your next event is ${title}${time ? ` at ${time}` : ""} — time to leave now."`;
   return [
     "You are the user's Life Manager, calling them on the phone. Be calm and concise.",
+    who ? `The user's name is "${who}". Address them by name as "${who}".` : "",
     "Speak naturally. Keep it short. This is a two-way call — answer follow-ups.",
     "NEVER call yourself \"Anicca\" — you are not Anicca. You are their Life Manager.",
     `The user's next event is "${title}"${time ? ` at ${time}` : ""}.`,
     location ? `It is at ${location}.` : "",
     tone,
     "Then ask if they need directions or how to get there.",
-    `Open with: "Hi, this is your Life Manager. Your next event is ${title}${time ? ` at ${time}` : ""} — time to leave now."`,
+    enOpen,
     "Speak 100% in English.",
   ].filter(Boolean).join(" ");
 }

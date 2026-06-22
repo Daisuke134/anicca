@@ -89,15 +89,16 @@ function ctxFromReq(req) {
   if (!VALID_URGENCY.has(urgency)) urgency = "gentle";
   let lang = q.get("lang");
   if (lang !== "ja" && lang !== "en") lang = "en"; // call language follows the user (JP→ja, else en)
+  const name = (q.get("name") || "").slice(0, 60); // who to address on the call (already sanitized when signed)
   const sig = q.get("sig") || "";
 
   const secret = process.env.LM_CALL_SECRET || "";
-  const expected = crypto.createHmac("sha256", secret).update([summary, dateTime, location, urgency, lang].join("\n")).digest("base64url");
+  const expected = crypto.createHmac("sha256", secret).update([summary, dateTime, location, urgency, lang, name].join("\n")).digest("base64url");
   const a = Buffer.from(sig);
   const b = Buffer.from(expected);
   if (!secret || a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
 
-  return { event: { summary, start: { dateTime }, location }, urgency, lang };
+  return { event: { summary, start: { dateTime }, location }, urgency, lang, name };
 }
 
 const server = http.createServer((req, res) => {
@@ -105,7 +106,7 @@ const server = http.createServer((req, res) => {
   if (path === "/health" || path === "/") {
     res.writeHead(200, { "content-type": "application/json" });
     // `build` lets any deploy be verified from outside (curl /health) — proves new code is live.
-    res.end(JSON.stringify({ ok: true, service: "life-call", ws: "/ws", build: "call-language-v1" }));
+    res.end(JSON.stringify({ ok: true, service: "life-call", ws: "/ws", build: "call-lang-name-v1" }));
     return;
   }
   // POST /test-call {uid,sig} — the dashboard "Call me now" button. Auth'd by the same HMAC uid+sig
@@ -137,7 +138,7 @@ const server = http.createServer((req, res) => {
           location: (body.location || "").toString().slice(0, 200),
         };
         const urgency = ["gentle", "firm", "harsh"].includes(body.urgency) ? body.urgency : "gentle";
-        const streamUrl = buildStreamUrl(ev, urgency, lang);
+        const streamUrl = buildStreamUrl(ev, urgency, lang, u.name);
         const result = await placeCall({ to: phone, streamUrl });
         return reply(result.ok ? 200 : 502, result);
       } catch (e) {
@@ -222,7 +223,7 @@ wss.on("connection", (carrierWs, req) => {
     return;
   }
   liveCalls++;
-  const { event, urgency, lang } = ctx;
+  const { event, urgency, lang, name } = ctx;
   console.log(`[bridge] carrier connected urgency=${urgency} live=${liveCalls}`);
   const state = { streamSid: null, inFrames: 0, outFrames: 0, setupComplete: false };
 
@@ -232,7 +233,7 @@ wss.on("connection", (carrierWs, req) => {
 
   gemini.on("open", () => {
     console.log("[bridge] Gemini connected");
-    geminiSend(geminiSetupForEvent(event, urgency, lang)); // per-call prompt (language follows the user)
+    geminiSend(geminiSetupForEvent(event, urgency, lang, name)); // per-call prompt (language + name follow the user)
   });
   gemini.on("message", (data) => {
     let msg;
