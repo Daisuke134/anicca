@@ -10,7 +10,27 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { getToolDefinitions, buildSystemPrompt, liveSlotNames } from '../prompt.mjs';
+import { getToolDefinitions, buildSystemPrompt, liveSlotNames, buildUserMessage } from '../prompt.mjs';
+
+// #7 AUT: low-liquid → the wake message must steer "replenish first" so the agent never strands itself.
+const baseCtx = (over) => ({ wakeId: 'W', balanceUsdc: 0.06, tier: 'broke', positionsSummary: 'HL ETH long 2x', reserveUsdc: 5, recentSlots: [], ...over });
+
+test('buildUserMessage: liquid below the instance buffer → REPLENISH-FIRST directive present', () => {
+  const m = buildUserMessage(baseCtx());
+  assert.match(m, /BELOW COMPUTE BUFFER/);
+  assert.match(m, /close/i, 'steers to close the HL position it holds');
+});
+
+test('buildUserMessage: healthy liquid (>= buffer) → no low-liquid directive', () => {
+  const m = buildUserMessage(baseCtx({ balanceUsdc: 12, tier: 'funded' }));
+  assert.doesNotMatch(m, /BELOW COMPUTE BUFFER/);
+});
+
+test('buildUserMessage: low liquid + NO position → steer to withdraw yield (not close)', () => {
+  const m = buildUserMessage(baseCtx({ positionsSummary: '' }));
+  assert.match(m, /withdraw/i);
+});
+
 
 const REGISTRY = {
   slots: {
