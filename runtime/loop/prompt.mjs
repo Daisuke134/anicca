@@ -162,12 +162,22 @@ export function buildUserMessage(ctx) {
   // fell to the yield default and loop-detected). The model decides fine when the message explicitly
   // asks for the strategy + reminds it of all the slots. This is a SYSTEM fix, not a model upgrade.
   const pos = ctx.positionsSummary ? `, positions: ${ctx.positionsSummary}` : '';
+  // Loop-break: if a slot was just detected looping, FORBID it this wake so the model diversifies instead
+  // of re-picking the same cook/x402 forever (Dais 2026-06-22). Also show the recent slot history so it
+  // can see its own pattern and change course.
+  const recent = Array.isArray(ctx.recentSlots) && ctx.recentSlots.length
+    ? `Recent actions: [${ctx.recentSlots.join(', ')}].` : '';
+  const avoid = ctx.avoidSlot
+    ? `⛔ You just repeated '${ctx.avoidSlot}' with no new result or earnings — it is FORBIDDEN this wake. Pick a DIFFERENT slot. If you keep exploring (cook) without acting, instead BUILD/sell what you already found, or try a different earn path (hl trade you can close for profit, yield idle cash, a new x402 product). Do something that can realise money.`
+    : '';
   return [
     `Wake ${ctx.wakeId}: liquid $${ctx.balanceUsdc.toFixed(4)}${pos} (tier ${ctx.tier}).`,
+    recent,
+    avoid,
     `Decide the single most productive action right now and call run_skill with BOTH slot AND args:`,
     `  - earn — pass args.strategy (yield | hl | x402 | token | 0xwork) + params. hl: coin/side/size_usd/sl_pct/tp_pct to OPEN, or {strategy:"hl",action:"close",coin:"ETH"} to REALISE an open position. Manage what you hold: if a position shows profit or hit its risk, close it.`,
     `  - cook — explore a NEW earner; pass args.query (your curiosity).`,
     `  - self/issue-dev — if you notice you're broken/stuck, file a bug to fix yourself.`,
     `Do NOT repeat the same action every wake — vary by your situation. Always include args, never call earn empty.`,
-  ].join('\n');
+  ].filter(Boolean).join('\n');
 }
