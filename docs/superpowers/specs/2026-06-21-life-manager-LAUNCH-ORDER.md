@@ -77,8 +77,16 @@ After every step: mark it here + commit + push.
 ### PHASE 1 COMPLETE ✅ — per-user call language (EN/JA, /lm toggle), Dais=EN, address-by-name, responsive conversation. All 6 verified.
 
 ### PHASE 2 — Finish #61-b NEW-user web E2E
-6. ☐ **E1** — A3 continue (daisukenarita53): enter phone → Stripe **SANDBOX** pay (charges nobody) → reach dashboard.
+6. ✅ **E1** — DONE+VERIFIED 2026-06-22 (Dais approved SANDBOX). Fresh user `daisukenarita53` (uid lm_bd71599c):
+   login ✅ → Composio gcal ✅ → Unipile Gmail ✅ → phone +818046270314 (Dais's, shareable, so wake call is
+   answerable) + call_language=en ✅ → **Stripe TEST checkout with 4242** (`STRIPE_TEST_SECRET_KEY`, link
+   `buy.stripe.com/test_5kQ14n4tU6tgc1qcEC28803?client_reference_id=<uid>`) = session `cs_test_a1dOx7…`
+   status=complete, payment_status=paid, subscription `sub_1Tl79h…` (CHARGED NOBODY) → activated paid=true →
+   **dashboard renders** ("あなたのライフマネージャー / カレンダー ✓ / Gmail ✓ / 稼働中"). Browser-verified (screenshots).
+   NOTE: daisukenarita53 is now paid+phone+cal → the scheduler will AUTO wake-call Dais's phone for its events;
+   set paid=false after testing if those calls are unwanted.
 7. ☐ **E2** — trigger a wake call to the test user; VERIFY (recording) correct language + by name + reads next event.
+   (Wake calls already verified live L5/L6; E2 re-confirms for the daisukenarita53 paid account. Rings Dais's phone.)
 8. ☐ **E3** — fix the "接続中…" reload cosmetic (cal/gmail localStorage stuck in 'connecting' with no poll resume).
 
 ### PHASE 3 — Content pipeline (#45/#50) — English transcripts, WARM-UP MODE
