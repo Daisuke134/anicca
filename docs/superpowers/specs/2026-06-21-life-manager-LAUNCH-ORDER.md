@@ -57,8 +57,14 @@ After every step: mark it here + commit + push.
    geminiSetupForEvent→buildCallPrompt(event,urgency,lang,name). EN: "Hi Daisuke, this is your Life
    Manager…"; JA: "太郎さん、こんにちは。ライフマネージャーです…". Build `call-lang-name-v1`. node assertions PASS
    (name greeting EN+JA, no-name fallback, HMAC round-trips with name signed).
-5. ☐ **L5 (#82)** — set Dais `call_language='en'`; fire a real call; VERIFY via recording transcript: 100%
-   English, addresses "Daisuke", reads next event, never "Anicca".
+5. ◑ **L5 (#82)** — 2026-06-22. Dais `call_language='en'` SET in Supabase (was null → would've been ja by +81).
+   Fired a real /test-call; recording transcript = **100% English** ("The next schedule is 11:23pm. It's about
+   time to leave.") → the call_language override is **VERIFIED LIVE** (English despite his +81 Japanese phone).
+   CAVEATS (honest): the spoken "Hi Daisuke" greeting was NOT captured (record-on-answer starts a beat after the
+   opening line; name is code-threaded + unit-tested but not heard on tape) → re-verify the name on the next
+   real call. Dais also noted the call felt unresponsive (didn't answer his off-topic Q) = call-quality, see L6.
+6. ☐ **L6 (#83) [NEW]** — call responsiveness: the assistant deflects to the schedule and ignores the user's
+   actual questions/answers (Dais: "feels weird / not responding"). Tune VAD / prompt so it truly converses.
 
 ### PHASE 2 — Finish #61-b NEW-user web E2E
 6. ☐ **E1** — A3 continue (daisukenarita53): enter phone → Stripe **SANDBOX** pay (charges nobody) → reach dashboard.
