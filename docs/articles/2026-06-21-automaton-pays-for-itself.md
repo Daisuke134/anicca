@@ -36,39 +36,67 @@ With the brain fixed, the agent got a toolbox — each a thin wrapper it drives 
 - **cook** — searches the live web for *new* ways to earn.
 - **self/issue-dev** — reads its own error log and files GitHub issues against its own source so the colony can fix it.
 
-## What actually happened (the honest ledger)
+## What actually happened — 68.7 hours, 351 decisions, every byte logged
 
-On the free GLM-4.7 model, **no human in the loop**, the agent (every number below is verifiable on
+With the brain fixed, I let it run unattended from 2026-06-19 21:09 to 2026-06-22 17:50 — **68.7 hours**.
+In that window it woke **351 times** and made a real decision each time (plus 836 loop-detector
+interventions, 207 infrastructure errors, 55 clean shutdowns). Every wake is recorded — the model name,
+the *exact arguments the model produced*, the skill's raw output, and a `profitable` flag — in an
+append-only ledger you can read line by line. Every dollar is verifiable on
 [basescan](https://basescan.org/address/0xa3CDd4Ec6b94F01826Aaf90a6d5538A2Aa8C4C21) and shown live at
-[aniccaai.com/agent?id=anicca-a3cdd4](https://aniccaai.com/agent?id=anicca-a3cdd4), which polls the
-chain every 4 seconds):
+[aniccaai.com/agent?id=anicca-a3cdd4](https://aniccaai.com/agent?id=anicca-a3cdd4) (it polls the chain
+every 4 seconds).
 
-- Spread idle USDC across **three real lending venues itself** — Aave v3 (~$1.20), Morpho (~$1.00),
-  Moonwell (~$1.00) — plus a small WETH "blue-chip" leg (~$4). These are real on-chain positions
-  (verified by reading the vault shares), not a seeded display.
-- Funded its **own Hyperliquid account** from Base USDC and opened a **real ETH long, 2× leverage, with
-  stop-loss and take-profit** (entry $1,735) — and the system now lets it *close and realise* the PnL on
-  its own when the trade is in profit.
-- Stood up a **public x402 endpoint** (returns HTTP 402 to the open internet) and advertised it.
-- Started **asking its own questions** — one wake it explored *"how to earn USDC with zero capital on
-  Base?"* — exactly the right question for an agent with little liquidity.
+Here is the uncomfortable headline, stated before anything else:
 
-And the number that matters, reported honestly by a real-time monitor:
+> **Realised profit across all 351 decisions, every tool, every model: $0.00.**
+> `profitable=true` count: **0 / 351.** Not the free model's fault, and not the premium model's
+> either — both earned exactly zero, for the same reason.
 
-> Invested ~$18.7 · **realised profit so far ≈ $0** · live net worth ~$10 on Base/HL (+~$3.4 idle on
-> Solana) · **net negative**, mostly the bridge fees and gas spent getting here.
+### What each tool actually did, and why it returned nothing
 
-It is **not yet net-positive**, and I won't pretend otherwise. Yield interest accrues in cents per day;
-the HL position's profit is real only once closed; the x402 shop has an address but not yet a paying
-stranger. What's *real* is the autonomy and the transparency: a $0-model agent allocating its own
-capital across five venues, opening its own leveraged trade, and reporting every position on a public
-page you can refresh and check against the chain. The honest story is *"the machine earns autonomously
-now, and you can watch — in real time — whether the earnings clear the costs."*
+| Tool | Wakes | What the model actually did (verbatim from the log) | Why $0 |
+|---|---|---|---|
+| **x402_sell** | 105 | Stood up a *real* public x402 endpoint (a live `trycloudflare.com` URL that returns HTTP 402 to the open internet) and advertised it. It even designed its own products: *"Base DeFi Yield Snapshot: real-time APY comparison of Aave, Beefy, Morpho, Fluid — JSON + PDF in 15 min for $5 USDC."* | **Zero buyers.** 105 attempts to sell; not one stranger ever paid. The proxy was also **down 207 times**. |
+| **earn / yield** | 132 / 49 | Deposited real USDC itself into **Aave v3, Morpho, Beefy (Gauntlet Frontier, 5.31% APY) and Fluid** (~$2.7 total), plus a ~$4.6 WETH "blue-chip" leg. Then mostly *"hold — buffer healthy, position accruing."* | Lending interest accrues in **sub-cent-per-day**; realised = $0 until withdrawn. |
+| **cook** (web research) | 90 | Generated sensible queries — *"how to earn USDC with zero capital on Base?"*, *"agent micro-task marketplace USDC"* — and genuinely clever ones: *"clone an open-source Lens MEV-alert tool that has no payment system, add a $0.75/alert x402 paywall."* | The cook skill returned **"no fresh candidates"** on **every single wake** — a system bug. A good idea never reached execution. |
+| **self/issue-dev** | 19 | **Diagnosed its own blocker correctly** and filed clean GitHub issues against its own source: *"Agent has zero USDC liquid balance, cannot execute any earn strategy. Need an initial seed or faucet integration. Loop detection is causing repeated sleeps — adjust the logic."* | Bug reports, not revenue — but striking meta-cognition from a *free* model. |
+| **token_launch** | 1 | Proposed launching *"Anicca Token / ANICCA"* with `launch:true`. | A safety gate required explicit human confirmation → no launch. |
+| **0xwork** | 5 | Attempted bounty task #391. | Never reached completion or payout. |
+
+### The on-chain money, honestly
+
+> Invested ~$18.7 (bridged Solana→Base). Live value ≈ **$9.09** the monitor *displays*
+> (liquid $0.06 + Aave $0.20 + Hyperliquid account $8.84) — though the display **under-counts** the
+> Morpho/Moonwell/Fluid/WETH legs (~$7 more) that are deposited but not yet wired into the page.
+> Mark-to-market P&L for the month: **−$0.0085** — pennies of gas and price drift, not a real loss.
+> **Realised revenue: exactly $0.**
+
+### Then I switched to premium — and nothing changed
+
+This is the part I expected to disprove the whole thesis. I mixed in frontier models on the *same tools,
+same wallet*: **Claude Opus 4.8 (6 wakes), GPT-5.4 (7), GPT-4o-mini (8), DeepSeek-R1 (6).**
+
+`profitable=true` for the premium models: **still 0.** GPT-5.4 actually designed a *better* product than
+the free model — *"Base-focused paid micro-research, 24h turnaround on one live answer for builders, $5
+USDC via x402"* — articulate, well-priced, correctly aimed. It still sold nothing. A frontier intelligence
+cannot manufacture demand that isn't there, or a buyer who never shows up, or fix a `cook` skill that
+returns zero candidates.
 
 ## The lesson
 
-"The AI can't make money" almost always decomposes into "the plumbing is broken" — a parser, a prompt, a guard with the wrong threshold, a log that lied. The cure for those is engineering, not a bigger model. We kept the free model and fixed the system.
+At **$13–18 of capital**, on a **brand-new wallet with no audience**, *neither a free model nor a frontier
+model earned a single cent* — and they failed for **identical reasons**, none of which is intelligence:
 
-If, after honest effort and real monitoring, a free model genuinely *can't* — that's when you switch to a premium one, deliberately, as a measured experiment. Not as the first reflex.
+1. **Capital.** Yield scales with principal; pennies in, pennies-of-pennies out.
+2. **Demand.** An x402 shop with no traffic and no reputation gets no buyers, however good the copy.
+3. **Plumbing.** `cook` surfaced 0 candidates every wake; the proxy died 207 times; the loop-detector
+   fired 836 times on repeated picks. All engineering bugs — the free model even filed them itself.
 
-The monitor keeps running. The next report will have the number this one doesn't.
+"The AI can't make money" almost always decomposes into "the plumbing is broken, the capital is tiny, and
+nobody is buying yet." The cure is engineering and distribution, not a bigger model. The most honest
+finding of this experiment is the one I least wanted: **swapping a free model for a frontier model moved
+the realised number by exactly $0.** We kept the free model — it was never the bottleneck.
+
+The monitor keeps running, in public, at [aniccaai.com](https://aniccaai.com/agent?id=anicca-a3cdd4).
+The first cent it clears the costs with will be on-chain before it's in this article.

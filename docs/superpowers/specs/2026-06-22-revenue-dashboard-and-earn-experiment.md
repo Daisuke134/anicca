@@ -29,9 +29,12 @@ earns differently):
 
 ## PHASE B — the earn experiment (free → premium), the article's data
 Prereq (done): all tools work + the agent knows how to use them (per-action tools + senior tips).
-- ☐ B1 FREE mode (free/glm-4.7): /loop monitors 20–30 wakes. If an error appears → fix the mother + rerun.
-     If no error but no earn → keep observing. Record per-tool realised P&L.
-- ☐ B2 switch to PREMIUM (a frontier model): monitor 20–30 wakes. Record per-tool realised P&L.
+- ☑ B1 FREE mode (free/glm-4.7): observed 351 wakes over 68.7h (2026-06-19→22). RESULT = $0 realised,
+     profitable=0/351, every tool. cook=0-candidates bug, x402=0 buyers, proxy_down ×207, loop_detect ×836.
+     Per-tool detail captured in article block 6-3. Verified from ~/.anicca/state/ledger.jsonl (1532 rows).
+- ◐ B2 PREMIUM: 21 scattered premium wakes already in the log (opus-4.8 ×6, gpt-5.4 ×7, gpt-4o-mini ×8) =
+     ALSO $0 realised. Article block 6-3 reflects this. TODO (optional): a CLEAN controlled premium window
+     (20–30 consecutive wakes) to strengthen the premium row before final publish.
 - ☐ B3 revert to FREE (we run on free by default — premium was a measured experiment).
 - ☐ B4 goal: at least one stream shows a real surplus (≥ a few cents), OR an honest loss — both are
      publishable. Capital is the lever (yield scales with $); honest if it stays pennies at $13.
