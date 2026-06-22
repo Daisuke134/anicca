@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLaunchLocale } from '@/lib/launchLocale';
 import { launchStrings } from '@/lib/launchStrings';
 import { signInWithGoogle, getSession } from '@/lib/auth';
@@ -100,6 +100,12 @@ export default function LmClient() {
   // Call language (Dais 2026-06-22): the user picks the language of their phone calls, independent of
   // phone country. Defaults to the page's display language; persisted to lm_users.call_language.
   const [lang, setLang] = useState<'en' | 'ja'>(locale === 'ja' ? 'ja' : 'en');
+  // useState's initializer only runs once (before locale hydrates), so keep the default in sync with the
+  // display language until the user explicitly picks — then their choice sticks.
+  const langPicked = useRef(false);
+  useEffect(() => {
+    if (!langPicked.current) setLang(locale === 'ja' ? 'ja' : 'en');
+  }, [locale]);
   const [dial, setDial] = useState('81'); // JP default
   const [natNum, setNatNum] = useState(''); // national number (digits only)
   const [cal, setCal] = useState<ConnState>('idle');
@@ -320,7 +326,7 @@ export default function LmClient() {
                 <button
                   key={lng}
                   type="button"
-                  onClick={() => setLang(lng)}
+                  onClick={() => { langPicked.current = true; setLang(lng); }}
                   aria-pressed={lang === lng}
                   className={`rounded-pill px-4 py-2 text-sm font-semibold transition-all duration-200 ${
                     lang === lng
