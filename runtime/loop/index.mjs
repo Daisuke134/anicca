@@ -331,6 +331,10 @@ async function runOneWake() {
     ...(args && Object.keys(args).length ? { args } : {}),
     ...(kind === 'wake' ? { profitable } : {}),
     ...(skillResult.exitCode != null ? { exit_code: skillResult.exitCode } : {}),
+    // DEEP FEEDBACK FIX (Dais 2026-06-22): record a short summary of what the skill ACTUALLY returned
+    // (cook's findings, x402's sales=0, yield's action) so the NEXT wake's prompt shows OUTCOMES, not
+    // just "I ran cook" — the model was re-cooking the same query because it never saw the result.
+    ...(safeObservation ? { result: safeObservation.replace(/\s+/g, ' ').slice(0, 180) } : {}),
   };
 
   // Verify ledger line has no private key pattern (PROP-020)
