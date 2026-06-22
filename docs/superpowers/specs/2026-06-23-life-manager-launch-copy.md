@@ -56,7 +56,25 @@ claim) via the `stop-ai-slop-jp` skill, then approved by Dais. The earlier featu
 
 ---
 
-## Status
-- EN copy (Product Hunt tagline + description + maker comment, X EN): APPROVED 2026-06-23.
-- JA X copy: pending (stop-ai-slop-jp).
+**Product Hunt description — PH 500-CHAR VERSION (the field caps at 500; the full version above is ~600).
+This 485-char trim is what's IN the live PH draft. The full story lives in the maker comment.**
+```
+You're late again. People notice. Each time, they trust you a little less.
+
+Life Manager fixes the behavior. It holds your calendar, calls your phone before each thing, names your route, and talks you out the door. You arrive early, not just on time. It blocks your travel time, asks by email when it doesn't know a place, and warns the people waiting when you run behind.
+
+Give it a week. You stop being the one people wait on. You're early to everything, and they count on you again.
+```
+
+---
+
+## Status (2026-06-23)
+- EN copy (PH tagline + description + maker comment, X EN): APPROVED.
+- **Product Hunt DRAFT PREPPED** on Dais's PH account (logged in via keiodaisuke Google, CloakBrowser daily-driver):
+  launch = "Life Manager — Anicca", in progress. Main info DONE + autosaved: name, tagline, url
+  (aniccaai.com/life-manager), description (485-char PH version above), topics (Productivity / Artificial
+  Intelligence / Calendar), first comment (maker comment). STILL TODO before publish: Images & media (gallery
+  promo.mp4 + /lm screenshots + logo), makers, then schedule/launch.
+- X: Dais handles X himself (no prep needed).
+- JA X copy: drafted (stop-ai-slop-jp) but X is Dais's; not used here.
 - Publishing is PUBLIC/IRREVERSIBLE → requires Dais's explicit "go" (per LAUNCH-ORDER #51 + CLAUDE.md broadcast gate).
