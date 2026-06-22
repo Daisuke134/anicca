@@ -42,5 +42,14 @@
 
 ## Verify (4-D done)
 - test passes (the phantom case returns false), execute-yield records delta-gated basis, cost-basis.json
-  matches on-chain (morpho gone), committed+pushed, synced to ~/.anicca. Adversary gate (vcsdd-adversary)
-  reviews from disk before done.
+  matches on-chain (see CORRECTION below — moonwell dropped, morpho kept), committed+pushed, synced to
+  ~/.anicca. Adversary gate (vcsdd-adversary) reviews from disk before done.
+
+
+## CORRECTION 2026-06-22 (adversary round 2) — the phantom was MOONWELL, not morpho
+Via name(): morpho field = Steakhouse Prime (0xbeef…, a Morpho vault) = 0.971 sh ≈ $1 REAL; moonwell field =
+Moonwell mUSDC (0xEdc817…) = 4 wei dust ≈ $0. So cost-basis MOONWELL $1 was the phantom (drop it); MORPHO $1
+is a real Steakhouse position (KEEP it). The first reconciliation had these backwards (mislabeled proof file
+misled even the adversary). Corrected: cost-basis = {aave, morpho, fluid, bluechip}; moonwell dropped. The
+vars M/V in telemetry-poster are non-mnemonic (M=Moonwell, V=Morpho) — commented now. revenueBySource
+extracted to lib/revenue.mjs with tests proving no +$1/−$1 phantom pair either way.
