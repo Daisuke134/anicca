@@ -17,7 +17,9 @@ WAKE="${WAKE_ID:-$(date -u +%s)}"
 REPO="${ANICCA_FORUM_REPO:-Daisuke134/anicca}"
 EARNLED="${EARN_LEDGER:-$HERE/../../earn/state/earn-ledger.jsonl}"
 STATELED="$HOME/.anicca/state/ledger.jsonl"
-ARGS="${ANICCA_ARGS:-{}}"
+# sanitize: the inline ANICCA_ARGS default with a literal {} mis-parses (stray `}` → invalid JSON drops
+# the model's note). Verbatim when set, {} when not. (same bash brace bug fixed in cook/earn 2026-06-22)
+ARGS="${ANICCA_ARGS:-}"; [ -z "$ARGS" ] && ARGS='{}'
 
 # 1) Detect a candidate problem from MY OWN recent behaviour (real logs, not a hardcoded list):
 #    - a reverted earn (status 0x0), or repeated loop_detect, or a model-supplied note.
