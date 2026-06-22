@@ -82,15 +82,16 @@ export default function AgentClient({ id: rawId }: { id: string }) {
               <div className="font-mono text-6xl md:text-7xl font-medium tracking-tight text-gold">${row.net_worth_usd.toFixed(2)}</div>
             </div>
 
-            {/* Daily + monthly revenue — what people actually care about: is it making money? */}
+            {/* Daily + monthly revenue. "today" = P&L change just today; "this month" = cumulative P&L
+                this month = the sum of the per-source breakdown below. Different time windows on purpose. */}
             <section className="mt-8 grid grid-cols-2 gap-px overflow-hidden rounded-card border border-border bg-border">
               <Cell label="Revenue today" value={fmtRev(row.daily_revenue_usd ?? 0)} signed={row.daily_revenue_usd ?? 0} />
               <Cell label="Revenue this month" value={fmtRev(row.monthly_revenue_usd ?? 0)} signed={row.monthly_revenue_usd ?? 0} />
             </section>
 
-            {/* Per-source revenue: how much earned/lost in each stream (green up, red down) */}
+            {/* Per-source revenue THIS MONTH (sums to "Revenue this month" above; not to "today"). */}
             <section className="mt-8">
-              <p className="mb-3 font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Revenue by source</p>
+              <p className="mb-3 font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Revenue by source · this month</p>
               {revSources.length === 0 ? (
                 <div className="rounded-card border border-border bg-white/40 p-4 font-mono text-[12px] text-muted-foreground">No measurable revenue yet — positions deployed, P&amp;L still ~$0.</div>
               ) : (
