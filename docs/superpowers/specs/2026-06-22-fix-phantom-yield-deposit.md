@@ -1,5 +1,14 @@
 # SPEC — #8 Fix phantom yield deposit + reconcile cost-basis to on-chain (VSDD, 2026-06-22)
 
+## ⭐ FINAL CONCLUSION (read this first — the sections below are the dated investigation trail)
+There was **NO phantom**. The original "morpho=$0 on-chain" was a **decimals bug** (Moonwell mUSDC is 8-dec; it
+was divided by 1e18 so $1 looked like dust). Verified via `decimals()`: aave=6, morpho/Steakhouse=18, moonwell/
+mUSDC=8, fluid=6 → ALL of {aave, morpho, moonwell, fluid, bluechip} are REAL on-chain; only beefy=0 (no key).
+**cost-basis.json is reverted to the original 5 keys — nothing dropped.** The DELIVERABLE that ships from #8 is
+the defensive **read-after-write deposit guard** (`lib/deposit-guard.mjs`, gates recordDeposit on liquid actually
+dropping, not just tx status) + `lib/revenue.mjs` extraction with phantom-sentinel tests. 21/21 green. The
+investigation below (rounds 1-3) is kept verbatim as an honest record of the wrong turns the adversary caught.
+
 ## Problem (on-chain verified)
 - `~/.anicca/skills/earn/state/cost-basis.json` claims `morpho: 1.00`, but on-chain morpho(0xEdc817)=0 → **phantom $1**.
 - Root: a now-removed older code path recorded a "morpho" basis without the position landing. The CURRENT
@@ -53,3 +62,18 @@ is a real Steakhouse position (KEEP it). The first reconciliation had these back
 misled even the adversary). Corrected: cost-basis = {aave, morpho, fluid, bluechip}; moonwell dropped. The
 vars M/V in telemetry-poster are non-mnemonic (M=Moonwell, V=Morpho) — commented now. revenueBySource
 extracted to lib/revenue.mjs with tests proving no +$1/−$1 phantom pair either way.
+
+## CORRECTION 2026-06-22 (adversary round 3, FIND-003) — THERE WAS NO PHANTOM; it was a decimals bug
+The whole "morpho/moonwell phantom" premise was a units misread. Moonwell mUSDC is an **8-decimal cToken**;
+my balanceOf read divided it by 1e18, so 43.66 mUSDC (≈$1 real, mint tx 0xa1a196 per earn-verification
+2026-06-18) looked like 4.37e-9 "dust". Verified via decimals(): aave=6, morpho/Steakhouse=18, **moonwell/
+mUSDC=8**, fluid=6. With correct decimals BOTH morpho(0xbeef Steakhouse, 0.971 sh) and moonwell(0xEdc817,
+43.66 mUSDC) hold ~$1 REAL. Only beefy(0x83152e)=0 — and it has no cost-basis key, so already consistent.
+ACTION: cost-basis fully REVERTED to the original {aave, moonwell, morpho, fluid, bluechip} — no key dropped.
+What REMAINS valuable from #8 (kept): (1) deposit-guard read-after-write (prevents a FUTURE real phantom),
+(2) revenueBySource extracted to lib/revenue.mjs + tests, (3) corrected proof with decimals, (4) M/V comment,
+(5) SKILL.md test glob fix.
+KNOWN LIMITATIONS (adversary, accepted): FIND-001 the morpho/moonwell basis keys have no current write path
+(legacy positions from older code; VENUE_KEY only writes aave/fluid/beefy) — fine while they're static real
+positions. FIND-004 depositLanded proves liquid dropped ~surplus, not that shares minted in the intended
+venue — a reasonable proxy; strengthening to shares-delta is a future hardening (revenue-dashboard spec A).
