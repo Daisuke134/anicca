@@ -79,6 +79,13 @@ fi
 # (lib/ledger.mjs isProfitable) now rejects it. No EARN_STRATEGY value can mint GATE-0 from a swap.
 STRATEGY="${EARN_STRATEGY:-yield}"
 
+# SANITIZED model args. The old inline ANICCA_ARGS default with a literal {} MIS-PARSES in bash: the
+# brace default inside the expansion closes at the first `}`, so a real {"action":"close"} became
+# {"action":"close"}} (invalid JSON) → every parse fell to its default → the model's coin/side/size/
+# action/launch decisions were ALL discarded (the HL close never fired: action='' != 'close', 2026-06-22).
+# Sanitize ONCE here; AARGS is verbatim when set, {} when not — every parse below reads "$AARGS".
+AARGS="${ANICCA_ARGS:-}"; [ -z "$AARGS" ] && AARGS='{}'
+
 # --- strategy=0xwork: REAL EXTERNAL REVENUE (a poster's escrow pays USDC to our wallet) -------
 if [ "$STRATEGY" = "0xwork" ] && [ -z "${EARN_TX:-}" ]; then
   RES=$(OXWORK_PKVAR="$PKVAR" PKVAR="$PKVAR" python3 "$HERE/execute-0xwork.py" 2>/dev/null)
@@ -138,10 +145,10 @@ if [ "$STRATEGY" = "hl" ] && [ -z "${EARN_TX:-}" ]; then
       && "$HLDIR/.venv/bin/pip" install -q hyperliquid-python-sdk eth_account >/dev/null 2>&1 || true
   fi
   HLPY="$HLDIR/.venv/bin/python"; [ -x "$HLPY" ] || HLPY="python3"
-  COIN=$(printf '%s' "${ANICCA_ARGS:-{}}" | python3 -c "import json,sys;print((json.load(sys.stdin) or {}).get('coin','ETH'))" 2>/dev/null || echo ETH)
-  SIDE=$(printf '%s' "${ANICCA_ARGS:-{}}" | python3 -c "import json,sys;print((json.load(sys.stdin) or {}).get('side','') or '')" 2>/dev/null)
-  SIZE=$(printf '%s' "${ANICCA_ARGS:-{}}" | python3 -c "import json,sys;d=json.load(sys.stdin) or {};print(d.get('size_usd','') or '')" 2>/dev/null)
-  ACTION=$(printf '%s' "${ANICCA_ARGS:-{}}" | python3 -c "import json,sys;print((json.load(sys.stdin) or {}).get('action','') or '')" 2>/dev/null)
+  COIN=$(printf '%s' "$AARGS" | python3 -c "import json,sys;print((json.load(sys.stdin) or {}).get('coin','ETH'))" 2>/dev/null || echo ETH)
+  SIDE=$(printf '%s' "$AARGS" | python3 -c "import json,sys;print((json.load(sys.stdin) or {}).get('side','') or '')" 2>/dev/null)
+  SIZE=$(printf '%s' "$AARGS" | python3 -c "import json,sys;d=json.load(sys.stdin) or {};print(d.get('size_usd','') or '')" 2>/dev/null)
+  ACTION=$(printf '%s' "$AARGS" | python3 -c "import json,sys;print((json.load(sys.stdin) or {}).get('action','') or '')" 2>/dev/null)
 
   # Read the live account/positions FIRST so the model can MANAGE what it has open (not just open new).
   ACC=$(PKVAR="$PKVAR" "$HLPY" "$HLDIR/hl.py" account 2>/dev/null)
@@ -169,8 +176,8 @@ except Exception: print(0)" 2>/dev/null || echo 0)
     JSON=$(python3 -c "import json,sys; print(json.dumps({'wallet':'${WLOW:-unknown}','source':'hl-trade','task':sys.argv[1][:160],'earn_usdc':0,'cost_usdc':0,'wake':'$WAKE'}))" "$TASK" 2>/dev/null)
     OUT=$(record_line "$JSON"); echo "[earn] hl narrate -> $OUT"; exit 0
   fi
-  SL=$(printf '%s' "${ANICCA_ARGS:-{}}" | python3 -c "import json,sys;d=json.load(sys.stdin) or {};print(d.get('sl_pct','') or '')" 2>/dev/null)
-  TP=$(printf '%s' "${ANICCA_ARGS:-{}}" | python3 -c "import json,sys;d=json.load(sys.stdin) or {};print(d.get('tp_pct','') or '')" 2>/dev/null)
+  SL=$(printf '%s' "$AARGS" | python3 -c "import json,sys;d=json.load(sys.stdin) or {};print(d.get('sl_pct','') or '')" 2>/dev/null)
+  TP=$(printf '%s' "$AARGS" | python3 -c "import json,sys;d=json.load(sys.stdin) or {};print(d.get('tp_pct','') or '')" 2>/dev/null)
   # FUND-HL: if the HL account can't cover this trade, fund it from Base USDC (relay). fund-hl.mjs has an
   # economic guard — it REFUSES to bridge when the ~fixed ~$1.2 fee would be a high % of the amount, so a
   # too-small wallet just gets a "needs more capital" note instead of burning money. Anicca funds itself.
@@ -239,10 +246,10 @@ fi
 # it reports the deposit address (read-only) and narrates. Token fees later fund compute.
 if [ "$STRATEGY" = "token" ] && [ -z "${EARN_TX:-}" ]; then
   TLPY="python3"
-  WANT=$(printf '%s' "${ANICCA_ARGS:-{}}" | python3 -c "import json,sys;print(str((json.load(sys.stdin) or {}).get('launch','')).lower())" 2>/dev/null)
+  WANT=$(printf '%s' "$AARGS" | python3 -c "import json,sys;print(str((json.load(sys.stdin) or {}).get('launch','')).lower())" 2>/dev/null)
   if [ "$WANT" = "true" ]; then
-    NAME=$(printf '%s' "${ANICCA_ARGS:-{}}" | python3 -c "import json,sys;print((json.load(sys.stdin) or {}).get('name','ANICCA'))" 2>/dev/null)
-    SYM=$(printf '%s' "${ANICCA_ARGS:-{}}" | python3 -c "import json,sys;print((json.load(sys.stdin) or {}).get('symbol','ANICCA'))" 2>/dev/null)
+    NAME=$(printf '%s' "$AARGS" | python3 -c "import json,sys;print((json.load(sys.stdin) or {}).get('name','ANICCA'))" 2>/dev/null)
+    SYM=$(printf '%s' "$AARGS" | python3 -c "import json,sys;print((json.load(sys.stdin) or {}).get('symbol','ANICCA'))" 2>/dev/null)
     RES=$(PKVAR="$PKVAR" "$TLPY" "$HERE/token-launch/launchpad.py" deposit 2>&1)
     echo "[earn] token deposit/launch ($NAME/$SYM): $RES"
     JSON=$(python3 -c "import json; print(json.dumps({'wallet':'${WLOW:-unknown}','source':'token','task':'token-launch $SYM','earn_usdc':0,'cost_usdc':0,'wake':'$WAKE'}))")
