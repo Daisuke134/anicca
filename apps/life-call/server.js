@@ -120,8 +120,16 @@ const server = http.createServer((req, res) => {
         if (!verifyUid(body.uid, body.sig)) return reply(403, { error: "bad uid signature" });
         const phone = await phoneForUid(body.uid);
         if (!phone) return reply(400, { error: "no phone on file" });
-        const ev = { summary: "Anicca — test call", startIso: new Date().toISOString(), location: "" };
-        const streamUrl = buildStreamUrl(ev, "gentle");
+        // Caller may pass a REAL event (summary/location/urgency) so the call + its recording are
+        // postable content — NEVER hardcode "test" (Charon reads the summary aloud). Default = a real
+        // morning nudge, not a "test" label.
+        const ev = {
+          summary: (body.summary || "次の予定").toString().slice(0, 200),
+          startIso: body.dateTime || new Date(Date.now() + 15 * 60000).toISOString(),
+          location: (body.location || "").toString().slice(0, 200),
+        };
+        const urgency = ["gentle", "firm", "harsh"].includes(body.urgency) ? body.urgency : "gentle";
+        const streamUrl = buildStreamUrl(ev, urgency);
         const result = await placeCall({ to: phone, streamUrl });
         return reply(result.ok ? 200 : 502, result);
       } catch (e) {
