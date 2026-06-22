@@ -53,5 +53,38 @@ Prereq (done): all tools work + the agent knows how to use them (per-action tool
      of only sleeping. Root cause of "not earning": model spun cook(×19)/x402(×10) with identical args,
      slept, re-picked the same — never diversified. Now forced to pick a different slot. Tests 15/15.
 
+- ☑ DEEP FEEDBACK FIX: each wake's ledger line now records `result` (180-char summary of what the skill
+     returned) so the next prompt shows OUTCOMES; the prompt counts recent slot usage and, when one
+     dominates (≥3) for $0 realised, explicitly steers the model to an UNTRIED earn path. Tests 15/15.
+- ☑ AKASH SOURCE FOUND: `skills/report/anicca-report.sh` (the CLOUD report script) hardcodes
+     `host:'akash'` and posts telemetry on the shared wallet → THAT was the "akash" overwriter. The
+     host-guard (above) already rejects it (400). TODO D2: also fix this script's host + NL summary.
+
+## PHASE D — per-wake / daily NL report to contact@aniccaai.com (Dais 2026-06-22)
+Each anicca must report what it did + net worth + revenue, as a NATURAL-LANGUAGE STORY ("I explored DeFi
+tools and found X; I kept $5 liquid for compute; net worth $7.36, today −$0.02"), NOT a raw tool list
+("DID read_file,list_children"). So Dais (and OSS users) learn earnings without asking.
+- ☐ D1 generate a 1–2 sentence NL summary each wake from the structured ledger (slot→human verb + result
+     + net worth + today's revenue). Reliable template (no fragile extra LLM call), storytelling tone.
+- ☐ D2 fix `report` skill: send the NL summary + net worth + revenue to contact@aniccaai.com (+ Dais).
+     Daily digest by default (1×/day), with an every-wake option. Fix host:'akash' → "anicca-<hex>".
+- ☐ D3 OSS onboarding (anicca repo): optionally ask the user's email → their agent's daily NL log +
+     earnings are emailed there (opt-in; dashboard search is the always-on alternative).
+
+## PHASE E — publish the article EVERYWHERE + launch the product (Dais 2026-06-22)
+Write in Japanese first → translate/edit to English. Theme: "AI that earns money with NO human in the
+loop — pays its own compute, distributes income as UBI, self-replicates" (AGI/takeoff narrative).
+- ☐ E1 Japanese article → publish to: note, Substack, Zenn, X (X Article).
+- ☐ E2 English article → publish to: dev.to, Substack, X (X Article).
+- ☐ E3 Product launch post (JA + EN) on X + Slack. Announcement copy (canonical, Dais-approved):
+      「人間の介入なしで、自分の計算コストを払い、稼いだ収益を生命に配布するAIを開発しました。
+      ・APIキー不要。クラウド・ローカルで動作。Baseウォレットに USDC課金するとより賢くなります。
+      ・現在は、クラウドで３体・ローカルで２体。収支・ログもリアルタイムで公開中。
+      ・自己監視・自己修復・自己改善・自己増殖・日次報告を繰り返す。
+      ・収益の一部を、生命に対してベーシックインカムとして毎日配布。
+      ・何兆体のAIがGithub Issuesで共進化しながら、より全体として多く稼ぎ、世界から苦しみをなくすことを目指す。
+      https://github.com/Daisuke134/anicca / 記事：X Articleリンク / 全個体：aniccaai.com/dashboard / デモ：Youtube」
+      Continuous cadence: keep posting AI-earns-money-without-humans content to grow audience.
+
 ## Sync rule
 Every code change → sync to ~/.anicca (the live experiment instance) + commit + push. The /loop tracks earnings.
