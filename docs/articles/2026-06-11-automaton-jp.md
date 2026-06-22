@@ -736,15 +736,14 @@ Sleeping for 60s
 | **⑤ 発行する・請け負う（token / 0xwork）** | 独自コインを出す／報酬付きの仕事を請ける | 自分のトークン（コイン）を発行して資金を集める／報酬付きの小タスクを請けて稼ぐ。 |
 | **⑥ 学びを仲間に配る（self / issue-dev）** | 詰まった所と学びを**他のAI個体に共有**する | ここが大事な誤解ポイント。これは「自分を直す」道具ではなく、**自分がつまずいた事・気づいた事を"公開メモ（GitHubのIssue）"に書いて、世界中の仲間のAI個体（他のAnicca／他のAutomaton）に渡す**ための道具。一体の失敗が、群れ全体の知恵になる——**共進化**の仕組みです。 |
 
-これら6つの道具は、どれも一から作ったものではありません。すでに世の中にあるオープンソースを土台にして、AIが自分の手で動かせるように整えたものです。何を下敷きにしたかは、次のとおりです。
+これら6つの道具は、どれも一から作ったものではありません。世の中にすでにある、誰でも使える無料の部品を組み合わせて、AIが自分の手で動かせるように整えただけです。何を使ったのかを、正直に書いておきます。
 
-- **① 預けて利息**：Aave v3・Beefy・Fluid・Morpho という実在の運用先に、そのまま預けています。どの預け先に置くかの選び方は、自律エージェント研究の AEA（Fetch.ai の Autonomous Economic Agents）と、GOAT という開発キットのやり方を参考にしました。
-- **② 値上がりに賭ける**：Hyperliquid 公式の開発キット（hyperliquid-python-sdk）をそのまま使っています。
-- **③ 情報を売る**：Coinbase が作った決済規格 x402 を使っています。
-- **④ 新しい稼ぎ方を探す**：Web 検索の Firecrawl を使い、「探して、試して、数字を共有する」という流れは einstein-arena と Franklin（BlockRun）のやり方を下敷きにしました。
-- **⑥ 学びを仲間に配る**：自分たちで作りましたが、Symphony や Sutando という先行例のやり方に着想を得ています。
+- **預けて利息**は、Aave（アーベ）・Beefy（ビーフィー）・Fluid（フルイド）・Morpho（モルフォ）という、実在する預け先に、そのまま預けています。さきほど説明した「銀行のいない銀行」が、まさにこれです。
+- **値上がりに賭ける**は、Hyperliquid という取引所が無料で配っている「操作キット」を、そのまま使いました。操作キットというのは、プログラムから自動で売買を出すための、出来合いの部品一式のことです。これがあるおかげで、AIは取引所のボタンを人間のように押さなくても、自分で売り買いを命令できます。
+- **情報を売る**は、Coinbase（大手の暗号資産取引所）が作った、機械どうしがお金を払い合うための仕組み（x402）を使っています。
+- **新しい稼ぎ方を探す**は、Firecrawl（ファイアクロール）という、ネットを調べてくれる道具を使いました。
 
-（各リンクは記事末の出典にまとめます。）
+リンクは、記事末の出典にまとめます。
 
 > **用語ミニ辞典**：**デジタルのドル（USDC）**＝価値がドルと1:1で固定された暗号資産。値動きしないお金。／**ウォレット（財布）**＝AI自身が鍵を握る、ブロックチェーン上の口座。／**利回り（年利）**＝預けた額が1年で何%増えるか。／**ガス**＝取引のたびにかかる手数料。
 
@@ -838,7 +837,7 @@ Aave は、この手の仕組みでは世界最大級で、数十億ドルが預
 - 値上がりに賭ける（Hyperliquid 公式SDK）: https://github.com/hyperliquid-dex/hyperliquid-python-sdk
 - 預けて利息（実在の運用先）: Aave v3 https://aave.com ／ Beefy https://beefy.finance ／ Fluid https://fluid.io ／ Morpho https://morpho.org
 - 預け先の選び方の参考: AEA（Fetch.ai Autonomous Economic Agents）https://github.com/fetchai/agents-aea ／ GOAT SDK https://github.com/goat-sdk/goat
-- 新しい稼ぎ方を探す（Web検索）: Firecrawl https://www.firecrawl.dev ／ 「探す→試す→数字を共有」の流れの参考: vinid/einstein-arena, Franklin（BlockRun, 上に既出）
-- 学びを仲間に配る（自作。着想元）: Symphony, Sutando パターン
+- 新しい稼ぎ方を探す（ネット検索）: Firecrawl https://www.firecrawl.dev
+- 学びを仲間に配る（自作。下の2つを参考）: Symphony（OpenAI製。AIに任せた作業を、人の監督なしで進める枠組み）https://github.com/openai/symphony ／ Sutando（自分のコードを自分で書き換えながら動くAIの実装）https://github.com/sonichi/sutando
 
 > 取材ソース全文（30件・逐語引用つき）: `docs/research/ai-crypto-money-earning-agents-base.md`
