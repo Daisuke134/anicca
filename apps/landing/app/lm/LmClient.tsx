@@ -97,6 +97,9 @@ export default function LmClient() {
   const [uid, setUid] = useState<string>('');
   const [sig, setSig] = useState<string>('');
   const [name, setName] = useState('');
+  // Call language (Dais 2026-06-22): the user picks the language of their phone calls, independent of
+  // phone country. Defaults to the page's display language; persisted to lm_users.call_language.
+  const [lang, setLang] = useState<'en' | 'ja'>(locale === 'ja' ? 'ja' : 'en');
   const [dial, setDial] = useState('81'); // JP default
   const [natNum, setNatNum] = useState(''); // national number (digits only)
   const [cal, setCal] = useState<ConnState>('idle');
@@ -189,13 +192,13 @@ export default function LmClient() {
       await fetch(SAVE_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ uid, sig, name: name.trim() }),
+        body: JSON.stringify({ uid, sig, name: name.trim(), call_language: lang }),
       });
       setStep('connect');
     } catch (e) {
       setErr(t.name.saveError);
     }
-  }, [name, uid, sig, t]);
+  }, [name, lang, uid, sig, t]);
 
   // TWO separate buttons / TWO connections — clearer UX than one button firing two consents back to
   // back. Calendar = Composio (clean sensitive scope, no warning). Gmail = Unipile (their Google-
@@ -308,6 +311,28 @@ export default function LmClient() {
             placeholder={t.name.placeholder}
             className="mt-5 w-full rounded-input border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-4 py-3 text-sm text-[hsl(var(--text-primary))] outline-none focus:border-[hsl(var(--gold))]"
           />
+          <div className="mt-5">
+            <span className="text-xs font-medium text-[hsl(var(--text-secondary))]">
+              {locale === 'ja' ? '電話の言語' : 'Call language'}
+            </span>
+            <div className="mt-2 grid grid-cols-2 gap-1 rounded-pill border border-[hsl(var(--border))] bg-[hsl(var(--background))] p-1">
+              {(['en', 'ja'] as const).map((lng) => (
+                <button
+                  key={lng}
+                  type="button"
+                  onClick={() => setLang(lng)}
+                  aria-pressed={lang === lng}
+                  className={`rounded-pill px-4 py-2 text-sm font-semibold transition-all duration-200 ${
+                    lang === lng
+                      ? 'bg-[hsl(var(--gold))] text-[#18181b] shadow-[0_1px_0_0_hsl(var(--border))]'
+                      : 'text-[hsl(var(--text-secondary))] hover:text-[hsl(var(--text-primary))]'
+                  }`}
+                >
+                  {lng === 'en' ? 'English' : '日本語'}
+                </button>
+              ))}
+            </div>
+          </div>
           <button
             type="button"
             onClick={saveName}

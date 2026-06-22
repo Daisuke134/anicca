@@ -117,12 +117,14 @@ exports.handler = async (event) => {
     if (!SUPABASE_URL || !SUPABASE_KEY) return json(500, { error: "missing supabase config" });
     let body;
     try { body = JSON.parse(event.body || "{}"); } catch { return json(400, { error: "bad json" }); }
-    const { uid, sig, name, phone } = body;
+    const { uid, sig, name, phone, call_language } = body;
     if (!uid) return json(400, { error: "missing uid" });
     if (!verifyUid(uid, sig)) return json(403, { error: "bad uid signature" });
     const row = { uid };
     if (typeof name === "string") row.name = name.slice(0, 120);
     if (typeof phone === "string") row.phone = phone.slice(0, 20);
+    // Call language the user picked on /lm (overrides the phone-country default; en/ja only).
+    if (call_language === "en" || call_language === "ja") row.call_language = call_language;
     const r = await upsertUser(row);
     if (!r.ok) return json(502, { error: "save failed", status: r.status });
     return json(200, { ok: true });

@@ -46,8 +46,11 @@ After every step: mark it here + commit + push.
 1. ✅ **L1 (#78)** — DONE 2026-06-22. `lm_users.call_language` text, nullable, CHECK in ('en','ja'); NULL →
    `langForPhone` fallback. Migration `apps/life-call/migrations/2026-06-22-call_language.sql`, applied to live
    Supabase (cycgdwndgfgdbnndithc) via Management API + VERIFIED (`select call_language` returns null for all rows).
-2. ☐ **L2 (#79)** — `/lm` language toggle button (English / 日本語) persists `call_language`. (gpt-tasteskill UI +
-   verify rendered in a real browser.)
+2. ◑ **L2 (#79)** — DONE 2026-06-22 (code; needs deploy + browser screenshot). `/lm` name step now has a
+   gold-pill segmented toggle **English / 日本語** (`LmClient.tsx`), defaults to the page display language,
+   posts `call_language` via `lm-onboard` save action (persists to lm_users; en/ja validated server-side).
+   gpt-tasteskill applied (matches existing gold-pill aesthetic, full contrast, no cheap labels). tsc clean.
+   PENDING: real-browser screenshot of the rendered toggle after Netlify deploy.
 3. ✅ **L3 (#80)** — DONE 2026-06-22 (code; deploys with L4). scheduler.js `langForUser(u)` = `call_language`
    else `langForPhone(phone)`; supaUsers select adds `call_language`; tick uses `langForUser(u)`. server.js
    `userForUid` fetches phone+call_language+name; `/test-call` lang = call_language else phone. Build bumped to
