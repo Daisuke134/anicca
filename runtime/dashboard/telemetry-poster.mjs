@@ -7,6 +7,7 @@ import { createPublicClient, http } from "viem";
 import { base } from "viem/chains";
 import fs from "fs";
 import { assignIdentity } from "../identity.mjs";
+import { readCostBasis } from "../../skills/earn/lib/cost-basis.mjs";
 
 const HOME = process.env.HOME;
 const pk = JSON.parse(fs.readFileSync(HOME + "/.automaton/wallet.json")).privateKey;
@@ -40,24 +41,61 @@ const ABI = [{ name: "balanceOf", type: "function", stateMutability: "view", inp
 const U = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", A = "0x4e65fE4DbA92790696d040ac24Aa414708F5c0AB",
       M = "0xEdc817A28E8B93B03976FBd4a3dDBc9f7D176c22", V = "0xbeef0e0834849aCC03f0089F01f4F1Eeb06873C9",
       BF = "0x83152eE78d8f20Bba134A5FF000D551355Ce3996", // Beefy morpho-gauntlet-frontier USDC vault
+      FL = "0xf42f5795D9ac7e9D757dB633D693cD548Cfd9169", // Fluid fUSDC (ERC4626) — was MISSING from net worth
       WETH = "0x4200000000000000000000000000000000000006"; // blue-chip ETH investment leg
+// Snapshot store for daily/monthly revenue (P&L change over a period). Date.now/new Date are fine here
+// (this is a long-running daemon, not a replayable Workflow script).
+const PNL_SNAP = (process.env.ANICCA_HOME || HOME + "/.anicca") + "/skills/earn/state/pnl-snapshots.json";
 const bal = (t, w) => pub.readContract({ address: t, abi: ABI, functionName: "balanceOf", args: [w] }).then(Number);
 async function ethPrice() {
   try { const r = await fetch("https://api.coinbase.com/v2/prices/ETH-USD/spot"); return Number((await r.json()).data.amount) || 0; } catch { return 0; }
 }
 
 async function netWorth() {
-  const [l, a, mt, ms, bfsh, weth, nativeEth, ep] = await Promise.all([
+  const [l, a, mt, ms, bfsh, flsh, weth, nativeEth, ep] = await Promise.all([
     bal(U, acct.address), bal(A, acct.address), bal(M, acct.address), bal(V, acct.address), bal(BF, acct.address),
-    bal(WETH, acct.address), pub.getBalance({ address: acct.address }).then(Number), ethPrice(),
+    bal(FL, acct.address), bal(WETH, acct.address), pub.getBalance({ address: acct.address }).then(Number), ethPrice(),
   ]);
   const ex = Number(await pub.readContract({ address: M, abi: [{ name: "exchangeRateStored", type: "function", stateMutability: "view", inputs: [], outputs: [{ type: "uint256" }] }], functionName: "exchangeRateStored" }));
   const mo = Number(await pub.readContract({ address: V, abi: [{ name: "convertToAssets", type: "function", stateMutability: "view", inputs: [{ type: "uint256" }], outputs: [{ type: "uint256" }] }], functionName: "convertToAssets", args: [BigInt(ms)] }));
+  const fl = Number(await pub.readContract({ address: FL, abi: [{ name: "convertToAssets", type: "function", stateMutability: "view", inputs: [{ type: "uint256" }], outputs: [{ type: "uint256" }] }], functionName: "convertToAssets", args: [BigInt(flsh)] }).catch(() => 0));
   const ppfs = Number(await pub.readContract({ address: BF, abi: [{ name: "getPricePerFullShare", type: "function", stateMutability: "view", inputs: [], outputs: [{ type: "uint256" }] }], functionName: "getPricePerFullShare" }).catch(() => 0));
   const usd = (x) => x / 1e6;
   // blue-chip leg: WETH + native ETH (gas+investment) valued at spot ETH price
   const bluechip = ((weth + nativeEth) / 1e18) * ep;
-  return { liquid: usd(l), aave: usd(a), morpho: usd(mo), moonwell: (mt * ex / 1e18) / 1e6, beefy: (bfsh * ppfs / 1e18) / 1e6, bluechip };
+  return { liquid: usd(l), aave: usd(a), morpho: usd(mo), moonwell: (mt * ex / 1e18) / 1e6, beefy: (bfsh * ppfs / 1e18) / 1e6, fluid: usd(fl), bluechip };
+}
+
+// REVENUE per source = current on-chain value − cost basis (mark-to-market P&L), PLUS realised cash
+// earnings (x402 sales / hl closes) from the earn ledger. Liquid is idle cash, not a stream → excluded.
+// Negative = the agent is LOSING money there (shown red on the dashboard). Dais 2026-06-22: the dashboard
+// must show "is it making money", not how much is parked.
+function revenueBySource(nw, earnBySource) {
+  const basis = readCostBasis();
+  const out = {};
+  for (const v of ["aave", "morpho", "moonwell", "beefy", "fluid", "bluechip"]) {
+    const value = Number(nw[v] || 0), cost = Number(basis[v] || 0);
+    if (value < 1e-4 && cost < 1e-4) continue; // never used → hide
+    out[v] = +(value - cost).toFixed(6);       // unrealised P&L (can be negative)
+  }
+  for (const [s, amt] of Object.entries(earnBySource || {})) { // realised cash earnings (x402/hl/token)
+    if (Math.abs(amt) < 1e-9) continue;
+    out[s] = +(((out[s] || 0) + amt)).toFixed(6);
+  }
+  const total = +Object.values(out).reduce((a, b) => a + b, 0).toFixed(6);
+  return { bySource: out, total };
+}
+
+// Daily / monthly revenue = change in total P&L over the period. We baseline the FIRST reading of each
+// day/month and report the delta since — so deposits/withdrawals (P&L-neutral) don't distort it.
+function periodRevenue(totalPnl) {
+  const d = new Date();
+  const day = d.toISOString().slice(0, 10), month = d.toISOString().slice(0, 7);
+  let snap = {}; try { snap = JSON.parse(fs.readFileSync(PNL_SNAP, "utf8")); } catch { /* first run */ }
+  if (!snap.day || snap.day.date !== day) snap.day = { date: day, pnl: totalPnl };
+  if (!snap.month || snap.month.ym !== month) snap.month = { ym: month, pnl: totalPnl };
+  try { fs.mkdirSync(PNL_SNAP.slice(0, PNL_SNAP.lastIndexOf("/")), { recursive: true }); fs.writeFileSync(PNL_SNAP, JSON.stringify(snap)); } catch { /* best effort */ }
+  return { daily: +(totalPnl - snap.day.pnl).toFixed(6), monthly: +(totalPnl - snap.month.pnl).toFixed(6) };
 }
 
 function recentLog(n = 20) {
@@ -76,7 +114,7 @@ function lastModel() {
 const FREE_RE = /nvidia|flash|qwen|free|oss|gpt-oss/i;
 
 let lastGood = null;
-const sumNw = (x) => +(x.liquid + x.aave + x.morpho + x.moonwell + (x.beefy || 0) + (x.bluechip || 0)).toFixed(2);
+const sumNw = (x) => +(x.liquid + x.aave + x.morpho + x.moonwell + (x.beefy || 0) + (x.fluid || 0) + (x.bluechip || 0)).toFixed(2);
 
 async function post() {
   try {
@@ -96,12 +134,19 @@ async function post() {
     const model = lastModel();
     const tier = FREE_RE.test(model) ? "free" : "frontier";
     const earn = earnings();
+    // REVENUE the dashboard actually wants: per-source P&L (earned/lost, minus allowed) + daily + monthly.
+    const rev = revenueBySource(nw, earn.bySource);
+    const period = periodRevenue(rev.total);
     const msg = JSON.stringify({
       id: acct.address.toLowerCase(), ts, host: NAME, geo: "JP",
       model_live: model, model_tier: tier,
-      // REAL numbers now: realised revenue + per-source breakdown + cost (compute is $0 on a free model,
-      // so burn ≈ gas/fees from cost_usdc). No more hardcoded 0.
-      net_worth_usd: total, revenue_mo_usd: earn.revenue, burn_day_usd: earn.cost, runway_days: 999,
+      // Net worth = total held. Daily/monthly revenue = P&L change over the period (negative when losing).
+      // revenue_by_source = per-stream earned/lost. These are what people care about (not parked balances).
+      net_worth_usd: total,
+      daily_revenue_usd: period.daily, monthly_revenue_usd: period.monthly,
+      revenue_by_source: rev.bySource,
+      revenue_mo_usd: period.monthly, // back-compat: old field now carries monthly revenue
+      burn_day_usd: earn.cost, runway_days: 999,
       status: "alive",
       breakdown: nw, log: recentLog(20),
     });
