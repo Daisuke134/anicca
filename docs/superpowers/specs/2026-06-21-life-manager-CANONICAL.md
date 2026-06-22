@@ -378,6 +378,26 @@ duplication you're worried about is REAL.
   "OpenClaw on your Mac" (Mac sleeps, gog is single-account) — cloud = OpenClaw on a SERVER. #74 is step 1
   of this staircase, NOT a throwaway: do #74 now (fix-once, low-risk), launch, then #72 step 2 after.
 
+## Per-user CALL LANGUAGE + identity (2026-06-22, Dais)
+- **Language is a USER CHOICE on /lm**, not a phone-country default. New column `lm_users.call_language`
+  ('en'|'ja', nullable). A toggle button (**English / 日本語**) on `/lm` persists it. Every call to that user
+  uses it from then on — a US phone can pick Japanese, a Japanese phone can pick English.
+- **Resolution order at call time:** `lm_users.call_language` → else `langForPhone(phone)` (+81→ja, else en).
+  The chosen `lang` is threaded END-TO-END and HMAC-signed: scheduler.js `buildStreamUrl(ev,urgency,lang)` /
+  server.js `/test-call` → query `?lang=` (signed with summary|dateTime|location|urgency|lang) → `ctxFromReq`
+  verifies → `geminiSetupForEvent(event,urgency,lang)` → `buildCallPrompt(event,urgency,lang,name)`.
+- **Identity:** the assistant is the user's **"Life Manager"** and must NEVER call itself "Anicca". It
+  **addresses the user BY NAME** in the chosen language (EN: "Hi Daisuke, this is your Life Manager…").
+- **Dais's account** (uid `lm_784ad279-4d2c-4274-a318-b51e38285a61`) = `call_language='en'` — the web/cloud
+  Life Manager is the one that calls him, and posted transcripts are English.
+- We only ever maintain **two** language branches (EN + JA) in `buildCallPrompt`.
+
+## Content account warm-up (@anicca.comedy, 2026-06-22, Dais)
+@anicca.comedy is a BRAND-NEW TikTok account → must be **warmed up** before auto-posting. The
+life-manager-video pipeline (#45/#50) therefore posts the daily clip as a **DRAFT into the TikTok app
+itself** (NOT Postiz `state=PUBLISHED`, NOT the posters app) so Dais warms it by posting manually at first.
+Switch to 2×/day auto-publish (verify real POST_ID per post) only AFTER the account is warmed.
+
 ## Next bigger version (post-launch)
 omni-channel chat (reply to gmail/slack/discord/whatsapp/imessage with approval) · proactive buddy
 (lead the user to their best self) · $10k MRR.
