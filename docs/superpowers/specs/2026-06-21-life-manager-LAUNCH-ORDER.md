@@ -43,7 +43,9 @@ After every step: mark it here + commit + push.
   Gmail mailbox).
 
 ### PHASE 1 — Per-user language selector (NEW, from 2026-06-22 decisions) → tasks #78–#82
-1. ☐ **L1 (#78)** — `lm_users.call_language` column ('en'/'ja', nullable; NULL → `langForPhone` fallback).
+1. ✅ **L1 (#78)** — DONE 2026-06-22. `lm_users.call_language` text, nullable, CHECK in ('en','ja'); NULL →
+   `langForPhone` fallback. Migration `apps/life-call/migrations/2026-06-22-call_language.sql`, applied to live
+   Supabase (cycgdwndgfgdbnndithc) via Management API + VERIFIED (`select call_language` returns null for all rows).
 2. ☐ **L2 (#79)** — `/lm` language toggle button (English / 日本語) persists `call_language`. (gpt-tasteskill UI +
    verify rendered in a real browser.)
 3. ☐ **L3 (#80)** — scheduler.js tick() + server.js `/test-call` read `call_language` and OVERRIDE the phone
