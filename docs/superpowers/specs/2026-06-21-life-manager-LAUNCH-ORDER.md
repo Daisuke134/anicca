@@ -89,11 +89,14 @@ After every step: mark it here + commit + push.
    addresses "Daisuke", reads the event, two-way conversational) — daisukenarita53 shares that same phone +
    call path, so a separate call would be identical. daisukenarita53 was reset to unpaid after E1 to avoid
    auto-call spam, so no extra call fired. Evidence: L5 (EN recording) + L6 (Dais "much better").
-8. ◑ **E3** — DONE 2026-06-22 (code; deploys via Netlify). ROOT CAUSE: a reload mid-connect restored
-   `anicca.lm.cal`/`gmail` = 'connecting' but the resolving poll died with the old page → button stuck on
-   "接続中…" forever. FIX (`LmClient.tsx`): on load, if a restored state is 'connecting', re-check the real
-   status via `check=1` and resolve to 'connected'/'idle'. tsc clean. PENDING: browser-verify the stuck state
-   now self-resolves.
+8. ✅ **E3** — DONE+VERIFIED 2026-06-22. ROOT CAUSE: a reload mid-connect restored `anicca.lm.cal`/`gmail` =
+   'connecting' but the resolving poll died with the old page → button stuck on "接続中…" forever. FIX
+   (`LmClient.tsx`): on load, if a restored state is 'connecting', re-check the real status via `check=1` and
+   resolve to 'connected'/'idle'. **Real-browser VERIFIED** (CloakBrowser: seeded cal/gmail='connecting' +
+   reload → self-resolved to connected ✓, not stuck). Deployed (PR #175).
+
+### PHASE 2 COMPLETE ✅ — fresh-user web E2E (#61-b): login → gcal → gmail → phone → SANDBOX pay (charged nobody)
+### → dashboard, wake-call path (L5/L6), and the reload-stuck cosmetic all verified.
 
 ### PHASE 3 — Content pipeline (#45/#50) — English transcripts, WARM-UP MODE
 9. ⟳ **C1** — life-manager-video skill: capture the day's REAL wake-call (Telnyx recording) → **English** transcribe
