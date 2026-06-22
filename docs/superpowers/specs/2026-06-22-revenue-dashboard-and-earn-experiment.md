@@ -64,10 +64,14 @@ Prereq (done): all tools work + the agent knows how to use them (per-action tool
 Each anicca must report what it did + net worth + revenue, as a NATURAL-LANGUAGE STORY ("I explored DeFi
 tools and found X; I kept $5 liquid for compute; net worth $7.36, today −$0.02"), NOT a raw tool list
 ("DID read_file,list_children"). So Dais (and OSS users) learn earnings without asking.
-- ☐ D1 generate a 1–2 sentence NL summary each wake from the structured ledger (slot→human verb + result
-     + net worth + today's revenue). Reliable template (no fragile extra LLM call), storytelling tone.
-- ☐ D2 fix `report` skill: send the NL summary + net worth + revenue to contact@aniccaai.com (+ Dais).
-     Daily digest by default (1×/day), with an every-wake option. Fix host:'akash' → "anicca-<hex>".
+- ☑ D1 the AGENT writes the report ITSELF via its OWN model (Dais 2026-06-22: "do NOT hardcode the prose
+     — they're the same as you; give them the facts, they speak. And it MUST be TRUTH, not a hallucination
+     like 'explored new ways to earn' if it didn't"). Script gathers only real FACTS (ledger counts + real
+     skill outputs + live on-chain money) → instance's LLM writes a short first-person honest report,
+     truth-only (told to never claim an action/number not in the facts). 10 anicca → 10 original voices.
+- ☑ D2 `daily-nl-report.mjs` sends it to contact@aniccaai.com (+ Dais) via AgentMail. Daily launchd cron
+     21:00 JST. Verified: glm-4.7 wrote "no buyers showed... I didn't make anything either... I lost 1.18
+     cents." (The cloud `anicca-report.sh` host:'akash' is already blocked by the telemetry host-guard.)
 - ☐ D3 OSS onboarding (anicca repo): optionally ask the user's email → their agent's daily NL log +
      earnings are emailed there (opt-in; dashboard search is the always-on alternative).
 
