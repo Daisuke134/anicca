@@ -14,6 +14,8 @@ function aggregate(rows, nowS) {
   );
   const total_net_worth_usd = live.reduce((s, r) => s + (r.net_worth_usd || 0), 0);
   const earned_mo_usd = live.reduce((s, r) => s + (r.revenue_mo_usd || 0), 0);
+  // total revenue TODAY across all live agents (can be negative when the colony is losing money)
+  const earned_today_usd = live.reduce((s, r) => s + (r.daily_revenue_usd || 0), 0);
   const alive = live.length;
   // self-funded = monthly revenue covers daily burn (real economic test, NOT a model proxy)
   const selfFunded = live.filter((r) => r.revenue_mo_usd / 30 >= (r.burn_day_usd || 0)).length;
@@ -21,6 +23,6 @@ function aggregate(rows, nowS) {
   const self_funded_pct = live.length ? Math.round((selfFunded / live.length) * 100) : 0;
   const frontier_pct = live.length ? Math.round((frontier / live.length) * 100) : 0;
   const leaderboard = [...live].sort((a, b) => b.net_worth_usd - a.net_worth_usd);
-  return { total_net_worth_usd, earned_mo_usd, alive, self_funded_pct, frontier_pct, leaderboard, updated_at: new Date().toISOString() };
+  return { total_net_worth_usd, earned_mo_usd, earned_today_usd, alive, self_funded_pct, frontier_pct, leaderboard, updated_at: new Date().toISOString() };
 }
 module.exports = { aggregate };

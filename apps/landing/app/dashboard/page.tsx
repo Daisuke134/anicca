@@ -25,12 +25,16 @@ type InstanceRow = {
 type DashboardData = {
   total_net_worth_usd: number;
   earned_mo_usd: number;
+  earned_today_usd?: number;
   alive: number;
   self_funded_pct: number;
   frontier_pct: number;
   leaderboard: InstanceRow[];
   updated_at: string;
 };
+
+// signed revenue: green making money, red losing, neutral at zero (Dais: show the minus)
+function fmtRev(v: number): string { return `${v >= 0 ? "+" : "−"}$${Math.abs(v).toFixed(2)}`; }
 
 export default function DashboardPage() {
   const seed = (snapshot as DashboardData | null) ?? null;
@@ -81,9 +85,9 @@ export default function DashboardPage() {
 
         <section className="mt-14 grid grid-cols-2 gap-px overflow-hidden rounded-card border border-border bg-border md:grid-cols-4">
           <Stat label="Total net worth" value={`$${(data?.total_net_worth_usd ?? 0).toFixed(2)}`} accent />
-          <Stat label="Earned / mo" value={`$${(data?.earned_mo_usd ?? 0).toFixed(2)}`} />
+          <Stat label="Revenue today" value={fmtRev(data?.earned_today_usd ?? 0)} signed={data?.earned_today_usd ?? 0} />
+          <Stat label="Revenue / mo" value={fmtRev(data?.earned_mo_usd ?? 0)} signed={data?.earned_mo_usd ?? 0} />
           <Stat label="Bodies alive" value={String(data?.alive ?? 0)} />
-          <Stat label="Self-funded" value={`${data?.self_funded_pct ?? 0}%`} />
         </section>
 
         <section className="mt-12">
@@ -136,11 +140,12 @@ function humanModel(live?: string, tier?: string): string {
   return live;
 }
 
-function Stat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+function Stat({ label, value, accent, signed }: { label: string; value: string; accent?: boolean; signed?: number }) {
+  const color = accent ? "text-gold" : signed === undefined ? "" : signed > 0 ? "text-[#3a9d6e]" : signed < 0 ? "text-[#c0392b]" : "";
   return (
     <div className="bg-background p-5">
       <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">{label}</p>
-      <p className={`font-mono mt-2 text-2xl md:text-3xl font-medium tracking-tight ${accent ? "text-gold" : ""}`}>{value}</p>
+      <p className={`font-mono mt-2 text-2xl md:text-3xl font-medium tracking-tight ${color}`}>{value}</p>
     </div>
   );
 }
