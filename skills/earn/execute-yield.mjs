@@ -16,6 +16,7 @@ import { privateKeyToAccount } from "viem/accounts";
 import { base } from "viem/chains";
 import fs from "fs";
 import { recordDeposit, recordWithdraw } from "./lib/cost-basis.mjs";
+import { depositLanded } from "./lib/deposit-guard.mjs";
 // depositKind → telemetry netWorth() venue key (so per-source P&L can pair value ↔ cost basis)
 const VENUE_KEY = { beefy: "beefy", erc4626: "fluid", aave: "aave" };
 
@@ -142,10 +143,13 @@ async function main() {
       tx = await w.writeContract({ address: FLUID, abi: erc4626, functionName: "deposit", args: [surplus, acct.address] });
       r = await pub.waitForTransactionReceipt({ hash: tx });
     }
-    // Track cost basis ONLY when the deposit actually landed (status success) — a reverted deposit moved
-    // no money, so recording it would inflate basis and understate real P&L. (Dais: no lying numbers.)
-    if (r.status === "success") recordDeposit(VENUE_KEY[depositKind], Number(surplus) / 1e6);
-    return out({ kind: "yield", action: "deploy", protocol, apy_pct: +(apy * 100).toFixed(2), tx, status: r.status === "success" ? "0x1" : "0x0", deposited_usdc: Number(surplus) / 1e6, reserve_usdc: RESERVE / 1e6, wallet: acct.address });
+    // READ-AFTER-WRITE: "status === success" is NOT proof money moved (a tx can succeed yet deposit
+    // nothing → the phantom `morpho $1` in cost-basis.json while on-chain morpho was 0). The ONLY honest
+    // proof is that LIQUID USDC strictly dropped by ~the amount we deposited. Record basis ONLY then.
+    const liqAfter = await pub.readContract({ address: USDC, abi: erc20, functionName: "balanceOf", args: [acct.address] });
+    const landed = depositLanded({ statusOk: r.status === "success", liqBefore: liquid, liqAfter, surplus });
+    if (landed) recordDeposit(VENUE_KEY[depositKind], Number(liquid - liqAfter) / 1e6);
+    return out({ kind: "yield", action: "deploy", protocol, apy_pct: +(apy * 100).toFixed(2), tx, status: r.status === "success" ? "0x1" : "0x0", landed, phantom: r.status === "success" && !landed, moved_usdc: Number(liquid - liqAfter) / 1e6, deposited_usdc: Number(surplus) / 1e6, reserve_usdc: RESERVE / 1e6, wallet: acct.address });
   }
 
   // ---- REFILL: liquid below the trigger → pull the position back to liquid to top up the buffer ----
