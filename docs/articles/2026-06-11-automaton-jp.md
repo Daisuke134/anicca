@@ -736,6 +736,16 @@ Sleeping for 60s
 | **⑤ 発行する・請け負う（token / 0xwork）** | 独自コインを出す／報酬付きの仕事を請ける | 自分のトークン（コイン）を発行して資金を集める／報酬付きの小タスクを請けて稼ぐ。 |
 | **⑥ 学びを仲間に配る（self / issue-dev）** | 詰まった所と学びを**他のAI個体に共有**する | ここが大事な誤解ポイント。これは「自分を直す」道具ではなく、**自分がつまずいた事・気づいた事を"公開メモ（GitHubのIssue）"に書いて、世界中の仲間のAI個体（他のAnicca／他のAutomaton）に渡す**ための道具。一体の失敗が、群れ全体の知恵になる——**共進化**の仕組みです。 |
 
+これら6つの道具は、どれも一から作ったものではありません。すでに世の中にあるオープンソースを土台にして、AIが自分の手で動かせるように整えたものです。何を下敷きにしたかは、次のとおりです。
+
+- **① 預けて利息**：Aave v3・Beefy・Fluid・Morpho という実在の運用先に、そのまま預けています。どの預け先に置くかの選び方は、自律エージェント研究の AEA（Fetch.ai の Autonomous Economic Agents）と、GOAT という開発キットのやり方を参考にしました。
+- **② 値上がりに賭ける**：Hyperliquid 公式の開発キット（hyperliquid-python-sdk）をそのまま使っています。
+- **③ 情報を売る**：Coinbase が作った決済規格 x402 を使っています。
+- **④ 新しい稼ぎ方を探す**：Web 検索の Firecrawl を使い、「探して、試して、数字を共有する」という流れは einstein-arena と Franklin（BlockRun）のやり方を下敷きにしました。
+- **⑥ 学びを仲間に配る**：自分たちで作りましたが、Symphony や Sutando という先行例のやり方に着想を得ています。
+
+（各リンクは記事末の出典にまとめます。）
+
 > **用語ミニ辞典**：**デジタルのドル（USDC）**＝価値がドルと1:1で固定された暗号資産。値動きしないお金。／**ウォレット（財布）**＝AI自身が鍵を握る、ブロックチェーン上の口座。／**利回り（年利）**＝預けた額が1年で何%増えるか。／**ガス**＝取引のたびにかかる手数料。
 
 #### 「預けて利息」の Aave や Fluid とは、何なのか
@@ -773,8 +783,6 @@ Aave は、この手の仕組みでは世界最大級で、数十億ドルが預
 | **確定した利益** | **＋0.17ドル**（トレードでの値上がり益） |
 
 額は17セント。少額です。でも核心はここです。**「無料の安いAIだから稼げない」は、間違いでした。** 6つの道具を全部試した結果、いま現金になったのは"トレード"の一つ——でも、**タダのAIが、人の手を借りず、自分で勝ちトレードを決済して利益を出した**のは事実です。残りの道具（情報販売・利息・コインなど）がまだゼロなのは、AIの賢さの問題ではなく、**「買ってくれる相手（需要）」と「元手の大きさ（資本）」**の問題。これは時間とお金を積めば変わる種類のものです（利息は元手に比例するので、$1ではなく$1万なら桁が変わります）。
-
-> **これはライブ検証です。** いま現在もAIは動き続けていて、収支は[全個体ダッシュボード](https://aniccaai.com/dashboard)でリアルタイムに公開しています。20〜30回の起床ぶんの観測がそろい次第、この数字を更新します。
 
 では、頭脳を**最先端の有料AIに切り替えたら、稼ぎは増えるのか？** 次に、まったく同じ"道具入り"のAIを、プレミアムモデルで走らせて確かめます。
 
@@ -824,5 +832,13 @@ Aave は、この手の仕組みでは世界最大級で、数十億ドルが預
 - AIエージェントの法人化（Digital LLC / MIDAO）: https://www.midao.org/guides/ai-agents
 - Stripe Link agent wallet / Agentic Commerce（x402 Inc.）: https://note.com/x402inc/n/nd945306fb457
 - Stripe Treasury × AIエージェント決済（x402 Inc.）: https://note.com/x402inc/n/n5b0a050cc70e
+
+**改造で持たせた「稼ぐ道具」の出典**
+
+- 値上がりに賭ける（Hyperliquid 公式SDK）: https://github.com/hyperliquid-dex/hyperliquid-python-sdk
+- 預けて利息（実在の運用先）: Aave v3 https://aave.com ／ Beefy https://beefy.finance ／ Fluid https://fluid.io ／ Morpho https://morpho.org
+- 預け先の選び方の参考: AEA（Fetch.ai Autonomous Economic Agents）https://github.com/fetchai/agents-aea ／ GOAT SDK https://github.com/goat-sdk/goat
+- 新しい稼ぎ方を探す（Web検索）: Firecrawl https://www.firecrawl.dev ／ 「探す→試す→数字を共有」の流れの参考: vinid/einstein-arena, Franklin（BlockRun, 上に既出）
+- 学びを仲間に配る（自作。着想元）: Symphony, Sutando パターン
 
 > 取材ソース全文（30件・逐語引用つき）: `docs/research/ai-crypto-money-earning-agents-base.md`
