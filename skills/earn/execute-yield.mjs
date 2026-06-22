@@ -15,6 +15,9 @@ import { createPublicClient, createWalletClient, http, fallback } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { base } from "viem/chains";
 import fs from "fs";
+import { recordDeposit, recordWithdraw } from "./lib/cost-basis.mjs";
+// depositKind → telemetry netWorth() venue key (so per-source P&L can pair value ↔ cost basis)
+const VENUE_KEY = { beefy: "beefy", erc4626: "fluid", aave: "aave" };
 
 // EVERY public Base RPC flakes intermittently (mainnet.base.org timeouts, llamarpc 521, drpc 500) —
 // that silently dropped deposits (the loop logged "deploy" but no tx landed). Use a viem fallback
@@ -139,6 +142,9 @@ async function main() {
       tx = await w.writeContract({ address: FLUID, abi: erc4626, functionName: "deposit", args: [surplus, acct.address] });
       r = await pub.waitForTransactionReceipt({ hash: tx });
     }
+    // Track cost basis ONLY when the deposit actually landed (status success) — a reverted deposit moved
+    // no money, so recording it would inflate basis and understate real P&L. (Dais: no lying numbers.)
+    if (r.status === "success") recordDeposit(VENUE_KEY[depositKind], Number(surplus) / 1e6);
     return out({ kind: "yield", action: "deploy", protocol, apy_pct: +(apy * 100).toFixed(2), tx, status: r.status === "success" ? "0x1" : "0x0", deposited_usdc: Number(surplus) / 1e6, reserve_usdc: RESERVE / 1e6, wallet: acct.address });
   }
 
@@ -153,6 +159,9 @@ async function main() {
       const tx = await w.writeContract({ address: vault, abi: beefy, functionName: "withdrawAll", args: [] });
       const r = await pub.waitForTransactionReceipt({ hash: tx });
       const liq2 = await pub.readContract({ address: USDC, abi: erc20, functionName: "balanceOf", args: [acct.address] });
+      // Withdrawing back to liquid is principal-OUT: reduce the beefy basis by the amount pulled, so the
+      // remaining position's value − reduced basis still reflects true unrealised P&L.
+      if (r.status === "success") recordWithdraw("beefy", Number(liq2 - liquid) / 1e6);
       return out({ kind: "yield", action: "refill", protocol: `beefy:${bf.id}`, tx, status: r.status === "success" ? "0x1" : "0x0", refilled_usdc: Number(liq2 - liquid) / 1e6, reserve_usdc: RESERVE / 1e6, wallet: acct.address });
     }
   }
