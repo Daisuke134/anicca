@@ -266,3 +266,5 @@ server.listen(PORT, () => {
   startAskLoop();     // begin the 20min ask/reply (location) loop
   startOnboardLoop(); // begin the 2min interactive Telegram onboarding nudge
 });
+
+// redeploy trigger 010026
