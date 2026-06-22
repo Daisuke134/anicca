@@ -375,27 +375,50 @@ function formatTime(dateTime) {
  * @param {object} event - GCal-shaped event { summary, start:{dateTime}, location }
  * @returns {string}
  */
-function buildCallPrompt(event, urgency) {
+function buildCallPrompt(event, urgency, lang) {
   const e = event || {};
-  const title = (e.summary || "your next appointment").toString().trim() || "your next appointment";
   const time = formatTime(e.start && e.start.dateTime);
   const location = (e.location || "").toString().trim();
+  // Language follows the USER (Dais 2026-06-22): Japan/JA → speak Japanese, everyone else → English,
+  // for EVERY call (wake + demo). The assistant is the user's "Life Manager" and must NEVER claim to be
+  // "Anicca" (it isn't). Default to English for any unknown locale.
+  const ja = String(lang || "").toLowerCase() === "ja";
+
+  if (ja) {
+    const title = (e.summary || "次のご予定").toString().trim() || "次のご予定";
+    const tone =
+      urgency === "harsh" ? "緊急で強めに。今すぐ出ないと遅刻します。雑談なしで強く促してください。" :
+      urgency === "firm"  ? "しっかりと。もう本当に出る時間です。動いてもらってください。" :
+                            "やわらかく、そろそろ出発の時間だと伝えてください。";
+    return [
+      "あなたはユーザーのライフマネージャーで、電話で話しかけています。落ち着いて簡潔に。",
+      "自然に、短く話してください。双方向の通話です。相手の返答に答えてください。",
+      "★ 自分を「アニッチャ」「Anicca」とは絶対に名乗らないでください。あなたはライフマネージャーです。★",
+      `ユーザーの次の予定は「${title}」${time ? ` ${time}` : ""} です。`,
+      location ? `場所は ${location} です。` : "",
+      tone,
+      "そのあと、道順や行き方が必要か尋ねてください。",
+      `最初の一言: 「こんにちは、ライフマネージャーです。次のご予定は${title}${time ? ` ${time}` : ""}。そろそろ出発の時間です。」`,
+      "★ 100% 日本語で話してください。★",
+    ].filter(Boolean).join(" ");
+  }
+
+  const title = (e.summary || "your next appointment").toString().trim() || "your next appointment";
   const tone =
     urgency === "harsh" ? "Be urgent and firm. They must leave RIGHT NOW or they will be late — push them hard, no small talk." :
     urgency === "firm"  ? "Be firm. It is really time to go now — get them moving." :
                           "Gently let them know it's about time to head out.";
-
-  const lines = [
-    "You are Anicca, a calm, concise voice assistant calling the user on the phone.",
+  return [
+    "You are the user's Life Manager, calling them on the phone. Be calm and concise.",
     "Speak naturally. Keep it short. This is a two-way call — answer follow-ups.",
+    "NEVER call yourself \"Anicca\" — you are not Anicca. You are their Life Manager.",
     `The user's next event is "${title}"${time ? ` at ${time}` : ""}.`,
     location ? `It is at ${location}.` : "",
     tone,
     "Then ask if they need directions or how to get there.",
-    `Open with: "Hi, it's Anicca. Your next event is ${title}${time ? ` at ${time}` : ""} — time to leave now."`,
-  ].filter(Boolean);
-
-  return lines.join(" ");
+    `Open with: "Hi, this is your Life Manager. Your next event is ${title}${time ? ` at ${time}` : ""} — time to leave now."`,
+    "Speak 100% in English.",
+  ].filter(Boolean).join(" ");
 }
 
 // ── TwiML ─────────────────────────────────────────────────────────────────────
