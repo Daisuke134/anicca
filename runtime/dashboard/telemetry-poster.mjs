@@ -8,6 +8,7 @@ import { base } from "viem/chains";
 import fs from "fs";
 import { assignIdentity } from "../identity.mjs";
 import { readCostBasis } from "../../skills/earn/lib/cost-basis.mjs";
+import { revenueBySource as pureRevenueBySource } from "../../skills/earn/lib/revenue.mjs";
 
 const HOME = process.env.HOME;
 const pk = JSON.parse(fs.readFileSync(HOME + "/.automaton/wallet.json")).privateKey;
@@ -39,6 +40,9 @@ function earnings() {
 const pub = createPublicClient({ chain: base, transport: http("https://base-rpc.publicnode.com") });
 const ABI = [{ name: "balanceOf", type: "function", stateMutability: "view", inputs: [{ type: "address" }], outputs: [{ type: "uint256" }] }];
 const U = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", A = "0x4e65fE4DbA92790696d040ac24Aa414708F5c0AB",
+      // NOTE (verified on-chain 2026-06-22): M = Moonwell mUSDC (name "Moonwell USDC") → drives the
+      // `moonwell` field; V = Steakhouse Prime USDC (a Morpho MetaMorpho vault) → drives the `morpho`
+      // field. The single-letter names are NOT mnemonic; the field assignments below are the source of truth.
       M = "0xEdc817A28E8B93B03976FBd4a3dDBc9f7D176c22", V = "0xbeef0e0834849aCC03f0089F01f4F1Eeb06873C9",
       BF = "0x83152eE78d8f20Bba134A5FF000D551355Ce3996", // Beefy morpho-gauntlet-frontier USDC vault
       FL = "0xf42f5795D9ac7e9D757dB633D693cD548Cfd9169", // Fluid fUSDC (ERC4626) — was MISSING from net worth
@@ -66,24 +70,10 @@ async function netWorth() {
   return { liquid: usd(l), aave: usd(a), morpho: usd(mo), moonwell: (mt * ex / 1e18) / 1e6, beefy: (bfsh * ppfs / 1e18) / 1e6, fluid: usd(fl), bluechip };
 }
 
-// REVENUE per source = current on-chain value − cost basis (mark-to-market P&L), PLUS realised cash
-// earnings (x402 sales / hl closes) from the earn ledger. Liquid is idle cash, not a stream → excluded.
-// Negative = the agent is LOSING money there (shown red on the dashboard). Dais 2026-06-22: the dashboard
-// must show "is it making money", not how much is parked.
+// REVENUE per source = pure lib (skills/earn/lib/revenue.mjs) so the logic is unit-tested independently
+// of this daemon. Reads cost basis here (I/O) and delegates the pure P&L math.
 function revenueBySource(nw, earnBySource) {
-  const basis = readCostBasis();
-  const out = {};
-  for (const v of ["aave", "morpho", "moonwell", "beefy", "fluid", "bluechip"]) {
-    const value = Number(nw[v] || 0), cost = Number(basis[v] || 0);
-    if (value < 1e-4 && cost < 1e-4) continue; // never used → hide
-    out[v] = +(value - cost).toFixed(6);       // unrealised P&L (can be negative)
-  }
-  for (const [s, amt] of Object.entries(earnBySource || {})) { // realised cash earnings (x402/hl/token)
-    if (Math.abs(amt) < 1e-9) continue;
-    out[s] = +(((out[s] || 0) + amt)).toFixed(6);
-  }
-  const total = +Object.values(out).reduce((a, b) => a + b, 0).toFixed(6);
-  return { bySource: out, total };
+  return pureRevenueBySource(nw, readCostBasis(), earnBySource);
 }
 
 // Daily / monthly revenue, defined so the numbers ADD UP with the per-source breakdown (Dais 2026-06-22:
