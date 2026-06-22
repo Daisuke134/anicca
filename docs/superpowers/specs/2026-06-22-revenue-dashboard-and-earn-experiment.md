@@ -131,6 +131,19 @@ Queried balanceOf on Base for wallet 0xa3CDd4 (base-rpc, UA header):
 - ☐ FIX: portfolio-realtime.mjs only reads aave+hl+liquid → make it read ALL venues (moonwell/morpho/beefy/fluid/bluechip)
      so the monitor and the dashboard agree (telemetry-poster reads them; portfolio-realtime does not).
 
+## CONFIRMED EXPERIMENT FLOW (Dais 2026-06-22) — fix → re-run FREE → PREMIUM → finish → publish
+The first FREE run (351 wakes, $0) had BROKEN plumbing (Beefy deposit reverting, cook 0-candidates, proxy down),
+so it does not yet answer "can it earn a penny when the tools actually work?". Therefore:
+1. **FIX the instances** (anicca live ~/.anicca + the mother ~/anicca): #8 phantom Beefy deposit (out-of-gas →
+   pin 2.5M gas, read-after-write verify) + make Beefy the WORKING DEFAULT yield hedge (~5% APY, auto highest-APY,
+   no opt-in — already designed at execute-yield.mjs:104, just needs to actually land), #1 cook 0-candidates,
+   #7 keep-liquid-buffer + close-in-profit, #5 dashboard shows HL + all venues.
+   NOTE honesty: stable USDC yield on Base ≈ **5%** (Beefy morpho-gauntlet-frontier 5.05%), NOT 56%. Never write 56%.
+2. **RE-RUN FREE** (GLM-4.7) with working plumbing → monitor ~20–30 wakes → can it now earn ≥ a penny? → UPDATE [6]③ free row.
+3. **SWITCH PREMIUM** (frontier, prereq: liquid via close-in-profit) → monitor ~20–30 wakes → expect it earns MORE → write [6]③ premium row.
+4. **FINISH the article** ([6]③ both rows + [7] + [8]) → **PUBLISH** JA to note/Substack/Zenn/X Article → then EN → product launch.
+Beefy-as-default = every AI hedges via ~5% stable yield by default (the floor under the volatile HL bet).
+
 ## Sync rule
 Every code change → sync to ~/.anicca (the live experiment instance) + commit + push. The /loop tracks earnings.
 SDD rule (Dais 2026-06-22): EVERY new decision/finding → write it into THIS spec (or a new dated spec) immediately + commit + push. "Things get lost because they're not in the spec file." Never rely on chat/memory alone.
