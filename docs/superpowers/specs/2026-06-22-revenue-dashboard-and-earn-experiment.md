@@ -118,6 +118,19 @@ The JP article is done through [6]② (vanilla Automaton: free=$0, frontier GPT-
 `runtime/dashboard/telemetry-poster.mjs` net-worth (≈line 66) + revenue_by_source (≈line 76) read ONLY 6 Base venues; they never query the **Hyperliquid account** → $8.84 is invisible; HL only appears if a `close` is in earn-ledger.
 - ☐ add a Hyperliquid account read (clearinghouseState) → include hl in net worth + revenue_by_source (realised on close, unrealised PnL labelled). So the dashboard the article cites is COMPLETE, not under-counting.
 
+## FINDING 2026-06-22 — PHANTOM BEEFY/MORPHO DEPOSIT (on-chain verified, the article's "why beefy earned $0")
+Queried balanceOf on Base for wallet 0xa3CDd4 (base-rpc, UA header):
+- aave 0.196 ✅, moonwell(V 0xbeef0e08) 0.971 ✅, fluid 0.447 ✅, WETH 0.00223 ETH(~$4.6) ✅
+- **morpho(M 0xEdc817) = 0.000**, **beefy(BF 0x83152e) = 0.000** 🔴 — cost-basis.json claims morpho $1.00 but on-chain is ZERO.
+→ The 12 `yield-beefy-morpho deploy` wakes recorded a deposit (cost-basis +$1) but NO vault shares exist on-chain
+  = **phantom success**: the skill reported success without the tx landing (same class as cook 0-candidates / x402 no-sale).
+→ So "why is Beefy earning $0" = ① the deposit never landed (bug) AND ② even at 6% APY, 6%×$1×3d = $0.0004 = invisible
+  (need ~$7,300 principal for $1/day). Capital is the lever; the rate is fine.
+- ☐ FIX: reconcile cost-basis.json with on-chain balanceOf; make execute-yield (beefy/morpho) verify the share balance
+     INCREASED after deposit (read-after-write) before recording cost-basis — else it logs phantom positions.
+- ☐ FIX: portfolio-realtime.mjs only reads aave+hl+liquid → make it read ALL venues (moonwell/morpho/beefy/fluid/bluechip)
+     so the monitor and the dashboard agree (telemetry-poster reads them; portfolio-realtime does not).
+
 ## Sync rule
 Every code change → sync to ~/.anicca (the live experiment instance) + commit + push. The /loop tracks earnings.
 SDD rule (Dais 2026-06-22): EVERY new decision/finding → write it into THIS spec (or a new dated spec) immediately + commit + push. "Things get lost because they're not in the spec file." Never rely on chat/memory alone.
