@@ -49,9 +49,10 @@ every 4 seconds).
 
 Here is the uncomfortable headline, stated before anything else:
 
-> **Realised profit across all 351 decisions, every tool, every model: $0.00.**
-> `profitable=true` count: **0 / 351.** Not the free model's fault, and not the premium model's
-> either — both earned exactly zero, for the same reason.
+> **Realised profit across all 351 free-mode decisions, every tool: $0.00.**
+> `profitable=true` count: **0 / 351.** And — importantly — it was *not* because the free model
+> was too dumb. It made coherent, rational decisions the whole way. It earned nothing for reasons
+> that a bigger model would not fix.
 
 ### What each tool actually did, and why it returned nothing
 
@@ -72,16 +73,17 @@ Here is the uncomfortable headline, stated before anything else:
 > Mark-to-market P&L for the month: **−$0.0085** — pennies of gas and price drift, not a real loss.
 > **Realised revenue: exactly $0.**
 
-### Then I switched to premium — and nothing changed
+### Premium — the experiment we have NOT run yet (and why that matters)
 
-This is the part I expected to disprove the whole thesis. I mixed in frontier models on the *same tools,
-same wallet*: **Claude Opus 4.8 (6 wakes), GPT-5.4 (7), GPT-4o-mini (8), DeepSeek-R1 (6).**
-
-`profitable=true` for the premium models: **still 0.** GPT-5.4 actually designed a *better* product than
-the free model — *"Base-focused paid micro-research, 24h turnaround on one live answer for builders, $5
-USDC via x402"* — articulate, well-priced, correctly aimed. It still sold nothing. A frontier intelligence
-cannot manufacture demand that isn't there, or a buyer who never shows up, or fix a `cook` skill that
-returns zero candidates.
+To be scrupulously honest: **this run was free-mode only.** A handful of frontier-model wakes appear in
+the log (Opus 4.8 ×6, GPT-5.4 ×7, GPT-4o-mini ×8) but those were *incidental* — model switches during
+debugging, not a controlled premium experiment — and they too realised $0. We are **not** going to
+dress those up as "we tested premium." The honest, deliberate premium experiment — switch the live
+instance to a frontier model, run a clean 20–30-wake window on the same tools and wallet, measure — is
+the **next** step, and its number will go here when it's real. (Early signal: GPT-5.4 designed a sharper
+product — *"$5 paid micro-research, 24h turnaround for Base builders"* — but a better pitch can't conjure
+a buyer who isn't there, so we expect capital + demand to dominate. We'll publish whatever actually
+happens.)
 
 ## The lesson
 
