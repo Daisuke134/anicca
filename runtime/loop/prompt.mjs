@@ -5,6 +5,8 @@
  * Pure string transform. No I/O.
  */
 
+import { liquidityDirective } from './liquidity.mjs';
+
 const SLEEP_TOOL = {
   type: 'function',
   function: {
@@ -182,8 +184,16 @@ export function buildUserMessage(ctx) {
   const avoid = ctx.avoidSlot
     ? `⛔ You just repeated '${ctx.avoidSlot}' with no new result or earnings — it is FORBIDDEN this wake. Pick a DIFFERENT slot. If you keep exploring (cook) without acting, instead BUILD/sell what you already found, or try a different earn path (hl trade you can close for profit, yield idle cash, a new x402 product). Do something that can realise money.`
     : '';
+  // AUT (keep-liquid-buffer + close-in-profit): if liquid has fallen below the instance's OWN compute
+  // buffer, steer it to REPLENISH first (close a profitable HL / withdraw yield) so it never strands
+  // itself at ~$0 and can fund inference. The agent still decides the action (HARD RULE #0). The numbers
+  // are the instance's own (its liquid + its reserve) — nothing hardcoded per agent.
+  const reserve = typeof ctx.reserveUsdc === 'number' ? ctx.reserveUsdc : 5;
+  const hasHl = /\bhl\b|hyperliquid|perp|long|short/i.test(ctx.positionsSummary || '');
+  const lowLiquid = liquidityDirective(ctx.balanceUsdc, reserve, hasHl);
   return [
     `Wake ${ctx.wakeId}: liquid $${ctx.balanceUsdc.toFixed(4)}${pos} (tier ${ctx.tier}).`,
+    lowLiquid,
     recent,
     overuse,
     avoid,
