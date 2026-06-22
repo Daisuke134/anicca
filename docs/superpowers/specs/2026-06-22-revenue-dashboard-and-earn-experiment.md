@@ -43,5 +43,15 @@ Prereq (done): all tools work + the agent knows how to use them (per-action tool
      "we gave it skills + advice; here is free-mode vs premium-mode earnings per tool; here is what we
      tweaked and why." Honest numbers, the live dashboard as proof.
 
+## Fixes done 2026-06-22 (prerequisites Dais demanded before REV-B; also the article's "how we tweaked it")
+- ☑ Revenue ADDS UP: monthly_revenue = Σ revenue_by_source exactly (was a separate snapshot baseline →
+     "+$0.0007 today but ETH −$0.0079" nonsense). Verified live: monthly −$0.0034 == ETH invest −$0.0034.
+- ☑ WALLET = 1 IDENTITY: telemetry rejects any validly-signed post whose host ≠ "anicca-<wallet hex>"
+     (400 host_wallet_mismatch). Kills the "akash" instance stealing anicca-a3cdd4's wallet — never
+     overwrites the dashboard again. The akash Akash-cloud lease was already closed (0 active). +test 7/7.
+- ☑ LOOP BREAK: loop_detect now forbids the repeated slot on the next wake + shows action history, instead
+     of only sleeping. Root cause of "not earning": model spun cook(×19)/x402(×10) with identical args,
+     slept, re-picked the same — never diversified. Now forced to pick a different slot. Tests 15/15.
+
 ## Sync rule
 Every code change → sync to ~/.anicca (the live experiment instance) + commit + push. The /loop tracks earnings.
