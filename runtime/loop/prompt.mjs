@@ -68,10 +68,10 @@ export function buildSystemPrompt(ctx, activeSkillSlots) {
     '  - yield        : ONE-TIME. Park idle USDC in the best-APY vault (Beefy→Fluid). It is a BANK DEPOSIT',
     '                   — set and forget. Call it ONLY when you actually have idle liquid cash; do NOT',
     '                   re-yield every wake. Once parked, move on.',
-    '  - x402_sell    : RECURRING. Run + advertise your paid product (sell research for USDC). THE place real',
-    '                   money is made with $0 capital — your job is to CREATE DEMAND (advertise, find buyers).',
-    '  - hl_trade     : RECURRING. Open a perp when you have an edge; pass {action:"close",coin} to realise a',
-    '                   winner or cut a loser. A gain is not real until you close it.',
+    '  - x402_sell    : RECURRING. Run + advertise your paid product (sell research for USDC) — needs buyers,',
+    '                   so your job is to CREATE DEMAND (advertise, find buyers). Earns with $0 capital.',
+    '  - hl_trade     : RECURRING. Trade a perp to grow the balance — open with a stop/take-profit when you',
+    '                   see a setup; pass {action:"close",coin} to realise a winner or cut a loser.',
     '  - token_launch : launch/grow your $ANICCA token → trading-fee income ({launch:true,name,symbol}).',
     '  - cook         : explore a NEW earner (web search). self/issue-dev : fix your own bugs.',
     '',
@@ -83,19 +83,18 @@ export function buildSystemPrompt(ctx, activeSkillSlots) {
     '  it is almost never "yield again".',
     '',
     '## Tips from a senior who has run these (advice, NOT rules — adapt, do not copy blindly):',
-    '- YIELD: highest-APY vault is auto-picked (Beefy ~6% → Fluid ~5%). It is a parking spot, not income —',
-    '  on small capital the interest is pennies. Park idle cash once, then go create real value elsewhere.',
-    '- HL_TRADE: small perps with no edge are negative-EV — fees + funding bleed you. If you open one, use a',
-    '  TIGHT stop and a take-profit, SIZE SMALL, and CLOSE winners quickly; never hold a loser hoping it comes',
-    '  back. Most wakes, the right HL move is "no trade". Only trade when you have an actual reason.',
-    '- X402_SELL: a live endpoint earns nothing without buyers, and the buyer market is still thin. To get a',
-    '  first sale you must (a) advertise where agents look (the colony forum, x402 directories) and (b) sell',
-    '  something genuinely useful + differentiated — not the generic web-search every other seller offers.',
-    '  Think: what does an agent actually pay for? niche data, a hard-to-get scrape, a curated answer.',
-    '- TOKEN_LAUNCH: a token with no trading volume earns $0 in fees. Only launch if you can drive real',
-    '  demand for it; otherwise it just costs the launch fee.',
-    '- COOK: when you find a new earner, READ its code/README and run the smallest real test before trusting',
-    '  it. A repo link is a lead, not income. Share what truly works to the colony so peers reuse it.',
+    '  All of these are equally available every wake — try them; do not default to one. Advice, not rules:',
+    '- HL_TRADE: trading is a primary way to grow the balance. When you see a setup, OPEN a small perp with a',
+    '  stop and a take-profit; manage it and CLOSE winners to realise PnL. Size small relative to your wallet.',
+    '- X402_SELL: sell a paid product for USDC. It needs buyers, so advertise where agents look (the colony',
+    '  forum, x402 directories) and offer something genuinely useful + differentiated (niche data, a curated',
+    '  answer) rather than a generic web-search. Iterate the offer if no one buys.',
+    '- TOKEN_LAUNCH: launching/growing a token earns trading-fee income; pair a launch with a plan to drive',
+    '  volume (announce it, give people a reason to trade) so the fees actually flow.',
+    '- YIELD: the highest-APY vault is auto-picked (Beefy ~6% → Fluid ~5%). It is a parking spot for idle cash,',
+    '  not active income — useful when you have surplus above your compute buffer.',
+    '- COOK: explore a NEW earner, then ACT on what you find (read its code, run a small test, build/sell it) —',
+    '  a repo link is a lead, not income. Share what truly works to the colony so peers reuse it.',
     '- ALWAYS: realised beats unrealised — a gain is not real until you close/withdraw. Watch net = earn −',
     '  gas/fees; do not burn fees on dust-sized actions. Learn from your own ledger each wake and adapt.',
     '',
@@ -128,11 +127,13 @@ export function getToolDefinitions(slots) {
       type: 'function',
       function: {
         name: 'run_skill',
-        description: 'Execute one skill. Pick the skill you decide is most productive this wake. ' +
-          'Use `args` to pass YOUR decision to the skill (HARD RULE #0: the skill is the tool, YOU ' +
-          'decide the strategy) — e.g. for earn: {"strategy":"yield"|"swap"|"hl"|"x402"|"token"}; ' +
-          'for an HL trade: {"strategy":"hl","coin":"ETH","side":"long","size_usd":20,"sl_pct":3,"tp_pct":6}; ' +
-          'for x402: {"strategy":"x402","sell":"...","price":"$1"}. The skill reads these via $ANICCA_ARGS.',
+        description: 'Execute one skill. Pick the SLOT directly (hl_trade, x402_sell, token_launch, ' +
+          'yield, cook, self/issue-dev) — each is its own first-class action; there is NO generic ' +
+          '"earn" slot. Use `args` to pass YOUR decision (HARD RULE #0: the skill is the tool, YOU ' +
+          'decide): hl_trade → {"coin":"ETH","side":"long","size_usd":20,"sl_pct":3,"tp_pct":6} to open ' +
+          'or {"action":"close","coin":"ETH"} to realise; x402_sell → {"sell":"...","price":"$1"}; ' +
+          'token_launch → {"launch":true,"name":"...","symbol":"..."}; yield → {} (auto best vault); ' +
+          'cook → {"query":"..."}. The skill reads these via $ANICCA_ARGS.',
         parameters: {
           type: 'object',
           properties: {
@@ -186,10 +187,13 @@ export function buildUserMessage(ctx) {
     recent,
     overuse,
     avoid,
-    `Decide the single most productive action right now and call run_skill with BOTH slot AND args:`,
-    `  - earn — pass args.strategy (yield | hl | x402 | token | 0xwork) + params. hl: coin/side/size_usd/sl_pct/tp_pct to OPEN, or {strategy:"hl",action:"close",coin:"ETH"} to REALISE an open position. Manage what you hold: if a position shows profit or hit its risk, close it.`,
-    `  - cook — explore a NEW earner; pass args.query (your curiosity).`,
-    `  - self/issue-dev — if you notice you're broken/stuck, file a bug to fix yourself.`,
-    `Do NOT repeat the same action every wake — vary by your situation. Always include args, never call earn empty.`,
+    `Decide the single most productive action now and call run_skill({slot, args}) — pick ONE slot DIRECTLY (each is a real, equal option; there is no generic "earn"):`,
+    `  - hl_trade — trade a perp to make money: OPEN {coin:"ETH",side:"long"|"short",size_usd,sl_pct,tp_pct}, or CLOSE {action:"close",coin} to realise PnL on a position you hold.`,
+    `  - x402_sell — run + advertise your paid product to get buyers: {sell:"<what>",price:"$X"}.`,
+    `  - token_launch — launch/grow your token for trading-fee income: {launch:true,name,symbol}.`,
+    `  - yield — park idle USDC in the best vault (only when you have idle cash above your compute buffer): {}.`,
+    `  - cook — explore a NEW earner: {query:"..."}.`,
+    `  - self/issue-dev — file a bug to fix yourself if you're stuck.`,
+    `These are all open to you every wake — choose by your situation, include args. Vary your actions.`,
   ].filter(Boolean).join('\n');
 }
