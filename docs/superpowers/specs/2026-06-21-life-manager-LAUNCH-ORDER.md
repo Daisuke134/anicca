@@ -48,8 +48,10 @@ After every step: mark it here + commit + push.
    Supabase (cycgdwndgfgdbnndithc) via Management API + VERIFIED (`select call_language` returns null for all rows).
 2. ☐ **L2 (#79)** — `/lm` language toggle button (English / 日本語) persists `call_language`. (gpt-tasteskill UI +
    verify rendered in a real browser.)
-3. ☐ **L3 (#80)** — scheduler.js tick() + server.js `/test-call` read `call_language` and OVERRIDE the phone
-   default when threading lang through the signed bridge URL.
+3. ✅ **L3 (#80)** — DONE 2026-06-22 (code; deploys with L4). scheduler.js `langForUser(u)` = `call_language`
+   else `langForPhone(phone)`; supaUsers select adds `call_language`; tick uses `langForUser(u)`. server.js
+   `userForUid` fetches phone+call_language+name; `/test-call` lang = call_language else phone. Build bumped to
+   `call-language-v1`. node assertions PASS (explicit choice overrides phone; null → phone fallback).
 4. ☐ **L4 (#81)** — `buildCallPrompt` addresses the user BY NAME in the chosen language.
 5. ☐ **L5 (#82)** — set Dais `call_language='en'`; fire a real call; VERIFY via recording transcript: 100%
    English, addresses "Daisuke", reads next event, never "Anicca".

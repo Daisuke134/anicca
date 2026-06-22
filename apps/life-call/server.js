@@ -46,13 +46,15 @@ function verifyUid(uid, sig) {
   const a = Buffer.from(String(sig)), b = Buffer.from(expected);
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
-async function phoneForUid(uid) {
+async function userForUid(uid) {
   const url = process.env.SUPABASE_URL, key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) return null;
-  const r = await fetch(`${url}/rest/v1/lm_users?uid=eq.${encodeURIComponent(uid)}&select=phone`,
+  // phone (to dial) + call_language (user-chosen call language, may be null → fall back to phone) +
+  // name (so the call can address them by name).
+  const r = await fetch(`${url}/rest/v1/lm_users?uid=eq.${encodeURIComponent(uid)}&select=phone,call_language,name`,
     { headers: { apikey: key, Authorization: `Bearer ${key}` } });
   const d = await r.json().catch(() => []);
-  return Array.isArray(d) && d[0] ? d[0].phone : null;
+  return Array.isArray(d) && d[0] ? d[0] : null;
 }
 function readBody(req) {
   return new Promise((resolve) => {
@@ -103,7 +105,7 @@ const server = http.createServer((req, res) => {
   if (path === "/health" || path === "/") {
     res.writeHead(200, { "content-type": "application/json" });
     // `build` lets any deploy be verified from outside (curl /health) — proves new code is live.
-    res.end(JSON.stringify({ ok: true, service: "life-call", ws: "/ws", build: "record-on-answer-v1" }));
+    res.end(JSON.stringify({ ok: true, service: "life-call", ws: "/ws", build: "call-language-v1" }));
     return;
   }
   // POST /test-call {uid,sig} — the dashboard "Call me now" button. Auth'd by the same HMAC uid+sig
@@ -120,10 +122,12 @@ const server = http.createServer((req, res) => {
       try {
         const body = JSON.parse((await readBody(req)) || "{}");
         if (!verifyUid(body.uid, body.sig)) return reply(403, { error: "bad uid signature" });
-        const phone = await phoneForUid(body.uid);
+        const u = await userForUid(body.uid);
+        const phone = u && u.phone;
         if (!phone) return reply(400, { error: "no phone on file" });
-        // Demo language follows the user's phone country (Dais 2026-06-22): +81 → Japanese, else English.
-        const lang = langForPhone(phone);
+        // Call language = the user's CHOICE (lm_users.call_language, set via the /lm toggle) if present,
+        // else fall back to the phone country (+81 → ja, else en). Dais 2026-06-22.
+        const lang = (u.call_language === "ja" || u.call_language === "en") ? u.call_language : langForPhone(phone);
         // Caller may pass a REAL event (summary/location/urgency) so the call + its recording are
         // postable content — NEVER hardcode "test" (the assistant reads the summary aloud). Default = a
         // real morning nudge in the USER's language, not a "test" label.

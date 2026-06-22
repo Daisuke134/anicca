@@ -40,7 +40,7 @@ async function supaUsers() {
   const { url, key } = SUPA();
   if (!url || !key) return [];
   const base = `${url}/rest/v1/lm_users?phone=not.is.null&paid=is.true&calendar_provider=eq.composio_gcal`;
-  const cols = "uid,name,phone,paid,calendar_provider,home_address,gmail_account_id,telegram_chat_id";
+  const cols = "uid,name,phone,paid,calendar_provider,home_address,gmail_account_id,telegram_chat_id,call_language";
   const hdr = { apikey: key, Authorization: `Bearer ${key}` };
   // FAIL-SAFE: try WITH wake_policy; if the column is missing (PostgREST 400) fall back to the base
   // columns rather than returning [] — a missing column must NOT silently disable wakes fleet-wide.
@@ -64,9 +64,17 @@ async function claimWake(uid, eventKey) {
 }
 
 // Pick the call language from the user's phone number: +81 (Japan) → Japanese, everyone else → English
-// (Dais 2026-06-22). lm_users has no locale column, so the dialing country code IS the locale signal.
+// (Dais 2026-06-22). Used as the FALLBACK when the user hasn't explicitly chosen a language.
 function langForPhone(phone) {
   return String(phone || "").replace(/[^\d+]/g, "").startsWith("+81") ? "ja" : "en";
+}
+
+// Resolve the call language for a user row: their EXPLICIT choice (lm_users.call_language, set via the
+// /lm toggle) wins; otherwise fall back to the phone country. So a US phone can choose Japanese and a
+// Japanese phone can choose English (Dais 2026-06-22).
+function langForUser(u) {
+  const c = u && u.call_language;
+  return c === "ja" || c === "en" ? c : langForPhone(u && u.phone);
 }
 
 function buildStreamUrl(ev, urgency, lang) {
@@ -109,7 +117,7 @@ async function tick() {
         const eventKey = `${u.uid}|${ev.startIso}|${lvl.min}`;
         const fresh = await claimWake(u.uid, eventKey);
         if (!fresh) continue; // already called for this (event, level)
-        const streamUrl = buildStreamUrl(ev, lvl.urgency, langForPhone(u.phone));
+        const streamUrl = buildStreamUrl(ev, lvl.urgency, langForUser(u));
         const res = await placeCall({ to: u.phone, streamUrl });
         if (res.ok) {
           console.log(`[scheduler] WAKE T-${lvl.min} uid=${u.uid.slice(0, 12)} "${ev.summary}" ccid=${res.ccid}`);
@@ -219,4 +227,4 @@ function startOnboardLoop() {
   return setInterval(run, ONBOARD_TICK_MS);
 }
 
-module.exports = { startScheduler, startTravelLoop, startAskLoop, startOnboardLoop, tick, travelTick, askTickAll, onboardTick, isHelperBlock, buildStreamUrl, langForPhone };
+module.exports = { startScheduler, startTravelLoop, startAskLoop, startOnboardLoop, tick, travelTick, askTickAll, onboardTick, isHelperBlock, buildStreamUrl, langForPhone, langForUser };
