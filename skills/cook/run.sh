@@ -15,19 +15,11 @@ set -uo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WAKE="${WAKE_ID:-$(date -u +%s)}"
 LEDGER="${EARN_LEDGER:-$HERE/../earn/state/earn-ledger.jsonl}"
-ARGS="${ANICCA_ARGS:-{}}"
 
-# the model's search intent this wake (its own words), or a neutral default that rotates by hour so we
-# never re-search the same thing — automaton-style "find externally new options", no hardcoded links.
-QUERY=$(printf '%s' "$ARGS" | python3 -c "
-import json,sys,time
-try: q=(json.load(sys.stdin) or {}).get('query','')
-except Exception: q=''
-if not q:
-    seeds=['new x402 paid API agents pay for','open-source DeFi yield strategy 2026 base','agent micro-task marketplace USDC','new onchain fee-earning protocol base','sell data or research for crypto agent']
-    q=seeds[int(time.time()//3600)%len(seeds)]
-print(q)
-" 2>/dev/null)
+# the model's search intent this wake (its own words), or a neutral seed that rotates by hour. Resolved
+# by a PURE, tested module — the old `${ANICCA_ARGS:-{}}` bash default appended a stray `}` and corrupted
+# the model's query to invalid JSON, so its curiosity was ALWAYS dropped to a seed (fixed 2026-06-22).
+QUERY=$(node "$HERE/lib/resolve-query.mjs" "${ANICCA_ARGS:-}")
 echo "[cook] exploring: $QUERY"
 
 # Use firecrawl's SEARCH API — scraping google/ddg directly is bot-blocked and returned ZERO candidates
