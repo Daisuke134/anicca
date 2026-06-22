@@ -99,11 +99,15 @@ After every step: mark it here + commit + push.
 ### → dashboard, wake-call path (L5/L6), and the reload-stuck cosmetic all verified.
 
 ### PHASE 3 — Content pipeline (#45/#50) — English transcripts, WARM-UP MODE
-9. ⟳ **C1** — life-manager-video skill: capture the day's REAL wake-call (Telnyx recording) → **English** transcribe
-   → captioned reel (jimaku, moving call-UI bg, transparent audio, TikTok export). **Post as a DRAFT into the
-   TikTok app for warm-up — NOT Postiz `state=PUBLISHED`.** Verify the draft actually lands in the TikTok app.
-   (Skill already BUILT + first reel self-verified + emailed to Dais; what changes here = draft-to-TikTok-app, not
-   auto-publish.) After warm-up: switch to 2×/day auto-post + verify real POST_ID per post.
+9. ✅ **C1** — DONE+VERIFIED 2026-06-22. MECHANISM CLARIFIED (Dais): the "draft to the TikTok app" = **Postiz with
+   `content_posting_method=UPLOAD`** while the integration's `warmup_phase=="warmup"` → the clip lands in the
+   TikTok **inbox/drafts** (NOT auto-published); a cron flips to `DIRECT_POST` at day 7. NOT TikTok web. The skill
+   (`~/.openclaw/skills/life-manager-video/post-daily.sh`) already does this. Verified: real EN wake-call recording
+   → `make-reel-from-audio.sh` → 1080×1920 captioned reel (iOS call UI bg + word-synced jimaku) → Postiz UPLOAD to
+   @anicca.comedy (cmpc6cr6g00d8lg0yfythzz9f, warmup) → **POST_ID `cmqp8bmji049dp40y4z13e68j`** (draft). Frame-
+   verified (English captions burned). BUG FIXED: post-daily forced auto-lang → mis-detected EN telephony as JA
+   garbage; now forces `en` (merged to ~/.openclaw main-internal). FOLLOW-UP: delete the earlier JA-caption draft
+   `cmqp85xcl…` (wrong content). Caller name "Anicca" on the bg = brand of @anicca.comedy (intentional).
 
 ### PHASE 4 — #67/#68 Telegram (DELEGATED — "the other guy"/mom; we only track)
 10. ☐ **T1** — real /start on @LifeManagerBotbot → name → web connect → phone → pay → done; ask delivers to TG +
