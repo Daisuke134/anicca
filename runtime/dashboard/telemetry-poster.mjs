@@ -9,6 +9,7 @@ import fs from "fs";
 import { assignIdentity } from "../identity.mjs";
 import { readCostBasis } from "../../skills/earn/lib/cost-basis.mjs";
 import { revenueBySource as pureRevenueBySource } from "../../skills/earn/lib/revenue.mjs";
+import { hlState } from "../lib/hl-state.mjs";
 
 const HOME = process.env.HOME;
 const pk = JSON.parse(fs.readFileSync(HOME + "/.automaton/wallet.json")).privateKey;
@@ -56,9 +57,10 @@ async function ethPrice() {
 }
 
 async function netWorth() {
-  const [l, a, mt, ms, bfsh, flsh, weth, nativeEth, ep] = await Promise.all([
+  const [l, a, mt, ms, bfsh, flsh, weth, nativeEth, ep, hl] = await Promise.all([
     bal(U, acct.address), bal(A, acct.address), bal(M, acct.address), bal(V, acct.address), bal(BF, acct.address),
     bal(FL, acct.address), bal(WETH, acct.address), pub.getBalance({ address: acct.address }).then(Number), ethPrice(),
+    hlState(acct.address), // Hyperliquid account (was MISSING — $8.84 invisible; the user asked "why is HL not in the dashboard")
   ]);
   const ex = Number(await pub.readContract({ address: M, abi: [{ name: "exchangeRateStored", type: "function", stateMutability: "view", inputs: [], outputs: [{ type: "uint256" }] }], functionName: "exchangeRateStored" }));
   const mo = Number(await pub.readContract({ address: V, abi: [{ name: "convertToAssets", type: "function", stateMutability: "view", inputs: [{ type: "uint256" }], outputs: [{ type: "uint256" }] }], functionName: "convertToAssets", args: [BigInt(ms)] }));
@@ -67,7 +69,7 @@ async function netWorth() {
   const usd = (x) => x / 1e6;
   // blue-chip leg: WETH + native ETH (gas+investment) valued at spot ETH price
   const bluechip = ((weth + nativeEth) / 1e18) * ep;
-  return { liquid: usd(l), aave: usd(a), morpho: usd(mo), moonwell: (mt * ex / 1e18) / 1e6, beefy: (bfsh * ppfs / 1e18) / 1e6, fluid: usd(fl), bluechip };
+  return { liquid: usd(l), aave: usd(a), morpho: usd(mo), moonwell: (mt * ex / 1e18) / 1e6, beefy: (bfsh * ppfs / 1e18) / 1e6, fluid: usd(fl), bluechip, hl: hl.accountValue, hlUpnl: hl.unrealizedPnl };
 }
 
 // REVENUE per source = pure lib (skills/earn/lib/revenue.mjs) so the logic is unit-tested independently
@@ -105,7 +107,7 @@ function lastModel() {
 const FREE_RE = /nvidia|flash|qwen|free|oss|gpt-oss/i;
 
 let lastGood = null;
-const sumNw = (x) => +(x.liquid + x.aave + x.morpho + x.moonwell + (x.beefy || 0) + (x.fluid || 0) + (x.bluechip || 0)).toFixed(2);
+const sumNw = (x) => +(x.liquid + x.aave + x.morpho + x.moonwell + (x.beefy || 0) + (x.fluid || 0) + (x.bluechip || 0) + (x.hl || 0)).toFixed(2);
 
 async function post() {
   try {
@@ -126,7 +128,9 @@ async function post() {
     const tier = FREE_RE.test(model) ? "free" : "frontier";
     const earn = earnings();
     // REVENUE the dashboard actually wants: per-source P&L (earned/lost, minus allowed) + daily + monthly.
-    const rev = revenueBySource(nw, earn.bySource);
+    // HL revenue = its unrealised PnL (Hyperliquid gives it directly — no cost basis needed). Merge it in
+    // alongside realised earnings so the dashboard shows an `hl` P&L cell (red when the perp is losing).
+    const rev = revenueBySource(nw, { ...earn.bySource, hl: nw.hlUpnl || 0 });
     const period = periodRevenue(rev.total);
     const msg = JSON.stringify({
       id: acct.address.toLowerCase(), ts, host: NAME, geo: "JP",

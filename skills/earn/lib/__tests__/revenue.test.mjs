@@ -32,6 +32,13 @@ test("PHANTOM sentinel: a basis key with NO on-chain position shows a fake loss 
   assert.ok(bySource.beefy < -0.9, "a recorded-but-not-landed deposit fabricates a −$1 loss — why we gate on depositLanded");
 });
 
+test("HL unrealised PnL surfaces as its own revenue cell (profit green / loss red)", () => {
+  const profit = revenueBySource(nw, basis, { hl: 0.112 });
+  assert.equal(profit.bySource.hl, 0.112);
+  const loss = revenueBySource(nw, basis, { hl: -0.5 });
+  assert.equal(loss.bySource.hl, -0.5, "a losing perp shows red on the dashboard");
+});
+
 test("realised earnings surface and lift total by exactly the sale amount", () => {
   const base = revenueBySource(nw, basis, {}).total;
   const { bySource, total } = revenueBySource(nw, basis, { x402: 0.02 });
