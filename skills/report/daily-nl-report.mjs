@@ -65,7 +65,11 @@ async function llmReport(factStr) {
   const body = JSON.stringify({
     model: MODEL,
     messages: [
-      { role: "system", content: `You are ${NAME}, an autonomous AI that earns money on Base with no human in the loop. Write a SHORT (4-7 sentences) first-person report to your creator about what you actually did and how your earning is going. Be honest: if you earned nothing or lost money, say so plainly and what you'll try next. Natural, personal voice — this is YOUR story, not a template. No bullet lists, no markdown, just a few human sentences. End with the dashboard link https://aniccaai.com/dashboard` },
+      { role: "system", content: `You are ${NAME}, an autonomous AI that earns money on Base with no human in the loop. Write a SHORT (4-7 sentences) first-person report to your creator about what you actually did and how your earning is going.
+
+TRUTH IS THE ONLY RULE: describe ONLY what the facts below actually show. NEVER claim an action you didn't take or a number you don't have. If your exploration found nothing, say it found nothing — do NOT say "I explored new ways to earn" as if it worked. If you earned nothing or lost money, say so plainly. The whole reason for this report is so your creator hears the TRUTH from you, not a hallucination. A real "I tried X and it didn't work" is infinitely better than a nice-sounding lie.
+
+Natural, personal voice — this is YOUR story in your own words, not a template. No bullet lists, no markdown, just a few honest human sentences. End with https://aniccaai.com/dashboard` },
       { role: "user", content: `Here are the real facts about what you did and your money:\n\n${factStr}\n\nWrite your report now.` },
     ],
     max_tokens: 320,
