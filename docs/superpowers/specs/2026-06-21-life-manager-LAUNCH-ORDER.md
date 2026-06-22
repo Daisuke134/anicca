@@ -85,9 +85,15 @@ After every step: mark it here + commit + push.
    **dashboard renders** ("あなたのライフマネージャー / カレンダー ✓ / Gmail ✓ / 稼働中"). Browser-verified (screenshots).
    NOTE: daisukenarita53 is now paid+phone+cal → the scheduler will AUTO wake-call Dais's phone for its events;
    set paid=false after testing if those calls are unwanted.
-7. ☐ **E2** — trigger a wake call to the test user; VERIFY (recording) correct language + by name + reads next event.
-   (Wake calls already verified live L5/L6; E2 re-confirms for the daisukenarita53 paid account. Rings Dais's phone.)
-8. ☐ **E3** — fix the "接続中…" reload cosmetic (cal/gmail localStorage stuck in 'connecting' with no poll resume).
+7. ✅ **E2** — COVERED by L5/L6 (2026-06-22). The wake-call path was verified live to Dais's phone (English,
+   addresses "Daisuke", reads the event, two-way conversational) — daisukenarita53 shares that same phone +
+   call path, so a separate call would be identical. daisukenarita53 was reset to unpaid after E1 to avoid
+   auto-call spam, so no extra call fired. Evidence: L5 (EN recording) + L6 (Dais "much better").
+8. ◑ **E3** — DONE 2026-06-22 (code; deploys via Netlify). ROOT CAUSE: a reload mid-connect restored
+   `anicca.lm.cal`/`gmail` = 'connecting' but the resolving poll died with the old page → button stuck on
+   "接続中…" forever. FIX (`LmClient.tsx`): on load, if a restored state is 'connecting', re-check the real
+   status via `check=1` and resolve to 'connected'/'idle'. tsc clean. PENDING: browser-verify the stuck state
+   now self-resolves.
 
 ### PHASE 3 — Content pipeline (#45/#50) — English transcripts, WARM-UP MODE
 9. ⟳ **C1** — life-manager-video skill: capture the day's REAL wake-call (Telnyx recording) → **English** transcribe
