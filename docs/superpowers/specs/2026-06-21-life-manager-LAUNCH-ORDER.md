@@ -43,12 +43,20 @@ After every step: mark it here + commit + push.
   Gmail mailbox).
 
 ### PHASE 1 — Per-user language selector (NEW, from 2026-06-22 decisions) → tasks #78–#82
-1. ☐ **L1 (#78)** — `lm_users.call_language` column ('en'/'ja', nullable; NULL → `langForPhone` fallback).
+1. ✅ **L1 (#78)** — DONE 2026-06-22. `lm_users.call_language` text, nullable, CHECK in ('en','ja'); NULL →
+   `langForPhone` fallback. Migration `apps/life-call/migrations/2026-06-22-call_language.sql`, applied to live
+   Supabase (cycgdwndgfgdbnndithc) via Management API + VERIFIED (`select call_language` returns null for all rows).
 2. ☐ **L2 (#79)** — `/lm` language toggle button (English / 日本語) persists `call_language`. (gpt-tasteskill UI +
    verify rendered in a real browser.)
-3. ☐ **L3 (#80)** — scheduler.js tick() + server.js `/test-call` read `call_language` and OVERRIDE the phone
-   default when threading lang through the signed bridge URL.
-4. ☐ **L4 (#81)** — `buildCallPrompt` addresses the user BY NAME in the chosen language.
+3. ✅ **L3 (#80)** — DONE 2026-06-22 (code; deploys with L4). scheduler.js `langForUser(u)` = `call_language`
+   else `langForPhone(phone)`; supaUsers select adds `call_language`; tick uses `langForUser(u)`. server.js
+   `userForUid` fetches phone+call_language+name; `/test-call` lang = call_language else phone. Build bumped to
+   `call-language-v1`. node assertions PASS (explicit choice overrides phone; null → phone fallback).
+4. ✅ **L4 (#81)** — DONE 2026-06-22 (code; deploys with L3). `name` threaded + HMAC-SIGNED through
+   buildStreamUrl→ctxFromReq (signed array now summary|dateTime|location|urgency|lang|name) →
+   geminiSetupForEvent→buildCallPrompt(event,urgency,lang,name). EN: "Hi Daisuke, this is your Life
+   Manager…"; JA: "太郎さん、こんにちは。ライフマネージャーです…". Build `call-lang-name-v1`. node assertions PASS
+   (name greeting EN+JA, no-name fallback, HMAC round-trips with name signed).
 5. ☐ **L5 (#82)** — set Dais `call_language='en'`; fire a real call; VERIFY via recording transcript: 100%
    English, addresses "Daisuke", reads next event, never "Anicca".
 
