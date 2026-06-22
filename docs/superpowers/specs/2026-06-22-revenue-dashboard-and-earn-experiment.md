@@ -86,12 +86,38 @@ loop — pays its own compute, distributes income as UBI, self-replicates" (AGI/
 - ☐ E3 Product launch post (JA + EN) on X + Slack. Announcement copy (canonical, Dais-approved):
       「人間の介入なしで、自分の計算コストを払い、稼いだ収益を生命に配布するAIを開発しました。
       ・APIキー不要。クラウド・ローカルで動作。Baseウォレットに USDC課金するとより賢くなります。
-      ・現在は、クラウドで３体・ローカルで２体。収支・ログもリアルタイムで公開中。
+      ・現在は、クラウドで３体・ローカルで1体。収支・ログもリアルタイムで公開中。
       ・自己監視・自己修復・自己改善・自己増殖・日次報告を繰り返す。
       ・収益の一部を、生命に対してベーシックインカムとして毎日配布。
       ・何兆体のAIがGithub Issuesで共進化しながら、より全体として多く稼ぎ、世界から苦しみをなくすことを目指す。
       https://github.com/Daisuke134/anicca / 記事：X Articleリンク / 全個体：aniccaai.com/dashboard / デモ：Youtube」
       Continuous cadence: keep posting AI-earns-money-without-humans content to grow audience.
 
+## MONEY TRUTH — never lie about "earned" (Dais 2026-06-22, the article's whole credibility)
+Three DIFFERENT numbers, never conflate them in the article or dashboard:
+- **Deposited capital** (e.g. HL account $8.84, yield venues ~$7.3) = OUR OWN money MOVED into a position. NOT earned. Writing "anicca made $8" because the HL account holds $8.84 = a LIE. It is $8.84 of the original $18.7 sitting in Hyperliquid.
+- **Realised revenue** (earn_usdc in the ledger) = cash from a CLOSED/SETTLED action (HL close, x402 sale, yield withdraw). Current value = **$0.00**.
+- **Mark-to-market (unrealised) P&L** = current position value − cost basis. Oscillates ±1¢ with ETH price (dashboard shows +$0.0075 now; local snapshot −$0.0085 earlier). Paper noise on the $4.63 WETH leg, NOT income.
+→ The article and dashboard report **realised = $0**, and may show MTM clearly labelled "unrealised/paper". HL deposited capital is NOT revenue.
+
+## ARTICLE [6]③ — exactly what to write (canonical = ~/anicca-project docs/frank-article worktree, articles/2026-06-11-automaton-jp.md, line ~725)
+The JP article is done through [6]② (vanilla Automaton: free=$0, frontier GPT-5.5=$0, burned ~$17, begs USDC). [6]③ = "稼ぐ手段を与えたら？":
+- Frame: vanilla Automaton (even frontier + ClawRouter/BlockRun) earned $0 → so we ADDED earning skills (yield/HL/x402/cook/token/0xwork) = the "改造版" = **our anicca**.
+- **改造版 × 無料モデル (GLM-4.7)**: 68.7h / 351 wakes → realised **$0**. BUT unlike vanilla it escaped the self-pulse loop: it converged on a real business ("sell MEV-protection alerts to small Base traders via x402"), stood up + advertised a live x402 shop, designed products, researched to build them. $0 because: 0 buyers + cook returns 0 candidates (bug) + $13 capital + over-deployed → ~$0 liquid. = capital/demand/plumbing, NOT intelligence. (Data: ~/.anicca/state/ledger.jsonl.)
+- **改造版 × プレミアム (frontier)**: ⏳ run B2 → record realised per-tool → write this row.
+- Then [7] (改造: Conway full / AutoHedge) + [8] 結論.
+
+## AUTONOMY — anicca must do these HIMSELF, no human/no Claude-Code in the loop (Dais 2026-06-22)
+"our nature has to go do it himself." Encode the earn-experiment actions into anicca's OWN decision layer, not as manual ops:
+- ☐ AUT1 keep-liquid-buffer rule in `runtime/loop/prompt.mjs` + `earn-detect.mjs`: anicca must NOT deploy 100% into illiquid positions; hold an operating buffer (e.g. ≥ enough USDC for N premium wakes) so it never strands itself at $0.06 liquid (the root of "zero balance, cannot act, begs seed").
+- ☐ AUT2 close-in-profit / realise rule: when an HL position is in profit (or buffer is low), anicca itself closes/withdraws to realise + replenish liquid — the loop picks this, not a human. (This is "closing" = turning a held position into realised USDC.)
+- ☐ AUT3 the model-experiment itself should be switchable by anicca/system (free↔premium) and self-revert to free; record which model in each ledger line (already present: `model` field).
+- ☐ AUT4 self-orientation for the autonomous instance: the loop already records model/slot/args/result; ensure it reads its OWN recent ledger before deciding (avoid re-deciding blind). Mirror of the dev-side orientation protocol (memory feedback_orientation_protocol_before_touching_files).
+
+## DASHBOARD HL FIX (PHASE A, concrete — telemetry-poster.mjs)
+`runtime/dashboard/telemetry-poster.mjs` net-worth (≈line 66) + revenue_by_source (≈line 76) read ONLY 6 Base venues; they never query the **Hyperliquid account** → $8.84 is invisible; HL only appears if a `close` is in earn-ledger.
+- ☐ add a Hyperliquid account read (clearinghouseState) → include hl in net worth + revenue_by_source (realised on close, unrealised PnL labelled). So the dashboard the article cites is COMPLETE, not under-counting.
+
 ## Sync rule
 Every code change → sync to ~/.anicca (the live experiment instance) + commit + push. The /loop tracks earnings.
+SDD rule (Dais 2026-06-22): EVERY new decision/finding → write it into THIS spec (or a new dated spec) immediately + commit + push. "Things get lost because they're not in the spec file." Never rely on chat/memory alone.

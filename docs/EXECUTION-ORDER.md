@@ -59,8 +59,13 @@ ClawRouter profiles: free (100% savings, $0) · auto (74-100%) · eco (95-100%) 
 
 ---
 
-## RIGHT NOW (the single next action)
-**Phase 1.3 → 2.1**: get x402 to make one real mainnet sale + let anicca realise its first gain, so the
-dashboard's revenue_by_source goes non-zero. Then Phase 3 (model experiment) → the recipe.
+## RIGHT NOW (the single next action) — updated 2026-06-22
+Article [6]③ needs the PREMIUM number. Blocker: premium = x402-paid from the wallet, but liquid USDC ≈ $0.06
+(over-deployed). So the ordered next actions (see spec 2026-06-22-revenue-dashboard-and-earn-experiment.md):
+1. anicca makes liquid: **close HL** (realise $8.84 position) or withdraw some yield → operating buffer.
+2. switch the live instance to a **frontier model** → run 20–30 wakes (B2) → record realised per-tool P&L.
+3. write **[6]③ premium row** into the JP article; fix dashboard to include HL (PHASE A); then [7]/[8]; translate; ship (E).
 
-I (Claude, type-2) only FIX the system + MONITOR. anicca (the nature) executes the earning itself.
+MONEY TRUTH: realised earned so far = **$0**. HL's $8.84 = deposited capital, NOT earnings — never write "made $8".
+AUTONOMY: these earn actions must be done by anicca ITSELF (keep-liquid-buffer + close-in-profit rules in
+runtime/loop/prompt.mjs + earn-detect.mjs), not by hand. I (Claude, type-2) only FIX the system + MONITOR.
