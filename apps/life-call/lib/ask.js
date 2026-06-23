@@ -64,14 +64,15 @@ const RESOLVE_TOOLS = [{
     },
     {
       name: "submit_answer",
-      description: "Submit your final decision once you've searched enough.",
+      description: "Submit your final decision once you've searched (or once you recognize the event needs no place).",
       parameters: {
         type: "OBJECT",
         properties: {
-          confident: { type: "BOOLEAN", description: "true if you found the real venue; false if the title is a person/vague activity and the user must be asked." },
-          location: { type: "STRING", description: "The exact formatted_address from a places_search result. Empty when confident=false." },
+          online: { type: "BOOLEAN", description: "true if this event has NO physical place to travel to — it is online / remote / a phone or video call (e.g. title contains オンライン, 電話, リモート, remote, online, Zoom, Meet, Teams, ビデオ通話, 通話). Then there is NO location to fill and the user must NOT be asked." },
+          confident: { type: "BOOLEAN", description: "true ONLY when online=false and you found the real physical venue; false if it is a person/vague activity and the user must be asked." },
+          location: { type: "STRING", description: "The exact formatted_address from a places_search result. Empty unless confident=true." },
         },
-        required: ["confident"],
+        required: ["online", "confident"],
       },
     },
   ],
@@ -80,17 +81,27 @@ const RESOLVE_TOOLS = [{
 // AGENTIC: the model uses the places_search TOOL itself to find the venue (no spoon-fed candidates),
 // then submit_answer. Returns the address, or null (= ask the user). This is the agent doing the
 // search a human would do, instead of bothering them.
+// Returns { kind: "online" } (no place — never ask, never travel) | { kind: "filled", location }
+// (real venue found) | { kind: "ask" } (a human must tell us). The agent classifies online itself —
+// "they are LLM agents, they should know" (Dais 2026-06-23): an event like "藤井さんと電話オンライン"
+// is online and must never trigger a where-is-it question.
 async function agentResolveLocation(event, { home, mapsKey, geminiKey }) {
   const contents = [{
     role: "user",
     parts: [{ text:
-`You are Life Manager. Resolve WHERE this calendar event happens so it can be filled into the user's
-calendar WITHOUT bothering them. Use places_search to look it up (more than once if needed). Only when
-searching genuinely can't identify a real venue (the title is a person's name, or a vague activity like
-"lunch"/"1on1") do you give up — then call submit_answer with confident=false. When you find it, call
-submit_answer with confident=true and the exact address from a search result.
+`You are Life Manager. For this calendar event, decide WHERE it happens so travel time can be planned —
+without bothering the user. Three outcomes via submit_answer:
+1. ONLINE: the event has no physical place — it is a phone/video/online/remote call (title has オンライン,
+   電話, リモート, remote, online, Zoom, Meet, Teams, ビデオ通話, 通話, or is clearly virtual). Then
+   submit_answer(online=true). No location, no question.
+2. PHYSICAL & FOUND: it happens at a real venue. Use places_search (try query variations: bare name,
+   name+area, English/Japanese, add the user's home city to disambiguate) to find the exact address,
+   then submit_answer(online=false, confident=true, location=<exact formatted_address>).
+3. UNKNOWN: it is physical but the title is a person's name or a vague activity ("lunch", "1on1") with no
+   findable venue — submit_answer(online=false, confident=false). Only then is the user asked.
 
 Event title: ${JSON.stringify(event.summary || "")}
+Event location field (may be a room name, a URL, or empty): ${JSON.stringify(event.location || "")}
 Start: ${JSON.stringify((event.start || {}).dateTime || "")}
 User's home address: ${JSON.stringify(home || "")}` }],
   }];
@@ -98,13 +109,15 @@ User's home address: ${JSON.stringify(home || "")}` }],
     const j = await geminiRaw({ contents, tools: RESOLVE_TOOLS, generationConfig: { temperature: 0 } }, geminiKey);
     const parts = j?.candidates?.[0]?.content?.parts || [];
     const calls = parts.filter((p) => p.functionCall).map((p) => p.functionCall);
-    if (!calls.length) return null;
+    if (!calls.length) return { kind: "ask" };
     contents.push({ role: "model", parts });
     const responses = [];
     for (const c of calls) {
       if (c.name === "submit_answer") {
         const a = c.args || {};
-        return a.confident && a.location && String(a.location).trim() ? String(a.location).trim() : null;
+        if (a.online) return { kind: "online" };
+        if (a.confident && a.location && String(a.location).trim()) return { kind: "filled", location: String(a.location).trim() };
+        return { kind: "ask" };
       }
       if (c.name === "places_search") {
         const res = await placesSearch((c.args || {}).query || "", mapsKey);
@@ -113,7 +126,7 @@ User's home address: ${JSON.stringify(home || "")}` }],
     }
     contents.push({ role: "user", parts: responses });
   }
-  return null; // ran out of turns → ask
+  return { kind: "ask" }; // ran out of turns → ask
 }
 
 // Reading a reply is a single judgment, not a search — one JSON call (deterministic enough, no tools).
@@ -175,13 +188,19 @@ async function askTick(uid, opts) {
 
   // For each event missing a location we haven't handled: agentic resolve, then ask only if unsure.
   for (const event of events.filter((e) => needsLocation(e) && !already.has(e.id))) {
-    const found = await agentResolveLocation(event, { home: opts.home, mapsKey, geminiKey });
-    if (found) {
-      await patchEvent(uid, event.id, { location: found }, composioKey);
+    const res = await agentResolveLocation(event, { home: opts.home, mapsKey, geminiKey });
+    if (res.kind === "online") {
+      // Online/remote/phone event → no place, no travel, and NEVER ask the user where it is.
+      await markAsked(uid, event.id, supaUrl, supaKey); // dedup so it's not reconsidered next tick
+      continue;
+    }
+    if (res.kind === "filled") {
+      await patchEvent(uid, event.id, { location: res.location }, composioKey);
       await markAsked(uid, event.id, supaUrl, supaKey);
       autofilled++;
       continue;
     }
+    // res.kind === "ask" — a human must tell us.
     // ASK: prefer Telegram when the user linked it (replies come back via the /telegram webhook);
     // otherwise email from their own Gmail via Unipile.
     if (opts.telegramChatId && opts.telegramToken) {
