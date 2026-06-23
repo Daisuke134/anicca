@@ -13,7 +13,7 @@
   "nonRenewingSubscriptions": [],
   "products": [
     {
-      "displayPrice": "5000",
+      "displayPrice": "99.99",
       "familyShareable": false,
       "internalID": "ANB0004L",
       "localizations": [
@@ -39,7 +39,7 @@
     "_failTransactionsEnabled": false,
     "_lastSynchronizedDate": 0,
     "_locale": "en_US",
-    "_storefront": "JPN",
+    "_storefront": "USA",
     "_storeKitErrors": []
   },
   "subscriptionGroups": [
@@ -51,7 +51,7 @@
         {
           "adHocOffers": [],
           "codeOffers": [],
-          "displayPrice": "2000",
+          "displayPrice": "39.99",
           "familyShareable": false,
           "groupNumber": 1,
           "internalID": "ANB0001A",
@@ -72,7 +72,7 @@
         {
           "adHocOffers": [],
           "codeOffers": [],
-          "displayPrice": "500",
+          "displayPrice": "9.99",
           "familyShareable": false,
           "groupNumber": 1,
           "internalID": "ANB0002A",
@@ -93,7 +93,7 @@
         {
           "adHocOffers": [],
           "codeOffers": [],
-          "displayPrice": "130",
+          "displayPrice": "7.99",
           "familyShareable": false,
           "groupNumber": 1,
           "internalID": "ANB0003A",

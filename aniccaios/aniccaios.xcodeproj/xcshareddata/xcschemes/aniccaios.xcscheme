@@ -70,11 +70,11 @@
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "-AppleLanguages (ja)"
+            argument = "-AppleLanguages (en)"
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "-AppleLocale ja_JP"
+            argument = "-AppleLocale en_US"
             isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>
