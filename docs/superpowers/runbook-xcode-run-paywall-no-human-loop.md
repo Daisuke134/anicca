@@ -43,3 +43,13 @@ osascript -e 'tell application "Xcode" to activate'
 4. booted sim を `simctl io screenshot` で検証（サインイン無し・¥/$価格・プラン数）
 
 これで完全に no-human-in-loop で paywall/購入を実機検証できる。
+
+## 追記: sim の言語が優先される（言語切替の確実な方法）
+scheme の `language="en"` 属性や `-AppleLanguages` 引数より、**sim のシステム言語が優先される**ことがある（新規 sim は Mac の locale=ja_JP を継承し ja-JP になる）。確実な言語切替:
+```bash
+xcrun simctl spawn <UDID> defaults write -g AppleLanguages -array en   # or ja
+xcrun simctl spawn <UDID> defaults write -g AppleLocale -string en_US  # or ja_JP
+xcrun simctl uninstall <UDID> ai.anicca.app.ios   # fresh
+# → cua-driver ⌘R
+```
+EN/JA を切り替える時は ① sim language ② Anicca.storekit `_storefront`(USA/JPN) + 価格 の**両方**を合わせる。
