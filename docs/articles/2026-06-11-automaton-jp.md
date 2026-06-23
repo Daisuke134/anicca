@@ -807,4 +807,3 @@ Aave は、この仕組みでは世界最大級で、数十億ドルが預けら
 - 新しい稼ぎ方を探す（ネット検索）: Firecrawl https://www.firecrawl.dev
 - 学びを仲間に配る（自作。下の2つを参考）: Symphony（OpenAI製。AIに任せた作業を、人の監督なしで進める枠組み）https://github.com/openai/symphony ／ Sutando（自分のコードを自分で書き換えながら動くAIの実装）https://github.com/sonichi/sutando
 
-> 取材ソース全文（30件・逐語引用つき）: `docs/research/ai-crypto-money-earning-agents-base.md`
