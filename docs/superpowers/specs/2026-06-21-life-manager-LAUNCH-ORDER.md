@@ -1,5 +1,21 @@
 # Life Manager — LAUNCH EXECUTION ORDER (do top→bottom, ONE at a time)
 
+## 🚨 P0 EMERGENCY — LIVE BUGS (Dais on a real call 2026-06-23, fix via /vcsdd, NO FAKE, verify no-mock)
+Block everything below until both are fixed + verified with a real call/calendar (not a mock).
+- [ ] **E1 (#99) — silent call**: the cloud wake call rings + connects but the Gemini Live assistant
+      speaks NO words (dead air). apps/life-call: geminiSetupForEvent / call-bridge.cjs / call-logic.js —
+      who greets first (assistant must speak immediately), audio output wiring, Telnyx↔Gemini bridge,
+      VAD/affective config. DONE = real call to Dais where Charon actually speaks the reminder.
+- [ ] **E2 (#100) — no 移動時間 on gcal**: travel-time blocks are NOT auto-added to the user's Google
+      Calendar (Dais had a 7:00 event today, no 🚆 block → he didn't know when to leave → late). Cloud
+      scheduler travel insertion (Routes API → 🚆移動 block written back via Composio) not firing for real
+      users. Check importance filter (#69 over-filtering?), Composio calendar-write scope, address
+      resolution. DONE = a real event on Dais's calendar gets a real 🚆 block with correct transit time.
+
+## Capafy monetization (separate track) = `2026-06-23-capafy-skill-monetization-10k-mrr.md`
+LM Capafy pricing LOCKED = **Serenity whole** (week $9.90/cap30 + month $29.90/cap120, NO trial, no day).
+Never combine setups. Publish via `capafy-autopublish`. Tasks #91-98.
+
 Date: 2026-06-21, **last updated 2026-06-23**. THIS file = the ORDER + remaining TODO (SSOT for "what's
 left until launch"). Architecture/state = `2026-06-21-life-manager-CANONICAL.md`. Video skill design =
 `2026-06-21-life-manager-video-skill-design.md`. Approved launch copy = `2026-06-23-life-manager-launch-copy.md`.
