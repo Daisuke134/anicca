@@ -1316,23 +1316,27 @@
 "paywall_plan_privacy" = "Privacidad";
 
 // MARK: - Paywall Variant B (A/B Test)
-"paywall_b_title" = "Mente serena.\nCada día.";
-"paywall_b_subtitle" = "200 afirmaciones en 20 temas. Entregadas con calma.";
-"paywall_b_feature_nudges" = "De 1 a 4 recordatorios al día, a tu ritmo";
+"paywall_b_title" = "Palabras amables cuando más las necesitas";
+"paywall_b_subtitle" = "Tarjetas diarias para ayudarte en los momentos difíciles";
+"paywall_b_feature_nudges" = "Recordatorios en el momento justo";
 "paywall_b_feature_ai" = "8 fondos hechos a mano";
-"paywall_b_feature_personalized" = "Imágenes para compartir sin marca";
+"paywall_b_feature_personalized" = "Se adapta a tus propias dificultades";
 "paywall_b_feature_feedback" = "Sin anuncios. Nunca.";
-"paywall_b_feature_cancel" = "Cancela cuando quieras";
+"paywall_b_feature_cancel" = "Cancela cuando quieras, sin preguntas";
 "paywall_b_per_year" = "/año";
 "paywall_b_per_month" = "/mes";
 "paywall_b_daily_price" = "Solo %@ por día";
-"paywall_b_cta_no_trial" = "Comienza tu viaje ahora";
+"paywall_b_cta_no_trial" = "Comienza tu camino ahora";
 "paywall_b_cta_trial" = "Comenzar gratis";
 "paywall_b_review" = "\"Anicca me ayudó a ser más amable conmigo.\"";
-"paywall_b_trust_no_trial" = "Cancela cuando quieras · Sin anuncios";
+"paywall_b_trust_no_trial" = "Cancela cuando quieras · Satisfacción garantizada";
 "paywall_b_trust_trial" = "3 días gratis, luego %@ · Cancela cuando quieras";
 "paywall_b_trial_badge" = "3 DÍAS GRATIS";
-
+"paywall_b_retry" = "Recargar planes";
+"paywall_b_load_failed" = "No se pudieron cargar los planes. Revisa tu conexión e inténtalo de nuevo.";
+"paywall_b_lifetime_badge" = "PAGO ÚNICO";
+"paywall_b_per_lifetime" = " · pago único";
+"paywall_b_plan_lifetime" = "De por vida";
 // MARK: - Paywall Primer (1.8.3)
 "paywall_primer_title" = "Tu plan personalizado\nestá listo";
 "paywall_primer_subtitle" = "Comienza tu viaje con palabras creadas para ti.";

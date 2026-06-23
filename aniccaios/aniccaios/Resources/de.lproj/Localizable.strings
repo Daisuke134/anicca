@@ -1287,11 +1287,21 @@
 "nudge_loneliness_detail_14" = "Statt zu reden, hör zu. Das ist Verbindung. Frag heute jemanden \"Wie geht's?\".";
 
 // MARK: - Paywall Variant B (1.8.5+ Free Trial)
-"paywall_b_cta_no_trial" = "Jetzt starten";
+"paywall_b_cta_no_trial" = "Jetzt deine Reise beginnen";
 "paywall_b_cta_trial" = "Kostenlos starten";
-"paywall_b_trust_no_trial" = "Jederzeit kündbar · Zufriedenheitsgarantie";
+"paywall_b_trust_no_trial" = "Jederzeit kündbar · Zufriedenheit garantiert";
 "paywall_b_trust_trial" = "3 Tage kostenlos, dann %@ · Jederzeit kündbar";
 "paywall_b_trial_badge" = "3 TAGE KOSTENLOS";
+"paywall_b_retry" = "Pläne neu laden";
+"paywall_b_load_failed" = "Pläne konnten nicht geladen werden. Prüfe deine Verbindung und versuche es erneut.";
+"paywall_b_lifetime_badge" = "EINMALIG";
+"paywall_b_per_lifetime" = " · einmalig";
+"paywall_b_plan_lifetime" = "Lebenslang";
+"paywall_b_feature_cancel" = "Jederzeit kündbar, ohne Nachfragen";
+"paywall_b_feature_personalized" = "Passt sich deinen Herausforderungen an";
+"paywall_b_feature_nudges" = "Erinnerungen im richtigen Moment";
+"paywall_b_subtitle" = "Tägliche Karten, die dir durch schwere Momente helfen";
+"paywall_b_title" = "Sanfte Worte, wenn du sie am meisten brauchst";
 "paywall_plan_cta_trial" = "Kostenlos starten";
 "paywall_plan_cta_no_trial" = "Reise beginnen";
 "paywall_plan_trust_trial" = "3 Tage kostenlos, dann %@. Jederzeit kündbar.";

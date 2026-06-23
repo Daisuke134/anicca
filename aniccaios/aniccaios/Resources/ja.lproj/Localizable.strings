@@ -1418,25 +1418,28 @@
 "paywall_plan_privacy" = "プライバシー";
 
 // MARK: - Paywall Variant B (A/B Test)
-"paywall_b_title" = "静かな心、\n毎日に。";
-"paywall_b_subtitle" = "20のテーマ、200のことば。静かに、毎日に。";
-"paywall_b_feature_nudges" = "1日1〜4通、自分の時間に届く通知";
-"paywall_b_feature_ai" = "8種類の手描き背景";
-"paywall_b_feature_personalized" = "ウォーターマーク無しのシェア画像";
-"paywall_b_feature_feedback" = "広告ゼロ";
+"paywall_b_title" = "あなたが一番つらいとき、\nそっと届く言葉";
+"paywall_b_subtitle" = "あなたの悩みに寄り添うカードを毎日受け取ろう";
+"paywall_b_feature_nudges" = "最適なタイミングのリマインダー";
+"paywall_b_feature_personalized" = "あなたの悩みに合わせて適応";
 "paywall_b_feature_cancel" = "いつでもキャンセル可能";
 "paywall_b_plan_yearly" = "年額プラン";
 "paywall_b_plan_monthly" = "月額プラン";
 "paywall_b_plan_weekly" = "週額プラン";
+"paywall_b_plan_lifetime" = "買い切り";
+"paywall_b_lifetime_badge" = "一回のみ";
 "paywall_b_per_year" = "/年";
 "paywall_b_per_month" = "/月";
+"paywall_b_per_lifetime" = " · 一度きり、ずっとあなたのもの";
 "paywall_b_daily_price" = "1日あたりたった%@";
 "paywall_b_cta_no_trial" = "今すぐ旅を始める";
 "paywall_b_cta_trial" = "無料で始める";
 "paywall_b_review" = "「アニッチャのおかげで自分に優しくなれました」";
-"paywall_b_trust_no_trial" = "いつでもキャンセル可 · 広告ゼロ";
+"paywall_b_trust_no_trial" = "いつでもキャンセル · 満足保証";
 "paywall_b_trust_trial" = "3日間無料、その後 %@ · いつでもキャンセル可能";
 "paywall_b_trial_badge" = "3日間無料";
+"paywall_b_load_failed" = "プランを読み込めませんでした。通信環境をご確認の上、再試行してください。";
+"paywall_b_retry" = "プランを再読み込み";
 
 // MARK: - Onboarding New 3 Screens (1.8.3)
 "onboarding_processing_title" = "あなた専用のプランを\n準備しています";

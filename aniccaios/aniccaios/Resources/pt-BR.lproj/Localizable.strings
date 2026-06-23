@@ -1292,6 +1292,16 @@
 "paywall_b_trust_no_trial" = "Cancele quando quiser · Satisfação garantida";
 "paywall_b_trust_trial" = "3 dias grátis, depois %@ · Cancele quando quiser";
 "paywall_b_trial_badge" = "3 DIAS GRÁTIS";
+"paywall_b_retry" = "Recarregar planos";
+"paywall_b_load_failed" = "Não foi possível carregar os planos. Verifique sua conexão e tente novamente.";
+"paywall_b_lifetime_badge" = "ÚNICO";
+"paywall_b_per_lifetime" = " · pagamento único";
+"paywall_b_plan_lifetime" = "Vitalício";
+"paywall_b_feature_cancel" = "Cancele quando quiser, sem perguntas";
+"paywall_b_feature_personalized" = "Se adapta às suas dificuldades";
+"paywall_b_feature_nudges" = "Lembretes no momento certo";
+"paywall_b_subtitle" = "Cartões diários para te ajudar nos momentos difíceis";
+"paywall_b_title" = "Palavras gentis quando você mais precisa";
 "paywall_plan_cta_trial" = "Começar grátis";
 "paywall_plan_cta_no_trial" = "Começar jornada";
 "paywall_plan_trust_trial" = "3 dias grátis, depois %@. Cancele quando quiser.";

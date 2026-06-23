@@ -287,10 +287,12 @@ extension SubscriptionInfo {
         }()
 
         let willRenew = entitlement?.willRenew ?? false
+        // 2026-06-23: 買い切り(lifetime)は willRenew=false でも有効なので "active" 扱い
+        let isLifetime = productId == "ai.anicca.app.ios.lifetime"
         let isTrial = entitlement?.periodType == .trial
         let statusString: String
         if entitlement?.isActive == true {
-            statusString = isTrial ? "trialing" : (willRenew ? "active" : "canceled")
+            statusString = isTrial ? "trialing" : (willRenew || isLifetime ? "active" : "canceled")
         } else {
             statusString = "expired"
         }
