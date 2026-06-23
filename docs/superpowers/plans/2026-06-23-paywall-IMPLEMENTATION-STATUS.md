@@ -31,3 +31,11 @@ scheme config + XCUITest(#7) → 緑+スクショ(#12) → RC/ASC(#10) → build
 - これが 1.9.4 にアップロードする確定版（es/de/fr は EN 画像流用）
 
 ## 次: JP storefront 実画面（¥500/¥2,000/¥5,000 + 買い切り）を StoreKit config(storefront=JPN) で確認
+
+## JP価格設定 進捗（2026-06-23, Dais go 受領・1つずつ実行）
+- ✅ JP-1 monthly.b JP ¥500 価格変更 作成（発効 2026-06-24, preserve既存購読者, US base $9.99 不変）pricePoint=¥500
+- ✅ JP-2 yearly.b JP ¥2,000 価格変更 作成（発効 2026-06-24, US base $39.99 不変）pricePoint=¥2000
+- ⏳ JP-3 トライアル削除 yearly.b/weekly.b（P3D intro）
+- ⏳ JP-4 lifetime IAP 新規 ai.anicca.app.ios.lifetime + JP ¥5,000
+- ⏳ JP-5 RC offering anicca_variant_b に lifetime package 追加
+- ASC ids: monthly.b=6769264298 / yearly.b=6762049696 / weekly.b=6762049888 / group(B)=22027036
