@@ -114,8 +114,29 @@ After every step: mark it here + commit + push.
     reply writes the calendar. Hands-on by the delegate, not us.
 
 ### PHASE 5 — #51 LAUNCH (public/irreversible → Dais confirms broadcast)
-11. ☐ **P1** — Product Hunt (English) listing: assets, copy, schedule.
-12. ☐ **P2** — X @aniccaxxx: the Japanese launch copy (below) + an English version (0.13 recursive-improver) → post.
+
+KEY FACT (from the 31 ph-* skills + directory-submissions, 2026-06-23): **Product Hunt has NO public API/CLI
+for creating launches** → the browser (CloakBrowser daily-driver) is the only way. So we also build a private
+**product-hunt-upload** skill (#84) to codify the browser automation. Approved copy lives in
+`2026-06-23-life-manager-launch-copy.md`.
+
+**P1 — Product Hunt (DRAFT prepped on Dais's account "Life Manager — Anicca"). Sub-steps:**
+- ✅ **P1a — Main info** DONE 2026-06-23: name, tagline ("Hand off your calendar. Show up early, every time."),
+  url (aniccaai.com/life-manager), description (485-char PH version), topics (Productivity / Artificial
+  Intelligence / Calendar), maker comment (true-pain). Autosaved, no warnings. **This is only step 1 of upload.**
+- ☐ **P1b (#85) — Demo video**: upload the ORIGINAL wake-promo to **YouTube** (PH embeds YouTube only, not mp4),
+  then add the YT link to the gallery. Video → **2.7× more upvotes**. 30-60s, hook in first 10s.
+- ☐ **P1c (#86) — Gallery images**: story sequence (late-pain → early-order → feature demos), PNG/JPG/GIF,
+  first image = most important (becomes the listing). Use /lm screenshots + before/after. taste-skill for design.
+- ☐ **P1d (#87) — Thumbnail + logo**: scroll-stopping thumbnail (static/GIF) + logo (PNG + SVG + 1024² + favicon).
+- ☐ **P1e (#88) — Makers + Extras**: Dais as maker, pricing $20/mo, optional launch offer, confirm first comment.
+- ☐ **P1f (#89) — SCHEDULE** for **Tue/Wed/Thu 12:01 AM PST** (PH resets midnight PST = full 24h window).
+  Do NOT publish/go-live without Dais's explicit "go".
+- ☐ **P1g (#90) — Launch-day execution** (ph-launch-day-checklist): post maker comment, monitor, respond.
+  ★ BAN-PREVENTION (ph-ban-prevention): NEVER buy/exchange upvotes, fake accounts, or have Anicca instances
+  auto-upvote — instant ban. 100% organic only. ★
+- ☐ **#84 — Build the private `product-hunt-upload` skill** (CloakBrowser automation; reuse the verified selectors).
+12. ☐ **P2** — X @aniccaxxx: **Dais handles X himself** (he already has it; no prep needed from us).
 13. ☐ **P3** — Slack (Dais posts).
 14. ☐ **P4** — final smoke: live-curl every surface + one real paid user works end-to-end.
 
