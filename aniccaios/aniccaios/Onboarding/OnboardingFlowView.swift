@@ -66,7 +66,6 @@ struct OnboardingFlowView: View {
         case .processing:       ProcessingStepView(next: advance)
         case .planReveal:       PersonalizedInsightStepView(next: advance)
         case .comparison:       ComparisonTableStepView(next: advance)
-        case .appDemo:          AppDemoStepView(next: advance)
         case .ratingPrompt:     RatingPrePromptStepView(next: advance)
         case .notifications:    NotificationPermissionStepView(next: advance)
         }

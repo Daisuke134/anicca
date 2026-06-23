@@ -25,7 +25,7 @@ struct OnboardingProgressBar: View {
     }
 
     static func progress(for step: OnboardingStep) -> Double {
-        let totalSteps = 11.0
+        let totalSteps = 10.0
         let currentIndex = Double(step.rawValue)
         return 0.2 + 0.6 * (currentIndex / (totalSteps - 1))
     }

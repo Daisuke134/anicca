@@ -176,6 +176,13 @@ final class AppState: ObservableObject {
         let args = CommandLine.arguments
         guard args.contains(where: { $0.hasPrefix("--screenshot-") }) else { return }
 
+        // 2026-06-23: paywall を直接表示（オンボ質問だけ完了扱い・未課金 → OnboardingFlowView が onAppear で paywall を出す）。
+        // isOnboardingComplete は立てない（立てると ContentView が main を出して paywall に行かない）。
+        if args.contains("--screenshot-paywall") {
+            markOnboardingQuestionsCompleted()
+            return
+        }
+
         // 共通: オンボーディング完了・モックデータ注入
         isOnboardingComplete = true
         var profile = userProfile

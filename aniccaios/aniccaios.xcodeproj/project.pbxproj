@@ -24,6 +24,7 @@
 		A0714DDB2FC1D35400D7F9C7 /* PostHog in Frameworks */ = {isa = PBXBuildFile; productRef = 84PH00012F2B000000000001 /* PostHog */; };
 		A0714DDC2FC1D35400D7F9C7 /* Singular in Frameworks */ = {isa = PBXBuildFile; productRef = EF17B89AF1FF1936EB1AE58E /* Singular */; };
 		A2A557539B41673D5F86B4DD /* BetaDistributionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D65F6D43EDB935AF0AB2C0DD /* BetaDistributionTests.swift */; };
+		BE2E7C57C0FFEE0000000002 /* PaywallE2ETests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE2E7C57C0FFEE0000000001 /* PaywallE2ETests.swift */; };
 		E81BA10340AD7BEFF6488EB4 /* ScreenshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A9BCCF09BD4516FCF9B831 /* ScreenshotTests.swift */; };
 		F29A0962172B02EC2AF48600 /* NotificationHotfixTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76CE63902F0DC6A555FFB103 /* NotificationHotfixTests.swift */; };
 		FEBAE36E43A36F64C5743079 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E1FFFD13F67306F87B5AA845 /* Foundation.framework */; };
@@ -90,6 +91,7 @@
 		84CC79132EFAA90F005078AE /* AniccaNotificationService.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = AniccaNotificationService.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		88497BECBC635C3BB2A4F5F9 /* NudgeStatsManagerTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NudgeStatsManagerTests.swift; sourceTree = "<group>"; };
 		8EB5063EEB22012F0836EE85 /* aniccaiosTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = aniccaiosTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		AE2E7C57C0FFEE0000000001 /* PaywallE2ETests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PaywallE2ETests.swift; sourceTree = "<group>"; };
 		D65F6D43EDB935AF0AB2C0DD /* BetaDistributionTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BetaDistributionTests.swift; sourceTree = "<group>"; };
 		D79CF80F4A02460444C7B3A5 /* ProblemNotificationSchedulerTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ProblemNotificationSchedulerTests.swift; sourceTree = "<group>"; };
 		E074536A7E39DB9F93036849 /* NudgeLocalizationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NudgeLocalizationTests.swift; sourceTree = "<group>"; };
@@ -204,6 +206,7 @@
 			isa = PBXGroup;
 			children = (
 				E1A9BCCF09BD4516FCF9B831 /* ScreenshotTests.swift */,
+				AE2E7C57C0FFEE0000000001 /* PaywallE2ETests.swift */,
 			);
 			path = aniccaiosUITests;
 			sourceTree = "<group>";
@@ -512,6 +515,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				E81BA10340AD7BEFF6488EB4 /* ScreenshotTests.swift in Sources */,
+				BE2E7C57C0FFEE0000000002 /* PaywallE2ETests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
