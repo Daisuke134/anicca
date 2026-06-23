@@ -9,6 +9,8 @@ After every step: mark it here + commit + push.
 - ✅ Thumbnail SET on PH draft = chatgpt-imagegen output (iPhone incoming-call screen + calendar/pin, gold). chatgpt-imagegen skill installed + codex backend verified working (Dais ChatGPT sub, GPT Image model).
 - ✅ Gallery = 3 English /lm screenshots (landing/onboard/dashboard) + YouTube demo video.
 - ⟳ P1c-A: generating production-grade story cards (pain→order→call→features→CTA) via chatgpt-imagegen to lead the gallery.
+
+- ✅ P1d/P1e DONE + **PH Launch checklist = 100% Complete** 2026-06-23 (Product name/tagline/description/thumbnail/gallery/tags all ✓ required; shoutouts/makers/first-comment ✓ recommended). Draft is LAUNCH-READY. ONLY P1f remains = SCHEDULE the go-live (Tue/Wed/Thu 12:01 AM PST) — that is the public/irreversible broadcast → needs Dais's explicit 'go' + chosen date.
 - ✅ P1c-A DONE 2026-06-23: 3 production-grade story cards generated via chatgpt-imagegen (GPT Image, text baked in clean): card1 'You're late again. People stop counting on you.' / card2 'It calls you before each thing.' (Life Manager incoming call) / card3 'Now you're early. People trust you again.' Uploaded to PH gallery + emailed to Dais. Gallery now = 3 story cards + 3 /lm screenshots + YouTube video. TODO: order card1 first (drag) + optionally drop the weaker raw screenshots.
 
 
