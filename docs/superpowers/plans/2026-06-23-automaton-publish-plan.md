@@ -165,3 +165,8 @@ OpenClaw は使わない（課金）。Claude のサブスクで回す。
 - PHASE 3: 完全 no-human → topic→執筆→自己採点→**直接投稿**。
 
 媒体（収益源）: X（有料購読/tips）＋ note（有料記事）＋ Substack（月額購読）。日本語→英語で全媒体。目標 10k MRR。
+
+### Mermaid → 画像 の無料レンダリング経路（検証済 2026-06-23）
+- Zenn: ```mermaid をそのまま貼る（ネイティブ描画）。
+- note/Substack/X: `kroki.io` に POST して PNG 取得（インストール不要・無料・検証済 PNG 6KB）:
+  `curl -X POST https://kroki.io/mermaid/png --data-binary @diagram.mmd -o fig.png`（or mermaid.ink）。
