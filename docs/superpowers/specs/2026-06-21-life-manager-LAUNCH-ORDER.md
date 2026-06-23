@@ -1,10 +1,22 @@
 # Life Manager — LAUNCH EXECUTION ORDER (do top→bottom, ONE at a time)
 
-Date: 2026-06-21, **last updated 2026-06-22**. THIS file = the ORDER + remaining TODO (SSOT for "what's
+Date: 2026-06-21, **last updated 2026-06-23**. THIS file = the ORDER + remaining TODO (SSOT for "what's
 left until launch"). Architecture/state = `2026-06-21-life-manager-CANONICAL.md`. Video skill design =
-`2026-06-21-life-manager-video-skill-design.md`.
+`2026-06-21-life-manager-video-skill-design.md`. Approved launch copy = `2026-06-23-life-manager-launch-copy.md`.
 RULE: search the real files before acting; never guess. The video is NOT reelclaw, NOT larry.
 After every step: mark it here + commit + push.
+
+## WORKING STANDARD (Dais 2026-06-23 — definition of done for EVERY task here)
+- **Goal**: keep going until the architecture AND the result meet the bar — not just until it runs.
+- **After every meaningful step**: real-time test the REAL thing (full end-to-end, plus computer use / browser /
+  keystrokes / whatever it needs) → auto-review → commit → write progress somewhere sensible in the project.
+- **Finish**: one dedicated review pass over everything.
+- **DONE = every dimension at 100%, production-grade, a real user can walk in and use it.** Nothing less counts.
+
+## ACCOUNT DECISIONS (Dais 2026-06-23)
+- **YouTube demo video**: the English Life Manager (aniccaios EN) gets a dedicated channel. For now we USE THE
+  CURRENT channel Dais approved ("we can just use this channel") — the wake-promo v2 is uploaded there as
+  UNLISTED (`youtube.com/shorts/W4gfN0LuD0g`). A separate new Google account is the ideal future home.
 
 ---
 
