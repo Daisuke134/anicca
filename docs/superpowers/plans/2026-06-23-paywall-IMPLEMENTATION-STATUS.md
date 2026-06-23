@@ -39,3 +39,4 @@ scheme config + XCUITest(#7) → 緑+スクショ(#12) → RC/ASC(#10) → build
 - ⏳ JP-4 lifetime IAP 新規 ai.anicca.app.ios.lifetime + JP ¥5,000
 - ⏳ JP-5 RC offering anicca_variant_b に lifetime package 追加
 - ASC ids: monthly.b=6769264298 / yearly.b=6762049696 / weekly.b=6762049888 / group(B)=22027036
+- ✅ JP-3 トライアル削除完了: monthly.b/yearly.b/weekly.b 全 introductory offer 0件（各74件×3 削除、完全no-trial）→ #8 完了
