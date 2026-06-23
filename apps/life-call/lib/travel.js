@@ -152,7 +152,7 @@ async function createTravelBlock(uid, apiKey, leaveMs, arriveMs, fromName, toNam
 
 // Returns { inserted, checked, skipped }. home = lm_users.home_address (may be null → first-of-day
 // located events are skipped this run and should be handled by the ask-loop separately).
-async function fillTravel(uid, { apiKey, mapsKey, home, nowMs = Date.now(), bufferMin = 5, calendar } = {}) {
+async function fillTravel(uid, { apiKey, mapsKey, geminiKey, home, nowMs = Date.now(), bufferMin = 5, calendar } = {}) {
   const cal = calendar || getCalendar({ apiKey });
   const events = await listEvents7d(uid, apiKey, nowMs, cal);
   let inserted = 0, checked = 0, skipped = 0;
@@ -160,19 +160,34 @@ async function fillTravel(uid, { apiKey, mapsKey, home, nowMs = Date.now(), buff
     const ev = events[i];
     if (isTravel(ev.summary) || !ev.location) continue;
     checked++;
-    // Single source of truth for the skip/insert decision (home→home, no-origin, etc.).
+    // Single source of truth for the skip/insert decision (home→home, no-origin, online, etc.).
     const decision = travelDecision(ev, events[i - 1], home);
     if (!decision.insert) { skipped++; continue; }
     const origin = decision.origin;
     // Dedup: a [Travel] block already sitting in the gap right before this event?
     const dup = events.some((e) => isTravel(e.summary) && e.endMs && e.endMs <= ev.startMs && e.endMs > ev.startMs - 3 * 3600000);
     if (dup) { skipped++; continue; }
-    const mins = await directionsMinutes(origin, ev.location, mapsKey, ev.startMs, nowMs);
+    let dest = ev.location;
+    let mins = await directionsMinutes(origin, dest, mapsKey, ev.startMs, nowMs);
+    if (mins == null && geminiKey) {
+      // The location is a room name / unroutable string (e.g. "情報科学大講義室[L1]（IS）"). Let the
+      // agent web-search the REAL venue address so a must-travel event still gets a block instead of a
+      // silent skip — never-late beats clean code. (Lazy require avoids any load-order coupling.)
+      try {
+        const { agentResolveLocation } = require("./ask.js");
+        const res = await agentResolveLocation(ev, { home, mapsKey, geminiKey });
+        if (res && res.kind === "online") { skipped++; continue; }       // not physical → no travel
+        if (res && res.kind === "filled" && res.location) {
+          dest = res.location;
+          mins = await directionsMinutes(origin, dest, mapsKey, ev.startMs, nowMs);
+        }
+      } catch { /* fall through to skip below */ }
+    }
     if (mins == null) { skipped++; continue; }
     const arriveMs = ev.startMs;
     const leaveMs = arriveMs - (mins + bufferMin) * 60000;
     if (leaveMs < nowMs) { skipped++; continue; } // already past the leave time
-    if (await createTravelBlock(uid, apiKey, leaveMs, arriveMs, origin, ev.location, ev.location)) inserted++;
+    if (await createTravelBlock(uid, apiKey, leaveMs, arriveMs, origin, dest, dest)) inserted++;
     else skipped++;
   }
   return { inserted, checked, skipped };
