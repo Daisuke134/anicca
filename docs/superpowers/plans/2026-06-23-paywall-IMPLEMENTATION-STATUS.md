@@ -41,3 +41,5 @@ scheme config + XCUITest(#7) → 緑+スクショ(#12) → RC/ASC(#10) → build
 - ASC ids: monthly.b=6769264298 / yearly.b=6762049696 / weekly.b=6762049888 / group(B)=22027036
 - ✅ JP-3 トライアル削除完了: monthly.b/yearly.b/weekly.b 全 introductory offer 0件（各74件×3 削除、完全no-trial）→ #8 完了
 - ✅ JP-4 lifetime IAP 作成: ai.anicca.app.ios.lifetime (ASC id 6783239477, NON_CONSUMABLE) / loc=en"Lifetime"+ja"買い切り（無期限）" / availability=JP / price=¥5,000(base JPN schedule) / state=MISSING_METADATA(審査スクショ・説明は1.9.4提出時)
+- ⏳ JP-5 RC offering link: **BLOCKED** = RevenueCat MCP write tools が body スキーマbugで全失敗 + RC dashboard 未ログイン(daily-driver, Google SSO無し=email/pw要) + RC remote OAuth MCP のためローカルAPI key無し。必要: ① Dais が CloakBrowser(vnc://100.99.82.95)で RC 1回ログイン → 私が v2 APIキー生成 → REST で完了、または ② RC creds、または ③ Dais が dashboard で $rc_lifetime package(product=ai.anicca.app.ios.lifetime, entitlement=Anicca)を1分で追加。
+- 注: ¥500/¥2,000 値下げ・no-trial は RC が ASC から auto-sync で反映（JP-5不要）。lifetime カード表示のみ JP-5 必須。
