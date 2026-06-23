@@ -5,6 +5,11 @@ left until launch"). Architecture/state = `2026-06-21-life-manager-CANONICAL.md`
 `2026-06-21-life-manager-video-skill-design.md`. Approved launch copy = `2026-06-23-life-manager-launch-copy.md`.
 RULE: search the real files before acting; never guess. The video is NOT reelclaw, NOT larry.
 After every step: mark it here + commit + push.
+## PH ASSET PROGRESS (2026-06-23)
+- ✅ Thumbnail SET on PH draft = chatgpt-imagegen output (iPhone incoming-call screen + calendar/pin, gold). chatgpt-imagegen skill installed + codex backend verified working (Dais ChatGPT sub, GPT Image model).
+- ✅ Gallery = 3 English /lm screenshots (landing/onboard/dashboard) + YouTube demo video.
+- ⟳ P1c-A: generating production-grade story cards (pain→order→call→features→CTA) via chatgpt-imagegen to lead the gallery.
+
 
 ## WORKING STANDARD (Dais 2026-06-23 — definition of done for EVERY task here)
 - **Goal**: keep going until the architecture AND the result meet the bar — not just until it runs.
