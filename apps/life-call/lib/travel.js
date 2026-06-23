@@ -18,24 +18,16 @@ function isTravel(summary) {
   return s.startsWith("[Travel]") || s.includes("🚆 移動");
 }
 
-// PURE travel decision (no network) — the single source of truth for "does this event need a
-// [Travel] block, and from where". Unit-tested so the home→home guard can never silently regress.
+// PURE travel decision — geometry only (origin selection + home→home guard). It does NOT judge whether
+// an event is "online": that is the AGENT's call (agentResolveLocation, ask.js), made via prompt+tools,
+// never a hardcoded keyword regex (Dais 2026-06-23: ~/.claude/rules/building-effective-ai-agents.md —
+// "no brittle if-else hardcoded logic; the model decides"). An online event surfaces here as an
+// un-routable location → fillTravel asks the agent, which returns kind:"online" → skipped.
 // Returns { insert: boolean, origin: string|null, reason: string }.
-function isOnlineLocation(loc) {
-  // A URL / video-call link / phone-only "location" is NOT a place to travel to — routing it
-  // wastes a Directions call (always null) and must never block-spam. meet/zoom/teams/webex + any
-  // http(s)/tel scheme. Source: real Dais calendar had "https://meet.google.com/…" as a location.
-  return /^(https?:\/\/|tel:)/i.test(loc) ||
-    /\b(meet\.google\.|zoom\.us|teams\.microsoft\.|webex\.|whereby\.com|\bonline\b)/i.test(loc);
-}
-
 function travelDecision(ev, prev, home) {
   const norm = (s) => (s || "").replace(/\s+/g, "").toLowerCase();
   if (!ev || isTravel(ev.summary) || !((ev.location || "").trim())) {
     return { insert: false, origin: null, reason: "helper-or-no-location" };
-  }
-  if (isOnlineLocation(ev.location.trim())) {
-    return { insert: false, origin: null, reason: "online" };
   }
   // Origin = previous event's location if it ends within [0,90] min before this one (back-to-back) AND
   // the previous event is a REAL event (not one of Anicca's own [Travel] helper blocks); else home.
@@ -194,7 +186,7 @@ async function fillTravel(uid, { apiKey, mapsKey, geminiKey, home, nowMs = Date.
 }
 
 module.exports = {
-  fillTravel, directionsMinutes, isTravel, travelDecision, isOnlineLocation,
+  fillTravel, directionsMinutes, isTravel, travelDecision,
   // #71 pure helpers (unit-tested)
   parseDurationSeconds, minutesFromSeconds, buildDriveBody, clampDepartIso,
 };
