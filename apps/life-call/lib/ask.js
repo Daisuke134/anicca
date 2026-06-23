@@ -89,16 +89,28 @@ async function agentResolveLocation(event, { home, mapsKey, geminiKey }) {
   const contents = [{
     role: "user",
     parts: [{ text:
-`You are Life Manager. For this calendar event, decide WHERE it happens so travel time can be planned —
-without bothering the user. Three outcomes via submit_answer:
-1. ONLINE: the event has no physical place — it is a phone/video/online/remote call (title has オンライン,
-   電話, リモート, remote, online, Zoom, Meet, Teams, ビデオ通話, 通話, or is clearly virtual). Then
-   submit_answer(online=true). No location, no question.
-2. PHYSICAL & FOUND: it happens at a real venue. Use places_search (try query variations: bare name,
-   name+area, English/Japanese, add the user's home city to disambiguate) to find the exact address,
-   then submit_answer(online=false, confident=true, location=<exact formatted_address>).
-3. UNKNOWN: it is physical but the title is a person's name or a vague activity ("lunch", "1on1") with no
-   findable venue — submit_answer(online=false, confident=false). Only then is the user asked.
+`You are Life Manager. Decide whether this calendar event requires the user to TRAVEL to an external
+place, and if so where — so travel time can be planned without bothering them. Reason about the event
+like a thoughtful assistant; do not pattern-match keywords. Three outcomes via submit_answer:
+1. NO TRAVEL (online=true): the event needs no journey to an external venue. This covers (a) online /
+   remote / phone / video calls (e.g. "藤井さんと電話オンライン", a Zoom/Meet/Teams link), AND (b) personal
+   routines done at or from home with no external destination — sleep, a workout/run, meditation, meals
+   at home, remote desk work. No location, no question.
+2. PHYSICAL & FOUND (online=false, confident=true, location=<exact address>): it genuinely happens at a
+   real external venue. Use places_search (try variations: bare name, name+area, EN/JA, add the user's
+   home city to disambiguate; resolve an institution/company/room name like "MUIT 出社" or a class room
+   to its real building address) and return the exact formatted_address.
+3. UNKNOWN (online=false, confident=false): it does require going somewhere, but the title is a person's
+   name or a vague external activity ("lunch", "1on1 with X") with no findable venue. Only then is the
+   user asked where it is.
+
+Canonical examples (match the SPIRIT, reason like these):
+- "藤井さんと電話オンライン" / "Zoom sync" / "電話 with X" → NO TRAVEL (online=true): it is a call.
+- "Sleep" / "Morning run" / "Meditation" / "Day job (remote, no bookings)" → NO TRAVEL (online=true):
+  a personal routine at/from home, no external venue.
+- "MUIT 出社" → PHYSICAL: search the company's office building → its real address.
+- "[NAIST] class @ 情報科学大講義室" → PHYSICAL: resolve the institution to its campus address.
+- "Lunch with Mai" / "1on1" → UNKNOWN: a real meetup but no findable venue → ask.
 
 Event title: ${JSON.stringify(event.summary || "")}
 Event location field (may be a room name, a URL, or empty): ${JSON.stringify(event.location || "")}
