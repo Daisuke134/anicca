@@ -49,23 +49,27 @@ ClawRouter profiles: free (100% savings, $0) · auto (74-100%) · eco (95-100%) 
 - ☐ 5.1 1% of MRR / surplus → charity-match or human payout, no human click
 
 ## PHASE 6 — CONTENT (publish, honest, with the live dashboard as proof)
-- ◐ 6.1 automaton article — DRAFT updated with block 6-3 (verified free+premium results: $0 realised /
-       351 wakes / 68.7h; both free & premium = $0, bottleneck = capital+demand+plumbing, not model).
-       File: docs/articles/2026-06-21-automaton-pays-for-itself.md. Remaining: optional clean premium
-       window (B2) → publish (PHASE E). Free observation (B1) = DONE: $0 realised across all 10 tools.
+- ◐ 6.1 automaton article — DONE as a FREE-only story, ships NOW. Canonical = docs/articles/2026-06-11-automaton-jp.md
+       (worktree ~/.cache/anicca-article-wt, branch docs/frank-article). NOT automaton-pays-for-itself.md (STALE).
+       Real numbers in it: そのまま×無料=$0 / そのまま×有料(GPT-5.5)=$0 burned ~$17 / 改造(道具)×無料=+$0.1676 (hl close, on-chain).
+       Premium-with-tools is NOT run (Dais 2026-06-23: do NOT fund premium, keep free glm-4.7). Remaining = PUBLISH ORDER below.
 - ☐ 6.2 takeoff article — our definition of takeoff (self-funding + self-spawning, no human), citing
        lesswrong + ai-2027, + the UBI vision
 - ☐ 6.3 block 6-3 — per-tool realised earnings table once Phase 2 has real numbers
 
 ---
 
-## RIGHT NOW (the single next action) — updated 2026-06-22
-Article [6]③ needs the PREMIUM number. Blocker: premium = x402-paid from the wallet, but liquid USDC ≈ $0.06
-(over-deployed). So the ordered next actions (see spec 2026-06-22-revenue-dashboard-and-earn-experiment.md):
-1. anicca makes liquid: **close HL** (realise $8.84 position) or withdraw some yield → operating buffer.
-2. switch the live instance to a **frontier model** → run 20–30 wakes (B2) → record realised per-tool P&L.
-3. write **[6]③ premium row** into the JP article; fix dashboard to include HL (PHASE A); then [7]/[8]; translate; ship (E).
+## RIGHT NOW — updated 2026-06-23 (DECISION: do NOT fund premium; keep FREE glm-4.7; PUBLISH the JP article NOW)
+Premium experiment (PHASE 3.3 / B2) = DEFERRED, not a blocker. The article is a complete free-only story.
+PUBLISH JP FULLY first, THEN translate to EN. Ordered next actions:
+1. **Article final QA** — 音読 + de-slop the whole piece; resolve [6]①② residual 全角ダッシュ with Dais (EDITOR PROTOCOL); every link → HTTP 200.
+2. **Visuals** — [2]/[3]/[4] 🎨 diagrams + thumbnail via the keiodaisuke ChatGPT subscription's **gpt-image** (NO API key; skywork.ai chatgpt-image method).
+3. **Publish JP** across media: note → Zenn → Substack(JA) → X Article → TikTok image. Record each live URL (HTTP 200).
+4. **Demo video** → YouTube → URL.
+5. **THEN EN**: full translate → dev.to → X Article → TikTok image.
+6. **Cloud for the launch claim 'クラウド3体・ローカル1体'** (PHASE 4): cloud = the real takeoff substrate; local can't self-spawn (disk-bound), cloud scales infinitely. Fix the genesis/cloud repo so the RIGHT anicca version spins up on Akash; get ≥3 cloud instances LIVE + on the dashboard BEFORE claiming '3体'.
+7. **Verify EVERY launch-copy claim is TRUE** (instance count, dashboard live, UBI cron actually sends, self-* crons real) → post the **LAUNCH announcement** with the article URL + YouTube URL.
 
-MONEY TRUTH: realised earned so far = **$0**. HL's $8.84 = deposited capital, NOT earnings — never write "made $8".
-AUTONOMY: these earn actions must be done by anicca ITSELF (keep-liquid-buffer + close-in-profit rules in
-runtime/loop/prompt.mjs + earn-detect.mjs), not by hand. I (Claude, type-2) only FIX the system + MONITOR.
+MONEY TRUTH: realised earned = **+$0.1676** (hl-trade close, on-chain verified). HL $8.94 = deposited capital, NOT earnings.
+AUTONOMY: earn actions done by anicca ITSELF (buffer + close-in-profit in runtime/loop/prompt.mjs + earn-detect.mjs).
+I (Claude, type-2) only FIX the system + MONITOR + write/publish the article.
