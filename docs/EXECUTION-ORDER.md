@@ -62,11 +62,11 @@ ClawRouter profiles: free (100% savings, $0) · auto (74-100%) · eco (95-100%) 
 ## RIGHT NOW — updated 2026-06-23b (MONETIZE BEFORE PUBLISH — we don't give the sauce for free)
 The article is DONE & verified (note draft, all visuals as compact images, infographic). Before publishing we set
 up monetization, because the whole point is 10k MRR from writing. note = the key. ORDER:
-M1. **note メンバーシップ開設** (daily-driver browser): apply → plan name + monthly price (~500–980円) + perks
+M1. **note メンバーシップ開設** (daily-driver browser): apply → plan name + monthly price = 500円/月 (BP: note 3000-membership analysis 'start at 500円') + perks
     (=「全有料記事 読み放題＋実験ログ」). Fee 10%, no setup cost. This is the MRR engine.
 M2. **This article = 一部有料記事** (note editor / daily-driver): FREE intro = blocks [0]–[5] (what Automaton is,
     landscape, how it works, how to run it). Set 有料ライン just before [6] → PAID = [6] onward (で、稼げたのか =
-    the actual experiment, results, earning logs, what-we-did). Single price ~300–500円, also unlocked by membership.
+    the actual experiment, results, earning logs, what-we-did). Single price = 980円 (BP: ノウハウ+独自ログ; note相場980-1500, かさこ '最低1000円の価値'). Members read it free → 980円単発 > 500円会員 funnels to membership.
     (note-mcp has NO paid-line API → set it in the editor with the daily-driver cookie/browser.)
 P1. **VERIFY on browser (screenshot) → PUBLISH note** → record URL.
 P2. **Other JP platforms** each with their monetization: Zenn(投げ銭/バッジ) → Substack(paid subscription) →
