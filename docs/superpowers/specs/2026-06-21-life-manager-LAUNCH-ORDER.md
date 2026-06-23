@@ -140,9 +140,57 @@ for creating launches** → the browser (CloakBrowser daily-driver) is the only 
 13. ☐ **P3** — Slack (Dais posts).
 14. ☐ **P4** — final smoke: live-curl every surface + one real paid user works end-to-end.
 
-### POST-LAUNCH
-15. ☐ **#77** — slice5 local converge (same node app w/ LIFE_TRANSPORT=gog; needs Dais's Mac real call).
-16. ☐ **#29** — STEP2 (Dais dogfoods on web). · **#72** OpenClaw unify. · **#70** DROPPED (not now).
+### PHASE 6 — TELEGRAM full E2E (#67/#68) — POST-LAUNCH, but WE must finish it (not "mom-only")
+17. ☐ **TG1 (#67)** — ask/notify loops deliver via Telegram + read TG replies → write the calendar. Full no-mock E2E.
+18. ☐ **TG2 (#68)** — interactive Telegram onboarding: the bot guides step-by-step (name → web connect → phone →
+    pay → done), NOT a web dump. Parity with the /lm web flow. A real /start on @LifeManagerBotbot, verified.
+    (Mom can be the human test user, but WE build + verify the flow.)
+
+### PHASE 7 — GROWTH ENGINE → 10k MRR ($20/mo × 500 paying). Product + marketing compound.
+19. ☐ **G1 — TikTok @anicca.comedy daily**: after warm-up, 2×/day real-call reels auto-post (life-manager-video).
+    Top-of-funnel awareness → aniccaai.com/life-manager.
+20. ☐ **G2 — Directory submissions** (directory-submissions skill): BetaList, Fazier, TAAFT, Futurepedia, SaaSHub,
+    AlternativeTo, AI/agent registries → dofollow backlinks → domain rating → **AI-engine citations** (ChatGPT /
+    Perplexity / Google AI Overviews answer "best AI scheduler" → us). AI-referred traffic converts 6-27× higher.
+21. ☐ **G3 — Post-launch follow-up** (ph-post-launch-followup): thank supporters, collect reviews, SEO benefits,
+    newsletter pitch, relaunch when there's a real update.
+22. ☐ **G4 — OSS funnel**: GitHub repo (MIT) = credibility + a free tier for tinkerers; some convert to cloud.
+23. ☐ **G5 — Retention = the moat**: the product genuinely changes behavior (late → early → trusted), so churn is
+    low AND every paying user becomes a visible testimonial (referral). Track churn (churn-prevention skill).
+
+### POST-LAUNCH (engineering)
+24. ☐ **#77** — slice5 local converge (same node app w/ LIFE_TRANSPORT=gog; needs Dais's Mac real call).
+25. ☐ **#29** — STEP2 (Dais dogfoods on web). · **#72** OpenClaw unify. · **#70** DROPPED (not now).
+
+---
+
+## END-STATE ARCHITECTURE + PATH TO 10k MRR (ASCII)
+```
+                 LIFE MANAGER — end state (ONE repo: Daisuke134/life-manager)
+   ┌──────────────────────────────────────────────────────────────────────────────────────┐
+   │ planner · travel · ask · notify · call (Telnyx ⇄ Gemini Live, voice=Charon) — SAME logic│
+   │ only diff = adapters/transport (gog=local | Composio=cloud) + who holds the keys        │
+   └───────────────┬───────────────────────────────────────────────┬────────────────────────┘
+        ① OSS / LOCAL  (free, MIT, BYOK)                  ② CLOUD  ($20/mo, managed) = the business
+        run on your own OpenClaw, your keys                aniccaai.com/lm: Google → cal+gmail → phone
+        GitHub repo = credibility + free tier              → Stripe $20/mo → dashboard. per-user lang,
+        audience: developers / tinkerers                   name, behavior. audience: everyone else
+                  └──────────── FUNNEL: free → trust → paid ───────────┘
+
+   GROWTH ENGINE  (→ 10k MRR = 500 × $20)
+   AWARENESS                      CONSIDERATION                 CONVERT + RETAIN
+   • TikTok @anicca.comedy daily  • /life-manager landing       • $20/mo Stripe
+     real-call reels (warmup→     (late → early → trust)        • product CHANGES behavior: you're
+     viral)                       • Product Hunt listing          early → people trust you → you STAY
+   • Product Hunt (anchor)        • OSS GitHub (proof)          • low churn = the real moat
+   • X (Dais) + word of mouth     • directory backlinks → DR    • every paid user = a visibly more
+   • directory submissions          → AI citations (ChatGPT       reliable person = walking testimonial
+   • Telegram bot onboarding        "best ___" → us, 6-27× conv)  → referral (trust is shareable)
+
+   THE MOAT = behavior change. A notification gets swiped; a phone call that makes you EARLY changes how
+   people see you. That transformation is STICKY (retention) AND SHAREABLE (organic growth). Product and
+   marketing compound — that's the road to 10k MRR.
+```
 
 ---
 
