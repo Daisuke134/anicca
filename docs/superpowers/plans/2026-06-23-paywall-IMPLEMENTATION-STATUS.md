@@ -1,24 +1,25 @@
 # 実装ステータス — paywall 立て直し (2026-06-23, feature/paywall-notrial-jp3plan, PR #182)
 
-## DONE（コード・このPRに含む / BUILD SUCCEEDED + adversary PASS）
-- no-trial 全面化（hasTrialEligibility=false） — PaywallVariantBView.swift
-- 1.9.1 コピー復元 + 特典3（AI/feedback削除） — en/ja/de/es/fr/pt-BR strings
-- 買い切り JP限定表示（Storefront.current==JPN gate） — PaywallVariantBView.swift
-- プラン並び 月→年→買い切り
-- 無限スピナー詰まり修正（5s timeout→再読込/復元）
-- lifetime status=active — SubscriptionManager.swift
-- Anicca.storekit: trial削除 + lifetime非消費型追加
+★ 方針 (Dais 2026-06-23): no-human-in-loop。AI が pbxproj 編集・E2E・RevenueCat・TestFlight まで全部やって自分で検証。
+★ 唯一の人間タスク = 新 App Store スクショ作成 + 1.9.4 へアップロード。その後 Anicca が asc で提出。
 
-## 検証
-- ✅ xcodebuild build = BUILD SUCCEEDED
-- ✅ fresh-context adversary（vcsdd）= PASS（全9次元, file:line evidence）
-- ⏳ StoreKit local 購入E2E: test plan + SKTestSession を別途。JP lifetime を見るには test 側で storefront=JPN（Anicca.storekit の _storefront は USA のまま）
-- 本番性: TestFlight+sandbox（Dais実機, 1回）+ 既存本番売上 $47/28d が「本番購入は通る」を証明
+## ✅ DONE（コード・PR #182 / BUILD SUCCEEDED + adversary PASS 9/9）
+- no-trial 全面化（hasTrialEligibility=false）
+- 1.9.1 コピー復元 + 特典3（AI/feedback削除）— en/ja/de/es/fr/pt-BR
+- 買い切り JP限定表示（Storefront==JPN gate）/ 並び 月→年→買い切り
+- 無限スピナー詰まり修正（5s→再読込/復元）
+- lifetime status=active / Anicca.storekit: trial削除+lifetime追加
 
-## RELEASE-GATED（1.9.4 提出と同時, Dais "submit" で実行 / このPRに含めない）
-- ASC: 3商品の introductory FREE_TRIAL 削除 / JP 月¥500・年¥2,000 / lifetime IAP ¥5,000(US$99.99)
-- RevenueCat: lifetime product + $rc_lifetime package + entitlement entlb820c43ab7 attach
-- App Store: 新 scroll UI + 新 paywall スクショ(EN/JA) + 1.9.4 提出
-- ★ ASC のトライアル削除は 1.9.4 と同時にする事（先に消すと旧1.9.3が誤表示） ★
+## 🔄 残（全部 AUTONOMOUS、自分で E2E 緑まで iterate）
+| # | タスク | 種別 |
+|---|---|---|
+| #7  | StoreKit/Maestro E2E harness（test target/test plan, pbxproj編集OK）。storefront=JPN で lifetime も検証 | autonomous |
+| #12 | fastlane test_paywall 緑まで iterate（no-trial表記消滅 / 月→年→買い切り(JP) / 購入→解錠） | autonomous |
+| #10 | RevenueCat: lifetime product + $rc_lifetime package + entitlement attach / ASC: trial削除・JP値下げ・lifetime IAP | autonomous |
+| #13 | 1.9.4 ビルド→TestFlight アップロード（fastlane, asc API key）+ sandbox 最終確認 | autonomous |
+| #17 | ★ 新スクショ作成 + 1.9.4 へアップロード ★ | HUMAN（唯一） |
+| #18 | Dais『uploaded』後、asc で 1.9.4 を提出（ASC価格はこの提出と同期） | autonomous |
 
-## 残（タスク #7/#12/#10/#13）= 上記 release-gated + StoreKit harness 配線
+## シーケンス
+E2E harness 構築(#7) → 緑まで iterate(#12) → RC/ASC 適用(#10) → 1.9.4 build+TestFlight(#13) → sandbox 自己検証 → [人間] スクショ upload(#17) → asc 提出(#18)。
+> ASC のトライアル削除/価格変更は #13/#18（リリース）と同期。先に消すと旧1.9.3が誤表示するため。
