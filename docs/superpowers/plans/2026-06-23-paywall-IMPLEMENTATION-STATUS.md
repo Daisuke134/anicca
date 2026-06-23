@@ -23,3 +23,11 @@
 
 ## シーケンス
 scheme config + XCUITest(#7) → 緑+スクショ(#12) → RC/ASC(#10) → build+TestFlight(#13) → [Dais 見る+スクショupload(#17)] → asc 提出(#18)
+
+## ✅ App Store スクショ（2026-06-23 Dais 承認済）
+- EN/JA 各4枚、GOAT 完全コピー + 新scroll UI + 3枚目「Choose From 8 Themes / 8種以上の豊富なテーマ」
+- 日本語=Hiragino W6 太字、phone を GOAT 同等に下げ余白拡大、SF Pro Rounded Bold(EN)
+- 保存: `aniccaios/fastlane/screenshots/{en-US,ja}/` + `~/anicca-project-store-assets/1.9.4/`
+- これが 1.9.4 にアップロードする確定版（es/de/fr は EN 画像流用）
+
+## 次: JP storefront 実画面（¥500/¥2,000/¥5,000 + 買い切り）を StoreKit config(storefront=JPN) で確認
