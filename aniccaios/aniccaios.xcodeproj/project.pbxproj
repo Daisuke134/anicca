@@ -25,6 +25,7 @@
 		A0714DDC2FC1D35400D7F9C7 /* Singular in Frameworks */ = {isa = PBXBuildFile; productRef = EF17B89AF1FF1936EB1AE58E /* Singular */; };
 		A2A557539B41673D5F86B4DD /* BetaDistributionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D65F6D43EDB935AF0AB2C0DD /* BetaDistributionTests.swift */; };
 		E81BA10340AD7BEFF6488EB4 /* ScreenshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A9BCCF09BD4516FCF9B831 /* ScreenshotTests.swift */; };
+		BE2E7C57C0FFEE0000000002 /* PaywallE2ETests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE2E7C57C0FFEE0000000001 /* PaywallE2ETests.swift */; };
 		F29A0962172B02EC2AF48600 /* NotificationHotfixTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76CE63902F0DC6A555FFB103 /* NotificationHotfixTests.swift */; };
 		FEBAE36E43A36F64C5743079 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E1FFFD13F67306F87B5AA845 /* Foundation.framework */; };
 		SUBINF1234567890ABCDEF /* SubscriptionInfoTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = SUBINF9876543210FEDCBA /* SubscriptionInfoTests.swift */; };
@@ -94,6 +95,7 @@
 		D79CF80F4A02460444C7B3A5 /* ProblemNotificationSchedulerTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ProblemNotificationSchedulerTests.swift; sourceTree = "<group>"; };
 		E074536A7E39DB9F93036849 /* NudgeLocalizationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NudgeLocalizationTests.swift; sourceTree = "<group>"; };
 		E1A9BCCF09BD4516FCF9B831 /* ScreenshotTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ScreenshotTests.swift; sourceTree = "<group>"; };
+		AE2E7C57C0FFEE0000000001 /* PaywallE2ETests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PaywallE2ETests.swift; sourceTree = "<group>"; };
 		E1FFFD13F67306F87B5AA845 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		FE5786A433C595C56594222F /* aniccaiosUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = aniccaiosUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		SUBINF9876543210FEDCBA /* SubscriptionInfoTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SubscriptionInfoTests.swift; sourceTree = "<group>"; };
@@ -204,6 +206,7 @@
 			isa = PBXGroup;
 			children = (
 				E1A9BCCF09BD4516FCF9B831 /* ScreenshotTests.swift */,
+				AE2E7C57C0FFEE0000000001 /* PaywallE2ETests.swift */,
 			);
 			path = aniccaiosUITests;
 			sourceTree = "<group>";
@@ -512,6 +515,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				E81BA10340AD7BEFF6488EB4 /* ScreenshotTests.swift in Sources */,
+				BE2E7C57C0FFEE0000000002 /* PaywallE2ETests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -95,4 +95,13 @@ final class PaywallE2ETests: XCTestCase {
         snap("after-purchase")
         XCTAssertTrue(unlocked, "entitlement not unlocked after purchase (hard paywall not passed)")
     }
+
+    /// Dais 最終チェック用: 英語・最初(onboarding)からアプリを起動し長時間保持（手動ウォークスルー）
+    @MainActor
+    func testManualWalkthrough() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-resetOnLaunch", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launch()
+        sleep(1500) // 25分: Dais が最初から英語で全画面を手動確認
+    }
 }
