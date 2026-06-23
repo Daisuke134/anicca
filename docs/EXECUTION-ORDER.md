@@ -59,17 +59,26 @@ ClawRouter profiles: free (100% savings, $0) · auto (74-100%) · eco (95-100%) 
 
 ---
 
-## RIGHT NOW — updated 2026-06-23 (DECISION: do NOT fund premium; keep FREE glm-4.7; PUBLISH the JP article NOW)
-Premium experiment (PHASE 3.3 / B2) = DEFERRED, not a blocker. The article is a complete free-only story.
-PUBLISH JP FULLY first, THEN translate to EN. Ordered next actions:
-1. **Article final QA** — 音読 + de-slop the whole piece; resolve [6]①② residual 全角ダッシュ with Dais (EDITOR PROTOCOL); every link → HTTP 200.
-2. **Visuals** — [2]/[3]/[4] 🎨 diagrams + thumbnail via the keiodaisuke ChatGPT subscription's **gpt-image** (NO API key; skywork.ai chatgpt-image method).
-3. **Publish JP** across media: note → Zenn → Substack(JA) → X Article → TikTok image. Record each live URL (HTTP 200).
-4. **Demo video** → YouTube → URL.
-5. **THEN EN**: full translate → dev.to → X Article → TikTok image.
-6. **Cloud for the launch claim 'クラウド3体・ローカル1体'** (PHASE 4): cloud = the real takeoff substrate; local can't self-spawn (disk-bound), cloud scales infinitely. Fix the genesis/cloud repo so the RIGHT anicca version spins up on Akash; get ≥3 cloud instances LIVE + on the dashboard BEFORE claiming '3体'.
-7. **Verify EVERY launch-copy claim is TRUE** (instance count, dashboard live, UBI cron actually sends, self-* crons real) → post the **LAUNCH announcement** with the article URL + YouTube URL.
+## RIGHT NOW — updated 2026-06-23b (MONETIZE BEFORE PUBLISH — we don't give the sauce for free)
+The article is DONE & verified (note draft, all visuals as compact images, infographic). Before publishing we set
+up monetization, because the whole point is 10k MRR from writing. note = the key. ORDER:
+M1. **note メンバーシップ開設** (daily-driver browser): apply → plan name + monthly price (~500–980円) + perks
+    (=「全有料記事 読み放題＋実験ログ」). Fee 10%, no setup cost. This is the MRR engine.
+M2. **This article = 一部有料記事** (note editor / daily-driver): FREE intro = blocks [0]–[5] (what Automaton is,
+    landscape, how it works, how to run it). Set 有料ライン just before [6] → PAID = [6] onward (で、稼げたのか =
+    the actual experiment, results, earning logs, what-we-did). Single price ~300–500円, also unlocked by membership.
+    (note-mcp has NO paid-line API → set it in the editor with the daily-driver cookie/browser.)
+P1. **VERIFY on browser (screenshot) → PUBLISH note** → record URL.
+P2. **Other JP platforms** each with their monetization: Zenn(投げ銭/バッジ) → Substack(paid subscription) →
+    X Article(有料購読) → TikTok image (hook → link to the paid note).
+D.  **EN**: translate → dev.to → X Article → Substack(EN) (paid).
+L.  Cloud 3体 (Akash) → verify launch-copy claims TRUE → LAUNCH post.
+F.  Automate: Claude Code Routine = write+publish+monetize daily, no human.
 
-MONEY TRUTH: realised earned = **+$0.1676** (hl-trade close, on-chain verified). HL $8.94 = deposited capital, NOT earnings.
+MONEY MODEL (note, researched 2026-06-23): 有料記事(単発) + メンバーシップ(月額=MRR, 手数料10%, 初期0) +
+定期購読マガジン(手数料20%). Funnel = free useful articles → followers → membership(recurring) + paid premium.
+Same shape on Substack(paid sub) and X(有料購読). MONEY TRUTH: realised so far = +$0.1676 (on-chain).
+
+
 AUTONOMY: earn actions done by anicca ITSELF (buffer + close-in-profit in runtime/loop/prompt.mjs + earn-detect.mjs).
 I (Claude, type-2) only FIX the system + MONITOR + write/publish the article.
