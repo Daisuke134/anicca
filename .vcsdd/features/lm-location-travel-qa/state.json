@@ -1,0 +1,31 @@
+{
+  "featureName": "lm-location-travel-qa",
+  "mode": "strict",
+  "language": "typescript",
+  "currentPhase": "1b",
+  "phaseHistory": [
+    {
+      "from": "init",
+      "to": "1a",
+      "timestamp": "2026-06-23T14:46:41.199Z"
+    },
+    {
+      "from": "1a",
+      "to": "1b",
+      "timestamp": "2026-06-23T14:46:41.212Z"
+    }
+  ],
+  "iterations": {
+    "1a": 1,
+    "1b": 1
+  },
+  "proofObligations": [],
+  "traceability": {
+    "epicId": "VCSDD-lm-location-travel-qa-1782225674352",
+    "beads": []
+  },
+  "gates": {},
+  "sprintCount": 0,
+  "createdAt": "2026-06-23T14:41:14.349Z",
+  "updatedAt": "2026-06-23T14:46:41.212Z"
+}
