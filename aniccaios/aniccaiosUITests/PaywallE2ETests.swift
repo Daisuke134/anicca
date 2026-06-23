@@ -73,25 +73,26 @@ final class PaywallE2ETests: XCTestCase {
         // CTA（既定=年額選択）をタップ → StoreKit ローカル購入シート
         app.buttons["paywall-plan-cta"].tap()
 
-        // StoreKit ローカルシートの確認ボタンを押す（システム/app 両方を試す）
-        let confirmTitles = ["Subscribe", "Confirm", "購入する", "購入", "Buy", "確認"]
-        var confirmed = false
-        for _ in 0..<8 {
+        // 解錠まで「購入/確認/リテンションAccept」系ボタンを叩き続ける堅牢ループ。
+        // StoreKit シート確認 + リテンション(Accept Offer) + paywall CTA 再タップを全部試す。
+        let mypath = app.otherElements["mypath-root"]
+        let sb = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        let confirmTitles = ["Subscribe", "Confirm", "購入する", "購入", "Buy", "確認",
+                             "Accept Offer", "オファーを受ける", "paywall-plan-cta"]
+        var unlocked = false
+        for _ in 0..<35 {
+            if mypath.exists { unlocked = true; break }
+            var tapped = false
             for t in confirmTitles {
                 let b = app.buttons[t]
-                if b.exists && b.isHittable { b.tap(); confirmed = true; break }
-                let sb = XCUIApplication(bundleIdentifier: "com.apple.springboard").buttons[t]
-                if sb.exists && sb.isHittable { sb.tap(); confirmed = true; break }
+                if b.exists && b.isHittable { b.tap(); tapped = true; break }
+                let s = sb.buttons[t]
+                if s.exists && s.isHittable { s.tap(); tapped = true; break }
             }
-            if confirmed { break }
-            app.tap() // interruption monitor 発火
+            if !tapped { app.tap() } // interruption monitor 発火
             sleep(1)
         }
-
-        // 解錠検証: paywall が閉じてメイン(mypath-root) に到達、または paywall-plan-cta 消滅
-        let mypath = app.otherElements["mypath-root"]
-        let unlocked = mypath.waitForExistence(timeout: 40)
-            || !app.buttons["paywall-plan-cta"].waitForExistence(timeout: 5)
+        unlocked = unlocked || mypath.waitForExistence(timeout: 10)
         snap("after-purchase")
         XCTAssertTrue(unlocked, "entitlement not unlocked after purchase (hard paywall not passed)")
     }
