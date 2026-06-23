@@ -186,21 +186,22 @@ async function askTick(uid, opts) {
   const events = await listEvents48h(uid, composioKey, nowMs);
   const already = await askedSet(uid, supaUrl, supaKey);
 
-  // For each event missing a location we haven't handled: agentic resolve, then ask only if unsure.
-  for (const event of events.filter((e) => needsLocation(e) && !already.has(e.id))) {
+  // For EVERY event still missing a location, let the agent RESOLVE it again every tick — the agent may
+  // now succeed where a past tick asked (better search / a newer model). We dedup only the ASK SEND
+  // (don't email/Telegram the same event twice), NOT the resolve attempt — that's what kept "MUIT 出社"
+  // permanently unfilled after one old ask. (Dais 2026-06-23: the agent must keep doing the work.)
+  for (const event of events.filter((e) => needsLocation(e))) {
     const res = await agentResolveLocation(event, { home: opts.home, mapsKey, geminiKey });
     if (res.kind === "online") {
-      // Online/remote/phone event → no place, no travel, and NEVER ask the user where it is.
-      await markAsked(uid, event.id, supaUrl, supaKey); // dedup so it's not reconsidered next tick
-      continue;
+      continue; // online/remote/phone → no place, no travel, never ask. (No mark: re-classify is cheap.)
     }
     if (res.kind === "filled") {
       await patchEvent(uid, event.id, { location: res.location }, composioKey);
-      await markAsked(uid, event.id, supaUrl, supaKey);
-      autofilled++;
+      autofilled++; // location now set → needsLocation=false next tick → drops out of this loop
       continue;
     }
-    // res.kind === "ask" — a human must tell us.
+    // res.kind === "ask" — a human must tell us. DEDUP the send: only ask once per event.
+    if (already.has(event.id)) continue; // already asked, awaiting their reply
     // ASK: prefer Telegram when the user linked it (replies come back via the /telegram webhook);
     // otherwise email from their own Gmail via Unipile.
     if (opts.telegramChatId && opts.telegramToken) {
