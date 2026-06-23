@@ -63,10 +63,8 @@ ClawRouter profiles: free (100% savings, $0) · auto (74-100%) · eco (95-100%) 
 The article is DONE & verified (note draft, all visuals as compact images, infographic). Before publishing we set
 up monetization, because the whole point is 10k MRR from writing. note = the key. ORDER:
 M1. ☑ DONE (verified by screenshot 2026-06-23): membership「アニッチャのメンバーシップ」exists; plan スタンダードプラン = **¥500/月 set**. 公開 toggle still OFF on purpose — publish it together with M2 (so members have content). Fee 10%, MRR engine.
-M2. **This article = 一部有料記事** (note editor / daily-driver): FREE intro = blocks [0]–[5] (what Automaton is,
-    landscape, how it works, how to run it). Set 有料ライン just before [6] → PAID = [6] onward (で、稼げたのか =
-    the actual experiment, results, earning logs, what-we-did). Single price = 980円 (BP: ノウハウ+独自ログ; note相場980-1500, かさこ '最低1000円の価値'). Members read it free → 980円単発 > 500円会員 funnels to membership.
-    (note-mcp has NO paid-line API → set it in the editor with the daily-driver cookie/browser.)
+M2. **This article = membership-gated** (COPY ChatGPT研究所, the top AI note creator = pure membership read-all; NO combine). FREE = [0]–[5] (what Automaton is = the hook). [6]+ (the experiment / earning logs) = **member-only** — added to the membership 特典 so only ¥500/月 subscribers read it. NO single-article price (that was a combine = wrong). Membership = the only monetization (recurring MRR). Then publish the membership plan (公開 ON) now that it has content.
+
 P1. **VERIFY on browser (screenshot) → PUBLISH note** → record URL.
 P2. **Other JP platforms** each with their monetization: Zenn(投げ銭/バッジ) → Substack(paid subscription) →
     X Article(有料購読) → TikTok image (hook → link to the paid note).
