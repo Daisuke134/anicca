@@ -1,20 +1,56 @@
 # Life Manager — LAUNCH EXECUTION ORDER (do top→bottom, ONE at a time)
 
-## 🚨 P0 EMERGENCY — LIVE BUGS (Dais on a real call 2026-06-23, fix via /vcsdd, NO FAKE, verify no-mock)
-Block everything below until both are fixed + verified with a real call/calendar (not a mock).
-- [ ] **E1 (#99) — silent call**: the cloud wake call rings + connects but the Gemini Live assistant
-      speaks NO words (dead air). apps/life-call: geminiSetupForEvent / call-bridge.cjs / call-logic.js —
-      who greets first (assistant must speak immediately), audio output wiring, Telnyx↔Gemini bridge,
-      VAD/affective config. DONE = real call to Dais where Charon actually speaks the reminder.
-- [ ] **E2 (#100) — no 移動時間 on gcal**: travel-time blocks are NOT auto-added to the user's Google
-      Calendar (Dais had a 7:00 event today, no 🚆 block → he didn't know when to leave → late). Cloud
-      scheduler travel insertion (Routes API → 🚆移動 block written back via Composio) not firing for real
-      users. Check importance filter (#69 over-filtering?), Composio calendar-write scope, address
-      resolution. DONE = a real event on Dais's calendar gets a real 🚆 block with correct transit time.
+## 🚨 P0 EMERGENCY (2026-06-23) — STATUS
+- [x] **E2 (#100) — 移動時間 auto-fill**: FIXED + verified no-mock on Dais's real cal. Online-classify =
+      agent (regex killed, PR195); room-name → agent web-search address (PR194); ask-loop RE-RESOLVES
+      every tick, dedup only the ask SEND (PR196) → MUIT 出社 autofilled→Mitsubishi UFJ Trust, real 🚆
+      block created (06-24 08:20→08:40, head-out time). Also deleted 3 NAIST classes + 4 orphaned blocks.
+- [x] **E1 (#99) — call audio**: the real call WORKED — Charon spoke (Dais confirmed 2026-06-23). Code
+      meets all voice best practices (bidirectional rtp, 24k→8k μ-law transcode, all parts, greet-first).
+- [ ] **#99b — YouTube wiring + post verify**: lm-video-post posts to TikTok only (2×/day, 9:30+21:00 JST,
+      recordings stored every 2h). ADD YouTube. VERIFY posted.jsonl reaches PUBLISHED (Postiz state), not
+      just a post_id.
+- [ ] **#100b — agent refinement + autonomous witness**: (a) pure routines (Running/Day job, no venue)
+      should classify as no-travel so the agent never asks "where is your run"; (b) WITNESS the deployed
+      cron autonomously autofill (not a manual node run) — the product must do it, per Dais.
 
-## Capafy monetization (separate track) = `2026-06-23-capafy-skill-monetization-10k-mrr.md`
-LM Capafy pricing LOCKED = **Serenity whole** (week $9.90/cap30 + month $29.90/cap120, NO trial, no day).
-Never combine setups. Publish via `capafy-autopublish`. Tasks #91-98.
+## SCHOOL recorded (read before building agents): `~/.claude/rules/building-effective-ai-agents.md` +
+`~/.claude/rules/building-voice-agents.md`. Core: the MODEL judges via prompt+tools; NEVER hardcode
+regex/if-else for a decision (Anthropic "brittle if-else hardcoded logic → fragility").
+
+## Capafy monetization (separate track) = `2026-06-23-capafy-skill-monetization-10k-mrr.md` + playbook
+`~/.openclaw/docs/CAPAFY_PROFITABLE_PLAYBOOK.md`. LM Capafy pricing LOCKED = **Serenity whole**
+(week $9.90/cap30 + month $29.90/cap120, NO trial, no day). Never combine setups. Via `capafy-autopublish`.
+
+## ===== FULL REMAINING TODO (all tracks, 2026-06-23) — task IDs in (#) =====
+### A. Sell Life Manager on Capafy (flagship)
+- [ ] A1 (#92) build cloned listing metadata (Serenity price, winner-cloned title/short/welcome/detailed)
+- [ ] A2 (#93) confirm our hosted-LLM (blockrun/x402 wallet) is funded — subscription publish fails on $0
+- [ ] A3 (#94) publish via `capafy-autopublish` (camofox: Card edit + DESELECT workspace docs + Serenity
+      pricing + logo → leak_scan fail-closed → configure --deep-scan → ship → Submit for Review)
+- [ ] A4 (#95) verify status=1(審査中)→4(listed) + record published.jsonl (no fake)
+- [ ] A5 (#96) first real paid subscriber E2E (buyer connects gcal+phone → real wake call), no-mock
+### B. Content (build-in-public)
+- [ ] B1 (#97) Capafy journey article via `ai-entity-article-writer` + stop-ai-slop, publish
+- [ ] B2 (#45) LM demo-reel: call recording → mp4 → TikTok (live) + add YouTube
+### C. Portfolio to $10k MRR
+- [ ] C1 (#98) clone playbook across 10-20 cheap-marginal skills (each WHOLE setup, A/B), ~900 active subs
+### D. LM web app + Product Hunt
+- [ ] D1 (#89) schedule PH launch (Tue/Wed/Thu 12:01 AM PST) — needs Dais go + date
+- [ ] D2 (#90) PH launch-day execution (ban-safe, organic, maker comment, monitor)
+- [ ] D3 (#84) product-hunt-upload skill (private, CloakBrowser automation)
+- [ ] D4 (#29) STEP 2 — LM web app full launch (Dais dogfoods, manages everyone's life)
+- [ ] D5 (#63/#67/#68) Telegram onboarding (full flow + ask/notify via TG + interactive bot)
+- [ ] D6 (#70) support users without Google Calendar (Outlook via Composio + chat-told schedule)
+- [ ] D7 (#74/#77) one JS codebase + transport adapter; local runs same Node app, retire Python
+### E. After launch
+- [ ] E1 (#27) aniccaai.com IA + vision redesign (nav=/install only, /me post-login, /dais hub, vision)
+- [ ] E2 (#28) UBI rails (starter-split + claim-link + offramp Circle/Bridge/Kotani + broadcast)
+- [ ] E3 (#72) unify on OpenClaw (upstream Telnyx+Gemini-Live into @openclaw/voice-call)
+- [ ] E4 (#22) E2E harness (UX-SPEC + browser-use loop until all green, no-mock)
+- [ ] E5 (#25) OSS anicca real automaton loop (Franklin-copy) + README
+- [ ] E6 (#3) earn GATE-0 (first real external USDC wake)
+- [ ] E7 (#12) marketing: article + demo video + hackathon
 
 Date: 2026-06-21, **last updated 2026-06-23**. THIS file = the ORDER + remaining TODO (SSOT for "what's
 left until launch"). Architecture/state = `2026-06-21-life-manager-CANONICAL.md`. Video skill design =
