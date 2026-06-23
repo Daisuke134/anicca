@@ -11,15 +11,21 @@ Companion: `~/.openclaw/docs/CAPAFY_PROFITABLE_PLAYBOOK.md` (winner patterns), m
 
 ## 1. Pricing (cloned EXACTLY from the top sellers — originality is a sin)
 
-All winners use a **3-tier subscription ladder + 24h free trial**, `run_online`, Sonnet 4.6, on_demand,
-`cycleMaxMessageCount` capped. Life Manager clones this:
+**COPY THE #1 BY SALES VERBATIM — zero originality, no blending, no "middle point".** The #1 money-maker
+by salesVolume is **Amazon Listing Image Generator (68 sales)**. Life Manager copies its EXACT tiers
+(NOT invented numbers — an earlier draft wrongly invented week $3.99/cap30 + month $9.99/cap80):
 
-| tier | price | msg cap | notes |
-|---|---|---|---|
-| day | **$1.99** | 10 | entry hook (clone of Amazon #1 / TikTok #2) |
-| week | **$3.99** | 30 | middle |
-| month | **$9.99** | 80 | committed user (clone of Resume #4) |
-| free trial | 24h, count 2 | — | `supportFreeTrial=1` |
+| tier | cyclePrice | cycleMaxMessageCount | isMain | trial |
+|---|---|---|---|---|
+| **day** | **$1.99** | **10** | **1 (MAIN — feature this)** | 24h, count 2 |
+| week | **$5.99** | **35** | 0 | 24h, count 2 |
+| month | **$11.99** | **80** | 0 | 24h, count 2 |
+
+`run_online`, `subscription`, Sonnet 4.6, on_demand, `supportFreeTrial=1`, `freeTrialHours=24`,
+`freeTrialCount=2`. The #1 KEEPS a monthly tier, so we keep all 3 (dropping one = our invention).
+
+Alternative "top" (Dais picks which to clone, do not invent a blend): highest-PRICE model =
+Serenity Stock (57 sales) week $9.90/cap30 + month $29.90/cap120, no day/trial.
 
 ---
 
