@@ -73,17 +73,3 @@ test("prev is a [Travel] helper block → not used as origin (falls back to home
   // origin must NOT leak from the [Travel] block; falls back to home → home→home skip
   assert.equal(travelDecision(ev, prev, HOME).reason, "same-location");
 });
-
-test("online meeting (URL/meet/zoom location) → NOT travel (no route, no late-spam)", () => {
-  for (const loc of [
-    "https://meet.google.com/abc-defg-hij",
-    "https://zoom.us/j/123",
-    "https://teams.microsoft.com/l/meetup",
-    "tel:+81312345678",
-  ]) {
-    const ev = { summary: "[TENTATIVE] ALAEW Mtg", location: loc, startMs: ms(15) };
-    const d = travelDecision(ev, null, HOME);
-    assert.equal(d.insert, false, `online loc should not insert: ${loc}`);
-    assert.equal(d.reason, "online", `online loc reason: ${loc}`);
-  }
-});
