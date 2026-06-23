@@ -145,11 +145,12 @@ const TRAVEL_TICK_MS = 30 * 60 * 1000;
 async function travelTick() {
   const apiKey = process.env.COMPOSIO_API_KEY;
   const mapsKey = process.env.LIFE_MAPS_KEY || process.env.GOOGLE_API_KEY;
+  const geminiKey = process.env.GEMINI_API_KEY; // agentic resolve of room-name / unroutable locations
   if (!apiKey || !mapsKey) return;
   const users = await supaUsers();
   for (const u of users) {
     try {
-      const r = await fillTravel(u.uid, { apiKey, mapsKey, home: u.home_address });
+      const r = await fillTravel(u.uid, { apiKey, mapsKey, geminiKey, home: u.home_address });
       if (r.inserted) console.log(`[travel] uid=${u.uid.slice(0, 12)} inserted=${r.inserted} checked=${r.checked}`);
     } catch (e) {
       console.error(`[travel] uid=${u.uid.slice(0, 12)} err ${e.message}`);
