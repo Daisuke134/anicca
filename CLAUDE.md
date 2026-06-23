@@ -20,6 +20,8 @@
 
 ## HARD RULE 0.39 — ブラウザ作業は CloakBrowser 永続プロファイル(daily-driver)を常に使う (Dais 2026-06-21)
 
+★★★ 絶対禁止 (Dais 2026-06-23 激怒「閉じたら990回刺して殺す」) ★★★: daily-driver の persistent context を **kill/close/pkill/`rm Singleton*` するな**。これは Dais が各サービスに1回ログインする **永遠に生き続けるブラウザ**。`launch_persistent_context` が「profile already in use / ProcessSingleton」error を出したら = **その forever ブラウザが生きてる証拠**。kill して奪うな、**再利用**しろ(running context に new_page、or Cookies sqlite をコピーして読む、or どうしても別途要るならプロファイルを別dirにcopyして起動)。万一死んでたら `nohup venv-cloak/python3 dd-keepalive.py &`(launch_persistent_context → `while True: sleep(3600)`)で**生かし続けて**再オープン。詳細: memory `feedback_never_close_daily_driver_browser`。
+
 Dais が headed CloakBrowser で**1回ログイン済**(Google/freee/Stripe card/YouTube/IG/TikTok) → `~/.cloak/profiles/daily-driver` に完全プロファイル永続。以降 ★ anicca は同プロファイルを再利用 = creds を知らずに全サービス操作・再ログイン不要・bot block 回避 ★。
 
 - API: `from cloakbrowser import launch_persistent_context; ctx = launch_persistent_context("/Users/anicca/.cloak/profiles/daily-driver", headless=False, humanize=True)` (★ `launch()` でなく `launch_persistent_context` ★)。CloakBrowser=CloakHQ/CloakBrowser(stealth Chromium・pip導入済 v0.3.30)。

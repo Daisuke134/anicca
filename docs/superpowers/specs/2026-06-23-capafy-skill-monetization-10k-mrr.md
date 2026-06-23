@@ -11,21 +11,18 @@ Companion: `~/.openclaw/docs/CAPAFY_PROFITABLE_PLAYBOOK.md` (winner patterns), m
 
 ## 1. Pricing (cloned EXACTLY from the top sellers — originality is a sin)
 
-**COPY THE #1 BY SALES VERBATIM — zero originality, no blending, no "middle point".** The #1 money-maker
-by salesVolume is **Amazon Listing Image Generator (68 sales)**. Life Manager copies its EXACT tiers
-(NOT invented numbers — an earlier draft wrongly invented week $3.99/cap30 + month $9.99/cap80):
+**COPY ONE SKILL VERBATIM — the top money-maker that has NO trial. Zero originality, no blending,
+no stripping a trial off a trial-skill (that is a modification = a sin).** Dais directive 2026-06-23:
+copy the highest-earning skill that natively has no free trial = **Serenity Stock Tracker (57 sales,
+`supportFreeTrial=0`)**. Life Manager clones its EXACT billings array verbatim:
 
-| tier | cyclePrice | cycleMaxMessageCount | isMain | trial |
-|---|---|---|---|---|
-| **day** | **$1.99** | **10** | **1 (MAIN — feature this)** | 24h, count 2 |
-| week | **$5.99** | **35** | 0 | 24h, count 2 |
-| month | **$11.99** | **80** | 0 | 24h, count 2 |
+| tier | cyclePrice | cycleMaxMessageCount | supportFreeTrial |
+|---|---|---|---|
+| week | **$9.90** | **30** | **0 (no trial)** |
+| month | **$29.90** | **120** | **0 (no trial)** |
 
-`run_online`, `subscription`, Sonnet 4.6, on_demand, `supportFreeTrial=1`, `freeTrialHours=24`,
-`freeTrialCount=2`. The #1 KEEPS a monthly tier, so we keep all 3 (dropping one = our invention).
-
-Alternative "top" (Dais picks which to clone, do not invent a blend): highest-PRICE model =
-Serenity Stock (57 sales) week $9.90/cap30 + month $29.90/cap120, no day/trial.
+`run_online`, `subscription`, `Claude Sonnet 4.6`, `containerMode: on_demand`. **No day tier, no
+trial** — exactly as Serenity ships them. Do not add/remove a tier or a trial (that = our originality).
 
 ---
 
