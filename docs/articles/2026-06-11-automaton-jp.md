@@ -23,7 +23,7 @@
 - **おすすめする人** → Automaton を自分の手で組んで、仕組みを学びたい人
 - **おすすめしない人** → 置いておくだけで儲けたい人（いまは、まだその段階ではない）
 
-![Automaton とは](images/automaton/what-is-automaton.png)
+![Automaton とは](images/automaton/what-is-automaton-detailed.png)
 
 ---
 
