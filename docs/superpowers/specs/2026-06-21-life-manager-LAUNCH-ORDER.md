@@ -136,7 +136,7 @@ for creating launches** → the browser (CloakBrowser daily-driver) is the only 
 - ✅ **P1a — Main info** DONE 2026-06-23: name, tagline ("Hand off your calendar. Show up early, every time."),
   url (aniccaai.com/life-manager), description (485-char PH version), topics (Productivity / Artificial
   Intelligence / Calendar), maker comment (true-pain). Autosaved, no warnings. **This is only step 1 of upload.**
-- ☐ **P1b (#85) — Demo video**: upload the ORIGINAL wake-promo to **YouTube** (PH embeds YouTube only, not mp4),
+- ✅ **P1b (#85) DONE 2026-06-23 — — Demo video**: upload the ORIGINAL wake-promo to **YouTube** (PH embeds YouTube only, not mp4),
   then add the YT link to the gallery. Video → **2.7× more upvotes**. 30-60s, hook in first 10s.
 - ☐ **P1c (#86) — Gallery images**: story sequence (late-pain → early-order → feature demos), PNG/JPG/GIF,
   first image = most important (becomes the listing). Use /lm screenshots + before/after. taste-skill for design.
