@@ -21,10 +21,21 @@ function isTravel(summary) {
 // PURE travel decision (no network) — the single source of truth for "does this event need a
 // [Travel] block, and from where". Unit-tested so the home→home guard can never silently regress.
 // Returns { insert: boolean, origin: string|null, reason: string }.
+function isOnlineLocation(loc) {
+  // A URL / video-call link / phone-only "location" is NOT a place to travel to — routing it
+  // wastes a Directions call (always null) and must never block-spam. meet/zoom/teams/webex + any
+  // http(s)/tel scheme. Source: real Dais calendar had "https://meet.google.com/…" as a location.
+  return /^(https?:\/\/|tel:)/i.test(loc) ||
+    /\b(meet\.google\.|zoom\.us|teams\.microsoft\.|webex\.|whereby\.com|\bonline\b)/i.test(loc);
+}
+
 function travelDecision(ev, prev, home) {
   const norm = (s) => (s || "").replace(/\s+/g, "").toLowerCase();
   if (!ev || isTravel(ev.summary) || !((ev.location || "").trim())) {
     return { insert: false, origin: null, reason: "helper-or-no-location" };
+  }
+  if (isOnlineLocation(ev.location.trim())) {
+    return { insert: false, origin: null, reason: "online" };
   }
   // Origin = previous event's location if it ends within [0,90] min before this one (back-to-back) AND
   // the previous event is a REAL event (not one of Anicca's own [Travel] helper blocks); else home.
@@ -168,7 +179,7 @@ async function fillTravel(uid, { apiKey, mapsKey, home, nowMs = Date.now(), buff
 }
 
 module.exports = {
-  fillTravel, directionsMinutes, isTravel, travelDecision,
+  fillTravel, directionsMinutes, isTravel, travelDecision, isOnlineLocation,
   // #71 pure helpers (unit-tested)
   parseDurationSeconds, minutesFromSeconds, buildDriveBody, clampDepartIso,
 };
