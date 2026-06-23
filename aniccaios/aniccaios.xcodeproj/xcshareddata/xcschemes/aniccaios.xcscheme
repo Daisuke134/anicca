@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
    LastUpgradeVersion = "2620"
-   version = "1.7">
+   version = "1.8">
    <BuildAction
       parallelizeBuildables = "YES"
       buildImplicitDependencies = "YES"
@@ -61,7 +61,7 @@
          </TestableReference>
       </Testables>
       <StoreKitConfigurationFileReference
-         identifier = "../../aniccaios/Anicca.storekit">
+         identifier = "../aniccaios/Anicca.storekit">
       </StoreKitConfigurationFileReference>
    </TestAction>
    <LaunchAction
@@ -91,7 +91,7 @@
          </CommandLineArgument>
       </CommandLineArguments>
       <StoreKitConfigurationFileReference
-         identifier = "../../aniccaios/Anicca.storekit">
+         identifier = "../aniccaios/Anicca.storekit">
       </StoreKitConfigurationFileReference>
    </LaunchAction>
    <ProfileAction
