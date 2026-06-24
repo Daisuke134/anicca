@@ -36,7 +36,12 @@ as the OSS path.
    subscription.created/updated/deleted + invoice.payment_failed), OLD netlify endpoint (we_1Tjyu5…) DELETED →
    single live endpoint. **LIVE no-mock E2E 12/12 against the DEPLOYED production endpoint + real Stripe secret
    + live Supabase**. HARD-3 fully done. NOTE: buy/Checkout PAGE + pricing = D-1/D-2 (HARD-3 = LIFECYCLE only).
-5. ☐ **HARD-4** — per-tenant isolation review (per-user tokens/secrets; one tenant's failure can't break others).
+5. ✅ **HARD-4 (per-tenant isolation)** — DONE 2026-06-24 (PR #237). `forEachUserSafe` (catch + per-uid log +
+   per-user 90s timeout) routes all in-process loops (tick/travelTick/askTickAll) so one tenant's throw OR hang
+   can't break the others; production Inngest already isolates each user as a separate parallel run. Token
+   isolation verified per-tenant (accountId=gmail_account_id, Composio keyed by uid, bounded unipileEmailCache,
+   NO shared mutable per-user secret). REQ-43/44. VCSDD: 109 tests (incl public-loop-routing + hang tests) +
+   fresh adversary 2 rounds → PASS (5/5 dims; FIND-001 test-routing, 002 hang-timeout, 003 cache-bound resolved).
 6. ☐ **PHASE C** — realize+VERIFY the 3 location cases (C1 filled / C2 online / C3 ask→remember via mem0/Supabase)
    + C4 determinism · C5 routines (=#100b-a: Running/Sleep/Day-job → no-travel, never ask "where is your run")
    · C6 autonomous witness (=#100b-b: WITNESS the DEPLOYED cron autofill, not a manual node run) · C7 EN/JA
