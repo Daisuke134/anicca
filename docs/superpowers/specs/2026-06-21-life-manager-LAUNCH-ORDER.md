@@ -287,8 +287,10 @@ CAPAFY — VERIFIED NOT VIABLE for the full product (research 2026-06-24, buyer 
   gcal/gmail OAuth, no persistence, no calls/email needed — fits Capafy's paste-in + seller-BYOK model.
   It is a LESSER product (advice, not autonomy) = the FUNNEL/lite tier. The 10k MRR body stays the WEB APP
   (Google OAuth + Composio + phone + email + memory). Capafy listing CTA → web app for the real thing.
-SEQUENCING (REVISED 2026-06-24, Dais): close REQ-15 real-run gate (trivial, already built/adversary-PASS)
-→ DO THE OPENCLAW TRANSITION (V1, low cost, local already runs on OpenClaw) → THEN realize + VERIFY the
+SEQUENCING (REVISED 2026-06-24, Dais): ✅ PHASE A DONE 2026-06-24 — REQ-15 return-trip block closed:
+RED→GREEN→3 fresh-context adversary rounds (all PASS)→92/92 REAL `node --test` run→merged PR #210
+(e17663d3), worktree cleaned. (Production-on-real-calendar witness = PHASE C / 0-d, on the OpenClaw setup.)
+NEXT → DO THE OPENCLAW TRANSITION (V1, low cost, local already runs on OpenClaw) → THEN realize + VERIFY the
 3 location cases (incl. MEMORY) ON the OpenClaw setup. Rationale: MEMORY is an OpenClaw-native feature
 (MEMORY.md) so it should be built+verified on the OpenClaw setup, not bolted onto the Railway Node app and
 re-done. ① filled + ② online already work in lib/ask.js (reused 100% in the port); only ③'s memory is new
