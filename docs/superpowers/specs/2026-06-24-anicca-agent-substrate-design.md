@@ -80,6 +80,22 @@ Gaps built as agents:
 Borrow from sutando: Core-agent + tasks/→results/ file bridge + cron `/proactive-loop` + Monitor tool
 for the self-improvement loop.
 
+## BP CORRECTION (re-read building-effective + voice md, 2026-06-24): SINGLE-AGENT FIRST
+voice md: "Single-agent first; split only when branches don't scale or >~15 overlapping tools confuse the
+model." agents md: "add multi-step agentic systems only when simpler solutions fall short." → Do NOT
+pre-split into 5 sub-agents. CORE = ONE augmented Life-Manager agent (LLM + tools in a loop, per-user
+memory). calendar/travel/ask/notify are TOOLS that one agent calls — NOT separate agents. Split into a
+specialized sub-agent ONLY where BP justifies: (1) VOICE realtime loop (latency-critical, separate
+Telnyx⇄Gemini-Live process), (2) EARN loop (separate long-running money process). So "multi-agent" =
+a FEW coarse agents (life-orchestrator + voice + earn), grown as scale demands — not one-agent-per-feature.
+Guardrail (voice md L81-82): gate irreversible spend/book (proactive booking, earn payout) behind a check.
+
+## BUILD ORDER (Dais 2026-06-24): OpenClaw FIRST, then other harnesses — not all at once
+Phase 2 builds the portable package on OpenClaw and gets it fully working there FIRST. ONLY after it runs
+end-to-end on OpenClaw do we add adapters for other harnesses (Hermes, Claude Code, …). Harness-portable
+is the DESIGN GOAL (keep the package harness-neutral: agent defs + MCP tools + skills + workflow modules),
+but the ROLLOUT is incremental: OpenClaw → prove → then port. We start from OpenClaw, that is all.
+
 ## Agent topology (target)
 ```
 ORCHESTRATOR agent (self-improving: per-user memory → when to call / what to say / what to book)
