@@ -332,8 +332,21 @@ everybody" is the deciding constraint.
     (default-on all-4, off zero, case/space-insensitive, fail-safe-to-ON). VCSDD adversary PASS first round.
     /ws + /test-call + /telegram always-on (outside the gate). Merged PR #217. Run: `LIFE_RUN_LOOPS=false
     node server.js` as a launchd KeepAlive / 2nd Railway service. LIVE /test-call real call = B4.
-  - B4 ☐ ONE SHARED gateway (Railway hosting VERIFIED LIVE — openclaw-lm-pilot 401) serving ALL lm_users rows
-    (NOT 1 instance/tenant) → pilot E2E (≥2 users) → flip from the Railway Node app.
+  - B4 ◑ IN PROGRESS 2026-06-24 — LIVE cutover (the real deployment + the step that CALLS REAL USERS).
+    DONE: verified openclaw@latest has command-cron flags (npx); stood up an isolated openclaw@latest gateway
+    → reached "ready" (real boot). BLOCKED on the quick local proof: the isolated DEV gateway's auth handshake
+    (CLI↔gateway credential matching) is a provisioning/config friction (not a flaw in B1/B2/B3 artifacts).
+    NOT YET: live cron-actually-fires-the-LM-script + a real wake call — that needs a PROVISIONED product
+    gateway (OpenClaw setup completed → auth/pairing, the apps/life-call code deployed onto the gateway host,
+    env keys GEMINI/MAPS/COMPOSIO/SUPABASE, Telnyx pointed at the daemon /ws). And it CALLS REAL phones, so it
+    is a DELIBERATE production event: do a CONTROLLED test-user E2E first (a test lm_users row → my own phone,
+    known event) → verify [Travel] block + real call → THEN single-writer SWITCH for all users (LIFE_RUN_LOOPS=
+    false on the daemon + enable the 3 cron jobs ⇄ disable the Railway start* loops).
+    PRODUCTION RUNBOOK (B4): ① get apps/life-call onto the gateway host (image COPY or volume + git) + node;
+    ② openclaw setup (provider/auth/pair) on the product gateway; ③ set env keys; ④ run register-crons.sh
+    (LIFE_CALL_DIR=…); ⑤ `openclaw cron list` shows lm-wake/travel/ask; ⑥ start voice daemon
+    (LIFE_RUN_LOOPS=false node server.js, launchd/2nd service) + point Telnyx /ws at it; ⑦ controlled
+    test-user E2E (real [Travel] + real call); ⑧ switch all users (cron on ⇄ Railway loops off) — single writer.
 - V2 ☐ memory (RE-DECIDED 2026-06-24 = SUPABASE per-user, for shared multi-tenant): `lm_user_places` table
   + `recall_place`/`save_place` tools the agent calls (model decides when; no regex). Exact per-uid SQL recall =
   native multi-tenant, cheap, no vector-pause risk. NOT OpenClaw native MEMORY.md (per-agent, can't isolate
