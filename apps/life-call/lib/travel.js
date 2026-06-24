@@ -100,12 +100,20 @@ async function routesDriveMinutes(src, dst, mapsKey, departAtMs, nowMs) {
   } catch { return null; }
 }
 
-async function legacyTransitMinutes(src, dst, mapsKey, arriveByMs, nowMs = Date.now()) {
+// arriveByMs: used for outbound (arrive-by event start). departAtMs: used for return legs (depart at
+// event end). Only one should be non-null; if neither is a future time, falls back to departure_time="now".
+async function legacyTransitMinutes(src, dst, mapsKey, arriveByMs, nowMs = Date.now(), departAtMs = null) {
   const p = new URLSearchParams({ origin: src, destination: dst, mode: "transit", key: mapsKey });
   // NEVER-LATE: anchor transit to the EVENT, not "now". Future event → arrival_time = event start, so
   // the train time reflects the schedule the user will actually ride. Past/missing → fall back to now.
-  if (Number.isFinite(arriveByMs) && arriveByMs > nowMs) p.set("arrival_time", String(Math.floor(arriveByMs / 1000)));
-  else p.set("departure_time", "now");
+  // Return leg: departAtMs is set → use departure_time anchored to event end (FIND-004).
+  if (Number.isFinite(departAtMs) && departAtMs > nowMs) {
+    p.set("departure_time", String(Math.floor(departAtMs / 1000)));
+  } else if (Number.isFinite(arriveByMs) && arriveByMs > nowMs) {
+    p.set("arrival_time", String(Math.floor(arriveByMs / 1000)));
+  } else {
+    p.set("departure_time", "now");
+  }
   try {
     const r = await fetch(`https://maps.googleapis.com/maps/api/directions/json?${p}`);
     const j = await r.json();
@@ -118,10 +126,18 @@ async function legacyTransitMinutes(src, dst, mapsKey, arriveByMs, nowMs = Date.
 // never-late bias: we don't yet know the user's mode, so assume the slower so we never under-estimate.
 // departAtMs ≈ event start. Returns null only if neither mode resolves (caller then asks). floor 5 min.
 // TODO(#69/#70): per-user travel_mode preference → trust the chosen mode instead of max().
-async function directionsMinutes(src, dst, mapsKey, departAtMs = Date.now(), nowMs = Date.now()) {
+//
+// departureMode: when true, the time arg is a DEPARTURE anchor (for return legs — FIND-004).
+// Outbound (default false): transit uses arrival_time = event start (arrive-by).
+// Return (true): transit uses departure_time = ev.endMs (depart-at, not arrive-by).
+async function directionsMinutes(src, dst, mapsKey, departAtMs = Date.now(), nowMs = Date.now(), departureMode = false) {
   if (!mapsKey || !src || !dst) return null;
   const [transit, drive] = await Promise.all([
-    legacyTransitMinutes(src, dst, mapsKey, departAtMs, nowMs),
+    departureMode
+      // Return leg: depart AT ev.endMs → departure_time anchor (legacyTransitMinutes 6th param).
+      ? legacyTransitMinutes(src, dst, mapsKey, null, nowMs, departAtMs)
+      // Outbound: arrive-by event start (legacyTransitMinutes 4th param = arriveByMs).
+      : legacyTransitMinutes(src, dst, mapsKey, departAtMs, nowMs),
     routesDriveMinutes(src, dst, mapsKey, departAtMs, nowMs),
   ]);
   const cands = [transit, drive].filter((n) => n != null);
@@ -144,7 +160,10 @@ async function createTravelBlock(uid, apiKey, leaveMs, arriveMs, fromName, toNam
 
 // Returns { inserted, checked, skipped }. home = lm_users.home_address (may be null → first-of-day
 // located events are skipped this run and should be handled by the ask-loop separately).
-async function fillTravel(uid, { apiKey, mapsKey, geminiKey, home, nowMs = Date.now(), bufferMin = 5, calendar } = {}) {
+// _directionsMinutes: test seam — inject a stub so unit/integration tests avoid real network calls.
+//   In production this is always undefined and the real directionsMinutes function is used.
+async function fillTravel(uid, { apiKey, mapsKey, geminiKey, home, nowMs = Date.now(), bufferMin = 5, calendar, _directionsMinutes } = {}) {
+  const directionsFn = _directionsMinutes || directionsMinutes;
   const cal = calendar || getCalendar({ apiKey });
   const events = await listEvents7d(uid, apiKey, nowMs, cal);
   let inserted = 0, checked = 0, skipped = 0;
@@ -152,41 +171,137 @@ async function fillTravel(uid, { apiKey, mapsKey, geminiKey, home, nowMs = Date.
     const ev = events[i];
     if (isTravel(ev.summary) || !ev.location) continue;
     checked++;
+
+    // ── OUTBOUND LEG ──────────────────────────────────────────────────────────────────────────────
     // Single source of truth for the skip/insert decision (home→home, no-origin, online, etc.).
+    // Use if/else (NOT continue) so the RETURN LEG below always runs regardless of outbound fate.
+    // FIND-005: the outbound continue statements must NEVER skip the return-leg evaluation.
     const decision = travelDecision(ev, events[i - 1], home);
-    if (!decision.insert) { skipped++; continue; }
-    const origin = decision.origin;
-    // Dedup: a [Travel] block already sitting in the gap right before this event?
-    const dup = events.some((e) => isTravel(e.summary) && e.endMs && e.endMs <= ev.startMs && e.endMs > ev.startMs - 3 * 3600000);
-    if (dup) { skipped++; continue; }
-    let dest = ev.location;
-    let mins = await directionsMinutes(origin, dest, mapsKey, ev.startMs, nowMs);
-    if (mins == null && geminiKey) {
-      // The location is a room name / unroutable string (e.g. "情報科学大講義室[L1]（IS）"). Let the
-      // agent web-search the REAL venue address so a must-travel event still gets a block instead of a
-      // silent skip — never-late beats clean code. (Lazy require avoids any load-order coupling.)
-      try {
-        const { agentResolveLocation } = require("./ask.js");
-        const res = await agentResolveLocation(ev, { home, mapsKey, geminiKey });
-        if (res && res.kind === "online") { skipped++; continue; }       // not physical → no travel
-        if (res && res.kind === "filled" && res.location) {
-          dest = res.location;
-          mins = await directionsMinutes(origin, dest, mapsKey, ev.startMs, nowMs);
+    let outboundInserted = false;
+    let resolvedDest = ev.location; // tracks the agent-resolved venue for the return leg
+
+    if (!decision.insert) {
+      skipped++;
+    } else {
+      const origin = decision.origin;
+      // Dedup: a [Travel] block already sitting in the gap right before this event?
+      const dup = events.some((e) => isTravel(e.summary) && e.endMs && e.endMs <= ev.startMs && e.endMs > ev.startMs - 3 * 3600000);
+      if (dup) {
+        skipped++;
+        // outbound block already exists — fall through to return-leg so it can backfill a missing return block
+      } else {
+        let dest = ev.location;
+        let mins = await directionsFn(origin, dest, mapsKey, ev.startMs, nowMs);
+        if (mins == null && geminiKey) {
+          // The location is a room name / unroutable string (e.g. "情報科学大講義室[L1]（IS）"). Let the
+          // agent web-search the REAL venue address so a must-travel event still gets a block instead of a
+          // silent skip — never-late beats clean code. (Lazy require avoids any load-order coupling.)
+          try {
+            const { agentResolveLocation } = require("./ask.js");
+            const res = await agentResolveLocation(ev, { home, mapsKey, geminiKey });
+            if (res && res.kind === "online") {
+              skipped++;
+              continue; // truly online — no outbound OR return block needed; skip entire iteration
+            }
+            if (res && res.kind === "filled" && res.location) {
+              dest = res.location;
+              mins = await directionsFn(origin, dest, mapsKey, ev.startMs, nowMs);
+            }
+          } catch { /* fall through to null-mins skip below */ }
         }
-      } catch { /* fall through to skip below */ }
+        if (mins == null) {
+          skipped++;
+          // Cannot route outbound — still evaluate return leg in case it is independently resolvable
+        } else {
+          const arriveMs = ev.startMs;
+          const leaveMs = arriveMs - (mins + bufferMin) * 60000;
+          if (leaveMs < nowMs) {
+            skipped++; // REQ-18: past GO leave time → no outbound block; return leg still evaluated below
+          } else {
+            if (await createTravelBlock(uid, apiKey, leaveMs, arriveMs, origin, dest, dest, cal)) {
+              inserted++;
+              outboundInserted = true;
+            } else {
+              skipped++;
+            }
+          }
+        }
+        resolvedDest = dest; // capture agent-resolved address for the return-leg directions call
+      }
     }
-    if (mins == null) { skipped++; continue; }
-    const arriveMs = ev.startMs;
-    const leaveMs = arriveMs - (mins + bufferMin) * 60000;
-    if (leaveMs < nowMs) { skipped++; continue; } // already past the leave time
-    if (await createTravelBlock(uid, apiKey, leaveMs, arriveMs, origin, dest, dest)) inserted++;
+
+    // ── RETURN LEG (REQ-15, FIND-001, FIND-003, FIND-004, FIND-005) ──────────────────────────────
+    // Evaluated INDEPENDENTLY of the outbound leg's fate. The three former `continue` points above
+    // (decision.insert=false, outbound dedup, past-leaveMs) no longer prevent this code from running.
+    //
+    // Return-leg past-guard (mirrors REQ-18 for the return leg — FIND-005):
+    // Skip only if ev.endMs itself is already in the past (the event is already over).
+    // An event whose outbound leave-time is past but endMs is still future still gets a return block.
+    if (Number.isFinite(ev.endMs) && ev.endMs <= nowMs) {
+      skipped++;
+      continue; // event already ended — no "head home" block needed
+    }
+
+    // returnDecision is PURE; pass events[i+1] as the "next" hint.
+    const retDecision = returnDecision(ev, events[i + 1], home);
+    if (!retDecision.insert) {
+      skipped++;
+      continue;
+    }
+    // Array-window dedup: scan events[] for any [Travel] return block already in the window after
+    // ev.endMs. Catches both the adjacent case and the non-adjacent case (FIND-003/FIND-006):
+    // a block that already exists but is NOT events[i+1] (e.g. another event sits between them).
+    const retDup = events.some(
+      (e) => isTravel(e.summary) && e.startMs && e.startMs >= ev.endMs && e.startMs < ev.endMs + 3 * 3600000,
+    );
+    if (retDup) { skipped++; continue; }
+    // Compute return travel time: DEPARTURE anchored to ev.endMs (FIND-004 — departureMode=true).
+    // resolvedDest is the agent-resolved venue address from the outbound leg (or ev.location if
+    // outbound was skipped due to dedup/no-origin — returnDecision already checked venue non-empty).
+    const venue = resolvedDest;
+    if (!home) { skipped++; continue; }
+    const retMins = await directionsFn(venue, home, mapsKey, ev.endMs, nowMs, /* departureMode= */ true);
+    if (retMins == null) { skipped++; continue; }
+    const retLeaveMs = ev.endMs;                           // depart immediately after event ends
+    const retArriveMs = retLeaveMs + retMins * 60000;
+    if (await createTravelBlock(uid, apiKey, retLeaveMs, retArriveMs, venue, home, home, cal)) inserted++;
     else skipped++;
+    void outboundInserted; // suppress unused warning — used for semantic clarity only
   }
   return { inserted, checked, skipped };
 }
 
+// PURE return-leg decision — mirrors travelDecision geometry for the post-event leg (venue→home).
+// Deterministic geometry = a TOOL-layer helper; NO LLM judgment, no keyword regex for decisions.
+// Returns { insert: boolean, origin: string|null, reason: string }.
+function returnDecision(ev, next, home) {
+  const norm = (s) => (s || "").replace(/\s+/g, "").toLowerCase();
+  // Guard: ev must exist, have an endMs, not be a [Travel] block, and have a real venue.
+  if (!ev) return { insert: false, origin: null, reason: "no-event" };
+  if (!Number.isFinite(ev.endMs)) return { insert: false, origin: null, reason: "no-end-time" };
+  if (isTravel(ev.summary)) return { insert: false, origin: null, reason: "travel-block" };
+  const venue = (ev.location || "").trim();
+  if (!venue) return { insert: false, origin: null, reason: "no-location" };
+  // Home must be known.
+  if (!home || !(home || "").trim()) return { insert: false, origin: null, reason: "no-home" };
+  // Same-location guard (reuses the identical norm() predicate from travelDecision).
+  if (norm(venue) === norm(home)) return { insert: false, origin: venue, reason: "same-location" };
+  // Dedup: if the immediately following slot already holds a [Travel] return block, don't insert again.
+  if (next && isTravel(next.summary) && next.startMs <= ev.endMs + 60000) {
+    return { insert: false, origin: venue, reason: "already-has-return-block" };
+  }
+  // Back-to-back check: if next exists, starts within ≤90min, AND has a real venue, the user travels
+  // venue→next-venue (not home), so no return block is needed.
+  const nextVenue = (next ? (next.location || "") : "").trim();
+  const gap = next && Number.isFinite(next.startMs) ? next.startMs - ev.endMs : Infinity;
+  if (nextVenue && gap >= 0 && gap <= 90 * 60000) {
+    return { insert: false, origin: venue, reason: "next-back-to-back-venue" };
+  }
+  return { insert: true, origin: venue, reason: "return-needed" };
+}
+
 module.exports = {
-  fillTravel, directionsMinutes, isTravel, travelDecision,
+  fillTravel, directionsMinutes, isTravel, travelDecision, returnDecision,
   // #71 pure helpers (unit-tested)
   parseDurationSeconds, minutesFromSeconds, buildDriveBody, clampDepartIso,
 };
