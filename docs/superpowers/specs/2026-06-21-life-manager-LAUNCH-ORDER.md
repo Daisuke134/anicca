@@ -31,9 +31,11 @@ as the OSS path.
    unit tests + **no-mock E2E 12/12** (real server + real live Supabase + real signature) + fail-closed 503 +
    fresh adversary 3 rounds → OVERALL PASS / 4-D CONVERGED (FIND-001 dual-writer, 002 immediate-cancel, 003
    payment_status, 004 tests, 005 raw-buffer, 006 reconcile, 007 checkout-staleness all resolved).
-   ⏳ DEPLOY-STEP REMAINING (spec §11 runbook): Railway deploy life-call from main → set STRIPE_WEBHOOK_SECRET
-   → point Stripe webhook at `life-call-production.up.railway.app/api/stripe/webhook` (+all events) → delete
-   old netlify endpoint → live verify. NOTE: buy/Checkout PAGE + pricing = D-1/D-2 (HARD-3 = LIFECYCLE only).
+   ✅ CUTOVER DONE 2026-06-24: life-call deployed (route serves), STRIPE_WEBHOOK_SECRET set on Railway, Stripe
+   webhook repointed to `life-call-production.up.railway.app/api/stripe/webhook` (5 events: checkout +
+   subscription.created/updated/deleted + invoice.payment_failed), OLD netlify endpoint (we_1Tjyu5…) DELETED →
+   single live endpoint. **LIVE no-mock E2E 12/12 against the DEPLOYED production endpoint + real Stripe secret
+   + live Supabase**. HARD-3 fully done. NOTE: buy/Checkout PAGE + pricing = D-1/D-2 (HARD-3 = LIFECYCLE only).
 5. ☐ **HARD-4** — per-tenant isolation review (per-user tokens/secrets; one tenant's failure can't break others).
 6. ☐ **PHASE C** — realize+VERIFY the 3 location cases (C1 filled / C2 online / C3 ask→remember via mem0/Supabase)
    + C4 determinism · C5 routines (=#100b-a: Running/Sleep/Day-job → no-travel, never ask "where is your run")
