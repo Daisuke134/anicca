@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "edge_case_coverage",
+  "category": "test_quality",
+  "severity": "major",
+  "description": "The unit tests in test/inngest.test.js could NOT and did NOT catch the runtime-crashing adapter bug (originally `inngest/express` serve mounted on a raw http.createServer, which throws 'res.status is not a function' at request time). Test F (lines 221-243) only does a SOURCE STRING check `src.includes('/api/inngest')` — it passes with EITHER adapter and never imports server.js nor calls inngestHandler(req,res). No test executes the mounted handler against a fake req/res, so the integration crash was invisible to `npm test`. The express-vs-node defect was only caught by the live dev-server E2E, not the test suite. This is a structural test-coverage gap: a unit test that exercised `inngestServe({client,functions})` then invoked the returned handler with a mock {req,res} would have caught it.",
+  "evidence": {
+    "filePath": "apps/life-call/test/inngest.test.js",
+    "lineRange": "221-228",
+    "snippet": "test(\"server.js source contains the /api/inngest mount\", () => { const src = fs.readFileSync(...); assert.ok(src.includes(\"/api/inngest\")); });"
+  },
+  "routeToPhase": "2b"
+}
