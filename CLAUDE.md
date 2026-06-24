@@ -69,6 +69,15 @@ SPEC (contract: inputs/outputs/edge cases/errors/invariants, commit)
 ### Relationship to superpowers (ADD, don't replace)
 Superpowers = the 8-stage process scaffold (HARD RULE #0). VSDD = the **verification spine** that runs INSIDE it: it sharpens the review stage into a fresh-context adversarial binary gate and redefines "done" as 4-D convergence. Compose them.
 
+### ROLE SPLIT — VERIFIED from the vcsdd plugin files (Dais 2026-06-24, "follow the plugin/answer, our originality is trash")
+★ The MANDATORY VCSDD invariant = the ADVERSARY (verify) is ALWAYS a FRESH, SEPARATE agent with ZERO builder
+context ("entropy resistance" — `AGENTS.md:31,45` + `agents/vcsdd-adversary.md:3,15`). The BUILDER (implement)
+is NOT required to be a subagent — the plugin nowhere mandates it; `vcsdd-builder` is merely an OFFERED sonnet
+agent. ★ THEREFORE: **I (the main agent) DO the implementation myself = the builder; I spawn ONLY a fresh-context
+`vcsdd:vcsdd-adversary` subagent to VERIFY.** Delegate the build to a vcsdd-builder subagent ONLY for huge/mechanical
+work or to spare main context; default = I build, fresh adversary verifies. This follows the PLUGIN, not what I or
+Dais "want/think/feel" — only following the researched answer counts (= HARD RULE #-3, IDENTICAL replication of BP).
+
 ### Tooling (installed)
 `vcsdd` plugin (`/vcsdd-init → -spec → -tdd → -impl → -adversary → -harden → -converge → -commit`) + `vcsdd:vcsdd-adversary` agent. Use the adversary agent as the gate even outside the full pipeline. Honest caveat: same-model adversary kills context-pollution but not shared blind spots — prefer a different model family for the adversary when available.
 

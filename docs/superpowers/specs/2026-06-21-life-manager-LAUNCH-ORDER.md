@@ -296,26 +296,36 @@ NEXT → DO THE OPENCLAW TRANSITION (V1, low cost, local already runs on OpenCla
 re-done. ① filled + ② online already work in lib/ask.js (reused 100% in the port); only ③'s memory is new
 and it WANTS OpenClaw. So: transition first, then memory + full 3-case verification land together on OpenClaw.
 
-MEMORY (REVISED 2026-06-24, Dais): use OpenClaw NATIVE memory (MEMORY.md) for per-user place aliases +
-prefs — NO new Supabase table/tools needed. The agent appends "remember: park = Yoyogi Park, <addr>" to
-MEMORY.md and reads it (MEMORY.md is auto-injected into context at session start, so a per-user alias set
-of dozens is ALWAYS present = reliable exact recall WITHOUT relying on the vector index that can pause).
-HONEST CAVEAT: this is reliable while the alias set fits the context budget (dozens, fine for launch); if a
-user accumulates hundreds of places we revisit a structured store (Supabase lm_user_places) for SQL-exact
-lookup. For launch: native memory, zero new tools. This only works AFTER the OpenClaw transition (native
-memory is an OpenClaw feature; today's Railway Node app has none) — hence transition-first above.
+MULTI-TENANT (DECIDED 2026-06-24, Dais "Life Manager is for EVERYBODY, can't pay per-tenant costs"):
+SHARED multi-tenant. The cloud app is ALREADY shared multi-tenant — ONE service serves ALL users:
+`scheduler.js supaUsers()` = `SELECT * FROM lm_users WHERE phone NOT NULL AND paid AND gcal-connected`, and
+tick()/travelTick()/askTickAll() each `for (const u of users)` over EVERY user (scheduler.js:94/151/190).
+"my life + mom + friend" = 3 rows in lm_users today. KEEP this: 1000 users = 1 service + 1000 rows (cheap),
+NOT 1000 VPS. The OpenClaw port = ONE shared gateway whose 3 cron scripts loop all lm_users rows (exactly as
+today) — NOT one OpenClaw instance per tenant. (Per-tenant instance only if/when Anicca self-funds its own
+server, later.)
+
+MEMORY (RE-DECIDED 2026-06-24 — "for everybody" REVERSES the native-memory lean): because we run SHARED
+multi-tenant (one gateway, many users), OpenClaw NATIVE memory (MEMORY.md is PER-AGENT, not per-user-in-one-
+agent) does NOT fit — it can't cleanly isolate per-user facts in a shared gateway. → place aliases + prefs =
+a structured SUPABASE per-user table `lm_user_places` (uid, alias, address, ...) + `recall_place`/`save_place`
+TOOLS the agent calls (model decides when, no regex). Exact SQL recall, per-uid scoped = native multi-tenant,
+cheap, reliable (no vector-index-pause risk). Native MEMORY.md is reserved for the single shared agent's own
+operating notes, NOT per-user data. This is the SAME conclusion as the very first memory research — "for
+everybody" is the deciding constraint.
 - V1 (port) — IN PROGRESS 2026-06-24:
-  - B1 ◑ skill scaffold `apps/life-call/skill-life-manager/` (SKILL.md + scripts/{tick,travel,ask}.js = thin
+  - B1 ✅ skill scaffold `apps/life-call/skill-life-manager/` (SKILL.md + scripts/{tick,travel,ask}.js = thin
     wrappers requiring scheduler.js one-shot exports tick/travelTick/askTickAll; right-altitude SKILL.md, no
-    regex). GREEN 13/13 new + 57/57 regression. Adversary r1 = wiring CORRECT but FAIL on test-coverage
-    (crossed-wiring + auto-run guard not asserted, not in npm test) → fix loop running. Railway Node UNTOUCHED.
+    regex). GREEN 19/19 + regression. Adversary r1 FAIL (test-coverage) → fix → adversary r2 = OVERALL PASS
+    (all 5 dims). Railway Node UNTOUCHED (git diff: only package.json + new skill dir). → ready to merge.
   - B2 ☐ register 3 cron-COMMAND jobs (`openclaw cron create` */1 tick, */30 travel, */20 ask).
   - B3 ☐ voice daemon (server.js minus start*Loop, launchd KeepAlive / 2nd Railway service) → /test-call verify.
-  - B4 ☐ 1 instance/tenant (Railway hosting VERIFIED LIVE — openclaw-lm-pilot 401) → pilot 1-user E2E → flip.
-- V2 ☐ memory (REVISED 2026-06-24 = OpenClaw NATIVE first): place aliases + prefs → OpenClaw MEMORY.md
-  (auto-injected at session start → reliable exact recall for dozens of aliases, no new tools). Per-tenant
-  scoping is clean because we run 1 OpenClaw instance per subscriber. Upgrade to a structured Supabase
-  `lm_user_places` table ONLY at scale (hundreds of places exceeding the context budget). Built+verified
+  - B4 ☐ ONE SHARED gateway (Railway hosting VERIFIED LIVE — openclaw-lm-pilot 401) serving ALL lm_users rows
+    (NOT 1 instance/tenant) → pilot E2E (≥2 users) → flip from the Railway Node app.
+- V2 ☐ memory (RE-DECIDED 2026-06-24 = SUPABASE per-user, for shared multi-tenant): `lm_user_places` table
+  + `recall_place`/`save_place` tools the agent calls (model decides when; no regex). Exact per-uid SQL recall =
+  native multi-tenant, cheap, no vector-pause risk. NOT OpenClaw native MEMORY.md (per-agent, can't isolate
+  per-user in a shared gateway). See MULTI-TENANT + MEMORY notes above. Built+verified
   ON the OpenClaw setup (see SEQUENCING + MEMORY notes above).
 - V3 ☐ omni-channel: LINE / WhatsApp / Discord / iMessage onboarding (OpenClaw native channels) — seamless add.
 - V4 ☐ self-improvement: agent tunes WHEN to call + WHAT to say + proactively books good events per user memory.
