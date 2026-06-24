@@ -37,6 +37,8 @@ const { parseUpdate, sendMessage } = require("./lib/telegram.js");
 const { resolveTelegramReply } = require("./lib/telegram-reply.js");
 const { sendStage, rowByChatId, setStage, handleOnboardingText } = require("./lib/telegram-onboard.js");
 const { classifyLate, sendLateNotice } = require("./lib/notify.js");
+const { claimEvent, unclaimEvent, applyBilling } = require("./lib/billing.js");
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY || "sk_test_placeholder"); // apiKey unused by constructEvent
 const SUPA_URL = process.env.SUPABASE_URL, SUPA_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const COMPOSIO_KEY = process.env.COMPOSIO_API_KEY, UNIPILE_TOKEN = process.env.UNIPILE_TOKEN, UNIPILE_DSN = process.env.UNIPILE_DSN;
 
@@ -51,6 +53,29 @@ function inngestServeAllowed(env) {
   const isDev = String((env || {}).INNGEST_DEV || "").trim() === "1";
   if (isDev) return true;
   return Boolean((env || {}).INNGEST_SIGNING_KEY);
+}
+
+// stripeWebhookAllowed: mirrors inngestServeAllowed — dev (STRIPE_DEV=1) serves without a secret; prod
+// requires STRIPE_WEBHOOK_SECRET else 503 fail-closed (REQ-41). Exported-shape pure helper for testing.
+function stripeWebhookAllowed(env) {
+  const isDev = String((env || {}).STRIPE_DEV || "").trim() === "1";
+  if (isDev) return true;
+  return Boolean((env || {}).STRIPE_WEBHOOK_SECRET);
+}
+
+// dunningNotify(uid): best-effort ONE message when a subscription goes past_due (REQ-40). Telegram if we
+// have the user's chat, else logged (email is a later enhancement). NEVER throws (dunning must not 500 the webhook).
+async function dunningNotify(uid) {
+  try {
+    if (!SUPA_URL || !SUPA_KEY) return;
+    const r = await fetch(`${SUPA_URL}/rest/v1/lm_users?uid=eq.${encodeURIComponent(uid)}&select=telegram_chat_id,email`,
+      { headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` } });
+    const d = await r.json().catch(() => []);
+    const row = Array.isArray(d) && d[0] ? d[0] : null;
+    const msg = "⚠️ Your Life Manager payment didn't go through. Update your card to keep your wake calls active.";
+    if (row && row.telegram_chat_id && LM_TG_TOKEN) await sendMessage(LM_TG_TOKEN, row.telegram_chat_id, msg);
+    else console.log("[stripe] dunning (no telegram channel) uid=", uid, "email=", row && row.email);
+  } catch (e) { console.error("[stripe] dunning err", e.message); }
 }
 
 const LM_UID_SECRET = process.env.LM_UID_SECRET || "";
@@ -227,6 +252,39 @@ const server = http.createServer((req, res) => {
       return;
     }
     return inngestHandler(req, res);
+  }
+  // POST /api/stripe/webhook — Stripe billing lifecycle = source of truth for lm_users.paid (HARD-3).
+  // Verify the signature over the RAW body (REQ-35), dedup by event.id (REQ-36), then apply entitlement.
+  // FAIL-CLOSED in prod when STRIPE_WEBHOOK_SECRET is missing (REQ-41).
+  if (path === "/api/stripe/webhook") {
+    if (req.method !== "POST") { res.writeHead(405); res.end("method"); return; }
+    if (!stripeWebhookAllowed(process.env)) {
+      res.writeHead(503, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "stripe webhook secret not configured", service: "life-call" }));
+      return;
+    }
+    (async () => {
+      const raw = await readBody(req);
+      let event;
+      try {
+        event = stripe.webhooks.constructEvent(raw, req.headers["stripe-signature"], process.env.STRIPE_WEBHOOK_SECRET || "");
+      } catch (e) {
+        console.error("[stripe] bad signature", e.message);
+        res.writeHead(400); res.end("invalid signature"); return; // REQ-35: reject, no billing side effect
+      }
+      const claimed = await claimEvent(event.id, event.type, SUPA_URL, SUPA_KEY); // REQ-36 idempotency
+      if (!claimed) { res.writeHead(200); res.end("duplicate"); return; }         // duplicate delivery → ack, no re-apply
+      try {
+        const result = await applyBilling(event, { supaUrl: SUPA_URL, supaKey: SUPA_KEY, notify: dunningNotify });
+        console.log("[stripe]", event.type, JSON.stringify(result));
+        res.writeHead(200); res.end("ok");
+      } catch (e) {
+        console.error("[stripe] apply failed", e.message);
+        await unclaimEvent(event.id, SUPA_URL, SUPA_KEY); // release the claim so Stripe's redelivery re-processes
+        res.writeHead(500); res.end("apply failed");
+      }
+    })();
+    return;
   }
 
   res.writeHead(404);
