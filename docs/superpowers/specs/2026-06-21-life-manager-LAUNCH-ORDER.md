@@ -377,6 +377,14 @@ everybody" is the deciding constraint.
     openclaw cron scheduler + node voice daemon, loopback auth, code+keys+Telnyx already present. No separate
     gateway image, no baking apps/life-call into the openclaw template. (OpenClaw LLM provider NOT needed yet —
     cron-COMMAND is deterministic node; voice is Gemini Live's own key. Agent/model = PHASE C+/V4.)
+    ★ VERIFIED 2026-06-24 (isolated openclaw@latest gateway): the auth fix WORKS — `OPENCLAW_GATEWAY_TOKEN` +
+    `--token <same>` CONNECTS and `openclaw cron list` succeeds. REMAINING gate: cron WRITE (`cron add/create`)
+    requires `operator.admin` scope ("command cron is an operator-admin surface" — docs). Via a `--url` remote
+    device it triggers device-pairing/scope-approval; the SOLUTION in the co-located production deploy = the
+    gateway's own setup/pairing grants the local operator admin (or run the registration as a trusted loopback
+    backend client per docs/gateway/security), THEN register-crons runs. So B4's live cron registration is a
+    PRODUCTION-gateway step (operator.admin via setup) — and it calls real users → still the deliberate event
+    with a controlled test-user E2E first. The code/artifacts (B1/B2/B3) are done + verified; B4 = the deploy/ops.
 - V2 ☐ memory (RE-DECIDED 2026-06-24 = SUPABASE per-user, for shared multi-tenant): `lm_user_places` table
   + `recall_place`/`save_place` tools the agent calls (model decides when; no regex). Exact per-uid SQL recall =
   native multi-tenant, cheap, no vector-pause risk. NOT OpenClaw native MEMORY.md (per-agent, can't isolate
