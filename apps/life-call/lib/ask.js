@@ -182,11 +182,24 @@ async function askedSet(uid, supaUrl, supaKey) {
   const d = await r.json().catch(() => []);
   return new Set((Array.isArray(d) ? d : []).map((x) => x.event_id));
 }
-async function markAsked(uid, eventId, supaUrl, supaKey) {
-  await fetch(`${supaUrl}/rest/v1/lm_ask_log`, {
+// ATOMIC claim of an ask (C-H1) — mirrors claimWake. INSERT relies on lm_ask_log UNIQUE(uid,event_id):
+// 201 = first claimer (proceed to send); 409 = already asked (skip). Race-safe; no SELECT-then-POST window.
+// If supa is unconfigured, return true (don't block) — matches the pre-ledger best-effort behaviour.
+async function claimAsk(uid, eventId, supaUrl, supaKey) {
+  if (!supaUrl || !supaKey) return true;
+  const r = await fetch(`${supaUrl}/rest/v1/lm_ask_log`, {
     method: "POST",
     headers: { apikey: supaKey, Authorization: `Bearer ${supaKey}`, "Content-Type": "application/json", Prefer: "return=minimal" },
     body: JSON.stringify({ uid, event_id: eventId }),
+  }).catch(() => null);
+  return !!r && r.status === 201; // 201 inserted (claimed) | 409 duplicate (already asked)
+}
+// Release a claim when the ask SEND failed, so a later tick retries (claim→send→unclaim-on-failure).
+async function unclaimAsk(uid, eventId, supaUrl, supaKey) {
+  if (!supaUrl || !supaKey) return;
+  await fetch(`${supaUrl}/rest/v1/lm_ask_log?uid=eq.${encodeURIComponent(uid)}&event_id=eq.${encodeURIComponent(eventId)}`, {
+    method: "DELETE",
+    headers: { apikey: supaKey, Authorization: `Bearer ${supaKey}`, Prefer: "return=minimal" },
   }).catch(() => {});
 }
 
@@ -212,19 +225,23 @@ async function askTick(uid, opts) {
       autofilled++; // location now set → needsLocation=false next tick → drops out of this loop
       continue;
     }
-    // res.kind === "ask" — a human must tell us. DEDUP the send: only ask once per event.
-    if (already.has(event.id)) continue; // already asked, awaiting their reply
+    // res.kind === "ask" — a human must tell us. ATOMIC dedup (C-H1): CLAIM before sending so two
+    // concurrent ticks can't double-ask; release the claim if the send fails so a later tick retries.
+    if (already.has(event.id)) continue; // fast-path: known-asked this tick → skip
+    if (!(await claimAsk(uid, event.id, supaUrl, supaKey))) continue; // 409 = another writer already asked
     // ASK: prefer Telegram when the user linked it (replies come back via the /telegram webhook);
     // otherwise email from their own Gmail via Unipile.
+    let sent = false;
     if (opts.telegramChatId && opts.telegramToken) {
       const r = await tgSend(opts.telegramToken, opts.telegramChatId,
         `📍 Where is “${event.summary || "your event"}”? Just reply here and I’ll add it to your calendar.`);
-      if (r && r.ok) { await markAsked(uid, event.id, supaUrl, supaKey); asked++; }
+      sent = !!(r && r.ok);
     } else if (accountId && unipileToken) {
       const { Subject, Body } = buildAsk(event); // simple, model-free template for the email itself
-      const ok = await getMail({ accountId, token: unipileToken, dsn: unipileDsn }).send(userEmail, Subject, Body);
-      if (ok) { await markAsked(uid, event.id, supaUrl, supaKey); asked++; }
+      sent = await getMail({ accountId, token: unipileToken, dsn: unipileDsn }).send(userEmail, Subject, Body);
     }
+    if (sent) asked++;
+    else await unclaimAsk(uid, event.id, supaUrl, supaKey); // send failed → release so next tick retries
   }
 
   // READ replies (EMAIL users only — Telegram replies arrive via the webhook, not here).
@@ -255,4 +272,4 @@ function buildAsk(event) {
   };
 }
 
-module.exports = { askTick, agentResolveLocation, agentMatchReply };
+module.exports = { askTick, agentResolveLocation, agentMatchReply, claimAsk, unclaimAsk };

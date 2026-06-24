@@ -49,6 +49,7 @@ async function listEvents7d(uid, apiKey, nowMs, calendar) {
     timeMax: new Date(nowMs + 7 * 86400 * 1000).toISOString().replace(/\.\d{3}Z$/, "Z"),
   });
   return items.map((e) => ({
+    id: e.id || "",                                   // C-H1: stable per-event key for the atomic claim ledger
     summary: e.summary || "",
     location: e.location || "",
     startMs: Date.parse((e.start || {}).dateTime || ""),
@@ -162,7 +163,28 @@ async function createTravelBlock(uid, apiKey, leaveMs, arriveMs, fromName, toNam
 // located events are skipped this run and should be handled by the ask-loop separately).
 // _directionsMinutes: test seam — inject a stub so unit/integration tests avoid real network calls.
 //   In production this is always undefined and the real directionsMinutes function is used.
-async function fillTravel(uid, { apiKey, mapsKey, geminiKey, home, nowMs = Date.now(), bufferMin = 5, calendar, _directionsMinutes } = {}) {
+// ATOMIC claim of a [Travel] leg (C-H1) — mirrors claimWake. INSERT relies on lm_travel_log
+// UNIQUE(uid,event_key,leg): 201 = first claimer (create the block); 409 = another run already claimed.
+// If supa is unconfigured, return true (don't block) — the in-memory gcal dedup still prevents obvious dups.
+async function claimTravel(uid, eventKey, leg, supaUrl, supaKey) {
+  if (!supaUrl || !supaKey) return true;
+  const r = await fetch(`${supaUrl}/rest/v1/lm_travel_log`, {
+    method: "POST",
+    headers: { apikey: supaKey, Authorization: `Bearer ${supaKey}`, "Content-Type": "application/json", Prefer: "return=minimal" },
+    body: JSON.stringify({ uid, event_key: eventKey, leg }),
+  }).catch(() => null);
+  return !!r && r.status === 201; // 201 inserted (claimed) | 409 duplicate (already created)
+}
+// Release a claim when createTravelBlock failed, so a later run retries (claim→create→unclaim-on-failure).
+async function unclaimTravel(uid, eventKey, leg, supaUrl, supaKey) {
+  if (!supaUrl || !supaKey) return;
+  await fetch(`${supaUrl}/rest/v1/lm_travel_log?uid=eq.${encodeURIComponent(uid)}&event_key=eq.${encodeURIComponent(eventKey)}&leg=eq.${encodeURIComponent(leg)}`, {
+    method: "DELETE",
+    headers: { apikey: supaKey, Authorization: `Bearer ${supaKey}`, Prefer: "return=minimal" },
+  }).catch(() => {});
+}
+
+async function fillTravel(uid, { apiKey, mapsKey, geminiKey, home, nowMs = Date.now(), bufferMin = 5, calendar, supaUrl, supaKey, _directionsMinutes } = {}) {
   const directionsFn = _directionsMinutes || directionsMinutes;
   const cal = calendar || getCalendar({ apiKey });
   const events = await listEvents7d(uid, apiKey, nowMs, cal);
@@ -171,6 +193,9 @@ async function fillTravel(uid, { apiKey, mapsKey, geminiKey, home, nowMs = Date.
     const ev = events[i];
     if (isTravel(ev.summary) || !ev.location) continue;
     checked++;
+    // C-H1: atomic claim key per (event, leg). Prefer the gcal event id (stable + unique). Fallback to
+    // startMs:summary (NOT startMs alone — two different same-user events can share a start time, FIND-001).
+    const evKey = String(ev.id || `${ev.startMs}:${ev.summary || ""}`);
 
     // ── OUTBOUND LEG ──────────────────────────────────────────────────────────────────────────────
     // Single source of truth for the skip/insert decision (home→home, no-origin, online, etc.).
@@ -218,11 +243,17 @@ async function fillTravel(uid, { apiKey, mapsKey, geminiKey, home, nowMs = Date.
           if (leaveMs < nowMs) {
             skipped++; // REQ-18: past GO leave time → no outbound block; return leg still evaluated below
           } else {
-            if (await createTravelBlock(uid, apiKey, leaveMs, arriveMs, origin, dest, dest, cal)) {
-              inserted++;
-              outboundInserted = true;
+            // C-H1: atomically CLAIM the GO leg before creating — two concurrent runs can't double-insert.
+            if (await claimTravel(uid, evKey, "go", supaUrl, supaKey)) {
+              if (await createTravelBlock(uid, apiKey, leaveMs, arriveMs, origin, dest, dest, cal)) {
+                inserted++;
+                outboundInserted = true;
+              } else {
+                skipped++;
+                await unclaimTravel(uid, evKey, "go", supaUrl, supaKey); // create failed → release for retry
+              }
             } else {
-              skipped++;
+              skipped++; // another writer already claimed the GO block (race-safe)
             }
           }
         }
@@ -264,8 +295,13 @@ async function fillTravel(uid, { apiKey, mapsKey, geminiKey, home, nowMs = Date.
     if (retMins == null) { skipped++; continue; }
     const retLeaveMs = ev.endMs;                           // depart immediately after event ends
     const retArriveMs = retLeaveMs + retMins * 60000;
-    if (await createTravelBlock(uid, apiKey, retLeaveMs, retArriveMs, venue, home, home, cal)) inserted++;
-    else skipped++;
+    // C-H1: atomically CLAIM the RETURN leg before creating.
+    if (await claimTravel(uid, evKey, "return", supaUrl, supaKey)) {
+      if (await createTravelBlock(uid, apiKey, retLeaveMs, retArriveMs, venue, home, home, cal)) inserted++;
+      else { skipped++; await unclaimTravel(uid, evKey, "return", supaUrl, supaKey); } // create failed → release
+    } else {
+      skipped++; // another writer already claimed the RETURN block (race-safe)
+    }
     void outboundInserted; // suppress unused warning — used for semantic clarity only
   }
   return { inserted, checked, skipped };
@@ -301,7 +337,7 @@ function returnDecision(ev, next, home) {
 }
 
 module.exports = {
-  fillTravel, directionsMinutes, isTravel, travelDecision, returnDecision,
+  fillTravel, directionsMinutes, isTravel, travelDecision, returnDecision, claimTravel, unclaimTravel,
   // #71 pure helpers (unit-tested)
   parseDurationSeconds, minutesFromSeconds, buildDriveBody, clampDepartIso,
 };
