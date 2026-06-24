@@ -27,6 +27,7 @@ const {
   parseGeminiTranscripts,
 } = require("./lib/call-logic.js");
 const { startScheduler, startTravelLoop, startAskLoop, startOnboardLoop, buildStreamUrl, langForPhone } = require("./scheduler.js");
+const { maybeStartLoops } = require("./lib/maybe-start-loops.js");
 const { placeCall, startRecording } = require("./lib/dial.js");
 const { parseUpdate, sendMessage } = require("./lib/telegram.js");
 const { resolveTelegramReply } = require("./lib/telegram-reply.js");
@@ -279,10 +280,11 @@ wss.on("connection", (carrierWs, req) => {
 
 server.listen(PORT, () => {
   console.log(`[life-call] listening ${PORT} ws=/ws build=agentic-ask-worldwide-v2`);
-  startScheduler();   // begin the 60s wake loop once the bridge is up
-  startTravelLoop();  // begin the 30min travel-block auto-fill loop
-  startAskLoop();     // begin the 20min ask/reply (location) loop
-  startOnboardLoop(); // begin the 2min interactive Telegram onboarding nudge
+  // SINGLE-WRITER (B3): run the scheduler loops in-process ONLY when LIFE_RUN_LOOPS!=="false".
+  // The /ws Telnyx⇄Gemini-Live voice bridge + /test-call + /telegram endpoints are ALWAYS on regardless.
+  // As an OpenClaw voice daemon, set LIFE_RUN_LOOPS=false so the cron-COMMAND jobs (B2) own the loops.
+  const loops = maybeStartLoops(process.env, { startScheduler, startTravelLoop, startAskLoop, startOnboardLoop });
+  console.log(`[life-call] ${loops.started ? "loops ON (standalone)" : "VOICE DAEMON (loops OFF)"} — ${loops.reason}`);
 });
 
 // redeploy trigger 010026

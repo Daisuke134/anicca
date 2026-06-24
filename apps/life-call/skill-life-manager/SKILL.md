@@ -60,6 +60,12 @@ pulls these from `process.env` internally.
   voice, Supabase writes. Tested via stubs.
 - **This skill** (`skill-life-manager/scripts/`) — thin cron entrypoints only. No logic lives
   here; everything is delegated to `scheduler.js`.
+- **Voice daemon** (B3) — `server.js` run with `LIFE_RUN_LOOPS=false` is an always-on process that
+  serves ONLY the `/ws` Telnyx⇄Gemini-Live voice bridge (Charon) + `/test-call` + `/telegram` endpoints;
+  it does NOT run the scheduler loops (the OpenClaw cron jobs own those — single writer). Run it as a
+  launchd KeepAlive daemon or a 2nd always-on service:
+  `LIFE_RUN_LOOPS=false GEMINI_API_KEY=… node server.js`. Default (flag unset) keeps the in-process
+  loops ON, so the standalone Railway app is unchanged.
 
 The Railway Node app (`server.js` + `scheduler.js`) keeps running until the B4 cutover. SINGLE-WRITER is
 a SAFETY requirement: only WAKE is race-safe (atomic `lm_wake_log` unique(uid,event_key) -> 409 at
