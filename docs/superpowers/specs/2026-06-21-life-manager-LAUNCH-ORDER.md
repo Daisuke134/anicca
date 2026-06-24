@@ -1,5 +1,21 @@
 # Life Manager — LAUNCH EXECUTION ORDER (do top→bottom, ONE at a time)
 
+## ★ REMAINING — DO IN THIS ORDER (updated 2026-06-24) ★
+1. ✅ hosting verified · ✅ PHASE A (REQ-15) · ✅ B1 scaffold · ✅ B2 cron-reg · ✅ B3 voice-daemon-gate
+2. ◑ **B4** — OpenClaw LIVE cutover, CO-LOCATED in apps/life-call (auth fix = OPENCLAW_GATEWAY_TOKEN both
+   sides). register crons + voice daemon + controlled test-user real-call E2E + single-writer switch.  ← NOW
+3. ☐ **C-H1** — atomic unique constraints on [Travel] + lm_ask_log (race hardening).
+4. ☐ **PHASE C** — realize+VERIFY the 3 location cases on OpenClaw (C1 filled / C2 online / C3 ask→remember)
+   + C4 determinism · C5 routines · C6 autonomous witness · C7 EN/JA · C8 ask-reply E2E · C9 YouTube.
+5. ☐ **D-1** end-to-end test web /lm + Telegram bot + QR on /life-manager (easy go).
+6. ☐ **D-2** sell on Capafy (lite Leave-Time Planner, best pricing/copy, CTA → web app).
+7. ☐ **D-3** content crons TikTok + YouTube (idempotent: no log → post, has log → skip; verify PUBLISHED).
+8. ☐ **D-4** Product Hunt launch schedule (Tue/Wed/Thu 12:01 AM PST; Dais go + date).
+9. ☐ **D-5** articles JP+EN on X / Zenn / Note / Substack / Dev.to (verify live URLs).
+10. ☐ **D-6** post-launch: directory submissions, PH follow-up, churn-prevention.
+11. ☐ **PHASE E** — self-improve from user behavior + proactive booking + deeper support → merge into Anicca.
+(Full detail for each = the PHASE sections below.)
+
 ## 🚨 P0 EMERGENCY (2026-06-23) — STATUS
 - [x] **E2 (#100) — 移動時間 auto-fill**: FIXED + verified no-mock on Dais's real cal. Online-classify =
       agent (regex killed, PR195); room-name → agent web-search address (PR194); ask-loop RE-RESOLVES
