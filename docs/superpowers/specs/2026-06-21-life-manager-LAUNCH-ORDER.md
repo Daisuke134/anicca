@@ -312,6 +312,24 @@ NEXT → DO THE OPENCLAW TRANSITION (V1, low cost, local already runs on OpenCla
 re-done. ① filled + ② online already work in lib/ask.js (reused 100% in the port); only ③'s memory is new
 and it WANTS OpenClaw. So: transition first, then memory + full 3-case verification land together on OpenClaw.
 
+★★★ ARCHITECTURE FINDING (search 2026-06-24, the SHARED-GATEWAY plan is an OpenClaw ANTI-PATTERN) ★★★
+How real OpenClaw-agent SELLERS deploy (verified): 1 DEDICATED INSTANCE PER USER. Evidence:
+- ClawHost generateCloudInit.ts (antoinersx/clawhost): each user = own Hetzner VPS; cloud-init does
+  `npm i -g openclaw@latest`, writes openclaw.json with `AUTH:token` + a per-instance gatewayToken, runs
+  `openclaw gateway --port 18789 --bind loopback` as a SYSTEMD service. No shared gateway, no pre-seeded
+  multi-tenant crons. = it HOSTS a personal openclaw per user.
+- GetOpenClaw.ai: "OpenClaw runs on your own computer" + a VPS Comparator = your-own-instance model.
+- Security (trilogyai substack + docs/gateway/security): "single-gateway = one person's secrets; naive
+  MULTI-USER deployment could expose EVERYONE's secrets" → shared-gateway multi-tenant = security anti-pattern.
+IMPLICATION: the cron-WRITE `operator.admin` friction we hit was a SYMPTOM of fighting OpenClaw's design.
+The OpenClaw-correct way = PER-USER instance, provisioned (ClawHost-style) with the life-manager skill + that
+user's 3 crons + gcal/keys + native per-user MEMORY.md; cron is registered AT PROVISION as the box's trusted
+operator (no pairing friction). This resolves isolation + native memory + cron-auth + "real per-user agent"
+all at once. TRADE-OFF = ~$4/user/mo VPS (≈$2k/mo at 500 users, cut by idle hibernation) + provisioning
+automation (fork ClawHost) VS the current cheap shared Railway Node app (plain Node, not openclaw). DECISION
+PENDING (Dais): per-user OpenClaw instances (correct, costs infra) vs keep cheap shared Node (works, not
+openclaw). The earlier "SHARED multi-tenant" decision below is SUPERSEDED-pending this choice.
+
 MULTI-TENANT (DECIDED 2026-06-24, Dais "Life Manager is for EVERYBODY, can't pay per-tenant costs"):
 SHARED multi-tenant. The cloud app is ALREADY shared multi-tenant — ONE service serves ALL users:
 `scheduler.js supaUsers()` = `SELECT * FROM lm_users WHERE phone NOT NULL AND paid AND gcal-connected`, and
