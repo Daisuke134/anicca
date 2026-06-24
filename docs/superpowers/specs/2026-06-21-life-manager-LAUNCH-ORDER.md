@@ -252,15 +252,27 @@ DIRECTION: stop being "a Node script that calls Gemini at a few points." Become 
 THE 3 FORMS:
 - LOCAL = a set of OpenClaw SKILLS the user installs on their own OpenClaw (BYOK). Minimal effort.
 - WEB APP = we host a COMPLETE OpenClaw agent on the cloud, one instance per subscriber ($20/mo Stripe). ★ main focus ★
-- CAPAFY = ship the SAME skill to the Capafy marketplace (run_online + subscription). ★ main focus ★
-  (OPEN: does an always-on Telnyx/Gemini-Live voice bridge fit a Capafy run_online skill, or is Capafy
-  the brain + a voice endpoint WE host? → being researched; record answer here.)
+- CAPAFY = ship a REDUCED chat-only "planner" skill (run_online + subscription) as a TOP-OF-FUNNEL channel.
+  RESOLVED (research 2026-06-24): Capafy run_online = per-MESSAGE request/response (billed by
+  `cycleMaxMessageCount`, `containerMode: on_demand`, no always-on field in the api-docs) → it CANNOT
+  host the scheduled cron loops or the always-on Telnyx/Gemini-Live voice bridge. So "Capafy = complete
+  agent" is FALSE for Life Manager. Capafy sells the conversational planner brain ONLY; the phone call +
+  cron MUST be served by an always-on gateway WE host. Capafy = acquisition, never the full product.
+HOSTING (research 2026-06-24): WEB APP = lead with a FORKED ClawHost (github.com/antoinersx/clawhost, MIT,
+1 dedicated VPS/tenant, Polar.sh billing + auto-SSL/DNS already built; commercialized as GetOpenClaw.ai
+$29-59/mo) — the ONLY packaging that runs cron + always-on voice as ONE complete agent. The Railway
+template (arjunkomath) = single-tenant pilot only, NOT productized multi-tenant. Dominant sell pattern =
+hosted dedicated instance + built-in subscription billing + BYOK LLM.
 SEQUENCING (decided): FINISH Phase 0 edge-case verification FIRST, THEN port. The edge-case fixes
 (memory tools + REQ-15) live in lib/ask.js + lib/travel.js — the EXACT libs the port reuses 100% — so
 fixing first means the port inherits a WORKING agent (no rework). Same code IS reused: the loops become
 cron-COMMAND jobs, the geometry/voice are wrapped not rewritten (see substrate spec port table).
 - V1 ☐ port: skills/life-manager (SKILL.md + scripts/{tick,travel,ask}.mjs require existing exports); 3 cron-COMMAND jobs; voice = launchd KeepAlive daemon. Keep Railway live (zero downtime). Pilot 1 user E2E → flip.
-- V2 ☐ memory: per-user place/preference memory so the agent never re-asks a learned location (OpenClaw native memory vs Supabase lm_user_places — decide from research).
+- V2 ☐ memory (RESOLVED = HYBRID): EXACT place aliases ("park"→address) → structured Supabase
+  `lm_user_places` table + save_place/recall_place tools (deterministic; native memory is LLM-summarized
+  prose + a vector index that can PAUSE → silently re-asks, proven live). FUZZY preferences ("hates early
+  mornings", "30min buffer") → OpenClaw native MEMORY.md (semantic, evolving). Per-tenant scoping is clean
+  because we run 1 OpenClaw instance per subscriber (OpenClaw memory is per-agent, not per-user-in-one-agent).
 - V3 ☐ omni-channel: LINE / WhatsApp / Discord / iMessage onboarding (OpenClaw native channels) — seamless add.
 - V4 ☐ self-improvement: agent tunes WHEN to call + WHAT to say + proactively books good events per user memory.
 - V5 ☐ earn loop (later): wallet/x402; eventually self-funds compute (no monthly fee).
