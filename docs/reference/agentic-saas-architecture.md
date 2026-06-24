@@ -113,6 +113,20 @@ schedule+voice); canceled → deprovision. Use Stripe Entitlements for the acces
 - `apps/life-call` deps: only `ws` (the Telnyx⇄Gemini-Live voice + scheduler service).
 - Scheduler today = raw `setInterval` in `apps/life-call/scheduler.js` + `apps/api/src/server.js` (the gap §4).
 
+## 7b. MAINTENANCE-COST minimization = ONE core lib + transport adapter (already built; OpenClaw NOT needed)
+The reason we wanted OpenClaw/open-core = ONE codebase across cloud/local/capafy so we don't maintain 3
+things. That goal is ALREADY achieved WITHOUT OpenClaw via the transport-adapter pattern (#74/#76, verified
+in code 2026-06-24): every core module (apps/life-call/lib/{events,ask,travel,notify,telegram-reply}.js)
+imports `getCalendar()/getMail()` from `lib/transport/index.js`, which switches `LIFE_TRANSPORT=gog|composio`.
+- ★ ONE shared CORE (lib + @openai/agents loop + tools + transport adapter) — fix once, all forms inherit ★
+- CLOUD = core + entrypoint (Inngest sweeper, pooled all lm_users) + LIFE_TRANSPORT=composio + our keys.
+- LOCAL (OSS/BYOK) = SAME core + small single-user launcher + LIFE_TRANSPORT=gog + BYOK keys + local trigger.
+- CAPAFY = SAME core's travel/plan FUNCTIONS, wrapped as a reduced stateless skill (no calls/cron/voice).
+- Diff cloud↔local = CONFIG ONLY (transport, keys, single vs pooled). cloud≈local ~95% identical; capafy ~30%.
+HONEST: dropping OpenClaw LOWERS maintenance — OpenClaw would have ADDED per-user gateways + operator.admin/
+pairing ops (the friction we hit 2026-06-24). Inngest + @openai/agents are LIBRARIES of the one core, NOT a
+3-way fork. The low-maintenance/one-codebase win we wanted from open-core is preserved by lib+adapter.
+
 ## 8. RECOMMENDED STACK (cleanest path to scale + future features)
 **Inngest (durable scheduler+fan-out spine) + `@openai/agents` (agent loop, already a dep; optional AgentKit)
 + mem0ai/Postgres (per-user memory) + Stripe webhooks (billing) + hand-rolled Node Telnyx↔Gemini-Live WS
