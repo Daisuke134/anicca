@@ -258,11 +258,31 @@ THE 3 FORMS:
   host the scheduled cron loops or the always-on Telnyx/Gemini-Live voice bridge. So "Capafy = complete
   agent" is FALSE for Life Manager. Capafy sells the conversational planner brain ONLY; the phone call +
   cron MUST be served by an always-on gateway WE host. Capafy = acquisition, never the full product.
-HOSTING (research 2026-06-24): WEB APP = lead with a FORKED ClawHost (github.com/antoinersx/clawhost, MIT,
-1 dedicated VPS/tenant, Polar.sh billing + auto-SSL/DNS already built; commercialized as GetOpenClaw.ai
-$29-59/mo) — the ONLY packaging that runs cron + always-on voice as ONE complete agent. The Railway
-template (arjunkomath) = single-tenant pilot only, NOT productized multi-tenant. Dominant sell pattern =
-hosted dedicated instance + built-in subscription billing + BYOK LLM.
+HOSTING — VERIFIED LIVE 2026-06-24 (actually deployed, not just researched):
+- ★ PROOF: OpenClaw self-hosts on Railway. Deployed arjunkomath/openclaw-railway-template (Docker + /setup
+  wizard + Railway Volume at /data + public HTTPS). Live gateway: openclaw-lm-pilot-production.up.railway.app
+  → `curl /setup` = HTTP 401 (password wall up), logs "[wrapper] listening on 8080 / configured:false /
+  device bootstrap SDK ready / volume mounted". Project = openclaw-lm-pilot (Railway, keiodaisuke acct). ★
+- Railway path = 1 service per tenant (Docker template, $5/mo + usage). The VOICE daemon = a 2nd Railway
+  service (always-on `node server.js`). Gotcha: device-code logins (ChatGPT/Grok) need `openclaw wizard`
+  in the Railway console (web /setup can't drive them) — for us LLM = API key so non-interactive setup works.
+- ClawHost (antoinersx, MIT, Bun/TS monorepo) = the productized multi-tenant layer (Hetzner VPS/tenant,
+  Polar billing, auto SSL/DNS, browser terminal; commercialized = GetOpenClaw.ai $29-59/mo). Heavier to
+  stand up (needs Hetzner+Cloudflare+Polar). PATH: ship pilots on Railway-per-service NOW; fork ClawHost
+  for the productized self-serve multi-tenant + billing later.
+
+CAPAFY — VERIFIED NOT VIABLE for the full product (research 2026-06-24, buyer + seller skills read):
+- ★ Capafy has NO buyer-side account-connect: no Google OAuth, no Composio, no "connect account" primitive.
+  Credentials are SELLER-side/BYOK confirmed at PUBLISH time (url_proxy/generic/env_var on the web page).
+  Buyer input = typed chat text + uploaded files ONLY (sse_stream.py --content/--files). on_demand container
+  = ephemeral, NO persistence of a connection across sessions. No outbound phone/email AS the buyer. ★
+- So LM on Capafy CANNOT read the buyer's live calendar, cannot phone-call, cannot email stakeholders,
+  cannot remember across sessions. It DEGRADES to "paste your schedule → get when-to-leave text advice."
+  The core pipeline (gcal poll → Charon call → ask-by-email) cannot fire. ZERO Capafy winners connect an
+  external account — it is not a platform pattern.
+- DECISION: Capafy ≠ the product. At most a FUNNEL listing (paste-in advisor) that points to the web app,
+  or skip Capafy for LM entirely and focus the 10k MRR on the WEB APP (Google OAuth + Composio + phone +
+  email + persistence all live there). Re-weight: 10k MRR = web app (+ OSS funnel), Capafy demoted.
 SEQUENCING (decided): FINISH Phase 0 edge-case verification FIRST, THEN port. The edge-case fixes
 (memory tools + REQ-15) live in lib/ask.js + lib/travel.js — the EXACT libs the port reuses 100% — so
 fixing first means the port inherits a WORKING agent (no rework). Same code IS reused: the loops become
