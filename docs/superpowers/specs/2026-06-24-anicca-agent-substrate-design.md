@@ -41,8 +41,30 @@ inflated — NOT independently re-verified; qualitative findings are consistent 
 3. Claude SDK / claude -p are model-locked to Claude (violates our model-agnostic META-RULE) and ToS
    forbids reselling a subscription across hosted tenants (→ metered API → thin margin at $20/mo).
 
+## CORRECTION (Dais 2026-06-24): HARNESS-PORTABLE, never vendor-locked
+The product is NOT "OpenClaw as THE harness." The product = a HARNESS-PORTABLE package that makes ANY AI
+(on OpenClaw, Hermes, Claude Code, or future harnesses) manage a human's life + earn money, no human in
+the loop. Support any harness, any model. We START on OpenClaw — that is all. The package =
+(1) harness-neutral AGENT definitions (orchestrator + call/calendar-travel/ask-notify/earn/omni),
+(2) TOOLS as MCP (harness-neutral), (3) SKILLS (agentskills.io standard), (4) deterministic WORKFLOW
+modules (voice-bridge Telnyx⇄Gemini-Live, arithmetic, dedup). Capafy = the SAME package shipped as a
+skill. Local/Cloud/Capafy differ ONLY by adapter + key-holder.
+
+## WORKFLOW vs AGENT (right altitude — NOT everything is agentic)
+Per building-effective-ai-agents.md ("Deterministic code only for tools+arithmetic+bookkeeping; judgment
+→ agent; regex OK only for parsing fixed machine formats") + building-voice-agents.md ("Build an agent
+only when complex judgment / hard rulesets / unstructured data; else deterministic suffices"):
+- WORKFLOW (keep deterministic): voice transport (bidi rtp, μ-law transcode, setupComplete handshake,
+  base64, VAD, greet-first); arithmetic (head-out = start−travel−buffer; T−15/10/5); bookkeeping/dedup
+  (don't double-ask, dedup [Travel], posted.jsonl); fixed parsing (E.164, URL scheme, gcal fields);
+  scheduler tick cadence; the tools themselves; the Telegram onboarding stage machine (predictable path).
+- AGENT (LLM judgment, no regex): location classification (online/physical/ask, which address, landmark
+  →web-search); when to call / what to say / tone (self-improving per user memory); which events to
+  proactively book; ask wording + matching a reply to an event; late-notice judgment; earn strategy.
+
 ## DECISION (recommended)
-**Substrate = OpenClaw (Hermes lineage we already run). Build the 3 gaps as agents/plugins on top.**
+**Start the package on OpenClaw (Hermes lineage we already run) — but design it HARNESS-PORTABLE so it
+also runs on Hermes / Claude Code / any harness, any model. Build the 3 gaps as agents/plugins on top.**
 Why: ~0 migration; model-agnostic (META-RULE satisfied); native multi-agent (orchestrator + subagents
 = "everything is an agent"); omni-channel native (free onboarding expansion); cloud host solved
 (Railway + ClawHost, idle-hibernate = cheap, no local disk); BYOK↔managed = config only = "same setup,
