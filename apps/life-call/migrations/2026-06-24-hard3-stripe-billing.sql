@@ -6,7 +6,8 @@
 ALTER TABLE public.lm_users ADD COLUMN IF NOT EXISTS stripe_customer_id     text;
 ALTER TABLE public.lm_users ADD COLUMN IF NOT EXISTS stripe_subscription_id text;
 ALTER TABLE public.lm_users ADD COLUMN IF NOT EXISTS plan_status            text;       -- mirrors Stripe subscription.status
-ALTER TABLE public.lm_users ADD COLUMN IF NOT EXISTS current_period_end     timestamptz; -- staleness guard
+ALTER TABLE public.lm_users ADD COLUMN IF NOT EXISTS current_period_end     timestamptz; -- the subscription's period end (data)
+ALTER TABLE public.lm_users ADD COLUMN IF NOT EXISTS stripe_event_at        timestamptz; -- created of the last applied event = the out-of-order staleness key (FIND-002)
 
 -- One Stripe customer maps to at most one user (subscription.* events look up the uid by this).
 DO $$ BEGIN

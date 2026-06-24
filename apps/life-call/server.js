@@ -101,6 +101,17 @@ function readBody(req) {
     req.on("end", () => resolve(b)); req.on("error", () => resolve(""));
   });
 }
+// readRawBody: collect the EXACT bytes as a Buffer (no utf8 string concat, which corrupts multi-byte chars
+// split across chunks → Stripe signature mismatch). Used for the Stripe webhook where constructEvent must
+// hash the raw bytes (FIND-005).
+function readRawBody(req) {
+  return new Promise((resolve) => {
+    const chunks = []; let len = 0;
+    req.on("data", (c) => { chunks.push(c); len += c.length; if (len > 1e5) req.destroy(); });
+    req.on("end", () => resolve(Buffer.concat(chunks)));
+    req.on("error", () => resolve(Buffer.alloc(0)));
+  });
+}
 
 const PORT = Number(process.env.PORT) || 8788;
 const GEMINI_KEY = process.env.GEMINI_API_KEY;
@@ -264,7 +275,7 @@ const server = http.createServer((req, res) => {
       return;
     }
     (async () => {
-      const raw = await readBody(req);
+      const raw = await readRawBody(req); // EXACT bytes (Buffer) for signature verification (FIND-005)
       let event;
       try {
         event = stripe.webhooks.constructEvent(raw, req.headers["stripe-signature"], process.env.STRIPE_WEBHOOK_SECRET || "");
@@ -280,7 +291,10 @@ const server = http.createServer((req, res) => {
         res.writeHead(200); res.end("ok");
       } catch (e) {
         console.error("[stripe] apply failed", e.message);
-        await unclaimEvent(event.id, SUPA_URL, SUPA_KEY); // release the claim so Stripe's redelivery re-processes
+        // FIND-006: release the claim so Stripe's redelivery re-processes. If THIS also fails, the event
+        // stays claimed → the transition would stick; log a RECONCILE marker (writes are idempotent SETs).
+        const released = await unclaimEvent(event.id, SUPA_URL, SUPA_KEY);
+        if (!released) console.error("[stripe] RECONCILE: unclaim failed for", event.id, "— manual replay needed");
         res.writeHead(500); res.end("apply failed");
       }
     })();

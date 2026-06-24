@@ -108,3 +108,29 @@ Source: https://docs.stripe.com/billing/subscriptions/webhooks (Firecrawl 2026-0
 - EDIT: `apps/life-call/server.js` (mount `/api/stripe/webhook` + fail-closed guard),
   `apps/life-call/package.json` (add `stripe` dep), behavioral-spec.md (§G REQ-35..42).
 - Branch: `feature/hard3-stripe` → PR → main (matching HARD-1/HARD-2).
+
+## 10. Adversary findings resolved (2026-06-24)
+- **FIND-001 (dual-writer, critical)** — discovery: a PRE-EXISTING `apps/landing/netlify/functions/lm-stripe-webhook.js`
+  was the LIVE Stripe-registered writer of `lm_users.paid` (verified-live 2026-06-21), subscribed to only 2
+  events (checkout.session.completed + customer.subscription.deleted) — so it could never do past_due/grace/
+  dunning, and it wrote bare `paid` with no customer_id/plan_status/idempotency/staleness. RESOLUTION: life-call
+  is the billing home (it owns the data + the sweeper = architectural BP). The landing stopgap is DELETED →
+  single writer = life-call `applyBilling`. (Other repo "paid" refs are readers: scheduler.js `paid=is.true`
+  filter, telegram-reply.js select; landing `webhook.js` writes a different product's `subscribers`/`buyers`.)
+- **FIND-002 (immediate-cancel dropped, critical)** — staleness re-keyed from `current_period_end` → the
+  EVENT's `created` (stored `stripe_event_at`). An immediate cancel (lower period_end, later created) now applies.
+- **FIND-003** — checkout gates on `payment_status` ('paid'/'no_payment_required' → provision; else link paid=false).
+- **FIND-005** — `readRawBody` returns a Buffer (no utf8 chunk-split corruption) for constructEvent.
+- **FIND-004** — `applyBilling` now has unit tests (checkout paid/unpaid, sub provision/deprovision/stale/orphan,
+  past_due+dunning, unknown-type, patch-failure-throws). FIND-006 — unclaim-fail logs a RECONCILE marker.
+- Verified: 98 unit tests + no-mock E2E 11/11 (incl. the FIND-002 immediate-cancel case) + fail-closed 503.
+
+## 11. LIVE cutover runbook (deploy step, AFTER merge — touches live Stripe config; only 1 paid user, link still sandbox)
+1. Merge HARD-3 → main → Railway auto-deploys life-call (route `/api/stripe/webhook` goes live at
+   `https://life-call-production.up.railway.app`). Netlify redeploys landing without the stopgap webhook.
+2. Create a Stripe webhook endpoint → `https://life-call-production.up.railway.app/api/stripe/webhook` with
+   events: checkout.session.completed, customer.subscription.created|updated|deleted, invoice.payment_failed.
+   Set its signing secret as `STRIPE_WEBHOOK_SECRET` on life-call Railway (live) — life-call serves the route
+   only when the secret is present (REQ-41). Verify a Stripe test event delivers 200.
+3. Delete the OLD Stripe endpoint (`aniccaai.com/.netlify/functions/lm-stripe-webhook`) so no duplicate.
+4. E2E: a real $20/mo checkout (sandbox first, then live link …2880v on go-live) → life-call webhook → paid=true.
