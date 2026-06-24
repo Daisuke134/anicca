@@ -280,19 +280,34 @@ CAPAFY — VERIFIED NOT VIABLE for the full product (research 2026-06-24, buyer 
   cannot remember across sessions. It DEGRADES to "paste your schedule → get when-to-leave text advice."
   The core pipeline (gcal poll → Charon call → ask-by-email) cannot fire. ZERO Capafy winners connect an
   external account — it is not a platform pattern.
-- DECISION: Capafy ≠ the product. At most a FUNNEL listing (paste-in advisor) that points to the web app,
-  or skip Capafy for LM entirely and focus the 10k MRR on the WEB APP (Google OAuth + Composio + phone +
-  email + persistence all live there). Re-weight: 10k MRR = web app (+ OSS funnel), Capafy demoted.
-SEQUENCING (decided): FINISH Phase 0 edge-case verification FIRST, THEN port. The edge-case fixes
-(memory tools + REQ-15) live in lib/ask.js + lib/travel.js — the EXACT libs the port reuses 100% — so
-fixing first means the port inherits a WORKING agent (no rework). Same code IS reused: the loops become
-cron-COMMAND jobs, the geometry/voice are wrapped not rewritten (see substrate spec port table).
+- DECISION: Capafy ≠ the autonomous product. BUT a sellable Capafy form EXISTS (Dais 2026-06-24): a
+  SELF-CONTAINED "Leave-Time Planner" skill — the buyer PASTES their day/locations as text (or uploads a
+  screenshot/.ics), a CHEAP model orchestrates a travel-time TOOL (Google Routes API via a seller-side
+  url_proxy/env key, OR web-search fallback) and returns a "leave by HH:MM + 🚆 route" plan IN CHAT. No
+  gcal/gmail OAuth, no persistence, no calls/email needed — fits Capafy's paste-in + seller-BYOK model.
+  It is a LESSER product (advice, not autonomy) = the FUNNEL/lite tier. The 10k MRR body stays the WEB APP
+  (Google OAuth + Composio + phone + email + memory). Capafy listing CTA → web app for the real thing.
+SEQUENCING (REVISED 2026-06-24, Dais): close REQ-15 real-run gate (trivial, already built/adversary-PASS)
+→ DO THE OPENCLAW TRANSITION (V1, low cost, local already runs on OpenClaw) → THEN realize + VERIFY the
+3 location cases (incl. MEMORY) ON the OpenClaw setup. Rationale: MEMORY is an OpenClaw-native feature
+(MEMORY.md) so it should be built+verified on the OpenClaw setup, not bolted onto the Railway Node app and
+re-done. ① filled + ② online already work in lib/ask.js (reused 100% in the port); only ③'s memory is new
+and it WANTS OpenClaw. So: transition first, then memory + full 3-case verification land together on OpenClaw.
+
+MEMORY (REVISED 2026-06-24, Dais): use OpenClaw NATIVE memory (MEMORY.md) for per-user place aliases +
+prefs — NO new Supabase table/tools needed. The agent appends "remember: park = Yoyogi Park, <addr>" to
+MEMORY.md and reads it (MEMORY.md is auto-injected into context at session start, so a per-user alias set
+of dozens is ALWAYS present = reliable exact recall WITHOUT relying on the vector index that can pause).
+HONEST CAVEAT: this is reliable while the alias set fits the context budget (dozens, fine for launch); if a
+user accumulates hundreds of places we revisit a structured store (Supabase lm_user_places) for SQL-exact
+lookup. For launch: native memory, zero new tools. This only works AFTER the OpenClaw transition (native
+memory is an OpenClaw feature; today's Railway Node app has none) — hence transition-first above.
 - V1 ☐ port: skills/life-manager (SKILL.md + scripts/{tick,travel,ask}.mjs require existing exports); 3 cron-COMMAND jobs; voice = launchd KeepAlive daemon. Keep Railway live (zero downtime). Pilot 1 user E2E → flip.
-- V2 ☐ memory (RESOLVED = HYBRID): EXACT place aliases ("park"→address) → structured Supabase
-  `lm_user_places` table + save_place/recall_place tools (deterministic; native memory is LLM-summarized
-  prose + a vector index that can PAUSE → silently re-asks, proven live). FUZZY preferences ("hates early
-  mornings", "30min buffer") → OpenClaw native MEMORY.md (semantic, evolving). Per-tenant scoping is clean
-  because we run 1 OpenClaw instance per subscriber (OpenClaw memory is per-agent, not per-user-in-one-agent).
+- V2 ☐ memory (REVISED 2026-06-24 = OpenClaw NATIVE first): place aliases + prefs → OpenClaw MEMORY.md
+  (auto-injected at session start → reliable exact recall for dozens of aliases, no new tools). Per-tenant
+  scoping is clean because we run 1 OpenClaw instance per subscriber. Upgrade to a structured Supabase
+  `lm_user_places` table ONLY at scale (hundreds of places exceeding the context budget). Built+verified
+  ON the OpenClaw setup (see SEQUENCING + MEMORY notes above).
 - V3 ☐ omni-channel: LINE / WhatsApp / Discord / iMessage onboarding (OpenClaw native channels) — seamless add.
 - V4 ☐ self-improvement: agent tunes WHEN to call + WHAT to say + proactively books good events per user memory.
 - V5 ☐ earn loop (later): wallet/x402; eventually self-funds compute (no monthly fee).
