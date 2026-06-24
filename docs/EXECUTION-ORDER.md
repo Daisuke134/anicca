@@ -90,7 +90,7 @@ F.  AUTOMATE — ☐ BUILD & STAGE NOW, ENABLE LATER (one `launchctl load` after
       ⑤ Telegram the live URL + screenshot. publish-to-note.sh = deterministic hands (--draft/--go split);
       claude -p = the eyes+brain (writing + the visual pre-post gate). Same shape per platform (publish-to-<x>.sh).
     BUILD ORDER: F1 ☑ DONE 2026-06-24 (publish-to-note.sh: verify/publish/cookies cmds, guarded; `verify na3a631e63d1a` E2E-passed — deterministic PASS + agent-vision PASS; verify-note.py = evidence for the vision gate) → F2 ☑ DONE 2026-06-24 (note-agent-prompt.md + run-note-agent.sh; scoped claude -p VERIFIED the vision gate headless — ran verify, Read the screenshot, returned PASS+reasons. AUTONOMY=off until proven) + the claude -p agent prompt + verify
-    checklist → F3 launchd plist (daily) → F4 = per-platform, SEPARATED, each its OWN rigorous pipeline (never collapse on one platform):
+    checklist → F3 ☑ DONE 2026-06-24 (staged ai.anicca.note-publish.plist NOT loaded + daily-run.sh; VSDD adversary round1 FAIL→2 FAIL→3 PASS: publish_guard.py gates all 11 publish clicks, env+sentinel double-gate, unattended FORCE_DRAFT=1+rm sentinel = cannot publish; honest threat model) → F4 = per-platform, SEPARATED, each its OWN rigorous pipeline (never collapse on one platform):
       F4a publish-to-zenn.sh (JP, mermaid native, badges) → F4b publish-to-substack.sh (JP, paid sub) →
       F4c publish-to-x-article.sh (JP, 有料購読) → F4d the EN pass of each. Each goes through the SAME gate as
       note (render → draft → VISION verify as visitor → monetize → API truth) + its own SKILL.md lessons.
