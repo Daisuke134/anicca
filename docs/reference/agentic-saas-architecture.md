@@ -127,6 +127,17 @@ HONEST: dropping OpenClaw LOWERS maintenance — OpenClaw would have ADDED per-u
 pairing ops (the friction we hit 2026-06-24). Inngest + @openai/agents are LIBRARIES of the one core, NOT a
 3-way fork. The low-maintenance/one-codebase win we wanted from open-core is preserved by lib+adapter.
 
+## 7c. MODEL = GEMINI, no OpenAI spend (Dais has no OpenAI budget — verified 2026-06-24)
+The agent loop runs on GEMINI, $0 OpenAI. We ALREADY use Gemini (ask.js agentResolveLocation = Gemini 2.5
+Flash + places_search tool loop; voice = Gemini Live native-audio Charon). Two ways to keep the agent loop
+on Gemini: (a) GEMINI-NATIVE — build the loop on the Gemini SDK we already use (Anthropic BP: "use LLM APIs
+directly"); RECOMMENDED. (b) @openai/agents pointed at Gemini's OpenAI-COMPATIBLE endpoint
+(ai.google.dev/gemini-api/docs/openai — base_url=https://generativelanguage.googleapis.com/v1beta/openai/ +
+the Gemini API key) → @openai/agents runs on Gemini with NO OpenAI key. So earlier "@openai/agents (a dep)"
+does NOT imply OpenAI cost — it's optional and only viable if pointed at the Gemini-compat endpoint. HARD-2
+(scheduling) adds NO model dependency at all; the agentic loop is a later task and stays on Gemini.
+Build subagents run `mode: "bypassPermissions"` (no human-in-loop — no permission prompts).
+
 ## 8. RECOMMENDED STACK (cleanest path to scale + future features)
 **Inngest (durable scheduler+fan-out spine) + `@openai/agents` (agent loop, already a dep; optional AgentKit)
 + mem0ai/Postgres (per-user memory) + Stripe webhooks (billing) + hand-rolled Node Telnyx↔Gemini-Live WS
