@@ -6,7 +6,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "node test/scheduler.test.js"
+    "test": "node test/scheduler.test.js && node --test skill-life-manager/scripts/scaffold.test.js"
   },
   "dependencies": {
     "ws": "^8.18.0"
