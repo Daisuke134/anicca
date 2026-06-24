@@ -80,6 +80,13 @@ test("isStale: no stored row → not stale (first event applies)", () => {
   assert.strictEqual(isStale(100, "sub_1", null), false);
   assert.strictEqual(isStale(100, "sub_1", {}), false);
 });
+test("isStale: stored current_period_end as ISO string (live DB shape) is parsed, not NaN", () => {
+  // Supabase returns timestamptz as ISO; Number(ISO)=NaN would break the guard. epoch 2000000200 = 2033-05-18.
+  const storedIso = new Date(2000000200 * 1000).toISOString();
+  const row = { stripe_subscription_id: "sub_1", current_period_end: storedIso };
+  assert.strictEqual(isStale(2000000050, "sub_1", row), true,  "older incoming vs ISO stored → stale");
+  assert.strictEqual(isStale(2000000300, "sub_1", row), false, "newer incoming vs ISO stored → fresh");
+});
 
 // ── claimEvent / unclaimEvent: idempotency ledger 201/409 (REQ-36) ────────────
 test("claimEvent: 201 → claimed(true); 409 → already(false)", async () => {

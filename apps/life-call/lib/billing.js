@@ -49,14 +49,25 @@ function parseStripeEvent(event) {
   return null; // unknown type → caller acks 200 with no side effect
 }
 
+// toEpoch: normalize a period-end to UNIX seconds. Stripe sends an int (epoch seconds); Supabase stores it
+// as timestamptz and PostgREST returns an ISO string — Number("2033-05-18T…") is NaN, so we must Date.parse
+// ISO values. Without this the staleness guard silently no-ops against the live DB (caught by reasoning + E2E).
+function toEpoch(v) {
+  if (v == null) return 0;
+  if (typeof v === "number") return v;
+  const n = Number(v);
+  if (!Number.isNaN(n) && String(v).trim() !== "") return n; // numeric string → epoch seconds
+  const t = Date.parse(v);                                    // ISO timestamp → ms
+  return Number.isNaN(t) ? 0 : Math.floor(t / 1000);
+}
+
 // isStale(incomingPeriodEnd, incomingSubId, storedRow) → true when this event is OLDER than what we already
 // stored for the SAME subscription (so a late/out-of-order delivery can't downgrade fresher state). A new
-// subscription id, or no stored row, is never stale.
+// subscription id, or no stored row, is never stale. Handles both epoch-int and ISO-string stored values.
 function isStale(incomingPeriodEnd, incomingSubId, storedRow) {
   if (!storedRow || !storedRow.stripe_subscription_id) return false;
   if (storedRow.stripe_subscription_id !== incomingSubId) return false; // different sub → apply
-  const stored = Number(storedRow.current_period_end || 0);
-  return Number(incomingPeriodEnd || 0) < stored;
+  return toEpoch(incomingPeriodEnd) < toEpoch(storedRow.current_period_end);
 }
 
 // ── Supabase IO (service-role). All accept an injectable fetch for testing. ──────────────────────────
@@ -164,6 +175,7 @@ module.exports = {
   entitlementFor,
   parseStripeEvent,
   isStale,
+  toEpoch,
   claimEvent,
   unclaimEvent,
   userByCustomer,
