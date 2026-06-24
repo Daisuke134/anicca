@@ -326,7 +326,12 @@ everybody" is the deciding constraint.
     in openclaw@latest 2026.6.10 (local 2026.6.1 lacks it). LIVE registration = B4. Merged PR #215.
     NEW follow-up → **C-H1 ☐ harden: give [Travel] + lm_ask_log ATOMIC unique constraints (like lm_wake_log)
     so travel/ask become race-safe too** (migration + future safety). [from B2 adversary FIND-005]
-  - B3 ☐ voice daemon (server.js minus start*Loop, launchd KeepAlive / 2nd Railway service) → /test-call verify.
+  - B3 ✅ DONE 2026-06-24 — voice-daemon loop gate: server.js runs the 4 scheduler loops only when
+    LIFE_RUN_LOOPS!=="false" (default ON = Railway unchanged; =false/0/off → pure /ws Telnyx⇄Gemini-Live
+    voice daemon, OpenClaw cron owns the loops = single writer). lib/maybe-start-loops.js pure + 8 tests
+    (default-on all-4, off zero, case/space-insensitive, fail-safe-to-ON). VCSDD adversary PASS first round.
+    /ws + /test-call + /telegram always-on (outside the gate). Merged PR #217. Run: `LIFE_RUN_LOOPS=false
+    node server.js` as a launchd KeepAlive / 2nd Railway service. LIVE /test-call real call = B4.
   - B4 ☐ ONE SHARED gateway (Railway hosting VERIFIED LIVE — openclaw-lm-pilot 401) serving ALL lm_users rows
     (NOT 1 instance/tenant) → pilot E2E (≥2 users) → flip from the Railway Node app.
 - V2 ☐ memory (RE-DECIDED 2026-06-24 = SUPABASE per-user, for shared multi-tenant): `lm_user_places` table
