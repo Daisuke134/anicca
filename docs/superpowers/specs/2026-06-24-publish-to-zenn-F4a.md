@@ -47,3 +47,16 @@ Zenn is FUNDAMENTALLY different from note: it is GIT-based, not browser-based. E
 ## Acceptance
 A draft pushed with published:false is NOT public; `zenn preview` + screenshot lets the agent judge; flipping to
 published:true + push makes it live (verified by HTTP 200). Unattended path can only ever draft. PAT rotated.
+
+## ZENN/X CONTENT + MONETIZATION STRATEGY (Dais 2026-06-24, locked)
+- ZENN ARTICLE = EXPLAINER ONLY: include up to「Automatonは「どう動いて」生きているのか」+ the 結論(conclusion)
+  final block. DO NOT include the setup / run steps / results / logs (those are the paid note content).
+- ZENN TITLE must NOT lie: the current note title「…実際に動かして検証してみた」claims we ran it — but Zenn omits
+  the running. So the Zenn title = 「人間なしで"自分で稼ぐ"AI『Automaton』を徹底解説」(徹底解説 = thorough explainer).
+- ZENN MONETIZE = ①バッジ/投げ銭 on the free article ②every 5–10 articles, compile a PAID Zenn BOOK containing the
+  FULL thing we sell on note (setup+results+logs); if quality is high, a print/hardback too. Books = the Zenn revenue.
+- X = made Premium (DM + Subscriptions). Model = free article preview; SUBSCRIBE to see the FULL article. Same
+  free-hook → paid-full shape as note.
+- note PAYWALL MOVE (Dais 2026-06-24): the subscribe line moves EARLIER to 「実際に動かす（手順と、起きたこと）」—
+  specifically before「Automatonをゼロから動かす手順を、実際に出た結果とともに記録します。同じコマンドをそのまま
+  なぞれば再現できます。」 → from there down = paid. Free = [0]–[4] + the 実際に動かす heading + that intro line.

@@ -347,6 +347,20 @@ everybody" is the deciding constraint.
     (LIFE_CALL_DIR=…); ⑤ `openclaw cron list` shows lm-wake/travel/ask; ⑥ start voice daemon
     (LIFE_RUN_LOOPS=false node server.js, launchd/2nd service) + point Telnyx /ws at it; ⑦ controlled
     test-user E2E (real [Travel] + real call); ⑧ switch all users (cron on ⇄ Railway loops off) — single writer.
+    ★ FIX FROM SEARCH (2026-06-24, docs.openclaw.ai/gateway/{security,configuration}): the dev-gateway auth
+    block = a CREDENTIAL MISMATCH, not a flaw. Gateway-connection auth = `gateway.auth.token`
+    (env `OPENCLAW_GATEWAY_TOKEN`) or `gateway.auth.password` (env `OPENCLAW_GATEWAY_PASSWORD`); the CLI must
+    present the MATCHING `gateway.remote.token`/`gateway.remote.password`. FIX = set ONE env
+    `OPENCLAW_GATEWAY_TOKEN=<secret>` on BOTH the gateway process AND the CLI (same process/container) → a
+    loopback backend client is a trusted control-plane caller → `openclaw cron create` works. My dev attempt
+    mismatched (started --password but config gateway.auth empty; set remote.password but gateway wanted token).
+    ★ SIMPLER DEPLOY (CO-LOCATE, not image-bake): run openclaw INSIDE the existing apps/life-call Railway
+    service — it ALREADY has the code + env keys (GEMINI/MAPS/COMPOSIO/SUPABASE) + Telnyx wiring. Steps: in
+    that container `npm i openclaw`, set `OPENCLAW_GATEWAY_TOKEN`, start the gateway, `register-crons.sh`
+    (LIFE_CALL_DIR=this dir), and run `LIFE_RUN_LOOPS=false node server.js` as the voice daemon. ONE service =
+    openclaw cron scheduler + node voice daemon, loopback auth, code+keys+Telnyx already present. No separate
+    gateway image, no baking apps/life-call into the openclaw template. (OpenClaw LLM provider NOT needed yet —
+    cron-COMMAND is deterministic node; voice is Gemini Live's own key. Agent/model = PHASE C+/V4.)
 - V2 ☐ memory (RE-DECIDED 2026-06-24 = SUPABASE per-user, for shared multi-tenant): `lm_user_places` table
   + `recall_place`/`save_place` tools the agent calls (model decides when; no regex). Exact per-uid SQL recall =
   native multi-tenant, cheap, no vector-pause risk. NOT OpenClaw native MEMORY.md (per-agent, can't isolate
@@ -359,6 +373,28 @@ everybody" is the deciding constraint.
 - V7 ☐ harness-portability (after OpenClaw works): Hermes / Claude Code adapters — incremental.
 LEGACY post-launch items folded in: #77 (local converge → now V1 local skills), #29 (STEP2 web dogfood),
 #72 (OpenClaw unify → now V1), #70 DROPPED.
+
+## LAUNCH SEQUENCE — explicit order (Dais 2026-06-24), do top→bottom
+After PHASE B (OpenClaw cutover) + PHASE C (3 cases incl. memory verified):
+- D-1 ☐ END-TO-END TEST on BOTH channels + frictionless entry:
+  - web /lm (Google→cal+gmail→phone→pay→dashboard) full E2E, real user, no-mock.
+  - Telegram bot full E2E (/start → guided name/cal/gmail/phone/pay → wake call + ask).
+  - QR code on aniccaai.com/life-manager (D8): scan → t.me/LifeManagerBotbot?start=src → onboarding. "easy go."
+- D-2 ☐ SELL ON CAPAFY (lite Leave-Time Planner) with the BEST setup: clone-winner pricing (3-tier sub),
+  emoji-headed detailedDescription, welcomeMsg, examples; CTA → web app for the full autonomous product.
+- D-3 ☐ CONTENT CRONS (TikTok + YouTube): from real call recordings → reel → post. ★ idempotent ledger: if a
+  given clip/day has NO post-log row → post; if it HAS one → SKIP (no redundant re-posting). ★ Add YouTube
+  alongside TikTok. Verify posted.jsonl reaches PUBLISHED (Postiz state), not just a post_id.
+- D-4 ☐ PRODUCT HUNT launch SCHEDULE (Tue/Wed/Thu 12:01 AM PST) — draft launch-ready; needs Dais go + date.
+- D-5 ☐ ARTICLES (build-in-public), JP + EN each, on: X (articles), Zenn, Note, Substack, Dev.to. Via
+  ai-entity-article-writer + stop-ai-slop; structural_principle (no verbatim hook); publish + verify live URL.
+- D-6 ☐ post-launch: directory submissions (AI citations), PH follow-up, churn-prevention.
+
+## PHASE E — SELF-IMPROVEMENT + deeper support (Dais 2026-06-24) — after launch, makes it BETTER over time
+- E-1 ☐ self-improve from USER BEHAVIOR: the agent tunes WHEN to call + WHAT to say + buffer per user, learned
+  from their responses/history (did they answer? get up? leave on time?). Memory = Supabase per-user.
+- E-2 ☐ proactive support: books good-for-you events (dentist, meetups) per liking + memory; other life support.
+- E-3 ☐ → merges into V4 (self-improvement) / V6 (Anicca merge) of PHASE 8.
 
 ---
 
