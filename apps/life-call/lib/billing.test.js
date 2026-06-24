@@ -81,9 +81,10 @@ test("unclaimEvent: DELETE → true; failure → false (caller logs RECONCILE)",
 function fakeSupa(storedRow) {
   const patches = [];
   const f = async (url, opts) => {
-    if ((opts == null || opts.method == null) && url.includes("lm_users?stripe_customer_id=eq."))
+    const method = opts && opts.method;
+    if (!method && url.includes("select=")) // a GET lookup (userByCustomer or userByUid)
       return { ok: true, json: async () => (storedRow ? [storedRow] : []) };
-    if (opts && opts.method === "PATCH" && url.includes("lm_users?uid=eq.")) {
+    if (method === "PATCH" && url.includes("lm_users?uid=eq.")) {
       patches.push({ url, body: JSON.parse(opts.body) }); return { status: 204 };
     }
     return { ok: false, status: 404, json: async () => [] };
@@ -107,6 +108,23 @@ test("applyBilling checkout UNPAID → link only, paid=false (FIND-003)", async 
     data: { object: { client_reference_id: "u1", customer: "cus", subscription: "sub", payment_status: "unpaid" } } }, deps(s));
   assert.strictEqual(r.action, "link-unpaid");
   assert.strictEqual(s.patches[0].body.paid, false);
+});
+test("FIND-007: out-of-order UNPAID checkout (older created) does NOT clobber an active payer", async () => {
+  // a subscription.active was already applied at created=200 (paid=true); a LATE unpaid checkout (created=100)
+  // must be stale → NO write → the active payer keeps paid=true and stripe_event_at is not regressed.
+  const row = { uid: "u1", paid: true, stripe_event_at: new Date(200 * 1000).toISOString() };
+  const s = fakeSupa(row);
+  const r = await applyBilling({ id: "e", type: "checkout.session.completed", created: 100,
+    data: { object: { client_reference_id: "u1", customer: "cus", payment_status: "unpaid" } } }, deps(s));
+  assert.strictEqual(r.action, "stale-checkout");
+  assert.strictEqual(s.patches.length, 0, "no write — active payer not downgraded, timestamp not regressed");
+});
+test("FIND-007: a FRESH checkout (no prior event) still provisions (first event never stale)", async () => {
+  const s = fakeSupa(null);
+  const r = await applyBilling({ id: "e", type: "checkout.session.completed", created: 100,
+    data: { object: { client_reference_id: "u1", customer: "cus", subscription: "sub", payment_status: "paid" } } }, deps(s));
+  assert.strictEqual(r.action, "provision");
+  assert.strictEqual(s.patches[0].body.paid, true);
 });
 test("applyBilling subscription active → provision; canceled → deprovision", async () => {
   const row = { uid: "u1", stripe_event_at: new Date(50 * 1000).toISOString() };

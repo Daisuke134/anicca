@@ -118,6 +118,22 @@ async function userByCustomer(customerId, supaUrl, supaKey, fetchImpl) {
   return Array.isArray(d) && d[0] ? d[0] : null;
 }
 
+// userByUid(uid) → the stored lm_users row (billing cols incl. stripe_event_at) or null. Used by the
+// checkout branch (keyed by uid via client_reference_id) for the same staleness guard the subscription
+// branch uses (FIND-007).
+async function userByUid(uid, supaUrl, supaKey, fetchImpl) {
+  const f = fetchImpl || fetch;
+  if (!supaUrl || !supaKey || !uid) return null;
+  const cols = "uid,stripe_subscription_id,current_period_end,stripe_event_at,plan_status,paid";
+  const r = await f(
+    `${supaUrl}/rest/v1/lm_users?uid=eq.${encodeURIComponent(uid)}&select=${cols}`,
+    { headers: hdr(supaKey) },
+  ).catch(() => null);
+  if (!r || !r.ok) return null;
+  const d = await r.json().catch(() => []);
+  return Array.isArray(d) && d[0] ? d[0] : null;
+}
+
 // patchUser: write the billing patch onto lm_users by a PostgREST filter.
 async function patchUser(filter, patch, supaUrl, supaKey, fetchImpl) {
   const f = fetchImpl || fetch;
@@ -142,6 +158,10 @@ async function applyBilling(event, deps) {
 
   if (p.kind === "checkout") {
     if (!p.uid) return { action: "orphan-checkout" };
+    // FIND-007: guard the checkout branch by event.created too (same as subscription) — a late/out-of-order
+    // checkout must NOT clobber a fresher applied state (downgrade an active payer, or regress stripe_event_at).
+    const row = await userByUid(p.uid, supaUrl, supaKey, fetchImpl);
+    if (isStale(p.created, row)) return { action: "stale-checkout", uid: p.uid };
     // FIND-003: only provision when the session is actually paid. An 'unpaid' checkout links the customer
     // but must NOT grant access — the subsequent subscription.* event sets the real status.
     const paid = p.paymentStatus === "paid" || p.paymentStatus === "no_payment_required";
@@ -190,6 +210,7 @@ module.exports = {
   claimEvent,
   unclaimEvent,
   userByCustomer,
+  userByUid,
   patchUser,
   applyBilling,
 };
