@@ -318,7 +318,14 @@ everybody" is the deciding constraint.
     wrappers requiring scheduler.js one-shot exports tick/travelTick/askTickAll; right-altitude SKILL.md, no
     regex). GREEN 19/19 + regression. Adversary r1 FAIL (test-coverage) → fix → adversary r2 = OVERALL PASS
     (all 5 dims). Railway Node UNTOUCHED (git diff: only package.json + new skill dir). → ready to merge.
-  - B2 ☐ register 3 cron-COMMAND jobs (`openclaw cron create` */1 tick, */30 travel, */20 ask).
+  - B2 ✅ DONE 2026-06-24 — cron-COMMAND registration artifacts: crons.json (3 jobs */1 tick/*/30 travel/
+    */20 ask) + build-commands.js (tested round-trip generator) + register-crons.sh (idempotent, errexit) +
+    27 tests. VCSDD r1/r2/r3: adversary caught a REAL coexistence RACE (FIND-005 — only wake is atomic via
+    lm_wake_log unique(uid,event_key); travel/ask dedup is in-memory read-then-write) → SINGLE-WRITER cutover
+    is a SAFETY requirement (B4 = SWITCH, disable Railway loops as you enable cron). Verified --command-argv
+    in openclaw@latest 2026.6.10 (local 2026.6.1 lacks it). LIVE registration = B4. Merged PR #215.
+    NEW follow-up → **C-H1 ☐ harden: give [Travel] + lm_ask_log ATOMIC unique constraints (like lm_wake_log)
+    so travel/ask become race-safe too** (migration + future safety). [from B2 adversary FIND-005]
   - B3 ☐ voice daemon (server.js minus start*Loop, launchd KeepAlive / 2nd Railway service) → /test-call verify.
   - B4 ☐ ONE SHARED gateway (Railway hosting VERIFIED LIVE — openclaw-lm-pilot 401) serving ALL lm_users rows
     (NOT 1 instance/tenant) → pilot E2E (≥2 users) → flip from the Railway Node app.
