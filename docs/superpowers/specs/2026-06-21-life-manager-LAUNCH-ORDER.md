@@ -304,7 +304,14 @@ HONEST CAVEAT: this is reliable while the alias set fits the context budget (doz
 user accumulates hundreds of places we revisit a structured store (Supabase lm_user_places) for SQL-exact
 lookup. For launch: native memory, zero new tools. This only works AFTER the OpenClaw transition (native
 memory is an OpenClaw feature; today's Railway Node app has none) — hence transition-first above.
-- V1 ☐ port: skills/life-manager (SKILL.md + scripts/{tick,travel,ask}.mjs require existing exports); 3 cron-COMMAND jobs; voice = launchd KeepAlive daemon. Keep Railway live (zero downtime). Pilot 1 user E2E → flip.
+- V1 (port) — IN PROGRESS 2026-06-24:
+  - B1 ◑ skill scaffold `apps/life-call/skill-life-manager/` (SKILL.md + scripts/{tick,travel,ask}.js = thin
+    wrappers requiring scheduler.js one-shot exports tick/travelTick/askTickAll; right-altitude SKILL.md, no
+    regex). GREEN 13/13 new + 57/57 regression. Adversary r1 = wiring CORRECT but FAIL on test-coverage
+    (crossed-wiring + auto-run guard not asserted, not in npm test) → fix loop running. Railway Node UNTOUCHED.
+  - B2 ☐ register 3 cron-COMMAND jobs (`openclaw cron create` */1 tick, */30 travel, */20 ask).
+  - B3 ☐ voice daemon (server.js minus start*Loop, launchd KeepAlive / 2nd Railway service) → /test-call verify.
+  - B4 ☐ 1 instance/tenant (Railway hosting VERIFIED LIVE — openclaw-lm-pilot 401) → pilot 1-user E2E → flip.
 - V2 ☐ memory (REVISED 2026-06-24 = OpenClaw NATIVE first): place aliases + prefs → OpenClaw MEMORY.md
   (auto-injected at session start → reliable exact recall for dozens of aliases, no new tools). Per-tenant
   scoping is clean because we run 1 OpenClaw instance per subscriber. Upgrade to a structured Supabase
