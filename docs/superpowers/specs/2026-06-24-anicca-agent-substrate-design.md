@@ -107,6 +107,49 @@ ORCHESTRATOR agent (self-improving: per-user memory → when to call / what to s
 3 deployments (LOCAL BYOK / CLOUD managed / CAPAFY) = SAME agents; diff = adapter + key-holder.
 ```
 
+## OpenClaw PORT PLAN — concrete, low-cost (researched 2026-06-24, ctx7+firecrawl + live ~/.openclaw)
+KEY: the code is ALREADY ~80% portable. `lib/transport/index.js` switches `LIFE_TRANSPORT=composio|gog`
+= the BYOK(local)/managed(cloud) split ALREADY EXISTS. Do NOT rewrite geometry or voice — WRAP them.
+
+Each piece → OpenClaw home (reuse vs rewrite):
+| current | OpenClaw home | reuse? | effort |
+|---|---|---|---|
+| scheduler 60s wake tick | cron COMMAND `*/1` → `node scripts/tick.mjs` (require existing exports) | reuse logic, ~30-line entry | S |
+| travel loop 30m | cron COMMAND `*/30` → fillTravel (already exported) | reuse | XS |
+| ask loop 20m | cron COMMAND `*/20` → askTickAll | reuse | XS |
+| lib/travel.js (geometry+gcal) | called by travel cron entry, unchanged | reuse 100% | none |
+| lib/ask.js (Gemini+places agent loop) | called by ask cron entry, unchanged | reuse 100% | none |
+| server.js voice /ws (Telnyx⇄Gemini Live) | launchd/systemd KeepAlive daemon (NOT cron — always-on; precedent: ai.anicca.pipecat-phone) minus the start*Loop() calls | reuse, split loops out | S |
+| lib/transport/* (composio|gog) | unchanged — LIFE_TRANSPORT env = the cloud/local switch | reuse 100% | none |
+| Telegram bot + /telegram webhook | OpenClaw native telegram channel + agent; reuse reply/onboard FUNCTIONS, drop webhook plumbing | reuse fns | M |
+| Supabase / Stripe | unchanged (env keys) | reuse | none |
+
+DECISION: **cron-COMMAND wins for the 3 loops** (deterministic node on the gateway host, ZERO model spend
+= 1:1 with today's setInterval). MCP-wrap is MORE work — reserve it ONLY for tools the chat agent calls
+mid-conversation (e.g. "resolve this location now" on a Telegram reply). For scheduled work, cron-COMMAND.
+BYOK vs managed = config only: transport env + `agents.defaults.model` / per-agent auth profile. Voice stays
+pinned to Gemini Live (Charon) regardless (a Telnyx/Gemini key, not the agent's chat model).
+
+HOSTING: paid privacy → 1 instance per tenant (ClawHost dedicated VPS, or Railway-per-tenant); voice bridge
+rides as a KeepAlive daemon on the same host (cloud → zero local-disk pressure). OpenClaw native multi-agent
+(shared gateway, agents.list[]) is cheapest but softer isolation ("true isolation = one agent per person").
+CAPAFY = the SAME skill dir via capafy-publisher (run_online + subscription); only listing metadata differs.
+
+ORDER (keep apps/life-call LIVE while porting — zero downtime):
+1. keep Railway running. 2. build skills/life-manager/ (SKILL.md + scripts/{tick,travel,ask}.mjs = ~30-line
+require()s, no lib changes). 3. register 3 cron COMMAND jobs (via `openclaw cron create`, NOT hand-edit
+jobs.json — cron now in SQLite; doctor --fix reverts manual edits) against a tenant filter so no double-dial.
+4. voice daemon as launchd KeepAlive (server.js minus loops) → verify one /test-call. 5. cut ONE pilot user
+to OpenClaw, verify wake+travel+ask+voice E2E. 6. flip remaining users, disable Railway scheduler (keep
+Railway voice as fallback one release). 7. wrap for Capafy from the same skill dir; add MCP later only for
+on-demand chat tools. Honest: OpenClaw has no native always-on web service (voice = daemon); Railway template
+is community (arjunkomath/openclaw-railway-template); ctx7 hit quota → OpenClaw claims cross-checked vs live
+~/.openclaw/openclaw.json.
+
+SEQUENCING vs edge-cases: the edge-case fixes (memory tools + REQ-15) live in lib/ask.js + lib/travel.js —
+the EXACT libs the port reuses 100%. So FIX EDGE CASES FIRST (Phase 0), then port (Phase 2 V1) so the port
+inherits a working LM and we don't port a half-working product.
+
 ## Migration path (don't break the launch)
 - Phase 0 (now): apps/life-call (cloud) keeps running — it earns; launch proceeds.
 - Phase 1: define OpenClaw agent topology (orchestrator + 5 subagents via agents.list[] + sessions_spawn);
