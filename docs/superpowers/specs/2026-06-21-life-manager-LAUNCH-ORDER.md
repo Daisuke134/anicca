@@ -1,19 +1,28 @@
 # Life Manager — LAUNCH EXECUTION ORDER (do top→bottom, ONE at a time)
 
-## ★ REMAINING — DO IN THIS ORDER (updated 2026-06-24) ★
-1. ✅ hosting verified · ✅ PHASE A (REQ-15) · ✅ B1 scaffold · ✅ B2 cron-reg · ✅ B3 voice-daemon-gate
-2. ◑ **B4** — OpenClaw LIVE cutover, CO-LOCATED in apps/life-call (auth fix = OPENCLAW_GATEWAY_TOKEN both
-   sides). register crons + voice daemon + controlled test-user real-call E2E + single-writer switch.  ← NOW
-3. ☐ **C-H1** — atomic unique constraints on [Travel] + lm_ask_log (race hardening).
-4. ☐ **PHASE C** — realize+VERIFY the 3 location cases on OpenClaw (C1 filled / C2 online / C3 ask→remember)
+## ★ REMAINING — DO IN THIS ORDER (updated 2026-06-24 — OpenClaw migration DROPPED, bespoke pooled + Inngest) ★
+ARCHITECTURE LOCKED (research + hands-on, `docs/reference/agentic-saas-architecture.md`): BESPOKE POOLED
+multi-tenant app (apps/life-call, the proven pattern — same as Viktor/Sierra/Lindy) + agent loop =
+`@openai/agents` (already a dep) + durable scheduler = ★ Inngest (VERIFIED hands-on 2026-06-24: cron sweeper
++ fan-out + per-user concurrency all ran) ★ + memory = mem0ai/Supabase + Stripe webhooks + hand-rolled
+Telnyx⇄Gemini-Live voice. OpenClaw = Dais's PERSONAL/OSS-local only (NOT the product). B1-B3 artifacts kept
+as the OSS path.
+1. ✅ hosting verified · ✅ PHASE A (REQ-15) · ✅ B1/B2/B3 (now OSS-path artifacts) · ✅ architecture research+verify
+2. ☐ **HARD-1 (C-H1)** — atomic unique constraints on [Travel] + lm_ask_log (race; wake already atomic).  ← NOW
+3. ☐ **HARD-2** — adopt Inngest: replace apps/life-call setInterval with a cron sweeper → fan-out → per-user
+   concurrency; make the per-user decision an `@openai/agents` loop; memory via mem0ai.
+4. ☐ **HARD-3** — Stripe lifecycle = billing source of truth (checkout→provision / past_due→suspend /
+   canceled→deprovision; Entitlements; idempotent webhooks; dunning ON).
+5. ☐ **HARD-4** — per-tenant isolation review (per-user tokens/secrets; one tenant's failure can't break others).
+6. ☐ **PHASE C** — realize+VERIFY the 3 location cases (C1 filled / C2 online / C3 ask→remember via mem0/Supabase)
    + C4 determinism · C5 routines · C6 autonomous witness · C7 EN/JA · C8 ask-reply E2E · C9 YouTube.
-5. ☐ **D-1** end-to-end test web /lm + Telegram bot + QR on /life-manager (easy go).
-6. ☐ **D-2** sell on Capafy (lite Leave-Time Planner, best pricing/copy, CTA → web app).
-7. ☐ **D-3** content crons TikTok + YouTube (idempotent: no log → post, has log → skip; verify PUBLISHED).
-8. ☐ **D-4** Product Hunt launch schedule (Tue/Wed/Thu 12:01 AM PST; Dais go + date).
-9. ☐ **D-5** articles JP+EN on X / Zenn / Note / Substack / Dev.to (verify live URLs).
-10. ☐ **D-6** post-launch: directory submissions, PH follow-up, churn-prevention.
-11. ☐ **PHASE E** — self-improve from user behavior + proactive booking + deeper support → merge into Anicca.
+7. ☐ **D-1** end-to-end test web /lm + Telegram bot + QR on /life-manager (easy go).
+8. ☐ **D-2** sell on Capafy (lite Leave-Time Planner, best pricing/copy, CTA → web app).
+9. ☐ **D-3** content crons TikTok + YouTube (idempotent: no log → post, has log → skip; verify PUBLISHED).
+10. ☐ **D-4** Product Hunt launch schedule (Tue/Wed/Thu 12:01 AM PST; Dais go + date).
+11. ☐ **D-5** articles JP+EN on X / Zenn / Note / Substack / Dev.to (verify live URLs).
+12. ☐ **D-6** post-launch: directory submissions, PH follow-up, churn-prevention.
+13. ☐ **PHASE E** — self-improve from user behavior + proactive booking + deeper support → merge into Anicca.
 (Full detail for each = the PHASE sections below.)
 
 ## 🚨 P0 EMERGENCY (2026-06-23) — STATUS

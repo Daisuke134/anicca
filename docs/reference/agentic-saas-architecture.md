@@ -77,6 +77,23 @@ normal multi-tenant app whose decision points are LLM-tool-loop calls ALREADY IS
     no scheduler-conveniences nor agent loop), LangGraph/CrewAI/Pydantic/Agno (Python = migration tax; Letta
     only as an optional memory sidecar). No "agent SaaS starter" repo worth forking (matches are 0–7★ solo).
 
+### 4b. Inngest — VERIFIED HANDS-ON 2026-06-24 (downloaded + ran, not README)
+Installed `inngest` + `express` in a scratch app, ran the Inngest dev server, and proved the EXACT pattern
+we need: a `* * * * *` cron sweeper fired automatically → `step.sendEvent` fan-out 3 events → 3 per-user
+`wake-user` jobs executed → and the per-user `concurrency: { key: "event.data.userId", limit: 1 }`
+SERIALIZED the same user's two jobs (u1 Dentist @.224 then u1 Lunch @.369, ~145ms apart) while a different
+user (u2 @.227) ran in parallel = no double-call per user / noisy-neighbor fairness. Durable `step.run` ran.
+GOTCHAS found by actually running it (the docs/research were slightly stale):
+- ★ The installed-version API is `createFunction({ id, triggers: [{ event }|{ cron }], concurrency }, handler)`
+  — 2 args, TRIGGERS IN THE FIRST CONFIG OBJECT. The 3-arg form `createFunction({id}, {event}, handler)` in
+  older docs CRASHES ("Triggers belong in the first argument"). Use the 2-arg form. ★
+- The local dev server only SYNCS the app when the SDK runs in dev mode → set `INNGEST_DEV=1` (else the
+  endpoint returns `internal_server_error` and `functions: []`). In prod you use INNGEST_SIGNING_KEY/EVENT_KEY.
+Verdict: Inngest delivers the cron-sweeper + fan-out + per-user-concurrency claims as a library on our
+Express/Node stack. inngest/inngest ⭐5522 (pushed daily). Alternatives confirmed: cloudflare/agents ⭐5163
+(elegant DO-per-user but a Workers-runtime migration), trigger.dev ⭐15461 (great scheduler, no agent loop).
+ADOPT Inngest.
+
 ## 5. Voice bridge (Telnyx + Gemini-Live)
 HAND-ROLL the WS bridge in Node (~few hundred lines). Hard parts already documented in
 `~/.claude/rules/building-voice-agents.md`: `stream_bidirectional_mode:"rtp"`, μ-law 24k↔8k resample,
