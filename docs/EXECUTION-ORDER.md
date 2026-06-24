@@ -73,7 +73,18 @@ P2. **Other JP platforms** each with their monetization: Zenn(投げ銭/バッ�
     X Article(有料購読) → TikTok image (hook → link to the paid note).
 D.  **EN**: translate → dev.to → X Article → Substack(EN) (paid).
 L.  Cloud 3体 (Akash) → verify launch-copy claims TRUE → LAUNCH post.
-F.  Automate: Claude Code Routine = write+publish+monetize daily, no human.
+F.  AUTOMATE (design locked 2026-06-24): an LLM is required end-to-end (writing AND the pre-post visual verify),
+    so automation = a LOCAL `claude -p` AGENT (Agent SDK headless, --allowedTools Read,Bash,Write,Edit), fired by
+    **launchd** (~/Library/LaunchAgents/ai.anicca.note-publish.plist, same pattern as the live ai.anicca.* jobs).
+    Must be LOCAL (cloud Routines can't reach the daily-driver browser). The agent loop:
+      ① write (ai-entity-article-writer) → ② publish-to-note.sh <md> --draft (render+imgs+eyecatch+目次+paywall+
+      membership, STOP before public) → ③ VERIFY by VISION: screenshot the draft as a logged-out visitor + Read it
+      (eyecatch shown? 目次=big titles only? imgs not crushed? [6]+ gated? headings intact?) + note API
+      (can_read=false, eyecatch set) → ④ PASS → publish-to-note.sh --go ; FAIL → fix & re-verify or Telegram →
+      ⑤ Telegram the live URL + screenshot. publish-to-note.sh = deterministic hands (--draft/--go split);
+      claude -p = the eyes+brain (writing + the visual pre-post gate). Same shape per platform (publish-to-<x>.sh).
+    BUILD ORDER: F1 publish-to-note.sh (--draft/--go, idempotent, guards) → F2 the claude -p agent prompt + verify
+    checklist → F3 launchd plist (daily) → F4 generalize to Zenn/Substack/X.
 
 MONEY MODEL (note, researched 2026-06-23): 有料記事(単発) + メンバーシップ(月額=MRR, 手数料10%, 初期0) +
 定期購読マガジン(手数料20%). Funnel = free useful articles → followers → membership(recurring) + paid premium.
