@@ -112,3 +112,5 @@ Same shape on Substack(paid sub) and X(有料購読). MONEY TRUTH: realised so f
 
 AUTONOMY: earn actions done by anicca ITSELF (buffer + close-in-profit in runtime/loop/prompt.mjs + earn-detect.mjs).
 I (Claude, type-2) only FIX the system + MONITOR + write/publish the article.
+
+- F1e ☑ NOTE E2E-as-DRAFT VERIFIED 2026-06-24: parameterized (NOTE_KEY/NUM/SRC) → fresh draft create_draft→rebuild(29 imgs+10 headings render clean)→目次, screenshot-verified, deleted (no prod). eyecatch+membership+paywall=publish-time (gate-blocked in draft, proven on live).
