@@ -132,12 +132,25 @@ async function wakeUserOnce(u, nowMs) {
   }
 }
 
+// forEachUserSafe: process each tenant in ISOLATION (HARD-4). A throw/rejection while handling one user is
+// caught + logged per-uid so it NEVER prevents the remaining tenants from being processed this tick. This
+// mirrors the production Inngest model (each user is a separate function run); it hardens the in-process
+// (LIFE_RUN_LOOPS) path to the same one-tenant-failure-can't-break-others guarantee.
+async function forEachUserSafe(users, label, fn) {
+  for (const u of (users || [])) {
+    try {
+      await fn(u);
+    } catch (e) {
+      const uid = (u && u.uid ? String(u.uid) : "?").slice(0, 12);
+      console.error(`[${label}] uid=${uid} err ${e && e.message}`);
+    }
+  }
+}
+
 async function tick() {
   const users = await supaUsers();
   const now = Date.now();
-  for (const u of users) {
-    await wakeUserOnce(u, now);
-  }
+  await forEachUserSafe(users, "scheduler", (u) => wakeUserOnce(u, now));
 }
 
 function startScheduler() {
@@ -172,9 +185,7 @@ async function travelTick() {
   const mapsKey = process.env.LIFE_MAPS_KEY || process.env.GOOGLE_API_KEY;
   if (!apiKey || !mapsKey) return;
   const users = await supaUsers();
-  for (const u of users) {
-    await travelUserOnce(u);
-  }
+  await forEachUserSafe(users, "travel", travelUserOnce);
 }
 function startTravelLoop() {
   console.log(`[travel] started — every ${TRAVEL_TICK_MS / 60000}min, horizon 7d`);
@@ -229,9 +240,7 @@ async function askTickAll() {
   const geminiKey = process.env.GEMINI_API_KEY;
   if (!composioKey || !supaUrl || !geminiKey) return;
   const users = await supaUsers();
-  for (const u of users) {
-    await askUserOnce(u);
-  }
+  await forEachUserSafe(users, "ask", askUserOnce);
 }
 function startAskLoop() {
   console.log(`[ask] started — every ${ASK_TICK_MS / 60000}min`);
@@ -282,6 +291,8 @@ module.exports = {
   tick, travelTick, askTickAll, onboardTick,
   // per-user single-invocation functions (for Inngest fan-out + testing)
   wakeUserOnce, travelUserOnce, askUserOnce,
+  // per-tenant isolation wrapper (HARD-4): one tenant's failure can't break the others' tick
+  forEachUserSafe,
   // paid-user listing (for Inngest sweep fan-out)
   listPaidUsers,
   // per-uid re-fetch for Inngest per-user functions (PII: sweepers send only uid)
