@@ -244,9 +244,30 @@ for creating launches** → the browser (CloakBrowser daily-driver) is the only 
 23. ☐ **G5 — Retention = the moat**: the product genuinely changes behavior (late → early → trusted), so churn is
     low AND every paying user becomes a visible testimonial (referral). Track churn (churn-prevention skill).
 
-### POST-LAUNCH (engineering)
-24. ☐ **#77** — slice5 local converge (same node app w/ LIFE_TRANSPORT=gog; needs Dais's Mac real call).
-25. ☐ **#29** — STEP2 (Dais dogfoods on web). · **#72** OpenClaw unify. · **#70** DROPPED (not now).
+### PHASE 8 — LIFE MANAGER = A FULL OPENCLAW AGENT (vNext; Dais 2026-06-24). Substrate spec = `2026-06-24-anicca-agent-substrate-design.md`.
+DIRECTION: stop being "a Node script that calls Gemini at a few points." Become ONE autonomous agent
+(single augmented agent + tools, BP single-agent-first) on OpenClaw, so it's the SAME thing as Anicca
+(Anicca is an agent) and the eventual merge is seamless. FOCUS = CLOUD (web app + Capafy) = where the
+10k MRR is. LOCAL/OSS = minimal effort (skills to install on your own OpenClaw, BYOK; makes no money).
+THE 3 FORMS:
+- LOCAL = a set of OpenClaw SKILLS the user installs on their own OpenClaw (BYOK). Minimal effort.
+- WEB APP = we host a COMPLETE OpenClaw agent on the cloud, one instance per subscriber ($20/mo Stripe). ★ main focus ★
+- CAPAFY = ship the SAME skill to the Capafy marketplace (run_online + subscription). ★ main focus ★
+  (OPEN: does an always-on Telnyx/Gemini-Live voice bridge fit a Capafy run_online skill, or is Capafy
+  the brain + a voice endpoint WE host? → being researched; record answer here.)
+SEQUENCING (decided): FINISH Phase 0 edge-case verification FIRST, THEN port. The edge-case fixes
+(memory tools + REQ-15) live in lib/ask.js + lib/travel.js — the EXACT libs the port reuses 100% — so
+fixing first means the port inherits a WORKING agent (no rework). Same code IS reused: the loops become
+cron-COMMAND jobs, the geometry/voice are wrapped not rewritten (see substrate spec port table).
+- V1 ☐ port: skills/life-manager (SKILL.md + scripts/{tick,travel,ask}.mjs require existing exports); 3 cron-COMMAND jobs; voice = launchd KeepAlive daemon. Keep Railway live (zero downtime). Pilot 1 user E2E → flip.
+- V2 ☐ memory: per-user place/preference memory so the agent never re-asks a learned location (OpenClaw native memory vs Supabase lm_user_places — decide from research).
+- V3 ☐ omni-channel: LINE / WhatsApp / Discord / iMessage onboarding (OpenClaw native channels) — seamless add.
+- V4 ☐ self-improvement: agent tunes WHEN to call + WHAT to say + proactively books good events per user memory.
+- V5 ☐ earn loop (later): wallet/x402; eventually self-funds compute (no monthly fee).
+- V6 ☐ MERGE with Anicca: drop /life-manager; one repo, one agent.
+- V7 ☐ harness-portability (after OpenClaw works): Hermes / Claude Code adapters — incremental.
+LEGACY post-launch items folded in: #77 (local converge → now V1 local skills), #29 (STEP2 web dogfood),
+#72 (OpenClaw unify → now V1), #70 DROPPED.
 
 ---
 
