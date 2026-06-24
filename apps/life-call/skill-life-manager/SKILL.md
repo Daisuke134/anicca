@@ -61,5 +61,11 @@ pulls these from `process.env` internally.
 - **This skill** (`skill-life-manager/scripts/`) — thin cron entrypoints only. No logic lives
   here; everything is delegated to `scheduler.js`.
 
-The Railway Node app (`server.js` + `scheduler.js`) stays untouched and live. This skill wraps
-it; both can coexist.
+The Railway Node app (`server.js` + `scheduler.js`) keeps running until the B4 cutover. SINGLE-WRITER is
+a SAFETY requirement: only WAKE is race-safe (atomic `lm_wake_log` unique(uid,event_key) -> 409 at
+`scheduler.js:53-64`). TRAVEL and ASK dedup is an in-memory read-then-write (the `[Travel]` scan in
+`lib/travel.js` and the `lm_ask_log` SELECT-then-POST in `lib/ask.js`) with NO atomic unique constraint,
+so running the Railway loops AND these cron jobs at the same time can double-insert a `[Travel]` block or
+double-ask. Therefore B4 is a SWITCH: disable the Railway scheduler loops (startScheduler + startTravelLoop/startAskLoop/startOnboardLoop) as you enable these cron
+jobs — never two writers at once. (Follow-up hardening C-H1: give `[Travel]` + `lm_ask_log` atomic unique
+constraints so they become race-safe like wake.)

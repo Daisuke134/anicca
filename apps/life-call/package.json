@@ -6,10 +6,12 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "node test/scheduler.test.js && node --test skill-life-manager/scripts/scaffold.test.js"
+    "test": "node test/scheduler.test.js && node --test skill-life-manager/scripts/scaffold.test.js && node --test skill-life-manager/openclaw/crons.test.js"
   },
   "dependencies": {
     "ws": "^8.18.0"
   },
-  "engines": { "node": ">=18" }
+  "engines": {
+    "node": ">=18"
+  }
 }
