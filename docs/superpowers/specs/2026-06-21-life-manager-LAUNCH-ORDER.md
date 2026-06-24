@@ -15,29 +15,26 @@ as the OSS path.
    canceled→deprovision; Entitlements; idempotent webhooks; dunning ON).
 5. ☐ **HARD-4** — per-tenant isolation review (per-user tokens/secrets; one tenant's failure can't break others).
 6. ☐ **PHASE C** — realize+VERIFY the 3 location cases (C1 filled / C2 online / C3 ask→remember via mem0/Supabase)
-   + C4 determinism · C5 routines · C6 autonomous witness · C7 EN/JA · C8 ask-reply E2E · C9 YouTube.
+   + C4 determinism · C5 routines (=#100b-a: Running/Sleep/Day-job → no-travel, never ask "where is your run")
+   · C6 autonomous witness (=#100b-b: WITNESS the DEPLOYED cron autofill, not a manual node run) · C7 EN/JA
+   · C8 ask-reply E2E · C9 YouTube wiring (folded into D-3 / #99b).
 7. ☐ **D-1** end-to-end test web /lm + Telegram bot + QR on /life-manager (easy go).
 8. ☐ **D-2** sell on Capafy (lite Leave-Time Planner, best pricing/copy, CTA → web app).
-9. ☐ **D-3** content crons TikTok + YouTube (idempotent: no log → post, has log → skip; verify PUBLISHED).
+9. ☐ **D-3** content crons TikTok + YouTube (= #99b). TODAY: `life-manager-video` skill stores wake-call
+   recordings every 2h → builds a 1080×1920 reel → `post-daily.sh` posts to @anicca.comedy TikTok 2×/day
+   (~9:30/21:00 JST) via Postiz, in WARMUP (content_posting_method=UPLOAD = TikTok drafts/inbox; `anicca-
+   warmup-flip-daily` 6:30 flips to DIRECT_POST at day 7). ADD YouTube: a NEW `youtube-poster` skill via
+   CloakBrowser daily-driver (logged-in, $0 — no Postiz/API) uploading the daily Short, with its OWN warmup
+   (unlisted first ~7-10 days → public). Idempotent ledger (no log → post, has log → skip) across both.
+   VERIFY posted.jsonl reaches PUBLISHED (not just a post_id). YT channel = confirm via daily-driver browser.
 10. ☐ **D-4** Product Hunt launch schedule (Tue/Wed/Thu 12:01 AM PST; Dais go + date).
 11. ☐ **D-5** articles JP+EN on X / Zenn / Note / Substack / Dev.to (verify live URLs).
 12. ☐ **D-6** post-launch: directory submissions, PH follow-up, churn-prevention.
 13. ☐ **PHASE E** — self-improve from user behavior + proactive booking + deeper support → merge into Anicca.
 (Full detail for each = the PHASE sections below.)
 
-## 🚨 P0 EMERGENCY (2026-06-23) — STATUS
-- [x] **E2 (#100) — 移動時間 auto-fill**: FIXED + verified no-mock on Dais's real cal. Online-classify =
-      agent (regex killed, PR195); room-name → agent web-search address (PR194); ask-loop RE-RESOLVES
-      every tick, dedup only the ask SEND (PR196) → MUIT 出社 autofilled→Mitsubishi UFJ Trust, real 🚆
-      block created (06-24 08:20→08:40, head-out time). Also deleted 3 NAIST classes + 4 orphaned blocks.
-- [x] **E1 (#99) — call audio**: the real call WORKED — Charon spoke (Dais confirmed 2026-06-23). Code
-      meets all voice best practices (bidirectional rtp, 24k→8k μ-law transcode, all parts, greet-first).
-- [ ] **#99b — YouTube wiring + post verify**: lm-video-post posts to TikTok only (2×/day, 9:30+21:00 JST,
-      recordings stored every 2h). ADD YouTube. VERIFY posted.jsonl reaches PUBLISHED (Postiz state), not
-      just a post_id.
-- [ ] **#100b — agent refinement + autonomous witness**: (a) pure routines (Running/Day job, no venue)
-      should classify as no-travel so the agent never asks "where is your run"; (b) WITNESS the deployed
-      cron autonomously autofill (not a manual node run) — the product must do it, per Dais.
+## P0 (2026-06-23) — RESOLVED + INTEGRATED: E1 (call audio) ✅ done · E2 (#100 travel auto-fill) ✅ done ·
+## #99b (YouTube wiring) → folded into D-3 · #100b (pure-routines no-travel + autonomous witness) → C5/C6.
 
 ## SCHOOL recorded (read before building agents): `~/.claude/rules/building-effective-ai-agents.md` +
 `~/.claude/rules/building-voice-agents.md`. Core: the MODEL judges via prompt+tools; NEVER hardcode
