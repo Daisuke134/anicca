@@ -21,8 +21,17 @@ as the OSS path.
    Completed, prod 503) + fresh adversary 3 rounds → OVERALL PASS (5/5 dims, 0 findings; FIND-001..007 +
    101..103 + OBS-201 all resolved). NOTE: the per-user JUDGMENT loop (`@openai/agents` on Gemini, $0 OpenAI)
    + mem0 memory are the decision layer → moved to PHASE C (C1-C3); HARD-2 was the scheduling spine only.
-4. ☐ **HARD-3** — Stripe lifecycle = billing source of truth (checkout→provision / past_due→suspend /
-   canceled→deprovision; Entitlements; idempotent webhooks; dunning ON).  ← NOW
+4. ⏳ **HARD-3 (Stripe lifecycle)** — IN PROGRESS 2026-06-24 (branch feature/hard3-stripe, spec
+   `2026-06-24-life-manager-HARD3-stripe-lifecycle-design.md`). DONE: `lib/billing.js` (entitlementFor
+   active/trialing/past_due→paid; canceled/unpaid/incomplete*→unpaid · parseStripeEvent · isStale
+   out-of-order guard · claim/unclaim idempotency ledger · applyBilling) + `POST /api/stripe/webhook`
+   (constructEvent signature verify, event.id dedup, fail-closed 503, claim→apply→unclaim-on-fail) +
+   migration LIVE-APPLIED (lm_users billing cols + lm_stripe_events) + REQ-35..42. VERIFIED: 93 unit tests +
+   **no-mock E2E 11/11** (real server + real live Supabase + real signature; provision→grace→active→
+   deprovision→idempotency→staleness→bad-sig=400) + fail-closed 503. ⏳ REMAINING: fresh-adversary gate
+   running (I flagged: staleness key may wrongly block an immediate-cancel; checkout optimistic provision) →
+   fix findings → re-verify → PR→main. NOTE: the buy/Checkout PAGE + pricing object = D-1/D-2 (HARD-3 = the
+   LIFECYCLE webhook only).  ← NOW
 5. ☐ **HARD-4** — per-tenant isolation review (per-user tokens/secrets; one tenant's failure can't break others).
 6. ☐ **PHASE C** — realize+VERIFY the 3 location cases (C1 filled / C2 online / C3 ask→remember via mem0/Supabase)
    + C4 determinism · C5 routines (=#100b-a: Running/Sleep/Day-job → no-travel, never ask "where is your run")

@@ -76,3 +76,24 @@ regex for judgment. Paid product → must run autonomously for ALL users.
   C-H1 atomic claims (lm_wake_log / lm_travel_log / lm_ask_log), so any accidental double-run cannot double-act.
 - REQ-34 The `/api/inngest` route SHALL FAIL CLOSED: in production (no `INNGEST_DEV=1`) it SHALL refuse to
   serve (HTTP 503) unless `INNGEST_SIGNING_KEY` is set; in dev (`INNGEST_DEV=1`) it serves without a key.
+
+## G. Billing lifecycle (HARD-3 — Stripe = source of truth for lm_users.paid)
+- REQ-35 `POST /api/stripe/webhook` SHALL verify the Stripe signature via `constructEvent` over the RAW body;
+  an invalid/missing signature SHALL be rejected (400) with NO billing side effect.
+- REQ-36 The webhook SHALL be idempotent: each `event.id` is processed at most once (claim in
+  `lm_stripe_events`, 201/409); a duplicate delivery returns 200 without re-applying.
+- REQ-37 On `checkout.session.completed` the system SHALL link `stripe_customer_id` + `stripe_subscription_id`
+  to the uid from `client_reference_id` and provision (paid=true).
+- REQ-38 On `customer.subscription.created|updated|deleted` the system SHALL set `paid`/`plan_status` from the
+  subscription `status`: `active`/`trialing`/`past_due` → paid=true; `canceled`/`unpaid`/`incomplete`/
+  `incomplete_expired` → paid=false. (Stripe BP: source of truth is the status, not the event type.)
+- REQ-39 The system SHALL order events by the EVENT's `created` timestamp (stored as `stripe_event_at`): an
+  event whose `created` is older than the last applied is stale and SHALL be skipped. `created` (not
+  `current_period_end`) is the key — an immediate cancel can carry a LOWER period_end than the prior active
+  event, so a period_end key would wrongly drop the downgrade and keep a canceled user paid (FIND-002).
+- REQ-40 WHEN a subscription becomes `past_due`, the system SHALL keep access (grace) and send ONE dunning
+  notice via the connected channel (Telegram else logged/email); it SHALL NOT revoke on past_due.
+- REQ-41 The `/api/stripe/webhook` route SHALL FAIL CLOSED in production (no `STRIPE_DEV=1`) when
+  `STRIPE_WEBHOOK_SECRET` is absent (503), mirroring the Inngest serve guard.
+- REQ-42 `lm_users.paid` SHALL have exactly ONE writer (the Stripe webhook) and the HARD-2 sweeper SHALL
+  remain its only reader; on a write failure the claim is released (unclaim) so Stripe's redelivery re-applies.
