@@ -67,6 +67,8 @@ M2. ☑ DONE+VERIFIED 2026-06-24: published https://note.com/anicca123/n/na3a631
 M2x. **This article = membership-gated** (COPY ChatGPT研究所, the top AI note creator = pure membership read-all; NO combine). FREE = [0]–[5] (what Automaton is = the hook). [6]+ (the experiment / earning logs) = **member-only** — added to the membership 特典 so only ¥500/月 subscribers read it. NO single-article price (that was a combine = wrong). Membership = the only monetization (recurring MRR). Then publish the membership plan (公開 ON) now that it has content.
 
 P1. ☑ DONE: verified the rendered gate as a visitor (screenshot) — free preview + ¥500 subscribe CTA. URL = https://note.com/anicca123/n/na3a631e63d1a
+P1b. ☑ DONE 2026-06-24: note article fully POLISHED & re-verified as a visitor — 見出し画像(eyecatch) set, body duplicate hero removed, broken heading restored, MANUAL 目次 (7 big titles only, auto-目次 deleted). Pipeline saved as reusable scripts in ~/.openclaw/skills/ai-entity-article-writer/scripts/note-publish/ + lessons in SKILL.md. note publishing is now repeatable.
+P1c. (nice-to-have) make the manual 目次 clickable (per-heading anchor links); add per-heading anchor jumps.
 P2. **Other JP platforms** each with their monetization: Zenn(投げ銭/バッジ) → Substack(paid subscription) →
     X Article(有料購読) → TikTok image (hook → link to the paid note).
 D.  **EN**: translate → dev.to → X Article → Substack(EN) (paid).
