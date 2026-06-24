@@ -28,6 +28,10 @@ const {
 } = require("./lib/call-logic.js");
 const { startScheduler, startTravelLoop, startAskLoop, startOnboardLoop, buildStreamUrl, langForPhone } = require("./scheduler.js");
 const { maybeStartLoops } = require("./lib/maybe-start-loops.js");
+const { serve: inngestServe } = require("inngest/node"); // raw Node http server (NOT express) → use the node adapter
+const { inngest } = require("./inngest/client.js");
+const { functions: inngestFunctions } = require("./inngest/functions.js");
+const inngestHandler = inngestServe({ client: inngest, functions: inngestFunctions });
 const { placeCall, startRecording } = require("./lib/dial.js");
 const { parseUpdate, sendMessage } = require("./lib/telegram.js");
 const { resolveTelegramReply } = require("./lib/telegram-reply.js");
@@ -39,6 +43,15 @@ const COMPOSIO_KEY = process.env.COMPOSIO_API_KEY, UNIPILE_TOKEN = process.env.U
 const LM_TG_TOKEN = process.env.LM_TELEGRAM_BOT_TOKEN || "";
 const LM_TG_SECRET = process.env.LM_TELEGRAM_WEBHOOK_SECRET || "";
 const PUBLIC_BASE = process.env.PUBLIC_BASE || "https://aniccaai.com";
+
+// inngestServeAllowed: pure helper — returns true when the /api/inngest route may serve requests.
+// In dev (INNGEST_DEV=1) it always returns true; in prod it requires INNGEST_SIGNING_KEY.
+// Exported for testing (FIND-005).
+function inngestServeAllowed(env) {
+  const isDev = String((env || {}).INNGEST_DEV || "").trim() === "1";
+  if (isDev) return true;
+  return Boolean((env || {}).INNGEST_SIGNING_KEY);
+}
 
 const LM_UID_SECRET = process.env.LM_UID_SECRET || "";
 function verifyUid(uid, sig) {
@@ -199,6 +212,23 @@ const server = http.createServer((req, res) => {
     })();
     return;
   }
+  // POST/GET /api/inngest — Inngest durable function endpoint (always mounted, independent of LIFE_RUN_LOOPS).
+  // Inngest cloud calls this to register functions and dispatch events. In dev, INNGEST_DEV=1 syncs with
+  // the local Inngest dev server. In prod, INNGEST_SIGNING_KEY authenticates incoming requests.
+  // FAIL-CLOSED: in production (INNGEST_DEV not "1"), if INNGEST_SIGNING_KEY is missing we return 503
+  // rather than serve unauthenticated — matching the fail-closed convention of /telegram and /ws.
+  // In dev (INNGEST_DEV=1) we serve without a signing key so the local dev server can sync.
+  // Both the in-process LIFE_RUN_LOOPS path and the Inngest path coexist; C-H1 (claimWake/claimTravel)
+  // makes concurrent executions race-safe so running both simultaneously is harmless.
+  if (path === "/api/inngest") {
+    if (!inngestServeAllowed(process.env)) {
+      res.writeHead(503, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "inngest signing key not configured", service: "life-call" }));
+      return;
+    }
+    return inngestHandler(req, res);
+  }
+
   res.writeHead(404);
   res.end("not found");
 });
@@ -278,13 +308,20 @@ wss.on("connection", (carrierWs, req) => {
   carrierWs.on("error", release);
 });
 
-server.listen(PORT, () => {
-  console.log(`[life-call] listening ${PORT} ws=/ws build=agentic-ask-worldwide-v2`);
-  // SINGLE-WRITER (B3): run the scheduler loops in-process ONLY when LIFE_RUN_LOOPS!=="false".
-  // The /ws Telnyx⇄Gemini-Live voice bridge + /test-call + /telegram endpoints are ALWAYS on regardless.
-  // As an OpenClaw voice daemon, set LIFE_RUN_LOOPS=false so the cron-COMMAND jobs (B2) own the loops.
-  const loops = maybeStartLoops(process.env, { startScheduler, startTravelLoop, startAskLoop, startOnboardLoop });
-  console.log(`[life-call] ${loops.started ? "loops ON (standalone)" : "VOICE DAEMON (loops OFF)"} — ${loops.reason}`);
-});
+// Only bind to the port when this file is run directly (not when required by tests).
+// This allows test files to import inngestServeAllowed without starting the HTTP server.
+if (require.main === module) {
+  server.listen(PORT, () => {
+    console.log(`[life-call] listening ${PORT} ws=/ws build=agentic-ask-worldwide-v2`);
+    // SINGLE-WRITER (B3): run the scheduler loops in-process ONLY when LIFE_RUN_LOOPS!=="false".
+    // The /ws Telnyx⇄Gemini-Live voice bridge + /test-call + /telegram endpoints are ALWAYS on regardless.
+    // As an OpenClaw voice daemon, set LIFE_RUN_LOOPS=false so the cron-COMMAND jobs (B2) own the loops.
+    const loops = maybeStartLoops(process.env, { startScheduler, startTravelLoop, startAskLoop, startOnboardLoop });
+    console.log(`[life-call] ${loops.started ? "loops ON (standalone)" : "VOICE DAEMON (loops OFF)"} — ${loops.reason}`);
+  });
+}
 
 // redeploy trigger 010026
+
+// Export pure helpers for unit tests (FIND-005).
+module.exports = { inngestServeAllowed };

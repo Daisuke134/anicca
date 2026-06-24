@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "implementation_correctness",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "The single-writer invariant is VIOLATED by the new Inngest path. lib/maybe-start-loops.js:3 documents 'SINGLE-WRITER (B2 FIND-005): exactly ONE writer of the wake/travel/ask loops at a time' and gates the in-process loops behind LIFE_RUN_LOOPS. But server.js:211 mounts /api/inngest ALWAYS, with NO env gate — so the Inngest sweepers are a THIRD writer that bypasses the single-writer flag entirely. In Railway standalone (LIFE_RUN_LOOPS unset -> in-process loops ON per maybe-start-loops.js:14 default-enabled) AND Inngest Cloud wired to the same /api/inngest, BOTH the in-process tick loop AND the sweep-* cron fire concurrently. For WAKE this is mitigated by claimWake (atomic dial dedup). But for ASK and TRAVEL the dedup is INCOMPLETE: lib/ask.js:219 runs agentResolveLocation (a Gemini LLM call) and lib/ask.js:224 patchEvent BEFORE any claim — claimAsk (ask.js:231) only dedups the ASK SEND. So two concurrent writers do 2x the Gemini/Maps spend and 2x the calendar patchEvent writes per tick. The 'C-H1 makes running both harmless' comment at server.js:209-210 is therefore false for the ask/travel resolve+patch work — only the send/dial is idempotent.",
+  "evidence": {
+    "filePath": "apps/life-call/server.js",
+    "lineRange": "206-213",
+    "snippet": "// Both the in-process LIFE_RUN_LOOPS path and the Inngest path coexist; C-H1 (claimWake/claimTravel) makes concurrent executions race-safe so running both simultaneously is harmless.\n  if (path === \"/api/inngest\") { return inngestHandler(req, res); }"
+  },
+  "routeToPhase": "2b"
+}

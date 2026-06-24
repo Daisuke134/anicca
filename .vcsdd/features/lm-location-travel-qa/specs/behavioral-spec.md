@@ -63,3 +63,16 @@ regex for judgment. Paid product → must run autonomously for ALL users.
   language (EN/JA).
 - REQ-29 The system SHALL escalate calls at T−15/10/5 min until the user moves.
 - REQ-30 The outbound Charon audio SHALL be audible to the caller (not silent).
+
+## F. Scheduling layer (HARD-2 — Inngest durable scheduler)
+- REQ-31 The system SHALL run a durable cron SWEEPER per pass (wake every 1 min, travel every 30 min, ask
+  every 20 min) that lists paid users and FAN-OUTS exactly one event per user (`lm/wake.user` etc.), each
+  carrying ONLY `{ uid }` (no phone/tokens/PII); the per-user function SHALL re-fetch the row by uid.
+- REQ-32 Each per-user function SHALL set Inngest `concurrency: { key: "event.data.uid" }` so two jobs for
+  the SAME user run serially (no double-dial/block/ask), while different users run in parallel.
+- REQ-33 SINGLE-WRITER: the in-process setInterval loops and the Inngest sweepers SHALL NEVER both write.
+  The sweepers SHALL no-op (no fan-out) unless `LIFE_RUN_LOOPS="false"`; when "false" the in-process loops
+  are off and the sweepers are the sole writer. Per-user idempotency is additionally guaranteed by the
+  C-H1 atomic claims (lm_wake_log / lm_travel_log / lm_ask_log), so any accidental double-run cannot double-act.
+- REQ-34 The `/api/inngest` route SHALL FAIL CLOSED: in production (no `INNGEST_DEV=1`) it SHALL refuse to
+  serve (HTTP 503) unless `INNGEST_SIGNING_KEY` is set; in dev (`INNGEST_DEV=1`) it serves without a key.

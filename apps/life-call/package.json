@@ -6,12 +6,13 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "node test/scheduler.test.js && node --test skill-life-manager/scripts/scaffold.test.js && node --test skill-life-manager/openclaw/crons.test.js && node --test lib/maybe-start-loops.test.js && node --test lib/ch1-atomic-dedup.test.js"
+    "test": "node test/scheduler.test.js && node --test skill-life-manager/scripts/scaffold.test.js && node --test skill-life-manager/openclaw/crons.test.js && node --test lib/maybe-start-loops.test.js && node --test lib/ch1-atomic-dedup.test.js && node --test test/inngest.test.js"
   },
   "dependencies": {
+    "inngest": "^4.11.0",
     "ws": "^8.18.0"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   }
 }

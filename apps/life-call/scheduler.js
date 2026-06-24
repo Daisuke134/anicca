@@ -90,43 +90,53 @@ function buildStreamUrl(ev, urgency, lang, name) {
   return `${base}/ws?${qs.toString()}`;
 }
 
+// ── Per-user single-invocation functions (extracted for Inngest fan-out) ─────
+// Each function takes a single user row `u` and performs the loop body for THAT user only.
+// The existing tick/travelTick/askTickAll still call these in a for-loop so the in-process
+// LIFE_RUN_LOOPS path continues to work unchanged.
+
+async function wakeUserOnce(u, nowMs) {
+  const now = nowMs !== undefined ? nowMs : Date.now();
+  let events;
+  try {
+    // 6h horizon: a long-travel event AND its [Travel] block must both be visible at the moment we
+    // wake 15 min before DEPARTURE, which can be hours before the event itself.
+    events = await fetchUpcomingEvents(u.uid, { nowMs: now, horizonH: 6 });
+  } catch {
+    return;
+  }
+  // #69 importance filter: only wake for events the user must TRAVEL to (per their wake_policy),
+  // and anchor the 15/10/5 levels to DEPARTURE (leave time), not the event start — so a 30-min-travel
+  // event is called before they must leave. resolveDeparture uses the [Travel] block if present, else
+  // computes the leave time inline (never-late even before the 30-min travel loop inserts the block).
+  const mapsKey = process.env.LIFE_MAPS_KEY || process.env.GOOGLE_API_KEY;
+  for (const ev of (events || []).filter((e) => shouldWake(e, u.home_address, u.wake_policy))) {
+    const depMs = await resolveDeparture(ev, events, {
+      home: u.home_address, mapsKey, nowMs: now, bufferMin: 5, directionsFn: directionsMinutes,
+    });
+    const mins = (depMs - now) / 60000;
+    for (const lvl of WAKE_LEVELS) {
+      // 60s tick → a ~2-min catch window per level; levels are 5 min apart so they never overlap.
+      if (mins > lvl.min + 0.5 || mins <= lvl.min - 1.5) continue;
+      const eventKey = `${u.uid}|${ev.startIso}|${lvl.min}`;
+      const fresh = await claimWake(u.uid, eventKey);
+      if (!fresh) continue; // already called for this (event, level)
+      const streamUrl = buildStreamUrl(ev, lvl.urgency, langForUser(u), u.name);
+      const res = await placeCall({ to: u.phone, streamUrl });
+      if (res.ok) {
+        console.log(`[scheduler] WAKE T-${lvl.min} uid=${u.uid.slice(0, 12)} "${ev.summary}" ccid=${res.ccid}`);
+      } else {
+        console.error(`[scheduler] dial failed T-${lvl.min} uid=${u.uid.slice(0, 12)}: ${res.error}`);
+      }
+    }
+  }
+}
+
 async function tick() {
   const users = await supaUsers();
   const now = Date.now();
   for (const u of users) {
-    let events;
-    try {
-      // 6h horizon: a long-travel event AND its [Travel] block must both be visible at the moment we
-      // wake 15 min before DEPARTURE, which can be hours before the event itself.
-      events = await fetchUpcomingEvents(u.uid, { nowMs: now, horizonH: 6 });
-    } catch {
-      continue;
-    }
-    // #69 importance filter: only wake for events the user must TRAVEL to (per their wake_policy),
-    // and anchor the 15/10/5 levels to DEPARTURE (leave time), not the event start — so a 30-min-travel
-    // event is called before they must leave. resolveDeparture uses the [Travel] block if present, else
-    // computes the leave time inline (never-late even before the 30-min travel loop inserts the block).
-    const mapsKey = process.env.LIFE_MAPS_KEY || process.env.GOOGLE_API_KEY;
-    for (const ev of (events || []).filter((e) => shouldWake(e, u.home_address, u.wake_policy))) {
-      const depMs = await resolveDeparture(ev, events, {
-        home: u.home_address, mapsKey, nowMs: now, bufferMin: 5, directionsFn: directionsMinutes,
-      });
-      const mins = (depMs - now) / 60000;
-      for (const lvl of WAKE_LEVELS) {
-        // 60s tick → a ~2-min catch window per level; levels are 5 min apart so they never overlap.
-        if (mins > lvl.min + 0.5 || mins <= lvl.min - 1.5) continue;
-        const eventKey = `${u.uid}|${ev.startIso}|${lvl.min}`;
-        const fresh = await claimWake(u.uid, eventKey);
-        if (!fresh) continue; // already called for this (event, level)
-        const streamUrl = buildStreamUrl(ev, lvl.urgency, langForUser(u), u.name);
-        const res = await placeCall({ to: u.phone, streamUrl });
-        if (res.ok) {
-          console.log(`[scheduler] WAKE T-${lvl.min} uid=${u.uid.slice(0, 12)} "${ev.summary}" ccid=${res.ccid}`);
-        } else {
-          console.error(`[scheduler] dial failed T-${lvl.min} uid=${u.uid.slice(0, 12)}: ${res.error}`);
-        }
-      }
-    }
+    await wakeUserOnce(u, now);
   }
 }
 
@@ -142,20 +152,28 @@ function startScheduler() {
 
 // ── Travel auto-fill (every 30 min) — keep today+7d filled with [Travel] blocks ─────────────────
 const TRAVEL_TICK_MS = 30 * 60 * 1000;
-async function travelTick() {
+
+async function travelUserOnce(u) {
   const apiKey = process.env.COMPOSIO_API_KEY;
   const mapsKey = process.env.LIFE_MAPS_KEY || process.env.GOOGLE_API_KEY;
   const geminiKey = process.env.GEMINI_API_KEY; // agentic resolve of room-name / unroutable locations
   if (!apiKey || !mapsKey) return;
   const { url: supaUrl, key: supaKey } = SUPA(); // C-H1: atomic [Travel] claim ledger (lm_travel_log)
+  try {
+    const r = await fillTravel(u.uid, { apiKey, mapsKey, geminiKey, home: u.home_address, supaUrl, supaKey });
+    if (r.inserted) console.log(`[travel] uid=${u.uid.slice(0, 12)} inserted=${r.inserted} checked=${r.checked}`);
+  } catch (e) {
+    console.error(`[travel] uid=${u.uid.slice(0, 12)} err ${e.message}`);
+  }
+}
+
+async function travelTick() {
+  const apiKey = process.env.COMPOSIO_API_KEY;
+  const mapsKey = process.env.LIFE_MAPS_KEY || process.env.GOOGLE_API_KEY;
+  if (!apiKey || !mapsKey) return;
   const users = await supaUsers();
   for (const u of users) {
-    try {
-      const r = await fillTravel(u.uid, { apiKey, mapsKey, geminiKey, home: u.home_address, supaUrl, supaKey });
-      if (r.inserted) console.log(`[travel] uid=${u.uid.slice(0, 12)} inserted=${r.inserted} checked=${r.checked}`);
-    } catch (e) {
-      console.error(`[travel] uid=${u.uid.slice(0, 12)} err ${e.message}`);
-    }
+    await travelUserOnce(u);
   }
 }
 function startTravelLoop() {
@@ -179,7 +197,8 @@ async function unipileEmail(accountId, token, dsn) {
     return email;
   } catch { return null; }
 }
-async function askTickAll() {
+
+async function askUserOnce(u) {
   const composioKey = process.env.COMPOSIO_API_KEY;
   const unipileToken = process.env.UNIPILE_TOKEN, unipileDsn = process.env.UNIPILE_DSN;
   const mapsKey = process.env.LIFE_MAPS_KEY || process.env.GOOGLE_API_KEY; // Places grounding
@@ -187,23 +206,31 @@ async function askTickAll() {
   const telegramToken = process.env.LM_TELEGRAM_BOT_TOKEN;                 // Telegram ask channel
   const { url: supaUrl, key: supaKey } = SUPA();
   if (!composioKey || !supaUrl || !geminiKey) return;
+  // A user is reachable for asks via Telegram OR a connected Gmail — need at least one.
+  if (!u.telegram_chat_id && !u.gmail_account_id) return;
+  let userEmail = null;
+  if (u.gmail_account_id && unipileToken && unipileDsn) {
+    userEmail = await unipileEmail(u.gmail_account_id, unipileToken, unipileDsn);
+  }
+  try {
+    const r = await askTick(u.uid, {
+      composioKey, accountId: u.gmail_account_id, unipileToken, unipileDsn, userEmail,
+      supaUrl, supaKey, mapsKey, geminiKey, home: u.home_address,
+      telegramChatId: u.telegram_chat_id, telegramToken,
+    });
+    if (r.autofilled || r.asked || r.resolved)
+      console.log(`[ask] uid=${u.uid.slice(0, 12)} autofilled=${r.autofilled} asked=${r.asked} resolved=${r.resolved} via=${u.telegram_chat_id ? "tg" : "email"}`);
+  } catch (e) { console.error(`[ask] uid=${u.uid.slice(0, 12)} err ${e.message}`); }
+}
+
+async function askTickAll() {
+  const composioKey = process.env.COMPOSIO_API_KEY;
+  const { url: supaUrl } = SUPA();
+  const geminiKey = process.env.GEMINI_API_KEY;
+  if (!composioKey || !supaUrl || !geminiKey) return;
   const users = await supaUsers();
   for (const u of users) {
-    // A user is reachable for asks via Telegram OR a connected Gmail — need at least one.
-    if (!u.telegram_chat_id && !u.gmail_account_id) continue;
-    let userEmail = null;
-    if (u.gmail_account_id && unipileToken && unipileDsn) {
-      userEmail = await unipileEmail(u.gmail_account_id, unipileToken, unipileDsn);
-    }
-    try {
-      const r = await askTick(u.uid, {
-        composioKey, accountId: u.gmail_account_id, unipileToken, unipileDsn, userEmail,
-        supaUrl, supaKey, mapsKey, geminiKey, home: u.home_address,
-        telegramChatId: u.telegram_chat_id, telegramToken,
-      });
-      if (r.autofilled || r.asked || r.resolved)
-        console.log(`[ask] uid=${u.uid.slice(0, 12)} autofilled=${r.autofilled} asked=${r.asked} resolved=${r.resolved} via=${u.telegram_chat_id ? "tg" : "email"}`);
-    } catch (e) { console.error(`[ask] uid=${u.uid.slice(0, 12)} err ${e.message}`); }
+    await askUserOnce(u);
   }
 }
 function startAskLoop() {
@@ -230,4 +257,35 @@ function startOnboardLoop() {
   return setInterval(run, ONBOARD_TICK_MS);
 }
 
-module.exports = { startScheduler, startTravelLoop, startAskLoop, startOnboardLoop, tick, travelTick, askTickAll, onboardTick, isHelperBlock, buildStreamUrl, langForPhone, langForUser };
+// listPaidUsers: public alias for supaUsers — used by Inngest sweep functions.
+const listPaidUsers = supaUsers;
+
+// getUserByUid: re-fetches a single user row by uid for Inngest per-user functions.
+// Inngest sweepers fan-out only { uid } (PII-safe); the per-user handler calls this
+// to get the full row (phone, home_address, etc.) before invoking the scheduler fn.
+// Uses the same column set as supaUsers to keep behaviour identical.
+async function getUserByUid(uid) {
+  const { url, key } = SUPA();
+  if (!url || !key || !uid) return null;
+  const cols = "uid,name,phone,paid,calendar_provider,home_address,gmail_account_id,telegram_chat_id,call_language";
+  const base = `${url}/rest/v1/lm_users?uid=eq.${encodeURIComponent(uid)}&phone=not.is.null&paid=is.true&calendar_provider=eq.composio_gcal`;
+  const hdr = { apikey: key, Authorization: `Bearer ${key}` };
+  let r = await fetch(`${base}&select=${cols},wake_policy`, { headers: hdr });
+  if (!r.ok) r = await fetch(`${base}&select=${cols}`, { headers: hdr });
+  if (!r.ok) return null;
+  const rows = await r.json().catch(() => []);
+  return Array.isArray(rows) && rows[0] ? rows[0] : null;
+}
+
+module.exports = {
+  startScheduler, startTravelLoop, startAskLoop, startOnboardLoop,
+  tick, travelTick, askTickAll, onboardTick,
+  // per-user single-invocation functions (for Inngest fan-out + testing)
+  wakeUserOnce, travelUserOnce, askUserOnce,
+  // paid-user listing (for Inngest sweep fan-out)
+  listPaidUsers,
+  // per-uid re-fetch for Inngest per-user functions (PII: sweepers send only uid)
+  getUserByUid,
+  // utilities used by server.js and tests
+  isHelperBlock, buildStreamUrl, langForPhone, langForUser,
+};
