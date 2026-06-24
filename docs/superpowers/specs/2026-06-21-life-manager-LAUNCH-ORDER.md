@@ -348,8 +348,13 @@ Dais's PERSONAL instance only. The B1-B3 artifacts (skill scaffold/cron-defs/voi
 the OSS/local-BYOK path, not the cloud product. Memory = Supabase per-user lm_user_places (pooled-compatible;
 native MEMORY.md was for the dropped per-instance model). NEW production-hardening tasks (replace PHASE B):
   HARD-1 ☐ C-H1: atomic unique constraints on [Travel] + lm_ask_log (race; wake already atomic).
-  HARD-2 ☐ durable scheduler: move scheduler.js setInterval → a durable engine (Inngest/Trigger.dev/Temporal),
-          central sweeper + fan-out, concurrency key=user_id (fairness), auto-retry, per-tenant error isolation.
+  HARD-2 ☐ durable scheduler: move scheduler.js setInterval → ★ Inngest ★ (drops on as a library, no rewrite;
+          central cron sweeper + step.sendEvent fan-out + concurrency key=user_id fairness + retries + replay).
+          AGENT LOOP = our existing `@openai/agents` dep (already in apps/api) = the agent-ness (LLM+tools+loop,
+          right altitude). Memory = mem0ai (already a dep) + Postgres. Full rationale + framework comparison +
+          Viktor's real stack = `docs/reference/agentic-saas-architecture.md` (researched 2026-06-24, do NOT
+          re-research). (Cloudflare Agents = elegant alt but a Workers-runtime migration; chosen only if we
+          move runtime. Bespoke app = NOT laziness — Sierra/Lindy/Viktor all bespoke deliberately.)
   HARD-3 ☐ Stripe lifecycle as source of truth: checkout.completed→provision, past_due→suspend, canceled→
           deprovision; Entitlements; idempotent webhooks; auto-dunning ON.
   HARD-4 ☐ per-tenant isolation review (tokens/secrets per user, one tenant's failure can't break others).
