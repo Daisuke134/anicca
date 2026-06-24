@@ -325,10 +325,36 @@ IMPLICATION: the cron-WRITE `operator.admin` friction we hit was a SYMPTOM of fi
 The OpenClaw-correct way = PER-USER instance, provisioned (ClawHost-style) with the life-manager skill + that
 user's 3 crons + gcal/keys + native per-user MEMORY.md; cron is registered AT PROVISION as the box's trusted
 operator (no pairing friction). This resolves isolation + native memory + cron-auth + "real per-user agent"
-all at once. TRADE-OFF = ~$4/user/mo VPS (≈$2k/mo at 500 users, cut by idle hibernation) + provisioning
-automation (fork ClawHost) VS the current cheap shared Railway Node app (plain Node, not openclaw). DECISION
-PENDING (Dais): per-user OpenClaw instances (correct, costs infra) vs keep cheap shared Node (works, not
-openclaw). The earlier "SHARED multi-tenant" decision below is SUPERSEDED-pending this choice.
+all at once. TRADE-OFF = ~$4/user/mo VPS + provisioning automation VS the current cheap shared Railway app.
+
+★★★ RESOLVED 2026-06-24 by 3-agent market research (decisive, consistent) ★★★
+HOW REAL AGENTIC SaaS IS SOLD (no-human-in-loop, subscription): POOLED SHARED MULTI-TENANT APP, keyed by
+tenant_id, stateless LLM call per request. NOT per-customer instance. Evidence: Viktor (Slack agent, 40k+
+teams: "walled off per workspace, no cross-tenant access, one-click install, NO infra to provision"),
+Slack platform, Decagon ("most customers run multi-tenant"), Intercom Fin (one Rails monolith → shared
+DBs), Ada/Cresta (per-tenant namespaces), Gumloop (shared static IPs), Zapier (shared worker fleet), Devin
+(pooled stateless brain + ephemeral per-session sandbox), Lindy/Dust. AWS: pooled = "essential to the SaaS
+model"; instance-per-customer = "a managed service model, differentiated FROM SaaS." Dedicated/silo = a
+premium enterprise/compliance carve-out only (Sierra/Devin VPC), never the default. → PER-USER OpenClaw
+instances (ClawHost) = personal-hosting artifact, NOT scaled-SaaS. The Claude Agent SDK = multi-tenant but
+heavy (1GiB subprocess/session) — only for shell/code-exec agents. Production agent-SaaS (Sierra/Decagon/
+Cognition) build a BESPOKE multi-tenant app with the agent loop as their OWN code + LLM API per request;
+Anthropic: "the most successful implementations weren't using complex frameworks." A normal app whose
+judgment steps are LLM calls over tools ALREADY IS an agent (no gateway needed).
+
+DECISION (Dais's intent + the research): STAY ON apps/life-call (pooled multi-tenant = it already IS the
+proven pattern). ★ PHASE B (OpenClaw migration B1-B4) is SUPERSEDED for the PRODUCT ★ — OpenClaw stays as
+Dais's PERSONAL instance only. The B1-B3 artifacts (skill scaffold/cron-defs/voice-daemon gate) are kept as
+the OSS/local-BYOK path, not the cloud product. Memory = Supabase per-user lm_user_places (pooled-compatible;
+native MEMORY.md was for the dropped per-instance model). NEW production-hardening tasks (replace PHASE B):
+  HARD-1 ☐ C-H1: atomic unique constraints on [Travel] + lm_ask_log (race; wake already atomic).
+  HARD-2 ☐ durable scheduler: move scheduler.js setInterval → a durable engine (Inngest/Trigger.dev/Temporal),
+          central sweeper + fan-out, concurrency key=user_id (fairness), auto-retry, per-tenant error isolation.
+  HARD-3 ☐ Stripe lifecycle as source of truth: checkout.completed→provision, past_due→suspend, canceled→
+          deprovision; Entitlements; idempotent webhooks; auto-dunning ON.
+  HARD-4 ☐ per-tenant isolation review (tokens/secrets per user, one tenant's failure can't break others).
+Then LAUNCH (PHASE D) on this hardened pooled app. (Full "MULTI-TENANT (DECIDED…)" note below is now
+CONFIRMED, not superseded — shared multi-tenant was right; the OpenClaw-gateway packaging was the wrong part.)
 
 MULTI-TENANT (DECIDED 2026-06-24, Dais "Life Manager is for EVERYBODY, can't pay per-tenant costs"):
 SHARED multi-tenant. The cloud app is ALREADY shared multi-tenant — ONE service serves ALL users:
