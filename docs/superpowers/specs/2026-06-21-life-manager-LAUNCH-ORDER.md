@@ -98,6 +98,19 @@ After every step: mark it here + commit + push.
    (not the Postiz/posters app) so Dais can warm the account by posting manually at first. Switch to
    auto-publish only after the account is warmed.
 
+## DECISION — 2026-06-24 (Dais), binding: QR-first Telegram entry on /life-manager
+- **aniccaai.com/life-manager shows TWO ways to start: "Web" and "Telegram".** Telegram is presented as a
+  **QR code shown by default** (no click needed) — scan with the phone camera → opens @LifeManagerBotbot.
+- **QR encodes the deep link** `https://t.me/LifeManagerBotbot?start=<src>` (`<src>` = traffic source, e.g.
+  `tiktok`/`web`/`lp` — for attribution; marketable on TikTok = "scan this, done").
+- **Honest constraint**: Telegram ALWAYS requires the user to tap its own START/開始 button once (anti-spam);
+  we cannot remove that one tap. After it, NO searching/URL-typing. Name + phone are still typed IN CHAT
+  (Google OAuth + Stripe on web). If we want truly zero-typing later, move name to the `start` payload and
+  phone via Telegram's `request_contact` button — backlog, not now.
+- **New task D8 (#NEW)**: build the /life-manager QR+Web chooser (QR renders client-side from the deep link,
+  taste-skill, EN/JA). Currently the page only links to the GitHub repo (#52). E2E: scan on a real phone →
+  bot opens → /start → guided onboarding.
+
 ---
 
 ## ORDER + STATUS
