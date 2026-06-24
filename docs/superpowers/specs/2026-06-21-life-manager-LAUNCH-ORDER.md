@@ -12,10 +12,17 @@ as the OSS path.
    like wake); lm_ask_log UNIQUE(uid,event_id) + new lm_travel_log UNIQUE(uid,event_key,leg) [live-applied];
    listEvents7d carries id (no startMs collision). VCSDD: 9 tests + 46 travel regression + live-DB 201/409 E2E
    + adversary r2 PASS (3 findings fixed).
-3. ☐ **HARD-2** — adopt Inngest: replace apps/life-call setInterval with a cron sweeper → fan-out → per-user
-   concurrency; make the per-user decision an `@openai/agents` loop; memory via mem0ai.  ← NOW
+3. ✅ **HARD-2 (Inngest scheduler)** — DONE 2026-06-24 (PR #232): replaced apps/life-call setInterval with
+   Inngest durable cron sweepers (wake 1m/travel 30m/ask 20m) → fan-out one `{uid}` event per user → per-user
+   fns (`concurrency: {key:"event.data.uid", limit:1}`). inngest/node adapter (raw http); single-writer gate
+   (sweepers no-op unless `LIFE_RUN_LOOPS=false`); fail-closed `/api/inngest` (503 in prod w/o
+   `INNGEST_SIGNING_KEY`); `getUserByUid` re-fetch (no PII fan-out); wake ts memoized via `step.run('now')`
+   (retry-deterministic). Spec REQ-31..34. VCSDD: 78 tests + dev-server E2E (6 fns sync, wake-user run
+   Completed, prod 503) + fresh adversary 3 rounds → OVERALL PASS (5/5 dims, 0 findings; FIND-001..007 +
+   101..103 + OBS-201 all resolved). NOTE: the per-user JUDGMENT loop (`@openai/agents` on Gemini, $0 OpenAI)
+   + mem0 memory are the decision layer → moved to PHASE C (C1-C3); HARD-2 was the scheduling spine only.
 4. ☐ **HARD-3** — Stripe lifecycle = billing source of truth (checkout→provision / past_due→suspend /
-   canceled→deprovision; Entitlements; idempotent webhooks; dunning ON).
+   canceled→deprovision; Entitlements; idempotent webhooks; dunning ON).  ← NOW
 5. ☐ **HARD-4** — per-tenant isolation review (per-user tokens/secrets; one tenant's failure can't break others).
 6. ☐ **PHASE C** — realize+VERIFY the 3 location cases (C1 filled / C2 online / C3 ask→remember via mem0/Supabase)
    + C4 determinism · C5 routines (=#100b-a: Running/Sleep/Day-job → no-travel, never ask "where is your run")
@@ -356,8 +363,8 @@ proven pattern). ★ PHASE B (OpenClaw migration B1-B4) is SUPERSEDED for the PR
 Dais's PERSONAL instance only. The B1-B3 artifacts (skill scaffold/cron-defs/voice-daemon gate) are kept as
 the OSS/local-BYOK path, not the cloud product. Memory = Supabase per-user lm_user_places (pooled-compatible;
 native MEMORY.md was for the dropped per-instance model). NEW production-hardening tasks (replace PHASE B):
-  HARD-1 ☐ C-H1: atomic unique constraints on [Travel] + lm_ask_log (race; wake already atomic).
-  HARD-2 ☐ durable scheduler: move scheduler.js setInterval → ★ Inngest ★ (drops on as a library, no rewrite;
+  HARD-1 ✅ C-H1: atomic unique constraints on [Travel] + lm_ask_log (race; wake already atomic). [PR #229]
+  HARD-2 ✅ durable scheduler: move scheduler.js setInterval → ★ Inngest ★ (drops on as a library, no rewrite;
           central cron sweeper + step.sendEvent fan-out + concurrency key=user_id fairness + retries + replay).
           AGENT LOOP = our existing `@openai/agents` dep (already in apps/api) = the agent-ness (LLM+tools+loop,
           right altitude). Memory = mem0ai (already a dep) + Postgres. Full rationale + framework comparison +
