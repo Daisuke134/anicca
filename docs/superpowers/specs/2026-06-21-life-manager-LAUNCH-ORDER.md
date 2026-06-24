@@ -8,9 +8,12 @@ multi-tenant app (apps/life-call, the proven pattern — same as Viktor/Sierra/L
 Telnyx⇄Gemini-Live voice. OpenClaw = Dais's PERSONAL/OSS-local only (NOT the product). B1-B3 artifacts kept
 as the OSS path.
 1. ✅ hosting verified · ✅ PHASE A (REQ-15) · ✅ B1/B2/B3 (now OSS-path artifacts) · ✅ architecture research+verify
-2. ☐ **HARD-1 (C-H1)** — atomic unique constraints on [Travel] + lm_ask_log (race; wake already atomic).  ← NOW
+2. ✅ **HARD-1 (C-H1)** — DONE 2026-06-24 (PR #229): claimAsk/claimTravel atomic (insert 201/409, race-safe
+   like wake); lm_ask_log UNIQUE(uid,event_id) + new lm_travel_log UNIQUE(uid,event_key,leg) [live-applied];
+   listEvents7d carries id (no startMs collision). VCSDD: 9 tests + 46 travel regression + live-DB 201/409 E2E
+   + adversary r2 PASS (3 findings fixed).
 3. ☐ **HARD-2** — adopt Inngest: replace apps/life-call setInterval with a cron sweeper → fan-out → per-user
-   concurrency; make the per-user decision an `@openai/agents` loop; memory via mem0ai.
+   concurrency; make the per-user decision an `@openai/agents` loop; memory via mem0ai.  ← NOW
 4. ☐ **HARD-3** — Stripe lifecycle = billing source of truth (checkout→provision / past_due→suspend /
    canceled→deprovision; Entitlements; idempotent webhooks; dunning ON).
 5. ☐ **HARD-4** — per-tenant isolation review (per-user tokens/secrets; one tenant's failure can't break others).
