@@ -132,12 +132,36 @@ async function wakeUserOnce(u, nowMs) {
   }
 }
 
-async function tick() {
-  const users = await supaUsers();
-  const now = Date.now();
-  for (const u of users) {
-    await wakeUserOnce(u, now);
+// forEachUserSafe: process each tenant in ISOLATION (HARD-4). A throw/rejection while handling one user is
+// caught + logged per-uid so it NEVER prevents the remaining tenants from being processed this tick. This
+// mirrors the production Inngest model (each user is a separate function run); it hardens the in-process
+// (LIFE_RUN_LOOPS) path to the same one-tenant-failure-can't-break-others guarantee.
+const USER_TICK_TIMEOUT_MS = Number(process.env.LIFE_USER_TICK_TIMEOUT_MS) || 90000;
+async function forEachUserSafe(users, label, fn, timeoutMs = USER_TICK_TIMEOUT_MS) {
+  for (const u of (users || [])) {
+    const uid = (u && u.uid ? String(u.uid) : "?").slice(0, 12);
+    try {
+      // FIND-002: a per-user TIMEOUT so a HANG (not just a throw) in one tenant's upstream (dial/Gemini with
+      // no AbortController) cannot stall the others. The abandoned op may still finish — idempotent via C-H1.
+      let timer;
+      const guard = new Promise((_, rej) => { timer = setTimeout(() => rej(new Error(`tenant timeout ${timeoutMs}ms`)), timeoutMs); });
+      try { await Promise.race([Promise.resolve(fn(u)), guard]); }
+      finally { clearTimeout(timer); }
+    } catch (e) {
+      console.error(`[${label}] uid=${uid} err ${e && e.message}`);
+    }
   }
+}
+
+// tick/travelTick/askTickAll accept optional injected deps (listUsers + the per-user fn) so a test can drive
+// the REAL public loop with a throwing tenant and prove it routes through forEachUserSafe (FIND-001) — a
+// future revert to a raw for-loop would then fail the test, not pass silently.
+async function tick(deps = {}) {
+  const listUsers = deps.listUsers || supaUsers;
+  const wake = deps.wake || wakeUserOnce;
+  const users = await listUsers();
+  const now = deps.now !== undefined ? deps.now : Date.now();
+  await forEachUserSafe(users, "scheduler", (u) => wake(u, now));
 }
 
 function startScheduler() {
@@ -167,14 +191,14 @@ async function travelUserOnce(u) {
   }
 }
 
-async function travelTick() {
+async function travelTick(deps = {}) {
   const apiKey = process.env.COMPOSIO_API_KEY;
   const mapsKey = process.env.LIFE_MAPS_KEY || process.env.GOOGLE_API_KEY;
   if (!apiKey || !mapsKey) return;
-  const users = await supaUsers();
-  for (const u of users) {
-    await travelUserOnce(u);
-  }
+  const listUsers = deps.listUsers || supaUsers;
+  const travel = deps.travel || travelUserOnce;
+  const users = await listUsers();
+  await forEachUserSafe(users, "travel", travel);
 }
 function startTravelLoop() {
   console.log(`[travel] started — every ${TRAVEL_TICK_MS / 60000}min, horizon 7d`);
@@ -186,6 +210,7 @@ function startTravelLoop() {
 // ── Ask/reply loop (every 20 min) — email the user about events missing a location, read replies ──
 const ASK_TICK_MS = 20 * 60 * 1000;
 const unipileEmailCache = new Map();
+const UNIPILE_CACHE_MAX = 5000; // FIND-003: bound the per-accountId email cache (email is stable per account)
 async function unipileEmail(accountId, token, dsn) {
   if (unipileEmailCache.has(accountId)) return unipileEmailCache.get(accountId);
   try {
@@ -193,7 +218,11 @@ async function unipileEmail(accountId, token, dsn) {
       { headers: { "X-API-KEY": token, accept: "application/json" } });
     const a = await r.json();
     const email = a && a.name && a.name.includes("@") ? a.name : null;
-    if (email) unipileEmailCache.set(accountId, email);
+    if (email) {
+      // evict oldest (Map preserves insertion order) when over the cap → bounded memory, no cross-tenant leak.
+      if (unipileEmailCache.size >= UNIPILE_CACHE_MAX) unipileEmailCache.delete(unipileEmailCache.keys().next().value);
+      unipileEmailCache.set(accountId, email);
+    }
     return email;
   } catch { return null; }
 }
@@ -223,15 +252,15 @@ async function askUserOnce(u) {
   } catch (e) { console.error(`[ask] uid=${u.uid.slice(0, 12)} err ${e.message}`); }
 }
 
-async function askTickAll() {
+async function askTickAll(deps = {}) {
   const composioKey = process.env.COMPOSIO_API_KEY;
   const { url: supaUrl } = SUPA();
   const geminiKey = process.env.GEMINI_API_KEY;
   if (!composioKey || !supaUrl || !geminiKey) return;
-  const users = await supaUsers();
-  for (const u of users) {
-    await askUserOnce(u);
-  }
+  const listUsers = deps.listUsers || supaUsers;
+  const ask = deps.ask || askUserOnce;
+  const users = await listUsers();
+  await forEachUserSafe(users, "ask", ask);
 }
 function startAskLoop() {
   console.log(`[ask] started — every ${ASK_TICK_MS / 60000}min`);
@@ -282,6 +311,8 @@ module.exports = {
   tick, travelTick, askTickAll, onboardTick,
   // per-user single-invocation functions (for Inngest fan-out + testing)
   wakeUserOnce, travelUserOnce, askUserOnce,
+  // per-tenant isolation wrapper (HARD-4): one tenant's failure can't break the others' tick
+  forEachUserSafe,
   // paid-user listing (for Inngest sweep fan-out)
   listPaidUsers,
   // per-uid re-fetch for Inngest per-user functions (PII: sweepers send only uid)

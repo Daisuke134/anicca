@@ -97,3 +97,14 @@ regex for judgment. Paid product → must run autonomously for ALL users.
   `STRIPE_WEBHOOK_SECRET` is absent (503), mirroring the Inngest serve guard.
 - REQ-42 `lm_users.paid` SHALL have exactly ONE writer (the Stripe webhook) and the HARD-2 sweeper SHALL
   remain its only reader; on a write failure the claim is released (unclaim) so Stripe's redelivery re-applies.
+
+## H. Per-tenant isolation (HARD-4)
+- REQ-43 A failure while processing ONE tenant SHALL NOT prevent the other tenants from being processed in the
+  same tick. The in-process loops (tick/travelTick/askTickAll) route each per-user call through
+  `forEachUserSafe` (catch + per-uid log + continue), which ALSO applies a per-user TIMEOUT (default 90s) so a
+  HANG — not just a throw/rejection — is bounded and cannot stall the others (FIND-002). A malformed user row
+  (missing uid) SHALL be contained, not fatal. The production Inngest path additionally isolates each user as
+  a separate, parallel function run. Tests SHALL drive the PUBLIC loops (not just the helper) to prove routing.
+- REQ-44 Per-user data SHALL be keyed per tenant (Composio connected account by uid; `accountId =
+  u.gmail_account_id`; unipile email cache by per-user accountId). App-level creds (COMPOSIO_API_KEY,
+  unipile/telegram tokens) are shared infra; NO per-user secret is stored or shared mutably across tenants.
