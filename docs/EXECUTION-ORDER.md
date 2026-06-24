@@ -62,6 +62,12 @@ ClawRouter profiles: free (100% savings, $0) · auto (74-100%) · eco (95-100%) 
 ## RIGHT NOW — updated 2026-06-23b (MONETIZE BEFORE PUBLISH — we don't give the sauce for free)
 The article is DONE & verified (note draft, all visuals as compact images, infographic). Before publishing we set
 up monetization, because the whole point is 10k MRR from writing. note = the key. ORDER:
+
+★ STRATEGY (Dais 2026-06-24): DO NOT enable any cron/launchd yet. Autonomous-now = slop = no money. Instead:
+  (a) publish 2 MORE articles BY HAND (Dais + Claude) to battle-test & polish the skill,
+  (b) BUILD the full pipeline so it is STAGED & ready: publish-to-note.sh (--draft/--go) + the claude -p agent
+      prompt + verify checklist + the launchd plist WRITTEN BUT NOT LOADED,
+  (c) flip automation on later with a SINGLE `launchctl load` ("tap once"). Prepare for that tap; don't tap yet. ★
 M1. ☑ DONE (verified by screenshot 2026-06-23): membership「アニッチャのメンバーシップ」exists; plan スタンダードプラン = **¥500/月 set**. 公開 toggle still OFF on purpose — publish it together with M2 (so members have content). Fee 10%, MRR engine.
 M2. ☑ DONE+VERIFIED 2026-06-24: published https://note.com/anicca123/n/na3a631e63d1a — 無料[0]-[5]+「で、稼げたのか？」teaser free, [6]+ (8378字/7画像) MEMBER-ONLY; membership ¥500/月 plan 公開ON, 「参加手続きへ」live (verified as a non-member visitor). Pure membership, no single price. ORIG below:
 M2x. **This article = membership-gated** (COPY ChatGPT研究所, the top AI note creator = pure membership read-all; NO combine). FREE = [0]–[5] (what Automaton is = the hook). [6]+ (the experiment / earning logs) = **member-only** — added to the membership 特典 so only ¥500/月 subscribers read it. NO single-article price (that was a combine = wrong). Membership = the only monetization (recurring MRR). Then publish the membership plan (公開 ON) now that it has content.
@@ -73,7 +79,7 @@ P2. **Other JP platforms** each with their monetization: Zenn(投げ銭/バッ�
     X Article(有料購読) → TikTok image (hook → link to the paid note).
 D.  **EN**: translate → dev.to → X Article → Substack(EN) (paid).
 L.  Cloud 3体 (Akash) → verify launch-copy claims TRUE → LAUNCH post.
-F.  AUTOMATE (design locked 2026-06-24): an LLM is required end-to-end (writing AND the pre-post visual verify),
+F.  AUTOMATE — ☐ BUILD & STAGE NOW, ENABLE LATER (one `launchctl load` after the skill is proven). Design locked 2026-06-24: an LLM is required end-to-end (writing AND the pre-post visual verify),
     so automation = a LOCAL `claude -p` AGENT (Agent SDK headless, --allowedTools Read,Bash,Write,Edit), fired by
     **launchd** (~/Library/LaunchAgents/ai.anicca.note-publish.plist, same pattern as the live ai.anicca.* jobs).
     Must be LOCAL (cloud Routines can't reach the daily-driver browser). The agent loop:
