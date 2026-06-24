@@ -59,7 +59,28 @@ ClawRouter profiles: free (100% savings, $0) · auto (74-100%) · eco (95-100%) 
 
 ---
 
-## RIGHT NOW — updated 2026-06-23b (MONETIZE BEFORE PUBLISH — we don't give the sauce for free)
+## RIGHT NOW — updated 2026-06-24c (★ TOP PRIORITY = FINISH + LAUNCH ANICCA, instances earn with NO human ★)
+★ Dais 2026-06-24: the Automaton article is DONE & LIVE (the PROOF/content). Writing more articles (N1/N2)
+and AUTOMATING the article skill (F1-F4) are WAY LATER — Dais writes the other articles with a separate CC.
+THE one thing that matters now = ANICCA itself: release it + prove every instance EARNS money with no human
+in the loop, then LAUNCH. Critical path below (EARN → CLOUD 3体 → VERIFY claims TRUE → LAUNCH). ★
+
+CRITICAL PATH TO LAUNCH:
+ A. EARN no-human (PHASE 1-2): realised revenue > 0 from each tool (HL close / yield interest / x402 sale),
+    decided & executed by anicca ITSELF on the FREE model. Dashboard revenue_by_source shows each tool's $>0.
+ B. CLOUD 3体 (PHASE 4 / L1): fix genesis/cloud repo so the RIGHT anicca spins up on Akash; ≥3 cloud instances
+    LIVE + on the dashboard (the launch claim "クラウド3体・ローカル1体" must be TRUE before we say it).
+ C. VERIFY every launch-copy claim is TRUE (L2): instance count, dashboard live, UBI cron actually sends,
+    self-* crons real, earn realised on-chain. No claim ships unverified.
+ D. LAUNCH (L3): post the announcement with the article URL + (demo) YouTube URL.
+ E. (end-state, AFTER launch) agent substrate = spec 2026-06-24-anicca-agent-substrate-design.md (OpenClaw +
+    voice/earn/multi-tenant agents) → Life Manager 10k MRR. Start AFTER launch, separate worktree.
+
+DEFERRED (way after launch, lower priority): F1 publish-to-note.sh → F2 claude -p agent → F3 launchd plist
+(write but don't load) → F4 generalize. + more articles. Order stays as decided; just not now.
+
+──────────────── (article publish history, DONE — kept for reference) ────────────────
+## RIGHT NOW (article) — 2026-06-23b (MONETIZE BEFORE PUBLISH)
 The article is DONE & verified (note draft, all visuals as compact images, infographic). Before publishing we set
 up monetization, because the whole point is 10k MRR from writing. note = the key. ORDER:
 
