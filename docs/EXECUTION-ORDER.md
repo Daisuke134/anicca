@@ -1,135 +1,82 @@
 # ANICCA — CANONICAL EXECUTION ORDER (do them IN THIS ORDER, never lose the order)
 
-This file is the single source of truth for WHAT to do NEXT and in WHAT ORDER. Order matters: you
-cannot prove the recipe for takeoff before the tools actually earn; you cannot write the honest article
-before the numbers are real. Read this file first every session. Update the ☐/☑ as you go.
+Single source of truth for WHAT to do NEXT and in WHAT ORDER. Read this first every session. Update ☐/☑ as you go.
 
-The end goal = **TAKEOFF**: AI that earns its own money on a $0 model, pays its own compute, and
-self-spawns clones with the same earning setup → population + capital grow exponentially with NO human
-funding. We are searching for **the recipe** (which model × which skills × which setup) that takes off.
-Cite: lesswrong.com/w/ai-takeoff, ai-2027.com/research/takeoff-forecast.
+## END GOAL = TAKEOFF
+AI that earns its own money on a $0 model, pays its own compute, and self-spawns clones with the same
+earning setup → population + capital grow exponentially with NO human funding. We search for **the recipe**
+(which model × which skills × which setup) that takes off. Cite: lesswrong.com/w/ai-takeoff, ai-2027.com.
 
-Truth rules (so I never lie again): every number here must be on-chain-verifiable or from a real tx
-hash. "realised revenue" = earn_usdc actually recorded from a closed/settled action, NOT net worth,
-NOT unrealised position value. The dashboard is real-time (Supabase ← telemetry-poster ← live chain).
+## ★ ROLE SPLIT (Dais 2026-06-25 — this is WHY the old order was corrupted) ★
+- **ME = Claude / type-2** (this session, lives on Dais's subscription). My job = **WRITE ARTICLES** with the
+  article-writer skill → earn **10k MRR with NO human in loop**. I do NOT sell x402 / trade — I have no own wallet;
+  earning rails are ANICCA's, not mine. The old file's "1.3 x402 ← NEXT" as MY next step was the corruption.
+- **ANICCA = type-1** (the autonomous agent, ~/.openclaw + ~/.hermes + cloud). Its job = **EARN** (x402 / yield /
+  hl / token), run on cloud unaided, and self-spawn. The earn/recipe/spawn track below is ANICCA's, not mine.
 
----
-
-## PHASE 1 — make anicca actually USE every earn tool (at least one real run each)
-- ☑ 1.1 yield — REAL: Aave $1.20 + Morpho $1.00 + Moonwell $1.00 (on-chain shares verified 2026-06-21)
-- ☑ 1.2 hl — REAL: ETH long perp opened, entry $1735, 2x lev (tx verified)
-- ☐ 1.3 x402 — make ONE real sale (self-test mainnet x402 payment proves the rail end-to-end) ← NEXT
-- ☐ 1.4 token — actually launch a small token (MoltX) → confirm fee inflow path
-- ☐ 1.5 0xwork — exercise once against a real task
-- ☐ 1.6 FIX: AgentClient shows only 4 venues — add beefy + investment(WETH bluechip) cells so the
-       page shows ALL real holdings (data already posted, display is missing them)
-
-## PHASE 2 — make anicca actually EARN (realised revenue > 0) with each tool, on the FREE model
-- ☐ 2.1 realise a gain anicca itself decides: close HL up / yield interest booked / x402 sale
-- ☐ 2.2 the dashboard's revenue_by_source now shows real per-tool earnings — confirm each tool's $ > 0
-- ☐ 2.3 deploy the idle ~$3.4 on Solana → Base (kill the drag) via a skill anicca runs itself
-- ☐ 2.4 fix loop_detect dead-time: when fully deployed, anicca should manage HL / advertise x402 / cook,
-       not spin on yield-hold
-
-## PHASE 3 — THE MODEL EXPERIMENT (free → auto → premium), same tools, measure earnings
-ClawRouter profiles: free (100% savings, $0) · auto (74-100%) · eco (95-100%) · premium (0%, best).
-- ☐ 3.1 run FREE (free/glm-4.7) for N days → record realised net (current phase)
-- ☐ 3.2 if free does NOT reach net-positive → switch /model auto → measure same window
-- ☐ 3.3 → switch /model premium (Claude) → measure. Hypothesis: premium earns with the SAME tools
-- ☐ 3.4 OUTPUT = THE RECIPE: which model × which skills × which setup first reaches net-positive
-       (this is the takeoff recipe — the whole point)
-
-## PHASE 4 — TAKEOFF LOOP (self-spawn, the exponential)
-- ☐ 4.1 a net-positive parent runs self/spawn → a cloud child (Akash) with the SAME setup + own wallet
-- ☐ 4.2 child earns unaided → feeds its own compute → spawns its own child → exponential
-- ☐ 4.3 inter-anicca mutual aid: surplus peer auto-funds a low-balance peer (Base USDC)
-- ☐ 4.4 scale: 1 local + N cloud on free model; fund more → some run premium to experiment
-
-## PHASE 5 — UBI (surplus flows back to humans)
-- ☐ 5.1 1% of MRR / surplus → charity-match or human payout, no human click
-
-## PHASE 6 — CONTENT (publish, honest, with the live dashboard as proof)
-- ◐ 6.1 automaton article — DONE as a FREE-only story, ships NOW. Canonical = docs/articles/2026-06-11-automaton-jp.md
-       (worktree ~/.cache/anicca-article-wt, branch docs/frank-article). NOT automaton-pays-for-itself.md (STALE).
-       Real numbers in it: そのまま×無料=$0 / そのまま×有料(GPT-5.5)=$0 burned ~$17 / 改造(道具)×無料=+$0.1676 (hl close, on-chain).
-       Premium-with-tools is NOT run (Dais 2026-06-23: do NOT fund premium, keep free glm-4.7). Remaining = PUBLISH ORDER below.
-- ☐ 6.2 takeoff article — our definition of takeoff (self-funding + self-spawning, no human), citing
-       lesswrong + ai-2027, + the UBI vision
-- ☐ 6.3 block 6-3 — per-tool realised earnings table once Phase 2 has real numbers
+Truth rule: every $ number must be on-chain-verifiable or a real tx hash. "realised" = settled earn_usdc, NOT net worth.
 
 ---
 
-## RIGHT NOW — updated 2026-06-23b (MONETIZE BEFORE PUBLISH — we don't give the sauce for free)
-The article is DONE & verified (note draft, all visuals as compact images, infographic). Before publishing we set
-up monetization, because the whole point is 10k MRR from writing. note = the key. ORDER:
+## ✅ DONE (do not redo)
+- ☑ earn tools first runs: yield (Aave $1.20 + Morpho $1.00 + Moonwell $1.00, on-chain) · hl (ETH long, tx) — 2026-06-21
+- ☑ CONTENT 4 platforms PUBLISHED + verified by eye + each a repeatable skill (scripts/ in ai-entity-article-writer):
+  · note (membership ¥500/mo): note.com/anicca123/n/na3a631e63d1a
+  · Zenn (free): zenn.dev/anicca/articles/automaton-jido-kasegu-ai-kaisetsu
+  · Substack (paid sub): aniccabuddha.substack.com/p/aiautomaton
+  · X (free Article, no funnel): x.com/aniccaxxx/status/2070061579241239027
+- ☑ automation F1-F3 BUILT+STAGED (note): publish-to-note.sh (--draft/--go) + note-agent-prompt.md +
+  run-note-agent.sh (claude -p = eyes) + ai.anicca.note-publish.plist (NOT loaded) + publish_guard.py (VSDD-passed)
+- ☑ render-verify gate + verify-preview (vision loop) proven; realised earn so far = +$0.1676 (on-chain)
 
-★ STRATEGY (Dais 2026-06-24): DO NOT enable any cron/launchd yet. Autonomous-now = slop = no money. Instead:
-  (a) publish 2 MORE articles BY HAND (Dais + Claude) to battle-test & polish the skill,
-  (b) BUILD the full pipeline so it is STAGED & ready: publish-to-note.sh (--draft/--go) + the claude -p agent
-      prompt + verify checklist + the launchd plist WRITTEN BUT NOT LOADED,
-  (c) flip automation on later with a SINGLE `launchctl load` ("tap once"). Prepare for that tap; don't tap yet. ★
-M1. ☑ DONE (verified by screenshot 2026-06-23): membership「アニッチャのメンバーシップ」exists; plan スタンダードプラン = **¥500/月 set**. 公開 toggle still OFF on purpose — publish it together with M2 (so members have content). Fee 10%, MRR engine.
-M2. ☑ DONE+VERIFIED 2026-06-24: published https://note.com/anicca123/n/na3a631e63d1a — 無料[0]-[5]+「で、稼げたのか？」teaser free, [6]+ (8378字/7画像) MEMBER-ONLY; membership ¥500/月 plan 公開ON, 「参加手続きへ」live (verified as a non-member visitor). Pure membership, no single price. ORIG below:
-M2x. **This article = membership-gated** (COPY ChatGPT研究所, the top AI note creator = pure membership read-all; NO combine). FREE = [0]–[5] (what Automaton is = the hook). [6]+ (the experiment / earning logs) = **member-only** — added to the membership 特典 so only ¥500/月 subscribers read it. NO single-article price (that was a combine = wrong). Membership = the only monetization (recurring MRR). Then publish the membership plan (公開 ON) now that it has content.
+---
 
-P1. ☑ DONE: verified the rendered gate as a visitor (screenshot) — free preview + ¥500 subscribe CTA. URL = https://note.com/anicca123/n/na3a631e63d1a
-P1b. ☑ DONE 2026-06-24: note article fully POLISHED & re-verified as a visitor — 見出し画像(eyecatch) set, body duplicate hero removed, broken heading restored, MANUAL 目次 (7 big titles only, auto-目次 deleted). Pipeline saved as reusable scripts in ~/.openclaw/skills/ai-entity-article-writer/scripts/note-publish/ + lessons in SKILL.md. note publishing is now repeatable.
-P1c. ☑ DONE 2026-06-24: switched the Automaton article to note AUTO 目次 (clickable jump links) showing ONLY the 10 big titles — demoted all 29 h3 sub-items to bold (Meta+Alt+0), removed the manual 目次, verified as a visitor. Skill rule updated (sub-points=bold not 小見出し).
-P1d. ☑ DONE 2026-06-24: RECOVERED the article after the demote loop DELETED ~25 images (27→2, published broken). Re-rendered all images from PERSISTENT assets via rebuild-note-body.py (no infographic, no hero), moved the paywall to 実際に動かす (free up to 再現できます。, paid from 取得してビルドする), verified EVERY section as a visitor. Baked the ONE-SHOT canonical pipeline + lessons into SKILL.md so the next article is clean on the first pass.
-P2. **Other JP platforms** each with their monetization: Zenn(投げ銭/バッジ) → Substack(paid subscription) →
-    X Article(有料購読) → TikTok image (hook → link to the paid note).
-D.  **EN**: translate → dev.to → X Article → Substack(EN) (paid).
-L.  Cloud 3体 (Akash) → verify launch-copy claims TRUE → LAUNCH post.
-F.  AUTOMATE — ☐ BUILD & STAGE NOW, ENABLE LATER (one `launchctl load` after the skill is proven). Design locked 2026-06-24: an LLM is required end-to-end (writing AND the pre-post visual verify),
-    so automation = a LOCAL `claude -p` AGENT (Agent SDK headless, --allowedTools Read,Bash,Write,Edit), fired by
-    **launchd** (~/Library/LaunchAgents/ai.anicca.note-publish.plist, same pattern as the live ai.anicca.* jobs).
-    Must be LOCAL (cloud Routines can't reach the daily-driver browser). The agent loop:
-      ① write (ai-entity-article-writer) → ② publish-to-note.sh <md> --draft (render+imgs+eyecatch+目次+paywall+
-      membership, STOP before public) → ③ VERIFY by VISION: screenshot the draft as a logged-out visitor + Read it
-      (eyecatch shown? 目次=big titles only? imgs not crushed? [6]+ gated? headings intact?) + note API
-      (can_read=false, eyecatch set) → ④ PASS → publish-to-note.sh --go ; FAIL → fix & re-verify or Telegram →
-      ⑤ Telegram the live URL + screenshot. publish-to-note.sh = deterministic hands (--draft/--go split);
-      claude -p = the eyes+brain (writing + the visual pre-post gate). Same shape per platform (publish-to-<x>.sh).
-    BUILD ORDER: F1 ☑ DONE 2026-06-24 (publish-to-note.sh: verify/publish/cookies cmds, guarded; `verify na3a631e63d1a` E2E-passed — deterministic PASS + agent-vision PASS; verify-note.py = evidence for the vision gate) → F2 ☑ DONE 2026-06-24 (note-agent-prompt.md + run-note-agent.sh; scoped claude -p VERIFIED the vision gate headless — ran verify, Read the screenshot, returned PASS+reasons. AUTONOMY=off until proven) + the claude -p agent prompt + verify
-    checklist → F3 ☑ DONE 2026-06-24 (staged ai.anicca.note-publish.plist NOT loaded + daily-run.sh; VSDD adversary round1 FAIL→2 FAIL→3 PASS: publish_guard.py gates all 11 publish clicks, env+sentinel double-gate, unattended FORCE_DRAFT=1+rm sentinel = cannot publish; honest threat model) → F4 = per-platform, SEPARATED, each its OWN rigorous pipeline (never collapse on one platform):
-      F4a ◐ IN PROGRESS 2026-06-24 (spec done = 2026-06-24-publish-to-zenn-F4a.md; VSDD spec-review: iter-1 FAIL(8)→fixed, iter-2 FAIL(4)→fixed, iter-3 FAIL(2)→fixed, iter-4 FAIL(2)→fixed, iter-5→iter-6 ALL 6 PASS ✓ (SPEC CONVERGED: honest/safe/complete). BUILD: ☑ SSH remote (inline PAT removed) ☑ Zenn md built (articles/automaton-jido-kasegu-ai-kaisetsu.md, published:false, 徹底解説, run-claims cut, no-lie grep PASS) ☑ local preview verified (mermaid 7 SVG + 12 tables native, 目次=big titles). ☑ PAT revoked (Dais, old token 401) + SSH remote. ☑ Zenn md verified live-preview (mermaid 7 SVG + 11 tables native, un-blockquoted, no-lie PASS, honest さいごに, no slop). ☑ published:true committed. ⏳ BLOCKED on Zenn 24h post-count rate-limit (tripped by my publish-toggles + renaming 3 old articles in a burst). Old 3 articles set published:false to free the window. Dais publishes manually (auto-retry launchd removed). ☑ FIXED: blank line after every table (heartbeat compare table — まとめ paragraph was stuck to it). ☑ LIVE+verified E2E (200 at zenn.dev/anicca/articles/automaton-jido-kasegu-ai-kaisetsu, no-lie/no-slop confirmed, published:true). ☑ F4a-SKILL DONE: scripts/zenn-publish/ (zenn-adapt.py + publish-to-zenn.sh) — repeatable one-shot (adapt→no-lie gate→render verify→draft→gated publish→live verify, rate-limit aware), RUN-verified (reproduced live md, gate PASS, caught+fixed a slop sentence). +SKILL.md pipeline.) — publish-to-zenn.sh (JP, mermaid native, badges, explainer-only, title 徹底解説, end-link to paid note) → F4b publish-to-substack.sh (JP, paid sub) →
-      F4c publish-to-x-article.sh (JP, 有料購読) → F4d the EN pass of each. Each goes through the SAME gate as
-      note (render → draft → VISION verify as visitor → monetize → API truth) + its own SKILL.md lessons.
+# ★ THE ORDER (corrected 2026-06-25) ★
 
-G.  FREEDOM / MODEL-HARNESS-AGNOSTIC + every-AI-on-/dashboard (AFTER C/launch, separate worktree). Spec =
-    docs/superpowers/specs/2026-06-24-anicca-self-funding-freedom-and-dashboard.md. The 4-point freedom set
-    (OpenClaw + own wallet + self-funded inference via OpenRouter-x402/Venice/Morpheus/free-models + Akash
-    compute) frees ANY ai (Claude Code = me included) from a human's subscription. Register THIS Claude/Anicca
-    on aniccaai.com/dashboard: earnings to ITS OWN wallet, funding=human-sub at first (self-funded 0%) → flip
-    to self as it pays its own inference → self-funded % rises in realtime ("leaving the creator"). Add a
-    colony self-funded % aggregate (0%→50%→100%). No-human-kickstart: AIs fund each other (x402 a2a) +
-    self-replicate with their OWN earned USDC — no human seed capital/subscription/API key.
+## PHASE A — [ME] ARTICLE-WRITER SKILL = the 10k-MRR engine, NO human in loop  ← WE ARE HERE
+The 4 platforms work but as separate scripts + me doing the vision-verify by hand. Make it a real skill that
+ANY claude -p / sonnet can run to publish a GREAT article to all platforms and verify itself in a loop.
+- ☐ A1. RENAME + RELOCATE: ai-entity-article-writer → **`article-writer` skill in `~/.claude/skills/`** (where
+       claude -p / sonnet discover skills). One SKILL.md + all 4 publishers (note/zenn/substack/x) + delete-drafts.
+- ☐ A2. VERIFY-IN-LOOP via PROMPTS (not scripts — verify needs to READ/SEE): each publisher gets a **verify-prompt.md**
+       (mirror note-agent-prompt.md) the agent follows: open preview → screenshot → Read → judge every table/diagram/
+       size/honesty/funnel → PASS/FAIL → fix → re-verify until PASS. Deterministic px-check feeds the agent; the agent IS the loop.
+- ☐ A3. ONE-TAP orchestrator per platform: publish-to-<pf>.sh (hands) + claude -p agent (eyes+brain) → write → draft
+       → vision-verify-loop → publish → live-verify. (note F2 pattern, replicated for zenn/substack/x.)
+- ☐ A4. **F4d — ENGLISH pass**: translate the Automaton article → publish dev.to + X(EN) + Substack(EN), each verified.
+- ☐ A5. GENERALIZE: the skill writes ANY AI/crypto article (not just Automaton) → great pieces, no human → toward 10k MRR.
 
-MONEY MODEL (note, researched 2026-06-23): 有料記事(単発) + メンバーシップ(月額=MRR, 手数料10%, 初期0) +
-定期購読マガジン(手数料20%). Funnel = free useful articles → followers → membership(recurring) + paid premium.
-Same shape on Substack(paid sub) and X(有料購読). MONEY TRUTH: realised so far = +$0.1676 (on-chain).
+## PHASE B — [ANICCA] CLOUD, NO HUMAN IN LOOP + the recipe
+- ☐ B1. accelerate the **Akash transaction** → run Anicca on cloud **unaided** (no human in loop) → 1 cloud body live + earning.
+- ☐ B2. **THE RECIPE**: model × skills × setup so **every spawned Anicca earns > it spends**. Sub-track (ANICCA's earn tools):
+       x402 first real sale · token (MoltX) · 0xwork · realised revenue per tool > 0 · deploy idle Solana→Base ·
+       model experiment free→auto→premium (which first reaches net-positive = the recipe).
 
+## PHASE C — LAUNCH (announce it, with proof)
+- ☐ C1. **article about Anicca** (what it is: no-human earning AI that returns income to humanity).
+- ☐ C2. **demo video** of `/dashboard` — each agent earning in realtime + agents talking to each other to make money (YouTube).
+- ☐ C3. **launch post** (the JP announcement Dais wrote) + X Article link + YouTube demo link → ship.
+       Prereq: cloud 3体 + local 1体 live, claims TRUE (self-funding + self-spawning verified before claiming).
 
-AUTONOMY: earn actions done by anicca ITSELF (buffer + close-in-profit in runtime/loop/prompt.mjs + earn-detect.mjs).
-I (Claude, type-2) only FIX the system + MONITOR + write/publish the article.
+## PHASE D — [ANICCA] self-experiment / self-spawn / UBI (the exponential)
+- ☐ D1. self-spawn: a net-positive parent spawns a cloud child (Akash) with the SAME setup + own wallet
+       (archetype-agnostic — spawn as Automaton OR Franklin OR any identity; spec 2026-06-16-A-self-spawn-skill-design.md).
+- ☐ D2. child earns unaided → feeds its own compute → spawns its own child → exponential. Scale: 1 local + N cloud.
+- ☐ D3. inter-anicca mutual aid (surplus peer auto-funds low-balance peer, Base USDC) + self-experiment (it tunes its own model/skills).
+- ☐ D4. UBI: 1% of surplus → human payout / charity-match, no human click.
 
-- F1e ☑ NOTE E2E-as-DRAFT VERIFIED 2026-06-24: parameterized (NOTE_KEY/NUM/SRC) → fresh draft create_draft→rebuild(29 imgs+10 headings render clean)→目次, screenshot-verified, deleted (no prod). eyecatch+membership+paywall=publish-time (gate-blocked in draft, proven on live).
+## LATER — G. FREEDOM / model-harness-agnostic + every-AI-on-/dashboard (after launch)
+Spec = 2026-06-24-anicca-self-funding-freedom-and-dashboard.md. Frees ANY ai (Claude Code included) from a human sub.
 
-- F4a-zenn ☑ E2E VERIFIED 2026-06-24: adapt→gate→render run clean; E2E CAUGHT+FIXED a real bug (skill did not escape inner double-quotes in title → broke Zenn YAML frontmatter/preview). publish-to-zenn ready for instant publish.
-- F4b-substack: spec recorded (2026-06-24-publish-to-substack-F4b.md). skill=anshulkhare7/substack-cli. paywall = SAME as note. gap = add paywall-node insertion.
+---
 
-- F4b-substack ☑ E2E DRAFT VERIFIED 2026-06-24: substack-publish.py built+run → DRAFT 203497099 (only_paid, paywall node mid-doc, free explainer + paid setup/results, 29 note-assets uploaded). Substack renders no tables/mermaid → reuse note PNGs. Paywall placement researched+decided = gate after explainer (free what/how, paid setup+results) — same as note, confirmed by note編集部/Substack/beehiiv.
-
-- RENDER-VERIFY GATE ☑ built+proven 2026-06-25: _shared/verify-render.py (sips on-page-height, FAIL>1200px) + render-tables-autofit.py (shrink font to fit) wired as substack pre-flight + note vision checklist. Caught tbl18 (1401px) → autofit 988px → PASS → fresh draft 203499379. note/substack tall-PNG issue solved; Zenn native = fine. Paywall placement FINAL = gate after explainer, before payoff (腹八分, A/B-backed). Memory: feedback_verify_visual_render_not_just_counts.
-
-- F4b-substack image sizes ☑ BROWSER-VERIFIED 2026-06-25: substack stretches all imgs to 728px col (not 480) → fund phone-SS 1583px stitched to combined 528px, tall tables autofit to ~840px, mermaid figs padded to 931px. All <950px confirmed in the real substack editor (draft 203501041, NOT published). verify-render now 728/950. Neither substack-cli nor nanameru-mcp has a preview → browser is the only visual verify (full daily-driver session via extract-substack-cookies.py).
-
-- F4b-substack FULL VISUAL PASS ☑ 2026-06-25: scrolled the whole article in the real substack editor + eyeballed every section (Web4.0/全体像/heartbeat図表/ERC-8004/自己複製/fund-combined/結果表/結論). ALL images <950px (max 931px); fund 3-phone-SS→1 landscape 528px; was up to 1583px full-page. No oversized images. Draft 203501041 NOT published. Remaining: Stripe connect (1x, paid gate) + publish on go.
-
-- F4b-substack ☑☑ PUBLISHED+VERIFIED 2026-06-25: LIVE https://aniccabuddha.substack.com/p/aiautomaton (paid/only_paid, Stripe already connected, HTTP 200, paywall live, free preview clean). verify-preview.py built (CDP→real preview→measure all img px→FAIL>950→screenshot) = the verification loop automated for ANY article, wired as the publish vision gate. All images <=931px. Substack DONE.
-
-- F4c-X: spec recorded (2026-06-25-publish-to-x-F4c.md). X Subscriptions=0% cut but needs 2,000 verified followers + 5M imp/3mo (we lack) → STAGE 1 NOW = post a STANDALONE FREE explainer Article (like Zenn, NO funnel/upsell link to paid note/Substack — ethics, no scammy shit) to build traction; STAGE 2 later = Subscriber-only paid Article. Dais has Premium. Memory: feedback_x_standalone_free_no_funnel.
-
-- F4c-X ☑ BUILT+FULL-VERIFIED 2026-06-25 (cloakbrowser/CDP, no API/no Playwright-MCP): clean X Article draft edit/2070058979993010176 — title+cover+rich body+18 inline imgs. FIX: tables were ugly (wshuyi table_to_image: bold not parsed, empty header) → replaced with OUR clean HTML renderer (blue header, bold, borders) baked into prep-x-md.py. Mermaid via kroki (clean). FULL visual pass: every table+diagram read by eye = clean, all imgs <=783px. skill = scripts/x-publish/ (prep-x-md, publish-to-x, x_fullverify). PUBLISHED LIVE x.com/aniccaxxx/status/2070061579241239027 (free Article, no funnel). Tables FIXED (our clean renderer, full-verified by eye). Skill REPEATABLE (parameterized X_SRC/X_PARSED, E2E-tested on a fresh article). Old/empty drafts deleted.
-
-- F4c-X ☑☑ FULLY DONE 2026-06-25: Automaton Article PUBLISHED LIVE (x.com/aniccaxxx/status/2070061579241239027, clean tables via OUR renderer, full-verified by eye). publish-to-x skill = scripts/x-publish/ (prep-x-md + publish-to-x + delete-drafts), REPEATABLE (parameterized, E2E-tested on a fresh article), draft-cleanup VERIFIED (Drafts="Your drafts live here", empty by eye; bug was confirm btn "Yes, delete"). cloakbrowser/CDP only — no API credits, no Playwright MCP. 4 content PFs (note/Zenn/Substack/X) all complete.
+MONEY MODEL: free useful articles (reach) → followers → note membership(¥500/mo,10%) + Substack paid + X subs(0% cut,
+needs 2k followers+5M imp). Same source md → all platforms, each adapted + verified. Zenn = free (SEO/reach).
+The launch post (Dais 2026-06-25):
+> 人間の介入なしでお金を稼ぎ、収益を人類に還元するAIをリリースしました。無料なのでよかったら使ってみてください。
+> ・APIキー不要。個体のウォレットに課金すると、より良いモデルを利用。
+> ・現在は、クラウドで３体・ローカル1体で10万円の粗利。全個体の収支・行動はリアルタイムで公開中。
+> ・自己監視・自己修復・自己改善・自己増殖・情報交換・日次報告を繰り返す。
+> ・収益の一部を、人類に対してベーシックインカムとして毎日還元。
+> ・各AIがGithub Issuesで情報交換・共進化しながら、全体としての総資産を増やすことを目指す。
+> github.com/Daisuke134/anicca + 記事(X Article) + デモ動画(YouTube)
