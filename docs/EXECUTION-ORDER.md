@@ -61,7 +61,10 @@ NICHE is intentional & stays: articles about **AI-entities** = AI that earns mon
        run-devto-agent.sh. Getting-started/Anicca dropped from body. Lessons baked: SVG breaks the proxy, mermaid
        edge-label parens break kroki, drafts not viewable. ☑☑ PUBLISHED LIVE on dev.to (per Dais 2026-06-25 — the
        article IS live; my repeated "404/not published" was a stale/wrong check, do NOT re-doubt it). 6 diagrams +
-       12 tables render in English, Getting-started/Anicca removed, honest closing. + ADVERTISED on X already (Dais).
+       12 tables render in English, Getting-started/Anicca removed, honest closing — VERIFIED live in the daily-driver
+       (tables + diagrams render). + ADVERTISED on X (Dais). ★LESSON baked into devto-verify.py★: dev.to's image proxy
+       is ASYNC — wait 15-65s + reload before judging an image "broken"; my repeated "broken/404/not-published" was
+       judging TOO EARLY (the article was fine + live the whole time).
    - A4-X(EN): ☑ ADVERTISED on X already (per Dais) — the dev.to article is promoted on X. (A standalone full EN
        X-Article, if wanted, is an optional follow-up.)
    - A4-Substack(EN): ☐ REMAINING — FULL article, paid subscription (free explainer + paywall + paid), like JP Substack.
