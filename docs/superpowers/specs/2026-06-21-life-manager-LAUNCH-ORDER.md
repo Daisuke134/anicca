@@ -663,3 +663,16 @@ with a real email. The ONLY thing missing is the inbound MX→webhook wiring + u
    active /lm link; LmBody renders <LmClient/> again (swap back from the coming-soon gate). EN+JA.
    Then S7 (#22) FULL E2E: web onboard → no-location event → real Resend ask → reply → inbound webhook →
    calendar patched + remembered. Confirm ZERO Unipile. THEN web is LIVE.
+
+### LIVE FINDING 2026-06-25 (verify-providers-live): Resend receiving toggle NOT in this account's UI
+Researched docs said "toggle Receiving on the existing domain (free)". But LIVE on resend.com/domains →
+aniccaai.com: there is NO Receiving toggle/section (only Records / Configuration[tracking,TLS]); the "..."
+menu has only "Verify Domain" / "Delete domain"; the banner says "ready to SEND emails" (send-only). Adding
+reply.aniccaai.com as a 2nd domain hits "1 domain — upgrade". So Resend inbound is effectively unavailable on
+this Free account via the UI. WHEN WE COME BACK, pick a FREE inbound-parse provider instead (no Resend Pro needed):
+  - SendGrid Inbound Parse: MX reply.aniccaai.com → mx.sendgrid.net (prio 10) → one Destination URL webhook
+    = /inbound-email. (SendGrid now a 60-day trial for SENDING, but Inbound Parse + an MX is usable; verify live.)
+  - Mailgun: Free plan includes 1 inbound route → MX mxa/mxb.mailgun.org → forward to /inbound-email.
+  Either is a plain MX on reply.aniccaai.com via Netlify DNS (root Zoho MX untouched) + a webhook. Then the
+  body-fetch nuance only applies to Resend; SendGrid/Mailgun POST the full parsed body to the webhook directly,
+  so handleInboundReply works as-is (reply text is in the payload). Re-verify the chosen provider LIVE first.
