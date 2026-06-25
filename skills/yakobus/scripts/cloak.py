@@ -80,9 +80,9 @@ def main():
             print("URL:", page.url)
         elif cmd == "eval":
             out = json.dumps(page.evaluate(sys.stdin.read()), ensure_ascii=False, default=str)[:60000]
-            # never echo card PANs read back from the DOM — incl. spaced/dashed forms (4111 1111 1111 1111)
-            out = re.sub(r"(?:\d[ \-]?){13,19}", "<redacted-card>", out)
-            out = re.sub(r"\d{12,}", "<redacted-digits>", out)
+            # redact card PANs only (card-shaped runs) — avoid over-redacting "1 2 3 .." numeric lists:
+            out = re.sub(r"\b(?:\d{4}[ \-]){3}\d{1,4}\b", "<redacted-card>", out)  # 4-4-4-4 grouped
+            out = re.sub(r"\b\d{13,19}\b", "<redacted-card>", out)                 # bare 13-19 digit PAN
             print(out)
         elif cmd == "url":
             print("URL:", page.url, "| TITLE:", page.title())
@@ -108,8 +108,9 @@ def main():
             xy, text = arg.split("||", 1); x, y = xy.split(",")
             if text.strip() == "@env":               # secret-safe path: value from env, never argv
                 text = os.environ.get("CLOAK_FILL_VALUE", ""); shown = "<env-secret>"
-            elif re.search(r"\d{12,}", text.replace(" ", "").replace("-", "")):
-                raise SystemExit("typeat refuses long digit strings (card?) in argv — use `fill` or `@env` (CLOAK_FILL_VALUE)")
+            elif re.fullmatch(r"\d{3,}", text.replace(" ", "").replace("-", "")):
+                # any pure-digit run (CVV 3-4, OTP, PAN 13-19) must NOT pass through argv → use fill/@env
+                raise SystemExit("typeat refuses pure-digit strings (CVV/PAN/OTP) in argv — use `fill` or `@env` (CLOAK_FILL_VALUE)")
             else:
                 shown = text
             page.mouse.click(float(x), float(y)); page.wait_for_timeout(400)
@@ -120,6 +121,8 @@ def main():
             # SECRET-SAFE: value comes from env CLOAK_FILL_VALUE, never argv (argv shows in `ps`/transcript).
             sel = arg
             val = os.environ.get("CLOAK_FILL_VALUE", "")
+            if not val:   # never fake-success on an unset/empty env (would submit a blank card field)
+                raise SystemExit("CLOAK_FILL_VALUE empty/unset — refusing to fill (no fake success)")
             page.locator(sel).first.fill(val, timeout=8000)
             print("FILLED:", sel, "(value via env, masked)")
         # NOTE: never browser.close() — CDP detach happens automatically on context exit.
