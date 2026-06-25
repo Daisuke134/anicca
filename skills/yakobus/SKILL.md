@@ -19,15 +19,27 @@ rules to decide — reason over the candidate list `search_buses.py` returns. Wh
 can't be met (cheapest is sold out, or only lands one stop short e.g. 池袋 vs 新宿), surface the real
 trade-off and ask ONE crisp question; otherwise just proceed.
 
-## Tools (scripts/)
+## Supported today
+The verified path is **バス比較なび → kosokubus.com** booking. `search_buses` works for any bushikaku
+route; the booking-drive selectors in §gotchas (card-field IDs, levers) are **kosokubus-specific**. Other
+sites (willer/busbookmark) are reachable via cloak.py but need their own selectors — detect the host first
+and adapt; do not assume kosokubus DOM elsewhere.
+
+## Tools (scripts/) — run STRICTLY SEQUENTIALLY (one CDP client at a time; never two at once)
 - `python3 search_buses.py <from> <to> <YYYYMMDD>` → JSON candidates (price, stops, availability, times)
-  + bookingLinks. Sorted cheapest-first. Raw data only — you pick.
+  + bookingLinks. Sorted cheapest-first. Raw data only — you pick. Exits 1 with `{"error":...}` if no
+  candidates. Closes its own tab. `stops` are the real alighting place-names (works for any destination).
 - `CLOAK_TARGET=<urlsubstr> CLOAK_SHOT_DIR=<dir> python3 cloak.py <cmd> [arg]` → drive the live
   daily-driver CloakBrowser (goto/eval/url/pages/shot/shotfull/clicktext/clicksel/clickxy/typeat/fill).
-- `read_otp.py --merchant <name> --minutes 15` → newest 3-D Secure OTP from Gmail (validated).
+- `read_otp.py --merchant <name> --amount <jpy> --minutes 15 --tries 6` → newest 3-D Secure OTP from
+  Gmail, RETRIED 6× (email arrives delayed), validated by merchant+amount. Exits 1 if none.
 - Card + passenger profile live in `~/.openclaw/.env` (`DAIS_CARD_PAN/_EXP_MONTH/_EXP_YEAR/_CVV/_NAME`,
-  `DAIS_PHONE`); email redacted@example.invalid. NEVER echo these — source `.env` and pass via env.
-- Google Calendar: use your gcal tool/MCP (gog has no gcal). Create a transit event + the bus event.
+  `DAIS_PHONE`); email redacted@example.invalid.
+  **SECRETS**: never put card values in argv (visible in `ps`/transcript). Fill them via
+  `CLOAK_FILL_VALUE="$DAIS_CARD_PAN" cloak.py fill '#cardNum'` (value read from env, printed masked).
+  `typeat` puts its text in argv → use it only for NON-secret fields (times, OTP), never card PAN/CVV.
+- Google Calendar: gog has NO gcal — use your gcal tool/MCP (the verified 2026-06-25 mechanism). Create a
+  transit event + the bus event. (A self-contained gcal_add.py is a TODO; it needs OAuth creds.)
 
 ## Flow
 1. `search_buses` for the route/date. Pick the best (see judgment above).
