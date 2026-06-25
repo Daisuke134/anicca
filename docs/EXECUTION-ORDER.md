@@ -122,25 +122,4 @@ I (Claude, type-2) only FIX the system + MONITOR + write/publish the article.
 
 - RENDER-VERIFY GATE ☑ built+proven 2026-06-25: _shared/verify-render.py (sips on-page-height, FAIL>1200px) + render-tables-autofit.py (shrink font to fit) wired as substack pre-flight + note vision checklist. Caught tbl18 (1401px) → autofit 988px → PASS → fresh draft 203499379. note/substack tall-PNG issue solved; Zenn native = fine. Paywall placement FINAL = gate after explainer, before payoff (腹八分, A/B-backed). Memory: feedback_verify_visual_render_not_just_counts.
 
----
-## === CONSOLIDATED STATE + REMAINING (2026-06-25, authoritative) ===
-DONE: note(LIVE membership-gated, verified) · Zenn(LIVE, verified, E2E) · render-verify gate(built+proven) ·
-      paywall placement(decided: gate after explainer, before payoff) · note/Zenn/Substack skills built.
-SUBSTACK STATUS (honest): sizes FIXED (tbl18→988px, gate passes) · DRAFT 203499379 created with fixed assets ·
-      NOT published · NOT visually verified (editor screenshot blocked by substack.sid cookie format) = the gap.
-
-### CONTENT TRACK (in order)
-- ☐ S1. Substack — run the VISION half on draft 203499379 (screenshot the render + eyeball sizes/split) → then publish (Dais go). Needs Stripe connected on aniccabuddha for only_paid to actually gate.
-- ☐ F4c. X Article (JP, 有料購読) — build publish-to-x-article + E2E (same gate).
-- ☐ F4d. EN pass — translate → dev.to + X(EN) + Substack(EN).
-- ☐ WRITE. ai-entity-article-writer as a full skill (research → JA draft → de-slop/language-purity), run-verified.
-- ☐ TRANSLATE. JA→EN + EN de-slop gate.
-- ☐ ORCHESTRATE. claude -p orchestrator: write → each platform × {JA,EN} → render-verify(A+B) → report.
-- ☐ AUTOMATE. one `launchctl load` (after the full chain is proven end-to-end). Prepare the tap; don't tap.
-
-### EARN / TAKEOFF TRACK (deeper goal, parallel)
-- ☐ 1.3 x402 ONE real sale · 1.4 token launch · 1.5 0xwork · 1.6 fix AgentClient display (beefy+WETH cells)
-- ☐ 2.x realise revenue >0 per tool · deploy idle ~$3.4 Solana→Base
-- ☐ 3.x MODEL EXPERIMENT free→auto→premium = THE RECIPE (which model×skills×setup reaches net-positive)
-- ☐ 4.x TAKEOFF LOOP (self-spawn cloud child w/ own wallet) · 5.x UBI (surplus→humans)
-- ☐ L. Cloud 3体 (Akash) → verify launch-copy claims TRUE → LAUNCH post · G. freedom/dashboard (self-funded %)
+- F4b-substack image sizes ☑ BROWSER-VERIFIED 2026-06-25: substack stretches all imgs to 728px col (not 480) → fund phone-SS 1583px stitched to combined 528px, tall tables autofit to ~840px, mermaid figs padded to 931px. All <950px confirmed in the real substack editor (draft 203501041, NOT published). verify-render now 728/950. Neither substack-cli nor nanameru-mcp has a preview → browser is the only visual verify (full daily-driver session via extract-substack-cookies.py).
