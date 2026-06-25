@@ -33,18 +33,24 @@ Truth rule: every $ number must be on-chain-verifiable or a real tx hash. "reali
 
 # ★ THE ORDER (corrected 2026-06-25) ★
 
-## PHASE A — [ME] ARTICLE-WRITER SKILL = the 10k-MRR engine, NO human in loop  ← WE ARE HERE
-The 4 platforms work but as separate scripts + me doing the vision-verify by hand. Make it a real skill that
-ANY claude -p / sonnet can run to publish a GREAT article to all platforms and verify itself in a loop.
-- ☐ A1. RENAME + RELOCATE: ai-entity-article-writer → **`article-writer` skill in `~/.claude/skills/`** (where
-       claude -p / sonnet discover skills). One SKILL.md + all 4 publishers (note/zenn/substack/x) + delete-drafts.
-- ☐ A2. VERIFY-IN-LOOP via PROMPTS (not scripts — verify needs to READ/SEE): each publisher gets a **verify-prompt.md**
-       (mirror note-agent-prompt.md) the agent follows: open preview → screenshot → Read → judge every table/diagram/
-       size/honesty/funnel → PASS/FAIL → fix → re-verify until PASS. Deterministic px-check feeds the agent; the agent IS the loop.
-- ☐ A3. ONE-TAP orchestrator per platform: publish-to-<pf>.sh (hands) + claude -p agent (eyes+brain) → write → draft
-       → vision-verify-loop → publish → live-verify. (note F2 pattern, replicated for zenn/substack/x.)
-- ☐ A4. **F4d — ENGLISH pass**: translate the Automaton article → publish dev.to + X(EN) + Substack(EN), each verified.
-- ☐ A5. GENERALIZE: the skill writes ANY AI/crypto article (not just Automaton) → great pieces, no human → toward 10k MRR.
+## PHASE A — [ME] ai-entity-article-writer skill = the 10k-MRR engine, NO human in loop  ← WE ARE HERE
+NICHE is intentional & stays: articles about **AI-entities** = AI that earns money with no/minimal human in loop
+(sovereign agents, agent economies, on-chain earners). NOT "any AI/crypto", NOT assistants. The niche is the point.
+- The **WRITING engine (SKILL.md playbook + research recipe) is ALREADY general**: writes about ANY AI-entity topic,
+  picked by **SEARCH** (context7 for lib docs + firecrawl for web), NOT a static queue (the topic-queue line is stale).
+- What is NOT general yet = the **PUBLISHER SCRIPTS** (SKILL.md line 378: "still Automaton-hardcoded — parameterize"):
+  note = Automaton-hardcoded; zenn/substack/x = mostly parameterized. And the **verify-loop is only wired for note**.
+- So PHASE A = make the publishers run **ANY AI-entity article** end-to-end, no-human, self-verifying. (NOT broaden the niche.)
+- ☑ A1. RELOCATE done: `~/.claude/skills/ai-entity-article-writer` → symlink to the openclaw skill (usable by ME + claude -p; no breakage).
+- ☐ A2. VERIFY-IN-LOOP via PROMPTS for **zenn/substack/x** (note already has note-publish/note-agent-prompt.md): a
+       verify-prompt.md the agent follows → open preview → screenshot → Read → judge every table/diagram/size/honesty/
+       funnel → PASS/FAIL → fix → re-verify until PASS. The deterministic px-gates exist for all; the AGENT-PROMPT is the gap.
+- ☐ A3. PARAMETERIZE + ONE-TAP: de-Automaton the **note** publisher (md/key/slug/paywall env, per SKILL.md line 378);
+       per-platform orchestrator publish-to-<pf>.sh (hands) + claude -p agent (eyes) → write ANY AI-entity article →
+       draft → verify-loop → publish → live-verify. (note F2 pattern replicated for zenn/substack/x.)
+- ☐ A4. ENGLISH pass: translate the article → dev.to + X(EN) + Substack(EN), each verified.
+(REMOVED old "A5 generalize to any AI/crypto" — wrong: niche = AI-entity by design; the writing is already general
+within it via search; the real generalization is A3 = parameterize the Automaton-hardcoded publishers.)
 
 ## PHASE B — [ANICCA] CLOUD, NO HUMAN IN LOOP + the recipe
 - ☐ B1. accelerate the **Akash transaction** → run Anicca on cloud **unaided** (no human in loop) → 1 cloud body live + earning.
