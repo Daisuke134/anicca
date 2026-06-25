@@ -685,3 +685,30 @@ event whose ranking depends on timing (Tue–Thu 12:01am PT) + a polished galler
 PH is not logged in on the daily-driver. GO-LIVE = Dais (AM): log into PH (Google keiodaisuke), generate the
 1270×760 gallery images from the live /life-manager page, create the launch, schedule the optimal day, hit launch,
 post the first comment. Everything else is ready.
+
+---
+
+## ★ MORNING HANDOFF (autonomous run, 2026-06-26) — what's done / prepped / your move ★
+
+### DONE + VERIFIED (autonomous)
+- v1 Telegram product LIVE + Dais-dogfooded (#18). Launch-ready.
+- web reply-by-email CODE complete, deployed, idempotent, VCSDD-adversary PASS (2 rounds), real send verified.
+- D-5 ARTICLES JP+EN — FINAL DRAFTS, vcsdd-adversary PASS (2 rounds): docs/articles/2026-06-26-life-manager-{jp,en}.md.
+  NOT published (your call AM). Honest: states email send live, receive unit-tested/inbound-not-wired, Telegram live.
+- Live JA landing over-claim fixed (onTime "3本"→"2本"), deployed.
+
+### PREPPED, ready-to-go (needs you / an account / a timed public moment)
+- D-4 Product Hunt: full ready-to-submit listing (docs/launch/product-hunt-life-manager.md). YOUR MOVE: log into PH,
+  generate gallery images from the live page, schedule a Tue–Thu 12:01am PT, launch, post the first comment.
+- D-2 Capafy: listing content (docs/launch/capafy-life-manager-leave-time-planner.md). YOUR MOVE: run the Capafy
+  publish pipeline on your account (init→configure→ship→web submit).
+- D-5 publish: when you approve the drafts, the article→note/Zenn/Substack/X/dev.to/TikTok pipeline runs.
+
+### REMAINING (large builds / blocked — documented, not faked done)
+- WEB v1.5 (#15/16/20/21/22): inbound is BLOCKED on Resend (live UI has no receiving toggle on this Free account).
+  Come-back path = SendGrid Inbound Parse OR Mailgun free (MX on reply.aniccaai.com via Netlify DNS + webhook →
+  /inbound-email; their webhook carries the body so handleInboundReply works as-is). Then S5 web onboarding drop
+  Gmail + S6 un-gate + S7 E2E. Per your plan: AFTER launch + marketing.
+- D-3 content crons (TikTok/YT demo reels): a build needing assets + the posting accounts.
+- D-6 directories (BetaList etc.) + PH follow-up + churn-prevention.
+- PHASE E (self-improve + proactive booking + merge into Anicca): large, separate.
