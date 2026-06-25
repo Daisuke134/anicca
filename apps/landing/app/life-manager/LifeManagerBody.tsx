@@ -2,7 +2,7 @@
 
 /* eslint-disable react/no-unescaped-entities */
 import { QRCodeSVG } from 'qrcode.react';
-import { SplitHero, Section, Reveal, CTA } from '@/components/site/taste';
+import { SplitHero, Section, Reveal } from '@/components/site/taste';
 import { useLaunchLocale } from '@/lib/launchLocale';
 import { launchStrings } from '@/lib/launchStrings';
 
@@ -23,11 +23,7 @@ export default function LifeManagerBody() {
       <SplitHero
         headline={t.heroHeadline}
         subtext={t.heroSubtext}
-        primary={
-          <CTA href="/lm" variant="primary">
-            {t.heroPrimary}
-          </CTA>
-        }
+        primary={null}
         secondary={
           <a
             href="#features"
@@ -56,17 +52,18 @@ export default function LifeManagerBody() {
                   {t.startPhoneLink}
                 </a>
               </div>
-              <a
-                href="/lm"
-                className="flex flex-col items-center justify-center rounded-card border border-[hsl(var(--gold))]/30 bg-[hsl(var(--surface-elevated))] p-4 text-center transition-colors hover:bg-[hsl(var(--surface))]"
+              {/* v1: web onboarding is built but gated — this card is a muted "Coming soon", not a link. */}
+              <div
+                aria-disabled="true"
+                className="flex flex-col items-center justify-center rounded-card border border-[hsl(var(--border))] bg-[hsl(var(--surface-elevated))] p-4 text-center opacity-80"
               >
-                <p className="text-[10px] uppercase tracking-widest text-[hsl(var(--gold))]">{t.startWebEyebrow}</p>
+                <p className="text-[10px] uppercase tracking-widest text-[hsl(var(--text-secondary))]">{t.startWebEyebrow}</p>
                 <p className="mt-3 text-sm font-semibold text-[hsl(var(--text-primary))]">{t.startWebTitle}</p>
                 <p className="mt-1 text-xs leading-relaxed text-[hsl(var(--text-secondary))]">{t.startWebDesc}</p>
-                <span className="mt-3 inline-flex items-center rounded-full bg-[hsl(var(--gold))] px-4 py-2 text-sm font-semibold text-black">
+                <span className="mt-3 inline-flex items-center rounded-full border border-[hsl(var(--border))] px-4 py-2 text-sm font-semibold text-[hsl(var(--text-secondary))]">
                   {t.startWebCta}
                 </span>
-              </a>
+              </div>
             </div>
           </div>
         }

@@ -24,6 +24,10 @@ export const launchStrings = {
       metaDesc:
         'Life Manager: connect your Google Calendar and Gmail, add your phone, and it keeps you on time by call and email. $20/mo.',
       eyebrow: 'Life Manager · $20/mo',
+      soonTitle: 'Web sign-up is coming soon',
+      soonBody:
+        'Life Manager launches on Telegram first. Tap below to start on Telegram — name, calendar, phone, done. The web version is coming soon.',
+      soonCta: 'Start on Telegram',
       heroTitle: 'Never be late again.',
       heroBody:
         'Sign in, connect your Google Calendar and Gmail, add your phone. Life Manager then handles travel time, calls, location asks, late-notices, and your mail. 24/7, by phone and email.',
@@ -207,6 +211,10 @@ export const launchStrings = {
       metaDesc:
         'ライフマネージャー。Google カレンダーと Gmail をつなぎ、電話番号を登録すれば、電話とメールで遅刻を防ぎ、メールも捌く。月 $20。',
       eyebrow: 'ライフマネージャー · 月 $20',
+      soonTitle: 'ウェブ登録は近日公開',
+      soonBody:
+        'Life Manager はまず Telegram で公開。下をタップして Telegram で開始 — 名前・カレンダー・電話で完了。ウェブ版は近日公開。',
+      soonCta: 'Telegram で始める',
       heroTitle: 'もう、遅刻しない。',
       heroBody:
         'ログインして、Google カレンダーと Gmail をつなぎ、電話番号を登録するだけ。移動時間の確保も、電話も、場所の確認も、遅刻連絡も、メール対応も、ライフマネージャーが引き受ける。24/7、電話とメールで。',
