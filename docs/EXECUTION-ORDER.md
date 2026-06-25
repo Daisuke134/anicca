@@ -67,7 +67,12 @@ NICHE is intentional & stays: articles about **AI-entities** = AI that earns mon
        judging TOO EARLY (the article was fine + live the whole time).
    - A4-X(EN): ☑ ADVERTISED on X already (per Dais) — the dev.to article is promoted on X. (A standalone full EN
        X-Article, if wanted, is an optional follow-up.)
-   - A4-Substack(EN): ☐ REMAINING — FULL article, paid subscription (free explainer + paywall + paid), like JP Substack.
+   - A4-Substack(EN): ☑ FINAL DRAFT done 2026-06-25 (id 203553806, NOT published): full EN translation (75k chars,
+       stop-slop 40/50) → free explainer + {paywall} + paid setup/results; 19 EN tables + 6 EN diagrams + fund image,
+       ALL re-rendered ≤950px (render-verify gate caught 7 oversized → autofit tables + pad figs → re-verified PASS);
+       no Getting-started/Anicca. Browser-verified via local asset-render (tables/diagrams/paywall render clean).
+       ⏳ Dais reviews in the morning → publish (SUBSTACK_GO=1). NOTE: daily-driver is LOGGED OUT of Substack (like
+       dev.to) → the live verify-preview needs a 1-tap Substack login to run on the real editor.
    - RULE: each = full-page browser verify-loop, NEVER publish unverified slop.
 (REMOVED old "A5 generalize to any AI/crypto" — wrong: niche = AI-entity by design; the writing is already general
 within it via search; the real generalization is A3 = parameterize the Automaton-hardcoded publishers.)
