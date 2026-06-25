@@ -117,3 +117,5 @@ I (Claude, type-2) only FIX the system + MONITOR + write/publish the article.
 
 - F4a-zenn ☑ E2E VERIFIED 2026-06-24: adapt→gate→render run clean; E2E CAUGHT+FIXED a real bug (skill did not escape inner double-quotes in title → broke Zenn YAML frontmatter/preview). publish-to-zenn ready for instant publish.
 - F4b-substack: spec recorded (2026-06-24-publish-to-substack-F4b.md). skill=anshulkhare7/substack-cli. paywall = SAME as note. gap = add paywall-node insertion.
+
+- F4b-substack ☑ E2E DRAFT VERIFIED 2026-06-24: substack-publish.py built+run → DRAFT 203497099 (only_paid, paywall node mid-doc, free explainer + paid setup/results, 29 note-assets uploaded). Substack renders no tables/mermaid → reuse note PNGs. Paywall placement researched+decided = gate after explainer (free what/how, paid setup+results) — same as note, confirmed by note編集部/Substack/beehiiv.
