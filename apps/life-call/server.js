@@ -85,6 +85,24 @@ function verifyUid(uid, sig) {
   const a = Buffer.from(String(sig)), b = Buffer.from(expected);
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
+// SERVER-SIDE rate-limit for /test-call. The dashboard "Call me now" button disables after one tap, but
+// that gate is client-side ONLY — a page reload resets it, so a user could otherwise spam billed Charon
+// calls. Every test call is real money, so we enforce the limit here (single always-on process → a Map is
+// authoritative). Cooldown stops reload-spam; the daily cap bounds total cost per user.
+const TEST_CALL_COOLDOWN_MS = 10 * 60 * 1000; // 1 test call per uid per 10 min
+const TEST_CALL_DAILY_MAX = 5;                // hard ceiling per uid per rolling 24h
+const _testCallLog = new Map();               // uid -> [epoch ms]
+function testCallAllowed(uid, now = Date.now()) {
+  const arr = (_testCallLog.get(uid) || []).filter((t) => now - t < 24 * 3600 * 1000);
+  const last = arr[arr.length - 1];
+  if (last !== undefined && now - last < TEST_CALL_COOLDOWN_MS) {
+    return { ok: false, retryAfter: Math.ceil((TEST_CALL_COOLDOWN_MS - (now - last)) / 1000) };
+  }
+  if (arr.length >= TEST_CALL_DAILY_MAX) return { ok: false, retryAfter: 3600 };
+  arr.push(now);
+  _testCallLog.set(uid, arr);
+  return { ok: true };
+}
 async function userForUid(uid) {
   const url = process.env.SUPABASE_URL, key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) return null;
@@ -176,6 +194,9 @@ const server = http.createServer((req, res) => {
         const u = await userForUid(body.uid);
         const phone = u && u.phone;
         if (!phone) return reply(400, { error: "no phone on file" });
+        // Cost guard: enforce the one-time/cooldown SERVER-SIDE (client gate resets on reload). 429 = too soon.
+        const rl = testCallAllowed(body.uid);
+        if (!rl.ok) return reply(429, { error: "rate_limited", retryAfter: rl.retryAfter });
         // Call language = the user's CHOICE (lm_users.call_language, set via the /lm toggle) if present,
         // else fall back to the phone country (+81 → ja, else en). Dais 2026-06-22.
         const lang = (u.call_language === "ja" || u.call_language === "en") ? u.call_language : langForPhone(phone);
@@ -396,4 +417,4 @@ if (require.main === module) {
 // redeploy trigger 010026
 
 // Export pure helpers for unit tests (FIND-005).
-module.exports = { inngestServeAllowed };
+module.exports = { inngestServeAllowed, testCallAllowed, TEST_CALL_COOLDOWN_MS, TEST_CALL_DAILY_MAX };
