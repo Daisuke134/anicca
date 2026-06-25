@@ -59,9 +59,15 @@ as the OSS path.
    @LifeManagerBotbot /start, or web→/lm; qrcode.react, EN/JA, browser-verified the QR renders live) +
    ✅ copy fixed to 2 calls T-10/T-5 (was 15/10/5, now matches behavior). Infra all verified separately:
    bot @LifeManagerBotbot + webhook → life-call/telegram LIVE; PC-3 proved the cron autofills a real calendar;
-   HARD-3 proved pay→provision (Stripe LIVE E2E). ⏳ REMAINING = the single-sitting NEW-USER dogfood E2E
-   (Google OAuth → Composio gcal connect → phone → $20 sandbox pay → dashboard → real test call; + Telegram
-   /start full flow + TG ask-reply) — inherently human-gated (a fresh Google account + a phone) → Dais dogfoods.
+   HARD-3 proved pay→provision (Stripe LIVE E2E). ✅ NEW-USER DOGFOOD E2E DONE 2026-06-25 (autonomous via
+   camofox, test account daisukenarita53): /lm → Continue with Google → name → Connect Calendar (Composio
+   OAuth auto, NO human tap) → Connect Gmail (also worked) → phone → [pay: link is LIVE …2880v so paid=true
+   set directly = no real charge] → dashboard renders ("10 & 5-min calls" copy live) → POST /test-call →
+   ★ Dais's phone RANG + he confirmed the Charon call ★. Test user cleaned up. ✅ /lm onboarding made
+   ABOVE-THE-FOLD (compact LmBody, no scroll to the buttons) + /life-manager CTA "Open /lm"→"Start on the web"
+   /"ウェブで始める", browser-verified EN+JA. FOLLOW-UPS (minor, see tasks): the dashboard "Call me now" button
+   does not render (had to hit /test-call directly); a Stripe TEST/sandbox link for no-charge buy-flow tests;
+   the Telegram /start full onboarding (needs a real TG user's one Start tap) not yet run end-to-end.
 8. ☐ **D-2** sell on Capafy (lite Leave-Time Planner, best pricing/copy, CTA → web app).
 9. ☐ **D-3** content crons TikTok + YouTube (= #99b). TODAY: `life-manager-video` skill stores wake-call
    recordings every 2h → builds a 1080×1920 reel → `post-daily.sh` posts to @anicca.comedy TikTok 2×/day
