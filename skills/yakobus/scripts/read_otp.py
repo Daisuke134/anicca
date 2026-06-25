@@ -79,9 +79,10 @@ def scan():
     return None
 
 def main():
-    # REQUIRE --amount so an unvalidated (wrong-charge) OTP can never be returned by omission.
-    if not AMOUNT:
-        print(json.dumps({"error": "--amount <jpy> is REQUIRED (prevents returning an OTP for a different charge)"})); sys.exit(2)
+    # REQUIRE both --amount AND --merchant: amount alone does not uniquely identify the charge
+    # (two same-amount charges in the window → wrong OTP). Both gates mandatory.
+    if not AMOUNT or not MERCH:
+        print(json.dumps({"error": "both --amount <jpy> and --merchant <name> are REQUIRED (amount alone can match a different same-amount charge)"})); sys.exit(2)
     for t in range(TRIES):
         hit = scan()
         if hit:

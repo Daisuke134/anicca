@@ -88,4 +88,4 @@ center 0570-048-983, 自動音声 24/7; human Mon–Fri 10–17).
 
 ## Definition of done (4-D convergence)
 spec ✓ + the flow runs ✓ + payment_complete & reservation # captured ✓ + confirmation email & card
-charge verified ✓. "It compiles" / "the page loaded" is NOT done.
+charge verified ✓ + **both gcal events created ✓** (per spec §7). "It compiles" / "the page loaded" is NOT done.
