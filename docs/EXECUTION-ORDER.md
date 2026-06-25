@@ -51,7 +51,16 @@ NICHE is intentional & stays: articles about **AI-entities** = AI that earns mon
        de-Automaton the **note** INNER scripts (slug/assets hardcoded, SKILL.md line 378) so note runs ANY article.
 - ⚠ BLOCKER (env, not code): the daily-driver is LOGGED OUT of X → a GREEN publish E2E needs Dais to re-login X once
        (HARD 0.39, 1 tap). Zenn green E2E needs no login (alternative proof). All code is adversary-verified + syntax-clean.
-- ◐ A4. ENGLISH: dev.to DONE+LIVE+eye-verified 2026-06-25 (EN body+12 tables+6 mermaid all translated+onboarding(buy USDC on Coinbase→wallet)+de-slop stop-slop 40/50; en-to-devto.py+post-to-devto.py). LIVE=dev.to/anicca_301094325e/automaton-the-ai-that-pays-its-own-bills...-14km. REMAINING: X(EN)+Substack(EN) + en-agent-prompt.md skill-ify.
+- ◐ A4. ENGLISH = ONLY **dev.to + X + Substack** (drop Medium/HackerNoon/TikTok/Hashnode). EN body translated +
+       de-slopped (stop-slop 40/50). content map: **dev.to + X = SAME free explainer** ; **Substack = FULL paid**
+       (subscription, free explainer + paywall + paid setup/results, like the JP Substack).
+   - A4-dev.to: NOT done. I wrongly PUBLISHED it then reverted to DRAFT. 2 bugs to FIX: (a) **diagrams break** —
+       dev.to proxies external imgs and can't fetch kroki → "image no longer exists"; fix = host diagram PNGs on a
+       reliable host (GitHub raw / dev.to upload) so the proxy renders them; (b) **DELETE the "Getting started"
+       block** (it named Anicca + unneeded). Then full-page BROWSER-verify as DRAFT → Dais OK → publish. Make it a skill.
+   - A4-X(EN): SAME free explainer via x-publish (X is logged in).
+   - A4-Substack(EN): FULL article, paid subscription (free explainer + paywall + paid), like JP Substack.
+   - RULE: each = full-page browser verify-loop, DRAFT until Dais approves, NEVER publish unverified.
 (REMOVED old "A5 generalize to any AI/crypto" — wrong: niche = AI-entity by design; the writing is already general
 within it via search; the real generalization is A3 = parameterize the Automaton-hardcoded publishers.)
 
