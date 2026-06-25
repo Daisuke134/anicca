@@ -6,11 +6,12 @@ const { sendMessage, onboardLink } = require("./telegram.js");
 
 // PURE: the onboarding stage is a function of the row. Same ORDER as the web app
 // (name → calendar → gmail → phone → pay → done). On Telegram, name + phone are collected NATIVELY in
-// chat (no web needed); calendar/gmail/pay need the web (OAuth/Stripe). A null row starts at "name".
+// chat (no web needed); calendar/pay need the web (OAuth/Stripe). A null row starts at "name".
+// v1 (Dais 2026-06-25): Telegram is the ask/reply channel, so TG users do NOT connect Gmail — the gmail
+// stage is dropped. Flow = name → calendar → phone → pay → done. (Web onboarding's email loop is v1.5.)
 function computeStage(row) {
   if (!row || !row.name) return "name";
   if (row.calendar_provider !== "composio_gcal") return "calendar";
-  if (!row.gmail_account_id) return "gmail";
   if (!row.phone) return "phone";
   if (row.paid !== true) return "pay";
   return "done";
@@ -37,10 +38,8 @@ function stageMessage(stage, chatId, base) {
       return { text: "👋 <b>Welcome to Life Manager!</b>\n\nFirst — what's your name? Just type it here.", extra: undefined };
     case "calendar":
       return { text: "Next — connect your Google Calendar so I can see your schedule and call you before you need to leave.", extra: btn("📅 Connect Calendar") };
-    case "gmail":
-      return { text: "✅ <b>Calendar connected!</b>\n\nNow connect Gmail so I can ask about events and act on your behalf.", extra: btn("📧 Connect Gmail") };
     case "phone":
-      return { text: "✅ <b>Gmail connected!</b>\n\nWhat's your phone number? Type it with the country code, e.g. <code>+818012345678</code> — I'll call you before events.", extra: undefined };
+      return { text: "✅ <b>Calendar connected!</b>\n\nWhat's your phone number? Type it with the country code, e.g. <code>+818012345678</code> — I'll call you before events.", extra: undefined };
     case "pay":
       return { text: "✅ <b>Phone saved!</b>\n\nLast step — subscribe ($20/mo) and I'll take it from here.", extra: btn("⭐ Subscribe & finish") };
     case "done":
