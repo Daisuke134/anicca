@@ -618,7 +618,7 @@ Everything for the web is already 90% built + documented below so we can "ship i
 ### NOW — v1 LAUNCH (Telegram only)
 - [x] TG onboarding (name → calendar → phone → pay; NO Gmail) — computeStage, 14/14 tests. (#12)
 - [x] Web surfaces gated: /life-manager left CTA removed, web card "Coming soon", /lm → Telegram funnel. (#17)
-- [ ] **#18 Telegram-only E2E** — real @LifeManagerBotbot: /start → name → Connect Calendar → phone → Stripe →
+- [x] **#18 Telegram-only E2E** (Dais DOGFOODED the real  onboarding end-to-end 2026-06-26 ✓ — TELEGRAM PRODUCT IS LAUNCH-READY) — real @LifeManagerBotbot: /start → name → Connect Calendar → phone → Stripe →
       done; then a wake call fires + a location ask arrives IN Telegram + the TG reply patches the calendar.
       (Composio calendar + Telnyx/Gemini wake calls + ask/reply are all already LIVE.) ← the launch gate.
 - [ ] Then: D-4 Product Hunt launch + D-3 content/TikTok/YT + D-5 articles + D-2 Capafy + D-6 directories.
