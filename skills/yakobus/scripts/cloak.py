@@ -51,11 +51,15 @@ def main():
     with sync_playwright() as p:
         browser = p.chromium.connect_over_cdp(CDP)
         ctx = browser.contexts[0]
+        # accept dialogs on EVERY tab (a dialog on any page crashes a 2nd client) — register
+        # context-wide BEFORE navigating; do not silently swallow the registration itself.
+        def _accept(d):
+            try: d.accept()
+            except Exception: pass
+        ctx.on("page", lambda pg: pg.on("dialog", _accept))
+        for pg in ctx.pages:
+            pg.on("dialog", _accept)
         page = pick_page(ctx, cmd)
-        try:
-            page.on("dialog", lambda d: d.accept())
-        except Exception:
-            pass
 
         if cmd in ("goto", "goto-wait"):
             wait = "networkidle" if cmd == "goto-wait" else "domcontentloaded"
@@ -87,11 +91,15 @@ def main():
         elif cmd == "typeat":
             xy, text = arg.split("||", 1); x, y = xy.split(",")
             page.mouse.click(float(x), float(y)); page.wait_for_timeout(400)
-            page.keyboard.press("Meta+a"); page.keyboard.press("Delete")
+            page.keyboard.press("ControlOrMeta+a"); page.keyboard.press("Delete")
             page.keyboard.type(text, delay=60); page.wait_for_timeout(300)
             page.keyboard.press("Enter"); page.wait_for_timeout(2500); print("TYPED:", "<text>", "| URL:", page.url)
         elif cmd == "fill":
-            sel, val = arg.split("||", 1); page.locator(sel).first.fill(val, timeout=8000); print("FILLED:", sel)
+            # SECRET-SAFE: value comes from env CLOAK_FILL_VALUE, never argv (argv shows in `ps`/transcript).
+            sel = arg
+            val = os.environ.get("CLOAK_FILL_VALUE", "")
+            page.locator(sel).first.fill(val, timeout=8000)
+            print("FILLED:", sel, "(value via env, masked)")
         # NOTE: never browser.close() — CDP detach happens automatically on context exit.
 
 if __name__ == "__main__":

@@ -17,8 +17,11 @@ import sys, json, re
 from playwright.sync_api import sync_playwright
 
 CDP = "http://localhost:9222"
+# lines to skip when back-scanning for the plan name (seat-type chips, ratings, prices, times)
 SKIP = {"夜行便","昼行便","充電","Wi-Fi","女性安心","女性専用席","トイレ付","仕切りカーテン",
         "3列独立","4列標準","4列足元広め","座席指定","2列","2列独立","3列シート","4列"}
+PREF_MARK = re.compile(r"^（.+）$")          # full-width "（大阪）" prefecture marker line
+NOISE = re.compile(r"^(¥?[\d,]+円?|\d{1,2}:\d{2}|★+|[\d.]+)$")  # price / time / rating noise
 
 def parse(txt):
     lines = [l.strip() for l in txt.split("\n")]
@@ -27,20 +30,25 @@ def parse(txt):
     for n, i in enumerate(idx):
         end = idx[n+1] if n+1 < len(idx) else len(lines)
         name = ""
-        for j in range(i-1, max(i-8, -1), -1):
-            if lines[j] and lines[j] not in SKIP:
-                name = lines[j]; break
-        blk = "\n".join(lines[i:end])
+        for j in range(i-1, max(i-9, -1), -1):
+            l = lines[j]
+            if l and l not in SKIP and not NOISE.match(l) and not PREF_MARK.match(l):
+                name = l; break
+        blk_lines = lines[i:end]
+        blk = "\n".join(blk_lines)
         price = re.search(r"¥([\d,]+)", blk)
         price = int(price.group(1).replace(",", "")) if price else None
-        dests = []
-        for stop in ["バスタ新宿","新宿","池袋","八重洲","東京駅","横浜","町田","大手町","TDL","TDS"]:
-            if stop in blk and stop not in dests:
-                dests.append(stop)
+        # GENERAL stop extraction: the place name is the line right AFTER a （都道府県） marker.
+        stops = []
+        for k, l in enumerate(blk_lines[:-1]):
+            if PREF_MARK.match(l):
+                place = blk_lines[k+1].strip()
+                if place and place not in stops and not NOISE.match(place):
+                    stops.append(place[:40])
         st = "満席" if "満席" in blk else ("わずか" if "わずか" in blk else "空席")
         times = re.findall(r"\d{1,2}:\d{2}", blk)
-        out.append({"name": name[:60], "price": price, "stops": dests,
-                    "availability": st, "times": times[:6]})
+        out.append({"name": name[:60], "price": price, "stops": stops,
+                    "availability": st, "times": times[:8]})
     return out
 
 def main():
@@ -52,7 +60,13 @@ def main():
         pg.goto(url, wait_until="domcontentloaded", timeout=90000); pg.wait_for_timeout(3500)
         txt = pg.evaluate("()=>{const t=document.body.innerText;const i=t.indexOf('並び替え');return t.slice(i>0?i:0,(i>0?i:0)+16000);}")
         links = pg.evaluate("""()=>[...document.querySelectorAll('a[href]')].filter(a=>/external_link|booking\\/select/.test(a.href)).map(a=>({t:(a.textContent||'').replace(/\\s+/g,' ').trim().slice(0,40),h:a.href})).slice(0,60)""")
+        try: pg.close()  # close our own tab (no browser.close()) to avoid tab leak on daily-driver
+        except Exception: pass
     cands = parse(txt)
+    if not cands:
+        print(json.dumps({"error": "no candidates parsed", "route": f"{frm}->{to}", "date": ymd,
+                          "url": url, "hint": "route slug/date wrong, or page layout changed"}, ensure_ascii=False))
+        sys.exit(1)
     cands.sort(key=lambda c: (c["price"] if c["price"] else 10**9))
     print(json.dumps({
         "route": f"{frm}->{to}", "date": ymd, "url": url,
