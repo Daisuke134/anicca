@@ -50,7 +50,7 @@ function startReply(chatId, base) {
     text:
       "👋 <b>Anicca Life Manager</b>\n\n" +
       "I keep you on time — I call you before you must leave, fill in travel time, ask where events are, " +
-      "and handle late-notices. Set up takes a minute: connect Google Calendar + Gmail, add your phone, subscribe.\n\n" +
+      "and handle late-notices. Set up takes a minute: connect Google Calendar, add your phone, subscribe.\n\n" +
       "Tap below to start 👇",
     extra: {
       reply_markup: {
