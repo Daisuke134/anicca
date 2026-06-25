@@ -65,8 +65,8 @@ as the OSS path.
    set directly = no real charge] → dashboard renders ("10 & 5-min calls" copy live) → POST /test-call →
    ★ Dais's phone RANG + he confirmed the Charon call ★. Test user cleaned up. ✅ /lm onboarding made
    ABOVE-THE-FOLD (compact LmBody, no scroll to the buttons) + /life-manager CTA "Open /lm"→"Start on the web"
-   /"ウェブで始める", browser-verified EN+JA. FOLLOW-UPS (minor, see tasks): the dashboard "Call me now" button
-   does not render (had to hit /test-call directly); a Stripe TEST/sandbox link for no-charge buy-flow tests;
+   /"ウェブで始める", browser-verified EN+JA. FOLLOW-UPS (minor, see tasks): ✅ D-1a DONE 2026-06-25: button restored as a ONE-TIME proof-of-life call (client gate) + SERVER-SIDE rate-limit on /test-call (10-min cooldown + 5/24h cap, 5 unit tests, deployed live) so reload-spam cannot bill repeated calls; verified the button renders via the daily-driver CloakBrowser over CDP (forever browser untouched).
+   (was: a Stripe TEST/sandbox link for no-charge buy-flow tests;
    the Telegram /start full onboarding (needs a real TG user's one Start tap) not yet run end-to-end.
 8. ☐ **D-2** sell on Capafy (lite Leave-Time Planner, best pricing/copy, CTA → web app).
 9. ☐ **D-3** content crons TikTok + YouTube (= #99b). TODAY: `life-manager-video` skill stores wake-call
