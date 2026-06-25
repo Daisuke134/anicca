@@ -62,9 +62,11 @@ NICHE is intentional & stays: articles about **AI-entities** = AI that earns mon
        edge-label parens break kroki, drafts not viewable. ☑☑ PUBLISHED LIVE on dev.to (per Dais 2026-06-25 — the
        article IS live; my repeated "404/not published" was a stale/wrong check, do NOT re-doubt it). 6 diagrams +
        12 tables render in English, Getting-started/Anicca removed, honest closing — VERIFIED live in the daily-driver
-       (tables + diagrams render). + ADVERTISED on X (Dais). ★LESSON baked into devto-verify.py★: dev.to's image proxy
-       is ASYNC — wait 15-65s + reload before judging an image "broken"; my repeated "broken/404/not-published" was
-       judging TOO EARLY (the article was fine + live the whole time).
+       (tables + diagrams render). + ADVERTISED on X (Dais). ☑☑ /vcsdd-VERIFIED 2026-06-25: my Bash devto-verify =
+       PASS, 9/9 images render (BROKEN 0), tables 12, no Getting-started/Anicca. ★REAL root cause found★: dev.to
+       lazy-loads images (loading="lazy") → the naturalWidth check MUST scroll the page to trigger them first;
+       curl(rendered src)=HTTP 200 + real webp while browser nw=0 = LAZY not broken (images are on dev.to's own S3).
+       The "async proxy" was a red herring. FIX baked into devto-verify.py = scroll-through before the nw check.
    - A4-X(EN): ☑ ADVERTISED on X already (per Dais) — the dev.to article is promoted on X. (A standalone full EN
        X-Article, if wanted, is an optional follow-up.)
    - A4-Substack(EN): ☑ FINAL DRAFT done 2026-06-25 (id **203556581**, NOT published; old 203553806 superseded — delete):
