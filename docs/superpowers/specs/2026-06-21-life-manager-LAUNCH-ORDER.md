@@ -42,10 +42,14 @@ as the OSS path.
    isolation verified per-tenant (accountId=gmail_account_id, Composio keyed by uid, bounded unipileEmailCache,
    NO shared mutable per-user secret). REQ-43/44. VCSDD: 109 tests (incl public-loop-routing + hang tests) +
    fresh adversary 2 rounds → PASS (5/5 dims; FIND-001 test-routing, 002 hang-timeout, 003 cache-bound resolved).
-6. ☐ **PHASE C** — realize+VERIFY the 3 location cases (C1 filled / C2 online / C3 ask→remember via mem0/Supabase)
-   + C4 determinism · C5 routines (=#100b-a: Running/Sleep/Day-job → no-travel, never ask "where is your run")
-   · C6 autonomous witness (=#100b-b: WITNESS the DEPLOYED cron autofill, not a manual node run) · C7 EN/JA
-   · C8 ask-reply E2E · C9 YouTube wiring (folded into D-3 / #99b).
+6. ⏳ **PHASE C** — realize+VERIFY the 3 location cases. NOW (2026-06-25, spec `2026-06-25-life-manager-PHASE-C-design.md`).
+   VERIFIED STATE: the judgment is ALREADY agentic (`agentResolveLocation` = Gemini tool-loop, temp 0, NO regex)
+   covering C1 filled / C2 online / C5 routines / C7 EN-JA; REQ-15 RETURN block DONE; `@openai/agents` rewrite
+   UNNECESSARY (keep the Gemini loop → $0 OpenAI). GAPS → 3 work-items, each VCSDD: **PC-1** C3 memory
+   (Supabase `lm_user_places`, NOT mem0; askTick recalls before asking, reply handlers remember → recurring
+   vague events autofill, never re-asked) ← FIRST · **PC-2** eval harness (C1/C2/C5/C7 + C4 determinism ≥9/10,
+   real Gemini ×N) · **PC-3** C6 autonomous witness (DEPLOYED Inngest cron autofills, not a manual run).
+   C8 ask-reply E2E folded into PC-1/PC-3 · C9 YouTube → D-3.
 7. ☐ **D-1** end-to-end test web /lm + Telegram bot + QR on /life-manager (easy go).
 8. ☐ **D-2** sell on Capafy (lite Leave-Time Planner, best pricing/copy, CTA → web app).
 9. ☐ **D-3** content crons TikTok + YouTube (= #99b). TODAY: `life-manager-video` skill stores wake-call
