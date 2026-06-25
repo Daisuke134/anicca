@@ -59,13 +59,13 @@ NICHE is intentional & stays: articles about **AI-entities** = AI that earns mon
        diagrams.py (mermaid→PNG→GitHub-raw host; dev.to's proxy fails external kroki) + publish-to-devto.sh
        (publish/verify/unpublish) + devto-agent-prompt.md (publish→★browser-verify★→unpublish+fix til clean) +
        run-devto-agent.sh. Getting-started/Anicca dropped from body. Lessons baked: SVG breaks the proxy, mermaid
-       edge-label parens break kroki, drafts not viewable. ☑ E2E-VERIFIED as DRAFT 2026-06-25 (id 3989207, NOT public):
-       all 6 diagrams render in English + 12 tables + Getting-started/Anicca removed + honest closing — browser-verified
-       by eye (img naturalWidth>0). ⏳ awaiting Dais's approve → then publish live (1 PUT). dev.to draft itself isn't
-       browser-viewable (daily-driver not logged in) → verified the exact draft md via local render.
-   - A4-X(EN): SAME free explainer via x-publish (X is logged in).
-   - A4-Substack(EN): FULL article, paid subscription (free explainer + paywall + paid), like JP Substack.
-   - RULE: each = full-page browser verify-loop, DRAFT until Dais approves, NEVER publish unverified.
+       edge-label parens break kroki, drafts not viewable. ☑☑ PUBLISHED LIVE on dev.to (per Dais 2026-06-25 — the
+       article IS live; my repeated "404/not published" was a stale/wrong check, do NOT re-doubt it). 6 diagrams +
+       12 tables render in English, Getting-started/Anicca removed, honest closing. + ADVERTISED on X already (Dais).
+   - A4-X(EN): ☑ ADVERTISED on X already (per Dais) — the dev.to article is promoted on X. (A standalone full EN
+       X-Article, if wanted, is an optional follow-up.)
+   - A4-Substack(EN): ☐ REMAINING — FULL article, paid subscription (free explainer + paywall + paid), like JP Substack.
+   - RULE: each = full-page browser verify-loop, NEVER publish unverified slop.
 (REMOVED old "A5 generalize to any AI/crypto" — wrong: niche = AI-entity by design; the writing is already general
 within it via search; the real generalization is A3 = parameterize the Automaton-hardcoded publishers.)
 
