@@ -596,3 +596,12 @@ Gmail (no per-user cost, no CASA): Telegram users use Telegram; web users use ou
 - [ ] S7 — FULL no-mock E2E on BOTH channels: WEB onboard → no-location event → real Resend ask → reply →
       Cloudflare worker → /inbound-email → calendar patched + remembered + late-notice; TELEGRAM onboard →
       wake call + TG ask/reply. Confirm ZERO Unipile calls. Then web is LIVE.
+
+### Progress 2026-06-25 (feature/lm-v15-email)
+- ✅ S1 lm_users.email + lm_ask_log.reply_token migrations (live-applied).
+- ✅ S2 mail-resend (sendAsk/sendLateNotice) — REAL Resend send verified (id returned); ask.js + notify.js
+  send via Resend; Unipile send + inbox-poll removed. Short opaque reply-token (64-char local-part fix).
+- ✅ S3-code /inbound-email webhook + handleInboundReply (token→lm_ask_log→event→location→patch+remember);
+  scheduler.askUserOnce + server late-notice wired to Resend + lm_users.email. 26 unit tests green.
+- ⏳ S3-infra Resend Inbound MX on reply.aniccaai.com (Netlify DNS) + inbound webhook → /inbound-email + Railway env.
+- ☐ S4 transport cleanup · S5 web onboarding drop Gmail · S6 un-gate web · S7 LIVE E2E.
