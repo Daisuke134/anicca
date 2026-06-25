@@ -7,6 +7,7 @@
 
 const { agentMatchReply } = require("./ask.js");
 const { getCalendar } = require("./transport/index.js");
+const { placeKey, rememberPlace } = require("./places-memory.js");
 
 async function userByChatId(chatId) {
   const url = process.env.SUPABASE_URL, key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -25,16 +26,21 @@ function needsLocation(e) {
   return !((e.location || "").trim());
 }
 
-// Returns { filled, event, location }.
-async function resolveTelegramReply(chatId, text) {
+// Returns { filled, event, location }. deps (lookupUser/calendar/match/remember) are injectable so the
+// patch→remember wiring (REQ-46) has an executable test (FIND-001/004); real defaults in production.
+async function resolveTelegramReply(chatId, text, deps = {}) {
   const composioKey = process.env.COMPOSIO_API_KEY, geminiKey = process.env.GEMINI_API_KEY;
   const out = { filled: false, event: "", location: "" };
-  if (!composioKey || !geminiKey) return out;
-  const user = await userByChatId(chatId);
+  if (!deps.calendar && (!composioKey || !geminiKey)) return out;
+  const lookupUser = deps.lookupUser || userByChatId;
+  const cal = deps.calendar || getCalendar({ apiKey: composioKey });
+  const match0 = deps.match || ((t, p) => agentMatchReply(t, p, geminiKey));
+  const remember = deps.remember || rememberPlace;
+  const user = await lookupUser(chatId);
   if (!user || user.calendar_provider !== "composio_gcal") return out;
 
   const now = Date.now();
-  const items = await getCalendar({ apiKey: composioKey }).listEventsRaw(user.uid, {
+  const items = await cal.listEventsRaw(user.uid, {
     timeMin: new Date(now).toISOString().replace(/\.\d{3}Z$/, "Z"),
     timeMax: new Date(now + 7 * 86400 * 1000).toISOString().replace(/\.\d{3}Z$/, "Z"),
     maxResults: 50,
@@ -42,11 +48,14 @@ async function resolveTelegramReply(chatId, text) {
   const pending = items.filter(needsLocation);
   if (!pending.length) return out;
 
-  const match = await agentMatchReply(text, pending.map((e) => ({ id: e.id, summary: e.summary })), geminiKey);
+  const match = await match0(text, pending.map((e) => ({ id: e.id, summary: e.summary })));
   if (!match) return out;
   const ev = pending.find((e) => e.id === match.eventId);
   if (!ev) return out;
-  await getCalendar({ apiKey: composioKey }).patchEvent(user.uid, { calendar_id: "primary", event_id: ev.id, location: match.location });
+  await cal.patchEvent(user.uid, { calendar_id: "primary", event_id: ev.id, location: match.location });
+  // PC-1 (C3 REQ-46): remember so a future same-summary event autofills without re-asking.
+  const ok = await remember(user.uid, placeKey(ev.summary), match.location, process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+  if (!ok) console.error(`[tg-reply] rememberPlace FAILED uid=${user.uid.slice(0, 12)} — will re-ask (FIND-003)`);
   return { filled: true, event: ev.summary || "your event", location: match.location };
 }
 

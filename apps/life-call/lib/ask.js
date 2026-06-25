@@ -15,6 +15,7 @@
 const GEMINI = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 const { sendMessage: tgSend } = require("./telegram.js");
 const { getCalendar, getMail } = require("./transport/index.js");
+const { placeKey, recallPlace, rememberPlace } = require("./places-memory.js");
 
 // Raw Gemini generateContent. Key goes in the x-goog-api-key HEADER, never the URL (so it can't leak
 // into logs/referrers). Returns the parsed response, or {} on failure.
@@ -203,6 +204,17 @@ async function unclaimAsk(uid, eventId, supaUrl, supaKey) {
   }).catch(() => {});
 }
 
+// recallOrResolve(event, opts) → { kind:"filled"|"online"|"ask", location?, fromMemory? }. Checks remembered
+// memory FIRST (REQ-45: a hit returns filled WITHOUT calling the model); else the agentic resolution. recall
+// + resolve are injectable so the recall-no-model invariant has an executable test (FIND-001/004).
+async function recallOrResolve(event, opts) {
+  const recall = opts.recall || recallPlace;
+  const resolve = opts.resolve || agentResolveLocation;
+  const mem = await recall(opts.uid, placeKey(event.summary), opts.supaUrl, opts.supaKey);
+  if (mem) return { kind: "filled", location: mem, fromMemory: true };
+  return await resolve(event, { home: opts.home, mapsKey: opts.mapsKey, geminiKey: opts.geminiKey });
+}
+
 // Returns { autofilled, asked, resolved }.
 async function askTick(uid, opts) {
   const { composioKey, accountId, unipileToken, unipileDsn, userEmail, supaUrl, supaKey, mapsKey, geminiKey } = opts;
@@ -216,7 +228,11 @@ async function askTick(uid, opts) {
   // (don't email/Telegram the same event twice), NOT the resolve attempt — that's what kept "MUIT 出社"
   // permanently unfilled after one old ask. (Dais 2026-06-23: the agent must keep doing the work.)
   for (const event of events.filter((e) => needsLocation(e))) {
-    const res = await agentResolveLocation(event, { home: opts.home, mapsKey, geminiKey });
+    // PC-1 (C3 REQ-45): memory FIRST (a hit fills WITHOUT calling the model, never asks); else agentic resolve.
+    const res = await recallOrResolve(event, {
+      uid, supaUrl, supaKey, home: opts.home, mapsKey, geminiKey,
+      recall: opts.recall, resolve: opts.resolve,
+    });
     if (res.kind === "online") {
       continue; // online/remote/phone → no place, no travel, never ask. (No mark: re-classify is cheap.)
     }
@@ -256,6 +272,9 @@ async function askTick(uid, opts) {
       const ev = pending.find((e) => e.id === match.eventId);
       if (!ev) continue;
       await patchEvent(uid, ev.id, { location: match.location }, composioKey);
+      // PC-1 (C3 REQ-46): remember the answer so a future same-summary event autofills without asking again.
+      const remembered = await rememberPlace(uid, placeKey(ev.summary), match.location, supaUrl, supaKey);
+      if (!remembered) console.error(`[ask] rememberPlace FAILED uid=${uid.slice(0, 12)} phrase=${placeKey(ev.summary).slice(0, 40)} — will re-ask (FIND-003)`);
       resolved++;
     }
   }
@@ -272,4 +291,4 @@ function buildAsk(event) {
   };
 }
 
-module.exports = { askTick, agentResolveLocation, agentMatchReply, claimAsk, unclaimAsk };
+module.exports = { askTick, recallOrResolve, agentResolveLocation, agentMatchReply, claimAsk, unclaimAsk };

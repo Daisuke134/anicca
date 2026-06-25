@@ -108,3 +108,18 @@ regex for judgment. Paid product → must run autonomously for ALL users.
 - REQ-44 Per-user data SHALL be keyed per tenant (Composio connected account by uid; `accountId =
   u.gmail_account_id`; unipile email cache by per-user accountId). App-level creds (COMPOSIO_API_KEY,
   unipile/telegram tokens) are shared infra; NO per-user secret is stored or shared mutably across tenants.
+
+## I. Location memory — C3 ask→remember (PHASE C / PC-1)
+- REQ-45 WHEN an event needs a location and a NON-STALE remembered place exists for its phrase (lm_user_places,
+  `updated_at` within the TTL = `LM_PLACE_TTL_DAYS`, default 90), the system SHALL autofill from memory and SHALL
+  NOT ask the user OR call the resolution model. A memory OLDER than the TTL is ignored → the event is asked
+  again → the answer upserts/refreshes it (FIND-002: a permanent pin would make a changed venue un-correctable).
+- REQ-46 WHEN the user answers a location ask (Telegram reply OR email reply), the system SHALL REMEMBER
+  (uid, phrase, address) so a future event with the SAME phrase autofills without asking again.
+- REQ-47 The recall/remember phrase key SHALL be a DETERMINISTIC normalization of the event summary
+  (lowercase, collapsed whitespace, trim) — bookkeeping, not a judgment. Memory is keyed per (uid, phrase)
+  and upserts (no duplicate rows per user+phrase).
+- REQ-48 (C4 determinism) The SAME event SHALL classify identically over N≥10 runs (temperature 0); the eval
+  harness measures ≥9/10 stable per canonical case. [PC-2]
+- REQ-49 The RETURN [Travel] block (REQ-15) is implemented (`returnDecision` + travel-return tests) — the
+  earlier "UNIMPLEMENTED gap" note is closed.
