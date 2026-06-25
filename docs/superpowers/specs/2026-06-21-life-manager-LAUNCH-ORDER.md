@@ -605,3 +605,83 @@ Gmail (no per-user cost, no CASA): Telegram users use Telegram; web users use ou
   scheduler.askUserOnce + server late-notice wired to Resend + lm_users.email. 26 unit tests green.
 - ⏳ S3-infra Resend Inbound MX on reply.aniccaai.com (Netlify DNS) + inbound webhook → /inbound-email + Railway env.
 - ☐ S4 transport cleanup · S5 web onboarding drop Gmail · S6 un-gate web · S7 LIVE E2E.
+
+---
+
+## ★★★ LAUNCH PLAN (Dais 2026-06-25) — SHIP ON TELEGRAM NOW, web = "coming soon", finish web AFTER launch ★★★
+
+DECISION: launch the product on **Telegram as the main channel** immediately. The **web onboarding (/lm) stays
+GATED at "Coming soon"** (the #17 gate is already live on main — DO NOT un-gate yet). Do Product Hunt + all
+the marketing on the Telegram product. THEN come back and finish the web reply-by-email end-to-end and un-gate.
+Everything for the web is already 90% built + documented below so we can "ship it instantly" when we return.
+
+### NOW — v1 LAUNCH (Telegram only)
+- [x] TG onboarding (name → calendar → phone → pay; NO Gmail) — computeStage, 14/14 tests. (#12)
+- [x] Web surfaces gated: /life-manager left CTA removed, web card "Coming soon", /lm → Telegram funnel. (#17)
+- [x] **#18 Telegram-only E2E** (Dais DOGFOODED the real  onboarding end-to-end 2026-06-26 ✓ — TELEGRAM PRODUCT IS LAUNCH-READY) — real @LifeManagerBotbot: /start → name → Connect Calendar → phone → Stripe →
+      done; then a wake call fires + a location ask arrives IN Telegram + the TG reply patches the calendar.
+      (Composio calendar + Telnyx/Gemini wake calls + ask/reply are all already LIVE.) ← the launch gate.
+- [ ] Then: D-4 Product Hunt launch + D-3 content/TikTok/YT + D-5 articles + D-2 Capafy + D-6 directories.
+
+### LATER — WEB v1.5 (come back AFTER launch + marketing). RUNBOOK so we ship instantly:
+**STATUS: the web reply-by-email is CODE-COMPLETE, DEPLOYED, idempotent, VCSDD-adversary PASSED, send VERIFIED
+with a real email. The ONLY thing missing is the inbound MX→webhook wiring + un-gating.** What's already done:
+- mail-resend.js (sendAsk/sendLateNotice via Resend, From hello@aniccaai.com, Reply-To reply+<token>@reply.
+  aniccaai.com) — REAL send verified (id returned).
+- ask.js/notify.js send via Resend; Unipile removed from runtime; reply token stored on lm_ask_log.reply_token.
+- POST /inbound-email?s=<LM_INBOUND_SECRET> — LIVE on life-call (403 without secret, 200 no-token verified);
+  parseInboundRecipient (all Resend payload shapes) + handleInboundReply (atomic answered_at consume = idempotent
+  + needsLocation no-overwrite guard). 40/40 unit tests.
+- Migrations applied LIVE: lm_users.email, lm_ask_log.reply_token, lm_ask_log.answered_at.
+- Railway env SET on life-call: RESEND_API_KEY, LM_INBOUND_SECRET (in scratchpad lm-inbound-secret.txt — ROTATE
+  it, it was echoed once), LM_MAIL_FROM, LM_REPLY_DOMAIN=reply.aniccaai.com.
+- Code lives on branch `feature/lm-v15-email` (life-call parts merged to main via PR #258/#259).
+
+**THE 4 STEPS TO FINISH (when we come back):**
+1. INBOUND PROVIDER = Resend, **FREE** (RESEARCH-VERIFIED 2026-06-25 — NOT a 2nd domain, NOT paid):
+   - Resend Free plan includes "Sending & receiving" + "Inbound emails ✓" (resend.com/pricing). Inbound is a
+     CAPABILITY TOGGLE on an EXISTING verified domain, NOT a new domain entry. My earlier "1 domain / upgrade"
+     wall was because I wrongly tried to ADD reply.aniccaai.com as a new domain.
+   - DO: Resend dashboard → Domains → open **aniccaai.com** (already send-verified) → toggle **Receiving ON**.
+     Resend shows an MX record (AWS inbound SMTP host, priority ~10).
+   - Add that MX in **Netlify DNS** on host **`reply`** (→ reply.aniccaai.com), Type MX, the shown priority/value.
+     "MX records only impact the subdomain they're associated to" → root aniccaai.com Zoho MX (mx.zoho.jp) UNTOUCHED;
+     only *@reply.aniccaai.com is caught (route by the `to` field).
+   - Resend dashboard → **Webhooks → Add Webhook** → URL `https://life-call-production.up.railway.app/inbound-email?s=<LM_INBOUND_SECRET>`
+     → event **`email.received`** (Free = 1 webhook endpoint).
+   - ★ CODE ADJUSTMENT NEEDED ★: the Resend `email.received` webhook payload contains METADATA ONLY, NOT the body.
+     Our /inbound-email + parseInboundRecipient currently read `d.text` directly — that will be empty. We must:
+     (i) parse the token from the webhook `to`/recipient (already done), then (ii) FETCH the full body via the
+     Resend Receiving API (resend.com/docs/dashboard/receiving/get-email-content) using the email id from the
+     webhook, and pass THAT body to handleInboundReply. Also verify the Resend webhook signature
+     (resend.com/docs/webhooks/verify-webhooks-requests) in addition to / instead of the ?s= secret.
+2. ROTATE LM_INBOUND_SECRET on Railway (was echoed); update the webhook URL with the new value.
+3. WEB ONBOARDING (S5, #20): LmClient drops the Gmail-connect step (web users don't connect Gmail — asks go to
+   the Google sign-in email via Resend). Flow = Google sign-in (capture email→lm_users.email) → name → calendar
+   → phone → pay → dashboard. Continue enabled with Calendar only.
+4. UN-GATE WEB (S6, #21): revert #17 — /life-manager restore the left "Get started" CTA + the web card as an
+   active /lm link; LmBody renders <LmClient/> again (swap back from the coming-soon gate). EN+JA.
+   Then S7 (#22) FULL E2E: web onboard → no-location event → real Resend ask → reply → inbound webhook →
+   calendar patched + remembered. Confirm ZERO Unipile. THEN web is LIVE.
+
+### LIVE FINDING 2026-06-25 (verify-providers-live): Resend receiving toggle NOT in this account's UI
+Researched docs said "toggle Receiving on the existing domain (free)". But LIVE on resend.com/domains →
+aniccaai.com: there is NO Receiving toggle/section (only Records / Configuration[tracking,TLS]); the "..."
+menu has only "Verify Domain" / "Delete domain"; the banner says "ready to SEND emails" (send-only). Adding
+reply.aniccaai.com as a 2nd domain hits "1 domain — upgrade". So Resend inbound is effectively unavailable on
+this Free account via the UI. WHEN WE COME BACK, pick a FREE inbound-parse provider instead (no Resend Pro needed):
+  - SendGrid Inbound Parse: MX reply.aniccaai.com → mx.sendgrid.net (prio 10) → one Destination URL webhook
+    = /inbound-email. (SendGrid now a 60-day trial for SENDING, but Inbound Parse + an MX is usable; verify live.)
+  - Mailgun: Free plan includes 1 inbound route → MX mxa/mxb.mailgun.org → forward to /inbound-email.
+  Either is a plain MX on reply.aniccaai.com via Netlify DNS (root Zoho MX untouched) + a webhook. Then the
+  body-fetch nuance only applies to Resend; SendGrid/Mailgun POST the full parsed body to the webhook directly,
+  so handleInboundReply works as-is (reply text is in the payload). Re-verify the chosen provider LIVE first.
+
+### D-4 Product Hunt — PREPARED (go-live = Dais, timed strategic launch)
+Full ready-to-submit listing written: docs/launch/product-hunt-life-manager.md (tagline options, ≤260-char
+description, topics, the maker's first comment, gallery shot list, launch-day checklist). The Telegram product
+is LIVE + dogfooded so it is launchable. NOT auto-launched overnight on purpose: a PH launch is a one-shot public
+event whose ranking depends on timing (Tue–Thu 12:01am PT) + a polished gallery + the maker present to reply.
+PH is not logged in on the daily-driver. GO-LIVE = Dais (AM): log into PH (Google keiodaisuke), generate the
+1270×760 gallery images from the live /life-manager page, create the launch, schedule the optimal day, hit launch,
+post the first comment. Everything else is ready.

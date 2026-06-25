@@ -295,7 +295,7 @@ export const launchStrings = {
       heroSecondary: '仕組みを見る',
       asset: {
         wake: '09:30 · 10 分前の電話 ·「そろそろ動いて」',
-        travel1: '09:30 · 10 分前の電話 ·「そろそろ動いて」',
+        travel1: '09:35 · 5 分前の電話 ·「今すぐ出て」',
         sync: '09:35 · 5 分前の電話 ·「今すぐ出ないと遅刻」',
         travel2: '09:40 · チームシンクへの移動 20 分',
         lunch: '10:00 · チームシンク',
@@ -347,10 +347,10 @@ export const launchStrings = {
       travelNotePost: ' プロパティで既存のブロックを見つける。',
       onTimeTitle: '予約して鳴らす。ポーリングはしない',
       onTimeBodyPre:
-        '小さなプランナーが数分おきにカレンダーを読んで、予定ごとに 3 本の電話を ',
+        '小さなプランナーが数分おきにカレンダーを読んで、予定ごとに 2 本の電話を ',
       onTimeBodyCode: '出発時刻 − 10 / − 5 分',
       onTimeBodyPost: ' ちょうどに予約する。出発時刻は、場所のある予定なら [移動] ブロックの開始、なければ予定の開始。鳴り終わった電話は自分で消える。',
-      onTimeResult: '予定ごとに 3 本、秒単位で。近づくほど急かす。無駄な確認はしない。',
+      onTimeResult: '予定ごとに 2 本、あとの電話ほど急かす。無駄な確認はしない。',
       gettingStartedTitle: 'はじめかた',
       gettingStartedSteps: [
         { link: 'オンボーディングを開始', rest: '。Google でログインして、名前を伝える。' },
