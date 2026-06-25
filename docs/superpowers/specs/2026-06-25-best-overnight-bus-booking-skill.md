@@ -87,3 +87,14 @@ notification received + both gcal events created. Anything less = not done.
   "departure call" feature (gcal-watch → Telnyx dialout N min before). 
 
 ## 9. Tasklist → see TaskCreate (registered same turn per HARD RULE 0.29)
+
+## 10. Verification status (2026-06-25)
+- **Adversary: CONVERGED** after 6 fresh-context VSDD rounds — no CRITICAL/MAJOR remain (only 2 NITs,
+  both mitigated by SKILL.md guardrails). Rounds fixed: gog `--max`+retry, card-via-env (not argv),
+  int-equality amount (no wrong-charge OTP), require both --amount & --merchant, CLOAK_TARGET-required
+  for drive/fill/eval, single-CDP flock, PAN redaction, general stop extraction, gcal=external-MCP.
+- **Live-verified components**: search_buses (real routes/dates), read_otp (real OTP 067987 + validation),
+  all security guards, flock. Full booking flow live-proven manually 2026-06-25 (reservation 1020255713).
+- **NOT yet run**: one fully-automated drive-to-confirm via the packaged scripts in a single pass
+  (blocked by CDP websocket hang after a long session — infra, not code). Run in a fresh browser session
+  to close 4-D convergence (verification leg).
