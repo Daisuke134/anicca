@@ -54,10 +54,12 @@ NICHE is intentional & stays: articles about **AI-entities** = AI that earns mon
 - ◐ A4. ENGLISH = ONLY **dev.to + X + Substack** (drop Medium/HackerNoon/TikTok/Hashnode). EN body translated +
        de-slopped (stop-slop 40/50). content map: **dev.to + X = SAME free explainer** ; **Substack = FULL paid**
        (subscription, free explainer + paywall + paid setup/results, like the JP Substack).
-   - A4-dev.to: NOT done. I wrongly PUBLISHED it then reverted to DRAFT. 2 bugs to FIX: (a) **diagrams break** —
-       dev.to proxies external imgs and can't fetch kroki → "image no longer exists"; fix = host diagram PNGs on a
-       reliable host (GitHub raw / dev.to upload) so the proxy renders them; (b) **DELETE the "Getting started"
-       block** (it named Anicca + unneeded). Then full-page BROWSER-verify as DRAFT → Dais OK → publish. Make it a skill.
+   - A4-dev.to: ☑ SKILL BUILT 2026-06-25 with a MANDATORY browser-verify loop (no-human, never ships broken):
+       devto-verify.py (browser gate — EVERY img naturalWidth>0 with proxy-retry; count/200 ≠ proof) + render-en-
+       diagrams.py (mermaid→PNG→GitHub-raw host; dev.to's proxy fails external kroki) + publish-to-devto.sh
+       (publish/verify/unpublish) + devto-agent-prompt.md (publish→★browser-verify★→unpublish+fix til clean) +
+       run-devto-agent.sh. Getting-started/Anicca dropped from body. Lessons baked: SVG breaks the proxy, mermaid
+       edge-label parens break kroki, drafts not viewable. ⏳ RUN run-devto-agent.sh to ship the clean live article.
    - A4-X(EN): SAME free explainer via x-publish (X is logged in).
    - A4-Substack(EN): FULL article, paid subscription (free explainer + paywall + paid), like JP Substack.
    - RULE: each = full-page browser verify-loop, DRAFT until Dais approves, NEVER publish unverified.
