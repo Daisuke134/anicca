@@ -190,8 +190,8 @@ export const launchStrings = {
       startPhoneLink: 'Or open the bot directly',
       startWebEyebrow: 'on the web',
       startWebTitle: 'Start on the web',
-      startWebDesc: 'Sign in with Google, connect Calendar, add your phone, subscribe. A test call then proves it works.',
-      startWebCta: 'Start on the web',
+      startWebDesc: 'Web sign-up is coming soon. Start on Telegram for now — scan the code on the left.',
+      startWebCta: 'Coming soon',
     },
   },
 
@@ -377,8 +377,8 @@ export const launchStrings = {
       startPhoneLink: 'ボットを直接開く',
       startWebEyebrow: 'ウェブで',
       startWebTitle: 'ウェブで開始',
-      startWebDesc: 'Google でログイン、カレンダー接続、電話番号を登録、購読。その場でテスト通話が動作を証明します。',
-      startWebCta: 'ウェブで始める',
+      startWebDesc: 'ウェブ登録は近日公開。今は左のコードを読み取って Telegram で始めてね。',
+      startWebCta: '近日公開',
     },
   },
 } as const;
