@@ -42,7 +42,7 @@ as the OSS path.
    isolation verified per-tenant (accountId=gmail_account_id, Composio keyed by uid, bounded unipileEmailCache,
    NO shared mutable per-user secret). REQ-43/44. VCSDD: 109 tests (incl public-loop-routing + hang tests) +
    fresh adversary 2 rounds → PASS (5/5 dims; FIND-001 test-routing, 002 hang-timeout, 003 cache-bound resolved).
-6. ⏳ **PHASE C** — realize+VERIFY the 3 location cases. NOW (2026-06-25, spec `2026-06-25-life-manager-PHASE-C-design.md`).
+6. ✅ **PHASE C** — DONE 2026-06-25 (spec `2026-06-25-life-manager-PHASE-C-design.md`). All 3 location cases realized+verified by Life Manager itself.
    VERIFIED STATE: the judgment is ALREADY agentic (`agentResolveLocation` = Gemini tool-loop, temp 0, NO regex)
    covering C1 filled / C2 online / C5 routines / C7 EN-JA; REQ-15 RETURN block DONE; `@openai/agents` rewrite
    UNNECESSARY (keep the Gemini loop → $0 OpenAI). 3 work-items, each VCSDD: ✅ **PC-1** C3 memory
@@ -50,9 +50,10 @@ as the OSS path.
    reply handlers remember; live-Supabase E2E) · ✅ **PC-2** eval harness (PR #240, adversary 2R PASS —
    `scripts/phase-c-eval.js` real Gemini N=10: 13/15 HARD PASS all 100% determinism + 2 soft [Morning run /
    URL-sync, ambiguous, memory-mitigated, forbid:filled hard-checks never-route]; judgment fixed by PROMPT
-   not regex) · ⏳ **PC-3** C6 live witness (DEPLOYED Inngest cron autofills) — BLOCKED on a connected
-   calendar: only Dais's real account (lm_784ad27) is connected → needs Dais's OK to add a far-future landmark
-   test event to his calendar (autofills, no call, cleaned up), OR a throwaway test tenant w/ Composio gcal.
+   not regex) · ✅ **PC-3** C6 live witness — WITNESSED 2026-06-25 on the DEPLOYED life-call (Railway, in-process
+   ask-cron every 20min, build agentic-ask-worldwide-v2, wake T-10/5 live): a test event "東京スカイツリーで打合せ"
+   (no location) on the real connected calendar was AUTOFILLED by the deployed cron to "1-chōme-1-2 Oshiage,
+   Sumida City, Tokyo 131-0045" within ~16min (agent web-searched the address); test event cleaned up.
    C8 ask-reply E2E folded into PC-1/PC-3 · C9 YouTube → D-3.
 7. ☐ **D-1** end-to-end test web /lm + Telegram bot + QR on /life-manager (easy go).
 8. ☐ **D-2** sell on Capafy (lite Leave-Time Planner, best pricing/copy, CTA → web app).
