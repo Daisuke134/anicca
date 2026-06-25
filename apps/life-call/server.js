@@ -35,7 +35,7 @@ const inngestHandler = inngestServe({ client: inngest, functions: inngestFunctio
 const { placeCall, startRecording } = require("./lib/dial.js");
 const { parseUpdate, sendMessage } = require("./lib/telegram.js");
 const { resolveTelegramReply } = require("./lib/telegram-reply.js");
-const { handleInboundReply } = require("./lib/ask.js");
+const { handleInboundReply, parseInboundRecipient } = require("./lib/ask.js");
 const { isReplyToken } = require("./lib/reply-token.js");
 const { sendStage, rowByChatId, setStage, handleOnboardingText } = require("./lib/telegram-onboard.js");
 const { classifyLate, sendLateNotice } = require("./lib/notify.js");
@@ -285,14 +285,8 @@ const server = http.createServer((req, res) => {
         const q = new URL(req.url, "http://x").searchParams;
         if (!LM_INBOUND_SECRET || q.get("s") !== LM_INBOUND_SECRET) { res.writeHead(403); res.end("forbidden"); return; }
         const body = JSON.parse((await readBody(req)) || "{}");
-        const d = body.data || body; // Resend wraps as {type,data}; tolerate a flat payload too
-        const recips = [].concat(d.to || [], d.cc || [], (d.headers && d.headers.to) || [])
-          .flatMap((x) => (typeof x === "string" ? x : (x && (x.address || x.email)) || ""));
-        const addr = recips.find((a) => /reply\+[A-Za-z0-9_-]+@/.test(a)) || "";
-        const m = addr.match(/reply\+([A-Za-z0-9_-]+)@/);
-        const token = m && m[1];
+        const { token, text } = parseInboundRecipient(body); // pure, unit-tested across Resend payload shapes
         if (!isReplyToken(token)) { res.writeHead(200); res.end("no-token"); return; } // not one of ours → ignore
-        const text = d.text || d.subject || "";
         const r = await handleInboundReply(token, text, { composioKey: COMPOSIO_KEY, geminiKey: GEMINI_KEY, supaUrl: SUPA_URL, supaKey: SUPA_KEY });
         console.log(`[inbound-email] token=${token.slice(0, 8)} ok=${r.ok} ${r.ok ? `${(r.uid || "").slice(0, 12)} → ${r.location}` : r.reason}`);
         res.writeHead(200); res.end(r.ok ? "patched" : "noop");
