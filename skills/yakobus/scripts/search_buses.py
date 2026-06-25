@@ -13,15 +13,16 @@ because the result list is JS-rendered. Prints JSON: {candidates:[...], note}.
 CAVEAT (verified): bushikaku availability is CACHED/laggy — a plan shown as "わずか" may be 満席 on the
 booking site. Treat availability as a hint; confirm on the booking site before relying on it.
 """
-import sys, json, re
+import sys, json, re, fcntl
 from playwright.sync_api import sync_playwright
 
 CDP = "http://localhost:9222"
 # lines to skip when back-scanning for the plan name (seat-type chips, ratings, prices, times)
 SKIP = {"夜行便","昼行便","充電","Wi-Fi","女性安心","女性専用席","トイレ付","仕切りカーテン",
         "3列独立","4列標準","4列足元広め","座席指定","2列","2列独立","3列シート","4列"}
-PREF_MARK = re.compile(r"^（.+）$")          # full-width "（大阪）" prefecture marker line
+PREF_MARK = re.compile(r"^[（(].+[）)]$")     # full- OR half-width "（大阪）"/"(大阪)" marker on its own line
 NOISE = re.compile(r"^(¥?[\d,]+円?|\d{1,2}:\d{2}|★+|[\d.]+)$")  # price / time / rating noise
+LABELISH = re.compile(r"(着$|発$|^\d{1,2}:\d{2}|乗車|降車|予約サイト|バス会社|時間)")  # not a place name
 
 def parse(txt):
     lines = [l.strip() for l in txt.split("\n")]
@@ -43,7 +44,8 @@ def parse(txt):
         for k, l in enumerate(blk_lines[:-1]):
             if PREF_MARK.match(l):
                 place = blk_lines[k+1].strip()
-                if place and place not in stops and not NOISE.match(place):
+                if (place and place not in stops and place not in SKIP
+                        and not NOISE.match(place) and not LABELISH.search(place)):
                     stops.append(place[:40])
         st = "満席" if "満席" in blk else ("わずか" if "わずか" in blk else "空席")
         times = re.findall(r"\d{1,2}:\d{2}", blk)
@@ -54,6 +56,11 @@ def parse(txt):
 def main():
     frm, to, ymd = sys.argv[1], sys.argv[2], sys.argv[3]
     url = f"https://www.bushikaku.net/search/{frm}_{to}/{ymd}/"
+    _lf = open("/tmp/yakobus-cdp.lock", "w")   # ONE CDP client at a time (shared with cloak.py)
+    try:
+        fcntl.flock(_lf, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        print(json.dumps({"error": "another yakobus CDP client holds the lock — run sequentially"})); sys.exit(1)
     with sync_playwright() as p:
         b = p.chromium.connect_over_cdp(CDP); ctx = b.contexts[0]
         pg = ctx.new_page(); pg.on("dialog", lambda d: d.accept())
