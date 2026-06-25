@@ -1,0 +1,7 @@
+Error 400: SyntaxError: Parse error on line 2:
+...blishes its ID card (name, abilities, se
+-----------------------^
+Expecting 'SQE', 'DOUBLECIRCLEEND', 'PE', '-)', 'STADIUMEND', 'SUBROUTINEEND', 'PIPE', 'CYLINDEREND', 'DIAMOND_STOP', 'TAGEND', 'TRAPEND', 'INVTRAPEND', 'UNICODE_TEXT', 'TEXT', 'TAGSTART', got 'PS'
+Error: Syntax error in graph
+    at Worker.convert (file:///usr/local/kroki/src/worker.js:64:15)
+    at async file:///usr/local/kroki/src/index.js:34:28
