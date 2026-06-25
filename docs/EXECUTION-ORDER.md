@@ -114,3 +114,6 @@ AUTONOMY: earn actions done by anicca ITSELF (buffer + close-in-profit in runtim
 I (Claude, type-2) only FIX the system + MONITOR + write/publish the article.
 
 - F1e ☑ NOTE E2E-as-DRAFT VERIFIED 2026-06-24: parameterized (NOTE_KEY/NUM/SRC) → fresh draft create_draft→rebuild(29 imgs+10 headings render clean)→目次, screenshot-verified, deleted (no prod). eyecatch+membership+paywall=publish-time (gate-blocked in draft, proven on live).
+
+- F4a-zenn ☑ E2E VERIFIED 2026-06-24: adapt→gate→render run clean; E2E CAUGHT+FIXED a real bug (skill did not escape inner double-quotes in title → broke Zenn YAML frontmatter/preview). publish-to-zenn ready for instant publish.
+- F4b-substack: spec recorded (2026-06-24-publish-to-substack-F4b.md). skill=anshulkhare7/substack-cli. paywall = SAME as note. gap = add paywall-node insertion.
