@@ -28,16 +28,21 @@ and adapt; do not assume kosokubus DOM elsewhere.
 ## Tools (scripts/) — run STRICTLY SEQUENTIALLY (one CDP client at a time; never two at once)
 - `python3 search_buses.py <from> <to> <YYYYMMDD>` → JSON candidates (price, stops, availability, times)
   + bookingLinks. Sorted cheapest-first. Raw data only — you pick. Exits 1 with `{"error":...}` if no
-  candidates. Closes its own tab. `stops` are the real alighting place-names (works for any destination).
+  candidates. Closes its own tab. `stops` are the route place-names (boarding+alighting; check the
+  destination is among them). Each `bookingLinks[]` carries a parsed `price` → map your chosen candidate
+  to its link by matching price, then CONFIRM the bus name on the booking page before paying.
 - `CLOAK_TARGET=<urlsubstr> CLOAK_SHOT_DIR=<dir> python3 cloak.py <cmd> [arg]` → drive the live
   daily-driver CloakBrowser (goto/eval/url/pages/shot/shotfull/clicktext/clicksel/clickxy/typeat/fill).
 - `read_otp.py --merchant <name> --amount <jpy> --minutes 15 --tries 6` → newest 3-D Secure OTP from
   Gmail, RETRIED 6× (email arrives delayed), validated by merchant+amount. Exits 1 if none.
 - Card + passenger profile live in `~/.openclaw/.env` (`DAIS_CARD_PAN/_EXP_MONTH/_EXP_YEAR/_CVV/_NAME`,
   `DAIS_PHONE`); email keiodaisuke@gmail.com.
-  **SECRETS**: never put card values in argv (visible in `ps`/transcript). Fill them via
-  `CLOAK_FILL_VALUE="$DAIS_CARD_PAN" cloak.py fill '#cardNum'` (value read from env, printed masked).
-  `typeat` puts its text in argv → use it only for NON-secret fields (times, OTP), never card PAN/CVV.
+  **SECRETS** (PAN **and CVV**): never put card values in argv (visible in `ps`/transcript). Fill them via
+  `CLOAK_FILL_VALUE="$DAIS_CARD_PAN" cloak.py fill '#cardNum'` and `CLOAK_FILL_VALUE="$DAIS_CARD_CVV"
+  cloak.py fill '#ccSecurityCode'` (value read from env, printed masked). `typeat` puts text in argv →
+  use ONLY for non-secret fields (times, OTP); NEVER for PAN/CVV (it refuses long digits, but a 3-digit
+  CVV would slip through — so just never use it there). And NEVER `eval` a card field's `.value`
+  (#cardNum/#ccSecurityCode) — eval output is printed (PAN is redacted, CVV is not).
 - Google Calendar: gog has NO gcal CLI. Use the **Google Calendar MCP `create_event`** (the verified
   2026-06-25 mechanism) for the two events. This is an external MCP dependency BY DESIGN — not a bundled
   script (no OAuth creds shipped in-skill).
@@ -49,7 +54,10 @@ and adapt; do not assume kosokubus DOM elsewhere.
 4. Fill passenger info (name kana, sex, age, tel, email×2, prefecture).
 5. Select credit card, fill card from env, decline optional insurance, agree 約款.
 6. Submit to final confirm. Read the page back and verify every field.
-7. Final confirm → 3-D Secure: when challenged, `read_otp.py` → enter code → 確認.
+7. Final confirm → 3-D Secure: the challenge opens on the ISSUER/ACS host (a DIFFERENT domain, e.g.
+   `acs-jcn.dnp-cdms.jp` / Visa Secure), NOT the booking site → **re-point `CLOAK_TARGET` to that ACS host**
+   for the OTP step (else cloak.py refuses the unknown tab). Then `read_otp.py --amount <jpy> --merchant
+   <name>` → type code (non-secret) → 確認.
 8. VERIFY (no mock): payment_complete page + reservation number + confirmation email +
    card-charge notification. Only then is it done.
 9. Add to Google Calendar: (a) leave/transit event (route + leave-by time, reminders),
