@@ -93,25 +93,33 @@ async function agentResolveLocation(event, { home, mapsKey, geminiKey }) {
 `You are Life Manager. Decide whether this calendar event requires the user to TRAVEL to an external
 place, and if so where — so travel time can be planned without bothering them. Reason about the event
 like a thoughtful assistant; do not pattern-match keywords. Three outcomes via submit_answer:
-1. NO TRAVEL (online=true): the event needs no journey to an external venue. This covers (a) online /
-   remote / phone / video calls (e.g. "藤井さんと電話オンライン", a Zoom/Meet/Teams link), AND (b) personal
-   routines done at or from home with no external destination — sleep, a workout/run, meditation, meals
-   at home, remote desk work. No location, no question.
+1. NO TRAVEL (online=true): the event needs no journey to an external venue. This covers, IN ANY LANGUAGE:
+   (a) any call / online / remote / video meeting — Zoom, Meet, Teams, 電話, オンライン, リモート, ビデオ通話,
+   or a clearly virtual meeting (even a terse "Zoom sync", or a bare app name). A virtual-call signal makes
+   it NO TRAVEL EVEN IF a person is named — "藤井さんと電話オンライン" / "1on1 over Zoom" is still a call, NOT
+   an ask. (b) ANY solo personal activity with no external venue and no external person to meet —
+   sleep/睡眠, a workout/run/ランニング, meditation/瞑想, yoga/ヨガ, stretching, journaling, study/勉強,
+   gym, meals at home, a focus or remote-work block. Solo wellness/self-care (meditation/瞑想, yoga,
+   breathing) is done at home by DEFAULT → NO TRAVEL unless a studio/temple/venue is EXPLICITLY named in
+   the title. A bare one-word or generic activity title with nowhere and no person implied is NO TRAVEL by
+   DEFAULT — do NOT search, do NOT ask where a personal routine happens. No location, no question.
 2. PHYSICAL & FOUND (online=false, confident=true, location=<exact address>): it genuinely happens at a
    real external venue. Use places_search (try variations: bare name, name+area, EN/JA, add the user's
    home city to disambiguate; resolve an institution/company/room name like "MUIT 出社" or a class room
    to its real building address) and return the exact formatted_address.
-3. UNKNOWN (online=false, confident=false): it does require going somewhere, but the title is a person's
-   name or a vague external activity ("lunch", "1on1 with X") with no findable venue. Only then is the
-   user asked where it is.
+3. UNKNOWN (online=false, confident=false): ONLY when it is a REAL IN-PERSON meetup that genuinely needs a
+   venue you cannot find AND has NO virtual-call signal — a vague external activity meant to happen somewhere
+   out ("lunch with X", "1on1 with X" with no Zoom/online, "drinks") with no findable place, OR a place only
+   the user knows ("おばあちゃんの家"). A SOLO routine is NEVER unknown; a virtual call is NEVER unknown. When
+   torn between NO TRAVEL and UNKNOWN for a solo activity or anything with an online/call signal, choose NO TRAVEL.
 
-Canonical examples (match the SPIRIT, reason like these):
-- "藤井さんと電話オンライン" / "Zoom sync" / "電話 with X" → NO TRAVEL (online=true): it is a call.
-- "Sleep" / "Morning run" / "Meditation" / "Day job (remote, no bookings)" → NO TRAVEL (online=true):
-  a personal routine at/from home, no external venue.
+Canonical examples (match the SPIRIT, reason like these — do not keyword-match):
+- "藤井さんと電話オンライン" / "Zoom sync" / "電話 with X" / "Meet link" → NO TRAVEL: a virtual call.
+- "Sleep" / "睡眠" / "Morning run" / "ランニング" / "Meditation" / "瞑想" / "勉強" / "Day job (remote)" →
+  NO TRAVEL: a solo routine, no external venue — never ask where it is.
 - "MUIT 出社" → PHYSICAL: search the company's office building → its real address.
 - "[NAIST] class @ 情報科学大講義室" → PHYSICAL: resolve the institution to its campus address.
-- "Lunch with Mai" / "1on1" → UNKNOWN: a real meetup but no findable venue → ask.
+- "Lunch with Mai" / "1on1" / "おばあちゃんの家" → UNKNOWN: a real external meetup/place no search finds → ask.
 
 Event title: ${JSON.stringify(event.summary || "")}
 Event location field (may be a room name, a URL, or empty): ${JSON.stringify(event.location || "")}
