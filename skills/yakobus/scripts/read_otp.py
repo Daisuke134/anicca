@@ -65,7 +65,9 @@ def scan():
         if not code:
             continue
         merch = re.search(r"(?:加盟店名|ご利用加盟店)[：:\s]*([^\n　]{1,30})", body)
-        amt = re.search(r"ご利用金額[：:\s]*([^\n]{0,20})", body)
+        # amount: from the 金額 label, skip currency prefix (：/JPY/¥/space) then take the FIRST digit run
+        # only (so "JPY 5,200" works and a trailing "2026年" is NOT swept in).
+        amt = re.search(r"ご利用金額[^\d]{0,12}([\d,]+)", body)
         mtext = merch.group(1).strip() if merch else ""
         atext = amt.group(1).strip() if amt else ""
         # validate against PARSED fields, not whole body
@@ -77,6 +79,9 @@ def scan():
     return None
 
 def main():
+    # REQUIRE --amount so an unvalidated (wrong-charge) OTP can never be returned by omission.
+    if not AMOUNT:
+        print(json.dumps({"error": "--amount <jpy> is REQUIRED (prevents returning an OTP for a different charge)"})); sys.exit(2)
     for t in range(TRIES):
         hit = scan()
         if hit:

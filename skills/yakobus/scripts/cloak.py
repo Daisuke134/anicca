@@ -80,7 +80,9 @@ def main():
             print("URL:", page.url)
         elif cmd == "eval":
             out = json.dumps(page.evaluate(sys.stdin.read()), ensure_ascii=False, default=str)[:60000]
-            out = re.sub(r"\d{12,}", "<redacted-digits>", out)  # never echo card PANs read back from the DOM
+            # never echo card PANs read back from the DOM — incl. spaced/dashed forms (4111 1111 1111 1111)
+            out = re.sub(r"(?:\d[ \-]?){13,19}", "<redacted-card>", out)
+            out = re.sub(r"\d{12,}", "<redacted-digits>", out)
             print(out)
         elif cmd == "url":
             print("URL:", page.url, "| TITLE:", page.title())
