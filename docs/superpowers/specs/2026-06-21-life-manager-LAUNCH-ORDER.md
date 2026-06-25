@@ -55,7 +55,13 @@ as the OSS path.
    (no location) on the real connected calendar was AUTOFILLED by the deployed cron to "1-chōme-1-2 Oshiage,
    Sumida City, Tokyo 131-0045" within ~16min (agent web-searched the address); test event cleaned up.
    C8 ask-reply E2E folded into PC-1/PC-3 · C9 YouTube → D-3.
-7. ☐ **D-1** end-to-end test web /lm + Telegram bot + QR on /life-manager (easy go).
+7. ⏳ **D-1** web /lm + Telegram + QR. DONE 2026-06-25: ✅ QR+web chooser on /life-manager (D8 — scan→
+   @LifeManagerBotbot /start, or web→/lm; qrcode.react, EN/JA, browser-verified the QR renders live) +
+   ✅ copy fixed to 2 calls T-10/T-5 (was 15/10/5, now matches behavior). Infra all verified separately:
+   bot @LifeManagerBotbot + webhook → life-call/telegram LIVE; PC-3 proved the cron autofills a real calendar;
+   HARD-3 proved pay→provision (Stripe LIVE E2E). ⏳ REMAINING = the single-sitting NEW-USER dogfood E2E
+   (Google OAuth → Composio gcal connect → phone → $20 sandbox pay → dashboard → real test call; + Telegram
+   /start full flow + TG ask-reply) — inherently human-gated (a fresh Google account + a phone) → Dais dogfoods.
 8. ☐ **D-2** sell on Capafy (lite Leave-Time Planner, best pricing/copy, CTA → web app).
 9. ☐ **D-3** content crons TikTok + YouTube (= #99b). TODAY: `life-manager-video` skill stores wake-call
    recordings every 2h → builds a 1080×1920 reel → `post-daily.sh` posts to @anicca.comedy TikTok 2×/day
