@@ -40,9 +40,11 @@ and adapt; do not assume kosokubus DOM elsewhere.
   **SECRETS** (PAN **and CVV**): never put card values in argv (visible in `ps`/transcript). Fill them via
   `CLOAK_FILL_VALUE="$DAIS_CARD_PAN" cloak.py fill '#cardNum'` and `CLOAK_FILL_VALUE="$DAIS_CARD_CVV"
   cloak.py fill '#ccSecurityCode'` (value read from env, printed masked). `typeat` puts text in argv →
-  use ONLY for non-secret fields (times, OTP); NEVER for PAN/CVV (it refuses long digits, but a 3-digit
-  CVV would slip through — so just never use it there). And NEVER `eval` a card field's `.value`
-  (#cardNum/#ccSecurityCode) — eval output is printed (PAN is redacted, CVV is not).
+  refuses ALL pure-digit runs (CVV/OTP/phone/PAN) → use it ONLY for text/time fields like "21:00".
+  Phone, OTP, CVV, PAN → `fill` via env, e.g. `CLOAK_FILL_VALUE="$DAIS_PHONE" cloak.py fill '#repTel'`
+  and `CLOAK_FILL_VALUE="$DAIS_CARD_CVV" cloak.py fill '#ccSecurityCode'`. NEVER `eval` a card field's
+  `.value` (#cardNum/#ccSecurityCode) — eval output is printed (PAN is redacted, CVV is not).
+  Also: drive/fill/eval commands REQUIRE `CLOAK_TARGET` set (cloak.py refuses an unset target for them).
 - Google Calendar: gog has NO gcal CLI. Use the **Google Calendar MCP `create_event`** (the verified
   2026-06-25 mechanism) for the two events. This is an external MCP dependency BY DESIGN — not a bundled
   script (no OAuth creds shipped in-skill).
@@ -57,7 +59,8 @@ and adapt; do not assume kosokubus DOM elsewhere.
 7. Final confirm → 3-D Secure: the challenge opens on the ISSUER/ACS host (a DIFFERENT domain, e.g.
    `acs-jcn.dnp-cdms.jp` / Visa Secure), NOT the booking site → **re-point `CLOAK_TARGET` to that ACS host**
    for the OTP step (else cloak.py refuses the unknown tab). Then `read_otp.py --amount <jpy> --merchant
-   <name>` → type code (non-secret) → 確認.
+   <name>` → put the code into the OTP field via `fill` (CLOAK_FILL_VALUE) or a JS-set (typeat refuses
+   pure digits) → 確認.
 8. VERIFY (no mock): payment_complete page + reservation number + confirmation email +
    card-charge notification. Only then is it done.
 9. Add to Google Calendar: (a) leave/transit event (route + leave-by time, reminders),

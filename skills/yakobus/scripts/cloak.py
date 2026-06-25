@@ -27,9 +27,14 @@ from playwright.sync_api import sync_playwright
 SHOT_DIR = os.environ.get("CLOAK_SHOT_DIR", "/tmp")
 CDP = os.environ.get("CLOAK_CDP", "http://localhost:9222")
 NAVCMDS = ("goto", "goto-wait", "newtab")
+# commands that mutate/read sensitive DOM — REQUIRE an explicit target (never drive an arbitrary tab,
+# or card data could be typed into the wrong site / a PAN read back from the wrong page).
+REQUIRE_TARGET = ("fill", "typeat", "clicktext", "clicksel", "clickxy", "eval")
 
 def pick_page(ctx, cmd):
     target = os.environ.get("CLOAK_TARGET", "")
+    if not target and cmd in REQUIRE_TARGET:
+        raise SystemExit(f"CLOAK_TARGET is required for '{cmd}' — refusing to drive/type into an arbitrary tab")
     if target:
         for pg in ctx.pages:
             if target in (pg.url or ""):
@@ -81,8 +86,8 @@ def main():
         elif cmd == "eval":
             out = json.dumps(page.evaluate(sys.stdin.read()), ensure_ascii=False, default=str)[:60000]
             # redact card PANs only (card-shaped runs) — avoid over-redacting "1 2 3 .." numeric lists:
-            out = re.sub(r"\b(?:\d{4}[ \-]){3}\d{1,4}\b", "<redacted-card>", out)  # 4-4-4-4 grouped
-            out = re.sub(r"\b\d{13,19}\b", "<redacted-card>", out)                 # bare 13-19 digit PAN
+            out = re.sub(r"\b(?:\d{4}[ \-]){2,3}\d{1,4}\b", "<redacted-card>", out)  # grouped 12-19 digit
+            out = re.sub(r"\b\d{12,19}\b", "<redacted-card>", out)                   # bare 12-19 digit PAN
             print(out)
         elif cmd == "url":
             print("URL:", page.url, "| TITLE:", page.title())

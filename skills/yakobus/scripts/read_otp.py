@@ -56,6 +56,9 @@ def scan():
         msgs = json.loads(out).get("messages") or []
     except Exception:
         msgs = []
+    # sort newest-first explicitly (don't trust gog default order) so a same-merchant+amount retry
+    # never returns the OLD/dead code; best-effort on whatever date field gog provides.
+    msgs.sort(key=lambda m: str(m.get("internalDate") or m.get("date") or m.get("timestamp") or ""), reverse=True)
     for m in msgs:  # newest first
         mid = m.get("id")
         if not mid:
