@@ -61,7 +61,8 @@ regex for judgment. Paid product → must run autonomously for ALL users.
 ## E. Voice call (boundary)
 - REQ-28 WHEN a wake call connects, Charon SHALL speak first, address the user by name, in the user's
   language (EN/JA).
-- REQ-29 The system SHALL escalate calls at T−15/10/5 min until the user moves.
+- REQ-29 The system SHALL place TWO escalating calls — at T−10 (firm) and T−5 (harsh) before DEPARTURE — until
+  the user moves (Dais 2026-06-25: "just call me 10 min before and 5 min before, that's it"; the T−15 call is removed).
 - REQ-30 The outbound Charon audio SHALL be audible to the caller (not silent).
 
 ## F. Scheduling layer (HARD-2 — Inngest durable scheduler)

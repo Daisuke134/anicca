@@ -1,4 +1,4 @@
-// scheduler.js — the cloud wake loop. Every 60s: find Life Manager users due for a T-15min wake
+// scheduler.js — the cloud wake loop. Every 60s: find Life Manager users due for a T-10/T-5 min wake
 // and place a Telnyx+Gemini-Charon call whose audio bridges back to THIS service's /ws.
 //
 // Source of truth:
@@ -24,10 +24,10 @@ function signCtx(parts) {
 }
 
 const TICK_MS = 60 * 1000;
-// Escalating wake calls: ring at T-15 (gentle), T-10 (firm), T-5 (harsh) before EACH event — like the
-// local Life Manager — so the user actually gets up / leaves. Each (event, level) fires once (deduped).
+// Escalating wake calls: ring at T-10 (firm) and T-5 (harsh) before EACH event — TWO calls only
+// (Dais 2026-06-25: "just call me 10 min before and 5 min before, that's it"), so the user actually
+// gets up / leaves. Each (event, level) fires once (deduped).
 const WAKE_LEVELS = [
-  { min: 15, urgency: "gentle" },
   { min: 10, urgency: "firm" },
   { min: 5, urgency: "harsh" },
 ];
@@ -106,7 +106,7 @@ async function wakeUserOnce(u, nowMs) {
     return;
   }
   // #69 importance filter: only wake for events the user must TRAVEL to (per their wake_policy),
-  // and anchor the 15/10/5 levels to DEPARTURE (leave time), not the event start — so a 30-min-travel
+  // and anchor the 10/5 levels to DEPARTURE (leave time), not the event start — so a 30-min-travel
   // event is called before they must leave. resolveDeparture uses the [Travel] block if present, else
   // computes the leave time inline (never-late even before the 30-min travel loop inserts the block).
   const mapsKey = process.env.LIFE_MAPS_KEY || process.env.GOOGLE_API_KEY;
@@ -313,6 +313,8 @@ module.exports = {
   wakeUserOnce, travelUserOnce, askUserOnce,
   // per-tenant isolation wrapper (HARD-4): one tenant's failure can't break the others' tick
   forEachUserSafe,
+  // wake escalation levels (Dais: T-10 firm + T-5 harsh only) — exported so a revert is test-caught
+  WAKE_LEVELS,
   // paid-user listing (for Inngest sweep fan-out)
   listPaidUsers,
   // per-uid re-fetch for Inngest per-user functions (PII: sweepers send only uid)
