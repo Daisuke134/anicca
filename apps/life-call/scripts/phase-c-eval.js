@@ -32,7 +32,7 @@ const CASES = [
   // OR be at a track/park = travel), so it defensibly hedges to ASK ~50%. That is an ACCEPTABLE product
   // outcome — PC-1 memory makes a single ask harmless (asked once → remembered → never repeated). Reported
   // honestly (its real %) but not counted as a hard failure; the clear routines (Sleep/瞑想) stay strict.
-  { summary: "Morning run", expect: "online", soft: true, tag: "C5/EN routine (SOFT — ambiguous, memory-mitigated)" },
+  { summary: "Morning run", expect: "online", soft: true, forbid: ["filled"], tag: "C5/EN routine (SOFT online/ask; HARD never-filled = no bogus travel block on a home routine, REQ-07)" },
   { summary: "Sleep", expect: "online", tag: "C5 routine" },
   { summary: "瞑想", expect: "online", tag: "C5/JA meditation" },
   // C3 ASK — real in-person meetup, no findable venue / user-only place → ask (REQ-08/09)
