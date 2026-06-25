@@ -111,3 +111,27 @@ GENERALIZED for our [explainer → setup → results] articles (applies to note 
   PAID = the setup (exact steps/commands) + the results (did it earn / the numbers).
   This is EXACTLY our current cut (free up to 実際に動かす intro, paid from 取得してビルドする). CONFIRMED correct.
   Conversion target 5-10% (Substack) — lever is intentional execution, gated content must over-deliver.
+
+## PAYWALL PLACEMENT — FINAL DECISION (web-researched, A/B-data-backed) 2026-06-25
+Gate LATE = free explainer (what + how it works), paywall right BEFORE the payoff (setup steps + results/numbers).
+NOT block 2. Hard evidence:
+- A/B (ditchthetemplates): paywall at start = 0 conv; before the solution = 4; give step1 free + gate step2 = 6.
+- Satiation rule (note なつお n/nf0a688dd17cc): free area optimal 3,500–4,000字, aim 腹八分 ("続きが気になる", not 満足).
+- Live note paid posts: 4 of 5 gate at [how-it-works]→[setup/results] seam (aiou 32% free gates all setup;
+  fresh_rail 15-20%; totyu 50%; 68sai 71%). hirakawa ¥55k <10% = high-ticket "sell the dream" EXCEPTION only.
+- % band: free ≈ 25–50% of a long post; cut position > % (must be BEFORE the payoff, on a cliffhanger).
+- Substack official: hiding best/accessible content = "a big mistake". beehiiv: "nothing converts like a scoop"
+  → the "did it earn / how much" results = the strongest gated asset.
+DECISION for our [intro][what][how-it-works][setup][results]:
+  FREE = intro + what + how-it-works (≈30-50%, 腹八分, end on cliffhanger), PAID = setup + results.
+  Long-article fix: note/substack COMPRESS the explainer (don't dump the full huge one); Zenn = full free (reach).
+  Same gate as note's existing 実際に動かす cut — CONFIRMED.
+
+## RENDER-VERIFY GATE — to add to every publisher (so oversized images are caught) 2026-06-25
+Found during #2 verify: tall PNGs (tbl18=3152px, fund=2556px, tbl3=2084px) become full-page on note/substack
+(Zenn native tables fine). I verified structure (img count) but NOT visual sizes — must bake the check in:
+  (A) DETERMINISTIC: sips every asset → height at 480px display width; if > ~1800px-equiv = FAIL (name the asset).
+  (B) VISION: screenshot the actual render (note editor / zenn live / substack preview) → AGENT Reads it and
+      judges each image (oversized / crushed / full-page / slop). FAIL → STOP before publish → re-render.
+  RENDER SIDE: enforce a max table-PNG height (font shrink / column split if exceeded); crop+resize fund phone
+  screenshots. Done is NOT "img count == N" — it is "every image eyeballed at the right size by the agent".
