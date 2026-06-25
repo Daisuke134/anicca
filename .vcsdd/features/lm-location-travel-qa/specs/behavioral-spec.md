@@ -110,8 +110,10 @@ regex for judgment. Paid product → must run autonomously for ALL users.
   unipile/telegram tokens) are shared infra; NO per-user secret is stored or shared mutably across tenants.
 
 ## I. Location memory — C3 ask→remember (PHASE C / PC-1)
-- REQ-45 WHEN an event needs a location and a remembered place exists for its phrase (lm_user_places), the
-  system SHALL autofill the event from memory and SHALL NOT ask the user OR call the resolution model.
+- REQ-45 WHEN an event needs a location and a NON-STALE remembered place exists for its phrase (lm_user_places,
+  `updated_at` within the TTL = `LM_PLACE_TTL_DAYS`, default 90), the system SHALL autofill from memory and SHALL
+  NOT ask the user OR call the resolution model. A memory OLDER than the TTL is ignored → the event is asked
+  again → the answer upserts/refreshes it (FIND-002: a permanent pin would make a changed venue un-correctable).
 - REQ-46 WHEN the user answers a location ask (Telegram reply OR email reply), the system SHALL REMEMBER
   (uid, phrase, address) so a future event with the SAME phrase autofills without asking again.
 - REQ-47 The recall/remember phrase key SHALL be a DETERMINISTIC normalization of the event summary

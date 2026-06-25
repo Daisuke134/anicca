@@ -13,14 +13,20 @@ function hdr(key, extra) {
   return Object.assign({ apikey: key, Authorization: `Bearer ${key}` }, extra || {});
 }
 
-// recallPlace(uid, phrase) → remembered address | null. Missing phrase/uid/creds → null (no memory, never queries).
-async function recallPlace(uid, phrase, supaUrl, supaKey, fetchImpl) {
+// recallPlace(uid, phrase) → remembered address | null. Missing phrase/uid/creds → null (no memory).
+// TTL (FIND-002): only memory UPDATED within ttlDays (default LM_PLACE_TTL_DAYS or 90) is recalled — so a
+// stale memory expires, the event is asked again, and the answer refreshes it (a venue can change). ttlDays<=0
+// disables the bound. This is the in-product staleness-refresh path that a permanent pin would block.
+async function recallPlace(uid, phrase, supaUrl, supaKey, fetchImpl, ttlDays) {
   const f = fetchImpl || fetch;
   if (!supaUrl || !supaKey || !uid || !phrase) return null;
-  const r = await f(
-    `${supaUrl}/rest/v1/lm_user_places?uid=eq.${encodeURIComponent(uid)}&phrase=eq.${encodeURIComponent(phrase)}&select=address&limit=1`,
-    { headers: hdr(supaKey) },
-  ).catch(() => null);
+  const days = Number(ttlDays != null ? ttlDays : (process.env.LM_PLACE_TTL_DAYS || 90));
+  let url = `${supaUrl}/rest/v1/lm_user_places?uid=eq.${encodeURIComponent(uid)}&phrase=eq.${encodeURIComponent(phrase)}&select=address&limit=1`;
+  if (days > 0) {
+    const since = new Date(Date.now() - days * 86400 * 1000).toISOString();
+    url += `&updated_at=gt.${encodeURIComponent(since)}`;
+  }
+  const r = await f(url, { headers: hdr(supaKey) }).catch(() => null);
   if (!r || !r.ok) return null;
   const d = await r.json().catch(() => []);
   return Array.isArray(d) && d[0] && d[0].address ? d[0].address : null;

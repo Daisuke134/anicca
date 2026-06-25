@@ -33,6 +33,13 @@ test("recallPlace: missing phrase/uid/creds → null (never queries)", async () 
   assert.strictEqual(await recallPlace("", "p", "http://s", "k", boom), null);
   assert.strictEqual(await recallPlace("u1", "p", "", "", boom), null);
 });
+test("recallPlace: TTL (FIND-002) adds an updated_at filter so stale memory expires; ttlDays=0 disables it", async () => {
+  let withTtl, noTtl;
+  await recallPlace("u1", "p", "http://s", "k", async (u) => { withTtl = u; return { ok: true, json: async () => [] }; }, 30);
+  await recallPlace("u1", "p", "http://s", "k", async (u) => { noTtl = u; return { ok: true, json: async () => [] }; }, 0);
+  assert.match(withTtl, /updated_at=gt\./, "ttlDays>0 → recall only fresh memory");
+  assert.doesNotMatch(noTtl, /updated_at/, "ttlDays=0 → no time bound");
+});
 
 // ── rememberPlace (REQ-46) ──────
 test("rememberPlace: upsert (POST merge-duplicates) → true on 201/200/204", async () => {
