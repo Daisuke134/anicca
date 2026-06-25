@@ -3,7 +3,7 @@
 Date: 2026-06-25
 Status: DESIGN (verified end-to-end manually on 2026-06-25 — this spec generalizes that real run)
 Owner: Life Manager (#1 Anicca-OpenClaw / #2 Hermes), model-driven
-Repo: `~/anicca` (mother) → `skills/life/yakobus/`
+Repo: `~/anicca` (mother) → `skills/yakobus/`  (on-disk verified location)
 
 ## 1. Goal
 
