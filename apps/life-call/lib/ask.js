@@ -15,6 +15,7 @@
 const GEMINI = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 const { sendMessage: tgSend } = require("./telegram.js");
 const { getCalendar, getMail } = require("./transport/index.js");
+const { placeKey, recallPlace, rememberPlace } = require("./places-memory.js");
 
 // Raw Gemini generateContent. Key goes in the x-goog-api-key HEADER, never the URL (so it can't leak
 // into logs/referrers). Returns the parsed response, or {} on failure.
@@ -216,6 +217,13 @@ async function askTick(uid, opts) {
   // (don't email/Telegram the same event twice), NOT the resolve attempt — that's what kept "MUIT 出社"
   // permanently unfilled after one old ask. (Dais 2026-06-23: the agent must keep doing the work.)
   for (const event of events.filter((e) => needsLocation(e))) {
+    // PC-1 (C3 REQ-45): a remembered place for this phrase autofills instantly — no model call, no re-ask.
+    const remembered = await recallPlace(uid, placeKey(event.summary), supaUrl, supaKey);
+    if (remembered) {
+      await patchEvent(uid, event.id, { location: remembered }, composioKey);
+      autofilled++;
+      continue;
+    }
     const res = await agentResolveLocation(event, { home: opts.home, mapsKey, geminiKey });
     if (res.kind === "online") {
       continue; // online/remote/phone → no place, no travel, never ask. (No mark: re-classify is cheap.)
@@ -256,6 +264,8 @@ async function askTick(uid, opts) {
       const ev = pending.find((e) => e.id === match.eventId);
       if (!ev) continue;
       await patchEvent(uid, ev.id, { location: match.location }, composioKey);
+      // PC-1 (C3 REQ-46): remember the answer so a future same-summary event autofills without asking again.
+      await rememberPlace(uid, placeKey(ev.summary), match.location, supaUrl, supaKey);
       resolved++;
     }
   }

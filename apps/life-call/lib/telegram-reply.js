@@ -7,6 +7,7 @@
 
 const { agentMatchReply } = require("./ask.js");
 const { getCalendar } = require("./transport/index.js");
+const { placeKey, rememberPlace } = require("./places-memory.js");
 
 async function userByChatId(chatId) {
   const url = process.env.SUPABASE_URL, key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -47,6 +48,8 @@ async function resolveTelegramReply(chatId, text) {
   const ev = pending.find((e) => e.id === match.eventId);
   if (!ev) return out;
   await getCalendar({ apiKey: composioKey }).patchEvent(user.uid, { calendar_id: "primary", event_id: ev.id, location: match.location });
+  // PC-1 (C3 REQ-46): remember so a future same-summary event autofills without re-asking.
+  await rememberPlace(user.uid, placeKey(ev.summary), match.location, process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
   return { filled: true, event: ev.summary || "your event", location: match.location };
 }
 
