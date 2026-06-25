@@ -14,8 +14,10 @@
 
 const GEMINI = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 const { sendMessage: tgSend } = require("./telegram.js");
-const { getCalendar, getMail } = require("./transport/index.js");
+const { getCalendar } = require("./transport/index.js");
 const { placeKey, recallPlace, rememberPlace } = require("./places-memory.js");
+const { newReplyToken } = require("./reply-token.js");
+const { sendAsk } = require("./mail-resend.js");
 
 // Raw Gemini generateContent. Key goes in the x-goog-api-key HEADER, never the URL (so it can't leak
 // into logs/referrers). Returns the parsed response, or {} on failure.
@@ -194,12 +196,14 @@ async function askedSet(uid, supaUrl, supaKey) {
 // ATOMIC claim of an ask (C-H1) — mirrors claimWake. INSERT relies on lm_ask_log UNIQUE(uid,event_id):
 // 201 = first claimer (proceed to send); 409 = already asked (skip). Race-safe; no SELECT-then-POST window.
 // If supa is unconfigured, return true (don't block) — matches the pre-ledger best-effort behaviour.
-async function claimAsk(uid, eventId, supaUrl, supaKey) {
+async function claimAsk(uid, eventId, supaUrl, supaKey, replyToken) {
   if (!supaUrl || !supaKey) return true;
+  const row = { uid, event_id: eventId };
+  if (replyToken) row.reply_token = replyToken; // ties the email reply (reply+<token>@) back to this event
   const r = await fetch(`${supaUrl}/rest/v1/lm_ask_log`, {
     method: "POST",
     headers: { apikey: supaKey, Authorization: `Bearer ${supaKey}`, "Content-Type": "application/json", Prefer: "return=minimal" },
-    body: JSON.stringify({ uid, event_id: eventId }),
+    body: JSON.stringify(row),
   }).catch(() => null);
   return !!r && r.status === 201; // 201 inserted (claimed) | 409 duplicate (already asked)
 }
@@ -225,7 +229,7 @@ async function recallOrResolve(event, opts) {
 
 // Returns { autofilled, asked, resolved }.
 async function askTick(uid, opts) {
-  const { composioKey, accountId, unipileToken, unipileDsn, userEmail, supaUrl, supaKey, mapsKey, geminiKey } = opts;
+  const { composioKey, userEmail, resendKey, supaUrl, supaKey, mapsKey, geminiKey } = opts;
   const nowMs = opts.nowMs || Date.now();
   let autofilled = 0, asked = 0, resolved = 0;
   const events = await listEvents48h(uid, composioKey, nowMs);
@@ -252,51 +256,53 @@ async function askTick(uid, opts) {
     // res.kind === "ask" — a human must tell us. ATOMIC dedup (C-H1): CLAIM before sending so two
     // concurrent ticks can't double-ask; release the claim if the send fails so a later tick retries.
     if (already.has(event.id)) continue; // fast-path: known-asked this tick → skip
-    if (!(await claimAsk(uid, event.id, supaUrl, supaKey))) continue; // 409 = another writer already asked
-    // ASK: prefer Telegram when the user linked it (replies come back via the /telegram webhook);
-    // otherwise email from their own Gmail via Unipile.
+    // ASK: prefer Telegram when the user linked it (replies come back via the /telegram webhook); otherwise
+    // email from OUR domain via Resend, with a short opaque token in the Reply-To (reply+<token>@reply.
+    // aniccaai.com). The reply lands on /inbound-email, which looks the token up in lm_ask_log and patches
+    // this event. We NEVER read the user's Gmail. CLAIM (with the token) before sending so two ticks can't
+    // double-ask; release the claim if the send fails so a later tick retries.
+    const replyToken = newReplyToken();
+    if (!(await claimAsk(uid, event.id, supaUrl, supaKey, replyToken))) continue; // 409 = already asked
     let sent = false;
     if (opts.telegramChatId && opts.telegramToken) {
       const r = await tgSend(opts.telegramToken, opts.telegramChatId,
         `📍 Where is “${event.summary || "your event"}”? Just reply here and I’ll add it to your calendar.`);
       sent = !!(r && r.ok);
-    } else if (accountId && unipileToken) {
-      const { Subject, Body } = buildAsk(event); // simple, model-free template for the email itself
-      sent = await getMail({ accountId, token: unipileToken, dsn: unipileDsn }).send(userEmail, Subject, Body);
+    } else if (userEmail && resendKey) {
+      const r = await sendAsk({ to: userEmail, replyToken, event, resendKey });
+      sent = !!(r && r.sent);
     }
     if (sent) asked++;
     else await unclaimAsk(uid, event.id, supaUrl, supaKey); // send failed → release so next tick retries
   }
 
-  // READ replies (EMAIL users only — Telegram replies arrive via the webhook, not here).
-  const pending = events.filter((e) => needsLocation(e) && already.has(e.id));
-  if (pending.length && accountId && unipileToken && !opts.telegramChatId) {
-    const inboxItems = await getMail({ accountId, token: unipileToken, dsn: unipileDsn }).listInbox({ limit: 15 });
-    for (const m of inboxItems) {
-      if (!/^Re:/i.test(m.subject || "")) continue;
-      const text = m.body_plain || m.body || m.snippet || "";
-      const match = await agentMatchReply(text, pending, geminiKey);
-      if (!match) continue;
-      const ev = pending.find((e) => e.id === match.eventId);
-      if (!ev) continue;
-      await patchEvent(uid, ev.id, { location: match.location }, composioKey);
-      // PC-1 (C3 REQ-46): remember the answer so a future same-summary event autofills without asking again.
-      const remembered = await rememberPlace(uid, placeKey(ev.summary), match.location, supaUrl, supaKey);
-      if (!remembered) console.error(`[ask] rememberPlace FAILED uid=${uid.slice(0, 12)} phrase=${placeKey(ev.summary).slice(0, 40)} — will re-ask (FIND-003)`);
-      resolved++;
-    }
-  }
+  // Replies (email + Telegram) both arrive via webhooks now — Telegram → /telegram, email → /inbound-email.
+  // Neither polls an inbox, so there is no read step here.
   return { autofilled, asked, resolved };
 }
 
-// The ask EMAIL is a fixed template (no judgment needed — just a courteous prompt). The Event title +
-// id go in so a human reply is natural; the model does the reading on the way back.
-function buildAsk(event) {
-  const title = event.summary || "your event";
-  return {
-    Subject: `[Ask] 場所を教えて — ${title}`,
-    Body: `Anicca より確認です。\n\n予定「${title}」の場所がまだ設定されていません。どこで行われますか？ この메일にそのまま返信してください（店名・住所どちらでもOK）。Anicca がカレンダーに反映します。\n\n--- Event ID: ${event.id || "unknown"}`,
-  };
+// Handle one inbound email reply (from /inbound-email). The Reply-To token resolves to (uid, event_id) via
+// lm_ask_log; we fetch that event, let the model extract the location the user gave, patch the calendar, and
+// remember it so a future same-summary event autofills. Returns { ok, uid, eventId, location } | { ok:false }.
+async function handleInboundReply(token, replyText, opts) {
+  const { composioKey, geminiKey, supaUrl, supaKey } = opts;
+  if (!token || !supaUrl || !supaKey) return { ok: false, reason: "missing token/supa" };
+  // token → (uid, event_id)
+  const r = await fetch(`${supaUrl}/rest/v1/lm_ask_log?reply_token=eq.${encodeURIComponent(token)}&select=uid,event_id&limit=1`,
+    { headers: { apikey: supaKey, Authorization: `Bearer ${supaKey}` } }).catch(() => null);
+  const rows = r ? await r.json().catch(() => []) : [];
+  const hit = Array.isArray(rows) && rows[0];
+  if (!hit) return { ok: false, reason: "unknown token" };
+  const { uid, event_id: eventId } = hit;
+  // Fetch the event so the model can match the reply text to its summary and extract the location given.
+  const events = await listEvents48h(uid, composioKey, opts.nowMs || Date.now()).catch(() => []);
+  const ev = (events || []).find((e) => e.id === eventId);
+  if (!ev) return { ok: false, reason: "event not found", uid, eventId };
+  const match = await agentMatchReply(replyText, [ev], geminiKey);
+  if (!match || !match.location) return { ok: false, reason: "no location in reply", uid, eventId };
+  await patchEvent(uid, eventId, { location: match.location }, composioKey);
+  await rememberPlace(uid, placeKey(ev.summary), match.location, supaUrl, supaKey);
+  return { ok: true, uid, eventId, location: match.location };
 }
 
-module.exports = { askTick, recallOrResolve, agentResolveLocation, agentMatchReply, claimAsk, unclaimAsk };
+module.exports = { askTick, recallOrResolve, agentResolveLocation, agentMatchReply, claimAsk, unclaimAsk, handleInboundReply };

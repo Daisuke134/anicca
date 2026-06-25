@@ -35,12 +35,16 @@ const inngestHandler = inngestServe({ client: inngest, functions: inngestFunctio
 const { placeCall, startRecording } = require("./lib/dial.js");
 const { parseUpdate, sendMessage } = require("./lib/telegram.js");
 const { resolveTelegramReply } = require("./lib/telegram-reply.js");
+const { handleInboundReply } = require("./lib/ask.js");
+const { isReplyToken } = require("./lib/reply-token.js");
 const { sendStage, rowByChatId, setStage, handleOnboardingText } = require("./lib/telegram-onboard.js");
 const { classifyLate, sendLateNotice } = require("./lib/notify.js");
 const { claimEvent, unclaimEvent, applyBilling } = require("./lib/billing.js");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY || "sk_test_placeholder"); // apiKey unused by constructEvent
 const SUPA_URL = process.env.SUPABASE_URL, SUPA_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const COMPOSIO_KEY = process.env.COMPOSIO_API_KEY, UNIPILE_TOKEN = process.env.UNIPILE_TOKEN, UNIPILE_DSN = process.env.UNIPILE_DSN;
+const COMPOSIO_KEY = process.env.COMPOSIO_API_KEY;
+const RESEND_API_KEY = process.env.RESEND_API_KEY || ""; // our-domain email send (asks + late-notice)
+const LM_INBOUND_SECRET = process.env.LM_INBOUND_SECRET || ""; // shared secret in the Resend inbound webhook URL
 
 const LM_TG_TOKEN = process.env.LM_TELEGRAM_BOT_TOKEN || "";
 const LM_TG_SECRET = process.env.LM_TELEGRAM_WEBHOOK_SECRET || "";
@@ -249,8 +253,8 @@ const server = http.createServer((req, res) => {
               const late = await classifyLate(u.text, GEMINI_KEY);
               if (late.isLate) {
                 const n = await sendLateNotice(row.uid, u.text, {
-                  composioKey: COMPOSIO_KEY, geminiKey: GEMINI_KEY, unipileToken: UNIPILE_TOKEN,
-                  unipileDsn: UNIPILE_DSN, accountId: row.gmail_account_id, userName: row.name, etaMinutes: late.etaMinutes,
+                  composioKey: COMPOSIO_KEY, geminiKey: GEMINI_KEY, resendKey: RESEND_API_KEY,
+                  userEmail: row.email, userName: row.name, etaMinutes: late.etaMinutes,
                 });
                 await sendMessage(LM_TG_TOKEN, u.chatId,
                   n.sent ? `✅ Let <b>${n.to}</b> know you're ${n.etaMinutes ? `~${n.etaMinutes} min ` : ""}late to “${n.event}”.`
@@ -266,6 +270,33 @@ const server = http.createServer((req, res) => {
         }
       } catch (e) { console.error("[telegram] err", e.message); }
       res.writeHead(200); res.end("ok"); // always 200 fast so Telegram doesn't retry
+    })();
+    return;
+  }
+  // POST /inbound-email?s=<secret> — Resend Inbound webhook. A web user replied to our "where is X?" email
+  // (To: reply+<token>@reply.aniccaai.com). Auth = the shared secret in the URL; we pull the token out of the
+  // recipient, resolve it to (uid,event) via lm_ask_log, extract the location the user gave, and patch the
+  // calendar + remember it. We never read the user's Gmail — this is OUR inbound domain. Always 200 (so the
+  // provider doesn't retry); a bad/unknown token is a no-op.
+  if (path === "/inbound-email") {
+    if (req.method !== "POST") { res.writeHead(405); res.end("method"); return; }
+    (async () => {
+      try {
+        const q = new URL(req.url, "http://x").searchParams;
+        if (!LM_INBOUND_SECRET || q.get("s") !== LM_INBOUND_SECRET) { res.writeHead(403); res.end("forbidden"); return; }
+        const body = JSON.parse((await readBody(req)) || "{}");
+        const d = body.data || body; // Resend wraps as {type,data}; tolerate a flat payload too
+        const recips = [].concat(d.to || [], d.cc || [], (d.headers && d.headers.to) || [])
+          .flatMap((x) => (typeof x === "string" ? x : (x && (x.address || x.email)) || ""));
+        const addr = recips.find((a) => /reply\+[A-Za-z0-9_-]+@/.test(a)) || "";
+        const m = addr.match(/reply\+([A-Za-z0-9_-]+)@/);
+        const token = m && m[1];
+        if (!isReplyToken(token)) { res.writeHead(200); res.end("no-token"); return; } // not one of ours → ignore
+        const text = d.text || d.subject || "";
+        const r = await handleInboundReply(token, text, { composioKey: COMPOSIO_KEY, geminiKey: GEMINI_KEY, supaUrl: SUPA_URL, supaKey: SUPA_KEY });
+        console.log(`[inbound-email] token=${token.slice(0, 8)} ok=${r.ok} ${r.ok ? `${(r.uid || "").slice(0, 12)} → ${r.location}` : r.reason}`);
+        res.writeHead(200); res.end(r.ok ? "patched" : "noop");
+      } catch (e) { console.error("[inbound-email] err", e.message); res.writeHead(200); res.end("err"); }
     })();
     return;
   }

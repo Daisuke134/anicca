@@ -1,10 +1,12 @@
-// lib/notify.js — WS6g cloud late-notice. The user tells the bot they're running late; the agent
-// finds the right event + its external attendee, drafts a short apology, and sends it from the user's
-// own Gmail (Unipile). No location, no auto-guessing — the user initiates, the agent does the work.
+// lib/notify.js — cloud late-notice. The user tells the bot they're running late; the agent finds the
+// right event + its external attendee, drafts a short apology, and sends it from OUR domain via Resend
+// "on behalf of" the user, with Reply-To = the user's email so attendees reach the human. We never read
+// or send from the user's Gmail. No location, no auto-guessing — the user initiates, the agent does the work.
 "use strict";
 
 const GEMINI = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
-const { getCalendar, getMail } = require("./transport/index.js");
+const { getCalendar } = require("./transport/index.js");
+const { resendSend } = require("./mail-resend.js");
 
 async function geminiJson(prompt, geminiKey) {
   try {
@@ -32,9 +34,9 @@ Reply JSON: {"isLate": true|false, "etaMinutes": <integer minutes late, or null 
 // The user said they're late. Find the event they mean + its external attendee, draft + send the notice.
 // Returns { sent, to, event, etaMinutes } — sent:false when there's nothing to notify.
 async function sendLateNotice(uid, text, opts) {
-  const { composioKey, geminiKey, unipileToken, unipileDsn, accountId, userEmail, userName } = opts;
+  const { composioKey, geminiKey, resendKey, userEmail, userName } = opts;
   const nowMs = opts.nowMs || Date.now();
-  if (!composioKey || !geminiKey || !accountId || !unipileToken || !unipileDsn) return { sent: false };
+  if (!composioKey || !geminiKey || !resendKey) return { sent: false };
 
   // Events from a bit before now to +6h that have at least one EXTERNAL attendee (someone to notify).
   const items = await getCalendar({ apiKey: composioKey }).listEventsRaw(uid, {
@@ -65,8 +67,10 @@ Reply JSON: {"eventId":"<id>"|null, "to":"<one attendee email from that event>"|
   const subject = `Running late — ${ev.summary || "our meeting"}`;
   const body = `Hi,\n\n${who === "I" ? "I'm" : who + " is"} running ${eta ? `about ${eta} minutes ` : ""}late to ${ev.summary || "our meeting"}. ` +
     `Apologies for the delay — ${who === "I" ? "I'll" : "they'll"} be there as soon as possible.\n\nThanks for your patience.`;
-  const ok = await getMail({ accountId, token: unipileToken, dsn: unipileDsn }).send(to, subject, body);
-  return { sent: ok, to, event: ev.summary, etaMinutes: eta };
+  // Send from our domain on the user's behalf; Reply-To = the user's email so the attendee can reach them.
+  const signed = `${body}\n\n— Sent by Life Manager on behalf of ${userName || "your contact"}.`;
+  const r = await resendSend({ to, subject, text: signed, replyTo: userEmail, resendKey });
+  return { sent: !!(r && r.sent), to, event: ev.summary, etaMinutes: eta };
 }
 
 module.exports = { classifyLate, sendLateNotice };

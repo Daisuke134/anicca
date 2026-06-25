@@ -40,7 +40,7 @@ async function supaUsers() {
   const { url, key } = SUPA();
   if (!url || !key) return [];
   const base = `${url}/rest/v1/lm_users?phone=not.is.null&paid=is.true&calendar_provider=eq.composio_gcal`;
-  const cols = "uid,name,phone,paid,calendar_provider,home_address,gmail_account_id,telegram_chat_id,call_language";
+  const cols = "uid,name,phone,paid,calendar_provider,home_address,gmail_account_id,email,telegram_chat_id,call_language";
   const hdr = { apikey: key, Authorization: `Bearer ${key}` };
   // FAIL-SAFE: try WITH wake_policy; if the column is missing (PostgREST 400) fall back to the base
   // columns rather than returning [] — a missing column must NOT silently disable wakes fleet-wide.
@@ -207,43 +207,23 @@ function startTravelLoop() {
   return setInterval(run, TRAVEL_TICK_MS);
 }
 
-// ── Ask/reply loop (every 20 min) — email the user about events missing a location, read replies ──
+// ── Ask/reply loop (every 20 min) — ask the user about events missing a location (Telegram or our-domain
+// email via Resend); replies arrive on webhooks (/telegram, /inbound-email), not polled here ──
 const ASK_TICK_MS = 20 * 60 * 1000;
-const unipileEmailCache = new Map();
-const UNIPILE_CACHE_MAX = 5000; // FIND-003: bound the per-accountId email cache (email is stable per account)
-async function unipileEmail(accountId, token, dsn) {
-  if (unipileEmailCache.has(accountId)) return unipileEmailCache.get(accountId);
-  try {
-    const r = await fetch(`https://${dsn}/api/v1/accounts/${encodeURIComponent(accountId)}`,
-      { headers: { "X-API-KEY": token, accept: "application/json" } });
-    const a = await r.json();
-    const email = a && a.name && a.name.includes("@") ? a.name : null;
-    if (email) {
-      // evict oldest (Map preserves insertion order) when over the cap → bounded memory, no cross-tenant leak.
-      if (unipileEmailCache.size >= UNIPILE_CACHE_MAX) unipileEmailCache.delete(unipileEmailCache.keys().next().value);
-      unipileEmailCache.set(accountId, email);
-    }
-    return email;
-  } catch { return null; }
-}
 
 async function askUserOnce(u) {
   const composioKey = process.env.COMPOSIO_API_KEY;
-  const unipileToken = process.env.UNIPILE_TOKEN, unipileDsn = process.env.UNIPILE_DSN;
+  const resendKey = process.env.RESEND_API_KEY;                            // our-domain email send
   const mapsKey = process.env.LIFE_MAPS_KEY || process.env.GOOGLE_API_KEY; // Places grounding
   const geminiKey = process.env.GEMINI_API_KEY;                            // agentic resolve/read
   const telegramToken = process.env.LM_TELEGRAM_BOT_TOKEN;                 // Telegram ask channel
   const { url: supaUrl, key: supaKey } = SUPA();
   if (!composioKey || !supaUrl || !geminiKey) return;
-  // A user is reachable for asks via Telegram OR a connected Gmail — need at least one.
-  if (!u.telegram_chat_id && !u.gmail_account_id) return;
-  let userEmail = null;
-  if (u.gmail_account_id && unipileToken && unipileDsn) {
-    userEmail = await unipileEmail(u.gmail_account_id, unipileToken, unipileDsn);
-  }
+  // A user is reachable for asks via Telegram OR their email (captured at sign-in) — need at least one.
+  if (!u.telegram_chat_id && !u.email) return;
   try {
     const r = await askTick(u.uid, {
-      composioKey, accountId: u.gmail_account_id, unipileToken, unipileDsn, userEmail,
+      composioKey, userEmail: u.email, resendKey,
       supaUrl, supaKey, mapsKey, geminiKey, home: u.home_address,
       telegramChatId: u.telegram_chat_id, telegramToken,
     });
@@ -296,7 +276,7 @@ const listPaidUsers = supaUsers;
 async function getUserByUid(uid) {
   const { url, key } = SUPA();
   if (!url || !key || !uid) return null;
-  const cols = "uid,name,phone,paid,calendar_provider,home_address,gmail_account_id,telegram_chat_id,call_language";
+  const cols = "uid,name,phone,paid,calendar_provider,home_address,gmail_account_id,email,telegram_chat_id,call_language";
   const base = `${url}/rest/v1/lm_users?uid=eq.${encodeURIComponent(uid)}&phone=not.is.null&paid=is.true&calendar_provider=eq.composio_gcal`;
   const hdr = { apikey: key, Authorization: `Bearer ${key}` };
   let r = await fetch(`${base}&select=${cols},wake_policy`, { headers: hdr });

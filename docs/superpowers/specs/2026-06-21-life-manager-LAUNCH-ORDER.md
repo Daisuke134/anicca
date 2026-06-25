@@ -567,3 +567,41 @@ After PHASE B (OpenClaw cutover) + PHASE C (3 cases incl. memory verified):
 アプリ版：aniccaai.com/life-manager
 ローカル版: https://github.com/Daisuke134/life-manager
 ```
+
+---
+
+## ★ CHANGE OF PLANS 2026-06-25 — SHIP BOTH web + Telegram, FULL, E2E-verified, NO gatekeeping ★
+
+Dais: "we will write and make everything work, just NO gatekeeping. implement and verify ALL RIGHT NOW,
+end to end ourselves. WE MUST HAVE OPTIONS ON WEB + telegram both. then lift off the web." So the web
+reply-by-email loop is now a v1 SHIP item (not v1.5 write-don't-ship), and the #17 coming-soon gate gets
+REVERTED once the web loop is E2E-verified. Email channel = own-domain (Resend + Cloudflare Email Routing +
+HMAC reply-token) per `2026-06-25-life-manager-email-channel-redesign.md`. NEITHER channel reads the user's
+Gmail (no per-user cost, no CASA): Telegram users use Telegram; web users use our-domain email.
+
+### Order (do in sequence, verify each)
+- [ ] S1 — `lm_users.email` migration (nullable) + persist the Google sign-in email (web) so the scheduler
+      can send asks/late-notices. Live-apply via Supabase Management API.
+- [ ] S2 — `lib/mail-resend.js` (sendAsk/sendLateNotice, From hello@aniccaai.com, Reply-To reply+<token>@
+      reply.aniccaai.com) + unit tests + a REAL Resend send test; wire into `ask.js` (replace the Unipile
+      `.send()` email branch) + `notify.js` (late-notice). [E3]
+- [ ] S3 — `POST /inbound-email` on life-call (verify LM_INBOUND_SECRET → verifyReplyToken → agent-match
+      location → Composio patchEvent + rememberPlace, idempotent) + Cloudflare Email Routing catch-all on
+      reply.aniccaai.com → Email Worker → POST the webhook + Resend sender-domain verify (hello@ + reply.). [E4]
+- [ ] S4 — remove Unipile entirely (transport/index.js, scheduler.unipileEmail → lm_users.email, env). [E5]
+- [ ] S5 — Web onboarding (LmClient) drops the Gmail connect step: Google sign-in (captures email) → name →
+      Calendar (Composio) → phone → pay → dashboard. Continue enabled with Calendar only.
+- [ ] S6 — UN-GATE web (revert #17): restore /life-manager left「Get started」CTA + the web card as an active
+      /lm link; /lm renders LmClient again. Both web + Telegram available. EN+JA. ONLY after S1–S5 verified.
+- [ ] S7 — FULL no-mock E2E on BOTH channels: WEB onboard → no-location event → real Resend ask → reply →
+      Cloudflare worker → /inbound-email → calendar patched + remembered + late-notice; TELEGRAM onboard →
+      wake call + TG ask/reply. Confirm ZERO Unipile calls. Then web is LIVE.
+
+### Progress 2026-06-25 (feature/lm-v15-email)
+- ✅ S1 lm_users.email + lm_ask_log.reply_token migrations (live-applied).
+- ✅ S2 mail-resend (sendAsk/sendLateNotice) — REAL Resend send verified (id returned); ask.js + notify.js
+  send via Resend; Unipile send + inbox-poll removed. Short opaque reply-token (64-char local-part fix).
+- ✅ S3-code /inbound-email webhook + handleInboundReply (token→lm_ask_log→event→location→patch+remember);
+  scheduler.askUserOnce + server late-notice wired to Resend + lm_users.email. 26 unit tests green.
+- ⏳ S3-infra Resend Inbound MX on reply.aniccaai.com (Netlify DNS) + inbound webhook → /inbound-email + Railway env.
+- ☐ S4 transport cleanup · S5 web onboarding drop Gmail · S6 un-gate web · S7 LIVE E2E.
