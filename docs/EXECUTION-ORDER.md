@@ -119,3 +119,5 @@ I (Claude, type-2) only FIX the system + MONITOR + write/publish the article.
 - F4b-substack: spec recorded (2026-06-24-publish-to-substack-F4b.md). skill=anshulkhare7/substack-cli. paywall = SAME as note. gap = add paywall-node insertion.
 
 - F4b-substack ☑ E2E DRAFT VERIFIED 2026-06-24: substack-publish.py built+run → DRAFT 203497099 (only_paid, paywall node mid-doc, free explainer + paid setup/results, 29 note-assets uploaded). Substack renders no tables/mermaid → reuse note PNGs. Paywall placement researched+decided = gate after explainer (free what/how, paid setup+results) — same as note, confirmed by note編集部/Substack/beehiiv.
+
+- RENDER-VERIFY GATE ☑ built+proven 2026-06-25: _shared/verify-render.py (sips on-page-height, FAIL>1200px) + render-tables-autofit.py (shrink font to fit) wired as substack pre-flight + note vision checklist. Caught tbl18 (1401px) → autofit 988px → PASS → fresh draft 203499379. note/substack tall-PNG issue solved; Zenn native = fine. Paywall placement FINAL = gate after explainer, before payoff (腹八分, A/B-backed). Memory: feedback_verify_visual_render_not_just_counts.
