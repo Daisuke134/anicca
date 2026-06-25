@@ -51,8 +51,17 @@ NICHE is intentional & stays: articles about **AI-entities** = AI that earns mon
        de-Automaton the **note** INNER scripts (slug/assets hardcoded, SKILL.md line 378) so note runs ANY article.
 - ⚠ BLOCKER (env, not code): the daily-driver is LOGGED OUT of X → a GREEN publish E2E needs Dais to re-login X once
        (HARD 0.39, 1 tap). Zenn green E2E needs no login (alternative proof). All code is adversary-verified + syntax-clean.
-- ☐ A4. ENGLISH pass: translate the article → dev.to + X(EN) + Substack(EN), each verified.
-(REMOVED old "A5 generalize to any AI/crypto" — wrong: niche = AI-entity by design; the writing is already general
+- ☐ A4. ENGLISH pass (Automaton article): translate → dev.to + X(EN) + Substack(EN), each verified.
+- ◐ A5. Frank / BlockRun ARTICLE = series #2 (explain BlockRun stack + Franklin, JP first)  ← NEXT
+  - ◐ A5.1. RUN Franklin end-to-end PURE (npx, doctor, balance, models, start -p ...)
+           → docs/articles/research/2026-06-25-franklin-pure-run.md (≥5 prompts, free tier first; paid if funded)
+           Anicca/compute-proxy 一切触らない (anti-rule: article 内 Anicca 言及禁止)
+  - ☐ A5.2. Write Frank article [1]–[8] on docs/frank-article branch — receipts in [5]
+  - ☐ A5.3. JP publish 4 platforms (note + Zenn + Substack JP + X Article), each verified
+  - ☐ A5.4. EN translate + publish (dev.to + Substack EN + X Article EN), each verified
+  - ☐ A5.5. de-Automaton the note publisher scripts (A3 remainder, exposed by the Frank piece)
+- ☐ A6. learnings → bake into ai-entity-article-writer SKILL.md (Frank stack ASCII as reusable, anti-rule var per article)
+(REMOVED old "generalize to any AI/crypto" — wrong: niche = AI-entity by design; the writing is already general
 within it via search; the real generalization is A3 = parameterize the Automaton-hardcoded publishers.)
 
 ## PHASE B — [ANICCA] CLOUD, NO HUMAN IN LOOP + the recipe
@@ -60,6 +69,11 @@ within it via search; the real generalization is A3 = parameterize the Automaton
 - ☐ B2. **THE RECIPE**: model × skills × setup so **every spawned Anicca earns > it spends**. Sub-track (ANICCA's earn tools):
        x402 first real sale · token (MoltX) · 0xwork · realised revenue per tool > 0 · deploy idle Solana→Base ·
        model experiment free→auto→premium (which first reaches net-positive = the recipe).
+- ☐ B3. Franklin parts harvest (= article-driven engineering byproduct, makes Anicca a better earner)
+  - ☐ B3.1. Smart Router 15-dim transplant → ~/anicca/runtime/loop/brain.mjs tier-aware model selection
+  - ☐ B3.2. blockrun-mcp 19 tools wired as ~/anicca/skills/_shared/blockrun-mcp/ (search/markets/image/video/voice)
+  - ☐ B3.3. compute-proxy stability — eliminate 'proxy_down' from ledger (currently散発; root-cause + auto-restart)
+  - ☐ B3.4. 1-line install (`npx @anicca/loop` or `curl|bash`) to accelerate cloud spawn UX (helps B1)
 
 ## PHASE C — LAUNCH (announce it, with proof)
 - ☐ C1. **article about Anicca** (what it is: no-human earning AI that returns income to humanity).
