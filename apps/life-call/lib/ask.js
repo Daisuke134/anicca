@@ -3,10 +3,11 @@
 //
 //   RESOLVE  : for each event missing a location, Gemini decides the real place + address (grounded
 //              on a Google Places search so it can't hallucinate a street number), or says "ask".
-//   ASK      : only when Gemini can't determine it (e.g. "Coffee with Mai" — a person, no venue) do
-//              we email the user (via Unipile, from their own Gmail).
-//   READ     : Gemini reads inbound replies + the list of pending events and returns {eventId,
-//              location} — no regex parsing of quoted threads.
+//   ASK      : only when Gemini can't determine it (e.g. "Coffee with Mai" — a person, no venue) do we
+//              ask — via Telegram if linked, else an email from OUR domain (Resend, From hello@aniccaai.com,
+//              Reply-To reply+<token>@reply.aniccaai.com). We NEVER read or send from the user's Gmail.
+//   READ     : replies arrive on webhooks (Telegram → /telegram, email → /inbound-email). Gemini reads the
+//              reply text + the pending event and returns {eventId, location} — no inbox polling, no regex.
 //
 // Dedup is the one deterministic part (a Supabase lm_ask_log row per asked event) — that's bookkeeping,
 // not judgment.
@@ -284,25 +285,59 @@ async function askTick(uid, opts) {
 // Handle one inbound email reply (from /inbound-email). The Reply-To token resolves to (uid, event_id) via
 // lm_ask_log; we fetch that event, let the model extract the location the user gave, patch the calendar, and
 // remember it so a future same-summary event autofills. Returns { ok, uid, eventId, location } | { ok:false }.
-async function handleInboundReply(token, replyText, opts) {
-  const { composioKey, geminiKey, supaUrl, supaKey } = opts;
-  if (!token || !supaUrl || !supaKey) return { ok: false, reason: "missing token/supa" };
-  // token → (uid, event_id)
-  const r = await fetch(`${supaUrl}/rest/v1/lm_ask_log?reply_token=eq.${encodeURIComponent(token)}&select=uid,event_id&limit=1`,
-    { headers: { apikey: supaKey, Authorization: `Bearer ${supaKey}` } }).catch(() => null);
-  const rows = r ? await r.json().catch(() => []) : [];
-  const hit = Array.isArray(rows) && rows[0];
-  if (!hit) return { ok: false, reason: "unknown token" };
-  const { uid, event_id: eventId } = hit;
-  // Fetch the event so the model can match the reply text to its summary and extract the location given.
-  const events = await listEvents48h(uid, composioKey, opts.nowMs || Date.now()).catch(() => []);
-  const ev = (events || []).find((e) => e.id === eventId);
-  if (!ev) return { ok: false, reason: "event not found", uid, eventId };
-  const match = await agentMatchReply(replyText, [ev], geminiKey);
-  if (!match || !match.location) return { ok: false, reason: "no location in reply", uid, eventId };
-  await patchEvent(uid, eventId, { location: match.location }, composioKey);
-  await rememberPlace(uid, placeKey(ev.summary), match.location, supaUrl, supaKey);
-  return { ok: true, uid, eventId, location: match.location };
+// Pull the reply+<token> out of a Resend Inbound payload, tolerating every recipient shape Resend may send:
+// {to:"a@b"} | {to:[{address}]} | {to:[{email}]} | {to:["a@b"]} | {data:{...}} wrapper + cc/headers.to.
+// Returns { token, text } | { token:null }. Pure — unit-tested for all shapes (vcsdd FIND-001).
+function parseInboundRecipient(payload) {
+  const d = (payload && payload.data) || payload || {};
+  const recips = []
+    .concat(d.to || [], d.cc || [], (d.headers && d.headers.to) || [])
+    .flatMap((x) => (typeof x === "string" ? x : (x && (x.address || x.email)) || ""));
+  const addr = recips.find((a) => /reply\+[A-Za-z0-9_-]+@/.test(a)) || "";
+  const m = addr.match(/reply\+([A-Za-z0-9_-]+)@/);
+  return { token: (m && m[1]) || null, text: d.text || d.subject || "" };
 }
 
-module.exports = { askTick, recallOrResolve, agentResolveLocation, agentMatchReply, claimAsk, unclaimAsk, handleInboundReply };
+// Atomically CONSUME an unanswered ask token (flip answered_at null→now). Returns the (uid,event_id) row IF
+// THIS call won the flip, else null — so a replayed/duplicate inbound POST is a no-op (vcsdd FIND-003).
+async function consumeAskToken(token, supaUrl, supaKey, fetchImpl) {
+  const f = fetchImpl || fetch;
+  const r = await f(`${supaUrl}/rest/v1/lm_ask_log?reply_token=eq.${encodeURIComponent(token)}&answered_at=is.null&select=uid,event_id`, {
+    method: "PATCH",
+    headers: { apikey: supaKey, Authorization: `Bearer ${supaKey}`, "Content-Type": "application/json", Prefer: "return=representation" },
+    body: JSON.stringify({ answered_at: new Date().toISOString() }),
+  }).catch(() => null);
+  const rows = r ? await r.json().catch(() => []) : [];
+  return (Array.isArray(rows) && rows[0]) || null;
+}
+
+// Handle one inbound email reply. IDEMPOTENT: we atomically consume the token FIRST — only the first
+// reply to win the answered_at flip resolves (uid,event); a replay/duplicate gets null and no-ops. We also
+// skip if the event already has a location (a later autofill fixed it) — no overwrite (vcsdd FIND-004).
+// Deps (consume/listEvents/match/patch/remember) are injectable for tests; default to the real impls.
+async function handleInboundReply(token, replyText, opts = {}) {
+  const { composioKey, geminiKey, supaUrl, supaKey } = opts;
+  if (!token || !supaUrl || !supaKey) return { ok: false, reason: "missing token/supa" };
+  const consume = opts.consume || ((t) => consumeAskToken(t, supaUrl, supaKey, opts.fetchImpl));
+  const listEv = opts.listEvents || ((uid) => listEvents48h(uid, composioKey, opts.nowMs || Date.now()));
+  const match = opts.match || ((text, ev) => agentMatchReply(text, [ev], geminiKey));
+  const patch = opts.patch || ((uid, id, loc) => patchEvent(uid, id, { location: loc }, composioKey));
+  const remember = opts.remember || ((uid, summary, loc) => rememberPlace(uid, placeKey(summary), loc, supaUrl, supaKey));
+  const needs = opts.needsLocation || needsLocation;
+
+  // ATOMIC CONSUME first → unknown OR already-answered token = idempotent no-op.
+  const hit = await consume(token);
+  if (!hit) return { ok: false, reason: "unknown or already-answered token" };
+  const { uid, event_id: eventId } = hit;
+  const events = await listEv(uid).catch(() => []);
+  const ev = (events || []).find((e) => e.id === eventId);
+  if (!ev) return { ok: false, reason: "event not found", uid, eventId };
+  if (!needs(ev)) return { ok: true, uid, eventId, alreadySet: true }; // location already set → don't overwrite
+  const m = await match(replyText, ev);
+  if (!m || !m.location) return { ok: false, reason: "no location in reply", uid, eventId };
+  await patch(uid, eventId, m.location);
+  await remember(uid, ev.summary, m.location);
+  return { ok: true, uid, eventId, location: m.location };
+}
+
+module.exports = { askTick, recallOrResolve, agentResolveLocation, agentMatchReply, claimAsk, unclaimAsk, handleInboundReply, parseInboundRecipient, consumeAskToken };
