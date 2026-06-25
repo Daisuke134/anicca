@@ -37,13 +37,37 @@ export default function LifeManagerBody() {
           </a>
         }
         asset={
-          <div className="space-y-2 rounded-card border border-[hsl(var(--border))] bg-[hsl(var(--surface-elevated))] p-5 font-mono text-sm">
-            <p className="text-[hsl(var(--text-secondary))]">{t.asset.wake}</p>
-            <p className="text-emerald-400">{t.asset.travel1}</p>
-            <p className="text-[hsl(var(--text-primary))]">{t.asset.sync}</p>
-            <p className="text-emerald-400">{t.asset.travel2}</p>
-            <p className="text-[hsl(var(--text-primary))]">{t.asset.lunch}</p>
-            <p className="mt-1 text-xs text-[hsl(var(--text-secondary))] not-italic">{t.asset.caption}</p>
+          // Above-the-fold start chooser: scan the QR (phone -> Telegram) OR start on web. No scrolling to act.
+          <div>
+            <p className="mb-3 text-sm font-semibold text-[hsl(var(--text-primary))]">{t.startTitle}</p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="flex flex-col items-center rounded-card border border-[hsl(var(--border))] bg-[hsl(var(--surface-elevated))] p-4 text-center">
+                <p className="text-[10px] uppercase tracking-widest text-[hsl(var(--gold))]">{t.startPhoneEyebrow}</p>
+                <div className="mt-3 rounded-xl bg-white p-3">
+                  <QRCodeSVG value={TG_DEEPLINK} size={116} level="M" />
+                </div>
+                <p className="mt-3 text-sm font-semibold text-[hsl(var(--text-primary))]">{t.startPhoneTitle}</p>
+                <a
+                  href={TG_DEEPLINK}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-2 text-xs underline underline-offset-4 text-[hsl(var(--text-secondary))] transition-colors hover:text-[hsl(var(--text-primary))]"
+                >
+                  {t.startPhoneLink}
+                </a>
+              </div>
+              <a
+                href="/lm"
+                className="flex flex-col items-center justify-center rounded-card border border-[hsl(var(--gold))]/30 bg-[hsl(var(--surface-elevated))] p-4 text-center transition-colors hover:bg-[hsl(var(--surface))]"
+              >
+                <p className="text-[10px] uppercase tracking-widest text-[hsl(var(--gold))]">{t.startWebEyebrow}</p>
+                <p className="mt-3 text-sm font-semibold text-[hsl(var(--text-primary))]">{t.startWebTitle}</p>
+                <p className="mt-1 text-xs leading-relaxed text-[hsl(var(--text-secondary))]">{t.startWebDesc}</p>
+                <span className="mt-3 inline-flex items-center rounded-full bg-[hsl(var(--gold))] px-4 py-2 text-sm font-semibold text-black">
+                  {t.startWebCta}
+                </span>
+              </a>
+            </div>
           </div>
         }
       />
@@ -73,50 +97,6 @@ export default function LifeManagerBody() {
               </div>
             </Reveal>
           ))}
-        </div>
-      </Section>
-
-      <Section id="start">
-        <Reveal>
-          <h2 className="font-display text-2xl md:text-3xl font-semibold text-[hsl(var(--text-primary))]">
-            {t.startTitle}
-          </h2>
-          <p className="mt-2 text-sm text-[hsl(var(--text-secondary))]">{t.startIntro}</p>
-        </Reveal>
-
-        <div className="mt-8 grid gap-4 md:grid-cols-2">
-          <Reveal>
-            <div className="flex h-full flex-col items-center rounded-card border border-[hsl(var(--border))] bg-[hsl(var(--surface))] p-6 text-center">
-              <p className="text-xs uppercase tracking-widest text-[hsl(var(--gold))]">{t.startPhoneEyebrow}</p>
-              <div className="mt-5 rounded-2xl bg-white p-4">
-                <QRCodeSVG value={TG_DEEPLINK} size={172} bgColor="#ffffff" fgColor="#0a0a0a" level="M" />
-              </div>
-              <p className="mt-5 text-base font-semibold text-[hsl(var(--text-primary))]">{t.startPhoneTitle}</p>
-              <p className="mt-1 max-w-xs text-xs leading-relaxed text-[hsl(var(--text-secondary))]">{t.startPhoneDesc}</p>
-              <a
-                href={TG_DEEPLINK}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-4 text-sm font-medium underline underline-offset-4 text-[hsl(var(--text-secondary))] transition-colors hover:text-[hsl(var(--text-primary))]"
-              >
-                {t.startPhoneLink}
-              </a>
-            </div>
-          </Reveal>
-
-          <Reveal>
-            <a
-              href="/lm"
-              className="flex h-full flex-col items-center justify-center rounded-card border border-[hsl(var(--gold))]/30 bg-[hsl(var(--surface))] p-6 text-center transition-colors hover:bg-[hsl(var(--surface-elevated))]"
-            >
-              <p className="text-xs uppercase tracking-widest text-[hsl(var(--gold))]">{t.startWebEyebrow}</p>
-              <p className="mt-5 text-base font-semibold text-[hsl(var(--text-primary))]">{t.startWebTitle}</p>
-              <p className="mt-1 max-w-xs text-xs leading-relaxed text-[hsl(var(--text-secondary))]">{t.startWebDesc}</p>
-              <span className="mt-5 inline-flex items-center rounded-full bg-[hsl(var(--gold))] px-5 py-2 text-sm font-semibold text-black">
-                {t.startWebCta}
-              </span>
-            </a>
-          </Reveal>
         </div>
       </Section>
 
