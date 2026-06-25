@@ -35,6 +35,11 @@ const STRIPE_LM_URL = process.env.NEXT_PUBLIC_STRIPE_LM_URL || '';
 const PHONE_RE = /^\+?[1-9]\d{7,14}$/;
 const STORAGE_KEY = 'anicca.lm.uid';
 const SIG_KEY = 'anicca.lm.sig';
+// /test-call on the cloud wake service: POST {uid, sig} (HMAC auth) -> phone lookup -> ONE immediate Charon
+// call. We expose it as a ONE-TIME proof-of-life button on the dashboard (disabled after success) so a new
+// user hears it works once -- without inviting repeated billed taps (Dais 2026-06-22 cost concern). Real wake
+// calls still fire automatically before every event.
+const TEST_CALL_URL = 'https://life-call-production.up.railway.app/test-call';
 
 // Country dial-code picker (like every other site): select country → +code auto-prefixed → type the
 // rest → we store E.164. Curated to the common markets; ordered with JP first (our first users).
@@ -111,6 +116,21 @@ export default function LmClient() {
   const [cal, setCal] = useState<ConnState>('idle');
   const [gmail, setGmail] = useState<ConnState>('idle');
   const [err, setErr] = useState<string>('');
+  const [callState, setCallState] = useState<'idle' | 'calling' | 'done' | 'error'>('idle');
+  const testCall = useCallback(async () => {
+    setCallState('calling');
+    try {
+      const r = await fetch(TEST_CALL_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uid, sig }),
+      });
+      const d = await r.json().catch(() => ({}));
+      setCallState(r.ok && d.ok ? 'done' : 'error');
+    } catch {
+      setCallState('error');
+    }
+  }, [uid, sig]);
 
   // Login = Supabase Auth (Google). On return from Google OAuth (or any load with a live session),
   // exchange the Supabase access token for a signed uid, then restore in-session progress. The
@@ -475,8 +495,22 @@ export default function LmClient() {
               <Pill ok={gmail === 'connected'}>{t.dashboard.pills.gmail}</Pill>
               <Pill ok={!!natNum}>{t.dashboard.pills.phone}</Pill>
             </div>
-            {/* Demo "call me now" button removed (Dais 2026-06-22): every tap costs a real call, and the
-               experience is already shown on TikTok. Real wake calls fire automatically before events. */}
+            {/* ONE-TIME proof-of-life call: a new user taps once, hears it works, then the button disables
+               (Dais 2026-06-22 cost concern = no repeated billed taps). Real wake calls fire automatically. */}
+            <button
+              type="button"
+              onClick={testCall}
+              disabled={callState === 'calling' || callState === 'done' || !natNum}
+              className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-pill border border-[hsl(var(--gold))] px-6 py-3 text-sm font-semibold text-[hsl(var(--gold))] transition-all hover:bg-[hsl(var(--gold))] hover:text-[#18181b] active:scale-[0.98] disabled:opacity-50"
+            >
+              {callState === 'calling'
+                ? t.dashboard.callBtn.calling
+                : callState === 'done'
+                  ? t.dashboard.callBtn.done
+                  : callState === 'error'
+                    ? t.dashboard.callBtn.error
+                    : t.dashboard.callBtn.idle}
+            </button>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             {t.dashboard.skills.map((s) => (
