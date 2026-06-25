@@ -75,6 +75,10 @@ def main():
                           "url": url, "hint": "route slug/date wrong, or page layout changed"}, ensure_ascii=False))
         sys.exit(1)
     cands.sort(key=lambda c: (c["price"] if c["price"] else 10**9))
+    # attach a parsed price to each booking link so the agent can map chosen candidate -> its link by price
+    for lk in links:
+        m = re.search(r"¥([\d,]+)", lk.get("t", ""))
+        lk["price"] = int(m.group(1).replace(",", "")) if m else None
     print(json.dumps({
         "route": f"{frm}->{to}", "date": ymd, "url": url,
         "candidates": cands, "bookingLinks": links,
