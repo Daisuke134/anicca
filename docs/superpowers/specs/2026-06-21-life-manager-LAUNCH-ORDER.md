@@ -638,13 +638,23 @@ with a real email. The ONLY thing missing is the inbound MX→webhook wiring + u
 - Code lives on branch `feature/lm-v15-email` (life-call parts merged to main via PR #258/#259).
 
 **THE 4 STEPS TO FINISH (when we come back):**
-1. INBOUND PROVIDER for reply.aniccaai.com (the open question — Resend free = 1 domain, aniccaai.com taken):
-   pick ONE (research pending; will be recorded here):
-   - (a) Resend Pro $20/mo FLAT → add reply.aniccaai.com inbound domain (unified, fastest), OR
-   - (b) SendGrid Inbound Parse FREE → MX reply.aniccaai.com → mx.sendgrid.net + Inbound Parse webhook.
-   Either way: add the MX on the SUBDOMAIN reply.aniccaai.com (via Netlify DNS API, NETLIFY_AUTH_TOKEN) — does
-   NOT touch the root aniccaai.com Zoho MX. Point its webhook at:
-   `https://life-call-production.up.railway.app/inbound-email?s=<LM_INBOUND_SECRET>`.
+1. INBOUND PROVIDER = Resend, **FREE** (RESEARCH-VERIFIED 2026-06-25 — NOT a 2nd domain, NOT paid):
+   - Resend Free plan includes "Sending & receiving" + "Inbound emails ✓" (resend.com/pricing). Inbound is a
+     CAPABILITY TOGGLE on an EXISTING verified domain, NOT a new domain entry. My earlier "1 domain / upgrade"
+     wall was because I wrongly tried to ADD reply.aniccaai.com as a new domain.
+   - DO: Resend dashboard → Domains → open **aniccaai.com** (already send-verified) → toggle **Receiving ON**.
+     Resend shows an MX record (AWS inbound SMTP host, priority ~10).
+   - Add that MX in **Netlify DNS** on host **`reply`** (→ reply.aniccaai.com), Type MX, the shown priority/value.
+     "MX records only impact the subdomain they're associated to" → root aniccaai.com Zoho MX (mx.zoho.jp) UNTOUCHED;
+     only *@reply.aniccaai.com is caught (route by the `to` field).
+   - Resend dashboard → **Webhooks → Add Webhook** → URL `https://life-call-production.up.railway.app/inbound-email?s=<LM_INBOUND_SECRET>`
+     → event **`email.received`** (Free = 1 webhook endpoint).
+   - ★ CODE ADJUSTMENT NEEDED ★: the Resend `email.received` webhook payload contains METADATA ONLY, NOT the body.
+     Our /inbound-email + parseInboundRecipient currently read `d.text` directly — that will be empty. We must:
+     (i) parse the token from the webhook `to`/recipient (already done), then (ii) FETCH the full body via the
+     Resend Receiving API (resend.com/docs/dashboard/receiving/get-email-content) using the email id from the
+     webhook, and pass THAT body to handleInboundReply. Also verify the Resend webhook signature
+     (resend.com/docs/webhooks/verify-webhooks-requests) in addition to / instead of the ?s= secret.
 2. ROTATE LM_INBOUND_SECRET on Railway (was echoed); update the webhook URL with the new value.
 3. WEB ONBOARDING (S5, #20): LmClient drops the Gmail-connect step (web users don't connect Gmail — asks go to
    the Google sign-in email via Resend). Flow = Google sign-in (capture email→lm_users.email) → name → calendar
