@@ -53,7 +53,7 @@ export const launchStrings = {
       },
       phone: {
         title: 'Your phone number',
-        body: 'Life Manager calls 15 minutes before each event with route guidance.',
+        body: 'Life Manager calls 10 minutes before each event with route guidance.',
         placeholder: '8012345678',
         button: 'Continue',
         error: 'Enter a valid phone number for the selected country.',
@@ -77,7 +77,7 @@ export const launchStrings = {
         callBtn: { idle: '📞 Call me now (test)', calling: 'Calling you…', done: '✓ Calling — pick up!', error: 'Could not call. Check your number.' },
         skills: [
           { title: 'Travel blocks', desc: 'Travel time goes in before every event.' },
-          { title: '15-min calls', desc: 'It calls before each event with route guidance.' },
+          { title: '10 & 5-min calls', desc: 'It calls twice before each event with route guidance.' },
           {
             title: 'Location asks',
             desc: 'No location? It emails you, and your reply updates the event.',
@@ -96,19 +96,19 @@ export const launchStrings = {
     lifeManager: {
       metaTitle: 'Life Manager',
       metaDesc:
-        'Life Manager runs your whole day: wake, sleep, work, commute, meditation. It reads your Google Calendar, blocks out travel time before every event, and phones you 15, 10, and 5 minutes before you need to leave. Each call gets sharper. Nothing to open.',
+        'Life Manager runs your whole day: wake, sleep, work, commute, meditation. It reads your Google Calendar, blocks out travel time before every event, and phones you 10 and 5 minutes before you need to leave. Each call gets sharper. Nothing to open.',
       heroHeadline: 'Life Manager',
       heroSubtext:
-        'Life Manager runs your day so you stop oversleeping and stop showing up late. It reads your calendar, blocks out travel time, and phones you 15, 10, and 5 minutes before you need to leave. Each call gets sharper. If you are going to be late, it drafts the message to whoever is waiting and sends it the moment you say OK. $20/mo. Nothing to open.',
+        'Life Manager runs your day so you stop oversleeping and stop showing up late. It reads your calendar, blocks out travel time, and phones you 10 and 5 minutes before you need to leave. Each call gets sharper. If you are going to be late, it drafts the message to whoever is waiting and sends it the moment you say OK. $20/mo. Nothing to open.',
       heroPrimary: 'Get started, $20/mo',
       heroSecondary: 'See how it works',
       asset: {
-        wake: '09:25 · call, 15 min before · "Team Sync soon"',
-        travel1: '09:30 · call, 10 min before · "time to move"',
-        sync: '09:35 · call, 5 min before · "leave now or you’re late"',
-        travel2: '09:40 · travel to Team Sync, 20 min',
-        lunch: '10:00 · Team Sync',
-        caption: 'Three calls before every event, each one sharper ↑',
+        wake: '09:30 · call, 10 min before · "time to move"',
+        travel1: '09:35 · call, 5 min before · "leave now or you’re late"',
+        sync: '09:40 · travel to Team Sync, 20 min',
+        travel2: '10:00 · Team Sync',
+        lunch: '12:30 · Lunch with Mai · asked where once, remembered it',
+        caption: 'Two calls before every event, each one sharper ↑',
       },
       featuresTitle: 'Four skills, one job: you stop being late',
       featuresIntro:
@@ -124,8 +124,8 @@ export const launchStrings = {
         {
           id: 'call',
           label: 'Phone',
-          headline: 'It calls you 15, 10, and 5 minutes before you leave',
-          body: 'Life Manager phones your real number three times before you need to leave, and each call is sharper than the last. At 15 minutes it gives you a heads-up. At 10 it tells you to move. At 5 it tells you to leave right now. It names the event, the place, and the route, in the language of your phone’s country. Wake, sleep, work, commute, meditation: it calls for every event and skips none.',
+          headline: 'It calls you 10 and 5 minutes before you leave',
+          body: 'Life Manager phones your real number twice before you need to leave, and the second call is sharper than the first. At 10 minutes it tells you to move. At 5 it tells you to leave right now. It names the event, the place, and the route, in the language of your phone’s country. Wake, sleep, work, commute, meditation: it calls for every event and skips none.',
         },
         {
           id: 'ask',
@@ -157,14 +157,14 @@ export const launchStrings = {
       onTimeTitle: 'Scheduled calls, no polling',
       onTimeBodyPre:
         'A small planner reads your calendar every few minutes and books three one-shot calls per event, at exactly ',
-      onTimeBodyCode: 'leave time − 15 / − 10 / − 5 min',
+      onTimeBodyCode: 'leave time − 10 / − 5 min',
       onTimeBodyPost: '. Leave time is the [Travel] block start when the event has a location, otherwise the event start. Each call deletes itself after it fires.',
-      onTimeResult: 'Three calls per event, on the second, each one more urgent. No wasted checks.',
+      onTimeResult: 'Two calls per event, the second more urgent. No wasted checks.',
       gettingStartedTitle: 'Getting started',
       gettingStartedSteps: [
         { link: 'Start onboarding', rest: '. Sign in with Google and tell it your name.' },
         { link: '', rest: 'Connect Google Calendar and Gmail (one click, via Composio).' },
-        { link: '', rest: 'Add your phone so it can call you 15, 10, and 5 minutes before every event. Share live location if you want.' },
+        { link: '', rest: 'Add your phone so it can call you 10 and 5 minutes before every event. Share live location if you want.' },
         {
           link: '',
           restPre: 'Subscribe: ',
@@ -236,7 +236,7 @@ export const launchStrings = {
       },
       phone: {
         title: '電話番号',
-        body: '各予定の 15 分前に、ルートを案内する電話をかける。',
+        body: '出発の 10 分前と 5 分前に、ルートを案内する電話をかける。',
         placeholder: '09012345678',
         button: '続ける',
         error: '選択した国の有効な電話番号を入力してください。',
@@ -260,7 +260,7 @@ export const launchStrings = {
         callBtn: { idle: '📞 今すぐ電話させる（テスト）', calling: '発信中…', done: '✓ 発信しました。出てください！', error: '発信できませんでした。番号を確認してください。' },
         skills: [
           { title: '移動時間の確保', desc: '各予定の前に、移動時間を自動で入れる。' },
-          { title: '15 分前の電話', desc: '各予定の前に、ルートを案内する電話をかける。' },
+          { title: '10分・5分前の電話', desc: '各予定の前に2回、ルートを案内する電話をかける。' },
           {
             title: '場所の確認',
             desc: '場所が未入力なら、メールで確認する。返信すれば予定を更新する。',
@@ -279,19 +279,19 @@ export const launchStrings = {
     lifeManager: {
       metaTitle: 'ライフマネージャー',
       metaDesc:
-        'ライフマネージャーが、あなたの一日をまわす。起床から就寝、仕事も通勤も瞑想も。Google カレンダーを読んで、予定の前に移動時間を入れ、出発の 15 分前、10 分前、5 分前に電話する。近づくほど声は急かす。開くアプリはない。',
+        'ライフマネージャーが、あなたの一日をまわす。起床から就寝、仕事も通勤も瞑想も。Google カレンダーを読んで、予定の前に移動時間を入れ、出発の 10 分前と 5 分前に電話する。近づくほど声は急かす。開くアプリはない。',
       heroHeadline: 'ライフマネージャー',
       heroSubtext:
-        'ライフマネージャーが一日をまわすから、もう寝坊しないし、遅刻もしない。カレンダーを読んで移動時間を入れ、出発の 15 分前、10 分前、5 分前に電話する。近づくほど声は急かす。間に合わないときは、待っている相手への連絡文を下書きして、あなたが OK と返した瞬間に送る。電話とメールだけ。月 $20。開くアプリはない。',
+        'ライフマネージャーが一日をまわすから、もう寝坊しないし、遅刻もしない。カレンダーを読んで移動時間を入れ、出発の 10 分前と 5 分前に電話する。近づくほど声は急かす。間に合わないときは、待っている相手への連絡文を下書きして、あなたが OK と返した瞬間に送る。電話とメールだけ。月 $20。開くアプリはない。',
       heroPrimary: 'はじめる（月 $20）',
       heroSecondary: '仕組みを見る',
       asset: {
-        wake: '09:25 · 15 分前の電話 ·「もうすぐチームシンク」',
+        wake: '09:30 · 10 分前の電話 ·「そろそろ動いて」',
         travel1: '09:30 · 10 分前の電話 ·「そろそろ動いて」',
         sync: '09:35 · 5 分前の電話 ·「今すぐ出ないと遅刻」',
         travel2: '09:40 · チームシンクへの移動 20 分',
         lunch: '10:00 · チームシンク',
-        caption: 'どの予定の前にも 3 回。近づくほど急かす ↑',
+        caption: 'どの予定の前にも 2 回。近づくほど急かす ↑',
       },
       featuresTitle: '4 つのスキル、ひとつの仕事。もう遅刻しない',
       featuresIntro:
@@ -307,8 +307,8 @@ export const launchStrings = {
         {
           id: 'call',
           label: '電話',
-          headline: '出発の 15 分前、10 分前、5 分前に電話する',
-          body: '出発の前に、ライフマネージャーがあなたの番号へ 3 回かける。近づくほど声は急かす。15 分前は軽い予告。10 分前は「そろそろ動いて」。5 分前は「今すぐ出て」。予定の名前と場所と行き方を、あなたの電話の国のことばで話す。起床も就寝も、仕事も通勤も瞑想も。どの予定でもかけて、ひとつも飛ばさない。',
+          headline: '出発の 10 分前と 5 分前に電話する',
+          body: '出発の前に、ライフマネージャーがあなたの番号へ 2 回かける。あとの電話ほど急かす。10 分前は「そろそろ動いて」。5 分前は「今すぐ出て」。予定の名前と場所と行き方を、あなたの電話の国のことばで話す。起床も就寝も、仕事も通勤も瞑想も。どの予定でもかけて、ひとつも飛ばさない。',
         },
         {
           id: 'ask',
@@ -340,14 +340,14 @@ export const launchStrings = {
       onTimeTitle: '予約して鳴らす。ポーリングはしない',
       onTimeBodyPre:
         '小さなプランナーが数分おきにカレンダーを読んで、予定ごとに 3 本の電話を ',
-      onTimeBodyCode: '出発時刻 − 15 / − 10 / − 5 分',
+      onTimeBodyCode: '出発時刻 − 10 / − 5 分',
       onTimeBodyPost: ' ちょうどに予約する。出発時刻は、場所のある予定なら [移動] ブロックの開始、なければ予定の開始。鳴り終わった電話は自分で消える。',
       onTimeResult: '予定ごとに 3 本、秒単位で。近づくほど急かす。無駄な確認はしない。',
       gettingStartedTitle: 'はじめかた',
       gettingStartedSteps: [
         { link: 'オンボーディングを開始', rest: '。Google でログインして、名前を伝える。' },
         { link: '', rest: 'Google カレンダーと Gmail をつなぐ（Composio でワンクリック）。' },
-        { link: '', rest: '電話番号を登録すれば、予定の 15 分前、10 分前、5 分前に電話がくる。位置情報は任意でつなげる。' },
+        { link: '', rest: '電話番号を登録すれば、予定の 10 分前と 5 分前に電話がくる。位置情報は任意でつなげる。' },
         {
           link: '',
           restPre: '登録する：',
