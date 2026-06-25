@@ -45,10 +45,14 @@ as the OSS path.
 6. ⏳ **PHASE C** — realize+VERIFY the 3 location cases. NOW (2026-06-25, spec `2026-06-25-life-manager-PHASE-C-design.md`).
    VERIFIED STATE: the judgment is ALREADY agentic (`agentResolveLocation` = Gemini tool-loop, temp 0, NO regex)
    covering C1 filled / C2 online / C5 routines / C7 EN-JA; REQ-15 RETURN block DONE; `@openai/agents` rewrite
-   UNNECESSARY (keep the Gemini loop → $0 OpenAI). GAPS → 3 work-items, each VCSDD: **PC-1** C3 memory
-   (Supabase `lm_user_places`, NOT mem0; askTick recalls before asking, reply handlers remember → recurring
-   vague events autofill, never re-asked) ← FIRST · **PC-2** eval harness (C1/C2/C5/C7 + C4 determinism ≥9/10,
-   real Gemini ×N) · **PC-3** C6 autonomous witness (DEPLOYED Inngest cron autofills, not a manual run).
+   UNNECESSARY (keep the Gemini loop → $0 OpenAI). 3 work-items, each VCSDD: ✅ **PC-1** C3 memory
+   (Supabase `lm_user_places`, PR #239, adversary 2R PASS — askTick recalls before asking + 90d TTL refresh,
+   reply handlers remember; live-Supabase E2E) · ✅ **PC-2** eval harness (PR #240, adversary 2R PASS —
+   `scripts/phase-c-eval.js` real Gemini N=10: 13/15 HARD PASS all 100% determinism + 2 soft [Morning run /
+   URL-sync, ambiguous, memory-mitigated, forbid:filled hard-checks never-route]; judgment fixed by PROMPT
+   not regex) · ⏳ **PC-3** C6 live witness (DEPLOYED Inngest cron autofills) — BLOCKED on a connected
+   calendar: only Dais's real account (lm_784ad27) is connected → needs Dais's OK to add a far-future landmark
+   test event to his calendar (autofills, no call, cleaned up), OR a throwaway test tenant w/ Composio gcal.
    C8 ask-reply E2E folded into PC-1/PC-3 · C9 YouTube → D-3.
 7. ☐ **D-1** end-to-end test web /lm + Telegram bot + QR on /life-manager (easy go).
 8. ☐ **D-2** sell on Capafy (lite Leave-Time Planner, best pricing/copy, CTA → web app).
