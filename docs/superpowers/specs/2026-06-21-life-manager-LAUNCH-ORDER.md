@@ -676,3 +676,12 @@ this Free account via the UI. WHEN WE COME BACK, pick a FREE inbound-parse provi
   Either is a plain MX on reply.aniccaai.com via Netlify DNS (root Zoho MX untouched) + a webhook. Then the
   body-fetch nuance only applies to Resend; SendGrid/Mailgun POST the full parsed body to the webhook directly,
   so handleInboundReply works as-is (reply text is in the payload). Re-verify the chosen provider LIVE first.
+
+### D-4 Product Hunt — PREPARED (go-live = Dais, timed strategic launch)
+Full ready-to-submit listing written: docs/launch/product-hunt-life-manager.md (tagline options, ≤260-char
+description, topics, the maker's first comment, gallery shot list, launch-day checklist). The Telegram product
+is LIVE + dogfooded so it is launchable. NOT auto-launched overnight on purpose: a PH launch is a one-shot public
+event whose ranking depends on timing (Tue–Thu 12:01am PT) + a polished gallery + the maker present to reply.
+PH is not logged in on the daily-driver. GO-LIVE = Dais (AM): log into PH (Google keiodaisuke), generate the
+1270×760 gallery images from the live /life-manager page, create the launch, schedule the optimal day, hit launch,
+post the first comment. Everything else is ready.
