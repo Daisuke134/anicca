@@ -187,7 +187,7 @@ export const launchStrings = {
       startWebEyebrow: 'on the web',
       startWebTitle: 'Start on the web',
       startWebDesc: 'Sign in with Google, connect Calendar, add your phone, subscribe. A test call then proves it works.',
-      startWebCta: 'Open /lm',
+      startWebCta: 'Start on the web',
     },
   },
 
@@ -370,7 +370,7 @@ export const launchStrings = {
       startWebEyebrow: 'ウェブで',
       startWebTitle: 'ウェブで開始',
       startWebDesc: 'Google でログイン、カレンダー接続、電話番号を登録、購読。その場でテスト通話が動作を証明します。',
-      startWebCta: '/lm を開く',
+      startWebCta: 'ウェブで始める',
     },
   },
 } as const;
