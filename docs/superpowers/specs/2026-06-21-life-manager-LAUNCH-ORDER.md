@@ -605,3 +605,51 @@ Gmail (no per-user cost, no CASA): Telegram users use Telegram; web users use ou
   scheduler.askUserOnce + server late-notice wired to Resend + lm_users.email. 26 unit tests green.
 - ⏳ S3-infra Resend Inbound MX on reply.aniccaai.com (Netlify DNS) + inbound webhook → /inbound-email + Railway env.
 - ☐ S4 transport cleanup · S5 web onboarding drop Gmail · S6 un-gate web · S7 LIVE E2E.
+
+---
+
+## ★★★ LAUNCH PLAN (Dais 2026-06-25) — SHIP ON TELEGRAM NOW, web = "coming soon", finish web AFTER launch ★★★
+
+DECISION: launch the product on **Telegram as the main channel** immediately. The **web onboarding (/lm) stays
+GATED at "Coming soon"** (the #17 gate is already live on main — DO NOT un-gate yet). Do Product Hunt + all
+the marketing on the Telegram product. THEN come back and finish the web reply-by-email end-to-end and un-gate.
+Everything for the web is already 90% built + documented below so we can "ship it instantly" when we return.
+
+### NOW — v1 LAUNCH (Telegram only)
+- [x] TG onboarding (name → calendar → phone → pay; NO Gmail) — computeStage, 14/14 tests. (#12)
+- [x] Web surfaces gated: /life-manager left CTA removed, web card "Coming soon", /lm → Telegram funnel. (#17)
+- [ ] **#18 Telegram-only E2E** — real @LifeManagerBotbot: /start → name → Connect Calendar → phone → Stripe →
+      done; then a wake call fires + a location ask arrives IN Telegram + the TG reply patches the calendar.
+      (Composio calendar + Telnyx/Gemini wake calls + ask/reply are all already LIVE.) ← the launch gate.
+- [ ] Then: D-4 Product Hunt launch + D-3 content/TikTok/YT + D-5 articles + D-2 Capafy + D-6 directories.
+
+### LATER — WEB v1.5 (come back AFTER launch + marketing). RUNBOOK so we ship instantly:
+**STATUS: the web reply-by-email is CODE-COMPLETE, DEPLOYED, idempotent, VCSDD-adversary PASSED, send VERIFIED
+with a real email. The ONLY thing missing is the inbound MX→webhook wiring + un-gating.** What's already done:
+- mail-resend.js (sendAsk/sendLateNotice via Resend, From hello@aniccaai.com, Reply-To reply+<token>@reply.
+  aniccaai.com) — REAL send verified (id returned).
+- ask.js/notify.js send via Resend; Unipile removed from runtime; reply token stored on lm_ask_log.reply_token.
+- POST /inbound-email?s=<LM_INBOUND_SECRET> — LIVE on life-call (403 without secret, 200 no-token verified);
+  parseInboundRecipient (all Resend payload shapes) + handleInboundReply (atomic answered_at consume = idempotent
+  + needsLocation no-overwrite guard). 40/40 unit tests.
+- Migrations applied LIVE: lm_users.email, lm_ask_log.reply_token, lm_ask_log.answered_at.
+- Railway env SET on life-call: RESEND_API_KEY, LM_INBOUND_SECRET (in scratchpad lm-inbound-secret.txt — ROTATE
+  it, it was echoed once), LM_MAIL_FROM, LM_REPLY_DOMAIN=reply.aniccaai.com.
+- Code lives on branch `feature/lm-v15-email` (life-call parts merged to main via PR #258/#259).
+
+**THE 4 STEPS TO FINISH (when we come back):**
+1. INBOUND PROVIDER for reply.aniccaai.com (the open question — Resend free = 1 domain, aniccaai.com taken):
+   pick ONE (research pending; will be recorded here):
+   - (a) Resend Pro $20/mo FLAT → add reply.aniccaai.com inbound domain (unified, fastest), OR
+   - (b) SendGrid Inbound Parse FREE → MX reply.aniccaai.com → mx.sendgrid.net + Inbound Parse webhook.
+   Either way: add the MX on the SUBDOMAIN reply.aniccaai.com (via Netlify DNS API, NETLIFY_AUTH_TOKEN) — does
+   NOT touch the root aniccaai.com Zoho MX. Point its webhook at:
+   `https://life-call-production.up.railway.app/inbound-email?s=<LM_INBOUND_SECRET>`.
+2. ROTATE LM_INBOUND_SECRET on Railway (was echoed); update the webhook URL with the new value.
+3. WEB ONBOARDING (S5, #20): LmClient drops the Gmail-connect step (web users don't connect Gmail — asks go to
+   the Google sign-in email via Resend). Flow = Google sign-in (capture email→lm_users.email) → name → calendar
+   → phone → pay → dashboard. Continue enabled with Calendar only.
+4. UN-GATE WEB (S6, #21): revert #17 — /life-manager restore the left "Get started" CTA + the web card as an
+   active /lm link; LmBody renders <LmClient/> again (swap back from the coming-soon gate). EN+JA.
+   Then S7 (#22) FULL E2E: web onboard → no-location event → real Resend ask → reply → inbound webhook →
+   calendar patched + remembered. Confirm ZERO Unipile. THEN web is LIVE.
