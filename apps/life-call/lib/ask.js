@@ -281,4 +281,28 @@ async function askTick(uid, opts) {
   return { autofilled, asked, resolved };
 }
 
-module.exports = { askTick, recallOrResolve, agentResolveLocation, agentMatchReply, claimAsk, unclaimAsk };
+// Handle one inbound email reply (from /inbound-email). The Reply-To token resolves to (uid, event_id) via
+// lm_ask_log; we fetch that event, let the model extract the location the user gave, patch the calendar, and
+// remember it so a future same-summary event autofills. Returns { ok, uid, eventId, location } | { ok:false }.
+async function handleInboundReply(token, replyText, opts) {
+  const { composioKey, geminiKey, supaUrl, supaKey } = opts;
+  if (!token || !supaUrl || !supaKey) return { ok: false, reason: "missing token/supa" };
+  // token → (uid, event_id)
+  const r = await fetch(`${supaUrl}/rest/v1/lm_ask_log?reply_token=eq.${encodeURIComponent(token)}&select=uid,event_id&limit=1`,
+    { headers: { apikey: supaKey, Authorization: `Bearer ${supaKey}` } }).catch(() => null);
+  const rows = r ? await r.json().catch(() => []) : [];
+  const hit = Array.isArray(rows) && rows[0];
+  if (!hit) return { ok: false, reason: "unknown token" };
+  const { uid, event_id: eventId } = hit;
+  // Fetch the event so the model can match the reply text to its summary and extract the location given.
+  const events = await listEvents48h(uid, composioKey, opts.nowMs || Date.now()).catch(() => []);
+  const ev = (events || []).find((e) => e.id === eventId);
+  if (!ev) return { ok: false, reason: "event not found", uid, eventId };
+  const match = await agentMatchReply(replyText, [ev], geminiKey);
+  if (!match || !match.location) return { ok: false, reason: "no location in reply", uid, eventId };
+  await patchEvent(uid, eventId, { location: match.location }, composioKey);
+  await rememberPlace(uid, placeKey(ev.summary), match.location, supaUrl, supaKey);
+  return { ok: true, uid, eventId, location: match.location };
+}
+
+module.exports = { askTick, recallOrResolve, agentResolveLocation, agentMatchReply, claimAsk, unclaimAsk, handleInboundReply };

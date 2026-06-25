@@ -58,7 +58,7 @@ async function sendStage(token, chatId, row, base) {
 }
 
 // ── Supabase helpers ────────────────────────────────────────────────────────────
-const SEL = "uid,name,telegram_chat_id,tg_onboard_stage,calendar_provider,gmail_account_id,phone,paid";
+const SEL = "uid,name,telegram_chat_id,tg_onboard_stage,calendar_provider,gmail_account_id,email,phone,paid";
 // Persist a single onboarding field (name/phone) typed in chat.
 async function saveField(uid, patch, supaUrl, supaKey) {
   await fetch(`${supaUrl}/rest/v1/lm_users?uid=eq.${encodeURIComponent(uid)}`, {
