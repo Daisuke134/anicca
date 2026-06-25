@@ -71,7 +71,8 @@ paid via 三菱UFJ-VISAデビット, 3-D Secure cleared with Gmail OTP automatic
 - `search_buses(from, to, yyyymmdd)` → structured candidate list (bushikaku scrape).
 - `cloak_drive` — CDP driver against daily-driver (goto/eval/click/fill/screenshot, dialog auto-accept, URL-target).
 - `read_3ds_otp(merchant, max_age)` — newest message-level Gmail 認証コード, validated by merchant/amount.
-- `gcal_add(event)` — via Google Calendar MCP.
+- gcal events — via the **Google Calendar MCP `create_event`** (EXTERNAL MCP dependency by design;
+  gog has no gcal CLI, no OAuth creds bundled in-skill). DoD §7 is met using this MCP, not a bundled script.
 - card/profile loader from `~/.openclaw/.env` (never echo values).
 
 ## 7. Verification (definition of done)

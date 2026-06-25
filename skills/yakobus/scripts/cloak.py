@@ -21,33 +21,45 @@ Usage: cloak.py <cmd> [arg]   (JS for `eval` is read from stdin)
   typeat "x,y||text"  | fill "css||value"
 Env: CLOAK_TARGET = URL substring of the page to drive (e.g. "kosokubus.com").
 """
-import sys, json, os
+import sys, json, os, re, fcntl
 from playwright.sync_api import sync_playwright
 
 SHOT_DIR = os.environ.get("CLOAK_SHOT_DIR", "/tmp")
 CDP = os.environ.get("CLOAK_CDP", "http://localhost:9222")
+NAVCMDS = ("goto", "goto-wait", "newtab")
 
 def pick_page(ctx, cmd):
     target = os.environ.get("CLOAK_TARGET", "")
-    page = None
     if target:
         for pg in ctx.pages:
             if target in (pg.url or ""):
-                page = pg
-    if page is None and target:
-        # fall back to any non-blank if the target isn't open yet
-        pass
-    if page is None:
-        for pg in ctx.pages:
-            if pg.url and pg.url != "about:blank":
-                page = pg
+                return pg
+        # target set but not open: only OK to open a fresh tab for nav cmds; otherwise REFUSE
+        # (never silently drive an arbitrary tab — risk of typing card data into the wrong site).
+        if cmd in NAVCMDS:
+            return ctx.new_page()
+        raise SystemExit(f"CLOAK_TARGET '{target}' not open and cmd '{cmd}' won't navigate — refusing to drive an arbitrary tab")
+    page = None
+    for pg in ctx.pages:
+        if pg.url and pg.url != "about:blank":
+            page = pg
     if cmd == "newtab" or page is None:
         page = ctx.new_page()
     return page
 
+def acquire_cdp_lock():
+    # ONE CDP client at a time (2nd client + a JS dialog = browser crash). Shared with search_buses.py.
+    lf = open("/tmp/yakobus-cdp.lock", "w")
+    try:
+        fcntl.flock(lf, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        raise SystemExit("another yakobus CDP client holds /tmp/yakobus-cdp.lock — run search/cloak strictly sequentially")
+    return lf  # keep open for process lifetime; released on exit
+
 def main():
     cmd = sys.argv[1] if len(sys.argv) > 1 else "url"
     arg = sys.argv[2] if len(sys.argv) > 2 else ""
+    _lock = acquire_cdp_lock()
     with sync_playwright() as p:
         browser = p.chromium.connect_over_cdp(CDP)
         ctx = browser.contexts[0]
@@ -67,7 +79,9 @@ def main():
             page.wait_for_timeout(3000)
             print("URL:", page.url)
         elif cmd == "eval":
-            print(json.dumps(page.evaluate(sys.stdin.read()), ensure_ascii=False, default=str)[:60000])
+            out = json.dumps(page.evaluate(sys.stdin.read()), ensure_ascii=False, default=str)[:60000]
+            out = re.sub(r"\d{12,}", "<redacted-digits>", out)  # never echo card PANs read back from the DOM
+            print(out)
         elif cmd == "url":
             print("URL:", page.url, "| TITLE:", page.title())
         elif cmd == "pages":
@@ -90,10 +104,16 @@ def main():
             page.wait_for_timeout(2000); print("CLICKED xy:", arg, "| URL:", page.url)
         elif cmd == "typeat":
             xy, text = arg.split("||", 1); x, y = xy.split(",")
+            if text.strip() == "@env":               # secret-safe path: value from env, never argv
+                text = os.environ.get("CLOAK_FILL_VALUE", ""); shown = "<env-secret>"
+            elif re.search(r"\d{12,}", text.replace(" ", "").replace("-", "")):
+                raise SystemExit("typeat refuses long digit strings (card?) in argv — use `fill` or `@env` (CLOAK_FILL_VALUE)")
+            else:
+                shown = text
             page.mouse.click(float(x), float(y)); page.wait_for_timeout(400)
             page.keyboard.press("ControlOrMeta+a"); page.keyboard.press("Delete")
             page.keyboard.type(text, delay=60); page.wait_for_timeout(300)
-            page.keyboard.press("Enter"); page.wait_for_timeout(2500); print("TYPED:", "<text>", "| URL:", page.url)
+            page.keyboard.press("Enter"); page.wait_for_timeout(2500); print("TYPED:", shown, "| URL:", page.url)
         elif cmd == "fill":
             # SECRET-SAFE: value comes from env CLOAK_FILL_VALUE, never argv (argv shows in `ps`/transcript).
             sel = arg
