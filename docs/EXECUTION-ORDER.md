@@ -42,12 +42,15 @@ NICHE is intentional & stays: articles about **AI-entities** = AI that earns mon
   note = Automaton-hardcoded; zenn/substack/x = mostly parameterized. And the **verify-loop is only wired for note**.
 - So PHASE A = make the publishers run **ANY AI-entity article** end-to-end, no-human, self-verifying. (NOT broaden the niche.)
 - ☑ A1. RELOCATE done: `~/.claude/skills/ai-entity-article-writer` → symlink to the openclaw skill (usable by ME + claude -p; no breakage).
-- ☐ A2. VERIFY-IN-LOOP via PROMPTS for **zenn/substack/x** (note already has note-publish/note-agent-prompt.md): a
-       verify-prompt.md the agent follows → open preview → screenshot → Read → judge every table/diagram/size/honesty/
-       funnel → PASS/FAIL → fix → re-verify until PASS. The deterministic px-gates exist for all; the AGENT-PROMPT is the gap.
-- ☐ A3. PARAMETERIZE + ONE-TAP: de-Automaton the **note** publisher (md/key/slug/paywall env, per SKILL.md line 378);
-       per-platform orchestrator publish-to-<pf>.sh (hands) + claude -p agent (eyes) → write ANY AI-entity article →
-       draft → verify-loop → publish → live-verify. (note F2 pattern replicated for zenn/substack/x.)
+- ☑ A2. DONE 2026-06-25 (VSDD, fresh adversary 4/4 PASS). verify-prompt.md + run-<pf>-agent.sh for zenn/substack/x mirror
+       note F2: agent → draft → verify → LOOK checklist (zenn: no-lie/no-run-claims; substack: ≤950px+paywall-boundary;
+       x: clean-tables+≤900px+NO-funnel) → fix→re-verify→JSON verdict. PROMPT WORKS: a real claude -p run followed it +
+       correctly FAILed on a blocker (no slop published) = loop+safety proven. GREEN publish E2E gated on X re-login (below).
+- ◐ A3. orchestrators DONE: publish-to-x.sh (+x-go.py go-path+sentinel) + publish-to-substack.sh (uniform iface+sentinel)
+       + existing publish-to-zenn.sh/publish-to-note.sh → uniform `publish <md> --mode draft|go` for all 4. REMAINING =
+       de-Automaton the **note** INNER scripts (slug/assets hardcoded, SKILL.md line 378) so note runs ANY article.
+- ⚠ BLOCKER (env, not code): the daily-driver is LOGGED OUT of X → a GREEN publish E2E needs Dais to re-login X once
+       (HARD 0.39, 1 tap). Zenn green E2E needs no login (alternative proof). All code is adversary-verified + syntax-clean.
 - ☐ A4. ENGLISH pass: translate the article → dev.to + X(EN) + Substack(EN), each verified.
 (REMOVED old "A5 generalize to any AI/crypto" — wrong: niche = AI-entity by design; the writing is already general
 within it via search; the real generalization is A3 = parameterize the Automaton-hardcoded publishers.)
