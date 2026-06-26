@@ -19,7 +19,7 @@ behavior byte-for-byte so the live note cron is unchanged.
 | `NOTE_SRC` | source markdown path | `/Users/anicca/.cache/anicca-article-wt/docs/articles/2026-06-11-automaton-jp.md` |
 | `NOTE_WORK` | temp work dir (replaces every `/tmp/...`) | `~/.cloak/note-work/note-stage` |
 | `NOTE_NUM` | note internal article id | `166686292` |
-| `NOTE_INFOG` | infographic image path (empty ⇒ drop the `@@INFOG@@` marker) | the Automaton `what-is-automaton-detailed.png` |
+| `NOTE_INFOG` | env OVERRIDE for the infographic. Default = the article's OWN infographic that stage1 captured into the manifest (`images/<NOTE_IMG_DIR>/what-is-*.png`, resolved vs the article dir). empty/missing ⇒ drop `@@INFOG@@`. NO Automaton fallback. | (none — stage1-captured) |
 | `NOTE_TAGS` | comma-separated tags | `AI,AIエージェント,暗号資産,Automaton,自律AI` |
 | `NOTE_IMG_DIR` | image subdir under `images/` used by the thumb/infographic strip | `automaton` |
 
