@@ -1,0 +1,16 @@
+{
+  "featureName": "akash-provider-services-acceleration",
+  "mode": "strict",
+  "currentPhase": "init",
+  "phaseHistory": [],
+  "iterations": {},
+  "proofObligations": [],
+  "traceability": {
+    "epicId": "VCSDD-akash-provider-services-acceleration-1782487602603",
+    "beads": []
+  },
+  "gates": {},
+  "sprintCount": 0,
+  "createdAt": "2026-06-26T15:26:42.602Z",
+  "updatedAt": "2026-06-26T15:26:42.602Z"
+}
