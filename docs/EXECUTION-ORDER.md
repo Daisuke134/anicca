@@ -46,12 +46,14 @@ NICHE is intentional & stays: articles about **AI-entities** = AI that earns mon
        note F2: agent → draft → verify → LOOK checklist (zenn: no-lie/no-run-claims; substack: ≤950px+paywall-boundary;
        x: clean-tables+≤900px+NO-funnel) → fix→re-verify→JSON verdict. PROMPT WORKS: a real claude -p run followed it +
        correctly FAILed on a blocker (no slop published) = loop+safety proven. GREEN publish E2E gated on X re-login (below).
-- ◐ A3. orchestrators DONE: publish-to-x.sh (+x-go.py go-path+sentinel) + publish-to-substack.sh (uniform iface+sentinel)
-       + existing publish-to-zenn.sh/publish-to-note.sh → uniform `publish <md> --mode draft|go` for all 4. REMAINING =
-       de-Automaton the **note** INNER scripts so note runs ANY article. PARTIAL 2026-06-25: rebuild-note-body.py
-       NOTE_ASSETS + note-stage1-render.py NOTE_SRC env'd; STILL hardcoded = rebuild-note tags + set-eyecatch/publish.py
-       NUM + note-stage1 /tmp paths. ⚠ ~/.openclaw is a LIVE runtime (a file VANISHED mid-edit) → do this when the
-       runtime is quiet, env-default = current Automaton values, then VSDD-adversary it. (Not blocking — note is published.)
+- ☑ A3. DONE 2026-06-26 via full VCSDD (spec→RED→GREEN→fresh-adversary gate→no-mock E2E→4-D convergence). orchestrators
+       (publish-to-x/substack/zenn/note.sh, uniform `publish <md> --mode draft|go`) + the note RENDER pipeline now run ANY
+       AI-entity article via env (NOTE_SRC/WORK/NUM/INFOG/TAGS/IMG_DIR/ASSETS), no /tmp, generic image-dir, with guards so
+       a non-Automaton article can NEVER overwrite the live note 166686292 or leak Automaton assets/tags/infographic.
+       VERIFIED: `note-publish/test-de-automaton.py` (hermetic oracle that RUNS stage1+stage2+rebuild with a fake note_mcp
+       recorder, asserts no Automaton value reaches any upload/update). VCSDD adversary ran 6 iterations (7→6→6→1→PASS→PASS),
+       each fresh-context pass caught real leaks the build missed; iter5+iter6 = overallVerdict PASS, all 6 dimensions.
+       Spec: anicca/docs/superpowers/specs/2026-06-26-A3-de-automaton-note-publisher.md.
 - ⚠ BLOCKER (env, not code): the daily-driver is LOGGED OUT of X → a GREEN publish E2E needs Dais to re-login X once
        (HARD 0.39, 1 tap). Zenn green E2E needs no login (alternative proof). All code is adversary-verified + syntax-clean.
 - ☑ A4. ENGLISH DONE (dev.to /vcsdd-VERIFIED+live · X advertised · Substack verified draft 203556581 → publish on Dais's
