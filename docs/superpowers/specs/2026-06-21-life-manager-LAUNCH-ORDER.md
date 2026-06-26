@@ -718,7 +718,7 @@ post the first comment. Everything else is ready.
 ## ★★★ NEW LAUNCH SEQUENCE (Dais 2026-06-26) — launch TODAY, Tokyo time ★★★
 | # | task | notes |
 |---|---|---|
-| **0** | **STEP-0 launch-blocker FIX** (DONE in code): `/lm?tg=<chat_id>` now renders LmClient (Telegram funnel works); Gmail/Unipile step REMOVED from LmClient (connect = Calendar only). Standalone `/lm` stays coming-soon. → deploy + I browser-verify a NEW account through @LifeManagerBotbot name→calendar→phone→pay (VCSDD ②browser gate) + fresh adversary. | LAUNCH BLOCKER |
+| **0** | ✅ DONE+VERIFIED 2026-06-26 (both VCSDD gates PASS: browser=/lm?tg= renders LmClient + standalone gated; adversary=PASS) — STEP-0 launch-blocker FIX: `/lm?tg=<chat_id>` now renders LmClient (Telegram funnel works); Gmail/Unipile step REMOVED from LmClient (connect = Calendar only). Standalone `/lm` stays coming-soon. → deploy + I browser-verify a NEW account through @LifeManagerBotbot name→calendar→phone→pay (VCSDD ②browser gate) + fresh adversary. | LAUNCH BLOCKER |
 | **1** | **D-4 Product Hunt launch** — Google login → gallery from live page → launch TODAY → first comment | |
 | **2** | **X release post** — approved copy, JP+EN, X Premium long post, @aniccaxxx (Postiz or browser) | |
 | **3** | **autofill 3-case VCSDD re-verify** (Dais worried) — the Google-Calendar autofill: (a) online vs physical classify, (b) unknown-address web search, (c) depart-by = start−travel−buffer. spec→test→fresh-adversary→NO-MOCK E2E on a real calendar | |
