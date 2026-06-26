@@ -114,7 +114,9 @@ export default function LifeManagerBody() {
                 <li key={i}>
                   {s.link ? (
                     <a
-                      href="/lm"
+                      href={TG_DEEPLINK}
+                      target="_blank"
+                      rel="noreferrer"
                       className="underline underline-offset-4 hover:text-[hsl(var(--text-secondary))] transition-colors"
                     >
                       {s.link}
@@ -132,7 +134,9 @@ export default function LifeManagerBody() {
         <Reveal>
           <div className="grid gap-4 md:grid-cols-2">
             <a
-              href="/lm"
+              href={TG_DEEPLINK}
+              target="_blank"
+              rel="noreferrer"
               className="block rounded-card border border-[hsl(var(--gold))]/30 bg-[hsl(var(--surface))] p-5 transition-colors hover:bg-[hsl(var(--surface-elevated))]"
             >
               <p className="text-xs uppercase tracking-widest text-[hsl(var(--gold))]">{t.cardGetStartedEyebrow}</p>
