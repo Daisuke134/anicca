@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "tests",
+  "category": "test_coverage",
+  "severity": "medium",
+  "description": "The requested test-execution gate (run node --test per file, expect 97 pass / 0 fail) could NOT be satisfied in this review session: this reviewer environment exposes no Bash/shell execution tool (only Read/Write/Edit/Grep/Glob). Per HONESTY RULE 4 I refuse to claim a pass count I did not run. Static verification was performed instead and is clean: every test file under skills/ubi/__tests__/, skills/_shared/lib/__tests__/, skills/earn/__tests__/, skills/earn/lib/__tests__/ imports modules and named exports that all exist at the stated relative paths after the move (e.g. earn/lib/__tests__/oxwork.test.js:4 imports ../../../_shared/lib/ledger.mjs which resolves correctly; ubi/__tests__/bank-payout-watcher.test.js:3 imports 12 named exports all present in bank-payout-watcher.mjs). Therefore the suite is structurally runnable, but the 97/0 GREEN result remains UNVERIFIED until actually executed.",
+  "evidence": {
+    "filePath": "skills/ubi/__tests__/bank-payout-watcher.test.js",
+    "lineRange": "3-4",
+    "snippet": "import { makeGmoAdapter, buildSubmittedPatch, buildClaimPatch, buildReleasePatch, claimedFromRows, claimWith, parseRef, parseClaimedAt, reconcileStuck, idempotencyKey, pollCompletions, todayYmd } from \"../bank-payout-watcher.mjs\";"
+  },
+  "fix": "A reviewer/agent with shell access must run, per file (node v25 mis-reports on a directory): node --test skills/_shared/lib/__tests__/*.test.js ; node --test skills/earn/__tests__/*.test.js ; node --test skills/earn/lib/__tests__/*.test.js ; node --test skills/ubi/__tests__/*.test.js — and confirm the aggregate is 97 pass / 0 fail before declaring 4-D convergence.",
+  "routeToPhase": "5"
+}

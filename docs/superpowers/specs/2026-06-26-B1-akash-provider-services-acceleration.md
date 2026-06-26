@@ -8,6 +8,27 @@ Builder = main agent (me). Adversary = fresh `vcsdd:vcsdd-adversary` (zero build
   the loop → breaks Anicca's self-funding. Anicca is no-human by definition, so a credit-card path has no meaning.
 - ✓ **provider-services + own crypto wallet = the no-human lane**. Accelerate THAT, not swap to a managed API.
 
+## SCOPE CLARIFICATION (2026-06-27, Dais)
+- This is the **REAL Akash mainnet** deploy — Anicca spawning itself on a real decentralized cloud, paid in its own
+  crypto (AKT/ACT), no credit card = no human. We HAVE hosted on real Akash before; it just took **~15 min** (mostly
+  the ACT mint + a per-spawn swap). GOAL of B1 = same real deploy, **~15 min → ~3 min** by moving mint/swap OFF the
+  per-spawn path. `sandbox-2` testnet is used ONLY as a free 1-shot check that the code boots a container + that
+  mint credits uact — NOT the destination. The destination is mainnet.
+
+## CORRECTION (2026-06-27 — AEP-76 + REAL sandbox-2 E2E; SUPERSEDES the earlier uakt pricing)
+The real chain (post AEP-76 / ACT upgrade) proved two things the fake + a stale-knowledge adversary (FIND-006) got wrong:
+1. **Escrow denom = `uact` (ACT, USD-pegged) — REQUIRED, not `uakt`.** AEP-76 DESIGN.md: "Every escrow account must
+   hold `Balance.Denom == uact`"; "uact = 1e-6 USD". `uakt` is gas/staking only. Live proof: a uakt deploy → on-chain
+   `Deposit invalid` / `Mismatched denominations (uact != uakt)`. → **SDL pricing + `--deposit` = `uact`; gas stays `uakt`.**
+2. **ACT is non-transferable + lives in a separate ledger** (AEP-76: "bank SendCoins disabled for uact";
+   `actKeeper.Credit` → non-transferable ledger). → **verify ACT via the act/bme ledger, NOT `bank balances`** (my
+   "mint reverted" call was a wrong-place query).
+3. **Getting uact**: `akash tx bme mint-act <X>uakt` (docs-confirmed). x/market also "auto top-ups via MsgMintACT if
+   balances low". OPEN ITEM for B1.4: one real mint appeared to refund despite a healthy circuit-breaker → the real
+   E2E must confirm mint credits uact (queried in the act ledger) before the treasury relies on it.
+Sources: aep-76 DESIGN.md (akash-network/website) · `akash query deployment params` (min_deposits uact+uakt) ·
+`akash tx bme mint-act` docs · the live `Deposit invalid` error.
+
 ## PROBLEM (current `skills/self/spawn/scripts/deploy-akash.sh`)
 1. **BROKEN**: it only runs `akash tx deployment create` + returns dseq. No cert, no bid query, no lease, no
    send-manifest → the container NEVER boots (the child does not actually run on Akash).
@@ -40,7 +61,8 @@ A COMPLETE, ~20-30s, 100%-no-human Akash deploy via provider-services, with fund
 | `AKASH_NODE` / `AKASH_CHAIN_ID` | override if set, else from meta.json | from meta.json |
 | `AKASH_GAS_PRICES` / `AKASH_GAS_ADJUSTMENT` | gas | `0.025uakt` / `1.5` |
 | `PROVIDER_SERVICES` | CLI binary (test seam) | `provider-services` |
-| `AKT_BUFFER_UAKT` | treasury low-watermark | e.g. `5000000` (5 AKT) |
+| `AKASH_PRICE_DENOM` / `AKASH_DEPOSIT` | SDL pricing + deposit denom (AEP-76 escrow) | `uact` / `5000000uact` |
+| `AKT_BUFFER_UAKT` / `ACT_BUFFER_UACT` | treasury low-watermarks (AKT for gas + ACT for escrow) | `5000000` / `5000000` |
 
 ## INVARIANTS (the test oracle)
 - **INV-1 no-human**: no `console-api.akash.network`, no "credit card", no Console managed wallet anywhere in the path;

@@ -1,0 +1,29 @@
+{
+  "sprintNumber": 1,
+  "feature": "de-automaton-note-publisher",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-06-26T00:00:00Z",
+  "iteration": 1,
+  "reviewContext": {
+    "reviewType": "implementation",
+    "note": "No input manifest existed at .vcsdd/features/de-automaton-note-publisher/reviews/sprint-1/input/manifest.json. Review conducted from the spec at /Users/anicca/anicca/docs/superpowers/specs/2026-06-26-A3-de-automaton-note-publisher.md and the file list supplied in the task. Output dir created under canonical path."
+  },
+  "dimensions": [
+    {"name": "spec_fidelity", "verdict": "FAIL", "findings": ["FIND-001", "FIND-002"], "evidence": []},
+    {"name": "no_leak_correctness", "verdict": "FAIL", "findings": ["FIND-001", "FIND-003"], "evidence": []},
+    {"name": "no_regression", "verdict": "PASS", "findings": [], "evidence": [
+      {"type": "file", "location": "note-stage1-render.py:58", "description": "manifest written to {WORK}/note-manifest.json; stage2 line 9 reads the same {WORK}/note-manifest.json with identical default WORK (~/.cloak/note-work/note-stage). Path round-trip consistent."},
+      {"type": "file", "location": "extract-note-cookies.py:15", "description": "cookies written to ~/.cloak/note-work/note-cookies.json; stage2 line 9 reads the same absolute path. Aligned."},
+      {"type": "file", "location": "note-stage1-render.py:3-5,11-12", "description": "All defaults (NOTE_SRC, NOTE_IMG_DIR=automaton) reproduce the prior literal Automaton paths; regex still escapes IMG_DIR so default behavior is byte-identical."}
+    ]},
+    {"name": "edge_cases", "verdict": "FAIL", "findings": ["FIND-004"], "evidence": []},
+    {"name": "test_adequacy", "verdict": "FAIL", "findings": ["FIND-005", "FIND-006"], "evidence": []},
+    {"name": "missed_hardcodes", "verdict": "FAIL", "findings": ["FIND-002", "FIND-007"], "evidence": []}
+  ],
+  "convergenceSignals": {
+    "findingCount": 7,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}

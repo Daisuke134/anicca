@@ -1,0 +1,80 @@
+{
+  "sprintNumber": 6,
+  "feature": "de-automaton-note-publisher",
+  "overallVerdict": "PASS",
+  "timestamp": "2026-06-26T00:00:00Z",
+  "iteration": 6,
+  "reviewContext": {
+    "reviewType": "implementation",
+    "note": "Fresh-context FINAL convergence review (iteration 6), zero builder context, disk-only. No review manifest.json was present on disk under .vcsdd/features/de-automaton-note-publisher/**; the in-scope files + 6 dimensions were supplied inline by the invoker. Output co-located with the authoritative spec repo (/Users/anicca/anicca), consistent with sprint-1/3/5. FILES IN SCOPE per spec lines 11-14: note-stage1-render.py, note-stage2-publish.py, rebuild-note-body.py. publish-to-note.sh, test-de-automaton.py, and the a3_fixtures recorder (models.py, api/articles.py, api/images.py) were read in full as CONTEXT; per scope rules files outside FILES IN SCOPE are not a FAIL basis. Verification method: exhaustive static trace (no Bash tool available in this adversary's toolset); the oracle is self-contained (manages its own temp NOTE_WORK dirs, stubs cookies only if absent, and routes all note_mcp calls to the recorder via NOTE_MCP_SRC=FIX), so its logic was traced line-by-line rather than executed. The iteration-5 LOW/informational finding is now substantively CLOSED (see below)."
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "note-stage1-render.py:4-6,12,15,33,62-63", "description": "INV-1 (positional arg OR NOTE_SRC source + NOTE_WORK manifest, sys.argv honored), INV-3 (no /tmp), INV-5 (thumb/infographic regexes use re.escape(IMG_DIR) at lines 12/15) all hold."},
+        {"type": "file", "location": "note-stage2-publish.py:1-2,14-15,36-37,55", "description": "INV-4 holds: only update_article is called (line 55); publish_article never called (header comment + verified absent). NOTE_NUM guard (14-15) and per-infographic captured paths (36-37) present."},
+        {"type": "file", "location": "rebuild-note-body.py:19-22,28-29,37,80", "description": "INV-1..5 reflected in rebuild: dual guard (NUM + ASSETS), NOTE_IMG_DIR-driven regexes (28-29,37), source-gated tag default (80), no /tmp (verified via Grep, 0 hits)."}
+      ]
+    },
+    {
+      "name": "no_leak_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "note-stage2-publish.py:10-15", "description": "Worst combo (NOTE_SRC set non-Automaton, all other NOTE_* unset): NUM defaults 166686292; _SRC non-empty -> raise SystemExit at line 14-15 BEFORE any upload_body_image/update_article. Live note 166686292 cannot be overwritten by a non-default article. To run any non-Automaton article through stage2 the caller MUST pass a non-default NOTE_NUM, after which tags default to '' (line 18), infographics come from the article's own manifest (36-37), and uploads are manifest paths under NOTE_WORK (45-54)."},
+        {"type": "file", "location": "rebuild-note-body.py:19-23", "description": "Worst combo: dual guard fires before I/O. Guard 1 (NUM==166686292 + _SRC) at 19-20 exits first; if a non-default NOTE_NUM is passed, guard 2 (automaton-assets in ASSETS + _SRC) at 21-22 exits. Both precede ck=json.load(open(COOK)) at line 23, md=open(ART) at 25, and every upload/update. No Automaton JP path / 166686292 / images/automaton/ / automaton-assets / Automaton tags / Automaton infographic can reach an upload or update."},
+        {"type": "file", "location": "note-stage1-render.py:4,6-15,62", "description": "stage1 sources ART from positional/NOTE_SRC and IMG_DIR from NOTE_IMG_DIR. With NOTE_SRC=non-Automaton and NOTE_IMG_DIR unset (defaults to 'automaton'), the strip/capture regexes for images/automaton/* simply match nothing in the non-Automaton md, so no Automaton value enters the manifest; title/body/tables/infographics are all the chosen article's own. Orchestrator (publish-to-note.sh:44) always exports NOTE_SRC to stage2, so the stage2 guard is never bypassed by the stage1->stage2 handoff."}
+      ]
+    },
+    {
+      "name": "no_regression",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "note-stage1-render.py:4,6", "description": "Default env (all unset): ART=Automaton JP md default, IMG_DIR=automaton -> reproduces the Automaton render. Oracle INV-1 (test-de-automaton.py:133-144) RUNS default stage1 on the real on-disk Automaton md (confirmed present at ~/.cache/anicca-article-wt/.../2026-06-11-automaton-jp.md) and asserts title contains 'Automaton' + tables>=10 + mermaids>=5."},
+        {"type": "file", "location": "note-stage2-publish.py:10,18,36-44", "description": "Default run (no NOTE_SRC): _SRC empty -> guard at line 14 does NOT fire, NUM=166686292, tags=Automaton tags, infographic via mf['infographics'] (the stage1-captured Automaton infographic). Render+tags+infographic preserved byte-for-byte."},
+        {"type": "file", "location": "rebuild-note-body.py:12,14-16,80", "description": "Default rebuild (no NOTE_SRC): _SRC empty -> guards (19-22) do not fire; ASSETS=automaton-assets, NUM=166686292, IMG_DIR=automaton, Automaton tag default applies. Automaton assets/tags/positions preserved."}
+      ]
+    },
+    {
+      "name": "edge_cases",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "note-stage1-render.py:9,26-29,43-49,60-61", "description": "0/1/2 infographics (per-match _infog_cap numbering, line 14); 0 tables (flush extends cur, no marker); 0 mermaid (re.sub no-op); malformed table header+separator only (to_html drops separator row line 26, renders header-only table without crash) — oracle FIND-A3 RUNS this (114-123); no-H1 falls back to basename (line 9) — oracle FIND-004 RUNS this (114-118)."},
+        {"type": "file", "location": "note-stage2-publish.py:18,38,43-44", "description": "Empty NOTE_TAGS -> TAGS=[] (filter drops empties); missing infographic file -> os.path.exists guard drops @@INFOGn@@ (line 43); stray/unmatched markers swept by re.sub (line 44)."},
+        {"type": "file", "location": "test-de-automaton.py:101-112", "description": "BOTH rebuild guard paths now RUN: guard 1 (NOTE_SRC set + NOTE_NUM unset -> rc!=0 + '166686292', lines 101-106) and guard 2 (NOTE_SRC set + NOTE_NUM=999000 + NOTE_ASSETS unset -> rc!=0 + 'Automaton assets', lines 107-112). Assertion strings match the SystemExit messages at rebuild-note-body.py:20 and :22."},
+        {"type": "file", "location": "note-stage1-render.py:5,note-stage2-publish.py:8,rebuild-note-body.py:12", "description": "Missing NOTE_WORK created via os.makedirs(exist_ok=True); missing NOTE_SRC file -> open(ART) raises FileNotFoundError (loud, per spec ERROR section)."}
+      ]
+    },
+    {
+      "name": "test_adequacy",
+      "verdict": "PASS",
+      "findings": ["FIND-001"],
+      "evidence": [
+        {"type": "file", "location": "test-de-automaton.py:11,41,52,102,108,137", "description": "HERMETIC: NOTE_ENVS = (NOTE_SRC,NOTE_WORK,NOTE_NUM,NOTE_TAGS,NOTE_INFOG,NOTE_IMG_DIR,NOTE_ASSETS,NOTE_MCP_SRC) is COMPLETE vs the NOTE_* vars the three in-scope scripts actually read (stage1: SRC/WORK/IMG_DIR; stage2: MCP_SRC/WORK/NUM/SRC/INFOG/TAGS; rebuild: MCP_SRC/ASSETS/SRC/NUM/IMG_DIR/TAGS — all 8 covered). Every subprocess rebuilds env by stripping all 8, so an inherited NOTE_* cannot mask a leak."},
+        {"type": "file", "location": "test-de-automaton.py:48-58,77-99", "description": "BEHAVIORAL stage2: runs the REAL stage2 against the a3_fixtures recorder (records upload path/num + update_article num/title/body/tags), then asserts no 'automaton'/'166686292' in any recorded call (84-85), update targets NUM=999000 (87), and the partial-override case NOTE_TAGS unset drops Automaton tags (92-99). Non-gameable: real exit codes + real recorded call args."},
+        {"type": "file", "location": "test-de-automaton.py:101-112", "description": "BOTH rebuild guards behaviorally asserted (closes the iteration-5 FIND-001 substantive gap). NO remaining behavioral blind spot among the three in-scope scripts except the LOW residual in FIND-001 (rebuild line 80 tag default, a byte-identical mirror of the already-tested stage2 line 18)."}
+      ]
+    },
+    {
+      "name": "missed_new_hardcodes",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "note-stage1-render.py:4,6", "description": "Automaton literals (JP md path, 'automaton') appear ONLY as os.environ.get(...) DEFAULTS (NOTE_SRC, NOTE_IMG_DIR) — permitted by INV-2; no active article-specific hardcode on the runtime path."},
+        {"type": "file", "location": "note-stage2-publish.py:10,18,31", "description": "166686292 and Automaton tags are env DEFAULTS gated on _SRC (10/14/18). user_id=14651590/anicca123 (line 31) is account identity — explicitly OK per scope."},
+        {"type": "file", "location": "rebuild-note-body.py:12,14-16,64,80", "description": "automaton-assets, JP md path, 166686292, IMG_DIR='automaton', Automaton tags are all _SRC-gated env DEFAULTS; user_id/username (line 64) is account identity. Grep for '/tmp/' across all three in-scope files = 0 hits. No remaining article-specific ACTIVE Automaton hardcode in any of the three in-scope files."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 1,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}

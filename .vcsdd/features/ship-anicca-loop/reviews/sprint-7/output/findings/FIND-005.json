@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "structural_integrity",
+  "category": "purity_boundary",
+  "severity": "medium",
+  "description": "Reserve defaulting and balance defaulting are duplicated across the boundary, creating two sources of truth for the same constant. The literal `5` appears in context.mjs:32 AND prompt.mjs:191; the default balance `0` appears in context.mjs:29 AND index.mjs:215. assembleContext is documented (context.mjs:1-2) and tested as the PURE assembler that normalizes context, yet prompt.mjs re-implements the same `?? 5` fallback instead of trusting ctx.reserveUsdc (which assembleContext already guarantees is a number). This is the under-cohesion the project's own coding-style rule warns against (single source of truth). It also weakens verification: a reviewer reading liquidityDirective in isolation cannot tell which `5` wins. Additionally, assembleContext's destructure (context.mjs:26) does NOT accept `avoidSlot` or `recentSlots`, yet index.mjs:225-226 passes them — they are silently dropped from the returned context object, so the overuse/avoid steering that buildUserMessage reads from ctx.avoidSlot / ctx.recentSlots is also dead in the assembled-context path (a pre-existing adjacent defect that the #7 wiring sits directly on top of and did not fix).",
+  "evidence": {
+    "filePath": "runtime/loop/context.mjs",
+    "lineRange": "26-45",
+    "snippet": "export function assembleContext({ walletAddress, balanceUsdc, ..., positionsSummary, reserveUsdc }) { ... }  // avoidSlot, recentSlots NOT destructured -> dropped; prompt.mjs:184/191 reads ctx.avoidSlot / re-defaults reserve to 5"
+  },
+  "routeToPhase": "2b"
+}

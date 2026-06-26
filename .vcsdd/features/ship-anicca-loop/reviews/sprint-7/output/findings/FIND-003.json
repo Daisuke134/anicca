@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "high",
+  "description": "The dimension-A edge cases named in the review brief (negative balance, reserve=0, NaN) are NOT covered by liquidity.test.mjs, and one produces wrong/misleading output. (a) NEGATIVE BALANCE: liquidityDirective(-3, 5, false) — both finite, liquid < reserve — emits 'LIQUID BELOW COMPUTE BUFFER: $-3.0000 < $5'. Never tested. (b) reserve=0: liquidityDirective(0, 0, false) — liquid(0) >= reserve(0) is TRUE so it returns '' (healthy). An agent at exactly $0 liquid with a $0 buffer is declared healthy and given NO replenish steer — the literal stranded-at-$0 case the feature exists to catch is silently passed. Never tested. (c) NaN reserve / NaN balance: only the all-undefined case is tested (liquidity.test.mjs:38). NaN coercion via Number('abc') is not. The 'never throws' test (line 37-39) asserts only typeof===string, which a thrown-and-caught path could never satisfy anyway — it does not prove the no-throw guarantee for the partial-NaN combinations (finite balance + NaN reserve, etc.).",
+  "evidence": {
+    "filePath": "runtime/loop/liquidity.mjs",
+    "lineRange": "14-15",
+    "snippet": "if (!Number.isFinite(liquid) || !Number.isFinite(reserve)) return \"\"; if (liquid >= reserve) return \"\";"
+  },
+  "routeToPhase": "2b"
+}

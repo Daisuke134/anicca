@@ -1,0 +1,27 @@
+{
+  "sprintNumber": 3,
+  "feature": "de-automaton-note-publisher",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-06-26T00:00:00Z",
+  "iteration": 3,
+  "reviewContext": {
+    "reviewType": "implementation",
+    "note": "No review manifest.json was present on disk under any .vcsdd/features/** path; the review files + dimensions were supplied inline by the invoker. Output written here co-located with the authoritative spec repo (/Users/anicca/anicca)."
+  },
+  "dimensions": [
+    {"name": "spec_fidelity", "verdict": "FAIL", "findings": ["FIND-001", "FIND-002"], "evidence": []},
+    {"name": "no_leak_correctness", "verdict": "FAIL", "findings": ["FIND-001"], "evidence": []},
+    {"name": "no_regression", "verdict": "FAIL", "findings": ["FIND-003"], "evidence": []},
+    {"name": "edge_cases", "verdict": "FAIL", "findings": ["FIND-004"], "evidence": []},
+    {"name": "test_adequacy", "verdict": "FAIL", "findings": ["FIND-005", "FIND-006"], "evidence": []},
+    {"name": "missed_new_hardcodes", "verdict": "FAIL", "findings": ["FIND-002"], "evidence": [
+      {"type": "file", "location": "/Users/anicca/.openclaw/skills/ai-entity-article-writer/scripts/note-stage2-publish.py", "description": "Account identity user_id=14651590/anicca123 at line 29 is OK per scope; the Automaton-tag default at line 16 is NOT."}
+    ]}
+  ],
+  "convergenceSignals": {
+    "findingCount": 6,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}

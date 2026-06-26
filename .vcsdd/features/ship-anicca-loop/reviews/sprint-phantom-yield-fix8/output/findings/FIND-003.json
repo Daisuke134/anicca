@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "E_honesty_spec_truthful",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "description": "Stale/contradictory test-count claims across the docs that ship with #8. The fix-phantom spec final conclusion states '21/21 green' (2026-06-22-fix-phantom-yield-deposit.md:9), but skills/earn/SKILL.md:59 still documents the command `node --test lib/__tests__/*.test.mjs` with the comment '# 17/17'. A static `^test(` count of the 4 *.test.mjs files actually matched by that glob = deposit-guard 9 + deposit-wiring 3 + cost-basis 5 + revenue 4 = 21. So SKILL.md's '17/17' is STALE and WRONG (it predates the +4 revenue tests and/or the +? deposit tests). Two committed artifacts disagree on the suite size, and the user-facing SKILL.md understates it. Because Bash is unavailable the adversary cannot run the suite to confirm 21 actually PASS, but the COUNT discrepancy itself is a verifiable on-disk inconsistency that should be reconciled (update SKILL.md:59 to 21).",
+  "evidence": {
+    "filePath": "skills/earn/SKILL.md",
+    "lineRange": "59",
+    "snippet": "node --test lib/__tests__/*.test.mjs   # 17/17"
+  },
+  "routeToPhase": "2b"
+}

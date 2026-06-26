@@ -1,0 +1,15 @@
+{
+  "findingId": "FIND-106",
+  "dimension": "test_quality",
+  "category": "test_coverage",
+  "severity": "high",
+  "title": "The round-5 'composed seam' test for FIND-103 part-(2) (bank-payout-watcher.test.js:72-80) is a happy-path-only assertion: it proves a submitted row's notes are re-parseable but asserts NOTHING about the dangerous consequence of that re-parseability (re-dispatch / double-pay). It locks in the FIND-105 bug as 'correct' behavior.",
+  "description": "The test 'FIND-103/102 seam: submitted notes preserve bank fields (operator re-queue stays parseable) + ref' (bank-payout-watcher.test.js:72-80) builds a submitted patch from raw+ref, then asserts (a) patch.status==='submitted', (b) parseRef(patch.notes)==='G1', (c) parseBankRecipient(patch.notes) returns a recipient with bankCode==='0005' and accountType==='2'. Every assertion confirms the row is RE-PARSEABLE as a payable bank recipient. That is precisely the property that makes FIND-105's double-pay reachable. The test never asserts the only behavior that would make preservation safe: that a notes string carrying parseRef()==='G1' / 'submitted' is REFUSED by the dispatch path (excluded from bankRecipientsFromRows, or routed to needs_review, or rejected before the GMO adapter). As written, this test would stay GREEN under the buggy behavior AND would FAIL if a correct de-dupe guard (FIND-105 recommendation) were added that makes parseBankRecipient return null for a ref-bearing row. The test therefore actively defends the bug. The reconcileStuck NULL-ts test (line 62-70) and the parseClaimedAt round-trip portion are real and genuinely close FIND-103 part-(1) and FIND-102's claimed_at seam; the defect is specifically the part-(2) 'operator re-queue stays parseable' assertion, which tests the wrong invariant.",
+  "evidence": {
+    "filePath": "skills/earn/__tests__/bank-payout-watcher.test.js",
+    "lineRange": "72-80",
+    "snippet": "const back = parseBankRecipient({ id: \"u1\", notes: patch.notes });\nassert.ok(back && back.bank.bankCode === \"0005\");  // asserts re-parseable == the FIND-105 double-pay lever\nassert.equal(back.bank.accountType, \"2\");           // never asserts the row is REFUSED re-dispatch despite ref=G1"
+  },
+  "recommendation": "Replace/augment the part-(2) assertion with the safety invariant: a submitted-or-needs_review notes string (carrying parseRef()!==null) flipped to status='queued' must NOT be dispatched — assert bankRecipientsFromRows([{id,notes:patch.notes}]) excludes it (or that the dispatch boundary routes it to needs_review). This test should FAIL today (proving FIND-105) and pass only once the de-dupe guard lands.",
+  "routeToPhase": "2b"
+}

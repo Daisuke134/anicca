@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-201",
+  "dimension": "implementation_correctness",
+  "category": "verification_tool_mismatch",
+  "severity": "critical",
+  "description": "DSEQ EVENT-ATTRIBUTE PARSE STILL RESTS ON AN UNVERIFIED, VERSION-SENSITIVE ENCODING ASSUMPTION, AND THE FAKE SELF-CONFIRMS IT. Line 80 parses dseq via `first(.. | objects | select(.key? == \"dseq\") | .value)` which assumes tx event attributes are emitted as PLAINTEXT {\"key\":\"dseq\",\"value\":\"<n>\"} objects in `provider-services tx deployment create -o json` output. The Cosmos SDK has TWO distinct representations: (a) the legacy `logs[].events[].attributes[]` ABCIMessageLog form, where key/value are plaintext strings; (b) the Tendermint/CometBFT RPC `/tx` and the post-SDK-v0.46 `events[]` (top-level) form, where attribute key/value have historically been BASE64-encoded in JSON. The script's `select(.key? == \"dseq\")` ONLY matches plaintext key==\"dseq\"; if the pinned provider-services build emits base64 keys (key would be `ZHNlcQ==`) or surfaces dseq only under a top-level `events[]` array (which post-v0.50 SDK uses and which `--output json` may serialize differently than `logs[]`), the select yields nothing -> line 81 fail-closes 'no numeric dseq' on a SUCCESSFUL broadcast -> the deploy NEVER works on real testnet/mainnet. The fake (test-deploy-akash.sh:48) hardcodes the EXACT plaintext shape the script assumes, so the behavioral run proves only that the script parses its own assumption, not the real CLI. I could not fetch live docs or run the binary in this environment (no Bash/firecrawl available), and there is NO captured real-CLI fixture and NO sandbox-2 E2E log anywhere under the feature dir to confirm the encoding. UNVERIFIED: the plaintext-attribute assumption is not confirmed against the pinned provider-services version.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/spawn/scripts/deploy-akash.sh",
+    "lineRange": "80-82",
+    "snippet": "DSEQ=\"$(jq -r 'first(.. | objects | select(.key? == \"dseq\") | .value) // empty' <<<\"$CREATE\")\"\n[ -n \"$DSEQ\" ] && [[ \"$DSEQ\" =~ ^[0-9]+$ ]] || { echo \"deploy-akash: no numeric dseq in tx response — lease not created\" >&2; exit 1; }"
+  },
+  "correctFix": "Make the parse encoding-robust: also accept base64 keys (try `.key` AND `(.key|@base64d?)` == \"dseq\", same for matching the value), AND/OR after a code==0 broadcast query the dseq back authoritatively: `provider-services query deployment list --owner \"$ADDR\" --state active -o json | jq -r '.deployments | max_by(.deployment.created_at // 0) | .deployment.deployment_id.dseq'`. Then PROVE it: replace the hardcoded plaintext fake with a fixture CAPTURED from a real `tx deployment create -o json` (sandbox-2), so the oracle exercises the actual encoding, not the assumed one. Until the required sandbox-2 E2E (spec lines 60-64) is run and its log committed, this parse cannot be claimed correct.",
+  "routeToPhase": "2b"
+}

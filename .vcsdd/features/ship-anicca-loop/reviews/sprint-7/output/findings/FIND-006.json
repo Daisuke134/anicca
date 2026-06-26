@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "verification_readiness",
+  "category": "test_quality",
+  "severity": "high",
+  "description": "Tests assert the PURE function and the buildUserMessage string assembly, but NONE of them exercise the real integration path (index.mjs -> assembleContext -> buildUserMessage), so they would NOT catch the load-bearing defect in FIND-001. The prompt.test.mjs cases hand-construct a ctx with balanceUsdc:0.06 and reserveUsdc:5 directly (prompt.test.mjs:16), bypassing index.mjs:215 where the real balance is discarded. Therefore the suite is GREEN while the feature is non-functional in production — exactly the AI-slop failure mode ('passes shallow tests, broken end-to-end'). Re: the brief's question 'would they fail if the directive were dropped from buildUserMessage?': YES, the three prompt.test.mjs cases (lines 18, 24, 29) would fail if the lowLiquid line were removed from buildUserMessage — so the wiring of liquidityDirective INTO buildUserMessage is genuinely covered. But there is NO test proving buildUserMessage receives the agent's TRUE liquid from the wake loop; a test feeding a fixed 0.06 cannot detect that the loop always feeds 0/undefined. SEPARATELY: the GREEN claim itself is UNVERIFIED in this review — Bash/the node test runner was not available in this context, so I did not execute `node --test`; I am explicitly NOT asserting the tests pass, only analyzing their source. Add an integration test that drives assembleContext with a non-broke tier and asserts the resulting buildUserMessage reflects the actual balance (it currently would show $0.0000, exposing FIND-001).",
+  "evidence": {
+    "filePath": "runtime/loop/__tests__/prompt.test.mjs",
+    "lineRange": "16-32",
+    "snippet": "const baseCtx = (over) => ({ wakeId: 'W', balanceUsdc: 0.06, ..., reserveUsdc: 5, ... });  // hand-built ctx bypasses index.mjs:215 where real balance is dropped"
+  },
+  "routeToPhase": "2b"
+}

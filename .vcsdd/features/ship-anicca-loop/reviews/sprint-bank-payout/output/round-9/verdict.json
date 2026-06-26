@@ -1,0 +1,96 @@
+{
+  "sprintNumber": "bank-payout-round-9",
+  "feature": "ship-anicca-loop",
+  "reviewContext": {
+    "reviewType": "implementation",
+    "scope": "③ bank-direct UBI payout chain FINAL convergence re-review (round 9). Verify two-sided money safety: AT-MOST-ONCE (FIND-108 double-pay close not reopened) AND AT-LEAST-ONCE-FOR-SKIPPED (FIND-109 payout-loss close: release restores CLEAN notes stripping claimed_at). Confirm release runs ONLY on the plan-skip path and check the r9 edit for any NEW flaw.",
+    "filesReviewed": [
+      "skills/earn/lib/bank-fanout.mjs",
+      "skills/earn/lib/bank-recipients.mjs",
+      "skills/earn/bank-watcher.mjs",
+      "skills/earn/bank-payout-watcher.mjs",
+      "skills/earn/gmo-furikomi.mjs",
+      "apps/landing/netlify/functions/_jp-bank.js (anicca-project repo)",
+      "skills/earn/__tests__/bank-payout-watcher.test.js",
+      "skills/earn/__tests__/bank-watcher.test.js",
+      "skills/earn/__tests__/bank-chain.integration.test.js",
+      "skills/earn/__tests__/bank-recipients.test.js",
+      "skills/earn/__tests__/bank-fanout.test.js",
+      "skills/earn/__tests__/gmo-furikomi.test.js"
+    ],
+    "note": "No round-9 input manifest exists on disk; reviewed against rounds 4-6 verdicts + FIND-104/105/107/108/109 lineage as the de-facto contract. Tests were NOT executed in this reviewer environment (no test runner invoked); test-correctness verdicts are from static read of test + implementation bodies and the post-edit syntax-verify hook, and are stated as such. queryStatus/残高照会 endpoint shapes remain unverifiable without a live GMO token (FIND-104)."
+  },
+  "overallVerdict": "PASS",
+  "timestamp": "2026-06-20T00:00:00Z",
+  "iteration": 9,
+  "moneySafetyConvergence": {
+    "criticalOrHighDoublePayPathRemains": false,
+    "criticalOrHighMoneyLossPathRemains": false,
+    "criticalOrHighMoneyReversalPathRemains": false,
+    "atMostOnceConfirmed": true,
+    "atLeastOnceForSkippedConfirmed": true,
+    "statement": "The chain is money-safe BOTH ways. (a) AT-MOST-ONCE: release is called ONLY at bank-watcher.mjs:43, inside the `if (plan.outcome !== \"send\")` branch (line 40) which returns at line 44 BEFORE the adapter loop begins (line 51). There is NO release call on the adapter-throw path (line 60-63), the no-adapter path (line 53-54), the markPaid-throw path (line 71-73), or anywhere after a dispatch. Therefore a row that entered the adapter call can NEVER be released-to-clean; it remains 'processing' for reconciliation. Additionally the dispatch guard parseBankRecipient (bank-recipients.mjs:24) refuses any row carrying `ref=` OR `claimed_at=`, so a row that ever entered the dispatch boundary is never auto-redispatched even if flipped to 'queued'. The r9 FIND-109 fix did NOT reopen the double-pay path. (b) AT-LEAST-ONCE-FOR-SKIPPED: a recipient skipped for below_reserve/insufficient_balance/etc. is released with buildReleasePatch(r.raw) (bank-payout-watcher.mjs:43,146) which sets { status:'queued', notes: raw }, restoring the ORIGINAL signup notes and STRIPPING the claimed_at the claim stamped. r.raw is provably clean: parseBankRecipient rejects any row with ref/claimed_at at line 24 BEFORE assigning raw=row.notes at line 31, so raw can never itself carry those markers. The restored row re-parses as a payable recipient (FIND-109 test bank-payout-watcher.test.js:28-33) and is payable on a later pass — no payout loss. The only remaining items are the FIND-104-class live-API-gated limitations (queryStatus / 残高照会 endpoint shapes + per-item status granularity), unverifiable without a real GMO_AOZORA_ACCESS_TOKEN. CONVERGENCE REACHED."
+  },
+  "findingStatus": {
+    "FIND-108": "CLOSED (double-pay / at-most-once). release does not run after any adapter dispatch; dispatch-boundary guard (bank-recipients.mjs:24) refuses ref= OR claimed_at=. Confirmed by bank-watcher.test.js:43-59 (FIND-B: released===[]) and :79-93 (FIND-007: released===[]), and bank-recipients.test.js:23-35 (ref= and claimed_at= both refused).",
+    "FIND-109": "CLOSED (payout-loss / at-least-once-for-skipped). buildReleasePatch(raw) restores ORIGINAL notes (bank-payout-watcher.mjs:43); release(claimed) passes full recipient objects carrying .raw (bank-watcher.mjs:43, bank-payout-watcher.mjs:146); the skip path passes full claimed recipients (bank-watcher.mjs:31-32,43). Restored notes are clean (no claimed_at) and re-parse (bank-payout-watcher.test.js:28-33 asserts parseBankRecipient succeeds on the restored notes). A legitimately-skipped recipient is payable on a later pass.",
+    "FIND-104": "OPEN, CARRIED OVER as the documented live-API-gated convergence ceiling. queryStatus (bank-payout-watcher.mjs:155-167) and getBalance (line 200-222) remain EXPLICITLY UNVERIFIED GMO endpoint shapes (markers at lines 155, 206) and queryStatus is batch-granular. NOTE: FIND-105's downstream-amplification concern (a false 'failed' feeding a re-dispatch) is now NEUTRALIZED — even if an operator re-queues a needs_review row, parseBankRecipient:24 refuses it because it still carries claimed_at/ref. So FIND-104 reverts to a pure low-severity verification-gated limitation. Cannot be closed without a real token."
+  },
+  "newFlawFromR9Edit": "NONE FOUND. Traced: (1) release default `async () => {}` (bank-watcher.mjs:23) only no-ops the skip path when a caller omits release; such rows stay 'processing' and are caught by reconcileStuck->needs_review (no loss, no double-pay) — and the live pass() always supplies release (line 235). (2) The live release loop (bank-payout-watcher.mjs:145-147) patches by id without a &status guard, but it is only ever called on rows THIS pass just claimed-and-did-not-dispatch (held in 'processing'; no concurrent pass can re-claim them because the claim CAS filters status=eq.queued at line 140), so the unconditional status='queued' reset is safe. (3) buildReleasePatch falls back to { status:'queued' } (no notes reset) only when raw is falsy; the live recipients always carry raw (bank-recipients.mjs:31), so the live path always strips claimed_at. The fallback is a tested degenerate branch (bank-payout-watcher.test.js:25) that cannot occur on the live skip path.",
+  "convergenceCeilingStatement": "All RESOLVABLE issues are closed. The chain is money-safe at-most-once (no double-pay) and at-least-once-for-skipped (no payout-loss). The ONLY remaining items are FIND-104-class live-API-gated limitations: the GMO bulktransfer/status (queryStatus) and 残高照会 (getBalance) endpoint paths/response shapes and per-item status granularity are UNVERIFIABLE without a real GMO_AOZORA_ACCESS_TOKEN (sunabar sandbox or 法人 account). These are the honest convergence ceiling and cannot be closed until the token exists.",
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/bank-watcher.mjs:40-44", "description": "Design invariant 'release returns to queued ONLY on a pre-dispatch skip (nothing was sent)' (header line 9) is implemented exactly: release is in the plan.outcome!=='send' branch and returns before the adapter loop."},
+        {"type": "file", "location": "skills/earn/lib/bank-recipients.mjs:18-24", "description": "Dispatch-boundary dedupe (FIND-105/107) implemented: parseBankRecipient refuses any row with ref= OR claimed_at=, so anything that entered dispatch is never auto-redispatched — matching the design comment."},
+        {"type": "file", "location": "skills/earn/bank-payout-watcher.mjs:40-43", "description": "FIND-109 intent (a skipped recipient must remain payable; restore original notes to strip claimed_at) implemented in buildReleasePatch."}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/__tests__/bank-watcher.test.js:43-93", "description": "Adapter-failure (FIND-B) and markPaid-failure (FIND-007) both assert released===[] (no auto-requeue of sent money); below_reserve skip (FIND-C, line 61-77) asserts released===['a','b'] (skipped rows returned to queue)."},
+        {"type": "file", "location": "skills/earn/__tests__/bank-payout-watcher.test.js:28-33", "description": "FIND-109 edge: buildReleasePatch(raw) returns clean notes (no claimed_at) AND parseBankRecipient re-parses the restored notes — the at-least-once-for-skipped invariant is directly tested, not tautological."},
+        {"type": "file", "location": "skills/earn/__tests__/bank-recipients.test.js:23-35", "description": "FIND-105 (ref=) and FIND-107 (claimed_at, no ref) both asserted REFUSED, while a fresh notes row still parses — the at-most-once dispatch-guard edges are covered on both markers."}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/bank-watcher.mjs:23-77", "description": "No-double-pay invariants verified line-by-line: atomic claim subset dispatch (31-35), skip-only release before adapter loop (40-44), no-requeue-on-adapter-throw (58-64), no-requeue-on-markPaid-throw (67-74). A sent row is unreachable by release."},
+        {"type": "file", "location": "skills/earn/bank-payout-watcher.mjs:43,135-147", "description": "claim stamps notes=raw+claimed_at (139); release restores notes=raw via buildReleasePatch (43,146), stripping claimed_at symmetrically (claim patches status+notes; release patches status+notes). r.raw is provably clean per bank-recipients.mjs:24->31."},
+        {"type": "file", "location": "skills/earn/lib/bank-fanout.mjs:14-45", "description": "Pure planner integer-yen split + reserve/fee/min/balance guards correct; insufficient_balance/below_reserve return outcome!=='send' which routes to the safe release path."}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/bank-payout-watcher.mjs:29-124", "description": "Pure helpers (buildReleasePatch/buildSubmittedPatch/buildClaimPatch/claimedFromRows/claimWith/parseRef/parseClaimedAt/reconcileStuck/pollCompletions/idempotencyKey/todayYmd/makeGmoAdapter) remain cleanly separated from live Supabase/GMO wiring (126-242). The r9 edit added a single parameter to buildReleasePatch and threaded r.raw through release; no dead code, no orphan refs introduced."},
+        {"type": "file", "location": "skills/earn/bank-watcher.mjs:30-47", "description": "release(claimed) now passes full recipient objects (carrying raw) instead of ids, consistent with claim(recipients) which also takes objects; the seam is symmetric and the rawById map (47) reuses the same .raw for markPaid."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-104"],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/bank-payout-watcher.mjs:155-167,200-222", "description": "queryStatus and getBalance remain EXPLICITLY UNVERIFIED GMO endpoints (UNVERIFIED markers at lines 155, 206) and queryStatus is batch-granular (one status string applied to every row sharing a ref). Cannot be verified without a live GMO_AOZORA_ACCESS_TOKEN. This is the documented, honest convergence ceiling — NOT a resolvable in-repo defect. Its prior amplification via FIND-105 is now neutralized by the claimed_at/ref dispatch guard (bank-recipients.mjs:24)."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 1,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": ["FIND-104", "FIND-108", "FIND-109"],
+    "duplicateFindings": []
+  }
+}

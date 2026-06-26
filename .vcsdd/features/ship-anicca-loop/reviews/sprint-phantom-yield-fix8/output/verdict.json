@@ -1,0 +1,38 @@
+{
+  "sprintNumber": "phantom-yield-fix8",
+  "feature": "ship-anicca-loop",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-06-22T00:00:00Z",
+  "iteration": 4,
+  "reviewContext": {
+    "reviewType": "implementation",
+    "note": "FINAL review of fix #8. ZERO builder context; disk-only. The dispatch instructed the reviewer to run `node --test lib/__tests__/*.test.mjs` and to query Base RPC decimals()/balanceOf consensus via Bash. BASH IS NOT AVAILABLE in this environment (every Bash invocation returns 'No such tool available: Bash. Bash exists but is not enabled in this context'). Therefore the reviewer COULD NOT run the test suite and COULD NOT independently query the chain. Per HONESTY rules NO test counts and NO chain values were fabricated. Dimensions that depend on live execution (A live-chain identity, D test execution) are FAILED-as-unverified, not passed. All other verdicts are from static disk analysis only.",
+    "toolConstraint": "Bash/node/RPC unavailable; Read+Grep+Glob only."
+  },
+  "dimensions": [
+    {"name": "A_decimals_conclusion_true", "verdict": "FAIL", "findings": ["FIND-001"], "evidence": [
+      {"type": "file", "location": "runtime/dashboard/telemetry-poster.mjs:70", "description": "STATIC corroboration only (not chain proof): netWorth computes moonwell as (mt * ex / 1e18) / 1e6 using exchangeRateStored(), which already encodes the 8-dec cToken / 6-dec underlying scaling — so the live dashboard math is consistent with 'mUSDC is 8-dec and ~$1 real'. The cToken interface (exchangeRateStored on 0xEdc817) vs ERC4626 interface (convertToAssets on 0xbeef) usage also corroborates M=Moonwell / V=Morpho. This makes the decimals conclusion PLAUSIBLE on disk, but the mandated live decimals()/balanceOf RPC consensus could NOT be re-run by the adversary, and an UNRECONCILED contradicting on-disk record (revenue-dashboard spec lines 122-124) still labels the same addresses the OPPOSITE way and still asserts a morpho phantom — so the conclusion is NOT independently confirmed."}
+    ]},
+    {"name": "B_deposit_guard_and_wiring", "verdict": "PASS", "findings": [], "evidence": [
+      {"type": "file", "location": "skills/earn/lib/deposit-guard.mjs:16-23", "description": "depositLanded is pure bigint: rejects !statusOk, surplus<=0, moved<=0, and moved < 99% of surplus. No I/O. Boundary (990000 pass / 989999 fail) and negative-delta and surplus-0 cases are all handled. Sound defensive logic."},
+      {"type": "file", "location": "skills/earn/execute-yield.mjs:149-152", "description": "liqAfter is read AFTER both the primary and Fluid-fallback deposit paths; recordDeposit is gated on `landed` and records Number(liquid - liqAfter)/1e6 (the actual moved delta), not the blind surplus. Output line emits phantom:true when status ok but not landed. Wiring matches the contract."},
+      {"type": "file", "location": "skills/earn/lib/__tests__/deposit-wiring.test.mjs:16-31", "description": "Static contract tests pin the import, the `if (landed) recordDeposit` gate, the absence of the old `if (r.status===success) recordDeposit` pattern, and the moved-delta basis. These would catch a regression re-wiring to status-gating."}
+    ]},
+    {"name": "C_revenue_lib_and_phantom_sentinels", "verdict": "PASS", "findings": [], "evidence": [
+      {"type": "file", "location": "skills/earn/lib/revenue.mjs:14-26", "description": "revenueBySource = value - cost per venue, hides venues where BOTH value<1e-4 AND cost<1e-4 (so a fully-empty venue with no basis never surfaces), and adds realised earnBySource. Pure, no I/O. telemetry-poster delegates to it (lines 11,76), so the daemon's P&L is the unit-tested path."},
+      {"type": "file", "location": "skills/earn/lib/__tests__/revenue.test.mjs:17-39", "description": "Tests assert REAL behavior: both real positions (morpho & moonwell) net |P&L|<0.01 against their basis; beefy (0 value, no basis) hidden; PHANTOM sentinel: injecting a basis key with no on-chain position yields a fake < -0.9 loss (the exact thing deposit-guard prevents); realised x402 earning lifts total by exactly the sale amount. Bidirectional and behavioral, not tautological."}
+    ]},
+    {"name": "D_tests_pass", "verdict": "FAIL", "findings": ["FIND-002", "FIND-004"], "evidence": [
+      {"type": "file", "location": "skills/earn/lib/__tests__/", "description": "Static count of `^test(` in the 4 *.test.mjs files matched by the documented glob = 9+3+5+4 = 21. The reviewer could NOT execute `node --test` (Bash unavailable), so PASS/FAIL of the suite is UNVERIFIED this round and cannot be claimed. The glob `*.test.mjs` excludes oxwork.test.js/swap.test.js (.js), so the documented command runs exactly 21 tests."}
+    ]},
+    {"name": "E_honesty_spec_truthful", "verdict": "FAIL", "findings": ["FIND-002", "FIND-003"], "evidence": [
+      {"type": "file", "location": "docs/superpowers/specs/2026-06-22-fix-phantom-yield-deposit.md:3-10,58-79", "description": "The fix-phantom spec DOES truthfully record the three wrong turns (round 1 drop-morpho, round 2 drop-moonwell, round 3 it-was-a-decimals-bug-revert-all) verbatim and labels them honestly as caught by the adversary. That part is honest."}
+    ]}
+  ],
+  "convergenceSignals": {
+    "findingCount": 4,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}

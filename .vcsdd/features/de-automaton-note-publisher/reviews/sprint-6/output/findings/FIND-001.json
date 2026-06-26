@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "test_adequacy",
+  "category": "test_coverage",
+  "severity": "low",
+  "description": "INFORMATIONAL ONLY — does NOT change any dimension verdict; the code is correct by exhaustive trace and the substantive iteration-5 gap is now closed. The oracle now behaviorally exercises BOTH rebuild guards: guard 1 (NOTE_NUM defaulted to 166686292 + NOTE_SRC set -> SystemExit) at test-de-automaton.py:101-106, and guard 2 (NOTE_ASSETS contains 'automaton-assets' + NOTE_SRC set -> SystemExit) at test-de-automaton.py:107-112 with NOTE_NUM=999000 so it passes guard 1 and proves guard 2 fires independently. The ONE remaining un-exercised line is rebuild-note-body.py:80 (the source-gated Automaton-tag DEFAULT). It is unreachable by a non-default rebuild run unless the caller ALSO passes NOTE_ASSETS=<non-automaton dir> (otherwise guard 2 exits first), so no oracle path reaches line 80 with _SRC set. This default is byte-identical to note-stage2-publish.py:18, which IS behaviorally asserted to drop Automaton tags when NOTE_TAGS is unset (test-de-automaton.py:92-99, FIND-006). rebuild's static gating is confirmed present by test-de-automaton.py:35 ('if not _SRC' in rb). Therefore no Automaton tag can leak from rebuild; the residual is purely a regression-detection nicety for a code-identical mirror of an already-tested path. Dimension remains PASS.",
+  "evidence": {
+    "filePath": "/Users/anicca/.openclaw/skills/ai-entity-article-writer/scripts/note-publish/rebuild-note-body.py",
+    "lineRange": "80",
+    "snippet": "tags=[t for t in os.environ.get(\"NOTE_TAGS\", (\"AI,AIエージェント,暗号資産,Automaton,自律AI\" if not _SRC else \"\")).split(\",\") if t]"
+  },
+  "suggestedFix": "Optional only: add one rebuild recorder run with NOTE_SRC set + NOTE_NUM=999000 + NOTE_ASSETS=<a non-automaton tmp dir containing tbl/fig assets> + NOTE_TAGS UNSET, and assert the recorded update_article tags contain no 'Automaton'. This exercises line 80 directly rather than relying on the stage2 mirror. Not required for convergence.",
+  "routeToPhase": "2b"
+}

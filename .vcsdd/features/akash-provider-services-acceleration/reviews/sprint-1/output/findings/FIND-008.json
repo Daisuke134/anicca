@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-008",
+  "dimension": "structural_integrity",
+  "category": "test_quality",
+  "severity": "major",
+  "description": "OVER-BROAD comment-stripping AND env-leak hole in the oracle. (a) test-deploy-akash.sh:8 strips comments with `sed 's/#.*//'`. This is NOT shell-aware: it will also blank out any legitimate `#` that appears inside a string literal, a parameter expansion default, or a heredoc line. In deploy-akash.sh the SDL heredoc and `${VAR:-default}` lines contain no `#`, so it is currently benign, but the technique is unsound and will silently corrupt INV grep results the moment a `#` appears in active code (e.g. a `${VAR:-#fff}` or a URL fragment). (b) The static `absent`/`have` greps run on the comment-stripped source, but the no-human INV-1 check `absent console-api|credit card|managed wallet` is the ONE check that SHOULD also scan comments (a smuggled console-api call hidden behind a comment-like `# console-api...` line followed by code would be stripped before the grep). The oracle strips comments for ALL checks uniformly.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/spawn/scripts/test-deploy-akash.sh",
+    "lineRange": "8-15",
+    "snippet": "src=\"$(sed 's/#.*//' \"$S\")\"   # strip comments\n...\nabsent \"console-api|credit card|managed wallet\"  \"INV-1 no-human\""
+  },
+  "correctFix": "Use a shell-aware extractor or at minimum keep INV-1's no-human absent-check on the RAW file (so a console-api URL cannot hide). For the comment strip, prefer matching only full-line comments (`grep -v '^[[:space:]]*#'`) rather than `s/#.*//` which clobbers inline `#` in code.",
+  "routeToPhase": "2b"
+}

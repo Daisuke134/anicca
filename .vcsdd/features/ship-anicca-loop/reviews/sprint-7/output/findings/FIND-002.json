@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "edge_case_coverage",
+  "category": "security_surface",
+  "severity": "high",
+  "description": "hasHl derivation is a substring regex over a free-text positions summary: prompt.mjs:192 `/\\bhl\\b|hyperliquid|perp|long|short/i.test(ctx.positionsSummary || '')`. The actual positionsSummary produced in production (index.mjs:210-211) is a YIELD summary string like '~$12 in yield-beefy (last tx 0xabcd...)'. It contains NO 'hl/hyperliquid/perp/long/short' token, so hasHl is FALSE even when the agent's portfolio is yield. That is correct for yield, but the derivation is fragile in both directions: (1) FALSE-NEGATIVE — the production summarizer (index.mjs:208) only ever looks for ledger lines whose source startsWith('yield'); it NEVER summarizes an actual open HL position. So in the real path positionsSummary can never contain an HL token, meaning the 'WITH an HL position -> close' branch is effectively dead code in production and the agent holding a real perp will be told to 'withdraw idle yield' (wrong steer). (2) FALSE-POSITIVE — `/long|short/i` matches inside unrelated words ('longshot', 'long-term goal', 'shortfall', 'belong'); a genesisPrompt or yield label containing such a word would flip hasHl true and mis-steer toward 'close an HL position' that does not exist. \\bhl\\b also matches a bare 'HL' anywhere. No test exercises either false case (the tests only feed the clean strings 'HL ETH long 2x' and '').",
+  "evidence": {
+    "filePath": "runtime/loop/prompt.mjs",
+    "lineRange": "192-192",
+    "snippet": "const hasHl = /\\bhl\\b|hyperliquid|perp|long|short/i.test(ctx.positionsSummary || '');"
+  },
+  "routeToPhase": "2b"
+}

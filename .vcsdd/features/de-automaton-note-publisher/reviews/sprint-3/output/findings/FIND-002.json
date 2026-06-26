@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "missed_new_hardcodes",
+  "category": "spec_gap",
+  "severity": "major",
+  "description": "GUARD BYPASS via title substring. The NUM guard at line 12 treats an article as Automaton if 'Automaton' appears anywhere in the title OR 'automaton' anywhere in NOTE_SRC (case-insensitive). This means a NON-Automaton article whose title merely mentions the word 'automaton' (e.g. an article ABOUT automaton theory, finite automata, or quoting the Automaton project) is classified _is_automaton=True, so the guard at line 12-13 does NOT fire, and the article can be uploaded to NOTE_NUM=166686292 (the real Automaton note) — overwriting the live Automaton article with unrelated content. The guard is a substring heuristic, not an identity check; it conflates 'the article is THE Automaton article (note 166686292)' with 'the article contains the word automaton'. INV-1/INV-2 only test the exact-default and a fully-clean fixture, so this collision is never exercised.",
+  "evidence": {
+    "filePath": "/Users/anicca/.openclaw/skills/ai-entity-article-writer/scripts/note-stage2-publish.py",
+    "lineRange": "11-13",
+    "snippet": "_SRC=os.environ.get(\"NOTE_SRC\",\"\"); _is_automaton=(\"Automaton\" in title) or (\"automaton\" in _SRC.lower())\nif NUM==\"166686292\" and not _is_automaton: raise SystemExit(...)"
+  },
+  "fix": "Do not infer identity from a content substring. Bind 166686292 to the canonical Automaton SRC path (os.path.realpath(NOTE_SRC) == realpath of the default automaton-jp.md) rather than to the word 'automaton' appearing in title/SRC. Better: require an explicit allow flag/env to write to 166686292 and refuse otherwise, so no content coincidence can target the live note.",
+  "routeToPhase": "2b"
+}

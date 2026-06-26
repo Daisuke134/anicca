@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-012",
+  "dimension": "structural_integrity",
+  "category": "test_quality",
+  "severity": "minor",
+  "description": "ORACLE `set -uo pipefail` WITHOUT `-e` plus `rc=$?` after a command substitution captures the WRONG status in one spot, and the static greps can false-PASS. On test-deploy-akash.sh:46 `OUT=\"$(... bash \"$S\" ...)\"; rc=$?` — rc here is the exit of the assignment which is the exit of the command substitution, so it does capture the script's rc correctly; acceptable. However the static `have '(market )?bid list|query market bid'` (line 19) and similar use loose alternations that would match a COMMENTED or string mention; since comments are stripped first this is mitigated, but `have 'cert'` (line 17) is so loose it matches the word 'cert' anywhere (e.g. inside 'certificates' in a jq path) and would PASS even if the actual `tx cert publish` were deleted. The INV-2 ordering claim ('grep proves each command is present AND ORDERED', spec line 49) is NOT actually enforced — the oracle greps for presence only, never order.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/spawn/scripts/test-deploy-akash.sh",
+    "lineRange": "17-21",
+    "snippet": "have   \"cert\"   \"INV-2 ensure client cert\"   ...   # presence only, no ordering check"
+  },
+  "correctFix": "Tighten greps to the actual subcommands (`tx cert publish`, `tx deployment create`, `query market bid list`, `tx market lease create`, `send-manifest`). Enforce ordering by asserting the line numbers are monotonically increasing (e.g. grep -n and check create < bid < lease < manifest) to satisfy the spec's 'ordered' claim.",
+  "routeToPhase": "2b"
+}

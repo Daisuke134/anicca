@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "implementation_correctness",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "BID bid_id JSON PATH IS PARTIALLY WRONG / UNVERIFIED. Real `provider-services query market bid list -o json` returns bids as `{\"bids\":[{\"bid\":{\"bid_id\":{\"owner\":..,\"dseq\":..,\"gseq\":N,\"oseq\":N,\"provider\":..},\"state\":\"open\",\"price\":{..}}, \"escrow_account\":{..}}]}`. The script reads `.bids[0].bid.bid_id` (line 78) then `.gseq/.oseq/.provider` (line 83) — gseq/oseq/provider DO live in bid_id, so that part is plausible. HOWEVER (a) the script does NOT filter `--state open`, so a closed/lost bid could be picked as `[0]`; (b) it blindly takes `[0]` instead of the lowest-price open bid; (c) gseq/oseq in real JSON may be integers, and they are interpolated unquoted into the lease command which is fine, but the script never validates they are non-empty/non-null before building the lease tx. The fake at test-deploy-akash.sh:36 returns an IDEALIZED shape `{\"bids\":[{\"bid\":{\"bid_id\":{\"gseq\":1,\"oseq\":1,\"provider\":\"akash1prov\"}}}]}` that omits owner/dseq/state/price, so the oracle cannot catch a state-filter or price-selection bug and cannot prove the real nested path beyond what the builder assumed.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/spawn/scripts/deploy-akash.sh",
+    "lineRange": "77-83",
+    "snippet": "BID=\"$(... | jq -c '.bids[0].bid.bid_id // empty')\" ... GSEQ=\"$(jq -r '.gseq' <<<\"$BID\")\"; OSEQ=...; PROVIDER=..."
+  },
+  "correctFix": "Add `--state open` to the bid query; select the cheapest open bid, e.g. `jq -c '[.bids[]|select(.bid.state==\"open\")]|sort_by(.bid.price.amount|tonumber)|.[0].bid.bid_id // empty'`. Guard each of GSEQ/OSEQ/PROVIDER for empty/null before the lease tx and fail-closed otherwise. Make the fake emit the full real bid shape (owner,dseq,gseq,oseq,provider,state,price + escrow_account) so the oracle exercises the real path.",
+  "routeToPhase": "2b"
+}

@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "orphans_dangling",
+  "category": "spec_gap",
+  "severity": "low",
+  "description": "Stale doc-comment path after the move. run.sh line 36 says the inline PII-unset list 'Mirrors USER_PII_ENV_PATTERNS in skills/earn/lib/identity-guard.mjs.' but identity-guard.mjs was moved to skills/_shared/lib/identity-guard.mjs by this refactor. The path no longer exists at skills/earn/lib/. This is a comment only (the runtime defense at run.sh:37-39 is self-contained and does NOT import the file by this path, and record.mjs:9 correctly imports ../../_shared/lib/identity-guard.mjs), so it does NOT break UBI or earning. But it is a dangling reference left by the move and will mislead the next maintainer trying to keep the two PII lists in sync.",
+  "evidence": {
+    "filePath": "skills/earn/run.sh",
+    "lineRange": "36",
+    "snippet": "# USER_PII_ENV_PATTERNS in skills/earn/lib/identity-guard.mjs."
+  },
+  "fix": "Update the comment to: '# USER_PII_ENV_PATTERNS in skills/_shared/lib/identity-guard.mjs.'",
+  "routeToPhase": "2b"
+}

@@ -1,0 +1,15 @@
+{
+  "findingId": "FIND-104",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "low",
+  "title": "CARRIED OVER (live-API-gated, NOT resolvable without a token): queryStatus (bank-payout-watcher.mjs:155-167) is still an EXPLICITLY UNVERIFIED GMO bulktransfer/status endpoint/shape and is batch-granular; getBalance (line 200-222) shares the same unverified-endpoint caveat for 残高照会. This is the sole remaining open item and is the documented convergence ceiling.",
+  "description": "Restated unchanged from rounds 5/6. queryStatus parses j.status/j.transferStatus into a single completed/failed/pending verdict by substring match and applies it to every row carrying that ref (pollCompletions, line 117-127); GMO 一括振込 status is per-item but there is no per-item read. getBalance reads accounts/{id}/balances and picks balance/availableBalance/balances[0].balance. Both endpoint paths and response field names cannot be confirmed without a real GMO_AOZORA_ACCESS_TOKEN (sunabar sandbox or 法人 account); the code marks this UNVERIFIED at lines 155 and 206. IMPORTANT UPDATE (round 9): the round-6 amplification concern — that a FALSE 'failed' classification could feed a double-pay re-dispatch via an operator re-queue — is now NEUTRALIZED. parseBankRecipient (bank-recipients.mjs:24) refuses any row still carrying ref= OR claimed_at=, so even a needs_review row an operator flips to 'queued' will NOT be re-dispatched. queryStatus errors therefore reduce to operator noise / a reconciliation-blind-spot for a per-item ambiguous batch status, never a money-safety hole. Severity remains low. The per-item granularity improvement (read itemId->status) COULD be coded now but cannot be VERIFIED correct until a token exists, so it stays verification-gated.",
+  "evidence": {
+    "filePath": "skills/earn/bank-payout-watcher.mjs",
+    "lineRange": "117-127,155-167,200-222",
+    "snippet": "const s = String(j.status || j.transferStatus || \"\").toLowerCase();  // ONE verdict for the whole batch ref\n// queryStatus: UNVERIFIED endpoint/shape until live token (line 155); getBalance: UNVERIFIED path+field (line 206)"
+  },
+  "recommendation": "On first live GMO token: confirm bulktransfer/status + accounts/{id}/balances endpoint+shape and read PER-ITEM status (itemId->status) so 'paid' is set only for items GMO confirms settled. Add a test that a batch ref shared by 2 submitted rows is not blanket-marked on an ambiguous status. This finding cannot be CLOSED without a real token and is the documented convergence ceiling — it does NOT block convergence of the in-repo money-safety work.",
+  "routeToPhase": "2b"
+}

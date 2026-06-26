@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "implementation_correctness",
+  "category": "requirement_mismatch",
+  "severity": "low",
+  "description": "False safety comment + idempotency key is best-effort only. (1) bank-fanout.mjs:39 claims 'the adapter re-checks before any real send', but makeGmoAdapter (bank-payout-watcher.mjs:56-62) performs NO balance re-check before submit — the comment overstates the safety net. (2) The idempotency key is a 32-bit non-cryptographic hash (bank-payout-watcher.mjs:44-49: h = h*31 + charCode, masked to int32) — collision-prone across distinct batches, and is sent only as an x-idempotency-key HEADER (gmo-furikomi.mjs:50-52) whose server-side honoring by GMO Aozora is UNVERIFIED (the whole submit path is flagged UNVERIFIED, gmo-furikomi.mjs:5,45-47). So the FIND-B 'defense-in-depth' dedupe is unproven against the real provider and could in principle collide two different batches onto one key. (3) Minor: comment at bank-payout-watcher.mjs:107 says env 'GMO_JPY_POOL' but code reads 'GMO_JPY_POOL_DEV' (line 127).",
+  "evidence": {
+    "filePath": "skills/earn/bank-payout-watcher.mjs",
+    "lineRange": "44-49,56-62",
+    "snippet": "for (i...) { h = (h * 31 + sig.charCodeAt(i)) | 0; } return `anicca-ubi-${(h >>> 0).toString(36)}`;  // 32-bit hash, header-only, GMO honoring UNVERIFIED"
+  },
+  "routeToPhase": "2b"
+}

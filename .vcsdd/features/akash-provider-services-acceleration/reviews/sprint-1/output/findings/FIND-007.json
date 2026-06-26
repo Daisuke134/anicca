@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-007",
+  "dimension": "edge_case_coverage",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "description": "RACE: lease create then send-manifest with NO settle/confirm wait. Line 86 broadcasts `tx market lease create` then line 88 IMMEDIATELY runs send-manifest. lease create is an on-chain tx that must be committed in a block (~6s) AND the provider must observe the lease before it will accept a manifest. Sending the manifest the same instant the lease tx is broadcast will frequently get 'no lease for that deployment'/'lease not found' from the provider -> send-manifest fails -> fail-closed, even though the lease will exist a few seconds later. There is no poll/retry on send-manifest analogous to the bid poll. Also lease create uses `-y` with `>/dev/null 2>&1`, so a tx that broadcasts but FAILS in the block (non-zero code) is not detected — only client-side broadcast errors are caught.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/spawn/scripts/deploy-akash.sh",
+    "lineRange": "86-89",
+    "snippet": "\"$PS\" tx market lease create ... || { ...; exit 1; }\n\"$PS\" send-manifest \"$SDL_FILE\" --dseq \"$DSEQ\" --provider \"$PROVIDER\" ... || { ...; exit 1; }"
+  },
+  "correctFix": "After lease create, confirm the lease is active (`query market lease list --owner $ADDR --dseq $DSEQ -o json | jq -e '.leases[]|select(.lease.state==\"active\")'`) in a short poll, OR retry send-manifest a few times with a 2-3s backoff. Verify the lease-create tx result code is 0 (use --output json and check .code==0 / .raw_log) rather than discarding output.",
+  "routeToPhase": "2b"
+}

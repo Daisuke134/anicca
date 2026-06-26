@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "implementation_correctness",
+  "category": "requirement_mismatch",
+  "severity": "high",
+  "description": "Latent schema mismatch in the (unwired) completion poll: buildSubmittedPatch stores the GMO reference embedded inside the notes STRING ('submitted;provider=...;ref=G1', bank-payout-watcher.mjs:31-34) and markPaid persists only { status, notes } (bank-payout-watcher.mjs:100-101). There is NO 'ref' column. pollCompletions, however, reads row.ref directly (bank-payout-watcher.mjs:70: queryStatus(row.ref)) and no readSubmitted implementation that parses ref out of notes exists. So even if FIND-D were wired, queryStatus would receive undefined for every row and never match 'completed'/'failed', leaving all rows 'pending' forever. The poll cannot function against the data the writer actually persists.",
+  "evidence": {
+    "filePath": "skills/earn/bank-payout-watcher.mjs",
+    "lineRange": "31-34,66-73,100-101",
+    "snippet": "notes: `submitted;provider=${info.provider};...${ref}`  // ref lives in the notes string\n... const st = await queryStatus(row.ref);  // expects a row.ref field that is never written as a column"
+  },
+  "routeToPhase": "2b"
+}

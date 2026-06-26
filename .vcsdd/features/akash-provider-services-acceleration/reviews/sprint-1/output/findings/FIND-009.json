@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-009",
+  "dimension": "spec_fidelity",
+  "category": "test_coverage",
+  "severity": "major",
+  "description": "INV-6 fail-closed is asserted by the oracle ONLY via a static `have 'exit 1'` grep (test-deploy-akash.sh:25) — there is ZERO behavioral test of any fail-closed path. The behavioral run (lines 44-52) exercises only the HAPPY path (cert exists, dseq parses, bid present, lease ok, manifest ok). None of the six fail-closed branches (missing CLI, unset AKASH_KEY_NAME, no dseq, no bid after poll, lease fail, manifest fail) is driven to assert the script actually exits non-zero AND prints no dseq. Given FIND-001 shows the real dseq parse fails-closed unexpectedly, and HARD 0.24 forbids any fake dseq on failure, the absence of a negative behavioral test is a material oracle gap: a regression that printed a stale/empty dseq on failure would pass this oracle.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/spawn/scripts/test-deploy-akash.sh",
+    "lineRange": "44-52",
+    "snippet": "OUT=\"$(... bash \"$S\" testchild ...)\"; rc=$? ... ok \"$([ $rc -eq 0 ] ...)\" ... # only happy path"
+  },
+  "correctFix": "Add negative behavioral cases: a fake that returns no dseq -> assert rc!=0 AND stdout is empty (no fake dseq); a fake whose bid list stays empty -> assert the poll exits non-zero within the window; unset AKASH_KEY_NAME -> assert rc!=0. Assert stdout==\"\" on every failure path to enforce HARD 0.24.",
+  "routeToPhase": "2b"
+}
