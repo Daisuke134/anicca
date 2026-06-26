@@ -728,3 +728,34 @@ post the first comment. Everything else is ready.
 | **7** | **web v1.5** — #15 inbound (SendGrid/Mailgun MX+webhook) → #16 Unipile cleanup → #20 already done (gmail dropped) → #21 fully un-gate web → #22 web E2E | |
 | **8** | **D-6 directories** — BetaList/Peerlist/etc. + PH follow-up + churn-prevention | |
 | **9** | **PHASE E** — self-improve + proactive booking + merge into Anicca | |
+
+---
+
+## ★★★ CURRENT FULL TODO (2026-06-26, post-step-0 — THE authoritative list) ★★★
+DESIGN CONFIRMED (Dais): v1 = Telegram-first, works for EVERY user, NO Gmail. Onboard = Google sign-in
+(email/identity, NOT reading Gmail) → name → Google Calendar → phone → pay. Daily = phone calls + Telegram
+ask/reply + travel blocks + late-notice. Gmail is never read/replied. Telegram is the read/reply channel.
+
+### ▶ LAUNCH TODAY (in order)
+- [x] **0. STEP-0** Telegram funnel fix — `/lm?tg=` renders onboarding (Gmail/Unipile step removed, connect=Calendar
+      only); standalone `/lm` stays coming-soon. BOTH VCSDD gates PASS (browser ✓ + adversary ✓). DONE 2026-06-26.
+- [ ] **1. Gmail COPY cleanup** (found via visual check): connect step still shows "Connect Calendar & Gmail /
+      reads your calendar and your mail" + the /life-manager hero/feature/desc copy still mention Gmail/"your mail".
+      v1 has NO Gmail → strip every Gmail/mail claim from launchStrings (EN+JA) so copy matches the build. VCSDD +
+      browser-verify the connect step reads "Connect Calendar" only.
+- [ ] **2. Telegram-first links** — PH listing links/CTA + the /life-manager "try it" CTA point to
+      t.me/LifeManagerBotbot (web onboarding is gated; standalone visitors must be sent to Telegram).
+- [ ] **3. Gallery** — generate 1270×760 PH images from the live /life-manager page (+ onboarding shots).
+- [ ] **4. PH LAUNCH** — existing draft "Life Manager — Anicca" is 90% filled (logged in as keiodaisuke); finish
+      links/gallery/makers, then I press Launch + post the first comment. (irreversible public — I press per Dais.)
+- [ ] **5. X release post** — approved copy, JP+EN, X Premium long post, @aniccaxxx.
+
+### ▶ AFTER LAUNCH (in order)
+- [ ] **6. autofill 3-case VCSDD re-verify** — (a) online vs physical classify, (b) unknown-address web search,
+      (c) depart-by = start−travel−buffer. spec → test → fresh adversary → NO-MOCK E2E on a real calendar.
+- [ ] **7. D-3 reels + daily-log→TikTok** — 3 demo reel scripts ready; cron posts each day's LM log to TikTok.
+- [ ] **8. D-5 article publish** — JP+EN final drafts (adversary PASS) → note/Zenn/dev.to/Substack/X/TikTok.
+- [ ] **9. D-2 Capafy** — list Leave-Time Planner (CP2 credential-hosting bug to resolve).
+- [ ] **10. web v1.5** — #15 inbound (SendGrid/Mailgun MX+webhook) → #16 Unipile cleanup → #21 un-gate web → #22 E2E.
+- [ ] **11. D-6 directories** — BetaList/Peerlist/etc. + PH follow-up + churn-prevention.
+- [ ] **12. PHASE E** — self-improve + proactive booking + merge into Anicca.
