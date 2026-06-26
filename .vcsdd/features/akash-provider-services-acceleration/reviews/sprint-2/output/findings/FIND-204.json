@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-204",
+  "dimension": "structural_integrity",
+  "category": "test_quality",
+  "severity": "major",
+  "description": "INV-1 NO-HUMAN CHECK STILL RUNS ON COMMENT-STRIPPED SOURCE — sprint-1 FIND-008(b) NOT FIXED. test-deploy-akash.sh:9 strips ALL comments (`src=\"$(sed 's/#.*//' \"$S\")\"`) and the INV-1 absent-check at line 16 (`absent \"console-api|credit card|managed wallet\"`) greps that STRIPPED source. The no-human guarantee is the security-critical invariant of this whole feature (spec INV-1), yet a `console-api.akash.network` URL or 'managed wallet' reference smuggled into deploy-akash.sh behind a `#` (or on a comment line, e.g. `curl https://console-api.akash.network/... # fallback`) would be erased by the strip BEFORE the absent-grep runs, so the oracle would PASS while a Console/credit-card path was present. Comment-stripping is correct for the presence/order INV-2 checks, but the no-human ABSENCE check must scan the RAW file. This makes the strongest invariant gameable.",
+  "evidence": {
+    "filePath": "/Users/operator/anicca/skills/self/spawn/scripts/test-deploy-akash.sh",
+    "lineRange": "9-16",
+    "snippet": "src=\"$(sed 's/#.*//' \"$S\")\"           # comments stripped\n...\nabsent \"console-api|credit card|managed wallet\"  \"INV-1 no-human: NO Console/credit-card path\""
+  },
+  "correctFix": "Run the INV-1 no-human absent-check against the RAW file contents (the unstripped `$S`), e.g. `grep -qiE 'console-api|credit card|managed wallet' \"$S\" && fail`. Keep comment-stripping only for the INV-2 presence/order greps. Also prefer full-line-comment removal (`grep -v '^[[:space:]]*#'`) over `s/#.*//` which clobbers inline `#` in any future active code.",
+  "routeToPhase": "2b"
+}

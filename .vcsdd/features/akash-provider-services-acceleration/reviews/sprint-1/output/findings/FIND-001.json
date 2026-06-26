@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "implementation_correctness",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "DSEQ PARSE IS WRONG against real CLI output. `provider-services tx deployment create -o json` returns a Cosmos SDK TxResponse, NOT an object with a top-level `dseq` field. The dseq is emitted as a tx EVENT ATTRIBUTE of the form {\"key\":\"dseq\",\"value\":\"<n>\"} nested under .logs[].events[].attributes[] (or .events[] on newer CLIs). The script's `jq -r '.. | .dseq? // empty' | head -1` recurses the whole document looking for an object KEY literally named `dseq`. In real output there is no such key whose value is the dseq number — `dseq` only ever appears as the VALUE of a `key` attribute. Therefore on a REAL successful broadcast the jq yields empty -> the script hits line 72 and fail-closes with 'no dseq — deployment tx failed' even though the deployment succeeded. The deploy will NEVER work on testnet/mainnet. This is the dimension-3 highest-risk defect and it is masked by the fake.",
+  "evidence": {
+    "filePath": "/Users/operator/anicca/skills/self/spawn/scripts/deploy-akash.sh",
+    "lineRange": "70-72",
+    "snippet": "DSEQ=\"$(\"$PS\" tx deployment create \"$SDL_FILE\" --from \"$AKASH_KEY_NAME\" -y -o json 2>/dev/null | jq -r '.. | .dseq? // empty' | head -1)\""
+  },
+  "correctFix": "Parse the dseq from the tx event attributes, e.g.: `jq -r '[..|.attributes? // empty]|flatten|map(select(.key==\"dseq\"))|.[0].value // empty'`, or more robustly query it back: after broadcast, `provider-services query deployment list --owner $ADDR -o json | jq -r '.deployments[-1].deployment.deployment_id.dseq'` (or filter by tx height). Do NOT rely on a top-level `.dseq`. Also note `2>/dev/null` swallows the broadcast error, compounding the silent failure.",
+  "routeToPhase": "2b"
+}

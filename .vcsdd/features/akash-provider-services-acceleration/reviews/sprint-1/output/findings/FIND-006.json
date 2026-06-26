@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "implementation_correctness",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "description": "SDL PRICING DENOM DEFAULTS TO `uact` WHICH WILL BE REJECTED. Line 35 sets PRICE_DENOM default to `uact`. Akash deployment-create bid pricing is denominated in `uakt` (or, on AEP-enabled nets, `uusdc`/IBC denoms) — `uact` is NOT a valid bid pricing denom for the marketplace. ACT (mint-act referenced in the spec) is a separate accounting unit, not the SDL price denom. A deploy.yml with `denom: uact` will either be rejected by the SDL validator or attract ZERO bids (no provider bids in an unknown denom), causing the poll loop to fail-closed after 60s on EVERY real deploy. The fake never validates the SDL, so the oracle cannot catch this. This also contradicts the spec's gas config `AKASH_GAS_PRICES=0.025uakt` (uakt), making the denom choice internally inconsistent.",
+  "evidence": {
+    "filePath": "/Users/operator/anicca/skills/self/spawn/scripts/deploy-akash.sh",
+    "lineRange": "35-61",
+    "snippet": "PRICE_DENOM=\"${AKASH_PRICE_DENOM:-uact}\"; PRICE_AMOUNT=\"${AKASH_PRICE_AMOUNT:-10000}\"  ...  pricing: automaton: denom: ${PRICE_DENOM}"
+  },
+  "correctFix": "Default PRICE_DENOM to `uakt` (the marketplace bid denom), matching AKASH_GAS_PRICES. Confirm the target net's accepted pricing denom from meta.json/docs before the sandbox-2 run; if using AEP stablecoin pricing use the correct IBC `uusdc` denom, not `uact`.",
+  "routeToPhase": "2b"
+}

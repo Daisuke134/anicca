@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "test_adequacy",
+  "category": "test_coverage",
+  "severity": "major",
+  "description": "TEST MASKS THE DEFAULT-LEAK PATHS. The stage2 behavioral test (test lines 71-87) ALWAYS sets NOTE_TAGS=foo,bar, NOTE_NUM=999000, NOTE_IMG_DIR=demo, NOTE_SRC=/x/demo-clean.md. It therefore never exercises the dangerous case where a non-Automaton article is run with NOTE_TAGS UNSET (→ Automaton tags leak, FIND-001) or with NOTE_NUM left at the 166686292 default while the title coincidentally contains 'automaton' (→ guard bypass, FIND-002). Because the oracle only runs the fully-overridden-clean configuration, it gives a GREEN that does not actually prove 'no Automaton value reaches a non-Automaton publish' for the realistic partial-override configurations. INV-1 likewise asserts only title + table/mermaid COUNTS (test lines 109-111), so it cannot detect infographic regression (FIND-003) or any body/tag content drift on the default run.",
+  "evidence": {
+    "filePath": "/Users/operator/.openclaw/skills/ai-entity-article-writer/scripts/note-publish/test-de-automaton.py",
+    "lineRange": "71-87",
+    "snippet": "env.update({\"NOTE_WORK\": W2, \"NOTE_NUM\": \"999000\", \"NOTE_SRC\": \"/x/demo-clean.md\", \"NOTE_TAGS\": \"foo,bar\", \"A3_REC\": rec, \"NOTE_MCP_SRC\": FIX})"
+  },
+  "fix": "Add behavioral cases: (a) non-Automaton SRC/title with NOTE_TAGS UNSET and NOTE_NUM set → assert recorded tags are NOT the Automaton list (or that stage2 refuses); (b) NOTE_NUM left default (166686292) with a non-Automaton article whose title contains the word 'automaton' → assert stage2 REFUSES (currently it would not). Strengthen INV-1 to compare the full default manifest body/infographic against a committed golden snapshot, not just counts.",
+  "routeToPhase": "2b"
+}

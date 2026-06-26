@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-007",
+  "dimension": "missed_hardcodes",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "description": "rebuild-note-body.py is in spec FILES IN SCOPE (spec line 14) and was changed by the builder, yet it retains THREE active (non-default) article-specific hardcodes that would break / mis-handle a non-Automaton article: line 21 re.sub(r'!\\[...\\]\\(images/automaton/thumb\\.png\\)...'), line 22 re.sub(r'...images/automaton/what-is-automaton[^)]*\\.png...'), line 30 re.sub(r'!\\[...\\]\\(images/automaton/(fund-[^)]+\\.png)\\)', _fund). These are NOT os.environ.get defaults — they are literal regex patterns in active code. The script also hardcodes the fallback title \"Automaton\" (line 19) and an asset dir name 'automaton-assets' default. The spec scopes rebuild as 'one-off restore; tags only', and the test only checks NOTE_TAGS in rb (test line 36) — so the de-Automaton effort explicitly left these image-path hardcodes un-parameterized. For a non-Automaton article the thumb/infographic/fund image refs use a different subdir (NOTE_IMG_DIR), so rebuild would fail to strip the thumb, fail to drop the infographic, and capture zero fund images, silently producing a wrong body. Account-identity values user_id=14651590 / username=anicca123 (rebuild line 57; stage2 line 25) are fine to keep. NUM=166686292 default (rebuild line 15) is article identity but is at least env-overridable.",
+  "evidence": {
+    "filePath": "/Users/operator/.openclaw/skills/ai-entity-article-writer/scripts/note-publish/rebuild-note-body.py",
+    "lineRange": "21-30",
+    "snippet": "body = re.sub(r'!\\[[^\\]]*\\]\\(images/automaton/thumb\\.png\\)\\s*', '', body)\nbody = re.sub(r'!\\[[^\\]]*\\]\\(images/automaton/what-is-automaton[^)]*\\.png\\)\\s*', '', body)\n...\nbody = re.sub(r'!\\[[^\\]]*\\]\\(images/automaton/(fund-[^)]+\\.png)\\)', _fund, body)"
+  },
+  "correctFix": "If rebuild-note-body.py is truly a dead one-off, remove it from spec scope and from the de-Automaton claim. If it is part of the path, parameterize the image subdir via NOTE_IMG_DIR (re.escape it) exactly as stage1 line 11-12 does, and env the asset dir / title fallback. As-is, the spec FILES-IN-SCOPE claim that all three files are de-Automatoned is false for this file.",
+  "routeToPhase": "2b"
+}

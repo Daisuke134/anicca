@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "edge_cases",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "description": "@@INFOG@@ PRESENT BUT FILE MISSING is not handled cleanly when NOTE_INFOG is unset and the captured manifest path is absent. The manifest task explicitly requires: 'a missing file drops @@INFOG@@ cleanly.' Trace: stage1 captures manifest['infographic'] = <article_dir>/images/<IMG_DIR>/what-is-X.png even if that file does NOT exist on disk (line 14 builds the path from the markdown ref with no existence check). stage2 line 15 sets INFOG to that path; line 33 `if INFOG and os.path.exists(INFOG)` is False, so line 38 `else: nb=nb.replace('@@INFOG@@','')` drops the marker — OK. HOWEVER the manifest still STORES a path containing 'automaton' for the Automaton case, and for the leak case it stores the demo path; that is fine. The real gap: there is NO edge-case TEST for 'marker present + file missing'. The behavioral test fixture (test line 48) always references images/demo/what-is-x.png which is never created on disk either — but the stage1 manifest assertion (test lines 61-63) only checks the marker and the captured string, never that stage2 drops it cleanly with a missing file. Combined with the dims() call: if a future change moves the infographic into the existence-true branch with a non-image or zero-byte file, dims() (line 17-19) runs `sips` and will raise on a missing/corrupt file, crashing the whole publish (uncaught at line 36 inside the try, but compact_html at line 22 calls dims BEFORE generate_image_html, so a sips failure there is caught — acceptable — yet a 0-table/0-fig article with a present-but-corrupt infographic still risks an unhandled sips error path if INFOG path exists but is not a valid image).",
+  "evidence": {
+    "filePath": "/Users/operator/.openclaw/skills/ai-entity-article-writer/scripts/note-stage1-render.py",
+    "lineRange": "14",
+    "snippet": "def _infog_cap(mo): INFOG_REF[0]=os.path.join(os.path.dirname(os.path.abspath(ART)), mo.group(1)); return '@@INFOG@@'"
+  },
+  "fix": "Add an explicit edge-case test: emit @@INFOG@@ via a what-is ref whose file does NOT exist, run stage2, and assert the produced body contains NO leftover '@@INFOG@@' and NO upload call for the missing path. Also guard dims()/sips against non-image/zero-byte files (validate suffix+size like the real upload_body_image.validate_image_file does) so a present-but-corrupt infographic cannot raise outside the try at line 34-37.",
+  "routeToPhase": "2b"
+}

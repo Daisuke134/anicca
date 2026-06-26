@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "description": "INV-4 (cert one-time / idempotent) is only HALF satisfied and has a swallowed-error hole. Line 28 runs `tx cert generate client ... || true` — generate failures are intentionally ignored, but generate writes a local cert file; if a stale/owned cert file already exists locally `generate` errors and the subsequent `publish` may publish nothing or re-publish, and both stdout+stderr are sent to /dev/null (line 28-29) so there is zero diagnostic. More importantly, the cert-exists check on line 27 keys off `.certificates[0]` existing for the owner, but does NOT check the cert STATE is `valid` — a revoked cert still appears in the list, so a deploy with a revoked cert would skip regeneration and then send-manifest would be refused by the provider. The oracle's fake always returns a cert (line 34) so the create branch is NEVER exercised behaviorally — INV-4's create path is untested.",
+  "evidence": {
+    "filePath": "/Users/operator/anicca/skills/self/spawn/scripts/deploy-akash.sh",
+    "lineRange": "27-31",
+    "snippet": "if ! \"$PS\" query cert list --owner \"$ADDR\" ... | jq -e '.certificates[0]' ...; then\n  \"$PS\" tx cert generate client --from \"$AKASH_KEY_NAME\" -y >/dev/null 2>&1 || true"
+  },
+  "correctFix": "Filter for a VALID cert: `jq -e '.certificates[]|select(.certificate.state==\"valid\")'`. Don't swallow generate stderr blindly; on `generate` failure check whether it's the benign 'already exists' case vs a real error. Add an oracle fake case that returns `{\"certificates\":[]}` to exercise the generate+publish branch.",
+  "routeToPhase": "2b"
+}

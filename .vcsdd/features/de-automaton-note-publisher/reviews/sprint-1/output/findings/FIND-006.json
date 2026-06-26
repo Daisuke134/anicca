@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "test_adequacy",
+  "category": "test_quality",
+  "severity": "major",
+  "description": "The INV-5 grep heuristic in test-de-automaton.py is gameable and gives false confidence. _bad_lines (lines 22-23) flags a line only if it contains 'images/automaton/' AND NOT 'environ.get' on the SAME line. This means: (a) any leaking line that mentions images/automaton/ but also happens to contain the substring 'environ.get' anywhere on the line is whitelisted — e.g. a line like `x = os.environ.get('FOO'); path='images/automaton/thumb.png'` passes; (b) a hardcode written across two lines, or using a different casing/spelling (e.g. 'images/' + dir, or an absolute path '.../images/automaton/...' that the regex in rebuild already uses), is invisible to this single-substring check. The check also does NOT scan rebuild-note-body.py for images/automaton/, even though rebuild-note-body.py:21-22,30 contain THREE hardcoded 'images/automaton/' regexes that are NOT env defaults (they are active re.sub patterns). The INV-5 heuristic thus cannot detect a genuine leak and is defeatable.",
+  "evidence": {
+    "filePath": "/Users/operator/.openclaw/skills/ai-entity-article-writer/scripts/note-publish/test-de-automaton.py",
+    "lineRange": "22-25",
+    "snippet": "def _bad_lines(src):\n    return [l for l in src.splitlines() if \"images/automaton/\" in l and \"environ.get\" not in l]"
+  },
+  "correctFix": "Test the OUTPUT (manifest) for the literal 'automaton', not the SOURCE for a fragile co-occurrence. If source-grep is kept, exclude only lines where images/<default-dir> is the value of an os.environ.get(...) call (parse the default), and explicitly scope which files are 'active code' vs one-off. Also clarify rebuild-note-body's status: its images/automaton/ regexes are active (FIND-007).",
+  "routeToPhase": "2b"
+}

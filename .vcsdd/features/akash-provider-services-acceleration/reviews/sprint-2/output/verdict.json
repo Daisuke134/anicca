@@ -1,0 +1,78 @@
+{
+  "sprintNumber": 2,
+  "feature": "akash-provider-services-acceleration",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-06-26T00:00:00Z",
+  "iteration": 2,
+  "reviewContext": {
+    "reviewType": "implementation",
+    "specPath": "/Users/operator/anicca/docs/superpowers/specs/2026-06-26-B1-akash-provider-services-acceleration.md",
+    "filesReviewed": [
+      "/Users/operator/anicca/skills/self/spawn/scripts/deploy-akash.sh",
+      "/Users/operator/anicca/skills/self/spawn/scripts/test-deploy-akash.sh"
+    ],
+    "environmentLimitation": "Bash/firecrawl/ctx7 were NOT available in this review context; live provider-services/Cosmos docs and the pinned binary could not be exercised. Version-sensitive encoding/serialization assumptions are flagged UNVERIFIED rather than asserted, per the project HONESTY rules. No real-CLI fixture or sandbox-2 E2E log exists anywhere under the feature dir to resolve them.",
+    "claimedFixesVerified": {
+      "FIND-006_uakt_denom": "VERIFIED FIXED — deploy-akash.sh:41 defaults PRICE_DENOM to uakt; no uact remains (Grep clean).",
+      "FIND-002_cheapest_open_bid": "VERIFIED FIXED at code level — deploy-akash.sh:87-89 adds --state open + sort_by(price.amount|tonumber); real nesting still UNVERIFIED (FIND-202).",
+      "FIND-007_lease_active_before_manifest": "PARTIALLY FIXED — code==0 gate (101-102) + lease-active poll (105-112) + manifest retry (113-119) present; but manifest success != service up (FIND-206).",
+      "FIND-004_cert_state_valid": "VERIFIED FIXED — deploy-akash.sh:33 select(state==\"valid\").",
+      "FIND-010_meta_once": "VERIFIED FIXED — deploy-akash.sh:22 single fetch into MJ.",
+      "FIND-001_dseq_event_attr": "STRUCTURALLY FIXED but rests on an UNVERIFIED plaintext-attribute assumption the fake self-confirms (FIND-201).",
+      "FIND-003_008_009_012_test": "PARTIALLY FIXED — fail-closed create/nobid/lease cases + ordered-line check added; but INV-1 still comment-stripped (FIND-204) and the fake self-confirms version-sensitive shapes (FIND-201/202/205) and has no manifest-fail case (FIND-206)."
+    }
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-203", "FIND-206"],
+      "evidence": [
+        {"type": "file", "location": "deploy-akash.sh:11-122", "description": "INV-2 complete flow {cert,deploy,bid,lease,manifest} present and ordered; INV-3 no sleep 30, poll loop present; INV-5 negative half holds (no mint/swap in deploy path). BUT spec's mandatory NO-MOCK sandbox-2 E2E DONE gate (spec 60-68) is unrun and send-manifest success never confirms 'service up' (spec 62)."}
+      ]
+    },
+    {
+      "name": "no_leak_no_human",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "deploy-akash.sh:14-15, 29, 34-36, 76, 98, 115", "description": "Every tx signs --from $AKASH_KEY_NAME (own keyring wallet). No console-api.akash.network, no credit-card, no managed-wallet path in active code. INV-1 holds at the code level (the oracle's INV-1 ENFORCEMENT is weak — see FIND-204 under test_adequacy — but the code itself leaks nothing)."}
+      ]
+    },
+    {
+      "name": "parse_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-201", "FIND-202", "FIND-205"],
+      "evidence": []
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-202", "FIND-206"],
+      "evidence": []
+    },
+    {
+      "name": "test_adequacy",
+      "verdict": "FAIL",
+      "findings": ["FIND-204", "FIND-201", "FIND-202", "FIND-205", "FIND-206"],
+      "evidence": [
+        {"type": "file", "location": "test-deploy-akash.sh:75-85", "description": "The three behavioral fail-closed cases (create code!=0, no bids, lease code!=0) DO genuinely assert rc!=0 AND empty stdout AND no downstream call — that part is non-gameable and proves HARD 0.24 for those paths. But the fake self-confirms every version-sensitive shape (dseq/bid/lease/keys-show), INV-1 is checked on comment-stripped source, and there is no manifest-fail / cert-create / service-up case."}
+      ]
+    },
+    {
+      "name": "fail_closed_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-206"],
+      "evidence": [
+        {"type": "file", "location": "deploy-akash.sh:78-82, 93, 101-102, 112, 120", "description": "Tested failure paths (deploy code!=0, no dseq, no bid, lease code!=0, lease-not-active) all exit !=0 BEFORE the line-122 dseq print, so NO dseq leaks on those failures — HARD 0.24 holds there. FAIL because send-manifest exit-0-but-service-down (FIND-206) is fail-OPEN: the script prints the dseq for a deployment whose container may never boot, the exact defect B1 targets (spec 11-13)."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 7,
+    "allCriteriaEvaluated": true,
+    "evaluatedInvariants": ["INV-1", "INV-2", "INV-3", "INV-4", "INV-5", "INV-6"],
+    "duplicateFindings": [],
+    "nonFailingNotes": ["FIND-207 (akt-treasury.sh missing) is scoped to B1.3 and does NOT count toward this verdict, per the review charter."]
+  }
+}

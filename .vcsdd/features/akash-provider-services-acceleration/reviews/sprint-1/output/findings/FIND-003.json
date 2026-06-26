@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "edge_case_coverage",
+  "category": "test_quality",
+  "severity": "critical",
+  "description": "THE FAKE MASKS THE PARSE BUGS (non-gameable-oracle violation). The fake provider-services hands back idealized shapes that do not resemble real CLI output: `{\"dseq\":\"777\"}` (real = TxResponse with dseq only as an event attribute, see FIND-001) and a stripped bid object (see FIND-002). Because the behavioral run feeds the script exactly the shape the script's jq assumes, the oracle PASSES while the real flow would fail-closed on every deploy. A faithful oracle must reproduce the real CLI JSON so that a real parse bug is caught here, before the sandbox-2 spend. As written the behavioral assertions on lines 48-49 ($rc==0, OUT==777) prove only that the script can parse the FAKE, not the CLI. This is the exact dimension-5 failure the spec's INV oracle was supposed to prevent.",
+  "evidence": {
+    "filePath": "/Users/operator/anicca/skills/self/spawn/scripts/test-deploy-akash.sh",
+    "lineRange": "35-36",
+    "snippet": "*\"tx deployment create\"*) echo '{\"dseq\":\"777\",\"logs\":[]}' ;;\n*\"query market bid list\"*)echo '{\"bids\":[{\"bid\":{\"bid_id\":{\"gseq\":1,\"oseq\":1,\"provider\":\"akash1prov\"}}}]}' ;;"
+  },
+  "correctFix": "Replace the fake outputs with captured real CLI fixtures: deployment-create -> a real TxResponse JSON whose dseq lives at .logs[0].events[].attributes[] {key:dseq,value:777}; bid list -> a full bid with bid_id{owner,dseq,gseq,oseq,provider}+state:open+price. Then the dseq/bid parses must still yield 777/akash1prov, which forces the script's jq to be correct against reality.",
+  "routeToPhase": "2b"
+}

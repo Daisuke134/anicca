@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-011",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "minor",
+  "description": "SCOPE INCOMPLETE: the spec lists `akt-treasury.sh` as a NEW in-scope file (spec lines 32, 53; INV-5 says mint/swap 'live only in akt-treasury.sh'), but that file DOES NOT EXIST in the tree (Glob **/akt-treasury.sh -> no files found). INV-5's positive half ('funding lives in akt-treasury.sh') is therefore unverifiable — only the negative half (deploy-akash.sh contains no mint/swap) is checked by the oracle (test-deploy-akash.sh:24). The off-path funding mechanism the whole acceleration premise depends on is unimplemented/unreviewed; without it, AKT can run dry and deploy-akash.sh will fail-closed at lease time with no top-up path. deploy-akash.sh itself correctly omits mint/swap (INV-5 negative half holds at line-level), so this is a scope/coverage gap, not a deploy-akash.sh defect.",
+  "evidence": {
+    "filePath": "/Users/operator/anicca/docs/superpowers/specs/2026-06-26-B1-akash-provider-services-acceleration.md",
+    "lineRange": "32-53",
+    "snippet": "`/Users/operator/anicca/skills/self/spawn/scripts/akt-treasury.sh`  (NEW: off-path AKT/ACT top-up)  ... INV-5 ... those live only in akt-treasury.sh"
+  },
+  "correctFix": "Implement akt-treasury.sh and add it to the oracle, OR descope it from B1 explicitly. Until it exists INV-5 cannot be claimed satisfied as written.",
+  "routeToPhase": "2b"
+}

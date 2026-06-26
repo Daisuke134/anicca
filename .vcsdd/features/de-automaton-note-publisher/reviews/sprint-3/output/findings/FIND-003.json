@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "no_regression",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "description": "INFOGRAPHIC CAPTURE only keeps the LAST match, and silently differs from the prior pipeline. stage1 line 14 assigns INFOG_REF[0]=... on every regex hit, so if an article references more than one 'images/<IMG_DIR>/what-is-*.png', only the final one is captured into manifest['infographic']; every earlier @@INFOG@@ marker is emitted in the body but stage2 has only ONE infographic path. stage2 line 36 does nb.replace('@@INFOG@@', ...) which is replace-ALL — so MULTIPLE @@INFOG@@ markers all collapse to the SAME single image, duplicating one infographic and dropping the others. The Automaton default happens to have exactly one what-is ref (line 26 of the md), so INV-1's count-only assertion (title/tables/mermaids, lines 109-111 of the test) cannot catch this; the spec GOAL 'reproduces current behavior byte-for-byte' is therefore unverified for the infographic, and a multi-infographic article regresses.",
+  "evidence": {
+    "filePath": "/Users/operator/.openclaw/skills/ai-entity-article-writer/scripts/note-stage1-render.py",
+    "lineRange": "13-15",
+    "snippet": "INFOG_REF=[None]\ndef _infog_cap(mo): INFOG_REF[0]=os.path.join(os.path.dirname(os.path.abspath(ART)), mo.group(1)); return '@@INFOG@@'\nbody=re.sub(r'!\\[[^\\]]*\\]\\((images/'+re.escape(IMG_DIR)+r'/what-is-[^)]*\\.png)\\)', _infog_cap, body)"
+  },
+  "fix": "Capture a LIST of infographic paths and emit indexed markers (@@INFOG1@@, @@INFOG2@@, ...) like tables/figs do; manifest['infographic'] becomes a list; stage2 iterates and replaces each indexed marker with its own uploaded image. Add a test fixture with two what-is-*.png refs asserting two distinct uploads. If single-infographic is an intentional invariant, assert in stage1 that at most one is matched and fail loudly otherwise.",
+  "routeToPhase": "2b"
+}

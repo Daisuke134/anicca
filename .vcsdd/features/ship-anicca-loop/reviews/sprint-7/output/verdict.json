@@ -1,0 +1,54 @@
+{
+  "sprintNumber": 7,
+  "feature": "ship-anicca-loop",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-06-22T00:00:00Z",
+  "iteration": 1,
+  "reviewContext": {
+    "reviewType": "implementation",
+    "note": "No implementation-review manifest existed for fix #7 (only spec-review manifests under reviews/spec/iteration-*). Reviewed disk-only per the standing VSDD instruction. Bash/test-runner was NOT available in this context, so all execution-dependent assertions (e.g. 'node --test passes') are marked UNVERIFIED and are NOT claimed as run.",
+    "scope": "fix #7: keep-liquid-buffer + close-in-profit steer"
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-001"],
+      "evidence": [
+        {"type": "file", "location": "runtime/loop/index.mjs", "description": "balanceUsdc passed into assembleContext at line 215 discards the real fetched balance"}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-002", "FIND-003"],
+      "evidence": []
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-004"],
+      "evidence": []
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "FAIL",
+      "findings": ["FIND-005"],
+      "evidence": []
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-006"],
+      "evidence": [
+        {"type": "note", "location": "review-context", "description": "Bash unavailable; test suite could not be executed in this context. GREEN claim UNVERIFIED."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 6,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}

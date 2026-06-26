@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "edge_cases",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "Edge case 'article with no H1 title' crashes in note-stage1-render.py. Line 8: m=re.search(r'^#\\s+(.+)$', md, re.M); title=m.group(1).strip(). If the source markdown has no level-1 heading (a plausible non-Automaton article), m is None and m.group(1) raises AttributeError, aborting the render. rebuild-note-body.py:19 guards this exact case (title = m.group(1).strip() if m else \"Automaton\"), proving the author knew the pattern was unsafe, but stage1 was left unguarded. The spec EDGE CASES list (lines 39-43) requires 'no crash' for degenerate articles; a missing H1 is squarely in that family. Separately, the spec ERROR clause (line 45) only blesses FileNotFoundError for a missing NOTE_SRC; a missing title is not covered and should not hard-crash with an opaque AttributeError.",
+  "evidence": {
+    "filePath": "/Users/operator/.openclaw/skills/ai-entity-article-writer/scripts/note-stage1-render.py",
+    "lineRange": "8",
+    "snippet": "m=re.search(r'^#\\s+(.+)$', md, re.M); title=m.group(1).strip()"
+  },
+  "correctFix": "Mirror the rebuild-note-body.py guard: title = m.group(1).strip() if m else <fallback derived from filename or a loud, explicit error>. The other enumerated edge cases (0 tables: flush() else-branch handles <2 lines; 0 mermaid: re.sub no-op; empty NOTE_TAGS: list-comp filters empties at stage2:12; missing NOTE_WORK: makedirs exist_ok=True at line 4) DO hold, but the no-H1 crash makes the dimension FAIL.",
+  "routeToPhase": "2b"
+}

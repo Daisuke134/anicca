@@ -1,0 +1,94 @@
+{
+  "sprintNumber": "bank-payout-round-6",
+  "feature": "ship-anicca-loop",
+  "reviewContext": {
+    "reviewType": "implementation",
+    "scope": "③ bank-direct UBI payout chain FINAL convergence re-review (round 6). Re-confirm money safety (no double-pay/loss/reversal), verify round-5 fixes for FIND-102/103/104, and check the FIND-103 raw-threading edit for any NEW hole.",
+    "filesReviewed": [
+      "skills/earn/lib/bank-fanout.mjs",
+      "skills/earn/lib/bank-recipients.mjs",
+      "skills/earn/bank-watcher.mjs",
+      "skills/earn/bank-payout-watcher.mjs",
+      "skills/earn/gmo-furikomi.mjs",
+      "apps/landing/netlify/functions/_jp-bank.js (anicca-project repo)",
+      "apps/landing/netlify/functions/income-signup.js (anicca-project repo)",
+      "skills/earn/__tests__/bank-payout-watcher.test.js",
+      "skills/earn/__tests__/bank-watcher.test.js",
+      "skills/earn/__tests__/bank-chain.integration.test.js",
+      "skills/earn/__tests__/bank-recipients.test.js",
+      "skills/earn/__tests__/bank-fanout.test.js",
+      "skills/earn/__tests__/gmo-furikomi.test.js"
+    ],
+    "note": "No round-6 input manifest exists on disk; reviewed against round-5 verdict + FIND-102/103/104 as the de-facto contract. Tests were NOT executed (no Bash in this reviewer environment); test-correctness verdicts are from static read of test + implementation bodies and are stated as such."
+  },
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-06-20T00:00:00Z",
+  "iteration": 6,
+  "moneySafetyConvergence": {
+    "criticalOrHighDoublePayPathRemains": true,
+    "criticalOrHighMoneyLossPathRemains": false,
+    "criticalOrHighMoneyReversalPathRemains": false,
+    "statement": "MONEY SAFETY REGRESSED IN ROUND 5. The round-5 fix for FIND-103 part-(2) made buildSubmittedPatch preserve the original bank notes via info.raw so a re-queued needs_review row 'stays parseable' (bank-payout-watcher.mjs:32-38). That re-parseability is exactly a NEW double-pay lever (FIND-105, critical): a 'submitted'/'needs_review' row carrying full bank fields + ref=R1, flipped back to 'queued' by the documented operator-recovery action, is re-parsed by parseBankRecipient as a valid recipient and DISPATCHED TO GMO A SECOND TIME — there is no guard rejecting a row that already carries ref=/submitted. Round-5's own write-up confirms the PRE-fix behavior (re-queue parses to null, dropped, never re-paid) was money-SAFE; the fix converted a money-SAFE recovery no-op into a money-UNSAFE re-dispatch. Therefore moneySafetyConvergence is NO LONGER MET. This is a RESOLVABLE issue (add a ref=/submitted de-dupe guard at the dispatch boundary) — it is NOT live-API-gated. The chain is NOT yet money-safe-with-all-resolvable-issues-closed."
+  },
+  "convergenceCeilingStatement": "Once FIND-105 (de-dupe guard) and FIND-106 (test the refuse-re-dispatch invariant) are fixed, the ONLY remaining items would be FIND-104-class live-API-gated limitations: the GMO bulktransfer/status and 残高照会 endpoint shapes and per-item status granularity are UNVERIFIABLE without a real GMO_AOZORA_ACCESS_TOKEN. Those are the honest convergence ceiling and cannot be closed until the token exists. But as of round 6 a RESOLVABLE critical double-pay path is OPEN, so the chain has not reached that ceiling yet.",
+  "roundFiveFindingStatus": {
+    "FIND-102": "CLOSED. New tests genuinely exercise the FIND-101 seam: parseClaimedAt round-trip on a real claim-stamped notes string composed with bank fields (bank-payout-watcher.test.js:72-80) and reconcileStuck NULL/unparseable-ts flagging (line 62-70). These are not tautological — they assert distinct observable outputs (parseRef==='G1', accountType==='2', both NULL/bad ts flagged). The reconcileStuck old/fresh test (line 98-112) asserts real branch behavior. NOTE the claimed_at portion is closed; the part of the same test block that asserts re-parseability is re-classified under FIND-106 (it tests the wrong invariant).",
+    "FIND-103": "PART-(1) CLOSED, PART-(2) FIX INTRODUCED A CRITICAL REGRESSION (FIND-105). Part-(1) NULL/unparseable claimed_at: reconcileStuck (bank-payout-watcher.mjs:79-91) now sets aged=true when ts is non-finite (line 87), so a processing row with NULL/unparseable claimed_at IS flagged to needs_review rather than silently dropped — verified by test line 62-70. CLOSED. Part-(2) operator re-queue parseability: the fix (preserve info.raw in buildSubmittedPatch) does make the row parseable, but parseability without a de-dupe guard is a double-pay lever — see FIND-105. NOT closed; made worse than the money-SAFE pre-fix state.",
+    "FIND-104": "OPEN, CARRIED OVER as the documented live-API-gated limitation (queryStatus/残高照会 endpoint+shape UNVERIFIED, batch-vs-item granularity). Cannot be closed without a real token. Severity remains low, but note it now feeds FIND-105: a false 'failed' classification routes a settled batch to needs_review, which an operator may re-queue into the FIND-105 double-pay path."
+  },
+  "newFindings": {
+    "FIND-105": "CRITICAL. The round-5 raw-threading edit re-opened a double-pay path via the documented operator re-queue of a needs_review row (bank fields + ref=R1 re-parse as a payable recipient; no ref/submitted guard). Resolvable without a live token.",
+    "FIND-106": "HIGH. The round-5 'seam' test asserts the dangerous re-parseability as if it were correct, locking in FIND-105 and providing no coverage of the refuse-re-dispatch invariant."
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-105"],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/bank-payout-watcher.mjs:107-110", "description": "Spec/design intent (FIND-100): 'failed'->needs_review so a human confirms with GMO BEFORE any re-send, explicitly to avoid auto-resend of irreversible money. The round-5 fix violates that intent by making the operator's manual re-queue silently re-dispatch the same money (FIND-105)."},
+        {"type": "file", "location": "skills/earn/lib/bank-recipients.mjs:15-34", "description": "parseBankRecipient honors method=bank + bank fields with no awareness of a ref=/submitted marker, so a post-submit row is treated identically to a fresh one."}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-106"],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/__tests__/bank-payout-watcher.test.js:62-70", "description": "FIND-103 part-(1): NULL/unparseable claimed_at flagging is genuinely tested (both 'nots' and 'bad' flagged)."},
+        {"type": "file", "location": "skills/earn/__tests__/bank-payout-watcher.test.js:72-80", "description": "The re-queue edge is tested for the WRONG invariant (re-parseability) and asserts nothing about refusing to re-dispatch a ref-bearing row (FIND-106). The double-pay edge from FIND-105 is untested."}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-105"],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/bank-watcher.mjs:23-75", "description": "The core no-double-pay invariants from prior rounds still hold IN ISOLATION: atomic claim subset dispatch (line 31-35), no-requeue-on-adapter-failure (line 56-62), markPaid-failure-stays-processing (line 65-72), release only pre-dispatch (line 41). These are correct."},
+        {"type": "file", "location": "skills/earn/bank-payout-watcher.mjs:32-38,125-141,189-193", "description": "BUT the round-5 buildSubmittedPatch raw-threading + absence of any ref=/submitted guard at readBankRecipients/parseBankRecipient/dispatch means a re-queued submitted row IS re-paid (FIND-105). markCompleted (line 165, status='paid') and markPaid-via-buildSubmittedPatch (line 189) are distinct deps passed under the same name in pollPass vs pass — money-safe but worth noting for clarity."}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/bank-payout-watcher.mjs:29-121", "description": "Pure helpers (buildSubmittedPatch/buildClaimPatch/claimedFromRows/idempotencyKey/parseRef/parseClaimedAt/claimWith/reconcileStuck/pollCompletions/todayYmd/makeGmoAdapter) remain cleanly separated from the live Supabase/GMO wiring (lines 123-233). The raw-threading (info.raw, rawById) is plumbed consistently bank-recipients.mjs:24 -> bank-watcher.mjs:45,67 -> bank-payout-watcher.mjs:36,67. No dead code or orphan references introduced by round-5. The structural organization is sound; the defect is a missing guard, not a structural one."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-104"],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/bank-payout-watcher.mjs:152-164,195-219", "description": "queryStatus and getBalance remain EXPLICITLY UNVERIFIED GMO endpoints (markers at line 152, 202) and batch-granular; cannot be verified without a live token. This is the documented convergence ceiling (FIND-104), now compounded because a false 'failed' can feed the FIND-105 re-queue double-pay lever."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 3,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": ["FIND-102", "FIND-103", "FIND-104"],
+    "duplicateFindings": []
+  }
+}

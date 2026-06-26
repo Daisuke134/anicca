@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-207",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "minor",
+  "description": "NOTE (B1.3, NOT a B1.2 failure per review charter): akt-treasury.sh still does not exist (Glob **/akt-treasury.sh -> none). Spec lines 32/52-53 make it the home of the off-path mint/swap that INV-5's POSITIVE half depends on. deploy-akash.sh correctly omits mint/swap (INV-5 negative half holds; verified absent at lines, oracle line 25), so this is explicitly scoped to the next sub-task B1.3 and is recorded here only for traceability — it does NOT count toward this sprint-2 verdict. Carried forward from sprint-1 FIND-011.",
+  "evidence": {
+    "filePath": "/Users/operator/anicca/docs/superpowers/specs/2026-06-26-B1-akash-provider-services-acceleration.md",
+    "lineRange": "32-53",
+    "snippet": "`/Users/operator/anicca/skills/self/spawn/scripts/akt-treasury.sh`  (NEW: off-path AKT/ACT top-up)"
+  },
+  "routeToPhase": "B1.3"
+}

@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-203",
+  "dimension": "verification_readiness",
+  "category": "test_coverage",
+  "severity": "critical",
+  "description": "THE REQUIRED NO-MOCK E2E (THE 4-D DONE GATE) HAS NOT BEEN RUN — ZERO REAL EVIDENCE ON DISK. Spec lines 60-68 make sandbox-2 a STRICT, mandatory gate: 'run deploy-akash.sh -> assert a real dseq + an active lease + lease-status shows the service up', and DONE = '4-D convergence ... verification (fresh adversary binary PASS + sandbox-2 real-deploy E2E)'. Glob of `.vcsdd/features/akash-provider-services-acceleration/**` finds ONLY the sprint-1 review JSON; there is NO sandbox-2 log, no captured real CLI output, no lease-status evidence, no evidence/ dir anywhere. Per HARD 0.31 and the project HONESTY rules, 'the fake-provider behavioral test passes' is NOT the same as 'it deploys on real Akash'. Because FIND-201/FIND-202 show every version-sensitive parse is self-confirmed by the fake, the fake passing provides NO assurance the real deploy works. The single most expensive failure mode (silent fail-closed on every real deploy) is exactly the one the fake cannot catch — and the gate designed to catch it (sandbox-2) was skipped. This dimension cannot pass without that fresh real-CLI evidence.",
+  "evidence": {
+    "filePath": "/Users/operator/anicca/docs/superpowers/specs/2026-06-26-B1-akash-provider-services-acceleration.md",
+    "lineRange": "60-68",
+    "snippet": "## NO-MOCK E2E (strict — real cloud)\n1. sandbox-2 testnet ... run deploy-akash.sh -> assert a real dseq + an active lease + lease-status shows the service up\n## DONE = 4-D convergence ... verification ✓ (fresh vcsdd-adversary binary PASS all dimensions + sandbox-2 real-deploy E2E)."
+  },
+  "correctFix": "Run deploy-akash.sh against sandbox-2 (free testnet AKT from the faucet) end-to-end; capture and commit under the feature evidence dir: the real `tx deployment create -o json`, the `query market bid list -o json`, the `query market lease list -o json` showing state active, and a `provider-services lease-status` showing the service up. Then feed those captures back as the oracle's fake outputs (FIND-201/202). Until that log exists on disk, verification_readiness is FAIL.",
+  "routeToPhase": "2b"
+}

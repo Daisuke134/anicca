@@ -1,0 +1,76 @@
+{
+  "sprintNumber": "earn-ubi-split",
+  "feature": "ship-anicca-loop",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-06-21T00:00:00Z",
+  "iteration": 1,
+  "commit": "dc250f8",
+  "reviewContext": {
+    "reviewType": "implementation",
+    "scope": "earn/ubi/_shared three-folder refactor",
+    "note": "Fresh-context adversarial review, disk-only. No Bash tool available in this environment; test execution dimension could NOT be run this session and is therefore NOT claimed (HONESTY RULE 4)."
+  },
+  "dimensions": [
+    {
+      "name": "import_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/lib/record.mjs:8-9", "description": "imports ../../_shared/lib/ledger.mjs + identity-guard.mjs — both exist at skills/_shared/lib/"},
+        {"type": "file", "location": "skills/ubi/distribute-ubi.mjs:11-13", "description": "imports ../_shared/lib/ledger.mjs + ../_shared/lib/usdc.mjs + ./lib/ubi.mjs — all exist"},
+        {"type": "file", "location": "skills/ubi/lib/ubi.mjs:8-9", "description": "imports ../../_shared/lib/ledger.mjs + transfer.mjs — both exist"},
+        {"type": "file", "location": "skills/ubi/bank-payout-watcher.mjs:14-17", "description": "imports ./bank-watcher.mjs, ./lib/bank-recipients.mjs, ./gmo-furikomi.mjs — all exist co-located"},
+        {"type": "file", "location": "skills/ubi/bank-watcher.mjs:13", "description": "imports ./lib/bank-fanout.mjs — exists"},
+        {"type": "file", "location": "skills/earn/run.sh:110,112,228", "description": "node -e dynamic import $HERE/../_shared/lib/verify-tx.mjs + usdc.mjs resolve to skills/_shared/lib/ which exist"},
+        {"type": "file", "location": "skills/earn/run.sh:105", "description": "dynamic import $HERE/lib/oxwork.mjs exists at skills/earn/lib/oxwork.mjs"}
+      ]
+    },
+    {
+      "name": "process_wiring",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/run.sh:62", "description": "distribute_ubi() execs node $HERE/../ubi/distribute-ubi.mjs — correct cross-folder link, target exists"},
+        {"type": "file", "location": "skills/ubi/com.anicca.ubi-watcher.plist:9-11", "description": "plist execs /Users/operator/anicca/skills/ubi/ubi-watcher-daemon.sh — exists"},
+        {"type": "file", "location": "skills/ubi/ubi-watcher-daemon.sh:9", "description": "daemon execs $HOME/anicca/skills/ubi/ubi-payout-watcher.mjs --loop — exists"},
+        {"type": "file", "location": "skills/ubi/ubi-payout-watcher.mjs:62", "description": "spawns join(__dirname,'execute-ubi.py') => skills/ubi/execute-ubi.py exists co-located"},
+        {"type": "file", "location": "skills/ubi/distribute-ubi.mjs:77", "description": "spawnSync python3 path.join(__dirname,'execute-ubi.py') co-located"},
+        {"type": "file", "location": "skills/ubi/ubi-watcher.mjs:78", "description": "execFileSync python3 path.join(__dirname,'execute-ubi.py') co-located"}
+      ]
+    },
+    {
+      "name": "money_safety_invariants",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/ubi/bank-payout-watcher.mjs:71-78,136-144", "description": "at-most-once: claimWith/claim atomic CAS PATCH &status=eq.queued returning only flipped rows; intact post-move"},
+        {"type": "file", "location": "skills/ubi/lib/bank-recipients.mjs:24", "description": "re-queued submitted (ref=) or claimed_at row REFUSED by parseBankRecipient — no auto-redispatch, intact"},
+        {"type": "file", "location": "skills/ubi/bank-payout-watcher.mjs:114-124,180-191", "description": "at-least-once: failed->needs_review (never auto-requeue), reconcileStuck flags rather than drops, intact"},
+        {"type": "file", "location": "skills/_shared/lib/identity-guard.mjs:77-88", "description": "own-funds-only: assertOwnIdentityOnly fails CLOSED on user-PII env; still imported by earn/lib/record.mjs:9"}
+      ]
+    },
+    {
+      "name": "orphans_dangling",
+      "verdict": "FAIL",
+      "findings": ["FIND-001"],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/SKILL.md:46,57-58", "description": "doc refs use ../ubi/ and ../_shared/lib/ correctly"},
+        {"type": "file", "location": "skills/earn", "description": "grep confirms no earn file references a ubi-only filename and no ubi file references a moved earn executor"}
+      ]
+    },
+    {
+      "name": "tests",
+      "verdict": "FAIL",
+      "findings": ["FIND-002"],
+      "evidence": [
+        {"type": "file", "location": "all __tests__ dirs", "description": "Static check: every test import path resolves to an existing module + existing exports. Live node --test NOT executed (no Bash tool in this session) — 97/0 is UNVERIFIED."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 2,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": ["import_integrity", "process_wiring", "money_safety_invariants", "orphans_dangling", "tests"],
+    "duplicateFindings": []
+  }
+}

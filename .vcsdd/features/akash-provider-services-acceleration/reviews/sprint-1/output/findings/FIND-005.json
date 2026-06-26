@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "implementation_correctness",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "description": "MISSING --node ON THE STATE-CHANGING TXs AND ON keys show. The script exports AKASH_NODE (line 20) but the lease-create (line 86) and deployment-create (line 70) and `keys show` (line 24) do NOT pass --node; they rely on provider-services reading AKASH_NODE from the environment. provider-services honors the AKASH_NODE env var for query/tx in recent versions, but the bid query on line 77 EXPLICITLY passes --node while the txs do NOT — this inconsistency means if env-var resolution differs from --node (e.g. an older binary, or a flag-vs-env precedence quirk) the txs broadcast to the DEFAULT node (often a dead/wrong endpoint) while the query hits the right one. The deployment would then be created on a different node than the bids are queried from -> 'no dseq' or 'no bids'. send-manifest (line 88) talks to the provider directly (no --node needed) which is fine, but it is also missing -y/keyring consistency context.",
+  "evidence": {
+    "filePath": "/Users/operator/anicca/skills/self/spawn/scripts/deploy-akash.sh",
+    "lineRange": "70-87",
+    "snippet": "tx deployment create ... (no --node)   vs   query market bid list ... --node \"$AKASH_NODE\"   vs   tx market lease create ... (no --node)"
+  },
+  "correctFix": "Pass --node \"$AKASH_NODE\" --chain-id \"$AKASH_CHAIN_ID\" explicitly on EVERY query and tx (deployment create, bid list, lease create, keys show where relevant) for consistency, OR rely solely on env vars for all of them — do not mix. Relying on AKASH_NODE env alone is acceptable only if verified against the actual binary version pinned in B1.",
+  "routeToPhase": "2b"
+}

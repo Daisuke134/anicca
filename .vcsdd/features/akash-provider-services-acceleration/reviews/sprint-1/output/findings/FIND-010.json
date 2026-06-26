@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-010",
+  "dimension": "edge_case_coverage",
+  "category": "security_surface",
+  "severity": "minor",
+  "description": "meta.json is fetched TWICE (two separate `curl -sSf`, lines 19 and 20). If the first succeeds and the second transiently fails, AKASH_NODE becomes empty and the guard on line 22 fail-closes — acceptable, but wasteful and creates a TOCTOU where chain_id and node could come from two different fetches (e.g. if the file changes between calls or one curl hits a different CDN edge). Also `curl ... | jq -r '.apis.rpc[0].address'` assumes the FIRST rpc endpoint is healthy; no fallback to rpc[1..]. A single dead rpc[0] takes down every spawn. The meta.json fetch-fail edge (spec EDGE CASES) IS handled (line 22 guard) so that requirement passes, but robustness is weak.",
+  "evidence": {
+    "filePath": "/Users/operator/anicca/skills/self/spawn/scripts/deploy-akash.sh",
+    "lineRange": "19-22",
+    "snippet": "export AKASH_CHAIN_ID=\"...$(curl -sSf \"$META\" | jq -r '.chain_id')\"\nexport AKASH_NODE=\"...$(curl -sSf \"$META\" | jq -r '.apis.rpc[0].address')\""
+  },
+  "correctFix": "Fetch meta.json ONCE into a var, then jq both fields out of it. Consider trying rpc[0..N] until one answers a quick `status` query before committing to it.",
+  "routeToPhase": "2b"
+}

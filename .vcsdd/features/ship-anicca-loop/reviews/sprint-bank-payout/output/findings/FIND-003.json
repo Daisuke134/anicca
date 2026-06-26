@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "implementation_correctness",
+  "category": "requirement_mismatch",
+  "severity": "high",
+  "description": "Permanently-stuck rows with NO operator path. Three terminal-ish states have no recovery: (1) adapter SUCCEEDS (irreversible transfer sent) but the subsequent 'submitted' PATCH fails — markPaid returns false and logs (bank-payout-watcher.mjs:102) but bankWatcherPass ignores the return value (bank-watcher.mjs:55-57) and still pushes to paid; the row stays 'processing' forever because readBankRecipients reads status=eq.queued only (bank-payout-watcher.mjs:81). (2) Adapter FAILURE (unknown outcome) intentionally leaves rows 'processing' for reconciliation (FIND-B), but no reconciliation reader, no operator query, and no 'processing' poll exists anywhere. (3) 'submitted' rows are orphaned by FIND-001/FIND-002. There is no admin/operator code path, alert, or query for stuck 'processing'/'submitted' rows. The safe-by-default design avoids double-pay by stranding money in limbo with no documented recovery.",
+  "evidence": {
+    "filePath": "skills/earn/bank-watcher.mjs",
+    "lineRange": "55-62,81",
+    "snippet": "await markPaid(t.to, {...}); paid.push(t.to);  // return value ignored; on PATCH fail row stuck 'processing'\n// readBankRecipients: status=eq.queued only -> 'processing'/'submitted' never revisited; no operator path"
+  },
+  "routeToPhase": "2b"
+}

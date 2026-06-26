@@ -1,0 +1,15 @@
+{
+  "findingId": "FIND-102",
+  "dimension": "test_quality",
+  "category": "test_coverage",
+  "severity": "medium",
+  "title": "The two round-4 fixes (claim stamps claimed_at into notes; reconcilePass ages on parseClaimedAt(notes)) are NOT exercised by any test in their COMPOSED live form — only the isolated pure pieces are tested, so the green suite proves the fix's wiring is correct without ever running notes->parseClaimedAt->reconcileStuck or raw+claimed_at stamping.",
+  "description": "FIND-101's fix has two moving parts that must compose: (1) claim() (bank-payout-watcher.mjs:126-134) writes notes=`${r.raw};claimed_at=${nowIso}` (preserving the original bank notes while appending a real claim time); (2) reconcilePass() (line 170-181) reads processing rows and maps r.notes->parseClaimedAt(r.notes)->ts, which reconcileStuck then ages. The tests cover ONLY the disjoint pure pieces: parseClaimedAt is unit-tested on hand-written strings (bank-payout-watcher.test.js:56-59) and reconcileStuck is unit-tested on hand-shaped {id,ts} rows (line 77-91). NOTHING asserts the COMPOSITION: no test feeds reconcileStuck a row whose ts came from parseClaimedAt applied to a real claim-stamped notes string (`method=bank;...;beneficiaryName=ﾅ;claimed_at=<iso>`), and no test asserts that claim()'s buildClaimPatch+notes patch actually produces `raw;claimed_at=<iso>` with the bank fields intact and the timestamp round-trippable by parseClaimedAt. This is exactly the round-4 gap restated for the new code: round-4 said the reconcile test 'never exercises the live applied_at->ts mapping' — the implementation switched applied_at->parseClaimedAt(notes) but the test STILL injects ts directly and STILL never exercises the live notes->ts mapping. The suite therefore stays green even if the claim notes format and parseClaimedAt regex diverged (e.g. an ISO timestamp containing a ';', a trailing ';', or claim writing claimed_at under a different key) — a coverage gap masking the precise seam FIND-101 created.",
+  "evidence": {
+    "filePath": "skills/earn/__tests__/bank-payout-watcher.test.js",
+    "lineRange": "56-59,77-91",
+    "snippet": "test(\"FIND-101 parseClaimedAt: extracts claimed_at ...\")  // pure regex only\ntest(\"FIND-003 reconcileStuck: flags only 'processing' rows ...\", readProcessing: async () => [ { id: \"old\", ts: new Date(now - 3_600_000).toISOString() }, ... ])  // ts injected directly, NOT via parseClaimedAt(claim-stamped notes)"
+  },
+  "recommendation": "Add a test that (a) builds a claim-stamped notes string the way claim() does (`${raw};claimed_at=${iso}`) and asserts parseClaimedAt round-trips the iso AND parseBankRecipient still extracts every bank field from that same string; and (b) drives reconcilePass with a mocked readProcessing returning REAL claim-stamped notes (not pre-shaped {id,ts}) to prove notes->parseClaimedAt->reconcileStuck ages an old row and keeps a fresh one. This closes the seam without needing a live token.",
+  "routeToPhase": "2b"
+}

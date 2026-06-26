@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "A_decimals_conclusion_true",
+  "category": "verification_tool_mismatch",
+  "severity": "critical",
+  "description": "The entire FINAL conclusion (no phantom ever; mUSDC is 8-dec; all 5 cost-basis keys reverted/kept) depends on a LIVE on-chain fact: that 0xEdc817=Moonwell mUSDC really holds ~43.66 mUSDC (~$1) at 8 decimals, and 0xbeef=Steakhouse/Morpho really holds ~0.971 shares (~$1) at 18 decimals. The dispatch REQUIRED the adversary to re-prove this via decimals()(0x313ce567) + balanceOf consensus across 3 Base RPCs. Bash/node/RPC were UNAVAILABLE in this review environment (every Bash call returns 'No such tool available'), so the adversary did NOT independently re-run the chain reads and refuses to fabricate them. On-disk corroboration is SUGGESTIVE but not decisive: (a) telemetry-poster.mjs:63,70 calls exchangeRateStored() on 0xEdc817 (a cToken interface) and computes moonwell as (mt*ex/1e18)/1e6 — a formula that already encodes the 8-dec/6-dec scaling and yields ~$1 without naively dividing mt by 1e18, so the LIVE dashboard math is consistent with the 8-dec claim and was itself never the bug; (b) convertToAssets() on 0xbeef (ERC4626) corroborates V=Morpho. BUT the proof artifact (state/cost-basis-onchain-proof.json) is the builder's OWN output and the adversary could not reproduce it. Verdict A is FAIL-as-unverified: the conclusion is plausible and internally consistent on disk, but the mandated independent live verification was not performed and a contradicting on-disk record still exists (see FIND-002).",
+  "evidence": {
+    "filePath": "skills/earn/state/cost-basis-onchain-proof.json",
+    "lineRange": "20-26",
+    "snippet": "\"moonwell\": { \"contract\": \"0xEdc817...\", \"decimals\": 8, \"tokens\": 43.65996686, \"has_real_position\": true }"
+  },
+  "routeToPhase": "2b"
+}

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "implementation_correctness",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "FIND-D (completion poll) is NOT genuinely CLOSED for production. pollCompletions() exists as a pure, dependency-injected function and is unit-tested, but it is NEVER wired into any live path: pass() (the daemon entrypoint, bank-payout-watcher.mjs:132-144) calls only bankWatcherPass and never pollCompletions; the CLI block (bank-payout-watcher.mjs:146-148) only calls pass(); and a repo-wide search found zero cron/daemon/live invocation of pollCompletions or of any readSubmitted/queryStatus/requeue implementation. Consequently every recipient that bankWatcherPass marks 'submitted' (the success path) is left permanently 'submitted' in production — never promoted to 'paid', never requeued on GMO failure. The state machine claimed by FIND-D is dead in production.",
+  "evidence": {
+    "filePath": "skills/earn/bank-payout-watcher.mjs",
+    "lineRange": "66-76,132-148",
+    "snippet": "export async function pollCompletions({ readSubmitted, queryStatus, markPaid, requeue }) { ... }  // exported + tested, but pass() never calls it and no live readSubmitted/queryStatus/requeue exists anywhere"
+  },
+  "routeToPhase": "2b"
+}

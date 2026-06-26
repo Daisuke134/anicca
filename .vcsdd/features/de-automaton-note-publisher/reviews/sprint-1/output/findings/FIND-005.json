@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "test_adequacy",
+  "category": "test_quality",
+  "severity": "critical",
+  "description": "test-de-automaton.py is a purely STATIC source-grep oracle and does NOT test INV-1 (no-regression) or INV-2 (no-leak) as BEHAVIORS at all. The spec (line 49) demands a NO-MOCK E2E: a real stage1 run verifying INV-1 (same title/tables/mermaids + manifest under NOTE_WORK) and INV-2 (run with a non-Automaton NOTE_SRC + NOTE_TAGS=foo,bar + NOTE_IMG_DIR=demo, then grep the PRODUCED manifest for leaks). The test never imports/executes either script, never sets any NOTE_* env, never produces or greps a manifest, and never asserts a title/tables/mermaids count. It only checks that certain SUBSTRINGS exist in the source files (e.g. '\"NOTE_SRC\" in s1'). A symbol can be present yet mis-wired (see FIND-001: NOTE_SRC is present in stage1 but the orchestrator never sets it) and this test still passes GREEN. The test therefore passes vacuously with respect to the two invariants that matter most.",
+  "evidence": {
+    "filePath": "/Users/operator/.openclaw/skills/ai-entity-article-writer/scripts/note-publish/test-de-automaton.py",
+    "lineRange": "26-33",
+    "snippet": "chk(\"NOTE_SRC\" in s1, \"INV-2 stage1 NOTE_SRC not env'd\")\nchk(\"NOTE_WORK\" in s1, \"INV-2 stage1 NOTE_WORK not used\")\nchk(\"NOTE_IMG_DIR\" in s1, \"INV-2 stage1 NOTE_IMG_DIR not used\")"
+  },
+  "correctFix": "Add a real run: (1) INV-1 — run stage1 with no env on the default source, assert printed title/tables/mermaids equal a recorded golden and that {NOTE_WORK}/note-manifest.json exists; (2) INV-2 — write a tiny non-Automaton md, run stage1 with NOTE_SRC/NOTE_TAGS/NOTE_IMG_DIR set, then assert the manifest contains the test title and NO 'automaton'/'166686292'/the JP md path. Static greps may stay as a cheap pre-check but cannot be the only oracle.",
+  "routeToPhase": "2b"
+}

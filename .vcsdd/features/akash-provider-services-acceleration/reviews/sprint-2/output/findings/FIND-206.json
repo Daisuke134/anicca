@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-206",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "major",
+  "description": "send-manifest SUCCESS IS JUDGED ONLY BY EXIT CODE, AND THE FAKE NEVER EXERCISES A MANIFEST FAILURE. Lines 113-120 loop send-manifest up to 5 times and treat a 0 exit as success (`SENT=1`). `provider-services send-manifest` talks to the provider over HTTP and can return exit 0 while the provider rejects/partially-applies the manifest, or print an error to stdout while still exiting 0 in some builds; the script discards stdout/stderr (`>/dev/null 2>&1`, line 115) so a soft failure is invisible. The spec's E2E success criterion is 'lease-status shows the service UP' (spec line 62), but deploy-akash.sh never calls `lease-status` to confirm the workload actually started — it prints the dseq as 'success' the moment send-manifest exits 0. Thus the script can report success (print dseq) for a deployment whose container never boots, which is the exact 'BROKEN: container NEVER boots' problem B1 set out to fix (spec lines 11-13). The oracle has NO fail case for send-manifest (mkfake modes are only create/nobid/lease, test-deploy-akash.sh:39), so a manifest-rejection regression would pass.",
+  "evidence": {
+    "filePath": "/Users/operator/anicca/skills/self/spawn/scripts/deploy-akash.sh",
+    "lineRange": "113-122",
+    "snippet": "for _ in $(seq 1 5); do\n  if \"$PS\" send-manifest \"$SDL_FILE\" --dseq \"$DSEQ\" --provider \"$PROVIDER\" --from \"$AKASH_KEY_NAME\" >/dev/null 2>&1; then SENT=1; break; fi\n  sleep 3\ndone\n...\nprintf '%s' \"$DSEQ\""
+  },
+  "correctFix": "After send-manifest, poll `provider-services lease-status --dseq \"$DSEQ\" --provider \"$PROVIDER\" --from \"$AKASH_KEY_NAME\" -o json` and require the service to report available/running before printing the dseq (matching spec line 62 'service up'); fail-closed otherwise. Add a `manifest`/`status` fail mode to mkfake asserting rc!=0 and empty stdout. Capture stderr to the error message instead of discarding it.",
+  "routeToPhase": "2b"
+}

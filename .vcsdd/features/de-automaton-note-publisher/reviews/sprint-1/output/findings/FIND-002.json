@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "missed_hardcodes",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "note-stage2-publish.py:46 prints a HARDCODED Automaton-specific success URL: print(\"UPDATED https://note.com/anicca123/n/na3a631e63d1a\", flush=True). This is the only success signal stage2 emits, and publish-to-note.sh:47 comments that 'the new key would be parsed from stage2 output here'. For a non-Automaton article the actual updated note is NUM (=os.environ NOTE_NUM), whose slug is NOT na3a631e63d1a, yet the output reports the Automaton article's public URL. This is article-specific identity (the note slug na3a631e63d1a corresponds to the Automaton article id 166686292), NOT account identity, so it MUST be parameterized. A downstream verify/report step keying off this line would verify/report the WRONG article. Distinguish: user_id=14651590 / username=anicca123 (stage2:25) are ACCOUNT identity and are fine to keep hardcoded; na3a631e63d1a here is ARTICLE identity and leaks.",
+  "evidence": {
+    "filePath": "/Users/operator/.openclaw/skills/ai-entity-article-writer/scripts/note-stage2-publish.py",
+    "lineRange": "45-46",
+    "snippet": "await update_article(sess, NUM, ArticleInput(title=title, body=nb, tags=TAGS))\n    print(\"UPDATED https://note.com/anicca123/n/na3a631e63d1a\", flush=True)"
+  },
+  "correctFix": "Derive the slug from the update_article response (the note key returned by note-mcp), or at minimum print the NUM that was updated: print(f\"UPDATED note id={NUM}\"). Do not emit a fixed Automaton slug as the universal success message.",
+  "routeToPhase": "2b"
+}
