@@ -25,7 +25,20 @@ export default function LmBody() {
     setTg(p && /^\d{1,20}$/.test(p) ? p : null);
   }, []);
 
-  if (typeof tg === 'string') return <LmClient />;
+  // Pre-mount (SSR + first client paint, before the effect reads the URL): show a neutral loader, NOT the
+  // gate — a Telegram visitor (?tg=) must never flash "coming soon" while we resolve the param.
+  if (tg === undefined) {
+    return (
+      <section className="w-full px-4 pt-28 pb-24 text-center">
+        <div
+          className="mx-auto h-6 w-6 animate-spin rounded-full border-2 border-[hsl(var(--gold))] border-t-transparent"
+          role="status"
+          aria-label="Loading"
+        />
+      </section>
+    );
+  }
+  if (tg) return <LmClient />;
 
   return (
     <section className="w-full px-4 pt-16 pb-20 md:pt-24">
