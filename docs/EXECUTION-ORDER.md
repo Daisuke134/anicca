@@ -90,7 +90,12 @@ NICHE is intentional & stays: articles about **AI-entities** = AI that earns mon
 within it via search; the real generalization is A3 = parameterize the Automaton-hardcoded publishers.)
 
 ## PHASE B — [ANICCA] CLOUD, NO HUMAN IN LOOP + the recipe
-- ☐ B1. accelerate the **Akash transaction** → run Anicca on cloud **unaided** (no human in loop) → 1 cloud body live + earning.
+- ◐ B1. accelerate the **Akash deploy** → 1 cloud Anicca **unaided** + earning. SEARCHED docs (META-RULE): Console Managed
+       Wallet API = credit-card = HUMAN → REJECTED; the no-human lane = provider-services + own crypto wallet. Found the
+       current deploy-akash.sh is BROKEN (only `tx deployment create`, no bid/lease/manifest → never boots) AND slow
+       (~3min: per-spawn USDC→AKT swap + gas-auto sim). FIX (docs-cited): provider-services FULL flow + meta.json fast
+       RPC + fixed gas + one-time cert + ACT pre-mint OFF-path treasury + bid-poll → ~20-30s, no-human, actually boots.
+       Spec: docs/superpowers/specs/2026-06-26-B1-akash-provider-services-acceleration.md. Doing via VSDD, sub-tasks below.
 - ☐ B2. **THE RECIPE**: model × skills × setup so **every spawned Anicca earns > it spends**. Sub-track (ANICCA's earn tools):
        x402 first real sale · token (MoltX) · 0xwork · realised revenue per tool > 0 · deploy idle Solana→Base ·
        model experiment free→auto→premium (which first reaches net-positive = the recipe).
