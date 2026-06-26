@@ -76,12 +76,13 @@ NICHE is intentional & stays: articles about **AI-entities** = AI that earns mon
        18/18 images render (scroll-for-lazy), EN cover (replaced JP thumb) + EN title (fixed '---' parse bug),
        no funnel / Getting-started / Anicca, honest closing, body 33k chars. Skill fixed: publish-to-x.sh extracts
        X_TITLE from frontmatter + skips the JP thumb for EN sources.
-   - A4-Substack(EN): ☑ FINAL DRAFT done 2026-06-25 (id **203556581**, NOT published; old 203553806 superseded — delete):
-       full EN translation (75k, stop-slop 40/50) → free explainer + {paywall at "Running it for real"} + paid setup/
-       results; 19 EN tables + 6 EN diagrams ALL ≤950px (render-verify gate caught 7 oversized → autofit+pad → PASS).
-       /vcsdd ADVERSARY: markdown clean confirmed (0 em-dash, 0 Anicca, 0 Getting-started, 0 JP kana) + FOUND a JP
-       screenshot baked in (fund-combined.png had 「SOL送金」etc.) → REMOVED the fund image + rebuilt the draft (203556581).
-       ⏳ Dais reviews in the morning → publish (SUBSTACK_GO=1). daily-driver LOGGED OUT of Substack → 1-tap login for live preview.
+   - A4-Substack(EN): ☑☑ PUBLISHED LIVE 2026-06-26 (Dais consent): https://aniccabuddha.substack.com/p/i-funded-an-ai-that-earns-its-own
+       — full EN paid subscription (free explainer + {paywall at "Running it for real"} + paid setup/results), 75k, stop-slop 40/50.
+       LIVE-VERIFIED in the browser: 26/26 images render, EN title + EN subtitle, paywall present, no published-leak / Anicca /
+       JP-in-body (the only JP on the page = Substack's own UI chrome, account locale). /vcsdd + browser caught + FIXED 4 issues:
+       (1) JP fund screenshot fund-combined.png 「SOL送金」 → removed; (2) JP subtitle → EN (subtitle now env SUBSTACK_SUBTITLE);
+       (3) stray "published: false" body line (LLM artifact) → stripped from source + script guard added; (4) broken frontmatter.
+       Superseded drafts 203553806 / 203556581 / 203693076 deleted. 19 EN tables + 6 EN diagrams all ≤950px.
    - RULE: each = full-page browser verify-loop, NEVER publish unverified slop.
 (REMOVED old "A5 generalize to any AI/crypto" — wrong: niche = AI-entity by design; the writing is already general
 within it via search; the real generalization is A3 = parameterize the Automaton-hardcoded publishers.)
