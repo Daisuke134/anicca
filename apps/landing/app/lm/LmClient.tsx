@@ -289,7 +289,8 @@ export default function LmClient() {
     [uid, sig]
   );
   const connectCal = useCallback(() => { setErr(''); runConnect('calendar-connect', setCal); }, [runConnect]);
-  const connectGmail = useCallback(() => { setErr(''); runConnect('unipile-connect', setGmail); }, [runConnect]);
+  // v1 (Dais 2026-06-26): Gmail/Unipile connect REMOVED — Telegram is the ask/reply channel; web users are
+  // reached by own-domain email (reply-by-email). Onboarding = login → name → calendar → phone → pay.
 
   const savePhone = useCallback(async () => {
     setErr('');
@@ -394,16 +395,10 @@ export default function LmClient() {
               strings={t.connect}
               onClick={connectCal}
             />
-            <ConnectRow
-              label={t.connect.gmail}
-              state={gmail}
-              strings={t.connect}
-              onClick={connectGmail}
-            />
           </div>
           <button
             type="button"
-            disabled={cal !== 'connected' || gmail !== 'connected'}
+            disabled={cal !== 'connected'}
             onClick={() => setStep('phone')}
             className="mt-6 inline-flex w-full items-center justify-center rounded-pill bg-[hsl(var(--gold))] px-6 py-3 text-sm font-semibold text-[#18181b] transition-all hover:brightness-95 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
           >
@@ -492,7 +487,6 @@ export default function LmClient() {
             </p>
             <div className="mt-3 flex flex-wrap gap-2 text-xs">
               <Pill ok={cal === 'connected'}>{t.dashboard.pills.calendar}</Pill>
-              <Pill ok={gmail === 'connected'}>{t.dashboard.pills.gmail}</Pill>
               <Pill ok={!!natNum}>{t.dashboard.pills.phone}</Pill>
             </div>
             {/* ONE-TIME proof-of-life call: a new user taps once, hears it works, then the button disables

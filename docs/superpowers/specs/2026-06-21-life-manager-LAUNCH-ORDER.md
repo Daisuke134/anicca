@@ -685,3 +685,46 @@ event whose ranking depends on timing (Tue–Thu 12:01am PT) + a polished galler
 PH is not logged in on the daily-driver. GO-LIVE = Dais (AM): log into PH (Google keiodaisuke), generate the
 1270×760 gallery images from the live /life-manager page, create the launch, schedule the optimal day, hit launch,
 post the first comment. Everything else is ready.
+
+---
+
+## ★ MORNING HANDOFF (autonomous run, 2026-06-26) — what's done / prepped / your move ★
+
+### DONE + VERIFIED (autonomous)
+- v1 Telegram product LIVE + Dais-dogfooded (#18). Launch-ready.
+- web reply-by-email CODE complete, deployed, idempotent, VCSDD-adversary PASS (2 rounds), real send verified.
+- D-5 ARTICLES JP+EN — FINAL DRAFTS, vcsdd-adversary PASS (2 rounds): docs/articles/2026-06-26-life-manager-{jp,en}.md.
+  NOT published (your call AM). Honest: states email send live, receive unit-tested/inbound-not-wired, Telegram live.
+- Live JA landing over-claim fixed (onTime "3本"→"2本"), deployed.
+
+### PREPPED, ready-to-go (needs you / an account / a timed public moment)
+- D-4 Product Hunt: full ready-to-submit listing (docs/launch/product-hunt-life-manager.md). YOUR MOVE: log into PH,
+  generate gallery images from the live page, schedule a Tue–Thu 12:01am PT, launch, post the first comment.
+- D-2 Capafy: listing content (docs/launch/capafy-life-manager-leave-time-planner.md). YOUR MOVE: run the Capafy
+  publish pipeline on your account (init→configure→ship→web submit).
+- D-5 publish: when you approve the drafts, the article→note/Zenn/Substack/X/dev.to/TikTok pipeline runs.
+
+### REMAINING (large builds / blocked — documented, not faked done)
+- WEB v1.5 (#15/16/20/21/22): inbound is BLOCKED on Resend (live UI has no receiving toggle on this Free account).
+  Come-back path = SendGrid Inbound Parse OR Mailgun free (MX on reply.aniccaai.com via Netlify DNS + webhook →
+  /inbound-email; their webhook carries the body so handleInboundReply works as-is). Then S5 web onboarding drop
+  Gmail + S6 un-gate + S7 E2E. Per your plan: AFTER launch + marketing.
+- D-3 content crons (TikTok/YT demo reels): a build needing assets + the posting accounts.
+- D-6 directories (BetaList etc.) + PH follow-up + churn-prevention.
+- PHASE E (self-improve + proactive booking + merge into Anicca): large, separate.
+
+---
+
+## ★★★ NEW LAUNCH SEQUENCE (Dais 2026-06-26) — launch TODAY, Tokyo time ★★★
+| # | task | notes |
+|---|---|---|
+| **0** | **STEP-0 launch-blocker FIX** (DONE in code): `/lm?tg=<chat_id>` now renders LmClient (Telegram funnel works); Gmail/Unipile step REMOVED from LmClient (connect = Calendar only). Standalone `/lm` stays coming-soon. → deploy + I browser-verify a NEW account through @LifeManagerBotbot name→calendar→phone→pay (VCSDD ②browser gate) + fresh adversary. | LAUNCH BLOCKER |
+| **1** | **D-4 Product Hunt launch** — Google login → gallery from live page → launch TODAY → first comment | |
+| **2** | **X release post** — approved copy, JP+EN, X Premium long post, @aniccaxxx (Postiz or browser) | |
+| **3** | **autofill 3-case VCSDD re-verify** (Dais worried) — the Google-Calendar autofill: (a) online vs physical classify, (b) unknown-address web search, (c) depart-by = start−travel−buffer. spec→test→fresh-adversary→NO-MOCK E2E on a real calendar | |
+| **4** | **D-3 reels + daily-log→TikTok** — demo reels (3 scripts ready) + a cron that posts EACH DAY's Life Manager log to TikTok for marketing | marketing before article |
+| **5** | **D-5 article publish** — JP+EN final drafts (adversary PASS) → note/Zenn/dev.to/Substack/X/TikTok | after marketing |
+| **6** | **D-2 Capafy** — list Leave-Time Planner (listing ready; CP2 credential-hosting bug to resolve) | |
+| **7** | **web v1.5** — #15 inbound (SendGrid/Mailgun MX+webhook) → #16 Unipile cleanup → #20 already done (gmail dropped) → #21 fully un-gate web → #22 web E2E | |
+| **8** | **D-6 directories** — BetaList/Peerlist/etc. + PH follow-up + churn-prevention | |
+| **9** | **PHASE E** — self-improve + proactive booking + merge into Anicca | |
