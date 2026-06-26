@@ -22,7 +22,7 @@ export const launchStrings = {
     lm: {
       metaTitle: 'Life Manager: Get started',
       metaDesc:
-        'Life Manager: connect your Google Calendar and Gmail, add your phone, and it keeps you on time by call and email. $20/mo.',
+        'Life Manager: connect your Google Calendar, add your phone, and it calls you before you need to leave. $20/mo.',
       eyebrow: 'Life Manager · $20/mo',
       soonTitle: 'Web sign-up is coming soon',
       soonBody:
@@ -30,11 +30,11 @@ export const launchStrings = {
       soonCta: 'Start on Telegram',
       heroTitle: 'Never be late again.',
       heroBody:
-        'Sign in, connect your Google Calendar and Gmail, add your phone. Life Manager then handles travel time, calls, location asks, late-notices, and your mail. 24/7, by phone and email.',
+        'Sign in, connect your Google Calendar, add your phone. Life Manager then handles travel time, calls you before you leave, asks on Telegram when a location is unclear, and drafts your late-notices. 24/7.',
       stepAria: (i: number, n: number) => `step ${i} of ${n}`,
       login: {
         title: 'Sign in to start',
-        body: 'Life Manager keeps you on time by phone and email. $20/mo.',
+        body: 'Life Manager keeps you on time by phone. $20/mo.',
         button: 'Continue with Google',
       },
       name: {
@@ -45,8 +45,8 @@ export const launchStrings = {
         saveError: 'Could not save. Try again.',
       },
       connect: {
-        title: 'Connect Calendar & Gmail',
-        body: 'Connect each below. Life Manager reads your calendar and your mail, asks you when something is unclear, and acts only with your approval.',
+        title: 'Connect your Calendar',
+        body: 'Connect your Google Calendar below. Life Manager reads your schedule, asks you on Telegram when something is unclear, and acts only with your approval.',
         calendar: 'Google Calendar',
         gmail: 'Gmail',
         button: 'Continue',
@@ -84,7 +84,7 @@ export const launchStrings = {
           { title: '10 & 5-min calls', desc: 'It calls twice before each event with route guidance.' },
           {
             title: 'Location asks',
-            desc: 'No location? It emails you, and your reply updates the event.',
+            desc: 'No location? It asks you on Telegram, and your reply updates the event.',
           },
           {
             title: 'Late-notice',
@@ -116,7 +116,7 @@ export const launchStrings = {
       },
       featuresTitle: 'Four skills, one job: you stop being late',
       featuresIntro:
-        'Life Manager runs your whole life: wake, sleep, meetings, commute, meditation, work. Every event, every time. It runs four skills on its own server and works your calendar by phone and email. $20/mo.',
+        'Life Manager runs your whole life: wake, sleep, meetings, commute, meditation, work. Every event, every time. It runs four skills on its own server and works your calendar by phone and Telegram. $20/mo.',
       liveLabel: 'live',
       features: [
         {
@@ -133,15 +133,15 @@ export const launchStrings = {
         },
         {
           id: 'ask',
-          label: 'Email',
+          label: 'Telegram',
           headline: 'No location? It asks you',
-          body: 'When an event has no place attached, Life Manager emails you to ask where it is. Reply with the address and it updates the event for you.',
+          body: 'When an event has no place attached, Life Manager messages you on Telegram to ask where it is. Reply with the address and it updates the event for you.',
         },
         {
           id: 'notify',
           label: 'Attendees',
           headline: 'Running late? It warns the people waiting',
-          body: 'When your travel time says you will not make it, Life Manager writes a short heads-up to the people in the event and emails it to you first. Reply OK and it sends. All by email.',
+          body: 'When your travel time says you will not make it, Life Manager writes a short heads-up to the people in the event and shows it to you first. Reply OK and it sends.',
         },
       ],
       travelTitle: 'How travel blocks work',
@@ -167,7 +167,7 @@ export const launchStrings = {
       gettingStartedTitle: 'Getting started',
       gettingStartedSteps: [
         { link: 'Start onboarding', rest: '. Sign in with Google and tell it your name.' },
-        { link: '', rest: 'Connect Google Calendar and Gmail (one click, via Composio).' },
+        { link: '', rest: 'Connect Google Calendar (one click, via Composio).' },
         { link: '', rest: 'Add your phone so it can call you 10 and 5 minutes before every event. Share live location if you want.' },
         {
           link: '',
@@ -178,7 +178,7 @@ export const launchStrings = {
       ],
       cardGetStartedEyebrow: 'get started',
       cardGetStartedTitle: 'Life Manager, $20/mo',
-      cardGetStartedDesc: 'Sign in with Google, give your name, connect Calendar and Gmail, add your phone, share location if you want. Done.',
+      cardGetStartedDesc: 'Sign in with Google, give your name, connect Calendar, add your phone, share location if you want. Done.',
       cardColonyEyebrow: 'open source',
       cardColonyTitle: 'Life Manager Skill (OSS)',
       cardColonyDesc: 'The same skill, free — run it locally on your own OpenClaw. Clone the repo, add your keys, done. On GitHub.',
@@ -209,7 +209,7 @@ export const launchStrings = {
     lm: {
       metaTitle: 'ライフマネージャー：はじめる',
       metaDesc:
-        'ライフマネージャー。Google カレンダーと Gmail をつなぎ、電話番号を登録すれば、電話とメールで遅刻を防ぎ、メールも捌く。月 $20。',
+        'ライフマネージャー。Google カレンダーをつなぎ、電話番号を登録すれば、出発前に電話で遅刻を防ぐ。月 $20。',
       eyebrow: 'ライフマネージャー · 月 $20',
       soonTitle: 'ウェブ登録は近日公開',
       soonBody:
@@ -217,11 +217,11 @@ export const launchStrings = {
       soonCta: 'Telegram で始める',
       heroTitle: 'もう、遅刻しない。',
       heroBody:
-        'ログインして、Google カレンダーと Gmail をつなぎ、電話番号を登録するだけ。移動時間の確保も、電話も、場所の確認も、遅刻連絡も、メール対応も、ライフマネージャーが引き受ける。24/7、電話とメールで。',
+        'ログインして、Google カレンダーをつなぎ、電話番号を登録するだけ。移動時間の確保も、出発前の電話も、場所の確認も、遅刻連絡も、ライフマネージャーが引き受ける。24/7。',
       stepAria: (i: number, n: number) => `ステップ ${i} / ${n}`,
       login: {
         title: 'ログインして始める',
-        body: 'ライフマネージャーが、電話とメールで遅刻を防ぐ。月 $20。',
+        body: 'ライフマネージャーが、電話で遅刻を防ぐ。月 $20。',
         button: 'Google で続ける',
       },
       name: {
@@ -232,8 +232,8 @@ export const launchStrings = {
         saveError: '保存できませんでした。もう一度お試しください。',
       },
       connect: {
-        title: 'カレンダーと Gmail をつなぐ',
-        body: '下のそれぞれを接続。ライフマネージャーが予定とメールを読み、不明点はあなたに聞き、承認を得てから動く。',
+        title: 'カレンダーをつなぐ',
+        body: 'Google カレンダーを接続。ライフマネージャーが予定を読み、不明点は Telegram で聞き、承認を得てから動く。',
         calendar: 'Google カレンダー',
         gmail: 'Gmail',
         button: '続ける',
@@ -271,7 +271,7 @@ export const launchStrings = {
           { title: '10分・5分前の電話', desc: '各予定の前に2回、ルートを案内する電話をかける。' },
           {
             title: '場所の確認',
-            desc: '場所が未入力なら、メールで確認する。返信すれば予定を更新する。',
+            desc: '場所が未入力なら、Telegram で確認する。返信すれば予定を更新する。',
           },
           {
             title: '遅刻連絡',
@@ -290,7 +290,7 @@ export const launchStrings = {
         'ライフマネージャーが、あなたの一日をまわす。起床から就寝、仕事も通勤も瞑想も。Google カレンダーを読んで、予定の前に移動時間を入れ、出発の 10 分前と 5 分前に電話する。近づくほど声は急かす。開くアプリはない。',
       heroHeadline: 'ライフマネージャー',
       heroSubtext:
-        'ライフマネージャーが一日をまわすから、もう寝坊しないし、遅刻もしない。カレンダーを読んで移動時間を入れ、出発の 10 分前と 5 分前に電話する。近づくほど声は急かす。間に合わないときは、待っている相手への連絡文を下書きして、あなたが OK と返した瞬間に送る。電話とメールだけ。月 $20。開くアプリはない。',
+        'ライフマネージャーが一日をまわすから、もう寝坊しないし、遅刻もしない。カレンダーを読んで移動時間を入れ、出発の 10 分前と 5 分前に電話する。近づくほど声は急かす。間に合わないときは、待っている相手への連絡文を下書きして、あなたが OK と返した瞬間に送る。電話と Telegram だけ。月 $20。開くアプリはない。',
       heroPrimary: 'はじめる（月 $20）',
       heroSecondary: '仕組みを見る',
       asset: {
@@ -303,7 +303,7 @@ export const launchStrings = {
       },
       featuresTitle: '4 つのスキル、ひとつの仕事。もう遅刻しない',
       featuresIntro:
-        'ライフマネージャーが生活をまるごとまわす。起床も就寝も、会議も通勤も瞑想も仕事も。どの予定も、毎回。4 つのスキルを自分のサーバーで動かして、電話とメールでカレンダーを回す。月 $20。',
+        'ライフマネージャーが生活をまるごとまわす。起床も就寝も、会議も通勤も瞑想も仕事も。どの予定も、毎回。4 つのスキルを自分のサーバーで動かして、電話と Telegram でカレンダーを回す。月 $20。',
       liveLabel: '稼働中',
       features: [
         {
@@ -320,15 +320,15 @@ export const launchStrings = {
         },
         {
           id: 'ask',
-          label: 'メール',
+          label: 'Telegram',
           headline: '場所がなければ、聞いてくる',
-          body: '予定に場所が入っていないと、ライフマネージャーがメールで「ここどこ？」と聞く。住所を返信すれば、そのまま予定に書き込む。',
+          body: '予定に場所が入っていないと、ライフマネージャーが Telegram で「ここどこ？」と聞く。住所を返信すれば、そのまま予定に書き込む。',
         },
         {
           id: 'notify',
           label: '出席者',
           headline: '遅れそうなら、待つ人に知らせる',
-          body: '移動時間から間に合わないと分かると、ライフマネージャーが待っている相手への短い連絡文を書いて、先にあなたへメールする。「OK」と返せば送る。ぜんぶメールで済む。',
+          body: '移動時間から間に合わないと分かると、ライフマネージャーが待っている相手への短い連絡文を書いて、先にあなたに見せる。「OK」と返せば送る。',
         },
       ],
       travelTitle: '移動ブロックの仕組み',
@@ -354,7 +354,7 @@ export const launchStrings = {
       gettingStartedTitle: 'はじめかた',
       gettingStartedSteps: [
         { link: 'オンボーディングを開始', rest: '。Google でログインして、名前を伝える。' },
-        { link: '', rest: 'Google カレンダーと Gmail をつなぐ（Composio でワンクリック）。' },
+        { link: '', rest: 'Google カレンダーをつなぐ（Composio でワンクリック）。' },
         { link: '', rest: '電話番号を登録すれば、予定の 10 分前と 5 分前に電話がくる。位置情報は任意でつなげる。' },
         {
           link: '',
@@ -365,7 +365,7 @@ export const launchStrings = {
       ],
       cardGetStartedEyebrow: 'はじめる',
       cardGetStartedTitle: 'ライフマネージャー（月 $20）',
-      cardGetStartedDesc: 'Google でログイン、名前を伝え、カレンダーと Gmail をつなぎ、電話番号を登録。位置情報は任意。これで完了。',
+      cardGetStartedDesc: 'Google でログイン、名前を伝え、カレンダーをつなぎ、電話番号を登録。位置情報は任意。これで完了。',
       cardColonyEyebrow: 'オープンソース',
       cardColonyTitle: 'ライフマネージャー スキル（OSS）',
       cardColonyDesc: '同じスキルを無料で — 自分の OpenClaw でローカル実行。リポジトリを clone して鍵を入れるだけ。GitHub にある。',
