@@ -114,7 +114,6 @@ export default function LmClient() {
   const [dial, setDial] = useState('81'); // JP default
   const [natNum, setNatNum] = useState(''); // national number (digits only)
   const [cal, setCal] = useState<ConnState>('idle');
-  const [gmail, setGmail] = useState<ConnState>('idle');
   const [err, setErr] = useState<string>('');
   const [callState, setCallState] = useState<'idle' | 'calling' | 'done' | 'error'>('idle');
   const testCall = useCallback(async () => {
@@ -173,7 +172,6 @@ export default function LmClient() {
           .catch(() => set('idle'));
       };
       restoreConn('anicca.lm.cal', 'calendar-connect', setCal);
-      restoreConn('anicca.lm.gmail', 'unipile-connect', setGmail);
       // Telegram deep-link (/lm?tg=<chat_id>): stash the chat id (survives the Google redirect via
       // localStorage), then bind it to this row once we have a signed uid so the cloud loops can
       // message the user on Telegram.
@@ -208,15 +206,14 @@ export default function LmClient() {
     };
   }, []);
 
-  // Persist progress (cal/gmail/step) so the OAuth redirect never strands the user mid-flow.
+  // Persist progress (cal/step) so the OAuth redirect never strands the user mid-flow.
   useEffect(() => {
     if (!uid) return;
     try {
       window.localStorage.setItem('anicca.lm.cal', cal);
-      window.localStorage.setItem('anicca.lm.gmail', gmail);
       window.localStorage.setItem('anicca.lm.step', step);
     } catch {}
-  }, [uid, cal, gmail, step]);
+  }, [uid, cal, step]);
 
   const login = useCallback(() => {
     // Supabase Auth (Google provider). Redirects to Google consent, returns to /lm with a session.
@@ -238,10 +235,9 @@ export default function LmClient() {
     }
   }, [name, lang, uid, sig, t]);
 
-  // TWO separate buttons / TWO connections — clearer UX than one button firing two consents back to
-  // back. Calendar = Composio (clean sensitive scope, no warning). Gmail = Unipile (their Google-
-  // verified app → no "App is blocked", no Google submission by us; read+reply+send + future
-  // Slack/Discord/etc through the same Unipile account). Each opens its OWN consent tab.
+  // Calendar = Composio managed OAuth (clean sensitive scope, no "App is blocked" warning). v1
+  // (Dais 2026-06-26): this is the ONLY connection — Gmail/Unipile was removed; Anicca reaches web
+  // users by own-domain email (reply-by-email via Resend), never by reading their Gmail.
   const runConnect = useCallback(
     (fn: string, set: (s: ConnState) => void) => {
       set('connecting');
