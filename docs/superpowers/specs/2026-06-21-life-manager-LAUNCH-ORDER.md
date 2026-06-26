@@ -739,7 +739,7 @@ ask/reply + travel blocks + late-notice. Gmail is never read/replied. Telegram i
 ### ▶ LAUNCH TODAY (in order)
 - [x] **0. STEP-0** Telegram funnel fix — `/lm?tg=` renders onboarding (Gmail/Unipile step removed, connect=Calendar
       only); standalone `/lm` stays coming-soon. BOTH VCSDD gates PASS (browser ✓ + adversary ✓). DONE 2026-06-26.
-- [ ] **1. Gmail COPY cleanup** (found via visual check): connect step still shows "Connect Calendar & Gmail /
+- [x] **1. Gmail COPY cleanup** ✅ DONE+VERIFIED 2026-06-26 (adversary PASS + cache-cleared browser: connect="Connect your Calendar", no Gmail) (found via visual check): connect step still shows "Connect Calendar & Gmail /
       reads your calendar and your mail" + the /life-manager hero/feature/desc copy still mention Gmail/"your mail".
       v1 has NO Gmail → strip every Gmail/mail claim from launchStrings (EN+JA) so copy matches the build. VCSDD +
       browser-verify the connect step reads "Connect Calendar" only.
