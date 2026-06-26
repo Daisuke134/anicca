@@ -71,11 +71,11 @@ NICHE is intentional & stays: articles about **AI-entities** = AI that earns mon
        lazy-loads images (loading="lazy") → the naturalWidth check MUST scroll the page to trigger them first;
        curl(rendered src)=HTTP 200 + real webp while browser nw=0 = LAZY not broken (images are on dev.to's own S3).
        The "async proxy" was a red herring. FIX baked into devto-verify.py = scroll-through before the nw check.
-   - A4-X(EN): ☑ FULL EN X-Article DRAFT created 2026-06-26 (x.com/compose/articles/edit/2070477594420723712, NOT
-       published): same free explainer as dev.to, via the x-publish skill. Browser-VERIFIED: EN cover (replaced the JP
-       thumb) + EN title (fixed the '---' parse bug) + 18 images all ≤900px + tables/diagrams render + no funnel /
-       Getting-started / Anicca + honest closing. ⏳ awaiting Dais's publish CONSENT (do NOT publish without it).
-       Skill fixed: publish-to-x.sh now extracts X_TITLE from frontmatter + skips the JP thumb for EN sources.
+   - A4-X(EN): ☑☑ PUBLISHED LIVE 2026-06-26 (Dais consent given): https://x.com/aniccaxxx/status/2070481241506463758
+       — full EN X-Article, same free explainer as dev.to, via the x-publish skill. LIVE-VERIFIED in the browser:
+       18/18 images render (scroll-for-lazy), EN cover (replaced JP thumb) + EN title (fixed '---' parse bug),
+       no funnel / Getting-started / Anicca, honest closing, body 33k chars. Skill fixed: publish-to-x.sh extracts
+       X_TITLE from frontmatter + skips the JP thumb for EN sources.
    - A4-Substack(EN): ☑ FINAL DRAFT done 2026-06-25 (id **203556581**, NOT published; old 203553806 superseded — delete):
        full EN translation (75k, stop-slop 40/50) → free explainer + {paywall at "Running it for real"} + paid setup/
        results; 19 EN tables + 6 EN diagrams ALL ≤950px (render-verify gate caught 7 oversized → autofit+pad → PASS).
