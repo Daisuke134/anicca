@@ -48,10 +48,14 @@ NICHE is intentional & stays: articles about **AI-entities** = AI that earns mon
        correctly FAILed on a blocker (no slop published) = loop+safety proven. GREEN publish E2E gated on X re-login (below).
 - ◐ A3. orchestrators DONE: publish-to-x.sh (+x-go.py go-path+sentinel) + publish-to-substack.sh (uniform iface+sentinel)
        + existing publish-to-zenn.sh/publish-to-note.sh → uniform `publish <md> --mode draft|go` for all 4. REMAINING =
-       de-Automaton the **note** INNER scripts (slug/assets hardcoded, SKILL.md line 378) so note runs ANY article.
+       de-Automaton the **note** INNER scripts so note runs ANY article. PARTIAL 2026-06-25: rebuild-note-body.py
+       NOTE_ASSETS + note-stage1-render.py NOTE_SRC env'd; STILL hardcoded = rebuild-note tags + set-eyecatch/publish.py
+       NUM + note-stage1 /tmp paths. ⚠ ~/.openclaw is a LIVE runtime (a file VANISHED mid-edit) → do this when the
+       runtime is quiet, env-default = current Automaton values, then VSDD-adversary it. (Not blocking — note is published.)
 - ⚠ BLOCKER (env, not code): the daily-driver is LOGGED OUT of X → a GREEN publish E2E needs Dais to re-login X once
        (HARD 0.39, 1 tap). Zenn green E2E needs no login (alternative proof). All code is adversary-verified + syntax-clean.
-- ◐ A4. ENGLISH = ONLY **dev.to + X + Substack** (drop Medium/HackerNoon/TikTok/Hashnode). EN body translated +
+- ☑ A4. ENGLISH DONE (dev.to /vcsdd-VERIFIED+live · X advertised · Substack verified draft 203556581 → publish on Dais's
+       go). = ONLY **dev.to + X + Substack** (drop Medium/HackerNoon/TikTok/Hashnode). EN body translated +
        de-slopped (stop-slop 40/50). content map: **dev.to + X = SAME free explainer** ; **Substack = FULL paid**
        (subscription, free explainer + paywall + paid setup/results, like the JP Substack).
    - A4-dev.to: ☑ SKILL BUILT 2026-06-25 with a MANDATORY browser-verify loop (no-human, never ships broken):
