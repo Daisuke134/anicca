@@ -8,7 +8,14 @@
       "language": "typescript",
       "currentPhase": "2c",
       "updatedAt": "2026-06-18T07:50:47.194Z"
+    },
+    "akash-provider-services-acceleration": {
+      "status": "active",
+      "createdAt": "2026-06-26T15:26:42.602Z",
+      "mode": "strict",
+      "currentPhase": "init",
+      "updatedAt": "2026-06-26T15:26:42.602Z"
     }
   },
-  "activeFeature": "ship-anicca-loop"
+  "activeFeature": "akash-provider-services-acceleration"
 }
