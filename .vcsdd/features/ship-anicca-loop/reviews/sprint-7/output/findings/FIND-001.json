@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "implementation_correctness",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "The stated goal is: 'When liquid USDC < the instance's OWN compute buffer, steer it to REPLENISH first.' This requires the AGENT'S REAL LIQUID BALANCE to reach liquidityDirective. It does not. In the real wake path, index.mjs:215 passes `balanceUsdc: currentTier.tier === 'broke' ? 0 : undefined` into assembleContext — the actual balance fetched at index.mjs:175 (`fetchUsdcBalance`) is consumed only by selectTier (line 176) to pick a tier and is then THROWN AWAY. context.mjs:29 coerces the `undefined` to 0. So buildUserMessage always sees balanceUsdc ∈ {0}. Consequence: (a) For a broke agent, liquid is reported as exactly $0.0000 regardless of true dust (e.g. $0.06), and (b) for a lean/funded agent (undefined→0) the directive ALWAYS fires with '$0.0000 < $5' even when the agent actually holds $12 liquid — a permanent false 'REPLENISH FIRST, do NOT deploy' that contradicts the goal (an agent with $12 should be told it is healthy). The pure function is correct; the wiring makes the feature either inert or actively wrong in production. The exact scenario the feature targets ('zero balance, stranded') cannot be distinguished from a healthy $12 agent because both surface as 0.",
+  "evidence": {
+    "filePath": "runtime/loop/index.mjs",
+    "lineRange": "175-215",
+    "snippet": "const balance = await fetchUsdcBalance(walletAddress, config); currentTier = selectTier(balance, config); ... balanceUsdc: currentTier.tier === 'broke' ? 0 : undefined, // balance already reflected in tier"
+  },
+  "routeToPhase": "2b"
+}

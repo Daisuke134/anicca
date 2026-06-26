@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "E_honesty_spec_truthful",
+  "category": "spec_gap",
+  "severity": "critical",
+  "description": "An UNRECONCILED, now-known-FALSE record is still live on disk and directly contradicts the FINAL conclusion. docs/superpowers/specs/2026-06-22-revenue-dashboard-and-earn-experiment.md lines 122-124 still assert: 'moonwell(V 0xbeef0e08) 0.971 OK' and '**morpho(M 0xEdc817) = 0.000** ... cost-basis.json claims morpho $1.00 but on-chain is ZERO ... = phantom success'. This is the EXACT OPPOSITE address-to-name mapping (V=moonwell, M=morpho) from the final proof (V=0xbeef=Morpho, M=0xEdc817=Moonwell) AND still claims a morpho phantom that the final conclusion refutes. The builder corrected the fix-phantom spec (added CORRECTION sections) but left this earlier spec's FINDING section uncorrected and unannotated. Two specs in the same repo now make mutually exclusive factual claims about the same two addresses and about whether a phantom exists. Anyone reading the revenue-dashboard spec (still on disk, still un-struck) will conclude the opposite of the shipped reconciliation. This is a partial honesty failure: the record is not truthful in aggregate, and the lossy/contradictory state means a future agent cannot trust the spec set. Fix: strike/annotate revenue-dashboard spec lines 121-131 to point to the decimals-bug final conclusion.",
+  "evidence": {
+    "filePath": "docs/superpowers/specs/2026-06-22-revenue-dashboard-and-earn-experiment.md",
+    "lineRange": "122-131",
+    "snippet": "- aave 0.196, moonwell(V 0xbeef0e08) 0.971, fluid 0.447 ... - **morpho(M 0xEdc817) = 0.000**, **beefy(BF 0x83152e) = 0.000** -- cost-basis.json claims morpho $1.00 but on-chain is ZERO."
+  },
+  "routeToPhase": "2b"
+}

@@ -1,0 +1,15 @@
+{
+  "findingId": "FIND-104",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "low",
+  "title": "queryStatus (the input that now routes to needs_review instead of requeue) remains an EXPLICITLY UNVERIFIED GMO endpoint/shape, and its batch-vs-item granularity is unchanged: one batch-level status string is applied to EVERY submitted row sharing that ref. The double-pay consequence is removed (failed->needs_review, no resend), but a misclassified-success-as-failed now mass-routes a whole settled batch to needs_review, and a misclassified-failed-as-completed mass-marks an unsettled batch 'paid'.",
+  "description": "FIND-100's money-doubling lever is closed because 'failed' no longer requeues. But the UNVERIFIED classifier (bank-payout-watcher.mjs:145-157, comment line 145: 'GMO bulktransfer/status — UNVERIFIED endpoint/shape until live token') still (a) queries by the batch ref (apptransferNo) and collapses the whole batch to ONE verdict via String(j.status||j.transferStatus), then (b) pollCompletions (line 107-112) applies that single verdict to EVERY submitted row whose notes carry that ref. Residual consequences, now both money-SAFE-ish but still wrong: a transient batch-level substring matching /complete|done|success|完了/ marks ALL recipients of that batch status='paid' while individual items may not have settled (false 'paid' = a recipient shows paid but money may not have landed -> reconciliation blind spot, the row leaves 'submitted' so the poll never revisits it); conversely a batch-level /fail|error|reject|失敗|却下/ substring mass-routes a fully-settled batch to needs_review (operator noise, no money harm). GMO 一括振込 status is per-item; the code has no per-item read. This is verification-readiness (the state machine hangs on an unverified, wrong-granularity external read) not a residual double-pay, hence low.",
+  "evidence": {
+    "filePath": "skills/earn/bank-payout-watcher.mjs",
+    "lineRange": "104-114,145-157",
+    "snippet": "const s = String(j.status || j.transferStatus || \"\").toLowerCase();  // ONE status for the whole batch\nif (st === \"completed\") { await markPaid(row.id); ... }  // applied to EVERY row sharing the ref -> false 'paid' if any item unsettled"
+  },
+  "recommendation": "On first live GMO token: confirm the bulktransfer/status endpoint + response shape and read PER-ITEM status (map itemId->status), so markPaid('paid') is only set for items GMO confirms settled and only those items route to needs_review on failure. Until then keep a CLEAR UNVERIFIED marker (present) and do NOT promote to 'paid' on a batch-level success without per-item confirmation; add a test that a batch ref shared by 2 submitted rows does not blanket-mark both on an ambiguous status.",
+  "routeToPhase": "2b"
+}

@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "no_leak_correctness",
+  "category": "spec_gap",
+  "severity": "major",
+  "description": "NOTE_NUM is listed in the spec's ENV CONTRACT table (line 21) as the 'note internal article id', but it is wired ONLY in stage2 (note-stage2-publish.py:10) and rebuild-note-body.py:15. There is no NOTE_NUM consumer in stage1, which is acceptable, but there is no mechanism by which a non-Automaton run obtains a DIFFERENT note id: every active entrypoint (publish-to-note.sh, run-note-agent.sh) only passes --key (the slug), never NOTE_NUM. For a brand-new article the slug 'new' path (publish-to-note.sh:43-48) renders+drafts but stage2 still uploads images against NUM=166686292 (the Automaton numeric id) because NOTE_NUM is never overridden. upload_body_image(sess, p, NUM) at stage2:32/37/43 would therefore attach a non-Automaton article's images to the Automaton note's image bucket. The env var exists but is not plumbed through the orchestrator for the 'new article' case, so a real non-Automaton run cannot avoid the 166686292 leak.",
+  "evidence": {
+    "filePath": "/Users/anicca/.openclaw/skills/ai-entity-article-writer/scripts/note-stage2-publish.py",
+    "lineRange": "10",
+    "snippet": "NUM=os.environ.get(\"NOTE_NUM\",\"166686292\"); title=mf[\"title\"]; body=mf[\"body\"]"
+  },
+  "correctFix": "Plumb NOTE_NUM (and the rest of the contract: NOTE_SRC, NOTE_INFOG, NOTE_TAGS, NOTE_IMG_DIR) from publish-to-note.sh into the stage1/stage2 environment for the chosen article, and for --key new resolve the freshly-created note id BEFORE stage2 uploads (the TODO at publish-to-note.sh:47 is unimplemented).",
+  "routeToPhase": "2b"
+}

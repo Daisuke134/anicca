@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "test_adequacy",
+  "category": "test_quality",
+  "severity": "critical",
+  "description": "THE STAGE2 LEAK ORACLE IS GAMEABLE: the fake recorder truncates the body to body[:300] before recording, so any Automaton string appearing past char 300 of the published body escapes the leak assertion. test line 80-82 greps json.dumps(calls) for 'automaton'/'166686292', but a3_fixtures/note_mcp/api/articles.py records only (art.body or '')[:300]. A real article body is thousands of chars; an Automaton word in the prose body (not just paths) beyond offset 300 would be published yet invisible to the oracle. The fake therefore does NOT faithfully record what the real update_article uploads (real update_article sends the FULL body via markdown_to_html → draft_save payload['body']). A genuine leak in body text can pass. Additionally the fake's upload_body_image returns a constant fake URL and never validates the file exists (real validate_image_file raises on missing/oversized/bad-extension), so the test cannot detect that stage2 would actually FAIL to upload a missing/non-image asset — the recorder rubber-stamps every upload.",
+  "evidence": {
+    "filePath": "/Users/anicca/.openclaw/skills/ai-entity-article-writer/scripts/note-publish/a3_fixtures/note_mcp/api/articles.py",
+    "lineRange": "5-6",
+    "snippet": "async def update_article(sess, num, art):\n    _rec({'call':'update_article','num':num,'title':art.title,'body':(art.body or '')[:300],'tags':art.tags}); return {'ok':True}"
+  },
+  "fix": "Record the FULL body (no [:300] truncation) so the leak grep covers the entire published payload, OR record a normalized hash plus the full lowercased body searched in-recorder. Have the fake upload_body_image mirror the real validate_image_file (raise on missing/non-image) so the oracle proves stage2 handles upload failures, not just happy paths. Then assert no 'automaton'/'166686292' anywhere in the full recorded body/tags/paths.",
+  "routeToPhase": "2b"
+}

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "high",
+  "description": "The atomic-CAS claim() that the entire FIND-A double-pay defense rests on has ZERO direct test coverage. The live claim() (bank-payout-watcher.mjs:87-96) — the per-id PATCH ...&status=eq.queued loop, the HTTP-error 'continue' branch (line 91), and the rows->claimedFromRows decision (line 93) — is never invoked by any test. The FIND-A bankWatcherPass test (bank-watcher.test.js:15-27) mocks claim with `ids.filter(id => id !== 'b')`, which only proves the CONSUMER dispatches the claimed subset; it does not exercise the CAS itself. The atomicity guarantee (concurrent UPDATE re-evaluates WHERE status=queued under READ COMMITTED, second updater matches 0 rows) is asserted only in comments (bank-payout-watcher.mjs:3-6,38) and never demonstrated by a concurrency test or a stubbed-fetch test of the claim loop. The most safety-critical function in the chain is unverified.",
+  "evidence": {
+    "filePath": "skills/earn/bank-payout-watcher.mjs",
+    "lineRange": "87-96",
+    "snippet": "async function claim(ids) { for (const id of ids) { const res = await sb(`recipients?id=eq.${id}&status=eq.queued`, {method:'PATCH', headers:{Prefer:'return=representation'}, ...}); if (!res.ok) continue; const rows = await res.json()...; if (claimedFromRows(rows)) claimed.push(id); } }  // never called by any test"
+  },
+  "routeToPhase": "2b"
+}

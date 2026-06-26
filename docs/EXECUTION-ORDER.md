@@ -96,6 +96,12 @@ within it via search; the real generalization is A3 = parameterize the Automaton
        (~3min: per-spawn USDC→AKT swap + gas-auto sim). FIX (docs-cited): provider-services FULL flow + meta.json fast
        RPC + fixed gas + one-time cert + ACT pre-mint OFF-path treasury + bid-poll → ~20-30s, no-human, actually boots.
        Spec: docs/superpowers/specs/2026-06-26-B1-akash-provider-services-acceleration.md. Doing via VSDD, sub-tasks below.
+       ★ THIS IS REAL AKASH MAINNET ★ (Anicca spawns itself on a real decentralized cloud, paid in own AKT/ACT, no
+       credit-card=no-human). We hosted on real Akash before but it took ~15min (ACT mint + per-spawn swap). B1 goal =
+       same real deploy ~15min→~3min by moving mint/swap OFF the per-spawn path. sandbox-2 = a FREE 1-shot code check
+       only (boots a container + mint credits uact), NOT the destination. CORRECTION 2026-06-27 (AEP-76 + real chain):
+       escrow denom = uact (ACT/USD-pegged), NOT uakt (a stale-adversary error → live "Deposit invalid"); ACT minted
+       from AKT via `bme mint-act`, verified in the act ledger NOT bank balances. 🟥 mainnet wallet = 0 AKT = the funding blocker.
 - ☐ B2. **THE RECIPE**: model × skills × setup so **every spawned Anicca earns > it spends**. Sub-track (ANICCA's earn tools):
        x402 first real sale · token (MoltX) · 0xwork · realised revenue per tool > 0 · deploy idle Solana→Base ·
        model experiment free→auto→premium (which first reaches net-positive = the recipe).

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "D_tests_pass",
+  "category": "test_quality",
+  "severity": "major",
+  "description": "depositLanded() proves money LEFT liquid (liqBefore - liqAfter >= 99% of surplus) but does NOT prove the money ARRIVED as shares in the intended venue. A tx that succeeds and moves USDC OUT of the wallet to the wrong destination (wrong vault, a no-op router that forwards funds, an approve-and-drain path) still satisfies depositLanded -> records a cost-basis under VENUE_KEY[depositKind] for a position that does not exist = the SAME phantom class, just gated one step later. The revenue-dashboard spec's own FIX item (2026-06-22-revenue-dashboard-and-earn-experiment.md:129-130) explicitly required 'verify the SHARE balance INCREASED after deposit (read-after-write)'; the shipped guard implements the weaker 'liquid decreased' invariant instead. The fix-phantom spec acknowledges this as an accepted KNOWN LIMITATION (lines 78-79), so it is disclosed honesty-wise, but it means the headline claim 'the deposit guard kills phantom basis' is only partially true: it kills the tx-succeeded-but-nothing-moved phantom, not the money-moved-to-wrong-place phantom. Pairs with FIND-001 (VENUE_KEY has no morpho/moonwell write path, from the prior round) so the two kept legacy keys still have no reconciling writer.",
+  "evidence": {
+    "filePath": "skills/earn/lib/deposit-guard.mjs",
+    "lineRange": "19-22",
+    "snippet": "const moved = BigInt(liqBefore) - BigInt(liqAfter); ... return moved >= (BigInt(surplus) * 99n) / 100n;  // proves liquid dropped, NOT that shares minted in the intended venue"
+  },
+  "routeToPhase": "2b"
+}

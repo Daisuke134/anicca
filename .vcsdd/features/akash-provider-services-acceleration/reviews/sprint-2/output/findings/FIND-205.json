@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-205",
+  "dimension": "implementation_correctness",
+  "category": "verification_tool_mismatch",
+  "severity": "major",
+  "description": "WHOLE FLOW DEPENDS ON UNVERIFIED AKASH_* ENV-VAR RESOLUTION BY provider-services. The rewrite drops --node/--from/--chain-id/--output from every subcommand and instead exports AKASH_FROM, AKASH_KEYRING_BACKEND, AKASH_YES, AKASH_OUTPUT, AKASH_NODE, AKASH_CHAIN_ID, AKASH_GAS, AKASH_GAS_PRICES, AKASH_GAS_ADJUSTMENT (lines 15-26), trusting provider-services to read all of them. (a) If the pinned provider-services build does NOT honor one of these env names for a given subcommand (e.g. `tx deployment create` ignoring AKASH_FROM, or `keys show` not honoring AKASH_OUTPUT), the tx broadcasts with no signer / to a default node and fails or mis-targets — and this resolves the sprint-1 FIND-005 inconsistency only by trusting env resolution that is never asserted anywhere. (b) AKASH_OUTPUT=json is exported globally (line 16) yet `keys show \"$AKASH_KEY_NAME\" -a` (line 29) expects a BARE bech32 address; if `-a` does NOT override --output json on this build, ADDR becomes a JSON blob and every subsequent --owner \"$ADDR\" query breaks. The fake (keys show -> bare address, line 46) hardcodes the bare-address assumption, so the oracle cannot catch a JSON-wrapped address. UNVERIFIED: provider-services env-var honoring and `keys show -a` precedence are not confirmed against the pinned binary, and no E2E exercises them.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/spawn/scripts/deploy-akash.sh",
+    "lineRange": "15-29",
+    "snippet": "export AKASH_FROM=\"$AKASH_KEY_NAME\" AKASH_KEYRING_BACKEND=...\nexport AKASH_YES=1 AKASH_OUTPUT=json\n...\nADDR=\"$(\"$PS\" keys show \"$AKASH_KEY_NAME\" -a)\""
+  },
+  "correctFix": "Either (1) pass the flags explicitly on every call (--node, --chain-id, --from, --keyring-backend, --output json / and NO --output for keys show -a) so behavior does not depend on env precedence, or (2) verify against the pinned provider-services version that each AKASH_* env var is honored for each subcommand and that `keys show -a` ignores AKASH_OUTPUT, and record that verification. Add a fake case where `keys show` is invoked with the global json output to confirm ADDR is still the bare address. Resolve before sandbox-2 to avoid burning a deploy on an env-resolution surprise.",
+  "routeToPhase": "2b"
+}

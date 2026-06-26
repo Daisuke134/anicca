@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "structural_integrity",
+  "category": "spec_gap",
+  "severity": "medium",
+  "description": "Dead, divergent second dispatch orchestrator. bank-payout.mjs::runBankPayout is a full alternate dispatcher (plan -> groupByProvider -> per-rail adapter loop) referenced ONLY by its own test (bank-payout.test.js); the live daemon path uses bankWatcherPass exclusively. runBankPayout does NOT carry the FIND-B no-auto-requeue / claim / markPaid status discipline — it has no status management at all and on adapter throw merely records { ok:false } (bank-payout.mjs:27-29). Its existence is a trap: an operator wiring runBankPayout (it has the same signature shape and an inviting `beforeDispatch` claim hook) would reintroduce the exact double-pay class the watcher was hardened against, with no guardrail forcing them to the safe path. Two orchestrators for irreversible transfers, only one hardened, is a structural hazard. Per project coding-style.md it should be deleted or merged.",
+  "evidence": {
+    "filePath": "skills/earn/bank-payout.mjs",
+    "lineRange": "13-33",
+    "snippet": "export async function runBankPayout({ pool, recipients, opts, adapters, beforeDispatch }) { ... }  // unused on live path, lacks FIND-B safety"
+  },
+  "routeToPhase": "2b"
+}

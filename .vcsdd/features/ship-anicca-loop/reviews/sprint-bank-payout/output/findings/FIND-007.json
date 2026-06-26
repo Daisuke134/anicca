@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-007",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "high",
+  "description": "Missing test for the post-acceptance markPaid-failure double-pay/stuck path (the FIND-B + FIND-003 hazard). No test exercises: adapter SUCCEEDS but markPaid PATCH returns false/throws. The FIND-B test (bank-watcher.test.js:43-59) only covers adapter FAILURE (rain throws), asserting release was NOT called — but markPaid there is a no-op that always succeeds. There is no test proving that when markPaid fails after a successful submit, (a) the row is not re-read on the next pass and (b) it does not get re-submitted. Likewise no test covers a markPaid that throws (the live markPaid returns false rather than throwing, but bankWatcherPass treats both identically by ignoring the value — untested). The single most dangerous real-world double-pay trigger (commit-the-money-then-fail-to-record) is not covered.",
+  "evidence": {
+    "filePath": "skills/earn/__tests__/bank-watcher.test.js",
+    "lineRange": "43-59",
+    "snippet": "markPaid: async (id) => marked.push(id),  // always succeeds; no test where markPaid fails AFTER a successful adapter submit"
+  },
+  "routeToPhase": "2b"
+}

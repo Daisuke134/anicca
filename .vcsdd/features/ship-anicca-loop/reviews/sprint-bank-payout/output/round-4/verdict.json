@@ -1,0 +1,85 @@
+{
+  "sprintNumber": "bank-payout-round-4",
+  "feature": "ship-anicca-loop",
+  "reviewContext": {
+    "reviewType": "implementation",
+    "scope": "③ bank-direct UBI payout chain re-review (round 4) — verify round-3 FIND-001..007 closed + scan for new double-pay/money-loss paths",
+    "filesReviewed": [
+      "skills/earn/lib/bank-fanout.mjs",
+      "skills/earn/lib/bank-recipients.mjs",
+      "skills/earn/bank-watcher.mjs",
+      "skills/earn/bank-payout-watcher.mjs",
+      "skills/earn/gmo-furikomi.mjs",
+      "apps/landing/netlify/functions/_jp-bank.js",
+      "apps/landing/netlify/functions/income-signup.js",
+      "skills/earn/__tests__/bank-watcher.test.js",
+      "skills/earn/__tests__/bank-payout-watcher.test.js",
+      "skills/earn/__tests__/bank-chain.integration.test.js",
+      "apps/landing/netlify/functions/__tests__/jp-bank.test.js"
+    ],
+    "note": "bank-payout.mjs and __tests__/bank-payout.test.js are DELETED (confirmed absent via Glob); no runBankPayout import exists anywhere in code (only a stale prose mention in docs/superpowers/specs/anicca/2026-06-19-ubi-direct-to-bank-and-proactive.md:190, not an import). Tests were NOT executed: no Bash tool available in this reviewer environment. Verdicts on test correctness are from static read of test + implementation bodies and are stated as such."
+  },
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-06-19T00:00:00Z",
+  "iteration": 4,
+  "roundThreeFindingStatus": {
+    "FIND-001": "CLOSED — pollCompletions is wired to live deps in pollPass() (bank-payout-watcher.mjs:150-154: readSubmitted/queryStatus/markCompleted/requeue) and reachable via CLI subcommand 'poll' (bank-payout-watcher.mjs:216-217).",
+    "FIND-002": "CLOSED — round-trip matches: buildSubmittedPatch writes ';ref=<apptransferNo>' (line 33-34); parseRef extracts it (line 53-56); readSubmitted maps notes->ref and drops ref-less rows (line 128-131). Unit test bank-payout-watcher.test.js:67-70 confirms.",
+    "FIND-003": "PARTIALLY CLOSED / RE-OPENED as FIND-101 — reconcileStuck()+reconcilePass() exist and flag 'processing'->'needs_review' without auto-pay/requeue (line 70-78,157-168). BUT the live reconcilePass keys the stuck-age on 'applied_at' (signup time), which the claim CAS never stamps and income-signup.js never writes — so genuinely-stuck rows with NULL applied_at are NEVER flagged, and freshly-claimed in-flight rows with an old applied_at are flagged prematurely. The unit test injects 'ts' directly and never exercises the applied_at->ts live mapping. See FIND-101.",
+    "FIND-004": "CLOSED — claimWith() is the testable CAS core (line 59-66); test bank-payout-watcher.test.js:60-65 proves 1-row=claimed, 0-rows=not-claimed; claimedFromRows test line 27-32 covers null/>1.",
+    "FIND-005": "CLOSED — bank-payout.mjs DELETED (Glob: no file); no runBankPayout reference in any code file.",
+    "FIND-006": "CLOSED — idempotencyKey uses createHash('sha256') (line 14,47-50); test line 34-39 confirms determinism + order-independence. (Honest caveat: GMO honoring x-idempotency-key remains UNVERIFIED, line 46/88 — relevant to FIND-100.)",
+    "FIND-007": "CLOSED — bank-watcher.mjs:63-70 wraps markPaid in try/catch: on throw after a successful adapter the recipient goes to 'failed' (stays 'processing'), is NOT released/requeued; test bank-watcher.test.js:79-93 proves released==[] and paid==['a']."
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/bank-payout-watcher.mjs:32-35,150-154,216-217", "description": "FIND-005 accepted!=完了 (status 'submitted' + ref persisted) and FIND-001 poll wiring + CLI subcommand verified present and reachable."},
+        {"type": "file", "location": "skills/earn/lib/bank-recipients.mjs:15-34", "description": "income-signup notes -> parseBankRecipient -> bankWatcherPass round-trip verified; integration test bank-chain.integration.test.js:13-48 exercises the full chain."}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-100", "FIND-101"],
+      "evidence": [
+        {"type": "file", "location": "apps/landing/netlify/functions/__tests__/jp-bank.test.js:24", "description": "FIND-F U+3000 fullwidth-space rejection tested — remains CLOSED."},
+        {"type": "file", "location": "skills/earn/__tests__/bank-watcher.test.js:79-93", "description": "FIND-007 markPaid-throws-after-success edge is genuinely tested (not tautological)."}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-100", "FIND-101"],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/bank-watcher.mjs:29-34,56-70", "description": "FIND-A claim subset + FIND-B no-auto-requeue-on-adapter-failure + FIND-007 markPaid-fail safety all VERIFIED on the dispatch path."},
+        {"type": "file", "location": "skills/earn/bank-payout-watcher.mjs:177-199", "description": "getBalance fails safe to 0 (no spend) on unknown balance — VERIFIED, no money-loss-by-overspend on this path."}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/bank-payout-watcher.mjs:1-219", "description": "Pure helpers (buildSubmittedPatch/claimedFromRows/idempotencyKey/parseRef/claimWith/reconcileStuck/pollCompletions) cleanly separated from live Supabase/GMO wiring; bank-payout.mjs dead module removed. One naming hazard noted (markPaid vs markCompleted, both passed as the 'markPaid' dep in different passes) but wiring is correct (line 153 vs 212)."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-100", "FIND-101"],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/bank-payout-watcher.mjs:133-145", "description": "queryStatus endpoint + response shape explicitly marked UNVERIFIED; the requeue decision (the only money-doubling lever left) hangs on this unverified classifier — see FIND-100."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 2,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": ["FIND-001", "FIND-002", "FIND-003", "FIND-004", "FIND-005", "FIND-006", "FIND-007", "FIND-A", "FIND-B", "FIND-C", "FIND-D", "FIND-F"],
+    "duplicateFindings": []
+  }
+}

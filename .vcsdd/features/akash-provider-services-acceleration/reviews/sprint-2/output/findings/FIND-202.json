@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-202",
+  "dimension": "edge_case_coverage",
+  "category": "verification_tool_mismatch",
+  "severity": "major",
+  "description": "BID AND LEASE jq PATHS ASSUME ONE PROTO-JSON NESTING THAT THE FAKE MIRRORS EXACTLY; NO REAL FIXTURE PROVES THEM. (a) Bid pick (lines 87-94) reads `.bids[]?.bid.state`, `.bids[]?.bid.price.amount`, `.bids[]?.bid.bid_id.{gseq,oseq,provider}`. Recent provider-services (the Akash fork, v0.6.x) `query market bid list -o json` nests fields under `.bids[].bid.bid_id` AND carries gseq/oseq as INTEGERS and price.amount as a STRING — but the EXACT envelope (`.bids[].bid` vs `.bids[].bid_id` directly, and whether state serializes as the string \"open\" vs the proto enum \"open\"/1) is version-sensitive. If state serializes as an enum integer, `select((.bid.state // \"open\")==\"open\")` would fall through to the `// \"open\"` default ONLY when state is absent — when state is the integer 1 it is present and != \"open\", so EVERY bid is filtered out -> 'no open bids' fail-closed on a healthy deployment. (b) Lease-active poll (line 108) reads `.leases[]?.lease.state==\"active\"`; same enum-vs-string risk -> 'lease never became active' fail-closed even when active. The fake (test-deploy-akash.sh:50,52) hands back the string forms the script wants, so the behavioral run cannot catch an enum-serialization mismatch. No real fixture or sandbox-2 lease-status log exists on disk to confirm the string form.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/spawn/scripts/deploy-akash.sh",
+    "lineRange": "87-112",
+    "snippet": "jq -c '[.bids[]? | select((.bid.state // \"open\")==\"open\")] | sort_by(.bid.price.amount | tonumber? // 1e18) | .[0].bid.bid_id // empty'\n...\njq -r 'first(.leases[]? | select((.lease.state // \"\")==\"active\") | .lease.state) // empty'"
+  },
+  "correctFix": "Capture real `query market bid list -o json` and `query market lease list -o json` fixtures from sandbox-2 and use them as the fake outputs so the oracle proves the nesting AND the state-string serialization. Make the state match tolerant of both string and enum forms, or normalize (`(.bid.state|tostring)|ascii_downcase|contains(\"open\")`). Do not claim bid/lease parse correctness until a real lease reaches `active` in the E2E.",
+  "routeToPhase": "2b"
+}

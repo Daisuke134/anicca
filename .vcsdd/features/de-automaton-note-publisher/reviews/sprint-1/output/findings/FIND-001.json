@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "no_leak_correctness",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "INV-2 (no-Automaton-leak) is violated in the INTEGRATED pipeline. note-stage1-render.py reads the source ONLY from the NOTE_SRC env var (line 3) and never reads sys.argv (grep for sys.argv/argv[ returns 0 matches). But the orchestrator publish-to-note.sh:45 invokes it as a POSITIONAL argument: \"$PY\" \"$DIR/../note-stage1-render.py\" \"$MD\" | filt — and the agent prompt (note-agent-prompt.md:14) drives that exact call as `publish-to-note.sh publish <md> ...` without ever exporting NOTE_SRC. Consequently, when a NON-Automaton article is requested via the documented entrypoint, $MD is silently ignored and stage1 renders the Automaton DEFAULT source (/Users/.../2026-06-11-automaton-jp.md). The Automaton title, body, tables, mermaids, JP md path and images/automaton/ refs then flow straight into the manifest and the uploaded article. The env var being 'wired' as a default is necessary but NOT sufficient: nothing in the active call path actually SETS NOTE_SRC from the user-selected article, so the leak reaches OUTPUT, not just the default. INV-2 fails for the as-shipped pipeline.",
+  "evidence": {
+    "filePath": "/Users/anicca/.openclaw/skills/ai-entity-article-writer/scripts/note-publish/publish-to-note.sh",
+    "lineRange": "45-46",
+    "snippet": "\"$PY\" \"$DIR/../note-stage1-render.py\" \"$MD\" | filt\n      \"$PY\" \"$DIR/../note-stage2-publish.py\" | filt"
+  },
+  "correctFix": "Either (a) make note-stage1-render.py accept a positional path that overrides NOTE_SRC (e.g. ART = sys.argv[1] if len(sys.argv)>1 else os.environ.get('NOTE_SRC', default)), OR (b) have publish-to-note.sh export NOTE_SRC=\"$MD\" before calling stage1 (and likewise pass NOTE_NUM/NOTE_INFOG/NOTE_IMG_DIR/NOTE_TAGS for the chosen article). Without one of these, the 'run ANY article via env vars' goal is not met end-to-end.",
+  "routeToPhase": "2b"
+}

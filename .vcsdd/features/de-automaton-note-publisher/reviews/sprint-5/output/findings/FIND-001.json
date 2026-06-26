@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "test_adequacy",
+  "category": "test_coverage",
+  "severity": "low",
+  "description": "INFORMATIONAL (does NOT change the dimension verdict; the underlying code is correct by exhaustive trace). The oracle now runs rebuild-note-body.py and verifies its FIRST guard — the NOTE_NUM==166686292 + NOTE_SRC-set refusal (test-de-automaton.py:100-105). However two rebuild-specific safety behaviors are present in code but NOT behaviorally exercised by any test: (1) the SECOND guard at rebuild-note-body.py:21-22 ('automaton-assets' in ASSETS and _SRC -> SystemExit), which is the only thing preventing a non-default article that DOES pass a custom NOTE_NUM but forgets NOTE_ASSETS from uploading the live Automaton assets; and (2) the source-gated Automaton-tag default at rebuild-note-body.py:80 (Automaton tags only when not _SRC). Both are verified correct by inspection/trace and mirror stage2's already-tested behavior, so no Automaton value can actually leak — hence the dimension remains PASS — but the oracle does not assert them, leaving a narrow regression-detection blind spot specific to rebuild.",
+  "evidence": {
+    "filePath": "/Users/anicca/.openclaw/skills/ai-entity-article-writer/scripts/note-publish/rebuild-note-body.py",
+    "lineRange": "21-22,80",
+    "snippet": "if \"automaton-assets\" in ASSETS and _SRC:\n    raise SystemExit(\"NOTE_ASSETS defaulted to the Automaton assets but NOTE_SRC=%r is set — pass NOTE_ASSETS\" % _SRC)\n...\ntags=[t for t in os.environ.get(\"NOTE_TAGS\", (\"AI,AIエージェント,暗号資産,Automaton,自律AI\" if not _SRC else \"\")).split(\",\") if t]"
+  },
+  "suggestedFix": "Add two rebuild assertions to test-de-automaton.py: (a) run rebuild with NOTE_SRC set + NOTE_NUM=999000 (a non-Automaton id) + NOTE_ASSETS UNSET, assert rc!=0 and 'automaton-assets'/'NOTE_ASSETS' in output (exercises the second guard); (b) point rebuild at the a3_fixtures recorder with NOTE_SRC set + NOTE_NUM=999000 + NOTE_ASSETS=<a non-automaton dir> + NOTE_TAGS UNSET, and assert the recorded update_article tags contain no 'Automaton' (exercises the source-gated tag default at line 80). This closes the rebuild blind spot to match stage2's coverage.",
+  "routeToPhase": "2b"
+}

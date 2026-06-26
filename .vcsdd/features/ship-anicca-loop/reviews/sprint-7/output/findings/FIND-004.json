@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "implementation_correctness",
+  "category": "spec_gap",
+  "severity": "high",
+  "description": "The directive's '$X needed' figure is per-instance but the reserve sourcing is duplicated and INCONSISTENT, so the number shown to the agent can disagree with the actual deploy floor. (1) context.mjs:32 defaults reserveUsdc to `Number(process.env.COMPUTE_RESERVE_USDC) || 5`. (2) prompt.mjs:191 INDEPENDENTLY defaults `const reserve = typeof ctx.reserveUsdc === 'number' ? ctx.reserveUsdc : 5;` — a second hardcoded literal 5. If a caller builds a ctx without going through assembleContext (e.g. the prompt tests, or any future caller), prompt.mjs silently substitutes 5 with no env awareness, so 'the instance's OWN reserve' claim is only true when the full assembleContext path is used. Worse, the in-code comment at context.mjs:30 claims reserveUsdc is the 'same source as execute-yield's RESERVE', but the actual yield keeper (runtime/yield-keeper.mjs:22) uses a DIFFERENT env var and DIFFERENT default: `const RESERVE = process.env.YIELD_RESERVE_USDC || \"1\"`. So the deploy floor the yield path actually enforces ($1, YIELD_RESERVE_USDC) is NOT the buffer the directive tells the agent to defend ($5, COMPUTE_RESERVE_USDC). The directive can tell an agent 'replenish to $5' while the yield keeper happily parks everything above $1 — they fight each other. The comment is a false claim of a single source of truth.",
+  "evidence": {
+    "filePath": "runtime/yield-keeper.mjs",
+    "lineRange": "22-22",
+    "snippet": "const RESERVE = process.env.YIELD_RESERVE_USDC || \"1\"; // keep $1 liquid for gas-adjacent ops  (vs context.mjs:32 COMPUTE_RESERVE_USDC||5, comment claims 'same source as execute-yield's RESERVE')"
+  },
+  "routeToPhase": "2b"
+}

@@ -1,0 +1,77 @@
+{
+  "sprintNumber": "bank-payout-round-3",
+  "feature": "ship-anicca-loop",
+  "reviewContext": {
+    "reviewType": "implementation",
+    "scope": "③ bank-direct UBI payout chain re-review (round 3)",
+    "filesReviewed": [
+      "skills/earn/lib/bank-fanout.mjs",
+      "skills/earn/lib/bank-recipients.mjs",
+      "skills/earn/bank-payout.mjs",
+      "skills/earn/bank-watcher.mjs",
+      "skills/earn/bank-payout-watcher.mjs",
+      "skills/earn/gmo-furikomi.mjs",
+      "apps/landing/netlify/functions/_jp-bank.js",
+      "apps/landing/netlify/functions/income-signup.js",
+      "skills/earn/__tests__/bank-fanout.test.js",
+      "skills/earn/__tests__/bank-payout.test.js",
+      "skills/earn/__tests__/bank-recipients.test.js",
+      "skills/earn/__tests__/bank-watcher.test.js",
+      "skills/earn/__tests__/bank-payout-watcher.test.js",
+      "skills/earn/__tests__/bank-chain.integration.test.js",
+      "apps/landing/netlify/functions/__tests__/jp-bank.test.js"
+    ],
+    "note": "No dedicated implementation-review scope existed under reviews/; manifest on disk is spec-review only. Verdict written to a sprint-scoped output dir per write-scope rules. Tests were NOT executed in this environment (no Bash) — verdict is from static read of test bodies."
+  },
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-06-19T00:00:00Z",
+  "iteration": 3,
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-001"],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/bank-payout-watcher.mjs:30-34,100-104", "description": "FIND-005 (accepted!=完了): markPaid sets 'submitted' not 'paid' and persists ref — VERIFIED present and correct"}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-004", "FIND-007"],
+      "evidence": [
+        {"type": "file", "location": "apps/landing/netlify/functions/__tests__/jp-bank.test.js:24", "description": "FIND-F U+3000 fullwidth-space rejection is tested and passes the regex analysis — CLOSED"}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-002", "FIND-003", "FIND-006"],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/bank-watcher.mjs:29-34", "description": "FIND-A: only the claimed subset is dispatched (claimed = recipients.filter(claimedIds.has)) — VERIFIED"},
+        {"type": "file", "location": "skills/earn/bank-watcher.mjs:59-62", "description": "FIND-B: adapter catch leaves rows 'processing', no re-queue; release only on plan!=send pre-dispatch skip (line 40) — VERIFIED on live path"},
+        {"type": "file", "location": "skills/earn/bank-payout-watcher.mjs:108-130", "description": "FIND-C: getBalance reads real GMO 残高照会 and returns 0 (no spend) on unknown; pool=0 -> invalid_pool -> skip — VERIFIED"}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "FAIL",
+      "findings": ["FIND-005"],
+      "evidence": []
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-004"],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/bank-payout-watcher.mjs:106-121", "description": "getBalance UNVERIFIED endpoint shape is explicitly marked and fails safe to 0 — acceptable as a documented gate"}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 7,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": ["FIND-A", "FIND-B", "FIND-C", "FIND-D", "FIND-F"],
+    "duplicateFindings": []
+  }
+}

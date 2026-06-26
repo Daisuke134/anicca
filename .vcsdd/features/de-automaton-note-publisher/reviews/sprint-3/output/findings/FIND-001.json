@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "no_leak_correctness",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "RESIDUAL AUTOMATON LEAK via default tags. For a non-Automaton article, the only loud guard protects NOTE_NUM (lines 12-13). NOTE_TAGS has no guard: if a publisher sets NOTE_NUM (so the NUM guard passes) but forgets NOTE_TAGS, line 16 silently falls back to the Automaton tag set 'AI,AIエージェント,暗号資産,Automaton,自律AI' and line 49 publishes those tags onto the non-Automaton article. Spec INV-2 explicitly enumerates 'JP tags' as an Automaton value that must NOT leak. The builder added a loud refusal for NUM precisely because a silent Automaton default is dangerous, but left the equally-dangerous Automaton-tag default unguarded — so a real Automaton value (the tags) can reach update_article for a non-Automaton article. This is a genuine residual leak path, not merely an env default, because the rest of the article is non-Automaton while the tags are Automaton.",
+  "evidence": {
+    "filePath": "/Users/anicca/.openclaw/skills/ai-entity-article-writer/scripts/note-stage2-publish.py",
+    "lineRange": "11-16,49",
+    "snippet": "_is_automaton=(\"Automaton\" in title) or (\"automaton\" in _SRC.lower())\nif NUM==\"166686292\" and not _is_automaton: raise SystemExit(...)\nTAGS=[t for t in os.environ.get(\"NOTE_TAGS\",\"AI,AIエージェント,暗号資産,Automaton,自律AI\").split(\",\") if t]"
+  },
+  "fix": "Apply the same _is_automaton guard to tags (and ideally IMG_DIR/INFOG/SRC defaults): when NOT _is_automaton and NOTE_TAGS is unset, refuse loudly (SystemExit) instead of defaulting to the Automaton tag list. Equivalently, only fall back to the Automaton tag string when _is_automaton is true; otherwise require NOTE_TAGS explicitly. The test must then assert that a non-Automaton run with NOTE_TAGS UNSET either refuses or produces non-Automaton tags.",
+  "routeToPhase": "2b"
+}

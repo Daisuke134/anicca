@@ -1,0 +1,91 @@
+{
+  "sprintNumber": "bank-payout-round-5",
+  "feature": "ship-anicca-loop",
+  "reviewContext": {
+    "reviewType": "implementation",
+    "scope": "③ bank-direct UBI payout chain re-review (round 5, convergence check) — verify round-4 FIND-100 (critical double-pay via auto-requeue) and FIND-101 (stuck-row aging on wrong/NULL timestamp) are CLOSED + scan for any NEW double-pay/money-loss/money-reversal path.",
+    "filesReviewed": [
+      "skills/earn/lib/bank-fanout.mjs",
+      "skills/earn/lib/bank-recipients.mjs",
+      "skills/earn/bank-watcher.mjs",
+      "skills/earn/bank-payout-watcher.mjs",
+      "skills/earn/gmo-furikomi.mjs",
+      "apps/landing/netlify/functions/_jp-bank.js (in anicca-project repo)",
+      "apps/landing/netlify/functions/income-signup.js (in anicca-project repo)",
+      "skills/earn/__tests__/bank-payout-watcher.test.js",
+      "skills/earn/__tests__/bank-watcher.test.js",
+      "skills/earn/__tests__/bank-chain.integration.test.js",
+      "skills/earn/__tests__/gmo-furikomi.test.js"
+    ],
+    "note": "No round-5 input manifest exists on disk; reviewed against the round-4 findings as the de-facto contract for this re-review. Tests were NOT executed (no Bash in this reviewer environment); test-correctness verdicts are from static read of test + implementation bodies and are stated as such. The _jp-bank.js / income-signup.js files live in the anicca-project repo (apps/landing/netlify/functions/), not anicca/."
+  },
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-06-19T00:00:00Z",
+  "iteration": 5,
+  "moneySafetyConvergence": {
+    "criticalOrHighDoublePayPathRemains": false,
+    "criticalOrHighMoneyLossPathRemains": false,
+    "criticalOrHighMoneyReversalPathRemains": false,
+    "statement": "NO critical/high double-pay, money-loss, or money-reversal path remains anywhere in the chain. The single residual money-safety bar required for convergence is MET. overallVerdict is FAIL only due to medium/low test-coverage, operator-path, and verification-readiness findings (FIND-102/103/104) that do not move money."
+  },
+  "roundFourFindingStatus": {
+    "FIND-100": "CLOSED. The 'requeue' function is DELETED (grep: no requeue declaration in bank-payout-watcher.mjs; only comments reference the removed lever). pollCompletions (bank-payout-watcher.mjs:104-114) routes st==='failed' -> flagNeedsReview (status='needs_review', line 159), NEVER status='queued'. No code path sets a dispatched row back to 'queued': release() (line 135-137) writes buildReleasePatch={status:'queued'} but is invoked ONLY at bank-watcher.mjs:41 inside `if (plan.outcome !== 'send')` which returns before any adapter call (nothing sent). The adapter-failure path (bank-watcher.mjs:57-60) and markPaid-failure path (line 68-70) only push to failed[] — they neither release nor requeue, so a submit-attempted row stays 'processing' and is never re-read (readBankRecipients reads status=eq.queued only, line 119). 'completed'->markPaid (pollCompletions line 109 -> markCompleted status='paid', line 158) sends NO money and is effectively idempotent: readSubmitted reads status=eq.submitted only (line 141), so a 'paid' row is never re-polled. The completed->paid path and reconcilePass operate on DISJOINT status filters (submitted vs processing), so they cannot race to re-send money. Test bank-payout-watcher.test.js:41-54 genuinely exercises the failed->needs_review branch (asserts review===['b'], no requeue dependency even exists). VERIFIED: no double-pay / no reversal.",
+    "FIND-101": "CLOSED at the high-severity (mis-route money in flight / never flag genuinely-stuck) level; partially mitigated with residual low/medium notes (FIND-102/103). claim() (bank-payout-watcher.mjs:126-134) now stamps notes=`${r.raw};claimed_at=${nowIso}` atomically inside the CAS PATCH, preserving the original bank notes (raw, captured in parseBankRecipient bank-recipients.mjs:24) while appending a real claim time. reconcilePass (line 170-181) now ages on parseClaimedAt(r.notes) (line 58-61, 176), NOT applied_at. DEFECT-B (false-flag of fresh in-flight rows) is CLOSED: claimed_at is a true claim time, so a row claimed seconds ago is not aged out. Notes lifecycle traced queued->processing->submitted: bank fields parsed at READ time (before claim appends claimed_at) so parseBankRecipient is uncorrupted; parseRef survives because buildSubmittedPatch writes a fresh `;ref=` (claimed_at + bank fields are intentionally dropped at the submitted stage and are not needed thereafter — reconcile only ages 'processing'). DEFECT-A (silent drop on NULL/unparseable timestamp) is now largely unreachable because every live 'processing' row is claim-stamped, but the silent Number.isFinite(NaN) skip with no alert remains as a latent operator-path gap -> downgraded and recorded as FIND-103 (low). The composition (notes->parseClaimedAt->reconcileStuck, and claim's notes stamping) is still NOT exercised by any test -> FIND-102 (medium)."
+  },
+  "answersToConvergenceQuestions": {
+    "q1_double_pay_or_reversal": "NO. requeue removed; release only fires pre-dispatch; failed->needs_review (no resend); completed->paid sends no money and is non-re-entrant (submitted-only read); claim CAS dispatches only the 1-row-flipped subset (claimWith line 65-72, claimedFromRows line 40-42); markPaid-after-success failure leaves the row 'processing' without requeue (bank-watcher.mjs:64-71); disjoint status filters prevent a completed->paid vs reconcile race. No path sends money twice or reverses a confirmed payment.",
+    "q2_claimed_at_notes_lifecycle": "Stamping claimed_at does NOT break parseRef or parseBankRecipient. parseBankRecipient runs at read time on the original (pre-claim) notes, so bank fields are parsed into memory before claim appends claimed_at; the claim PATCH preserves those bank fields in the DB (raw;claimed_at=...). buildSubmittedPatch later overwrites notes with a fresh `;ref=` which parseRef reads correctly; claimed_at and bank fields are dropped at the submitted stage but neither is needed after submit (reconcile ages 'processing' only; bank fields were already consumed by the in-memory transfer). No field needed later is lost on the normal path.",
+    "q3_tests_real_or_tautological": "The failed->needs_review pollCompletions test (bank-payout-watcher.test.js:41-54) is REAL (three distinct statuses, asserts no auto-requeue, distinct done/review/pending). parseClaimedAt and reconcileStuck tests are real but UNIT-ONLY and do NOT compose into a test of the live reconcilePass notes->ts mapping nor of claim()'s notes stamping (FIND-102). No test is tautological, but the precise seam FIND-101 introduced is not covered end-to-end."
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/bank-payout-watcher.mjs:104-114,159", "description": "FIND-100 requirement met: failed verdict -> flagNeedsReview(status='needs_review'), never status='queued'; requeue function removed entirely (verified by grep)."},
+        {"type": "file", "location": "skills/earn/bank-payout-watcher.mjs:126-134,170-181", "description": "FIND-101 requirement met: claim stamps claimed_at preserving raw bank notes; reconcile ages on parseClaimedAt(notes), not applied_at."}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-102", "FIND-103"],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/__tests__/bank-payout-watcher.test.js:41-54", "description": "failed->needs_review branch genuinely tested (not tautological)."},
+        {"type": "file", "location": "skills/earn/bank-payout-watcher.mjs:80-81", "description": "NULL/unparseable claimed_at silently skipped with no alert; re-queued post-submit row (overwritten notes) silently dropped by parseBankRecipient — neither edge is tested."}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-103"],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/bank-watcher.mjs:29-72", "description": "No double-pay/reversal: atomic claim subset dispatch + no-requeue-on-failure + markPaid-fail-stays-processing all VERIFIED."},
+        {"type": "file", "location": "skills/earn/bank-payout-watcher.mjs:104-114,135-137", "description": "pollCompletions/release: no money-resend path; release pre-dispatch only. Residual operator-path no-ops (FIND-103) are money-safe but defeat the FIND-003 recovery intent."}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/bank-payout-watcher.mjs:29-114", "description": "Pure helpers (buildSubmittedPatch/buildClaimPatch/claimedFromRows/idempotencyKey/parseRef/parseClaimedAt/claimWith/reconcileStuck/pollCompletions) cleanly separated from live Supabase/GMO wiring; the requeue dead lever was removed leaving no orphan reference (only descriptive comments)."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-104"],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/bank-payout-watcher.mjs:145-157", "description": "queryStatus endpoint/shape still EXPLICITLY UNVERIFIED and batch-granular; failure no longer doubles money (good) but a batch-level verdict is still blanket-applied to every submitted row of the batch -> false 'paid' / operator noise (FIND-104)."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 3,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": ["FIND-100", "FIND-101"],
+    "duplicateFindings": []
+  }
+}

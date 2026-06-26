@@ -1,0 +1,15 @@
+{
+  "findingId": "FIND-104",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "low",
+  "title": "CARRIED OVER (live-API-gated, NOT resolvable without a token): queryStatus (bank-payout-watcher.mjs:152-164) is still an EXPLICITLY UNVERIFIED GMO bulktransfer/status endpoint/shape, and it is batch-granular — one batch-level status string is applied to every submitted row sharing that ref (pollCompletions, line 111-121). getBalance (line 197-219) shares the same unverified-endpoint caveat for 残高照会.",
+  "description": "This is the honest convergence ceiling, restated unchanged from round-5. queryStatus parses j.status/j.transferStatus into a single completed/failed/pending verdict by substring match and applies it to every row carrying that ref; GMO 一括振込 status is per-item, but there is no per-item read. Consequences remain: a batch-level success substring marks ALL rows of the batch status='paid' even if an individual item did not settle (the row leaves 'submitted' so the poll never revisits it — a reconciliation blind spot), and a batch-level failure substring mass-routes a settled batch to needs_review. Crucially, since FIND-105 now makes a needs_review row re-dispatchable on operator re-queue, a FALSE 'failed' classification here is no longer merely operator noise: it can feed the FIND-105 double-pay lever. The endpoint path and response field names cannot be verified without a real GMO_AOZORA_ACCESS_TOKEN (sunabar sandbox or 法人 account); the code marks this UNVERIFIED at lines 152 and 202. The per-item granularity defect is itself a code change that COULD be made now (read itemId->status) but cannot be VERIFIED correct until the token exists, so it is correctly classified as verification-gated.",
+  "evidence": {
+    "filePath": "skills/earn/bank-payout-watcher.mjs",
+    "lineRange": "111-121,152-164,195-219",
+    "snippet": "const s = String(j.status || j.transferStatus || \"\").toLowerCase();  // ONE verdict for the whole batch ref\n// queryStatus: UNVERIFIED endpoint/shape until live token (line 152); getBalance: UNVERIFIED path+field (line 202)"
+  },
+  "recommendation": "On first live GMO token: confirm bulktransfer/status + accounts/{id}/balances endpoint+shape and read PER-ITEM status (itemId->status) so 'paid' is set only for items GMO confirms settled. Add a test that a batch ref shared by 2 submitted rows is not blanket-marked on an ambiguous status. This finding cannot be CLOSED without a real token and is the documented convergence ceiling.",
+  "routeToPhase": "2b"
+}
