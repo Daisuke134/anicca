@@ -1,17 +1,31 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { Reveal } from '@/components/site/taste';
 import { useLaunchLocale } from '@/lib/launchLocale';
 import { launchStrings } from '@/lib/launchStrings';
+import LmClient from './LmClient';
 
-// /lm — v1 GATE (Dais 2026-06-25): web onboarding is BUILT (LmClient.tsx, kept intact for v1.5) but NOT
-// exposed yet — we ship on Telegram first. This page funnels web visitors to the Telegram bot. At v1.5,
-// after the reply-by-email loop is verified, swap this back to render <LmClient/>.
+// /lm — v1 GATE (Dais 2026-06-25/26): standalone web onboarding stays "coming soon" (we ship on Telegram
+// first), BUT the Telegram funnel /lm?tg=<chat_id> MUST render the real onboarding (LmClient) — name + phone
+// are collected in the bot, but the Google Calendar OAuth (Composio) and Stripe payment can only happen on the
+// web, and the Telegram "Connect Calendar"/"Subscribe" buttons open exactly this page with ?tg=. Without this,
+// a Telegram user taps Connect Calendar and lands on the coming-soon gate = onboarding dead at the calendar step.
+// Standalone visitors (no ?tg=) keep the coming-soon gate. At v1.5 (S6) the gate is removed entirely.
 const TG_DEEPLINK = 'https://t.me/LifeManagerBotbot?start=lp';
 
 export default function LmBody() {
   const { locale } = useLaunchLocale();
   const t = launchStrings[locale].lm;
+  // undefined = not yet read (pre-mount/SSR) → show the gate; a digit string = Telegram funnel → LmClient;
+  // null = standalone web → gate.
+  const [tg, setTg] = useState<string | null | undefined>(undefined);
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search).get('tg');
+    setTg(p && /^\d{1,20}$/.test(p) ? p : null);
+  }, []);
+
+  if (typeof tg === 'string') return <LmClient />;
 
   return (
     <section className="w-full px-4 pt-16 pb-20 md:pt-24">

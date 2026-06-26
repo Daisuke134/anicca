@@ -712,3 +712,19 @@ post the first comment. Everything else is ready.
 - D-3 content crons (TikTok/YT demo reels): a build needing assets + the posting accounts.
 - D-6 directories (BetaList etc.) + PH follow-up + churn-prevention.
 - PHASE E (self-improve + proactive booking + merge into Anicca): large, separate.
+
+---
+
+## ★★★ NEW LAUNCH SEQUENCE (Dais 2026-06-26) — launch TODAY, Tokyo time ★★★
+| # | task | notes |
+|---|---|---|
+| **0** | **STEP-0 launch-blocker FIX** (DONE in code): `/lm?tg=<chat_id>` now renders LmClient (Telegram funnel works); Gmail/Unipile step REMOVED from LmClient (connect = Calendar only). Standalone `/lm` stays coming-soon. → deploy + I browser-verify a NEW account through @LifeManagerBotbot name→calendar→phone→pay (VCSDD ②browser gate) + fresh adversary. | LAUNCH BLOCKER |
+| **1** | **D-4 Product Hunt launch** — Google login → gallery from live page → launch TODAY → first comment | |
+| **2** | **X release post** — approved copy, JP+EN, X Premium long post, @aniccaxxx (Postiz or browser) | |
+| **3** | **autofill 3-case VCSDD re-verify** (Dais worried) — the Google-Calendar autofill: (a) online vs physical classify, (b) unknown-address web search, (c) depart-by = start−travel−buffer. spec→test→fresh-adversary→NO-MOCK E2E on a real calendar | |
+| **4** | **D-3 reels + daily-log→TikTok** — demo reels (3 scripts ready) + a cron that posts EACH DAY's Life Manager log to TikTok for marketing | marketing before article |
+| **5** | **D-5 article publish** — JP+EN final drafts (adversary PASS) → note/Zenn/dev.to/Substack/X/TikTok | after marketing |
+| **6** | **D-2 Capafy** — list Leave-Time Planner (listing ready; CP2 credential-hosting bug to resolve) | |
+| **7** | **web v1.5** — #15 inbound (SendGrid/Mailgun MX+webhook) → #16 Unipile cleanup → #20 already done (gmail dropped) → #21 fully un-gate web → #22 web E2E | |
+| **8** | **D-6 directories** — BetaList/Peerlist/etc. + PH follow-up + churn-prevention | |
+| **9** | **PHASE E** — self-improve + proactive booking + merge into Anicca | |
