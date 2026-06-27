@@ -104,8 +104,10 @@ within it via search; the real generalization is A3 = parameterize the Automaton
        from AKT via `bme mint-act`, verified in the act ledger NOT bank balances. 🟥 mainnet wallet = 0 AKT = the funding blocker.
        PROGRESS 2026-06-27: ☑ B1.1 tooling · ☑ B1.2 deploy-akash.sh full flow, ALL parses real-chain-verified, adversary
        sprint-4 PASS (4-D converged) · ☑ B1.4 sandbox-2 no-mock E2E (mint cracked = min_mint 10M uact; uact escrow;
-       create→bid→lease proven on the live chain). ☐ B1.3 akt-treasury.sh (off-path ACT mint ≥ min_mint) · ☐ B1.5 mainnet
-       boot — send-manifest only completes on a REAL provider (sandbox test-providers 400) AND needs real AKT (wallet=0).
+       create→bid→lease proven on the live chain) · ☑ B1.3 akt-treasury.sh (off-path ACT mint, sprint-6 PASS, LIVE
+       EXECUTED uact 18.1M→34.7M). ★ ALL B1 CODE is VSDD-converged + live-verified on sandbox-2 (6 adversary sprints;
+       the no-mock E2E caught real bugs the mock missed). ★ ☐ B1.5 mainnet boot = the ONLY remaining step — needs a REAL
+       provider (mainnet has them) AND real AKT on the wallet (currently 0; Anicca's USDC ~$0.17). = the funding wall.
 - ☐ B2. **THE RECIPE**: model × skills × setup so **every spawned Anicca earns > it spends**. Sub-track (ANICCA's earn tools):
        x402 first real sale · token (MoltX) · 0xwork · realised revenue per tool > 0 · deploy idle Solana→Base ·
        model experiment free→auto→premium (which first reaches net-positive = the recipe).
