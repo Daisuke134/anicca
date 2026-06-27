@@ -1,0 +1,30 @@
+{
+  "featureName": "founder-x402-self-facilitate",
+  "mode": "lean",
+  "currentPhase": "1b",
+  "phaseHistory": [
+    {
+      "from": "init",
+      "to": "1a",
+      "timestamp": "2026-06-27T22:50:10.406Z"
+    },
+    {
+      "from": "1a",
+      "to": "1b",
+      "timestamp": "2026-06-27T22:50:10.408Z"
+    }
+  ],
+  "iterations": {
+    "1a": 1,
+    "1b": 1
+  },
+  "proofObligations": [],
+  "traceability": {
+    "epicId": "VCSDD-founder-x402-self-facilitate-1782600465747",
+    "beads": []
+  },
+  "gates": {},
+  "sprintCount": 0,
+  "createdAt": "2026-06-27T22:47:45.745Z",
+  "updatedAt": "2026-06-27T22:50:10.408Z"
+}
