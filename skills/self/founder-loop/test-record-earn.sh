@@ -14,12 +14,12 @@ mkdir_dir(){ local d; d="$(mktemp -d)"; mkdir -p "$d/state"; printf '{"address":
 
 # ---------- STATIC: every seam is TEST-gated (prod un-fakeable, FIND-001/008) ----------
 src="$(cat "$M")"
-for seam in FOUNDER_DIR FOUNDER_WALLET FOUNDER_LEDGER FOUNDER_USDC_NOW FOUNDER_USDC_BASELINE BASE_RPC_URL; do
+for seam in FOUNDER_DIR FOUNDER_WALLET FOUNDER_LEDGER FOUNDER_USDC_NOW FOUNDER_USDC_BASELINE BASE_RPC_URL HOME; do
   bad="$(grep -n "process\.env\.$seam" <<<"$src" | grep -v "TEST" || true)"
   ok "$([ -z "$bad" ] && echo 1 || echo 0)" "STATIC: $seam read is TEST-gated (offending: ${bad:-none})"
 done
 ok "$(grep -q "renameSync" <<<"$src" && echo 1 || echo 0)" "STATIC: baseline written atomically (renameSync) — FIND-009"
-ok "$(grep -q 'startsWith(path.resolve(FOUNDER_DIR)' <<<"$src" && echo 1 || echo 0)" "STATIC: ledger anchored INSIDE founder dir — INV-3/FIND-004"
+ok "$(grep -q 'realpathSync(FOUNDER_DIR)' <<<"$src" && echo 1 || echo 0)" "STATIC: ledger anchored INSIDE founder dir via realpath symlink-deref — INV-3/FIND-303"
 
 # ---------- BEHAVIORAL (all in FOUNDER_TEST=1 with a temp dir) ----------
 # 1. FIRST run => INIT baseline to current, record NOTHING (FIND-007)
@@ -66,4 +66,19 @@ T="$(mktemp -d)"; mkdir -p "$T/state"
 OUT="$(FOUNDER_TEST=1 FOUNDER_DIR="$T" FOUNDER_USDC_BASELINE=3 FOUNDER_USDC_NOW=9 node "$M" 2>&1)"; rc=$?
 ok "$([ $rc -ne 0 ] && echo 1 || echo 0)" "missing wallet.json → fail-closed (rc=$rc)"
 
-[ $fails -eq 0 ] && { echo "PASS — founder record-earn invariants hold (static seam-gating + first-run-init + corrupt-baseline + no-double-count + INV-1/3/6)"; exit 0; } || { echo "FAIL ($fails)"; exit 1; }
+# 10. INV-1 positive pin (FIND-302): a non-shared, non-expected wallet is rejected
+T="$(mkdir_dir "$FW")"; RANDW="0x$(openssl rand -hex 20)"
+OUT="$(FOUNDER_TEST=1 FOUNDER_DIR="$T" FOUNDER_WALLET="$RANDW" FOUNDER_USDC_BASELINE=3 FOUNDER_USDC_NOW=9 node "$M" 2>&1)"; rc=$?
+ok "$([ $rc -ne 0 ] && echo 1 || echo 0)" "INV-1 pin: non-shared non-expected wallet rejected (rc=$rc)"
+
+# 11. INV-3 symlink escape (FIND-303): state/ symlinked OUT of the founder dir is rejected
+T="$(mkdir_dir "$FW")"; EVIL="$(mktemp -d)"; rm -rf "$T/state"; ln -s "$EVIL" "$T/state"
+OUT="$(FOUNDER_TEST=1 FOUNDER_DIR="$T" FOUNDER_USDC_BASELINE=3 FOUNDER_USDC_NOW=9 node "$M" 2>&1)"; rc=$?
+ok "$([ $rc -ne 0 ] && [ ! -s "$EVIL/earn-ledger.jsonl" ] && echo 1 || echo 0)" "INV-3 symlink: symlinked state/ escaping founder dir rejected (rc=$rc)"
+
+# 12. no double-count on crash: append happens AFTER baseline advance — assert baseline written even if we only check post-state
+T="$(mkdir_dir "$FW")"
+FOUNDER_TEST=1 FOUNDER_DIR="$T" FOUNDER_USDC_BASELINE=3 FOUNDER_USDC_NOW=5 node "$M" >/dev/null 2>&1
+ok "$([ "$(cat "$T/state/usdc-baseline.txt" 2>/dev/null)" = "5" ] && [ "$(jq -r '.earn_usdc' "$T/state/earn-ledger.jsonl" 2>/dev/null | tail -1)" = "2" ] && echo 1 || echo 0)" "crash-safe order: baseline=5 advanced + row=2 (replay would see delta=0)"
+
+[ $fails -eq 0 ] && { echo "PASS — founder record-earn invariants hold (static seam-gating incl HOME + wallet-pin + symlink-deref + crash-safe order + first-run-init + corrupt-baseline + no-double-count + INV-1/3/6)"; exit 0; } || { echo "FAIL ($fails)"; exit 1; }

@@ -20,22 +20,30 @@ const args = process.argv.slice(2);
 const opt = (k, d) => { const i = args.indexOf("--" + k); return i >= 0 ? args[i + 1] : d; };
 function die(m) { console.error("record-earn: " + m); process.exit(1); }
 
-const HOME = process.env.HOME || os.homedir();
+const HOME = (TEST && process.env.HOME) || os.homedir(); // HOME is a seam too — TEST-gated so prod cannot move the trust root (FIND-301)
 const FOUNDER_DIR = (TEST && process.env.FOUNDER_DIR) || path.join(HOME, ".anicca-founder"); // canonical in prod (FIND-008)
 const STATE = path.join(FOUNDER_DIR, "state");
 const WALLET_JSON = path.join(FOUNDER_DIR, "wallet.json");
 const BASELINE_FILE = path.join(STATE, "usdc-baseline.txt");
 let LEDGER = (TEST && process.env.FOUNDER_LEDGER) || path.join(STATE, "earn-ledger.jsonl");
-if (!(path.resolve(LEDGER) + "").startsWith(path.resolve(FOUNDER_DIR) + path.sep)) {
+// INV-3 (FIND-303): realpath the founder dir AND the ledger's nearest existing ancestor so a symlinked state/
+// dir cannot escape the body — a lexical resolve does NOT dereference symlinks.
+const realFounder = fs.realpathSync(FOUNDER_DIR);
+let _anc = path.resolve(LEDGER);
+while (!fs.existsSync(_anc) && path.dirname(_anc) !== _anc) _anc = path.dirname(_anc);
+const realAnc = fs.realpathSync(_anc);
+if (realAnc !== realFounder && !(realAnc + path.sep).startsWith(realFounder + path.sep)) {
   die("INV-3: ledger must resolve INSIDE the founder dir, never the public site/dashboard render.");
 }
 
 const SHARED = ["0xa3cdd4ec6b94f01826aaf90a6d5538a2aa8c4c21", "0x9b1ee988b1a2931abce467f0a8eaff6c70c93e83"];
+const FOUNDER_WALLET_EXPECTED = "0x810f6d61f7606deee2657d3083e150a222bc29c5"; // the generated founder wallet — positive identity pin (FIND-302)
 let wallet;
 if (TEST && process.env.FOUNDER_WALLET) wallet = process.env.FOUNDER_WALLET;
 else { try { wallet = JSON.parse(fs.readFileSync(WALLET_JSON, "utf8")).address; } catch { die("no founder wallet.json (gen-wallet first)"); } }
 if (!/^0x[a-fA-F0-9]{40}$/.test(wallet || "")) die("bad founder wallet address");
 if (SHARED.includes(wallet.toLowerCase())) die("INV-1: founder wallet must NOT be a shared/other instance's wallet");
+if (wallet.toLowerCase() !== FOUNDER_WALLET_EXPECTED) die("INV-1: founder wallet must be the PINNED founder wallet (rejects ANY other wallet, even non-shared) — FIND-302");
 
 const source = opt("source", "x402");
 const cost = Number(opt("cost", "0")) || 0;
@@ -88,6 +96,6 @@ if (!(delta > 0)) die(`no verified earning (USDC delta=${delta}; baseline=${base
 
 const row = { ts: Math.floor(Date.now() / 1000), wallet, source, task, earn_usdc: delta, cost_usdc: cost, net_usdc: +(delta - cost).toFixed(6), wake };
 fs.mkdirSync(path.dirname(LEDGER), { recursive: true });
+writeBaselineAtomic(current);   // FIND-304: advance the high-water-mark FIRST — a crash here loses ONE record (honest under-count), but the same dollars can NEVER be double-counted (a replay sees delta=0).
 fs.appendFileSync(LEDGER, JSON.stringify(row) + "\n");
-writeBaselineAtomic(current);   // advance the baseline atomically so the same dollars are never double-counted
 console.log(`record-earn: VERIFIED +${delta} USDC (${source}) -> ${LEDGER}`);
