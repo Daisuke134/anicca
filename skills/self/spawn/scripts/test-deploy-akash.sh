@@ -38,7 +38,7 @@ ok "$([ -n "$C" ] && [ -n "$DC" ] && [ -n "$BD" ] && [ -n "$LC" ] && [ -n "$SM" 
    "FIND-012 commands ordered cert<deploy<bid<lease<manifest (got $C<$DC<$BD<$LC<$SM)"
 
 # ---------- BEHAVIORAL: faithful fake provider-services ----------
-mkfake(){ # $1 = fail mode ("" | create | nobid | lease)
+mkfake(){ # $1 = fail mode ("" | create | nobid | lease | manifest)
   cat <<FAKE
 #!/usr/bin/env bash
 echo "\$*" >> "\$B1_REC"
