@@ -1,0 +1,198 @@
+{
+  "iteration": 1,
+  "reviewType": "spec",
+  "feature": "founder-x402-self-facilitate",
+  "mode": "lean",
+  "dimensions": {
+    "spec_fidelity": {
+      "verdict": "FAIL",
+      "findings": [
+        {
+          "location": "specs/behavioral-spec.md:13 (REQ-001)",
+          "issue": "REQ-001 omits the mandatory toFacilitatorEvmSigner wrapper step. The canonical reference (anicca-work/x402/examples/typescript/servers/self-facilitation/index.ts:28-36) wraps the viem walletClient via toFacilitatorEvmSigner({address,getCode,readContract,verifyTypedData,writeContract,sendTransaction,waitForTransactionReceipt}) before passing as `signer` to registerExactEvmScheme. EvmFacilitatorConfig.signer is typed FacilitatorEvmSigner (verified at packages/mechanisms/evm/src/exact/facilitator/register.ts:14), NOT a viem account/walletClient. An implementer following the spec verbatim could pass privateKeyToAccount(...) or the raw walletClient as `signer` and the runtime breaks.",
+          "fix": "Append to REQ-001: 'and shall wrap the viem walletClient (created via createWalletClient({account: privateKeyToAccount(EVM_PRIVATE_KEY), chain: base, transport: http()}).extend(publicActions)) via toFacilitatorEvmSigner from @x402/evm to produce the FacilitatorEvmSigner passed as signer to registerExactEvmScheme.'"
+        },
+        {
+          "location": "specs/behavioral-spec.md:13 (REQ-001)",
+          "issue": "REQ-001 omits the mandatory `.register(network, new ExactEvmScheme())` call on the x402ResourceServer. Reference example index.ts:64-68 shows `new x402ResourceServer({verify, settle, getSupported}).register('eip155:84532', new ExactEvmServerScheme())`. Without the .register(...) call the resource server has zero schemes registered → paymentMiddleware will reject every request.",
+          "fix": "Append to REQ-001: 'and shall call .register(\"eip155:8453\", new ExactEvmScheme()) (imported as ExactEvmServerScheme from @x402/evm/exact/server) on the constructed x402ResourceServer before passing it to paymentMiddleware.'"
+        },
+        {
+          "location": "specs/behavioral-spec.md:9 (Goal sentence) + REQ-003",
+          "issue": "Spec does not call out that the reference example uses Base Sepolia (eip155:84532, baseSepolia from viem/chains) while this feature flips to Base mainnet (eip155:8453, base). A future reader may copy the example verbatim and miss the flip; the existing server.js bug (REQ-007 violator) is exactly this hazard.",
+          "fix": "Add an explicit DEVIATION note in the Goal section: '★ This deviates from the canonical reference (which uses Sepolia eip155:84532 + baseSepolia) — we use Base MAINNET (eip155:8453 + viem/chains.base). All chain references must be mainnet; importing baseSepolia is forbidden by REQ-003.'"
+        }
+      ]
+    },
+    "edge_cases": {
+      "verdict": "FAIL",
+      "findings": [
+        {
+          "location": "specs/behavioral-spec.md:21 (REQ-005)",
+          "issue": "REQ-005 calls declareDiscoveryExtension({output:{example,schema}}) — but for a POST endpoint that misroutes through createQueryDiscoveryExtension (the GET path). Verified at packages/extensions/src/bazaar/resourceService.ts:93-99: `isBodyMethod = bodyType !== undefined`; without bodyType the call returns a query-style extension. The current server.js has the same bug (apps/x402-agents/src/server.js:96 etc.). Bazaar will misclassify POST /social/x → buyers cannot discover it → goal blocked.",
+          "fix": "Rewrite REQ-005 to require: declareDiscoveryExtension({ method: 'POST', bodyType: 'json', input: <realistic example body>, inputSchema: { type:'object', properties:{...}, required:[...] }, output: { example, schema } }). Also add PROP that greps the routes literal for both `method: \"POST\"` and `bodyType: \"json\"`."
+        },
+        {
+          "location": "specs/behavioral-spec.md (no REQ covers USDC asset address)",
+          "issue": "Parent G1.2 line 110 pins USDC Base mainnet contract 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913. The spec NEVER requires the impl to assert or pin this asset address. @x402/evm has its own internal asset registry; if that registry maps eip155:8453 to a different USDC variant (or test USDC), settle credits the wrong token to 0x810f and Bazaar's USDC-mainnet indexer never sees the row. INV-7 in record-earn (parent line 84) won't fire because the Transfer log is on the wrong contract.",
+          "fix": "Add REQ-013: 'The paymentMiddleware accepts config for POST /social/x shall pin asset: \"0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913\" (USDC on Base mainnet) via accepts.extra or the SDK-supported asset field.' Add PROP-013 (Tier 0): static grep server.js for the exact contract address string."
+        },
+        {
+          "location": "specs/behavioral-spec.md:23 (REQ-006)",
+          "issue": "REQ-006 says env vars are 'missing'. process.env.EVM_PRIVATE_KEY === '' is technically not undefined; it passes the existing impl's `REQUIRED_ENV.filter(key => !process.env[key])` (falsy guard) but the spec's 'missing' is ambiguous. Worse, a syntactically-invalid key (e.g. not 0x + 64 hex) passes the check and crashes deep inside privateKeyToAccount with an opaque error.",
+          "fix": "Rewrite REQ-006: 'IF process.env.EVM_PRIVATE_KEY is missing OR empty OR does not match /^0x[0-9a-fA-F]{64}$/ OR process.env.X402_WALLET_ADDRESS is missing OR empty OR does not match /^0x[0-9a-fA-F]{40}$/, THEN the server shall log a structured error to stderr and exit non-zero BEFORE binding the listen port.' Add PROP-006a tier 0 for the format check."
+        },
+        {
+          "location": "specs/behavioral-spec.md (no REQ for settle failure)",
+          "issue": "No requirement covers facilitator.settle failure modes: (a) signature invalid → spec silent on status code returned to buyer; (b) signer's wallet has zero gas → settle throws → buyer sees generic 500 → x402 client retries → infinite loop. Reference example index.ts has no error handler. On mainnet without gas (parent line 110 'gas seed ~$1 Base ETH' is F3, AFTER F1), every buyer-facing settle would 500 silently.",
+          "fix": "Add REQ-014: 'When facilitator.settle throws, the response shall be HTTP 502 with body {error: \"settle_failed\", reason: <truncated message>} and the failure shall be logged with the settle errortype. When facilitator.verify fails, return 402 with re-issued PaymentRequirements per x402 spec.'"
+        },
+        {
+          "location": "specs/behavioral-spec.md (no REQ for port conflict)",
+          "issue": "No spec for EADDRINUSE / port conflict on host environments. F2 hosting on cloudflared + Akash may run multiple instances; without a clear error the server silently fails to bind.",
+          "fix": "Add REQ-015 (unwanted): 'IF the listen port is in use, server shall exit non-zero within 2s with stderr message including the port number.'"
+        },
+        {
+          "location": "specs/behavioral-spec.md:35 (REQ-004 + REQ-012 + parent G1.2 line 121)",
+          "issue": "REQ-004 fixes price at $0.003 but does NOT anchor that this string resolves to exactly 3000 USDC base units (6 decimals). Two implementations of paymentMiddleware could parse $0.003 differently (e.g. round-to-cents → $0.00 → 0 units → free service); spec is silent on resolved units. Parent G1.2 line 121 also requires self-buy ~$0.003 to seed Bazaar — a units mismatch makes the seed self-buy succeed at $0 and Bazaar discovery does nothing.",
+          "fix": "Add PROP-004b: the resolved PaymentRequirements.maxAmountRequired for POST /social/x shall be exactly '3000' (string). Unit test asserts via a vitest spy on x402ResourceServer.getPaymentRequirements (or equivalent)."
+        }
+      ]
+    },
+    "verification_readiness": {
+      "verdict": "FAIL",
+      "findings": [
+        {
+          "location": "specs/verification-architecture.md:28 (PROP-001)",
+          "issue": "Grep regex 'x402Facilitator|registerExactEvmScheme' will match comments and JSDoc strings (e.g. `// registerExactEvmScheme is …`). 'returns ≥ 2 matches' threshold is trivially satisfied by any developer who copy-pastes the spec text into a comment. Falsifiable but easily fooled.",
+          "fix": "Replace with: 'grep -nE \"new\\s+x402Facilitator\\\\(\\\\)\" src/server.js returns EXACTLY 1 match AND grep -nE \"registerExactEvmScheme\\\\(facilitator,\" src/server.js returns EXACTLY 1 match AND grep -nE \"toFacilitatorEvmSigner\\\\(\" src/server.js returns EXACTLY 1 match.'"
+        },
+        {
+          "location": "specs/verification-architecture.md:34 (PROP-007)",
+          "issue": "The grep pattern `\"@coinbase/x402\\|CDP_API_KEY\\|...\\|OPENAI_API_KEY\"` with -E is wrong: `\\|` under -E becomes a literal `|` in some shells/awk variants, while the intended `|` alternation needs no escape. Also, `apps/x402-agents/src/server.js` and `apps/x402-agents/src/lib/x402/` are the only paths checked — but the existing apps/x402-agents/src/routes/*.js, apps/x402-agents/src/lib/prisma.js still import openai+prisma. After the swap they remain under src/** → PROP-007 either misses them (path under-scope) or fails (because the spec did not require deleting/moving them).",
+          "fix": "Rewrite PROP-007 as: 'grep -rnE \"(@coinbase/x402|CDP_API_KEY|x402\\\\.org/facilitator|RAILWAY_|DATABASE_URL|OPENAI_API_KEY|@prisma/client|require\\\\(.openai.\\\\)|from .openai.)\" apps/x402-agents/src/ returns 0 matches.' AND add spec REQ (see structural_integrity) deciding whether to delete or move the 8 deferred route files BEFORE PROP-007 runs."
+        },
+        {
+          "location": "specs/verification-architecture.md:35 (PROP-008)",
+          "issue": "PROP-008 supertest GET /health returns 200, but does NOT verify that the source NO LONGER imports prisma. The current server.js:11 imports `./lib/prisma.js` and uses `await prisma.$queryRaw` in /health. A test that mocks prisma still passes while the impl still requires DATABASE_URL at module-load time → REQ-008 silently violated.",
+          "fix": "Add PROP-008b: 'grep -nE \"prisma|@prisma/client|from .\\\\./lib/prisma\" apps/x402-agents/src/server.js returns 0 matches.'"
+        },
+        {
+          "location": "specs/verification-architecture.md:29-32 (PROP-002, PROP-004, PROP-005 — all 'spy on …')",
+          "issue": "All three PROPs rely on vitest spies against paymentMiddleware/declareDiscoveryExtension/etc., but the current server.js uses dynamic await import('@x402/express') inside createApp(). Dynamic-import spying is non-trivial (`vi.doMock` must run before the module graph resolves, which in async createApp is racy). Spec gives no guidance — implementer could ship tests that no-op while reporting PASS.",
+          "fix": "Either (a) require behavioral-spec to switch from dynamic to static top-level imports so vi.mock works, OR (b) factor the routes/payment config into a pure exported `getRouteConfig()` that returns the plain object, then PROP-002/004/005 become static unit tests on that pure function (no spying needed)."
+        },
+        {
+          "location": "specs/verification-architecture.md:33 (PROP-006)",
+          "issue": "PROP-006 marked Tier 1 / required:no — but REQ-006 (the fail-fast env check before listen) is the ONLY barrier preventing a half-booted server from receiving (and silently rejecting/leaking) buyer traffic. This is mission-critical for a real-money path.",
+          "fix": "Promote PROP-006 to Tier 0 / required:yes."
+        },
+        {
+          "location": "specs/verification-architecture.md:30 (PROP-003)",
+          "issue": "PROP-003 marked Tier 1 / required:no — but REQ-003 forbids importing baseSepolia. Sending settle to the wrong chainId means buyer pays Base mainnet USDC but the seller signer signs Sepolia tx → either the tx never lands or it lands on Sepolia where USDC has no real value. This is a money-losing failure mode.",
+          "fix": "Promote PROP-003 to Tier 0 / required:yes."
+        },
+        {
+          "location": "specs/verification-architecture.md:38 (PROP-011)",
+          "issue": "'boots successfully' is unfalsifiable — what does 'successfully' mean? No error log? Listening on port? PROP doesn't specify.",
+          "fix": "Rewrite PROP-011 verification: 'spawn `node src/server.js` with ONLY EVM_PRIVATE_KEY=<32-byte hex test key> + X402_WALLET_ADDRESS=<40-hex test addr> + PORT=<random> in env; within 2s the child stdout contains \"listening on port\" AND supertest GET /health → 200 within 500ms AND stderr is empty (or contains only INFO-level structured log lines).'"
+        },
+        {
+          "location": "specs/verification-architecture.md:37 (PROP-010)",
+          "issue": "PROP-010 'no real RPC URLs hit' verified via a spy on http.request — but the @x402/evm scheme uses viem's transport, which goes through fetch on Node 18+ (NOT http.request). Spy will report 0 hits while a real RPC call happens.",
+          "fix": "Replace with: 'set viem transport to a fake-RPC URL (http://127.0.0.1:1) and assert any RPC attempt produces a deterministic test-fixture error, never a wall-clock network hit. Confirm via NODE_OPTIONS=\"--require <interceptor>\" or msw/node setup that no outbound HTTPS to 8453.publicnode/etc. occurs during npm test.'"
+        }
+      ]
+    },
+    "structural_integrity": {
+      "verdict": "FAIL",
+      "findings": [
+        {
+          "location": "specs/behavioral-spec.md:25 (REQ-007) vs lines 49-50 (Out of scope, 8 deferred endpoints)",
+          "issue": "REQ-007 forbids OPENAI_API_KEY/@prisma/client imports under apps/x402-agents/src/**, but Out-of-scope §F1 line 49 keeps the 8 other endpoints (buddhist-counsel etc.) 'deferred until W-A first external $ proven'. Those endpoints currently live at apps/x402-agents/src/routes/*.js and almost certainly import openai+prisma. Contradiction: PROP-007 either fails (because deferred routes still import openai) or PROP-007's path filter under-scopes (misses them). Either way the spec is internally inconsistent.",
+          "fix": "Add explicit REQ: 'The 8 deferred route files (buddhistCounsel.js, contextCompressor.js, decisionClarifier.js, emotionDetector.js, focusCoach.js, habitDesigner.js, intentRouter.js, promptSanitizer.js) shall be MOVED out of apps/x402-agents/src/ before F1 lands. Acceptable target: apps/x402-agents-deferred/ OR git-deletion (recoverable via history).' Then PROP-007's path filter can scan all of apps/x402-agents/src/ recursively."
+        },
+        {
+          "location": "specs/behavioral-spec.md:15 (REQ-002) and :19 (REQ-004)",
+          "issue": "REQ-002 generalizes 'every paid route', REQ-004 specifies the one route. With exactly one paid route, REQ-002's 'every' is trivially satisfied. If future drift adds a second paid route, REQ-002 still passes while REQ-004's '/social/x' uniqueness invariant breaks silently.",
+          "fix": "Collapse REQ-002 into REQ-004's payTo clause, OR keep REQ-002 but anchor the singleton: 'shall have EXACTLY ONE paid route key, and that key shall be \"POST /social/x\", and its payTo === process.env.X402_WALLET_ADDRESS.' Then PROP-004 asserts the singleton via Object.keys().length === 1."
+        },
+        {
+          "location": "specs/verification-architecture.md:17 ('PURE-ish' /health)",
+          "issue": "Labeling /health 'PURE-ish' is an honesty leak. Current impl reads Prisma which is IMPURE. After swap REQ-008 wants it Pure but PROP-008 (as currently written) doesn't enforce the source removal of the prisma import (see verification_readiness finding above). 'PURE-ish' grants the implementer license to leave the prisma import in place.",
+          "fix": "Replace 'PURE-ish' with 'PURE — must not import prisma/openai/any module that touches network/disk.' Pair with PROP-008b grep above."
+        },
+        {
+          "location": "specs/behavioral-spec.md:35 (REQ-012, 'out of scope') vs parent G1.2 lines 121-123 (self-buy seed as part of F1)",
+          "issue": "Behavioral-spec REQ-012 says on-chain settle is 'out of scope for unit tests; in scope for Phase 2 no-mock E2E.' But TaskList #5 is `F1 E2E: curl 402 + self-buy seeds + INV-7 rejects self-pay` and parent G1.2 line 121 says 'self-buy ONE call (~$0.003) → first self-facilitated settle on Base mainnet → Bazaar auto-indexes.' Is the self-buy seed in F1 or F2? The spec contradicts the parent + tasklist.",
+          "fix": "Clarify in behavioral-spec §Out-of-scope: 'F1 INCLUDES one self-buy seed call on Base mainnet (~$0.003 to gas-seeded 0x810f) for Bazaar discovery. INV-7 must reject this as self-payment (not earn). E2E proof of the self-buy is required for F1 done; the FIRST EXTERNAL earn (REQ-012 proper) is deferred to F2-F5.' Then add a Tier-0 PROP for the self-buy E2E."
+        },
+        {
+          "location": "specs/behavioral-spec.md:29 (REQ-009) vs the routes literal",
+          "issue": "REQ-009 fixes the GET /metadata response shape (hand-written) and REQ-004 fixes the paymentMiddleware config. There's no requirement that BOTH read from a single source of truth. Implementer may hard-code two separate literals → they drift → /metadata advertises a price/network that the actual middleware rejects.",
+          "fix": "Add REQ-016: 'GET /metadata response shall be derived from the same constant route table object passed to paymentMiddleware. No literal duplication.' Add PROP-016: import the module, assert metadata.routes[0].price === middlewareConfig['POST /social/x'].accepts.price (or equivalent)."
+        }
+      ]
+    },
+    "impl_correctness": {
+      "verdict": "FAIL",
+      "findings": [
+        {
+          "location": "specs/behavioral-spec.md (no acknowledgment of F1-only insufficient-for-goal)",
+          "issue": "An F1 that satisfies every REQ + every PROP yields a server that boots locally with no public host, no funded gas wallet, and no pre-settlement listing. Bazaar is settlement-driven (parent line 152) — discovery requires a first settle. First settle requires (a) public URL (F2), (b) gas (F3), (c) a buyer (F4 listing). F1 alone CANNOT achieve G1's STOP rule ('first real external USDC') no matter how clean the swap is. The spec does not state this — risk: F1 ships, tests green, no money flows, team blames F1 instead of moving to F2-F5.",
+          "fix": "Add explicit Done-clarifier in §Done (Phase 1a): 'F1 done = the server *would* settle correctly if hosted + funded + listed. F1 done does NOT satisfy G1's STOP rule (first real external USDC). The GOAL requires F1+F2+F3+F4+F5 conjunctively.' Make this part of the spec, not a footnote."
+        },
+        {
+          "location": "specs/behavioral-spec.md:33 (REQ-011 replicability)",
+          "issue": "REQ-011 says a child must boot with only EVM_PRIVATE_KEY + X402_WALLET_ADDRESS. But a child boot does not equal a child earn. Without Base ETH gas on the child wallet, every facilitator.settle on the child server throws. Replicability is incomplete; a self-funded Tier-2 child will report 'I booted, I am replicable' while every settle fails silently.",
+          "fix": "Expand REQ-011 OR add NFR-004: 'A child shall additionally verify >= 0.0005 Base ETH on its EVM address before binding the listen port (since settle requires gas). On insufficient gas the server shall exit non-zero with a structured stderr message naming the funding shortfall and the address that needs gas.' This makes the replicability contract honest about the gas dependency."
+        },
+        {
+          "location": "specs/behavioral-spec.md (no error path covering settle gas failure)",
+          "issue": "Without REQ-014 (settle failure handler from edge_cases) the buyer sees a generic 500 on gas-empty wallets. x402 buyer clients typically retry → infinite retry storm. This actively HURTS the goal: any external buyer who finds /social/x while gas is empty will mark the endpoint dead and never return.",
+          "fix": "Add REQ-014 (cross-listed in edge_cases): structured 502 on settle throws + stderr error log. Add PROP that integration-tests a settle-throw via a viem mock that raises insufficient-funds; supertest sees 502, not 500."
+        },
+        {
+          "location": "specs/behavioral-spec.md:19 (REQ-004) — accepts shape",
+          "issue": "REQ-004 lists scheme/price/network/payTo/mimeType but does NOT cover `description` length, `maxTimeoutSeconds`, or the per-route `extra` field where some facilitators expect asset/eip712-domain pins. Reference example index.ts:50-63 also omits `extra`, but that's Sepolia + test USDC. On mainnet, missing `extra.asset` may default to a registry value that does not match the USDC contract used by buyers' x402 clients → settle reverts.",
+          "fix": "Add REQ-004b: 'accepts.extra shall pin: { asset: \"0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913\", maxTimeoutSeconds: 60 } unless a SEARCH-FIRST verified canonical reference for Base mainnet shows otherwise. Implementer must read @x402/evm/exact/server source before submitting to confirm what fields are required for eip155:8453.'"
+        },
+        {
+          "location": "specs/behavioral-spec.md:23 (REQ-006) vs current impl src/server.js:176-177",
+          "issue": "REQ-006 says exit before listen. Current impl runs checkRequiredEnv() only inside the top-level `if (process.argv[1] && import.meta.url.endsWith(...))` block, NOT inside createApp(). After the swap, REQ-011 ('boot with only EVM_PRIVATE_KEY + X402_WALLET_ADDRESS') requires the check to gate normal boot. If the check stays only at the script entrypoint, integration tests that call createApp() bypass it and pass spuriously while production has the same hole.",
+          "fix": "Strengthen REQ-006: 'The env check shall run inside createApp() / facilitator-init code path, unconditionally, and shall throw (not exit) when called as a library, OR shall be a separate exported assertion called both from createApp() and from the script entrypoint. The check shall NOT be gated on any import.meta.url branch.'"
+        }
+      ]
+    }
+  },
+  "overallVerdict": "FAIL",
+  "blockingFindings": [
+    "spec_fidelity: REQ-001 omits toFacilitatorEvmSigner wrapper — implementer can pass wrong signer type; runtime breaks.",
+    "spec_fidelity: REQ-001 omits the .register(network, new ExactEvmScheme()) call on x402ResourceServer — paymentMiddleware will reject every request without it.",
+    "spec_fidelity: spec does not flag the Base Sepolia → Base mainnet deviation from the canonical reference; replicators will copy-paste the testnet chain.",
+    "edge_cases: REQ-005 calls declareDiscoveryExtension without method/bodyType/input — POST /social/x silently misroutes through the GET/query builder; Bazaar misclassifies; buyers cannot discover.",
+    "edge_cases: no REQ pins USDC Base mainnet contract address 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913 — settle could land in wrong token, INV-7 in record-earn never fires.",
+    "edge_cases: REQ-006 'missing' is ambiguous; empty string + malformed hex pass check and crash deep in privateKeyToAccount.",
+    "edge_cases: no REQ for facilitator.settle failure handling — gas-empty wallet returns generic 500 to buyers, kills demand discovery loop.",
+    "edge_cases: no REQ pins exact $0.003 = 3000 USDC base units — units mismatch silently breaks the self-buy seed.",
+    "verification_readiness: PROP-001 grep regex matches comments — trivially fooled; need anchored regex with EXACT counts.",
+    "verification_readiness: PROP-007 grep has wrong escapes + under-scoped paths; will miss the 8 deferred-route files that still import openai+prisma.",
+    "verification_readiness: PROP-008 does not require removing the prisma import from server.js source — REQ-008 silently violated.",
+    "verification_readiness: PROP-002/004/005 rely on spying through dynamic await import('@x402/express') — fragile; require static imports or pure exported route table.",
+    "verification_readiness: PROP-006 + PROP-003 marked Tier 1 / not required — but they protect against half-booted servers and wrong-chain settles. Promote to Tier 0.",
+    "verification_readiness: PROP-010 spies on http.request — viem on Node 18+ uses fetch; spy reports 0 hits while real RPC call happens.",
+    "verification_readiness: PROP-011 'boots successfully' is unfalsifiable as written.",
+    "structural_integrity: REQ-007 + the 8 deferred route files contradiction — the spec must decide whether to delete or move them before F1 lands.",
+    "structural_integrity: REQ-002 generalization over a single paid route is vacuous — anchor the singleton constraint explicitly.",
+    "structural_integrity: 'PURE-ish /health' label leaks honesty; demand the prisma import removal.",
+    "structural_integrity: REQ-012 (out of scope) vs parent G1.2 self-buy seed (in scope per Task #5) — contradiction.",
+    "structural_integrity: REQ-009 metadata + REQ-004 paymentMiddleware config are not pinned to a single source of truth — drift hazard.",
+    "impl_correctness: spec implies F1 advances toward GOAL but F1 alone cannot satisfy STOP rule; must be stated explicitly to keep team from blaming F1 when no money flows.",
+    "impl_correctness: replicability contract omits gas requirement — children will 'boot replicable' but earn $0.",
+    "impl_correctness: no REQ for settle-throws on gas-empty wallet → external buyers will see 500, retry-storm, abandon.",
+    "impl_correctness: REQ-004 missing accepts.extra.asset on Base mainnet — settle may revert silently.",
+    "impl_correctness: REQ-006 enforcement must live inside createApp(), not only at the script entrypoint, to prevent integration tests passing spuriously."
+  ],
+  "notes": "All 5 dimensions FAIL. The biggest failure mode is silent: a server that passes every PROP but (a) misroutes Bazaar discovery for POST (declareDiscoveryExtension shape wrong), (b) settles to the wrong USDC contract (asset unpinned), (c) crashes deep in viem instead of fail-fast (env format unchecked), (d) replicates to children that boot but never earn (gas absent), and (e) returns 500 instead of 502 on settle throws (retry storms kill discovery). The reference example was followed in spirit but the spec dropped two non-optional steps from REQ-001 (toFacilitatorEvmSigner + .register(network, scheme)) and the bodyType field from REQ-005, which together account for the most expensive realistic failure modes. Recommend Builder revise the spec along the fix proposals above and re-submit to a second adversarial round. Reviewed disk-only, zero builder context. No 'looks good' findings.",
+  "findingsCount": 25
+}

@@ -23,8 +23,29 @@
     "epicId": "VCSDD-founder-x402-self-facilitate-1782600465747",
     "beads": []
   },
-  "gates": {},
+  "gates": {
+    "1c": {
+      "verdict": "FAIL",
+      "timestamp": "2026-06-27T23:00:04.668Z",
+      "reviewedBy": "adversary",
+      "details": {
+        "iteration": 1,
+        "findingsCount": 25,
+        "blockingDimensions": [
+          "spec_fidelity",
+          "edge_cases",
+          "verification_readiness",
+          "structural_integrity",
+          "impl_correctness"
+        ],
+        "verdictFile": ".vcsdd/features/founder-x402-self-facilitate/reviews/spec/iteration-1/output/verdict.json",
+        "nextAction": "builder-revise-iteration-2"
+      },
+      "adversaryVerdict": "FAIL",
+      "adversaryReviewedAt": "2026-06-27T23:00:04.668Z"
+    }
+  },
   "sprintCount": 0,
   "createdAt": "2026-06-27T22:47:45.745Z",
-  "updatedAt": "2026-06-27T22:50:10.408Z"
+  "updatedAt": "2026-06-27T23:00:04.669Z"
 }
