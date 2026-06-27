@@ -1,0 +1,16 @@
+{
+  "featureName": "founder-money-loop",
+  "mode": "strict",
+  "currentPhase": "init",
+  "phaseHistory": [],
+  "iterations": {},
+  "proofObligations": [],
+  "traceability": {
+    "epicId": "VCSDD-founder-money-loop-1782563259096",
+    "beads": []
+  },
+  "gates": {},
+  "sprintCount": 0,
+  "createdAt": "2026-06-27T12:27:39.095Z",
+  "updatedAt": "2026-06-27T12:27:39.095Z"
+}

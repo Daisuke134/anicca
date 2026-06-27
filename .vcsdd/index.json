@@ -15,7 +15,14 @@
       "mode": "strict",
       "currentPhase": "init",
       "updatedAt": "2026-06-26T15:26:42.602Z"
+    },
+    "founder-money-loop": {
+      "status": "active",
+      "createdAt": "2026-06-27T12:27:39.095Z",
+      "mode": "strict",
+      "currentPhase": "init",
+      "updatedAt": "2026-06-27T12:27:39.095Z"
     }
   },
-  "activeFeature": "akash-provider-services-acceleration"
+  "activeFeature": "founder-money-loop"
 }
