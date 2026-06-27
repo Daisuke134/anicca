@@ -22,4 +22,6 @@ Reminders:
   ★ Per HARD RULE 0.33: ★ Dais 待ち = 罪 ★ — work exists = immediate execute
   ★ Per HARD RULE 0.32: ★ task 確定 = 即 TaskCreate、 状態変化 = 即 TaskUpdate、 spec 変更 = 即 commit+push、 permission ゼロ ★
   ★ Per HARD RULE 0.31: ★ E2E verify = MD5 + frame + audio + Postiz URL まで、 patch だけ で完了報告 = 大罪 ★
+  ★ Per HARD RULE 0.40 (GLVS HARNESS): どんな non-trivial task も ★goal-setter FIRST★ → done = ★証明可能な REAL outcome★ (例「実USDC着金tx存在」「実mail着信」「endpoint curl 200」)、 ★絶対に「script が走った / list した / curl 自分で / wake が走った / mock」では done にしない★ → /loop → VSDD adversary(maker≠checker、 自分で自分を done にできない) → ship ★
+  ★ VERIFY の問い = 「本物が起きたか(金を実際に稼いだ/成果物が本当に rendered/外部 buyer が払った)」 であって 「走らせたか」 ではない。 self-test / 「実行された」 = NOT done ★
 EOF
