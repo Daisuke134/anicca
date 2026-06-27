@@ -1,51 +1,48 @@
 #!/usr/bin/env node
-// record-earn.mjs — append a VERIFIED earning to the FOUNDER node's OWN body ledger, with NO way to fabricate a dollar.
+// record-earn.mjs — record ONLY real EXTERNAL earnings to the FOUNDER node's own body ledger.
 //
-// The founder (me = Claude Code, human-funded) records ONLY a REAL settled INCREASE of its own on-chain USDC since the
-// last record. A read-only monitor pulls this ledger to a public dashboard claiming "your Claude earns more than you
-// pay", so a faked number = fraud. Anti-fake design (post-adversary sprint-2):
-//   - PROD (FOUNDER_TEST != "1") trusts NOTHING from the caller: the founder dir is the HARDCODED canonical path, the
-//     wallet is its wallet.json, the balance comes from a HARDCODED trusted Base RPC. Every override env (dir / wallet /
-//     ledger / baseline / now / rpc) is honored ONLY under FOUNDER_TEST=1 (FIND-001/008).
-//   - FIRST run initializes the baseline to the CURRENT balance and records NOTHING — pre-existing/seed capital is never
-//     counted as an earning (FIND-007). Only later INCREASES are earnings.
-//   - the baseline is read strictly (a corrupt/NaN file fails closed, never coerced to 0) and written ATOMICALLY (FIND-009).
-//   - the ledger MUST resolve INSIDE the founder dir (INV-3); delta<=0 / missing wallet / RPC failure → exit!=0, no write (INV-6).
+// An earning = USDC Transferred to the founder wallet by an EXTERNAL payer (`from` ∉ MY wallets), summed since the
+// last processed block (a BLOCK CURSOR, not a balanceOf delta). A self-transfer between my own wallets contributes
+// ZERO — so I can NEVER fabricate an earning by moving my own money (THE GOAL / INV-7). All sprint-1..5 anti-fake
+// invariants are preserved: prod root is an env-INDEPENDENT literal (os.homedir() honors $HOME → never the root); every
+// seam is FOUNDER_TEST-gated; the wallet is the pinned canonical founder wallet; the ledger must resolve INSIDE the
+// founder dir (symlink-deref); fail-closed; the cursor advances crash-safely (under-count, never double-count).
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-const TEST = process.env.FOUNDER_TEST === "1";          // EVERY override below is honored ONLY in test
+const TEST = process.env.FOUNDER_TEST === "1";   // every override below is honored ONLY in test
 const args = process.argv.slice(2);
 const opt = (k, d) => { const i = args.indexOf("--" + k); return i >= 0 ? args[i + 1] : d; };
 function die(m) { console.error("record-earn: " + m); process.exit(1); }
 
-// FIND-401: os.homedir() HONORS $HOME on POSIX, so it can NEVER be the prod root. Pin an env-INDEPENDENT absolute
-// path in prod; only test may relocate the dir (HOME / FOUNDER_DIR honored ONLY under TEST).
+// FIND-401: prod root is an env-independent absolute literal; only test may relocate it.
 const FOUNDER_DIR = TEST ? (process.env.FOUNDER_DIR || path.join(process.env.HOME || os.homedir(), ".anicca-founder")) : "/Users/anicca/.anicca-founder";
 const STATE = path.join(FOUNDER_DIR, "state");
 const WALLET_JSON = path.join(FOUNDER_DIR, "wallet.json");
-const BASELINE_FILE = path.join(STATE, "usdc-baseline.txt");
-let LEDGER = (TEST && process.env.FOUNDER_LEDGER) || path.join(STATE, "earn-ledger.jsonl");
-// INV-3 (FIND-303): realpath the founder dir AND the ledger's nearest existing ancestor so a symlinked state/
-// dir cannot escape the body — a lexical resolve does NOT dereference symlinks.
+const CURSOR_FILE = path.join(STATE, "block-cursor.txt");
+const LEDGER = (TEST && process.env.FOUNDER_LEDGER) || path.join(STATE, "earn-ledger.jsonl");
+
+// INV-3 (symlink-deref): the ledger must resolve INSIDE the founder body.
 let realFounder;
 try { realFounder = fs.realpathSync(FOUNDER_DIR); } catch { die("founder dir missing/unreadable: " + FOUNDER_DIR + " (gen-wallet/init first)"); }
-let _anc = path.resolve(LEDGER);
-while (!fs.existsSync(_anc) && path.dirname(_anc) !== _anc) _anc = path.dirname(_anc);
-const realAnc = fs.realpathSync(_anc);
-if (realAnc !== realFounder && !(realAnc + path.sep).startsWith(realFounder + path.sep)) {
-  die("INV-3: ledger must resolve INSIDE the founder dir, never the public site/dashboard render.");
-}
+let anc = path.resolve(LEDGER);
+while (!fs.existsSync(anc) && path.dirname(anc) !== anc) anc = path.dirname(anc);
+const realAnc = fs.realpathSync(anc);
+if (realAnc !== realFounder && !(realAnc + path.sep).startsWith(realFounder + path.sep)) die("INV-3: ledger must resolve INSIDE the founder dir, never the public site/dashboard render.");
 
+// INV-1: the wallet is the pinned canonical founder wallet — never a shared/other-instance wallet.
+const FOUNDER_WALLET_EXPECTED = "0x810f6d61f7606deee2657d3083e150a222bc29c5";
 const SHARED = ["0xa3cdd4ec6b94f01826aaf90a6d5538a2aa8c4c21", "0x9b1ee988b1a2931abce467f0a8eaff6c70c93e83"];
-const FOUNDER_WALLET_EXPECTED = "0x810f6d61f7606deee2657d3083e150a222bc29c5"; // the generated founder wallet — positive identity pin (FIND-302)
 let wallet;
 if (TEST && process.env.FOUNDER_WALLET) wallet = process.env.FOUNDER_WALLET;
 else { try { wallet = JSON.parse(fs.readFileSync(WALLET_JSON, "utf8")).address; } catch { die("no founder wallet.json (gen-wallet first)"); } }
 if (!/^0x[a-fA-F0-9]{40}$/.test(wallet || "")) die("bad founder wallet address");
 if (SHARED.includes(wallet.toLowerCase())) die("INV-1: founder wallet must NOT be a shared/other instance's wallet");
-if (wallet.toLowerCase() !== FOUNDER_WALLET_EXPECTED) die("INV-1: founder wallet must be the PINNED founder wallet (rejects ANY other wallet, even non-shared) — FIND-302");
+if (wallet.toLowerCase() !== FOUNDER_WALLET_EXPECTED) die("INV-1: founder wallet must be the PINNED founder wallet — FIND-302");
+
+// MY wallets — a Transfer FROM any of these to the founder wallet is INTERNAL, never an earning (INV-7).
+const MY_WALLETS = [wallet.toLowerCase(), ...SHARED];
 
 const source = opt("source", "x402");
 const cost = Number(opt("cost", "0")) || 0;
@@ -53,51 +50,59 @@ const task = opt("task", "earn");
 const wake = opt("wake", String(Math.floor(Date.now() / 1000)));
 
 const USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+const TRANSFER_TOPIC = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"; // Transfer(address,address,uint256)
 const TRUSTED_RPC = "https://mainnet.base.org";
-async function usdcBalance(addr) {
-  if (TEST && process.env.FOUNDER_USDC_NOW !== undefined) return Number(process.env.FOUNDER_USDC_NOW);
-  const rpc = (TEST && process.env.BASE_RPC_URL) || TRUSTED_RPC;
-  const data = "0x70a08231000000000000000000000000" + addr.slice(2).toLowerCase();
-  const r = await fetch(rpc, { method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_call", params: [{ to: USDC, data }, "latest"] }) });
+async function rpc(method, params) {
+  const url = (TEST && process.env.BASE_RPC_URL) || TRUSTED_RPC;
+  const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }) });
   const j = await r.json();
-  if (!j.result) throw new Error("rpc: " + JSON.stringify(j.error || j));
-  return Number(BigInt(j.result)) / 1e6;
+  if (j.error || j.result === undefined) throw new Error(method + ": " + JSON.stringify(j.error || j));
+  return j.result;
 }
-function writeBaselineAtomic(v) {
+async function blockNow() {
+  if (TEST && process.env.FOUNDER_BLOCK_NOW !== undefined) return Number(process.env.FOUNDER_BLOCK_NOW);
+  return Number(BigInt(await rpc("eth_blockNumber", [])));
+}
+// sum of USDC Transferred to the founder wallet by EXTERNAL payers in (fromBlock..toBlock]
+async function externalInflow(fromBlock, toBlock) {
+  let logs;
+  const logsSeam = TEST ? process.env.FOUNDER_LOGS_JSON : undefined; // honored ONLY in test
+  if (logsSeam !== undefined) {
+    logs = JSON.parse(logsSeam); // [{from, value}] (value in USDC units)
+  } else {
+    const toTopic = "0x000000000000000000000000" + wallet.slice(2).toLowerCase();
+    const res = await rpc("eth_getLogs", [{ address: USDC, topics: [TRANSFER_TOPIC, null, toTopic], fromBlock: "0x" + fromBlock.toString(16), toBlock: "0x" + toBlock.toString(16) }]);
+    if (!Array.isArray(res)) throw new Error("getLogs not an array");
+    logs = res.map((l) => ({ from: "0x" + String(l.topics[1]).slice(26), value: Number(BigInt(l.data)) / 1e6 }));
+  }
+  let sum = 0;
+  for (const lg of logs) if (!MY_WALLETS.includes(String(lg.from || "").toLowerCase())) sum += Number(lg.value) || 0;
+  return +sum.toFixed(6);
+}
+function writeCursorAtomic(v) {
   fs.mkdirSync(STATE, { recursive: true });
-  const tmp = BASELINE_FILE + ".tmp";
+  const tmp = CURSOR_FILE + ".tmp";
   fs.writeFileSync(tmp, String(v));
-  fs.renameSync(tmp, BASELINE_FILE);   // atomic on the same fs (FIND-009)
+  fs.renameSync(tmp, CURSOR_FILE);
 }
 
-// baseline = the founder's OWN last-recorded balance. STRICT: a corrupt file fails closed, never coerced to 0 (FIND-009).
-let baseline = null; // null = "not initialized yet"
-const baselineSeam = TEST ? process.env.FOUNDER_USDC_BASELINE : undefined; // honored ONLY in test
-if (baselineSeam !== undefined) {
-  baseline = Number(baselineSeam);
-  if (!Number.isFinite(baseline) || baseline < 0) die("bad --baseline seam");
-} else if (fs.existsSync(BASELINE_FILE)) {
-  const raw = fs.readFileSync(BASELINE_FILE, "utf8").trim();
-  const n = Number(raw);
-  if (raw === "" || !Number.isFinite(n) || n < 0) die("baseline file corrupt — fail-closed (refusing to re-count the balance)");
-  baseline = n;
-}
+// cursor = last processed block. STRICT: corrupt → fail-closed, never coerced. null = not initialized.
+let cursor = null;
+const cursorSeam = TEST ? process.env.FOUNDER_CURSOR : undefined;
+if (cursorSeam !== undefined) { cursor = Number(cursorSeam); if (!Number.isInteger(cursor) || cursor < 0) die("bad cursor seam"); }
+else if (fs.existsSync(CURSOR_FILE)) { const raw = fs.readFileSync(CURSOR_FILE, "utf8").trim(); const n = Number(raw); if (raw === "" || !Number.isInteger(n) || n < 0) die("cursor file corrupt — fail-closed"); cursor = n; }
 
-const current = await usdcBalance(wallet).catch((e) => die("balance query failed (fail-closed): " + e.message));
+const now = await blockNow().catch((e) => die("block query failed (fail-closed): " + e.message));
 
-// FIRST run: initialize the baseline to the current balance and record NOTHING — pre-existing/seed capital is NOT earned (FIND-007).
-if (baseline === null) {
-  writeBaselineAtomic(current);
-  console.log(`record-earn: initialized baseline=${current} USDC (first run — no earning recorded; only future INCREASES count)`);
-  process.exit(0);
-}
+// FIRST run: initialize the cursor, record nothing — pre-existing balance is NOT an earning.
+if (cursor === null) { writeCursorAtomic(now); console.log(`record-earn: initialized block cursor=${now} (first run — no earning recorded)`); process.exit(0); }
+if (now < cursor) die("block height went backwards (fail-closed)");
 
-const delta = +(current - baseline).toFixed(6);
-if (!(delta > 0)) die(`no verified earning (USDC delta=${delta}; baseline=${baseline} now=${current}) — refusing a fake dollar`);
+const earned = await externalInflow(cursor + 1, now).catch((e) => die("getLogs failed (fail-closed): " + e.message));
+writeCursorAtomic(now); // advance FIRST: a crash here loses one window (honest under-count), never double-counts already-cursored blocks
+if (!(earned > 0)) { console.log(`record-earn: no EXTERNAL income in blocks ${cursor + 1}..${now} (self-transfers ignored) — nothing recorded`); process.exit(0); }
 
-const row = { ts: Math.floor(Date.now() / 1000), wallet, source, task, earn_usdc: delta, cost_usdc: cost, net_usdc: +(delta - cost).toFixed(6), wake };
+const row = { ts: Math.floor(Date.now() / 1000), wallet, source, task, earn_usdc: earned, cost_usdc: cost, net_usdc: +(earned - cost).toFixed(6), wake, from_block: cursor + 1, to_block: now };
 fs.mkdirSync(path.dirname(LEDGER), { recursive: true });
-writeBaselineAtomic(current);   // FIND-304: advance the high-water-mark FIRST — a crash here loses ONE record (honest under-count), but the same dollars can NEVER be double-counted (a replay sees delta=0).
 fs.appendFileSync(LEDGER, JSON.stringify(row) + "\n");
-console.log(`record-earn: VERIFIED +${delta} USDC (${source}) -> ${LEDGER}`);
+console.log(`record-earn: VERIFIED +${earned} USDC from EXTERNAL payer(s) (${source}) -> ${LEDGER}`);

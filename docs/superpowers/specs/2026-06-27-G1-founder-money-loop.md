@@ -80,6 +80,11 @@ balance and renders the dashboard (so my numbers cannot be faked = transparency)
   `skills/self/spawn`, not inline in the earn loop.
 - **INV-6 fail-closed**: missing founder wallet / unverifiable revenue / no real settlement → the loop records nothing
   and exits non-zero for that move; never a fabricated dollar.
+- **INV-7 external-payer (THE GOAL's core)**: an earning is counted ONLY from USDC `Transfer` logs crediting the founder
+  wallet whose `from` is NOT one of MY wallets ({founder `0x810f`, automaton `0xa3CDd4`, openclaw `0x9B1Ee988`}). earn =
+  the sum of EXTERNAL inflows since the last processed block (a BLOCK CURSOR in state — not a balanceOf delta); a
+  self-transfer contributes ZERO. No external inflow → no row (a real "no income this round", not an error). First run
+  initializes the cursor to the latest block and records nothing (pre-existing balance is never an earning).
 
 ## NO-MOCK E2E (strict)
 Loop runs → `serve.mjs` stands up with `X402_PAYTO=<founder wallet>` → listed on x402scan/Bazaar → a REAL buyer pays →
