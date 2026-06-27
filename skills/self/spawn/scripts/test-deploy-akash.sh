@@ -26,8 +26,9 @@ absent "bme mint-act|usdc.*akt|swap"               "INV-5 funding OFF the per-de
 have   "exit 1"                                    "INV-6 fail-closed"
 # FIND-001/006 the corrected parses must be present
 have   'select\(.key.* == .dseq.|key=="dseq"'      "FIND-001 dseq parsed from the event attribute (not a top-level key)"
-have   "uakt"                                       "FIND-006 SDL pricing denom is uakt (bids are uakt-priced)"
-absent 'denom: uact|PRICE_DENOM:-uact'             "FIND-006 NOT defaulting pricing to uact"
+have   "uact"                                       "FIND-006 SDL pricing+deposit denom is uact (AEP-76 escrow MUST be uact)"
+absent 'PRICE_DENOM:-uakt'                          "FIND-006 pricing default is NOT uakt (gas stays uakt)"
+have   'AKASH_DEPOSIT.*uact|deposit.*uact'          "FIND-006 deposit denom is uact"
 # FIND-012 ordered flow: cert < deployment < bid < lease < manifest
 ln(){ grep -nE "$1" "$S" | grep -vE ':[[:space:]]*#' | head -1 | cut -d: -f1; }   # skip comment lines
 C=$(ln "tx cert"); DC=$(ln "deployment create"); BD=$(ln "bid list"); LC=$(ln "lease create"); SM=$(ln "send-manifest")
@@ -47,7 +48,7 @@ case "\$*" in
   *"tx deployment create"*) [ "\$FAIL" = create ] && echo '{"code":11,"raw_log":"insufficient funds"}' \
                               || echo '{"code":0,"txhash":"ABC","logs":[{"events":[{"type":"akash.v1","attributes":[{"key":"owner","value":"akash1ms7"},{"key":"dseq","value":"777"}]}]}]}' ;;
   *"query market bid list"*) [ "\$FAIL" = nobid ] && echo '{"bids":[]}' \
-                              || echo '{"bids":[{"bid":{"bid_id":{"owner":"akash1ms7","dseq":"777","gseq":1,"oseq":1,"provider":"akash1prov"},"state":"open","price":{"denom":"uakt","amount":"5"}}}]}' ;;
+                              || echo '{"bids":[{"bid":{"bid_id":{"owner":"akash1ms7","dseq":"777","gseq":1,"oseq":1,"provider":"akash1prov"},"state":"open","price":{"denom":"uact","amount":"5"}}}]}' ;;
   *"tx market lease create"*)[ "\$FAIL" = lease ] && echo '{"code":8,"raw_log":"bid not found"}' || echo '{"code":0,"txhash":"DEF"}' ;;
   *"query market lease list"*) echo '{"leases":[{"lease":{"state":"active"}}]}' ;;
   *"send-manifest"*)        echo "ok" ;;
