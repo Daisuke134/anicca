@@ -14,8 +14,8 @@ mkdir_dir(){ local d; d="$(mktemp -d)"; mkdir -p "$d/state"; printf '{"address":
 
 # ---------- STATIC ----------
 src="$(cat "$M")"
-for seam in FOUNDER_DIR FOUNDER_WALLET FOUNDER_LEDGER FOUNDER_CURSOR FOUNDER_BLOCK_NOW FOUNDER_LOGS_JSON BASE_RPC_URL HOME; do
-  bad="$(grep -n "process\.env\.$seam" <<<"$src" | grep -v "TEST" || true)"
+for seam in FOUNDER_DIR FOUNDER_WALLET FOUNDER_LEDGER FOUNDER_CURSOR FOUNDER_BLOCK_NOW FOUNDER_LOGS_JSON FOUNDER_RAW_LOGS_JSON BASE_RPC_URL HOME; do
+  bad="$(grep -n "process\.env\.$seam" <<<"$src" | grep -vE "TEST (&&|\?)" || true)"
   ok "$([ -z "$bad" ] && echo 1 || echo 0)" "STATIC: $seam read is TEST-gated (${bad:-none})"
 done
 ok "$(grep -q "renameSync" <<<"$src" && echo 1 || echo 0)" "STATIC: cursor written atomically (renameSync)"
@@ -42,7 +42,7 @@ ok "$([ $rc -eq 0 ] && [ ! -s "$T/state/earn-ledger.jsonl" ] && echo 1 || echo 0
 # 4. MIXED → only external counted
 T="$(mkdir_dir "$FW")"
 OUT="$(FOUNDER_TEST=1 FOUNDER_DIR="$T" FOUNDER_CURSOR=100 FOUNDER_BLOCK_NOW=200 FOUNDER_LOGS_JSON="[{\"from\":\"$EXT\",\"value\":5},{\"from\":\"$A3\",\"value\":3},{\"from\":\"$FW\",\"value\":2}]" node "$M" 2>&1)"; rc=$?
-ok "$([ "$(jq -r '.earn_usdc' "$T/state/earn-ledger.jsonl" 2>/dev/null | tail -1)" = "5" ] && echo 1 || echo 0)" "mixed: only external 5 counted (self 3+2 ignored)"
+ok "$([ $rc -eq 0 ] && [ "$(jq -r '.earn_usdc' "$T/state/earn-ledger.jsonl" 2>/dev/null | tail -1)" = "5" ] && echo 1 || echo 0)" "mixed: only external 5 counted (self 3+2 ignored, rc=$rc)"
 
 # 5. corrupt cursor → fail-closed
 T="$(mkdir_dir "$FW")"; printf 'abc' > "$T/state/block-cursor.txt"
@@ -85,4 +85,37 @@ printf '{"address":"%s"}' "$FW" > "$PLANT/.anicca-founder/wallet.json"; echo 100
 HOME="$PLANT" node "$M" >/dev/null 2>&1
 ok "$([ ! -s "$PLANT/.anicca-founder/state/earn-ledger.jsonl" ] && echo 1 || echo 0)" "PROD: HOME-poisoned planted dir NOT used as root — FIND-401"
 
-[ $fails -eq 0 ] && { echo "PASS — founder record-earn (external-inflow model): external-only earnings (self-transfer=0, INV-7) + seam-gating + wallet-pin + ledger-realpath + env-independent root + corrupt/backwards fail-closed + atomic cursor"; exit 0; } || { echo "FAIL ($fails)"; exit 1; }
+# ----- RAW eth_getLogs parse path (FIND-602: the real from-slice/BigInt/topic checks, never tested before) -----
+TT="0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"   # Transfer topic0
+USDCADDR="0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+TO_F="0x000000000000000000000000${FW#0x}"                  # padded to-topic = founder
+FROM_EXT="0x000000000000000000000000${EXT#0x}"; FROM_A3="0x000000000000000000000000${A3#0x}"
+V5="0x4c4b40"   # 5,000,000 = 5 USDC (6 decimals)
+
+# 13. RAW: external payer decoded from a real log → recorded 5 (exercises from-slice + BigInt decode = INV-7 heart)
+T="$(mkdir_dir "$FW")"
+RAW="[{\"address\":\"$USDCADDR\",\"topics\":[\"$TT\",\"$FROM_EXT\",\"$TO_F\"],\"data\":\"$V5\"}]"
+OUT="$(FOUNDER_TEST=1 FOUNDER_DIR="$T" FOUNDER_CURSOR=100 FOUNDER_BLOCK_NOW=200 FOUNDER_RAW_LOGS_JSON="$RAW" node "$M" 2>&1)"; rc=$?
+ok "$([ $rc -eq 0 ] && [ "$(jq -r '.earn_usdc' "$T/state/earn-ledger.jsonl" 2>/dev/null | tail -1)" = "5" ] && echo 1 || echo 0)" "RAW parse: external 5 USDC decoded from real log (rc=$rc — $OUT)"
+
+# 14. RAW: a self-transfer log → 0 (the from-extraction must correctly identify MY wallet)
+T="$(mkdir_dir "$FW")"
+RAW="[{\"address\":\"$USDCADDR\",\"topics\":[\"$TT\",\"$FROM_A3\",\"$TO_F\"],\"data\":\"$V5\"}]"
+OUT="$(FOUNDER_TEST=1 FOUNDER_DIR="$T" FOUNDER_CURSOR=100 FOUNDER_BLOCK_NOW=200 FOUNDER_RAW_LOGS_JSON="$RAW" node "$M" 2>&1)"; rc=$?
+ok "$([ $rc -eq 0 ] && [ ! -s "$T/state/earn-ledger.jsonl" ] && echo 1 || echo 0)" "RAW parse: self-transfer log → 0 (rc=$rc)"
+
+# 15. RAW: non-USDC address + to≠founder + wrong topic0 are ALL dropped (don't trust the RPC filter — FIND-603)
+T="$(mkdir_dir "$FW")"; TO_OTHER="0x0000000000000000000000001111111111111111111111111111111111111111"
+RAW="[{\"address\":\"0xDEADbeef00000000000000000000000000000000\",\"topics\":[\"$TT\",\"$FROM_EXT\",\"$TO_F\"],\"data\":\"$V5\"},{\"address\":\"$USDCADDR\",\"topics\":[\"$TT\",\"$FROM_EXT\",\"$TO_OTHER\"],\"data\":\"$V5\"},{\"address\":\"$USDCADDR\",\"topics\":[\"0xdeadbeef\",\"$FROM_EXT\",\"$TO_F\"],\"data\":\"$V5\"}]"
+OUT="$(FOUNDER_TEST=1 FOUNDER_DIR="$T" FOUNDER_CURSOR=100 FOUNDER_BLOCK_NOW=200 FOUNDER_RAW_LOGS_JSON="$RAW" node "$M" 2>&1)"; rc=$?
+ok "$([ $rc -eq 0 ] && [ ! -s "$T/state/earn-ledger.jsonl" ] && echo 1 || echo 0)" "RAW parse: non-USDC + to≠founder + wrong-topic0 all dropped (rc=$rc)"
+
+# 16. multiple external payers + a 0-value transfer → sum of externals only (FIND-604)
+T="$(mkdir_dir "$FW")"; EXT2="0x2222222222222222222222222222222222222222"
+OUT="$(FOUNDER_TEST=1 FOUNDER_DIR="$T" FOUNDER_CURSOR=100 FOUNDER_BLOCK_NOW=200 FOUNDER_LOGS_JSON="[{\"from\":\"$EXT\",\"value\":5},{\"from\":\"$EXT2\",\"value\":2.5},{\"from\":\"$EXT\",\"value\":0}]" node "$M" 2>&1)"; rc=$?
+ok "$([ $rc -eq 0 ] && [ "$(jq -r '.earn_usdc' "$T/state/earn-ledger.jsonl" 2>/dev/null | tail -1)" = "7.5" ] && echo 1 || echo 0)" "multiple external payers + 0-value → 7.5 (rc=$rc)"
+
+# 17. STATIC: scans the FINALIZED head, not eth_blockNumber (no reorg over/double-count) — FIND-601
+ok "$(grep -qF '["finalized", false]' <<<"$src" && echo 1 || echo 0)" "STATIC: scans the FINALIZED head (eth_getBlockByNumber finalized), not un-finalized latest — FIND-601"
+
+[ $fails -eq 0 ] && { echo "PASS — founder record-earn (external-inflow + finalized + raw-parse): external-only (self=0, INV-7) + real-log parse (from-slice/BigInt/to/address re-verify) + finalized-head (no reorg) + seam-gating + wallet-pin + realpath + env-independent root + fail-closed + atomic cursor"; exit 0; } || { echo "FAIL ($fails)"; exit 1; }

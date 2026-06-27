@@ -61,23 +61,41 @@ async function rpc(method, params) {
 }
 async function blockNow() {
   if (TEST && process.env.FOUNDER_BLOCK_NOW !== undefined) return Number(process.env.FOUNDER_BLOCK_NOW);
-  return Number(BigInt(await rpc("eth_blockNumber", [])));
+  // FIND-601: scan the FINALIZED head only. eth_blockNumber (latest) is un-finalized — a Transfer in a block that
+  // later reorgs would be counted though it never settled, and a reorged-out tx re-mined later would double-count.
+  // Finalized blocks cannot reorg, so the cursor never advances past genuinely-settled income.
+  const b = await rpc("eth_getBlockByNumber", ["finalized", false]);
+  if (!b || b.number === undefined) throw new Error("no finalized block");
+  return Number(BigInt(b.number));
 }
-// sum of USDC Transferred to the founder wallet by EXTERNAL payers in (fromBlock..toBlock]
-async function externalInflow(fromBlock, toBlock) {
-  let logs;
-  const logsSeam = TEST ? process.env.FOUNDER_LOGS_JSON : undefined; // honored ONLY in test
-  if (logsSeam !== undefined) {
-    logs = JSON.parse(logsSeam); // [{from, value}] (value in USDC units)
-  } else {
-    const toTopic = "0x000000000000000000000000" + wallet.slice(2).toLowerCase();
-    const res = await rpc("eth_getLogs", [{ address: USDC, topics: [TRANSFER_TOPIC, null, toTopic], fromBlock: "0x" + fromBlock.toString(16), toBlock: "0x" + toBlock.toString(16) }]);
-    if (!Array.isArray(res)) throw new Error("getLogs not an array");
-    logs = res.map((l) => ({ from: "0x" + String(l.topics[1]).slice(26), value: Number(BigInt(l.data)) / 1e6 }));
-  }
+// sum the value of EXTERNAL inflows ({from} ∉ MY_WALLETS) from already-parsed {from,value} logs
+function sumExternal(logs) {
   let sum = 0;
   for (const lg of logs) if (!MY_WALLETS.includes(String(lg.from || "").toLowerCase())) sum += Number(lg.value) || 0;
   return +sum.toFixed(6);
+}
+// parse RAW eth_getLogs entries → {from,value}, RE-VERIFYING topic0==Transfer, address==USDC, to==founder
+// (never trust the RPC's server-side filter for a money invariant — FIND-603). Malformed entries are dropped.
+function parseRawLogs(res) {
+  if (!Array.isArray(res)) throw new Error("getLogs not an array");
+  const wlow = wallet.slice(2).toLowerCase();
+  return res
+    .filter((l) => l && String(l.address || "").toLowerCase() === USDC.toLowerCase())
+    .filter((l) => Array.isArray(l.topics) && l.topics.length >= 3 && String(l.topics[0]).toLowerCase() === TRANSFER_TOPIC && String(l.topics[2]).toLowerCase().endsWith(wlow))
+    .map((l) => ({ from: "0x" + String(l.topics[1]).slice(26), value: Number(BigInt(l.data)) / 1e6 }));
+}
+// sum of USDC Transferred to the founder wallet by EXTERNAL payers in (fromBlock..toBlock]
+async function externalInflow(fromBlock, toBlock) {
+  const logsSeam = TEST ? process.env.FOUNDER_LOGS_JSON : undefined;     // pre-parsed [{from,value}] — filter/sum tests
+  if (logsSeam !== undefined) return sumExternal(JSON.parse(logsSeam));
+  const rawSeam = TEST ? process.env.FOUNDER_RAW_LOGS_JSON : undefined;  // raw eth_getLogs result — exercises the real parse
+  let res;
+  if (rawSeam !== undefined) res = JSON.parse(rawSeam);
+  else {
+    const toTopic = "0x000000000000000000000000" + wallet.slice(2).toLowerCase();
+    res = await rpc("eth_getLogs", [{ address: USDC, topics: [TRANSFER_TOPIC, null, toTopic], fromBlock: "0x" + fromBlock.toString(16), toBlock: "0x" + toBlock.toString(16) }]);
+  }
+  return sumExternal(parseRawLogs(res));
 }
 function writeCursorAtomic(v) {
   fs.mkdirSync(STATE, { recursive: true });
