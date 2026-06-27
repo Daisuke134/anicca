@@ -1,0 +1,92 @@
+{
+  "sprintNumber": 5,
+  "feature": "akash-provider-services-acceleration",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-06-27T00:00:00Z",
+  "iteration": 1,
+  "reviewContext": {
+    "reviewType": "implementation",
+    "scope": "B1.3 akt-treasury.sh + deploy-akash.sh INV-5/json touch",
+    "artifactsReviewed": [
+      "skills/self/spawn/scripts/akt-treasury.sh",
+      "skills/self/spawn/scripts/test-akt-treasury.sh",
+      "skills/self/spawn/scripts/deploy-akash.sh",
+      "docs/superpowers/specs/2026-06-26-B1-akash-provider-services-acceleration.md",
+      ".vcsdd/features/akash-provider-services-acceleration/evidence/2026-06-27-real-sandbox2-e2e.md"
+    ]
+  },
+  "dimensions": [
+    {
+      "name": "mint_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/self/spawn/scripts/akt-treasury.sh:36", "description": "TREASURY_MINT_UAKT default 25000000 uakt = the 25 AKT chunk proven EXECUTED on sandbox-2 (evidence line 11, 16,578,449 uact > min_mint 10M)"},
+        {"type": "file", "location": "skills/self/spawn/scripts/akt-treasury.sh:41-43", "description": "only mints when CUR_UACT < ACT_BUFFER; returns early (exit 0, no mint) when already at buffer"}
+      ]
+    },
+    {
+      "name": "verification_robustness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/self/spawn/scripts/akt-treasury.sh:40", "description": "CUR_UACT captured BEFORE the mint (line 58)"},
+        {"type": "file", "location": "skills/self/spawn/scripts/akt-treasury.sh:64-69", "description": "confirms via balance DELTA NEW_UACT > CUR_UACT, never reads records[-1] nor tx code; a non-crediting mint exhausts the poll window and exits 1"}
+      ]
+    },
+    {
+      "name": "fail_closed_loud",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/self/spawn/scripts/akt-treasury.sh:18-19", "description": "missing CLI / unset AKASH_KEY_NAME → exit 1 with message"},
+        {"type": "file", "location": "skills/self/spawn/scripts/akt-treasury.sh:54", "description": "insufficient AKT and no swap wired → exit 1"},
+        {"type": "file", "location": "skills/self/spawn/scripts/akt-treasury.sh:69", "description": "mint that never credits uact → exit 1, loud"}
+      ]
+    },
+    {
+      "name": "off_path_inv5",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/self/spawn/scripts/deploy-akash.sh:1-124", "description": "no `tx bme mint-act` and no swap invocation anywhere in deploy path (only comment mentions at lines 2,5,6); INV-5 holds on the deploy side"},
+        {"type": "file", "location": "skills/self/spawn/scripts/akt-treasury.sh:1-69", "description": "no deployment create / lease create / send-manifest; treasury only funds"}
+      ]
+    },
+    {
+      "name": "swap_hook_honesty",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/self/spawn/scripts/akt-treasury.sh:48-54", "description": "swap is an explicit TREASURY_SWAP_CMD hook; when unset and AKT short the script exits 1 (no silent no-op pretending to fund); when set, a failing swap also exits 1"}
+      ]
+    },
+    {
+      "name": "test_non_circularity",
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-002"],
+      "evidence": []
+    },
+    {
+      "name": "deploy_regression",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/self/spawn/scripts/deploy-akash.sh:32,77,88,99,108", "description": "every query/tx that parses JSON carries explicit -o json after the global AKASH_OUTPUT removal; keys show -a (line 29) and send-manifest (line 116) correctly omit it (no JSON parsed)"},
+        {"type": "file", "location": "skills/self/spawn/scripts/deploy-akash.sh:46", "description": "AKASH_IMAGE override defaults to ghcr.io/conway-research/automaton:latest (the automaton image) — safe"}
+      ]
+    },
+    {
+      "name": "new_defects",
+      "verdict": "FAIL",
+      "findings": ["FIND-003"],
+      "evidence": []
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 3,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}

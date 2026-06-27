@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-302",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "major",
+  "description": "The send-manifest fail-closed path is the SINGLE most likely real path per the captured evidence, yet it has NO behavioral test case. Evidence line 22-23 establishes that sandbox test-providers return 400 on send-manifest (they bid but do not host), so on the real sandbox-2 chain deploy-akash.sh:114-121 (the 5-retry send-manifest loop + `[ -n \"$SENT\" ] || ... exit 1`) is the path that actually fires. The fake provider-services in test-deploy-akash.sh has fail modes only for `create`, `nobid`, and `lease` (test lines 41,49,51,53); `*send-manifest*` ALWAYS echoes \"ok\" (test:55). There is no `manifest` fail mode and therefore no assertion that send-manifest failure -> rc!=0 AND empty stdout AND dseq NOT printed AND no leak. The exact fail-closed guarantee for the path most likely to be exercised against a real provider is unverified by the oracle. This is the same class as the sprint-2 FIND-206 gap and remains open.",
+  "evidence": {
+    "filePath": "skills/self/spawn/scripts/test-deploy-akash.sh",
+    "lineRange": "41-55",
+    "snippet": "mkfake(){ # $1 = fail mode (\"\" | create | nobid | lease)\n...\n  *\"send-manifest\"*)        echo \"ok\" ;;"
+  },
+  "fix": "Add a `manifest` fail mode to mkfake (test:41-59) where `*send-manifest*` exits non-zero, then add a runfake \"manifest\" behavioral case asserting `rc -ne 0 && -z \"$OUT\"` and that no dseq is printed (mirroring the create/nobid/lease cases at test:78-87). This locks deploy-akash.sh:121 fail-closed for the path that the evidence proves is the real-sandbox outcome.",
+  "routeToPhase": "2b"
+}

@@ -1,0 +1,80 @@
+{
+  "sprintNumber": 4,
+  "feature": "akash-provider-services-acceleration",
+  "overallVerdict": "PASS",
+  "timestamp": "2026-06-27T00:00:00Z",
+  "iteration": 4,
+  "reviewContext": {
+    "reviewType": "implementation",
+    "specPath": "/Users/anicca/anicca/docs/superpowers/specs/2026-06-26-B1-akash-provider-services-acceleration.md",
+    "evidencePath": "/Users/anicca/anicca/.vcsdd/features/akash-provider-services-acceleration/evidence/2026-06-27-real-sandbox2-e2e.md",
+    "filesReviewed": [
+      "/Users/anicca/anicca/skills/self/spawn/scripts/deploy-akash.sh",
+      "/Users/anicca/anicca/skills/self/spawn/scripts/test-deploy-akash.sh"
+    ],
+    "note": "RE-review (sprint-4) of the two sprint-3 FAIL findings (FIND-301 fixed gas, FIND-302 manifest fail-closed untested) plus a no-regression sweep of the sprint-3 PASSes and the new AKASH_POLL_SLEEP knob. Both prior findings are now resolved on disk: AKASH_GAS defaults to a fixed numeric 500000 (no --gas auto), justified by the measured deployment-create gasUsed=138662 with ample headroom over cert-publish/lease-create; and the fake gains a `manifest` fail mode with a behavioral case that drives the script through deploy-akash.sh:114-121 and asserts rc!=0 + empty stdout + that send-manifest was actually attempted. No regression to parse fidelity, test non-circularity, fail-closed, or boot-claim honesty. AKASH_POLL_SLEEP defaulting preserves real polling and the test's 0 setting only removes the delay, not iteration/break logic. Sole non-blocking nit: the test:41 mkfake comment still lists modes as (\"\" | create | nobid | lease), omitting `manifest` — a stale doc string, not a behavioral defect."
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "deploy-akash.sh:26", "description": "FIND-301 RESOLVED. `export AKASH_GAS=\"${AKASH_GAS:-500000}\"` is now a FIXED numeric default, not `auto`. With a numeric gas the broadcast carries `--gas 500000` directly and runs NO simulation round-trip (AKASH_GAS_ADJUSTMENT only multiplies a simulated value, which is dead with fixed gas) — satisfying spec line 43/54 'fixed gas' acceleration fix. The inline comment cites the real measured deployment-create gasUsed=138662, so the constant is justified by a real tx, not invented."},
+        {"type": "file", "location": "deploy-akash.sh:34-36,77,99-100", "description": "Gas-limit adequacy: the three on-chain txs in the flow are cert publish (MsgCreateCertificate, ~100-200k typical), deployment create (138662 measured), lease create (similar magnitude). 500000 covers each with >2.5x headroom; no single tx plausibly exceeds 500000 to cause an out-of-gas failure. cert generate (line 34) is a local op (no tx)."},
+        {"type": "file", "location": "deploy-akash.sh:9-37,77-121", "description": "INV-1 own-wallet (--from $AKASH_KEY_NAME, no console-api/credit-card/managed-wallet), INV-2 ordered cert<deploy<bid<lease<manifest, INV-3 no sleep 30 + bid poll loop, INV-4 cert only if none valid (32-37), INV-5 no mint/swap in active code, INV-6 fail-closed exits — all still hold."}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "test-deploy-akash.sh:55", "description": "FIND-302 RESOLVED (fake mode). `*\"send-manifest\"*) [ \"$FAIL\" = manifest ] && exit 1 || echo \"ok\" ;;` adds a `manifest` fail mode that makes send-manifest exit non-zero on every retry, while still echoing ok in all other modes (happy path unaffected, non-circularity preserved)."},
+        {"type": "file", "location": "test-deploy-akash.sh:89-91", "description": "FIND-302 RESOLVED (behavioral case). `runfake manifest` then `ok \"$([ $rc -ne 0 ] && [ -z \"$OUT\" ] ...)\"` asserts rc!=0 AND empty stdout (no dseq leak), and line 91 greps `recd` to assert send-manifest was actually attempted. In manifest mode the fake returns happy values for keys/cert/create(code0,dseq777)/bid(open)/lease(code0)/lease-list(active), so the script proceeds all the way to the send-manifest loop and exits 1 at deploy-akash.sh:121 — genuinely exercising lines 114-121, not short-circuiting earlier."},
+        {"type": "file", "location": "test-deploy-akash.sh:78-87", "description": "The three prior fail-closed behavioral cases (create code!=0, no bids -> no lease attempt, lease code!=0 -> no manifest) remain valid against the updated shared fake; recd is recorded per-runfake (62,67) so the lease/manifest non-call asserts (83,87) read the correct invocation log."}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "deploy-akash.sh:87-94,107-112,115-120", "description": "AKASH_POLL_SLEEP knob (#4): `sleep \"${AKASH_POLL_SLEEP:-2}\"` defaults to 2 in prod (real polling preserved across bid/lease/manifest loops). Loop termination depends ONLY on bid-found / lease-active / send-manifest-rc=0, never on sleep, so setting it to 0 in the test (test:65) removes the delay without altering iteration count or break conditions — no weakening of any real guarantee."},
+        {"type": "file", "location": "deploy-akash.sh:9,34,116", "description": "set -e safety: cert publish uses `|| true`/explicit `||` guard (34-36); the send-manifest call sits inside an `if` (116), and bid/lease results come from command substitution — none trigger premature set -e exit. No new control-flow defect introduced by the edits."}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "test-deploy-akash.sh:41", "description": "Sole nit (non-blocking): the mkfake header comment still reads `# $1 = fail mode (\"\" | create | nobid | lease)`, omitting the newly added `manifest` mode handled at line 55. Stale documentation only; the code path is correct and tested. Not severe enough to FAIL structural integrity."},
+        {"type": "file", "location": "test-deploy-akash.sh:61-68", "description": "runfake isolates each run in its own temp dir + REC file and tears it down (rm -rf), so the five behavioral runs (happy/create/nobid/lease/manifest) do not cross-contaminate; the manifest case slots cleanly into the existing structure."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "test-deploy-akash.sh:50,52,54,55", "description": "Non-circularity preserved: the fake jq-builds the real decoded shapes (EventDeploymentCreated id-attr as a tojson string, .bid.id, lease.state=active) so a parse regression still breaks the happy path; the manifest fail mode is the ONLY change to send-manifest and does not loosen any parse assertion. A regression to the old `select(.key==\"dseq\")` or `.bid.bid_id` would still empty-out DSEQ/BID and fail test:72-73."},
+        {"type": "file", "location": "deploy-akash.sh:113-123", "description": "Boot-claim honesty unchanged: the script prints ONLY the dseq (123), reached only after lease-active (113) AND send-manifest rc=0 (121). On a real provider that 400s, the new manifest path means the script exits 1 rather than overclaim a boot. The test does not assert a container boot."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 0,
+    "allCriteriaEvaluated": true,
+    "evaluatedInvariants": ["INV-1", "INV-2", "INV-3", "INV-4", "INV-5", "INV-6"],
+    "duplicateFindings": [],
+    "resolvedSincePrior": [
+      "FIND-301 (--gas auto on default path) — RESOLVED: AKASH_GAS defaults to fixed numeric 500000 (deploy-akash.sh:26), justified by measured gasUsed=138662, covers cert/deploy/lease with headroom; no simulation round-trip.",
+      "FIND-302 (send-manifest fail-closed untested) — RESOLVED: `manifest` fail mode (test:55) + behavioral case (test:89-91) drives the script to deploy-akash.sh:114-121 and asserts rc!=0 + empty stdout + send-manifest attempted."
+    ],
+    "nonFailingNotes": [
+      "test-deploy-akash.sh:41 mkfake comment omits the `manifest` mode (stale doc string only; behavior at line 55 is correct and tested).",
+      "AKASH_POLL_SLEEP (deploy-akash.sh:92,111,119) defaults to 2 in prod (real polling); test sets 0 (sleep delay only, no correctness/iteration impact)."
+    ]
+  }
+}

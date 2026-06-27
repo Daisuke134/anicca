@@ -1,0 +1,88 @@
+{
+  "sprintNumber": 3,
+  "feature": "akash-provider-services-acceleration",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-06-27T00:00:00Z",
+  "iteration": 3,
+  "reviewContext": {
+    "reviewType": "implementation",
+    "specPath": "/Users/anicca/anicca/docs/superpowers/specs/2026-06-26-B1-akash-provider-services-acceleration.md",
+    "evidencePath": "/Users/anicca/anicca/.vcsdd/features/akash-provider-services-acceleration/evidence/2026-06-27-real-sandbox2-e2e.md",
+    "filesReviewed": [
+      "/Users/anicca/anicca/skills/self/spawn/scripts/deploy-akash.sh",
+      "/Users/anicca/anicca/skills/self/spawn/scripts/test-deploy-akash.sh"
+    ],
+    "note": "RE-review focused on the sprint-1/2 demand that dseq/bid/lease parses be verified against REAL provider-services output. The captured real-chain evidence (2026-06-27-real-sandbox2-e2e.md) is treated as ground truth; the impl was checked to AGREE with it line by line. The three previously-blocking parse findings (FIND-001 dseq event-attr, FIND-002 .bid.id, lease state) are now corrected to the captured reality and the fake is non-circular. Two NEW/persisting defects keep the verdict at FAIL: a remaining --gas auto simulation that contradicts the spec's 'fixed gas' acceleration fix, and the absence of any behavioral test for the send-manifest fail-closed path that the evidence proves is the real-sandbox outcome."
+  },
+  "dimensions": [
+    {
+      "name": "parse_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "deploy-akash.sh:81", "description": "dseq parse `select(.type==\"akash.deployment.v1.EventDeploymentCreated\")|.attributes[]?|select(.key==\"id\")|(.value|fromjson).dseq` EXACTLY matches evidence lines 15-18. No residual `select(.key==\"dseq\")` (grep-confirmed: select(.key== appears only at line 81 with ==\"id\")."},
+        {"type": "file", "location": "deploy-akash.sh:90,95", "description": "bid_id path `.[0].bid.id` (then .gseq/.oseq/.provider extracted from that id object) matches evidence line 19 (.bids[].bid.id {owner,dseq,gseq,oseq,provider,bseq}). No `.bid.bid_id` anywhere (grep-confirmed). `.bid.state==\"open\"` filter present (line 89)."},
+        {"type": "file", "location": "deploy-akash.sh:109", "description": "lease parse `select((.lease.state // \"\")==\"active\")` matches evidence line 21 (.leases[].lease.state == \"active\")."},
+        {"type": "file", "location": "deploy-akash.sh:41,77,26", "description": "Denom: SDL pricing default uact (41) + --deposit 5000000uact (77) per AEP-76 escrow; gas stays uakt (26). grep-confirmed uact only in pricing/deposit, uakt only in gas."}
+      ]
+    },
+    {
+      "name": "test_non_circularity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "test-deploy-akash.sh:50", "description": "Fake jq-builds the EventDeploymentCreated `id` attribute as a JSON string ({owner,dseq:\"777\"}|tojson) — the real decoded shape. A regression to select(.key==\"dseq\") would find no such attribute -> empty DSEQ -> exit 1 -> happy-path assertion `OUT=777 && rc=0` (test:72-73) FAILS. Non-circular for dseq."},
+        {"type": "file", "location": "test-deploy-akash.sh:52", "description": "Fake bid emits `.bid.id` (not `.bid.bid_id`). A regression to `.bid.bid_id` yields null -> empty BID -> exit 1 'no open bids' -> happy-path assertion FAILS. gseq/oseq/provider are nested inside .bid.id matching the impl's extraction at line 95. Non-circular for bid_id."},
+        {"type": "file", "location": "test-deploy-akash.sh:72-76", "description": "Happy path asserts rc=0, OUT=777, and that deployment create / bid list / lease create / send-manifest were each actually invoked. Combined with the create/nobid/lease fail-closed cases (78-87), the oracle would catch a regression to any of the three wrong parses."}
+      ]
+    },
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-301"],
+      "evidence": [
+        {"type": "file", "location": "deploy-akash.sh:9-37,77-121", "description": "INV-1 (own-wallet --from, no console/credit-card/managed-wallet), INV-2 (cert<deploy<bid<lease<manifest ordered flow), INV-3 (no sleep 30, bid poll loop), INV-4 (cert only if none valid), INV-5 negative half (no mint/swap in active code), INV-6 (fail-closed exits) all hold. FAIL is driven by FIND-301: AKASH_GAS defaults to `auto` (line 26), keeping the --gas auto simulation the spec (line 43/54) requires removed via 'fixed gas'."}
+      ]
+    },
+    {
+      "name": "fail_closed",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "deploy-akash.sh:79-83,94,96,102-103,113,121,123", "description": "The dseq print (line 123) is reached only after create code==0, numeric dseq, bid found, provider present, lease code==0, lease active, and manifest sent. Every failure path exits 1 BEFORE line 123, so no dseq leaks on failure (HARD 0.24)."},
+        {"type": "file", "location": "test-deploy-akash.sh:78-87", "description": "The three behavioral fail-closed cases (create code!=0, no bids, lease code!=0) still genuinely assert rc!=0 AND empty stdout AND no downstream call, and remain valid after the fake's shape changes."}
+      ]
+    },
+    {
+      "name": "honesty_of_boot_claim",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "deploy-akash.sh:113-123", "description": "Script prints ONLY the dseq, and only after lease-active (113) + send-manifest returned 0 (121). It never asserts a booted container. On the real sandbox-2 chain (evidence: providers 400 on send-manifest) the script would exit 1 at line 121 rather than overclaim. The 'child ACTUALLY boots' wording is a header comment (line 4), not a runtime claim."},
+        {"type": "file", "location": "test-deploy-akash.sh:55", "description": "Test does not assert a container boot; the fake returns send-manifest ok and the test only checks the dseq parse + ordered calls. No boot overclaim in the oracle."}
+      ]
+    },
+    {
+      "name": "new_defect",
+      "verdict": "FAIL",
+      "findings": ["FIND-302"],
+      "evidence": [
+        {"type": "file", "location": "test-deploy-akash.sh:41-55", "description": "FIND-302: the send-manifest fail-closed path (deploy-akash.sh:114-121) — which evidence line 22-23 proves is the actual sandbox-2 outcome (provider 400) — has NO behavioral test. mkfake has no `manifest` fail mode; *send-manifest* always echoes ok. The fail-closed guarantee for the most-likely real path is unverified."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 2,
+    "allCriteriaEvaluated": true,
+    "evaluatedInvariants": ["INV-1", "INV-2", "INV-3", "INV-4", "INV-5", "INV-6"],
+    "duplicateFindings": [],
+    "resolvedSincePrior": [
+      "FIND-001/FIND-201 (dseq event-attr) — now matches real shape, non-circular",
+      "FIND-002/FIND-202 (bid_id .bid.id, cheapest open) — now matches real shape, non-circular",
+      "FIND-006 (uact escrow denom) — corrected per AEP-76 real E2E"
+    ],
+    "nonFailingNotes": [
+      "FIND-206-equivalent (manifest fail-closed) is now re-raised as FIND-302 because the evidence makes the manifest-400 path the EXPECTED real outcome, so its untested fail-closed behavior is a first-class coverage defect rather than a deferred concern."
+    ]
+  }
+}

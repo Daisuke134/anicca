@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "new_defects",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "description": "ACT_BUFFER_UACT default contradicts the authoritative spec. akt-treasury.sh:34 defaults ACT_BUFFER_UACT to 20000000, but the spec ENV CONTRACT table (2026-06-26-B1-...md:73) documents the default as 5000000. They cannot both be authoritative. Beyond the bare divergence, the spec's documented 5000000 is itself unsafe: it is BELOW bme params.min_mint (10000000, akt-treasury.sh:35) — a buffer lower than min_mint means the treasury can sit at e.g. 6M uact (above the 5M watermark, so NO mint fires) while 6M may be too little for the next escrow (AKASH_DEPOSIT default 5000000uact, deploy-akash.sh:77) plus a second concurrent spawn, reintroducing the per-spawn wait the treasury exists to remove. The script's 20M (>=2x min_mint) is the safer value, so the spec table is likely the stale side — but the mismatch must be reconciled in ONE direction (update spec line 73 to 20000000, and document that ACT_BUFFER_UACT MUST be >= min_mint) rather than left as two conflicting source-of-truth values.",
+  "evidence": {
+    "filePath": "skills/self/spawn/scripts/akt-treasury.sh",
+    "lineRange": "34-35",
+    "snippet": "ACT_BUFFER=\"${ACT_BUFFER_UACT:-20000000}\"   # script default\nMIN_MINT=\"${AKASH_MIN_MINT_UACT:-10000000}\"  # vs spec ENV CONTRACT default 5000000 (< min_mint)"
+  },
+  "routeToPhase": "1c"
+}
