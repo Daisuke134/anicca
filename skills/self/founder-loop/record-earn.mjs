@@ -81,7 +81,7 @@ function parseRawLogs(res) {
   const wlow = wallet.slice(2).toLowerCase();
   return res
     .filter((l) => l && String(l.address || "").toLowerCase() === USDC.toLowerCase())
-    .filter((l) => Array.isArray(l.topics) && l.topics.length >= 3 && String(l.topics[0]).toLowerCase() === TRANSFER_TOPIC && String(l.topics[2]).toLowerCase().endsWith(wlow))
+    .filter((l) => Array.isArray(l.topics) && l.topics.length >= 3 && String(l.topics[0]).toLowerCase() === TRANSFER_TOPIC && String(l.topics[2]).toLowerCase() === "0x" + "0".repeat(24) + wlow) // FIND-704: exact padded-topic equality, not a suffix match
     .map((l) => ({ from: "0x" + String(l.topics[1]).slice(26), value: Number(BigInt(l.data)) / 1e6 }));
 }
 // sum of USDC Transferred to the founder wallet by EXTERNAL payers in (fromBlock..toBlock]
@@ -116,11 +116,16 @@ const now = await blockNow().catch((e) => die("block query failed (fail-closed):
 if (cursor === null) { writeCursorAtomic(now); console.log(`record-earn: initialized block cursor=${now} (first run — no earning recorded)`); process.exit(0); }
 if (now < cursor) die("block height went backwards (fail-closed)");
 
-const earned = await externalInflow(cursor + 1, now).catch((e) => die("getLogs failed (fail-closed): " + e.message));
-writeCursorAtomic(now); // advance FIRST: a crash here loses one window (honest under-count), never double-counts already-cursored blocks
-if (!(earned > 0)) { console.log(`record-earn: no EXTERNAL income in blocks ${cursor + 1}..${now} (self-transfers ignored) — nothing recorded`); process.exit(0); }
+// FIND-702: cap the scan span so a single eth_getLogs never exceeds the provider's block-range limit (a silent
+// truncation would under-count). Advance the cursor only by what we actually scanned — the next run continues; no skip.
+const MAX_SPAN = 9000;
+const to = Math.min(now, cursor + MAX_SPAN);
 
-const row = { ts: Math.floor(Date.now() / 1000), wallet, source, task, earn_usdc: earned, cost_usdc: cost, net_usdc: +(earned - cost).toFixed(6), wake, from_block: cursor + 1, to_block: now };
+const earned = await externalInflow(cursor + 1, to).catch((e) => die("getLogs failed (fail-closed): " + e.message));
+writeCursorAtomic(to); // advance FIRST to what we scanned: a crash here loses one window (honest under-count), never double-counts already-cursored blocks
+if (!(earned > 0)) { console.log(`record-earn: no EXTERNAL income in blocks ${cursor + 1}..${to} (self-transfers ignored) — nothing recorded`); process.exit(0); }
+
+const row = { ts: Math.floor(Date.now() / 1000), wallet, source, task, earn_usdc: earned, cost_usdc: cost, net_usdc: +(earned - cost).toFixed(6), wake, from_block: cursor + 1, to_block: to };
 fs.mkdirSync(path.dirname(LEDGER), { recursive: true });
 fs.appendFileSync(LEDGER, JSON.stringify(row) + "\n");
 console.log(`record-earn: VERIFIED +${earned} USDC from EXTERNAL payer(s) (${source}) -> ${LEDGER}`);
