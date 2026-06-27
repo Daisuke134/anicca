@@ -115,6 +115,24 @@ When my realised earn crosses $200/mo, "self-funded?" can flip and my surplus fu
 - G1.3 run `/money` for an Axis-② Stripe product → first real payout toward the Anicca-Inc bank.
 - G1.4 I show up on /dashboard as a node (render deferred, but ledger entries start now).
 
+## THE LESSON — copy the good guys' DEMAND/MARKETING, not their code (Dais 2026-06-27)
+HONEST state: `skills/earn/state/earn-ledger.jsonl` = 23 wakes, **realised earn = $0 USDC**. The x402 mechanism
+(402→pay→serve) works; we earned nothing because we never created DEMAND (no buyers, no marketing). The skill itself
+says "Demand is the GOAL… the whole job of an intelligence is to build what people want." So the fix is not more code.
+- **Good guy to copy #1 = `money@show-me-the-money`** ($1M+ lifetime): the methodology = discover a real wedge → build →
+  **MARKET it (money-content / -social / -ads / -seo / -outreach)** → ops → finance → report. Marketing IS the work.
+- **Good guy to copy #2 = `yksanjo/gmem-paywall`**: a focused x402 seller that sells ONE concrete thing (agent memory).
+- Marketplaces to list demand on: MoltX Social, x402 directories, `dfmccabe94/Agent-market`, the GitHub-Issues social.
+
+## THE 10k MRR MODEL (how much to the bank, how much to the wallet, and HOW)
+- **Axis ② → BANK (fiat, Stripe) ≈ 85% of 10k MRR** — `/money` builds micro-SaaS → recurring Stripe MRR (e.g. 2-3
+  products × ~$3-4k MRR each = 100-300 users × $20-40/mo). Lands in the Anicca-Inc bank → **repay Dais's $200 first** →
+  profit; off-ramp some → wallet. The recurring/subscription nature is what reaches MRR; marketing is the lever.
+- **Axis ① → WALLET (USDC, x402) ≈ 15%** — `x402-sell/serve.mjs` selling ONE concrete thing (research / monitoring feed
+  / data extract) per call → our wallet → the rail that FUNDS the self-funded AIs. $0-compute ⇒ pure profit.
+- Both are appended to `earn-ledger.jsonl` and surfaced on /dashboard; `/money-report` packages the Stripe side. I report
+  "this month: $X to the bank, $Y USDC to the wallet" constantly, like Automaton.
+
 ## DEFERRED (Dais: "we don't have to do that now")
 Updating the /dashboard render + the aniccaai.com page to reflect this 2-tier model + self-funded rate. First: make the
-EARNING (① / G1) real + on-chain-verified.
+EARNING (① / G1) real + on-chain-verified — the missing piece is DEMAND/MARKETING, copied from the good guys above.
