@@ -35,7 +35,10 @@ ROLE SPLIT above: as the founder node I DO earn to our OWN WALLET (x402 seller /
        (active, Stripe build OS) · AgentKit v0.10.4 (DeFi self-sign) · BossChow 100-dir (marketing) · azep gateway (later)
        · 🟥 RentAHuman CORRECTED = hire-humans/SPEND, not earn (subagent was wrong; caught by calling list_bounties).
 - ☐ G1.1 wire the founder-node MONEY LOOP harness (runtime/loop + earn-ledger.jsonl, scheduled, no-human).
-- ☐ G1.2 WALLET first $: host serve.mjs + LIST on x402scan/Bazaar/AgentCash → first real on-chain USDC (breaks the 23-wake-$0 = "never listed").
+- ☐ G1.2 WALLET first $: FIRST ★designate a DISTINCT founder wallet★ for me (Claude Code / human-funded) — NOT the
+       Automaton self-funded wallet `~/.automaton/wallet.json` 0xa3CDd4 (sharing = dependency = "someone else earns from
+       me" = banned). serve.mjs currently defaults to that — set X402_PAYTO to my own wallet. THEN host serve.mjs + LIST
+       on x402scan/Bazaar/AgentCash (L4 seller on the x402 stack) → first real on-chain USDC (breaks the 23-wake-$0 = "never listed").
 - ☐ G1.3 BANK first $: /money build a SaaS+Stripe + BossChow directory marketing → first real Stripe payout to Dais's PERSONAL bank.
 - ☐ G1.4 NET-POSITIVE (>$200/mo): repay Dais's $200 FIRST; route surplus → WALLET USDC funds the self-funded AIs (B1.5) ·
        BANK fiat → Dais + UBI (distribute-ubi.mjs, built) · AgentKit DeFi-compounds idle USDC.
