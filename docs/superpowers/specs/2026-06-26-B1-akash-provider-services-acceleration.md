@@ -70,7 +70,7 @@ A COMPLETE, ~20-30s, 100%-no-human Akash deploy via provider-services, with fund
 | `AKASH_GAS_PRICES` / `AKASH_GAS_ADJUSTMENT` | gas | `0.025uakt` / `1.5` |
 | `PROVIDER_SERVICES` | CLI binary (test seam) | `provider-services` |
 | `AKASH_PRICE_DENOM` / `AKASH_DEPOSIT` | SDL pricing + deposit denom (AEP-76 escrow) | `uact` / `5000000uact` |
-| `AKT_BUFFER_UAKT` / `ACT_BUFFER_UACT` | treasury low-watermarks (AKT for gas + ACT for escrow) | `5000000` / `5000000` |
+| `ACT_BUFFER_UACT` / `TREASURY_MINT_UAKT` | treasury: ACT kept on hand (MUST be ≥ `min_mint` 10M, else it idles below a single deposit) / AKT burned per mint (must clear min_mint at the current price) | `20000000` / `25000000` |
 
 ## INVARIANTS (the test oracle)
 - **INV-1 no-human**: no `console-api.akash.network`, no "credit card", no Console managed wallet anywhere in the path;
