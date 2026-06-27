@@ -23,9 +23,17 @@ The real chain (post AEP-76 / ACT upgrade) proved two things the fake + a stale-
 2. **ACT is non-transferable + lives in a separate ledger** (AEP-76: "bank SendCoins disabled for uact";
    `actKeeper.Credit` → non-transferable ledger). → **verify ACT via the act/bme ledger, NOT `bank balances`** (my
    "mint reverted" call was a wrong-place query).
-3. **Getting uact**: `akash tx bme mint-act <X>uakt` (docs-confirmed). x/market also "auto top-ups via MsgMintACT if
-   balances low". OPEN ITEM for B1.4: one real mint appeared to refund despite a healthy circuit-breaker → the real
-   E2E must confirm mint credits uact (queried in the act ledger) before the treasury relies on it.
+3. **Getting uact** (RESOLVED on real sandbox-2 — see `.vcsdd/.../evidence/2026-06-27-real-sandbox2-e2e.md`):
+   `akash tx bme mint-act <X>uakt`. The mint CANCELS (`cancel_reason 6` = BMCancelReasonMinimumMint) unless its output
+   ≥ `bme params.min_mint` = **10,000,000 uact**; at P_mint≈0.66 a sub-16-AKT mint falls below 10M uact → refunded.
+   **25 AKT → 16,578,449 uact EXECUTED.** Verify via `akash query bme ledger --owner <addr>` (status=executed). So the
+   treasury (B1.3) mints in chunks ≥ min_mint, OFF the per-spawn path. (`x/market` may also auto-top-up via MsgMintACT.)
+
+## REAL E2E PARSE TRUTHS (2026-06-27, verified on sandbox-2 — these define the impl)
+- dseq = `events[]|select(.type=="akash.deployment.v1.EventDeploymentCreated")|.attributes[]|select(.key=="id")|(.value|fromjson).dseq` (the `id` attribute value is a JSON string).
+- bid_id = `.bids[].bid.id` `{owner,dseq,gseq,oseq,provider,bseq}` (NOT `.bid.bid_id`); `.bid.state=="open"`; price denom uact.
+- lease = `.leases[].lease.state == "active"`.
+- send-manifest returns 400 from sandbox test-providers (they bid but don't host) → container-boot proof = MAINNET (B1.5).
 Sources: aep-76 DESIGN.md (akash-network/website) · `akash query deployment params` (min_deposits uact+uakt) ·
 `akash tx bme mint-act` docs · the live `Deposit invalid` error.
 
