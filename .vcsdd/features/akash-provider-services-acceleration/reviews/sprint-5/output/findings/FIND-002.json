@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "test_non_circularity",
+  "category": "test_coverage",
+  "severity": "major",
+  "description": "The manifest asks that a regression to the stale-`records[-1]` ledger check FAIL the test. The fake `akash` CLI implements NO `query bme ledger` / `bme ledger` command — any such call falls through to `*) echo '{}'` (test-akt-treasury.sh:39). Consequently the test cannot distinguish the correct balance-delta verification from a `records[-1].status==executed` check: it never models the real chain trap (an EXECUTED mint left records[-1] pointing at an OLDER CANCELED record, per the code-context note and the comment at akt-treasury.sh:62-63). A regression that read `bme ledger` records[-1] would hit `{}` and fail only by accident (empty jq), not because the test encodes the records[-1] semantics. The non-circularity guarantee for the records[-1] regression is unproven. Add a `bme ledger` response to the fake whose records[-1] is a CANCELED record while an EXECUTED record sits earlier, and a static `absent \"records\\[-1\\]\"` assertion, so a records[-1] regression deterministically FAILS.",
+  "evidence": {
+    "filePath": "skills/self/spawn/scripts/test-akt-treasury.sh",
+    "lineRange": "28-40",
+    "snippet": "case \"$*\" in ... *) echo '{}' ;; esac   # no `bme ledger` branch — records[-1] regression is not modeled"
+  },
+  "routeToPhase": "2b"
+}

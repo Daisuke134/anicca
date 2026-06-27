@@ -25,3 +25,17 @@ Network sandbox-2 (`rpc.sandbox-2.aksh.pw`), `provider-services v0.11.1`. Everyt
 ## Outcome
 `deploy-akash.sh` + `test-deploy-akash.sh` updated so every parse matches the above; the test fake jq-builds these
 real shapes (non-circular). GREEN. Remaining: B1.3 treasury (mint ≥ min_mint off-path) · B1.5 mainnet boot.
+
+## B1.3 treasury — LIVE on sandbox-2 (akt-treasury.sh)
+- Ran `akt-treasury.sh` against the real chain: it read uact below buffer, minted 25 AKT, and confirmed via the
+  balance delta: **`uact 18139615 → 34673369` EXECUTED**, exit 0. Real, not a mock.
+- The LIVE run caught 2 bugs the unit-test mock could not: (1) a global `AKASH_OUTPUT=json` export breaks
+  `keys show -a` ("cannot use --output with --address") — removed from both scripts, each call passes `-o json`
+  explicitly; (2) `bme ledger records[-1]` is NOT the newest record (an executed mint left records[-1] on an older
+  canceled one) — so the mint is confirmed by the uact BALANCE DELTA, never by `records[-1]`.
+
+## deploy-akash.sh — LIVE integration on sandbox-2 (AKASH_IMAGE=nginx)
+- Ran the WHOLE `deploy-akash.sh` end-to-end. It passed cert → deployment create → bid poll → lease create →
+  lease-active, then exited 1 at `send-manifest failed after retries` (the sandbox test-provider 400s, as expected) —
+  printing NO dseq (fail-closed, HARD 0.24). So the full script's parses + flow work on the real chain through
+  lease-active; only the manifest→boot needs a real mainnet provider (B1.5).

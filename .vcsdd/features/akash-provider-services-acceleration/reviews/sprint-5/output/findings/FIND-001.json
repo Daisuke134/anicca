@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "test_non_circularity",
+  "category": "test_quality",
+  "severity": "major",
+  "description": "The `executed` fake credits uact INSTANTLY on the first balance poll after the mint tx (the `tx bme mint-act` branch touches T_MARK at line 30, and the very next `query bank balances` for mode=executed returns uact=16000000 because T_MARK now exists). The real settlement is EPOCH-DELAYED — the script's whole reason for the 30-try poll loop (akt-treasury.sh:64-68) is that uact does NOT rise immediately. Because the fake makes the delta appear on poll #1, a regression that replaced the poll loop with a SINGLE post-mint balance read would still PASS the `executed` case. The test therefore does not prove the poll/epoch-wait behavior is load-bearing. Add an executed variant where uact rises only after N>=2 balance reads (e.g. a counter file) so a no-loop regression FAILS.",
+  "evidence": {
+    "filePath": "skills/self/spawn/scripts/test-akt-treasury.sh",
+    "lineRange": "30-36",
+    "snippet": "*\"tx bme mint-act\"*)  touch \"$T_MARK\"; echo '{\"code\":0}' ;;\n... executed) [ -f \"$T_MARK\" ] && echo '{... uact 16000000 ...}' || echo '{... uact 0 ...}'"
+  },
+  "routeToPhase": "2b"
+}
