@@ -1,93 +1,88 @@
 #!/usr/bin/env bash
-# VSDD oracle for record-earn.mjs (G1.1, post-adversary sprint-2). Fences every fabrication path:
-#  STATIC: every override seam (dir/wallet/ledger/now/baseline/rpc) is gated behind FOUNDER_TEST (FIND-001/008) so prod
-#          trusts nothing from the caller; baseline is written atomically (FIND-009).
-#  BEHAVIORAL: first run INITIALIZES the baseline and records NOTHING (FIND-007); a corrupt baseline fails closed
-#          (FIND-009); only a REAL increase is recorded; no double-count; INV-1/3/6 hold.
+# VSDD oracle for record-earn.mjs (G1.1-A2, external-inflow model). THE GOAL: an earning is ONLY external USDC credited
+# to the founder wallet (from ∉ my wallets), summed by block cursor — a self-transfer can NEVER fabricate an earning.
+# Plus all sprint-1..5 anti-fake invariants (seam-gating, wallet pin, ledger realpath, env-independent prod root,
+# fail-closed, atomic cursor advance).
 set -uo pipefail
 M="/Users/anicca/anicca/skills/self/founder-loop/record-earn.mjs"
 FW="0x810f6d61f7606deee2657d3083e150a222bc29c5"
-A3="0xa3CDd4Ec6b94F01826Aaf90a6d5538A2Aa8C4C21"
+A3="0xa3CDd4Ec6b94F01826Aaf90a6d5538A2Aa8C4C21"   # automaton = MY wallet (internal)
+EXT="0x1111111111111111111111111111111111111111" # external payer
 fails=0
 ok(){ [ "$1" = 1 ] || { echo "  - FAIL $2"; fails=$((fails+1)); }; }
 mkdir_dir(){ local d; d="$(mktemp -d)"; mkdir -p "$d/state"; printf '{"address":"%s"}' "$1" > "$d/wallet.json"; echo "$d"; }
 
-# ---------- STATIC: every seam is TEST-gated (prod un-fakeable, FIND-001/008) ----------
+# ---------- STATIC ----------
 src="$(cat "$M")"
-for seam in FOUNDER_DIR FOUNDER_WALLET FOUNDER_LEDGER FOUNDER_USDC_NOW FOUNDER_USDC_BASELINE BASE_RPC_URL HOME; do
+for seam in FOUNDER_DIR FOUNDER_WALLET FOUNDER_LEDGER FOUNDER_CURSOR FOUNDER_BLOCK_NOW FOUNDER_LOGS_JSON BASE_RPC_URL HOME; do
   bad="$(grep -n "process\.env\.$seam" <<<"$src" | grep -v "TEST" || true)"
-  ok "$([ -z "$bad" ] && echo 1 || echo 0)" "STATIC: $seam read is TEST-gated (offending: ${bad:-none})"
+  ok "$([ -z "$bad" ] && echo 1 || echo 0)" "STATIC: $seam read is TEST-gated (${bad:-none})"
 done
-ok "$(grep -q "renameSync" <<<"$src" && echo 1 || echo 0)" "STATIC: baseline written atomically (renameSync) — FIND-009"
-ok "$(grep -q 'realpathSync(FOUNDER_DIR)' <<<"$src" && echo 1 || echo 0)" "STATIC: ledger anchored INSIDE founder dir via realpath symlink-deref — INV-3/FIND-303"
-ok "$(grep -qF ': "/Users/anicca/.anicca-founder"' <<<"$src" && echo 1 || echo 0)" "STATIC: prod founder dir is an env-INDEPENDENT literal (os.homedir/\$HOME cannot move the root) — FIND-401"
+ok "$(grep -q "renameSync" <<<"$src" && echo 1 || echo 0)" "STATIC: cursor written atomically (renameSync)"
+ok "$(grep -q 'realpathSync(FOUNDER_DIR)' <<<"$src" && echo 1 || echo 0)" "STATIC: ledger realpath symlink-deref — INV-3"
+ok "$(grep -qF ': "/Users/anicca/.anicca-founder"' <<<"$src" && echo 1 || echo 0)" "STATIC: prod root is an env-independent literal — FIND-401"
+ok "$(grep -q 'MY_WALLETS' <<<"$src" && echo 1 || echo 0)" "STATIC: external-payer check (MY_WALLETS) present — INV-7"
 
-# ---------- BEHAVIORAL (all in FOUNDER_TEST=1 with a temp dir) ----------
-# 1. FIRST run => INIT baseline to current, record NOTHING (FIND-007)
+# ---------- BEHAVIORAL ----------
+# 1. first run (no cursor) → init cursor, record nothing
 T="$(mkdir_dir "$FW")"
-OUT="$(FOUNDER_TEST=1 FOUNDER_DIR="$T" FOUNDER_USDC_NOW=5 node "$M" 2>&1)"; rc=$?
-ok "$([ $rc -eq 0 ] && [ ! -s "$T/state/earn-ledger.jsonl" ] && [ "$(cat "$T/state/usdc-baseline.txt" 2>/dev/null)" = "5" ] && echo 1 || echo 0)" "first run: baseline init=5, NO earning recorded (rc=$rc — $OUT)"
+OUT="$(FOUNDER_TEST=1 FOUNDER_DIR="$T" FOUNDER_BLOCK_NOW=200 node "$M" 2>&1)"; rc=$?
+ok "$([ $rc -eq 0 ] && [ ! -s "$T/state/earn-ledger.jsonl" ] && [ "$(cat "$T/state/block-cursor.txt" 2>/dev/null)" = "200" ] && echo 1 || echo 0)" "first run: cursor init=200, NO row (rc=$rc — $OUT)"
 
-# 2. REAL earn once a baseline exists: 3 -> 5 = +2
+# 2. EXTERNAL payment → recorded; cursor advances (no re-scan = no double-count)
 T="$(mkdir_dir "$FW")"
-OUT="$(FOUNDER_TEST=1 FOUNDER_DIR="$T" FOUNDER_USDC_BASELINE=3 FOUNDER_USDC_NOW=5 node "$M" --source x402 2>&1)"; rc=$?
-ok "$([ $rc -eq 0 ] && [ "$(jq -r '.earn_usdc' "$T/state/earn-ledger.jsonl" 2>/dev/null | tail -1)" = "2" ] && echo 1 || echo 0)" "verified earn +2 written (rc=$rc)"
+OUT="$(FOUNDER_TEST=1 FOUNDER_DIR="$T" FOUNDER_CURSOR=100 FOUNDER_BLOCK_NOW=200 FOUNDER_LOGS_JSON="[{\"from\":\"$EXT\",\"value\":5}]" node "$M" 2>&1)"; rc=$?
+ok "$([ $rc -eq 0 ] && [ "$(jq -r '.earn_usdc' "$T/state/earn-ledger.jsonl" 2>/dev/null | tail -1)" = "5" ] && [ "$(cat "$T/state/block-cursor.txt")" = "200" ] && echo 1 || echo 0)" "external +5 recorded, cursor→200 (rc=$rc)"
 
-# 3/4. delta 0 / <0 => fail-closed, no write
-for nb in "3 3" "3 2"; do set -- $nb
-  T="$(mkdir_dir "$FW")"
-  OUT="$(FOUNDER_TEST=1 FOUNDER_DIR="$T" FOUNDER_USDC_BASELINE=$1 FOUNDER_USDC_NOW=$2 node "$M" 2>&1)"; rc=$?
-  ok "$([ $rc -ne 0 ] && [ ! -s "$T/state/earn-ledger.jsonl" ] && echo 1 || echo 0)" "delta($1->$2)<=0: rc=$rc !=0 + no write"
-done
-
-# 5. INV-1: shared wallet override rejected even with a real increase
+# 3. ★THE GOAL★ self-transfer only → ZERO earning, no row
 T="$(mkdir_dir "$FW")"
-OUT="$(FOUNDER_TEST=1 FOUNDER_DIR="$T" FOUNDER_WALLET="$A3" FOUNDER_USDC_BASELINE=3 FOUNDER_USDC_NOW=9 node "$M" 2>&1)"; rc=$?
+OUT="$(FOUNDER_TEST=1 FOUNDER_DIR="$T" FOUNDER_CURSOR=100 FOUNDER_BLOCK_NOW=200 FOUNDER_LOGS_JSON="[{\"from\":\"$A3\",\"value\":9}]" node "$M" 2>&1)"; rc=$?
+ok "$([ $rc -eq 0 ] && [ ! -s "$T/state/earn-ledger.jsonl" ] && echo 1 || echo 0)" "self-transfer ONLY: no earning (a self-payment can't fake income) — INV-7 (rc=$rc)"
+
+# 4. MIXED → only external counted
+T="$(mkdir_dir "$FW")"
+OUT="$(FOUNDER_TEST=1 FOUNDER_DIR="$T" FOUNDER_CURSOR=100 FOUNDER_BLOCK_NOW=200 FOUNDER_LOGS_JSON="[{\"from\":\"$EXT\",\"value\":5},{\"from\":\"$A3\",\"value\":3},{\"from\":\"$FW\",\"value\":2}]" node "$M" 2>&1)"; rc=$?
+ok "$([ "$(jq -r '.earn_usdc' "$T/state/earn-ledger.jsonl" 2>/dev/null | tail -1)" = "5" ] && echo 1 || echo 0)" "mixed: only external 5 counted (self 3+2 ignored)"
+
+# 5. corrupt cursor → fail-closed
+T="$(mkdir_dir "$FW")"; printf 'abc' > "$T/state/block-cursor.txt"
+OUT="$(FOUNDER_TEST=1 FOUNDER_DIR="$T" FOUNDER_BLOCK_NOW=200 node "$M" 2>&1)"; rc=$?
+ok "$([ $rc -ne 0 ] && [ ! -s "$T/state/earn-ledger.jsonl" ] && echo 1 || echo 0)" "corrupt cursor → fail-closed (rc=$rc)"
+
+# 6. INV-1 shared wallet rejected
+T="$(mkdir_dir "$FW")"
+OUT="$(FOUNDER_TEST=1 FOUNDER_DIR="$T" FOUNDER_WALLET="$A3" FOUNDER_CURSOR=100 FOUNDER_BLOCK_NOW=200 FOUNDER_LOGS_JSON="[{\"from\":\"$EXT\",\"value\":9}]" node "$M" 2>&1)"; rc=$?
 ok "$([ $rc -ne 0 ] && echo 1 || echo 0)" "INV-1: shared automaton wallet rejected (rc=$rc)"
 
-# 6. INV-3: ledger at the dashboard render source rejected
+# 7. INV-1 pin: non-shared, non-expected wallet rejected
 T="$(mkdir_dir "$FW")"
-OUT="$(FOUNDER_TEST=1 FOUNDER_DIR="$T" FOUNDER_LEDGER=/Users/anicca/anicca/runtime/dashboard/earn.jsonl FOUNDER_USDC_BASELINE=3 FOUNDER_USDC_NOW=9 node "$M" 2>&1)"; rc=$?
-ok "$([ $rc -ne 0 ] && echo 1 || echo 0)" "INV-3: runtime/dashboard ledger path rejected (rc=$rc)"
+OUT="$(FOUNDER_TEST=1 FOUNDER_DIR="$T" FOUNDER_WALLET="$EXT" FOUNDER_CURSOR=100 FOUNDER_BLOCK_NOW=200 FOUNDER_LOGS_JSON="[]" node "$M" 2>&1)"; rc=$?
+ok "$([ $rc -ne 0 ] && echo 1 || echo 0)" "INV-1 pin: non-expected wallet rejected (rc=$rc)"
 
-# 7. corrupt baseline file => fail-closed, never coerced to 0 (FIND-009)
-T="$(mkdir_dir "$FW")"; printf 'abc-corrupt' > "$T/state/usdc-baseline.txt"
-OUT="$(FOUNDER_TEST=1 FOUNDER_DIR="$T" FOUNDER_USDC_NOW=5 node "$M" 2>&1)"; rc=$?
-ok "$([ $rc -ne 0 ] && [ ! -s "$T/state/earn-ledger.jsonl" ] && echo 1 || echo 0)" "corrupt baseline → fail-closed (rc=$rc)"
-
-# 8. no double-count: init(5) → re-run at 5 fail-closed → 7 records +2, baseline=7
+# 8. INV-3 dashboard render path rejected
 T="$(mkdir_dir "$FW")"
-FOUNDER_TEST=1 FOUNDER_DIR="$T" FOUNDER_USDC_NOW=5 node "$M" >/dev/null 2>&1; ri=$?
-OUT="$(FOUNDER_TEST=1 FOUNDER_DIR="$T" FOUNDER_USDC_NOW=5 node "$M" 2>&1)"; r0=$?
-FOUNDER_TEST=1 FOUNDER_DIR="$T" FOUNDER_USDC_NOW=7 node "$M" >/dev/null 2>&1; r2=$?
-ok "$([ $ri -eq 0 ] && [ $r0 -ne 0 ] && [ "$(jq -r '.earn_usdc' "$T/state/earn-ledger.jsonl" 2>/dev/null | tail -1)" = "2" ] && [ "$(cat "$T/state/usdc-baseline.txt")" = "7" ] && echo 1 || echo 0)" "no double-count: init5→(5 fail)→(7=+2), baseline=7 (ri=$ri r0=$r0 r2=$r2)"
+OUT="$(FOUNDER_TEST=1 FOUNDER_DIR="$T" FOUNDER_LEDGER=/Users/anicca/anicca/runtime/dashboard/earn.jsonl FOUNDER_CURSOR=100 FOUNDER_BLOCK_NOW=200 FOUNDER_LOGS_JSON="[{\"from\":\"$EXT\",\"value\":9}]" node "$M" 2>&1)"; rc=$?
+ok "$([ $rc -ne 0 ] && echo 1 || echo 0)" "INV-3: runtime/dashboard ledger rejected (rc=$rc)"
 
-# 9. missing wallet.json => fail-closed
+# 9. INV-3 symlink escape rejected
+T="$(mkdir_dir "$FW")"; EVIL="$(mktemp -d)"; rm -rf "$T/state"; ln -s "$EVIL" "$T/state"
+OUT="$(FOUNDER_TEST=1 FOUNDER_DIR="$T" FOUNDER_CURSOR=100 FOUNDER_BLOCK_NOW=200 FOUNDER_LOGS_JSON="[{\"from\":\"$EXT\",\"value\":9}]" node "$M" 2>&1)"; rc=$?
+ok "$([ $rc -ne 0 ] && [ ! -s "$EVIL/earn-ledger.jsonl" ] && echo 1 || echo 0)" "INV-3: symlinked state/ escaping founder dir rejected (rc=$rc)"
+
+# 10. missing wallet.json → fail-closed
 T="$(mktemp -d)"; mkdir -p "$T/state"
-OUT="$(FOUNDER_TEST=1 FOUNDER_DIR="$T" FOUNDER_USDC_BASELINE=3 FOUNDER_USDC_NOW=9 node "$M" 2>&1)"; rc=$?
+OUT="$(FOUNDER_TEST=1 FOUNDER_DIR="$T" FOUNDER_BLOCK_NOW=200 node "$M" 2>&1)"; rc=$?
 ok "$([ $rc -ne 0 ] && echo 1 || echo 0)" "missing wallet.json → fail-closed (rc=$rc)"
 
-# 10. INV-1 positive pin (FIND-302): a non-shared, non-expected wallet is rejected
-T="$(mkdir_dir "$FW")"; RANDW="0x$(openssl rand -hex 20)"
-OUT="$(FOUNDER_TEST=1 FOUNDER_DIR="$T" FOUNDER_WALLET="$RANDW" FOUNDER_USDC_BASELINE=3 FOUNDER_USDC_NOW=9 node "$M" 2>&1)"; rc=$?
-ok "$([ $rc -ne 0 ] && echo 1 || echo 0)" "INV-1 pin: non-shared non-expected wallet rejected (rc=$rc)"
-
-# 11. INV-3 symlink escape (FIND-303): state/ symlinked OUT of the founder dir is rejected
-T="$(mkdir_dir "$FW")"; EVIL="$(mktemp -d)"; rm -rf "$T/state"; ln -s "$EVIL" "$T/state"
-OUT="$(FOUNDER_TEST=1 FOUNDER_DIR="$T" FOUNDER_USDC_BASELINE=3 FOUNDER_USDC_NOW=9 node "$M" 2>&1)"; rc=$?
-ok "$([ $rc -ne 0 ] && [ ! -s "$EVIL/earn-ledger.jsonl" ] && echo 1 || echo 0)" "INV-3 symlink: symlinked state/ escaping founder dir rejected (rc=$rc)"
-
-# 12. no double-count on crash: append happens AFTER baseline advance — assert baseline written even if we only check post-state
+# 11. block height backwards → fail-closed
 T="$(mkdir_dir "$FW")"
-FOUNDER_TEST=1 FOUNDER_DIR="$T" FOUNDER_USDC_BASELINE=3 FOUNDER_USDC_NOW=5 node "$M" >/dev/null 2>&1
-ok "$([ "$(cat "$T/state/usdc-baseline.txt" 2>/dev/null)" = "5" ] && [ "$(jq -r '.earn_usdc' "$T/state/earn-ledger.jsonl" 2>/dev/null | tail -1)" = "2" ] && echo 1 || echo 0)" "crash-safe order: baseline=5 advanced + row=2 (replay would see delta=0)"
+OUT="$(FOUNDER_TEST=1 FOUNDER_DIR="$T" FOUNDER_CURSOR=300 FOUNDER_BLOCK_NOW=200 FOUNDER_LOGS_JSON="[]" node "$M" 2>&1)"; rc=$?
+ok "$([ $rc -ne 0 ] && echo 1 || echo 0)" "block backwards (now<cursor) → fail-closed (rc=$rc)"
 
-# 13. PROD HOME-poison ignored (FIND-401/402): FOUNDER_TEST unset + HOME=planted(.anicca-founder with the PINNED
-#     wallet + baseline=0) must NOT be used as the root — the env-independent prod literal wins, planted dir stays empty.
+# 12. PROD HOME-poison ignored (env-independent root) — assert ONLY planted dir stays empty (FIND-401/501)
 PLANT="$(mktemp -d)"; mkdir -p "$PLANT/.anicca-founder/state"
-printf '{"address":"%s"}' "$FW" > "$PLANT/.anicca-founder/wallet.json"; echo 0 > "$PLANT/.anicca-founder/state/usdc-baseline.txt"
-# FIND-501: assert ONLY that the planted dir stays empty — never snapshot/restore live money-loop state (race + rollback-replay).
+printf '{"address":"%s"}' "$FW" > "$PLANT/.anicca-founder/wallet.json"; echo 100 > "$PLANT/.anicca-founder/state/block-cursor.txt"
 HOME="$PLANT" node "$M" >/dev/null 2>&1
-ok "$([ ! -s "$PLANT/.anicca-founder/state/earn-ledger.jsonl" ] && echo 1 || echo 0)" "PROD: HOME-poisoned planted dir NOT used as root (no fabricated row) — FIND-401"
+ok "$([ ! -s "$PLANT/.anicca-founder/state/earn-ledger.jsonl" ] && echo 1 || echo 0)" "PROD: HOME-poisoned planted dir NOT used as root — FIND-401"
 
-[ $fails -eq 0 ] && { echo "PASS — founder record-earn invariants hold (env-independent prod root + static seam-gating + wallet-pin + symlink-deref + crash-safe + first-run-init + corrupt-baseline + no-double-count + HOME-poison-ignored + INV-1/3/6)"; exit 0; } || { echo "FAIL ($fails)"; exit 1; }
+[ $fails -eq 0 ] && { echo "PASS — founder record-earn (external-inflow model): external-only earnings (self-transfer=0, INV-7) + seam-gating + wallet-pin + ledger-realpath + env-independent root + corrupt/backwards fail-closed + atomic cursor"; exit 0; } || { echo "FAIL ($fails)"; exit 1; }
