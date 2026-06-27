@@ -86,9 +86,8 @@ ok "$([ "$(cat "$T/state/usdc-baseline.txt" 2>/dev/null)" = "5" ] && [ "$(jq -r 
 #     wallet + baseline=0) must NOT be used as the root — the env-independent prod literal wins, planted dir stays empty.
 PLANT="$(mktemp -d)"; mkdir -p "$PLANT/.anicca-founder/state"
 printf '{"address":"%s"}' "$FW" > "$PLANT/.anicca-founder/wallet.json"; echo 0 > "$PLANT/.anicca-founder/state/usdc-baseline.txt"
-RB="/Users/anicca/.anicca-founder/state/usdc-baseline.txt"; BK=""; [ -f "$RB" ] && BK="$(cat "$RB" 2>/dev/null)"
+# FIND-501: assert ONLY that the planted dir stays empty — never snapshot/restore live money-loop state (race + rollback-replay).
 HOME="$PLANT" node "$M" >/dev/null 2>&1
 ok "$([ ! -s "$PLANT/.anicca-founder/state/earn-ledger.jsonl" ] && echo 1 || echo 0)" "PROD: HOME-poisoned planted dir NOT used as root (no fabricated row) — FIND-401"
-[ -n "$BK" ] && printf '%s' "$BK" > "$RB" 2>/dev/null  # restore the real founder baseline if the prod run touched it
 
 [ $fails -eq 0 ] && { echo "PASS — founder record-earn invariants hold (env-independent prod root + static seam-gating + wallet-pin + symlink-deref + crash-safe + first-run-init + corrupt-baseline + no-double-count + HOME-poison-ignored + INV-1/3/6)"; exit 0; } || { echo "FAIL ($fails)"; exit 1; }
