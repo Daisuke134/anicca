@@ -13,7 +13,7 @@ PS="${PROVIDER_SERVICES:-provider-services}"
 command -v "$PS" >/dev/null 2>&1 || { echo "deploy-akash: provider-services missing — cannot lease (no fake)" >&2; exit 1; }
 : "${AKASH_KEY_NAME:?deploy-akash: AKASH_KEY_NAME unset — cannot sign with the own wallet}"
 export AKASH_FROM="$AKASH_KEY_NAME" AKASH_KEYRING_BACKEND="${AKASH_KEYRING_BACKEND:-test}"
-export AKASH_YES=1 AKASH_OUTPUT=json
+export AKASH_YES=1   # NOT AKASH_OUTPUT=json globally — it conflicts with `keys show -a` ("cannot use --output with --address"); each query/tx passes -o json explicitly
 
 # fast RPC + chain id from the network's own meta.json — fetched ONCE (no TOCTOU); overridable (tests/other nets).
 # Every provider-services call reads AKASH_NODE/AKASH_CHAIN_ID from the env, so the query and the txs hit ONE node.
@@ -43,7 +43,7 @@ cat > "$SDL_FILE" <<SDL
 version: "2.0"
 services:
   automaton:
-    image: ghcr.io/conway-research/automaton:latest
+    image: ${AKASH_IMAGE:-ghcr.io/conway-research/automaton:latest}
     env:
       - AUTOMATON_GOAL=earn
       - ANICCA_CHILD_ID=${CHILD_ID}
