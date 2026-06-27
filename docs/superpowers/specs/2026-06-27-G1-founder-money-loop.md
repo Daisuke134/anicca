@@ -91,6 +91,26 @@ Loop runs → `serve.mjs` stands up with `X402_PAYTO=<founder wallet>` → liste
 on-chain USDC settles to the founder wallet → the loop verifies the delta + appends a real ledger row → the monitor
 shows it. (Bank path: a real Stripe payout to Dais's bank, verified.)
 
+## G1.2 CORRECTED (post-research 2026-06-28) — USE apps/x402-agents + Railway + CDP mainnet (NOT a hand-rolled tunnel)
+The earlier serve.mjs+cloudflared path was a SEARCH-FIRST failure: (a) serve.mjs used the `x402.org` **TESTNET** facilitator
+→ never real money; (b) a hand-rolled quick tunnel (rate-limited 1015) was unnecessary. The repo ALREADY has the right
+asset — `apps/x402-agents/src/server.js` (VERIFIED): imports `@coinbase/x402`, branches to the **CDP facilitator** on
+`X402_NETWORK=eip155:8453` (Base mainnet), pays to `X402_WALLET_ADDRESS`, ships via `railway.toml` (stable URL, no
+tunnel). Endpoints = context-compressor/intent-router/prompt-sanitizer/emotion-detector (REQUIRES OPENAI_API_KEY +
+DATABASE_URL/Postgres). Steps to the first real dollar:
+- **a. CDP keys** (self-serve, no-human, FREE 1000 settle/mo): portal.cdp.coinbase.com → CloakBrowser daily-driver
+  Google login → API Keys → `CDP_API_KEY_ID` + `CDP_API_KEY_SECRET`. No business KYC (USDC → my own 0x810f).
+- **b. Railway env**: `X402_NETWORK=eip155:8453`, `X402_WALLET_ADDRESS=0x810f6d61f7606deee2657d3083e150a222bc29c5`,
+  `CDP_API_KEY_ID/SECRET`, `OPENAI_API_KEY`, `DATABASE_URL` (Railway Postgres add-on).
+- **c. deploy**: `cd apps/x402-agents && railway up` → `*.up.railway.app`; verify `/health` 200 + the 402 advertises
+  0x810f on Base **mainnet**.
+- **d. list pre-settlement**: x402scan.com/resources/register (single URL field, no signup) + agentcash.dev/onboard ($100K to first users).
+- **e. seed discovery**: self-buy ONE call (~$0.005) → first CDP settle → Bazaar auto-indexes <10 min. ★ NOTE: a self-buy
+  is NOT a real earning — record-earn correctly REJECTS a self-payment (INV-7); it only seeds discovery. ★
+- **f. FIRST REAL earn** = an EXTERNAL buyer pays → record-earn records the row → VERIFY on BaseScan + ledger = THE GOAL done.
+- **PARALLEL (existing demand, no hosting)**: VERIFY then earn on molty.cash (`mcp__rentahuman__*`, already wired) /
+  Clankonomy bounties → real USDC to 0x810f today (lower friction than waiting for x402 buyers).
+
 ## THE LOOP HARNESS (G1.1-B) — invariants (the no-human wake body, GLVS)
 One wake = restore STATE → run the verified recorder → check THE GOAL on the REAL ledger → update STATE → report.
 A cadence (/loop, cron, launchd) wraps it. Invariants:
