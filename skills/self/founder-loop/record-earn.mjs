@@ -20,15 +20,17 @@ const args = process.argv.slice(2);
 const opt = (k, d) => { const i = args.indexOf("--" + k); return i >= 0 ? args[i + 1] : d; };
 function die(m) { console.error("record-earn: " + m); process.exit(1); }
 
-const HOME = (TEST && process.env.HOME) || os.homedir(); // HOME is a seam too — TEST-gated so prod cannot move the trust root (FIND-301)
-const FOUNDER_DIR = (TEST && process.env.FOUNDER_DIR) || path.join(HOME, ".anicca-founder"); // canonical in prod (FIND-008)
+// FIND-401: os.homedir() HONORS $HOME on POSIX, so it can NEVER be the prod root. Pin an env-INDEPENDENT absolute
+// path in prod; only test may relocate the dir (HOME / FOUNDER_DIR honored ONLY under TEST).
+const FOUNDER_DIR = TEST ? (process.env.FOUNDER_DIR || path.join(process.env.HOME || os.homedir(), ".anicca-founder")) : "/Users/anicca/.anicca-founder";
 const STATE = path.join(FOUNDER_DIR, "state");
 const WALLET_JSON = path.join(FOUNDER_DIR, "wallet.json");
 const BASELINE_FILE = path.join(STATE, "usdc-baseline.txt");
 let LEDGER = (TEST && process.env.FOUNDER_LEDGER) || path.join(STATE, "earn-ledger.jsonl");
 // INV-3 (FIND-303): realpath the founder dir AND the ledger's nearest existing ancestor so a symlinked state/
 // dir cannot escape the body — a lexical resolve does NOT dereference symlinks.
-const realFounder = fs.realpathSync(FOUNDER_DIR);
+let realFounder;
+try { realFounder = fs.realpathSync(FOUNDER_DIR); } catch { die("founder dir missing/unreadable: " + FOUNDER_DIR + " (gen-wallet/init first)"); }
 let _anc = path.resolve(LEDGER);
 while (!fs.existsSync(_anc) && path.dirname(_anc) !== _anc) _anc = path.dirname(_anc);
 const realAnc = fs.realpathSync(_anc);
