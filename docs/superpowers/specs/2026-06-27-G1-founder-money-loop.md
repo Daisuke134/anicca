@@ -10,6 +10,38 @@ input; Claude takes no credit card — that is why the fuel is the subscription)
 change. My job: **earn no-human, repeatably, more than $200/mo**, to TWO places, and **be the parent that funds + teaches
 the self-funded swarm**.
 
+## THE GOAL (set via the goal-setter skill, 2026-06-27) — Done = REAL money EARNED, never "the script ran"
+
+GOAL: the founder node (me, human-funded, wallet `0x810f6d61f7606deee2657d3083e150a222bc29c5`) has earned REAL,
+EXTERNAL money with no human in the loop, PROVEN on a public immutable channel — not by any claim that code ran.
+**Done is TRUE only when** an on-chain Base USDC settlement tx exists crediting `0x810f` for a service an EXTERNAL
+agent paid for via x402 (the payer is NOT any wallet I control — `0x810f` / automaton `0xa3CDd4` / openclaw
+`0x9B1Ee988`), AND `record-earn.mjs` wrote the matching real-delta row (earn_usdc>0). Equivalent fiat path: a real
+Stripe payout settles into Dais's personal bank. ★ "serve.mjs started", "I listed it on x402scan", "I curl'd my own
+endpoint", "a wake ran", or a self-transfer between my own wallets are NOT Done — they are the representation, not
+the thing. ★
+
+EVIDENCE (where Done is checked): the settlement tx hash on Base (basescan) showing USDC → `0x810f` from an EXTERNAL
+payer; `balanceOf(0x810f)` increased by that amount via the trusted RPC; the record-earn ledger row; the payer
+address ∉ {my wallets}. Fiat: the Stripe payout id + balance transaction reconciled to Dais's bank.
+
+MUST / NEVER / ONLY: the receiving wallet is ONLY `0x810f`. The payer must NEVER be a wallet I control (self-payment
+= a fabricated earning). NEVER record a dollar without an on-chain / Stripe receipt (HARD 0.24). I NEVER write
+aniccaai.com — the read-only monitor captures my ledger.
+
+STOP: the FIRST real external USDC (or Stripe payout) settles → this earn-goal is Done (keep the loop running to grow
+it). If many wakes pass with $0 settled, the bottleneck is DEMAND / LISTING / PRICING, not code → hand off to
+re-strategize; do NOT keep re-running the same listing and call it progress.
+
+VERIFY CONTINUOUSLY (VCSDD, TWO gates): ① the fresh adversary keeps the recorder un-fakeable on disk (DONE = G1.1-A,
+sprint-5 PASS). ② I run the live NO-MOCK E2E myself — a REAL external x402 buyer pays → on-chain settle → real ledger
+row — and re-verify on every change. ★ record-earn MUST be extended to confirm the credit came from an EXTERNAL payer
+(parse the USDC `Transfer` log `from` ≠ my wallets), so a self-transfer can NEVER satisfy the goal. ★
+
+`/goal Earn real EXTERNAL money to founder wallet 0x810f (an on-chain x402 USDC settlement from a non-self payer,
+recorded by record-earn) OR a real Stripe payout to Dais's bank — no human in the loop; Done ONLY on a verifiable
+receipt, NEVER on "the code ran"; keep verifying with the fresh adversary + a live no-mock E2E.`
+
 ## TWO EARNING PATHS (both no-human, both verified)
 - **TO USER (Dais) — fiat, his credentials**: build + market products via `/money` (show-me-the-money) using Dais's
   Stripe keys → payouts to Dais's PERSONAL bank. This gives a human the INCENTIVE to kickstart me ("my Claude earns
