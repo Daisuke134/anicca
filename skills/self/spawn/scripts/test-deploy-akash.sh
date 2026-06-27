@@ -52,7 +52,7 @@ case "\$*" in
                               || echo '{"bids":[{"bid":{"id":{"owner":"akash1ms7","dseq":"777","gseq":1,"oseq":1,"provider":"akash1prov"},"state":"open","price":{"denom":"uact","amount":"5"}}}]}' ;;
   *"tx market lease create"*)[ "\$FAIL" = lease ] && echo '{"code":8,"raw_log":"bid not found"}' || echo '{"code":0,"txhash":"DEF"}' ;;
   *"query market lease list"*) echo '{"leases":[{"lease":{"state":"active"}}]}' ;;
-  *"send-manifest"*)        echo "ok" ;;
+  *"send-manifest"*)        [ "\$FAIL" = manifest ] && exit 1 || echo "ok" ;;
   *version*)                echo "v0.11.1" ;;
   *)                        echo "{}" ;;
 esac
@@ -62,7 +62,7 @@ runfake(){ # $1 = fail mode -> sets OUT, rc, recd
   local T; T="$(mktemp -d)"; REC="$T/rec"; : >"$REC"
   mkfake "$1" >"$T/provider-services"; chmod +x "$T/provider-services"
   OUT="$(B1_REC="$REC" PROVIDER_SERVICES="$T/provider-services" AKASH_KEY_NAME=anicca-akash \
-         AKASH_NODE="http://localhost:1" AKASH_CHAIN_ID="testchain" AKASH_KEYRING_BACKEND=test \
+         AKASH_NODE="http://localhost:1" AKASH_CHAIN_ID="testchain" AKASH_KEYRING_BACKEND=test AKASH_POLL_SLEEP=0 \
          bash "$S" testchild 2>"$T/err")"; rc=$?
   recd="$(cat "$REC")"; errd="$(tail -1 "$T/err" 2>/dev/null)"; rm -rf "$T"
 }
@@ -85,5 +85,9 @@ grep -q "lease create" <<<"$recd" && { echo "  - FAIL fail-closed: lease attempt
 runfake lease
 ok "$([ $rc -ne 0 ] && [ -z "$OUT" ] && echo 1 || echo 0)" "behavioral fail-closed (lease code!=0): rc=$rc out='$OUT'"
 grep -q "send-manifest" <<<"$recd" && { echo "  - FAIL fail-closed: manifest sent after failed lease"; fails=$((fails+1)); }; true
+# fail-closed: send-manifest fails — the provider-400 path that ACTUALLY fires on sandbox (evidence) -> exit!=0, NO dseq leak
+runfake manifest
+ok "$([ $rc -ne 0 ] && [ -z "$OUT" ] && echo 1 || echo 0)" "behavioral fail-closed (send-manifest 400): rc=$rc out='$OUT'"
+grep -q "send-manifest" <<<"$recd" || { echo "  - FAIL: manifest never attempted in manifest-fail mode"; fails=$((fails+1)); }
 
 [ $fails -eq 0 ] && { echo "PASS — all B1 deploy invariants hold (static + faithful-fake behavioral + fail-closed)"; exit 0; } || { echo "FAIL ($fails)"; exit 1; }
