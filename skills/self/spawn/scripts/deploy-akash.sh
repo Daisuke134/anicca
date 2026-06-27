@@ -38,7 +38,7 @@ fi
 
 SDL_FILE="$(mktemp -t "anicca-${CHILD_ID}-sdl-XXXX.yml")"
 trap 'rm -f "$SDL_FILE"' EXIT
-PRICE_DENOM="${AKASH_PRICE_DENOM:-uakt}"; PRICE_AMOUNT="${AKASH_PRICE_AMOUNT:-10000}"   # bids are uakt-priced (FIND-006)
+PRICE_DENOM="${AKASH_PRICE_DENOM:-uact}"; PRICE_AMOUNT="${AKASH_PRICE_AMOUNT:-10000}"   # AEP-76: escrow MUST be uact (NOT uakt); gas stays uakt
 cat > "$SDL_FILE" <<SDL
 version: "2.0"
 services:
@@ -73,7 +73,7 @@ deployment:
 SDL
 
 # 1. create the deployment. dseq is an EVENT ATTRIBUTE in the TxResponse, NOT a top-level key (FIND-001).
-CREATE="$("$PS" tx deployment create "$SDL_FILE" --from "$AKASH_KEY_NAME" -y -o json 2>/dev/null)" \
+CREATE="$("$PS" tx deployment create "$SDL_FILE" --from "$AKASH_KEY_NAME" --deposit "${AKASH_DEPOSIT:-5000000uact}" -y -o json 2>/dev/null)" \
   || { echo "deploy-akash: deployment create tx errored" >&2; exit 1; }
 [ "$(jq -r '.code // 0' <<<"$CREATE")" = "0" ] \
   || { echo "deploy-akash: deployment tx failed code=$(jq -r '.code' <<<"$CREATE") log=$(jq -r '.raw_log // ""' <<<"$CREATE" | head -c160)" >&2; exit 1; }
