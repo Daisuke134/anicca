@@ -1,0 +1,31 @@
+{
+  "reviewType": "spec",
+  "featureName": "founder-x402-self-facilitate",
+  "mode": "lean",
+  "iteration": 3,
+  "priorIteration": 2,
+  "priorVerdict": "FAIL",
+  "priorVerdictFile": ".vcsdd/features/founder-x402-self-facilitate/reviews/spec/iteration-2/output/verdict.json",
+  "priorFindingsCount": 4,
+  "priorBlockingFindings": 1,
+  "iter2RecommendedFixes": [
+    "REQ-008 add gas_ready to body literal + cross-reference NFR-004",
+    "REQ-002 cross-ref correction PROP-004 → PROP-002",
+    "§Done (c)+(d) explicit F3-conjunction note (manual one-shot seed allowed)"
+  ],
+  "artifactsToReview": [
+    ".vcsdd/features/founder-x402-self-facilitate/specs/behavioral-spec.md",
+    ".vcsdd/features/founder-x402-self-facilitate/specs/verification-architecture.md"
+  ],
+  "parentSpec": "docs/superpowers/specs/2026-06-27-G1-founder-money-loop.md",
+  "referenceExample": "/Users/anicca/anicca-work/x402/examples/typescript/servers/self-facilitation/index.ts",
+  "targetFileForSwap": "/Users/anicca/anicca-project/apps/x402-agents/src/server.js",
+  "reviewDimensions": [
+    "spec_fidelity",
+    "edge_cases",
+    "verification_readiness",
+    "structural_integrity",
+    "impl_correctness"
+  ],
+  "outputPath": ".vcsdd/features/founder-x402-self-facilitate/reviews/spec/iteration-3/output/verdict.json"
+}
