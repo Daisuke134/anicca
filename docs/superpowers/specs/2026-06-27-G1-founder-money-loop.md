@@ -91,6 +91,19 @@ Loop runs → `serve.mjs` stands up with `X402_PAYTO=<founder wallet>` → liste
 on-chain USDC settles to the founder wallet → the loop verifies the delta + appends a real ledger row → the monitor
 shows it. (Bank path: a real Stripe payout to Dais's bank, verified.)
 
+## THE LOOP HARNESS (G1.1-B) — invariants (the no-human wake body, GLVS)
+One wake = restore STATE → run the verified recorder → check THE GOAL on the REAL ledger → update STATE → report.
+A cadence (/loop, cron, launchd) wraps it. Invariants:
+- **INV-H1 read-state-first**: each wake reads STATE.md before acting (the model forgets, the repo doesn't).
+- **INV-H2 ledger via record-earn ONLY**: the harness NEVER appends the ledger itself — only `record-earn.mjs` does,
+  so every anti-fake gate (INV-1..7) applies. The harness passes the env through and never writes earn rows.
+- **INV-H3 atomic STATE**: STATE.md is written atomically (tmp + mv).
+- **INV-H4 no-human**: the wake runs unattended — no prompts, no stdin, no approval gate.
+- **INV-H5 goal-check on the REAL ledger**: the harness reports `realised_earn` = sum of `earn_usdc` from the ledger,
+  NEVER "the wake ran". Done = realised external earn from a real receipt.
+- **INV-H6 fail-safe**: a failed move is logged + surfaced (rc); STATE is never corrupted; a record-earn failure does
+  not write a fake row (it can't — its own gates) and does not crash the cadence.
+
 ## ADVISORY (non-blocking) — FIND-801 (adversary sprint-8)
 `MAX_SPAN=9000` blocks/wake. Base ≈ 43,200 blocks/day, so a loop waking less than ~once/5h lets the cursor trail real
 income. This is strictly under-count / monotonic / fail-safe — it can NEVER fabricate or inflate a number. The founder
