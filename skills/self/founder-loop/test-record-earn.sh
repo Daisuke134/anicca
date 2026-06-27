@@ -14,8 +14,9 @@ mkdir_dir(){ local d; d="$(mktemp -d)"; mkdir -p "$d/state"; printf '{"address":
 
 # ---------- STATIC ----------
 src="$(cat "$M")"
+src_code="$(sed 's|//.*||' "$M")"   # FIND-703: strip line comments so a comment's "TEST &&"/"TEST ?" cannot false-pass the seam gate
 for seam in FOUNDER_DIR FOUNDER_WALLET FOUNDER_LEDGER FOUNDER_CURSOR FOUNDER_BLOCK_NOW FOUNDER_LOGS_JSON FOUNDER_RAW_LOGS_JSON BASE_RPC_URL HOME; do
-  bad="$(grep -n "process\.env\.$seam" <<<"$src" | grep -vE "TEST (&&|\?)" || true)"
+  bad="$(grep -n "process\.env\.$seam" <<<"$src_code" | grep -vE "TEST (&&|\?)" || true)"
   ok "$([ -z "$bad" ] && echo 1 || echo 0)" "STATIC: $seam read is TEST-gated (${bad:-none})"
 done
 ok "$(grep -q "renameSync" <<<"$src" && echo 1 || echo 0)" "STATIC: cursor written atomically (renameSync)"
@@ -117,5 +118,32 @@ ok "$([ $rc -eq 0 ] && [ "$(jq -r '.earn_usdc' "$T/state/earn-ledger.jsonl" 2>/d
 
 # 17. STATIC: scans the FINALIZED head, not eth_blockNumber (no reorg over/double-count) — FIND-601
 ok "$(grep -qF '["finalized", false]' <<<"$src" && echo 1 || echo 0)" "STATIC: scans the FINALIZED head (eth_getBlockByNumber finalized), not un-finalized latest — FIND-601"
+
+# ----- blockNow REAL path via a mock JSON-RPC (FIND-705: no FOUNDER_BLOCK_NOW — exercise eth_getBlockByNumber finalized) -----
+MOCKJS="$(dirname "$M")/mock-rpc.mjs"; PORT=8731
+RAWLOG="[{\"address\":\"$USDCADDR\",\"topics\":[\"$TT\",\"$FROM_EXT\",\"$TO_F\"],\"data\":\"$V5\"}]"
+startmock(){ MOCK_FINALIZED="$1" MOCK_LOGS="${2:-[]}" MOCK_PORT=$PORT node "$MOCKJS" >/dev/null 2>&1 & MPID=$!; sleep 1; }
+stopmock(){ kill $MPID 2>/dev/null; wait $MPID 2>/dev/null; }
+
+# 18. REAL path: finalized=200 + external log → records 5, cursor→200 (real finalized-decode + real getLogs parse)
+T="$(mkdir_dir "$FW")"; startmock 0xc8 "$RAWLOG"
+OUT="$(FOUNDER_TEST=1 FOUNDER_DIR="$T" FOUNDER_CURSOR=100 BASE_RPC_URL="http://127.0.0.1:$PORT" node "$M" 2>&1)"; rc=$?; stopmock
+ok "$([ $rc -eq 0 ] && [ "$(jq -r '.earn_usdc' "$T/state/earn-ledger.jsonl" 2>/dev/null | tail -1)" = "5" ] && [ "$(cat "$T/state/block-cursor.txt")" = "200" ] && echo 1 || echo 0)" "REAL RPC: finalized=200 + ext log → +5, cursor=200 (rc=$rc — $OUT)"
+
+# 19. REAL path: finalized=null → fail-closed
+T="$(mkdir_dir "$FW")"; startmock null
+OUT="$(FOUNDER_TEST=1 FOUNDER_DIR="$T" FOUNDER_CURSOR=100 BASE_RPC_URL="http://127.0.0.1:$PORT" node "$M" 2>&1)"; rc=$?; stopmock
+ok "$([ $rc -ne 0 ] && echo 1 || echo 0)" "REAL RPC: finalized=null → fail-closed (rc=$rc)"
+
+# 20. REAL path: finalized.number=null → fail-closed
+T="$(mkdir_dir "$FW")"; startmock numbernull
+OUT="$(FOUNDER_TEST=1 FOUNDER_DIR="$T" FOUNDER_CURSOR=100 BASE_RPC_URL="http://127.0.0.1:$PORT" node "$M" 2>&1)"; rc=$?; stopmock
+ok "$([ $rc -ne 0 ] && echo 1 || echo 0)" "REAL RPC: finalized.number=null → fail-closed (rc=$rc)"
+
+# 21. FIND-701: a filter-passing log with malformed data="0x" reaches BigInt → fail-closed, no row
+T="$(mkdir_dir "$FW")"
+RAWBAD="[{\"address\":\"$USDCADDR\",\"topics\":[\"$TT\",\"$FROM_EXT\",\"$TO_F\"],\"data\":\"0x\"}]"
+OUT="$(FOUNDER_TEST=1 FOUNDER_DIR="$T" FOUNDER_CURSOR=100 FOUNDER_BLOCK_NOW=200 FOUNDER_RAW_LOGS_JSON="$RAWBAD" node "$M" 2>&1)"; rc=$?
+ok "$([ $rc -ne 0 ] && [ ! -s "$T/state/earn-ledger.jsonl" ] && echo 1 || echo 0)" "FIND-701: malformed data=0x (filter-passing) → fail-closed (rc=$rc)"
 
 [ $fails -eq 0 ] && { echo "PASS — founder record-earn (external-inflow + finalized + raw-parse): external-only (self=0, INV-7) + real-log parse (from-slice/BigInt/to/address re-verify) + finalized-head (no reorg) + seam-gating + wallet-pin + realpath + env-independent root + fail-closed + atomic cursor"; exit 0; } || { echo "FAIL ($fails)"; exit 1; }
