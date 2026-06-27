@@ -18,6 +18,9 @@ ok "$(grep -q 'mv "\$TMP"' <<<"$src" && echo 1 || echo 0)" "INV-H3: STATE writte
 ok "$(grep -q '</dev/null' <<<"$src" && echo 1 || echo 0)" "INV-H4: record-earn run with no stdin (no-human)"
 ok "$(grep -qE '^[[:space:]]*read[[:space:]]' <<<"$src" && echo 0 || echo 1)" "INV-H4: no interactive read/prompt"
 ok "$(grep -q 'jq -s' <<<"$src" && grep -q 'realised_earn_usdc' <<<"$src" && echo 1 || echo 0)" "INV-H5: realised_earn summed from the REAL ledger, not 'the wake ran'"
+H_code="$(sed 's|#.*||' "$H")"   # FIND-903: strip comments so a comment can't false-pass/fail the gate
+bad="$(grep 'FOUNDER_LEDGER' <<<"$H_code" | grep -v 'FOUNDER_TEST' || true)"
+ok "$([ -z "$bad" ] && echo 1 || echo 0)" "FIND-901: every FOUNDER_LEDGER read is TEST-gated — prod ledger path is env-independent (offending: ${bad:-none})"
 
 # ---------- BEHAVIORAL ----------
 # 1. external income → STATE realised_earn=5, status EARNING
@@ -51,4 +54,9 @@ FOUNDER_TEST=1 FOUNDER_DIR="$T" FOUNDER_CURSOR=100 FOUNDER_BLOCK_NOW=200 FOUNDER
 FOUNDER_TEST=1 FOUNDER_DIR="$T" FOUNDER_BLOCK_NOW=300 bash "$H" >/dev/null 2>&1
 ok "$(grep -q 'prev_realised_earn_usdc: 5' "$T/STATE.md" 2>/dev/null && echo 1 || echo 0)" "INV-H1: 2nd wake read prior STATE (prev_realised_earn=5)"
 
-[ $fails -eq 0 ] && { echo "PASS — founder-loop harness invariants hold (INV-H1 read-state-first · H2 ledger-via-record-earn-only · H3 atomic STATE · H4 no-human · H5 goal-on-real-ledger · H6 fail-safe)"; exit 0; } || { echo "FAIL ($fails)"; exit 1; }
+# 7. FIND-903: a corrupt ledger → LEDGER UNREADABLE + rc surfaced (NOT silently realised_earn=0)
+T="$(mkdir_dir)"; printf 'not-json\n' > "$T/state/earn-ledger.jsonl"; echo 100 > "$T/state/block-cursor.txt"
+OUT="$(FOUNDER_TEST=1 FOUNDER_DIR="$T" FOUNDER_BLOCK_NOW=200 FOUNDER_LOGS_JSON='[]' bash "$H" 2>&1)"; rc=$?
+ok "$([ $rc -ne 0 ] && grep -q 'LEDGER UNREADABLE' "$T/STATE.md" 2>/dev/null && echo 1 || echo 0)" "FIND-903: corrupt ledger → UNREADABLE + rc surfaced, not a silent 0 (rc=$rc)"
+
+[ $fails -eq 0 ] && { echo "PASS — founder-loop harness invariants hold (INV-H1 read-state-first · H2 ledger-via-record-earn-only · H3 atomic STATE · H4 no-human · H5 goal-on-real-ledger · H6 fail-safe · FOUNDER_LEDGER TEST-gated · corrupt-ledger fail-safe)"; exit 0; } || { echo "FAIL ($fails)"; exit 1; }
