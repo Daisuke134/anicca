@@ -23,7 +23,7 @@ if [ -z "${AKASH_NODE:-}" ] || [ -z "${AKASH_CHAIN_ID:-}" ]; then
   export AKASH_CHAIN_ID="${AKASH_CHAIN_ID:-$(jq -r '.chain_id' <<<"$MJ")}"
   export AKASH_NODE="${AKASH_NODE:-$(jq -r '.apis.rpc[0].address' <<<"$MJ")}"
 fi
-export AKASH_GAS="${AKASH_GAS:-auto}" AKASH_GAS_PRICES="${AKASH_GAS_PRICES:-0.025uakt}" AKASH_GAS_ADJUSTMENT="${AKASH_GAS_ADJUSTMENT:-1.5}"
+export AKASH_GAS="${AKASH_GAS:-500000}" AKASH_GAS_PRICES="${AKASH_GAS_PRICES:-0.025uakt}" AKASH_GAS_ADJUSTMENT="${AKASH_GAS_ADJUSTMENT:-1.5}"   # FIXED gas (real deployment-create gasUsed=138662 + buffer) — NO --gas auto simulation round-trip
 [ -n "${AKASH_CHAIN_ID:-}" ] && [ -n "${AKASH_NODE:-}" ] || { echo "deploy-akash: could not resolve node/chain" >&2; exit 1; }
 
 ADDR="$("$PS" keys show "$AKASH_KEY_NAME" -a)" || { echo "deploy-akash: key '$AKASH_KEY_NAME' not in keyring" >&2; exit 1; }
@@ -89,7 +89,7 @@ for _ in $(seq 1 30); do
          | jq -c '[.bids[]? | select((.bid.state // "open")=="open")]
                   | sort_by(.bid.price.amount | tonumber? // 1e18) | .[0].bid.id // empty')"   # bid_id path = .bid.id (verified)
   [ -n "$BID" ] && [ "$BID" != "null" ] && break
-  BID=""; sleep 2
+  BID=""; sleep "${AKASH_POLL_SLEEP:-2}"
 done
 [ -n "$BID" ] || { echo "deploy-akash: no open bids for dseq $DSEQ" >&2; exit 1; }
 GSEQ="$(jq -r '.gseq' <<<"$BID")"; OSEQ="$(jq -r '.oseq' <<<"$BID")"; PROVIDER="$(jq -r '.provider' <<<"$BID")"
@@ -108,7 +108,7 @@ for _ in $(seq 1 20); do
   ACTIVE="$("$PS" query market lease list --owner "$ADDR" --dseq "$DSEQ" -o json 2>/dev/null \
             | jq -r 'first(.leases[]? | select((.lease.state // "")=="active") | .lease.state) // empty')"
   [ -n "$ACTIVE" ] && break
-  sleep 2
+  sleep "${AKASH_POLL_SLEEP:-2}"
 done
 [ -n "$ACTIVE" ] || { echo "deploy-akash: lease never became active for dseq $DSEQ" >&2; exit 1; }
 SENT=""
@@ -116,7 +116,7 @@ for _ in $(seq 1 5); do
   if "$PS" send-manifest "$SDL_FILE" --dseq "$DSEQ" --provider "$PROVIDER" --from "$AKASH_KEY_NAME" >/dev/null 2>&1; then
     SENT=1; break
   fi
-  sleep 3
+  sleep "${AKASH_POLL_SLEEP:-2}"
 done
 [ -n "$SENT" ] || { echo "deploy-akash: send-manifest failed after retries" >&2; exit 1; }
 
