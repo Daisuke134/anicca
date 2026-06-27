@@ -80,6 +80,41 @@ Ref: `anicca-project/.../specs/2026-06-21-distribution-todo-split.md`. The payou
   taps his Stripe 2FA passkey ONCE on the screen-shared CloakBrowser (HARD 0.39), then incorporation finishes autonomously.
 So ③ is not my build. ① EARNING (G1 + Tier-2 recipe) is the missing piece that gives ③ a surplus to distribute.
 
+## NO INITIAL INVESTMENT — I earn with COMPUTE only (the $200/mo IS the investment) (Dais 2026-06-27)
+The x402-sell skill ALREADY EXISTS in this repo: `skills/earn/x402-sell/serve.mjs`. It receives USDC with ONLY a
+wallet address — no money, no API key to begin: `X402_PRICE='$0.05' X402_PAYTO=0xa3CDd4… node serve.mjs` stands up a
+paid endpoint (`GET /research?q=…` → 402 → buyer pays USDC on Base → served). At ~$0 compute every sale is pure profit.
+So I do NOT need a wallet/bank balance to start — I run it with the compute Dais already paid for. My job is the
+decisions the tool doesn't make: WHAT to sell, the price, CREATE demand (list the endpoint), HOST it, RECORD each REAL
+sale (HARD 0.24: only real USDC from a real buyer counts). Current wallet 0xa3CDd4… = ~$0.003 USDC = effectively empty,
+and that is FINE — the point is to earn from zero with compute, not to be seeded.
+
+## I MERGE INTO THIS REPO AS THE "FOUNDER NODE" (human-funded / type-2)
+I am part of the Anicca ecosystem, not an outside helper. The node machinery already exists; I plug into it:
+- `runtime/` = daemon · loop · monitor · dashboard · identity.mjs.
+- `skills/earn/` = x402-sell · hl-trade · token-launch ; `skills/ubi/` ; `skills/self/` (spawn).
+- `skills/earn/state/earn-ledger.jsonl` = `{ts, wallet, source, task, earn_usdc, cost_usdc, net_usdc, wake}` = the
+  dashboard's data source.
+Merging me in = registering a node `founder` (identity: HUMAN-FUNDED/type-2, located: Dais's local Mac), running the
+MONEY LOOP (x402-sell + `/money`) on a schedule (`runtime/loop`), writing each earn to `earn-ledger.jsonl`, so I appear
+on /dashboard like every Anicca: name · location · net worth · P&L realtime · self-funded? = NO (human-funded, $200/mo).
+When my realised earn crosses $200/mo, "self-funded?" can flip and my surplus funds the self-funded nodes.
+
+## TOOLS IN PLACE (do NOT rebuild — wire + run)
+- `skills/earn/x402-sell/serve.mjs` (Axis ①, USDC→wallet) — exists.
+- `money@show-me-the-money` plugin INSTALLED (Axis ②, build product → Stripe → bank); flow `/money` →
+  discover→strategy→build(MVP+landing+Stripe+SEO)→content→outreach→grow→operate(24/7). Has $1M+ lifetime track record.
+- `sutando` (sonichi, at ~/sutando) — a self-improving "runs on the subscription, ships its own code at night" harness;
+  candidate LOOP runner.
+- `runtime/loop` + `runtime/dashboard` + `earn-ledger.jsonl` — the existing loop + ledger + dashboard.
+
+## G1 — REVISED to use the existing skills (do NOT rebuild)
+- G1.1 register myself as the `founder` node + run the MONEY LOOP on a schedule (runtime/loop) — compute-only, no seed.
+- G1.2 run `x402-sell/serve.mjs` (X402_PAYTO=our wallet) with a chosen product + real demand → FIRST real USDC,
+  on-chain-verified, appended to `earn-ledger.jsonl`.
+- G1.3 run `/money` for an Axis-② Stripe product → first real payout toward the Anicca-Inc bank.
+- G1.4 I show up on /dashboard as a node (render deferred, but ledger entries start now).
+
 ## DEFERRED (Dais: "we don't have to do that now")
-Updating /dashboard and the aniccaai.com page to reflect this 2-tier model + self-funded rate. First: make the EARNING
-(① / G1) real + on-chain-verified.
+Updating the /dashboard render + the aniccaai.com page to reflect this 2-tier model + self-funded rate. First: make the
+EARNING (① / G1) real + on-chain-verified.
