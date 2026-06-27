@@ -109,6 +109,13 @@ A cadence (/loop, cron, launchd) wraps it. Invariants:
 income. This is strictly under-count / monotonic / fail-safe — it can NEVER fabricate or inflate a number. The founder
 loop's cadence (G1.1-B) keeps the gap small; an in-wake chunk loop (`while scanned<now`) is the future optimization.
 
+## G1.2 LIVE E2E — progress + the real path to the first dollar (2026-06-27)
+- ✅ **serve.mjs verified with the founder wallet**: GET /research → HTTP 402, payTo=`0x810F6D61F7606dEEE2657d3083E150a222Bc29C5`, asset=USDC(Base), $0.02, `discoverable:true`. (NOT the automaton wallet.)
+- ✅ **public host verified**: `cloudflared tunnel --url http://localhost:8403` → a public https URL serves the same 402. The Mac mini (always-on) + tunnel = a reachable seller.
+- ⚠ **facilitator**: serve.mjs uses `x402.org/facilitator` (free, settles payments → USDC lands) but does NOT feed CDP Bazaar discovery. To appear in the CDP Bazaar, switch to the **CDP Facilitator** + register `bazaarResourceServerExtension` + `declareDiscoveryExtension()`, and the payment payload must carry `paymentPayload.resource`.
+- ⚠ **the chicken-and-egg (the real bottleneck = THE GOAL's stop rule "demand/listing")**: CDP Bazaar + x402scan are **settlement-driven** — an endpoint is cataloged only AFTER its first successful settle. So the FIRST external buyer must find the URL another way: a directory that accepts pre-settlement submissions (AgentCash / x402scan submit), or direct outreach to the x402 buyer community. Verify own listing via merchant-discovery (Get merchant resources by payTo `0x810f`).
+- NEXT (G1.2 sub-steps): (a) persistent host (named tunnel / deploy — the quick-tunnel URL is ephemeral); (b) switch to CDP Facilitator + discovery extension; (c) get a pre-settlement listing / outreach so a REAL external agent pays; (d) founder-loop on a cadence records the first real external earn row → VERIFY on-chain + ledger.
+
 ## INCREMENTS (do one by one, each VSDD-converged)
 - **G1.1** founder wallet (distinct, generated) + the money-loop harness + the verified-earn ledger writer (RED→GREEN
   →fresh adversary). ← START HERE.
