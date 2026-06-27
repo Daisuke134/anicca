@@ -1,0 +1,30 @@
+#!/bin/bash
+set -e
+set -a; . ~/.openclaw/.env; set +a
+cd "$(dirname "$0")/assets"
+MSG=19f088ab76a395ee
+
+dl() {
+  local FN="$1"; local AID="$2"
+  local PATHJSON
+  PATHJSON=$(gog gmail --account keiodaisuke@gmail.com -j attachment "$MSG" "$AID" 2>&1 | grep '"path"' | sed 's/.*"path": *"//;s/".*//')
+  if [ -n "$PATHJSON" ] && [ -f "$PATHJSON" ]; then
+    cp "$PATHJSON" "./$FN"
+    echo "OK $FN $(wc -c < ./$FN) bytes"
+  else
+    echo "FAIL $FN"
+  fi
+}
+
+dl IMG_4924.png "ANGjdJ98DBSQfXP6COhCDFUU939trEZLVwwTs2e9EdwxzUCN8WB8tli9coB5KSt9kvHeYi62Vagu4uwVIX8Y3w7vpwh_MsL3qP-ds_5odyg5FgSXAHZq6DQyC1-I1nlEtPKnX8JTqNBWD5j4FAcIupH6v-nsd-Lv2NeoMdXsr5mg1o65p5r5oxRqcs5oMHr7SZPjbQ3Dtqk2oDhgMgWbjl47uLrK8NX3A4NdPwYyaOG-oMAPpLvT_W4g6NsD6l49AHyk9AAQIvukD2QH4E5hD8tZJ_rKe0s2Szbir_Jzti1rLyBArY8Pi9YHW32qNtA"
+dl IMG_4920.heic "ANGjdJ-4UXMXvc7NpracARA665y0nc-0uV52bCxs4b6OnI5BK9gKR3UMFR-V270lXhGdszfLoeEi290lpei3LIfg8g_ikuqCunAxFEUxpmZWaWT7xodCRb-0uCmJj_CHLU8zbzQHvFvFkUPm_hSOoOryjylQr3QI-dswoK7h_2e4QM1jTTab4faZaznQPuMPmy3mJs4APb6F9tPyosXfmLlHb3EGtoNIh2QGM8DMDyVIaNQ26XgHgpamzp4CZTtByj2DZNYnrjhaca_4rx0UBkLzf3zKbtUj9kvY0fAJLfhKzsS7UG34rN-XgyJ30KQ"
+dl IMG_4925.png "ANGjdJ-2Kn78TRL1RraeZpnNIoGpLfa7ARVfkebuBrtUGyvAvFwHeQQZFI4cCX7krZigOX5FOKBJ9N5tyuUmSYxo2teGEXjWl_UTjSIAfOfz4y--xeD9OXqnACHOOEv_N6rVnD1Z73J3TJlC1inD9STnxSU4SZtSGkSmESq8IsBm_gcz98_eeFkK0HLW9KiBpqnScNE3259DDIMULeVjyaBnOiW-MbSpH1CA7hlhxwbcfwmFDMuwr8ijJ4yv8LRtfAmpHoqgySv2ADdyic4vMFMsDfrCDw9WcnzAneLs47riaLMMrqBq-byjKPiZZ-k"
+dl IMG_4926.heic "ANGjdJ9V428G9BZJDHrM3UV_E1dfbvVG7WHp__7OKzSoHVkWFAWuQBfXz1kziTdxvPHYmUMBR669kZPLhiyEWpjAWIO9bCLS2RLiqqSynhs_8tePO9wr6OEfJ5iJtquPzb4sM1Lc-u_qsgXW8uffebMDwCE1UbZVhKXy6ypQ9rgpeuc09sSve2aj8DQ6-2rVqNzMqbs7fA9LOySkiTvfGUIL8nmQJTXVda1E6cYe59J6Ioqtv-kScK-qi_zjOwokDJxHcLQHA69qnU84m16lnO1lZEnu0pzFP48m10IsfizdpcSuqcxs8HJuKcmkkno"
+dl IMG_4927.heic "ANGjdJ_oY7qivjFTNwMl-C25v5xBBF-L49uhXsThinexFgg7f0DR6eUkPPaHgCXxgM0vLhZ5zhKaENgMcj9rps0NJLWIGtTL292qXbqovvnHRK4gvHaJH7u6Lr-uXYguVu9CSXomyoFq-M4TVaxGUuO3vBdbSLaO2L6XI2zTpGfirZOmmDJf7JgnwlY2UKIB_fWHMUIp54KyRLvMhnWMDkEg52ka5o6HUUqT7ipblUchvD0aL9udt9kSPES0J5nummJiIyfSpKXXOT128X5vx1cKV0j3szZiMmtAH2K2EF6dkadxG_cL760gQchOtAc"
+dl IMG_4922.heic "ANGjdJ-DpKWEiCi4LEXJHXr_rcCt2hInQ_uzjV1E05uziiJS5bJjoSHXLAmqVbxuD38Al8ow4LXePLDgQuVfumCgKIDxj9WkRBe75Sy0Bbmfe4SdP0cAdfN9cAi-1i9hj2RRdFL1W0or8AC4_ioqFuHt0OHd3oXFh8N6rhOMbCvvw1qnPdEKMZCrmHmHGoyJ4MztmT1MHGbWFNAcdMKuZE0K_E4-aGg_MgYlOjGquu3iohMHHUXjt7cuSplcuOnNvvlO26vz0zqRNwCmaeR6iiEr6mfvQX6UR89IXhpcfYd1dQdCWg-D_OF1VKolLqM"
+dl IMG_4930.heic "ANGjdJ9Lylr6xW5pyaK9lqPaRTp_iXn34Ul-olYNwiPjiEQlhh7oajT9WtEz-4wiUNaxX6ZXiOHLIbMxKn7VchIAbw84-gbZecqX9koCjO4zZ1YoxVhx8OBa52BOP6H9tiJNMTU6xhS-HdbzUCunKJyQWksFnUfO1gfQ59HJI1FszqslyPpiUvoGjJRJ0eosbyUqIhADT9q98g9VCFa5JmuOA-5JLP9gEWFkjG6lCOEwXYBbOXHNICLOqLyniYgacxj_oOCnCBQJ9JcP0ze--FaTeZTvVfHeDty__7sPud3wzSieg2rm1zjucYKlw-A"
+dl IMG_4931.heic "ANGjdJ9A5A_zky-ZiWUfYeJQHDxBmcSROcFP-anoU8DlABQaNfDyrqSciIuFFALVAcsfxNM5NOpw7S-cBzZgQxBcI9xFNpjaPOOSnmpMgHPUTfP1huHtbDa-S8nIY7DnbbMo1qBhJ9KnQnZ3e6d4DoTdxUk28OpstXhI5U-YI1G0XoQDUkcAHJzxZpSQwEFcmq-PMfj0Bl2HiY5Y1_D0bPM2EC-nGUQX7D83yivfNgAONo4yuXIkSc5zuvZNl74a8Qy3VVmMAWHVMYGIFoKZFk8TgpgNp4cUyUwa_1WYCr-cCsSu7CsoiTrZbrhMAu0"
+dl IMG_4928.heic "ANGjdJ-vB3rPZ_hN0chhzkAUASKo8EqtyIzi4PpxqF51UQ0d8Co3e1fcfLwjrfGkRkSA-_H5_HrUDcqddUAaIHNIKDmHyDxQbc_KKDqnWzWM-ekv1ONPadzRubkjV9GT5foYrSd91Uw3Y2kks0IMGKkcqo7SL626xU26_PKHeozEh57C7UR-jeWK1pPXXEBSJHjeqWPsa4s5r9c2BY2n9UQAjiXnJ54vffDoV85xTioakU9x-L26gf5nJuivjuQ2h-s2Kx2BBFDPJAKh_j6Na02CwRjcoVVKq_RPdmiP45jFZRn_uICwiNcZqTNdLz9nAMdDlPpy36diJRAx1BRo"
+
+echo "---"
+ls -la

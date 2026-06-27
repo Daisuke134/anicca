@@ -1,0 +1,11 @@
+# transient publishing artifacts
+run.log
+article.json
+article.html
+screenshots/
+verify/
+parse.log
+# original camera files (jpg + png versions are committed)
+assets/*.heic
+# secrets — none in this dir, but defensive
+*.env
