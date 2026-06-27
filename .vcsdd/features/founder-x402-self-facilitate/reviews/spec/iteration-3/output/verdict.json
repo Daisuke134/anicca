@@ -1,0 +1,59 @@
+{
+  "iteration": 3,
+  "reviewType": "spec",
+  "feature": "founder-x402-self-facilitate",
+  "mode": "lean",
+  "iter2FindingsClosure": [
+    {
+      "id": "NEW-2",
+      "status": "CLOSED",
+      "newLocation": "behavioral-spec.md:36 (REQ-008)",
+      "evidenceOrGap": "REQ-008 body literal is now `{ \"status\": \"ok\", \"service\": \"x402-agents\", \"gas_ready\": <bool> }` with the explicit cross-reference 'where `gas_ready` is the boot-time NFR-004 flag (true when the agent's Base ETH balance ≥ 0.0005 ETH at boot, false otherwise)'. The handler is further constrained to be 'a pure constant response derived from the boot-time `gas_ready` snapshot'. REQ-008, NFR-004 (line 61), purity table line 14, and PROP-008 (verification-architecture.md:44) now all agree on the body shape and on the boot-time derivation of `gas_ready`. The iter-2 BLOCKING contradiction is structurally eliminated."
+    },
+    {
+      "id": "NEW-1",
+      "status": "CLOSED",
+      "newLocation": "behavioral-spec.md:15 (§Done block, '§Done (c)+(d) PREREQUISITE' clause)",
+      "evidenceOrGap": "§Done now contains an explicit star-marked PREREQUISITE clause: 'a one-shot manual gas seed of ≥ $1 Base ETH onto X402_WALLET_ADDRESS MUST land before §Done (c) can be evaluated... F3 productionizes this gas-seed step as an automated capability; F1 §Done (c) accepts either the F3 automation OR a manual one-shot seed. An autonomous builder loop reading the spec MUST treat §Done (c)+(d) as conjoined with that one-shot gas seed (or with F3) and SHALL NOT freeze waiting for \"F3 first\" — the seed is permitted under either authority.' This is the recommended fix-path (a) from iter-2 verdict verbatim, plus an explicit anti-freeze instruction for an autonomous builder. The Out-of-scope F3 entry (line 67) remains consistent because §Done now permits the manual seed as a permitted alternative to F3."
+    },
+    {
+      "id": "NEW-3",
+      "status": "CLOSED",
+      "newLocation": "behavioral-spec.md:22 (REQ-002 parenthetical cross-reference)",
+      "evidenceOrGap": "REQ-002 now reads '(`Object.keys(routeTable).length === 1` is a structural invariant — see PROP-002.)'. The cross-reference points to the actual location of the singleton check (verification-architecture.md:36 PROP-002), matching the iter-2 verdict's recommended one-character fix."
+    }
+  ],
+  "iter1RegressionCheck": "NO_REGRESSION. The iter-3 edits touch only three sites: (1) REQ-008 body literal grew from a 2-field object to a 3-field object — additive, no closure of any prior finding depended on the literal being exactly 2 fields; the iter-1 #11 prisma-removal and iter-1 #19 PURE-label closures stand because the new clause 'a pure constant response derived from the boot-time `gas_ready` snapshot' STRENGTHENS the purity claim by tying the third field to a boot-time snapshot rather than a request-time read. (2) §Done (c)+(d) gained an explicit PREREQUISITE clause — additive, the iter-1 #22 'F1 done ≠ GOAL done' closure stands and is reinforced by the explicit clarification that F1's done is permitted under either F3 or a manual seed. (3) REQ-002's parenthetical changed 'see PROP-004' → 'see PROP-002' — pure cross-reference fix; iter-1 #18 singleton closure stands. verification-architecture.md is unchanged in iter-3 per manifest, so all 14 closures whose evidence cites that file (PROP-001a/b/c/d, PROP-002, PROP-003, PROP-004, PROP-004b, PROP-005, PROP-006/006a, PROP-007, PROP-008/008b, PROP-010, PROP-011, PROP-013, PROP-014, PROP-016, PROP-017, PROP-NFR-004) are mechanically preserved. Cross-checked specifically: REQ-008 still forbids Prisma/Postgres/OpenAI at request time (line 36); purity table /health row still labeled PURE with the boot-once gas-balance carve-out (verification-architecture.md:14); REQ-002 still anchors EXACTLY ONE paid route key 'POST /social/x' bound to X402_WALLET_ADDRESS (line 22); §Done still names F2/F3/F4/F5 as conjoined for the GOAL STOP (line 16).",
+  "dimensions": {
+    "spec_fidelity": {
+      "verdict": "PASS",
+      "findings": []
+    },
+    "edge_cases": {
+      "verdict": "PASS",
+      "findings": []
+    },
+    "verification_readiness": {
+      "verdict": "PASS",
+      "findings": []
+    },
+    "structural_integrity": {
+      "verdict": "PASS",
+      "findings": [
+        {
+          "location": "behavioral-spec.md:1, :3-4, :80, :82 (iteration label drift)",
+          "issue": "NON-BLOCKING process-hygiene slip. The behavioral-spec.md header still reads '(Phase 1a, lean, iteration 2)' and 'Iteration: 2 (revising on adversary iteration-1 verdict FAIL, 25 findings)', and the footer reads 'Done (Phase 1a, iteration 2)' / 'This iteration revises every REQ flagged in iteration-1...'. The artifact has had three substantive iter-3 edits (REQ-008 body literal, §Done prerequisite clause, REQ-002 cross-ref). verification-architecture.md is legitimately labeled iter-2 because the manifest says it is unchanged in iter-3. The behavioral-spec.md labels are no longer accurate. This does not change any semantic claim, no PROP fails because of it, and the adversary gate is not blocked on it — but it is the kind of slip that erodes traceability across iterations and should be fixed in the iter-3 commit. NOT a blocker.",
+          "fix": "Update behavioral-spec.md line 1 → '(Phase 1a, lean, iteration 3)'; line 3-4 → 'Iteration: 3'; line 80 → 'Done (Phase 1a, iteration 3)'; line 82 → 'This iteration closes the three iter-2 findings (NEW-2 REQ-008 body, NEW-1 §Done prerequisite, NEW-3 REQ-002 cross-ref) and is otherwise identical to iteration 2'. Single commit, no semantic change."
+        }
+      ]
+    },
+    "impl_correctness": {
+      "verdict": "PASS",
+      "findings": []
+    }
+  },
+  "overallVerdict": "PASS",
+  "blockingFindings": [],
+  "notes": "Iteration 3 is a tight, surgical close-out of the three iter-2 findings. (1) NEW-2 (BLOCKING in iter-2) is structurally closed: REQ-008 body literal now includes gas_ready and explicitly defines it as the boot-time NFR-004 flag with the 0.0005 ETH floor; REQ-008, NFR-004, the purity table, and PROP-008 are now self-consistent, which means an impl following REQ-008 verbatim passes PROP-008, and the heartbeat / monitor described in NFR-004 has a real readiness signal at the documented endpoint. (2) NEW-1 (non-blocking under lean) is closed by the new PREREQUISITE clause in §Done, which both names the gas-seed prerequisite explicitly and instructs an autonomous builder loop NOT to freeze waiting for F3 — exactly the failure mode iter-2 flagged. The clause permits either F3 automation OR a manual one-shot seed; this is internally consistent with the Out-of-scope F3 entry (line 67), which describes F3 as productionizing the same step. (3) NEW-3 (non-blocking) is closed: REQ-002 now points at PROP-002 where the singleton check actually lives. Regression scan: zero. The iter-3 edits are additive (REQ-008 body grew from 2 fields to 3; §Done gained a clarifying paragraph) or pure-textual (REQ-002 cross-ref). None invalidates any of the 25 iter-1 closures or the verification-architecture artifact, which is unchanged. The only remaining observation is a non-blocking process slip: the behavioral-spec.md header and footer still self-label as 'iteration 2' despite the iter-3 edits — recommended fix is a label bump in the same commit. No PROP fails because of it; no semantic claim is affected. The iter-2 residual note about prior-finding #20 (no numbered Tier-0 PROP for the self-buy E2E under lean mode) remains non-blocking under lean per iter-2's own analysis, and is recorded for reference only — strict mode would still want a numbered PROP-XXX, but this feature is locked at lean. All five review dimensions PASS, no regressions, all three iter-2 findings CLOSED — this is the converged spec. Reviewed disk-only with zero builder context; no 'looks good' findings; verdicts pinned to specific lines.",
+  "findingsCount": 1
+}

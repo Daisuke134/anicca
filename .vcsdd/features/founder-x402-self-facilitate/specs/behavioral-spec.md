@@ -1,7 +1,7 @@
-# Behavioral Spec — founder-x402-self-facilitate (Phase 1a, lean, iteration 2)
+# Behavioral Spec — founder-x402-self-facilitate (Phase 1a, lean, iteration 3, ADVERSARY-PASS LOCKED)
 
 Feature: `founder-x402-self-facilitate`
-Date: 2026-06-28 · Iteration: 2 (revising on adversary iteration-1 verdict FAIL, 25 findings)
+Date: 2026-06-28 · Iteration: 3 (adversary iter-3 verdict PASS, 5/5 dims, 0 regressions; closes iter-2 NEW-1/NEW-2/NEW-3)
 Builder = main agent (me). Adversary = fresh `vcsdd:vcsdd-adversary` (Phase 1c).
 Parent: `~/anicca/docs/superpowers/specs/2026-06-27-G1-founder-money-loop.md` §G1.2 SELF-FACILITATION.
 
@@ -77,6 +77,6 @@ Swap `apps/x402-agents/src/server.js` from `HTTPFacilitatorClient` (CDP/x402.org
 
 REQ-007 + REQ-011 + REQ-017 + NFR-004 together: a Tier-2 child clones the same `src/server.js`, sets ONLY its OWN `EVM_PRIVATE_KEY` + `X402_WALLET_ADDRESS`, boots on any of H1–H5, AND signals `gas_ready=false` until F3 (or its child equivalent) funds it. No silent "booted but earning nothing" claim. This is what makes F1 a teachable skill (HARD 0.40 GLVS step 4).
 
-## Done (Phase 1a, iteration 2)
+## Done (Phase 1a, iteration 3 — adversary PASS)
 
-This iteration revises every REQ flagged in iteration-1's adversary verdict + adds REQ-004b, REQ-013, REQ-014, REQ-015, REQ-016, REQ-017, NFR-004. Verification architecture follows in `verification-architecture.md` (iteration 2).
+iter-3 surgical close-out: REQ-008 body literal now includes `gas_ready` cross-ref to NFR-004; §Done (c)+(d) carries an explicit "F3-or-manual one-shot seed" prerequisite clause so an autonomous builder loop will not freeze; REQ-002 cross-ref corrected to PROP-002. All three iter-2 findings CLOSED, zero iter-1 regressions, 5/5 dimensions PASS. Verification architecture (iteration 2) is unchanged and re-validated against this spec. The spec is now locked for Phase 2a (RED).
