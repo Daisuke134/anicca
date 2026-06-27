@@ -25,7 +25,8 @@ have   "for [^;]*seq|while "                        "INV-3 bid poll loop"
 absent "bme mint-act|usdc.*akt|swap"               "INV-5 funding OFF the per-deploy path (no mint/swap here)"
 have   "exit 1"                                    "INV-6 fail-closed"
 # FIND-001/006 the corrected parses must be present
-have   'select\(.key.* == .dseq.|key=="dseq"'      "FIND-001 dseq parsed from the event attribute (not a top-level key)"
+have   'EventDeploymentCreated'                     "FIND-001 dseq parsed from EventDeploymentCreated id-attr (verified real shape)"
+have   '\.bid\.id'                                  "FIND-002 bid_id path = .bid.id (verified real shape, NOT .bid.bid_id)"
 have   "uact"                                       "FIND-006 SDL pricing+deposit denom is uact (AEP-76 escrow MUST be uact)"
 absent 'PRICE_DENOM:-uakt'                          "FIND-006 pricing default is NOT uakt (gas stays uakt)"
 have   'AKASH_DEPOSIT.*uact|deposit.*uact'          "FIND-006 deposit denom is uact"
@@ -46,9 +47,9 @@ case "\$*" in
   *"keys show"*)            echo "akash1ms7gr5sxkv33ra353hg5lu8dm7akljdaamj523" ;;
   *"query cert list"*)      echo '{"certificates":[{"certificate":{"state":"valid"}}]}' ;;
   *"tx deployment create"*) [ "\$FAIL" = create ] && echo '{"code":11,"raw_log":"insufficient funds"}' \
-                              || echo '{"code":0,"txhash":"ABC","logs":[{"events":[{"type":"akash.v1","attributes":[{"key":"owner","value":"akash1ms7"},{"key":"dseq","value":"777"}]}]}]}' ;;
+                              || jq -nc '{code:0,txhash:"ABC",events:[{type:"akash.deployment.v1.EventDeploymentCreated",attributes:[{key:"hash",value:"xx"},{key:"id",value:({owner:"akash1ms7",dseq:"777"}|tojson)}]}]}' ;;
   *"query market bid list"*) [ "\$FAIL" = nobid ] && echo '{"bids":[]}' \
-                              || echo '{"bids":[{"bid":{"bid_id":{"owner":"akash1ms7","dseq":"777","gseq":1,"oseq":1,"provider":"akash1prov"},"state":"open","price":{"denom":"uact","amount":"5"}}}]}' ;;
+                              || echo '{"bids":[{"bid":{"id":{"owner":"akash1ms7","dseq":"777","gseq":1,"oseq":1,"provider":"akash1prov"},"state":"open","price":{"denom":"uact","amount":"5"}}}]}' ;;
   *"tx market lease create"*)[ "\$FAIL" = lease ] && echo '{"code":8,"raw_log":"bid not found"}' || echo '{"code":0,"txhash":"DEF"}' ;;
   *"query market lease list"*) echo '{"leases":[{"lease":{"state":"active"}}]}' ;;
   *"send-manifest"*)        echo "ok" ;;

@@ -72,12 +72,13 @@ deployment:
       count: 1
 SDL
 
-# 1. create the deployment. dseq is an EVENT ATTRIBUTE in the TxResponse, NOT a top-level key (FIND-001).
+# 1. create the deployment. dseq lives in the EventDeploymentCreated `id` attribute, whose VALUE is a JSON string
+#    {"owner":..,"dseq":".."} — provider-services -o json emits decoded events (verified on real sandbox-2).
 CREATE="$("$PS" tx deployment create "$SDL_FILE" --from "$AKASH_KEY_NAME" --deposit "${AKASH_DEPOSIT:-5000000uact}" -y -o json 2>/dev/null)" \
   || { echo "deploy-akash: deployment create tx errored" >&2; exit 1; }
 [ "$(jq -r '.code // 0' <<<"$CREATE")" = "0" ] \
   || { echo "deploy-akash: deployment tx failed code=$(jq -r '.code' <<<"$CREATE") log=$(jq -r '.raw_log // ""' <<<"$CREATE" | head -c160)" >&2; exit 1; }
-DSEQ="$(jq -r 'first(.. | objects | select(.key? == "dseq") | .value) // empty' <<<"$CREATE")"
+DSEQ="$(jq -r 'first(.events[]? | select(.type=="akash.deployment.v1.EventDeploymentCreated") | .attributes[]? | select(.key=="id") | (.value|fromjson).dseq) // empty' <<<"$CREATE")"
 [ -n "$DSEQ" ] && [[ "$DSEQ" =~ ^[0-9]+$ ]] \
   || { echo "deploy-akash: no numeric dseq in tx response — lease not created" >&2; exit 1; }
 
@@ -86,7 +87,7 @@ BID=""
 for _ in $(seq 1 30); do
   BID="$("$PS" query market bid list --owner "$ADDR" --dseq "$DSEQ" --state open -o json 2>/dev/null \
          | jq -c '[.bids[]? | select((.bid.state // "open")=="open")]
-                  | sort_by(.bid.price.amount | tonumber? // 1e18) | .[0].bid.bid_id // empty')"
+                  | sort_by(.bid.price.amount | tonumber? // 1e18) | .[0].bid.id // empty')"   # bid_id path = .bid.id (verified)
   [ -n "$BID" ] && [ "$BID" != "null" ] && break
   BID=""; sleep 2
 done
