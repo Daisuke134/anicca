@@ -91,6 +91,11 @@ Loop runs → `serve.mjs` stands up with `X402_PAYTO=<founder wallet>` → liste
 on-chain USDC settles to the founder wallet → the loop verifies the delta + appends a real ledger row → the monitor
 shows it. (Bank path: a real Stripe payout to Dais's bank, verified.)
 
+## ADVISORY (non-blocking) — FIND-801 (adversary sprint-8)
+`MAX_SPAN=9000` blocks/wake. Base ≈ 43,200 blocks/day, so a loop waking less than ~once/5h lets the cursor trail real
+income. This is strictly under-count / monotonic / fail-safe — it can NEVER fabricate or inflate a number. The founder
+loop's cadence (G1.1-B) keeps the gap small; an in-wake chunk loop (`while scanned<now`) is the future optimization.
+
 ## INCREMENTS (do one by one, each VSDD-converged)
 - **G1.1** founder wallet (distinct, generated) + the money-loop harness + the verified-earn ledger writer (RED→GREEN
   →fresh adversary). ← START HERE.
