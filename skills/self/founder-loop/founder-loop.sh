@@ -22,6 +22,8 @@ PREV_EARN="${PREV_EARN:-0}"
 
 # INV-H2 + INV-H4: ONLY record-earn writes the ledger (its gates decide if a REAL external earn is recorded). No stdin.
 node "$RECORD" --source x402 --wake "$(date +%s)" </dev/null >>"$DIR/state/wake.log" 2>&1; RC=$?
+# FIND-1001: cap wake.log so an unattended cadence never grows it unbounded (disk hygiene, HARD 0.26).
+if [ -f "$DIR/state/wake.log" ]; then tail -n 2000 "$DIR/state/wake.log" > "$DIR/state/wake.log.tmp.$$" 2>/dev/null && mv "$DIR/state/wake.log.tmp.$$" "$DIR/state/wake.log"; fi
 
 # INV-H5: goal-check on the REAL ledger — realised earn = SUM of earn_usdc, NEVER "the wake ran".
 TOTAL=0; LEDGER_OK=1
