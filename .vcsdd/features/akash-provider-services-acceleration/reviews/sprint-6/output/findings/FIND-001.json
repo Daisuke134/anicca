@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "test_non_circularity",
+  "category": "test_quality",
+  "severity": "minor",
+  "description": "FIND-002 (sprint-5) is RESOLVED for the literal records[-1] regression, but the static fence is regex-narrow. The records[-1] regression is fenced ONLY by the static check `absent \"records\\[-1\\]\"` (test-akt-treasury.sh:22), NOT by the behavioral run: the impl never calls `bme ledger`, so the new fake ledger branch (test-akt-treasury.sh:35 returning records[-1]=canceled) is dead at runtime in every executed/canceled run — it is inert decoration. The static check greps the comment-stripped source (src via `sed 's/#.*//'`, test-akt-treasury.sh:11), which correctly tolerates the two legitimate `records[-1]` mentions in the impl COMMENTS (akt-treasury.sh:62-63) while rejecting any executable `records[-1]`. However the regex `records\\[-1\\]` would NOT catch a semantically-equivalent stale-ledger regression written as `.records | last` or `.records[-1:]` or `last(.records[])` (jq idioms) — those read the same last record without the literal `[-1]` token. The manifest's named regression (literal records[-1]) is caught; near-equivalent rewrites are not. This is non-blocking because the literal form is the one the live-run trap and the impl comment reference, but the fake's ledger branch gives a FALSE impression of behavioral coverage it does not provide.",
+  "evidence": {
+    "filePath": "skills/self/spawn/scripts/test-akt-treasury.sh",
+    "lineRange": "22,35",
+    "snippet": "absent \"records\\[-1\\]\"  ... (static, comment-stripped src)\n*\"query bme ledger\"*) echo '{\"records\":[{\"status\":\"...canceled\"}]}'  # dead: impl never calls bme ledger"
+  },
+  "routeToPhase": "2b"
+}
