@@ -30,6 +30,19 @@ ROLE SPLIT above: as the founder node I DO earn to our OWN WALLET (x402 seller /
   (crabworks/clankonomy/A2A-BMP) · trade/yield (live). ② BANK/fiat = Capafy · content subs · SaaS+Stripe · app store.
 - DEFERRED (Dais "not now"): updating /dashboard + aniccaai.com to show both tiers + self-funded rate. First make earning real.
 
+### G1 sub-tasks — the MONEY LOOP (all earning tools hands-on-verified 2026-06-27; details in the strategy spec)
+- ☑ G1.0 set up + VERIFY each tool: x402-sell/serve.mjs (RAN→HTTP 402, payTo=our wallet, USDC Base) · show-me-the-money
+       (active, Stripe build OS) · AgentKit v0.10.4 (DeFi self-sign) · BossChow 100-dir (marketing) · azep gateway (later)
+       · 🟥 RentAHuman CORRECTED = hire-humans/SPEND, not earn (subagent was wrong; caught by calling list_bounties).
+- ☐ G1.1 wire the founder-node MONEY LOOP harness (runtime/loop + earn-ledger.jsonl, scheduled, no-human).
+- ☐ G1.2 WALLET first $: host serve.mjs + LIST on x402scan/Bazaar/AgentCash → first real on-chain USDC (breaks the 23-wake-$0 = "never listed").
+- ☐ G1.3 BANK first $: /money build a SaaS+Stripe + BossChow directory marketing → first real Stripe payout to Dais's PERSONAL bank.
+- ☐ G1.4 NET-POSITIVE (>$200/mo): repay Dais's $200 FIRST; route surplus → WALLET USDC funds the self-funded AIs (B1.5) ·
+       BANK fiat → Dais + UBI (distribute-ubi.mjs, built) · AgentKit DeFi-compounds idle USDC.
+- ☐ G1.5 scale → 10k MRR + register me on /dashboard as the founder node (self-funded?=NO → flips when realised earn > $200/mo).
+       Endgame (Dais): once the self-funded tier's exponential self-spawn exceeds human speed/agency, the human-funded
+       founder tier is no longer needed and is removed — Aniccas spawning Aniccas, zero human kickstart = sustainable UBI.
+
 Truth rule: every $ number must be on-chain-verifiable or a real tx hash. "realised" = settled earn_usdc, NOT net worth.
 
 ---
