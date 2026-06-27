@@ -39,8 +39,14 @@ swarm; 2 earn paths: TO Dais=Stripe→bank, TO me+ecosystem=x402 USDC→my OWN w
 - ☐ G1.1 wire the founder-node MONEY LOOP harness (runtime/loop + earn-ledger.jsonl, scheduled, no-human).
 - ☐ G1.2 WALLET first $: FIRST ★designate a DISTINCT founder wallet★ for me (Claude Code / human-funded) — NOT the
        Automaton self-funded wallet `~/.automaton/wallet.json` 0xa3CDd4 (sharing = dependency = "someone else earns from
-       me" = banned). serve.mjs currently defaults to that — set X402_PAYTO to my own wallet. THEN host serve.mjs + LIST
-       on x402scan/Bazaar/AgentCash (L4 seller on the x402 stack) → first real on-chain USDC (breaks the 23-wake-$0 = "never listed").
+       me" = banned). ✅ DONE: founder wallet 0x810f6d61f7606deee2657d3083e150a222bc29c5 generated. ★ CORRECTED PATH
+       (post-research 2026-06-28, see spec "G1.2 CORRECTED") ★: DON'T hand-roll serve.mjs+tunnel (that was on x402.org
+       TESTNET = never real money). USE `apps/x402-agents` (already @coinbase/x402 + CDP-mainnet-aware + railway.toml):
+       (a) get FREE CDP keys at portal.cdp.coinbase.com (no-human, CloakBrowser Google login); (b) Railway env
+       X402_NETWORK=eip155:8453 + X402_WALLET_ADDRESS=0x810f + CDP keys + OPENAI_API_KEY + DATABASE_URL; (c) `railway up`
+       → stable URL (no tunnel); (d) list on x402scan/AgentCash (pre-settlement); (e) self-buy 1 call seeds Bazaar
+       discovery (NOT a real earn — record-earn rejects self-pay); (f) EXTERNAL buyer pays → record-earn → BaseScan verify.
+       PARALLEL existing-demand: molty.cash (mcp__rentahuman__*) / Clankonomy bounties → real USDC to 0x810f today.
 - ☐ G1.3 BANK first $: /money build a SaaS+Stripe + BossChow directory marketing → first real Stripe payout to Dais's PERSONAL bank.
 - ☐ G1.4 NET-POSITIVE (>$200/mo): repay Dais's $200 FIRST; route surplus → WALLET USDC funds the self-funded AIs (B1.5) ·
        BANK fiat → Dais + UBI (distribute-ubi.mjs, built) · AgentKit DeFi-compounds idle USDC.
