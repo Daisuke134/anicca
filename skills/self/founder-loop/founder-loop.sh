@@ -10,7 +10,9 @@ RECORD="$HERE/record-earn.mjs"
 # prod root is env-independent; tests relocate via FOUNDER_TEST + FOUNDER_DIR (mirrors record-earn's FIND-401 fix).
 if [ "${FOUNDER_TEST:-}" = "1" ] && [ -n "${FOUNDER_DIR:-}" ]; then DIR="$FOUNDER_DIR"; else DIR="/Users/anicca/.anicca-founder"; fi
 STATE_MD="$DIR/STATE.md"
-LEDGER="${FOUNDER_LEDGER:-$DIR/state/earn-ledger.jsonl}"
+# FIND-901: FOUNDER_LEDGER is a TEST-only seam, mirroring record-earn. In prod the goal-check reads the env-INDEPENDENT
+# ledger path, so no env var can point it at an attacker-controlled file full of fake earnings.
+if [ "${FOUNDER_TEST:-}" = "1" ] && [ -n "${FOUNDER_LEDGER:-}" ]; then LEDGER="$FOUNDER_LEDGER"; else LEDGER="$DIR/state/earn-ledger.jsonl"; fi
 mkdir -p "$DIR/state"
 
 # INV-H1: read prior STATE (the durable spine) BEFORE acting.
@@ -22,10 +24,15 @@ PREV_EARN="${PREV_EARN:-0}"
 node "$RECORD" --source x402 --wake "$(date +%s)" </dev/null >>"$DIR/state/wake.log" 2>&1; RC=$?
 
 # INV-H5: goal-check on the REAL ledger — realised earn = SUM of earn_usdc, NEVER "the wake ran".
-TOTAL=0
-[ -f "$LEDGER" ] && TOTAL="$(jq -s 'map(.earn_usdc // 0) | add // 0' "$LEDGER" 2>/dev/null || echo 0)"
-case "$TOTAL" in ''|*[!0-9.]*) TOTAL=0;; esac
-if awk "BEGIN{exit !($TOTAL>0)}" 2>/dev/null; then STATUS="EARNING — real external USDC received; keep growing"; else STATUS="NO realised external earn yet — bottleneck is DEMAND/LISTING/PRICING, not code"; fi
+TOTAL=0; LEDGER_OK=1
+if [ -f "$LEDGER" ]; then
+  TOTAL="$(jq -s 'map(.earn_usdc) | add // 0' "$LEDGER" 2>/dev/null)" || LEDGER_OK=0   # FIND-903: jq error (corrupt/malformed row) → surface, don't silently report 0
+fi
+printf '%s' "$TOTAL" | grep -qE '^[0-9]+(\.[0-9]+)?$' || { LEDGER_OK=0; TOTAL=0; }       # only a clean number is a real total
+if [ "$LEDGER_OK" != "1" ]; then
+  STATUS="LEDGER UNREADABLE — fail-safe; a real total cannot be summed, recompute before trusting"; [ "$RC" = "0" ] && RC=1
+elif awk "BEGIN{exit !($TOTAL>0)}" 2>/dev/null; then STATUS="EARNING — real external USDC received; keep growing"
+else STATUS="NO realised external earn yet — bottleneck is DEMAND/LISTING/PRICING, not code"; fi
 
 # INV-H3: write STATE.md atomically (tmp + mv).
 TMP="$STATE_MD.tmp.$$"
