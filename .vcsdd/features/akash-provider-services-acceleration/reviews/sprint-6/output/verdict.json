@@ -1,0 +1,74 @@
+{
+  "sprintNumber": 6,
+  "feature": "akash-provider-services-acceleration",
+  "overallVerdict": "PASS",
+  "timestamp": "2026-06-27T00:00:00Z",
+  "iteration": 1,
+  "reviewContext": {
+    "reviewType": "implementation",
+    "scope": "sprint-6 RE-review: FIND-001 (epoch-delay) + FIND-002 (stale-ledger fence) + FIND-003 (ACT_BUFFER spec/impl conflict) resolution on akt-treasury.sh + test-akt-treasury.sh + B1 spec ENV CONTRACT",
+    "artifactsReviewed": [
+      "skills/self/spawn/scripts/akt-treasury.sh",
+      "skills/self/spawn/scripts/test-akt-treasury.sh",
+      "skills/self/spawn/scripts/deploy-akash.sh",
+      "docs/superpowers/specs/2026-06-26-B1-akash-provider-services-acceleration.md"
+    ],
+    "priorFindingsResolved": ["sprint-5/FIND-001", "sprint-5/FIND-002", "sprint-5/FIND-003"]
+  },
+  "dimensions": [
+    {
+      "name": "find001_epoch_delay_resolved",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/self/spawn/scripts/test-akt-treasury.sh:40-46", "description": "executed-mode fake now credits uact (16000000) ONLY when the post-mint poll counter T_CNT reaches N>=2 (line 44); the pre-mint CUR_UACT and CUR_UAKT reads occur before T_MARK exists so they hit the else branch (line 45) and never increment N — the risen value appears on exactly the 2nd post-mint poll, no off-by-one"},
+        {"type": "file", "location": "skills/self/spawn/scripts/test-akt-treasury.sh:64,67", "description": "executed asserts rc==0 AND `query bank balances` count >=3 (1 pre-mint uact + 1 pre-mint uakt + >=2 polls = 4 in the correct impl). A regression replacing akt-treasury.sh:64-68 with a single post-mint read returns uact=0 on N=1 (<2) -> NEW_UACT not > CUR_UACT -> exit 1 -> the rc==0 assertion FAILS. The poll loop is now proven load-bearing."},
+        {"type": "file", "location": "skills/self/spawn/scripts/akt-treasury.sh:64-68", "description": "impl polls the balance delta in a loop; deterministic with AKASH_POLL_SLEEP=0 TREASURY_MINT_TRIES=5 in the test (no flakiness)"}
+      ]
+    },
+    {
+      "name": "find002_stale_ledger_fence_resolved",
+      "verdict": "PASS",
+      "findings": ["FIND-001"],
+      "evidence": [
+        {"type": "file", "location": "skills/self/spawn/scripts/test-akt-treasury.sh:11,22", "description": "static `absent \"records\\[-1\\]\"` greps the comment-stripped source (src = sed 's/#.*//'); the only records[-1] tokens in the impl are in COMMENTS (akt-treasury.sh:62-63) which are stripped, so the check passes for the correct impl and rejects any executable records[-1]. The literal records[-1] regression named in the manifest deterministically FAILS the test."},
+        {"type": "file", "location": "skills/self/spawn/scripts/akt-treasury.sh:62-66", "description": "impl verifies the mint solely via NEW_UACT > CUR_UACT (balance delta), never via `bme ledger` records[-1] nor tx code==0"}
+      ]
+    },
+    {
+      "name": "find003_buffer_spec_impl_reconciled",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "docs/superpowers/specs/2026-06-26-B1-akash-provider-services-acceleration.md:73", "description": "ENV CONTRACT now documents ACT_BUFFER_UACT default = 20000000, matching akt-treasury.sh:34, AND states the constraint 'MUST be >= min_mint 10M, else it idles below a single deposit' — exactly the >= min_mint requirement FIND-003 demanded"},
+        {"type": "file", "location": "docs/superpowers/specs/2026-06-26-B1-akash-provider-services-acceleration.md:72", "description": "no stale 5000000 buffer value remains; the only 5000000uact is AKASH_DEPOSIT (per-deploy escrow), a legitimately separate value consistent with deploy-akash.sh:77"}
+      ]
+    },
+    {
+      "name": "no_sprint5_regression",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/self/spawn/scripts/akt-treasury.sh:40,58", "description": "CUR_UACT captured BEFORE mint (line 40), mint at line 58 — balance-delta verification intact; mint correctness (25M uakt chunk) unchanged at line 36"},
+        {"type": "file", "location": "skills/self/spawn/scripts/akt-treasury.sh:18,19,54,69", "description": "fail-loud intact: missing CLI/key -> exit 1; insufficient AKT no swap -> exit 1; non-crediting mint -> exit 1"},
+        {"type": "file", "location": "skills/self/spawn/scripts/deploy-akash.sh:77,116", "description": "INV-5 holds: deploy path has NO `bme mint-act` and NO TREASURY_SWAP_CMD; only deployment create / send-manifest. JSON -o json coverage on create (line 77) unchanged; send-manifest correctly omits it"},
+        {"type": "file", "location": "skills/self/spawn/scripts/akt-treasury.sh:48-54", "description": "swap-hook honesty intact: explicit TREASURY_SWAP_CMD; unset + AKT short -> exit 1 (no silent no-op); failing swap -> exit 1"},
+        {"type": "file", "location": "skills/self/spawn/scripts/test-akt-treasury.sh:69-74", "description": "canceled run: balance switch *) default keeps uact=0 across all 5 polls -> exit 1 PASS; lowakt run: uakt=5M < 25M, no swap -> exit 1 PASS and never minted"}
+      ]
+    },
+    {
+      "name": "new_defects",
+      "verdict": "PASS",
+      "findings": ["FIND-001"],
+      "evidence": [
+        {"type": "file", "location": "skills/self/spawn/scripts/test-akt-treasury.sh:9", "description": "test uses `set -uo pipefail` (no -e), correct for an oracle that accumulates fails; counter logic has no off-by-one (verified by hand-trace of pre-mint reads not incrementing N). The single residual is the non-blocking regex-narrowness of the static records[-1] fence (FIND-001, minor)."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 1,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}
