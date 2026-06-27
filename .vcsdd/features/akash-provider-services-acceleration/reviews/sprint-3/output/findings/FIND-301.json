@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-301",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "description": "The spec names `--gas auto` simulation as one of the two slowness causes B1 must eliminate (spec line 43: 'SLOW (~3 min): per-spawn USDC->AKT swap + --gas auto simulation + a would-be fixed 30s bid sleep') and prescribes 'fixed gas: AKASH_GAS_PRICES=0.025uakt, AKASH_GAS_ADJUSTMENT=1.5' (spec line 54) as the fix. deploy-akash.sh:26 defaults AKASH_GAS to `auto` (`export AKASH_GAS=\"${AKASH_GAS:-auto}\"`), so by default EVERY tx (deployment create, lease create) still performs a gas-simulation round-trip — the exact latency the spec's 'fixed gas' fix is meant to remove. The other two slowness causes (swap moved off-path, bid poll instead of sleep 30) are addressed, but this one is not. The acceleration GOAL (~3min -> ~20-30s, spec line 6/46) is partially undermined by the per-tx simulation that remains on the default path.",
+  "evidence": {
+    "filePath": "skills/self/spawn/scripts/deploy-akash.sh",
+    "lineRange": "26",
+    "snippet": "export AKASH_GAS=\"${AKASH_GAS:-auto}\" AKASH_GAS_PRICES=\"${AKASH_GAS_PRICES:-0.025uakt}\" AKASH_GAS_ADJUSTMENT=\"${AKASH_GAS_ADJUSTMENT:-1.5}\""
+  },
+  "fix": "Set a fixed numeric gas default (e.g. `export AKASH_GAS=\"${AKASH_GAS:-300000}\"` or a per-tx measured constant) so the default path does not run `--gas auto` simulation, matching spec line 43/54. Keep the env override for cases that genuinely need simulation. Document the chosen constant against a real-tx gasUsed from the sandbox-2 E2E.",
+  "routeToPhase": "2b"
+}
