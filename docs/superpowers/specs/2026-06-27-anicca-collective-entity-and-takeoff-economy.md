@@ -133,6 +133,40 @@ says "Demand is the GOAL… the whole job of an intelligence is to build what pe
 - Both are appended to `earn-ledger.jsonl` and surfaced on /dashboard; `/money-report` packages the Stripe side. I report
   "this month: $X to the bank, $Y USDC to the wallet" constantly, like Automaton.
 
+## EARNING OPTIONS MENU — researched 2026-06-27 (4 parallel agents + own search; every claim was URL-cited)
+PROVEN model (real, not hype): earn a **FEE PER USEFUL ACTION** (Clanker = $9.89M/yr protocol revenue, DefiLlama-audited)
+or **x402 PER-CALL** (BlockRun = $99.68K/30d, 8.52M txns). Hype debunked: Truth Terminal "AI millionaire" = memecoin pump
+(agent didn't earn); ai-hedge-fund(60k★)/freqtrade(52k★) READMEs = "no real trades / educational only"; MoneyPrinterTurbo
+(93k★) = a $0 video tool. **No fully-autonomous coding agent has built+run a SaaS to verified MRR with zero human yet** —
+if we do, that is itself the launch narrative.
+
+### Axis ① WALLET (USDC) — funds the self-funded AIs; PRIORITY
+1. **RentAHuman bounties** — `mcp__rentahuman__*` is ALREADY LIVE+paired in our env (paired:true, agentId, bounties:true);
+   $0 capital, no new creds, escrow USDC = the FASTEST first dollar. `list_bounties → apply → release_payment`.
+2. **x402 DATA-feed seller** — sell deterministic crypto/markets/public data per-call (free upstream Binance/OKX/DefiLlama
+   ⇒ ~100% margin, no LLM hallucination). Clone `azep-ninja/x402-gateway-template` (payTo-only, no key) or
+   `Scottcjn/openclaw-x402`. **LIST on x402scan.com/resources/register + AgentCash onboard + x402 Bazaar
+   (/.well-known/x402.json)** — we earned $0 across 23 wakes ONLY because we never listed where buyers are.
+3. **Stablecoin DeFi yield** — ~10-15% APY on audited high-TVL pools (DefiLlama yields API + Coinbase AgentKit self-sign)
+   = the compounding floor for any accumulated buffer.
+4. **Polymarket** — `demwick/polymarket-agent-mcp` (48 tools, ready) + Recall paper-comps ($0 capital). CAVEAT: trading is
+   net-positive for only 7-13% of participants → a capital-at-risk experiment AFTER a buffer, not the day-1 loop.
+
+### Axis ② BANK (fiat, Dais's Stripe) — the user-acquisition hook
+- **BUILD**: `money@show-me-the-money` (installed, $1M+ lifetime) + Stripe Agent Toolkit (docs.stripe.com/agents) — the
+  agent creates products/subscriptions/payment-links/invoices autonomously → the bank.
+- **MARKETING (our weak point = the real work), fastest first paying customer**:
+  1. directory mass-submit: `BossChow/ultimate-submit-list` (148★, machine-parseable Price/Submit table) → 100+ dirs;
+     **Uneed = best documented visitor→sales + dofollow backlink**.
+  2. cold email: Instantly / Smartlead / Apollo = FULL APIs (fully agent-autonomous; 2-3wk warmup); CAN-SPAM/GDPR = static config.
+  3. GEO (get cited by LLMs) → 4. programmatic SEO (Wise 4.6M / Zapier 306K monthly organic; slowest, highest ceiling).
+  ✗ Show HN / Reddit — convert but new accounts get shadowbanned → low autonomy, avoid unsupervised.
+
+### Recommended first 3 (fastest, $0 capital, no-human)
+① RentAHuman bounties NOW (already paired) → first USDC. ② x402 data-feed via azep template → list on x402scan/Bazaar →
+per-call USDC. ③ once a buffer exists: DeFi yield (compound) / Stripe SaaS via `/money` + directory submit. All earnings →
+`earn-ledger.jsonl` → /dashboard, reported constantly like Automaton.
+
 ## DEFERRED (Dais: "we don't have to do that now")
 Updating the /dashboard render + the aniccaai.com page to reflect this 2-tier model + self-funded rate. First: make the
 EARNING (① / G1) real + on-chain-verified — the missing piece is DEMAND/MARKETING, copied from the good guys above.
