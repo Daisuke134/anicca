@@ -1,0 +1,234 @@
+{
+  "iteration": 2,
+  "reviewType": "spec",
+  "feature": "founder-x402-self-facilitate",
+  "mode": "lean",
+  "priorIterationFindingsClosure": [
+    {
+      "priorFindingIndex": 1,
+      "priorIssueSummary": "spec_fidelity: REQ-001 omits toFacilitatorEvmSigner wrapper — implementer can pass wrong signer type; runtime breaks.",
+      "status": "CLOSED",
+      "newLocation": "behavioral-spec.md:20 (REQ-001 step (iii))",
+      "evidenceOrGap": "REQ-001 (iii) now mandates `toFacilitatorEvmSigner({ address, getCode, readContract, verifyTypedData, writeContract, sendTransaction, waitForTransactionReceipt }) from @x402/evm to produce the FacilitatorEvmSigner instance`, matching the canonical reference index.ts:28-36 verbatim. Verified against packages/mechanisms/evm/src/exact/facilitator/register.ts:14 (EvmFacilitatorConfig.signer: FacilitatorEvmSigner)."
+    },
+    {
+      "priorFindingIndex": 2,
+      "priorIssueSummary": "spec_fidelity: REQ-001 omits the .register(network, new ExactEvmScheme()) call on x402ResourceServer — paymentMiddleware will reject every request without it.",
+      "status": "CLOSED",
+      "newLocation": "behavioral-spec.md:20 (REQ-001 step (vii))",
+      "evidenceOrGap": "REQ-001 (vii) now mandates `.register(\"eip155:8453\", new ExactEvmServerScheme()) from @x402/evm/exact/server on the resource server BEFORE passing it to paymentMiddleware`, matching index.ts:64-68 verbatim. The text also explicitly tags (iii), (v), (vii) as 'MANDATORY — omitting any one results in a server that boots but cannot settle.'"
+    },
+    {
+      "priorFindingIndex": 3,
+      "priorIssueSummary": "spec_fidelity: spec does not flag the Base Sepolia → Base mainnet deviation from the canonical reference; replicators will copy-paste the testnet chain.",
+      "status": "CLOSED",
+      "newLocation": "behavioral-spec.md:11 (★ DEVIATION FROM CANONICAL REFERENCE ★ block)",
+      "evidenceOrGap": "Dedicated DEVIATION block names the reference file path, contrasts Sepolia (eip155:84532, baseSepolia) with mainnet (eip155:8453, base), and states 'Replicators MUST flip every chain reference; importing baseSepolia is forbidden by REQ-003 and PROP-003 (Tier 0).' PROP-003 (line 37) makes this a Tier-0 static grep."
+    },
+    {
+      "priorFindingIndex": 4,
+      "priorIssueSummary": "edge_cases: REQ-005 calls declareDiscoveryExtension without method/bodyType/input — POST /social/x silently misroutes through the GET/query builder; Bazaar misclassifies; buyers cannot discover.",
+      "status": "CLOSED",
+      "newLocation": "behavioral-spec.md:30 (REQ-005) + verification-architecture.md:40 (PROP-005)",
+      "evidenceOrGap": "REQ-005 now mandates `declareDiscoveryExtension({ method: \"POST\", bodyType: \"json\", input, inputSchema, output: { example, schema } })` and explicitly cites the resourceService.ts:93-99 isBodyMethod branch as the failure mode. PROP-005 unit-tests presence of `method: 'POST'` AND `bodyType: 'json'` on the extension and cross-checks via deepEqual re-invocation."
+    },
+    {
+      "priorFindingIndex": 5,
+      "priorIssueSummary": "edge_cases: no REQ pins USDC Base mainnet contract address 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913 — settle could land in wrong token, INV-7 in record-earn never fires.",
+      "status": "CLOSED",
+      "newLocation": "behavioral-spec.md:46 (REQ-013), :26 (REQ-004 extra.asset), verification-architecture.md:50 (PROP-013)",
+      "evidenceOrGap": "REQ-013 pins the exact contract address; REQ-004 includes it inside `accepts.extra.asset`; PROP-013 is a Tier-0 grep for the exact 42-char string requiring EXACTLY 1 match inside the ROUTES constant."
+    },
+    {
+      "priorFindingIndex": 6,
+      "priorIssueSummary": "edge_cases: REQ-006 'missing' is ambiguous; empty string + malformed hex pass check and crash deep in privateKeyToAccount.",
+      "status": "CLOSED",
+      "newLocation": "behavioral-spec.md:32 (REQ-006)",
+      "evidenceOrGap": "REQ-006 now explicitly requires the union `missing OR empty OR does not match /^0x[0-9a-fA-F]{64}$/` (and 40-hex equivalent for address). Logs include 'length+prefix snippet' only — no full secret echo. PROP-006 + PROP-006a (Tier 0) make this falsifiable."
+    },
+    {
+      "priorFindingIndex": 7,
+      "priorIssueSummary": "edge_cases: no REQ for facilitator.settle failure handling — gas-empty wallet returns generic 500 to buyers, kills demand discovery loop.",
+      "status": "CLOSED",
+      "newLocation": "behavioral-spec.md:48 (REQ-014) + verification-architecture.md:51 (PROP-014, Tier 0)",
+      "evidenceOrGap": "REQ-014 mandates 502 on settle-throw with structured body `{error,reason,code}`, structured stderr tag `[x402.settle.error]`, sanitized error text (no key bytes), AND covers the verify-fail → 402 + re-issued PaymentRequirements path. PROP-014 integration-tests both an `insufficient_funds` throw (→ 502) and a verify-rejection (→ 402)."
+    },
+    {
+      "priorFindingIndex": 8,
+      "priorIssueSummary": "edge_cases: no REQ pins exact $0.003 = 3000 USDC base units — units mismatch silently breaks the self-buy seed.",
+      "status": "CLOSED",
+      "newLocation": "behavioral-spec.md:28 (REQ-004b) + verification-architecture.md:39 (PROP-004b, Tier 0)",
+      "evidenceOrGap": "REQ-004b mandates `\"$0.003\"` → `\"3000\"` USDC base-units (6 decimals) and requires a startup or startup-test assertion. PROP-004b makes this a boot-or-unit assertion against the SDK's price resolver / resulting maxAmountRequired."
+    },
+    {
+      "priorFindingIndex": 9,
+      "priorIssueSummary": "verification_readiness: PROP-001 grep regex matches comments — trivially fooled; need anchored regex with EXACT counts.",
+      "status": "CLOSED",
+      "newLocation": "verification-architecture.md:32-35 (PROP-001a/b/c/d)",
+      "evidenceOrGap": "PROP-001a/b/c/d replace the single loose regex with four anchored regexes each requiring `EXACTLY 1 match`. PROP-001b additionally requires the match line not start with `//` or `*` (comment guard)."
+    },
+    {
+      "priorFindingIndex": 10,
+      "priorIssueSummary": "verification_readiness: PROP-007 grep has wrong escapes + under-scoped paths; will miss the 8 deferred-route files that still import openai+prisma.",
+      "status": "CLOSED",
+      "newLocation": "verification-architecture.md:43 (PROP-007) + :54 (PROP-017) + behavioral-spec.md:54 (REQ-017)",
+      "evidenceOrGap": "PROP-007 is now `grep -rnE \"...\" apps/x402-agents/src/` (recursive) AND PROP-017 separately verifies the 8 deferred routes + lib/prisma.js are MOVED out of src/ before F1 lands. The alternation list now also covers `from 'openai'`, `require('openai')`, `from './lib/prisma'`. Note: the markdown-table `\\|` un-escapes to `|` when rendered, giving a valid -E alternation."
+    },
+    {
+      "priorFindingIndex": 11,
+      "priorIssueSummary": "verification_readiness: PROP-008 does not require removing the prisma import from server.js source — REQ-008 silently violated.",
+      "status": "CLOSED",
+      "newLocation": "verification-architecture.md:45 (PROP-008b, Tier 0)",
+      "evidenceOrGap": "PROP-008b is a Tier-0 source grep `grep -nE \"prisma|@prisma/client|from '\\./lib/prisma'\" apps/x402-agents/src/server.js = 0 matches` — catches a mock that papers over an unremoved import."
+    },
+    {
+      "priorFindingIndex": 12,
+      "priorIssueSummary": "verification_readiness: PROP-002/004/005 rely on spying through dynamic await import('@x402/express') — fragile; require static imports or pure exported route table.",
+      "status": "CLOSED",
+      "newLocation": "verification-architecture.md:24 (Implementation requirement) + PROP-002/004/005",
+      "evidenceOrGap": "Verification-arch now explicitly mandates `export const ROUTES = { ... }` as an exported module-level constant and rewrites PROP-002/004/005 as PURE unit tests on the imported constant. No vi.mock / no spy. The fragility is structurally eliminated."
+    },
+    {
+      "priorFindingIndex": 13,
+      "priorIssueSummary": "verification_readiness: PROP-006 marked Tier 1 / not required — promote to Tier 0.",
+      "status": "CLOSED",
+      "newLocation": "verification-architecture.md:41 (PROP-006 row, Tier 0 / required:yes)",
+      "evidenceOrGap": "PROP-006 + PROP-006a are now both Tier-0 / required:yes (table column reads `0 | yes`). Tiering rationale (line 59) explicitly lists PROP-006 (promoted) in the Tier-0 set."
+    },
+    {
+      "priorFindingIndex": 14,
+      "priorIssueSummary": "verification_readiness: PROP-003 marked Tier 1 / not required — promote to Tier 0.",
+      "status": "CLOSED",
+      "newLocation": "verification-architecture.md:37 (PROP-003 row, Tier 0 / required:yes)",
+      "evidenceOrGap": "PROP-003 is now Tier 0 / required:yes. Tiering rationale (line 59) explicitly lists `003 (promoted)`."
+    },
+    {
+      "priorFindingIndex": 15,
+      "priorIssueSummary": "verification_readiness: PROP-010 spies on http.request — viem on Node 18+ uses fetch; spy reports 0 hits while real RPC call happens.",
+      "status": "CLOSED",
+      "newLocation": "verification-architecture.md:47 (PROP-010)",
+      "evidenceOrGap": "PROP-010 now requires a fetch-layer interceptor — `undici.setGlobalDispatcher(new MockAgent())` or `msw/node` — so any unmocked outbound HTTPS aborts with `NoMockHandlerError`. The http.request spy is gone."
+    },
+    {
+      "priorFindingIndex": 16,
+      "priorIssueSummary": "verification_readiness: PROP-011 'boots successfully' is unfalsifiable as written.",
+      "status": "CLOSED",
+      "newLocation": "verification-architecture.md:48 (PROP-011)",
+      "evidenceOrGap": "PROP-011 now spells out the operational success contract: spawn with ONLY EVM_PRIVATE_KEY + X402_WALLET_ADDRESS + PORT; within 2 s child stdout contains `listening on port <PORT>`; supertest GET /health returns 200 within 500 ms; stderr contains only INFO-level `[x402.boot.*]` tags (no stack traces / Error: lines except the allowed `[x402.boot.gas_low]` warning)."
+    },
+    {
+      "priorFindingIndex": 17,
+      "priorIssueSummary": "structural_integrity: REQ-007 + the 8 deferred route files contradiction — the spec must decide whether to delete or move them before F1 lands.",
+      "status": "CLOSED",
+      "newLocation": "behavioral-spec.md:54 (REQ-017) + verification-architecture.md:54 (PROP-017, Tier 0)",
+      "evidenceOrGap": "REQ-017 explicitly mandates moving the 8 named files + `apps/x402-agents/src/lib/prisma.js` out of `apps/x402-agents/src/` before F1 lands (acceptable targets: `apps/x402-agents-deferred/src/...` or git-deletion). PROP-017 is a Tier-0 directory-presence check. Resolves the iter-1 contradiction with REQ-007."
+    },
+    {
+      "priorFindingIndex": 18,
+      "priorIssueSummary": "structural_integrity: REQ-002 generalization over a single paid route is vacuous — anchor the singleton constraint explicitly.",
+      "status": "CLOSED",
+      "newLocation": "behavioral-spec.md:22 (REQ-002) + verification-architecture.md:36 (PROP-002, Tier 0)",
+      "evidenceOrGap": "REQ-002 is now anchored: 'EXACTLY ONE paid route key. That key shall be \"POST /social/x\" and its payTo shall be process.env.X402_WALLET_ADDRESS'. PROP-002 asserts `Object.keys(ROUTES).length === 1` and `Object.keys(ROUTES)[0] === \"POST /social/x\"` plus the payTo binding. Note: REQ-002 cross-refers 'see PROP-004' but the singleton check actually lives in PROP-002 — see NEW finding NEW-3 (non-blocking cross-ref slip)."
+    },
+    {
+      "priorFindingIndex": 19,
+      "priorIssueSummary": "structural_integrity: 'PURE-ish /health' label leaks honesty; demand the prisma import removal.",
+      "status": "CLOSED",
+      "newLocation": "verification-architecture.md:14 (purity table /health row) + PROP-008b",
+      "evidenceOrGap": "Label is now `PURE` (not PURE-ish) with a sharp caveat: 'No Prisma, no Postgres, no network — except the boot-once NFR-004 gas-balance read which is cached at module-load.' PROP-008b enforces the source-level removal of the prisma import."
+    },
+    {
+      "priorFindingIndex": 20,
+      "priorIssueSummary": "structural_integrity: REQ-012 (out of scope) vs parent G1.2 self-buy seed (in scope per Task #5) — contradiction.",
+      "status": "CLOSED",
+      "newLocation": "behavioral-spec.md:15 (§Done point (c)+(d)) + :44 (REQ-012 clarification) + verification-architecture.md:64-66 (anti-fake gate)",
+      "evidenceOrGap": "§Done (c) explicitly puts the on-chain self-buy in F1, §Done (d) requires record-earn INV-7 to reject it, and REQ-012 clarifies 'F1 covers only the SELF-buy seed in §Done point (c)'. Anti-fake gate in verification-arch (lines 64-66) makes the §Done condition the gate that the Phase 3 adversary will enforce (real tx hash on BaseScan + INV-7 rejection log). Iter-1 also asked for a numbered Tier-0 PROP for the self-buy E2E; iter-2 chose to encode the gate in §Done + anti-fake-gate prose instead. For lean mode this is acceptable because the Phase 3 adversary is bound to those sections; in strict mode a numbered PROP would still be preferable."
+    },
+    {
+      "priorFindingIndex": 21,
+      "priorIssueSummary": "structural_integrity: REQ-009 metadata + REQ-004 paymentMiddleware config are not pinned to a single source of truth — drift hazard.",
+      "status": "CLOSED",
+      "newLocation": "behavioral-spec.md:52 (REQ-016) + verification-architecture.md:53 (PROP-016, Tier 0)",
+      "evidenceOrGap": "REQ-016 mandates a single module-level constant `ROUTES`, consumed by both paymentMiddleware and the GET /metadata handler. PROP-016 enforces it three ways: (a) `grep -cE \"\\\"\\$0\\.003\\\"\" = EXACTLY 1`; (b) `grep -cE \"\\\"eip155:8453\\\"\" = EXACTLY 1`; (c) unit assertion `getMetadata().routes[0].price === ROUTES[\"POST /social/x\"].accepts.price` (and same for network/payTo/asset/discoverable)."
+    },
+    {
+      "priorFindingIndex": 22,
+      "priorIssueSummary": "impl_correctness: spec implies F1 advances toward GOAL but F1 alone cannot satisfy STOP rule; must be stated explicitly to keep team from blaming F1 when no money flows.",
+      "status": "CLOSED",
+      "newLocation": "behavioral-spec.md:13-16 (§Done block 'F1 done ≠ GOAL done')",
+      "evidenceOrGap": "§Done now has a dedicated 'F1 done ≠ GOAL done (explicit)' block that names the missing pieces — 'host (F2), gas seed (F3), pre-settlement listing (F4), 24/7 heartbeat (F5)' — and instructs the team not to blame F1 when no money flows after F1 ships. Strong organizational guard."
+    },
+    {
+      "priorFindingIndex": 23,
+      "priorIssueSummary": "impl_correctness: replicability contract omits gas requirement — children will 'boot replicable' but earn $0.",
+      "status": "CLOSED",
+      "newLocation": "behavioral-spec.md:61 (NFR-004) + :78 (Replicability assertion) + verification-architecture.md:55 (PROP-NFR-004) + :71 (Tier-2 bridge)",
+      "evidenceOrGap": "NFR-004 mandates a boot-time gas-balance read; below `0.0005 ETH` the impl logs `[x402.boot.gas_low] balance=<wei> address=<addr> floor=500000000000000`, exposes `gas_ready=false` via /health, but does NOT refuse to boot (so the heartbeat / monitor can detect 'booted but cannot settle'). PROP-NFR-004 stubs `getBalance` to 0 and to 1e18 and asserts the two states. The replicability assertion + Tier-2 bridge sections explicitly close the iter-1 finding 'a Tier-2 child clones server.js, sets ONLY its OWN env, boots on any of H1-H5, AND signals gas_ready=false until F3 (or its child-equivalent) funds it'."
+    },
+    {
+      "priorFindingIndex": 24,
+      "priorIssueSummary": "impl_correctness: no REQ for settle-throws on gas-empty wallet → external buyers will see 500, retry-storm, abandon.",
+      "status": "CLOSED",
+      "newLocation": "behavioral-spec.md:48 (REQ-014) + verification-architecture.md:51 (PROP-014)",
+      "evidenceOrGap": "REQ-014 covers it: 502 on throw, structured body, `[x402.settle.error]` stderr tag with code + sanitized message. PROP-014 integration-tests via a stubbed insufficient_funds throw → 502 body match. Iter-1's 'gas-empty wallet kills demand discovery loop' failure mode is closed."
+    },
+    {
+      "priorFindingIndex": 25,
+      "priorIssueSummary": "impl_correctness: REQ-006 enforcement must live inside createApp(), not only at the script entrypoint, to prevent integration tests passing spuriously.",
+      "status": "CLOSED",
+      "newLocation": "behavioral-spec.md:32 (REQ-006 (b)) + verification-architecture.md:42 (PROP-006a)",
+      "evidenceOrGap": "REQ-006 now says (a) script-entrypoint path exits non-zero before listen, (b) library path (`createApp()`) throws a typed `MissingEnvError`, (c) check is a single exported function called from BOTH paths and 'shall NOT be gated on any `import.meta.url` branch'. PROP-006a integration-tests createApp() throws."
+    }
+  ],
+  "dimensions": {
+    "spec_fidelity": {
+      "verdict": "PASS",
+      "findings": []
+    },
+    "edge_cases": {
+      "verdict": "PASS",
+      "findings": []
+    },
+    "verification_readiness": {
+      "verdict": "PASS",
+      "findings": [
+        {
+          "location": "verification-architecture.md:14 + :44 (PROP-008) vs behavioral-spec.md:36 (REQ-008)",
+          "issue": "PROP-008 verifies a /health body shape that REQ-008 does not declare (see structural_integrity NEW-2). PROP-008 will fail an impl that follows REQ-008 verbatim, and pass an impl that follows NFR-004 + verification-arch. The verification artifact is internally inconsistent with the behavioral artifact.",
+          "fix": "Fix REQ-008 per NEW-2 (add `gas_ready: <bool>`); PROP-008 is already correct after that fix."
+        }
+      ]
+    },
+    "structural_integrity": {
+      "verdict": "FAIL",
+      "findings": [
+        {
+          "location": "behavioral-spec.md:36 (REQ-008) vs :61 (NFR-004) vs verification-architecture.md:14 + :44 (PROP-008)",
+          "issue": "NEW-2 (BLOCKING internal contradiction). REQ-008 specifies the /health body literal as exactly `{ \"status\": \"ok\", \"service\": \"x402-agents\" }`. NFR-004 says /health shall additionally expose `gas_ready=<bool>`. Verification-architecture purity table line 14 and PROP-008 line 44 both require the body to be `{status:\"ok\",service:\"x402-agents\",gas_ready:<bool>}`. A builder implementing REQ-008 verbatim produces a body that fails PROP-008; a builder implementing PROP-008 produces a body that violates REQ-008. The spec cannot be locked while it contradicts itself on the /health response shape — and /health is the heartbeat's only readiness signal, so the contradiction has runtime consequences (a monitor watching the wrong shape never sees gas_ready).",
+          "fix": "Amend REQ-008 body literal to `{ \"status\": \"ok\", \"service\": \"x402-agents\", \"gas_ready\": <bool> }` with an explicit cross-reference to NFR-004. Optionally cite NFR-004 in REQ-008 (e.g. 'where `gas_ready` is the boot-time NFR-004 flag'). After the fix PROP-008, the purity table, REQ-008, and NFR-004 are all aligned."
+        },
+        {
+          "location": "behavioral-spec.md:15 (§Done point (c)) vs :65 (Out of scope — F3 gas seed)",
+          "issue": "NEW-1 (NON-BLOCKING under lean, would be BLOCKING under strict). F1 §Done point (c) requires 'a single self-buy on Base mainnet for POST /social/x reaches a successful settle on-chain'. A successful Base-mainnet settle costs Base ETH gas on the founder wallet. §Out of scope explicitly defers gas-seeding to F3 ('Gas seeding $1 Base ETH onto 0x810f — F3'). So the literal F1 done definition requires a capability the spec assigns to a later feature: F1 cannot be declared 'done' until F3 (or an equivalent manual seed) has put gas on 0x810f. The §Done block in lines 13-16 acknowledges F1 done ≠ GOAL done but is silent on whether §Done (c) is gated on F3 / a manual one-shot seed. An autonomous builder loop reading the spec will hit this and freeze.",
+          "fix": "Either (a) explicitly state in §Done point (c) that 'a one-shot manual gas seed of $1 Base ETH onto X402_WALLET_ADDRESS is a prerequisite for §Done (c); F3 productionizes this seed as an automated capability', or (b) move §Done (c)+(d) to a 'F1+F3-conjunction done condition' and remove them from F1's standalone done, or (c) split the spec into F1a (impl + boot, no on-chain) and F1b (self-buy seed, gated on F3 being satisfied)."
+        },
+        {
+          "location": "behavioral-spec.md:22 (REQ-002 cross-reference to PROP-004)",
+          "issue": "NEW-3 (NON-BLOCKING cross-ref slip). REQ-002 reads '(`Object.keys(routeTable).length === 1` is a structural invariant — see PROP-004.)' — but the singleton check actually lives in PROP-002 (verification-architecture.md:36), not PROP-004. PROP-004 covers the `accepts` shape. The cross-reference is wrong.",
+          "fix": "Change 'see PROP-004' → 'see PROP-002' in REQ-002 line 22. One-character fix."
+        }
+      ]
+    },
+    "impl_correctness": {
+      "verdict": "PASS",
+      "findings": []
+    }
+  },
+  "overallVerdict": "FAIL",
+  "blockingFindings": [
+    "structural_integrity NEW-2 (BLOCKING): REQ-008 specifies the /health body literal without `gas_ready` while NFR-004 + PROP-008 + verification-architecture's purity table require `gas_ready: <bool>` in the same body. Pure internal contradiction between the behavioral artifact and the verification artifact. The /health response shape is the heartbeat's only readiness signal, so this is not a documentation nit — a downstream monitor configured to the wrong shape never sees gas_ready. Fix: amend REQ-008 body literal to `{ \"status\": \"ok\", \"service\": \"x402-agents\", \"gas_ready\": <bool> }` and cross-reference NFR-004. After this fix the spec is self-consistent and overall PASS is reachable in iter-3.",
+    "structural_integrity prior #20 RESIDUAL note (NON-BLOCKING in lean, would be BLOCKING in strict): the iter-1 verdict's fix proposed 'add a Tier-0 PROP for the self-buy E2E' to close the REQ-012 / parent-G1.2 contradiction. Iter-2 closes the contradiction by elevating the self-buy to §Done (c)+(d) and tying it to the anti-fake gate prose, but does NOT add a numbered Tier-0 PROP for the on-chain E2E (PROP-012 is explicitly OUT-OF-SCOPE for unit tests). For lean mode this is acceptable — the Phase 3 adversary will read §Done + anti-fake-gate as the gate — but if mode were ever flipped to strict the spec would need an explicit PROP-XXX entry."
+  ],
+  "notes": "Iter-2 is a substantial improvement: 24 of 25 prior findings are fully CLOSED, the one remaining (prior #20, self-buy Tier-0 PROP) is closed-as-rectified via §Done + anti-fake-gate prose and is non-blocking under lean mode. Builder visibly read the canonical reference (~/anicca-work/x402/examples/typescript/servers/self-facilitation/index.ts), the SDK source (resourceService.ts:93-99, register.ts:14, packages/http/express/src/index.ts), and the parent G1.2 spec, and translated each prior finding into either (a) a tightened REQ + falsifiable Tier-0 PROP, or (b) a new sub-PROP (PROP-001a/b/c/d, PROP-006a, PROP-008b, PROP-NFR-004) where a single PROP was being overloaded. The exported `ROUTES` constant is a clean structural fix that eliminates the dynamic-import spy fragility cleanly. The Sepolia→mainnet deviation block and the gas-readiness signal at /health are mature additions. Overall verdict is FAIL purely because NEW-2 is a fresh internal contradiction introduced by the iter-2 additions: REQ-008's body literal was not updated when NFR-004 added `gas_ready` to /health, so REQ-008 and PROP-008 now disagree on the response shape. This is a one-line fix and iter-3 should converge fast. NEW-1 (F1 §Done (c) implicitly depends on F3 gas) is recorded as a separate non-blocking structural finding because §Done is a constitutive gate and a builder loop will hit it; a sentence of clarification will resolve it. NEW-3 (REQ-002 cross-refs PROP-004 when it should be PROP-002) is a non-blocking one-character slip. The markdown-table `\\|` convention in PROP-007 / PROP-001a / PROP-003 / PROP-008b / PROP-017 reads as `|` under any markdown-aware renderer and gives a valid -E alternation, so the iter-1 escape concern is closed for any sane verifier execution path. Reviewed disk-only with zero builder context; no 'looks good' findings. Recommend Builder amend REQ-008 (and optionally NEW-1 / NEW-3) and resubmit for an iter-3 spec-review pass.",
+  "findingsCount": 4
+}

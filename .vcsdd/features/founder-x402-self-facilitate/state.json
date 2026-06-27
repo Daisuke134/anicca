@@ -26,26 +26,25 @@
   "gates": {
     "1c": {
       "verdict": "FAIL",
-      "timestamp": "2026-06-27T23:00:04.668Z",
+      "timestamp": "2026-06-27T23:14:40.235Z",
       "reviewedBy": "adversary",
       "details": {
-        "iteration": 1,
-        "findingsCount": 25,
+        "iteration": 2,
+        "findingsCount": 4,
+        "priorClosed": 25,
+        "blockingNew": 1,
+        "nonBlockingNew": 2,
         "blockingDimensions": [
-          "spec_fidelity",
-          "edge_cases",
-          "verification_readiness",
-          "structural_integrity",
-          "impl_correctness"
+          "structural_integrity"
         ],
-        "verdictFile": ".vcsdd/features/founder-x402-self-facilitate/reviews/spec/iteration-1/output/verdict.json",
-        "nextAction": "builder-revise-iteration-2"
+        "verdictFile": ".vcsdd/features/founder-x402-self-facilitate/reviews/spec/iteration-2/output/verdict.json",
+        "nextAction": "builder-revise-iteration-3"
       },
       "adversaryVerdict": "FAIL",
-      "adversaryReviewedAt": "2026-06-27T23:00:04.668Z"
+      "adversaryReviewedAt": "2026-06-27T23:14:40.235Z"
     }
   },
   "sprintCount": 0,
   "createdAt": "2026-06-27T22:47:45.745Z",
-  "updatedAt": "2026-06-27T23:00:04.669Z"
+  "updatedAt": "2026-06-27T23:14:40.236Z"
 }
