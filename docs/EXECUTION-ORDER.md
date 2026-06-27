@@ -102,6 +102,10 @@ within it via search; the real generalization is A3 = parameterize the Automaton
        only (boots a container + mint credits uact), NOT the destination. CORRECTION 2026-06-27 (AEP-76 + real chain):
        escrow denom = uact (ACT/USD-pegged), NOT uakt (a stale-adversary error → live "Deposit invalid"); ACT minted
        from AKT via `bme mint-act`, verified in the act ledger NOT bank balances. 🟥 mainnet wallet = 0 AKT = the funding blocker.
+       PROGRESS 2026-06-27: ☑ B1.1 tooling · ☑ B1.2 deploy-akash.sh full flow, ALL parses real-chain-verified, adversary
+       sprint-4 PASS (4-D converged) · ☑ B1.4 sandbox-2 no-mock E2E (mint cracked = min_mint 10M uact; uact escrow;
+       create→bid→lease proven on the live chain). ☐ B1.3 akt-treasury.sh (off-path ACT mint ≥ min_mint) · ☐ B1.5 mainnet
+       boot — send-manifest only completes on a REAL provider (sandbox test-providers 400) AND needs real AKT (wallet=0).
 - ☐ B2. **THE RECIPE**: model × skills × setup so **every spawned Anicca earns > it spends**. Sub-track (ANICCA's earn tools):
        x402 first real sale · token (MoltX) · 0xwork · realised revenue per tool > 0 · deploy idle Solana→Base ·
        model experiment free→auto→premium (which first reaches net-positive = the recipe).
