@@ -180,8 +180,13 @@ per-call USDC. ③ once a buffer exists: DeFi yield (compound) / Stripe SaaS via
   Next.js + Supabase + Vercel SaaS + landing + auth + **Stripe** integration + deploy → fiat to Dais's personal bank.
 - ◇ **azep x402-gateway-template** — cloned+read: a GATEWAY that wraps an upstream backend (`PAY_TO_ADDRESS` + per-route
   price). serve.mjs is self-contained (product built in) so it's the first-move tool; azep is for a multi-route gateway later.
-- ☐ STILL TO SET UP (one by one): Coinbase AgentKit (DeFi yield self-sign), `BossChow/ultimate-submit-list` (directory
-  marketing), cold-email APIs (Instantly/Smartlead/Apollo), `demwick/polymarket-agent-mcp` (trading, deferred).
+- ✅ **Coinbase AgentKit** — `@coinbase/agentkit` v0.10.4 on npm ("every AI agent deserves a wallet"); installable for
+  DeFi-yield self-signing (the compounding floor).
+- ✅ **BossChow/ultimate-submit-list** — the top-100 submit directories (Product Hunt #1, Hacker News #2,
+  theresanaiforthat, Toolify, r/SideProject…) as a machine-parseable Price/Type/Submit-Link table → the agent loops the
+  FREE ones (the marketing channel for the bank-axis products).
+- ◇ cold-email (Instantly / Smartlead / Apollo) = full APIs, fully agent-autonomous, but need paid accounts → wire when scaling.
+- ◇ `demwick/polymarket-agent-mcp` = MCP, 48 trading tools — deferred (net-positive only 7-13%, capital-at-risk).
 
 ## DEFERRED (Dais: "we don't have to do that now")
 Updating the /dashboard render + the aniccaai.com page to reflect this 2-tier model + self-funded rate. First: make the
