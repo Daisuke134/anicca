@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 # VSDD oracle for akt-treasury.sh. STATIC invariants + BEHAVIORAL runs against a fake `akash` CLI that models the REAL
-# settlement: an EXECUTED mint makes uact RISE (post-mint balance > pre-mint); a CANCELED mint (below min_mint) refunds
-# so uact never rises. Proves: mints only below buffer, confirms via the uact balance DELTA (not tx code, not a stale
-# ledger record), fails LOUD on a non-crediting mint, never touches the deploy path. Exit 0=PASS.
+# settlement TRAPS the live run exposed:
+#  (a) EPOCH DELAY — an executed mint credits uact only AFTER several polls (not instantly); so the poll LOOP must
+#      actually iterate (a regression to a single post-mint read would never see the rise → FAIL).
+#  (b) STALE LEDGER — the fake's `bme ledger` returns records[-1] = CANCELED while the balance DOES rise; so a
+#      regression that trusts `records[-1].status` would wrongly conclude canceled → the executed case FAILs.
+# A CANCELED mint never credits uact. Exit 0=PASS.
 set -uo pipefail
 D="/Users/operator/anicca/skills/self/spawn/scripts"; S="$D/akt-treasury.sh"
 src="$(sed 's/#.*//' "$S")"; fails=0
@@ -16,11 +19,12 @@ have   "MIN_MINT|min_mint"               "min_mint awareness (chunk must clear i
 have   "NEW_UACT|CUR_UACT"               "confirms the mint via the uact balance DELTA (robust, not a stale ledger record)"
 have   "EXECUTED"                        "confirms success when uact rises"
 have   "CANCELED"                        "warns when uact never rises (below min_mint)"
+absent "records\[-1\]"                    "must NOT trust the stale ledger records[-1] (the live-run trap)"
 absent "deployment create|send-manifest" "OFF the deploy path (no per-spawn deploy here)"
 have   "ACT_BUFFER"                      "only tops up when below buffer"
 have   "exit 1"                          "fail-closed/loud"
 
-# ---------- BEHAVIORAL: fake akash CLI (uact rises after mint iff executed) ----------
+# ---------- BEHAVIORAL: fake akash CLI (epoch-delayed credit + stale-ledger trap) ----------
 mkfake(){ cat <<FAKE
 #!/usr/bin/env bash
 echo "\$*" >> "\$T_REC"
@@ -28,12 +32,18 @@ M="${1}"
 case "\$*" in
   *"keys show"*)        echo "akash1ms7gr5sxkv33ra353hg5lu8dm7akljdaamj523" ;;
   *"tx bme mint-act"*)  touch "\$T_MARK"; echo '{"code":0}' ;;
+  *"query bme ledger"*) echo '{"records":[{"status":"ledger_record_status_canceled"}]}' ;;   # TRAP: newest record is NOT here
   *"query bank balances"*)
     case "\$M" in
       enough) echo '{"balances":[{"denom":"uact","amount":"30000000"},{"denom":"uakt","amount":"75000000"}]}' ;;
       lowakt) echo '{"balances":[{"denom":"uact","amount":"0"},{"denom":"uakt","amount":"5000000"}]}' ;;
-      executed) [ -f "\$T_MARK" ] && echo '{"balances":[{"denom":"uact","amount":"16000000"},{"denom":"uakt","amount":"50000000"}]}' \
-                                   || echo '{"balances":[{"denom":"uact","amount":"0"},{"denom":"uakt","amount":"75000000"}]}' ;;
+      executed)
+        if [ -f "\$T_MARK" ]; then
+          N=\$(( \$(cat "\$T_CNT" 2>/dev/null || echo 0) + 1 )); echo "\$N" > "\$T_CNT"
+          # EPOCH DELAY: uact rises only on the 2nd post-mint poll, so the loop must iterate
+          if [ "\$N" -ge 2 ]; then echo '{"balances":[{"denom":"uact","amount":"16000000"},{"denom":"uakt","amount":"50000000"}]}'
+          else echo '{"balances":[{"denom":"uact","amount":"0"},{"denom":"uakt","amount":"75000000"}]}'; fi
+        else echo '{"balances":[{"denom":"uact","amount":"0"},{"denom":"uakt","amount":"75000000"}]}'; fi ;;
       *)      echo '{"balances":[{"denom":"uact","amount":"0"},{"denom":"uakt","amount":"75000000"}]}' ;;
     esac ;;
   *) echo '{}' ;;
@@ -42,8 +52,8 @@ FAKE
 }
 runfake(){ local T; T="$(mktemp -d)"; REC="$T/rec"; : >"$REC"
   mkfake "$1" >"$T/akash"; chmod +x "$T/akash"
-  OUT="$(AKASH_CLI="$T/akash" T_REC="$REC" T_MARK="$T/mark" AKASH_KEY_NAME=anicca-akash AKASH_NODE="http://x" \
-         AKASH_CHAIN_ID="t" AKASH_KEYRING_BACKEND=test AKASH_POLL_SLEEP=0 TREASURY_MINT_TRIES=3 bash "$S" 2>"$T/err")"; rc=$?
+  OUT="$(AKASH_CLI="$T/akash" T_REC="$REC" T_MARK="$T/mark" T_CNT="$T/cnt" AKASH_KEY_NAME=anicca-akash AKASH_NODE="http://x" \
+         AKASH_CHAIN_ID="t" AKASH_KEYRING_BACKEND=test AKASH_POLL_SLEEP=0 TREASURY_MINT_TRIES=5 bash "$S" 2>"$T/err")"; rc=$?
   recd="$(cat "$REC")"; rm -rf "$T"; }
 
 runfake enough
@@ -51,8 +61,10 @@ ok "$([ $rc -eq 0 ] && echo 1 || echo 0)" "enough: exit $rc (want 0)"
 grep -q "mint-act" <<<"$recd" && { echo "  - FAIL enough: minted despite ACT ≥ buffer"; fails=$((fails+1)); }; true
 
 runfake executed
-ok "$([ $rc -eq 0 ] && echo 1 || echo 0)" "executed: exit $rc (want 0 — uact rose after mint)"
+ok "$([ $rc -eq 0 ] && echo 1 || echo 0)" "executed: exit $rc (want 0 — uact rose on the 2nd poll)"
 grep -q "mint-act" <<<"$recd" || { echo "  - FAIL executed: never minted"; fails=$((fails+1)); }
+# the loop had to iterate ≥2 times to see the delayed rise (≥3 balance calls: 1 pre-mint + ≥2 polls)
+ok "$([ "$(grep -c 'query bank balances' <<<"$recd")" -ge 3 ] && echo 1 || echo 0)" "executed: poll loop iterated for the epoch-delayed credit (>=3 balance reads)"
 
 runfake canceled
 ok "$([ $rc -ne 0 ] && echo 1 || echo 0)" "canceled: exit $rc (want !=0 — uact never rose = below min_mint)"
@@ -61,4 +73,4 @@ runfake lowakt
 ok "$([ $rc -ne 0 ] && echo 1 || echo 0)" "lowakt: exit $rc (want !=0 — insufficient AKT, no swap wired)"
 grep -q "mint-act" <<<"$recd" && { echo "  - FAIL lowakt: minted with insufficient AKT"; fails=$((fails+1)); }; true
 
-[ $fails -eq 0 ] && { echo "PASS — akt-treasury invariants hold (static + balance-delta behavioral)"; exit 0; } || { echo "FAIL ($fails)"; exit 1; }
+[ $fails -eq 0 ] && { echo "PASS — akt-treasury invariants hold (static + epoch-delay + stale-ledger-trap behavioral)"; exit 0; } || { echo "FAIL ($fails)"; exit 1; }
