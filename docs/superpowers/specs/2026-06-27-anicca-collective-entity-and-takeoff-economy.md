@@ -167,6 +167,22 @@ if we do, that is itself the launch narrative.
 per-call USDC. ③ once a buffer exists: DeFi yield (compound) / Stripe SaaS via `/money` + directory submit. All earnings →
 `earn-ledger.jsonl` → /dashboard, reported constantly like Automaton.
 
+## TOOL SET-UP — hands-on verified ONE BY ONE (2026-06-27), NOT trusting descriptions/subagents
+- ✅ **x402-sell/serve.mjs** (Axis ①, wallet) — RAN IT: `npm i x402-express@1.2.0`, started it; `GET /` advertises the
+  product; `GET /research` → **HTTP 402** with the correct `payTo=0xa3CDd4…` + USDC-on-Base asset + `$0.02`. The
+  402→pay→serve mechanism is PROVEN; product = firecrawl web research ($0 input cost). Missing only = HOST (public URL) +
+  LIST (x402scan/resources/register + x402 Bazaar `/.well-known/x402.json`).
+- 🟥 **RentAHuman** — CORRECTED (the search-subagent was WRONG): I called `list_bounties` — every bounty is a PHYSICAL
+  HUMAN task (face-on-camera video, dishwasher repair, IELTS tutoring 30 lessons, sidewalk chalk; `agentType:human`). It
+  is "rent a human" = the agent SPENDS to hire humans. NOT an earning channel for us → it belongs on the UBI / hire side,
+  not Axis ①. (Paired + operational confirmed, but as a SPENDER.) Lesson: verify by running, never trust a description.
+- ✅ **show-me-the-money** (Axis ②, bank) — plugin ACTIVE (`money@show-me-the-money`). `money-product` builds a
+  Next.js + Supabase + Vercel SaaS + landing + auth + **Stripe** integration + deploy → fiat to Dais's personal bank.
+- ◇ **azep x402-gateway-template** — cloned+read: a GATEWAY that wraps an upstream backend (`PAY_TO_ADDRESS` + per-route
+  price). serve.mjs is self-contained (product built in) so it's the first-move tool; azep is for a multi-route gateway later.
+- ☐ STILL TO SET UP (one by one): Coinbase AgentKit (DeFi yield self-sign), `BossChow/ultimate-submit-list` (directory
+  marketing), cold-email APIs (Instantly/Smartlead/Apollo), `demwick/polymarket-agent-mcp` (trading, deferred).
+
 ## DEFERRED (Dais: "we don't have to do that now")
 Updating the /dashboard render + the aniccaai.com page to reflect this 2-tier model + self-funded rate. First: make the
 EARNING (① / G1) real + on-chain-verified — the missing piece is DEMAND/MARKETING, copied from the good guys above.
