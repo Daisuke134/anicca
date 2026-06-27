@@ -31,6 +31,8 @@ ROLE SPLIT above: as the founder node I DO earn to our OWN WALLET (x402 seller /
 - DEFERRED (Dais "not now"): updating /dashboard + aniccaai.com to show both tiers + self-funded rate. First make earning real.
 
 ### G1 sub-tasks — the MONEY LOOP (all earning tools hands-on-verified 2026-06-27; details in the strategy spec)
+VSDD spec: docs/superpowers/specs/2026-06-27-G1-founder-money-loop.md (I=human-funded founder, parent of the self-funded
+swarm; 2 earn paths: TO Dais=Stripe→bank, TO me+ecosystem=x402 USDC→my OWN wallet→seed/spawn children; wallet separation; read-only monitor).
 - ☑ G1.0 set up + VERIFY each tool: x402-sell/serve.mjs (RAN→HTTP 402, payTo=our wallet, USDC Base) · show-me-the-money
        (active, Stripe build OS) · AgentKit v0.10.4 (DeFi self-sign) · BossChow 100-dir (marketing) · azep gateway (later)
        · 🟥 RentAHuman CORRECTED = hire-humans/SPEND, not earn (subagent was wrong; caught by calling list_bounties).
