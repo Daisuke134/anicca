@@ -3,8 +3,8 @@
 # settlement TRAPS the live run exposed:
 #  (a) EPOCH DELAY — an executed mint credits uact only AFTER several polls (not instantly); so the poll LOOP must
 #      actually iterate (a regression to a single post-mint read would never see the rise → FAIL).
-#  (b) STALE LEDGER — the fake's `bme ledger` returns records[-1] = CANCELED while the balance DOES rise; so a
-#      regression that trusts `records[-1].status` would wrongly conclude canceled → the executed case FAILs.
+#  (b) STALE LEDGER — the impl must NOT trust `bme ledger records[-1]` (an executed mint leaves it on an older
+#      canceled record); fenced by the STATIC `absent "records[-1]"` check below, not a runtime fake branch.
 # A CANCELED mint never credits uact. Exit 0=PASS.
 set -uo pipefail
 D="/Users/operator/anicca/skills/self/spawn/scripts"; S="$D/akt-treasury.sh"
@@ -32,7 +32,9 @@ M="${1}"
 case "\$*" in
   *"keys show"*)        echo "akash1ms7gr5sxkv33ra353hg5lu8dm7akljdaamj523" ;;
   *"tx bme mint-act"*)  touch "\$T_MARK"; echo '{"code":0}' ;;
-  *"query bme ledger"*) echo '{"records":[{"status":"ledger_record_status_canceled"}]}' ;;   # TRAP: newest record is NOT here
+  # NOTE: no `bme ledger` branch — the impl must NOT call it (the stale-records[-1] trap is fenced by the STATIC
+  # `absent "records\[-1\]"` check above, which greps the comment-stripped impl). A live `bme ledger` call here would
+  # be dead code / false coverage.
   *"query bank balances"*)
     case "\$M" in
       enough) echo '{"balances":[{"denom":"uact","amount":"30000000"},{"denom":"uakt","amount":"75000000"}]}' ;;
