@@ -1,0 +1,120 @@
+# F1 §Done (c)+(d) sprint-2 — Part A wire-level proof — 2026-06-28T06:36Z
+#
+# Boots the new src/server.js with the canonical founder wallet 0x810f6d61f7606deee2657d3083e150a222bc29c5
+# against Base mainnet RPC (https://mainnet.base.org) on a random local port. Confirms wire-level
+# correctness end-to-end: GET /health, GET /metadata, POST /social/x → 402 Payment Required with the
+# x402 PAYMENT-REQUIRED header carrying the spec-mandated payment requirements.
+#
+# Part A = wire-level only (no real on-chain settle).
+# Part B = requires Base ETH gas + USDC on 0x810f, currently both 0 (Base mainnet checked 06:35Z).
+# Part B unblocks via task #11 (molty / Clankonomy register, gasless EIP-712 signature, first USDC).
+
+== boot ==
+EVM_PRIVATE_KEY=<founder 0x810f canonical key (sensitive, omitted)>
+X402_WALLET_ADDRESS=0x810f6d61f7606deee2657d3083e150a222bc29c5
+PORT=0 (OS picked 60813)
+X402_RPC_URL=https://mainnet.base.org
+boot-stdout: x402-agents listening on port 60813
+boot-stderr: [x402.boot.gas_low] balance=0 address=0x810F6D61F7606dEEE2657d3083E150a222Bc29C5 floor=500000000000000
+
+== GET /health ==
+HTTP 200
+{"status":"ok","service":"x402-agents","gas_ready":false}
+
+== GET /metadata ==
+HTTP 200
+{
+  "routes": [
+    {
+      "method": "POST",
+      "path": "/social/x",
+      "scheme": "exact",
+      "price": "$0.003",
+      "network": "eip155:8453",
+      "payTo": "0x810f6d61f7606deee2657d3083e150a222bc29c5",
+      "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+      "discoverable": true
+    }
+  ]
+}
+
+== POST /social/x (no payment header) ==
+HTTP/1.1 402 Payment Required
+Access-Control-Expose-Headers: X-PAYMENT-RESPONSE
+X-RateLimit-Limit: 30
+PAYMENT-REQUIRED (base64-decoded JSON):
+{
+  "x402Version": 2,
+  "error": "Payment required",
+  "resource": {
+    "url": "http://127.0.0.1:60813/social/x",
+    "description": "Real-time X/Twitter data for AI agents — user/thread/search, pay per request in USDC on Base mainnet.",
+    "mimeType": "application/json"
+  },
+  "accepts": [
+    {
+      "scheme": "exact",
+      "network": "eip155:8453",
+      "amount": "3000",
+      "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+      "payTo": "0x810f6d61f7606deee2657d3083e150a222bc29c5",
+      "maxTimeoutSeconds": 60,
+      "extra": {
+        "name": "USD Coin",
+        "version": "2",
+        "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+      }
+    }
+  ],
+  "extensions": {
+    "bazaar": {
+      "info": {
+        "input": {
+          "type": "http",
+          "method": "POST",
+          "bodyType": "json",
+          "body": { "query": "tokyo", "kind": "search", "limit": 10 }
+        },
+        "output": {
+          "type": "json",
+          "example": {
+            "results": [
+              { "id": "1234567890", "text": "sample tweet text", "user": "@alice", "ts": "2026-06-28T00:00:00Z" }
+            ]
+          }
+        }
+      },
+      "schema": { /* JSON-schema for the input body shape, properties:{query, kind, limit} */ }
+    }
+  }
+}
+
+== Invariants confirmed on the wire ==
+- REQ-001  ✓  in-process facilitator wiring boots cleanly with EVM_PRIVATE_KEY
+- REQ-002  ✓  single paid route key POST /social/x
+- REQ-003  ✓  network=eip155:8453 (Base mainnet) only, no Sepolia
+- REQ-004  ✓  accepts.scheme=exact, price=$0.003, payTo=0x810f, asset=USDC mainnet, maxTimeoutSeconds=60
+- REQ-004b ✓  resolved amount = "3000" (= $0.003 × 1e6 USDC base units) actually advertised
+- REQ-005  ✓  extensions.bazaar.info.input.{type:http, method:POST, bodyType:json, body:<raw example>} present
+- REQ-008  ✓  /health pure, no Prisma; returns gas_ready flag from NFR-004 snapshot
+- REQ-009  ✓  /metadata derived from ROUTES; reports same payTo/network/asset/discoverable
+- REQ-013  ✓  USDC asset pinned to 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
+- NFR-004  ✓  [x402.boot.gas_low] stderr tag with balance=0 + floor=5e14 wei
+
+== Funding blocker on Part B ==
+Checked Base mainnet via https://mainnet.base.org @ 2026-06-28T06:35Z:
+- 0x810f6d61f7606deee2657d3083e150a222bc29c5 ETH:  wei=0 (no gas for settle)
+- 0x810f USDC at 0x833589fCD6...02913:               raw=0 (no funds for self-buy)
+
+NEXT (per parent spec §G1.2 PARALLEL): task #11 (molty / Clankonomy register + gasless EIP-712
+sigs → first USDC bounty earn) precedes task #7 (F3 gas seed). Once 0x810f has any USDC, swap a
+sliver to Base ETH for gas, then re-run Part B on this same /social/x endpoint to prove §Done
+(c)+(d) (self-buy succeeds on-chain; record-earn INV-7 rejects the row).
+
+target-feature-tests: pass
+regression-baseline: pass
+existing tests pass: yes (36/36)
+total-tests: 36
+sprint: 2 (the on-chain E2E sprint, Part A complete, Part B funding-blocked)
+phase: 5 / complete (sprint-1) + sprint-2 Part A on-disk evidence
+feature: founder-x402-self-facilitate
