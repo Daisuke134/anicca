@@ -1,0 +1,12 @@
+PASS R5 no paid/keyed/secret env referenced
+PASS R1 no bot-blocked search backend actually used (URL form)
+PASS R1 tech query → >=1 source
+PASS R1 tech sources are real URLs
+PASS R3 tech digest non-empty (>200)
+PASS R6 digest is real content, not an error body
+PASS R1 general (non-tech) query → >=1 source (UNIVERSAL)
+PASS R3 general digest non-empty
+PASS R4 empty query exits non-zero
+PASS R4 no fake JSON on stdout for empty query
+
+10 passed, 0 failed

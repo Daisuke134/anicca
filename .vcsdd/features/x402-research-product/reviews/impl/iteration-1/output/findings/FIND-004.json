@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "verification_readiness",
+  "category": "test_coverage",
+  "severity": "major",
+  "description": "The only happy-path test query is 'x402 agent payments base' (line 22) — a tech term guaranteed to be richly indexed by HN Algolia. The test thus cannot catch the central regression: that the product is HN-only and fails for general/non-tech queries (see FIND-002). A test that exercised a plainly non-tech query (e.g. 'chocolate chip cookie recipe') would expose the universality gap, but none exists. Additionally, the error branches 'no search results' (line 31) and 'all source reads failed' (line 43) are never exercised by any test, so a regression that turned either into a silent empty-success would pass CI. The green-e2e.log reflects only this single tech-query path and provides no evidence of universality or of the DDG requirement in R1.",
+  "evidence": {
+    "filePath": "skills/earn/x402-sell/__tests__/research-product.test.mjs",
+    "lineRange": "20-27",
+    "snippet": "const { stdout } = await execFileP('node', [SCRIPT, 'x402 agent payments base'], { timeout: 60000, maxBuffer: 8 << 20 });"
+  },
+  "routeToPhase": "2b"
+}
