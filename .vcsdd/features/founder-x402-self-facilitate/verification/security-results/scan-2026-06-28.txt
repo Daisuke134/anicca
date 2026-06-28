@@ -1,0 +1,25 @@
+# Security scan output — founder-x402-self-facilitate sprint-1
+# 2026-06-28 · lean mode · scoped to apps/x402-agents/src/
+
+[forbidden-imports-scan] (REQ-007 / PROP-007)
+grep -rE '@coinbase/x402|CDP_API_KEY|x402\.org/facilitator|RAILWAY_|DATABASE_URL|OPENAI_API_KEY|@prisma/client|from\s+["'"'"'][^"'"'"']*openai["'"'"']|from\s+["'"'"']\./lib/prisma["'"'"']|HTTPFacilitatorClient' apps/x402-agents/src/
+result: 0 matches
+status: PASS
+
+[hardcoded-secret-scan]
+grep -nE '0x[0-9a-fA-F]{64}' apps/x402-agents/src/server.js | grep -v -E '(EVM_PRIVATE_KEY_RE|TEST_KEY|all-hex test)'
+result: 0 matches (only regex constants + symbolic refs)
+status: PASS
+
+[dep-floor-scan] (NFR-001)
+node -p 'Object.keys(require("apps/x402-agents/package.json").dependencies).sort().join(",")'
+result: @x402/core,@x402/evm,@x402/express,@x402/extensions,cors,express,express-rate-limit,viem
+status: PASS (8 direct deps, matches NFR-001 floor)
+
+[settle-error-leak-scan] (REQ-014)
+Verify [x402.settle.error] log path does not echo private-key bytes.
+inspection: wrapSettle at server.js:78-89 logs only err.code + err.message.slice(0, 200); the
+private key is held inside viem's walletClient and never serialized into a thrown Error.
+status: PASS
+
+# Summary: 0 high-severity findings on sprint-1 scope.
