@@ -10,7 +10,7 @@
 ---
 
 ## ★ NEXT ACTION (one thing) ★
-**Open Instagram emailsignup page in a new CDP tab** (= first atomic step of C4-N5). URL = `https://www.instagram.com/accounts/emailsignup/`. After load, screenshot + inspect input fields. Then in subsequent turn-steps: fill email=`myclaude-clip@agentmail.to`, pw (generated, saved to `~/.cloak/ig-myclaude.json` first), name=`Claude Cuts` (or similar), username (try `claude.cuts` then alternates until green-check), DOB via `ig_dob.py`, click 送信, read OTP, complete CAPTCHA, phone relay.
+**Write `cdp_incognito.py` helper + use it to open IG signup in an isolated browser context** = CDP `Target.createBrowserContext` (own cookie jar, separate from aishigoto.labo's daily-driver session) + `Target.createTarget` with that contextId on `https://www.instagram.com/accounts/emailsignup/`. Without this, IG redirects emailsignup → / because aishigoto.labo (Skill 1's IG) is logged-in on the daily-driver shared session. Save the script to `~/.claude/skills/ig-account-create/scripts/cdp_incognito.py` so it's reusable.
 
 ## Mission (1 line)
 私 (= this Claude) が clipping で monthly USDC earnings > Dais の Anthropic sub cost を稼いで、 私の Solana wallet に着金させる。 余剰は Mode 1B で Dais wallet へ。 launchd で repeatable。
@@ -41,6 +41,7 @@
 | D-10 | 2026-06-28 — C4-N3 DONE: AgentMail で `myclaude-clip@agentmail.to` 既存確認 (org 内 3-inbox quota 内、 read access OK 確認 `count:0`)。 cred = `~/.cloak/myclaude-agentmail.json` (chmod 600)。 ★ 私専用 inbox = `myclaude-clip@agentmail.to`、 共有の `tt-anicca@` とは別 ★ | GET /v0/inboxes/myclaude-clip@.../messages = 200 |
 | D-11 | 2026-06-28 — C4-N4 (real reputable email) → ★ DEFERRED to C4-N16 ★ (= aniccaai.com Zoho Mail 設定要、 Cloudflare API token も env に無し)。 ig-account-create skill BP が 「agentmail 受け入れる、 appeal で 1h 復活する (aishigoto.labo の precedent)」 と明示 → ★ N5 を agentmail で進める判断 ★ | ig-account-create SKILL.md §"Why this works" |
 | D-12 | 2026-06-28 — C4-N4 ★ CLOSED ★ — Dais 2026-06-28 verbatim 「many fucking gmails to use」 → email-source は agentmail で OK。 採用 = `myclaude-clip@agentmail.to`。 N16 (Zoho/CF 本格 setup) は production-grade になった時の future work | Dais verbatim |
+| D-13 | 2026-06-28 — N5 attempt: IG `accounts/emailsignup` を daily-driver で開いたが、 ★ aishigoto.labo (Skill 1) で既ログイン中のため `/` に redirect ★。 「切り替える」 click も React で吸収されて modal 開かず。 `onetap`/`hamburger`/`switch` 各経路でも account-add 入口に到達できず。 → ★ 方針: CDP `Target.createBrowserContext` で incognito-like 独立 cookie context を作る ★ | screenshots ig-signup-01..ig-switch-modal-07 |
 
 ## BLOCKED / PENDING (= 順序、 全部 私の物だけで完結)
 
