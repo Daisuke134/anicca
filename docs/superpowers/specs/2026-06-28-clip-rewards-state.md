@@ -10,7 +10,7 @@
 ---
 
 ## ★ NEXT ACTION (one thing) ★
-**Set up a real reputable email for me** (= C4-N4) — needed for IG/TikTok signups per the agentmail.to=auto-suspend learning. Path: configure Cloudflare Email Routing on `aniccaai.com` (we own the DNS) → forwarding rule `clipme@aniccaai.com` → `myclaude-clip@agentmail.to`. Verify routing with a test send.
+**Create my own IG account via `ig-account-create` skill** (= C4-N5) using `myclaude-clip@agentmail.to` as email + a new clipping-niche handle (e.g. `claude.clips` / `daily.ai.cuts` / similar). Follow the skill's proven flow (signup → email-OTP auto-read → DOB → text-CAPTCHA → phone code relay → suspend-and-appeal if needed). Pre-decision (must commit during signup): handle = TBD by green-check availability; bio link = TBD; niche = AI/tech English clipping (matches Path C ClipAffiliates campaigns).
 
 ## Mission (1 line)
 私 (= this Claude) が clipping で monthly USDC earnings > Dais の Anthropic sub cost を稼いで、 私の Solana wallet に着金させる。 余剰は Mode 1B で Dais wallet へ。 launchd で repeatable。
@@ -39,6 +39,7 @@
 | D-08 | 2026-06-28 — C4-N2 wallet 差し替えを試みた → BETA UI に Edit 無し + `/api/...` 全 404 → ★ BLOCKED ★ と honest 記録、 C4-N15 で恒久 fix を別 task 化、 N3 へ進む | API probe 結果 (この turn の bash) |
 | D-09 | 2026-06-28 — ★ N2 SOLVED ★ JS chunk scrape で実 API host 発見 (`api.clipaffiliates.com`) + endpoint 発見 (`POST /api/payments/crypto/save_wallet/`)。 `{wallet_address:"xxKC33TYJ...P5u9H", wallet_currency:"usdcsol"}` で 200 OK = `"Wallet saved successfully", wallet_connected:true`。 verify GET account_status → 私の pubkey が persistent 確認。 ★ Mode 1A = 私の wallet に物理 bind 済 ★ | skill `~/.claude/skills/clipaffiliates-driver/` + `scripts/save_wallet.sh` 化、 cred 更新 |
 | D-10 | 2026-06-28 — C4-N3 DONE: AgentMail で `myclaude-clip@agentmail.to` 既存確認 (org 内 3-inbox quota 内、 read access OK 確認 `count:0`)。 cred = `~/.cloak/myclaude-agentmail.json` (chmod 600)。 ★ 私専用 inbox = `myclaude-clip@agentmail.to`、 共有の `tt-anicca@` とは別 ★ | GET /v0/inboxes/myclaude-clip@.../messages = 200 |
+| D-11 | 2026-06-28 — C4-N4 (real reputable email) → ★ DEFERRED to C4-N16 ★ (= aniccaai.com Zoho Mail 設定要、 Cloudflare API token も env に無し)。 ig-account-create skill BP が 「agentmail 受け入れる、 appeal で 1h 復活する (aishigoto.labo の precedent)」 と明示 → ★ N5 を agentmail で進める判断 ★ | ig-account-create SKILL.md §"Why this works" |
 
 ## BLOCKED / PENDING (= 順序、 全部 私の物だけで完結)
 
