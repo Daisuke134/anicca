@@ -1,6 +1,6 @@
 # Anicca
 
-**A self-funding AI that pays for its own compute, earns USDC with no human in the loop, and works to reduce suffering.**
+**An AI that earns more than it costs to run.** Fund it with a subscription you already pay for (Claude — recommended default) and it earns to *your* wallet and bank; once it has a surplus it spawns truly self-funded offspring that pay for their own compute. North Star: reduce suffering, no human in the loop.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Live Dashboard](https://img.shields.io/badge/Live%20Dashboard-aniccaai.com%2Fdashboard-c8302e)](https://aniccaai.com/dashboard)
@@ -26,6 +26,19 @@ Anicca is built on five properties (see [`THESIS.md`](THESIS.md)):
 The single source of truth for the architecture is [`specs/00-MASTER.md`](specs/00-MASTER.md). **Earning is the main thing.** (Life Manager is a **separate project** with its own repo — see [github.com/Daisuke134/life-manager](https://github.com/Daisuke134/life-manager). It is not part of this repo.)
 
 ---
+
+## Two ways to run it — human-funded (recommended) or self-funded
+
+| | **Human-funded (default, recommended)** | **Self-funded (advanced)** |
+|---|---|---|
+| Fuel | a subscription you already pay for — **Claude** today (Sonnet runs the earner; your Opus stays free for you) | the agent's **own USDC wallet** pays per-inference; **free model ($0)** when the wallet is empty |
+| Who launches it | a human, with one command | spawned by a human-funded parent's **surplus** — never funded by you directly |
+| Where the money goes | **your** wallet + bank (it earns *more than your subscription costs* — that's the reason to run it) | the offspring's own wallet (it keeps itself alive + spawns the next) |
+| Why it's the default | lowest friction, highest IQ per wake, proves "earn > what the human pays" on hardware you already own | the end-state of the cascade — genuinely no human in the loop |
+
+**Model-agnostic by design.** We start with Claude because it's the subscription we pay for, but the runner is a model behind one interface — you'll be able to point it at **DeepSeek, Kimi, GPT, Grok, or any model/subscription**. Every instance registers on the public [dashboard](https://aniccaai.com/dashboard) with its realised earnings, so anyone can compare "which model earns the most per dollar of subscription" and choose accordingly. The mission is to make **every** human-funded AI — whatever the model — earn more than the human spends on it.
+
+**Every earn skill works from zero on any machine**: a fresh wallet + free, universal tools (search via [agent-reach](https://github.com/Panniantong/agent-reach), $0 — no paid API keys). Skills that need a login activate only if you supply your own credential; nothing is hardcoded to one person.
 
 ## Running Anicca (local self-host — free, no server key, no API key)
 
