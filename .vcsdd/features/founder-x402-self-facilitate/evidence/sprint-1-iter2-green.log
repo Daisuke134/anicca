@@ -1,19 +1,14 @@
 target-feature-tests: pass
 regression-baseline: pass
 new-feature-tests: PASS
-regression-baseline-note: the prior baseline (src/__tests__/server.test.js) was deleted per REQ-017 because it tested the obsolete pre-swap routes. The post-swap test suite (src/__tests__/server-self-facilitate.test.js, 31 tests, all passing) IS the regression baseline going forward; no other tests in apps/x402-agents/ exist or were broken.
-existing tests pass: yes (post-REQ-017 suite = 31/31 PASS, no other tests in apps/x402-agents/)
-total-tests: 31
-new-tests-PASSING: 31
-new-tests-FAILING: 0
+total-tests: 36 (= 31 from iter-1 + 4 PROP-014 + 1 extra PROP-005)
+iter-2-closures: 8 blockers + 4 minor + spec REQ-014 SDK-alignment + spec REQ-005 SDK shape
 sprint: 1
-phase: 2b (GREEN)
+phase: 2b->3 iter-2
 feature: founder-x402-self-facilitate
-spec-iter-locked: 3 (adversary PASS)
-tier-0-props-covered: 17 of 17 (all passing)
-files-changed: apps/x402-agents/src/server.js (rewritten), src/routes/* (deleted), src/lib/prisma.js (deleted), src/services/buddhistCounselService.js (deleted), src/generated/prisma/ (deleted), src/__tests__/server.test.js (deleted — obsolete baseline)
+deps-cleaned: dropped @coinbase/x402, @prisma/client, prisma, openai, ethers, dotenv, zod (NFR-001)
 
-==================== GREEN raw vitest output ====================
+==================== iter-2 GREEN raw ====================
 
  RUN  v2.1.9 /Users/anicca/anicca-project/apps/x402-agents
 
@@ -24,15 +19,16 @@ files-changed: apps/x402-agents/src/server.js (rewritten), src/routes/* (deleted
  ✓ src/__tests__/server-self-facilitate.test.js > PROP-001c [Tier 0] REQ-001 iv+v: in-process x402Facilitator + registerExactEvmScheme > registerExactEvmScheme(facilitator, ...) appears exactly once
  ✓ src/__tests__/server-self-facilitate.test.js > PROP-001d [Tier 0] REQ-001 vi+vii: x402ResourceServer.register + ExactEvmServerScheme > x402ResourceServer is constructed with in-process facilitator object-literal
  ✓ src/__tests__/server-self-facilitate.test.js > PROP-001d [Tier 0] REQ-001 vi+vii: x402ResourceServer.register + ExactEvmServerScheme > .register(<base-mainnet>, new ExactEvmServerScheme()) appears exactly once
- ✓ src/__tests__/server-self-facilitate.test.js > PROP-002 [Tier 0] REQ-002: ROUTES singleton bound to X402_WALLET_ADDRESS > server.js exports ROUTES constant 575ms
+ ✓ src/__tests__/server-self-facilitate.test.js > PROP-002 [Tier 0] REQ-002: ROUTES singleton bound to X402_WALLET_ADDRESS > server.js exports ROUTES constant 388ms
  ✓ src/__tests__/server-self-facilitate.test.js > PROP-002 [Tier 0] REQ-002: ROUTES singleton bound to X402_WALLET_ADDRESS > exactly one paid route key = "POST /social/x"
  ✓ src/__tests__/server-self-facilitate.test.js > PROP-002 [Tier 0] REQ-002: ROUTES singleton bound to X402_WALLET_ADDRESS > payTo equals process.env.X402_WALLET_ADDRESS at config time
  ✓ src/__tests__/server-self-facilitate.test.js > PROP-003 [Tier 0, PROMOTED] REQ-003: Base MAINNET only, never Sepolia > imports base from viem/chains AND zero Sepolia references
  ✓ src/__tests__/server-self-facilitate.test.js > PROP-004 [Tier 0] REQ-004: POST /social/x accepts shape > accepts has full mainnet shape including extra.asset
  ✓ src/__tests__/server-self-facilitate.test.js > PROP-004b [Tier 0] REQ-004b: $0.003 resolves to 3000 USDC base units > server.js exports resolveAcceptsAmount
  ✓ src/__tests__/server-self-facilitate.test.js > PROP-004b [Tier 0] REQ-004b: $0.003 resolves to 3000 USDC base units > resolveAcceptsAmount(accepts) === "3000"
- ✓ src/__tests__/server-self-facilitate.test.js > PROP-005 [Tier 0] REQ-005: Bazaar POST shape (method+bodyType+input+inputSchema) > ROUTES["POST /social/x"].extensions carries method:POST + bodyType:json
- ✓ src/__tests__/server-self-facilitate.test.js > PROP-005 [Tier 0] REQ-005: Bazaar POST shape (method+bodyType+input+inputSchema) > extensions carries input + inputSchema (non-empty)
+ ✓ src/__tests__/server-self-facilitate.test.js > PROP-005 [Tier 0] REQ-005: Bazaar POST shape (SDK-aligned ext.bazaar.info) > extensions.bazaar.info.input has type:http + method:POST + bodyType:json + raw body
+ ✓ src/__tests__/server-self-facilitate.test.js > PROP-005 [Tier 0] REQ-005: Bazaar POST shape (SDK-aligned ext.bazaar.info) > extensions.bazaar.info.output has type:json + non-empty example
+ ✓ src/__tests__/server-self-facilitate.test.js > PROP-005 [Tier 0] REQ-005: Bazaar POST shape (SDK-aligned ext.bazaar.info) > extensions.bazaar.schema.properties.input.properties.body exists (inputSchema fed in)
  ✓ src/__tests__/server-self-facilitate.test.js > PROP-006 [Tier 0, PROMOTED] REQ-006: validateEnv format check > server.js exports validateEnv + MissingEnvError
  ✓ src/__tests__/server-self-facilitate.test.js > PROP-006 [Tier 0, PROMOTED] REQ-006: validateEnv format check > throws on missing EVM_PRIVATE_KEY
  ✓ src/__tests__/server-self-facilitate.test.js > PROP-006 [Tier 0, PROMOTED] REQ-006: validateEnv format check > throws on empty EVM_PRIVATE_KEY
@@ -42,7 +38,11 @@ files-changed: apps/x402-agents/src/server.js (rewritten), src/routes/* (deleted
  ✓ src/__tests__/server-self-facilitate.test.js > PROP-006a [Tier 0] REQ-006: createApp() throws on bad env > createApp rejects/throws when env is missing
  ✓ src/__tests__/server-self-facilitate.test.js > PROP-007 [Tier 0] REQ-007 + REQ-017: zero forbidden imports under src/ > server.js has no forbidden imports / env refs
  ✓ src/__tests__/server-self-facilitate.test.js > PROP-008 + PROP-008b [Tier 0] REQ-008: /health pure, no prisma anywhere > server.js does not contain the string "prisma" (case-insensitive)
- ✓ src/__tests__/server-self-facilitate.test.js > PROP-011 [Tier 0] REQ-011: replicable boot — only EVM_PRIVATE_KEY + X402_WALLET_ADDRESS + PORT > server boots with only required env, prints "listening on port" within 2s 2005ms
+ ✓ src/__tests__/server-self-facilitate.test.js > PROP-011 [Tier 0] REQ-011: replicable boot — only EVM_PRIVATE_KEY + X402_WALLET_ADDRESS + PORT (+ X402_RPC_URL for test determinism) > server boots with only required env, prints "listening on port" within 2s, deterministic (no live RPC) 2002ms
+ ✓ src/__tests__/server-self-facilitate.test.js > PROP-014 [Tier 0] REQ-014: wrapSettle logs [x402.settle.error] + rethrows > wrapSettle is exported
+ ✓ src/__tests__/server-self-facilitate.test.js > PROP-014 [Tier 0] REQ-014: wrapSettle logs [x402.settle.error] + rethrows > wrapSettle re-raises the original error
+ ✓ src/__tests__/server-self-facilitate.test.js > PROP-014 [Tier 0] REQ-014: wrapSettle logs [x402.settle.error] + rethrows > wrapSettle logs [x402.settle.error] with the error code + message snippet
+ ✓ src/__tests__/server-self-facilitate.test.js > PROP-014 [Tier 0] REQ-014: wrapSettle logs [x402.settle.error] + rethrows > wrapSettle passes through on success
  ✓ src/__tests__/server-self-facilitate.test.js > PROP-013 [Tier 0] REQ-013: USDC Base mainnet contract address pin > USDC mainnet contract appears exactly once in server.js
  ✓ src/__tests__/server-self-facilitate.test.js > PROP-016 [Tier 0] REQ-016: single source of truth literals > the literal $0.003 appears exactly once (quote-agnostic)
  ✓ src/__tests__/server-self-facilitate.test.js > PROP-016 [Tier 0] REQ-016: single source of truth literals > the literal eip155:8453 appears exactly once (quote-agnostic)
@@ -50,7 +50,7 @@ files-changed: apps/x402-agents/src/server.js (rewritten), src/routes/* (deleted
  ✓ src/__tests__/server-self-facilitate.test.js > PROP-017 [Tier 0] REQ-017: deferred route files moved out of src/ > src/lib/prisma.js does not exist
 
  Test Files  1 passed (1)
-      Tests  31 passed (31)
-   Start at  15:01:12
-   Duration  2.89s (transform 21ms, setup 0ms, collect 11ms, tests 2.59s, environment 0ms, prepare 42ms)
+      Tests  36 passed (36)
+   Start at  15:19:34
+   Duration  2.66s (transform 22ms, setup 0ms, collect 13ms, tests 2.40s, environment 0ms, prepare 48ms)
 

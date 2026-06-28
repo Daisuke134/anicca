@@ -1,0 +1,124 @@
+{
+  "iteration": 1,
+  "reviewType": "impl",
+  "feature": "founder-x402-self-facilitate",
+  "mode": "lean",
+  "phase": 3,
+  "dimensions": {
+    "spec_fidelity": {
+      "verdict": "FAIL",
+      "findings": [
+        {
+          "location": "apps/x402-agents/src/server.js:127-138",
+          "issue": "declareDiscoveryExtension is called with the WRONG argument shape relative to the @x402/extensions SDK. The SDK's createBodyDiscoveryExtension destructures top-level { method, input, inputSchema, bodyType, output } (see x402/typescript/packages/extensions/src/bazaar/http/resourceService.ts:123-149). The impl passes input as `{ example: SOCIAL_X_EXAMPLE_INPUT, schema: SOCIAL_X_INPUT_SCHEMA }` and output as `{ example, schema }`, and does NOT pass top-level `inputSchema`. Result: the SDK reads `body: input` and sets it to the WRAPPER object `{example, schema}` (not the raw example), inputSchema defaults to `{ properties: {} }` (an empty schema), and `output.schema` is silently dropped. The Bazaar discovery payload that actual buyers see is therefore malformed: empty input schema, empty output schema, and a body example shaped like `{example:{...}, schema:{...}}`. REQ-005 is violated despite tests passing — the tests pass because the impl decorates `extensions.{method,bodyType,input,inputSchema}` at the TOP LEVEL (server.js:134-137), which Bazaar does not read.",
+          "fix": "Replace the extensions block with: `extensions: declareDiscoveryExtension({ method: 'POST', bodyType: 'json', input: SOCIAL_X_EXAMPLE_INPUT, inputSchema: SOCIAL_X_INPUT_SCHEMA, output: { example: SOCIAL_X_EXAMPLE_OUTPUT } })`. Delete the top-level method/bodyType/input/inputSchema decorations on server.js:134-137 (they are dead bytes that only fool the test). Update PROP-005 in the verification architecture so the test verifies the ACTUAL bazaar payload shape: `ext.bazaar.info.input.body === SOCIAL_X_EXAMPLE_INPUT` AND `ext.bazaar.schema.properties.input.properties.body.properties` is non-empty (proves inputSchema flowed through)."
+        },
+        {
+          "location": "apps/x402-agents/src/server.js:257-268",
+          "issue": "The REQ-014 settle-failure handler `app.use((err, _req, res, _next) => { if (err.code === 'settle_failed' || err.x402Settle) ... })` will NEVER fire. The @x402/express paymentMiddleware handles settlement failures internally and returns its OWN response without calling next(err): (a) FacilitatorResponseError → `sendFacilitatorError(res, err)` → `res.status(502).json({ error: err.message })` and `return` (see x402/typescript/packages/http/express/src/index.ts:51-53, 154-159, 346-350); (b) settleResult.success === false → SDK sends the route's settlementFailedResponseBody directly (lines 327-339); (c) unexpected settle exception → `res.status(402).json({})` (line 355). None of these surface an error with `code === 'settle_failed'` or `x402Settle` to our Express error handler. REQ-014's mandated response body `{ error: 'settle_failed', reason, code }` and the `[x402.settle.error]` stderr tag NEVER appear in production for any real settle failure path.",
+          "fix": "Wire `settlementFailedResponseBody` on `ROUTES['POST /social/x']` (the SDK's intended hook — see RouteConfig.settlementFailedResponseBody in x402HTTPResourceServer.ts:169-177). That callback receives the settleResult and can return the spec-mandated `{ contentType: 'application/json', body: { error: 'settle_failed', reason, code } }` and emit the `[x402.settle.error]` log. Additionally hook `unpaidResponseBody` for the verify-failure (402) shape REQ-014 second clause asks for. Then update PROP-014 to drive the test through `paymentMiddleware` end-to-end (it currently does not exist as an integration test — Tier-0 PROP-014 is missing from the executed suite)."
+        }
+      ]
+    },
+    "edge_cases": {
+      "verdict": "FAIL",
+      "findings": [
+        {
+          "location": "apps/x402-agents/src/server.js:165-179",
+          "issue": "probeGasReady is fire-and-forget AND silently swallows RPC errors. The flag `gasReady` is initialized to `false` (line 164) and only flipped after the promise resolves. If a heartbeat hits `GET /health` within the RPC round-trip after boot, the response is `gas_ready:false` even when the wallet has gas — external monitors will misclassify a funded agent as perpetually broke. Worse, the catch handler `.catch(() => { gasReady = false; })` (line 176-178) silently keeps the flag false on ANY RPC failure (timeout, 5xx from RPC, DNS hiccup) with NO log, NO retry, NO observability — NFR-004's mandated `[x402.boot.gas_low]` tag never fires for the silent-RPC-failure path, and the impl has no way to recover when transient RPC recovers later.",
+          "fix": "(a) Either await the probe before app.listen() so /health responses always reflect a determined value, OR (b) emit `[x402.boot.gas_probe_error] error=<msg> address=<addr>` in the catch and re-probe on each /health request when the cached read is older than N seconds. (c) Surface a tri-state — `gas_ready: 'true'|'false'|'unknown'` — so the heartbeat can distinguish 'probed and broke' from 'never successfully probed'."
+        },
+        {
+          "location": "apps/x402-agents/src/server.js:221-228",
+          "issue": "CORS preflight is broken for x402. `allowedHeaders: ['Content-Type', 'Authorization', 'X-Payment-*']` uses a non-existent wildcard syntax — Access-Control-Allow-Headers takes EXACT header names, not glob patterns. The x402 spec sends `X-PAYMENT` (singular) on the request and `X-PAYMENT-RESPONSE` on the response. Browsers preflighting `POST /social/x` with the `X-PAYMENT` request header will see no match for `x-payment` in the allowed list and abort the request before the buyer agent ever reaches the route. Web-context buyers (paywall fallback, browser-based wallets) are blocked from buying.",
+          "fix": "Change to `allowedHeaders: ['Content-Type', 'Authorization', 'X-PAYMENT']` and add `exposedHeaders: ['X-PAYMENT-RESPONSE']` so settlement metadata is readable by the buyer."
+        },
+        {
+          "location": "apps/x402-agents/src/server.js:62-69",
+          "issue": "resolveAcceptsAmount hardcodes 6-decimal arithmetic but never cross-checks that `accepts.extra.asset` is in fact a 6-decimal token. If a future PR (or typo) flips USDC_BASE_MAINNET to e.g. WETH on Base (18 decimals), $0.003 would still resolve to '3000' base units, which on an 18-decimal asset equals 3000 wei ≈ 1e-15 ETH (essentially $0), or — if the price string were '$3' — 3000000 wei ≈ $0.000000001 (silently letting a 'paid' buyer through without payment). REQ-004b's units pin is enforced only against the literal `accepts`, not against the on-chain decimals of the pinned asset. NFR-004 already does one boot-time RPC — adding a decimals() probe is cheap and removes a silent-money-loss class."
+        }
+      ]
+    },
+    "impl_correctness": {
+      "verdict": "FAIL",
+      "findings": [
+        {
+          "location": "apps/x402-agents/src/server.js:276-277",
+          "issue": "Script entrypoint detection is fragile: `process.argv[1].endsWith('server.js')` matches by basename only. Any launcher that invokes via `node --import some-preload src/server.js` may still match, but `node -e \"import('./src/server.js')\"` puts argv[1]='[eval]' and createApp() runs but app.listen() never fires — server boots silently and serves nothing. Containers that wrap with a launcher (pm2, dumb-init wrapping a node module) frequently rewrite argv[1] to the launcher path; the listener is silently disabled with no log. This breaks REQ-011 replicability for any Tier-2 child that does not invoke `node src/server.js` literally.",
+          "fix": "Use the standard ESM entrypoint check: `import { pathToFileURL } from 'node:url'; const __isEntry = import.meta.url === pathToFileURL(process.argv[1] ?? '').href;` OR export an explicit `export async function start({ port }) { ... }` that launchers must call. The implicit run-on-import path is the most common production silent-failure mode."
+        },
+        {
+          "location": "apps/x402-agents/src/server.js:113-122",
+          "issue": "The `payTo` getter `get payTo() { return process.env.X402_WALLET_ADDRESS; }` snapshots the wallet address on each property access. paymentMiddleware reads accepts.payTo via x402HTTPResourceServer which compiles routes once at construction (paymentMiddleware → new x402HTTPResourceServer(server, routes) at express/src/index.ts:408). For a static env this is harmless. BUT if the env is unset BETWEEN createApp() (which calls validateEnv first) and the FIRST request that hits paymentMiddleware's compile path, payTo silently becomes `undefined`. The bigger structural smell: a getter on a route config that the SDK assumes is a plain frozen object — any later SDK refactor that deep-clones or freezes the route table will lose the dynamic binding without warning. The PROP-002 test that sets env then imports passes only because vitest hot-reloads modules between tests; production has no such guarantee.",
+          "fix": "Resolve payTo to a string ONCE inside `createApp()` after validateEnv: `const payTo = process.env.X402_WALLET_ADDRESS; const routes = { 'POST /social/x': { ...ROUTES['POST /social/x'], accepts: { ...ROUTES['POST /social/x'].accepts, payTo } } };`. Then pass `routes` to paymentMiddleware. Keep ROUTES as a pure shape constant for tests; build the runtime route table from it. This also makes the getter-vs-property invariant unambiguous for downstream auditors."
+        },
+        {
+          "location": "apps/x402-agents/src/server.js:113-140 + verification-architecture.md:36 PROP-002",
+          "issue": "REQ-002 spec text says exactly ONE paid route key with payTo = process.env.X402_WALLET_ADDRESS. The impl currently satisfies this because `Object.keys(ROUTES).length === 1`. However the impl exposes `ROUTES` as a mutable export — any future code anywhere in the package that does `import { ROUTES } from './server.js'; ROUTES['POST /other'] = {...}` silently breaks the singleton invariant WITHOUT a runtime check. PROP-002 verifies the invariant at module-load time only; nothing enforces it at app construction. A simple `Object.freeze(ROUTES)` + `Object.freeze(ROUTES['POST /social/x'].accepts)` would make the constant tamper-evident.",
+          "fix": "`export const ROUTES = Object.freeze({ 'POST /social/x': Object.freeze({ accepts: Object.freeze({ ... }), description: '...', extensions: Object.freeze({ ... }) }) });` and add a `createApp()`-time assertion `if (Object.keys(ROUTES).length !== 1) throw new Error('REQ-002 violated');`."
+        },
+        {
+          "location": "apps/x402-agents/src/server.js:184-217 (createApp) + spec REQ-004b",
+          "issue": "REQ-004b's spec text reads: 'The impl shall assert this resolution at startup (or in a startup test)'. The impl exports resolveAcceptsAmount but NEVER calls it at runtime — neither in createApp nor in the script entrypoint. The 'startup test' satisfies the OR clause technically, but the test only fires when CI runs vitest — a Tier-2 replicator who clones server.js and changes the price literal to '$0.30' (or USDC_BASE_MAINNET to a non-6-decimal asset) and `npm start`s the server hits no runtime check. The unit-misparse class is exactly the one REQ-004b is designed to prevent in production, not in CI.",
+          "fix": "Add to createApp() top: `const expectedUnits = '3000'; const actual = resolveAcceptsAmount(ROUTES['POST /social/x'].accepts); if (actual !== expectedUnits) throw new Error('REQ-004b units misparse: expected '+expectedUnits+' got '+actual);`. Cheap, defense-in-depth, fires before app.listen()."
+        },
+        {
+          "location": "apps/x402-agents/src/server.js:120 + verification-architecture.md PROP-004",
+          "issue": "`mimeType: 'application/json'` is placed INSIDE `accepts` (a PaymentOption), but the SDK's `PaymentOption` interface does NOT include a mimeType field — see x402HTTPResourceServer.ts:126-133 (PaymentOption = { scheme, payTo, price, network, maxTimeoutSeconds?, extra? }). mimeType belongs on the parent RouteConfig (x402HTTPResourceServer.ts:148). The reference example also puts mimeType at the route level (self-facilitation/index.ts:60-62). The impl's mimeType is silently dropped by the SDK type contract — Bazaar discovery emits NO mimeType for the route. REQ-004's `shall be exactly` clause locks the impl to the wrong location (matching the spec literal), which means the spec and impl agree on a place the SDK will ignore.",
+          "fix": "Move `mimeType: 'application/json'` out of `accepts` and onto the RouteConfig: `'POST /social/x': { accepts: { scheme, price, ... }, description: '...', mimeType: 'application/json', extensions: {...} }`. Open a spec-revision change-note (REQ-004 literal mismatch with SDK)."
+        }
+      ]
+    },
+    "structural_integrity": {
+      "verdict": "FAIL",
+      "findings": [
+        {
+          "location": "apps/x402-agents/package.json:8 (scripts.start)",
+          "issue": "`\"start\": \"npx prisma generate && node src/server.js\"` is broken by REQ-017 — schema.prisma was deleted. Any Tier-2 child following standard `npm install && npm start` semantics gets `Error: Could not find a schema.prisma file` and the server never boots. REQ-011's replicability promise depends on the canonical run path; the test suite bypasses this by spawning node directly (PROP-011), masking the real-world break. This is precisely the kind of replicability falsehood the spec's HARD 0.31 anti-fake gate is designed to catch.",
+          "fix": "Change to `\"start\": \"node src/server.js\"` AND remove the `prisma:generate` script. Also remove `@prisma/client`, `prisma`, `openai`, `ethers`, `dotenv`, `zod`, `@coinbase/x402` from dependencies (REQ-007 + NFR-001) — the @prisma/client postinstall hook will fail on a fresh `npm install` because there is no schema, breaking even the install step for a replicator. The spec notes 'Removal from package.json may be a separate cleanup' but that cleanup is BLOCKING for REQ-011's first-boot-from-fresh-install path."
+        },
+        {
+          "location": "apps/x402-agents/src/server.js:13-19 vs canonical example",
+          "issue": "Imports of `x402Facilitator` and `x402ResourceServer` come from `@x402/core/facilitator` and `@x402/core/server` respectively. The canonical reference (self-facilitation/index.ts:1-2) imports both `paymentMiddleware` AND `x402ResourceServer` from `@x402/express` (which re-exports from @x402/core/server — see express/src/index.ts:465). Spec REQ-001(vi) names `@x402/core/server` as the source, so this matches the spec. BUT the deeper `@x402/core/facilitator` subpath is not stable as a public exports surface across @x402 versions — `@x402/core` package.json may not expose it as a named export. If the package locks to a version where the `/facilitator` subpath is internal, `npm install` succeeds but `import` throws ERR_PACKAGE_PATH_NOT_EXPORTED at runtime — a class of failure no test catches because vitest runs against the same installed package. Verify against the installed @x402/core's `exports` field; if it's not public, switch to `import { x402Facilitator } from '@x402/core'` (top-level barrel)."
+        },
+        {
+          "location": "apps/x402-agents/src/server.js:111-140 (ROUTES) + spec REQ-016",
+          "issue": "REQ-016/PROP-016 enforce SINGLE occurrence of `\"$0.003\"` and `\"eip155:8453\"` in source. The impl satisfies this via `PRICE_LITERAL` and `NETWORK_LITERAL` constants. But the test only counts the QUOTED literal — the SDK string `'eip155:8453'` is also passed to `.register(NETWORK_LITERAL, ...)` AND to `registerExactEvmScheme(..., { networks: NETWORK_LITERAL })`. If a later refactor inlines the constant in one place, the test catches it. OK. However the impl ALSO uses `NETWORK_LITERAL` for the `registerExactEvmScheme.networks` value — but `registerExactEvmScheme` signature in the SDK probably expects an ARRAY of networks for multi-network signers. Confirm against `@x402/evm/exact/facilitator` source; the canonical example passes `networks: 'eip155:84532'` as a string, so single-string is accepted — fine."
+        }
+      ]
+    },
+    "verification_readiness": {
+      "verdict": "FAIL",
+      "findings": [
+        {
+          "location": "verification-architecture.md PROP-014 + apps/x402-agents/src/__tests__/server-self-facilitate.test.js",
+          "issue": "PROP-014 is declared Tier-0 (required) in verification-architecture.md:51 but NO PROP-014 test exists in the executed suite (server-self-facilitate.test.js has zero `describe('PROP-014'...)` blocks; the GREEN log lists 31 tests but PROP-014 is not among them — see sprint-1-green-phase.log:20-50). REQ-014 cannot be considered verified. Combined with the structural finding above (the error handler never fires), there is BOTH no runtime path for the spec-mandated 502 body AND no test that would have caught the gap. This is a Phase 2 Red-phase regression that masquerades as Green.",
+          "fix": "Add a supertest-based integration test that constructs createApp() with a stubbed resourceServer whose `settle` rejects (or returns success:false) and asserts: (a) HTTP 502; (b) body = `{ error: 'settle_failed', reason: <truncated>, code: <code> }`; (c) stderr captured via spy contains `[x402.settle.error]`. Same shape for the verify-fail (402 + fresh PaymentRequirements) clause. Tag both tests with `[MOCKED]` per the anti-fake gate. Until this lands, Phase 2 Green is overstated."
+        },
+        {
+          "location": "apps/x402-agents/src/server.js:195-203 + spec REQ-001(iii)",
+          "issue": "End-to-end on Base mainnet: the impl wires `toFacilitatorEvmSigner` with `getCode/readContract/verifyTypedData/writeContract/sendTransaction/waitForTransactionReceipt` taken from a `walletClient` extended with `publicActions`. Spec §Done (c) requires a real on-chain settle on Base mainnet that record-earn INV-7 then rejects as self-payment. There is no integration test that exercises this settle path against either a forked Base mainnet node OR a live Base node — the only PROP that tests it (PROP-012) is explicitly OUT-OF-SCOPE. The §Done (c) gate is therefore unverifiable from the impl alone. The impl has not demonstrated that USDC.transferFrom(buyer, X402_WALLET_ADDRESS, 3000) actually broadcasts under a real signature, because no test forces facilitator.settle to traverse all six signer methods on a live RPC.",
+          "fix": "Add a Phase 4 acceptance gate (E2E) that: (i) spawns the server with the real EVM_PRIVATE_KEY + X402_WALLET_ADDRESS; (ii) crafts a buyer with a second test key prefunded with USDC AND ETH on Base mainnet (or, cheaper, runs against a Base mainnet fork via anvil's `--fork-url`); (iii) executes a paid POST /social/x; (iv) asserts a Transfer event with `to == X402_WALLET_ADDRESS` AND `from == buyer` on the USDC contract (`0x8335...2913`); (v) feeds the tx hash to record-earn.mjs and asserts INV-7 REJECTS. Without this the §Done (c)+(d) gate is theoretical."
+        },
+        {
+          "location": "apps/x402-agents/src/server.js:217 (probeGasReady at boot) + PROP-011 in tests",
+          "issue": "PROP-011 spawns `node src/server.js` with TEST_KEY = '0xaaaa...'; this triggers `probeGasReady` which calls `walletClient.getBalance({ address: <derived test addr> })` against Base mainnet's default RPC. The test does not intercept this network call — it ONLY waits for 'listening on port' within 2s. The test took 2005ms (sprint-1-green-phase.log:45) — right at the edge of the 2s window because of the real RPC round-trip. On slow CI this test will flake. Worse, it sends a probe-request to the public Base mainnet RPC from CI carrying an obviously-bogus test address, polluting the rate-limit budget for the real wallet. NFR-001 doesn't ban it, but REQ-010 explicitly says 'tests shall be deterministic and shall NOT require live network access'. PROP-011 currently does both.",
+          "fix": "Inject a fake transport into viem (`http('http://127.0.0.1:1')`) for the spawned child via an env override (e.g. read `process.env.X402_RPC_URL` in createApp), and pass `X402_RPC_URL=http://127.0.0.1:1` in PROP-011's spawn env. Probe will fail fast → `[x402.boot.gas_probe_error]` logged → test asserts stderr contains the boot tag, not a real-RPC round-trip. Boot timing returns to <500ms; determinism restored; REQ-010 satisfied."
+        }
+      ]
+    }
+  },
+  "overallVerdict": "FAIL",
+  "blockingFindings": [
+    "spec_fidelity-1: declareDiscoveryExtension is invoked with the wrong arg shape; Bazaar discovery payload has an empty inputSchema and a wrapper-object body — buyers cannot validate or auto-call POST /social/x. server.js:127-138.",
+    "spec_fidelity-2: REQ-014 settle-failure 502 body + [x402.settle.error] log NEVER fire — @x402/express handles its own errors and never reaches the user-supplied Express error handler. server.js:257-268.",
+    "edge_cases-2: CORS allowedHeaders 'X-Payment-*' is invalid syntax; browser-context buyers are blocked at preflight. server.js:226.",
+    "impl_correctness-1: ESM entrypoint detection by basename is fragile — any non-`node src/server.js` launcher silently disables the listener. server.js:276-277.",
+    "impl_correctness-4: REQ-004b has no runtime startup assertion, only a CI test — a Tier-2 replicator who edits the price literal hits a silent $0-buy class. server.js:184-217.",
+    "structural_integrity-1: package.json scripts.start runs prisma generate against a deleted schema → first-boot-from-fresh-install is broken; @prisma/client postinstall also fails on `npm install`. package.json:8.",
+    "verification_readiness-1: PROP-014 (Tier-0) has NO corresponding test in the suite — REQ-014 is structurally unenforced and unverified.",
+    "verification_readiness-3: PROP-011 makes a real Base mainnet RPC call and runs at the 2s timeout edge → REQ-010 determinism violated, test is flaky on slow CI."
+  ],
+  "notes": "Built against the LOCKED iter-3 spec + iter-2 verification architecture, read disk only. The 31/31 GREEN proof is real but the suite has known holes (no PROP-014 test, PROP-011 hits live RPC) and the impl has two structural breaks against the @x402 SDK contract (declareDiscoveryExtension arg shape + paymentMiddleware error handling). Tests pass because of decorative top-level fields on extensions and because PROP-014 was never written. All five dimensions FAIL with concrete file:line locations and SDK-source citations. Lean mode → recommend a single fix-and-re-review iteration covering: (1) declareDiscoveryExtension call shape; (2) settle-failure path via settlementFailedResponseBody; (3) CORS x-payment header; (4) ESM entrypoint check; (5) runtime REQ-004b assertion; (6) package.json start script + @prisma/client + @coinbase/x402 dep removal; (7) add the missing PROP-014 test; (8) inject X402_RPC_URL for PROP-011 determinism. After those, the spec ↔ impl ↔ SDK triangle closes and Phase 4 (E2E on Base mainnet for §Done c+d) becomes the next adversary gate.",
+  "findingsCount": 16
+}
