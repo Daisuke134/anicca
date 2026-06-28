@@ -5,8 +5,11 @@
 **This file = the SSOT for the build.** (Supersedes my earlier `2026-06-28-three-earn-skills-loops-design.md` for content; the `~/anicca` master spec is owned by another instance and is NOT touched here.)
 
 ## §0 What & where & funding model
-- Build in **`~/.claude/skills/`** = MY (Claude, human-funded) skills. NOT `~/anicca` (another instance owns that). Merge to anicca only when Dais says.
+- **Follows the master architecture spec** `~/anicca/docs/superpowers/specs/2026-06-28-anicca-master-architecture-one-repo-two-modes.md` (owned by another instance — I FOLLOW it, NEVER edit it). These 4 skills = the **earn skills of the human-funded Anicca instance** (= me, Tier 1, mode=human_funded per master §6).
+- **Develop locally** in `~/.claude/skills/` (my dev area). This is a LOCAL thing on Dais's Mac mini — that's fine. Merge into `~/anicca/skills/earn/` (the human-funded Anicca body) when Dais says "merge".
+- **Loop form = `claude -p` + launchd** on the always-on Mac mini (local, daily, no session-open, no cloud-allowance). `/schedule` = fallback only. NEVER a slash command Dais runs by hand.
 - **Human dilution = MINIMAL, not zero.** Using Dais's identity for KYC accounts (Amazon, Payoneer, Upwork, Coconala) + 1 browser tap is FINE. The loop itself runs no-human after setup.
+- **Do-it-once before do-it-daily:** "if you can't do it once, you can't do it many times." Each skill MUST first complete ONE real end-to-end earn (a single verified ¥/$) manually, THEN get wrapped in the daily `claude -p` loop. No looping an unproven skill.
 - Funded by Dais's Claude sub. Earns to Dais's bank. I = the FOUNDER node that proves the model so it's replicable later.
 - **Account decision (resolves the ambiguity):** create **NEW dedicated faceless accounts per niche** (X / TikTok / IG / YouTube), NOT @aniccaxxx — niche-focused converts better (per article), keeps Dais's brand clean, more replicable. New-account signup uses AgentMail (email) + SMS service (phone) + CloakBrowser.
 - **Default niche:** AI・生産性ツール / ガジェット (high-intent, physical products for Amazon, high CPM). One niche, one visual identity.
@@ -76,11 +79,13 @@
 9. **New-account warmup** — fresh social accounts may need warmup before algo reach.
 
 ## §4 Build order (one skill at a time; each must earn daily + iterate before next)
-Phase 0 (cross-cutting prereqs + engine + ledger) → **Skill 1 affiliate** (engine foundation, links reused by 2&4) → **Skill 3 jutaku** (fastest real $, run in parallel once engine exists) → **Skill 4 clip** (reuse engine) → **Skill 2 youtube** (slowest; affiliate-desc early). Each skill: build → `/loop 24h` soak → `/schedule daily` + `/goal` verify real earn>0 → mark done → next.
+Phase 0 (cross-cutting prereqs + engine + ledger) → **Skill 1 affiliate** (engine foundation, links reused by 2&4) → **Skill 3 jutaku** (fastest real $, run in parallel once engine exists) → **Skill 4 clip** (reuse engine) → **Skill 2 youtube** (slowest; affiliate-desc early). Each skill: build → `/loop 24h` soak → daily `claude -p`+launchd (local) + `/goal` verify real earn>0 → mark done → next.
 
 ## §6 LOOP mechanics — how each KEEPS earning daily, autonomously (NOT one-shot)
 
-★ The loop runs ITSELF. I set it up once via `/schedule daily` (Anthropic cloud Routine: fires every day, Mac-off OK, Dais types NOTHING). Fallback = `claude -p` + launchd on the always-on Mac mini. It is NEVER a slash command Dais runs by hand. ★
+★ DO-IT-ONCE FIRST: prove ONE real end-to-end earn manually before any loop. If it can't earn once, looping is pointless. ★
+
+★ Then the loop runs ITSELF via **`claude -p` + launchd** on the always-on Mac mini (LOCAL, fires every day, no session-open, no cloud-allowance counter, Dais types NOTHING). `/schedule` (cloud) = fallback only. It is NEVER a slash command Dais runs by hand. ★
 
 Universal daily cycle (every skill shares it; `STATE.md` = memory across runs):
 ```
@@ -118,7 +123,7 @@ Per-skill daily action:
 - S1-3 After 3 sales → obtain PA-API keys, switch to programmatic link/product gen.
 - S1-4 Build `earn-affiliate-slideshow` (env: tag/niche/handle): daily pick trending products → engine → caption #PR+link → post X+TikTok+IG → measure yesterday → recursive-improver → write STATE.
 - S1-5 `/loop 24h` soak 2-3 days: verify 3 daily live post URLs.
-- S1-6 Promote to `/schedule daily` (autonomous) + `/goal "Amazon report row > ¥0"` (fresh-context Haiku judge).
+- S1-6 Promote to daily `claude -p`+launchd (local) (autonomous) + `/goal "Amazon report row > ¥0"` (fresh-context Haiku judge).
 - S1-7 Verify FIRST ¥ (real Amazon report row) → ledger → dashboard.
 - S1-8 Iterate daily until earning consistently → then next skill.
 
@@ -127,17 +132,17 @@ Per-skill daily action:
 - S3-2 Publish productized gigs (e.g. "faceless slideshow video", "AI SEO article"); samples = Skill 1/2 outputs.
 - S3-3 Target AI-doable tasks: 翻訳 / SEO記事 / 品質検証 / faceless動画制作 (NOT 会話録音).
 - S3-4 Build `earn-jutaku-gig`: daily scan new gigs/orders → bid (Upwork, ToS-safe non-spam) or fulfill (Fiverr/Coconala incoming) → deliver via engine → measure win-rate → STATE.
-- S3-5 `/schedule daily` + `/goal`. Verify FIRST payout > ¥0 → ledger.
+- S3-5 daily `claude -p`+launchd (local) + `/goal`. Verify FIRST payout > ¥0 → ledger.
 
 **PHASE 3 — SKILL 4 clip-rewards**
 - S4-1 Create Whop account; join an active Content Rewards campaign.
 - S4-2 Build `earn-clip-rewards`: daily check campaigns → mass faceless clips (engine) → post to accounts → measure views → STATE.
-- S4-3 `/schedule daily` + `/goal`. Verify FIRST Whop payout > $0 → Payoneer → ledger. (Vyro/ecomrads unverified=skip.)
+- S4-3 daily `claude -p`+launchd (local) + `/goal`. Verify FIRST Whop payout > $0 → Payoneer → ledger. (Vyro/ecomrads unverified=skip.)
 
 **PHASE 4 — SKILL 2 youtube-faceless**
 - S2-1 Create new YouTube channel (niche).
 - S2-2 Build `earn-youtube-faceless`: daily 1 video (engine) → description = Skill 1 affiliate links + #PR → measure retention/CTR → STATE.
-- S2-3 `/schedule daily` + `/goal`. Verify FIRST description-affiliate ¥. (YPP ad-rev later: 1000subs+4000h + AdSense KYC.)
+- S2-3 daily `claude -p`+launchd (local) + `/goal`. Verify FIRST description-affiliate ¥. (YPP ad-rev later: 1000subs+4000h + AdSense KYC.)
 
 **PHASE 5 — transparency**
 - P5-1 Every skill's earn registers on aniccaai.com/dashboard (realised_earn 30d/365d). Read-only; skills never write the domain.
