@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-203",
+  "dimension": "verification_readiness",
+  "category": "spec_gap",
+  "severity": "major",
+  "description": "The builder added two new normative requirements in this iteration — R6 (content quality / anti-fake, spec lines 28-32) and R7 (rate-limit honesty, spec lines 33-34) — but did NOT add corresponding rows to the 'Verification architecture (no-mock)' table (spec lines 36-43), which still enumerates only R1-R5. Per the spec's own done-definition (line 11: 'R1-R5 verified by fresh evidence' — also not updated to R1-R7) and the verification-architecture discipline, every requirement must have a declared check + pass condition. R6 and R7 are the precise anti-fake guarantees this product's paid nature depends on, yet they have no documented verification method, no pass criterion, and (see FIND-204) no executing test. The verification architecture is incomplete relative to the requirements it is supposed to cover.",
+  "evidence": {
+    "filePath": ".vcsdd/features/x402-research-product/specs/spec.md",
+    "lineRange": "11,36-43",
+    "snippet": "`done =` R1–R5 verified by fresh evidence ...\n## Verification architecture (no-mock)\n| Req | Check | Pass |\n... (only R1, R2, R3, R4, R5 rows; no R6/R7)"
+  },
+  "routeToPhase": "2b"
+}
