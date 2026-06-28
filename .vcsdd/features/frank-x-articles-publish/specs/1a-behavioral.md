@@ -97,7 +97,7 @@ the API to guarantee parity with the live note article.
 
 Per skill "Verification gate (apply to every publish)":
 
-1. `Read` every `screenshots/0{1..8}-*.png` saved by the publisher script.
+1. `Read` every `screenshots/{01,01b,02,03,04,05,06,08}-*.png` saved by the publisher script (no 07 — publisher script intentionally skips that index).
 2. Open the draft URL in the daily-driver via CDP, take ONE more full-page
    screenshot.
 3. `Read` THAT screenshot.
