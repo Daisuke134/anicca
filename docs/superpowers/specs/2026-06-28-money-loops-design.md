@@ -181,3 +181,20 @@ render+caption(maker) → GATE2 determ + vision(checker) ──FAIL──► 再
 post → POST_ID 取得(no-mock E2E) → 記録(ledger)
 ```
 ★ maker ≠ checker、binary PASS/FAIL、loop til pass、最後に実投稿E2E ★ = VCSDD の 4-D 収束を投稿パイプラインに適用。
+
+---
+# LIP-SYNC 決定 (2026-06-28) — ローカル無料 Easy-Wav2Lip（base動画使い回し）
+
+問題: render-free の static+KenBurns は口パクしない。HeyGen代替の「喋る僧侶」が要る。
+fal Sonic は SOTA だが ① fal残高$0(枯渇) ② ~$2-3/本=3本/日$180/月 で却下(earn>spend違反)。
+
+## 決定: Easy-Wav2Lip v8.3 (anothermartz) ローカル・$0
+- ★唯一 Apple Silicon MPS ネイティブ対応★ + GFPGAN顔復元同梱(投稿可品質)。
+- 設計(Dais案): **base 僧侶動画(renders_v3 A13等, 既存HeyGen製talking-head)を1本使い回し → 新音声(edge-tts/VOICEVOX)で口だけ再同期**。顔box 1回キャッシュ→毎回は音声→口パスのみ=高速化。
+- diffusion SOTA(MuseTalk/LatentSync/Sonic)は全部CUDA専用→M4不可。Wav2Lip+GFPGANが唯一のローカル解。
+- 品質: 投稿OK。有料Sonic/Hedraより口元僅かに甘い(96×96復元)が faceless中景で許容。速度~10-30分/本(cron なので可、要実測)。
+- alt: wav2lip-onnx-HQ(CPU/ONNX, 遮蔽マスク良)。
+- install: ~/.cache/anicca-clones/Easy-Wav2Lip、venv、pip install -r requirements.txt(ITS版, torch MPS)、install.py(weights DL)、config.ini headless設定。dlib要cmake、librosa/numba注意、PYTORCH_ENABLE_MPS_FALLBACK=1。
+
+## render-free 改修
+render-free.sh の ②静止画+KenBurns を「base動画 + Easy-Wav2Lip 再同期」に差替(lip-sync版)。voice/script は毎回変わる、僧侶は使い回し。$0維持。
