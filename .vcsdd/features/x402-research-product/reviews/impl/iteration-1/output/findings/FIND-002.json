@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "implementation_correctness",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "The product is specified and sold as a 'universal web-research product' (spec line 6) that returns research for 'a buyer's query' on 'ANY fresh install', honoring the operating principle 'build for ALL human-funded AI.' The implementation uses HN Algolia with tags=story, which only indexes Hacker News submissions. This is a tech/startup-news corpus, NOT the open web. Any non-tech query (e.g. 'best sourdough recipe', 'symptoms of vitamin D deficiency', 'tax filing deadline France') will return 0 hits, hitting line 31 'no search results' and exiting 1. The product therefore fails R1's '>=1 real external result URL' for the large majority of general queries and is not universal. The code comment on line 9 ('tech-relevant — the x402 buyer audience') silently narrows scope away from the spec without amending it.",
+  "evidence": {
+    "filePath": "skills/earn/x402-sell/research-product.mjs",
+    "lineRange": "9-31",
+    "snippet": "// Free, reliable, no-key, non-bot-blocked search (tech-relevant — the x402 buyer audience).\n...\n  if (hits.length === 0) throw new Error('no search results');"
+  },
+  "routeToPhase": "2b"
+}

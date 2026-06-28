@@ -11,16 +11,27 @@ stub. Becomes `X402_PRODUCT_CMD` for the founder x402 seller.
 `done =` R1–R5 verified by fresh evidence (real network run, no mock) AND fresh-context adversary PASS.
 
 ## Requirements (EARS)
-- **R1** WHEN invoked with a non-empty query arg, the script SHALL search DuckDuckGo HTML (free, no key)
-  and extract ≥1 real external result URL.
+- **R1** WHEN invoked with a non-empty query arg, the script SHALL search free, no-key, non-bot-blocked
+  backends — **Wikipedia opensearch (general knowledge, any topic) + HN Algolia (tech/current)**, merged
+  and deduped — and extract ≥1 real external result URL. (DuckDuckGo/Bing/Google HTML are NOT used: they
+  bot-block keyless access — verified 2026-06-28. This R1 is the corrected backend per adversary FIND-001.)
+  The two sources together make it UNIVERSAL (general + tech), not tech-only (adversary FIND-002).
 - **R2** WHEN it has result URLs, the script SHALL fetch the top ≤3 via Jina Reader (`https://r.jina.ai/<url>`,
   free, no key) and return their cleaned content.
 - **R3** The script SHALL print to stdout a single JSON object `{query, sources:[...], digest:"..."}` with
   a NON-EMPTY digest, and exit 0 on success.
 - **R4** WHEN the query is empty/missing, the script SHALL exit non-zero (usage error) and write nothing
   fake to stdout.
-- **R5 (invariant)** The script SHALL NOT reference or require any paid/keyed service env
-  (TWITTERAPI_KEY, FIRECRAWL_API_KEY, OPENAI_API_KEY, CDP_*, any Dais cred). $0 + zero-config only.
+- **R5 (invariant)** The script SHALL NOT reference or require any paid/keyed/secret service env
+  (TWITTERAPI_KEY, FIRECRAWL_API_KEY, OPENAI_API_KEY, ANTHROPIC_API_KEY, BRAVE_API_KEY, CDP_*,
+  *_PRIVATE_KEY, GOOGLE_LOGIN_*, any Dais cred). $0 + zero-config only.
+- **R6 (content quality, anti-fake)** WHEN Jina Reader returns a body, the script SHALL accept it ONLY
+  if it is real content (≥300 chars AND not matching an error/placeholder pattern: rate-limit/429/
+  auth-required/"could not be reached"). A placeholder/error body SHALL be treated as a failed source
+  (skip + try next), never returned as a paid digest. If ALL sources fail/placeholder → exit non-zero
+  (no fake success). (adversary FIND-003.)
+- **R7 (rate-limit honesty)** WHEN Jina Reader returns 429, the script SHALL back off + retry (≤3) and,
+  if still rate-limited for all sources, exit non-zero — never a partial/fake digest. (adversary FIND-006.)
 
 ## Verification architecture (no-mock)
 | Req | Check | Pass |
