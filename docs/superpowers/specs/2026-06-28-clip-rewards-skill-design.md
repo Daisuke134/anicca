@@ -32,24 +32,34 @@ AI が自分で動画を切り抜いて per-view 報酬を受け取る。 受取
 - TikTok CRP 原本要件: [TikTok FAQ 7581821550694013452](https://www.tiktok.com/support/faq_detail?id=7581821550694013452)
 - YouTube Shorts 二次利用不可: [Google Support 12504220](https://support.google.com/youtube/answer/12504220)
 
-## §2 Dual-payout architecture (= the big idea)
+## §2 TRIPLE-payout architecture (= revised 2026-06-28, Dais: "USDC acceptance is rare but off-ramping is easy")
+
+★ 重要 insight (Dais 2026-06-28 verbatim) ★: 「USDC を merchant が直接受け取る場所は rare、 しかし USDC を受け取って自分で off-ramp するのは超簡単」。 → **Stripe Connect → JP bank (Mode 2)** よりも **USDC → Dais wallet → Dais 自己 off-ramp (Mode 1B)** の方が same goal を fewer hops で達成。 Mode 2 は legacy / non-crypto buyer fallback。
 
 ```
-                     ┌──── ClipAffiliates ─USDC─► Anicca wallet 0x810f (Base)
-                     │                           ★ Mode 1: AI-native, zero human ★
-                     │                           = "every Claude が自分で稼ぐ"
-1 pipeline + clips ──┤
-                     │                                          
-                     ├──── Whop ──Stripe Connect──► Dais JP bank
-                     │                              ★ Mode 2: human-funded ★
-                     │
-                     └──── Vyro ──PayPal/銀行/USDC──► どちらにも振れる safety net
+                 ┌── ClipAffiliates ─USDC─► 0x810f (Anicca wallet, Base)
+                 │                          ★ Mode 1A: AI 自身の財布 ★
+                 │                          = "every Claude が自分で稼ぐ"
+                 │                          ★ PRIORITY = holy grail ★
+                 │                          surplus = sub cost を超えたら scale lever
+1 pipeline ─────┤
+                 ├── ClipAffiliates ─USDC─► Dais wallet (TBD address)
+                 │                          ★ Mode 1B: 余剰を Dais へ ★
+                 │                          Dais 自己 off-ramp → JPY
+                 │                          USDC merchant 受取 rare 問題を回避
+                 │
+                 ├── Whop ─Stripe Connect─► Dais JP bank (legacy)
+                 │                          Mode 2: 銀行直、 KYC 凍結リスクあり
+                 │                          non-crypto buyer 用 fallback
+                 │
+                 └── Vyro ─PayPal/USDC/銀行─► どちらにも振れる safety net
 ```
 
-- **同じ投稿** が 2 経路で稼ぐ。 1 clip = 同時に ClipAffiliates 案件 + Whop 案件 + Vyro 案件 (規約が許す範囲で)。
-- **Mode 1 を主軸に**: 銀行 KYC が要らない = Anicca instance を colony で増やす時、 各 instance が自分の wallet で稼げる (= Type 2 colony 設計と一致、 memory `feedback_anicca_type1_type2_mutual_aid`)。
-- **Mode 2 は同時運用**: 既に Dais の身分証で KYC が通せる = sunk cost。 並走すれば収益経路が 2 倍。
-- **ledger は両方を 1 ファイルで集計**: `~/.smtm/earn-loops/clip/earn-ledger.jsonl`、 行に `payout_mode: "usdc_self" | "jpy_bank"` を持つ。
+- **同じ投稿** が 3 経路で稼ぐ。 1 clip = 同時に ClipAffiliates 案件 + Whop 案件 + Vyro 案件 (規約が許す範囲で)。
+- ★ Mode 1A 最優先 ★: 銀行 KYC ゼロ + colony spawn 時各 instance が自分の wallet で稼げる (= Type 2 設計、 memory `feedback_anicca_type1_type2_mutual_aid`)。
+- ★ Mode 1B 第二優先 ★: Anicca wallet > Anthropic sub cost を超えた瞬間、 自動で surplus を Dais wallet (TBD) に転送。 USDC merchant 受取 rare 問題を回避、 off-ramp は Dais 側で完結。
+- Mode 2 は Mode 1B が動かないケースの fallback のみ。
+- **ledger schema**: `payout_mode: "usdc_anicca_self" | "usdc_dais" | "jpy_bank_stripe"`。 同 ledger 1 ファイルで集計。
 
 ## §3 Pipeline — long-form → 15-30 short clips (CONFIRMED 2026-06-28)
 
