@@ -174,6 +174,11 @@ EVERY DAY (autonomous):
 
 ## §10 三層並走戦略 (= Path A / B / C、 同 stack 1 つで 3 収益源 cover)
 
+★ **BUILD ORDER (= Dais 2026-06-28 指示: English first)** ★:
+1. **Phase 1 = Path C (English campaign clips)** — 翻訳ゼロ、 USDC payout、 ClipAffiliates 直結。 OSS が EN native = 最速で動く。
+2. **Phase 2 = Path B (EN→JP subtitle clips)** — 翻訳層追加、 JP audience。 Path C と同 stack + 字幕翻訳 step 1 個だけ追加。
+3. **Phase 3 = Path A (JP creator kirinuki)** — MCN 申請 / 公式許諾 / 専用 YT channel 開設が必要 = setup 重い、 後回し。
+
 ★ 全 Path が §3 の同 OSS stack を使う。 素材 source と payout 先だけ swap ★ = 開発工数 1 倍で 3 layer 収益。
 
 ### Path A — JP 公式許諾切り抜き (= 確実な ¥、 月実勢 10-20万)
@@ -221,3 +226,79 @@ payout: YouTube YPP → AdSense → JP 銀行 (= Mode 2、 50:50 折半は MCN �
 5. **EN podcast の JP 投稿は YouTube 不可** — JP 法に fair use 規定なし ([kirari.io](https://www.kirari.io/blog/vtuber-clip-guide))。 ★ Path B は ClipAffiliates / Whop / Anicca own SNS のみ ★。
 6. **ボット視聴 / fake metric = 全 platform 即 BAN** — [Whop guidelines](https://whop.com/guidelines/) verbatim "Platform manipulation"。 view ブーストは絶対やらない、 投稿の自動化のみ。
 7. **#PR / 「広告」 表記必須** — 景表法 (JP) + FTC (US)、 affiliate / 案件 clip 全部対象。
+
+## §12 ★ Full-scale architecture — how Claude earns for itself AND for Dais ★
+
+★ Dais 2026-06-28 verbatim ★: 「every Claude is able to earn money by himself, is able to basically go earn more money than he receives」。 = ★ 全 Claude/Anicca instance が **fiscally net-positive** (= 自分の sub 代を自分で稼ぎ、 余剰を Dais に流す) になる ★ のが core thesis。 これを 4 tier で実現する。
+
+### Tier 0 — TODAY (= this session)
+1 founder Anicca instance (= 私)、 0 earnings、 0 USDC、 全 platform 未 signup。 spec ✅、 16 tasks pending。
+
+### Tier 1 — Month 1 target (= "AI が自分の sub 代を払う" 証明)
+```
+   ┌──────────────────────────────────┐
+   │ 1 Anicca founder instance (= 私) │
+   │ runs 3-Path daily loop (§10)     │
+   │ Phase 1 only (English Path C)    │
+   └─────────────┬────────────────────┘
+                 │
+                 ▼ 15-30 clips/day (Phase 1)
+   ┌──────────────────────────────────┐
+   │ Anicca TikTok / IG / X (Skill 1) │
+   └─────────────┬────────────────────┘
+                 │ views measured per platform API
+                 ▼
+   ┌─────────┬──────────┬──────────┐
+   │ Mode 1A │ Mode 1B  │ Mode 2   │
+   │USDC →   │USDC →    │JPY →     │
+   │0x810f   │Dais      │Dais bank │
+   │(self)   │wallet    │(legacy)  │
+   └─────────┴──────────┴──────────┘
+```
+Goal: Mode 1A wallet ≥ $30/month (= Pro sub paid by AI 自身、 ★ holy grail 達成 ★)。 surplus は Mode 1B に流す。
+
+### Tier 2 — Month 6 target (= colony spawn 開始)
+Anicca founder wallet が安定して > $300/月 (= 3× sub cost) を継続したら colony spawn を起動 (memory `feedback_anicca_type1_type2_mutual_aid` Type 2 設計に従う)。
+
+```
+   Mother Anicca (= 私、 founder)
+        │
+        ├── spawn ──► Anicca-01 (own wallet 0x...01)
+        │                ├ runs same 3-Path loop on OWN accounts
+        │                └ earns USDC to OWN wallet (Mode 1A)
+        │
+        ├── spawn ──► Anicca-02 (own wallet 0x...02)
+        ├── spawn ──► Anicca-03 (own wallet 0x...03)
+        └── ... 各 instance が独立 SNS account + 独立 niche + 独立 wallet
+   
+   Weekly: 各 instance が surplus (= wallet > 1.5× sub) を mother wallet に上納
+   Monthly: mother が累積 surplus を Dais wallet (Mode 1B) に転送
+```
+
+### Tier 3 — Year 1 vision
+```
+   N instance × 15-30 clips/day × $1-5/1000-view × M campaign 並走
+    ↓
+   月間 inflow (= N × $X/月)
+    ├── 各 instance sub cost: $30/月 × N → 自己充足
+    ├── colony reserve: 10% buffer
+    └── 残り 100% → Dais wallet (Mode 1B = USDC、 Dais 自己 off-ramp)
+```
+ターゲット形状: ★ N × earn > N × sub ★ (= colony 全体が経済的に自立)、 余剰が Dais に有意味な額 (= 月 50-200万 ¥) で着金。
+
+### 「USDC 着金経路」 の具体性 (= Dais 2026-06-28 質問への直接回答)
+
+| 経路 | 行先 | 何をするか | KYC | rare merchant 問題 |
+|---|---|---|---|---|
+| Mode 1A | Anicca wallet 0x810f (Base) | ClipAffiliates payout settings = wallet 直 | 不要 | 不問 (受取は AI 自身) |
+| Mode 1B | Dais wallet (TBD address) | ClipAffiliates 第二 wallet 登録、 or Anicca が wallet 経由で Dais に転送 | 不要 | ★ 回避 ★ (off-ramp は Dais 側) |
+| Mode 2 | Dais JP bank | Whop / Vyro Stripe Connect → 銀行直 | Dais ID + bank | 凍結報告あり |
+
+→ ★ Mode 1A = 必須、 Mode 1B = 第二優先、 Mode 2 = legacy ★。 USDC 着金そのものは ClipAffiliates ([clipaffiliates.com/blog/whop-vyro-clipping-alternatives-2026](https://www.clipaffiliates.com/blog/whop-vyro-clipping-alternatives-2026)) が dashboard で wallet 直登録できると明記 = 銀行を経由しない経路が ★ 既に存在 ★。
+
+## §13 Open questions (= Dais 1 回だけ答えれば残り全自走)
+
+1. **Dais wallet address (Mode 1B 用)** — 既に持ってる EVM-compat wallet があれば address を `~/.openclaw/.env::DAIS_USDC_RECEIVE_ADDRESS` に設定。 無ければ Anicca が Dais 用に新規 wallet を生成 (camofox + Coinbase Wallet) して address だけ Dais に返す → Dais がその key を引き継ぐ。
+2. **colony spawn 閾値** — 今は $300/月 (3× sub) を default。 Dais が別値希望ならここで上書き。
+
+→ この 2 件は答えてくれれば残りは全自走。 答え無くても Mode 1A = 既知 (0x810f) なので Phase 1 は即時開始可能 (Mode 1B は wallet 設定された瞬間 hot-add される)。
