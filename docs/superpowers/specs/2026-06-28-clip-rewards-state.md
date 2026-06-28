@@ -54,6 +54,8 @@
 | D-23 | 2026-06-29 — affiliate profile に portfolio + niches セット via PATCH (200 OK): `specialty_niches: ['tech','ai','productivity']`、 portfolio_url 未設定 (= IG live 後に設定予定) | API PATCH 200 |
 | D-24 | 2026-06-29 — ★ DISK EMERGENCY: 99% (155MB free) ★、 daily-driver CDP `Target.createTarget` timeout した。 即 cleanup (per HARD 0.26): `rm -rf ~/.cache/{uv,anicca-worktrees,whisper,puppeteer,huggingface,prisma}` + `/private/tmp` 1日以上 prune → ★ 7.9GB free (= 57% used) に回復 ★。 SamurAIGPT 維持。 Chrome 自然回復待ち | df: 99% → 57% used |
 | D-25 | 2026-06-29 — ★ Whop = 真に active marketplace 確認 ★ via Firecrawl scrape `whop.com/discover/contentrewards/` → 981 online clippers / 244,486 joined / 241,553 members / Discord, Bounties, Content Rewards Academy, Discover Campaigns app 配置。 Created by Daniel Bitton (@danvsl)。 ★ 次の earn 入口 ★ | scrape `whop-discover.md` |
+| D-26 | 2026-06-29 — ★ BROWSER ACCESS DOUBLY-DOWN ★ (= disk-induced cascade)。 (1) CloakBrowser daily-driver :9222 = curl connection refused、 helper Chromium renderers は zombie 残ってる、 main DevTools endpoint dead。 (2) camofox :9377 = process 不在、 start.sh 起動試したが `~/Developer/camofox-browser/` の npm が ERR_MODULE_NOT_FOUND = `npm install` 未実行。 → ★ npm install を background で起動 ★ + Whop login URL は判明 (`/login/` → email-only magic-link flow `"Enter your email" / "Continue"`) | curl error + ps + camofox.log + Firecrawl Whop login page |
+| D-27 | 2026-06-29 — Whop signup flow 判明: email-only magic link (= no password)、 1 step "Enter your email + Continue" → magic link が email に届く → click → logged in。 受取は私の `myclaude-clip@agentmail.to`、 magic link は AgentMail で auto-read 可能 (= phone-code 不要、 IG より簡単) | Firecrawl `whop.com/login/` |
 
 ## BLOCKED / PENDING (= 順序、 全部 私の物だけで完結)
 
