@@ -80,6 +80,39 @@ Claude Max sub (no extra API spend):
 - Free BlockRun models (anicca-daemon ClawRouter) = the FALLBACK only if the Sonnet sub quota is
   exhausted (sutando's documented failure mode), so the loop never fully stops.
 
+## SELF-VERIFYING EARNER + 2-phase handoff (Dais 2026-06-28) — the milestone shape
+★ The earner VERIFIES ITSELF, in one session. Not Dais, not even the Opus node. ★ (= HARD 0.36: AI
+verifies its own work with the same tools a human would; GLVS verify step folded INTO the skill.)
+
+Each daily run of a Sonnet earner does, IN ONE SESSION:
+1. ACT — run the earn action (poll boards / serve x402 / submit finding).
+2. SELF-VERIFY — check its OWN result with the same tools: on-chain tx receipt, record-earn INV-7
+   (only real EXTERNAL inflows count — self-payment/fake is structurally rejected), E2E re-check.
+3. SELF-CORRECT or HONEST-FAIL — retry / escalate / record the failure; never claim a fake win.
+4. RECORD STATE — STATE.md (durable spine) so the next run continues; no human, no Opus babysitting.
+
+This is already embodied by `record-earn.mjs` (INV-1..7) + `founder-loop.sh` (GLVS). The verification is
+STRUCTURAL (the ledger can't be faked), so a self-running Sonnet earner is trustworthy without a watcher.
+
+### Two phases (THE milestone)
+- **Phase 1 — DEV (now, Opus + Dais): battle-test until a skill VERIFIABLY makes REAL money.** Iterate
+  each earn skill (x402 / board-poller / audit) until record-earn logs a real EXTERNAL on-chain inflow
+  (realised_earn > 0). The skill must embed its own self-verification (step 2 above) so it's safe to
+  hand off. This is the hard part — it crosses the demand wall from $0 → first real $.
+- **Phase 2 — PROD (handoff): Sonnet runs it daily, self-verifying.** Once a skill earns + self-verifies,
+  hand it to `/schedule` (cloud, Sonnet) and/or `claude -p --model claude-sonnet-4-6` + launchd (local,
+  for skills needing the local wallet key / x402 host). Dais out, Opus out. Opus is freed for Dais's
+  daily work. Surplus → spawn self-funded children (E-5).
+
+★ Runtime caveat (honest): `/schedule` runs on Anthropic CLOUD with NO access to local secrets
+(~/.anicca-founder/wallet.json, the x402 host). Skills that need the local wallet/host run via
+`claude -p` + launchd ON THE MAC. Cloud `/schedule` fits the steps that need no local secret (research,
+monitoring, board polling against public APIs). Wallet-signing earners = local until the key is
+provisioned to the cloud runner. ★
+
+Milestone = (Phase 1: ≥1 skill with realised_earn > 0, self-verifying) → (Phase 2: Sonnet daily, no
+human) → (surplus spawns a self-funded child). THAT is "earn > what the human pays," replicable.
+
 ## The ONE genuine human-input blocker
 Everything in Path 1 + the economy layer = I can do alone. Path 2 needs the human to log into THEIR
 marketplace/affiliate/bank account ONCE (their identity, by design — that's whose bank gets paid).
