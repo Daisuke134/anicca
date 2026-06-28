@@ -42,6 +42,13 @@ Dais verbatim: "You cannot post to my existing one, so go create one… make a n
 - **Quality bar:** the slideshow/content QUALITY "defines everything" — Dais reviews the slideshow before any posting.
 - **Worktree:** not required here — other agents each took their own worktree, so the main tree (feature/frank-run) is free for this work.
 
+### ★ SLIDESHOW = the product (NOT a video) + CTA book fix (Dais 2026-06-28) ★
+- ★ The deliverable is a PHOTO SLIDESHOW (carousel), NOT a video. ★ Article-confirmed (Statusbrew: TikTok carousel gets MORE reach than video; Digiday: TikTok pushing photos). Post the 6 images as **TikTok photo-mode (slideshow)** + **Instagram carousel** (swipeable). The mp4 = NOT needed (I over-engineered a video — stopped/deleted it).
+- **The 6 slides = `composed_1..6.png`** (1080x1920, in scratchpad/affiliate-deck). HOW MADE: backgrounds via `chatgpt-imagegen` ($0, ChatGPT sub) → JP text overlay + book-cover composite via **Python PIL** (`~/.claude/skills/earn-affiliate-slideshow/scripts/compose_slides.py`, `compose_cta_book.py`). ★ NOT Remotion / NOT hyperframes ★ — not needed for an image carousel.
+- **CTA (last slide) FIX:** old CTA had an EMPTY label box → replaced with the **REAL product image** (book cover「生成AIで爆速！ChatGPT仕事術」日経文庫, downloaded from Amazon m.media-amazon.com) + "リンクはプロフィールに" + #PR. Affiliate rule = show the actual product.
+- Emailed to keiodaisuke@gmail.com via `gog gmail send --attach` (Resend had NO verified domain → unusable). Dais approved quality (text/visuals good); only the empty-box CTA needed the book fix.
+- **NEXT:** profile completion (#12 icon+bio on @aishigoto.labo) → warmup 7d (#13) → THEN post the slideshow (#6). ★ No day-0 post. ★
+
 **This file = the SSOT for the build.** (Supersedes my earlier `2026-06-28-three-earn-skills-loops-design.md` for content; the `~/anicca` master spec is owned by another instance and is NOT touched here.)
 
 ## §0 What & where & funding model
