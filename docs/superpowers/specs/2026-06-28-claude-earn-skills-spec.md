@@ -49,6 +49,13 @@ Dais verbatim: "You cannot post to my existing one, so go create one… make a n
 - Emailed to keiodaisuke@gmail.com via `gog gmail send --attach` (Resend had NO verified domain → unusable). Dais approved quality (text/visuals good); only the empty-box CTA needed the book fix.
 - **NEXT:** profile completion (#12 icon+bio on @aishigoto.labo) → warmup 7d (#13) → THEN post the slideshow (#6). ★ No day-0 post. ★
 
+### ★ WARMER built + Day-1 run (2026-06-28) — research-backed, browser-driven ★
+**Skill:** `~/.agents/skills/ig-account-warmer/` (symlinked into ~/.claude/skills + ~/.openclaw/skills). `scripts/warm.py <handle>` drives the daily-driver (residential IP, real session) via cdp.py.
+**Research (cited):** shadowphone.io = first 72h critical (80%+ ban if aggressive); 360uniquizer = min 7d neutral, NO offer link day-0; elfsight = IG limits ~200 follow/20-per-hr → we run FAR below. Patterns: Appilot Instagram-warmup-bot (scroll/story/like/profile+caps+jitter) + azizullah12 n8n (age-based caps, ban-risk stop). Reuse, not reinvent. (instagrapi/aiograpi = private-API ref, but browser-driven is SAFER for a fresh acct.)
+**Age-based caps** (day1 PURE passive scroll6/story3/0like/0follow → day7 like22/follow10, all far below limits). Idempotent 1 session/day; stops on ban-signal (操作がブロック/challenge/本人確認).
+**Done:** @aishigoto.labo Day-1 ran (6 scrolls, 3 stories, NO ban) ✅. State `~/.cloak/ig-warmup-aishigoto.labo.json`. Days 2-7 via loop (#7) → then POSTER + affiliate-link-in-bio.
+**Amazon tax:** 税情報 interview COMPLETE 2026-06-28 (状態=コンプリート, 源泉0%) → payout unblocked ✅.
+
 **This file = the SSOT for the build.** (Supersedes my earlier `2026-06-28-three-earn-skills-loops-design.md` for content; the `~/anicca` master spec is owned by another instance and is NOT touched here.)
 
 ## §0 What & where & funding model
