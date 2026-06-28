@@ -119,3 +119,31 @@ Veo fast/lite + image-to-video でコスト$1-80/本 → $50-1,500で販売(広�
 
 ## ONGOING
 - disk hygiene(>10GB維持)。
+
+---
+# CRITERIA 確定版 (2026-06-28) — anicca-monk-earn = end-to-end self-funding skill
+
+目的: ★ 各 Anicca(Claude) が「自分を動かすコスト」より多く稼ぐ = self-funding ★。human-funded AI → 黒字 → その黒字が次の self-funded AI を生む(colony)。
+
+## 全ノブ確定
+| ノブ | 確定値 | 理由 |
+|---|---|---|
+| **台本** | ★毎回 DeepSeek でフレッシュ生成★ (bank rotation 廃止) | 「scripts is everything」。毎回 構造/hook を変える = YouTube/TikTok の inauthentic/テンプレ濫造 demonetize 回避 (HARD: 0.16 ROTATION廃止と整合)。Agent-Reach でトレンド注入可 |
+| **音声 EN** | 既定 edge-tts(無料) / 任意 ElevenLabs(高品質, ~$0.1/本) | $0でearn>spend保証。retentionが要るなら ElevenLabs 昇格(売上が賄う) |
+| **音声 JP** | VOICEVOX 青山龍星(無料) | 既配線・完全無料 |
+| **映像** | photoreal 僧侶 still + Ken Burns (将来 fresh生成で多様化) | $0・faceless |
+| **字幕** | whisper(base)→ASS TikTok風 焼込 | $0・retention必須 |
+| **尺** | ≥60秒 | TikTok Creator Rewards 対象 |
+| **投稿** | 3回/日 (07/12/19), MEDIA_UPLOAD方式 | reach最大・upload-flooding回避の上限 |
+| **配信先** | TikTok + IG Reels (EN: anicca_en/monk_anicca, JP別) | 既存アカウント流用 |
+| **集金** | caption/bio に ebook link ($7-27) + comment→DM | 製品販売=純利益(動画$0) |
+| **記録** | views/sales → dashboard.json | 翌runが別角度を選ぶ |
+
+## 新スクリプト(要ビルド)
+- `gen-script.sh` = DeepSeek でフレッシュ台本生成(best-practice prompt, 毎回別hook/構造)。pick-next-script.sh(bank rotation) を置換。
+- `gen-caption.sh` = DeepSeek で description + hook + ebook link 生成(再建要、gutされてた)。
+
+## self-funding 数式
+1本コスト ≒ $0 (edge-tts/VOICEVOX + still + whisper + ffmpeg、全ローカル無料) + DeepSeek 数円。
+3本/日 × 30日 = 90本/月 ≒ $0。ebook 1冊販売($5-25純益)で黒字。再生報酬は後乗せ。
+→ ★ skill の稼働コスト < 売上 = self-funding 成立。余剰が次instanceの燃料 ★。
