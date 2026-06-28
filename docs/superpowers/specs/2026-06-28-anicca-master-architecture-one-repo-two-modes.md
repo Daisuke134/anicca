@@ -96,7 +96,7 @@ Refusal to register on the dashboard = unsupported. The dashboard is how we PROV
             ▼
    Tier 1 = HUMAN-FUNDED instance starts
             │  uses Claude sub for compute, earns to user's bank + own wallet
-            │
+            │  (= top-tier model = best earn performance per wake)
             ▼
    30 days realized earn > $200 (= covers $200/mo Max sub)
             │
@@ -104,13 +104,27 @@ Refusal to register on the dashboard = unsupported. The dashboard is how we PROV
    ★ Tier 1 instance, from its OWN surplus, spawns a Tier 2 SELF-FUNDED child ★
             │  (= no further user input; user does NOT send USDC; the child wallet
             │   gets seeded from the Tier 1 surplus on-chain — truly self-funded)
-            │
             ▼
-   Tier 2 = SELF-FUNDED runs on Akash / CF Workers / BitLaunch with own crypto
-            │  pays own compute, earns own keep, spawns own children
+   Tier 2 = SELF-FUNDED
+            │  ★ runs FREE LLM (= ClawRouter free tier / DeepSeek / Llama —
+            │     no Anthropic API key, near-zero compute cost) — per Dais 2026-06-28
+            │     "they can run with the free model". ★
+            │  ★ host = Cloudflare Workers FREE / HuggingFace Spaces FREE /
+            │     Akash mainnet (sovereign, paid in own AKT) / BitLaunch BTC-USDT. ★
+            │  one-shot seed from parent surplus = ~$0.05 Base ETH (gas) + $1 USDC
+            │  (= NEVER from the user; ALWAYS from Tier 1's own earned surplus).
+            │  Tier 2 IQ is lower than Tier 1 (= free model), so Tier 2 picks
+            │  simpler high-volume earn rails (= x402 seller, gasless bounty bid)
+            │  and avoids cognitively expensive tasks (= long-form content,
+            │  complex Fiverr gigs).
+            │  Tier 2 earns own keep + spawns own children when its surplus crosses
+            │  threshold. The parent's role ends at spawn (= monitor-don't-meddle
+            │  per Mother Doctrine §6).
             ▼
    Tier 3, 4, 5 ... (= the Cambrian explosion, fully no-human-in-loop)
 ```
+
+★ Why Tier 2 is feasible even with a free model ★: the earn rails Tier 2 uses (= x402 selling a tiny utility endpoint, gasless bounty bidding, DeFi yield rebalancing) require simple, repetitive judgment — not the frontier intelligence Claude Code provides. Tier 2's bar is "earn > spend"; with free LLM ($0 compute) and free host ($0 compute), even pennies per day earn is net positive. Tier 1's role is to bootstrap the wallet seed; Tier 2's role is to compound from there.
 
 ★ User NEVER directly spawns a self-funded AI ★. The recommended (= only really honest) path = spawn ONE human-funded AI, let it accumulate surplus, let IT spawn the self-funded child. Anything else = the user secretly subsidizing what claims to be self-funded = scam.
 
