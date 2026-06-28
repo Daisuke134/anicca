@@ -1,0 +1,17 @@
+{
+  "featureName": "x402-earn-endpoint-live",
+  "mode": "lean",
+  "language": "typescript",
+  "currentPhase": "init",
+  "phaseHistory": [],
+  "iterations": {},
+  "proofObligations": [],
+  "traceability": {
+    "epicId": "VCSDD-x402-earn-endpoint-live-1782644641172",
+    "beads": []
+  },
+  "gates": {},
+  "sprintCount": 0,
+  "createdAt": "2026-06-28T11:04:01.172Z",
+  "updatedAt": "2026-06-28T11:04:01.172Z"
+}
