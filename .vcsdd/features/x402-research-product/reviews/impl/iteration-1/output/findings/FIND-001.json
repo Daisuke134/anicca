@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "R1 mandates the search backend be DuckDuckGo HTML: 'WHEN invoked with a non-empty query arg, the script SHALL search DuckDuckGo HTML (free, no key) and extract >=1 real external result URL.' The spec Goal (line 6-8) and the verification-architecture table (R1 row: 'none on duckduckgo.com') both name DuckDuckGo. The implementation does NOT use DuckDuckGo at all; it queries hn.algolia.com (Hacker News Algolia API). The authoritative search source required by the spec is absent. Either the impl violates R1 or the spec was silently changed without being updated.",
+  "evidence": {
+    "filePath": "skills/earn/x402-sell/research-product.mjs",
+    "lineRange": "10-19",
+    "snippet": "async function hnSearch(query) {\n  const r = await fetch('https://hn.algolia.com/api/v1/search?tags=story&hitsPerPage=8&query=' + encodeURIComponent(query),"
+  },
+  "routeToPhase": "2b"
+}
