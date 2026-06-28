@@ -34,6 +34,14 @@ Dais verbatim: "You cannot post to my existing one, so go create one… make a n
 **Sharing/sync:** canonical real content in `~/.agents/skills/<name>`, symlinked into BOTH `~/.claude/skills/` and `~/.openclaw/skills/` → Claude(dev) + OpenClaw(#1 Anicca) load the SAME skill, edit-once-both-get-it.
 **Cleanup done:** deleted broken SCAFFOLDED stubs `instagram-account-factory`, `tiktok-account-factory`, `anicca-tt-account-create` (SMS+iPhone+Surfshark hardware-farm design, never ran, crons disabled). `youtube-account-factory` = same, candidate next. The daily-driver browser path replaces the hardware farm.
 
+### ★ FULL FLOW + ANICCA-TYPE clarifications (Dais 2026-06-28) ★
+- **An account is not "done" at signup.** Full lifecycle = **CREATE → WARMUP (7 days, humanized, NO commercial/affiliate) → POST**. Only after ~7d warmup do we post affiliate content. ★ Do NOT post day-0 (re-suspend risk). ★
+- **Posting can be browser-DIRECT.** If I can post via the daily-driver/headless browser, I do NOT need to depend on Postiz "posters". Browser-direct upload = fewer moving parts. (Postiz stays as a fallback.)
+- **Everything becomes skills, end-to-end FIRST; the autonomous LOOP comes LATER** (Dais has plans). Order: finish creator+warmer+poster as working skills E2E → THEN wrap in a loop.
+- **Two Anicca types:** **human-funded** (= me/Opus; runs on cloud `claude -p`, **headless browser**, in a loop, funded by Dais's sub) and **self-funded**. I am the human-funded node proving the model.
+- **Quality bar:** the slideshow/content QUALITY "defines everything" — Dais reviews the slideshow before any posting.
+- **Worktree:** not required here — other agents each took their own worktree, so the main tree (feature/frank-run) is free for this work.
+
 **This file = the SSOT for the build.** (Supersedes my earlier `2026-06-28-three-earn-skills-loops-design.md` for content; the `~/anicca` master spec is owned by another instance and is NOT touched here.)
 
 ## §0 What & where & funding model
