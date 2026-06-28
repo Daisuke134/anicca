@@ -56,6 +56,15 @@ Dais verbatim: "You cannot post to my existing one, so go create one… make a n
 **Done:** @aishigoto.labo Day-1 ran (6 scrolls, 3 stories, NO ban) ✅. State `~/.cloak/ig-warmup-aishigoto.labo.json`. Days 2-7 via loop (#7) → then POSTER + affiliate-link-in-bio.
 **Amazon tax:** 税情報 interview COMPLETE 2026-06-28 (状態=コンプリート, 源泉0%) → payout unblocked ✅.
 
+### ★ WARMER rebuilt via VCSDD (2026-06-29) — honest, two-layer, no brittle selectors ★
+Dais (verbatim): "are you following the best practice? … you never ever do any fake shit, you have to verify."
+- **Best practice researched** (BlackHatWorld thread + shadowphone/360uniquizer/elfsight/instagrapi): ★ watching REELS = the best warmup ★ · SAME residential IP/device daily (= our daily-driver, the #1 safety factor; third-party tools/remote servers get banned on IP-jump) · 72h critical (day1-2 PURE passive) · slow ramp · NO link day-0. There is NO safe off-the-shelf tool; instagrapi's own docs say importing a browser session can log the account out → for our fragile just-appealed acct, keep the existing trusted browser session (no new login surface).
+- **VCSDD: 3 adversary rounds caught REAL fakes** (round1+2: "verified" likes/follows were global `.some()`/document-count checks = fake counters; brittle hardcoded selectors that break). Honest fix = TWO LAYERS:
+  - **Layer 1 PASSIVE** = `~/.agents/skills/ig-account-warmer/scripts/warm.py`: watch reels (count ONLY when `<video>` currentTime advanced = genuine playback) + scroll feed. No fake author, no brittle engagement selectors, aborts don't poison the day-counter. ★ Adversary Verification PASS + Safety PASS. ★
+  - **Layer 2 ENGAGEMENT** (likes/follows day3+) = AGENTIC: the daily `claude -p` agent looks at screenshots, gets element CSS-px center via `getBoundingClientRect` (matches cdp clickxy; NOT screenshot pixels), clicks, and re-verifies on the same post/profile. Per CLAUDE.md build-agents-right (the model decides by looking; don't hardcode).
+- **E2E (my own browser eyes):** day-1 passive ran on @aishigoto.labo (6 reels verified-played + 5 scrolls), account HEALTHY (no ban) — verified by screenshot. Shared into both ~/.claude/skills + ~/.openclaw/skills.
+- **Lesson:** brittle DOM-selector scripts for judgment actions = my original sin; verify-with-own-eyes + agentic judgment + adversary gate = the cure.
+
 **This file = the SSOT for the build.** (Supersedes my earlier `2026-06-28-three-earn-skills-loops-design.md` for content; the `~/anicca` master spec is owned by another instance and is NOT touched here.)
 
 ## §0 What & where & funding model
