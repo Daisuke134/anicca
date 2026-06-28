@@ -22,7 +22,14 @@
       "mode": "strict",
       "currentPhase": "init",
       "updatedAt": "2026-06-27T12:27:39.095Z"
+    },
+    "founder-x402-self-facilitate": {
+      "status": "active",
+      "createdAt": "2026-06-27T22:47:45.745Z",
+      "mode": "lean",
+      "currentPhase": "complete",
+      "updatedAt": "2026-06-28T06:34:20.660Z"
     }
   },
-  "activeFeature": "founder-money-loop"
+  "activeFeature": "founder-x402-self-facilitate"
 }
