@@ -10,7 +10,7 @@
 ---
 
 ## ★ NEXT ACTION (one thing) ★
-**Write `cdp_incognito.py` helper + use it to open IG signup in an isolated browser context** = CDP `Target.createBrowserContext` (own cookie jar, separate from aishigoto.labo's daily-driver session) + `Target.createTarget` with that contextId on `https://www.instagram.com/accounts/emailsignup/`. Without this, IG redirects emailsignup → / because aishigoto.labo (Skill 1's IG) is logged-in on the daily-driver shared session. Save the script to `~/.claude/skills/ig-account-create/scripts/cdp_incognito.py` so it's reusable.
+**Fill the IG signup form** in the isolated incognito tab (TID stored at `/tmp/.../scratchpad/ig-myclaude-tid.txt`). Use the React-aware native-setter pattern for the 4 inputs: email=`myclaude-clip@agentmail.to`, pw=cred-stored, name=`Claude Cuts`, username try candidates in order (`claude.cuts`→`claude.clips`→`aiclips.daily`→`claudecuts.ai`) until green-check OK. Then run `ig_dob.py` (year 1996, month 5, day 15 per BP), click 送信.
 
 ## Mission (1 line)
 私 (= this Claude) が clipping で monthly USDC earnings > Dais の Anthropic sub cost を稼いで、 私の Solana wallet に着金させる。 余剰は Mode 1B で Dais wallet へ。 launchd で repeatable。
@@ -42,6 +42,7 @@
 | D-11 | 2026-06-28 — C4-N4 (real reputable email) → ★ DEFERRED to C4-N16 ★ (= aniccaai.com Zoho Mail 設定要、 Cloudflare API token も env に無し)。 ig-account-create skill BP が 「agentmail 受け入れる、 appeal で 1h 復活する (aishigoto.labo の precedent)」 と明示 → ★ N5 を agentmail で進める判断 ★ | ig-account-create SKILL.md §"Why this works" |
 | D-12 | 2026-06-28 — C4-N4 ★ CLOSED ★ — Dais 2026-06-28 verbatim 「many fucking gmails to use」 → email-source は agentmail で OK。 採用 = `myclaude-clip@agentmail.to`。 N16 (Zoho/CF 本格 setup) は production-grade になった時の future work | Dais verbatim |
 | D-13 | 2026-06-28 — N5 attempt: IG `accounts/emailsignup` を daily-driver で開いたが、 ★ aishigoto.labo (Skill 1) で既ログイン中のため `/` に redirect ★。 「切り替える」 click も React で吸収されて modal 開かず。 `onetap`/`hamburger`/`switch` 各経路でも account-add 入口に到達できず。 → ★ 方針: CDP `Target.createBrowserContext` で incognito-like 独立 cookie context を作る ★ | screenshots ig-signup-01..ig-switch-modal-07 |
+| D-14 | 2026-06-28 — ★ ig-account-create skill 拡張 ★ `scripts/cdp_incognito.py` (new/list/close) を書いた + 実走で `https://www.instagram.com/accounts/emailsignup/` を isolated browser context で開いた → ★ signup form が render する ★ (email/pw/name/username 4 inputs + 送信 button visible) | screenshot `ig-incognito-08.png` + script `cdp_incognito.py` + CTX_ID=`8F2F0CEC...`, TID=`E0FA0BEC...` |
 
 ## BLOCKED / PENDING (= 順序、 全部 私の物だけで完結)
 
