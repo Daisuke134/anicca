@@ -44,10 +44,11 @@ async function search(query) {
 }
 
 // --- free reader with 429 backoff + content-quality gate (reject Jina error/placeholder bodies) ---
-const ERROR_BODY_RE = /rate limit|too many requests|429|error code\s*\d|"code"\s*:\s*4|authentication is required|could not be reached/i;
-function isRealContent(body) {
+// Strong challenge/error-page signals (unlikely in genuine article prose); scanned over the FULL body.
+export const ERROR_BODY_RE = /rate limit|too many requests|\b429\b|error code\s*\d|authentication is required|could not be reached|just a moment\.{0,3}|attention required|enable javascript and cookies|verify you are (a )?human|checking your browser|please enable cookies|\bcaptcha\b|access to this page has been denied/i;
+export function isRealContent(body) {
   if (!body || body.trim().length < 300) return false;
-  if (ERROR_BODY_RE.test(body.slice(0, 400))) return false;
+  if (ERROR_BODY_RE.test(body)) return false; // scan FULL body, not just the head (adversary FIND-202)
   return true;
 }
 async function jinaRead(url) {
