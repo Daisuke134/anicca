@@ -147,3 +147,37 @@ Veo fast/lite + image-to-video でコスト$1-80/本 → $50-1,500で販売(広�
 1本コスト ≒ $0 (edge-tts/VOICEVOX + still + whisper + ffmpeg、全ローカル無料) + DeepSeek 数円。
 3本/日 × 30日 = 90本/月 ≒ $0。ebook 1冊販売($5-25純益)で黒字。再生報酬は後乗せ。
 → ★ skill の稼働コスト < 売上 = self-funding 成立。余剰が次instanceの燃料 ★。
+
+---
+# VERIFICATION GATE (2026-06-28) — slop を投稿しない（VCSDD式 maker≠checker）
+
+「scripts is everything」かつ「slop投稿は罪」なので、★投稿の前に2段の関門★を置く。maker(生成) ≠ checker(検証) を別コンテキストで。★ここに余ってる Sonnet 枠を使う(claude -p = adversary)★ = 賢い使い道(bash実行ではなく judgment)。
+
+## GATE 1 — SCRIPT GATE（gen-script 直後、render 前）
+checker = `claude -p` Sonnet（fresh context, maker と別）。binary PASS/FAIL:
+- 独自性: 直近N本(ledger)と構造/hook/テーマが被ってない（dedup）
+- hook: 最初3秒で掴む best-practice か
+- 構造: 毎回違うか（テンプレ濫造=ban → FAIL）
+- ★禁止: 医療/治療 claim（TikTok shadowban/72h shop-ban リスク）→ 即FAIL★
+- ブランド: Anicca の無常/瞑想に忠実
+FAIL → gen-script を別角度で再生成（最大3回ループ）→ それでもFAILなら skip(投稿しない)。
+
+## GATE 2 — VIDEO GATE（render+caption 後、post 前）
+### 2a 決定論(deterministic, bash):
+- 尺 ≥60秒 / video stream有 / audio stream有 / 字幕cue ≥10 / ffprobe再生OK / MD5 が前回と不一致(重複防止)
+### 2b ビジョン検査(claude -p vision、3フレーム抽出):
+- 僧侶が映ってる・破綻なし / 字幕が読める・画面内 / アーティファクト無し → PASS/FAIL
+どちらか FAIL → 投稿せず再render or skip。★FAIL を post に通さない★。
+
+## 通過後 = NO-MOCK E2E（HARD 0.31）
+post → 実 POST_ID/URL 取得 → 取れなければ exit 1。これが最終の deterministic 検証。
+
+## ループ全体（VCSDD と同型）
+```
+gen-script(maker) → GATE1 Sonnet adversary(checker) ──FAIL──► 再生成(≤3)
+        │PASS
+render+caption(maker) → GATE2 determ + vision(checker) ──FAIL──► 再render/skip
+        │PASS
+post → POST_ID 取得(no-mock E2E) → 記録(ledger)
+```
+★ maker ≠ checker、binary PASS/FAIL、loop til pass、最後に実投稿E2E ★ = VCSDD の 4-D 収束を投稿パイプラインに適用。
