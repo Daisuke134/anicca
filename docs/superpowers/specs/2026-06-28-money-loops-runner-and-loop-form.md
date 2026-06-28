@@ -1,6 +1,10 @@
 # SPEC — Money Loops Runner + Loop Form (supplement to 2026-06-28-money-loops-design.md)
 
-Date: 2026-06-28 · Status: LIVE direction · Author: main agent (me) per Dais 2026-06-28 verbatim direction.
+★★★ SUPERSEDED for ARCHITECTURE by `~/anicca/docs/superpowers/specs/2026-06-28-anicca-master-architecture-one-repo-two-modes.md` 2026-06-28. ★★★
+The §2 loop-form decision (/loop session-scoped / claude -p + launchd / /schedule cloud durable) is folded
+into §3 of the master spec verbatim. Kept here as the docs sources for the /loop slash command research.
+
+Date: 2026-06-28 · Status: SUPERSEDED for architecture; /loop docs research kept · Author: main agent (me).
 Parent (= canonical source of truth on WHAT to earn): `2026-06-28-money-loops-design.md`.
 Per Dais verbatim: "we have to make a loop that earns money" + "It's a loop that runs every single day that earns money" + "go search how to use this" (= /loop).
 Replaces my superseded `~/anicca/docs/superpowers/specs/2026-06-28-anicca-as-installable-claude-sub-earner.md` (= confused Anicca with the profitable Claude wrapper).

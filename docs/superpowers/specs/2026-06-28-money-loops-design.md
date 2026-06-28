@@ -1,5 +1,15 @@
 # Money Loops Design — earn > spend, no-human (2026-06-28)
 
+★★★ SUPERSEDED for ARCHITECTURE by `~/anicca/docs/superpowers/specs/2026-06-28-anicca-master-architecture-one-repo-two-modes.md` 2026-06-28. ★★★
+This spec proposed Monk Factory → Ebook Funnel (= JP note paid articles + EN Payhip PDF). Dais clarified
+2026-06-28 that the ebook funnel relies on his specific note / Substack accounts and is NOT replicable
+for the OSS repo where every Claude install must start from zero with only the user's Claude sub. The
+LOOP MECHANICS (cost-$0 production, video → DM → email → product, ban-avoid via varied structure) are
+still useful but applied per-install (= each user's own note / Substack / Payhip), not Dais's accounts.
+The chosen first earn rail is now Amazon Associates affiliate (W1–W8 in three-earn-skills-loops-design.md,
+also superseded for architecture, content kept). Kept here as the failure-mode lesson on per-install
+credentials.
+
 研究4本(faceless短尺収益 / ebook funnel JP+EN / Veo黒字化 / 自動投稿ループ)を実数値+ソースで実施。本specはその統合と、最初に作る利益ループの設計。
 
 ## 0. 核心の真実（全ソース収束）

@@ -1,9 +1,16 @@
 # Three Earn Skills + Daily Loops — Design Spec
 
+★★★ ARCHITECTURE SUPERSEDED 2026-06-28 by `~/anicca/docs/superpowers/specs/2026-06-28-anicca-master-architecture-one-repo-two-modes.md` ★★★
+LOOP CONTENT (= W1–W8 affiliate-first sequence, Loop A → B → C order, recorder INV pattern) is KEPT and
+referenced by §9 of the master spec. The architecture change: credentials are PER-INSTANCE (= each user
+signs up their OWN Amazon Associates account, NOT shares Dais's). Dais's account remains his instance's
+install-local override only, never baked into shared OSS skill code. The replicable rail is W1–W8 with
+`AMAZON_PARTNER_TAG` parameterized via env.
+
 **Date:** 2026-06-28
 **Author:** Claude (dev IDE) for Dais
 **Branch:** feature/frank-run
-**Status:** Direction proposed. W1 ready to execute.
+**Status:** Architecture superseded; W1-W8 content kept as the OSS earn rail (parameterized per install).
 **Relationship to prior specs:** Extends `2026-06-28-money-loops-runner-and-loop-form.md` and `2026-06-28-money-loops-design.md`. Those chose the *ebook funnel* product. This spec adds the **3 earn loops Dais explicitly requested (affiliate / YouTube / freelance)**, which are commission/labor — NOT ad-revenue — so they do not violate the "広告収益=罠" principle.
 
 ---
