@@ -71,3 +71,19 @@ Veo fast/lite + image-to-video でコスト$1-80/本 → $50-1,500で販売(広�
 - Veo価格 $0.10-0.40/s: ai.google.dev/gemini-api/docs/pricing
 - ebook funnel: hustlemarketers.com(faceless wellness), creatorflow.so(CTR), note.jp(JP統計), kdp.amazon
 - 自動投稿: upload-post.com, blotato.com, github.com/gitroomhq/postiz-app(32.4k★)
+
+---
+# ADDENDUM (2026-06-28) — Skill Roster（確定: 4 skills, ViMax=受注専用）
+
+手持ちツールを「稼ぐ skill」に落とし込んだ確定版。各 skill は ①`~/.openclaw/skills/`(本番cron) ②`~/.claude/skills/`(Claude Code から手動) の両方に install(dual-install、HyperFrames方式)。
+
+| # | skill | tools | 稼ぎ方 | cost | autonomous | priority |
+|---|---|---|---|---|---|---|
+| 1 | **anicca-monk-earn** | monk-factory改 + VOICEVOX + HyperFrames + ElevenLabs/DeepSeek | ebook funnel + 再生報酬 | $0/本 | ◎ cron | NOW |
+| 2 | **ebook-factory** | DeepSeek + Payhip/note/KDP | 製品販売=純利益(skill1の集金先) | $0 | ◎ | NOW |
+| 3 | faceless-explainer-earn | HyperFrames /faceless-explainer | 高RPMニッチ横展開・複数ch | $0 | ◎ | next |
+| 4 | vimax-video-service | ViMax+Veo | 広告/商品動画 受注 $50-1500 | 有料 | △客要 | later |
+
+★ViMax決定: 日次無料ループに入れない(faceless Veo=赤字の罠)。Skill4の受注B2Bサービス専用。日次で勝手に課金しない。
+★Skill 1+2 のペアだけで完結した money machine。動画は無料の客寄せ、稼ぐのはebook。動画コスト$0 → ebook1冊でも黒字 = earn>spend保証。
+★monk改造の中身 = 死んだHeyGen Avatar IV を「静止画/Kling i2v + VOICEVOX(JP)/ElevenLabs(EN) + HyperFrames字幕」に差し替え。account/投稿経路/skill骨格は流用。
