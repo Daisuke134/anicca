@@ -2,6 +2,13 @@
 
 **Date:** 2026-06-28 · **Author:** Claude (dev IDE) for Dais · **Branch:** feature/frank-run
 **Status:** EXECUTING (Dais "go" 2026-06-28: affiliate FIRST, browser-driven, minimal-human, one-by-one). Building Skill 1.
+
+### ★ SESSION GOAL (do-once, provable finish line — GLVS/HARD 0.40) ★
+`done` = **ONE live faceless AI/productivity slideshow video** (9:16 1080x1920, $0 generation, #PR景表法 disclosure) is **publicly posted to an Anicca-owned account** (NOT Dais's @aniccaxxx) AND the profile **BIO resolves to** `https://www.amazon.co.jp/dp/4296209310?tag=aniccaai-22` — verified by (a) a live public post URL that loads, (b) `build-link.mjs` output matching the bio link, (c) mp4 frame+audio E2E (HARD 0.31).
+- **Boundary:** $0 only · no fake/mock/dry (HARD 0.24) · Anicca-owned account only · #PR mandatory · reuse existing engines (no rebuild).
+- **Blocker known:** fresh TikTok create = D-01 blocked (no `SMSPOOL_API_KEY`/`SADCAPTCHA_API_KEY`/`TIKTOK_PROXY_URL` in env) + DataDome. Path: CloakBrowser daily-driver minimal-human (Dais ≤1 CAPTCHA tap). Fallback = existing Anicca-owned **@anicca.he** (Postiz integration `cmq2aoena08bhqp0yx1epjcik`).
+- **Stop rule:** build+verify the video artifact regardless; only the live-post step may stall on account access → surface as the single genuine blocker, not silent.
+- **Then loop:** wrap in daily `claude -p`+launchd + `/goal "Amazon report row > ¥0"`.
 **This file = the SSOT for the build.** (Supersedes my earlier `2026-06-28-three-earn-skills-loops-design.md` for content; the `~/anicca` master spec is owned by another instance and is NOT touched here.)
 
 ## §0 What & where & funding model
