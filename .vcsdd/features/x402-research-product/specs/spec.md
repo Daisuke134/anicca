@@ -5,10 +5,10 @@ Date: 2026-06-28 · Builder: main agent (me) · Mode: lean · Worktree: ~/anicca
 ## Goal (provable)
 A `$0`, zero-credential, universal web-research product the x402 seller serves: a buyer's query →
 real curated web research digest. Works on ANY fresh install (no twitterapi, no firecrawl key, no Dais
-creds) — only free tools: DuckDuckGo HTML search + Jina Reader (`r.jina.ai`). Replaces the twitterapi
-stub. Becomes `X402_PRODUCT_CMD` for the founder x402 seller.
+creds) — only free tools: **Wikipedia opensearch + HN Algolia search + Jina Reader (`r.jina.ai`)**.
+Replaces the twitterapi stub. Becomes `X402_PRODUCT_CMD` for the founder x402 seller.
 
-`done =` R1–R5 verified by fresh evidence (real network run, no mock) AND fresh-context adversary PASS.
+`done =` R1–R7 verified by fresh evidence (real network run, no mock) AND fresh-context adversary PASS.
 
 ## Requirements (EARS)
 - **R1** WHEN invoked with a non-empty query arg, the script SHALL search free, no-key, non-bot-blocked
@@ -40,11 +40,14 @@ stub. Becomes `X402_PRODUCT_CMD` for the founder x402 seller.
 | R2 | inspect `digest` | contains content fetched via r.jina.ai (non-empty per source) |
 | R3 | `node research-product.mjs "x402 agent payments"` → parse stdout | valid JSON, digest length > 200, exit 0 |
 | R4 | `node research-product.mjs ""` | exit ≠ 0, empty/usage stderr, no JSON on stdout |
-| R5 | static grep of the file | zero matches for TWITTERAPI/FIRECRAWL/OPENAI/CDP/secret env |
+| R5 | static grep of the file | zero matches for TWITTERAPI/FIRECRAWL/OPENAI/BRAVE/CDP/_PRIVATE_KEY/secret env |
+| R6 | unit-feed an error/placeholder body to `isRealContent` | returns false (rejected); a real ≥300-char body returns true |
+| R7 | inspect `jinaRead` 429 path + run when all sources unreachable | backoff≤3 then throw; `research()` exits non-zero, never a partial digest |
 
 ## Purity boundary
-- I/O (impure): the two fetch calls (DDG, Jina).
-- Pure: URL extraction from DDG HTML, JSON assembly, arg parsing.
+- I/O (impure): the fetch calls (Wikipedia opensearch, HN Algolia, Jina Reader).
+- Pure (unit-testable, no network): `isRealContent` (content-quality gate), result merge/dedup, JSON
+  assembly, arg parsing.
 
 ## Out of scope
 - LLM synthesis (the buying agent synthesizes; this product delivers curated raw research = $0, deterministic).

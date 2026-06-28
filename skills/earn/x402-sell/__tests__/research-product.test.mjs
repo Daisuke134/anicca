@@ -4,6 +4,7 @@ import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { readFileSync } from 'node:fs';
+import { isRealContent } from '../research-product.mjs';
 
 const execFileP = promisify(execFile);
 const here = dirname(fileURLToPath(import.meta.url));
@@ -20,6 +21,16 @@ async function run(arg) {
 const src = readFileSync(SCRIPT, 'utf8');
 ok(!/TWITTERAPI_KEY|FIRECRAWL_API_KEY|OPENAI_API_KEY|ANTHROPIC_API_KEY|BRAVE_API_KEY|CDP_API_KEY|_PRIVATE_KEY|GOOGLE_LOGIN/.test(src), 'R5 no paid/keyed/secret env referenced');
 ok(!/https?:\/\/[^\s'"`]*(duckduckgo|bing\.com\/search|google\.com\/search)/i.test(src), 'R1 no bot-blocked search backend actually used (URL form)');
+
+// R6 (deterministic, no network) — content-quality gate actually REJECTS error/placeholder bodies
+const realArticle = 'Photosynthesis is the process used by plants, algae and cyanobacteria to convert light energy into chemical energy. '.repeat(6);
+const cfChallenge = 'Just a moment...\nChecking your browser before accessing the site. Please enable JavaScript and cookies to continue. '.repeat(4);
+const rateLimited = '{"data":null,"code":429,"message":"Too Many Requests. Rate limit exceeded, please try again later."} '.repeat(4);
+ok(isRealContent(realArticle) === true, 'R6 real ≥300-char article accepted');
+ok(isRealContent(cfChallenge) === false, 'R6 Cloudflare challenge body rejected');
+ok(isRealContent(rateLimited) === false, 'R6 rate-limit body rejected');
+ok(isRealContent('short') === false, 'R6 too-short body rejected');
+ok(isRealContent('') === false, 'R6 empty body rejected');
 
 // R1/R2/R3 — TECH query (HN path)
 try {
