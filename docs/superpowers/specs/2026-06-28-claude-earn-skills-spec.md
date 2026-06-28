@@ -1,7 +1,7 @@
 # Claude Earn Skills — Master SSOT (4 skills, prereqs, uncertainties, loops)
 
 **Date:** 2026-06-28 · **Author:** Claude (dev IDE) for Dais · **Branch:** feature/frank-run
-**Status:** SCOPING — resolving all ambiguity before any build. Nothing built yet.
+**Status:** EXECUTING (Dais "go" 2026-06-28: affiliate FIRST, browser-driven, minimal-human, one-by-one). Building Skill 1.
 **This file = the SSOT for the build.** (Supersedes my earlier `2026-06-28-three-earn-skills-loops-design.md` for content; the `~/anicca` master spec is owned by another instance and is NOT touched here.)
 
 ## §0 What & where & funding model
