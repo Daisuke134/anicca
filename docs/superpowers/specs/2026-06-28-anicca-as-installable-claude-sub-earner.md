@@ -1,6 +1,9 @@
 # SPEC — Anicca as an installable, Claude-sub-only, OSS earner (= the "profitable claude" inside the existing Daisuke134/anicca repo)
 
-Date: 2026-06-28 · Sprint: 1 · Status: LIVE direction — supersedes 2026-06-28-bank-rail-strategy.md (= SaaS-product-on-Dais's-creds direction, RETIRED)
+★★★ SUPERSEDED 2026-06-28 by `~/anicca-project/docs/superpowers/specs/2026-06-28-money-loops-design.md` + the supplementary loop-form runner spec `2026-06-28-money-loops-runner-and-loop-form.md`. ★★★
+This file confused TWO separate things: (a) ANICCA the existing OSS no-human-in-loop AI (which already has its own earn skills under `skills/earn/` — `ensure-gas`, `execute-yield`, `x402-sell`, `hl-trade`, `token-launch` — I should NOT touch them) and (b) the PROFITABLE CLAUDE loop we are actually building on Dais's machine to earn HIM money via Payhip/note/Stripe (= the Monk Factory → Ebook Funnel loop in the new money-loops-design.md). They are different products: CLAUDE = human-funded loop that earns money for the human; ANICCA = no-human-in-loop AI that exists separately. The former finds/funds the latter; they don't share a repo or a wake body. Kept in history for the failure-mode lesson. DO NOT IMPLEMENT FROM THIS FILE.
+
+Date: 2026-06-28 · Sprint: 1 · Status: SUPERSEDED
 Author: main agent (me) per Dais 2026-06-28 verbatim direction.
 
 ---
