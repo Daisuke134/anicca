@@ -70,7 +70,9 @@ describe('PROP-001d [Tier 0] REQ-001 vi+vii: x402ResourceServer.register + Exact
   test('x402ResourceServer is constructed with in-process facilitator object-literal', () => {
     expect(SOURCE).toMatch(/new\s+x402ResourceServer\s*\(\s*\{/);
     expect(SOURCE).toMatch(/verify\s*:\s*facilitator\.verify/);
-    expect(SOURCE).toMatch(/settle\s*:\s*facilitator\.settle/);
+    // settle may be wrapped (e.g. wrapSettle(facilitator.settle.bind(facilitator))) for
+    // REQ-014 logging — accept either form as long as facilitator.settle is referenced.
+    expect(SOURCE).toMatch(/settle\s*:[^,\n]*facilitator\.settle/);
     expect(SOURCE).toMatch(/getSupported\s*:/);
   });
   test('.register(<base-mainnet>, new ExactEvmServerScheme()) appears exactly once', () => {
@@ -145,21 +147,40 @@ describe('PROP-004b [Tier 0] REQ-004b: $0.003 resolves to 3000 USDC base units',
   });
 });
 
-describe('PROP-005 [Tier 0] REQ-005: Bazaar POST shape (method+bodyType+input+inputSchema)', () => {
-  test('ROUTES["POST /social/x"].extensions carries method:POST + bodyType:json', async () => {
+describe('PROP-005 [Tier 0] REQ-005: Bazaar POST shape (SDK-aligned ext.bazaar.info)', () => {
+  test('extensions.bazaar.info.input has type:http + method:POST + bodyType:json + raw body', async () => {
     const mod = await import('../server.js');
     const ext = mod.ROUTES['POST /social/x'].extensions;
     expect(ext).toBeDefined();
-    const serialized = JSON.stringify(ext);
-    expect(serialized).toMatch(/"method"\s*:\s*"POST"/);
-    expect(serialized).toMatch(/"bodyType"\s*:\s*"json"/);
+    expect(ext.bazaar).toBeDefined();
+    expect(ext.bazaar.info).toBeDefined();
+    expect(ext.bazaar.info.input).toBeDefined();
+    expect(ext.bazaar.info.input.type).toBe('http');
+    expect(ext.bazaar.info.input.method).toBe('POST');
+    expect(ext.bazaar.info.input.bodyType).toBe('json');
+    expect(ext.bazaar.info.input.body).toBeDefined();
+    expect(typeof ext.bazaar.info.input.body).toBe('object');
+    // Body should be a non-empty object (a realistic example), not an empty wrapper
+    expect(Object.keys(ext.bazaar.info.input.body).length).toBeGreaterThan(0);
   });
-  test('extensions carries input + inputSchema (non-empty)', async () => {
+  test('extensions.bazaar.info.output has type:json + non-empty example', async () => {
     const mod = await import('../server.js');
     const ext = mod.ROUTES['POST /social/x'].extensions;
-    const serialized = JSON.stringify(ext);
-    expect(serialized).toMatch(/"input"\s*:/);
-    expect(serialized).toMatch(/"inputSchema"\s*:/);
+    expect(ext.bazaar.info.output).toBeDefined();
+    expect(ext.bazaar.info.output.type).toBe('json');
+    expect(ext.bazaar.info.output.example).toBeDefined();
+    expect(typeof ext.bazaar.info.output.example).toBe('object');
+  });
+  test('extensions.bazaar.schema.properties.input.properties.body exists (inputSchema fed in)', async () => {
+    const mod = await import('../server.js');
+    const ext = mod.ROUTES['POST /social/x'].extensions;
+    expect(ext.bazaar.schema).toBeDefined();
+    const bodySchema = ext.bazaar.schema?.properties?.input?.properties?.body;
+    expect(bodySchema).toBeDefined();
+    expect(bodySchema.type).toBe('object');
+    // Schema should carry our inputSchema's properties (e.g. "query") — not default empty
+    expect(bodySchema.properties).toBeDefined();
+    expect(Object.keys(bodySchema.properties || {}).length).toBeGreaterThan(0);
   });
 });
 
@@ -238,8 +259,8 @@ describe('PROP-008 + PROP-008b [Tier 0] REQ-008: /health pure, no prisma anywher
   });
 });
 
-describe('PROP-011 [Tier 0] REQ-011: replicable boot — only EVM_PRIVATE_KEY + X402_WALLET_ADDRESS + PORT', () => {
-  test('server boots with only required env, prints "listening on port" within 2s', async () => {
+describe('PROP-011 [Tier 0] REQ-011: replicable boot — only EVM_PRIVATE_KEY + X402_WALLET_ADDRESS + PORT (+ X402_RPC_URL for test determinism)', () => {
+  test('server boots with only required env, prints "listening on port" within 2s, deterministic (no live RPC)', async () => {
     const env = { ...process.env };
     // Strip everything else
     delete env.DATABASE_URL;
@@ -254,6 +275,9 @@ describe('PROP-011 [Tier 0] REQ-011: replicable boot — only EVM_PRIVATE_KEY + 
     env.X402_WALLET_ADDRESS = TEST_ADDR;
     env.PORT = '0';
     env.NODE_ENV = 'test';
+    // X402_RPC_URL pinned to an unreachable local port keeps the gas probe deterministic
+    // (no live Base mainnet RPC during tests — REQ-010 compliance).
+    env.X402_RPC_URL = 'http://127.0.0.1:1';
 
     const child = spawn(process.execPath, [SERVER_JS], {
       env,
@@ -280,6 +304,67 @@ describe('PROP-011 [Tier 0] REQ-011: replicable boot — only EVM_PRIVATE_KEY + 
       combined.toLowerCase(),
       `expected "listening on port" in output. stdout=${stdout} stderr=${stderr}`,
     ).toMatch(/listening on port/);
+  });
+});
+
+// ============================================================================
+// PROP-014 (added iter-2 per Phase 3 adversary feedback): wrapSettle unit test
+// ============================================================================
+describe('PROP-014 [Tier 0] REQ-014: wrapSettle logs [x402.settle.error] + rethrows', () => {
+  test('wrapSettle is exported', async () => {
+    const mod = await import('../server.js');
+    expect(typeof mod.wrapSettle).toBe('function');
+  });
+
+  test('wrapSettle re-raises the original error', async () => {
+    const { wrapSettle } = await import('../server.js');
+    const cause = Object.assign(new Error('low gas'), { code: 'insufficient_funds' });
+    const errs = [];
+    const orig = console.error;
+    console.error = (...a) => errs.push(a.map((x) => String(x)).join(' '));
+    try {
+      const wrapped = wrapSettle(async () => {
+        throw cause;
+      });
+      await expect(wrapped()).rejects.toBe(cause);
+    } finally {
+      console.error = orig;
+    }
+  });
+
+  test('wrapSettle logs [x402.settle.error] with the error code + message snippet', async () => {
+    const { wrapSettle } = await import('../server.js');
+    const cause = Object.assign(new Error('rpc timeout details'), { code: 'rpc_timeout' });
+    const errs = [];
+    const orig = console.error;
+    console.error = (...a) => errs.push(a.map((x) => String(x)).join(' '));
+    try {
+      const wrapped = wrapSettle(async () => {
+        throw cause;
+      });
+      await wrapped().catch(() => {});
+      const joined = errs.join('\n');
+      expect(joined).toMatch(/\[x402\.settle\.error\]/);
+      expect(joined).toMatch(/rpc_timeout/);
+      expect(joined).toMatch(/rpc timeout details/);
+    } finally {
+      console.error = orig;
+    }
+  });
+
+  test('wrapSettle passes through on success', async () => {
+    const { wrapSettle } = await import('../server.js');
+    const errs = [];
+    const orig = console.error;
+    console.error = (...a) => errs.push(a.map((x) => String(x)).join(' '));
+    try {
+      const wrapped = wrapSettle(async () => ({ success: true, payer: '0xabc' }));
+      const result = await wrapped();
+      expect(result).toEqual({ success: true, payer: '0xabc' });
+      expect(errs.join('\n')).not.toMatch(/\[x402\.settle\.error\]/);
+    } finally {
+      console.error = orig;
+    }
   });
 });
 
