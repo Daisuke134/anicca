@@ -1,7 +1,7 @@
 {
   "featureName": "founder-x402-self-facilitate",
   "mode": "lean",
-  "currentPhase": "3",
+  "currentPhase": "complete",
   "phaseHistory": [
     {
       "from": "init",
@@ -41,16 +41,37 @@
       "to": "3",
       "timestamp": "2026-06-28T06:02:36.100Z",
       "sprint": 1
+    },
+    {
+      "from": "3",
+      "to": "5",
+      "timestamp": "2026-06-28T06:32:21.937Z",
+      "sprint": 1
+    },
+    {
+      "from": "5",
+      "to": "6",
+      "timestamp": "2026-06-28T06:33:56.932Z",
+      "sprint": 1
+    },
+    {
+      "from": "6",
+      "to": "complete",
+      "timestamp": "2026-06-28T06:34:20.659Z",
+      "sprint": 1
     }
   ],
   "iterations": {
     "3": 1,
+    "5": 1,
+    "6": 1,
     "1a": 1,
     "1b": 1,
     "1c": 1,
     "2a": 1,
     "2b": 1,
-    "2c": 1
+    "2c": 1,
+    "complete": 1
   },
   "proofObligations": [],
   "traceability": {
@@ -59,14 +80,17 @@
   },
   "gates": {
     "3": {
-      "verdict": "FAIL",
-      "timestamp": "2026-06-28T06:15:02.545Z",
+      "verdict": "PASS",
+      "timestamp": "2026-06-28T06:29:58.907Z",
       "reviewedBy": "adversary",
       "details": {
-        "iteration": 1,
-        "findingsCount": 16,
-        "blockingFindings": 8,
-        "verdictFile": ".vcsdd/features/founder-x402-self-facilitate/reviews/impl/iteration-1/output/verdict.json"
+        "iteration": 2,
+        "findingsCount": 4,
+        "blockingFindings": 0,
+        "priorBlockersAllClosed": 8,
+        "dims": "all-5-PASS",
+        "notes": "F1 code-level §Done (a)+(b) met; on-chain E2E (§Done c+d) is Phase 4 / task #5",
+        "verdictFile": ".vcsdd/features/founder-x402-self-facilitate/reviews/impl/iteration-2/output/verdict.json"
       }
     },
     "1c": {
@@ -88,5 +112,5 @@
   },
   "sprintCount": 1,
   "createdAt": "2026-06-27T22:47:45.745Z",
-  "updatedAt": "2026-06-28T06:15:02.545Z"
+  "updatedAt": "2026-06-28T06:34:20.660Z"
 }
