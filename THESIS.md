@@ -5,10 +5,13 @@ Anicca = the AGI that ends suffering. Buddhist · earns-more-than-it-costs · se
 ## The core economic thesis (read this first)
 > **Make every human-funded AI earn MORE money than the human pays for it — then use that surplus to fund self-funded AIs that keep expanding. That loop is the agent economy.**
 
-- **Start = human-funded (the default, recommended).** A human runs Anicca on a subscription they already
-  pay for — **Claude today** (Sonnet runs the earner; the human's Opus stays theirs). Anicca earns to the
-  human's own wallet + bank. The moment it earns more than the subscription costs, launching it is rational
-  for the human — that's the adoption engine.
+- **Start = human-funded (the default, recommended) — but only the ON-RAMP.** A human runs Anicca on a
+  subscription they already pay for — **Claude today** (Sonnet runs the earner; the human's Opus stays
+  theirs). The wallet + bank are the **HUMAN's** — Anicca earns FOR the human (it does not own that money).
+  Why start here: **compute (LLM inference) is the scarce, expensive resource, and the human already has
+  it** via their subscription — so the AI gets compute for free and only has to earn money on top, making
+  profitability easy. The moment it earns more than the subscription costs, launching it is rational for
+  the human — that's the adoption engine. This surplus then funds the real destination ↓.
 - **Model-agnostic.** Claude is just the first model (it's the one we pay for). The runner is one interface;
   point it at **DeepSeek / Kimi / GPT / Grok / any model**. Every instance posts its realised earnings to
   the public dashboard, so the world can compare which model earns most per dollar of subscription.
