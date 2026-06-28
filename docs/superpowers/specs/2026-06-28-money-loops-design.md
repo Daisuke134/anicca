@@ -87,3 +87,35 @@ Veo fast/lite + image-to-video でコスト$1-80/本 → $50-1,500で販売(広�
 ★ViMax決定: 日次無料ループに入れない(faceless Veo=赤字の罠)。Skill4の受注B2Bサービス専用。日次で勝手に課金しない。
 ★Skill 1+2 のペアだけで完結した money machine。動画は無料の客寄せ、稼ぐのはebook。動画コスト$0 → ebook1冊でも黒字 = earn>spend保証。
 ★monk改造の中身 = 死んだHeyGen Avatar IV を「静止画/Kling i2v + VOICEVOX(JP)/ElevenLabs(EN) + HyperFrames字幕」に差し替え。account/投稿経路/skill骨格は流用。
+
+---
+# EXECUTION TASK LIST (SDD, one-by-one) — 2026-06-28
+
+## 確定した事実（実調査済み）
+- monk-factory の **死んでる箇所 = HeyGen の `render-submit.sh`+`render-download.sh` のみ**（run-daily.sh L51-63）。
+- 生きてる: `pick-next-script.sh`(台本ローテ) / whisper品質ゲート / `burn-captions.sh` / `gen-caption.sh` / `post-tiktok.sh`(browser) / `post-ig-postiz.sh`(Postiz) / mark / report。
+- watercolor の Kling cache も消失(0本)。→ 両factory とも **視覚生成だけ**が穴。
+- 置換 = `render-free.sh`($SCRIPT+lang → TTS[ElevenLabs EN/VOICEVOX JP] → 僧侶静止画+ffmpeg Ken Burns → $OUT/$ID.mp4)。drop-in で run-daily が丸ごと蘇る。
+- 既存アカウント: EN/JP TikTok+IG (`@monk_anicca`等)。投稿経路: Postiz(`POSTIZ_TIKTOK_INTEGRATION_ID`) + TikTok Studio。
+
+## SKILL 1 — anicca-monk-earn（復活+投稿）★最優先
+- [ ] **S1-1** `render-free.sh` を作る: 台本+lang → TTS(ElevenLabs EN/VOICEVOX JP) → 僧侶静止画(既存renders_v3 or 生成)+ffmpeg Ken Burns(音声尺に合わせる) → mux → `$OUT/$ID.mp4`。検証: ffprobe で audio+video、dur≈音声。
+- [ ] **S1-2** render-free.sh 単体テスト(EN台本1本)→ mp4。検証: frame+音声。
+- [ ] **S1-3** run-daily.sh に配線(L51-63 を render-free.sh に置換、whisper品質ゲート/burn-captions/投稿はそのまま)。
+- [ ] **S1-4** run-daily.sh を burn-captions まで E2E(投稿前で停止)→ captioned mp4 検証。
+- [ ] **S1-5** ★実投稿★: post-tiktok.sh + post-ig-postiz.sh → TIKTOK_URL / IG reel URL 取得(=「本当に投稿できる」POST_ID検証)。
+- [ ] **S1-6** funnel: gen-caption.sh の bio/概要に ebook リンク差込。
+- [ ] **S1-7** dual-install → `~/.claude/skills/anicca-monk-earn`(私=Claude Code からも叩ける)。
+- [ ] **S1-8** cron 設置(jobs.json, 日次 EN+JP)。1回 fire して実 POST_ID 確認。
+
+## SKILL 2 — ebook-factory（売り物=収益）
+- [ ] **S2-1** DeepSeek で EN ebook 全10章フル生成(現状ch1のみ)。
+- [ ] **S2-2** md→PDF(整形)。
+- [ ] **S2-3** Payhip 出品 EN $9 → product URL 取得。
+- [ ] **S2-4** JP ebook(note ¥1,800 実用framing)→ note URL。
+
+## SKILL 3/4（後）
+- faceless-explainer-earn(高RPMニッチ横展開) / vimax-video-service(受注B2B)。
+
+## ONGOING
+- disk hygiene(>10GB維持)。
