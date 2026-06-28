@@ -1,0 +1,116 @@
+{
+  "iteration": 2,
+  "reviewType": "impl",
+  "feature": "founder-x402-self-facilitate",
+  "mode": "lean",
+  "phase": 3,
+  "priorBlockerClosure": [
+    {
+      "id": "blocker-1",
+      "status": "CLOSED",
+      "newLocation": "apps/x402-agents/src/server.js:126-132",
+      "evidenceOrGap": "declareDiscoveryExtension now invoked with the SDK-correct shape: top-level method/bodyType + raw `input` body + separate `inputSchema` + `output: { example, schema }`. Verified against installed @x402/extensions/bazaar createBodyDiscoveryExtension at node_modules/@x402/extensions/dist/cjs/bazaar/index.js:153-230 — `body: input` (line 168) sets info.input.body to the RAW example; `body: inputSchema` (line 197) puts the schema under schema.properties.input.properties.body. Decorative top-level fields removed (no longer present on extensions object outside the {bazaar:...} wrapper). PROP-005 tier-0 tests at __tests__/server-self-facilitate.test.js:150-185 assert the SDK-aligned shape directly."
+    },
+    {
+      "id": "blocker-2",
+      "status": "CLOSED",
+      "newLocation": "apps/x402-agents/src/server.js:78-89 + 252-256",
+      "evidenceOrGap": "Replaced unreachable Express error handler with wrapSettle(settleFn) at L78-89: catches any throw from the wrapped settle, logs `[x402.settle.error] <code> <msg>` to stderr, then re-raises the original error so @x402/express performs the SDK-defined response. Wired at L255 by passing `settle: wrapSettle(facilitator.settle.bind(facilitator))` to x402ResourceServer. Verified the wrap is actually reached: paymentMiddleware → x402HTTPResourceServer.processSettlement (core/server line 2289) → calls back through facilitatorClient.settle (core/server line 1452 / 1464) which IS our wrapped function. The contract `[x402.settle.error] LOG + RETHROW` is the impl invariant; spec amendment validation note below clarifies a remaining spec-vs-SDK gap on the SDK's response BODY shape."
+    },
+    {
+      "id": "blocker-3",
+      "status": "CLOSED",
+      "newLocation": "apps/x402-agents/src/server.js:263-271",
+      "evidenceOrGap": "CORS now uses `allowedHeaders: ['Content-Type','Authorization','X-PAYMENT']` and `exposedHeaders: ['X-PAYMENT-RESPONSE']`. The non-existent 'X-Payment-*' wildcard syntax from iter-1 is gone. Browser preflight will now match the x402 spec's singular `X-PAYMENT` request header and surface `X-PAYMENT-RESPONSE` on the response."
+    },
+    {
+      "id": "blocker-4",
+      "status": "CLOSED",
+      "newLocation": "apps/x402-agents/src/server.js:304-306",
+      "evidenceOrGap": "Replaced basename `process.argv[1].endsWith('server.js')` with the canonical ESM entrypoint check: `__isEntry = typeof process.argv[1] === 'string' && import.meta.url === pathToFileURL(process.argv[1]).href`. `pathToFileURL` import added at L9. This is exactly iter-1's fix option (a) verbatim. Standard `node src/server.js` (absolute or relative cwd) → both URLs resolve identically and match. `node -e \"import('./src/server.js')\"` → argv[1]='[eval]' → pathToFileURL('[eval]')='file:///cwd/%5Beval%5D' which does NOT match import.meta.url, so the listener is correctly disabled (no silent boot of a partial server). The pm2/dumb-init launcher edge case is acknowledged but not the canonical Node entrypoint shape, so the fix is complete per iter-1's proposal."
+    },
+    {
+      "id": "blocker-5",
+      "status": "CLOSED",
+      "newLocation": "apps/x402-agents/src/server.js:212-218",
+      "evidenceOrGap": "createApp() now performs the REQ-004b runtime assertion: `const resolved = resolveAcceptsAmount(ROUTES['POST /social/x'].accepts); if (resolved !== '3000') throw new Error('REQ-004b violation: ...')`. This fires BEFORE the in-process facilitator wiring and BEFORE app.listen(), so a Tier-2 replicator who edits PRICE_LITERAL silently to '$0.30' (or flips USDC to an 18-decimal asset) sees the boot fail loudly. Cheap, defense-in-depth — matches the iter-1 suggested fix verbatim."
+    },
+    {
+      "id": "blocker-6",
+      "status": "CLOSED",
+      "newLocation": "apps/x402-agents/package.json:7-12 + 20-29",
+      "evidenceOrGap": "scripts.start = 'node src/server.js' (the prisma generate prefix is gone). dependencies cleaned to NFR-001 floor only: viem, @x402/core, @x402/evm, @x402/express, @x402/extensions, express, cors, express-rate-limit. @coinbase/x402, @prisma/client, prisma, openai, ethers, dotenv, zod all removed. `npm install` will no longer fail on a missing prisma schema postinstall. Manifest reports the resulting node_modules is 168 packages / 123M — clean fresh-install path."
+    },
+    {
+      "id": "blocker-7",
+      "status": "CLOSED",
+      "newLocation": "apps/x402-agents/src/__tests__/server-self-facilitate.test.js:313-369",
+      "evidenceOrGap": "PROP-014 now has 4 dedicated unit tests on the exported wrapSettle: (1) wrapSettle is exported; (2) wrapped function re-raises the ORIGINAL error object (rejects.toBe(cause) — preserves identity); (3) console.error called with `[x402.settle.error]` containing the error code AND the message snippet; (4) success path passes the value through untouched and does NOT emit the error tag. Iter-2 GREEN log line 42-45 confirms all 4 tests pass."
+    },
+    {
+      "id": "blocker-8",
+      "status": "CLOSED",
+      "newLocation": "apps/x402-agents/src/server.js:226-228 + __tests__/server-self-facilitate.test.js:280",
+      "evidenceOrGap": "createApp() reads `process.env.X402_RPC_URL` and, if set, builds the viem transport against it: `const rpcTransport = process.env.X402_RPC_URL ? http(process.env.X402_RPC_URL) : http();`. PROP-011 test now passes `env.X402_RPC_URL = 'http://127.0.0.1:1'`, so the gas probe fails fast and stderr-logs `[x402.boot.gas_probe_error]` (the silent-RPC swallow is also fixed at server.js:199-203). No live Base mainnet RPC traffic. REQ-010 determinism restored. Test duration logged at 2002ms in iter-2 GREEN — that is the synthetic 2s wait window in the test, NOT a real-RPC round-trip. (Suggest: refactor the test to await the 'listening on port' line instead of fixed 2s, but that is polish, not a blocker.)"
+    }
+  ],
+  "specAmendmentValidation": {
+    "REQ-014-SDK-alignment": {
+      "status": "REFUTED",
+      "evidence": "Spec REQ-014 (behavioral-spec.md:48) claims: 'the installed @x402/express paymentMiddleware performs the SDK-defined response (HTTP 402 with body { \"error\": \"Settlement failed\", \"details\": <message> }, per @x402/express/dist/cjs/index.js lines 256-273 + 281-291)'. Installed @x402/express is 2.17.0 (node_modules/@x402/express/package.json:3), NOT the 2.4.0 the spec references. The actual installed SDK code at node_modules/@x402/express/dist/cjs/index.js:344-353 reads: `} catch (error) { if (error instanceof FacilitatorResponseError) { ... sendFacilitatorError(res, error); return; } console.error(error); bufferedCalls = []; res.status(402).json({}); return; }` — i.e. an UNEXPECTED settle exception (the wrapSettle rethrow path) produces `res.status(402).json({})` with an EMPTY body, NOT `{ error: 'Settlement failed', details: <message> }`. The FacilitatorResponseError path (line 141-143) is `res.status(502).json({ error: error.message })` — 502, not 402, and `{ error }` only. The cited spec line ranges 256-273 and 281-291 in the installed file are inside the writeHead/write/end buffering shim and the handler-invoke try/catch, NOT the 402 response. Therefore: the impl's `log + rethrow` contract is correctly implemented and the impl satisfies REQ-014 LITERALLY; but the SPEC's characterization of what the SDK responds with is stale (anchored to a version-and-line-number that no longer exists in the installed package). A Tier-2 replicator reading the spec will expect a `{error,details}` settle-failure body and get an empty `{}` — buyer-facing contract drift. (NOT a blocker for impl PASS — the impl matches the spec's contract — but logged here as an outstanding spec maintenance item.)"
+    },
+    "REQ-005-SDK-alignment": {
+      "status": "CONFIRMED",
+      "evidence": "Spec REQ-005 (behavioral-spec.md:30) claims the SDK returns `{ bazaar: { info: { input: { type:\"http\", method, bodyType, body: <input> }, output: { type:\"json\", example } }, schema: {...} } }`. Verified against node_modules/@x402/extensions/dist/cjs/bazaar/index.js:153-230 (createBodyDiscoveryExtension) and L317-326 (declareDiscoveryExtension wraps the return as `{ bazaar: extension }` when not MCP-shaped). Specifically: L168 sets `body: input` (raw example flows through); L171-176 emits `output: { type: 'json', example: output.example }` when output.example is truthy; L197 sets `body: inputSchema` in the JSON schema sub-tree at schema.properties.input.properties.body — exactly the assertion in PROP-005 tier-0 test #3 at __tests__/server-self-facilitate.test.js:174-184. The impl's SOCIAL_X_INPUT_SCHEMA has type:'object' and properties:{query,kind,limit} — non-empty — so `Object.keys(bodySchema.properties).length > 0` is robust. REQ-005 amendment aligns exactly with installed SDK."
+    }
+  },
+  "dimensions": {
+    "spec_fidelity": {
+      "verdict": "PASS",
+      "findings": [
+        {
+          "location": "behavioral-spec.md:48 (REQ-014 SDK characterization)",
+          "issue": "SPEC-side (not impl-side) drift: REQ-014 anchors its SDK-behavior claim to @x402/express 2.4.0 and to specific line numbers (256-273 + 281-291) that do not exist in the installed 2.17.0 file. Installed SDK responds with `res.status(402).json({})` (empty body) on the wrapSettle rethrow path — not `{ error: 'Settlement failed', details }`. Impl SATISFIES the spec contract (`[x402.settle.error]` log + rethrow), so this is NOT an impl finding; it is a spec maintenance item. Logged here for visibility — does not block this iter-2 verdict because the spec's normative contract on the IMPL is met.",
+          "fix": "(Spec maintenance, not impl) Amend behavioral-spec.md REQ-014 to drop the specific 2.4.0 line-number citation and either (a) state the SDK responds with whatever it responds with — impl contract is log+rethrow only — or (b) re-verify against installed 2.17.0 and document the actual `res.status(402).json({})` empty-body behavior so Tier-2 replicators don't anchor on a fictional `{error,details}` shape."
+        },
+        {
+          "location": "apps/x402-agents/src/server.js:137-142 (comment contradiction)",
+          "issue": "Trivial. Comment at L137 says `payTo is materialized inside createApp() AFTER validateEnv, NOT as a getter` but lines 139-142 immediately say `payTo is an enumerable accessor over process.env.X402_WALLET_ADDRESS`, and L147-149 IS a getter. The L137 comment lies about the implementation chosen in the same block — a reader-confusion smell.",
+          "fix": "Delete L137 (or update it to reflect the kept-getter decision). Manifest's `minorClosures.payTo-getter-smell` explicitly records 'kept as accessor' so the comment is stale, not the impl."
+        }
+      ]
+    },
+    "edge_cases": {
+      "verdict": "PASS",
+      "findings": [
+        {
+          "location": "apps/x402-agents/src/server.js:187-204 (probeGasReady race window)",
+          "issue": "PARTIAL closure of iter-1 edge_cases-1. The silent-catch is gone — the catch now logs `[x402.boot.gas_probe_error] address=<addr> reason=<msg>` (L199-203). However the fire-and-forget shape remains: `gasReady` starts at `false` (L187) and is only flipped after the promise resolves. A `/health` hit that lands within the RPC round-trip after boot returns `gas_ready:false` even for a funded wallet. iter-1 finding was NOT in the 8 blockers list so deferral is acceptable; raising as PASS-with-observation. Optional follow-up: tri-state `'true'|'false'|'unknown'` so the heartbeat can distinguish 'probed and broke' from 'never successfully probed'.",
+          "fix": "Optional (not blocking): change `let gasReady = false` to `let gasReady = 'unknown'`, set to `'true'`/`'false'` on probe resolve/reject, and serialize in the `/health` body. Or simply await the probe before app.listen() (NFR-003 budget is 2s, probe RTT is ~200ms on Base mainnet, fits the budget)."
+        }
+      ]
+    },
+    "impl_correctness": {
+      "verdict": "PASS",
+      "findings": []
+    },
+    "structural_integrity": {
+      "verdict": "PASS",
+      "findings": []
+    },
+    "verification_readiness": {
+      "verdict": "PASS",
+      "findings": [
+        {
+          "location": "apps/x402-agents/src/__tests__/server-self-facilitate.test.js:262-308 (PROP-011 fixed-2s wait)",
+          "issue": "Minor flake risk. The PROP-011 test waits a hard 2000ms before tearing down the child (line 291: `setTimeout(() => res(), 2000)`). With the X402_RPC_URL=http://127.0.0.1:1 override, the server prints `listening on port` in ~50-100ms — but the test always blocks 2s. On a slow CI runner the test could brush against the vitest default timeout. Not a regression vs iter-1 (iter-1 also took ~2s) and the test PASSES in iter-2 GREEN (2002ms reported). Optional polish: stream stdout, resolve as soon as `/listening on port/` matches, kill the child immediately — drops the test to <500ms and removes the implicit timeout coupling.",
+          "fix": "(Optional, non-blocking) Replace the fixed-2s timer with an event-driven match: `child.stdout.on('data', d => { stdout += d; if (/listening on port/.test(stdout)) { resolved = true; res(); } })` and only fall back to the 2s timer if the line never appears."
+        }
+      ]
+    }
+  },
+  "overallVerdict": "PASS",
+  "blockingFindings": [],
+  "notes": "Read disk only against installed SDK source (@x402/express 2.17.0, @x402/core 2.17.0, @x402/extensions 2.17.0 — NOT the 2.4.0 the spec REQ-014 anchors on). All 8 iter-1 blockers are CLOSED with concrete file:line evidence verified against SDK source. REQ-005 SDK-alignment CONFIRMED bit-for-bit against createBodyDiscoveryExtension at node_modules/@x402/extensions/dist/cjs/bazaar/index.js:153-230. REQ-014 SDK-alignment is REFUTED on the SPEC side (line numbers + body shape stale against installed 2.17.0) BUT the impl satisfies the spec's contract (log+rethrow) — the SDK drift is a spec maintenance item not an impl defect, so it is logged as a PASS-with-note in spec_fidelity rather than a fail. 3 non-blocking observations carried over (comment contradiction at server.js:137-142, gas-probe race window, PROP-011 fixed-2s wait) — all explicitly NOT in the 8 blocker scope and documented for future polish. Wrapping (wrapSettle wired to facilitator.settle.bind(facilitator) → x402ResourceServer → x402HTTPResourceServer.processSettlement → facilitatorClient.settle at core/server line 1452/1464) verified end-to-end against the installed SDK; the wrap IS reached on the live settle path. ROUTES Object.freeze + accepts Object.freeze + extra Object.freeze in place; getter on accepts.payTo preserved through Object.freeze (Object.freeze keeps accessor descriptors), confirmed safe because x402HTTPResourceServer holds the route config by reference (constructor line 1924) and reads accepts at request time (normalizePaymentOptions line 2345). x402Facilitator import path '@x402/core/facilitator' verified as a public export in @x402/core/package.json. NFR-001 dep floor satisfied. All Tier-0 PROPs covered. 36/36 GREEN per iter-2 evidence log. Recommendation: PASS the impl gate. Optional spec-maintenance follow-up to refresh REQ-014's SDK-version anchoring; optional polish on PROP-011 wait shape and probeGasReady tri-state. F1 §Done points (a)+(b) are met by this iter-2; §Done points (c)+(d) require Phase 4 E2E with a one-shot Base ETH gas seed on 0x810f (or F3) — that is the next adversary gate, out of scope for this Phase 3 review.",
+  "findingsCount": 4
+}
