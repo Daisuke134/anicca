@@ -233,7 +233,7 @@ question violation × 7 日連続 → claude-helper heartbeat 自動停止。 BE
 | 0.5 | 出力は常にテーブル形式。 箇条書き単体禁止 |
 | 0.6 | テストは変更した部分だけ |
 | 0.7 | スペックに「任意」「optional」「推奨」禁止。 全て MUST |
-| 0.8 | コンテキスト 50% で `/compact`。 タスク完了即コミット |
+| 0.8 | **`/compact` は コミット直後 (= 作業の区切り) でのみ。 実装途中の手動 compact 禁止** (= 圧縮で「次に何をするつもりだったか」が要約に溶け、半分実装の上に別実装を重ねる事故。 Qiita ミス#3)。 長作業は計画を spec/plan file に永続化 (会話=揮発、 file=不揮発)。 コンテキスト 50% 目安、 タスク完了即コミット |
 | 0.10 | スペック 100% 明確になるまで実装禁止 |
 | 0.11 | テキスト羅列禁止。 テーブル/ASCII図/絵文字でビジュアル化 |
 | 0.12 | **完了宣言前に必ず `superpowers:verification-before-completion` 5-step gate (IDENTIFY → RUN → READ → VERIFY → CLAIM)。 Fresh evidence 無しの「rendered ✓」「pushed ✓」「Done!」は嘘**。 詳細: `.claude/rules/verification.md` + memory HARD RULE #8 |
@@ -257,118 +257,13 @@ question violation × 7 日連続 → claude-helper heartbeat 自動停止。 BE
 | 0.30 | **BROWSER 4-tier 固定順序 (Dais 2026-06-08 verbatim) — 順序逆転 = 罪、 progress kill 原因**: ★ camofox > cloakbrowser > agent-browser > playwright-cli ★。 ①SaaS login / Google OAuth / Microsoft / GitHub / Cloudflare / reCAPTCHA / Turnstile / 任意 captcha + fingerprint 検出系 = **camofox 必須** (`~/.openclaw/skills/camofox-browser/` :9377、 stealth Firefox、 default session に Daisuke Google OAuth 既存) ②camofox binary missing / config 不可 = cloakbrowser (`~/.openclaw/skills/_shared/venv-cloak/bin/cloakbrowser`) ③stealth 不要 + 単純 web (Tally / 公開 Google Form / static) = agent-browser (`/opt/homebrew/bin/agent-browser`) ④CDP / Chrome 特有 / 高速 small test = playwright-cli skill。 ★ 違反 = agent-browser を 先 試行 → Google fingerprint 弾き → progress kill ★ (= a16z Speedrun reCAPTCHA / Microsoft GitHub OAuth で 実証 2026-06-07/08)。 Dais verbatim 2026-06-08: 「always camofox -> cloack browser -> agent borwwser -> playrigth cli in this order yes」 + 「becoming exteremlet toxic at this point.. killing many of our progress」。 [[feedback_browser_order_camofox_first]] [[feedback_dont_assume_captcha_try_first]] mirror。 |
 | 言語 | **回答は常に日本語** |
 
-## TIER A AUTONOMOUS BYPASS PATTERNS (= 2026-06-06 verified、 「fucking invisible」)
+## TIER A AUTONOMOUS BYPASS PATTERNS → skill `tier-a-bypass` (2026-06-28 skill 化)
 
-人間 介入 ゼロ で SaaS signup / login / payment / 3DS / OTP read を 全部 通せる pattern 群。 「CAPTCHA だから諦め」 「OAuth は人」 「3DS は phone 要」 と 言いそうな 瞬間 = ★ 違反 ★、 まず この section 確認。
+★ human-zero SaaS signup / login / payment / Cloudflare Turnstile / hCaptcha / reCAPTCHA / Stripe 3DS / 銀行 OTP 突破 の runbook は skill に移設 ★。 「CAPTCHA だから諦め」「OAuth は人」「3DS は phone 要」 と 言いそうな 瞬間 = ★ 違反 ★ = まず `Skill` → `tier-a-bypass` を invoke (= CapSolver + camofox + Gmail-OTP の Pattern 1-4 verbatim runbook)。
 
-### Pattern 1 — Cloudflare Turnstile / hCaptcha 突破 (= CapSolver + camofox)
-
-★ 2026-06-06 SMSPool anonymous account 自動 登録 + Stripe Visa $5 deposit + 9 TikTok 番号購入、 全 step human-in-loop ゼロ で完走 verify ★。
-
-| 項目 | 値 |
-|---|---|
-| API key | `~/.openclaw/.env::CAPSOLVER_API_KEY` (= `CAP-...DFC5419`) |
-| cost | Turnstile = $0.0003/solve、 hCaptcha = $0.001/solve、 reCAPTCHA v2 = $0.0008/solve |
-| solve 時間 | ~1 秒 (= sleep 5 後 polling 1 回で ready 返却) |
-| browser | ★ camofox 必須 ★ (= Camoufox stealth Firefox、 :9377)。 agent-browser / Playwright は fingerprint で先に弾かれる |
-
-```bash
-# 1. site 開く (camofox)
-TAB=$(curl -sS -X POST http://localhost:9377/tabs \
-  -H 'Content-Type: application/json' \
-  -d '{"url":"<target>","userId":"anicca","sessionKey":"<key>"}' | jq -r .tabId)
-
-# 2. sitekey 取得 (evaluate)
-curl -sS -X POST "http://localhost:9377/tabs/$TAB/evaluate" \
-  -H 'Content-Type: application/json' \
-  -d '{"expression":"(() => Array.from(document.querySelectorAll(\"[data-sitekey]\")).map(e => e.dataset.sitekey))()","userId":"anicca","sessionKey":"<key>"}'
-
-# 3. CapSolver createTask
-TASK=$(curl -sS -X POST https://api.capsolver.com/createTask \
-  -H 'Content-Type: application/json' \
-  -d "{\"clientKey\":\"$CAPSOLVER_API_KEY\",\"task\":{\"type\":\"AntiTurnstileTaskProxyLess\",\"websiteURL\":\"<target>\",\"websiteKey\":\"<sitekey>\"}}" | jq -r .taskId)
-
-# 4. poll (5-10 秒で ready)
-sleep 5
-TOKEN=$(curl -sS -X POST https://api.capsolver.com/getTaskResult \
-  -H 'Content-Type: application/json' \
-  -d "{\"clientKey\":\"$CAPSOLVER_API_KEY\",\"taskId\":\"$TASK\"}" | jq -r .solution.token)
-
-# 5. inject + click Submit (ref via snapshot)
-curl -sS -X POST "http://localhost:9377/tabs/$TAB/evaluate" \
-  -H 'Content-Type: application/json' \
-  -d "{\"expression\":\"(() => { const inp = document.querySelector('[name=cf-turnstile-response]'); inp.value = '$TOKEN'; inp.dispatchEvent(new Event('change',{bubbles:true})); })()\",\"userId\":\"anicca\",\"sessionKey\":\"<key>\"}"
-```
-
-### Pattern 2 — Stripe 3DS / 銀行 OTP 自動承認
-
-★ MUFG-Visa debit / Stripe Link で $5 payment 完走 verify ★。 MUFG 3DS は eメール OTP (= keiodaisuke@gmail.com) 送信、 Gmail から `gog gmail` で auto-read → coord click + key press で iframe 入力 → 確認 click。
-
-```bash
-# 1. 3DS 開始 (Stripe Pay button click)
-curl -sS -X POST "http://localhost:9377/tabs/$TAB/click" \
-  -H 'Content-Type: application/json' \
-  -d '{"coordinates":{"x":1154,"y":680},"userId":"anicca","sessionKey":"smspool"}'
-sleep 8
-
-# 2. Gmail から OTP read (= gog gmail search + get、 認証コード regex)
-set -a; . ~/.openclaw/.env; set +a
-THREAD_ID=$(gog gmail search --account keiodaisuke@gmail.com --json --limit 1 "MUFG OR 認証 newer_than:5m" | jq -r '.threads[0].id')
-OTP=$(gog gmail get $THREAD_ID --account keiodaisuke@gmail.com --json | python3 -c "
-import json,sys,re
-d = json.load(sys.stdin)
-m = re.search(r'認証コード[：:]\s*(\d{6})', d['body'])
-print(m.group(1) if m else '')
-")
-
-# 3. 入力欄 coord click + 1 digit ずつ key press (iframe で type が refuse される場合の workaround)
-curl -sS -X POST "http://localhost:9377/tabs/$TAB/click" \
-  -H 'Content-Type: application/json' \
-  -d '{"coordinates":{"x":777,"y":388},"userId":"anicca","sessionKey":"smspool"}'
-for d in $(echo $OTP | grep -o .); do
-  curl -sS -X POST "http://localhost:9377/tabs/$TAB/press" \
-    -H 'Content-Type: application/json' \
-    -d "{\"key\":\"$d\",\"userId\":\"anicca\",\"sessionKey\":\"smspool\"}" >/dev/null
-done
-
-# 4. 確認 click
-curl -sS -X POST "http://localhost:9377/tabs/$TAB/click" \
-  -H 'Content-Type: application/json' \
-  -d '{"coordinates":{"x":777,"y":482},"userId":"anicca","sessionKey":"smspool"}'
-```
-
-### Pattern 3 — SaaS anonymous signup full flow
-
-★ SMSPool anonymous account = Pattern 1 + 2 の合わせ技で完全自動化 ★。 application: TokPortal / Postiz / 他 SaaS の登録、 全部 同 path。
-
-1. camofox で `/register` open
-2. form ref via snapshot
-3. ToS checkbox click (ref)
-4. Turnstile solve (= Pattern 1) → token inject
-5. Submit click
-6. 返却 ID 確認 input に 自動 type
-7. dashboard へ移動 + login 状態維持 (= cookie + storage は sessionKey 経由で persist)
-
-### Pattern 4 — どこに 何が 書いてある か (= future-me が 即 参照 する map)
-
-| file path | 用途 |
-|---|---|
-| **`~/.claude/projects/-Users-anicca-anicca-project/memory/reference_capsolver_turnstile_bypass.md`** | 完全 verbatim runbook (= 全 5 step + sister memory link) |
-| **`~/.claude/projects/-Users-anicca-anicca-project/memory/MEMORY.md`** | index 行 1 (= 🟢🟢🟢 LIVE PROOF) で常時 context 載せ |
-| **`~/anicca-project/CLAUDE.md`** | ★ この section ★ (= project CLAUDE.md の TIER A section) |
-| **`~/anicca-project/docs/superpowers/specs/2026-06-07-tiktok-ig-yt-poster-warmer-design.md`** | §1 Goal + §4 各 skill の CapSolver usage 欄 で 参照 |
-| `~/.openclaw/skills/camofox-browser/SKILL.md` | camofox REST API (= click / type / evaluate / screenshot / scroll / press) reference |
-| `~/.openclaw/.env::CAPSOLVER_API_KEY` | API key 本体 |
-| `~/Developer/camofox-browser/server.js` | camofox endpoint 一覧 (= `/click` に `coordinates: {x,y}` field 取れる、 iframe 内 widget 用) |
-
-### Pattern が 通用 する 対象 (= 適用範囲)
-
-| 通る (= verified) | 通らない / 注意 |
-|---|---|
-| Cloudflare Turnstile 保護 SaaS signup / login | TikTok signup の DataDome + device fingerprint = 別系統、 CapSolver では不可 → 別 path 必要 (= TikTok Web Login は camofox 単体で十分、 challenge 出ないケース多い) |
-| hCaptcha 保護サイト (= `HCaptchaTaskProxyLess`) | 一部 site で `ERROR_INVALID_TASK_DATA` 返す → Turnstile 版 (= `AntiTurnstileTaskProxyLess`) に switch して通す (= SMSPool で実証、 同 site に複数 captcha 系統 共存ケース) |
-| reCAPTCHA v2 invisible | Anti-Captcha の `RecaptchaV2TaskProxyless` 等 fallback あり |
-| Stripe Link / Stripe Checkout (= iframe 内 card 選択 + Pay) | Stripe Link 自動 fill (= Dais の saved MUFG card 自動表示) は keiodaisuke@gmail.com Gmail login state に依存 |
+- skill 本体: `~/anicca-project/.claude/skills/tier-a-bypass/SKILL.md`
+- 完全 verbatim runbook (memory): `~/.claude/projects/-Users-anicca-anicca-project/memory/reference_capsolver_turnstile_bypass.md`
+- API key: `~/.openclaw/.env::CAPSOLVER_API_KEY` / camofox: `~/.openclaw/skills/camofox-browser/SKILL.md` (:9377)
 
 ## 実行環境
 
