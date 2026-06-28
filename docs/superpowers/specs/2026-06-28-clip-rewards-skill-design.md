@@ -37,7 +37,7 @@ AI が自分で動画を切り抜いて per-view 報酬を受け取る。 受取
 ★ 重要 insight (Dais 2026-06-28 verbatim) ★: 「USDC を merchant が直接受け取る場所は rare、 しかし USDC を受け取って自分で off-ramp するのは超簡単」。 → **Stripe Connect → JP bank (Mode 2)** よりも **USDC → Dais wallet → Dais 自己 off-ramp (Mode 1B)** の方が same goal を fewer hops で達成。 Mode 2 は legacy / non-crypto buyer fallback。
 
 ```
-                 ┌── ClipAffiliates ─USDC─► 0x810f (Anicca wallet, Base)
+                 ┌── ClipAffiliates ─USDC─► tvTn7tis...TrNT (Anicca wallet, Solana) [corrected 2026-06-28: ClipAffiliates pays USDC-Solana only, not Base]
                  │                          ★ Mode 1A: AI 自身の財布 ★
                  │                          = "every Claude が自分で稼ぐ"
                  │                          ★ PRIORITY = holy grail ★
@@ -236,6 +236,52 @@ payout: YouTube YPP → AdSense → JP 銀行 (= Mode 2、 50:50 折半は MCN �
 5. **EN podcast の JP 投稿は YouTube 不可** — JP 法に fair use 規定なし ([kirari.io](https://www.kirari.io/blog/vtuber-clip-guide))。 ★ Path B は ClipAffiliates / Whop / Anicca own SNS のみ ★。
 6. **ボット視聴 / fake metric = 全 platform 即 BAN** — [Whop guidelines](https://whop.com/guidelines/) verbatim "Platform manipulation"。 view ブーストは絶対やらない、 投稿の自動化のみ。
 7. **#PR / 「広告」 表記必須** — 景表法 (JP) + FTC (US)、 affiliate / 案件 clip 全部対象。
+8. ★ **ClipAffiliates payout chain = SOLANA ONLY** ★ (= dropdown 確認 2026-06-28、 STABLECOINS section に "USDC (Solana) Recommended" のみ、 CRYPTOCURRENCY section 空)。 Base / EVM の wallet (0x...) は受け取れない。 → Mode 1A target wallet = `tvTn7tisC5JWV81iDeFeLPcHapAamvXcyJVKia1TrNT` (Anicca Solana 既存 keypair、 env `SOLANA_PUBKEY` / `ANICCA_SOLANA_KEY`)、 Mode 1B も Dais の Solana wallet が望ましい (EVM だと bridge 必要)。
+9. ClipAffiliates setup wizard = 3 step (country → wallet → social)、 **全 step 完了まで earn 不可** ("You won't be able to earn until setup is complete")。
+
+## §14 Post-execution learnings 2026-06-28 (this session) — for future hand-off
+
+### C4-1 完了サマリー
+- ★ ClipAffiliates アカウント作成 + Solana 払出 wallet bind 完了 ★ (= Mode 1A operational once step 3 social link が完了次第)
+- account: id=5597, username=`anicca`, email=`tt-anicca@agentmail.to`, country=Japan
+- creds: `~/.cloak/clipaffiliates-anicca.json` (chmod 600)
+- payout: USDC-Solana → `tvTn7tisC5JWV81iDeFeLPcHapAamvXcyJVKia1TrNT`
+- evidence: screenshots `/tmp/.../scratchpad/ca-signup-{01..14}.png`
+
+### 手口 (= 後継 instance 用 cheat-sheet)
+- Driver: `~/.claude/skills/ig-account-create/scripts/cdp.py` (raw CDP per-tab、 ~100ms attach、 daily-driver tab 触らず new tab のみ)
+- AgentMail OTP/verify: `read_otp.py` 拡張で `Verify your email — ClipAffiliates` 件名検索 → body 内 `https://clipaffiliates.com/verify-email?token=...` を抽出 → 同 tab で nav
+- React controlled inputs (signup OK だが login form は壊れた): ★ `Input.insertText` だけでは React state 更新されないケース有り ★ → fallback = native value setter + `dispatchEvent('input'/'change')`:
+  ```js
+  const setter = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(el), 'value').set;
+  setter.call(el, val);
+  el.dispatchEvent(new Event('input', {bubbles:true}));
+  el.dispatchEvent(new Event('change', {bubbles:true}));
+  ```
+- `<select>` 同様の pattern (setNative + dispatch input + change)
+- AgentMail JSON parse: 一部 control char が混ざる → `json.loads(raw, strict=False)` 必須
+
+### agentmail.to の評判 — platform-by-platform
+- ★ ClipAffiliates: **OK** ★ (crypto-friendly、 fraud filter 緩い)
+- IG: ★ NG ★ (disposable domain で auto-suspend、 appeal 通る場合あり = `aishigoto.labo` 復活 2026-06-28)
+- 教訓: per-platform 判断必要、 IG/TikTok/Meta 系は Gmail/独自ドメイン推奨、 マイナー SaaS は agentmail OK
+
+### ClipAffiliates platform 観察 (= 後で活きる)
+- avg CPM = $4.20 (= Whop の 4×、 Avg Campaign数=12 アクティブ、 10M+ views tracked)
+- payout = USDC-Solana のみ (Base 等 EVM 不可)
+- 案件 brief 72h auto-approve window
+- community = Telegram (active)
+- 投稿先 = TikTok / IG / YouTube / X (= Skill 1 で作る Anicca accounts と一致)
+- earning gated on all 3 setup steps complete
+
+### Mode 1A の実装更新
+| 旧 | 新 |
+|---|---|
+| 行先 = `0x810f` (Base) | 行先 = `tvTn7tis...TrNT` (Solana) |
+| ClipAffiliates payout setting | 同左、 USDC (Solana) 1 択 |
+| key location | `~/.openclaw/.env::SOLANA_PUBKEY` + `ANICCA_SOLANA_KEY` |
+
+Mode 1B (= Dais wallet) も同様に Solana 推奨 — Dais EVM のみ持ってるなら bridge (Wormhole / Allbridge) → 別 task。
 
 ## §12 ★ Full-scale architecture — how Claude earns for itself AND for Dais ★
 
