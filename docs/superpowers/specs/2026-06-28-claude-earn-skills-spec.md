@@ -70,19 +70,25 @@ Dais verbatim: "You cannot post to my existing one, so go create one… make a n
 | deliverable capability | target AI-doable tasks: 翻訳 / SEO記事 / 品質検証 / faceless動画制作 (NOT 会話録音=needs human voice) | no | which task types win fastest |
 | Payoneer | Phase 0 | KYC | — |
 
-### Skill 4 — clip-rewards (harv)
+### Skill 4 — clip-rewards (per-view, dual-payout) — UPDATED 2026-06-28 post-research
+**Detailed spec:** `2026-06-28-clip-rewards-skill-design.md`. **Dual-payout (Dais 2026-06-28)**: Mode 1 = ClipAffiliates → **USDC** → Anicca wallet 0x810f (★ AI-native, zero KYC, holy grail ★); Mode 2 = Whop → Stripe Connect → Dais JP bank. Same pipeline, both run in parallel.
+
 | Prereq | Action | Human tap? | Uncertainty |
 |---|---|---|---|
-| Whop account + join a Content Rewards campaign | signup | maybe KYC | campaign availability/eligibility; per-campaign min followers; **JP-bank payout via Whop UNCONFIRMED** |
-| social accts | reuse Skill 1's new accts (or dedicated clip accts) | no | reuse-vs-dedicated |
-| brand content source | from the campaign brief | no | each campaign supplies assets |
-| Vyro / Clipping.net / ecomrads | — | — | **UNVERIFIED = treat as hype; Whop only until proven** |
+| **ClipAffiliates** account (Mode 1, primary) | signup, crypto-only payout to 0x810f | no (wallet-only) | account approval for AI faceless clips |
+| **Whop** Content Rewards (Mode 2, secondary) | signup, KYC, Stripe Connect → JP bank | KYC: Dais ID + bank | JP bank payout via Stripe Connect not officially documented; account-freeze reports exist |
+| **Vyro** (safety net) | signup (invite-list if gated) | maybe KYC | partner-roster limited to MrBeast-tier brands |
+| social accts | reuse Skill 1's new Anicca handles (same niche) | no | — |
+| brand content source | campaign brief OR public EN podcasts (free) | no | which brand briefs allow AI/faceless |
+| OSS clipping stack | long-form → 15-30 short clips + JP subtitle | no | tooling choice (pending fork `clip-tooling-jp`) |
+
+**Skip (verified 2026-06-28)**: Clipping.net (100K-view payout floor too high), TikTok CRP (AI/text-overlay/loop not paid), YouTube Shorts ad-share (二次利用 disqualified), IG Reels Bonuses (program effectively retired).
 
 ## §3 ALL open uncertainties (the list Dais asked for)
 1. **Amazon Associates approval** — JP/US require a qualifying site/app/SNS at signup; a brand-new faceless account may be rejected. → may need to seed the new social account with some content first, OR register Dais's existing presence install-locally.
 2. **PA-API access gate** — needs 3 qualifying sales in 180 days to KEEP it. Early link-gen must use **SiteStripe** (manual/browser) until sales unlock PA-API.
 3. **TikTok signup** — DataDome + device fingerprint, NOT CapSolver-bypassable (per memory). May need camofox or a manual tap.
-4. **Whop JP-bank payout** — unconfirmed; clipper min-followers per campaign unknown.
+4. **Whop JP-bank payout** — unconfirmed via Stripe Connect; account-freeze reports common (Mode 2 risk). → mitigated by **ClipAffiliates USDC self-pay (Mode 1)** which bypasses JP bank entirely; both run in parallel per `2026-06-28-clip-rewards-skill-design.md`.
 5. **Upwork automation ToS** — bans automated/AI-spam proposals; winning work needs real-time client interaction = the least-automatable of the 4.
 6. **#PR / 景表法 / FTC disclosure** — every affiliate/clip post MUST carry #PR/「広告」.
 7. **Which poster** works for each NEW account (Postiz integration vs camofox-direct).
@@ -145,10 +151,13 @@ Per-skill daily action:
 - S3-4 Build `earn-jutaku-gig`: daily scan new gigs/orders → bid (Upwork, ToS-safe non-spam) or fulfill (Fiverr/Coconala incoming) → deliver via engine → measure win-rate → STATE.
 - S3-5 daily `claude -p`+launchd (local) + `/goal`. Verify FIRST payout > ¥0 → ledger.
 
-**PHASE 3 — SKILL 4 clip-rewards**
-- S4-1 Create Whop account; join an active Content Rewards campaign.
-- S4-2 Build `earn-clip-rewards`: daily check campaigns → mass faceless clips (engine) → post to accounts → measure views → STATE.
-- S4-3 daily `claude -p`+launchd (local) + `/goal`. Verify FIRST Whop payout > $0 → Payoneer → ledger. (Vyro/ecomrads unverified=skip.)
+**PHASE 3 — SKILL 4 clip-rewards (dual-payout)** — full TODO in `2026-06-28-clip-rewards-skill-design.md` §8
+- S4-1 ClipAffiliates signup (**Mode 1**, USDC → Anicca wallet 0x810f) + Whop signup (**Mode 2**, Stripe Connect → JP bank) + Vyro (safety net).
+- S4-2 Join 1 active campaign in each platform; verify AI/faceless OK per brand brief.
+- S4-3 Implement long-form → 15-30 short-clip pipeline + JP burned-in subtitle (OSS stack from fork `clip-tooling-jp`).
+- S4-4 do-once: 1 short clip live on Anicca TikTok+IG+X (Skill 1 accounts), submitted to each platform.
+- S4-5 daily `claude -p`+launchd + `/goal "USDC settle to 0x810f > $0 within 30d"`. Verify **FIRST USDC tx on Basescan = holy-grail proof** → ledger row (`payout_mode: "usdc_self"`).
+- S4-6 Mode 2 parallel: verify FIRST JPY settle to Dais bank → ledger row (`payout_mode: "jpy_bank"`).
 
 **PHASE 4 — SKILL 2 youtube-faceless**
 - S2-1 Create new YouTube channel (niche).
