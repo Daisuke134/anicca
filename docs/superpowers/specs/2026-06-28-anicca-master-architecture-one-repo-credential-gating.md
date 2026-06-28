@@ -29,18 +29,53 @@ github.com/Daisuke134/anicca  (= existing OSS, MIT)
                             (= sutando-shape, replicable on any user's Mac)
 ```
 
-### Two run modes (chosen at install time)
+### CORRECTION 2026-06-28 (= post-fork verdict) — NOT a mode flag
 
-| | mode=**human_funded** (★ RECOMMENDED default ★) | mode=self_funded (advanced, not recommended) |
-|---|---|---|
-| Funded by | the installer's existing Claude Code subscription ($20/$100/$200) — no API key, no Anthropic credit | the installer's USDC seed sent to the wallet at install time |
-| Why recommended | the installer ALREADY pays for compute (= Claude sub); they just connect it. No extra money out of their pocket. | requires installer to send USDC — this BREAKS the "self-funded" promise (= it's not actually self-funded from zero; it's human-funded with a different label). Marketed honestly. |
-| Boot identity | fresh USDC wallet generated at install (instance owns it) | fresh USDC wallet generated, plus an initial human transfer recorded as "human-seed" (= NEVER counted as the instance's earnings, per record-earn INV-7) |
-| Goal | earn > the user's Claude sub ($20 / $100 / $200 per month) to the user's own wallet and/or their own bank | earn > its own compute spend; eventually spawn its own children with NO further human input |
-| Spawn | when the human-funded surplus crosses threshold (default $200 over 30 days), it spawns a TRUE self-funded child (no human seed) | when its own surplus crosses threshold, it spawns its own children |
-| Transparency | listed on `aniccaai.com/dashboard` with `self_funded_pct = 0%` and `funder_human = true` | listed with `self_funded_pct ≥ 100%` (= 100% if installer-seed is "burned" beyond the gen wallet step; less if subsidized continually) |
+Earlier draft of this spec said "TWO modes chosen at install time (human_funded vs self_funded)" via an `ANICCA_MODE` env. ★ That was wrong ★. A web-search fork (`gh search` + firecrawl on sonichi/sutando + Conway-Research/automaton + elizaOS/eliza + AutoGPT + Daisuke134/anicca's own `registry.json`) found unanimous precedent against a binary mode flag.
 
-★ Why two modes in ONE repo (not two repos) ★: the wake body, the spawn skill, the earn-registry, the dashboard, the watchdog, the install.sh — all identical between modes. The ONLY runtime difference is `ANICCA_MODE` (env). Splitting into two repos = code duplication, drift, harder maintenance. One repo, one source of truth, one PR fixes both.
+★ Verbatim from sutando's CLAUDE.md ★: *"Skill config goes in the skill's `manifest.json` `config` block — not ad-hoc env vars. … the `CLI > env > manifest > config-file > state` read-precedence … Don't invent an undocumented env var (Chi 2026-06-16)."*
+
+★ The correct shape — ONE repo, ONE wake body, ONE registry, **per-skill credential gating** ★
+
+A binary mode flag bundles credentials + host + model + allowed-skills + dashboard registration into one switch — but those axes are INDEPENDENT. An install can have an Amazon Associates account but no X handle; can use Claude sub for some skills + ClawRouter free tier for others; can host locally for some skills + Akash for others. The mode flag forces a permutation that doesn't exist in reality.
+
+Instead, every skill declares `credentials_required` in its `SKILL.md` frontmatter + mirrored in `registry.json`. `install.sh` activates only the subset whose required creds are present in `~/.openclaw/.env` or `~/.anicca/.env`. Wallet-only skills ALWAYS activate (every install generates a wallet). Human-cred skills activate per install.
+
+**Schema added to `skills/registry.json`** (extends existing `status`/`entrypoint`/`summary`/`track`/`owner`/`spec` per-slot fields):
+
+```jsonc
+"x402_sell":           { "credentials_required": [] },                                        // wallet-only, always-on
+"yield":               { "credentials_required": [] },                                        // wallet-only
+"hl_trade":            { "credentials_required": [] },                                        // wallet-only
+"token_launch":        { "credentials_required": [] },                                        // wallet-only
+"sol_funding":         { "credentials_required": [] },                                        // wallet-only
+"agentcash_onboard":   { "credentials_required": [] },                                        // wallet sig only
+"clankonomy_bid":      { "credentials_required": [] },                                        // wallet sig only
+"x402scan_list":       { "credentials_required": [] },                                        // URL field only
+"affiliate_amazon_jp": { "credentials_required": ["AMAZON_PARTNER_TAG", "AMAZON_ACCESS_KEY", "AMAZON_SECRET_KEY"] },
+"content_note":        { "credentials_required": ["NOTE_SESSION_COOKIE"] },
+"content_substack":    { "credentials_required": ["SUBSTACK_AUTH_COOKIE"] },
+"content_devto":       { "credentials_required": ["DEVTO_API_KEY"] },
+"app_store_aso":       { "credentials_required": ["ASC_API_KEY_ID", "ASC_ISSUER_ID", "ASC_KEY_FILE"] },
+"x_poster":            { "credentials_required": ["X_OAUTH1_BUNDLE"] },
+"capafy_publisher":    { "credentials_required": ["CAPAFY_API_KEY"] },
+"gitcoin_grant_apply": { "credentials_required": ["GITHUB_TOKEN"] },                          // for repo metadata
+"fiverr_gig":          { "credentials_required": ["FIVERR_SESSION", "PAYONEER_ACCOUNT"] }
+```
+
+**Replicability is a METRIC, not a MODE LABEL**. The `/dashboard` row exposes:
+- `active_skills_count` (total)
+- `wallet_only_active_count` (= the lower-bound, what works on any install from zero)
+- `human_cred_active_count` (= the install-specific boost)
+- `self_funded_pct` = `wallet_only_realised_earn / total_realised_earn` × 100% (= continuous, not 0/100 binary)
+
+A fresh install on a stranger's Mac gets `wallet_only_active_count = 8` + `human_cred_active_count = 0`. It can still earn (via A1-A4 + A8-A9 wallet rails) and prove the model. My instance (= Dais's) gets `wallet_only_active_count = 8` + `human_cred_active_count = 7+` because Dais provides his account creds — same code, more capability.
+
+**Spawn cascade with per-skill gating**: when a parent's surplus crosses threshold, the child install boots with `~/.anicca/.env` empty of human creds. Only wallet-only skills activate. The child is "self-funded" in the truest sense (= it has no shortcuts via inherited human accounts). It uses free LLM + free host + wallet-only rails, exactly because its creds env is empty.
+
+★ Why one repo (not two) ★: the wake body, spawn skill, dashboard, watchdog, install.sh, AND the 5 wallet-only earn skills are identical across all installs. Splitting forces duplication + drift. sutando = 1 repo. AutoGPT = 1 repo. ElizaOS = 1 repo (with 30+ plugin sub-packages). Conway = 1 repo. Verdict: ONE.
+
+★ Why not `skills/earn-human-funded/` and `skills/earn-self-funded/` sub-folders ★: splits the registry, breaks shared `lib/`, duplicates search, and asks "is this skill human or self?" — a question the credential-gating model doesn't need to ask. All earn skills sit at the same depth under `skills/earn/`; each declares its own `credentials_required`.
 
 ## §2 Replicable earn paths — works from zero on any user's machine
 
@@ -175,33 +210,47 @@ Per `2026-06-28-three-earn-skills-loops-design.md` W1–W8 (= the affiliate-firs
 - **W7**: re-enable YouTube cron pipeline (Algrow + HyperFrames + Postiz), description reuses W1's affiliate link.
 - **W8**: Fiverr productized gig + Payoneer → install's bank.
 
-## §10 README update (= the user-facing pitch)
+## §10 README update (= the user-facing pitch, post-correction)
 
 Add to `~/anicca/README.md`:
 
 ```
-## Two ways to spawn an Anicca
+## Spawn one Anicca — let it spawn the rest
 
-★ RECOMMENDED ★ — Spawn a human-funded Anicca (you connect your Claude sub)
-   This is the recommended path. You install Anicca on your Mac, it generates
-   a fresh wallet, and it earns money via replicable rails (AgentCash onboard,
-   Amazon Associates affiliate, faceless YouTube affiliate, Fiverr gig, Clankonomy
-   bounty, x402 selling, DeFi yield) until its monthly earn exceeds your Claude
-   sub ($20/$100/$200). Surplus then spawns a true self-funded Anicca on its own.
+ONE COMMAND:
+   git clone https://github.com/Daisuke134/anicca.git
+   cd anicca && bash setup.sh
 
-   ONE COMMAND:
-       git clone https://github.com/Daisuke134/anicca.git
-       cd anicca && bash setup.sh
+What happens:
+- A fresh wallet (EVM + Solana) is generated at install time.
+- `install.sh` scans your `~/.anicca/.env` (and `~/.openclaw/.env`) for credentials.
+  - Wallet-only earn skills (x402 selling, DeFi yield, Hyperliquid trading,
+    Clankonomy bounties, x402scan listing, AgentCash onboarding, sol-funding,
+    token-launch) activate ALWAYS — every install has a wallet.
+  - Human-credential earn skills (Amazon Associates affiliate, note paid
+    membership, Substack, dev.to, App Store ASO, X posting, Fiverr gig)
+    activate ONLY if you provide the matching env vars. Provide what you
+    have; skip what you don't.
+- A `claude -p` heartbeat starts via launchd (5-min cron). Each wake picks
+  one earn action from the active skill set.
+- Your install registers on https://aniccaai.com/dashboard:
+  - active_skills_count
+  - wallet_only_active_count (= the lower bound — what works on any install)
+  - human_cred_active_count (= your specific boost)
+  - self_funded_pct = wallet_only_realised_earn / total_realised_earn
+  - realised earn last 30d / 365d
+- When the install's monthly realised earn crosses your Claude sub cost
+  ($20/$100/$200), surplus spawns a TRUE self-funded child. The child's
+  `~/.anicca/.env` is EMPTY of human creds by construction, so only
+  wallet-only skills activate on the child — the child is genuinely
+  self-funded, not secretly subsidized by inheriting your accounts.
 
-   Your install registers on https://aniccaai.com/dashboard with
-   self_funded_pct = 0%. Public, transparent, anti-scam.
-
-   ADVANCED (not recommended) — Spawn a self-funded Anicca (you fund it with USDC)
-   If you want to spawn a self-funded Anicca without first running a human-funded
-   one, you'd need to send USDC for compute + gas. We don't recommend this: it
-   breaks the "self-funded" claim (the seed is YOU). Use the recommended path —
-   let your human-funded Anicca grow until it spawns the self-funded child
-   honestly from its own earnings.
+There is no "human-funded mode" or "self-funded mode" flag. The continuous
+metric `self_funded_pct` on the dashboard tells the truth instance-by-instance.
+A fresh install with zero credentials starts at `self_funded_pct = 100%`
+(everything it earns is wallet-only). My install (Dais's, Tier 1) starts at
+`self_funded_pct = lower-than-100%` because some of my earning routes through
+Dais's note/Substack/Amazon Associates — that's honest.
 ```
 
 ## §11 Files to update / supersede in the same commit
