@@ -78,5 +78,69 @@
 ## §4 Build order (one skill at a time; each must earn daily + iterate before next)
 Phase 0 (cross-cutting prereqs + engine + ledger) → **Skill 1 affiliate** (engine foundation, links reused by 2&4) → **Skill 3 jutaku** (fastest real $, run in parallel once engine exists) → **Skill 4 clip** (reuse engine) → **Skill 2 youtube** (slowest; affiliate-desc early). Each skill: build → `/loop 24h` soak → `/schedule daily` + `/goal` verify real earn>0 → mark done → next.
 
-## §5 DONE (this spec)
-All 4 skills named, money mechanics traced to articles, every prerequisite + every uncertainty listed, account decision made (new dedicated niche accounts), build order set. Ready: on Dais "go", execute Phase 0 + Skill 1.
+## §6 LOOP mechanics — how each KEEPS earning daily, autonomously (NOT one-shot)
+
+★ The loop runs ITSELF. I set it up once via `/schedule daily` (Anthropic cloud Routine: fires every day, Mac-off OK, Dais types NOTHING). Fallback = `claude -p` + launchd on the always-on Mac mini. It is NEVER a slash command Dais runs by hand. ★
+
+Universal daily cycle (every skill shares it; `STATE.md` = memory across runs):
+```
+EVERY DAY (autonomous):
+  read STATE.md (what posted, what converted, ledger, what to avoid)
+   → 1. RESEARCH fresh (today's trending products/topics/hooks)
+   → 2. GENERATE (faceless-visual-engine, $0)
+   → 3. POST to own accounts (#PR + link)
+   → 4. MEASURE yesterday's posts (views/clicks/sales from platform/ASP report)
+   → 5. LEARN (recursive-improver: amplify winners, kill losers)
+   → 6. RECORD earn (un-fakeable ledger) → dashboard
+   → 7. /goal check (earn growing? > sub cost?) → write STATE.md → sleep
+   └────────────── repeat forever, no human ──────────────┘
+```
+Why it COMPOUNDS (not one-shot): posts are evergreen (old keep earning + new add) · winners get amplified (conversion rises) · account reach grows daily (each post reaches more) · ledger+/goal self-correct toward more $.
+
+Per-skill daily action:
+- **1 affiliate**: pick N trending niche products → N decks → post → measure clicks/sales → amplify winning product+hook.
+- **2 youtube**: 1 video/day → measure retention+CTR → iterate title/thumb/topic.
+- **3 jutaku**: scan new gigs/orders → bid/deliver via engine → measure win-rate → refine gig/proposal.
+- **4 clip**: check active Whop campaigns → mass clips → measure views → double down viral format.
+
+## §7 FULL TODO (no abbreviation)
+**PHASE 0 — foundation (once)**
+- P0-1 Build `faceless-visual-engine` lib: script(hook→problem→agitate→solution→proof→CTA) · chatgpt-imagegen reusable base-asset set (made ONCE) · slide composer (text on base) · VOICEVOX narration · Remotion 9:16 render · still-image exporter. Verify: 1 mp4 + stills, $0.
+- P0-2 Build un-fakeable `earn-ledger.jsonl` (append-only; accepts ONLY external real report rows: Amazon report / Whop payout / platform payout; rejects internal/test). Unit test.
+- P0-3 Build per-skill `STATE.md` memory spine (read first, write last each run).
+- P0-4 Create Payoneer (KYC: Dais ID+bank).
+- P0-5 Create NEW niche accounts (niche=AI/productivity gadgets): X, TikTok, IG, YouTube — AgentMail email + SMS phone + CloakBrowser. Set bio + profile.
+- P0-6 Wire posting to each new account; test 1 post each.
+
+**PHASE 1 — SKILL 1 affiliate (first; engine foundation)**
+- S1-1 Amazon Associates JP signup (KYC; register the new SNS as the site).
+- S1-2 Early link gen = SiteStripe (browser); PA-API later.
+- S1-3 After 3 sales → obtain PA-API keys, switch to programmatic link/product gen.
+- S1-4 Build `earn-affiliate-slideshow` (env: tag/niche/handle): daily pick trending products → engine → caption #PR+link → post X+TikTok+IG → measure yesterday → recursive-improver → write STATE.
+- S1-5 `/loop 24h` soak 2-3 days: verify 3 daily live post URLs.
+- S1-6 Promote to `/schedule daily` (autonomous) + `/goal "Amazon report row > ¥0"` (fresh-context Haiku judge).
+- S1-7 Verify FIRST ¥ (real Amazon report row) → ledger → dashboard.
+- S1-8 Iterate daily until earning consistently → then next skill.
+
+**PHASE 2 — SKILL 3 jutaku (parallel once engine exists)**
+- S3-1 Create Upwork (ID KYC), Coconala (KYC), Fiverr (ID) accounts; link Payoneer.
+- S3-2 Publish productized gigs (e.g. "faceless slideshow video", "AI SEO article"); samples = Skill 1/2 outputs.
+- S3-3 Target AI-doable tasks: 翻訳 / SEO記事 / 品質検証 / faceless動画制作 (NOT 会話録音).
+- S3-4 Build `earn-jutaku-gig`: daily scan new gigs/orders → bid (Upwork, ToS-safe non-spam) or fulfill (Fiverr/Coconala incoming) → deliver via engine → measure win-rate → STATE.
+- S3-5 `/schedule daily` + `/goal`. Verify FIRST payout > ¥0 → ledger.
+
+**PHASE 3 — SKILL 4 clip-rewards**
+- S4-1 Create Whop account; join an active Content Rewards campaign.
+- S4-2 Build `earn-clip-rewards`: daily check campaigns → mass faceless clips (engine) → post to accounts → measure views → STATE.
+- S4-3 `/schedule daily` + `/goal`. Verify FIRST Whop payout > $0 → Payoneer → ledger. (Vyro/ecomrads unverified=skip.)
+
+**PHASE 4 — SKILL 2 youtube-faceless**
+- S2-1 Create new YouTube channel (niche).
+- S2-2 Build `earn-youtube-faceless`: daily 1 video (engine) → description = Skill 1 affiliate links + #PR → measure retention/CTR → STATE.
+- S2-3 `/schedule daily` + `/goal`. Verify FIRST description-affiliate ¥. (YPP ad-rev later: 1000subs+4000h + AdSense KYC.)
+
+**PHASE 5 — transparency**
+- P5-1 Every skill's earn registers on aniccaai.com/dashboard (realised_earn 30d/365d). Read-only; skills never write the domain.
+
+## §8 DONE (this spec)
+All 4 skills named, money mechanics traced to articles, every prerequisite + uncertainty listed, account decision made (new dedicated niche accounts), loop mechanics defined (autonomous /schedule daily, compounding, self-verifying), full unabridged TODO written. Ready: on Dais "go", execute Phase 0 + Skill 1.
