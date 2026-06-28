@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-204",
+  "dimension": "verification_readiness",
+  "category": "test_coverage",
+  "severity": "major",
+  "description": "FIND-004 was partially closed: the test now exercises a general/non-tech query ('photosynthesis', test lines 35-40) in addition to the tech query, addressing the universality regression. But three behavior-critical branches added or retained in this iteration remain entirely unexercised, so a regression that re-broke them would still pass CI green: (1) R6 rejection — no test ever drives isRealContent / jinaRead to REJECT an error/placeholder body (only the success path is asserted, test line 31); a change that made isRealContent 'return true' unconditionally would not fail any test. (2) R7 — no test covers the 429 backoff/retry loop (impl lines 54-62) or the 'all sources rate-limited -> exit non-zero' path; the spec forbids a partial/fake digest here but nothing verifies it. (3) The error branches research-product.mjs line 69 ('no search results') and line 80 ('all source reads failed') are never triggered, so a regression turning either into a silent empty-success is undetectable. These are hard to exercise under the no-mock policy, but their absence means R6/R7 and the no-fake-success invariant are asserted only by code reading, not by the test suite.",
+  "evidence": {
+    "filePath": "skills/earn/x402-sell/__tests__/research-product.test.mjs",
+    "lineRange": "24-49",
+    "snippet": "// only success-path assertions (tech + general) and the empty-query R4 case; no rejection / 429 / no-results branch is tested"
+  },
+  "routeToPhase": "2b"
+}

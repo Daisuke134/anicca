@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "edge_case_coverage",
+  "category": "test_quality",
+  "severity": "major",
+  "description": "jinaRead only fails-closed on a non-2xx HTTP status (line 23). r.jina.ai frequently returns HTTP 200 with a body that is itself an error/placeholder ('Warning: Target URL returned error', timeout notices, Cloudflare interstitial text, or an empty-ish stub). The success gate at line 37 is merely 'if (body && body.trim())', so such an error body is accepted as a valid source, pushed into the digest, and the run exits 0. This is a fake-success path: the buyer pays USDC and can receive a digest composed of Jina error text rather than real fetched content, while R2 ('cleaned content') and R3 ('NON-EMPTY digest' implying real research) are nominally reported as satisfied. There is no content-quality validation (min real-content length per source, error-string rejection, content-type check).",
+  "evidence": {
+    "filePath": "skills/earn/x402-sell/research-product.mjs",
+    "lineRange": "21-44",
+    "snippet": "  if (!r.ok) throw new Error('jina ' + r.status);\n  return (await r.text()).slice(0, 4000);\n...\n      if (body && body.trim()) {\n        parts.push('## SOURCE: ' + h.title + ' — ' + h.url + '\\n' + body);"
+  },
+  "routeToPhase": "2b"
+}

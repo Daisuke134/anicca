@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-008",
+  "dimension": "implementation_correctness",
+  "category": "requirement_mismatch",
+  "severity": "minor",
+  "description": "The CLI entrypoint detection at line 48 compares import.meta.url to a hand-built 'file://' + process.argv[1]. import.meta.url is percent-encoded and uses the file:// (three-slash) form, while process.argv[1] is a raw filesystem path. If the script is ever invoked from a path containing spaces or non-ASCII characters (encoded as %20 etc. in import.meta.url but not in argv[1]), the equality fails, isEntry is false, and the CLI block silently does nothing — research never runs and the process exits 0 with empty stdout, a silent no-op success. Node's documented pattern is pathToFileURL(process.argv[1]).href. The current worktree path happens to be ASCII/space-free, so the green run does not exercise this, leaving the fragility untested.",
+  "evidence": {
+    "filePath": "skills/earn/x402-sell/research-product.mjs",
+    "lineRange": "48-51",
+    "snippet": "const isEntry = import.meta.url === ('file://' + process.argv[1]);"
+  },
+  "routeToPhase": "2b"
+}

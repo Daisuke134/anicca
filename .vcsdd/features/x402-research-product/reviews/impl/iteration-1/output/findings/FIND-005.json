@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "verification_readiness",
+  "category": "security_surface",
+  "severity": "minor",
+  "description": "R5 (spec line 22-23) forbids referencing/requiring 'any paid/keyed service env (TWITTERAPI_KEY, FIRECRAWL_API_KEY, OPENAI_API_KEY, CDP_*, any Dais cred)'. The R5 guard test (line 18) only matches the four literal strings TWITTERAPI_KEY|FIRECRAWL_API_KEY|OPENAI_API_KEY|CDP_API_KEY. It would NOT catch a reintroduction of, e.g., CDP_API_KEY_SECRET via process.env, a Dais wallet key (WALLET_PRIVATE_KEY), GOOGLE_LOGIN_*, or any other credential the spec's open-ended 'any Dais cred' clause covers. The static assertion is narrower than the invariant it claims to protect, so R5 is under-verified.",
+  "evidence": {
+    "filePath": "skills/earn/x402-sell/__tests__/research-product.test.mjs",
+    "lineRange": "16-18",
+    "snippet": "ok(!/TWITTERAPI_KEY|FIRECRAWL_API_KEY|OPENAI_API_KEY|CDP_API_KEY/.test(src), 'R5 no paid-key env referenced');"
+  },
+  "routeToPhase": "2b"
+}
