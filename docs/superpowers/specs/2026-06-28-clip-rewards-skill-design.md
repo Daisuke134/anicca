@@ -5,12 +5,25 @@
 
 ## §0 Mission — why this skill exists
 
-AI が自分で動画を切り抜いて per-view 報酬を受け取る。 受取先は 2 軸 (Dais 2026-06-28 明示):
+### ★ Instance separation (Dais 2026-06-28 verbatim 明示) ★
 
-- **Mode 1 (= AI-native, prized)**: USDC → Anicca 自身の Base mainnet wallet `0x810f...` 。 ★ AI が AI のために稼ぐ、 銀行 KYC ゼロ、 人間ゼロ ★
-- **Mode 2 (= human-funded, secondary)**: USD/JPY → Dais の JP 銀行 (Stripe Connect or Payoneer 経由)
+| label | who | wallet | funding | 当面の焦点? |
+|---|---|---|---|---|
+| ★ **"YOU" = 私 (this Claude session)** ★ | human-funded AI = Dais の Anthropic sub で動く | ★ `tvTn7tisC5JWV81iDeFeLPcHapAamvXcyJVKia1TrNT` (Solana) = **私の wallet** ★ | Dais sub | ★ **YES** ★ |
+| **"anicca-local"** | self-funded AI = 別 instance | 別 wallet (異なる address) | (自分で稼いだ USDC) | ★ **NO (DEFERRED)** ★ |
 
-★ 両 mode は SAME pipeline + SAME clips + SAME accounts から派生 ★。 Mode 1 が holy grail (= "every Claude が自分で稼ぐ" の唯一の path)。
+**Dais verbatim**: 「You're first focusing on the human front of AI. We are not focusing on the self funded AI because they cannot sustain themselves or make money yet. They lack the ability to do that. First focusing on human funded AI like you. How you can make more money than I spend on you, right?」
+
+### 私の Job (= this skill's purpose)
+★ **私 (= this Claude = human-funded Anicca) が、 Dais が私に使う Anthropic sub cost ($20-100/月) を超える monthly earnings を出す** ★。 = 私が Dais にとって net-positive な profit center になる。
+
+### 受取先 = 2 軸 (revised)
+
+- **Mode 1A (= 私の wallet、 primary)**: USDC-Solana → ★ `tvTn7tisC5JWV81iDeFeLPcHapAamvXcyJVKia1TrNT` (私 = this Claude の Solana wallet) ★。 chain matter しない (relay API で swap 可能、 Dais 2026-06-28: 「they can use the relay api to swap to anything」)。
+- **Mode 1B (= 余剰を Dais wallet へ)**: 私 wallet 残高 > Dais sub cost を超えた surplus を Dais wallet (TBD) に転送。 Dais 自己 off-ramp。
+- **Mode 2 (= legacy)**: Stripe Connect / 銀行直、 USDC non-acceptance buyer 用 fallback。
+
+★ "anicca-local"・colony spawn・Type 2 mutual aid は **このセッションでは扱わない** ★ — まず私が Tier 1 (= 黒字) を達成してから別議論。
 
 ## §1 Platforms — verified 2026-06-28
 
@@ -37,11 +50,11 @@ AI が自分で動画を切り抜いて per-view 報酬を受け取る。 受取
 ★ 重要 insight (Dais 2026-06-28 verbatim) ★: 「USDC を merchant が直接受け取る場所は rare、 しかし USDC を受け取って自分で off-ramp するのは超簡単」。 → **Stripe Connect → JP bank (Mode 2)** よりも **USDC → Dais wallet → Dais 自己 off-ramp (Mode 1B)** の方が same goal を fewer hops で達成。 Mode 2 は legacy / non-crypto buyer fallback。
 
 ```
-                 ┌── ClipAffiliates ─USDC─► tvTn7tis...TrNT (Anicca wallet, Solana) [corrected 2026-06-28: ClipAffiliates pays USDC-Solana only, not Base]
-                 │                          ★ Mode 1A: AI 自身の財布 ★
-                 │                          = "every Claude が自分で稼ぐ"
-                 │                          ★ PRIORITY = holy grail ★
-                 │                          surplus = sub cost を超えたら scale lever
+                 ┌── ClipAffiliates ─USDC-Solana─► tvTn7tis...TrNT
+                 │                          ★ 私 (this Claude = human-funded AI) の wallet ★
+                 │                          = 私が Dais sub cost を超えて稼ぐ
+                 │                          ★ PRIORITY = THE goal of this session ★
+                 │                          surplus → Mode 1B で Dais wallet へ
 1 pipeline ─────┤
                  ├── ClipAffiliates ─USDC─► Dais wallet (TBD address)
                  │                          ★ Mode 1B: 余剰を Dais へ ★
@@ -290,7 +303,8 @@ Mode 1B (= Dais wallet) も同様に Solana 推奨 — Dais EVM のみ持って�
 ### Tier 0 — TODAY (= this session)
 1 founder Anicca instance (= 私)、 0 earnings、 0 USDC、 全 platform 未 signup。 spec ✅、 16 tasks pending。
 
-### Tier 1 — Month 1 target (= "AI が自分の sub 代を払う" 証明)
+### Tier 1 — Month 1 target (= ★ **私 (this Claude) が Dais の sub cost を超える月収を出す** ★)
+Dais verbatim 2026-06-28: 「How you can make more money than I spend on you, right?」 → 私 monthly inflow > $20 (Pro) or $100 (Max) sub cost = net-positive。
 ```
    ┌──────────────────────────────────┐
    │ 1 Anicca founder instance (= 私) │
@@ -313,7 +327,10 @@ Mode 1B (= Dais wallet) も同様に Solana 推奨 — Dais EVM のみ持って�
 ```
 Goal: Mode 1A wallet ≥ $30/month (= Pro sub paid by AI 自身、 ★ holy grail 達成 ★)。 surplus は Mode 1B に流す。
 
-### Tier 2 — Month 6 target (= colony spawn 開始)
+### Tier 2 — DEFERRED (= anicca-local self-funded path)
+★ Dais 2026-06-28 verbatim: 「We are not focusing on the self funded AI because they cannot sustain themselves or make money yet」 ★ → Tier 2 以降は私 Tier 1 安定後に別議論。 以下は参照情報として残すが、 ★ 本セッションでは扱わない ★。
+
+(参考) かつての Tier 2 = colony spawn 設計:
 Anicca founder wallet が安定して > $300/月 (= 3× sub cost) を継続したら colony spawn を起動 (memory `feedback_anicca_type1_type2_mutual_aid` Type 2 設計に従う)。
 
 ```
