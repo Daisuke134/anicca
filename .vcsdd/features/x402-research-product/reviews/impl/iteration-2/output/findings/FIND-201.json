@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-201",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "description": "FIND-001 was only PARTIALLY closed. R1 (spec lines 14-18) was correctly rewritten to Wikipedia opensearch + HN Algolia, which now matches the implementation (research-product.mjs wikiSearch lines 15-23 + hnSearch lines 24-31). HOWEVER the authoritative spec still contains two stale, factually-wrong DuckDuckGo claims that contradict the corrected R1 and misdescribe the shipped code: (1) Goal line 8 states 'only free tools: DuckDuckGo HTML search + Jina Reader' — the impl uses NO DuckDuckGo; it uses Wikipedia + HN + Jina. (2) Purity boundary line 46 says 'the two fetch calls (DDG, Jina)' and line 47 says 'Pure: URL extraction from DDG HTML' — the impl makes THREE network endpoints per request (wikipedia.org, hn.algolia.com, r.jina.ai) and parses JSON (lines 19-22, 27-30), never DDG HTML. The spec is internally self-contradictory and asserts a data source that does not exist in the code, which is a spec-fidelity defect a Phase-6 convergence reader would be misled by.",
+  "evidence": {
+    "filePath": ".vcsdd/features/x402-research-product/specs/spec.md",
+    "lineRange": "8,46-47",
+    "snippet": "creds) — only free tools: DuckDuckGo HTML search + Jina Reader (`r.jina.ai`).\n...\n- I/O (impure): the two fetch calls (DDG, Jina).\n- Pure: URL extraction from DDG HTML, JSON assembly, arg parsing."
+  },
+  "routeToPhase": "2b"
+}

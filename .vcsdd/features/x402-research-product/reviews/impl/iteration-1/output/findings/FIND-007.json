@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-007",
+  "dimension": "verification_readiness",
+  "category": "spec_gap",
+  "severity": "minor",
+  "description": "The test file's header comment (line 1) states the test exercises 'real DDG + Jina network calls', but the code under test performs HN Algolia + Jina (no DuckDuckGo). The stale documentation masks the spec-vs-impl divergence flagged in FIND-001 and would mislead a future maintainer or a Phase-6 convergence reader into believing the DDG requirement (R1) is exercised when it is not. Spec, impl header (lines 3-5), and test comment disagree on the actual data source.",
+  "evidence": {
+    "filePath": "skills/earn/x402-sell/__tests__/research-product.test.mjs",
+    "lineRange": "1-1",
+    "snippet": "// E2E (no-mock) test for research-product.mjs — real DDG + Jina network calls, $0."
+  },
+  "routeToPhase": "2c"
+}

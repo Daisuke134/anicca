@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-202",
+  "dimension": "edge_case_coverage",
+  "category": "test_quality",
+  "severity": "major",
+  "description": "FIND-003 (fake-success: Jina HTTP-200 error/placeholder body sold as a paid digest) is substantially mitigated by the new isRealContent gate (research-product.mjs lines 48-52) — the >=300-char length floor (line 49) rejects most short Jina error stubs. But a residual fake-success path remains and is UNTESTED: (1) the error-pattern scan only inspects the FIRST 400 characters (line 50: body.slice(0,400)); a body whose real-content head is benign but whose error/placeholder/truncation notice appears after char 400 is accepted. (2) The pattern set (ERROR_BODY_RE line 47) is narrow — it matches 'rate limit/too many requests/429/error code N/\"code\":4/authentication is required/could not be reached' but NOT a Cloudflare/anti-bot interstitial, a JS-challenge page, a generic 'Warning: Target URL returned error 403' (no literal 'error code'), or a soft-404 navigation shell. Any such page exceeding 300 chars passes isRealContent and is returned as a paid digest. (3) Critically there is NO negative test: research-product.test.mjs has no case that feeds isRealContent an error/placeholder body and asserts rejection — the only R6 assertion (test line 31) checks the success-path digest does not contain error text, which cannot detect a gate that fails open. The rejection guarantee R6 (spec lines 28-32) is therefore unproven.",
+  "evidence": {
+    "filePath": "skills/earn/x402-sell/research-product.mjs",
+    "lineRange": "47-52",
+    "snippet": "const ERROR_BODY_RE = /rate limit|too many requests|429|error code\\s*\\d|\"code\"\\s*:\\s*4|authentication is required|could not be reached/i;\nfunction isRealContent(body) {\n  if (!body || body.trim().length < 300) return false;\n  if (ERROR_BODY_RE.test(body.slice(0, 400))) return false;\n  return true;\n}"
+  },
+  "routeToPhase": "2b"
+}
