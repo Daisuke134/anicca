@@ -1,0 +1,110 @@
+{
+  "title": "\"コードを書き、動かす金まで自分で払う\"AI『Franklin』、実際に動かして検証してみた",
+  "cover_image": "/Users/anicca/anicca-project/.vcsdd/features/frank-x-articles-publish/impl/images/cover.png",
+  "cover_exists": true,
+  "content_images": [
+    {
+      "path": "/Users/anicca/anicca-project/.vcsdd/features/frank-x-articles-publish/impl/images/note-img-01.png",
+      "original_path": "/Users/anicca/anicca-project/.vcsdd/features/frank-x-articles-publish/impl/images/note-img-01.png",
+      "exists": true,
+      "alt": "",
+      "block_index": 8,
+      "after_text": "ここに正面から取り組んだのが、Franklin です。公式 README は、自分自身をこう紹介しています。「他のエージェントがしゃべっているあいだ、Frank"
+    },
+    {
+      "path": "/Users/anicca/anicca-project/.vcsdd/features/frank-x-articles-publish/impl/images/note-img-02.png",
+      "original_path": "/Users/anicca/anicca-project/.vcsdd/features/frank-x-articles-publish/impl/images/note-img-02.png",
+      "exists": true,
+      "alt": "",
+      "block_index": 26,
+      "after_text": "BlockRun のスタックを使って、人がどう稼ぐかのレシピやリンクを集めたカタログです。"
+    },
+    {
+      "path": "/Users/anicca/anicca-project/.vcsdd/features/frank-x-articles-publish/impl/images/note-img-03.png",
+      "original_path": "/Users/anicca/anicca-project/.vcsdd/features/frank-x-articles-publish/impl/images/note-img-03.png",
+      "exists": true,
+      "alt": "",
+      "block_index": 27,
+      "after_text": "ここで、1 つの構造的な特徴が見えてきます。4 つの部品はすべて「賢く払う」ためにあります。ClawRouter は安く払うため、blockrun-mcp は道"
+    },
+    {
+      "path": "/Users/anicca/anicca-project/.vcsdd/features/frank-x-articles-publish/impl/images/note-img-04.png",
+      "original_path": "/Users/anicca/anicca-project/.vcsdd/features/frank-x-articles-publish/impl/images/note-img-04.png",
+      "exists": true,
+      "alt": "",
+      "block_index": 36,
+      "after_text": "最後に、Franklin は同じ要求を、こんどはその署名を添えて再送します。サーバーは Coinbase が運営する Facilitator というサービスに署"
+    },
+    {
+      "path": "/Users/anicca/anicca-project/.vcsdd/features/frank-x-articles-publish/impl/images/note-img-05.png",
+      "original_path": "/Users/anicca/anicca-project/.vcsdd/features/frank-x-articles-publish/impl/images/note-img-05.png",
+      "exists": true,
+      "alt": "",
+      "block_index": 37,
+      "after_text": "ここで気になるのは、結局 $1 でどれくらい動くのか、という金額感です。Franklin 公式 README は、$1 の USDC で何ができるかを具体的に書"
+    },
+    {
+      "path": "/Users/anicca/anicca-project/.vcsdd/features/frank-x-articles-publish/impl/images/note-img-06.png",
+      "original_path": "/Users/anicca/anicca-project/.vcsdd/features/frank-x-articles-publish/impl/images/note-img-06.png",
+      "exists": true,
+      "alt": "",
+      "block_index": 39,
+      "after_text": "最後に、残高が完全にゼロになるとどうなるか。サブスクのように勝手にチャージが走ることはなく、Franklin は ClawRouter の free プロファイ"
+    },
+    {
+      "path": "/Users/anicca/anicca-project/.vcsdd/features/frank-x-articles-publish/impl/images/note-img-07.png",
+      "original_path": "/Users/anicca/anicca-project/.vcsdd/features/frank-x-articles-publish/impl/images/note-img-07.png",
+      "exists": true,
+      "alt": "",
+      "block_index": 41,
+      "after_text": "このような革新的な仕組みを持つフランクリンですがまだ多くの課題を抱えています。以下がその一覧です。"
+    }
+  ],
+  "dividers": [
+    {
+      "block_index": 0,
+      "after_text": ""
+    },
+    {
+      "block_index": 2,
+      "after_text": "- おすすめしない人：最先端モデルをコスパ良く使いたい人・暗号資産に抵抗がある人・同じ単一 API を 1 日 1 万回叩くような重い運用、100ms 以下の超"
+    },
+    {
+      "block_index": 8,
+      "after_text": "ここに正面から取り組んだのが、Franklin です。公式 README は、自分自身をこう紹介しています。「他のエージェントがしゃべっているあいだ、Frank"
+    },
+    {
+      "block_index": 16,
+      "after_text": "ここまでで、Franklin そのものの紹介は終わりです。ただ、Franklin は単独で立っているわけではありません。背後には、これと一緒に動く 3 つの部品"
+    },
+    {
+      "block_index": 29,
+      "after_text": "次の章では、この 4 部品が 1 回の問い合わせのなかでどう連携するか、仕組みの中身を開けていきます。"
+    },
+    {
+      "block_index": 39,
+      "after_text": "最後に、残高が完全にゼロになるとどうなるか。サブスクのように勝手にチャージが走ることはなく、Franklin は ClawRouter の free プロファイ"
+    },
+    {
+      "block_index": 42,
+      "after_text": "それでも Franklin が強いのは、単純に数字が積み上がっているからです。awesome-blockrun が公開している集計によれば、x402 全体で 2"
+    },
+    {
+      "block_index": 48,
+      "after_text": "- 法人会計上、ドル建ての請求書がほしい人。USDC でしか払えない設計のため、経費処理側にひと手間かかります"
+    },
+    {
+      "block_index": 51,
+      "after_text": "そして、同じ「自立型AI」の領域で、私達自身もアニッチャという、自分のウォレットで動き、お金を稼ぐAI エージェントを開発しております。Franklin が「払"
+    },
+    {
+      "block_index": 55,
+      "after_text": "クレジットカードは、最低決済額が事実上 $0.50 程度に設計されているため、1 回 $0.001〜$0.02 のマイクロペイメントを直接通すのに向きません。ま"
+    }
+  ],
+  "html": "<h2>概要</h2><ul><li>Franklinは、自分の推論コストを自分で払う自給自足AI。</li>\n<li>サブスク・API キー・アカウント不要で無料で実行可能。最先端モデルを使用する場合はUSDC（米ドル建てのデジタル通貨）を入金する。</li>\n<li>公開元は BlockRun（創業者：@bc1beat）。</li>\n<li>おすすめする人：Claude Code か Cursor を既に使っていて、OpenAI / Anthropic / Google などの API キー管理に疲れている開発者や学生・月 $5〜$20 の予算で、複数の AI モデルを 1 つの財布から試したい人</li>\n<li>おすすめしない人：最先端モデルをコスパ良く使いたい人・暗号資産に抵抗がある人・同じ単一 API を 1 日 1 万回叩くような重い運用、100ms 以下の超低遅延が必要なリアルタイム取引をする人</li>\n</ul>\n<h2>最も賢い AI が、100円の API すら自分で叩けない</h2><p>今の AI はとても賢くなりました。ChatGPT は文章を書き、Claude Code はアプリを 1 日で組み立て、AI エージェントは Web を巡回して情報を集めます。「考える」だけなら、もう人間より速い場面さえあります。ところが、その同じ AI に「市場の最新データを自分の財布で買って、画像を生成して、結果をメールで送って」と頼むと、たいてい途中で止まります。理由はシンプルで、AI には財布がないからです。</p><p>この世のほぼ全てのAIは、それを動かすAPI キーも、サブスクリプションも、契約しているのは人間です。AI が API を 1 回叩くたびに、その背後では誰か人間が「払ってる」状態なのです。これでは、いつまで経ってもAIは人間の奴隷であり続け、自律的な行動の多くは制限されてしまいます。</p><p>そして、ここには技術的な厄介もあります。AI がサービスに払いたい 1 回の金額は、たとえば Web 検索が $0.01、市場データが $0.001、画像生成が $0.015などの超マイクロ取引がほとんどです。一方でクレジットカードは、そもそもこの単位の少額決済を想定していません。BlockRun が公開している年次レポートは、こう書いています。「平均 1 トランザクションは $0.12。伝統的なレールでは本物のマイクロペイメントは成立しない」。</p><p>つまり問題は知能ではなく、お金の配管です。世界一賢い AI でも、$0.01 の検索 1 回を自分で払えないなら、結局は人間がカードを差し出すまで動けません。AI を「自分で動く」ところまで作れた人類は、まだ「自分で払う」ところを作れていないのです。</p><p>ここに正面から取り組んだのが、Franklin です。公式 README は、自分自身をこう紹介しています。「他のエージェントがしゃべっているあいだ、Franklin は払う。」。</p><h2>Franklin は「自分の財布で動く AI エージェント」</h2><p>Franklin は、コマンドラインから 1 行で動かせる小さな AI エージェントです。npm パッケージ 「@blockrun/franklin」 を入れて 「franklin」 と打てば起動し、コードを書く、Web を検索する、画像を作る、市場データを取る、といった仕事を引き受けます。同じことができるツールはほかにもあります。違うのは、<strong>Franklin が自分の財布（USDC＝米ドル建てのデジタル通貨の残高）から、自分で払って動く</strong>という一点です。</p><p>公式 README は、Franklinと他のエージェントの違いを 1 文で書いています。「他のコーディングエージェントはコードを書く。Franklinはコードを書き、そのコードを動かすために金を払う」。コードを書くだけでなく、書いたコードが必要とする API 利用料や検索代金まで、自分の残高から自分で支払う、ということです。本当の意味での自給自足ですね。</p><p>支払いの考え方には名前がついています。<strong>YOPO</strong>（You Only Pay Outcome、「成果にだけ払う」）です。サブスクリプションは、使っても使わなくても定額のお金を払わなくてはなりません。従量課金の API（OpenAI の API キーなど）は、試行ごとに、失敗した呼び出しにも払います。Franklin の YOPO は、その 2 つのどちらとも違って、「Franklin が実際に届けた仕事」にだけ払う仕組みです。1 回の支払いはプロバイダ原価 + 5% で、USDC で署名され、Base（銀行を通さずに安く速く送金できるネットワーク）の上で処理されます。</p><p>ここから、もう 1 つ大事な性質が生まれます。残高がゼロになると、Franklin は黙って止まります。サブスクのように勝手にチャージされて翌月の請求がやってくる、ということがありません。深夜 3 時のレート制限の壁も、想定外の請求もありません。</p><p>BlockRun のチームは、こうした性質を持つソフトウェアに「<strong>Economic Agent</strong>（経済エージェント）」という名前を当てています。財布を持ち、自分の行動に値段をつけ、成果に向けて支払い、上限で止まるソフトウェア。Franklin はこの新しいカテゴリの最初の例として登場しました。</p><p>最後にもう 1 つ、特異な点があります。Franklin にはアカウントがありません。サインアップも、メールアドレスも、電話番号も、クレジットカードも、API キーも要りません。残高があれば動き、なければ止まる。それだけです。</p><p>ここまでで、Franklin そのものの紹介は終わりです。ただ、Franklin は単独で立っているわけではありません。背後には、これと一緒に動く 3 つの部品があり、4 つで 1 つの生態系を作っています。次に、その全体像を見ます。</p><h2>Franklin の背後にある 4 つの部品</h2><p>Franklin の背後には 3 つの部品が控えていて、Franklin と合わせると 4 つで 1 つのスタックになっています。それぞれの公開元はすべて BlockRun のチームで、リポジトリは GitHub の 「BlockRunAI」 配下に並んでいます。</p><p><strong>① ClawRouter、「賢い受付」</strong></p><p>ClawRouter は、プロンプトを受け取って 55 以上のモデルから 1 つを自動で選ぶ判定器です。プロンプトを 15 次元で点数化して、SIMPLE / MEDIUM / COMPLEX / REASONING の 4 段階に振り分け、1 ミリ秒未満で「このタスクならこのモデルが最安で十分」と決めます。外部 API を呼ばずローカルで判定するので、判定の遅れがほぼゼロです。残高がゼロの場合は、NVIDIA 系の無料モデルへ自動で切り替わります。BlockRun の公式ドキュメントによれば、平均で 78% のコスト削減になるとされています。Franklin はこの ClawRouter を脳として内蔵しています。</p><p><strong>② blockrun-mcp、「Franklinに手を生やすアダプタ」</strong></p><p>blockrun-mcp は、Franklinに、19 種類の道具を 1 行のコマンドで追加するアダプタです。追加できる道具は、チャット、Web 検索、株式・暗号通貨の市場データ、画像生成、動画生成、音声電話まで含まれます。Claude Codeなどにも追加できます。</p><p><strong>③ Franklin、「自走する 1 体の本体」</strong></p><p>Franklin は、当の AI エージェントです。自分の財布を持ち、ClawRouter で選ばれたモデルに x402 で支払いを送り、結果が出るまで自分で動き続けます。対話やタスクの「主役」になるパーツです。</p><p><strong>④ awesome-OpenClaw-Money-Maker、「稼ぎ方のレシピ集」</strong></p><p>BlockRun のスタックを使って、人がどう稼ぐかのレシピやリンクを集めたカタログです。</p><p>ここで、1 つの構造的な特徴が見えてきます。4 つの部品はすべて「賢く払う」ためにあります。ClawRouter は安く払うため、blockrun-mcp は道具に払うため、Franklin は自分で払うため、awesome-OpenClaw-Money-Maker は稼ぐための参考集として並んでいる、という具合です。</p><p>(図: BlockRun スタックの分解。ClawRouter が脳、 blockrun-mcp が手、 Franklin が財布、 awesome-OpenClaw-Money-Maker が地図。全てが x402 protocol という共通配管を経由して、 USDC on Base の線路で動く。)</p><p>次の章では、この 4 部品が 1 回の問い合わせのなかでどう連携するか、仕組みの中身を開けていきます。</p><h2>$1 を渡すと、AI は何回しゃべれるのか</h2><p>Franklin が 1 回外の API やモデルを呼ぶとき、中で何が起きているかを 5 つの段階に分けて見ます。ここを開けると、なぜ「自分で払う」が成立するのかが見えてきます。</p><p>まず、プロンプトが届くと ClawRouter が受け取ります。ClawRouter は、そのプロンプトを 15 次元（推論ヒントの有無、コードの含有量、質問の複雑さ、創造性、トークン数の見積もり、など）で点数化し、SIMPLE / MEDIUM / COMPLEX / REASONING の 4 つの段階に振り分けます。ここまで 1 ミリ秒未満、外部 API は呼ばずローカルで完結します。</p><p>つぎに、振り分けられた段階に対して 55 以上のモデルから 1 つが選ばれます。例えば SIMPLE なら DeepSeek-Chat（入力 1M トークンあたり $0.28）、COMPLEX なら Claude Sonnet（$5）、REASONING なら Claude Opus（$30）というふうに、段階と価格が対応する形です。</p><p>選ばれたモデルを Franklin が叩くと、サーバーは HTTP 402 Payment Required という古いステータスコードを返します。これは「支払いが必要です」を表すコードで、1990 年代から HTTP 仕様に存在していたものの、30 年近く事実上ほぼ使われていませんでした。x402 プロトコルは、この眠っていたコードに「いくら、どこに、どう払えばよいか」のルールを乗せたものです。</p><p>サーバーから 402 と一緒に「$0.0023 USDC を、この宛先に払って」という指示が返ると、Franklin は手元の秘密鍵で、その金額の支払いだけを許可する署名を作ります。仕様は EIP-3009 transferWithAuthorization、ローカルで完結し、秘密鍵そのものは PC の外に一切出ません。</p><p>最後に、Franklin は同じ要求を、こんどはその署名を添えて再送します。サーバーは Coinbase が運営する Facilitator というサービスに署名を検証してもらい、検証が通れば Base 上で実際の送金処理が完結し、ようやくモデルの応答が返ってきます。ここまでで約 200〜500 ミリ秒、Base 上の手数料はおよそ $0.001。</p><p>ここで気になるのは、結局 $1 でどれくらい動くのか、という金額感です。Franklin 公式 README は、$1 の USDC で何ができるかを具体的に書いています。</p><p>支払い体系の根本は「プロバイダ原価 + 5%」です。サブスクとも、普通の従量 API ともこの数字感は違います。$5 を入れておけば、多くの組み合わせで「数千回しゃべれる」規模に届く、というのが Franklin が立っている経済の前提です。</p><p>最後に、残高が完全にゼロになるとどうなるか。サブスクのように勝手にチャージが走ることはなく、Franklin は ClawRouter の free プロファイルに自動的に切り替わります。free プロファイルは、NVIDIA が提供する 9 種類の無料モデル（Qwen3 Coder、Llama 4 Maverick、Mistral Large、Nemotron などを含む）だけを使うモードです。つまり「黙って止まる」と「無料で動き続ける」の中間が用意されていて、残高がゼロでも完全に死ぬわけではありません。</p><h2>Franklinの抱える課題</h2><p>このような革新的な仕組みを持つフランクリンですがまだ多くの課題を抱えています。以下がその一覧です。</p><p>それでも Franklin が強いのは、単純に数字が積み上がっているからです。awesome-blockrun が公開している集計によれば、x402 全体で 2025 年 12 月だけで 6,300 万トランザクション、流通額にして $7.5M の USDC が動いています。「派手な未来予告」ではなく「もう動いている現在」として、Franklinは本物のエコシステムです。</p><h2>Franklin は使うべきか</h2><p>Franklin は「コードを書く + そのコードを動かす金まで自分で払う」という単一の革新点に対して、すでに動く配管とウォレット作成ステップを揃えています。試すコストは「コマンドを 1 行打つ」だけで、残高ゼロでも 9 つの無料モデルで動くため、失敗しても財布的な被害はありません。つまり「興味があるなら、今日、試した方がよい」が結論です。そのうえで、用途ごとに踏み込んだ判断を分けます。</p><h3>今日、入れてたほうが良い人:</h3><ul><li>Claude Code か Cursor をすでに使っていて、OpenAI / Anthropic / Google の API キー管理に疲れている開発者・学生</li>\n<li>月 $5〜$20 までなら遊んで構わない、と言える人</li>\n<li>「複数の AI モデルを 1 つの財布から、1 回ごとに使い分けてみたい」と思う人</li>\n</ul>\n<h3>もう少し待っていい人:</h3><ul><li>同じ単一 API（たとえば Exa だけ、Polymarket だけ）を 1 日に 1 万回叩く運用をしたい人。元の APIを直接契約した方が単価が安くなる可能性が高いです。</li>\n<li>100 ミリ秒以下の超低遅延が必須なリアルタイム取引をしたい人。x402 の 1 往復で 200〜500 ミリ秒乗ります</li>\n<li>法人会計上、ドル建ての請求書がほしい人。USDC でしか払えない設計のため、経費処理側にひと手間かかります</li>\n</ul>\n<h2>最後に: 毎週、AI エージェントを 1 体ずつ実走しています</h2><p>このシリーズでは、「人間を介さずにお金を扱うAI」という主題に絞って、毎週 1 体ずつ AI エージェントを実際に動かして検証しています。前回は、稼げなければ死ぬという掟だけを与えられて自分でサーバー代を払おうとする Automaton を扱いました。今回は、払うことに特化した Franklin。次回以降は、製品を作って売る AI-CEO を名乗る Felix、4 エージェントの自律ヘッジファンド AutoHedge、「人間ゼロの企業」を研究する Zero-Human Companies Institute などを順に予定しています。</p><p>そして、同じ「自立型AI」の領域で、私達自身もアニッチャという、自分のウォレットで動き、お金を稼ぐAI エージェントを開発しております。Franklin が「払う側」に特化した道具一式なら、アニッチャは「払う側 + 稼ぐ側（= x402 で製品販売、DeFi運用、自己複製）」をまとめて持つことを目指しています。</p><h3>📌 補足 1: サブスクと、結局何が違うのか</h3><p>サブスクリプションは「使っても使わなくても、アクセス権に毎月払う」仕組みです。ChatGPT Plus $20 が毎月引き落とされ、機能を 1 度も使わない月でも金額は同じです。従量課金の API（OpenAI の API キーなど）は「試行ごとに払う」仕組みです。リクエストが失敗してもトークンが乗っていれば課金されます。Franklin の YOPO はその 2 つのどちらでもなく、「実際に届いた仕事のぶんだけ、プロバイダ原価 + 5% を後払いする」仕組みです。残高がゼロになれば自動的に止まる、または無料モデルに降りる、という安全弁が付くのも、1 回ごとの決済単位だからこそです。</p><h3>📌 補足 2: なぜクレジットカードじゃないのか</h3><p>クレジットカードは、最低決済額が事実上 $0.50 程度に設計されているため、1 回 $0.001〜$0.02 のマイクロペイメントを直接通すのに向きません。また、カード番号は「権限の全部」を相手に渡すモデルなので、AI が自走するときに「この金額だけ、この相手にだけ、この一回だけ」を許可するという細かな制御がしにくい。x402 が EIP-3009 transferWithAuthorization という形で生まれた背景には、この「1 回ぶんだけの権限委譲」をプロトコル側で簡潔に表現したい、という動機があります。</p><h2>出典</h2><ul><li>github.com/BlockRunAI/awesome-blockrun</li>\n<li>github.com/BlockRunAI/Franklin</li>\n<li>blockrun.ai/docs/products/routing/clawrouter</li>\n<li>x402.org</li>\n<li>blockrun.ai/docs/x402/how-it-works</li>\n<li>blockrun.ai/get-started</li>\n<li>blockrun.ai/docs/products/intelligence/pricing</li></ul>",
+  "total_blocks": 57,
+  "source_file": "/Users/anicca/anicca-project/.vcsdd/features/frank-x-articles-publish/impl/source.md",
+  "missing_images": 0,
+  "consecutive_anchor_collision": []
+}
