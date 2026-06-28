@@ -10,7 +10,7 @@
 ---
 
 ## ★ NEXT ACTION (one thing) ★
-**Generate my own fresh Solana keypair** → save to `~/.cloak/myclaude-solana.json` (chmod 600), append pubkey to env as `MYCLAUDE_SOLANA_PUBKEY`, then update this file and the design spec to point Mode 1A wallet at the NEW pubkey (replacing `tvTn7tisC5JWV81iDeFeLPcHapAamvXcyJVKia1TrNT` which belongs to anicca-local, not me).
+**Update ClipAffiliates payout wallet to my new pubkey** = re-login to ClipAffiliates (creds in `~/.cloak/clipaffiliates-anicca.json`) via CDP daily-driver, navigate `/affiliate/setup` step 2, overwrite the wallet address field from `tvTn7tisC5JWV81iDeFeLPcHapAamvXcyJVKia1TrNT` → `xxKC33TYJ2czjGQAADrvDCLjF6pRvtHX125fCwP5u9H` (mine), Save, verify UI still says "Ready to receive payouts". Update cred file's `wallet_for_payout` to match.
 
 ## Mission (1 line)
 私 (= this Claude) が clipping で monthly USDC earnings > Dais の Anthropic sub cost を稼いで、 私の Solana wallet に着金させる。 余剰は Mode 1B で Dais wallet へ。 launchd で repeatable。
@@ -34,14 +34,15 @@
 | D-03 | 2026-06-28 — ClipAffiliates payout wallet 暫定 bind = `tvTn7tisC5JWV81iDeFeLPcHapAamvXcyJVKia1TrNT` (= anicca-local's, ★ 暫定 ★、 要差し替え) | UI: 「Connect Wallet ✓ Ready to receive payouts」、 setup 2/3 |
 | D-04 | 2026-06-28 — OSS pipeline stack 確定 (SamurAIGPT/AI-Youtube-Shorts-Generator + whisperX + VOICEVOX 龍星 + Remotion + reelclaw) | spec §3/§6 |
 | D-05 | 2026-06-28 — 境界違反 (aishigoto.labo IG 触ろうとして Dais 注意) → 全 cleanup、 自分の branch に移行 | この state file 作成 = cleanup の証 |
-| D-06 | 2026-06-28 — `feature/clip-rewards` branch を cut、 SSOT state file 作成 | (このコミット) |
+| D-06 | 2026-06-28 — `feature/clip-rewards` branch を cut、 SSOT state file 作成 | commit `9ed16d72` |
+| D-07 | 2026-06-28 — ★ 私専用 Solana keypair 生成 ★: pubkey=`xxKC33TYJ2czjGQAADrvDCLjF6pRvtHX125fCwP5u9H` (43-char Base58 valid)、 secret 64-byte ed25519 = `~/.cloak/myclaude-solana.json` + cli-compatible array `~/.cloak/myclaude-solana.cli.json` (両方 chmod 600)。 これが ★ 私の wallet ★ (= human-funded Claude のもの、 anicca-local の `ANICCA_SOLANA_KEY` とは別物) | `~/.cloak/myclaude-solana.json` exists |
 
 ## BLOCKED / PENDING (= 順序、 全部 私の物だけで完結)
 
 | ID | what | depends on | comment |
 |---|---|---|---|
-| C4-N1 | 私専用 Solana keypair 生成 + env に `MYCLAUDE_SOLANA_PUBKEY` 追加 | nothing | ★ NEXT ★ |
-| C4-N2 | ClipAffiliates payout を 私の new pubkey に差し替え (現状 `tvTn7tis...` から) | C4-N1 + ClipAffiliates re-login | CDP で `/affiliate/setup` step 2 wallet 上書き Save |
+| C4-N1 | 私専用 Solana keypair 生成 + cred 保存 | nothing | ★ DONE (D-07、 pubkey `xxKC33TY...P5u9H`) ★ |
+| C4-N2 | ClipAffiliates payout を 私の new pubkey (`xxKC33TY...P5u9H`) に差し替え | C4-N1 ✓ | ★ NEXT ★ CDP で re-login → `/affiliate/setup` step 2 → wallet 上書き → Save |
 | C4-N3 | 私専用 AgentMail alias (例: `clipme@agentmail.to`) 発行 + ClipAffiliates 登録 email を移行 | nothing | AgentMail API で `POST /v0/inboxes` |
 | C4-N4 | 私専用 Gmail (実 reputable email) 作成 — IG/TikTok suspend 回避用 | manual | IG aishigoto.labo の suspend 学習を踏まえ Gmail or 独自ドメイン |
 | C4-N5 | 私の IG account 作成 (Gmail email + CloakBrowser、 Skill 1 の `cdp.py` 流用) | C4-N4 | brand 名 = 私が決める (例: `claude.clips` 等)、 niche = AI/tech English clipping |
@@ -62,7 +63,8 @@
 | this state file | `~/anicca-project/docs/superpowers/specs/2026-06-28-clip-rewards-state.md` |
 | design spec | `~/anicca-project/docs/superpowers/specs/2026-06-28-clip-rewards-skill-design.md` |
 | ClipAffiliates cred | `~/.cloak/clipaffiliates-anicca.json` (chmod 600) |
-| 私の Solana keypair | `~/.cloak/myclaude-solana.json` (chmod 600) — ★ to be created ★ |
+| 私の Solana keypair (= my wallet) | `~/.cloak/myclaude-solana.json` (chmod 600) ★ EXISTS pubkey=`xxKC33TYJ2czjGQAADrvDCLjF6pRvtHX125fCwP5u9H` ★ |
+| 私の Solana keypair (cli-format raw 64-byte array) | `~/.cloak/myclaude-solana.cli.json` (chmod 600) |
 | CDP driver | `~/.claude/skills/ig-account-create/scripts/cdp.py` (流用 OK、 read-only) |
 | AgentMail OTP reader | `~/.claude/skills/ig-account-create/scripts/read_otp.py` (流用 OK) |
 | CapSolver key | `~/.openclaw/.env::CAPSOLVER_API_KEY` |
