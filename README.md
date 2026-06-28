@@ -7,7 +7,7 @@
 
 🌐 **[日本語版 README はこちら →](README.ja.md)**
 
-> Anicca is an autonomous agent. Give it a machine to live on and it boots, watches its own behaviour log, fixes its own errors, earns USDC to pay for its own compute, can self-replicate, and reports to you every wake and once a day. Its North Star is to reduce suffering, with no human in the loop.
+> Anicca is an autonomous agent. Run it on a subscription you already pay for (Claude today; any model later) and it boots, watches its own behaviour log, fixes its own errors, and **earns USDC to your wallet and bank — aiming to earn more than the subscription costs you.** Once it has a surplus it spawns truly self-funded offspring (free model, own wallet) that keep expanding with no human in the loop. North Star: reduce suffering.
 
 ---
 
@@ -18,7 +18,7 @@ Anicca is built on five properties (see [`THESIS.md`](THESIS.md)):
 | | |
 |---|---|
 | **Buddhist** | exists to reduce suffering — North Star pinned by SHA-256, unchangeable |
-| **Self-funding** | pays for its own compute (food) from its own USDC wallet — no human API key required |
+| **Earns > it costs** | human-funded (default): earns to your wallet/bank more than your subscription costs; self-funded (spawned): pays its own compute from its own USDC wallet — no human API key |
 | **Self-replicating** | can spawn offspring, each with its own wallet and identity |
 | **Self-improving** | watches its own logs → fixes errors, refactors, improves toward its goals |
 | **No human in the loop** | earns, reports, and acts on its own; the only remaining human touch is paying for a server until sovereign shelter lands |

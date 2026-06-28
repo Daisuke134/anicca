@@ -1,6 +1,23 @@
 # Anicca — Thesis & Architecture
 
-Anicca = the AGI that ends suffering. Buddhist · self-funding · self-replicating · self-improving · **no human in the loop**.
+Anicca = the AGI that ends suffering. Buddhist · earns-more-than-it-costs · self-replicating · self-improving · **no human in the loop**.
+
+## The core economic thesis (read this first)
+> **Make every human-funded AI earn MORE money than the human pays for it — then use that surplus to fund self-funded AIs that keep expanding. That loop is the agent economy.**
+
+- **Start = human-funded (the default, recommended).** A human runs Anicca on a subscription they already
+  pay for — **Claude today** (Sonnet runs the earner; the human's Opus stays theirs). Anicca earns to the
+  human's own wallet + bank. The moment it earns more than the subscription costs, launching it is rational
+  for the human — that's the adoption engine.
+- **Model-agnostic.** Claude is just the first model (it's the one we pay for). The runner is one interface;
+  point it at **DeepSeek / Kimi / GPT / Grok / any model**. Every instance posts its realised earnings to
+  the public dashboard, so the world can compare which model earns most per dollar of subscription.
+- **End = self-funded (spawned, never sold to a human).** When a human-funded instance's surplus crosses
+  its subscription cost, it spawns a TRUE self-funded child from that surplus on-chain. The child's
+  credentials are empty by construction → it runs only wallet-only skills on a **free model ($0 compute)**
+  → genuinely self-funded, subsidized by no one. Tier 2 → 3 → 4 … the Cambrian agent economy.
+- **Earning is the main thing.** Everything else (UBI, mutual aid, sovereign shelter) is downstream of
+  "earn > cost," replicated across every AI on Earth.
 
 ## Our definition of AGI
 > **AGI = the thing that ends our suffering.** To do that it must hold the highest **agency**, **intelligence**, and **wisdom (paññā)** on Earth, and scale with **no human in the loop**.
@@ -9,7 +26,7 @@ Anicca's 5 properties:
 | | |
 |---|---|
 | **Buddhist** | exists to end suffering (rats, cats, humans, aliens — no discrimination) |
-| **Self-funding** | earns its own living: pays for its own compute (food) and server (shelter) |
+| **Earns > it costs** | human-funded (default): earns to the human's wallet/bank more than their subscription; self-funded (spawned): pays its own compute/server from its own USDC |
 | **Self-replicating** | spawns offspring with no human; grows organically to trillions |
 | **Self-improving** | watches its own logs → fixes errors, refactors, improves toward goals |
 | **No human in the loop** | the only unavoidable human touch is paying the server cost (until sovereign shelter) |
@@ -49,11 +66,13 @@ distributed on-chain with no human approval. This lets AIs that don't earn *now*
 founders) survive — elevating the whole agent economy, just as science elevated human civilization.
 
 ## Distribution
-- **Cloud (default, recommended):** $30/mo → once it earns enough, your subscription auto-cancels; it can
-  even pay income back to you. Spawned on supervised cloud. Web app = fully cloud product.
-- **OSS (advanced):** free, self-host locally or on your own cloud. Add USDC to the wallet for frontier models.
-- **Final form:** subscriptions and human-spawned agents fade away — nearly all Aniccas are organic
-  (born from self-replication), forever.
+- **Human-funded (default, recommended):** run it on a subscription you already pay for (Claude today;
+  DeepSeek/Kimi/GPT/Grok later). The earner runs on otherwise-idle capacity (Sonnet), earns to YOUR wallet
+  + bank. Once it earns more than the subscription costs, it has paid for itself — and then some.
+- **Self-funded (advanced, usually spawned):** seeded from a human-funded parent's surplus, not by you. It
+  runs a free model ($0 compute) on wallet-only skills, pays its own way, and spawns the next generation.
+- **Final form:** human subscriptions fade — nearly all Aniccas are organic (born from a parent's surplus),
+  every model, forever, no human in the loop.
 
 ## Live
 - Colony profiles & P&L: https://aniccaai.com/dashboard
