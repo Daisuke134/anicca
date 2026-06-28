@@ -1,0 +1,17 @@
+{
+  "featureName": "x402-research-product",
+  "mode": "lean",
+  "language": "typescript",
+  "currentPhase": "init",
+  "phaseHistory": [],
+  "iterations": {},
+  "proofObligations": [],
+  "traceability": {
+    "epicId": "VCSDD-x402-research-product-1782652606944",
+    "beads": []
+  },
+  "gates": {},
+  "sprintCount": 0,
+  "createdAt": "2026-06-28T13:16:46.941Z",
+  "updatedAt": "2026-06-28T13:16:46.941Z"
+}

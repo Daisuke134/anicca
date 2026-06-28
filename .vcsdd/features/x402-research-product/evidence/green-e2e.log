@@ -1,0 +1,8 @@
+PASS R5 no paid-key env referenced
+PASS R1 >=1 real source
+PASS R1 sources are real external URLs
+PASS R3 non-empty digest (>200 chars)
+PASS R4 empty query exits non-zero
+PASS R4 no fake JSON on stdout for empty query
+
+6 passed, 0 failed
