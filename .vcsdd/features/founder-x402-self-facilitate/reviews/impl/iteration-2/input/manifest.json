@@ -1,0 +1,50 @@
+{
+  "reviewType": "impl",
+  "featureName": "founder-x402-self-facilitate",
+  "mode": "lean",
+  "iteration": 2,
+  "phase": 3,
+  "priorIteration": 1,
+  "priorVerdict": "FAIL",
+  "priorVerdictFile": ".vcsdd/features/founder-x402-self-facilitate/reviews/impl/iteration-1/output/verdict.json",
+  "priorFindingsCount": 16,
+  "priorBlockingFindings": 8,
+  "builderClosures": {
+    "blocker-1-declareDiscoveryExtension-shape": "fixed in server.js BAZAAR_EXTENSION_FOR_SOCIAL_X (raw input, separate inputSchema); test asserts ext.bazaar.info.input.{type,method,bodyType,body}",
+    "blocker-2-REQ-014-unreachable-handler": "spec corrected to SDK reality (SDK hardcodes 402 + {error,details}; no settlementFailedResponseBody hook exists in @x402/express 2.4.0). Replaced with wrapSettle(fn) that logs [x402.settle.error] + rethrows so SDK responds. PROP-014 unit test added.",
+    "blocker-3-CORS-X-PAYMENT-wildcard": "allowedHeaders=['Content-Type','Authorization','X-PAYMENT'] + exposedHeaders=['X-PAYMENT-RESPONSE']",
+    "blocker-4-__isEntry-brittle": "import.meta.url === pathToFileURL(process.argv[1]).href",
+    "blocker-5-REQ-004b-not-asserted": "startup assertion added in createApp",
+    "blocker-6-package.json-broken-start": "scripts.start = 'node src/server.js'; deps cleaned (dropped @coinbase/x402, @prisma/client, prisma, openai, ethers, dotenv, zod). 168 pkgs / 123M.",
+    "blocker-7-PROP-014-missing-test": "added 4 unit cases for wrapSettle",
+    "blocker-8-PROP-011-live-RPC-flaky": "X402_RPC_URL=http://127.0.0.1:1 env knob; createWalletClient transport uses it; test sets it for determinism"
+  },
+  "minorClosures": {
+    "probeGasReady-silent-catch": "logs [x402.boot.gas_probe_error]",
+    "payTo-getter-smell": "kept as accessor (REQ-002/004 tests require fresh-env read; accessor is correct semantics)",
+    "ROUTES-mutable": "Object.frozen at module-level + nested accepts/extra also frozen",
+    "x402ResourceServer-import-path": "now from @x402/express (safer surface)",
+    "mimeType-location": "added on RouteConfig parent (matches SDK Type)"
+  },
+  "artifactsToReview": [
+    ".vcsdd/features/founder-x402-self-facilitate/specs/behavioral-spec.md",
+    ".vcsdd/features/founder-x402-self-facilitate/specs/verification-architecture.md",
+    "/Users/anicca/anicca-project/apps/x402-agents/src/server.js",
+    "/Users/anicca/anicca-project/apps/x402-agents/src/__tests__/server-self-facilitate.test.js",
+    "/Users/anicca/anicca-project/apps/x402-agents/package.json",
+    ".vcsdd/features/founder-x402-self-facilitate/evidence/sprint-1-iter2-green.log"
+  ],
+  "referenceExample": "/Users/anicca/anicca-work/x402/examples/typescript/servers/self-facilitation/index.ts",
+  "installedSDKpaths": [
+    "/Users/anicca/anicca-project/apps/x402-agents/node_modules/@x402/express/dist/cjs/index.js",
+    "/Users/anicca/anicca-project/apps/x402-agents/node_modules/@x402/extensions/dist/cjs/bazaar/index.js"
+  ],
+  "reviewDimensions": [
+    "spec_fidelity",
+    "edge_cases",
+    "impl_correctness",
+    "structural_integrity",
+    "verification_readiness"
+  ],
+  "outputPath": ".vcsdd/features/founder-x402-self-facilitate/reviews/impl/iteration-2/output/verdict.json"
+}
