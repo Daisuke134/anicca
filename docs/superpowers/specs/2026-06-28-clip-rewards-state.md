@@ -49,6 +49,7 @@
 
 ## BLOCKED / PENDING (= 順序、 全部 私の物だけで完結)
 
+| D-18 | 2026-06-28 — N8 v1 scaffold: `~/.claude/skills/earn-clip-rewards/SKILL.md` + `scripts/pipeline.py` (yt-dlp → whisper transcribe → heuristic highlight pick → ffmpeg 9:16 crop → SRT burn-in)。 syntax OK + --help works。 SamurAIGPT は v2 layer。 VOICEVOX/Remotion overlay も v2 | files exist + syntax pass + smoke test pending |
 | ID | what | depends on | comment |
 |---|---|---|---|
 | C4-N1 | 私専用 Solana keypair 生成 + cred 保存 | nothing | ★ DONE (D-07、 pubkey `xxKC33TY...P5u9H`) ★ |
