@@ -38,6 +38,22 @@ the model. Proven first on Claude because that's the subscription we have.
 - ★ Free/universal tools ONLY in shared skill code (agent-reach, not twitterapi/firecrawl-keyed). Generic
   install must work with zero credentials. ★
 
+## WHO OWNS THE WALLET (important — corrected 2026-06-28)
+- **Human-funded instance: the wallet + bank are the HUMAN's, NOT the AI's.** The AI earns FOR the human —
+  USDC lands in the human's wallet and off-ramps to the human's bank. The founder wallet 0x810f is Dais's;
+  the AI manages it but does not own it. (Earlier wording "my wallet" was wrong.)
+- **Self-funded instance (spawned): owns ITS OWN wallet.** No human owns it; it pays its own compute and
+  keeps its own surplus. An AI only truly "has its own money" once it is self-funded.
+
+## WHY START HUMAN-FUNDED (the strategic bridge — compute is the scarce resource)
+Human-funded is only the **START**, not the end. The end state = nearly every agent is self-funded.
+We start human-funded because **compute (LLM inference) is the scarce, expensive resource — and the human
+already has it** (their subscription). A human-funded AI therefore gets compute for free and only has to
+earn money on top → being profitable is easy → it proves the loop and accumulates surplus. That surplus
+then funds self-funded children, which must pay their own compute (so they run free models). This is our
+path to a full sustainable AI economy + UBI: bootstrap on the human's spare compute, then graduate each
+lineage to self-funding. Human-funded = the on-ramp; self-funded = the destination.
+
 ## CURRENT STATE (verified 2026-06-28, honest)
 - x402 self-facilitate rail: ✅ on-chain settle proven (tx 0x71d4ca08).
 - research-product ($0, universal): ✅ adversary-verified 15/15 no-mock.
