@@ -254,18 +254,90 @@ P0 ✅     SIGNUP        do-once gig          skill scaffold  Upwork+Fiverr    c
 
 ---
 
-## §7 ADVERSARY CHECKLIST (= 5 dim、 ★ P2-13 で 自分 が PASS とした 基準 を ここに 落とす ★)
+## §7 ★ VERIFICATION ENGINE (= 全 earn skill の 心臓、 Dais 2026-06-28 verbatim) ★
+
+### §7.0 過去の失敗 (= 教訓 = なぜこれが必須か)
+2026-05-30 cfo-earner-coconala / cfo-earner-lancers 計 ¥4,956 着金 で 停止。 root cause:
+- ★ `cfo-earner-coconala/data/apply-log.jsonl` 1 行 のみ ★: "First run - login+scan attempt. **Apply logic in next iteration.**" → ★ Apply 実装 が TODO のまま 永久放置 ★
+- ★ Lancers: "applied:3, yield_usd_expected:4500" 記録 だが **実 ¥0 着金** ★ → ★ post-submit verify ゼロ で silent fail ★
+- ★ `jutaku-deliver-{writing,script,video,ai-app}` skill = memory 記載 のみ、 disk に **不在** ★ → ★ deliver chain 永遠に未配線 ★
+- ★ 「situation 変わっても 出品 を re-verify しない」 「buyer reply 来ても 自分の qualify 検証 せず 動く / 動かない」 ★
+
+Dais verbatim 2026-06-28: "they submitted things but then they never actually made money... they were not verifying their output... they were just posting... they have to constantly keep verifying it... when somebody applies they have to go verify that and take the action accordingly"
+
+### §7.1 五重 VERIFICATION GATES (= 全 step に gate、 必ず adversary fresh-context、 iterate til PASS)
 
 ```
-□ ① brief 一致     : buyer 要件 (文字数/形式/締切/言語) を 100% 満たすか
-□ ② quality        : 誤字 0、 文法 OK、 構成 (= hook→body→CTA) 揃う、 流れ 自然
-□ ③ fact check     : 数値/固有名詞/URL/価格 を verify、 hallucination 0
-□ ④ ToS+景表法    : platform AI policy 遵守、 #PR/「広告」 disclosure 有
-□ ⑤ deliverable    : codec/format/拡張子/サイズ が buyer 指定通り、 開封テスト 成功
+┌─────────────────────────────────────────────────────────────┐
+│ V1: PROPOSAL-VERIFY (= 攻め path、 Upwork/Lancers/CrowdWorks)│
+│   Trigger: poller が 適合 job 発見 → proposal draft 生成    │
+│   Gate:    ① brief 一致 ② skill 適合 ③ unique value         │
+│            ④ ToS+AI honest disclosure ⑤ template でない    │
+│   Iterate: FAIL → re-draft、 ≤3 round、 PASS で submit       │
+│   Past 失敗: 「apply logic = TODO」 だった = この gate 不在  │
+├─────────────────────────────────────────────────────────────┤
+│ V2: LISTING-VERIFY (= 守り path、 ココナラ/Fiverr 出品)      │
+│   Trigger: 新 gig list 直前 + 既存 gig 24h 周期 re-check   │
+│   Gate:    ① 競合 比較 「buyer がこれ選ぶ理由」              │
+│            ② 価格 適正 ③ portfolio 添付 ④ AI disclosure     │
+│            ⑤ ToS 第9条(34) 「出品代行」 表現回避            │
+│   Iterate: FAIL → title/desc/価格 書き直し、 ≤3 round       │
+├─────────────────────────────────────────────────────────────┤
+│ V3: DELIVERABLE-VERIFY (= ★ 核心、 過去 完全不在 ★)         │
+│   Trigger: engine が draft v1 生成 → submit 直前            │
+│   Gate:    ① brief 一致 (文字数/形式/締切/言語)             │
+│            ② quality (誤字/構成/流れ)                       │
+│            ③ fact check (hallucination 0)                  │
+│            ④ ToS + 景表法 + AI disclosure                   │
+│            ⑤ deliverable format (codec/拡張子/開封テスト)   │
+│   Iterate: FAIL → builder へ findings → loop fix ≤3 round  │
+│   ★ 「自分 で 開いて 中身 視認」 必須 (= P2-13 experience) ★│
+├─────────────────────────────────────────────────────────────┤
+│ V4: INBOUND-VERIFY (= 受信側 = client action に 反応する前) │
+│   Trigger: buyer から pre-sale Q / 注文 / 質問 / 修正依頼   │
+│   Gate:    ① brief 明確か (= 曖昧なら 質問返信)              │
+│            ② 自分 qualify する か (= scope/期限/技術 内?)   │
+│            ③ red flag 有無 (= 価格 dump / scope creep /     │
+│              支払前 納品 要求 / 直接取引 誘引)               │
+│            ④ ToS 越境 リスク (= 規約外コンテンツ依頼?)      │
+│            ⑤ 既存 SLA 競合 (= 今 N 件抱えて締切 平気か)     │
+│   Iterate: FAIL → 「お受けできかねます」 丁寧断り or 質問    │
+│   ★ Dais verbatim: 「somebody asks you something you gotta │
+│     go verify that and take action accordingly」 ★         │
+├─────────────────────────────────────────────────────────────┤
+│ V5: CONTINUOUS-VERIFY (= 24h 自動 re-check、 stale 駆除)    │
+│   Trigger: 24h cron + 任意 trigger                          │
+│   対象:    ① 公開中 全 gig (= 価格 / desc が market 適正か) │
+│            ② 進行中 全 order (= 締切 残 / 中間 progress)    │
+│            ③ 過去 submit proposal (= client 反応 待機/expire)│
+│            ④ payout 履歴 (= 着金 数 ↔ ledger 整合 / 差分)   │
+│            ⑤ competitor 上位 5 (= 自分 落ち て な い か)    │
+│   Action:  drift 検知 = V1/V2/V3 を 該当 item に再起動      │
+│   ★ Dais verbatim: 「situations changed so they have to    │
+│     constantly keep verifying」 ★                          │
+└─────────────────────────────────────────────────────────────┘
 ```
-FAIL = builder へ findings 返却 → loop fix ≤3 → なお FAIL = Slack DM 1 通 escalate
 
-★ ↑ 5 dim の 具体的 pass-line は P2 experience 後 に 「自分 が こう判断 した」 を spec §7 に追記 ★ (= 体験 した quality 基準 が adversary の 教科書)
+### §7.2 各 gate の adversary 実装 (= 共通 pattern)
+```
+def verify(item, gate_id):
+    score, findings = adversary_5dim(item, gate_id)  # fresh-context vcsdd-adversary
+    for round in range(3):  # ≤3 iterate
+        if all_pass(score):
+            return PASS
+        item = builder_revise(item, findings)
+        score, findings = adversary_5dim(item, gate_id)
+    return ESCALATE  # 3 round NG = Slack DM + 人 介入 待機
+```
+
+### §7.3 5 gate 全部 走る base rate
+- V1 PROPOSAL: 攻め 1日 ≤3 proposal × 各 1-3 round = 3-9 verify/日
+- V2 LISTING: 新出品 N + 既存 12 gig × 24h re-check = 13+/日
+- V3 DELIVERABLE: order 数 × 各 1-3 round = order に比例
+- V4 INBOUND: client action 数 × 各 1 round
+- V5 CONTINUOUS: 24h × 1 sweep = 1/日 (= 全部 cover)
+
+★ 全 5 gate を skipping して submit する 関数 を `pass-no-verify` symbol で 物理 grep block (= compliance.py で startup check) ★ — 「短縮しよう」 thought の 物理排除。
 
 ---
 
