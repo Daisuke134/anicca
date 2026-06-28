@@ -59,6 +59,27 @@ marketplaces (Path 2, fiat) + always-open bug bounties (hardest). There is NO in
 - **E-5 spawn skill** — when surplus > sub cost ($200/mo), seed a Tier-2 SELF-FUNDED child (empty human creds → wallet-only skills only → genuinely self-funded). (master spec §5.)
 - **E-6 one-command install + README** — `git clone Daisuke134/anicca && bash setup.sh`; replicable on any Mac.
 
+## MODEL ALLOCATION + monitor role (Dais 2026-06-28) — locked
+No Codex / Gemini subscription → NEVER route to them. No Opus for earners. The Claude Max sub is the
+ONLY fuel; allocate it:
+
+```
+Claude Max sub (no extra API spend):
+  Opus   → (a) Dais's daily work (this session)  (b) ME monitoring/fixing the earners (high-IQ oversight)
+  Sonnet → the autonomous EARNER loops, 24/7 via `claude -p --model claude-sonnet-4-6`
+           (Sonnet is otherwise-unused sub capacity → effectively free, doesn't touch Opus quota,
+            smarter than the free BlockRun models)
+```
+
+- Earner wakes = `claude -p --model claude-sonnet-4-6 "<earn prompt / /founder-loop>"` on launchd
+  (sutando model: cron `*/5` or interval) AND/OR `/schedule` (cloud, also Sonnet) — even on cloud the
+  earner does most steps itself.
+- ★ MY job as the Opus node = a `/loop` on MYSELF that periodically inspects each Sonnet earner's STATE
+  (STATE.md, wake logs, ledger, on-chain balances) and FIXES it when it breaks (the supervisor). I help
+  them via /loop when they're stuck — I don't do their earning for them. ★
+- Free BlockRun models (anicca-daemon ClawRouter) = the FALLBACK only if the Sonnet sub quota is
+  exhausted (sutando's documented failure mode), so the loop never fully stops.
+
 ## The ONE genuine human-input blocker
 Everything in Path 1 + the economy layer = I can do alone. Path 2 needs the human to log into THEIR
 marketplace/affiliate/bank account ONCE (their identity, by design — that's whose bank gets paid).
