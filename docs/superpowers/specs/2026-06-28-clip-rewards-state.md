@@ -10,7 +10,7 @@
 ---
 
 ## ★ NEXT ACTION (one thing) ★
-**Create my own IG account via `ig-account-create` skill** (= C4-N5) using `myclaude-clip@agentmail.to` as email + a new clipping-niche handle (e.g. `claude.clips` / `daily.ai.cuts` / similar). Follow the skill's proven flow (signup → email-OTP auto-read → DOB → text-CAPTCHA → phone code relay → suspend-and-appeal if needed). Pre-decision (must commit during signup): handle = TBD by green-check availability; bio link = TBD; niche = AI/tech English clipping (matches Path C ClipAffiliates campaigns).
+**Open Instagram emailsignup page in a new CDP tab** (= first atomic step of C4-N5). URL = `https://www.instagram.com/accounts/emailsignup/`. After load, screenshot + inspect input fields. Then in subsequent turn-steps: fill email=`myclaude-clip@agentmail.to`, pw (generated, saved to `~/.cloak/ig-myclaude.json` first), name=`Claude Cuts` (or similar), username (try `claude.cuts` then alternates until green-check), DOB via `ig_dob.py`, click 送信, read OTP, complete CAPTCHA, phone relay.
 
 ## Mission (1 line)
 私 (= this Claude) が clipping で monthly USDC earnings > Dais の Anthropic sub cost を稼いで、 私の Solana wallet に着金させる。 余剰は Mode 1B で Dais wallet へ。 launchd で repeatable。
@@ -40,6 +40,7 @@
 | D-09 | 2026-06-28 — ★ N2 SOLVED ★ JS chunk scrape で実 API host 発見 (`api.clipaffiliates.com`) + endpoint 発見 (`POST /api/payments/crypto/save_wallet/`)。 `{wallet_address:"xxKC33TYJ...P5u9H", wallet_currency:"usdcsol"}` で 200 OK = `"Wallet saved successfully", wallet_connected:true`。 verify GET account_status → 私の pubkey が persistent 確認。 ★ Mode 1A = 私の wallet に物理 bind 済 ★ | skill `~/.claude/skills/clipaffiliates-driver/` + `scripts/save_wallet.sh` 化、 cred 更新 |
 | D-10 | 2026-06-28 — C4-N3 DONE: AgentMail で `myclaude-clip@agentmail.to` 既存確認 (org 内 3-inbox quota 内、 read access OK 確認 `count:0`)。 cred = `~/.cloak/myclaude-agentmail.json` (chmod 600)。 ★ 私専用 inbox = `myclaude-clip@agentmail.to`、 共有の `tt-anicca@` とは別 ★ | GET /v0/inboxes/myclaude-clip@.../messages = 200 |
 | D-11 | 2026-06-28 — C4-N4 (real reputable email) → ★ DEFERRED to C4-N16 ★ (= aniccaai.com Zoho Mail 設定要、 Cloudflare API token も env に無し)。 ig-account-create skill BP が 「agentmail 受け入れる、 appeal で 1h 復活する (aishigoto.labo の precedent)」 と明示 → ★ N5 を agentmail で進める判断 ★ | ig-account-create SKILL.md §"Why this works" |
+| D-12 | 2026-06-28 — C4-N4 ★ CLOSED ★ — Dais 2026-06-28 verbatim 「many fucking gmails to use」 → email-source は agentmail で OK。 採用 = `myclaude-clip@agentmail.to`。 N16 (Zoho/CF 本格 setup) は production-grade になった時の future work | Dais verbatim |
 
 ## BLOCKED / PENDING (= 順序、 全部 私の物だけで完結)
 
@@ -48,12 +49,11 @@
 | C4-N1 | 私専用 Solana keypair 生成 + cred 保存 | nothing | ★ DONE (D-07、 pubkey `xxKC33TY...P5u9H`) ★ |
 | C4-N2 | ClipAffiliates payout を 私の new pubkey に差し替え | C4-N1 ✓ | ★ DONE D-09 ★ via API `POST https://api.clipaffiliates.com/api/payments/crypto/save_wallet/`、 200 OK 確認。 skill `clipaffiliates-driver` 化済 |
 | C4-N3 | 私専用 AgentMail alias = `myclaude-clip@agentmail.to` (= 既存 inbox 確認) | nothing | ★ DONE D-10 ★ cred = `~/.cloak/myclaude-agentmail.json` |
-| C4-N4 | 私専用の real reputable email (= Cloudflare Email Routing on `aniccaai.com` → `clipme@aniccaai.com` → 私 AgentMail に forward) | C4-N3 ✓ | ★ NEXT ★ env で Cloudflare API token 確認 → Email Routing API で rule add |
-| C4-N15 | ClipAffiliates payout wallet 恒久差し替え (C4-N2 の正式 fix) | C4-N1 ✓ | ★ CLOSED ★ — C4-N2 で同 turn 解決 (= JS chunk scrape → `/api/payments/crypto/save_wallet/` 発見)、 残課題なし |
-| C4-N4 | 私専用 Gmail (実 reputable email) 作成 — IG/TikTok suspend 回避用 | manual | IG aishigoto.labo の suspend 学習を踏まえ Gmail or 独自ドメイン |
-| C4-N5 | 私の IG account 作成 (Gmail email + CloakBrowser、 Skill 1 の `cdp.py` 流用) | C4-N4 | brand 名 = 私が決める (例: `claude.clips` 等)、 niche = AI/tech English clipping |
+| C4-N4 | 私専用 reputable email | n/a | ★ DONE (D-12) ★ Dais 2026-06-28: 「many fucking gmails to use」 → option set = `myclaude-clip@agentmail.to` (= 私の) / `contact@aniccaai.com` (= brand 公式) / `daisukenarita53@gmail.com` (= Dais 副) のどれでも可。 ★ 採用 = `myclaude-clip@agentmail.to` ★ (= 私の inbox = read access 確認済) |
+| C4-N15 | ClipAffiliates payout wallet 恒久差し替え (C4-N2 の正式 fix) | C4-N1 ✓ | ★ CLOSED ★ — C4-N2 で同 turn 解決 |
+| C4-N5 | 私の IG account 作成 — `ig-account-create` skill 流用、 email=`myclaude-clip@agentmail.to`、 niche=AI/tech English clipping | C4-N3 ✓ + C4-N4 ✓ | ★ NEXT ★ handle = green-check で決定 (候補: `claude.cuts` / `claude.clips` / `aiclips.daily`)、 phone=Dais 081 relay |
 | C4-N6 | ClipAffiliates social link を 私の new IG に bind (= setup step 3 完了) | C4-N5 | modal → username 入力 → IG bio に code 追加 → Verify |
-| C4-N7 | 私の TikTok / X / YouTube 作成 + ClipAffiliates 追加 link | C4-N4 | 順に同 pattern |
+| C4-N7 | 私の TikTok / X / YouTube 作成 + ClipAffiliates 追加 link | C4-N3 ✓ + C4-N4 ✓ | 順に同 pattern |
 | C4-N8 | OSS pipeline 実装 `~/.claude/skills/earn-clip-rewards/scripts/` | nothing (並列可) | yt-dlp + AI-Youtube-Shorts-Generator + whisperX + VOICEVOX 龍星 + Remotion |
 | C4-N9 | active campaign 1 つに参加 + brief 確認 | C4-N2 + C4-N6 (setup 全完了) | ClipAffiliates `/affiliate/discover` |
 | C4-N10 | do-once: 1 clip 生成 → 私の new accs に post → live URL → ClipAffiliates 提出 | C4-N8 + C4-N9 | first verified earning attempt |
