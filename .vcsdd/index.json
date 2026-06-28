@@ -29,7 +29,23 @@
       "mode": "lean",
       "currentPhase": "complete",
       "updatedAt": "2026-06-28T06:34:20.660Z"
+    },
+    "x402-research-product": {
+      "status": "active",
+      "createdAt": "2026-06-28T13:16:46.941Z",
+      "mode": "lean",
+      "language": "typescript",
+      "currentPhase": "init",
+      "updatedAt": "2026-06-28T13:16:46.941Z"
+    },
+    "x402-go-live": {
+      "status": "active",
+      "createdAt": "2026-06-28T13:50:03.040Z",
+      "mode": "lean",
+      "language": "typescript",
+      "currentPhase": "init",
+      "updatedAt": "2026-06-28T13:50:03.040Z"
     }
   },
-  "activeFeature": "founder-x402-self-facilitate"
+  "activeFeature": "x402-go-live"
 }
