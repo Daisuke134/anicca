@@ -12,11 +12,13 @@
 - Visual confirmation: `evidence/v1-final-region.jpg` shows V1 directly between [1] hook (ending in 「Franklin は払う。」) and [2] heading 「Franklin は『自分の財布で動く AI エージェント』」.
 
 ## H3 platform constraint
-- X Articles renders `<h3>` visually flat against paragraph text. [7] sub-sections
-  (今日入れてたほうが良い人 / もう少し待っていい人) work because they use **bold paragraph**
-  in `source.md`, NOT actual h3. Adversary's R1 H3 finding refers to a theoretical
-  problem that does not bite this article. Spec line 4b documents this platform
-  constraint to prevent future regressions.
+- X Articles renders `<h3>` visually flat against paragraph text.
+- [7] sub-sections in `source.md:125,130` DO use `### ` (becoming `<h3>` in
+  `article.html:7,11`). On the live X draft they render only as slightly
+  heavier paragraphs — the platform downplays h3 vs h2.
+- Spec line 60 (4b) classifies this as a documented platform constraint
+  (NOT an impl bug); future articles should prefer bold-paragraph or h2 for
+  visible sub-sections.
 
 ## Live draft state (post-R2)
 - DRAFT URL: https://x.com/compose/articles/edit/2071129016560758784
