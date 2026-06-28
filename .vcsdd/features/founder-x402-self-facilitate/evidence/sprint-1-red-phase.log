@@ -1,0 +1,130 @@
+new-feature-tests: FAIL
+regression-baseline: PASS
+total-tests: 35
+new-tests-added: 31
+new-tests-FAILING: 31
+new-tests-PASSING: 0
+baseline-tests-PASSING: 4
+baseline-tests-FAILING: 0
+sprint: 1
+phase: 2a (RED)
+feature: founder-x402-self-facilitate
+spec-iter-locked: 3 (adversary PASS)
+tier-0-props-covered: 17 of 17
+test-file: apps/x402-agents/src/__tests__/server-self-facilitate.test.js
+
+==================== NEW TESTS (FAIL) raw ====================
+
+ RUN  v2.1.9 /Users/operator/anicca-project/apps/x402-agents
+
+ × src/__tests__/server-self-facilitate.test.js > PROP-001a [Tier 0] REQ-001 i+ii: viem walletClient on Base mainnet > uses privateKeyToAccount(process.env.EVM_PRIVATE_KEY)
+   → expected '/**\n * x402-agents server\n *\n * In…' to match /privateKeyToAccount\(\s*process\.env\…/
+ × src/__tests__/server-self-facilitate.test.js > PROP-001a [Tier 0] REQ-001 i+ii: viem walletClient on Base mainnet > createWalletClient with chain: base
+   → expected '/**\n * x402-agents server\n *\n * In…' to match /createWalletClient\s*\([^)]*chain:\s*…/
+ × src/__tests__/server-self-facilitate.test.js > PROP-001b [Tier 0] REQ-001 iii: toFacilitatorEvmSigner wrapper > imports + calls toFacilitatorEvmSigner exactly once (non-comment)
+   → expected +0 to be 1 // Object.is equality
+ × src/__tests__/server-self-facilitate.test.js > PROP-001c [Tier 0] REQ-001 iv+v: in-process x402Facilitator + registerExactEvmScheme > new x402Facilitator() appears exactly once
+   → expected +0 to be 1 // Object.is equality
+ × src/__tests__/server-self-facilitate.test.js > PROP-001c [Tier 0] REQ-001 iv+v: in-process x402Facilitator + registerExactEvmScheme > registerExactEvmScheme(facilitator, ...) appears exactly once
+   → expected +0 to be 1 // Object.is equality
+ × src/__tests__/server-self-facilitate.test.js > PROP-001d [Tier 0] REQ-001 vi+vii: x402ResourceServer.register + ExactEvmServerScheme > x402ResourceServer is constructed with in-process facilitator object-literal
+   → expected '/**\n * x402-agents server\n *\n * In…' to match /new\s+x402ResourceServer\s*\(\s*\{/
+ × src/__tests__/server-self-facilitate.test.js > PROP-001d [Tier 0] REQ-001 vi+vii: x402ResourceServer.register + ExactEvmServerScheme > .register("eip155:8453", new ExactEvmServerScheme()) appears exactly once
+   → expected +0 to be 1 // Object.is equality
+ × src/__tests__/server-self-facilitate.test.js > PROP-002 [Tier 0] REQ-002: ROUTES singleton bound to X402_WALLET_ADDRESS > server.js exports ROUTES constant
+   → Missing credentials. Please pass an `apiKey`, or set the `OPENAI_API_KEY` environment variable.
+ × src/__tests__/server-self-facilitate.test.js > PROP-002 [Tier 0] REQ-002: ROUTES singleton bound to X402_WALLET_ADDRESS > exactly one paid route key = "POST /social/x"
+   → Missing credentials. Please pass an `apiKey`, or set the `OPENAI_API_KEY` environment variable.
+ × src/__tests__/server-self-facilitate.test.js > PROP-002 [Tier 0] REQ-002: ROUTES singleton bound to X402_WALLET_ADDRESS > payTo equals process.env.X402_WALLET_ADDRESS at config time
+   → Missing credentials. Please pass an `apiKey`, or set the `OPENAI_API_KEY` environment variable.
+ × src/__tests__/server-self-facilitate.test.js > PROP-003 [Tier 0, PROMOTED] REQ-003: Base MAINNET only, never Sepolia > imports base from viem/chains AND zero Sepolia references
+   → expected { hasBaseImport: false, …(2) } to deeply equal { hasBaseImport: true, …(2) }
+ × src/__tests__/server-self-facilitate.test.js > PROP-004 [Tier 0] REQ-004: POST /social/x accepts shape > accepts has full mainnet shape including extra.asset
+   → Missing credentials. Please pass an `apiKey`, or set the `OPENAI_API_KEY` environment variable.
+ × src/__tests__/server-self-facilitate.test.js > PROP-004b [Tier 0] REQ-004b: $0.003 resolves to 3000 USDC base units > server.js exports resolveAcceptsAmount
+   → Missing credentials. Please pass an `apiKey`, or set the `OPENAI_API_KEY` environment variable.
+ × src/__tests__/server-self-facilitate.test.js > PROP-004b [Tier 0] REQ-004b: $0.003 resolves to 3000 USDC base units > resolveAcceptsAmount(accepts) === "3000"
+   → Missing credentials. Please pass an `apiKey`, or set the `OPENAI_API_KEY` environment variable.
+ × src/__tests__/server-self-facilitate.test.js > PROP-005 [Tier 0] REQ-005: Bazaar POST shape (method+bodyType+input+inputSchema) > ROUTES["POST /social/x"].extensions carries method:POST + bodyType:json
+   → Missing credentials. Please pass an `apiKey`, or set the `OPENAI_API_KEY` environment variable.
+ × src/__tests__/server-self-facilitate.test.js > PROP-005 [Tier 0] REQ-005: Bazaar POST shape (method+bodyType+input+inputSchema) > extensions carries input + inputSchema (non-empty)
+   → Missing credentials. Please pass an `apiKey`, or set the `OPENAI_API_KEY` environment variable.
+ × src/__tests__/server-self-facilitate.test.js > PROP-006 [Tier 0, PROMOTED] REQ-006: validateEnv format check > server.js exports validateEnv + MissingEnvError
+   → Missing credentials. Please pass an `apiKey`, or set the `OPENAI_API_KEY` environment variable.
+ × src/__tests__/server-self-facilitate.test.js > PROP-006 [Tier 0, PROMOTED] REQ-006: validateEnv format check > throws on missing EVM_PRIVATE_KEY
+   → Missing credentials. Please pass an `apiKey`, or set the `OPENAI_API_KEY` environment variable.
+ × src/__tests__/server-self-facilitate.test.js > PROP-006 [Tier 0, PROMOTED] REQ-006: validateEnv format check > throws on empty EVM_PRIVATE_KEY
+   → Missing credentials. Please pass an `apiKey`, or set the `OPENAI_API_KEY` environment variable.
+ × src/__tests__/server-self-facilitate.test.js > PROP-006 [Tier 0, PROMOTED] REQ-006: validateEnv format check > throws on malformed EVM_PRIVATE_KEY (not 64-hex)
+   → Missing credentials. Please pass an `apiKey`, or set the `OPENAI_API_KEY` environment variable.
+ × src/__tests__/server-self-facilitate.test.js > PROP-006 [Tier 0, PROMOTED] REQ-006: validateEnv format check > throws on malformed X402_WALLET_ADDRESS (not 40-hex)
+   → Missing credentials. Please pass an `apiKey`, or set the `OPENAI_API_KEY` environment variable.
+ × src/__tests__/server-self-facilitate.test.js > PROP-006 [Tier 0, PROMOTED] REQ-006: validateEnv format check > accepts a valid env pair
+   → Missing credentials. Please pass an `apiKey`, or set the `OPENAI_API_KEY` environment variable.
+ × src/__tests__/server-self-facilitate.test.js > PROP-006a [Tier 0] REQ-006: createApp() throws on bad env > createApp rejects/throws when env is missing
+   → Missing credentials. Please pass an `apiKey`, or set the `OPENAI_API_KEY` environment variable.
+ × src/__tests__/server-self-facilitate.test.js > PROP-007 [Tier 0] REQ-007 + REQ-017: zero forbidden imports under src/ > server.js has no forbidden imports / env refs
+   → forbidden patterns matched: /@coinbase\/x402/, /x402\.org\/facilitator/, /\bDATABASE_URL\b/, /\bOPENAI_API_KEY\b/, /HTTPFacilitatorClient/: expected [ '/@coinbase\/x402/', …(4) ] to deeply equal []
+ × src/__tests__/server-self-facilitate.test.js > PROP-008 + PROP-008b [Tier 0] REQ-008: /health pure, no prisma anywhere > server.js does not contain the string "prisma" (case-insensitive)
+   → expected '/**\n * x402-agents server\n *\n * in…' not to match /prisma/
+ × src/__tests__/server-self-facilitate.test.js > PROP-011 [Tier 0] REQ-011: replicable boot — only EVM_PRIVATE_KEY + X402_WALLET_ADDRESS + PORT > server boots with only required env, prints "listening on port" within 2s
+   → expected "listening on port" in output. stdout= stderr=file:///Users/operator/anicca-project/apps/x402-agents/node_modules/openai/client.mjs:91
+            throw new Errors.OpenAIError('Missing credentials. Please pass an `apiKey`, or set the `OPENAI_API_KEY` environment variable.');
+                  ^
+
+OpenAIError: Missing credentials. Please pass an `apiKey`, or set the `OPENAI_API_KEY` environment variable.
+    at new OpenAI (file:///Users/operator/anicca-project/apps/x402-agents/node_modules/openai/client.mjs:91:19)
+    at file:///Users/operator/anicca-project/apps/x402-agents/src/services/buddhistCounselService.js:11:16
+    at ModuleJob.run (node:internal/modules/esm/module_job:430:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:655:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v25.6.1
+: expected '\nfile:///users/anicca/anicca-project…' to match /listening on port/
+ × src/__tests__/server-self-facilitate.test.js > PROP-013 [Tier 0] REQ-013: USDC Base mainnet contract address pin > USDC mainnet contract appears exactly once in server.js
+   → expected +0 to be 1 // Object.is equality
+ × src/__tests__/server-self-facilitate.test.js > PROP-016 [Tier 0] REQ-016: single source of truth literals > the literal "$0.003" appears exactly once
+   → expected +0 to be 1 // Object.is equality
+ × src/__tests__/server-self-facilitate.test.js > PROP-016 [Tier 0] REQ-016: single source of truth literals > the literal "eip155:8453" appears exactly once
+   → expected +0 to be 1 // Object.is equality
+ × src/__tests__/server-self-facilitate.test.js > PROP-017 [Tier 0] REQ-017: deferred route files moved out of src/ > none of the 8 deferred route files exist under src/routes/
+   → the following deferred route files must be moved out of src/routes/: buddhistCounsel.js, contextCompressor.js, decisionClarifier.js, emotionDetector.js, focusCoach.js, habitDesigner.js, intentRouter.js, promptSanitizer.js: expected [ 'buddhistCounsel.js', …(7) ] to deeply equal []
+ × src/__tests__/server-self-facilitate.test.js > PROP-017 [Tier 0] REQ-017: deferred route files moved out of src/ > src/lib/prisma.js does not exist
+   → expected true to be false // Object.is equality
+
+ Test Files  1 failed (1)
+      Tests  31 failed (31)
+   Start at  14:54:05
+   Duration  679ms (transform 44ms, setup 0ms, collect 12ms, tests 320ms, environment 0ms, prepare 51ms)
+
+
+==================== BASELINE TESTS (PASS) raw ====================
+
+ RUN  v2.1.9 /Users/operator/anicca-project/apps/x402-agents
+
+stdout | src/__tests__/server.test.js > x402-agents server > GET /health returns 200 when DB is connected
+x402 server initialized successfully
+x402 payment middleware active (testnet, network: eip155:84532)
+
+stdout | src/__tests__/server.test.js > x402-agents server > GET /health returns 503 when DB is down
+x402 server initialized successfully
+x402 payment middleware active (testnet, network: eip155:84532)
+
+stdout | src/__tests__/server.test.js > x402-agents server > has trust proxy enabled
+x402 server initialized successfully
+x402 payment middleware active (testnet, network: eip155:84532)
+
+stdout | src/__tests__/server.test.js > x402-agents server > mounts all 8 route endpoints
+x402 server initialized successfully
+x402 payment middleware active (testnet, network: eip155:84532)
+
+ ✓ src/__tests__/server.test.js > x402-agents server > GET /health returns 200 when DB is connected
+ ✓ src/__tests__/server.test.js > x402-agents server > GET /health returns 503 when DB is down
+ ✓ src/__tests__/server.test.js > x402-agents server > has trust proxy enabled
+ ✓ src/__tests__/server.test.js > x402-agents server > mounts all 8 route endpoints
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  14:54:06
+   Duration  343ms (transform 24ms, setup 0ms, collect 81ms, tests 43ms, environment 0ms, prepare 33ms)
+
