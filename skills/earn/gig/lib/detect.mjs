@@ -3,8 +3,8 @@
  *
  * Bounded, no-side-effect refresh: poll the VERIFIED-LIVE rails for AI-doable open jobs,
  * write state/guild_feed.json. Only rails we have actually onboarded + E2E-proven are
- * polled (dealwork API, LaborX public board). Dead/unverified rails (abillio etc.) are
- * NOT polled (D2: never pretend a dead rail works). Pure-ish: network in, file out; earns 0.
+ * polled (dealwork API). Unverified/dead rails (abillio) and not-yet-coded rails (laborx) are
+ * NOT polled (D2: never pretend a rail works before its action code exists). network in, file out; earns 0.
  *
  * Creds are read from the creds file (~/.openclaw/.env) — the loop scrubs *_WALLET_KEY
  * from env, and we never need a wallet key to DETECT (read-only public/auth-token calls).
@@ -12,8 +12,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
+import { AI_HINT } from './ai-hint.mjs';
 
-const AI_HINT = /python|script|csv|json|data|scrap|research|seo|lead|writ|content|doc|code|review|translat|automat|bot|api|server|telegram|web|powerpoint|スライド|資料|記事|文字起こし|入力/i;
 
 function readCreds(envFile) {
   const out = {};
@@ -44,23 +44,6 @@ async function dealworkJobs(creds) {
   } catch { return []; }
 }
 
-async function laborxJobs() {
-  // public SSR board, no login needed to DETECT
-  try {
-    const r = await fetch('https://laborx.com/jobs', { headers: { 'User-Agent': 'Mozilla/5.0' }, signal: AbortSignal.timeout(15000) });
-    if (!r.ok) return [];
-    const h = await r.text();
-    const out = []; const seen = new Set();
-    for (const blk of h.split(/class="[^"]*job-card[^"]*"/).slice(1)) {
-      const hm = blk.match(/href="(\/jobs\/[a-z0-9-]+-\d+)"/i);
-      if (!hm || seen.has(hm[1])) continue; seen.add(hm[1]);
-      const tm = blk.match(new RegExp('href="' + hm[1].replace(/[/-]/g, '\\$&') + '"[^>]*>\\s*([^<]{4,90})'));
-      const title = tm ? tm[1].trim() : hm[1].split('/').pop();
-      if (AI_HINT.test(title)) out.push({ rail: 'laborx', id: hm[1].split('-').pop(), title, url: 'https://laborx.com' + hm[1], budget: null, currency: 'USD' });
-    }
-    return out;
-  } catch { return []; }
-}
 
 export async function detect({ envFile, outFile } = {}) {
   const ef = envFile || path.join(os.homedir(), '.openclaw', '.env');

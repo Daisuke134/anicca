@@ -10,8 +10,8 @@
  * earn_usdc is ALWAYS 0 for a bid — earning is only counted at on-chain settle (record-earn).
  */
 import fs from 'node:fs';
+import { AI_HINT } from './ai-hint.mjs';
 
-const AI_HINT = /python|script|csv|json|data|scrap|research|seo|lead|writ|content|doc|code|review|translat|automat|bot|api|server|web|powerpoint|スライド|資料|記事|文字起こし|入力/i;  // identical to detect.mjs
 
 export function loadBidLedger(file) {
   const set = new Set();
@@ -47,6 +47,12 @@ export function buildProposal(job) {
     `against your criteria, and hand over files + a short README so you can verify immediately. ` +
     `Fast turnaround, clear updates, one revision included.`
   );
+}
+
+/** Record a bid (for idempotency) ONLY when it actually succeeded — a failed POST stays
+ *  retryable on a later wake (FIND-004). Single source of the recording rule. */
+export function shouldRecordBid(result) {
+  return !!(result && result.ok === true);
 }
 
 /** Effectful: POST the bid to dealwork. Returns {ok, status, bidId|err}. */

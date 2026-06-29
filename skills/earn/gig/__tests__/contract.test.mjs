@@ -83,6 +83,11 @@ test('reads the loop decision channel $ANICCA_ARGS (not GIG_MODE) — drives the
   assert.equal(r.status, 0, r.stderr);
   const j = lastJsonLine(r.stdout);
   assert.ok(j && j.task && j.task.startsWith('settle'), `settle not driven via ANICCA_ARGS: ${r.stdout}`);
+  // non-tautological (FIND-006): with no real external inflow the settle MUST be 0 and not flagged external —
+  // a fabricated earn would fail here. record-earn must actually have been invoked (its line appears).
+  assert.equal(j.earn_usdc, 0, 'settle fabricated a non-zero earn without on-chain inflow');
+  assert.ok(!j.external, 'settle claimed external with no inflow');
+  assert.ok(/record-earn|settle:/.test(r.stdout), 'record-earn oracle was not invoked');
   assert.ok(!(`${r.stdout}${r.stderr}`).includes(LEAK), 'key leaked');
 });
 

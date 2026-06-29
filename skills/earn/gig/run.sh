@@ -118,16 +118,31 @@ do_deliver() {
 }
 
 # ── SETTLE: count ONLY real external on-chain USDC (record-earn INV-7). Anti-shortcut. ──
+# record-earn is the CHAIN ORACLE (external-USDC truth). On a confirmed inflow the slot
+# also writes a LOOP-FORMAT earn line to the loop's EARN_LEDGER tagged wake=$WAKE (WAKE_ID),
+# because the loop classifies profitability by `line.wake === WAKE_ID` (FIND-001).
 do_settle() {
-  local re="$HOME/anicca/skills/self/founder-loop/record-earn.mjs"
-  [ -f "$re" ] || { echo "[gig] settle: record-earn not found"; emit "settle" 0 0; return; }
+  local re="${ANICCA_HOME:-$HOME/anicca}/skills/self/founder-loop/record-earn.mjs"  # portable (FIND-005)
+  [ -f "$re" ] || { echo "[gig] settle: record-earn not found at $re"; emit "settle" 0 0; return; }
   local out earn=0
-  out=$(timeout 45 node "$re" --source gig --task settle 2>&1) || true
+  out=$(timeout 45 node "$re" --source gig --task settle --wake "$WAKE" 2>&1) || true   # --wake (FIND-001)
   echo "[gig] settle: $out"
-  # earn_usdc is parsed from record-earn's chain-verified output — the slot never sets it itself
   earn=$(printf '%s' "$out" | sed -nE 's/.*VERIFIED \+([0-9.]+) USDC.*/\1/p' | head -1)
   [ -n "$earn" ] || earn=0
-  if [ "$earn" != "0" ]; then emit "settle" "$earn" 0 '{"external":true}'; else emit "settle" 0 0; fi
+  if [ "$earn" != "0" ]; then
+    # write the loop's EARN_LEDGER line so classifyEarnResult finds wake===WAKE_ID
+    local ledger="${EARN_LEDGER:-${ANICCA_HOME:-$HOME/anicca}/skills/earn/state/earn-ledger.jsonl}"
+    mkdir -p "$(dirname "$ledger")" 2>/dev/null || true
+    python3 - "$WALLET" "$earn" "$WAKE" "$ledger" <<'PY' 2>/dev/null || true
+import json,sys,time
+wallet,earn,wake,ledger=sys.argv[1:5]
+row={"ts":int(time.time()),"wallet":wallet,"source":"gig","task":"settle","earn_usdc":float(earn),"cost_usdc":0,"net_usdc":float(earn),"external":True,"wake":wake}
+open(ledger,"a").write(json.dumps(row)+"\n")
+PY
+    emit "settle" "$earn" 0 '{"external":true}'
+  else
+    emit "settle" 0 0
+  fi
 }
 
 case "$MODE" in
