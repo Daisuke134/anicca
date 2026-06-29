@@ -171,29 +171,31 @@ print(u)" 2>/dev/null)
       fi
     fi ;;
   S4_record)
-    # ★ FIND-403 fix: actually CALL record_earn against the payout inflow source. The source file
-    #   (INFLOWS=~/.cloak/earn-video-inflows.jsonl) is appended by an external on-chain payout detector;
-    #   each candidate line is gated by record_earn (INV-7: verified external USDC inflow ONLY, idempotent).
-    #   No source file yet ⇒ nothing recorded (honest: never fabricate earnings). ★
-    INFLOWS="$HOME/.cloak/earn-video-inflows.jsonl"
-    REC=$(INFLOWS="$INFLOWS" LEDGER="$LEDGER" $PY -c "
-import json,os,sys
+    # ★ ②③ REAL: onchain.detect() scans Base for USDC inflows to the founder/ChangeNOW-payout wallet and appends
+    #   them to INFLOWS; then record_earn records each, RE-CONFIRMED on-chain via onchain.confirm_usdc_inflow
+    #   (fail-closed: a spoofed inflows line that isn't a real matching transfer is rejected). Records only real money. ★
+    REC=$(LEDGER="$LEDGER" timeout 60 $PY -c "
+import json,os,sys,io,contextlib
 sys.path.insert(0,'$SK')
 from record_earn import record_earn
-inf=os.environ['INFLOWS']; led=os.environ['LEDGER']
-n=0.0; c=0
-if os.path.exists(inf):
-  for l in open(inf):
+from onchain import confirm_usdc_inflow, INFLOWS, detect
+try:
+  with contextlib.redirect_stdout(io.StringIO()): detect()   # scan chain → append new confirmed inflows (suppress its print)
+except Exception: pass
+led=os.environ['LEDGER']; n=0.0; c=0
+if os.path.exists(INFLOWS):
+  for l in open(INFLOWS):
     l=l.strip()
     if not l: continue
     try: e=json.loads(l)
     except: continue
-    st,val=record_earn(e,led)
+    st,val=record_earn(e,led,onchain_check=confirm_usdc_inflow)   # ← REAL on-chain re-verify, not the False stub
     if st=='recorded': n+=float(val); c+=1
 print(json.dumps({'recorded_count':c,'recorded_usdc':n}))" 2>/dev/null)
+    [ -z "$REC" ] && REC='{"recorded_count":0,"recorded_usdc":0}'
     EARNED=$($PY -c "import json;print(json.loads('''$REC''').get('recorded_usdc',0))" 2>/dev/null || echo 0)
     set_state '{"status": "monetized"}'
-    DID="record-earn: $REC" ;;
+    DID="record-earn (onchain): $REC" ;;
   noop) DID="noop (already warmed today)" ;;
   S0_create)
     # one-time bootstrap (0-human via ig-account-create+setup_profile, proven). Not a per-wake human step.
