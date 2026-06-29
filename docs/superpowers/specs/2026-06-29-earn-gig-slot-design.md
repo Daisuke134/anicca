@@ -138,3 +138,9 @@ Coconala は payout が ¥→人間の KYC 銀行口座 = ★ human loop ★ = �
 - 新ファイル: lib/{bid,bid-run,deliver,deliver-run,gates,no-human}.mjs + __tests__/{bid,deliver,gates,no-human}.test.mjs + NO_HUMAN.md
 - mode: detect(feed24job) / bid(実201) / deliver(検知) / settle(chain-truth earn) / inbound→deliver
 - 残: #9 adversary verify (実行中) → #10 NO-MOCK E2E フル → #11 移植+launchd退役 → #12 完了CC+push
+
+## 実装完了 #9-#11 (2026-06-29、 adversary ROUND 6 PASS、 36 テスト)
+- ✅ #9 adversary: 6 round で深層バグ全潰し (本番$0forever→wake不一致→tx欠如→seam偽造→抽出未テスト→PASS)。 settle-tx.mjs (代表external tx) + settle-write.mjs (profitable-shape line) + GIG_SETTLE_TX/GIG_RAW_LOGS_JSON は FOUNDER_TEST gate
+- ✅ #10 NO-MOCK E2E: loop-style 実 wake (ULID+ANICCA_ARGS+scrubbed) で detect(実18job)/settle(実chain scan, fail-closed)/exit0/鍵非露出。 mock ゼロ。 実 profitable wake は実 gig 着金時
+- ✅ #11 self-contained: 旧 ~/.claude/skills/earn-gig 依存 0。 standalone launchd 5本 (guild/guildpublish/dealwork/inbox/clawpoller) は ★ loop cutover (#12, dashboard CC が loop 起動) 時に退役 ★ — 今退役すると空白が出る為
+- 残: #12 dashboard CC へ slot 登録依頼 (registry status:live + loop 配線) + ~/anicca push reconcile
