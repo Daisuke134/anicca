@@ -62,17 +62,33 @@ except Exception: print('')
 " 2>/dev/null | sed 's/のプロフィール写真//')"
 [ "$ACTIVE" = "$HANDLE" ] || { emit "not logged in as @${HANDLE} on :${PORT} (active='${ACTIVE}') — skip"; exit 0; }
 
-# post the carousel via the PROVEN ig-account-poster. Its interface = --images <comma-paths> --caption-file
-# --live. It has no built-in handle-guard, so our ACTIVE==HANDLE check above is the fail-closed guard.
+# snapshot the account's posts BEFORE posting, so we confirm via a profile-tile DIFF (the poster's own
+# post_url verify false-negatives on carousels). Our ACTIVE==HANDLE check above is the fail-closed guard.
+tiles_before="$(CDP_PORT="$PORT" "$PY" -c "
+import sys,os,time; sys.path.insert(0,'$CDP_DIR'); import cdp
+cdp.navigate('$TID','https://www.instagram.com/$HANDLE/'); time.sleep(4)
+print('|'.join(cdp.evaluate('$TID','(()=>[...document.querySelectorAll(\"main a[href*=/p/],main a[href*=/reel/]\")].map(a=>a.getAttribute(\"href\")))()') or []))" 2>/dev/null)"
+
 IMAGES="$(ls "$SET"/slide_*.png | sort -t_ -k2 -n | paste -sd, -)"
 RES="$(CDP_PORT="$PORT" "$PY" "$POSTER" --images "$IMAGES" --caption-file "$SET/caption.txt" --live 2>/dev/null | tail -1)"
-URL="$(printf '%s' "$RES" | "$PY" -c 'import json,sys
-try: print(json.loads(sys.stdin.read()).get("post_url") or "")
-except Exception: print("")')"
+
+# confirm by a NEW tile on the profile (truth), not the poster's post_url
+URL="$(CDP_PORT="$PORT" "$PY" - "$TID" "$HANDLE" "$tiles_before" "$CDP_DIR" <<'PYV' 2>/dev/null
+import sys,os,time; sys.path.insert(0,sys.argv[4]); import cdp
+tid,handle,before=sys.argv[1],sys.argv[2],set(sys.argv[3].split('|'))
+url=""
+for _ in range(8):
+    time.sleep(10); cdp.navigate(tid,f"https://www.instagram.com/{handle}/"); time.sleep(4)
+    now=cdp.evaluate(tid,'(()=>[...document.querySelectorAll("main a[href*=/p/],main a[href*=/reel/]")].map(a=>a.getAttribute("href")))()') or []
+    new=[h for h in now if h and h not in before]
+    if new: url="https://www.instagram.com"+new[0]; break
+print(url)
+PYV
+)"
 if [ -n "$URL" ]; then
   mv "$SET" "$POSTED/" 2>/dev/null || true
   emit "posted carousel @${HANDLE}: ${URL} (BIO must carry the Amazon link; commission recorded later by record-affiliate-earn)"
 else
-  emit "post did not confirm a live URL (res=${RES})"
+  emit "post not confirmed by a new profile tile (poster res=${RES})"
 fi
 exit 0
