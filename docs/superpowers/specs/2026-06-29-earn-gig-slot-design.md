@@ -94,3 +94,32 @@ record-earn = block cursor で ★ 外部payer→自wallet の USDC inflow の�
 
 ### D6. BRAIN = Sonnet
 claude-p = `claude -p --model claude-sonnet-4-6` (Opus は outburst でコスト破綻=不可) / proxy = BlockRun x402。
+
+## 実装状況 (2026-06-29、 VCSDD で 1つずつ、 全 E2E 検証済)
+
+### folder tree (= skills/earn/gig/)
+```
+skills/earn/gig/
+├── run.sh                      # entrypoint: loop が spawn、 1 bounded unit、 構造化JSON、 exit0
+├── lib/
+│   ├── can-run.mjs             # D1 availableRails(creds,brain,usdc) — 走れるレール判定
+│   └── detect.mjs              # D2 検知: dealwork API + LaborX public → guild_feed.json
+├── __tests__/
+│   ├── contract.test.mjs       # 契約 (exit0/構造化/鍵leak無/idempotent) 5/5 pass
+│   ├── can-run.test.mjs        # gating 5/5 pass
+│   └── detect.test.mjs         # 検知 shape 1/1 pass
+└── state/
+    └── guild_feed.json         # 検知結果 (実 24 job)
+```
+
+### 完了タスク (RED→GREEN→E2E)
+- ✅ #2 骨格+契約: run.sh が contract 充足 (5/5、 鍵非露出、 wallet address のみ)
+- ✅ #3 can_run (D1): claude-p→coconala込 / proxy→除外 を実機確認 (5/5)
+- ✅ #4 DETECT (D2): 実 fetch で 24 job (dealwork19+laborx5)、 死レール除外 (1/1)
+- 全 11 テスト pass、 local commit 済 (push は #12 reconcile)
+
+### bounded-unit flow (= 実装した run.sh の1 wake)
+```
+GIG_MODE=detect (既定): detect.mjs で feed refresh → jobs_seen + available_rails + 構造化JSON + exit0 (earn0)
+GIG_MODE=bid/deliver/inbound: #5/#6 で配線 (現在は安全 no-op、 偽tx無し)
+```
