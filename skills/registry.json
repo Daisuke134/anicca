@@ -115,7 +115,7 @@
       "summary": "smart-contract audit contest finding → bounty USDC"
     },
     "earn/_probe": {
-      "status": "live",
+      "status": "declared",
       "summary": "VCSDD integration probe (writes a test earn-ledger line)"
     }
   }
