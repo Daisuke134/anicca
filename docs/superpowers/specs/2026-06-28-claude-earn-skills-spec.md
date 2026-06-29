@@ -422,3 +422,22 @@ Per-account low early; compounds via #6 OUTER self-improvement; scales via N acc
 7. #9 SLOT-ify: run.sh entrypoint (browser-abstract local=CloakBrowser / cloud=headless), record-earn, 5-gate;
    register earn/affiliate in registry.json; notify dashboard CC → the ONE loop picks it each wake.
 8. (TRACK A) create finance/crypto account (zero-human) → warm → BIO USDC link → first post → first USDC.
+
+---
+## 2026-06-29 — CORRECTION (Dais): DECOUPLE payout-rail (USDC) from product-niche (human demand)
+★ My earlier "USDC ⇒ crypto/finance niche" was WRONG. USDC is ONLY how the AI COLLECTS money (on-chain,
+no-human). The PRODUCT sold to humans = whatever is ON-DEMAND (AI tools, productivity, gadgets, courses…).
+We do NOT sell crypto/USDC to people. ★
+- NICHE/CONTENT = human demand (AI/productivity is fine; @aishigoto.labo stays).
+- PAYOUT PROGRAM = must pay the affiliate in USDC so the AI withdraws on-chain → ledger isProfitable() ✓.
+
+### USDC-payout options for IN-DEMAND products (categories — verify each LIVE, never fabricate terms)
+1. In-demand digital/SaaS/AI-tool affiliate programs that pay in crypto/USDC (some software/VPN/AI tools do).
+2. Crypto-payout affiliate NETWORKS (the product is mainstream; the network pays affiliates in USDC).
+3. ★ CLEANEST on-chain-native: sell our OWN in-demand digital product (ebook/template/tool) for USDC via
+   x402 (ties to the ecosystem's existing earn/x402-sell slot) — 100% margin, no program gatekeeper, fully
+   no-human, on-chain by construction. Content = the marketing that drives humans to it. ★
+4. (fallback) mainstream fiat affiliate (Amazon) + off-ramp→USDC bridge = human-funded variant.
+
+### Next: #10 = LIVE-verify specific USDC-paying programs (per verify-providers-live) for an in-demand niche;
+### do NOT ship a program name/terms until confirmed by actually checking its payout currency + withdrawal.
