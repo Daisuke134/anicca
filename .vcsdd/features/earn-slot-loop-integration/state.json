@@ -1,0 +1,17 @@
+{
+  "featureName": "earn-slot-loop-integration",
+  "mode": "lean",
+  "language": "typescript",
+  "currentPhase": "init",
+  "phaseHistory": [],
+  "iterations": {},
+  "proofObligations": [],
+  "traceability": {
+    "epicId": "VCSDD-earn-slot-loop-integration-1782729519892",
+    "beads": []
+  },
+  "gates": {},
+  "sprintCount": 0,
+  "createdAt": "2026-06-29T10:38:39.891Z",
+  "updatedAt": "2026-06-29T10:38:39.891Z"
+}

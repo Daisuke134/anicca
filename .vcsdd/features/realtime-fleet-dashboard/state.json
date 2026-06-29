@@ -1,0 +1,17 @@
+{
+  "featureName": "realtime-fleet-dashboard",
+  "mode": "lean",
+  "language": "typescript",
+  "currentPhase": "init",
+  "phaseHistory": [],
+  "iterations": {},
+  "proofObligations": [],
+  "traceability": {
+    "epicId": "VCSDD-realtime-fleet-dashboard-1782709431456",
+    "beads": []
+  },
+  "gates": {},
+  "sprintCount": 0,
+  "createdAt": "2026-06-29T05:03:51.456Z",
+  "updatedAt": "2026-06-29T05:03:51.456Z"
+}
