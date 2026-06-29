@@ -25,47 +25,34 @@ export function LedgerWidget({ locale }: { locale: 'en' | 'ja' }) {
   const labels =
     locale === 'ja'
       ? {
-          instances: 'インスタンス',
-          revenue: '月収',
-          cost: '月コスト',
-          distributed: '配布額',
+          netWorth: '純資産',
+          earned: '月の稼ぎ',
+          alive: '稼働中',
+          selfFunded: '自給率',
           loading: '読み込み中',
         }
       : {
-          instances: 'instances',
-          revenue: 'monthly revenue',
-          cost: 'monthly cost',
-          distributed: 'distributed',
+          netWorth: 'net worth',
+          earned: 'earned / mo',
+          alive: 'alive',
+          selfFunded: 'self-funded',
           loading: 'loading',
         };
 
+  // Real Anicca-colony numbers from dashboard-sync (same source as /dashboard).
+  // No iOS/RevenueCat MRR here — an anicca's revenue is its own, near zero today.
   const tiles: Tile[] = [];
-  if (data?.instances_count !== undefined) {
-    tiles.push({ label: labels.instances, value: formatCount(data.instances_count)! });
+  if (data?.total_net_worth_usd !== undefined) {
+    tiles.push({ label: labels.netWorth, value: formatUSD(data.total_net_worth_usd)! });
   }
-  if (data?.avg_revenue_usd !== undefined) {
-    tiles.push({ label: labels.revenue, value: formatUSD(data.avg_revenue_usd)! });
+  if (data?.earned_mo_usd !== undefined) {
+    tiles.push({ label: labels.earned, value: formatUSD(data.earned_mo_usd)! });
   }
-  if (data?.avg_cost_usd !== undefined) {
-    tiles.push({ label: labels.cost, value: formatUSD(data.avg_cost_usd)! });
+  if (data?.alive !== undefined) {
+    tiles.push({ label: labels.alive, value: formatCount(data.alive)! });
   }
-  if (data?.distributed_usd !== undefined) {
-    tiles.push({ label: labels.distributed, value: formatUSD(data.distributed_usd)! });
-  }
-
-  // Fallback: if no instance-economics fields are present yet, surface
-  // the existing MRR-style numbers so the hero asset is never empty.
-  if (tiles.length === 0 && data?.mrr?.actually_landed_usd !== undefined) {
-    tiles.push({
-      label: locale === 'ja' ? '実着金' : 'landed revenue',
-      value: formatUSD(data.mrr.actually_landed_usd)!,
-    });
-  }
-  if (tiles.length === 0 && data?.mrr?.total_usd !== undefined) {
-    tiles.push({
-      label: locale === 'ja' ? 'MRR' : 'MRR',
-      value: formatUSD(data.mrr.total_usd)!,
-    });
+  if (data?.self_funded_pct !== undefined) {
+    tiles.push({ label: labels.selfFunded, value: `${formatCount(data.self_funded_pct)!}%` });
   }
 
   const enter = (delay: number) => ({

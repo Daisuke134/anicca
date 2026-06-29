@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-007",
+  "dimension": "structural_integrity",
+  "category": "verification_tool_mismatch",
+  "severity": "minor",
+  "description": "The per-user handlers wrap the ENTIRE multi-side-effect per-user body inside a single step.run (inngest/functions.js:72 `step.run('wake', () => wakeOnce(u, Date.now()))`). Inngest's durability model memoizes at the step boundary: if wakeUserOnce throws after some placeCall/patchEvent side-effects (e.g. a transient Telnyx/Maps failure mid-loop), Inngest RETRIES the whole step, re-running the full body. Idempotency then rests ENTIRELY on the C-H1 atomic claims inside scheduler.js (claimWake/claimTravel/claimAsk) rather than on Inngest's step memoization — which is the opposite of the durable-step pattern Inngest is meant to provide (one step per externally-visible effect). It works because the claims are atomic, but the design under-uses step granularity, so Inngest gives no replay protection of its own here. Also: Date.now() is called INSIDE step.run (functions.js:72), so on retry the timestamp changes — non-deterministic across replays, mildly at odds with REQ-27 determinism intent. Separately, package.json:16 declares engines.node>=18 but inngest@4.11.0 requires node>=20 (node_modules/inngest/package.json:435) — a latent engine-mismatch.",
+  "evidence": {
+    "filePath": "apps/life-call/inngest/functions.js",
+    "lineRange": "69-73",
+    "snippet": "return async ({ event, step }) => { const u = event.data; await step.run(\"wake\", () => wakeOnce(u, Date.now())); };"
+  },
+  "routeToPhase": "2b"
+}

@@ -1,12 +1,11 @@
 import Link from 'next/link';
-import { translations, type Locale } from '@/lib/i18n';
+import { type Locale } from '@/lib/i18n';
 
 interface NavbarProps {
   locale: Locale;
 }
 
 export default function Navbar({ locale }: NavbarProps) {
-  const t = translations[locale].navbar;
   const otherLocale = locale === 'en' ? 'ja' : 'en';
 
   return (
@@ -20,17 +19,13 @@ export default function Navbar({ locale }: NavbarProps) {
         </Link>
 
         <div className="hidden flex-1 items-center gap-6 whitespace-nowrap md:flex">
+          {/* spec31 §G / spec30 §10: no /install route. Anchor to the on-page Start
+              section (cloud / local, both on GitHub). */}
           <Link
-            href="#vision"
+            href="#start"
             className="text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold))]"
           >
-            {t.vision}
-          </Link>
-          <Link
-            href="#how-it-works"
-            className="text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold))]"
-          >
-            {t.howItWorks}
+            {locale === 'ja' ? '始める' : 'Start'}
           </Link>
         </div>
 

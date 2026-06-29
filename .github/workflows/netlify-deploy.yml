@@ -30,6 +30,20 @@ jobs:
       - name: Build
         working-directory: apps/landing
         run: npm run build
+        env:
+          # NEXT_PUBLIC_* are inlined at BUILD time (this build runs in the GHA runner, then deploys
+          # with --no-build). Netlify env is NOT used here, so the client-side vars MUST be injected
+          # from GHA secrets or the Supabase client (login) is unconfigured. Public by design.
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          NEXT_PUBLIC_STRIPE_LM_URL: ${{ secrets.NEXT_PUBLIC_STRIPE_LM_URL }}
+          NEXT_PUBLIC_STRIPE_LINK_30: ${{ secrets.NEXT_PUBLIC_STRIPE_LINK_30 }}
+          NEXT_PUBLIC_STRIPE_LINK_5: ${{ secrets.NEXT_PUBLIC_STRIPE_LINK_5 }}
+          NEXT_PUBLIC_CROSSMINT_CLIENT_KEY: ${{ secrets.NEXT_PUBLIC_CROSSMINT_CLIENT_KEY }}
+          # #36 World ID 4.0 personhood gate — public app_id + rp_id + env, inlined at build time
+          NEXT_PUBLIC_WORLDCOIN_APP_ID: ${{ secrets.NEXT_PUBLIC_WORLDCOIN_APP_ID }}
+          NEXT_PUBLIC_WORLDCOIN_RP_ID: ${{ secrets.NEXT_PUBLIC_WORLDCOIN_RP_ID }}
+          NEXT_PUBLIC_WORLDCOIN_ENV: ${{ secrets.NEXT_PUBLIC_WORLDCOIN_ENV }}
 
       # 2026-06-07 V14-2 fix: replaced nwtgck/actions-netlify@v3.0 (= 5 連続 ISE)
       # with direct netlify-cli call (= validated via manual deploy locally)

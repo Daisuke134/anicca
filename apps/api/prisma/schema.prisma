@@ -713,3 +713,17 @@ model failed_resend_calls {
 
   @@map("failed_resend_calls")
 }
+
+// #36: World ID personhood — one nullifier per action = one human, at most one UBI recipient.
+// The @@unique([nullifierHash, action]) is the ATOMIC sybil guard: a duplicate insert throws P2002,
+// which verifyPersonhood maps to already_claimed (closes the TOCTOU race — security review #1).
+model personhood_nullifier {
+  id            BigInt   @id @default(autoincrement())
+  nullifierHash String   @map("nullifier_hash")
+  action        String
+  signal        String?
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@unique([nullifierHash, action])
+  @@map("personhood_nullifier")
+}

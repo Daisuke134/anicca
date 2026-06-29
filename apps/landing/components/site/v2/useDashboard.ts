@@ -2,23 +2,17 @@
 import { useEffect, useState } from 'react';
 
 /**
- * Subset of /dashboard.json we read on the homepage.
- * Unknown fields are not faked (§v2.7, §v2.10). Optional everywhere.
+ * The home reads the SAME real source as /dashboard: the dashboard-sync function,
+ * which reports the live Anicca colony state (net worth, earnings, how many are
+ * alive). We do NOT read /dashboard.json here — that file mixes in iOS/RevenueCat
+ * MRR, which is NOT an anicca's revenue (spec31 R3-4). Unknown fields are never faked.
  */
 export type DashboardData = {
-  updated_at?: string;
-  mrr?: {
-    total_usd?: number;
-    actually_landed_usd?: number;
-  };
-  instances_count?: number;
-  avg_revenue_usd?: number;
-  avg_cost_usd?: number;
-  distributed_usd?: number;
-  basic_income?: {
-    distributed_usd?: number;
-    recipients?: number;
-  };
+  total_net_worth_usd?: number;
+  earned_mo_usd?: number;
+  alive?: number;
+  self_funded_pct?: number;
+  frontier_pct?: number;
 };
 
 export type DashboardState = {
@@ -36,7 +30,7 @@ export function useDashboard(): DashboardState {
 
   useEffect(() => {
     const ctrl = new AbortController();
-    fetch('/dashboard.json', { signal: ctrl.signal })
+    fetch('/.netlify/functions/dashboard-sync', { signal: ctrl.signal })
       .then((r) => {
         if (!r.ok) throw new Error('failed');
         return r.json();
@@ -47,7 +41,7 @@ export function useDashboard(): DashboardState {
       .catch((e: unknown) => {
         if (e instanceof Error && e.name === 'AbortError') return;
         if (typeof window !== 'undefined') {
-          console.warn('[v2/useDashboard] /dashboard.json fetch failed:', String(e));
+          console.warn('[v2/useDashboard] dashboard-sync fetch failed:', String(e));
         }
         setState({ data: null, loading: false, error: true });
       });

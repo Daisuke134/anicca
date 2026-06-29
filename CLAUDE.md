@@ -1,5 +1,94 @@
 # Anicca プロジェクト - 開発ガイドライン
 
+## HARD RULE 0.40 — ~/.openclaw (anicca-dais) の trunk は `main-internal`。`main` に runtime 作業を commit するな (Dais 2026-06-22)
+
+`~/.openclaw` = LIVE runtime、push 先 = **github.com/Daisuke134/anicca-dais**(private)。この repo は **無関係な2履歴**を持つ:
+
+| branch | 中身 | 扱い |
+|---|---|---|
+| **`main-internal`** ★TRUNK★ | LIVE runtime(~76k files: skills/cron/state)。履歴に secret(.env/profile.json)が含まれるので pre-push secret-guard が `main` への push を**拒否** → ここに隔離。 | ★ runtime 作業は全てここに統合 ★ |
+| `main` | secret-free な OSS 輸出ビュー(public anicca の雛形、~694 files)。main-internal と**無関係履歴**。 | runtime 作業を置くな。live store で `git checkout main` 禁止(gateway の tree が雛形に化けて壊れる) |
+
+**鉄則(全エージェント・例外なし)**:
+1. ★ trunk = `main-internal`。runtime 作業を `main` に commit するな ★(`main` への commit は orphan 化 → gateway が main-internal に戻った瞬間 WIPE。2026-06-22 に1セッション分消失)。
+2. ベストプラクティス flow: `git checkout main-internal` → `git checkout -b feature/<name>` → 作業 → `git checkout main-internal && git merge --no-ff feature/<name>` → `git push origin main-internal`(新 commit のみ scan → secret 無し → 通る)→ feature 削除。
+3. `git push origin main` は**禁止**(secret-guard が阻止)。`--no-verify` で**回避するな**(.env を GitHub に漏らす)。
+4. `~/.openclaw` で `git worktree` 禁止(gateway は単一 checkout path を読む)。secret-guard が config 無しで error る時は `git checkout origin/main -- .gitleaks.toml` で復元(bypass しない)。
+5. gateway は working tree を読むので feature branch は短命に、merge は素早く。
+
+詳細 = `~/.openclaw/CLAUDE.md`(canonical) + memory `feedback_openclaw_trunk_is_main_internal`。3か所が食い違ったら `~/.openclaw/CLAUDE.md` が `~/.openclaw` について勝つ。
+
+## HARD RULE 0.39 — ブラウザ作業は CloakBrowser 永続プロファイル(daily-driver)を常に使う (Dais 2026-06-21)
+
+★★★ 絶対禁止 (Dais 2026-06-23 激怒「閉じたら990回刺して殺す」) ★★★: daily-driver の persistent context を **kill/close/pkill/`rm Singleton*` するな**。これは Dais が各サービスに1回ログインする **永遠に生き続けるブラウザ**。`launch_persistent_context` が「profile already in use / ProcessSingleton」error を出したら = **その forever ブラウザが生きてる証拠**。kill して奪うな、**再利用**しろ(running context に new_page、or Cookies sqlite をコピーして読む、or どうしても別途要るならプロファイルを別dirにcopyして起動)。万一死んでたら `nohup venv-cloak/python3 dd-keepalive.py &`(launch_persistent_context → `while True: sleep(3600)`)で**生かし続けて**再オープン。詳細: memory `feedback_never_close_daily_driver_browser`。
+
+Dais が headed CloakBrowser で**1回ログイン済**(Google/freee/Stripe card/YouTube/IG/TikTok) → `~/.cloak/profiles/daily-driver` に完全プロファイル永続。以降 ★ anicca は同プロファイルを再利用 = creds を知らずに全サービス操作・再ログイン不要・bot block 回避 ★。
+
+- API: `from cloakbrowser import launch_persistent_context; ctx = launch_persistent_context("/Users/anicca/.cloak/profiles/daily-driver", headless=False, humanize=True)` (★ `launch()` でなく `launch_persistent_context` ★)。CloakBrowser=CloakHQ/CloakBrowser(stealth Chromium・pip導入済 v0.3.30)。
+- ★ headed で常駐 → Dais は macOS 画面共有(Finder ⌘K → `vnc://100.99.82.95`)で見られる ★。
+- ★ captcha/新規login/2FA で詰まったら = Dais を呼ぶ(画面に出てる→1タップ) → anicca 継続。これで「ブラウザで ANYTHING」+ minimum human-in-loop ★。
+- 用途: freee法人・Stripe・法人口座・**YouTube/IG/TikTok 投稿(Postiz $49 解約)**・任意の認証必須サイト。スケール=プロファイルcopyで複数anicca共有。
+- 旧 camofox(:9377, storageState弱)は Google OAuth が Chromium で弾かれた時の Firefox fallback のみ。launcher=`~/.openclaw/skills/_shared/cloak-login.py`。詳細: memory `feedback_cloakbrowser_persistent_profile_forever`。3か所同期(ここ+memory+spec 2026-06-21-persistent-auth-browser.md)。
+
+## HARD RULE 0.34 — TOOL-CALL SYNTAX MUST BE CLEAN (= "malformed/parse failed" を物理的に起こさない) — Dais 2026-06-16
+
+**症状**: "The model's tool call could not be parsed, retried or failed" が連発し、生コマンドが画面に漏れ、進行が止まる。
+
+**原因 (= 100% 自分の出力規律)**: ① ツール呼び出しブロックの直前に余計なトークン (= "court" 等の幻覚文字) を混入 ② 閉じタグ (`</parameter>` / `</invoke>`) を重複・誤配置・入れ子崩し。これをパーサが解釈できず malformed になる。環境/設定のバグではない。
+
+**恒久ルール (= 例外ゼロ)**:
+- ツール呼び出しブロックの ★ 直前に散文・余計な文字を一切置かない ★。
+- 各 parameter = ★ 開きタグ + 値 + 閉じタグを 1 回ずつ ★ だけ。
+- 1 つの invoke の ★ 閉じタグは 1 回だけ ★。余分な `</parameter>` / `</invoke>` を付けない。
+- 「テキストを書いてから慌ててタグを付ける」過程で余剰が混入していた → ツール呼び出しは ★ それ単体の正確な構造としてのみ ★ 出力し、前後に何も混ぜない。
+- 迷ったらツールを呼ばずチャットで返す。malformed を出した瞬間 = このルール違反 = 即 self-correct。
+
+## HARD RULE 0.37 — VSDD = DEFAULT engineering method, every session, unprompted (Dais 2026-06-18)
+
+**Dais verbatim**: "make it the default way of you working towards a problem... any session, without being told, without me proving anything. When you have a certain engineering problem level you have to always follow this."
+
+**VSDD = Verified Spec-Driven Development** = SDD + TDD + VDD fused by one adversarial gate (sc30gsw Zenn + dollspace-gay/VSDD.md, 2026-06-18). It is the answer to **AI slop** (code that passes shallow review but hides spec-gaps / untested edges / "works because a cron exists").
+
+### The loop (run by DEFAULT — no asking — for any NON-trivial task)
+```
+SPEC (contract: inputs/outputs/edge cases/errors/invariants, commit)
+ → RED (a failing test/observable check before impl)
+ → GREEN (minimal impl) → refactor
+ → ADVERSARIAL GATE: spawn a FRESH-CONTEXT reviewer (vcsdd:vcsdd-adversary) — zero builder
+   context, reads ONLY from disk, FORCED to find flaws, emits binary PASS/FAIL per dimension
+   with file:line evidence, may NEVER say "looks good". Loop fix→re-review until ALL PASS.
+ → NO-MOCK E2E (real browser/API/build, looped until green)
+ → DONE = 4-D convergence (spec ✓ + test ✓ + impl ✓ + verification ✓). Next.
+```
+"It compiles / a cron exists / looks right" ≠ done.
+
+### Trigger
+- **Trivial** (1-line, copy tweak, config, rename) → skip the loop, but still verify the result.
+- **Non-trivial** (2+ files / logic / anything user-facing or breakable) → full VSDD loop, every time.
+
+### Relationship to superpowers (ADD, don't replace)
+Superpowers = the 8-stage process scaffold (HARD RULE #0). VSDD = the **verification spine** that runs INSIDE it: it sharpens the review stage into a fresh-context adversarial binary gate and redefines "done" as 4-D convergence. Compose them.
+
+### ROLE SPLIT — VERIFIED from the vcsdd plugin files (Dais 2026-06-24, "follow the plugin/answer, our originality is trash")
+★ The MANDATORY VCSDD invariant = the ADVERSARY (verify) is ALWAYS a FRESH, SEPARATE agent with ZERO builder
+context ("entropy resistance" — `AGENTS.md:31,45` + `agents/vcsdd-adversary.md:3,15`). The BUILDER (implement)
+is NOT required to be a subagent — the plugin nowhere mandates it; `vcsdd-builder` is merely an OFFERED sonnet
+agent. ★ THEREFORE: **I (the main agent) DO the implementation myself = the builder; I spawn ONLY a fresh-context
+`vcsdd:vcsdd-adversary` subagent to VERIFY.** Delegate the build to a vcsdd-builder subagent ONLY for huge/mechanical
+work or to spare main context; default = I build, fresh adversary verifies. This follows the PLUGIN, not what I or
+Dais "want/think/feel" — only following the researched answer counts (= HARD RULE #-3, IDENTICAL replication of BP).
+
+### Tooling (installed)
+`vcsdd` plugin (`/vcsdd-init → -spec → -tdd → -impl → -adversary → -harden → -converge → -commit`) + `vcsdd:vcsdd-adversary` agent. Use the adversary agent as the gate even outside the full pipeline. Honest caveat: same-model adversary kills context-pollution but not shared blind spots — prefer a different model family for the adversary when available.
+
+3 か所同期: ① ここ (project) ② global `~/.claude/CLAUDE.md` HARD RULE 0.37 ③ memory `feedback_vsdd_default_engineering_method`. [[feedback_superpowers_is_hard_rule_zero]]
+
+## HARD RULE 0.38 — FRONTEND = 必ず taste skill を使う (Dais 2026-06-18)
+
+**Dais verbatim**: "whenever you write frontend ... you use this skill" — `npx skills add https://github.com/Leonxlnx/taste-skill`（= 既設の `gpt-tasteskill` / name `gpt-taste`）。
+
+★ 任意の frontend / UI を書く・直す前に **必ず `Skill` で `gpt-tasteskill` を起動** ★（AWWWARDS級: Python乱択でレイアウト固定回避・AIDA・2-3行 hero・gapless bento・GSAP/motion・cheap meta-label 禁止・section大余白）。書いた後は **出力 UI を実ブラウザ(agent-browser/camofox)で検証**（taste 基準 + VSDD §17）。「文字だけ並べた UI」= 違反。landing(`apps/landing`)・mobile・any web 全部対象。3か所同期: ここ + global CLAUDE.md + memory `feedback_frontend_always_taste_skill`。
+
 ## 根本原則
 
 **BP = 答え。オリジナル = 罪。検索不足 = 最大の罪。**
@@ -254,7 +343,7 @@ question violation × 7 日連続 → claude-helper heartbeat 自動停止。 BE
 | 0.27 | **App Store / production publish は Dais 実機 OK 受領後のみ実行**: 「stop putting me in the loop」≠「全 step skip」。 削除対象 = disk cleanup / password 確認 等 routine loop。 残す対象 = irreversible publish (App Store submit / app release / repo delete / 不可逆 broadcast) の Dais 視認 + verbatim「go」「submit」「ship」「approve」。 absent = 即 STOP、 build artifact local 待機、 Xcode + simulator pop up |
 | 0.28 | **NOT PUSHING = 大罪 (virus / nuisance to humanity)、 push ≠ deploy**: ①全 edit 直後 `git add -A && commit && push` 1 行で即実行 ②`git status` で M/?? 残ったまま turn 終了★絶対禁止★ ③「まとめて push」「次 turn で push」全部違反 ④multi-repo は全 repo を 1 turn 内で push 確認 ⑤deploy 必要なら netlify/fly/railway も commit と同時 ⑥push 後即 production endpoint 1 個を live curl 200 確認まで が 1 task |
 | 0.29 | **★ SPEC + TASKLIST + PUSH 三点 同時実行、 slack 禁止 (Dais 2026-06-07 verbatim) ★**: 新作業 が決まった ★その同 turn★ で ①`docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md` spec 作成 ②TaskCreate で 全 sub-task 登録 ③`git add && commit && push` を 1 行 実行。 この 3 件 を 「後で」「次 turn」「実装終わってから」 全部 違反。 「spec slacking」 = 1 turn 後ろ倒 した瞬間 = 罪。 「task register slacking」 = TaskList に出ない 作業 を 進めた瞬間 = 罪。 「push slacking」 = M/?? 残ったまま 次 op に進んだ瞬間 = 罪。 違反 incident 2026-06-07: build-in-public spec/task は同 turn だが、 run.sh Postiz schema fix を ★ push せず ★ 直 fire → user に PUSH 強制 された (= virus 大罪)。 三点同時 が canonical、 deviation = 削除+やり直し。 [[feedback_spec_task_push_three_at_once]] |
-| 0.30 | **BROWSER 4-tier 固定順序 (Dais 2026-06-08 verbatim) — 順序逆転 = 罪、 progress kill 原因**: ★ camofox > cloakbrowser > agent-browser > playwright-cli ★。 ①SaaS login / Google OAuth / Microsoft / GitHub / Cloudflare / reCAPTCHA / Turnstile / 任意 captcha + fingerprint 検出系 = **camofox 必須** (`~/.openclaw/skills/camofox-browser/` :9377、 stealth Firefox、 default session に Daisuke Google OAuth 既存) ②camofox binary missing / config 不可 = cloakbrowser (`~/.openclaw/skills/_shared/venv-cloak/bin/cloakbrowser`) ③stealth 不要 + 単純 web (Tally / 公開 Google Form / static) = agent-browser (`/opt/homebrew/bin/agent-browser`) ④CDP / Chrome 特有 / 高速 small test = playwright-cli skill。 ★ 違反 = agent-browser を 先 試行 → Google fingerprint 弾き → progress kill ★ (= a16z Speedrun reCAPTCHA / Microsoft GitHub OAuth で 実証 2026-06-07/08)。 Dais verbatim 2026-06-08: 「always camofox -> cloack browser -> agent borwwser -> playrigth cli in this order yes」 + 「becoming exteremlet toxic at this point.. killing many of our progress」。 [[feedback_browser_order_camofox_first]] [[feedback_dont_assume_captcha_try_first]] mirror。 |
+| 0.30 | **BROWSER — ★ 既定 = CloakBrowser daily-driver 永続プロファイル。 camofox を既定で使うの禁止 ★ (SUPERSEDES 旧 camofox-first 順序、 Dais 2026-06-21 + 2026-06-25 激怒「NEVER WITH camofox」)**: ★ 全ブラウザ作業 (login / Google OAuth / SaaS / captcha / 2FA / dogfood / 任意の認証必須サイト) = `~/.cloak/profiles/daily-driver` の **CloakBrowser** `launch_persistent_context` (= Dais が各サービスに1回ログイン済の **forever ブラウザ**・headed 常駐・creds 不要で再利用・Dais は画面共有で見られる) ★。 ★ 旧 0.30 の「camofox > cloakbrowser > ...」順序は 2026-06-21 HARD 0.39 で **廃止** ★。 順序: ① **CloakBrowser daily-driver** (= 既定・ほぼ全部これ) ② cloakbrowser fresh context ③ **camofox(:9377) は CloakBrowser の Chromium が Google OAuth を弾いた時の Firefox fallback のみ** (= 既定使用 禁止) ④ agent-browser (= stealth 不要の static/公開ページのスクショ検証だけ) ⑤ playwright-cli (= CDP/高速 small test)。 ★ 違反 = camofox を既定で起動 (2026-06-25 /lm dogfood を camofox でやって Dais 激怒) ★。 ★ daily-driver の persistent context を kill/close/pkill するの **絶対禁止** (HARD 0.39・「閉じたら990回刺して殺す」) ★ — `launch_persistent_context` が「profile already in use」を出したら = forever ブラウザが生きてる証拠 → 奪わず **再利用** (running context に new_page / Cookies sqlite copy / どうしても別途要るならプロファイルを別dirへcopy起動)。 [[feedback_cloakbrowser_persistent_profile_forever]] [[feedback_never_close_daily_driver_browser]] [[feedback_use_cloakbrowser_daily_driver_not_camofox]] mirror。 |
 | 言語 | **回答は常に日本語** |
 
 ## TIER A AUTONOMOUS BYPASS PATTERNS (= 2026-06-06 verified、 「fucking invisible」)

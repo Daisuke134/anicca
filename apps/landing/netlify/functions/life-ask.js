@@ -2,15 +2,20 @@
 //
 // TWO endpoints in one handler (distinguished by `action` query param or body field):
 //
-//   POST /.netlify/functions/life-ask?action=question
-//     Triggered by Anicca's heartbeat cron (daily 06:00 JST / 21:00 UTC via netlify.toml schedule).
+//   POST /.netlify/functions/life-ask?action=question   (GCAL-READ-ONLY)
+//     gog (the mail-send binary) can't run inside a Netlify lambda, so this
+//     action only DETECTS the events that need asking and returns them. The
+//     local ask/ask.js (on the Mac-mini) does the actual `gog gmail send` and
+//     then calls action=mark-asked to set the pending flag.
 //     1. Reads today's GCal events (using gcal-token.js for OAuth2).
-//     2. Finds events with no `location` field (via ask-logic.detectMissingLocations).
-//     3. Sends a question email to Dais via AgentMail using the DEDICATED B-ask inbox
-//        (LIFE_ASK_INBOX_ID = anicca-life-ask@agentmail.to) to avoid quota contention
-//        with the high-frequency "Anicca wake" report emails in the genesis inbox.
-//     4. Patches the GCal event with anicca_ask_pending=true to avoid duplicate asks.
-//     Returns { ok, asked: [{ eventId, eventTitle, messageId }] }.
+//     2. Finds events missing location AND/OR duration (ask-logic.detectMissingInfo).
+//     Returns { ok, checked, toAsk: [{ eventId, eventTitle, subject, body }] }.
+//
+//   POST /.netlify/functions/life-ask?action=mark-asked
+//     Called by the local sender (ask/ask.js) after a question email is sent.
+//     Body: { eventId, messageId }
+//     PATCHes the GCal event with anicca_ask_pending=true to avoid duplicate asks.
+//     Returns { ok, eventId }.
 //
 //   POST /.netlify/functions/life-ask?action=reply
 //     Triggered by AgentMail inbound webhook (webhook_id ep_3FBcXGwrcP575GjLm46jCMj2TYr,
@@ -19,28 +24,28 @@
 //     1. Ignores non-[Ask] subject messages (returns 200 no-op) so the webhook can safely
 //        receive all message.received events without polluting logs.
 //     2. Matches the inbound reply to a pending GCal event (via Event ID in the email body).
-//     3. Parses the location from the reply body (via ask-logic.parseLocationFromReply).
-//     4. PATCHes the GCal event with the resolved location + clears pending flag.
-//     Returns { ok, eventId, location }.
+//     3. Parses location AND/OR duration from the reply body (parseLocationFromReply /
+//        parseDurationFromReply). Duration-only replies don't get written as a location.
+//     4. PATCHes the GCal event with the resolved location/end + clears pending flag.
+//     Returns { ok, eventId, location, durationMinutes }.
 //
 // Env vars:
 //   GOOGLE_CALENDAR_TOKEN or GOOGLE_REFRESH_TOKEN+CLIENT_ID+CLIENT_SECRET (GCal auth)
-//   AGENTMAIL_API_KEY                — AgentMail API key (shared across inboxes)
-//   LIFE_ASK_INBOX_ID                — DEDICATED B-ask inbox (anicca-life-ask@agentmail.to)
-//                                      Fallback: AGENTMAIL_INBOX_ID (genesis, may hit 429)
-//   DAIS_EMAIL                       — recipient email for location questions
 //   GCAL_ID                          — Google Calendar ID (default: "primary")
+//   (Mail SEND is done locally via gog in ask/ask.js — no AgentMail needed here.)
 
 "use strict";
 
 const { getAccessToken } = require("./_lib/gcal-token");
 const {
-  detectMissingLocations,
+  detectMissingInfo,
   buildQuestionBody,
   buildQuestionSubject,
   buildAskPendingPatch,
-  buildLocationPatch,
+  buildResolvePatch,
   parseLocationFromReply,
+  parseDurationFromReply,
+  DURATION_RE,
 } = require("./_lib/ask-logic");
 
 // ── GCal REST helpers ──────────────────────────────────────────────────────────
@@ -88,69 +93,52 @@ async function getEvent(calendarId, eventId, token) {
   return r.json();
 }
 
-// ── AgentMail REST helper ──────────────────────────────────────────────────────
+// ── action=question (GCAL-READ-ONLY) ─────────────────────────────────────────────
+// gog can't run on Netlify, so this only DETECTS and returns the events to ask
+// (plus the pre-built subject/body). The local ask/ask.js sends the mail via gog,
+// then calls action=mark-asked to set the pending flag.
 
-async function sendEmail({ apiKey, inboxId, to, subject, text }) {
-  // Correct endpoint: /messages/send (not /messages which is list-only)
-  const url = `https://api.agentmail.to/v0/inboxes/${encodeURIComponent(inboxId)}/messages/send`;
-  // AgentMail v0 "to" field accepts array of strings (email addresses)
-  const toArray = Array.isArray(to) ? to : [to];
-  const r = await fetch(url, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ to: toArray, subject, text }),
-  });
-  if (!r.ok) throw new Error(`AgentMail send ${r.status}: ${await r.text()}`);
-  return r.json();
-}
-
-// ── action=question handler ────────────────────────────────────────────────────
-
-async function handleQuestion(token, calendarId, agentMailCfg) {
+async function handleQuestion(token, calendarId) {
   const events = await listTodayEvents(calendarId, token);
-  const missing = detectMissingLocations(events);
-  const asked = [];
-
-  for (const ev of missing) {
-    const subject = buildQuestionSubject(ev);
-    const text = buildQuestionBody(ev);
-
-    let messageId = "";
-    try {
-      const sent = await sendEmail({
-        apiKey: agentMailCfg.apiKey,
-        inboxId: agentMailCfg.inboxId,
-        to: agentMailCfg.daisEmail,
-        subject,
-        text,
-      });
-      messageId = sent?.id || sent?.messageId || "";
-    } catch (err) {
-      // Log and continue — partial success is better than hard failure
-      asked.push({ eventId: ev.id, eventTitle: ev.summary, error: err.message });
-      continue;
-    }
-
-    // Patch GCal event to mark ask as pending
-    const pendingPatch = buildAskPendingPatch(messageId, ev);
-    try {
-      await patchEvent(calendarId, ev.id, pendingPatch, token);
-    } catch (err) {
-      // Non-fatal: email was sent, patch failed — log but don't abort
-      asked.push({ eventId: ev.id, eventTitle: ev.summary, messageId, patchError: err.message });
-      continue;
-    }
-
-    asked.push({ eventId: ev.id, eventTitle: ev.summary, messageId });
-  }
-
+  const missing = detectMissingInfo(events); // [{ event, kind }]
+  const toAsk = missing.map(({ event: ev }) => ({
+    eventId: ev.id,
+    eventTitle: ev.summary || "",
+    subject: buildQuestionSubject(ev),
+    body: buildQuestionBody(ev),
+  }));
   return {
     statusCode: 200,
-    body: JSON.stringify({ ok: true, checked: events.length, asked }),
+    body: JSON.stringify({ ok: true, checked: events.length, toAsk }),
   };
+}
+
+// ── action=mark-asked handler ────────────────────────────────────────────────────
+// Called by the local sender (ask/ask.js) after a question email is sent.
+// Body: { eventId, messageId }
+
+async function handleMarkAsked(rawBody, token, calendarId) {
+  let p;
+  try {
+    p = typeof rawBody === "string" ? JSON.parse(rawBody) : rawBody;
+  } catch {
+    return { statusCode: 400, body: "invalid_json" };
+  }
+  const { eventId, messageId } = p || {};
+  if (!eventId) return { statusCode: 400, body: "missing_event_id" };
+
+  let ev;
+  try {
+    ev = await getEvent(calendarId, eventId, token);
+  } catch (err) {
+    return { statusCode: 502, body: `gcal_get_error: ${err.message}` };
+  }
+  try {
+    await patchEvent(calendarId, eventId, buildAskPendingPatch(messageId || "", ev), token);
+  } catch (err) {
+    return { statusCode: 502, body: `gcal_patch_error: ${err.message}` };
+  }
+  return { statusCode: 200, body: JSON.stringify({ ok: true, eventId }) };
 }
 
 // ── action=reply handler ───────────────────────────────────────────────────────
@@ -186,10 +174,14 @@ async function handleReply(body, token, calendarId) {
     return { statusCode: 400, body: "invalid_event_id" };
   }
 
-  // Parse location from reply
-  const location = parseLocationFromReply(replyBody);
-  if (!location) {
-    return { statusCode: 422, body: "no_location_found_in_reply" };
+  // Parse location AND/OR duration from reply.
+  let location = parseLocationFromReply(replyBody);
+  const durationMinutes = parseDurationFromReply(replyBody);
+  // Duration-only guard (review point 4): if the only content is a duration
+  // like "所要 90分", don't write it as a bogus location.
+  if (location && DURATION_RE.test(location)) location = null;
+  if (!location && !durationMinutes) {
+    return { statusCode: 422, body: "no_location_or_duration_in_reply" };
   }
 
   // Fetch the current event to build the patch correctly
@@ -204,8 +196,8 @@ async function handleReply(body, token, calendarId) {
     return { statusCode: 502, body: `gcal_get_error: ${err.message}` };
   }
 
-  // Patch GCal with the resolved location
-  const patch = buildLocationPatch(location, existingEvent);
+  // Patch GCal with the resolved location and/or duration
+  const patch = buildResolvePatch({ location, durationMinutes }, existingEvent);
   try {
     await patchEvent(calendarId, eventId, patch, token);
   } catch (err) {
@@ -214,7 +206,7 @@ async function handleReply(body, token, calendarId) {
 
   return {
     statusCode: 200,
-    body: JSON.stringify({ ok: true, eventId, location }),
+    body: JSON.stringify({ ok: true, eventId, location, durationMinutes }),
   };
 }
 
@@ -250,22 +242,14 @@ exports.handler = async (event) => {
     return handleReply(event.body, token, calendarId);
   }
 
-  // Default: action=question
-  const apiKey = process.env.AGENTMAIL_API_KEY;
-  // LIFE_ASK_INBOX_ID = dedicated B-ask inbox (anicca-life-ask@agentmail.to).
-  // Avoid AGENTMAIL_INBOX_ID (genesis) which is saturated by high-frequency
-  // "Anicca wake" report emails and hits 429 daily limit (verifier gap #1).
-  const inboxId =
-    process.env.LIFE_ASK_INBOX_ID ||
-    process.env.AGENTMAIL_INBOX_ID;
-  const daisEmail = process.env.DAIS_EMAIL || "keiodaisuke@gmail.com";
-
-  if (!apiKey || !inboxId) {
-    return { statusCode: 500, body: "missing AGENTMAIL_API_KEY or LIFE_ASK_INBOX_ID" };
+  if (action === "mark-asked") {
+    return handleMarkAsked(event.body, token, calendarId);
   }
 
+  // Default: action=question (GCal read-only; no mail sent here — the local
+  // ask/ask.js does the gog send + mark-asked, since gog can't run on Netlify).
   try {
-    return await handleQuestion(token, calendarId, { apiKey, inboxId, daisEmail });
+    return await handleQuestion(token, calendarId);
   } catch (err) {
     return { statusCode: 502, body: `ask_error: ${err.message}` };
   }

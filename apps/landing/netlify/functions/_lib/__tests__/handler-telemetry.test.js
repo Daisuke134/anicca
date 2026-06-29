@@ -6,6 +6,8 @@ const { handler } = require("../../telemetry");
 
 const w = new Wallet("0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d");
 const addr = w.address.toLowerCase();
+// canonical host bound to this wallet (Dais: wallet = 1 identity; "akash" squatters rejected)
+const canonHost = "anicca-" + addr.slice(2, 8);
 
 let lastTs, upserts, origFetch;
 beforeEach(() => {
@@ -23,7 +25,7 @@ beforeEach(() => {
 function ev(body) { return { httpMethod: "POST", body: JSON.stringify(body), headers: {} }; }
 function objStr(over = {}) {
   const now = Math.floor(Date.now() / 1000);
-  return canonicalMessage({ id: addr, ts: now, host: "akash", geo: "US", model_live: "x",
+  return canonicalMessage({ id: addr, ts: now, host: canonHost, geo: "US", model_live: "x",
     model_tier: "free", net_worth_usd: 1, revenue_mo_usd: 0, burn_day_usd: 0.1, runway_days: 10, status: "alive", ...over });
 }
 
@@ -33,6 +35,15 @@ test("202 on a valid signed fresh message", async () => {
   assert.strictEqual(res.statusCode, 202);
   assert.strictEqual(upserts.length, 1);
   assert.strictEqual(upserts[0].id, addr);
+  global.fetch = origFetch;
+});
+test("400 host_wallet_mismatch — a validly-signed post on this wallet but named 'akash' is REJECTED (no wallet-stealing)", async () => {
+  const message = objStr({ host: "akash" }); // correct signer + wallet, but foreign host
+  const signature = await w.signMessage(message);
+  const res = await handler(ev({ message, signature }));
+  assert.strictEqual(res.statusCode, 400);
+  assert.strictEqual(res.body, "host_wallet_mismatch");
+  assert.strictEqual(upserts.length, 0); // never written → dashboard row untouched
   global.fetch = origFetch;
 });
 test("401 on signer mismatch", async () => {

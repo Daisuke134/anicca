@@ -1,0 +1,61 @@
+{
+  "sprintNumber": 6,
+  "feature": "lm-location-travel-qa",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-06-24T00:00:00Z",
+  "iteration": 1,
+  "reviewContext": {
+    "reviewType": "implementation",
+    "scope": "HARD-2 Inngest scheduling layer (durable cron sweep -> per-user fan-out -> per-user concurrency)",
+    "note": "No manifest.json was present at reviews/sprint-6/input/; authoritative spec read = .vcsdd/features/lm-location-travel-qa/specs/behavioral-spec.md. Inngest API claims verified against installed node_modules/inngest@4.11.0 (.d.ts), not docs."
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-001"],
+      "evidence": [
+        {"type": "file", "location": "apps/life-call/scheduler.js", "description": "Per-user extraction verified faithful: wakeUserOnce (98-133), travelUserOnce (156-168), askUserOnce (201-224) hold the same per-user bodies as the old loops; tick (135-141)/travelTick (170-178)/askTickAll (226-235) still loop+call them, so the in-process path is unbroken — NO behavior drift from the extraction."},
+        {"type": "file", "location": ".vcsdd/features/lm-location-travel-qa/specs/behavioral-spec.md", "description": "REQ-01..REQ-30 cover location/travel QA only; durable cron/fan-out/concurrency is unspecified -> FAIL."}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-002", "FIND-006"],
+      "evidence": []
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-003", "FIND-004", "FIND-005"],
+      "evidence": [
+        {"type": "file", "location": "apps/life-call/server.js", "description": "ADAPTER FIX CONFIRMED on disk: server.js:31 imports `serve` from `inngest/node` (NOT inngest/express); the raw http.createServer (109) calls inngestHandler(req,res) at 212. inngest/node export exists in node_modules/inngest/package.json:197. This crash is fixed."},
+        {"type": "file", "location": "apps/life-call/inngest/functions.js", "description": "Inngest API usage VERIFIED correct against installed SDK 4.11.0: 2-arg createFunction(options,handler) (Inngest.d.ts:530-545); triggers array of {cron}|{event} (InngestFunction.d.ts:93-106); top-level concurrency:{key,limit} (InngestFunction.d.ts:132, types.d.ts:1102-1120 — key is a CEL expr, 'event.data.uid' valid). concurrency key present on ALL THREE per-user fns (110,127,144)."},
+        {"type": "file", "location": "apps/life-call/lib/ask.js", "description": "C-H1 atomic claims confirmed: claimWake (scheduler.js:55-64), claimTravel (travel.js:169-176), claimAsk (ask.js:188-195) all use 201/409 atomic insert. Dial/send side-effects are idempotent — BUT ask/travel resolve+patch are NOT claim-guarded (FIND-003)."}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "FAIL",
+      "findings": ["FIND-007"],
+      "evidence": [
+        {"type": "file", "location": "apps/life-call/inngest/functions.js", "description": "Handler-factory pattern (makeSweep*/make*UserHandler injecting the per-user fn) is clean and testable; the 6-function array (149) is coherent. Structural defect = whole-body single step.run + Date.now-in-step + engines mismatch (FIND-007)."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-005"],
+      "evidence": [
+        {"type": "file", "location": "apps/life-call/server.js", "description": "purity boundary OK: maybe-start-loops.js:14 is a pure (env,starters)->{started,reason} fn; signCtx/ctxFromReq HMAC gates intact. But Inngest prod auth is comment-only, not fail-closed (FIND-005), and the Inngest path is a 3rd writer outside the documented single-writer contract (FIND-003) -> verification cannot certify safe-by-construction."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 7,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}

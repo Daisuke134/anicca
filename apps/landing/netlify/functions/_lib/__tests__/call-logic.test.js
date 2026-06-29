@@ -20,6 +20,7 @@ const {
   buildTelnyxMediaFrame,
   parseTelnyxStart,
   telnyxDialBody,
+  telnyxStreamingStartBody,
 } = require("../call-logic");
 
 // ── 1. μ-law encode(decode(x)) is the identity for every byte (G.711) ─────────
@@ -198,13 +199,19 @@ test("parseGeminiAudio pulls inlineData audio chunks and ignores non-audio messa
   assert.deepStrictEqual(parseGeminiAudio(null), []);
 });
 
-// ── 17. Telnyx outbound media frame uses stream_id (not streamSid) ─────────────
-test("buildTelnyxMediaFrame: event=media, stream_id, base64 payload", () => {
-  const f = buildTelnyxMediaFrame("32DE0DEA", "QUJD");
+// ── 17. Telnyx outbound media frame = documented {event:media,media:{payload}} (NO stream_id) ──
+test("buildTelnyxMediaFrame matches Telnyx docs shape (no stream_id)", () => {
+  const f = buildTelnyxMediaFrame("ignored", "QUJD");
   assert.strictEqual(f.event, "media");
-  assert.strictEqual(f.stream_id, "32DE0DEA");
   assert.strictEqual(f.media.payload, "QUJD");
-  assert.strictEqual(f.media.streamSid, undefined, "Telnyx uses stream_id not streamSid");
+  assert.ok(!("stream_id" in f), "outbound frame must omit stream_id per Telnyx docs");
+});
+// ── 17b. streaming_start contingency body ──
+test("telnyxStreamingStartBody carries rtp+PCMU+inbound_track", () => {
+  const b = telnyxStreamingStartBody({ streamUrl: "wss://x/ws" });
+  assert.strictEqual(b.stream_bidirectional_mode, "rtp");
+  assert.strictEqual(b.stream_bidirectional_codec, "PCMU");
+  assert.strictEqual(b.stream_track, "inbound_track");
 });
 
 // ── 18. parseTelnyxStart pulls stream_id + call_control_id ─────────────────────
@@ -234,7 +241,7 @@ test("telnyxDialBody: outbound /v2/calls body with bidirectional rtp + PCMU", ()
   assert.strictEqual(b.to, "+818046270314");
   assert.strictEqual(b.from, "+14322234204");
   assert.strictEqual(b.stream_url, "wss://x.trycloudflare.com/ws");
-  assert.strictEqual(b.stream_track, "both_tracks");
+  assert.strictEqual(b.stream_track, "inbound_track");
   assert.strictEqual(b.stream_bidirectional_mode, "rtp");
   assert.strictEqual(b.stream_bidirectional_codec, "PCMU");
 });

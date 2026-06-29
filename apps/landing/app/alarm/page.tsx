@@ -225,7 +225,7 @@ export default function AlarmPage() {
           </a>
         </motion.div>
         <p className="mt-16 font-mono text-[11px] tracking-[0.2em] text-white/25">
-          ANICCA · OPEN SOURCE · github.com/Daisuke134/anicca-oss
+          ANICCA · OPEN SOURCE · github.com/Daisuke134/anicca
         </p>
       </section>
     </main>

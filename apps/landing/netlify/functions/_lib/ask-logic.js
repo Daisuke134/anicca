@@ -15,6 +15,9 @@
 const ASK_PREFIX = "[Ask] ";
 const AGENTMAIL_PENDING_PROP = "anicca_ask_pending";
 const AGENTMAIL_QUESTION_ID_PROP = "anicca_ask_question_id";
+// Exported so handleReply (life-ask.js) can guard against writing a
+// duration-only reply as a bogus location. (Review point 3 — no ReferenceError.)
+const DURATION_RE = /(?:所要|duration|時間)[：:\s]*([0-9０-９]{1,3})\s*(?:分|min)/i;
 
 // ── Pure helpers ───────────────────────────────────────────────────────────────
 
@@ -40,6 +43,33 @@ function needsLocationAsk(event) {
 }
 
 /**
+ * Returns true if the event needs a duration question to be sent.
+ * Duration unknown: no end.dateTime OR end<=start. start.dateTime required.
+ *
+ * @param {object} event  GCal event resource
+ * @returns {boolean}
+ */
+function needsDurationAsk(event) {
+  if (!event || !event.start || !event.start.dateTime) return false;
+  const summary = (event.summary || "").trim();
+  if (summary.startsWith("[Travel]") || summary.startsWith(ASK_PREFIX)) return false;
+  if (event.extendedProperties?.private?.[AGENTMAIL_PENDING_PROP] === "true") return false;
+  const endDt = event.end?.dateTime;
+  if (!endDt) return true;
+  return new Date(endDt).getTime() <= new Date(event.start.dateTime).getTime();
+}
+
+/**
+ * Detect which kinds of info an event is missing.
+ *
+ * @param {object} event  GCal event resource
+ * @returns {{ location: boolean, duration: boolean }}
+ */
+function detectAskKind(event) {
+  return { location: needsLocationAsk(event), duration: needsDurationAsk(event) };
+}
+
+/**
  * Filter a list of GCal events to those that need a location question.
  *
  * @param {Array<object>} events  GCal event resource list
@@ -51,6 +81,20 @@ function detectMissingLocations(events) {
 }
 
 /**
+ * Filter events to those needing EITHER location OR duration.
+ * Returns items: { event, kind }.
+ *
+ * @param {Array<object>} events  GCal event resource list
+ * @returns {Array<{event: object, kind: {location: boolean, duration: boolean}}>}
+ */
+function detectMissingInfo(events) {
+  if (!Array.isArray(events)) return [];
+  return events
+    .map((event) => ({ event, kind: detectAskKind(event) }))
+    .filter(({ kind }) => kind.location || kind.duration);
+}
+
+/**
  * Build the plain-text question email body for a given event.
  *
  * @param {object} event  GCal event resource
@@ -58,14 +102,20 @@ function detectMissingLocations(events) {
  */
 function buildQuestionBody(event) {
   const title = (event.summary || "").trim() || "(no title)";
+  // Show the time in the EVENT's own timezone (Google provides start.timeZone) — never a hardcoded
+  // zone — so it reads correctly for a user anywhere in the world.
   const when = event.start?.dateTime
-    ? new Date(event.start.dateTime).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" })
+    ? new Date(event.start.dateTime).toLocaleString(undefined, event.start.timeZone ? { timeZone: event.start.timeZone } : undefined)
     : "日時不明";
+  const kind = detectAskKind(event);
+  const wants = [];
+  if (kind.location) wants.push(`・場所(住所・目的地)`);
+  if (kind.duration) wants.push(`・所要時間(例: 所要 60分)`);
+  const ask = wants.length ? wants.join("\n") : `・場所(住所・目的地)`;
   return (
     `Anicca より確認です。\n\n` +
-    `予定「${title}」(${when})の場所が未設定です。\n` +
-    `場所・住所・目的地を返信してください。\n` +
-    `Anicca が自動でカレンダーに反映します。\n\n` +
+    `予定「${title}」(${when})の以下が未設定です。\n${ask}\n` +
+    `そのまま返信してください。Anicca が自動でカレンダーに反映します。\n\n` +
     `---\nEvent ID: ${event.id || "unknown"}`
   );
 }
@@ -78,7 +128,9 @@ function buildQuestionBody(event) {
  */
 function buildQuestionSubject(event) {
   const title = (event.summary || "").trim() || "(no title)";
-  return `${ASK_PREFIX}場所を教えて — ${title}`;
+  const k = detectAskKind(event);
+  const what = k.location && k.duration ? "場所と所要時間" : k.duration ? "所要時間" : "場所";
+  return `${ASK_PREFIX}${what}を教えて — ${title}`;
 }
 
 /**
@@ -118,6 +170,23 @@ function parseLocationFromReply(body) {
 }
 
 /**
+ * Parse minutes from "所要 60分" / "duration: 90 min" / a bare "N分" line.
+ *
+ * @param {string} body  raw reply email body
+ * @returns {number|null}  minutes (1..1440) or null if not found
+ */
+function parseDurationFromReply(body) {
+  if (!body || typeof body !== "string") return null;
+  const norm = body.replace(/[０-９]/g, (d) => "0123456789"["０１２３４５６７８９".indexOf(d)]);
+  const m =
+    norm.match(/(?:所要|duration|時間)[：:\s]*([0-9]{1,3})\s*(?:分|min)/i) ||
+    norm.match(/(?:^|\n)\s*([0-9]{1,3})\s*(?:分|min|m)\s*(?:$|\n)/i);
+  if (!m) return null;
+  const mins = parseInt(m[1], 10);
+  return Number.isFinite(mins) && mins > 0 && mins <= 1440 ? mins : null;
+}
+
+/**
  * Build the GCal patch body to update the location field of an event.
  *
  * @param {string} location  The resolved location string
@@ -134,11 +203,31 @@ function buildLocationPatch(location, existingEvent) {
   );
 
   return {
-    location,
+    ...(location ? { location } : {}),
     extendedProperties: {
       private: newPrivate,
     },
   };
+}
+
+/**
+ * Build a GCal patch that sets end.dateTime = start + N min (when a duration is
+ * supplied) and optionally the location, and clears the pending flag.
+ *
+ * @param {{ location?: string, durationMinutes?: number }} resolved
+ * @param {object} existingEvent  The original GCal event
+ * @returns {object}  GCal event resource patch
+ */
+function buildResolvePatch({ location, durationMinutes }, existingEvent) {
+  const patch = buildLocationPatch(location || "", existingEvent);
+  if (durationMinutes && existingEvent?.start?.dateTime) {
+    const startMs = new Date(existingEvent.start.dateTime).getTime();
+    patch.end = {
+      dateTime: new Date(startMs + durationMinutes * 60000).toISOString(),
+      ...(existingEvent.start.timeZone ? { timeZone: existingEvent.start.timeZone } : {}),
+    };
+  }
+  return patch;
 }
 
 /**
@@ -167,13 +256,19 @@ function buildAskPendingPatch(questionId, existingEvent) {
 
 module.exports = {
   needsLocationAsk,
+  needsDurationAsk,
+  detectAskKind,
   detectMissingLocations,
+  detectMissingInfo,
   buildQuestionBody,
   buildQuestionSubject,
   parseLocationFromReply,
+  parseDurationFromReply,
   buildLocationPatch,
+  buildResolvePatch,
   buildAskPendingPatch,
   ASK_PREFIX,
+  DURATION_RE,
   AGENTMAIL_PENDING_PROP,
   AGENTMAIL_QUESTION_ID_PROP,
 };

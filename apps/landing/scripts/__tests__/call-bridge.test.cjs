@@ -187,3 +187,28 @@ test("Telnyx bridge moves audio BOTH ways through fake sockets", () => {
   assert.ok(toTelnyx.length >= 1, "Charon audio reached Telnyx (downlink)");
   assert.strictEqual(toTelnyx[0].stream_id, "TX-2");
 });
+
+// ── 12. Telnyx outbound (Charon-playback) track frames are skipped (no echo) ───
+test("routeTelnyxMessage ignores outbound (Charon-playback) track frames", () => {
+  const sent = [];
+  const st = {};
+  const out = routeTelnyxMessage(
+    { event: "media", stream_id: "s1", media: { track: "outbound", payload: "AAAA" } },
+    st, (o) => sent.push(o)
+  );
+  assert.equal(out, "media-skip");
+  assert.equal(sent.length, 0);
+  assert.equal(st.inFrames || 0, 0);
+});
+
+// ── 13. Telnyx inbound (caller) track frames are forwarded to Gemini ───────────
+test("routeTelnyxMessage forwards inbound (caller) track frames to Gemini", () => {
+  const sent = [];
+  const st = {};
+  const out = routeTelnyxMessage(
+    { event: "media", stream_id: "s1", media: { track: "inbound", payload: "AAAA" } },
+    st, (o) => sent.push(o)
+  );
+  assert.equal(out, "media");
+  assert.equal(sent.length, 1);
+});
