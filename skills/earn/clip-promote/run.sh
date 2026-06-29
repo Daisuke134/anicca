@@ -26,6 +26,7 @@ WALLET="${CLIP_WALLET_SOLANA:-xxKC33TYJ2czjGQAADrvDCLjF6pRvtHX125fCwP5u9H}"
 STATE="${CLIP_PROMOTE_STATE:-$HOME/.cloak/clip-promote-state.json}"
 LEDGER="${EARN_LEDGER:-$HOME/.openclaw/state/clip-earn-ledger.jsonl}"
 ACCTS="${CLIP_ACCOUNTS:-$HOME/.cloak/clip-accounts.json}"
+CDP_DIR="${CDP_DIR:-$HOME/.claude/skills/ig-account-create/scripts}"
 mkdir -p "$(dirname "$STATE")" "$(dirname "$LEDGER")" 2>/dev/null || true
 
 # shared emit / run_step (portable watchdog, FIND-302) / blocked_or (fail-closed) — see _lib.sh.
@@ -66,10 +67,35 @@ case "$TRANS" in
     fi
     emit "record:$STATUS"; exit 0
     ;;
-  SELECT|CLIP|POST|SUBMIT|WITHDRAW|STALLED)
-    # Live transition handlers are wired in #14 (campaign select / clip / post / submit / withdraw against
-    # promote.fun + ig-reels-poster + earn-clip-rewards, each via run_step). Until wired, narrate honestly
-    # (NO fake success): report the transition without claiming a side effect.
+  SELECT)
+    # REQ-1: fetch ACTIVE campaigns from the logged-in promote.fun tab + rank by cpm*budget; pick the top
+    # not-yet-clipped, advance state to CLIP. REQ-1a: none eligible → narrate idle.
+    PF_PORT="${CLIP_PROMOTE_CDP_PORT:-9222}"
+    PF_TID="$(curl -sS --max-time 5 "http://localhost:$PF_PORT/json/list" 2>/dev/null | "$PY" -c "import json,sys
+try: d=json.load(sys.stdin)
+except Exception: d=[]
+print(next((t['id'] for t in d if t.get('type')=='page' and 'promote.fun' in (t.get('url') or '')),''))" 2>/dev/null)"
+    if [ -z "$PF_TID" ]; then emit "select:no-promote-tab (login session not open on :$PF_PORT)"; exit 0; fi
+    CLIPPED="$("$PY" -c "import json,os;p='$STATE';d=json.load(open(p)) if os.path.exists(p) else {};print(','.join(d.get('clipped',[])))" 2>/dev/null)"
+    RANKED="$(run_step "$STEP_DEADLINE_S" env CDP_DIR="$CDP_DIR" PF_TID="$PF_TID" CDP_PORT="$PF_PORT" \
+              "$PY" "$SK/select_campaigns.py" 2>/dev/null)"; rc=$?
+    blocked_or "select" "$rc" "select:fetch-failed"
+    PICK="$("$PY" -c "import json,sys
+r=json.loads(sys.argv[1] or '[]'); clipped=set('$CLIPPED'.split(',')) if '$CLIPPED' else set()
+r=[c for c in r if c['slug'] not in clipped]
+print(json.dumps(r[0]) if r else '')" "$RANKED" 2>/dev/null)"
+    if [ -z "$PICK" ]; then emit "no-eligible-campaign"; exit 0; fi
+    SLUG="$("$PY" -c "import json,sys;print(json.loads(sys.argv[1])['slug'])" "$PICK")"
+    "$PY" -c "import json,os
+p='$STATE'; d=json.load(open(p)) if os.path.exists(p) else {}
+pick=json.loads('''$PICK'''); d.update({'phase':'CLIP','campaign_id':pick['slug'],'cpm':pick['cpm'],'budget':pick['budget']})
+json.dump(d,open(p,'w'))" 2>/dev/null
+    emit "select:$SLUG (cpm=$("$PY" -c "import json,sys;print(json.loads(sys.argv[1])['cpm'])" "$PICK"))"; exit 0
+    ;;
+  CLIP|POST|SUBMIT|WITHDRAW|STALLED)
+    # Wired in subsequent #14 increments (clip via earn-clip-rewards / post via ig-reels-poster to a WARMED
+    # account / submit / withdraw), each under run_step. POST is gated on a Day-7-warmed account (REQ-4 +
+    # promote.fun's own "warm the account up properly" rule). Until wired, narrate honestly — NO fake success.
     emit "execute:$TRANS:not-yet-wired (#14)"; exit 0
     ;;
   *)
