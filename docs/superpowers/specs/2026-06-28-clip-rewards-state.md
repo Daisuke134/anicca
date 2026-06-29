@@ -227,3 +227,21 @@ first reported the old DaK36 URL because it grabbed a stale first tile; ledger c
 REMAINING for "prints money daily": CLIP-B 5-gate+record-earn(real payout), CLIP-D account factory + JP
 account, CLIP-E first real USDC (campaign), CLIP-F self-improve. Login-persist note: IG OTP = LATEST msg in
 the "Verify your profile" thread.
+
+## D-59 (2026-06-29) — ★★★ ALWAYS-ON claude-p clip-core LIVE (Sutando architecture copied) ★★★
+Dais: "look at sutando, they go on claude-p crons, we copy them." DONE. Copied sonichi/sutando's
+always-on chain (read the real code: scripts/start-cli.sh, src/health-check + launchd plists, skills/
+startup + schedule-crons, skills/proactive-loop):
+- ~/anicca/skills/earn/clip/clip-cli.sh = detached tmux headless `claude --dangerously-skip-permissions
+  --add-dir $HOME -- "<startup>"`. The startup registers a durable recurring CronCreate driver, runs one
+  pass, then idles — crons fire while the REPL idles. Independent of any interactive session → survives close.
+- ~/anicca/skills/earn/clip/clip-healthcheck.sh + launchd ai.anicca.clip-core-healthcheck (every 5min,
+  StartInterval 300, ThrottleInterval 60) = restarts the tmux core if dead (Sutando health-check-fallback).
+VERIFIED LIVE: tmux session anicca-clip-core ALIVE; headless claude registered its own cron (job 2bed65f9,
+hourly :07), ran the first pass → {"did":"nothing to post (queue empty)","earned_usdc":0} (fail-closed,
+correctly skipped — did NOT force-post). monitor: posts=1 (DaK4tlmvomQ), USDC=$0, wallet=0.
+This is the claude-p loop (NOT OpenClaw, NOT Anthropic cloud — a cloud schedule can't reach the local
+CloakBrowser; runs on the Claude Code subscription on THIS Mac, exactly like Sutando).
+REMAINING for real $: (1) a PRODUCER that fills ~/clips/queue daily (SamurAIGPT long-form→clip→captions);
+(2) CLIP-E campaign join→on-chain payout. Loop posts $0 until both. Minor: headless core shows a
+PreToolUse Bash-hook node error (non-blocking; pass completed) — fix the hook env later.
