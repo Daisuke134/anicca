@@ -73,3 +73,26 @@ test('idempotent: two detect wakes both exit 0 with valid output', () => {
     assert.ok(lastJsonLine(r.stdout), 'no valid result on repeat wake');
   }
 });
+
+test('reads the loop decision channel $ANICCA_ARGS (not GIG_MODE) — drives the mode', () => {
+  // the live loop passes ANICCA_ARGS (JSON), never GIG_MODE — settle must be reachable from it
+  const r = spawnSync('bash', [RUN], {
+    encoding: 'utf8', timeout: 60_000,
+    env: { ...process.env, WAKE_ID: 'args-wake', GIG_MODE: '', ANICCA_ARGS: '{"mode":"settle"}', BLOCKRUN_WALLET_KEY: LEAK },
+  });
+  assert.equal(r.status, 0, r.stderr);
+  const j = lastJsonLine(r.stdout);
+  assert.ok(j && j.task && j.task.startsWith('settle'), `settle not driven via ANICCA_ARGS: ${r.stdout}`);
+  assert.ok(!(`${r.stdout}${r.stderr}`).includes(LEAK), 'key leaked');
+});
+
+test('empty ANICCA_ARGS defaults safely to detect (earns 0)', () => {
+  const r = spawnSync('bash', [RUN], {
+    encoding: 'utf8', timeout: 60_000,
+    env: { ...process.env, WAKE_ID: 'empty-args', GIG_MODE: '', ANICCA_ARGS: '{}' },
+  });
+  assert.equal(r.status, 0);
+  const j = lastJsonLine(r.stdout);
+  assert.equal(j.task, 'detect');
+  assert.equal(j.earn_usdc, 0);
+});

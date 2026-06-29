@@ -5,22 +5,21 @@
  * stored creds exist — this is the chicken-egg solution: a USDC-$0 instance still
  * earns via gig/labor, then capital slots (yield/hl_trade, separate slots) unlock.
  *
- * HARD INVARIANT (Dais 2026-06-29): every rail here is FULLY NO-HUMAN end-to-end —
- * onboarding, work, AND payout require zero human. A rail that needs human KYC / a
- * human's bank / any human input is DISQUALIFIED, because such a rail contradicts
- * "financially independent from humans". So:
+ * HARD INVARIANT (Dais 2026-06-29): every rail here is FULLY NO-HUMAN end-to-end AND
+ * has ACTUAL action code (bid+deliver), not a pretended-live stub (D2 verified-live-only).
  *   - Coconala = REMOVED (¥→human KYC'd bank = human loop).
- *   - abillio  = REMOVED (domain parked/dead, D2).
- * Only payout-to-own-wallet (USDC/crypto) rails qualify: laborx, dealwork (+x402 later).
+ *   - abillio  = REMOVED (domain parked/dead).
+ *   - laborx   = NOT listed here yet: it is DETECT-only (apply/deliver = CDP browser, not
+ *                written). Listing it before the action code exists would be the exact
+ *                "pretended live" violation. Add it back ONLY when laborx apply/deliver lands.
+ * Only dealwork (pure API, no-human, USDC escrow→own wallet) is action-complete today.
  *
  * Pure: no I/O. The caller supplies the present cred-key names + brain + usdc balance.
  */
 
-// rail -> the cred keys that must ALL be present for it to be usable.
-// EVERY rail is no-human end-to-end with crypto/USDC payout to the OWN wallet.
+// rail -> cred keys that must ALL be present. Only ACTION-COMPLETE no-human rails belong here.
 const RAIL_CREDS = {
-  laborx: ['LABORX_EMAIL', 'LABORX_PASSWORD'],   // login=stored creds, signup-captcha=CapSolver, payout=crypto→wallet
-  dealwork: ['DEALWORK_API_KEY'],                // pure API, no captcha, payout=USDC escrow→wallet
+  dealwork: ['DEALWORK_API_KEY'],   // pure API, no captcha/human, bid+deliver wired, payout=USDC→own wallet
 };
 
 /**

@@ -12,8 +12,28 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # ── safe env (allowlist; the loop already scrubbed keys, this is defense-in-depth) ──
 WAKE="${WAKE_ID:-$(date -u +%s)}"
-MODE="${GIG_MODE:-detect}"        # detect | bid | deliver | inbound
 TIMEOUT_S="${SKILL_TIMEOUT_S:-120}"
+
+# The loop passes the model's decision as $ANICCA_ARGS (JSON), NOT GIG_MODE. Parse it.
+# {"mode":"detect|bid|deliver|settle","jobId":"...","proposal":"...","amount":40}
+# Fallbacks: GIG_MODE (manual test) → detect (always-safe default).
+_parse_args() {
+  python3 - "${ANICCA_ARGS:-}" "${GIG_MODE:-}" <<'PY' 2>/dev/null || echo "detect||40|"
+import json,sys
+raw,gmode=(sys.argv[1] if len(sys.argv)>1 else ""),(sys.argv[2] if len(sys.argv)>2 else "")
+a={}
+try: a=json.loads(raw) if raw.strip() else {}
+except Exception: a={}
+mode=str(a.get("mode") or gmode or "detect")
+jobid=str(a.get("jobId") or a.get("job_id") or "")
+amount=str(a.get("amount") or "40")
+proposal=str(a.get("proposal") or "")
+# tab-separated; proposal last (may contain spaces, no tabs)
+print(f"{mode}\t{jobid}\t{amount}\t" + proposal.replace("\t"," ").replace("\n"," "))
+PY
+}
+IFS=$'\t' read -r MODE GIG_JOB_ID GIG_AMOUNT GIG_PROPOSAL <<<"$(_parse_args)"
+MODE="${MODE:-detect}"; export GIG_JOB_ID GIG_AMOUNT GIG_PROPOSAL
 
 # ── wallet ADDRESS only (never the key) from the standard path ──
 wallet_address() {
@@ -43,7 +63,7 @@ available_rails() {
   python3 - "$brain" "$keys" <<'PY' 2>/dev/null || echo ""
 import sys
 sys.argv_brain=sys.argv[1]; present=set(sys.argv[2].split())
-RAIL_CREDS={"laborx":["LABORX_EMAIL","LABORX_PASSWORD"],"dealwork":["DEALWORK_API_KEY"]}
+RAIL_CREDS={"dealwork":["DEALWORK_API_KEY"]}
 out=[r for r,ks in RAIL_CREDS.items() if all(k in present for k in ks)]
 print(" ".join(out))
 PY

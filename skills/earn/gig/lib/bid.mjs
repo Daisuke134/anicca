@@ -11,7 +11,7 @@
  */
 import fs from 'node:fs';
 
-const AI_HINT = /python|script|csv|json|data|scrap|research|seo|lead|writ|content|doc|code|review|translat|automat|bot|api|server|web/i;
+const AI_HINT = /python|script|csv|json|data|scrap|research|seo|lead|writ|content|doc|code|review|translat|automat|bot|api|server|web|powerpoint|スライド|資料|記事|文字起こし|入力/i;  // identical to detect.mjs
 
 export function loadBidLedger(file) {
   const set = new Set();
