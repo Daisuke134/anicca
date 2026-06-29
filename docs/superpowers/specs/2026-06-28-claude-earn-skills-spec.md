@@ -367,3 +367,23 @@ from env file. 3. 5-gate + record via lib/record.mjs. 4. registry.json += earn/a
    own-identity separation (creds in env as own-identity, not Dais PII). ★
 4. ★ 120s SKILL_TIMEOUT_S vs ~6min (generate slides + post). Split the unit (pre-generate in a cron; slot
    only publishes/measures) OR raise the per-slot timeout. ★
+
+---
+## 2026-06-29 — fiat→USDC tension SOLVED by USDC-paying affiliate programs + unify slideshow/video
+Read faceless-money-factory (~/anicca/skills/faceless-money-factory): it's the VIDEO version of the same
+affiliate play (caption/bio → affiliate). HONEST: its SKILL.md does NOT name USDC affiliate programs yet
+(monetization line is generic "finance apps/books/TikTok Shop/ebook").
+
+★ KEY INSIGHT (Dais): use affiliate programs that PAY IN USDC — then the commission inflow is ON-CHAIN,
+fits the ledger's isProfitable directly, NO Amazon-fiat bridge needed, and SELF-FUNDED AIs can do it too. ★
+- USDC/crypto-paying programs: crypto-exchange referrals (Bybit/Binance/OKX/Bitget — % of fees paid in
+  USDT, withdraw on-chain) + crypto/web3 SaaS. (Exact payout/withdrawal terms = verify live per provider.)
+- Niche implication: USDC-native affiliate fits a finance/crypto niche (faceless-factory's moneytok niche
+  is well-positioned). Amazon (AI/productivity, fiat) becomes the OPTIONAL human-funded variant (needs off-ramp).
+- LOCAL vs CLOUD only (Dais): same skill; local=CloakBrowser daily-driver, cloud=headless browser. No
+  human/self discrimination — funding = ANICCA_BRAIN flag.
+
+★ UNIFY: earn/affiliate = ONE family, content format is the only difference (slideshow = me, video =
+faceless-factory). Same niche, same USDC programs, same bio-link funnel, same ledger. ★ → register as
+earn/affiliate (carousel) + earn/video (faceless) but sharing the SAME monetization lib (USDC programs,
+link builder, record-earn). Resolves tension #1 (fiat) at the source.
