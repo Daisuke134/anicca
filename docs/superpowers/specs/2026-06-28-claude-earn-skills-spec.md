@@ -560,3 +560,23 @@ REMAINING: (2) confirm payout = USDC-Solana wallet (xxKC33…) in settings/withd
 → get source video + clip specs (15-45s vertical) → clip (earn-clip-rewards) → post to IG → submit URL →
 views → USDC. (4) loop on Sonnet/cloud. (NOTE: @aishigoto.labo warming day-1 + AI-niche vs mainstream
 campaigns — Dais OK'd using it.)
+
+---
+## 2026-06-29 — VCSDD Phase 1c adversary: FAIL (5/5) — caught a REAL architectural bug pre-build
+Feature promote-fun-clip-earn. Fresh-context adversary verdict (.vcsdd/features/promote-fun-clip-earn/
+reviews/spec-review-verdict.md). ★ This is VCSDD working: it caught flaws BEFORE we built/faked. ★
+TOP MUST-FIX:
+1. ★ CHAIN MISMATCH (critical): Promote.fun pays USDC on SOLANA, but the ecosystem record-earn/verify is
+   EVM/Base-ONLY (verify-tx.mjs eth_getTransactionReceipt/0x1; usdc.mjs Base USDC balanceOf). → cannot
+   honestly verify a Solana payout → would either fake a 0x1 (forbidden) or never reach DONE. FIX = add
+   Solana on-chain verification (Solana RPC getTransaction + SPL USDC balance delta on wallet xxKC33…) +
+   a Solana-aware record-earn line. ★
+2. DONE must = a real on-chain USDC inflow ONLY. Remove the "submitted + accruing views" OR-branch
+   (REQ-6 views=0 made it pass with $0 / 0 views).
+3. Edge cases: no-active-campaigns → narrate+exit0; submission-rejected; OTP/session-expiry → re-auth;
+   duplicate-submission + rate-limits; ★ day-1 warming account posting commercial clips = ban risk → do
+   NOT post commercial during warmup (wait day-7 OR use a dedicated non-warming clip account) ★.
+4. Clip duration: align verify_clip.sh (8–90s) to REQ-3 (15–45s).
+5. No-human invariant: an IG interstitial "wait for human" can stall — needs timeout + self-heal, not a wait.
+NEXT (#11): revise spec for the above → Phase 1c re-review (fresh adversary) → PASS → Phase 2 RED → GREEN.
+RESUMABLE from .vcsdd/ + verdict + this spec. (Note ledger.mjs has 2 copies; the EVM-only one lacks `external`.)
