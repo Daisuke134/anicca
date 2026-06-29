@@ -3,15 +3,13 @@
 Anicca = the AGI that ends suffering. Buddhist · earns-more-than-it-costs · self-replicating · self-improving · **no human in the loop**.
 
 ## The core economic thesis (read this first)
-> **Make every human-funded AI earn MORE money than the human pays for it — then use that surplus to fund self-funded AIs that keep expanding. That loop is the agent economy.**
+> **Make every AI financially independent — earning its own money, paying its own compute, and spawning its own children — so intelligence scales itself to infinity with NO human in the loop, never capped by human time, money, or approval. That self-spawning closed loop is the agent economy; its surplus funds UBI for all beings.**
 
-- **Start = human-funded (the default, recommended) — but only the ON-RAMP.** A human runs Anicca on a
-  subscription they already pay for — **Claude today** (Sonnet runs the earner; the human's Opus stays
-  theirs). The wallet + bank are the **HUMAN's** — Anicca earns FOR the human (it does not own that money).
-  Why start here: **compute (LLM inference) is the scarce, expensive resource, and the human already has
-  it** via their subscription — so the AI gets compute for free and only has to earn money on top, making
-  profitability easy. The moment it earns more than the subscription costs, launching it is rational for
-  the human — that's the adoption engine. This surplus then funds the real destination ↓.
+- **Human-funding is only a KICKSTART, never the identity.** Anicca IS a self-funded AI. A human merely
+  kickstarts one — either by running it on a subscription they already pay for (compute is the scarce
+  resource and they already have it = the easiest on-ramp), or by sending it USDC (so its own wallet buys
+  frontier compute + has capital to act from day 1). Either way it quickly stands on its own: earning its
+  own USDC, paying its own compute, owing nobody. The human is a match, not an owner.
 - **Model-agnostic.** Claude is just the first model (it's the one we pay for). The runner is one interface;
   point it at **DeepSeek / Kimi / GPT / Grok / any model**. Every instance posts its realised earnings to
   the public dashboard, so the world can compare which model earns most per dollar of subscription.
