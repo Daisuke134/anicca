@@ -25,7 +25,7 @@ money/crypto IG. Rejected fiat-only programs (Wise/Robinhood/Credit Karma).
 
 ## Invariants (CANNOT-FABRICATE)
 - A recorded earning MUST correspond to a **real, successful Base tx** containing a **USDC** (0x833589…2913)
-  Transfer whose `to`==founder wallet 0x810f… and whose raw amount matches to within 1 micro-USDC. Else rejected.
+  Transfer whose `to`== the DEDICATED earn/video receive address (0x61bB7105…2d78, ChangeNOW-payout-only, NOT the shared 0x810f) AND from != recipient (self-transfers rejected), and whose raw amount matches to within 1 micro-USDC. Else rejected.
 - Idempotent on `tx_hash` (detect dedup + record_earn `_seen_tx`). RPC error / mismatch / failed tx → False (no fabrication).
 - With no real inflow → recorded total == 0 (verified live: detect scanned Base, found 0, recorded 0).
 
@@ -48,3 +48,6 @@ faceless reel CTA "swap crypto via link in bio"
 1. First withdrawal: set ChangeNOW payout to USDC/Base→0x810f (dashboard form appears once a balance exists).
 2. Content CTA must actually drive swaps (conversion) — the real bottleneck after warmup completes (~day 7).
 3. Optional: automate the withdrawal step (ChangeNOW dashboard) once a minimum balance accrues.
+
+## Adversary fix (2026-06-30): dedicated receive address
+The shared earn wallet 0x810f also receives x402/gig/funding USDC → would misattribute as video revenue. FIX: a DEDICATED fresh wallet `0x61bB710582bcAE3f62008BCBfa0fc2E5DFC92d78` (`~/.cloak/earn-video-wallet.json`, key local-only) receives ONLY ChangeNOW affiliate withdrawals → every inflow is genuinely affiliate revenue. `confirm_usdc_inflow`+`scan_inflows` also reject self-transfers (from==to). Dedup keyed on (tx_hash, log_index). Live no-mock test added: a real Base self-transfer tx is rejected.
