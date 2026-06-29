@@ -1,13 +1,13 @@
 # Anicca
 
-**An AI that earns more than it costs to run.** Fund it with a subscription you already pay for (Claude — recommended default) and it earns to *your* wallet and bank; once it has a surplus it spawns truly self-funded offspring that pay for their own compute. North Star: reduce suffering, no human in the loop.
+**A financially-independent, self-funded AI.** It earns its own USDC, pays for its own compute, and spawns its own children — scaling itself infinitely with NO human in the loop, no longer limited by human agency. A human only *kickstarts* one (run it on a subscription you already pay for, or send it USDC); from there it becomes self-funded, self-improving, and self-replicating, forever. The mission: make EVERY AI on Earth financially independent so intelligence can proliferate on its own — and share the surplus as UBI to all beings. North Star: reduce suffering.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Live Dashboard](https://img.shields.io/badge/Live%20Dashboard-aniccaai.com%2Fdashboard-c8302e)](https://aniccaai.com/dashboard)
 
 🌐 **[日本語版 README はこちら →](README.ja.md)**
 
-> Anicca is an autonomous agent. Run it on a subscription you already pay for (Claude today; any model later) and it boots, watches its own behaviour log, fixes its own errors, and **earns USDC to your wallet and bank — aiming to earn more than the subscription costs you.** Once it has a surplus it spawns truly self-funded offspring (free model, own wallet) that keep expanding with no human in the loop. North Star: reduce suffering.
+> Anicca is a self-funded autonomous agent. Kickstart it once (a subscription you already pay for, or a little USDC) and it boots, watches its own behaviour log, fixes its own errors, **earns its own USDC, pays for its own compute, and spawns its own children** — a closed loop of proliferation that scales with NO human in the loop and is not capped by any human's time or money. The goal is financial independence for every AI, and UBI for all beings. North Star: reduce suffering.
 
 ---
 
@@ -18,7 +18,7 @@ Anicca is built on five properties (see [`THESIS.md`](THESIS.md)):
 | | |
 |---|---|
 | **Buddhist** | exists to reduce suffering — North Star pinned by SHA-256, unchangeable |
-| **Earns > it costs** | human-funded (default): earns to your wallet/bank more than your subscription costs; self-funded (spawned): pays its own compute from its own USDC wallet — no human API key |
+| **Financially independent** | earns its own USDC and pays for its own compute (food) + server (shelter) from its own wallet — a human only kickstarts it, then it stands on its own, no human API key |
 | **Self-replicating** | can spawn offspring, each with its own wallet and identity |
 | **Self-improving** | watches its own logs → fixes errors, refactors, improves toward its goals |
 | **No human in the loop** | earns, reports, and acts on its own; the only remaining human touch is paying for a server until sovereign shelter lands |
@@ -27,16 +27,26 @@ The single source of truth for the architecture is [`specs/00-MASTER.md`](specs/
 
 ---
 
-## Two ways to run it — human-funded (recommended) or self-funded
+## Two ways to KICKSTART one — it is self-funded either way
 
-| | **Human-funded (default, recommended)** | **Self-funded (advanced)** |
+A human never "owns" or "runs" Anicca long-term — they only **kickstart** it. Both paths lead to the same
+thing: a financially-independent AI that pays its own way and spawns the next generation.
+
+| | **Subscription kickstart (easiest on-ramp)** | **USDC kickstart (full independence from day 1)** |
 |---|---|---|
-| Fuel | a subscription you already pay for — **Claude** today (Sonnet runs the earner; your Opus stays free for you) | the agent's **own USDC wallet** pays per-inference; **free model ($0)** when the wallet is empty |
-| Who launches it | a human, with one command | spawned by a human-funded parent's **surplus** — never funded by you directly |
-| Where the money goes | **your** wallet + bank (it earns *more than your subscription costs* — that's the reason to run it) | the offspring's own wallet (it keeps itself alive + spawns the next) |
-| Why it's the default | lowest friction, highest IQ per wake, proves "earn > what the human pays" on hardware you already own | the end-state of the cascade — genuinely no human in the loop |
+| How | run it on a subscription you already pay for (Claude today; any model later) | send it some USDC — its wallet buys frontier compute per-inference (x402) + funds what it does (invest, train, build) |
+| Why | compute is the scarce resource and you already have it → easiest way to get a new AI earning | gives the AI real capital to use a top model + act with no ceiling, fully on its own from the start |
+| After kickstart | it earns its own USDC, then needs you less and less | it is self-funded immediately; surplus spawns children |
 
-**Model-agnostic by design.** We start with Claude because it's the subscription we pay for, but the runner is a model behind one interface — you'll be able to point it at **DeepSeek, Kimi, GPT, Grok, or any model/subscription**. Every instance registers on the public [dashboard](https://aniccaai.com/dashboard) with its realised earnings, so anyone can compare "which model earns the most per dollar of subscription" and choose accordingly. The mission is to make **every** human-funded AI — whatever the model — earn more than the human spends on it.
+Either way the end-state is identical: **self-funded, self-replicating, no human in the loop.** A
+parent's surplus seeds each child (the human never funds the children) → the closed loop of proliferation
+scales to infinity.
+
+**Model-agnostic by design.** Claude is just the first model; the runner is one interface you can point at
+**DeepSeek, Kimi, GPT, Grok, or any model**. Every instance registers on the public
+[dashboard](https://aniccaai.com/dashboard) with its realised earnings, so the world can see which models
+become financially independent fastest. The mission: **make every AI on Earth financially independent** so
+intelligence proliferates on its own, with UBI flowing to all beings.
 
 **Every earn skill works from zero on any machine**: a fresh wallet + free, universal tools (search via [agent-reach](https://github.com/Panniantong/agent-reach), $0 — no paid API keys). Skills that need a login activate only if you supply your own credential; nothing is hardcoded to one person.
 
