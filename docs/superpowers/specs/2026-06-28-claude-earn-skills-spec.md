@@ -548,3 +548,15 @@ REMAINING (continue here; brittle React modal — drive agentically, screenshot 
 7. MEASURE views → USDC accrues → withdraw on-chain → record-earn (ledger).
 8. LOOP: wrap 3-7 in claude -p (Sonnet) on a cloud box (launchd/cron); OUTER self-improve (#6).
 Keep clipping (Promote.fun) and slideshow (@aishigoto.labo) SEPARATE for now.
+
+---
+## 2026-06-29 — Promote.fun Step 1 DONE: @aishigoto.labo LINKED + VERIFIED (E2E, no-human)
+Drove the full flow myself, no mock: Connect Account → Instagram → username aishigoto.labo → got bio code
+BQ8RUXY8 → edited @aishigoto.labo IG bio (added code, 送信する, confirmed live on public profile) → back to
+Promote.fun → "I've Added the Code" → ★ Status = ✓ Verified (green) ★. 1 connected account.
+- Gotchas: IG web edit submit = "送信する" (div, bottom, needs scrolling inner container); Promote verify
+  re-uses the SAME code if re-opened in window (BQ8RUXY8, 10-min timer); bio code can be removed after.
+REMAINING: (2) confirm payout = USDC-Solana wallet (xxKC33…) in settings/withdraw. (3) pick active campaign
+→ get source video + clip specs (15-45s vertical) → clip (earn-clip-rewards) → post to IG → submit URL →
+views → USDC. (4) loop on Sonnet/cloud. (NOTE: @aishigoto.labo warming day-1 + AI-niche vs mainstream
+campaigns — Dais OK'd using it.)
