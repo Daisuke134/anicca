@@ -20,6 +20,10 @@ TID="$($PY -c "import json,os;p=os.path.expanduser('$CREDS');print(json.load(ope
 # init slot state if missing: account already created+profiled ⇒ start warming day 0
 [ -s "$STATE" ] || printf '{"handle":"%s","status":"warming","warmup_day":0,"affiliate_set":false}\n' "$HANDLE" > "$STATE"
 
+# ★ D1 fix: refresh affiliate_available from env EVERY wake (re-evaluable; no permanent trap). True iff a link is configured. ★
+AVAIL=false; [ -n "$AFFLINK" ] && AVAIL=true
+AVAIL="$AVAIL" $PY -c "import json,os;p='$STATE';d=json.load(open(p));d['affiliate_available']=(os.environ['AVAIL']=='true');d.pop('affiliate_pending',None);json.dump(d,open(p,'w'),ensure_ascii=False)"
+
 TRANS="$($PY -c "import json,sys;sys.path.insert(0,'$SK');from decide import decide;print(decide(json.load(open('$STATE')),'$TODAY'))" 2>/dev/null)"
 DID=""; EARNED=0; COST=0
 
@@ -51,13 +55,13 @@ except: print(0)" 2>/dev/null)
       DID="warmup INCOMPLETE: only $WATCHED real views (<3) — day NOT advanced"
     fi ;;
   S2_affiliate)
+    # ★ D1 round-2 fix: decide returns S2 ONLY when affiliate_available (AFFLINK is set), so installing the link is reachable.
+    #   When no link exists, decide skips S2 → S3 keeps posting; the link installs in-loop the wake it becomes available. ★
     if [ -z "$AFFLINK" ]; then
-      # ★ Dim1/3 fix: no link available yet → ADVANCE as pending (status=warmed), keep posting; never dead-end, never wait on a human. S2 fires later once a link exists. ★
-      set_state "{\"affiliate_pending\": true, \"status\": \"warmed\"}"
-      DID="affiliate pending (no link yet) — advancing to post; will set link in-loop when MONEY_AFFILIATE_URL exists"
+      DID="S2 reached with empty AFFLINK (unexpected) — no-op; decide will route to post next wake"   # defensive only; should not happen
     else
       [ "$DRY" = 1 ] || timeout "$TIMEOUT" $PY "$HOME/.claude/skills/ig-account-create/scripts/setup_profile.py" --tid "$TID" --website "$AFFLINK" --username "$HANDLE" >/tmp/ev_aff.log 2>&1 || true
-      set_state "{\"affiliate_set\": true, \"affiliate_pending\": false, \"status\": \"warmed\"}"; DID="affiliate link set (post-warmup, in-loop): $AFFLINK"
+      set_state "{\"affiliate_set\": true, \"status\": \"warmed\"}"; DID="affiliate link set (post-warmup, in-loop): $AFFLINK"
     fi ;;
   S3_post)
     OUT="$HOME/.claude/skills/faceless-money-factory/state/renders"

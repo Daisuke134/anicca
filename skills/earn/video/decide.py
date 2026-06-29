@@ -14,9 +14,10 @@ Transitions:
                                                              posting builds audience even while the link is pending)
   S4_record   already posted today (or steady state)      → record only real external USDC inflows
 
-NOTE on the S2 dead-end (fixed): if no affiliate link is available yet, run.sh sets `affiliate_pending=true`
-and advances status to `warmed` — so the machine does NOT loop on S2 forever; it proceeds to post daily, and
-S2 fires later (clearing `affiliate_pending`) once a link exists. The loop NEVER stalls and NEVER needs a human.
+S2 is RE-EVALUABLE, not a trap: run.sh refreshes `affiliate_available` from env EVERY wake (true iff a link
+URL is configured). So at day>=7: if a link IS available and not yet set → S2 installs it; if NO link yet →
+S2 is skipped and the machine keeps POSTING (S3) daily; the moment a link is configured, S2 fires on the next
+wake and installs it. Never stalls, never needs a human, and the monetization link is never permanently unreachable.
 """
 
 def decide(state, today):
@@ -29,9 +30,12 @@ def decide(state, today):
         if s.get("last_warmup_date") == today:
             return "noop"          # already did today's warmup — idempotent, do nothing this wake
         return "S1_warmup"
-    # day-7 affiliate link — only when a link is available-and-not-yet-set (pending ⇒ skip, keep posting)
-    if warmup_day >= 7 and not s.get("affiliate_set") and not s.get("affiliate_pending"):
+    # ── warmup COMPLETE (warmup_day >= 7) — posting + monetization are gated on the DAY count, not the
+    #    status string, so a finished account always posts even if status was never flipped to "warmed". ──
+    # day-7 affiliate link — fires whenever a link is AVAILABLE (env-derived, refreshed each wake) and not set.
+    # No link available ⇒ skip to posting; appears later ⇒ S2 fires next wake (re-evaluable, no permanent trap).
+    if warmup_day >= 7 and not s.get("affiliate_set") and s.get("affiliate_available"):
         return "S2_affiliate"
-    if status in ("warmed", "monetized") and s.get("last_post_date") != today:
-        return "S3_post"
+    if warmup_day >= 7 and s.get("last_post_date") != today:
+        return "S3_post"          # post daily (builds audience even while the affiliate link is still pending)
     return "S4_record"

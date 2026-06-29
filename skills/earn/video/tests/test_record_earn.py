@@ -18,6 +18,12 @@ assert r[0]=="rejected", f"no-tx should reject: {r}"; print("ok reject no-tx (po
 # reject: not verified
 r = record_earn({"token":"USDC","amount":5,"direction":"in","tx_hash":"0x2","verified":False}, L)
 assert r[0]=="rejected", f"unverified should reject: {r}"; print("ok reject unverified")
+# reject: bool amount (True == 1 in python — must NOT slip through as $1 earned)
+r = record_earn({"token":"USDC","amount":True,"direction":"in","tx_hash":"0x9","verified":True}, L)
+assert r[0]=="rejected", f"bool amount should reject: {r}"; print("ok reject bool amount")
+# reject: outbound (direction != in) must not count as earned
+r = record_earn({"token":"USDC","amount":5,"direction":"out","tx_hash":"0x8","verified":True}, L)
+assert r[0]=="rejected", f"outbound should reject: {r}"; print("ok reject outbound")
 # record: real USDC inflow
 r = record_earn({"token":"USDC","amount":4.2,"direction":"in","tx_hash":"0xDEAD","verified":True}, L)
 assert r[0]=="recorded" and abs(r[1]-4.2)<1e-9, f"valid should record: {r}"; print("ok record real USDC", r)
