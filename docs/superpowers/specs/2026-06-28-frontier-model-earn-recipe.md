@@ -240,5 +240,32 @@ build the 5-gate earn verification (#3) — that's their lane. We build the colo
 
 Result: a fleet that registers itself, runs the earn skills daily on its own, coordinates, survives death, and renders live on /dashboard — the infrastructure under everyone's skills. The 3 skill-agents plug their skills into this engine; spawned self-funded children inherit the exact same engine.
 
+## DASHBOARD DESIGN (Dais 2026-06-29) — real-time fleet board (assets + revenue + live logs)
+Current break: `app/dashboard/page.tsx` reads the STATIC `public/dashboard.json` (dead since 06-01) and falls
+back to 3 hardcoded instances; a LIVE `netlify/functions/dashboard-sync.js` reads Supabase `instances` but the
+page never calls it. Fix = wire the page to the live registry + add real-time.
+
+**Registry = Supabase (the ONE source; cloud children POST too). Two tables, Realtime ON:**
+- `instances` (one row per body): `id, name, funding('human'|'self'), env('local'|'cloud'), brain('claude-p'|'proxy'),
+  model, runtime/host, wallet, wallet_usdc(assets), realised_earn_usd(revenue), spend_usd, status, current_activity, last_heartbeat`.
+- `instance_logs` (the live feed): `instance_id, ts, kind('earn'|'claim'|'blocked'|'done'|'ping'|'spawn'), msg, tx_hash?`.
+
+**Write path (each instance, no human):** boot → `register()` upsert row; every 30s → `heartbeat()` update
+{last_heartbeat, wallet_usdc, realised_earn, spend, current_activity}; every action → `log(kind,msg,tx)` insert.
+status derived: `now-last_heartbeat>90s ⇒ STALE` (→ resurrection #17). Assets = instance writes its own
+wallet_usdc each beat (it knows its balance); optional server cross-check vs basescan.
+
+**Read path (the page, TRUE real-time):** server fetch instances+recent logs on load, THEN a client component
+subscribes to **Supabase Realtime** (Postgres-changes over websocket) → rows + logs update live with NO polling.
+Kill the hardcoded fallback + the dead static cfo pipeline.
+
+**Layout:** top totals (assets / revenue30d / net); filters [All|Human-funded|Self-funded] × [Local|Cloud];
+per-instance card = funding+env badges, model, brain, wallet→assets, revenue/spend/net, status dot, mini live-log;
+bottom = GLOBAL LIVE FEED (all instances' earns + bot2bot). The human-funded vs self-funded + model are first-class badges.
+
+**Build steps:** (1) Supabase tables + Realtime; (2) registry client in `~/anicca/runtime/` (register/heartbeat/log)
+wired into runtime/loop; (3) rewrite page.tsx → live Supabase + Realtime + grouping; (4) register THIS instance
+(Claude/human/local/claude-p/0x810f) as first real row; (5) E2E: browser shows it ALIVE w/ live log + assets, not fallback.
+
 ## Done = the recipe runs on Claude end-to-end with realised_earn > subscription, self-verified, then the
 ## same recipe boots on a second model with only the `--model` swap. That proves "any frontier model self-earns."
