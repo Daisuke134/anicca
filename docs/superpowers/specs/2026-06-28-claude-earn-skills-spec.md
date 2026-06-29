@@ -292,3 +292,16 @@ Amazon Associates report (clicks/紹介料, real_sale gate) → un-fakeable ledg
 → 1垢5,000円/月 × 20垢 = 10万円/月。★ どのAIでも複製=収入が掛け算 ★。
 **正直な但し書き**: 大半のアフィリ垢は¥0近辺。成功=毎日の継続 + アルゴリズム + 2-3ヶ月の時間 + スケール。
 記事① 3000万円/年 = 数年の外れ値。人間のサブスク代(月3千-3万円)超えは「複利ループ×複数垢」で達成する設計。
+
+---
+## 2026-06-29 — Caption / PR-disclosure format (copy real sellers + ステマ規制 compliant)
+- ★ Last slide = SHOW the real product (book cover via compose_cta_book.py) + 「リンクはプロフィール」+ #PR ★
+  (the soft "no product" version under-converts). Product is NAMED in the caption too.
+- ★ PR disclosure: drop the sketchy "アフィリエイトを含むPRです" sentence. Use 【PR】 on the FIRST line. ★
+  消費者庁 ステマ規制 (景表法, 2023-10): disclosure must be 明瞭/clearly visible — #PR BURIED at the
+  bottom among many hashtags = NON-compliant. 【PR】 at the top = clean AND compliant.
+- Caption format (build_caption.py, copies real affiliate accounts):
+  `【PR】` → value recap (tips) → `📖 もっと深く→『<product>』` → `リンクはプロフィールから📎` → niche hashtags (bottom).
+- Link is BIO-only (TikTok/IG strip clickable caption links — valuecommerce confirmed).
+- ONE niche, ROTATING products: account = "the AI仕事術 person"; the featured product changes daily to
+  match each day's topic (#17 sourcing). Amazon 24h-cart earns on anything the referred user buys.
