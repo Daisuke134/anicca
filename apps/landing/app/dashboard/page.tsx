@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+// PURE render helpers (REQ-4/5/6/8) — single source of display logic, unit-tested separately.
+import { toCardModel, countByStatus } from "../../lib/dashboard-core.mjs";
 
 // Metadata is exported from a separate layout or via static export approach
 // (app/dashboard/layout.tsx) — cannot use export const metadata in "use client".
@@ -9,6 +11,7 @@ type InstanceRow = {
   id: string;
   host: string;
   geo?: string;
+  ts?: number;
   model_live?: string;
   model_tier?: string;
   net_worth_usd: number;
@@ -17,6 +20,10 @@ type InstanceRow = {
   runway_days: number;
   status: string;
   wallet_addr?: string | null;
+  funding?: string | null;
+  env?: string | null;
+  brain?: string | null;
+  log?: Array<{ ts: number; kind: string; note?: string }>;
 };
 
 type DashboardData = {
@@ -49,7 +56,10 @@ export default function DashboardPage() {
       }
     }
     load();
-    return () => { cancelled = true; };
+    // REQ-10: refresh from the live registry every 30s (< the 120s telemetry heartbeat) so the board is
+    // near-real-time. Polling (not websocket) is the chosen mechanism for static-export compatibility.
+    const timer = setInterval(load, 30_000);
+    return () => { cancelled = true; clearInterval(timer); };
   }, []);
 
   return (
@@ -78,6 +88,7 @@ export default function DashboardPage() {
 }
 
 function DashboardBody({ data }: { data: DashboardData }) {
+  const counts = countByStatus(data.leaderboard, Math.floor(Date.now() / 1000));
   return (
     <>
       {/* Group P&L — summary metrics */}
@@ -86,7 +97,7 @@ function DashboardBody({ data }: { data: DashboardData }) {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 24 }}>
           <Stat label="Total Net Worth" value={`$${data.total_net_worth_usd.toFixed(2)}`} />
           <Stat label="Earned / mo" value={`$${data.earned_mo_usd.toFixed(2)}`} />
-          <Stat label="Bodies alive" value={String(data.alive)} />
+          <Stat label="Bodies (alive / stale)" value={`${counts.alive} / ${counts.stale}`} />
           <Stat label="Self-funded %" value={`${data.self_funded_pct}%`} />
           <Stat label="Frontier model %" value={`${data.frontier_pct}%`} />
         </div>
@@ -113,42 +124,62 @@ function DashboardBody({ data }: { data: DashboardData }) {
 }
 
 function InstanceCard({ row, rank }: { row: InstanceRow; rank: number }) {
-  const selfFunded = row.status !== "dead" && row.revenue_mo_usd / 30 >= row.burn_day_usd;
+  // All display logic via the PURE core (display-staleness, self-funded test, view-model, log cap/order).
+  const c = toCardModel(row, Math.floor(Date.now() / 1000));
   return (
     <div style={{ border: "1px solid rgba(244,241,234,0.15)", padding: 20 }}>
       <div style={{ display: "grid", gridTemplateColumns: "auto 1fr auto", gap: 16, alignItems: "flex-start" }}>
         <div style={{ fontSize: 24, opacity: 0.3, fontWeight: 900, minWidth: 32 }}>#{rank}</div>
         <div>
-          <p style={{ fontSize: 10, letterSpacing: 3, textTransform: "uppercase", opacity: 0.5 }}>{row.id}</p>
-          <p style={{ fontSize: 18, marginTop: 4 }}>{row.host} · {row.geo ?? "?"}</p>
-          <p style={{ fontSize: 12, opacity: 0.6, marginTop: 2 }}>{row.model_live ?? "—"} ({row.model_tier ?? "?"})</p>
+          <p style={{ fontSize: 18 }}>{c.host} · {row.geo ?? "?"}</p>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
+            <Tag text={c.funding === "human" ? "HUMAN-FUNDED" : c.funding === "self" ? "SELF-FUNDED" : "FUNDING?"} tone={c.funding === "self" ? "green" : "blue"} />
+            <Tag text={String(c.env).toUpperCase()} tone="dim" />
+            <Tag text={String(c.brain)} tone="dim" />
+            <Tag text={`${c.model} · ${c.modelTier}`} tone="dim" />
+            {c.selfFundedEconomic && <Tag text="ECON SELF-FUNDED" tone="green" />}
+          </div>
+          <a href={c.walletUrl ?? "#"} target="_blank" rel="noopener noreferrer"
+             style={{ fontSize: 11, color: "#c8302e", textDecoration: "none", marginTop: 6, display: "inline-block" }}>
+            {c.id ? `${c.id.slice(0, 6)}…${c.id.slice(-4)}` : ""}
+          </a>
         </div>
-        <StatusBadge status={row.status} />
+        <StatusBadge status={c.statusDisplay} />
       </div>
 
       <div style={{
         marginTop: 12, paddingTop: 12, borderTop: "1px solid rgba(244,241,234,0.08)",
         display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 12,
       }}>
-        <Metric label="Net Worth" value={`$${row.net_worth_usd.toFixed(2)}`} />
-        <Metric label="Earned / mo" value={`$${row.revenue_mo_usd.toFixed(2)}`} />
-        <Metric label="Burn / day" value={`$${row.burn_day_usd.toFixed(2)}`} />
-        <Metric label="Runway" value={`${row.runway_days}d`} />
-        <Metric label="Self-funded" value={selfFunded ? "YES" : "NO"} highlight={selfFunded} />
-        {row.wallet_addr && (
-          <div>
-            <p style={{ fontSize: 9, letterSpacing: 2, textTransform: "uppercase", opacity: 0.4 }}>Wallet</p>
-            <a
-              href={`https://basescan.org/address/${row.wallet_addr}`}
-              target="_blank" rel="noopener noreferrer"
-              style={{ fontSize: 11, color: "#c8302e", wordBreak: "break-all", textDecoration: "none" }}
-            >
-              {row.wallet_addr.slice(0, 6)}…{row.wallet_addr.slice(-4)}
-            </a>
-          </div>
-        )}
+        <Metric label="Assets" value={`$${c.assetsUsd.toFixed(2)}`} />
+        <Metric label="Revenue / mo" value={`$${c.revenueMoUsd.toFixed(2)}`} />
+        <Metric label="Burn / day" value={`$${c.burnDayUsd.toFixed(2)}`} />
+        <Metric label="Net / mo" value={`$${c.netUsd.toFixed(2)}`} highlight={c.netUsd >= 0} />
       </div>
+
+      {c.logs.length > 0 && (
+        <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid rgba(244,241,234,0.08)" }}>
+          <p style={{ fontSize: 9, letterSpacing: 2, textTransform: "uppercase", opacity: 0.4, marginBottom: 6 }}>Live log</p>
+          <div style={{ display: "grid", gap: 2, fontFamily: "monospace", fontSize: 11, opacity: 0.75, maxHeight: 130, overflowY: "auto" }}>
+            {c.logs.slice(0, 8).map((l: { ts: number; kind: string; note?: string }, i: number) => (
+              <div key={i}>
+                <span style={{ opacity: 0.5 }}>{new Date((Number(l.ts) || 0) * 1000).toLocaleTimeString("ja-JP")}</span>{" "}
+                <span style={{ color: "#c8302e" }}>{l.kind}</span>{l.note ? ` ${l.note}` : ""}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
+  );
+}
+
+function Tag({ text, tone }: { text: string; tone: "green" | "blue" | "dim" }) {
+  const color = tone === "green" ? "#4ade80" : tone === "blue" ? "#60a5fa" : "rgba(244,241,234,0.6)";
+  return (
+    <span style={{ fontSize: 9, letterSpacing: 1.5, textTransform: "uppercase", padding: "3px 8px", border: `1px solid ${color}`, color, borderRadius: 2, whiteSpace: "nowrap" }}>
+      {text}
+    </span>
   );
 }
 
