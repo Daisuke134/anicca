@@ -176,3 +176,23 @@ Clip nuance: payout accrues days later (per-view) ≠ instant swap → SPLIT: ex
 separate payout-check wake = record-earn only when campaign USDC lands.
 TASKS (dep order): CLIP-A slot run.sh → CLIP-B 5-gate+record-earn → CLIP-E first real inflow (THE gate) ; CLIP-D account
 factory(parallel) ; CLIP-C model-agnostic ; CLIP-F self-improve(after E). registry.json earn/clip declared→live handed to dashboard CC.
+
+## D-56 (2026-06-29) — isolated clip-browser built; login blocked by STALE-OTP pollution (root cause found)
+ARCHITECTURE DONE (Dais "separate profile"): dedicated CloakBrowser instance on :9223 with profile
+~/.cloak/profiles/clip-en (isolated, never touches daily-driver :9222). cdp.py honors CDP_PORT env.
+launch_clip_browser.py = launcher (launch_persistent_context + --remote-debugging-port=9223). account-guard
+in poster is now FAIL-CLOSED (aborts unless active==handle positively confirmed). All committed+pushed.
+PROVEN earlier this session: no-human account create (@aiclipsvault, Gmail plus-addr), default-ctx
+file-attach WORKS (galloway posted to aishigoto by mistake → DELETED, aishigoto intact), interstitial
+dismiss, 作成 must be clicked at its TEXT center (~x75) not svg center.
+★ ROOT CAUSE of the login wall (CONFIRMED) ★: aiclipsvault login on :9223 hits IG email-OTP codeentry,
+but every code entered returns "このコードは使用できません". Reason = repeated login attempts sent MANY IG
+codes into keiodaisuke@gmail.com; we cannot identify WHICH code is bound to the CURRENT codeentry session,
+so we keep entering STALE ones. (The earlier successes — IG acct-create 420195, TikTok 011607/987066 —
+worked because Gmail had exactly ONE fresh code at that moment.)
+★ CLEAN FIX (next session, fresh context) ★: (1) first mark-read/clear old IG security emails so the inbox
+has no stale codes; (2) start ONE login, capture t0 at the ログイン click; (3) read the IG code whose
+internalDate > t0 (the only one that matters), enter within ~30s; (4) handle 情報を保存→保存; (5) once
+logged in (sole account on :9223 → no switch, no pollution), open composer (click 作成 text-center),
+load galloway via fileChooser-intercept (default-ctx works), 次へ→caption→シェア, verify live URL on
+/aiclipsvault/. Clip is NOT yet live — honest.
