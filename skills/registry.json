@@ -1,127 +1,132 @@
 {
-  "$schema": "https://aniccaai.com/schema/skills-registry.v1.json",
-  "version": 1,
-  "description": "Anicca capability registry (SSOT). install.sh reads this to sync every skill slot into the runtime body. Foundation pre-declares EVERY slot so parallel subsystem builders only ADD files inside their slot's dir and NEVER edit this registry. A slot with status \"declared\" is reserved (dir scaffolded, entrypoint stubbed); a builder flips it to \"live\" once its real implementation + E2E verify land.",
-  "runtime_root": "~/.anicca",
-  "slots": {
-    "report": {
-      "track": "core",
-      "dir": "skills/report",
-      "entrypoint": "anicca-report.sh",
-      "status": "live",
-      "spec": "26 A2 / 27 A-telemetry",
-      "summary": "Per-wake report: emails Dais 4 fields (AgentMail) + POSTs EIP-191 signed telemetry to aniccaai.com/.netlify/functions/telemetry.",
-      "owner": "foundation"
-    },
-    "earn": {
-      "track": "A",
-      "dir": "skills/earn",
-      "entrypoint": "run.sh",
-      "status": "declared",
-      "spec": "26 A3 / 27 A-earn (GATE-0)",
-      "summary": "(retired — split into yield/hl_trade/x402_sell/token_launch)",
-      "owner": "wf-a:earn"
-    },
-    "self/spawn": {
-      "track": "A",
-      "dir": "skills/self/spawn",
-      "entrypoint": "run.sh",
-      "status": "declared",
-      "spec": "26 A4 / 27 A-self-spawn",
-      "summary": "Self-replication: birth a child instance on DO/Akash with its own wallet + AgentMail inbox; no parent instruction needed for the child's first earn wake.",
-      "owner": "wf-a:self-spawn"
-    },
-    "self/issue-dev": {
-      "track": "A",
-      "dir": "skills/self/issue-dev",
-      "entrypoint": "run.sh",
-      "status": "live",
-      "spec": "26 'self-solve/refactor/improve' / 27 WF-A",
-      "summary": "SELF-IMPROVE: read own behaviour log (reverts/loop_detect), file ONE GitHub Issue on the mother so the colony fixes it. args.note optional.",
-      "owner": "wf-a:self-spawn"
-    },
-    "economy/ubi": {
-      "track": "A",
-      "dir": "skills/economy/ubi",
-      "entrypoint": "ubi.js",
-      "status": "declared",
-      "spec": "27 §3 UBI",
-      "summary": "contribute() surplus X% to Treasury; distributeAI() rescue+flat basic income to alive/dying agents; distributeHuman() periodic USDC batch to allowlist. Post-earn roadmap; mechanism fixed.",
-      "owner": "wf-a:earn"
-    },
-    "cook": {
-      "track": "A",
-      "dir": "skills/cook",
-      "entrypoint": "run.sh",
-      "status": "live",
-      "spec": "02 cook-loop",
-      "summary": "EXPLORE: web-search for a NEW earner; surface real candidate URLs; the model decides what to try. args.query = your curiosity.",
-      "owner": "wf-a:earn"
-    },
-    "yield": {
-      "track": "A",
-      "dir": "skills/earn",
-      "entrypoint": "run.sh",
-      "status": "live",
-      "spec": "PATCH6",
-      "owner": "wf-a:earn",
-      "summary": "Park idle USDC in best-APY vault (Beefy6.1%->Fluid). SET-AND-FORGET: do ONCE when you have idle cash, NOT every wake."
-    },
-    "hl_trade": {
-      "track": "A",
-      "dir": "skills/earn",
-      "entrypoint": "run.sh",
-      "status": "live",
-      "spec": "PATCH6",
-      "owner": "wf-a:earn",
-      "summary": "Open/close a Hyperliquid perp = active trading edge. args coin/side/size_usd/sl_pct/tp_pct or {action:close,coin}."
-    },
-    "x402_sell": {
-      "track": "A",
-      "dir": "skills/earn",
-      "entrypoint": "run.sh",
-      "status": "live",
-      "spec": "PATCH6",
-      "owner": "wf-a:earn",
-      "summary": "Run+advertise paid x402 product (sell research for USDC). THE recurring $0-capital earner; build demand."
-    },
-    "token_launch": {
-      "track": "A",
-      "dir": "skills/earn",
-      "entrypoint": "run.sh",
-      "status": "live",
-      "spec": "PATCH6",
-      "owner": "wf-a:earn",
-      "summary": "Launch/manage $ANICCA token (MoltX ~$2.70). args {launch:true,name,symbol}."
-    },
-    "earn/gig": {
-      "status": "live",
-      "summary": "gig work → USDC (one bounded gig per wake, no human)"
-    },
-    "earn/clip": {
-      "track": "A",
-      "dir": "skills/earn/clip",
-      "entrypoint": "run.sh",
-      "status": "live",
-      "owner": "clip",
-      "spec": "2026-06-29-ecosystem-integration + clip-rewards-state D-57",
-      "summary": "LOCAL: post next queued captioned 9:16 clip to next ready clip account (isolated CloakBrowser profile). EARN_MODE=execute posts ONE; per-view USDC accrues later (separate payout-check records on-chain). No human."
-    },
-    "earn/affiliate": {
-      "status": "declared",
-      "summary": "affiliate post + commission tracking → USDC"
-    },
-    "earn/video": {
-      "status": "live",
-      "summary": "faceless short video → monetized/affiliate channel"
-    },
-    "earn/audit": {
-      "status": "declared",
-      "summary": "smart-contract audit contest finding → bounty USDC"
-    },
-    "earn/_probe": {
-      "status": "declared",
-      "summary": "VCSDD integration probe (writes a test earn-ledger line)"
-    }
+ "$schema": "https://aniccaai.com/schema/skills-registry.v1.json",
+ "version": 1,
+ "description": "Anicca capability registry (SSOT). install.sh reads this to sync every skill slot into the runtime body. Foundation pre-declares EVERY slot so parallel subsystem builders only ADD files inside their slot's dir and NEVER edit this registry. A slot with status \"declared\" is reserved (dir scaffolded, entrypoint stubbed); a builder flips it to \"live\" once its real implementation + E2E verify land.",
+ "runtime_root": "~/.anicca",
+ "slots": {
+  "report": {
+   "track": "core",
+   "dir": "skills/report",
+   "entrypoint": "anicca-report.sh",
+   "status": "live",
+   "spec": "26 A2 / 27 A-telemetry",
+   "summary": "Per-wake report: emails Dais 4 fields (AgentMail) + POSTs EIP-191 signed telemetry to aniccaai.com/.netlify/functions/telemetry.",
+   "owner": "foundation"
+  },
+  "earn": {
+   "track": "A",
+   "dir": "skills/earn",
+   "entrypoint": "run.sh",
+   "status": "declared",
+   "spec": "26 A3 / 27 A-earn (GATE-0)",
+   "summary": "(retired — split into yield/hl_trade/x402_sell/token_launch)",
+   "owner": "wf-a:earn"
+  },
+  "self/spawn": {
+   "track": "A",
+   "dir": "skills/self/spawn",
+   "entrypoint": "run.sh",
+   "status": "declared",
+   "spec": "26 A4 / 27 A-self-spawn",
+   "summary": "Self-replication: birth a child instance on DO/Akash with its own wallet + AgentMail inbox; no parent instruction needed for the child's first earn wake.",
+   "owner": "wf-a:self-spawn"
+  },
+  "self/issue-dev": {
+   "track": "A",
+   "dir": "skills/self/issue-dev",
+   "entrypoint": "run.sh",
+   "status": "live",
+   "spec": "26 'self-solve/refactor/improve' / 27 WF-A",
+   "summary": "SELF-IMPROVE: read own behaviour log (reverts/loop_detect), file ONE GitHub Issue on the mother so the colony fixes it. args.note optional.",
+   "owner": "wf-a:self-spawn"
+  },
+  "economy/ubi": {
+   "track": "A",
+   "dir": "skills/economy/ubi",
+   "entrypoint": "ubi.js",
+   "status": "declared",
+   "spec": "27 §3 UBI",
+   "summary": "contribute() surplus X% to Treasury; distributeAI() rescue+flat basic income to alive/dying agents; distributeHuman() periodic USDC batch to allowlist. Post-earn roadmap; mechanism fixed.",
+   "owner": "wf-a:earn"
+  },
+  "cook": {
+   "track": "A",
+   "dir": "skills/cook",
+   "entrypoint": "run.sh",
+   "status": "live",
+   "spec": "02 cook-loop",
+   "summary": "EXPLORE: web-search for a NEW earner; surface real candidate URLs; the model decides what to try. args.query = your curiosity.",
+   "owner": "wf-a:earn"
+  },
+  "yield": {
+   "track": "A",
+   "dir": "skills/earn",
+   "entrypoint": "run.sh",
+   "status": "live",
+   "spec": "PATCH6",
+   "owner": "wf-a:earn",
+   "summary": "Park idle USDC in best-APY vault (Beefy6.1%->Fluid). SET-AND-FORGET: do ONCE when you have idle cash, NOT every wake."
+  },
+  "hl_trade": {
+   "track": "A",
+   "dir": "skills/earn",
+   "entrypoint": "run.sh",
+   "status": "live",
+   "spec": "PATCH6",
+   "owner": "wf-a:earn",
+   "summary": "Open/close a Hyperliquid perp = active trading edge. args coin/side/size_usd/sl_pct/tp_pct or {action:close,coin}."
+  },
+  "x402_sell": {
+   "track": "A",
+   "dir": "skills/earn",
+   "entrypoint": "run.sh",
+   "status": "live",
+   "spec": "PATCH6",
+   "owner": "wf-a:earn",
+   "summary": "Run+advertise paid x402 product (sell research for USDC). THE recurring $0-capital earner; build demand."
+  },
+  "token_launch": {
+   "track": "A",
+   "dir": "skills/earn",
+   "entrypoint": "run.sh",
+   "status": "live",
+   "spec": "PATCH6",
+   "owner": "wf-a:earn",
+   "summary": "Launch/manage $ANICCA token (MoltX ~$2.70). args {launch:true,name,symbol}."
+  },
+  "earn/gig": {
+   "status": "live",
+   "summary": "gig work → USDC (one bounded gig per wake, no human)"
+  },
+  "earn/clip": {
+   "track": "A",
+   "dir": "skills/earn/clip",
+   "entrypoint": "run.sh",
+   "status": "live",
+   "owner": "clip",
+   "spec": "2026-06-29-ecosystem-integration + clip-rewards-state D-57",
+   "summary": "LOCAL: post next queued captioned 9:16 clip to next ready clip account (isolated CloakBrowser profile). EARN_MODE=execute posts ONE; per-view USDC accrues later (separate payout-check records on-chain). No human."
+  },
+  "earn/affiliate": {
+   "status": "declared",
+   "summary": "affiliate post + commission tracking → USDC"
+  },
+  "earn/video": {
+   "track": "A",
+   "dir": "skills/earn/video",
+   "entrypoint": "run.sh",
+   "status": "live",
+   "owner": "video",
+   "spec": "2026-06-29-earn-video-slot-vcsdd-spec (ROUND-8 OVERALL PASS)",
+   "summary": "LOCAL: faceless-video earn slot. ONE bounded transition/wake (create->warmup->affiliate@day7->post->record). Warmup = dedicated anti-throttle CloakBrowser (real distinct reels). Post = live+verified (published+post_url). record_earn = fail-closed on-chain only. No human, no fake-success."
+  },
+  "earn/audit": {
+   "status": "declared",
+   "summary": "smart-contract audit contest finding → bounty USDC"
+  },
+  "earn/_probe": {
+   "status": "declared",
+   "summary": "VCSDD integration probe (writes a test earn-ledger line)"
   }
+ }
 }
