@@ -17,17 +17,26 @@ AFFLINK="${MONEY_AFFILIATE_URL:-${MONK_EBOOK_URL:-}}"  # affiliate/ebook link (s
 TODAY="$(date +%Y-%m-%d)"
 TID="$($PY -c "import json,os;p=os.path.expanduser('$CREDS');print(json.load(open(p)).get('tid','') if os.path.exists(p) else '')" 2>/dev/null)"
 
-# init slot state if missing: account already created+profiled ⇒ start warming day 0
-[ -s "$STATE" ] || printf '{"handle":"%s","status":"warming","warmup_day":0,"affiliate_set":false}\n' "$HANDLE" > "$STATE"
+# ★ FIND-603: ensure STATE exists AND is valid JSON; re-init ATOMICALLY if missing/corrupt. A truncated write from
+#   a prior kill must NOT brick the slot into 'unknown transition' forever (atomic tmp+os.replace everywhere below). ★
+$PY -c "import json,os
+p='$STATE';h='$HANDLE';ok=False
+if os.path.exists(p) and os.path.getsize(p)>0:
+  try: json.load(open(p));ok=True
+  except Exception: ok=False
+if not ok:
+  t=p+'.tmp';json.dump({'handle':h,'status':'warming','warmup_day':0,'affiliate_set':False},open(t,'w'),ensure_ascii=False);os.replace(t,p)"
 
-# ★ D1 fix: refresh affiliate_available from env EVERY wake (re-evaluable; no permanent trap). True iff a link is configured. ★
+# ★ D1 fix: refresh affiliate_available from env EVERY wake (re-evaluable; no permanent trap). Atomic write. ★
 AVAIL=false; [ -n "$AFFLINK" ] && AVAIL=true
-AVAIL="$AVAIL" $PY -c "import json,os;p='$STATE';d=json.load(open(p));d['affiliate_available']=(os.environ['AVAIL']=='true');d.pop('affiliate_pending',None);json.dump(d,open(p,'w'),ensure_ascii=False)"
+AVAIL="$AVAIL" $PY -c "import json,os;p='$STATE';d=json.load(open(p));d['affiliate_available']=(os.environ['AVAIL']=='true');d.pop('affiliate_pending',None);t=p+'.tmp';json.dump(d,open(t,'w'),ensure_ascii=False);os.replace(t,p)"
 
 TRANS="$($PY -c "import json,sys;sys.path.insert(0,'$SK');from decide import decide;print(decide(json.load(open('$STATE')),'$TODAY'))" 2>/dev/null)"
+[ -z "$TRANS" ] && TRANS="noop"   # ★ FIND-603: decide load failure ⇒ safe noop, never an 'unknown transition' dead-end ★
 DID=""; EARNED=0; COST=0
 
-set_state(){ $PY -c "import json,sys;p='$STATE';d=json.load(open(p));d.update(json.loads(sys.argv[1]));json.dump(d,open(p,'w'),ensure_ascii=False)" "$1"; }
+# atomic state update (tmp + os.replace) so a kill mid-write can't truncate STATE
+set_state(){ $PY -c "import json,os,sys;p='$STATE';d=json.load(open(p));d.update(json.loads(sys.argv[1]));t=p+'.tmp';json.dump(d,open(t,'w'),ensure_ascii=False);os.replace(t,p)" "$1"; }
 wday(){ $PY -c "import json;print(int(json.load(open('$STATE')).get('warmup_day',0)))"; }
 
 case "$TRANS" in
@@ -78,7 +87,7 @@ print('1' if ok else '0')" 2>/dev/null)
     fi ;;
   S3_post)
     OUT="$HOME/.claude/skills/faceless-money-factory/state/renders"
-    VFYBUD=$(( TIMEOUT / 6 )); GENBUD=$(( TIMEOUT / 2 )); POSTBUD=$(( TIMEOUT / 3 ))   # ★ Dim5: verify+gen+post ≤ TIMEOUT ★
+    VFYBUD=$(( TIMEOUT / 10 )); GENBUD=$(( TIMEOUT * 4 / 10 )); POSTBUD=$(( TIMEOUT * 3 / 10 ))   # ★ FIND-604: sum=0.8×TIMEOUT, headroom for glue/writes so kills are exceptional, not the norm ★
     PR="$HOME/.claude/skills/ig-reels-poster/scripts/post_reel.py"
     if [ "$DRY" = 1 ]; then
       timeout "$GENBUD" bash "$HOME/.claude/skills/faceless-money-factory/scripts/run-daily.sh" "${EARN_VIDEO_SCRIPT:-$OUT/today.txt}" en >/dev/null 2>&1 || true
@@ -88,14 +97,24 @@ print('1' if ok else '0')" 2>/dev/null)
       #   AFTER シェア (post_attempt_date==today, last_post_date unset) and a reel appeared that wasn't in pre_reels,
       #   that post DID land → set last_post_date, DO NOT double-post; AND (b) snapshot pre_reels for THIS attempt. ★
       timeout "$VFYBUD" $PY "$PR" --video /dev/null --caption-file /dev/null --handle "$HANDLE" --tid "$TID" --verify-only >/tmp/ev_vfy.log 2>&1 || true
-      CUR=$($PY -c "import json
-r='[]'
+      # ★ FIND-601: parse VOK (authoritative success) + CUR (reels, compact JSON, no spaces). VOK=1 ONLY when the
+      #   verify_only line had ok==true. A failed/aborted verify (not-logged-in, account-guard None, timeout) → VOK=0. ★
+      read VOK CUR < <($PY -c "import json
+ok='0'; r='[]'
 try:
   for l in open('/tmp/ev_vfy.log'):
     l=l.strip()
-    if l.startswith('{') and 'verify_only' in l: r=json.dumps(json.loads(l).get('reels') or [])
-except: r='[]'
-print(r)" 2>/dev/null)
+    if l.startswith('{') and 'verify_only' in l:
+      d=json.loads(l)
+      if d.get('ok') is True: ok='1'; r=json.dumps(d.get('reels') or [], separators=(',',':'))
+except: ok='0'; r='[]'
+print(ok, r)" 2>/dev/null)
+      if [ "${VOK:-0}" != 1 ]; then
+        # ★ FIND-601: verify-only NOT authoritative → ABORT this wake. NEVER treat a failed read as '0 reels' (that
+        #   would miss reconcile AND overwrite pre_reels=[] → double-post). Leave state untouched; retry next wake. ★
+        R_HANDLE="$HANDLE" R_TRANS="$TRANS" R_DID="verify-only failed/unauthoritative — aborting wake to avoid double-post (retry next wake)" $PY -c "import json,os;print(json.dumps({'slot':'earn/video','handle':os.environ['R_HANDLE'],'transition':os.environ['R_TRANS'],'did':os.environ['R_DID'],'earned_usdc':0.0,'cost_usdc':0.0},ensure_ascii=False))"
+        exit 0
+      fi
       NEWURL=$(STATE="$STATE" TODAY="$TODAY" CUR="$CUR" $PY -c "import json,os
 new=''
 try:
@@ -110,8 +129,8 @@ print(new)" 2>/dev/null)
         set_state "{\"last_post_date\": \"$TODAY\", \"status\": \"warmed\", \"last_post_url\": \"$NEWURL\"}"
         DID="reconciled prior timeout-killed post (already live, no double-post): $NEWURL"
       else
-        # snapshot pre_reels for THIS attempt (so a timeout-kill is reconciled next wake) + mark attempt date
-        CUR="$CUR" $PY -c "import json,os;p='$STATE';d=json.load(open(p));d['pre_reels']=json.loads(os.environ['CUR']);d['post_attempt_date']='$TODAY';json.dump(d,open(p,'w'),ensure_ascii=False)"
+        # snapshot pre_reels for THIS attempt (ATOMIC; so a timeout-kill is reconciled next wake) + mark attempt date
+        CUR="$CUR" $PY -c "import json,os;p='$STATE';d=json.load(open(p));d['pre_reels']=json.loads(os.environ['CUR']);d['post_attempt_date']='$TODAY';t=p+'.tmp';json.dump(d,open(t,'w'),ensure_ascii=False);os.replace(t,p)"
         timeout "$GENBUD" bash "$HOME/.claude/skills/faceless-money-factory/scripts/run-daily.sh" "${EARN_VIDEO_SCRIPT:-$OUT/today.txt}" en >/tmp/ev_gen.log 2>&1 || true
         MP4="$(ls -t "$OUT"/*.mp4 2>/dev/null | head -1)"
         if [ -n "$MP4" ]; then
