@@ -37,9 +37,14 @@ for, and clip culture (DOAC, MFM, Galloway) already trains viewers to watch cuts
    ↓
 [3] TRIM     ffmpeg -t 45  (shorts want ≤60s; SamurAIGPT windows can be 200s+)
    ↓
-[4] CAPTION  scripts/burn_captions.py
+[4] CAPTION  ★ DEFAULT = scripts/burn_captions.py (simple, robust, any source) ★
              EN  → word-by-word karaoke (current word amber, centered)
              JP  → --jp : Gemini 2.5-flash translate per segment + hard-wrap + Hiragino
+             ── Dais 2026-06-29: "just clip it as-is + put captions on it." Sources
+                change over time, so DON'T do per-clip occlusion/hero authoring by
+                default — simple centered captions are the right call. embedded-captions
+                (occlusion, monk factory) = OPTIONAL premium for a hero clip only, NOT
+                the default (brittle ≤2-word-hero matching, needs 1080p, slow render).
    ↓
 [5] (opt)    VOICEVOX 龍星 narration — REQUIRED for any YouTube upload (繰り返しコンテンツ ban)
    ↓
