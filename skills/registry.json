@@ -95,7 +95,7 @@
       "summary": "Launch/manage $ANICCA token (MoltX ~$2.70). args {launch:true,name,symbol}."
     },
     "earn/gig": {
-      "status": "declared",
+      "status": "live",
       "summary": "gig work → USDC (one bounded gig per wake, no human)"
     },
     "earn/clip": {
@@ -107,7 +107,7 @@
       "summary": "affiliate post + commission tracking → USDC"
     },
     "earn/video": {
-      "status": "declared",
+      "status": "live",
       "summary": "faceless short video → monetized/affiliate channel"
     },
     "earn/audit": {
