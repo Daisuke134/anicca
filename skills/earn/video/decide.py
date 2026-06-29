@@ -32,10 +32,12 @@ def decide(state, today):
         return "S1_warmup"
     # ── warmup COMPLETE (warmup_day >= 7) — posting + monetization are gated on the DAY count, not the
     #    status string, so a finished account always posts even if status was never flipped to "warmed". ──
-    # day-7 affiliate link — fires whenever a link is AVAILABLE (env-derived, refreshed each wake) and not set.
-    # No link available ⇒ skip to posting; appears later ⇒ S2 fires next wake (re-evaluable, no permanent trap).
-    if warmup_day >= 7 and not s.get("affiliate_set") and s.get("affiliate_available"):
-        return "S2_affiliate"
+    # ★ FIND-501 fix: DAILY POST has PRIORITY over the affiliate install. Posting must NEVER be starved by a
+    #   failing/looping S2 (e.g. IG normalizes the website value so website_set stays false). So: if today's post
+    #   isn't done yet → S3 first; the affiliate link installs on a later wake (same day, after posting, or next
+    #   day) and retries daily until it sticks. Re-evaluable, never a permanent block on either posting or the link.
     if warmup_day >= 7 and s.get("last_post_date") != today:
-        return "S3_post"          # post daily (builds audience even while the affiliate link is still pending)
+        return "S3_post"          # post daily FIRST (builds audience even while the affiliate link is still pending)
+    if warmup_day >= 7 and not s.get("affiliate_set") and s.get("affiliate_available"):
+        return "S2_affiliate"     # today's post already done → install/retry the affiliate link this wake
     return "S4_record"

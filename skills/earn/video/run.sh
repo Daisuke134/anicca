@@ -78,19 +78,48 @@ print('1' if ok else '0')" 2>/dev/null)
     fi ;;
   S3_post)
     OUT="$HOME/.claude/skills/faceless-money-factory/state/renders"
-    GENBUD=$(( TIMEOUT * 2 / 3 )); POSTBUD=$(( TIMEOUT / 3 ))   # ★ Dim5 fix: split ONE wake budget across both calls ★
-    # generate today's fresh script (agent writes it; here use gen fallback if present) + render via run-daily
-    [ "$DRY" = 1 ] || timeout "$GENBUD" bash "$HOME/.claude/skills/faceless-money-factory/scripts/run-daily.sh" "${EARN_VIDEO_SCRIPT:-$OUT/today.txt}" en >/tmp/ev_gen.log 2>&1 || true
-    MP4="$(ls -t "$OUT"/*.mp4 2>/dev/null | head -1)"
-    if [ -n "$MP4" ]; then
-      printf 'Daily money tips. Follow @%s for more. #moneytok #personalfinance\n' "$HANDLE" > /tmp/ev_cap.txt
-      # ★ FIND-001 fix: S3 fires only after warmup (warmup_day>=7) → account IS warmed → post LIVE (link optional). ★
-      if [ "$DRY" = 1 ]; then
-        set_state "{\"last_post_date\": \"$TODAY\", \"status\": \"warmed\"}"; DID="[DRY] would post reel $(basename "$MP4")"
+    VFYBUD=$(( TIMEOUT / 6 )); GENBUD=$(( TIMEOUT / 2 )); POSTBUD=$(( TIMEOUT / 3 ))   # ★ Dim5: verify+gen+post ≤ TIMEOUT ★
+    PR="$HOME/.claude/skills/ig-reels-poster/scripts/post_reel.py"
+    if [ "$DRY" = 1 ]; then
+      timeout "$GENBUD" bash "$HOME/.claude/skills/faceless-money-factory/scripts/run-daily.sh" "${EARN_VIDEO_SCRIPT:-$OUT/today.txt}" en >/dev/null 2>&1 || true
+      set_state "{\"last_post_date\": \"$TODAY\", \"status\": \"warmed\", \"post_attempt_date\": \"$TODAY\"}"; DID="[DRY] would post reel"
+    else
+      # ★ FIND-502 fix: ONE verify-only call serves BOTH (a) reconcile — if a prior attempt TODAY was timeout-killed
+      #   AFTER シェア (post_attempt_date==today, last_post_date unset) and a reel appeared that wasn't in pre_reels,
+      #   that post DID land → set last_post_date, DO NOT double-post; AND (b) snapshot pre_reels for THIS attempt. ★
+      timeout "$VFYBUD" $PY "$PR" --video /dev/null --caption-file /dev/null --handle "$HANDLE" --tid "$TID" --verify-only >/tmp/ev_vfy.log 2>&1 || true
+      CUR=$($PY -c "import json
+r='[]'
+try:
+  for l in open('/tmp/ev_vfy.log'):
+    l=l.strip()
+    if l.startswith('{') and 'verify_only' in l: r=json.dumps(json.loads(l).get('reels') or [])
+except: r='[]'
+print(r)" 2>/dev/null)
+      NEWURL=$(STATE="$STATE" TODAY="$TODAY" CUR="$CUR" $PY -c "import json,os
+new=''
+try:
+  s=json.load(open(os.environ['STATE']))
+  if s.get('post_attempt_date')==os.environ['TODAY'] and s.get('last_post_date')!=os.environ['TODAY']:
+    pre=set(s.get('pre_reels') or []); cur=json.loads(os.environ['CUR'])
+    fresh=[h for h in cur if h not in pre]
+    if fresh: new='https://www.instagram.com'+fresh[0]
+except: new=''
+print(new)" 2>/dev/null)
+      if [ -n "$NEWURL" ]; then
+        set_state "{\"last_post_date\": \"$TODAY\", \"status\": \"warmed\", \"last_post_url\": \"$NEWURL\"}"
+        DID="reconciled prior timeout-killed post (already live, no double-post): $NEWURL"
       else
-        timeout "$POSTBUD" $PY "$HOME/.claude/skills/ig-reels-poster/scripts/post_reel.py" --video "$MP4" --caption-file /tmp/ev_cap.txt --handle "$HANDLE" --tid "$TID" --live >/tmp/ev_post.log 2>&1 || true
-        # ★ FIND-401 fix: mark posted ONLY when post_reel VERIFIES published==true AND a non-empty post_url. Else leave last_post_date unset → retry; report the REAL failure (no fake-success on a real wake). ★
-        PURL=$($PY -c "import json
+        # snapshot pre_reels for THIS attempt (so a timeout-kill is reconciled next wake) + mark attempt date
+        CUR="$CUR" $PY -c "import json,os;p='$STATE';d=json.load(open(p));d['pre_reels']=json.loads(os.environ['CUR']);d['post_attempt_date']='$TODAY';json.dump(d,open(p,'w'),ensure_ascii=False)"
+        timeout "$GENBUD" bash "$HOME/.claude/skills/faceless-money-factory/scripts/run-daily.sh" "${EARN_VIDEO_SCRIPT:-$OUT/today.txt}" en >/tmp/ev_gen.log 2>&1 || true
+        MP4="$(ls -t "$OUT"/*.mp4 2>/dev/null | head -1)"
+        if [ -n "$MP4" ]; then
+          printf 'Daily money tips. Follow @%s for more. #moneytok #personalfinance\n' "$HANDLE" > /tmp/ev_cap.txt
+          # ★ FIND-001: account is warmed (warmup_day>=7) → post LIVE (affiliate link optional for posting). ★
+          timeout "$POSTBUD" $PY "$PR" --video "$MP4" --caption-file /tmp/ev_cap.txt --handle "$HANDLE" --tid "$TID" --live >/tmp/ev_post.log 2>&1 || true
+          # ★ FIND-401: mark posted ONLY when post_reel VERIFIES published==true AND non-empty post_url; else leave last_post_date unset → retry, report REAL failure. ★
+          PURL=$($PY -c "import json
 u=''
 try:
   for l in open('/tmp/ev_post.log'):
@@ -100,10 +129,11 @@ try:
       if d.get('published') is True and d.get('post_url'): u=d['post_url']
 except: u=''
 print(u)" 2>/dev/null)
-        if [ -n "$PURL" ]; then set_state "{\"last_post_date\": \"$TODAY\", \"status\": \"warmed\", \"last_post_url\": \"$PURL\"}"; DID="posted reel LIVE: $PURL"
-        else set_state '{"status": "warmed"}'; DID="post FAILED/unverified ($(tail -1 /tmp/ev_post.log 2>/dev/null|cut -c1-80)) — last_post_date NOT set, will retry"; fi
+          if [ -n "$PURL" ]; then set_state "{\"last_post_date\": \"$TODAY\", \"status\": \"warmed\", \"last_post_url\": \"$PURL\"}"; DID="posted reel LIVE: $PURL"
+          else set_state '{"status": "warmed"}'; DID="post FAILED/unverified ($(tail -1 /tmp/ev_post.log 2>/dev/null|cut -c1-80)) — last_post_date NOT set, will retry/reconcile next wake"; fi
+        else DID="post skipped: no rendered mp4 ($(tail -1 /tmp/ev_gen.log 2>/dev/null|cut -c1-50))"; fi
       fi
-    else DID="post skipped: no rendered mp4 ($(tail -1 /tmp/ev_gen.log 2>/dev/null|cut -c1-50))"; fi ;;
+    fi ;;
   S4_record)
     # ★ FIND-403 fix: actually CALL record_earn against the payout inflow source. The source file
     #   (INFLOWS=~/.cloak/earn-video-inflows.jsonl) is appended by an external on-chain payout detector;
