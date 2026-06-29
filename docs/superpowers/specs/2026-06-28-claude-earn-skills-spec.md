@@ -337,3 +337,33 @@ DONE: create / warmer / poster(post→verify→delete) / amazon_report / ledger 
 $0 (now, warmup) → first real post day-7 → first clicks/sale (month 1, near $0) → OUTER loop learns
 what converts (month 2-3, the skill rewrites itself toward winners) → +more accounts/niches (scale) →
 cross $200 then $1K via compounding (better skill × more accounts), NOT by posting the same thing forever.
+
+---
+## 2026-06-29 — INTEGRATE affiliate into the ONE Anicca loop (earn/affiliate SLOT) — PLAN (don't build yet)
+Read the runtime (no ecosystem spec file exists yet; read code directly):
+- `~/anicca/runtime/loop/run-skill.mjs`: runSkill(slot,args,wakeId,config) spawns `~/anicca/skills/<slot>/run.sh`
+  with SCRUBBED env (private keys removed), 120s SKILL_TIMEOUT_S, captures stdout. Slot = a run.sh doing
+  ONE bounded unit, printing a structured one-line result, exit 0.
+- `~/anicca/skills/registry.json`: declares slots (status declared→live). Existing earn slots are all
+  ON-CHAIN: yield/hl-trade/x402-sell/token-launch. No earn/affiliate yet.
+- `~/anicca/skills/_shared/lib/ledger.mjs isProfitable()`: GATE-0 = `tx && status==0x1 && net_usdc>0 &&
+  external==true && source≠swap`. ★ Counts ONLY a confirmed on-chain INBOUND USDC transfer from an external payer. ★
+- `identity-guard.mjs` (malice-guard): the earn process must carry NO user-PII env (gmail/gcal/google-login/
+  telegram) or it FAILS CLOSED. run.sh sources wallet key from /opt/anicca.env|~/.openclaw/.env itself.
+
+### Slot steps (when we build, via VCSDD)
+1. `~/anicca/skills/earn/affiliate/run.sh` (bounded unit: publish ONE piece OR measure+record). 2. Source wallet
+from env file. 3. 5-gate + record via lib/record.mjs. 4. registry.json += earn/affiliate. 5. notify dashboard CC.
+
+### ★ 4 TENSIONS that must be resolved BEFORE this is a clean slot (honest) ★
+1. ★ FIAT vs on-chain USDC: Amazon Associates pays JP-bank FIAT, not on-chain USDC. ledger isProfitable
+   requires an on-chain USDC tx — affiliate can NEVER satisfy GATE-0 as-is. Need a fiat→USDC off-ramp→
+   on-chain settle bridge (periodic), OR an ecosystem "fiat-earn" ledger variant. BIGGEST blocker. ★
+2. ★ Browser-direct (CloakBrowser daily-driver) is human-funded-LOCAL only — a headless self-funded AI
+   (BlockRun proxy) has no daily-driver. The slot contract wants the SAME code human+self-funded. Affiliate
+   would be a human-funded-only slot unless a headless IG-posting path exists. ★
+3. ★ malice-guard scrubs Google/IG PII + fails closed; the daily-driver uses Dais's Google session. The
+   affiliate IG (@aishigoto.labo) is Anicca-owned but lives inside Dais's personal browser → need clean
+   own-identity separation (creds in env as own-identity, not Dais PII). ★
+4. ★ 120s SKILL_TIMEOUT_S vs ~6min (generate slides + post). Split the unit (pre-generate in a cron; slot
+   only publishes/measures) OR raise the per-slot timeout. ★
