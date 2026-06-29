@@ -91,6 +91,17 @@ changing the 120s cadence, basescan cross-check (net worth already computed on-c
   of any posted `message`, and (b) no key outside the allowlist is present. The private-key heuristic SHALL NOT scan the
   `log[]` notes for 64-hex (no `tx_hash` field exists in this payload). (fixes F15)
 
+## PHASE 3 RULINGS (impl-adversary FIND-004/005)
+- **FIND-004 (REQ-9 ruling):** the leaderboard MAY rank by net worth (the "who's wealthiest" metric); REQ-9's
+  intent — "the human-funded vs self-funded + env + model distinction is CLEAR" (Dais) — is satisfied by rendering
+  funding/env/brain/model as FIRST-CLASS badges on every card (page.tsx). Ranking metric ≠ the distinction axis;
+  both coexist. No reorder required.
+- **FIND-005 (brain semantics):** `brain` = the DECLARED backend the instance runs on: `claude-p` = rides a Claude
+  subscription; `proxy` = self-pay compute (BlockRun x402, INCLUDING free models like NVIDIA/GLM). So an instance
+  whose `model_live` is `free/glm-4.7` MUST declare `brain='proxy'` (NOT claude-p) — glm-free is the proxy/free path,
+  not a Claude sub. The local genesis instance anicca-a3cdd4 (runs free/glm) = `funding=human, env=local, brain=proxy`.
+  REQ-11's claude-p example applies only to an instance actually running `claude -p`.
+
 ## Acceptance / E2E (objective; fixes F16)
 - Unit (pure `dashboard-core`, no network): REQ-4 (incl. missing/NaN ts, exactly-300s boundary, dead), REQ-5, REQ-6
   (incl. empty fleet → pct 0, negative net), REQ-8 toCardModel full-shape + log ordering/cap, normalizeLogKind. RED first.
