@@ -1,4 +1,4 @@
-# Behavioral Spec — earn-slot-loop-integration (lean) — ITERATION 2 (grounded in index.mjs's REAL path)
+# Behavioral Spec — earn-slot-loop-integration (lean) — ITERATION 3 (prompt.mjs real lines + wake-key + fat-earn fallback)
 
 ## Goal (provable, E2E)
 The ONE runtime loop picks a PER-METHOD earn slot (`earn/gig|clip|affiliate|video|audit`), spawns its
@@ -19,8 +19,13 @@ File `~/anicca/runtime/loop/index.mjs`:
 - **GAP-B — earn env (index.mjs buildSkillEnv, EARN_SLOTS map):** only `{earn,yield,hl_trade,x402_sell,token_launch}`
   receive `EARN_MODE/EARN_STRATEGY/WAKE_ID/EARN_LEDGER`. `earn/gig` falls to the else → gets only `ANICCA_ARGS+WAKE_ID`,
   **no EARN_LEDGER** ⇒ the sub-skill cannot write the earn-ledger line that GAP-A's classify reads. ← MUST fix.
-- **GAP-C — prompt.mjs (≈:69-101,121):** hardcodes the old 5 slots + the line "there is NO generic earn slot",
-  steering the brain away from `earn/*`. The brain must be offered the live `earn/<sub>` slots. ← MUST fix.
+- **GAP-C — prompt.mjs (CORRECTED lines, iter-3):** the brain is steered away from `earn/*` in TWO hardcoded
+  spots: (i) `getToolDefinitions` run_skill DESCRIPTION (prompt.mjs:131-138) literally says "there is NO generic
+  earn slot" + lists only hl_trade/x402_sell/token_launch/yield/cook/self-issue-dev; (ii) `buildUserMessage`
+  (prompt.mjs:163-208, sent EVERY wake via brain.mjs:60) hardcodes `ALL=['yield','hl_trade','x402_sell',
+  'token_launch','cook']` (≈:178) + hardcoded slot bullets, and NEVER reads ctx/activeSkillSlots → it cannot
+  surface `earn/<sub>`. NOTE: `getToolDefinitions`'s `slot` ENUM is already dynamic (it uses the `slots` arg),
+  so the enum is fine; the DESCRIPTION + buildUserMessage menu are the steer. ← MUST fix BOTH.
 - VERIFIED-OK (don't over-correct): enum carries `earn/gig` (prompt:121) → parseToolCall returns it (:41) →
   index.mjs:379 resolves the path; `liveSlotNames` handles slash keys; notFound→'skill_missing' (no crash).
 - Two ledgers: WAKE ledger `state/ledger.jsonl` (every wake) vs EARN ledger (per-source, correlated by WAKE_ID,
@@ -31,7 +36,7 @@ IN: (1) one predicate `isEarnSlot(slot) = EARN_ACTION.includes(slot) || slot.sta
 the classify gate (GAP-A) and buildSkillEnv (GAP-B); for `earn/<sub>`, `EARN_STRATEGY=<sub>`; pass EARN_LEDGER/
 EARN_MODE/WAKE_ID. (2) prompt.mjs surfaces live `earn/<sub>` slots + drop the "no generic earn slot" steer (GAP-C).
 (3) declare `earn/gig|clip|affiliate|video|audit` in registry.json (status declared→live when run.sh exists).
-(4) a STUB `skills/earn/_probe/run.sh` that writes a real EARN-ledger line (WAKE_ID, earn_usdc) + exits 0,
+(4) a STUB `skills/earn/_probe/run.sh` that writes a real EARN-ledger line keyed "wake"=WAKE_ID (NOT wake_id) + earn_usdc + exits 0,
 used to E2E-prove pick→spawn→env→earn-classify→wake-ledger.
 OUT: the 4 CCs' real earn logic (their run.sh + 5-gate + record-earn live in their slot, their own VCSDD).
 
@@ -41,11 +46,20 @@ OUT: the 4 CCs' real earn logic (their run.sh + 5-gate + record-earn live in the
 - **REQ-2 (classify, GAP-A):** the index.mjs:318 gate SHALL use `isEarnSlot(slot)` so a successful `earn/<sub>`
   wake runs `classifyEarnResult` against the earn-ledger (profit only from the ledger line, never exit-0 alone).
 - **REQ-3 (env, GAP-B):** buildSkillEnv SHALL give every `isEarnSlot` slot `EARN_MODE`, `WAKE_ID`, `EARN_LEDGER`
-  (when configured), and `EARN_STRATEGY` = the legacy map value for action slots, else `<sub>` for `earn/<sub>`.
+  (when configured), and `EARN_STRATEGY`. ★ EARN_STRATEGY MUST PRESERVE the existing fallback (index.mjs:446):
+  for the fat `earn` slot it stays `args.strategy || 'yield'` (NOT null/empty); for the legacy action slots it
+  is the map value (yield→yield, hl_trade→hl, x402_sell→x402, token_launch→token); for `earn/<sub>` it is `<sub>`.
+  (NEW-003: do not regress the fat-earn fallback chain.)
 - **REQ-4 (path, unchanged):** `earn/<sub>` SHALL resolve to `skills/earn/<sub>/run.sh` (already true via the
   else branch); `earn` and the 4 action slots SHALL still map to the fat `skills/earn/run.sh`. Regression-tested.
-- **REQ-5 (prompt, GAP-C):** the brain menu SHALL include every `status:live` slot whose name starts `earn/`
-  (with its summary), and SHALL NOT contain copy that denies a generic/earn slot exists.
+  ★ Single-level invariant (FIND-007): earn slots are ONE level (`earn/<sub>`); `replace('/',sep)` replaces only
+  the first slash, so a deeper `earn/a/b` would mis-resolve — the registry SHALL declare only one-level earn slots
+  and the spec pins this (no multi-segment earn slots).
+- **REQ-5 (prompt, GAP-C — BOTH spots):** (a) `getToolDefinitions` run_skill DESCRIPTION (prompt.mjs:131-138)
+  SHALL NOT deny a generic/earn slot and SHALL note `earn/<sub>` slots are valid; (b) `buildUserMessage`
+  (prompt.mjs:163-208) SHALL build its slot menu (the `ALL` list ~:178 + the bullet lines) DYNAMICALLY from the
+  live slots in `ctx` (the loop already loads activeSkillSlots — pass them into ctx), so live `earn/<sub>` slots
+  appear every wake. The dynamic menu MUST still include the legacy action slots. (NEW-001)
 - **REQ-6 (registry):** registry.json SHALL declare `earn/gig`, `earn/clip`, `earn/affiliate`, `earn/video`,
   `earn/audit` (summaries; status declared until run.sh exists). A declared slot with no run.sh ⇒ 'skill_missing'
   (not crash) if forced.
@@ -56,12 +70,15 @@ OUT: the 4 CCs' real earn logic (their run.sh + 5-gate + record-earn live in the
 ## Acceptance / E2E (objective)
 - Unit: isEarnSlot (REQ-1, incl earn/gig true, cook false); EARN_STRATEGY mapping (yield→yield, earn/gig→gig);
   path resolution (earn/gig→skills/earn/gig/run.sh; yield→skills/earn/run.sh) (REQ-4).
-- Integration: with a stub `earn/_probe/run.sh` that writes an earn-ledger line {wake_id, earn_usdc:0.01} +
-  exit 0 → buildSkillEnv gave it EARN_LEDGER + EARN_STRATEGY=_probe; classifyEarnResult reads the line.
-- **E2E (mine, NO-MOCK): run the REAL loop one wake with the brain stubbed to emit a tool-call for `earn/_probe`
-  (status:live) in a tmp ANICCA_HOME; assert (a) skills/earn/_probe/run.sh was spawned, (b) it received EARN_LEDGER
-  + WAKE_ID, (c) the wake ledger line has slot=earn/_probe and (because the earn-ledger line exists) the earn
-  classification ran, (d) no crash.** This proves a per-method earn slot flows pick→spawn→env→classify→record.
+- Integration: with a stub `earn/_probe/run.sh` that writes an earn-ledger line **`{"wake": <WAKE_ID>, "earn_usdc": 0.01}`**
+  (key MUST be `wake` — earn-detect.mjs:40 matches `l.wake === wakeId`, NOT wake_id) to `$EARN_LEDGER` + exit 0 →
+  buildSkillEnv gave it EARN_LEDGER + EARN_STRATEGY=_probe + WAKE_ID; classifyEarnResult finds the line.
+- **E2E (mine, NO-MOCK): run the REAL loop one wake, brain stubbed to emit run_skill({slot:'earn/_probe'})
+  (status:live), in a tmp ANICCA_HOME with EARN_LEDGER set; the stub writes its `{"wake":WAKE_ID,"earn_usdc":..}`
+  line to `$EARN_LEDGER`. Assert: (a) skills/earn/_probe/run.sh was spawned; (b) ★the earn-ledger line keyed by
+  WAKE_ID exists at $EARN_LEDGER — which is ONLY possible if the child received EARN_LEDGER (GAP-B), so this IS the
+  EARN_LEDGER-reached-child observation★; (c) the wake ledger line has slot=earn/_probe; (d) no crash.**
+  Anti-tautology: a non-earn slot gets NO EARN_LEDGER → no such line → the assertion fails closed if GAP-A/B regress.
 
 ## Done = isEarnSlot wired into classify+env (GAP-A/B), prompt surfaces earn/* (GAP-C), registry declares the 5,
 ## the stub flows end-to-end through the REAL loop (earn env + classify + ledger), adversary PASS + my no-mock run.
