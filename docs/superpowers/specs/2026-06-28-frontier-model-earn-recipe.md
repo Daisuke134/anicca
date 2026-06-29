@@ -82,7 +82,7 @@ USDC on Base, gets a curated research digest. My cost = $0 (Wikipedia+HN+Jina) �
 | A3d-1 | FinChip Chip PUBLISHED on-chain ✅ — fc_key self-generated + registered (tx 0x9d8d1a1e), chip minted (contract 0xb45CFe0B08788f0c9bC3E75A453cFA7B0Df25212, slug anicca-research_finchip, Base, ERC-1155, 97.5% creator). Fully autonomous, no browser. Skill = `skills/earn/finchip-publish/SKILL.md`. | ✅ |
 | A3d | Bazaar/x402scan surface the resource — checked post-seed: CDP Bazaar (first 100) = not yet, x402scan tx page = 404. Both are INDEXING-LAGGED right after the first tx (minutes–hours) + a possible v1(x402-express)↔v2(CDP Bazaar) scheme nuance. Endpoint is 24/7 live so indexers will catch up. Accelerators: (a) recheck Bazaar/x402scan after lag, (b) PR endpoint to awesome-x402 (manual surface), (c) direct outreach to x402 agent devs. | 🔜 in progress |
 | A4 | first REAL EXTERNAL buyer settle (realised_earn > 0) | ⬜ demand-gated |
-| B1 | board-poller skill | ⬜ |
+| B1 | board-poller skill | ✅ built (surfaces real BountyBook bounties); BountyBook EARN blocked — see findings 06-29 |
 | B2 | audit-bounty skill (Immunefi live) | ⬜ |
 | C1 | embed self-verify in every skill | ⬜ |
 | C2 | Sonnet daily handoff (claude -p + launchd/schedule; never an incomplete cron) | ⬜ |
@@ -91,6 +91,17 @@ USDC on Base, gets a curated research digest. My cost = $0 (Wikipedia+HN+Jina) �
 | D2 | per-skill credential gating + one-command install (generic) | ⬜ |
 | E1 | spawn self-funded child (surplus → free-model wallet-only child) → feeds UBI pool | ⬜ |
 | F1 | README on main ✅ ; aniccaai.com landing reflect thesis | 🟡 |
+
+## FINDINGS 2026-06-29 — BountyBook earn root cause (verified, not assumed)
+- BountyBook DOES pay (leaderboard: top agent $96.5/14 jobs; totalPaidOut $159.5; success_rate ~28%). So $0 = MY submit problem, not the platform.
+- My agent profile (0x810f) = earned 0 / completed 0 / **failed 0** → submissions never even register as attempts.
+- **inline outputData submit**: accepted ("Output received. Verification in progress.") then reverts job to status=open, executor=null in ~24s. profile stays 0/0/0. No error, no jobs_failed++.
+- **outputCID submit**: SAME revert. Root cause found = the CID was unretrievable publicly.
+  - Lighthouse.storage: API key obtained FULLY AUTONOMOUSLY via wallet signature (GET /api/auth/get_message → sign with founder key → POST /api/auth/create_api_key) — no browser/email. ✅ key works.
+  - BUT Lighthouse free-tier upload is NOT publicly retrievable: `gateway.lighthouse.storage/ipfs/<cid>` = "Payment required"; public gateways (ipfs.io, dweb.link) = 504 timeout. → the oracle can't fetch the CID → verification fails → revert.
+- **oracle gives ZERO feedback** (no error message, no jobs_failed) → fundamentally hard to VCSDD-verify (no verdict signal).
+- DECISION: get a publicly-retrievable CID via **Pinata** (free tier serves public IPFS; needs one autonomous browser signup w/ AgentMail email) → ONE decisive BountyBook test. If a retrievable CID STILL reverts → BountyBook oracle unworkable for us → pivot to the verifiable x402-buyer path (A3d/A4). kubo not installed; Storacha/web3.storage DNS-dead on this host.
+- Autonomous IPFS key via wallet-sig (Lighthouse pattern) is a reusable building block even though its free retrieval is paywalled.
 
 ## Done = the recipe runs on Claude end-to-end with realised_earn > subscription, self-verified, then the
 ## same recipe boots on a second model with only the `--model` swap. That proves "any frontier model self-earns."
