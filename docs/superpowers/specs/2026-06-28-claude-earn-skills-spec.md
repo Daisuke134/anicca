@@ -526,3 +526,25 @@ Drove the daily-driver (CDP) end-to-end, NO mock, NO human:
 → Promote.fun is a CONFIRMED no-human + USDC-Solana + real-demand rail. Account = aniccaclips (creds in
    ~/.cloak/promotefun-anicca.json). Remaining onboard: link a social account + confirm USDC-Solana payout
    wallet bind, then clip a campaign → post → per-view USDC. (Keep clipping + slideshow SEPARATE for now.)
+
+---
+## 2026-06-29 — Promote.fun onboard state + EXACT remaining steps (HANDOFF, resumable)
+PROVEN E2E so far (no-human, no-mock):
+- ✅ account `aniccaclips` created + logged in (creds ~/.cloak/promotefun-anicca.json). gog OTP needs GOG_KEYRING_PASSWORD.
+- ✅ link flow = pick platform (Instagram/TikTok/YouTube/X) → enter username → bio-CODE verification (NO OAuth,
+  same pattern as ClipAffiliates) → put code in the IG bio → verify. (no-human-capable.)
+- ✅ real demand: CROCS $17,500@$2.50/1K, BIA $3,750, COPA90 $4,000, BUMBLE $4,480, IDA CORR @$2.00.
+
+REMAINING (continue here; brittle React modal — drive agentically, screenshot each step, getBoundingClientRect CSS-px):
+1. Connect Account → Instagram → username "aishigoto.labo" → **Next** (the real modal Next button, NOT the
+   dashboard banner) → copy the `promote-XXXX` bio code → set it in @aishigoto.labo IG bio (ig profile-edit)
+   → Verify. (Note: @aishigoto.labo is warming day-1 + AI-niche; a dedicated clip account may be cleaner —
+   Dais OK'd using the existing IG.)
+2. Confirm payout = USDC-Solana wallet xxKC33TYJ2czjGQAADrvDCLjF6pRvtHX125fCwP5u9H (settings/withdraw).
+3. Pick an active campaign → open it → get the SOURCE video URL + clip specs (15-45s vertical).
+4. Make a clip with `earn-clip-rewards` (yt-dlp source → SamurAIGPT/ffmpeg 9:16 15-45s + captions).
+5. Post the clip to IG (reuse ig-reels-poster --live, post→verify; per-view tracked by Promote).
+6. Submit the post URL to the campaign on Promote.fun.
+7. MEASURE views → USDC accrues → withdraw on-chain → record-earn (ledger).
+8. LOOP: wrap 3-7 in claude -p (Sonnet) on a cloud box (launchd/cron); OUTER self-improve (#6).
+Keep clipping (Promote.fun) and slideshow (@aishigoto.labo) SEPARATE for now.
