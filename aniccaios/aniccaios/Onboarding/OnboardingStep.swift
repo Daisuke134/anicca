@@ -10,9 +10,8 @@ enum OnboardingStep: Int, CaseIterable, Codable {
     case processing = 5
     case planReveal = 6
     case comparison = 7
-    case appDemo = 8
-    case ratingPrompt = 9
-    case notifications = 10
+    case ratingPrompt = 8
+    case notifications = 9
 }
 
 enum PaywallStep: Int, CaseIterable, Codable {
@@ -40,7 +39,7 @@ extension OnboardingStep {
         case 12: return .planReveal
         case 13: return .comparison       // valueTimeline → skip to comparison
         case 14: return .comparison
-        case 15: return .appDemo
+        case 15: return .ratingPrompt     // appDemo removed → skip to ratingPrompt
         case 16: return .ratingPrompt     // valueDelivery → skip to ratingPrompt
         case 17: return .ratingPrompt
         case 18: return .notifications
@@ -60,7 +59,6 @@ extension OnboardingStep {
         case .processing: return "processing"
         case .planReveal: return "plan_reveal"
         case .comparison: return "comparison"
-        case .appDemo: return "app_demo"
         case .ratingPrompt: return "rating_prompt"
         case .notifications: return "notifications"
         }

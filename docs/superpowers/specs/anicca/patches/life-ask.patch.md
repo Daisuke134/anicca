@@ -39,14 +39,15 @@ So `?action=question` on Netlify becomes **GCal-read-only**: it returns the list
 | G1 | Send via `gog gmail send` (AGENTMAIL daily-limited) | `handleQuestion` sends via AgentMail INSIDE Netlify | gog can't run on Netlify → send must move to local `ask/ask.js`. | life-ask.js:93-108; renraku.py:58-65 |
 | G2 | Inbound reply → gcal `where` update | `handleReply` parses webhook, patches `location` | Exists + wired (webhook `ep_3FBcXGwrcP575GjLm46jCMj2TYr`); only `location`, never duration. | life-ask.js:158-219 |
 | G3 | Detect/parse **unknown duration** ("所要") | none | `needsLocationAsk` only checks empty `location`; no duration. | ask-logic.js:31-41 |
-| G4 | Env keys present | `.env` has `GOG_ACCOUNT`,`GOG_KEYRING_PASSWORD`,`GOOGLE_LOGIN_EMAIL`,`AGENTMAIL_API_KEY`,`AGENTMAIL_INBOX_ID` | **MISSING (Netlify side, for GCal)**: `GCAL_ID`, `GOOGLE_REFRESH_TOKEN`/`GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` (or `GOOGLE_CALENDAR_TOKEN`), and `LIFE_ASK_INBOX_ID` (only if AgentMail kept). Without these the round-trip is NOT executable end-to-end. | grep `~/.openclaw/.env`; gcal-token.js:27-37 |
+| G4 | GCal env present **in the Netlify lambda** (every action calls `getAccessToken()` first → absent = 500 `auth_error`) | **CONFIRMED SET** via `netlify env:list --json` (linked site `d67537f0-21bd-477e-ac1a-323f7ec6d5cd`): `GCAL_ID=primary`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REFRESH_TOKEN` ALL present. | NO GAP — satisfied prereq, not a blocker. (Local `~/.openclaw/.env` does NOT need these; the Netlify lambda reads its own env. The local sender needs only `GOG_*`, which are present.) | `netlify env:list --json` (run in apps/landing); gcal-token.js:27-37; life-ask.js:240-245 |
 | G5 | DURATION_RE cross-module reference | — | If guard uses `DURATION_RE` in `handleReply` but it's only `const` in `ask-logic.js`, that's a ReferenceError. Must export it (or inline). | (review point 3) |
+| G6 | Netlify schedule removed (no dead lambda) | `netlify.toml` lines 26-27 declare `[functions."life-ask"]  schedule = "0 21 * * *"` + stale comment (17-25) describing AgentMail-send-from-Netlify | **STALE**: after the architecture change `question` is GCal-read-only and sends NO mail. A scheduled Netlify invoke = a daily lambda emailing nothing. The local cron `anicca-life-ask` (jobs.json:5710/5722) is the SOLE driver. Remove the stanza + fix the comment. | netlify.toml:17-27; jobs.json:5710,5722 |
 
 ---
 
 ## Diff
 
-Three parts: **(P1)** duration logic in `ask-logic.js` (exports DURATION_RE — fixes G5); **(P2)** Netlify `life-ask.js` → GCal-read-only `question` + new `mark-asked` action + duration in `reply`; **(P3)** real rewrite of local `ask/ask.js` to do the `gog` send.
+Four parts: **(P1)** duration logic in `ask-logic.js` (exports DURATION_RE — fixes G5); **(P2)** Netlify `life-ask.js` → GCal-read-only `question` + new `mark-asked` action + duration in `reply`; **(P3)** real rewrite of local `ask/ask.js` to do the `gog` send; **(P4)** remove the orphaned Netlify schedule + stale comment in `netlify.toml` (fixes G6).
 
 ### P1 — `apps/landing/netlify/functions/_lib/ask-logic.js`
 
@@ -247,9 +248,11 @@ Remove the AgentMail `sendEmail` from `question`. `question` now RETURNS the eve
 +  // Parse location AND/OR duration.
 +  let location = parseLocationFromReply(replyBody);
 +  const durationMinutes = parseDurationFromReply(replyBody);
-+  // Duration-only guard (review point 4): if the only content is a duration
-+  // like "所要 90分", don't write it as a bogus location.
-+  if (location && DURATION_RE.test(location)) location = null;
++  // Duration-only guard (review point 4): if the candidate "location" is really
++  // a duration string, don't write it as a bogus location. Catches both the
++  // prefixed form ("所要 90分", via DURATION_RE) AND a bare line ("60分" / "60 min").
++  const BARE_DURATION_RE = /^\s*\d{1,3}\s*(?:分|min)\s*$/i;
++  if (location && (DURATION_RE.test(location) || BARE_DURATION_RE.test(location))) location = null;
 +  if (!location && !durationMinutes) {
 +    return { statusCode: 422, body: "no_location_or_duration_in_reply" };
 +  }
@@ -353,14 +356,45 @@ Replace the pure HTTP shim with: (1) POST Netlify `?action=question` to GET the 
 
 (Keep the flat shim `~/anicca/skills/life/ask.js` as-is — it still `require("./ask/ask")`.)
 
-### Env to add (G4) — `~/.openclaw/.env` (names only; values out of scope)
+### P4 — `apps/landing/netlify.toml` (remove orphaned schedule + stale comment, G6)
+
+The local cron `anicca-life-ask` (jobs.json id `891b90bb…`, `0 21 * * *`) is now the SOLE driver: it runs `ask/ask.js`, which POSTs Netlify for GCal read and sends mail via `gog` locally. A Netlify-side schedule would invoke the lambda with the default `question` action, which is GCal-read-only and sends NOTHING → a dead daily lambda. Delete the stanza and rewrite the comment.
+
+```diff
+@@ apps/landing/netlify.toml  (lines 17-27)
+-# B-ask scheduled trigger — runs daily at 06:00 JST (21:00 UTC).
+-# Scans today's GCal events for missing location, emails Dais via the DEDICATED
+-# B-ask inbox (LIFE_ASK_INBOX_ID = anicca-life-ask@agentmail.to) to avoid the
+-# daily 429 quota contention with high-frequency "Anicca wake" report emails.
+-# The action=reply path is driven by AgentMail webhook ep_3FBcXGwrcP575GjLm46jCMj2TYr
+-# (client_id b-ask-reply-webhook) which POSTs to this function when Dais replies.
+-# Required env: GOOGLE_REFRESH_TOKEN, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
+-#               AGENTMAIL_API_KEY, LIFE_ASK_INBOX_ID (= anicca-life-ask@agentmail.to)
+-# Optional env: DAIS_EMAIL (default: keiodaisuke@gmail.com), GCAL_ID
+-[functions."life-ask"]
+-  schedule = "0 21 * * *"
++# B-ask (life-ask) is NOT scheduled by Netlify. The local cron `anicca-life-ask`
++# (~/.openclaw/cron/jobs.json, 0 21 * * *) drives it: it runs ask/ask.js which
++# POSTs this function for GCal read (action=question) + flag set (action=mark-asked),
++# and sends the question email locally via `gog gmail send` (no Netlify-side mail).
++# This function therefore exposes ONLY on-demand actions (question / mark-asked / reply);
++# action=reply is invoked by the AgentMail inbound webhook ep_3FBcXGwrcP575GjLm46jCMj2TYr.
++# Required Netlify env (read + patch GCal): GOOGLE_REFRESH_TOKEN, GOOGLE_CLIENT_ID,
++#   GOOGLE_CLIENT_SECRET (or GOOGLE_CALENDAR_TOKEN), GCAL_ID — all CONFIRMED set.
+```
+
+### Env status (G4) — CONFIRMED, no change required
 
 ```
-# GCal (Netlify side — required for read + patch):
-GCAL_ID=primary
-GOOGLE_REFRESH_TOKEN=     # + GOOGLE_CLIENT_ID + GOOGLE_CLIENT_SECRET   (or GOOGLE_CALENDAR_TOKEN)
-# Mail (local side — already present): GOG_ACCOUNT, GOG_KEYRING_PASSWORD, GOOGLE_LOGIN_EMAIL  ✓
-# AgentMail no longer needed for SEND; LIFE_ASK_INBOX_ID only if reply webhook intake kept.
+# Netlify lambda (read + patch GCal) — CONFIRMED set via `netlify env:list --json`:
+GCAL_ID=primary               ✓
+GOOGLE_CLIENT_ID=...           ✓
+GOOGLE_CLIENT_SECRET=...       ✓
+GOOGLE_REFRESH_TOKEN=...       ✓
+# Local sender (~/.openclaw/.env) — CONFIRMED present:
+GOG_ACCOUNT, GOG_KEYRING_PASSWORD, GOOGLE_LOGIN_EMAIL  ✓
+# AgentMail NOT needed for SEND anymore. LIFE_ASK_INBOX_ID only if the reply
+# webhook intake path is kept (see open question 2).
 ```
 
 ---
@@ -374,9 +408,10 @@ set -a; . ~/.openclaw/.env; set +a
 ACC="${GOG_ACCOUNT:-${GOOGLE_LOGIN_EMAIL:-keiodaisuke@gmail.com}}"
 
 # 1. Throwaway timed event, NO location, end==start (duration unknown).
+#    gog 0.17.0: `gog calendar create <calendarId>` (calId is a POSITIONAL arg).
 START=$(date -u -v+2H +%Y-%m-%dT%H:%M:%S 2>/dev/null || date -u -d '+2 hours' +%Y-%m-%dT%H:%M:%S)
-EV_ID=$(GOG_KEYRING_PASSWORD="$GOG_KEYRING_PASSWORD" /opt/homebrew/bin/gog calendar events create \
-  --account "$ACC" --calendar primary \
+EV_ID=$(GOG_KEYRING_PASSWORD="$GOG_KEYRING_PASSWORD" /opt/homebrew/bin/gog calendar create primary \
+  --account "$ACC" \
   --summary "[TEST-ASK] throwaway $(date +%s)" \
   --start "${START}Z" --end "${START}Z" --json \
   | python3 -c 'import json,sys;print(json.load(sys.stdin).get("id",""))')
@@ -406,16 +441,22 @@ node $HOME/anicca/skills/life/ask/ask.js --action reply --body \
   "$(python3 -c 'import json;print(json.dumps({"message":{"subject":"Re: [Ask] 場所と所要時間を教えて","body":"渋谷ヒカリエ 8F\n所要 90分\n---\nEvent ID: '"$EV_ID"'"}}))')"
 
 # 6. VERIFY gcal where + end populated.
-GOG_KEYRING_PASSWORD="$GOG_KEYRING_PASSWORD" /opt/homebrew/bin/gog calendar events get \
-  --account "$ACC" --calendar primary "$EV_ID" --json \
+#    gog 0.17.0: `gog calendar event <calendarId> <eventId>` (get; calId+eventId positional).
+GOG_KEYRING_PASSWORD="$GOG_KEYRING_PASSWORD" /opt/homebrew/bin/gog calendar event primary "$EV_ID" \
+  --account "$ACC" --json \
   | python3 -c 'import json,sys;e=json.load(sys.stdin);print("location=",e.get("location"));print("end=",e.get("end"))'
 
 # 7. Duration-only reply guard check (must NOT set location to "所要 60分").
-#    (Re-create a throwaway, reply with only "所要 60分", verify location stays empty, end set.)
+#    Re-create a throwaway, simulate a reply whose ONLY content is a duration,
+#    then verify location stays EMPTY and end is set.
+node $HOME/anicca/skills/life/ask/ask.js --action reply --body \
+  "$(python3 -c 'import json;print(json.dumps({"message":{"subject":"Re: [Ask] 所要時間を教えて","body":"所要 60分\n---\nEvent ID: '"$EV_ID"'"}}))')"
+# Expect: handler returns location:null, durationMinutes:60 → step-6 re-check shows location empty.
 
 # 8. CLEANUP.
-GOG_KEYRING_PASSWORD="$GOG_KEYRING_PASSWORD" /opt/homebrew/bin/gog calendar events delete \
-  --account "$ACC" --calendar primary "$EV_ID"
+#    gog 0.17.0: `gog calendar delete <calendarId> <eventId>`.
+GOG_KEYRING_PASSWORD="$GOG_KEYRING_PASSWORD" /opt/homebrew/bin/gog calendar delete primary "$EV_ID" \
+  --account "$ACC"
 ```
 
 Real round-trip (optional, exercises the live AgentMail webhook):
@@ -440,7 +481,10 @@ Real round-trip (optional, exercises the live AgentMail webhook):
 | A6 | Duration-only reply NOT written as a bogus location. | Step 7: `location` stays empty, `end` set. (Guard uses exported `DURATION_RE`.) |
 | A7 | No real data disturbed. | Only `[TEST-ASK]` throwaway touched; deleted step 8. |
 
+**Resolved (verified this pass)**
+- `gog` 0.17.0 verbs CONFIRMED via `gog calendar --help`: `calendar create <calId>`, `calendar event <calId> <eventId>` (get), `calendar delete <calId> <eventId>`, `calendar update <calId> <eventId>` — calId/eventId are POSITIONAL (NOT `calendar events create/get/delete`, NOT `--calendar`). Commands steps 1/6/8 fixed.
+- Netlify GCal env CONFIRMED set (`netlify env:list --json`): `GCAL_ID`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REFRESH_TOKEN`. `getAccessToken()` will authenticate → no 500. (G4 satisfied.)
+
 **Open questions**
-1. Confirm exact `gog` subcommand names on this build (0.17.0): used `calendar events create|get|delete` and `gmail search|send`. Verify `events create/get/delete` flag spelling before apply (renraku.py only exercised `gmail send` + `calendar events list`).
-2. Confirm the AgentMail inbound webhook (`ep_3FBcXGwrcP575GjLm46jCMj2TYr`) is still live, OR move reply intake to a local `gog gmail search` poll on the Mac-mini (would drop AgentMail from B-ask entirely — simpler, no quota anywhere).
-3. Netlify GCal env (`GCAL_ID`, `GOOGLE_REFRESH_TOKEN`/`CLIENT_ID`/`SECRET` or `GOOGLE_CALENDAR_TOKEN`) must be set in the Netlify dashboard for `question`/`mark-asked`/`reply` to authenticate; not present in local `.env`.
+1. Confirm the AgentMail inbound webhook (`ep_3FBcXGwrcP575GjLm46jCMj2TYr`) is still live and registered against the genesis inbox, OR move reply intake to a local `gog gmail search` poll on the Mac-mini (drops AgentMail from B-ask entirely — no quota anywhere, single runtime). Recommended: the poll, for symmetry with the local-send architecture.
+2. `gog gmail send --json` exact id field: code reads `j.id || j.messageId` (best-effort); the messageId is only used as a label in `mark-asked` and is non-load-bearing, so an empty string is tolerated.

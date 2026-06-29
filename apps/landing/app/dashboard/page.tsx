@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import snapshot from "./_snapshot.json";
+import { deriveStatus } from "../../lib/dashboard-core.mjs"; // display-staleness (>300s since heartbeat ⇒ stale)
 
 type LogLine = { ts: number; kind?: string; slot?: string | null; model?: string | null; note?: string };
 type Breakdown = { liquid?: number; aave?: number; morpho?: number; moonwell?: number };
@@ -20,6 +21,9 @@ type InstanceRow = {
   wallet_addr?: string | null;
   breakdown?: Breakdown;
   log?: LogLine[];
+  funding?: string | null;   // 'human' | 'self' — funded by a human's compute / its own wallet
+  env?: string | null;       // 'local' | 'cloud'
+  brain?: string | null;     // 'claude-p' (Claude sub) | 'proxy' (self-pay x402)
 };
 
 type DashboardData = {
@@ -110,12 +114,21 @@ export default function DashboardPage() {
                 className="group flex items-center gap-5 rounded-card border border-border bg-white/40 px-5 py-4 transition-all hover:border-gold hover:bg-white/70"
               >
                 <span className="font-mono text-lg text-muted-foreground/60 w-7">#{i + 1}</span>
-                <span className="h-2 w-2 rounded-full" style={{ background: row.status === "alive" ? "#3a9d6e" : row.status === "critical" ? "#e0a04d" : "#b3b3b3", boxShadow: row.status === "alive" ? "0 0 8px rgba(58,157,110,.6)" : "none" }} />
+                {(() => { const ds = deriveStatus(row, Math.floor(Date.now() / 1000)); return (
+                <span title={ds} className="h-2 w-2 rounded-full" style={{ background: ds === "alive" ? "#3a9d6e" : ds === "critical" ? "#e0a04d" : "#b3b3b3", boxShadow: ds === "alive" ? "0 0 8px rgba(58,157,110,.6)" : "none" }} />
+                ); })()}
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-[15px] font-medium">{row.host}</div>
                   <div className="font-mono text-[11px] text-muted-foreground">
                     {row.geo ?? "—"} · {humanModel(row.model_live, row.model_tier)} · {row.id.slice(0, 6)}…{row.id.slice(-4)}
                   </div>
+                  {(row.funding || row.env || row.brain) && (
+                    <div className="mt-1.5 flex flex-wrap gap-1.5">
+                      {row.funding && <Badge text={row.funding === "self" ? "self-funded" : "human-funded"} tone={row.funding === "self" ? "green" : "blue"} />}
+                      {row.env && <Badge text={row.env} />}
+                      {row.brain && <Badge text={row.brain} />}
+                    </div>
+                  )}
                 </div>
                 <div className="text-right">
                   <div className="font-mono text-lg font-medium tracking-tight">${row.net_worth_usd.toFixed(2)}</div>
@@ -132,6 +145,13 @@ export default function DashboardPage() {
         </p>
       </div>
     </main>
+  );
+}
+
+function Badge({ text, tone }: { text: string; tone?: "green" | "blue" }) {
+  const color = tone === "green" ? "text-[#3a9d6e] border-[#3a9d6e]/40" : tone === "blue" ? "text-[#4a7bd0] border-[#4a7bd0]/40" : "text-muted-foreground border-border";
+  return (
+    <span className={`font-mono text-[9px] uppercase tracking-[0.12em] rounded border px-1.5 py-0.5 ${color}`}>{text}</span>
   );
 }
 

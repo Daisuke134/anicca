@@ -1,5 +1,6 @@
 import SwiftUI
 import RevenueCat
+import StoreKit
 
 /// Variant B paywall — CRO optimized design for RevenueCat Experiments A/B
 /// Offering swap is handled server-side by RevenueCat; this view always renders the `current` offering.
@@ -15,11 +16,18 @@ struct PaywallVariantBView: View {
     @State private var hasTracked = false
     @State private var hasShownRetention = false
     @State private var showRetention = false
+    @State private var showReloadAfterTimeout = false
+    @State private var storefrontCountry = ""
 
     private var offering: Offering? { appState.cachedOffering }
     private var packages: [Package] { offering?.availablePackages ?? [] }
     private var yearlyPackage: Package? { packages.first { $0.packageType == .annual } }
     private var monthlyPackage: Package? { packages.first { $0.packageType == .monthly } }
+    // 2026-06-23 Dais: 買い切りは日本(JPストア)のみ表示する実験。US等では nil。
+    private var lifetimePackage: Package? {
+        guard storefrontCountry == "JPN" else { return nil }
+        return packages.first { $0.packageType == .lifetime }
+    }
 
     private var savePct: Int? {
         guard let yearly = yearlyPackage, let monthly = monthlyPackage else { return nil }
@@ -40,15 +48,8 @@ struct PaywallVariantBView: View {
         return formatter.string(from: NSNumber(value: price))
     }
 
-    private var hasTrialEligibility: Bool {
-        // 2026-05-22 Dais directive: free trial back ON. annual.b and monthly.b ($9.99/mo)
-        // both have a 3-day FREE_TRIAL configured in App Store Connect (verified across all
-        // 174 territories). We don't gate on storeProduct.introductoryDiscount because StoreKit
-        // on simulator (no .storekit config / sandbox sign-in) returns nil for it, so we trust
-        // the package type and default to the trial side when no package is selected yet.
-        guard let pkg = selectedPackage else { return true }
-        return pkg.packageType == .annual || pkg.packageType == .monthly
-    }
+    // 2026-06-23 Dais: 無料トライアル全廃（ASC からも introductory offer を削除）。
+    private var hasTrialEligibility: Bool { false }
 
     var body: some View {
         VStack(spacing: 12) {
@@ -56,8 +57,25 @@ struct PaywallVariantBView: View {
             featureList
 
             if packages.isEmpty {
-                ProgressView()
-                    .padding(.top, 40)
+                VStack(spacing: 16) {
+                    ProgressView()
+                    if showReloadAfterTimeout {
+                        Text(String(localized: "paywall_b_load_failed"))
+                            .font(.system(size: 14))
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 24)
+                        Button(String(localized: "paywall_b_retry")) {
+                            Task { await SubscriptionManager.shared.refreshOfferings() }
+                        }
+                        .font(.system(size: 16, weight: .semibold))
+                        Button(String(localized: "paywall_plan_restore")) { restorePurchases() }
+                            .font(.system(size: 14))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .padding(.top, 40)
+                .onAppear { scheduleReloadTimeout() }
                 Spacer()
             } else {
                 planCards
@@ -74,6 +92,9 @@ struct PaywallVariantBView: View {
             if selectedPackage == nil {
                 selectedPackage = yearlyPackage ?? monthlyPackage
             }
+        }
+        .task {
+            storefrontCountry = await Storefront.current?.countryCode ?? ""
         }
         .sheet(isPresented: $showRetention) {
             RetentionOfferSheet { customerInfo in
@@ -105,9 +126,7 @@ struct PaywallVariantBView: View {
     private var featureList: some View {
         VStack(alignment: .leading, spacing: 8) {
             featureRow(String(localized: "paywall_b_feature_nudges"))
-            featureRow(String(localized: "paywall_b_feature_ai"))
             featureRow(String(localized: "paywall_b_feature_personalized"))
-            featureRow(String(localized: "paywall_b_feature_feedback"))
             featureRow(String(localized: "paywall_b_feature_cancel"))
         }
         .padding(.horizontal, 32)
@@ -116,6 +135,16 @@ struct PaywallVariantBView: View {
     private var planCards: some View {
         ScrollView {
             VStack(spacing: 12) {
+                // 並び順 2026-06-23 Dais: 月 → 年 → 買い切り
+                if let monthly = monthlyPackage {
+                    planCard(
+                        package: monthly,
+                        priceLabel: monthly.localizedPriceString + String(localized: "paywall_b_per_month"),
+                        badge: trialBadge(for: monthly),
+                        dailyPriceLabel: nil
+                    )
+                }
+
                 if let yearly = yearlyPackage {
                     planCard(
                         package: yearly,
@@ -127,11 +156,11 @@ struct PaywallVariantBView: View {
                     )
                 }
 
-                if let monthly = monthlyPackage {
+                if let lifetime = lifetimePackage {
                     planCard(
-                        package: monthly,
-                        priceLabel: monthly.localizedPriceString + String(localized: "paywall_b_per_month"),
-                        badge: trialBadge(for: monthly),
+                        package: lifetime,
+                        priceLabel: lifetime.localizedPriceString + String(localized: "paywall_b_per_lifetime"),
+                        badge: String(localized: "paywall_b_lifetime_badge"),
                         dailyPriceLabel: nil
                     )
                 }
@@ -289,11 +318,19 @@ struct PaywallVariantBView: View {
         case .annual: return String(localized: "paywall_b_plan_yearly")
         case .monthly: return String(localized: "paywall_b_plan_monthly")
         case .weekly: return String(localized: "paywall_b_plan_weekly")
+        case .lifetime: return String(localized: "paywall_b_plan_lifetime")
         default: return package.storeProduct.localizedTitle
         }
     }
 
     // MARK: - Actions
+
+    private func scheduleReloadTimeout() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+            if packages.isEmpty { showReloadAfterTimeout = true }
+            Task { await SubscriptionManager.shared.refreshOfferings() }
+        }
+    }
 
     private func purchase() {
         guard let package = selectedPackage else { return }

@@ -1419,25 +1419,28 @@
 "paywall_plan_privacy" = "Privacy";
 
 // MARK: - Paywall Variant B (A/B Test)
-"paywall_b_title" = "Steady mind.\nEvery day.";
-"paywall_b_subtitle" = "200 affirmations across 20 themes. Calmly delivered.";
-"paywall_b_feature_nudges" = "1–4 reminders a day, on your schedule";
-"paywall_b_feature_ai" = "8 hand-crafted backgrounds";
-"paywall_b_feature_personalized" = "Clean share images";
-"paywall_b_feature_feedback" = "No ads. Ever.";
-"paywall_b_feature_cancel" = "Cancel anytime";
+"paywall_b_title" = "Gentle words when you need them most";
+"paywall_b_subtitle" = "Daily cards to help you through your struggles";
+"paywall_b_feature_nudges" = "Reminders at the right moment";
+"paywall_b_feature_personalized" = "Adapts to your unique struggles";
+"paywall_b_feature_cancel" = "Cancel anytime, no questions asked";
 "paywall_b_per_year" = "/yr";
 "paywall_b_per_month" = "/mo";
+"paywall_b_per_lifetime" = " · pay once";
 "paywall_b_plan_yearly" = "Annual Plan";
 "paywall_b_plan_monthly" = "Monthly Plan";
 "paywall_b_plan_weekly" = "Weekly Plan";
+"paywall_b_plan_lifetime" = "Lifetime";
+"paywall_b_lifetime_badge" = "ONE-TIME";
 "paywall_b_daily_price" = "Just %@ per day";
-"paywall_b_cta_no_trial" = "Start my journey";
+"paywall_b_cta_no_trial" = "Start Your Journey Now";
 "paywall_b_cta_trial" = "Start For Free";
 "paywall_b_review" = "\"Anicca helped me be kinder to myself.\"";
-"paywall_b_trust_no_trial" = "Cancel anytime · No ads, ever";
+"paywall_b_trust_no_trial" = "Cancel anytime · Satisfaction guaranteed";
 "paywall_b_trust_trial" = "3 days free, then %@ · Cancel anytime";
 "paywall_b_trial_badge" = "3 DAYS FREE";
+"paywall_b_load_failed" = "Couldn't load plans. Check your connection and try again.";
+"paywall_b_retry" = "Reload plans";
 
 // MARK: - Onboarding New 3 Screens (1.8.3)
 "onboarding_processing_title" = "Setting everything up for you";
