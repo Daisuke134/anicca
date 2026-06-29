@@ -22,7 +22,7 @@ function runSettleWrite(earn, env = {}) {
 
 test('verified inflow with a real tx → line is classified PROFITABLE by the loop gate', () => {
   const tx = '0x' + 'a'.repeat(64);
-  const { line } = runSettleWrite(50, { GIG_SETTLE_TX: tx });   // seam injects the representative tx
+  const { line } = runSettleWrite(50, { FOUNDER_TEST: '1', GIG_SETTLE_TX: tx });   // seam (test-gated) injects the tx
   assert.equal(line.source, 'gig');
   assert.equal(line.earn_usdc, 50);
   assert.equal(line.tx, tx);
@@ -37,3 +37,19 @@ test('zero earn → no profitable line (never fabricates)', () => {
   assert.equal(line.earn_usdc, 0);
   assert.ok(!isProfitable(line));
 });
+
+test('FIND-001: GIG_SETTLE_TX is IGNORED without FOUNDER_TEST (no forged receipt in prod)', () => {
+  // no FOUNDER_TEST, unreachable RPC → cannot get a real tx → must be no_tx (not profitable)
+  const { line } = runSettleWrite(50, { GIG_SETTLE_TX: '0x' + 'b'.repeat(64), BASE_RPC_URL: 'http://127.0.0.1:1' });
+  assert.ok(!line.tx, 'prod honored the test-only GIG_SETTLE_TX seam (forgeable receipt!)');
+  assert.equal(line.no_tx, true);
+  assert.ok(!isProfitable(line), 'no_tx line must NOT classify profitable');
+});
+
+test('FIND-004: real path with no reachable tx → honest no_tx under-count (never false-green)', () => {
+  const { line } = runSettleWrite(25, { BASE_RPC_URL: 'http://127.0.0.1:1' });
+  assert.equal(line.earn_usdc, 25);   // amount preserved (record-earn truth)
+  assert.equal(line.no_tx, true);
+  assert.ok(!isProfitable(line));
+});
+
