@@ -3,11 +3,12 @@
 ## Purity boundary (pure core vs effectful shell; unchanged-sound, now fully pinned)
 
 ### PURE module `dashboard-core` (TS, NO fetch/supabase/fs imports) — the heart, 100% unit-tested
-- `deriveStatus(row, nowSec) -> 'alive'|'stale'|'dead'` (REQ-4). `now` is a PARAMETER (no Date.now) → deterministic.
-- `isSelfFundedEconomic(row, nowSec) -> boolean` (REQ-5) — uses deriveStatus≠dead && revenue_mo/30 ≥ burn_day.
-- `computeTotals(rows, nowSec) -> {assets,revenue30d,net,counts:{alive,stale,dead},self_funded_pct,frontier_pct}` (REQ-6).
+- `deriveStatus(row, nowSec) -> 'alive'|'stale'|'critical'|'dead'` (REQ-4). `now` is a PARAMETER (no Date.now). 'critical' preserved.
+- `isSelfFundedEconomic(row, nowSec) -> boolean` (REQ-5) — deriveStatus≠dead && revenue_mo/30 ≥ burn_day. Signature `(row,nowSec)`.
+- `countByStatus(rows, nowSec) -> {alive,stale,critical,dead}` (REQ-6). NO `computeTotals`: the $ totals
+  (total_net_worth_usd/earned_mo_usd/self_funded_pct/frontier_pct) are REUSED from server `aggregate()` — not re-derived in TS (resolves N2).
 - `normalizeLogKind(kind) -> 'earn'|'claim'|'blocked'|'done'|'ping'|'spawn'|'info'` (unknown ⇒ 'info').
-- `toCardModel(row, nowSec) -> {FULL fixed shape per REQ-8, no "..."}` incl. `logs` (newest-first, ≤20).
+- `toCardModel(row, nowSec) -> {FULL fixed shape per REQ-8, no "..."}` incl. `logs` (newest-first, ≤20); funding/env/brain null ⇒ 'unknown' (REQ-14).
 
 ### EFFECTFUL shell (thin; integration/E2E)
 - poster extension (`~/anicca/runtime/dashboard/telemetry-poster.mjs`): add 3 env-read fields INTO the signed msg (REQ-1).
@@ -36,9 +37,10 @@ monthly_revenue_usd,revenue_by_source,revenue_mo_usd,burn_day_usd,runway_days,st
 ## Test plan
 | Layer | What | How |
 |---|---|---|
-| Unit | dashboard-core (5 fns) + every edge above | node:test, fixtures, RED→GREEN |
-| Integration | signed post w/ 3 fields → 202 + persisted; old post → 202 + defaults; unsigned/anon → rejected | against telemetry receiver (test wallet, id-prefixed rows, snapshot-diff cleanup) |
-| E2E (mine, post-adversary) | unique sentinel in ledger → poster cycle → sentinel + 3 badges in /dashboard DOM ≤150s | real browser screenshot + DOM assert |
+| Unit | dashboard-core (deriveStatus incl critical/null-ts/300-boundary, isSelfFundedEconomic, countByStatus incl empty, normalizeLogKind, toCardModel full-shape+log order/cap+unknown defaults) | node:test, fixtures, RED→GREEN |
+| Integration | (a) signed post w/ 3 fields → 202 + columns persisted + returned via select=* (proves REQ-13 migration applied + `log` is a column); (b) old post (no fields) → 202, renders 'unknown'; (c) **post signed by a DIFFERENT key than `id` → 401 `signer_mismatch`** (the akash-fix regression, N5); (d) replay (ts≤lastTs) → rejected | against telemetry receiver (test wallet, id-prefixed rows, snapshot-diff cleanup) |
+| Key-safety | message key-set ⊆ allowlist; wallet privkey + SERVICE_ROLE_KEY never substring of `message` | unit over the built payload |
+| E2E (mine, post-adversary) | unique sentinel in ledger → poster cycle → sentinel + 3 badges (human/local/claude-p) in /dashboard DOM ≤150s, NOT fallback | real browser screenshot + DOM assert |
 
 ## Done (4-D convergence)
 spec ✓ + tests ✓ (pure core RED→GREEN + integration) + impl ✓ (poster fields + receiver + page rewrite) + verification ✓
