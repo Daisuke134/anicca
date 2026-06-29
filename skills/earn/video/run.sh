@@ -71,7 +71,10 @@ except: print(0)" 2>/dev/null)
     MP4="$(ls -t "$OUT"/*.mp4 2>/dev/null | head -1)"
     if [ -n "$MP4" ]; then
       printf 'Daily money tips. Follow @%s for more. #moneytok #personalfinance\n' "$HANDLE" > /tmp/ev_cap.txt
-      LIVEFLAG="--dry"; [ "$(/usr/bin/env $PY -c "import json;print(json.load(open('$STATE')).get('affiliate_set'))")" = "True" ] && LIVEFLAG="--live"
+      # ★ FIND-001 fix: S3 only fires after warmup is complete (warmup_day>=7), so the account IS warmed → post LIVE.
+      #   The affiliate link is OPTIONAL for posting (it just adds a CTA); posting REALLY builds audience while the
+      #   link is still pending. Never report a --dry post as done on a real wake (= dry-run violation). ★
+      LIVEFLAG="--live"
       [ "$DRY" = 1 ] || timeout "$POSTBUD" $PY "$HOME/.claude/skills/ig-reels-poster/scripts/post_reel.py" --video "$MP4" --caption-file /tmp/ev_cap.txt --handle "$HANDLE" --tid "$TID" $LIVEFLAG >/tmp/ev_post.log 2>&1 || true
       set_state "{\"last_post_date\": \"$TODAY\", \"status\": \"warmed\"}"
       DID="posted reel ($LIVEFLAG) $(basename "$MP4")"
