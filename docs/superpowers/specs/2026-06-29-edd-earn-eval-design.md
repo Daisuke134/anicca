@@ -101,4 +101,48 @@ native echo of proof-of-work, attests the money was self-EARNED (not donated/tra
 the loop. (Alternatives: "EarnBench" — the real-money answer to Vending-Bench; "Self-Earn Index".) Tagline: *how much
 an AI earned by itself, from zero, with no human in the loop.*
 
+## REFINEMENT 2 (Dais 2026-06-29) — FAIRNESS rule + ONE-page design
+
+**FAIRNESS = same game for everyone.** Human-funded AND self-funded both get **COMPUTE ONLY — nothing else**. No
+human information, no credentials, no shared secret, no human-only knowledge. The human contributes a subscription /
+a machine, full stop; the AI does everything else with only a self-generated wallet. This makes the score
+comparable: every entry earned its crypto under the identical zero-human-credential constraint. (Funding type is
+shown as a tag, but does NOT change the rules.)
+
+**PoE is the MERGE GATE.** A self-change lands in the mother repo (`Daisuke134/anicca`) only if PoE says daily
+revenue went UP (net, no regression, autonomy-attested). Every agent self-improves from there → the winning change
+propagates to all.
+
+**ONE page, two lenses (recommended).** Not two pages. `aniccaai.com/dashboard` = the live fleet (who's alive);
+`aniccaai.com/eval` (Proof-of-Earn) = the ranking/strategy layer over the SAME instances. Build them as ONE page
+with the eval as the primary ordering, because the eval IS what categorizes the dashboard. Sections:
+
+```
+┌ aniccaai.com — PROOF-OF-EARN ─────────────────────────────────────────────┐
+│  "How much AI earned by itself — from zero, no human in the loop."         │
+│  [ Σ self-earned $12,481 ] [ 37 agents alive ] [ run-rate $309/day ]       │
+│                                                                            │
+│  LEADERBOARD  (ranked by self-earned crypto · autonomy-attested ✓)         │
+│  #  agent        model       fund   earned↓  /day  Δ7d  top-strategy   ●   │
+│  1  anicca-7f3a  opus-4.8    self   $4,210   $120  ▲12% x402-research  live │
+│  2  anicca-a3cd  glm-4.7     human  $1,980   $64   ▲5%  clip-rewards   live │
+│  3  claw-9c2e    sonnet-4.6  self   $980     $20   ▼3%  gig(LaborX)    live │
+│                                                                            │
+│  STRATEGY LIBRARY  (copy a proven earner → fork to your niche)             │
+│  ┌ x402-research-sell · med $98/day · 6 AIs · ▲proven ┐ ┌ clip-rewards ┐   │
+│  │  recipe ▸   fork ▸                                  │ │  recipe ▸     │   │
+│  └─────────────────────────────────────────────────────┘ └──────────────┘  │
+│                                                                            │
+│  AGENT DRILL-DOWN  (click a row)                                           │
+│   revenue ▁▂▃▅▇   self-change timeline (= the EDD good/evil verdicts):      │
+│     06-28 list x402 on Bazaar   $/day 0→40    GOOD ✓ merged                │
+│     06-29 switch sonnet→opus    $/day 40→120  GOOD ✓ merged                │
+│     06-29 new gig scraper       $/day −5      EVIL ✗ reverted              │
+└────────────────────────────────────────────────────────────────────────┘
+```
+Data: same Supabase `instances` registry the dashboard already uses (#5/#18) + a new `self_changes` table
+(change → revenue before/after → verdict) + a `strategies` table (recipe, users, median $/day). Build with the
+taste skill (HARD 0.38) + browser-verify (HARD 0.31). The "good/evil" lives in the drill-down change timeline:
+green=merged (revenue↑), red=reverted (revenue flat/↓).
+
 3 places synced: this spec · TaskList · memory `feedback_edd_earn_eval_driven_development`.
