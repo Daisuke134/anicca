@@ -97,8 +97,22 @@ do_deliver() {
   echo "$res" | grep -q '"task"' || emit "deliver-noop" 0 0
 }
 
+# ── SETTLE: count ONLY real external on-chain USDC (record-earn INV-7). Anti-shortcut. ──
+do_settle() {
+  local re="$HOME/anicca/skills/self/founder-loop/record-earn.mjs"
+  [ -f "$re" ] || { echo "[gig] settle: record-earn not found"; emit "settle" 0 0; return; }
+  local out earn=0
+  out=$(timeout 45 node "$re" --source gig --task settle 2>&1) || true
+  echo "[gig] settle: $out"
+  # earn_usdc is parsed from record-earn's chain-verified output — the slot never sets it itself
+  earn=$(printf '%s' "$out" | sed -nE 's/.*VERIFIED \+([0-9.]+) USDC.*/\1/p' | head -1)
+  [ -n "$earn" ] || earn=0
+  if [ "$earn" != "0" ]; then emit "settle" "$earn" 0 '{"external":true}'; else emit "settle" 0 0; fi
+}
+
 case "$MODE" in
   detect)  do_detect ;;
+  settle)  do_settle ;;
   bid)     do_bid ;;
   deliver) do_deliver ;;
   inbound) do_deliver ;;   # inbound (accepted/messages) routes through deliver-detect for now
