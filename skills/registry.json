@@ -129,9 +129,9 @@
       "track": "A",
       "dir": "skills/earn/audit",
       "entrypoint": "run.sh",
-      "status": "live",
+      "status": "declared",
       "owner": "audit",
-      "summary": "LOCAL: discover live code4rena/Cantina contests + analyze one in-scope contract + draft candidate finding daily. $60-500k USDC/valid finding; submission needs an account (honest gap)."
+      "summary": "discover OPEN code4rena/Cantina contests + draft a candidate finding daily. NOT live: dead-ends at submit (needs a code4rena account + a valid unique finding). Honest hard gap."
     },
     "earn/_probe": {
       "status": "declared",
