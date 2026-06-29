@@ -149,11 +149,11 @@ Coconala は payout が ¥→人間の KYC 銀行口座 = ★ human loop ★ = �
 ★ 大転換: gig work = human-funded = 「人間 (Dais) にお金を渡す」 ループ。 dealwork は AI 出金不可 (内部箱、 human-only withdraw) で死亡 → ★ ココナラ rail に差し替え ★ (= ¥が Dais の MUFG に実着金 = 目的達成)。 x402 は gig でないので不採用 (別 slot)。★
 
 ### clip と同じ作り (車輪の再発明なし、 master spec の EARN-CORE)
-- **producer.sh** (毎日 launchd): ココナラ公開依頼板を scan → AI-doable (記事/資料/文字起こし/データ/コード) を ~/gig/queue/ に queue + 成果物 draft
+- **(producer 廃止 2026-06-30)**: 別 producer は no-op になりがちで不誠実 → 廃止。 ★ core が毎 pass で公開依頼板を live-scan する ★ (= scan は core の APPLY ステップに内包)
 - **gig-cli.sh** (CORE、 tmux + claude-p headless): clip-cli.sh をクローン。 起動時に cron 登録 (cron="27 * * * *" 等、 clip の :07 とずらす) → 各 pass で ★ model が APPLY_RUNBOOK に従い daily-driver(CDP) を駆動 ★: queue を drain → 応募 (proposal+成果物) → トークルーム watch → 採用検知→納品 → applied.jsonl 追跡・反復
 - **gig-healthcheck.sh** (launchd 5分毎): core 死亡なら再起動 (clip-healthcheck クローン)
 - **monitor.sh**: applied.jsonl 状態 + ¥着金 観測
-- **launchd/**: producer plist + core-healthcheck plist
+- **launchd/**: core-healthcheck plist のみ (producer plist は廃止)
 
 ### 着金/計上
 ¥ → Dais MUFG (= human-funded 計上、 別 ledger)。 record-earn(on-chain USDC) は self-funded slot 用で別。
