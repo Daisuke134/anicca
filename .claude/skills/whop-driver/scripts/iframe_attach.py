@@ -22,8 +22,9 @@ import json, os, sys, time, datetime, pathlib
 from patchright.sync_api import sync_playwright
 
 CDP_URL = os.environ.get("CDP_URL", "http://localhost:9222")
-TARGET_URL = (
-    "https://whop.com/joined/contentrewards/discover-campaigns-B5C5S1vijHGVt9/app/"
+TARGET_URL = os.environ.get(
+    "TARGET_URL",
+    "https://whop.com/joined/contentrewards/discover-campaigns-B5C5S1vijHGVt9/app/",
 )
 INTEREST_HOSTS = ("apps.whop.com", "/api/graphql/")
 WAIT_SECONDS = int(os.environ.get("WAIT_SECONDS", "20"))
