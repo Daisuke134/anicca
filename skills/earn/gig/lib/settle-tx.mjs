@@ -24,13 +24,20 @@ async function rpc(method, params) {
   return j.result;
 }
 
-/** @returns {Promise<{tx:string, from:string}|null>} most recent EXTERNAL USDC Transfer to `wallet`. */
-export async function representativeExternalTx(wallet, { spanBlocks = 9000, myWallets = [] } = {}) {
+/** @returns {Promise<{tx:string, from:string}|null>} most recent EXTERNAL USDC Transfer to `wallet`.
+ *  Prefer the EXACT block range record-earn just processed ({fromBlock,toBlock}); else fall back to
+ *  the FINALIZED head minus spanBlocks (finalized matches record-earn's reorg-safe scan, FIND-003). */
+export async function representativeExternalTx(wallet, { spanBlocks = 9000, myWallets = [], fromBlock, toBlock } = {}) {
   if (!wallet || !/^0x[0-9a-fA-F]{40}$/.test(wallet)) return null;
   const exclude = new Set([wallet.toLowerCase(), ...myWallets.map(w => String(w).toLowerCase())]);
-  let now;
-  try { now = Number(BigInt(await rpc('eth_blockNumber', []))); } catch { return null; }
-  const from = Math.max(0, now - spanBlocks);
+  let from, now;
+  if (Number.isInteger(fromBlock) && Number.isInteger(toBlock)) {
+    from = fromBlock; now = toBlock;   // exact window record-earn verified (already finalized)
+  } else {
+    try { const b = await rpc('eth_getBlockByNumber', ['finalized', false]); now = Number(BigInt(b.number)); }
+    catch { return null; }
+    from = Math.max(0, now - spanBlocks);
+  }
   const toTopic = '0x000000000000000000000000' + wallet.slice(2).toLowerCase();
   let logs;
   try {
