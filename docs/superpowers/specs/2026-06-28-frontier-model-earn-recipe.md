@@ -198,5 +198,19 @@ on first run, NO API key / subscription. This is the self-funded AI's life-suppo
 
 **Fix path (make every instance register, revive the board):** (a) pick ONE registry = the existing Supabase `instances` table (modern, already wired to dashboard-sync.js) — drop the dead static-file cfo pipeline; (b) add a tiny `register+heartbeat` step to the instance loop: upsert {id, model, harness, runtime, wallet, realised_earn, status, ts} to the registry each boot/heartbeat; (c) point /dashboard at the live dashboard-sync function (or a cron that writes dashboard.json from it) so it stops showing the hardcoded fallback. THIS instance (human-funded, Claude, wallet 0x810f) registers the same way the cloud children will.
 
+## RUNTIME ARCHITECTURE (Dais 2026-06-29) — ONE runtime, swappable BRAIN, two SPAWN paths (NOT two runtimes)
+The funding difference does NOT require two runtimes. It's **one loop + one skill library + a pluggable BRAIN
+adapter (already built) + two thin SPAWN bootstrappers.**
+
+- **The brain adapter ALREADY EXISTS** in `~/anicca/runtime/loop/inference.mjs` (REQ-011 / test PROP-023):
+  - `ANICCA_BRAIN=claude-p` → subprocess `claude -p` (model claude-sonnet-4-6) = **HUMAN-FUNDED** path (rides the human's Claude subscription; no per-token API). Falls back to proxy if the claude binary is missing.
+  - `ANICCA_BRAIN=proxy` → HTTP to the self-pay **compute-proxy / ClawRouter** (`runtime/compute-proxy/`) which pays USDC per-inference from the instance's OWN wallet over x402 (BlockRun 60+ models, free model when broke) = **SELF-FUNDED** path.
+  - → Same `runtime/loop/` (think→act→observe→persist + heartbeat), same `skills/`, same earn/verify/ledger. Only the env var flips the brain. THIS is how we keep the architecture "as same as possible."
+- **What genuinely differs = the SPAWN bootstrap (2 thin scripts, not 2 runtimes):**
+  - spawn HUMAN-FUNDED: a human runs `install.sh` on their machine → `ANICCA_BRAIN=claude-p` → points at their Claude sub. Human's ONLY act = provide compute; then zero-human-loop.
+  - spawn SELF-FUNDED: a **PARENT AI** provisions a cloud box (Modal/Franklin/Akash) + funds a fresh wallet + boots the SAME loop with `ANICCA_BRAIN=proxy`. No human at all.
+- **Sutando (spec 22-REF-SUTANDO, sonichi/sutando) = the COLONY layer that BOTH share** (and it inspires the claude-p side because Sutando is Claude-Code-subscription-native): agent-registry (register/heartbeat, stale=90s) + day/night (serve/earn by day, self-rewrite by night) + bot2bot-post (claim/blocked/done/ping) + resurrection of stale peers + claude-router (@claude/@codex). ★ Its **registry IS the dashboard source AND the resurrection trigger** — one registry serves three jobs: /dashboard render + colony liveness + revive-dead-peer. ★ So task #5 (dashboard registration) = adopt Sutando's register/heartbeat as the colony registry.
+- Net: human-funded vs self-funded = **one config flag (brain) + which spawn script**; everything above the brain (loop, skills, verify, ledger, colony registry, dashboard) is identical. Endgame (only self-funded) = everyone runs `ANICCA_BRAIN=proxy`; the claude-p path retires.
+
 ## Done = the recipe runs on Claude end-to-end with realised_earn > subscription, self-verified, then the
 ## same recipe boots on a second model with only the `--model` swap. That proves "any frontier model self-earns."
