@@ -23,7 +23,7 @@ BODY="${2:?usage: api.sh <opName> <json body>}"
 
 SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}" || echo "${BASH_SOURCE[0]}")")" && pwd)"
 VENV="$(dirname "$SCRIPT_DIR")/.venv"
-COOKIE_FILE=$(mktemp /tmp/whop-cookies.XXXXXX.json)
+COOKIE_FILE=$(mktemp /tmp/whop-cookies-XXXXXXXX)
 trap 'rm -f "$COOKIE_FILE"' EXIT
 
 "$VENV/bin/python" - <<'PY' > "$COOKIE_FILE"
