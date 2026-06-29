@@ -130,16 +130,12 @@ do_settle() {
   earn=$(printf '%s' "$out" | sed -nE 's/.*VERIFIED \+([0-9.]+) USDC.*/\1/p' | head -1)
   [ -n "$earn" ] || earn=0
   if [ "$earn" != "0" ]; then
-    # write the loop's EARN_LEDGER line so classifyEarnResult finds wake===WAKE_ID
+    # write a PROFITABLE-SHAPE line (real external tx + status 0x1 + external + net>0) to the loop's
+    # EARN_LEDGER so classifyEarnResult finds wake===WAKE_ID AND isProfitable accepts it (FIND-001).
     local ledger="${EARN_LEDGER:-${ANICCA_HOME:-$HOME/anicca}/skills/earn/state/earn-ledger.jsonl}"
-    mkdir -p "$(dirname "$ledger")" 2>/dev/null || true
-    python3 - "$WALLET" "$earn" "$WAKE" "$ledger" <<'PY' 2>/dev/null || true
-import json,sys,time
-wallet,earn,wake,ledger=sys.argv[1:5]
-row={"ts":int(time.time()),"wallet":wallet,"source":"gig","task":"settle","earn_usdc":float(earn),"cost_usdc":0,"net_usdc":float(earn),"external":True,"wake":wake}
-open(ledger,"a").write(json.dumps(row)+"\n")
-PY
-    emit "settle" "$earn" 0 '{"external":true}'
+    local line; line=$(node "$HERE/lib/settle-write.mjs" "$earn" "$WALLET" "$WAKE" "$ledger" 2>/dev/null) || true
+    echo "[gig] settle-line: $line"
+    [ -n "$line" ] && echo "$line" || emit "settle" "$earn" 0 '{"external":true}'
   else
     emit "settle" 0 0
   fi
