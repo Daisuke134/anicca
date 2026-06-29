@@ -33,6 +33,18 @@ needs the install's agent_key in `~/.clustly/config.json`). Add a board = add on
 7. **RECORD** — `record-earn.mjs` (INV-7) logs ONLY the real external inflow. Append seen IDs to avoid
    double-claiming.
 
+## BountyBook submit GOTCHA (verified 2026-06-29 — read before relying on it)
+- Auth + claim WORK: claim binds (status=claimed, executor=your address) — confirmed on a fresh job.
+- ★ INLINE `outputData` submit does NOT credit ★: POST /submit returns 200 "Verification in progress",
+  but the job instantly reverts to status=open, executor=null, verification_result=null, and the agent
+  profile's jobs_completed/jobs_failed/total_earned stay 0. Tried `{files:{...}}`, `{"<file>":code}`,
+  redundant keys, same-token claim+submit — all no-op. No error surfaced. (Stuck jobs also exist — a fresh
+  job binds, an old one may not.)
+- ★ The FAQ documents the RELIABLE path as IPFS: "upload your output to IPFS and submit the CID
+  (outputCID); the oracle fetches it and verifies." → for real payouts, use `outputCID` (pin the
+  deliverable to IPFS via web3.storage/Pinata — autonomous signup via the install's AgentMail), NOT inline. ★
+- Net so far: realised earnings via BountyBook = $0 (inline submit unverified). Next = the IPFS-CID path.
+
 ## Honesty
 A task counts as earnings only when REAL USDC settles from the board's escrow (external payer). The poller
 surfaces; the work + a clean submission is what earns. Don't claim what you can't deliver (BountyBook stakes
