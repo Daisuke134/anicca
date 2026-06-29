@@ -54,18 +54,31 @@ changes to the canonical lib are MANDATORY and each has a test:
    This is backward-compatible with the existing suite (non-`tx`/non-`0x1` lines stay false). [FIND-207]
 3. **`assertOwnIdentityOnly` MUST accept the Solana clip source.** Add `"promote.fun"` (and `"clip-promote"`)
    to `ALLOWED_EARN_SOURCES` in `identity-guard.mjs` — it is Anicca's OWN identity (own IG + own Solana
-   wallet); it matches no `FORBIDDEN_EARN_SOURCES` pattern. The RECORD wake MUST run with a MINIMAL env
-   (no `*GMAIL*`/`GOOGLE_LOGIN`/`COMPOSIO`/`TELEGRAM`/`USER_*` vars) so `findUserPIIEnv` passes; OTP/Gmail
-   are only needed at LOGIN wakes, never at RECORD. [FIND-201]
+   wallet); it matches no `FORBIDDEN_EARN_SOURCES` pattern. [FIND-201]
+3a. **PII-scrub duty is `run.sh`'s, NOT the harness's.** [FIND-301] The harness (`run-skill.mjs` →
+   `env-filter.mjs scrubPrivateKeys`) strips ONLY `*_WALLET_KEY`/`_PRIVATE_KEY`/`_PRIV_KEY`, NOT PII — so
+   `GOOGLE_LOGIN`/`COMPOSIO`/`*GMAIL*`/`TELEGRAM`/`USER_*` would still reach the wake, and `record.mjs:19`
+   calls `assertOwnIdentityOnly(line)` against `process.env` → `findUserPIIEnv` would THROW before append →
+   DONE silently never fires. THEREFORE `run.sh` SHALL invoke the RECORD step under a CLEAN env:
+   `env -i PATH="$PATH" HOME="$HOME" SOLANA_RPC_URL="$SOLANA_RPC_URL" EARN_LEDGER="$LEDGER" node <record.mjs> '<json>' "$LEDGER"`
+   — passing ONLY the public wallet address + RPC + ledger path, never any PII var. (OTP/Gmail are needed
+   only at LOGIN wakes, never at RECORD, so a clean RECORD env loses nothing.) Regression test: set a PII
+   var (e.g. `GOOGLE_LOGIN=x`) in the parent env → the run.sh RECORD invocation STILL records the line
+   (because `env -i` stripped it) AND a direct `record.mjs` call WITH that var in env still throws (guard
+   intact). [FIND-301]
 4. **NEW `solana-verify.mjs`** (pure transport, `fetchImpl` injectable for tests; RPC = `SOLANA_RPC_URL`,
    default a public mainnet RPC):
    - `sigStatus(signature, {rpc, fetchImpl})` → `getSignatureStatuses`/`getTransaction`; returns
      `{confirmed, err}` where `confirmed === (confirmationStatus ∈ {confirmed,finalized} && err === null)`.
      Signature validated as base58 ~64–88 chars (NOT `0x…64`).
    - `usdcDeltaForSig(signature, wallet, {mint, rpc, fetchImpl})` → from the tx's `meta.preTokenBalances`
-     / `postTokenBalances`, sum `post-pre` ONLY over entries where `owner === wallet` AND `mint === USDC
-     mint`, ignoring every other transfer in the same signature (batch/multi-transfer safe). Returns the
-     net inbound USDC to OUR ATA (6dp). [FIND-209]
+     / `postTokenBalances`, for EACH `postTokenBalances` entry where `owner === wallet` AND `mint === USDC
+     mint`, find the matching `preTokenBalances` entry **by `accountIndex`**; **if no matching pre entry
+     exists, pre = 0** (this IS the acceptance case — the wallet has no USDC ATA today, so the first
+     inbound withdraw CREATES the ATA and emits a post entry with no pre). Sum `(post.uiAmount −
+     pre.uiAmount)` over those entries only, ignoring every other transfer in the same signature
+     (batch/multi-transfer safe). Returns the net inbound USDC to OUR ATA (6dp). Tests MUST include a
+     first-inbound fixture (post entry present, NO pre entry → delta = full post amount). [FIND-209/303]
    - `usdcBalance(wallet, {mint, rpc, fetchImpl})` → `getTokenAccountsByOwner(wallet,{mint})` parsed
      `tokenAmount.uiAmount`; **returns 0 (not throw) when the ATA does not exist** (verified on-chain
      2026-06-29: our wallet currently has no USDC ATA → first inbound withdraw creates it).
@@ -131,13 +144,17 @@ isolated profile per clip account.
 - **REQ-9 (no-human INVARIANT + watchdog — owner defined):** [FIND-205] zero human — captcha→CapSolver,
   OTP→`gog gmail`, login→stored creds. Verified TWO ways. (a) static: adversary greps for human-gating
   calls. (b) runtime: **the harness `run-skill.mjs` enforces the wake-level `SKILL_TIMEOUT_S`** (kills a
-  wake that overruns); **AND `run.sh` self-guards every browser/IO step by wrapping it in
-  `timeout "$STEP_DEADLINE_S" <cmd>`** (`/opt/homebrew/bin/timeout` present; default `STEP_DEADLINE_S=120`).
-  If a wrapped step blocks on human input (daily-driver captcha/2FA fallback, IG interstitial, file-attach
-  prompt) `timeout` returns 124 → run.sh prints `did:"blocked:human:<step>"`, `earned_usdc:0`, exit 0
-  (a recorded defect, NEVER a hang, NEVER a silent wait-for-Dais). Constructible test: a step
-  `timeout 1 sleep 5` (or `STEP_DEADLINE_S=1` + a `sleep 5` step) returns 124 → assert the printed line is
-  `blocked:human:*` and exit code 0.
+  wake that overruns); **AND `run.sh` self-guards every browser/IO step with a portably-resolved timeout
+  binary.** [FIND-302] run.sh SHALL resolve `TIMEOUT_BIN="$(command -v timeout || command -v gtimeout)"`
+  (GNU coreutils ships `gtimeout`; some installs also expose `timeout` — BOTH verified present at
+  `/opt/homebrew/bin` on this Mac 2026-06-29, but the cloud box may have only one); IF neither exists, fall
+  back to a pure wrapper (`node`/`python3` child killed via `SIGTERM` after the deadline). Each browser/IO
+  step runs as `"$TIMEOUT_BIN" "$STEP_DEADLINE_S" <cmd>` (default `STEP_DEADLINE_S=120`). If a wrapped step
+  blocks on human input (daily-driver captcha/2FA fallback, IG interstitial, file-attach prompt) the
+  wrapper returns 124 → run.sh prints `did:"blocked:human:<step>"`, `earned_usdc:0`, exit 0 (a recorded
+  defect, NEVER a hang, NEVER a silent wait-for-Dais). Constructible test: `"$TIMEOUT_BIN" 1 sleep 5` (or
+  `STEP_DEADLINE_S=1` + a `sleep 5` step) returns 124 → assert the printed line is `blocked:human:*` and
+  exit code 0.
 - **REQ-10 (auth resilience):** IF OTP missing/expired or session expired mid-flow, re-authenticate once
   within the step deadline; if re-auth fails print `did:"auth-failed"`, exit 0 (no human prompt).
 - **REQ-11 (idempotent + bounded + dedup):** safe every wake; dedup keyed on `(campaign_id, post_url)`

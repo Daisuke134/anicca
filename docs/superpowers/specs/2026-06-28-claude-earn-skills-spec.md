@@ -631,3 +631,17 @@ chain-generalization rewrite introduced. Canonical feature spec = `.vcsdd/.../sp
    mint==USDC`, ignoring other transfers in the same sig.
 On-chain VERIFIED 2026-06-29: USDC mint accepted by getTokenAccountsByOwner; wallet has 0 USDC ATA + 0 SOL
 (fine for RECEIVING an SPL withdraw). NEXT: Phase 1c re-review ×3 → PASS → Phase 2 RED→GREEN.
+
+---
+## 2026-06-29 — VCSDD spec REV 4 (#12): close REV-3 re-review (0 crit + 3 major); 2/5 dims already PASS
+REV-3 re-review (`reviews/spec-review-verdict-rev3.md`) confirmed ALL 9 REV-2 findings CLOSED against disk
+and PASSed Spec Fidelity + Structural Integrity. 3 NEW major (all last-mile, fixed in REV 4):
+- **FIND-301**: harness `env-filter.mjs scrubPrivateKeys` strips only `*_WALLET_KEY` etc, NOT PII → PII env
+  reaches the wake → `assertOwnIdentityOnly` (record.mjs:19, reads process.env) THROWS before append →
+  DONE never fires. FIX: scrub duty = run.sh's — RECORD step invoked under `env -i PATH HOME SOLANA_RPC_URL
+  EARN_LEDGER node record.mjs` (clean env, only public wallet+RPC+ledger). Regression test both ways.
+- **FIND-302**: hard `/opt/homebrew/bin/timeout` claim is fragile on cloud → portable
+  `TIMEOUT_BIN=$(command -v timeout || command -v gtimeout)` + pure node/python fallback.
+- **FIND-303**: `usdcDeltaForSig` absent-pre case (first inbound CREATES the ATA → no pre entry) IS the
+  DONE scenario → match pre by `accountIndex`, absent ⇒ pre=0; first-inbound fixture mandated.
+NEXT: Phase 1c re-review ×4 → PASS → Phase 2 RED→GREEN.
