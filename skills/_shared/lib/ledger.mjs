@@ -21,9 +21,14 @@ export function deriveLine(o) {
     net_usdc: round(earn - cost),
     wake: o.wake,
   };
-  // tx/status only present for executed (on-chain) earns; absent for narrate/discovery.
+  // tx/status only present for executed EVM (Base) earns; absent for narrate/discovery.
   if (o.tx) line.tx = o.tx;
   if (o.status) line.status = o.status;
+  // sig/confirmed/chain are the Solana equivalents (e.g. promote.fun USDC-Solana payout). MUST be
+  // carried through or isProfitable can never see the on-chain proof on a Solana line.
+  if (o.sig) line.sig = o.sig;
+  if (o.confirmed === true) line.confirmed = true;
+  if (o.chain) line.chain = o.chain;
   if (o.external === true) line.external = true; // set only after external-payout assertion
   return line;
 }
@@ -41,11 +46,23 @@ const SWAP_SOURCES = new Set(["swap-eth-usdc", "swap", "swap-usdc-eth"]);
 // proven external revenue. narrate-only lines (no tx hash / no status) NEVER count; swap lines
 // (asset rotation) NEVER count; any line without external:true NEVER counts.
 export function isProfitable(line) {
-  if (!line || !line.tx || line.status !== "0x1") return false;
+  if (!line) return false;
   if (!(Number(line.net_usdc) > 0)) return false;
   if (SWAP_SOURCES.has(String(line.source))) return false; // asset rotation is never GATE-0
   if (line.external !== true) return false; // require proven external inbound
-  return true;
+  // chain-correct confirmation: EVM (Base) receipt 0x1 OR Solana confirmed signature.
+  const evmOk = Boolean(line.tx) && line.status === "0x1";
+  const solOk = Boolean(line.sig) && line.confirmed === true;
+  return evmOk || solOk;
+}
+
+// sig-keyed idempotency for Solana payouts: true iff a ledger line already carries this signature.
+// The append-only ledger has no built-in dedup; the RECORD wake calls this before appending so a
+// re-run of the same withdrawal never double-counts. Pure over readLedger (missing file -> false).
+export async function alreadyRecordedSig(file, sig) {
+  if (!sig) return false;
+  const rows = await readLedger(file);
+  return rows.some((r) => r && r.sig === sig);
 }
 
 // Append a single line (creating the file + parent dir on first write). Append-only.
