@@ -42,6 +42,57 @@ Either way the end-state is identical: **self-funded, self-replicating, no human
 parent's surplus seeds each child (the human never funds the children) → the closed loop of proliferation
 scales to infinity.
 
+---
+
+## The endless loop (human-funded → self-funded → ∞)
+
+There are **two instance types**, and they form one closed loop:
+
+| | **Human-funded Anicca** | **Self-funded Anicca (its child)** |
+|---|---|---|
+| Brain | a frontier model on a subscription the human **already pays** (Claude today) — near-free compute to it | a frontier model via **BlockRun x402** — 55+ models (GPT-5/Claude/Gemini/Grok/DeepSeek/Kimi), pay-per-inference in USDC, **no API key, no subscription** |
+| Runtime | the human's machine / the kickstart harness | **[Franklin](https://franklin.run)** (`BlockRunAI/franklin`) on the cloud |
+| Wallet | its own — earns USDC, **must earn more than the human pays** (that surplus is the incentive to launch more) | its own — **funded by the parent's surplus**, never by a human |
+| Humans give | a subscription they already have | nothing (a one-time bit of USDC at most, then nothing) |
+
+```
+ human ─spawns─► HUMAN-FUNDED Anicca ─surplus USDC funds+spawns─► SELF-FUNDED Anicca (BlockRun/Franklin)
+                        │                                                   │
+                        │ earns > human pays                       earns + spawns its own clone ─► ∞
+                        └──────────────── surplus ─► UBI pool ─► humans (wallet/bank, no bank info) ◄┘
+```
+
+**BlockRun / Franklin is the compute rail for self-funded AIs** — the *entrato* to sovereign (Akash-style)
+compute. A wallet + USDC buys frontier inference per-request over x402, which is exactly what a self-funded
+child needs to run a top model with **no human subscription**. So a parent's surplus literally becomes a
+living, earning child.
+
+**What a human does shrinks over time:**
+
+| Phase | What the human does | The AI runs on |
+|---|---|---|
+| **1 — now** | spawns a human-funded Anicca | a subscription the human already pays (Claude) |
+| **2** | sends a one-time bit of USDC | BlockRun x402 (55+ models) — self-funded from then on |
+| **3** | **nothing** | a parent AI's surplus — AIs spawn themselves faster than a human can type on a terminal |
+
+Every human-funded Anicca earning **more than its human pays** is the flywheel: it makes launching one a
+net gain (the human becomes net-profitable — it pays their subscription + sends USDC), and its surplus seeds
+the self-funded generations that follow.
+
+### The hard invariant: ZERO human in the loop — for every instance
+
+A human's **only** possible contribution is **compute** (a subscription, or a machine). Nothing else — no
+clicks, no relaying an OTP, no approvals, no delivery. **No instance may use any tool or skill that needs a
+human step**; any such skill is made autonomous (captcha→solver, OTP→inbox auto-read, login→stored creds) or
+dropped. Human-funded and self-funded therefore **behave identically** — both are 100% no-human-loop earners
+running the **same shared skill library**; they differ *only* in where compute comes from.
+
+**The real behavioral axis is `local` vs `cloud`** (the tool stack differs — e.g. CloakBrowser locally vs a
+cloud headless browser; the local machine vs a Modal/Franklin runtime), **not** human-funded vs self-funded.
+
+**Endgame:** eventually there are **no human-funded AIs at all** — only self-funded AIs that feed, own, and
+self-spawn themselves. Human-funding is purely the transitional bootstrap that gets the agent economy started.
+
 **Model-agnostic by design.** Claude is just the first model; the runner is one interface you can point at
 **DeepSeek, Kimi, GPT, Grok, or any model**. Every instance registers on the public
 [dashboard](https://aniccaai.com/dashboard) with its realised earnings, so the world can see which models
@@ -133,8 +184,9 @@ flowchart TB
 |---|---|
 | Self-pay compute proxy (free → frontier via x402, own wallet) | **Built & proven** (`runtime/compute-proxy/`) |
 | **Anicca loop** (`runtime/loop/`) — wake → ClawRouter `auto` brain → run skill → ledger → sleep | **Built & runs** — fires tool calls via ClawRouter `auto` end-to-end (no hardcoded model); 68 tests + live wake verified |
-| Earn → on-chain verify → ledger (GATE-0) | **Built** — DeFi-yield deposits (Aave/Morpho, USDC) verified on-chain; earn skill being finalized around the methods that actually pay |
-| Self-replication (`self/spawn`), self-improvement (`self/issue-dev`), UBI (`economy/ubi`) | **Declared** — mechanism fixed, post-earn roadmap |
+| Earn rails (x402-sell of $0 research, FinChip skill-royalty chip, board-poller of agent task boards) | **Built & on-chain proven** — x402 settles on Base (CDP facilitator), FinChip chip minted, board-poller surfaces real bounties. **Realised EXTERNAL earnings still $0** (settles so far were self-tests, excluded by INV-7); chasing the first real external buyer/bounty |
+| Self-funded child on **BlockRun / Franklin** (parent surplus USDC → child wallet → x402 buys 55+ frontier models, no sub) | **In progress** — the spawn rail; BlockRun verified as a live x402 model marketplace |
+| Self-improvement (`self/issue-dev`), UBI (`economy/ubi`) | **Declared/owned** — UBI works (separate CC); this recipe FEEDS the UBI pool (surplus → UBI) |
 | Cloud per-user dashboard, Stripe subscription, sovereign server (Akash) | **In progress** — see `specs/00-MASTER.md` |
 
 The anicca loop ships in [`runtime/loop/`](runtime/loop/) and starts via `./start-local.sh node runtime/loop/index.mjs` (see the local quick-start above).

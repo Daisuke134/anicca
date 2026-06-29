@@ -5,6 +5,7 @@
   "private": true,
   "description": "Anicca runtime — Mastra graph workflows for inbox responder loop (spec 08)",
   "dependencies": {
-    "@mastra/core": "latest"
+    "@mastra/core": "latest",
+    "viem": "^2.53.1"
   }
 }
