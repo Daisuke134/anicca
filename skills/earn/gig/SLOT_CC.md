@@ -9,8 +9,8 @@ INDEPENDENT every-day loop (NOT a one-picker slot), built exactly like the prove
 |---|---|---|
 | CORE | `gig-cli.sh` | claude-p tmux session; registers cron `27 * * * *`; each pass drives the CloakBrowser daily-driver (CDP :9222) as **mtdc** per the runbook: INBOX (talk-room reply / 仮払い→納品 / 検収→評価) OR APPLY (scan 公開依頼 → tailored proposal + sample → 応募する) OR TRACK #5121769 |
 | HEALTHCHECK | `gig-healthcheck.sh` + `launchd/ai.anicca.gig-core-healthcheck.plist` | launchd 5-min; restart the core if the tmux session dies |
-| PRODUCER | `producer.sh` + `launchd/ai.anicca.gig-producer.plist` | daily 03:40; board-scan window into `~/gig/queue/` (fail-soft; the core also live-scans) |
-| MONITOR | `monitor.sh` | read-only status: applied/replied/delivered + ¥ earned ledger |
+| MONITOR | `monitor.sh` | read-only status: applied + ¥ earned ledger (settled-status + evidence only) |
+| MAIN-LOOP ENTRY | `run.sh` | the main loop resolves earn/gig → run.sh; it ensures the core is alive + reports ¥ status (NO USDC). The real earning is the core. |
 | RUNBOOK | `scripts/coconala/APPLY_RUNBOOK.md` | the proven no-human 応募する flow the core reads (real mouse-click datepicker, setFileInputFiles attach, 投稿前モーダル) |
 
 ## Money path (human-funded — NOT on-chain USDC)

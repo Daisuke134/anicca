@@ -8,7 +8,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
-const FILES = ['gig-cli.sh', 'producer.sh', 'monitor.sh', 'gig-healthcheck.sh'];
+const FILES = ['gig-cli.sh', 'monitor.sh', 'gig-healthcheck.sh'];
 
 // runtime human-step patterns (the one allowed human element — Dais's one-time KYC/account — is not a
 // runtime step and is only mentioned in comments, which we strip before scanning).
