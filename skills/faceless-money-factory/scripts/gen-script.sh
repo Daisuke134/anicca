@@ -36,10 +36,9 @@ Do NOT reuse any of these recent topics: [${RECENT}]
 Also output the topic as a short label on the FIRST line prefixed "TOPIC:" then the script after a blank line.
 EOF
 
-PAYLOAD="$(SYS="$SYS" USERP="$USERP" python3 -c "import json,os;print(json.dumps({'model':'deepseek-chat','messages':[{'role':'system','content':os.environ['SYS']},{'role':'user','content':os.environ['USERP']}],'temperature':0.95}))")"
-RESP="$(curl -sS https://api.deepseek.com/chat/completions -H "Authorization: Bearer ${DEEPSEEK_API_KEY:?DEEPSEEK_API_KEY missing}" -H "Content-Type: application/json" -d "$PAYLOAD")"
-RAW="$(printf '%s' "$RESP" | python3 -c "import json,sys;print(json.load(sys.stdin)['choices'][0]['message']['content'].strip())")"
-[ -n "$RAW" ] || { echo "GEN_SCRIPT_FAILED" >&2; exit 3; }
+# MODEL-AGNOSTIC: the running agent's OWN model writes the script (env decides the provider).
+RAW="$(SYS="$SYS" USERP="$USERP" LLM_TEMPERATURE=0.95 bash "$SK/scripts/llm-call.sh")"
+[ -n "$RAW" ] || { echo "GEN_SCRIPT_FAILED (no LLM configured — see llm-call.sh)" >&2; exit 3; }
 
 # parse TOPIC + SCRIPT + derive query, emit JSON, and append topic to the dedup ledger — all in python (portable)
 ID="$ID" RAW="$RAW" LEDGER="$LEDGER" python3 - <<'PY'
