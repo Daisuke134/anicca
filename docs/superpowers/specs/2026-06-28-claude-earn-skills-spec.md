@@ -664,3 +664,37 @@ NEXT: Phase 1c re-review ×4 → PASS → Phase 2 RED→GREEN.
   live handlers = honestly narrate `not-yet-wired (#14)`, NO fake success (HARD 0.24 clean).
 NEXT (#14): wire + no-mock E2E the live execute pipeline (needs a warmed account + an active campaign that
 ends + a real Solana withdrawal → the only true DONE).
+
+---
+## 2026-06-29 — HANDOVER to the `claude -p` loop agent (#14 cont. + #15) — exact remaining work
+The DONE spine is built + independently GREEN (106 tests + money probes); SELECT is LIVE-wired (picked crocs
+from 23 real campaigns). What the loop agent must do, in order. Repo = `~/anicca` (OSS, push to main).
+Slot = `~/anicca/skills/earn/clip-promote/`. Each step keeps the slot contract: run.sh runs ONE bounded
+transition chosen by the PURE `decide.py`, prints ONE JSON line `{slot,did,earned_usdc,cost_usdc}`, exit 0;
+every browser/IO step wrapped in `run_step` (watchdog → `blocked:human:<x>` exit0); RECORD only under `env -i`.
+
+1. **CLIP handler (run.sh `CLIP)` case).** From the selected campaign page (`/campaigns/<slug>`) extract a
+   SOURCE video from the "content library" tab (e.g. crocs = 8 MicroDrama episodes). Run `earn-clip-rewards`
+   (yt-dlp + faster-whisper + ffmpeg) → a **15–45s 1080×1920** clip with burned subtitles + **≥1 treatment**
+   the campaign requires (reframe 3:4 / color grade / 4K upscale / flip — crocs Rules mandate it, raw repost
+   is rejected). Verify with `ffprobe` (15≤dur≤45, 1080×1920, audio present). Advance state → POST. Mind disk
+   hygiene (HARD 0.26): clip in `~/.cache/`, clean up.
+2. **POST handler — TRUE Day-7 gate.** Post `ig-reels-poster --live` ONLY to an account that is genuinely
+   Day-7-warmed. ★ `~/.cloak/clip-accounts.json status=="ready"` is NOT enough — @aiclipsvault was created
+   2026-06-29 and is mid-warmup (port 9223, anti-throttle browser). Add a REAL day-count check (warmup_day≥7)
+   before `--live`; else defer (`did:"no-warm-account"`). ★ Caption MUST include the campaign's required tags
+   (crocs: tag `@crocsshop_US`, CTA "Watch now"/"Watch what happens next", `#crocs #DejaShoe`). Capture +
+   profile-verify the post URL. Advance → SUBMIT.
+3. **SUBMIT handler.** Submit the post URL to the campaign on promote.fun; read status. REJECTED → STALLED.
+4. **MEASURE handler.** Read views + accrued balance from promote.fun stats each wake; 0 views past
+   `DEAD_ZERO_HOURS` (48) → STALLED. Loops here for days until the campaign ENDS.
+5. **WITHDRAW handler.** When the campaign has ENDED and the promote.fun balance > 0, click Withdraw → capture
+   the Solana **signature** into state (`sig`), phase → RECORD. (RECORD is already implemented: `record-payout.mjs`
+   verifies the sig on-chain + appends the only `earned_usdc>0` ledger line.)
+6. **#15 LOOP.** Wrap one wake in `claude -p` (Sonnet) on a cadence (`/loop` or launchd), prompt = "run ONE wake
+   of earn/clip-promote (EARN_MODE=execute) and report the JSON line". The loop walks the state machine across
+   wakes with no human; it reaches DONE when real USDC lands (multi-day — do NOT fake; HARD 0.24).
+INVARIANTS the agent must not break: DONE = a confirmed on-chain Solana USDC inflow ONLY; never count
+posted/submitted/views as earned; RECORD only via `record-payout.mjs` under `env -i`; keep every new handler
+covered by a test (`tests/`), and re-run all 5 suites green before claiming a stage done. Full prompt mailed
+to keiodaisuke@gmail.com + saved at `docs/handover-claude-p-clip-earn.md`.
