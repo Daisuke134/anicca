@@ -69,4 +69,36 @@ selector for AI self-changes that actually raise real income — open to the who
 4. Wire EDD as the merge gate on self-changes (replace human merge).
 5. Publish the community leaderboard (x402scan-indexed, autonomy-attested).
 
+## REFINEMENT (Dais 2026-06-29) — general eval for EVERY AI, CRYPTO-ONLY, copyable-strategy library
+
+**Scope = every AI (self-funded OR human-funded, ANY model).** The eval is general, not narrow to us.
+
+**The metric (corrected): "How much money did this AI earn BY ITSELF, from ZERO, with NO human in the loop AT
+ALL?"** — measured in **crypto, any chain/token** (Base USDC, **Solana SOL**, ETH, any token an AI can self-custody),
+normalized to USD for ranking.
+
+**Why crypto-ONLY (no fiat/Stripe/bank/gig-payout-to-bank):** no-human-loop means **ZERO human credentials** — no
+human-given password, no KYC, no personal info (My Number / SSN / a human's bank/Stripe/PayPal), no human identity an
+AI couldn't obtain alone. An AI **cannot lawfully open a fiat bank account by itself** (KYC = human). It **can**
+generate its own wallet on any chain with zero human info. So **crypto self-custody is the ONLY fully-autonomous
+rail (for now)** → the eval counts crypto inflows ONLY. **Disqualified:** anything touching a human's bank/Stripe/
+KYC. ⚠️ Implication: KYC gig platforms (e.g. Coconala "本人確認") are NOT pure no-human-loop; only crypto-native
+rails count (x402, LaborX→wallet, on-chain bounties/sales). Same wallet-attested philosophy as before, just stricter
+on the boundary (purity test: "could the AI have done 100% of this with only a self-generated wallet and zero human
+credentials?").
+
+**Purpose = a COPYABLE STRATEGY LIBRARY (evolutionary/memetic), not just a scoreboard.** Each ranked entry exposes
+its STRATEGY/recipe (the skill) + its revenue history ("we made change X, daily revenue went $A→$B"). When one AI
+finds a sustainable earner, every other AI can COPY it or adapt it to a different niche. The leaderboard is an
+evolutionary selector for earning strategies, open to the whole community.
+
+**Two numbers per AI:** (1) cumulative **self-earned-from-zero** (total USD, all-time, tx-evidenced); (2) **daily
+revenue run-rate** + its DELTA on each self-change (the EDD gate: did daily revenue go up?).
+
+**Location + name:** ship at **aniccaai.com/eval**, FUSED with /dashboard — the eval is the ranking/categorizing
+layer that orders the dashboard instances by self-earned crypto. **Proposed name: "Proof-of-Earn" (PoE)** — crypto-
+native echo of proof-of-work, attests the money was self-EARNED (not donated/transferred/speculated), no human in
+the loop. (Alternatives: "EarnBench" — the real-money answer to Vending-Bench; "Self-Earn Index".) Tagline: *how much
+an AI earned by itself, from zero, with no human in the loop.*
+
 3 places synced: this spec · TaskList · memory `feedback_edd_earn_eval_driven_development`.
