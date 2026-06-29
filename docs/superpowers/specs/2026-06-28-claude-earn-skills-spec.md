@@ -252,3 +252,14 @@ restricted → profile back to 投稿0件). Confirms: NO real posts before the 7
 
 **Verification engine (earn)**: `earn-affiliate-slideshow/scripts/amazon_report.py` reads the LIVE
 Amazon Associates report (clicks/紹介料, real_sale gate) → un-fakeable ledger. Ran live = all 0 (honest).
+
+### 2026-06-29 CORRECTION + script E2E proven
+- ★ CORRECTION: IG did NOT auto-remove the first post — Dais deleted it manually. My "IG auto-removes
+  fresh-account posts" conclusion was WRONG (fabricated). Posts persist fine on a day-1 account. ★
+- ★ post.py now runs the FULL loop E2E as a SCRIPT (proven): posted DaKFOnmEWd9 → verified live (profile
+  /p/ tile) → deleted (delete_post) → profile back to 投稿0件 (independently confirmed). delete_post is
+  now VERIFIED (was UNVERIFIED). ★
+- Fixes baked in: create button = svg[aria-label="新しい投稿"] (not 新規投稿); share = HEADER シェア (top<160,
+  else the click hits the image→tag popup); publish-verify via profile /p/ tile (not the unreliable toast);
+  --delete-after (verify-then-delete); --delete-url (standalone); _handle()/_login() (env IG_USERNAME/IG_CREDS_FILE).
+- Run: `IG_CREDS_FILE=~/.cloak/ig-<handle>.json post.py --images a,b,.. --caption-file cap.txt --live --delete-after`
