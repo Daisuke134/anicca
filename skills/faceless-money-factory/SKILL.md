@@ -1,6 +1,6 @@
 ---
 name: faceless-money-factory
-description: Generate a FRESH faceless personal-finance short video every day, forever, for $0. Copies a proven viral template (head-to-head) but writes brand-new content each run (DeepSeek + dedup ledger), pairs it with free stock b-roll (Mixkit) + free TTS (edge-tts) + beat-aligned cuts + burned captions. No face, no lip-sync, no paid APIs. Use when the user wants to mass-produce monetizable short-form finance content (TikTok/Reels/Shorts) on autopilot. Default output = DRAFT email for approval until posting accounts are wired.
+description: Generate a FRESH faceless personal-finance short video every day, forever, for $0. MODEL-AGNOSTIC (uses the running agent's own LLM — OpenClaw/DeepSeek, Claude, or any via env; no provider lock-in). Copies a proven viral template (head-to-head) but writes brand-new content each run (agent's own model + dedup ledger), pairs it with free stock b-roll (Mixkit) + free TTS (edge-tts) + beat-aligned cuts + burned captions. No face, no lip-sync, no paid APIs. Use when the user wants to mass-produce monetizable short-form finance content (TikTok/Reels/Shorts) on autopilot. Default output = DRAFT email for approval until posting accounts are wired.
 ---
 
 # Faceless Money Factory
