@@ -95,8 +95,13 @@
    "summary": "Launch/manage $ANICCA token (MoltX ~$2.70). args {launch:true,name,symbol}."
   },
   "earn/gig": {
+   "track": "A",
+   "dir": "skills/earn/gig",
+   "entrypoint": "run.sh",
    "status": "live",
-   "summary": "gig work → USDC (one bounded gig per wake, no human)"
+   "spec": "2026-06-29-earn-gig-slot-design.md (D8 pivot)",
+   "owner": "wf-a:earn-gig",
+   "summary": "Coconala freelance gig → ¥ (HUMAN-FUNDED, settles to Dais MUFG; NOT on-chain USDC). The real earner is an independent claude-p tmux+cron core (gig-cli.sh, hourly :27) that drives the daily-driver browser as mtdc per scripts/coconala/APPLY_RUNBOOK.md (scan 公開依頼 → 応募 → talk-room reply → 納品 → 評価). run.sh is a cheap supervise+report entrypoint: ensures the core is alive + reports ¥ status. NO USDC, NO record-earn, no human in the daily op (only Dais's one-time KYC)."
   },
   "earn/clip": {
    "track": "A",

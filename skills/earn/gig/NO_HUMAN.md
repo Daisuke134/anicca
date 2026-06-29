@@ -1,26 +1,27 @@
-# earn/gig — NO-HUMAN guarantee (D4)
+# NO-HUMAN — earn/gig = Coconala loop (human-funded ¥ → Dais MUFG)
 
-Every step is autonomous. A human step disqualifies a rail (CC contract #2). Proven by
-`__tests__/no-human.test.mjs` (audits run.sh + every lib for stdin reads / interactive
-prompts / "ask a human" patterns; fails the build if any appears). The loop also spawns
-run.sh with **stdin ignored**, so the slot physically cannot block on human input.
+The DAILY operation has NO human in the loop. The ONLY human element is Dais's one-time
+Coconala account + KYC + bank link (a setup fact, not a runtime step).
 
-## Human touchpoint → autonomous mechanism
-| would-be human step | mechanism | where |
-|---|---|---|
-| captcha | CapSolver (`CAPSOLVER_API_KEY`) | (dealwork has none; for future browser rails) |
-| OTP / login code | `gog gmail` / AgentMail auto-read (incl. SPAM) | any email-code gate |
-| login | stored creds in `~/.openclaw/.env` (read from file) | future browser rails |
-| publish / submit | CDP browser (daily-driver :9222) | future browser rails |
-| private key | loop scrubs `*_WALLET_KEY`; slot reads wallet **address only** from `~/.anicca-founder/wallet.json` | all |
-| "did I earn?" | record-earn on-chain scan (external USDC only) — never self-asserted | settle |
+## Mechanism (audited by __tests__/no-human-loop.test.mjs)
+| concern | how it's handled, no human |
+|---|---|
+| login lapsed | core re-logs in via「Googleでログイン」on the daily-driver (stored Daisuke session) |
+| CAPTCHA | CapSolver (Turnstile/hCaptcha) per tier-a-bypass |
+| OTP / verification mail | `gog gmail` auto-read (keiodaisuke@gmail.com) |
+| 応募 (apply) | model drives CDP :9222 per scripts/coconala/APPLY_RUNBOOK.md (real-mouse datepicker, setFileInputFiles attach, 投稿前モーダル) — no human click |
+| talk-room reply / 納品 / 評価 | model acts on the live DOM each cron pass |
+| a blocker | "A blocker is NOT a stop" — the core tries the autonomous path + reports; it never asks a human |
 
-## Rails (all no-human end-to-end, own-wallet crypto payout)
-- **dealwork** — pure REST API, no captcha, no browser → fully headless no-human. PRIMARY.
-- **laborx** — NOT yet a live rail: detection + apply/deliver (CDP daily-driver) not written, so it is
-  NOT offered by can_run (avoids a pretended-live rail). Re-add when its no-human apply/deliver code lands.
-- **Removed** (human loop / dead): Coconala (¥→human KYC bank), abillio (domain parked).
+## NO-FAKE-EARN
+- ¥ is human-funded (settles to Dais's Coconala account → MUFG). There is NO on-chain USDC,
+  NO wallet, NO record-earn in this loop. The cron prompt forbids claiming USDC.
+- A ¥ earn is recorded to `~/gig/earnings.jsonl` ONLY when Coconala UI shows a settled status
+  (検収/支払) AND evidence is captured. `monitor.sh` + `run.sh` enforce this deterministically
+  (status whitelist + non-empty evidence); an applied/in-progress/fabricated row is never summed.
 
-## Funding-agnostic
-Same no-human rails on `ANICCA_BRAIN=claude-p` (human-funded) and `=proxy` (self-funded). The
-human funds compute only; the earning loop touches no human.
+## Files audited
+`gig-cli.sh` (the live core + cron prompt), `monitor.sh`, `gig-healthcheck.sh`. The old dealwork +
+on-chain-USDC machinery (run.sh detect/bid/settle, lib/*) lives in `archive/` and is NOT part of
+this loop. (Coconala is the ACTIVE rail — earlier notes that called Coconala "removed" were the
+pre-pivot self-funded-USDC framing and are obsolete.)

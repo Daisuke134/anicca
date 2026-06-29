@@ -26,9 +26,15 @@ def rows(f):
     return out
 ap=rows(applied_f); ea=rows(earn_f)
 applied=[r for r in ap if r.get("status")=="applied"]
-jpy=sum(float(r.get("jpy",0) or 0) for r in ea)
+# deterministic earned guard (FIND-003): a ¥ row counts ONLY with a settled status AND non-empty
+# evidence — an applied/in-progress/fabricated row can NEVER be summed as earned.
+SETTLED={"検収","支払","検収完了","completed","paid"}
+valid=[r for r in ea if r.get("status") in SETTLED and r.get("evidence")]
+rejected=len(ea)-len(valid)
+jpy=sum(float(r.get("jpy",0) or 0) for r in valid)
 core_alive=os.system("tmux -S /tmp/anicca-gig-tmux.sock has-session -t anicca-gig-core 2>/dev/null")==0
 print(json.dumps({"slot":"gig/coconala","core":"ALIVE" if core_alive else "DEAD",
-  "applied_total":len(applied),"earn_rows":len(ea),"jpy_earned":round(jpy,0),
-  "note":"¥ human-funded -> Dais MUFG; earn rows are real 検収 only (no USDC)"}))
+  "applied_total":len(applied),"earn_rows_valid":len(valid),"earn_rows_rejected":rejected,
+  "jpy_earned":round(jpy,0),
+  "note":"¥ human-funded -> Dais MUFG; earned = settled-status + evidence only (no USDC)"}))
 PY
