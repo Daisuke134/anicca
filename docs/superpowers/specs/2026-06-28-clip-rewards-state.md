@@ -150,3 +150,5 @@ do a step → update DONE section + BLOCKED order + NEXT ACTION
 ```
 
 このルールを破ったら罪。 1 step 1 commit を絶対守る。
+
+| D-47 | 2026-06-29 — ★ CONTENT UNIT 完成 + Dais に送付 ★ (= Dais 「動画を chat に送れ、 caption burn-in しろ」)。 (1) clip を gog gmail (--account keiodaisuke@gmail.com、 GOG_KEYRING_PASSWORD env 必須、 Resend は domain 未 verify で 403 だった) で keiodaisuke@gmail.com に添付送信 (msg 19f1141ce7138163)。 (2) ★ `burn_captions.py` 作成 ★ (= earn-clip-rewards skill): clip 自身を faster-whisper word_timestamps=True で再 transcribe → word-level karaoke ASS (現在語 amber highlight + rolling 3-word window) → ffmpeg `ass=` 焼き込み + hook banner (最初 2s, top)。 font は frame 幅比例 (= overflow 防止、 v1 は 54px 固定で画面外 はみ出し → 0.085×width に修正)。 (3) E2E verify: frame@1s = hook "THE PURPOSE OF WEALTH IS FREEDOM" + karaoke "the **reason** you"、 frame@16s = "doesn't **fulfill** you." 全 画面内 ✓、 270×480 9:16 + aac audio intact。 (4) 完成版 short_01_captioned.mp4 を Dais 送付 (msg 19f11449842d1c12)。 ★ これで content engine = 完全に「投稿可能な clip」 まで自走 ★ | 2 emails sent + frames + ffprobe |
