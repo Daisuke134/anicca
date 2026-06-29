@@ -1,0 +1,7 @@
+# Baseline: integration.test.mjs on ~/anicca (main, WITHOUT earn-slot change) — 2026-06-29
+# Proves PROP-013/021 failures are PRE-EXISTING flaky (not the earn-slot integration's regression).
+✖ PROP-021(a): profitable earn line -> loop records profitable:true (813.507709ms)
+ℹ pass 10
+ℹ fail 1
+✖ failing tests:
+✖ PROP-021(a): profitable earn line -> loop records profitable:true (813.507709ms)
