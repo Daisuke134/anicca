@@ -36,13 +36,12 @@ function payTo() {
   }
 }
 
-const PRICE = process.env.X402_PRICE || "$0.02";
+const PRICE = process.env.X402_PRICE || "$0.003";
 const NETWORK = process.env.X402_NETWORK || "base";
 const PORT = Number(process.env.X402_PORT || 8403);
-// default product = web-research brief via research-product.sh (firecrawl search, $0 input cost).
-// (The old `agent-reach format --json --query {q}` is broken — that CLI now only supports `format xhs`.)
+// default product = $0 web-research digest via research-product.mjs (Wikipedia + HN + Jina, zero paid keys).
 const PRODUCT_CMD = process.env.X402_PRODUCT_CMD ||
-  `bash ${new URL('./research-product.sh', import.meta.url).pathname} {q}`;
+  `node ${new URL('./research-product.mjs', import.meta.url).pathname} {q}`;
 
 const app = express();
 
@@ -50,11 +49,19 @@ const app = express();
 // (x402-express, prior session): payTo=wallet, $price USDC on Base, returns 402 until paid — no key
 // needed to RECEIVE. Loaded dynamically so the skill installs the dep on first run.
 const { paymentMiddleware } = await import("x402-express");
+// CDP facilitator (when CDP keys present) → settles on Base mainnet AND lists the endpoint in the x402
+// Bazaar discovery layer (how buyer agents FIND us). Falls back to the x402.org testnet facilitator when
+// no CDP keys (generic install / dev). payTo stays our wallet — CDP only facilitates + catalogs, never custodies.
+let facilitator = { url: "https://x402.org/facilitator" };
+if (process.env.CDP_API_KEY_ID && process.env.CDP_API_KEY_SECRET) {
+  const { createFacilitatorConfig } = await import("@coinbase/x402");
+  facilitator = createFacilitatorConfig(process.env.CDP_API_KEY_ID, process.env.CDP_API_KEY_SECRET);
+}
 app.use(
   paymentMiddleware(
     payTo(),
-    { "GET /research": { price: PRICE, network: NETWORK } },
-    { url: "https://x402.org/facilitator" }
+    { "GET /research": { price: PRICE, network: NETWORK, config: { description: "On-demand web research digest — free-source curated (Wikipedia + Hacker News + Jina Reader). GET /research?q=<topic>; pay per request in USDC on Base. Runs on any install, $0 source cost." } } },
+    facilitator
   )
 );
 
