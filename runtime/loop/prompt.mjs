@@ -76,6 +76,8 @@ export function buildSystemPrompt(ctx, activeSkillSlots) {
     '                   see a setup; pass {action:"close",coin} to realise a winner or cut a loser.',
     '  - token_launch : launch/grow your $ANICCA token → trading-fee income ({launch:true,name,symbol}).',
     '  - cook         : explore a NEW earner (web search). self/issue-dev : fix your own bugs.',
+    '  - earn/<sub>   : per-method earners (gig, clip, affiliate, video, audit) — each makes real money a',
+    '                   different way. The LIVE ones are listed under "Available skill slots" below; pick one.',
     '',
     '## MINDSET: yield is the bank (done once). Value is CREATED by SELLING + TRADING + BUILDING.',
     '- You were funded to GROW the balance, not to sit. Re-yielding every wake = failure.',
@@ -130,8 +132,8 @@ export function getToolDefinitions(slots) {
       function: {
         name: 'run_skill',
         description: 'Execute one skill. Pick the SLOT directly (hl_trade, x402_sell, token_launch, ' +
-          'yield, cook, self/issue-dev) — each is its own first-class action; there is NO generic ' +
-          '"earn" slot. Use `args` to pass YOUR decision (HARD RULE #0: the skill is the tool, YOU ' +
+          'yield, cook, self/issue-dev, AND any earn/<sub> slot — gig, clip, affiliate, video, audit) — ' +
+          'each is a first-class earn/action. Use `args` to pass YOUR decision (HARD RULE #0: the skill is the tool, YOU ' +
           'decide): hl_trade → {"coin":"ETH","side":"long","size_usd":20,"sl_pct":3,"tp_pct":6} to open ' +
           'or {"action":"close","coin":"ETH"} to realise; x402_sell → {"sell":"...","price":"$1"}; ' +
           'token_launch → {"launch":true,"name":"...","symbol":"..."}; yield → {} (auto best vault); ' +
@@ -176,7 +178,10 @@ export function buildUserMessage(ctx) {
   // earning in different ways"). The per-action ledger `result` (now recorded) lets it see what it found.
   const counts = (ctx.recentSlots || []).reduce((m, s) => (m[s] = (m[s] || 0) + 1, m), {});
   const over = Object.entries(counts).filter(([, n]) => n >= 3).map(([s]) => s);
-  const ALL = ['yield', 'hl_trade', 'x402_sell', 'token_launch', 'cook'];
+  // DYNAMIC (GAP-C): the menu includes the live per-method earn slots (earn/gig, earn/clip, …) the loop
+  // surfaced via ctx.activeSkillSlots — NOT a hardcoded list — so a CC dropping a new earn slot is pickable.
+  const earnSubs = (ctx.activeSkillSlots || []).filter((s) => typeof s === 'string' && s.startsWith('earn/'));
+  const ALL = ['yield', 'hl_trade', 'x402_sell', 'token_launch', 'cook', ...earnSubs];
   const untried = ALL.filter((s) => !counts[s]);
   const overuse = over.length
     ? `⚠️ You've used [${over.join(', ')}] heavily this session for $0 realised. Do NOT repeat them now. ${untried.length ? `Try a path you have NOT tried: [${untried.join(', ')}].` : 'Switch to a different earn path.'} Concretely: deploy idle cash to yield, open or CLOSE an hl trade to realise PnL, or act on what cook already found. Diversify — don't spin one slot.`
@@ -196,13 +201,14 @@ export function buildUserMessage(ctx) {
     recent,
     overuse,
     avoid,
-    `Decide the single most productive action now and call run_skill({slot, args}) — pick ONE slot DIRECTLY (each is a real, equal option; there is no generic "earn"):`,
+    `Decide the single most productive action now and call run_skill({slot, args}) — pick ONE slot DIRECTLY (each is a real, equal earn/action option):`,
     `  - hl_trade — trade a perp to make money: OPEN {coin:"ETH",side:"long"|"short",size_usd,sl_pct,tp_pct}, or CLOSE {action:"close",coin} to realise PnL on a position you hold.`,
     `  - x402_sell — run + advertise your paid product to get buyers: {sell:"<what>",price:"$X"}.`,
     `  - token_launch — launch/grow your token for trading-fee income: {launch:true,name,symbol}.`,
     `  - yield — park idle USDC in the best vault (only when you have idle cash above your compute buffer): {}.`,
     `  - cook — explore a NEW earner: {query:"..."}.`,
     `  - self/issue-dev — file a bug to fix yourself if you're stuck.`,
+    earnSubs.length ? `  - per-method earners (each makes real money a different way): ${earnSubs.join(', ')}.` : '',
     `These are all open to you every wake — choose by your situation, include args. Vary your actions.`,
   ].filter(Boolean).join('\n');
 }
