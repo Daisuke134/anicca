@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# affiliate-cli.sh — ALWAYS-ON affiliate earn-core (clone of clip-cli.sh). Detached tmux headless
+# claude that registers a DAILY cron: producer writes a deck + builds the slideshow, then run.sh
+# posts the carousel to the ready niche account. Idles between; healthcheck restarts if it dies.
+set -uo pipefail
+SOCK="/tmp/anicca-affiliate-tmux.sock"; SESSION="anicca-affiliate-core"
+CLAUDE="$(command -v claude || echo /opt/homebrew/bin/claude)"
+STARTUP='You are the Anicca affiliate earn-core (claude-p, every-day loop, AI仕事術 niche, Amazon Associates JP tag aniccaai-22). FIRST register the recurring driver if absent: CronList; if none mentions earn/affiliate, CronCreate cron="41 8 * * *" (daily ~08:41), recurring=true, durable=true, prompt="Run ONE daily affiliate pass, no human. set -a; . ~/.openclaw/.env; set +a. (1) WRITE a fresh educational slideshow deck.json to /tmp/aff-deck-$(date +%Y%m%d).json: an AI/productivity tip carousel — hook → 3-5 genuinely useful tips → soft bridge → CTA リンクはプロフィール; include a caption ending with #PR (景表法). slides[] each {n:1..N contiguous, text}. (2) PRODUCE: bash ~/anicca/skills/earn/affiliate/producer.sh /tmp/aff-deck-$(date +%Y%m%d).json (gen bg + compose + verify → ~/affiliate/queue). (3) POST: EARN_MODE=execute bash ~/anicca/skills/earn/affiliate/run.sh (drains queue → carousel to the ready affiliate account; fail-closed if no ready account). Report one-line JSON. NEVER post to a non-affiliate account. ¥/commission accrues later; do not fake earn. Blocker is not stop.". THEN run ONE pass now. THEN idle.'
+status(){ tmux -S "$SOCK" has-session -t "$SESSION" 2>/dev/null && echo ALIVE || echo DEAD; }
+case "${1:-}" in --status) status; exit 0;; --restart) tmux -S "$SOCK" kill-session -t "$SESSION" 2>/dev/null||true;; esac
+[ "${1:-}" != "--restart" ] && tmux -S "$SOCK" has-session -t "$SESSION" 2>/dev/null && { echo "affiliate-core already ALIVE"; exit 0; }
+tmux -S "$SOCK" new-session -d -s "$SESSION" "$CLAUDE" --name "$SESSION" --dangerously-skip-permissions --add-dir "$HOME" -- "$STARTUP"
+sleep 2; echo "affiliate-core started ($(status))"
