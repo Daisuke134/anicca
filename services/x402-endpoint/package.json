@@ -1,1 +1,1 @@
-{"name":"anicca-x402-endpoint","private":true,"type":"module","version":"0.1.0","dependencies":{"@x402/core":"^2.15.0","@x402/evm":"^2.15.0","@x402/express":"^2.15.0","express":"^5.2.1","viem":"^2.52.2","x402-express":"^1.2.0","x402-fetch":"^1.2.0"}}
+{"name":"anicca-x402-endpoint","private":true,"type":"module","version":"0.1.0","dependencies":{"@coinbase/cdp-sdk":"^1.51.2","@x402/core":"^2.15.0","@x402/evm":"^2.15.0","@x402/express":"^2.15.0","express":"^5.2.1","viem":"^2.52.2","x402-express":"^1.2.0","x402-fetch":"^1.2.0"}}
