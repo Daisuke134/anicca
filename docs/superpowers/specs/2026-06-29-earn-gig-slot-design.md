@@ -123,3 +123,10 @@ skills/earn/gig/
 GIG_MODE=detect (既定): detect.mjs で feed refresh → jobs_seen + available_rails + 構造化JSON + exit0 (earn0)
 GIG_MODE=bid/deliver/inbound: #5/#6 で配線 (現在は安全 no-op、 偽tx無し)
 ```
+
+## 改訂 D7 (2026-06-29、 Dais 厳命) — Coconala 完全削除
+★ earn/gig は **完全 no-human (onboard+work+payout 全て人間ゼロ)** のレールだけ ★。
+Coconala は payout が ¥→人間の KYC 銀行口座 = ★ human loop ★ = 「人間から財務独立」 に矛盾 → ★ 削除 ★。
+- D3 (Coconala 条件レール) 撤回。 can-run の RAIL_CREDS から coconala 除去。 テストは「決して出さない」 に。
+- 残レール = laborx (crypto→wallet) / dealwork (USDC escrow→wallet) (+ x402 後日)。 全て own wallet 着金。
+- 教訓: 人間入力が要る rail は財務独立に反する → slot に入れない (abillio 死亡 + coconala human-loop と同列で除外)。
