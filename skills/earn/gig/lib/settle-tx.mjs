@@ -40,10 +40,16 @@ export async function representativeExternalTx(wallet, { spanBlocks = 9000, myWa
   }
   const toTopic = '0x000000000000000000000000' + wallet.slice(2).toLowerCase();
   let logs;
-  try {
-    logs = await rpc('eth_getLogs', [{ address: USDC, topics: [TRANSFER, null, toTopic],
-      fromBlock: '0x' + from.toString(16), toBlock: '0x' + now.toString(16) }]);
-  } catch { return null; }
+  // TEST-ONLY seam (gated by FOUNDER_TEST, like record-earn's FOUNDER_RAW_LOGS_JSON): inject raw
+  // eth_getLogs to exercise the real parse + founder/SHARED exclude + window logic without a node.
+  if (process.env.FOUNDER_TEST === '1' && process.env.GIG_RAW_LOGS_JSON !== undefined) {
+    try { logs = JSON.parse(process.env.GIG_RAW_LOGS_JSON); } catch { return null; }
+  } else {
+    try {
+      logs = await rpc('eth_getLogs', [{ address: USDC, topics: [TRANSFER, null, toTopic],
+        fromBlock: '0x' + from.toString(16), toBlock: '0x' + now.toString(16) }]);
+    } catch { return null; }
+  }
   if (!Array.isArray(logs)) return null;
   // most recent external Transfer (re-verify topic0 + recipient; never trust server filter)
   for (let i = logs.length - 1; i >= 0; i--) {
