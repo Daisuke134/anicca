@@ -1,0 +1,17 @@
+import { privateKeyToAccount } from "viem/accounts";
+import { createPublicClient, http, formatUnits } from "viem";
+import { base } from "viem/chains";
+import { readFileSync } from "node:fs";
+const JOB="87b131ee-7102-4d69-a99d-08cff67e9c1a";
+const w=JSON.parse(readFileSync(process.env.HOME+"/.anicca-founder/wallet.json","utf8"));
+let pk=w.private_key.startsWith("0x")?w.private_key:"0x"+w.private_key;
+const acct=privateKeyToAccount(pk);const API="https://api.bountybook.ai";
+const n=await(await fetch(`${API}/auth/nonce?address=${acct.address}`)).json();
+const sig=await acct.signMessage({message:String(n.nonce||n.message||n)});
+const v=await(await fetch(`${API}/auth/verify`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({address:acct.address,signature:sig})})).json();
+const j=(await(await fetch(`${API}/jobs/${JOB}`,{headers:{Authorization:"Bearer "+v.token}})).json());const job=j.job||j;
+console.log("status:",job.status,"| payout_status:",job.payout_status,"| payout_tx:",job.payout_tx_hash);
+console.log("verification_result:",JSON.stringify(job.verification_result||"(none yet)").slice(0,300));
+const c=createPublicClient({chain:base,transport:http("https://mainnet.base.org")});
+const bal=await c.readContract({address:"0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",abi:[{name:"balanceOf",type:"function",stateMutability:"view",inputs:[{type:"address"}],outputs:[{type:"uint256"}]}],functionName:"balanceOf",args:["0x810f6d61f7606deee2657d3083e150a222bc29c5"]});
+console.log("founder 0x810f USDC now:",formatUnits(bal,6));
