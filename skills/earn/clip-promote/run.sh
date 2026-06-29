@@ -28,35 +28,8 @@ LEDGER="${EARN_LEDGER:-$HOME/.openclaw/state/clip-earn-ledger.jsonl}"
 ACCTS="${CLIP_ACCOUNTS:-$HOME/.cloak/clip-accounts.json}"
 mkdir -p "$(dirname "$STATE")" "$(dirname "$LEDGER")" 2>/dev/null || true
 
-# ── portable timeout (FIND-302): GNU `timeout` or coreutils `gtimeout`; else a pure node fallback. ──
-TIMEOUT_BIN="$(command -v timeout || command -v gtimeout || true)"
-run_step() { # run_step <deadline_s> <cmd...> ; returns 124 on timeout
-  local d="$1"; shift
-  if [ -n "$TIMEOUT_BIN" ]; then
-    "$TIMEOUT_BIN" "$d" "$@"; return $?
-  fi
-  # pure fallback: child killed via SIGTERM after the deadline (exit 124 to mirror coreutils).
-  ( "$@" ) & local pid=$!
-  ( sleep "$d"; kill -TERM "$pid" 2>/dev/null; sleep 2; kill -KILL "$pid" 2>/dev/null ) & local wd=$!
-  if wait "$pid" 2>/dev/null; then kill -TERM "$wd" 2>/dev/null; return 0; fi
-  local rc=$?; kill -TERM "$wd" 2>/dev/null
-  [ "$rc" -ge 128 ] && return 124 || return "$rc"
-}
-
-emit() { # emit <did> [earned_usdc] [cost_usdc]
-  "$PY" - "$1" "${2:-0}" "${3:-0}" <<'PYE'
-import json,sys
-print(json.dumps({"slot":"earn/clip-promote","did":sys.argv[1],
-                  "earned_usdc":float(sys.argv[2]),"cost_usdc":float(sys.argv[3])}))
-PYE
-}
-
-# guard a step's exit code: 124 ⇒ blocked:human (no hang, no human wait), other non-zero ⇒ narrate.
-blocked_or() { # blocked_or <step-name> <rc> <narrate-msg-on-nonzero>
-  local step="$1" rc="$2" msg="$3"
-  if [ "$rc" -eq 124 ]; then emit "blocked:human:$step"; exit 0; fi
-  if [ "$rc" -ne 0 ]; then emit "$msg"; exit 0; fi
-}
+# shared emit / run_step (portable watchdog, FIND-302) / blocked_or (fail-closed) — see _lib.sh.
+. "$SK/_lib.sh"
 
 # load the current pipeline state (missing ⇒ {} ⇒ decide returns SELECT).
 read_state() { [ -f "$STATE" ] && cat "$STATE" || echo '{}'; }

@@ -10,6 +10,12 @@ import path from "node:path";
 import { record } from "../record.mjs";
 import { readLedger, isProfitable } from "../../../_shared/lib/ledger.mjs";
 
+// FIND-006: record() evaluates assertOwnIdentityOnly against process.env — strip any ambient PII var
+// so the test is deterministic regardless of the dev/CI shell (the live RECORD wake uses env -i).
+for (const k of Object.keys(process.env)) {
+  if (/^USER_|GOOGLE_LOGIN|COMPOSIO|GCAL|GOOGLE_CALENDAR|GMAIL|TELEGRAM|USER\.?PHONE/i.test(k)) delete process.env[k];
+}
+
 async function tmpFile() {
   const d = await fs.mkdtemp(path.join(os.tmpdir(), "clip-earn-ledger-"));
   return path.join(d, "earn-ledger.jsonl");
