@@ -228,3 +228,27 @@ Per-skill daily action:
 
 ## §8 DONE (this spec)
 All 4 skills named, money mechanics traced to articles, every prerequisite + uncertainty listed, account decision made (new dedicated niche accounts), loop mechanics defined (autonomous /schedule daily, compounding, self-verifying), full unabridged TODO written. Ready: on Dais "go", execute Phase 0 + Skill 1.
+
+---
+## 2026-06-29 — ig-account-poster PROVEN browser-direct (no Postiz) + verify-then-delete
+
+**Dais directives**: ① don't use Postiz — drive the browser MANUALLY like creator/warmer.
+② dry runs are meaningless — actually post E2E, verify, THEN scalify, THEN run it.
+③ ALWAYS delete the verification post after (no posts lingering during warmup).
+
+**PROVEN**: drove the daily-driver (CDP :9222) → re-login (@aishigoto.labo) → sidebar + → set 6
+images (DOM.setFileInputFiles multi) → 4:5 aspect → 次へ×2 → caption → シェア. Post went LIVE,
+verified **投稿1件** + tile on profile (URL /p/DaKDIOOETK_/).
+
+**Hard learning**: IG AUTO-REMOVED the post within minutes (fresh day-1 account; account NOT
+restricted → profile back to 投稿0件). Confirms: NO real posts before the 7-day warmup completes.
+
+**Scalified into `~/.agents/skills/ig-account-poster/`** (symlinked to .claude + .openclaw):
+- `post.py`: login() + sidebar-+ create + multi-image + 4:5 aspect + caption + シェア + `--delete-after`
+  (verify-then-delete) + `--delete-url` (standalone). delete_post() = UNVERIFIED E2E (IG removed the
+  test post first) — verify on next surviving post.
+- `build_caption.py`: deck → educational caption (#PR + link-in-bio CTA + niche hashtags).
+- Slide-dim fix TODO: generate slides 1080×1350 (4:5) natively (9:16 top text gets cropped).
+
+**Verification engine (earn)**: `earn-affiliate-slideshow/scripts/amazon_report.py` reads the LIVE
+Amazon Associates report (clicks/紹介料, real_sale gate) → un-fakeable ledger. Ran live = all 0 (honest).
