@@ -23,4 +23,13 @@ export function earnStrategyFor(slot) {
   return null;
 }
 
+// The skill entrypoint path (relative to skills/) for a slot — single source so the loop's inline resolver
+// and tests agree (REQ-4). Legacy action slots {earn,yield,hl_trade,x402_sell,token_launch} all run the fat
+// `earn/run.sh`; everything else (incl per-method earn/<sub> and non-earn slots) runs `<slot>/run.sh`.
+// Single-level only (FIND-007): `slot` carries at most one slash (earn/<sub>); deeper is not declared.
+export function earnSkillRelPath(slot) {
+  if (Object.prototype.hasOwnProperty.call(EARN_ACTION, slot)) return 'earn/run.sh';
+  return `${slot}/run.sh`;
+}
+
 export { EARN_ACTION };

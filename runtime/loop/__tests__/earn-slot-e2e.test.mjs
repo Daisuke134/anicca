@@ -74,3 +74,25 @@ test('E2E: real loop picks earn/_probe → stub gets EARN_LEDGER+WAKE_ID → ear
     server.close();
   }
 });
+
+test('E2E: forced earn/<sub> with NO run.sh → skill_missing (not crash) (REQ-6)', { timeout: 30000 }, async () => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'anicca-earnmiss-'));
+  fs.mkdirSync(path.join(home, 'identity'), { recursive: true });
+  fs.writeFileSync(path.join(home, 'identity', 'genesis.md'), '# Anicca\nautonomous agent.\n');
+  // NOTE: deliberately do NOT create skills/earn/_gone/run.sh
+  const wakeLedger = path.join(home, 'state', 'ledger.jsonl');
+  const { server, url } = await (async () => {
+    let count = 0;
+    const s = http.createServer((req, res) => {
+      if (req.method === 'POST' && req.url.includes('/chat/completions')) { let b = ''; req.on('data', d => b += d); req.on('end', () => { res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(count++ === 0 ? toolCall('earn/_gone') : narrate()); }); }
+      else { res.writeHead(200, { 'Content-Type': 'application/json' }); res.end('{"object":"list","data":[]}'); }
+    });
+    return new Promise(r => s.listen(0, '127.0.0.1', () => r({ server: s, url: `http://127.0.0.1:${s.address().port}/v1` })));
+  })();
+  const proc = spawn(process.execPath, [LOOP_ENTRY], { env: { ...process.env, ANICCA_HOME: home, OPENAI_BASE_URL: url, ANICCA_BALANCE_OVERRIDE: '0', SLEEP_BASE_S: '0', SLEEP_ERROR_S: '0', SLEEP_LOOP_DETECT_S: '0', SKILL_TIMEOUT_S: '10', LOOP_DETECT_WINDOW: '100' }, stdio: ['ignore', 'pipe', 'pipe'] });
+  try {
+    await waitFor(() => readJsonl(wakeLedger).some(l => l.slot === 'earn/_gone'));
+    const line = readJsonl(wakeLedger).find(l => l.slot === 'earn/_gone');
+    assert.equal(line.kind, 'skill_missing', 'missing earn/<sub> run.sh → skill_missing, not a crash');
+  } finally { try { proc.kill('SIGTERM'); } catch {} server.close(); }
+});
