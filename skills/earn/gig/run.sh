@@ -33,6 +33,27 @@ PY
 }
 WALLET="$(wallet_address)"
 
+# ── D1 can_run: which rails are available THIS wake (labor rails; capital-free) ──
+# Reads only the KEY NAMES present in the creds file (never the secret values) + brain.
+available_rails() {
+  local envf="${ANICCA_CREDS_ENV:-$HOME/.openclaw/.env}"
+  local brain="${ANICCA_BRAIN:-proxy}"
+  local keys=""
+  [ -f "$envf" ] && keys=$(grep -oE '^(export +)?[A-Z0-9_]+=' "$envf" 2>/dev/null | sed -E 's/^export +//; s/=$//' | sort -u | tr '\n' ' ')
+  python3 - "$brain" "$keys" <<'PY' 2>/dev/null || echo ""
+import sys
+sys.argv_brain=sys.argv[1]; present=set(sys.argv[2].split())
+RAIL_CREDS={"laborx":["LABORX_EMAIL","LABORX_PASSWORD"],"dealwork":["DEALWORK_API_KEY"],"coconala":["COCONALA_EMAIL","COCONALA_PASSWORD"]}
+out=[]
+for rail,ks in RAIL_CREDS.items():
+    if not all(k in present for k in ks): continue
+    if rail=="coconala" and sys.argv_brain!="claude-p": continue
+    out.append(rail)
+print(" ".join(out))
+PY
+}
+RAILS="$(available_rails)"
+
 # ── emit one structured result line (the loop/ledger parse this) ──
 emit() { # $1=task $2=earn_usdc $3=cost_usdc [$4=extra-json]
   python3 - "$WALLET" "$1" "$2" "$3" "$WAKE" "${4:-}" <<'PY'
@@ -52,8 +73,10 @@ do_detect() {
   local jobs=0 pending=0
   [ -f "$feed" ] && jobs=$(python3 -c "import json;print(len(json.load(open('$feed')).get('jobs',[])))" 2>/dev/null || echo 0)
   [ -f "$queue" ] && pending=$(grep -c . "$queue" 2>/dev/null || echo 0)
-  echo "[gig] detect wake=$WAKE jobs=$jobs pending_inbound=$pending"
-  emit "detect" 0 0 "{\"jobs_seen\":$jobs,\"pending_inbound\":$pending}"
+  local rails_json
+  rails_json=$(printf '%s' "$RAILS" | python3 -c "import sys,json;print(json.dumps(sys.stdin.read().split()))")
+  echo "[gig] detect wake=$WAKE jobs=$jobs pending_inbound=$pending rails=[$RAILS]"
+  emit "detect" 0 0 "{\"jobs_seen\":$jobs,\"pending_inbound\":$pending,\"available_rails\":$rails_json}"
 }
 
 case "$MODE" in
