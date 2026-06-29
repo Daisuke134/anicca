@@ -1,5 +1,7 @@
-# Behavioral Spec — promote-fun-clip-earn (VCSDD, lean) — REV 3 (post-adversary ×2)
+# Behavioral Spec — promote-fun-clip-earn (VCSDD, lean) — REV 4 (PASS, post-adversary ×4)
 
+> REV 4 closes the REV-3 re-review (FIND-301/302/303) + the 3 REV-4 minors (FIND-401/402/403); Phase 1c
+> adversary gate = PASS 5/5 (`reviews/spec-review-verdict-rev4.md`). Earlier:
 > REV 3 closes the REV 2 re-review findings (`reviews/spec-review-verdict-rev2.md`: 1 critical, 6 major,
 > 2 minor). Cross-refs marked `[FIND-2xx]`. REV 1→2 closed the original 9 (`spec-review-verdict.md`).
 
@@ -60,8 +62,9 @@ changes to the canonical lib are MANDATORY and each has a test:
    `GOOGLE_LOGIN`/`COMPOSIO`/`*GMAIL*`/`TELEGRAM`/`USER_*` would still reach the wake, and `record.mjs:19`
    calls `assertOwnIdentityOnly(line)` against `process.env` → `findUserPIIEnv` would THROW before append →
    DONE silently never fires. THEREFORE `run.sh` SHALL invoke the RECORD step under a CLEAN env:
-   `env -i PATH="$PATH" HOME="$HOME" SOLANA_RPC_URL="$SOLANA_RPC_URL" EARN_LEDGER="$LEDGER" node <record.mjs> '<json>' "$LEDGER"`
-   — passing ONLY the public wallet address + RPC + ledger path, never any PII var. (OTP/Gmail are needed
+   `env -i PATH="$PATH" HOME="$HOME" SOLANA_RPC_URL="$SOLANA_RPC_URL" node <record.mjs> '<json>' "$LEDGER"`
+   — the ledger path rides in argv[3] (`record.mjs:28`), the wallet rides in the JSON; pass NO PII var.
+   (FIND-403: `EARN_LEDGER` is NOT in the allowlist — record.mjs ignores it.) (OTP/Gmail are needed
    only at LOGIN wakes, never at RECORD, so a clean RECORD env loses nothing.) Regression test: set a PII
    var (e.g. `GOOGLE_LOGIN=x`) in the parent env → the run.sh RECORD invocation STILL records the line
    (because `env -i` stripped it) AND a direct `record.mjs` call WITH that var in env still throws (guard
@@ -75,12 +78,15 @@ changes to the canonical lib are MANDATORY and each has a test:
      / `postTokenBalances`, for EACH `postTokenBalances` entry where `owner === wallet` AND `mint === USDC
      mint`, find the matching `preTokenBalances` entry **by `accountIndex`**; **if no matching pre entry
      exists, pre = 0** (this IS the acceptance case — the wallet has no USDC ATA today, so the first
-     inbound withdraw CREATES the ATA and emits a post entry with no pre). Sum `(post.uiAmount −
-     pre.uiAmount)` over those entries only, ignoring every other transfer in the same signature
-     (batch/multi-transfer safe). Returns the net inbound USDC to OUR ATA (6dp). Tests MUST include a
-     first-inbound fixture (post entry present, NO pre entry → delta = full post amount). [FIND-209/303]
+     inbound withdraw CREATES the ATA and emits a post entry with no pre). Sum `(post − pre)` over those
+     entries only, ignoring every other transfer in the same signature (batch/multi-transfer safe). [FIND-402]
+     The amount field is `entry.uiTokenAmount` (NOT `tokenAmount`); read `uiTokenAmount.uiAmount`, and when
+     it is `null` fall back to `Number(uiTokenAmount.amount) / 10**uiTokenAmount.decimals`. Returns the net
+     inbound USDC to OUR ATA (6dp). Tests MUST include a first-inbound fixture (post entry present, NO pre
+     entry → delta = full post amount). [FIND-209/303]
    - `usdcBalance(wallet, {mint, rpc, fetchImpl})` → `getTokenAccountsByOwner(wallet,{mint})` parsed
-     `tokenAmount.uiAmount`; **returns 0 (not throw) when the ATA does not exist** (verified on-chain
+     `account.data.parsed.info.tokenAmount.uiAmount` (uiAmount null → `amount/10**decimals`); **returns 0
+     (not throw) when the ATA does not exist** (verified on-chain
      2026-06-29: our wallet currently has no USDC ATA → first inbound withdraw creates it).
    - USDC SPL mint `EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v` (verified accepted by
      `getTokenAccountsByOwner` 2026-06-29); re-confirm against the wallet's actual USDC ATA at build time.
