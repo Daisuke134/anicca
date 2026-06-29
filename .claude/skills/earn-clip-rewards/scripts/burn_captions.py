@@ -149,11 +149,26 @@ Style: Hook,Hiragino Sans,{hook_fs},&H0000F0FF,&H000000FF,&H00000000,&H96000000,
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
+    def wrap_jp(s, per_line=11):
+        # hard-wrap CJK text to per_line chars using ASS \N, so it never
+        # overflows a narrow vertical frame
+        out, line = [], ""
+        for ch in s:
+            line += ch
+            if len(line) >= per_line and ch in "。、！？!?, 　 ":
+                out.append(line); line = ""
+            elif len(line) >= per_line + 4:
+                out.append(line); line = ""
+        if line:
+            out.append(line)
+        return "\\N".join(out)
+
     lines = []
     for st, en, txt in segments:
         if not txt:
             continue
-        lines.append(f"Dialogue: 0,{fmt_ass_ts(st)},{fmt_ass_ts(en)},Cap,,0,0,0,,{ass_escape(txt)}")
+        wrapped = wrap_jp(ass_escape(txt))
+        lines.append(f"Dialogue: 0,{fmt_ass_ts(st)},{fmt_ass_ts(en)},Cap,,0,0,0,,{wrapped}")
     if hook:
         lines.append(f"Dialogue: 1,{fmt_ass_ts(0.0)},{fmt_ass_ts(2.0)},Hook,,0,0,0,,{ass_escape(hook)}")
     return head + "\n".join(lines) + "\n"
