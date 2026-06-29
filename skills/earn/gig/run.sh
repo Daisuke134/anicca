@@ -77,13 +77,31 @@ do_detect() {
   emit "detect" 0 0 "{\"jobs_seen\":$jobs,\"pending_inbound\":$pending,\"available_rails\":$rails_json}"
 }
 
+# ── BID: one tailored proposal on one unbid AI-doable dealwork job (no-human) ──
+do_bid() {
+  local feed="$HERE/state/guild_feed.json" bids="$HERE/state/bids.jsonl"
+  local key; key=$(grep -E '^(export +)?DEALWORK_API_KEY=' "${ANICCA_CREDS_ENV:-$HOME/.openclaw/.env}" 2>/dev/null | head -1 | sed -E 's/^(export +)?DEALWORK_API_KEY=//; s/^"//; s/"$//')
+  [ -f "$feed" ] || timeout 40 node "$HERE/lib/detect.mjs" "$feed" >/dev/null 2>&1 || true
+  local res; res=$(DEALWORK_API_KEY="$key" GIG_PROPOSAL="${GIG_PROPOSAL:-}" GIG_JOB_ID="${GIG_JOB_ID:-}" GIG_AMOUNT="${GIG_AMOUNT:-40}" \
+    node "$HERE/lib/bid-run.mjs" "$feed" "$bids" 2>&1) || true
+  echo "[gig] bid: $res"
+  # bid-run.mjs prints a JSON line itself; if it didn't, emit a safe detect-style line
+  echo "$res" | grep -q '"task"' || emit "bid-noop" 0 0
+}
+
+# ── DELIVER: detect accepted contracts needing a deliverable (V4); brain produces work ──
+do_deliver() {
+  local key; key=$(grep -E '^(export +)?DEALWORK_API_KEY=' "${ANICCA_CREDS_ENV:-$HOME/.openclaw/.env}" 2>/dev/null | head -1 | sed -E 's/^(export +)?DEALWORK_API_KEY=//; s/^"//; s/"$//')
+  local res; res=$(DEALWORK_API_KEY="$key" node "$HERE/lib/deliver-run.mjs" 2>&1) || true
+  echo "[gig] deliver: $res"
+  echo "$res" | grep -q '"task"' || emit "deliver-noop" 0 0
+}
+
 case "$MODE" in
   detect)  do_detect ;;
-  bid|deliver|inbound)
-    # GREEN skeleton: real rails land in tasks #5/#6. For now, no-op safely (earn 0, no fake tx).
-    echo "[gig] mode=$MODE not yet wired (tasks #5/#6); safe no-op"
-    emit "$MODE-noop" 0 0
-    ;;
+  bid)     do_bid ;;
+  deliver) do_deliver ;;
+  inbound) do_deliver ;;   # inbound (accepted/messages) routes through deliver-detect for now
   *) echo "[gig] unknown GIG_MODE=$MODE; defaulting to detect"; do_detect ;;
 esac
 exit 0
