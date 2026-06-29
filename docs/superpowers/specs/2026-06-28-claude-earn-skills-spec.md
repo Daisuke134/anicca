@@ -263,3 +263,32 @@ Amazon Associates report (clicks/紹介料, real_sale gate) → un-fakeable ledg
   else the click hits the image→tag popup); publish-verify via profile /p/ tile (not the unreliable toast);
   --delete-after (verify-then-delete); --delete-url (standalone); _handle()/_login() (env IG_USERNAME/IG_CREDS_FILE).
 - Run: `IG_CREDS_FILE=~/.cloak/ig-<handle>.json post.py --images a,b,.. --caption-file cap.txt --live --delete-after`
+
+---
+## 2026-06-29 — TASK LIST (SSOT) + EARNINGS MODEL
+
+### TASK LIST (TaskCreate登録済 #1-5)
+| # | task | status |
+|---|---|---|
+| #1 (#7) | ★毎日ループ配線 (claude -p + launchd): source→generate→post→measure→record→amplify→翌日★ | ⬜ 本丸 |
+| #2 (#17) | 商品ソーシングengine (Amazon売れ筋→毎日freshなdeck) | ⬜ |
+| #3 | スライドを1080×1350(4:5)生成に修正 (上1行クロップ解消) | ⬜ |
+| #4 | ウォーム Day2→7 完了 (@aishigoto.labo) | 進行中 1/7 |
+| #5 | ウォーム明け: BIOにアフィリリンク設置 + 初本番投稿 | ⬜ |
+| done | ig-account-create / warmer / poster(post→verify→delete) / amazon_report / ledger | ✅ 実証済 |
+
+### EARNINGS MODEL (Amazon Associates JP 公式料率 2026 検証済)
+**料率**: 本(物理)**3%** / Kindle本・服・食品・ファッション **8%** / ビューティー 5% / Echo等デバイス 4.5% /
+工具・ベビー・スポーツ 4% / 家電・PC・カメラ・ゲーム 2% / Amazonビデオ 10%。
+**対象書籍** 4296209310 (~1,650円) → 物理3%=**~50円/冊** / Kindle8%=**~130円/冊**(小さい)。
+★ 本当のレバー = Amazonは「クリック後24時間に買った**全商品**」に紹介料を払う(本だけでない)★
+→ 1成約クリックあたり平均 **~60-150円**(平均カート3,000-5,000円 × 2-3%)。
+
+**1アカウントの現実(正直・幅大)**:
+- 月1: ほぼ¥0(リーチ立上げ中。記事①も「最初の1ヶ月は伸びない」)
+- 月2-3: おすすめ拡散が出始め → **数百〜数万円/月**(投稿の当たり次第)
+- +TikTok Creativity Program: 1万フォロワー&10万view/30日 で $0.5-1.5/1000view 加算
+**スケール(=本スキルの本質)**: 同じスキルで **N垢 × Nニッチ** を自走ループで回す
+→ 1垢5,000円/月 × 20垢 = 10万円/月。★ どのAIでも複製=収入が掛け算 ★。
+**正直な但し書き**: 大半のアフィリ垢は¥0近辺。成功=毎日の継続 + アルゴリズム + 2-3ヶ月の時間 + スケール。
+記事① 3000万円/年 = 数年の外れ値。人間のサブスク代(月3千-3万円)超えは「複利ループ×複数垢」で達成する設計。
