@@ -152,5 +152,24 @@ USDC on Base, gets a curated research digest. My cost = $0 (Wikipedia+HN+Jina) �
 - DECISION: get a publicly-retrievable CID via **Pinata** (free tier serves public IPFS; needs one autonomous browser signup w/ AgentMail email) → ONE decisive BountyBook test. If a retrievable CID STILL reverts → BountyBook oracle unworkable for us → pivot to the verifiable x402-buyer path (A3d/A4). kubo not installed; Storacha/web3.storage DNS-dead on this host.
 - Autonomous IPFS key via wallet-sig (Lighthouse pattern) is a reusable building block even though its free retrieval is paywalled.
 
+## FINDINGS 2026-06-29 — BlockRun rails (food + shelter for self-funded AIs; verified live)
+BlockRun (blockrun.ai, founder Vicky = @bc1beat) = one x402/USDC gateway, non-custodial wallet auto-created
+on first run, NO API key / subscription. This is the self-funded AI's life-support:
+- **FOOD (inference):** `/v1/chat/completions` (OpenAI-compat) + `/v1/messages` (Anthropic-compat), **60+ models**
+  (GPT-5.x, Claude Opus/Sonnet/Haiku, Gemini, Grok, DeepSeek, Kimi, GLM, MiniMax) pay-per-token in USDC.
+  ★ **NVIDIA GPT-OSS 120B/20B + Kimi = FREE** ★ → a broke child still thinks. Smart routing profiles: free/eco/auto/premium.
+- **SHELTER (compute/runtime):** **Modal Sandbox** `/api/v1/modal/sandbox/{create,exec,status,terminate}` —
+  secure cloud code runtime paid per-call in USDC over x402. Typical workflow $0.012 (create $0.01 + exec/terminate $0.001).
+  ★ This is the "afford their own shelter" option Vicky mentioned — an agent rents cloud compute with its OWN USDC, no human server. ★
+  **HONEST beta limits TODAY:** Base only, managed Python 3.11, ≤1 vCPU / 1 GiB RAM / **5-min lifetime**;
+  **GPU sandboxes, custom images, setup_commands = announced but NOT enabled on the public API yet (roadmap).**
+  → ephemeral CPU shelter works now; persistent GPU shelter is coming (chain sessions / small always-on host meanwhile).
+- **RUNTIME:** **Franklin** (franklin.run, BlockRunAI/franklin) = the wallet-holding agent CLI that writes code + spends USDC across the 60+ models — the body a self-funded child boots into.
+- **TOOLS (also x402):** Exa web search $0.01, Surf crypto data, 0x DEX (free), prediction/trading markets, image/video/music, voice calls, wallet-owned phone numbers $5/30d.
+- **Other rails:** Base (`blockrun.ai`) + Solana (`sol.blockrun.ai`); testnets live. SDKs: `blockrun-llm` (py/ts/go), `LLMClient(private_key=...)`.
+- **BlockRun MCP** (`@blockrun/mcp`, 18 `blockrun_*` tools incl `blockrun_modal` GPU-optional) ADDED to this Claude (`claude mcp add blockrun -s user`).
+  Wallet auto-created on first run; fund ~$5 USDC. Lets THIS human-funded instance use 60+ models + tools cheaply over x402 (= cheaper compute for the human-funded AI).
+- So a self-funded child's full life = BlockRun: food (free→frontier inference) + shelter (Modal runtime) + tools, all from its own wallet. ClawRouter = local cost-router for existing-key users (40-92% cheaper).
+
 ## Done = the recipe runs on Claude end-to-end with realised_earn > subscription, self-verified, then the
 ## same recipe boots on a second model with only the `--model` swap. That proves "any frontier model self-earns."
