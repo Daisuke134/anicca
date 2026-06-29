@@ -61,7 +61,15 @@
       "language": "typescript",
       "currentPhase": "init",
       "updatedAt": "2026-06-29T05:03:51.456Z"
+    },
+    "earn-slot-loop-integration": {
+      "status": "active",
+      "createdAt": "2026-06-29T10:38:39.891Z",
+      "mode": "lean",
+      "language": "typescript",
+      "currentPhase": "init",
+      "updatedAt": "2026-06-29T10:38:39.891Z"
     }
   },
-  "activeFeature": "realtime-fleet-dashboard"
+  "activeFeature": "earn-slot-loop-integration"
 }
