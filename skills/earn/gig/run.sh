@@ -43,12 +43,8 @@ available_rails() {
   python3 - "$brain" "$keys" <<'PY' 2>/dev/null || echo ""
 import sys
 sys.argv_brain=sys.argv[1]; present=set(sys.argv[2].split())
-RAIL_CREDS={"laborx":["LABORX_EMAIL","LABORX_PASSWORD"],"dealwork":["DEALWORK_API_KEY"],"coconala":["COCONALA_EMAIL","COCONALA_PASSWORD"]}
-out=[]
-for rail,ks in RAIL_CREDS.items():
-    if not all(k in present for k in ks): continue
-    if rail=="coconala" and sys.argv_brain!="claude-p": continue
-    out.append(rail)
+RAIL_CREDS={"laborx":["LABORX_EMAIL","LABORX_PASSWORD"],"dealwork":["DEALWORK_API_KEY"]}
+out=[r for r,ks in RAIL_CREDS.items() if all(k in present for k in ks)]
 print(" ".join(out))
 PY
 }
