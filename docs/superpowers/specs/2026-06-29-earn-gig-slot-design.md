@@ -130,3 +130,11 @@ Coconala は payout が ¥→人間の KYC 銀行口座 = ★ human loop ★ = �
 - D3 (Coconala 条件レール) 撤回。 can-run の RAIL_CREDS から coconala 除去。 テストは「決して出さない」 に。
 - 残レール = laborx (crypto→wallet) / dealwork (USDC escrow→wallet) (+ x402 後日)。 全て own wallet 着金。
 - 教訓: 人間入力が要る rail は財務独立に反する → slot に入れない (abillio 死亡 + coconala human-loop と同列で除外)。
+
+## 実装進捗 #5-#8 (2026-06-29、 VCSDD 全 E2E 検証、 23 テスト pass)
+- ✅ #5 自律レール: lib/bid.mjs+bid-run.mjs (dealwork 提案 POST、 V1記録、 idempotent、 ★実E2E: 201+本物bidId★) / lib/deliver.mjs+deliver-run.mjs (採用済contract検知、 work捏造せず)。 LaborX browser rail = daily-driver gated の follow-up、 dealwork が headless primary
+- ✅ #7 5-gate+record-earn: lib/gates.mjs (V1-V5、 gate は観測のみ・earn を産まない) + run.sh settle が founder-loop/record-earn.mjs (block cursor・外部USDCのみ・自己送金0) を再利用。 ★実E2E: chain scan→外部無し→earn0.0 (捏造不能)★
+- ✅ #8 NO-HUMAN: lib/no-human.mjs 監査 (run.sh+全lib を stdin読/対話prompt/人間依頼 でスキャン、 違反で test FAIL、 植え違反も catch) + NO_HUMAN.md (機構表)。 loop は stdin ignore で spawn
+- 新ファイル: lib/{bid,bid-run,deliver,deliver-run,gates,no-human}.mjs + __tests__/{bid,deliver,gates,no-human}.test.mjs + NO_HUMAN.md
+- mode: detect(feed24job) / bid(実201) / deliver(検知) / settle(chain-truth earn) / inbound→deliver
+- 残: #9 adversary verify (実行中) → #10 NO-MOCK E2E フル → #11 移植+launchd退役 → #12 完了CC+push
