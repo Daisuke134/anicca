@@ -28,9 +28,10 @@ wday(){ $PY -c "import json;print(int(json.load(open('$STATE')).get('warmup_day'
 
 case "$TRANS" in
   S1_warmup)
-    [ "$DRY" = 1 ] || timeout "$TIMEOUT" $PY "$HOME/.claude/skills/ig-account-warmer/scripts/warm.py" "$HANDLE" >/tmp/ev_warm.log 2>&1 || true
+    # REAL warmup in the account's ISOLATED context (--tid): bringToFront + play() + verify currentTime advances
+    [ "$DRY" = 1 ] || timeout "$TIMEOUT" $PY "$HOME/.claude/skills/ig-account-warmer/scripts/warm_iso.py" --tid "$TID" --handle "$HANDLE" --reels 5 >/tmp/ev_warm.log 2>&1 || true
     set_state "{\"warmup_day\": $(( $(wday) + 1 )), \"last_warmup_date\": \"$TODAY\", \"status\": \"warming\"}"
-    DID="warmup day→$(wday) ($(tail -1 /tmp/ev_warm.log 2>/dev/null | cut -c1-60))" ;;
+    DID="warmup day→$(wday) ($(tail -1 /tmp/ev_warm.log 2>/dev/null | cut -c1-70))" ;;
   S2_affiliate)
     if [ -z "$AFFLINK" ]; then DID="affiliate link NOT set: MONEY_AFFILIATE_URL/MONK_EBOOK_URL empty (waiting)";
     else
