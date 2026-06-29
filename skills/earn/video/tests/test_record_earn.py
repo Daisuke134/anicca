@@ -24,11 +24,15 @@ assert r[0]=="rejected", f"bool amount should reject: {r}"; print("ok reject boo
 # reject: outbound (direction != in) must not count as earned
 r = record_earn({"token":"USDC","amount":5,"direction":"out","tx_hash":"0x8","verified":True}, L)
 assert r[0]=="rejected", f"outbound should reject: {r}"; print("ok reject outbound")
-# record: real USDC inflow
+# ★ FIND-503: verified:true flag ALONE (no on-chain confirmation) must be REJECTED (fail-closed, not spoofable) ★
 r = record_earn({"token":"USDC","amount":4.2,"direction":"in","tx_hash":"0xDEAD","verified":True}, L)
-assert r[0]=="recorded" and abs(r[1]-4.2)<1e-9, f"valid should record: {r}"; print("ok record real USDC", r)
+assert r[0]=="rejected", f"verified-flag-alone should reject without on-chain check: {r}"; print("ok reject verified-flag-alone (fail-closed)")
+# a CONFIRMED tx (on-chain check passes) records — simulate the detector's confirmation via injected stub
+CONFIRMED = lambda e: True
+r = record_earn({"token":"USDC","amount":4.2,"direction":"in","tx_hash":"0xDEAD","verified":True}, L, onchain_check=CONFIRMED)
+assert r[0]=="recorded" and abs(r[1]-4.2)<1e-9, f"confirmed should record: {r}"; print("ok record on-chain-confirmed USDC", r)
 # idempotent: same tx_hash again → duplicate, not double-counted
-r = record_earn({"token":"USDC","amount":4.2,"direction":"in","tx_hash":"0xDEAD","verified":True}, L)
+r = record_earn({"token":"USDC","amount":4.2,"direction":"in","tx_hash":"0xDEAD","verified":True}, L, onchain_check=CONFIRMED)
 assert r[0]=="duplicate", f"dup should be duplicate: {r}"; print("ok idempotent duplicate")
 lines = [l for l in open(L) if l.strip()]
 assert len(lines)==1, f"ledger must have exactly 1 entry, got {len(lines)}"; print("ok ledger single entry")
