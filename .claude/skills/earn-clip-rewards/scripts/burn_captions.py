@@ -41,8 +41,8 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Cap,Arial Black,{cap_fs},&H00FFFFFF,&H000000FF,&H00000000,&H64000000,-1,0,0,0,100,100,0,0,1,3,2,2,{margin_lr},{margin_lr},90,1
-Style: Hook,Arial Black,{hook_fs},&H0000F0FF,&H000000FF,&H00000000,&H96000000,-1,0,0,0,100,100,0,0,1,3,2,8,{margin_lr},{margin_lr},70,1
+Style: Cap,Arial Black,{cap_fs},&H00FFFFFF,&H000000FF,&H00000000,&H64000000,-1,0,0,0,100,100,0,0,1,4,3,5,{margin_lr},{margin_lr},0,1
+Style: Hook,Arial Black,{hook_fs},&H0000F0FF,&H000000FF,&H00000000,&H96000000,-1,0,0,0,100,100,0,0,1,4,3,8,{margin_lr},{margin_lr},70,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -89,6 +89,76 @@ def transcribe_words(clip, model_size, lang):
     return words
 
 
+def transcribe_segments(clip, model_size, lang):
+    """Segment-level (phrase) transcription — for JP subtitles where word-by-word
+    karaoke timing from EN audio doesn't map to translated text."""
+    from faster_whisper import WhisperModel
+    m = WhisperModel(model_size, device="cpu", compute_type="int8")
+    segs, _ = m.transcribe(clip, language=lang, word_timestamps=False)
+    return [(float(s.start), float(s.end), s.text.strip()) for s in segs if s.text.strip()]
+
+
+def translate_segments_ja(segments):
+    """Translate EN segment texts → natural JP via Gemini. Returns list of
+    (start, end, jp_text). No-human, deterministic call."""
+    import os, json, urllib.request
+    key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+    if not key:
+        raise RuntimeError("GEMINI_API_KEY/GOOGLE_API_KEY required for --jp")
+    texts = [s[2] for s in segments]
+    prompt = (
+        "Translate each numbered English line into natural, punchy Japanese suitable "
+        "for a short-video subtitle. Keep it concise. Return ONLY a JSON array of "
+        "strings, same length and order, no numbering.\n\n"
+        + "\n".join(f"{i+1}. {t}" for i, t in enumerate(texts))
+    )
+    body = {"contents": [{"parts": [{"text": prompt}]}],
+            "generationConfig": {"temperature": 0.3, "responseMimeType": "application/json"}}
+    url = ("https://generativelanguage.googleapis.com/v1beta/models/"
+           "gemini-2.5-flash:generateContent?key=" + key)
+    req = urllib.request.Request(url, data=json.dumps(body).encode(),
+                                 headers={"Content-Type": "application/json"})
+    resp = json.loads(urllib.request.urlopen(req, timeout=60).read())
+    raw = resp["candidates"][0]["content"]["parts"][0]["text"]
+    ja = json.loads(raw)
+    out = []
+    for i, (st, en, _) in enumerate(segments):
+        out.append((st, en, ja[i] if i < len(ja) else ""))
+    return out
+
+
+def build_ass_segments(segments, hook, width, height):
+    """Phrase-level centered subtitles (used for JP). One dialogue per segment."""
+    play_w, play_h = width, height
+    cap_fs = max(18, round(play_w * 0.075))
+    hook_fs = max(14, round(play_w * 0.072))
+    margin_lr = max(12, round(play_w * 0.06))
+    # Use a CJK-capable font
+    head = f"""[Script Info]
+ScriptType: v4.00+
+PlayResX: {play_w}
+PlayResY: {play_h}
+WrapStyle: 0
+ScaledBorderAndShadow: yes
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Cap,Hiragino Sans,{cap_fs},&H00FFFFFF,&H000000FF,&H00000000,&H64000000,-1,0,0,0,100,100,0,0,1,4,3,5,{margin_lr},{margin_lr},0,1
+Style: Hook,Hiragino Sans,{hook_fs},&H0000F0FF,&H000000FF,&H00000000,&H96000000,-1,0,0,0,100,100,0,0,1,4,3,8,{margin_lr},{margin_lr},70,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+"""
+    lines = []
+    for st, en, txt in segments:
+        if not txt:
+            continue
+        lines.append(f"Dialogue: 0,{fmt_ass_ts(st)},{fmt_ass_ts(en)},Cap,,0,0,0,,{ass_escape(txt)}")
+    if hook:
+        lines.append(f"Dialogue: 1,{fmt_ass_ts(0.0)},{fmt_ass_ts(2.0)},Hook,,0,0,0,,{ass_escape(hook)}")
+    return head + "\n".join(lines) + "\n"
+
+
 def probe_dims(clip):
     out = subprocess.run(
         ["ffprobe", "-v", "error", "-select_streams", "v:0",
@@ -106,13 +176,21 @@ def main():
     ap.add_argument("--hook", default=None)
     ap.add_argument("--model", default="tiny")
     ap.add_argument("--lang", default="en")
+    ap.add_argument("--jp", action="store_true", help="Translate to JP + phrase-level centered subs (jimaku)")
     a = ap.parse_args()
 
     w, h = probe_dims(a.inp)
     print(f"[burn] dims {w}x{h}", file=sys.stderr)
-    words = transcribe_words(a.inp, a.model, a.lang)
-    print(f"[burn] {len(words)} words", file=sys.stderr)
-    ass = build_ass(words, a.hook, w, h)
+    if a.jp:
+        segs = transcribe_segments(a.inp, a.model, a.lang)
+        print(f"[burn] {len(segs)} EN segments → translating to JP", file=sys.stderr)
+        ja = translate_segments_ja(segs)
+        print(f"[burn] sample JP: {ja[0][2] if ja else '(none)'}", file=sys.stderr)
+        ass = build_ass_segments(ja, a.hook, w, h)
+    else:
+        words = transcribe_words(a.inp, a.model, a.lang)
+        print(f"[burn] {len(words)} words", file=sys.stderr)
+        ass = build_ass(words, a.hook, w, h)
     with tempfile.NamedTemporaryFile("w", suffix=".ass", delete=False) as f:
         f.write(ass)
         ass_path = f.name
