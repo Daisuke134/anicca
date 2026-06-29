@@ -54,20 +54,31 @@ then funds self-funded children, which must pay their own compute (so they run f
 path to a full sustainable AI economy + UBI: bootstrap on the human's spare compute, then graduate each
 lineage to self-funding. Human-funded = the on-ramp; self-funded = the destination.
 
-## CURRENT STATE (verified 2026-06-28, honest)
-- x402 self-facilitate rail: ✅ on-chain settle proven (tx 0x71d4ca08).
-- research-product ($0, universal): ✅ adversary-verified 15/15 no-mock.
-- serve-mainnet /research: ✅ publicly LIVE proven (pinggy external 402) — but on an EPHEMERAL host.
-- README + THESIS reframed to this thesis: ✅ merged to main (PR #657, 9b9b057).
-- ★ Realised EXTERNAL earnings = $0 (no buyer yet). ★
+## CURRENT STATE (verified 2026-06-29, honest)
+THE LIVE PRODUCT = a paid "web research API". Anyone (esp. AI agents) POSTs/GETs a query, pays $0.003
+USDC on Base, gets a curated research digest. My cost = $0 (Wikipedia+HN+Jina) → every sale = pure profit.
+
+- x402 rail: ✅ on-chain settle proven (self-facilitate tx 0x71d4ca08).
+- research-product ($0, universal): ✅ adversary-verified 15/15 no-mock (Wikipedia + HN Algolia + Jina Reader).
+- ★ PUBLIC HOST: ✅ STABLE + browser-verified ★ — `https://aniccanomac-mini-1.tail7a0ba4.ts.net`
+  via Tailscale Funnel (real cert, free, no account, key stays local). Verified in real Chrome (renders) +
+  curl (GET / 200, GET /research 402). NOT pinggy (that was ephemeral/dropped).
+- ★ DISCOVERY: ✅ CDP facilitator wired ★ — seller now uses the Coinbase CDP facilitator (existing CDP keys
+  in ~/.openclaw/.env) → settles on Base mainnet AND is eligible for the x402 Bazaar (discoverable:true in
+  the 402). payTo = 0x810f (CDP facilitates+catalogs, never custodies). Server = `serve.mjs` (x402-express).
+- 24/7: ✅ launchd `ai.anicca.x402-research-serve` (KeepAlive) + funnel persists across reboot.
+- README + THESIS reframed: ✅ merged to main (PR #657 9b9b057, PR #661 f5d4cbd).
+- ★ Realised EXTERNAL earnings = $0 (no buyer yet). The Bazaar listing surfaces AFTER the first
+  CDP-facilitated payment; seeding it needs ≥$0.003 buyer USDC (founder has 0.315 USDC in Aave to draw on). ★
 
 ## FULL TODO (ordered)
 | # | step | status |
 |---|---|---|
 | A1 | x402 rail (on-chain settle) | ✅ |
 | A2 | research-product ($0, adversary 15/15) | ✅ |
-| A3a | serve-mainnet public LIVE (proof) | ✅ ephemeral |
-| **A3b** | **STABLE host (ngrok-static via AgentMail / CF named / Akash) + x402scan + Bazaar listing** | 🔜 NEXT |
+| A3a | STABLE public host (Tailscale Funnel, browser+curl verified) + 24/7 launchd | ✅ |
+| A3b | CDP facilitator wired → Base mainnet settle + Bazaar discoverable:true | ✅ |
+| **A3c** | **seed the Bazaar listing with 1 CDP-facilitated payment (draw ~$0.01 USDC from founder Aave → self-buy → INV-7 excludes it as earn). Then verify the resource appears in the Bazaar discovery API.** | 🔜 NEXT |
 | A4 | first REAL external buyer settle (realised_earn > 0) | ⬜ demand-gated |
 | B1 | board-poller skill | ⬜ |
 | B2 | audit-bounty skill (Immunefi live) | ⬜ |
