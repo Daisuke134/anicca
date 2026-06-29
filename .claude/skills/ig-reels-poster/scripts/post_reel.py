@@ -105,6 +105,12 @@ def main():
         if active != a.handle:
             res["error"] = f"ACCOUNT GUARD (fail-closed): could not confirm active account == '{a.handle}' (detected: {active!r}) — aborting to avoid posting to the wrong account"
             res["active_account"] = active; print(json.dumps(res, ensure_ascii=False)); return
+        # snapshot existing reels NOW (before composer) so the publish step can tell the NEW reel
+        # from pre-existing tiles (a stale first-tile is how the wrong URL got reported before).
+        if a.live:
+            cdp.navigate(tid, f"https://www.instagram.com/{a.handle}/"); time.sleep(4)
+            res["_before_reels"] = ev(tid, """(()=>[...document.querySelectorAll('main a[href*="/reel/"],main a[href*="/p/"]')].map(a=>a.getAttribute('href')))()""") or []
+            cdp.navigate(tid, "https://www.instagram.com/"); time.sleep(4)
         # 1) open composer
         c = rect_center(tid, """(()=>{const s=document.querySelector('svg[aria-label="新しい投稿"],svg[aria-label="New post"]');if(!s)return null;const r=s.getBoundingClientRect();return{x:Math.round(r.left+r.width/2),y:Math.round(r.top+r.height/2)};})()""")
         if not c: res["error"] = "no create btn"; print(json.dumps(res)); return
@@ -150,16 +156,21 @@ def main():
             dl = rect_center(tid, """(()=>{const b=[...document.querySelectorAll('button,[role=button]')].find(x=>['破棄','Discard'].includes((x.textContent||'').trim())&&x.offsetParent);if(!b)return null;const r=b.getBoundingClientRect();return{x:Math.round(r.left+r.width/2),y:Math.round(r.top+r.height/2)};})()""")
             if dl: cdp.click_xy(tid, dl["x"], dl["y"])
             res["reached"] = "DRY-ok"; print(json.dumps(res, ensure_ascii=False)); return
-        # LIVE
+        # LIVE share (the composer is still open; `before` reel set was captured at the start)
         cdp.click_xy(tid, sb["x"], sb["y"]); time.sleep(3); shot(tid, "6-sharing")
         url = None
+        before = res.get("_before_reels") or []
         for _ in range(10):
             time.sleep(12)
             cdp.navigate(tid, f"https://www.instagram.com/{a.handle}/"); time.sleep(5)
-            url = ev(tid, """(()=>{const a=document.querySelector('main a[href*="/reel/"],main a[href*="/p/"]');return a?('https://www.instagram.com'+a.getAttribute('href')):null;})()""")
-            if url: break
+            hrefs = ev(tid, """(()=>[...document.querySelectorAll('main a[href*="/reel/"],main a[href*="/p/"]')].map(a=>a.getAttribute('href')))()""") or []
+            # the NEW reel = a href that was NOT present before we shared
+            new = [h for h in hrefs if h not in before]
+            if new:
+                url = "https://www.instagram.com" + new[0]; break
         res["published"] = bool(url); res["post_url"] = url
         res["reached"] = "PUBLISHED" if url else "shared-unconfirmed"; shot(tid, "7-profile")
+        res.pop("_before_reels", None)
         if a.delete_after and url:
             res["delete"] = delete_reel(tid, url, a.handle)
     except Exception as e:

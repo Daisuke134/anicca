@@ -210,3 +210,20 @@ fail-closed account-guard, fresh-account interstitial dismiss, the one-time "動
 dismiss + 7-step 次へ loop. KEY login fix: the OTP code = the LATEST message in the IG "Verify your profile"
 THREAD (083187), not the oldest — entering stale codes was the whole login wall.
 Architecture for SCALE = one dedicated CloakBrowser profile+port per account (isolated, no switch-pollution).
+
+## D-58 (2026-06-29) — ★ earn/clip SLOT live in claude-p loop + posted a real reel via the slot ★
+CLIP-A DONE. ~/anicca/skills/earn/clip/run.sh (EARN_MODE=discover|execute, ONE bounded unit, one-line
+stdout {slot,did,earned_usdc,cost_usdc}, fail-closed account-guard, idempotent). registry.json
+slots."earn/clip".status = "live" → the ONE loop's brain can pick it among gig/clip/affiliate/video.
+E2E proof: EARN_MODE=execute posted the queued galloway clip → NEW reel
+https://www.instagram.com/aiclipsvault/reel/DaK4tlmvomQ/ (verified: by=aiclipsvault, Galloway caption,
+hasVideo) — now 2 reels on @aiclipsvault. Clip moved queue→posted; ledger line appended to
+~/.openclaw/state/clip-earn-ledger.jsonl (earn_usdc=0; per-view USDC recorded later by a payout-check wake).
+Slot design: accounts in ~/.cloak/clip-accounts.json [{handle,profile,port,status}]; each account = its own
+isolated CloakBrowser profile+port (no switch pollution). Producer fills ~/clips/queue (mp4+caption); slot
+posts one per wake.
+Poster FIX: publish-verify now diffs reel hrefs before/after share to report the ACTUAL new URL (the slot
+first reported the old DaK36 URL because it grabbed a stale first tile; ledger corrected to DaK4tlmvomQ).
+REMAINING for "prints money daily": CLIP-B 5-gate+record-earn(real payout), CLIP-D account factory + JP
+account, CLIP-E first real USDC (campaign), CLIP-F self-improve. Login-persist note: IG OTP = LATEST msg in
+the "Verify your profile" thread.
