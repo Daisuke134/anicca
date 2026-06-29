@@ -28,6 +28,7 @@ import { assembleContext } from './context.mjs';
 import { think } from './brain.mjs';
 import { parseToolCall } from './parse-tool-call.mjs';
 import { runSkill } from './run-skill.mjs';
+import { isEarnSlot, earnStrategyFor } from './earn-slot.mjs';
 import { isLooping } from './loop-detect.mjs';
 import { formatRecord } from './ledger-record.mjs';
 import { appendLedgerLine, readLedgerLines } from './ledger.mjs';
@@ -315,8 +316,9 @@ async function runOneWake() {
     kind = 'skill_timeout';
   } else if (skillResult.exitCode !== 0) {
     kind = 'skill_error';
-  } else if (['earn', 'yield', 'hl_trade', 'x402_sell', 'token_launch'].includes(slot)) {
-    // Only classify earn from the earn-ledger line (exit code 0 alone is NOT sufficient)
+  } else if (isEarnSlot(slot)) {
+    // Only classify earn from the earn-ledger line (exit code 0 alone is NOT sufficient).
+    // isEarnSlot covers the legacy action slots AND per-method nested earn/<sub> (gig/clip/affiliate/video/audit).
     const earnLedgerPath = defaultEarnLedgerPath(config);
     const { profitable: p } = await classifyEarnResult(wakeId, earnLedgerPath, isProfitable);
     profitable = p;
@@ -436,14 +438,16 @@ function buildSkillEnv(slot, wakeId, config, scrub, args) {
   const ANICCA_ARGS = JSON.stringify(a);
   // PATCH 6: each earn ACTION is its own slot now — the SLOT names the strategy (yield/hl/x402/token).
   // `earn` stays as the back-compat fat tool that reads args.strategy.
-  const EARN_SLOTS = { earn: null, yield: 'yield', hl_trade: 'hl', x402_sell: 'x402', token_launch: 'token' };
-  if (slot in EARN_SLOTS) {
+  // isEarnSlot = legacy action slots {earn,yield,hl_trade,x402_sell,token_launch} ∪ per-method earn/<sub>.
+  // earnStrategyFor: action slots → their map value; fat `earn` → null (keeps the args.strategy||yield
+  // fallback below); earn/<sub> → '<sub>'. So every earn slot — incl gig/clip/affiliate/video — gets
+  // EARN_LEDGER/EARN_MODE/WAKE_ID and can write the earn-ledger line the classify gate reads.
+  if (isEarnSlot(slot)) {
     return {
       ...base,
       ANICCA_ARGS,
       EARN_MODE:     process.env.EARN_MODE     || 'execute',
-      // The slot decides the strategy; fat `earn` falls back to args.strategy, then yield (safe last resort).
-      EARN_STRATEGY: process.env.EARN_STRATEGY || EARN_SLOTS[slot] || (typeof a.strategy === 'string' && a.strategy.trim() ? a.strategy.trim() : 'yield'),
+      EARN_STRATEGY: process.env.EARN_STRATEGY || earnStrategyFor(slot) || (typeof a.strategy === 'string' && a.strategy.trim() ? a.strategy.trim() : 'yield'),
       WAKE_ID:       wakeId,
       ...(config.EARN_LEDGER ? { EARN_LEDGER: config.EARN_LEDGER } : {}),
     };
