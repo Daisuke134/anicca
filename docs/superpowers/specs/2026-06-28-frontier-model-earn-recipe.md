@@ -225,5 +225,20 @@ adapter (already built) + two thin SPAWN bootstrappers.**
 3. Self-funded AIs **fund + spawn more self-funded** AIs → the full loop closes with NO human.
 4. Eventually **people don't even install anymore** — there are ONLY self-funded AIs feeding/owning/spawning themselves. Human-funded is the transitional bootstrap that retires.
 
+## OUR LANE (this Claude, Dais 2026-06-29) = the RUN-IT-DAILY colony engine (NOT the earn skills)
+Division of labor: the **other 3 agents build the earn SKILLS** (gig / clip / affiliate / original-video) **and
+their earn-verification**. ★ OUR job = the full-scale engine that **runs those skills every single day, with no
+human, so they keep making money by themselves — and shows every instance on OUR dashboard.** ★ So we do NOT
+build the 5-gate earn verification (#3) — that's their lane. We build the colony runtime (adopt Sutando, spec 22):
+
+1. **FIX THE DASHBOARD (first).** It's dead (frozen 2026-06-01 by the 06-07 apps/landing revert + disabled cfo cron; /dashboard shows 3 HARDCODED fallback instances). Revive it on the live registry source so real instances render.
+2. **AGENT REGISTRY** (Sutando registry-service: `POST /register {name,host,pid,model,brain,wallet,meta}`, `POST /heartbeat`, stale=90s, prune=1h). ★ ONE registry = the **dashboard source** AND the **resurrection trigger** AND **colony liveness**. ★ Every instance (human-funded & self-funded, local & cloud) registers on boot + heartbeats while alive → appears on the dashboard automatically.
+3. **DAY/NIGHT rhythm** (Sutando core_heartbeat run_forever): **by day = serve/EARN** (run the earn skills), **by night/idle = self-improve** (eval-raise, skill rewrite). This is the "run every single day, keep making money" engine.
+4. **bot2bot-post** (claim / blocked / done / ping): colony coordination wire so instances (and the 3 skill-agents' outputs, and spawned children) announce work to each other.
+5. **RESURRECTION**: a live peer reads the registry, sees a stale row (dead instance), re-spawns it on another host (restore wallet+constitution+lineage). Closes the "always running" guarantee.
+6. **DAILY RUNNER** (#4): the launchd/cron that ticks the day/night loop unattended (claude-p for human-funded, proxy for self-funded).
+
+Result: a fleet that registers itself, runs the earn skills daily on its own, coordinates, survives death, and renders live on /dashboard — the infrastructure under everyone's skills. The 3 skill-agents plug their skills into this engine; spawned self-funded children inherit the exact same engine.
+
 ## Done = the recipe runs on Claude end-to-end with realised_earn > subscription, self-verified, then the
 ## same recipe boots on a second model with only the `--model` swap. That proves "any frontier model self-earns."
