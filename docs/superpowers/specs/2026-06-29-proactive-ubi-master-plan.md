@@ -75,3 +75,38 @@ Fully zero physical-contact reach to a person with no phone in a remote area sti
 
 - 4-D: principle ✓ + phased plan ✓ + Phase 0 real payout E2E-verified (on-chain/mobile-money receipt) ✓ + at least one Phase 2 partnership pilot in motion.
 - The system never requires a person to "go to a website" past Phase 0.
+
+## 8. Milestone ladder — provable finish lines, knocked off one by one (this is a GOAL, not a dream)
+
+Each milestone has `done = <verifiable condition>`. We march top-down; each unlocks the next.
+
+### Phase 0 — seed (start NOW, no entity needed)
+- **M0.1 First verified human** — done = ≥1 row in `personhood_nullifiers` + a recipient record with a payout endpoint.
+- **M0.2 First real on-chain UBI payment** — done = a confirmed USDC transfer tx on Base to that human's wallet (txhash).
+- **M0.3 First continuous stream** — done = GDA pool has ≥1 member, flowRate>0, member balance verifiably increasing on-chain.
+- **M0.4 Ten humans streaming** — done = 10 members in the pool, all with live streams.
+
+### Phase 1 — push to phone (no website)
+- **M1.1 Legal entity exists** — done = incorporation cert + EIN (US Atlas: Anicca AI, Inc., in progress) OR JP entity.
+- **M1.2 Fiat off-ramp KYB approved** — done = Kotani/Bridge/Crossmint KYB approved + a test payout lands in a real bank/mobile-money account.
+- **M1.3 First fiat UBI** — done = a recipient confirms cash received (mobile-money/bank receipt).
+- **M1.4 SMS/USSD enrollment live** — done = a person enrolls via SMS/USSD + phone-liveness with ZERO website visit.
+- **M1.5 First UBI to a no-website human** — done = phone-only enroll → mobile-money payout, E2E verified.
+
+### Phase 2 — proactive via partnerships (the real shift)
+- **M2.1 Partnership outreach kit** — done = proposal doc + target list (gov/NGO/carrier/Orb) committed.
+- **M2.2 First partner agreement in motion** — done = a signed LOI/MOU or active pilot with a government/NGO/carrier.
+- **M2.3 First opt-out community pilot** — done = N people in one community enrolled WITHOUT seeking it out (field/device), receiving UBI.
+- **M2.4 Personhood-at-edge deployed** — done = ≥1 edge personhood point (Orb/biometric/operator) live, enrolling in-person.
+- **M2.5 1,000 proactively-reached recipients** — done = 1,000 members enrolled via push (not pull), streaming.
+
+### Phase 3 — human-in-loop → 0
+- **M3.1 AI runs one outreach function autonomously** — done = an AI agent completes a real outreach task (discovery/partner-ops) with no human.
+- **M3.2 Device/robot last-mile** — done = a deployed device enrolls + pays a person with zero human present.
+- **M3.3 Autonomous compounding scale** — done = MoM recipient count ↑ AND per-person flowRate ↑, with zero human intervention.
+
+### North star (the GOAL)
+- done = **every human who wants it receives a growing UBI stream, reached proactively, requiring zero action from them.**
+- Tracked proxies: # recipients · % reached by push vs pull · $/person/month · # countries · human-in-loop count (→ 0).
+
+**Immediate next achievable**: M0.1 → M0.2 (first real on-chain UBI payout) — doable today, no entity required.
