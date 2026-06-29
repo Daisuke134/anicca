@@ -1,0 +1,17 @@
+{
+  "featureName": "x402-discovery",
+  "mode": "lean",
+  "language": "typescript",
+  "currentPhase": "init",
+  "phaseHistory": [],
+  "iterations": {},
+  "proofObligations": [],
+  "traceability": {
+    "epicId": "VCSDD-x402-discovery-1782661099485",
+    "beads": []
+  },
+  "gates": {},
+  "sprintCount": 0,
+  "createdAt": "2026-06-28T15:38:19.477Z",
+  "updatedAt": "2026-06-28T15:38:19.477Z"
+}
