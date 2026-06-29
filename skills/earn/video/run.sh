@@ -35,11 +35,21 @@ wday(){ $PY -c "import json;print(int(json.load(open('$STATE')).get('warmup_day'
 
 case "$TRANS" in
   S1_warmup)
-    # REAL warmup in the account's ISOLATED context (--tid): bringToFront + play() + verify currentTime advances.
-    # ★ Dim4 fix: advance warmup_day ONLY when warm_iso REALLY watched >=3 reels (verified playback); never fake. ★
+    # REAL warmup in a DEDICATED anti-throttle CloakBrowser (NOT the daily-driver): an occluded reels tab in the
+    # daily-driver is visibilityState=hidden → Chrome pauses the video → 0 real views. The dedicated instance is
+    # launched with occlusion/throttle/autoplay flags so reels really play while staying out of Dais's way.
+    # ★ Dim4: advance warmup_day ONLY when warm_iso REALLY watched >=3 DISTINCT reels (verified playback); never fake. ★
     WATCHED=0; BAN=0
     if [ "$DRY" = 1 ]; then WATCHED=5; else
-      timeout "$TIMEOUT" $PY "$HOME/.claude/skills/ig-account-warmer/scripts/warm_iso.py" --tid "$TID" --handle "$HANDLE" --reels 5 >/tmp/ev_warm.log 2>&1 || true
+      WPORT=$($PY -c "import json;print(json.load(open('$CREDS')).get('warmup_cdp_port',9334))" 2>/dev/null)
+      WPROF=$($PY -c "import json,os;print(json.load(open('$CREDS')).get('warmup_profile',os.path.expanduser('~/.cloak/profiles/warmup-$HANDLE')))" 2>/dev/null)
+      EBUD=$(( TIMEOUT / 3 )); WBUD=$(( TIMEOUT * 2 / 3 ))   # ensure-browser + warm ≤ TIMEOUT
+      WTID=$(timeout "$EBUD" $PY "$HOME/.claude/skills/ig-account-warmer/scripts/ensure_warmup_browser.py" --handle "$HANDLE" --port "$WPORT" --profile "$WPROF" --creds "$CREDS" 2>/tmp/ev_ensure.log | tail -1)
+      if [ -z "$WTID" ] || printf '%s' "$WTID" | grep -q ERROR; then
+        set_state "{\"last_warmup_date\": \"$TODAY\"}"; DID="warmup deferred: dedicated browser/login not ready ($(tail -1 /tmp/ev_ensure.log 2>/dev/null|cut -c1-60))"
+        R_HANDLE="$HANDLE" R_TRANS="$TRANS" R_DID="$DID" $PY -c "import json,os;print(json.dumps({'slot':'earn/video','handle':os.environ['R_HANDLE'],'transition':os.environ['R_TRANS'],'did':os.environ['R_DID'],'earned_usdc':0.0,'cost_usdc':0.0},ensure_ascii=False))"; exit 0
+      fi
+      CDP_PORT="$WPORT" timeout "$WBUD" $PY "$HOME/.claude/skills/ig-account-warmer/scripts/warm_iso.py" --tid "$WTID" --handle "$HANDLE" --reels 6 >/tmp/ev_warm.log 2>&1 || true
       WATCHED=$($PY -c "import json,sys
 try:
   for l in open('/tmp/ev_warm.log'):
