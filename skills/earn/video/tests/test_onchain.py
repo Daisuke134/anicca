@@ -19,6 +19,11 @@ print("ok reject wrong recipient")
 # correct tx + recipient but WRONG amount → reject (no amount spoofing)
 assert confirm_usdc_inflow({"tx_hash": TX, "amount": 999.0}, recipient=RCV) is False, "wrong amount must reject"
 print("ok reject wrong amount")
+# ★ D1 fix: a REAL self-transfer (from==to) to the recipient must be REJECTED (not affiliate revenue) ★
+SELF_TX = "0x8eebc01bd43651a85ccc789c983c78cb7b9a6e26bd1713b1e6786d1c3ea59018"
+SELF_ADDR = "0x6ffc327344290d66a7b6edf01e62f7fcb1d90c95"
+assert confirm_usdc_inflow({"tx_hash": SELF_TX, "amount": 0.000001}, recipient=SELF_ADDR) is False, "self-transfer (from==to) must reject"
+print("ok reject self-transfer / self-funding (from==to)")
 # garbage tx hash → reject (fail-closed)
 assert confirm_usdc_inflow({"tx_hash": "0xdead", "amount": AMT}, recipient=RCV) is False, "bad tx must reject"
 print("ok reject bad tx_hash")
