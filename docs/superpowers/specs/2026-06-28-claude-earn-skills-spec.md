@@ -580,3 +580,26 @@ TOP MUST-FIX:
 5. No-human invariant: an IG interstitial "wait for human" can stall — needs timeout + self-heal, not a wait.
 NEXT (#11): revise spec for the above → Phase 1c re-review (fresh adversary) → PASS → Phase 2 RED → GREEN.
 RESUMABLE from .vcsdd/ + verdict + this spec. (Note ledger.mjs has 2 copies; the EVM-only one lacks `external`.)
+
+---
+## 2026-06-29 — VCSDD spec REV 2 (#11): all 9 adversary MUST-FIX closed
+Canonical feature spec = `.vcsdd/features/promote-fun-clip-earn/specs/spec.md` (REV 2). Summary of the fixes:
+1. **Chain mismatch [F3.1]** → build `lib/solana-verify.mjs` (`sigStatus` getSignatureStatuses/getTransaction
+   confirmed+err==null; `usdcDeltaForSig` from pre/postTokenBalances; `usdcBalance` getTokenAccountsByOwner)
+   + generalize `isProfitable` (canonical `~/anicca/skills/earn/lib/ledger.mjs`) to accept a Solana line
+   (`sig`+`confirmed`) OR the EVM line (`tx`+`0x1`), keeping net>0 + external:true + not-swap.
+2. **DONE [F1.2]** = a real on-chain Solana USDC inflow ONLY. Removed the money-free OR-branch. views=0 is an
+   explicit NON-pass; a liveness check distinguishes dead/shadowbanned (FAIL→dead) from early-zero (stay MEASURE).
+3. **REQ-7/8 citation [F1.1]** matches the real ledger fields (no phantom `external`/`0x1` for Solana).
+4. **Payout [F1.3]** (Promote.fun FAQ): per-view → off-chain balance → credited when campaign ENDS → manual
+   withdraw → Solana sig. WITHDRAW + RECORD are distinct wakes; RECORD is the only `earned_usdc>0` wake.
+5. **Day-1 account [F2.2]** → REQ-4 posts ONLY to a `ready` (Day-7-warmed) account, else defers; commercial
+   clips on an un-warmed account forbidden.
+6. **State machine [F4.2]** → PURE `decide(state,now)` (mirrors earn/video/decide.py): SELECT→CLIP→POST→
+   SUBMIT→MEASURE→WITHDRAW→RECORD, persisted in `state/clip-promote-state.json`, one bounded transition + one
+   structured line per wake, re-auth (REQ-10) on OTP/session expiry.
+7. **Edge EARS** → REQ-1a (no campaigns), REQ-5a (rejected), REQ-11 (dedup on (campaign,post_url)+sig, 429 backoff).
+8. **Clip duration [F3.3]** → dedicated 15–45s gate (the shared verify_clip.sh 8–90s is insufficient).
+9. **No-human [F5.3]** → REQ-9 runtime watchdog: any step blocking on human input trips SKILL_TIMEOUT_S →
+   `did:"blocked:human:<step>"` + exit 0 (a defect, never a hang).
+NEXT (#12): Phase 1c re-review with a fresh-context adversary → PASS, then Phase 2 RED→GREEN.
