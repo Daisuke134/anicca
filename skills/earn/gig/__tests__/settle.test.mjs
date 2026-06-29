@@ -53,3 +53,16 @@ test('FIND-004: real path with no reachable tx → honest no_tx under-count (nev
   assert.ok(!isProfitable(line));
 });
 
+
+import { classifyEarnResult } from '../../../../runtime/loop/earn-detect.mjs';
+
+test('FIND-002: settle line is classified PROFITABLE by the loop classifyEarnResult (wake match + isProfitable)', async () => {
+  const tx = '0x' + 'c'.repeat(64);
+  const ledger = path.join(os.tmpdir(), 'gig-classify-' + Date.now() + '.jsonl');
+  const r = spawnSync('node', [LIB, '12.5', '0x810f6d61f7606deee2657d3083e150a222bc29c5', 'WAKE-CLASSIFY-1', ledger],
+    { encoding: 'utf8', timeout: 30000, env: { ...process.env, FOUNDER_TEST: '1', GIG_SETTLE_TX: tx } });
+  assert.equal(r.status, 0, r.stderr);
+  const res = await classifyEarnResult('WAKE-CLASSIFY-1', ledger, isProfitable);
+  assert.equal(res.profitable, true, 'loop did not classify the real settle profitable: ' + JSON.stringify(res));
+  assert.equal(res.earnLine.earn_usdc, 12.5);
+});
