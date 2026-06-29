@@ -99,8 +99,13 @@
       "summary": "gig work → USDC (one bounded gig per wake, no human)"
     },
     "earn/clip": {
-      "status": "declared",
-      "summary": "clip long-form → post/campaign → per-view USDC"
+      "track": "A",
+      "dir": "skills/earn/clip",
+      "entrypoint": "run.sh",
+      "status": "live",
+      "owner": "clip",
+      "spec": "2026-06-29-ecosystem-integration + clip-rewards-state D-57",
+      "summary": "LOCAL: post next queued captioned 9:16 clip to next ready clip account (isolated CloakBrowser profile). EARN_MODE=execute posts ONE; per-view USDC accrues later (separate payout-check records on-chain). No human."
     },
     "earn/affiliate": {
       "status": "declared",
