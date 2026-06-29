@@ -1,165 +1,190 @@
-# Behavioral Spec — promote-fun-clip-earn (VCSDD, lean) — REV 2 (post-adversary)
+# Behavioral Spec — promote-fun-clip-earn (VCSDD, lean) — REV 3 (post-adversary ×2)
 
-> REV 2 rewrites REV 1 to close all 9 adversary MUST-FIX items
-> (`reviews/spec-review-verdict.md`, FAIL 5/5). Cross-refs to that verdict are marked `[Fn.n]`.
+> REV 3 closes the REV 2 re-review findings (`reviews/spec-review-verdict-rev2.md`: 1 critical, 6 major,
+> 2 minor). Cross-refs marked `[FIND-2xx]`. REV 1→2 closed the original 9 (`spec-review-verdict.md`).
 
 ## Goal (provable finish line)
-An autonomous, no-human loop that earns **real USDC on Solana** on Promote.fun by clipping active
-brand campaigns and posting them to a **warmed, verified Instagram account**.
+An autonomous, no-human loop that earns **real USDC on Solana** on Promote.fun by clipping active brand
+campaigns and posting them to a **warmed, verified Instagram account**.
 
 **DONE (the ONLY acceptance gate) = a real, confirmed, EXTERNAL on-chain USDC inflow to the wallet
-`xxKC33TYJ2czjGQAADrvDCLjF6pRvtHX125fCwP5u9H` (Solana), recorded as ONE profitable ledger line.**
-Nothing short of an on-chain USDC inflow is DONE. [F1.2/F3.2/F5.2]
+`xxKC33TYJ2czjGQAADrvDCLjF6pRvtHX125fCwP5u9H` (Solana), persisted as ONE ledger line for which the
+canonical `isProfitable(persistedLine) === true`.** Nothing short of that is DONE. Pre-payout milestones
+are pipeline STATE, never DONE; a milestone wake prints `earned_usdc:0` and keeps the slot `declared`.
+Only a RECORD wake can flip the slot `live`.
 
-Pre-payout milestones (campaign selected, clip live, submission accepted, views accruing) are tracked
-as **pipeline STATE**, never as DONE, and each is independently evidence-backed. A milestone wake prints
-`earned_usdc:0` and leaves the slot `declared` (not `live`). Only the payout/record wake can flip the
-slot `live`. [F4.2]
+## Canonical file map (paths VERIFIED to exist on disk) [FIND-203]
+- Ledger + classifier (THE one recorder): `~/anicca/skills/_shared/lib/ledger.mjs`
+  (`deriveLine`, `isProfitable`, `appendLedger`, `readLedger`).
+- Write bridge: `~/anicca/skills/earn/lib/record.mjs` (calls `deriveLine` → `assertOwnIdentityOnly`
+  → `appendLedger` → `isProfitable`; imports `../../_shared/lib/ledger.mjs` + `identity-guard.mjs`).
+- Malice-guard: `~/anicca/skills/_shared/lib/identity-guard.mjs` (`assertOwnIdentityOnly`,
+  `ALLOWED_EARN_SOURCES`).
+- EVM verifiers (siblings, EVM-only — NOT reused for Solana): `~/anicca/skills/_shared/lib/verify-tx.mjs`,
+  `~/anicca/skills/_shared/lib/usdc.mjs`.
+- **NEW Solana adapter SHALL live at `~/anicca/skills/_shared/lib/solana-verify.mjs`** (beside the EVM
+  siblings).
+- Existing test suite to EXTEND + re-run: `~/anicca/skills/_shared/lib/__tests__/ledger.test.js`
+  (+ NEW `__tests__/solana-verify.test.js`).
+- This feature's slot dir (NEW): `~/anicca/skills/earn/clip-promote/` — `run.sh`, `decide.py` (PURE,
+  mirrors `~/anicca/skills/earn/video/decide.py`), `tests/`, `state/clip-promote-state.json`.
+- Reused as-is: `~/.claude/skills/earn-clip-rewards/` (clip), `~/.claude/skills/ig-reels-poster/` (post),
+  `~/anicca/skills/earn/clip/run.sh` (warm-account pattern; reads `~/.cloak/clip-accounts.json`).
+- The Python `video/record_earn.py` is the VIDEO track's local recorder. clip-promote does NOT use it as
+  the write path — it mirrors only its PRINCIPLE (inflow-only + idempotent). [FIND-202]
 
-## Context (already proven E2E, no-human)
-- Promote.fun account `aniccaclips` created + logged in (creds `~/.cloak/promotefun-anicca.json`:
-  `username`, `password`, `email`, `wallet_solana`, `linked_ig`).
-- IG `@aishigoto.labo` LINKED + ✓Verified on Promote.fun (bio-code BQ8RUXY8).
-- Auth: web login (username+password) → session cookie; email OTP via `gog gmail` (needs env
-  `GOG_KEYRING_PASSWORD` from `~/.openclaw/.env`; OTP query `in:anywhere`, incl. SPAM).
-- Browser: local = CloakBrowser daily-driver (CDP :9222); each clip account in its OWN isolated profile.
+## ONE canonical recorder [FIND-202]
+The earn line is recorded EXCLUSIVELY via the JS canonical path `record.mjs` → `deriveLine`/`isProfitable`
+in `_shared/lib/ledger.mjs`. No other recorder is authoritative for this feature. The line schema is the
+JS schema (`tx`/`status`/`external` for EVM; `sig`/`confirmed`/`chain` for Solana — see below), NOT the
+Python `tx_hash`/`verified`/`direction` schema.
 
-## Payout mechanics (Promote.fun — verified from FAQ 2026-06-29) [F1.3]
-Source: `https://www.promote.fun/faq` — verbatim: *"Earnings are added to your promote balance once a
-campaign ends, withdraw USDC instantly on the Solana blockchain."*
-1. Per-view reward accrues to an **off-chain Promote.fun `balance`** as the submitted post gathers views.
-2. The balance is **credited (becomes withdrawable) only once the campaign ENDS** (campaign has an end
-   date / budget exhaustion).
-3. Withdrawal is a **manual claim** action by the account holder → produces **one Solana USDC transfer**
-   (an SPL-token transfer of mint `EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v` to the wallet's ATA).
-   That transfer's **signature** is the on-chain proof of the only true DONE state.
-   (The USDC SPL mint address MUST be re-confirmed at build time against the wallet's actual USDC ATA;
-   do not hardcode without an on-chain check — HONESTY Rule 1.)
+## Solana chain support — REQUIRED lib changes (the DONE write-path) [FIND-201/202/203/206/207]
+Promote.fun pays on Solana (base58 wallet); the EVM gate cannot honestly confirm it. The following
+changes to the canonical lib are MANDATORY and each has a test:
 
-## Chain model — Solana, NOT EVM/Base [F3.1/F4.1/F5.1]
-The reused canonical earn ledger (`~/anicca/skills/earn/lib/ledger.mjs`) and its verifiers
-(`lib/verify-tx.mjs`, `lib/usdc.mjs`) are **EVM/Base-only** (`eth_getTransactionReceipt`→`0x1`,
-`eth_call balanceOf`, `0x…64`/`0x…40` regexes). Promote.fun pays on **Solana** (base58 wallet). The
-EVM gate can NEVER honestly confirm a Solana payout, so:
+1. **`deriveLine` MUST carry the Solana fields** (`_shared/lib/ledger.mjs`, currently copies only
+   `{ts,wallet,source,task,earn_usdc,cost_usdc,net_usdc,wake}` + conditional `tx`/`status`/`external`).
+   Add, conditionally (same style): `if (o.sig) line.sig = o.sig; if (o.confirmed === true)
+   line.confirmed = true; if (o.chain) line.chain = o.chain;`. Without this the persisted line lacks
+   `sig`/`confirmed` and DONE can NEVER fire. [FIND-201]
+2. **`isProfitable` MUST be generalized** off the hard EVM `0x1` assumption, keeping every existing guard
+   (net>0, external:true, not-a-swap). New predicate:
+   `net_usdc>0 AND external===true AND source∉SWAP_SOURCES AND ((tx && status==="0x1") OR (sig && confirmed===true))`.
+   This is backward-compatible with the existing suite (non-`tx`/non-`0x1` lines stay false). [FIND-207]
+3. **`assertOwnIdentityOnly` MUST accept the Solana clip source.** Add `"promote.fun"` (and `"clip-promote"`)
+   to `ALLOWED_EARN_SOURCES` in `identity-guard.mjs` — it is Anicca's OWN identity (own IG + own Solana
+   wallet); it matches no `FORBIDDEN_EARN_SOURCES` pattern. The RECORD wake MUST run with a MINIMAL env
+   (no `*GMAIL*`/`GOOGLE_LOGIN`/`COMPOSIO`/`TELEGRAM`/`USER_*` vars) so `findUserPIIEnv` passes; OTP/Gmail
+   are only needed at LOGIN wakes, never at RECORD. [FIND-201]
+4. **NEW `solana-verify.mjs`** (pure transport, `fetchImpl` injectable for tests; RPC = `SOLANA_RPC_URL`,
+   default a public mainnet RPC):
+   - `sigStatus(signature, {rpc, fetchImpl})` → `getSignatureStatuses`/`getTransaction`; returns
+     `{confirmed, err}` where `confirmed === (confirmationStatus ∈ {confirmed,finalized} && err === null)`.
+     Signature validated as base58 ~64–88 chars (NOT `0x…64`).
+   - `usdcDeltaForSig(signature, wallet, {mint, rpc, fetchImpl})` → from the tx's `meta.preTokenBalances`
+     / `postTokenBalances`, sum `post-pre` ONLY over entries where `owner === wallet` AND `mint === USDC
+     mint`, ignoring every other transfer in the same signature (batch/multi-transfer safe). Returns the
+     net inbound USDC to OUR ATA (6dp). [FIND-209]
+   - `usdcBalance(wallet, {mint, rpc, fetchImpl})` → `getTokenAccountsByOwner(wallet,{mint})` parsed
+     `tokenAmount.uiAmount`; **returns 0 (not throw) when the ATA does not exist** (verified on-chain
+     2026-06-29: our wallet currently has no USDC ATA → first inbound withdraw creates it).
+   - USDC SPL mint `EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v` (verified accepted by
+     `getTokenAccountsByOwner` 2026-06-29); re-confirm against the wallet's actual USDC ATA at build time.
+5. **`sig`-keyed idempotency** (neither recorder dedups today): before a RECORD append, the WITHDRAW/RECORD
+   wake SHALL `readLedger(file)` and skip the append if any existing line has `line.sig === sig`. Spec'd as
+   a helper `alreadyRecordedSig(file, sig)` in `ledger.mjs` (pure over `readLedger`), tested. [FIND-206]
+6. **Regression gate**: the change to the SHARED `_shared/lib/ledger.mjs` SHALL extend
+   `__tests__/ledger.test.js` with Solana cases (confirmed+external+net>0 → true; `confirmed:false` →
+   false; `sig` present but `external` missing → false; `deriveLine` carries `sig`/`confirmed`/`chain`)
+   AND re-run the FULL suite green (existing EVM `0x1`/swap/external guards preserved). [FIND-207]
 
-- **A new Solana adapter SHALL be built** (`lib/solana-verify.mjs`):
-  - `sigStatus(signature, {rpc, fetchImpl})` → reads `getSignatureStatuses` /`getTransaction`; returns
-    `{confirmed: bool, err: any}` where `confirmed === (confirmationStatus ∈ {confirmed,finalized} && err === null)`.
-    Signature regex = base58 ~64–88 chars (NOT `0x…64`).
-  - `usdcDeltaForSig(signature, wallet, {mint, rpc, fetchImpl})` → from the tx's `meta.preTokenBalances`
-    / `postTokenBalances`, computes the SPL-USDC `uiAmount` delta credited to `wallet`'s ATA in that tx
-    (the inbound amount). Returns a number (USDC, 6dp).
-  - `usdcBalance(wallet, {mint, rpc, fetchImpl})` → `getTokenAccountsByOwner(wallet,{mint})` parsed
-    `tokenAmount.uiAmount`, for an independent before/after balance proof.
-- **`isProfitable` SHALL be generalized off the EVM `0x1` assumption** (canonical ledger.mjs):
-  a line counts iff `net_usdc > 0` AND `external === true` AND source-not-swap AND a chain-correct
-  confirmation:
-  - EVM line: `tx` present AND `status === "0x1"` (unchanged), OR
-  - Solana line: `sig` present AND `confirmed === true`.
-  The `external:true` flag SHALL be set ONLY by run.sh after the Solana adapter asserts an INBOUND
-  USDC transfer to our wallet (delta > 0) on a confirmed signature — never by env, never by a swap.
-  RPC = `SOLANA_RPC_URL` env (default a public mainnet RPC), injectable for tests.
+## Payout mechanics (Promote.fun FAQ, verified 2026-06-29)
+Verbatim (`https://www.promote.fun/faq`): *"Earnings are added to your promote balance once a campaign
+ends, withdraw USDC instantly on the Solana blockchain."*
+1. Per-view reward accrues to an off-chain Promote.fun `balance`.
+2. Credited (withdrawable) only once the campaign ENDS.
+3. Withdrawal = manual claim → ONE Solana USDC SPL transfer to our wallet's ATA. Its **signature** is the
+   on-chain DONE proof. WITHDRAW + RECORD are distinct wakes.
+
+## Context (proven E2E, no-human)
+Promote.fun `aniccaclips` (creds `~/.cloak/promotefun-anicca.json`). IG `@aishigoto.labo` LINKED +
+✓Verified (bio-code BQ8RUXY8). Auth: web login → session cookie; OTP via `gog gmail` (env
+`GOG_KEYRING_PASSWORD`, query `in:anywhere` incl. SPAM). Browser: CloakBrowser daily-driver (CDP :9222),
+isolated profile per clip account.
 
 ## EARS Requirements
-- **REQ-1 (campaign select):** WHEN the loop wakes in SELECT phase, the system SHALL fetch ACTIVE
-  Promote.fun campaigns (authenticated session) and select one whose platform allows Instagram and that
-  is not already in the dedup ledger this cycle, preferring higher (CPM × remaining budget).
-- **REQ-1a (no active campaigns):** IF zero eligible ACTIVE campaigns exist (none, all clipped, none
-  allow IG), the wake SHALL print one narrate line `did:"no-eligible-campaign"`, `earned_usdc:0`, and
-  exit 0 (idle, never error, never block). [F2.1]
-- **REQ-2 (source + specs):** WHEN a campaign is selected, the system SHALL obtain its source video URL
-  and clip spec (allowed length, vertical 9:16, allowed platforms incl. Instagram).
-- **REQ-3 (clip):** WHEN source + spec are known, the system SHALL produce a **15–45s, 1080×1920** clip
-  (reuse earn-clip-rewards: yt-dlp + faster-whisper + ffmpeg), NO mock asset. A dedicated duration gate
-  SHALL assert `15 ≤ dur ≤ 45` (the shared `verify_clip.sh` window 8–90s is NOT sufficient; layer a
-  stricter check or fail the clip). [F3.3/F5.4]
-- **REQ-4 (post — WARMED account only):** WHEN a clip exists, the system SHALL post it via
-  `ig-reels-poster --live` ONLY to an account whose warm-state is `ready` (warmer Day-7 complete) AND
-  whose isolated browser confirms it is logged in as that exact handle (fail-closed account-guard). IF no
-  `ready` account exists, the wake SHALL defer (narrate `did:"no-warm-account"`, exit 0) and NOT post —
-  posting commercial brand clips from an un-warmed account is a ban/shadowban path and is forbidden.
-  [F2.2] The live post URL SHALL be captured and verified to resolve on the account's profile.
-- **REQ-5 (submit):** WHEN posted, the system SHALL submit the post URL to the campaign on Promote.fun
-  and read the submission status.
-- **REQ-5a (submission not accepted):** IF the submission is REJECTED / pending / disallowed, the wake
-  SHALL record the status, mark that (campaign,post) as `submit-failed` in state (do NOT re-submit blindly),
-  print a narrate line, and exit 0. Acceptance is required before MEASURE. [F2.3]
-- **REQ-6 (measure + liveness):** In MEASURE phase the system SHALL read views + accrued balance per
-  submission from Promote.fun stats AND assert post liveness (the post URL still resolves on profile AND
-  the submission is still `accepted/active`, not removed/shadowbanned/rejected). views MAY be a real `0`
-  ONLY while liveness PASSES; **views=0 is NOT a pass of the earning gate** — it leaves the pipeline in
-  MEASURE state. A failed liveness check (dead/removed/rejected post) is an explicit FAIL that moves the
-  item to `dead` and frees the campaign slot. [F3.2/F5.2]
-- **REQ-7 (withdraw):** WHEN a campaign has ENDED and the Promote.fun withdrawable balance for our
-  account is `> 0`, the WITHDRAW wake SHALL trigger the on-chain USDC withdrawal (claim) to the Solana
-  wallet and capture the resulting Solana transaction **signature**. [F1.3]
-- **REQ-8 (record-earn):** WHEN a withdrawal signature exists, the system SHALL verify it with the
-  Solana adapter (`sigStatus.confirmed === true` AND `usdcDeltaForSig > 0` inbound to our wallet) and
-  append ONE ledger line `{chain:"solana", sig, confirmed:true, earn_usdc:<delta>, cost_usdc:<run cost>,
-  external:true, source:"promote.fun"}` to the canonical ledger via `record.mjs`/`isProfitable`. Idempotent:
-  the same `sig` is NEVER double-counted. A non-confirmed or zero-delta signature is REJECTED (never
-  recorded as earned). This is the ONLY path that prints `earned_usdc > 0`. [F1.1/F3.1]
-- **REQ-9 (no-human INVARIANT + watchdog):** every step SHALL run with zero human — captcha→CapSolver,
-  OTP→`gog gmail`, login→stored creds. Verified TWO ways: (a) static — fresh-context adversary greps the
-  impl for human-gating calls; (b) **runtime** — each wake runs under a hard `SKILL_TIMEOUT_S` watchdog and
-  each browser/IO step under a per-step deadline; if any step would block on human input (daily-driver
-  captcha/2FA fallback, IG interstitial, file-attach prompt) it SHALL trip the deadline, the wake SHALL
-  print `did:"blocked:human:<step>"`, `earned_usdc:0`, and exit 0 (recorded as a defect — NEVER a hang,
-  NEVER a silent wait-for-Dais). [F5.3]
-- **REQ-10 (auth resilience):** IF OTP does not arrive / is expired, or the session cookie expired
-  mid-flow (between post and submit), the wake SHALL re-authenticate (login → OTP) once within its
-  deadline; if re-auth fails it prints `did:"auth-failed"` and exits 0 (no human prompt). [F2.4]
-- **REQ-11 (idempotent + bounded + dedup):** safe to run every wake; dedup is keyed on
-  `(campaign_id, post_url)` and on withdrawal `sig` (REQ-8) — never double-post the same clip to the same
-  campaign, never double-submit the same post URL, never double-record a sig. Promote.fun/IG `429`/rate
-  limits SHALL back off (narrate `did:"rate-limited"`, exit 0). [F2.5]
-- **REQ-12 (slot contract — single-wake mapping):** entrypoint `run.sh` is spawnable by `run-skill.mjs`,
-  reads config from env (wallet/keys scrubbed from output), performs the ONE bounded transition chosen by
-  a PURE decision function for the current pipeline STATE, prints ONE structured stdout line
-  (`{slot, did, earned_usdc, cost_usdc}`), and exits 0. State persists in a JSON state file across wakes
-  (see state machine). [F4.2/F2.4]
+- **REQ-1 (campaign select):** WHEN the loop wakes in SELECT, the system SHALL fetch ACTIVE campaigns
+  (authenticated) and pick one allowing Instagram, not in the dedup ledger this cycle, preferring higher
+  (CPM × remaining budget).
+- **REQ-1a (no campaigns):** IF zero eligible ACTIVE campaigns, print `did:"no-eligible-campaign"`,
+  `earned_usdc:0`, exit 0 (idle, never error/block).
+- **REQ-2 (source + spec):** obtain the campaign source video URL + clip spec (length, 9:16, IG allowed).
+- **REQ-3 (clip):** produce a **15–45s, 1080×1920** clip (reuse earn-clip-rewards), NO mock. A dedicated
+  gate asserts `15 ≤ dur ≤ 45` (the shared `verify_clip.sh:38` 8–90s window is insufficient — layer the
+  stricter check, fail otherwise).
+- **REQ-4 (post — WARMED account only):** post via `ig-reels-poster --live` ONLY to an account whose entry
+  in `~/.cloak/clip-accounts.json` has `status === "ready"` (Day-7-warmed, written by `ig-account-warmer`;
+  same file `earn/clip/run.sh:22,47` reads) AND whose isolated browser confirms it is logged in as that
+  exact handle (fail-closed guard). IF no `ready` account: defer (`did:"no-warm-account"`, exit 0), do NOT
+  post. Capture + profile-verify the live post URL. [FIND-208]
+- **REQ-5 (submit):** submit the post URL to the campaign; read submission status.
+- **REQ-5a (not accepted):** IF REJECTED/pending/disallowed: record status, mark `(campaign,post)` as
+  `submit-failed`, do not blindly re-submit, narrate, exit 0.
+- **REQ-6 (measure + liveness, with an honest dead-vs-early discriminator):** [FIND-204] In MEASURE, read
+  views + accrued balance, AND check: (a) post URL still resolves on profile, (b) submission still
+  `accepted/active`. A direct shadowban is NOT detectable via (a)+(b) (a throttled reel still resolves +
+  stays accepted) — so the dead-vs-early-zero discriminator is **time-bounded**: IF views are still `0`
+  after `DEAD_ZERO_HOURS` (default 48h) since the post went live, classify the item `stalled` (treat as
+  not-earning), free the campaign slot, narrate. views==0 BEFORE that bound = legitimate early-zero, stay
+  in MEASURE. views==0 is NEVER a pass of the earning gate. (a)/(b) failing = `dead` immediately.
+- **REQ-7 (withdraw):** WHEN a campaign has ENDED AND the Promote.fun withdrawable balance `> 0`, the
+  WITHDRAW wake SHALL trigger the on-chain USDC claim to the Solana wallet and capture the Solana
+  **signature**.
+- **REQ-8 (record-earn):** WHEN a withdrawal `sig` exists AND `alreadyRecordedSig(file,sig)` is false, the
+  RECORD wake SHALL verify it (`solana-verify.sigStatus(sig).confirmed === true` AND
+  `usdcDeltaForSig(sig,wallet) > 0`) and append via `record.mjs` ONE line
+  `{chain:"solana", sig, confirmed:true, source:"promote.fun", earn_usdc:<delta>, cost_usdc:<run cost>,
+  external:true, wallet, task, wake}` for which `isProfitable(persistedLine) === true`. A non-confirmed or
+  zero-delta or already-seen `sig` is REJECTED (never recorded as earned). This is the ONLY wake that
+  prints `earned_usdc > 0`.
+- **REQ-9 (no-human INVARIANT + watchdog — owner defined):** [FIND-205] zero human — captcha→CapSolver,
+  OTP→`gog gmail`, login→stored creds. Verified TWO ways. (a) static: adversary greps for human-gating
+  calls. (b) runtime: **the harness `run-skill.mjs` enforces the wake-level `SKILL_TIMEOUT_S`** (kills a
+  wake that overruns); **AND `run.sh` self-guards every browser/IO step by wrapping it in
+  `timeout "$STEP_DEADLINE_S" <cmd>`** (`/opt/homebrew/bin/timeout` present; default `STEP_DEADLINE_S=120`).
+  If a wrapped step blocks on human input (daily-driver captcha/2FA fallback, IG interstitial, file-attach
+  prompt) `timeout` returns 124 → run.sh prints `did:"blocked:human:<step>"`, `earned_usdc:0`, exit 0
+  (a recorded defect, NEVER a hang, NEVER a silent wait-for-Dais). Constructible test: a step
+  `timeout 1 sleep 5` (or `STEP_DEADLINE_S=1` + a `sleep 5` step) returns 124 → assert the printed line is
+  `blocked:human:*` and exit code 0.
+- **REQ-10 (auth resilience):** IF OTP missing/expired or session expired mid-flow, re-authenticate once
+  within the step deadline; if re-auth fails print `did:"auth-failed"`, exit 0 (no human prompt).
+- **REQ-11 (idempotent + bounded + dedup):** safe every wake; dedup keyed on `(campaign_id, post_url)`
+  and on withdrawal `sig` (REQ-8 helper). Never double-post/-submit/-record. `429`/rate-limit → back off
+  (`did:"rate-limited"`, exit 0).
+- **REQ-12 (slot contract — single-wake mapping):** `run.sh` spawnable by `run-skill.mjs`, reads env
+  (wallet/keys scrubbed from output), runs the ONE bounded transition chosen by PURE `decide(state, now)`,
+  prints ONE structured line `{slot,did,earned_usdc,cost_usdc}`, exits 0. State persists in
+  `state/clip-promote-state.json`.
 
-## Multi-wake state machine (mapped onto the single-wake run.sh) [F4.2]
-A PURE `decide(state, now)` (no I/O, testable in isolation — mirrors `earn/video/decide.py`) returns ONE
-transition per wake. State persists in `state/clip-promote-state.json`. Per-item lifecycle:
+## Multi-wake state machine (PURE decide, mirrors earn/video/decide.py)
+| State | One bounded action | earned_usdc |
+|---|---|---|
+| SELECT | REQ-1 / REQ-1a | 0 |
+| CLIP | REQ-2 + REQ-3 | 0 |
+| POST | REQ-4 (warmed-only, else defer) | 0 |
+| SUBMIT | REQ-5 / REQ-5a | 0 |
+| MEASURE | REQ-6 (loops til campaign end or `stalled`) | 0 |
+| WITHDRAW | REQ-7 (campaign ended + balance>0 → sig) | 0 |
+| RECORD | REQ-8 (verify sig + append profitable line) | **>0 (DONE)** |
+| dead/stalled/idle | free slot, narrate | 0 |
 
-| State        | Wake transition (one bounded action)                                   | prints earned_usdc |
-|--------------|------------------------------------------------------------------------|--------------------|
-| SELECT       | REQ-1: pick a campaign (or REQ-1a idle)                                 | 0 |
-| CLIP         | REQ-2+REQ-3: produce the 15–45s clip                                   | 0 |
-| POST         | REQ-4: post to a warmed account, capture URL (or defer)                | 0 |
-| SUBMIT       | REQ-5: submit URL; REQ-5a on reject                                    | 0 |
-| MEASURE      | REQ-6: read views + liveness (loops here until campaign ends)          | 0 |
-| WITHDRAW     | REQ-7: campaign ended + balance>0 → claim → capture sig                | 0 |
-| RECORD       | REQ-8: verify sig on Solana + append profitable line                   | **>0 (DONE)** |
-| dead/idle    | liveness fail / no work → free slot, narrate                           | 0 |
+## Verification architecture (maker≠checker)
+- REQ-1/1a/2/5/5a: live session read (fresh screenshot/JSON) shows campaign + submission status + the
+  idle/reject narrate lines.
+- REQ-3: `ffprobe` → `15 ≤ dur ≤ 45` AND `1080×1920` AND audio stream present.
+- REQ-4: post URL resolves on profile (`/p/` or `/reel/`); the account's `clip-accounts.json` `status`
+  was `ready` before posting.
+- REQ-6: stats read returns a real view number; (a)+(b) liveness; the `DEAD_ZERO_HOURS` rule classifies
+  stalled vs early-zero (honest — no shadowban overclaim).
+- REQ-7: withdraw returns a base58 Solana signature.
+- REQ-8 (DONE): `solana-verify.sigStatus(sig).confirmed===true` AND `usdcDeltaForSig(sig,wallet)>0` AND
+  `record.mjs`-persisted line satisfies `isProfitable`. Re-run with same sig appends nothing
+  (`alreadyRecordedSig`). Runnable end-to-end against the named lib — no phantom field.
+- REQ-9: (a) grep finds no interactive prompt; (b) inject a blocking step → `timeout` 124 → exit 0 with
+  `blocked:human:*` within the deadline.
+- Lib regression: `node --test ~/anicca/skills/_shared/lib/__tests__/*.test.js` green (extended ledger +
+  new solana-verify suites), preserving the EVM/swap/external guards.
+- 5-GATE: V1 campaign-picked / V2 clip-posted-live(warmed) / V3 submitted-accepted / V4 views-inbound /
+  V5 **USDC-withdrawn + Solana-confirmed + recorded** (the only DONE). pass-without-evidence grep-blocked.
 
-Most wakes legitimately print `earned_usdc:0` and keep the slot `declared`; the slot flips `live` only
-on a RECORD wake. This is expected and explicitly spec'd (not a silent stall).
-
-## Verification architecture (how each REQ is checked — maker≠checker)
-- REQ-1/1a/2/5/5a: live Promote.fun session read shows the selected campaign + submission status
-  (fresh screenshot/JSON), and the idle/reject narrate line for the empty/rejected cases.
-- REQ-3: `ffprobe` confirms `15 ≤ dur ≤ 45` AND `1080×1920` AND an audio stream present (no silent).
-- REQ-4: the post URL resolves on the account profile (a `/p/` or `/reel/` tile), browser-verified; the
-  account's warm-state was `ready` (assert the state file) before posting.
-- REQ-6: stats read returns a real view number AND liveness PASS; a dead/removed post FAILS the check.
-- REQ-7: the withdraw action returns a base58 Solana signature.
-- REQ-8 (the DONE check): `solana-verify.sigStatus(sig).confirmed === true` AND
-  `usdcDeltaForSig(sig, wallet) > 0` AND the ledger line satisfies `isProfitable` (net>0 + external:true +
-  Solana-confirmed). Re-running with the same sig appends nothing (idempotent). A maker≠checker agent can
-  run all of these against the named lib — no phantom `external`/`0x1` field. [F1.1/F5.1]
-- REQ-9: (a) `grep` finds no interactive prompt; (b) inject a step that blocks → the watchdog trips and
-  the wake exits 0 with `did:"blocked:human:*"` within `SKILL_TIMEOUT_S`. [F5.3]
-- 5-GATE (earn engine): V1 campaign-picked / V2 clip-posted-live(warmed) / V3 submitted-accepted /
-  V4 views-inbound(liveness) / V5 **USDC-withdrawn-and-Solana-confirmed-recorded**. pass-without-evidence
-  is grep-blocked. Only V5 is DONE.
-
-## Out of scope (this feature)
-- TikTok (IG only for now). The educational slideshow track (@aishigoto.labo) stays SEPARATE.
-- The OUTER self-improvement loop (#6) + self-heal (#8) are follow-on features.
+## Out of scope
+TikTok (IG only). Educational slideshow track (@aishigoto.labo) stays SEPARATE. OUTER self-improvement
+(#6) + self-heal (#8) = follow-on.
 
 ## NOTE / risk
-@aishigoto.labo is AI-niche; campaigns are mainstream. REQ-4 forbids posting until an account is warmed
-(`ready`); a dedicated warmed clip account is the clean path if @aishigoto.labo is not yet Day-7. The bio
-still holds BQ8RUXY8 (removable after verification).
+@aishigoto.labo is AI-niche; campaigns are mainstream. REQ-4 forbids posting until an account is `ready`
+(Day-7-warmed); a dedicated warmed clip account is the clean path if @aishigoto.labo is not yet Day-7.
+Bio still holds BQ8RUXY8 (removable). Wallet has 0 SOL + no USDC ATA today — fine for RECEIVING an SPL
+withdraw (sender funds the ATA); we never sign our own Solana tx.

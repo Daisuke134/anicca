@@ -603,3 +603,31 @@ Canonical feature spec = `.vcsdd/features/promote-fun-clip-earn/specs/spec.md` (
 9. **No-human [F5.3]** → REQ-9 runtime watchdog: any step blocking on human input trips SKILL_TIMEOUT_S →
    `did:"blocked:human:<step>"` + exit 0 (a defect, never a hang).
 NEXT (#12): Phase 1c re-review with a fresh-context adversary → PASS, then Phase 2 RED→GREEN.
+
+---
+## 2026-06-29 — VCSDD spec REV 3 (#12): close the REV-2 re-review (1 crit + 6 maj + 2 min)
+The REV-2 re-review (`reviews/spec-review-verdict-rev2.md`) FAILed 5/5 on SECOND-ORDER breaks the
+chain-generalization rewrite introduced. Canonical feature spec = `.vcsdd/.../specs/spec.md` (REV 3). Fixes:
+1. **[FIND-201 crit] DONE write-path** — generalizing `isProfitable` is NOT enough: `deriveLine`
+   (`_shared/lib/ledger.mjs`) silently drops `sig`/`confirmed`/`chain` → persisted line has no sig →
+   DONE unreachable. REV 3 mandates `deriveLine` carry those 3 fields + a test `record.mjs`(Solana line)
+   → `isProfitable(persisted)===true`. Also: add `"promote.fun"`/`"clip-promote"` to
+   `ALLOWED_EARN_SOURCES` (else `assertOwnIdentityOnly` throws); RECORD wake runs MINIMAL env (no PII vars).
+2. **[FIND-202] ONE recorder** = JS `_shared/lib/ledger.mjs`+`record.mjs` (NOT the Python `record_earn.py`;
+   mirror only its inflow-only/idempotent PRINCIPLE).
+3. **[FIND-206] sig-dedup** = new pure `alreadyRecordedSig(file,sig)` over `readLedger` (neither recorder
+   dedups today).
+4. **[FIND-204] shadowban honesty** — URL-resolves+accepted CANNOT detect a shadowban; replace the
+   overclaim with a time-bounded rule: views==0 past `DEAD_ZERO_HOURS` (48h) ⇒ `stalled`, else early-zero.
+5. **[FIND-205] watchdog owner** = harness `run-skill.mjs` enforces wake-level `SKILL_TIMEOUT_S`; `run.sh`
+   wraps each browser/IO step in `timeout "$STEP_DEADLINE_S"` (`/opt/homebrew/bin/timeout` present) →
+   124 ⇒ `blocked:human:<step>` exit 0. Constructible test included.
+6. **[FIND-207] regression** = extend + re-run `_shared/lib/__tests__/ledger.test.js` (Solana cases,
+   preserve EVM/swap/external guards) + new `solana-verify.test.js`.
+7. **[FIND-203] paths** — all canonical = `_shared/lib/`; new `solana-verify.mjs` lives there; new slot
+   `~/anicca/skills/earn/clip-promote/`.
+8. **[FIND-208] warm-state file** = `~/.cloak/clip-accounts.json` `status=="ready"` (ig-account-warmer).
+9. **[FIND-209] batch payout** — `usdcDeltaForSig` sums post-pre ONLY for entries `owner==wallet &&
+   mint==USDC`, ignoring other transfers in the same sig.
+On-chain VERIFIED 2026-06-29: USDC mint accepted by getTokenAccountsByOwner; wallet has 0 USDC ATA + 0 SOL
+(fine for RECEIVING an SPL withdraw). NEXT: Phase 1c re-review ×3 → PASS → Phase 2 RED→GREEN.
