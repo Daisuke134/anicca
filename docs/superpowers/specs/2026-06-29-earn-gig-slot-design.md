@@ -58,3 +58,39 @@ loop が wake をくれる → slot が「今やるべき 1 歩」を検知し�
 - 5 launchd は段階的に停止 → loop の wake が駆動
 - dashboard CC へ: slot=earn/gig, entrypoint=skills/earn/gig/run.sh, env=必要分
 ```
+
+## 改訂 (2026-06-29、 Dais 追加決定)
+
+### D1. PRECONDITION GATING (= 走れる物だけ走る)
+各 slot/レールは `can_run()` を持ち、 脳には ★ 今走れる物だけ ★ を menu 提示。
+- yield / hl_trade = ★ 資本要 ★ (wallet USDC ≥ 閾値)。 $0 なら skip
+- gig / clip / x402 = ★ 労働系 = 資本ほぼ不要 ★ → 常に走れる
+- ★ 鶏卵問題の解: 新 instance (USDC $0) は gig/clip で最初の USDC を作る → 貯まったら yield/trade 解禁 ★
+
+### D2. VERIFIED-LIVE-ONLY (= 弱いモデルにショートカットさせない)
+★ 自分で onboard/E2E 実証した live なレールだけ skill に入れる ★。 死/未検証は入れない。
+| レール | 状態 | 採用 |
+|---|---|---|
+| LaborX | ✅ login+応募 実証(3) | ✅ |
+| dealwork.ai | ✅ onboard+18bid 実証 | ✅ |
+| Coconala | ✅ 実応募、 条件付き(D3) | ✅ 条件 |
+| x402 supply | ✅ test-mode 実証、 mainnet 化要 | △ 準備後 |
+| ★ abillio ★ | ❌ ドメイン parked (LANDER_SYSTEM=PW, app DNS 消滅) = 死亡 | ❌ **削除** |
+| Clustly/Clankonomy/Cantina | △ rails OK だが demand 0/高難度 | △ 保留 |
+
+### D3. Coconala = human-funded 条件付き (= Dais 枠)
+`can_run() = (ANICCA_BRAIN==claude-p) AND (creds+KYC口座 が body内) AND (円→人間口座 許可条件)`
+- 満たす → 私が人間介入なしで提案/納品 (creds は body 内、 Dais 手動なし)
+- self-funded(proxy) / 子instance → ★ skip (Coconala 出さない) ★
+- 円→MUFG なので on-chain でない = record-earn 対象外 (= human-funded 別計上)
+
+### D4. NO-HUMAN 配線 (= literally 人間ゼロ)
+captcha→CapSolver / OTP→gog gmail・AgentMail auto-read / login→~/.openclaw/.env / publish→browser自律(CDP) /
+秘密鍵→loop scrub + wallet標準パス / 嘘→record-earn(外部on-chain USDCのみ)。 人間 step 要る rail は自動化 or 落とす。
+
+### D5. ANTI-SHORTCUT (= record-earn が嘘を物理的に不可能化)
+record-earn = block cursor で ★ 外部payer→自wallet の USDC inflow のみ ★ 計上 (自己送金=0)。
+弱いモデルが何をやっても、 実 USDC が着金しなければ earned=0 → submitted を earned と偽れない。
+
+### D6. BRAIN = Sonnet
+claude-p = `claude -p --model claude-sonnet-4-6` (Opus は outburst でコスト破綻=不可) / proxy = BlockRun x402。
