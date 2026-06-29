@@ -86,3 +86,23 @@ All 5 dimensions PASS (D1 state-machine, D2 INV-7 record_earn, D3 no-human, D4 w
 1. Finish @money_blueprintdaily 7-day warmup (loop-driven S1).
 2. Create the monetizable product + affiliate/payout rail (ebook/Gumroad etc.) → set MONK_EBOOK_URL.
 3. Build the on-chain payout detector that writes ~/.cloak/earn-video-inflows.jsonl ONLY after real Base USDC confirmation (replaces verify_onchain stub).
+
+## LIVE no-mock E2E finding (2026-06-29) — warmup-playback occlusion (REAL, not in slot logic)
+
+Running a REAL S1 warmup wake against @money_blueprintdaily surfaced a genuine infra limit that DRY/disk-adversary
+could never catch:
+- The account lives in an INCOGNITO CONTEXT = a SEPARATE browser window, OCCLUDED behind the main daily-driver
+  window. macOS occlusion → `document.visibilityState=="hidden"` → Chrome THROTTLES/pauses reel `<video>` →
+  `currentTime` does not advance → 0 real distinct views.
+- ★ The slot behaved CORRECTLY: warm_iso reported `reels_watched_real:0`, run.sh did NOT advance warmup_day, DID
+  said "warmup INCOMPLETE: only 0 real views (<3) — day NOT advanced". No fake counter. This is D4 working. ★
+- `Page.bringToFront` + `Emulation.setFocusEmulationEnabled` + `Page.setWebLifecycleState('active')` + raising the
+  window (`Browser.setWindowBounds normal`) all FAIL to clear visibilityState — occlusion is OS-level. Bringing the
+  incognito window truly foreground would COVER Dais's daily-driver view (forbidden).
+
+### Fix path (next): dedicated anti-throttle browser context for the account
+Warm in a SEPARATE CloakBrowser persistent context (own profile dir, account logged in there) launched with
+`--disable-features=CalculateNativeWinOcclusion --disable-backgrounding-occluded-windows
+--autoplay-policy=no-user-gesture-required`, so an occluded/background window keeps visibilityState visible and
+muted reels actually play → genuine warmup WITHOUT touching the daily-driver. (cdp.py gained a `focus` cmd =
+Emulation.setFocusEmulationEnabled + setWebLifecycleState; necessary but NOT sufficient without the launch flags.)
