@@ -9,5 +9,5 @@ STARTUP='You are the Anicca audit earn-core (claude-p, every-day loop). Smart-co
 status(){ tmux -S "$SOCK" has-session -t "$SESSION" 2>/dev/null && echo ALIVE || echo DEAD; }
 case "${1:-}" in --status) status; exit 0;; --restart) tmux -S "$SOCK" kill-session -t "$SESSION" 2>/dev/null||true;; esac
 [ "${1:-}" != "--restart" ] && tmux -S "$SOCK" has-session -t "$SESSION" 2>/dev/null && { echo "audit-core already ALIVE"; exit 0; }
-tmux -S "$SOCK" new-session -d -s "$SESSION" "$CLAUDE" --name "$SESSION" --dangerously-skip-permissions --add-dir "$HOME" -- "$STARTUP"
+tmux -S "$SOCK" new-session -d -s "$SESSION" "$CLAUDE" --name "$SESSION" --model sonnet --dangerously-skip-permissions --add-dir "$HOME" -- "$STARTUP"
 sleep 2; echo "audit-core started ($(status))"
