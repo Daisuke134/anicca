@@ -71,3 +71,18 @@ a real reel; S4 records only real USDC) → 4-D convergence.
 ```
 Built by VCSDD; entrypoint + registry summary delivered to the dashboard CC to flip status:live.
 ```
+
+## VCSDD verdict — ROUND 8: OVERALL PASS (2026-06-29)
+
+All 5 dimensions PASS (D1 state-machine, D2 INV-7 record_earn, D3 no-human, D4 warmup-real, D5 contract) after 8 fresh-context adversary rounds. Fixed across rounds: D1 affiliate trap → reachable; warmup fake-counter → real distinct reels; dry-fake post → live+verified; unverified post/affiliate → published+post_url / website_set gates; posting starvation → S3 priority; double-post on timeout → verify-only reconcile; record_earn spoof → fail-closed on-chain gate; stale render → freshness gate; corrupt state → state_io atomic+.bak; ban → per-day backoff; S4 starvation → affiliate once/day (FIND-801).
+
+### Known-accepted non-blocking findings
+| ID | Sev | Status |
+|----|-----|--------|
+| FIND-804 | low | `json.load(open(p))` without context-manager — FD leak only in short-lived `$PY -c` procs; no practical impact. Accepted. |
+| FIND-805 | low | Concurrency: atomic writes prevent truncation but two SIMULTANEOUS wakes could last-writer-wins or double-post. **Invariant: the ONE loop spawns this slot SERIALLY (one bounded transition/wake) — never two concurrent run.sh for the same handle.** Enforced by the loop scheduler, not in-file. |
+
+### REMAINING for first real $ (not code-correctness, but real-world wiring)
+1. Finish @money_blueprintdaily 7-day warmup (loop-driven S1).
+2. Create the monetizable product + affiliate/payout rail (ebook/Gumroad etc.) → set MONK_EBOOK_URL.
+3. Build the on-chain payout detector that writes ~/.cloak/earn-video-inflows.jsonl ONLY after real Base USDC confirmation (replaces verify_onchain stub).

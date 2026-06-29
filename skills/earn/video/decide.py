@@ -38,6 +38,9 @@ def decide(state, today):
     #   day) and retries daily until it sticks. Re-evaluable, never a permanent block on either posting or the link.
     if warmup_day >= 7 and s.get("last_post_date") != today:
         return "S3_post"          # post daily FIRST (builds audience even while the affiliate link is still pending)
-    if warmup_day >= 7 and not s.get("affiliate_set") and s.get("affiliate_available"):
-        return "S2_affiliate"     # today's post already done → install/retry the affiliate link this wake
+    # ★ FIND-801 fix: S2 retries the link AT MOST ONCE PER DAY (gated on affiliate_attempt_date). After today's
+    #   attempt, S4_record runs — so a link IG perpetually strips can NEVER starve earnings recording. Retries daily. ★
+    if (warmup_day >= 7 and not s.get("affiliate_set") and s.get("affiliate_available")
+            and s.get("affiliate_attempt_date") != today):
+        return "S2_affiliate"     # today's post already done → install/retry the affiliate link (once/day)
     return "S4_record"

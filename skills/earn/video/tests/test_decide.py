@@ -22,6 +22,9 @@ eq(decide({"status": "warmed", "warmup_day": 9, "affiliate_set": False, "affilia
 eq(decide({"status": "warmed", "warmup_day": 8, "affiliate_available": True, "affiliate_set": False, "last_post_date": "2026-06-28"}, T), "S3_post", "link-avail-old-post->POST-first")
 # S2 fires ONLY after today's post is already done (so the link installs/retries without starving posting)
 eq(decide({"status": "warmed", "warmup_day": 8, "affiliate_available": True, "affiliate_set": False, "last_post_date": T}, T), "S2_affiliate", "posted-today+link-avail->affiliate")
+# ★ FIND-801: S2 retries at most ONCE/day — after today's attempt, S4_record runs (link IG strips never starves earnings) ★
+eq(decide({"status": "warmed", "warmup_day": 8, "affiliate_available": True, "affiliate_set": False, "last_post_date": T, "affiliate_attempt_date": T}, T), "S4_record", "affiliate-tried-today->record-not-starved")
+eq(decide({"status": "warmed", "warmup_day": 8, "affiliate_available": True, "affiliate_set": False, "last_post_date": T, "affiliate_attempt_date": "2026-06-28"}, T), "S2_affiliate", "affiliate-tried-yesterday->retry-today")
 # S3: warmed + affiliate set + not posted today → post
 eq(decide({"status": "warmed", "warmup_day": 8, "affiliate_set": True, "last_post_date": "2026-06-28"}, T), "S3_post", "warmed-notposted->post")
 # S4: posted today + (affiliate set OR no link) → record earn (only path left)

@@ -23,7 +23,7 @@ $PY -c "import sys;sys.path.insert(0,'$SK');from state_io import load_or_init;lo
 
 # ★ D1: refresh affiliate_available from env EVERY wake (re-evaluable; no permanent trap). Atomic via state_io. ★
 AVAIL=false; [ -n "$AFFLINK" ] && AVAIL=true
-AVAIL="$AVAIL" $PY -c "import os,sys;sys.path.insert(0,'$SK');from state_io import update,_read;d=_read('$STATE') or {};d.pop('affiliate_pending',None);update('$STATE',{'affiliate_available':os.environ['AVAIL']=='true'})"
+AVAIL="$AVAIL" $PY -c "import os,sys;sys.path.insert(0,'$SK');from state_io import update;update('$STATE',{'affiliate_available':os.environ['AVAIL']=='true'})"
 
 TRANS="$($PY -c "import json,sys;sys.path.insert(0,'$SK');from decide import decide;print(decide(json.load(open('$STATE')),'$TODAY'))" 2>/dev/null)"
 [ -z "$TRANS" ] && TRANS="noop"   # ★ FIND-603: decide load failure ⇒ safe noop, never an 'unknown transition' dead-end ★
@@ -79,8 +79,9 @@ try:
       ok = json.loads(l).get('website_set') is True
 except: ok=False
 print('1' if ok else '0')" 2>/dev/null)
-      if [ "$WSET" = 1 ]; then set_state '{"affiliate_set": true, "status": "warmed"}'; DID="affiliate link VERIFIED+set (post-warmup): $AFFLINK"
-      else set_state '{"status": "warmed"}'; DID="affiliate set FAILED (not verified) — affiliate_set stays false, S2 re-fires next wake"; fi
+      # ★ FIND-801: stamp affiliate_attempt_date EITHER way so S2 retries at most once/day and never starves S4_record. ★
+      if [ "$WSET" = 1 ]; then set_state "{\"affiliate_set\": true, \"status\": \"warmed\", \"affiliate_attempt_date\": \"$TODAY\"}"; DID="affiliate link VERIFIED+set (post-warmup): $AFFLINK"
+      else set_state "{\"status\": \"warmed\", \"affiliate_attempt_date\": \"$TODAY\"}"; DID="affiliate set FAILED (not verified) — affiliate_set stays false, S2 retries tomorrow; S4 records today"; fi
     fi ;;
   S3_post)
     OUT="$HOME/.claude/skills/faceless-money-factory/state/renders"
@@ -132,9 +133,11 @@ print(new)" 2>/dev/null)
         #   A failed/killed generation that leaves a stale prior-day render must NOT be posted as today's fresh reel. ★
         GEN_START=$(date +%s)
         timeout "$GENBUD" bash "$HOME/.claude/skills/faceless-money-factory/scripts/run-daily.sh" "${EARN_VIDEO_SCRIPT:-$OUT/today.txt}" en >/tmp/ev_gen.log 2>&1 || true
+        # ★ FIND-803: fresh (mtime>=GEN_START) AND non-trivial size (>100KB) — a partial mp4 from a timeout-killed
+        #   gen would otherwise be selected and waste a posting attempt. Min-size filters obvious truncations. ★
         MP4="$(GEN_START="$GEN_START" OUT="$OUT" $PY -c "import os,glob
 gs=float(os.environ['GEN_START']); out=os.environ['OUT']
-c=[f for f in glob.glob(os.path.join(out,'*.mp4')) if os.path.getmtime(f)>=gs]
+c=[f for f in glob.glob(os.path.join(out,'*.mp4')) if os.path.getmtime(f)>=gs and os.path.getsize(f)>100000]
 c.sort(key=os.path.getmtime, reverse=True)
 print(c[0] if c else '')" 2>/dev/null)"
         if [ -n "$MP4" ]; then
