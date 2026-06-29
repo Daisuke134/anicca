@@ -463,3 +463,11 @@ Researched (my own live-verified memory + skills, not fabricated):
 - ALSO clean: sell our OWN in-demand digital product via x402 (humans pay USDC directly, 100%, no program).
 - Amazon (fiat, classic affiliate) = OPTIONAL human-funded variant only (needs off-ramp; not no-human).
 - #10 reframed: wire the content engine → ClipAffiliates campaigns (USDC), NOT a classic affiliate program.
+
+---
+## 2026-06-29 — DROP Amazon (Dais): everything must be no-human-loop
+★ Amazon Associates is DROPPED. Reason: classic affiliate needs human KYC + bank → human in the loop.
+Keep ONLY no-human + USDC rails. ★ @aishigoto.labo's content engine stays (AI/productivity content is fine);
+only the Amazon monetization is removed — repoint its BIO/funnel to a USDC, no-human rail once chosen.
+Running 3 parallel web-research agents to find the BEST no-human+USDC content/affiliate rail (ClipAffiliates
+competitors / crypto affiliate networks no-KYC / how clip-faceless creators get paid USDC) — synthesize next.
