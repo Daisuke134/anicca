@@ -32,6 +32,11 @@ def verify_onchain(entry):
     return False  # UNVERIFIED: no chain RPC wired yet — fail-closed so nothing fabricated reaches the ledger
 
 
+def _key(e):
+    # dedup on (tx_hash, log_index) so a tx carrying TWO legit USDC transfers isn't under-counted (log_index
+    # absent ⇒ None, so single-transfer entries dedup on tx_hash exactly as before)
+    return (e.get("tx_hash"), e.get("log_index"))
+
 def _seen_tx(ledger_path):
     seen = set()
     if os.path.exists(ledger_path):
@@ -40,7 +45,7 @@ def _seen_tx(ledger_path):
             if not line:
                 continue
             try:
-                seen.add(json.loads(line).get("tx_hash"))
+                seen.add(_key(json.loads(line)))
             except Exception:
                 pass
     return seen
@@ -51,7 +56,7 @@ def record_earn(entry, ledger_path, onchain_check=None):
         return ("rejected", "not a verified external USDC inflow")
     if not check(entry):
         return ("rejected", "tx_hash not confirmed on-chain (fail-closed: verified flag alone is not trusted)")
-    if entry["tx_hash"] in _seen_tx(ledger_path):
+    if _key(entry) in _seen_tx(ledger_path):
         return ("duplicate", entry["tx_hash"])
     os.makedirs(os.path.dirname(ledger_path) or ".", exist_ok=True)
     with open(ledger_path, "a") as f:

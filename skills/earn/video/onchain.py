@@ -88,12 +88,17 @@ def scan_inflows(recipient=None, from_block=None, rpc=BASE_RPC):
         raise RuntimeError("eth_blockNumber returned no result")
     latest = int(blk, 16)
     start = (from_block + 1) if isinstance(from_block, int) else max(0, latest - 5000)
+    # ★ D3: cap blocks scanned per call so an extremely stale cursor still makes forward progress each wake
+    #   (returns scanned_to = the last block actually covered, which detect() persists — not always `latest`). ★
+    MAX_BLOCKS = 40000
+    target = min(latest, start + MAX_BLOCKS - 1)
     padded = "0x" + "0" * 24 + recipient.replace("0x", "")
     out = []
     step = 2000
     b = start
-    while b <= latest:
-        end = min(b + step - 1, latest)
+    scanned_to = start - 1
+    while b <= target:
+        end = min(b + step - 1, target)
         logs = _rpc("eth_getLogs", [{
             "address": USDC, "fromBlock": hex(b), "toBlock": hex(end),
             "topics": [TRANSFER_TOPIC, None, padded],
@@ -111,8 +116,9 @@ def scan_inflows(recipient=None, from_block=None, rpc=BASE_RPC):
                 "block": int(lg["blockNumber"], 16),
                 "verified": True,
             })
+        scanned_to = end
         b = end + 1
-    return out, latest
+    return out, scanned_to
 
 
 def _key(e):
