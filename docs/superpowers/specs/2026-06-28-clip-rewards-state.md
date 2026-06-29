@@ -196,3 +196,17 @@ internalDate > t0 (the only one that matters), enter within ~30s; (4) handle 情
 logged in (sole account on :9223 → no switch, no pollution), open composer (click 作成 text-center),
 load galloway via fileChooser-intercept (default-ctx works), 次へ→caption→シェア, verify live URL on
 /aiclipsvault/. Clip is NOT yet live — honest.
+
+## D-57 (2026-06-29) — ★★★ FIRST CLIP LIVE on OUR account, FULLY NO-HUMAN, E2E ★★★
+https://www.instagram.com/aiclipsvault/reel/DaK36VYPYuE/ — verified: profile @aiclipsvault "AI Clips Daily"
+投稿1件, reel tile shows Scott Galloway w/ burned EN karaoke caption ("What do you"). hasVideo=true, by=aiclipsvault.
+THE FULL no-human chain proven end to end:
+  SamurAIGPT clip ($0) → burn_captions EN → verify_clip PASS → ISOLATED clip-browser :9223 (profile clip-en,
+  daily-driver untouched) → aiclipsvault sole-login (no switch/pollution) → ig-reels-poster --tid --live →
+  fail-closed account-guard confirmed aiclipsvault → file-attach (default-ctx of the profile) → reel "OK" notice
+  dismissed → multi-step 次へ → caption → シェア → PUBLISHED → independent browser verify.
+KEY FIXES THIS SESSION (all in ig-reels-poster/post_reel.py): --tid (drive a specific logged-in tab),
+fail-closed account-guard, fresh-account interstitial dismiss, the one-time "動画はリール動画として…" OK modal
+dismiss + 7-step 次へ loop. KEY login fix: the OTP code = the LATEST message in the IG "Verify your profile"
+THREAD (083187), not the oldest — entering stale codes was the whole login wall.
+Architecture for SCALE = one dedicated CloakBrowser profile+port per account (isolated, no switch-pollution).

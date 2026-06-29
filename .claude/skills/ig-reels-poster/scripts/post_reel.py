@@ -123,12 +123,19 @@ def main():
                 ok = True; break
         if not ok: res["error"] = "video never loaded"; shot(tid, "2-noload"); print(json.dumps(res)); return
         res["reached"] = "video-loaded"; shot(tid, "2-video")
-        # 3) 次へ until caption textarea + header シェア appear
-        for i in range(4):
+        # 3) advance trim → (filter) → caption. Handle interstitials + the one-time
+        #    "動画投稿はリール動画としてシェアされるようになりました" OK modal that blocks 次へ.
+        for i in range(7):
+            # share button reached → done advancing
+            if ev(tid, "(()=>[...document.querySelectorAll('div[role=button],button')].some(x=>/^(シェア|Share)$/.test((x.textContent||'').trim())&&x.getBoundingClientRect().top<160&&x.getBoundingClientRect().height>0))()"):
+                break
+            # dismiss the reel-notice OK modal (centered button, not top bar)
+            okb = rect_center(tid, """(()=>{const e=[...document.querySelectorAll('div[role=dialog] button,div[role=dialog] div[role=button]')].find(x=>(x.textContent||'').trim()==='OK'&&x.getBoundingClientRect().height>0);if(!e)return null;const r=e.getBoundingClientRect();return{x:Math.round(r.left+r.width/2),y:Math.round(r.top+r.height/2)};})()""")
+            if okb: cdp.click_xy(tid, okb["x"], okb["y"]); time.sleep(2); continue
+            # else click the top-bar 次へ
             nb = rect_center(tid, """(()=>{const x=[...document.querySelectorAll('div[role=button],button,span,a')].find(e=>['次へ','Next'].includes((e.textContent||'').trim())&&e.getBoundingClientRect().top<160&&e.getBoundingClientRect().height>0);if(!x)return null;const r=x.getBoundingClientRect();return{x:Math.round(r.left+r.width/2),y:Math.round(r.top+r.height/2)};})()""")
             if nb: cdp.click_xy(tid, nb["x"], nb["y"]); time.sleep(3.5)
-            if ev(tid, "(()=>!!(document.querySelector('textarea[aria-label],div[role=textbox][contenteditable=true]')||document.querySelector('textarea')))()"):
-                break
+            else: time.sleep(2)
         res["reached"] = "caption-step"; shot(tid, "3-caption-step")
         # 4) caption
         cf = rect_center(tid, """(()=>{const t=document.querySelector('textarea[aria-label],div[role=textbox][contenteditable=true]')||document.querySelector('textarea');if(!t)return null;const r=t.getBoundingClientRect();return{x:Math.round(r.left+r.width/2),y:Math.round(r.top+r.height/2)};})()""")
