@@ -25,3 +25,10 @@
 # Optional env: DAIS_EMAIL (default: keiodaisuke@gmail.com), GCAL_ID
 [functions."life-ask"]
   schedule = "0 21 * * *"
+
+[dev]
+  command = "npm run dev"
+  targetPort = 3000
+  port = 8888
+  functions = "netlify/functions"
+  framework = "next"
