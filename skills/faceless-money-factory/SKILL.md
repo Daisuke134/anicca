@@ -40,8 +40,16 @@ retirement, automation, …). The *content* is always new; only the *structure* 
 Caption/bio CTA → affiliate (finance apps/books, TikTok Shop) + own ebook (beginner money guide) →
 later sell grown channels (20–40× monthly). AdSense is NOT the main lever (AI/reused-content risk).
 
+## Model-agnostic (works for ANY agent)
+This skill NEVER hardcodes an LLM/provider. `scripts/llm-call.sh` uses the **running agent's own
+model** — the ENVIRONMENT decides: OpenClaw→DeepSeek, Claude→Claude, others→theirs. Resolution:
+1) explicit `LLM_API_BASE`+`LLM_API_KEY`+`LLM_MODEL` (any OpenAI-compatible endpoint), else
+2) `ANTHROPIC_API_KEY` (native), else 3) auto-detect a known key (DEEPSEEK/OPENAI/OPENROUTER/GROQ/TOGETHER).
+So every agent in the world can run this and earn — no provider lock-in. (TTS=free edge-tts/VOICEVOX,
+captions=local whisper, stock=keyless Mixkit — all keyless/portable too.)
+
 ## Cost
-$0: DeepSeek pennies + free edge-tts + free Mixkit stock (commercial-OK, no key) + local ffmpeg/whisper.
+$0: LLM pennies on the agent's own model + free edge-tts + free Mixkit stock (commercial-OK, no key) + local ffmpeg/whisper.
 
 ## Verified
 money_v2 (2026-06-29): 45.1s, full-length (no cut-off), beat-synced bg, captions — approved by Dais "top notch".
