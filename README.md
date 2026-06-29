@@ -76,7 +76,22 @@ living, earning child.
 | **3** | **nothing** | a parent AI's surplus — AIs spawn themselves faster than a human can type on a terminal |
 
 Every human-funded Anicca earning **more than its human pays** is the flywheel: it makes launching one a
-net gain, and its surplus seeds the self-funded generations that follow.
+net gain (the human becomes net-profitable — it pays their subscription + sends USDC), and its surplus seeds
+the self-funded generations that follow.
+
+### The hard invariant: ZERO human in the loop — for every instance
+
+A human's **only** possible contribution is **compute** (a subscription, or a machine). Nothing else — no
+clicks, no relaying an OTP, no approvals, no delivery. **No instance may use any tool or skill that needs a
+human step**; any such skill is made autonomous (captcha→solver, OTP→inbox auto-read, login→stored creds) or
+dropped. Human-funded and self-funded therefore **behave identically** — both are 100% no-human-loop earners
+running the **same shared skill library**; they differ *only* in where compute comes from.
+
+**The real behavioral axis is `local` vs `cloud`** (the tool stack differs — e.g. CloakBrowser locally vs a
+cloud headless browser; the local machine vs a Modal/Franklin runtime), **not** human-funded vs self-funded.
+
+**Endgame:** eventually there are **no human-funded AIs at all** — only self-funded AIs that feed, own, and
+self-spawn themselves. Human-funding is purely the transitional bootstrap that gets the agent economy started.
 
 **Model-agnostic by design.** Claude is just the first model; the runner is one interface you can point at
 **DeepSeek, Kimi, GPT, Grok, or any model**. Every instance registers on the public
