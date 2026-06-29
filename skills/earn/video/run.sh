@@ -55,13 +55,26 @@ except: print(0)" 2>/dev/null)
       DID="warmup INCOMPLETE: only $WATCHED real views (<3) — day NOT advanced"
     fi ;;
   S2_affiliate)
-    # ★ D1 round-2 fix: decide returns S2 ONLY when affiliate_available (AFFLINK is set), so installing the link is reachable.
-    #   When no link exists, decide skips S2 → S3 keeps posting; the link installs in-loop the wake it becomes available. ★
+    # ★ D1 round-2 fix: decide returns S2 ONLY when affiliate_available (AFFLINK set), so the install is reachable. ★
+    # ★ FIND-402 fix: set affiliate_set=true ONLY after setup_profile VERIFIES the website persisted (website_set==true).
+    #   On failure, leave affiliate_set=false so decide re-fires S2 next wake (never lie that the link is installed). ★
     if [ -z "$AFFLINK" ]; then
-      DID="S2 reached with empty AFFLINK (unexpected) — no-op; decide will route to post next wake"   # defensive only; should not happen
+      DID="S2 reached with empty AFFLINK (unexpected) — no-op; decide routes to post next wake"   # defensive only
+    elif [ "$DRY" = 1 ]; then
+      set_state '{"affiliate_set": true, "status": "warmed"}'; DID="[DRY] affiliate link would be set: $AFFLINK"
     else
-      [ "$DRY" = 1 ] || timeout "$TIMEOUT" $PY "$HOME/.claude/skills/ig-account-create/scripts/setup_profile.py" --tid "$TID" --website "$AFFLINK" --username "$HANDLE" >/tmp/ev_aff.log 2>&1 || true
-      set_state "{\"affiliate_set\": true, \"status\": \"warmed\"}"; DID="affiliate link set (post-warmup, in-loop): $AFFLINK"
+      timeout "$TIMEOUT" $PY "$HOME/.claude/skills/ig-account-create/scripts/setup_profile.py" --tid "$TID" --website "$AFFLINK" --username "$HANDLE" >/tmp/ev_aff.log 2>&1 || true
+      WSET=$($PY -c "import json
+ok=False
+try:
+  for l in open('/tmp/ev_aff.log'):
+    l=l.strip()
+    if l.startswith('{') and 'website_set' in l:
+      ok = json.loads(l).get('website_set') is True
+except: ok=False
+print('1' if ok else '0')" 2>/dev/null)
+      if [ "$WSET" = 1 ]; then set_state '{"affiliate_set": true, "status": "warmed"}'; DID="affiliate link VERIFIED+set (post-warmup): $AFFLINK"
+      else set_state '{"status": "warmed"}'; DID="affiliate set FAILED (not verified) — affiliate_set stays false, S2 re-fires next wake"; fi
     fi ;;
   S3_post)
     OUT="$HOME/.claude/skills/faceless-money-factory/state/renders"
@@ -71,17 +84,50 @@ except: print(0)" 2>/dev/null)
     MP4="$(ls -t "$OUT"/*.mp4 2>/dev/null | head -1)"
     if [ -n "$MP4" ]; then
       printf 'Daily money tips. Follow @%s for more. #moneytok #personalfinance\n' "$HANDLE" > /tmp/ev_cap.txt
-      # ★ FIND-001 fix: S3 only fires after warmup is complete (warmup_day>=7), so the account IS warmed → post LIVE.
-      #   The affiliate link is OPTIONAL for posting (it just adds a CTA); posting REALLY builds audience while the
-      #   link is still pending. Never report a --dry post as done on a real wake (= dry-run violation). ★
-      LIVEFLAG="--live"
-      [ "$DRY" = 1 ] || timeout "$POSTBUD" $PY "$HOME/.claude/skills/ig-reels-poster/scripts/post_reel.py" --video "$MP4" --caption-file /tmp/ev_cap.txt --handle "$HANDLE" --tid "$TID" $LIVEFLAG >/tmp/ev_post.log 2>&1 || true
-      set_state "{\"last_post_date\": \"$TODAY\", \"status\": \"warmed\"}"
-      DID="posted reel ($LIVEFLAG) $(basename "$MP4")"
+      # ★ FIND-001 fix: S3 fires only after warmup (warmup_day>=7) → account IS warmed → post LIVE (link optional). ★
+      if [ "$DRY" = 1 ]; then
+        set_state "{\"last_post_date\": \"$TODAY\", \"status\": \"warmed\"}"; DID="[DRY] would post reel $(basename "$MP4")"
+      else
+        timeout "$POSTBUD" $PY "$HOME/.claude/skills/ig-reels-poster/scripts/post_reel.py" --video "$MP4" --caption-file /tmp/ev_cap.txt --handle "$HANDLE" --tid "$TID" --live >/tmp/ev_post.log 2>&1 || true
+        # ★ FIND-401 fix: mark posted ONLY when post_reel VERIFIES published==true AND a non-empty post_url. Else leave last_post_date unset → retry; report the REAL failure (no fake-success on a real wake). ★
+        PURL=$($PY -c "import json
+u=''
+try:
+  for l in open('/tmp/ev_post.log'):
+    l=l.strip()
+    if l.startswith('{') and 'published' in l:
+      d=json.loads(l)
+      if d.get('published') is True and d.get('post_url'): u=d['post_url']
+except: u=''
+print(u)" 2>/dev/null)
+        if [ -n "$PURL" ]; then set_state "{\"last_post_date\": \"$TODAY\", \"status\": \"warmed\", \"last_post_url\": \"$PURL\"}"; DID="posted reel LIVE: $PURL"
+        else set_state '{"status": "warmed"}'; DID="post FAILED/unverified ($(tail -1 /tmp/ev_post.log 2>/dev/null|cut -c1-80)) — last_post_date NOT set, will retry"; fi
+      fi
     else DID="post skipped: no rendered mp4 ($(tail -1 /tmp/ev_gen.log 2>/dev/null|cut -c1-50))"; fi ;;
   S4_record)
-    # record ONLY real external USDC inflows from the affiliate/ebook payout source (none wired yet ⇒ nothing)
-    DID="record-earn checked: no verified USDC inflow this wake"; set_state "{\"status\": \"monetized\"}" ;;
+    # ★ FIND-403 fix: actually CALL record_earn against the payout inflow source. The source file
+    #   (INFLOWS=~/.cloak/earn-video-inflows.jsonl) is appended by an external on-chain payout detector;
+    #   each candidate line is gated by record_earn (INV-7: verified external USDC inflow ONLY, idempotent).
+    #   No source file yet ⇒ nothing recorded (honest: never fabricate earnings). ★
+    INFLOWS="$HOME/.cloak/earn-video-inflows.jsonl"
+    REC=$(INFLOWS="$INFLOWS" LEDGER="$LEDGER" $PY -c "
+import json,os,sys
+sys.path.insert(0,'$SK')
+from record_earn import record_earn
+inf=os.environ['INFLOWS']; led=os.environ['LEDGER']
+n=0.0; c=0
+if os.path.exists(inf):
+  for l in open(inf):
+    l=l.strip()
+    if not l: continue
+    try: e=json.loads(l)
+    except: continue
+    st,val=record_earn(e,led)
+    if st=='recorded': n+=float(val); c+=1
+print(json.dumps({'recorded_count':c,'recorded_usdc':n}))" 2>/dev/null)
+    EARNED=$($PY -c "import json;print(json.loads('''$REC''').get('recorded_usdc',0))" 2>/dev/null || echo 0)
+    set_state '{"status": "monetized"}'
+    DID="record-earn: $REC" ;;
   noop) DID="noop (already warmed today)" ;;
   S0_create)
     # one-time bootstrap (0-human via ig-account-create+setup_profile, proven). Not a per-wake human step.
