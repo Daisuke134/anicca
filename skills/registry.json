@@ -19,7 +19,7 @@
       "entrypoint": "run.sh",
       "status": "declared",
       "spec": "26 A3 / 27 A-earn (GATE-0)",
-      "summary": "(retired \u2014 split into yield/hl_trade/x402_sell/token_launch)",
+      "summary": "(retired — split into yield/hl_trade/x402_sell/token_launch)",
       "owner": "wf-a:earn"
     },
     "self/spawn": {
@@ -45,7 +45,7 @@
       "dir": "skills/economy/ubi",
       "entrypoint": "ubi.js",
       "status": "declared",
-      "spec": "27 \u00a73 UBI",
+      "spec": "27 §3 UBI",
       "summary": "contribute() surplus X% to Treasury; distributeAI() rescue+flat basic income to alive/dying agents; distributeHuman() periodic USDC batch to allowlist. Post-earn roadmap; mechanism fixed.",
       "owner": "wf-a:earn"
     },
@@ -93,6 +93,30 @@
       "spec": "PATCH6",
       "owner": "wf-a:earn",
       "summary": "Launch/manage $ANICCA token (MoltX ~$2.70). args {launch:true,name,symbol}."
+    },
+    "earn/gig": {
+      "status": "declared",
+      "summary": "gig work → USDC (one bounded gig per wake, no human)"
+    },
+    "earn/clip": {
+      "status": "declared",
+      "summary": "clip long-form → post/campaign → per-view USDC"
+    },
+    "earn/affiliate": {
+      "status": "declared",
+      "summary": "affiliate post + commission tracking → USDC"
+    },
+    "earn/video": {
+      "status": "declared",
+      "summary": "faceless short video → monetized/affiliate channel"
+    },
+    "earn/audit": {
+      "status": "declared",
+      "summary": "smart-contract audit contest finding → bounty USDC"
+    },
+    "earn/_probe": {
+      "status": "live",
+      "summary": "VCSDD integration probe (writes a test earn-ledger line)"
     }
   }
 }
