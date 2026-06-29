@@ -31,6 +31,6 @@ if [ "${1:-}" != "--restart" ] && tmux -S "$SOCK" has-session -t "$SESSION" 2>/d
 fi
 
 tmux -S "$SOCK" new-session -d -s "$SESSION" \
-  "$CLAUDE" --name "$SESSION" --dangerously-skip-permissions --add-dir "$HOME" -- "$STARTUP"
+  "$CLAUDE" --name "$SESSION" --model sonnet --dangerously-skip-permissions --add-dir "$HOME" -- "$STARTUP"
 sleep 2
 echo "gig-core started ($(status)). Attach: tmux -S $SOCK attach -t $SESSION"
