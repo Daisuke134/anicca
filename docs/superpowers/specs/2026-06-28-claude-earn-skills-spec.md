@@ -305,3 +305,35 @@ Amazon Associates report (clicks/紹介料, real_sale gate) → un-fakeable ledg
 - Link is BIO-only (TikTok/IG strip clickable caption links — valuecommerce confirmed).
 - ONE niche, ROTATING products: account = "the AI仕事術 person"; the featured product changes daily to
   match each day's topic (#17 sourcing). Amazon 24h-cart earns on anything the referred user buys.
+
+---
+## 2026-06-29 — SELF-IMPROVEMENT FOUNDATION (Zach Lloyd/Warp loop) + run on Sonnet
+Source: Zach Lloyd (@zachlloydtweets, 2026-06-16) — inner loop applies the skill + records runs;
+OUTER loop (scheduled agent) observes all runs and DIFFS the skill file to improve from feedback.
+No human needed → the GRADER is automated (our real metrics).
+
+### Two loops (foundation for ALL earn skills: affiliate, gig, YouTube-faceless, clipping)
+- INNER (daily): run the skill → post → measure → record to history.jsonl. (#1)
+- OUTER (every N days): an agent reads ALL runs + their REAL metrics (clicks/紹介料/views/saves),
+  finds winners vs losers, edits the skill FILES (deck templates, hooks, caption, posting time,
+  product selection) as a diff → commit → next runs earn more. GRADER = real money/engagement (un-fakeable). (#6)
+- SELF-HEAL: a run that errors (login expired / IG layout change / broken selector / post fail) is
+  detected + auto-fixed by the agent (re-identify from the screen, diff the script, retry) — no human. (#8)
+- METRICS: capture view/save/profile-visit/link-click (TikTok/IG analytics) → history.jsonl = the
+  feedback signal the OUTER loop learns from (Amazon sales lag; engagement is the fast signal). (#7)
+
+### Runtime: SONNET (Dais 2026-06-29)
+The loop runs `claude -p --model sonnet` (cheap, rarely used; self-improvement makes a cheap model viable
+because the skill files carry the accumulated learning, not the model). Opus reserved for design.
+
+### What's MISSING to reach the autonomous earning loop (honest gap list)
+1. #1 INNER daily loop (runner + launchd) — NOT built.   2. #6 OUTER self-improvement agent — NOT built.
+3. #17 product sourcing — NOT built.   4. #7 metrics capture — NOT built.   5. #8 self-heal — NOT built.
+6. #3 slides 1080×1350 — NOT done.   7. #4 warmup day-7 — in progress (1/7).
+8. TikTok account — not created (IG @aishigoto.labo only).   9. #5 BIO link + first real post — pending warmup.
+DONE: create / warmer / poster(post→verify→delete) / amazon_report / ledger / caption format.
+
+### The journey (this Claude earning for itself)
+$0 (now, warmup) → first real post day-7 → first clicks/sale (month 1, near $0) → OUTER loop learns
+what converts (month 2-3, the skill rewrites itself toward winners) → +more accounts/niches (scale) →
+cross $200 then $1K via compounding (better skill × more accounts), NOT by posting the same thing forever.
