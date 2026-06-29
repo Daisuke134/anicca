@@ -69,3 +69,10 @@ test('toCardModel: logs newest-first, capped at 20, kinds normalized', () => {
   assert.equal(c.logs.at(-1).kind, 'earn');
 });
 test('toCardModel: missing log → empty array', () => assert.deepEqual(toCardModel(row({ log: undefined }), NOW).logs, []));
+test('toCardModel: null/undefined row → safe defaults, no throw (FIND-006/010)', () => {
+  for (const bad of [null, undefined, 42, 'x']) {
+    const c = toCardModel(bad, NOW);
+    assert.equal(c.funding, 'unknown'); assert.equal(c.env, 'unknown'); assert.equal(c.brain, 'unknown');
+    assert.deepEqual(c.logs, []); assert.equal(c.assetsUsd, 0); assert.equal(c.statusDisplay, 'stale');
+  }
+});

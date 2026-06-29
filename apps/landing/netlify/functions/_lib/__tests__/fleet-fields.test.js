@@ -6,6 +6,7 @@ const assert = require("node:assert/strict");
 const { Wallet } = require("ethers");
 const { verifyTelemetry } = require("../telemetry-verify");
 const { validate } = require("../telemetry-schema");
+const { upsertInstance } = require("../telemetry-store");
 
 // Deterministic throwaway key (hardhat account #0) — NEVER a real wallet. id MUST equal the signer.
 const TEST_PK = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
@@ -72,4 +73,20 @@ test("key-safety: message never contains a private key / service-role key; keys 
   assert.ok(!message.includes(fakeSvcKey), "service-role key must NOT appear in the message");
   const keys = Object.keys(JSON.parse(message));
   for (const k of keys) assert.ok(ALLOWED.has(k), `unexpected key in message: ${k}`);
+});
+
+// FIND-008/FIND-002 (REQ-13): the STORE forwards funding/env/brain/log to PostgREST (injectable fetch).
+// Combined with supabase/instances.sql declaring those columns, this proves the persist path end-to-end
+// (CI-safe; no prod write). The live round-trip was also manually verified (a3cdd4 row read back).
+test("upsertInstance forwards funding/env/brain/log to the upsert body (REQ-13 persist path)", async () => {
+  let captured = null;
+  const fakeFetch = async (url, opts) => { captured = { url, body: JSON.parse(opts.body) }; return { ok: true, status: 200, text: async () => "" }; };
+  const payload = JSON.parse(posterMsg({ log: [{ ts: 9, kind: "earn", note: "+$2" }] }));
+  await upsertInstance(payload, { url: "https://x.supabase.co", key: "k", f: fakeFetch });
+  assert.ok(captured.url.includes("on_conflict=id"), "must upsert on id");
+  assert.equal(captured.body.funding, "human");
+  assert.equal(captured.body.env, "local");
+  assert.equal(captured.body.brain, "proxy");
+  assert.ok(Array.isArray(captured.body.log) && captured.body.log.length === 1, "log must be forwarded");
+  assert.equal(captured.body.id, payload.id);
 });
