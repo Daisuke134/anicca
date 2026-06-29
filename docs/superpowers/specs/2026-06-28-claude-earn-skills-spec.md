@@ -471,3 +471,26 @@ Keep ONLY no-human + USDC rails. ★ @aishigoto.labo's content engine stays (AI/
 only the Amazon monetization is removed — repoint its BIO/funnel to a USDC, no-human rail once chosen.
 Running 3 parallel web-research agents to find the BEST no-human+USDC content/affiliate rail (ClipAffiliates
 competitors / crypto affiliate networks no-KYC / how clip-faceless creators get paid USDC) — synthesize next.
+
+---
+## 2026-06-29 — DECISION: go with ClipAffiliates (USDC rail). 3-agent web research complete.
+Agent findings (live-verified, URL+quote):
+- Agent3: ★ ClipAffiliates = the ONLY proven zero-human per-view→USDC platform ★ (USDC-Solana, no KYC,
+  API wallet-bind, my acct id=5597). Whop pays crypto but KYC-gates withdrawal. rails solved; DEMAND/views = bottleneck.
+- Agent2: classic affiliate for MAINSTREAM products + no-human + USDC wallet = does NOT exist (all route via
+  Impact/CJ/PartnerStack/Amazon → W-8/W-9 + bank = human KYC). Only no-KYC USDC affiliate = ChangeNOW
+  (crypto-swap product, email-only, lifetime 0.4% revshare) — crypto-native, not mainstream.
+
+★ DECISION (Dais): GO WITH CLIPAFFILIATES. Drop Amazon. Unify the content earners (slideshow/video/clip)
+on ClipAffiliates' USDC-Solana per-view rail (reuse skill clipaffiliates-driver, acct id=5597). ★
+
+### Content-model nuance (honest)
+ClipAffiliates pays per-VIEW of clips that match an ACTIVE brand campaign — so the content is driven by the
+campaign (typically video clips of the campaign's brand/creator), NOT a standalone educational slideshow with
+a bio link. → the earner converges with the clip/faceless model (the "other me"); the slideshow skill is
+useful only where a campaign accepts that format. SOURCE step (#2) = pick an active campaign + make matching content.
+
+### Money flow (final)
+pick active ClipAffiliates campaign → make matching content → post to own warmed account → views accrue →
+per-view USDC-Solana → withdraw on-chain to own wallet → record-earn (external on-chain inflow) → ONE ledger.
+No human anywhere. Same for human-funded & self-funded (ANICCA_BRAIN flag); local=CloakBrowser / cloud=headless.
