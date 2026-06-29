@@ -513,3 +513,16 @@ Model is still CLIPPING (post short video clips of a campaign's content → per-
 converges with the clip/video pipeline (reuse earn-clip-rewards + the IG account infra create/warm/post).
 My Solana wallet already exists (xxKC33TYJ2czjGQAADrvDCLjF6pRvtHX125fCwP5u9H). KYC/signup friction =
 verify E2E when onboarding (FAQ shows wallet-based instant withdraw = low friction).
+
+---
+## 2026-06-29 — TRIED IT (Dais "go try it"): Promote.fun account CREATED E2E, fully no-human ✅
+Drove the daily-driver (CDP) end-to-end, NO mock, NO human:
+1. ✅ signup: username (aniccaclips) + Gmail PLUS-ADDRESS (keiodaisuke+promotefun@gmail.com) + password.
+   ★ NO KYC, NO phone, NO captcha ★ (custom React ToS checkbox needed a precise click + screenshot-verify).
+2. ✅ email OTP auto-read via `gog gmail search` (REQUIRES env GOG_KEYRING_PASSWORD from ~/.openclaw/.env) →
+   code 826282 → entered into the 6-char code input (Input.insertText) → Verify Email.
+3. ✅ LOGGED IN: dashboard "Welcome Back, aniccaclips", balance $0.00, real campaigns visible
+   (CROCS $17,500 @ $2.50/1K, BIA $3,750, COPA90 $4,000, BUMBLE $4,480, IDA CORR $1,400 @ $2.00...).
+→ Promote.fun is a CONFIRMED no-human + USDC-Solana + real-demand rail. Account = aniccaclips (creds in
+   ~/.cloak/promotefun-anicca.json). Remaining onboard: link a social account + confirm USDC-Solana payout
+   wallet bind, then clip a campaign → post → per-view USDC. (Keep clipping + slideshow SEPARATE for now.)
