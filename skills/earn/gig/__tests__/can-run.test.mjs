@@ -16,13 +16,11 @@ test('dealwork available with API key, even at USDC 0 (chicken-egg: labor funds 
   assert.ok(r.includes('dealwork'));
 });
 
-test('coconala ONLY when brain=claude-p AND creds present (D3 conditional)', () => {
-  const creds = new Set(['COCONALA_EMAIL', 'COCONALA_PASSWORD']);
-  assert.ok(availableRails({ creds, brain: 'claude-p', usdc: 0 }).includes('coconala'));
-  // self-funded brain → coconala dropped
+test('coconala is NEVER offered (human KYC/bank = human loop = disqualified)', () => {
+  // even with creds + human-funded brain, a human-loop rail must never appear
+  const creds = new Set(['COCONALA_EMAIL', 'COCONALA_PASSWORD', 'LABORX_EMAIL', 'LABORX_PASSWORD']);
+  assert.ok(!availableRails({ creds, brain: 'claude-p', usdc: 0 }).includes('coconala'));
   assert.ok(!availableRails({ creds, brain: 'proxy', usdc: 0 }).includes('coconala'));
-  // human-funded but no creds → dropped
-  assert.ok(!availableRails({ creds: new Set(), brain: 'claude-p', usdc: 0 }).includes('coconala'));
 });
 
 test('no creds → no rails (do not pretend a dead/unconfigured rail works)', () => {

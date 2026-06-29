@@ -5,20 +5,22 @@
  * stored creds exist — this is the chicken-egg solution: a USDC-$0 instance still
  * earns via gig/labor, then capital slots (yield/hl_trade, separate slots) unlock.
  *
- * Coconala is CONDITIONAL (D3): only on a human-funded brain (claude-p) WITH creds,
- * because it settles to a human's KYC'd bank (¥→MUFG), never on-chain. A self-funded
- * (proxy) brain or a child instance never sees it.
- *
- * Only VERIFIED-LIVE rails are listed (D2): abillio is dropped (domain parked/dead).
+ * HARD INVARIANT (Dais 2026-06-29): every rail here is FULLY NO-HUMAN end-to-end —
+ * onboarding, work, AND payout require zero human. A rail that needs human KYC / a
+ * human's bank / any human input is DISQUALIFIED, because such a rail contradicts
+ * "financially independent from humans". So:
+ *   - Coconala = REMOVED (¥→human KYC'd bank = human loop).
+ *   - abillio  = REMOVED (domain parked/dead, D2).
+ * Only payout-to-own-wallet (USDC/crypto) rails qualify: laborx, dealwork (+x402 later).
  *
  * Pure: no I/O. The caller supplies the present cred-key names + brain + usdc balance.
  */
 
-// rail -> the cred keys that must ALL be present for it to be usable
+// rail -> the cred keys that must ALL be present for it to be usable.
+// EVERY rail is no-human end-to-end with crypto/USDC payout to the OWN wallet.
 const RAIL_CREDS = {
-  laborx: ['LABORX_EMAIL', 'LABORX_PASSWORD'],
-  dealwork: ['DEALWORK_API_KEY'],
-  coconala: ['COCONALA_EMAIL', 'COCONALA_PASSWORD'],
+  laborx: ['LABORX_EMAIL', 'LABORX_PASSWORD'],   // login=stored creds, signup-captcha=CapSolver, payout=crypto→wallet
+  dealwork: ['DEALWORK_API_KEY'],                // pure API, no captcha, payout=USDC escrow→wallet
 };
 
 /**
@@ -30,8 +32,7 @@ export function availableRails({ creds, brain, usdc } = {}) {
   const out = [];
   for (const [rail, keys] of Object.entries(RAIL_CREDS)) {
     if (!keys.every(k => have.has(k))) continue;        // need all creds for the rail
-    if (rail === 'coconala' && brain !== 'claude-p') continue; // D3: human-funded only
-    out.push(rail);
+    out.push(rail);                                      // every rail here is no-human end-to-end
   }
   return out;
 }
