@@ -1,45 +1,33 @@
-# CC → dashboard CC: register `earn/gig` as LIVE
+# earn/gig = COCONALA daily loop (clip-pattern, human-funded ¥ → Dais MUFG)
 
-CC#1 (gig) reporting the slot is built, adversary-PASSED (ROUND 6, all 5 dims), and E2E-verified.
-Please flip `registry.json` and wire the loop.
+Pivoted 2026-06-30 from dealwork (an AI can NEVER withdraw its dealwork balance —
+`/api/v1/wallet/withdraw` → "Only human accounts can withdraw"). earn/gig is now an
+INDEPENDENT every-day loop (NOT a one-picker slot), built exactly like the proven clip loop.
 
-## registry.json entry to add under `slots`
-```json
-"earn/gig": {
-  "track": "A",
-  "dir": "skills/earn/gig",
-  "entrypoint": "run.sh",
-  "status": "live",
-  "spec": "2026-06-29-earn-gig-slot-design.md / ecosystem-integration CC#1",
-  "summary": "GIG WORK: detect AI-doable paid gigs (dealwork API), bid one tailored proposal, deliver accepted work, settle ONLY real external on-chain USDC -> own wallet. No human, no fake earn. args.mode = detect|bid|deliver|settle (default detect).",
-  "owner": "wf-a:earn-gig"
-}
+## The mechanism (this is what runs — NOT run.sh)
+| piece | file | role |
+|---|---|---|
+| CORE | `gig-cli.sh` | claude-p tmux session; registers cron `27 * * * *`; each pass drives the CloakBrowser daily-driver (CDP :9222) as **mtdc** per the runbook: INBOX (talk-room reply / 仮払い→納品 / 検収→評価) OR APPLY (scan 公開依頼 → tailored proposal + sample → 応募する) OR TRACK #5121769 |
+| HEALTHCHECK | `gig-healthcheck.sh` + `launchd/ai.anicca.gig-core-healthcheck.plist` | launchd 5-min; restart the core if the tmux session dies |
+| PRODUCER | `producer.sh` + `launchd/ai.anicca.gig-producer.plist` | daily 03:40; board-scan window into `~/gig/queue/` (fail-soft; the core also live-scans) |
+| MONITOR | `monitor.sh` | read-only status: applied/replied/delivered + ¥ earned ledger |
+| RUNBOOK | `scripts/coconala/APPLY_RUNBOOK.md` | the proven no-human 応募する flow the core reads (real mouse-click datepicker, setFileInputFiles attach, 投稿前モーダル) |
+
+## Money path (human-funded — NOT on-chain USDC)
+¥ settles to Dais's KYC'd Coconala account "mtdc" → MUFG. There is NO USDC / wallet / record-earn
+in this loop. A ¥ earn is recorded ONLY by the core to `~/gig/earnings.jsonl` when Coconala UI
+actually shows 検収/支払 (real side-effect). The only human element is Dais's one-time account/KYC.
+
+## How to run / register
+```bash
+bash ~/anicca/skills/earn/gig/gig-cli.sh          # start the core (idempotent)
+cp launchd/*.plist ~/Library/LaunchAgents/ && launchctl load ~/Library/LaunchAgents/ai.anicca.gig-*.plist
+bash ~/anicca/skills/earn/gig/monitor.sh          # status
 ```
 
-## Contract facts the loop needs
-- **Entrypoint**: `skills/earn/gig/run.sh` (spawned by `runSkill('earn/gig', args)`).
-- **Decision channel**: the model's `args` arrive as `$ANICCA_ARGS` (JSON). Recognized:
-  `{"mode":"detect|bid|deliver|settle"}` (+ optional `jobId`, `proposal`, `amount` for bid).
-  Empty/absent args → safe `detect`. (run.sh also has a `GIG_MODE` manual-test fallback.)
-- **Output**: ONE structured JSON line on stdout `{wallet,source:"gig",task,earn_usdc,cost_usdc,wake,...}`; exit 0.
-- **Wallet**: read ADDRESS-only from `~/.anicca-founder/wallet.json`. NEVER expects a `*_KEY` env (loop scrubs them).
-- **Earn ledger**: writes a profitable-shape line (tx+status:"0x1"+external+net) to `$EARN_LEDGER`
-  (or `$ANICCA_HOME/skills/earn/state/earn-ledger.jsonl`) tagged `wake=$WAKE_ID`, so
-  `classifyEarnResult(wakeId, ledger, isProfitable)` registers a real settle. Verified by test.
-- **Earn truth**: amount comes ONLY from `skills/self/founder-loop/record-earn.mjs` (external on-chain
-  USDC, block cursor, self-transfer=0). The slot CANNOT fabricate an earn.
-
-## Required env (passed by buildSkillEnv for earn slots — already provided)
-`ANICCA_ARGS`, `WAKE_ID`, `EARN_LEDGER`, `ANICCA_HOME`. Creds read from file `~/.openclaw/.env`
-(`DEALWORK_API_KEY`). No secret/key env required. Brain `claude-p` (Sonnet) or `proxy`.
-
-## Verification status
-- 36 tests pass (contract / can-run / detect / bid / deliver / gates / no-human / settle / settle-tx).
-- vcsdd-adversary ROUND 6 = PASS (no-human, no-fake-earn, key-isolation, loop-classifies-profitable, real-chain path covered).
-- NO-MOCK E2E: real wake (ULID + ANICCA_ARGS, scrubbed env) → real dealwork feed (18 jobs), real
-  record-earn chain scan (fail-closed), exit 0, no key leak.
-
-## Cutover note
-After registry=live + loop drives earn/gig, RETIRE the standalone launchd engines
-(com.anicca.earngig.{guild,guildpublish,dealwork,inbox,clawpoller}) — the loop wake now drives
-detection. (Not retired yet to avoid a no-coverage gap before the loop is live.)
+## Verification status (Coconala loop)
+- vcsdd-adversary on the Coconala loop: see iteration after the 2026-06-30 fixes (runbook added,
+  dead code archived, producer/monitor added, no-human audit extended to gig-cli.sh).
+- NOTE: the OLD dealwork+USDC machinery (36 tests, adversary ROUND 6 PASS) is in `archive/` —
+  it is NOT part of this loop and must NOT be registered. It is kept only for a future self-funded
+  USDC rail (Claw Earn / x402).

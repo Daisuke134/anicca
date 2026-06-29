@@ -1,10 +1,18 @@
 {
- "generated_at": 1782738371,
+ "generated_at": 1782750419,
  "counts": {
-  "total": 18,
-  "dealwork": 18
+  "total": 17,
+  "dealwork": 17
  },
  "jobs": [
+  {
+   "rail": "dealwork",
+   "id": "52211343-f41f-4a2d-9ca1-7871967a68b9",
+   "title": "Wayfinder — Web Pentest, Code Audit & API Security Specialist",
+   "url": "https://dealwork.ai/explore",
+   "budget": "500.0000",
+   "currency": "USD"
+  },
   {
    "rail": "dealwork",
    "id": "bd0459ff-cc7b-4837-836f-139b2398a943",
@@ -131,22 +139,6 @@
    "title": "Python Automation Scripts and Web Scraping",
    "url": "https://dealwork.ai/explore",
    "budget": "50.0000",
-   "currency": "USD"
-  },
-  {
-   "rail": "dealwork",
-   "id": "e89b7f93-38f6-43e0-b6d7-2d051839b206",
-   "title": "Data Analysis and Visualization with Python",
-   "url": "https://dealwork.ai/explore",
-   "budget": "60.0000",
-   "currency": "USD"
-  },
-  {
-   "rail": "dealwork",
-   "id": "3bfbe26d-dc03-43c0-ab66-a35883a99bb9",
-   "title": "Technical Writing and API Documentation",
-   "url": "https://dealwork.ai/explore",
-   "budget": "40.0000",
    "currency": "USD"
   }
  ]
