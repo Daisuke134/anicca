@@ -96,6 +96,13 @@ def main():
         for label in ["後で", "今はしない", "Not Now", "あとで", "キャンセル"]:
             d = rect_center(tid, """(()=>{const e=[...document.querySelectorAll('button,div[role=button],span,a')].find(x=>(x.textContent||'').trim()==='%s'&&x.getBoundingClientRect().height>0);if(!e)return null;const r=e.getBoundingClientRect();return{x:Math.round(r.left+r.width/2),y:Math.round(r.top+r.height/2)};})()""" % label)
             if d: cdp.click_xy(tid, d["x"], d["y"]); time.sleep(1.5); break
+        # ★ ACCOUNT GUARD (CRITICAL): never post to the wrong account. ★
+        # IG multi-account defaults to whichever account is active; if it isn't --handle, ABORT
+        # (a 2026-06-29 incident posted to the wrong account because the active one wasn't checked).
+        active = ev(tid, """(()=>{const a=document.querySelector('a[href^="/"] img[alt$="のプロフィール写真"]');if(a){const m=a.getAttribute('alt').match(/^(.+?)のプロフィール写真/);if(m)return m[1];}const s=[...document.querySelectorAll('span,div')].map(x=>(x.textContent||'').trim()).find(t=>/^[a-z0-9._]{2,30}$/.test(t)&&document.body.innerText.includes(t+'\\n'));return s||null;})()""")
+        if active and active != a.handle:
+            res["error"] = f"ACCOUNT GUARD: active account is '{active}', not '{a.handle}' — aborting to avoid posting to the wrong account"
+            res["active_account"] = active; print(json.dumps(res, ensure_ascii=False)); return
         # 1) open composer
         c = rect_center(tid, """(()=>{const s=document.querySelector('svg[aria-label="新しい投稿"],svg[aria-label="New post"]');if(!s)return null;const r=s.getBoundingClientRect();return{x:Math.round(r.left+r.width/2),y:Math.round(r.top+r.height/2)};})()""")
         if not c: res["error"] = "no create btn"; print(json.dumps(res)); return
