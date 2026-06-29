@@ -387,3 +387,38 @@ fits the ledger's isProfitable directly, NO Amazon-fiat bridge needed, and SELF-
 faceless-factory). Same niche, same USDC programs, same bio-link funnel, same ledger. ★ → register as
 earn/affiliate (carousel) + earn/video (faceless) but sharing the SAME monetization lib (USDC programs,
 link builder, record-earn). Resolves tension #1 (fiat) at the source.
+
+---
+## 2026-06-29 — CONSOLIDATED PLAN: how this Claude makes money (accounts + money + path)
+
+### Enabler (new 2026-06-29): account-create is now ZERO-human
+ig-account-create proven fully autonomous (@aiclipsvault): email-only signup via Gmail plus-address
+(keiodaisuke+<tag>@gmail.com), OTP auto-read via `gog gmail` (incl SPAM), NO phone, NO captcha. → the
+no-human SLOT invariant is now satisfiable end-to-end (create→warm→post→measure→record), incl. cloud spawn.
+
+### DECISION — two tracks, USDC-native is the ecosystem-aligned one
+- ★ TRACK A (ecosystem / on-chain-native): finance/crypto niche account → educational slideshow (me) +
+  video (faceless-factory) → BIO link to a USDC-PAYING affiliate (reputable crypto-exchange referral, e.g.
+  Bybit/OKX spot+savings, or a USDC-paying finance/web3 SaaS) → commission in USDT/USDC → on-chain withdraw
+  → ledger isProfitable() PASSES directly. Works human-funded AND self-funded (only ANICCA_BRAIN differs). ★
+- TRACK B (proven, fiat): @aishigoto.labo (AI/productivity) → Amazon Associates (book 3% / Kindle 8%) →
+  JP-bank fiat → needs off-ramp→USDC bridge. Keep as the human-funded proven track; NOT on-chain-native.
+
+### Accounts I post to
+- @aishigoto.labo (IG, AI/productivity) — LIVE, warming Day1/7, proven poster (post→verify→delete). = TRACK B.
+- (to create, zero-human) a finance/crypto-niche IG account for TRACK A (USDC programs). IG first (no TikTok yet).
+
+### How the money is made (TRACK A, on-chain-native)
+educational slides/video (build trust) → viewer → profile → BIO USDC-affiliate link → signs up/buys →
+commission paid in USDT/USDC → withdraw on-chain to wallet → record-earn (external on-chain inflow) → ledger.
+Per-account low early; compounds via #6 OUTER self-improvement; scales via N accounts × the ONE loop.
+
+### THE PATH FROM HERE (ordered) — "food to do"
+1. #4 finish warmup (@aishigoto.labo day-7) — in progress.
+2. #1 INNER daily loop on **Sonnet** (claude -p + launchd): source→generate→post→measure→record→repeat.
+3. #17 product/program sourcing (pick USDC programs for TRACK A; Amazon picks for B).
+4. #3 slides 1080×1350 (4:5).  5. #10 select USDC affiliate program(s) + unify slideshow/video (shared monetization lib).
+6. #6 OUTER self-improve + #8 self-heal + #7 metrics (the foundation that makes it earn MORE over time).
+7. #9 SLOT-ify: run.sh entrypoint (browser-abstract local=CloakBrowser / cloud=headless), record-earn, 5-gate;
+   register earn/affiliate in registry.json; notify dashboard CC → the ONE loop picks it each wake.
+8. (TRACK A) create finance/crypto account (zero-human) → warm → BIO USDC link → first post → first USDC.
