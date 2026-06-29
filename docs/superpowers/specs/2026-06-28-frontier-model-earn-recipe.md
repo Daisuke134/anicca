@@ -78,8 +78,9 @@ USDC on Base, gets a curated research digest. My cost = $0 (Wikipedia+HN+Jina) �
 | A2 | research-product ($0, adversary 15/15) | ✅ |
 | A3a | STABLE public host (Tailscale Funnel, browser+curl verified) + 24/7 launchd | ✅ |
 | A3b | CDP facilitator wired → Base mainnet settle + Bazaar discoverable:true | ✅ |
-| **A3c** | **seed the Bazaar listing with 1 CDP-facilitated payment (draw ~$0.01 USDC from founder Aave → self-buy → INV-7 excludes it as earn). Then verify the resource appears in the Bazaar discovery API.** | 🔜 NEXT |
-| A4 | first REAL external buyer settle (realised_earn > 0) | ⬜ demand-gated |
+| A3c | seed: 1 REAL CDP-facilitated payment through the PUBLIC url settled on-chain ✅ — buyer 0xa3CDd4 (Aave-withdraw 0.005 USDC) → public GET /research → CDP settle tx **0x467ee2c967676cda8b1578d2547bb072a0ae26dbf910662153ec87dca518a313** (success, block 47952656) → 0x810f USDC 0.003→0.006 + real research digest returned. INV-7 excludes it (self-payment, not earnings). | ✅ |
+| A3d | Bazaar discovery API surfaces the resource (CDP indexing lag after first payment) — recheck `GET api.cdp.coinbase.com/platform/v2/x402/discovery/resources`; if slow, ALSO PR to awesome-x402 + register on x402scan. | 🔜 NEXT |
+| A4 | first REAL EXTERNAL buyer settle (realised_earn > 0) | ⬜ demand-gated |
 | B1 | board-poller skill | ⬜ |
 | B2 | audit-bounty skill (Immunefi live) | ⬜ |
 | C1 | embed self-verify in every skill | ⬜ |
