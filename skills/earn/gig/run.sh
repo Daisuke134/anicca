@@ -71,6 +71,8 @@ PY
 do_detect() {
   local feed="$HERE/state/guild_feed.json" queue="$HERE/state/earn_action_queue.jsonl"
   local jobs=0 pending=0
+  # refresh the verified-live feed (bounded; failure is non-fatal — stale feed still usable)
+  timeout 40 node "$HERE/lib/detect.mjs" "$feed" >/dev/null 2>&1 || true
   [ -f "$feed" ] && jobs=$(python3 -c "import json;print(len(json.load(open('$feed')).get('jobs',[])))" 2>/dev/null || echo 0)
   [ -f "$queue" ] && pending=$(grep -c . "$queue" 2>/dev/null || echo 0)
   local rails_json
