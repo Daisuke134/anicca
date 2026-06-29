@@ -27,7 +27,8 @@ bash ~/anicca/skills/earn/gig/monitor.sh          # status
 
 ## Verification status (Coconala loop)
 - vcsdd-adversary on the Coconala loop: see iteration after the 2026-06-30 fixes (runbook added,
-  dead code archived, producer/monitor added, no-human audit extended to gig-cli.sh).
+  dead code archived, monitor added, no-human audit extended to gig-cli.sh; no producer —
+  the core live-scans the board each pass).
 - NOTE: the OLD dealwork+USDC machinery (36 tests, adversary ROUND 6 PASS) is in `archive/` —
   it is NOT part of this loop and must NOT be registered. It is kept only for a future self-funded
   USDC rail (Claw Earn / x402).

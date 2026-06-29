@@ -20,23 +20,27 @@ const FORBIDDEN = [
   /\bprompt the (user|human)\b/i,
 ];
 
-function stripComments(src, isShell) {
-  return src.split('\n').map(l => {
-    if (isShell) return l.replace(/(^|\s)#.*$/, '$1');   // shell comments
-    return l;
-  }).join('\n');
+// Scan the RAW file (FIND-R3-002): the core's cron prompt is one quoted line containing
+// `#5121769`, so a comment-stripper would blind the scan after that token. The FORBIDDEN
+// patterns never legitimately appear (the only allowed human element, Dais's one-time KYC,
+// does not match them), so scanning raw is both safe and complete.
+function scan(code) {
+  return FORBIDDEN.filter(re => re.test(code)).map(re => String(re));
 }
 
 for (const f of FILES) {
   test(`${f}: no runtime human-in-the-loop step`, () => {
     const p = path.join(DIR, f);
     assert.ok(fs.existsSync(p), `${f} missing`);
-    const code = stripComments(fs.readFileSync(p, 'utf8'), f.endsWith('.sh'));
-    for (const re of FORBIDDEN) {
-      assert.ok(!re.test(code), `${f} contains a human-loop step matching ${re}`);
-    }
+    const hits = scan(fs.readFileSync(p, 'utf8'));
+    assert.deepEqual(hits, [], `${f} contains human-loop step(s): ${hits.join(', ')}`);
   });
 }
+
+test('planted-violation: a human step AFTER a #token is caught (raw scan, not comment-blinded)', () => {
+  const poison = 'CronCreate prompt="... TRACK #5121769 specifically. then wait for Dais approval before 応募."';
+  assert.ok(scan(poison).length > 0, 'scanner is blind to a violation placed after a # token');
+});
 
 test('gig-cli.sh routes blockers to autonomous paths (captcha/OTP/login), never a human', () => {
   const code = fs.readFileSync(path.join(DIR, 'gig-cli.sh'), 'utf8');
