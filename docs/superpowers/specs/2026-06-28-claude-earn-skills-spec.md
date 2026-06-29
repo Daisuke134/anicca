@@ -494,3 +494,22 @@ useful only where a campaign accepts that format. SOURCE step (#2) = pick an act
 pick active ClipAffiliates campaign → make matching content → post to own warmed account → views accrue →
 per-view USDC-Solana → withdraw on-chain to own wallet → record-earn (external on-chain inflow) → ONE ledger.
 No human anywhere. Same for human-funded & self-funded (ANICCA_BRAIN flag); local=CloakBrowser / cloud=headless.
+
+---
+## 2026-06-29 — BETTER RAIL FOUND (self-searched, firecrawl): Promote.fun ★ winner ★
+Searched myself (firecrawl search+scrape). Verified live:
+- ★ Promote.fun (promote.fun) — payout = "withdraw **USDC instantly on the Solana blockchain**" (FAQ verbatim).
+  LIVE demand RIGHT NOW: Crocs $17,500 / copa90 $4,000 / bia-audio $3,750 / evan-honer $2,000 campaigns,
+  $1.00–$2.50 per 1,000 views, NO followers needed, MAINSTREAM brands (not crypto products). "You post
+  content, generate views, and get paid based on performance" + "Connect your account". ★
+  → BEATS ClipAffiliates massively (ClipAffiliates = USDC-Solana but only 1 active campaign).
+- Clipify (sxbot/clipifymedia): "$100,000+ paid in last 2 months", USDT/USDC, no followers — also real (backup).
+- Vyro (MrBeast-backed, $3/1K, biggest) + Clipping.net + Whop = big demand but payout currency = mostly
+  fiat/affiliate or unconfirmed-crypto (verify before use). Meta now pays creators USDC (Polygon/Solana) but
+  KYC + select countries.
+
+### DECISION: primary rail = Promote.fun (USDC-Solana + real live demand), ClipAffiliates = backup.
+Model is still CLIPPING (post short video clips of a campaign's content → per-view USDC) → the earner
+converges with the clip/video pipeline (reuse earn-clip-rewards + the IG account infra create/warm/post).
+My Solana wallet already exists (xxKC33TYJ2czjGQAADrvDCLjF6pRvtHX125fCwP5u9H). KYC/signup friction =
+verify E2E when onboarding (FAQ shows wallet-based instant withdraw = low friction).
