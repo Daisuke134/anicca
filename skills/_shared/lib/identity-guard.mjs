@@ -39,6 +39,9 @@ export const ALLOWED_EARN_SOURCES = new Set([
   "hl-trade", "hl", // own-wallet Hyperliquid perp (own identity, own funds)
   "token-launch", "token", // own token launch (own identity)
   "content", "x402-serve",
+  // promote.fun per-view clipping: Anicca's OWN IG account + OWN Solana wallet payout (own identity).
+  // Added 2026-06-29 (promote-fun-clip-earn). Matches no FORBIDDEN_EARN_SOURCES pattern.
+  "promote.fun", "clip-promote", "ig-clip",
   "cook", // own-identity web exploration (no funds moved)
   "discover", // narrate-only discovery wake
 ]);

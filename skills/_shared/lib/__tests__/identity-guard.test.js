@@ -46,3 +46,15 @@ test("assertOwnIdentityOnly: Composio (user gcal/Gmail grant) in env THROWS", ()
   const env = { BLOCKRUN_WALLET_KEY: "0xkey", COMPOSIO_API_KEY: "user-grant" };
   assert.throws(() => assertOwnIdentityOnly({ source: "0xwork" }, { env }), /MALICE-GUARD/);
 });
+
+test("assertOwnIdentityOnly: promote.fun / clip-promote are OWN-identity sources (clean env) PASS", () => {
+  const env = { PATH: "/usr/bin", SOLANA_RPC_URL: "https://api.mainnet-beta.solana.com" };
+  assert.equal(assertOwnIdentityOnly({ source: "promote.fun" }, { env }), true);
+  assert.equal(assertOwnIdentityOnly({ source: "clip-promote" }, { env }), true);
+  assert.equal(assertOwnIdentityOnly({ source: "ig-clip" }, { env }), true);
+});
+
+test("assertOwnIdentityOnly: a promote.fun record with PII env present STILL THROWS (guard intact)", () => {
+  const env = { SOLANA_RPC_URL: "https://x", GOOGLE_LOGIN: "leaked" };
+  assert.throws(() => assertOwnIdentityOnly({ source: "promote.fun" }, { env }), /MALICE-GUARD/);
+});
