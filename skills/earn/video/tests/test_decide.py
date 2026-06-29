@@ -23,4 +23,9 @@ eq(decide({"status": "warmed", "warmup_day": 8, "affiliate_set": True, "last_pos
 # S4: posted today → record earn (only path left)
 eq(decide({"status": "warmed", "warmup_day": 8, "affiliate_set": True, "last_post_date": T}, T), "S4_record", "posted-today->record")
 eq(decide({"status": "monetized", "warmup_day": 30, "affiliate_set": True, "last_post_date": T}, T), "S4_record", "monetized-posted->record")
+# S2 dead-end fix: no link yet → run.sh sets affiliate_pending → machine ADVANCES to post (never stuck on S2)
+eq(decide({"status": "warmed", "warmup_day": 8, "affiliate_pending": True, "affiliate_set": False, "last_post_date": "2026-06-28"}, T), "S3_post", "pending->post-not-stuck")
+eq(decide({"status": "warmed", "warmup_day": 9, "affiliate_pending": True, "affiliate_set": False, "last_post_date": "2026-06-28"}, T), "S3_post", "pending-warmed->post")
+# but if a link IS available (not pending, not set) it still fires S2
+eq(decide({"status": "warmed", "warmup_day": 7, "affiliate_pending": False, "affiliate_set": False}, T), "S2_affiliate", "available->affiliate")
 print("ALL DECIDE TESTS PASSED")
