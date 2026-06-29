@@ -47,6 +47,21 @@ $PY ~/.claude/skills/ig-reels-poster/scripts/post_reel.py \
 `earn-clip-rewards/scripts/daily.sh` calls `poster.sh`, which routes mp4 → THIS skill
 per account. Always gate on `earn-clip-rewards/scripts/verify_clip.sh` BEFORE --live.
 
+## Multi-account (--tid) + fresh-account gotchas (2026-06-29)
+- `--tid <TID>` reuses an existing logged-in tab (e.g. an incognito-context tab where a SECOND
+  account is logged in, since the default context holds a different account). Without --tid it
+  opens a new tab in the default context.
+- ★ Fresh accounts show interstitials ("お知らせをオンにする") that BLOCK the composer → the poster
+  now dismisses 後で/今はしない/Not Now after nav. ★
+- ★ The "作成" create control: clicking the SVG center (x≈36) does NOT register; click the TEXT
+  center (≈x75) of the "作成" nav item. ★
+- ★ OPEN WALL (incognito context): on @aiclipsvault (incognito ctx) the composer opens and
+  Page.fileChooserOpened DOES fire, but DOM.setFileInputFiles does NOT attach the video (pink
+  progress bar flashes, then resets to the drag screen — no 次へ). The SAME video + flow works on
+  aishigoto.labo in the DEFAULT context. Suspected incognito-context file-attach limitation.
+  WORKAROUND to verify E2E: log the target account into the DEFAULT context (creds in
+  ~/.cloak/ig-<handle>.json) and run the poster WITHOUT --tid. TODO: fix incognito file-attach. ★
+
 ## Gotchas (IG web video upload)
 - IG web composer accepts mp4 via the hidden `input[type=file]` — use cdp.py `setfile`.
 - Video adds a cover/thumbnail step; the carousel poster skips it. Don't reuse its post.py.

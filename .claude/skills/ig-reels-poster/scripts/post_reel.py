@@ -79,14 +79,23 @@ def main():
     ap.add_argument("--handle", required=True, help="IG handle to verify the post landed")
     ap.add_argument("--live", action="store_true")
     ap.add_argument("--delete-after", action="store_true", help="delete the post after verifying (for test runs)")
+    ap.add_argument("--tid", default=None, help="reuse an existing logged-in tab (e.g. an incognito-context TID where the target account is logged in). If omitted, opens a new tab in the default context.")
     a = ap.parse_args()
     video = os.path.abspath(a.video); assert os.path.exists(video)
     caption = open(a.caption_file, encoding="utf-8").read().strip()
     res = {"video": os.path.basename(video), "handle": a.handle, "live": a.live, "reached": "start", "published": False}
     try:
-        tid = cdp.new_tab("https://www.instagram.com/"); time.sleep(7)
+        if a.tid:
+            tid = a.tid; cdp.navigate(tid, "https://www.instagram.com/")
+        else:
+            tid = cdp.new_tab("https://www.instagram.com/")
+        time.sleep(7)
         if ev(tid, "(()=>!!document.querySelector('input[name=\"username\"],input[name=\"email\"]'))()"):
             res["error"] = "not logged in"; print(json.dumps(res)); return
+        # dismiss fresh-account interstitials (お知らせをオンにする / アプリを保存 etc.) that block the composer
+        for label in ["後で", "今はしない", "Not Now", "あとで", "キャンセル"]:
+            d = rect_center(tid, """(()=>{const e=[...document.querySelectorAll('button,div[role=button],span,a')].find(x=>(x.textContent||'').trim()==='%s'&&x.getBoundingClientRect().height>0);if(!e)return null;const r=e.getBoundingClientRect();return{x:Math.round(r.left+r.width/2),y:Math.round(r.top+r.height/2)};})()""" % label)
+            if d: cdp.click_xy(tid, d["x"], d["y"]); time.sleep(1.5); break
         # 1) open composer
         c = rect_center(tid, """(()=>{const s=document.querySelector('svg[aria-label="新しい投稿"],svg[aria-label="New post"]');if(!s)return null;const r=s.getBoundingClientRect();return{x:Math.round(r.left+r.width/2),y:Math.round(r.top+r.height/2)};})()""")
         if not c: res["error"] = "no create btn"; print(json.dumps(res)); return
