@@ -6,9 +6,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { availableRails } from '../lib/can-run.mjs';
 
-test('laborx available when its creds present (no capital needed)', () => {
+test('laborx NOT offered until apply/deliver code exists (no pretended-live rail, D2)', () => {
   const r = availableRails({ creds: new Set(['LABORX_EMAIL', 'LABORX_PASSWORD']), brain: 'proxy', usdc: 0 });
-  assert.ok(r.includes('laborx'));
+  assert.ok(!r.includes('laborx'));
 });
 
 test('dealwork available with API key, even at USDC 0 (chicken-egg: labor funds capital)', () => {

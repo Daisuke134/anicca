@@ -65,9 +65,10 @@ async function laborxJobs() {
 export async function detect({ envFile, outFile } = {}) {
   const ef = envFile || path.join(os.homedir(), '.openclaw', '.env');
   const creds = readCreds(ef);
-  const [dw, lx] = await Promise.all([dealworkJobs(creds), laborxJobs()]);
-  const jobs = [...dw, ...lx];
-  const feed = { generated_at: Math.floor(Date.now() / 1000), counts: { total: jobs.length, dealwork: dw.length, laborx: lx.length }, jobs };
+  const dw = await dealworkJobs(creds);
+  // laborx detection re-enabled when its apply/deliver code lands (no pretended-live rail)
+  const jobs = [...dw];
+  const feed = { generated_at: Math.floor(Date.now() / 1000), counts: { total: jobs.length, dealwork: dw.length }, jobs };
   if (outFile) { fs.mkdirSync(path.dirname(outFile), { recursive: true }); fs.writeFileSync(outFile, JSON.stringify(feed, null, 1)); }
   return feed;
 }
@@ -75,5 +76,5 @@ export async function detect({ envFile, outFile } = {}) {
 // CLI: node detect.mjs <outFile>  → prints counts line
 if (import.meta.url === `file://${process.argv[1]}`) {
   const out = process.argv[2] || path.join(path.dirname(new URL(import.meta.url).pathname), '..', 'state', 'guild_feed.json');
-  detect({ outFile: out }).then(f => console.log(`[gig] detect feed: total=${f.counts.total} dealwork=${f.counts.dealwork} laborx=${f.counts.laborx}`));
+  detect({ outFile: out }).then(f => console.log(`[gig] detect feed: total=${f.counts.total} dealwork=${f.counts.dealwork}`));
 }

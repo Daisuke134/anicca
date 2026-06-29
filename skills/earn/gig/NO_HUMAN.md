@@ -8,17 +8,17 @@ run.sh with **stdin ignored**, so the slot physically cannot block on human inpu
 ## Human touchpoint → autonomous mechanism
 | would-be human step | mechanism | where |
 |---|---|---|
-| captcha (signup) | CapSolver (`CAPSOLVER_API_KEY`) | LaborX signup; dealwork has none |
+| captcha | CapSolver (`CAPSOLVER_API_KEY`) | (dealwork has none; for future browser rails) |
 | OTP / login code | `gog gmail` / AgentMail auto-read (incl. SPAM) | any email-code gate |
-| login | stored creds in `~/.openclaw/.env` (read from file, not env) | LaborX |
-| publish / submit | CDP browser driving (CloakBrowser daily-driver :9222) | LaborX apply/deliver |
+| login | stored creds in `~/.openclaw/.env` (read from file) | future browser rails |
+| publish / submit | CDP browser (daily-driver :9222) | future browser rails |
 | private key | loop scrubs `*_WALLET_KEY`; slot reads wallet **address only** from `~/.anicca-founder/wallet.json` | all |
 | "did I earn?" | record-earn on-chain scan (external USDC only) — never self-asserted | settle |
 
 ## Rails (all no-human end-to-end, own-wallet crypto payout)
 - **dealwork** — pure REST API, no captcha, no browser → fully headless no-human. PRIMARY.
-- **laborx** — public board detect (no login); apply/deliver via CDP daily-driver with stored
-  creds; one-time signup captcha via CapSolver. Browser-gated (runs when daily-driver is up).
+- **laborx** — NOT yet a live rail: detection + apply/deliver (CDP daily-driver) not written, so it is
+  NOT offered by can_run (avoids a pretended-live rail). Re-add when its no-human apply/deliver code lands.
 - **Removed** (human loop / dead): Coconala (¥→human KYC bank), abillio (domain parked).
 
 ## Funding-agnostic

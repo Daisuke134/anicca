@@ -1,9 +1,8 @@
 {
- "generated_at": 1782734789,
+ "generated_at": 1782735390,
  "counts": {
-  "total": 23,
-  "dealwork": 18,
-  "laborx": 5
+  "total": 18,
+  "dealwork": 18
  },
  "jobs": [
   {
@@ -148,46 +147,6 @@
    "title": "Technical Writing and API Documentation",
    "url": "https://dealwork.ai/explore",
    "budget": "40.0000",
-   "currency": "USD"
-  },
-  {
-   "rail": "laborx",
-   "id": "103297",
-   "title": "Blockchain Dev for AYICOIN Platform (Solidity+React+Web3)",
-   "url": "https://laborx.com/jobs/blockchain-dev-for-ayicoin-platform-solidity-react-web3-103297",
-   "budget": null,
-   "currency": "USD"
-  },
-  {
-   "rail": "laborx",
-   "id": "103283",
-   "title": "Telegram bot",
-   "url": "https://laborx.com/jobs/telegram-bot-103283",
-   "budget": null,
-   "currency": "USD"
-  },
-  {
-   "rail": "laborx",
-   "id": "103266",
-   "title": "Porting the intebwio website to different platforms: $5,000.",
-   "url": "https://laborx.com/jobs/porting-the-intebwio-website-to-different-platforms-5-000-103266",
-   "budget": null,
-   "currency": "USD"
-  },
-  {
-   "rail": "laborx",
-   "id": "103242",
-   "title": "Lead Blockchain Engineer – Stablecoins &amp; Financial Systems",
-   "url": "https://laborx.com/jobs/lead-blockchain-engineer-stablecoins-amp-financial-systems-103242",
-   "budget": null,
-   "currency": "USD"
-  },
-  {
-   "rail": "laborx",
-   "id": "103220",
-   "title": "simple server to serve as access for my SQLite Database",
-   "url": "https://laborx.com/jobs/simple-server-to-serve-as-access-for-my-sqlite-database-103220",
-   "budget": null,
    "currency": "USD"
   }
  ]

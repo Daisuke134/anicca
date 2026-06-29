@@ -28,8 +28,11 @@ const proposal = process.env.GIG_PROPOSAL || buildProposal(job);
 const amount = process.env.GIG_AMOUNT || '40';
 
 const r = await postBid({ apiKey: key, jobId: job.id, proposal, amount });
-// record for idempotency + V1 (proposal exists) gate
-try {
-  fs.appendFileSync(bidsFile, JSON.stringify({ jobId: String(job.id), title: job.title, amount, ok: r.ok, status: r.status, bidId: r.bidId || null, ts: wake }) + '\n');
-} catch {}
-out({ task: 'bid', jobId: String(job.id), title: String(job.title || '').slice(0, 50), bid_ok: r.ok, http: r.status });
+// Record for idempotency ONLY when the bid actually SUCCEEDED (r.ok). A failed POST must
+// stay retryable on a later wake — recording intent would permanently skip it (FIND-004).
+if (r.ok) {
+  try {
+    fs.appendFileSync(bidsFile, JSON.stringify({ jobId: String(job.id), title: job.title, amount, status: r.status, bidId: r.bidId || null, ts: wake }) + '\n');
+  } catch {}
+}
+out({ task: r.ok ? 'bid' : 'bid-failed', jobId: String(job.id), title: String(job.title || '').slice(0, 50), bid_ok: r.ok, http: r.status });
