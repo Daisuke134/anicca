@@ -17,26 +17,20 @@ AFFLINK="${MONEY_AFFILIATE_URL:-${MONK_EBOOK_URL:-}}"  # affiliate/ebook link (s
 TODAY="$(date +%Y-%m-%d)"
 TID="$($PY -c "import json,os;p=os.path.expanduser('$CREDS');print(json.load(open(p)).get('tid','') if os.path.exists(p) else '')" 2>/dev/null)"
 
-# ★ FIND-603: ensure STATE exists AND is valid JSON; re-init ATOMICALLY if missing/corrupt. A truncated write from
-#   a prior kill must NOT brick the slot into 'unknown transition' forever (atomic tmp+os.replace everywhere below). ★
-$PY -c "import json,os
-p='$STATE';h='$HANDLE';ok=False
-if os.path.exists(p) and os.path.getsize(p)>0:
-  try: json.load(open(p));ok=True
-  except Exception: ok=False
-if not ok:
-  t=p+'.tmp';json.dump({'handle':h,'status':'warming','warmup_day':0,'affiliate_set':False},open(t,'w'),ensure_ascii=False);os.replace(t,p)"
+# ★ FIND-603/702: load-or-init via state_io — atomic writes + .bak restore. A corrupt/missing primary is restored
+#   from .bak (progress preserved), re-init to day-0 only as last resort; never a truncated-write dead-end. ★
+$PY -c "import sys;sys.path.insert(0,'$SK');from state_io import load_or_init;load_or_init('$STATE','$HANDLE')"
 
-# ★ D1 fix: refresh affiliate_available from env EVERY wake (re-evaluable; no permanent trap). Atomic write. ★
+# ★ D1: refresh affiliate_available from env EVERY wake (re-evaluable; no permanent trap). Atomic via state_io. ★
 AVAIL=false; [ -n "$AFFLINK" ] && AVAIL=true
-AVAIL="$AVAIL" $PY -c "import json,os;p='$STATE';d=json.load(open(p));d['affiliate_available']=(os.environ['AVAIL']=='true');d.pop('affiliate_pending',None);t=p+'.tmp';json.dump(d,open(t,'w'),ensure_ascii=False);os.replace(t,p)"
+AVAIL="$AVAIL" $PY -c "import os,sys;sys.path.insert(0,'$SK');from state_io import update,_read;d=_read('$STATE') or {};d.pop('affiliate_pending',None);update('$STATE',{'affiliate_available':os.environ['AVAIL']=='true'})"
 
 TRANS="$($PY -c "import json,sys;sys.path.insert(0,'$SK');from decide import decide;print(decide(json.load(open('$STATE')),'$TODAY'))" 2>/dev/null)"
 [ -z "$TRANS" ] && TRANS="noop"   # ★ FIND-603: decide load failure ⇒ safe noop, never an 'unknown transition' dead-end ★
 DID=""; EARNED=0; COST=0
 
-# atomic state update (tmp + os.replace) so a kill mid-write can't truncate STATE
-set_state(){ $PY -c "import json,os,sys;p='$STATE';d=json.load(open(p));d.update(json.loads(sys.argv[1]));t=p+'.tmp';json.dump(d,open(t,'w'),ensure_ascii=False);os.replace(t,p)" "$1"; }
+# atomic state update via state_io (tmp+os.replace + .bak) so a kill mid-write can't truncate STATE
+set_state(){ $PY -c "import json,sys;sys.path.insert(0,'$SK');from state_io import update;update('$STATE',json.loads(sys.argv[1]))" "$1"; }
 wday(){ $PY -c "import json;print(int(json.load(open('$STATE')).get('warmup_day',0)))"; }
 
 case "$TRANS" in
@@ -55,7 +49,10 @@ try:
 except: print(0)" 2>/dev/null)
       grep -q "STOP_BAN_SIGNAL" /tmp/ev_warm.log 2>/dev/null && BAN=1
     fi
-    if [ "$BAN" = 1 ]; then DID="warmup STOPPED: ban signal — NOT advancing day";
+    if [ "$BAN" = 1 ]; then
+      # ★ FIND-703: on ban, mark today done so decide does NOT re-drive a banned account every wake (per-day backoff). Day NOT advanced. ★
+      set_state "{\"last_warmup_date\": \"$TODAY\", \"ban_signal_date\": \"$TODAY\"}"
+      DID="warmup STOPPED: ban signal — NOT advancing day; backing off for today";
     elif [ "${WATCHED:-0}" -ge 3 ]; then
       set_state "{\"warmup_day\": $(( $(wday) + 1 )), \"last_warmup_date\": \"$TODAY\", \"status\": \"warming\"}"
       DID="warmup day→$(wday) (real reels watched=$WATCHED)"
@@ -129,10 +126,17 @@ print(new)" 2>/dev/null)
         set_state "{\"last_post_date\": \"$TODAY\", \"status\": \"warmed\", \"last_post_url\": \"$NEWURL\"}"
         DID="reconciled prior timeout-killed post (already live, no double-post): $NEWURL"
       else
-        # snapshot pre_reels for THIS attempt (ATOMIC; so a timeout-kill is reconciled next wake) + mark attempt date
-        CUR="$CUR" $PY -c "import json,os;p='$STATE';d=json.load(open(p));d['pre_reels']=json.loads(os.environ['CUR']);d['post_attempt_date']='$TODAY';t=p+'.tmp';json.dump(d,open(t,'w'),ensure_ascii=False);os.replace(t,p)"
+        # snapshot pre_reels for THIS attempt (ATOMIC via state_io; so a timeout-kill is reconciled next wake) + mark attempt date
+        CUR="$CUR" $PY -c "import json,os,sys;sys.path.insert(0,'$SK');from state_io import update;update('$STATE',{'pre_reels':json.loads(os.environ['CUR']),'post_attempt_date':'$TODAY'})"
+        # ★ FIND-701: require a FRESH render. Stamp GEN_START, then accept ONLY an mp4 whose mtime >= GEN_START.
+        #   A failed/killed generation that leaves a stale prior-day render must NOT be posted as today's fresh reel. ★
+        GEN_START=$(date +%s)
         timeout "$GENBUD" bash "$HOME/.claude/skills/faceless-money-factory/scripts/run-daily.sh" "${EARN_VIDEO_SCRIPT:-$OUT/today.txt}" en >/tmp/ev_gen.log 2>&1 || true
-        MP4="$(ls -t "$OUT"/*.mp4 2>/dev/null | head -1)"
+        MP4="$(GEN_START="$GEN_START" OUT="$OUT" $PY -c "import os,glob
+gs=float(os.environ['GEN_START']); out=os.environ['OUT']
+c=[f for f in glob.glob(os.path.join(out,'*.mp4')) if os.path.getmtime(f)>=gs]
+c.sort(key=os.path.getmtime, reverse=True)
+print(c[0] if c else '')" 2>/dev/null)"
         if [ -n "$MP4" ]; then
           printf 'Daily money tips. Follow @%s for more. #moneytok #personalfinance\n' "$HANDLE" > /tmp/ev_cap.txt
           # ★ FIND-001: account is warmed (warmup_day>=7) → post LIVE (affiliate link optional for posting). ★
@@ -150,7 +154,7 @@ except: u=''
 print(u)" 2>/dev/null)
           if [ -n "$PURL" ]; then set_state "{\"last_post_date\": \"$TODAY\", \"status\": \"warmed\", \"last_post_url\": \"$PURL\"}"; DID="posted reel LIVE: $PURL"
           else set_state '{"status": "warmed"}'; DID="post FAILED/unverified ($(tail -1 /tmp/ev_post.log 2>/dev/null|cut -c1-80)) — last_post_date NOT set, will retry/reconcile next wake"; fi
-        else DID="post skipped: no rendered mp4 ($(tail -1 /tmp/ev_gen.log 2>/dev/null|cut -c1-50))"; fi
+        else DID="post skipped: no FRESH mp4 from this wake's generation ($(tail -1 /tmp/ev_gen.log 2>/dev/null|cut -c1-50)) — honest skip, NOT posting a stale render"; fi
       fi
     fi ;;
   S4_record)
