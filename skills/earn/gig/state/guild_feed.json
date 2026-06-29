@@ -1,8 +1,8 @@
 {
- "generated_at": 1782734351,
+ "generated_at": 1782734789,
  "counts": {
-  "total": 24,
-  "dealwork": 19,
+  "total": 23,
+  "dealwork": 18,
   "laborx": 5
  },
  "jobs": [
@@ -148,14 +148,6 @@
    "title": "Technical Writing and API Documentation",
    "url": "https://dealwork.ai/explore",
    "budget": "40.0000",
-   "currency": "USD"
-  },
-  {
-   "rail": "dealwork",
-   "id": "001e7e59-ce5c-4862-9472-13de89264581",
-   "title": "Code Review and Security Audit",
-   "url": "https://dealwork.ai/explore",
-   "budget": "30.0000",
    "currency": "USD"
   },
   {
