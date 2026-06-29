@@ -21,7 +21,8 @@ set -euo pipefail
 OP="${1:?usage: api.sh <opName> <json body>}"
 BODY="${2:?usage: api.sh <opName> <json body>}"
 
-VENV=~/.claude/skills/whop-driver/.venv
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}" || echo "${BASH_SOURCE[0]}")")" && pwd)"
+VENV="$(dirname "$SCRIPT_DIR")/.venv"
 COOKIE_FILE=$(mktemp /tmp/whop-cookies.XXXXXX.json)
 trap 'rm -f "$COOKIE_FILE"' EXIT
 
