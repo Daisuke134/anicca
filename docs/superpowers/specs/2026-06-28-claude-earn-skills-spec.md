@@ -65,6 +65,13 @@ Dais (verbatim): "are you following the best practice? … you never ever do any
 - **E2E (my own browser eyes):** day-1 passive ran on @aishigoto.labo (6 reels verified-played + 5 scrolls), account HEALTHY (no ban) — verified by screenshot. Shared into both ~/.claude/skills + ~/.openclaw/skills.
 - **Lesson:** brittle DOM-selector scripts for judgment actions = my original sin; verify-with-own-eyes + agentic judgment + adversary gate = the cure.
 
+### ★ TikTok-slideshow affiliate METHOD researched + skill aligned (Dais 2026-06-29: "search how to do it and do it") ★
+I had only a 1-line ref of the slideshow article (②37,000円), so I web-researched the real method and encoded it into `~/.claude/skills/earn-affiliate-slideshow/SKILL.md`:
+- **Sources:** slidestorm.ai (TikTok pays for slideshows as 1st-class content; ★ the real money = slideshows as a CONTENT ENGINE for EXTERNAL revenue, not per-view; EDUCATIONAL slideshows = expert positioning → affiliate; info-slideshows get saved/shared far more ★) + valuecommerce.ne.jp (niche 特化; ★ link in BIO ONLY ★; new accounts reach via おすすめ feed w/o followers; some ASPs need 1,000 TikTok followers — Amazon doesn't) + X-article① (research→write-in-voice→schedule→analyze→feedback LOOP + monetization 4-step type).
+- **KEY PIVOT (was wrong before):** stop product-PITCH slides → make **EDUCATIONAL slideshows** (tips/frameworks/step-by-step, e.g. "ChatGPT仕事術5選") that build trust + get saved; the affiliate product = the soft "go deeper" BIO resource, NOT the hard sell. Example deck written: `content/deck-edu-chatgpt-shigoto.json`.
+- **Funnel:** educational carousel → profile tap → BIO affiliate link (tag aniccaai-22, set post-warmup) → Amazon → 成約. #PR mandatory. Daily fresh, one niche.
+- **Still MISSING (the article①'s heart):** the 4-工程 compounding LOOP (research b2 seeds → generate → post at best time → analyze → feedback) — tasks #17 (sourcing) + #7 (loop). Built upstream (account/warmer/content); the loop is next.
+
 **This file = the SSOT for the build.** (Supersedes my earlier `2026-06-28-three-earn-skills-loops-design.md` for content; the `~/anicca` master spec is owned by another instance and is NOT touched here.)
 
 ## §0 What & where & funding model
