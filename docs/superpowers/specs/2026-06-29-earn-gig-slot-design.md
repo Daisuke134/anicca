@@ -144,3 +144,18 @@ Coconala は payout が ¥→人間の KYC 銀行口座 = ★ human loop ★ = �
 - ✅ #10 NO-MOCK E2E: loop-style 実 wake (ULID+ANICCA_ARGS+scrubbed) で detect(実18job)/settle(実chain scan, fail-closed)/exit0/鍵非露出。 mock ゼロ。 実 profitable wake は実 gig 着金時
 - ✅ #11 self-contained: 旧 ~/.claude/skills/earn-gig 依存 0。 standalone launchd 5本 (guild/guildpublish/dealwork/inbox/clawpoller) は ★ loop cutover (#12, dashboard CC が loop 起動) 時に退役 ★ — 今退役すると空白が出る為
 - 残: #12 dashboard CC へ slot 登録依頼 (registry status:live + loop 配線) + ~/anicca push reconcile
+
+## 改訂 D8 (2026-06-30、 Dais 決定) — earn/gig = ココナラ毎日ループ (clip と同型、 human-funded)
+★ 大転換: gig work = human-funded = 「人間 (Dais) にお金を渡す」 ループ。 dealwork は AI 出金不可 (内部箱、 human-only withdraw) で死亡 → ★ ココナラ rail に差し替え ★ (= ¥が Dais の MUFG に実着金 = 目的達成)。 x402 は gig でないので不採用 (別 slot)。★
+
+### clip と同じ作り (車輪の再発明なし、 master spec の EARN-CORE)
+- **producer.sh** (毎日 launchd): ココナラ公開依頼板を scan → AI-doable (記事/資料/文字起こし/データ/コード) を ~/gig/queue/ に queue + 成果物 draft
+- **gig-cli.sh** (CORE、 tmux + claude-p headless): clip-cli.sh をクローン。 起動時に cron 登録 (cron="27 * * * *" 等、 clip の :07 とずらす) → 各 pass で ★ model が APPLY_RUNBOOK に従い daily-driver(CDP) を駆動 ★: queue を drain → 応募 (proposal+成果物) → トークルーム watch → 採用検知→納品 → applied.jsonl 追跡・反復
+- **gig-healthcheck.sh** (launchd 5分毎): core 死亡なら再起動 (clip-healthcheck クローン)
+- **monitor.sh**: applied.jsonl 状態 + ¥着金 観測
+- **launchd/**: producer plist + core-healthcheck plist
+
+### 着金/計上
+¥ → Dais MUFG (= human-funded 計上、 別 ledger)。 record-earn(on-chain USDC) は self-funded slot 用で別。
+### 唯一の人間要素 = Dais の account/KYC/銀行 (設定済・一度きり)。 毎日運用 (scan/応募/会話/納品/追跡) は全自律。
+### 既提出 #5121769 を loop で追跡 (トーク返信→採用→納品→評価→¥着金)。
