@@ -1,4 +1,6 @@
-# Verification Architecture — realtime-fleet-dashboard — ITERATION 2
+# Verification Architecture — realtime-fleet-dashboard — ITERATION 3
+
+NOTE (M1): `toCardModel.netUsd` basis = MONTHLY: `netUsd = revenue_mo_usd − burn_day_usd*30` (same as REQ-6 net; daily figures are display-only, not used in net).
 
 ## Purity boundary (pure core vs effectful shell; unchanged-sound, now fully pinned)
 
@@ -22,7 +24,7 @@
 | `nowSec - ts` exactly 300 | `'alive'` (strict `> 300` ⇒ stale) |
 | `nowSec - ts` 301 | `'stale'` |
 | `status==='dead'` | `'dead'` (overrides staleness) |
-| empty fleet `computeTotals([])` | `{assets:0,revenue30d:0,net:0,counts:{0,0,0},self_funded_pct:0,frontier_pct:0}` |
+| empty fleet `countByStatus([])` | `{alive:0,stale:0,critical:0,dead:0}` ($ totals come from server `aggregate`, not TS) |
 | `burn_day_usd===0` | NOT a div hazard (REQ-5 divides by const 30, REQ-6 multiplies burn); row simply economic-self-funded if revenue_mo≥0 |
 | negative net (burn>revenue) | net < 0 rendered as-is (honest) |
 | NO `burn_day` division anywhere | confirmed (phantom F5 edge removed) |

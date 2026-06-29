@@ -1,4 +1,4 @@
-# Behavioral Spec — realtime-fleet-dashboard (lean, typescript) — ITERATION 2 (grounded; fixes F1–F16)
+# Behavioral Spec — realtime-fleet-dashboard (lean, typescript) — ITERATION 3 (grounded; fixes F1–F16 + N1–N9; spec gate PASS)
 
 ## Goal (provable)
 Make `/dashboard` a LIVE fleet board sourced from the EXISTING signed-telemetry → Supabase pipeline, showing every
