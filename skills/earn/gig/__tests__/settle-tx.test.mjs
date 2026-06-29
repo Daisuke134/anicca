@@ -46,3 +46,18 @@ test('a log to a DIFFERENT recipient is ignored (recipient re-verified, not trus
   const r = await withSeam([wrongTo], () => representativeExternalTx(WALLET, { myWallets: SHARED, fromBlock: 1, toBlock: 9 }));
   assert.equal(r, null);
 });
+
+test('FIND-ADV-001: GIG_RAW_LOGS_JSON is IGNORED without FOUNDER_TEST (prod cannot inject logs)', async () => {
+  // no FOUNDER_TEST + unreachable RPC → the seam must NOT be honored → falls to RPC → null
+  const prev = process.env.GIG_RAW_LOGS_JSON, prevRpc = process.env.BASE_RPC_URL;
+  process.env.GIG_RAW_LOGS_JSON = JSON.stringify([log('0x1111111111111111111111111111111111111111', '0xshouldNotAppear')]);
+  process.env.BASE_RPC_URL = 'http://127.0.0.1:1';
+  delete process.env.FOUNDER_TEST;
+  try {
+    const r = await representativeExternalTx(WALLET, { myWallets: SHARED, fromBlock: 1, toBlock: 9 });
+    assert.equal(r, null, 'prod honored the test-only GIG_RAW_LOGS_JSON seam (injectable receipt!)');
+  } finally {
+    if (prev === undefined) delete process.env.GIG_RAW_LOGS_JSON; else process.env.GIG_RAW_LOGS_JSON = prev;
+    if (prevRpc === undefined) delete process.env.BASE_RPC_URL; else process.env.BASE_RPC_URL = prevRpc;
+  }
+});
