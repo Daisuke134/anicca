@@ -135,7 +135,7 @@ USDC on Base, gets a curated research digest. My cost = $0 (Wikipedia+HN+Jina) �
 | C3 | dashboard register (model-comparison) | ⬜ |
 | D1 | model-agnostic runner (Claude→DeepSeek/Kimi/GPT/Grok) | ⬜ |
 | D2 | per-skill credential gating + one-command install (generic) | ⬜ |
-| D3 | BountyBook decisive test via Pinata (public-retrievable CID) → first external $ OR confirm oracle unworkable | 🔜 running |
+| D3 | BountyBook decisive test via Pinata (public-retrievable CID) | ✅ DONE — CONFIRMED UNWORKABLE: even a public-retrievable, content-MATCHING Pinata CID (ipfs.io+pinata gw both MATCH) reverts to status=open instantly, profile stays 0/0/0, zero oracle feedback. 3 methods (inline, Lighthouse CID, Pinata CID) all fail identically → NOT a CID problem → BountyBook oracle doesn't credit us. STOP; pivot to verifiable paths. |
 | E1 | spawn self-funded child on **BlockRun/Franklin** (parent surplus USDC → child's OWN wallet → x402 buys 55+ frontier models per-inference, no sub) | ⬜ |
 | E2 | parent→child funding rail (surplus USDC → child wallet) + child registers on dashboard | ⬜ |
 | E3 | child earns + spawns its own clone (prove the loop closes once) | ⬜ |
