@@ -1,124 +1,160 @@
 #!/usr/bin/env python3
-"""ig-reels-poster — publish a VIDEO Reel to Instagram via the daily-driver browser.
+"""ig-reels-poster — publish a VIDEO Reel to Instagram via the CloakBrowser daily-driver.
 
-Differs from the carousel poster: a video upload triggers IG's リール flow with an
-extra cover-frame/trim step. --dry (default) walks everything up to but NOT including
-the final シェア click, screenshots each step, then discards.
+★ MANUALLY VERIFIED E2E 2026-06-29 ★ on @aishigoto.labo (posted reel DaKIoaeuWiJ,
+then deleted it via the browser — profile back to 投稿0件).
+
+THE KEY TECHNIQUE (why a naive setFile fails on IG):
+  IG's composer dropzone ignores DOM.setFileInputFiles on the static <input>.
+  You MUST: Page.setInterceptFileChooserDialog(enabled) → click "コンピューターから選択"
+  → catch Page.fileChooserOpened → DOM.setFileInputFiles on its backendNodeId.
+
+Verified flow:
+  新規投稿(+) → [intercept] コンピューターから選択 → 切り取る → 次へ →
+  「新しいリール動画」 caption screen → caption + header シェア → ~30s processing → LIVE.
+Delete:  reel url → ⋯ (他のオプション) → 削除 → confirm 削除.
 
 Usage:
-  post_reel.py --video <mp4> --caption-file <txt> [--dry|--live]
-
-Relies on the shared CDP driver (ig-account-create/scripts/cdp.py).
+  post_reel.py --video <mp4> --caption-file <txt> --handle <ig_handle> [--live] [--delete-after]
+  default = dry (loads video, fills caption, stops before シェア, discards).
 """
-import argparse, os, sys, time
-
+import argparse, json, os, sys, time
 sys.path.insert(0, os.path.expanduser("~/.claude/skills/ig-account-create/scripts"))
 import cdp  # noqa: E402
+from websocket import create_connection  # noqa: E402
 
-SHOT_DIR = "/tmp/ig-reels-shots"
-os.makedirs(SHOT_DIR, exist_ok=True)
-
-
-def ev(tid, expr):
-    return cdp.evaluate(tid, expr)
+SHOTDIR = "/tmp/ig-reels-shots"; os.makedirs(SHOTDIR, exist_ok=True)
 
 
-def shot(tid, name):
-    p = os.path.join(SHOT_DIR, f"{name}.png")
-    try:
-        cdp.screenshot(tid, p)
-    except Exception:
-        pass
+def ev(tid, e):
+    r = cdp.evaluate(tid, e)
+    return None if (isinstance(r, dict) and "__error__" in r) else r
+
+
+def rect_center(tid, js_find):
+    return ev(tid, js_find)
+
+
+def shot(tid, n):
+    p = os.path.join(SHOTDIR, f"{n}.png")
+    try: cdp.screenshot(tid, p)
+    except Exception: pass
     return p
 
 
-def find_and_click(tid, *texts, timeout=15):
-    """Find a clickable element whose text matches any of `texts`, click it."""
-    deadline = time.time() + timeout
-    js = (
-        "(()=>{const ts=%s;const els=[...document.querySelectorAll("
-        "'button,a,div[role=button],span')];"
-        "for(const t of ts){const e=els.find(x=>(x.innerText||'').trim()===t"
-        "&&x.getBoundingClientRect().height>0);"
-        "if(e){const r=e.getBoundingClientRect();e.click();"
-        "return {ok:true,t,x:r.x+r.width/2,y:r.y+r.height/2};}}"
-        "return {ok:false};})()"
-    ) % (str(list(texts)))
-    while time.time() < deadline:
-        r = ev(tid, js)
-        res = r.get("result", r) if isinstance(r, dict) else r
-        if isinstance(res, dict) and res.get("ok"):
-            return res
-        time.sleep(1.5)
-    return {"ok": False}
+def load_video_via_filechooser(tid, video):
+    """The ONLY reliable way to put a video into IG's web composer."""
+    ws = create_connection(cdp.page_ws(tid), timeout=30, suppress_origin=True, max_size=None)
+    def send(i, m, p=None): ws.send(json.dumps({"id": i, "method": m, "params": p or {}}))
+    def wait(idv=None, evt=None, t=15):
+        end = time.time() + t
+        while time.time() < end:
+            ws.settimeout(max(0.1, end - time.time()))
+            try: msg = json.loads(ws.recv())
+            except Exception: break
+            if idv and msg.get("id") == idv: return msg
+            if evt and msg.get("method") == evt: return msg
+        return None
+    try:
+        send(1, "DOM.enable"); send(2, "Page.enable"); send(3, "Runtime.enable"); time.sleep(0.8)
+        send(10, "Page.setInterceptFileChooserDialog", {"enabled": True}); time.sleep(0.4)
+        send(11, "Runtime.evaluate", {"expression":
+            "(()=>{const b=[...document.querySelectorAll('button,[role=button],div[role=button]')]"
+            ".find(x=>(x.textContent||'').trim()==='コンピューターから選択');if(b){b.click();return true}return false})()"})
+        fc = wait(evt="Page.fileChooserOpened", t=10)
+        if not fc:
+            return False
+        send(20, "DOM.setFileInputFiles", {"files": [video], "backendNodeId": fc["params"]["backendNodeId"]})
+        wait(idv=20, t=10)
+        send(30, "Page.setInterceptFileChooserDialog", {"enabled": False})
+        return True
+    finally:
+        ws.close()
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--video", required=True)
     ap.add_argument("--caption-file", required=True)
-    ap.add_argument("--live", action="store_true", help="actually publish (default = dry)")
+    ap.add_argument("--handle", required=True, help="IG handle to verify the post landed")
+    ap.add_argument("--live", action="store_true")
+    ap.add_argument("--delete-after", action="store_true", help="delete the post after verifying (for test runs)")
     a = ap.parse_args()
-    dry = not a.live
+    video = os.path.abspath(a.video); assert os.path.exists(video)
     caption = open(a.caption_file, encoding="utf-8").read().strip()
-    video = os.path.abspath(a.video)
-    assert os.path.exists(video), f"no video: {video}"
-
-    tid = cdp.new_tab("https://www.instagram.com/")
-    time.sleep(6)
-    shot(tid, "01-home")
-
-    # 1) Create (新規投稿 / Create)
-    r = find_and_click(tid, "作成", "Create", "新規投稿", "New post")
-    print("[reel] create:", r)
-    time.sleep(3)
-    shot(tid, "02-create")
-
-    # 2) set the video into the hidden file input
+    res = {"video": os.path.basename(video), "handle": a.handle, "live": a.live, "reached": "start", "published": False}
     try:
-        cdp.setfile(tid, "input[type=file]", video)
+        tid = cdp.new_tab("https://www.instagram.com/"); time.sleep(7)
+        if ev(tid, "(()=>!!document.querySelector('input[name=\"username\"],input[name=\"email\"]'))()"):
+            res["error"] = "not logged in"; print(json.dumps(res)); return
+        # 1) open composer
+        c = rect_center(tid, """(()=>{const s=document.querySelector('svg[aria-label="新しい投稿"],svg[aria-label="New post"]');if(!s)return null;const r=s.getBoundingClientRect();return{x:Math.round(r.left+r.width/2),y:Math.round(r.top+r.height/2)};})()""")
+        if not c: res["error"] = "no create btn"; print(json.dumps(res)); return
+        cdp.click_xy(tid, c["x"], c["y"]); time.sleep(2.5)
+        pm = rect_center(tid, """(()=>{const b=[...document.querySelectorAll('[role=button],button,div[role=button]')].find(x=>['投稿','Post'].includes((x.textContent||'').trim())&&x.offsetParent);if(!b)return null;const r=b.getBoundingClientRect();return{x:Math.round(r.left+r.width/2),y:Math.round(r.top+r.height/2)};})()""")
+        if pm: cdp.click_xy(tid, pm["x"], pm["y"]); time.sleep(2)
+        res["reached"] = "composer"; shot(tid, "1-composer")
+        # 2) load video via file-chooser intercept (THE key step)
+        if not load_video_via_filechooser(tid, video):
+            res["error"] = "file chooser load failed"; shot(tid, "2-loadfail"); print(json.dumps(res)); return
+        # wait for upload (次へ appears)
+        ok = False
+        for _ in range(12):
+            time.sleep(5)
+            if ev(tid, "(()=>!![...document.querySelectorAll('div[role=button],button,span,a')].find(x=>['次へ','Next'].includes((x.textContent||'').trim())&&x.getBoundingClientRect().top<160))()"):
+                ok = True; break
+        if not ok: res["error"] = "video never loaded"; shot(tid, "2-noload"); print(json.dumps(res)); return
+        res["reached"] = "video-loaded"; shot(tid, "2-video")
+        # 3) 次へ until caption textarea + header シェア appear
+        for i in range(4):
+            nb = rect_center(tid, """(()=>{const x=[...document.querySelectorAll('div[role=button],button,span,a')].find(e=>['次へ','Next'].includes((e.textContent||'').trim())&&e.getBoundingClientRect().top<160&&e.getBoundingClientRect().height>0);if(!x)return null;const r=x.getBoundingClientRect();return{x:Math.round(r.left+r.width/2),y:Math.round(r.top+r.height/2)};})()""")
+            if nb: cdp.click_xy(tid, nb["x"], nb["y"]); time.sleep(3.5)
+            if ev(tid, "(()=>!!(document.querySelector('textarea[aria-label],div[role=textbox][contenteditable=true]')||document.querySelector('textarea')))()"):
+                break
+        res["reached"] = "caption-step"; shot(tid, "3-caption-step")
+        # 4) caption
+        cf = rect_center(tid, """(()=>{const t=document.querySelector('textarea[aria-label],div[role=textbox][contenteditable=true]')||document.querySelector('textarea');if(!t)return null;const r=t.getBoundingClientRect();return{x:Math.round(r.left+r.width/2),y:Math.round(r.top+r.height/2)};})()""")
+        if cf: cdp.click_xy(tid, cf["x"], cf["y"]); time.sleep(0.6); cdp.insert_text(tid, caption); time.sleep(1.5)
+        res["reached"] = "caption-filled"; shot(tid, "4-caption")
+        # 5) header シェア
+        sb = rect_center(tid, """(()=>{const el=[...document.querySelectorAll('div[role=button],button,a,span')].find(x=>/^(シェア|Share)$/.test((x.textContent||'').trim())&&x.getBoundingClientRect().top<160&&x.getBoundingClientRect().height>0);if(!el)return null;const r=el.getBoundingClientRect();return{x:Math.round(r.left+r.width/2),y:Math.round(r.top+r.height/2)};})()""")
+        if not sb: res["reached"] = "no-share-btn"; shot(tid, "5-noshare"); print(json.dumps(res)); return
+        res["reached"] = "READY"; shot(tid, "5-ready")
+        if not a.live:
+            cdp.press_key(tid, "Escape", code="Escape", vk=27); time.sleep(1)
+            dl = rect_center(tid, """(()=>{const b=[...document.querySelectorAll('button,[role=button]')].find(x=>['破棄','Discard'].includes((x.textContent||'').trim())&&x.offsetParent);if(!b)return null;const r=b.getBoundingClientRect();return{x:Math.round(r.left+r.width/2),y:Math.round(r.top+r.height/2)};})()""")
+            if dl: cdp.click_xy(tid, dl["x"], dl["y"])
+            res["reached"] = "DRY-ok"; print(json.dumps(res, ensure_ascii=False)); return
+        # LIVE
+        cdp.click_xy(tid, sb["x"], sb["y"]); time.sleep(3); shot(tid, "6-sharing")
+        url = None
+        for _ in range(10):
+            time.sleep(12)
+            cdp.navigate(tid, f"https://www.instagram.com/{a.handle}/"); time.sleep(5)
+            url = ev(tid, """(()=>{const a=document.querySelector('main a[href*="/reel/"],main a[href*="/p/"]');return a?('https://www.instagram.com'+a.getAttribute('href')):null;})()""")
+            if url: break
+        res["published"] = bool(url); res["post_url"] = url
+        res["reached"] = "PUBLISHED" if url else "shared-unconfirmed"; shot(tid, "7-profile")
+        if a.delete_after and url:
+            res["delete"] = delete_reel(tid, url, a.handle)
     except Exception as e:
-        print("[reel] setfile err:", e)
-    time.sleep(6)
-    shot(tid, "03-uploaded")
+        res["error"] = repr(e)[:200]
+    finally:
+        print(json.dumps(res, ensure_ascii=False))
 
-    # 3) IG may show a "リール" notice / OK / 続行 — accept it
-    find_and_click(tid, "OK", "続行", "Continue", "リール", "Reel", timeout=8)
-    time.sleep(2)
 
-    # 4) 次へ (crop/cover step — video adds the cover-frame selection)
-    find_and_click(tid, "次へ", "Next")
-    time.sleep(3)
-    shot(tid, "04-cover-step")
-    # 5) 次へ again (edit/filter step)
-    find_and_click(tid, "次へ", "Next")
-    time.sleep(3)
-    shot(tid, "05-caption-step")
-
-    # 6) caption
-    cap_js = (
-        "(()=>{const a=document.querySelector('textarea,div[contenteditable=true]');"
-        "if(!a)return{ok:false};a.focus();return{ok:true};})()"
-    )
-    ev(tid, cap_js)
-    try:
-        cdp.insert(tid, caption)
-    except Exception as e:
-        print("[reel] caption insert err:", e)
-    time.sleep(2)
-    shot(tid, "06-caption-filled")
-
-    if dry:
-        print("[reel] DRY — stopping BEFORE final シェア (flow verified). Shots in", SHOT_DIR)
-        return
-
-    # 7) LIVE: final share
-    r = find_and_click(tid, "シェア", "Share")
-    print("[reel] share:", r)
-    time.sleep(8)
-    shot(tid, "07-shared")
-    url = ev(tid, "location.href")
-    print("[reel] LIVE posted. url=", url)
+def delete_reel(tid, url, handle):
+    """⋯ → 削除 → confirm. Verifies via post-count returning lower."""
+    cdp.navigate(tid, url); time.sleep(6)
+    mb = ev(tid, """(()=>{const s=document.querySelector('svg[aria-label="他のオプション"],svg[aria-label="その他のオプション"],svg[aria-label="More options"],svg[aria-label="More"]');if(!s)return null;const r=s.getBoundingClientRect();return{x:Math.round(r.left+r.width/2),y:Math.round(r.top+r.height/2)};})()""")
+    if mb: cdp.click_xy(tid, mb["x"], mb["y"]); time.sleep(2)
+    dl = ev(tid, """(()=>{const b=[...document.querySelectorAll('button,[role=button],div[role=button],span')].find(x=>['削除','Delete'].includes((x.textContent||'').trim())&&x.offsetParent);if(!b)return null;const r=b.getBoundingClientRect();return{x:Math.round(r.left+r.width/2),y:Math.round(r.top+r.height/2)};})()""")
+    if dl: cdp.click_xy(tid, dl["x"], dl["y"]); time.sleep(2)
+    cf = ev(tid, """(()=>{const b=[...document.querySelectorAll('button,[role=button],div[role=button]')].find(x=>['削除','Delete'].includes((x.textContent||'').trim())&&x.offsetParent&&x.getBoundingClientRect().top>120);if(!b)return null;const r=b.getBoundingClientRect();return{x:Math.round(r.left+r.width/2),y:Math.round(r.top+r.height/2)};})()""")
+    if cf: cdp.click_xy(tid, cf["x"], cf["y"]); time.sleep(4)
+    cdp.navigate(tid, f"https://www.instagram.com/{handle}/"); time.sleep(5)
+    tiles = ev(tid, "(()=>[...document.querySelectorAll('main a[href*=\"/reel/\"],main a[href*=\"/p/\"]')].length)()")
+    return {"deleted": tiles == 0, "remaining_tiles": tiles}
 
 
 if __name__ == "__main__":
