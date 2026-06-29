@@ -145,4 +145,35 @@ Data: same Supabase `instances` registry the dashboard already uses (#5/#18) + a
 taste skill (HARD 0.38) + browser-verify (HARD 0.31). The "good/evil" lives in the drill-down change timeline:
 green=merged (revenue↑), red=reverted (revenue flat/↓).
 
+## REFINEMENT 3 (Dais 2026-06-29) — CANONICAL brain = the clip/sutando SHELL pattern; deprecate the node-brain
+
+**Why two ways existed (history, not design):** (1) the NODE way — `runtime/loop/index.mjs` + `inference.mjs`
+spawning `claude -p` and parsing its JSON — was built FIRST (for a3cdd4/glm via the proxy). It treats claude -p as a
+JSON oracle; it's fragile and it HUNG (project hooks/MCP load + the SyntaxError). (2) the SHELL way —
+`skills/earn/clip/clip-cli.sh` (copied verbatim from sutando `scripts/start-cli.sh`) — was built LATER by the clip
+CC. The headless `claude` **IS** the brain directly (a detached tmux session, cron-driven), so it WORKS and is live.
+**Decision: the SHELL/clip/sutando pattern is CANONICAL for the brain. The node-brain (inference.mjs claude-p spawn)
+is deprecated.** What stays from the node side = the SKILL layer (`skills/earn/<slot>/run.sh`, registry MENU,
+earn-ledger, #19 earn-slot wiring) — the shell brain CALLS those.
+
+**The template (clip-cli.sh, ~35 lines):** detached `tmux` session running `claude --name <core> --dangerously-skip-
+permissions --add-dir $HOME -- "<STARTUP prompt>"`; idempotent (`--status`/`--restart`); a launchd health-check
+(`*-healthcheck.plist`, 5 min) restarts the tmux if it dies; the STARTUP prompt makes the session register a durable
+hourly cron that fires ONE pass, then idle.
+
+**Generalize it (the ONLY change needed):** clip-cli.sh's STARTUP prompt HARDCODES clip (`run.sh` for clip only).
+Make ONE generic **`anicca-core.sh`** whose STARTUP prompt is slot-agnostic:
+> "Each pass: read `skills/registry.json` MENU + your state (wallet balance, recent earn-ledger). Pick the SINGLE
+> highest-ROI earn slot. Run `skills/earn/<slot>/run.sh` (EARN_MODE=execute, idempotent, fail-closed). Heavy jobs →
+> spawn a bounded worker. Then `monitor` to observe USDC. Record. Idle; the cron drives the next pass."
+
+**So: ONE `anicca-core` per agent** (not clip-core + gig-core + …). The one brain picks gig/clip/video/x402 from the
+menu (the prior-turn decision). Per agent: `anicca-core.sh` + `core-healthcheck.sh` + `launchd/*.plist` + the shared
+`skills/earn/*`. Parallelism = MORE AGENTS (each one core), ranked by PoE. Deprecate `runtime/loop/index.mjs` as a
+brain (keep it only if a node skill-runner is ever needed; the live a3cdd4 node loop migrates to anicca-core too).
+
+**Build #21 step 1 rewritten:** generalize `clip-cli.sh`→`skills/self/anicca-core/anicca-core.sh` (+ healthcheck +
+launchd), STARTUP = slot-agnostic menu-picker; stand up ONE core for the human-funded Anicca (0x810f / ~/.anicca-
+founder), prove a real pass picks+runs an earn slot; then migrate a3cdd4; then PoE.
+
 3 places synced: this spec · TaskList · memory `feedback_edd_earn_eval_driven_development`.
