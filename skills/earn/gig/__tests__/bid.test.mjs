@@ -1,7 +1,7 @@
 // node:test — BID rail pure logic (RED). Real POST is the E2E wake (#10).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { pickJob, buildProposal, loadBidLedger } from '../lib/bid.mjs';
+import { pickJob, buildProposal, loadBidLedger, shouldRecordBid } from '../lib/bid.mjs';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -39,4 +39,11 @@ test('loadBidLedger reads recorded jobIds for idempotency', () => {
   fs.writeFileSync(f, JSON.stringify({ jobId: 'D2', ts: 1 }) + '\n' + JSON.stringify({ jobId: 'D5', ts: 2 }) + '\n');
   const s = loadBidLedger(f);
   assert.ok(s.has('D2') && s.has('D5') && !s.has('D9'));
+});
+
+test('shouldRecordBid: record ONLY on success — failed POST stays retryable (FIND-004)', () => {
+  assert.equal(shouldRecordBid({ ok: true, status: 201 }), true);
+  assert.equal(shouldRecordBid({ ok: false, status: 500 }), false);
+  assert.equal(shouldRecordBid({ ok: false, status: 0, err: 'timeout' }), false);
+  assert.equal(shouldRecordBid(null), false);
 });
