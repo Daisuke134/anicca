@@ -13,6 +13,10 @@ function validate(o) {
   if (typeof o.burn_day_usd !== "number" || o.burn_day_usd < 0) return { ok: false, reason: "schema" };
   if (!Number.isInteger(o.runway_days) || o.runway_days < 0) return { ok: false, reason: "schema" };
   if (!["alive", "critical", "dead"].includes(o.status)) return { ok: false, reason: "schema" };
+  // Optional fleet-identity fields (backward compatible: absent is OK; if present must be a known enum).
+  for (const [k, allowed] of [["funding", ["human", "self"]], ["env", ["local", "cloud"]], ["brain", ["claude-p", "proxy"]]]) {
+    if (o[k] !== undefined && !allowed.includes(o[k])) return { ok: false, reason: "schema" };
+  }
   return { ok: true, payload: o };
 }
 module.exports = { validate };
