@@ -13,10 +13,19 @@ DECK="${1:?usage: producer.sh <deck.json>}"
 ID="aff$(date +%s)"; WORK="/tmp/aff-prod-$$"; OUT="$QUEUE/$ID"; mkdir -p "$WORK" "$OUT"
 trap 'rm -rf "$WORK"' EXIT
 
-N=$("$PY" -c "import json;print(len(json.load(open('$DECK'))['slides']))" 2>/dev/null || echo 0)
-[ "$N" -ge 1 ] || { echo "{\"producer\":\"affiliate\",\"did\":\"deck has no slides\"}"; exit 0; }
+# validate deck: every slide must have a contiguous n (1..N) AND non-empty text (FIND-005/006).
+N=$("$PY" - "$DECK" <<'PYV' 2>/dev/null || echo 0
+import json,sys
+d=json.load(open(sys.argv[1])); sl=d.get("slides",[])
+ns=sorted(int(s.get("n",0)) for s in sl)
+if not sl or ns!=list(range(1,len(sl)+1)): print(0); sys.exit()   # n must be exactly 1..N
+if any(not str(s.get("text","")).strip() for s in sl): print(0); sys.exit()  # no empty slide
+print(len(sl))
+PYV
+)
+[ "$N" -ge 3 ] || { echo "{\"producer\":\"affiliate\",\"did\":\"deck invalid (need contiguous n=1..N, non-empty text, >=3 slides)\"}"; exit 0; }
 
-# 1) clean gradient background per slide (compose overlays text in the top negative space)
+# 1) gradient background per slide, named by the deck's own n (compose opens slide_<n>.png) (FIND-006)
 "$PY" - "$WORK" "$N" <<'PYBG'
 import sys
 from PIL import Image
@@ -43,8 +52,13 @@ for i in $(seq 1 "$N"); do
   [ "$dim" = "1080x1920" ] && { cp "$f" "$OUT/slide_$i.png"; ok=$((ok + 1)); }
 done
 
-# 4) caption sidecar (#PR mandatory, 景表法)
-"$PY" -c "import json;print(json.load(open('$DECK')).get('caption','AI仕事術。 リンクはプロフィール #PR'))" > "$OUT/caption.txt" 2>/dev/null
+# 4) caption sidecar — #PR is MANDATORY (景表法); append it to ANY deck-supplied caption if missing (FIND-004)
+"$PY" - "$DECK" <<'PYC' > "$OUT/caption.txt" 2>/dev/null
+import json,sys
+cap=json.load(open(sys.argv[1])).get("caption","AI仕事術。 リンクはプロフィール")
+if "#PR" not in cap and "＃PR" not in cap: cap=cap.rstrip()+" #PR"
+print(cap)
+PYC
 
 if [ "$ok" -eq "$N" ] && [ "$N" -ge 3 ]; then
   echo "{\"producer\":\"affiliate\",\"did\":\"queued $ID ($ok verified slides)\",\"queue\":\"$OUT\"}"
