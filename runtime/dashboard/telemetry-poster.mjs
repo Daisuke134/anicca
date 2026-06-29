@@ -17,6 +17,12 @@ const acct = privateKeyToAccount(pk.startsWith("0x") ? pk : "0x" + pk);
 // Unique-by-construction identity: explicit ANICCA_NAME wins, else a guaranteed-unique handle derived
 // from this instance's wallet address (collision-impossible across spawns; auto-registers on first POST).
 const NAME = process.env.ANICCA_NAME || (await assignIdentity(acct.address)).name;
+// Identity attributes for the fleet dashboard (REQ-1): funding origin (human gives compute only / self =
+// own wallet), runtime environment (local Mac vs cloud), and brain backend (claude-p subscription vs the
+// self-pay proxy). Declared via env so one runtime serves both types by config, not by a separate script.
+const FUNDING = process.env.ANICCA_FUNDING || "human";
+const ENV = process.env.ANICCA_ENV || "local";
+const BRAIN = process.env.ANICCA_BRAIN || "claude-p";
 const LEDGER = (process.env.ANICCA_HOME || HOME + "/.anicca") + "/state/ledger.jsonl";
 const EARN_LEDGER = (process.env.ANICCA_HOME || HOME + "/.anicca") + "/skills/earn/state/earn-ledger.jsonl";
 
@@ -134,6 +140,7 @@ async function post() {
     const period = periodRevenue(rev.total);
     const msg = JSON.stringify({
       id: acct.address.toLowerCase(), ts, host: NAME, geo: "JP",
+      funding: FUNDING, env: ENV, brain: BRAIN,
       model_live: model, model_tier: tier,
       // Net worth = total held. Daily/monthly revenue = P&L change over the period (negative when losing).
       // revenue_by_source = per-stream earned/lost. These are what people care about (not parked balances).
