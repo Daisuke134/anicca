@@ -69,3 +69,19 @@ Per-clip ledger (source/hook/account/lang/views@24h·7d/earned) → weekly analy
 - **CLIP-D account factory**: N IG (+ TikTok) accounts no-human (Gmail +alias), each its own isolated profile; create→warm 7d→ready pool; JP account; then more languages.
 - **CLIP-F self-improvement loop**: ledger → analyze → update heuristics → adversary-validate.
 - **fix** headless-core PreToolUse Bash-hook node error (non-blocking now).
+
+## CLIP-E findings (2026-06-29, web-researched) — rails solved, VIEWS are the bottleneck
+Joinable per-view rails CONFIRMED + payout reaches a wallet:
+- **Whop Content Rewards**: real open campaigns (Dreamina AI $15/1k tech, Coinbase $6/1k crypto), NO
+  follower gate, crypto withdrawal ($10 min). We already hold a Whop account (myclaude-clip@agentmail.to)
+  joined to a Content Rewards community + the whop-driver CDP skill. ⚠️ new accounts = 90-DAY payout reserve;
+  high-CPM campaigns require BRAND-SPECIFIC briefs (not generic podcast clips); browser-driven (no clipper API).
+- **clipping.net**: USDC/USDT on Ethereum DIRECT to our 0x810f wallet, no application/followers — cleanest
+  wallet path; but campaigns can gate min-views (Kick=100k).
+- **ClipAffiliates**: USDC-Solana wallet already bound (xxKC33TY…), but 0 active campaigns now (drought).
+VERDICT (fork + prior research agree): clip→per-view-USDC is REAL but NOT fast for a fresh 0-follower account
+— the bottleneck is VIEWS (reach + brand-brief match), not rails/followers/age; Whop holds new funds 90 days.
+DECISION: keep the clip loop as the REACH engine (24/7, done); wire wallet bindings on Whop + clipping.net so
+payout auto-flows once views/campaigns land; get the FIRST real USDC from a higher-certainty slot (earn/gig
+Coconala→USDC, earn/audit code4rena) per the fast-earn map. CLIP-E (clip→USDC) = long-game, revisit when a
+clip breaks ~50-100k views or a brief-matching low-threshold campaign opens.
