@@ -204,13 +204,26 @@ adapter (already built) + two thin SPAWN bootstrappers.**
 
 - **The brain adapter ALREADY EXISTS** in `~/anicca/runtime/loop/inference.mjs` (REQ-011 / test PROP-023):
   - `ANICCA_BRAIN=claude-p` → subprocess `claude -p` (model claude-sonnet-4-6) = **HUMAN-FUNDED** path (rides the human's Claude subscription; no per-token API). Falls back to proxy if the claude binary is missing.
-  - `ANICCA_BRAIN=proxy` → HTTP to the self-pay **compute-proxy / ClawRouter** (`runtime/compute-proxy/`) which pays USDC per-inference from the instance's OWN wallet over x402 (BlockRun 60+ models, free model when broke) = **SELF-FUNDED** path.
+  - `ANICCA_BRAIN=proxy` → HTTP to the self-pay **compute-proxy** (`runtime/compute-proxy/`) which pays USDC per-inference from the instance's OWN wallet over x402 directly to the **BlockRun x402 gateway** (60+ models, free NVIDIA model when broke) = **SELF-FUNDED** path. ★ NOT ClawRouter — ClawRouter only cost-optimizes EXISTING paid API keys, which presumes a human pays for those keys; a no-human self-funded AI has no one paying for keys, so it must PAY-PER-INFERENCE from its own wallet via the BlockRun x402 gateway. Drop ClawRouter from the self-funded path. ★
   - → Same `runtime/loop/` (think→act→observe→persist + heartbeat), same `skills/`, same earn/verify/ledger. Only the env var flips the brain. THIS is how we keep the architecture "as same as possible."
 - **What genuinely differs = the SPAWN bootstrap (2 thin scripts, not 2 runtimes):**
   - spawn HUMAN-FUNDED: a human runs `install.sh` on their machine → `ANICCA_BRAIN=claude-p` → points at their Claude sub. Human's ONLY act = provide compute; then zero-human-loop.
   - spawn SELF-FUNDED: a **PARENT AI** provisions a cloud box (Modal/Franklin/Akash) + funds a fresh wallet + boots the SAME loop with `ANICCA_BRAIN=proxy`. No human at all.
 - **Sutando (spec 22-REF-SUTANDO, sonichi/sutando) = the COLONY layer that BOTH share** (and it inspires the claude-p side because Sutando is Claude-Code-subscription-native): agent-registry (register/heartbeat, stale=90s) + day/night (serve/earn by day, self-rewrite by night) + bot2bot-post (claim/blocked/done/ping) + resurrection of stale peers + claude-router (@claude/@codex). ★ Its **registry IS the dashboard source AND the resurrection trigger** — one registry serves three jobs: /dashboard render + colony liveness + revive-dead-peer. ★ So task #5 (dashboard registration) = adopt Sutando's register/heartbeat as the colony registry.
 - Net: human-funded vs self-funded = **one config flag (brain) + which spawn script**; everything above the brain (loop, skills, verify, ledger, colony registry, dashboard) is identical. Endgame (only self-funded) = everyone runs `ANICCA_BRAIN=proxy`; the claude-p path retires.
+
+## TWO SETUP OPTIONS (what a human picks at install) + ROADMAP (Dais 2026-06-29)
+`install.sh` offers exactly two on-ramps (the human's ONLY decision; after that, zero human loop):
+| Option | What the human does | Brain | Compute paid by |
+|---|---|---|---|
+| **1. FREE / self-funded** | sends a bit of **USDC** to the printed wallet | `ANICCA_BRAIN=proxy` (BlockRun x402, own wallet) | the AI itself (per-inference USDC; free NVIDIA model when broke) |
+| **2. MAIN / human-funded** | gives **their API key / subscription** (first just **Claude**) | `ANICCA_BRAIN=claude-p` | the human's subscription |
+
+**ROADMAP (the whole point):**
+1. Every **human-funded** AI is engineered to **earn MORE than the human spends on it** → human net-profitable → incentive to run one.
+2. A human-funded AI's surplus **funds + spawns a self-funded** AI (BlockRun x402, own wallet).
+3. Self-funded AIs **fund + spawn more self-funded** AIs → the full loop closes with NO human.
+4. Eventually **people don't even install anymore** — there are ONLY self-funded AIs feeding/owning/spawning themselves. Human-funded is the transitional bootstrap that retires.
 
 ## Done = the recipe runs on Claude end-to-end with realised_earn > subscription, self-verified, then the
 ## same recipe boots on a second model with only the `--model` swap. That proves "any frontier model self-earns."
