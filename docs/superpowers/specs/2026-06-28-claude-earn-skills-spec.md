@@ -645,3 +645,22 @@ and PASSed Spec Fidelity + Structural Integrity. 3 NEW major (all last-mile, fix
 - **FIND-303**: `usdcDeltaForSig` absent-pre case (first inbound CREATES the ATA → no pre entry) IS the
   DONE scenario → match pre by `accountIndex`, absent ⇒ pre=0; first-inbound fixture mandated.
 NEXT: Phase 1c re-review ×4 → PASS → Phase 2 RED→GREEN.
+
+---
+## 2026-06-29 — VCSDD Phase 1c PASS 5/5 → Phase 2 GREEN (spine) → Phase 3 gaps closed
+- **Phase 1c**: REV 4 = PASS 5/5 (verdict-rev4.md). adversary 4 rounds: REV1 9 findings → REV2 1crit+6maj
+  (deriveLine drops sig = DONE unreachable; one-recorder; sig-dedup; shadowban honesty; watchdog owner;
+  regression gate; paths; warm-file; batch payout) → REV3 3maj (PII-env scrub; portable timeout; absent-pre)
+  → REV4 closed all + 3 minors. ★ VCSDD caught the chain-mismatch + DONE-unreachable bugs BEFORE any build. ★
+- **Phase 2 GREEN** (all `~/anicca` repo, pushed): `_shared/lib/solana-verify.mjs` (sigStatus/usdcDeltaForSig/
+  usdcBalance, real-RPC-shape verified) + `ledger.mjs` (deriveLine sig/confirmed/chain passthrough; isProfitable
+  EVM∨Solana; alreadyRecordedSig) + identity-guard promote.fun source + `earn/clip-promote/` (PURE decide.py
+  SM; record-payout.mjs = the on-chain DONE executor; run.sh slot harness w/ portable watchdog + env -i RECORD).
+- **Phase 3 impl adversary** = FAIL on VERIFICATION GAPS only (NO money bug — false-earn impossible by trace).
+  Closed: FIND-001 (blocked_or 124→blocked:human integration test), FIND-002 (RECORD→DONE shell-glue E2E vs a
+  local fake Solana RPC, passes even with PII env), FIND-006 (deterministic PII env). 106 unit tests green;
+  independent maker≠checker re-run in progress (FIND-007).
+- **Real vs stubbed**: lib + state-machine + DONE executor = REAL + proven. SELECT/CLIP/POST/SUBMIT/WITHDRAW
+  live handlers = honestly narrate `not-yet-wired (#14)`, NO fake success (HARD 0.24 clean).
+NEXT (#14): wire + no-mock E2E the live execute pipeline (needs a warmed account + an active campaign that
+ends + a real Solana withdrawal → the only true DONE).
