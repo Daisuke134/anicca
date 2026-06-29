@@ -1,0 +1,240 @@
+{
+  "fetched_at": "1782753475",
+  "contests": [
+    {
+      "platform": "code4rena",
+      "pool_usdc": 500000,
+      "url": "https://code4rena.com/audits/2025-09-monad"
+    },
+    {
+      "platform": "code4rena",
+      "pool_usdc": 203500,
+      "url": "https://code4rena.com/audits/2025-08-solana-foundation"
+    },
+    {
+      "platform": "code4rena",
+      "pool_usdc": 200000,
+      "url": "https://code4rena.com/audits/2025-06-chainlink-rewards"
+    },
+    {
+      "platform": "code4rena",
+      "pool_usdc": 190000,
+      "url": "https://code4rena.com/audits/2025-08-flare-fasset"
+    },
+    {
+      "platform": "code4rena",
+      "pool_usdc": 183500,
+      "url": "https://code4rena.com/audits/2025-11-ekubo"
+    },
+    {
+      "platform": "code4rena",
+      "pool_usdc": 135000,
+      "url": "https://code4rena.com/audits/2026-04-k2"
+    },
+    {
+      "platform": "code4rena",
+      "pool_usdc": 112500,
+      "url": "https://code4rena.com/audits/2025-09-succinct"
+    },
+    {
+      "platform": "code4rena",
+      "pool_usdc": 107000,
+      "url": "https://code4rena.com/audits/2026-02-jupiter-lend"
+    },
+    {
+      "platform": "code4rena",
+      "pool_usdc": 105500,
+      "url": "https://code4rena.com/audits/2026-02-injective-peggy-bridge"
+    },
+    {
+      "platform": "code4rena",
+      "pool_usdc": 104500,
+      "url": "https://code4rena.com/audits/2025-08-meteora-dynamic-bonding-curve"
+    },
+    {
+      "platform": "code4rena",
+      "pool_usdc": 103500,
+      "url": "https://code4rena.com/audits/2025-07-lido-finance"
+    },
+    {
+      "platform": "code4rena",
+      "pool_usdc": 103250,
+      "url": "https://code4rena.com/audits/2025-08-gte-perps-and-launchpad"
+    },
+    {
+      "platform": "code4rena",
+      "pool_usdc": 103000,
+      "url": "https://code4rena.com/audits/2025-09-layerzero-endpoint-v2-sui"
+    },
+    {
+      "platform": "code4rena",
+      "pool_usdc": 101000,
+      "url": "https://code4rena.com/audits/2026-04-layerzero-stellar-endpoint"
+    },
+    {
+      "platform": "code4rena",
+      "pool_usdc": 100000,
+      "url": "https://code4rena.com/audits/2025-11-swafe"
+    },
+    {
+      "platform": "code4rena",
+      "pool_usdc": 100000,
+      "url": "https://code4rena.com/audits/2025-10-layerzero-starknet-endpoint"
+    },
+    {
+      "platform": "code4rena",
+      "pool_usdc": 73000,
+      "url": "https://code4rena.com/audits/2025-10-sequence"
+    },
+    {
+      "platform": "code4rena",
+      "pool_usdc": 65000,
+      "url": "https://code4rena.com/audits/2026-03-chainlink-payment-abstraction-v2"
+    },
+    {
+      "platform": "code4rena",
+      "pool_usdc": 63250,
+      "url": "https://code4rena.com/audits/2025-07-gte-spot-clob-and-router"
+    },
+    {
+      "platform": "code4rena",
+      "pool_usdc": 62000,
+      "url": "https://code4rena.com/audits/2026-01-olas"
+    },
+    {
+      "platform": "code4rena",
+      "pool_usdc": 56000,
+      "url": "https://code4rena.com/audits/2025-12-panoptic-next-core"
+    },
+    {
+      "platform": "code4rena",
+      "pool_usdc": 43000,
+      "url": "https://code4rena.com/audits/2025-10-covenant"
+    },
+    {
+      "platform": "code4rena",
+      "pool_usdc": 40000,
+      "url": "https://code4rena.com/audits/2025-12-rujira"
+    },
+    {
+      "platform": "code4rena",
+      "pool_usdc": 40000,
+      "url": "https://code4rena.com/audits/2025-11-sukukfi"
+    },
+    {
+      "platform": "code4rena",
+      "pool_usdc": 37500,
+      "url": "https://code4rena.com/audits/2025-11-garden"
+    },
+    {
+      "platform": "code4rena",
+      "pool_usdc": 33000,
+      "url": "https://code4rena.com/audits/2025-10-hybra-finance"
+    },
+    {
+      "platform": "code4rena",
+      "pool_usdc": 30000,
+      "url": "https://code4rena.com/audits/2025-11-megapot"
+    },
+    {
+      "platform": "code4rena",
+      "pool_usdc": 28000,
+      "url": "https://code4rena.com/audits/2025-05-blackhole"
+    },
+    {
+      "platform": "code4rena",
+      "pool_usdc": 23000,
+      "url": "https://code4rena.com/audits/2025-11-brix-money"
+    },
+    {
+      "platform": "code4rena",
+      "pool_usdc": 23000,
+      "url": "https://code4rena.com/audits/2025-04-cabal-liquid-staking-token"
+    },
+    {
+      "platform": "code4rena",
+      "pool_usdc": 22000,
+      "url": "https://code4rena.com/audits/2026-04-monetrix"
+    },
+    {
+      "platform": "code4rena",
+      "pool_usdc": 20000,
+      "url": "https://code4rena.com/audits/2025-10-reflector-v3"
+    },
+    {
+      "platform": "code4rena",
+      "pool_usdc": 20000,
+      "url": "https://code4rena.com/audits/2025-08-morpheus"
+    },
+    {
+      "platform": "code4rena",
+      "pool_usdc": 20000,
+      "url": "https://code4rena.com/audits/2025-04-blend-v2-mitigation-review"
+    },
+    {
+      "platform": "code4rena",
+      "pool_usdc": 18500,
+      "url": "https://code4rena.com/audits/2025-11-sequence-transaction-rails"
+    },
+    {
+      "platform": "code4rena",
+      "pool_usdc": 18000,
+      "url": "https://code4rena.com/audits/2025-11-merkl"
+    },
+    {
+      "platform": "code4rena",
+      "pool_usdc": 18000,
+      "url": "https://code4rena.com/audits/2025-06-panoptic-hypovault"
+    },
+    {
+      "platform": "code4rena",
+      "pool_usdc": 17500,
+      "url": "https://code4rena.com/audits/2026-03-intuition"
+    },
+    {
+      "platform": "code4rena",
+      "pool_usdc": 13000,
+      "url": "https://code4rena.com/audits/2025-05-upside"
+    },
+    {
+      "platform": "code4rena",
+      "pool_usdc": 12000,
+      "url": "https://code4rena.com/audits/2026-03-swafe-mitigation-review-round-2"
+    },
+    {
+      "platform": "code4rena",
+      "pool_usdc": 12000,
+      "url": "https://code4rena.com/audits/2026-03-swafe-mitigation-review"
+    },
+    {
+      "platform": "code4rena",
+      "pool_usdc": 11000,
+      "url": "https://code4rena.com/audits/2025-10-flare-fasset-mitigation-review"
+    },
+    {
+      "platform": "code4rena",
+      "pool_usdc": 8000,
+      "url": "https://code4rena.com/audits/2025-05-silo-finance-mitigation-review"
+    },
+    {
+      "platform": "code4rena",
+      "pool_usdc": 6000,
+      "url": "https://code4rena.com/audits/2026-02-panoptic-next-core-mitigation-review"
+    },
+    {
+      "platform": "code4rena",
+      "pool_usdc": 5000,
+      "url": "https://code4rena.com/audits/2025-11-hybra-finance-mitigation-review"
+    },
+    {
+      "platform": "code4rena",
+      "pool_usdc": 4250,
+      "url": "https://code4rena.com/audits/2025-06-blackhole-mitigation-review"
+    },
+    {
+      "platform": "code4rena",
+      "pool_usdc": 4000,
+      "url": "https://code4rena.com/audits/2026-04-intuition-mitigation-review"
+    }
+  ]
+}
