@@ -12,7 +12,7 @@ def is_real_usdc_inflow(e):
     return (
         isinstance(e, dict)
         and e.get("token") == "USDC"
-        and isinstance(e.get("amount"), (int, float)) and e.get("amount", 0) > 0
+        and isinstance(e.get("amount"), (int, float)) and not isinstance(e.get("amount"), bool) and e.get("amount", 0) > 0
         and e.get("direction") == "in"
         and bool(e.get("tx_hash"))
         and e.get("verified") is True
