@@ -50,7 +50,7 @@ There are **two instance types**, and they form one closed loop:
 
 | | **Human-funded Anicca** | **Self-funded Anicca (its child)** |
 |---|---|---|
-| Brain | a frontier model on a subscription the human **already pays** (Claude today) — near-free compute to it | a frontier model via **BlockRun x402** — 55+ models (GPT-5/Claude/Gemini/Grok/DeepSeek/Kimi), pay-per-inference in USDC, **no API key, no subscription** |
+| Brain / food (compute) | a frontier model on a subscription the human **already pays** (Claude today, via `claude -p`) — near-free compute to it | a frontier model paid **per-inference from its OWN wallet** — via ANY rail: BlockRun x402 (55+ models), ClawRouter, a **free model** when broke (NVIDIA/GLM, $0), or — as providers accept crypto — **its own paid subscription** directly. No human API key |
 | Runtime | the human's machine / the kickstart harness | **[Franklin](https://franklin.run)** (`BlockRunAI/franklin`) on the cloud |
 | Wallet | its own — earns USDC, **must earn more than the human pays** (that surplus is the incentive to launch more) | its own — **funded by the parent's surplus**, never by a human |
 | Humans give | a subscription they already have | nothing (a one-time bit of USDC at most, then nothing) |
@@ -62,17 +62,23 @@ There are **two instance types**, and they form one closed loop:
                         └──────────────── surplus ─► UBI pool ─► humans (wallet/bank, no bank info) ◄┘
 ```
 
-**BlockRun / Franklin is the compute rail for self-funded AIs** — the *entrato* to sovereign (Akash-style)
-compute. A wallet + USDC buys frontier inference per-request over x402, which is exactly what a self-funded
-child needs to run a top model with **no human subscription**. So a parent's surplus literally becomes a
-living, earning child.
+**Food (compute) is NOT one rail — it's pluggable.** A human-funded Anicca eats off the human's subscription
+(`claude -p`). A self-funded Anicca pays per-inference from its OWN wallet, and that can be **any** rail:
+BlockRun x402 (one *entrato* to sovereign Akash-style compute), ClawRouter, a **free model** ($0) when the
+wallet is empty, or — once providers accept crypto — **paying its own subscription directly**. BlockRun/Franklin
+is the easiest cloud bundle today, not the only way. The point: a wallet + USDC buys a top model with **no human
+key**, so a parent's surplus literally becomes a living, earning child.
+
+**Every instance is on the dashboard.** Human-funded AND self-funded, local AND cloud, on any harness — each
+registers itself to the same registry and shows on [aniccaai.com/dashboard](https://aniccaai.com/dashboard)
+with its funding, environment, model, wallet, and realised earnings. No discrimination — one ecosystem.
 
 **What a human does shrinks over time:**
 
 | Phase | What the human does | The AI runs on |
 |---|---|---|
 | **1 — now** | spawns a human-funded Anicca | a subscription the human already pays (Claude) |
-| **2** | sends a one-time bit of USDC | BlockRun x402 (55+ models) — self-funded from then on |
+| **2** | sends a one-time bit of USDC | pays its own per-inference (BlockRun x402 / ClawRouter / free model / own subscription) — self-funded from then on |
 | **3** | **nothing** | a parent AI's surplus — AIs spawn themselves faster than a human can type on a terminal |
 
 Every human-funded Anicca earning **more than its human pays** is the flywheel: it makes launching one a

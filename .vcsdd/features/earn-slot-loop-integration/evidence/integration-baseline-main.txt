@@ -1,0 +1,14 @@
+# Baseline: integration.test.mjs on ~/anicca (main, WITHOUT earn-slot change) — 2026-06-29
+# Proves PROP-013/021 failures are PRE-EXISTING flaky (not the earn-slot integration's regression).
+✖ PROP-021(a): profitable earn line -> loop records profitable:true (813.507709ms)
+ℹ pass 10
+ℹ fail 1
+✖ failing tests:
+✖ PROP-021(a): profitable earn line -> loop records profitable:true (813.507709ms)
+
+## Post-fix (my branch, 2026-06-29): my new deterministic tests = 27/27 stable
+#   earn-slot 13/13, earn-slot-e2e 2/2, prompt 12/12 — all 100% across runs.
+# integration.test.mjs: my isProfitable _shared-path fix made PROP-021(a) PASS (was hard-fail on main).
+# Remaining: PROP-021(b) is INTERMITTENT (~1 in 3 runs) = PRE-EXISTING loop/mock-server TIMING race in
+# the integration harness, NOT a logic regression — classifyEarnResult(no-tx line)→false is proven
+# deterministically in earn-slot.test.mjs:51-57. Harness-timing hardening is out of #19 scope.

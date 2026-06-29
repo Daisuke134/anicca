@@ -96,3 +96,16 @@ test('buildSystemPrompt lists each active slot with its summary', () => {
   assert.ok(p.includes('report'), 'lists report');
   assert.ok(p.includes('earn USDC'), 'includes earn summary');
 });
+
+// ── GAP-C regression guards (FIND-IMPL-004) ──────────────────────────────────
+test('GAP-C: getToolDefinitions description does NOT deny a generic earn slot + mentions earn/<sub>', () => {
+  const defs = getToolDefinitions(['earn/gig', 'yield']);
+  const desc = defs[0].function.description;
+  assert.ok(!/no generic\s+"?earn"?\s+slot/i.test(desc), 'must not deny a generic earn slot');
+  assert.ok(/earn\/<sub>|gig/i.test(desc), 'must mention earn/<sub> (gig/clip/…) are valid');
+});
+test('GAP-C: buildUserMessage surfaces live earn/<sub> slots from ctx.activeSkillSlots', () => {
+  const msg = buildUserMessage({ wakeId: 'W', balanceUsdc: 1, tier: 'free', recentSlots: [], activeSkillSlots: ['yield', 'earn/gig', 'earn/clip'] });
+  assert.ok(msg.includes('earn/gig'), 'menu includes earn/gig');
+  assert.ok(!/there is no generic\s+"?earn"?/i.test(msg), 'no denial in user message');
+});

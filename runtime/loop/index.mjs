@@ -28,6 +28,7 @@ import { assembleContext } from './context.mjs';
 import { think } from './brain.mjs';
 import { parseToolCall } from './parse-tool-call.mjs';
 import { runSkill } from './run-skill.mjs';
+import { isEarnSlot, earnStrategyFor, earnSkillRelPath } from './earn-slot.mjs';
 import { isLooping } from './loop-detect.mjs';
 import { formatRecord } from './ledger-record.mjs';
 import { appendLedgerLine, readLedgerLines } from './ledger.mjs';
@@ -76,7 +77,13 @@ let isProfitable;
   // ever be classified profitable. Resolve from ANICCA_HOME first (where the file + viem actually are),
   // fall back to the code repo for dev.
   const repoRoot = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..', '..');
+  // FIND-IMPL-006 FIX: the real export lives in skills/_shared/lib/ledger.mjs (record.mjs imports it from
+  // ../../_shared/lib/ledger.mjs); the old skills/earn/lib/ledger.mjs path does NOT exist → isProfitable
+  // silently fell back to ()=>false on every boot, so NO wake was ever classified profitable. Try the
+  // real _shared path first (ANICCA_HOME then repo), keep the legacy paths as last-resort fallbacks.
   const candidates = [
+    path.join(ANICCA_HOME, 'skills', '_shared', 'lib', 'ledger.mjs'),
+    path.join(repoRoot, 'skills', '_shared', 'lib', 'ledger.mjs'),
     path.join(ANICCA_HOME, 'skills', 'earn', 'lib', 'ledger.mjs'),
     path.join(repoRoot, 'skills', 'earn', 'lib', 'ledger.mjs'),
   ];
@@ -315,8 +322,9 @@ async function runOneWake() {
     kind = 'skill_timeout';
   } else if (skillResult.exitCode !== 0) {
     kind = 'skill_error';
-  } else if (['earn', 'yield', 'hl_trade', 'x402_sell', 'token_launch'].includes(slot)) {
-    // Only classify earn from the earn-ledger line (exit code 0 alone is NOT sufficient)
+  } else if (isEarnSlot(slot)) {
+    // Only classify earn from the earn-ledger line (exit code 0 alone is NOT sufficient).
+    // isEarnSlot covers the legacy action slots AND per-method nested earn/<sub> (gig/clip/affiliate/video/audit).
     const earnLedgerPath = defaultEarnLedgerPath(config);
     const { profitable: p } = await classifyEarnResult(wakeId, earnLedgerPath, isProfitable);
     profitable = p;
@@ -370,13 +378,14 @@ async function runSkillWithKillRef(slot, args, wakeId, config, killRef) {
   let skillPath;
   // PATCH 6: the earn action slots (yield/hl_trade/x402_sell/token_launch) all run the one earn skill;
   // the slot names the strategy (mapped in buildSkillEnv). `earn` stays as the back-compat fat tool.
-  const EARN_SLOT_DIRS = ['earn', 'yield', 'hl_trade', 'x402_sell', 'token_launch'];
-  if (EARN_SLOT_DIRS.includes(slot) && config.ANICCA_EARN_SKILL) {
+  // Single source of the slot→path rule (earn-slot.earnSkillRelPath): legacy action slots → the fat
+  // skills/earn/run.sh; earn/<sub> + non-earn → skills/<slot>/run.sh. ANICCA_EARN_SKILL still overrides
+  // the fat earn skill (tests). rel.split('/') keeps it cross-platform via path.join.
+  const rel = earnSkillRelPath(slot);
+  if (rel === 'earn/run.sh' && config.ANICCA_EARN_SKILL) {
     skillPath = config.ANICCA_EARN_SKILL;
-  } else if (EARN_SLOT_DIRS.includes(slot)) {
-    skillPath = path.join(ANICCA_HOME, 'skills', 'earn', 'run.sh');
   } else {
-    skillPath = path.join(ANICCA_HOME, 'skills', slot.replace('/', path.sep), 'run.sh');
+    skillPath = path.join(ANICCA_HOME, 'skills', ...rel.split('/'));
   }
 
   try { await access(skillPath); }
@@ -436,14 +445,16 @@ function buildSkillEnv(slot, wakeId, config, scrub, args) {
   const ANICCA_ARGS = JSON.stringify(a);
   // PATCH 6: each earn ACTION is its own slot now — the SLOT names the strategy (yield/hl/x402/token).
   // `earn` stays as the back-compat fat tool that reads args.strategy.
-  const EARN_SLOTS = { earn: null, yield: 'yield', hl_trade: 'hl', x402_sell: 'x402', token_launch: 'token' };
-  if (slot in EARN_SLOTS) {
+  // isEarnSlot = legacy action slots {earn,yield,hl_trade,x402_sell,token_launch} ∪ per-method earn/<sub>.
+  // earnStrategyFor: action slots → their map value; fat `earn` → null (keeps the args.strategy||yield
+  // fallback below); earn/<sub> → '<sub>'. So every earn slot — incl gig/clip/affiliate/video — gets
+  // EARN_LEDGER/EARN_MODE/WAKE_ID and can write the earn-ledger line the classify gate reads.
+  if (isEarnSlot(slot)) {
     return {
       ...base,
       ANICCA_ARGS,
       EARN_MODE:     process.env.EARN_MODE     || 'execute',
-      // The slot decides the strategy; fat `earn` falls back to args.strategy, then yield (safe last resort).
-      EARN_STRATEGY: process.env.EARN_STRATEGY || EARN_SLOTS[slot] || (typeof a.strategy === 'string' && a.strategy.trim() ? a.strategy.trim() : 'yield'),
+      EARN_STRATEGY: process.env.EARN_STRATEGY || earnStrategyFor(slot) || (typeof a.strategy === 'string' && a.strategy.trim() ? a.strategy.trim() : 'yield'),
       WAKE_ID:       wakeId,
       ...(config.EARN_LEDGER ? { EARN_LEDGER: config.EARN_LEDGER } : {}),
     };
