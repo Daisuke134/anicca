@@ -79,7 +79,7 @@ USDC on Base, gets a curated research digest. My cost = $0 (Wikipedia+HN+Jina) �
 | A3a | STABLE public host (Tailscale Funnel, browser+curl verified) + 24/7 launchd | ✅ |
 | A3b | CDP facilitator wired → Base mainnet settle + Bazaar discoverable:true | ✅ |
 | A3c | seed: 1 REAL CDP-facilitated payment through the PUBLIC url settled on-chain ✅ — buyer 0xa3CDd4 (Aave-withdraw 0.005 USDC) → public GET /research → CDP settle tx **0x467ee2c967676cda8b1578d2547bb072a0ae26dbf910662153ec87dca518a313** (success, block 47952656) → 0x810f USDC 0.003→0.006 + real research digest returned. INV-7 excludes it (self-payment, not earnings). | ✅ |
-| A3d | Bazaar discovery API surfaces the resource (CDP indexing lag after first payment) — recheck `GET api.cdp.coinbase.com/platform/v2/x402/discovery/resources`; if slow, ALSO PR to awesome-x402 + register on x402scan. | 🔜 NEXT |
+| A3d | Bazaar/x402scan surface the resource — checked post-seed: CDP Bazaar (first 100) = not yet, x402scan tx page = 404. Both are INDEXING-LAGGED right after the first tx (minutes–hours) + a possible v1(x402-express)↔v2(CDP Bazaar) scheme nuance. Endpoint is 24/7 live so indexers will catch up. Accelerators: (a) recheck Bazaar/x402scan after lag, (b) PR endpoint to awesome-x402 (manual surface), (c) direct outreach to x402 agent devs. | 🔜 in progress |
 | A4 | first REAL EXTERNAL buyer settle (realised_earn > 0) | ⬜ demand-gated |
 | B1 | board-poller skill | ⬜ |
 | B2 | audit-bounty skill (Immunefi live) | ⬜ |
