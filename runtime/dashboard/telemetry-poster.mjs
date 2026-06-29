@@ -10,6 +10,7 @@ import { assignIdentity } from "../identity.mjs";
 import { readCostBasis } from "../../skills/earn/lib/cost-basis.mjs";
 import { revenueBySource as pureRevenueBySource } from "../../skills/earn/lib/revenue.mjs";
 import { hlState } from "../lib/hl-state.mjs";
+import { buildTelemetryMsg } from "./telemetry-msg.mjs";
 
 const HOME = process.env.HOME;
 const pk = JSON.parse(fs.readFileSync(HOME + "/.automaton/wallet.json")).privateKey;
@@ -138,16 +139,16 @@ async function post() {
     // alongside realised earnings so the dashboard shows an `hl` P&L cell (red when the perp is losing).
     const rev = revenueBySource(nw, { ...earn.bySource, hl: nw.hlUpnl || 0 });
     const period = periodRevenue(rev.total);
-    const msg = JSON.stringify({
-      id: acct.address.toLowerCase(), ts, host: NAME, geo: "JP",
+    // Net worth = total held. Daily/monthly revenue = P&L change over the period (negative when losing).
+    // The message SHAPE lives in telemetry-msg.mjs (pure, side-effect-free) so it is unit-testable for
+    // shape + key-safety without importing this poster (which posts on import).
+    const { msg } = buildTelemetryMsg({
+      id: acct.address, ts, host: NAME, geo: "JP",
       funding: FUNDING, env: ENV, brain: BRAIN,
       model_live: model, model_tier: tier,
-      // Net worth = total held. Daily/monthly revenue = P&L change over the period (negative when losing).
-      // revenue_by_source = per-stream earned/lost. These are what people care about (not parked balances).
       net_worth_usd: total,
       daily_revenue_usd: period.daily, monthly_revenue_usd: period.monthly,
       revenue_by_source: rev.bySource,
-      revenue_mo_usd: period.monthly, // back-compat: old field now carries monthly revenue
       burn_day_usd: earn.cost, runway_days: 999,
       status: "alive",
       breakdown: nw, log: recentLog(20),
