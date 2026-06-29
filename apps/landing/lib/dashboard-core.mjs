@@ -33,6 +33,7 @@ export function normalizeLogKind(kind) {
 
 // REQ-8 + REQ-14: full fixed card view-model. funding/env/brain null ⇒ 'unknown'; logs newest-first ≤20.
 export function toCardModel(row, nowSec) {
+  if (row === null || row === undefined || typeof row !== 'object') row = {}; // null-row guard (FIND-006)
   const orDefault = (v) => (v === null || v === undefined || v === '' ? 'unknown' : v);
   const logs = (Array.isArray(row.log) ? row.log : [])
     .slice()
