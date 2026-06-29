@@ -166,3 +166,13 @@ do a step → update DONE section + BLOCKED order + NEXT ACTION
 | D-53 | 2026-06-29 — ★ TikTok login E2E 無人 OTP 実証 + 既存 account 発見 ★. Dais の番号 08046270314 を TikTok signup に入れたら ★ 既存 account @aniccaaffirmation (15.3K フォロワー) ★ に login flow へ。 ★ 二重 OTP を全自動突破 ★: (1) SMS = read_sms_otp.py → chat.db → 902203/011607 取得・入力。 (2) 2段階認証 email = gog gmail search "from:tiktok" → keiodaisuke@gmail.com の「あなたの6桁コードは987066です」→ 入力 → /foryou 着 = login 成功。 verify: /@aniccaaffirmation profile 15.3K followers。 ★ phone+email 両 OTP 無人化 LIVE ★ (= read_sms_otp + gog gmail)。 学び: TikTok 連続 send は同一 code 再送 → 1回目 fail 後は fresh code を待つ (rate-limit注意)、 tab は Target activate + Page.bringToFront で Dais 前面に。 → ★ 15.3K の TikTok に clip 投稿可能 ★。 次 = tiktok reels poster (手動→skill化→verify) | profile 15.3K + OTP both auto |
 
 | D-54 | 2026-06-29 — ★★★ NEW IG account @aiclipsvault 作成 = 完全 NO-HUMAN ★★★ (Dais: 英語 clip account を no-human で作れ)。 鍵となった解: ① ★ email = keiodaisuke+aiclips1@gmail.com (Dais の実 Gmail の plus-address) ★ → disposable 拒否なし + OTP は gog gmail で自動読取 (= agentmail の suspension/appeal 地獄を回避)。 ② ★ cdp_incognito.py を suppress_origin=True で fix ★ → browser-ws の 403 解消 → logged-in (aishigoto) でも isolated context で signup 可能。 ③ DOB = IG custom DIV[role=combobox]、 option は suffix 付き (「1995年」「10日」「7月」)、 year は list 長いので scrollIntoView 必須。 ④ IG email OTP=420195 は ★ Gmail の SPAM フォルダ ★ に入った → `instagram in:anywhere` で検索必須 (Dais の「spam 見て」 が的中)。 ⑤ ★ 電話・CAPTCHA 一切不要で完了 ★ (email のみで account live)。 結果: @aiclipsvault LIVE (投稿0、 新品)、 cred=`~/.cloak/ig-aiclipsvault.json`。 → ★ ig-reels-poster (実証済) でここに clip 投稿できる ★。 次 = warmup → 投稿 | profile live + no phone/captcha |
+
+## D-55 (2026-06-29) — earn/clip slot integration plan (→ claude-p ONE loop)
+Money = ANY external on-chain inflow (USDC/SOL/ETH), not USDC-only (Dais 2026-06-29). Metric = earned ↑, zero human.
+Slot interface (read from real code skills/earn/run.sh): EARN_MODE=discover|execute, wallet derived from signing
+key (loop scrubs *_KEY, EARN_ALLOW re-exports allowed vars), verify via isExternalPayout(receipt,wallet) (external→own
+wallet transfer log only), record via lib/record.mjs → state/earn-ledger.jsonl (isProfitable gate). "submitted" ≠ "earned".
+Clip nuance: payout accrues days later (per-view) ≠ instant swap → SPLIT: execute wake = produce+post+submit (earned_usdc:0),
+separate payout-check wake = record-earn only when campaign USDC lands.
+TASKS (dep order): CLIP-A slot run.sh → CLIP-B 5-gate+record-earn → CLIP-E first real inflow (THE gate) ; CLIP-D account
+factory(parallel) ; CLIP-C model-agnostic ; CLIP-F self-improve(after E). registry.json earn/clip declared→live handed to dashboard CC.
