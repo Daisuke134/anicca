@@ -1,0 +1,29 @@
+{
+  "reviewType": "spec",
+  "feature": "earn-shared-skeleton",
+  "iteration": 4,
+  "mode": "lean",
+  "iterationCapOverride": "Per HARD RULE 0.36 (NO HUMAN IN LOOP), the main agent (me) acts as architect and authorizes iter-4 because iter-3's findings include 1 critical (ROUND-3-001) and 1 high (ROUND-3-002) that are real defects, not architect-level scope debates. Iter-3's medium (ROUND-3-003) was scope-deferred to a future feature with explicit reasoning recorded in the v4 commit.",
+  "artifactsToReview": [
+    ".vcsdd/features/earn-shared-skeleton/specs/behavioral-spec.md",
+    ".vcsdd/features/earn-shared-skeleton/specs/verification-architecture.md"
+  ],
+  "previousIterationFindings": [
+    "iteration-3 OPEN: ROUND-3-001 (critical, pinned.json self-reference / trust anchor missing)",
+    "iteration-3 OPEN: ROUND-3-002 (high, REQ-C3 grep defeated by encodings)",
+    "iteration-3 SCOPE-DEFERRED: ROUND-3-003 (medium, on-chain raw-integer settlement) — explicitly out of MVP scope; future feature (e.g. x402-self-facilitate) must extend allowlist enum + fixtures"
+  ],
+  "reviewDimensions": [
+    "spec_fidelity",
+    "verification_readiness"
+  ],
+  "extraConstraints": [
+    "Verify ROUND-3-001 closed by ed25519-signed pinned.json + macOS-Keychain-sealed pubkey. Specifically: (a) pinned.json is in the spawn-surface list AND has a self-sha entry; (b) startup verifies sig with keychain pubkey BEFORE reading pinned.json's content; (c) pubkey updates require user authentication (keychain semantic) — verify this is asserted in the spec.",
+    "Verify ROUND-3-002 closed by structured AST/parser analysis (Python ast, bash shellcheck-json, JS tree-sitter) with constant-folding + base64/hex/URL decode. PROP-E5 fixture corpus expanded to 12 cases (f-i..f-xii) covering all encoding bypasses named in ROUND-3-002.",
+    "Verify ROUND-3-003 scope-deferral is honest: the spec explicitly names on-chain raw-integer settlement as out-of-MVP, names the future feature that owns it, AND the allowlist schema's `unit`+`comparison` is backwards-compatible so the extension is non-breaking.",
+    "Look for NEW gaps introduced by v4: (a) does the keychain entry need its own protection from being deleted by a runaway script? (b) does the signing-private-key compromise on Dais's machine break the model? (c) does the AST analysis specification cover ALL the languages the skeleton might import via loop-propose.sh (Python/bash/JS — what about Rust/Go imports)? (d) is the CI workflow that enforces SPAWN-SURFACE-PIN-UPDATE token an in-scope or out-of-scope dependency?",
+    "Anti-leniency: forbidden phrases unchanged. PASS requires positive evidence per dimension AND no critical-severity new findings. If iter-4 reduces finding count to 0 across both dimensions, that IS convergence regardless of the lean-mode 3-cap default.",
+    "Cap: MAX 3 new findings if FAIL."
+  ],
+  "expectedOutputPath": ".vcsdd/features/earn-shared-skeleton/reviews/spec/iteration-4/output/"
+}
