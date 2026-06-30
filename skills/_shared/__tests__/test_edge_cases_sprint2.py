@@ -51,24 +51,32 @@ def test_edge_s3_quota_unknown_when_source_missing(tmp_path):
 
 # ─── EDGE-S6: flock guards concurrent ticks ───────────────────────
 def test_edge_s6_flock_concurrent_ticks(tmp_path):
-    """EDGE-S6: flock -n on second tick exits 0 silently when first holds the lock."""
+    """EDGE-S6: re-entrancy guard. Second tick exits 0 silently when first holds the lock.
+    Uses fcntl (production path; cross-platform — macOS has no flock(1))."""
     lock = tmp_path / "proactive.lock"
-    # Tick 1 holds the lock
-    p1 = subprocess.Popen(
-        ["bash", "-c", f"exec 200>{lock}; flock -n 200 && sleep 2 && echo first_done"],
-        stdout=subprocess.PIPE,
+    holder_script = (
+        "import fcntl, sys, time;\n"
+        f"fh = open(r'{lock}', 'w');\n"
+        "fcntl.flock(fh.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB);\n"
+        "print('first_locked', flush=True);\n"
+        "time.sleep(2);\n"
     )
-    # Give tick 1 a moment to acquire
-    time.sleep(0.3)
-    # Tick 2 tries to acquire and should fail immediately
+    p1 = subprocess.Popen(
+        ["python3", "-c", holder_script], stdout=subprocess.PIPE, text=True,
+    )
+    # Wait until tick-1 has actually grabbed the lock
+    line = p1.stdout.readline().strip()
+    assert line == "first_locked"
+    # Tick-2 invokes proactive-loop.sh; production fcntl guard must abort it gracefully
+    shared_dir = Path(__file__).resolve().parent.parent
     p2 = subprocess.run(
-        ["bash", "-c", f"exec 200>{lock}; flock -n 200 || echo second_skipped"],
-        capture_output=True, text=True, timeout=5,
+        ["bash", str(shared_dir / "proactive-loop.sh"), "edge_s6_test"],
+        capture_output=True, text=True, timeout=10,
+        env={**os.environ, "ANICCA_LOCK_PATH": str(lock), "HOME": str(tmp_path)},
     )
     p1.wait(timeout=5)
-    out_p1 = p1.stdout.read().decode() if p1.stdout else ""
-    assert "second_skipped" in p2.stdout or "second_skipped" in p2.stderr
     assert p2.returncode == 0  # graceful exit
+    assert "another tick in progress" in p2.stdout or "another tick in progress" in p2.stderr
 
 
 # ─── EDGE-S7: adversary daily as menu item with cadence ───────────
