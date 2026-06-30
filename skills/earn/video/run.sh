@@ -49,7 +49,10 @@ case "$TRANS" in
         set_state "{\"last_warmup_date\": \"$TODAY\"}"; DID="warmup deferred: dedicated browser/login not ready ($(tail -1 /tmp/ev_ensure.log 2>/dev/null|cut -c1-60))"
         R_HANDLE="$HANDLE" R_TRANS="$TRANS" R_DID="$DID" $PY -c "import json,os;print(json.dumps({'slot':'earn/video','handle':os.environ['R_HANDLE'],'transition':os.environ['R_TRANS'],'did':os.environ['R_DID'],'earned_usdc':0.0,'cost_usdc':0.0},ensure_ascii=False))"; exit 0
       fi
-      CDP_PORT="$WPORT" timeout "$WBUD" $PY "$HOME/.claude/skills/ig-account-warmer/scripts/warm_iso.py" --tid "$WTID" --handle "$HANDLE" --reels 6 >/tmp/ev_warm.log 2>&1 || true
+      # ★ NICHE warmup: watch the content the TARGET audience watches (money/finance) so the account becomes the
+      #   persona + the algo learns the niche. Tags configurable per account (AI-agnostic); default = money niche. ★
+      NICHE="${EARN_VIDEO_NICHE_TAGS:-personalfinance,investing,moneytips,financetips,moneytok}"
+      CDP_PORT="$WPORT" timeout "$WBUD" $PY "$HOME/.claude/skills/ig-account-warmer/scripts/warm_iso.py" --tid "$WTID" --handle "$HANDLE" --reels 6 --niche-tags "$NICHE" >/tmp/ev_warm.log 2>&1 || true
       WATCHED=$($PY -c "import json,sys
 try:
   for l in open('/tmp/ev_warm.log'):
