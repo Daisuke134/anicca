@@ -15,7 +15,7 @@ Ground-truth live code: `telemetry-schema.js`, `telemetry-aggregate.js` (emits `
 reconciled by R12), `components/site/EmpireDashboard.tsx` (own `DashboardData{mrr,goals}`, fetches
 `/dashboard.json`), `apps/landing/public/dashboard.json` (STATIC, Dais-render-owned, no leaderboard).
 
-## Constants / helpers (checked-in: `apps/landing/netlify/functions/_lib/leaderboard-constants.js`)
+## Constants / helpers (NEW file, created in GREEN: `apps/landing/netlify/functions/_lib/leaderboard-constants.js`)
 - `OUR_INSTANCE_IDS: string[]` — our canonical 0x ids.
 - `SEED_ADDRESSES: string[]` — parent-treasury / seed wallets.
 - `excludeSet(row) → Set<string>` = `{ row.id } ∪ OUR_INSTANCE_IDS ∪ SEED_ADDRESSES` (PER ROW — must
@@ -42,7 +42,9 @@ chain caller.
   carries row fields + (when present) `tags, revenue_today_usd, revenue_by_source, log_feed` + derived
   `stale, net_worth_src, earn_src`.
 - **R2 (rank = verified external earnings)** verified (`earn_src==='chain'`) first by `revenue_mo_usd`
-  desc (tie `net_worth_usd` desc), then unverified by `id` asc. Unverified never out-ranks verified.
+  desc; ties broken by `net_worth_usd` desc WHEN both tied rows are `net_worth_src==='chain'`, else by
+  `id` asc (a non-chain net worth is never used to rank); then unverified (`earn_src==='unverified'`)
+  appended by `id` asc. Unverified never out-ranks verified.
 - **R3 (enrichment — dimensioned + per-row exclude)** `enrichOnChain` SHALL set, per row:
   - `net_worth_usd = usdcBalanceAtomic(id)/1e6 + (nativeBalanceWei(id)/1e18) * ethUsdPrice()` (USD).
   - `revenue_mo_usd = externalInflowsUsd(id, monthStart, excludeSet(row))`,
