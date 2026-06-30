@@ -1,0 +1,20 @@
+{
+  "findingId": "R4-FIND-002",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "round": 4,
+  "status": "NEW (introduced by the v4 EXCLUDED_FROM_EARNINGS construct; defeats the anti-buy guarantee for the exact target population)",
+  "description": "v4 defines EXCLUDED_FROM_EARNINGS as a CHECKED-IN constant Set<string> = { the agent's own id } ∪ OUR_INSTANCE_IDS ∪ SEED_ADDRESSES, living in a static file leaderboard-constants.js (behavioral-spec.md:17-19). A single static constant CANNOT contain 'the agent's own id' for an arbitrary agent — there are many agents and the set is one checked-in value. R3 then passes that single literal constant to the per-id call: revenue_mo_usd = reader.externalInflowsUsd(id, monthStart, EXCLUDED_FROM_EARNINGS) for EVERY id (behavioral-spec.md:46). Consequence: for a hackathon entrant (id ∉ OUR_INSTANCE_IDS and id ∉ SEED_ADDRESSES — i.e. the precise population this leaderboard exists to rank), the entrant's OWN id is NOT in the constant, so self-transfers from the entrant's own wallet are NOT excluded and DO inflate revenue_mo_usd and rank. The 'self-transfer does not rank' anti-buy guarantee (INV-NOFAKE, behavioral-spec.md:98-101; 1b proof behavioral-spec.md:87) only holds for ids that happen to already be in OUR_INSTANCE_IDS/SEED — it FAILS for every external entrant. The 1b proof at line 87 can only pass if the test constructs a per-row exclude set containing row.id, which directly contradicts the 'checked-in constant Set' definition at lines 17-19. The construct is internally inconsistent and the core guarantee is hollow for non-OUR agents.",
+  "evidence": {
+    "filePath": ".vcsdd/features/agents-at-arms-leaderboard/specs/behavioral-spec.md",
+    "lineRange": "17-19",
+    "snippet": "EXCLUDED_FROM_EARNINGS: Set<string> = { the agent's own id } ∪ OUR_INSTANCE_IDS ∪ SEED_ADDRESSES (same file)."
+  },
+  "crossEvidence": [
+    {"filePath": ".vcsdd/features/agents-at-arms-leaderboard/specs/behavioral-spec.md", "lineRange": "46", "note": "enrichOnChain passes the single literal constant EXCLUDED_FROM_EARNINGS for every id; the row's own id is not included unless it is in OUR/SEED"},
+    {"filePath": ".vcsdd/features/agents-at-arms-leaderboard/specs/behavioral-spec.md", "lineRange": "87", "note": "anti-buy proof asserts a self-transfer row -> revenue=0, which requires row.id in the exclude set — impossible under the static-constant definition"}
+  ],
+  "fix": "Define the exclude set as PER-ROW, computed at enrich time: excludeSet(row) = { row.id } ∪ OUR_INSTANCE_IDS ∪ SEED_ADDRESSES, where only OUR_INSTANCE_IDS and SEED_ADDRESSES are the checked-in constants. Update R3 (line 46) to pass excludeSet(row) (not the literal EXCLUDED_FROM_EARNINGS constant) so each agent's own self-transfers are excluded. Update the 1b proof to use a hackathon-entrant fixture (id ∉ OUR/SEED) whose only inflows are from its own id, asserting revenue=0.",
+  "routeToPhase": "1a"
+}

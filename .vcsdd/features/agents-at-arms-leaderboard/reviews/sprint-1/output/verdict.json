@@ -3,27 +3,31 @@
   "feature": "agents-at-arms-leaderboard",
   "overallVerdict": "FAIL",
   "timestamp": "2026-07-01T00:00:00Z",
-  "iteration": 3,
+  "iteration": 4,
   "reviewContext": {
     "reviewType": "spec",
     "phase": "1c",
     "specPath": ".vcsdd/features/agents-at-arms-leaderboard/specs/behavioral-spec.md",
-    "specVersion": "v3"
+    "specVersion": "v4"
   },
   "dimensions": [
-    {"name": "spec_fidelity", "verdict": "FAIL", "findings": ["R3-FIND-001", "R3-FIND-002"], "evidence": []},
-    {"name": "edge_case_coverage", "verdict": "FAIL", "findings": ["R3-FIND-003"], "evidence": []},
-    {"name": "implementation_correctness", "verdict": "FAIL", "findings": ["R3-FIND-004"], "evidence": []},
-    {"name": "structural_integrity", "verdict": "FAIL", "findings": ["R3-FIND-005"], "evidence": []},
+    {"name": "spec_fidelity", "verdict": "FAIL", "findings": ["R3-FIND-001", "R4-FIND-002"], "evidence": []},
+    {"name": "edge_case_coverage", "verdict": "PASS", "findings": [], "evidence": [
+      {"type": "file", "location": ".vcsdd/features/agents-at-arms-leaderboard/specs/behavioral-spec.md:50-53", "description": "R4 all-unverified total -> undefined (UI renders —), never 0 — resolves R3-FIND-003 headline edge"},
+      {"type": "file", "location": ".vcsdd/features/agents-at-arms-leaderboard/specs/behavioral-spec.md:68", "description": "R9 constrains revenue_today_usd >=0 and <= revenue_mo_usd; revenue_by_source values >=0 — resolves R3-FIND-003 relational/sign edge"},
+      {"type": "file", "location": ".vcsdd/features/agents-at-arms-leaderboard/specs/behavioral-spec.md:42,88,93", "description": "deterministic unverified ordering (id asc) + 1b NaN-free + negative-source proofs"}
+    ]},
+    {"name": "implementation_correctness", "verdict": "FAIL", "findings": ["R4-FIND-001"], "evidence": []},
+    {"name": "structural_integrity", "verdict": "FAIL", "findings": ["R4-FIND-003"], "evidence": []},
     {"name": "verification_readiness", "verdict": "FAIL", "findings": ["R3-FIND-006"], "evidence": []}
   ],
-  "round2Disposition": {
-    "resolved": ["R2-FIND-002", "R2-FIND-003", "R2-FIND-004", "R2-FIND-006", "R2-FIND-008"],
-    "partiallyResolved": ["R2-FIND-001", "R2-FIND-005", "R2-FIND-007", "R2-FIND-009", "R2-FIND-010", "R2-FIND-011"],
-    "stillOpen": []
+  "round3Disposition": {
+    "resolved": ["R3-FIND-002", "R3-FIND-003", "R3-FIND-004", "R3-FIND-005"],
+    "stillOpen": ["R3-FIND-001", "R3-FIND-006"],
+    "newThisRound": ["R4-FIND-001", "R4-FIND-002", "R4-FIND-003"]
   },
   "convergenceSignals": {
-    "findingCount": 6,
+    "findingCount": 5,
     "allCriteriaEvaluated": true,
     "evaluatedCriteria": [],
     "duplicateFindings": []

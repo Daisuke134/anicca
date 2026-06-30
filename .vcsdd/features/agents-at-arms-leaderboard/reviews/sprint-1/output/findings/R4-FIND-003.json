@@ -1,0 +1,20 @@
+{
+  "findingId": "R4-FIND-003",
+  "dimension": "structural_integrity",
+  "category": "spec_gap",
+  "severity": "major",
+  "round": 4,
+  "status": "NEW (v4 R11 governs only the Dais-owned render; the live netlify function that ALSO emits leaderboard is left unreconciled and serves un-enriched, gameable data)",
+  "description": "v4 R11 (behavioral-spec.md:73-76) assigns leaderboard production to the Dais-owned dashboard-sync render that writes the served apps/landing/public/dashboard.json, and forbids Anicca from writing that file. But there is a SECOND, already-deployed producer of leaderboard that v4 never mentions or reconciles: the landing-repo netlify function apps/landing/netlify/functions/dashboard-sync.js, which at line 14 returns JSON.stringify(aggregate(rows)) directly from the Supabase instances rows — WITHOUT any enrichOnChain step. That public function endpoint therefore serves a leaderboard built from RAW SELF-REPORTED net_worth_usd/revenue_mo_usd (telemetry-aggregate.js:2-3,10 sort by self-reported net_worth_usd), i.e. exactly the gameable, un-verified figures INV-NOFAKE (behavioral-spec.md:98-101) promises never to rank. The spec leaves two leaderboard code paths coexisting (one enriched+un-buyable, one raw+self-reported) with no statement that the netlify function is removed, repurposed to call enrichOnChain, or otherwise prevented from exposing un-verified rankings. Separately, revenue_by_source is signed (R10:69), typed (R9:68) and carried (R1:38), and the design renders it in the per-agent drill-down (design:78), but R6's UI render contract (behavioral-spec.md:56-60) never specifies rendering it or labelling its self-reported provenance — a signed-but-self-asserted money breakdown can reach the UI unlabelled.",
+  "evidence": {
+    "filePath": "apps/landing/netlify/functions/dashboard-sync.js",
+    "lineRange": "11-15",
+    "snippet": "body: JSON.stringify(aggregate(Array.isArray(rows) ? rows : [])),  // aggregate() of raw Supabase rows, NO enrichOnChain"
+  },
+  "crossEvidence": [
+    {"filePath": "apps/landing/netlify/functions/_lib/telemetry-aggregate.js", "lineRange": "2-10", "note": "aggregate sums and ranks raw self-reported net_worth_usd/revenue_mo_usd; without enrichOnChain this endpoint serves un-verified, buyable rankings"},
+    {"filePath": ".vcsdd/features/agents-at-arms-leaderboard/specs/behavioral-spec.md", "lineRange": "56-60", "note": "R6 render contract omits revenue_by_source and its self-reported provenance label"}
+  ],
+  "fix": "State explicitly what happens to the netlify dashboard-sync.js function: either remove it, or have it run enrichOnChain before aggregate so it cannot serve un-verified rankings; confirm a single source of the enriched leaderboard. Add revenue_by_source (with a self-reported indicator) to the R6 render contract.",
+  "routeToPhase": "1a"
+}

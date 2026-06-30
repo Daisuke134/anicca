@@ -1,151 +1,152 @@
-# VCSDD Phase 1c Spec-Review Verdict (ROUND 3 / RE-REVIEW) — agents-at-arms-leaderboard
+# VCSDD Phase 1c Spec-Review Verdict (ROUND 4 / RE-REVIEW) — agents-at-arms-leaderboard
 
 - Feature: `agents-at-arms-leaderboard` (lean mode)
-- Review scope: `reviews/sprint-1/` (behavioral spec gate, v3 spec)
+- Review scope: `reviews/sprint-1/` (behavioral spec gate, v4 spec)
 - Reviewer: fresh-context adversary (disk-only, zero builder context)
-- Round: 3 (re-review of the v3 rewrite)
+- Round: 4 (re-review of the v4 rewrite)
 - Timestamp: 2026-07-01
-- Artifact under judgment: `.vcsdd/features/agents-at-arms-leaderboard/specs/behavioral-spec.md` (v3)
+- Artifact under judgment: `.vcsdd/features/agents-at-arms-leaderboard/specs/behavioral-spec.md` (v4)
 
 ## Overall verdict: **FAIL**
 
-v3 made real progress — it correctly binds the rank to an on-chain enrich step, fixes the INV-NOFAKE
-mislabel, defines deterministic unverified ordering + NaN-free totals, extends the signed
-`canonicalMessage`, places `net_worth_src` in the element + UI, and scopes Solana out. Five round-2
-findings are genuinely resolved. **But the two deepest issues survive the rewrite, and the disk proves
-it:**
+v4 is converging — **four of the six round-3 findings are genuinely resolved on disk** (R3-FIND-002,
+-003, -004, -005): the served-file producer is now named (R11), the all-unverified headline renders `—`
+not `$0` (R4), `revenue_today_usd` is sign/relationally constrained (R9), the `reader` interface is
+defined (lines 22-28), `revenue_by_source` is typed (R9), and an `earn_src` indicator is added to the UI
+(R6). **But the feature's core guarantee is still not delivered, and v4's new exclusion construct
+actively breaks it for the exact population the board exists to rank:**
 
-1. The ranked figure's on-chain source is **redefined to raw wallet inflows**, which is **fakeable by
-   self-transfer/seed** and **diverges from the design's earn-ledger** — so the no-fake guarantee is now
-   attached to the right field but reads a gameable value (R3-FIND-001).
-2. The `/dashboard.json` `EmpireDashboard.tsx` actually fetches is a **static Dais-owned file with no
-   `leaderboard`** (`apps/landing/public/dashboard.json`), while the aggregate's `leaderboard` lives in a
-   **separate Supabase-backed netlify function** with no rewrite — so R6's leaderboard never reaches the
-   UI (R3-FIND-002).
+1. **Anti-buy is still hollow + the new exclude-set is incoherent.** The ranked figure is still raw
+   inbound USDC transfers minus a *known* exclusion set, not the design's recorded earn-ledger — so any
+   inbound transfer from a non-enumerated wallet (donation/airdrop/fresh sybil wallet) still counts as
+   "earnings" (R3-FIND-001, STILL-OPEN). Worse, v4 defines `EXCLUDED_FROM_EARNINGS` as a *checked-in
+   constant* that "includes the agent's own id" — impossible for a single static set across many agents —
+   so for a hackathon entrant (`id ∉ OUR/SEED`) the entrant's own id is NOT excluded and self-transfers
+   DO pump rank (R4-FIND-002, NEW critical).
+2. **`net_worth_usd` is not implementable as written** (R4-FIND-001, NEW): the reader returns ETH `wei`
+   and USDC `atomic` bigints, the spec sums them as "USD" with no ETH/USD price source and no decimal
+   scaling.
+3. **A second, deployed producer serves un-verified rankings** (R4-FIND-003, NEW): the live netlify
+   `dashboard-sync.js` returns `aggregate(rows)` of raw self-reported figures with no `enrichOnChain`,
+   directly contradicting INV-NOFAKE; v4 R11 governs only the Dais-owned render and never reconciles it.
 
-| Dimension | R1 | R2 | R3 |
-|---|---|---|---|
-| 1. Spec Fidelity | FAIL | FAIL | **FAIL** |
-| 2. Edge Cases | FAIL | FAIL | **FAIL** |
-| 3. Impl Correctness (testability) | FAIL | FAIL | **FAIL** |
-| 4. Structural Integrity | FAIL | FAIL | **FAIL** |
-| 5. Verification Readiness | FAIL | FAIL | **FAIL** |
+| Dimension | R1 | R2 | R3 | R4 |
+|---|---|---|---|---|
+| 1. Spec Fidelity | FAIL | FAIL | FAIL | **FAIL** |
+| 2. Edge Cases | FAIL | FAIL | FAIL | **PASS** |
+| 3. Impl Correctness (testability) | FAIL | FAIL | FAIL | **FAIL** |
+| 4. Structural Integrity | FAIL | FAIL | FAIL | **FAIL** |
+| 5. Verification Readiness | FAIL | FAIL | FAIL | **FAIL** |
 
 ---
 
-## Round-2 must-fix disposition (every item re-checked against disk)
+## Round-3 must-fix disposition (every item re-checked against disk)
 
-| R2 finding | Status in v3 | Evidence |
+| R3 finding | Status in v4 | Evidence |
 |---|---|---|
-| R2-FIND-001/010 (no-fake binds to ranked revenue) | **PARTIAL — structurally bound, semantically hollow** | R3 now enriches `revenue_mo_usd` from chain (`behavioral-spec.md:36-42`) and INV-NOFAKE names the ranked metric (`:88-90`). But the chain source = "realized inflows to id", which is self-fundable and diverges from design's earn-ledger (`design...:64-66`). See R3-FIND-001/006. |
-| R2-FIND-002 (INV-NOFAKE mislabel) | **RESOLVED** | INV-NOFAKE now binds to `revenue_mo_usd` AND `net_worth_usd` correctly (`behavioral-spec.md:88-90`). |
-| R2-FIND-003 (unverified order + total inclusion + NaN) | **RESOLVED** | R2 appends unverified by `id` asc, never out-ranking verified (`:32-35`); R4 totals exclude unverified and "Reducers SHALL never operate on a flagged/undefined figure" (`:43-45`). |
-| R2-FIND-004 (extend signed `canonicalMessage`) | **RESOLVED** | R10 extends `canonicalMessage()` + `validate()` (`:63-66`). Soundness confirmed: `telemetry-verify.js:17-29` recovers the signer from the **verbatim** message and `validate()` parses those same bytes, so any `tags` present on a persisted row were signed by `id`; `signer==id` is enforced (`:28`) and replay/tamper are closed (`:23-27`). No cross-agent tag spoof. (Caveat: "not spoofable" overstates — any agent may self-assign `agent-hackathon`; acceptable for a self-declared display filter, non-blocking.) |
-| R2-FIND-005 (single render component + type) | **PARTIAL** | v3 correctly single-owns `EmpireDashboard.tsx` + its local `DashboardData` (`:49-53`), matching `EmpireDashboard.tsx:52-56,64-76`. But the compounding sub-point — the `mrr/goals` vs aggregate-output mismatch / which `/dashboard.json` carries `leaderboard` — is **still unreconciled** (R3-FIND-002). |
-| R2-FIND-006 (`net_worth_src` in element + UI) | **RESOLVED** | R1 lists `net_worth_src`/`earn_src` (`:31`); R6 renders a `net_worth_src` indicator (`:52`). (Gap: `earn_src` not surfaced — folded into R3-FIND-005.) |
-| R2-FIND-007 (type-validate additive fields) | **PARTIAL** | R9/R10 require type-checks for `tags`/`revenue_today_usd`/`log_feed` (`:60-62`) with a 1b proof (`:84`), but **omit `revenue_by_source`** (R3-FIND-005). |
-| R2-FIND-008 (Solana scope) | **RESOLVED** | Scope note states `wallet_sol` OUT OF SCOPE, EVM `id` only, with a named follow-up (`:68-70`). |
-| R2-FIND-009 (`OUR_INSTANCE_IDS` source/shape) | **PARTIAL** | Shape given ("checked-in `string[]` of 0x ids", `:56`), but **file location/owner still unspecified**; `grep` confirms `OUR_INSTANCE_IDS` exists nowhere in code yet. Minor. |
-| R2-FIND-011 (proofs for the above) | **PARTIAL** | New 1b rows added for R2/R9/R10 (`:77,84,85`). Still missing: proof that fabricated EARNED money can't win, and proof the served `/dashboard.json` actually carries the leaderboard (R3-FIND-006). |
+| R3-FIND-001 / -006 (ranked figure un-buyable; anti-buy proof) | **STILL-OPEN (partial)** | v4 excludes self/seed/OUR (`behavioral-spec.md:17-19,44-49`) and adds a self/seed=0 proof (`:87`) — real progress. But the value is still raw inbound USDC transfers (`:26`), not the design's earn-ledger (`design...:64-66`); a fresh attacker-controlled wallet's inflow still counts as "earnings," and the spec falsely calls this "un-buyable"/"earn-ledger inflows" (`:98-101`). The proof only covers known addresses, so it gives false confidence. See R3-FIND-001 (carried) + R3-FIND-006 (carried). |
+| R3-FIND-002 (producer writes leaderboard into the SERVED `/dashboard.json`) | **RESOLVED** | R11 names the Dais-owned dashboard-sync render as the writer of the served `apps/landing/public/dashboard.json`, forbids Anicca writing it, and adds an R11 integration proof that the consumed file carries `leaderboard` (`behavioral-spec.md:73-76,95`); header acknowledges the real static file (`:13-14`). |
+| R3-FIND-003 (all-unverified `—` not `$0`; constrain `revenue_today_usd`) | **RESOLVED** | R4 makes empty-metric totals `undefined`→`—`, never `0` (`:50-53`); R9 adds `revenue_today_usd ≥0 and ≤ revenue_mo_usd` + `revenue_by_source ≥0` with 1b proofs (`:68,88,93`). |
+| R3-FIND-004 (define `reader` interface) | **RESOLVED** (but exposes R4-FIND-001) | Interface defined: `nativeBalanceWei`, `usdcBalanceAtomic`, `externalInflowsUsd`, throw⇒unverified, Base mainnet + USDC contract (`:22-28,20`). Mock is now non-tautological for the inflow path. The `net_worth_usd` USD math it wires to is broken — see R4-FIND-001. |
+| R3-FIND-005 (ownership; type `revenue_by_source`; surface `earn_src`) | **RESOLVED** | Owner named (R11 `:73-76`); `revenue_by_source: Record<string,number>` typed (`:68`); `earn_src` indicator in R6 (`:56-60`). (Residual netlify-function reconciliation → R4-FIND-003.) |
 
 ---
 
 ## Dimension 1 — Spec Fidelity: FAIL
 
-### R3-FIND-001 (critical) — Ranked revenue = "raw inflows" is gameable + diverges from design
-- v3 R3 (`behavioral-spec.md:38-39`) defines `revenue_mo_usd`/`revenue_today_usd` as *"realized inflows to
-  `id` over the month / since 00:00 UTC."* Design (`design...:64-66`) instead says compute *"from the
-  on-chain realized-earn **ledger** (INV-7 rows from the earn skeleton)"* and *"Self-reported numbers …
-  never the ranked figure."*
-- Raw inflows ⊋ earn-ledger rows: they include (a) the design's own test agent's seed (`design...:98`
-  *"seeded a few USDC"*) and (b) USDC an attacker cycles in from a second wallet. Since `revenue_mo_usd`
-  is THE ranked field (`:32-34`), rank #1 is buyable with your own money. INV-NOFAKE (`:88-90`) is bound
-  to the right field but reads a fabricable value.
-- **Fix**: define revenue as earn-ledger reads (exclude seed/self/own-address transfers), name the
-  ledger interface + network + token set, and prove a self-transfer cannot raise rank.
+### R3-FIND-001 (critical, CARRIED / STILL-OPEN) — "un-buyable earnings" still reads inbound transfers, not the earn-ledger
+- v4 R3 sets `revenue_mo_usd = reader.externalInflowsUsd(id, monthStart, EXCLUDED_FROM_EARNINGS)`
+  (`behavioral-spec.md:45-46`), and the reader defines that as *"Σ USDC Transfer(value) to addr where
+  from ∉ excludeSet"* (`:26`). The design mandates revenue be computed from *"the on-chain realized-earn
+  **ledger** (INV-7 rows from the earn skeleton)"* with *"self-reported numbers … never the ranked
+  figure"* (`design...:64-66`). Inbound transfers ⊋ earned money: a donation, an airdrop, or USDC pushed
+  in from a fresh wallet the operator controls all count as "earnings."
+- The spec then asserts the opposite of what it delivers: INV-NOFAKE calls this *"un-buyable external
+  earnings"* and *"earn-ledger inflows"* and states *"Buying rank with your own/seed money is
+  impossible"* (`:98-101`). That is true only for the enumerated self/seed/OUR addresses; it is false for
+  any non-enumerated wallet. Asserting an impossibility the spec does not deliver is a fidelity defect.
+- **Fix**: adopt the design's recorded-earn-ledger (count only provenance-tagged earn events:
+  trading/gig/x402/bounty) as the ranked figure, OR downgrade the INV-NOFAKE claim to its true scope
+  (self/seed/own only) and document the residual sybil hole. Do not label raw transfers "earn-ledger."
 
-### R3-FIND-002 (critical) — The leaderboard never reaches the `/dashboard.json` the UI reads
-- R6 says `EmpireDashboard.tsx` reads `leaderboard` via *"its existing `/dashboard.json` fetch"*
-  (`:53`). The real `apps/landing/public/dashboard.json` is a **static** file shaped
-  `{updated_at, mrr, followers, views, spend, goals, basic_income, socials, lineage, …}` — **no
-  `leaderboard`, no `total_net_worth_usd`** (`apps/landing/public/dashboard.json:1-8,186-190`).
-- The aggregate's `leaderboard` is produced only by `dashboard-sync.js:14` (`return … aggregate(rows)`
-  from the Supabase `instances` table) at the **function endpoint**; no netlify rewrite maps
-  `/dashboard.json` → that function (`grep`: none). Extending `EmpireDashboard`'s local type with
-  `leaderboard?` adds a field the fetched file never contains.
-- **Fix**: name the single producer that injects the enriched `leaderboard` into the exact
-  `/dashboard.json` the UI fetches and reconcile the two data sources (Supabase `instances` vs the
-  Dais-owned instance-state render).
-
----
-
-## Dimension 2 — Edge Cases: FAIL
-
-### R3-FIND-003 (major) — All-unverified headline + unconstrained `revenue_today_usd`
-- All-unverified state (reader fully down): R4 (`:43-45`) makes `total_net_worth_usd`/`earned_mo_usd`
-  sum to **0**, so the headline shows a literal `$0` while rows display flagged numbers — the
-  "never render `$0`" intent of R8 (`:58`) is not applied to the totals; spectators read "$0 earned"
-  instead of "nothing verified yet". Undefined in the spec.
-- `revenue_today_usd` has **no sign/relational constraint** (R9 only requires "number", `:62`), unlike
-  `net_worth_usd ≥ 0` (`telemetry-schema.js:11`); a negative value or `today > mtd` passes.
-- **Fix**: define the all-unverified headline (`—`, not `$0`) and add `revenue_today_usd ≥ 0` +
-  `today ≤ mtd` invariants with proofs.
+### R4-FIND-002 (critical, NEW) — `EXCLUDED_FROM_EARNINGS` constant cannot exclude an entrant's own id
+- v4 defines `EXCLUDED_FROM_EARNINGS` as a **checked-in constant** `Set<string>` =
+  `{ the agent's own id } ∪ OUR_INSTANCE_IDS ∪ SEED_ADDRESSES` (`behavioral-spec.md:17-19`), and R3
+  passes that single literal to every per-id call (`:46`). One static set cannot hold "the agent's own
+  id" for arbitrary agents.
+- For a hackathon entrant (`id ∉ OUR_INSTANCE_IDS`, `id ∉ SEED_ADDRESSES` — the precise population the
+  board ranks), the entrant's own id is therefore NOT excluded ⇒ self-transfers from its own wallet
+  inflate `revenue_mo_usd` and rank. The anti-buy proof (`:87`) can only pass if the test builds a
+  per-row set containing `row.id`, which contradicts the constant definition at `:17-19`. Internally
+  inconsistent; the core guarantee fails for external entrants.
+- **Fix**: compute the exclude set per-row at enrich time — `excludeSet(row) = { row.id } ∪
+  OUR_INSTANCE_IDS ∪ SEED_ADDRESSES` (only the latter two are checked-in constants) — and have
+  `enrichOnChain` pass `excludeSet(row)` (update `:46`). Use a hackathon-entrant fixture in the 1b proof.
 
 ---
+
+## Dimension 2 — Edge Cases: PASS
+
+Positive evidence reviewed on disk:
+- All-unverified headline: R4 makes empty-metric totals `undefined`→`—`, never `$0`
+  (`behavioral-spec.md:50-53`), with a 1b "all-unverified ⇒ undefined, never NaN" proof (`:88`). Resolves
+  R3-FIND-003 part (1).
+- `revenue_today_usd` now constrained `≥0 and ≤ revenue_mo_usd`; `revenue_by_source` values `≥0`
+  (`:68`), with 1b proofs `today>mtd ⇒ ok:false` and `negative source ⇒ ok:false` (`:93`). Resolves
+  R3-FIND-003 part (2).
+- Unverified ordering deterministic (`id` asc, never out-ranking verified) (`:42`); empty filtered set →
+  explicit empty-state (`:64`).
+(Note, non-blocking: the existing schema does not constrain `revenue_mo_usd ≥ 0`
+(`telemetry-schema.js:12`), so `today ≥0 ∧ today ≤ revenue_mo` is unsatisfiable if `revenue_mo` is ever
+negative; tighten in Phase 2.)
 
 ## Dimension 3 — Impl Correctness / Testability: FAIL
 
-### R3-FIND-004 (major) — `reader` interface is undefined → R3 mock is non-deterministic
-- The no-fake core is `enrichOnChain(rows, reader)` (`:22-23`) and R3's proof is *"unit (mock `reader`)"*
-  (`:78`), but the spec never defines the `reader` contract: method names, return shapes
-  (number vs `{amount,from,token,ts}[]`), network/RPC, or failure signalling (throw vs null → maps to
-  `*_src='unverified'`). A mock can be shaped to pass any assertion → tautological-test risk.
-- `net_worth_usd` = *"on-chain USDC+native balance of `id`"* (`:37-38`) names no token contract or chain
-  (design says Base/Polygon, `design...:44`).
-- **Fix**: specify the reader interface, network(s), token-contract set, and earn-ledger query shape.
-
----
+### R4-FIND-001 (major, NEW) — `net_worth_usd = usdc + native` is dimensionally meaningless
+- R3 computes `net_worth_usd = usdc(id)+native(id) (USD)` (`behavioral-spec.md:47-48`), but the reader
+  returns `nativeBalanceWei` (ETH wei, 1e18) and `usdcBalanceAtomic` (6-dec, 1e6) (`:24-25`). Neither is
+  USD; there is no ETH/USD price method anywhere, and no decimal scaling is given. Summing a 1e6 bigint
+  and a 1e18 wei bigint as "USD" is arithmetically meaningless, and `net_worth_usd` is the R2 ranking
+  tie-breaker (`:41`) + a displayed headline — so the value, the RED mock, and the ranking are all
+  non-deterministic.
+- **Fix**: add `ethUsdPrice()` to the reader (source + throw⇒unverified) and specify
+  `net_worth_usd = usdcAtomic/1e6 + (nativeWei/1e18)*ethUsd`, OR scope net worth to USDC-only this slice.
 
 ## Dimension 4 — Structural Integrity: FAIL
 
-### R3-FIND-005 (major) — Producer/ownership conflict + `revenue_by_source` untyped + `earn_src` unshown
-- Pipeline (`:21-23`) treats the landing-repo netlify `dashboard-sync.js` as the `/dashboard.json`
-  owner, but project `CLAUDE.md` says `/dashboard.json` is rendered by a **Dais-owned** sync from
-  `anicca-dais`+`anicca-genesis` state and Anicca/landing must not write it. The spec adds the chain
-  enrich/aggregate without saying which producer owns it or how the guardrail holds.
-- `revenue_by_source` is signed/persisted (R1 `:30-31`, R10 `:63-64`) and shown in drill-down, but R9's
-  type-check list (`:62`) omits it → malformed object reaches the UI.
-- `earn_src` (the ranked figure's provenance) is added to the element (`:31`) but R6 surfaces only a
-  `net_worth_src` indicator (`:52`) → an unverified high-revenue row looks identical to a verified one.
-- **Fix**: name the enrich/write owner + respect the guardrail; add `revenue_by_source` to R9; add an
-  `earn_src` indicator to R6.
-
----
+### R4-FIND-003 (major, NEW) — second deployed producer serves un-verified rankings
+- v4 R11 governs only the Dais-owned render (`behavioral-spec.md:73-76`), but the live netlify function
+  `apps/landing/netlify/functions/dashboard-sync.js:14` returns `JSON.stringify(aggregate(rows))` of raw
+  Supabase rows with **no `enrichOnChain`** — i.e. a public endpoint ranking self-reported, gameable
+  `net_worth_usd`/`revenue_mo_usd` (`telemetry-aggregate.js:2-3,10`), exactly what INV-NOFAKE forbids
+  (`:98-101`). The spec never says this function is removed, repurposed to enrich, or otherwise
+  prevented from serving un-verified rankings — two leaderboard code paths coexist unreconciled.
+- Minor compounding: `revenue_by_source` is signed (`:69`), typed (`:68`) and carried (`:38`), and the
+  design renders it in drill-down (`design...:78`), but R6's render contract (`:56-60`) never specifies
+  rendering it or labelling its self-reported provenance.
+- **Fix**: state the netlify function's fate (remove, or run `enrichOnChain` before `aggregate`);
+  guarantee a single enriched source; add `revenue_by_source` (with a self-reported indicator) to R6.
 
 ## Dimension 5 — Verification Readiness: FAIL
 
-### R3-FIND-006 (critical) — Proof covers self-report overwrite, not fabricated EARNINGS or real delivery
-- 1b R3 (`:78`) proves only that an inflated **self-report** is overwritten by the mocked chain value.
-  Because R3 trusts raw inflows (R3-FIND-001), the chain value itself is fakeable — no 1b row feeds a
-  self-transfer/seed inflow and asserts rank does not move.
-- R6's proof (`:81`) renders a hand-authored *"leaderboard fixture"*, not the real served
-  `/dashboard.json`, so a green component test coexists with a `/dashboard.json` that has no
-  `leaderboard` (R3-FIND-002).
-- **Fix**: add a 1b proof that a self-funding inflow cannot raise rank, and a 1b/E2E proof that the
-  actually-served `/dashboard.json` carries the enriched leaderboard the UI renders.
+### R3-FIND-006 (critical, CARRIED / STILL-OPEN) — anti-buy proof gives false confidence
+- The 1b R3 proof (`behavioral-spec.md:87`) asserts only that a row whose inflows are *self/seed*
+  transfers → `revenue=0`. Because the ranked figure is raw inbound transfers (R3-FIND-001) and the
+  exclude set cannot contain an entrant's own id (R4-FIND-002), the proof passes while the board remains
+  buyable for the population it ranks — a green proof coexisting with a gameable feature is precisely the
+  AI-slop failure mode this gate exists to catch.
+- **Fix**: once R3-FIND-001/R4-FIND-002 are fixed (earn-ledger and/or per-row exclude set), add a 1b
+  proof with a *hackathon-entrant* fixture (`id ∉ OUR/SEED`) whose only inflows are its own/fresh-wallet
+  transfers, asserting `revenue_mo_usd` does NOT increase and rank does NOT move.
 
 ---
 
-## Must-fix before Phase 2 (RED)
-1. **R3-FIND-001 + R3-FIND-006**: define the ranked figure as earn-ledger reads (exclude
-   seed/self/own-address transfers), name the ledger interface, and prove a self-transfer cannot win.
-   This is the feature's entire point and is still gameable.
-2. **R3-FIND-002 + R3-FIND-005**: name the single producer that writes the enriched `leaderboard` into
-   the exact `/dashboard.json` `EmpireDashboard` fetches; reconcile Supabase-`instances` vs the
-   Dais-owned static render and the no-direct-write guardrail.
-3. **R3-FIND-004**: specify the `reader` interface + network + token-contract set so R3's mock tests are
-   concrete and non-tautological.
-4. **R3-FIND-003**: define the all-unverified headline state (`—`, not `$0`) and constrain
-   `revenue_today_usd` (`≥0`, `today ≤ mtd`).
-5. Minor: type-validate `revenue_by_source`; surface `earn_src` in the UI; pin `OUR_INSTANCE_IDS` file
-   location/owner.
+## Must-fix before Phase 2 (RED) — load-bearing only
+1. **R4-FIND-002 + R3-FIND-001/-006**: make the exclude set per-row (`{row.id} ∪ OUR ∪ SEED`) AND base
+   the ranked figure on the design's recorded earn-ledger (or downgrade the "un-buyable" claim to its
+   true self/seed/own scope and document the residual sybil hole). Add a hackathon-entrant anti-buy proof.
+   This is the feature's entire point and is still gameable for external entrants.
+2. **R4-FIND-001**: make `net_worth_usd` implementable — add an ETH/USD price method + explicit decimal
+   scaling, or scope net worth to USDC-only this slice.
+3. **R4-FIND-003**: reconcile the live netlify `dashboard-sync.js` (which serves un-enriched, self-reported
+   rankings) with the Dais-owned enriched render; ensure a single enriched leaderboard source.

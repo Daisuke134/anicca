@@ -1,0 +1,19 @@
+{
+  "findingId": "R4-FIND-001",
+  "dimension": "implementation_correctness",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "round": 4,
+  "status": "NEW (surfaced by the v4 reader-interface definition that R3-FIND-004 demanded)",
+  "description": "v4 resolved R3-FIND-004 by defining the reader interface (behavioral-spec.md:22-28), but the net_worth_usd computation it now wires to that interface is dimensionally under-specified and not implementable as written. R3 defines net_worth_usd = usdc(id)+native(id) (USD) (behavioral-spec.md:47-48). The reader exposes nativeBalanceWei(addr) -> bigint (ETH WEI, 18-decimals) and usdcBalanceAtomic(addr) -> bigint (USDC atomic, 6-decimals) (behavioral-spec.md:24-25). Neither is a USD figure: (1) there is NO ETH/USD price source anywhere in the reader interface or the spec, so native ETH cannot be converted to USD at all; (2) the decimal scaling between wei (1e18), USDC atomic (1e6), and a USD float is never specified. 'usdc+native' literally sums a 1e6-scaled bigint and a 1e18-scaled wei bigint and calls the result USD, which is arithmetically meaningless. Because net_worth_usd is the R2 tie-breaker for ranking (behavioral-spec.md:41) and a displayed headline (R4/R6), this ambiguity makes both the RED unit tests (what value should the mock return / what does enrichOnChain compute?) and the ranking non-deterministic.",
+  "evidence": {
+    "filePath": ".vcsdd/features/agents-at-arms-leaderboard/specs/behavioral-spec.md",
+    "lineRange": "47-48",
+    "snippet": "net_worth_usd = usdc(id)+native(id) (USD). Inflows from the agent's own id / OUR_INSTANCE_IDS / SEED_ADDRESSES are excluded"
+  },
+  "crossEvidence": [
+    {"filePath": ".vcsdd/features/agents-at-arms-leaderboard/specs/behavioral-spec.md", "lineRange": "24-26", "note": "reader returns nativeBalanceWei (ETH wei, 18-dec) and usdcBalanceAtomic (6-dec) — no USD, no ETH/USD price method"}
+  ],
+  "fix": "Either (a) add an ETH/USD price method to the reader (e.g. ethUsdPrice() -> number, with a defined source + failure->unverified) and specify the exact conversion net_worth_usd = usdcAtomic/1e6 + (nativeWei/1e18)*ethUsd, or (b) scope net_worth to USDC-only for this slice and drop native from the USD sum. Specify the decimal scaling explicitly so the mock and the ranking are deterministic.",
+  "routeToPhase": "1a"
+}
