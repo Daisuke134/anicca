@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-021",
+  "dimension": "implementation_correctness",
+  "category": "requirement_mismatch",
+  "severity": "medium",
+  "status": "new",
+  "description": "The wrapper/skill spawn gate is double-evaluated with contradictory parameters. spawnEligible (REQ-S1 cond 3) calls decideSpawn with maxChildren=config.spawn_hard_cap (REQ-S7 default 5) and minBalanceUsdc=config.spawn_threshold_usdc. But the REAL run.sh re-runs the gate itself (run.sh:61-66) with ONLY {balanceUsdc, children}, falling back to decideSpawn's hardcoded defaults minBalanceUsdc=20, rateLimitDays=14, maxChildren=1 (spawn-decision.js:11-13). Consequences: (a) REQ-S7 'Hard cap: at most spawn_hard_cap (default 5) total registered children' is contradicted — run.sh returns reason:'max_children' and exits 0 (dormant) as soon as children.length>=1, so the wrapper can pass while run.sh refuses the 2nd..5th child; (b) run.sh reads parent balance from $STATE_DIR/wallet.json '.balance_usdc' (run.sh:48-51), a different file and schema than the secp256k1 key file ~/.automaton/wallet.json the spec's wallet model (REQ-R1/R2/S2c) uses — on the real automaton runtime that field is absent, so BAL=0 -> decideSpawn low_balance -> spawn never fires. The spec never reconciles run.sh's internal gate, balance source, or the maxChildren default with its own config-driven REQ-S1/S7 values.",
+  "evidence": {
+    "filePath": "skills/self/spawn/run.sh",
+    "lineRange": "48-66",
+    "snippet": "BAL=\"$(\"$JQ\" -r '.balance_usdc // 0' \"$WALLET_JSON\" ...)\"  ...  decideSpawn({ balanceUsdc: balance, children })  # defaults maxChildren=1, minBalanceUsdc=20"
+  },
+  "routeToPhase": "1a"
+}

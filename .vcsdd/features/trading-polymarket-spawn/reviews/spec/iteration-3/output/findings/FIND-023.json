@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-023",
+  "dimension": "structural_integrity",
+  "category": "spec_gap",
+  "severity": "low",
+  "status": "new",
+  "description": "jurisdictionVenueFilter(jurisdiction, venue, jurisdiction_ok_for_real, kyc_required) carries two vestigial parameters. The documented return semantics (behavioral-spec.md:35, verification-architecture.md:23: 'True IFF jurisdiction_ok_for_real == true AND kyc_required == false') depend solely on the two booleans; jurisdiction and venue are never used in any branch, and every proof obligation (PROP-T14/14b/15/15b/16) ignores them. A pure function intended for formal verification with two dead inputs is a name-vs-behavior mismatch (the function is really bothFlagsClear(ok, kyc)). Non-blocking, but the signature should either drop the unused args or the semantics should actually consult a jurisdiction/venue table.",
+  "evidence": {
+    "filePath": "specs/behavioral-spec.md",
+    "lineRange": "35",
+    "snippet": "jurisdictionVenueFilter(jurisdiction, venue, jurisdiction_ok_for_real, kyc_required) ... returns true IFF both jurisdiction_ok_for_real == true AND kyc_required == false"
+  },
+  "routeToPhase": "1a"
+}
