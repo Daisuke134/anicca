@@ -1,0 +1,29 @@
+{
+  "reviewType": "spec",
+  "feature": "earn-shared-skeleton",
+  "iteration": 6,
+  "mode": "lean",
+  "iterationCapOverride": "iter-5 caught 3 critical residuals in v6 (REQ-E5 still had Keychain/Touch ID + Dais signing; REQ-B6 still called escalate.sh with 'human review' literal; EDGE-10 still Telegram POST; verification-architecture.md fully unchanged). v7 performed a complete hard scrub: REQ-E5 rewritten with anicca-bot framework key, REQ-A3/A5/A8/B6/E5/EDGE-10 all rerouted to self-recover.sh, verification-architecture.md PROP-E2/PROP-E5/PROP-G2-static/PROP-F2/CoDD all rewritten, REQ-J3/J4/J7/J9 concretized. iter-6 verifies the scrub is genuinely complete and the new MOTHER bootstrap is implementable.",
+  "artifactsToReview": [
+    ".vcsdd/features/earn-shared-skeleton/specs/behavioral-spec.md",
+    ".vcsdd/features/earn-shared-skeleton/specs/verification-architecture.md"
+  ],
+  "previousIterationFindings": [
+    "iter-5 OPEN: ROUND-5-001 (critical, REQ-E5 Touch ID Keychain not removed)",
+    "iter-5 OPEN: ROUND-5-002 (high, verification-architecture.md still references escalate.sh + Telegram + TG_BOT_API)",
+    "iter-5 OPEN: ROUND-5-003 (medium, Group J handlers vague: J3 schema undef, J4 model ladder inconsistent, J7 MOTHER bootstrap deferred 'out of MVP')"
+  ],
+  "reviewDimensions": [
+    "spec_fidelity",
+    "verification_readiness"
+  ],
+  "extraConstraints": [
+    "Verify ROUND-5-001 closed: grep for 'macOS Keychain', 'Touch ID', 'security find-generic-password', 'security add-generic-password', 'anicca-trust-anchor-pubkey', 'Dais signing', 'Dais's private key' — should ONLY appear in NEGATIVE contexts (= 'NEVER do X', 'REMOVED', 'NO Touch ID') or in REQ-J8 blocklist. ANY non-negative occurrence = FAIL.",
+    "Verify ROUND-5-002 closed: grep verification-architecture.md for 'escalate.sh' (raw, not the rename note), 'Telegram POST', 'TG_BOT_API', 'TG_DAIS_CHAT_ID', 'human review' — should be ZERO non-negative occurrences.",
+    "Verify ROUND-5-003 closed: (i) REQ-J3 trusted-authors.json schema is concrete (= literal JSON with schema_version, trusted_npm_authors list, trusted_org_namespaces, min thresholds, deny_pattern_substrings); (ii) REQ-J4 ladder is concrete (= claude-opus-4-8 → +effort high → spec-split → scope-defer; no 'next-stronger' hand-wave); (iii) REQ-J7 MOTHER bootstrap is MVP-shippable (= mother-poll.sh + mother-spawn.sh + mother-prompt.tmpl + launchd plist named with concrete paths; self-starting from inside REQ-J7 dispatcher).",
+    "Look for NEW gaps introduced by v7: (a) the framework-shipped anicca-bot.pub trust model: is the CI pipeline's private-key custody honestly stated as a single point of failure? (b) does the MOTHER instance polling another instance's queue introduce a livelock if BOTH instances are simultaneously degraded? (c) REQ-J9 measurement-seam-recovery probes alternate token sources — what if Anthropic doesn't expose any usage source and every measurement falls back to estimate? does the 4x penalty actually save the kill-switch from a fundamentally broken meter?",
+    "Look for HOST blocklist completeness in REQ-J8: does it cover Discord, Matrix, IRC, XMPP, IFTTT, Zapier webhooks, FCM push, APN push, Apple Mail bridges? Should the blocklist be a positive allowlist instead?",
+    "Anti-leniency phrases unchanged. PASS encouraged if iter-5 findings are genuinely closed AND new findings are not critical. Cap: MAX 3 new findings if FAIL."
+  ],
+  "expectedOutputPath": ".vcsdd/features/earn-shared-skeleton/reviews/spec/iteration-6/output/"
+}

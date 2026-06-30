@@ -39,21 +39,23 @@
   "gates": {
     "1c": {
       "verdict": "PASS",
-      "timestamp": "2026-06-30T15:47:21.680Z",
+      "timestamp": "2026-06-30T18:16:20.224Z",
       "reviewedBy": "adversary",
       "details": {
-        "iteration": 4,
+        "iteration": 6,
         "iter1_findings": 15,
         "iter2_findings": 2,
         "iter3_findings": 3,
         "iter4_findings": 0,
-        "override_note": "architect-level cap override at iter-4 per HARD 0.36"
+        "iter5_findings": 3,
+        "iter6_findings": 0,
+        "reverse_note": "iter-4 PASSed apparent but architect (= main agent) self-reversed under HARD 0.36 to remove human-touch paths; iter-5 caught residuals; iter-6 PASSed genuinely"
       },
       "adversaryVerdict": "PASS",
-      "adversaryReviewedAt": "2026-06-30T15:47:21.680Z"
+      "adversaryReviewedAt": "2026-06-30T18:16:20.224Z"
     }
   },
   "sprintCount": 1,
   "createdAt": "2026-06-30T15:15:28.620Z",
-  "updatedAt": "2026-06-30T15:52:23.255Z"
+  "updatedAt": "2026-06-30T18:16:20.226Z"
 }
