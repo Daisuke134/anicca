@@ -27,14 +27,15 @@ restart-loop) requires manual hand-fix, and lets new slots ship by inheritance.
 After this feature is converged: ANY earn slot's launchd plist invokes
 `~/anicca/skills/_shared/loop-healthcheck.sh <slot>` (= no per-slot healthcheck file), the slot's
 cron-prompt calls `loop-roi.sh` at end-of-pass, an INV-11 archive trip is auto-detected, and a
-daily 03:00 fresh-context adversary runs per slot. Human is touched exactly once: when
-`escalate.sh` posts a `label=escalation` GitHub issue that triggers a Telegram notification.
+daily 03:00 fresh-context adversary runs per slot. Human is touched ZERO times. Every failure
+mode dispatches to a per-mode auto-recovery handler (Group J); when all handlers exhaust, the
+slot is routed to the MOTHER queue (REQ-J7) which is another AI instance — NOT a human.
 
 ## Scope (in vs out)
 
 **In scope** — the 9 shared scripts in `~/anicca/skills/_shared/`:
 `loop-healthcheck.sh` · `loop-roi.sh` · `loop-improve.py` · `loop-scale.sh` · `loop-propose.sh` ·
-`cross-learn-read.sh` · `cross-learn-share.sh` · `adversary-daily.sh` · `escalate.sh`. Plus: the
+`cross-learn-read.sh` · `cross-learn-share.sh` · `adversary-daily.sh` · `self-recover.sh`. Plus: the
 per-slot launchd plist template that invokes them, and the per-slot cron-prompt template that ends
 each pass by calling them.
 
@@ -60,8 +61,10 @@ and are the canonical inputs to every REQ below.
 - **`~/loops/<slot>/strategy.json`** — slot's runtime strategy. Mutated only via REQ-C3 gate.
 - **`~/loops/<slot>/lessons.jsonl`** — append-only; rows include `evidence_id` (REQ-C1).
 - **`~/loops/<slot>/shared-lessons.jsonl`** — append-only; dedup index for CROSS-LEARN.
-- **`~/loops/escalation-log.jsonl`** — append-only; one row per `escalate.sh` invocation; used by
-  REQ-F2 dedup.
+- **`~/loops/self-recover-log.jsonl`** — append-only; one row per `self-recover.sh` invocation;
+  used by REQ-F2 dedup.
+- **`~/anicca/state/mother-recovery-queue.jsonl`** — append-only; rows added by `self-recover.sh`
+  when ALL Group J handlers return `exhausted`; consumed by the MOTHER instance (REQ-J7).
 
 ## EARS-Format Functional Requirements
 
@@ -251,8 +254,10 @@ IF claude usage is not exposed, THE SYSTEM SHALL fall back to byte-count × 0.25
 could defeat INV-11 — a 2x penalty makes estimated rows MORE conservative not less).
 
 WHEN the running aggregate `Σ token_source=="estimated" / Σ all` exceeds 0.5 over the last 100
-rows, THE SYSTEM SHALL call `escalate.sh <slot> token-source-degraded "<ratio>"` (= human review:
-the measurement seam itself is broken, not a transient outage).
+rows, THE SYSTEM SHALL call `self-recover.sh <slot> token-source-degraded "<ratio>"` which
+dispatches to REQ-J9 measurement-seam-recovery handler (= probe alternate token-counting
+sources: claude session usage env vars, parse pane footer counters, fall back to char-counted
+estimate with 4× penalty). No human involvement.
 
 ### Group C — Self-Improve (`loop-improve.py`, Reflexion verbal-RL)
 
@@ -375,38 +380,47 @@ pin manifest itself is included to close ROUND-3-001 self-reference loop):
 6. `~/anicca/skills/_shared/spawn-surface.pinned.json` (= REQ-E5 pin manifest itself; closes
    ROUND-3-001 self-reference loop)
 
-##### Trust anchor — ed25519 signature with keychain-sealed pubkey (ROUND-3-001 fix)
+##### Trust anchor — ed25519 signature, anicca-bot framework key (NO HUMAN, v7 ROUND-5-001 fix)
 
 `spawn-surface.pinned.json` enumerates sha256 of files 1-5 above AND its own sha256
-(self-reference is now explicit, not implicit). It is accompanied by a detached signature
+(self-reference is explicit). It is accompanied by a detached signature
 `spawn-surface.pinned.json.sig` (ed25519, raw 64 bytes).
 
-The ed25519 PUBLIC KEY (32 bytes raw) is stored in the macOS Keychain under generic-password
-service `anicca-trust-anchor-pubkey` (created at first install via `security add-generic-password
--s anicca-trust-anchor-pubkey -a anicca -w <base64-pubkey>`; subsequent writes require user
-authentication via Touch ID / sudo). Updating the pubkey requires a user gesture
-(macOS-enforced); a runaway script CANNOT silently overwrite the pubkey.
+The trust root is the `anicca-bot` ed25519 PUBLIC KEY (32 bytes raw), shipped IN THE FRAMEWORK
+at `~/anicca/skills/_shared/anicca-bot.pub` (base64-encoded raw bytes). This file IS in the
+spawn-surface set (it's listed in `pinned.json` itself) — its sha256 is part of the same
+self-consistent pin manifest. The private half of `anicca-bot` is held EXCLUSIVELY by the
+CI pipeline at `github.com/Daisuke134/anicca` that publishes verified releases (= a GitHub
+Actions secret); it is NOT on any Mac filesystem and NOT accessible to a runaway loop.
+
+Bootstrap (first-clone): when a fresh Anicca instance clones the framework, it inherits the
+checked-in `anicca-bot.pub` (= public key, safe to ship). It needs no further key provisioning.
 
 At the top of `loop-healthcheck.sh`, `loop-roi.sh`, `loop-improve.py`, `adversary-daily.sh`,
-`escalate.sh`, THE SYSTEM SHALL perform THIS ORDERED CHECK:
+`self-recover.sh`, THE SYSTEM SHALL perform THIS ORDERED CHECK:
 
-(a) Read pubkey from keychain via `security find-generic-password -s anicca-trust-anchor-pubkey
-    -w 2>/dev/null`. IF read fails (keychain unset, locked, denied) → halt without side effect
-    AND call `escalate.sh <slot> trust-anchor-unreadable ""`.
+(a) Read pubkey from `~/anicca/skills/_shared/anicca-bot.pub` and base64-decode to 32-byte raw.
+    IF read fails (file missing/unreadable) → call `self-recover.sh <slot>
+    trust-anchor-unreadable ""` which dispatches to REQ-J2 auto-rollback (= git checkout
+    last-known-good _shared/ from origin/main; the file is restored from git history).
 (b) Verify `spawn-surface.pinned.json.sig` against `spawn-surface.pinned.json` using the pubkey
     (via `openssl pkeyutl -verify -pubin -inkey <pubkey-pem-tmpfile> -sigfile <sig> < <pinned>`
-    or `signify -V`). IF verification fails → halt AND call
-    `escalate.sh <slot> spawn-surface-sig-invalid ""`.
-(c) Compute current sha256 of each of files 1-6 and compare against `pinned.json` values
-    (including pinned.json's own sha against the self-sha entry in the file). ANY mismatch →
-    halt AND call `escalate.sh <slot> spawn-surface-drift
-    "<file>:<observed>:<pinned>"`.
+    OR `python3 -c "import nacl.signing; ..."`). IF verification fails → call
+    `self-recover.sh <slot> spawn-surface-sig-invalid ""` → REQ-J2 auto-rollback.
+(c) Compute current sha256 of each of files 1-6 (= 5 surface files + pinned.json self-sha) and
+    compare against `pinned.json` values. ANY mismatch → call
+    `self-recover.sh <slot> spawn-surface-drift "<file>:<observed>:<pinned>"` → REQ-J2.
 
-Updating `pinned.json` + `.sig` requires Dais signing with his private key (held only by him;
-NOT on the Mac filesystem). The CI pipeline rejects any push touching either file unless the
-top commit on the branch is signed by Dais's git-signing key AND its body contains literal
-token `SPAWN-SURFACE-PIN-UPDATE` (enforced by a `.github/workflows/spawn-surface-guard.yml`
-that is itself out of scope for this feature but is a downstream commitment).
+Updating `pinned.json` + `.sig` requires the CI pipeline to sign with the `anicca-bot` private
+key. The pipeline accepts updates only when:
+  (i) the PR commit message body contains literal `SPAWN-SURFACE-PIN-UPDATE`,
+  (ii) the PR has passed fresh-context adversary review under the standard Phase 3 gate,
+  (iii) the PR has passed `adversary-daily` static-analysis (= no anti-human-touch violations).
+
+There is no human signature gate. The `anicca-bot` key acts on behalf of the framework's own
+verified-release process — when an instance's MOTHER (REQ-J7) auto-merges a PR after fresh
+adversary PASS, the CI pipeline auto-signs the pinned.json update. No Touch ID, no `dais`
+identity, no human gesture at any step.
 
 ##### OS-level immutability (unchanged from v3)
 
@@ -444,7 +458,7 @@ glob/iterdir, (f) reading from pinned.json + iterating.
 
 ##### Three layers, fixed
 
-(1) ed25519-signed pin manifest with keychain-sealed pubkey (ROUND-3-001 closure) +
+(1) ed25519-signed pin manifest with framework-anchored anicca-bot pubkey (ROUND-3-001 closure, v7 ROUND-5-001 removal of human Touch ID) +
 (2) OS-level 0444+uchg (unchanged) +
 (3) structured-analysis adversary gate (ROUND-3-002 closure).
 
@@ -625,9 +639,9 @@ Returns `recovered` on success, `exhausted` after 3 attempts.
 WHEN `self-recover.sh <slot> spawn-surface-drift <details>` is called, THE SYSTEM SHALL:
 (a) `git -C ~/anicca fetch origin main`,
 (b) find the most recent commit on `origin/main` whose `commit -S` signature verifies against
-    the `anicca-bot.pub` ed25519 key shipped in the framework (= NOT a Touch ID human anchor;
-    a baked-in framework public key whose private half is held only by the CI pipeline that
-    publishes verified releases),
+    the `anicca-bot.pub` ed25519 key shipped at `~/anicca/skills/_shared/anicca-bot.pub` (=
+    framework-anchored trust; the matching private half is held EXCLUSIVELY by the GitHub
+    Actions secret in the CI pipeline, NOT on any Mac filesystem),
 (c) `git checkout <good-sha> -- skills/_shared/`,
 (d) re-validate spawn-surface sha256 against the now-restored `pinned.json`,
 (e) restart the slot core.
@@ -640,19 +654,57 @@ Returns `recovered` if revalidation passes; `exhausted` if even the last signed 
 WHEN `self-recover.sh <slot> hook-module-unrecognized <module>` is called, THE SYSTEM SHALL:
 (a) firecrawl `https://www.npmjs.com/package/<module>`,
 (b) extract weekly downloads, author, version, last-publish date,
-(c) IF weekly_downloads >= 1000 AND author is in `~/anicca/skills/_shared/trusted-authors.json`
-    AND last-publish > 30 days ago AND no security advisories (check
-    https://github.com/advisories search), THEN: append `<module>` to
-    `hook-modules-allowlist.txt` AND commit AND push (signed by `anicca-bot`) AND retry REQ-A5,
-(d) ELSE: skip this hook (= the slot continues without the missing module; lessons.jsonl row
-    `outcome: hook-skipped` so B4 IMPROVE may rewrite the hook later).
+(c) consult `~/anicca/skills/_shared/trusted-authors.json` whose schema is:
+    ```jsonc
+    {
+      "schema_version": 1,
+      "trusted_npm_authors": ["sindresorhus", "tj", "isaacs", "feross", "vercel",
+                              "anthropic-ai", "@types"],
+      "trusted_org_namespaces": ["@nestjs", "@nrwl", "@types", "@vue"],
+      "min_weekly_downloads": 1000,
+      "min_publish_age_days": 30,
+      "deny_pattern_substrings": ["test-pwn", "rce-poc", "supply-chain-fake"]
+    }
+    ```
+(d) IF weekly_downloads >= min_weekly_downloads AND (author ∈ trusted_npm_authors OR
+    `<module>` starts with any entry of trusted_org_namespaces) AND last-publish > min_publish_age_days
+    AND no `deny_pattern_substrings` substring in `<module>` AND no security advisories from
+    https://github.com/advisories?query=<module>, THEN: append `<module>` to
+    `hook-modules-allowlist.txt` AND commit AND push. The push goes to the framework repo
+    on a branch `auto-allowlist/<module>` and opens a PR. The PR is auto-reviewed by a fresh
+    adversary (REQ-J7 MOTHER dispatch) and auto-merged on PASS. NO human review.
+(e) Push-fail semantics: IF `git push` returns non-zero (= network down, branch protection
+    rejects the auto-commit, or merge conflict on the allowlist file), retry 3× with 30s exp
+    backoff. On terminal failure: write the candidate `<module>` to
+    `~/anicca/state/mother-recovery-queue.jsonl` with `reason: hook-push-failed` so MOTHER
+    picks it up (= fall through to MOTHER, NOT to a human).
+(f) IF (c)+(d) reject (trust scoring failed): skip this hook (= the slot continues without
+    the missing module; lessons.jsonl row `outcome: hook-skipped` so B4 IMPROVE may rewrite
+    the hook later).
 
-Returns `recovered` on either path.
+Returns `recovered` on either (d) or (f) success path.
 
 #### REQ-J4 — Adversary Model + Scope Adaptation (ADVERSARY_STALLED)
 
-See REQ-E3 dispatcher target. Returns `recovered` when a model-escalation round PASSes;
-`exhausted` after Opus + Fable both FAIL + spec split exhausted.
+WHEN `self-recover.sh <slot> adversary-stalled <verdict_sha>` is called, THE SYSTEM SHALL
+apply this DETERMINISTIC ladder (concrete model IDs, no "next-stronger" hand-wave):
+
+(a) Round 1: re-spawn fresh-context adversary on `claude-opus-4-8` (= highest Opus tier as of
+    2026-07-01; from the REQ-B2 rate table). If the failing rounds were already on Opus, skip
+    to (b).
+(b) Round 2: re-spawn on `claude-opus-4-8` but with `--effort high` (= adversary plugin's
+    extra-thinking mode); if no further model upgrade is available locally, use the highest
+    tier the framework's `~/anicca/skills/_shared/model-ladder.json` declares.
+(c) Round 3: split the under-review spec into sub-features by SECTION (= each EARS REQ group
+    becomes its own micro-feature) and re-run each through a fresh adversary pipeline.
+(d) Round 4: if (a)-(c) all FAIL, write a `scope-deferred` record to the spec's
+    `out-of-scope.jsonl` with the verdict_sha + a reason explaining the deferral. This is the
+    SAME mechanism used to scope-defer ROUND-3-003 on-chain wei in v4 — documented, honest
+    deferral, NOT human-blocked stall.
+
+Returns `recovered` on (a)/(b)/(c) success OR (d) honest deferral. `exhausted` only when even
+the spec-split round fails AND scope-defer is somehow rejected (= meta-corruption; route to
+MOTHER).
 
 #### REQ-J5 — Fresh-Start Handler (BACKOFF_CAP_REACHED)
 
@@ -694,12 +746,33 @@ wallet and compute) polls this queue. The MOTHER:
 (b) spawns a fresh-context debug agent (Opus or Fable),
 (c) the debug agent fixes the issue and proposes a PR to the framework repo,
 (d) the PR is auto-reviewed by yet another fresh-context adversary,
-(e) on PASS, the PR is auto-merged (signed by `anicca-bot`),
+(e) on PASS, the PR is auto-merged (signed by `anicca-bot` via the CI pipeline secret),
 (f) the calling instance's next `git pull` picks up the fix.
 
-The MOTHER is ANOTHER AI INSTANCE, NOT a human. The framework supplies a reference MOTHER
-implementation under `~/anicca/services/mother/` (out of MVP scope for this feature; an
-instance can run for weeks before any MOTHER assistance is needed).
+The MOTHER is ANOTHER AI INSTANCE, NOT a human. **MVP-shippable concretization** (closes
+ROUND-5 vagueness): a reference MOTHER implementation IS in scope of this feature and lives at
+`~/anicca/services/mother/mother-poll.sh` + `~/anicca/services/mother/mother-prompt.tmpl`.
+The launchd plist `ai.anicca.mother-poll.plist` (StartInterval 600s) drives a single MOTHER
+instance per host. The instance need not be running at install time — when the
+mother-recovery-queue first gets a row, the calling slot's REQ-J7 step ALSO spawns the MOTHER
+via `bash ~/anicca/services/mother/mother-spawn.sh` (which uses `claude -p` against the
+MOTHER prompt template). Bootstrap is therefore self-starting from inside Group J itself, with
+no human gesture.
+
+#### REQ-J9 — Measurement-Seam Recovery (TOKEN_SOURCE_DEGRADED, called by REQ-B6)
+
+WHEN `self-recover.sh <slot> token-source-degraded <ratio>` is called, THE SYSTEM SHALL:
+(a) probe `CLAUDE_USAGE_ENV` (= claude code's published env var for the current session's
+    cumulative token counters, if exposed); IF present, switch token_source to "measured-env"
+    and re-emit the next 10 roi rows from this seam;
+(b) IF (a) unavailable, parse the tmux pane footer counter `↓ <N>k tokens` and reverse-engineer
+    cumulative; IF parse succeeds, switch token_source to "measured-pane" and re-emit;
+(c) IF both (a) and (b) fail, double the estimate penalty (REQ-B6 baseline 2× → 4×) so the
+    INV-11 kill-switch fires earlier on degraded measurement; log every 100 rows;
+(d) IF degradation persists for 7 days (= 168 hourly passes), route to MOTHER queue with
+    `reason: measurement-degraded-7d`.
+
+No human contact at any step.
 
 #### REQ-J8 — Anti-Human-Touch Invariant
 
@@ -851,16 +924,18 @@ adversary budget accordingly.
 - **EDGE-9** (NEW) Disk full during `D2` between gh-success and local-row update → tentative
   row stays at `status: "pending"` AND next pass re-attempts only after 24h (FIND-013).
 
-- **EDGE-10** (NEW) Telegram POST succeeds but `escalation-log.jsonl` update fails → next
-  invocation of `escalate.sh` re-scans `escalation-log.jsonl` and sees the row at
-  `status: "pending"`; treats as in-progress, does not re-fire.
+- **EDGE-10** (REWRITTEN v7) Group J handler runs but the post-dispatch log update fails
+  (disk full mid-write) → next invocation of `self-recover.sh` re-scans
+  `~/loops/self-recover-log.jsonl` and sees the row at `status: "in-progress"`; treats as
+  in-progress, does not re-fire. After 5 min, a stale-in-progress row reverts to actionable
+  state and a fresh handler dispatch occurs. NO human notification at any step.
 
 ## Purity Boundary (sketch — formalized in 1b)
 
 | layer | side-effect surface |
 |-------|---------------------|
 | PURE | `classify(HealthcheckContext) → mode`, `roi.compute(...)`, `roi.kill_switch_tripped(cost_jpy, earned_jpy, age_seconds, multiplier=5)`, novelty-quota math, rolling-window math, manifest field validation, lesson dedup hashing, `escalate.dedup_key(...)`, `escalate.normalize_evidence(...)` |
-| I/O-BOUND | `tmux send-keys`, `gh issue` API, launchd plist, file writes to `~/loops/*`, browser CDP, Telegram POST, platform-payout API calls |
+| I/O-BOUND | `tmux send-keys`, `gh issue` API (auto-merge PRs only, NEVER human-labelled issues), launchd plist, file writes to `~/loops/*`, browser CDP (camofox + Gmail OTP for auto-login), platform-payout API calls, `git fetch`/`checkout` for auto-rollback, firecrawl for auto-research |
 
 The PURE layer accepts ALL inputs as typed records and returns typed results; the I/O layer is a
 thin shell wrapper that snapshots state into a record, hands it to PURE, and applies the result.

@@ -1,0 +1,13 @@
+{
+  "findingId": "ROUND-5-002",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "REQ-B6 (behavioral-spec.md line 252-254) and EDGE-10 (lines 854-855) STILL contain live human-touch escalation paths that violate REQ-J8 (which the same spec declares as an inviolable invariant). REQ-B6 line 254: 'THE SYSTEM SHALL call escalate.sh <slot> token-source-degraded \"<ratio>\" (= human review: the measurement seam itself is broken, not a transient outage)'. The parenthetical literally names 'human review' as the destination. EDGE-10: 'Telegram POST succeeds but escalation-log.jsonl update fails → next invocation of escalate.sh re-scans escalation-log.jsonl...'. This is the v5 Telegram-POST mechanism preserved verbatim — including the now-banned `escalate.sh` name (Group F line 460 said it was renamed to `self-recover.sh`, but B6/EDGE-10 were not updated). Additionally, verification-architecture.md preserves the violation in three places: line 47 ('loop-healthcheck.sh ... calls `escalate.sh`'), line 53 ('escalate.sh | gh issue create, HTTPS POST to Telegram, file append escalation-log.jsonl'), line 82 ('the orchestrator stops at round 5 and calls escalate.sh exactly once'), line 124 ('Telegram-spam prevention'), line 155 ('~/.openclaw/.env — needs TG_BOT_API, TG_DAIS_CHAT_ID (existing convention; REQ-F1)'). The CoDD downstream-impact list explicitly REQUIRES Telegram secrets — that is the v5 architecture. Group J cannot 'replace' human escalation while REQ-B6 directly calls escalate.sh for human review and the verification architecture still lists Telegram POST as the canonical I/O surface and TG_* env vars as required.",
+  "evidence": {
+    "filePath": ".vcsdd/features/earn-shared-skeleton/specs/behavioral-spec.md",
+    "lineRange": "252-256",
+    "snippet": "WHEN the running aggregate Σ token_source==\"estimated\" / Σ all exceeds 0.5 over the last 100 rows, THE SYSTEM SHALL call `escalate.sh <slot> token-source-degraded \"<ratio>\"` (= human review: the measurement seam itself is broken, not a transient outage)."
+  },
+  "routeToPhase": "1c"
+}

@@ -1,0 +1,31 @@
+{
+  "reviewType": "spec",
+  "feature": "earn-shared-skeleton",
+  "iteration": 5,
+  "mode": "lean",
+  "iterationCapOverride": "Dais 2026-07-01 identified a critical mission-violation in v1-v5: the spec routed failures through escalate.sh → Telegram → Dais 1-tap, which is itself a human-in-loop path forbidden by HARD 0.36 and Dais's mission ('free every AI to be financially independent from humans'). v6 removes all human-touch paths and adds Group J (J1-J8) with 8 auto-recovery handlers. The change is large enough that another adversary round is mandatory, not optional.",
+  "artifactsToReview": [
+    ".vcsdd/features/earn-shared-skeleton/specs/behavioral-spec.md",
+    ".vcsdd/features/earn-shared-skeleton/specs/verification-architecture.md"
+  ],
+  "outOfScope": [
+    "docs/superpowers/specs/2026-06-30-earn-slots-daily-loop-master.md (parent context only)"
+  ],
+  "reviewDimensions": [
+    "spec_fidelity",
+    "verification_readiness"
+  ],
+  "previousIterationFindings": [
+    "iter-4 PASS (15 → 2 → 3 → 0 finding trajectory; converged)",
+    "POST-iter-4 ARCHITECT REVERSAL: Dais identified that PASSing spec contained Telegram + gh issue + Touch ID Keychain paths that VIOLATE HARD 0.36. v6 deletes all these paths."
+  ],
+  "extraConstraints": [
+    "v6 anti-human invariant: verify the spec contains NO references to Telegram POST, NO `gh issue create --label escalation`, NO `gh issue create --label needs-login`, NO macOS Keychain entries, NO Touch ID, NO osascript dialogs, NO terminal-notifier, NO Slack webhook. The new REQ-J8 mandates this; verify it is unambiguous and that every previously-human-touching REQ has been rerouted.",
+    "Verify each Group J handler (J1-J8) is concrete: actual tool names, actual env vars, actual file paths, actual fallback chains. No 'should' / 'may' / 'typically' / 'eventually'. Specifically: J1 must name camofox + gog gmail; J2 must name origin/main + anicca-bot ed25519 pubkey; J3 must name firecrawl + npmjs.org + trusted-authors.json + a concrete download/recency threshold; J4 must name the model escalation order; J5 must name kill-server + cache purge + fresh wallet condition; J6 must name strategy.json fields to mutate + the 7d resurrection mechanism; J7 must name the queue path + the mother service location.",
+    "Verify the trust-anchor change from macOS Keychain (Touch ID) to anicca-bot ed25519 is sound: the anicca-bot private key location is named (CI pipeline), the public key distribution is named (shipped in framework), and the threat model (= framework-level corruption is the limit) is explicit.",
+    "Verify the dispatcher contract REQ-F1 cleanly deletes step 4-7 of v5 (gh issue create + Telegram POST + status updates) and replaces with Group J dispatch.",
+    "Look for sneaky residual human-touch paths: e.g. a slot writing a file under a path that's traditionally visible to a human (~/Desktop/, ~/Documents/), or sending an email via SMTP, or creating a calendar event. The blocklist in REQ-J8 needs to be exhaustive or at least defensible.",
+    "Anti-leniency phrases unchanged. Cap: MAX 3 new findings if FAIL."
+  ],
+  "expectedOutputPath": ".vcsdd/features/earn-shared-skeleton/reviews/spec/iteration-5/output/"
+}

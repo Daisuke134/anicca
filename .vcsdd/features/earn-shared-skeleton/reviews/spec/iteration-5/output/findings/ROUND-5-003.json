@@ -1,0 +1,13 @@
+{
+  "findingId": "ROUND-5-003",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "high",
+  "description": "Group J handlers contain vague/incomplete concreteness that the iteration-5 manifest explicitly disallows. (1) REQ-J3 (line 638-650): step (c) writes 'commit AND push (signed by `anicca-bot`)' but does not name the signing-key location, the git remote, the branch, or what happens when push fails (network/auth error → exhausted? recovered?). The trusted-authors.json file is named but never specified (= what JSON schema? what counts as 'trusted'?). 'no security advisories (check https://github.com/advisories search)' — names a URL but not the query string nor the parse rule for results. (2) REQ-J4 (line 652-655): describes the model escalation order as 'Sonnet → Opus → Fable' in REQ-E3 prose (line 351) but Fable is listed in B-rate table at Sonnet-tier pricing — there is no claim Fable is STRONGER than Opus. The 'next-stronger model' assertion is unjustified; the escalation could be a downgrade. (3) REQ-J7 MOTHER queue (line 685-702): step (d) 'the PR is auto-reviewed by yet another fresh-context adversary' but the manifest path, the verdict-file location, the round cap, and the auto-merge actor are all unspecified. Step (f) 'the calling instance's next `git pull` picks up the fix' assumes the failing instance is still alive and polling — but J7 is called when J1-J6 returned 'exhausted', i.e. the instance is in a degraded state where it may be the one that needs git-pull. The MOTHER service's compute funding, identity, and bootstrap are deferred to 'out of MVP scope' which means the no-human invariant is unverifiable for the exhaustion case — humans are the only thing keeping the system from infinite-stalling on first MOTHER need.",
+  "evidence": {
+    "filePath": ".vcsdd/features/earn-shared-skeleton/specs/behavioral-spec.md",
+    "lineRange": "638-702",
+    "snippet": "REQ-J3 (c) ... commit AND push (signed by `anicca-bot`) AND retry REQ-A5 ... REQ-J7 ... A separate MOTHER instance (= a more-capable Anicca with broader skill set, running on its own wallet and compute) polls this queue ... The framework supplies a reference MOTHER implementation under `~/anicca/services/mother/` (out of MVP scope for this feature; an instance can run for weeks before any MOTHER assistance is needed)."
+  },
+  "routeToPhase": "1c"
+}
