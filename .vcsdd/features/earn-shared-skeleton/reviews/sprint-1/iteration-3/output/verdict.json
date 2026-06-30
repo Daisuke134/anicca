@@ -1,0 +1,76 @@
+{
+  "sprintNumber": 1,
+  "feature": "earn-shared-skeleton",
+  "overallVerdict": "PASS",
+  "timestamp": "2026-07-01T00:00:00Z",
+  "iteration": 3,
+  "mode": "lean",
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/_shared/payout-endpoint-allowlist.json", "description": "Allowlist now enumerates all 5 MVP platforms named in REQ-G2 MVP scope (behavioral-spec.md:578-589): coconala, whop, amazon_associates, youtube_adsense, algora. Each entry carries the required field set (endpoint, method, response_format, receipt_id_path, amount_path, payer_path, unit, comparison). FIND-2-003 closed."},
+        {"type": "file", "location": ".vcsdd/features/earn-shared-skeleton/specs/behavioral-spec.md", "description": "Scope-cut table at lines 945-959 enumerates 13 deferred findings (FIND-002/003/004/005/006/007/008/010/012/014/015/017/018), each with a concrete sprint-2 acceptance criterion citing a specific file/module. The 8 items the iter-2 manifest declared as silently incomplete are all listed. FIND-2-004 closed."}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": ".vcsdd/features/earn-shared-skeleton/specs/behavioral-spec.md", "description": "EDGE-1..EDGE-10 enumerated including EDGE-8 STALE_FIRST_PASS grace, EDGE-9 disk-full claim-check tentative-row recovery, EDGE-10 stale-in-progress reversion. Scope-cut table commits sprint-2 fixture coverage for empty-verdict (FIND-008), MOTHER queue read-only (FIND-014), and PROP-tests (FIND-017)."}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/_shared/loop-healthcheck.sh", "description": "Lines 22-37 export ANICCA_PANE_TEXT (etc.) as env vars; line 40 execs python3 against a static-path script — NO heredoc interpolation. Untrusted tmux pane bytes flow into os.environ only (kernel-mediated bytes, not parsed as source). FIND-2-001 critical RCE surface closed for healthcheck path."},
+        {"type": "file", "location": "skills/_shared/loop-roi.sh", "description": "Lines 9-15 export 6 numeric/string args as ANICCA_* env vars; line 17 execs python3 against static path. No string interpolation of $TOKENS_IN/$MODEL_ID into Python source. FIND-2-001 closed for roi path."},
+        {"type": "file", "location": "skills/_shared/self-recover.sh", "description": "Lines 12-15 export slot/reason/evidence as env vars; line 20 execs python3 dispatch script. REQ-F1 evidence (potentially externally-influenced) reaches Python as os.environ value, never parsed as code. FIND-2-001 closed for self-recover path."},
+        {"type": "file", "location": "skills/_shared/cross-learn-share.sh", "description": "Lines 9-13 export req_id/outcome/body-file as env vars; line 15 execs python3 dispatch. REQ-D2 dedup-check uses Python equality on env-string vs JSON-decoded field — no source-level injection surface. FIND-2-001 closed for cross-learn path."},
+        {"type": "file", "location": "skills/_shared/lib/group_j.py", "description": "Lines 60-64 carry two complementary regex rules: the command-line form (`--label\\s*[=]?\\s*['\"]?escalation['\"]?`) AND the Python list-literal form (`['\"]--label['\"]\\s*,\\s*['\"]escalation['\"]`). The second rule catches subprocess.run([..., '--label', 'escalation']) — verified by inspection (quote+--label+quote, comma+optional-space, quote+escalation+quote). FIND-2-005 closed."}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/_shared/loop-healthcheck-dispatch.py", "description": "Clean separation: shell snapshots state → env, Python dispatch reads env, calls pure lib.healthcheck.classify(ctx). Per-script ~50 lines, single-purpose, sys.path bootstrapping via ANICCA_SHARED_DIR is uniform across all 4 -dispatch.py files."},
+        {"type": "file", "location": "skills/_shared/loop-roi-dispatch.py", "description": "RATES_INPUT/RATES_OUTPUT centralized at module top (lines 18-23); pure lib.roi.compute_token_cost_jpy called with typed dict; result appended via shared lib._common.append_jsonl. No duplication with the .sh wrapper."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/_shared/anicca-bot.pub", "description": "Contains `3kVjAfM7r8IVJjqIXcg7L0r/wHv4WhBN+0/o/eOtPI4=` — 44 base64 chars (43 + 1 pad) decoding to exactly 32 bytes per REQ-E5 (base64-encoded raw ed25519 pubkey). REQ-E5 precondition (`base64.b64decode(...) length == 32`) now passes. FIND-2-002 closed for the placeholder-decode-failure surface; the spec scope-cut row for FIND-015 commits the real keypair + nacl.signing verify to sprint-2."},
+        {"type": "file", "location": ".vcsdd/features/earn-shared-skeleton/specs/behavioral-spec.md", "description": "Purity Boundary section (lines 967-975) keeps PURE layer enumerated (classify, roi.compute, kill_switch_tripped, novelty-quota, rolling-window, manifest field validation, escalate.dedup_key/normalize_evidence); I/O-BOUND layer enumerated separately. The 4 new -dispatch.py files match this boundary: they do env-read + io-glue only, never inline pure logic."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 0,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [
+      "FIND-2-001-closure",
+      "FIND-2-002-closure",
+      "FIND-2-003-closure",
+      "FIND-2-004-closure",
+      "FIND-2-005-closure"
+    ],
+    "duplicateFindings": [],
+    "iter2FindingsClosure": {
+      "FIND-2-001": "CLOSED — all 4 shell scripts replaced heredoc-PYEOF with ENV VAR pattern; Python dispatch reads os.environ only; pane_text/evidence/req_id/tokens never reach Python as parsed source",
+      "FIND-2-002": "CLOSED — anicca-bot.pub now contains a 44-char base64 string decoding to 32 bytes; REQ-E5 byte-count precondition passes; scope-cut row for FIND-015 covers real ed25519 ship in sprint-2",
+      "FIND-2-003": "CLOSED — payout-endpoint-allowlist.json enumerates all 5 MVP platforms (coconala/whop/amazon_associates/youtube_adsense/algora) with full required field set",
+      "FIND-2-004": "CLOSED — scope-cut table at behavioral-spec.md lines 945-959 lists 13 deferred findings (incl. the 8 from iter-2 manifest), each with concrete sprint-2 file/module acceptance criteria",
+      "FIND-2-005": "CLOSED — group_j.py:64 adds the list-literal form regex (`['\"]--label['\"]\\s*,\\s*['\"]escalation['\"]`) complementing the command-line form on line 63"
+    }
+  }
+}

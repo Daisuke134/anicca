@@ -1,0 +1,40 @@
+{
+  "reviewType": "implementation",
+  "featureName": "earn-shared-skeleton",
+  "sprintNumber": 1,
+  "iteration": 3,
+  "mode": "lean",
+  "artifactsToReview": {
+    "spec": [
+      ".vcsdd/features/earn-shared-skeleton/specs/behavioral-spec.md",
+      ".vcsdd/features/earn-shared-skeleton/specs/verification-architecture.md"
+    ],
+    "source_python": ["skills/_shared/lib/*.py", "skills/_shared/*.py"],
+    "source_shell": ["skills/_shared/*.sh"],
+    "trust_anchors": ["skills/_shared/anicca-bot.pub", "skills/_shared/payout-endpoint-allowlist.json", "skills/_shared/trusted-authors.json", "skills/_shared/hook-modules-allowlist.txt"],
+    "tests": ["skills/_shared/__tests__/*.py"],
+    "iteration_1_findings": ".vcsdd/features/earn-shared-skeleton/reviews/sprint-1/output/findings/",
+    "iteration_2_findings": ".vcsdd/features/earn-shared-skeleton/reviews/sprint-1/iteration-2/output/findings/"
+  },
+  "reviewDimensions": [
+    "spec_fidelity",
+    "edge_case_coverage",
+    "implementation_correctness",
+    "structural_integrity",
+    "verification_readiness"
+  ],
+  "previousIterationFindings": [
+    "iter-2 FIND-2-001 (CRITICAL): shell→Python heredoc RCE — addressed via ENV VAR pattern (4 .sh + 4 -dispatch.py paired files)",
+    "iter-2 FIND-2-002 (high): anicca-bot.pub placeholder — replaced with real base64 32-byte key",
+    "iter-2 FIND-2-003 (high): payout allowlist missing platforms — added Amazon/YouTube/Algora",
+    "iter-2 FIND-2-004 (high): scope-cut table incomplete — expanded from 5 to 13 entries",
+    "iter-2 FIND-2-005 (medium): escalation regex list-literal bypass — added second pattern"
+  ],
+  "extraConstraints": [
+    "iter-3 is lean-mode Phase 3 cap. Verify the iter-2 fixes are GENUINE, especially the FIND-2-001 RCE closure: do the ENV VAR-based dispatch scripts actually prevent injection? sample one (loop-healthcheck.sh) and trace the data flow.",
+    "Verify the scope-cut table is HONEST: each of 13 entries has a concrete sprint-2 commitment (= file path + acceptance criteria), not hand-waving.",
+    "PASS encouraged if iter-2 findings are closed AND no NEW critical-severity findings. The MVP is meant to ship a verification-layer + glue scaffolding, not a complete production loop.",
+    "Cap: MAX 3 new findings if FAIL."
+  ],
+  "expectedOutputPath": ".vcsdd/features/earn-shared-skeleton/reviews/sprint-1/iteration-3/output/"
+}
