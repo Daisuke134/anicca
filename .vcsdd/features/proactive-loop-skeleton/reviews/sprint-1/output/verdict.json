@@ -1,0 +1,67 @@
+{
+  "sprintNumber": 1,
+  "feature": "proactive-loop-skeleton",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-01T00:00:00Z",
+  "iteration": 1,
+  "reviewContext": {
+    "reviewType": "implementation",
+    "mode": "lean"
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-002", "FIND-005", "FIND-008", "FIND-012", "FIND-018"],
+      "evidence": []
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-009", "FIND-015", "FIND-020"],
+      "evidence": []
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-003", "FIND-006", "FIND-007", "FIND-011", "FIND-013"],
+      "evidence": []
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "FAIL",
+      "findings": ["FIND-016", "FIND-017"],
+      "evidence": [
+        {"type": "file", "location": "skills/_shared/lib/bot2bot.py:82-90", "description": "annotate_pr correctly emits a comment-only PR annotation and never invokes 'gh pr merge'; grep across skills/_shared/lib for 'pr merge|auto_merge|automerge' yields 1 hit — the docstring on bot2bot.py:86. No regression of FIND-003 found in the source."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-002", "FIND-004", "FIND-010", "FIND-014", "FIND-019"],
+      "evidence": []
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 20,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [
+      "PROP-P1-budget-quantize",
+      "PROP-P7-pivot",
+      "PROP-H3-dispatch",
+      "PROP-H6-no-human-touch",
+      "PROP-M3-pick-next",
+      "PROP-J8-blocklist",
+      "PROP-J8a-new-files",
+      "PROP-B4-no-human-escalation",
+      "PROP-B3-annotate",
+      "PROP-novelty-key-aligned",
+      "PROP-Q3d-ratio-escalation",
+      "PROP-Q3e-mother-queue",
+      "PROP-Q5-dormant",
+      "PROP-Q6-sentinel-rm",
+      "PROP-M1-append-only"
+    ],
+    "duplicateFindings": []
+  }
+}

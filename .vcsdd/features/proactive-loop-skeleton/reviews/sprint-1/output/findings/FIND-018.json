@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-018",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "high",
+  "description": "REQ-M1 (in spec required:true list per manifest) defines a build_log section schema with header '## YYYY-MM-DDTHH:MMZ — pass <pass_id>' followed by fields. The implementation's format_log_section emits '## pass {pass_id} (ts {ts})' — different shape, plain epoch instead of ISO 8601 timestamp, no em-dash separator, no Z-suffixed UTC. parse_log_section round-trip works but does not consume the spec'd schema. A consumer following REQ-M1 to parse a real build_log would not interoperate. Tests only check round-trip with this implementation's own format, not the spec'd schema.",
+  "evidence": {
+    "filePath": "skills/_shared/lib/build_log.py",
+    "lineRange": "11-22",
+    "snippet": "def format_log_section(\n    *, pass_id: str, ts: int, budget: str,\n    picked: str, outcome: str, next_candidate: str,\n) -> str:\n    return (\n        f\"## pass {pass_id} (ts {ts})\\n\"\n        f\"budget: {budget}\\n\"\n        f\"picked: {picked}\\n\"\n        f\"outcome: {outcome}\\n\"\n        f\"next-candidate: {next_candidate}\\n\\n\"\n    )"
+  },
+  "routeToPhase": "2b"
+}

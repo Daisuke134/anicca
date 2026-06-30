@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-017",
+  "dimension": "structural_integrity",
+  "category": "purity_boundary",
+  "severity": "medium",
+  "description": "verification-architecture L33-37 claims classify_issue_from_snapshot is PURE because it operates on an already-captured dict; the I/O capture is separated. In practice, classify_issue_from_snapshot accepts a HealthSnapshot dataclass instance, not a plain dict — the test fixtures use HealthSnapshot directly. That's still pure. However: HealthSnapshot.tmux_server_state is a dataclass field with default; test_tmux_server_corrupted_detected mutates it with attribute assignment after construction (snap.tmux_server_state = 'corrupted'). For a dataclass that's not @dataclass(frozen=True), this works but the purity claim is structurally fragile — any future @frozen decoration breaks the test. The decision to use a mutable dataclass while claiming purity should be either documented or hardened with frozen=True.",
+  "evidence": {
+    "filePath": "skills/_shared/lib/health_check_v2.py",
+    "lineRange": "29-41",
+    "snippet": "@dataclass\nclass HealthSnapshot:\n    tmux_alive: bool\n    last_pass_mtime: int\n    last_start_mtime: int\n    restart_log_entries: list[int]\n    pane_text: str\n    cron_has_slot_job: bool\n    spawn_surface_valid: bool\n    hook_modules_valid: bool\n    now_ts: int\n    tmux_server_state: str = \"ok\""
+  },
+  "routeToPhase": "2b"
+}

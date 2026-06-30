@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "PROP-Q6 (sentinel removal; required:true via REQ-Q5 enforcement set in manifest) has ZERO implementation and ZERO tests. Verification-architecture demands static-analysis + integration check that 'ONLY 2 call sites SHALL be present: (a) bot2bot.sh apply-sibling-response handler with clear-dormancy + adversary-PASS; (b) REQ-C3 mutation-gate post-merge hook'. Neither call site exists. No grep/AST check is automated. No remove-sentinel function exists in any of the 6 sprint-2 modules. The required: true PROP is wholly unverified.",
+  "evidence": {
+    "filePath": "skills/_shared/lib/quota_tracker.py",
+    "lineRange": "1-61",
+    "snippet": "(no unlink/remove/Path.unlink call sites for .dormant.sentinel exist anywhere in skills/_shared/lib/)"
+  },
+  "routeToPhase": "2b"
+}

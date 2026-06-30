@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-014",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "high",
+  "description": "PROP-Q6-sentinel-rm declares mechanism 'static-analysis (AST + grep) + integration' with finite expected call-site set. No AST walker exists. No grep test exists. test_anti_human_v2.py runs anti_human_touch_violations over sources but does NOT scan for .dormant.sentinel unlink call sites. There is no automation that would fail if a developer introduced a third unlink(.dormant.sentinel) call. Verification tier (Tier 1 static-analysis) does not match what's actually executable.",
+  "evidence": {
+    "filePath": "skills/_shared/__tests__/test_anti_human_v2.py",
+    "lineRange": "1-69",
+    "snippet": "(no test scans for unlink|remove|os.remove on .dormant.sentinel)"
+  },
+  "routeToPhase": "2a"
+}

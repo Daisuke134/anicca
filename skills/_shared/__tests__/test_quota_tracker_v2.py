@@ -68,30 +68,56 @@ def test_estimated_ratio_below_threshold_uses_2x():
 
 # ─── PROP-Q3e-mother-queue (required:true) ────────────────────────
 def test_mother_queue_route_when_degraded_7d():
-    # 7 consecutive negative ROI days
-    assert should_route_mother_queue(neg_roi_days=7, age_days=30) is True
+    """FIND-005 fix: no age gate; REQ-Q3(e) verbatim is just neg_roi_days>=7."""
+    assert should_route_mother_queue(neg_roi_days=7) is True
 
 
 def test_no_mother_queue_route_at_6_days():
-    assert should_route_mother_queue(neg_roi_days=6, age_days=30) is False
-
-
-def test_no_mother_queue_route_when_slot_young():
-    """slot age < 14 days = young, never routed."""
-    assert should_route_mother_queue(neg_roi_days=14, age_days=10) is False
+    assert should_route_mother_queue(neg_roi_days=6) is False
 
 
 # ─── PROP-Q5-dormant ──────────────────────────────────────────────
 def test_dormant_at_14_consecutive_negative_windows():
-    assert is_dormant(neg_7day_windows=14, age_days=30) is True
+    """FIND-006 fix: param renamed to consecutive_neg_7day_windows."""
+    assert is_dormant(consecutive_neg_7day_windows=14, age_days=30) is True
 
 
 def test_not_dormant_at_13_windows():
-    assert is_dormant(neg_7day_windows=13, age_days=30) is False
+    assert is_dormant(consecutive_neg_7day_windows=13, age_days=30) is False
 
 
 def test_not_dormant_when_slot_young():
-    assert is_dormant(neg_7day_windows=14, age_days=10) is False
+    assert is_dormant(consecutive_neg_7day_windows=14, age_days=10) is False
+
+
+def test_dormant_boundary_age_15():
+    """FIND-020 fix: age=15 (just past >14 boundary) IS eligible."""
+    assert is_dormant(consecutive_neg_7day_windows=14, age_days=15) is True
+
+
+def test_dormant_boundary_age_14_not_eligible():
+    """Boundary inclusive-lower-of-14d: age=14 is NOT past the boundary."""
+    assert is_dormant(consecutive_neg_7day_windows=14, age_days=14) is False
+
+
+# ─── REQ-Q5 SIDE-EFFECT (FIND-001 fix) ────────────────────────────
+def test_write_dormant_sentinel(tmp_path):
+    from lib.quota_tracker import write_dormant_sentinel
+    write_dormant_sentinel(tmp_path, evidence={"reason": "test", "ratio": -0.5})
+    sentinel = tmp_path / ".dormant.sentinel"
+    assert sentinel.exists()
+    import json
+    parsed = json.loads(sentinel.read_text())
+    assert parsed["reason"] == "test"
+
+
+# ─── REQ-Q6 sentinel removal allowlist (FIND-002 + FIND-014 fix) ─
+def test_sentinel_removal_only_allowed_callers():
+    from lib.quota_tracker import is_allowed_sentinel_removal_call
+    assert is_allowed_sentinel_removal_call("bot2bot.apply_sibling_response") is True
+    assert is_allowed_sentinel_removal_call("mutation_gate.post_merge_hook") is True
+    assert is_allowed_sentinel_removal_call("random_caller") is False
+    assert is_allowed_sentinel_removal_call("proactive_loop.main") is False
 
 
 # ─── compute_budget formula sanity ────────────────────────────────

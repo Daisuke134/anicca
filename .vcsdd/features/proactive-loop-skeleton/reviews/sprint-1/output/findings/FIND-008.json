@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-008",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "high",
+  "description": "bot2bot.poll has THREE divergences from REQ-B2. (1) Spec: 'fetch open bot2bot-* issues' — implementation hardcodes label 'bot2bot-review-requested' and never queries other bot2bot-* kinds (opinion-requested, escalation, pr-mentioned). (2) Spec: 'authored by an anicca-bot account' — implementation never filters by author. (3) Spec accepts a slot argument but the implementation ignores it; issues from all slots flow through. PROP-B2 test test_poll_returns_empty_list_when_no_issues is tautological — '[]' input → [] output. The actual schema mapping (issue_url/kind/slot/body/ts_created vs spec {issue_url, comment_body, kind, ts}) also diverges (body vs comment_body; ts_created vs ts).",
+  "evidence": {
+    "filePath": "skills/_shared/lib/bot2bot.py",
+    "lineRange": "56-66",
+    "snippet": "def poll(*, slot: str) -> list[dict]:\n    \"\"\"REQ-B2: fetch open bot2bot-* issues; empty list if none. NEVER crashes.\"\"\"\n    out = _gh_call(\"issue\", \"list\", \"--label\", f\"bot2bot-review-requested\",\n                   \"--state\", \"open\", \"--json\", \"url,title,body,createdAt\")"
+  },
+  "routeToPhase": "2b"
+}

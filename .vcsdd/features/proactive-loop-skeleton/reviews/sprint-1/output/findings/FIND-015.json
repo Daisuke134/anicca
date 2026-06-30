@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-015",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "medium",
+  "description": "EDGE-S1..S7 coverage is incomplete. (S1) first-pass build_log.md auto-create: untested in any test module — no fixture covers absent build_log.md path. (S2) menu.json malformed → fallback: covered by test_load_menu_malformed_falls_back (OK). (S3) quota source unavailable + estimated-byte also fails → MINIMAL + status quota_unknown: no test. (S4) all categories blocked → bot2bot post: covered partially by write_unfixable_cascade_sink test but the gh-call failure leg is mocked away. (S5) bot2bot.poll returns 0 issues: covered. (S6) concurrent passes / flock: untested (flock would be in shell script). (S7) adversary cadence as menu item: not tested as integration; only the cadence gate primitive is tested.",
+  "evidence": {
+    "filePath": "skills/_shared/__tests__/test_proactive_loop.py",
+    "lineRange": "1-72",
+    "snippet": "(no EDGE-S1, EDGE-S3, EDGE-S6, EDGE-S7 fixtures present in any test module)"
+  },
+  "routeToPhase": "2a"
+}

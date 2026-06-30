@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "test_quality",
+  "category": "test_quality",
+  "severity": "high",
+  "description": "test_novelty_key_is_category_platform_tuple is a tautological test. It sets up history with 10 (scan-requests, coconala) entries, calls pick_next, and asserts only 'result is not None'. The assertion would pass even if the implementation ignored history entirely, or used a different key shape, or chose an arbitrary item. The trailing comment 'Verified by the API not accepting any other key shape' is aspirational — there is no actual check on key shape, and pick_next accepts any dict for history. PROP-novelty-key-aligned (required:true) is therefore unverified by this test.",
+  "evidence": {
+    "filePath": "skills/_shared/__tests__/test_menu.py",
+    "lineRange": "114-126",
+    "snippet": "history = [{\"category\": \"scan-requests\", \"platform\": \"coconala\"}] * 10\nresult = pick_next(menu=menu, log_tail=[], history=history, blockers=set(),\n                  now_ts=1782900000, budget=Budget.FULL)\nassert result is not None\n# The picker may apply novelty quota; key shape is (category, platform)\n# Verified by the API not accepting any other key shape"
+  },
+  "routeToPhase": "2a"
+}

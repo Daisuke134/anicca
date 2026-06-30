@@ -89,24 +89,34 @@ def classify_issue_from_snapshot(snap: HealthSnapshot) -> list[Issue]:
 
 
 def select_fix_recipe(issue: Issue) -> dict:
-    """PURE: maps an Issue to a recipe dict {action, params}. ZERO human-touch."""
+    """PURE: maps an Issue to a recipe dict {action, params}. ZERO human-touch.
+    All 10 issue kinds from PRIORITY_ORDER have a recipe (FIND-012 fix: all enumerated).
+    """
     kind = issue.kind
-    if kind in ("tmux_dead", "stale"):
-        return {"action": "restart", "params": {}}
-    if kind == "tmux_server_corrupted":
-        return {"action": "kill_server", "params": {}}
-    if kind == "trust_dialog":
-        return {"action": "send_keys", "params": {"keys": "1", "enter": True}}
-    if kind == "not_logged_in":
-        return {"action": "login", "params": {"flow": "camofox+gmail_otp"}}
-    if kind == "api_rate_limit":
-        return {"action": "send_keys", "params": {"keys": "/model haiku-4-5", "enter": True}}
-    if kind == "hook_missing":
-        return {"action": "npm_install", "params": {"flow": "allowlist_check"}}
-    if kind == "spawn_drift":
-        return {"action": "git_checkout", "params": {"target": "anicca-bot-signed"}}
-    if kind == "cron_missing":
-        return {"action": "send_keys", "params": {"flow": "reinject_startup"}}
-    if kind == "backoff":
-        return {"action": "escalate_via_bot2bot", "params": {"reason": "backoff-cap"}}
-    return {"action": "noop", "params": {}}
+    RECIPES = {
+        "tmux_dead": {"action": "restart", "params": {}},
+        "stale": {"action": "restart", "params": {}},
+        "tmux_server_corrupted": {"action": "kill_server", "params": {}},
+        "trust_dialog": {"action": "send_keys", "params": {"keys": "1", "enter": True}},
+        "not_logged_in": {"action": "login", "params": {"flow": "camofox+gmail_otp"}},
+        "api_rate_limit": {"action": "send_keys",
+                          "params": {"keys": "/model haiku-4-5", "enter": True}},
+        "hook_missing": {"action": "npm_install", "params": {"flow": "allowlist_check"}},
+        "spawn_drift": {"action": "git_checkout", "params": {"target": "anicca-bot-signed"}},
+        "cron_missing": {"action": "send_keys", "params": {"flow": "reinject_startup"}},
+        "backoff": {"action": "escalate_via_bot2bot", "params": {"reason": "backoff-cap"}},
+    }
+    return RECIPES.get(kind, {"action": "noop", "params": {}})
+
+
+def dispatch_highest_priority(snap: HealthSnapshot) -> dict | None:
+    """Production-side entry (FIND-007 fix): collect issues, resolve multi-match
+    by PRIORITY_ORDER, return the recipe for the highest-priority detected issue.
+    Returns None when no issue detected (= healthy).
+    """
+    issues = classify_issue_from_snapshot(snap)
+    if not issues:
+        return None
+    issues.sort(key=lambda i: PRIORITY_ORDER.index(i.kind)
+                if i.kind in PRIORITY_ORDER else 999)
+    return select_fix_recipe(issues[0])

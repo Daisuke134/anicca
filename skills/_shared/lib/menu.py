@@ -69,8 +69,12 @@ def _passes_blocker(item: dict, blockers: set) -> bool:
 
 
 def _is_novelty_eligible(item: dict, history: list) -> bool:
-    """Novelty key is the (category, platform) tuple from sprint-1's REQ-H1."""
-    key = (item.get("name"), item.get("platform"))
+    """Novelty key (category, platform). FIND-011 fix: read 'category' from BOTH
+    item (= the menu item's category field, NOT 'name') and history (= row's category).
+    Items without 'category' fall back to their 'name' as a category alias.
+    """
+    item_category = item.get("category", item.get("name"))
+    key = (item_category, item.get("platform"))
     seen = {(h.get("category"), h.get("platform")) for h in history if isinstance(h, dict)}
     return key not in seen
 
@@ -99,14 +103,28 @@ def pick_next(
     # Rank by ROI score
     candidates.sort(key=compute_roi_score, reverse=True)
 
-    # Novelty quota — if ratio of novelty-eligible picks is below threshold, promote one
+    # Novelty quota (FIND-003 fix: aligns to REQ-M3(v) verbatim — measures
+    # NOVELTY-PICK RATE over history, not uniqueness). Spec: at least 10% of picks
+    # across history must be (category, platform) tuples not previously present.
     novelty_ratio = float(menu.get("novelty_quota_ratio", 0.1))
     novel_items = [c for c in candidates if _is_novelty_eligible(c, history)]
-    if novel_items and len(history) >= 10:
-        # Check current novelty ratio
-        recent_picks = [(h.get("category"), h.get("platform")) for h in history[-10:]]
-        unique_recent = len(set(recent_picks))
-        if unique_recent / 10 < novelty_ratio:
+    if novel_items and len(history) >= int(1.0 / novelty_ratio):
+        # Count how many of the last 1/ratio picks were novel at the time of selection.
+        # We approximate via: of the last N picks (N = 1/ratio), how many introduced a
+        # new (category, platform) key. If < ratio, promote a novel item this pass.
+        window = int(1.0 / novelty_ratio)
+        recent = history[-window:]
+        seen_before_each: list[bool] = []
+        seen_set: set = set()
+        for r in history[: -window]:
+            seen_set.add((r.get("category"), r.get("platform")))
+        for r in recent:
+            key = (r.get("category"), r.get("platform"))
+            was_novel = key not in seen_set
+            seen_set.add(key)
+            seen_before_each.append(was_novel)
+        novel_count = sum(1 for x in seen_before_each if x)
+        if novel_count < int(novelty_ratio * window) + 1:
             return novel_items[0]
 
     return candidates[0]
