@@ -1,0 +1,28 @@
+{
+  "reviewType": "spec",
+  "feature": "earn-shared-skeleton",
+  "iteration": 3,
+  "mode": "lean",
+  "artifactsToReview": [
+    ".vcsdd/features/earn-shared-skeleton/specs/behavioral-spec.md",
+    ".vcsdd/features/earn-shared-skeleton/specs/verification-architecture.md"
+  ],
+  "previousIterationFindings": [
+    "iteration-2 OPEN: ROUND-2-001 (critical, REQ-G2 hash-replay loophole)",
+    "iteration-2 OPEN: ROUND-2-002 (high, spawn-surface immutability missing)"
+  ],
+  "reviewDimensions": [
+    "spec_fidelity",
+    "verification_readiness"
+  ],
+  "extraConstraints": [
+    "iteration 3 final approach for lean-mode 1c gate cap (≤ 3 iterations per VCSDD plugin doctrine).",
+    "Verify ROUND-2-001 is genuinely closed by the new 3-check pattern in REQ-G2(b): (1) endpoint allowlist, (2) hash-fidelity, (3) field-equality. The PROP-G2-runtime fixture corpus must mechanically include the original attack (forged receipt + benign endpoint hash).",
+    "Verify ROUND-2-002 is genuinely closed by REQ-E5: (a) spawn-surface.pinned.json mechanism, (b) per-script startup sha256 check + escalate on drift, (c) OS-level immutable flag (0444 + chflags uchg), (d) REQ-C3 adversary string-match gate. PROP-E5-spawn-pin must test all 4 layers.",
+    "Look for whether the THREE-LAYER defense in REQ-E5 has a meta-loophole (e.g. the pinned.json file itself isn't covered by the pin; the chflags uchg can be removed by the same user; the adversary grep can be defeated by base64 encoding the path).",
+    "Look for whether the 3-check pattern in REQ-G2 has a remaining gap (e.g. amount comparison precision on USDC; what if platform returns the receipt at a JSON path the spec doesn't anchor; what if platform API is itself compromised).",
+    "Anti-leniency: forbidden phrases unchanged. If both ROUND-2 findings are closed AND no new critical findings, emit PASS with positive evidence.",
+    "Cap: MAX 3 new findings if FAIL."
+  ],
+  "expectedOutputPath": ".vcsdd/features/earn-shared-skeleton/reviews/spec/iteration-3/output/"
+}

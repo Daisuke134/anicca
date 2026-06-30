@@ -1,0 +1,55 @@
+{
+  "sprintNumber": null,
+  "feature": "earn-shared-skeleton",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-01T00:00:00Z",
+  "iteration": 3,
+  "reviewContext": {
+    "reviewType": "spec",
+    "mode": "lean",
+    "phase": "1c",
+    "note": "ROUND-2-001 (REQ-G2 hash-replay): CLOSED. v3 introduces a 3-check pattern (endpoint allowlist + hash-fidelity + field-equality) at behavioral-spec.md:446-479. PROP-G2-runtime fixture corpus at verification-architecture.md:90 mechanically includes the exact attack from ROUND-2-001 (skill emits FAKE-123 receipt with /v1/me endpoint hash) and asserts rejection at the allowlist step; a second fixture covers the field-equality bypass with an allowlisted endpoint + forged receipt_id. The closure is genuine for the named attack vector. ROUND-2-002 (spawn-surface immutability): CLOSED IN INTENT BUT INTRODUCES NEW CRITICAL HOLE. v3 adds REQ-E5 with three layers (pinned-sha startup check, OS-level 0444+chflags uchg, REQ-C3 adversary string-match gate) at behavioral-spec.md:353-385, PROP-E5-spawn-pin at verification-architecture.md:85 tests all four fixture cases the spec promises. The original ROUND-2-002 'spawn surface lives in self-improving tree with no immutability' concern is addressed. HOWEVER, the trust anchor itself (spawn-surface.pinned.json) is NOT covered by any of the three layers, producing a self-reference loop captured in ROUND-3-001. And the third defense layer (string-match grep) is trivially encoding-bypassable, captured in ROUND-3-002. Additional medium gap on amount-precision uniformity for on-chain tiers captured in ROUND-3-003."
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["ROUND-3-001", "ROUND-3-003"],
+      "evidence": [
+        {
+          "type": "file",
+          "location": ".vcsdd/features/earn-shared-skeleton/specs/behavioral-spec.md:433-481",
+          "description": "REQ-G2 3-check pattern reviewed line-by-line; endpoint allowlist + hash-fidelity + field-equality checks are concrete and enforceable for JPY/Stripe-USDC tiers. ROUND-2-001 closure verified."
+        },
+        {
+          "type": "file",
+          "location": ".vcsdd/features/earn-shared-skeleton/specs/behavioral-spec.md:353-385",
+          "description": "REQ-E5 introduces spawn-surface.pinned.json as a new trust anchor without specifying any enforcement of its own immutability — this is the ROUND-3-001 critical gap."
+        }
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["ROUND-3-002"],
+      "evidence": [
+        {
+          "type": "file",
+          "location": ".vcsdd/features/earn-shared-skeleton/specs/verification-architecture.md:90",
+          "description": "PROP-G2-runtime fixture corpus reviewed; named ROUND-2-001 attack vectors are mechanically in the corpus and named failure modes are asserted. ROUND-2-002 fixture (PROP-E5-spawn-pin) covers four of the four cases the spec promises."
+        },
+        {
+          "type": "file",
+          "location": ".vcsdd/features/earn-shared-skeleton/specs/behavioral-spec.md:380-382",
+          "description": "Adversary 'grep' clause is too weak to constitute a verification obligation; PROP-E5 fixture (iv) only covers the literal-string case, leaving encoding-bypass attack vectors untested. This is the ROUND-3-002 high gap."
+        }
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 3,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}
