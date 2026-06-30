@@ -1,0 +1,20 @@
+{
+  "reviewType": "spec",
+  "featureName": "gig-run-shim",
+  "iteration": 1,
+  "mode": "lean",
+  "artifactsToReview": [
+    ".vcsdd/features/gig-run-shim/specs/behavioral-spec.md",
+    ".vcsdd/features/gig-run-shim/specs/verification-architecture.md",
+    "docs/superpowers/specs/2026-07-01-proactive-loop-architecture-and-cleanup-design.md",
+    "skills/earn/gig/run.sh"
+  ],
+  "reviewDimensions": ["spec_fidelity", "verification_readiness"],
+  "extraConstraints": [
+    "Parent architecture spec §6: INV-1 (no LAYER C kill), INV-4 (no double-write of core-status.json), INV-P1 (NEVER stop tmux). Verify REQ-I1..I3 honor all three.",
+    "Current run.sh at skills/earn/gig/run.sh:1-45 has zero writes under ~/loops/. Verify REQ-I1 mtime-snapshot assertion catches a regression if someone adds one.",
+    "REQ-S3 says BOTH disk AND launchctl rc=0. Verify EDGE-E5 (plist exists, not loaded) test is wired.",
+    "REQ-NFR-1 says <100ms — is this verifiable? Optional Tier 0 is fine; just confirm it's optional not required."
+  ],
+  "expectedOutputPath": ".vcsdd/features/gig-run-shim/reviews/spec/iteration-1/output/"
+}
