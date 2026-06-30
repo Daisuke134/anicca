@@ -1,0 +1,15 @@
+{
+  "findingId": "FIND-015",
+  "relatedTo": "FIND-002",
+  "dimension": "spec_fidelity",
+  "category": "security_surface",
+  "severity": "high",
+  "status": "new",
+  "description": "The round-2 fix replaced the unusable REQ-G2 gate with a dedicated settle-verify.py on-chain gate (good direction), but the Polymarket verification predicate is UNDER-BOUND and does not actually prove the incoming USDC is THIS market's settlement. REQ-T8(b) (spec.md:207) matches eth_getLogs(USDC_POLYGON, topics=[Transfer_topic0, null, our_wallet]) for any 'Transfer of the expected gross payout (... >= entry_cost) to our wallet' in blocks >= market_end_ts. The topic filter correctly constrains `to`=our_wallet (ERC20 Transfer topic[2] = indexed `to`), but it does NOT constrain `from` to the Polymarket settlement / CTF-exchange / NegRiskAdapter contract, and it does NOT bind the matched amount to the specific resolved market's payout (only '>= entry_cost'). Therefore ANY incoming USDC >= entry_cost after market_end_ts satisfies the gate: a sibling/child tithe (REQ-S8), a wallet top-up, a different market's payout, or an unrelated transfer would all be accepted as 'realized settlement' -> a misattributed / faked earn row. INV-7 ('realized PnL only') is not actually enforced. The Hyperliquid branch (spec.md:208) is weaker still: realizedPnl from clearinghouseState is a cumulative self-reported API field (not on-chain), the 'increased by the expected amount since position open' requires a before-snapshot the spec never specifies persisting, and SHA-256 of the agent's own API response is not tamper-evident. PROP-T26 (verification-architecture.md:89) would PASS on any matching incoming Transfer, so the property does not catch this.",
+  "evidence": {
+    "filePath": "specs/behavioral-spec.md",
+    "lineRange": "206-209",
+    "snippet": "eth_getLogs(chain=Polygon, address=USDC_POLYGON, topics=[ERC20_Transfer_topic0, null, checksummed_our_polygon_wallet]) ... confirm a Transfer of the expected gross payout (... >= entry_cost) to our wallet"
+  },
+  "routeToPhase": "1a"
+}

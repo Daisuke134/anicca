@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-018",
+  "dimension": "structural_integrity",
+  "category": "structural",
+  "severity": "medium",
+  "status": "new",
+  "description": "Group S (REQ-S1..S9) re-invents an entire spawn subsystem that already exists, tested, in the live runtime — duplicating logic instead of reusing it (the same anti-pattern FIND-013 flagged for hl.py). The existing skills/self/spawn/ ships a node:test-covered pure decision core (lib/spawn-decision.js decideSpawn, lib/child-spec.js nextChildId/buildChildSpec), an append-only colony ledger (lib/ledger.js readChildren/appendChild over state/children.jsonl), a durable fail-closed state-path resolver (lib/state-path.js, explicitly refusing /tmp), a wallet generator (scripts/gen-wallet.sh) with a parent-collision guard (run.sh:104), and a real provisioning + dashboard-registration flow. The spec instead introduces parallel, un-referenced constructs: spawnEligible (vs decideSpawn), spawn.py, spawn-log.jsonl (vs children.jsonl), a viem generatePrivateKey inline (vs gen-wallet.sh), and a brand-new spawn.lock. It never references skills/self/spawn/ at all. Worse, the existing skill spawns to an ISOLATED droplet (separate host -> child clawrouter binds its own :8402 cleanly), whereas REQ-S5 invents an infeasible SAME-HOST port-split model (see FIND-014). This is structural divergence/duplication that invites two drifting spawn code paths and discards a proven, isolation-correct design.",
+  "evidence": {
+    "filePath": "skills/self/spawn/run.sh",
+    "lineRange": "60-66,101-105,135-162",
+    "snippet": "decideSpawn({ balanceUsdc, children }) ... gen-wallet.sh > WALLET_TMP ... child wallet collided with parent — abort ... provision the droplet (DO) or lease (Akash). Real provider call required — no mock."
+  },
+  "routeToPhase": "1a"
+}

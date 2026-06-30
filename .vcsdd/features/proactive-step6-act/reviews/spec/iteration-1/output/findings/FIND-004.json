@@ -1,0 +1,16 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "verification_readiness",
+  "category": "spec_gap",
+  "severity": "medium",
+  "description": "PROP-I2-step6-writes-scoped maps to REQ-I2 ('All writes from STEP 6 SHALL be confined to <slot_dir>/tasks/ + <slot_dir>/build_log.md. Verified by mtime snapshot.'). But the existing dispatcher already writes <slot_dir>/state/core-status.json on every step transition (proactive-loop-dispatch.py:_write_status, called at lines 54, 62, 68, 77, 98, 116, 125, 152, 165). An mtime snapshot taken before/after STEP 6 will detect state/core-status.json mtime change as a violation when in fact it's a STEP-status write, not a STEP 6 ACT write. The proof obligation as stated will either (a) false-positive against the existing scaffold, or (b) be silently scoped to exclude state/, making the test tautological. Verification architecture must specify: 'mtime snapshot is taken between pick_next return and execute_recipe entry, scoped to <slot_dir>/ excluding state/core-status.json' OR redefine REQ-I2 as 'STEP 6 enqueue SHALL only create files under <slot_dir>/tasks/'. Without this, PROP-I2 is not unambiguously verifiable.",
+  "evidence": {
+    "filePath": ".vcsdd/features/proactive-step6-act/specs/verification-architecture.md",
+    "lineRange": "33",
+    "snippet": "PROP-I2-step6-writes-scoped | 1 | true | REQ-I2 mtime snapshot"
+  },
+  "secondaryEvidence": [
+    {"filePath": "skills/_shared/proactive-loop-dispatch.py", "lineRange": "40-44", "snippet": "_write_status writes <slot_dir>/state/core-status.json on every step transition"}
+  ],
+  "routeToPhase": "1b"
+}

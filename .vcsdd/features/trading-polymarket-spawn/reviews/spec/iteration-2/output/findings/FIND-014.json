@@ -1,0 +1,15 @@
+{
+  "findingId": "FIND-014",
+  "reopens": "FIND-004",
+  "dimension": "implementation_correctness",
+  "category": "verification_tool_mismatch",
+  "severity": "critical",
+  "status": "still-open",
+  "description": "REQ-S5 (spec.md:332-337) claims that launching the child daemon with COMPUTE_PROXY_PORT=$CHILD_PORT (a free port in 8403..8499) makes 'ensure_brain ... start its own ClawRouter on $CHILD_PORT using the child's wallet'. This is FALSE against the real runtime. anicca-daemon.sh::ensure_brain (line 55) launches the brain with `BLOCKRUN_WALLET_KEY=\"$KEY\" clawrouter` passing NO port argument, and the in-code comment (line 50) states verbatim that 'ClawRouter is :8402-only (no port split)'. COMPUTE_PROXY_PORT is honored only by the OLD proxy.mjs (proxy.mjs:13) — NOT by clawrouter, which the daemon actually launches. Net effect on a same-host child: (a) the child's clawrouter attempts to bind :8402, which the parent already holds -> EADDRINUSE -> child brain dies; (b) the daemon's readiness curl (line 56) and OPENAI_BASE_URL (line 69) point at $CHILD_PORT where nothing listens -> every child inference returns 502 -> the child can never run a THINK step. The round-2 edit fixed wallet resolution via HOME (genuinely works), but the 'child self-pays its own inference on its own port' half of FIND-004 is still infeasible. No REQ modifies ensure_brain to pass a port flag to clawrouter, and the spec does not verify clawrouter even accepts one. NOTE: the EXISTING skills/self/spawn/run.sh avoids this by provisioning a SEPARATE droplet (cloud-init boots clawrouter on its own :8402, no collision) — REQ-S5's same-host port-split model contradicts both that proven path and the daemon's :8402-only constraint.",
+  "evidence": {
+    "filePath": "runtime/anicca-daemon.sh",
+    "lineRange": "50-56,69",
+    "snippet": "# ClawRouter is :8402-only (no port split). ... BLOCKRUN_WALLET_KEY=\"$KEY\" clawrouter >>\"$LOGDIR/clawrouter.log\" 2>&1 &  ... for _ in $(seq 1 30); do curl -sf \"http://127.0.0.1:$PORT/v1/models\" ... export OPENAI_BASE_URL=\"http://127.0.0.1:$PORT/v1\""
+  },
+  "routeToPhase": "1a"
+}

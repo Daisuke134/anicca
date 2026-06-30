@@ -1,0 +1,16 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "medium",
+  "description": "REQ-T3 says sanitize 'name' through a '[a-z0-9_-]' filter dropping other chars. EDGE-E2 covers ONLY empty input ('name field is empty'). But common menu.json names contain Japanese (e.g. 'スキャン-coconala', from the gig menu domain) or uppercase ASCII. Post-sanitization, an all-non-matching name (e.g. 'スキャンリクエスト') becomes the empty string, which then collides with the EDGE-E2 'unnamed-<ts>' fallback semantically but NOT structurally — REQ-T3 says 'drop other chars' producing '', not invoke E2 fallback. Spec must define: (a) does the sanitizer also lowercase ASCII (current regex implies yes by exclusion but unstated), and (b) what is the filename when sanitized output is empty? If 'unnamed-<ts>', state it; if empty-string is acceptable producing '<ts>-.json', state that. Without this an implementation choice is forced on the builder and adversary cannot test deterministically.",
+  "evidence": {
+    "filePath": ".vcsdd/features/proactive-step6-act/specs/behavioral-spec.md",
+    "lineRange": "53-55",
+    "snippet": "REQ-T3: THE filename <sanitized_name> SHALL be the menu item's `name` field passed through a `[a-z0-9_-]` sanitizer (= drop other chars)."
+  },
+  "secondaryEvidence": [
+    {"filePath": ".vcsdd/features/proactive-step6-act/specs/behavioral-spec.md", "lineRange": "94", "snippet": "EDGE-E2 | menu item name is empty | enqueue with unnamed-<ts> filename"}
+  ],
+  "routeToPhase": "1a"
+}

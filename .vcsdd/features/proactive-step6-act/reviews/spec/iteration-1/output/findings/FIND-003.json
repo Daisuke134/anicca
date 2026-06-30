@@ -1,0 +1,16 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "high",
+  "description": "REQ-T4 + EDGE-E3 require idempotent enqueue: 'SHALL NOT enqueue if a task with the SAME pass_id already exists'. But the filename pattern from REQ-T3 is '<unix_ts>-<sanitized_name>.json' and contains NO pass_id. Detecting duplication by pass_id therefore requires either (a) opening every existing tasks/*.json and parsing the descriptor field, or (b) encoding pass_id into the filename. The spec specifies neither. Worse, pass_id is generated as 'p-<int(time.time())>' (proactive-loop-dispatch.py:51) — unique per tick — so the same-pass_id collision can only occur on retry within a single tick (e.g. cron overlap), but the existing fcntl LOCK_EX guard (_acquire_or_exit, line 23-37) already prevents overlapping ticks. So the dedup contract as written is either (i) untestable without an implementation choice the spec defers, or (ii) provably never triggers under the current fcntl guard. Pick one: (1) define the filename to contain pass_id (e.g. '<pass_id>-<sanitized_name>.json') so dedup is a single stat() call, OR (2) drop REQ-T4 / EDGE-E3 as the fcntl guard already provides the invariant, OR (3) name the real failure mode you want to defend against (e.g. STEP 5 picks the same item twice in one tick — but pick_next is called once).",
+  "evidence": {
+    "filePath": ".vcsdd/features/proactive-step6-act/specs/behavioral-spec.md",
+    "lineRange": "53-58",
+    "snippet": "REQ-T3: filename SHALL be <unix_ts>-<sanitized_name> ... REQ-T4: SHALL NOT enqueue if a task with the SAME pass_id already exists"
+  },
+  "secondaryEvidence": [
+    {"filePath": "skills/_shared/proactive-loop-dispatch.py", "lineRange": "23-51", "snippet": "fcntl.LOCK_EX | fcntl.LOCK_NB on .proactive.lock; pass_id = f'p-{int(time.time())}'"}
+  ],
+  "routeToPhase": "1a"
+}

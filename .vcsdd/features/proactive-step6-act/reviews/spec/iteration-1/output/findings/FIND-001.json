@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "REQ-R1 invokes <slot>-cli.sh --restart whenever recipe.action == 'restart'. But health_check_v2.select_fix_recipe maps BOTH issue kinds 'tmux_dead' AND 'stale' to {action: 'restart'} (skills/_shared/lib/health_check_v2.py:97-98). 'stale' fires whenever (now_ts - last_pass_mtime) >= _STALE_SECONDS even though the tmux core is ALIVE. Under live #27 (gig migration is now live, hot path is healthy tmux + noop), this means the very first time the dispatcher sees a stale snapshot it will subprocess.run gig-cli.sh --restart, which executes 'tmux kill-session -t gig-core' (gig-cli.sh:27) on the running INNER worker. This DIRECTLY violates parent INV-P1 ('proactive-loop NEVER stops LAYER C <slot>-cli.sh tmux sessions during normal operation') and the §8 Open-Question resolution ('proactive-loop ever invoke <slot>-cli.sh to restart? YES via STEP 3 dispatch_highest_priority({tmux_dead: true})' — note: tmux_dead ONLY, not stale). Spec must either (a) gate restart on recipe.params or issue.kind == 'tmux_dead' explicitly, or (b) split 'stale' into a non-restart recipe. As written REQ-R1 + the existing recipe map is an INV-P1 violation on the hot path.",
+  "evidence": {
+    "filePath": ".vcsdd/features/proactive-step6-act/specs/behavioral-spec.md",
+    "lineRange": "65-67",
+    "snippet": "REQ-R1: WHEN STEP 3 computes recipe.action == 'restart', THE DISPATCHER SHALL invoke the per-slot restart command. For slot 'gig' that command is `bash <ANICCA_HOME>/skills/earn/gig/gig-cli.sh --restart`"
+  },
+  "secondaryEvidence": [
+    {"filePath": "skills/_shared/lib/health_check_v2.py", "lineRange": "97-98", "snippet": "'tmux_dead': {'action': 'restart', 'params': {}}, 'stale': {'action': 'restart', 'params': {}},"},
+    {"filePath": "skills/earn/gig/gig-cli.sh", "lineRange": "27", "snippet": "--restart) tmux -S \"$SOCK\" kill-session -t \"$SESSION\" 2>/dev/null || true ;;"},
+    {"filePath": "docs/superpowers/specs/2026-07-01-proactive-loop-architecture-and-cleanup-design.md", "lineRange": "182", "snippet": "INV-P1: proactive-loop NEVER stops LAYER C <slot>-cli.sh tmux sessions during normal operation"}
+  ],
+  "routeToPhase": "1a"
+}

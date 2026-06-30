@@ -25,12 +25,13 @@ generated_at: 2026-07-01
 | PROP-T3-filename-sanitized | 1 | true | REQ-T3 |
 | PROP-T4-idempotent-pass-id | 1 | true | REQ-T4 |
 | PROP-T5-build-log-outcome | 1 | true | REQ-T5 (= "enqueued:<filename>") |
-| PROP-R1-restart-invokes-cmd | 1 | true | REQ-R1 (= subprocess called with the resolved cmd) |
+| PROP-R1-restart-invokes-cmd | 1 | true | REQ-R1 (= subprocess called with the resolved cmd) — assert ONLY when Issue.kind == `tmux_dead` |
+| PROP-R1a-stale-suppressed | 1 | true | REQ-R1a (= Issue.kind == `stale` + action == `restart` → log + NO subprocess; parent INV-P1) |
 | PROP-R2-restart-failures-logged | 1 | true | REQ-R2 (= rc!=0 + timeout both log + continue) |
-| PROP-R3-other-actions-scaffold-only | 1 | true | REQ-R3, EDGE-E6 (= noop/send_keys/escalate do NOT exec) |
+| PROP-R3-other-actions-scaffold-only | 1 | true | REQ-R3, EDGE-E6 — parametrized over the full 7-action set {kill_server, send_keys, login, npm_install, git_checkout, escalate_via_bot2bot, noop} + unknown-action catch-all |
 | PROP-R4-cmd-table-lookup | 1 | true | REQ-R4, EDGE-E7 |
 | PROP-I1-no-tmux-kill | 1 | true | REQ-I1 static grep |
-| PROP-I2-step6-writes-scoped | 1 | true | REQ-I2 mtime snapshot |
+| PROP-I2-step6-writes-scoped | 1 | true | REQ-I2 mtime snapshot scoped to <slot_dir>/tasks/* + build_log.md ONLY (NOT state/, which the dispatcher legitimately writes every step) |
 | PROP-I3-no-human-touch | 1 | true | REQ-I3 grep |
 | PROP-E1-tasks-dir-autocreate | 1 | true | EDGE-E1 |
 | PROP-E3-dup-pass-id-skipped | 1 | true | EDGE-E3 |
