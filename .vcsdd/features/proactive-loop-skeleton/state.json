@@ -1,0 +1,31 @@
+{
+  "featureName": "proactive-loop-skeleton",
+  "mode": "lean",
+  "language": "python",
+  "currentPhase": "1b",
+  "phaseHistory": [
+    {
+      "from": "init",
+      "to": "1a",
+      "timestamp": "2026-06-30T20:33:28.193Z"
+    },
+    {
+      "from": "1a",
+      "to": "1b",
+      "timestamp": "2026-06-30T20:33:28.197Z"
+    }
+  ],
+  "iterations": {
+    "1a": 1,
+    "1b": 1
+  },
+  "proofObligations": [],
+  "traceability": {
+    "epicId": "VCSDD-proactive-loop-skeleton-1782851429508",
+    "beads": []
+  },
+  "gates": {},
+  "sprintCount": 0,
+  "createdAt": "2026-06-30T20:30:29.507Z",
+  "updatedAt": "2026-06-30T20:33:28.197Z"
+}
