@@ -83,8 +83,17 @@ for it in items:
     try: d=json.loads(cj) if cj.strip() else {}
     except Exception: d={}
     if d.get("state")!="OPEN": continue
-    body=" ".join(c.get("body","") for c in d.get("comments",[]))
+    comments=d.get("comments",[])
+    body=" ".join(c.get("body","") for c in comments)
     if re.search(r'removing the bounty|bounty.*(removed|withdrawn|cancell?ed|no longer)|no bounty', body, re.I):
+        continue
+    # keystatic#340 lesson: Algora marks a WITHDRAWN bounty by rendering the bot's bounty comment
+    # in ~~strikethrough~~. Skip if any algora-pbc comment has its bounty line struck through.
+    algora=[c for c in comments if "algora" in (c.get("author",{}) or {}).get("login","").lower()]
+    if any(re.search(r'~~.{0,40}bounty', c.get("body",""), re.I|re.S) for c in algora):
+        continue
+    # require an ACTIVE (non-struck) algora bounty comment to exist at all
+    if not any(re.search(r'\bbounty\b', c.get("body","")) and not c.get("body","").lstrip().startswith("~~") for c in algora):
         continue
     # (b) existing open PR referencing the issue?
     pl=sh(["gh","pr","list","-R",repo,"--state","open","--search",f"#{num} in:body","--json","number"])
