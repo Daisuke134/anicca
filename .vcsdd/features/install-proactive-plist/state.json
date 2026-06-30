@@ -1,0 +1,47 @@
+{
+  "featureName": "install-proactive-plist",
+  "mode": "lean",
+  "language": "python",
+  "currentPhase": "1b",
+  "phaseHistory": [
+    {
+      "from": "init",
+      "to": "1a",
+      "timestamp": "2026-06-30T21:58:49.404Z"
+    },
+    {
+      "from": "1a",
+      "to": "1b",
+      "timestamp": "2026-06-30T21:58:49.407Z"
+    }
+  ],
+  "iterations": {
+    "1a": 1,
+    "1b": 1
+  },
+  "proofObligations": [],
+  "traceability": {
+    "epicId": "VCSDD-install-proactive-plist-1782856670849",
+    "beads": []
+  },
+  "gates": {
+    "1c": {
+      "verdict": "PASS",
+      "timestamp": "2026-06-30T22:03:39.210Z",
+      "reviewedBy": "adversary",
+      "details": {
+        "iterations": 2,
+        "mode": "lean",
+        "findingDiminishment": [
+          7,
+          0
+        ]
+      },
+      "adversaryVerdict": "PASS",
+      "adversaryReviewedAt": "2026-06-30T22:03:39.210Z"
+    }
+  },
+  "sprintCount": 0,
+  "createdAt": "2026-06-30T21:57:50.848Z",
+  "updatedAt": "2026-06-30T22:03:39.211Z"
+}

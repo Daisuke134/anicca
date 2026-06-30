@@ -1,0 +1,19 @@
+{
+  "reviewType": "spec",
+  "featureName": "install-proactive-plist",
+  "iteration": 1,
+  "mode": "lean",
+  "artifactsToReview": [
+    ".vcsdd/features/install-proactive-plist/specs/behavioral-spec.md",
+    ".vcsdd/features/install-proactive-plist/specs/verification-architecture.md",
+    "docs/superpowers/specs/2026-07-01-proactive-loop-architecture-and-cleanup-design.md"
+  ],
+  "reviewDimensions": ["spec_fidelity", "verification_readiness"],
+  "extraConstraints": [
+    "Parent spec §3 has the canonical plist template — verify behavioral-spec REQ-A1..A3 cite all fields (Label, ProgramArguments, StartInterval=300, RunAtLoad=false, StandardOutPath, StandardErrorPath).",
+    "REQ-D1 forbids human-touch surfaces — verify no test or fixture references osascript/Telegram/Slack/Touch-ID/sudo.",
+    "Architecture spec §6 has 6 anti-collision INVs — verify REQ-E1 (no touch core-healthcheck) and REQ-E2 (single LAYER A plist) align with INV-6.",
+    "Verify EDGE-E4 (slot injection guard) is concrete: a slot like 'gig; rm -rf /' must be REJECTED before any disk/launchctl side-effect."
+  ],
+  "expectedOutputPath": ".vcsdd/features/install-proactive-plist/reviews/spec/iteration-1/output/"
+}

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-007",
+  "dimension": "verification_readiness",
+  "category": "purity_boundary",
+  "severity": "medium",
+  "description": "verification-architecture.md:14-16 declares plist_digest/render_plist/validate_slot as PURE 'shell-internal funcs' but then states (line 19-20) that for testability these are extracted into a Python companion module lib/plist_render.py. The architecture has two contradictory implementations of the same pure functions: the bash version inside install-proactive-plist.sh AND the Python version in lib/plist_render.py. PROP-A1-render-template (line 25) does not say which one is being tested. If only the Python version is unit-tested, the bash version (= what actually runs in production) is unverified — a divergence between the two would silently ship. Spec must either (a) make the bash script call the Python module (= single source of truth for pure logic), or (b) declare both implementations identical-by-construction and add a PROP that diff's their outputs over a fuzz corpus. As written, lean-mode required:true set leaves a proof gap on the production code path.",
+  "evidence": {
+    "filePath": ".vcsdd/features/install-proactive-plist/specs/verification-architecture.md",
+    "lineRange": "11-20",
+    "snippet": "PURE (shell-internal funcs) | validate_slot(slot), render_plist(slot, abs_path), plist_digest(content) ... For testability the PURE helpers are extracted into a small companion Python module lib/plist_render.py so they can be unit-tested without shelling out."
+  },
+  "routeToPhase": "1b"
+}

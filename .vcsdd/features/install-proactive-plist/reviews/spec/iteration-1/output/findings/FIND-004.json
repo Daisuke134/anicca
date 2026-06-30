@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "spec_fidelity",
+  "category": "security_surface",
+  "severity": "high",
+  "description": "REQ-A4 + EDGE-E4 (behavioral-spec.md:37-39, 83) define an injection guard with regex '[a-z0-9_-]' but the spec does NOT require ORDER OF OPERATIONS: validation MUST happen BEFORE any disk write, mkdir, file read of an existing plist, or launchctl invocation. Without that ordering invariant, an implementer could (a) compute target path = '~/Library/LaunchAgents/ai.anicca.gig; rm -rf /-proactive.plist', (b) mkdir -p the parent (no-op), (c) THEN validate and bail — but the per-slot loop file path may already have been touched (e.g. existing-plist hash check, mkdir of log dir derived from slot, plutil -lint of an unrelated path). The spec must add an explicit invariant: 'validate_slot() runs as the FIRST executable line after argument parsing; no path interpolation, no filesystem syscall, no subprocess, no launchctl call may reference the slot value before validation passes.' Otherwise EDGE-E4 is testable only post-hoc and the security boundary is wishful.",
+  "evidence": {
+    "filePath": ".vcsdd/features/install-proactive-plist/specs/behavioral-spec.md",
+    "lineRange": "37-39",
+    "snippet": "WHEN the slot argument contains characters outside [a-z0-9_-], THE SCRIPT SHALL exit non-zero with a stderr error and create no plist"
+  },
+  "routeToPhase": "1a"
+}
