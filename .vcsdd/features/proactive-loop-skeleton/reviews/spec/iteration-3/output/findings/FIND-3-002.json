@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-3-002",
+  "dimension": "verification_readiness",
+  "category": "requirement_mismatch",
+  "severity": "high",
+  "description": "`pick_next` has FOUR different signatures across the v3 spec, making the required-true PROPs untestable as a coherent contract. (1) REQ-M3 line 307: `menu.pick_next(menu, log_tail, history, now_ts)`; (2) Purity table line 21: `pick_next(menu, log_tail, history, blockers)` with `set[str]` typing; (3) PROP-P6-menu-pick line 63: `pick_next(menu, log_tail, history, blockers)`; (4) PROP-P7-pivot line 78: `pick_next(menu, blocked_set)` (2-arg). The cadence gate (FIND-2-005 fix) added to REQ-M3(ii) requires `now_ts` to compare `last_fired_ts + min_cadence_seconds <= now_ts`, but the Purity table signature has no `now_ts` parameter, so the pure function literally cannot perform the cadence comparison without reading a clock (= I/O leak into the pure layer, violating Purity Boundary). Either pick_next must take BOTH `blockers: set[str]` AND `now_ts: int` AND the signature must be identical in all 4 locations, or the cadence gate must be promoted to the I/O layer (e.g. lib/menu.py:execute_pick at line 51 already lives in the I/O column). Without one consistent signature, PROP-P6 / PROP-P7 / PROP-cadence / PROP-M3-pick-next are testing different contracts.",
+  "evidence": {
+    "filePath": ".vcsdd/features/proactive-loop-skeleton/specs/verification-architecture.md",
+    "lineRange": "21,63,78,91",
+    "snippet": "L21: pick_next(menu, log_tail, history, blockers) | menu | dict, list, list, set[str] vs L78: pick_next(menu, blocked_set) vs behavioral-spec.md L307: pick_next(menu, log_tail, history, now_ts)"
+  },
+  "routeToPhase": "1b"
+}

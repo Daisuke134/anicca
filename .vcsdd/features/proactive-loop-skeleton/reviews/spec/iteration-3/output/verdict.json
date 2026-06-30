@@ -1,0 +1,54 @@
+{
+  "sprintNumber": 2,
+  "feature": "proactive-loop-skeleton",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-01T12:00:00Z",
+  "iteration": 3,
+  "reviewContext": {
+    "reviewType": "spec",
+    "mode": "lean",
+    "iterationCapNote": "lean-mode 1c cap (iter 3 of 3)"
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-3-001"],
+      "evidence": [
+        {"type": "file", "location": "specs/behavioral-spec.md", "description": "REQ-P11 condition count now matches 3 (a/b/c) per FIND-2-004 closure; verified L110-120"},
+        {"type": "file", "location": "specs/behavioral-spec.md", "description": "REQ-Q3 sub-levels d/e added at L222-226 closing FIND-2-003 at the REQ level"},
+        {"type": "file", "location": "specs/behavioral-spec.md", "description": "REQ-M3(ii) cadence gate added at L311-316 closing FIND-2-005 at the REQ level"},
+        {"type": "file", "location": "specs/behavioral-spec.md", "description": "EDGE-S4 + REQ-P11(c) durable sink contract closes FIND-018 at the REQ level"}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-3-002"],
+      "evidence": [
+        {"type": "file", "location": "specs/verification-architecture.md", "description": "PROP-Q3d-ratio-escalation + PROP-Q3e-mother-queue added at L85-86, closing FIND-2-003 verification gap"},
+        {"type": "file", "location": "specs/verification-architecture.md", "description": "PROP-H3-dispatch language at L81 now reads 'multi-match resolves to HIGHEST-PRIORITY' aligning with REQ-H3, closing FIND-2-002"},
+        {"type": "file", "location": "specs/verification-architecture.md", "description": "PROP-P11-skip at L79 now enumerates EXACTLY 3 conditions matching REQ-P11, closing FIND-2-004"},
+        {"type": "file", "location": "specs/verification-architecture.md", "description": "PROP-Q6-sentinel-rm at L88 specifies finite 2-site allowlist with AST+grep mechanism, closing FIND-009"},
+        {"type": "file", "location": "specs/verification-architecture.md", "description": "PROP-blocker-gate at L89 defines is_blocker semantics + per-known-name fixtures, closing FIND-015"},
+        {"type": "file", "location": "specs/verification-architecture.md", "description": "PROP-EDGE-S4-sink at L90 defines durable .unfixable.jsonl contract, closing FIND-018"},
+        {"type": "file", "location": "specs/verification-architecture.md", "description": "PROP-cadence at L91 added for FIND-2-005 cadence gate verification"}
+      ]
+    }
+  ],
+  "iter2ClosureStatus": {
+    "FIND-2-001": "PARTIAL — REQ-Q2 fixed; REQ-P1 not updated (see FIND-3-001)",
+    "FIND-2-002": "CLOSED — PROP-H3 language now aligned to highest-priority dispatch",
+    "FIND-2-003": "CLOSED — PROP-Q3d + PROP-Q3e added with concrete mechanics",
+    "FIND-2-004": "CLOSED — PROP-P11 now says EXACTLY 3 conditions matching REQ-P11",
+    "FIND-2-005": "PARTIAL — REQ-M3(ii) + PROP-cadence added but pick_next signature inconsistent across spec (see FIND-3-002)",
+    "FIND-009": "CLOSED — PROP-Q6-sentinel-rm specifies finite 2-call-site allowlist",
+    "FIND-015": "CLOSED — PROP-blocker-gate defines is_blocker semantics + fixtures",
+    "FIND-018": "CLOSED — REQ-P11(c) + EDGE-S4 + PROP-EDGE-S4-sink define durable .unfixable.jsonl sink"
+  },
+  "convergenceSignals": {
+    "findingCount": 2,
+    "allCriteriaEvaluated": true,
+    "duplicateFindings": []
+  }
+}

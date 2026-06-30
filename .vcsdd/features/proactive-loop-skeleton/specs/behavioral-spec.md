@@ -64,8 +64,11 @@ never stops the loop, only switches lane.
   through steps 1-7 AND write `{"status": "idle", "ts": <epoch>}` at end of pass.
 
 - **REQ-P1** AS STEP 0.5, THE SYSTEM SHALL invoke `quota-tracker.py` to compute the
-  per-pass budget: `FULL` (remaining% per pass > 3%) / `MEDIUM` (1-3%) / `LIGHT` (< 1%)
-  / `MINIMAL` (0% remaining). The budget gates the depth of subsequent steps.
+  per-pass budget. The quantization is canonical and SHALL appear EXACTLY ONCE in this
+  spec; per REQ-Q2 (FIND-3-001 fix: REQ-P1 defers to REQ-Q2 verbatim): `FULL` iff
+  `b >= 3.0`; `MEDIUM` iff `1.0 <= b < 3.0`; `LIGHT` iff `0.1 <= b < 1.0`; `MINIMAL` iff
+  `b < 0.1`. All ranges are inclusive-lower, exclusive-upper. The budget gates the
+  depth of subsequent steps.
 
 - **REQ-P2** AS STEP 1, THE SYSTEM SHALL process any files in `~/loops/<slot>/tasks/`
   (= owner-injected tasks; in our case = test fixtures + cross-instance task hand-off).
@@ -304,18 +307,30 @@ zero-side-channel (= REQ-J8 compliant).
   }
   ```
 
-- **REQ-M3** `menu.pick_next(menu, log_tail, history, now_ts)` SHALL return the
-  unblocked item with highest `roi_estimate × probability_of_landing`, applying:
-  (i) the novelty quota (sprint-1 REQ-H1 inherited verbatim) — at least 10% of picks
-  must be `(category, platform)` tuples not present in `history` (FIND-005 fix);
-  (ii) the cadence gate (FIND-2-005 fix): each menu item MAY declare
-  `min_cadence_seconds` in menu.json; items whose `last_fired_ts` (= read from
-  build_log.md or a sidecar cadence.json) is within `min_cadence_seconds` of
-  `now_ts` are excluded from selection — this lets "adversary-daily" be a regular
-  menu item with `min_cadence_seconds: 86400` (= once per 24h) instead of a separate
-  launchd plist;
-  (iii) the budget gate — items whose `required_budget` exceeds the current
-  budget (REQ-Q2) are excluded.
+- **REQ-M3** Canonical signature (FIND-3-002 fix: SINGLE shape used everywhere —
+  Purity table, PROP-P6, PROP-P7, PROP-cadence, PROP-blocker-gate all reference this
+  exact shape):
+
+  `pick_next(menu: dict, log_tail: list, history: list, blockers: set[str],
+             now_ts: int, budget: BudgetEnum) -> dict | None`
+
+  Returns the unblocked item with highest `roi_estimate × probability_of_landing`,
+  applying IN ORDER:
+  (i) the cadence gate — items whose `min_cadence_seconds` is set AND whose
+      `last_fired_ts` (read from log_tail or sidecar cadence.json) satisfies
+      `now_ts − last_fired_ts < min_cadence_seconds` are excluded;
+  (ii) the budget gate — items whose `required_budget` (= one of FULL/MEDIUM/LIGHT)
+       exceeds the current `budget` are excluded;
+  (iii) the blocker gate — items whose `blocker_check` name is in `blockers` (= the
+        set of currently-failing blocker predicates) are excluded;
+  (iv) ranking — among remaining items, pick argmax(roi_estimate × probability_of_landing);
+  (v) the novelty quota (sprint-1 REQ-H1 inherited verbatim) — at least 10% of picks
+      across history must be `(category, platform)` tuples not present in `history`
+      (FIND-005 fix); the quota is enforced by occasionally promoting a novelty-eligible
+      item over the strict argmax pick.
+
+  Returns `None` iff every menu item is excluded by (i)-(iii) — proactive-loop's
+  EDGE-S4 sink handler then fires.
 
 - **REQ-M4** Sprint-1's existing jsonl streams (`lessons.jsonl`, `earnings.jsonl`,
   `applied.jsonl`, `roi.jsonl`) SHALL remain as immutable audit logs. `build_log.md`
