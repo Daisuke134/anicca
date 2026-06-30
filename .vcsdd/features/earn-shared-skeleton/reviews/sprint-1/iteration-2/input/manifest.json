@@ -1,0 +1,85 @@
+{
+  "reviewType": "implementation",
+  "featureName": "earn-shared-skeleton",
+  "sprintNumber": 1,
+  "iteration": 2,
+  "mode": "lean",
+  "artifactsToReview": {
+    "spec": [
+      ".vcsdd/features/earn-shared-skeleton/specs/behavioral-spec.md",
+      ".vcsdd/features/earn-shared-skeleton/specs/verification-architecture.md"
+    ],
+    "source_python": [
+      "skills/_shared/lib/_common.py",
+      "skills/_shared/lib/healthcheck.py",
+      "skills/_shared/lib/roi.py",
+      "skills/_shared/lib/lessons.py",
+      "skills/_shared/lib/escalate.py",
+      "skills/_shared/lib/manifest.py",
+      "skills/_shared/lib/events.py",
+      "skills/_shared/lib/mutation_gate.py",
+      "skills/_shared/lib/spawn_pin.py",
+      "skills/_shared/lib/proposal_loop.py",
+      "skills/_shared/lib/deliverable_loop.py",
+      "skills/_shared/lib/group_j.py",
+      "skills/_shared/loop-improve.py"
+    ],
+    "source_shell": [
+      "skills/_shared/self-recover.sh",
+      "skills/_shared/loop-healthcheck.sh",
+      "skills/_shared/loop-roi.sh",
+      "skills/_shared/adversary-daily.sh",
+      "skills/_shared/cross-learn-read.sh",
+      "skills/_shared/cross-learn-share.sh",
+      "skills/_shared/loop-scale.sh",
+      "skills/_shared/loop-propose.sh"
+    ],
+    "trust_anchors": [
+      "skills/_shared/anicca-bot.pub",
+      "skills/_shared/hook-modules-allowlist.txt",
+      "skills/_shared/trusted-authors.json",
+      "skills/_shared/payout-endpoint-allowlist.json"
+    ],
+    "tests": ["skills/_shared/__tests__/*.py"],
+    "evidence": [
+      ".vcsdd/features/earn-shared-skeleton/evidence/sprint-1-red-phase.log",
+      ".vcsdd/features/earn-shared-skeleton/evidence/sprint-1-green-phase.log"
+    ],
+    "iteration_1_verdict": ".vcsdd/features/earn-shared-skeleton/reviews/sprint-1/output/verdict.json",
+    "iteration_1_findings": ".vcsdd/features/earn-shared-skeleton/reviews/sprint-1/output/findings/"
+  },
+  "reviewDimensions": [
+    "spec_fidelity",
+    "edge_case_coverage",
+    "implementation_correctness",
+    "structural_integrity",
+    "verification_readiness"
+  ],
+  "previousIterationFindings": [
+    "FIND-001 (critical, requirement_mismatch): 9 shell scripts + trust anchors missing — ADDRESSED via 9 .sh scripts + 4 seed files",
+    "FIND-002 (critical, requirement_mismatch): Group J handlers are stubs — SCOPE-DEFERRED to sprint-2 (documented in behavioral-spec.md Sprint-1/Sprint-2 Scope Cut section)",
+    "FIND-003 (critical, requirement_mismatch): Shell + JS AST analyzer missing — SCOPE-DEFERRED to sprint-2",
+    "FIND-004 (high, test_quality): proposal_loop._revise_draft no-op — partial fix (sprint-2 wires LLM-based revise)",
+    "FIND-005 (high, test_quality): deliverable_loop never revises artifact — partial fix (sprint-2 wires LLM-based revise)",
+    "FIND-006 (high, requirement_mismatch): Pure layer missing symbols — SCOPE-DEFERRED to sprint-2",
+    "FIND-007 (high, requirement_mismatch): REQ-B6 self-recover dispatch missing — partial: loop-roi.sh scaffold; sprint-2 wires the dispatch in lib/roi.py compute_pass_row",
+    "FIND-008 (high, test_coverage): mutation_gate empty-verdict-file edge — needs test (sprint-2)",
+    "FIND-009 (high, requirement_mismatch): events._amount_equal dead branch — FIXED",
+    "FIND-010 (high, spec_gap): PROP-E5 ZERO-call assertions — needs test additions (sprint-2)",
+    "FIND-011 (high, requirement_mismatch): needs-login + oauth-extract-failed both → j1 — INTENTIONAL per REQ-A3(d) failure leg",
+    "FIND-012 (medium, test_quality): tautological killswitch test — needs strengthening (sprint-2)",
+    "FIND-013 (medium, requirement_mismatch): payout_id docstring — FIXED",
+    "FIND-014 (medium, test_coverage): MOTHER queue read-only path test — needs test (sprint-2)",
+    "FIND-015 (high, verification_tool_mismatch): real ed25519 — SCOPE-DEFERRED to sprint-2",
+    "FIND-016 (medium, spec_gap): mutation_gate not using _common — FIXED",
+    "FIND-017 (medium, test_coverage): missing PROP tests — SCOPE-DEFERRED to sprint-2",
+    "FIND-018 (medium, security_surface): escalation regex over-greedy — FIXED"
+  ],
+  "extraConstraints": [
+    "iteration 2 evaluates whether the sprint-1/sprint-2 scope cut is HONEST: are the scope-deferred items genuinely documented as next-sprint commitments with concrete acceptance criteria, OR is this a polite excuse for incomplete work?",
+    "The 9 new shell scripts must be reviewed for: do they correctly invoke the lib/*.py helpers? Do they introduce ANY human-touch surface that REQ-J8 forbids (osascript, Telegram POST, gh issue label=escalation)?",
+    "The 4 trust-anchor seed files must be reviewed for: does anicca-bot.pub being a placeholder string break PROP-E5? Does payout-endpoint-allowlist.json match the schema verify_earn_event expects?",
+    "Verify 142/142 tests still pass after fixes (regression baseline)."
+  ],
+  "expectedOutputPath": ".vcsdd/features/earn-shared-skeleton/reviews/sprint-1/iteration-2/output/"
+}

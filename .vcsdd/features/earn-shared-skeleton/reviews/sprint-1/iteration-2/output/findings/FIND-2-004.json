@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-2-004",
+  "dimension": "edge_case_coverage",
+  "category": "spec_gap",
+  "severity": "high",
+  "description": "The Sprint-1/Sprint-2 Scope Cut section (behavioral-spec.md lines 933-957) enumerates 5 honestly scope-deferred findings: FIND-002, FIND-003, FIND-006, FIND-015, FIND-017. The iteration-2 manifest (previousIterationFindings) declares EIGHT additional iter-1 findings as `partial fix` or `needs test (sprint-2)`: FIND-004 (proposal_loop revise no-op), FIND-005 (deliverable_loop revise no-op), FIND-007 (REQ-B6 token-source-degraded ratio monitor + dispatch), FIND-008 (mutation_gate empty-verdict edge), FIND-010 (PROP-E5 ZERO-call meta-assertions), FIND-012 (tautological killswitch test), FIND-014 (MOTHER queue read-only path test), FIND-018 (escalation regex list-literal bypass). NONE of these 8 appear in the scope-cut table. The spec is the authoritative scope-defer contract; manifests are not durable. By the lean-mode rule that scope-defer is acceptable ONLY when the deferred items carry concrete sprint-2 acceptance criteria in the spec itself, these 8 are NOT honestly deferred — they are silently incomplete with a hand-wave in the review manifest. The required fix: extend the scope-cut table with one row per finding, citing the concrete file and acceptance criterion, e.g. `FIND-004 | proposal_loop._revise_draft | sprint-2 wires LLM revise call via lib/proposal_loop.py:_revise_draft; acceptance: round-2 draft sha256 != round-1 draft sha256 in adversarial fixture`. FIND-018 (escalation regex) is a code defect, not a deferral candidate — its claimed fix at group_j.py:63 narrows the regex to `--label\\s*[=]?\\s*['\\\"]?escalation['\\\"]?` but the list-literal form `subprocess.run([\"gh\", \"issue\", \"create\", \"--label\", \"escalation\"])` still bypasses (comma+quote sits between `--label` and `escalation`); the static analyzer's central job (prevent human-escalation gh issues) remains incomplete.",
+  "evidence": {
+    "filePath": ".vcsdd/features/earn-shared-skeleton/specs/behavioral-spec.md",
+    "lineRange": "945-951",
+    "snippet": "| FIND-002 | ... | FIND-003 | ... | FIND-006 | ... | FIND-015 | ... | FIND-017 | ... — 5 rows; FIND-004/005/007/008/010/012/014/018 absent."
+  },
+  "routeToPhase": "2b"
+}

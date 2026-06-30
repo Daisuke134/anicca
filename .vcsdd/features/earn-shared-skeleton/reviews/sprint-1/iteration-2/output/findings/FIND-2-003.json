@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-2-003",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "high",
+  "description": "skills/_shared/payout-endpoint-allowlist.json enumerates only `coconala` and `whop`. REQ-G2 step 3 MVP-scope (behavioral-spec.md lines 578-589) names 5 settling platforms for the MVP: `gig=Coconala JPY, clip=Whop USDC, affiliate=Amazon JPY commission, video=YouTube AdSense/USDC, bounty=Algora USDC`. Amazon, YouTube AdSense, and Algora are missing from the allowlist. Per REQ-G2 step (b) check 1 (`Endpoint allowlist check`), any earn event from those 3 platforms today fails with `endpoint-not-allowlisted` BEFORE any field-equality check runs. The scope-cut section claims `The MVP that ships at sprint-1 boundary is a complete VERIFICATION LAYER ... that the slot's cron prompt can invoke today` (line 955) — that is not true for 3 of 5 MVP slots. The scope-cut table does NOT list `payout-endpoint-allowlist completeness` as a sprint-2 commitment, so the gap is silent. Two fixes acceptable: (a) extend the allowlist to all 5 MVP platforms in-sprint (the entries are static JSON), or (b) add an explicit row to the scope-cut table: `payout-endpoint-allowlist: Amazon/YouTube/Algora entries deferred; sprint-2 ships them along with PROP-G2-runtime fixtures for each`. Either is fine; the current state (silent omission) is not.",
+  "evidence": {
+    "filePath": "skills/_shared/payout-endpoint-allowlist.json",
+    "lineRange": "1-32",
+    "snippet": "{\"schema_version\":1,\"coconala\":{...},\"whop\":{...}} — no `amazon`, `youtube`, `algora` keys; spec REQ-G2 MVP scope names 5 platforms."
+  },
+  "routeToPhase": "2b"
+}

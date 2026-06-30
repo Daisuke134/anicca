@@ -27,5 +27,47 @@
         "comparison": "epsilon:0.01"
       }
     ]
+  },
+  "amazon_associates": {
+    "endpoints": [
+      {
+        "endpoint": "/paapi5/getbrowsenodes/{receipt_id}",
+        "method": "GET",
+        "response_format": "json",
+        "receipt_id_path": "$.report.id",
+        "amount_path": "$.report.commission_jpy",
+        "payer_path": "$.report.affiliate_tag",
+        "unit": "jpy_int",
+        "comparison": "exact"
+      }
+    ]
+  },
+  "youtube_adsense": {
+    "endpoints": [
+      {
+        "endpoint": "/v2/payments/{receipt_id}",
+        "method": "GET",
+        "response_format": "json",
+        "receipt_id_path": "$.payment.id",
+        "amount_path": "$.payment.amount_jpy",
+        "payer_path": "$.payment.publisher_id",
+        "unit": "jpy_int",
+        "comparison": "exact"
+      }
+    ]
+  },
+  "algora": {
+    "endpoints": [
+      {
+        "endpoint": "/api/bounties/{receipt_id}/payout",
+        "method": "GET",
+        "response_format": "json",
+        "receipt_id_path": "$.bounty.id",
+        "amount_path": "$.bounty.amount_usdc",
+        "payer_path": "$.bounty.funder",
+        "unit": "usdc_float_6dp",
+        "comparison": "epsilon:0.01"
+      }
+    ]
   }
 }

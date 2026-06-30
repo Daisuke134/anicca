@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-2-001",
+  "dimension": "implementation_correctness",
+  "category": "security_surface",
+  "severity": "critical",
+  "description": "All 4 new shell scripts that embed Python via `python3 - <<PYEOF ... PYEOF` interpolate untrusted shell variables DIRECTLY into the Python source. The bash heredoc with `<<PYEOF` (no quotes around the delimiter) performs $-substitution BEFORE Python sees the text, so attacker-controlled bytes can close a Python string and execute arbitrary code as the caller (= launchd / cron-prompt context). Specific sites: (1) loop-healthcheck.sh:38 `pane_text=\"\"\"${pane_text}\"\"\"` — tmux pane content is hostile by definition (it's the very text the script is supposed to classify) and a pane containing the 3-char sequence `\"\"\"` plus a Python statement breaks out; (2) loop-roi.sh:38-49 inlines `${TOKENS_IN}`, `${TOKENS_OUT}`, `${MODEL_ID}`, `${PASS_ID}`, `${SLOT}`, `${WALL_S}` directly into Python expressions (e.g. `tokens_in: ${TOKENS_IN}`) — a cron-prompt that builds the loop-roi.sh argv from an LLM response can be steered to inject `0; import os; os.system(\"rm -rf ~/loops\")`; (3) cross-learn-share.sh:27,34 puts `${REQ_ID}` and `${OUTCOME}` inside Python string literals (`row.get(\"requestId\") == \"${REQ_ID}\"`) — a request id containing `\"` ends the string and the rest is code; (4) self-recover.sh:27 `evidence=\"\"\"${EVIDENCE}\"\"\"` — REQ-F1's `evidence` arg can be a captured pane or an OAuth URL or a hash, ALL externally influenced. The launchd plists named in the spec invoke these scripts every 5 minutes, so this is a remote code execution surface against the framework's own runtime. The lib/*.py functions accept typed parameters safely; the shell scripts undo that safety by reverting to string templating. Fix: pass values via env vars (`SLOT=\"$1\" python3 -c 'import os; slot = os.environ[\"SLOT\"]; ...'`) or via argv (`python3 -c 'import sys; slot = sys.argv[1]' \"$1\"`) — NEVER via heredoc interpolation.",
+  "evidence": {
+    "filePath": "skills/_shared/loop-healthcheck.sh",
+    "lineRange": "31-48",
+    "snippet": "python3 - <<PYEOF\n...\nctx = HealthcheckContext(\n    slot=\"${SLOT}\",\n    pane_text=\"\"\"${pane_text}\"\"\",\n    ...\n)\nPYEOF"
+  },
+  "routeToPhase": "2b"
+}

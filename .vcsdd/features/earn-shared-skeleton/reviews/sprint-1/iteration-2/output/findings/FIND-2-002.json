@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-2-002",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "high",
+  "description": "skills/_shared/anicca-bot.pub contains the literal ASCII string `PLACEHOLDER_ANICCA_BOT_ED25519_PUBKEY_BASE64_32_BYTES==`. REQ-E5 line 391 specifies the file MUST be `base64-encoded raw bytes` of a 32-byte ed25519 public key. Verifying this file against `base64.b64decode(...)` decodes to 36 bytes of binary garbage, not 32 bytes — even the BYTE-COUNT precondition fails. spawn_pin.verify_spawn_surface (lines 122-141) reads this string and runs the fixture-protocol verification (sha256(pinned + pubkey) truncated to 64), so today's fixture tests pass against the placeholder, but any production import of this file as a real trust anchor immediately fails. The scope-cut table commits FIND-015 (real ed25519) to sprint-2, but does NOT acknowledge that the current placeholder is not just a non-cryptographic stand-in — it is a string that the REQ-E5 algorithm cannot even parse. Two specific harms: (a) the bootstrap clause at lines 396-397 (`fresh instance clones the framework, it inherits the checked-in anicca-bot.pub ... It needs no further key provisioning`) is unmet — a fresh clone gets a literal placeholder, the trust anchor is unusable; (b) the spawn-surface pinned.json must include this file's sha256 (file #6 in REQ-E5's set), pinning the placeholder bytes — so when sprint-2 ships a real pubkey, the pin breaks and triggers spawn-surface-drift → REQ-J2 rollback → back to the placeholder. Either the placeholder must be at least a syntactically-valid base64 of 32 zero bytes (`AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=`) AND the spec must explicitly mark `anicca-bot.pub: <placeholder, no production deploy until sprint-2>`, or the spawn-surface trust chain must be fully scope-deferred in writing.",
+  "evidence": {
+    "filePath": "skills/_shared/anicca-bot.pub",
+    "lineRange": "1-1",
+    "snippet": "PLACEHOLDER_ANICCA_BOT_ED25519_PUBKEY_BASE64_32_BYTES=="
+  },
+  "routeToPhase": "2b"
+}

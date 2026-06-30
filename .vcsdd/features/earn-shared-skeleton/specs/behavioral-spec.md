@@ -946,9 +946,17 @@ The following findings are explicitly **scope-deferred to sprint-2** with honest
 |---------|----------|---------------------|
 | FIND-002 | Group J handler real impls | Production camofox + Gmail OTP for J1; git checkout for J2; firecrawl + auto-PR for J3; model upgrade dispatch for J4; full fresh-start for J5; strategy reset for J6; mother-poll loop for J7; meas-seam probe for J9 |
 | FIND-003 | Shell + JS AST analyzer | Add `shellcheck --format=json` parser + `tree-sitter-javascript` walker to `adversary_path_intersect`; sprint-1 ships Python-AST + substring-grep fallback |
+| FIND-004 | proposal_loop._revise_draft no-op | Wire LLM call (Reflexion-style verbal revise) that rewrites the draft body against the previous round's adversary findings |
+| FIND-005 | deliverable_loop no artifact revision | Same as 004 for the artifact: each FAIL round triggers an LLM-driven rewrite of the deliverable file, written as round-N+1 artifact |
 | FIND-006 | Pure-layer missing symbols | Add `roi.compute_pass_row`, `passprep.compute_novelty_floor`, `passprep.pick_untried`, `manifest.validate` as full pure functions (sprint-1 has scaffold) |
+| FIND-007 | REQ-B6 degraded dispatch missing in lib/roi.py | Compute the 100-row rolling estimate ratio in `roi.compute_pass_row`; when ratio > 0.5, call `self-recover.sh <slot> token-source-degraded <ratio>` via subprocess |
+| FIND-008 | mutation_gate empty-verdict-file edge | Add test fixture: write `verdict.json` as size=0; assert mutation_gate treats it as FAIL (fail-closed); add corresponding code path |
+| FIND-010 | PROP-E5 ZERO-call assertions in tests | Add assertion to test_spawn_pin.py: spy on subprocess calls; assert ZERO calls to `security find-generic-password`, telegram URLs, slack URLs |
+| FIND-012 | tautological killswitch test | Replace inspect.signature check with a real test that exercises the boundary algebra (cost_jpy = 5*earn_jpy → False; cost_jpy = 5*earn_jpy + 1 → True past grace) |
+| FIND-014 | MOTHER queue read-only path untested | Add fixture: chmod queue_path to 0o444; dispatch unknown reason; assert PermissionError handled gracefully (write to fallback path, log warning, do not crash) |
 | FIND-015 | Real ed25519 sig | Replace fixture-protocol sha256-mix with real `nacl.signing` ed25519 verify; ship anicca-bot real keypair in CI secret |
 | FIND-017 | Missing PROP tests | PROP-B5 rolling-window edge cases, PROP-C2 tail-50 exact-count, PROP-D1/D2/D3 cross-learn-share gh-rate-limit/retry/dedup-race, PROP-G1 manifest schema validation, PROP-H1 novelty quota |
+| FIND-018 | Escalation regex list-literal bypass | Add regex matching `["--label", "escalation"]` list-form (= FIND-2-005 fix in v8.1) |
 
 The sprint-2 commitment is **NOT** open-ended deferral — it is a documented next-sprint
 contract with concrete file paths and module-level acceptance criteria. The MVP that
