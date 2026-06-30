@@ -108,7 +108,8 @@ def pick_next(
     # across history must be (category, platform) tuples not previously present.
     novelty_ratio = float(menu.get("novelty_quota_ratio", 0.1))
     novel_items = [c for c in candidates if _is_novelty_eligible(c, history)]
-    if novel_items and len(history) >= int(1.0 / novelty_ratio):
+    # Guard: novelty_ratio == 0 means "disabled" → never force a novelty pick.
+    if novel_items and novelty_ratio > 0 and len(history) >= int(1.0 / novelty_ratio):
         # Count how many of the last 1/ratio picks were novel at the time of selection.
         # We approximate via: of the last N picks (N = 1/ratio), how many introduced a
         # new (category, platform) key. If < ratio, promote a novel item this pass.

@@ -55,9 +55,11 @@ inherits: earn-shared-skeleton (PROP-A1..A9, PROP-B1..B6, PROP-C1..C3, PROP-D1..
 | PROP-T11 | `riskGate(risk_state, pos, current_balance, edge, config)` is pure: same 5-tuple of inputs → identical output (no hidden state, no I/O) | REQ-T4 | 2 | true | hypothesis stateless test |
 | PROP-T12 | `riskGate` boundary: daily_loss exactly = threshold → HALT (≥ is inclusive, not >) | REQ-T4 | 1 | true | pytest |
 | PROP-T13 | `riskGate` boundary: drawdown exactly = threshold → HALT | REQ-T4 | 1 | true | pytest |
-| PROP-T14 | `jurisdictionVenueFilter("US", "polymarket", menu)` = False when `menu.venues.polymarket.jurisdiction_ok_for_real = false` | REQ-T10 | 1 | true | pytest |
-| PROP-T15 | `jurisdictionVenueFilter("US", "polymarket", menu)` fails-closed when key absent from menu (→ False) | REQ-T10 | 1 | true | pytest |
-| PROP-T16 | `jurisdictionVenueFilter("SG", "polymarket", menu)` = True when `menu.venues.polymarket.jurisdiction_ok_for_real = true` | REQ-T10 | 1 | true | pytest |
+| PROP-T14 | `jurisdictionVenueFilter("US", "polymarket", jurisdiction_ok_for_real=False, kyc_required=False)` = False (jurisdiction blocked) | REQ-T10 | 1 | true | pytest |
+| PROP-T14b | `jurisdictionVenueFilter("US", "kalshi", jurisdiction_ok_for_real=True, kyc_required=True)` = False (kyc_required veto fires even when jurisdiction_ok_for_real=True; belt-and-suspenders against misconfiguration) | REQ-T10 | 1 | true | pytest |
+| PROP-T15 | `jurisdictionVenueFilter("US", "polymarket", jurisdiction_ok_for_real=False, kyc_required=True)` = False (both fields fail-closed) | REQ-T10 | 1 | true | pytest |
+| PROP-T15b | Effectful shell reads `menu.venues[venue].kyc_required` before calling `jurisdictionVenueFilter`; absent `kyc_required` key defaults to `True` (fail-closed — venue assumed KYC-required until explicitly cleared) → `jurisdictionVenueFilter(..., kyc_required=True)` = False | REQ-T10 | 1 | true | pytest (absent key → default True → False) |
+| PROP-T16 | `jurisdictionVenueFilter("SG", "hyperliquid", jurisdiction_ok_for_real=True, kyc_required=False)` = True (both flags clear = allowed) | REQ-T10 | 1 | true | pytest |
 | PROP-T17 | `edgePredicate(model_p, market_p)` = True IFF `model_p > market_p` (strict inequality) | REQ-T3 | 1 | true | pytest |
 | PROP-T18 | Paper mode: no CLOB endpoint called while `risk_state.paper_mode = true` (confirmed by call-spy) | REQ-T6 | 2 | true | integration + spy |
 | PROP-T19 | Paper-to-real transition requires both paper_pass_count ≥ required AND adversary PASS file present | REQ-T6 | 2 | true | integration (state machine) |
@@ -68,28 +70,29 @@ inherits: earn-shared-skeleton (PROP-A1..A9, PROP-B1..B6, PROP-C1..C3, PROP-D1..
 | PROP-T24 | `isEarnSlot("earn/pm-trade")` = true (earn-slot.mjs existing pure predicate) | REQ-T1 | 1 | true | node unit test |
 | PROP-T25 | `earnSkillRelPath("earn/pm-trade")` = `"earn/pm-trade/run.sh"` | REQ-T1 | 1 | true | node unit test |
 | PROP-S1 | `spawnEligible`: treasury < threshold → {eligible: false, reason: "insufficient_treasury"} | REQ-S1 | 1 | true | pytest |
-| PROP-S2 | `spawnEligible`: net_pos_days < config.spawn_net_pos_days → {eligible: false, reason: "not_enough_net_positive_days"} | REQ-S1 | 1 | true | pytest |
-| PROP-S3 | `spawnEligible`: spawn within rate_cap_days exists in log → {eligible: false, reason: "rate_cap"} | REQ-S1 | 1 | true | pytest |
-| PROP-S4 | `spawnEligible`: all 4 conditions satisfied → {eligible: true} | REQ-S1 | 1 | true | pytest |
-| PROP-S5 | `spawnEligible` is pure (no I/O; same inputs → same output) | REQ-S1 | 2 | true | hypothesis |
+| PROP-S2 | `spawnEligible`: net_pos_days < config.spawn_net_pos_days → {eligible: false, reason: "not_enough_net_positive_days"} (trading-specific gate, evaluated before `decideSpawn`) | REQ-S1 | 1 | true | pytest |
+| PROP-S3 | `spawnEligible`: child with `spawned_ms` within `rateLimitDays` in `children` array → `decideSpawn` returns `{eligible: false, reason: "rate_limited"}` → `spawnEligible` returns `{eligible: false, reason: "rate_cap"}` | REQ-S1 | 1 | true | pytest (stub `children` array with recent `spawned_ms`) |
+| PROP-S4 | `spawnEligible`: all 4 conditions satisfied → {eligible: true} (treasury ok + net_pos_days ok + decideSpawn eligible + seed >= 1.50) | REQ-S1 | 1 | true | pytest |
+| PROP-S5 | `spawnEligible` is pure (no I/O; same inputs → same output); `children` array is passed explicitly, not read inside the function | REQ-S1 | 2 | true | hypothesis |
 | PROP-S6 | `spawnEligible` treasury boundary: treasury exactly = threshold → eligible: true (≥ is inclusive) | REQ-S1 | 1 | true | pytest |
 | PROP-S7 | `spawnEligible`: spawn_seed_usdc < 1.50 in config → {eligible: false, reason: "seed_below_minimum"} | REQ-S1 | 1 | true | pytest |
 | PROP-S8 | `titheAmount(pnl, pct, min)`: result = 0 when `pnl × pct < min` | REQ-S8 | 1 | true | pytest |
 | PROP-S9 | `titheAmount`: result ≤ pnl for all inputs | REQ-S8 | 1 | true | pytest |
-| PROP-S10 | Child wallet address ≠ parent wallet address (collision guard) | REQ-S2 | 2 | true | integration |
-| PROP-S11 | Seed transfer requires confirmed tx_hash before child boot proceeds | REQ-S4 | 2 | true | integration (stub RPC, assert boot blocked when tx unconfirmed) |
-| PROP-S12 | spawn-log.jsonl never truncated; only appended | REQ-S4 | 1 | true | pytest (open mode check) |
-| PROP-S13 | Multiple concurrent spawn attempts: only first proceeds (rate-cap sees "initiated" status) | REQ-S7 | 2 | true | integration (concurrent calls) |
+| PROP-S10 | Child wallet address ≠ parent wallet address (collision guard in `scripts/gen-wallet.sh`) | REQ-S2 | 2 | true | integration |
+| PROP-S11 | Seed transfer step in `run.sh` (step 5) is sequential; if seed fails, `run.sh` exits 1 before telemetry registration (step 6) — child never registered as "active" without confirmed seed | REQ-S4 | 2 | true | integration (stub Base USDC transfer → failure → assert children.jsonl stays at "provisioning") |
+| PROP-S12 | `children.jsonl` never truncated; only O_APPEND via `lib/ledger.js appendChild` | REQ-S4 | 1 | true | pytest (open mode check on `appendFileSync`) |
+| PROP-S13 | Multiple concurrent spawn attempts: `spawnEligible` rate-cap check (via `decideSpawn` on `children` array) blocks all but the first | REQ-S7 | 2 | true | integration (concurrent calls; assert at most one active child row added) |
 | PROP-R1 | `registry.json` declares `earn/pm-trade` with `status: "live"` after install | REQ-T1 | 2 | true | integration (run install.sh in tmpdir) |
 | PROP-R2 | Two instances with different ANICCA_HOME never share wallet.json path | REQ-R2 | 2 | true | integration |
 | PROP-R3 | Bot2bot dedup: two stub instances on same market_id → second reduces or skips position | REQ-R3 | 2 | true | integration (stub gh issue API) |
 | PROP-R4 | ledger.jsonl never written via truncate or O_WRONLY (only O_APPEND) | REQ-R4 | 2 | true | integration (fsevents or strace spy) |
 | PROP-R5 | `execute-yield.mjs` (the surplus-math module, not yield-keeper.mjs) with EFFECTIVE_RESERVE = COMPUTE_RESERVE + reserved.json.reserved_usdc: balance $100, reserved_usdc 60 → deploys ≤ $35; reserved.json absent AND earn/pm-trade registered → deploys $0 (fail-safe, no sweep); reserved.json absent AND earn/pm-trade not in registry → deploys balance−COMPUTE_RESERVE (legacy) | REQ-R5 | 2 | true | integration (stub Base RPC balanceOf; assert deposit call amount for all 3 cases) |
-| PROP-T26 | Earn row for Polymarket settlement: only written when `settle-verify.py` returns `{verified: true}` with a matching Polygon `eth_getLogs` Transfer event to our wallet; no earn row when no matching Transfer found | REQ-T8 | 2 | true | integration (stub Polygon RPC → no matching log → assert earnings.jsonl unchanged; stub → matching log → assert earn row written) |
-| PROP-R6 | Child daemon is started with `HOME=$CHILD_HOME` and `COMPUTE_PROXY_PORT ≠ 8402`; `proxy.mjs` and `execute-yield.mjs` in child process tree resolve wallet from `$CHILD_HOME/.automaton/wallet.json`, never from parent's `$HOME` | REQ-S5, REQ-R2 | 2 | true | integration (start child with CHILD_HOME=tmpdir; inspect process env + wallet read path; assert ≠ parent wallet) |
-| PROP-S14 | `spawn.lock` flock acquired exclusively before 'initiated' row appended; concurrent spawn attempt while lock held → aborts with `spawn_lock_held`, no duplicate row | REQ-S2 | 2 | true | integration (thread-concurrent spawn calls; assert exactly one 'initiated' row in spawn-log after both complete) |
+| PROP-T26 | Earn row for Polymarket settlement: only written when `settle-verify.py` returns `{verified: true}` with a Transfer where `from` ∈ `POLYMARKET_SETTLEMENT_ADDRS`, amount = expected `gross_payout_usdc` (±1 raw unit), and tx contains matching `condition_id` event; no earn row when no matching Transfer found | REQ-T8 | 2 | true | integration (stub Polygon RPC → no matching log → assert earnings.jsonl unchanged; stub → matching log meeting all 3 sub-conditions → assert earn row written) |
+| PROP-T26b | `settle-verify.py` REJECTS a Transfer where `from` is NOT in `POLYMARKET_SETTLEMENT_ADDRS` (e.g. a sibling tithe, parent seed top-up, or unrelated market payout) — no earn row written even if `amount >= entry_cost`; INV-7 not satisfied by a misattributed transfer | REQ-T8 | 2 | true | integration (stub Polygon RPC with Transfer `from`=random address, amount >= entry_cost → assert earnings.jsonl unchanged) |
+| PROP-R6 | Child runs on a separate droplet with `HOME=$CHILD_HOME` in systemd unit; child `clawrouter` binds `:8402` on its own host (no port collision); NO `CHILD_PORT` or `COMPUTE_PROXY_PORT` env var in spawn flow; `proxy.mjs` and `execute-yield.mjs` resolve wallet from `$CHILD_HOME/.automaton/wallet.json`, never from parent's `$HOME` | REQ-S5, REQ-R2 | 2 | true | integration (spawn with stub DO provider; inspect `children.jsonl` row + cloud-init user_data for `HOME=$CHILD_HOME`; assert child wallet path ≠ parent; assert no CHILD_PORT in env) |
+| PROP-S14 | `spawnEligible` rate-cap gate (via `decideSpawn` reading `children` array) prevents duplicate spawns: if a recent `spawned_ms` row exists, second call is rate-limited; `children.jsonl` ends up with exactly one new row | REQ-S2 | 2 | true | integration (sequential near-concurrent calls; assert exactly one "provisioning" or "active" row appended) |
 | PROP-E2E-1 | After paper_pass_count ≥ required AND adversary PASS: a real Polygon/Base tx from wallet exists for a model-decided trade | REQ-T7, REQ-T8 | 3 | true | E2E (real tiny stake, on-chain verify) |
-| PROP-E2E-2 | Child runtime with its own funded wallet completes ≥1 earn pass verified on-chain | REQ-S5, REQ-S8 | 3 | true | E2E (child boot + real tithe tx) |
+| PROP-E2E-2 | Child provisioned with parent venue policy (Hyperliquid `jurisdiction_ok_for_real:true, kyc_required:false`) completes ≥1 real earn pass verified by `settle-verify.py`; `tithe-log.jsonl` has ≥1 row with confirmed Base `tx_hash`; no human operator action required | REQ-S5, REQ-S8, REQ-T10 | 3 | true | E2E (child boot via stub DO + parent policy file; real Hyperliquid stake; confirm tithe tx on Base) |
 
 ## Verification Strategy
 
@@ -153,7 +156,7 @@ Each test boots a minimal Anicca runtime in a `tmpdir` with `ANICCA_HOME=<tmpdir
 | INT-T4 | Paper-to-real gate: paper_pass_count ≥ required BUT adversary file absent | paper_mode stays true (fail-closed) |
 | INT-T5 | Earn row: order placed → no earn event; market resolves → earn event in events/ | Event stream correct; events/ spy confirms timing |
 | INT-T6 | Risk gate halt persists: after HALT, subsequent passes do NOT call CLOB | State machine correct; daily_loss accumulated across passes |
-| INT-T7 | Geoblock: polymarket.jurisdiction_ok_for_real=false → zero Polymarket CLOB calls | Spy on pm.py invocations; confirm venue=kalshi chosen instead |
+| INT-T7 | Geoblock: polymarket.jurisdiction_ok_for_real=false → zero Polymarket CLOB calls; kalshi.kyc_required=true → zero Kalshi CLOB calls even if jurisdiction_ok_for_real=true; hyperliquid.jurisdiction_ok_for_real=true AND kyc_required=false → hl.py invoked | Spy on pm.py and hl.py invocations; confirm all three branches |
 | INT-T8 | isEarnSlot + registry: after install, earn/pm-trade is a registered live earn slot | Node unit test + registry JSON assertion |
 | INT-T9 | Wallet isolation: two instances started with different `HOME` env values (`HOME=$TMPDIR_A` vs `HOME=$TMPDIR_B`) resolve `wallet.json` to different paths and different secp256k1 addresses | `process.env.HOME` path inequality + address inequality assertion; confirms `proxy.mjs` wallet read uses `$HOME`, not `$ANICCA_HOME` |
 | INT-T10 | Spawn eligibility: all conditions met → spawn-log gets "initiated" row | spawn-log.jsonl assertion |
@@ -199,10 +202,10 @@ All `earn-shared-skeleton` tests (PROP-A1..J8) continue to pass unchanged. The n
 | Risk | Mitigation |
 |------|-----------|
 | Hardcoded strategy in skill code | PROP-T3 (no regex/keyword) + adversary static analysis of `run.sh` and `pm.py` |
-| Fake PnL (earn event without real settlement) | PROP-T21 + PROP-T26 + `settle-verify.py` on-chain gate (Polygon `eth_getLogs` Transfer match for Polymarket; HL API realizedPnl delta for Hyperliquid). REQ-G2 skeleton gate is NOT used for trading venues (out of scope per skeleton spec); `settle-verify.py` is the dedicated gate. |
+| Fake PnL (earn event without real settlement) | PROP-T21 + PROP-T26 + PROP-T26b + `settle-verify.py` on-chain gate: Polymarket = `eth_getLogs` Transfer where `from` ∈ `POLYMARKET_SETTLEMENT_ADDRS` (CTF/NegRiskAdapter allowlist) + exact `gross_payout_usdc` amount + matching `condition_id` in tx; HL = API realizedPnl delta. Misattributed transfers (sibling tithe, top-up, wrong market) are REJECTED by PROP-T26b. REQ-G2 skeleton gate is NOT used for trading venues; `settle-verify.py` is the dedicated gate. |
 | Human touch in spawn flow | REQ-J8 inheritance + adversary static analysis for Telegram/gh-escalation patterns |
 | Paper mode bypass | PROP-T18 + PROP-T19 + PROP-T20 (state machine tests) |
-| Wallet collision / cross-instance key sharing | PROP-S10 + PROP-R2 + PROP-R6 (child uses `HOME=$CHILD_HOME` so all runtime wallet reads go to child's key; isolation integration tests confirm different `$HOME` → different wallet) |
+| Wallet collision / cross-instance key sharing | PROP-S10 + PROP-R2 + PROP-R6 (child on separate droplet with `HOME=$CHILD_HOME` in systemd unit; clawrouter on its own `:8402`; no CHILD_PORT/COMPUTE_PROXY_PORT needed; isolation tests confirm different host → different wallet path → different key) |
 | Kelly overbetting | PROP-T1 hypothesis sweep + kelly_fraction_max cap |
 | Spawn without net-positive history | PROP-S2 + PROP-S5 (pure function + hypothesis) |
 | Ledger truncation | PROP-R4 (O_APPEND mode spy) |
