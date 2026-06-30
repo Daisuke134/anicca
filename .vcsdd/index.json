@@ -76,7 +76,15 @@
       "mode": "lean",
       "currentPhase": "4",
       "updatedAt": "2026-06-30T18:40:54.071Z"
+    },
+    "proactive-loop-skeleton": {
+      "status": "active",
+      "createdAt": "2026-06-30T20:30:29.507Z",
+      "mode": "lean",
+      "language": "python",
+      "currentPhase": "1b",
+      "updatedAt": "2026-06-30T20:33:28.197Z"
     }
   },
-  "activeFeature": "earn-shared-skeleton"
+  "activeFeature": "proactive-loop-skeleton"
 }
