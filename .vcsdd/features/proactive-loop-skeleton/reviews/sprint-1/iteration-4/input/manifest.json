@@ -1,0 +1,44 @@
+{
+  "reviewType": "implementation",
+  "featureName": "proactive-loop-skeleton",
+  "sprintNumber": 1,
+  "iteration": 4,
+  "mode": "lean",
+  "artifactsToReview": {
+    "spec": [".vcsdd/features/proactive-loop-skeleton/specs/behavioral-spec.md",
+             ".vcsdd/features/proactive-loop-skeleton/specs/verification-architecture.md"],
+    "source_python": ["skills/_shared/lib/quota_tracker.py", "skills/_shared/lib/menu.py",
+                       "skills/_shared/lib/health_check_v2.py", "skills/_shared/lib/bot2bot.py",
+                       "skills/_shared/lib/proactive_loop.py", "skills/_shared/lib/build_log.py"],
+    "source_shell": ["skills/_shared/proactive-loop.sh",
+                      "skills/_shared/proactive-loop-dispatch.py",
+                      "skills/_shared/credential-restore.sh", "skills/_shared/auto-allowlist.sh",
+                      "skills/_shared/auto-rollback.sh"],
+    "tests": ["skills/_shared/__tests__/test_quota_tracker_v2.py",
+              "skills/_shared/__tests__/test_menu.py",
+              "skills/_shared/__tests__/test_health_check_v2.py",
+              "skills/_shared/__tests__/test_bot2bot.py",
+              "skills/_shared/__tests__/test_anti_human_v2.py",
+              "skills/_shared/__tests__/test_proactive_loop.py",
+              "skills/_shared/__tests__/test_build_log.py",
+              "skills/_shared/__tests__/test_edge_cases_sprint2.py"]
+  },
+  "previousIterationFindings": [
+    "iter-3 FIND-3-001 (spec REQ-H3 enumeration honesty): cycle-4 appended scope-cut table with explicit api_rate_limit + backoff + REQ-A6 + REQ-A8 + haiku table",
+    "iter-3 FIND-3-002 (scope-cut only 4/8): cycle-4 added 8-row + 1-carry table",
+    "iter-3 FIND-3-003 (STEP 3 noop): cycle-4 wired HealthSnapshot+dispatch_highest_priority into proactive-loop-dispatch.py",
+    "iter-3 FIND-3-004 (EDGE coverage gaps): cycle-4 new test_edge_cases_sprint2.py with S1/S3/S6/S7 fixtures",
+    "iter-3 FIND-3-005 (count_consecutive untested): cycle-4 added 7 tests for count_consecutive_negative_windows"
+  ],
+  "reviewDimensions": ["spec_fidelity", "edge_case_coverage", "implementation_correctness",
+                       "structural_integrity", "verification_readiness"],
+  "extraConstraints": [
+    "Verify FIND-3-001 closed: grep spec for 'api_rate_limit' and 'backoff' and 'REQ-A6' and 'REQ-A8' and 'haiku' — all present.",
+    "Verify FIND-3-002 closed: count rows in Sprint-3 commitments table (should be 8 + 1 carry).",
+    "Verify FIND-3-003 closed: proactive-loop-dispatch.py STEP 3 code path imports + calls dispatch_highest_priority.",
+    "Verify FIND-3-004 closed: test_edge_cases_sprint2.py has 4 EDGE fixtures (S1, S3, S6, S7).",
+    "Verify FIND-3-005 closed: test_count_consecutive* tests (≥7) cover empty/all-positive/trailing/reset/most-recent-positive/single/zero cases.",
+    "229 tests pass (+12 from 217). Verify the +12 assert SPEC behavior."
+  ],
+  "expectedOutputPath": ".vcsdd/features/proactive-loop-skeleton/reviews/sprint-1/iteration-4/output/"
+}
