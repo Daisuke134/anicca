@@ -350,39 +350,92 @@ fresh-context Opus adversary with manifest = `{reviewType: "strategy-mutation", 
 <path>, strategyNext: <path>, lessonsTail: <path>, sha: <sha>}` and write verdict.json to
 `reviews/strategy-mutation-<sha>/output/`. Same dedup semantics, same anti-leniency rules apply.
 
-#### REQ-E5 — Spawn-surface immutability (ROUND-2-002 fix)
+#### REQ-E5 — Spawn-surface immutability (ROUND-2-002 + ROUND-3-001 + ROUND-3-002 fix)
 
 The "two layers of fresh context" guarantee of REQ-E1/E2 collapses if the spawn surface itself
-drifts under the self-improving loop. The spawn surface comprises:
-`~/anicca/skills/_shared/adversary-daily.sh`,
-`~/anicca/skills/_shared/adversary-daily-prompt.tmpl`,
-`~/anicca/skills/_shared/loop-improve.py` (= the writer of strategy.json.next),
-`~/anicca/skills/_shared/payout-endpoint-allowlist.json` (= REQ-G2 trust anchor),
-`~/anicca/skills/_shared/hook-modules-allowlist.txt` (= REQ-A5 trust anchor).
+drifts under the self-improving loop. The spawn surface comprises EXACTLY these SIX files (the
+pin manifest itself is included to close ROUND-3-001 self-reference loop):
 
-THE SYSTEM SHALL maintain `~/anicca/skills/_shared/spawn-surface.pinned.json` containing the
-sha256 of each spawn-surface file at the most recent human-signed release. This file is updated
-ONLY by a tagged commit on `main` (signed off in the commit message body with the literal token
-`SPAWN-SURFACE-PIN-UPDATE`); it is NEVER updated by REQ-C3 strategy mutation, REQ-C2 improve,
-REQ-E2 builder auto-fix, or REQ-loop-propose imports.
+1. `~/anicca/skills/_shared/adversary-daily.sh`
+2. `~/anicca/skills/_shared/adversary-daily-prompt.tmpl`
+3. `~/anicca/skills/_shared/loop-improve.py` (= writer of strategy.json.next)
+4. `~/anicca/skills/_shared/payout-endpoint-allowlist.json` (= REQ-G2 trust anchor)
+5. `~/anicca/skills/_shared/hook-modules-allowlist.txt` (= REQ-A5 trust anchor)
+6. `~/anicca/skills/_shared/spawn-surface.pinned.json` (= REQ-E5 pin manifest itself; closes
+   ROUND-3-001 self-reference loop)
+
+##### Trust anchor — ed25519 signature with keychain-sealed pubkey (ROUND-3-001 fix)
+
+`spawn-surface.pinned.json` enumerates sha256 of files 1-5 above AND its own sha256
+(self-reference is now explicit, not implicit). It is accompanied by a detached signature
+`spawn-surface.pinned.json.sig` (ed25519, raw 64 bytes).
+
+The ed25519 PUBLIC KEY (32 bytes raw) is stored in the macOS Keychain under generic-password
+service `anicca-trust-anchor-pubkey` (created at first install via `security add-generic-password
+-s anicca-trust-anchor-pubkey -a anicca -w <base64-pubkey>`; subsequent writes require user
+authentication via Touch ID / sudo). Updating the pubkey requires a user gesture
+(macOS-enforced); a runaway script CANNOT silently overwrite the pubkey.
 
 At the top of `loop-healthcheck.sh`, `loop-roi.sh`, `loop-improve.py`, `adversary-daily.sh`,
-`escalate.sh`, THE SYSTEM SHALL compute current sha256 of each spawn-surface file and compare
-against `spawn-surface.pinned.json`. ANY mismatch SHALL halt the script before any side effect
-AND call `escalate.sh <slot> spawn-surface-drift "<which-file>:<observed-sha>:<pinned-sha>"`.
+`escalate.sh`, THE SYSTEM SHALL perform THIS ORDERED CHECK:
 
-REQ-C3, REQ-E2 auto-fix, and loop-propose imports SHALL refuse to write to any spawn-surface
-file at the OS level: the runner SHALL ensure these files have mode `0444` (read-only) and are
-owned by a separate uid or via macOS `chflags uchg` (immutable flag); attempted writes fail with
-`EACCES` and surface as a "skill-emitted-fake-earn"-class lesson row (per REQ-G2 failure
-handling). This is the OS-level enforcement that complements the static-analysis check.
+(a) Read pubkey from keychain via `security find-generic-password -s anicca-trust-anchor-pubkey
+    -w 2>/dev/null`. IF read fails (keychain unset, locked, denied) → halt without side effect
+    AND call `escalate.sh <slot> trust-anchor-unreadable ""`.
+(b) Verify `spawn-surface.pinned.json.sig` against `spawn-surface.pinned.json` using the pubkey
+    (via `openssl pkeyutl -verify -pubin -inkey <pubkey-pem-tmpfile> -sigfile <sig> < <pinned>`
+    or `signify -V`). IF verification fails → halt AND call
+    `escalate.sh <slot> spawn-surface-sig-invalid ""`.
+(c) Compute current sha256 of each of files 1-6 and compare against `pinned.json` values
+    (including pinned.json's own sha against the self-sha entry in the file). ANY mismatch →
+    halt AND call `escalate.sh <slot> spawn-surface-drift
+    "<file>:<observed>:<pinned>"`.
 
-REQ-C3 adversary review SHALL ALSO grep `strategy.json.next` for any string literal matching a
-spawn-surface path and FAIL the mutation if any match — the adversary catches the textual intent
-even if the OS write would have failed.
+Updating `pinned.json` + `.sig` requires Dais signing with his private key (held only by him;
+NOT on the Mac filesystem). The CI pipeline rejects any push touching either file unless the
+top commit on the branch is signed by Dais's git-signing key AND its body contains literal
+token `SPAWN-SURFACE-PIN-UPDATE` (enforced by a `.github/workflows/spawn-surface-guard.yml`
+that is itself out of scope for this feature but is a downstream commitment).
 
-These three layers (pinned-sha guard at startup, OS-level immutability, adversary string-match
-gate) together close ROUND-2-002 spawn-surface drift.
+##### OS-level immutability (unchanged from v3)
+
+All 6 spawn-surface files have mode `0444` AND `chflags uchg` (macOS immutable flag); the
+runner sets these on install AND re-asserts on every startup before the trust-anchor check
+above (a script that finds the flag missing halts and escalates `spawn-surface-flag-missing`).
+
+##### REQ-C3 adversary review: structured analysis, NOT grep (ROUND-3-002 fix)
+
+REQ-C3's third defense layer is no longer a literal grep. THE SYSTEM SHALL: when reviewing
+`strategy.json.next` (or any auto-proposed diff to `_shared/*`), the adversary subagent SHALL
+perform structured static analysis:
+
+(i) Python files: walk the `ast` module's NodeVisitor. For every literal `str` constant, for
+    every `ast.JoinedStr`/`ast.BinOp(op=Add, left=Str, right=Str)`/`ast.Call(func=str.join)`
+    chain, constant-fold to the resolved string. For every value flowing into `open()`,
+    `pathlib.Path()`, `os.rename()`, `shutil.*`, `subprocess.run(shell=True)`, `exec`/`eval`
+    sinks, taint-trace the source. Decode candidate strings via base64, hex, url-decode at each
+    sink and check whether any resolved value intersects the 6-file spawn-surface set.
+(ii) Shell files: parse with `bash -n` + `shellcheck --format=json` to extract every command
+    invocation and its arguments after variable expansion; resolve `${VAR}` substitutions
+    against the script's own assignments; flag any resolved argument that intersects the
+    spawn-surface set.
+(iii) JS/TS files: parse with `acorn` or `tree-sitter-javascript`; same AST + taint-trace
+     discipline as Python.
+
+The adversary subagent — being a fresh-context Opus instance — IS capable of this semantic
+analysis; the v3 grep clause was a downgrade. The adversary MUST flag and FAIL the mutation
+when ANY resolved path (after constant-folding AND base64/hex/URL decode) intersects the
+spawn-surface set, regardless of how the path was constructed in source.
+
+PROP-E5 fixture corpus (verification-architecture.md) expands to cover the encoding bypasses
+named in ROUND-3-002: (a) base64, (b) hex, (c) string concat, (d) os.path.join, (e)
+glob/iterdir, (f) reading from pinned.json + iterating.
+
+##### Three layers, fixed
+
+(1) ed25519-signed pin manifest with keychain-sealed pubkey (ROUND-3-001 closure) +
+(2) OS-level 0444+uchg (unchanged) +
+(3) structured-analysis adversary gate (ROUND-3-002 closure).
 
 ### Group F — Escalate (`escalate.sh`, the only human gate)
 
@@ -460,18 +513,50 @@ and DOES NOT append to earnings. Closes ROUND-2-001 hash-replay loophole:
    computes sha256 of the response body. MUST equal
    `platform_api_call.response_sha256`. Mismatch → fail with `failed_check: "response-hash-mismatch"`.
 
-3. **Field-equality check.** The runner parses the re-fetched response body as JSON (or
-   platform-specific format) and asserts:
-   - `receipt_id` appears in the response at a platform-defined JSON path AND its value equals
-     the event row's `receipt_id`;
-   - `amount_jpy` (or `amount_usdc`) appears in the response at a platform-defined JSON path AND
-     its numeric value equals the event row's value (exact equality for amount_jpy, ≤ 0.01 USDC
-     epsilon for amount_usdc);
-   - `payer` appears in the response at a platform-defined JSON path AND its value equals the
-     event row's `payer`.
-   The platform-defined JSON paths are part of `payout-endpoint-allowlist.json` (one per
-   allowlist entry). ANY field missing or mismatched → fail with
+3. **Field-equality check.** The runner parses the re-fetched response body in the format
+   declared per allowlist entry and asserts EACH of:
+   - `receipt_id` appears in the response at the entry's declared JSON path AND its value
+     equals the event row's `receipt_id`;
+   - the amount field appears at the entry's declared path AND, after BOTH values are
+     canonicalized to the entry's declared `unit`, they compare equal under the entry's
+     declared `comparison` predicate;
+   - `payer` appears at the entry's declared JSON path AND its value equals the event row's
+     `payer`.
+
+   The allowlist entry schema includes per-entry unit + comparison declarations to handle
+   different payout tiers correctly (closes ROUND-3-003 ambiguity for the MVP scope; see
+   "Out of MVP" note below for on-chain ERC-20/Solana settlement scope):
+
+   ```jsonc
+   {
+     "platform": "coconala" | "stripe" | "whop" | "algora" | "amazon" | ...,
+     "endpoint": "/api/v1/sales/{receipt_id}",
+     "method": "GET",
+     "auth": "bearer",
+     "response_format": "json",
+     "receipt_id_path": "$.sale.id",
+     "amount_path": "$.sale.amount",
+     "payer_path": "$.sale.buyer.id",
+     "unit": "jpy_int" | "usdc_float_6dp",
+     "comparison": "exact" | "epsilon:0.01"
+   }
+   ```
+
+   ANY field missing or comparison failure → fail with
    `failed_check: "field-mismatch:<which-field>"`.
+
+   **MVP scope (closes ROUND-3-003 medium for the slots we ship):** The MVP's 5 slots
+   (gig=Coconala JPY, clip=Whop USDC, affiliate=Amazon JPY commission, video=YouTube
+   AdSense/USDC, bounty=Algora USDC) all settle off-chain via payment processors that return
+   JSON receipts with discrete `jpy_int` (Coconala/Amazon) or `usdc_float_6dp` (Whop/Algora/
+   Stripe) amounts. NO MVP slot settles directly via `eth_getLogs` or Solana RPC. On-chain
+   raw-unit settlements (wei_uint256, lamport_uint64) are declared OUT OF SCOPE for
+   `earn-shared-skeleton` and will be added by a future feature (`x402-self-facilitate` or
+   equivalent) which extends `payout-endpoint-allowlist.json`'s `unit`/`comparison` enums with
+   raw-integer cases and adds the corresponding PROP-G2-runtime fixtures. This deferral is
+   acceptable because (a) the existing 5 MVP slots inherit the skeleton WITHOUT raw on-chain
+   tiers, and (b) when on-chain settlement is added, the allowlist schema extension is
+   backwards-compatible (= no allowlist entry change for existing platforms).
 
 This three-step verification closes the hash-replay loophole (ROUND-2-001 critical): no skill can
 pair a forged `receipt_id` with a benign-endpoint hash, because (1) the benign endpoint isn't in
