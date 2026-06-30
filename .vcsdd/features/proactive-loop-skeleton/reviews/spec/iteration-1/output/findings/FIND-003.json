@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "spec_fidelity",
+  "category": "security_surface",
+  "severity": "critical",
+  "description": "REQ-B3 bot2bot auto-merge gates merge solely on 'a sibling AI instance's fresh-context adversary returns PASS' but the spec NEVER specifies how the verifier proves identity of that sibling adversary, how 'PASS' is detected programmatically, or how attacker-spoofed gh PRs with the right labels are excluded. REQ-B2 says 'fetch open bot2bot-* issues authored by an anicca-bot account' — but the spec leaves 'anicca-bot account' undefined (no gh user list, no signature check, no SHA pin) and the carry-forward of sprint-1 FIND-015 (real ed25519 nacl.signing key + signed-commit CI gate) is explicitly OUT OF SCOPE for sprint-2. Result: REQ-B3 ships an auto-merge surface with no enforceable identity gate, opening a code-execution path on any repo where the bot has write. This is a security regression versus sprint-1 REQ-J7/REQ-C3 which required adversary review + ed25519 signature for merge.",
+  "evidence": {
+    "filePath": ".vcsdd/features/proactive-loop-skeleton/specs/behavioral-spec.md",
+    "lineRange": "192-199",
+    "snippet": "REQ-B2 ... authored by an anicca-bot account ... REQ-B3 bot2bot.sh auto-merge <slot> <pr-number> SHALL be called after a sibling AI instance's fresh-context adversary returns PASS on a PR. The merge SHALL use gh pr merge --merge --delete-branch signed by anicca-bot"
+  },
+  "routeToPhase": "1a"
+}

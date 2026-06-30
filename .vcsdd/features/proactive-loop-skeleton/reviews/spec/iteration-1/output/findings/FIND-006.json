@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "high",
+  "description": "REQ-S4(c) requires that 'applied.jsonl count must continue to grow across passes' post-migration. But sprint-2's proactive-loop only picks ONE menu item per pass at step 5, and the gig menu categories (scan-requests / nurture-talk-rooms / deliver / evaluate per REQ-P6) do not include an explicit 'apply-to-request' menu item that writes to applied.jsonl. Sprint-1 wrote applied.jsonl from passprep + handler code that is being replaced. The spec does not specify which menu category is responsible for appending applied.jsonl, nor under what budget tier (FULL/MEDIUM/LIGHT/MINIMAL) the apply step runs. PROP-S4 (required: true) cannot be satisfied without spec clarification of the data-write path.",
+  "evidence": {
+    "filePath": ".vcsdd/features/proactive-loop-skeleton/specs/behavioral-spec.md",
+    "lineRange": "273-277",
+    "snippet": "After migration, the first proactive-loop pass MUST observably: (a) touch ~/loops/gig/.last-pass, (b) append at least one section to ~/loops/gig/build_log.md, (c) NOT regress on the existing growing-applied behavior (= applied.jsonl count must continue to grow across passes)."
+  },
+  "routeToPhase": "1a"
+}

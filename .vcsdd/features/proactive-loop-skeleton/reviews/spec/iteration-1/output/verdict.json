@@ -1,0 +1,53 @@
+{
+  "sprintNumber": 2,
+  "feature": "proactive-loop-skeleton",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-01T00:00:00Z",
+  "iteration": 1,
+  "reviewContext": {
+    "reviewType": "spec",
+    "mode": "lean"
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": [
+        "FIND-001",
+        "FIND-002",
+        "FIND-003",
+        "FIND-004",
+        "FIND-005",
+        "FIND-006",
+        "FIND-010",
+        "FIND-012",
+        "FIND-013",
+        "FIND-014",
+        "FIND-015",
+        "FIND-016",
+        "FIND-018",
+        "FIND-020"
+      ],
+      "evidence": []
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": [
+        "FIND-007",
+        "FIND-008",
+        "FIND-009",
+        "FIND-011",
+        "FIND-017",
+        "FIND-019"
+      ],
+      "evidence": []
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 20,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}

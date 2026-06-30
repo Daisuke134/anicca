@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-018",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "medium",
+  "description": "Manifest mapping claims 'J7 MOTHER queue → Group B'. Sprint-1 REQ-J7 routes EXHAUSTED slots to a separate MOTHER instance that 'reads and remediates'. Sprint-2 Group B (REQ-B1..B4) provides bot2bot.sh that 'creates a gh issue' and 'polls open bot2bot-* issues' but defines no contract for what happens when ALL local recovery is exhausted AND no sibling instance is online AND no PR is forthcoming. Sprint-1 had `mother-recovery-queue.jsonl` as the EXHAUSTED sink with the property: 'when no slot can act, the queue persists work to disk so the MOTHER eventually picks it up'. Sprint-2 has no such durable exhausted-sink — REQ-B2 poll only fetches gh-side issues, REQ-B1 only posts new ones. If no sibling answers, the request is lost. Replace with: an explicit EXHAUSTED jsonl + a 'next pass re-posts after backoff' contract.",
+  "evidence": {
+    "filePath": ".vcsdd/features/proactive-loop-skeleton/specs/behavioral-spec.md",
+    "lineRange": "186-199",
+    "snippet": "REQ-B1..B4 — no durable exhausted-sink contract; relies on gh issue staying open + sibling instance eventually polling."
+  },
+  "routeToPhase": "1a"
+}

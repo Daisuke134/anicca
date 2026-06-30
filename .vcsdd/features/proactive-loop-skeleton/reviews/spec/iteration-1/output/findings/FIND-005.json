@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "high",
+  "description": "REQ-M3 references '(category, novelty)' tuples for the novelty quota, but the sprint-1 invariant (REQ-H1) and FIND-017 explicitly define the novelty key as '(category, platform)' tuple over applied.jsonl history. '(category, novelty)' is incoherent: 'novelty' is not a column on applied rows, it is the property being computed. Either this is a typo for (category, platform), or sprint-2 silently changes the novelty key. Either way the PROP-M3 test cannot be written correctly until the spec disambiguates.",
+  "evidence": {
+    "filePath": ".vcsdd/features/proactive-loop-skeleton/specs/behavioral-spec.md",
+    "lineRange": "235-238",
+    "snippet": "menu.pick_next(menu, log_tail, history) SHALL return the unblocked item with highest roi_estimate × probability_of_landing, applying the novelty quota (REQ-H1 from sprint-1) — at least 10% of picks must be (category, novelty) tuples not seen in history."
+  },
+  "routeToPhase": "1a"
+}

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-017",
+  "dimension": "verification_readiness",
+  "category": "purity_boundary",
+  "severity": "medium",
+  "description": "Purity table lists `classify_health_issue(snapshot) → list[Issue]` and `dispatch_fix(issue) → FixAction dict` as PURE. But REQ-H1 collects 'pane-text capture (for the slot's claude-p session)' as part of HealthSnapshot — pane text is an unbounded, time-dependent string. Pure dispatch over arbitrary pane text means the PURE layer must contain the regex/pattern catalog for 'Not logged in', 'Quick safety check', etc. This couples the PURE layer to the exact wording of upstream UIs (claude CLI, OAuth modals). When the upstream wording drifts, PURE tests pass but production breaks (= classic 'pure' that isn't decoupled). Spec must either (i) declare the pattern catalog data-driven from a YAML file (so the PURE function takes patterns as input), or (ii) acknowledge classify is IO-bound and route the PROP through integration testing.",
+  "evidence": {
+    "filePath": ".vcsdd/features/proactive-loop-skeleton/specs/verification-architecture.md",
+    "lineRange": "25-26",
+    "snippet": "classify_health_issue(snapshot) | health_check | HealthSnapshot dict | list[Issue] | none\ndispatch_fix(issue) | health_check | Issue dict | FixAction dict (= the recipe, not yet executed) | none"
+  },
+  "routeToPhase": "1b"
+}

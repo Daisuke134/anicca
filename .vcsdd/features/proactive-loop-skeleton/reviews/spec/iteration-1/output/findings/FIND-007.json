@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-007",
+  "dimension": "verification_readiness",
+  "category": "test_coverage",
+  "severity": "critical",
+  "description": "Massive REQ-to-PROP coverage gap. The spec contains 38 functional REQs across groups P/H/Q/B/M/J/S; verification-architecture.md defines 19 PROPs. Concretely uncovered REQs: P2 (task processing), P3 (pending-questions log path), P4 (health-check invocation in step 3), P5 (build_log read-before-act), P6 (menu pick at step 5), P8 (budget-gated step depth), P9 (build_log append at step 7), P10 (clean exit + no daemon), H4 (per-fix log row schema), Q1 (usage read at step 0.5), Q2 (budget formula), Q4 (roi.jsonl + build_log emission), B2 (poll behavior + sibling identity), B3 (auto-merge gating), M2 (menu.json schema validation), M4 (jsonl audit logs preserved), S2 (per-slot seed file installation), S3 (state preservation). 18+ REQs ship without any proof obligation. Lean mode does not justify zero coverage of these REQs.",
+  "evidence": {
+    "filePath": ".vcsdd/features/proactive-loop-skeleton/specs/verification-architecture.md",
+    "lineRange": "44-64",
+    "snippet": "PROP table contains only 19 entries; REQ-P2/P3/P4/P5/P6/P8/P9/P10/H4/Q1/Q2/Q4/B2/B3/M2/M4/S2/S3 are absent."
+  },
+  "routeToPhase": "1b"
+}

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-020",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "low",
+  "description": "REQ-S1 says 'gig-cli.sh STARTUP prompt' is rewritten to 1 line invoking proactive-loop.sh. PROP-S1 tests file content length is ≤200 chars. But neither REQ-S1 nor the launchd-plist change in CoDD specifies what happens to the existing 8000-char prompt body that contained REQ-B1..B5 logic. Either (i) the logic moves into proactive-loop.sh (then proactive-loop.sh's invariants must subsume B1..B5 — but Group P REQs don't mention B1/B2/B3/B4/B5), or (ii) the logic is silently dropped (= regression). Spec must explicitly state the migration of the 8000-char prompt's semantic content into Group P/H/Q/B requirements.",
+  "evidence": {
+    "filePath": ".vcsdd/features/proactive-loop-skeleton/specs/behavioral-spec.md",
+    "lineRange": "259-262",
+    "snippet": "REQ-S1 Gig slot migration: rewrite gig-cli.sh STARTUP prompt so the slot's cron prompt body becomes bash ~/anicca/skills/_shared/proactive-loop.sh gig (= 1 line) instead of the current 8000-character B1-B5 prompt."
+  },
+  "routeToPhase": "1a"
+}

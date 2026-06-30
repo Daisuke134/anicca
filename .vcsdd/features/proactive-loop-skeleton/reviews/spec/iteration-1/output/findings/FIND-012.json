@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-012",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "high",
+  "description": "REQ-H3(c) folds sprint-1 REQ-J1 (camofox + Gmail OTP credential restore) into a single bullet 'invoke credential-restore helper (camofox + Gmail OTP per REQ-J1 of sprint-1; the actual recovery flow)'. Sprint-1 REQ-J1 specified concrete steps (launch profile, navigate, fill OTP, verify session). Sprint-2 leaves the helper undefined: no module path, no input/output contract, no purity boundary placement, no PROP. PROP-H3-dispatch only asserts the dispatch table maps the issue class to a 'FixAction recipe', not that the recipe executes correctly. The actual credential restore (= a security-sensitive surface that handles Gmail tokens) is unspecified at implementation depth and ungated by verification.",
+  "evidence": {
+    "filePath": ".vcsdd/features/proactive-loop-skeleton/specs/behavioral-spec.md",
+    "lineRange": "132-134",
+    "snippet": "(c) NOT_LOGGED_IN (pane contains \"Not logged in\") → invoke credential-restore helper (camofox + Gmail OTP per REQ-J1 of sprint-1; the actual recovery flow);"
+  },
+  "routeToPhase": "1a"
+}

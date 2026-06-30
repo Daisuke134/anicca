@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-013",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "medium",
+  "description": "REQ-P11(b) introduces '.presenter-mode.sentinel' as 'the ONE owner-control file the loop respects' — this is a brand-new human-control surface not present in sprint-1. It is justified as 'human-set, single-tap pause for ad-hoc demos' which is a human-in-loop input mechanism (sentinel file set by hand). REQ-J8 invariant forbids 'human touch' surfaces. The spec text declares this allowed as an exception 'this is the ONE owner-control file the loop respects' without RECONCILING with REQ-J8. Either REQ-J8 must be amended to permit one filesystem touchpoint (and the static analyzer adjusted) or REQ-P11(b) must be removed. As written, the spec contradicts itself: J8 absolute, P11(b) exception.",
+  "evidence": {
+    "filePath": ".vcsdd/features/proactive-loop-skeleton/specs/behavioral-spec.md",
+    "lineRange": "111-114",
+    "snippet": "(b) ~/loops/<slot>/.presenter-mode.sentinel active (= human-set, single-tap pause for ad-hoc demos; this is the ONE owner-control file the loop respects)"
+  },
+  "routeToPhase": "1a"
+}

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-019",
+  "dimension": "verification_readiness",
+  "category": "test_quality",
+  "severity": "medium",
+  "description": "PROP-S4-first-pass-touches is required-true and asserts 'applied.jsonl growth pattern preserved (verified by comparing pre-migration and post-migration cumulative growth rate)'. Comparing growth rates across two different runtime regimes (8000-char prompt vs. 1-line loop) requires (i) a statistically meaningful pre-migration baseline window, (ii) a post-migration window, (iii) tolerance bounds. The spec specifies none. Without a defined null-hypothesis and tolerance, the test is implementation-tunable — anyone implementing it can pick a tolerance band that always passes. This is a tautological-test risk for a required-true convergence gate.",
+  "evidence": {
+    "filePath": ".vcsdd/features/proactive-loop-skeleton/specs/verification-architecture.md",
+    "lineRange": "62-62",
+    "snippet": "PROP-S4-first-pass-touches | S4 | 1 | after migration, first proactive-loop pass touches .last-pass AND appends to build_log.md AND applied.jsonl growth pattern preserved (verified by comparing pre-migration and post-migration cumulative growth rate)"
+  },
+  "routeToPhase": "1b"
+}

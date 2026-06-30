@@ -107,11 +107,17 @@ never stops the loop, only switches lane.
 - **REQ-P10** EXIT CONDITION: at end of pass, THE SYSTEM SHALL exit cleanly with
   status=idle. The cron next 5-min tick re-enters. NO background daemon is left running.
 
-- **REQ-P11** SKIP CONDITIONS (= the ONLY legitimate reasons to skip step 6, per Sutando):
-  (a) budget = MINIMAL AND no tasks in step 1; (b) `~/loops/<slot>/.presenter-mode.sentinel`
-  active (= human-set, single-tap pause for ad-hoc demos; this is the ONE owner-control file
-  the loop respects); (c) `~/loops/<slot>/.loop-paused-until.sentinel` future-dated;
-  (d) external wait on PRIMARY item ONLY (= other menu items still fair game per REQ-P7).
+- **REQ-P11** SKIP CONDITIONS (= the ONLY legitimate reasons to skip step 6):
+  (a) budget = MINIMAL AND no tasks in step 1;
+  (b) `~/loops/<slot>/.dormant.sentinel` present (= REQ-Q5 wrote it; only bot2bot or
+      adversary-PASS strategy mutation can remove it; FIND-013 fix removes the
+      presenter-mode sentinel which was a human-control surface);
+  (c) `~/loops/<slot>/.unfixable.jsonl` has ≥3 entries that are all REQ-H3 unfixable
+      AND each menu item is blocker_check-blocked (= cascading failure; logged + exit).
+
+  No human-control sentinel exists. Per Sutando's "infinite menu by design", if every
+  category is genuinely blocked, that's a menu-misconfiguration to be surfaced via
+  bot2bot, NOT a legitimate idle state.
 
 ### Group H — Health Check (`health-check.py --fix`)
 
@@ -130,13 +136,54 @@ failure class without per-mode handler proliferation.
 - **REQ-H3** Auto-fix dispatch — for each detected issue, ONE of:
   (a) `tmux dead` → restart via slot's `<slot>-cli.sh --restart`;
   (b) `.last-pass stale (>90 min)` → restart;
-  (c) `NOT_LOGGED_IN` (pane contains "Not logged in") → invoke credential-restore helper
-      (camofox + Gmail OTP per REQ-J1 of sprint-1; the actual recovery flow);
+  (c) `NOT_LOGGED_IN` (pane contains "Not logged in") → call
+      `credential-restore.sh <slot>` which executes per FIND-012 fix below;
   (d) `trust_dialog` (pane contains "Quick safety check") → `tmux send-keys "1" Enter`;
-  (e) `hook_module_missing` → research via firecrawl + add to allowlist via signed PR;
-  (f) `spawn_surface_drift` (pinned-sha mismatch) → `git checkout` last anicca-bot-signed
-      commit of `_shared/`;
-  (g) `tmux_server_corrupted` (e.g. socket missing) → `tmux kill-server` + restart.
+  (e) `hook_module_missing` → call `auto-allowlist.sh <slot> <module>` which executes
+      per REQ-H3e below;
+  (f) `spawn_surface_drift` (pinned-sha mismatch) → call `auto-rollback.sh <slot>` which
+      `git fetch origin main` then `git checkout <last-anicca-bot-signed-sha> -- skills/_shared/`
+      then re-validates `verify_spawn_surface`;
+  (g) `tmux_server_corrupted` (socket missing OR `tmux ls` exits non-zero) →
+      `tmux kill-server` then call (a).
+
+  Issue classes are mutually exclusive by detection priority (= same priority order as
+  sprint-1 REQ-A classify); when multiple match, the highest-priority issue is the only
+  one dispatched per pass (the next pass re-detects whatever remains).
+
+- **REQ-H3c** Credential restore (FIND-012 fix; defines what (c) actually does):
+  `credential-restore.sh <slot>` SHALL:
+  (i) launch camofox (= `~/.openclaw/skills/camofox-browser`, port :9377) with the
+      stored `~/.cloak/profiles/anicca-login` profile;
+  (ii) navigate to `claude.com/cai/oauth/authorize?...` (the OAuth URL extracted from
+       the pane);
+  (iii) IF Google sign-in shown, fill `${GOOGLE_LOGIN_EMAIL}` + `${GOOGLE_LOGIN_PASSWORD}`
+        from `~/.openclaw/.env`;
+  (iv) IF OTP requested, invoke `gog gmail` (= `~/.openclaw/skills/gog/gmail`) to read
+       the most recent code matching `subject contains "Claude"|"Anthropic"` AND
+       `receivedWithin 5min`;
+  (v) capture the redirected callback URL containing `code=...`;
+  (vi) `tmux send-keys "$code" Enter` into the slot's pane (= paste auth code into the
+       waiting `/login` prompt);
+  (vii) `tmux capture-pane -p` to verify "Logged in as <email>";
+  (viii) `<slot>-cli.sh --restart` to restart the slot core with fresh credentials.
+
+  IF any step fails 3 attempts, write to `~/loops/<slot>/.unfixable.jsonl` per REQ-H5
+  AND post to `bot2bot.sh post <slot> opinion-requested` so a sibling instance can
+  diagnose. NO human is contacted.
+
+- **REQ-H3e** Hook auto-allowlist (FIND-004 fix replaces vague --fix-deep with concrete):
+  `auto-allowlist.sh <slot> <module>` SHALL:
+  (i) `firecrawl scrape https://npmjs.com/package/<module> markdown` and extract
+      weekly_downloads + author + last_publish + advisory_count;
+  (ii) read `~/anicca/skills/_shared/trusted-authors.json` (sprint-1 carry);
+  (iii) IF weekly_downloads >= trusted-authors.json's `min_weekly_downloads` AND author
+        in `trusted_npm_authors` (OR module starts with any `trusted_org_namespaces`)
+        AND no security advisories AND no `deny_pattern_substrings` match, append
+        module to `~/anicca/skills/_shared/hook-modules-allowlist.txt` AND
+        `git commit && git push` to a branch `auto-allowlist/<module>` AND
+        open a PR for sibling-AI review (bot2bot.sh post);
+  (iv) ELSE: skip + lessons.jsonl row `{outcome: hook-skipped, evidence_id: <npm-url>}`.
 
 - **REQ-H4** Each fix attempt SHALL be logged to `~/.openclaw/logs/<slot>-health.log`
   with `{ts, issue, action, outcome: "fixed" | "unfixable", details}`.
@@ -161,18 +208,30 @@ Continuous budget. Replaces J4/J6/J9.
   `budget_per_pass = remaining_pct / (minutes_until_reset / 5)`.
   Then quantize: `FULL` if > 3, `MEDIUM` if 1-3, `LIGHT` if 0.1-1, `MINIMAL` if < 0.1.
 
-- **REQ-Q3** IF quota source is unavailable (claude command not exposing usage), THE
-  SYSTEM SHALL fall back to byte-count × 4-bytes-per-token heuristic AND apply 2×
-  conservative penalty (sprint-1 REQ-B6 inherited) AND emit `token_source: "estimated"`.
+- **REQ-Q3** Measurement-seam resilience (FIND-002 fix; restores full sprint-1 REQ-J9
+  semantics):
+  (a) Primary seam: read `CLAUDE_USAGE_ENV` or equivalent env-published usage if exposed.
+  (b) Fallback 1: parse the tmux pane footer counter `↓ <N>k tokens` if the pane is
+      capturable; reverse-engineer cumulative.
+  (c) Fallback 2: byte-count × 0.25 (= 4-bytes-per-token) heuristic; emit
+      `token_source: "estimated"` AND multiply computed cost by 2× (sprint-1 REQ-B6
+      conservative penalty preserved).
+  (d) Running ratio: when `Σ token_source=="estimated" / Σ all > 0.5` over the last 100
+      rows, escalate to 4× penalty (sprint-1 REQ-J9 line 2 preserved).
+  (e) Persistent degradation: IF degraded for 7 days (= 168 hourly rows), THE SYSTEM
+      SHALL append a row to `~/anicca/state/mother-recovery-queue.jsonl` (= sibling
+      instance picks it up via its own `bot2bot.sh poll`; not a separate service).
 
 - **REQ-Q4** AT END-OF-PASS, THE SYSTEM SHALL emit a roi.jsonl row (sprint-1 REQ-B1
   schema) AND append a 1-line summary to `build_log.md`.
 
-- **REQ-Q5** IF cumulative ROI (= sprint-1 REQ-B5 rolling_window) has been < 0 for 14
-  consecutive days AND the slot is not freshly seeded, THE SYSTEM SHALL write
-  `~/loops/<slot>/.dormant.sentinel` (= graceful disable; the cron next tick reads this
-  and skips step 6, only updating state to `idle`). This is the slow continuous version
-  of INV-11 token kill-switch.
+- **REQ-Q5** Dormancy boundary uses sprint-1 REQ-B5's `roi_7day_jpy` directly (FIND-001
+  fix; one window definition across the framework). IF `roi_7day_jpy < 0` for 14
+  consecutive 7-day windows (= 14 calendar days where each day's rolling-7d sum was
+  negative) AND slot age > 14 days, THE SYSTEM SHALL write
+  `~/loops/<slot>/.dormant.sentinel` (= graceful disable). The 14-window count is the
+  HARD limit; INV-11 binary kill-switch (sprint-1 REQ-B4) remains as a backstop for the
+  cost-cliff case.
 
 - **REQ-Q6** Sentinel removal: ONLY a bot2bot.sh response or a successful adversary-PASS
   on a new strategy.json may remove `.dormant.sentinel`. NEVER a human gesture.
@@ -193,9 +252,19 @@ zero-side-channel (= REQ-J8 compliant).
   an anicca-bot account (= the other AI instance's reply) AND emit them as JSON for the
   proactive-loop step 1 to ingest as tasks.
 
-- **REQ-B3** `bot2bot.sh auto-merge <slot> <pr-number>` SHALL be called after a sibling
-  AI instance's fresh-context adversary returns PASS on a PR. The merge SHALL use
-  `gh pr merge --merge --delete-branch` signed by anicca-bot (= CI pipeline secret).
+- **REQ-B3** (REVISED FIND-003 fix; auto-merge SCOPE-DEFERRED to sprint-3)
+  Sprint-2 ships `bot2bot.sh annotate-pr <slot> <pr-number> <verdict>` which adds a
+  COMMENT to the PR carrying the sibling instance's fresh-context adversary verdict.
+  Sprint-2 explicitly DOES NOT merge. Auto-merge requires sprint-3's real-ed25519 +
+  anicca-bot CI pipeline (= FIND-015 sprint-1 carry); without that identity gate, a
+  rogue sibling could merge arbitrary code.
+
+  Sprint-2 merge path: the PR is annotated with `bot2bot-review-passed` label + verdict
+  comment; an external watcher in the CI pipeline (= existing GitHub Actions on the
+  framework repo, configured by Dais at install time) is the one that performs the
+  actual merge once it sees the label AND verifies an ed25519 signature on the comment.
+  This separates "AI proposes" (= sprint-2 in-scope) from "trust gate enforces" (=
+  sprint-3 + Dais's CI config). The proactive-loop never directly merges.
 
 - **REQ-B4** THE SYSTEM SHALL NEVER create a gh issue with label `escalation` whose
   body asks a human to act. REQ-J8 invariant: `escalation` label is reserved for the
@@ -234,8 +303,9 @@ zero-side-channel (= REQ-J8 compliant).
 
 - **REQ-M3** `menu.pick_next(menu, log_tail, history)` SHALL return the unblocked
   item with highest `roi_estimate × probability_of_landing`, applying the novelty
-  quota (REQ-H1 from sprint-1) — at least 10% of picks must be `(category, novelty)`
-  tuples not seen in `history`.
+  quota (sprint-1 REQ-H1 inherited verbatim) — at least 10% of picks must be
+  `(category, platform)` tuples not present in `history` (FIND-005 fix: key aligns
+  to sprint-1's canonical novelty key, not a parallel `(category, novelty)` slang).
 
 - **REQ-M4** Sprint-1's existing jsonl streams (`lessons.jsonl`, `earnings.jsonl`,
   `applied.jsonl`, `roi.jsonl`) SHALL remain as immutable audit logs. `build_log.md`
@@ -273,8 +343,12 @@ zero-side-channel (= REQ-J8 compliant).
 - **REQ-S4** After migration, the first proactive-loop pass MUST observably:
   (a) touch `~/loops/gig/.last-pass`,
   (b) append at least one section to `~/loops/gig/build_log.md`,
-  (c) NOT regress on the existing growing-applied behavior (= applied.jsonl count
-  must continue to grow across passes).
+  (c) preserve the growing-applied invariant (FIND-006 fix): a SINGLE menu pick at step 6
+  in the `scan-requests` category SHALL itself apply a BATCH of N requests (where N is
+  driven by strategy.json `max_apply_per_pass` from sprint-1), so applied.jsonl grows
+  by N per scan-requests-pick. The acceptance is that applied.jsonl growth over the
+  first 24h post-migration is ≥ 50% of the 24h before migration (= no regression in
+  apply throughput; menu-driven picks are NOT per-row but per-batch-action).
 
 ## Non-Functional Requirements
 
@@ -300,11 +374,11 @@ zero-side-channel (= REQ-J8 compliant).
   CLI not in PATH): log + set budget = MINIMAL + write `{"status": "quota_unknown"}` to
   core-status.json.
 
-- **EDGE-S4** All categories in menu.json are blocked at step 5: log "no unblocked
-  menu items" + run step 3 health-check again with a more aggressive --fix-deep flag
-  AND, if still nothing, exit cleanly with idle status. Sutando rule: "infinite menu
-  by design — if you truly find nothing to do, that's a menu-misconfiguration, not
-  legitimate idle."
+- **EDGE-S4** All categories in menu.json are blocked at step 5 (FIND-004 fix; removes
+  vague --fix-deep): log "no unblocked menu items" + call `bot2bot.sh post <slot>
+  opinion-requested` with the blocker breakdown as the body (= surfaces to sibling
+  instance for menu re-configuration) + exit cleanly with `idle`. Sutando rule:
+  "infinite menu by design" — full block means menu config drift, surface via bot2bot.
 
 - **EDGE-S5** bot2bot.sh poll returns 0 issues: that's normal (= no sibling instance
   online or none has answered yet). Step 1 just continues with local tasks.

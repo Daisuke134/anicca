@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-009",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "high",
+  "description": "PROP-Q6-sentinel-rm requires 'static-analysis: no code path removes .dormant.sentinel except (a) bot2bot.sh response handler, (b) successful adversary-PASS on strategy.json mutation'. Detecting 'no code path' across mixed bash + python + future contributor code is a soundness-impossible static check at tier-1 — a contributor could `os.system('rm ...')`, use `shutil`, write through subprocess, or use a tmpfile + rename. A grep-based static analyzer is not the right mechanism for unbounded paths. The mechanism should be (i) filesystem-level guard (e.g., immutable flag + signed sentinel remover process) or (ii) eBPF/dtrace audit, not a static analyzer at tier-1. Tier mismatch invalidates the convergence claim.",
+  "evidence": {
+    "filePath": ".vcsdd/features/proactive-loop-skeleton/specs/verification-architecture.md",
+    "lineRange": "56-56",
+    "snippet": "PROP-Q6-sentinel-rm | Q6 | 1 | static-analysis: no code path removes .dormant.sentinel except (a) bot2bot.sh response handler, (b) successful adversary-PASS on strategy.json mutation | static-analysis + integration | YES"
+  },
+  "routeToPhase": "1b"
+}
