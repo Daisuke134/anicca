@@ -1,0 +1,67 @@
+{
+  "sprintNumber": 1,
+  "feature": "install-proactive-plist",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-01T00:00:00Z",
+  "iteration": 1,
+  "reviewContext": {
+    "reviewType": "implementation",
+    "mode": "lean"
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-004"],
+      "evidence": [
+        {"type": "file", "location": "skills/_shared/install-proactive-plist.sh", "description": "REQ-A4 ordering literal: validation runs via subprocess (python3 -m lib.plist_render validate), creating spec/impl ambiguity (FIND-004)"}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-002", "FIND-003"],
+      "evidence": [
+        {"type": "file", "location": "skills/_shared/__tests__/test_install_integration_darwin.py", "description": "PROP-E5 rollback path implemented at install-proactive-plist.sh:79-86 but no test exercises bootstrap failure (FIND-002); PROP-E1 cohealth load-identity test skips when cohealth absent and only compares PID, not path or load-ts (FIND-003)"}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-005"],
+      "evidence": [
+        {"type": "file", "location": "skills/_shared/install-proactive-plist.sh:55-88", "description": "Cross-path collision + pre-existing matching disk content race: bootout fires but bootstrap is skipped because NEEDS_WRITE=0 (FIND-001). Shared /tmp/.iplv.err and /tmp/.iplb.err symlink-race / parallel-clobber (FIND-005)"}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/_shared/lib/plist_render.py", "description": "PURE single-source helpers verified: validate_slot, render_plist, plist_digest, parse_loaded_plist_path — no duplicate bash implementations (test_install_no_human_touch.py:73-82 enforces)"},
+        {"type": "file", "location": "skills/_shared/install-proactive-plist.sh:10-39", "description": "Shell front-end is thin: SHARED_DIR resolution + 2-up REPO_ROOT computation is correct (/Users/anicca/anicca/skills/_shared → cd .. → /Users/anicca/anicca/skills → cd .. → /Users/anicca/anicca matches CANONICAL_HOME pin). Module boundary respected."},
+        {"type": "file", "location": "skills/_shared/__tests__/test_install_no_human_touch.py:42-47", "description": "DUPLICATE_KEYWORDS test enforces FIND-007 single-source invariant at test time"}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-006"],
+      "evidence": [
+        {"type": "file", "location": "skills/_shared/__tests__/test_install_no_human_touch.py:86-89", "description": "test_no_elevated_privilege uses naive substring 'sudo' (false-positive on 'pseudo') and HUMAN_TOUCH_PATTERNS omits pkexec/doas/AuthorizationExecuteWithPrivileges (FIND-006)"}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 6,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [
+      "spec_fidelity",
+      "edge_case_coverage",
+      "implementation_correctness",
+      "structural_integrity",
+      "verification_readiness"
+    ],
+    "duplicateFindings": []
+  }
+}

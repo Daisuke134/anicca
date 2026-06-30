@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "edge_case_coverage",
+  "category": "test_quality",
+  "severity": "medium",
+  "description": "test_no_human_touch.py:test_no_elevated_privilege (line 86-89) asserts `'sudo' not in txt.lower()` over the .sh source. This is a substring check that will also flag legitimate words containing 'sudo' (e.g. 'pseudo', 'pseudo-tty', a comment mentioning 'no sudo allowed'). It also IGNORES the case where elevation is requested via `osascript -e 'do shell script ... with administrator privileges'` (osascript IS pattern-checked, but only as a literal word \u2014 `/usr/bin/osascript` invocation is caught). Conversely, `pkexec`, `doas`, `security execute-with-privileges`, `AuthorizationExecuteWithPrivileges` are NOT in HUMAN_TOUCH_PATTERNS, so a future regression that elevates via any of these mechanisms passes the test. Either tighten to `\\bsudo\\b` regex and add the other escalation primitives to HUMAN_TOUCH_PATTERNS, or document the limit explicitly.",
+  "evidence": {
+    "filePath": "skills/_shared/__tests__/test_install_no_human_touch.py",
+    "lineRange": "19-89",
+    "snippet": "HUMAN_TOUCH_PATTERNS = [\n    r\"\\bosascript\\b\",\n    ...\n    r\"\\bsudo\\b\",\n    ...\n]\n...\ndef test_no_elevated_privilege():\n    for src in (INSTALL_SH, PLIST_RENDER_PY):\n        txt = _read(src)\n        assert \"sudo\" not in txt.lower(), f\"sudo found in {src}\""
+  },
+  "routeToPhase": "2a"
+}

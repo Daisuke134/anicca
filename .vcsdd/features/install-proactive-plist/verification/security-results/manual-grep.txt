@@ -1,0 +1,32 @@
+install-proactive-plist manual security grep sweep
+generated 2026-07-01
+
+=== RCE / injection patterns ===
+$ grep -rnE "subprocess.*shell=True|os\.system|eval\(|<<PYEOF|<<EOF.*\\\$\\{" \
+        skills/_shared/install-proactive-plist.sh \
+        skills/_shared/lib/plist_render.py
+(0 hits)
+
+=== Anti-J8 patterns + sudo word-boundary ===
+$ grep -rnE "telegram\.org|hooks\.slack|twilio|osascript|terminal-notifier|find-generic-password|SecKeychain" \
+        skills/_shared/install-proactive-plist.sh \
+        skills/_shared/lib/plist_render.py
+(0 hits)
+
+$ grep -nE "\\bsudo\\b" \
+        skills/_shared/install-proactive-plist.sh \
+        skills/_shared/lib/plist_render.py
+(0 hits)
+
+=== LAUNCHCTL_BIN gate (FIND-2-001) ===
+- Path canonicalized via cd "$(dirname …)" && pwd -P → defeats /tmp/../etc/launchctl
+- Allow-list: $TMPDIR | /tmp | /private/tmp | /private/var/folders | /var/folders
+- -x executable check on canonicalized path
+- stderr WARN log on override active
+- exit 9 BEFORE any other side-effect
+
+Verdict:
+- 0 RCE / injection surfaces
+- 0 anti-J8 hits
+- 0 sudo invocations (word-boundary)
+- LAUNCHCTL_BIN test hook is production-safe (adversary iter-3 verified)

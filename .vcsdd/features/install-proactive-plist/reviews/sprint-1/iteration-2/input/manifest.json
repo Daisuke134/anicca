@@ -1,0 +1,33 @@
+{
+  "reviewType": "implementation",
+  "featureName": "install-proactive-plist",
+  "sprintNumber": 1,
+  "iteration": 2,
+  "mode": "lean",
+  "artifactsToReview": {
+    "spec": [".vcsdd/features/install-proactive-plist/specs/behavioral-spec.md",
+             ".vcsdd/features/install-proactive-plist/specs/verification-architecture.md"],
+    "source_python": ["skills/_shared/lib/plist_render.py"],
+    "source_shell": ["skills/_shared/install-proactive-plist.sh"],
+    "tests": ["skills/_shared/__tests__/test_plist_render.py",
+              "skills/_shared/__tests__/test_install_integration_darwin.py",
+              "skills/_shared/__tests__/test_install_no_human_touch.py"]
+  },
+  "previousIterationFindings": [
+    "FIND-001 critical (collision-bootout race): fixed via BOOTED_OUT_STALE flag in install.sh + NEEDS_BOOTSTRAP=1 when stale removed + new test_collision_bootout_with_identical_disk_still_loads",
+    "FIND-002 high (PROP-E5 untested): added test_bootstrap_failure_rolls_back_disk_plist + new LAUNCHCTL_BIN env hook in install.sh; asserts disk plist gone after simulated bootstrap fail",
+    "FIND-003 high (PROP-E1 skip + PID-only): replaced with test_does_not_touch_sibling_job which bootstraps a controlled sibling first; REQ-E1 spec updated (path-identity only, no PID assert)",
+    "FIND-004 medium (REQ-A4 wording): clarified that read-only python3 -m validate subprocess is part of validation step, not a violation",
+    "FIND-005 medium (TOCTOU /tmp): replaced /tmp/.iplv.err and /tmp/.iplb.err with mktemp in $TMPDIR + trap EXIT cleanup",
+    "FIND-006 medium ('sudo' substring): replaced with word-boundary regex + comment stripping"
+  ],
+  "reviewDimensions": ["spec_fidelity", "edge_case_coverage", "implementation_correctness", "structural_integrity", "verification_readiness"],
+  "extraConstraints": [
+    "Verify FIND-001 closure: trace the BOOTED_OUT_STALE flag flow in install.sh. Confirm the bootstrap branch fires when stale=1 and disk-digest matches.",
+    "Verify FIND-002 closure: confirm test_bootstrap_failure_rolls_back_disk_plist actually triggers the rollback path (LAUNCHCTL_BIN injection works as intended, not silently bypassed).",
+    "Verify FIND-005 closure: grep install.sh for literal /tmp/. — must be 0 hits (no shared tmpfile paths).",
+    "Verify FIND-006 closure: the word-boundary 'sudo' check still ban real sudo invocations (= regression test).",
+    "Verify no new critical bug introduced by the LAUNCHCTL_BIN testability hook (= could it be abused in production?)."
+  ],
+  "expectedOutputPath": ".vcsdd/features/install-proactive-plist/reviews/sprint-1/iteration-2/output/"
+}

@@ -1,0 +1,62 @@
+{
+  "sprintNumber": 1,
+  "feature": "install-proactive-plist",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-01T00:00:00Z",
+  "iteration": 2,
+  "reviewContext": {
+    "reviewType": "implementation",
+    "mode": "lean"
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "specs/behavioral-spec.md", "description": "REQ-A4 amended L56-61 to explicitly permit read-only validate subprocess; REQ-E1 amended L97-102 to require controlled sibling bootstrap, removing the skip-when-absent escape hatch (closes FIND-1-003, FIND-1-004)"},
+        {"type": "file", "location": "skills/_shared/install-proactive-plist.sh:64-92", "description": "BOOTED_OUT_STALE flag + NEEDS_BOOTSTRAP forced=1 path closes FIND-1-001 (REQ-B4 collision+identical-disk now leaves exactly one loaded job)"}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "__tests__/test_install_integration_darwin.py:64-100", "description": "test_collision_bootout_with_identical_disk_still_loads exercises FIND-1-001 fix path-by-path"},
+        {"type": "file", "location": "__tests__/test_install_integration_darwin.py:104-131", "description": "test_bootstrap_failure_rolls_back_disk_plist injects a fake launchctl via LAUNCHCTL_BIN that fails on `bootstrap`, asserts disk plist rolled back (closes FIND-1-002 PROP-E5 coverage gap)"},
+        {"type": "file", "location": "__tests__/test_install_integration_darwin.py:200-240", "description": "test_does_not_touch_sibling_job bootstraps its own controlled sibling and asserts path-identity unconditionally (closes FIND-1-003)"}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-2-001"],
+      "evidence": []
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/_shared/install-proactive-plist.sh:16-19", "description": "mktemp + trap EXIT replaces shared /tmp/.iplv.err and /tmp/.iplb.err; grep '/tmp/' against install-proactive-plist.sh returns 0 hits (FIND-1-005 closed)"},
+        {"type": "file", "location": "skills/_shared/install-proactive-plist.sh:103-104", "description": "trap re-bound to include TMPBERR only inside NEEDS_BOOTSTRAP branch; clean exit path verified"}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "__tests__/test_install_no_human_touch.py:86-98", "description": "sudo check tightened to `\\bsudo\\b` word-boundary regex with line-comment stripping; grep -i 'sudo' against install-proactive-plist.sh returns 0 hits → regression check would still catch a literal `sudo foo` invocation (FIND-1-006 closed)"},
+        {"type": "file", "location": "skills/_shared/lib/plist_render.py", "description": "PURE module re-read — single-source contract unchanged; no shell duplicate of validate_slot / render_plist / parse_loaded_plist_path / plist_digest (PROP-NFR1 holds)"}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 1,
+    "previousIterationFindingsClosed": ["FIND-001", "FIND-002", "FIND-003", "FIND-004", "FIND-005", "FIND-006"],
+    "newFindings": ["FIND-2-001"],
+    "duplicateFindings": []
+  }
+}

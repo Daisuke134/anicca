@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "edge_case_coverage",
+  "category": "test_quality",
+  "severity": "high",
+  "description": "PROP-E1-cohealth-load-identity (required:true, verification-architecture.md L35) demands comparison of BOTH path-identity AND load-timestamp of ai.anicca.<slot>-core-healthcheck before/after. The test test_does_not_touch_core_healthcheck (test_install_integration_darwin.py:127-141) (a) only checks PID, not path and not load-timestamp; (b) skips entirely if cohealth is not loaded (line 131-132), giving zero coverage in CI environments where cohealth is not preinstalled; (c) silently passes if either before- or after-PID regex doesn't match (line 139 'if pid_before and pid_after'). A bootout-then-rebootstrap of cohealth that re-acquired the SAME PID by coincidence — or that occurred while cohealth was idle (no PID line) — would pass this test while violating INV-6. Strengthen: assert path-identity unconditionally, parse load-timestamp / 'last exit code' line, fail loud (don't skip) when cohealth absent in production, or fixture-install a stub cohealth.",
+  "evidence": {
+    "filePath": "skills/_shared/__tests__/test_install_integration_darwin.py",
+    "lineRange": "127-141",
+    "snippet": "if rc != 0:\n    pytest.skip(\"gig-core-healthcheck not loaded; skipping load-identity check\")\npid_before = re.search(r\"pid\\s*=\\s*(\\d+)\", before)\n... \nif pid_before and pid_after:\n    assert pid_before.group(1) == pid_after.group(1), ..."
+  },
+  "routeToPhase": "2b"
+}
