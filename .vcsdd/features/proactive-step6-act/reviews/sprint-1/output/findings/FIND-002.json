@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "medium",
+  "description": "Sprint-2-carry novelty_ratio=0 ZeroDivisionError guard at lib/menu.py:112 ('novelty_ratio > 0' added to the conditional) has NO dedicated unit test. test_dispatch_integration_step6.py seeds novelty_quota_ratio=0.0 but only as scaffolding to keep the integration test deterministic \u2014 it does not assert the no-crash contract on lib.menu.pick_next with an empty/non-empty history under novelty_ratio=0. A regression that removes the '> 0' check would slip past the entire suite as long as history stays empty (because int(1.0/0.0) is never reached when history is []). The manifest extra-constraint #4 specifically demanded this test coverage exist; it does not.",
+  "evidence": {
+    "filePath": "skills/_shared/lib/menu.py",
+    "lineRange": "109-112",
+    "snippet": "novelty_ratio = float(menu.get(\"novelty_quota_ratio\", 0.1))\\n    novel_items = [c for c in candidates if _is_novelty_eligible(c, history)]\\n    # Guard: novelty_ratio == 0 means \"disabled\" \u2192 never force a novelty pick.\\n    if novel_items and novelty_ratio > 0 and len(history) >= int(1.0 / novelty_ratio):"
+  },
+  "routeToPhase": "2a"
+}

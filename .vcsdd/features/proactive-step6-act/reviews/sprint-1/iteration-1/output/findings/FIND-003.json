@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "edge_case_coverage",
+  "category": "test_quality",
+  "severity": "low",
+  "description": "REQ-I2 spec (behavioral-spec.md:117-123) demands: 'snapshots <slot_dir>/tasks/* + <slot_dir>/build_log.md mtimes BEFORE STEP 6, asserts STEP 6 adds AT MOST one tasks/ file and appends to build_log.md AT MOST one \"## \" section.' The implementation in test_dispatch_integration_step6.py::test_step6_does_not_write_outside_tasks_and_build_log only snapshots seeded EXTRAS (menu.json, other.txt, subdir/nested.txt) and proves they are unchanged. It does NOT snapshot tasks/* before/after and does NOT assert the 'AT MOST one ## section' append boundary. A regression that double-appends to build_log.md (e.g. accidentally calling append_pass twice) or writes a second sibling file into tasks/ would pass this test. The test is a partial proxy of REQ-I2, not a complete one.",
+  "evidence": {
+    "filePath": "skills/_shared/__tests__/test_dispatch_integration_step6.py",
+    "lineRange": "96-125",
+    "snippet": "before = {p: p.stat().st_mtime_ns for p in extras}\\n    r = _run_dispatch(slot, slot_dir)\\n    assert r.returncode == 0\\n    after = {p: p.stat().st_mtime_ns for p in extras if p.exists()}\\n    for p, mt in before.items():\\n        assert after.get(p) == mt"
+  },
+  "routeToPhase": "2b"
+}

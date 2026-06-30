@@ -1,0 +1,31 @@
+{
+  "reviewType": "implementation",
+  "featureName": "proactive-step6-act",
+  "sprintNumber": 1,
+  "iteration": 2,
+  "mode": "lean",
+  "artifactsToReview": {
+    "spec": [".vcsdd/features/proactive-step6-act/specs/behavioral-spec.md",
+             ".vcsdd/features/proactive-step6-act/specs/verification-architecture.md"],
+    "source_python": ["skills/_shared/lib/step6_act.py", "skills/_shared/lib/step3_recipe.py",
+                       "skills/_shared/lib/menu.py", "skills/_shared/proactive-loop-dispatch.py"],
+    "tests": ["skills/_shared/__tests__/test_step6_act.py",
+              "skills/_shared/__tests__/test_step3_recipe.py",
+              "skills/_shared/__tests__/test_dispatch_integration_step6.py",
+              "skills/_shared/__tests__/test_menu.py"]
+  },
+  "previousIterationFindings": [
+    "FIND-001 medium (REQ-I1 dispatcher regression guard missing): fixed via test_dispatcher_has_no_tmux_kill_or_stop + test_step3_recipe_has_no_tmux_kill in test_step3_recipe.py",
+    "FIND-002 medium (novelty_ratio=0 unit-test missing): fixed via TestNoveltyRatioZeroGuard 3 tests in test_menu.py",
+    "FIND-003 low (bounds missing): fixed — scoped-mtime integration test now asserts AT MOST one new tasks/ file AND AT MOST one new '## ' section in build_log.md",
+    "FIND-004 low (tautological sanitizer assertion): fixed — exact-match assertions on 'スキャン-coconala' → 'coconala' + 2 new rigorous cases"
+  ],
+  "reviewDimensions": ["spec_fidelity", "edge_case_coverage", "implementation_correctness", "structural_integrity", "verification_readiness"],
+  "extraConstraints": [
+    "Verify FIND-001 grep guard tests catch a regression — if someone adds 'tmux kill-server' to dispatcher, the test must fail.",
+    "Verify FIND-002 novelty tests genuinely exercise the > 0 guard (not just happy path).",
+    "Verify FIND-003 bounds use len(new_tasks) <= 1 and section delta <= 1.",
+    "Verify FIND-004 sanitizer parametrize has no conditional fallback (all assertions are exact-match)."
+  ],
+  "expectedOutputPath": ".vcsdd/features/proactive-step6-act/reviews/sprint-1/iteration-2/output/"
+}
