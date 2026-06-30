@@ -1,0 +1,23 @@
+{
+  "reviewType": "spec",
+  "feature": "proactive-loop-skeleton",
+  "iteration": 5,
+  "mode": "lean",
+  "sprint": 2,
+  "iterationCapOverride": "Architect override per HARD 0.36. iter-4 verdict was spec_fidelity PASS, verification_readiness FAIL on 1 mechanical drift. v5 fixes both PROPs.",
+  "artifactsToReview": [
+    ".vcsdd/features/proactive-loop-skeleton/specs/behavioral-spec.md",
+    ".vcsdd/features/proactive-loop-skeleton/specs/verification-architecture.md"
+  ],
+  "previousIterationFindings": [
+    "iter-4 FIND-4-001 (high, verification_readiness): PROP-P6-menu-pick + PROP-P7-pivot still using 4-arg/2-arg pick_next instead of canonical 6-arg",
+    "v5 fix: both PROPs now use `pick_next(menu, log_tail, history, blockers, now_ts, budget)` matching REQ-M3 + Purity table"
+  ],
+  "reviewDimensions": ["spec_fidelity", "verification_readiness"],
+  "extraConstraints": [
+    "Verify FIND-4-001 closed: every `pick_next(` occurrence across both spec files must use the canonical 6-arg signature.",
+    "If closed AND no new finding → PASS the lean 1c gate so Phase 2a can begin.",
+    "Cap: MAX 2 new findings if FAIL."
+  ],
+  "expectedOutputPath": ".vcsdd/features/proactive-loop-skeleton/reviews/spec/iteration-5/output/"
+}
