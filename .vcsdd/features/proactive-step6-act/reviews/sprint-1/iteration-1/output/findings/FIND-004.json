@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "spec_fidelity",
+  "category": "test_quality",
+  "severity": "low",
+  "description": "test_step6_act.py::TestSanitizeName declares the parametrized case ('スキャン-coconala', '-coconala') with expected starting with '-', then bypasses strict equality (lines 36-41) and only asserts non-empty + safe-char invariant. This is tautological for the documented FIND-005 fix (REQ-T3 (iv) — empty-after-strip → 'unnamed'): the actual sanitize_name output is 'coconala' (= ascii suffix survives, Japanese prefix replaced with '-' then collapsed/stripped), NOT '-coconala'. The expectation column is misleading and the assertion is weaker than the spec table claims. A regression that produced (say) '___' or other purely-safe-char garbage would pass this test even though it violates the REQ-T3 intent.",
+  "evidence": {
+    "filePath": "skills/_shared/__tests__/test_step6_act.py",
+    "lineRange": "29-41",
+    "snippet": "(\"スキャン-coconala\", \"-coconala\"),  # mixed Japanese drops to ascii suffix\\n    ])\\n    def test_sanitize(self, inp, expected):\\n        ...\\n        if not expected.startswith(\"-\"):\\n            assert out == expected\\n        else:\\n            ...\\n            assert out  # non-empty"
+  },
+  "routeToPhase": "2b"
+}

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "verification_readiness",
+  "category": "test_coverage",
+  "severity": "medium",
+  "description": "PROP-I1 (REQ-I1) explicitly mandates 'Static grep over the dispatcher SHALL find 0 hits' for forbidden patterns {tmux kill, --stop, --kill}. An automated grep-test exists for skills/earn/gig/run.sh (skills/_shared/__tests__/test_gig_run_shim_no_human_touch.py:36-42) but NO automated grep-test asserts this invariant against skills/_shared/proactive-loop-dispatch.py. Manual grep currently finds 0 hits, so the code is correct today — but the regression guard the verification architecture demands is missing. A future edit to the dispatcher (e.g. adding an emergency 'tmux kill-server' helper) would silently bypass the invariant.",
+  "evidence": {
+    "filePath": ".vcsdd/features/proactive-step6-act/specs/verification-architecture.md",
+    "lineRange": "32-32",
+    "snippet": "PROP-I1-no-tmux-kill | 1 | true | REQ-I1 static grep"
+  },
+  "routeToPhase": "2b"
+}

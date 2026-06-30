@@ -1,0 +1,26 @@
+proactive-step6-act manual security grep
+generated 2026-07-01
+
+=== RCE / injection ===
+$ grep -rnE "subprocess.*shell=True|os\.system|eval\(" \
+        skills/_shared/lib/step6_act.py skills/_shared/lib/step3_recipe.py \
+        skills/_shared/proactive-loop-dispatch.py
+(0 hits)
+
+=== Anti-J8 + tmux-kill ===
+$ grep -rnE "telegram\.org|hooks\.slack|twilio|osascript|terminal-notifier|find-generic-password|SecKeychain|tmux.*kill|kill-session|kill-server" \
+        skills/_shared/lib/step6_act.py skills/_shared/lib/step3_recipe.py \
+        skills/_shared/proactive-loop-dispatch.py
+(0 hits)
+
+=== sudo word-boundary ===
+$ grep -nE "\\bsudo\\b" \
+        skills/_shared/lib/step6_act.py skills/_shared/lib/step3_recipe.py \
+        skills/_shared/proactive-loop-dispatch.py
+(0 hits)
+
+Verdict:
+- 0 RCE / injection
+- 0 anti-J8 hits
+- 0 tmux-kill / kill-session / kill-server
+- 0 sudo invocations
