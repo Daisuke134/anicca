@@ -1,0 +1,21 @@
+target-feature-tests: PASS
+regression-baseline: PASS
+
+cross-platform unit:
+  test_plist_render.py        — 23 passed
+  test_install_no_human_touch — 12 passed
+darwin integration (live launchctl, real probe slot):
+  test_install_then_launchctl_print_succeeds   PASSED
+  test_idempotent_install_no_churn             PASSED
+  test_darwin_branch_does_not_short_circuit    PASSED
+  test_injection_guard_no_side_effect          PASSED
+  test_rendered_plist_contains_literal_paths   PASSED
+  test_does_not_touch_core_healthcheck         PASSED
+full regression: 264 passed (+35 new since sprint-2 baseline 229)
+live install verified (gig-probe-1782857268):
+  - bash install-proactive-plist.sh gig-probe-1782857268 → "installed ..." stdout
+  - plist on disk: ~/Library/LaunchAgents/ai.anicca.gig-probe-1782857268-proactive.plist
+  - launchctl print: state=not running, path=<canonical>, args=<canonical>
+  - 2nd identical install: 0 churn
+  - injection guard 'gig; rm -rf /' → exit 3, validation error
+  - teardown: bootout + rm clean
