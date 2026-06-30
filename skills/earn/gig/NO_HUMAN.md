@@ -20,8 +20,17 @@ Coconala account + KYC + bank link (a setup fact, not a runtime step).
   (検収/支払) AND evidence is captured. `monitor.sh` + `run.sh` enforce this deterministically
   (status whitelist + non-empty evidence); an applied/in-progress/fabricated row is never summed.
 
-## Files audited
-`gig-cli.sh` (the live core + cron prompt), `monitor.sh`, `gig-healthcheck.sh`. The old dealwork +
-on-chain-USDC machinery (run.sh detect/bid/settle, lib/*) lives in `archive/` and is NOT part of
-this loop. (Coconala is the ACTIVE rail — earlier notes that called Coconala "removed" were the
-pre-pivot self-funded-USDC framing and are obsolete.)
+## Files audited by no-human-loop.test.mjs
+`gig-cli.sh` (live core + cron prompt), `monitor.sh`, `gig-healthcheck.sh`, `auditor.sh`, `run.sh`.
+All new `.sh` scripts added to the loop must be listed in `__tests__/no-human-loop.test.mjs:FILES`.
+
+## Self-improving loop files (added 2026-06-30)
+| File | Role |
+|------|------|
+| `strategy.default.json` | Seed strategy (categories, templates, prices) — copied to `~/gig/strategy.json` on first pass |
+| `~/gig/strategy.json` | Live strategy (self-updated by the improve step every N passes) |
+| `~/gig/lessons.jsonl` | Outcome log: {ts,requestId,category,outcome,reason,lesson} |
+| `~/gig/shared-lessons.jsonl` | Dedup marker: which lessons were already posted to GitHub |
+
+The old dealwork + on-chain-USDC machinery (run.sh detect/bid/settle, lib/*) lives in `archive/`
+and is NOT part of this loop.
