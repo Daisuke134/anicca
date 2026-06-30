@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "edge_case_coverage",
+  "category": "test_quality",
+  "severity": "major",
+  "description": "PROP-I1 integration test does NOT actually exercise the snapshot-diff against a populated ~/loops/gig/ directory. When LOOPS_DIR does not exist (= the documented pre-#27 state per manifest, and the state shown by live E2E), _snapshot_mtimes() returns {} both before and after, so the assertion `before == after` becomes `{} == {}` and is trivially satisfied. The test will NOT catch a regression where the shim modifies an EXISTING file under ~/loops/gig/ (only a brand-new first-ever file creation would be caught). The manifest's extraConstraint #1 explicitly demands: 'verify the integration test ACTUALLY exercises this (= the snapshot logic catches a regression, not just happy path).' The test needs to seed ~/loops/gig/ with at least one fixture file (e.g. write a sentinel under a tmp HOME or under ~/loops/gig/state/.snapshot-sentinel), snapshot, run shim, snapshot, and assert mtimes are identical. As written, REQ-I1 / PROP-I1 is unverified in the configuration the live system is actually in.",
+  "evidence": {
+    "filePath": "skills/_shared/__tests__/test_gig_run_shim_darwin.py",
+    "lineRange": "32-63",
+    "snippet": "def _snapshot_mtimes(d: Path) -> dict:\n    if not d.exists():\n        return {}\n    ...\nbefore = _snapshot_mtimes(LOOPS_DIR)\n...\nafter = _snapshot_mtimes(LOOPS_DIR)\nassert before == after, ..."
+  },
+  "routeToPhase": "2b"
+}

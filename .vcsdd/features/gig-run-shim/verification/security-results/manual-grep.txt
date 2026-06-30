@@ -1,0 +1,22 @@
+gig-run-shim manual security grep sweep
+generated 2026-07-01
+
+=== RCE / injection ===
+$ grep -rnE "subprocess.*shell=True|os\.system|eval\(" \
+        skills/_shared/lib/proactive_observe.py skills/earn/gig/run.sh
+(0 hits)
+
+=== Anti-J8 + tmux-kill ===
+$ grep -rnE "telegram\.org|hooks\.slack|twilio|osascript|terminal-notifier|find-generic-password|SecKeychain|tmux.*kill" \
+        skills/_shared/lib/proactive_observe.py skills/earn/gig/run.sh
+(0 hits)
+
+$ grep -nE "\\bsudo\\b" \
+        skills/_shared/lib/proactive_observe.py skills/earn/gig/run.sh
+(0 hits)
+
+Verdict:
+- 0 RCE / injection surfaces
+- 0 anti-J8 hits
+- 0 tmux-kill / restart commands
+- 0 sudo invocations

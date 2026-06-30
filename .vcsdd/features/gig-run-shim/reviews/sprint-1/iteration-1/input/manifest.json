@@ -1,0 +1,26 @@
+{
+  "reviewType": "implementation",
+  "featureName": "gig-run-shim",
+  "sprintNumber": 1,
+  "iteration": 1,
+  "mode": "lean",
+  "artifactsToReview": {
+    "spec": [".vcsdd/features/gig-run-shim/specs/behavioral-spec.md",
+             ".vcsdd/features/gig-run-shim/specs/verification-architecture.md"],
+    "source_python": ["skills/_shared/lib/proactive_observe.py"],
+    "source_shell": ["skills/earn/gig/run.sh"],
+    "tests": ["skills/_shared/__tests__/test_proactive_observe.py",
+              "skills/_shared/__tests__/test_gig_run_shim_darwin.py",
+              "skills/_shared/__tests__/test_gig_run_shim_no_human_touch.py"]
+  },
+  "reviewDimensions": ["spec_fidelity", "edge_case_coverage", "implementation_correctness",
+                       "structural_integrity", "verification_readiness"],
+  "extraConstraints": [
+    "REQ-I1: snapshot-diff of ~/loops/gig/ mtimes before/after run.sh — verify the integration test ACTUALLY exercises this (= the snapshot logic catches a regression, not just happy path).",
+    "REQ-S3 BOTH-AND check: confirm summarize_loops_dir returns installed=False when only ONE of {plist exists, rc=0} is true.",
+    "EDGE-E2 malformed JSON: catch shouldn't be too-broad swallow — verify it only catches JSONDecodeError/ValueError/OSError, not bare Exception.",
+    "PROP-I2 no-tmux-kill: grep run.sh for tmux kill / --restart / --stop / --kill = 0 hits.",
+    "Live E2E showed 23 production apps + LAYER B not yet installed (= expected, #27 installs it). Verify the impl correctly handles the not-installed state."
+  ],
+  "expectedOutputPath": ".vcsdd/features/gig-run-shim/reviews/sprint-1/iteration-1/output/"
+}
