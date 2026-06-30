@@ -84,6 +84,15 @@ def test_shell_does_not_reimplement_pure_logic():
 
 # ─── REQ-D2 — no sudo / elevated privilege requests ───────────────
 def test_no_elevated_privilege():
+    # FIND-006 fix: word-boundary regex avoids matching 'pseudo' / 'sudo-less'
+    # in comments; strip line comments first so a banning-comment doesn't trip
+    # the assertion.
+    sudo_re = re.compile(r"\bsudo\b")
     for src in (INSTALL_SH, PLIST_RENDER_PY):
-        txt = _read(src)
-        assert "sudo" not in txt.lower(), f"sudo found in {src}"
+        raw = _read(src)
+        stripped = "\n".join(
+            (line.split("#", 1)[0] if not line.lstrip().startswith("#!") else line)
+            for line in raw.splitlines()
+        )
+        m = sudo_re.search(stripped)
+        assert not m, f"sudo invocation in {src}: {m.group(0) if m else ''}"

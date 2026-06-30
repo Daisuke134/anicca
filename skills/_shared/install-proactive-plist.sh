@@ -9,20 +9,29 @@ export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
 
 SHARED_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PY=python3
+# Tests can override the launchctl binary to simulate failures (EDGE-E5);
+# production callers leave LAUNCHCTL unset → resolved via PATH.
+LAUNCHCTL="${LAUNCHCTL_BIN:-launchctl}"
 
-# ─── REQ-A4 ordering: validate FIRST, before any side-effect ────────
+# FIND-005 fix: per-invocation private tmpfile, no shared /tmp paths (TOCTOU).
+TMPROOT="${TMPDIR:-/tmp}"
+TMPERR="$(mktemp "$TMPROOT/iplv.XXXXXXXX")"
+trap 'rm -f "$TMPERR"' EXIT
+
+# ─── REQ-A4 ordering: validate FIRST, before any FS/launchctl side-effect ────
+# (Calling the PURE validator via subprocess is permitted because it has no
+#  filesystem or launchctl side-effect of its own; spec REQ-A4 forbids
+#  side-effecting subprocesses, not the read-only validator call. The validator
+#  is also re-asserted inside render_plist (defense in depth).)
 SLOT="${1:-}"
 if [[ -z "$SLOT" ]]; then
   echo "Usage: install-proactive-plist.sh <slot>" >&2
   exit 2
 fi
-# Run validate from SHARED_DIR so lib.plist_render resolves
-if ! ( cd "$SHARED_DIR" && "$PY" -m lib.plist_render validate "$SLOT" 2>/tmp/.iplv.err ); then
-  echo "invalid slot: validation failed — $(cat /tmp/.iplv.err 2>/dev/null)" >&2
-  rm -f /tmp/.iplv.err
+if ! ( cd "$SHARED_DIR" && "$PY" -m lib.plist_render validate "$SLOT" 2>"$TMPERR" ); then
+  echo "invalid slot: validation failed — $(cat "$TMPERR" 2>/dev/null)" >&2
   exit 3
 fi
-rm -f /tmp/.iplv.err
 
 # ─── EDGE-E6 Darwin-only guard ──────────────────────────────────────
 if [[ "$(uname -s)" != "Darwin" ]]; then
@@ -52,11 +61,16 @@ NEW_CONTENT="$( cd "$SHARED_DIR" && "$PY" -m lib.plist_render render "$SLOT" "$C
   || { echo "render failed" >&2; exit 5; }
 
 # ─── REQ-E2: detect cross-path collision and bootout if needed ──────
-PRINT_OUT="$(launchctl print "gui/$UID_NUM/$LABEL" 2>/dev/null || true)"
+PRINT_OUT="$("$LAUNCHCTL" print "gui/$UID_NUM/$LABEL" 2>/dev/null || true)"
+BOOTED_OUT_STALE=0
 if [[ -n "$PRINT_OUT" ]]; then
   EXISTING_PATH="$( cd "$SHARED_DIR" && printf '%s' "$PRINT_OUT" | "$PY" -m lib.plist_render parse-path 2>/dev/null || true )"
   if [[ -n "$EXISTING_PATH" && "$EXISTING_PATH" != "$PLIST" ]]; then
-    launchctl bootout "gui/$UID_NUM/$LABEL" >/dev/null 2>&1 || true
+    "$LAUNCHCTL" bootout "gui/$UID_NUM/$LABEL" >/dev/null 2>&1 || true
+    # FIND-001 fix: track that we removed a stale loaded job so the idempotent
+    # branch below knows it MUST re-bootstrap, even if the canonical disk
+    # plist already exists byte-identical (= the bootout left zero loaded jobs).
+    BOOTED_OUT_STALE=1
   fi
 fi
 
@@ -70,25 +84,36 @@ if [[ -f "$PLIST" ]]; then
   fi
 fi
 
+# FIND-001 fix: even if disk is byte-identical, if we just booted-out a stale
+# job we MUST bootstrap to leave one loaded job at the canonical path.
+NEEDS_BOOTSTRAP=$NEEDS_WRITE
+if [[ "$BOOTED_OUT_STALE" == "1" ]]; then
+  NEEDS_BOOTSTRAP=1
+fi
+
 if [[ "$NEEDS_WRITE" == "1" ]]; then
   # REQ-B2: rewrite + bootout/bootstrap to pick up the new template
   if [[ -f "$PLIST" ]]; then
-    launchctl bootout "gui/$UID_NUM/$LABEL" >/dev/null 2>&1 || true
+    "$LAUNCHCTL" bootout "gui/$UID_NUM/$LABEL" >/dev/null 2>&1 || true
   fi
   printf '%s' "$NEW_CONTENT" > "$PLIST"
-  if ! launchctl bootstrap "gui/$UID_NUM" "$PLIST" 2>/tmp/.iplb.err; then
+fi
+
+if [[ "$NEEDS_BOOTSTRAP" == "1" ]]; then
+  TMPBERR="$(mktemp "$TMPROOT/iplb.XXXXXXXX")"
+  trap 'rm -f "$TMPERR" "$TMPBERR"' EXIT
+  if ! "$LAUNCHCTL" bootstrap "gui/$UID_NUM" "$PLIST" 2>"$TMPBERR"; then
     # EDGE-E5: bootstrap failure → rollback (remove the disk plist so we
     # don't leave a half-loaded job).
-    BOOT_ERR="$(cat /tmp/.iplb.err 2>/dev/null)"
-    rm -f "$PLIST" /tmp/.iplb.err
+    BOOT_ERR="$(cat "$TMPBERR" 2>/dev/null)"
+    rm -f "$PLIST"
     echo "launchctl bootstrap failed: $BOOT_ERR" >&2
     exit 6
   fi
-  rm -f /tmp/.iplb.err
 fi
 
 # ─── REQ-C1: confirm loaded post-install ────────────────────────────
-if ! launchctl print "gui/$UID_NUM/$LABEL" >/dev/null 2>&1; then
+if ! "$LAUNCHCTL" print "gui/$UID_NUM/$LABEL" >/dev/null 2>&1; then
   echo "post-install launchctl print failed for $LABEL" >&2
   exit 7
 fi
