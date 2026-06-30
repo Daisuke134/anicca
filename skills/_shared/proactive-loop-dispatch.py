@@ -3,6 +3,7 @@
 
 REQ-P0..P10 8-step body. NO human-touch surfaces.
 """
+import fcntl
 import json
 import os
 import sys
@@ -19,6 +20,23 @@ from lib.build_log import append_pass  # noqa: E402
 from lib.proactive_loop import should_skip_step6, write_unfixable_cascade_sink  # noqa: E402
 
 
+def _acquire_or_exit():
+    """REQ-NFR-3 re-entrancy guard: fcntl.flock (cross-platform; macOS has no flock(1))."""
+    lock_path = os.environ.get("ANICCA_LOCK_PATH", "")
+    if not lock_path:
+        return None
+    Path(lock_path).parent.mkdir(parents=True, exist_ok=True)
+    fh = open(lock_path, "w")
+    try:
+        fcntl.flock(fh.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        sys.stdout.write(f"{time.strftime('%F %T')} proactive-loop: another tick in progress, exit\n")
+        sys.stdout.flush()
+        fh.close()
+        sys.exit(0)
+    return fh
+
+
 def _write_status(slot_dir, **fields):
     p = Path(slot_dir) / "state" / "core-status.json"
     p.parent.mkdir(parents=True, exist_ok=True)
@@ -27,6 +45,7 @@ def _write_status(slot_dir, **fields):
 
 
 def main() -> int:
+    _lock_fh = _acquire_or_exit()  # REQ-NFR-3 fcntl re-entrancy guard
     slot = os.environ.get("ANICCA_SLOT", "gig")
     slot_dir = Path.home() / "loops" / slot
     pass_id = f"p-{int(time.time())}"
