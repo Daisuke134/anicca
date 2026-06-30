@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-022",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "medium",
+  "status": "new",
+  "description": "Two proof obligations cannot be discharged as written. (1) PROP-S11 (verification-architecture.md:82) asserts 'Seed transfer step in run.sh (step 5) is sequential; if seed fails, run.sh exits 1 before telemetry registration (step 6)'. No seed-transfer step exists in run.sh (see FIND-019); the property would test a non-existent code path, so the integration test described is impossible to write against the real skill. (2) PROP-T26 (verification-architecture.md:90) and REQ-T8(b) condition 2 require the on-chain Transfer amount to equal gross_payout_usdc = 'position_size_usdc x settlement_price' (behavioral-spec.md:209), but settlement_price is undefined — it appears in no Tracked Quantity and no other REQ (REQ-T5 defines only market_p as the CLOB mid). For a Polymarket CTF binary redemption the USDC payout = outcome_shares x $1 where outcome_shares = position_size_usdc / entry_price; thus size x settlement_price is dimensionally wrong and a genuine winning redemption fails the exact-amount (+/-1 raw unit) match, so the earn row is never written. This is fail-closed (no fake earn — good) but over-strict (blocks ALL real earn) and the predicate is not deterministically checkable until gross_payout_usdc / settlement_price are precisely defined.",
+  "evidence": {
+    "filePath": "specs/behavioral-spec.md",
+    "lineRange": "209",
+    "snippet": "the raw USDC amount (6-decimal) equals gross_payout_usdc computed for THIS resolved position (position_size_usdc x settlement_price)  # settlement_price undefined; payout for CTF binary = shares x $1, shares = size/entry_price"
+  },
+  "routeToPhase": "1a"
+}

@@ -1,0 +1,15 @@
+{
+  "findingId": "FIND-020",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "high",
+  "reopens": "FIND-016",
+  "status": "still-open",
+  "description": "FIND-016's fix mechanism is fictional. REQ-T10 (parent-provisioned venue policy), REQ-S2 (invokes run.sh with ANICCA_VENUE_POLICY_PATH=$parent_venue_policy_path), REQ-S3 ('cloud-init writes the policy file to $CHILD_HOME/loops/earn-pm-trade/menu.json BEFORE install.sh runs'), and REQ-S5 (venue policy provisioning) all assert the EXISTING spawn skill consumes ANICCA_VENUE_POLICY_PATH and that cloud-init writes the child menu.json. grep of skills/self/spawn returns ZERO references to ANICCA_VENUE_POLICY_PATH and ZERO references to menu.json. run.sh:143 invokes cloud-init.sh with only two args: \"$CHILD_ID\" \"$CHILD_INBOX\" — the venue policy path is never read, never forwarded, never written. SKILL.md:12 env_optional list does not include ANICCA_VENUE_POLICY_PATH. Therefore the autonomous child still cannot enable any real venue through the claimed delegated path; the resolution depends on capabilities the delegated skill does not have, while the spec frames it as 'delegated entirely to the spawn skill' (REQ-S3). FIND-016 remains open.",
+  "evidence": {
+    "filePath": "skills/self/spawn/run.sh",
+    "lineRange": "143",
+    "snippet": "USER_DATA=\"$(\"$SKILL_DIR/scripts/cloud-init.sh\" \"$CHILD_ID\" \"$CHILD_INBOX\")\"  # only 2 args; grep skills/self/spawn -> 0 hits for ANICCA_VENUE_POLICY_PATH / menu.json"
+  },
+  "routeToPhase": "1a"
+}

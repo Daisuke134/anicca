@@ -1,0 +1,15 @@
+{
+  "findingId": "FIND-019",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "reopens": "FIND-014",
+  "status": "still-open",
+  "description": "REQ-S2 step 5 ('USDC seed transfer from parent wallet to child wallet on Base') and REQ-S4 ('The USDC seed transfer ... is performed as step 5 in skills/self/spawn/run.sh. The spawn skill waits for confirmation and records seed_usdc', acceptance: 'Child base wallet balance >= spawn_seed_usdc verified via RPC after run.sh exits 0') claim the existing spawn skill performs the on-chain seed transfer. The REAL run.sh does NO transfer: it only sets SEED_USDC=${ANICCA_SEED_USDC:-1} (run.sh:118), stores it as ledger metadata seedUsdc (run.sh:129 -> child-spec.seed_usdc), and PRINTS a manual instruction 'Seed the child wallet with $X and it wakes on its own' (run.sh:196). SKILL.md:55 confirms seeding is a SEPARATE manual post-step ('Seed: transfer $1 USDC parent->child'). run.sh's actual steps are wallet-gen, AgentMail, provisional row, droplet, telemetry, final row — there is NO seed-transfer step. The round-3 note's claim that 'all 7 mechanics ... seed transfer ... delegate to the spawn skill' is false. The 'thin wrapper fully delegates' framing is therefore infeasible: a real seed transfer would require NEW code the spec asserts already exists. FIND-014 delegation-feasibility half remains unresolved.",
+  "evidence": {
+    "filePath": "skills/self/spawn/run.sh",
+    "lineRange": "96-196",
+    "snippet": "SEED_USDC=\"${ANICCA_SEED_USDC:-1}\"  # (run.sh:118) ... echo \"... Seed the child wallet with \\$${SEED_USDC} and it wakes on its own.\"  # (run.sh:196) — no on-chain transfer anywhere"
+  },
+  "routeToPhase": "1a"
+}
