@@ -11,7 +11,25 @@ set -uo pipefail
 SOCK="/tmp/anicca-gig-tmux.sock"; SESSION="anicca-gig-core"
 HB="$HOME/gig/.last-pass"; STALE_MIN=90
 LOG="$HOME/.openclaw/logs/gig-core-healthcheck.log"; mkdir -p "$(dirname "$LOG")"
-restart(){ echo "$(date '+%F %T') $1 → restarting" >> "$LOG"; bash "$HOME/anicca/skills/earn/gig/gig-cli.sh" --restart >> "$LOG" 2>&1 || true; }
+RESTART_LOG="$HOME/gig/.restart-log"
+restart(){
+  # backoff: max 5 restarts per 60min window (prevent subscription drain under persistent failure)
+  mkdir -p "$HOME/gig"
+  local now; now=$(date +%s)
+  local count=0
+  if [ -f "$RESTART_LOG" ]; then
+    while IFS= read -r ts; do
+      [ -n "$ts" ] && [ $(( now - ts )) -le 3600 ] && count=$(( count + 1 ))
+    done < "$RESTART_LOG"
+  fi
+  if [ "$count" -ge 5 ]; then
+    echo "$(date '+%F %T') backoff: $count restarts in last 60min — not restarting (likely quota/persistent failure; will resume after reset)" >> "$LOG"
+    return
+  fi
+  echo "$now" >> "$RESTART_LOG"
+  echo "$(date '+%F %T') $1 → restarting" >> "$LOG"
+  bash "$HOME/anicca/skills/earn/gig/gig-cli.sh" --restart >> "$LOG" 2>&1 || true
+}
 
 if ! tmux -S "$SOCK" has-session -t "$SESSION" 2>/dev/null; then
   restart "gig-core DEAD"

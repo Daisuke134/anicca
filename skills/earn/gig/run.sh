@@ -21,6 +21,9 @@ CORE=$(bash "$HERE/gig-cli.sh" --status 2>/dev/null | head -1)
 import json,sys,os
 wake,core=sys.argv[1],sys.argv[2]
 G=os.path.expanduser("~/gig")
+def jnum(v):
+    try: return float(str(v).replace(',','').replace('¥','').replace('円','').strip() or 0)
+    except Exception: return 0.0
 def rows(f):
     p=os.path.join(G,f); out=[]
     if os.path.exists(p):
@@ -32,8 +35,8 @@ def rows(f):
     return out
 applied=[r for r in rows("applied.jsonl") if r.get("status")=="applied"]
 SETTLED={"検収","支払","検収完了","completed","paid"}
-earned=[r for r in rows("earnings.jsonl") if r.get("status") in SETTLED and r.get("evidence") and float(r.get("jpy",0) or 0)>0]
-jpy=sum(float(r.get("jpy",0) or 0) for r in earned)
+earned=[r for r in rows("earnings.jsonl") if r.get("status") in SETTLED and r.get("evidence") and jnum(r.get("jpy",0))>0]
+jpy=sum(jnum(r.get("jpy",0)) for r in earned)
 print(json.dumps({"wallet":None,"source":"gig","task":"supervise","funding":"human(¥→MUFG)",
   "earn_usdc":0,"cost_usdc":0,"jpy_earned":round(jpy,0),"applied_total":len(applied),
   "core":core,"wake":wake,"note":"Coconala loop; ¥ human-funded; no USDC; earned=検収-only"}))

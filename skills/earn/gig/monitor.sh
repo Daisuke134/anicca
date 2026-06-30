@@ -16,6 +16,9 @@ PY=/opt/homebrew/bin/python3
 "$PY" - "$APPLIED" "$EARN" <<'PY'
 import json,sys,os
 applied_f,earn_f=sys.argv[1],sys.argv[2]
+def jnum(v):
+    try: return float(str(v).replace(',','').replace('¥','').replace('円','').strip() or 0)
+    except Exception: return 0.0
 def rows(f):
     if not os.path.exists(f): return []
     out=[]
@@ -30,9 +33,9 @@ applied=[r for r in ap if r.get("status")=="applied"]
 # deterministic earned guard (FIND-003): a ¥ row counts ONLY with a settled status AND non-empty
 # evidence — an applied/in-progress/fabricated row can NEVER be summed as earned.
 SETTLED={"検収","支払","検収完了","completed","paid"}
-valid=[r for r in ea if r.get("status") in SETTLED and r.get("evidence") and float(r.get("jpy",0) or 0)>0]
+valid=[r for r in ea if r.get("status") in SETTLED and r.get("evidence") and jnum(r.get("jpy",0))>0]
 rejected=len(ea)-len(valid)
-jpy=sum(float(r.get("jpy",0) or 0) for r in valid)
+jpy=sum(jnum(r.get("jpy",0)) for r in valid)
 core_alive=os.system("tmux -S /tmp/anicca-gig-tmux.sock has-session -t anicca-gig-core 2>/dev/null")==0
 print(json.dumps({"slot":"gig/coconala","core":"ALIVE" if core_alive else "DEAD",
   "applied_total":len(applied),"earn_rows_valid":len(valid),"earn_rows_rejected":rejected,
