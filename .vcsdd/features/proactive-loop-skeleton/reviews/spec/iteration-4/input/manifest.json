@@ -1,0 +1,24 @@
+{
+  "reviewType": "spec",
+  "feature": "proactive-loop-skeleton",
+  "iteration": 4,
+  "mode": "lean",
+  "sprint": 2,
+  "iterationCapOverride": "lean-mode 3-cap exceeded. Per HARD 0.36 NO HUMAN, architect (= main agent) authorizes iter-4 because iter-3's 2 remaining findings (FIND-3-001 boundary REQ-P1, FIND-3-002 pick_next signature) are MECHANICAL surface-alignment issues, not architectural defects, and the rest of the spec is converged.",
+  "artifactsToReview": [
+    ".vcsdd/features/proactive-loop-skeleton/specs/behavioral-spec.md",
+    ".vcsdd/features/proactive-loop-skeleton/specs/verification-architecture.md"
+  ],
+  "previousIterationFindings": [
+    "iter-3 FIND-3-001 (high): REQ-P1 not updated to half-open; ADDRESSED in v4 by REQ-P1 deferring to REQ-Q2 (single source of truth)",
+    "iter-3 FIND-3-002 (high): pick_next 4 signatures across REQ-M3/Purity/PROPs; ADDRESSED in v4 by canonical signature pick_next(menu, log_tail, history, blockers, now_ts, budget) → dict|None with ordered (i)cadence (ii)budget (iii)blocker (iv)rank (v)novelty gates"
+  ],
+  "reviewDimensions": ["spec_fidelity", "verification_readiness"],
+  "extraConstraints": [
+    "Verify FIND-3-001 closed: grep for `> 3%` and `1-3%` and `< 1%` in REQ-P1; both should be GONE — REQ-P1 now defers to REQ-Q2's half-open canonical.",
+    "Verify FIND-3-002 closed: every reference to pick_next must use the canonical 6-parameter signature. Grep all instances; verify alignment.",
+    "If both closed AND no new critical findings, emit PASS — this is the architect-override final iteration.",
+    "Cap: MAX 2 new findings if FAIL."
+  ],
+  "expectedOutputPath": ".vcsdd/features/proactive-loop-skeleton/reviews/spec/iteration-4/output/"
+}
