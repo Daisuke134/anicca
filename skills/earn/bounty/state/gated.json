@@ -1,0 +1,13 @@
+{
+  "survivors": [
+    {
+      "title": "RIP-310: Social Mining \u2014 Earn RTC by Posting on 4claw, Moltb",
+      "url": "https://github.com/Scottcjn/Rustchain/issues/2239",
+      "repo": "Scottcjn/Rustchain",
+      "issue": 2239,
+      "stars": 460,
+      "gate": "passed (funder-active, no-open-PR, real-repo>=50\u2605)"
+    }
+  ],
+  "checked": 25
+}
