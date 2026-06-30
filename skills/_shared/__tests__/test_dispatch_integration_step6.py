@@ -96,12 +96,14 @@ def test_step6_idempotent_same_pass_no_dup(tmp_path, monkeypatch):
 def test_step6_does_not_write_outside_tasks_and_build_log(tmp_path, monkeypatch):
     """REQ-I2 scoped mtime check (FIND-004 fix): EVERYTHING under slot_dir
     except tasks/ + build_log.md + state/ must be mtime-unchanged across the
-    dispatch run."""
+    dispatch run.
+
+    FIND-003 iter-1 fix: also assert STEP 6 adds AT MOST one tasks/ file AND
+    AT MOST one new '## ' section in build_log.md."""
     monkeypatch.setenv("HOME", str(tmp_path))
     slot = "step6scopedprobe"
     slot_dir = tmp_path / "loops" / slot
     slot_dir.mkdir(parents=True)
-    # Seed extraneous files that STEP 6 must NOT touch
     extras = {
         slot_dir / "menu.json": json.dumps({
             "schema_version": 1, "categories": [{
@@ -117,8 +119,28 @@ def test_step6_does_not_write_outside_tasks_and_build_log(tmp_path, monkeypatch)
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text(body)
     before = {p: p.stat().st_mtime_ns for p in extras}
+    tasks_dir = slot_dir / "tasks"
+    tasks_before = list(tasks_dir.glob("*.json")) if tasks_dir.exists() else []
+    bl = slot_dir / "build_log.md"
+    sections_before = (
+        sum(1 for l in bl.read_text().splitlines() if l.startswith("## "))
+        if bl.exists() else 0
+    )
+
     r = _run_dispatch(slot, slot_dir)
     assert r.returncode == 0
+
+    # Extras must be untouched
     after = {p: p.stat().st_mtime_ns for p in extras if p.exists()}
     for p, mt in before.items():
         assert after.get(p) == mt, f"REQ-I2 violation: STEP 6 mutated {p}"
+
+    # Bounds (FIND-003): AT MOST one new tasks/ file
+    tasks_after = list(tasks_dir.glob("*.json"))
+    new_tasks = set(tasks_after) - set(tasks_before)
+    assert len(new_tasks) <= 1, f"REQ-I2 bound violation: >1 new tasks: {new_tasks}"
+
+    # Bounds (FIND-003): AT MOST one new build_log section
+    sections_after = sum(1 for l in bl.read_text().splitlines() if l.startswith("## "))
+    delta = sections_after - sections_before
+    assert delta <= 1, f"REQ-I2 bound violation: build_log gained {delta} sections"
