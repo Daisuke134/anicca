@@ -1,0 +1,14 @@
+{
+  "findingId": "R2-FIND-004",
+  "dimension": "structural_integrity",
+  "category": "security_surface",
+  "severity": "critical",
+  "description": "New additive fields (revenue_today_usd, revenue_by_source, tags, log_feed, net_worth_src) must be inside the signed message to be authenticated AND persisted: telemetry.js:29 upserts v.payload = the parsed signed message. The documented signer canonicalMessage() (telemetry-verify.js:7-13) serializes a FIXED field set that excludes all new fields, and the spec has no requirement to extend it. Result: a canonical client never emits tags (R7 #agent-hackathon/Ours classification has no data source) OR tags are bolted on unsigned (a security-relevant 'who is Ours' categorization is unauthenticated). INV-OWN-STATE (behavioral-spec.md:77-78) says nothing about which fields the signature must cover.",
+  "evidence": {
+    "filePath": "apps/landing/netlify/functions/_lib/telemetry-verify.js",
+    "lineRange": "7-13",
+    "snippet": "canonicalMessage(p){return JSON.stringify({id,ts,host,geo,model_live,model_tier,net_worth_usd,revenue_mo_usd,burn_day_usd,runway_days,status})}"
+  },
+  "routeToPhase": "1a"
+}
+</content>

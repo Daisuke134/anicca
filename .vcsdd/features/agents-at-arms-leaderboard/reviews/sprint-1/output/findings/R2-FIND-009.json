@@ -1,0 +1,14 @@
+{
+  "findingId": "R2-FIND-009",
+  "dimension": "structural_integrity",
+  "category": "spec_gap",
+  "severity": "minor",
+  "description": "R7 keys Ours on a 'known-canonical allowlist (OUR_INSTANCE_IDS)' (behavioral-spec.md:53) but never says where it lives, who maintains it, or its format/shape, so the Ours filter is not concretely testable or implementable without inventing that contract.",
+  "evidence": {
+    "filePath": ".vcsdd/features/agents-at-arms-leaderboard/specs/behavioral-spec.md",
+    "lineRange": "53",
+    "snippet": "Ours shows elements whose id is in the known-canonical allowlist (OUR_INSTANCE_IDS) AND lacks agent-hackathon"
+  },
+  "routeToPhase": "1a"
+}
+</content>

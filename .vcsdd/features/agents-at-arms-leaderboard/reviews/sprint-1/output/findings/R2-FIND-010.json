@@ -1,0 +1,14 @@
+{
+  "findingId": "R2-FIND-010",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "critical",
+  "description": "1b R4 (behavioral-spec.md:67) proves chain enrichment of net_worth_usd only. No 1b row feeds an inflated revenue_mo_usd and asserts it does not reach the top of the leaderboard. Since R2 ranks by revenue_mo_usd, the feature's central guarantee ('earns the most wins, no fake') is unproven for the figure that actually decides ranking.",
+  "evidence": {
+    "filePath": ".vcsdd/features/agents-at-arms-leaderboard/specs/behavioral-spec.md",
+    "lineRange": "65-67",
+    "snippet": "R4 | unit (enrichOnChain, mocked RPC) | inflated self-report -> overwritten to mocked chain balance + src:chain ... (net_worth only)"
+  },
+  "routeToPhase": "1b"
+}
+</content>

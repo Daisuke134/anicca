@@ -1,0 +1,14 @@
+{
+  "findingId": "R2-FIND-003",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "critical",
+  "description": "R4 'excluded from ranking (shown but unranked)' (behavioral-spec.md:39-40) never defines where an unranked element sits in the single leaderboard array that R6 renders 'in order' (behavioral-spec.md:46) -> nondeterministic render. It also never states whether an unverified row's schema-required net_worth_usd is included in total_net_worth_usd (telemetry-aggregate.js:2). If included, the headline total contains unverified money; if nulled to exclude, the reducer NaNs (round-1 FIND-013 reintroduced).",
+  "evidence": {
+    "filePath": ".vcsdd/features/agents-at-arms-leaderboard/specs/behavioral-spec.md",
+    "lineRange": "39-40",
+    "snippet": "the row SHALL be marked net_worth_src:\"unverified\" and excluded from ranking (shown but unranked)"
+  },
+  "routeToPhase": "1a"
+}
+</content>

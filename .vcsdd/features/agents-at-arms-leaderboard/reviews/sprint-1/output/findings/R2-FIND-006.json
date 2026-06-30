@@ -1,0 +1,14 @@
+{
+  "findingId": "R2-FIND-006",
+  "dimension": "structural_integrity",
+  "category": "spec_gap",
+  "severity": "major",
+  "description": "R4 introduces net_worth_src (behavioral-spec.md:38) but it is absent from the R1 element field enumeration (behavioral-spec.md:25-28) and from the R6 UI render list (behavioral-spec.md:46-48), which shows status+stale but not the verified/unverified source. The 'flagged, never silently trusted' outcome (R4 behavioral-spec.md:41) has no requirement surfacing it; an unranked row is visually indistinguishable from a ranked one.",
+  "evidence": {
+    "filePath": ".vcsdd/features/agents-at-arms-leaderboard/specs/behavioral-spec.md",
+    "lineRange": "46-48",
+    "snippet": "showing rank, id ..., net_worth_usd, revenue_mo_usd, revenue_today_usd ..., status, and a stale indicator"
+  },
+  "routeToPhase": "1a"
+}
+</content>

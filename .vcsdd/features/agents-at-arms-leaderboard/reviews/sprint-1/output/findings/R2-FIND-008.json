@@ -1,0 +1,14 @@
+{
+  "findingId": "R2-FIND-008",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "major",
+  "description": "Design net worth = sum of wallet balances over wallet_evm AND wallet_sol (design...:44-46). v2 R4 (behavioral-spec.md:36-38) reads only the EVM balance of id (id is the 0x EVM address per telemetry-schema.js:5). Solana holdings are silently dropped, understating net worth for any agent holding value on Solana; the spec never acknowledges dropping wallet_sol.",
+  "evidence": {
+    "filePath": ".vcsdd/features/agents-at-arms-leaderboard/specs/behavioral-spec.md",
+    "lineRange": "36-38",
+    "snippet": "set each row's net_worth_usd to the on-chain USDC+native balance of id"
+  },
+  "routeToPhase": "1a"
+}
+</content>

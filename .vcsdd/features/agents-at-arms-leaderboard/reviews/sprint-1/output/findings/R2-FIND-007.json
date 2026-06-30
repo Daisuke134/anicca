@@ -1,0 +1,14 @@
+{
+  "findingId": "R2-FIND-007",
+  "dimension": "structural_integrity",
+  "category": "security_surface",
+  "severity": "major",
+  "description": "telemetry-schema.js:3-16 validates only the fixed field set and ignores unknown keys, so the additive fields (tags, revenue_by_source, log_feed) are never type-checked. R9 (behavioral-spec.md:57-58; 1b :72) only proves existing rows still pass and imposes no validation on the new shapes. A malformed tags (string instead of string[], or [123]) passes validation and is consumed by R7 tags.includes('agent-hackathon') and the Ours logic, which can throw or misclassify a security boundary.",
+  "evidence": {
+    "filePath": "apps/landing/netlify/functions/_lib/telemetry-schema.js",
+    "lineRange": "3-16",
+    "snippet": "function validate(o){...return {ok:true,payload:o}} // no checks for tags/revenue_by_source/log_feed"
+  },
+  "routeToPhase": "1a"
+}
+</content>

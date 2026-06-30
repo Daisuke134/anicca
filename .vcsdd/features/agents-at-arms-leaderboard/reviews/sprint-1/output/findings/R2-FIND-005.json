@@ -1,0 +1,14 @@
+{
+  "findingId": "R2-FIND-005",
+  "dimension": "implementation_correctness",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "description": "R6 (behavioral-spec.md:46-50) names EmpireDashboard.tsx to render the leaderboard but tells you to extend useDashboard.ts's DashboardData type. EmpireDashboard.tsx does NOT use the useDashboard hook; it declares its own local interface DashboardData { updated_at; mrr; goals } (EmpireDashboard.tsx:52-56) and fetches /dashboard.json itself (EmpireDashboard.tsx:64-76), reading data.mrr.total_usd and data.goals.progress_pct. Extending useDashboard.ts's type does nothing for the render component; which type carries leaderboard is ambiguous and EmpireDashboard's mrr/goals contract already diverges from telemetry-aggregate.js:11 output. Not concretely implementable.",
+  "evidence": {
+    "filePath": "apps/landing/components/site/EmpireDashboard.tsx",
+    "lineRange": "52-56",
+    "snippet": "interface DashboardData { updated_at: string; mrr: {...}; goals: {...} }"
+  },
+  "routeToPhase": "1a"
+}
+</content>

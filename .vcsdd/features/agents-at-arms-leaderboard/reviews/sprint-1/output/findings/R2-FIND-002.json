@@ -1,0 +1,14 @@
+{
+  "findingId": "R2-FIND-002",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "INV-NOFAKE calls net_worth_usd 'the ranked money' (behavioral-spec.md:75) then says 'Earnings rank = revenue_mo_usd' (behavioral-spec.md:76), while R2 (behavioral-spec.md:29) ranks by revenue_mo_usd. The invariant binds the no-fake guarantee to the wrong (non-ranked) column. Implementer cannot tell which figure must be on-chain-protected.",
+  "evidence": {
+    "filePath": ".vcsdd/features/agents-at-arms-leaderboard/specs/behavioral-spec.md",
+    "lineRange": "75-76",
+    "snippet": "the ranked money (net_worth_usd) is the on-chain balance of id ... Earnings rank = revenue_mo_usd."
+  },
+  "routeToPhase": "1a"
+}
+</content>

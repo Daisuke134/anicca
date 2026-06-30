@@ -1,211 +1,200 @@
-# VCSDD Phase 1c Spec-Review Verdict — agents-at-arms-leaderboard
+# VCSDD Phase 1c Spec-Review Verdict (ROUND 2 / RE-REVIEW) — agents-at-arms-leaderboard
 
 - Feature: `agents-at-arms-leaderboard` (lean mode)
-- Review scope: `reviews/sprint-1/` (behavioral spec gate)
+- Review scope: `reviews/sprint-1/` (behavioral spec gate, v2 spec)
 - Reviewer: fresh-context adversary (disk-only, zero builder context)
+- Round: 2 (re-review of v2 rewrite)
 - Timestamp: 2026-07-01
-- Artifact under judgment: `.vcsdd/features/agents-at-arms-leaderboard/specs/behavioral-spec.md`
+- Artifact under judgment: `.vcsdd/features/agents-at-arms-leaderboard/specs/behavioral-spec.md` (v2)
 
 ## Overall verdict: **FAIL**
 
-All 5 dimensions FAIL. The behavioral spec was authored as if the **existing enforced telemetry
-schema/verify pipeline does not exist**. The real `instances` rows are validated by
-`telemetry-schema.js` (a hard validator) and the existing aggregate consumes a *different* field
-vocabulary than the spec declares. Multiple R-requirements directly contradict code that is already
-live, and the no-fake invariant — the entire point of the feature — has no proof.
+The v2 rewrite resolved the bulk of round-1 (vocabulary/schema/status reconciliation, rank-by-earnings,
+tag-based filter, provenance for net worth). But the rank-by-earnings fix exposed a **deeper hole than
+round 1 had**: the figure that decides who "wins" (`revenue_mo_usd`) is **self-reported and never
+on-chain-verified**, while the no-fake machinery (R4/INV-NOFAKE) only guards `net_worth_usd`, which is
+**not** the ranked field. The spec even contradicts itself on this point. Two dimensions still FAIL on
+fidelity/verification, and the signed-message + UI-type plumbing still has structural gaps.
 
-| Dimension | Verdict |
-|---|---|
-| 1. Spec Fidelity | FAIL |
-| 2. Edge Cases | FAIL |
-| 3. Impl Correctness (testability) | FAIL |
-| 4. Structural Integrity | FAIL |
-| 5. Verification Readiness | FAIL |
+| Dimension | R1 | R2 |
+|---|---|---|
+| 1. Spec Fidelity | FAIL | **FAIL** |
+| 2. Edge Cases | FAIL | **FAIL** |
+| 3. Impl Correctness (testability) | FAIL | **FAIL** |
+| 4. Structural Integrity | FAIL | **FAIL** |
+| 5. Verification Readiness | FAIL | **FAIL** |
+
+---
+
+## Round-1 finding disposition (every must-fix re-checked)
+
+| R1 finding | Status in v2 | Evidence |
+|---|---|---|
+| FIND-001 (rank metric ≠ earnings) | **RESOLVED-WITH-REGRESSION** | R2 now ranks by `revenue_mo_usd` (`behavioral-spec.md:29-32`) — but see R2-FIND-001/002: the new ranked field is unverified and INV-NOFAKE still names the wrong field. |
+| FIND-002 (`Ours` on `funding_type`) | **RESOLVED** | R7 redefines `Ours` on `OUR_INSTANCE_IDS` + `tags`, never `funding_type` (`behavioral-spec.md:51-54`). |
+| FIND-003 (undefined-money sort NaN) | **RESOLVED for omission, REOPENED for unverified** | R3 keeps money required (`:33-35`) — no `undefined`. But R4 "shown but unranked" reintroduces an ordering gap (R2-FIND-003). |
+| FIND-004 (missing `last_heartbeat`) | **RESOLVED** | v2 derives staleness from schema-required `ts` (`:42-44`); no undefined case at aggregate. |
+| FIND-005 (stale destroys terminal status) | **RESOLVED** | R5 "SHALL NOT change `status`", `dead`/`critical` still surfaced (`:42-45`). |
+| FIND-006 (filter overlap) | **RESOLVED** | R7 `Ours` = allowlisted AND lacks `agent-hackathon` → disjoint (`:51-54`). |
+| FIND-007 (no provenance → R3 untestable) | **RESOLVED for net_worth only** | R4 adds `net_worth_src:"chain"\|"unverified"` (`:36-41`). NOT added for the ranked `revenue_mo_usd` (R2-FIND-001). |
+| FIND-008 (no component/type named) | **STILL OPEN** | R6 names `EmpireDashboard.tsx` to render yet tells you to extend `useDashboard.ts`'s type — two different types; the render component uses its own local one (R2-FIND-005). |
+| FIND-009 (R6 untestable) | **RESOLVED** | tag-based R7 is testable (`:51-54`, 1b `:70`). |
+| FIND-010 (omitted money rejected by schema) | **RESOLVED** | R3 keeps schema unchanged, money required (`:33-35`). |
+| FIND-011 (status three-way contradiction) | **RESOLVED** | R5 uses live enum `alive\|critical\|dead`; staleness = derived flag (`:42-45`). |
+| FIND-012 (field-name mismatches) | **RESOLVED** | v2 uses `leaderboard`/`id`/`revenue_mo_usd` per live vocabulary (`:11-17, :25-29`). |
+| FIND-013 (omission NaNs reducers) | **RESOLVED for omission, REOPENED for unverified** | No omission (`:33-35`); but whether unverified rows feed `total_net_worth_usd` is unspecified (R2-FIND-003). |
+| FIND-014 (ignores signed-heartbeat/verify) | **STILL OPEN** | INV-OWN-STATE is named (`:77-78`) but no requirement extends `canonicalMessage()` for the new signed fields (R2-FIND-004). |
+| FIND-015 (no-fake invariant unproven) | **RESOLVED for net_worth, OPEN for the ranked field** | 1b R4 proves chain enrichment of net worth (`:67`). The ranked `revenue_mo_usd` has no on-chain proof (R2-FIND-001). |
+| FIND-016 (proof = screenshot only) | **RESOLVED** | 1b adds component-test assertions for R6/R7/R8 (`:69-71`); screenshot now supplementary. |
+| FIND-017 (edges unproven) | **MOSTLY RESOLVED** | R5 stale + R7 filter proofs added (`:68,70`); unranked-ordering edge still unproven (R2-FIND-003). |
+| FIND-018 (totals/schema-shape unproven) | **RESOLVED for back-compat, OPEN for new-field validation** | R9 proves existing rows still pass (`:72`); no proof the new optional fields are type-validated (R2-FIND-007). |
 
 ---
 
 ## Dimension 1 — Spec Fidelity: FAIL
 
-### FIND-001 (critical) — Default rank metric contradicts the design north star
-- Design intent, `docs/.../2026-07-01-agents-at-arms-live-leaderboard-design.md:21-22`:
-  *"a leaderboard ranked by what each agent actually **earned** — the agent that **earns the most
-  wins**."*
-- Behavioral spec `behavioral-spec.md:13-14` (R2): default rank = `net_worth_usd` descending.
-- Conflict: `net_worth_usd` = total wallet balance, which is dominated by **seeded capital**, not
-  earnings. An agent seeded with USDC that earns $0 outranks an agent that genuinely earned money but
-  withdrew it. This inverts "earns the most wins" and undermines INV-NOFAKE's spirit (the *ranked
-  figure* should reflect real earning, per design §1). The design itself is internally split (§5 line
-  75 says "default by net worth"), but the **north-star §1 is the approved Dais intent** and the
-  behavioral spec sided with the wrong one without justification.
-- Fix: state explicitly which metric is the ranked figure and reconcile with §1; if net worth is
-  intended, amend the design north-star and record the rationale. Do not leave the contradiction
-  unresolved.
+### R2-FIND-001 (critical) — The RANKED figure (`revenue_mo_usd`) is self-reported and never on-chain-verified
+- North star, `design...:20-21`: *"a leaderboard ranked by what each agent actually earned — the agent
+  that earns the most wins"* — and `design...:64-66` (§4.3): revenue *"computes `revenue_today/mtd`
+  from the **on-chain realized-earn ledger** … Self-reported numbers are display-only labels, never the
+  ranked figure."*
+- v2 R2 (`behavioral-spec.md:29`) ranks by `revenue_mo_usd`. v2 R4 (`:36-41`) only enriches
+  **`net_worth_usd`** from chain balance; it says **nothing** about deriving `revenue_mo_usd` from an
+  on-chain ledger. `revenue_mo_usd` is written by the agent's own heartbeat (`telemetry-schema.js:12`
+  validates it as any number; it is signed by the agent but **asserted by the agent**).
+- Consequence: an agent can set `revenue_mo_usd` to any value and **win the leaderboard** — exactly the
+  "fake" the feature exists to prevent. The no-fake guarantee (R4) is applied to a field
+  (`net_worth_usd`) that is **not** the ranked figure. This is a direct violation of the design's
+  explicit "never the ranked figure" rule.
+- Fix: add a requirement (and 1b proof) that the **ranked** metric is computed from the on-chain
+  realized-earn ledger (per design §4.3), or that an unverifiable earnings figure is excluded/flagged
+  the same way R4 handles net worth.
 
-### FIND-002 (critical) — R6 `Ours` filter defined on a field that has no "hackathon" value
-- `behavioral-spec.md:23-26` (R6): *"`Ours` SHALL show only agents whose `funding_type` is not a
-  hackathon entrant."*
-- `design...:41` (§3): `funding_type` ∈ `{self, human}`. Neither value is "a hackathon entrant."
-- Hackathon membership is carried by the **tag** `agent-hackathon` (`design...:52`, and R6's own
-  `#agent-hackathon` branch keys off `tags`), NOT by `funding_type`. R6 conflates two orthogonal
-  axes, making "Ours" undefinable as written.
-- Fix: define `Ours` as agents whose `tags` do **not** include `agent-hackathon` (or an explicit
-  owned-instance allowlist), and handle the overlap case (see FIND-006).
+### R2-FIND-002 (critical) — INV-NOFAKE contradicts R2 about which field is ranked
+- INV-NOFAKE, `behavioral-spec.md:75`: *"the **ranked money (`net_worth_usd`)** is the on-chain
+  balance of `id`"* — then `:76` immediately says *"Earnings rank = `revenue_mo_usd`."*
+- R2 (`:29`) ranks by `revenue_mo_usd`, not `net_worth_usd`. The invariant therefore mislabels the
+  non-ranked field as "the ranked money," and the protection it specifies is aimed at the wrong column.
+  A reader/implementer cannot tell which figure the no-fake guarantee must bind to.
+- Fix: rewrite INV-NOFAKE so the on-chain guarantee binds to the actually-ranked metric.
+
+### R2-FIND-008 (major) — On-chain net worth ignores the Solana wallet the design counts
+- `design...:46` net worth = *"sum of wallet balances"* over `wallet_evm` **and** `wallet_sol`
+  (`design...:44`). v2 R4 (`:36-38`) reads only *"the on-chain USDC+native balance of `id`"* — `id` is
+  the EVM address only (`telemetry-schema.js:5`). Solana holdings are silently dropped, understating net
+  worth for any agent holding value on Solana. The spec does not acknowledge dropping `wallet_sol`.
+- Fix: either state Solana is out of scope for this slice (and why) or include it.
 
 ---
 
 ## Dimension 2 — Edge Cases: FAIL
 
-### FIND-003 (critical) — Undefined-money × sort interaction is unspecified
-- R3 (`:15-17`) omits money fields (leaves `undefined`); R2 (`:13-14`) sorts by
-  `b.net_worth_usd - a.net_worth_usd`.
-- When `net_worth_usd` is `undefined`, `undefined - n === NaN`; `Array.prototype.sort` with a NaN
-  comparator yields **implementation-defined ordering**. The spec never says where an agent with no
-  on-chain net worth ranks (bottom? excluded? above $0 agents?). This is the most common real case at
-  spawn time (a just-registered agent before the enrich step runs) and it is undefined behavior.
-- Fix: add an EARS requirement: agents with undefined ranked-metric sort last (and tie-break among
-  themselves deterministically), or are placed in a separate "pending on-chain" bucket.
-
-### FIND-004 (major) — Missing/never-set `last_heartbeat` not covered by R4
-- R4 (`:18-19`) only addresses heartbeat *"older than"* the window. It is silent on a row that has
-  **never** heartbeated (`last_heartbeat` undefined/null) — exactly the spawn-registration case in
-  design §4.1. Is that `idle`? `running`? Undefined.
-- Fix: specify status when `last_heartbeat` is absent.
-
-### FIND-005 (major) — R4 destroys the `stopped`/terminal distinction
-- R4: stale ⇒ `idle` *"regardless of the stored status."* An agent explicitly `stopped`/`dead` that
-  also happens to be stale is forcibly relabeled `idle`, hiding the real terminal state. The board
-  would show a dead agent as merely idle.
-- Fix: exempt terminal statuses from the stale→idle override, or define precedence explicitly.
-
-### FIND-006 (major) — `All`/`#agent-hackathon`/`Ours` are assumed disjoint but can overlap
-- Design §1/§4 allow our **own self-funded** agents to also carry `agent-hackathon`. R6 treats
-  hackathon vs Ours as a partition. The spec never says how an agent that is both ours AND tagged is
-  classified, nor whether the three chips are mutually exclusive filters or independent.
-- Fix: define set semantics for the overlap.
+### R2-FIND-003 (critical) — "Shown but unranked" is undefined ordering + undefined total inclusion
+- R4 (`:39-40`): a chain-read failure ⇒ `net_worth_src:"unverified"` and *"excluded from ranking
+  (shown but unranked)."* The spec never says **where** an unranked element sits in the single
+  `leaderboard` array (top? bottom? interleaved?), nor whether a stable second list exists. Since the UI
+  renders elements *"in order"* (R6, `:46`), undefined order = nondeterministic render.
+- It also never says whether an unverified row's (still schema-required) `net_worth_usd` is **included
+  in `total_net_worth_usd`** (`telemetry-aggregate.js:2`). If included, the headline total contains
+  exactly the unverified/fake money the feature forbids; if the field is nulled to exclude it, the
+  existing reducer yields `NaN` (the round-1 FIND-013 failure mode, reintroduced).
+- Fix: define the array position of unranked rows deterministically and state whether unverified net
+  worth is included in `total_net_worth_usd` (with a null-safe reducer either way).
 
 ---
 
-## Dimension 3 — Impl Correctness / Spec Testability: FAIL
+## Dimension 3 — Impl Correctness / Testability: FAIL
 
-### FIND-007 (critical) — R3 is untestable at the aggregate layer: cannot distinguish self-reported from on-chain
-- R3 (`:15-17`) requires omitting a money field when *"not available from an **on-chain source**"*
-  and forbids emitting *"a self-reported value."*
-- But `dashboard-sync.js:6-14` feeds the aggregate the **raw Supabase `instances` rows**, where
-  `net_worth_usd` is a single numeric column. A present number is indistinguishable from a
-  self-reported one at this layer — there is no provenance flag in the data model (design §3 has no
-  `net_worth_source` column). The aggregate physically cannot enforce "never self-reported."
-- The 1b proof for R3 (`:37`) only checks *absent ⇒ undefined*; it does not — and cannot, with this
-  data model — prove the "never self-reported" half.
-- Fix: add a provenance signal to the data contract (e.g. only the enrich step writes
-  `net_worth_usd`, agents write to a separate `net_worth_self_reported`), then R3 becomes testable.
-
-### FIND-008 (major) — R5 does not name the rendering component; two divergent DashboardData types exist
-- R5 (`:20-22`) says "the dashboard UI." Design §5 names `EmpireDashboard.tsx`. But
-  `EmpireDashboard.tsx:52-56` declares a *local* `DashboardData` of `{mrr, goals}` and reads
-  `data.goals.progress_pct` (`:79`), `data.mrr.total_usd` (`:120`) — none of which the aggregate
-  emits (`telemetry-aggregate.js:11`). Meanwhile `useDashboard.ts:8-22` declares a *different*
-  `DashboardData` with no `agents`/`leaderboard` field at all. R5 does not say which type/component
-  gains the leaderboard, so it is not concretely implementable.
-- Fix: name the exact component and the exact type to extend.
-
-### FIND-009 (major) — R6 untestable due to FIND-002 (contradictory predicate)
-- A test cannot be written for "`funding_type` is not a hackathon entrant" because no `funding_type`
-  value denotes a hackathon entrant. Untestable as written.
+### R2-FIND-005 (major) — R6 names a render component and a type that are NOT the same object
+- R6 (`:46-50`): *"`EmpireDashboard.tsx` SHALL render one row per `leaderboard` element … `useDashboard.ts`
+  `DashboardData` type SHALL gain an optional `leaderboard?` array."*
+- But `EmpireDashboard.tsx` does **not** use the `useDashboard` hook or its type. It declares its **own
+  local** `interface DashboardData { updated_at; mrr; goals }` (`EmpireDashboard.tsx:52-56`) and fetches
+  `/dashboard.json` itself (`:64-76`), reading `data.mrr.total_usd` (`:120`) and `data.goals.progress_pct`
+  (`:79`). Extending `useDashboard.ts`'s type (`useDashboard.ts:8-22`) does **nothing** for
+  `EmpireDashboard.tsx`. The spec leaves it ambiguous which type carries `leaderboard` and whether
+  `EmpireDashboard` must be refactored onto the hook — so R6 is not concretely implementable as written.
+- Compounding: `EmpireDashboard`'s local type reads `mrr`/`goals`, which `telemetry-aggregate.js:11`
+  does **not** emit. The spec adds a leaderboard to a component whose existing data contract already
+  diverges from the aggregate, without reconciling that contract.
+- Fix: name the single type to extend and the single component that consumes it; reconcile the
+  `mrr/goals` vs aggregate-output mismatch.
 
 ---
 
-## Dimension 4 — Structural Integrity: FAIL (most severe dimension)
+## Dimension 4 — Structural Integrity: FAIL
 
-### FIND-010 (critical) — R3 directly violates the existing enforced schema
-- `telemetry-schema.js:11`: `if (typeof o.net_worth_usd !== "number" || o.net_worth_usd < 0) return
-  {ok:false, reason:"schema"}`. A row with `net_worth_usd` **omitted/undefined** (R3's mandate) is
-  **rejected** by the live validator before it can reach Supabase or the aggregate.
-- R3 ("leave undefined rather than emit 0") is incompatible with a schema that **requires** the field
-  to be a non-negative number. The spec never acknowledges this validator exists.
-- Fix: either make the money fields optional in `telemetry-schema.js` (and document the contract
-  change) or change R3.
+### R2-FIND-004 (critical) — The signed canonical message is never extended for the new fields
+- New additive fields (`revenue_today_usd, revenue_by_source, tags, log_feed`, and R4's `net_worth_src`)
+  must be in the **signed `message`** to be both authenticated and persisted: `telemetry.js:29` upserts
+  `v.payload`, which is the parsed signed message (`telemetry-verify.js:21,29`). The documented client
+  signer `canonicalMessage()` (`telemetry-verify.js:7-13`) serializes a **fixed** field set that
+  **excludes** all new fields. The spec has **no requirement** to extend it.
+- Consequences: (a) a canonical client never emits `tags` → they are never on the row → R1's
+  *"when present on the row"* passthrough and R7's `#agent-hackathon`/`Ours` classification have **no
+  data source** through the signed path; or (b) if `tags` are bolted on outside the canonical message,
+  they are **unsigned** — and `tags` drive a security-relevant categorization (who is "Ours"). INV-OWN-STATE
+  (`:77-78`) asserts signer==id but says nothing about which fields the signature must cover.
+- Fix: add a requirement (+1b proof) that `canonicalMessage()` is extended to cover the new
+  signed/persisted fields, and that classification-driving fields (`tags`) are inside the signed payload.
 
-### FIND-011 (critical) — Status vocabulary is a three-way contradiction
-- Existing enforced enum, `telemetry-schema.js:15`: `["alive","critical","dead"]`.
-- Existing aggregate, `telemetry-aggregate.js:4,6`: keys off `status !== "dead"`.
-- Design §3 (`design...:53`): `running | idle | stopped`.
-- Behavioral R4 (`:18-19`): sets `idle`.
-- `idle`/`running`/`stopped` are **not** accepted by the live schema; a heartbeat with `status:"idle"`
-  is rejected at `telemetry-schema.js:15`. The spec picks a vocabulary that the running code forbids
-  and never reconciles the three.
-- Fix: choose one status vocabulary, update the schema enum + aggregate filters, and state the
-  migration.
+### R2-FIND-006 (major) — `net_worth_src` has no home in the element schema or the UI
+- R4 (`:38`) introduces `net_worth_src`, but the R1 element field enumeration (`:25-28`) does **not**
+  list it, and R6's UI render list (`:46-48`) shows `status` + `stale` but **not** the verified/unverified
+  source. So the "flagged, never silently trusted" outcome (R4, `:41`) has no requirement that surfaces
+  it to a viewer, and an unranked row is visually indistinguishable from a ranked one.
+- Fix: add `net_worth_src` to the element field set (R1) and to the UI render contract (R6).
 
-### FIND-012 (critical) — Field-name mismatches with live code (`agents` vs `leaderboard`, `revenue_mtd_usd` vs `revenue_mo_usd`, `instance_id` vs `id`)
-- R1 (`:10-12`) demands a top-level **`agents`** array, but `telemetry-aggregate.js:10-11` already
-  emits **`leaderboard`**; the spec never says whether to rename, replace, or add (breaking existing
-  consumers/tests `aggregate.test.js:16`).
-- R1 lists **`revenue_mtd_usd`**; the live schema/aggregate use **`revenue_mo_usd`**
-  (`telemetry-schema.js:12`, `telemetry-aggregate.js:3`). Same concept, different key — unreconciled.
-- R1 element key **`instance_id`**; existing leaderboard rows are keyed by **`id`**
-  (`aggregate.test.js:16` asserts `d.leaderboard[0].id`; schema validates `o.id` at
-  `telemetry-schema.js:5`). Unreconciled.
-- Fix: a field-mapping table in the spec reconciling every new name against the existing column/key.
+### R2-FIND-007 (major) — New optional fields are type-unvalidated; `tags` feeds the filter unchecked
+- `telemetry-schema.js:3-16` validates only the fixed field set and ignores unknown keys. The additive
+  fields (`tags`, `revenue_by_source`, `log_feed`) are therefore **never type-checked**. R9
+  (`:57-58`, 1b `:72`) only proves *existing* rows still pass — it imposes no validation on the new
+  shapes. A malformed `tags` (e.g. a string instead of `string[]`, or `[123]`) passes validation and is
+  consumed by R7's `tags.includes("agent-hackathon")` and the `Ours` logic, which can throw or
+  misclassify.
+- Fix: require the validator to type-check the additive fields when present (`tags` is `string[]`,
+  `revenue_by_source` is an object, `log_feed` is `{ts,line}[]`), with a 1b proof.
 
-### FIND-013 (major) — R3 omission breaks existing total reducers (NaN)
-- `telemetry-aggregate.js:2-3`: `rows.reduce((s, r) => s + r.net_worth_usd, 0)` and `+ r.revenue_mo_usd`.
-  If R3 makes any row's money field `undefined`, these reducers yield **`NaN`**, corrupting
-  `total_net_worth_usd`/`earned_mo_usd` shown elsewhere on the board. The spec mandates omission but
-  never requires guarding the existing sums.
-- Fix: require null-safe reducers as part of this slice.
-
-### FIND-014 (major) — Spec ignores the signed-heartbeat/verify layer it depends on
-- Design §4.4 anti-spoof = signed heartbeat; this is implemented in `telemetry-verify.js` +
-  `telemetry-schema.js`, whose canonical field set (`telemetry-verify.js:10`) is `net_worth_usd,
-  revenue_mo_usd, model_tier, ...` — not the spec's `revenue_mtd_usd, revenue_by_source,
-  model_current, tags`. Adding the new fields silently changes (or bypasses) the signed canonical
-  message. The behavioral spec has **no requirement** governing how new fields interact with
-  signature verification. INV-OWN-STATE (`:47`) is asserted but unproven against this layer.
-- Fix: add a requirement + test covering the canonical signed message when new columns are added.
+### R2-FIND-009 (minor) — `OUR_INSTANCE_IDS` allowlist is referenced but unlocated/unspecified
+- R7 (`:53`) keys `Ours` on a *"known-canonical allowlist (`OUR_INSTANCE_IDS`)"* but never says where it
+  lives, who maintains it, or its format — so the `Ours` filter is not concretely testable or
+  implementable without inventing that contract.
+- Fix: specify the allowlist's source/location and shape.
 
 ---
 
 ## Dimension 5 — Verification Readiness: FAIL
 
-### FIND-015 (critical) — The no-fake invariant (the feature's whole point) has no proof
-- INV-NOFAKE (`:45-46`): money is on-chain-derived or omitted, *"never a self-reported or fabricated
-  number."* The 1b table (`:37`, R3 row) only asserts *absent ⇒ undefined*. **No test** feeds a
-  self-reported number and asserts it is rejected/not ranked. Given FIND-007 (no provenance in the
-  data model), this invariant is currently unprovable. The single most important guarantee of "Agents
-  at Arms" is unverified.
-- Fix: add provenance to the contract (FIND-007) and a test asserting a self-reported value never
-  becomes the ranked figure.
+### R2-FIND-010 (critical) — No proof binds the no-fake guarantee to the field that decides winning
+- 1b R4 (`:67`) proves chain enrichment of `net_worth_usd` only. There is **no 1b row** that feeds an
+  inflated `revenue_mo_usd` and asserts it does not become the top of the leaderboard. Since R2 ranks by
+  `revenue_mo_usd`, the single most important guarantee ("earns the most wins — no fake") is **unproven**
+  for the figure that actually determines the ranking (see R2-FIND-001).
+- Fix: add a 1b proof that a fabricated earnings figure cannot win the board.
 
-### FIND-016 (major) — R5/R6 proofs rely on a manual screenshot, not an automated assertion
-- 1b table `:39-40`: R5/R6 "browser E2E / CloakBrowser screenshot." A screenshot is a human eyeball
-  check, not a regression-proof assertion. The component-test halves are listed but their expected
-  DOM contract (which component, which selectors) is undefined because of FIND-008.
-- Fix: specify automated component-test assertions (rows in order; filter narrows DOM set) as the
-  binding proof; keep the screenshot as supplementary.
-
-### FIND-017 (major) — No proof for the stale/missing-heartbeat and overlap edges
-- No 1b row proves FIND-004 (missing heartbeat), FIND-005 (stopped+stale precedence), FIND-006
-  (Ours/hackathon overlap), or FIND-003 (undefined-money sort position). Each named edge needs a
-  test row.
-- Fix: add one test per edge above.
-
-### FIND-018 (major) — No proof that totals survive R3 omission, nor that schema accepts the new shape
-- No test covers FIND-013 (NaN totals) or FIND-010/011 (schema accepting omitted money / new status
-  enum). The spec asserts a new data shape that the existing validator rejects, with no test pinning
-  the validator change.
+### R2-FIND-011 (major) — Signature/new-field interaction and new-field validation are unproven
+- No 1b row covers R2-FIND-004 (new fields inside the signed canonical message) or R2-FIND-007
+  (validation of `tags`/`revenue_by_source`/`log_feed`). The `Ours`/`#agent-hackathon` classification —
+  a security boundary — rests on data whose authenticity and well-formedness are untested.
+- Also unproven: R2-FIND-003 (deterministic placement of unranked rows; inclusion of unverified net
+  worth in `total_net_worth_usd`).
+- Fix: add one 1b row per gap above.
 
 ---
 
 ## Must-fix before Phase 2 (RED)
-1. FIND-010 + FIND-011 + FIND-012: reconcile the spec's field/status vocabulary against the **live**
-   `telemetry-schema.js` / `telemetry-aggregate.js` (mapping table + schema migration). The spec
-   currently describes a contract the running code rejects.
-2. FIND-007 + FIND-015: add money **provenance** to the data model so INV-NOFAKE is testable; today
-   it cannot be proven and the aggregate cannot enforce it.
-3. FIND-001 + FIND-002: fix the rank-metric vs "earns most wins" contradiction and redefine `Ours`
-   on `tags`, not `funding_type`.
-4. FIND-003/004/005/006: specify the undefined-money sort position, missing-heartbeat status,
-   stopped-vs-stale precedence, and Ours/hackathon overlap.
-5. FIND-008: name the exact rendering component/type (EmpireDashboard reads `mrr/goals` the aggregate
-   never emits — pick and reconcile).
-6. FIND-013: require null-safe reducers so omission cannot NaN the totals.
+1. **R2-FIND-001 + R2-FIND-002 + R2-FIND-010**: bind the no-fake guarantee to the **ranked** metric
+   (`revenue_mo_usd` from the on-chain earn ledger, per design §4.3), fix the INV-NOFAKE mislabel, and
+   add a proof that fabricated earnings cannot win. This is the feature's entire point and is currently
+   unguarded.
+2. **R2-FIND-004 + R2-FIND-006 + R2-FIND-007 + R2-FIND-011**: extend `canonicalMessage()` for the new
+   signed/persisted fields, place `net_worth_src` in the element + UI contracts, type-validate the
+   additive fields, and prove all three.
+3. **R2-FIND-005**: name the single component **and** the single `DashboardData` type that carries
+   `leaderboard`; reconcile `EmpireDashboard`'s `mrr/goals` contract with the aggregate output.
+4. **R2-FIND-003**: define deterministic ordering for unranked rows and whether unverified net worth is
+   included in `total_net_worth_usd` (null-safe reducer either way).
+5. **R2-FIND-008 + R2-FIND-009**: state Solana scope for net worth; specify the `OUR_INSTANCE_IDS`
+   allowlist source/shape.
+</content>
+</invoke>

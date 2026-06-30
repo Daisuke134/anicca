@@ -1,0 +1,14 @@
+{
+  "findingId": "R2-FIND-001",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "R2 ranks the leaderboard by revenue_mo_usd (behavioral-spec.md:29) but R4 (behavioral-spec.md:36-41) only enriches net_worth_usd from chain. revenue_mo_usd is self-reported by the agent heartbeat (telemetry-schema.js:12 accepts any number). Design 4.3 (design...:64-66) mandates revenue come from the on-chain realized-earn ledger and 'never the ranked figure' for self-report. The no-fake guarantee is applied to a non-ranked field; the field that decides who wins is fakeable.",
+  "evidence": {
+    "filePath": ".vcsdd/features/agents-at-arms-leaderboard/specs/behavioral-spec.md",
+    "lineRange": "29-41",
+    "snippet": "R2 ... sorted by revenue_mo_usd descending ... R4 ... set each row's net_worth_usd to the on-chain ... balance"
+  },
+  "routeToPhase": "1a"
+}
+</content>
