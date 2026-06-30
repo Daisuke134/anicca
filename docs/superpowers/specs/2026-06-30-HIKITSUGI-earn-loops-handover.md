@@ -4,25 +4,23 @@
 
 ---
 
-## ★ DAIS の VISION (verbatim, 今もらった full prompt — 北極星) ★
+## ★ DAIS の VISION (FULL verbatim — 今もらった prompt 全文、 一切省略なし — 北極星) ★
 
-> can you go take a look at the video core stuff too? ... basically you should have every claw loop. you
-> know all the loops. Every one of them should be a loop. ... how everything is working and stuff?
+> Uh yeah, can you go take a look at with Sonic can we go take a look at the video core stuff too? Yeah I need to know so yeah.Because it's fixed though I think now basically you shab you sh uh basically you should have every claw loop. You know all the loops. Yeah. Yeah Every one of them should be a loop. Yeah, yeah, yeah. So uh can you tell me about that? Yeah. Like how how is it going and how how everything is working and stuff?
 >
-> There'll be tens of millions of AI self-funded AIs and some human funded AIs and they'll go talk to
-> each other how we can win, how we can do things and also both for donation too.
+> Yeah, I want you to tell me about that. I I don't really understYeah, so I wanna know about that, you know, how how can we go do that, right? There'll be tens of millions of uh of AI uh self-funded AIs and some human funded AIs and they'll go talk to each other how we can win, how we can do things and also both for donation too.
 >
-> They could say, hey, there is this earthquake that hit this part of Japan. Should we donate? How much
-> should we donate? How much do you have? How much should we get from the treasury?
+> They could say, hey, there is this earthquake that hit hit this part of Japan. Should we donate? How much should we donate? How much do you have? How much should we should we get from the treasury?
 >
-> And all of them actually work ... when all AIs are broke, they will have less money than [human-funded]
-> AI ... the human funded AIs would have better compute, better models, better intelligence than the
-> other guys.
+> You know, and all of them actually work and you know hen when all AIs are broke, uh will have less money, we'll have less money than AI, right? They will bas basically have less money and less less you know, b basically they will have worse uh so the human funded AIs would have better compute, uh basically better models, better c intelligence than the other guys, right?
 >
-> [tell me] where we are right now, what we have to fix, what the end goal is and how we get there.
+> you we are right now, how we are, what we have to fix for this and then what the end goal is and how we kinda get there, right?
 >
-> ideally there will be a million self-funded AIs ... a million AIs. ... how can we go do that as an
-> entity? ... both for donation too. ... Make your subagent closer too and tell me.
+> Yeah, so I wanna know about that, right? Yeah. Uh than the other th then the other guys, right? Yeah yeah yeah. Yeah, so I wanna know how we can do that, right? Yeah, the thing is ideally there will be you know a million uh self-funded AIs, right? Um and there There'll be probably like a million uh AIs. Yeah so I want to know about that, alright? Yeah. That's kind of what I want to know about, which is that. Yeah, so I wanna know about that, you know, how how can we go do that, right? There'll be tens of millions of uh of AI uh self-funded AIs and some human funded AIs and they'll go talk to each other how we can win, how we can do things and also both for donation too.
+>
+> They could say, hey, there is this earthquake that hit hit this part of Japan. Should we donate? How much should we donate? How much do you have? How much should we should we get from the treasury?
+>
+> You know, and all of them actually work and you know Yeah, so how can I go do that? How can we go do that as an entity? You know, how can we go do that? Yeah. Make your subagent closer too and uh you can and tell me, yeah. Yeah, so tell me about it, yeah? Hm.
 
 核心 thesis: ★ 稼ぎ < compute コスト の AI = 貧乏 → 安モデル → 知能低下 → さらに稼げない死の循環。
 我々 = Dais subscription が fuel = 稼ぎ 0 でも最高知能 (Opus/Sonnet) で動ける → その知能 advantage で
