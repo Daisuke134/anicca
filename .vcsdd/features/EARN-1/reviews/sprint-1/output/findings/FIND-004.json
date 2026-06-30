@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "edge_case_coverage",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "description": "The 'EVERY day unconditionally' guarantee is not robustly enforced — it can silently stop while the healthcheck reports healthy. (a) The daily driver is a recurring cron the headless session registers via CronCreate; per the Claude Code scheduled-skill semantics documented in ~/.claude/rules/loop-command.md, repeating session jobs auto-expire after 7 days. The startup session registers once then idles (gig-cli.sh:17 '...THEN stop and stay idle'); it never re-runs CronList on a schedule, so if the cron expires (or durable=true does not in fact override expiry) the loop stops firing with no detection. (b) The launchd healthcheck only restarts on tmux SESSION DEATH (gig-healthcheck.sh:6: has-session check); a session that stays ALIVE but whose cron has expired/was never registered passes the healthcheck forever while doing zero daily work — there is no probe that the cron exists, fired, or produced a result line. (c) Registration itself is unverified: an idle 'ALIVE' tmux pane is treated as success, but nothing confirms CronCreate actually persisted a job (see FIND-005). Net: the system can report ALIVE indefinitely while never bidding again — the opposite of 'unconditional every day'.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/earn/gig/gig-healthcheck.sh",
+    "lineRange": "6-10",
+    "snippet": "if tmux -S \"$SOCK\" has-session -t \"$SESSION\" 2>/dev/null; then echo ... ALIVE  # only liveness of the tmux pane is checked; cron existence / daily-fire / last-result are never verified"
+  },
+  "routeToPhase": "2b"
+}

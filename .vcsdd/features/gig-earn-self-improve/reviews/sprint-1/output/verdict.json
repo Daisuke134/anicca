@@ -1,0 +1,53 @@
+{
+  "sprintNumber": 1,
+  "feature": "gig-earn-self-improve",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-06-30T00:00:00Z",
+  "iteration": 1,
+  "reviewScope": "ad-hoc sprint review (commit 6ab291e, 5-behavior self-improving loop upgrade)",
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "rationale": "NO-FAKE-EARN write guard is instruction-only in the cron prompt. The earnings.jsonl write path ('ONLY THEN append... NEVER write earnings.jsonl for an applied/in-progress gig') is an LLM instruction with no code enforcement at the write site. The deterministic guard exists only on READS (monitor.sh, run.sh, auditor.sh filter by settled-status+evidence+jpy>0). A confabulated lesson from B5 peer GitHub issues or B4 strategy reasoning could cause the LLM to write a fabricated row; the row enters the ledger and pollutes audit history even though it will not be summed. Additionally, the spec (line 89) requires reading peer [gig-lesson] issues 'Each pass (not just Nth)' but the cron prompt places gh issue list entirely inside STEP 5 IMPROVE STEP (only every N passes). This is an unimplemented spec requirement.",
+      "findings": ["FIND-007", "FIND-003"]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "rationale": "No-human-loop.test.mjs scans all five live .sh files (gig-cli.sh, monitor.sh, gig-healthcheck.sh, auditor.sh, run.sh) for runtime human-step patterns (read -p, ask user, wait for approval, manual click). The planted-violation test confirms the scanner is not blind to patterns after a # token. gig-cli.sh asserts CapSolver, gog gmail OTP, and the 'blocker is NOT a stop' fallback. B5 graceful degradation (gh failure → log + continue, never abort) is present in the cron prompt. The healthcheck's START_AGE grace window handles the 'first pass not yet completed' edge case correctly.",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/earn/gig/__tests__/no-human-loop.test.mjs", "description": "Lines 46-52: asserts CapSolver, gog gmail OTP, blocker-not-stop, no-fake-earn guard in gig-cli.sh"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/earn/gig/gig-healthcheck.sh", "description": "Lines 36-44: START_AGE grace window correctly uses .last-start mtime to distinguish first-pass-pending from stale"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/earn/gig/gig-cli.sh", "description": "Line 21: 'A blocker is NOT a stop — try the autonomous path (captcha→CapSolver, OTP→gog gmail)'"}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "FAIL",
+      "rationale": "Two critical defects. (1) The pass_count throttle gate is entirely LLM-driven with no deterministic code enforcement. The cron prompt tells the LLM to 'increment pass_count and write it back' then later check 'when pass_count % improve_cadence_passes == 0'. No code validates the increment happened or that the JSON write succeeded. If the LLM reads the pre-increment value of pass_count (0 after bootstrap or after any failed write-back) and checks 0 % 4 == 0, the improve step fires on every pass and B5 posts a GitHub issue every hour — unbounded issue spam. If write-back consistently fails, pass_count stays at whatever value the LLM last successfully wrote, and the modulo gate becomes unreliable. (2) strategy.json corruption: B4 writes 'valid JSON back' under LLM instruction. If the LLM writes malformed JSON to strategy.json, no code detects this. The bootstrap ('if strategy.json does not exist, copy strategy.default.json') only activates when the file is absent, not corrupted. On the next pass the LLM will attempt to 'Read ~/gig/strategy.json' and receive malformed content, causing the entire pass to stall or proceed with garbled strategy.",
+      "findings": ["FIND-001", "FIND-002"]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "FAIL",
+      "rationale": "Three structural defects. (1) B4 can set skip_categories to overlap entirely with priority_categories. The cron prompt instructs adding categories with 'repeatedly needs_human|unsustainable|0-accept after 3+ tries' but defines '3+ tries' nowhere and has no structural floor ensuring at least one applicant category remains. A bad peer lesson read from B5 could cause the model to add all 7 categories to skip_categories in a single improve step, permanently stopping B2 applications. (2) EARNED CHECK step ordering is inverted between spec and cron prompt: the spec places it as step 7 (after IMPROVE+BOT-TO-BOT), the cron prompt places it as STEP 4 (before STEP 5 IMPROVE STEP). This is an internally inconsistent design. (3) B4 reads 'all rows' of lessons.jsonl on every Nth pass with no limit. lessons.jsonl grows indefinitely. After weeks of hourly passes with 5 applications each, this file could contain thousands of rows, consuming unbounded tokens in the improve step.",
+      "findings": ["FIND-005", "FIND-006", "FIND-008"]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "rationale": "Two test quality defects. (1) The shared-lessons.jsonl dedup test (self-improve.test.mjs lines 129-140) defines a local `alreadyShared()` function entirely within the test body, not imported from or derived from any production code. It tests this local function exclusively. The test passes even if the cron prompt's dedup instruction ('check by requestId+outcome') were entirely removed. This is a tautological test that provides no assurance about the actual cron behavior. (2) The graceful-gh degradation test (self-improve.test.mjs line 228) uses regex `/gh fails.*continue|failure.*never abort|2>\/dev\/null/i`. This matches on any occurrence of `2>/dev/null` in gig-cli.sh. The string `2>/dev/null` is present in three unrelated places in the file (lines 27, 30, and within the cron prompt's `gh issue list ... 2>/dev/null`). The test would pass even if the explicit 'If gh fails, log a warning and continue' instruction were deleted from the cron prompt, as long as any `2>/dev/null` remains.",
+      "findings": ["FIND-004", "FIND-009"]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 9,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [
+      "NO-FAKE-EARN", "NO-HUMAN", "IDEMPOTENT-BOUNDED", "SELF-IMPROVE-SOUNDNESS", "CONSISTENCY-HONESTY"
+    ],
+    "duplicateFindings": []
+  }
+}

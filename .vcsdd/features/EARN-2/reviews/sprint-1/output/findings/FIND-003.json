@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "implementation_correctness",
+  "category": "test_quality",
+  "severity": "high",
+  "description": "The verify step cannot detect a low-quality or garbled-but-correctly-sized slide. compose_slides.py:58 draws text starting at fixed top=150 with no bounding/clipping check; a slide whose text has many or long lines overflows past y=1920 (off-canvas) yet the saved PNG is still exactly 1080x1920 and PASSES producer.sh:43. Likewise the gradient-only background (producer.sh:20-32) with text confined to the top region (compose draws from top=150, CTA #PR at H-110) means the middle/lower ~3/4 of every slide is empty gradient — a viable-but-thin slideshow that the geometry-only gate rates as fully verified. Could queue overflowed/illegible slides. No pixel-content, text-bbox-within-canvas, or contrast assertion exists.",
+  "evidence": {
+    "filePath": "/Users/anicca/.claude/skills/earn-affiliate-slideshow/scripts/compose_slides.py",
+    "lineRange": "28-58",
+    "snippet": "y = top ... y += int(line_h * lh)  # no check that y stays < H; end_y = draw_text(d, lines, font, top=150, color=INK)"
+  },
+  "routeToPhase": "2b"
+}

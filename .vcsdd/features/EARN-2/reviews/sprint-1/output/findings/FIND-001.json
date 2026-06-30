@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "The feature goal is an EVERY-DAY autonomous loop, but producer.sh is a manual-input tool: it takes a pre-existing deck.json as $1 (producer.sh:11) and there is NO autonomous deck generator anywhere in skills/earn/affiliate/ (Glob returns only producer.sh). Today's deck was hand-seeded (/tmp/aff-deck.json). The spec (2026-06-30-earn-affiliate-slot-design.md:15-16) claims 'brain writes a deck (NL judgment)' as step 1 of the daily PRODUCER, but no wiring invokes the brain to emit a fresh deck each day. Contrast clip/producer.sh:29-33 which self-starts by picking a trending source URL with zero input. As built, the affiliate producer cannot run unattended daily — it stalls without a human dropping a deck.json. This is a one-off render tool, not a self-starting daily loop.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/earn/affiliate/producer.sh",
+    "lineRange": "11-17",
+    "snippet": "DECK=\"${1:?usage: producer.sh <deck.json>}\""
+  },
+  "routeToPhase": "2b"
+}

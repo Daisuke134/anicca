@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "features": {
+    "promote-fun-clip-earn": {
+      "status": "active",
+      "createdAt": "2026-06-29T12:34:14.396Z",
+      "mode": "lean",
+      "currentPhase": "init",
+      "updatedAt": "2026-06-29T12:34:14.396Z"
+    },
+    "agents-at-arms-leaderboard": {
+      "status": "active",
+      "createdAt": "2026-06-30T21:40:14.034Z",
+      "mode": "lean",
+      "language": "typescript",
+      "currentPhase": "init",
+      "updatedAt": "2026-06-30T21:40:14.034Z"
+    }
+  },
+  "activeFeature": "agents-at-arms-leaderboard"
+}

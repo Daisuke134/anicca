@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "verification_readiness",
+  "category": "test_coverage",
+  "severity": "major",
+  "description": "The AUTONOMOUS daily loop has no E2E evidence of a real side-effect; only manual fires are proven. state/bids.jsonl:1-2 contains two genuine bids (HTTP 201 + bidId) — so a real bid IS observable on dealwork.ai (good, the bid rail works) — but both rows carry ts='e2e-bid' / 'e2e-bid2', i.e. they were produced by manual test invocations, NOT by the cron-driven headless session. There is no artifact demonstrating that: (1) the headless `claude` actually executes the STARTUP prompt at all — gig-cli.sh:30-31 launches `claude --name ... --dangerously-skip-permissions --add-dir $HOME -- \"$STARTUP\"` inside a detached tmux with no TTY; passing the prompt positionally after `--` (not via `-p`/print mode) into a non-interactive pane is unproven to run; (2) CronCreate actually registered a durable daily job (no CronList dump, no logs/gig-core-healthcheck.log showing a daily fire, no result line tagged with a cron WAKE_ID); (3) any bid/deliver was triggered by the loop rather than by hand. The whole earn loop also cannot be E2E-verified to its goal (real USDC) because the deliver step is missing (FIND-001), so V5_settle is unreachable. Verification readiness therefore fails: the unit pieces are runnable, but the autonomous daily loop's real side-effects are unobserved.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/earn/gig/state/bids.jsonl",
+    "lineRange": "1-2",
+    "snippet": "{\"jobId\":\"bd0459ff-...\",\"ok\":true,\"status\":201,\"bidId\":\"e87b03a2-...\",\"ts\":\"e2e-bid\"}  // ts='e2e-bid' => manual test, not a cron-triggered autonomous fire"
+  },
+  "routeToPhase": "2b"
+}

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-011",
+  "dimension": "verification_readiness",
+  "category": "test_coverage",
+  "severity": "critical",
+  "description": "The FULL affiliate daily loop cannot be E2E-verified because it does not exist end-to-end (see FIND-008/009/010). Only the producer sub-step is verifiable (and was: queue/aff1782751457 has 5 PNGs, slide_1 = 1080x1920). The spec's own DONE gate (spec:36-37: 'posted + rendered live = done for the post step') is unreachable today: no run.sh to post, no niche account to post to, no BIO-link automation, no loop to invoke amazon_report.py / record-affiliate-earn.mjs. There is no failing-then-passing E2E that proves a real carousel went live on our own account with a live BIO Amazon link. The verification spine stops at 'slides composed', which the spec explicitly says is NOT done.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/docs/superpowers/specs/2026-06-30-earn-affiliate-slot-design.md",
+    "lineRange": "36-37",
+    "snippet": "DONE = a real educational slideshow posted to our own account daily, BIO Amazon link live, verified in browser. \"composed images exist\" != done"
+  },
+  "routeToPhase": "2b"
+}

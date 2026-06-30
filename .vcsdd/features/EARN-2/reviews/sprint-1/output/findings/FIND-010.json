@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-010",
+  "dimension": "structural_integrity",
+  "category": "spec_gap",
+  "severity": "high",
+  "description": "The post -> BIO-link -> commission -> record path is a set of disconnected parts, not an end-to-end wire. build-link.mjs PRODUCES an affiliate URL but NOTHING sets it into an account BIO (no BIO-update automation exists in skills/earn/affiliate/ or referenced by any loop). amazon_report.py and record-affiliate-earn.mjs (INV-7) exist but are invoked by NO loop — there is no run.sh or core to call them, so commission is never measured or recorded automatically. record-affiliate-earn.mjs:22 also writes to ~/.smtm/earn-loops/affiliate/ while the clip ledger lives under ~/.openclaw/state and the spec narrative says 'record (earn_usdc 0)'; the ledger location/integration is not reconciled with the slot. The money path therefore cannot complete unattended even once the account exists.",
+  "evidence": {
+    "filePath": "/Users/anicca/.claude/skills/earn-affiliate-slideshow/scripts/record-affiliate-earn.mjs",
+    "lineRange": "22-23",
+    "snippet": "const LEDGER_DIR = join(homedir(), \".smtm\", \"earn-loops\", \"affiliate\"); // invoked by no loop; no BIO-set automation exists"
+  },
+  "routeToPhase": "2b"
+}

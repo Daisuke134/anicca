@@ -1,0 +1,22 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "structural_integrity",
+  "category": "requirement_mismatch",
+  "severity": "medium",
+  "title": "EARNED CHECK step ordering inverted between spec (step 7) and cron prompt (STEP 4)",
+  "description": "The spec (2026-06-30-gig-self-improving-multiapply-loop-design.md lines 176-188) defines the pass structure as: step 5 = OBSERVE OUTCOMES (B3), step 6 = IMPROVE (B4) + BOT-TO-BOT (B5) (if cadence gate), step 7 = EARNED CHECK. In the cron prompt the ordering is: STEP 3 = OBSERVE OUTCOMES, STEP 4 = EARNED CHECK (NO FAKE EARN), STEP 5 = IMPROVE STEP. The EARNED CHECK fires before the improve step in the prompt but after it in the spec. The practical consequence is minor (earnings.jsonl writes are instruction-gated regardless of order) but the spec and implementation describe different pass structures, making the spec an unreliable reference document and creating maintenance confusion when future reviewers need to reason about ordering dependencies.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/docs/superpowers/specs/2026-06-30-gig-self-improving-multiapply-loop-design.md",
+    "lineRange": "176-188",
+    "snippet": "5. OBSERVE OUTCOMES (B3) ... 6. If pass_count % improve_cadence_passes == 0: IMPROVE STEP (B4): ... BOT-TO-BOT SHARE (B5): ... 7. EARNED CHECK: if any request shows 検収/支払 in the UI → ONLY THEN append ..."
+  },
+  "additionalEvidence": [
+    {
+      "filePath": "/Users/anicca/anicca/skills/earn/gig/gig-cli.sh",
+      "lineRange": "21",
+      "note": "Cron prompt ordering: STEP 3 OBSERVE OUTCOMES → STEP 4 EARNED CHECK (NO FAKE EARN) → STEP 5 IMPROVE STEP"
+    }
+  ],
+  "fix": "Align one of the two documents. The cron prompt ordering (EARNED CHECK before IMPROVE) is arguably more correct because lessons should include earn events. Update the spec's pass structure to match the cron prompt ordering, or update the cron prompt to place EARNED CHECK after IMPROVE (step 6 → 7 in spec numbering).",
+  "routeToPhase": "2b"
+}

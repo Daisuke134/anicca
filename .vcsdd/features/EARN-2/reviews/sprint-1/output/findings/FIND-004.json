@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "implementation_correctness",
+  "category": "security_surface",
+  "severity": "high",
+  "description": "景表法 (Japanese stealth-marketing law) compliance is unenforced. Spec:11-12 and SKILL.md:34 state '#PR mandatory'. producer.sh:47 writes caption.txt as json.get('caption', DEFAULT): the DEFAULT contains '#PR', but a deck that SUPPLIES a 'caption' field is passed through verbatim with NO check that it contains '#PR'. A deck whose caption omits the disclosure will queue a non-compliant carousel caption. Disclosure must be guaranteed in code (append #PR if absent / reject), not left to the upstream deck author. This is a legal/compliance correctness gap on the affiliate funnel itself.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/earn/affiliate/producer.sh",
+    "lineRange": "46-47",
+    "snippet": "\"$PY\" -c \"import json;print(json.load(open('$DECK')).get('caption','AI仕事術。 リンクはプロフィール #PR'))\" > \"$OUT/caption.txt\""
+  },
+  "routeToPhase": "2b"
+}

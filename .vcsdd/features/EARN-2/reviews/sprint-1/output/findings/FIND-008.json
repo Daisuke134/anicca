@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-008",
+  "dimension": "structural_integrity",
+  "category": "spec_gap",
+  "severity": "critical",
+  "description": "The entire earn-core (the thing that makes it a LOOP) is missing. The master plan (2026-06-30-earn-slots-daily-loop-master.md:17-22, row 37, build-step 47) requires every slot to clone clip's three pieces PLUS a poster loop. The clip reference has: run.sh, clip-cli.sh (core), clip-healthcheck.sh, monitor.sh, launchd/*.plist (Glob of skills/earn/clip/). The affiliate slot has ONLY producer.sh (Glob of skills/earn/affiliate/ returns exactly one file). MISSING, concretely: (a) run.sh slot entrypoint — none; (b) affiliate-cli.sh core (tmux headless claude-p) — none; (c) healthcheck — none; (d) launchd plists (daily producer cron + 5-min healthcheck) — skills/earn/affiliate/launchd/ does not exist; (e) monitor.sh — none. Nothing drains the queue, nothing posts, nothing runs daily. The 'every-day loop' does not exist as code; only the produce sub-step does.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/earn/affiliate/",
+    "lineRange": "directory listing",
+    "snippet": "Glob skills/earn/affiliate/** -> producer.sh ONLY (vs clip: run.sh, clip-cli.sh, clip-healthcheck.sh, monitor.sh, producer.sh, launchd/*.plist)"
+  },
+  "routeToPhase": "2b"
+}

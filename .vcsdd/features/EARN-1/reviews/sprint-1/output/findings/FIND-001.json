@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "structural_integrity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "OPEN LOOP — the gig money loop has no path from an accepted contract to a delivered deliverable, so it can never reach settle and can never earn. The cron/startup prompt step (3) claims it will 'DELIVER any accepted contract' (gig-cli.sh:17), and run.sh do_deliver() is documented 'brain produces work' (run.sh:112). But the entire deliver implementation only DETECTS: deliver-run.mjs prints task 'deliver-detect' and lists pending contracts (deliver-run.mjs:13-16); deliver.mjs only fetches /contracts?role=worker and filters by status (deliver.mjs:11-32). There is NO code anywhere that produces a deliverable artifact or POSTs/PUTs it to dealwork (grep for deliverable/submit across the skill returns only comments and the detect path). gates.mjs:11,19 makes V3_deliverable depend on a 'deliverables.jsonl' that nothing in the pipeline ever writes, so V3 is permanently false → V4_inbound / V5_settle are unreachable → record-earn (the only earn source) is never legitimately triggered by gig work. Result: bids land (bids.jsonl proves 201s), but accepted jobs dead-end and no USDC can ever be earned. This is exactly the stated fail condition: 'a loop that doesn't actually work — bids that never get delivered, settle that can't reach payout.'",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/earn/gig/lib/deliver-run.mjs",
+    "lineRange": "11-16",
+    "snippet": "const r = await fetchContracts(key); ... out({ task: 'deliver-detect', pending: pending.length, contracts: pending.slice(0, 5)... });  // detect + surface only; no deliverable is ever produced or submitted"
+  },
+  "routeToPhase": "2b"
+}

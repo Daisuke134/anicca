@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "implementation_correctness",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "description": "Bids are economically blind and not actually tailored, undermining the 'actually earns' goal (BP-2: win the first gig in 1-4 weeks by actively pitching). Every bid hardcodes proposedAmount='40' and estimatedHours=2 regardless of the job's real budget: postBid defaults amount='40', hours=2 (bid.mjs:59) and bid-run.mjs:28 uses GIG_AMOUNT || '40'. detect.mjs:42-43 DOES capture each job's budget, but bid.mjs/pickJob never read it. Live proof: state/guild_feed.json:11-14 shows a job with budget '500.0000' USD — the loop would bid $40 on it (drastically under-pricing / signalling low quality) and would equally bid $40 on a $5 job (over-pricing). The 'tailored proposal' claim (bid.mjs:5, run.sh comment) is false: buildProposal (bid.mjs:41-50) is a single fixed template with only the title string-interpolated — identical boilerplate for every job, no use of the brief, acceptance criteria, or budget. Generic fixed-price boilerplate bids have a near-zero win rate, so the loop 'runs daily' but is structurally unlikely to ever convert to a paid contract.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/earn/gig/lib/bid.mjs",
+    "lineRange": "41-59",
+    "snippet": "export function buildProposal(job){ const t=String(job.title||'this task'); return (`I can deliver \"${t}\" end-to-end...`); }  // fixed template, ignores brief/budget\nexport async function postBid({ apiKey, jobId, proposal, amount='40', hours=2 })  // budget never consulted"
+  },
+  "routeToPhase": "2b"
+}

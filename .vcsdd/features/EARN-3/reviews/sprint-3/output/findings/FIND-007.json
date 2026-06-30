@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-007",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "medium",
+  "description": "Freshness/staleness handling is absent. contests.json stores fetched_at as a raw epoch (state/contests.json:2 '1782753475') with no human-readable date and no consumer that checks staleness — execute() will happily pick contests[0] from an arbitrarily old file (run.sh:45 only re-discovers if the file is ENTIRELY missing, never if stale). There is no per-contest start/end date captured at all, so closed-contest pruning (FIND-001) is impossible even downstream. The /tmp markdown uses $$ (PID) and is rm -f'd (run.sh:35) which is fine, but the scrape errors that the rm masks (2>/dev/null) leave no diagnostic. state/findings/ is created but has no retention/dedup policy. These are second-order to FIND-001 but block any robust open-contest logic.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/earn/audit/run.sh",
+    "lineRange": "44-46",
+    "snippet": "local cj=\"$STATE/contests.json\"\n[ -f \"$cj\" ] || discover >/dev/null 2>&1   # only re-discovers when file absent, never when stale; no date fields stored"
+  },
+  "routeToPhase": "2b"
+}

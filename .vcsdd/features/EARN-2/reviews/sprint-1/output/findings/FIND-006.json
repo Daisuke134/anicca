@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "edge_case_coverage",
+  "category": "requirement_mismatch",
+  "severity": "medium",
+  "description": "Hidden coupling between producer's background naming and compose's slide indexing. producer.sh:24-31 generates backgrounds named slide_1..slide_N by sequential loop index (range(1, n+1)). compose_slides.py:44-45 instead opens the background by the deck-provided field s['n'] (bg_path = slide_<n>.png). These agree ONLY when the deck's 'n' values are exactly the contiguous integers 1..N. A deck with 0-based n, gaps, duplicates, or out-of-order n will mismatch: compose prints 'missing {bg_path}' and skips (compose_slides.py:46-47), ok < N, and producer.sh:49 silently does not queue. Also compose_slides.py:44 'n = s[\"n\"]' KeyErrors (crashes whole deck) if any slide lacks an 'n' key. The contract that 'n' must be contiguous 1..N is implicit and unvalidated.",
+  "evidence": {
+    "filePath": "/Users/anicca/.claude/skills/earn-affiliate-slideshow/scripts/compose_slides.py",
+    "lineRange": "43-47",
+    "snippet": "for s in deck[\"slides\"]: n = s[\"n\"]; bg_path = os.path.join(work, f\"slide_{n}.png\")"
+  },
+  "routeToPhase": "2b"
+}

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-007",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "medium",
+  "description": "Disk hygiene is half-done. The /tmp workdir IS cleaned (producer.sh:14 trap 'rm -rf $WORK' EXIT) — good. But ~/affiliate/queue grows UNBOUNDED: every producer run mints a new id 'aff$(date +%s)' (producer.sh:13) and drops ~5 PNGs (~400KB) into $QUEUE/$ID, and there is NO consumer to drain it (no run.sh exists), no posted/ archive, and no retention cap. If a daily producer fires but nothing posts, the queue accumulates one ~400KB dir per day forever. Contrast clip/run.sh:92-94 which moves posted clips to ~/clips/posted. HARD 0.26 disk-hygiene is satisfied for /tmp only, not for the queue. Also: id collisions on same-second double-fire reuse the same OUT dir (mkdir -p) with no lock.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/earn/affiliate/producer.sh",
+    "lineRange": "13-13",
+    "snippet": "ID=\"aff$(date +%s)\"; WORK=\"/tmp/aff-prod-$$\"; OUT=\"$QUEUE/$ID\"; mkdir -p \"$WORK\" \"$OUT\""
+  },
+  "routeToPhase": "2b"
+}

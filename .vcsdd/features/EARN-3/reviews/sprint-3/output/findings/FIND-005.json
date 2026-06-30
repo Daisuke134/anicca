@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "high",
+  "description": "The feature requirement is an 'every-single-day, unconditional' loop (master:9). But daily firing is NOT guaranteed by any deterministic mechanism. There is no cron file, no launchd that runs the daily pass — the only launchd job is the 5-min healthcheck (plist:6 StartInterval 300) which merely restarts the tmux session. The actual daily schedule is delegated to the LLM brain via a STARTUP instruction telling it to 'CronList; if none mentions earn/audit, CronCreate cron=53 7 * * *' (audit-cli.sh:8). This is non-deterministic self-registration: if the brain skips/fails/forgets the CronCreate, or the cron is cleared (cf. memory: openclaw doctor --fix rolls back cron model overrides), the loop silently never fires daily and the healthcheck will not detect it (it only checks tmux liveness, not whether a daily cron exists or last-fired). Contrast clip, whose master entry specifies an actual 'cron :07' (master:21,35). The 'every-day' invariant is therefore unverified and fragile.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/earn/audit/audit-cli.sh",
+    "lineRange": "8-12",
+    "snippet": "STARTUP='... FIRST register the recurring driver if absent: CronList; if none mentions earn/audit, CronCreate cron=\"53 7 * * *\" ...'  # daily firing depends on the LLM executing this; healthcheck only restarts tmux"
+  },
+  "routeToPhase": "2b"
+}

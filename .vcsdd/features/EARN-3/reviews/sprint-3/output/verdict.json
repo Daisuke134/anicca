@@ -1,0 +1,55 @@
+{
+  "sprintNumber": 3,
+  "feature": "EARN-3",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-06-30T00:00:00Z",
+  "iteration": 1,
+  "reviewContext": {
+    "reviewType": "implementation",
+    "scope": "reviews/sprint-3",
+    "note": "No manifest.json present under reviews/sprint-3/input/; reviewed the artifacts enumerated in the review request directly from disk."
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-005", "FIND-008"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/earn/audit/run.sh:17-18", "description": "emit() hardcodes earn_usdc:0 / cost_usdc:0 — INV-7 (only real external USDC counts; discover/analyze earn 0) is respected for the no-fake-earn aspect"}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-002", "FIND-007"],
+      "evidence": []
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-004"],
+      "evidence": []
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "FAIL",
+      "findings": ["FIND-003", "FIND-008"],
+      "evidence": []
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-006"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/earn/audit/state/contests.json", "description": "discover ran and produced 47 entries with real USDC pools — the FETCH is verifiable; the OPEN/joinable status of those entries is false (see FIND-001)"}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 8,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  },
+  "highestPriorityGap": "FIND-001 — discover lists CLOSED/historical audits as 'live open contests' (no open/active filter). This silently poisons every downstream step (analyze targets a contest that cannot be submitted to) and is the highest-priority deterministic fix to make audit anything other than discovery theater. The account/submit gap (FIND-003) is the next blocker but is at least honestly flagged; FIND-001 is an undisclosed correctness bug presented as success."
+}

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "medium",
+  "description": "A single slide with empty or whitespace-only text crashes the ENTIRE deck. compose_slides.py:51 builds lines = [l for l in s['text'].split('\\n') if l.strip()]; if that yields [], line 56 'fsize = 104 if max(len(l) for l in lines) <= 6 else 86' calls max() on an empty sequence → ValueError → the whole compose_slides.py process aborts → producer.sh:36 catches it as 'compose failed' and NOTHING is queued. One bad slide kills the whole daily run. No per-slide guard, no skip, no test for empty/missing text.",
+  "evidence": {
+    "filePath": "/Users/anicca/.claude/skills/earn-affiliate-slideshow/scripts/compose_slides.py",
+    "lineRange": "51-57",
+    "snippet": "lines = [l for l in s[\"text\"].split(\"\\n\") if l.strip()] ... fsize = 104 if max(len(l) for l in lines) <= 6 else 86"
+  },
+  "routeToPhase": "2b"
+}

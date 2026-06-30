@@ -1,0 +1,22 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "implementation_correctness",
+  "category": "purity_boundary",
+  "severity": "critical",
+  "title": "strategy.json corruption has no recovery path — bootstrap only fires on file-absent, not malformed",
+  "description": "The cron prompt instructs B4: 'write valid JSON back' to ~/gig/strategy.json. This is an LLM instruction with no deterministic validation. If B4 produces malformed JSON (e.g. truncated due to context limit, unescaped characters in a learned proposal_template string, or a structural edit mistake), strategy.json exists on disk but contains invalid JSON. The bootstrap guard ('if ~/gig/strategy.json does not exist, copy strategy.default.json') fires only when the file is absent. It does NOT fire when the file exists with malformed content. On the subsequent pass, 'Read ~/gig/strategy.json' returns the malformed content. The LLM may: (a) fail to parse APPLIED_IDS (the derived list of already-applied requestIds), causing dedup to break (B2 can double-apply), (b) fail to read max_apply_per_pass (B2 applies unlimited requests), (c) fail to read skip_categories (B2 applies to all categories), or (d) stall mid-pass. There is no try/parse-fallback-to-default path anywhere in the codebase.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/earn/gig/gig-cli.sh",
+    "lineRange": "21",
+    "snippet": "STRATEGY BOOTSTRAP: if ~/gig/strategy.json does not exist, copy ~/anicca/skills/earn/gig/strategy.default.json to ~/gig/strategy.json. ... (c) update ~/gig/strategy.json: ... write valid JSON back"
+  },
+  "additionalEvidence": [
+    {
+      "filePath": "/Users/anicca/anicca/skills/earn/gig/__tests__/self-improve.test.mjs",
+      "lineRange": "16-22",
+      "note": "Tests validate strategy.default.json (the static seed), never the live strategy.json after a B4 write. No test exercises the corrupted-JSON recovery scenario."
+    }
+  ],
+  "fix": "Add a shell-level validity check in the cron prompt: 'python3 -c \"import json,sys; json.load(open(\\\"$HOME/gig/strategy.json\\\"))\" 2>/dev/null || cp ~/anicca/skills/earn/gig/strategy.default.json ~/gig/strategy.json'. Place this AFTER B4 writes strategy.json (self-healing for the next pass) and BEFORE reading it at pass start (recover from a prior corruption). Alternatively, have B4 write to strategy.json.tmp, validate it with python3 -c 'import json,open(...)' then mv to strategy.json only on success.",
+  "routeToPhase": "2b"
+}

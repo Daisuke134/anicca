@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "verification_readiness",
+  "category": "test_coverage",
+  "severity": "high",
+  "description": "There is no RED test and no per-slot spec for the audit slot, despite the master plan mandating '/vcsdd: spec -> RED (failing check) -> GREEN' for every step (master:44,49,56). A Glob of skills/earn/audit/** returns only run.sh, audit-cli.sh, audit-healthcheck.sh, the plist, and state/contests.json — no test file, no spec. The single most important property of this slot (discover must yield ONLY currently-open/joinable contests) is exactly what is unpinned, and a trivial RED test ('every contest in contests.json has an active submission window / status==active') would have immediately caught FIND-001. Without it, the GREEN claim ('discover E2E ran: 47 contests with real pools') is verifying the wrong thing — it confirms the fetch ran, not that the data is correct. The state/findings/ directory contains no drafted finding either, so the analyze step has zero produced evidence.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/earn/audit",
+    "lineRange": "n/a",
+    "snippet": "Glob skills/earn/audit/** => {run.sh, audit-cli.sh, audit-healthcheck.sh, launchd/...plist, state/contests.json}; no *test*/*spec* file; state/findings/ empty"
+  },
+  "routeToPhase": "2a"
+}

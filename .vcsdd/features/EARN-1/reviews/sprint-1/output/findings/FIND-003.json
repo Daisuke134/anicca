@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "edge_case_coverage",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "description": "Duplicate-bid race: no lock protects the bid bounded-unit, so two near-simultaneous fires can bid the SAME job twice. Idempotency relies entirely on bids.jsonl, which is read at the start (loadBidLedger, bid.mjs:16-25; pickJob skips ledgered ids, bid.mjs:33) but written ONLY after a successful POST (shouldRecordBid requires r.ok, bid.mjs:54; bid-run.mjs:33-37). This is a classic TOCTOU: two concurrent run.sh invocations both loadBidLedger (job X absent) -> both pickJob X -> both postBid X -> double bid, before either appends. Concurrency is realistic here: the startup prompt makes the headless session 'run ONE cycle now' on every (re)start (gig-cli.sh:17), the launchd healthcheck restarts/launches the session every 5 minutes whenever tmux is not found (gig-healthcheck.sh:6-10), and the daily cron fires independently — a restart that coincides with the cron, or a stale-socket false-DEAD that spawns a second session, yields overlapping cycles. run.sh contains no flock/lock (grep: no flock/.lock anywhere in the skill). Double-bidding the same client job is reputation-damaging on a real marketplace.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/earn/gig/lib/bid-run.mjs",
+    "lineRange": "20-37",
+    "snippet": "let job = pickJob(feed, bid); ... const r = await postBid({...}); if (shouldRecordBid(r)) fs.appendFileSync(bidsFile, ...)  // ledger appended only AFTER POST; no lock between read and write"
+  },
+  "routeToPhase": "2b"
+}

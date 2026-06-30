@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-008",
+  "dimension": "structural_integrity",
+  "category": "spec_gap",
+  "severity": "medium",
+  "description": "registry.json marks earn/audit status 'live' (registry.json:132) with a summary asserting it 'discover[s] live code4rena/Cantina contests + analyze one in-scope contract + draft candidate finding daily'. In reality: Cantina is not implemented at all (only code4rena is scraped, run.sh:23), 'live' contests are actually closed (FIND-001), analyze/draft is a no-op stub (FIND-004), and no daily fire is guaranteed (FIND-005). Marking it 'live' (same status string as the genuinely-running clip/video slots) overstates maturity and will mislead the cross-loop AUDITOR (master:26-30) whose job is to judge 'will this actually work' — it will read 'live' and a healthy tmux session and conclude the slot is functioning while it is structurally incapable of earning.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/registry.json",
+    "lineRange": "128-135",
+    "snippet": "\"earn/audit\": { ... \"status\": \"live\", ... \"summary\": \"LOCAL: discover live code4rena/Cantina contests + analyze one in-scope contract + draft candidate finding daily. ...\" }"
+  },
+  "routeToPhase": "2b"
+}

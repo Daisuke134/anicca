@@ -1,0 +1,27 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "implementation_correctness",
+  "category": "purity_boundary",
+  "severity": "critical",
+  "title": "pass_count throttle gate has no deterministic enforcement — improve step fires every pass or never",
+  "description": "The improve cadence gate ('STEP 5 IMPROVE STEP (every strategy.improve_cadence_passes passes, i.e. when pass_count % improve_cadence_passes == 0)') depends entirely on the LLM: (a) reading strategy.json, (b) incrementing pass_count, (c) writing the incremented value back to strategy.json, then (d) using the incremented value — not the stored value — in the modulo check. No deterministic code enforces any of these steps. Failure mode A: the LLM evaluates the modulo using the pre-increment value (0, which strategy.default.json seeds) or the value it reads before writing back. On every pass where the stored pass_count is 0 (i.e. every time a write-back fails), 0 % 4 == 0 is TRUE, causing B4 IMPROVE and B5 BOT-TO-BOT to fire. B5 posts a GitHub issue to Daisuke134/anicca every pass — the dedup via shared-lessons.jsonl only prevents same (requestId, outcome) re-posting, not posting from different lessons each hour. Failure mode B: if the LLM consistently fails to write back (JSON parse error in write, context overflow, tool error), pass_count never advances beyond 0 in the stored file, and the LLM sees 0 every pass. If it correctly uses post-increment (1) for the check, improve never fires. This is non-deterministic behavior from a non-deterministic gate.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/earn/gig/gig-cli.sh",
+    "lineRange": "21",
+    "snippet": "STRATEGY BOOTSTRAP: if ~/gig/strategy.json does not exist, copy ~/anicca/skills/earn/gig/strategy.default.json to ~/gig/strategy.json. Read ~/gig/strategy.json; increment pass_count and write it back. ... STEP 5 IMPROVE STEP (every strategy.improve_cadence_passes passes, i.e. when pass_count % improve_cadence_passes == 0)"
+  },
+  "additionalEvidence": [
+    {
+      "filePath": "/Users/anicca/anicca/skills/earn/gig/strategy.default.json",
+      "lineRange": "36",
+      "note": "pass_count seeds at 0; 0 % 4 == 0 is TRUE — the first pass triggers improve immediately under Failure Mode A, before any learning has occurred"
+    },
+    {
+      "filePath": "/Users/anicca/anicca/skills/earn/gig/__tests__/self-improve.test.mjs",
+      "lineRange": "86-88",
+      "note": "Test only confirms pass_count=0 in strategy.default.json, not that the increment-and-persist mechanism works or that the modulo gate is deterministically enforced"
+    }
+  ],
+  "fix": "Add a deterministic shell wrapper that reads, increments, and writes pass_count using jq, then exports PASS_COUNT for the LLM to use. The cron prompt can then receive PASS_COUNT as an env var or injected value rather than trusting the LLM to read-increment-write-check atomically. Alternatively, use a monotonic counter file (wc -l ~/gig/applied.jsonl or a simple echo-counter) that the LLM reads but does not write.",
+  "routeToPhase": "2b"
+}

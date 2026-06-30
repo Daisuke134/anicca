@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "structural_integrity",
+  "category": "spec_gap",
+  "severity": "critical",
+  "description": "The loop cannot earn end-to-end: there is no submission path and no account, anywhere. A grep of /Users/anicca/.openclaw/.env for code4rena|cantina|sherlock|warden returns NO matches, and there is no submit code in run.sh or audit-cli.sh — the entire 'submit' step is a prose disclaimer ('Real SUBMIT needs a code4rena/Cantina account', run.sh:6-7, audit-cli.sh:4). So the realized pipeline is: discover (closed contests, FIND-001) -> execute writes a .target.json placeholder (FIND-004) -> brain MAY draft state/findings/<id>.md -> DEAD END. This is the same 'deliverable with no delivery channel' dead-end as the gig slot. Being honestly flagged does not make it a loop that can earn — as built, the maximum possible earnings is structurally 0 because no path to a paid submission exists, and the analyzed target is a closed contest anyway.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/earn/audit/run.sh",
+    "lineRange": "42-53",
+    "snippet": "execute(){ ... echo \"{...draft_target...}\" > \"$STATE/findings/$id.target.json\"; emit \"... Submission account = honest gap.\" }  # no submit, no account referenced anywhere in repo or .env"
+  },
+  "routeToPhase": "2b"
+}

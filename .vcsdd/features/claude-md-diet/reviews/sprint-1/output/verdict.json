@@ -1,0 +1,69 @@
+{
+  "sprintNumber": 1,
+  "feature": "claude-md-diet",
+  "overallVerdict": "PASS",
+  "timestamp": "2026-06-28T00:00:00Z",
+  "iteration": 1,
+  "reviewContext": {
+    "reviewType": "implementation",
+    "specPath": "docs/superpowers/specs/2026-06-28-claude-md-diet-design.md",
+    "methodologyCaveat": "This adversary toolset has no Bash; `git show HEAD:CLAUDE.md` could NOT be executed. INV1 verbatim verification was performed against the session-loaded pre-edit project CLAUDE.md snapshot (the harness still had the full pre-diet TIER A block cached) cross-referenced with the current on-disk skill. I did NOT run git and do not claim to have."
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": ".claude/skills/tier-a-bypass/SKILL.md:6-118", "description": "INV1: full TIER A runbook present — intro, Pattern 1 (table+bash L14-47), Pattern 2 3DS/OTP bash L49-84, Pattern 3 7-step flow L86-96, Pattern 4 map L98-108, 適用範囲 table L110-117. Matches pre-edit CLAUDE.md TIER A block verbatim except the 3 allowed deltas (heading-level shift ##->#/###->##, intro 'この section'->'この skill', Pattern-4 self-row path/desc update)."},
+        {"type": "file", "location": "CLAUDE.md:260-266", "description": "INV1/MUST#2: pointer replaces the moved block; points to BOTH skill body (L264) and memory verbatim runbook (L265)."},
+        {"type": "file", "location": "CLAUDE.md:236", "description": "MUST#4: /compact discipline added to rule 0.8 (commit-only compact, Qiita ミス#3, persist plan to spec/plan file)."},
+        {"type": "file", "location": "/Users/anicca/.claude/CLAUDE.md:128", "description": "INV5: global funder 0.27 condensed to a pointer referencing application-kit/KIT.md + memory + CONSTITUTION.md; AI-authorship-forbidden guard ('first AGI' etc.) survives."}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": ".claude/skills/tier-a-bypass/SKILL.md:1-4", "description": "Frontmatter description is strong/triggerable: enumerates Turnstile/hCaptcha/reCAPTCHA/Stripe 3DS/銀行 OTP AND the exact refusal phrases ('CAPTCHA だから諦め'/'OAuth は人'/'3DS は phone 要') as invoke triggers — will fire when captcha/login/payment work arises."},
+        {"type": "file", "location": ".claude/skills/tier-a-bypass/SKILL.md", "description": "Broken-pointer hunt: skill path in CLAUDE.md:264 resolves (Glob confirmed file exists)."},
+        {"type": "file", "location": "/Users/anicca/.claude/projects/-Users-anicca-anicca-project/memory/reference_capsolver_turnstile_bypass.md", "description": "Broken-pointer hunt: memory runbook path in CLAUDE.md:265 resolves (Glob confirmed file exists)."}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "grep", "location": "CLAUDE.md", "description": "INV2: grep 'api.capsolver.com' = 0 hits AND grep 'localhost:9377/tabs' = 0 hits — raw bypass bash fully removed from CLAUDE.md."},
+        {"type": "file", "location": "CLAUDE.md:262", "description": "INV2: behavioral guard 'CAPTCHA だから諦め'/'OAuth は人'/'3DS は phone 要' retained in CLAUDE.md alongside the tier-a-bypass pointer."},
+        {"type": "file", "location": "/Users/anicca/.claude/CLAUDE.md:130-159", "description": "INV6: global NO-DRY-RUN 0.24 and disk-hygiene 0.26 present in full with verbatim Dais quotes — not moved or condensed."},
+        {"type": "grep", "location": ".claude/skills/tier-a-bypass/SKILL.md:35,63,66,116", "description": "INV1 payload integrity: AntiTurnstileTaskProxyLess, 'gog gmail get', OTP regex r'認証コード[：:]\\s*(\\d{6})', RecaptchaV2TaskProxyless all survived into the skill."}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "grep", "location": "CLAUDE.md:65,69,101,107,132,167,430 + table rows 0.2-0.40", "description": "INV3: every HARD RULE heading from the pre-edit file survives (#6, #-3, #-1.5, #-2, #-1, #0, the aniccaai sub-rule, absolute-rules table 0.2-0.30, 0.31/0.32/0.33/0.40). Block-replacement touched only the TIER A region; adjacency to '## 実行環境' (L268) preserved."},
+        {"type": "file", "location": "CLAUDE.md:538", "description": "INV4: file reduced to 538 lines (was 642), within the spec's ~535 target — ~104 lines relocated, not deleted."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "docs/superpowers/specs/2026-06-28-claude-md-diet-design.md:29-35", "description": "Spec defines INV1-INV6 as machine-checkable grep/line-count assertions; all six reproduced green this review (no fabricated runs — grep/Glob/Read only, git baseline check noted as not executable in this toolset)."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 0,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": ["INV1", "INV2", "INV3", "INV4", "INV5", "INV6"],
+    "duplicateFindings": []
+  }
+}

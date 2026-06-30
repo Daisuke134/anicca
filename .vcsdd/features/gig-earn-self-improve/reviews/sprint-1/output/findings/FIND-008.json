@@ -1,0 +1,22 @@
+{
+  "findingId": "FIND-008",
+  "dimension": "structural_integrity",
+  "category": "spec_gap",
+  "severity": "medium",
+  "title": "lessons.jsonl reading in B4 is unbounded — no limit, no pruning, token consumption grows with every improve step",
+  "description": "The cron prompt's STEP 5 IMPROVE STEP instructs: '(a) read ~/gig/lessons.jsonl + ~/gig/applied.jsonl stats'. There is no LIMIT N on how many rows are read. lessons.jsonl grows one row per observed outcome event. With hourly passes, up to 5 applications per pass, and some fraction generating outcomes, the file can accumulate thousands of rows over weeks. At 4-pass cadence for improve, every ~4 hours the LLM reads the ENTIRE lessons.jsonl into context. At several hundred tokens per JSON row, a month of operation could push lessons.jsonl to 50k+ tokens per improve read, approaching context window limits. The spec at line 63 says 'Read ~/gig/lessons.jsonl (all rows)' with no qualification. No pruning, rotation, or limit is specified anywhere. There is no test that the file is bounded.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/docs/superpowers/specs/2026-06-30-gig-self-improving-multiapply-loop-design.md",
+    "lineRange": "63",
+    "snippet": "1. Read `~/gig/lessons.jsonl` (all rows)."
+  },
+  "additionalEvidence": [
+    {
+      "filePath": "/Users/anicca/anicca/skills/earn/gig/gig-cli.sh",
+      "lineRange": "21",
+      "note": "Cron prompt: '(a) read ~/gig/lessons.jsonl + ~/gig/applied.jsonl stats → compute per-category accept_rate' — no limit specified"
+    }
+  ],
+  "fix": "Add to the improve step prompt: 'Read only the last 50 rows of ~/gig/lessons.jsonl (use tail -n 50) for the improve computation. Older rows are already encoded in the current strategy.json from prior improve runs.' Alternatively, archive lessons.jsonl > N rows to lessons-archive.jsonl and only keep the recent N. Specify a lessons.jsonl row cap in the spec and test that the improve step uses tail or limit.",
+  "routeToPhase": "2b"
+}

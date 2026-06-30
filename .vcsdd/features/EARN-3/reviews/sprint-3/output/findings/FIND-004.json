@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "implementation_correctness",
+  "category": "spec_gap",
+  "severity": "high",
+  "description": "execute() (EARN_MODE=execute) does NO analysis. It reads contests[0] and writes a single placeholder file <id>.target.json containing a note 'brain: read scope, analyze one in-scope contract, write a candidate finding here' (run.sh:51). It never fetches the contest scope, never clones/reads the repo, never produces a draft .md. 100% of the actual analysis is deferred to the free-form claude-p cron prompt (audit-cli.sh:8). So 'execute' is a no-op stub dressed as a build step: there is zero deterministic code that moves toward a finding, and nothing verifiable is produced by run.sh execute beyond a 1-line JSON pointer. The master spec's claimed deliverable 'discover->analyze->draft' (master:38,49) has no analyze/draft implementation in code.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/earn/audit/run.sh",
+    "lineRange": "48-52",
+    "snippet": "# the brain (this loop's claude) reads the scope/repo ... This script seeds the draft target; the cron prompt does the actual analysis.\necho \"{...\\\"note\\\":\\\"brain: read scope, analyze one in-scope contract, write a candidate finding here\\\"}\" > \"$STATE/findings/$id.target.json\""
+  },
+  "routeToPhase": "2b"
+}

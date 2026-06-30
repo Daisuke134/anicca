@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-009",
+  "dimension": "structural_integrity",
+  "category": "spec_gap",
+  "severity": "critical",
+  "description": "There is no destination to deliver to. The spec itself admits it (2026-06-30-earn-affiliate-slot-design.md:28: 'Affiliate NICHE account: none yet'). The DONE definition (spec:36) is 'a real educational slideshow posted to our own account daily, BIO Amazon link live'. The proven deliver reference (ig-account-poster -> @aishigoto.labo) used a DIFFERENT, non-niche test account, not the 'AI仕事術' niche identity the method (SKILL.md:18-19) requires. Without a created/warmed niche account whose BIO holds the Amazon link, the produced slides cannot be posted to a funnel that earns, so the commission path cannot begin. 'Deliver is proven' is true only mechanically; it has no target.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/docs/superpowers/specs/2026-06-30-earn-affiliate-slot-design.md",
+    "lineRange": "28-28",
+    "snippet": "Affiliate NICHE account: none yet -> create one no-human via ig-account-create ... OR (interim) use a sanctioned test account with self-delete for E2E."
+  },
+  "routeToPhase": "2b"
+}

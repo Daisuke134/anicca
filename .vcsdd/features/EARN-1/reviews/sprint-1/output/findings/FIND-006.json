@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "edge_case_coverage",
+  "category": "security_surface",
+  "severity": "medium",
+  "description": "Always-on headless `claude` + a daily cron prompt consume Anthropic subscription quota with no guard, risking a silent cooldown that kills the whole earn fleet. gig-cli.sh:30-31 keeps a `claude --dangerously-skip-permissions` session resident, and the registered cron fires a full claude turn every day (gig-cli.sh:17). This is one of several identical always-on cores (clip-core, video-core) all doing the same. The project CLAUDE.md states verbatim: 'Anicca cron が claude-cli 叩く ❌ 禁止 (Anthropic quota 焼切 → 全 Anicca cooldown)'. There is no quota/cost cap, no backoff, and SKILL_TIMEOUT_S (run.sh:15, default 120s) bounds only run.sh — NOT the claude turn that wraps it. If quota is exhausted, the daily fire silently fails and (combined with FIND-004) the healthcheck still reports ALIVE. At minimum the architecture should document why these earner cores are exempt from that rule, or route the daily fire through a non-Anthropic provider / hard budget.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/earn/gig/gig-cli.sh",
+    "lineRange": "30-31",
+    "snippet": "tmux -S \"$SOCK\" new-session -d -s \"$SESSION\" \"$CLAUDE\" --name \"$SESSION\" --dangerously-skip-permissions --add-dir \"$HOME\" -- \"$STARTUP\"  // resident claude + daily cron turn, no quota guard"
+  },
+  "routeToPhase": "2b"
+}

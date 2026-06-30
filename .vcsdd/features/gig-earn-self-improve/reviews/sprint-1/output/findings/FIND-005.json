@@ -1,0 +1,22 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "structural_integrity",
+  "category": "spec_gap",
+  "severity": "high",
+  "title": "B4 can set skip_categories = all priority_categories with no floor guard — B2 permanently applies nothing",
+  "description": "The cron prompt instructs B4: 'add to skip_categories if category repeatedly needs_human|unsustainable|0-accept after 3+ tries'. There is no structural check that skip_categories cannot subsume all priority_categories. A scenario that reaches this state: (a) B5 reads a peer GitHub issue that over-generalizes 'all Coconala request categories need human review' and B4 folds this as a lesson, or (b) early results in several categories all show 0-accept (common during account warmup) and B4 adds all of them in one improve step. Once skip_categories contains every category in priority_categories, B2's filter 'NOT in strategy.skip_categories' eliminates every candidate and the apply loop runs zero applications per pass indefinitely. No alert, no heartbeat change, no auditor flag would indicate this (the auditor checks actions_total which counts B1 nurture actions too). The loop appears 'FIRING' while silently not applying. No test covers this scenario.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/earn/gig/gig-cli.sh",
+    "lineRange": "21",
+    "snippet": "add to skip_categories if category repeatedly needs_human|unsustainable|0-accept after 3+ tries"
+  },
+  "additionalEvidence": [
+    {
+      "filePath": "/Users/anicca/anicca/skills/earn/gig/__tests__/self-improve.test.mjs",
+      "lineRange": "65-67",
+      "note": "Test only asserts skip_categories is an array, not that skip_categories.length < priority_categories.length or that the intersection never equals the full set"
+    }
+  ],
+  "fix": "Add a structural guard to the cron prompt: 'After updating skip_categories, verify that at least one category from priority_categories is NOT in skip_categories. If all are skipped, do not write skip_categories change and instead add a note in lessons.jsonl: {ts, outcome:\"unsustainable\", lesson:\"all categories skipped — reverting skip_categories to empty\"}.' Also add a test: assert that strategy.default.json.skip_categories.length == 0 is not sufficient — add a validator test that the improve step cannot produce skip_categories.length >= priority_categories.length.",
+  "routeToPhase": "2b"
+}

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-007",
+  "dimension": "structural_integrity",
+  "category": "test_quality",
+  "severity": "minor",
+  "description": "Persisted bid-ledger format drifts from the current writer, and stored titles are mojibake. bids.jsonl:1-2 rows include an `ok` field, but the current writer bid-run.mjs:35 emits {jobId,title,amount,status,bidId,ts} with NO `ok` field — so the on-disk rows were produced by a different/older code path than the one under review, weakening confidence that the reviewed bid writer is the one actually exercised. Functionally harmless for idempotency (loadBidLedger reads only jobId, bid.mjs:21), but it is a silent format inconsistency that will confuse any future consumer that keys on `ok`. Separately, both stored titles contain a replacement char (e.g. 'AdrenalinHermes \\ufffd Python Automation...') indicating an encoding/round-trip bug in how titles are captured or written.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/earn/gig/lib/bid-run.mjs",
+    "lineRange": "35",
+    "snippet": "fs.appendFileSync(bidsFile, JSON.stringify({ jobId: String(job.id), title: job.title, amount, status: r.status, bidId: r.bidId || null, ts: wake }) + '\\n');  // no `ok` field, yet bids.jsonl rows carry ok:true"
+  },
+  "routeToPhase": "2b"
+}

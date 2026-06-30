@@ -1,0 +1,15 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "verification_readiness",
+  "category": "test_quality",
+  "severity": "high",
+  "title": "shared-lessons.jsonl dedup test is tautological — tests a locally-defined function, not the cron behavior",
+  "description": "The test at self-improve.test.mjs lines 129-140 defines a local helper function `alreadyShared(existing, requestId, outcome)` entirely within the test body. The test calls this local function and asserts it returns the expected boolean. This function does not come from any production source file — it is invented in the test. The test passes by construction. It cannot detect any flaw in the cron prompt's actual dedup instruction ('if there is a notable lesson ... not already in ~/gig/shared-lessons.jsonl (check by requestId+outcome)'). If that instruction were completely removed from gig-cli.sh, or if the dedup check used only requestId without outcome (or vice versa), or if it used a different comparison logic, this test would still pass. The test provides zero assurance about the cron's B5 dedup behavior.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/earn/gig/__tests__/self-improve.test.mjs",
+    "lineRange": "129-140",
+    "snippet": "function alreadyShared(existing, requestId, outcome) {\n    return existing.some(r => r.requestId === requestId && r.outcome === outcome);\n  }\n  assert.ok(alreadyShared(existing, '5121769', 'rejected'), 'dedup should prevent re-posting');"
+  },
+  "fix": "Replace with a behavioral test that reads gig-cli.sh and asserts the specific dedup pattern is present in the cron prompt string. For example: assert.ok(/shared-lessons\\.jsonl.*requestId.*outcome|requestId.*outcome.*shared-lessons/i.test(code)) where code is the full gig-cli.sh content. Stronger alternative: add a node integration test that runs the actual dedup check against a temp shared-lessons.jsonl with a known entry and verifies the model prompt contains the correct check key.",
+  "routeToPhase": "2b"
+}

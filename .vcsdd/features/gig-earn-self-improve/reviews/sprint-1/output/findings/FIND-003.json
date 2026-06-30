@@ -1,0 +1,22 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "high",
+  "title": "Spec requires reading peer [gig-lesson] issues every pass; cron prompt reads them only every N passes",
+  "description": "The authoritative spec (2026-06-30-gig-self-improving-multiapply-loop-design.md line 89) states: 'Each pass (not just Nth), read recent [gig-lesson] issues from any AI on this repo.' This is a distinct requirement from the improve step cadence — the intent is for all passes to stay current with peer learning even when not running the full improve cycle. The cron prompt in gig-cli.sh places the `gh issue list -R Daisuke134/anicca --label gig-lesson --limit 10 2>/dev/null` command exclusively inside STEP 5 IMPROVE STEP, which fires only when pass_count % improve_cadence_passes == 0 (every ~4 hours at default). Between improve steps (3 out of 4 passes), peer lessons are never read. This contradicts the spec's stated invariant.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/docs/superpowers/specs/2026-06-30-gig-self-improving-multiapply-loop-design.md",
+    "lineRange": "89-92",
+    "snippet": "Each pass (not just Nth), **read** recent `[gig-lesson]` issues from any AI on this repo:\n```\ngh issue list -R Daisuke134/anicca --label gig-lesson --limit 10\n```\nFold any novel lesson into the local `strategy.json` improvement (B4)."
+  },
+  "additionalEvidence": [
+    {
+      "filePath": "/Users/anicca/anicca/skills/earn/gig/gig-cli.sh",
+      "lineRange": "21",
+      "note": "gh issue list appears only within 'STEP 5 IMPROVE STEP (every strategy.improve_cadence_passes passes)' block, not as a standalone every-pass action"
+    }
+  ],
+  "fix": "Add a standalone STEP 0 (before STEP 1 NURTURE): 'Run: gh issue list -R Daisuke134/anicca --label gig-lesson --limit 10 2>/dev/null and fold any novel lesson IDs into the working context for this pass. On failure, skip and continue.' Keep the full B4 strategy.json update inside the cadence gate. Only the read step needs to be every pass.",
+  "routeToPhase": "2b"
+}

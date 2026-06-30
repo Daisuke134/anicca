@@ -1,0 +1,65 @@
+{
+  "sprintNumber": 1,
+  "feature": "EARN-2",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-06-30T00:00:00Z",
+  "iteration": 1,
+  "reviewContext": {
+    "reviewType": "implementation",
+    "authoritativeSpec": "/Users/anicca/anicca/docs/superpowers/specs/2026-06-30-earn-affiliate-slot-design.md",
+    "masterPlan": "/Users/anicca/anicca-project/docs/superpowers/specs/2026-06-30-earn-slots-daily-loop-master.md",
+    "filesReviewed": [
+      "/Users/anicca/anicca/skills/earn/affiliate/producer.sh",
+      "/Users/anicca/.claude/skills/earn-affiliate-slideshow/scripts/compose_slides.py",
+      "/Users/anicca/.claude/skills/earn-affiliate-slideshow/scripts/build-link.mjs",
+      "/Users/anicca/.claude/skills/earn-affiliate-slideshow/scripts/record-affiliate-earn.mjs",
+      "/Users/anicca/.claude/skills/earn-affiliate-slideshow/SKILL.md",
+      "/Users/anicca/.claude/skills/earn-affiliate-slideshow/content/deck-edu-chatgpt-shigoto.json",
+      "/Users/anicca/anicca/skills/earn/clip/run.sh (reference)",
+      "/Users/anicca/anicca/skills/earn/clip/producer.sh (reference)"
+    ],
+    "note": "No manifest.json present at .vcsdd/features/EARN-2/reviews/*/input/; reviewed from the artifacts named in the task. Scope written as sprint-1."
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-002"],
+      "evidence": []
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-005", "FIND-006", "FIND-007"],
+      "evidence": []
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-003", "FIND-004"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/earn/affiliate/producer.sh:14", "description": "trap 'rm -rf $WORK' EXIT — /tmp workdir cleanup is correctly wired"},
+        {"type": "file", "location": "/System/Library/Fonts/ヒラギノ角ゴシック W6.ttc", "description": "compose_slides.py:13 hardcoded font path confirmed present on this machine (Read returned ttcf header) — not a defect here, but non-portable for the 'any AI earns' claim"}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "FAIL",
+      "findings": ["FIND-008", "FIND-009", "FIND-010"],
+      "evidence": []
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-011"],
+      "evidence": []
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 11,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  },
+  "highestPriorityGap": "FIND-008/FIND-009 together: there is no run.sh poster loop AND no niche account, so nothing posts. The single highest-priority next gap = stand up a real AI仕事術 niche account (ig-account-create, no-human) and the run.sh slot entrypoint that drains ~/affiliate/queue and posts ONE carousel/day to it via ig-account-poster — turning the producer's verified slides into a real live post (the spec's DONE-for-post-step). The producer is the only piece that exists; everything downstream of 'slides in queue' is unbuilt."
+}

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "high",
+  "description": "Firecrawl failure / changed markdown is silently swallowed and reported as success. run.sh:23 ends the scrape with '|| true' and '2>/dev/null'; the python parser at run.sh:24 runs with '2>/dev/null' and falls back to md=\"\" when the file is missing (run.sh:27). If code4rena changes its markup (so the regex matches nothing) or firecrawl errors/returns empty, the result is 0 contests with NO error signal — the script still exits 0 and emit() narrates a normal-looking line. Worse, because json.dump always overwrites contests.json (run.sh:32), a transient empty scrape WIPES the previously-good contest list. There is no minimum-count guard, no 'contests dropped to 0 vs last run' alarm, and no test exercising the empty/changed-markdown path.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/earn/audit/run.sh",
+    "lineRange": "22-35",
+    "snippet": "\"$FC\" scrape \"https://code4rena.com/audits\" markdown > \"$md\" 2>/dev/null || true\n... \nmd=open(mdf,encoding=\"utf-8\").read() if os.path.exists(mdf) else \"\"\n...\njson.dump({\"fetched_at\":...,\"contests\":ranked}, open(cj,\"w\"), indent=2)"
+  },
+  "routeToPhase": "2b"
+}

@@ -1,0 +1,27 @@
+{
+  "findingId": "FIND-007",
+  "dimension": "spec_fidelity",
+  "category": "security_surface",
+  "severity": "medium",
+  "title": "earnings.jsonl write guard is instruction-only — deterministic defense only applies to reads, not writes",
+  "description": "The NO-FAKE-EARN invariant has a split enforcement model. The READ side is deterministic: monitor.sh lines 35-36, run.sh lines 37-38, and auditor.sh lines 35-36 all filter earnings.jsonl by settled-status whitelist (検収|支払|検収完了|completed|paid) AND non-empty evidence AND jpy>0. A fabricated row written to earnings.jsonl will never be summed. The WRITE side is instruction-only: 'STEP 4 EARNED CHECK (NO FAKE EARN): for any request showing 検収完了 or 支払 in the UI → ONLY THEN append ... NEVER write earnings.jsonl for an applied/in-progress gig.' An LLM reasoning failure (e.g. confusing B1 talk-room actions with B4 EARNED CHECK, or misreading a UI status) can cause a fabricated row to be appended to earnings.jsonl. The row will not be counted in jpy_earned, but it contaminates the audit trail and will appear in 'earn_rows_rejected' in auditor.sh (making the ledger look like it had errors). If future code paths add an 'all rows' scan of earnings.jsonl for any purpose, the fabricated rows would be visible.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/earn/gig/gig-cli.sh",
+    "lineRange": "21",
+    "snippet": "STEP 4 EARNED CHECK (NO FAKE EARN): for any request showing 検収完了 or 支払 in the UI → ONLY THEN append {ts,requestId,jpy,status,evidence} to ~/gig/earnings.jsonl. NEVER write earnings.jsonl for an applied/in-progress gig."
+  },
+  "additionalEvidence": [
+    {
+      "filePath": "/Users/anicca/anicca/skills/earn/gig/monitor.sh",
+      "lineRange": "35-38",
+      "note": "Read-side guard is deterministic and correct: SETTLED whitelist + evidence check + jnum > 0"
+    },
+    {
+      "filePath": "/Users/anicca/anicca/skills/earn/gig/run.sh",
+      "lineRange": "37-38",
+      "note": "run.sh enforces the same read-side guard, never calls record-earn, emits earn_usdc:0"
+    }
+  ],
+  "fix": "The read-side guard is strong. To harden the write side: add an explicit instruction to the cron prompt requiring the model to also append the earnings row status to applied.jsonl (updating the status field of the matching requestId from 'applied' to '検収' or '支払'), so auditor.sh can cross-check that every earnings.jsonl row has a corresponding applied.jsonl row with a settled status. This creates a ledger consistency check without adding runtime code.",
+  "routeToPhase": "2b"
+}

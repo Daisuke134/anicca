@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "implementation_correctness",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "discover() claims to fetch 'LIVE open contests' but its regex captures EVERY audit that has a USDC pool printed on code4rena's /audits index — which is overwhelmingly the COMPLETED/closed-audit archive, not the active set. The proof is the script's own output state/contests.json: the top entry is '2025-09-monad' ($500,000), followed by '2025-08-solana-foundation', '2025-06-chainlink-rewards', etc. Today is 2026-06-30, so the #1 'live' contest is ~10 months old and long closed. code4rena audit windows are ~1-3 weeks, so NONE of these 47 (even the newest '2026-04-*') are plausibly still open for submission. There is no date filter, no status=active filter, and no open/closed discrimination anywhere. The slot reports '47 live code4rena contests (top: ...$500000)' (run.sh:39) which is false. Every downstream step (execute picks contests[0]) then targets a dead contest that cannot be submitted to even if an account existed.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/earn/audit/run.sh",
+    "lineRange": "29-31",
+    "snippet": "for m in re.finditer(r'\\$([0-9,]+)\\s+in USDC\\]\\((https://code4rena\\.com/audits/[^)]+)\\)', md):\n    seen[m.group(2)]={\"platform\":\"code4rena\",\"pool_usdc\":int(...),\"url\":m.group(2)}\nranked=sorted(seen.values(), key=lambda c:-c[\"pool_usdc\"])"
+  },
+  "routeToPhase": "2b"
+}

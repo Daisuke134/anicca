@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "high",
+  "description": "Spec 2026-06-30-earn-affiliate-slot-design.md:22-24 defines the VERIFY gate as 'each composed PNG exists, 1080x1920, non-empty'. producer.sh:40-43 implements only existence + exact dimension equality ('1080x1920'); the 'non-empty' / non-trivial content check is absent. A composed PNG is accepted purely on geometry. The clip reference enforces real content (verify_clip.sh checks 'non-black' among others, per clip/producer.sh:53). The affiliate verify has no equivalent, so the implemented gate is weaker than its own spec.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/earn/affiliate/producer.sh",
+    "lineRange": "40-43",
+    "snippet": "dim=$(\"$PY\" -c \"from PIL import Image;im=Image.open('$f');print(f'{im.width}x{im.height}')\" ...); [ \"$dim\" = \"1080x1920\" ] && { cp \"$f\" \"$OUT/slide_$i.png\"; ok=$((ok + 1)); }"
+  },
+  "routeToPhase": "2b"
+}

@@ -1,0 +1,22 @@
+{
+  "findingId": "FIND-009",
+  "dimension": "verification_readiness",
+  "category": "test_quality",
+  "severity": "medium",
+  "title": "graceful-gh test regex matches any 2>/dev/null occurrence — passes even if degradation instruction is removed",
+  "description": "Test in self-improve.test.mjs line 228: `assert.ok(/gh fails.*continue|failure.*never abort|2>\/dev\/null/i.test(code), 'graceful gh degradation missing')`. The regex has three alternatives joined by `|`. The third alternative `2>\/dev\/null` matches any shell error-redirect in the file. gig-cli.sh contains `2>/dev/null` in three unrelated places: the tmux `has-session` check on line 23 (status function), the has-session check on line 27 (restart case), and the `2>/dev/null` suffix on `gh issue list ... 2>/dev/null` and `gh issue create ... 2>/dev/null` in the cron prompt (line 21). As long as any one of these exists, the test passes. The actual graceful-degradation instruction ('If gh fails, log a warning and continue — gh failure must never abort the pass') could be deleted from the cron prompt and this test would still pass because `2>/dev/null` exists in unrelated lines. The test comment on line 227 ('The prompt says...') correctly identifies the TARGET phrase but the regex does not check for it.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/earn/gig/__tests__/self-improve.test.mjs",
+    "lineRange": "225-229",
+    "snippet": "test('gig-cli.sh: gh failure must not abort pass (graceful degradation note)', () => {\n  const code = fs.readFileSync(path.join(DIR, 'gig-cli.sh'), 'utf8');\n  // The prompt says \"If gh fails, log a warning and continue\"\n  assert.ok(/gh fails.*continue|failure.*never abort|2>\/dev\/null/i.test(code), 'graceful gh degradation missing');\n});"
+  },
+  "additionalEvidence": [
+    {
+      "filePath": "/Users/anicca/anicca/skills/earn/gig/gig-cli.sh",
+      "lineRange": "23",
+      "note": "Line 23 `2>/dev/null` is in the status() function — unrelated to gh graceful degradation. It alone satisfies the test's third alternative."
+    }
+  ],
+  "fix": "Replace the regex with one that specifically targets the degradation instruction text in the cron prompt: `/gh fails.*log.*continue|If gh fails.*continue|gh failure.*never abort.*pass/i` with the `2>/dev/null` alternative removed. Or separately test that the cron prompt string contains both the `gh issue create` command AND the graceful-continue instruction in the same logical block.",
+  "routeToPhase": "2b"
+}
