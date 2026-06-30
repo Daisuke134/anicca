@@ -1,0 +1,30 @@
+{
+  "featureName": "earn-shared-skeleton",
+  "mode": "lean",
+  "currentPhase": "1b",
+  "phaseHistory": [
+    {
+      "from": "init",
+      "to": "1a",
+      "timestamp": "2026-06-30T15:18:43.931Z"
+    },
+    {
+      "from": "1a",
+      "to": "1b",
+      "timestamp": "2026-06-30T15:18:43.934Z"
+    }
+  ],
+  "iterations": {
+    "1a": 1,
+    "1b": 1
+  },
+  "proofObligations": [],
+  "traceability": {
+    "epicId": "VCSDD-earn-shared-skeleton-1782832528622",
+    "beads": []
+  },
+  "gates": {},
+  "sprintCount": 0,
+  "createdAt": "2026-06-30T15:15:28.620Z",
+  "updatedAt": "2026-06-30T15:18:43.934Z"
+}
