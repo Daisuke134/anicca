@@ -1,0 +1,16 @@
+{
+  "featureName": "trading-polymarket-spawn",
+  "mode": "lean",
+  "currentPhase": "init",
+  "phaseHistory": [],
+  "iterations": {},
+  "proofObligations": [],
+  "traceability": {
+    "epicId": "VCSDD-trading-polymarket-spawn-1782854985672",
+    "beads": []
+  },
+  "gates": {},
+  "sprintCount": 0,
+  "createdAt": "2026-06-30T21:29:45.671Z",
+  "updatedAt": "2026-06-30T21:29:45.671Z"
+}

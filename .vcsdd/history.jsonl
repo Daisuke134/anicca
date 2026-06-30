@@ -54,3 +54,16 @@
 {"timestamp":"2026-06-30T20:30:29.510Z","event":"feature_created","featureName":"proactive-loop-skeleton","mode":"lean","language":"python"}
 {"timestamp":"2026-06-30T20:33:28.197Z","event":"phase_transition","featureName":"proactive-loop-skeleton","from":"init","to":"1a","iteration":1,"phase":"1a"}
 {"timestamp":"2026-06-30T20:33:28.198Z","event":"phase_transition","featureName":"proactive-loop-skeleton","from":"1a","to":"1b","iteration":1,"phase":"1b"}
+{"timestamp":"2026-06-30T20:52:46.106Z","event":"gate_recorded","featureName":"proactive-loop-skeleton","phase":"1c","verdict":"PASS","reviewedBy":"adversary"}
+{"timestamp":"2026-06-30T20:52:46.107Z","event":"phase_transition","featureName":"proactive-loop-skeleton","from":"1b","to":"1c","iteration":1,"phase":"1c"}
+{"timestamp":"2026-06-30T20:55:22.020Z","event":"phase_transition","featureName":"proactive-loop-skeleton","from":"1c","to":"2a","iteration":1,"phase":"2a"}
+{"timestamp":"2026-06-30T20:55:22.020Z","event":"sprint_started","featureName":"proactive-loop-skeleton","sprintNumber":1,"phase":"2a"}
+{"timestamp":"2026-06-30T20:57:57.631Z","event":"phase_transition","featureName":"proactive-loop-skeleton","from":"2a","to":"2b","iteration":1,"phase":"2b"}
+{"timestamp":"2026-06-30T21:24:33.137Z","event":"gate_recorded","featureName":"proactive-loop-skeleton","phase":"3","verdict":"PASS","reviewedBy":"adversary"}
+{"timestamp":"2026-06-30T21:28:44.862Z","event":"gate_recorded","featureName":"proactive-loop-skeleton","phase":"6","verdict":"PASS","reviewedBy":"verifier"}
+{"timestamp":"2026-06-30T21:28:56.314Z","event":"phase_transition","featureName":"proactive-loop-skeleton","from":"2b","to":"2c","iteration":1,"phase":"2c"}
+{"timestamp":"2026-06-30T21:29:04.951Z","event":"phase_transition","featureName":"proactive-loop-skeleton","from":"2c","to":"3","iteration":1,"phase":"3"}
+{"timestamp":"2026-06-30T21:29:04.953Z","event":"phase_transition","featureName":"proactive-loop-skeleton","from":"3","to":"5","iteration":1,"phase":"5"}
+{"timestamp":"2026-06-30T21:29:45.111Z","event":"phase_transition","featureName":"proactive-loop-skeleton","from":"5","to":"6","iteration":1,"phase":"6"}
+{"timestamp":"2026-06-30T21:29:45.112Z","event":"gate_recorded","featureName":"proactive-loop-skeleton","phase":"6","verdict":"PASS","reviewedBy":"verifier"}
+{"timestamp":"2026-06-30T21:29:45.674Z","event":"feature_created","featureName":"trading-polymarket-spawn","mode":"lean"}
