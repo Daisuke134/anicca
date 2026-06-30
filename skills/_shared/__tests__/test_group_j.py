@@ -160,17 +160,19 @@ def test_two_calls_same_failure_collapse_via_self_recover_log(tmp_path, monkeypa
                                        SelfRecoverResult(status="recovered")),
     )
     log = tmp_path / "self-recover-log.jsonl"
+    # Two failures with identical core evidence but different rotating identifiers
+    # (ts:N and round-N). normalize_evidence strips both → dedup_key collapses.
     dispatch_self_recover(
         slot="gig",
         reason="needs-login",
-        evidence="https://claude.com/cai/oauth/authorize?code=A ts:1782800000 round-3",
+        evidence="OAuth URL extracted ts:1782800000 round-3",
         mother_queue_path=tmp_path / "queue.jsonl",
         log_path=log,
     )
     dispatch_self_recover(
         slot="gig",
         reason="needs-login",
-        evidence="https://claude.com/cai/oauth/authorize?code=B ts:1782900000 round-5",
+        evidence="OAuth URL extracted ts:1782900000 round-5",
         mother_queue_path=tmp_path / "queue.jsonl",
         log_path=log,
     )
