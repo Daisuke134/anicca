@@ -18,7 +18,7 @@ outputs deterministic.
 |--------|--------|--------|--------|--------------|
 | `compute_budget(remaining_pct, minutes_until_reset)` | quota_tracker | float, int | float (per-pass budget) | none |
 | `quantize_budget(budget_per_pass)` | quota_tracker | float | enum `{FULL, MEDIUM, LIGHT, MINIMAL}` | none |
-| `pick_next(menu, log_tail, history, blockers)` | menu | dict, list, list, set[str] | menu-item dict OR None | none |
+| `pick_next(menu, log_tail, history, blockers, now_ts, budget)` | menu | dict, list, list, set[str], int, BudgetEnum | menu-item dict OR None | none (FIND-3-002 fix: canonical signature matches REQ-M3 verbatim) |
 | `apply_novelty_quota(picks, history, ratio)` | menu | list, list, float | list | none |
 | `parse_log_section(text)` | build_log | str | dict (parsed pass record) | none |
 | `format_log_section(pass_id, ts, budget, picked, outcome, next)` | build_log | typed | str | none |
