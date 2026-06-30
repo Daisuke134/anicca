@@ -10,23 +10,23 @@ from dataclasses import dataclass, field
 from typing import Any
 
 
-# Priority order: lower index = higher priority
-# (REQ-H3 says: BACKOFF > TRUST_DIALOG > NOT_LOGGED_IN > API_RATE_LIMIT > HOOK > CRON > TMUX > STALE)
+# REQ-H3 priority order (sprint-2 v6 fix per FIND-2-002: api_rate_limit + backoff
+# INHERITED from sprint-1 REQ-A6 + REQ-A8 explicitly). Lower index = higher priority.
 PRIORITY_ORDER = [
-    "backoff",
-    "trust_dialog",
-    "not_logged_in",
-    "api_rate_limit",
-    "hook_missing",
-    "spawn_drift",
-    "cron_missing",
-    "tmux_dead",
-    "tmux_server_corrupted",
-    "stale",
+    "backoff",            # = sprint-1 REQ-A8 BACKOFF
+    "trust_dialog",       # = sprint-1 REQ-A4
+    "not_logged_in",      # = sprint-1 REQ-A3
+    "api_rate_limit",     # = sprint-1 REQ-A6 (inherited; FIND-2-002 enumeration)
+    "hook_missing",       # = sprint-1 REQ-A5
+    "spawn_drift",        # = sprint-2 REQ-H3(f)
+    "cron_missing",       # = sprint-1 REQ-A7
+    "tmux_dead",          # = sprint-1 REQ-A1
+    "tmux_server_corrupted",  # = sprint-2 REQ-H3(g)
+    "stale",              # = sprint-1 REQ-A2
 ]
 
 
-@dataclass
+@dataclass(frozen=True)
 class HealthSnapshot:
     tmux_alive: bool
     last_pass_mtime: int

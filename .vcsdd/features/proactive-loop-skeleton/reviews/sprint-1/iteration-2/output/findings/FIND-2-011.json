@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-2-011",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "medium",
+  "description": "FIND-010 NOT CLOSED. test_quantize_budget_never_throws (test_quota_tracker_v2.py:35-39) STILL iterates 10 hand-picked values. There is no property-test (hypothesis.given, random sampling, shrinking). verification-architecture L58 claims '1000 random b + 4 boundary fixtures' Tier 1 property-test; the implementation is still Tier 0 fixture. The parametrized test_quantize_budget_half_open does cover the 4 boundary fixtures, but no domain randomization exists. The verification-tier claim and reality diverge.",
+  "evidence": {
+    "filePath": "skills/_shared/__tests__/test_quota_tracker_v2.py",
+    "lineRange": "35-39",
+    "snippet": "def test_quantize_budget_never_throws():\n    # property-test sketch: bounds + nan\n    for b in [-1.0, 0.0, 0.05, 0.1, 0.5, 1.0, 1.5, 3.0, 5.0, 100.0]:\n        result = quantize_budget(b)\n        assert isinstance(result, Budget)"
+  },
+  "routeToPhase": "2a"
+}

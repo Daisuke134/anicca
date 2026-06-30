@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-2-004",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "medium",
+  "description": "FIND-015 NOT CLOSED. Grepped test_*.py for 'EDGE-S1', 'EDGE-S3', 'EDGE-S6', 'EDGE-S7' and 'flock', 'quota_unknown' — ZERO matches. (S1) First-pass build_log.md auto-create with header '# <slot> build log — initialized YYYY-MM-DD' (spec L392-393): no test asserts this header. (S3) quota source unavailable + estimated-byte also fails → MINIMAL + status quota_unknown: no test. (S6) flock-guarded concurrent ticks (spec L411-413; proactive-loop.sh L18-19 uses flock -n 200): no test verifies that a second tick exits without running. (S7) adversary cadence as menu item: no integration test. The edge cases listed in the spec remain unverified.",
+  "evidence": {
+    "filePath": "skills/_shared/__tests__/test_proactive_loop.py",
+    "lineRange": "1-73",
+    "snippet": "(no test references EDGE-S1, EDGE-S3, EDGE-S6, EDGE-S7, flock, or quota_unknown)"
+  },
+  "routeToPhase": "2a"
+}

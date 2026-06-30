@@ -17,10 +17,13 @@ from lib._common import append_jsonl
 _HUMAN_BODY_PHRASES = [
     "dais", "owner please", "human", "manual review",
     "please intervene", "please look at this", "needs attention",
-    # FIND-013 fix: bypasses caught by lower() before substring match
+    # FIND-013 fix
     "human-in-the-loop", "humanintheloop", "@dais", "human required",
     "needs review by", "please review", "human approval", "ask the owner",
     "owner-only", "manual approval", "user input required",
+    # FIND-2-008 fix: Japanese phrase bypass coverage
+    "デイス", "デイスさん", "人間", "人が必要", "ユーザー対応",
+    "オーナー", "判断してください", "手動で", "確認してください", "お願いします",
 ]
 
 
@@ -57,16 +60,21 @@ def post(*, slot: str, kind: str, body_text: str) -> str:
     return url
 
 
+_ANICCA_BOT_AUTHOR = "anicca-bot"
+
+
 def poll(*, slot: str) -> list[dict]:
-    """REQ-B2 (FIND-008 fix): fetch ALL bot2bot-* labels (not hardcoded to one),
-    filter by slot via the title's [bot2bot][<slot>][<kind>] prefix, empty list
-    if none, NEVER crashes.
+    """REQ-B2 (FIND-008 + FIND-2-001 fix): fetch ALL bot2bot-* labels filtered by
+    author=anicca-bot (= the sibling AI instance's signed comments), slot-filter via
+    title prefix. Empty list if none. NEVER crashes.
     """
     out = _gh_call(
         "issue", "list",
-        "--search", "label:bot2bot-review-requested label:bot2bot-opinion-requested "
-                    "label:bot2bot-escalation label:bot2bot-pr-mentioned",
-        "--state", "open", "--json", "url,title,body,createdAt",
+        "--search",
+        f"author:{_ANICCA_BOT_AUTHOR} "
+        f"label:bot2bot-review-requested label:bot2bot-opinion-requested "
+        f"label:bot2bot-escalation label:bot2bot-pr-mentioned",
+        "--state", "open", "--json", "url,title,body,createdAt,author",
     )
     if not out.strip() or out.strip() == "[]":
         return []
@@ -75,8 +83,9 @@ def poll(*, slot: str) -> list[dict]:
     except json.JSONDecodeError:
         return []
     parsed = [parse_bot2bot_issue(j) for j in raw]
-    # Filter by slot
-    return [t for t in parsed if t.get("slot") == slot]
+    # Filter by slot AND by author (= defense in depth: --search filters server-side,
+    # this client-side filter rejects any rogue rows that slipped through).
+    return [t for t in parsed if t.get("slot") == slot and t.get("author") == _ANICCA_BOT_AUTHOR]
 
 
 def parse_bot2bot_issue(gh_json: dict) -> dict:
@@ -85,12 +94,17 @@ def parse_bot2bot_issue(gh_json: dict) -> dict:
     m = re.match(r"\[bot2bot\]\[([^\]]+)\]\[([^\]]+)\]", title)
     slot = m.group(1) if m else "unknown"
     kind = m.group(2) if m else "unknown"
+    author = gh_json.get("author")
+    # Author may be a dict {login: x} or a string
+    if isinstance(author, dict):
+        author = author.get("login")
     return {
         "issue_url": gh_json.get("url"),
         "slot": slot,
         "kind": kind,
         "body": gh_json.get("body", ""),
         "ts_created": gh_json.get("createdAt"),
+        "author": author,
     }
 
 

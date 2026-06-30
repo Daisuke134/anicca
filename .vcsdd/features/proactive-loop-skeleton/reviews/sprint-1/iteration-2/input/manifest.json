@@ -1,0 +1,40 @@
+{
+  "reviewType": "implementation",
+  "featureName": "proactive-loop-skeleton",
+  "sprintNumber": 1,
+  "iteration": 2,
+  "mode": "lean",
+  "artifactsToReview": {
+    "spec": [".vcsdd/features/proactive-loop-skeleton/specs/behavioral-spec.md",
+             ".vcsdd/features/proactive-loop-skeleton/specs/verification-architecture.md"],
+    "source_python": ["skills/_shared/lib/quota_tracker.py", "skills/_shared/lib/menu.py",
+                       "skills/_shared/lib/health_check_v2.py", "skills/_shared/lib/bot2bot.py",
+                       "skills/_shared/lib/proactive_loop.py", "skills/_shared/lib/build_log.py"],
+    "source_shell": ["skills/_shared/proactive-loop.sh", "skills/_shared/proactive-loop-dispatch.py",
+                      "skills/_shared/credential-restore.sh", "skills/_shared/auto-allowlist.sh",
+                      "skills/_shared/auto-rollback.sh"],
+    "tests": ["skills/_shared/__tests__/test_quota_tracker_v2.py",
+              "skills/_shared/__tests__/test_menu.py",
+              "skills/_shared/__tests__/test_health_check_v2.py",
+              "skills/_shared/__tests__/test_bot2bot.py",
+              "skills/_shared/__tests__/test_anti_human_v2.py",
+              "skills/_shared/__tests__/test_proactive_loop.py",
+              "skills/_shared/__tests__/test_build_log.py"]
+  },
+  "previousIterationFindings": [
+    "iter-1 verdict FAIL: 20 findings (3 critical, 8 high, 7 medium, 2 low)",
+    "v2 cycle-2 claims to close ALL 20. Verify each by re-reading the cited file/line, NOT by trusting the commit msg."
+  ],
+  "reviewDimensions": ["spec_fidelity", "edge_case_coverage", "implementation_correctness",
+                       "structural_integrity", "verification_readiness"],
+  "extraConstraints": [
+    "Top 3 critical closure verification: (1) FIND-001 — write_dormant_sentinel exists AND tests cover the side-effect path; (2) FIND-002 + FIND-014 — is_allowed_sentinel_removal_call exists AND test verifies allowlist; (3) FIND-009 — 4 shell scripts exist AND anti_human_touch_violations returns ZERO hits on each.",
+    "Verify FIND-003 + FIND-011 novelty fix: the formula is now NOVELTY-PICK RATE not uniqueness; the key reads 'category' from both sides.",
+    "Verify FIND-005: should_route_mother_queue has NO age_days parameter anymore.",
+    "Verify FIND-007: dispatch_highest_priority is a PRODUCTION function (not just in test).",
+    "Verify FIND-008: bot2bot.poll fetches via --search (multiple labels) not single hardcoded label.",
+    "Verify FIND-018: build_log section header matches '## YYYY-MM-DDTHH:MMZ — pass <pass_id>'.",
+    "216 tests pass (was 209, +7 for new fixes). Verify the 7 new tests assert SPEC behavior."
+  ],
+  "expectedOutputPath": ".vcsdd/features/proactive-loop-skeleton/reviews/sprint-1/iteration-2/output/"
+}

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-2-012",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "high",
+  "description": "FIND-014 PARTIAL CLOSURE + FIND-019 NOT CLOSED. is_allowed_sentinel_removal_call() exists and the function-level allowlist contract is unit-tested, BUT no AST walker or grep test SCANS the actual production source files to flag any call site that .unlink() or os.remove() targets .dormant.sentinel from outside the 2 allowed callers. The verification claim in FIND-014 ('static-analysis (AST + grep) over .dormant.sentinel unlink sites') is satisfied at the API contract but NOT at the codebase scan level. Similarly, FIND-019 test_auto_merge_function_does_not_exist STILL only checks hasattr 'auto_merge' as a literal string — a renamed function like pr_merge / do_merge / force_merge would bypass it. No subprocess-AST scan for 'gh pr merge' or similar invocation strings outside annotate_pr was added.",
+  "evidence": {
+    "filePath": "skills/_shared/__tests__/test_bot2bot.py",
+    "lineRange": "32-36",
+    "snippet": "def test_auto_merge_function_does_not_exist():\n    \"\"\"Static-analysis-level: lib.bot2bot has NO auto_merge function.\"\"\"\n    import lib.bot2bot\n    assert not hasattr(lib.bot2bot, \"auto_merge\"), \\\n        \"auto_merge is SCOPE-DEFERRED to sprint-3 per FIND-003 critical\""
+  },
+  "routeToPhase": "2a"
+}

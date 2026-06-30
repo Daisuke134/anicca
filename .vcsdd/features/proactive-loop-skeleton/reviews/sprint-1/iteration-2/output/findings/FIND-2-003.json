@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-2-003",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "high",
+  "description": "FIND-009 PARTIAL CLOSURE. The 4 shell files exist (proactive-loop.sh, credential-restore.sh, auto-allowlist.sh, auto-rollback.sh) and anti_human_touch_violations returns ZERO violations on each (verified by mental application of group_j._HUMAN_TOUCH_PATTERNS against each script's contents — no telegram/slack/twilio/osascript/terminal-notifier/find-generic-password/needs-login/needs-human/needs-attention/--label escalation/please-review/discord/fcm/apple-push/pushover/ntfy/messagebird/iCloud/anicca-please tokens). HOWEVER: credential-restore.sh L25-26, auto-allowlist.sh L17-18, and auto-rollback.sh L20-21 are SCAFFOLDS that echo a TODO and 'exit 1'. The integration-backbone proofs REQ-H3c (camofox + Gmail OTP auto-login), REQ-H3e (firecrawl + trust-score + auto-PR), REQ-H3f (git checkout signed-sha rollback) are NOT implemented — the 'sprint-2 cycle 2 wires real flow' comments mark this as TODO. Spec's 'Goal' L370 ('launchd plist invokes proactive-loop.sh <slot> every 5 min ... append at least one section to ~/loops/gig/build_log.md') is only met for the happy path; every credential/allowlist/rollback recovery path returns exit 1 to its caller without doing anything.",
+  "evidence": {
+    "filePath": "skills/_shared/credential-restore.sh",
+    "lineRange": "25-26",
+    "snippet": "echo \"$(date '+%F %T') credential-restore: scaffold (sprint-2 cycle 2 wires real flow)\" >> \"$LOG\"\nexit 1  # scaffold returns failure → bot2bot escalation"
+  },
+  "routeToPhase": "2b"
+}
