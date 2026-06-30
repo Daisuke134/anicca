@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-3-005",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "medium",
+  "description": "PROP-Q5-dormant integration gap. quota_tracker.py:69-81 ships count_consecutive_negative_windows (FIND-2-013 fix verified at tail-scan / break-on-non-negative level), but no test in test_quota_tracker_v2.py exercises the helper itself. Grep over __tests__/ for 'count_consecutive_negative_windows' returns ZERO hits. The boundary cases that matter — empty list (= count 0), all-negative (= count == len), non-consecutive in middle (= count == tail-only run), single positive at tail (= count 0 even if N-1 negatives precede) — are entirely unverified. The function is the canonical bridge between roi.jsonl input and is_dormant(consecutive_neg_7day_windows=N), so PROP-Q5 cannot be considered verification-ready without that bridge tested. Additionally, is_dormant defends against negative input ('if consecutive_neg_7day_windows < 0: return False') but no test exercises that path either.",
+  "evidence": {
+    "filePath": "skills/_shared/__tests__/test_quota_tracker_v2.py",
+    "lineRange": "1-135",
+    "snippet": "(zero occurrences of 'count_consecutive_negative_windows' in the entire test file; is_dormant tests cover only the {13,14}-window x {10,14,15,30}-age matrix)"
+  },
+  "routeToPhase": "2a"
+}

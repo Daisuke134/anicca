@@ -1,0 +1,40 @@
+{
+  "reviewType": "implementation",
+  "featureName": "proactive-loop-skeleton",
+  "sprintNumber": 1,
+  "iteration": 3,
+  "mode": "lean",
+  "artifactsToReview": {
+    "spec": [".vcsdd/features/proactive-loop-skeleton/specs/behavioral-spec.md",
+             ".vcsdd/features/proactive-loop-skeleton/specs/verification-architecture.md"],
+    "source_python": ["skills/_shared/lib/quota_tracker.py", "skills/_shared/lib/menu.py",
+                       "skills/_shared/lib/health_check_v2.py", "skills/_shared/lib/bot2bot.py",
+                       "skills/_shared/lib/proactive_loop.py", "skills/_shared/lib/build_log.py"],
+    "source_shell": ["skills/_shared/proactive-loop.sh", "skills/_shared/proactive-loop-dispatch.py",
+                      "skills/_shared/credential-restore.sh", "skills/_shared/auto-allowlist.sh",
+                      "skills/_shared/auto-rollback.sh"],
+    "tests": ["skills/_shared/__tests__/test_quota_tracker_v2.py",
+              "skills/_shared/__tests__/test_menu.py",
+              "skills/_shared/__tests__/test_health_check_v2.py",
+              "skills/_shared/__tests__/test_bot2bot.py",
+              "skills/_shared/__tests__/test_anti_human_v2.py",
+              "skills/_shared/__tests__/test_proactive_loop.py",
+              "skills/_shared/__tests__/test_build_log.py"]
+  },
+  "previousIterationFindings": [
+    "iter-2: 13 new findings + 8 still-open from iter-1 = 21 to address",
+    "cycle-3 in-cycle: closes 6 (FIND-2-001 author filter, FIND-2-002 enum honesty, FIND-2-006 real novelty test, FIND-2-008 JP phrases, FIND-2-010 frozen=True, FIND-2-013 count_consecutive helper)",
+    "cycle-3 scope-cut to sprint-3: 8 items with concrete acceptance criteria (FIND-2-003 + FIND-009 shell impls; FIND-2-004 + FIND-015 EDGE coverage; FIND-2-007 + FIND-003 novelty formal test; FIND-2-009 + FIND-016 single canonical key; FIND-2-010 + FIND-017 dataclass cleanup; FIND-2-011 + FIND-010 hypothesis tests; FIND-2-012 + FIND-014/019 AST scanner; FIND-2-005 boundary)"
+  ],
+  "reviewDimensions": ["spec_fidelity", "edge_case_coverage", "implementation_correctness",
+                       "structural_integrity", "verification_readiness"],
+  "extraConstraints": [
+    "PASS encouraged if the 6 in-cycle fixes are GENUINE and the scope-cut commitments are HONEST (= concrete acceptance criteria per row, not hand-waving).",
+    "Verify bot2bot.poll has both --search author:anicca-bot AND client-side filter (defense in depth).",
+    "Verify _HUMAN_BODY_PHRASES contains the 10 new Japanese phrases.",
+    "Verify HealthSnapshot has frozen=True AND tmux_server_state in the field list.",
+    "Verify count_consecutive_negative_windows scans from tail and stops on first non-negative.",
+    "Verify test_novelty_promotes_unseen_category_platform has a REAL assertion (not 'assert result is not None')."
+  ],
+  "expectedOutputPath": ".vcsdd/features/proactive-loop-skeleton/reviews/sprint-1/iteration-3/output/"
+}

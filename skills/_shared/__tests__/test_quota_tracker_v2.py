@@ -100,6 +100,46 @@ def test_dormant_boundary_age_14_not_eligible():
     assert is_dormant(consecutive_neg_7day_windows=14, age_days=14) is False
 
 
+# ─── REQ-Q5 count_consecutive_negative_windows (FIND-3-005 fix) ────
+def test_count_consecutive_empty_list():
+    from lib.quota_tracker import count_consecutive_negative_windows
+    assert count_consecutive_negative_windows([]) == 0
+
+
+def test_count_consecutive_all_positive():
+    from lib.quota_tracker import count_consecutive_negative_windows
+    assert count_consecutive_negative_windows([1.0, 2.0, 3.0]) == 0
+
+
+def test_count_consecutive_trailing_negatives():
+    from lib.quota_tracker import count_consecutive_negative_windows
+    # Most recent at tail; 3 consecutive negative
+    assert count_consecutive_negative_windows([5.0, -1.0, -2.0, -3.0]) == 3
+
+
+def test_count_consecutive_positive_resets():
+    from lib.quota_tracker import count_consecutive_negative_windows
+    # Positive in middle breaks chain — only the trailing negatives count
+    assert count_consecutive_negative_windows([-1.0, 0.5, -2.0, -3.0]) == 2
+
+
+def test_count_consecutive_most_recent_positive_returns_zero():
+    from lib.quota_tracker import count_consecutive_negative_windows
+    # Most recent = positive → 0 regardless of history
+    assert count_consecutive_negative_windows([-1.0, -2.0, -3.0, 0.1]) == 0
+
+
+def test_count_consecutive_single_negative():
+    from lib.quota_tracker import count_consecutive_negative_windows
+    assert count_consecutive_negative_windows([-1.0]) == 1
+
+
+def test_count_consecutive_zero_is_not_negative():
+    from lib.quota_tracker import count_consecutive_negative_windows
+    # 0 is NOT negative; breaks the consecutive chain
+    assert count_consecutive_negative_windows([-1.0, 0.0, -2.0]) == 1
+
+
 # ─── REQ-Q5 SIDE-EFFECT (FIND-001 fix) ────────────────────────────
 def test_write_dormant_sentinel(tmp_path):
     from lib.quota_tracker import write_dormant_sentinel

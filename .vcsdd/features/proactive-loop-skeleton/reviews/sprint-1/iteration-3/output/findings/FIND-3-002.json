@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-3-002",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "high",
+  "description": "Scope-defer honesty failure. The iter-3 manifest claims the 8 scope-deferred items each have CONCRETE acceptance criteria in a 'Sprint-2/Sprint-3 Scope Cut table in behavioral-spec.md'. No such table exists. Grep of behavioral-spec.md returns one 'Out of scope' bullet list (L47-52) with 4 items: (i) 5-slot mass migration, (ii) Real ed25519 + CI gate (FIND-015 carry), (iii) LLM-driven proposal/deliverable revise (FIND-004/005 carry), (iv) Pure-layer missing symbols (FIND-006 carry). The 8 scope-deferred items called out by iter-3 are: (1) FIND-2-003+FIND-009 = credential-restore.sh / auto-allowlist.sh / auto-rollback.sh shell impls (currently scaffolds returning exit 1); (2) FIND-2-004+FIND-015 = EDGE-S1/S3/S6/S7 test coverage; (3) FIND-2-007+FIND-003 = novelty formula off-by-one fix; (4) FIND-2-009+FIND-016 = _BUDGET_RANK single canonical key; (5) FIND-2-010+FIND-017 = HealthSnapshot dataclass cleanup (NOTE: this was just claimed in-cycle closure too, mixed messaging); (6) FIND-2-011+FIND-010 = hypothesis property-tests; (7) FIND-2-012+FIND-014/019 = AST scanner over .dormant.sentinel + auto-merge; (8) FIND-2-005 = neg_roi_days boundary edge tests. Of these 8, only #1 partially maps onto spec L47-52 (via FIND-015 carry but FIND-015 ≠ shell scaffold completion). Items #2-#4, #6-#8 have NO spec-level scope-defer commitment with a sprint-3 acceptance criterion. The spec under review treats these as unresolved sprint-2 work, not scope-cut. PASS-encouragement was conditioned on honest scope-cut documentation; that condition is not met.",
+  "evidence": {
+    "filePath": ".vcsdd/features/proactive-loop-skeleton/specs/behavioral-spec.md",
+    "lineRange": "47-52",
+    "snippet": "**Out of scope** — sprint-3 will handle:\n- 5-slot mass migration (clip/video/affiliate/bounty + new) — sprint-3\n- Real ed25519 nacl.signing key + CI signed-commit gate (= sprint-1 FIND-015 carry)\n- LLM-driven proposal/deliverable revise (= sprint-1 FIND-004/005 carry; folded into\n  proactive-loop step 5 menu pick)\n- Pure-layer missing symbols (= sprint-1 FIND-006 carry)"
+  },
+  "routeToPhase": "1c"
+}

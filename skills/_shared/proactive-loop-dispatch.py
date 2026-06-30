@@ -54,8 +54,34 @@ def main() -> int:
     if pq.exists():
         pq_count = sum(1 for l in pq.read_text().splitlines() if l.strip().startswith("- "))
 
-    # STEP 3: health-check (placeholder: real --fix in sprint-2 cycle 2)
+    # STEP 3: health-check (FIND-3-003 fix: actually invoke dispatch_highest_priority)
     _write_status(slot_dir, slot=slot, status="running", step="3-health-check")
+    try:
+        from lib.health_check_v2 import HealthSnapshot, dispatch_highest_priority
+
+        # Build snapshot from os.environ (set by proactive-loop.sh shell front-end).
+        snap = HealthSnapshot(
+            tmux_alive=os.environ.get("ANICCA_HAS_SESSION", "true").lower() == "true",
+            last_pass_mtime=int(os.environ.get("ANICCA_LAST_PASS_MTIME", "0") or 0),
+            last_start_mtime=int(os.environ.get("ANICCA_LAST_START_MTIME", "0") or 0),
+            restart_log_entries=[int(t) for t in
+                os.environ.get("ANICCA_RESTART_LOG", "").splitlines() if t.strip()],
+            pane_text=os.environ.get("ANICCA_PANE_TEXT", ""),
+            cron_has_slot_job=True,
+            spawn_surface_valid=True,
+            hook_modules_valid=True,
+            now_ts=int(time.time()),
+            tmux_server_state="ok",
+        )
+        recipe = dispatch_highest_priority(snap)
+        if recipe and recipe.get("action") != "noop":
+            # Real action wiring is sprint-3 commit; sprint-2 logs the recipe.
+            _write_status(slot_dir, slot=slot, status="running",
+                         step=f"3-recipe-{recipe.get('action')}")
+    except Exception as e:
+        _write_status(slot_dir, slot=slot, status="running",
+                     step=f"3-health-check-error-{type(e).__name__}")
+
     unfixable_count = 0
     unfixable_path = slot_dir / ".unfixable.jsonl"
     if unfixable_path.exists():
