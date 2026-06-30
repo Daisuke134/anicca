@@ -1,13 +1,13 @@
 {
   "findingId": "FIND-016",
-  "dimension": "structural_integrity",
+  "dimension": "spec_fidelity",
   "category": "spec_gap",
   "severity": "low",
-  "description": "lib/menu.py imports Budget from lib.quota_tracker creating an implicit module-graph coupling: menu cannot be imported without quota_tracker. This is fine functionally but mixes responsibilities (menu is the picker; budget enum is policy). The verification-architecture lists Budget as a quota_tracker symbol and pick_next as a menu symbol; the budget gate inside pick_next requires both. _BUDGET_RANK has parallel string keys AND enum keys (defensively allowing 'FULL' or Budget.FULL) — that defensive double-key would mask any future regression where a caller passes a string and the enum import drifts.",
+  "description": "lib/menu.py imports Budget from lib.quota_tracker creating an implicit module-graph coupling: menu cannot be imported without quota_tracker. This is fine functionally but mixes responsibilities (menu is the picker; budget enum is policy). The verification-architecture lists Budget as a quota_tracker symbol and pick_next as a menu symbol; the budget gate inside pick_next requires both. _BUDGET_RANK has parallel string keys AND enum keys (defensively allowing 'FULL' or Budget.FULL) \u2014 that defensive double-key would mask any future regression where a caller passes a string and the enum import drifts.",
   "evidence": {
     "filePath": "skills/_shared/lib/menu.py",
     "lineRange": "12-18",
     "snippet": "from lib.quota_tracker import Budget\n\n_BUDGET_RANK = {\n    Budget.FULL: 4, Budget.MEDIUM: 3, Budget.LIGHT: 2, Budget.MINIMAL: 1,\n    \"FULL\": 4, \"MEDIUM\": 3, \"LIGHT\": 2, \"MINIMAL\": 1,\n}"
   },
-  "routeToPhase": "2b"
+  "routeToPhase": "1a"
 }

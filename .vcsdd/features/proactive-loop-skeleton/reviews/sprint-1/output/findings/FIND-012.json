@@ -3,11 +3,11 @@
   "dimension": "spec_fidelity",
   "category": "spec_gap",
   "severity": "medium",
-  "description": "health_check_v2.select_fix_recipe adds two issue kinds ('api_rate_limit' → /model haiku-4-5, 'backoff' → escalate_via_bot2bot) that REQ-H3(a)..(g) does not enumerate. classify_issue_from_snapshot also emits these. The spec lists exactly 7 issue classes (a..g); the implementation adds 2 more without a corresponding REQ. While these are reasonable behaviors, they are spec-undefined; PROP-H3 dispatch correctness is therefore not auditable against an authoritative source. Either the spec must be extended to include them, or the implementation should drop them.",
+  "description": "health_check_v2.select_fix_recipe adds two issue kinds ('api_rate_limit' \u2192 /model haiku-4-5, 'backoff' \u2192 escalate_via_bot2bot) that REQ-H3(a)..(g) does not enumerate. classify_issue_from_snapshot also emits these. The spec lists exactly 7 issue classes (a..g); the implementation adds 2 more without a corresponding REQ. While these are reasonable behaviors, they are spec-undefined; PROP-H3 dispatch correctness is therefore not auditable against an authoritative source. Either the spec must be extended to include them, or the implementation should drop them.",
   "evidence": {
     "filePath": "skills/_shared/lib/health_check_v2.py",
     "lineRange": "100-112",
     "snippet": "if kind == \"api_rate_limit\":\n    return {\"action\": \"send_keys\", \"params\": {\"keys\": \"/model haiku-4-5\", \"enter\": True}}\n...\nif kind == \"backoff\":\n    return {\"action\": \"escalate_via_bot2bot\", \"params\": {\"reason\": \"backoff-cap\"}}"
   },
-  "routeToPhase": "1c"
+  "routeToPhase": "1a"
 }

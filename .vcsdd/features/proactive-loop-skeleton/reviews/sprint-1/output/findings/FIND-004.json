@@ -1,9 +1,9 @@
 {
   "findingId": "FIND-004",
-  "dimension": "test_quality",
+  "dimension": "edge_case_coverage",
   "category": "test_quality",
   "severity": "high",
-  "description": "test_novelty_key_is_category_platform_tuple is a tautological test. It sets up history with 10 (scan-requests, coconala) entries, calls pick_next, and asserts only 'result is not None'. The assertion would pass even if the implementation ignored history entirely, or used a different key shape, or chose an arbitrary item. The trailing comment 'Verified by the API not accepting any other key shape' is aspirational — there is no actual check on key shape, and pick_next accepts any dict for history. PROP-novelty-key-aligned (required:true) is therefore unverified by this test.",
+  "description": "test_novelty_key_is_category_platform_tuple is a tautological test. It sets up history with 10 (scan-requests, coconala) entries, calls pick_next, and asserts only 'result is not None'. The assertion would pass even if the implementation ignored history entirely, or used a different key shape, or chose an arbitrary item. The trailing comment 'Verified by the API not accepting any other key shape' is aspirational \u2014 there is no actual check on key shape, and pick_next accepts any dict for history. PROP-novelty-key-aligned (required:true) is therefore unverified by this test.",
   "evidence": {
     "filePath": "skills/_shared/__tests__/test_menu.py",
     "lineRange": "114-126",

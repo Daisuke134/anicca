@@ -9,5 +9,5 @@
     "lineRange": "1-69",
     "snippet": "(no test scans for unlink|remove|os.remove on .dormant.sentinel)"
   },
-  "routeToPhase": "2a"
+  "routeToPhase": "1b"
 }

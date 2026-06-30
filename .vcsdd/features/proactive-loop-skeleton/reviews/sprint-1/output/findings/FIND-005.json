@@ -1,13 +1,13 @@
 {
   "findingId": "FIND-005",
-  "dimension": "implementation_correctness",
+  "dimension": "spec_fidelity",
   "category": "requirement_mismatch",
   "severity": "high",
   "description": "should_route_mother_queue silently adds an age_days > 14 precondition that REQ-Q3(e) does NOT specify. REQ-Q3(e) verbatim: 'Persistent degradation: IF degraded for 7 days (= 168 hourly rows), THE SYSTEM SHALL append a row to ~/anicca/state/mother-recovery-queue.jsonl'. No age gate appears in REQ-Q3(e); the 14-day age threshold belongs to REQ-Q5 (dormancy), a different concern. The test test_no_mother_queue_route_when_slot_young codifies the same fabricated precondition, so the divergence is not caught. PROP-Q3e-mother-queue (required:true) verifies a synthetic specification, not REQ-Q3(e).",
   "evidence": {
     "filePath": "skills/_shared/lib/quota_tracker.py",
     "lineRange": "47-53",
-    "snippet": "def should_route_mother_queue(*, neg_roi_days: int, age_days: int) -> bool:\n    \"\"\"REQ-Q3(e): 7-day persistent degradation routes to mother-recovery-queue.\n    Slot age must be > 14 days (= young slots never routed — they need warmup time).\n    \"\"\"\n    if age_days <= 14:\n        return False\n    return neg_roi_days >= 7"
+    "snippet": "def should_route_mother_queue(*, neg_roi_days: int, age_days: int) -> bool:\n    \"\"\"REQ-Q3(e): 7-day persistent degradation routes to mother-recovery-queue.\n    Slot age must be > 14 days (= young slots never routed \u2014 they need warmup time).\n    \"\"\"\n    if age_days <= 14:\n        return False\n    return neg_roi_days >= 7"
   },
   "routeToPhase": "2b"
 }
