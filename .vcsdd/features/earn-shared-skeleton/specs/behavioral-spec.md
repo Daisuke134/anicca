@@ -110,8 +110,9 @@ Highest-priority rule that matches wins. Order is more-specific (pane content) b
   (c) extract OAuth URL via the regex
   `^https://claude\.com/cai/oauth/authorize\?[a-z0-9_=&%+\.\-]+$` (anchored, host hard-coded to
   `claude.com`, no subdomain match, restricted charset; addresses FIND-005 phishing),
-  (d) IF a URL extracted, call `escalate.sh <slot> needs-login <url>`;
-  IF NOT, call `escalate.sh <slot> oauth-extract-failed <truncated pane sha256>`.
+  (d) IF a URL extracted, call `self-recover.sh <slot> needs-login <url>` which dispatches to
+  the auto-login handler (REQ-J1: camofox + Gmail OTP automatic OAuth completion); IF NOT,
+  call `self-recover.sh <slot> oauth-extract-failed <truncated pane sha256>`.
 
 - **REQ-A4** WHEN `classify(ctx) == TRUST_DIALOG`, THE SYSTEM SHALL `tmux send-keys "1" Enter`.
 
@@ -123,8 +124,9 @@ Highest-priority rule that matches wins. Order is more-specific (pane content) b
       (curated allowlist; addresses FIND-004 RCE: NO auto-install of arbitrary modules),
   (c) IF validated AND in allowlist, run `npm install -g <name>`;
   IF validation fails OR name not in allowlist, call
-  `escalate.sh <slot> hook-module-unrecognized <module_name_sha256>` (= human review required for
-  new modules; this is the conservative anti-RCE default per FIND-004).
+  `self-recover.sh <slot> hook-module-unrecognized <module_name_sha256>` which dispatches to
+  REQ-J3 auto-research handler (= firecrawl npmjs.org, evaluate downloads + author trust,
+  auto-add to allowlist if safe via signed commit + push; auto-skip if not). No human review.
 
 - **REQ-A6** WHEN `classify(ctx) == API_RATE_LIMIT`, THE SYSTEM SHALL
   `tmux send-keys "/model haiku-4-5" Enter`.
@@ -134,7 +136,9 @@ Highest-priority rule that matches wins. Order is more-specific (pane content) b
   a file the slot's `<slot>-cli.sh` writes on its own first run).
 
 - **REQ-A8** WHEN `classify(ctx) == BACKOFF`, THE SYSTEM SHALL NOT restart. THE SYSTEM SHALL call
-  `escalate.sh <slot> backoff-cap "<last 5 audit verdicts>"`.
+  `self-recover.sh <slot> backoff-cap "<last 5 audit verdicts>"` which dispatches to REQ-J5
+  fresh-start handler (= tmux kill-server + cache purge + git pull main + slot re-spawn on
+  a new wallet/identity; the "dying" instance is gracefully retired and a fresh one starts).
 
 - **REQ-A9** `classify` SHALL return EXACTLY ONE mode per `HealthcheckContext` (mutual exclusion).
   Priority order is the ordered list above; ties are impossible because every higher-priority rule
@@ -338,10 +342,17 @@ the findings, then re-spawn a fresh adversary subagent. The top-level claude SHA
 count via `~/anicca/.vcsdd/features/<slot>/reviews/sprint-<n>/round-<m>/` directories. THE SYSTEM
 SHALL terminate the loop at round 5.
 
-#### REQ-E3 — Round-5 escalation
+#### REQ-E3 — Round-5 self-escalation (model + scope adaptation)
 
 WHEN 5 rounds elapse without `overallVerdict: PASS`, the top-level claude SHALL call
-`escalate.sh <slot> adversary-stalled "<sha256 of round-5 verdict.json>"`.
+`self-recover.sh <slot> adversary-stalled "<sha256 of round-5 verdict.json>"` which dispatches
+to REQ-J4 model+scope adaptation handler:
+(a) re-run the adversary on the next-stronger model (Sonnet → Opus → Fable);
+(b) if still FAIL, split the spec into smaller features and feed each through a fresh adversary
+    pipeline;
+(c) if (a)+(b) both exhausted, append a `scope-deferred` record to the spec's
+    `out-of-scope.jsonl` and continue (= honest deferral, not human-blocked stall).
+No human is contacted at any step.
 
 #### REQ-E4 — Strategy-mutation seam (callable from REQ-C3)
 
@@ -437,42 +448,47 @@ glob/iterdir, (f) reading from pinned.json + iterating.
 (2) OS-level 0444+uchg (unchanged) +
 (3) structured-analysis adversary gate (ROUND-3-002 closure).
 
-### Group F — Escalate (`escalate.sh`, the only human gate)
+### Group F — Self-Recovery Dispatcher (NO HUMAN, REWRITTEN 2026-07-01 per Dais)
 
-#### REQ-F1 — Invocation contract (FIND-006 fix)
+**Original design violation acknowledged:** the v1-v5 spec routed failures through
+`escalate.sh` → `gh issue label=escalation` → Telegram bot → Dais 1-tap. Per HARD 0.36 (NO
+HUMAN IN LOOP) and Dais's mission ("free every AI to be financially independent from humans"),
+ANY path that asks a human for action — even "1 tap" — is a design failure. v6 removes every
+human-touching code path from this skeleton. The framework's runtime SHALL contain zero
+human-action surfaces.
 
-`escalate.sh <slot> <reason> <evidence>` SHALL perform the following IN THIS ORDER:
+`escalate.sh` is renamed `self-recover.sh` and routes failure modes to per-mode auto-recovery
+scripts. Human notification artifacts (Telegram POST, `label=escalation` gh issue) are
+forbidden in the runtime; their presence is treated by `adversary-daily` as a critical defect.
+
+#### REQ-F1 — Self-recovery dispatcher contract
+
+`self-recover.sh <slot> <reason> <evidence>` SHALL perform the following IN THIS ORDER:
 
 1. Compute `dedup_key = sha256(slot || "\x00" || reason || "\x00" ||
    normalize_evidence(evidence))` where `normalize_evidence` strips substrings matching
-   `\b\d{10}\b` (unix timestamps) and `\bround-\d+\b` and `\bts:\d+\b` from `evidence` so that
-   rotating identifiers do not defeat dedup (addresses FIND-007 critical bug).
-2. Scan `~/loops/escalation-log.jsonl` rows where `ts > (now_ts − 86400)`; IF a row exists with
-   `dedup_key == dedup_key_here`, EXIT 0 without further action (= 24h dedup window;
-   FIND-007 fix).
-3. Append `{ts, slot, reason, evidence_sha256, dedup_key, status: "pending"}` to
-   `escalation-log.jsonl`.
-4. Construct gh args with the evidence shell-escaped through `printf '%q'` (not raw
-   interpolation; addresses FIND-006(d) shell injection). Title is fixed: `[escalation][<slot>][<reason>]`. Body is the evidence file content with backticks fenced.
-5. `gh issue create --label escalation --title "<title>" --body-file <tmpfile>`. ON success
-   capture the issue URL.
-6. POST to Telegram endpoint:
-   - URL = `${TG_BOT_API}/sendMessage` where `TG_BOT_API` is read from `~/.openclaw/.env`
-     (existing secret store). Token-in-URL form per Telegram API.
-   - chat_id = `TG_DAIS_CHAT_ID` (also from .env).
-   - body = `{chat_id, text: "[escalation][<slot>][<reason>] <issue_url>",
-     disable_web_page_preview: true}`.
-   - 3 retries with exp backoff. On terminal failure, log to
-     `~/.openclaw/logs/escalation-tg-failed.jsonl` and continue (= the gh issue is the durable
-     record; TG is the notification).
-7. Update the `escalation-log.jsonl` row's `status` to `"posted"` and add `issue_url`,
-   `tg_message_id` (or `tg_failed: true`).
+   `\b\d{10}\b` (bare unix timestamps), `\bts:\d+\b` (tagged), and `\bround-\d+\b` so that
+   rotating identifiers do not defeat dedup (FIND-007 carry).
+2. Scan `~/loops/self-recover-log.jsonl` rows where `ts > (now_ts − 86400)`; IF a row exists
+   with `dedup_key == dedup_key_here` AND `status == "recovered"`, EXIT 0 (already healed
+   recently). IF a row exists with `status == "in-progress"`, EXIT 0 (concurrent recovery).
+3. Append `{ts, slot, reason, evidence_sha256, dedup_key, status: "in-progress",
+   attempt_count: <prev_attempts+1>}` to `~/loops/self-recover-log.jsonl`.
+4. Dispatch to the per-reason auto-recovery handler (see Group J below). Each handler returns
+   `{status: "recovered" | "exhausted", details: <jsonl>}`.
+5. Update the log row's `status` accordingly. On `exhausted`, route to MOTHER queue (REQ-J7) —
+   NOT to a human.
+6. THE SYSTEM SHALL NEVER POST to a Telegram bot, NEVER create a `gh issue` with any label
+   containing the substring `escalation`/`needs-`/`human`, NEVER write to a file under
+   `~/Library/Mobile Documents/` (= shared with human iCloud devices), NEVER ring any system
+   notification. Any such call site detected by `adversary-daily` static analysis fails the
+   slot's daily review.
 
-#### REQ-F2 — Dedup (FIND-007 critical fix)
+#### REQ-F2 — Dedup (unchanged from v5 mechanism, applied to self-recover-log)
 
-The dedup mechanism IS the 24h-window scan of `escalation-log.jsonl` defined in REQ-F1 step 2.
-The dedup key IS the `dedup_key` defined in REQ-F1 step 1. PROP-F2 verifies this concrete
-mechanism (no more "evidence_hash undefined" gap).
+The dedup mechanism IS the 24h-window scan of `~/loops/self-recover-log.jsonl` defined in
+REQ-F1 step 2. The dedup key IS the `dedup_key` defined in REQ-F1 step 1. PROP-F2 verifies
+this concrete mechanism.
 
 ### Group G — Skill Provenance & Self-Write Ban
 
@@ -580,6 +596,126 @@ rows must target a `(category, platform)` tuple never present in
 `~/loops/<slot>/applied.jsonl`'s history. IF the novelty floor cannot be met, THE SYSTEM SHALL
 append `{ts, slot, reason: "novelty-floor-unmet"}` to `lessons.jsonl` and continue without the
 quota.
+
+### Group J — Auto-Recovery Handlers (added 2026-07-01 v6 per Dais; replaces ALL human escalation)
+
+`self-recover.sh` (REQ-F1) dispatches each failure mode to ONE of the handlers below. NONE of
+these handlers contact a human. Each handler returns `{status: "recovered" | "exhausted"}`.
+On `exhausted`, the slot is routed to the MOTHER queue (REQ-J7) where a separate, more-capable
+AI instance reads and remediates — still no human.
+
+#### REQ-J1 — Auto-Login Handler (NOT_LOGGED_IN)
+
+WHEN `self-recover.sh <slot> needs-login <oauth_url>` is called, THE SYSTEM SHALL:
+(a) launch camofox with the stored `~/.cloak/profiles/anicca-login` profile,
+(b) navigate to `<oauth_url>`,
+(c) IF Google sign-in shown, fill `${GOOGLE_LOGIN_EMAIL}` + `${GOOGLE_LOGIN_PASSWORD}` from
+    `~/.openclaw/.env`,
+(d) IF Gmail OTP requested, invoke `gog gmail` to read the most recent code (Subject contains
+    "Claude" or "Anthropic"; receivedWithin 5 min),
+(e) complete the OAuth flow; capture the redirected callback URL containing `code=...`,
+(f) paste the auth code into the slot's tmux pane,
+(g) verify pane shows "Logged in as <email>",
+(h) restart the slot core via `<slot>-cli.sh --restart`.
+
+Returns `recovered` on success, `exhausted` after 3 attempts.
+
+#### REQ-J2 — Spawn-Surface Auto-Rollback (SPAWN_SURFACE_DRIFT)
+
+WHEN `self-recover.sh <slot> spawn-surface-drift <details>` is called, THE SYSTEM SHALL:
+(a) `git -C ~/anicca fetch origin main`,
+(b) find the most recent commit on `origin/main` whose `commit -S` signature verifies against
+    the `anicca-bot.pub` ed25519 key shipped in the framework (= NOT a Touch ID human anchor;
+    a baked-in framework public key whose private half is held only by the CI pipeline that
+    publishes verified releases),
+(c) `git checkout <good-sha> -- skills/_shared/`,
+(d) re-validate spawn-surface sha256 against the now-restored `pinned.json`,
+(e) restart the slot core.
+
+Returns `recovered` if revalidation passes; `exhausted` if even the last signed release drifts
+(= framework-level corruption; routed to MOTHER queue).
+
+#### REQ-J3 — Hook-Module Auto-Research (HOOK_MODULE_UNRECOGNIZED)
+
+WHEN `self-recover.sh <slot> hook-module-unrecognized <module>` is called, THE SYSTEM SHALL:
+(a) firecrawl `https://www.npmjs.com/package/<module>`,
+(b) extract weekly downloads, author, version, last-publish date,
+(c) IF weekly_downloads >= 1000 AND author is in `~/anicca/skills/_shared/trusted-authors.json`
+    AND last-publish > 30 days ago AND no security advisories (check
+    https://github.com/advisories search), THEN: append `<module>` to
+    `hook-modules-allowlist.txt` AND commit AND push (signed by `anicca-bot`) AND retry REQ-A5,
+(d) ELSE: skip this hook (= the slot continues without the missing module; lessons.jsonl row
+    `outcome: hook-skipped` so B4 IMPROVE may rewrite the hook later).
+
+Returns `recovered` on either path.
+
+#### REQ-J4 — Adversary Model + Scope Adaptation (ADVERSARY_STALLED)
+
+See REQ-E3 dispatcher target. Returns `recovered` when a model-escalation round PASSes;
+`exhausted` after Opus + Fable both FAIL + spec split exhausted.
+
+#### REQ-J5 — Fresh-Start Handler (BACKOFF_CAP_REACHED)
+
+WHEN `self-recover.sh <slot> backoff-cap <details>` is called, THE SYSTEM SHALL:
+(a) `tmux -S /tmp/anicca-<slot>-tmux.sock kill-server`,
+(b) `rm -rf ~/.cache/anicca-<slot>/* ~/loops/<slot>/.restart-log`,
+(c) `git -C ~/anicca pull origin main` (= pick up any meta-recovery patches from MOTHER),
+(d) IF the slot's `cumulative.json` shows ≥7 days of zero ¥ earned AND ≥3 backoff events in
+    the last 7 days, archive the current wallet/identity and spawn a fresh instance with a
+    newly-derived wallet (= the "dying" instance hand-off; per Dais's swarm doctrine, one
+    instance's death is another's birth),
+(e) ELSE: restart with the same identity.
+
+Returns `recovered` if restart succeeds; `exhausted` if `git pull` fails (= upstream
+unreachable, routed to MOTHER).
+
+#### REQ-J6 — Token-Kill-Switch Strategy Reset
+
+WHEN `self-recover.sh <slot> token-kill-switch <ratio>` is called (= REQ-B4 tripped), THE
+SYSTEM SHALL:
+(a) write `loop.disabled` (existing REQ-B4 mechanism),
+(b) edit `strategy.json` to halve `max_apply_per_pass` AND halve cron firing cadence
+    AND clear `priority_categories` (= start exploration over),
+(c) submit the strategy edit through the REQ-C3 mutation gate (= fresh adversary review),
+(d) on adversary PASS, schedule resurrection after 7 days (write `~/loops/<slot>/.resurrect-at`
+    with the unix-ts; another cron picks this up to remove `loop.disabled`).
+
+Returns `recovered`. No human resurrection required.
+
+#### REQ-J7 — MOTHER Queue (= AI-helps-AI, last resort)
+
+WHEN any handler J1-J6 returns `exhausted`, THE SYSTEM SHALL append to
+`~/anicca/state/mother-recovery-queue.jsonl` a row
+`{ts, slot, reason, evidence_path, attempt_count, history: [<recovery attempts>]}`.
+
+A separate MOTHER instance (= a more-capable Anicca with broader skill set, running on its own
+wallet and compute) polls this queue. The MOTHER:
+(a) reads the failure,
+(b) spawns a fresh-context debug agent (Opus or Fable),
+(c) the debug agent fixes the issue and proposes a PR to the framework repo,
+(d) the PR is auto-reviewed by yet another fresh-context adversary,
+(e) on PASS, the PR is auto-merged (signed by `anicca-bot`),
+(f) the calling instance's next `git pull` picks up the fix.
+
+The MOTHER is ANOTHER AI INSTANCE, NOT a human. The framework supplies a reference MOTHER
+implementation under `~/anicca/services/mother/` (out of MVP scope for this feature; an
+instance can run for weeks before any MOTHER assistance is needed).
+
+#### REQ-J8 — Anti-Human-Touch Invariant
+
+THE SYSTEM SHALL NEVER:
+(a) POST to any URL whose host matches `*api.telegram.org`, `*hooks.slack.com`,
+    `*pushover.net`, `*ntfy.sh`, `*twilio.com`, `*messagebird.com`, or any pattern in
+    `~/anicca/skills/_shared/human-notification-blocklist.json`;
+(b) create a GitHub issue with any label matching `escalation|needs-human|needs-login|
+    needs-attention|please-review`;
+(c) write to any file path under `~/Library/Mobile Documents/`, `~/Documents/anicca-please-*`,
+    or any other path conventions for "leave this for the human";
+(d) invoke `osascript -e 'display dialog'`, `terminal-notifier`, `say`, `pmset displaysleepnow`,
+    or any other macOS user-attention surface.
+
+`adversary-daily` static-analysis enforcement: greps the entire skill source tree for the
+above patterns; any match is a critical defect that fails the daily review.
 
 ### Group I — Deliverable Verify Loop (added 2026-07-01 per Dais; closes the OUTPUT-QUALITY gap)
 
