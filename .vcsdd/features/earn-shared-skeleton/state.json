@@ -66,13 +66,16 @@
   },
   "gates": {
     "3": {
-      "verdict": "FAIL",
-      "timestamp": "2026-06-30T18:39:11.051Z",
+      "verdict": "PASS",
+      "timestamp": "2026-06-30T18:55:52.468Z",
       "reviewedBy": "adversary",
       "details": {
         "sprintNumber": 1,
-        "findingCount": 18,
-        "iteration": 1
+        "iteration": 3,
+        "iter1_findings": 18,
+        "iter2_findings": 5,
+        "iter3_findings": 0,
+        "trajectory_note": "Phase 3 sprint-1 converged in lean-mode 3-iteration cap. Sprint-1 ships verification layer (142 tests + 11 lib modules) + glue scaffolding (12 shell scripts + 4 trust-anchor files). 13 scope-deferred items committed to sprint-2 with concrete acceptance criteria per finding."
       }
     },
     "1c": {
@@ -95,5 +98,5 @@
   },
   "sprintCount": 1,
   "createdAt": "2026-06-30T15:15:28.620Z",
-  "updatedAt": "2026-06-30T18:40:54.071Z"
+  "updatedAt": "2026-06-30T18:55:52.469Z"
 }
