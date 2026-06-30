@@ -1,0 +1,22 @@
+target-feature-tests: PASS
+regression-baseline: PASS
+total-tests: 142
+passing: 142
+failing: 0
+duration_s: 0.10
+
+# All 14 test modules GREEN. 11 lib modules implemented. 13 required:true PROPs
+# enforced. Spec v7 NO HUMAN doctrine verified by PROP-J8 static analyzer.
+#
+# Module → PROP → tests pass count:
+#   lib/healthcheck.py       → PROP-A-classify + A-oauth + A-hook-allowlist  (42)
+#   lib/roi.py               → PROP-B2 + B4 + B5 + B6                        (20)
+#   lib/lessons.py           → PROP-C1 + dedup_hash                          (17)
+#   lib/escalate.py          → PROP-F2                                       (10)
+#   lib/manifest.py          → PROP-G2-static                                 (5)
+#   lib/events.py            → PROP-G2-runtime (3-check pattern)              (7)
+#   lib/mutation_gate.py     → PROP-C3                                        (3)
+#   lib/spawn_pin.py         → PROP-E5 (12 fixture f-i..f-xii)               (12)
+#   lib/proposal_loop.py     → PROP-I1                                        (5)
+#   lib/deliverable_loop.py  → PROP-I2                                        (4)
+#   lib/group_j.py           → PROP-J8 anti-human-touch + dispatcher          (17)
