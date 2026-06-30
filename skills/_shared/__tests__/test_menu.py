@@ -110,20 +110,56 @@ def test_is_blocker_returns_false_when_unknown_check():
     assert is_blocker(item, slot_state={"failing_blockers": set()}) is False
 
 
-# ─── PROP-novelty-key-aligned (required:true) ─────────────────────
-def test_novelty_key_is_category_platform_tuple():
-    """Sprint-1's canonical novelty key is (category, platform)."""
-    menu = _menu_3items()
-    # history shows scan-requests/coconala already tried 10× — should bias to novelty
+# ─── PROP-novelty-key-aligned (required:true; FIND-004 + FIND-2-006 fix) ─
+def test_novelty_promotes_unseen_category_platform():
+    """Novelty quota: when history is saturated with one (cat, platform) tuple,
+    the picker should promote a (cat, platform) NOT in history (= novelty)."""
+    menu = {
+        "schema_version": 1,
+        "categories": [
+            # high ROI but fully-seen
+            {"name": "scan", "category": "scan-requests", "platform": "coconala",
+             "roi_estimate_jpy": 100000, "probability_of_landing": 0.20,
+             "required_budget": "LIGHT", "blocker_check": None},
+            # low ROI but never-tried (= novel)
+            {"name": "explore", "category": "explore-affiliate", "platform": "amazon",
+             "roi_estimate_jpy": 100, "probability_of_landing": 0.05,
+             "required_budget": "LIGHT", "blocker_check": None},
+        ],
+        "novelty_quota_ratio": 0.1,
+    }
+    # 10 picks of scan-requests/coconala = saturated; novel one not in history
     history = [{"category": "scan-requests", "platform": "coconala"}] * 10
     result = pick_next(menu=menu, log_tail=[], history=history, blockers=set(),
                       now_ts=1782900000, budget=Budget.FULL)
-    # Even though scan wouldn't beat nurture on ROI, the test asserts
-    # the (category, platform) key is what's used for novelty checking
-    # (= we don't introduce a parallel (category, novelty) slang)
+    # Real assertion (= NOT tautological): the novel item beats high-ROI saturated one
     assert result is not None
-    # The picker may apply novelty quota; key shape is (category, platform)
-    # Verified by the API not accepting any other key shape
+    assert result["name"] == "explore", \
+        f"novelty quota should promote explore-affiliate (unseen), got {result['name']}"
+
+
+def test_novelty_uses_category_key_not_name():
+    """FIND-2-007: novelty key reads .category from item AND history (not .name)."""
+    menu = {
+        "schema_version": 1,
+        "categories": [
+            # item.name differs from item.category — verify key picks category
+            {"name": "scan-v2", "category": "scan-requests", "platform": "coconala",
+             "roi_estimate_jpy": 1000, "probability_of_landing": 0.1,
+             "required_budget": "LIGHT"},
+            {"name": "new", "category": "explore", "platform": "amazon",
+             "roi_estimate_jpy": 100, "probability_of_landing": 0.05,
+             "required_budget": "LIGHT"},
+        ],
+        "novelty_quota_ratio": 0.1,
+    }
+    # scan-requests/coconala saturated via history
+    history = [{"category": "scan-requests", "platform": "coconala"}] * 10
+    result = pick_next(menu=menu, log_tail=[], history=history, blockers=set(),
+                      now_ts=1782900000, budget=Budget.FULL)
+    # Even though scan-v2 has higher ROI, it's NOT novel (its .category matches history);
+    # novelty quota promotes the unseen explore category
+    assert result["name"] == "new"
 
 
 # ─── compute_roi_score basic ──────────────────────────────────────

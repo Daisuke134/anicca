@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-2-007",
+  "dimension": "implementation_correctness",
+  "category": "requirement_mismatch",
+  "severity": "medium",
+  "description": "FIND-003 PARTIAL. The novelty formula was rewritten (menu.py L106-128) and now uses a rolling window of size 1/ratio with a 'novel_count < int(ratio*window)+1' decision rule. Two concerns: (1) the menu items in _menu_3items() do NOT have a 'category' field — they have 'name' and 'platform'. _is_novelty_eligible falls back to item.get('name') as category alias (menu.py L76). The menu's items keyed as e.g. ('scan-requests','coconala') will only match history rows where 'category'=='scan-requests'. This silently works for the fixture but the spec (REQ-M2 L301-302) shows menu items SHOULD have a 'category' field separate from 'name' — the test fixture does not exercise the real schema. (2) The threshold 'int(ratio*window)+1' is biased: with window=10 and ratio=0.1, threshold becomes 2, meaning the novelty branch triggers when novel_count<2 (= at least 1 novel pick must exist in the window before suppressing) — the off-by-one direction of '+1' is undocumented and arguably wrong vs spec 'at least 10%'.",
+  "evidence": {
+    "filePath": "skills/_shared/lib/menu.py",
+    "lineRange": "106-128",
+    "snippet": "if novel_count < int(novelty_ratio * window) + 1:\n    return novel_items[0]"
+  },
+  "routeToPhase": "2b"
+}

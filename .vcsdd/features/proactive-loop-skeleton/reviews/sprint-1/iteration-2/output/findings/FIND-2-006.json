@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-2-006",
+  "dimension": "implementation_correctness",
+  "category": "test_quality",
+  "severity": "high",
+  "description": "FIND-004 NOT CLOSED. test_novelty_key_is_category_platform_tuple (test_menu.py L114-126) STILL asserts only 'assert result is not None' followed by an aspirational comment. Bug demonstration: replacing the entire pick_next implementation with `return menu['categories'][0]` would still satisfy this test. PROP-novelty-key-aligned (required:true per manifest) is unverified by test. The supposed 'FIND-003 + FIND-011 novelty fix' updated the implementation but did NOT replace the tautological test with one that asserts (e.g.) 'the picker promoted the novelty item over the strict-argmax pick when novelty deficit existed' or 'result['category'] is not present in history'.",
+  "evidence": {
+    "filePath": "skills/_shared/__tests__/test_menu.py",
+    "lineRange": "114-126",
+    "snippet": "history = [{\"category\": \"scan-requests\", \"platform\": \"coconala\"}] * 10\nresult = pick_next(menu=menu, log_tail=[], history=history, blockers=set(),\n                  now_ts=1782900000, budget=Budget.FULL)\nassert result is not None\n# The picker may apply novelty quota; key shape is (category, platform)\n# Verified by the API not accepting any other key shape"
+  },
+  "routeToPhase": "2a"
+}

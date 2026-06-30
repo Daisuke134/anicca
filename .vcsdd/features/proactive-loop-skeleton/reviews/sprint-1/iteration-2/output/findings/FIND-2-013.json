@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-2-013",
+  "dimension": "verification_readiness",
+  "category": "test_quality",
+  "severity": "high",
+  "description": "FIND-006 PARTIAL CLOSURE. The is_dormant kwarg was renamed from neg_7day_windows to consecutive_neg_7day_windows (signals intent to caller via name), but the function body STILL only checks `>= 14` (quota_tracker.py:60) without verifying consecutiveness from any list/series input. The semantic invariant (= negative windows must be temporally contiguous) is entirely the caller's responsibility, and no test exercises a non-consecutive scenario where the kwarg is mis-passed. A caller computing total negative window count instead of consecutive count would still trigger dormancy. A REQ-Q5-faithful API would accept the time series (e.g. last N days of roi_7day_jpy) and compute consecutiveness internally.",
+  "evidence": {
+    "filePath": "skills/_shared/lib/quota_tracker.py",
+    "lineRange": "54-60",
+    "snippet": "def is_dormant(*, consecutive_neg_7day_windows: int, age_days: int) -> bool:\n    if age_days <= 14:\n        return False\n    return consecutive_neg_7day_windows >= 14"
+  },
+  "routeToPhase": "2b"
+}

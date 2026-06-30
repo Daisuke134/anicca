@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-2-009",
+  "dimension": "structural_integrity",
+  "category": "spec_gap",
+  "severity": "low",
+  "description": "FIND-016 NOT CLOSED. lib/menu.py:15-18 _BUDGET_RANK STILL has the defensive double-key set (Budget.FULL: 4 AND \"FULL\": 4 simultaneously). No comment was added to document this is intentional; no enforcement was added to require Budget enum only. Future regression where a caller passes a string and the enum import drifts would still be silently masked.",
+  "evidence": {
+    "filePath": "skills/_shared/lib/menu.py",
+    "lineRange": "12-18",
+    "snippet": "from lib.quota_tracker import Budget\n\n_BUDGET_RANK = {\n    Budget.FULL: 4, Budget.MEDIUM: 3, Budget.LIGHT: 2, Budget.MINIMAL: 1,\n    \"FULL\": 4, \"MEDIUM\": 3, \"LIGHT\": 2, \"MINIMAL\": 1,\n}"
+  },
+  "routeToPhase": "2b"
+}

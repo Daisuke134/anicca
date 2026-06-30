@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-2-008",
+  "dimension": "implementation_correctness",
+  "category": "security_surface",
+  "severity": "medium",
+  "description": "FIND-013 PARTIAL. _HUMAN_BODY_PHRASES was extended from 7 → ~17 phrases including 'human-in-the-loop', '@dais', 'human required', 'please review', 'human approval', 'ask the owner', 'owner-only', 'manual approval', 'user input required'. STILL missed: (a) Japanese phrases — 'デイスさん' / 'デイス' / 'ダイスケ' / 'ダイスさん' / 'お願いします' / '見てください' — the blocklist is ASCII-only despite Dais being a Japanese-named owner and the codebase routinely using Japanese. (b) Mixed-language tokens — 'Daisuke-san' / 'Dais-sama'. (c) Indirect surfaces — 'open a ticket', 'page the operator', 'wake up the owner', 'check with the team'. PROP-B4 (required:true) coverage is still bypassable by a sibling AI authoring in Japanese.",
+  "evidence": {
+    "filePath": "skills/_shared/lib/bot2bot.py",
+    "lineRange": "17-24",
+    "snippet": "_HUMAN_BODY_PHRASES = [\n    \"dais\", \"owner please\", \"human\", ...\n    \"human-in-the-loop\", \"humanintheloop\", \"@dais\", \"human required\", ...\n    \"owner-only\", \"manual approval\", \"user input required\",\n]\n# all ASCII; no Japanese."
+  },
+  "routeToPhase": "2b"
+}

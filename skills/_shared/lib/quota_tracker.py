@@ -53,11 +53,32 @@ def should_route_mother_queue(*, neg_roi_days: int) -> bool:
 
 def is_dormant(*, consecutive_neg_7day_windows: int, age_days: int) -> bool:
     """REQ-Q5: 14 CONSECUTIVE negative 7-day windows AND age > 14d → dormant.
-    Consecutive (= reset on any positive day), not cumulative (FIND-006 fix).
+    Consecutive (= reset on any positive day), not cumulative (FIND-006 + FIND-2-013 fix).
+
+    The CONSECUTIVE invariant is enforced by the CALLER: the parameter name carries
+    the contract; the caller's responsibility is to reset the counter to 0 the moment
+    a positive day occurs, NOT to keep a cumulative sum across resets.
     """
     if age_days <= 14:
         return False
+    if consecutive_neg_7day_windows < 0:
+        return False  # defensive
     return consecutive_neg_7day_windows >= 14
+
+
+def count_consecutive_negative_windows(daily_roi_7day_jpy: list[float]) -> int:
+    """REQ-Q5 helper (FIND-2-013 fix): scan a list of daily rolling-7d ROI values
+    (most recent LAST) and return the count of CONSECUTIVE negatives at the tail.
+    Returns 0 if the most recent value is non-negative.
+    This is the canonical way to compute `consecutive_neg_7day_windows` for is_dormant.
+    """
+    count = 0
+    for v in reversed(daily_roi_7day_jpy):
+        if v < 0:
+            count += 1
+        else:
+            break
+    return count
 
 
 def write_dormant_sentinel(slot_dir, *, evidence: dict) -> None:

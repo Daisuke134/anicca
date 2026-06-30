@@ -69,9 +69,9 @@ def test_spawn_drift_detected():
 
 
 def test_tmux_server_corrupted_detected():
-    """Test that snapshot can encode a corrupted server state."""
-    snap = _snap(tmux_alive=False)
-    snap.tmux_server_state = "corrupted"  # additional attribute
+    """FIND-2-010 fix: HealthSnapshot is frozen=True; tmux_server_state set
+    at construction time, not via post-construct mutation."""
+    snap = _snap(tmux_alive=False, tmux_server_state="corrupted")
     issues = classify_issue_from_snapshot(snap)
     # Either tmux_dead or tmux_server_corrupted issue is acceptable
     assert any(i.kind in ("tmux_dead", "tmux_server_corrupted") for i in issues)

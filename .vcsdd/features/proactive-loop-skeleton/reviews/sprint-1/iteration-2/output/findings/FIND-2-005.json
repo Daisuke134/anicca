@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-2-005",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "low",
+  "description": "should_route_mother_queue (FIND-005 fix) drops the age gate, but no boundary test was added at neg_roi_days=7 from the other side: test_no_mother_queue_route_at_6_days covers neg_roi_days=6 (False) and test_mother_queue_route_when_degraded_7d covers 7 (True). However, edge cases like neg_roi_days=0 (degenerate input) and large values (e.g. 365) are not tested, and the function silently accepts negative inputs without raising. With age_days removed, callers must ensure non-negative semantics elsewhere — this contract is unverified.",
+  "evidence": {
+    "filePath": "skills/_shared/__tests__/test_quota_tracker_v2.py",
+    "lineRange": "69-76",
+    "snippet": "def test_mother_queue_route_when_degraded_7d():\n    assert should_route_mother_queue(neg_roi_days=7) is True\n\ndef test_no_mother_queue_route_at_6_days():\n    assert should_route_mother_queue(neg_roi_days=6) is False"
+  },
+  "routeToPhase": "2a"
+}

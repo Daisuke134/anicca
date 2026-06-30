@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-2-010",
+  "dimension": "structural_integrity",
+  "category": "purity_boundary",
+  "severity": "medium",
+  "description": "FIND-017 NOT CLOSED. HealthSnapshot is STILL declared as plain @dataclass (no frozen=True) at health_check_v2.py:29-41. test_tmux_server_corrupted_detected at test_health_check_v2.py:71-77 mutates after construction via attribute assignment ('snap.tmux_server_state = \"corrupted\"'). The purity claim in verification-architecture L33-37 remains structurally fragile: any future @dataclass(frozen=True) decoration would break the test (FrozenInstanceError) without notice; conversely the tests do not enforce purity invariants. No documentation was added clarifying the contract.",
+  "evidence": {
+    "filePath": "skills/_shared/lib/health_check_v2.py",
+    "lineRange": "29-41",
+    "snippet": "@dataclass\nclass HealthSnapshot:\n    tmux_alive: bool\n    ...\n    tmux_server_state: str = \"ok\""
+  },
+  "routeToPhase": "2b"
+}

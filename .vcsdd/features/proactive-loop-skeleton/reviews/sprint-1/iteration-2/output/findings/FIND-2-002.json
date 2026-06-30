@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-2-002",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "medium",
+  "description": "FIND-012 NOT CLOSED. health_check_v2.PRIORITY_ORDER + classify_issue_from_snapshot + select_fix_recipe still enumerate 'api_rate_limit' (→ '/model haiku-4-5' send_keys) and 'backoff' (→ escalate_via_bot2bot). Searched behavioral-spec.md for 'api_rate_limit' / 'backoff' / '/model haiku' — ZERO hits. REQ-H3 in the spec enumerates only (a)..(g) (= tmux dead/stale/not_logged_in/hook_missing/spawn_drift/cron_missing/trust_dialog). The two extra kinds remain spec-undefined; PROP-H3 dispatch-correctness still has nothing to grade against for these 2 of 10 kinds.",
+  "evidence": {
+    "filePath": "skills/_shared/lib/health_check_v2.py",
+    "lineRange": "15-26",
+    "snippet": "PRIORITY_ORDER = [\n    \"backoff\",\n    \"trust_dialog\",\n    \"not_logged_in\",\n    \"api_rate_limit\",\n    ...\n]"
+  },
+  "routeToPhase": "1c"
+}
