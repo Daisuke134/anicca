@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
 # monitor.sh — observe the Coconala gig loop (cloned from clip/monitor.sh's role). Reports, from the
 # files the core writes, WITHOUT taking any action: applications made, replies, deliveries, and the
 # ¥ earned ledger. ¥ is HUMAN-FUNDED (settles to Dais's Coconala account → MUFG) — there is NO
@@ -29,7 +30,7 @@ applied=[r for r in ap if r.get("status")=="applied"]
 # deterministic earned guard (FIND-003): a ¥ row counts ONLY with a settled status AND non-empty
 # evidence — an applied/in-progress/fabricated row can NEVER be summed as earned.
 SETTLED={"検収","支払","検収完了","completed","paid"}
-valid=[r for r in ea if r.get("status") in SETTLED and r.get("evidence")]
+valid=[r for r in ea if r.get("status") in SETTLED and r.get("evidence") and float(r.get("jpy",0) or 0)>0]
 rejected=len(ea)-len(valid)
 jpy=sum(float(r.get("jpy",0) or 0) for r in valid)
 core_alive=os.system("tmux -S /tmp/anicca-gig-tmux.sock has-session -t anicca-gig-core 2>/dev/null")==0

@@ -8,7 +8,7 @@ GREEN → fresh-context adversary → no-mock E2E → my own runtime verify.
 1. **AUTONOMOUS FIRE (the #1 proof)**: with NO main-session intervention, the in-session :27 cron
    fires a pass — provable by `~/gig/.last-pass` mtime advancing across a :27 boundary that I did
    NOT trigger, AND an independent `audit.jsonl` row written by the launchd auditor recording
-   `verdict=FIRING`. (Currently UNPROVEN — prior heartbeats came from my manual --restart.)
+   `verdict=FIRING`. (PROVEN 2026-06-30: heartbeat advanced 18:37→18:43 with no main-session touch + applied #10 added autonomously — see 検証結果 below.)
 2. **CONVERSATION SWEEP**: one pass checks ALL active talk-rooms (not just one), so a buyer reply is
    never dropped. Evidence: applied.jsonl `replied` rows keep pace with inbound Gmail notifications.
 3. **EARN-CORE TEMPLATE**: the clip/gig common parts (core-cli + healthcheck + heartbeat + auditor +
