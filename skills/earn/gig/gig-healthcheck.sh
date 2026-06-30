@@ -34,9 +34,15 @@ restart(){
 if ! tmux -S "$SOCK" has-session -t "$SESSION" 2>/dev/null; then
   restart "gig-core DEAD"
 elif [ ! -f "$HB" ]; then
-  # FIND-001: alive but NO heartbeat = core started but never ran a pass (cron never registered/hung).
-  # gig-cli seeds the heartbeat at startup, so a missing file means it never really booted → restart.
-  restart "gig-core ALIVE but NO heartbeat (never fired)"
+  # .last-pass is created ONLY by a COMPLETED pass (NOT at startup — startup seeds .last-start).
+  # So a missing .last-pass right after boot is normal; give a grace window since .last-start before
+  # treating "never completed a pass" as a failure (else we'd kill the core mid-first-pass = restart loop).
+  START_AGE="$(( ($(date +%s) - $(stat -f %m "$HOME/gig/.last-start" 2>/dev/null || echo 0)) / 60 ))"
+  if [ "$START_AGE" -ge "$STALE_MIN" ]; then
+    restart "gig-core ALIVE but no completed pass in >=${START_AGE}min since start (never fired)"
+  else
+    echo "$(date '+%F %T') gig-core ALIVE (first pass pending, ${START_AGE}min since start)" >> "$LOG"
+  fi
 elif [ "$(( ($(date +%s) - $(stat -f %m "$HB" 2>/dev/null || echo 0)) / 60 ))" -ge "$STALE_MIN" ]; then
   # FIND-005: -ge to match auditor's >=90 threshold exactly
   restart "gig-core STALE (no pass in >=${STALE_MIN}min; in-session cron likely stopped)"
