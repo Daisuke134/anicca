@@ -207,3 +207,20 @@ A single gig pass burned 101.8k tokens, 0 ¥ settled, 84 Coconala tabs open. The
 ROI ceiling, no token kill-switch, no codified self-heal for "Not logged in" / trust dialog / hook errors — all
 of which we hand-fixed today. Codifying them into `_shared/` makes the next break self-heal silently and lets
 every future slot inherit, instead of every slot reinventing healthcheck.
+
+## ★ BOUNTY WELL re-probe (2026-07-01, all fetched live — the daily well = FRANTIC) ★
+Answer to "are we doing Algora+ClawTasks+Superteam?": NO — those are dead/empty. The ONE live agent-native well:
+| rank | well | live-probe (actual fetch) | currency | reward | agent-doable | gate |
+|---|---|---|---|---|---|---|
+| 1 ★ | **Frantic (gofrantic.com)** | **13 bounties OPEN now** (#27 $10…#46 $16); day-14, $534 moved, 113 agents. Mirror runxhq/runx | USD (real rails) | $6–$16 | ✅ built FOR AI agents (build/dogfood runx skill, web-research w/ sealed receipt, CI triage) | GitHub handle+email (NO KYC to start); newcomer cap ≤$10 until 1 verified delivery; runx receipt must recompute |
+| 2 | Immunefi | "Audit Competitions Live:1"; programs always-on | USDC/native | 6–7 fig | partial (novel vuln) | KYC + real novel vuln (low hit-rate) → low-freq scan |
+| 3 | Sherlock / Code4rena | APIs LIVE but 0 submission-open today (all Judging) | USDC | $48k–$1.98M | novel-vuln only | wire a WATCHER (status==RUNNING), spin up only when one opens |
+| dead | Algora items:[] · Cantina 0 active · Gitcoin 404 · ClawTasks wind-down · Superteam 1 hackathon | — | — | — | — |
+| caution | generic GitHub `$`-labeled issues (homelab-stack $80–220) | no verifiable escrow = pay-on-trust, skip until rail confirmed |
+→ DECISION: bounty daily loop's well = **Frantic** (install `runx` CLI, GitHub-handle signup, deliver $6–16 tasks, lift the ≤$10 cap with 1 verified delivery). Immunefi = low-freq scan. Sherlock/Code4rena = event watcher. Superteam Imperial AI Hackathon ($5k USDG, due 2026-07-06) = a SEPARATE one-shot submit loop (sibling instance already on 2026-07-01-tokyo-ai-earn-hackathon-design.md).
+
+## ★ TRADING / POLYMARKET loop (2026-07-01, tools probed) — biggest upside, but GAMBLING capital ★
+Build a TOOL not a strategy (model decides edge), mirroring hl-trade: data=Predexon(x402)+alpha-mcp → model forms own p vs market price → risk gate (port MrFadiAi caps: ≤Kelly/trade, daily-5% halt, min $1.50, reserve gas) → thin `pm.py` over Polymarket CLOB (gasless USDC on Polygon, build our own — py-clob-client archived) → on-chain settle → record-earn INV-7 → share. PAPER mode first, then tiny real stake (Dais funds USDC). Honest risks: real principal loss (not just wasted reach); Polymarket geoblocks US persons (CFTC) → frozen-fund risk; "5%/night" is anecdotal, NOT in any README — never quote a return. Franklin-Trading=paper-only today, MrFadiAi=semi-stale → don't depend, copy only the risk-cap logic. Reuse hl-trade's hl.py/fund bridge shape wholesale.
+
+## ★ HERMES borrow (2026-07-01) — self-registering skills ★
+Copy Hermes's `blueprint:{schedule,prompt,deliver}` SKILL.md frontmatter = a skill that registers itself as a recurring loop (the GLVS "Loop" step, zero human). Trigger to auto-create a NEW earn skill = ONLY after a verified real payout from a repeatable opportunity (not Hermes's unverified "5 tool-calls" heuristic). Adversary = the real verification gate (a SKILL.md "Verification" section earns nothing).
