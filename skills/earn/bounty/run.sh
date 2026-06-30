@@ -28,6 +28,11 @@ for it in items:
     repo=re.sub(r'.*/repos/','',it.get("repository_url","")).strip()
     out.append({"title":it.get("title","")[:80],"url":it.get("html_url",""),"repo":repo,
                 "comments":it.get("comments",0)})
+import os
+# GitHub search intermittently returns total_count>0 but items:[] (rate-limit/consistency).
+# Don't clobber good prior data on a transient empty response.
+if not items and os.path.exists(sys.argv[1]):
+    print(len(json.load(open(sys.argv[1])).get("open_bounties",[]))); sys.exit()
 json.dump({"fetched_at":sys.argv[2],"open_bounties":out}, open(sys.argv[1],"w"), indent=2)
 print(len(out))
 PY
