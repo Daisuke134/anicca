@@ -82,11 +82,12 @@ real disk effects are observed without polluting prod state.
 | **PROP-E2-loop-bound** | E2 | 1 (integration) | given a fixture set of FAIL verdicts, the orchestrator stops at round 5 and calls escalate.sh exactly once | integration-test using fixture verdicts (no real subagent spawned) | YES (retiered from FIND-010(3)) |
 | **PROP-E3-escalate-path** | E3 | 0 (integration) | round-5 FAIL path includes the round-5 verdict sha256 in the evidence param | integration-test | YES |
 | **PROP-E4-mutation-seam** | E4 | 1 (integration) | calling `adversary-daily.sh strategy-mutation <slot> <sha>` writes the verdict under `reviews/strategy-mutation-<sha>/`; manifest input matches the typed schema | integration-test | YES |
+| **PROP-E5-spawn-pin** | E5 | 1 (integration) | (a) every shared script computes the current sha256 of each spawn-surface file at startup and refuses to proceed if any value differs from `spawn-surface.pinned.json`; (b) `escalate.sh <slot> spawn-surface-drift ...` is called exactly once per mismatch; (c) spawn-surface files have mode 0444 + uchg flag (verified via `stat`); (d) REQ-C3 adversary review FAILs any `strategy.json.next` whose body contains a string literal matching a spawn-surface path. Fixture corpus: (i) clean run — all sha match → script proceeds; (ii) drift on `adversary-daily-prompt.tmpl` — script halts, escalate fires once; (iii) attempted write to spawn-surface file by skill code — fails with EACCES, surfaces lesson row; (iv) strategy.json.next contains literal `_shared/loop-improve.py` — adversary FAILs | integration-test with disk fixtures + adversary stub | **YES** (ROUND-2-002 fix) |
 | **PROP-F1-order** | F1 | 0 (integration) | invocation order: dedup-check → log-append-pending → gh create → tg post → log-update-posted; ANY step failure leaves the log row in a recoverable state | integration-test (gh + tg stubbed) | YES |
 | **PROP-F2-dedup** | F2 | 1 | `is_duplicate(key, log_rows, now)` returns True iff a row exists in log with `ts > (now − 86400)` AND `dedup_key == key`; `normalize_evidence` strips unix ts substrings and `round-N` substrings so cosmetic rotation doesn't defeat dedup | property-test (corpus of 100 evidence pairs that differ only in stripped fields → must collapse to same dedup key) | **YES** (FIND-007 critical) |
 | **PROP-G1-manifest-schema** | G1 | 0 | `manifest.validate(json)` accepts iff all fields present with correct types AND `schema_version == 1` | unit-test | YES |
 | **PROP-G2-static** | G2 | 1 | static-analysis grep: for each `~/anicca/skills/earn/<slot>/`, no source file contains a write target whose resolved path is `<that slot's dir>/manifest.json`. Heuristic covers literal strings, simple variable concatenation, and Python `Path(__file__).parent / "manifest.json"` constructions; flags any indirect cases for human review | static-analysis test (AST walker for Python; grep + AST for shell+JS) | **YES** (FIND-014 promotion, INV-13 trust model) |
-| **PROP-G2-runtime** | G2 | 1 (integration) | `events.jsonl → earnings.jsonl` runner verification: a skill emitting a fake `event: "earn"` with a forged `receipt_id` but no matching `platform_api_response_sha256` is rejected; ONLY real platform-API-verified events propagate to `earnings.jsonl`; rejected events surface a `skill-emitted-fake-earn` lesson row | integration-test (platform API stubbed) | **YES** (FIND-015 fix, INV-13 active half) |
+| **PROP-G2-runtime** | G2 | 1 (integration) | `events.jsonl → earnings.jsonl` runner verification enforces ALL THREE checks: (1) endpoint allowlist — events claiming a payout from an endpoint not in `payout-endpoint-allowlist.json` are rejected with `failed_check: endpoint-not-allowlisted`; (2) hash-fidelity — events with `response_sha256` not matching re-fetched response are rejected with `failed_check: response-hash-mismatch`; (3) field-equality — events whose `receipt_id` / `amount` / `payer` do not appear AT the platform-defined JSON paths in the re-fetched response are rejected with `failed_check: field-mismatch:<which>`. Test fixtures MUST include: (i) the ROUND-2-001 "plausible-endpoint + forged receipt" attack — skill emits `{receipt_id: "FAKE-123", amount_jpy: 100000, platform_api_call: {endpoint: "/v1/me", response_sha256: <real-hash-of-real-me-response>}}`; runner MUST reject at step 1 (allowlist); (ii) skill picks an allowlisted endpoint AND a real response_sha256 from a prior real settlement but with a forged receipt_id in the event row — runner MUST reject at step 3 (field-equality); (iii) the happy path — real settlement, all fields match — runner appends to `earnings.jsonl` | integration-test with platform API stubbed; fixture corpus includes 3 attacks above plus 20 random rejections | **YES** (FIND-015 + ROUND-2-001 fix, INV-13 active half) |
 | **PROP-H1-novelty** | H1 | 1 | `compute_novelty_floor(history, max_apply, 0.1)` returns `min(ceil(0.1 * max_apply), len(untried(catalog, history)))` for any inputs; never throws; never returns negative | property-test | YES |
 
 ## Verification Tiers (CLAUDE.md plugin doctrine)
@@ -118,7 +119,8 @@ INV trust model — not just easy-to-prove invariants:
 7. **PROP-C3-mutation-gate** — INV-10 (FIND-007 was about F2 not C3; C3 stays required)
 8. **PROP-F2-dedup** — Telegram-spam prevention (FIND-007 critical)
 9. **PROP-G2-static** — INV-13 static half (FIND-014 promotion)
-10. **PROP-G2-runtime** — INV-13 active half (FIND-015 fix)
+10. **PROP-G2-runtime** — INV-13 active half (FIND-015 + ROUND-2-001 fix, 3-check pattern)
+11. **PROP-E5-spawn-pin** — spawn-surface immutability (ROUND-2-002 fix; the trust anchor for E1/E2/C3)
 
 All other PROPs are `required: false` in lean mode — they're still tested but failure does not
 block convergence.
@@ -140,8 +142,10 @@ Two seams the daily adversary must verify:
 This feature impacts:
 - `~/anicca/skills/earn/{gig,clip,affiliate,video,bounty}/*` — each slot's runner refactor
 - `~/Library/LaunchAgents/ai.anicca.<slot>-{core,adversary}-healthcheck.plist` × 5 each
-- `~/anicca/skills/_shared/hook-modules-allowlist.txt` (NEW, REQ-A5 seed file)
-- `~/anicca/skills/_shared/adversary-daily-prompt.tmpl` (NEW, REQ-E1 spawn prompt)
+- `~/anicca/skills/_shared/hook-modules-allowlist.txt` (NEW, REQ-A5 seed file, spawn-surface)
+- `~/anicca/skills/_shared/payout-endpoint-allowlist.json` (NEW, REQ-G2 trust anchor, spawn-surface)
+- `~/anicca/skills/_shared/adversary-daily-prompt.tmpl` (NEW, REQ-E1 spawn prompt, spawn-surface)
+- `~/anicca/skills/_shared/spawn-surface.pinned.json` (NEW, REQ-E5 trust anchor — sha256 pins of all 5 spawn-surface files; updated only by tagged commit with `SPAWN-SURFACE-PIN-UPDATE` token in commit body)
 - `~/.openclaw/.env` — needs `TG_BOT_API`, `TG_DAIS_CHAT_ID` (existing convention; REQ-F1)
 
 Any change to a Group-A rule propagates to all 5 slot plists; any change to Group-B (rate table,
