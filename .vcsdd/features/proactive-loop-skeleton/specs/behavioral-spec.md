@@ -419,3 +419,34 @@ zero-side-channel (= REQ-J8 compliant).
   merged into the menu, not the EXECUTION isolation. `bash adversary-daily.sh
   <slot>` (from sprint-1) is still the actual invocation; only the WHEN-TO-FIRE
   decision moved into the menu picker.
+
+## Sprint-2 / Sprint-3 Scope Cut (added 2026-07-01 post-Phase-3 iter-3 adversary)
+
+Phase 3 sprint-2 produced findings across 3 iterations. Cycle-4 fixes the critical surface; deferred items have concrete sprint-3 commitments.
+
+### REQ-H3 enumeration honesty (FIND-2-002 + FIND-3-001 fix)
+
+REQ-H3 issue classes (a)-(g) above INHERIT additional kinds from sprint-1's earn-shared-skeleton REQ-A1..A8:
+
+| sprint-2 kind | sprint-1 inheritance | recipe |
+|---|---|---|
+| api_rate_limit | sprint-1 REQ-A6 | send_keys "/model haiku-4-5" + Enter |
+| backoff | sprint-1 REQ-A8 | escalate_via_bot2bot reason=backoff-cap |
+
+These kinds appear in `health_check_v2.PRIORITY_ORDER` (positions 1 and 4) and `select_fix_recipe` because the sprint-2 `health-check.py --fix` IS the sprint-1 loop-healthcheck callable; the priority order is inherited verbatim from sprint-1 REQ-A.
+
+### Sprint-3 commitments (8 items + iter-1 carry)
+
+| finding | what | sprint-3 commitment |
+|---|---|---|
+| FIND-2-003 + FIND-009 cont. | 3 shell scripts are exit-1 scaffolds | Wire camofox + Gmail OTP (REQ-H3c), firecrawl npmjs + auto-PR (REQ-H3e), git fetch + checkout + verify (REQ-H3(f)). Each exits 0 on success; integration test in tmp sandbox. |
+| FIND-3-003 | proactive-loop STEP 3 doesn't call health-check | Wire `health_check_v2.dispatch_highest_priority(snap)` into proactive-loop-dispatch.py STEP 3. Acceptance: an injected snap that detects tmux_dead causes the dispatcher to invoke the restart recipe. |
+| FIND-3-004 + FIND-2-004 + FIND-015 | EDGE-S1/S3/S6/S7 untested + flock + quota_unknown | Add fixtures: (S1) absent build_log → auto-create; (S3) quota_unknown core-status; (S6) flock concurrent ticks; (S7) min_cadence_seconds respected; flock test concurrent. |
+| FIND-3-005 + FIND-2-013 cont. | count_consecutive_negative_windows untested | Add unit-test fixtures: empty list → 0; all positive → 0; trailing negatives → count; positive in middle resets count. |
+| FIND-2-007 + FIND-003 cont. | novelty formula off-by-one | Replace with formal "novelty pick rate": count picks where the (cat, platform) key was NEW at pick-time across last N picks; property-test for N=10, ratio=0.1. |
+| FIND-2-009 + FIND-016 cont. | _BUDGET_RANK dual-key | Single canonical key + comment on the enum/string conversion seam. |
+| FIND-2-011 + FIND-010 cont. | PROP-P1 declared property-test, ships parametrize | hypothesis-based fuzz that generates 1000 budgets and asserts half-open invariant. |
+| FIND-2-012 + FIND-014/019 cont. | PROP-Q6 AST scanner + PROP-B3 callable detection | Build a static-analysis AST walker scanning for: (a) .dormant.sentinel removals outside the 2 allowed call sites; (b) gh pr merge patterns regardless of function name. |
+| FIND-2-005 | mother-queue boundary at 6/7/8 days | Boundary fixtures at 6 and 8 days alongside the existing 7-day test. |
+
+Cycle-4 in-cycle: FIND-3-001 spec REQ-H3 enumeration (above table); FIND-3-002 scope-cut table (this section); FIND-3-003 STEP 3 wire (proactive-loop-dispatch.py edit); FIND-3-005 count_consecutive test added.

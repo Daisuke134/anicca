@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-3-004",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "medium",
+  "description": "FIND-2-004 still NOT closed at the test-coverage level. Grep across __tests__/test_*.py for the EDGE-Sx identifiers and the supporting symbols: 'EDGE-S1' = 0 hits; 'EDGE-S3' = 0 hits; 'EDGE-S6' = 0 hits; 'EDGE-S7' = 0 hits; 'flock' = 0 hits; 'quota_unknown' = 0 hits; 'initialized' (= EDGE-S1 build_log header marker) = 0 hits. (S1) First-pass build_log.md auto-create with '# <slot> build log — initialized YYYY-MM-DD' header (spec L392-393): no test asserts the header text. (S3) quota source unavailable AND estimated-byte also fails: no test exercises the MINIMAL + status='quota_unknown' fallback path. (S6) concurrent ticks: proactive-loop.sh:18-19 uses 'flock -n 200' for re-entrancy, NO test validates that a second concurrent invocation exits 0 silently. (S7) adversary as menu item with cadence_seconds=86400: test_menu.py has cadence tests but none specifically exercise the adversary-daily integration described in EDGE-S7. The iter-3 manifest claims this is honestly scope-deferred, but per FIND-3-002 the spec contains no scope-cut commitment for this row.",
+  "evidence": {
+    "filePath": "skills/_shared/__tests__/test_proactive_loop.py",
+    "lineRange": "1-73",
+    "snippet": "(grep over the full directory confirms zero occurrences of 'EDGE-S1' | 'EDGE-S3' | 'EDGE-S6' | 'EDGE-S7' | 'flock' | 'quota_unknown' | 'initialized')"
+  },
+  "routeToPhase": "2a"
+}

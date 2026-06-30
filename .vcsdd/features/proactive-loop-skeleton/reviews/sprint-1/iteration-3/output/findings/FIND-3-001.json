@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-3-001",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "high",
+  "description": "FIND-2-002 NOT CLOSED. The cycle-3 fix added an inline comment to health_check_v2.py:13-26 that maps 'api_rate_limit' to 'sprint-1 REQ-A6' and 'backoff' to 'sprint-1 REQ-A8' (= INHERITED). However, the spec under review (behavioral-spec.md) was NOT updated. Grep over behavioral-spec.md for 'api_rate_limit', 'backoff', 'REQ-A6', 'REQ-A8', 'haiku' returns ZERO matches (verified 2026-07-01). REQ-H3 (behavioral-spec.md:139-152) still enumerates only kinds (a)-(g) = {tmux_dead, stale, not_logged_in, trust_dialog, hook_missing, spawn_drift, tmux_server_corrupted}. The production source code's PRIORITY_ORDER list at health_check_v2.py:15-26 contains 10 kinds — 'api_rate_limit' and 'backoff' have NO REQ-XXX backing in this sprint's spec. select_fix_recipe at L102-107 maps 'api_rate_limit' to a '/model haiku-4-5' tmux send-keys action and 'backoff' to 'escalate_via_bot2bot' — neither of which is mentioned in the spec under review. PROP-H3 (required:true) cannot grade these 2 of 10 kinds because the spec has no requirement to grade against. A spec-side comment in code is NOT a spec update.",
+  "evidence": {
+    "filePath": ".vcsdd/features/proactive-loop-skeleton/specs/behavioral-spec.md",
+    "lineRange": "139-152",
+    "snippet": "REQ-H3 Auto-fix dispatch — for each detected issue, ONE of: (a) tmux dead → restart ... (g) tmux_server_corrupted → tmux kill-server then call (a). Issue classes are mutually exclusive by detection priority. (no mention of api_rate_limit / backoff)"
+  },
+  "routeToPhase": "1c"
+}

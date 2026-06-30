@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-3-003",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "high",
+  "description": "REQ-P4 violation discovered during in-cycle audit. behavioral-spec.md:84-86 mandates 'AS STEP 3, THE SYSTEM SHALL invoke health-check.py --fix <slot>'. proactive-loop-dispatch.py:57-62 does NOT invoke health-check.py at all. It writes a status line 'step=3-health-check' (cosmetic), then reads .unfixable.jsonl byte-count to compute 'unfixable_count'. There is no subprocess invocation of health-check.py, no call into lib.health_check_v2.dispatch_highest_priority, no auto-fix path. REQ-P4 was the unifying glue between Group P (proactive loop) and Group H (health check). With STEP 3 a no-op, the entire Group H auto-recovery surface (REQ-H1..H6, including the FIND-2-002 / FIND-3-001 enumeration issue, all PROP-H3 dispatch correctness) is dead code in the production cron path. PROP-P4-health-call (verification-architecture.md:60-61 'integration-test (health-check stubbed)') CANNOT pass against this implementation.",
+  "evidence": {
+    "filePath": "skills/_shared/proactive-loop-dispatch.py",
+    "lineRange": "57-62",
+    "snippet": "    # STEP 3: health-check (placeholder: real --fix in sprint-2 cycle 2)\n    _write_status(slot_dir, slot=slot, status=\"running\", step=\"3-health-check\")\n    unfixable_count = 0\n    unfixable_path = slot_dir / \".unfixable.jsonl\"\n    if unfixable_path.exists():\n        unfixable_count = sum(1 for l in unfixable_path.read_text().splitlines() if l.strip())"
+  },
+  "routeToPhase": "2b"
+}
