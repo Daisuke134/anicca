@@ -1,43 +1,7 @@
 {
-  "fetched_at": 1782862341,
+  "fetched_at": 1782862395,
   "well": "dework",
   "open_bounties": [
-    {
-      "id": "f0cc668b-e19d-454f-8921-bc96808ede1e",
-      "title": "United Wallet Social Engagement & Followers Growth",
-      "reward_usd": 30000000000000.0,
-      "token": "USDT",
-      "network": "Binance Smart Chain",
-      "claim_url": "https://app.dework.xyz/task/f0cc668b-e19d-454f-8921-bc96808ede1e",
-      "source": "dework"
-    },
-    {
-      "id": "37c990a0-3706-474f-aa4e-40eca4872959",
-      "title": "Sub-Reddit Organic Amplification",
-      "reward_usd": 20000000000000.0,
-      "token": "USDT",
-      "network": "Binance Smart Chain",
-      "claim_url": "https://app.dework.xyz/task/37c990a0-3706-474f-aa4e-40eca4872959",
-      "source": "dework"
-    },
-    {
-      "id": "832f59b2-1d58-4bc6-a430-4c9712d259ab",
-      "title": "@essi_L",
-      "reward_usd": 10000000.0,
-      "token": "USDC",
-      "network": "Ethereum Mainnet",
-      "claim_url": "https://app.dework.xyz/task/832f59b2-1d58-4bc6-a430-4c9712d259ab",
-      "source": "dework"
-    },
-    {
-      "id": "04214e05-763a-4b89-ab7b-8446934b421d",
-      "title": "@zenbastiam",
-      "reward_usd": 100000.0,
-      "token": "USDC",
-      "network": "Ethereum Mainnet",
-      "claim_url": "https://app.dework.xyz/task/04214e05-763a-4b89-ab7b-8446934b421d",
-      "source": "dework"
-    },
     {
       "id": "8da59a31-14f2-4bb6-9f70-804e6d61cef6",
       "title": "Culture Development & Strategy Leader 2025- May",
@@ -300,6 +264,15 @@
       "source": "dework"
     },
     {
+      "id": "f20900ca-107b-4006-9c3f-7303bc4204e5",
+      "title": "[Educational Graphic] NodeShift Whitepaper",
+      "reward_usd": 25.0,
+      "token": "USDC",
+      "network": "Polygon Mainnet",
+      "claim_url": "https://app.dework.xyz/task/f20900ca-107b-4006-9c3f-7303bc4204e5",
+      "source": "dework"
+    },
+    {
       "id": "04d7b934-0ac8-4b85-865d-837063f67760",
       "title": "\u65b0\u4eba\u4efb\u52a1\ud83c\udf81 \u5206\u4eab 2 \u4e2a\u7092\u5e01\u4ed8\u8d39\u8bfe\u7a0b\u4e0e\u63a8\u8350\u539f\u56e0",
       "reward_usd": 25.0,
@@ -315,15 +288,6 @@
       "token": "USDC",
       "network": "Ethereum Mainnet",
       "claim_url": "https://app.dework.xyz/task/6036bd70-c44e-438c-be16-e8cb0b56b6f6",
-      "source": "dework"
-    },
-    {
-      "id": "f20900ca-107b-4006-9c3f-7303bc4204e5",
-      "title": "[Educational Graphic] NodeShift Whitepaper",
-      "reward_usd": 20.0,
-      "token": "USDC",
-      "network": "Polygon Mainnet",
-      "claim_url": "https://app.dework.xyz/task/f20900ca-107b-4006-9c3f-7303bc4204e5",
       "source": "dework"
     },
     {

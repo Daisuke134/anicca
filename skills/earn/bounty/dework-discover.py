@@ -72,6 +72,12 @@ def main():
             continue  # structural spam, not a real task
         r = cr[0]
         tok = (r.get("token") or {})
+        amt = usd(r)
+        # Sanity cap: Dework is full of junk tasks with absurd fake rewards ($30T USDT) and DAO
+        # role-listings; a real discrete agent-doable bounty is small. Drop fake-huge (>$5000) and
+        # keep the realistic band. The MODEL still makes the final legit/doable call on survivors.
+        if amt is not None and amt > 5000:
+            continue
         cands.append({
             "id": t.get("id"),
             "title": name[:120],
