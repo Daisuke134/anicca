@@ -1,0 +1,64 @@
+{
+  "sprintNumber": 0,
+  "feature": "earn-shared-skeleton",
+  "overallVerdict": "PASS",
+  "timestamp": "2026-07-01T00:00:00Z",
+  "iteration": 6,
+  "reviewContext": {
+    "reviewType": "spec",
+    "phase": "1c",
+    "mode": "lean"
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": ".vcsdd/features/earn-shared-skeleton/specs/behavioral-spec.md",
+          "description": "ROUND-5-001 CLOSED: REQ-E5 trust-anchor section (lines 383-423) was fully rewritten. Pubkey is now read from `~/anicca/skills/_shared/anicca-bot.pub` (line 390, 402), a framework-shipped ed25519 raw 32-byte file, base64-encoded. The private half is named as a GitHub Actions secret in the `Daisuke134/anicca` CI pipeline (line 393-394). No macOS Keychain entry. No Touch ID gesture. The only surviving mentions of 'Touch ID', 'Keychain', 'Dais signing' are in explicitly negative contexts: line 422 ('No Touch ID, no `dais` identity, no human gesture'); line 461 ('v7 ROUND-5-001 removal of human Touch ID'); line 468 in the F1 design-violation acknowledgement of v1-v5. Grep for `security find-generic-password` / `security add-generic-password` / `anicca-trust-anchor-pubkey` returns ZERO non-negative matches across both spec files."
+        },
+        {
+          "type": "file",
+          "location": ".vcsdd/features/earn-shared-skeleton/specs/behavioral-spec.md",
+          "description": "ROUND-5-002 CLOSED: REQ-B6 (line 256-260) now calls `self-recover.sh <slot> token-source-degraded \"<ratio>\"` which dispatches to REQ-J9 (no Telegram, no 'human review' parenthetical). EDGE-10 (lines 927-931, marked 'REWRITTEN v7') is the in-progress lock check on `~/loops/self-recover-log.jsonl` with no Telegram POST. REQ-F1 step 6 (line 495-499) explicitly BANS Telegram bots, `escalation`/`needs-`/`human` labels, iCloud writes, and macOS notifications. REQ-J8 (line 777-791) is a hard invariant enforced by adversary-daily static analysis. All surviving 'Telegram'/'escalate.sh' tokens in both spec files are in NEGATIVE contexts: behavioral-spec.md line 468/474/475/495 = the v1-v5-violation acknowledgement and the explicit bans; line 780 = blocklist host; verification-architecture.md line 53/84/87/91/126/163 = negative ('NO telegram/slack/etc', 'no human-touch surfaces fire', 'ZERO Telegram POSTs', 'no Telegram exists to spam', 'REMOVED v7')."
+        },
+        {
+          "type": "file",
+          "location": ".vcsdd/features/earn-shared-skeleton/specs/behavioral-spec.md",
+          "description": "ROUND-5-003 CLOSED (3 sub-items): (i) REQ-J3 (lines 657-668) inlines the literal JSON schema for `trusted-authors.json` with `schema_version`, `trusted_npm_authors`, `trusted_org_namespaces`, `min_weekly_downloads`, `min_publish_age_days`, `deny_pattern_substrings`. Push-fail semantics (line 677-680) name retry-3x-exp-backoff + MOTHER fallback for terminal push failure. (ii) REQ-J4 (lines 688-707) is now a deterministic 4-rung ladder with concrete model IDs: claude-opus-4-8 → claude-opus-4-8 --effort high → spec-split-per-EARS-section → scope-defer to `out-of-scope.jsonl`. The 'next-stronger' hand-wave is gone. (iii) REQ-J7 (lines 752-760) names concrete artifacts: `~/anicca/services/mother/mother-poll.sh` + `mother-prompt.tmpl` + `mother-spawn.sh` + `ai.anicca.mother-poll.plist` (StartInterval 600s). Bootstrap is self-starting from inside the REQ-J7 dispatcher via `mother-spawn.sh`, removing the 'out of MVP scope' deferral that iter-5 flagged. verification-architecture.md CoDD section (lines 159-162) lists each new MOTHER file in the downstream-impact set."
+        }
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": ".vcsdd/features/earn-shared-skeleton/specs/verification-architecture.md",
+          "description": "PROP-E5-spawn-pin (line 87) was fully rewritten for v7. Layer 1 (a1) reads pubkey from `~/anicca/skills/_shared/anicca-bot.pub`, NOT from a keychain; (a2) verifies via `openssl pkeyutl -verify` OR `nacl.signing`; (a3) declares `anicca-bot.pub` + `pinned.json` are BOTH in the spawn-surface set with self-reference. The fixture corpus includes (f-xi) 'anicca-bot.pub deleted → self-recover→J2 (NOT keychain entry; v7 fix)' and (f-xii) 'pinned.json self-sha drift'. The integration test EXPLICITLY asserts ZERO calls to `security find-generic-password`, ZERO Telegram POSTs, ZERO gh-issue creates with escalation-class labels — these are codified as regression checks of the v7 NO HUMAN invariant. PROP-E2 (line 84) was rewritten: round-5 dispatch now calls `self-recover.sh ... adversary-stalled <sha>` and the integration test asserts no human-touch surfaces fire. PROP-G2-static (line 91) routes indirect cases to MOTHER (REQ-J7) instead of human review."
+        },
+        {
+          "type": "file",
+          "location": ".vcsdd/features/earn-shared-skeleton/specs/verification-architecture.md",
+          "description": "CoDD downstream-impact list (lines 150-163) added `anicca-bot.pub`, `mother-poll.sh`, `mother-spawn.sh`, `mother-prompt.tmpl`, `ai.anicca.mother-poll.plist` and explicitly states 'REMOVED v7: no Telegram env vars, no Slack webhooks, no Twilio creds, no Touch ID Keychain entries'. The required-set for lean convergence (line 113-134) retains PROP-A-classify, PROP-A-oauth, PROP-A-hook-allowlist, PROP-B2/B4, PROP-C1/C3, PROP-F2, PROP-G2-static, PROP-G2-runtime, PROP-E5-spawn-pin, PROP-I1/I2 — covering security, dimensional correctness, INV trust model, and output-quality gates. The PROP-F2 entry explicitly notes 'v7: no Telegram exists to spam — this is duplicate-handler-fire prevention in self-recover-log.jsonl', reflecting the new semantics without dropping the invariant."
+        },
+        {
+          "type": "file",
+          "location": ".vcsdd/features/earn-shared-skeleton/specs/behavioral-spec.md",
+          "description": "Predicted-new-gap probe (manifest extraConstraints d/e): (a) anicca-bot CI key SPOF: lines 393-394 + 414-417 + 750 acknowledge the private key lives ONLY in a single GitHub Actions secret. While the spec does not label this as a 'single point of failure' explicitly, it IS named concretely and accessible to a future hardening sprint (key-rotation / threshold-sig). Not a critical gap. (b) MOTHER livelock when both instances degraded: REQ-J5 (b)+(c) does `git pull origin main` which picks up any meta-recovery patches authored by other MOTHERs in the swarm, and REQ-J7's self-starting bootstrap means at least one MOTHER per host is guaranteed at first failure. Honest residual risk: a single-host single-MOTHER outage cannot self-rescue, but this is acknowledged via the 'routed to MOTHER queue' path that any peer instance pulling main can service. (c) REQ-J9 4x penalty: when all sources fail, the kill-switch fires faster and `loop.disabled` is written — honest 7-day deferral via path (d). (d) REQ-J8 blocklist completeness: covers Telegram/Slack/Pushover/ntfy/Twilio/MessageBird + extension via `human-notification-blocklist.json`, but does NOT explicitly enumerate Discord/Matrix/IRC/XMPP/FCM/APN, and is a denylist not an allowlist. This is a real but non-critical gap — the extension file provides escape, and adversary-daily static analysis will catch any new POST host at next nightly review. Decision: not a Phase-1c blocker; flag for Phase 3 hardening sprint."
+        }
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 0,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}
