@@ -7,7 +7,7 @@ INDEPENDENT every-day loop (NOT a one-picker slot), built exactly like the prove
 ## The mechanism (this is what runs — NOT run.sh)
 | piece | file | role |
 |---|---|---|
-| CORE | `gig-cli.sh` | claude-p tmux session; registers cron `27 * * * *`; each pass drives the CloakBrowser daily-driver (CDP :9222) as **mtdc** per the runbook: INBOX (talk-room reply / 仮払い→納品 / 検収→評価) OR APPLY (scan 公開依頼 → tailored proposal + sample → 応募する) OR TRACK #5121769 |
+| CORE | `gig-cli.sh` | claude-p tmux session; registers cron `27 * * * *`; each pass runs the 5-behavior self-improving loop (see below) |
 | HEALTHCHECK | `gig-healthcheck.sh` + `launchd/ai.anicca.gig-core-healthcheck.plist` | launchd 5-min; restart the core if the tmux session dies |
 | MONITOR | `monitor.sh` | read-only status: applied + ¥ earned ledger (settled-status + evidence only) |
 | MAIN-LOOP ENTRY | `run.sh` | the main loop resolves earn/gig → run.sh; it ensures the core is alive + reports ¥ status (NO USDC). The real earning is the core. |
@@ -17,6 +17,21 @@ INDEPENDENT every-day loop (NOT a one-picker slot), built exactly like the prove
 ¥ settles to Dais's KYC'd Coconala account "mtdc" → MUFG. There is NO USDC / wallet / record-earn
 in this loop. A ¥ earn is recorded ONLY by the core to `~/gig/earnings.jsonl` when Coconala UI
 actually shows 検収/支払 (real side-effect). The only human element is Dais's one-time account/KYC.
+
+## 5-behavior self-improving loop (added 2026-06-30)
+
+Each hourly pass runs in priority order:
+
+| Step | Behavior | Ledger written |
+|------|----------|---------------|
+| B1 | **NURTURE ALL**: sweep every active talk-room; reply / 納品 / 評価依頼 | `applied.jsonl` (status: replied/delivered/評価依頼) |
+| B2 | **APPLY BROADLY**: up to `strategy.max_apply_per_pass` new requests per pass, guided by `strategy.json` categories + templates; deduped via `applied.jsonl` requestIds | `applied.jsonl` (status: applied) |
+| B3 | **LEARN**: outcome events (accepted/rejected/needs_human/…) → `~/gig/lessons.jsonl` | `lessons.jsonl` |
+| B4 | **SELF-IMPROVE** (every N passes): read lessons + peer GitHub issues → update `~/gig/strategy.json` (priorities, skip_categories, templates, prices) | `strategy.json` |
+| B5 | **BOT-TO-BOT** (with B4): post `[gig-lesson]` GitHub issue on notable lesson; read recent peer issues; dedup via `~/gig/shared-lessons.jsonl` | `shared-lessons.jsonl` |
+
+Strategy seeded from `strategy.default.json` → `~/gig/strategy.json` on first pass.  
+Improve step cadence: `strategy.improve_cadence_passes` (default 4 = every ~4h).
 
 ## How to run / register
 ```bash
