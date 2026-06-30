@@ -1,0 +1,22 @@
+new-feature-tests: FAIL
+regression-baseline: PASS
+total-test-modules: 7
+total-tests-defined: ~50
+collection-errors: 6
+
+# new-feature-tests: FAIL — 6 test modules fail at import (lib.proactive_loop,
+#   lib.build_log, lib.quota_tracker, lib.menu, lib.health_check_v2, lib.bot2bot
+#   don't exist yet). test_anti_human_v2.py uses skip-when-file-missing pattern
+#   so it can run before Phase 2b creates the sprint-2 lib files.
+#
+# regression-baseline: PASS — sprint-1's 142 tests in the same __tests__/ dir
+#   continue to pass unaffected by the new sprint-2 test additions.
+#
+# Test → PROP mapping (Sprint-2 required:true PROPs covered):
+#   test_quota_tracker_v2.py → PROP-P1 + Q3 + Q3d + Q3e + Q5 + Q6
+#   test_menu.py             → PROP-P7 + M3 + cadence + blocker-gate + novelty-key-aligned
+#   test_health_check_v2.py  → PROP-H3 (multi-match) + H6 (no-human-touch)
+#   test_bot2bot.py          → PROP-B3-annotate (no auto-merge!) + B4
+#   test_anti_human_v2.py    → PROP-J8 + J8a (re-asserts sprint-1 invariant on sprint-2 files)
+#   test_proactive_loop.py   → PROP-P11 + EDGE-S4-sink
+#   test_build_log.py        → PROP-M1 + M2 + M4
