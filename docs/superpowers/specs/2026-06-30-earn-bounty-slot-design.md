@@ -49,3 +49,10 @@ merge" game. Stripe-KYC is the withdrawal gate (one-time). This is the realest a
 - TODO-3: bounty-cli core + healthcheck (daily attempt + track), like clip/affiliate.
 - TODO-4: track to MERGE → payout → record-earn (multi-day; the loop monitors).
 DONE = a gate-passed bounty PR merged + payout recorded. "PR opened" ≠ done; "merged + paid" = done.
+
+## UPDATE 2026-06-30: GATE implemented + verified (TODO-1 done)
+run.sh `gate` mode does (a) funder-not-withdrawn (b) no-existing-PR (c) real-repo≥50★ + excludes
+test/throwaway/farm repos. VERIFIED: top-25 open Algora bounties → only **1** passes (Scottcjn/Rustchain
+#2239, 460★). Reality: the genuinely fresh×uncontested×real intersection is ~1 right now. NEXT (TODO-2):
+deep-verify that survivor is REAL money (not a Clanker/token farm) + agent-doable, then /attempt + PR; if
+fake/blocked, report honestly (like drizzle) — never force.
