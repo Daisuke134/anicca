@@ -27,22 +27,23 @@ def rows(f):
                 try: out.append(json.loads(l))
                 except: pass
     return out
-applied=[r for r in rows("applied.jsonl")]
+all_rows=rows("applied.jsonl")
+applied=[r for r in all_rows if r.get("status")=="applied"]  # FIND-006: align with run/monitor
 SETTLED={"検収","支払","検収完了","completed","paid"}
-earned=[r for r in rows("earnings.jsonl") if r.get("status") in SETTLED and r.get("evidence")]
+earned=[r for r in rows("earnings.jsonl") if r.get("status") in SETTLED and r.get("evidence") and float(r.get("jpy",0) or 0)>0]
 jpy=sum(float(r.get("jpy",0) or 0) for r in earned)
 hb_age=int((time.time()-os.path.getmtime(HB))/60) if os.path.exists(HB) else None
 # last audit for deltas
 prev=rows("audit.jsonl")
-prev_applied=prev[-1].get("applied_total") if prev else 0
-applied_delta=len(applied)-(prev_applied or 0)
+prev_actions=prev[-1].get("actions_total") if prev else 0
+applied_delta=len(all_rows)-(prev_actions or 0)
 # verdict
 if not alive: verdict="DEAD (tmux gone — healthcheck should restart)"
 elif hb_age is None: verdict="NO_HEARTBEAT (no pass yet)"
 elif hb_age>=90: verdict="STALE (no pass in %dmin — in-session cron likely stopped; healthcheck should restart)"%hb_age
 else: verdict="FIRING (last pass %dmin ago)"%hb_age
 row={"ts":int(time.time()),"verdict":verdict,"core_alive":alive,"heartbeat_age_min":hb_age,
-     "applied_total":len(applied),"applied_delta_since_last_audit":applied_delta,
+     "applied_total":len(applied),"actions_total":len(all_rows),"applied_delta_since_last_audit":applied_delta,
      "earn_rows":len(earned),"jpy_earned":round(jpy,0),
      "progressing": applied_delta>0 or jpy>0}
 os.makedirs(G,exist_ok=True)

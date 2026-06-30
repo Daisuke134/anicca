@@ -32,7 +32,7 @@ def rows(f):
     return out
 applied=[r for r in rows("applied.jsonl") if r.get("status")=="applied"]
 SETTLED={"検収","支払","検収完了","completed","paid"}
-earned=[r for r in rows("earnings.jsonl") if r.get("status") in SETTLED and r.get("evidence")]
+earned=[r for r in rows("earnings.jsonl") if r.get("status") in SETTLED and r.get("evidence") and float(r.get("jpy",0) or 0)>0]
 jpy=sum(float(r.get("jpy",0) or 0) for r in earned)
 print(json.dumps({"wallet":None,"source":"gig","task":"supervise","funding":"human(¥→MUFG)",
   "earn_usdc":0,"cost_usdc":0,"jpy_earned":round(jpy,0),"applied_total":len(applied),

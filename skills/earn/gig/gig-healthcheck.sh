@@ -15,8 +15,13 @@ restart(){ echo "$(date '+%F %T') $1 → restarting" >> "$LOG"; bash "$HOME/anic
 
 if ! tmux -S "$SOCK" has-session -t "$SESSION" 2>/dev/null; then
   restart "gig-core DEAD"
-elif [ -f "$HB" ] && [ "$(( ($(date +%s) - $(stat -f %m "$HB" 2>/dev/null || echo 0)) / 60 ))" -gt "$STALE_MIN" ]; then
-  restart "gig-core STALE (no pass in >${STALE_MIN}min; in-session cron likely stopped)"
+elif [ ! -f "$HB" ]; then
+  # FIND-001: alive but NO heartbeat = core started but never ran a pass (cron never registered/hung).
+  # gig-cli seeds the heartbeat at startup, so a missing file means it never really booted → restart.
+  restart "gig-core ALIVE but NO heartbeat (never fired)"
+elif [ "$(( ($(date +%s) - $(stat -f %m "$HB" 2>/dev/null || echo 0)) / 60 ))" -ge "$STALE_MIN" ]; then
+  # FIND-005: -ge to match auditor's >=90 threshold exactly
+  restart "gig-core STALE (no pass in >=${STALE_MIN}min; in-session cron likely stopped)"
 else
   echo "$(date '+%F %T') gig-core ALIVE+fresh" >> "$LOG"
 fi
