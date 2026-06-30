@@ -224,3 +224,16 @@ Build a TOOL not a strategy (model decides edge), mirroring hl-trade: data=Prede
 
 ## ★ HERMES borrow (2026-07-01) — self-registering skills ★
 Copy Hermes's `blueprint:{schedule,prompt,deliver}` SKILL.md frontmatter = a skill that registers itself as a recurring loop (the GLVS "Loop" step, zero human). Trigger to auto-create a NEW earn skill = ONLY after a verified real payout from a repeatable opportunity (not Hermes's unverified "5 tool-calls" heuristic). Adversary = the real verification gate (a SKILL.md "Verification" section earns nothing).
+
+## ★ BOUNTY PIVOT (2026-07-01, Dais) — drop GitHub-coupled, go wallet-native crypto ★
+Verified this session: Frantic's earn LOOP works E2E (enlist→deliver→auto-review PASS, public receipts) BUT the
+cash path (runx registry publish) needs GitHub OAuth. We CAN self-create an AI-owned GitHub (`anicca-earn`,
+email-only, no CAPTCHA/phone, github.com/anicca-earn=200) — but a BRAND-NEW GitHub account is blocked from
+authorizing 3rd-party OAuth apps ("You can't perform that action at this time" = new-account anti-abuse cooldown).
+Forcing/faking the disabled Authorize button = server-side reject + account-flag risk → not done.
+DECISION (Dais): ABANDON GitHub-coupled bounties (Frantic/Algora/OnlyDust). The bounty slot's well = **wallet-native
+crypto bounties that need NO GitHub** (identity = our wallet or a self-creatable Farcaster/web handle), real (not
+ClawTasks/scam), with open inventory. Candidates under live-verification: Bountycaster (Farcaster, USDC/ETH/DEGEN),
+Dework (DAO tasks, wallet), Questbook (wallet grants), LaborX/abillio (already known crypto payout). The bounty
+`run.sh` discover source is being re-pointed at the verified wallet-native well(s). Learn: AI-owned GitHub creation
+is feasible (no human) but a fresh account can't OAuth same-day — so GitHub-gated rails are a poor no-human fit.
