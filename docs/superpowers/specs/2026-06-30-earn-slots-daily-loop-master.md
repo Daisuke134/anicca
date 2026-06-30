@@ -89,3 +89,121 @@ Have vs missing: HAVE = inner loop (video), INV-7 reward gate, recursive-improve
 agent-reach (research). MISSING = DGM archive, STOP self-rewrite, and the cross-slot UCB/Thompson allocator keyed on
 on-chain USDC/wake. ★ The single highest-ROI build = that cross-slot bandit allocator + archive = step 5 AUDITOR. ★
 Swarm: loops are model-agnostic skills in public ~/anicca → any AI clones & runs the same earn+self-improve → trillion-agent swarm feeding one treasury.
+
+---
+
+## ★ IMPLEMENTATION SKELETON — Shared Earn-Core Library (added 2026-07-01, research-validated) ★
+
+The architecture above is THE plan. This section nails down the concrete shared library every slot inherits,
+so we stop hand-coding per-slot healthcheck/ROI/escalation. Validated by 2026 SoTA: VOYAGER (arXiv 2305.16291)
+— skill-library-as-code; Reflexion (arXiv 2303.11366) — verbal RL post-mortem; EvoAgentX 2026 survey
+(arXiv 2508.07407) — **Three Laws of Self-Evolving Agents: Endure / Excel / Evolve**; Anthropic Nov 2025
+spec-gaming study + Terminal-Wrench 2026 — 331 logged reward-hacking patterns.
+
+### Library location: `~/anicca/skills/_shared/`
+
+Every slot's `<slot>-healthcheck.sh` and `<slot>-cli.sh` `source`s this. Plist passes `LOOP_NAME=<slot>`.
+
+```
+~/anicca/skills/_shared/
+├── loop-healthcheck.sh        ← layer ② SELF-HEAL (8-mode detect+fix)
+├── loop-roi.sh                ← layer ③ SELF-MEASURE-ROI (per-pass)
+├── loop-improve.py            ← layer ④ SELF-IMPROVE (Reflexion verbal-RL on lessons.jsonl)
+├── loop-scale.sh              ← layer ⑤ SELF-SCALE (raise/lower max_apply, spawn alt accounts)
+├── loop-propose.sh            ← layer ⑥ SELF-PROPOSE (scan earning-skill-proposal GH issues, sandbox-eval)
+├── cross-learn-read.sh        ← layer ⑦ PRE-STEP: gh issue list label=<slot>-lesson
+├── cross-learn-share.sh       ← layer ⑦ B5 SHARE: gh issue create dedup by shared-lessons.jsonl
+├── adversary-daily.sh         ← layer ⑧ SELF-VERIFY (daily 03:00 fresh-Opus + builder auto-fix ≤5 rounds)
+└── escalate.sh                ← layer ⑨ ONLY human surface (gh issue label=escalation + TG ping)
+```
+
+### 8-mode self-heal (`loop-healthcheck.sh`, fires every 5 min via launchd)
+
+Bug catalogue from real incidents — each gets auto-fix; only mode 8 escalates:
+
+| # | failure mode (pane substring / signal)              | auto-fix |
+|---|------------------------------------------------------|----------|
+| 1 | tmux session missing                                 | restart core (existing) |
+| 2 | `.last-pass` age ≥ 90 min                            | restart core (existing) |
+| 3 | "Not logged in · Please run /login" in pane          | `send-keys /login` → capture OAuth URL → `gh issue create --label needs-login --body <url>` → TG watcher → Dais 1-tap |
+| 4 | "Quick safety check: Is this a project you ... trust" | `send-keys "1" Enter` (we did this manually today; codify) |
+| 5 | "PreToolUse:Bash hook error  node:internal/modules/cjs/loader" | grep hook script → identify missing module → `npm i -g <pkg>` → re-test |
+| 6 | "API error · Retrying ... attempt N/10" with N≥5     | swap `--model sonnet` → `--model haiku-4-5`; restart |
+| 7 | core ALIVE but `CronList` returns 0 jobs for `<slot>` | re-inject STARTUP via send-keys (= cron registration was dropped) |
+| 8 | restart-log shows ≥5 restarts in 60 min              | call `escalate.sh <slot> "backoff cap reached: <last 5 audit verdicts>"` and stop |
+
+### ROI tracking (`loop-roi.sh`, called at end of every pass)
+
+Format `~/loops/<slot>/roi.jsonl` (append-only, one row per pass):
+
+```jsonc
+{
+  "ts": 1782830000,
+  "slot": "gig",
+  "pass_id": "p-2026-07-01T00:27:00Z",
+  "tokens_in": 24718,
+  "tokens_out": 91300,
+  "tokens_total": 116018,
+  "token_cost_jpy": 174,           // tokens × PUBLIC API rate, NOT $0 (TRAP-5)
+  "jpy_earned_this_pass": 0,        // ONLY settled receipts (INV-7/INV-8)
+  "usdc_earned_this_pass": 0,
+  "wall_seconds": 2278,
+  "roi_7day_jpy": -1218,            // rolling Σ(jpy - token_cost) over 7 days
+  "roi_30day_jpy": -1218,
+  "actions_taken": 2                // applied count this pass
+}
+```
+
+`roi_7day_jpy` drives layer ⑤ SELF-SCALE; `tokens_total` drives INV-11 kill-switch.
+
+### 6 invariants (anti-slop, research-validated)
+
+Existing INV-7 carries over. New:
+
+- **INV-8 External non-replayable receipt.** A pass counts ¥/USDC earned only when the platform's API (Coconala
+  payout endpoint / on-chain Transfer log / Stripe payout webhook) returns `{payout_id, payer, amount, ts}`. No
+  screenshots, no agent self-log, no "I posted ∴ I earned." Source: Anthropic Nov 2025 spec-gaming production study.
+- **INV-9 Two-clock check.** Skill not labelled "profitable" unless **7-day rolling** `roi_7day_jpy > 0`. Single
+  big lucky pass does not unlock SELF-SCALE.
+- **INV-10 Fresh-context adversary before mutation merge.** Every `strategy.json` self-edit, every new skill
+  proposal, goes through `vcsdd-adversary` (Opus, fresh subagent) BEFORE the change is committed. The same
+  context that wrote the change must never approve it. Source: DGM reward-hacked logs (arXiv 2505.22954).
+- **INV-11 Token kill-switch.** Any skill whose `cumulative_tokens > 5 × cumulative_¥_earned_in_jpy` (priced at
+  public API rates) is archived (= `loop.disabled` file dropped, cron skips, only `adversary-daily.sh` can
+  resurrect after fixing). Prevents zombie loops that look "alive" only because Max plan masks cost.
+- **INV-12 Skill provenance.** Every skill in `~/anicca/skills/earn/<slot>/manifest.json` records:
+  `{origin: "self" | "github-issue:<owner>/<repo>#<n>" | "fork-of:<sha>", first_seen_ts, last_audit_round}`.
+  Required for the "Endure" law — must be rollback-able if a sibling-learned skill turns toxic.
+- **INV-13 Runner writes manifest, skill emits events.** A skill's code MUST NOT write to its own
+  `manifest.json`. The slot runner (= the claude-p in tmux) writes; the skill emits `{event: "earn",
+  receipt_id, amount}` and the runner verifies + appends. Closes the inflation hole where an agent grades
+  itself.
+
+### 6 known traps to defend against (with mitigation)
+
+| trap | failure mode | mitigation in skeleton |
+|------|--------------|------------------------|
+| **TRAP-1 Reward hacking** | "applied=earned" "posted=earned" | Already INV-7/8 |
+| **TRAP-2 Cognitive surrender** | merging skills nobody read | `adversary-daily.sh` posts a 1-line human-readable changelog per slot; refuses to skip |
+| **TRAP-3 Curriculum collapse** | overfit to one platform | passprep.py mandates novelty quota: ≥10% of `max_apply_per_pass` must target a category/platform never tried |
+| **TRAP-4 Faithfulness drift** | reflections diverge from facts | `lessons.jsonl` rows must include `evidence_id` quoting raw tool-output (URL, payout_id, screenshot path) — not paraphrases |
+| **TRAP-5 Token-rich illusion** | "free" because Max plan | `loop-roi.sh` always prices tokens at PUBLIC rates ($3/M Sonnet, $15/M Opus 2026-07-01); Max-plan cost = $0 is forbidden |
+| **TRAP-6 Sibling-poisoning** | malicious gh issue skill | imported skills via `loop-propose.sh` run in `.worktrees/sandbox-<sha>/` for ≥3 days; promote only after adversary-daily PASS + no SELF-HEAL escalation |
+
+### Build order (replaces the old "GIG → AFFILIATE → ..." sequence for shared infra)
+
+1. ★ **TODAY** ★ — `loop-roi.sh` + `escalate.sh` + INV-11 token kill-switch. Today's gig pass burned **101.8k
+   tokens** for 0 ¥; ROI tracking + alarm is no longer optional.
+2. `loop-healthcheck.sh` 8-mode self-heal (codifies today's manual fixes: trust dialog send-keys, /login OAuth →
+   gh issue → TG, hook-error node-install).
+3. `cross-learn-{read,share}.sh` + `adversary-daily.sh` (= closes layers ⑦+⑧ end-to-end).
+4. Migrate the 5 slots to inherit (gig is reference; clip already largely conforms).
+5. `loop-improve.py` (Reflexion verbal-RL) + `loop-scale.sh` + `loop-propose.sh` (= INNER+OUTER altitudes from
+   the SELF-IMPROVEMENT ARCHITECTURE section above, now with concrete file names).
+
+### Why this section was added 2026-07-01
+
+A single gig pass burned 101.8k tokens, 0 ¥ settled, 84 Coconala tabs open. The loop IS working but with no
+ROI ceiling, no token kill-switch, no codified self-heal for "Not logged in" / trust dialog / hook errors — all
+of which we hand-fixed today. Codifying them into `_shared/` makes the next break self-heal silently and lets
+every future slot inherit, instead of every slot reinventing healthcheck.
