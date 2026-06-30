@@ -107,3 +107,9 @@
 {"timestamp":"2026-06-30T22:59:37.425Z","event":"sprint_started","featureName":"proactive-step6-act","sprintNumber":1,"phase":"2a"}
 {"timestamp":"2026-06-30T22:59:46.826Z","event":"phase_transition","featureName":"proactive-step6-act","from":"2a","to":"2b","iteration":1,"phase":"2b"}
 {"timestamp":"2026-06-30T22:59:46.884Z","event":"phase_transition","featureName":"proactive-step6-act","from":"2b","to":"2c","iteration":1,"phase":"2c"}
+{"timestamp":"2026-06-30T23:07:17.944Z","event":"gate_recorded","featureName":"proactive-step6-act","phase":"3","verdict":"PASS","reviewedBy":"adversary"}
+{"timestamp":"2026-06-30T23:07:17.946Z","event":"phase_transition","featureName":"proactive-step6-act","from":"2c","to":"3","iteration":1,"phase":"3"}
+{"timestamp":"2026-06-30T23:07:17.948Z","event":"phase_transition","featureName":"proactive-step6-act","from":"3","to":"5","iteration":1,"phase":"5"}
+{"timestamp":"2026-06-30T23:08:44.791Z","event":"phase_transition","featureName":"proactive-step6-act","from":"5","to":"6","iteration":1,"phase":"6"}
+{"timestamp":"2026-06-30T23:08:44.792Z","event":"gate_recorded","featureName":"proactive-step6-act","phase":"6","verdict":"PASS","reviewedBy":"verifier"}
+{"timestamp":"2026-06-30T23:08:44.796Z","event":"phase_transition","featureName":"proactive-step6-act","from":"6","to":"complete","iteration":1,"phase":"complete"}
