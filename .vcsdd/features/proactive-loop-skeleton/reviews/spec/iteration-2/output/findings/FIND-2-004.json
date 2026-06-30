@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-2-004",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "medium",
+  "description": "PROP-P11-skip asserts 'iff one of 4 conditions hold; the 4 are enumerable' but the v2 REQ-P11 enumerates only 3 conditions (a, b, c). Iter-1 FIND-011 said either add a 5th condition or fold it in. v2 went the other direction (removed presenter-mode sentinel per FIND-013 fix) so the actual count is now 3, not 4. PROP-P11 was not adjusted. A unit-test that asserts exactly-4 enumerable conditions will fail or be tuned around the spec. The number must be aligned (PROP says 3 and matches REQ).",
+  "evidence": {
+    "filePath": ".vcsdd/features/proactive-loop-skeleton/specs/verification-architecture.md",
+    "lineRange": "79",
+    "snippet": "PROP-P11-skip | P11 | 0 | proactive-loop exits without running step 6 iff one of 4 conditions hold; the 4 are enumerable ... vs behavioral-spec.md line 110-120: REQ-P11 enumerates only (a) budget=MINIMAL+no-tasks, (b) .dormant.sentinel, (c) ≥3 H3-unfixable cascading failure"
+  },
+  "routeToPhase": "1a"
+}

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-2-003",
+  "dimension": "verification_readiness",
+  "category": "test_coverage",
+  "severity": "high",
+  "description": "REQ-Q3 fix added 5 measurement-seam sub-levels (a-e) to close FIND-002, but PROP-Q3-fallback only gates sub-level (c) ('2x penalty AND emits token_source=\"estimated\"'). No PROP covers sub-level (d) — the running ratio Σ estimated / Σ all > 0.5 over last 100 rows → 4× escalation, or sub-level (e) — 7-day persistent degradation → append row to ~/anicca/state/mother-recovery-queue.jsonl. The 4× escalation and the mother-recovery-queue appender are exactly the sprint-1 REQ-J9 semantics whose absence triggered FIND-002 critical. FIND-002 is therefore only structurally closed (REQ language added) but not verification-closed (no proof obligation). The required-set for lean convergence does not include any PROP for Q3 sub-levels d/e. The recovery-queue write path is also security-sensitive (cross-instance hand-off surface) and ships untested.",
+  "evidence": {
+    "filePath": ".vcsdd/features/proactive-loop-skeleton/specs/verification-architecture.md",
+    "lineRange": "84",
+    "snippet": "PROP-Q3-fallback | Q3 | 0 | when usage source unavailable, fallback estimate uses 2× penalty AND emits token_source=\"estimated\" | unit-test | YES — no companion PROP covers REQ-Q3(d) 4× escalation or REQ-Q3(e) 7-day mother-recovery-queue.jsonl appender"
+  },
+  "routeToPhase": "1b"
+}

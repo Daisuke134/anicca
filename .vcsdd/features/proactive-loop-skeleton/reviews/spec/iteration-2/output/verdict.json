@@ -1,0 +1,42 @@
+{
+  "sprintNumber": 2,
+  "feature": "proactive-loop-skeleton",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-01T00:00:00Z",
+  "iteration": 2,
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-2-004", "FIND-2-005"],
+      "evidence": [
+        {"type": "file", "location": ".vcsdd/features/proactive-loop-skeleton/specs/behavioral-spec.md", "description": "FIND-001 closed (REQ-Q5 lines 230-234 reconciled to 14 consecutive 7-day windows using sprint-1 REQ-B5 roi_7day_jpy); FIND-002 closed (REQ-Q3 lines 211-223 added 5-level ladder a-e matching sprint-1 REQ-J9); FIND-003 closed (REQ-B3 lines 255-267 explicitly scope-defers auto-merge; sprint-2 ships annotate-pr only; all 'merge' mentions are NEGATIVE/DEFERRED); FIND-004 closed (EDGE-S4 lines 377-381 replaces --fix-deep with bot2bot.sh post opinion-requested; REQ-H3e auto-allowlist.sh fully defined); FIND-005 closed (REQ-M3 line 307 uses (category, platform)); FIND-006 closed (REQ-S4(c) lines 346-351 defines batch-apply via strategy.json max_apply_per_pass + 50% tolerance); FIND-012 closed (REQ-H3c lines 154-173 fully specified with 8 explicit steps); FIND-013 closed (REQ-P11 line 119 removes presenter-mode sentinel)"}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-2-001", "FIND-2-002", "FIND-2-003"],
+      "evidence": [
+        {"type": "file", "location": ".vcsdd/features/proactive-loop-skeleton/specs/verification-architecture.md", "description": "FIND-007 closed (37 PROPs now present; PROPs added for P2/P3/P4/P5/P6/P8/P9/P10/H4/Q1/Q2/Q4/B2/B3-annotate/M2/M4/S2/S3/novelty-key-aligned); FIND-017 partially closed (snapshot capture acknowledged I/O-bound at lines 33-36 but PURE classify still embeds upstream UI text patterns); FIND-008 partially closed (REQ-B4 narrowed escalation label to bot2bot-internal but static-analysis still cannot inspect runtime-constructed body files); FIND-009 unchanged (PROP-Q6 mechanism still tier-1 static-analysis which is soundness-impossible for unbounded delete paths); FIND-019 partially closed (REQ-S4(c) added 50% threshold but PROP-S4 wording unchanged)"}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 5,
+    "iter1Closure": {
+      "closed": ["FIND-001", "FIND-002", "FIND-003", "FIND-004", "FIND-005", "FIND-006", "FIND-007", "FIND-012", "FIND-013"],
+      "partiallyClosed": ["FIND-008", "FIND-011", "FIND-017", "FIND-019", "FIND-020"],
+      "stillOpen": ["FIND-009", "FIND-010", "FIND-014", "FIND-015", "FIND-016", "FIND-018"],
+      "counts": {"CLOSED": 9, "PARTIAL": 5, "OPEN": 6}
+    },
+    "newFindingsCount": 5,
+    "duplicateFindings": [],
+    "criticalSurfacesProbed": [
+      "merge grep verified all NEGATIVE/DEFERRED context (FIND-003 closure genuine)",
+      "REQ-Q3 5-step ladder compared line-by-line to sprint-1 REQ-J9: (a)=CLAUDE_USAGE_ENV, (b)=pane footer parse, (c)=byte-count 2x, (d)=4x escalation, (e)=mother-recovery-queue (all 4 J9 sub-steps preserved at spec level; verification gap remains per FIND-2-003)",
+      "REQ-H3c credential-restore.sh: 8 concrete steps including camofox port + profile + gog gmail OTP read + tmux send-keys verify",
+      "REQ-H3e auto-allowlist.sh: 4 concrete sub-steps with trusted-authors.json gate"
+    ]
+  }
+}
