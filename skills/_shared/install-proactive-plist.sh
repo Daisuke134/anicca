@@ -9,9 +9,31 @@ export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
 
 SHARED_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PY=python3
-# Tests can override the launchctl binary to simulate failures (EDGE-E5);
-# production callers leave LAUNCHCTL unset → resolved via PATH.
-LAUNCHCTL="${LAUNCHCTL_BIN:-launchctl}"
+# Tests can override the launchctl binary to simulate failures (EDGE-E5).
+# Production foot-gun guard (FIND-2-001): the override is REJECTED unless the
+# binary lives under a recognized temp root (= $TMPDIR | /tmp | /private/tmp |
+# /private/var/folders). A production cron that accidentally exports
+# LAUNCHCTL_BIN to anything else dies loud instead of silently executing an
+# attacker binary with launchctl's argv. Logged to stderr when active.
+LAUNCHCTL="launchctl"
+if [[ -n "${LAUNCHCTL_BIN:-}" ]]; then
+  _RESOLVED="$(cd "$(dirname "$LAUNCHCTL_BIN")" 2>/dev/null && pwd -P)/$(basename "$LAUNCHCTL_BIN")"
+  _ALLOWED_PREFIXES=("${TMPDIR%/}" "/tmp" "/private/tmp" "/private/var/folders" "/var/folders")
+  _OK=0
+  for _PFX in "${_ALLOWED_PREFIXES[@]}"; do
+    [[ -n "$_PFX" && "$_RESOLVED" == "$_PFX"/* ]] && _OK=1 && break
+  done
+  if [[ "$_OK" != "1" ]]; then
+    echo "LAUNCHCTL_BIN must resolve under a temp root; got: $_RESOLVED" >&2
+    exit 9
+  fi
+  if [[ ! -x "$_RESOLVED" ]]; then
+    echo "LAUNCHCTL_BIN not executable: $_RESOLVED" >&2
+    exit 9
+  fi
+  echo "WARN: LAUNCHCTL_BIN override active (test mode): $_RESOLVED" >&2
+  LAUNCHCTL="$_RESOLVED"
+fi
 
 # FIND-005 fix: per-invocation private tmpfile, no shared /tmp paths (TOCTOU).
 TMPROOT="${TMPDIR:-/tmp}"
