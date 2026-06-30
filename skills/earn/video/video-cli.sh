@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# video-cli.sh — launch the ALWAYS-ON video-loop claude-p session (clone of clip-cli.sh /
+# affiliate-cli.sh pattern, canonicalising the ad-hoc launch that originally had no --model).
+# Detached tmux headless claude --model sonnet that registers a cron every 4h: one faceless-video
+# transition per wake (create→warmup→affiliate@day7→post→record). Idles; healthcheck restarts.
+#
+#   bash video-cli.sh            # start if not already running (idempotent)
+#   bash video-cli.sh --restart  # kill the existing session then start fresh
+#   bash video-cli.sh --status   # is the session alive?
+set -uo pipefail
+SOCK="/tmp/anicca-video-tmux.sock"
+SESSION="anicca-video-core"
+CLAUDE="$(command -v claude || echo /Users/operator/.local/bin/claude)"
+
+# startup prompt — matches the original ad-hoc launch (reconstructed from session history)
+STARTUP='You are the Anicca video-loop core (Sutando proactive-loop style, claude-p). FIRST, register the recurring driver if absent: call CronList; if no job whose prompt mentions earn/video exists, call CronCreate with cron="23 */4 * * *", recurring=true, durable=true, and prompt="Run ONE pass of the faceless-video money loop: set -a; . ~/.openclaw/.env; set +a ; EARN_VIDEO_HANDLE=money_blueprintdaily SKILL_TIMEOUT_S=220 bash ~/anicca/skills/earn/video/run.sh (idempotent, fail-closed; warmup uses the DEDICATED anti-throttle CloakBrowser on its own port+profile = NEVER the daily-driver; posts LIVE+verified only = published+post_url; records earnings ONLY for on-chain-confirmed USDC). Report the slot one-line JSON + warmup_day + any new reel URL. Blocker is not stop.". THEN run ONE pass now (the same body). THEN stop and stay idle — the cron will drive subsequent passes. Do NOT touch the daily-driver browser (:9222) or any non-money_blueprintdaily account.'
+
+status() { tmux -S "$SOCK" has-session -t "$SESSION" 2>/dev/null && echo "ALIVE" || echo "DEAD"; }
+
+case "${1:-}" in
+  --status) status; exit 0 ;;
+  --restart) tmux -S "$SOCK" kill-session -t "$SESSION" 2>/dev/null || true ;;
+esac
+
+# idempotent: do nothing if already alive (unless --restart already killed it)
+if [ "${1:-}" != "--restart" ] && tmux -S "$SOCK" has-session -t "$SESSION" 2>/dev/null; then
+  echo "video-core already ALIVE"; exit 0
+fi
+
+tmux -S "$SOCK" new-session -d -s "$SESSION" \
+  "$CLAUDE" --name "$SESSION" --model sonnet --dangerously-skip-permissions --add-dir "$HOME" -- "$STARTUP"
+sleep 2
+echo "video-core started ($(status)). Attach: tmux -S $SOCK attach -t $SESSION"
