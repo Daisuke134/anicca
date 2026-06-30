@@ -18,6 +18,8 @@ from lib.quota_tracker import compute_budget, quantize_budget, Budget  # noqa: E
 from lib.menu import pick_next, load_menu  # noqa: E402
 from lib.build_log import append_pass  # noqa: E402
 from lib.proactive_loop import should_skip_step6, write_unfixable_cascade_sink  # noqa: E402
+from lib.step6_act import task_descriptor, enqueue_task_descriptor  # noqa: E402
+from lib.step3_recipe import execute_recipe, default_restart_cmd_map  # noqa: E402
 
 
 def _acquire_or_exit():
@@ -92,11 +94,25 @@ def main() -> int:
             now_ts=int(time.time()),
             tmux_server_state="ok",
         )
-        recipe = dispatch_highest_priority(snap)
-        if recipe and recipe.get("action") != "noop":
-            # Real action wiring is sprint-3 commit; sprint-2 logs the recipe.
+        # sprint-3 #33 wires REAL action for Issue.kind=='tmux_dead' only.
+        # Replicate the highest-priority Issue extraction so we can route by
+        # kind, not just action (= FIND-001 INV-P1 fix).
+        from lib.health_check_v2 import classify_issue_from_snapshot, PRIORITY_ORDER, select_fix_recipe
+        issues = classify_issue_from_snapshot(snap)
+        issues.sort(key=lambda i: PRIORITY_ORDER.index(i.kind) if i.kind in PRIORITY_ORDER else 999)
+        if issues:
+            top = issues[0]
+            recipe = select_fix_recipe(top)
+            anicca_home = os.environ.get("ANICCA_HOME", "/Users/operator/anicca")
+            cmd_map = default_restart_cmd_map(anicca_home)
+            r = execute_recipe(
+                recipe=recipe, issue_kind=top.kind, slot=slot,
+                cmd_map=cmd_map, timeout=30,
+            )
             _write_status(slot_dir, slot=slot, status="running",
-                         step=f"3-recipe-{recipe.get('action')}")
+                         step=f"3-{r['status']}")
+        else:
+            _write_status(slot_dir, slot=slot, status="running", step="3-no-issues")
     except Exception as e:
         _write_status(slot_dir, slot=slot, status="running",
                      step=f"3-health-check-error-{type(e).__name__}")
@@ -148,17 +164,26 @@ def main() -> int:
         )
         return 0
 
-    # STEP 6: ACT (cycle 2 wires real action; here we just log the pick)
+    # STEP 6 ACT (sprint-3 #33 wire): enqueue tasks/<ts>-<pass_id>-<name>.json
     _write_status(slot_dir, slot=slot, status="running",
                  step=f"6-act-{picked.get('name')}")
+    descriptor = task_descriptor(
+        pass_id=pass_id, ts=int(time.time()), picked=picked,
+        budget=budget.value, slot=slot,
+    )
+    enq = enqueue_task_descriptor(slot_dir, descriptor)
+    outcome = (
+        f"enqueued:{enq['filename']}" if enq.get("ok")
+        else f"enqueue-failed:{enq.get('status', 'unknown')}"
+    )
 
     # STEP 7: update build_log
     append_pass(
         slot_dir / "build_log.md",
         pass_id=pass_id, ts=int(time.time()), budget=budget.value,
         picked=str(picked.get("name", "?")),
-        outcome="scaffold-pick-recorded",
-        next_candidate="(cycle-2-wires-action)",
+        outcome=outcome,
+        next_candidate=f"(layer-c-dequeue: tasks/{enq.get('filename','?')})",
     )
 
     # STEP exit

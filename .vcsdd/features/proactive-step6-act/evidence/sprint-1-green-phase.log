@@ -1,0 +1,4 @@
+target-feature-tests: PASS
+regression-baseline: PASS
+total: 321 passed (+34 = 7 step3 + 11 step6 + 4 integration + sprint-2 menu-div-by-zero fix carry)
+live E2E (production gig kickstart): tasks/ x2 files created, build_log outcome=enqueued:, ~/gig/ untouched, gig-cli.sh ALIVE
