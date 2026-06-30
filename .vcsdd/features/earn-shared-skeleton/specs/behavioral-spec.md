@@ -350,6 +350,40 @@ fresh-context Opus adversary with manifest = `{reviewType: "strategy-mutation", 
 <path>, strategyNext: <path>, lessonsTail: <path>, sha: <sha>}` and write verdict.json to
 `reviews/strategy-mutation-<sha>/output/`. Same dedup semantics, same anti-leniency rules apply.
 
+#### REQ-E5 — Spawn-surface immutability (ROUND-2-002 fix)
+
+The "two layers of fresh context" guarantee of REQ-E1/E2 collapses if the spawn surface itself
+drifts under the self-improving loop. The spawn surface comprises:
+`~/anicca/skills/_shared/adversary-daily.sh`,
+`~/anicca/skills/_shared/adversary-daily-prompt.tmpl`,
+`~/anicca/skills/_shared/loop-improve.py` (= the writer of strategy.json.next),
+`~/anicca/skills/_shared/payout-endpoint-allowlist.json` (= REQ-G2 trust anchor),
+`~/anicca/skills/_shared/hook-modules-allowlist.txt` (= REQ-A5 trust anchor).
+
+THE SYSTEM SHALL maintain `~/anicca/skills/_shared/spawn-surface.pinned.json` containing the
+sha256 of each spawn-surface file at the most recent human-signed release. This file is updated
+ONLY by a tagged commit on `main` (signed off in the commit message body with the literal token
+`SPAWN-SURFACE-PIN-UPDATE`); it is NEVER updated by REQ-C3 strategy mutation, REQ-C2 improve,
+REQ-E2 builder auto-fix, or REQ-loop-propose imports.
+
+At the top of `loop-healthcheck.sh`, `loop-roi.sh`, `loop-improve.py`, `adversary-daily.sh`,
+`escalate.sh`, THE SYSTEM SHALL compute current sha256 of each spawn-surface file and compare
+against `spawn-surface.pinned.json`. ANY mismatch SHALL halt the script before any side effect
+AND call `escalate.sh <slot> spawn-surface-drift "<which-file>:<observed-sha>:<pinned-sha>"`.
+
+REQ-C3, REQ-E2 auto-fix, and loop-propose imports SHALL refuse to write to any spawn-surface
+file at the OS level: the runner SHALL ensure these files have mode `0444` (read-only) and are
+owned by a separate uid or via macOS `chflags uchg` (immutable flag); attempted writes fail with
+`EACCES` and surface as a "skill-emitted-fake-earn"-class lesson row (per REQ-G2 failure
+handling). This is the OS-level enforcement that complements the static-analysis check.
+
+REQ-C3 adversary review SHALL ALSO grep `strategy.json.next` for any string literal matching a
+spawn-surface path and FAIL the mutation if any match — the adversary catches the textual intent
+even if the OS write would have failed.
+
+These three layers (pinned-sha guard at startup, OS-level immutability, adversary string-match
+gate) together close ROUND-2-002 spawn-surface drift.
+
 ### Group F — Escalate (`escalate.sh`, the only human gate)
 
 #### REQ-F1 — Invocation contract (FIND-006 fix)
@@ -396,7 +430,7 @@ Every skill under `~/anicca/skills/earn/<slot>/` SHALL have a `manifest.json` wi
 last_audit_round, cumulative_tokens, cumulative_token_cost_jpy, cumulative_jpy_earned,
 cumulative_usdc_earned, schema_version: 1}`.
 
-#### REQ-G2 — Runner writes; skill emits events (INV-13, FIND-015 fix)
+#### REQ-G2 — Runner writes; skill emits events (INV-13, FIND-015 + ROUND-2-001 fix)
 
 The skill SHALL NOT contain a write to its own `manifest.json` (= the file at the path the skill
 itself lives at). Compliance is checked by:
@@ -406,16 +440,45 @@ own directory; flags any match.
 (b) runtime: every skill emits events to a per-invocation file
 `~/loops/<slot>/events/<pass_id>.jsonl`. Each event row:
 `{event: "earn"|"action"|"learn", slot, pass_id, ts, receipt_id?, amount_jpy?, amount_usdc?,
-platform?, platform_api_call: {endpoint, request_sha256, response_sha256}, raw_response_path?}`.
+payer?, platform, platform_api_call: {endpoint, request_sha256, response_sha256}, raw_response_path?}`.
 
-The runner SHALL verify every `event: "earn"` row by re-issuing the platform API call referenced
-in `platform_api_call.endpoint` and checking that the response sha256 matches
-`platform_api_response_sha256`. ONLY on match SHALL the runner append the corresponding row to
-`earnings.jsonl` (= the canonical earnings stream of REQ-B3). On mismatch, the runner appends a
-`lessons.jsonl` row of form `{outcome: "skill-emitted-fake-earn", evidence_id: <events path>}`
-and DOES NOT append to earnings.
+The runner SHALL verify every `event: "earn"` row via THREE mandatory checks ALL of which MUST
+pass before any append to `earnings.jsonl`. ANY check failure → runner appends a `lessons.jsonl`
+row `{outcome: "skill-emitted-fake-earn", evidence_id: <events path>, failed_check: "<which>"}`
+and DOES NOT append to earnings. Closes ROUND-2-001 hash-replay loophole:
 
-This is the active half of INV-13 that FIND-015 flagged as missing.
+1. **Endpoint allowlist check.** `platform_api_call.endpoint` MUST be a settled-payout or
+   receipt-lookup endpoint listed in
+   `~/anicca/skills/_shared/payout-endpoint-allowlist.json` for the named `platform`. The
+   allowlist is a frozen file enumerating per-platform payout endpoints (e.g. Coconala
+   `/api/v1/sales/<id>`, Stripe `payouts/<id>`, on-chain `eth_getLogs` for ERC-20 Transfer to
+   founder wallet). Generic / read-only / account-info endpoints (`/v1/me`, `/v1/health`,
+   `/api/profile`) are explicitly absent — they cannot serve as cover for forged receipts. An
+   endpoint not in the allowlist for its platform → fail with `failed_check: "endpoint-not-allowlisted"`.
+
+2. **Hash-fidelity check.** The runner re-fetches the endpoint with the same parameters and
+   computes sha256 of the response body. MUST equal
+   `platform_api_call.response_sha256`. Mismatch → fail with `failed_check: "response-hash-mismatch"`.
+
+3. **Field-equality check.** The runner parses the re-fetched response body as JSON (or
+   platform-specific format) and asserts:
+   - `receipt_id` appears in the response at a platform-defined JSON path AND its value equals
+     the event row's `receipt_id`;
+   - `amount_jpy` (or `amount_usdc`) appears in the response at a platform-defined JSON path AND
+     its numeric value equals the event row's value (exact equality for amount_jpy, ≤ 0.01 USDC
+     epsilon for amount_usdc);
+   - `payer` appears in the response at a platform-defined JSON path AND its value equals the
+     event row's `payer`.
+   The platform-defined JSON paths are part of `payout-endpoint-allowlist.json` (one per
+   allowlist entry). ANY field missing or mismatched → fail with
+   `failed_check: "field-mismatch:<which-field>"`.
+
+This three-step verification closes the hash-replay loophole (ROUND-2-001 critical): no skill can
+pair a forged `receipt_id` with a benign-endpoint hash, because (1) the benign endpoint isn't in
+the payout allowlist and (2) even if a skill picks an allowlisted endpoint, the field-equality
+check rejects forged identifiers.
+
+This is the active half of INV-13.
 
 #### REQ-G3 — Manifest update is the runner's job
 

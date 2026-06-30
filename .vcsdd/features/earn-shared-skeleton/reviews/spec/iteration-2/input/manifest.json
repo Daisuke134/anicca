@@ -1,0 +1,42 @@
+{
+  "reviewType": "spec",
+  "feature": "earn-shared-skeleton",
+  "iteration": 2,
+  "mode": "lean",
+  "artifactsToReview": [
+    ".vcsdd/features/earn-shared-skeleton/specs/behavioral-spec.md",
+    ".vcsdd/features/earn-shared-skeleton/specs/verification-architecture.md"
+  ],
+  "outOfScope": [
+    "docs/superpowers/specs/2026-06-30-earn-slots-daily-loop-master.md (parent — context only)"
+  ],
+  "reviewDimensions": [
+    "spec_fidelity",
+    "verification_readiness"
+  ],
+  "previousIterationFindings": [
+    ".vcsdd/features/earn-shared-skeleton/reviews/spec/iteration-1/output/findings/FIND-001.json (critical, REQ-B4 dimensional bug)",
+    ".vcsdd/features/earn-shared-skeleton/reviews/spec/iteration-1/output/findings/FIND-002.json (critical, REQ-B2 formula ambiguity)",
+    ".vcsdd/features/earn-shared-skeleton/reviews/spec/iteration-1/output/findings/FIND-003.json (high, classify purity)",
+    ".vcsdd/features/earn-shared-skeleton/reviews/spec/iteration-1/output/findings/FIND-004.json (critical, REQ-A5 RCE)",
+    ".vcsdd/features/earn-shared-skeleton/reviews/spec/iteration-1/output/findings/FIND-005.json (high, OAuth phishing)",
+    ".vcsdd/features/earn-shared-skeleton/reviews/spec/iteration-1/output/findings/FIND-006.json (high, escalate.sh under-spec)",
+    ".vcsdd/features/earn-shared-skeleton/reviews/spec/iteration-1/output/findings/FIND-007.json (critical, PROP-F2 evidence_hash)",
+    ".vcsdd/features/earn-shared-skeleton/reviews/spec/iteration-1/output/findings/FIND-008.json (high, first-pass grace)",
+    ".vcsdd/features/earn-shared-skeleton/reviews/spec/iteration-1/output/findings/FIND-009.json (high, priority order)",
+    ".vcsdd/features/earn-shared-skeleton/reviews/spec/iteration-1/output/findings/FIND-010.json (high, verification tier mismatch)",
+    ".vcsdd/features/earn-shared-skeleton/reviews/spec/iteration-1/output/findings/FIND-011.json (high, EDGE-6 token estimation)",
+    ".vcsdd/features/earn-shared-skeleton/reviews/spec/iteration-1/output/findings/FIND-012.json (medium, E1 scheduling)",
+    ".vcsdd/features/earn-shared-skeleton/reviews/spec/iteration-1/output/findings/FIND-013.json (medium, D2 dedup race)",
+    ".vcsdd/features/earn-shared-skeleton/reviews/spec/iteration-1/output/findings/FIND-014.json (medium, required set)",
+    ".vcsdd/features/earn-shared-skeleton/reviews/spec/iteration-1/output/findings/FIND-015.json (medium, G2 event schema)"
+  ],
+  "extraConstraints": [
+    "iteration 2: the spec was rewritten to address every iter-1 finding. Verify each finding is genuinely closed by the new text — do NOT trust the addresses_findings frontmatter; verify by re-reading the requirements those findings cited.",
+    "New surface introduced by v2 (look here for NEW bugs): HealthcheckContext record, per-model rate table frozen 2026-07-01, model_breakdown[] schema, cumulative.json tracked quantity, STALE_FIRST_PASS mode, hook-modules-allowlist.txt, normalize_evidence regex, claim-check pattern in REQ-D2, two-level fresh-context spawn in REQ-E1, full 7-step escalate.sh contract in REQ-F1, INV-13 active-half runner verification in REQ-G2 step (b).",
+    "The required:true set in lean mode was expanded from 5 to 10 PROPs. Verify each addition is testable in its claimed tier AND that no required PROP overlaps trivially with another (= avoid pretend coverage).",
+    "Anti-leniency: 'looks good', 'mostly correct', 'minor issue' are forbidden verdict phrases. If a critical iter-1 finding is now only partially closed, that's still FAIL.",
+    "If iter-2 itself is FAIL, you may emit MAX 5 NEW findings (cumulative cap to prevent infinite spiral); cite each as ROUND-2-NNN to distinguish."
+  ],
+  "expectedOutputPath": ".vcsdd/features/earn-shared-skeleton/reviews/spec/iteration-2/output/"
+}

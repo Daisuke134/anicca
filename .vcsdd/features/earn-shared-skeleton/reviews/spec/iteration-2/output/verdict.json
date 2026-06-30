@@ -1,0 +1,50 @@
+{
+  "sprintNumber": 0,
+  "feature": "earn-shared-skeleton",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-01T00:00:00Z",
+  "iteration": 2,
+  "reviewContext": {
+    "reviewType": "spec",
+    "scope": "Phase 1c spec review gate (iteration 2, lean mode)",
+    "filesReviewed": [
+      ".vcsdd/features/earn-shared-skeleton/specs/behavioral-spec.md",
+      ".vcsdd/features/earn-shared-skeleton/specs/verification-architecture.md",
+      ".vcsdd/features/earn-shared-skeleton/reviews/spec/iteration-1/output/findings/FIND-001..015 (15 files, re-read for closure verification)"
+    ],
+    "note": "Iter-1 finding closure judgment (verified by re-reading the requirements each finding cited, NOT by trusting addresses_findings frontmatter):\n\nFIND-001 (critical, REQ-B4 dimensional bug): CLOSED. REQ-B4 line 213-227 now compares cumulative_token_cost_jpy (JPY) to 5 × cumulative_jpy_earned (JPY); dimensional coherence restored; 7-day grace via first_seen_ts prevents first-pass kill. PROP-B4-killswitch (verification-architecture.md line 72) tests grace + dimensional check.\n\nFIND-002 (critical, REQ-B2 formula): CLOSED. REQ-B2 line 187-208 gives fully-parenthesized closed-form Σ over model_breakdown with FX applied to entire USD total; per-model rate table frozen 2026-07-01 (line 148-153); refuses to write on unknown model_id. PROP-B2-cost-formula has golden fixture (Sonnet 1M/1M @ FX=150 = 2700) AND unknown-model raise assertion (line 70).\n\nFIND-003 (high, classify purity): CLOSED. HealthcheckContext record (line 75-78) carries all inputs; classify(ctx) is genuinely pure per verification-architecture.md line 24.\n\nFIND-004 (critical, REQ-A5 RCE): CLOSED. REQ-A5 line 118-127 requires strict npm-name regex AND allowlist file (`hook-modules-allowlist.txt`); failure path escalates instead of installing. PROP-A-hook-allowlist promoted to required:true (line 68).\n\nFIND-005 (high, OAuth phishing): CLOSED. REQ-A3 line 111 specifies anchored regex `^https://claude\\.com/cai/oauth/authorize\\?[a-z0-9_=&%+\\.\\-]+$`; PROP-A-oauth required:true (line 67) with 30-fixture corpus including phishing variants.\n\nFIND-006 (high, escalate.sh under-spec): CLOSED. REQ-F1 line 357-382 has 7-step contract: dedup-check → log-pending → printf '%q' shell-escape → gh create → tg post (env-var TG_BOT_API, 3-retry exp-backoff) → log-update-posted. PROP-F1-order (line 85) verifies the ordering as integration test.\n\nFIND-007 (critical, PROP-F2 evidence_hash): CLOSED. REQ-F1 step 1 (line 359-362) defines dedup_key = sha256(slot || \\x00 || reason || \\x00 || normalize_evidence(evidence)); normalize_evidence strips `\\b\\d{10}\\b` (unix ts), `\\bround-\\d+\\b`, `\\bts:\\d+\\b`. PROP-F2 (line 86) is property-test over 100-pair corpus that must collapse.\n\nFIND-008 (high, first-pass grace): CLOSED. STALE_FIRST_PASS mode added at priority 9 (line 95) keyed on last_start_mtime; EDGE-8 (line 475-477) describes the mid-flight semantics; PROP-A-classify covers all 10 modes.\n\nFIND-009 (high, priority order): CLOSED. NOT_LOGGED_IN at priority 3 now outranks STALE at priority 8 (line 84-95); spec explicitly states the FIND-009 reason in line 88; BACKOFF at priority 1 is correctly terminal.\n\nFIND-010 (high, verification tier mismatch): CLOSED. PROPs touching orchestration (PROP-E1, E2, E3, E4, F1, C3, D2, G2-static, G2-runtime) explicitly tagged as integration with described mechanism (sandbox, stubbed external calls, fixture verdicts); annotation explained in verification-architecture.md line 103-104.\n\nFIND-011 (high, EDGE-6 token estimation): CLOSED. REQ-B6 line 239-251 adds token_source field, 2× cost penalty for estimated rows (conservative direction), and >50%-estimated escalation; PROP-B6-estimate (line 74) verifies exactly-2× penalty.\n\nFIND-012 (medium, E1 scheduling): CLOSED. REQ-E1 line 322-332 specifies launchd plist `ai.anicca.<slot>-adversary-daily.plist` with StartCalendarInterval, claude -p wrapper, explicit two-level fresh-context spawn. (See ROUND-2-002 for a NEW concern about spawn-surface immutability.)\n\nFIND-013 (medium, D2 dedup race): CLOSED. REQ-D2 line 297-310 implements claim-check: tentative row written FIRST, then gh, then status update; gh failure leaves row pending with 24h cooldown. EDGE-9 documents disk-full case.\n\nFIND-014 (medium, required set): CLOSED. Required set expanded from 5 to 10 PROPs (verification-architecture.md line 107-124); PROP-A-hook-allowlist, PROP-A-oauth, PROP-C1-evidence, PROP-G2-static, PROP-G2-runtime added; PROPs are non-overlapping (each targets a distinct invariant: classify mutex / anti-phishing / anti-RCE / cost formula / kill-switch / evidence faithfulness / strategy gate / dedup / static manifest-write / runtime earn verification).\n\nFIND-015 (medium, G2 event schema): CLOSED at the schema level. REQ-G2(b) line 408-417 declares full event row schema {event, slot, pass_id, ts, receipt_id?, amount_jpy?, amount_usdc?, platform?, platform_api_call:{endpoint, request_sha256, response_sha256}, raw_response_path?} and a runtime verification step. HOWEVER the verification mechanism has a hash-replay loophole — see ROUND-2-001, which is the same INV-13 active-half gap re-emerging in a new disguise.\n\nClosure totals: 15 of 15 iter-1 findings CLOSED. NEW findings: 2 (ROUND-2-001 critical, ROUND-2-002 high) — both surfaced by the iter-2 expanded surface (REQ-G2 runtime verification mechanism and REQ-E1 two-level fresh-context spawn) and neither is a duplicate of an iter-1 finding."
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["ROUND-2-001"],
+      "evidence": [
+        {"type": "file", "location": ".vcsdd/features/earn-shared-skeleton/specs/behavioral-spec.md:213-227", "description": "REQ-B4 kill-switch now dimensionally correct (JPY vs JPY, 7-day grace) — FIND-001 verified closed"},
+        {"type": "file", "location": ".vcsdd/features/earn-shared-skeleton/specs/behavioral-spec.md:187-208", "description": "REQ-B2 closed-form cost formula with per-model table — FIND-002 verified closed"},
+        {"type": "file", "location": ".vcsdd/features/earn-shared-skeleton/specs/behavioral-spec.md:118-127", "description": "REQ-A5 npm allowlist + escalation default — FIND-004 verified closed"},
+        {"type": "file", "location": ".vcsdd/features/earn-shared-skeleton/specs/behavioral-spec.md:357-382", "description": "REQ-F1 full 7-step contract with shell-escape + TG endpoint — FIND-006 verified closed"},
+        {"type": "file", "location": ".vcsdd/features/earn-shared-skeleton/specs/behavioral-spec.md:359-362", "description": "REQ-F1 dedup_key + normalize_evidence — FIND-007 verified closed"},
+        {"type": "file", "location": ".vcsdd/features/earn-shared-skeleton/specs/behavioral-spec.md:411-417", "description": "REQ-G2(b) runtime verification — schema closed but introduces hash-replay loophole (ROUND-2-001)"}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["ROUND-2-002"],
+      "evidence": [
+        {"type": "file", "location": ".vcsdd/features/earn-shared-skeleton/specs/verification-architecture.md:24", "description": "classify(HealthcheckContext) typed input — FIND-003 verified closed"},
+        {"type": "file", "location": ".vcsdd/features/earn-shared-skeleton/specs/verification-architecture.md:66-90", "description": "Proof table re-tiered; integration PROPs explicitly tagged — FIND-010 verified closed"},
+        {"type": "file", "location": ".vcsdd/features/earn-shared-skeleton/specs/verification-architecture.md:107-124", "description": "Required set expanded from 5 to 10 PROPs with non-overlapping invariants — FIND-014 verified closed"},
+        {"type": "file", "location": ".vcsdd/features/earn-shared-skeleton/specs/behavioral-spec.md:322-332", "description": "REQ-E1 two-level fresh-context — but spawn-surface immutability is NOT guarded (ROUND-2-002)"}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 2,
+    "previousFindingCount": 15,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}
