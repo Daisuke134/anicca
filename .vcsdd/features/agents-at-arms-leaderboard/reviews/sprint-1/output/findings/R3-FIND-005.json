@@ -1,0 +1,19 @@
+{
+  "findingId": "R3-FIND-005",
+  "dimension": "structural_integrity",
+  "category": "spec_gap",
+  "severity": "major",
+  "round": 3,
+  "status": "NEW (ownership) + PARTIAL carryover of R2-FIND-007/R2-FIND-009",
+  "description": "Three structural gaps. (1) OWNERSHIP CONFLICT: the spec pipeline (behavioral-spec.md:21-23) routes Supabase rows → enrichOnChain → aggregate → JSON as if the landing-repo netlify dashboard-sync.js owns /dashboard.json, but project CLAUDE.md states /dashboard.json is rendered by a Dais-owned dashboard-sync job from anicca-dais + anicca-genesis instance-state and that Anicca/landing must NOT write dashboard.json. The spec adds an on-chain enrich + aggregate path without saying which of the two 'dashboard-sync' producers gains the chain-read responsibility, who owns it, and how the guardrail is respected. (2) revenue_by_source is listed as a signed/persisted field (R1 behavioral-spec.md:30-31, R10 behavioral-spec.md:63-64) and consumed in the UI, yet R9's type-check list (behavioral-spec.md:62) covers only tags/revenue_today_usd/log_feed — revenue_by_source is never type-validated, so a malformed object reaches the drill-down. (3) earn_src (the ranked figure's provenance) is added to the element (R1 behavioral-spec.md:31) but R6's UI render contract (behavioral-spec.md:52) surfaces only a net_worth_src indicator — the verified/unverified state of the RANKED revenue is invisible, so an unverified high-revenue row looks identical to a chain-verified one.",
+  "evidence": {
+    "filePath": ".vcsdd/features/agents-at-arms-leaderboard/specs/behavioral-spec.md",
+    "lineRange": "21-23",
+    "snippet": "`dashboard-sync handler` → Supabase rows → **`enrichOnChain(rows, reader)`** → `aggregate(enriched)` → JSON."
+  },
+  "crossEvidence": [
+    {"filePath": "apps/landing/netlify/functions/dashboard-sync.js", "lineRange": "1-16", "note": "landing-repo netlify function vs the Dais-owned static-file render job — two different 'dashboard-sync' producers, unreconciled"}
+  ],
+  "fix": "Name which producer enriches+writes leaderboard and reconcile it with the no-direct-write guardrail; add revenue_by_source to the R9 type-check list; add an earn_src indicator to the R6 UI render contract.",
+  "routeToPhase": "1a"
+}

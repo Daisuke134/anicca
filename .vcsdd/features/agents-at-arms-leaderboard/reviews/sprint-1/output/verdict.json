@@ -3,29 +3,29 @@
   "feature": "agents-at-arms-leaderboard",
   "overallVerdict": "FAIL",
   "timestamp": "2026-07-01T00:00:00Z",
-  "iteration": 2,
+  "iteration": 3,
   "reviewContext": {
     "reviewType": "spec",
     "phase": "1c",
-    "specPath": ".vcsdd/features/agents-at-arms-leaderboard/specs/behavioral-spec.md"
+    "specPath": ".vcsdd/features/agents-at-arms-leaderboard/specs/behavioral-spec.md",
+    "specVersion": "v3"
   },
   "dimensions": [
-    {"name": "spec_fidelity", "verdict": "FAIL", "findings": ["R2-FIND-001", "R2-FIND-002", "R2-FIND-008"], "evidence": []},
-    {"name": "edge_case_coverage", "verdict": "FAIL", "findings": ["R2-FIND-003"], "evidence": []},
-    {"name": "implementation_correctness", "verdict": "FAIL", "findings": ["R2-FIND-005"], "evidence": []},
-    {"name": "structural_integrity", "verdict": "FAIL", "findings": ["R2-FIND-004", "R2-FIND-006", "R2-FIND-007", "R2-FIND-009"], "evidence": []},
-    {"name": "verification_readiness", "verdict": "FAIL", "findings": ["R2-FIND-010", "R2-FIND-011"], "evidence": []}
+    {"name": "spec_fidelity", "verdict": "FAIL", "findings": ["R3-FIND-001", "R3-FIND-002"], "evidence": []},
+    {"name": "edge_case_coverage", "verdict": "FAIL", "findings": ["R3-FIND-003"], "evidence": []},
+    {"name": "implementation_correctness", "verdict": "FAIL", "findings": ["R3-FIND-004"], "evidence": []},
+    {"name": "structural_integrity", "verdict": "FAIL", "findings": ["R3-FIND-005"], "evidence": []},
+    {"name": "verification_readiness", "verdict": "FAIL", "findings": ["R3-FIND-006"], "evidence": []}
   ],
-  "round1Disposition": {
-    "resolved": ["FIND-002", "FIND-004", "FIND-005", "FIND-006", "FIND-009", "FIND-010", "FIND-011", "FIND-012", "FIND-016"],
-    "partiallyResolved": ["FIND-001", "FIND-003", "FIND-007", "FIND-013", "FIND-015", "FIND-017", "FIND-018"],
-    "stillOpen": ["FIND-008", "FIND-014"]
+  "round2Disposition": {
+    "resolved": ["R2-FIND-002", "R2-FIND-003", "R2-FIND-004", "R2-FIND-006", "R2-FIND-008"],
+    "partiallyResolved": ["R2-FIND-001", "R2-FIND-005", "R2-FIND-007", "R2-FIND-009", "R2-FIND-010", "R2-FIND-011"],
+    "stillOpen": []
   },
   "convergenceSignals": {
-    "findingCount": 11,
+    "findingCount": 6,
     "allCriteriaEvaluated": true,
     "evaluatedCriteria": [],
     "duplicateFindings": []
   }
 }
-</content>

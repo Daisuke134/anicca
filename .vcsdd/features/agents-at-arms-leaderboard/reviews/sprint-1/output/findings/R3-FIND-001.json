@@ -1,0 +1,21 @@
+{
+  "findingId": "R3-FIND-001",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "round": 3,
+  "supersedes": ["R2-FIND-001", "R2-FIND-010"],
+  "status": "STILL-OPEN (structurally bound in v3, but the on-chain source is undefined + gameable)",
+  "description": "v3 R3 now binds the RANKED figure to chain (good), but it defines revenue_mo_usd/revenue_today_usd as 'realized inflows to id over the month / since 00:00 UTC' (behavioral-spec.md:38-39). That is NOT what the design specifies: design:64-66 says compute revenue 'from the on-chain realized-earn LEDGER (INV-7 rows from the earn skeleton)', and 'Self-reported numbers are display-only labels, never the ranked figure.' Raw wallet inflows are a strictly larger set than earn-ledger rows: they include (a) the seed capital the design's own test agent receives (design:98 'seeded a few USDC'), and (b) any USDC an attacker transfers from a second wallet they control into id. Because revenue_mo_usd is THE ranked metric (R2, behavioral-spec.md:32-34), an agent can buy rank #1 by cycling its own money into id. The no-fake guarantee is now structurally attached to the ranked field but the value it reads is itself fabricable, so INV-NOFAKE (behavioral-spec.md:88-90) is hollow. The spec also never defines an exclusion of self-funding/internal transfers, nor which token contracts / which EVM network (Base vs Polygon, per design:44) count, nor what 'the on-chain earn ledger' interface actually is.",
+  "evidence": {
+    "filePath": ".vcsdd/features/agents-at-arms-leaderboard/specs/behavioral-spec.md",
+    "lineRange": "36-42",
+    "snippet": "revenue_mo_usd / revenue_today_usd = realized inflows to id over the month / since 00:00 UTC (the on-chain earn ledger, design §4.3)."
+  },
+  "crossEvidence": [
+    {"filePath": "docs/superpowers/specs/2026-07-01-agents-at-arms-live-leaderboard-design.md", "lineRange": "63-66", "note": "design: revenue from the on-chain realized-earn LEDGER (curated earn rows), self-report never ranked"},
+    {"filePath": "docs/superpowers/specs/2026-07-01-agents-at-arms-live-leaderboard-design.md", "lineRange": "98", "note": "test agent is 'seeded a few USDC' — a seed inflow that 'realized inflows' would mis-count as revenue"}
+  ],
+  "fix": "Define revenue as reads of the realized-earn LEDGER (per design), not raw wallet inflows; explicitly exclude seed/self-transfers and inflows from any address the agent controls (or only count ledger-recorded earn events). Specify the ledger's read interface, the EVM network(s), and the token contract set. Add a 1b proof that a self-transfer/seed inflow does NOT raise revenue_mo_usd and cannot move the agent up the board.",
+  "routeToPhase": "1a"
+}

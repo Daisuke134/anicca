@@ -1,0 +1,16 @@
+{
+  "findingId": "R3-FIND-003",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "major",
+  "round": 3,
+  "status": "NEW",
+  "description": "v3 resolved the unverified-ordering / NaN edges (R2-FIND-003 → R2/R4 now deterministic), but introduced two new unhandled edges. (1) ALL-UNVERIFIED state: if the chain reader is fully down, every row has earn_src/net_worth_src='unverified', so total_net_worth_usd and earned_mo_usd both sum to 0 (R4 excludes all rows). The headline then shows a literal '$0' even though rows display flagged numbers — the same 'never render $0' spirit R8 (behavioral-spec.md:58) enforces for elements is not enforced for the headline totals, which will mislead a spectator into thinking the empire earned $0 rather than 'nothing verified yet'. The spec never defines the all-unverified headline state. (2) revenue_today_usd has NO sign or relational constraint: net_worth_usd is constrained >=0 (telemetry-schema.js:11) but R9/R10 only require revenue_today_usd to be a 'number' (behavioral-spec.md:62). A negative or > revenue_mo_usd value passes, and after enrichment a chain read could legitimately produce revenue_today > 0 while revenue_mo overwrite path differs — the spec gives no invariant tying today<=mtd, so the UI can show today's revenue exceeding the month's.",
+  "evidence": {
+    "filePath": ".vcsdd/features/agents-at-arms-leaderboard/specs/behavioral-spec.md",
+    "lineRange": "43-45",
+    "snippet": "total_net_worth_usd SHALL sum only net_worth_src==='chain' elements ... Reducers SHALL never operate on a flagged/undefined figure."
+  },
+  "fix": "Define the all-unverified headline state (render '—' / 'unverified' rather than $0 when zero chain-verified elements exist). Add invariants/type-checks for revenue_today_usd (>=0, and today<=mtd) and a 1b proof for each.",
+  "routeToPhase": "1a"
+}

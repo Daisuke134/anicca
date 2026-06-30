@@ -1,0 +1,16 @@
+{
+  "findingId": "R3-FIND-006",
+  "dimension": "verification_readiness",
+  "category": "test_coverage",
+  "severity": "critical",
+  "round": 3,
+  "status": "STILL-OPEN (proof binds to self-report overwrite, not to fabricated EARNED money)",
+  "description": "1b R3 (behavioral-spec.md:78) proves only that an inflated SELF-REPORT is overwritten by the mocked chain value. It does NOT prove the feature's core guarantee: that a fabricated EARNING cannot win the board. Because R3 defines revenue as raw 'realized inflows to id' (see R3-FIND-001), the chain value the proof trusts is itself produced by self-transfers/seed — so the overwrite proof passes while the board is still gameable. There is no 1b row that feeds a self-funding inflow and asserts revenue_mo_usd does NOT increase / the agent does NOT rise in rank. Separately, no 1b row proves the leaderboard data actually reaches the /dashboard.json EmpireDashboard consumes (R3-FIND-002) — the R6 'component + browser E2E' proof (behavioral-spec.md:81) renders a hand-authored 'leaderboard fixture', not the real served file, so a green component test can coexist with a /dashboard.json that has no leaderboard.",
+  "evidence": {
+    "filePath": ".vcsdd/features/agents-at-arms-leaderboard/specs/behavioral-spec.md",
+    "lineRange": "78",
+    "snippet": "R3 | unit (mock `reader`) | inflated self-report → overwritten to mocked chain value, `src:'chain'`; reader throws → `src:'unverified'`"
+  },
+  "fix": "Add a 1b proof that a self-transfer/seed inflow is excluded from revenue and cannot raise rank (depends on R3-FIND-001 fix). Add a 1b/E2E proof that the actual served /dashboard.json carries the enriched leaderboard the UI renders (not a local fixture).",
+  "routeToPhase": "1b"
+}

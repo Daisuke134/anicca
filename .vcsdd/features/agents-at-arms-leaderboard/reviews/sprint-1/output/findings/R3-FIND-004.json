@@ -1,0 +1,16 @@
+{
+  "findingId": "R3-FIND-004",
+  "dimension": "implementation_correctness",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "round": 3,
+  "status": "NEW",
+  "description": "The whole no-fake core hinges on enrichOnChain(rows, reader) (behavioral-spec.md:22-23,36-42), and the 1b proofs for R3 are written 'unit (mock reader)' (behavioral-spec.md:78). But the spec never defines the 'reader' interface: what methods does it expose (balance(id)? inflows(id, sinceTs)? earnLedger(id, window)?), what do they return (a number? a list of {amount, from, token, ts}?), which network/RPC, and how a 'read failure' is signalled (throw vs null) so R3 can map it to *_src='unverified'. Without the reader contract, the RED tests cannot be written deterministically — a mock can be shaped to make any assertion pass, which is precisely the tautological-test risk the adversary guards against. Compounding: net_worth_usd is defined only as 'on-chain USDC+native balance of id' (behavioral-spec.md:37-38) with no token-contract address(es) or chain named, so even the balance read is ambiguous to implement.",
+  "evidence": {
+    "filePath": ".vcsdd/features/agents-at-arms-leaderboard/specs/behavioral-spec.md",
+    "lineRange": "78",
+    "snippet": "R3 | unit (mock `reader`) | inflated self-report → overwritten to mocked chain value, `src:'chain'`; reader throws → `src:'unverified'`, figure flagged"
+  },
+  "fix": "Specify the reader interface (method signatures + return shapes + failure mode), the EVM network(s) and token-contract set for the balance read, and the earn-ledger query shape. Then the R3 mock and assertions are concrete and non-tautological.",
+  "routeToPhase": "1a"
+}

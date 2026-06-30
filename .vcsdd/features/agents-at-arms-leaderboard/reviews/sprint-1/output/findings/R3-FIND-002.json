@@ -1,0 +1,21 @@
+{
+  "findingId": "R3-FIND-002",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "round": 3,
+  "supersedes": ["R2-FIND-005"],
+  "status": "STILL-OPEN (v3 fixed the type-owner, but the data SOURCE for /dashboard.json is still wrong)",
+  "description": "v3 R6 (behavioral-spec.md:49-53) correctly aligns the UI owner with the real code: EmpireDashboard.tsx has its own local DashboardData and fetches /dashboard.json (EmpireDashboard.tsx:52-56,64-76). BUT the spec asserts the leaderboard arrives via 'its existing /dashboard.json fetch' (behavioral-spec.md:53) while the actual /dashboard.json that EmpireDashboard reads (apps/landing/public/dashboard.json) is a STATIC file whose shape is {updated_at, mrr, followers, views, spend, goals, basic_income, socials, lineage, ...} — it contains NO 'leaderboard' and NO 'total_net_worth_usd'. The aggregate's 'leaderboard' key is produced only by the netlify function dashboard-sync.js (dashboard-sync.js:14 returns aggregate(rows) from the Supabase 'instances' table) and is served at the FUNCTION endpoint, not at /dashboard.json (no netlify rewrite from /dashboard.json to the function exists). So extending EmpireDashboard's local type with leaderboard?: LeaderboardEntry[] adds a field the fetched file never contains; the on-chain leaderboard never reaches the UI. The spec's pipeline (behavioral-spec.md:21-23) and R6 never reconcile (a) which producer writes 'leaderboard' into the static /dashboard.json, (b) that the static file is sourced from instance-state by a Dais-owned sync (per project CLAUDE.md) — a DIFFERENT data source than the Supabase 'instances' table that feeds aggregate.",
+  "evidence": {
+    "filePath": "apps/landing/public/dashboard.json",
+    "lineRange": "1-8",
+    "snippet": "{ \"updated_at\": ..., \"mrr\": { \"total_usd\": 27, ... }, ... }  // no leaderboard / no total_net_worth_usd"
+  },
+  "crossEvidence": [
+    {"filePath": "apps/landing/netlify/functions/dashboard-sync.js", "lineRange": "11-15", "note": "netlify function returns aggregate(rows) (with leaderboard) at the FUNCTION endpoint, sourced from Supabase instances — not /dashboard.json"},
+    {"filePath": "apps/landing/components/site/EmpireDashboard.tsx", "lineRange": "120-161", "note": "EmpireDashboard reads data.mrr.total_usd / data.goals.* — the static-file shape, which aggregate does NOT emit"}
+  ],
+  "fix": "Name the single producer that writes 'leaderboard' into the exact /dashboard.json EmpireDashboard fetches, and reconcile the two data sources (Supabase instances vs Dais-owned instance-state render). Either (a) have the Dais-owned dashboard-sync merge aggregate(enrichOnChain(...)).leaderboard into the static /dashboard.json, or (b) point EmpireDashboard at the function endpoint. State this in the spec and add a proof that the consumed file actually carries leaderboard.",
+  "routeToPhase": "1a"
+}
