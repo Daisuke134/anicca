@@ -46,35 +46,64 @@ Sprint-3 #33 makes both real:
 ### Group T — Tasks/ enqueue (STEP 6 real ACT)
 
 - **REQ-T1**: WHEN STEP 5 picks a menu item, THE DISPATCHER SHALL write a
-  task descriptor JSON file at `<slot_dir>/tasks/<unix_ts>-<sanitized_name>.json`.
+  task descriptor JSON file at
+  `<slot_dir>/tasks/<unix_ts>-<pass_id>-<sanitized_name>.json` (FIND-003 fix:
+  pass_id embedded in filename so REQ-T4 idempotent check is a single
+  `glob('*-<pass_id>-*.json')` call without opening any file).
 - **REQ-T2**: THE TASK DESCRIPTOR SHALL contain at minimum:
   `{schema_version: 1, pass_id, ts, picked: <item dict>, budget,
   proactive_loop_origin: "step6-act", slot}`.
-- **REQ-T3**: THE filename `<sanitized_name>` SHALL be the menu item's
-  `name` field passed through a `[a-z0-9_-]` sanitizer (= drop other chars).
-- **REQ-T4**: THE DISPATCHER SHALL NOT enqueue if a task with the SAME
-  pass_id already exists (= idempotent re-tick safety).
+- **REQ-T3**: THE `<sanitized_name>` component SHALL:
+  (i) lowercase the input,
+  (ii) keep only chars matching `[a-z0-9_-]`,
+  (iii) collapse runs of `-` into one,
+  (iv) IF the result is empty (= name was Japanese, all-uppercase, or
+  symbol-only — FIND-005 fix), use the literal `unnamed` as the sanitized
+  component.
+- **REQ-T4**: THE DISPATCHER SHALL NOT enqueue if a task file with the SAME
+  pass_id already exists in `<slot_dir>/tasks/` (= idempotent re-tick
+  safety). Detection = `len(glob('*-<pass_id>-*.json')) > 0`.
 - **REQ-T5**: AFTER successful enqueue, build_log.md `outcome` SHALL change
-  from "scaffold-pick-recorded" to "enqueued:<filename>" (no rollback if write
-  later fails; the file is the source of truth).
+  from `scaffold-pick-recorded` to `enqueued:<filename>` (no rollback if
+  write later fails; the file is the source of truth).
 
-### Group R — STEP 3 recipe action (real restart)
+### Group R — STEP 3 recipe action (real restart, narrowly scoped)
 
-- **REQ-R1**: WHEN STEP 3 computes recipe.action == "restart", THE DISPATCHER
-  SHALL invoke the per-slot restart command. For slot "gig" that command is
-  `bash <ANICCA_HOME>/skills/earn/gig/gig-cli.sh --restart` (= the documented
-  Sutando-pattern restart entrypoint).
-- **REQ-R2**: THE restart invocation SHALL be subprocess.run with timeout=30s
-  + capture_output=True; failures (rc != 0, timeout) are logged to
-  core-status.json as `step=3-recipe-restart-failed-<reason>` and the tick
-  continues (= do not abort the whole pass on health-fix failure).
-- **REQ-R3**: WHEN recipe.action is anything OTHER than "restart" (= "noop",
-  "send_keys", "escalate_via_bot2bot"), THE DISPATCHER SHALL log
-  `step=3-recipe-<action>-scaffold-deferred-sprint-4` and CONTINUE without
-  side-effect (= sprint-3 #33 ships restart only).
+- **REQ-R1** (FIND-001 fix): THE DISPATCHER SHALL invoke the per-slot
+  restart command ONLY WHEN BOTH:
+  (i) the dispatched Issue.kind == `tmux_dead` (NOT merely
+  `recipe.action == "restart"`, because health_check_v2 also emits
+  `restart` for `stale` Issues which can fire on a HEALTHY tmux that
+  simply hasn't ticked recently — restarting it would violate parent
+  INV-P1), AND
+  (ii) the dispatched recipe.action == `restart`.
+  For slot "gig" that command is
+  `bash <ANICCA_HOME>/skills/earn/gig/gig-cli.sh --restart` (= the
+  documented Sutando-pattern recover-from-dead entrypoint).
+- **REQ-R1a** (= stale → no-op): WHEN Issue.kind == `stale` AND
+  recipe.action == `restart`, THE DISPATCHER SHALL log
+  `step=3-recipe-stale-suppressed-INV-P1` to core-status.json and take NO
+  subprocess action (= keep the healthy tmux alive; sprint-4 may add a
+  gentler "wake-up" send_keys for stale; sprint-3 does NOT).
+- **REQ-R2**: THE restart invocation SHALL be `subprocess.run(...,
+  timeout=30, capture_output=True)`; failures (rc != 0, timeout) are
+  logged to core-status.json as
+  `step=3-recipe-restart-failed-<reason>` and the tick continues (= do
+  not abort the whole pass on health-fix failure).
+- **REQ-R3** (FIND-002 fix): WHEN Issue.kind / recipe.action falls into
+  ANY of the explicitly enumerated sprint-4-deferred set —
+  `{kill_server, send_keys, login, npm_install, git_checkout,
+  escalate_via_bot2bot, noop}` (= the 7 non-`tmux_dead`-restart recipes
+  health_check_v2 currently emits) — THE DISPATCHER SHALL log
+  `step=3-recipe-<action>-scaffold-deferred-sprint-4` and CONTINUE
+  without side-effect. The list is closed: any future recipe action
+  added to health_check_v2 falls into the catch-all
+  `step=3-recipe-unknown-<action>-scaffold-deferred-sprint-4` (= must
+  not crash on a recipe the dispatcher doesn't yet know).
 - **REQ-R4**: THE restart command per slot SHALL be resolved via a lookup
-  table `RESTART_CMD_BY_SLOT` keyed on slot name; unknown slots fall back to
-  the scaffold-deferred path (REQ-R3).
+  table `RESTART_CMD_BY_SLOT` keyed on slot name; unknown slots (= no
+  table entry) fall back to the scaffold-deferred path
+  `step=3-recipe-restart-no-cmd-for-<slot>`.
 
 ### Group I — Invariants
 
@@ -82,8 +111,16 @@ Sprint-3 #33 makes both real:
   DISPATCHER MAY perform is the per-slot `--restart` command (which the core
   itself documents as the recover-from-dead path). No `tmux kill`, no
   `--stop`, no `--kill`. Static grep over the dispatcher SHALL find 0 hits.
-- **REQ-I2** (= parent INV-4): All writes from STEP 6 SHALL be confined to
-  `<slot_dir>/tasks/` + `<slot_dir>/build_log.md`. Verified by mtime snapshot.
+- **REQ-I2** (= parent INV-4, FIND-004 scope fix): All writes from STEP 6
+  SHALL be confined to `<slot_dir>/tasks/` + `<slot_dir>/build_log.md`.
+  Verified by mtime snapshot scoped to EXACTLY those two paths
+  (NOT the whole `<slot_dir>/`, because `<slot_dir>/state/core-status.json`
+  is legitimately written every step transition by the existing dispatcher
+  — a whole-slot-dir snapshot would always fail). The test snapshots
+  `<slot_dir>/tasks/*` + `<slot_dir>/build_log.md` mtimes before STEP 6,
+  asserts STEP 6 adds AT MOST one tasks/ file and appends to build_log.md
+  AT MOST one "## " section, and asserts EVERYTHING ELSE under
+  `<slot_dir>/` except `<slot_dir>/state/` is mtime-unchanged.
 - **REQ-I3** (= no-human-touch / REQ-J8): THE DISPATCHER MUST NOT call
   osascript / Telegram / Slack / Twilio / sudo / SecKeychain / Touch-ID.
 
@@ -92,7 +129,8 @@ Sprint-3 #33 makes both real:
 | EDGE | Trigger | Expected behavior |
 |---|---|---|
 | E1 | `<slot_dir>/tasks/` does not exist | mkdir -p, then write |
-| E2 | menu item `name` is empty | enqueue with `unnamed-<ts>` filename |
+| E2 | menu item `name` is empty | enqueue with sanitized component = `unnamed` (per REQ-T3 (iv)) |
+| E2a | menu item `name` is Japanese / all-uppercase / symbol-only | sanitized component = `unnamed` (= FIND-005 fix, REQ-T3 (iv) covers this) |
 | E3 | task file already exists (= same pass_id) | skip enqueue + log "enqueue-skipped-dup" |
 | E4 | restart subprocess times out (30s) | log "step=3-recipe-restart-failed-timeout"; continue |
 | E5 | restart subprocess exits non-zero | log "step=3-recipe-restart-failed-rc<N>"; continue |

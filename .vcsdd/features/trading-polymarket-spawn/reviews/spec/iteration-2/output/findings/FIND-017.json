@@ -1,0 +1,15 @@
+{
+  "findingId": "FIND-017",
+  "relatedTo": "FIND-007",
+  "dimension": "verification_readiness",
+  "category": "test_coverage",
+  "severity": "medium",
+  "status": "new",
+  "description": "REQ-T10's central new safety claim — the belt-and-suspenders 'A venue entry with kyc_required: true is never selected for a real stake even if jurisdiction_ok_for_real: true is set' (spec.md:246) — has NO proof obligation. jurisdictionVenueFilter is declared in the Pure Core with signature (jurisdiction, venue, menu) (verification-architecture.md:23), but its only proof obligations PROP-T14/T15/T16 (verification-architecture.md:59-61) exclusively exercise jurisdiction_ok_for_real; none feed a venue with kyc_required:true to assert the filter returns False. The single guard that prevents an autonomous instance from real-staking on Kalshi (the exact J8/KYC failure FIND-007 raised) is therefore unverified, and the kyc_required field is not even an input parameter named in the function signature, so it is unclear the pure function can read it. The anti-slop table (verification-architecture.md) does not cover this path either.",
+  "evidence": {
+    "filePath": "specs/verification-architecture.md",
+    "lineRange": "23,59-61",
+    "snippet": "jurisdictionVenueFilter(jurisdiction, venue, menu) ... PROP-T14/15/16 only assert jurisdiction_ok_for_real true/false/absent; no kyc_required case"
+  },
+  "routeToPhase": "1b"
+}

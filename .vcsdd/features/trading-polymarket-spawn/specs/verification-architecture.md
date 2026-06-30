@@ -18,9 +18,9 @@ inherits: earn-shared-skeleton (PROP-A1..A9, PROP-B1..B6, PROP-C1..C3, PROP-D1..
 | `riskGate(risk_state, position_usdc, current_balance, edge, config)` | `skills/earn/pm-trade/risk.py` | typed records | `{decision: ALLOW\|HALT, reason: str}` |
 | `edgePredicate(model_p, market_p)` | `skills/earn/pm-trade/risk.py` | 2 floats | `bool` |
 | `positionSize(kelly_f, bankroll, min_size, gas_reserve)` | `skills/earn/pm-trade/risk.py` | 4 floats | `float` |
-| `spawnEligible(treasury, net_pos_days, recent_spawns, config)` | `skills/self/spawn-child/spawn.py` | typed records | `{eligible: bool, reason: str}` |
-| `titheAmount(realized_pnl, tithe_pct, min_tithe)` | `skills/self/spawn-child/spawn.py` | 3 floats | `float` |
-| `jurisdictionVenueFilter(jurisdiction, venue, menu)` | `skills/earn/pm-trade/risk.py` | str, str, dict | `bool` (True = allowed) |
+| `spawnEligible(treasury, net_pos_days, children, config)` | wraps `decideSpawn` from `skills/self/spawn/lib/spawn-decision.js`; `children` = `readChildren(children.jsonl)` | typed records (treasury: float, net_pos_days: int, children: array, config: dict) | `{eligible: bool, reason: str}` |
+| `titheAmount(realized_pnl, tithe_pct, min_tithe)` | `skills/earn/pm-trade/risk.py` | 3 floats | `float` |
+| `jurisdictionVenueFilter(jurisdiction, venue, jurisdiction_ok_for_real, kyc_required)` | `skills/earn/pm-trade/risk.py` | str, str, bool, bool | `bool` (True = BOTH `jurisdiction_ok_for_real == true` AND `kyc_required == false`; effectful shell reads both scalars from `menu.venues[venue]` before calling) |
 | `selectTier(balanceUsdc, env)` | `runtime/loop/tier.mjs` | float, dict | `{tier, model}` (existing) |
 | `isEarnSlot(slot)` | `runtime/loop/earn-slot.mjs` | str | `bool` (existing) |
 | `earnSkillRelPath(slot)` | `runtime/loop/earn-slot.mjs` | str | `str` (existing) |
@@ -32,10 +32,9 @@ inherits: earn-shared-skeleton (PROP-A1..A9, PROP-B1..B6, PROP-C1..C3, PROP-D1..
 | `pm.py` | REST calls to Polymarket/Kalshi/Hyperliquid CLOB; writes to `risk_state.json`, `events/` |
 | `ensure-solana-wallet.mjs` | ed25519 keygen + file write to `$ANICCA_HOME/.automaton/solana.json` |
 | EVM key gen + Base tx broadcast | entropy read; `wallet.json` write; on-chain USDC transfer |
-| `git clone` + `install.sh` | disk writes to `$CHILD_HOME` |
-| `anicca-daemon.sh` child boot | process spawn (tmux); log file writes |
+| `skills/self/spawn/run.sh` | droplet provision (DO/Akash), wallet gen, AgentMail inbox, seed USDC transfer, telemetry POST, `children.jsonl` append — all on a separate isolated host |
 | `appendLedgerLine` | O_APPEND write to `ledger.jsonl` (existing) |
-| `spawn-log.jsonl` append | O_APPEND write |
+| `children.jsonl` append | O_APPEND write via `lib/ledger.js appendChild` |
 | `bot2bot.sh` gh issue create | gh API call |
 | Predexon x402 fetch | outbound HTTP; x402 USDC settlement |
 

@@ -1,0 +1,15 @@
+{
+  "findingId": "FIND-016",
+  "relatedTo": "FIND-007",
+  "dimension": "edge_case_coverage",
+  "category": "spec_gap",
+  "severity": "medium",
+  "status": "new",
+  "description": "The FIND-007 fix made venue provisioning fail-closed (REQ-T10 / spec.md:241: install.sh provisions ALL venues with jurisdiction_ok_for_real:false AND kyc_required:true; 'The operator sets jurisdiction_ok_for_real:true only for venues with confirmed programmatic access'). This is safe but creates an unreachable-real-earn dead-end for the autonomous spawn path: a spawned child (REQ-S2/S3) is provisioned with NO human operator, so jurisdiction_ok_for_real stays false for EVERY venue forever, including Hyperliquid (the spec's designated US fallback). Consequently the child can never leave paper mode into a real stake on any venue, which makes REQ-T8 real earn recording, REQ-S8 real tithe, and PROP-E2E-2 (verification-architecture.md:180: 'child ... completes >=1 earn pass verified on-chain' + 'tithe-log.jsonl has >=1 row with a confirmed Base tx_hash') permanently unreachable. The spec never defines who or what flips jurisdiction_ok_for_real:true for a no-human-in-the-loop instance, so either the slot is inert for real earning (no money ever made) or an undefined human/operator step is implied (J8 tension).",
+  "evidence": {
+    "filePath": "specs/behavioral-spec.md",
+    "lineRange": "241",
+    "snippet": "menu.json is provisioned by install.sh with ALL venues set to jurisdiction_ok_for_real: false AND kyc_required: true by default. The operator sets jurisdiction_ok_for_real: true only for venues with confirmed programmatic access"
+  },
+  "routeToPhase": "1a"
+}

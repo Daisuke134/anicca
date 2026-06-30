@@ -1,0 +1,28 @@
+{
+  "reviewType": "spec",
+  "featureName": "proactive-step6-act",
+  "iteration": 2,
+  "mode": "lean",
+  "artifactsToReview": [
+    ".vcsdd/features/proactive-step6-act/specs/behavioral-spec.md",
+    ".vcsdd/features/proactive-step6-act/specs/verification-architecture.md",
+    "skills/_shared/lib/health_check_v2.py",
+    "skills/_shared/proactive-loop-dispatch.py"
+  ],
+  "previousIterationFindings": [
+    "FIND-001 critical: REQ-R1 now gates restart on Issue.kind=='tmux_dead' AND action=='restart' (both). REQ-R1a explicitly maps stale→log+no-op (INV-P1 preserved).",
+    "FIND-002 high: REQ-R3 now enumerates the full 7-action set {kill_server, send_keys, login, npm_install, git_checkout, escalate_via_bot2bot, noop} + unknown-action catch-all.",
+    "FIND-003 high: REQ-T1 filename now includes pass_id (<unix_ts>-<pass_id>-<sanitized_name>.json); REQ-T4 detection = glob('*-<pass_id>-*.json').",
+    "FIND-004 medium: REQ-I2 snapshot scope is tasks/* + build_log.md ONLY; state/ legitimately writes every step.",
+    "FIND-005 medium: REQ-T3 (iv) — when sanitized result is empty (Japanese/uppercase/symbol-only), use 'unnamed'."
+  ],
+  "reviewDimensions": ["spec_fidelity", "verification_readiness"],
+  "extraConstraints": [
+    "Verify REQ-R1 gates on Issue.kind=='tmux_dead' explicitly — not just action=='restart'.",
+    "Verify REQ-R1a explicitly names parent INV-P1 and the suppression log line.",
+    "Verify REQ-R3 enumerates the 7 actions matching health_check_v2.py:97-107 exactly.",
+    "Verify REQ-T1 filename includes pass_id and REQ-T4 detection algorithm is concrete.",
+    "Verify REQ-I2 scope tasks/* + build_log.md, NOT slot_dir tree."
+  ],
+  "expectedOutputPath": ".vcsdd/features/proactive-step6-act/reviews/spec/iteration-2/output/"
+}

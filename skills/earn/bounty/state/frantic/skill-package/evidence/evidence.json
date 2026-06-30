@@ -1,0 +1,15 @@
+{
+  "claim_type": "relevant_repo_demo_example",
+  "public_url": "https://github.com/Daisuke134/runx-ci-failure-triage",
+  "runx_link_found": ["https://runx.ai", "https://github.com/runxhq/runx"],
+  "summary": "An original, runnable runx skill package (SKILL.md + X.yaml + run.mjs + fixtures) that triages a CI failure into flake/infra/real-break/dep and emits a typed runx.ci.triage.v1 packet. It demonstrates real runx usage end to end: a green 2-case harness and a signed receipt that `runx verify` recomputes as valid.",
+  "audience": "Developers and maintainers evaluating runx for governed agent skills, and anyone learning how to author a runx cli-tool skill with harness cases and verifiable receipts.",
+  "why_allowed": "This is an original public GitHub repository authored by the submitter that uses and links to runx; GitHub repositories are the canonical place to share open-source tooling and examples, so a runx demo/example repo is on-topic and allowed.",
+  "observations": [
+    "runx --version: runx-cli 0.6.14",
+    "runx harness <abs path> => status passed, cases [real_break_clear_logs, ambiguous_truncated_logs]",
+    "dogfood run (dep break) sealed receipt sha256:0ed1ab9cc51259d1dc497e20a279a40a5dc5ec21e839310ba6517785a13a483e",
+    "runx verify --receipt <id>.json => valid=true (digest valid, content_address valid, signature valid/production)",
+    "README links to https://runx.ai and https://github.com/runxhq/runx"
+  ]
+}

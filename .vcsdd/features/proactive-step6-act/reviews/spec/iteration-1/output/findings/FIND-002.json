@@ -1,0 +1,16 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "high",
+  "description": "REQ-R3 enumerates ONLY three non-restart actions for scaffold-deferred logging: 'noop', 'send_keys', 'escalate_via_bot2bot'. But the production recipe map in health_check_v2.select_fix_recipe emits SEVEN distinct action strings: restart, kill_server, send_keys, login, npm_install, git_checkout, escalate_via_bot2bot, noop (skills/_shared/lib/health_check_v2.py:96-108). The spec's scaffold-deferred enumeration is incomplete: 'kill_server' (= for tmux_server_corrupted, a destructive LAYER C side-effect), 'login', 'npm_install', 'git_checkout' are unmentioned. REQ-R4 says 'unknown slots fall back to the scaffold-deferred path' but that's slot-keyed, not action-keyed. The spec must either (a) explicitly enumerate ALL non-restart actions as scaffold-deferred including kill_server/login/npm_install/git_checkout, or (b) state that recipe.action NOT IN {'restart'} maps to the scaffold-deferred branch (current REQ-R3 phrasing 'anything OTHER than restart' technically covers them but the EARS contract loses verifiability when the test author reads only the three named actions). Without this, an adversary test for PROP-R3-other-actions-scaffold-only could pass while leaving kill_server silently uncovered.",
+  "evidence": {
+    "filePath": ".vcsdd/features/proactive-step6-act/specs/behavioral-spec.md",
+    "lineRange": "71-74",
+    "snippet": "REQ-R3: WHEN recipe.action is anything OTHER than 'restart' (= 'noop', 'send_keys', 'escalate_via_bot2bot'), THE DISPATCHER SHALL log `step=3-recipe-<action>-scaffold-deferred-sprint-4`"
+  },
+  "secondaryEvidence": [
+    {"filePath": "skills/_shared/lib/health_check_v2.py", "lineRange": "96-108", "snippet": "RECIPES enumerates: restart, restart, kill_server, send_keys, login, send_keys, npm_install, git_checkout, send_keys, escalate_via_bot2bot"}
+  ],
+  "routeToPhase": "1a"
+}

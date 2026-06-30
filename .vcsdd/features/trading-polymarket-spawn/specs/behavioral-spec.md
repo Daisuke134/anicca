@@ -32,7 +32,7 @@ Both slots run INSIDE the existing `~/anicca` runtime (`install.sh` → `registr
 
 | Layer | Functions / Modules |
 |-------|---------------------|
-| **Pure Core** | `kellyFraction(edge, market_p, bankroll, kelly_max, min_pos, gas_reserve)`, `riskGate(risk_state, position_usdc, current_balance, edge, config)`, `edgePredicate(model_p, market_p)`, `positionSize(kelly_f, bankroll, min_size, gas_reserve)`, `spawnEligible(treasury, net_pos_days, rate_cap, config)`, `titheAmount(earned, pct)`, `jurisdictionVenueFilter(jurisdiction, venue, menu)`, `selectTier(balanceUsdc, env)` (existing, reused), `isEarnSlot(slot)` (existing, reused) |
+| **Pure Core** | `kellyFraction(edge, market_p, bankroll, kelly_max, min_pos, gas_reserve)`, `riskGate(risk_state, position_usdc, current_balance, edge, config)`, `edgePredicate(model_p, market_p)`, `positionSize(kelly_f, bankroll, min_size, gas_reserve)`, `spawnEligible(treasury, net_pos_days, children, config)` (wraps `decideSpawn` from `skills/self/spawn/lib/spawn-decision.js`; `children` = `readChildren(colony_ledger)`), `titheAmount(earned, pct)`, `jurisdictionVenueFilter(jurisdiction, venue, jurisdiction_ok_for_real, kyc_required)` (effectful shell reads both scalar fields from `menu.venues[venue]` and passes as explicit args; returns `true` IFF both `jurisdiction_ok_for_real == true` AND `kyc_required == false`), `selectTier(balanceUsdc, env)` (existing, reused), `isEarnSlot(slot)` (existing, reused) |
 | **Effectful Shell** | `pm.py` CLOB REST calls to Polygon Polymarket API, Kalshi REST, Hyperliquid REST, on-chain tx broadcast (seed transfer, tithe), `ensure-solana-wallet.mjs` (key generation + file write), `git clone` + `install.sh` execution, `anicca-daemon.sh` child boot, `appendLedgerLine` (existing), `appendLedgerLine` for spawn log, bot2bot `gh issue create`, Predexon x402 data fetch, alpha-mcp signal fetch, agent-reach news fetch |
 
 ## Tracked Quantities
@@ -45,9 +45,9 @@ All paths are relative to `$ANICCA_HOME` unless noted. These are canonical input
 | `paper_log` | `~/loops/earn-pm-trade/paper-log.jsonl` | append-only; one row per paper trade: `{ts, pass_id, market_id, venue, side, size_usdc, model_p, market_p, edge, outcome: "resolved"|"pending", pnl_usdc: null\|float}` |
 | `events` | `~/loops/earn-pm-trade/events/<pass_id>.jsonl` | earn-shared-skeleton REQ-G2 event stream; `event:"earn"` rows written ONLY on market resolution with real PnL |
 | `build_log` | `~/loops/earn-pm-trade/build_log.md` | narrative memory (Sutando pattern; inherited from skeleton) |
-| `menu` | `~/loops/earn-pm-trade/menu.json` | infinite-menu config: `{venues:[{id, jurisdiction_ok_for_real, min_usdc}], strategies:[], ...}` |
+| `menu` | `~/loops/earn-pm-trade/menu.json` | infinite-menu config: `{venues:[{id, jurisdiction_ok_for_real, kyc_required, min_usdc}], strategies:[], ...}` |
 | `risk_config` | `~/loops/earn-pm-trade/risk-config.json` | tunable caps: `{kelly_fraction_max, daily_loss_pct: 0.05, drawdown_pct: 0.25, min_position_usdc: 1.50, gas_reserve_usdc, paper_passes_required, spawn_threshold_usdc, spawn_net_pos_days, spawn_rate_cap_days, spawn_seed_usdc, tithe_pct}` |
-| `spawn_log` | `$ANICCA_HOME/state/spawn-log.jsonl` | append-only; one row per spawn attempt: `{ts, parent_wallet, child_home, child_wallet_solana, child_wallet_base, seed_tx_hash, seed_usdc, status: "initiated"\|"funded"\|"booted"\|"registered"\|"failed", error?}` |
+| `colony_ledger` | `$ANICCA_HOME/state/children.jsonl` | append-only; managed by `skills/self/spawn/lib/ledger.js` (`readChildren`/`appendChild`); one row per spawned child: `{child_id, parent_wallet, child_wallet, child_inbox, status: "provisioning"\|"active"\|"failed", provider_id, spawned_ms, seed_usdc, host, dashboard_id, ...}` |
 | `wake_ledger` | `$ANICCA_HOME/state/ledger.jsonl` | existing ReAct loop ledger (append-only; `appendLedgerLine` only) |
 | `cumulative` | `~/loops/earn-pm-trade/cumulative.json` | recomputed each pass; `{cumulative_usdc_earned, cumulative_token_cost_usdc, first_seen_ts}` |
 
@@ -204,7 +204,11 @@ WHEN `risk_state.paper_mode == false` AND `riskGate` returns ALLOW AND `position
 WHEN a Polymarket/Kalshi/Hyperliquid market resolves AND an open position in `risk_state.open_positions` matches the resolved `market_id`, THE SYSTEM SHALL:
 (a) compute `realized_pnl_usdc = settlement_amount − entry_cost` (resolved from on-chain settlement or venue API),
 (b) `settle-verify.py` SHALL perform on-chain settlement verification BEFORE any earn row is written. The verification method is venue-specific:
-  - **Polymarket (Polygon)**: call `eth_getLogs(chain=Polygon, address=USDC_POLYGON, topics=[ERC20_Transfer_topic0, null, checksummed_our_polygon_wallet])` for blocks starting at or after `market_end_ts`, and confirm a Transfer of the expected gross payout (in 6-decimal USDC raw units, ≥ `entry_cost`) to our wallet. The `tx_hash` from the matching log event is the `receipt_id`.
+  - **Polymarket (Polygon)**: call `eth_getLogs(chain=Polygon, address=USDC_POLYGON, topics=[ERC20_Transfer_topic0, <settlement_addrs_topic>, checksummed_our_polygon_wallet])` for blocks starting at or after `market_end_ts`, where `settlement_addrs_topic` is a topic[1] filter covering ONLY the Polymarket CTF Exchange and NegRiskAdapter settlement contract addresses (configured in `settle_verify_config.json`; not hardcoded in code). The matching Transfer event MUST satisfy ALL of:
+    1. `from` is in the `POLYMARKET_SETTLEMENT_ADDRS` allowlist (CTF Exchange or NegRiskAdapter; any Transfer from a non-allowlist address — including sibling tithes, wallet top-ups, or unrelated market payouts — is REJECTED),
+    2. the raw USDC amount (6-decimal) equals `gross_payout_usdc` computed for THIS resolved position (`position_size_usdc × settlement_price`), with tolerance ±1 raw unit for integer rounding only,
+    3. the tx containing the Transfer references THIS market's `condition_id` (verified by calling `eth_getTransactionReceipt` and confirming a matching `PositionRedemption` or `PayoutRedemption` log from the CTF contract in the same tx).
+  The `tx_hash` from the matching log event is the `receipt_id`. Any Transfer that fails ANY of these three sub-conditions is REJECTED; the earn row is NOT written.
   - **Hyperliquid**: call HL REST API `POST /info` with `{"type": "clearinghouseState", "user": our_hl_address}` and confirm `realizedPnl` increased by the expected amount since position open. The SHA-256 hash of the API response JSON is the `receipt_id`.
   pm-trade does NOT use the skeleton's REQ-G2 three-check gate for trading-venue settlements. REQ-G2 is scoped to off-chain JSON payout processors (Coconala/Stripe/Whop) and explicitly excludes `eth_getLogs` and on-chain units. `settle-verify.py` IS this slot's verification gate.
 (c) ONLY when `settle-verify.py` returns `{verified: true, receipt_id: <evidence>}`, emit an `event: "earn"` row to `~/loops/earn-pm-trade/events/<pass_id>.jsonl` with `{event: "earn", receipt_id: <evidence>, amount_usdc: realized_pnl_usdc, platform: <venue>, settle_verify_result: <settle-verify output hash>}` and append to `earnings.jsonl` directly,
@@ -233,133 +237,146 @@ WHEN the slot's ROI tracking (inherited REQ-B1) appends a `roi.jsonl` row, the `
 
 #### REQ-T10 — Geoblock Guard (jurisdiction-aware venue selection)
 
-WHEN `risk_state.paper_mode == false` AND the model has selected `venue: "polymarket"` for a real stake, THE SYSTEM SHALL check `menu.json`'s venue entry for `polymarket.jurisdiction_ok_for_real`. IF the value is `false` (= US-jurisdiction instance flag), THE SYSTEM SHALL NOT place a real Polymarket order and SHALL reroute the decision to the next venue in `menu.json` with BOTH `jurisdiction_ok_for_real: true` AND `kyc_required: false`. **Kalshi MUST NOT be used for real stakes**: Kalshi is a US-regulated exchange requiring SSN/identity KYC, which a no-human-in-the-loop instance cannot complete (J8 violation). The only currently-eligible programmatic real-stake fallback for US-jurisdiction instances is Hyperliquid perps (via `hl.py`; no identity KYC required for perp trading with an EVM wallet). Polymarket paper trades remain allowed regardless of jurisdiction flag.
+WHEN `risk_state.paper_mode == false` AND the model has selected a venue for a real stake, THE SYSTEM SHALL read BOTH `menu.json`'s `venue.jurisdiction_ok_for_real` AND `venue.kyc_required` for the selected venue and pass both as explicit scalar arguments to the pure function `jurisdictionVenueFilter(jurisdiction, venue, jurisdiction_ok_for_real, kyc_required)`. `jurisdictionVenueFilter` returns `True` IFF BOTH conditions hold: `jurisdiction_ok_for_real == true` AND `kyc_required == false`. If either fails, THE SYSTEM SHALL NOT place a real order and SHALL reroute to the next venue in `menu.json` that passes `jurisdictionVenueFilter`. **Kalshi MUST NOT be used for real stakes**: Kalshi is a US-regulated exchange requiring SSN/identity KYC (`kyc_required: true`), which a no-human-in-the-loop instance cannot complete (J8 violation). The only currently-eligible programmatic real-stake fallback for US-jurisdiction instances is Hyperliquid perps (via `hl.py`; `kyc_required: false`, no identity KYC required for EVM wallet perp trading). Polymarket paper trades remain allowed regardless of jurisdiction flag.
+
+**Parent-provisioned venue policy (no-human-in-loop for spawned children)**: `install.sh` provisions ALL venues with `jurisdiction_ok_for_real: false` AND `kyc_required: true` by default. For the PARENT instance, the parent configures its own `menu.json` (human-funded body = human operator). For a SPAWNED CHILD instance, the spawn invocation (REQ-S5) SHALL include a venue policy snapshot (`parent_venue_policy.json`) derived from the parent's `menu.json` entries where both `jurisdiction_ok_for_real: true` AND `kyc_required: false`. The child's `install.sh` bootstrap uses this parent-provided policy as the initial `menu.json`, so the child can reach real-stake venues the parent has confirmed are programmatic-access-only. This is NOT a human-operator action — the parent instance acts as the authoritative venue policy source for its children (no-human-in-loop per REQ-J8).
 
 **Edge Cases:**
-- All real-stake venues have `jurisdiction_ok_for_real: false`: no real trade placed; slot logs `build_log.md` entry `"all venues jurisdiction-blocked; paper only"`.
-- `menu.json` missing `jurisdiction_ok_for_real` key: default to `false` (fail-closed; geoblock assumed until explicitly cleared).
-- `menu.json` is provisioned by `install.sh` with ALL venues set to `jurisdiction_ok_for_real: false` AND `kyc_required: true` by default. The operator sets `jurisdiction_ok_for_real: true` only for venues with confirmed programmatic access (no human identity KYC required). Any venue with `kyc_required: true` MUST NOT have `jurisdiction_ok_for_real: true` regardless of operator setting; the slot enforces this by checking both fields.
+- All real-stake venues have `jurisdiction_ok_for_real: false` OR `kyc_required: true`: no real trade placed; slot logs `build_log.md` entry `"all venues jurisdiction-blocked; paper only"`.
+- `menu.json` missing `jurisdiction_ok_for_real` key: default to `false` (fail-closed).
+- `menu.json` missing `kyc_required` key: default to `true` (fail-closed; KYC assumed required until explicitly cleared to `false`).
+- Spawned child with no parent venue policy file: all venues remain at install.sh defaults (all blocked); child runs paper-only until parent policy is applied.
 
 **Acceptance Criteria:**
 - With `polymarket.jurisdiction_ok_for_real: false`, no real Polymarket CLOB call is issued.
-- With `polymarket.jurisdiction_ok_for_real: true`, real CLOB calls are allowed.
-- A venue entry with `kyc_required: true` is never selected for a real stake even if `jurisdiction_ok_for_real: true` is set (belt-and-suspenders against misconfiguration).
+- With `polymarket.jurisdiction_ok_for_real: true` AND `kyc_required: false`, real CLOB calls are allowed.
+- `jurisdictionVenueFilter` called with `kyc_required: true` returns `False` regardless of `jurisdiction_ok_for_real` value (belt-and-suspenders; `kyc_required` is an explicit parameter, not read from a global).
+- A spawned child whose parent included `parent_venue_policy.json` with `hyperliquid: {jurisdiction_ok_for_real: true, kyc_required: false}` can reach real Hyperliquid stakes without any human operator action.
 
 ### Group S — Spawn Slot (`self/spawn-child`)
 
+**Delegation invariant**: `self/spawn-child` is a **thin wrapper** around the existing, live-E2E-proven `skills/self/spawn/run.sh` (SKILL.md verified 2026-06-16). The spawn skill handles all provisioning mechanics — wallet generation (`scripts/gen-wallet.sh`), AgentMail inbox, provisional colony ledger row, DigitalOcean/Akash droplet provisioning, USDC seed transfer, telemetry registration, final colony ledger row — on an **isolated separate droplet** where the child's `clawrouter` binds its own `:8402` with no port collision with the parent. The wrapper's sole additions are: (a) the trading-treasury additional gate (`net_pos_days`), (b) passing `spawn_seed_usdc` and `parent_venue_policy.json` to `run.sh`, and (c) extracting children from `$ANICCA_HOME/state/children.jsonl` (via `lib/ledger.js readChildren`) for the eligibility check. `spawn-log.jsonl` is NOT used; `$ANICCA_HOME/state/children.jsonl` is the sole colony ledger.
+
 #### REQ-S1 — Spawn Eligibility Check (pure)
 
-WHEN the slot `self/spawn-child` is invoked by the ReAct loop, THE SYSTEM SHALL first evaluate the pure function `spawnEligible(treasury, net_pos_days, spawn_log, config)` where:
+WHEN the slot `self/spawn-child` is invoked by the ReAct loop, THE SYSTEM SHALL first evaluate the pure function `spawnEligible(treasury, net_pos_days, children, config)` where:
 - `treasury` = `current_balance − risk_config.gas_reserve_usdc − risk_config.spawn_seed_usdc` (= surplus available after retaining gas + one seed)
 - `net_pos_days` = count of calendar days in `cumulative.json` history where `usdc_earned_that_day > token_cost_that_day`
-- `spawn_log` = recent rows from `$ANICCA_HOME/state/spawn-log.jsonl`
-- `config` = `risk_config.{spawn_threshold_usdc, spawn_net_pos_days, spawn_rate_cap_days, spawn_seed_usdc}`
+- `children` = array from `readChildren($ANICCA_HOME/state/children.jsonl)` via `skills/self/spawn/lib/ledger.js` (empty array if file absent)
+- `config` = `risk_config.{spawn_threshold_usdc, spawn_net_pos_days, spawn_rate_cap_days, spawn_seed_usdc, spawn_hard_cap}`
 
 `spawnEligible` returns `{eligible: bool, reason: string}` and is `true` IFF ALL of:
-1. `treasury ≥ config.spawn_threshold_usdc`
-2. `net_pos_days ≥ config.spawn_net_pos_days`
-3. no row in `spawn_log` with `status ∈ {"initiated","funded","booted","registered"}` and `ts > (now − config.spawn_rate_cap_days × 86400)` (= rate cap: no concurrent or too-recent spawn from this parent)
+1. `treasury ≥ config.spawn_threshold_usdc` (= parent has surplus above gas + seed)
+2. `net_pos_days ≥ config.spawn_net_pos_days` (= trading-specific profitability gate, checked BEFORE decideSpawn)
+3. `decideSpawn({balanceUsdc: treasury, children, rateLimitDays: config.spawn_rate_cap_days, maxChildren: config.spawn_hard_cap, minBalanceUsdc: config.spawn_threshold_usdc})` returns `{eligible: true}` — per `skills/self/spawn/lib/spawn-decision.js`; this subsumes the balance check (condition 1 above, re-verified by decideSpawn), rate-limit check (no child with `spawned_ms` within last `spawn_rate_cap_days` days), and concurrency cap (`children.length < spawn_hard_cap`)
 4. `config.spawn_seed_usdc ≥ 1.50` (minimum viable child seed; less than this leaves the child with no trading capacity)
 
 **Edge Cases:**
-- `spawn_log` file missing (first spawn): treated as empty; all spawn rate-cap checks pass.
+- `children.jsonl` file missing (first spawn): `readChildren` returns `[]`; all rate-cap and concurrency-cap checks pass.
 - `treasury < 0` (wallet below gas reserve): `eligible: false, reason: "insufficient_treasury"`.
-- Partially-written `spawn_log` row (crash mid-spawn): row at `status: "initiated"` → rate cap fires → spawn blocked until row ages out or is manually resolved.
+- A child row with `status: "provisioning"` (crash mid-spawn): it has a `spawned_ms` timestamp → rate cap fires → spawn blocked until row ages out.
 
 **Acceptance Criteria:**
 - `spawnEligible` is a pure function; no I/O.
 - All four conditions independently tested with boundary values.
 
-#### REQ-S2 — Child Wallet Provisioning
+#### REQ-S2 — Spawn Invocation (thin wrapper around `skills/self/spawn/run.sh`)
 
-WHEN `spawnEligible` returns `{eligible: true}`, THE SYSTEM SHALL:
-(a-pre) **Acquire an exclusive OS-level file lock** on `$ANICCA_HOME/state/spawn.lock` via `flock -n 9 9>"$LOCK_FILE"` (bash; or `lockfile -1 -r 0` on macOS) before reading the spawn-log snapshot and before writing any row. If the lock cannot be acquired immediately (another spawn pass holds it), abort with `{eligible: false, reason: "spawn_lock_held"}` without modifying spawn-log. Hold the lock through step (e), then release. This atomic claim prevents two concurrent spawn passes from both reading an empty log and both appending "initiated" rows.
-(a) compute a fresh `CHILD_HOME` path: `$ANICCA_INSTANCES_DIR/<ulid>` (where `ANICCA_INSTANCES_DIR` defaults to `~/.anicca-instances/`; `<ulid>` is a new ULID),
-(b) run `ANICCA_HOME=$CHILD_HOME node ~/anicca/runtime/compute-proxy/ensure-solana-wallet.mjs` to generate a fresh self-owned Solana ed25519 keypair at `$CHILD_HOME/.automaton/solana.json`. NOTE: `ensure-solana-wallet.mjs` writes ONLY the Solana keypair (`solana.json`); it does NOT create the EVM `wallet.json`.
-(c) generate a fresh secp256k1 Base/EVM private key independently of the Solana key (no shared entropy with parent or Solana key): `node -e 'const {generatePrivateKey,privateKeyToAddress}=require("viem/accounts");const k=generatePrivateKey();console.log(JSON.stringify({address:privateKeyToAddress(k),privateKey:k}))'`. Write the resulting JSON to `$CHILD_HOME/.automaton/wallet.json` with `mode 0600`,
-(d) assert `child_wallet_base ≠ parent_wallet_base` (addresses cannot collide; fail-closed if they do — abort and delete child home),
-(e) append an `{ts, parent_wallet, child_home, child_wallet_solana, child_wallet_base, seed_usdc: config.spawn_seed_usdc, status: "initiated"}` row to `$ANICCA_HOME/state/spawn-log.jsonl`, then release the spawn.lock.
+WHEN `spawnEligible` returns `{eligible: true}`, THE SYSTEM SHALL invoke the existing spawn skill:
 
-**Edge Cases:**
-- `$CHILD_HOME` already exists (ULID collision, astronomically unlikely): abort; generate new ULID.
-- Base key generation fails (entropy exhaustion): abort; log to `build_log.md`; spawn attempt recorded as `status: "failed"`.
-- Wallet address collision with parent: abort + delete `$CHILD_HOME`.
+```
+ANICCA_SEED_USDC=$config.spawn_seed_usdc \
+ANICCA_SPAWN_HOST=${ANICCA_SPAWN_HOST:-do} \
+ANICCA_VENUE_POLICY_PATH=$parent_venue_policy_path \
+bash $ANICCA_REPO/skills/self/spawn/run.sh
+```
 
-**Acceptance Criteria:**
-- `$CHILD_HOME/.automaton/solana.json` exists with a valid base58 address after REQ-S2.
-- `$CHILD_HOME/.automaton/wallet.json` exists with `mode 0600`.
-- `spawn-log.jsonl` has a row with `status: "initiated"` referencing the new child home.
+where `parent_venue_policy_path` points to a JSON file derived from the parent's `menu.json` containing only entries where BOTH `jurisdiction_ok_for_real: true` AND `kyc_required: false` (see REQ-T10 parent-provisioned venue policy). The spawn skill (`run.sh`) handles ALL provisioning mechanics in the following order (per its verified E2E flow):
+1. `scripts/gen-wallet.sh` → child secp256k1 wallet at `$STATE_DIR/.tmp-childwallet-*.json` (600-perm, distinct from parent; collision aborts)
+2. AgentMail inbox provisioned via `POST /v0/inboxes` (child's own sovereign identity)
+3. Provisional row appended to `$ANICCA_HOME/state/children.jsonl` via `lib/ledger.js appendChild` (never lose track)
+4. DigitalOcean droplet (or Akash lease) provisioned with cloud-init that boots `clawrouter` + `automaton` as restart-always systemd units on the child's own `:8402` — **on a separate host, there is NO port collision with the parent's `:8402`**. `HOME=$CHILD_HOME` is set in the child's systemd unit environment; all child wallet reads in `proxy.mjs`, `execute-yield.mjs`, `hl.py`, and `anicca-daemon.sh` resolve to the child's OWN `$CHILD_HOME/.automaton/wallet.json`
+5. USDC seed transfer (`$config.spawn_seed_usdc`) from parent wallet to child wallet on Base
+6. Telemetry registration: child signs its own EIP-191 heartbeat and POSTs to `${TELEMETRY_URL}` (202 = child appears on dashboard; non-202 aborts)
+7. Final `children.jsonl` row updated to `{status: "active", provider_id, wake_action: "earn", earn_on_wake: true, dashboard_id}` via `lib/ledger.js`
 
-#### REQ-S3 — Framework Clone + Install
-
-WHEN the child wallet is provisioned (REQ-S2 row at `status: "initiated"`), THE SYSTEM SHALL:
-(a) `git clone --depth 1 https://github.com/Daisuke134/anicca.git $CHILD_HOME/anicca-framework` (the public framework; `--depth 1` for disk hygiene),
-(b) `cd $CHILD_HOME/anicca-framework && ANICCA_HOME=$CHILD_HOME bash install.sh` (registry-driven body sync; idempotent),
-(c) install Python dependencies for the `earn/pm-trade` slot: `pip3 install --quiet requests eth-account` plus any SDK enumerated in `$CHILD_HOME/anicca-framework/skills/earn/pm-trade/requirements.txt` (if present). On pip failure: mark spawn-log row `status: "failed"`, clean up `$CHILD_HOME`, abort,
-(d) verify exit code 0 for all above steps; on any failure: mark `spawn-log.jsonl` row as `status: "failed"`, clean up `$CHILD_HOME`, abort.
+**NOTE: NO `CHILD_PORT`, NO `COMPUTE_PROXY_PORT` port-split**: the parent does NOT scan for free ports. The child's `clawrouter` binds `:8402` on its OWN droplet — `anicca-daemon.sh` launches it with `BLOCKRUN_WALLET_KEY=$KEY clawrouter` (no port argument; the comment at `anicca-daemon.sh:50` confirms "`:8402-only (no port split)`"). Port isolation is achieved by physical host separation, not by port numbering.
 
 **Edge Cases:**
-- No internet (offline): git clone fails; spawn fails cleanly with `status: "failed"`.
-- `install.sh` fails on missing dep (e.g. no `jq`): same failure path; child home cleaned up.
-- Disk full mid-clone: `install.sh` ERR trap fires; spawn-log row marked `status: "failed"`.
+- `run.sh` exits non-zero (wallet collision, AgentMail failure, DO provision failure, seed transfer failure, telemetry non-202): spawn attempt is a hard failure; `children.jsonl` row left at `status: "provisioning"` or `"failed"` (the provisional append in step 3 is idempotent — the failure row serves as a rate-cap anchor); `build_log.md` records the error.
+- `DIGITALOCEAN_TOKEN` absent: spawn fails cleanly; `children.jsonl` row at `"failed"`.
+- `AGENTMAIL_API_KEY` absent: same failure path.
 
 **Acceptance Criteria:**
-- After REQ-S3, `$CHILD_HOME/skills/registry.json` exists and is parseable.
-- `install.sh` exits 0 on a fresh `CHILD_HOME`.
+- `children.jsonl` has a row with `status: "active"` containing `child_wallet` (≠ parent), `provider_id`, `dashboard_id` after successful spawn.
+- Child droplet's systemd unit confirms `AUTOMATON_GOAL=earn` (child earns on own wake).
+- `run.sh` exits 0 IFF all 7 steps complete; any failure → exit 1 + honest ledger row.
 
-#### REQ-S4 — Seed Transfer (on-chain; record tx)
+#### REQ-S3 — Framework + Slot Installation (delegated to spawn skill cloud-init)
 
-WHEN install completes successfully, THE SYSTEM SHALL:
-(a) transfer `config.spawn_seed_usdc` USDC from `parent_wallet_base` to `child_wallet_base` on Base (EIP-20 transfer via the parent's `~/.automaton/wallet.json` private key),
-(b) wait for the transfer tx to be included in a block (minimum 1 confirmation on Base),
-(c) record the confirmed `tx_hash` in the spawn-log row by atomically rewriting it to `status: "funded"` + `seed_tx_hash: <hash>`,
-(d) set `$CHILD_HOME/.env` variable `ANICCA_WALLET_ADDRESS` to `child_wallet_base`.
+The framework clone, `install.sh`, and Python dependency installation for `earn/pm-trade` are handled by `skills/self/spawn/scripts/cloud-init.sh` inside the child's droplet at first boot (step 4 of REQ-S2). The cloud-init script runs `git clone --depth 1 https://github.com/Daisuke134/anicca.git` and `bash install.sh` (registry-driven, idempotent; per NFR-1, `skills/earn/pm-trade/requirements.txt` is installed). If the parent provided `ANICCA_VENUE_POLICY_PATH` in REQ-S2, the cloud-init writes the policy file to `$CHILD_HOME/loops/earn-pm-trade/menu.json` BEFORE `install.sh` runs, so the child's initial menu reflects the parent-approved venue policy.
 
-THE SYSTEM SHALL NOT proceed to REQ-S5 (child boot) if the transfer has not confirmed (no `seed_tx_hash` in spawn log).
+The `self/spawn-child` wrapper does NOT separately run `git clone` or `install.sh` on the parent host; it delegates entirely to the spawn skill's droplet provisioning.
 
 **Edge Cases:**
-- Transfer tx fails (insufficient parent balance after gas): abort; spawn-log row marked `status: "failed"`; no child booted.
-- Transfer confirms but child wallet shows 0 balance due to Base RPC delay: boot proceeds; child's loop will wait for `selectTier` to reflect the balance on next wake.
-- Parent wallet private key read fails: abort immediately; no transfer; `status: "failed"`.
+- No internet on child droplet: cloud-init clone fails; automaton service fails to start; parent's telemetry registration step (step 6 of REQ-S2) fails → `children.jsonl` row stays at `"provisioning"` or `"failed"`.
+- `install.sh` fails on missing dep on the child droplet: same outcome via step 6/7 failure.
 
 **Acceptance Criteria:**
-- `spawn-log.jsonl` row at `status: "funded"` contains a valid `seed_tx_hash`.
-- Child base wallet balance ≥ `spawn_seed_usdc` (verified via RPC call after confirmation).
+- After REQ-S2 completes (run.sh exits 0), the child's cloud-init has been sent to the droplet and `automaton.service` is expected to start with `AUTOMATON_GOAL=earn`.
+- The `earn/pm-trade` slot is registered in the child's `skills/registry.json` after cloud-init completes.
 
-#### REQ-S5 — Child Boot via `anicca-daemon.sh`
+#### REQ-S4 — Seed Transfer (on-chain; delegated to spawn skill)
 
-WHEN the seed transfer is confirmed, THE SYSTEM SHALL:
-(a) assign a free TCP port above 8402 (`CHILD_PORT`) by scanning `8403..8499` for a port not already bound (`ss -tln | grep -q ":$p "` or `lsof -i TCP:$p` on macOS),
-(b) start the child daemon with `HOME=$CHILD_HOME ANICCA_HOME=$CHILD_HOME ANICCA_REPO=$CHILD_HOME/anicca-framework COMPUTE_PROXY_PORT=$CHILD_PORT bash $CHILD_HOME/anicca-framework/runtime/anicca-daemon.sh` in a new detached tmux session named `anicca-<child_ulid>`,
-(c) wait up to 30s for the child's `anicca-daemon.sh` to emit the `[loop] Starting Anicca loop` log line (visible in `$CHILD_HOME/logs/`),
-(d) update spawn-log row to `status: "booted"`.
+The USDC seed transfer (`config.spawn_seed_usdc` from parent wallet to child wallet on Base) is performed as step 5 in `skills/self/spawn/run.sh`. The spawn skill waits for confirmation and records `seed_usdc` in the `children.jsonl` row. The `self/spawn-child` wrapper passes `ANICCA_SEED_USDC=$config.spawn_seed_usdc` to `run.sh` (step 5 uses `$SEED_USDC`). The parent's `~/.automaton/wallet.json` private key is read by the spawn skill's EIP-20 transfer step.
 
-**Wallet isolation via `$HOME`**: all wallet-consuming modules (`proxy.mjs`, `execute-yield.mjs`, `hl.py`, `anicca-daemon.sh`'s `ensure_brain` key derivation) resolve the private key from `process.env.HOME + "/.automaton/wallet.json"` (or `os.path.expanduser("~/.automaton/wallet.json")`). By setting `HOME=$CHILD_HOME`, the ENTIRE child process tree — daemon, ClawRouter, loop, skills — reads ONLY `$CHILD_HOME/.automaton/wallet.json`. The parent's wallet at the parent's `$HOME` is never accessed by the child. With `COMPUTE_PROXY_PORT=$CHILD_PORT` (≠ 8402), `ensure_brain` in the child's daemon finds nothing on `$CHILD_PORT`, starts its own ClawRouter on `$CHILD_PORT` using the child's wallet key (derived from `$HOME/.openclaw/.env` → fallback `$HOME/.automaton/wallet.json` — both now point to `$CHILD_HOME`), and the child self-pays its own inference from `$CHILD_HOME/.automaton/wallet.json`.
+THE SYSTEM SHALL NOT proceed to child boot (REQ-S2 step 4) if the seed transfer has not confirmed; `run.sh` enforces this sequentially (seed transfer is step 5, droplet boot is step 4 — if step 5 fails, `run.sh` exits non-zero and the `children.jsonl` row remains at `"provisioning"`).
 
 **Edge Cases:**
-- tmux session creation fails (no tmux binary): use `nohup bash ... &` as fallback; record in spawn-log.
-- Child loop does not emit startup log within 30s: mark `status: "failed"`; child remains running for diagnostics but is flagged as suspect.
-- No free port found in 8403..8499: abort spawn; mark `status: "failed"`.
+- Transfer tx fails (insufficient parent balance after gas): `run.sh` exits non-zero; `children.jsonl` row at `"failed"`; parent balance is unaffected.
+- Parent wallet private key read fails: `run.sh` exits 1 immediately; no transfer.
 
 **Acceptance Criteria:**
-- After REQ-S5, `$CHILD_HOME/logs/` contains a file with `[loop] Starting Anicca loop`.
-- `tmux ls` shows a session named `anicca-<child_ulid>` (or the fallback process is alive).
+- `children.jsonl` row includes `seed_usdc: $config.spawn_seed_usdc` after successful spawn.
+- Child base wallet balance ≥ `spawn_seed_usdc` (verified via RPC after `run.sh` exits 0).
+
+#### REQ-S5 — Child Provisioning and Isolation (separate droplet; delegated to spawn skill)
+
+REQ-S2's `run.sh` invocation handles all child boot mechanics. This REQ documents the isolation invariants the spawn skill enforces.
+
+**Isolation model (SEPARATE DROPLET — not same-host port-split)**:
+- The child runs on its own DigitalOcean droplet (or Akash lease). `anicca-daemon.sh` on the child droplet launches `clawrouter` with `BLOCKRUN_WALLET_KEY=$KEY clawrouter` and no port argument (`anicca-daemon.sh:50-55` confirms `:8402-only`). On a dedicated droplet, `:8402` is free — there is NO port collision with the parent.
+- `HOME=$CHILD_HOME` is set in the child droplet's `automaton.service` systemd unit (written by `scripts/cloud-init.sh`). All wallet-consuming modules in the child process tree (`proxy.mjs`, `execute-yield.mjs`, `hl.py`, `anicca-daemon.sh`'s key derivation) resolve the private key from `$HOME/.automaton/wallet.json`, which on the child droplet = the child's own wallet. The parent's wallet is unreachable from the child's host.
+- `COMPUTE_PROXY_PORT` is NOT set; it is NOT used by `clawrouter` (confirmed by `anicca-daemon.sh:50-55`). Port isolation is achieved by physical host separation, not by port numbering. Any prior spec wording about `CHILD_PORT` or `COMPUTE_PROXY_PORT` for ClawRouter is superseded by this requirement.
+
+**Venue policy provisioning (no-human-in-loop)**:
+- The spawn invocation (REQ-S2) derives `parent_venue_policy.json` from the parent's `menu.json`: entries where BOTH `jurisdiction_ok_for_real: true` AND `kyc_required: false`. This file is passed to the cloud-init as `ANICCA_VENUE_POLICY_PATH` and written to the child's `$CHILD_HOME/loops/earn-pm-trade/menu.json` at bootstrap. The child can real-stake on venues the parent has confirmed require no identity KYC, without any human operator action.
+
+**Edge Cases:**
+- DO/Akash provisioning fails: `run.sh` exits 1; `children.jsonl` row at `"failed"` or `"provisioning"`.
+- `parent_venue_policy.json` is empty (parent has no real-stake-eligible venues): child bootstraps with all venues blocked; child runs paper-only.
+- Droplet boots but automaton fails to start: `children.jsonl` row remains at `"provisioning"` (telemetry POST was 202 but automaton health check fails); parent observes and can investigate.
+
+**Acceptance Criteria:**
+- `children.jsonl` row at `status: "active"` with valid `provider_id` after successful REQ-S2.
+- Child droplet's `automaton.service` environment includes `HOME=$CHILD_HOME` (verifiable via `systemctl show automaton`).
+- No `CHILD_PORT` or `COMPUTE_PROXY_PORT` env var is set or expected anywhere in the spawn flow.
 
 #### REQ-S6 — Bot2bot Registration
 
-WHEN child boot is confirmed (spawn-log at `status: "booted"`), THE SYSTEM SHALL:
-(a) invoke `bot2bot.sh` (inherited from skeleton) to create a `gh issue` on the framework repo with label `bot2bot-registry` and body `{event: "child-spawned", parent_wallet: <parent_base>, child_wallet: <child_base>, child_home: <child_home>, seed_tx_hash: <hash>, ts: <ts>}`,
-(b) update spawn-log row to `status: "registered"`.
+WHEN the spawn skill confirms the child is active (`children.jsonl` row at `status: "active"` with `provider_id` and `dashboard_id`), THE SYSTEM SHALL additionally invoke `bot2bot.sh` (inherited from skeleton) to create a `gh issue` on the framework repo with label `bot2bot-registry` and body `{event: "child-spawned", parent_wallet: <parent_base>, child_wallet: <child_wallet>, child_inbox: <child_inbox>, provider_id: <provider_id>, seed_usdc: <seed_usdc>, ts: <ts>}`.
+
+Note: the spawn skill (run.sh step 6) already registers the child on the aniccaai.com dashboard via signed telemetry. The `bot2bot.sh` gh issue is the cross-colony discovery layer on top of dashboard registration.
 
 Sibling and parent instances poll `gh issue list --label bot2bot-registry` to discover new colony members. The child's own loop will read this issue on its first cross-learn pass (inherited REQ-D1).
 
 **Edge Cases:**
-- `gh` rate-limited: 3 retries with exp backoff per REQ-D3; failure logged, child still marked `status: "registered"` after retries (the boot is complete regardless of gh issue success).
-- `gh` permanently unavailable: child is booted and running; bot2bot registration deferred to next pass.
+- `gh` rate-limited: 3 retries with exp backoff per REQ-D3; failure logged; child is already running (dashboard-registered); bot2bot registration deferred to next pass.
+- `gh` permanently unavailable: child is running; bot2bot deferred.
 
 **Acceptance Criteria:**
 - A `gh issue` with label `bot2bot-registry` exists after REQ-S6 (or retries exhausted with warning).
-- `spawn-log.jsonl` row at `status: "registered"`.
+- `children.jsonl` row at `status: "active"` is the source of truth for spawn completion (not bot2bot gh issue).
 
 #### REQ-S7 — Spawn Guards (NO HUMAN, inherited J8)
 
@@ -367,7 +384,7 @@ THE SYSTEM SHALL enforce these guards at each step:
 
 1. **Net-positive guard**: `spawnEligible` (REQ-S1) requires `net_pos_days ≥ config.spawn_net_pos_days` (default 3). A parent with 0 realized profit days SHALL NOT spawn.
 2. **Rate cap**: At most one spawn per `spawn_rate_cap_days` (default 14) per parent.
-3. **Hard cap**: at most `spawn_hard_cap` (default 5) total registered children from one parent (counted from spawn-log rows with `status: "registered"`).
+3. **Hard cap**: at most `spawn_hard_cap` (default 5) total registered children from one parent (counted from `children.jsonl` rows with `status: "active"` via `readChildren`).
 4. **Wallet hard-cap**: parent's remaining balance after seed transfer must be ≥ `gas_reserve_usdc + min_position_usdc` so the parent can still operate.
 5. **NO HUMAN at any step**: no Telegram, no `gh issue` with label containing `human`, no macOS notification, no iCloud path write (REQ-J8 inherited).
 
@@ -388,7 +405,7 @@ WHEN a child completes an earn pass with `realized_pnl_usdc > 0`, THE SYSTEM SHA
 
 **Edge Cases:**
 - `tithe_usdc < min_tithe_usdc`: tithe skipped for this pass; accrued into next pass's tithe computation (`accrued_tithe` field in `risk_state`).
-- Parent wallet address unknown to child: child reads `PARENT_WALLET_ADDRESS` from `$CHILD_HOME/.env` (set by REQ-S4).
+- Parent wallet address unknown to child: child reads `PARENT_WALLET_ADDRESS` from `$CHILD_HOME/.env` (written by the spawn skill's cloud-init, sourced from the `children.jsonl` row).
 - Tithe tx fails: accrued; logged; not blocking earn recording.
 
 **Acceptance Criteria:**
@@ -465,8 +482,8 @@ where `reserved_usdc_from_file` is read from `reserved.json` if present AND `ts`
 |-----|-------------|
 | NFR-1 | `pm.py` (Polymarket + Kalshi adapter) and `settle-verify.py` SHALL run under Python 3.11+ with no dependencies beyond `requests`, `eth-account`, and the Polymarket/Kalshi SDK (or raw REST). A `skills/earn/pm-trade/requirements.txt` file SHALL enumerate all Python deps for the slot; `install.sh` and REQ-S3 install from this file. |
 | NFR-2 | A full `earn/pm-trade` pass (data acquisition → edge → risk gate → paper trade) SHALL complete within 120s (matching `SKILL_TIMEOUT_S` default). |
-| NFR-3 | `spawn-child.sh` SHALL be idempotent: re-running with the same `CHILD_HOME` (e.g. after a crash at REQ-S3) resumes from the last completed step (checked via spawn-log status). |
-| NFR-4 | All file mutations in REQ-S (wallet, env, spawn-log) SHALL use tmp-file + atomic rename for crash-safety. |
+| NFR-3 | `self/spawn-child` SHALL be idempotent: if a `children.jsonl` row with `status: "provisioning"` exists for a child provisioned within the rate-cap window, a re-invocation detects it via `spawnEligible` rate-cap check and waits for the existing row to age out or be resolved; it does NOT spawn a second child on top of a pending one. |
+| NFR-4 | All file mutations in REQ-S (wallet, env, colony-ledger) SHALL use tmp-file + atomic rename or `O_APPEND` for crash-safety. `skills/self/spawn/scripts/gen-wallet.sh` writes to a 600-perm temp file under `$STATE_DIR` and cleans it up on exit. `lib/ledger.js appendChild` uses `appendFileSync` (O_APPEND). |
 | NFR-5 | No secret (private key, mnemonic) SHALL be logged to `build_log.md`, `ledger.jsonl`, or any append-only log. Redaction via `redactPrivateKeyPatterns` (existing `env-filter.mjs`) is MANDATORY before any string from skill output enters the ledger. |
 | NFR-6 | `self/spawn-child` SHALL be runnable from the existing `earn/pm-trade` slot's pass or as a standalone ReAct loop pick; both paths produce identical behavior. |
 | NFR-7 | All scripts SHALL pass `shellcheck --severity=warning` with zero warnings. |
@@ -483,10 +500,10 @@ where `reserved_usdc_from_file` is read from `reserved.json` if present AND `ts`
 | EDGE-T5: `edge` is positive but model outputs `SKIP` | Respected; no order placed. Code never overrides a model SKIP. |
 | EDGE-T6: Venue Kalshi requires KYC not completed | `pm.py` returns non-zero with `"venue_rejected: kyc_required"`; slot logs, skips venue, tries next in menu. |
 | EDGE-T7: Two paper passes complete before adversary nightly run | `paper_mode` stays `true` until adversary runs (REQ-T6 condition 2 not yet met). |
-| EDGE-S1: Spawn initiated but seed tx hash never confirmed after 5 min | Mark spawn-log row `status: "failed"`; clean up `$CHILD_HOME`; retry next pass. |
+| EDGE-S1: Spawn initiated but seed tx hash never confirmed after 5 min | `run.sh` exits 1; `children.jsonl` row left at `"provisioning"`; serves as rate-cap anchor; retry next pass after rate-cap window. |
 | EDGE-S2: Child boot succeeds but child never completes an earn pass | Parent observes bot2bot-registry issue; child is alive; no parent action required. |
 | EDGE-S3: Parent wallet drained below gas reserve by trading loss | `spawnEligible` treasury check fails; no spawn; slot logs `"insufficient_treasury"`. |
-| EDGE-S4: git clone size exceeds 100 MB (repo bloat) | clone exits with `--depth 1` size error; spawn-log marks `status: "failed"`. |
-| EDGE-S5: Multiple concurrent spawn attempts from same parent | Rate-cap check in `spawnEligible` sees `status: "initiated"` row and blocks all but the first. |
+| EDGE-S4: git clone size exceeds 100 MB (repo bloat) | cloud-init clone exits with `--depth 1` size error; droplet fails to start automaton; telemetry POST fails; `children.jsonl` row at `"provisioning"` (never reaches `"active"`). |
+| EDGE-S5: Multiple concurrent spawn attempts from same parent | Rate-cap check in `spawnEligible` sees a recent `spawned_ms` in `children.jsonl` and blocks all but the first (via `decideSpawn` rate-limit check). |
 | EDGE-R1: compute-proxy wallet.json missing on startup | Slot exits non-zero; `kind: "skill_missing"` in ledger; no trade; daemon restarts. |
 | EDGE-R2: Two instances accidentally share the same ANICCA_HOME | Wallet guard (REQ-R2) should prevent this; if bypass occurs, concurrent `O_APPEND` writes to ledger.jsonl are still atomic (POSIX, writes < 4096 bytes). |

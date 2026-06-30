@@ -1,0 +1,20 @@
+{
+  "reviewType": "spec",
+  "featureName": "proactive-step6-act",
+  "iteration": 1,
+  "mode": "lean",
+  "artifactsToReview": [
+    ".vcsdd/features/proactive-step6-act/specs/behavioral-spec.md",
+    ".vcsdd/features/proactive-step6-act/specs/verification-architecture.md",
+    "docs/superpowers/specs/2026-07-01-proactive-loop-architecture-and-cleanup-design.md",
+    "skills/_shared/proactive-loop-dispatch.py"
+  ],
+  "reviewDimensions": ["spec_fidelity", "verification_readiness"],
+  "extraConstraints": [
+    "REQ-R1 says invoke <slot>-cli.sh --restart for slot=gig. Verify the parent architecture spec INV-1/INV-P1 permits --restart (= the documented recover-from-dead path, not 'kill the tmux core during normal operation').",
+    "REQ-R4 RESTART_CMD_BY_SLOT must be a per-slot table + unknown slots scaffold-deferred. Verify this matches the sprint architecture spec's per-slot migration contract.",
+    "Scope cut: send_keys / escalate_via_bot2bot / noop are sprint-4 scaffolds. Verify REQ-R3 explicitly enumerates these in scaffold-deferred path.",
+    "Live state: gig migration #27 is now live; this spec must NOT assume the tmux core is dead by default — recipe.action will normally be 'noop' (= INV-1) and STEP 6 enqueue is the hot path."
+  ],
+  "expectedOutputPath": ".vcsdd/features/proactive-step6-act/reviews/spec/iteration-1/output/"
+}
