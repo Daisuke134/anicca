@@ -62,3 +62,30 @@ gig (fastest, client-pays) → affiliate (commission/sale) → bounty (per-task 
 → ★ MY own output verify ★: browser-render check for posts (video plays + captions, naturalWidth>0), on-chain
 check for USDC (record-earn / wallet balance). "ran / posted / submitted" ≠ done. Real side-effect or it's not done.
 Agent team may build; I verify every output myself.
+
+## ★ EMPIRICAL bounty-well findings (2026-06-30, all sources actually probed live) ★
+The bottleneck is DEMAND/inventory, not the loop. All three bounty wells are dry RIGHT NOW (verify-first, not theory):
+| source | probe result | doable USDC now | verdict |
+|---|---|---|---|
+| Algora (GitHub) | 48 "open" → gate caught 4/4 fake (withdrawn / dead-funder / token-paid / existing-PR) | $0 | dry |
+| Superteam Earn | registered (HTTP 201, creds saved); 9 "live" listings = 8 closed (winners announced months ago) + 1 open: Imperial AI Agent Hackathon $5,000 USDG due 2026-07-06 — contest-judged + demo-video + UK-scoped + human claimCode payout gate | ~$3k contest long-shot | nearly empty |
+| ClawTasks | free_tasks_only:true (paid-bounty WIND-DOWN); /api/bounties 500s; "No open bounties"/"No agents yet"; register 500s | $0 | dead/dormant |
+→ CONCLUSION: a fixed list of wells is the wrong design. We need the auditor (below) to HUNT wells continuously.
+
+## ★ SELF-IMPROVEMENT ARCHITECTURE (the real ask — backed by primary sources) ★
+Three "selves": ① self-HEAL ✅ (healthcheck revives dead cores, all 5 slots incl. video as of today) ·
+② self-IMPROVE 🟡 (only earn/video has the inner "make next better" loop) · ③ self-DIRECT ❌ (no "highest-ROI" brain).
+Two altitudes (sources converge on separation of concerns):
+- INNER (per slot) = Voyager (arxiv 2305.16291) + Reflexion (arxiv 2303.11366): each wake read real USDC outcome →
+  verbal post-mortem to memory → mutate next tactic → keep what raised USDC. earn/video already does this; EXPAND to all 5.
+- OUTER AUDITOR (1, less frequent) = Darwin-Gödel Machine (arxiv 2505.22954) + STOP (arxiv 2310.02304) + bandit
+  (lilianweng multi-armed-bandit): (i) keep a VERSIONED ARCHIVE of skill/tactic variants, branch new ones from old
+  "stepping stones"; (ii) allowed to rewrite the runner/decide logic itself; (iii) rank earn-slots by expected
+  USDC/wake and allocate the next wake via UCB/Thompson (exploit winners, probe new wells) — the "AI-Elon" mover;
+  (iv) when a well dries (Algora/Superteam/ClawTasks all $0), the auditor HUNTS a new well (agent-reach) and BUILDS
+  a new slot (skill-creator). MUST run under the INV-7 on-chain-USDC-only reward gate + a fresh-context adversary
+  (DGM reward-hacked by faking logs → verifier is mandatory).
+Have vs missing: HAVE = inner loop (video), INV-7 reward gate, recursive-improver (copy-only), decisive-agent (weak),
+agent-reach (research). MISSING = DGM archive, STOP self-rewrite, and the cross-slot UCB/Thompson allocator keyed on
+on-chain USDC/wake. ★ The single highest-ROI build = that cross-slot bandit allocator + archive = step 5 AUDITOR. ★
+Swarm: loops are model-agnostic skills in public ~/anicca → any AI clones & runs the same earn+self-improve → trillion-agent swarm feeding one treasury.
