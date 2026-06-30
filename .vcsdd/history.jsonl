@@ -43,3 +43,10 @@
 {"timestamp":"2026-06-30T15:47:21.684Z","event":"phase_transition","featureName":"earn-shared-skeleton","from":"1b","to":"1c","iteration":1,"phase":"1c"}
 {"timestamp":"2026-06-30T15:52:23.258Z","event":"phase_transition","featureName":"earn-shared-skeleton","from":"1c","to":"2a","iteration":1,"phase":"2a"}
 {"timestamp":"2026-06-30T15:52:23.258Z","event":"sprint_started","featureName":"earn-shared-skeleton","sprintNumber":1,"phase":"2a"}
+{"timestamp":"2026-06-30T18:16:20.227Z","event":"gate_recorded","featureName":"earn-shared-skeleton","phase":"1c","verdict":"PASS","reviewedBy":"adversary"}
+{"timestamp":"2026-06-30T18:24:15.528Z","event":"phase_transition","featureName":"earn-shared-skeleton","from":"2a","to":"2b","iteration":1,"phase":"2b"}
+{"timestamp":"2026-06-30T18:29:35.243Z","event":"phase_transition","featureName":"earn-shared-skeleton","from":"2b","to":"2c","iteration":1,"phase":"2c"}
+{"timestamp":"2026-06-30T18:39:11.053Z","event":"gate_recorded","featureName":"earn-shared-skeleton","phase":"3","verdict":"FAIL","reviewedBy":"adversary"}
+{"timestamp":"2026-06-30T18:39:17.228Z","event":"phase_transition","featureName":"earn-shared-skeleton","from":"2c","to":"3","iteration":1,"phase":"3"}
+{"timestamp":"2026-06-30T18:40:54.073Z","event":"phase_transition","featureName":"earn-shared-skeleton","from":"3","to":"4","iteration":1,"phase":"4"}
+{"timestamp":"2026-06-30T18:55:52.471Z","event":"gate_recorded","featureName":"earn-shared-skeleton","phase":"3","verdict":"PASS","reviewedBy":"adversary"}
