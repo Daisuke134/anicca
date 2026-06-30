@@ -100,7 +100,11 @@ for it in items:
     try: r=json.loads(rj) if rj.strip() else {}
     except Exception: r={}
     if int(r.get("stargazerCount",0)) < 50: continue   # real funded projects have traction
-    survivors.append({**it,"issue":int(num),"stars":r.get("stargazerCount",0),"gate":"passed (funder-active, no-open-PR, real-repo>=50★)"})
+    # (d) REAL USD, not a self-issued token (Rustchain#2239 lesson: paid in 'RTC', algora page 404).
+    blob=(it.get("title","")+" "+body+" "+(r.get("description") or "")).lower()
+    if re.search(r'\bearn [a-z]{2,5}\b|\b\d+\s*(rtc|\$[a-z]{2,6}|tokens?)\b|token.?farm|social mining|clanker|/tip', blob):
+        continue   # token-reward / tip farm, not USD
+    survivors.append({**it,"issue":int(num),"stars":r.get("stargazerCount",0),"gate":"passed (funder-active, no-open-PR, real-repo>=50★, USD-not-token)"})
 json.dump({"survivors":survivors,"checked":len(items)}, open(gj,"w"), indent=2)
 print(f"{len(survivors)}/{len(items)}")
 PY
