@@ -42,7 +42,7 @@ All paths are relative to `$ANICCA_HOME` unless noted. These are canonical input
 
 | Quantity | Path | Semantics |
 |----------|------|-----------|
-| `risk_state` | `~/loops/earn-pm-trade/risk-state.json` | `{session_start_balance, peak_balance, daily_loss_usdc, drawdown_usdc, open_positions: [{order_id, venue, market_id, side, size_usdc, entry_price, filled_size, ts}], paper_mode: bool, paper_pass_count: int, last_daily_reset_ts: int}` — `entry_price` = CLOB mid price at fill time (USDC per outcome share, e.g. 0.65 for a YES at 65¢); `filled_size` = USDC actually spent at fill (may be less than `size_usdc` for partial fills); `shares_held` = `filled_size / entry_price` (computed, not stored — the number of CTF outcome tokens held; for a Polymarket binary winning redemption, `gross_payout_usdc = shares_held × $1.00`) |
+| `risk_state` | `~/loops/earn-pm-trade/risk-state.json` | `{session_start_balance, peak_balance, daily_loss_usdc, drawdown_usdc, open_positions: [{order_id, venue, market_id, side, size_usdc, entry_price, filled_size, ts}], paper_mode: bool, paper_pass_count: int, last_daily_reset_ts: int}` — `entry_price` = the **average execution (fill) price** = VWAP of the actual fills for this order (USDC per outcome share, e.g. 0.65 for a YES filled at an average of 65¢), read back from the venue fill response — NOT the order-book mid (FIND-027: the mid does not reconstruct `shares_held` from `filled_size`, so the on-chain redemption amount would never match); `filled_size` = USDC actually spent at fill (may be less than `size_usdc` for partial fills); `shares_held` = `filled_size / entry_price` (computed, not stored — the number of CTF outcome tokens held; for a Polymarket binary winning redemption, `gross_payout_usdc = shares_held × $1.00`); `entry_cost` = `filled_size` (USDC actually spent = the cost basis); `settlement_amount` = the verified `gross_payout_usdc` from `settle-verify.py` (0 on a losing outcome) |
 | `paper_log` | `~/loops/earn-pm-trade/paper-log.jsonl` | append-only; one row per paper trade: `{ts, pass_id, market_id, venue, side, size_usdc, model_p, market_p, edge, outcome: "resolved"|"pending", pnl_usdc: null\|float}` |
 | `events` | `~/loops/earn-pm-trade/events/<pass_id>.jsonl` | earn-shared-skeleton REQ-G2 event stream; `event:"earn"` rows written ONLY on market resolution with real PnL |
 | `build_log` | `~/loops/earn-pm-trade/build_log.md` | narrative memory (Sutando pattern; inherited from skeleton) |
@@ -184,7 +184,7 @@ Transition from `paper_mode: true` to `false` is an atomic rename of `risk_state
 WHEN `risk_state.paper_mode == false` AND `riskGate` returns ALLOW AND `position_usdc` ≥ `min_position_usdc`, THE SYSTEM SHALL:
 (a) call `pm.py` for Polymarket or Kalshi venues, OR the existing `skills/earn/hl-trade/hl.py` for the Hyperliquid venue, based on the model-selected `venue`,
 (b) `pm.py` SHALL submit a limit order to the appropriate prediction-market CLOB (Polymarket beta REST or Kalshi REST). For `venue = "hyperliquid"`, the slot dispatches to `hl.py`'s `open`/`close` actions and MUST pass the model's SL/TP parameters (`--sl`, `--tp`). `pm.py` SHALL NOT re-implement Hyperliquid logic (the proven `hl.py` adapter enforces SL+TP on every position).
-(c) record `{order_id, venue, market_id, side, size_usdc, entry_price, ts}` in `risk_state.open_positions`,
+(c) record `{order_id, venue, market_id, side, size_usdc, entry_price, filled_size, ts}` in `risk_state.open_positions` (FIND-024: `filled_size` and `entry_price` = avg execution price MUST be read back from the venue fill response and written here — they are the sole inputs to the REQ-T8(b) settlement gate; a position row missing `filled_size` is invalid and the slot SHALL re-query the fill before persisting),
 (d) emit an `event: "action"` row to `~/loops/earn-pm-trade/events/<pass_id>.jsonl`.
 
 `pm.py` SHALL expose exactly four actions: `buy`, `sell`, `positions`, `close` for Polymarket and Kalshi prediction-market CLOBs only. It SHALL NOT implement any trading strategy logic or Hyperliquid perp logic. It is a thin REST adapter for prediction-market CLOBs. Hyperliquid routing goes through the existing `hl.py`.
@@ -286,7 +286,7 @@ WHEN `earn/pm-trade` opens a position, it SHALL record the `order_id` in `risk_s
 
 #### REQ-R4 — Ledger Immutability
 
-The slot SHALL NEVER rewrite or truncate `$ANICCA_HOME/state/ledger.jsonl`. All writes go through `appendLedgerLine` (existing, O_APPEND). The spawn-log (`spawn-log.jsonl`) and tithe-log (`tithe-log.jsonl`) follow the same append-only contract.
+The slot SHALL NEVER rewrite or truncate `$ANICCA_HOME/state/ledger.jsonl`. All writes go through `appendLedgerLine` (existing, O_APPEND). (FIND-025: spawn-log/tithe-log removed — spawn is deferred to the `spawn-child-earn` feature; no in-scope requirement creates them.)
 
 **Acceptance Criteria:**
 - No `truncate`, `>` redirect, or `O_WRONLY` open on any `.jsonl` file within the slot.
