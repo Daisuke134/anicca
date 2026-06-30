@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "reality",
+  "category": "requirement_mismatch",
+  "severity": "minor",
+  "description": "settle reaches record-earn via a HARDCODED home-relative path `$HOME/anicca/skills/self/founder-loop/record-earn.mjs` (run.sh:122). Every other part of the slot resolves files via `$HERE` (the slot's own dir), so this is the only outbound assumption that the founder code repo is checked out at exactly $HOME/anicca. The spec calls out cloud portability (REQ-008 / 'no macOS-specific code'); on any instance where the repo is not at $HOME/anicca (a cloud worker, a different home layout), record-earn is 'not found' and settle silently degrades to emit settle 0 0 — i.e. earnings can never be counted there, with no error surfaced beyond a log line. TOP FIX: resolve record-earn relative to the slot (e.g. via $HERE/../../self/founder-loop/record-earn.mjs) or an explicit ANICCA_RECORD_EARN env, and make a missing recorder a loud failure rather than a silent earn-0.",
+  "evidence": {
+    "filePath": "skills/earn/gig/run.sh",
+    "lineRange": "122-123",
+    "snippet": "local re=\"$HOME/anicca/skills/self/founder-loop/record-earn.mjs\"\n[ -f \"$re\" ] || { echo \"[gig] settle: record-earn not found\"; emit \"settle\" 0 0; return; }"
+  },
+  "routeToPhase": "2b"
+}

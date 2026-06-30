@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "reality",
+  "category": "test_coverage",
+  "severity": "major",
+  "description": "No test in the suite asserts that a VERIFIED settle ledger line is actually classified profitable by the loop's isProfitable gate — which is exactly why FIND-001 survived undetected. (1) contract.test.mjs only exercises the no-inflow settle path (asserts earn_usdc===0 + !external), never the positive path. (2) runtime/loop/__tests__/earn-slot-e2e.test.mjs proves only correlation (el.wake===wakeLine.wake_id, el.earn_usdc===0.01) and never asserts the resulting wake ledger line has profitable:true; moreover its _probe stub (skills/earn/_probe/run.sh:7) ALSO omits tx/status, so the e2e enshrines the same isProfitable-incompatible shape rather than catching it. (3) The settle 'oracle invoked' assertion in contract.test.mjs:90 `/record-earn|settle:/.test(r.stdout)` is effectively tautological: run.sh always prints `[gig] settle: ...` (run.sh:129 AND the not-found branch run.sh:126), so the regex matches whether or not record-earn actually ran — it does not prove the oracle was invoked. REQUIRED: add a test that feeds a record-earn-VERIFIED inflow (FOUNDER_TEST seam) through the slot and then asserts classifyEarnResult(...).profitable === true (i.e. the written line satisfies isProfitable), and tighten the oracle assertion to match a record-earn-only marker (e.g. /record-earn:/ or 'block cursor'/'EXTERNAL').",
+  "evidence": {
+    "filePath": "skills/earn/gig/__tests__/contract.test.mjs",
+    "lineRange": "86-91",
+    "snippet": "assert.ok(/record-earn|settle:/.test(r.stdout), 'record-earn oracle was not invoked'); // 'settle:' is printed unconditionally -> assertion always passes"
+  },
+  "routeToPhase": "2b"
+}

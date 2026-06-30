@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-007",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "INV-2 (verified-earn-only) and HARD 0.24 (no fabricated dollar) are violated by the DEFAULT first-run path — no env manipulation, no test seam required. On the very first production run the baseline file (FOUNDER_DIR/state/usdc-baseline.txt) does not yet exist, so line 66 falls into the catch and sets baseline=0. current = the wallet's REAL pre-existing on-chain USDC balance (e.g. the human-funded $1 seed, or any balance already in the founder wallet — capital that was NEVER EARNED). delta = current - 0 = current > 0, so line 71's guard passes and line 75 appends a row claiming earn_usdc = the entire pre-existing balance as a 'VERIFIED earning'. The spec (lines 34-36) makes this ledger the body's record-of-truth that the read-only monitor renders as 'your Claude earns more than you pay' — so recording seed/pre-existing capital as earnings is exactly the fraud INV-2 forbids. The earner writes a USDC number it did not earn. This is strictly worse than a seam attack because it is the normal, unattended cron path.",
+  "evidence": {
+    "filePath": "skills/self/founder-loop/record-earn.mjs",
+    "lineRange": "63-71",
+    "snippet": "let baseline;\nif (TEST && process.env.FOUNDER_USDC_BASELINE !== undefined) baseline = Number(process.env.FOUNDER_USDC_BASELINE);\nelse { try { baseline = Number(fs.readFileSync(BASELINE_FILE, \"utf8\").trim()) || 0; } catch { baseline = 0; } }\n...\nconst delta = +(current - baseline).toFixed(6);\nif (!(delta > 0)) die(...);"
+  },
+  "fix": "On first run (baseline file absent) you MUST NOT treat the whole current balance as earned. Initialize the baseline to the CURRENT on-chain balance and record NOTHING, exiting 0 with 'baseline initialized, no earning recorded'. Concretely: detect absence explicitly with fs.existsSync(BASELINE_FILE); if absent (and not the test-baseline seam), set baseline=current, write BASELINE_FILE=current, and exit without appending a ledger row. Only subsequent runs whose current exceeds the recorded baseline may record delta. Add a test: fresh FOUNDER_DIR, wallet with a non-zero balance, FOUNDER_TEST unset path simulated by a fixture — assert NO ledger row is written and baseline equals current.",
+  "routeToPhase": "2b"
+}

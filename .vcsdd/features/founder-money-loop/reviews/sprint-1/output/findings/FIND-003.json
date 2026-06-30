@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "high",
+  "description": "INV-1 ('founder wallet != ANY other instance's wallet. No sharing.') is enforced only by a 2-entry DENYLIST (record-earn.mjs:51-52: 0xa3cdd4... and 0x9b1ee988...). A denylist cannot satisfy 'any other instance's wallet': the founder can still be pointed at any shared/other wallet not in the two hardcoded entries — a future child wallet, a partner instance, or a copy-pasted shared address. There is no positive binding that the wallet equals the distinctly-generated founder wallet. Worse, FOUNDER_WALLET (line 44) overrides wallet.json (line 46) with no verification that it matches the generated founder wallet, so the loop can be silently re-pointed at a shared wallet via env. The invariant is structurally unenforceable as written.",
+  "evidence": {
+    "filePath": "skills/self/founder-loop/record-earn.mjs",
+    "lineRange": "44-52",
+    "snippet": "let wallet = process.env.FOUNDER_WALLET; ...\nconst SHARED = [\"0xa3cdd4...\", \"0x9b1ee988...\"];\nif (SHARED.includes(wallet.toLowerCase())) die(\"INV-1 violation...\");"
+  },
+  "fix": "Replace the denylist with a positive identity check: pin the founder wallet to the address stored in FOUNDER_DIR/wallet.json (the generated, distinct one) and REQUIRE that the effective wallet === that pinned address, lowercased. If FOUNDER_WALLET is provided, it must equal the pinned wallet.json address or die. Keep the SHARED denylist as defense-in-depth, but the allowlist (== the generated founder wallet) is the real INV-1 guarantee.",
+  "routeToPhase": "2b"
+}

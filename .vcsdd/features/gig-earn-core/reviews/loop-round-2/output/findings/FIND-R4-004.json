@@ -1,0 +1,20 @@
+{
+  "findingId": "FIND-R4-004",
+  "dimension": "verification_readiness",
+  "category": "test_quality",
+  "severity": "medium",
+  "description": "The functions `validateLessonRow()` (self-improve.test.mjs:98-108) and `isValidEarnRow()` (self-improve.test.mjs:145-146) are defined within the test file itself, not imported from any production module. The 12 tests using these helpers (lines 110-177) validate only the test-file-local functions' own logic. This means the 'lessons.jsonl validator: ...' and 'no-fake-earn: ...' test names overstate their coverage: they prove the validator logic IS correct, but they cannot catch a regression in which the production cron loop writes a row with the wrong status or missing fields — because the production code is an LLM instruction in gig-cli.sh:21, not a callable function. The Round-1 FIND-004 fix (dedup test now greps actual cron text) applies to the shared-lessons dedup test at line 131-135. It does NOT address the broader pattern where the lesson/earn row schema validators test only self-defined logic. The risk window is partially closed by the deterministic read guards in monitor.sh:36, auditor.sh:36, and run.sh:38 (which reject rows that fail the settled+evidence+jpy>0 criteria at read time), but the WRITE side validation — that the LLM actually appends the correct schema — has no non-tautological test coverage.",
+  "evidence": {
+    "filePath": "skills/earn/gig/__tests__/self-improve.test.mjs",
+    "lineRange": "92-177",
+    "snippet": "// validateLessonRow and isValidEarnRow are defined IN this test file (lines 98-108, 145-146).\n// Lines 110-177 test these local functions, not any production code.\nfunction validateLessonRow(row) { ... }   // test-local, not imported\nfunction isValidEarnRow(row) { ... }      // test-local, not imported"
+  },
+  "crossRef": [
+    "docs/superpowers/specs/2026-06-30-gig-self-improving-multiapply-loop-design.md:220-229 (FIND-007: acknowledges write gate is LLM-dependent; read guard is deterministic)",
+    "skills/earn/gig/monitor.sh:36 (deterministic read guard: partial mitigation)",
+    "skills/earn/gig/auditor.sh:36 (deterministic read guard: partial mitigation)",
+    "skills/earn/gig/run.sh:38 (deterministic read guard: partial mitigation)"
+  ],
+  "fix": "The dedup test fix (FIND-004) established the right pattern: grep actual cron text for schema-critical phrases. Apply the same pattern for the lesson/earn schemas: add tests that grep gig-cli.sh:21 STARTUP string for (a) all LESSON_REQUIRED field names appearing together ('ts', 'requestId', 'category', 'outcome', 'reason', 'lesson'); (b) 'earnings.jsonl' guarded by '検収' or '支払' and 'evidence'. This moves these tests from tautological to behavioral. The existing self-defined helpers can remain as local schema utilities — they do document the correct logic — but should be supplemented by cron-text assertions.",
+  "routeToPhase": "2c"
+}

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "contract",
+  "category": "test_coverage",
+  "severity": "minor",
+  "description": "Round-1 FIND-004 fix (record a bid to bids.jsonl ONLY on a successful POST so a failed POST stays retryable) is present in CODE (bid-run.mjs:33-37 guards the appendFileSync with `if (r.ok)`) but has NO regression test. bid.test.mjs only covers the PURE helpers (pickJob/buildProposal/loadBidLedger); it never drives bid-run.mjs with a stubbed/failed postBid to assert that a non-ok response leaves bids.jsonl unwritten and the job still picked on a later wake. A claimed-fixed invariant with zero test guarding it can silently regress on the next edit. TOP FIX: add a test that runs bid-run.mjs (or unit-tests the record decision) with r.ok=false and asserts the bids ledger was NOT appended and pickJob still returns that job afterward.",
+  "evidence": {
+    "filePath": "skills/earn/gig/lib/bid-run.mjs",
+    "lineRange": "31-37",
+    "snippet": "if (r.ok) {\n  try { fs.appendFileSync(bidsFile, JSON.stringify({ jobId: String(job.id), ... }) + '\\n'); } catch {}\n}"
+  },
+  "routeToPhase": "2a"
+}

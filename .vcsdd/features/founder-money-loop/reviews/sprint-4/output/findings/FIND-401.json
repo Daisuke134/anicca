@@ -1,0 +1,15 @@
+{
+  "findingId": "FIND-401",
+  "dimension": "implementation_correctness",
+  "category": "security_surface",
+  "severity": "critical",
+  "title": "FIND-301 NOT closed: os.homedir() re-reads HOME in prod, defeating the HOME trust-root gate",
+  "description": "The HOME gate is a fiction. Line 23 reads `const HOME = (TEST && process.env.HOME) || os.homedir();`. In PRODUCTION (FOUNDER_TEST unset) the first operand short-circuits to false, so HOME is taken from `os.homedir()`. On POSIX, Node's os.homedir() is implemented via libuv uv_os_homedir(), which returns the value of the HOME environment variable whenever it is set (only falling back to getpwuid().pw_dir when HOME is unset/empty). Therefore the attacker-controlled HOME env STILL moves the entire trust root in prod: FOUNDER_DIR = path.join(HOME, '.anicca-founder') (line 24), and from there WALLET_JSON, STATE, BASELINE_FILE and the default LEDGER all follow. Concrete prod fabrication path with FOUNDER_TEST unset and NO other override env: (1) prepare /attacker/.anicca-founder/wallet.json containing the PUBLICLY-KNOWN pinned address 0x810f6d61f7606deee2657d3083e150a222bc29c5 (it is hardcoded in this very file at line 40 and committed in wallet.json), (2) prepare /attacker/.anicca-founder/state/usdc-baseline.txt = 0, (3) run with HOME=/attacker. The wallet pin (line 46) passes because the address matches, the baseline is 0, and the REAL on-chain balanceOf of the pinned wallet (line 85, real RPC) becomes the delta — so the founder's pre-existing/seed balance is re-counted as a fabricated 'earning' and written to a ledger the attacker controls the location of. The seed-capital protection (FIND-007) is bypassed because the attacker supplies a fresh baseline=0 via a planted state dir, not via the (gated) FOUNDER_USDC_BASELINE env. This is precisely the FIND-301 vulnerability the sprint-3 fix claimed to close; it remains OPEN. The inline comment '// HOME is a seam too — TEST-gated so prod cannot move the trust root (FIND-301)' is false.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/founder-loop/record-earn.mjs",
+    "lineRange": "23-27",
+    "snippet": "const HOME = (TEST && process.env.HOME) || os.homedir(); // HOME is a seam too — TEST-gated so prod cannot move the trust root (FIND-301)\nconst FOUNDER_DIR = (TEST && process.env.FOUNDER_DIR) || path.join(HOME, \".anicca-founder\");"
+  },
+  "fix": "Do NOT derive the prod trust root from anything HOME-influenced. Pin the founder dir to an absolute, env-independent path in prod, e.g. `const FOUNDER_DIR = TEST ? (process.env.FOUNDER_DIR || path.join(process.env.HOME || os.homedir(), '.anicca-founder')) : '/Users/anicca/.anicca-founder';` (or resolve HOME in prod only from getpwuid via a method that ignores the env, e.g. read it from a hardcoded constant). os.homedir() MUST NOT be used as the prod root because it honors the HOME env var on POSIX.",
+  "routeToPhase": "2b"
+}

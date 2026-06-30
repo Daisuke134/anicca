@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "reality",
+  "category": "requirement_mismatch",
+  "severity": "minor",
+  "description": "Round-1 FIND-005 (AI_HINT divergence detect vs bid) is NOT actually fixed — the claimed fix is false. detect.mjs's AI_HINT contains the token 'telegram' (detect.mjs:16: '...|bot|api|server|telegram|web|powerpoint|...'), but bid.mjs's AI_HINT omits 'telegram' (bid.mjs:14: '...|bot|api|server|web|powerpoint|...'). Worse, bid.mjs:14 carries a trailing comment '// identical to detect.mjs' that is demonstrably false. Practical impact: a job whose title qualifies as AI-doable in DETECT only via 'telegram' is surfaced into guild_feed.json but is then rejected by pickJob's narrower filter (bid.mjs:34), so the feed and the bidder disagree on what is biddable — exactly the divergence FIND-005 was supposed to close. TOP FIX: extract a single shared AI_HINT constant imported by both detect.mjs and bid.mjs (the comment even calls it 'identical' — make it literally one source of truth), or at minimum add 'telegram' to bid.mjs and add a test asserting the two regexes are equal.",
+  "evidence": {
+    "filePath": "skills/earn/gig/lib/bid.mjs",
+    "lineRange": "14",
+    "snippet": "const AI_HINT = /python|...|bot|api|server|web|powerpoint|.../i;  // identical to detect.mjs  <-- FALSE: detect.mjs:16 has '...server|telegram|web...'"
+  },
+  "routeToPhase": "2b"
+}

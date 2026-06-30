@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-007",
+  "dimension": "edge_case_coverage",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "description": "The pipeline never captures or verifies the bounty's actual USD amount, so it cannot tell a real reward from a fake one except by keyword. discover() (run.sh:25-30) stores only {title,url,repo,comments} — no reward amount, no funder. The 'USD-not-token' gate (FIND-005) is keyword-ABSENCE based: a token/no-payout bounty that simply lacks the trigger words passes as 'USD' (false-positive), while a real USD bounty with incidental token wording is dropped (false-negative). The algora-pbc bot comment states the reward (e.g. '$1340' is right there in bounties.json title for microg/GmsCore#2843), and Algora has an API, yet neither is parsed. RESULT: the gate cannot actually prove 'real USD', cannot rank by $ value, and its 'USD-not-token' label on survivors is not backed by any reward lookup.",
+  "evidence": {
+    "filePath": "skills/earn/bounty/run.sh",
+    "lineRange": "27-30",
+    "snippet": "out.append({\"title\":it.get(\"title\",\"\")[:80],\"url\":it.get(\"html_url\",\"\"),\"repo\":repo,\"comments\":it.get(\"comments\",0)})  # no reward amount / funder captured"
+  },
+  "routeToPhase": "2b"
+}

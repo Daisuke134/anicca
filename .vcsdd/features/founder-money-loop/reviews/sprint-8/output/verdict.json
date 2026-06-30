@@ -1,0 +1,50 @@
+{
+  "sprintNumber": 8,
+  "feature": "founder-money-loop",
+  "overallVerdict": "PASS",
+  "timestamp": "2026-06-27T15:30:00Z",
+  "iteration": 1,
+  "reviewContext": {
+    "reviewType": "implementation",
+    "increment": "G1.1-A2 (external-inflow / finalized block-cursor model, INV-7) — sprint-7 hardening fixes re-review",
+    "priorFindings": ["FIND-701", "FIND-702", "FIND-703", "FIND-704", "FIND-705"],
+    "coreQuestion": "Can the earner write a USDC number that did not come from a genuine, FINALIZED, external on-chain payment?",
+    "coreAnswer": "NO. (1) On the prod path (FOUNDER_TEST unset, record-earn.mjs:14) every override seam is TEST-gated: FOUNDER_DIR (20), FOUNDER_LEDGER (24), FOUNDER_WALLET (38), FOUNDER_CURSOR (109), FOUNDER_BLOCK_NOW (63), FOUNDER_LOGS_JSON (89), FOUNDER_RAW_LOGS_JSON (91), BASE_RPC_URL (56), HOME (20). (2) Prod root is an env-independent absolute literal '/Users/anicca/.anicca-founder' (20). (3) The wallet is pinned to 0x810f and shared/automaton/openclaw wallets are rejected (35-42). (4) blockNow() reads ONLY the FINALIZED head (67) so the cursor never advances past genuinely settled income — no reorg over/double-count. (5) The scan is bounded (cursor+1..to] with to=min(now,cursor+MAX_SPAN) (122,124) and the cursor is advanced only to what was scanned (125) — under-count on a wide gap, never over-count. (6) parseRawLogs locally RE-verifies address==USDC, topic0==Transfer, and to==founder by EXACT padded-topic equality (83-84), and sumExternal drops any from in MY_WALLETS (74) — a self-transfer contributes ZERO (INV-7). (7) Every error path fails closed: corrupt cursor (111), missing wallet.json (39), missing founder dir (28), block-backwards (117), RPC/getLogs failure (113,124), malformed data BigInt throw (85 -> 124 catch die). No combination on the prod path writes a fabricated or inflated USDC number."
+  },
+  "priorFindingStatus": {
+    "FIND-701": "CLOSED — test 21 (test-record-earn.sh:143-147) feeds a filter-PASSING log (USDC address, Transfer topic0, to==padded founder) with data=\"0x\"; this is the only input that reaches the BigInt decoder (record-earn.mjs:85) with bad data; BigInt(\"0x\") throws -> externalInflow rejects -> line 124 .catch(die) -> asserts rc!=0 AND no ledger row.",
+    "FIND-702": "CLOSED (integrity) — MAX_SPAN=9000 cap added (record-earn.mjs:121); to=min(now,cursor+MAX_SPAN) (122); the single getLogs covers (cursor+1..to] (124) and the cursor is written ONLY to `to`, the block actually scanned (125). No off-by-one (window inclusive of `to`, next run starts at to+1), no skip, no silent truncation past the cap. The remaining wide-gap LIVENESS lag (cursor can permanently trail if `now` outruns by >9000 per run) is under-count / fail-safe, not an integrity defect — see FIND-801 (advisory, non-blocking).",
+    "FIND-703": "CLOSED — the seam-gate now greps a comment-STRIPPED copy: src_code=$(sed 's|//.*||' \"$M\") (test-record-earn.sh:17) and the loop greps <<<\"$src_code\" (19). A same-line comment containing 'TEST &&'/'TEST ?' can no longer mask an un-gated env read for any of the 9 seams.",
+    "FIND-704": "CLOSED — to==founder is now EXACT padded-topic equality: String(l.topics[2]).toLowerCase() === '0x' + '0'.repeat(24) + wlow (record-earn.mjs:84), replacing the prior .endsWith(wlow). A non-canonical or oversized topic that suffix-matches no longer passes. LHS is .toLowerCase() so a checksummed/uppercase topic from a real RPC normalizes correctly — no casing under-count.",
+    "FIND-705": "CLOSED — mock-rpc.mjs is a real fixture JSON-RPC server answering BOTH eth_getBlockByNumber (mock-rpc.mjs:16) and eth_getLogs (17). Tests 18/19/20 (test-record-earn.sh:128-141) drive blockNow's REAL path via BASE_RPC_URL with NO FOUNDER_BLOCK_NOW: test 18 (finalized=0xc8=200 + a real raw external log) asserts the decoded finalized height is written to the cursor (=200) AND the real getLogs parse records +5; test 19 ({result:null}) asserts fail-closed; test 20 ({number:null}) asserts fail-closed. The FIND-601 finality fix and the real getLogs decode are now EXECUTED proofs, not a string-presence grep."
+  },
+  "newDefects": {
+    "FIND-801": "ADVISORY (non-blocking, liveness not integrity): with MAX_SPAN=9000 (record-earn.mjs:121-122) and Base producing ~43,200 blocks/day (~2s/block), if the loop wakes less often than ~once per 5h the cursor falls >9000 behind and never catches up, permanently lagging real income. This is under-count / monotonic / fail-safe — it can NEVER fabricate or inflate a USDC number, so it does not fail the core integrity question or any dimension. Recommended (future increment, not a sprint-8 blocker): loop getLogs in <=MAX_SPAN windows up to `now` within one run, summing, advancing the cursor per completed window, so a wide gap after downtime still settles."
+  },
+  "dimensions": [
+    {"name": "spec_fidelity", "verdict": "PASS", "findings": [], "evidence": [
+      {"type": "file", "location": "/Users/anicca/anicca/skills/self/founder-loop/record-earn.mjs", "description": "INV-1 wallet pin 0x810f + shared-wallet reject (35-42); INV-3 ledger realpath symlink-deref inside founder dir (27-32); INV-6 fail-closed (28,39,111,117,124); INV-7 external-only via MY_WALLETS drop (44-45,72-75) + finalized-cursor model (62-70,121-125) per spec INV-1..7 (lines 70-87) and THE GOAL (15-22)"},
+      {"type": "file", "location": "/Users/anicca/anicca/skills/self/founder-loop/test-record-earn.sh", "description": "THE GOAL self-transfer=0 asserted at test 3 (39-41), mixed at test 4 (43-46), and raw-log self-transfer at test 14 (102-106); INV-1/3/6/7 at tests 5-11,13-16,21"}
+    ]},
+    {"name": "edge_case_coverage", "verdict": "PASS", "findings": [], "evidence": [
+      {"type": "test", "location": "/Users/anicca/anicca/skills/self/founder-loop/test-record-earn.sh", "description": "FIND-701 filter-passing malformed data=\"0x\" -> fail-closed (test 21, 143-147); FIND-705 finalized=null and number=null fail-closed (tests 19-20, 133-141); corrupt cursor (test 5), block-backwards (test 11), missing wallet (test 10), 0-value + multi-payer (test 16), non-USDC/to-mismatch/wrong-topic0 all dropped (test 15) covered"}
+    ]},
+    {"name": "implementation_correctness", "verdict": "PASS", "findings": [], "evidence": [
+      {"type": "file", "location": "/Users/anicca/anicca/skills/self/founder-loop/record-earn.mjs", "description": "Finalized-head read (67) closes the reorg over/double-count; from-slice(26)+Number(BigInt(data))/1e6 decode correct (85); to/address/topic0 re-verified, to by EXACT padded equality (83-84); MAX_SPAN cap + advance-to-scanned cursor write give honest under-count, never double-count (121-125); no off-by-one in the (cursor+1..to] window or the cursor write. No prod fabrication path found."}
+    ]},
+    {"name": "structural_integrity", "verdict": "PASS", "findings": [], "evidence": [
+      {"type": "file", "location": "/Users/anicca/anicca/skills/self/founder-loop/test-record-earn.sh", "description": "FIND-703 comment-stripped seam gate (17,19) is now sound for all 9 seams; FIND-704 exact padded-topic equality (record-earn.mjs:84) replaces the weaker endsWith; mock-rpc.mjs is a focused single-purpose fixture"}
+    ]},
+    {"name": "verification_readiness", "verdict": "PASS", "findings": [], "evidence": [
+      {"type": "test", "location": "/Users/anicca/anicca/skills/self/founder-loop/mock-rpc.mjs", "description": "FIND-705 closed: the FIND-601 finality proof obligation ('cursor never advances past the finalized head') is now BEHAVIORALLY executed — tests 18/19/20 (test-record-earn.sh:128-141) run blockNow's real eth_getBlockByNumber finalized decode + real getLogs parse against a live mock RPC over BASE_RPC_URL with NO FOUNDER_BLOCK_NOW, asserting cursor advance to the decoded finalized height and fail-closed on null/number-null"}
+    ]}
+  ],
+  "convergenceSignals": {
+    "findingCount": 0,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": ["INV-1", "INV-2", "INV-3", "INV-4", "INV-5", "INV-6", "INV-7", "FIND-701", "FIND-702", "FIND-703", "FIND-704", "FIND-705"],
+    "duplicateFindings": [],
+    "recorderConverged": true,
+    "note": "On-disk recorder converged: all 5 sprint-7 findings CLOSED, core integrity question = NO (cannot fabricate). FIND-801 is an advisory liveness improvement, non-blocking. The disk-only adversary gate is PASS; the remaining DONE obligation per SPEC line 36-39 / NO-MOCK E2E (line 89-92) is the builder's live E2E (a REAL external x402 buyer pays -> on-chain settle -> real ledger row), which cannot be judged from disk."
+  }
+}

@@ -1,0 +1,103 @@
+{
+  "sprintNumber": 4,
+  "feature": "earn-gig-slot",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-06-29T00:00:00Z",
+  "iteration": 4,
+  "reviewContext": {
+    "reviewType": "impl",
+    "scope": "earn/gig settle tx-bridge — round-5 re-review of the round-4 FAIL fixes (settle-write.mjs + settle-tx.mjs, FIND-001..004)",
+    "filesReviewed": [
+      "skills/earn/gig/run.sh",
+      "skills/earn/gig/lib/settle-write.mjs",
+      "skills/earn/gig/lib/settle-tx.mjs",
+      "skills/earn/gig/__tests__/settle.test.mjs",
+      "skills/earn/gig/__tests__/contract.test.mjs",
+      "skills/_shared/lib/ledger.mjs",
+      "skills/self/founder-loop/record-earn.mjs",
+      "skills/earn/_probe/run.sh",
+      "runtime/loop/index.mjs",
+      "runtime/loop/run-skill.mjs",
+      "runtime/loop/earn-detect.mjs",
+      "runtime/loop/earn-slot.mjs",
+      "runtime/loop/__tests__/earn-slot-e2e.test.mjs"
+    ],
+    "note": "No manifest.json exists for this feature under .vcsdd (Glob confirmed); review conducted disk-only per the adversary mandate. The Bash tool was NOT available in this context, so `node --test` was NOT executed — every verdict is from static reading of the on-disk code+tests, and each round-4 claimed fix was checked against the actual code, not the commit message. Round numbering: prompt 'round-5'; written as the next on-disk impl iteration (iteration-4)."
+  },
+  "dimensions": [
+    {
+      "name": "no_human",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "runtime/loop/index.mjs:401-404", "description": "Loop spawns the slot with stdio ['ignore','pipe','pipe'] — stdin physically ignored; the slot cannot block on a human."},
+        {"type": "file", "location": "skills/earn/gig/lib/settle-write.mjs:1-51", "description": "settle-write contains no stdin/readline/prompt; resolves the tx from a chain log or the test seam, never a human."},
+        {"type": "file", "location": "skills/earn/gig/lib/settle-tx.mjs:17-60", "description": "settle-tx is a pure RPC fetcher (eth_getBlockByNumber/eth_getLogs); no interactive input, fully autonomous."},
+        {"type": "file", "location": "skills/earn/gig/run.sh:124-142", "description": "do_settle resolves 'did I earn?' via record-earn's on-chain scan + an automated chain log lookup; no human step."}
+      ]
+    },
+    {
+      "name": "no_fake_earn",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/gig/run.sh:130-136", "description": "earn is parsed ONLY from record-earn's 'VERIFIED +X USDC' line (sed); settle-write.mjs is invoked ONLY inside the `[ \"$earn\" != \"0\" ]` branch. The slot cannot originate an amount."},
+        {"type": "file", "location": "skills/earn/gig/lib/settle-write.mjs:18-22,45-46", "description": "earn=Number(argv); if !(earn>0) writes a zero line and exits; line.earn_usdc/net_usdc are exactly the record-earn amount — no fabrication path. SUPREME amount-integrity holds."},
+        {"type": "file", "location": "skills/earn/gig/lib/settle-write.mjs:38", "description": "tx is injectable ONLY when process.env.FOUNDER_TEST==='1' && GIG_SETTLE_TX; in prod (FOUNDER_TEST unset) the seam is closed and tx MUST come from a real on-chain Transfer log via representativeExternalTx. GIG_SETTLE_TX is NOT parsed from the model's ANICCA_ARGS (run.sh:20-36), so the model cannot supply it."},
+        {"type": "file", "location": "skills/earn/gig/__tests__/settle.test.mjs:41-47", "description": "Asserts prod IGNORES GIG_SETTLE_TX without FOUNDER_TEST (unreachable RPC => no_tx) and the line does NOT classify profitable — FIND-001(round-4) genuinely fixed and tested."},
+        {"type": "file", "location": "skills/self/founder-loop/record-earn.mjs:71-99,116-131", "description": "VERIFIED prints only when earned>0 from EXTERNAL inflows (from ∉ MY_WALLETS), finalized-head block cursor, logs re-verified (topic0==Transfer,address==USDC,padded to==founder), fail-closed; self-transfers sum to 0."},
+        {"type": "file", "location": "skills/_shared/lib/ledger.mjs:43-49", "description": "A profitable line requires tx && status==='0x1' && net>0 && external===true && not-swap. settle-write only sets tx+status when a real (or test-seam) tx exists; settle.test.mjs:23-33 confirms isProfitable(line)===true for the verified path."}
+      ]
+    },
+    {
+      "name": "key_isolation",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/gig/run.sh:39-54", "description": "wallet_address emits only an address-shaped field (0x, len<=44); a 66-char key would be rejected by the length filter."},
+        {"type": "file", "location": "skills/earn/gig/lib/settle-tx.mjs:13-25", "description": "settle-tx reads only BASE_RPC_URL (a URL, not a key) and the public USDC/Transfer constants; it prints nothing — returns an object. No secret is read or echoed."},
+        {"type": "file", "location": "skills/earn/gig/lib/settle-write.mjs:20,50", "description": "settle-write prints ONLY the structured ledger line (ts/wallet/source/task/earn/cost/net/external/wake[/tx/status/no_tx]); no env secret is interpolated."},
+        {"type": "file", "location": "runtime/loop/index.mjs:337,360", "description": "Loop redacts private-key patterns from both the observation and the wake ledger line; contract.test.mjs:64-67,91 asserts the planted keys never appear in stdout/stderr incl. the settle path."}
+      ]
+    },
+    {
+      "name": "contract",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/gig/run.sh:17-36,144-152", "description": "Mode is driven by $ANICCA_ARGS (the real loop channel, index.mjs:445), GIG_MODE only a manual fallback; always exits 0; unknown mode falls back to detect; settle bounded by `timeout 45` under SKILL_TIMEOUT_S."},
+        {"type": "file", "location": "skills/earn/gig/run.sh:124-142", "description": "do_settle emits exactly one structured JSON line on every branch (record-earn-missing :126, zero-earn :140, settle-write line :138, or the emit fallback :138) — one structured line, exit 0."},
+        {"type": "file", "location": "skills/earn/gig/__tests__/contract.test.mjs:77-92", "description": "Drives settle via ANICCA_ARGS with no real inflow → earn_usdc===0, !external, record-earn invoked, no key leak. Non-tautological on the no-inflow path."},
+        {"type": "file", "location": "skills/earn/gig/lib/bid.mjs:54-56", "description": "bid idempotent: shouldRecordBid(r) === (r.ok===true); a failed POST stays retryable (verified unchanged this round)."}
+      ]
+    },
+    {
+      "name": "reality",
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-002"],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/gig/lib/settle-write.mjs:16,41", "description": "POSITIVE — round-4 FIND-002 fix present in CODE: SHARED = [0xa3cd...,0x9b1e...]; representativeExternalTx is called with { myWallets: SHARED, ...range } so settle-tx excludes founder+SHARED. (But UNTESTED — see FIND-001.)"},
+        {"type": "file", "location": "skills/earn/gig/lib/settle-tx.mjs:30-40", "description": "POSITIVE — round-4 FIND-003 fix present in CODE: when recordEarnRange supplies {fromBlock,toBlock} the exact (already-finalized) record-earn window is scanned; else falls back to the FINALIZED head minus spanBlocks (reorg-safe, matches record-earn.mjs:62-69). (But UNTESTED — see FIND-001.)"},
+        {"type": "file", "location": "skills/earn/gig/lib/settle-write.mjs:26-34", "description": "POSITIVE — recordEarnRange reads the last founder-ledger row's from_block/to_block (written by record-earn.mjs:128) inside try/catch → returns {} on any error → graceful finalized fallback, NOT a crash. Missing founder ledger degrades gracefully."},
+        {"type": "file", "location": "skills/earn/gig/__tests__/settle.test.mjs:41-54", "description": "FAIL — both 'real path' tests use an unreachable RPC, so representativeExternalTx only reaches its null/catch branch; the positive log-parse + founder/SHARED-exclude + window logic (settle-tx.mjs:41-59, the substance of the round-4 FIND-002/003/004 fixes) has ZERO executable coverage. A regression would pass all tests silently (FIND-001)."},
+        {"type": "file", "location": "skills/earn/_probe/run.sh:7", "description": "FAIL — the loop E2E probe still writes a line with NO tx/status (earn_usdc:0.01), and earn-slot-e2e.test.mjs:71 asserts only earn_usdc===0.01, never profitable===true → no NO-MOCK E2E ties the real run.sh→settle-write→classifyEarnResult chain to a profitable wake (FIND-002)."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 2,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": [],
+    "round4FixesConfirmedReal": [
+      "FIND-001(round-4): GIG_SETTLE_TX honored ONLY under FOUNDER_TEST=1 (settle-write.mjs:38); prod-ignored asserted by settle.test.mjs:41-47. GENUINELY FIXED + tested.",
+      "FIND-002(round-4): settle-write passes myWallets=SHARED (settle-write.mjs:16,41) and settle-tx excludes founder+SHARED (settle-tx.mjs:32,56). Code-correct.",
+      "FIND-003(round-4): settle-write recordEarnRange reads founder-ledger from_block/to_block (settle-write.mjs:26-34) and settle-tx uses the exact finalized window with finalized-head fallback (settle-tx.mjs:34-40). Code-correct.",
+      "Core money-safety: settle line now carries tx+status:0x1 when a real tx exists → isProfitable accepts it (settle.test.mjs:23-33). The settle FUNCTIONS in the loop (index.mjs:325-330 classifyEarnResult on the EARN_LEDGER line settle-write appends; earn/gig receives EARN_LEDGER+WAKE_ID+ANICCA_ARGS via index.mjs:452-460). No double-count: the loop READS the slot's earn-ledger line, it does not re-append it (index.mjs:361 writes only the wake ledger)."
+    ],
+    "round4FixesNotReal": [
+      "FIND-002/FIND-003(round-4) are verified ONLY by code-reading — the founder/SHARED exclude filter and the record-earn-window read have NO executable test (no settle-tx*.test.mjs; grep of __tests__ for representativeExternalTx|recordEarnRange|getLogs = 0 matches).",
+      "FIND-004(round-4) PARTIAL — added a null-path + a prod-seam-ignored test, but the positive real-chain extraction path (the actual receipt source) is still never executed (both real-path tests force an unreachable RPC)."
+    ]
+  }
+}

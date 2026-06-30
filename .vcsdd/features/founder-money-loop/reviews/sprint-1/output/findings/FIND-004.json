@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "spec_fidelity",
+  "category": "security_surface",
+  "severity": "high",
+  "description": "INV-3 (no public-site/dashboard write) is enforced by a 4-substring DENYLIST regex (record-earn.mjs:29: /aniccaai|apps\\/landing|dashboard\\.json|public\\//). This is bypassable. The spec (line 36) names runtime/dashboard/server.mjs as the render source, yet a ledger path under runtime/dashboard/ contains none of the four tokens and passes. Likewise common static-publish dirs (dist/, out/, build/, www/, site/, .next/, static/ when not under apps/landing) all bypass the regex and could be a live site root. The guard is a blocklist of incidental path tokens, not a positive constraint that the ledger is inside the founder body.",
+  "evidence": {
+    "filePath": "skills/self/founder-loop/record-earn.mjs",
+    "lineRange": "28-31",
+    "snippet": "if (/aniccaai|apps\\/landing|dashboard\\.json|public\\//.test(LEDGER)) {\n  die(\"INV-3 violation: ...\");\n}"
+  },
+  "fix": "Invert to an allowlist: resolve both paths and require the ledger to live under the founder body dir, e.g. `const r = path.resolve(LEDGER); if (!r.startsWith(path.resolve(FOUNDER_DIR) + path.sep)) die('INV-3: ledger must be inside the founder body');`. This guarantees no path outside FOUNDER_DIR (including runtime/dashboard, dist, any site root) can ever be written, independent of token spelling.",
+  "routeToPhase": "2b"
+}

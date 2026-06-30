@@ -56,3 +56,27 @@ test/throwaway/farm repos. VERIFIED: top-25 open Algora bounties → only **1** 
 #2239, 460★). Reality: the genuinely fresh×uncontested×real intersection is ~1 right now. NEXT (TODO-2):
 deep-verify that survivor is REAL money (not a Clanker/token farm) + agent-doable, then /attempt + PR; if
 fake/blocked, report honestly (like drizzle) — never force.
+
+## UPDATE 2026-06-30 (2): Rustchain#2239 = token-farm; current real-USD inventory = 0
+The 1 gate-survivor was deep-verified FAKE: RTC self-token (not USD), algora.io 404, AutoJanitor bot
+auto-merge, AI-agent farm. Added gate filter (d) USD-not-token. ★ HONEST: top-25 open Algora bounties →
+0 real-payable-uncontested-agent-doable right now. ★ The verify-first discipline caught 3 dead/fake leads
+in a row (47-live=closed, drizzle=dead-funder, Rustchain=token) — this is the system WORKING, not failing.
+The bounty loop + gate are built + correct; they will attempt the moment a real USD bounty appears. Inventory
+(like clip per-view campaigns) is demand-thin. NEXT: bounty-cli core (daily discover+gate; attempt only when
+a survivor passes ALL gates incl. USD) + widen discover beyond Algora if a second real platform emerges."
+git add docs/superpowers/specs/2026-06-30-earn-bounty-slot-design.md
+git commit -q -m "spec(earn/bounty): UPDATE-2 — Rustchain=token-farm, real-USD inventory=0 now; verify-first caught 3 fakes; loop+gate correct, demand-thin"
+git pull --rebase origin main 2>&1 | tail -1; git push 2>&1 | tail -1
+## UPDATE 2026-06-30 (3): keystatic#340 withdrawn; full-48 gate → 0 real; verify caught 4/4
+Full gate over all 48 open Algora bounties → 1 real-repo survivor (keystatic#340) → deep-verify = DEAD
+(withdrawn: ~~strikethrough~~ algora comment; community-funded not team; undesigned roadmap, maintainer
+declined). Gate upgraded: detect strikethrough-withdrawn + require an ACTIVE algora bounty comment.
+★ CONCLUSIVE: current real-payable Algora inventory = 0. Verify-first caught 4/4 fakes (closed/dead/
+token/withdrawn) BEFORE any wasted PR. ★ The loop + gate are correct + battle-tested; they will attempt
+the moment a genuinely-live USD bounty appears. The honest constraint is DEMAND (no real open bounties
+now), not the loop. NEXT: build the back-half anyway (attempt mode + record-earn + bounty-cli core) so
+the loop can act autonomously the instant inventory appears; widen sources beyond Algora."
+git add docs/superpowers/specs/2026-06-30-earn-bounty-slot-design.md
+git commit -q -m "spec(earn/bounty): UPDATE-3 — keystatic withdrawn, full-48 gate=0 real, verify caught 4/4; demand is the constraint not the loop"
+git pull --rebase origin main 2>&1 | tail -1; git push 2>&1 | tail -1

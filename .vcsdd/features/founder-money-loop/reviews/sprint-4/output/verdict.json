@@ -1,0 +1,80 @@
+{
+  "sprintNumber": 4,
+  "feature": "founder-money-loop",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-06-27T00:00:00Z",
+  "iteration": 1,
+  "reviewContext": {
+    "reviewType": "implementation",
+    "coreQuestion": "In PRODUCTION (FOUNDER_TEST unset), can the earner write a USDC number it did not really receive on-chain to the ledger the public dashboard reads?",
+    "answer": "YES — via the HOME env var, because os.homedir() re-reads HOME in prod and moves the entire trust root (FIND-401). overallVerdict FAIL."
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-401"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/founder-loop/record-earn.mjs:18-28", "description": "INV-2 (verified-earn-only) is violated in prod: the HOME-derived trust root lets a fabricated baseline=0 + real on-chain balance be recorded as an earning."}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-402"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/founder-loop/test-record-earn.sh:17-20", "description": "Static HOME assert greps literal process.env.HOME and misses os.homedir(); no prod-mode behavioral test for HOME poisoning."}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-401", "FIND-403"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/founder-loop/record-earn.mjs:23", "description": "os.homedir() honors $HOME on POSIX (libuv uv_os_homedir), defeating the prod gate."},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/founder-loop/record-earn.mjs:31", "description": "realpathSync(FOUNDER_DIR) unhandled-throws when the dir is absent."}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "FAIL",
+      "findings": ["FIND-404"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/founder-loop/record-earn.mjs:40", "description": "Hardcoded FOUNDER_WALLET_EXPECTED duplicates wallet.json state; bricks on rotation and publishes the address used by the FIND-401 attack."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-401", "FIND-402"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/founder-loop/record-earn.mjs:18-28", "description": "The claimed core invariant 'prod trusts NOTHING from the caller' (file header lines 7-9) is not upheld: HOME is caller-controlled and still moves the trust root. The oracle cannot witness the violation because it only greps and never runs prod mode."}
+      ]
+    }
+  ],
+  "closedFindingsVerifiedThisRound": [
+    {
+      "findingId": "FIND-302",
+      "status": "CLOSED",
+      "evidence": "record-earn.mjs:46 adds a positive pin `wallet.toLowerCase() !== FOUNDER_WALLET_EXPECTED -> die`, rejecting ANY wallet other than the pinned address (not just the 2-entry SHARED denylist at line 39/45). Behavioral test case 10 (test-record-earn.sh:69-72) feeds a random non-shared wallet and asserts rc!=0. Caveat: see FIND-404 (drift/leak of the pin) and FIND-401 (a planted wallet.json can present the publicly-known pinned address)."
+    },
+    {
+      "findingId": "FIND-303",
+      "status": "CLOSED",
+      "evidence": "record-earn.mjs:31-37 realpath()s the founder dir AND the ledger's nearest existing ancestor (lines 32-34 walk up to the first existing path), then requires realAnc to equal or be under realFounder — so a symlinked state/ escaping the body is rejected. Behavioral test case 11 (test-record-earn.sh:74-77) symlinks state/ to a temp dir and asserts rc!=0 and no write to the escape target. Verified the dashboard reads home+/state/ledger.jsonl (server.mjs:56), confirming the threat model. Caveat: realpathSync throws when the dir is absent (FIND-403)."
+    },
+    {
+      "findingId": "FIND-304",
+      "status": "CLOSED",
+      "evidence": "record-earn.mjs:99-100 advances the baseline high-water-mark (writeBaselineAtomic(current)) BEFORE appendFileSync(LEDGER,...). A crash between the two loses exactly one record (honest under-count); a replay reads baseline=current so delta=0 and line 95 fails closed — no double-count. Behavioral test cases 8 and 12 (test-record-earn.sh:57-62, 79-82) assert baseline advanced + single row + replay-sees-delta=0. No double-count window remains."
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 4,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": [],
+    "openFindings": ["FIND-401", "FIND-402", "FIND-403", "FIND-404"],
+    "regressionsFromSprint3": ["FIND-301 NOT closed -> re-raised as FIND-401", "FIND-305 partially open -> re-raised as FIND-402"]
+  }
+}

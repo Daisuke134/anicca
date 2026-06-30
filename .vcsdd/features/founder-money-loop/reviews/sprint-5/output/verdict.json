@@ -1,0 +1,69 @@
+{
+  "sprintNumber": 5,
+  "feature": "founder-money-loop",
+  "overallVerdict": "PASS",
+  "timestamp": "2026-06-27T00:00:00Z",
+  "iteration": 1,
+  "reviewContext": {
+    "reviewType": "implementation",
+    "priorFindings": ["FIND-401", "FIND-402", "FIND-403", "FIND-404"],
+    "coreQuestion": "In PRODUCTION (FOUNDER_TEST unset), can the earner write a USDC number it did not really receive on-chain to the ledger the public dashboard reads?",
+    "coreAnswer": "NO. The prod trust root is the env-independent literal '/Users/anicca/.anicca-founder' (record-earn.mjs:25). Every override env (HOME, FOUNDER_DIR, FOUNDER_WALLET, FOUNDER_LEDGER, FOUNDER_USDC_NOW, FOUNDER_USDC_BASELINE, BASE_RPC_URL) and os.homedir() is reachable ONLY under FOUNDER_TEST=1. No prod env can move the root, swap the wallet, fake the balance, or relocate the ledger."
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/founder-loop/record-earn.mjs:41-48", "description": "INV-1 enforced: SHARED wallet rejected (47), positive pin against FOUNDER_WALLET_EXPECTED rejects any other wallet (48)."},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/founder-loop/record-earn.mjs:30-39", "description": "INV-3 enforced: ledger must realpath-resolve inside the founder dir, symlink-deref via realpathSync of nearest existing ancestor."},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/founder-loop/record-earn.mjs:87,97", "description": "INV-6 fail-closed: RPC failure -> die; delta<=0 -> die; no write."},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/founder-loop/record-earn.mjs:89-94", "description": "FIND-007 honored: first run initializes baseline to current and records nothing."}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "test", "location": "/Users/anicca/anicca/skills/self/founder-loop/test-record-earn.sh:85-92", "description": "FIND-402 closed: behavioral PROD-mode case (FOUNDER_TEST unset) with HOME=planted .anicca-founder{pinned wallet, baseline=0} asserts NO fabricated row lands in the planted dir."},
+        {"type": "test", "location": "/Users/anicca/anicca/skills/self/founder-loop/test-record-earn.sh:23", "description": "Static assert that the prod founder dir is an env-independent literal '/Users/anicca/.anicca-founder' (grep -qF)."},
+        {"type": "test", "location": "/Users/anicca/anicca/skills/self/founder-loop/test-record-earn.sh:53-56,75-78", "description": "Corrupt-baseline fail-closed and INV-3 symlink-escape both covered."}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/founder-loop/record-earn.mjs:25", "description": "FIND-401 closed: prod FOUNDER_DIR is the literal '/Users/anicca/.anicca-founder'; HOME/os.homedir()/FOUNDER_DIR are inside the TEST-only ternary branch and unreachable in prod."},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/founder-loop/record-earn.mjs:32-33", "description": "FIND-403 closed: realpathSync(FOUNDER_DIR) wrapped in try/catch -> friendly die('founder dir missing/unreadable ... gen-wallet/init first')."},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/founder-loop/record-earn.mjs:18,29,44,58,59,76", "description": "Enumerated every process.env.* read: all overrides TEST-gated; only process.env.FOUNDER_TEST (mode switch, cannot move root) is read unconditionally."}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": ["FIND-501"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/founder-loop/record-earn.mjs:42,48", "description": "FIND-404 (hardcoded pin) is now acceptable defense-in-depth: with the prod root env-independent, wallet.json is always the canonical founder wallet, so the pin can only ever match the real wallet; residual risk is config-drift bricking on rotation, recorded as non-blocking FIND-501."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/founder-loop/record-earn.mjs:96-102", "description": "Earn is a pure delta of two on-chain reads vs strict baseline; baseline advanced atomically BEFORE append (crash = honest under-count, never double-count)."},
+        {"type": "verification", "location": "/Users/anicca/.anicca-founder/wallet.json + state/usdc-baseline.txt", "description": "Live prod state confirmed: wallet.json.address == FOUNDER_WALLET_EXPECTED (0x810f6d61...), baseline file = 0 (well-formed)."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 1,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": ["INV-1", "INV-2", "INV-3", "INV-6", "FIND-401", "FIND-402", "FIND-403", "FIND-404"],
+    "duplicateFindings": []
+  }
+}

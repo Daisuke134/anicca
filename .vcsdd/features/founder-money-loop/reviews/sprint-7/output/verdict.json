@@ -1,0 +1,37 @@
+{
+  "sprintNumber": 7,
+  "feature": "founder-money-loop",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-06-27T13:10:00Z",
+  "iteration": 1,
+  "coreIntegrityQuestion": {
+    "question": "Can the earner write a USDC number that did not come from a genuine, FINALIZED, external on-chain payment?",
+    "answer": "NO",
+    "basis": "On the prod path (FOUNDER_TEST unset) every seam (FOUNDER_DIR/LEDGER/WALLET/CURSOR/BLOCK_NOW/LOGS_JSON/RAW_LOGS_JSON/BASE_RPC_URL/HOME) is TEST-gated (record-earn.mjs:14,20,24,38,56,63,89,91,109); blockNow() reads the FINALIZED head only (record-earn.mjs:67-69) so the cursor never advances past un-finalized blocks; externalInflow scans cursor+1..finalizedHead and the cursor is written to finalizedHead (record-earn.mjs:119-120) — both bounded by finality, no reorg window; parseRawLogs re-verifies address==USDC, topic0==Transfer, to==founder locally (record-earn.mjs:83-84) and sumExternal drops from in MY_WALLETS (record-earn.mjs:74); wallet is pinned to 0x810f (record-earn.mjs:42). FIND-601/602/603 are CLOSED. The FAILs below are MINOR non-integrity hardening/coverage gaps, none of which permits a fabricated or inflated USDC number (all fail-closed or under-count)."
+  },
+  "priorFindingStatus": {
+    "FIND-601": "CLOSED — finalized head read at record-earn.mjs:67-69; window+cursor both finalized (119-120)",
+    "FIND-602": "CLOSED — raw-log seam FOUNDER_RAW_LOGS_JSON (record-earn.mjs:91) + parseRawLogs (79-86) exercised by tests 13/14/15 (test-record-earn.sh:96-111)",
+    "FIND-603": "CLOSED — parseRawLogs re-verifies address/topic0/to locally (record-earn.mjs:83-84); test 15 (test-record-earn.sh:107-111)",
+    "FIND-604": "PARTIALLY CLOSED — multi-payer+0-value tested (test 16, test-record-earn.sh:113-116); range-cap still unchunked+untested and a filter-passing malformed-data log is untested -> FIND-702",
+    "FIND-605": "PARTIALLY CLOSED — mixed case now asserts rc==0 (test-record-earn.sh:45) and static gate tightened to TEST &&/TEST ? (test-record-earn.sh:18); residual same-line-comment false-pass -> FIND-703"
+  },
+  "dimensions": [
+    {"name": "spec_fidelity", "verdict": "PASS", "findings": [], "evidence": [
+      {"type": "file", "location": "/Users/anicca/anicca/skills/self/founder-loop/record-earn.mjs", "description": "INV-1 wallet pin (35-42), INV-3 realpath (27-32), INV-6 fail-closed (28,39,110,111,113,117,119), INV-7 external-only via MY_WALLETS (44-45,72-75) all implemented per spec lines 70-87"},
+      {"type": "file", "location": "/Users/anicca/anicca/skills/self/founder-loop/test-record-earn.sh", "description": "INV-1/3/6/7 covered by tests 3,6,7,8,9,10,11,14 (THE GOAL self-transfer=0 at test 3 line 39-40 and test 14 line 102-105)"}
+    ]},
+    {"name": "edge_case_coverage", "verdict": "FAIL", "findings": ["FIND-701", "FIND-702"], "evidence": []},
+    {"name": "implementation_correctness", "verdict": "PASS", "findings": [], "evidence": [
+      {"type": "file", "location": "/Users/anicca/anicca/skills/self/founder-loop/record-earn.mjs", "description": "Finalized-head read (67-69) closes reorg over/double-count; null-finalized fails closed via BigInt throw -> catch die (68-69,113); from-slice(26)+BigInt(data)/1e6 decode correct (85); to/address/topic0 re-verified (83-84); cursor advance-first under-count semantics (120). No prod fabrication path found."}
+    ]},
+    {"name": "structural_integrity", "verdict": "FAIL", "findings": ["FIND-703", "FIND-704"], "evidence": []},
+    {"name": "verification_readiness", "verdict": "FAIL", "findings": ["FIND-705"], "evidence": []}
+  ],
+  "convergenceSignals": {
+    "findingCount": 5,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": ["INV-1", "INV-2", "INV-3", "INV-4", "INV-5", "INV-6", "INV-7", "FIND-601", "FIND-602", "FIND-603", "FIND-604", "FIND-605"],
+    "duplicateFindings": []
+  }
+}

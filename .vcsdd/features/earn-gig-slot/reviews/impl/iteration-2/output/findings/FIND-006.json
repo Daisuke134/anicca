@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "contract",
+  "category": "test_quality",
+  "severity": "minor",
+  "description": "The settle contract test (contract.test.mjs:77-87) is tautological with respect to the record-earn integration it purports to exercise. It only asserts r.status===0, that the last JSON line's task starts with 'settle', and that no key leaked. Because do_settle emits a 'settle' line in EVERY branch — record-earn missing (run.sh:123), record-earn erroring, or record-earn returning no external income (run.sh:130) — the test passes even if the record-earn wiring is completely broken or the binary is absent. It therefore does not prove the chain-truth settle path actually runs; it only proves run.sh routes the 'settle' mode label. Combined with FIND-001 (wake-correlation gap), the test suite gives false confidence that settle is loop-integrated. TOP FIX: under FOUNDER_TEST seams, drive record-earn with a stubbed external inflow and assert do_settle propagates a non-zero earn_usdc with external:true, and a separate test that a missing recorder is surfaced (not silently earn-0).",
+  "evidence": {
+    "filePath": "skills/earn/gig/__tests__/contract.test.mjs",
+    "lineRange": "77-87",
+    "snippet": "assert.ok(j && j.task && j.task.startsWith('settle'), `settle not driven via ANICCA_ARGS: ${r.stdout}`);  // passes even when record-earn is missing/broken"
+  },
+  "routeToPhase": "2a"
+}

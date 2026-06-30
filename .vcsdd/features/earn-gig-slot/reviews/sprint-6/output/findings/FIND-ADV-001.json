@@ -1,0 +1,15 @@
+{
+  "findingId": "FIND-ADV-001",
+  "dimension": "verification_readiness",
+  "category": "test_coverage",
+  "severity": "minor",
+  "blocking": false,
+  "description": "Asymmetric regression coverage of the two FOUNDER_TEST seams. The GIG_SETTLE_TX seam has an explicit prod-ignored regression test (settle.test.mjs:41-47: without FOUNDER_TEST the env var is ignored -> no_tx, not profitable), but the sibling GIG_RAW_LOGS_JSON seam (settle-tx.mjs:45) has NO equivalent test asserting it is ignored when FOUNDER_TEST is unset. settle-tx.test.mjs only exercises the seam WITH FOUNDER_TEST=1. The gate IS present in code and the seam is NOT reachable from the model's ANICCA_ARGS (run.sh parses only mode/jobId/amount/proposal) and no prod path sets GIG_RAW_LOGS_JSON, so this is NON-EXPLOITABLE and violates no PASS criterion. It is a defense-in-depth regression guard only: if a future edit dropped `process.env.FOUNDER_TEST === '1' &&` from settle-tx.mjs:45, no test would fail.",
+  "evidence": {
+    "filePath": "skills/earn/gig/lib/settle-tx.mjs",
+    "lineRange": "45-46",
+    "snippet": "if (process.env.FOUNDER_TEST === '1' && process.env.GIG_RAW_LOGS_JSON !== undefined) {"
+  },
+  "recommendedFix": "Add one test to settle-tx.test.mjs that sets GIG_RAW_LOGS_JSON WITHOUT FOUNDER_TEST and (with fromBlock/toBlock supplied so no network is hit, or BASE_RPC_URL=http://127.0.0.1:1) asserts representativeExternalTx does NOT consume the injected logs -> returns null. This gives the GIG_RAW_LOGS_JSON gate the same prod-ignored regression guard that GIG_SETTLE_TX already has at settle.test.mjs:41-47.",
+  "routeToPhase": null
+}

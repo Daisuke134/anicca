@@ -1,0 +1,90 @@
+{
+  "sprintNumber": 2,
+  "feature": "gig-earn-core",
+  "reviewType": "infrastructure-round-2",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-06-30T00:00:00Z",
+  "iteration": 2,
+  "round1FixVerification": {
+    "FIND-001_alive_no_heartbeat": "PARTIAL — seed (gig-cli.sh:36) + healthcheck branch (gig-healthcheck.sh:18-21) present, but the seed introduces a NEW defect: it lets the restart path forge a fresh heartbeat / FIRING verdict (see FIND-R2-001), and makes the no-heartbeat branch near-unreachable (FIND-R2-003).",
+    "FIND-002_touch_no_dir": "FIXED — cron prompt `mkdir -p ~/gig && touch ~/gig/.last-pass` (gig-cli.sh:21) + startup seed `mkdir -p \"$HOME/gig\"` (gig-cli.sh:36).",
+    "FIND-003_monitor_path": "FIXED — monitor.sh:2 exports /opt/homebrew/bin:... PATH.",
+    "FIND-004_registry_spec": "FIXED — registry.json:102 earn/gig spec points to 2026-06-30-gig-earn-core-recipe-design.md.",
+    "FIND-005_threshold": "FIXED — gig-healthcheck.sh:22 `-ge \"$STALE_MIN\"` (STALE_MIN=90) and auditor.sh:43 `hb_age>=90` use the same boundary (both floor the minute value).",
+    "FIND-006_applied_total": "PARTIAL — applied_total now status==applied in all three (run.sh:33, monitor.sh:29, auditor.sh:31), but the delta field is mislabeled/miscomputed (FIND-R2-004).",
+    "FIND-007_spec_contradiction": "FIXED on disk — finish-line #1 reconciled to PROVEN (spec:8-11); no UNPROVEN-vs-PROVEN contradiction remains. NOTE: the 'PROVEN' runtime evidence (audit.jsonl/applied.jsonl in ~/gig) is not in the repo and cannot be verified from disk.",
+    "FIND-008_jpy_guard": "FIXED (logic) — run.sh:35, monitor.sh:33, auditor.sh:33 all require status in SETTLED + truthy evidence + float(jpy)>0. NOTE: the float() call is crash-unsafe on non-numeric jpy (FIND-R2-005)."
+  },
+  "dimensions": [
+    {
+      "name": "self_heal_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-R2-002", "FIND-R2-003"],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/gig/gig-healthcheck.sh:14-24", "description": "DEAD/no-heartbeat/STALE branches present; restart() has no backoff or retry cap"},
+        {"type": "file", "location": "launchd/ai.anicca.gig-core-healthcheck.plist:7", "description": "StartInterval 300 -> unbounded 5-min restart cadence under persistent failure"}
+      ]
+    },
+    {
+      "name": "auditor_honesty",
+      "verdict": "FAIL",
+      "findings": ["FIND-R2-001", "FIND-R2-005"],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/gig/auditor.sh:35-44", "description": "FIRING verdict derived solely from heartbeat freshness, which the restart seed can forge"}
+      ]
+    },
+    {
+      "name": "no_fake_earn",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/gig/auditor.sh:32-34", "description": "earned requires status in {検収,支払,検収完了,completed,paid} AND non-empty evidence AND float(jpy)>0"},
+        {"type": "file", "location": "skills/earn/gig/monitor.sh:32-35", "description": "same settled+evidence+jpy>0 guard; rejected counter exposes non-qualifying rows"},
+        {"type": "file", "location": "skills/earn/gig/run.sh:34-39", "description": "same guard; earn_usdc:0, no record-earn, no USDC claim"}
+      ]
+    },
+    {
+      "name": "no_human",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/gig/gig-cli.sh:21", "description": "cron prompt routes blockers to CapSolver/gog gmail/Google re-login; 'A blocker is NOT a stop'; only one-time KYC is human"},
+        {"type": "file", "location": "skills/earn/gig/__tests__/no-human-loop.test.mjs:15-43", "description": "raw-scans live loop files for runtime human-step patterns incl. a planted-violation test; no forbidden pattern present in gig-cli/monitor/healthcheck"}
+      ]
+    },
+    {
+      "name": "path_fix_reality",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/gig/gig-cli.sh:2", "description": "exports /opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"},
+        {"type": "file", "location": "skills/earn/gig/gig-healthcheck.sh:2", "description": "same PATH export; tmux/stat/date resolvable under launchd minimal PATH"},
+        {"type": "file", "location": "skills/earn/gig/auditor.sh:2", "description": "same PATH export; also uses absolute /opt/homebrew/bin/python3"},
+        {"type": "file", "location": "skills/earn/gig/monitor.sh:2", "description": "same PATH export"},
+        {"type": "note", "location": "skills/earn/gig/run.sh", "description": "no PATH export, but not launchd-triggered; delegates tmux to gig-cli.sh and uses absolute python3 -> acceptable"}
+      ]
+    },
+    {
+      "name": "consistency_honesty",
+      "verdict": "FAIL",
+      "findings": ["FIND-R2-004"],
+      "evidence": [
+        {"type": "file", "location": "skills/registry.json:102", "description": "earn/gig spec reference now correct (FIND-004 fixed)"},
+        {"type": "file", "location": "docs/superpowers/specs/2026-06-30-gig-earn-core-recipe-design.md:8-11", "description": "finish-line reconciled to PROVEN (FIND-007 fixed); runtime PROVEN evidence not on disk, unverifiable"}
+      ]
+    }
+  ],
+  "preservedInvariants": {
+    "auditor_cannot_report_FIRING_when_tmux_dead_or_heartbeat_stale": "Literally upheld by file-state logic, BUT defeated in spirit — the restart seed makes heartbeat fresh so the dead/stale state never persists for the auditor to observe (FIND-R2-001).",
+    "no_record_earn": "UPHELD — no record-earn call in run.sh/monitor.sh/auditor.sh.",
+    "earn_usdc_zero": "UPHELD — run.sh:38 earn_usdc:0.",
+    "no_usdc_claim": "UPHELD — cron prompt + run.sh/monitor.sh/NO_HUMAN.md state human-funded ¥, no USDC.",
+    "no_runtime_human": "UPHELD — daily op autonomous; only one-time KYC."
+  },
+  "convergenceSignals": {
+    "findingCount": 5,
+    "newDefectsFromRound1Edits": ["FIND-R2-001", "FIND-R2-003", "FIND-R2-005"],
+    "residualUnfixed": ["FIND-R2-002", "FIND-R2-004"],
+    "duplicateFindings": []
+  }
+}

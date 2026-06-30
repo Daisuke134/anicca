@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-R4-003",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "low",
+  "description": "The hardcoded FALLBACK dict in passprep.py (lines 23-50) and its last-resort write path (lines 96-99) — triggered when strategy.json is missing OR corrupt AND strategy.default.json is also missing or unreadable — are never exercised by any test. passprep.test.mjs correctly runs real passprep.py scripts in an isolated temp HOME, but SKILL_DIR is computed from `os.path.dirname(os.path.abspath(__file__))` (passprep.py:20), which always resolves to the real skill directory containing strategy.default.json. The 'missing strategy.json' test (passprep.test.mjs:30-51) therefore goes through the 'restore from strategy.default.json' path (passprep.py:87-93), not the FALLBACK dict path (lines 96-99). The FALLBACK dict contains different values than strategy.default.json (e.g., the FALLBACK notes field says 'Fallback defaults — strategy.default.json was not found.' and hardcodes specific price_defaults). A regression in the FALLBACK values (e.g., max_apply_per_pass set to 0) would not be caught.",
+  "evidence": {
+    "filePath": "skills/earn/gig/passprep.py",
+    "lineRange": "96-99",
+    "snippet": "# Last resort: hardcoded fallback (strategy.default.json missing in this HOME)\nstrategy = dict(FALLBACK)\natomic_write(STRATEGY_FILE, strategy)\nreturn strategy, True"
+  },
+  "crossRef": [
+    "skills/earn/gig/__tests__/passprep.test.mjs:30-51 (test 1: covers missing strategy.json, but SKILL_DIR has real strategy.default.json so shutil.copy2 path executes, not FALLBACK path)",
+    "skills/earn/gig/passprep.py:20-21 (SKILL_DIR = os.path.dirname(os.path.abspath(__file__)))"
+  ],
+  "fix": "Add a test that temporarily makes strategy.default.json unreadable or passes a SKILL_DIR override (e.g., monkeypatching DEFAULT_STRATEGY path via env var or running from a temp directory), then verifies passprep.py emits valid JSON with sane defaults and creates a valid strategy.json. Alternatively, validate that FALLBACK has identical required keys and valid max_apply_per_pass (>0, <=10) by adding a static assertion test.",
+  "routeToPhase": "2c"
+}

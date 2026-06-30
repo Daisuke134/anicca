@@ -1,0 +1,34 @@
+{
+  "sprintNumber": 1,
+  "feature": "founder-money-loop",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-06-27T13:05:00Z",
+  "iteration": 1,
+  "reviewContext": {
+    "reviewType": "implementation",
+    "increment": "G1.1",
+    "artifacts": [
+      "skills/self/founder-loop/record-earn.mjs",
+      "skills/self/founder-loop/test-record-earn.sh",
+      "docs/superpowers/specs/2026-06-27-G1-founder-money-loop.md"
+    ],
+    "note": "No manifest.json or reviews/ scaffold existed for this feature (only state.json at currentPhase=init). Output written under reviews/sprint-1/output/ per the requested scope (founder-money-loop)."
+  },
+  "dimensions": [
+    {"name": "spec_fidelity", "verdict": "FAIL", "findings": ["FIND-001", "FIND-003", "FIND-004"], "evidence": []},
+    {"name": "edge_case_coverage", "verdict": "FAIL", "findings": ["FIND-006"], "evidence": []},
+    {"name": "implementation_correctness", "verdict": "PASS", "findings": [], "evidence": [
+      {"type": "file", "location": "skills/self/founder-loop/record-earn.mjs:54", "description": "USDC Base contract 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913 is the canonical Base USDC; correct."},
+      {"type": "file", "location": "skills/self/founder-loop/record-earn.mjs:58", "description": "balanceOf calldata 0x70a08231 + 24-hex-char zero pad + 40-hex-char address = 64 hex (32 bytes) ABI-correct; eth_call shape valid."},
+      {"type": "file", "location": "skills/self/founder-loop/record-earn.mjs:67-74", "description": "delta arithmetic, JSON row shape, mkdir recursive + appendFileSync verified."}
+    ]},
+    {"name": "structural_integrity", "verdict": "FAIL", "findings": ["FIND-005"], "evidence": []},
+    {"name": "verification_readiness", "verdict": "FAIL", "findings": ["FIND-001", "FIND-006"], "evidence": []}
+  ],
+  "convergenceSignals": {
+    "findingCount": 6,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}

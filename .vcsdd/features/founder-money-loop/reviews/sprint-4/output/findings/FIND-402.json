@@ -1,0 +1,15 @@
+{
+  "findingId": "FIND-402",
+  "dimension": "edge_case_coverage",
+  "category": "test_quality",
+  "severity": "critical",
+  "title": "Static HOME-gating assert is gameable — it greps the literal `process.env.HOME` and misses os.homedir()",
+  "description": "The oracle's static seam-gating loop (test lines 17-20) asserts each seam by `grep -n \"process\\.env\\.$seam\" | grep -v \"TEST\"` and passing if the result is empty. For HOME this only proves the literal token `process.env.HOME` appears on a line that also contains 'TEST' (it does, at impl line 23). It does NOT detect that the SAME line routes the prod value through `os.homedir()`, which itself reads the HOME env var (see FIND-401). Thus the assert green-lights a defeated gate. The test therefore certifies an un-fakeable prod root while the prod root is in fact attacker-movable. There is also NO behavioral test that runs the script in PROD mode (FOUNDER_TEST unset) with a poisoned HOME pointing at a planted .anicca-founder containing the pinned wallet and baseline=0, which would have caught FIND-401. (This is the FIND-305 'no prod-mode test' gap, still open for the HOME vector.)",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/founder-loop/test-record-earn.sh",
+    "lineRange": "17-20",
+    "snippet": "for seam in FOUNDER_DIR FOUNDER_WALLET FOUNDER_LEDGER FOUNDER_USDC_NOW FOUNDER_USDC_BASELINE BASE_RPC_URL HOME; do\n  bad=\"$(grep -n \"process\\.env\\.$seam\" <<<\"$src\" | grep -v \"TEST\" || true)\"\n  ok \"$([ -z \"$bad\" ] && echo 1 || echo 0)\" \"STATIC: $seam read is TEST-gated (offending: ${bad:-none})\""
+  },
+  "fix": "Add a static assert that os.homedir() is NOT used to derive the prod trust root (e.g. grep that FOUNDER_DIR's prod branch is a literal absolute path, not HOME-derived). Add a BEHAVIORAL prod-mode case: with FOUNDER_TEST UNSET, HOME pointed at a temp dir seeded with wallet.json{pinned addr} + state/usdc-baseline.txt=0, assert the script does NOT append a fabricated earn row into that temp dir's ledger (it must ignore HOME entirely and use the real founder dir).",
+  "routeToPhase": "2b"
+}

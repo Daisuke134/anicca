@@ -1,0 +1,15 @@
+{
+  "findingId": "FIND-603",
+  "dimension": "implementation_correctness",
+  "category": "security_surface",
+  "severity": "major",
+  "title": "Post-parse loop re-checks `from` but NOT `to`: the sum trusts the RPC's topics[2] filter without re-verifying each log credits the founder wallet",
+  "description": "externalInflow filters only on `from notin MY_WALLETS` in the summation loop (record-earn.mjs:79). It never re-verifies that each returned log's `to` is actually the founder wallet — it trusts that eth_getLogs honored the topics:[..,..,toTopic] filter (line 74). On the prod path the RPC is the hardcoded TRUSTED_RPC (mainnet.base.org), so this is defense-in-depth rather than an active prod fabrication path. But INV-7 is the load-bearing money invariant and the code extracts nothing about `to` to cross-check it; a buggy/stale RPC, an index node returning a superset, or any future change that loosens the getLogs topics (e.g. dropping toTopic to work around a range cap) would silently sum Transfers that do NOT credit 0x810f, with no second line of defense. Combined with FIND-602 (the real path is untested), there is zero test that the `to` constraint is enforced at all.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/founder-loop/record-earn.mjs",
+    "lineRange": "76-79",
+    "snippet": "logs = res.map((l) => ({ from: '0x' + String(l.topics[1]).slice(26), value: Number(BigInt(l.data)) / 1e6 })); ... for (const lg of logs) if (!MY_WALLETS.includes(String(lg.from||'').toLowerCase())) sum += Number(lg.value)||0;"
+  },
+  "fix": "Extract `to` in the map (to: '0x' + String(l.topics[2]).slice(26)) and, in the summation loop, additionally require String(lg.to).toLowerCase() === wallet.toLowerCase() before adding value (and re-check l.address.toLowerCase() === USDC.toLowerCase()). Defense-in-depth: never trust the RPC server-side filter for a money invariant — re-verify address, to-topic, and from-topic locally. Add a test (via the raw-log seam from FIND-602) feeding a log whose `to` is a different address and assert it contributes 0.",
+  "routeToPhase": "2b"
+}

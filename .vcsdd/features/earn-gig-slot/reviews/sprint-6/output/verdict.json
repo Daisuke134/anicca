@@ -1,0 +1,73 @@
+{
+  "sprintNumber": 6,
+  "feature": "earn-gig-slot",
+  "overallVerdict": "PASS",
+  "timestamp": "2026-06-29T00:00:00Z",
+  "iteration": 6,
+  "reviewContext": {
+    "reviewType": "implementation",
+    "note": "No manifest supplied for this scope; reviewed disk-only per the explicit file list. Round-6 verification of round-5 FIND-001/FIND-002 fixes plus full money-integrity / security / no-human re-audit."
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/gig/run.sh:120-142", "description": "do_settle takes the amount ONLY from record-earn's 'VERIFIED +N USDC' stdout (sed at run.sh:130); never from ANICCA_ARGS/GIG_AMOUNT. GIG_AMOUNT is used only as a bid proposal price (bid-run.mjs:28), not as a recorded earn."},
+        {"type": "file", "location": "skills/earn/gig/lib/settle-write.mjs:38-47", "description": "earn is the record-earn value; tx attached only from a real external log (representativeExternalTx) or the FOUNDER_TEST-gated GIG_SETTLE_TX seam; otherwise no_tx is flagged and the line under-counts rather than fabricating."}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/gig/__tests__/settle-tx.test.mjs:22-48", "description": "Round-5 FIND-001 gap CLOSED: the real-chain extraction SUCCESS branch is now executed via the FOUNDER_TEST-gated GIG_RAW_LOGS_JSON seam — external-log->tx (test:22), founder+SHARED-only->null (test:30), most-recent-external-skipping-trailing-SHARED (test:36), wrong-recipient->null (test:43)."},
+        {"type": "file", "location": "skills/earn/gig/__tests__/settle.test.mjs:49-54", "description": "Null/no-tx branch covered: real path with unreachable RPC (BASE_RPC_URL http://127.0.0.1:1) -> representativeExternalTx returns null -> honest no_tx under-count, not profitable."},
+        {"type": "file", "location": "skills/earn/gig/lib/settle-tx.mjs:32,55-63", "description": "Regression check confirmed: dropping the SHARED exclusion (myWallets) makes settle-tx.test.mjs:30 and :36 both fail (a SHARED transfer would be returned as external); dropping the founder-self exclusion makes :30 fail (0xself returned). Both exclusions are genuinely guarded."}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/gig/lib/settle-tx.mjs:55-63", "description": "Recipient (topics[2]) and topic0 (Transfer sig) are re-verified per log, server filter never trusted; payer excluded against {wallet} U SHARED. A Transfer log only exists for a mined+successful tx, so status 0x1 is sound (settle-write.mjs:47)."},
+        {"type": "file", "location": "runtime/loop/earn-detect.mjs:23-50", "description": "classifyEarnResult locates the line by line.wake===WAKE_ID (never last-line) and applies isProfitable; settle.test.mjs:59-68 drives the REAL function with the correct arg order (wakeId, ledgerPath, isProfitableFn) and asserts profitable===true and earnLine.earn_usdc===12.5."},
+        {"type": "file", "location": "skills/_shared/lib/ledger.mjs:43-49", "description": "isProfitable demands tx && status==='0x1' && net_usdc>0 && external===true && non-swap source; the settle line satisfies all five only when a real tx is attached."}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/gig/lib/settle-tx.mjs:45 ; skills/earn/gig/lib/settle-write.mjs:38", "description": "Both test seams follow identical FOUNDER_TEST gating discipline as record-earn's seams. The I/O boundary is the injection point (raw eth_getLogs), so the parse/exclude/select logic under test is byte-identical to prod."},
+        {"type": "file", "location": "skills/earn/gig/lib/bid-run.mjs:12 ; skills/earn/gig/lib/deliver-run.mjs:9", "description": "bid/deliver hardcode earn_usdc:0 and never emit external or tx, so the always-safe anti-shortcut invariant (only record-earn counts) holds end-to-end."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "runtime/loop/run-skill.mjs:79-101 ; runtime/loop/env-filter.mjs:15-37", "description": "Child env is scrubPrivateKeys(process.env) (strips *_WALLET_KEY/_PRIVATE_KEY/_PRIV_KEY) + redactPrivateKeyPatterns on output; KEY-ISOLATION holds. contract.test.mjs:64-67 asserts the planted key never appears in stdout/stderr."},
+        {"type": "file", "location": "skills/earn/gig/run.sh:20-36 ; runtime/loop/index.mjs:439-462", "description": "ANICCA_ARGS is the ONLY model-controlled channel and is parsed into mode/jobId/amount/proposal only — it cannot set FOUNDER_TEST, GIG_SETTLE_TX, or GIG_RAW_LOGS_JSON. grep across runtime/ + skills/ shows no prod path sets any of the three seam vars (only __tests__ and prior review docs). Both seams are unreachable in prod."},
+        {"type": "file", "location": "skills/earn/gig/lib/no-human.mjs:17-44 ; skills/earn/gig/__tests__/no-human.test.mjs:21-30", "description": "auditNoHuman scans every executable file for stdin/prompt/read-p/ask-human patterns; the test proves the auditor catches planted human steps and that the live slot has zero. Loop spawns run.sh with stdin ignored (run-skill.mjs:44)."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 1,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": [],
+    "advisories": ["FIND-ADV-001"],
+    "blockingFindings": [],
+    "round5FindingsVerified": {
+      "FIND-001": "FIXED - settle-tx.test.mjs:22-48 executes the previously-dead real-chain success branch + exclude filter via the FOUNDER_TEST-gated GIG_RAW_LOGS_JSON seam (settle-tx.mjs:45).",
+      "FIND-002": "FIXED - settle.test.mjs:59-68 ties settle-write -> classifyEarnResult (real fn, correct arg order) -> profitable===true."
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "findingId": "FIND-705",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "major",
+  "title": "The FIND-601 finality fix is verified ONLY by a static string grep; the actual finalized-head decode (BigInt(b.number)) and the null-finalized fail-closed are NEVER executed by any test seam",
+  "description": "blockNow() (record-earn.mjs:62-70) is the entire FIND-601 fix and the reason this re-review exists. Yet in EVERY behavioral test the function short-circuits at line 63 via FOUNDER_BLOCK_NOW, so the real branch — rpc(\"eth_getBlockByNumber\",[\"finalized\",false]); the `if (!b || b.number === undefined) throw` guard (line 68); and `Number(BigInt(b.number))` (line 69) — is NEVER run. The only verification is test 17 (test-record-earn.sh:118-119), a static grep for the literal '[\"finalized\", false]'. That asserts the STRING is present, not that the decode is correct or that a null/garbage finalized response fails closed. Concrete untested risks: (a) a finalized block returning b.number=null (not undefined) passes the line-68 guard, then BigInt(null) throws -> caught -> die: correct, but unasserted; (b) a finalized response shaped {result:null} -> b is null -> line-68 throw -> die: correct, but unasserted; (c) the hex decode Number(BigInt(\"0x...\")) of a real finalized number is never validated. Because BASE_RPC_URL is already a TEST seam (record-earn.mjs:56), blockNow's real path CAN be driven by a mock RPC, so this is testable today and the gap is unjustified. This is a verification-readiness FAIL: the proof obligation 'cursor never advances past the finalized head' is asserted at the source-string level, not the behavioral level.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/founder-loop/record-earn.mjs",
+    "lineRange": "62-70",
+    "snippet": "async function blockNow() {\n  if (TEST && process.env.FOUNDER_BLOCK_NOW !== undefined) return Number(process.env.FOUNDER_BLOCK_NOW);\n  const b = await rpc(\"eth_getBlockByNumber\", [\"finalized\", false]);\n  if (!b || b.number === undefined) throw new Error(\"no finalized block\");\n  return Number(BigInt(b.number));\n}"
+  },
+  "fix": "Add behavioral tests that drive blockNow's REAL path (do NOT set FOUNDER_BLOCK_NOW) against a mock RPC via BASE_RPC_URL: (i) a stub returning {result:{number:\"0x...\"}} for eth_getBlockByNumber and an empty getLogs, asserting the cursor advances to the decoded finalized height and is NOT the un-finalized latest; (ii) a stub returning {result:null} (no finalized block) asserting rc!=0 and NO ledger row (fail-closed); (iii) a stub returning {result:{number:null}} asserting fail-closed. This converts FIND-601 from a string-presence claim into an executed proof.",
+  "routeToPhase": "2b"
+}

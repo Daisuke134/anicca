@@ -1,0 +1,17 @@
+{
+  "findingId": "FIND-R4-002",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "medium",
+  "description": "The spec document contains two contradictory statements about the B4 improve step's lessons.jsonl read scope. The B4 section at spec line 62 states: '1. Read `~/gig/lessons.jsonl` (all rows).' The Pass structure section at spec line 203-205 states: '- tail -n 50 ~/gig/lessons.jsonl  (last 50 lessons only, not the whole file — FIND-008)'. The cron prompt (gig-cli.sh:21) implements the tail -n 50 version: '(a) run: tail -n 50 ~/gig/lessons.jsonl to read the last 50 lessons (not the whole file, FIND-008)'. The B4 narrative section was NOT updated when FIND-008 was fixed. The FIND-008 fix reconciled the Pass structure and the cron prompt but left the B4 narrative saying 'all rows'. Any LLM reading the spec document to understand B4 behavior will encounter conflicting instructions in the same file. The cron prompt is the runtime instruction (it wins at runtime), but the inconsistency in the spec is a correctness defect in the authoritative documentation.",
+  "evidence": {
+    "filePath": "docs/superpowers/specs/2026-06-30-gig-self-improving-multiapply-loop-design.md",
+    "lineRange": "62 vs 203-205",
+    "snippet": "Line 62:  '1. Read `~/gig/lessons.jsonl` (all rows).'\nLine 203: '- tail -n 50 ~/gig/lessons.jsonl  (last 50 lessons only, not the whole file — FIND-008)'"
+  },
+  "crossRef": [
+    "skills/earn/gig/gig-cli.sh:21 (cron prompt: 'run: tail -n 50 ~/gig/lessons.jsonl to read the last 50 lessons')"
+  ],
+  "fix": "Update B4 section line 62 from '1. Read `~/gig/lessons.jsonl` (all rows).' to '1. Read `~/gig/lessons.jsonl` (last 50 rows — `tail -n 50`; bounded, not the whole file — FIND-008)'. The B4 section and Pass structure must agree.",
+  "routeToPhase": "2b"
+}

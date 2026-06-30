@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-R2-005",
+  "dimension": "auditor_honesty",
+  "category": "security_surface",
+  "severity": "medium",
+  "description": "The FIND-008 hardening (`float(r.get(\"jpy\",0) or 0)>0`) is present in all three readers (run.sh:35, monitor.sh:33, auditor.sh:33), but float() is called inside a list comprehension OUTSIDE the JSON-parse try/except, on a value the core (an LLM) writes. The rows() parsers only guard json.loads (auditor.sh:27-28, monitor.sh:25-26, run.sh:30-31), not the later float conversion. If the core ever writes jpy as a non-numeric string — entirely plausible from an LLM, e.g. \"5,000\", \"¥5000\", \"5000円\" — float() raises ValueError that propagates and crashes the whole script. For auditor.sh this means the python block exits non-zero, NO audit.jsonl row is written, and the launchd auditor silently stops producing verdicts — an availability/honesty hole in the very artifact that is supposed to be the independent proof the loop runs. monitor.sh/run.sh likewise crash their status report on one malformed row.",
+  "evidence": {
+    "filePath": "skills/earn/gig/auditor.sh",
+    "lineRange": "33-34",
+    "snippet": "earned=[r for r in rows(\"earnings.jsonl\") if r.get(\"status\") in SETTLED and r.get(\"evidence\") and float(r.get(\"jpy\",0) or 0)>0]\njpy=sum(float(r.get(\"jpy\",0) or 0) for r in earned)"
+  },
+  "fix": "Add a safe numeric coercion helper (try float(...) except return 0.0) and use it in the filter and the sum, in all three scripts. A malformed jpy row should be rejected (counted as not-earned), never crash the reporter.",
+  "routeToPhase": "2b"
+}

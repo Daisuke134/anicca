@@ -1,0 +1,17 @@
+{
+  "findingId": "FIND-R3-001",
+  "dimension": "dead_code_honesty",
+  "category": "spec_gap",
+  "severity": "major",
+  "description": "FIND-005 (round-2) is only PARTIALLY fixed. producer.sh and its launchd plist were deleted from the active skill dir (confirmed: Glob of skills/earn/gig/** shows no producer.sh and only ai.anicca.gig-core-healthcheck.plist remains), but TWO authoritative documents still advertise producer as a current component, leaving a dangling reference that breaks handover. (1) SLOT_CC.md:30 lists '...producer/monitor added...' as part of the 2026-06-30 fixes, presenting the now-deleted producer.sh as live with no note that it was removed. (2) The design spec the registry points to (registry.json:102 -> 2026-06-29-earn-gig-slot-design.md) at lines 152 and 156 still MANDATES '**producer.sh** (毎日 launchd): ... ~/gig/queue/ に queue' and '**launchd/**: producer plist + core-healthcheck plist'. The round-2 verification criterion was explicitly 'nothing references them (SLOT_CC, plists)'; that criterion is NOT met. A reader following SLOT_CC/the spec will look for producer.sh + a producer plist + a ~/gig/queue/ drain step that no longer exist, and the spec's 'queue drain -> apply' loop no longer matches the code (gig-cli.sh's prompt scans coconala directly, no queue). TOP FIX: delete the producer line from SLOT_CC.md:30 (or replace with 'producer.sh removed; the core scans directly'), and update 2026-06-29-earn-gig-slot-design.md:152-156 to drop producer.sh + the producer plist + the ~/gig/queue drain so the canonical spec matches the shipped artifact.",
+  "evidence": {
+    "filePath": "skills/earn/gig/SLOT_CC.md",
+    "lineRange": "30",
+    "snippet": "  dead code archived, producer/monitor added, no-human audit extended to gig-cli.sh)."
+  },
+  "corroboratingEvidence": [
+    {"filePath": "docs/superpowers/specs/2026-06-29-earn-gig-slot-design.md", "lineRange": "152,156", "snippet": "- **producer.sh** (毎日 launchd): ... ~/gig/queue/ に queue ...\\n- **launchd/**: producer plist + core-healthcheck plist"},
+    {"filePath": "skills/earn/gig/launchd/", "lineRange": "dir", "snippet": "only ai.anicca.gig-core-healthcheck.plist present; no producer plist (deletion done, docs not updated)"}
+  ],
+  "routeToPhase": "2b"
+}

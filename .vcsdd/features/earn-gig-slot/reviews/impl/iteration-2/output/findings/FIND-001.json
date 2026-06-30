@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "contract",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "description": "A real gig settle is INVISIBLE to the loop's earn-classification gate. do_settle invokes record-earn WITHOUT --wake, so the recorded ledger row carries wake=<unix timestamp> (record-earn.mjs:50 default), while the loop's classifyEarnResult looks the row up strictly by line.wake === WAKE_ID, where WAKE_ID is the wake's ULID (earn-detect.mjs:40; ULID generated index.mjs:40-45). A unix-timestamp string can never equal a ULID, so classifyEarnResult returns {profitable:false} for EVERY gig wake even when an external on-chain USDC settle truly occurred. There is also a second path divergence: record-earn writes to the founder dir ledger /Users/anicca/.anicca-founder/state/earn-ledger.jsonl (record-earn.mjs:20,24), whereas the loop reads $ANICCA_HOME/skills/earn/state/earn-ledger.jsonl (earn-detect.mjs:58-64) unless EARN_LEDGER is overridden. Net effect: the on-chain money is recorded truthfully (the anti-fake invariant holds, so this is NOT a fake-earn), but the loop's REQ-003 per-wake profit signal for the gig slot is permanently dead — the slot can earn yet the loop never classifies the wake profitable. TOP FIX: pass `--wake \"$WAKE\"` to record-earn in do_settle AND align EARN_LEDGER/ANICCA_HOME so record-earn writes the same ledger file the loop classifies.",
+  "evidence": {
+    "filePath": "skills/earn/gig/run.sh",
+    "lineRange": "121-130",
+    "snippet": "out=$(timeout 45 node \"$re\" --source gig --task settle 2>&1) || true   # no --wake \"$WAKE\" passed"
+  },
+  "routeToPhase": "2b"
+}

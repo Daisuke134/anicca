@@ -1,0 +1,15 @@
+{
+  "findingId": "FIND-403",
+  "dimension": "implementation_correctness",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "title": "realpathSync(FOUNDER_DIR) throws an unhandled ENOENT when the founder dir does not yet exist",
+  "description": "Line 31 calls `fs.realpathSync(FOUNDER_DIR)` unconditionally and outside any try/catch. On a genuine first-ever invocation (before gen-wallet has created ~/.anicca-founder) — or whenever FOUNDER_DIR resolves to a non-existent path (including the HOME-poisoned case in FIND-401 where the attacker's HOME has no founder dir) — realpathSync throws ENOENT and the process dies with an unhandled exception and a confusing stack trace rather than a clean fail-closed `record-earn:` diagnostic. INV-6 requires a controlled non-zero exit with no write; an unhandled throw technically exits non-zero but violates the deliberate fail-closed UX the rest of the file uses (die()) and would crash the wake loop. Note that the wallet.json read at line 43 is wrapped in try/catch precisely for the missing-dir case, but the earlier realpathSync is not, so the wallet's friendly 'gen-wallet first' message is never reached.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/founder-loop/record-earn.mjs",
+    "lineRange": "31-34",
+    "snippet": "const realFounder = fs.realpathSync(FOUNDER_DIR);\nlet _anc = path.resolve(LEDGER);\nwhile (!fs.existsSync(_anc) && path.dirname(_anc) !== _anc) _anc = path.dirname(_anc);\nconst realAnc = fs.realpathSync(_anc);"
+  },
+  "fix": "Guard the founder-dir realpath: if !fs.existsSync(FOUNDER_DIR) die('founder dir missing — gen-wallet first'); and wrap realpathSync in try/catch → die(). Apply the same to the realAnc resolution.",
+  "routeToPhase": "2b"
+}

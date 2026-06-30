@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "reality",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "Round-2 FIND-001 is NOT genuinely resolved. The round-3 fix correctly (a) passes `--wake \"$WAKE\"` to record-earn and (b) writes a line to the SAME ledger the loop reads (EARN_LEDGER / ${ANICCA_HOME}/skills/earn/state/earn-ledger.jsonl) tagged wake=$WAKE, so classifyEarnResult now FINDS the line (earn-detect.mjs:40 line.wake===wakeId is satisfied — WAKE in run.sh:14 = WAKE_ID env from buildSkillEnv index.mjs:458, and the path matches via defaultEarnLedgerPath earn-detect.mjs:58-64 + propagated ANICCA_HOME). BUT the line do_settle writes (run.sh:139) has ONLY {ts,wallet,source,task,earn_usdc,cost_usdc,net_usdc,external,wake} — it has NO `tx` and NO `status`. The loop's classifier isProfitable (skills/_shared/lib/ledger.mjs:44, the function index.mjs:84-91 loads) returns false immediately on `!line.tx` and on `line.status !== \"0x1\"`. Therefore even a genuine external on-chain USDC inflow (record-earn prints VERIFIED, earn>0, external:true, net>0) is classified profitable:false on EVERY gig wake. This is the identical defect round-2 FIND-001 named (\"the slot can earn yet the loop never classifies the wake profitable\"), surviving with a new root cause (line-shape incompatibility instead of wake-key mismatch). The slot 'registers' the line but the loop's REQ-003 profit signal for gig stays permanently dead — it does NOT actually function. Architecturally, record-earn aggregates multiple Transfer logs over a block-cursor span (record-earn.mjs:88-99,128) and emits NO single tx hash, so the slot has nothing to put in `tx`/`status` — the gig settle design is incompatible with the gate it must trip. TOP FIX: either (1) make isProfitable accept an external-verified aggregate settle line (e.g. treat external===true && net_usdc>0 as profitable when tx/status are absent for the gig/aggregate source), updating _shared/lib/ledger.mjs + its tests; OR (2) have record-earn emit a representative tx hash + status:\"0x1\" for the inflow and have do_settle copy them into the loop line. Until then, gig can never produce a profitable-classified wake.",
+  "evidence": {
+    "filePath": "skills/earn/gig/run.sh",
+    "lineRange": "136-142",
+    "snippet": "row={\"ts\":int(time.time()),\"wallet\":wallet,\"source\":\"gig\",\"task\":\"settle\",\"earn_usdc\":float(earn),\"cost_usdc\":0,\"net_usdc\":float(earn),\"external\":True,\"wake\":wake}  # NO tx, NO status:0x1 -> isProfitable() returns false (ledger.mjs:44)"
+  },
+  "routeToPhase": "2b"
+}

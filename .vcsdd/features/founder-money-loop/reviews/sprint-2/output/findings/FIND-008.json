@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-008",
+  "dimension": "implementation_correctness",
+  "category": "security_surface",
+  "severity": "high",
+  "description": "FOUNDER_DIR (line 26) is honored in PRODUCTION with no TEST gate, and EVERY positive-binding the sprint-1 fixes added (wallet allowlist, ledger allowlist, baseline) is anchored to FOUNDER_DIR — so the anchor is attacker-controlled and the bindings are circular. A prod caller (FOUNDER_TEST unset) who controls the process environment can set FOUNDER_DIR=/attacker/dir where /attacker/dir/wallet.json = {\"address\":\"<any whale/own address holding real USDC>\"} (must merely pass the /^0x[0-9a-f]{40}$/ regex and not equal the 2-entry SHARED denylist) and /attacker/dir/state/usdc-baseline.txt = 0. Then: wallet = attacker-chosen address (FIND-003 binding to wallet.json is to an attacker file), current = that address's REAL balance (e.g. 1000 USDC the founder never received), baseline = 0, delta = 1000 > 0 -> a row earn_usdc=1000 is written. Separately, FOUNDER_DIR can be set to a live site/render root (e.g. /Users/anicca/anicca/runtime/dashboard) so the INV-3 startsWith(FOUNDER_DIR) check (line 33) passes while the ledger is written INTO the dashboard render source the spec names at line 36 — defeating FIND-004. The sprint-1 patches moved the trust root from individual env vars to FOUNDER_DIR but left FOUNDER_DIR itself ungated, so INV-1, INV-2, and INV-3 are all re-openable through one variable.",
+  "evidence": {
+    "filePath": "skills/self/founder-loop/record-earn.mjs",
+    "lineRange": "26-41",
+    "snippet": "const FOUNDER_DIR = process.env.FOUNDER_DIR || path.join(HOME, \".anicca-founder\");\nconst WALLET_JSON = path.join(FOUNDER_DIR, \"wallet.json\");\n...\nelse { try { wallet = JSON.parse(fs.readFileSync(WALLET_JSON, \"utf8\")).address; } catch { die(...); } }"
+  },
+  "fix": "Gate FOUNDER_DIR behind FOUNDER_TEST exactly like the other seams: `const FOUNDER_DIR = (TEST && process.env.FOUNDER_DIR) || path.join(HOME, '.anicca-founder');` so production always reads the single canonical body dir. Additionally pin the founder wallet to a value that is NOT re-derivable from a caller-supplied file in prod (e.g. compare the wallet.json address against a checked-in/expected founder address constant, dying on mismatch), so even a swapped canonical wallet.json cannot redirect the balance query. Use fs.realpathSync on FOUNDER_DIR/LEDGER before the INV-3 startsWith check to defeat symlinked state dirs.",
+  "routeToPhase": "2b"
+}

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "implementation_correctness",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "description": "The USD-not-token gate regex produces false-negatives that silently DROP real, payable bounties. run.sh:105 drops a bounty if the lowercased title+body+description matches `\\bearn [a-z]{2,5}\\b|\\b\\d+\\s*(rtc|\\$[a-z]{2,6}|tokens?)\\b|token.?farm|social mining|clanker|/tip`. Two sub-patterns are over-broad on ordinary English/engineering text: (1) `\\bearn [a-z]{2,5}\\b` matches legitimate phrases like 'earn cash', 'earn money', 'earn usd', 'earn fast' — a real USD bounty whose description says 'earn money fixing this' is dropped. (2) `\\b\\d+\\s*tokens?\\b` matches commonplace software language: 'fix 3 tokens not refreshing', 'expose 2 tokens', JWT/OAuth/API/CSS-design tokens. Auth/ORM/frontend bounties (the exact high-value targets in bounties.json: drizzle, zod, keystatic) routinely say 'N tokens' and would be classified as token-farms and dropped. Dropping real bounties directly kills earnings — the gate must verify the actual reward currency via the algora-pbc comment / Algora API, not infer 'token' from incidental keywords.",
+  "evidence": {
+    "filePath": "skills/earn/bounty/run.sh",
+    "lineRange": "104-106",
+    "snippet": "if re.search(r'\\bearn [a-z]{2,5}\\b|\\b\\d+\\s*(rtc|\\$[a-z]{2,6}|tokens?)\\b|token.?farm|social mining|clanker|/tip', blob): continue"
+  },
+  "routeToPhase": "2b"
+}

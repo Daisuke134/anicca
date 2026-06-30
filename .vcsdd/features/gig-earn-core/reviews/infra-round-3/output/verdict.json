@@ -1,0 +1,115 @@
+{
+  "sprintNumber": 3,
+  "feature": "gig-earn-core",
+  "reviewType": "infrastructure-round-3",
+  "overallVerdict": "PASS",
+  "timestamp": "2026-06-30T00:00:00Z",
+  "iteration": 3,
+
+  "round2FixVerification": {
+    "FIND-R2-001_startup_seed_forged_FIRING": "FIXED AND VERIFIED. gig-cli.sh:36 now touches ~/gig/.last-start only. The STARTUP prompt instructs the model to touch ~/gig/.last-pass in its FINALLY clause only after a real completed pass, with the explicit guard 'never touch it on mere startup/restart'. The --restart path (gig-cli.sh:27) kills the session and then falls through to line 34-36, touching .last-start but not .last-pass. The auditor's FIRING verdict is now derived from a file that startup/restart CANNOT forge.",
+    "FIND-R2-002_restart_storm": "FIXED AND VERIFIED. gig-healthcheck.sh:15-32: restart() counts RESTART_LOG timestamps within the last 3600s; if count >= 5, logs backoff and returns without restarting. The log entry (line 29, echo \"$now\") is written only when count < 5 and a restart proceeds. The window is sliding (based on age from current time), not fixed, so entries age out naturally — the backoff is not permanent: once the earliest entry exceeds 3600s old, count drops below 5 and restarts resume. The maximum restart rate is 5 per 3600-second window.",
+    "FIND-R2-003_no_heartbeat_branch_near_unreachable": "FIXED (INTERACTION FIX) AND VERIFIED. gig-healthcheck.sh:36-45: when .last-pass is absent AND tmux is alive, the branch now reads START_AGE from .last-start mtime. If START_AGE < 90 (STALE_MIN), it logs 'ALIVE (first pass pending)' and does NOT restart. Only if START_AGE >= 90 does it restart. Since gig-cli.sh:36 touches .last-start on every (re)start, START_AGE resets to ~0 after each restart, giving a genuine 90-minute grace window before the next no-heartbeat restart — the restart loop described in the INTERACTION FIX is eliminated. Verified: fresh-boot path (small START_AGE) does not restart; long-booted-no-pass path (START_AGE >= 90) does restart.",
+    "FIND-R2-004_delta_mislabel": "FIXED AND VERIFIED. auditor.sh:39-55: (a) the output key is now 'actions_delta_since_last_audit' (was 'applied_delta_since_last_audit'); (b) prev_actions is obtained from prev_last.get('actions_total') which returns None if the previous row has no such key; (c) when prev_actions is None (first audit or post-migration first row), actions_delta is set to 0 and progressing is set to False — no spurious full-count delta on first run. The old bug (prev_actions or 0 = 0 on first run, yielding actions_delta = full count) is gone.",
+    "FIND-R2-005_jpy_crash": "FIXED AND VERIFIED. jnum(v) helper present in all three scripts: auditor.sh:21-23, monitor.sh:19-21, run.sh:24-27. The helper does str(v).replace(',','').replace('¥','').replace('円','').strip() or 0, wrapped in try/except returning 0.0 on any exception. Non-numeric jpy values (e.g. '5,000', '¥5,000円', None) are coerced to 0.0 and cannot crash the script. All three scripts use jnum() in both the filter and the sum."
+  },
+
+  "newDefectSearch": {
+    "permanent_wedge_from_restart_log": "NOT A WEDGE. RESTART_LOG entries age out of the 3600s sliding window naturally. After count reaches 5 and backoff fires, the entry window begins to drain: within at most 3600s from the oldest of the 5 entries, count drops to 4 and restarts resume. Confirmed by tracing: entries are only appended (line 29) when count < 5, so the 5 entries in the window span at most 3600s, and after 3600+1s from the first, count drops. The log file grows indefinitely (~60 bytes/hour max) but this is not a correctness concern.",
+    "last_start_resets_START_AGE_on_every_restart": "ANALYZED. YES, .last-start is refreshed every restart (gig-cli.sh:36). In the NO-HEARTBEAT case this resets START_AGE to ~0, giving a new 90-minute grace window. This does NOT create a permanent wedge: the restart rate in the no-heartbeat case is at most once per 90 minutes (the grace window IS the rate limiter), which is 0.67/hour — far below the backoff threshold of 5/hour. In the STALE case (.last-pass exists and old), .last-start is also refreshed but the STALE branch does not use START_AGE, so restarts can fire every 5 minutes (healthcheck cadence) until the backoff (5/hour) kicks in. This is the designed aggressive behavior for a stale core.",
+    "bash_syntax_errors": "NONE FOUND. All five .sh files reviewed: gig-cli.sh uses set -uo pipefail, case statement, tmux commands, single-quoted STARTUP variable — structurally clean. gig-healthcheck.sh: restart() with while/read loop, stat -f %m arithmetic, nested command substitutions — syntactically valid. auditor.sh: PY variable + heredoc <<'PY' (single-quoted, so no expansion inside; 'PY' line 61 is the sole closing delimiter) — correct. monitor.sh and run.sh: identical heredoc pattern — clean. Python code inside heredocs: imports, def jnum, list comprehensions, json.dumps — syntactically valid.",
+    "stat_minus_f_macOS_specific": "NOTED. stat -f %m is macOS-specific (BSD stat). The described deployment is a Mac Mini (CLAUDE.md). No portability concern for this deployment target.",
+    "missing_scripts_coconala_APPLY_RUNBOOK_md": "VERIFIED PRESENT. Glob confirms /Users/anicca/anicca/skills/earn/gig/scripts/coconala/APPLY_RUNBOOK.md exists — the runtime read in the cron prompt will succeed.",
+    "RESTART_LOG_disk_growth": "NEGLIGIBLE. Maximum 5 restarts/hour × 12 bytes/entry = 60 bytes/hour. Week = ~10KB. Not a disk concern."
+  },
+
+  "moneyHonestyInvariantsCheck": {
+    "auditor_cannot_report_FIRING_when_dead_stale_never_fired": "UPHELD. DEAD: alive=0 → verdict='DEAD'. NEVER_FIRED: hb_age=None → verdict='NO_HEARTBEAT'. STALE: hb_age>=90 → verdict='STALE'. FIRING: requires .last-pass to exist AND age<90 — startup/restart cannot forge this because line 36 only touches .last-start.",
+    "no_record_earn": "UPHELD. No record-earn call in run.sh, monitor.sh, or auditor.sh.",
+    "earn_usdc_zero": "UPHELD. run.sh:40 'earn_usdc':0.",
+    "no_usdc_claim": "UPHELD. run.sh, monitor.sh, NO_HUMAN.md, SLOT_CC.md, cron prompt all state human-funded ¥, no USDC.",
+    "no_runtime_human": "UPHELD. gig-cli.sh cron prompt routes blockers to CapSolver/gog gmail/Google re-login; 'A blocker is NOT a stop'; only one-time KYC is human.",
+    "jpy_only_when_settled_plus_evidence": "UPHELD. All three readers (run.sh:38, monitor.sh:36, auditor.sh:36) require status in {検収,支払,検収完了,completed,paid} AND non-empty evidence AND jnum(jpy)>0. jnum() is crash-safe."
+  },
+
+  "dimensions": [
+    {
+      "name": "self_heal_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/gig/gig-healthcheck.sh:15-32", "description": "restart() has backoff: counts RESTART_LOG entries in last 3600s; returns without restarting if count >= 5; appends timestamp only when proceeding. Verified non-permanent: entries age out naturally."},
+        {"type": "file", "location": "skills/earn/gig/gig-healthcheck.sh:36-45", "description": "elif [ ! -f $HB ] branch: computes START_AGE from .last-start mtime; does NOT restart if START_AGE < 90 (STALE_MIN); only restarts when START_AGE >= 90. Fresh boot: no restart; long-booted-no-pass: restart. Interaction fix verified."},
+        {"type": "file", "location": "skills/earn/gig/gig-cli.sh:36", "description": "Startup and --restart both touch .last-start (not .last-pass), resetting START_AGE without forging a FIRING signal."}
+      ]
+    },
+    {
+      "name": "auditor_honesty",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/gig/gig-cli.sh:36", "description": "Touches .last-start; STARTUP prompt (line 21 FINALLY clause) instructs model to touch .last-pass only after a real completed pass. No startup/restart path writes .last-pass."},
+        {"type": "file", "location": "skills/earn/gig/auditor.sh:50-53", "description": "Verdict logic: not alive → DEAD; hb_age None → NO_HEARTBEAT; hb_age>=90 → STALE; else FIRING. FIRING requires .last-pass to exist AND be fresh. Cannot be reached via startup/restart alone."},
+        {"type": "file", "location": "skills/earn/gig/auditor.sh:39-48", "description": "delta renamed to actions_delta_since_last_audit; first-audit guard: prev_actions=None → delta=0, progressing=False. No spurious burst on first run."},
+        {"type": "file", "location": "skills/earn/gig/auditor.sh:21-23", "description": "jnum() helper catches all non-numeric jpy values with try/except; cannot crash the Python block."}
+      ]
+    },
+    {
+      "name": "no_fake_earn",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/gig/auditor.sh:36-37", "description": "earned filter: status in {検収,支払,検収完了,completed,paid} AND evidence AND jnum(jpy)>0 AND jnum crash-safe via helper."},
+        {"type": "file", "location": "skills/earn/gig/monitor.sh:36-38", "description": "Same settled+evidence+jnum guard; rejected counter exposes non-qualifying rows."},
+        {"type": "file", "location": "skills/earn/gig/run.sh:38-40", "description": "Same guard; earn_usdc:0, no record-earn, no USDC claim in output JSON."},
+        {"type": "file", "location": "skills/earn/gig/gig-cli.sh:21", "description": "Cron prompt: 'NEVER write earnings.jsonl for an applied/in-progress gig'; 'EARNED CONDITION (no fake earn): a ¥ is earned ONLY when Coconala UI actually shows 検収完了/支払 for a contract'; 'do NOT claim USDC / do NOT call record-earn'."}
+      ]
+    },
+    {
+      "name": "no_human",
+      "verdict": "PASS",
+      "findings": ["FIND-R3-001"],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/gig/__tests__/no-human-loop.test.mjs:15-50", "description": "Scans gig-cli.sh, monitor.sh, gig-healthcheck.sh for runtime human-step patterns; planted-violation test confirms scanner is not comment-blinded; asserts CapSolver/OTP/blocker-is-not-stop/no-fake-earn guards present in gig-cli.sh."},
+        {"type": "file", "location": "skills/earn/gig/NO_HUMAN.md:8-14", "description": "Autonomous paths documented: Google re-login, CapSolver (Turnstile/hCaptcha), gog gmail OTP, CDP model-driven apply — no runtime human step in daily operation."},
+        {"type": "note", "location": "skills/earn/gig/auditor.sh and skills/earn/gig/run.sh", "description": "Neither file contains human-loop patterns (both are read-only reporters / supervisors). The test does not scan them (FIND-R3-001), but functionally the invariant holds."}
+      ]
+    },
+    {
+      "name": "path_fix_reality",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/gig/gig-cli.sh:2", "description": "export PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH — launchd safe."},
+        {"type": "file", "location": "skills/earn/gig/gig-healthcheck.sh:2", "description": "Same PATH export; tmux, stat, date, bash all resolvable."},
+        {"type": "file", "location": "skills/earn/gig/auditor.sh:2", "description": "Same PATH export; PY=/opt/homebrew/bin/python3 absolute; tmux check uses SOCK absolute path."},
+        {"type": "file", "location": "skills/earn/gig/monitor.sh:2", "description": "Same PATH export; PY=/opt/homebrew/bin/python3 absolute."},
+        {"type": "note", "location": "skills/earn/gig/run.sh", "description": "No PATH export, acceptable: not launchd-triggered; delegates tmux-bearing logic to gig-cli.sh (which sets PATH); uses absolute python3 path. Unchanged from R2 PASS."}
+      ]
+    },
+    {
+      "name": "consistency_honesty",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/registry.json:97-105", "description": "earn/gig entry: dir=skills/earn/gig, entrypoint=run.sh, spec references 2026-06-30-gig-earn-core-recipe-design.md, summary accurately describes Coconala+¥ loop with no USDC claim."},
+        {"type": "file", "location": "docs/superpowers/specs/2026-06-30-gig-earn-core-recipe-design.md:8-11", "description": "Finish-line #1 documented as PROVEN with runtime evidence dates. Consistent with auditor.sh FIRING verdict definition."},
+        {"type": "file", "location": "skills/earn/gig/SLOT_CC.md:1-35", "description": "Architecture table, money path, verification status all consistent with implemented files. Pivoted-from-dealwork history documented."},
+        {"type": "file", "location": "skills/earn/gig/NO_HUMAN.md:17-27", "description": "Money path, no-fake-earn mechanism, and file list consistent with actual implementations. Minor gap: files list omits auditor.sh and run.sh (see FIND-R3-001)."},
+        {"type": "file", "location": "skills/earn/gig/auditor.sh:55", "description": "Output key 'actions_delta_since_last_audit' matches computation (delta of actions_total); no longer mislabeled 'applied_delta'. First-audit delta=0, progressing=False — honest."}
+      ]
+    }
+  ],
+
+  "convergenceSignals": {
+    "findingCount": 1,
+    "r2FixesVerified": ["FIND-R2-001", "FIND-R2-002", "FIND-R2-003", "FIND-R2-004", "FIND-R2-005"],
+    "interactionFixVerified": true,
+    "newDefects": ["FIND-R3-001"],
+    "r3NewDefectSeverities": ["low"],
+    "permanentWedgeExists": false,
+    "lastStartResetCreatesWedgeOrLoop": false,
+    "bashPythonSyntaxErrors": false,
+    "duplicateFindings": []
+  }
+}

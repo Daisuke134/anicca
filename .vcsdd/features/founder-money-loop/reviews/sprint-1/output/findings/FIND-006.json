@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "high",
+  "description": "The 5-case oracle (test-record-earn.sh) does not fence the most important failure modes and a real regression could pass it. Missing: (1) NO test that the FOUNDER_USDC_NOW seam is refused in production — in fact every test RELIES on the ungated seam (line 10), so the test suite actively depends on the FIND-001 vulnerability and can never catch it. (2) NO RPC-failure fail-closed test (INV-6): the .catch->die path at record-earn.mjs:66 and the missing-result throw at line 62 are untested. (3) NO missing-wallet fail-closed test (line 48). (4) INV-3 is tested with exactly ONE path token (apps/landing/public, test line 33); the runtime/dashboard and dist/out/build bypasses from FIND-004 are untested. (5) NO test that FOUNDER_WALLET cannot be re-pointed at a non-founder wallet (FIND-003). A regression that widened the seam, dropped the lowercasing on line 51, or removed the delta>0 check on a non-tested branch could still report PASS.",
+  "evidence": {
+    "filePath": "skills/self/founder-loop/test-record-earn.sh",
+    "lineRange": "9-34",
+    "snippet": "run(){ OUT=\"$(FOUNDER_USDC_NOW=\"$1\" FOUNDER_WALLET=\"$3\" FOUNDER_LEDGER=\"$4\" node \"$M\" ... )\"; rc=$?; }"
+  },
+  "fix": "Add cases: (a) seam-refused-in-production — run WITHOUT the test gate set and assert rc!=0 and no write; (b) RPC failure (point BASE_RPC_URL at a local server returning {error} or an unreachable host) -> rc!=0, ledger empty; (c) missing wallet (no FOUNDER_WALLET, no wallet.json) -> rc!=0; (d) INV-3 for a runtime/dashboard/ path and a dist/ path -> rc!=0; (e) FOUNDER_WALLET != generated founder wallet -> rc!=0. Re-implement the real-earn happy path against a fixture RPC (BASE_RPC_URL) instead of the env seam so the suite exercises the production code path.",
+  "routeToPhase": "2a"
+}

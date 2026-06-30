@@ -106,11 +106,8 @@ async function thinkClaudeP(ctx, config) {
     let stdout = '';
     let stderr = '';
 
-    // Build a scrubbed env (PROP-023: no private key in claude -p subprocess)
-    const { scrubPrivateKeys } = await import('./env-filter.mjs').then(m => m);
-
-    // We can't use top-level await inside a Promise constructor callback,
-    // so we import synchronously via the module cache trick
+    // Build a scrubbed env (PROP-023: no private key in claude -p subprocess).
+    // buildClaudeEnv scrubs synchronously — no await here (this is a non-async Promise executor).
     const childEnv = buildClaudeEnv(config);
 
     const proc = spawn(claudeBin, [
@@ -120,7 +117,7 @@ async function thinkClaudeP(ctx, config) {
     ], {
       env: childEnv,
       stdio: ['ignore', 'pipe', 'pipe'],
-      timeout: 30000,
+      timeout: 90000, // claude -p cold-start + ~5k-char prompt can exceed 30s
     });
 
     proc.stdout.on('data', d => { stdout += d; });
