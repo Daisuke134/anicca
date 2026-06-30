@@ -1,0 +1,34 @@
+{
+  "sprintNumber": null,
+  "feature": "earn-shared-skeleton",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-01T00:00:00Z",
+  "iteration": 5,
+  "reviewContext": {
+    "reviewType": "spec",
+    "mode": "lean",
+    "scope": "reviews/spec/iteration-5/"
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["ROUND-5-001", "ROUND-5-002", "ROUND-5-003"],
+      "evidence": []
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["ROUND-5-001", "ROUND-5-002"],
+      "evidence": [
+        {"type": "file", "location": ".vcsdd/features/earn-shared-skeleton/specs/verification-architecture.md", "description": "PROP-E5-spawn-pin (line 85) still requires keychain mock + Touch ID flow; PROP-F2-dedup framed as 'Telegram-spam prevention' (line 124); CoDD list (line 155) still requires TG_BOT_API + TG_DAIS_CHAT_ID env vars — the verification architecture has not been rewritten to match v6 prose."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 3,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}

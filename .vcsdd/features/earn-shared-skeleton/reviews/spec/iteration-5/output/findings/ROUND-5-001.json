@@ -1,0 +1,13 @@
+{
+  "findingId": "ROUND-5-001",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "REQ-E5 trust anchor in v6 STILL specifies the macOS Keychain + Touch ID pubkey-sealing mechanism that the manifest explicitly required to be REMOVED. behavioral-spec.md lines 378-415 retain verbatim the v5 design: 'The ed25519 PUBLIC KEY (32 bytes raw) is stored in the macOS Keychain under generic-password service anicca-trust-anchor-pubkey ... subsequent writes require user authentication via Touch ID / sudo ... Updating the pubkey requires a user gesture (macOS-enforced)'. Lines 393-394 hard-code reading the pubkey via `security find-generic-password -s anicca-trust-anchor-pubkey`. Line 405 says 'Updating pinned.json + .sig requires Dais signing with his private key (held only by him; NOT on the Mac filesystem)' — that is a human action by definition. The new REQ-J2 (line 628) names anicca-bot.pub as the framework-baked key, but REQ-E5 itself was not rewritten to use it. The verification artifact PROP-E5-spawn-pin (verification-architecture.md line 85) ALSO still requires '(a1) startup reads pubkey from macOS keychain entry anicca-trust-anchor-pubkey ... (xi) keychain entry deleted → halt+escalate'. Two contradictory trust anchors coexist in the spec: REQ-E5 = Touch ID/Keychain/Dais-signing-key (human-required), REQ-J2 = framework-baked anicca-bot key (no-human). This is not an anti-human invariant; it is the v5 violation preserved verbatim under the Group J cosmetic rewrite. Per the iteration-5 manifest extraConstraints: 'verify the spec contains NO ... macOS Keychain entries, NO Touch ID'. This finding alone fails the iteration.",
+  "evidence": {
+    "filePath": ".vcsdd/features/earn-shared-skeleton/specs/behavioral-spec.md",
+    "lineRange": "378-415",
+    "snippet": "##### Trust anchor — ed25519 signature with keychain-sealed pubkey (ROUND-3-001 fix)\n... stored in the macOS Keychain under generic-password service `anicca-trust-anchor-pubkey` ... subsequent writes require user authentication via Touch ID / sudo ... Updating `pinned.json` + `.sig` requires Dais signing with his private key"
+  },
+  "routeToPhase": "1c"
+}
