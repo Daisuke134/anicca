@@ -91,7 +91,15 @@
       "mode": "lean",
       "currentPhase": "init",
       "updatedAt": "2026-06-30T21:29:45.671Z"
+    },
+    "install-proactive-plist": {
+      "status": "active",
+      "createdAt": "2026-06-30T21:57:50.848Z",
+      "mode": "lean",
+      "language": "python",
+      "currentPhase": "1b",
+      "updatedAt": "2026-06-30T21:58:49.407Z"
     }
   },
-  "activeFeature": "trading-polymarket-spawn"
+  "activeFeature": "install-proactive-plist"
 }
