@@ -1,0 +1,28 @@
+{
+  "reviewType": "implementation",
+  "featureName": "install-proactive-plist",
+  "sprintNumber": 1,
+  "iteration": 3,
+  "mode": "lean",
+  "artifactsToReview": {
+    "spec": [".vcsdd/features/install-proactive-plist/specs/behavioral-spec.md",
+             ".vcsdd/features/install-proactive-plist/specs/verification-architecture.md"],
+    "source_python": ["skills/_shared/lib/plist_render.py"],
+    "source_shell": ["skills/_shared/install-proactive-plist.sh"],
+    "tests": ["skills/_shared/__tests__/test_plist_render.py",
+              "skills/_shared/__tests__/test_install_integration_darwin.py",
+              "skills/_shared/__tests__/test_install_no_human_touch.py",
+              "skills/_shared/__tests__/test_install_launchctl_bin_guard.py"]
+  },
+  "previousIterationFindings": [
+    "FIND-2-001 high (LAUNCHCTL_BIN production foot-gun): closed in install.sh L12-32 — override now requires path under recognized temp roots ($TMPDIR | /tmp | /private/tmp | /private/var/folders | /var/folders), must be executable, logs warning to stderr; exits 9 otherwise. 3 new tests in test_install_launchctl_bin_guard.py."
+  ],
+  "reviewDimensions": ["spec_fidelity", "edge_case_coverage", "implementation_correctness", "structural_integrity", "verification_readiness"],
+  "extraConstraints": [
+    "Verify FIND-2-001 closure: trace L12-32 of install.sh; allowed-prefix list complete + check is BEFORE any other use.",
+    "Verify the override check still allows the existing Darwin integration tests to work (= test_collision_bootout_with_identical_disk_still_loads, test_bootstrap_failure_rolls_back_disk_plist) — these use LAUNCHCTL_BIN.",
+    "Check if there's a path-traversal escape: e.g. LAUNCHCTL_BIN=/tmp/../etc/launchctl — does pwd -P canonicalize before the prefix check?",
+    "275/275 tests pass; +3 new guard tests genuinely exercise the new gate (not happy-path only)."
+  ],
+  "expectedOutputPath": ".vcsdd/features/install-proactive-plist/reviews/sprint-1/iteration-3/output/"
+}

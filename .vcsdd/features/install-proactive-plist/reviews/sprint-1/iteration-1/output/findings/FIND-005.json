@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "implementation_correctness",
+  "category": "security_surface",
+  "severity": "medium",
+  "description": "The shell uses a fixed shared-temp path `/tmp/.iplv.err` and `/tmp/.iplb.err` for capturing stderr from the python validate / launchctl bootstrap calls (lines 20-25, 79-87). On a multi-user macOS host (or one where /tmp is world-writable, which is the default), this is a TOCTOU symlink race: an unprivileged attacker who can win the race can pre-create `/tmp/.iplv.err` as a symlink to e.g. `~/.openclaw/state/cron-ledger.jsonl`, and the redirection `2>/tmp/.iplv.err` will silently truncate the target. Even without a malicious actor, two parallel invocations for two different slots (EDGE-E7 explicitly contemplates concurrent calls) will clobber each other's error file and report wrong stderr text to the user. Fix: use `mktemp -t iplv.XXXXXX` per-invocation, or capture stderr into a bash variable via process substitution.",
+  "evidence": {
+    "filePath": "skills/_shared/install-proactive-plist.sh",
+    "lineRange": "20-87",
+    "snippet": "if ! ( cd \"$SHARED_DIR\" && \"$PY\" -m lib.plist_render validate \"$SLOT\" 2>/tmp/.iplv.err ); then\n  echo \"invalid slot: validation failed — $(cat /tmp/.iplv.err 2>/dev/null)\" >&2\n  rm -f /tmp/.iplv.err\n  exit 3\nfi\n...\n  if ! launchctl bootstrap \"gui/$UID_NUM\" \"$PLIST\" 2>/tmp/.iplb.err; then\n    BOOT_ERR=\"$(cat /tmp/.iplb.err 2>/dev/null)\"\n    rm -f \"$PLIST\" /tmp/.iplb.err"
+  },
+  "routeToPhase": "2b"
+}

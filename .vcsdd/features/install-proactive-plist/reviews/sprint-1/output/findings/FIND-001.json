@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "REQ-E2 + REQ-B3 collision-then-idempotent race leaves no plist loaded. Sequence: (1) a stale job is loaded from a DIFFERENT path (e.g. /tmp/old.plist); (2) the canonical disk plist $HOME/Library/LaunchAgents/ai.anicca.<slot>-proactive.plist already exists with the EXACT byte content that render_plist would produce (e.g. left over from a prior install that was then bootout'd). Run: line 55-61 parses path, sees it != canonical, calls bootout \u2014 the OLD job is unloaded. Then line 64-71 computes digests; existing file matches new content, so NEEDS_WRITE=0. The branch at line 73-88 is skipped entirely \u2014 there is no bootstrap call. Result: the script exits via REQ-C1 launchctl print at line 91, which will FAIL because we just bootout'd the job and never bootstrapped a replacement \u2192 exit 7 with stderr 'post-install launchctl print failed'. So the user-visible symptom is an install error AND no loaded job \u2014 but the disk plist is unchanged so a second run finally fixes it. REQ-B4 (idempotent = exactly one loaded job after N calls) is violated for N=1 in this specific cross-path-collision-plus-prior-disk-state. Fix: when bootout fires at line 59, set NEEDS_WRITE=1 unconditionally (or move the bootstrap call outside the NEEDS_WRITE guard when the loaded path differed from canonical).",
+  "evidence": {
+    "filePath": "skills/_shared/install-proactive-plist.sh",
+    "lineRange": "55-88",
+    "snippet": "PRINT_OUT=\"$(launchctl print \"gui/$UID_NUM/$LABEL\" 2>/dev/null || true)\"\nif [[ -n \"$PRINT_OUT\" ]]; then\n  EXISTING_PATH=\"$( cd \"$SHARED_DIR\" && printf '%s' \"$PRINT_OUT\" | \"$PY\" -m lib.plist_render parse-path 2>/dev/null || true )\"\n  if [[ -n \"$EXISTING_PATH\" && \"$EXISTING_PATH\" != \"$PLIST\" ]]; then\n    launchctl bootout \"gui/$UID_NUM/$LABEL\" >/dev/null 2>&1 || true\n  fi\nfi\n# NEEDS_WRITE may be 0 \u2192 skips bootstrap entirely"
+  },
+  "routeToPhase": "2b"
+}

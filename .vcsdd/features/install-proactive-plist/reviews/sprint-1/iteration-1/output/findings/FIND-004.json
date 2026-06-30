@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "medium",
+  "description": "REQ-A4 ordering literal reads: 'Validation MUST run as the FIRST executable line after argument parsing, before any mkdir, file write, or subprocess invocation' (behavioral-spec.md L55-56). The shell wrapper performs validation BY ITSELF invoking a subprocess: `python3 -m lib.plist_render validate \"$SLOT\"` (install-proactive-plist.sh:20). Strictly read, validation cannot run before any subprocess invocation when validation itself IS a subprocess invocation. Two possible resolutions, neither taken: (a) inline the regex check in bash before delegating to python (still call python after as defense-in-depth); (b) amend the spec to carve out 'subprocess that exists for the sole purpose of running validation'. The current code is reasonable but creates ambiguity for any reviewer reading the spec literally and lets an injection-vector slot string pass into a subprocess argv before the regex has been evaluated (mitigated only because argv is passed positionally, not interpolated into a shell string — but the spec invariant was meant to be stricter than 'mitigated').",
+  "evidence": {
+    "filePath": "skills/_shared/install-proactive-plist.sh",
+    "lineRange": "13-25",
+    "snippet": "# ─── REQ-A4 ordering: validate FIRST, before any side-effect ────────\nSLOT=\"${1:-}\"\nif [[ -z \"$SLOT\" ]]; then\n  echo \"Usage: install-proactive-plist.sh <slot>\" >&2\n  exit 2\nfi\nif ! ( cd \"$SHARED_DIR\" && \"$PY\" -m lib.plist_render validate \"$SLOT\" 2>/tmp/.iplv.err ); then"
+  },
+  "routeToPhase": "1c"
+}

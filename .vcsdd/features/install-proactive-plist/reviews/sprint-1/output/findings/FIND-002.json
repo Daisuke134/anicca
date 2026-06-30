@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "high",
+  "description": "PROP-E5-half-load-rollback is declared Tier 1 / required:true in verification-architecture.md line 40, but NO test exercises a bootstrap failure path. test_install_integration_darwin.py has zero tests that simulate launchctl bootstrap failing (e.g. by passing a slot whose plist would be rejected by launchd, or by monkey-patching launchctl). The rollback branch at install-proactive-plist.sh:79-86 (rm -f $PLIST + exit 6) is therefore implemented but UNVERIFIED. EDGE-E5 in the spec is explicit: 'do NOT leave a half-loaded job'. Without a test that triggers the failure, regression in this rollback path (e.g. a future refactor that drops the rm -f) will not be caught. Add a test that stubs PATH to inject a launchctl shim returning non-zero on bootstrap and asserts (a) exit code 6, (b) disk plist removed, (c) stderr contains 'launchctl bootstrap failed'.",
+  "evidence": {
+    "filePath": "skills/_shared/__tests__/test_install_integration_darwin.py",
+    "lineRange": "1-142",
+    "snippet": "(file contains zero references to 'bootstrap' failure, no PATH-shimmed launchctl, no assertion that disk plist is removed on bootstrap failure)"
+  },
+  "routeToPhase": "2a"
+}

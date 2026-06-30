@@ -1,0 +1,147 @@
+{
+  "sprintNumber": 1,
+  "feature": "install-proactive-plist",
+  "overallVerdict": "PASS",
+  "timestamp": "2026-07-01T00:00:00Z",
+  "iteration": 3,
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/_shared/install-proactive-plist.sh:48-56",
+          "description": "REQ-A4 validator runs before any side-effect; SLOT presence and validate sub-command checked first"
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/install-proactive-plist.sh:59-70",
+          "description": "EDGE-E6 Darwin guard + REQ-A2 canonical-home pin both enforced before launchctl invocation"
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/install-proactive-plist.sh:86-97",
+          "description": "REQ-E2 cross-path collision detection with bootout"
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/install-proactive-plist.sh:100-122",
+          "description": "REQ-B1/B2 idempotent rewrite path"
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/install-proactive-plist.sh:138-144",
+          "description": "REQ-C1/C2/NFR-3 post-install confirmation + single-line summary"
+        }
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/_shared/__tests__/test_install_launchctl_bin_guard.py:25-42",
+          "description": "Negative test: override under $HOME/.cache rejected with exit 9 and 'must resolve under a temp root' on stderr"
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/__tests__/test_install_launchctl_bin_guard.py:60-68",
+          "description": "Negative test: non-executable override rejected with exit 9"
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/__tests__/test_install_launchctl_bin_guard.py:45-57",
+          "description": "Positive test: override inside tmp_path (= under /private/var/folders) accepted and emits the 'override active (test mode)' stderr line"
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/install-proactive-plist.sh:20",
+          "description": "pwd -P canonicalizes dirname BEFORE prefix check: LAUNCHCTL_BIN=/tmp/../etc/launchctl resolves to /etc -> rejected; /tmp/foo/../launchctl resolves to /private/tmp/launchctl -> accepted (correct)"
+        }
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/_shared/install-proactive-plist.sh:19-36",
+          "description": "Guard placement is BEFORE validation (L53), FS writes (L79), and any LAUNCHCTL invocation (L86) \u2014 no side-effect can run with a rejected override"
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/install-proactive-plist.sh:21",
+          "description": "Allow-list covers macOS canonical temp roots: $TMPDIR (with trailing slash stripped), /tmp, /private/tmp, /private/var/folders, /var/folders \u2014 matches the tmpdirs the existing Darwin integration tests use (test_collision_bootout_with_identical_disk_still_loads, test_bootstrap_failure_rolls_back_disk_plist still functional)"
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/install-proactive-plist.sh:30-33",
+          "description": "Executable bit re-checked on the canonicalized path so a non-x file under /tmp still dies loud"
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/install-proactive-plist.sh:34",
+          "description": "Stderr warning emitted whenever override is active \u2014 production callers cannot trigger silent substitution"
+        }
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/_shared/install-proactive-plist.sh:12-17",
+          "description": "Inline comment block names the finding (FIND-2-001) and the rationale \u2014 future maintainers see why the guard exists"
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/__tests__/test_install_launchctl_bin_guard.py:1-3",
+          "description": "Test module docstring explicitly names FIND-2-001 and what is being verified"
+        }
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/_shared/install-proactive-plist.sh:53",
+          "description": "Pure validator (lib.plist_render validate) invoked via subprocess with no FS/launchctl side-effect \u2014 purity boundary preserved"
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/install-proactive-plist.sh:82-83",
+          "description": "Pure render call (lib.plist_render render) keeps content generation in the pure core; shell shell only writes the returned bytes"
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/install-proactive-plist.sh:102-103",
+          "description": "Digest comparison also delegated to pure lib.plist_render digest"
+        }
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [
+      "CRIT-001",
+      "CRIT-002",
+      "CRIT-003",
+      "CRIT-004",
+      "CRIT-005"
+    ],
+    "duplicateFindings": [],
+    "findingCount": 0,
+    "previousFindingCount": 1
+  }
+}

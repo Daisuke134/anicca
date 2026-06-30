@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-2-001",
+  "dimension": "implementation_correctness",
+  "category": "security_surface",
+  "severity": "high",
+  "description": "The new LAUNCHCTL_BIN testability hook (install-proactive-plist.sh:14 `LAUNCHCTL=\"${LAUNCHCTL_BIN:-launchctl}\"`) is an unconditional env-var override of the launchctl binary in PRODUCTION callers, not just in tests. Any process that exports LAUNCHCTL_BIN before invoking install-proactive-plist.sh (= a cron parent env, a malicious or buggy wrapper, a sibling skill that exports it for its own tests and forgets to unexport, an attacker who can write to the user's env) will cause the script to execute an ARBITRARY binary with the same args as launchctl bootstrap/bootout/print — including the user's LaunchAgents path as argv[3]. There is NO guard that gates this hook to test contexts (no `[[ -n \"${PYTEST_CURRENT_TEST:-}\" ]]` check, no `[[ \"$SLOT\" == probe-* ]]` check, no env-allow-list). The shell also does NOT log when the override is in effect, so a poisoned environment causes silent execution of the substitute binary and a wrong-looking install (or worse, the substitute binary running with the user's privileges and writing wherever it likes). PROP-D1 / REQ-D2 demand 'no human-targeted side-effect, no elevated privilege' — but an arbitrary-binary-exec via an unscoped env hook violates the spirit of that boundary because the substitute could perform any side-effect it likes. Fix options: (a) require LAUNCHCTL_BIN to start with the system test tmpdir (`$TMPDIR`) and reject otherwise with an explicit warning; (b) gate the override behind a second sentinel like `INSTALL_PROACTIVE_PLIST_TEST_MODE=1` so production cron callers can never accidentally trigger it; (c) refactor the test to PATH-prepend a tmp dir containing a `launchctl` shim instead of an env-var override (more orthodox unix idiom, no script change needed at all).",
+  "evidence": {
+    "filePath": "skills/_shared/install-proactive-plist.sh",
+    "lineRange": "12-14",
+    "snippet": "# Tests can override the launchctl binary to simulate failures (EDGE-E5);\n# production callers leave LAUNCHCTL unset → resolved via PATH.\nLAUNCHCTL=\"${LAUNCHCTL_BIN:-launchctl}\""
+  },
+  "routeToPhase": "2b"
+}
