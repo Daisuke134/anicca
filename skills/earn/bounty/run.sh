@@ -58,5 +58,56 @@ track(){
   emit "track: $tracked PR(s) monitored, $merged merged. (on merge → record-earn when payout lands)"
 }
 
-case "$EARN_MODE" in track) track ;; *) discover ;; esac
+# ── gate: filter discovered bounties to genuinely-attemptable ones (the drizzle#1188 lesson) ──
+# Deterministic checks via gh: (a) funder NOT withdrawn (issue comments), (b) NO existing open PR
+# referencing the issue. (c) fix-not-blocked + (d) agent-doable are left to the brain's judgment on
+# the survivors. Bounded to the top N candidates (gh rate-limit + time).
+gate(){
+  local bj="$STATE/bounties.json" gj="$STATE/gated.json" n="${BOUNTY_GATE_N:-12}"
+  [ -f "$bj" ] || discover >/dev/null 2>&1
+  "$PY" - "$bj" "$gj" "$n" <<'PY' 2>/dev/null
+import json,sys,subprocess,re
+bj,gj,n=sys.argv[1],sys.argv[2],int(sys.argv[3])
+def sh(args):
+    try: return subprocess.run(args,capture_output=True,text=True,timeout=30).stdout
+    except Exception: return ""
+items=json.load(open(bj)).get("open_bounties",[])[:n]
+survivors=[]
+for it in items:
+    repo=it.get("repo",""); url=it.get("url","")
+    m=re.search(r'/issues/(\d+)',url)
+    if not repo or not m: continue
+    num=m.group(1)
+    # (a) funder withdrawn? scan comments
+    cj=sh(["gh","issue","view",num,"-R",repo,"--json","comments,closed,state"])
+    try: d=json.loads(cj) if cj.strip() else {}
+    except Exception: d={}
+    if d.get("state")!="OPEN": continue
+    body=" ".join(c.get("body","") for c in d.get("comments",[]))
+    if re.search(r'removing the bounty|bounty.*(removed|withdrawn|cancell?ed|no longer)|no bounty', body, re.I):
+        continue
+    # (b) existing open PR referencing the issue?
+    pl=sh(["gh","pr","list","-R",repo,"--state","open","--search",f"#{num} in:body","--json","number"])
+    try: prs=json.loads(pl) if pl.strip() else []
+    except Exception: prs=[]
+    if prs: continue   # someone already has an open PR
+    # (c) REAL project? filter the fake/farm layer (test repos, throwaway numeric-username accounts,
+    # near-zero-star playgrounds) the research flagged as fake-money. Require a real org + some traction.
+    owner=repo.split("/")[0]; name=repo.split("/")[-1]
+    if name.lower() in ("test","young","playground","sandbox","demo") or re.fullmatch(r'\d{6,}',owner):
+        continue
+    rj=sh(["gh","repo","view",repo,"--json","stargazerCount,isFork,description"])
+    try: r=json.loads(rj) if rj.strip() else {}
+    except Exception: r={}
+    if int(r.get("stargazerCount",0)) < 50: continue   # real funded projects have traction
+    survivors.append({**it,"issue":int(num),"stars":r.get("stargazerCount",0),"gate":"passed (funder-active, no-open-PR, real-repo>=50★)"})
+json.dump({"survivors":survivors,"checked":len(items)}, open(gj,"w"), indent=2)
+print(f"{len(survivors)}/{len(items)}")
+PY
+  local s; s=$([ -f "$gj" ] && "$PY" -c "import json;print(len(json.load(open('$gj')).get('survivors',[])))" 2>/dev/null || echo 0)
+  echo "[bounty] gate: $s candidates passed (funder-active + no-open-PR) of top $n"
+  emit "gate: $s attemptable bounties (state/gated.json). Brain then judges fix-not-blocked + agent-doable, picks ONE."
+}
+
+case "$EARN_MODE" in track) track ;; gate) gate ;; *) discover ;; esac
 exit 0
