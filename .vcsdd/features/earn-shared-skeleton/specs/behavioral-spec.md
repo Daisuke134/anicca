@@ -581,6 +581,94 @@ rows must target a `(category, platform)` tuple never present in
 append `{ts, slot, reason: "novelty-floor-unmet"}` to `lessons.jsonl` and continue without the
 quota.
 
+### Group I — Deliverable Verify Loop (added 2026-07-01 per Dais; closes the OUTPUT-QUALITY gap)
+
+The skeleton so far gates the SELF-IMPROVING META layer (REQ-C3 strategy mutation gate, REQ-E5
+spawn-surface drift gate) but does NOT gate the actual WORK PRODUCT (= the proposal text the
+slot sends to the platform, and the deliverable file it uploads after a contract is signed).
+Without an adversary gate on the work product, a slot can apply 100 jobs/day at 0% accept rate
+because the proposals are slop, OR ship deliverables that earn 低評価 and tank cumulative
+ratings. Group I closes this.
+
+#### REQ-I1 — Proposal Verify Loop (B2 APPLY pre-submit gate)
+
+WHEN B2 APPLY BROADLY has constructed a proposal `{title, body, sample_deliverable,
+price_jpy, delivery_date}` for a request `R`, THE SYSTEM SHALL NOT submit until the proposal
+passes a fresh-context adversary review:
+
+1. Persist proposal draft + the source request brief to
+   `~/loops/<slot>/proposals/<request_id>/round-1/draft.json`.
+2. Spawn fresh-context Opus adversary with manifest `{reviewType: "proposal-quality",
+   request_brief: <path>, proposal_draft: <path>, strategy_snapshot: <path>}`.
+3. Adversary writes verdict per the standard 5-dimension schema, augmented with these
+   PROPOSAL-specific dimensions:
+   - `brief_alignment` — does the proposal address the SPECIFIC asks of the brief, not just
+     a generic template?
+   - `sample_relevance` — is the attached sample on-topic, not a stock filler?
+   - `price_realism` — is the price within ±50% of the brief's stated range (if any)?
+   - `delivery_realism` — is the delivery_date achievable for the scope?
+   - `red_flags` — does the proposal contain any AI-tell phrases ("delighted to help",
+     "tailored to your needs", excessive emoji) that lower acceptance odds?
+4. IF verdict is FAIL, the slot revises the proposal (round-2) using the findings, persists
+   to `round-2/draft.json`, and re-spawns adversary. Cap at 3 rounds.
+5. IF round-3 still FAIL → record `{outcome: "proposal-stalled", requestId,
+   findings_sha256}` to `lessons.jsonl` and SKIP this request (= do not submit a bad
+   proposal that would hurt account rating).
+6. IF any round PASSes → submit, then record `{requestId, rounds_to_pass, evidence_id:
+   <verdict path>}` to `applied.jsonl` extension.
+
+#### REQ-I2 — Deliverable Verify Loop (B1 NURTURE pre-納品 gate)
+
+WHEN a 仮払い contract arrives on a talk-room AND the slot has constructed the actual
+deliverable artifact (pptx, docx, py code, mp4, etc), THE SYSTEM SHALL NOT 納品 until the
+artifact passes a fresh-context adversary review:
+
+1. Persist artifact + the contract's brief + any buyer messages to
+   `~/loops/<slot>/deliveries/<request_id>/round-1/`.
+2. Spawn fresh-context Opus adversary with manifest `{reviewType: "deliverable-quality",
+   brief: <path>, deliverable_path: <path>, buyer_messages: <path>}`.
+3. Adversary writes verdict augmented with DELIVERABLE-specific dimensions:
+   - `brief_completeness` — every concrete ask in the brief addressed?
+   - `factual_correctness` — claims that look like facts are actually correct (no
+     hallucinated stats, no made-up references)?
+   - `usefulness` — would a real buyer find this immediately actionable, not a generic
+     summary?
+   - `presentation_quality` — formatting / structure / readability — would 検収 likely
+     succeed or come back for revisions?
+   - `safety_surface` — no embedded secrets, no broken sandbox escapes, no risky payloads?
+4. IF FAIL → fix artifact (round-2), re-review. Cap at 3 rounds (lean) / 5 rounds (strict).
+5. IF still FAIL at round-cap → DO NOT 納品. Record
+   `{outcome: "deliverable-stalled", requestId, findings_sha256}` to `lessons.jsonl`.
+   The slot SHALL then send a polite message to the buyer in the talk-room requesting
+   scope clarification — DO NOT auto-cancel the contract; let the buyer decide whether to
+   extend deadline, adjust scope, or refund.
+6. IF any round PASSes → 納品, record `{requestId, rounds_to_pass, deliverable_sha256,
+   verdict_path}` to `deliveries.jsonl` (new append-only stream parallel to
+   `earnings.jsonl`).
+
+#### REQ-I3 — Retro from Outcomes Back to Strategy
+
+WHEN an outcome `(accepted|rejected|低評価|高評価)` arrives for a previously-submitted
+proposal or deliverable, THE SYSTEM SHALL append to `lessons.jsonl` BOTH:
+- the outcome row (existing REQ-C1 format), AND
+- the `rounds_to_pass` (= how many adversary iterations the proposal/deliverable went
+  through before being submitted). This connects WORK QUALITY EFFORT to ACTUAL MARKET
+  OUTCOME and feeds B4 IMPROVE's strategy mutation: if rounds_to_pass = 1 correlates with
+  rejection, the proposal_template is too lax; if rounds_to_pass = 3 correlates with
+  acceptance, the verify-loop is the value-add.
+
+#### REQ-I4 — Adversary Budget for Verify-Loops
+
+To avoid burning tokens on hopeless proposals, EACH slot SHALL maintain a
+per-`(category, platform)` budget in `strategy.json`:
+- `verify_max_rounds_per_request: int` (default 3 for lean, 5 for strict mode)
+- `verify_disabled_categories: list[str]` (= categories where adversary cost is not
+  worth it; updated by B4 IMPROVE based on lessons)
+
+The verify-loop is a SELF-IMPROVING component of the SELF-IMPROVE layer itself: it learns
+which categories deserve adversary scrutiny vs which can be single-shot, and routes
+adversary budget accordingly.
+
 ## Non-Functional Requirements
 
 - **NFR-1** All shared scripts SHALL be POSIX-bash or Python 3.11+; no external runtime
