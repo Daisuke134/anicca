@@ -1,0 +1,15 @@
+{
+  "findingId": "FIND-704",
+  "dimension": "structural_integrity",
+  "category": "security_surface",
+  "severity": "minor",
+  "title": "parseRawLogs verifies `to` with .endsWith(wlow) instead of an exact padded-topic equality; sound for a well-formed 32-byte topic from the trusted RPC, but weaker than necessary as the local re-verification of the load-bearing money invariant",
+  "description": "The to-check is String(l.topics[2]).toLowerCase().endsWith(wlow) (record-earn.mjs:84) where wlow is the 40-hex founder address. For a canonical 32-byte (66-char) topic this is exact (last 40 chars == the address, with 24 leading zero-nibbles), so no real address can suffix-collide. But .endsWith does NOT assert the 24 leading nibbles are zero, nor that topics[2] is exactly 66 chars: a non-canonical topic of the form 0x<arbitrary><founder40> (longer than 66, or with non-zero high bytes) would still pass endsWith while NOT being a clean to==founder credit. On prod the RPC is the hardcoded TRUSTED_RPC so topics are always canonical 32 bytes and this is defense-in-depth only, not an exploitable fabrication path. But FIND-603 was explicitly about NOT trusting the wire for a money invariant; an exact equality is the stronger local re-verification.",
+  "evidence": {
+    "filePath": "/Users/operator/anicca/skills/self/founder-loop/record-earn.mjs",
+    "lineRange": "81-84",
+    "snippet": "const wlow = wallet.slice(2).toLowerCase();\n...\n.filter((l) => Array.isArray(l.topics) && l.topics.length >= 3 && String(l.topics[0]).toLowerCase() === TRANSFER_TOPIC && String(l.topics[2]).toLowerCase().endsWith(wlow))"
+  },
+  "fix": "Re-verify `to` by exact equality against the canonical padded topic: const toTopic = \"0x\" + \"0\".repeat(24) + wlow; ... && String(l.topics[2]).toLowerCase() === toTopic. Add a RAW test feeding a topics[2] that is longer-than-32-bytes-but-suffix-matches and assert it contributes 0.",
+  "routeToPhase": "2b"
+}

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-009",
+  "dimension": "structural_integrity",
+  "category": "requirement_mismatch",
+  "severity": "minor",
+  "description": "Contested/farm detection is weak — the gate can both KEEP fakes and MISS already-claimed bounties. (1) The existing-PR check (run.sh:90) only finds OPEN PRs whose BODY contains '#<num>' via `gh pr list --search \"#N in:body\"`. It misses PRs that reference the issue in the TITLE or via GitHub's auto-linking, and crucially misses Algora claims made by '/attempt #N' COMMENTS that have no PR yet — so the loop can attempt a bounty another agent already claimed, wasting the work. (2) discover() skips GitHub `assignee` (run.sh:26), but Algora contest happens via /attempt comments, not GitHub assignment, so this filter is largely inert. (3) The farm filter (run.sh:97) only excludes literal repo names test/young/playground/sandbox/demo and 6+ digit numeric owners; a self-funded AI farm with a starred repo and many sequential issues (e.g. the SCIBASE-AI/SCIBASE.AI block of 13 issues in bounties.json) passes the gate. There is no per-funder volume / funder-reputation check, so a sophisticated farm survives as a false-positive 'attemptable' bounty.",
+  "evidence": {
+    "filePath": "skills/earn/bounty/run.sh",
+    "lineRange": "89-98",
+    "snippet": "pl=sh([\"gh\",\"pr\",\"list\",\"-R\",repo,\"--state\",\"open\",\"--search\",f\"#{num} in:body\",\"--json\",\"number\"]) ... if name.lower() in (\"test\",\"young\",\"playground\",\"sandbox\",\"demo\") or re.fullmatch(r'\\d{6,}',owner): continue"
+  },
+  "routeToPhase": "2b"
+}

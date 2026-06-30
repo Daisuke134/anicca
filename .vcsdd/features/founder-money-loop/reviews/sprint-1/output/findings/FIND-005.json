@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "structural_integrity",
+  "category": "security_surface",
+  "severity": "medium",
+  "description": "The integrity of every invariant rests on env-var-controlled inputs with no defense against silent misconfiguration: FOUNDER_LEDGER (line 24), FOUNDER_WALLET (line 44), FOUNDER_USDC_NOW (line 56), BASE_RPC_URL (line 57), FOUNDER_DIR (line 22) are all caller-supplied. Notably BASE_RPC_URL lets a caller point the 'on-chain' query at an attacker-controlled RPC that returns any balance — an alternate fabrication path to FIND-001 that does not even need the test seam. A malicious/buggy RPC returning a large eth_call result is treated as a real settlement. The design centralizes trust in the environment rather than in on-chain truth, so 'cannot be faked' is not structurally true.",
+  "evidence": {
+    "filePath": "skills/self/founder-loop/record-earn.mjs",
+    "lineRange": "55-63",
+    "snippet": "const rpc = process.env.BASE_RPC_URL || \"https://mainnet.base.org\"; ... method: \"eth_call\" ..."
+  },
+  "fix": "Pin BASE_RPC_URL to a trusted default and refuse arbitrary overrides in production (allow override only under the same test gate as FIND-001). Consider corroborating the balance against a second independent RPC, or recording the block number + a tx hash so the monitor can independently re-verify the settlement on-chain rather than trusting the writer's reported delta.",
+  "routeToPhase": "2b"
+}

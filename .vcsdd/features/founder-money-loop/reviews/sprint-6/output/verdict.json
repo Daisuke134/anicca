@@ -1,0 +1,62 @@
+{
+  "sprintNumber": 6,
+  "feature": "founder-money-loop",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-06-27T00:00:00Z",
+  "iteration": 1,
+  "reviewContext": {
+    "reviewType": "implementation",
+    "increment": "G1.1-A2 (balanceOf-delta -> external-inflow / block-cursor model, INV-7)",
+    "priorFindings": ["FIND-401", "FIND-402", "FIND-403", "FIND-404", "FIND-501"],
+    "coreQuestion": "Can the earner write a USDC number that did not come from a genuine external payer (self-transfer, fabricated log, or replay)?",
+    "coreAnswer": "YES — via block REORG. Self-transfers are correctly filtered (record-earn.mjs:79) and fabricated logs are blocked in prod (logs come only from TRUSTED_RPC getLogs pinned to the USDC address + founder to-topic). BUT the cursor advances on the un-finalized LATEST block with no confirmation/finality lag (record-earn.mjs:64,101-102): an orphaned external Transfer is counted though it never settled, and a reorged-then-reincluded Transfer is counted TWICE. Both write a USDC number that did not come from a genuine SETTLED external payer, violating THE GOAL and INV-7. Separately, the entire real getLogs parse path (from-topic slice, value decode, topics filter) is masked by the FOUNDER_LOGS_JSON seam and untested, so a bug in the self-vs-external classification itself would ship green."
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "/Users/operator/anicca/skills/self/founder-loop/record-earn.mjs:44-45,79", "description": "INV-7 external-payer filter present: MY_WALLETS = [founder, automaton 0xa3cdd4, openclaw 0x9b1ee98] (lowercased), and the sum loop adds value ONLY when from is not in MY_WALLETS — a self-transfer contributes 0."},
+        {"type": "file", "location": "/Users/operator/anicca/skills/self/founder-loop/record-earn.mjs:97-98", "description": "First-run init records nothing and sets cursor=now (pre-existing balance never an earning), per INV-7 spec lines 86-87."},
+        {"type": "file", "location": "/Users/operator/anicca/skills/self/founder-loop/record-earn.mjs:34-42", "description": "INV-1 pin: SHARED wallets rejected (41) and positive pin to FOUNDER_WALLET_EXPECTED 0x810f (42)."}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-602", "FIND-604", "FIND-605"],
+      "evidence": []
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-601", "FIND-603"],
+      "evidence": []
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "/Users/operator/anicca/skills/self/founder-loop/record-earn.mjs:20", "description": "Prod root is the env-independent literal '/Users/operator/.anicca-founder'; HOME/os.homedir()/FOUNDER_DIR are inside the TEST-only ternary branch (FIND-401 stays closed)."},
+        {"type": "file", "location": "/Users/operator/anicca/skills/self/founder-loop/record-earn.mjs:82-87", "description": "Cursor written atomically (tmp + renameSync). FIND-501 part-2 residual addressed: the new test no longer snapshots/restores the real /Users/operator/.anicca-founder baseline."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "/Users/operator/anicca/skills/self/founder-loop/record-earn.mjs:67-81", "description": "externalInflow is a pure fold over the log set (no I/O once logs are fetched); the I/O (rpc/getLogs) is isolated and FOUNDER_TEST-seam-gated, so the classification logic is in principle unit-testable — though FIND-602 shows it is not yet actually tested."},
+        {"type": "file", "location": "/Users/operator/anicca/skills/self/founder-loop/record-earn.mjs:101-102", "description": "Cursor advanced BEFORE append (crash = under-count for absent-reorg case). NOTE: the finality gap in FIND-601 breaks the 'never double-count' claim for reorgs."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 5,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": ["INV-1", "INV-3", "INV-6", "INV-7", "FIND-401", "FIND-501"],
+    "duplicateFindings": []
+  }
+}

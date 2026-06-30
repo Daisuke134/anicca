@@ -1,0 +1,15 @@
+{
+  "findingId": "FIND-703",
+  "dimension": "structural_integrity",
+  "category": "test_quality",
+  "severity": "minor",
+  "title": "Static TEST-gate check still false-passes on a same-line comment containing \"TEST &&\" or \"TEST ?\" — FIND-605's tightening reduced but did not eliminate the grep weakness",
+  "description": "The seam-gating loop now does grep -vE \"TEST (&&|\\?)\" (test-record-earn.sh:18), an improvement over the bare \"TEST\" of sprint-6. But it still operates on raw text: a future edit that reads an env UNGUARDED yet shares a line with a comment containing the literal 'TEST &&' or 'TEST ?' (e.g. `const x = process.env.HOME; // restore TEST && prod behavior`) would be removed by grep -v and FALSE-PASS the gate. The check is textual, not syntactic — it cannot distinguish a real `TEST &&` guard from the same characters in a comment/string on the matching line. The behavioral prod-mode backstop (test 12, test-record-earn.sh:82-86) only covers HOME, not the other 8 seams, so for FOUNDER_RAW_LOGS_JSON et al. the static grep is the SOLE prod-ignore guarantee. Not an active fabrication path in current code (all seams are genuinely TEST-gated), but the guard against a future un-gated seam is bypassable.",
+  "evidence": {
+    "filePath": "/Users/operator/anicca/skills/self/founder-loop/test-record-earn.sh",
+    "lineRange": "17-20",
+    "snippet": "for seam in FOUNDER_DIR ... FOUNDER_RAW_LOGS_JSON BASE_RPC_URL HOME; do\n  bad=\"$(grep -n \"process\\.env\\.$seam\" <<<\"$src\" | grep -vE \"TEST (&&|\\?)\" || true)\"\n  ok \"$([ -z \"$bad\" ] && echo 1 || echo 0)\" \"STATIC: $seam read is TEST-gated (${bad:-none})\"\ndone"
+  },
+  "fix": "Replace (or backstop) the static grep with a per-seam BEHAVIORAL prod-mode assertion like test 12: for EACH seam, run with FOUNDER_TEST unset and the seam set to a poison value, and assert it is ignored (root/wallet/cursor/logs unaffected, no fabricated row). That tests the actual runtime gate and cannot be fooled by comments. At minimum, strip comments before the grep (e.g. sed 's://.*::') so a commented 'TEST &&' cannot mask an un-gated read.",
+  "routeToPhase": "2b"
+}

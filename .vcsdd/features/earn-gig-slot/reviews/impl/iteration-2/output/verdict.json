@@ -1,0 +1,89 @@
+{
+  "sprintNumber": 2,
+  "feature": "earn-gig-slot",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-06-29T00:00:00Z",
+  "iteration": 2,
+  "reviewContext": {
+    "reviewType": "impl",
+    "scope": "earn/gig slot — round-2 re-review of round-1 FAIL fixes",
+    "filesReviewed": [
+      "skills/earn/gig/run.sh",
+      "skills/earn/gig/lib/can-run.mjs",
+      "skills/earn/gig/lib/detect.mjs",
+      "skills/earn/gig/lib/bid.mjs",
+      "skills/earn/gig/lib/bid-run.mjs",
+      "skills/earn/gig/lib/deliver.mjs",
+      "skills/earn/gig/lib/deliver-run.mjs",
+      "skills/earn/gig/lib/gates.mjs",
+      "skills/earn/gig/lib/no-human.mjs",
+      "skills/earn/gig/NO_HUMAN.md",
+      "skills/earn/gig/__tests__/*.test.mjs",
+      "runtime/loop/index.mjs",
+      "runtime/loop/earn-slot.mjs",
+      "runtime/loop/earn-detect.mjs",
+      "skills/self/founder-loop/record-earn.mjs",
+      "docs/superpowers/specs/2026-06-29-earn-gig-slot-design.md"
+    ],
+    "note": "No manifest.json found for this feature under .vcsdd; review conducted disk-only per the round-2 instructions. Tooling note: Bash was not available in this context, so node --test / run.sh were NOT executed — all judgments are from static reading of the on-disk code and tests."
+  },
+  "dimensions": [
+    {
+      "name": "no_human",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/gig/lib/no-human.mjs:17-45", "description": "auditNoHuman scans every executable for stdin reads / interactive prompts / ask-human patterns; FORBIDDEN regex set is real and comment-stripped before scan."},
+        {"type": "file", "location": "skills/earn/gig/__tests__/no-human.test.mjs:21-30", "description": "Asserts zero violations on the real slot files AND that planted human steps are caught (audit is not a no-op)."},
+        {"type": "file", "location": "runtime/loop/index.mjs:403", "description": "Loop spawns the skill with stdio ['ignore','pipe','pipe'] — stdin physically ignored, so the slot cannot block on a human."},
+        {"type": "file", "location": "skills/self/founder-loop/record-earn.mjs:1-132", "description": "settle's record-earn dependency contains no stdin/prompt read either."}
+      ]
+    },
+    {
+      "name": "no_fake_earn",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/gig/run.sh:120-131", "description": "do_settle never sets earn itself; earn_usdc is parsed ONLY from record-earn's chain-verified 'VERIFIED +X USDC' line; detect/bid/deliver always emit earn_usdc 0."},
+        {"type": "file", "location": "skills/self/founder-loop/record-earn.mjs:44-46,71-76", "description": "Only EXTERNAL inflows (from âˆ‰ MY_WALLETS) are summed; self-transfers contribute 0; block-cursor based; fail-closed. A weak model cannot fabricate income."},
+        {"type": "file", "location": "skills/earn/gig/lib/gates.mjs:15-28", "description": "Gates are observation-only; earnFromSettle returns ONLY externalEarnUsdc. gates.test asserts V1..V4 pass => still $0."},
+        {"type": "file", "location": "skills/earn/gig/run.sh:121-130", "description": "settle passes NO model-controlled args to record-earn and does not set FOUNDER_TEST, so test seams stay closed and the real RPC + pinned wallet are used — no injection vector."}
+      ]
+    },
+    {
+      "name": "key_isolation",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/gig/run.sh:39-54", "description": "wallet_address emits only an address-shaped field (0x, len<=44); never a key-shaped value."},
+        {"type": "file", "location": "skills/earn/gig/run.sh:58-69", "description": "available_rails reads only env KEY NAMES (grep '^...=' then strips '='), never the secret values."},
+        {"type": "file", "location": "skills/earn/gig/lib/bid-run.mjs:12,38", "description": "bid-run's output JSON contains task/jobId/title/bid_ok/http only; the DEALWORK_API_KEY and the HTTP body are never printed."},
+        {"type": "file", "location": "skills/earn/gig/__tests__/contract.test.mjs:13,64-67,86", "description": "Plants BLOCKRUN_WALLET_KEY + SOME_PRIVATE_KEY and asserts they never appear in stdout/stderr, incl. the ANICCA_ARGS settle path."}
+      ]
+    },
+    {
+      "name": "contract",
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-004", "FIND-006"],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/gig/run.sh:17-36,133-140", "description": "POSITIVE: mode is genuinely driven by $ANICCA_ARGS (the real loop channel), GIG_MODE only a fallback; run.sh always exits 0; each mode is bounded by inner timeouts under SKILL_TIMEOUT_S."}
+      ]
+    },
+    {
+      "name": "reality",
+      "verdict": "FAIL",
+      "findings": ["FIND-002", "FIND-003", "FIND-005"],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/gig/lib/can-run.mjs:21-23", "description": "POSITIVE: laborx is no longer in the offered rails; only action-complete dealwork is returned."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 6,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": [],
+    "round1FixesConfirmedReal": ["FIND-001/002 (ANICCA_ARGS mode)", "FIND-003 (laborx removed from offered rails+detect)", "FIND-004 (record bid only on r.ok — code only, untested)"],
+    "round1FixesNotReal": ["FIND-005 (AI_HINT detect-vs-bid still divergent; 'identical' comment is false)"]
+  }
+}

@@ -1,0 +1,99 @@
+{
+  "sprintNumber": 3,
+  "feature": "earn-gig-slot",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-06-30T00:00:00Z",
+  "iteration": 3,
+  "reviewContext": {
+    "reviewType": "impl",
+    "scope": "earn/gig COCONALA pivot — round-3 re-review of round-2 FAIL fixes (FIND-001..006)",
+    "filesReviewed": [
+      "skills/registry.json (earn/gig entry, :97-105)",
+      "runtime/loop/earn-slot.mjs",
+      "skills/earn/gig/run.sh",
+      "skills/earn/gig/gig-cli.sh",
+      "skills/earn/gig/monitor.sh",
+      "skills/earn/gig/gig-healthcheck.sh",
+      "skills/earn/gig/NO_HUMAN.md",
+      "skills/earn/gig/SLOT_CC.md",
+      "skills/earn/gig/scripts/coconala/APPLY_RUNBOOK.md",
+      "skills/earn/gig/__tests__/no-human-loop.test.mjs",
+      "skills/earn/gig/launchd/ai.anicca.gig-core-healthcheck.plist",
+      "skills/earn/gig/archive/run.sh (reachability check)",
+      "docs/superpowers/specs/2026-06-29-earn-gig-slot-design.md:148-159"
+    ],
+    "note": "No manifest.json exists for this scope under .vcsdd (Glob confirmed) and no prior coconala-pivot round-1/2 review dir was persisted; reviewed disk-only per the adversary mandate and written to a new scope dir. The Bash tool was NOT available in this context, so `node --test`, `bash -n`, and `WAKE_ID=t bash run.sh` were NOT executed — every verdict is from static reading of the on-disk code/tests, and each round-2 claimed fix was checked against the actual code, not a commit message."
+  },
+  "dimensions": [
+    {
+      "name": "no_human",
+      "verdict": "FAIL",
+      "findings": ["FIND-R3-002"],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/gig/gig-cli.sh:19-20", "description": "POSITIVE — the core's cron prompt itself is genuinely no-human on manual read: blockers route to autonomous paths (captcha->CapSolver, OTP->gog gmail, login->Googleでログイン), 'A blocker is NOT a stop', and it never asks a human."},
+        {"type": "file", "location": "skills/earn/gig/scripts/coconala/APPLY_RUNBOOK.md:7-25", "description": "POSITIVE — the apply flow is fully automated (real-mouse datepicker, setFileInputFiles attach, 投稿前モーダル) with no human click step."},
+        {"type": "file", "location": "skills/earn/gig/__tests__/no-human-loop.test.mjs:23-39", "description": "FAIL — the automated guard that is supposed to ENFORCE no-human on gig-cli.sh is blind on ~60% of the only meaningful line: stripComments deletes everything after 'TRACK #5121769' before the FORBIDDEN scan (see FIND-R3-002). The artifact is no-human today, but the round-2 audit fix does not actually protect the core prompt."}
+      ]
+    },
+    {
+      "name": "no_fake_earn",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/gig/run.sh:33-39", "description": "FIND-003 fixed + deterministic: a ¥ row is summed ONLY if status ∈ {検収,支払,検収完了,completed,paid} AND r.get('evidence') is truthy; an applied/in-progress/no-evidence/fabricated row is rejected. earn_usdc is the literal 0 and wallet is null on every run — no USDC origination."},
+        {"type": "file", "location": "skills/earn/gig/monitor.sh:31-34", "description": "Identical deterministic guard (SETTLED whitelist + non-empty evidence) with an explicit rejected-row counter; monitor never calls record-earn (read-only)."},
+        {"type": "file", "location": "runtime/loop/earn-slot.mjs:30-33", "description": "earnSkillRelPath('earn/gig') returns 'earn/gig/run.sh' ('earn/gig' is not a key of EARN_ACTION), so the loop resolves the slot to the NEW honest run.sh — NOT the archived dealwork/USDC run.sh."},
+        {"type": "file", "location": "skills/earn/gig/archive/run.sh:120-142", "description": "The record-earn / on-chain-USDC settle machinery now lives ONLY under archive/ and is not referenced by run.sh, monitor.sh, gig-cli.sh, or the loop resolver — the USDC path is unreachable from the active loop."}
+      ]
+    },
+    {
+      "name": "structural",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "runtime/loop/earn-slot.mjs:30-33", "description": "FIND-001/002 fixed: the slot resolver finds skills/earn/gig/run.sh (no more skill_missing). The restored run.sh is a cheap honest supervise+report entry (ensure-core-alive + ¥ status)."},
+        {"type": "file", "location": "skills/earn/gig/", "description": "FIND-005 file deletion done: Glob of skills/earn/gig/** shows producer.sh gone and only ai.anicca.gig-core-healthcheck.plist remains (no producer plist). Core (gig-cli.sh) + healthcheck (gig-healthcheck.sh) + monitor (monitor.sh) all present and internally consistent."},
+        {"type": "file", "location": "skills/earn/gig/archive/guild_feed.json ; skills/earn/gig/archive/bids.jsonl", "description": "FIND-006 fixed: dealwork artifacts moved to archive/; the active skill dir has no state/ directory (Glob of state/** empty)."},
+        {"type": "file", "location": "skills/earn/gig/run.sh:13 ; skills/earn/gig/monitor.sh:13", "description": "MINOR (non-blocking) — PY is hardcoded to /opt/homebrew/bin/python3; if absent the heredoc emits no JSON line. Acceptable for this Mac-local human-funded loop but a portability footgun vs the archived run.sh which used bare `python3`."}
+      ]
+    },
+    {
+      "name": "reality",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/gig/scripts/coconala/APPLY_RUNBOOK.md:1-35", "description": "The runbook is concrete and proven: real request 5121769 (mtdc account), exact /offers/add/{id} flow, real-mouse datepicker rationale (JS .click() not committed), setFileInputFiles attach with chip verification, 投稿前モーダル final submit, and an E2E verify via tab-title change."},
+        {"type": "file", "location": "skills/earn/gig/gig-cli.sh:4-9", "description": "The dealwork->Coconala pivot rationale is real and documented ('Only human accounts can withdraw' for dealwork; Coconala pays real ¥ to Dais MUFG)."},
+        {"type": "file", "location": "skills/earn/gig/artifacts/5121769/ppt_sample.pptx", "description": "A real sample deliverable artifact exists for the tracked request, consistent with the runbook's 'attach a real sample' step."}
+      ]
+    },
+    {
+      "name": "dead_code_honesty",
+      "verdict": "FAIL",
+      "findings": ["FIND-R3-001"],
+      "evidence": [
+        {"type": "file", "location": "skills/registry.json:97-105", "description": "POSITIVE — FIND-001/002 honesty fix present: the earn/gig summary is ¥/HUMAN-FUNDED/Coconala/Dais MUFG, explicitly 'NO USDC, NO record-earn, no human in the daily op'."},
+        {"type": "file", "location": "skills/earn/gig/NO_HUMAN.md:16-27", "description": "POSITIVE — FIND-004 fixed: NO_HUMAN.md is consistent with the Coconala reality, names archive/ as holding the old USDC machinery, and explicitly retracts the stale 'Coconala removed' note."},
+        {"type": "file", "location": "skills/earn/gig/SLOT_CC.md:30", "description": "FAIL — SLOT_CC.md still advertises 'producer/monitor added' though producer.sh + its plist were deleted; the design spec it points to (2026-06-29-earn-gig-slot-design.md:152,156) still mandates producer.sh + a producer plist + a ~/gig/queue drain that no longer exist. Round-2 FIND-005's 'nothing references them (SLOT_CC, plists)' criterion is not met (see FIND-R3-001)."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 2,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": [],
+    "round2FixesConfirmedReal": [
+      "FIND-001/002: earn-slot.mjs resolves earn/gig -> earn/gig/run.sh (no skill_missing); run.sh restored as honest supervise+report emitting earn_usdc:0/wallet:null; registry summary rewritten to ¥/Coconala.",
+      "FIND-003: deterministic ¥ guard (SETTLED status whitelist + non-empty evidence) present and identical in BOTH run.sh:33-39 and monitor.sh:31-34; rejects applied/in-progress/no-evidence rows.",
+      "FIND-004: NO_HUMAN.md rewritten consistent with Coconala; no contradiction remains.",
+      "FIND-005 (PARTIAL): producer.sh + producer plist DELETED from disk — but SLOT_CC.md:30 and the design spec still reference them (NOT fully fixed; see FIND-R3-001).",
+      "FIND-006: guild_feed.json + bids.jsonl moved to archive/; active state/ is empty.",
+      "Reachability: archived USDC/record-earn run.sh is NOT reachable from the loop resolver or any active script."
+    ],
+    "round2FixesNotReal": [
+      "FIND-005 only partially fixed — the dangling producer references in SLOT_CC.md:30 and 2026-06-29-earn-gig-slot-design.md:152,156 remain (FIND-R3-001).",
+      "The no-human audit added for gig-cli.sh (F1) is blind on ~60% of the core prompt due to the stripComments quoted-string bug (FIND-R3-002)."
+    ]
+  }
+}

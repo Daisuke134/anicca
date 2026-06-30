@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-R2-003",
+  "dimension": "self_heal_correctness",
+  "category": "spec_gap",
+  "severity": "low",
+  "description": "The FIND-001 part-B branch (gig-healthcheck.sh:18-21, restart on `[ ! -f \"$HB\" ]`) is effectively dead code given its companion fix. gig-cli.sh creates the heartbeat file on every start AND every --restart (gig-cli.sh:36), so once the core has ever been started the file always exists. The only way the 'ALIVE but NO heartbeat' branch can fire is a session started OUTSIDE gig-cli.sh or a manually deleted file — neither occurs in the designed flow. The genuine 'alive but in-session cron stopped' case the branch was meant to cover is actually handled by the STALE branch (line 22) after the seeded heartbeat ages past 90 min, not by this branch. The branch is harmless but gives a false impression of additional coverage; the real coverage is STALE, which (per FIND-R2-001) is itself defeated by the restart re-seed.",
+  "evidence": {
+    "filePath": "skills/earn/gig/gig-healthcheck.sh",
+    "lineRange": "18-21",
+    "snippet": "elif [ ! -f \"$HB\" ]; then\n  # FIND-001: alive but NO heartbeat = core started but never ran a pass (cron never registered/hung).\n  # gig-cli seeds the heartbeat at startup, so a missing file means it never really booted -> restart.\n  restart \"gig-core ALIVE but NO heartbeat (never fired)\""
+  },
+  "fix": "Either remove the near-unreachable branch, or (preferred, ties to FIND-R2-001) stop seeding .last-pass at startup so a missing/old heartbeat genuinely signals 'no real pass yet' and this branch regains meaning.",
+  "routeToPhase": "2b"
+}

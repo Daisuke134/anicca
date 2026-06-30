@@ -1,0 +1,20 @@
+{
+  "findingId": "FIND-R3-001",
+  "dimension": "no_human",
+  "category": "test_coverage",
+  "severity": "low",
+  "description": "NO_HUMAN.md (line 6) claims the no-human invariant is 'audited by __tests__/no-human-loop.test.mjs', but the test only scans three files: FILES = ['gig-cli.sh', 'monitor.sh', 'gig-healthcheck.sh'] (no-human-loop.test.mjs:11). The two remaining live loop files — auditor.sh (independent launchd verifier) and run.sh (main-loop entry, SLOT_CC.md:12) — are not scanned. Both files are functionally human-free (auditor.sh reads files and appends JSON; run.sh calls gig-cli.sh and reports status), so the invariant holds behaviorally. However, the stated verification mechanism is incomplete: a future edit that adds a human-step to either uncovered file would not be caught by the test. The claim 'audited by ...' overstates the test's scope.",
+  "evidence": {
+    "filePath": "skills/earn/gig/__tests__/no-human-loop.test.mjs",
+    "lineRange": "11",
+    "snippet": "const FILES = ['gig-cli.sh', 'monitor.sh', 'gig-healthcheck.sh'];"
+  },
+  "crossRef": [
+    "skills/earn/gig/NO_HUMAN.md:6",
+    "skills/earn/gig/SLOT_CC.md:12",
+    "skills/earn/gig/auditor.sh",
+    "skills/earn/gig/run.sh"
+  ],
+  "fix": "Add 'auditor.sh' and 'run.sh' to the FILES array in no-human-loop.test.mjs. Both are currently clean and will pass; the change closes the coverage gap against future regressions.",
+  "routeToPhase": "2c"
+}

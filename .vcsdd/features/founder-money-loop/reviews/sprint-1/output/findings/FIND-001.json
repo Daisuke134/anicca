@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "spec_fidelity",
+  "category": "security_surface",
+  "severity": "critical",
+  "description": "INV-2 (verified-earn-only) is DEFEATED by an ungated test seam. record-earn.mjs:56 short-circuits the real on-chain balanceOf RPC whenever the env var FOUNDER_USDC_NOW is merely DEFINED (`process.env.FOUNDER_USDC_NOW !== undefined`). There is no NODE_ENV/test-only guard anywhere in the file. In production, ANY caller that controls the process environment (the cron/harness, a compromised wrapper, a shell that exported the var, or an attacker who can influence env) can set FOUNDER_USDC_NOW to an arbitrary number, producing delta = (fake now) - baseline > 0, which is then written to the ledger at line 74 as a 'VERIFIED' earning. The read-only monitor pulls this ledger to a public dashboard claiming 'numbers cannot be faked' — so this is exactly the fabricated-dollar / fraud path INV-2 and HARD 0.24 forbid. The earner CAN write a number it did not earn.",
+  "evidence": {
+    "filePath": "skills/self/founder-loop/record-earn.mjs",
+    "lineRange": "55-64",
+    "snippet": "async function usdcBalance(addr) {\n  if (process.env.FOUNDER_USDC_NOW !== undefined) return Number(process.env.FOUNDER_USDC_NOW); // test seam"
+  },
+  "fix": "Gate the seam to test-only and fail-closed otherwise. Minimum: require BOTH an explicit opt-in AND a non-production marker, e.g. `if (process.env.FOUNDER_USDC_NOW !== undefined) { if (process.env.NODE_ENV !== 'test' && process.env.FOUNDER_ALLOW_TEST_SEAM !== '1') die('test seam not permitted in production'); return Number(process.env.FOUNDER_USDC_NOW); }`. Better: delete the env seam entirely and inject the fake balance ONLY by pointing BASE_RPC_URL (record-earn.mjs:57) at a local fixture server in the test, so no production code path can ever bypass the real chain query. Add a test asserting that with the var set but NODE_ENV unset/production the process refuses to use it.",
+  "routeToPhase": "2b"
+}

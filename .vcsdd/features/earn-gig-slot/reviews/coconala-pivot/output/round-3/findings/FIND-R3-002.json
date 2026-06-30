@@ -1,0 +1,16 @@
+{
+  "findingId": "FIND-R3-002",
+  "dimension": "no_human",
+  "category": "test_quality",
+  "severity": "major",
+  "description": "The no-human audit that round-2's F1 added to cover gig-cli.sh is substantially blind, so the NO-HUMAN guarantee for the core is not actually enforced by the test. In __tests__/no-human-loop.test.mjs the FORBIDDEN human-step scan (lines 30-39) first runs stripComments(), whose shell branch does `l.replace(/(^|\\s)#.*$/, '$1')` (line 24) — a naive 'anything after a whitespace-# is a comment' strip with no awareness of quoted strings. gig-cli.sh's ENTIRE cron prompt is a single-quoted one-line string on line 20 that contains 'TRACK #5121769'. The regex matches at the space before '#5121769' and deletes everything from there to end-of-line in the scanned copy. Consequently the whole tail of the STARTUP prompt — the EARNED-CONDITION block, 'do NOT claim USDC / do NOT call record-earn', 'A blocker is NOT a stop', the CapSolver/gog-gmail autonomous-blocker paths — is NEVER scanned by the FORBIDDEN loop for human-in-the-loop steps. Today this yields no false PASS (the unscanned region contains no forbidden pattern; 'ask for 評価' does not match /ask (the )?(user|human|dais)/), but the audit gives FALSE CONFIDENCE: a future edit inserting e.g. 'ask the user to approve' or 'wait for Dais' anywhere after '#5121769' in the prompt would pass test 1 silently. Since gig-cli.sh's prompt is the ONLY place the actual browser-driving daily operation is specified, the dimension-1 guard is effectively not protecting the file it was added to protect. (Note: the SECOND test, lines 41-47, reads the raw file and so its CapSolver/USDC assertions still pass — that is why `node --test` is green despite the blind spot.) TOP FIX: make stripComments string-aware (do not strip inside single/double-quoted shell strings), or for the FORBIDDEN scan operate on the raw file (the same way test 2 does) rather than the comment-stripped copy, then add a planted-violation case ('ask the user ...' appended after the #5121769 token in a fixture) to prove the scan would catch it.",
+  "evidence": {
+    "filePath": "skills/earn/gig/__tests__/no-human-loop.test.mjs",
+    "lineRange": "23-28",
+    "snippet": "function stripComments(src, isShell) {\n  return src.split('\\n').map(l => {\n    if (isShell) return l.replace(/(^|\\s)#.*$/, '$1');   // shell comments\n    return l;\n  }).join('\\n');"
+  },
+  "corroboratingEvidence": [
+    {"filePath": "skills/earn/gig/gig-cli.sh", "lineRange": "20", "snippet": "...(3) TRACK #5121769 (our submitted PPTX) specifically ... EARNED CONDITION (no fake earn): ... do NOT claim USDC / do NOT call record-earn ... A blocker is NOT a stop — try the autonomous path (captcha->CapSolver, OTP->gog gmail) ... (everything after '#5121769' is stripped before the FORBIDDEN scan)"}
+  ],
+  "routeToPhase": "2b"
+}

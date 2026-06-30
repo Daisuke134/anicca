@@ -1,0 +1,108 @@
+{
+  "sprintNumber": 3,
+  "feature": "earn-gig-slot",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-06-29T00:00:00Z",
+  "iteration": 3,
+  "reviewContext": {
+    "reviewType": "impl",
+    "scope": "earn/gig slot — round-3 (final) re-review of round-2 FAIL fixes",
+    "filesReviewed": [
+      "skills/earn/gig/run.sh",
+      "skills/earn/gig/lib/ai-hint.mjs",
+      "skills/earn/gig/lib/can-run.mjs",
+      "skills/earn/gig/lib/detect.mjs",
+      "skills/earn/gig/lib/bid.mjs",
+      "skills/earn/gig/lib/bid-run.mjs",
+      "skills/earn/gig/lib/deliver.mjs",
+      "skills/earn/gig/lib/deliver-run.mjs",
+      "skills/earn/gig/lib/gates.mjs",
+      "skills/earn/gig/lib/no-human.mjs",
+      "skills/earn/gig/NO_HUMAN.md",
+      "skills/earn/gig/__tests__/contract.test.mjs",
+      "skills/earn/gig/__tests__/bid.test.mjs",
+      "skills/earn/gig/__tests__/detect.test.mjs",
+      "runtime/loop/index.mjs",
+      "runtime/loop/earn-slot.mjs",
+      "runtime/loop/earn-detect.mjs",
+      "runtime/loop/config.mjs",
+      "runtime/loop/__tests__/earn-slot-e2e.test.mjs",
+      "skills/_shared/lib/ledger.mjs",
+      "skills/self/founder-loop/record-earn.mjs",
+      "skills/earn/_probe/run.sh"
+    ],
+    "note": "No Bash/shell tool was available in this review context, so `node --test` and `bash run.sh` were NOT executed — all verdicts are from static disk-only analysis (the adversary's disk-only mandate). Each round-2 claimed fix was checked against the actual code, not the commit message."
+  },
+  "dimensions": [
+    {
+      "name": "no_human",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/gig/lib/no-human.mjs:17-45", "description": "auditNoHuman scans comment-stripped executables for stdin/readline/read -p/ask-human/wait-for-human patterns; real regex set, not a no-op."},
+        {"type": "file", "location": "runtime/loop/index.mjs:401-404", "description": "Loop spawns the slot with stdio ['ignore','pipe','pipe'] — stdin physically ignored, slot cannot block on a human."},
+        {"type": "file", "location": "skills/earn/gig/run.sh:124-146", "description": "settle resolves 'did I earn?' via record-earn's on-chain scan, never a human prompt; detect/bid/deliver use stored creds only."},
+        {"type": "file", "location": "skills/self/founder-loop/record-earn.mjs:1-132", "description": "record-earn dependency contains no stdin/prompt read."}
+      ]
+    },
+    {
+      "name": "no_fake_earn",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/gig/run.sh:130-142", "description": "do_settle sets earn ONLY by parsing record-earn's 'VERIFIED +X USDC' line; the nonzero EARN_LEDGER line (with external:true) is written ONLY inside the `[ \"$earn\" != \"0\" ]` branch, so it cannot be produced without record-earn's chain-verified output. CANNOT fabricate an earn."},
+        {"type": "file", "location": "skills/self/founder-loop/record-earn.mjs:44-46,71-99,116-131", "description": "VERIFIED prints only when earned>0 from EXTERNAL inflows (from ∉ MY_WALLETS), block-cursor based on the FINALIZED head, logs re-verified (topic0==Transfer, address==USDC, padded to==founder), fail-closed. Self-transfers sum to 0."},
+        {"type": "file", "location": "skills/earn/gig/lib/gates.mjs:15-28", "description": "Gates are observation-only; V1..V4 passing yields $0; earnFromSettle returns only externalEarnUsdc."}
+      ]
+    },
+    {
+      "name": "key_isolation",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/gig/run.sh:39-54", "description": "wallet_address emits only an address-shaped field (startswith 0x, len<=44); the planted 66-char leak key (contract.test:13) would be rejected by the length filter even if present in wallet.json."},
+        {"type": "file", "location": "skills/earn/gig/run.sh:58-69", "description": "available_rails reads only env KEY NAMES (grep '^...=' then strip '='), never secret values."},
+        {"type": "file", "location": "skills/earn/gig/lib/bid-run.mjs:12,38", "description": "bid-run output JSON is task/jobId/title/bid_ok/http only; DEALWORK_API_KEY passed via env, never printed."},
+        {"type": "file", "location": "runtime/loop/index.mjs:375,428,360", "description": "Loop scrubs *_WALLET_KEY into child env and redacts private-key patterns from observation + ledger line; contract.test:64-67,91 asserts the planted keys never appear in stdout/stderr incl. the settle path."}
+      ]
+    },
+    {
+      "name": "contract",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/gig/run.sh:20-36,148-156", "description": "Mode is driven by $ANICCA_ARGS (the real loop channel, buildSkillEnv index.mjs:445), GIG_MODE only a manual fallback; always exits 0; unknown mode falls back to detect; each mode bounded by inner timeouts under SKILL_TIMEOUT_S."},
+        {"type": "file", "location": "skills/earn/gig/lib/bid.mjs:54-56", "description": "FIND-004 genuinely fixed: shouldRecordBid(r)=== r.ok===true; bid-run.mjs:33 records only on success so a failed POST stays retryable; bid.test:44-49 asserts the rule."},
+        {"type": "file", "location": "skills/earn/gig/__tests__/contract.test.mjs:88-89", "description": "FIND-006 partially improved: settle assertions earn_usdc===0 + !external are now non-tautological for the no-inflow path (a fabricated earn would fail). The 'oracle invoked' sub-assertion is weak — see FIND-002."}
+      ]
+    },
+    {
+      "name": "reality",
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-002"],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/gig/lib/ai-hint.mjs:6", "description": "POSITIVE — FIND-002(r2) genuinely fixed: ONE shared AI_HINT in ai-hint.mjs, imported by BOTH detect.mjs:15 and bid.mjs:13; grep confirms no local AI_HINT redefinition remains in either."},
+        {"type": "file", "location": "skills/earn/gig/lib/detect.mjs:48-57", "description": "POSITIVE — FIND-003(r2) genuinely fixed: laborxJobs() deleted; detect spreads only [...dw]; remaining 'laborx' references are accurate not-yet-coded comments; can-run.mjs:21-23 offers only dealwork."},
+        {"type": "file", "location": "skills/earn/gig/run.sh:125", "description": "POSITIVE — FIND-005(r2) genuinely fixed: record-earn path uses ${ANICCA_HOME:-$HOME/anicca} (portable), no hardcoded $HOME/anicca."},
+        {"type": "file", "location": "skills/_shared/lib/ledger.mjs:43-49", "description": "FAIL — the settle line written by run.sh:139 lacks `tx` and `status:\"0x1\"`, so isProfitable() returns false on every gig wake even for a real external inflow. The loop FINDS the line by wake but never classifies it profitable. FIND-001 (the core round-2 defect) persists. No test covers the profitable-settle path (FIND-002)."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 2,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": [],
+    "round2FixesConfirmedReal": [
+      "FIND-002 (single shared lib/ai-hint.mjs imported by detect+bid; no local copy)",
+      "FIND-003 (laborxJobs deleted; detect spreads only dw; docstring accurate)",
+      "FIND-004 (shouldRecordBid records only on r.ok; bid.test asserts it)",
+      "FIND-005 (record-earn path uses ${ANICCA_HOME:-$HOME/anicca})",
+      "FIND-001 PARTIAL (--wake passed + line written to the loop's EARN_LEDGER with wake=$WAKE; path+key correlation now correct)"
+    ],
+    "round2FixesNotReal": [
+      "FIND-001 INCOMPLETE — settle line omits tx+status:0x1, so isProfitable rejects it; real earns are found but never classified profitable (the exact defect FIND-001 named still stands)",
+      "FIND-006 PARTIAL — settle test's 'oracle invoked' assertion /record-earn|settle:/ is tautological (settle: always printed)"
+    ]
+  }
+}

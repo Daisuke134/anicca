@@ -1,0 +1,15 @@
+{
+  "findingId": "FIND-010",
+  "dimension": "verification_readiness",
+  "category": "test_coverage",
+  "severity": "high",
+  "description": "The oracle (test-record-earn.sh) cannot certify the core invariant ('un-fakeable in production') because it tests the wrong paths and actively blesses a fraud path. (1) Case 7 (lines 44-47) runs the FIRST run with FOUNDER_USDC_NOW=5 against a fresh FOUNDER_DIR and ASSERTS r1==0 (success) — i.e. the suite encodes 'recording a pre-existing balance on first run is correct', the exact FIND-007 fabrication, so a fix for FIND-007 would make this test fail. (2) There is NO test for the FOUNDER_DIR production override (FIND-008): no case proves that in prod the wallet/baseline/ledger cannot be redirected via FOUNDER_DIR to an attacker dir or to runtime/dashboard. (3) The only true-prod case (case 6, lines 38-41) depends on a freshly random address having ~0 USDC on Base mainnet — a NON-DETERMINISTIC external-balance assertion that also requires live network; it can flake (network down -> usdcBalance throws -> die -> rc!=0, so the test passes for the WRONG reason, masking that the seam-ignore logic was never actually exercised). (4) NO corrupt-baseline case (FIND-009). (5) NO symlinked-state-dir INV-3 case. The suite therefore PASSES while the canonical first-run fraud, the FOUNDER_DIR override, and baseline corruption all remain.",
+  "evidence": {
+    "filePath": "skills/self/founder-loop/test-record-earn.sh",
+    "lineRange": "37-47",
+    "snippet": "OUT=\"$(FOUNDER_DIR=\\\"$T\\\" FOUNDER_USDC_NOW=999999 node \\\"$M\\\" 2>&1)\"; rc=$?\nok ... \"PROD: seam ignored, ~0 addr -> fail-closed\"\n...\nFOUNDER_TEST=1 FOUNDER_DIR=\\\"$T\\\" FOUNDER_USDC_NOW=5 node \\\"$M\\\" >/dev/null 2>&1; r1=$?\n... [ $r1 -eq 0 ] ... \"baseline advanced 0->5\"",
+    "note": "case 6 relies on a live RPC + an external balance; case 7 asserts first-run records earnings"
+  },
+  "fix": "Replace the live-RPC prod case with a fixture: gate a local RPC server behind FOUNDER_TEST=1 via BASE_RPC_URL, and have the PROD-mode case point at a fixture that returns a known balance, asserting the seam value never appears AND the fixture balance drives the result deterministically. Add: (a) first-run-with-nonzero-balance -> NO ledger row, baseline initialized (locks FIND-007); (b) FOUNDER_DIR override in prod (no FOUNDER_TEST) pointed at a temp dir with a whale wallet.json + baseline 0 -> assert it CANNOT be redirected (locks FIND-008); (c) FOUNDER_DIR=runtime/dashboard prod -> rejected; (d) corrupt/empty/NaN baseline file -> rc!=0, no write (locks FIND-009); (e) symlinked state dir escaping FOUNDER_DIR -> rejected.",
+  "routeToPhase": "2a"
+}

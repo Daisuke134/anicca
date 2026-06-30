@@ -1,0 +1,19 @@
+{
+  "findingId": "FIND-R4-001",
+  "dimension": "spec_fidelity",
+  "category": "purity_boundary",
+  "severity": "high",
+  "description": "The spec invariant table (spec:line 248) claims 'DETERMINISTIC-BOOKKEEPING | pass_count / do_improve / max_apply / skip_floor all computed by passprep.py, never by LLM'. This overstates the guarantee. passprep.py correctly COMPUTES do_improve (line 124: `do_improve = (pass_count % cadence == 0)`) and prints it to stdout. However, do_improve is NOT written to strategy.json (atomic_write at passprep.py:120 serialises the strategy dict, which does not have do_improve added to it). The cron prompt (gig-cli.sh:21) instructs the LLM to 'Parse PREP_JSON to read: pass_count, do_improve (true/false)' but specifies no mechanical parse command (no jq, no python3 -c, no variable assignment). The LLM parsing of passprep.py stdout is non-mechanical: it is a natural-language instruction to execute a bash command and extract fields from the result. If the LLM skips or misparses PREP_JSON and instead re-derives do_improve from strategy.json (which contains the updated pass_count and improve_cadence_passes), the re-derived result would be mathematically identical — BUT the cron prompt explicitly says 'do NOT compute cadence yourself', making re-derivation a prompt violation. The spec's invariant has no structural enforcement: there is no test that verifies the LLM reads do_improve from PREP_JSON rather than re-deriving it, and there is no test that verifies the B4/B5 improve gate fires or suppresses correctly based on passprep.py's do_improve output.",
+  "evidence": {
+    "filePath": "skills/earn/gig/passprep.py",
+    "lineRange": "119-131",
+    "snippet": "# atomic_write is at line 120 — BEFORE do_improve is computed at line 124.\n# do_improve is added to `result` (line 127) but not to `strategy` before the write.\n# strategy.json therefore does NOT contain do_improve.\natomic_write(STRATEGY_FILE, strategy)   # line 120 — strategy has pass_count, NOT do_improve\ncadence = max(1, int(strategy.get('improve_cadence_passes') or 4))\ndo_improve = (pass_count % cadence == 0) # line 124 — computed AFTER the write\nresult = { 'pass_count': pass_count, 'do_improve': do_improve, ... }  # line 126-132 — stdout only"
+  },
+  "crossRef": [
+    "docs/superpowers/specs/2026-06-30-gig-self-improving-multiapply-loop-design.md:248 (invariant table DETERMINISTIC-BOOKKEEPING)",
+    "skills/earn/gig/gig-cli.sh:21 (STARTUP prompt: 'Parse PREP_JSON to read: do_improve')",
+    "skills/earn/gig/__tests__/passprep.test.mjs:121-139 (tests verify passprep.py emits correct do_improve, but NO test verifies the LLM reads and acts on it)"
+  ],
+  "fix": "Either (a) add do_improve to strategy.json so a fallback read path exists and add a test that asserts strategy.json does NOT contain stale do_improve across runs — verifying the separation is clean; or (b) tighten the cron prompt to include an explicit mechanical parse: e.g. `DO_IMPROVE=$(echo \"$PREP_JSON\" | python3 -c \"import json,sys; print(json.loads(sys.stdin.read())['do_improve'])\")` and add a test that greps gig-cli.sh for a concrete parse command pattern. The spec invariant text should also be qualified: 'do_improve is computed by passprep.py; the LLM reads it from passprep.py stdout (non-mechanical).'",
+  "routeToPhase": "2b"
+}

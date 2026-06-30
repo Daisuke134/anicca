@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "structural_integrity",
+  "category": "spec_gap",
+  "severity": "major",
+  "description": "There is no daily-loop wiring — the slot is a run.sh nobody fires. The spec (line 35-36, TODO-3) calls for 'bounty-cli.sh (daily core: discover→gate→attempt + track) + healthcheck launchd', modeled on clip/affiliate. The bounty directory contains ONLY run.sh + state/. Contrast skills/earn/clip/ which ships clip-cli.sh, monitor.sh, clip-healthcheck.sh, producer.sh, and launchd/ai.anicca.clip-core-healthcheck.plist + ai.anicca.clip-producer.plist. With no cli core, no cron, and no healthcheck, the bounty loop does not run every day; it must be invoked by hand. A loop that is not scheduled cannot 'earn every day' as the spec claims.",
+  "evidence": {
+    "filePath": "skills/earn/bounty",
+    "lineRange": "directory listing",
+    "snippet": "skills/earn/bounty/ = { run.sh, state/bounties.json, state/gated.json } only — no bounty-cli.sh, no monitor.sh, no healthcheck, no launchd plist (cf. skills/earn/clip/ which has all of these)"
+  },
+  "routeToPhase": "2b"
+}

@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-R2-004",
+  "dimension": "consistency_honesty",
+  "category": "requirement_mismatch",
+  "severity": "medium",
+  "description": "FIND-006's fix only half-landed: applied_total is now consistently status==applied across run/monitor/auditor (verified: run.sh:33, monitor.sh:29, auditor.sh:31), but the auditor still emits a MISLABELED delta. The output key is `applied_delta_since_last_audit` (auditor.sh:46) yet its value is computed from `actions_total` = ALL rows regardless of status (auditor.sh:30 all_rows, :39 `applied_delta=len(all_rows)-(prev_actions or 0)`). So an audit row can show applied_total=5 while applied_delta_since_last_audit=3 even when ZERO new 'applied' rows were added (e.g. 3 reply/deliver rows). A field named 'applied_delta' that actually reports the delta of all actions is exactly the divergent-semantics class FIND-006 set out to remove — now relocated from applied_total to the delta field. Additionally, on the first audit run after this code change the previous audit row lacks the new `actions_total` key, so `prev[-1].get(\"actions_total\")` returns None -> `(prev_actions or 0)` -> 0 -> applied_delta spuriously equals the full row count (e.g. 10), with progressing=true (auditor.sh:48), falsely reporting a 10-action burst in one interval. It self-corrects after one row, but the audit ledger — whose sole purpose is honest reporting — emits a wrong number.",
+  "evidence": {
+    "filePath": "skills/earn/gig/auditor.sh",
+    "lineRange": "37-46",
+    "snippet": "prev=rows(\"audit.jsonl\")\nprev_actions=prev[-1].get(\"actions_total\") if prev else 0\napplied_delta=len(all_rows)-(prev_actions or 0)\n...\n\"applied_total\":len(applied),\"actions_total\":len(all_rows),\"applied_delta_since_last_audit\":applied_delta,"
+  },
+  "fix": "Rename the key to `actions_delta_since_last_audit` (it tracks actions_total, by design), OR compute a true applied delta from len(applied) vs a stored prev applied_total. Either way the key name must match what it counts. The progressing signal can keep using the actions delta.",
+  "routeToPhase": "2b"
+}

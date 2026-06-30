@@ -1,0 +1,161 @@
+{
+  "sprintNumber": 4,
+  "feature": "gig-earn-core",
+  "reviewType": "loop-round-2",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-06-30T00:00:00Z",
+  "iteration": 2,
+
+  "round1FixVerification": {
+    "FIND-001_pass_count_not_deterministic": "VERIFIED FIXED. passprep.py:116 increments pass_count deterministically (int(strategy.get('pass_count') or 0) + 1). passprep.py:120 writes it back atomically (tempfile.mkstemp + os.replace in atomic_write). passprep.py:124 computes do_improve deterministically. gig-cli.sh:21 STARTUP instructs the LLM 'do NOT increment pass_count yourself, do NOT compute cadence yourself'. Residual concern logged as FIND-R4-001 (do_improve is in stdout only, not strategy.json; LLM parsing is not mechanical).",
+    "FIND-002_strategy_json_corruption": "VERIFIED FIXED. passprep.py:83-84 catches json.JSONDecodeError/OSError/ValueError on corrupt file. Lines 87-93 restore from strategy.default.json via shutil.copy2 (non-atomic copy, but followed immediately by atomic_write in main() at line 120). Lines 96-99 use hardcoded FALLBACK dict if default is also missing. The shutil.copy2 non-atomicity is a minor risk: if interrupted between copy and the main() atomic_write, the partial file is detected as corrupt on the next pass and the repair re-runs. Self-healing.",
+    "FIND-003_peer_issues_only_during_improve": "VERIFIED FIXED. gig-cli.sh:21 STARTUP positions PRE-STEP BEFORE B1 and outside the 'IF do_improve is true' block. The PRE-STEP instruction explicitly says '(every pass): run: gh issue list...'",
+    "FIND-004_tautological_dedup_test": "VERIFIED FIXED. self-improve.test.mjs:131-135 reads the actual gig-cli.sh file and asserts /shared-lessons\\.jsonl/.test(code) AND /requestId.*outcome|outcome.*requestId/i.test(code). These are real assertions on production text.",
+    "FIND-005_skip_categories_floor": "VERIFIED FIXED. passprep.py:109-113: `if priority and all(c in skip for c in priority): strategy['skip_categories'] = []`. Correct: handles the case where every priority_category is in skip_categories. passprep.test.mjs:76-97 exercises and verifies this path including the disk write.",
+    "FIND-006_spec_prompt_step_order_mismatch": "VERIFIED FIXED. spec lines 165-218 (Pass structure section) now matches cron prompt order exactly: STEP0 → PRE-STEP → B1 → B2 → B3 → EARNED → (if do_improve) B4+B5 → FINALLY. Residual issue: B4 narrative (line 62) still says 'all rows' for lessons.jsonl, contradicting the pass structure (line 203) which says 'tail -n 50'. Logged as FIND-R4-002.",
+    "FIND-007_earnings_write_gate": "ACCEPTED AND VERIFIED. Documented in spec lines 220-229 as intentional. Deterministic read guards verified: run.sh:38, monitor.sh:36, auditor.sh:36 — all require status in {検収,支払,検収完了,completed,paid} AND non-empty evidence AND jnum(jpy)>0.",
+    "FIND-008_lessons_unbounded": "VERIFIED FIXED. gig-cli.sh:21 STARTUP contains '(a) run: tail -n 50 ~/gig/lessons.jsonl to read the last 50 lessons (not the whole file, FIND-008)'. B4 narrative inconsistency logged as FIND-R4-002.",
+    "FIND-009_graceful_gh_regex": "VERIFIED FIXED. self-improve.test.mjs:222-225 regex is /gh fail|log a warning and continue|never abort/i — no 2>/dev/null escape. gig-cli.sh:21 contains both 'log a warning and continue' and 'gh failure must never abort the pass' (two instances: PRE-STEP and B5)."
+  },
+
+  "findR3001Verification": {
+    "FIND-R3-001_no_human_test_missing_auditor_run": "VERIFIED FIXED. no-human-loop.test.mjs:12 now reads: const FILES = ['gig-cli.sh', 'monitor.sh', 'gig-healthcheck.sh', 'auditor.sh', 'run.sh']. Both auditor.sh and run.sh are scanned. The planted-violation test at lines 41-44 still verifies the scanner is not comment-blinded."
+  },
+
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-R4-001", "FIND-R4-002"],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/earn/gig/passprep.py:119-131",
+          "description": "do_improve computed AFTER atomic_write (line 120); do_improve is in stdout only, NOT in strategy.json. The spec invariant 'DETERMINISTIC-BOOKKEEPING' at line 248 claims this is fully deterministic, but the LLM parsing of stdout is non-mechanical."
+        },
+        {
+          "type": "file",
+          "location": "docs/superpowers/specs/2026-06-30-gig-self-improving-multiapply-loop-design.md:62 vs 203",
+          "description": "B4 section (line 62) says 'Read ~/gig/lessons.jsonl (all rows)' but Pass structure (line 203) says 'tail -n 50 ~/gig/lessons.jsonl (last 50 lessons only)'. Two contradictory instructions in the same spec document."
+        }
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-R4-003"],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/earn/gig/passprep.py:96-99",
+          "description": "Last-resort FALLBACK dict code path (triggered when strategy.default.json is also missing) has no test coverage. passprep.test.mjs always resolves SKILL_DIR to the real skill directory which has strategy.default.json, so shutil.copy2 path executes in all tests, never the FALLBACK dict."
+        },
+        {
+          "type": "file",
+          "location": "skills/earn/gig/__tests__/passprep.test.mjs:30-51",
+          "description": "Test 1 correctly creates an isolated temp HOME with no gig/ dir. SKILL_DIR resolves to real script location. shutil.copy2 finds the real strategy.default.json and succeeds. The FALLBACK dict at passprep.py:23-50 is never reached."
+        }
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/earn/gig/passprep.py:53-68",
+          "description": "atomic_write: tempfile.mkstemp in same dir as target (same filesystem, no cross-device risk), os.replace (POSIX atomic), exception cleanup of tmp file on failure."
+        },
+        {
+          "type": "file",
+          "location": "skills/earn/gig/passprep.py:109-113",
+          "description": "Skip-floor: `if priority and all(c in skip for c in priority): strategy['skip_categories'] = []` — correct superset check with empty-priority guard."
+        },
+        {
+          "type": "file",
+          "location": "skills/earn/gig/passprep.py:116-124",
+          "description": "pass_count: `int(strategy.get('pass_count') or 0) + 1` — handles None/missing/falsy without crashing. do_improve: `pass_count % cadence == 0` — correct modulo gate."
+        },
+        {
+          "type": "file",
+          "location": "skills/earn/gig/monitor.sh:36, skills/earn/gig/auditor.sh:36, skills/earn/gig/run.sh:38",
+          "description": "Deterministic earnings read guards: SETTLED set + non-empty evidence + jnum(jpy)>0. jnum() catches non-numeric/None values with try/except. All three files consistent."
+        },
+        {
+          "type": "file",
+          "location": "skills/earn/gig/passprep.py:137-148",
+          "description": "Crash-safe outer try/except in main(): emits valid JSON with safe defaults + do_improve=False + _error field. Never raises to caller."
+        }
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/earn/gig/passprep.py:1-152",
+          "description": "Pure stdlib, no external deps. load_strategy/atomic_write/main separation is clean. Repair path is self-healing (partial shutil.copy2 detected as corrupt on next pass, repaired again). Functions are focused and <=30 lines each."
+        },
+        {
+          "type": "file",
+          "location": "skills/earn/gig/gig-cli.sh:21",
+          "description": "STARTUP contains all 9 required behavioral markers: STEP0/passprep, PRE-STEP every pass, NURTURE ALL, APPLY BROADLY, LEARN, EARNED CHECK, IMPROVE STEP, BOT-TO-BOT SHARE, FINALLY. No-fake-earn guard ('do NOT claim USDC / do NOT call record-earn') present."
+        },
+        {
+          "type": "file",
+          "location": "skills/earn/gig/__tests__/no-human-loop.test.mjs:12",
+          "description": "FILES array: ['gig-cli.sh', 'monitor.sh', 'gig-healthcheck.sh', 'auditor.sh', 'run.sh'] — all 5 live loop files covered. FIND-R3-001 is fixed."
+        }
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-R4-004", "FIND-R4-003"],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/earn/gig/__tests__/self-improve.test.mjs:92-177",
+          "description": "validateLessonRow() and isValidEarnRow() are test-local helpers. 12 tests using them validate the helpers' own logic, not the production cron instruction. The read-side guards in monitor/auditor/run partially mitigate at runtime."
+        },
+        {
+          "type": "file",
+          "location": "skills/earn/gig/__tests__/passprep.test.mjs:1-159",
+          "description": "6 tests exercise real passprep.py against temp HOME dirs. All 6 pass through the shutil.copy2 repair path (strategy.default.json present in SKILL_DIR). The FALLBACK dict code path (passprep.py:96-99) is not reached by any test."
+        },
+        {
+          "type": "positive",
+          "location": "skills/earn/gig/__tests__/passprep.test.mjs:99-117",
+          "description": "Tests 4 and 5 (pass_count increment and do_improve true/false) correctly exercise the deterministic gate by setting pass_count in the temp HOME strategy.json and verifying output. These are genuine behavioral tests using the real script."
+        },
+        {
+          "type": "positive",
+          "location": "skills/earn/gig/__tests__/self-improve.test.mjs:131-135",
+          "description": "FIND-004 dedup fix verified: greps actual gig-cli.sh text for /shared-lessons\\.jsonl/ and /requestId.*outcome/. Real assertion on production code."
+        }
+      ]
+    }
+  ],
+
+  "convergenceSignals": {
+    "findingCount": 4,
+    "round1FixesVerified": [
+      "FIND-001", "FIND-002", "FIND-003", "FIND-004",
+      "FIND-005", "FIND-006", "FIND-007", "FIND-008", "FIND-009"
+    ],
+    "findR3001Fixed": true,
+    "newFindings": ["FIND-R4-001", "FIND-R4-002", "FIND-R4-003", "FIND-R4-004"],
+    "newFindingSeverities": {
+      "FIND-R4-001": "high",
+      "FIND-R4-002": "medium",
+      "FIND-R4-003": "low",
+      "FIND-R4-004": "medium"
+    },
+    "blockerCount": 3,
+    "note": "FIND-R4-001 and FIND-R4-002 block on spec_fidelity. FIND-R4-004 blocks on verification_readiness. FIND-R4-003 is low-severity test_coverage gap. All Round-1 findings are genuinely fixed. The residual defects are real gaps in this refactor, not pre-existing issues.",
+    "duplicateFindings": []
+  }
+}

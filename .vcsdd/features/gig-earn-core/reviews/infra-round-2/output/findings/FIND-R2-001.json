@@ -1,0 +1,15 @@
+{
+  "findingId": "FIND-R2-001",
+  "dimension": "auditor_honesty",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "REGRESSION introduced by the FIND-001/002 fix. The round-1 fix adds a heartbeat SEED on every core (re)start: gig-cli.sh:36 `mkdir -p \"$HOME/gig\" && touch \"$HOME/gig/.last-pass\"`. The healthcheck (gig-healthcheck.sh:14) restarts the core via `gig-cli.sh --restart`, which ALWAYS re-runs line 36 and refreshes the heartbeat. The independent auditor's FIRING verdict (the spec's #1 proof, 2026-06-30-gig-earn-core-recipe-design.md:8-11) is derived SOLELY from heartbeat freshness (auditor.sh:35 hb_age, :44 `verdict=\"FIRING\"`). Therefore the self-heal path itself can forge a fresh heartbeat with no real autonomous pass. Concrete failure mode (the author's own documented quota scenario, spec line 17 '96% weekly cap'): if claude cannot run (quota/auth), the detached tmux command exits immediately so the session dies; the launchd healthcheck (every 300s) then restarts it every ~5 min, each restart executing gig-cli.sh:36 and re-seeding the heartbeat. The auditor (launchd :45) reads heartbeat age <5min and writes verdict=FIRING while the core has completed ZERO real gig passes. The 'independent proof that the loop self-runs' is thus produced by the restart mechanism, not by work. Pre-fix (round 1, no seed) the heartbeat would have aged out and the auditor honestly reported STALE/DEAD; the fix decoupled 'heartbeat fresh' from 'a real pass happened'.",
+  "evidence": {
+    "filePath": "skills/earn/gig/gig-cli.sh",
+    "lineRange": "34-36",
+    "snippet": "tmux -S \"$SOCK\" new-session -d -s \"$SESSION\" -c \"$HOME\" \"$CLAUDE\" ... -- \"$STARTUP\"\nmkdir -p \"$HOME/gig\" && touch \"$HOME/gig/.last-pass\"   # FIND-001/002: seed the heartbeat clock at startup"
+  },
+  "crossRef": ["skills/earn/gig/gig-healthcheck.sh:14", "skills/earn/gig/auditor.sh:35", "skills/earn/gig/auditor.sh:44"],
+  "fix": "Separate the liveness seed from the work heartbeat. Seed a distinct file (e.g. ~/gig/.last-start) at startup; let ONLY a completed cron pass touch ~/gig/.last-pass. The auditor's FIRING verdict must require a .last-pass that was NOT written by a restart. Alternatively require the auditor to also confirm applied.jsonl/actions_total advanced before emitting FIRING (heartbeat freshness alone must not yield FIRING).",
+  "routeToPhase": "2b"
+}

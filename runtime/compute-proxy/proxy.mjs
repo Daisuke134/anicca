@@ -1,7 +1,7 @@
 // Anicca compute self-pay proxy — OpenAI-compatible on :8402.
 // Every inference is paid in USDC via x402 from THIS Anicca's own wallet (no human key).
 // br.post settles the x402 payment and returns the OpenAI-shaped completion. Pass a concrete model
-// id (e.g. anthropic/claude-opus-4.8 for frontier). ClawRouter profile auto-routing (premium/auto)
+// id (e.g. anthropic/claude-sonnet-4-6 for frontier). ClawRouter profile auto-routing (premium/auto)
 // needs the full routing config and is wired separately; for now the loop pins a model id.
 import http from "http";
 import fs from "fs";
@@ -12,7 +12,7 @@ process.env.BASE_CHAIN_WALLET_KEY = pk.startsWith("0x") ? pk : "0x" + pk;
 const br = new BlockrunClient();
 const PORT = process.env.COMPUTE_PROXY_PORT || 8402;
 // Strip any ClawRouter profile prefix/word the caller might send; map to a concrete frontier id.
-const FRONTIER = process.env.ANICCA_FRONTIER_MODEL || "anthropic/claude-opus-4.8";
+const FRONTIER = process.env.ANICCA_FRONTIER_MODEL || "anthropic/claude-sonnet-4-6";
 const PROFILES = new Set(["auto", "premium", "eco", "free", "blockrun/auto", "blockrun/premium", "blockrun/eco", "blockrun/free"]);
 const server = http.createServer((req, res) => {
   if (req.method === "POST" && req.url.includes("/chat/completions")) {

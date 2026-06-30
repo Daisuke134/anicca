@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "reality",
+  "category": "test_quality",
+  "severity": "minor",
+  "description": "No single NO-MOCK E2E exercises a PROFITABLE gig settle through the REAL loop. The composition is sound on paper — settle.test.mjs:23-33 proves isProfitable(line)===true for a settle-write line, and earn-slot-e2e.test.mjs proves the loop delivers EARN_LEDGER+WAKE_ID to a per-method earn slot and correlates by wake — but the gap iteration-3 FIND-002 named (the e2e enshrines an isProfitable-INCOMPATIBLE ledger shape) is unchanged: the probe stub skills/earn/_probe/run.sh:7 still writes `{wake,source,strategy,earn_usdc:0.01,cost_usdc:0}` with NO tx and NO status, and earn-slot-e2e.test.mjs:71 asserts only `el.earn_usdc===0.01`, never `profitable===true` and never classifyEarnResult(...).profitable. Furthermore the isProfitable-true proof in settle.test.mjs:25 is reached via the test-gated FOUNDER_TEST/GIG_SETTLE_TX seam (the injected tx), NOT via the real representativeExternalTx path, so the assembled chain 'real external inflow -> real on-chain tx -> profitable-classified wake' is never demonstrated against the actual on-chain extraction code. This is MINOR because the constituent guarantees are individually tested and a fully-real E2E requires a live external USDC inflow + a real Transfer log (not reproducible in CI); but the loop-integration test currently proves wiring against a shape the production gate rejects. SUGGESTED: have the probe/e2e (or a dedicated test) inject a representative tx via the FOUNDER_TEST seam through the real gig run.sh settle and assert the resulting wake ledger line classifies profitable, so at least one test ties the real run.sh -> settle-write -> classifyEarnResult chain to profitable===true.",
+  "evidence": {
+    "filePath": "runtime/loop/__tests__/earn-slot-e2e.test.mjs",
+    "lineRange": "67-71",
+    "snippet": "const el = earnLines[0]; assert.equal(el.source,'_probe'); ... assert.equal(el.earn_usdc,0.01); // never asserts profitable===true; _probe stub omits tx/status (run.sh:7) so isProfitable(el) would be false"
+  },
+  "routeToPhase": "2b"
+}

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "reality",
+  "category": "spec_gap",
+  "severity": "minor",
+  "description": "laborx is removed from the OFFERED rails (good), but dead/contradictory laborx remnants still linger and form a pretended-live landmine. (1) detect.mjs defines a fully-written laborxJobs() function (detect.mjs:47-63) that is NEVER called — detect() builds `const jobs = [...dw];` (detect.mjs:70), so laborxJobs is dead code. Project coding-style mandates ruthless deletion of unused code. (2) The detect.mjs module docstring still claims 'Only rails we have actually onboarded + E2E-proven are polled (dealwork API, LaborX public board)' (detect.mjs:4-7) — this is stale and contradicts the executable behavior, i.e. documentation still pretends LaborX is polled live when it is not. A future edit re-adding `...lx` to the jobs array would silently resurrect a pretended-live rail with no apply/deliver code (the exact FIND-003 violation). TOP FIX: delete laborxJobs() and correct the docstring to state dealwork is the only polled rail.",
+  "evidence": {
+    "filePath": "skills/earn/gig/lib/detect.mjs",
+    "lineRange": "47-70",
+    "snippet": "async function laborxJobs() { /* ...defined... */ }\n...\nconst dw = await dealworkJobs(creds);\n// laborx detection re-enabled when its apply/deliver code lands\nconst jobs = [...dw];   // laborxJobs() never called"
+  },
+  "routeToPhase": "2c"
+}

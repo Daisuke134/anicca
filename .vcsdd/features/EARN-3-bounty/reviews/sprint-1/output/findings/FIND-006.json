@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "implementation_correctness",
+  "category": "requirement_mismatch",
+  "severity": "minor",
+  "description": "The hard >=50 star cut (run.sh:102, `if int(r.get('stargazerCount',0)) < 50: continue`) is a proxy for 'real funded project' that false-negatives real small-org bounties. Algora is used by early-stage startups and solo maintainers who post genuine $100-500 USD bounties on repos with well under 50 stars. Star count is not correlated with whether a Stripe-backed reward is attached. The correct signal — does algora-pbc actually report a USD reward on the issue — is never queried. This rule will discard a class of legitimately payable bounties.",
+  "evidence": {
+    "filePath": "skills/earn/bounty/run.sh",
+    "lineRange": "99-102",
+    "snippet": "rj=sh([...repo view...stargazerCount...]); if int(r.get(\"stargazerCount\",0)) < 50: continue"
+  },
+  "routeToPhase": "2b"
+}

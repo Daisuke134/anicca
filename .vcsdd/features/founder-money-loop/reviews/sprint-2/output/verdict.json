@@ -1,0 +1,60 @@
+{
+  "sprintNumber": 2,
+  "feature": "founder-money-loop",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-06-27T00:00:00Z",
+  "iteration": 2,
+  "reviewContext": {
+    "reviewType": "implementation",
+    "coreQuestion": "Can the earner write a USDC number it did not really receive on-chain?",
+    "answer": "YES — via the default first-run baseline=0 path (records pre-existing/seed balance as earned) and via the ungated production FOUNDER_DIR override (points wallet.json + baseline + ledger at attacker-controlled files). The earner CAN write a fabricated dollar."
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-007", "FIND-008"],
+      "evidence": [
+        {"type": "file", "location": "skills/self/founder-loop/record-earn.mjs:53", "description": "FIND-001 confirmed fixed: FOUNDER_USDC_NOW seam is TEST-gated; prod uses TRUSTED_RPC"},
+        {"type": "file", "location": "skills/self/founder-loop/record-earn.mjs:54", "description": "FIND-005 confirmed fixed: BASE_RPC_URL only honored under TEST; prod hardcodes mainnet.base.org"}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-007", "FIND-009"],
+      "evidence": []
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-008", "FIND-009"],
+      "evidence": []
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "FAIL",
+      "findings": ["FIND-008"],
+      "evidence": []
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-010"],
+      "evidence": []
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 4,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": [],
+    "sprint1FixStatus": {
+      "FIND-001-seam": "FIXED (record-earn.mjs:53 TEST-gated; test case 6 proves prod ignores seam)",
+      "FIND-005-rpc": "FIXED with caveat (record-earn.mjs:54 TEST-gated; residual single-RPC trust in TRUSTED_RPC)",
+      "FIND-003-wallet": "PARTIAL — wallet read from wallet.json in prod, but wallet.json lives under the always-overridable FOUNDER_DIR (see FIND-008); positive binding anchors to a movable target",
+      "FIND-004-ledger": "PARTIAL — allowlist startsWith(FOUNDER_DIR) holds for lexical traversal, but FOUNDER_DIR itself is attacker-controlled in prod so the anchor is circular (see FIND-008); symlinked state dir not resolved (path.resolve does not deref symlinks)",
+      "FIND-006-tests": "PARTIAL — added prod-seam-ignored (case 6) and baseline-no-double-count (case 7) cases, but case 7 BLESSES the first-run pre-existing-balance fraud (see FIND-007); no FOUNDER_DIR-override, no real-RPC-failure, no symlink, no corrupt-baseline case"
+    }
+  }
+}

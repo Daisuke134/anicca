@@ -1,0 +1,15 @@
+{
+  "findingId": "FIND-605",
+  "dimension": "structural_integrity",
+  "category": "test_quality",
+  "severity": "minor",
+  "title": "Test case 4 (mixed) does not assert rc=0; weak static TEST-gating check can be fooled by a comment merely mentioning TEST",
+  "description": "(1) The mixed case (test-record-earn.sh:44-45) asserts only that earn_usdc=5 but never checks rc -eq 0, unlike cases 1/2; a partial-failure exit that still wrote the row would pass. (2) The static seam-gating loop (test-record-earn.sh:17-20) does `grep process.env.$seam | grep -v TEST` — it passes as long as the literal substring 'TEST' appears anywhere on the matching line, so a future edit that reads an env unguarded but happens to share a line with a TEST comment would false-pass. The behavioral prod case (line 82-86) backstops only HOME, not the other seams. These are hygiene gaps, not active fabrication paths in the current code.",
+  "evidence": {
+    "filePath": "/Users/operator/anicca/skills/self/founder-loop/test-record-earn.sh",
+    "lineRange": "17-20",
+    "snippet": "bad=\"$(grep -n \"process\\.env\\.$seam\" <<<\"$src\" | grep -v \"TEST\" || true)\"; ok \"$([ -z \"$bad\" ] && echo 1 || echo 0)\" \"STATIC: $seam read is TEST-gated\""
+  },
+  "fix": "(1) Add `[ $rc -eq 0 ]` to the mixed-case assertion. (2) Tighten the static check to require the env read be syntactically inside a `TEST &&` / `TEST ?` guard (e.g. grep that the same line contains `TEST &&` or `TEST ?` immediately preceding the env read), or add a behavioral prod-mode assertion per seam (run with FOUNDER_TEST unset and the seam set, assert it is ignored) the way case 12 does for HOME.",
+  "routeToPhase": "2b"
+}

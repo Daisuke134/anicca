@@ -1,0 +1,15 @@
+{
+  "findingId": "FIND-701",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "minor",
+  "title": "A log that PASSES the address/topic0/to filter but carries malformed `data` (e.g. data=\"0x\") is never tested; parseRawLogs would throw on BigInt(\"0x\") and fail-closed, but FIND-604's malformed-data case was never actually exercised",
+  "description": "parseRawLogs runs .filter() BEFORE .map() (record-earn.mjs:82-85). Test 15 (test-record-earn.sh:107-111) feeds malformed logs (wrong address/to/topic0) that are all DROPPED by the filter, so the .map() body — including Number(BigInt(l.data))/1e6 — never executes on them. There is NO test for a log that survives the filter (correct USDC address, Transfer topic0, to==founder) but whose `data` is malformed (e.g. \"0x\", missing, or odd-length). On the real path such a log reaches .map(), BigInt(\"0x\") throws, externalInflow rejects, and line 119 .catch(die) fail-closes — which is the correct behavior, but it is asserted nowhere. FIND-604 fix item (3) explicitly asked for 'a malformed topic/short data asserting fail-closed (BigInt(\"0x\") throws -> die)'; the applied tests do not cover the filter-passing variant. Not an integrity/fabrication path (fail-closed), but the only path that actually reaches the BigInt decoder with bad data is untested.",
+  "evidence": {
+    "filePath": "/Users/operator/anicca/skills/self/founder-loop/record-earn.mjs",
+    "lineRange": "82-85",
+    "snippet": ".filter((l) => l && String(l.address || \"\").toLowerCase() === USDC.toLowerCase())\n.filter((l) => Array.isArray(l.topics) && l.topics.length >= 3 && String(l.topics[0]).toLowerCase() === TRANSFER_TOPIC && String(l.topics[2]).toLowerCase().endsWith(wlow))\n.map((l) => ({ from: \"0x\" + String(l.topics[1]).slice(26), value: Number(BigInt(l.data)) / 1e6 }));"
+  },
+  "fix": "Add a RAW test feeding a single log with correct address(USDC)/topic0(Transfer)/topics[2]==padded founder but data=\"0x\" (or omitted), and assert rc!=0 AND no ledger row (fail-closed). This exercises the BigInt decoder on the only input that reaches it with bad data.",
+  "routeToPhase": "2b"
+}

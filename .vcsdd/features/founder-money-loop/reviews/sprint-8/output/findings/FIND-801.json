@@ -1,0 +1,16 @@
+{
+  "findingId": "FIND-801",
+  "dimension": "implementation_correctness",
+  "category": "test_coverage",
+  "severity": "advisory",
+  "blocking": false,
+  "title": "MAX_SPAN cap is correct for integrity but introduces a LIVENESS lag: if the loop wakes less often than the cap covers, the cursor can permanently trail real income (under-count, never over-count)",
+  "description": "FIND-702 was correctly closed for INTEGRITY by capping the scan: MAX_SPAN=9000 (record-earn.mjs:121), to=min(now, cursor+MAX_SPAN) (122), and the cursor is advanced ONLY to `to` (125). This guarantees a single eth_getLogs never exceeds the provider range limit and the cursor never jumps past unscanned blocks. The side effect is a liveness gap: Base produces ~43,200 blocks/day (~2s/block), so if a wake processes only 9000 blocks and `now` advances by more than 9000 between wakes (i.e. the loop runs less often than roughly once per ~5 hours), the cursor falls further behind every run and never catches up — genuinely earned external USDC in the un-scanned tail is recorded late or, if `now` keeps outrunning the cap, effectively never. This is strictly an UNDER-count / monotonic / fail-safe behavior: it can NEVER fabricate or inflate a USDC number, so it does NOT fail the core integrity question or any review dimension. It is recorded as a non-blocking advisory only.",
+  "evidence": {
+    "filePath": "/Users/operator/anicca/skills/self/founder-loop/record-earn.mjs",
+    "lineRange": "119-125",
+    "snippet": "const MAX_SPAN = 9000;\nconst to = Math.min(now, cursor + MAX_SPAN);\nconst earned = await externalInflow(cursor + 1, to).catch((e) => die(\"getLogs failed (fail-closed): \" + e.message));\nwriteCursorAtomic(to);"
+  },
+  "fix": "Future increment (not a sprint-8 blocker): within a single wake, loop eth_getLogs in <=MAX_SPAN windows from cursor+1 up to `now`, summing external inflow and advancing the cursor per completed window, so a wide gap after downtime still fully settles in one run while each individual getLogs stays under the provider cap. Add a test feeding now-cursor > MAX_SPAN and asserting all windows are summed and the cursor reaches `now`.",
+  "routeToPhase": "2b"
+}

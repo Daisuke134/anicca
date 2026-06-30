@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "structural_integrity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "The money chain breaks at 'attempt'. The spec defines EARN_MODE=discover|attempt|track (run.sh comment header even says 'discover|attempt|track', line 34 of spec) and steps ③ CLAIM /attempt and ④ FIX→PR as the core of the loop. But run.sh implements NO attempt mode: the dispatch at the bottom is `case \"$EARN_MODE\" in track) track ;; gate) gate ;; *) discover ;; esac`. There is no code path that posts `/attempt #N`, forks, writes a failing test, opens a PR, or appends to state/attempts.jsonl. run.sh:7 explicitly defers this to 'the brain's job' with zero automation, prompt, or handoff artifact. CONSEQUENCE: the loop can discover and gate a bounty but cannot autonomously act on it. The 'CAN IT EARN' answer is NO at this node — discover→gate dead-ends because nothing converts a gated survivor into a tracked PR.",
+  "evidence": {
+    "filePath": "skills/earn/bounty/run.sh",
+    "lineRange": "116",
+    "snippet": "case \"$EARN_MODE\" in track) track ;; gate) gate ;; *) discover ;; esac"
+  },
+  "routeToPhase": "2b"
+}

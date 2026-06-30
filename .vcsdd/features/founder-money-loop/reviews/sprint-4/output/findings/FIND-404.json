@@ -1,0 +1,15 @@
+{
+  "findingId": "FIND-404",
+  "dimension": "structural_integrity",
+  "category": "requirement_mismatch",
+  "severity": "minor",
+  "title": "FOUNDER_WALLET_EXPECTED hardcoded in source — silently drifts if gen-wallet is re-run",
+  "description": "Line 40 hardcodes FOUNDER_WALLET_EXPECTED = 0x810f6d61f7606deee2657d3083e150a222bc29c5. I confirmed it currently equals the address in /Users/operator/.anicca-founder/wallet.json, so the positive pin (line 46) works today. But the pin is duplicated state: if gen-wallet.sh is ever re-run (e.g. key rotation, re-provision on a new host), wallet.json.address changes while the hardcoded constant does not, and line 46 will permanently die('founder wallet must be the PINNED founder wallet') — the loop is bricked with no earnings, and the failure mode looks like an attack rather than config drift. Conversely, anyone reading the repo learns the exact pinned address, which is what enables the FIND-401 HOME-poisoning attack to plant a matching wallet.json. The pin should be the wallet's identity bound at provisioning time, not a source literal a reader can copy.",
+  "evidence": {
+    "filePath": "/Users/operator/anicca/skills/self/founder-loop/record-earn.mjs",
+    "lineRange": "40-46",
+    "snippet": "const FOUNDER_WALLET_EXPECTED = \"0x810f6d61f7606deee2657d3083e150a222bc29c5\"; // the generated founder wallet — positive identity pin (FIND-302)"
+  },
+  "fix": "Pin to a value bound at provisioning under the trusted (un-movable, see FIND-401) founder dir — e.g. a write-once pin file FOUNDER_DIR/.wallet-pin created by gen-wallet, compared against wallet.json.address; or accept wallet.json as canonical once FOUNDER_DIR itself is an env-independent trusted root. Either way remove the duplicated source literal so rotation does not brick the loop and the address is not a copy-paste recipe for the FIND-401 attack.",
+  "routeToPhase": "2b"
+}

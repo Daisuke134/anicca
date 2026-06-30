@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-009",
+  "dimension": "implementation_correctness",
+  "category": "security_surface",
+  "severity": "medium",
+  "description": "The baseline read on line 66 uses `Number(fs.readFileSync(BASELINE_FILE).trim()) || 0`, which silently coerces ANY non-positive or unparseable baseline file to 0. A corrupt/truncated baseline file (e.g. a partial write after a crash mid fs.writeFileSync on line 77, or an empty/whitespace file, or non-numeric garbage) yields Number(...) = NaN, and `NaN || 0` = 0. The validation on line 67 (`!Number.isFinite(baseline) || baseline < 0`) runs AFTER the `|| 0`, so it can never catch the corruption — baseline is already a finite 0. Result: the next run re-counts the ENTIRE current balance as a brand-new earning (double-count), writing a fabricated earn_usdc and then re-advancing the baseline so the bug self-heals silently after one fraudulent row. This is a real settled-but-not-earned fabrication path that requires only a crash/truncation, not an attacker. Line 77 also writes the baseline non-atomically (no temp-file + rename), making the truncation realistic.",
+  "evidence": {
+    "filePath": "skills/self/founder-loop/record-earn.mjs",
+    "lineRange": "66-67",
+    "snippet": "else { try { baseline = Number(fs.readFileSync(BASELINE_FILE, \"utf8\").trim()) || 0; } catch { baseline = 0; } }\nif (!Number.isFinite(baseline) || baseline < 0) die(\"bad baseline\");"
+  },
+  "fix": "Distinguish 'file absent' (first run, handle per FIND-007) from 'file present but unparseable' (corruption -> fail-closed). Read raw, then: if the file exists and its trimmed content does not parse to a finite >=0 number, die('corrupt baseline, refusing to count') instead of defaulting to 0. Remove the `|| 0` so a NaN cannot masquerade as a clean zero. Write the baseline atomically: fs.writeFileSync(tmp, String(current)); fs.renameSync(tmp, BASELINE_FILE).",
+  "routeToPhase": "2b"
+}

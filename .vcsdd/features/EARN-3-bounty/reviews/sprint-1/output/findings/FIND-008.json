@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-008",
+  "dimension": "verification_readiness",
+  "category": "test_coverage",
+  "severity": "major",
+  "description": "track() consumes state/attempts.jsonl, but nothing in the codebase ever writes that file, and there are zero tests for the slot. track() (run.sh:45-46) returns early with 'no attempts yet' when state/attempts.jsonl is absent — and it is absent (bounty/state/ holds only bounties.json + gated.json). Because there is no attempt mode (FIND-001), attempts.jsonl is never produced, so the track loop is permanently fed empty input — it is dead code until the missing attempt half is built. Additionally, unlike sibling slots (skills/earn/gig/__tests__, skills/earn/video/tests), the bounty slot ships NO __tests__ at all: no RED test for discover keep-prior, gate filtering, or track MERGED detection. The spec's own VCSDD checklist (spec line 43 'spec→RED→GREEN') was not followed — there is no failing-test-first evidence and no executable verification that any mode behaves as specified.",
+  "evidence": {
+    "filePath": "skills/earn/bounty/run.sh",
+    "lineRange": "45-46",
+    "snippet": "local af=\"$STATE/attempts.jsonl\" ...; [ -f \"$af\" ] || { emit \"track: no attempts yet (state/attempts.jsonl empty)\"; return; }"
+  },
+  "routeToPhase": "2b"
+}

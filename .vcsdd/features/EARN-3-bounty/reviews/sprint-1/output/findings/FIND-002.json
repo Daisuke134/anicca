@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "implementation_correctness",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "track() never records real USD. The spec's north star (spec line 12-14) and INV-7 require record-earn to count the real inflow on merge. But track() on a MERGED PR only increments a counter and emits a PROSE string: `emit \"track: $tracked PR(s) monitored, $merged merged. (on merge → record-earn when payout lands)\"`. record-earn.mjs is NEVER invoked. Compare the correct reference pattern in skills/earn/gig/archive/run.sh:124-137 (do_settle resolves $HOME/anicca/skills/self/founder-loop/record-earn.mjs and runs `node \"$re\" --task settle`, parsing 'VERIFIED +N USDC'). record-earn.mjs DOES exist on disk at skills/self/founder-loop/record-earn.mjs — bounty simply does not call it. CONSEQUENCE: even if a PR somehow merged and a payout landed, the loop would record $0. There is no code path in the bounty slot that records a real dollar.",
+  "evidence": {
+    "filePath": "skills/earn/bounty/run.sh",
+    "lineRange": "44-59",
+    "snippet": "case \"$st\" in MERGED*) merged=$((merged+1));; esac ... emit \"track: $tracked PR(s) monitored, $merged merged. (on merge → record-earn when payout lands)\""
+  },
+  "routeToPhase": "2b"
+}

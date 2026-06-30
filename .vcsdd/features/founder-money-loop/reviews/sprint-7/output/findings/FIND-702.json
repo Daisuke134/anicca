@@ -1,0 +1,15 @@
+{
+  "findingId": "FIND-702",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "minor",
+  "title": "eth_getLogs is called once over the full cursor+1..finalizedHead range with NO chunking and NO range-cap test; a wide gap after downtime relies entirely on mainnet.base.org erroring (fail-closed) rather than silently truncating (under-count)",
+  "description": "externalInflow issues a single eth_getLogs for the whole window (record-earn.mjs:96). mainnet.base.org caps eth_getLogs block spans; after downtime the finalizedHead can be far beyond the cursor. Two unhandled-by-test outcomes: (a) the RPC returns an ERROR -> caught at record-earn.mjs:119 .catch(die) -> fail-closed but the loop HALTS on every wide gap until manually narrowed (no chunking to make forward progress); (b) a silent-truncation RPC returns a PARTIAL array with no error -> sumExternal under-counts while the cursor still advances to finalizedHead (record-earn.mjs:120), PERMANENTLY skipping the un-returned blocks. (b) is under-count not over-count, so it is not a fabrication of a false number, but it silently loses genuine external income. FIND-604 fix asked to either chunk into <=cap windows or document+test the halt; neither was done — no test feeds a getLogs error or a wide range.",
+  "evidence": {
+    "filePath": "/Users/operator/anicca/skills/self/founder-loop/record-earn.mjs",
+    "lineRange": "94-97",
+    "snippet": "const toTopic = \"0x000000000000000000000000\" + wallet.slice(2).toLowerCase();\nres = await rpc(\"eth_getLogs\", [{ address: USDC, topics: [TRANSFER_TOPIC, null, toTopic], fromBlock: \"0x\" + fromBlock.toString(16), toBlock: \"0x\" + toBlock.toString(16) }]);"
+  },
+  "fix": "Chunk eth_getLogs into <=cap windows (loop fromBlock..toBlock in fixed steps, summing) so a wide gap after downtime still settles; advance the cursor only across windows that actually returned. Add a test feeding a getLogs error via BASE_RPC_URL mock asserting fail-closed, and (if chunking) a wide-range test asserting all chunks are summed. Until then, document the halt-on-wide-gap as intended.",
+  "routeToPhase": "2b"
+}

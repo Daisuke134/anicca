@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-R2-002",
+  "dimension": "self_heal_correctness",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "description": "The self-heal restart has NO backoff / circuit-breaker, so under a PERSISTENT failure it becomes a restart storm that reproduces the exact quota-burn the author documents as the project's main hazard (spec 2026-06-30-gig-earn-core-recipe-design.md:53-56 'I over-restarted the core ... burned the weekly quota to 96%'). gig-healthcheck.sh restarts on every DEAD detection (lines 16-17) with no counter and no escalating delay; launchd re-invokes it every 300s (ai.anicca.gig-core-healthcheck.plist:7 StartInterval 300). If claude cannot start (quota exhausted / auth lapsed), the detached tmux command (gig-cli.sh:34-35) exits and the session dies, so the next healthcheck sees DEAD and restarts again — spawning a fresh headless `claude` process every ~5 minutes indefinitely (~288/day), each consuming subscription budget and deepening the very quota exhaustion that caused the failure. The task's pass condition is 'self-heal ... WITHOUT a pathological loop'; an unbounded restart-spawn loop under persistent failure is that pathology.",
+  "evidence": {
+    "filePath": "skills/earn/gig/gig-healthcheck.sh",
+    "lineRange": "14-17",
+    "snippet": "restart(){ echo \"$(date '+%F %T') $1 -> restarting\" >> \"$LOG\"; bash \"$HOME/anicca/skills/earn/gig/gig-cli.sh\" --restart >> \"$LOG\" 2>&1 || true; }\n\nif ! tmux -S \"$SOCK\" has-session -t \"$SESSION\" 2>/dev/null; then\n  restart \"gig-core DEAD\""
+  },
+  "fix": "Add a restart counter + exponential backoff persisted to disk (e.g. ~/gig/.restart-count with a timestamp window), and stop restarting after N consecutive failures within a window, logging a single STALLED line instead of re-spawning. This directly prevents the documented quota-burn.",
+  "routeToPhase": "2b"
+}

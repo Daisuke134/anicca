@@ -1,0 +1,15 @@
+{
+  "findingId": "FIND-604",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "minor",
+  "title": "Missing cases: multiple distinct external payers, 0-value Transfer, malformed topic/data, and eth_getLogs block-range-cap truncation",
+  "description": "The 12-case oracle fences single-external/self/mixed/replay/prod but omits: (1) MULTIPLE distinct external payers in one window (assert all are summed, not just the first/last) — only single-payer sums are checked (test-record-earn.sh:34,44); (2) a 0-value Transfer (data='0x0') asserting 0 contribution and `Number(lg.value)||0` not turning NaN into a row; (3) a malformed topic/short data asserting fail-closed (BigInt('0x') throws -> die); (4) the eth_getLogs block-span CAP: mainnet.base.org limits eth_getLogs ranges, so when now-cursor exceeds the cap the real RPC returns an error -> caught at record-earn.mjs:101 -> die (fail-closed, acceptable) BUT this is never tested and the failure mode (the loop halts on a wide gap, e.g. after downtime) is undocumented; a silent-truncation RPC (returns a partial array, no error) would UNDER-count with the cursor still advancing to `now`, permanently skipping the un-returned blocks. No test asserts the wide-range behavior either way.",
+  "evidence": {
+    "filePath": "/Users/operator/anicca/skills/self/founder-loop/test-record-earn.sh",
+    "lineRange": "32-45",
+    "snippet": "FOUNDER_LOGS_JSON=\"[{\\\"from\\\":\\\"$EXT\\\",\\\"value\\\":5}]\" ... FOUNDER_LOGS_JSON=\"[{\\\"from\\\":\\\"$EXT\\\",\\\"value\\\":5},{\\\"from\\\":\\\"$A3\\\",\\\"value\\\":3},{\\\"from\\\":\\\"$FW\\\",\\\"value\\\":2}]\""
+  },
+  "fix": "Add cases for: two distinct external payers (sum = a+b); a 0-value external log (0 contribution, no row); a malformed log (fail-closed). For the range cap, either chunk eth_getLogs into <=cap windows in record-earn.mjs (loop fromBlock..toBlock in steps, summing) so a wide gap after downtime still settles, or document the halt-on-wide-gap as intended and add a test feeding a getLogs error to assert fail-closed. Guard against silent truncation by validating the returned log set covers the requested range where the RPC exposes it.",
+  "routeToPhase": "2b"
+}
