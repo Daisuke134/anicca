@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "edge_case_coverage",
+  "category": "test_quality",
+  "severity": "high",
+  "description": "proposal_loop._revise_draft (lib/proposal_loop.py:88) is a no-op that returns dict(draft) \u2014 a shallow clone with no mutation. So when a round-N adversary verdict is FAIL, round-(N+1)'s draft is BIT-IDENTICAL to round-N's. The docstring admits 'production wires this to an LLM call' \u2014 the exact AI-slop signal (iv) flagged in the manifest. test_each_round_draft_persisted_to_disk passes trivially because the loop persists the same content twice. The REQ-I1 'iterate using the findings' semantics is not actually implemented; the verify-loop's value depends on draft revision happening between rounds, which it does not.",
+  "evidence": {
+    "filePath": "skills/_shared/lib/proposal_loop.py",
+    "lineRange": "88-93",
+    "snippet": "def _revise_draft(draft, verdict): return dict(draft)  # 'tests treat round-2 as a fresh draft and only verify the LOOP STRUCTURE'"
+  },
+  "routeToPhase": "2b"
+}

@@ -65,16 +65,22 @@ def _allowlist_lookup(allowlist: dict, platform: str, endpoint: str) -> dict | N
 def _amount_equal(claim: Any, observed: Any, unit: str, comparison: str) -> bool:
     """Per-unit equality. unit = jpy_int (exact) | usdc_float_6dp (epsilon).
     comparison = 'exact' | 'epsilon:<value>'.
+    FIND-009 fix: dead `if False` branch removed; exact int equality enforced for jpy_int.
     """
     if unit == "jpy_int":
-        return isinstance(claim, int) or isinstance(claim, float) and float(claim).is_integer() \
-            if False else int(claim) == int(observed)
+        try:
+            return int(claim) == int(observed)
+        except (TypeError, ValueError):
+            return False
     if unit == "usdc_float_6dp":
         if comparison.startswith("epsilon:"):
             eps = float(comparison.split(":", 1)[1])
         else:
             eps = 0.0
-        return abs(float(claim) - float(observed)) <= eps
+        try:
+            return abs(float(claim) - float(observed)) <= eps
+        except (TypeError, ValueError):
+            return False
     # Unknown unit fails closed.
     return False
 

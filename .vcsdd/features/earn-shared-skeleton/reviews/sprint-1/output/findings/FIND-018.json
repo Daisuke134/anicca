@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-018",
+  "dimension": "implementation_correctness",
+  "category": "security_surface",
+  "severity": "medium",
+  "description": "group_j._HUMAN_TOUCH_PATTERNS line 60: '(re.compile(r\"[\\\"\\']escalation[\\\"\\']\"), \"gh-issue-escalation\")' \u2014 matches the literal substring 'escalation' ONLY when surrounded by quote marks. But REQ-F1 step 6 bans any gh issue label containing the substring 'escalation' (not just quoted). 'gh issue create --label escalation' (unquoted in shell) or 'subprocess.run([\"gh\", \"issue\", \"create\", \"--label\", \"escalation\"])' inside a list literal does contain quotes around the word \u2014 these match. But a python f-string like f'gh issue create --label {label}' where label = 'escalation' would NOT be caught at static analysis time. Other patterns use \\b word-boundary (e.g. \\bneeds-login\\b) which would catch un-quoted forms. Inconsistent pattern strictness leaves a small-but-real bypass.",
+  "evidence": {
+    "filePath": "skills/_shared/lib/group_j.py",
+    "lineRange": "60-60",
+    "snippet": "(re.compile(r\"['\\\"]escalation['\\\"]\"), \"gh-issue-escalation\")  # only matches quoted; \\bescalation\\b would be consistent with sibling patterns"
+  },
+  "routeToPhase": "2b"
+}

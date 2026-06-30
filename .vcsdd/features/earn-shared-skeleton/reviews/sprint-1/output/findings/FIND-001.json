@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "Spec Goal mandates 9 shared SHELL scripts (loop-healthcheck.sh, loop-roi.sh, loop-improve.py, loop-scale.sh, loop-propose.sh, cross-learn-read.sh, cross-learn-share.sh, adversary-daily.sh, self-recover.sh) in ~/anicca/skills/_shared/ as the entire 'I/O-BOUND layer' that EVERY launchd plist invokes. ZERO of these 9 scripts exist on disk. Without them, no slot can actually be wired into launchd; the entire Goal condition (launchd plist invokes loop-healthcheck.sh <slot>) is unmet. Only the pure-Python lib/ helpers exist; the actual deliverable per spec is absent.",
+  "evidence": {
+    "filePath": "skills/_shared/",
+    "lineRange": "1-1",
+    "snippet": "Glob skills/_shared/*.sh and skills/_shared/*.py shows only lib/*.py + __tests__/*.py \u2014 no loop-healthcheck.sh, no loop-roi.sh, no adversary-daily.sh, no self-recover.sh."
+  },
+  "routeToPhase": "2b"
+}

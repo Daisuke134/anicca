@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-016",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "medium",
+  "description": "_common.py refactor extracted is_verdict_pass, sha256_file, append_jsonl as common helpers, BUT mutation_gate.py (which the green-phase log claims was a 2c refactor beneficiary candidate) does NOT use them: mutation_gate._log_rejection (line 71-85) inlines its own f.open('a')/json.dumps append, ignoring _common.append_jsonl; mutation_gate.apply_strategy_mutation line 59 inlines verdict.get('overallVerdict') != 'PASS' check, ignoring _common.is_verdict_pass. The refactor is INCOMPLETE \u2014 proposal_loop + deliverable_loop + spawn_pin use the helpers, mutation_gate does not. Verification of 'extraction must not change observable behavior' (manifest extraConstraint 4) is moot for unused helpers; the structural improvement is half-applied.",
+  "evidence": {
+    "filePath": "skills/_shared/lib/mutation_gate.py",
+    "lineRange": "59-71",
+    "snippet": "if overall != \"PASS\":  # could be _common.is_verdict_pass(verdict) inverted; not used. _log_rejection: with lessons_path.open('a', encoding='utf-8') as f: f.write(json.dumps(row, ...)) \u2014 could be _common.append_jsonl; not used."
+  },
+  "routeToPhase": "2c"
+}

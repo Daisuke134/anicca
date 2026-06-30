@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "high",
+  "description": "Verification-architecture.md Pure layer table enumerates symbols that are MISSING from the implementation: (a) roi.compute_pass_row \u2192 end-of-pass RoiRow construction (REQ-B1); (b) passprep.compute_novelty_floor (REQ-H1, PROP-H1-novelty); (c) passprep.pick_untried (REQ-H1); (d) manifest.validate (REQ-G1, PROP-G1-manifest-schema). Grep across skills/_shared/lib/ confirms none exist. PROP-G1-manifest-schema is declared 'required: false' in lean mode but still claimed in the spec table; the symbol is wired in zero places. Tests for these PROPs are also absent. The Pure layer is materially incomplete vs the formal spec.",
+  "evidence": {
+    "filePath": ".vcsdd/features/earn-shared-skeleton/specs/verification-architecture.md",
+    "lineRange": "27-37",
+    "snippet": "table claims roi.compute_pass_row, passprep.compute_novelty_floor, passprep.pick_untried, manifest.validate \u2014 grep confirms 0 matches in skills/_shared/lib/"
+  },
+  "routeToPhase": "2b"
+}

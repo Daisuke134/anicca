@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-010",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "high",
+  "description": "PROP-E5 fixture corpus explicitly mandates 'ALSO asserts ZERO calls to security find-generic-password, ZERO Telegram POSTs, ZERO gh-issue creates with escalation-class labels \u2014 these would all be regressions of the v7 NO HUMAN invariant'. test_spawn_pin.py has 12 fixture cases (f-i..f-xii) but NO meta-assertion against the v7 NO HUMAN regression set. The only place anti-human-touch is checked is test_group_j.py's static-analyzer test corpus, which exercises anti_human_touch_violations on synthetic input strings \u2014 not on the actual lib/* source tree. There is no integration test that scans the entire skills/_shared/ tree with anti_human_touch_violations to prove the production codebase itself is clean. This is exactly the kind of static-analysis check the spec says adversary-daily would run, but the runner is missing (see FIND-001) and there is no equivalent guard.",
+  "evidence": {
+    "filePath": ".vcsdd/features/earn-shared-skeleton/specs/verification-architecture.md",
+    "lineRange": "87-87",
+    "snippet": "PROP-E5 row: 'The integration test ALSO asserts ZERO calls to security find-generic-password, ZERO Telegram POSTs, ZERO gh-issue creates with escalation-class labels' \u2014 no such assertion in test_spawn_pin.py."
+  },
+  "routeToPhase": "2b"
+}

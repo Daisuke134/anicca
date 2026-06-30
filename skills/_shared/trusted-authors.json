@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "trusted_npm_authors": ["sindresorhus", "tj", "isaacs", "feross", "vercel",
+                          "anthropic-ai", "@types"],
+  "trusted_org_namespaces": ["@nestjs", "@nrwl", "@types", "@vue"],
+  "min_weekly_downloads": 1000,
+  "min_publish_age_days": 30,
+  "deny_pattern_substrings": ["test-pwn", "rce-poc", "supply-chain-fake"]
+}

@@ -1,7 +1,7 @@
 {
   "featureName": "earn-shared-skeleton",
   "mode": "lean",
-  "currentPhase": "2c",
+  "currentPhase": "4",
   "phaseHistory": [
     {
       "from": "init",
@@ -35,9 +35,23 @@
       "to": "2c",
       "timestamp": "2026-06-30T18:29:35.239Z",
       "sprint": 1
+    },
+    {
+      "from": "2c",
+      "to": "3",
+      "timestamp": "2026-06-30T18:39:17.226Z",
+      "sprint": 1
+    },
+    {
+      "from": "3",
+      "to": "4",
+      "timestamp": "2026-06-30T18:40:54.070Z",
+      "sprint": 1
     }
   ],
   "iterations": {
+    "3": 1,
+    "4": 1,
     "1a": 1,
     "1b": 1,
     "1c": 1,
@@ -51,6 +65,16 @@
     "beads": []
   },
   "gates": {
+    "3": {
+      "verdict": "FAIL",
+      "timestamp": "2026-06-30T18:39:11.051Z",
+      "reviewedBy": "adversary",
+      "details": {
+        "sprintNumber": 1,
+        "findingCount": 18,
+        "iteration": 1
+      }
+    },
     "1c": {
       "verdict": "PASS",
       "timestamp": "2026-06-30T18:16:20.224Z",
@@ -71,5 +95,5 @@
   },
   "sprintCount": 1,
   "createdAt": "2026-06-30T15:15:28.620Z",
-  "updatedAt": "2026-06-30T18:29:35.240Z"
+  "updatedAt": "2026-06-30T18:40:54.071Z"
 }

@@ -1,0 +1,95 @@
+{
+  "sprintNumber": 1,
+  "feature": "earn-shared-skeleton",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-01T00:00:00Z",
+  "iteration": 1,
+  "reviewContext": {
+    "reviewType": "implementation"
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": [
+        "FIND-001",
+        "FIND-002",
+        "FIND-003",
+        "FIND-006",
+        "FIND-007",
+        "FIND-009",
+        "FIND-010",
+        "FIND-011",
+        "FIND-013",
+        "FIND-016"
+      ],
+      "evidence": []
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": [
+        "FIND-004",
+        "FIND-005",
+        "FIND-008",
+        "FIND-012",
+        "FIND-014",
+        "FIND-017"
+      ],
+      "evidence": []
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "FAIL",
+      "findings": [
+        "FIND-018"
+      ],
+      "evidence": []
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/_shared/lib/_common.py",
+          "description": "post-2c refactor: 3 helpers extracted (is_verdict_pass, sha256_file, append_jsonl), used by \u22653 modules without duplication"
+        }
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": [
+        "FIND-015"
+      ],
+      "evidence": []
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 18,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [
+      "CRIT-001",
+      "CRIT-002",
+      "CRIT-003",
+      "CRIT-004",
+      "CRIT-005",
+      "CRIT-006",
+      "CRIT-007",
+      "CRIT-008",
+      "CRIT-009",
+      "CRIT-010",
+      "CRIT-011",
+      "CRIT-012",
+      "CRIT-013",
+      "CRIT-014",
+      "CRIT-015",
+      "CRIT-016",
+      "CRIT-017",
+      "CRIT-018"
+    ],
+    "duplicateFindings": []
+  }
+}

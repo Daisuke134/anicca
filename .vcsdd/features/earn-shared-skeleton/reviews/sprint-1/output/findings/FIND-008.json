@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-008",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "high",
+  "description": "Manifest extraConstraint (g) flags as scrutiny target: 'mutation_gate when verdict.json is empty file (size=0)'. mutation_gate.py:51-56 wraps json.loads in try/except (json.JSONDecodeError, OSError) which would catch the empty-file case \u2014 but no test in test_mutation_gate.py covers it. The 3 tests cover PASS verdict / FAIL verdict / missing verdict \u2014 none cover empty (0-byte) verdict.json, malformed JSON verdict.json, or verdict.json with overallVerdict field missing (vs FAIL). The adversarial behavior under malformed verdict is therefore neither verified nor proved. Similar: PROP-B5-rolling has impl in roi.py:83 but zero tests; no test_rolling.py exists. PROP-D1/D2/D3 (cross-learn) have zero implementation AND zero tests.",
+  "evidence": {
+    "filePath": "skills/_shared/__tests__/test_mutation_gate.py",
+    "lineRange": "12-67",
+    "snippet": "_setup(verdict=...) covers None (missing) and dict \u2014 no fixture for empty bytes, no fixture for malformed JSON, no fixture for missing overallVerdict key (would behave same as FAIL but untested)."
+  },
+  "routeToPhase": "2b"
+}

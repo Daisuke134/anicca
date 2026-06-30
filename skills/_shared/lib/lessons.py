@@ -21,7 +21,9 @@ def validate_evidence_id(value: str, type_tag: str) -> bool:
     """Accept iff value is well-formed for the claimed type AND type is known.
 
     - url:        must match http(s)://... (full string)
-    - payout_id:  must match ^[A-Z][A-Z0-9_\\-]{3,}$ (caps + nums + _- ; ≥4 chars)
+    - payout_id:  must match ^[A-Za-z][A-Za-z0-9_\\-]{3,}$ (letter-led; mixed case OK
+                  to accept both caps-only platforms (Coconala CN_PAYOUT_...) and
+                  mixed-case platforms (Stripe STRIPE_po_3ABC). FIND-013 doc fix.)
     - file:       must be an absolute path (starts with '/')
 
     Rejects: paraphrase strings, type mismatches (URL claimed as payout_id, etc),

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-013",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "medium",
+  "description": "lessons.validate_evidence_id docstring (lib/lessons.py:21-29) declares 'payout_id: must match ^[A-Z][A-Z0-9_\\-]{3,}$' (UPPERCASE-only). The actual regex _PAYOUT_ID_RE on line 16 is '^[A-Za-z][A-Za-z0-9_\\-]{3,}$' (mixed case). The implementation is more permissive than the docstring promises. This is the manifest's AI-slop signal (iii): docstring promises more than (or different from) what the code delivers. Test fixture includes 'STRIPE_po_3ABCDEF' (mixed case) which the docstring-described regex would REJECT but the impl ACCEPTS \u2014 meaning either the docstring is wrong or the impl is too permissive. Reviewer cannot tell which is the authoritative intent.",
+  "evidence": {
+    "filePath": "skills/_shared/lib/lessons.py",
+    "lineRange": "13-29",
+    "snippet": "_PAYOUT_ID_RE = re.compile(r\"^[A-Za-z][A-Za-z0-9_\\-]{3,}$\")  # vs docstring '^[A-Z][A-Z0-9_\\-]{3,}$'"
+  },
+  "routeToPhase": "2c"
+}

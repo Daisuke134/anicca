@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-007",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "high",
+  "description": "REQ-B6 mandates 'WHEN running aggregate \u03a3 token_source==estimated / \u03a3 all > 0.5 over last 100 rows, SHALL call self-recover.sh <slot> token-source-degraded <ratio>'. The roi.py module has the 2x penalty (line 14, 55-56) but NO degradation-ratio monitor; grep 'degraded|0\\.5' against roi.py returns zero matches. group_j._HANDLER_BY_REASON does map 'token-source-degraded' \u2192 j9_measurement_recovery (line 104) but no producer ever raises that reason. REQ-B6 requirement is half-implemented: penalty exists, escalation pipeline exists in dispatcher, but the connector that observes the ratio and triggers the dispatcher is absent.",
+  "evidence": {
+    "filePath": "skills/_shared/lib/roi.py",
+    "lineRange": "1-107",
+    "snippet": "No reference to 'degraded', '0.5', 'last 100', or any aggregator. compute_token_cost_jpy returns a per-call cost; nothing tracks the running estimated/measured ratio."
+  },
+  "routeToPhase": "2b"
+}

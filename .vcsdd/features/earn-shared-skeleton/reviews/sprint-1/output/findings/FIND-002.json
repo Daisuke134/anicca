@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "Group J handlers (REQ-J1..J9) are STUBS that return {status: 'recovered'} without performing the spec'd recovery action. REQ-J1 mandates 'launch camofox + Gmail OTP automatic OAuth completion' \u2014 j1_auto_login is a 2-line return. REQ-J2 mandates 'git fetch origin main + signature verify + git checkout' \u2014 j2_auto_rollback is a 2-line return. REQ-J3 mandates 'firecrawl npmjs.org + trust-author check + auto-PR' \u2014 j3_auto_research is a 2-line return. REQ-J4 (model ladder), REQ-J5 (tmux kill-server + cache purge + git pull), REQ-J6 (strategy halve + REQ-C3 gate + resurrect-at), REQ-J9 (probe CLAUDE_USAGE_ENV + parse pane footer + 4x penalty) \u2014 all 2-line stubs returning 'recovered' with no behavior. The docstring 'Production wires these to real recovery actions' is the exact AI-slop signal (iv) the manifest flags. Stubs pass tests because tests monkeypatch them, but no production code path actually recovers any failure mode.",
+  "evidence": {
+    "filePath": "skills/_shared/lib/group_j.py",
+    "lineRange": "164-203",
+    "snippet": "def j1_auto_login(*, slot, oauth_url, **kw): return SelfRecoverResult(status='recovered', ...); def j2_auto_rollback(...): return SelfRecoverResult(status='recovered', ...); [all seven handlers identical pattern]"
+  },
+  "routeToPhase": "2b"
+}
