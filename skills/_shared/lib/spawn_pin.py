@@ -97,8 +97,7 @@ class SpawnSurfaceState:
 # ────────────────────────────────────────────────────────────────────────
 # Verification
 # ────────────────────────────────────────────────────────────────────────
-def _sha256_file(p: Path) -> str:
-    return hashlib.sha256(p.read_bytes()).hexdigest()
+from lib._common import sha256_file as _sha256_file  # extracted in 2c refactor
 
 
 def verify_spawn_surface(state: SpawnSurfaceState) -> VerifyResult:

@@ -13,6 +13,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
 
+from lib._common import append_jsonl, is_verdict_pass
+
 
 @dataclass
 class ProposalLoopResult:
@@ -61,7 +63,7 @@ def propose_with_verify(
             review_type="proposal-quality",
         )
 
-        if _is_pass(verdict):
+        if is_verdict_pass(verdict):
             submit_fn(current_draft)
             return ProposalLoopResult(submitted=True, rounds_to_pass=round_n, stalled=False)
 
@@ -71,12 +73,16 @@ def propose_with_verify(
 
     # Cap reached without PASS: log + SKIP (protect account)
     if lessons_path is not None:
-        _append_stalled_lesson(Path(lessons_path), request_id, max_rounds)
+        append_jsonl(Path(lessons_path), {
+            "ts": int(time.time()),
+            "requestId": request_id,
+            "category": "proposal-verify",
+            "outcome": "proposal-stalled",
+            "reason": f"all {max_rounds} rounds FAIL",
+            "evidence_id": None,
+            "rounds_attempted": max_rounds,
+        })
     return ProposalLoopResult(submitted=False, rounds_to_pass=0, stalled=True)
-
-
-def _is_pass(verdict: dict) -> bool:
-    return verdict.get("overallVerdict") == "PASS"
 
 
 def _revise_draft(draft: dict, verdict: dict) -> dict:
@@ -85,18 +91,3 @@ def _revise_draft(draft: dict, verdict: dict) -> dict:
     draft and only verify the LOOP STRUCTURE responds to PASS/FAIL correctly).
     """
     return dict(draft)
-
-
-def _append_stalled_lesson(lessons_path: Path, request_id: str, rounds: int) -> None:
-    row = {
-        "ts": int(time.time()),
-        "requestId": request_id,
-        "category": "proposal-verify",
-        "outcome": "proposal-stalled",
-        "reason": f"all {rounds} rounds FAIL",
-        "evidence_id": None,
-        "rounds_attempted": rounds,
-    }
-    lessons_path.parent.mkdir(parents=True, exist_ok=True)
-    with lessons_path.open("a", encoding="utf-8") as f:
-        f.write(json.dumps(row, ensure_ascii=False) + "\n")
