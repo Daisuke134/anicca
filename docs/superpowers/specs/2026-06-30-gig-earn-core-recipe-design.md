@@ -54,3 +54,9 @@ human-funded → ¥/bank; self-funded → USDC/wallet. Same template, different 
 I over-restarted the core + over-spawned adversaries this session → burned the weekly quota to 96%.
 The correct verification is HANDS-OFF: stop touching the core, let launchd+cron run it, and read
 audit.jsonl/applied.jsonl to confirm it advanced on its own.
+
+## 検証結果 + 修正 (2026-06-30、 hands-off runtime verify)
+- ✅ **自律 fire 実証**: heartbeat 18:37(私の最後touch)→18:43 を ★私が触らず★ core が進めた + 18:43 の自律 pass で applied #10 追加 = メインsession 無しで core が gig 作業を自走。
+- 🐛→✅ **PATH バグ (auditor が炙り出した continuity-breaker)**: launchd は最小 PATH で動く → `tmux: command not found` → ① auditor が core を誤 DEAD 判定 ② healthcheck が再起動不能 = 自己回復&監視が壊れてた。 FIX = gig-cli.sh / gig-healthcheck.sh / auditor.sh 冒頭に絶対 PATH (`/opt/homebrew/bin:...`) を export。 最小 PATH で `core_alive:True / FIRING` を再現検証済。 = disk adversary では不可視・runtime のみで判明する class のバグ。
+- ✅ **独立 auditor 機能**: FIRING/STALE/DEAD を正しく判定 (heartbeat 偽装テストで両 verdict 確認)。
+- 残: #20 会話 sweep 網羅 + EARN-CORE テンプレ抽出 + ★ この infra への fresh-context adversary (now) ★。
