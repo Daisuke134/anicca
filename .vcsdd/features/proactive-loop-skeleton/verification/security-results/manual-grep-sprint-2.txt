@@ -1,0 +1,21 @@
+proactive-loop-skeleton sprint-2 manual security grep sweep
+generated 2026-07-01T08:00:00+09:00
+
+=== RCE / injection patterns ===
+$ grep -rnE "subprocess.*shell=True|os\.system|eval\(|exec\(|<<PYEOF|<<EOF.*\\\$\\{" \
+        skills/_shared/lib/{quota_tracker,menu,health_check_v2,bot2bot,proactive_loop,build_log}.py \
+        skills/_shared/{proactive-loop.sh,proactive-loop-dispatch.py,credential-restore.sh,auto-allowlist.sh,auto-rollback.sh}
+(0 hits)
+
+=== Anti-J8 patterns ===
+$ grep -rnE "telegram\.org|hooks\.slack|twilio|osascript|terminal-notifier|find-generic-password" \
+        skills/_shared/lib/{quota_tracker,menu,health_check_v2,bot2bot,proactive_loop,build_log}.py \
+        skills/_shared/*.sh skills/_shared/*-dispatch.py
+(0 hits)
+
+Verdict:
+- Zero RCE / injection surfaces in sprint-2 production code
+- Zero anti-J8 patterns (the BLOCKLIST samples in test_anti_human_v2.py are guarded by skip-when-missing)
+- REQ-J8 anti-human-touch invariant VERIFIED ENFORCED on sprint-2 sources
+- ENV VAR pattern inherited from sprint-1 FIND-2-001 RCE fix; bash → Python passes via os.environ, never heredoc interpolation
+</parameter>
