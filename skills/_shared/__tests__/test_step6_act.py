@@ -26,19 +26,15 @@ class TestSanitizeName:
         ("日本語", "unnamed"),  # all non-ASCII → unnamed (FIND-005 fix)
         ("***", "unnamed"),  # symbol-only → unnamed
         ("", "unnamed"),
-        ("スキャン-coconala", "-coconala"),  # mixed Japanese drops to ascii suffix
+        # FIND-004 iter-1 fix (non-tautological): assert exact expected output.
+        # スキャン → drops, "-coconala" remains, leading dash stripped per
+        # REQ-T3 (iii) "collapse runs of `-` into one" + (iv) strip.
+        ("スキャン-coconala", "coconala"),
+        ("foo!@#bar", "foo-bar"),  # punctuation → single dash separator
+        ("ABC-日本-XYZ", "abc-xyz"),  # mid-string drop + collapse
     ])
     def test_sanitize(self, inp, expected):
-        # "スキャン-coconala" case: Japanese drops + "-coconala" remains; collapse '-'
-        # Adjust assertion: the result must be non-empty AND only [a-z0-9_-]; if
-        # the test expectation is "-coconala", verify with the relaxed rule:
-        out = sanitize_name(inp)
-        if not expected.startswith("-"):
-            assert out == expected
-        else:
-            # mixed-case: ensure invariants
-            assert all(c in "abcdefghijklmnopqrstuvwxyz0123456789-_" for c in out)
-            assert out  # non-empty (= leading dash trimmed or kept)
+        assert sanitize_name(inp) == expected
 
 
 # ─── PROP-T1 + T2: filename and descriptor shape ───────────────────

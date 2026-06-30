@@ -136,3 +136,32 @@ def test_scaffold_deferred_actions_constant_is_7_set():
         "kill_server", "send_keys", "login", "npm_install",
         "git_checkout", "escalate_via_bot2bot", "noop",
     })
+
+
+# ─── FIND-001 fix: REQ-I1 static-grep regression guard ─────────────
+def test_dispatcher_has_no_tmux_kill_or_stop():
+    """PROP-I1 / parent INV-1: proactive-loop-dispatch.py must contain ZERO
+    occurrences of tmux-kill / --stop / --kill patterns. A future edit that
+    adds an emergency 'tmux kill-server' would silently bypass INV-1 without
+    this regression guard."""
+    import re
+    from pathlib import Path
+    dispatcher = Path(__file__).resolve().parents[1] / "proactive-loop-dispatch.py"
+    txt = dispatcher.read_text()
+    forbidden = [r"tmux\s+kill", r"--stop\b", r"--kill\b", r"kill-session", r"kill-server"]
+    for pat in forbidden:
+        m = re.search(pat, txt)
+        assert not m, f"INV-1 violation: dispatcher contains {pat!r}: {m.group(0)}"
+
+
+# ─── FIND-001 fix: also guard the lib helpers ─────────────────────
+def test_step3_recipe_has_no_tmux_kill():
+    """Defense in depth — execute_recipe also must never contain kill primitives."""
+    import re
+    from pathlib import Path
+    src = Path(__file__).resolve().parents[1] / "lib" / "step3_recipe.py"
+    txt = src.read_text()
+    forbidden = [r"tmux\s+kill", r"--stop\b", r"--kill\b", r"kill-session", r"kill-server"]
+    for pat in forbidden:
+        m = re.search(pat, txt)
+        assert not m, f"INV-1 violation: step3_recipe contains {pat!r}: {m.group(0)}"

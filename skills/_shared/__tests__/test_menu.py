@@ -7,6 +7,9 @@ from __future__ import annotations
 
 import pytest
 
+# FIND-002 fix (sprint-2 carry): novelty_quota_ratio=0 must not crash pick_next.
+import pytest as _pytest_for_novelty_guard
+
 from lib.menu import (  # FAIL until 2b
     Budget,
     pick_next,
@@ -166,3 +169,63 @@ def test_novelty_uses_category_key_not_name():
 def test_compute_roi_score_is_product():
     item = {"roi_estimate_jpy": 10000, "probability_of_landing": 0.2}
     assert compute_roi_score(item) == pytest.approx(2000.0, abs=0.01)
+
+
+# ─── FIND-002 fix: novelty_ratio=0 guard (sprint-2 carry) ─────────
+class TestNoveltyRatioZeroGuard:
+    """REQ-M3 + FIND-002: novelty_quota_ratio == 0.0 means novelty disabled.
+    Prior code: int(1.0 / 0.0) → ZeroDivisionError on first tick of any slot
+    with novelty disabled (e.g. an adversary-only slot). Fix: gate with > 0."""
+
+    def test_novelty_ratio_zero_does_not_crash(self):
+        menu = {
+            "schema_version": 1,
+            "categories": [
+                {"name": "a", "category": "x", "platform": "p",
+                 "roi_estimate_jpy": 100, "probability_of_landing": 0.5,
+                 "required_budget": "LIGHT", "min_cadence_seconds": 0},
+            ],
+            "novelty_quota_ratio": 0.0,
+        }
+        # Should NOT raise; should return the only candidate.
+        from lib.quota_tracker import Budget
+        result = pick_next(menu=menu, log_tail=[], history=[],
+                           blockers=set(), now_ts=0, budget=Budget.LIGHT)
+        assert result is not None
+        assert result.get("name") == "a"
+
+    def test_novelty_ratio_zero_with_history_does_not_crash(self):
+        menu = {
+            "schema_version": 1,
+            "categories": [
+                {"name": "a", "category": "scan", "platform": "coconala",
+                 "roi_estimate_jpy": 100, "probability_of_landing": 0.5,
+                 "required_budget": "LIGHT", "min_cadence_seconds": 0},
+            ],
+            "novelty_quota_ratio": 0.0,
+        }
+        # History present too — would have triggered the divide on the old code path
+        from lib.quota_tracker import Budget
+        result = pick_next(
+            menu=menu, log_tail=[],
+            history=[{"category": "scan", "platform": "coconala"}] * 20,
+            blockers=set(), now_ts=0, budget=Budget.LIGHT,
+        )
+        assert result is not None
+        assert result.get("name") == "a"
+
+    def test_novelty_ratio_negative_treated_as_disabled(self):
+        # Defensive: negative ratio should also not crash.
+        menu = {
+            "schema_version": 1,
+            "categories": [
+                {"name": "a", "category": "x", "platform": "p",
+                 "roi_estimate_jpy": 100, "probability_of_landing": 0.5,
+                 "required_budget": "LIGHT", "min_cadence_seconds": 0},
+            ],
+            "novelty_quota_ratio": -0.5,
+        }
+        from lib.quota_tracker import Budget
+        result = pick_next(menu=menu, log_tail=[], history=[],
+                           blockers=set(), now_ts=0, budget=Budget.LIGHT)
+        assert result is not None
