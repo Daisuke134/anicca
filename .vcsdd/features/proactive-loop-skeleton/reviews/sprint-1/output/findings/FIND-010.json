@@ -1,6 +1,6 @@
 {
   "findingId": "FIND-010",
-  "dimension": "test_quality",
+  "dimension": "edge_case_coverage",
   "category": "test_quality",
   "severity": "medium",
   "description": "PROP-P1-budget-quantize is claimed (in spec verification-architecture L58) to be verified by 'property-test (1000 random b + 4 boundary fixtures: 2.99/3.0/0.99/0.0999)'. The actual test test_quantize_budget_never_throws iterates 10 hand-picked values and asserts each result is an instance of Budget. This is parametrized fixture coverage, not a property-test. There is no randomization, no shrinking, no invariant-style check across the float domain. The verification-tier claim (Tier 1 property-test) does not match the implementation (Tier 0 fixture).",

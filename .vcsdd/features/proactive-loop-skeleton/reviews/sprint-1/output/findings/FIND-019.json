@@ -1,9 +1,9 @@
 {
   "findingId": "FIND-019",
-  "dimension": "test_quality",
+  "dimension": "edge_case_coverage",
   "category": "test_quality",
   "severity": "medium",
-  "description": "test_auto_merge_function_does_not_exist (test_bot2bot.py L32-36) verifies only the literal attribute name 'auto_merge'. A function called pr_merge, do_merge, force_merge, finalize_pr, or _merge would all bypass this check. PROP-B3-annotate (required:true, FIND-003 closure) is therefore guarded only against the most obvious naming. test_annotate_pr_does_not_merge checks the gh args string for 'merge' which is broader but only covers the annotate_pr code path — not any other newly-introduced function. A comprehensive static-analysis (grep for 'pr merge' in bot2bot.py + AST scan for subprocess.call with 'merge') would actually close FIND-003.",
+  "description": "test_auto_merge_function_does_not_exist (test_bot2bot.py L32-36) verifies only the literal attribute name 'auto_merge'. A function called pr_merge, do_merge, force_merge, finalize_pr, or _merge would all bypass this check. PROP-B3-annotate (required:true, FIND-003 closure) is therefore guarded only against the most obvious naming. test_annotate_pr_does_not_merge checks the gh args string for 'merge' which is broader but only covers the annotate_pr code path \u2014 not any other newly-introduced function. A comprehensive static-analysis (grep for 'pr merge' in bot2bot.py + AST scan for subprocess.call with 'merge') would actually close FIND-003.",
   "evidence": {
     "filePath": "skills/_shared/__tests__/test_bot2bot.py",
     "lineRange": "32-36",

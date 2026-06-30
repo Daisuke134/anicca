@@ -1,9 +1,9 @@
 {
   "findingId": "FIND-007",
-  "dimension": "implementation_correctness",
+  "dimension": "spec_fidelity",
   "category": "requirement_mismatch",
   "severity": "high",
-  "description": "PROP-H3 (required:true) acceptance demands 'multi-match resolves to the HIGHEST-PRIORITY issue per REQ-H3 priority order' — i.e. the SYSTEM picks one issue when multiple match. The production code only exposes classify_issue_from_snapshot which returns a LIST of all detected issues. There is no production function that, given that list, applies PRIORITY_ORDER and returns the single highest-priority Issue. test_multi_match_resolves_to_highest_priority simulates this resolution INSIDE the test (it calls max(issues, key=lambda...) by hand). The dispatch correctness gate is therefore tested at test-fixture level, not at the production API level. Any real caller that iterates issues in detection-order rather than priority-order would dispatch the wrong fix; the static type contract doesn't prevent it.",
+  "description": "PROP-H3 (required:true) acceptance demands 'multi-match resolves to the HIGHEST-PRIORITY issue per REQ-H3 priority order' \u2014 i.e. the SYSTEM picks one issue when multiple match. The production code only exposes classify_issue_from_snapshot which returns a LIST of all detected issues. There is no production function that, given that list, applies PRIORITY_ORDER and returns the single highest-priority Issue. test_multi_match_resolves_to_highest_priority simulates this resolution INSIDE the test (it calls max(issues, key=lambda...) by hand). The dispatch correctness gate is therefore tested at test-fixture level, not at the production API level. Any real caller that iterates issues in detection-order rather than priority-order would dispatch the wrong fix; the static type contract doesn't prevent it.",
   "evidence": {
     "filePath": "skills/_shared/lib/health_check_v2.py",
     "lineRange": "53-88",

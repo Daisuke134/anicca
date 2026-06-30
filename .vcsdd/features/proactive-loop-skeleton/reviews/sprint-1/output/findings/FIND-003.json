@@ -1,9 +1,9 @@
 {
   "findingId": "FIND-003",
-  "dimension": "implementation_correctness",
+  "dimension": "spec_fidelity",
   "category": "requirement_mismatch",
   "severity": "high",
-  "description": "menu.pick_next novelty quota implements a different formula than REQ-M3(v) specifies. Spec: 'at least 10% of picks across history must be (category, platform) tuples not present in history; the quota is enforced by occasionally promoting a novelty-eligible item over the strict argmax pick.' Implementation: checks 'unique_recent / 10 < novelty_ratio' over last 10 history rows — i.e. measures recent-pick UNIQUENESS, not the running ratio of novel picks. Two bugs: (1) numerator is wrong (should count novelty-eligible picks, not unique tuples); (2) the test test_novelty_key_is_category_platform_tuple only asserts 'result is not None', i.e. tautology, so the bug ships silently. PROP-M3-pick-next, PROP-novelty-key-aligned (required:true) both effectively unverified.",
+  "description": "menu.pick_next novelty quota implements a different formula than REQ-M3(v) specifies. Spec: 'at least 10% of picks across history must be (category, platform) tuples not present in history; the quota is enforced by occasionally promoting a novelty-eligible item over the strict argmax pick.' Implementation: checks 'unique_recent / 10 < novelty_ratio' over last 10 history rows \u2014 i.e. measures recent-pick UNIQUENESS, not the running ratio of novel picks. Two bugs: (1) numerator is wrong (should count novelty-eligible picks, not unique tuples); (2) the test test_novelty_key_is_category_platform_tuple only asserts 'result is not None', i.e. tautology, so the bug ships silently. PROP-M3-pick-next, PROP-novelty-key-aligned (required:true) both effectively unverified.",
   "evidence": {
     "filePath": "skills/_shared/lib/menu.py",
     "lineRange": "102-110",

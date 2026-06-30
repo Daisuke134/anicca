@@ -1,6 +1,6 @@
 {
   "findingId": "FIND-011",
-  "dimension": "implementation_correctness",
+  "dimension": "spec_fidelity",
   "category": "requirement_mismatch",
   "severity": "medium",
   "description": "menu._is_novelty_eligible uses item.get('name') as the category, but history rows are tagged with .get('category'). The novelty key compares (item['name'], item['platform']) against (history['category'], history['platform']). This only works when menu items name themselves identically to the category convention. REQ-M3(v) says the novelty key is '(category, platform)'. The function should explicitly look up item.get('category') or document that name IS category. As-is, any menu where item.name != category will silently break novelty quota.",
