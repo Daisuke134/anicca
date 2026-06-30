@@ -1,0 +1,25 @@
+{
+  "reviewType": "implementation",
+  "featureName": "proactive-step6-act",
+  "sprintNumber": 1,
+  "iteration": 1,
+  "mode": "lean",
+  "artifactsToReview": {
+    "spec": [".vcsdd/features/proactive-step6-act/specs/behavioral-spec.md",
+             ".vcsdd/features/proactive-step6-act/specs/verification-architecture.md"],
+    "source_python": ["skills/_shared/lib/step6_act.py", "skills/_shared/lib/step3_recipe.py",
+                       "skills/_shared/lib/menu.py", "skills/_shared/proactive-loop-dispatch.py"],
+    "tests": ["skills/_shared/__tests__/test_step6_act.py",
+              "skills/_shared/__tests__/test_step3_recipe.py",
+              "skills/_shared/__tests__/test_dispatch_integration_step6.py"]
+  },
+  "reviewDimensions": ["spec_fidelity", "edge_case_coverage", "implementation_correctness", "structural_integrity", "verification_readiness"],
+  "extraConstraints": [
+    "REQ-R1 + R1a: trace lib/step3_recipe.execute_recipe — gates restart on issue_kind=='tmux_dead' AND action=='restart'; stale+restart returns 'stale-suppressed-INV-P1' with no subprocess. LIVE proof: production gig kickstart did NOT restart gig-cli.sh.",
+    "REQ-T1 + T4: trace lib/step6_act — filename includes pass_id; dedup via glob('*-<pass_id>-*.json').",
+    "FIND-004 scope: REQ-I2 mtime snapshot now only checks slot_dir extras (NOT state/). Verify the integration test exercises this correctly.",
+    "Sprint-2 carry fix in lib/menu.py:111 — novelty_ratio=0 ZeroDivisionError guarded by '> 0' check. Test coverage?",
+    "Live E2E showed 2 task files appeared + build_log enqueued: + INV-1/4/P1 all honored. Verify the test suite + impl genuinely match this observed behavior."
+  ],
+  "expectedOutputPath": ".vcsdd/features/proactive-step6-act/reviews/sprint-1/iteration-1/output/"
+}
