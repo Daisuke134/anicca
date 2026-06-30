@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "PROP-E5 explicitly mandates structured analysis of THREE source languages: (i) Python via ast, (ii) Shell via bash -n + shellcheck --format=json, (iii) JS/TS via acorn or tree-sitter. The impl's adversary_path_intersect (lib/spawn_pin.py:193) only walks Python AST. There is no bash shellcheck branch and no JS tree-sitter branch. The fallback at line 216 ('any(s in source for s in surface_set)') reduces non-Python to substring grep \u2014 the EXACT v3 grep clause that ROUND-3-002 declared a downgrade. Spec text: 'the v3 grep clause was a downgrade'. Impl regresses to grep for 2 of 3 languages. Shell scripts in spawn-surface (adversary-daily.sh, the missing loop-*.sh) cannot be meaningfully analyzed.",
+  "evidence": {
+    "filePath": "skills/_shared/lib/spawn_pin.py",
+    "lineRange": "193-220",
+    "snippet": "try: tree = ast.parse(source) except SyntaxError: return any(s in source for s in surface_set)  # \u2190 shell + JS hit this fallback"
+  },
+  "routeToPhase": "2b"
+}

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-014",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "medium",
+  "description": "Manifest extraConstraint (h) flags 'group_j dispatcher when MOTHER queue path is read-only' as an edge case to scrutinize. lib/group_j.py:227-237 _append_mother_queue calls queue_path.open('a') with no exception handling. PermissionError on a read-only filesystem would propagate uncaught into dispatch_self_recover, breaking the recovery dispatcher itself \u2014 the exact failure-recovery surface that is supposed to be most resilient. No test injects a read-only queue path. Similar: _append_log line 222-223 also has no exception handling. EDGE-10 in the spec calls out disk-full mid-write should leave the row recoverable; the impl has no recovery branch.",
+  "evidence": {
+    "filePath": "skills/_shared/lib/group_j.py",
+    "lineRange": "226-237",
+    "snippet": "queue_path.parent.mkdir(parents=True, exist_ok=True); with queue_path.open('a', encoding='utf-8') as f: f.write(...) \u2014 no try/except for PermissionError / OSError; would propagate uncaught."
+  },
+  "routeToPhase": "2b"
+}

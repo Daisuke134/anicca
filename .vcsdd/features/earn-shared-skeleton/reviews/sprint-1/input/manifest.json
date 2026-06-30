@@ -1,0 +1,64 @@
+{
+  "reviewType": "implementation",
+  "featureName": "earn-shared-skeleton",
+  "sprintNumber": 1,
+  "mode": "lean",
+  "artifactsToReview": {
+    "spec": [
+      ".vcsdd/features/earn-shared-skeleton/specs/behavioral-spec.md",
+      ".vcsdd/features/earn-shared-skeleton/specs/verification-architecture.md"
+    ],
+    "source": [
+      "skills/_shared/lib/__init__.py",
+      "skills/_shared/lib/_common.py",
+      "skills/_shared/lib/healthcheck.py",
+      "skills/_shared/lib/roi.py",
+      "skills/_shared/lib/lessons.py",
+      "skills/_shared/lib/escalate.py",
+      "skills/_shared/lib/manifest.py",
+      "skills/_shared/lib/events.py",
+      "skills/_shared/lib/mutation_gate.py",
+      "skills/_shared/lib/spawn_pin.py",
+      "skills/_shared/lib/proposal_loop.py",
+      "skills/_shared/lib/deliverable_loop.py",
+      "skills/_shared/lib/group_j.py"
+    ],
+    "tests": [
+      "skills/_shared/__tests__/conftest.py",
+      "skills/_shared/__tests__/test_classify.py",
+      "skills/_shared/__tests__/test_oauth.py",
+      "skills/_shared/__tests__/test_hook_allowlist.py",
+      "skills/_shared/__tests__/test_roi.py",
+      "skills/_shared/__tests__/test_killswitch.py",
+      "skills/_shared/__tests__/test_evidence.py",
+      "skills/_shared/__tests__/test_dedup.py",
+      "skills/_shared/__tests__/test_g2_static.py",
+      "skills/_shared/__tests__/test_g2_runtime.py",
+      "skills/_shared/__tests__/test_mutation_gate.py",
+      "skills/_shared/__tests__/test_spawn_pin.py",
+      "skills/_shared/__tests__/test_proposal_loop.py",
+      "skills/_shared/__tests__/test_deliverable_loop.py",
+      "skills/_shared/__tests__/test_group_j.py"
+    ],
+    "evidence": [
+      ".vcsdd/features/earn-shared-skeleton/evidence/sprint-1-red-phase.log",
+      ".vcsdd/features/earn-shared-skeleton/evidence/sprint-1-green-phase.log"
+    ]
+  },
+  "reviewDimensions": [
+    "spec_fidelity",
+    "edge_case_coverage",
+    "implementation_correctness",
+    "structural_integrity",
+    "verification_readiness"
+  ],
+  "extraConstraints": [
+    "13 required:true PROPs in lean mode: PROP-A-classify, A-oauth, A-hook-allowlist, B2-cost-formula, B4-killswitch, C1-evidence, C3-mutation-gate, F2-dedup, G2-static, G2-runtime, E5-spawn-pin, I1-proposal-loop, I2-deliverable-loop. Each must be GENUINELY enforced by the implementation, not just have a passing test.",
+    "PROP-J8 anti-human-touch invariant is the lethal-defect dimension: if ANY production source file (= skills/_shared/lib/*.py, but also any shell helper if present) contains a call to Telegram/Slack/Twilio/osascript/find-generic-password/needs-login label/etc, the entire feature FAILs spec_fidelity (= v7 NO HUMAN doctrine breach).",
+    "Spec NUMBER OF REQUIREMENTS = 30 EARS reqs + 5 NFRs across Groups A-J (excluding deleted v7 paths). Verify the implementation covers all 13 required PROPs, and that any unimplemented non-required PROP is documented (e.g. as TODO or scope-deferred).",
+    "Verify the post-Refactor (2c) state is genuinely equivalent to 2b: lib/_common.py extraction must not change observable behavior. Sample at least 3 callers to confirm.",
+    "Edge cases to scrutinize: (a) classify(ctx) priority — when multiple modes match simultaneously, does the impl honor the priority table (esp. NOT_LOGGED_IN > STALE, the FIND-009 fix)? (b) roi.kill_switch_tripped at exact 7d grace boundary; (c) lessons.validate_evidence_id with edge URLs (e.g. trailing whitespace, query params); (d) escalate.normalize_evidence preserves enough signal that meaningfully-different failures don't collapse; (e) spawn_pin.adversary_path_intersect handling of pathlib operations vs os.path; (f) events.verify_earn_event with malformed JSON response body; (g) mutation_gate when verdict.json is empty file (size=0); (h) group_j dispatcher when MOTHER queue path is read-only.",
+    "Look for AI-slop signals: (i) any test that passes because it tests the implementation's behavior rather than the SPEC's behavior; (ii) any test that uses a 'magic' constant the implementation just happens to honor; (iii) any function whose docstring promises more than the code delivers; (iv) any 'todo' / 'will be implemented' / 'production wires this' notes that hide a real gap."
+  ],
+  "expectedOutputPath": ".vcsdd/features/earn-shared-skeleton/reviews/sprint-1/output/"
+}

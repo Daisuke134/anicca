@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "edge_case_coverage",
+  "category": "test_quality",
+  "severity": "high",
+  "description": "deliverable_loop.deliver_with_verify (lib/deliverable_loop.py:50-78) never revises the artifact between rounds: the same artifact_path is re-reviewed on round-2 and round-3. The comment at line 77-78 even acknowledges 'real impl writes new version; tests treat round-N as a fresh review of the same artifact path' \u2014 the same AI-slop signal as FIND-004. test_hallucinated_stat_caught_by_factual_dimension and test_round_1_factual_fail_round_2_pass pass not because the impl detects hallucinated stats or revises artifacts, but because the test injects the round-2 verdict as PASS via the stub. The REQ-I2 gate semantics (= the deliverable improves between rounds) is not enforceable from the impl; the loop is a no-op rerun.",
+  "evidence": {
+    "filePath": "skills/_shared/lib/deliverable_loop.py",
+    "lineRange": "50-78",
+    "snippet": "for round_n in range(1, max_rounds + 1): ... verdict = adversary_stub(... artifact_path=str(artifact_path), ...) ... # FAIL \u2192 would revise artifact (real impl writes new version)"
+  },
+  "routeToPhase": "2b"
+}

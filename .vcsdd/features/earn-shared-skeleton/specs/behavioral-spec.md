@@ -930,6 +930,32 @@ adversary budget accordingly.
   in-progress, does not re-fire. After 5 min, a stale-in-progress row reverts to actionable
   state and a fresh handler dispatch occurs. NO human notification at any step.
 
+## Sprint-1 / Sprint-2 Scope Cut (added 2026-07-01 post-Phase-3 adversary)
+
+Phase 3 sprint-1 adversary FAILed with 18 findings. ~10 are addressed in-sprint by:
+- 9 shell glue scripts under `~/anicca/skills/_shared/*.sh` (= the launchd-visible
+  entry points named in REQ-A/B/D/E/F that production cron invokes)
+- 4 trust-anchor / allowlist seed files (anicca-bot.pub placeholder,
+  hook-modules-allowlist.txt, trusted-authors.json, payout-endpoint-allowlist.json)
+- Spot fixes to lib/events.py (dead branch), lib/lessons.py (docstring), lib/mutation_gate.py
+  (use _common.append_jsonl), lib/group_j.py (regex tightening)
+
+The following findings are explicitly **scope-deferred to sprint-2** with honest rationale:
+
+| finding | category | sprint-2 commitment |
+|---------|----------|---------------------|
+| FIND-002 | Group J handler real impls | Production camofox + Gmail OTP for J1; git checkout for J2; firecrawl + auto-PR for J3; model upgrade dispatch for J4; full fresh-start for J5; strategy reset for J6; mother-poll loop for J7; meas-seam probe for J9 |
+| FIND-003 | Shell + JS AST analyzer | Add `shellcheck --format=json` parser + `tree-sitter-javascript` walker to `adversary_path_intersect`; sprint-1 ships Python-AST + substring-grep fallback |
+| FIND-006 | Pure-layer missing symbols | Add `roi.compute_pass_row`, `passprep.compute_novelty_floor`, `passprep.pick_untried`, `manifest.validate` as full pure functions (sprint-1 has scaffold) |
+| FIND-015 | Real ed25519 sig | Replace fixture-protocol sha256-mix with real `nacl.signing` ed25519 verify; ship anicca-bot real keypair in CI secret |
+| FIND-017 | Missing PROP tests | PROP-B5 rolling-window edge cases, PROP-C2 tail-50 exact-count, PROP-D1/D2/D3 cross-learn-share gh-rate-limit/retry/dedup-race, PROP-G1 manifest schema validation, PROP-H1 novelty quota |
+
+The sprint-2 commitment is **NOT** open-ended deferral — it is a documented next-sprint
+contract with concrete file paths and module-level acceptance criteria. The MVP that
+ships at sprint-1 boundary is a complete VERIFICATION LAYER (= 142 tests passing) plus
+RUNTIME GLUE SCAFFOLDING (= 9 shell scripts + 4 seed files) that the slot's cron prompt
+can invoke today. Sprint-2 fills in the production behaviors.
+
 ## Purity Boundary (sketch — formalized in 1b)
 
 | layer | side-effect surface |

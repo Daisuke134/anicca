@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-015",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "high",
+  "description": "PROP-E5 is declared Tier 1 (integration) with 12 fixture cases. The impl uses a 'fixture-protocol' signature scheme (lib/spawn_pin.py:84-88, 132-134): sig = sha256(pinned_bytes + pubkey_raw) truncated/padded to 64 bytes. This is NOT ed25519. The spec REQ-E5 explicitly says 'ed25519 signature, raw 64 bytes' verified via 'openssl pkeyutl -verify -pubin' or 'python3 -c \"import nacl.signing\"'. The impl's verify_spawn_surface does the fixture-protocol verification, not real ed25519. A Phase 5 formal hardening attempting to verify the cryptographic property of spawn-surface integrity would find the property claimed (ed25519-signed) does not match the mechanism implemented (sha256 mix). Any production deployment would need a separate code path; the test fixture proves nothing about production signature security.",
+  "evidence": {
+    "filePath": "skills/_shared/lib/spawn_pin.py",
+    "lineRange": "82-94",
+    "snippet": "sig = hashlib.sha256(final_bytes + pubkey_raw.encode()).digest(); sig_64 = (sig + sig)[:64] \u2014 claims 'mimic ed25519 sig length'. verify computes the same sha256(pinned + pubkey) and compares \u2014 this is NOT ed25519 verification."
+  },
+  "routeToPhase": "2b"
+}

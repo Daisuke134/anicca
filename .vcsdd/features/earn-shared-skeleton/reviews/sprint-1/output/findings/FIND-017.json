@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-017",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "medium",
+  "description": "Several spec'd PROPs have impl + spec table entries but zero tests, contradicting Phase 2a/2b TDD discipline: (1) PROP-B5-rolling \u2014 roi.rolling_window (lib/roi.py:83-106) exists, has docstring, but no test_rolling.py and grep across __tests__/ for 'rolling_window' = zero hits. The data-floor / partial-window semantics declared in REQ-B5 are unverified. (2) PROP-C2-tail50 \u2014 no impl AND no test (loop-improve.py is missing per FIND-001). (3) PROP-D1/D2/D3 cross-learn \u2014 no impl AND no tests. (4) PROP-G1-manifest-schema \u2014 no impl (FIND-006) AND no test. (5) PROP-H1-novelty \u2014 no impl AND no test. (6) PROP-I3-retro / PROP-I4-budget \u2014 declared 'required: false' (Tier 0 / Tier 1) but unimplemented + untested. The spec NUMBER OF REQUIREMENTS = 30 EARS + 5 NFRs; the impl covers ~13 properties via 142 tests. The 'documented as TODO or scope-deferred' criterion from extraConstraint 3 is not satisfied \u2014 these gaps are silent, not declared.",
+  "evidence": {
+    "filePath": ".vcsdd/features/earn-shared-skeleton/specs/verification-architecture.md",
+    "lineRange": "75-78",
+    "snippet": "PROP-B5/C2/D1/D2/D3/G1/H1/I3/I4 declared in spec table; only PROP-B5 has impl + 0 tests; others have neither impl nor tests."
+  },
+  "routeToPhase": "2b"
+}

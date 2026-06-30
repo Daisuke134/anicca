@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-011",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "high",
+  "description": "Group J handler dispatch maps both 'needs-login' AND 'oauth-extract-failed' to j1_auto_login (lib/group_j.py:94-95). Per REQ-A3(d): 'IF a URL extracted, call self-recover.sh <slot> needs-login <url>; IF NOT, call self-recover.sh <slot> oauth-extract-failed <truncated pane sha256>'. These are SEMANTICALLY DIFFERENT failure modes: 'needs-login' has a real OAuth URL to drive camofox to; 'oauth-extract-failed' has only a pane sha256 (NOT a URL) \u2014 the URL extraction itself failed. Routing both to the same handler with signature j1_auto_login(slot, oauth_url) will pass a sha256 string in the oauth_url parameter for the oauth-extract-failed case. The stub hides this, but production code wired to camofox would attempt to navigate to a sha256 hex string. This is a dispatcher/handler contract violation that the test corpus does not exercise (test_dispatch_needs_login_invokes_j1_handler only covers the URL case).",
+  "evidence": {
+    "filePath": "skills/_shared/lib/group_j.py",
+    "lineRange": "93-105",
+    "snippet": "_HANDLER_BY_REASON = { 'needs-login': 'j1_auto_login', 'oauth-extract-failed': 'j1_auto_login', ... } \u2014 j1_auto_login signature takes oauth_url, but oauth-extract-failed evidence is a pane sha256."
+  },
+  "routeToPhase": "2b"
+}

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-012",
+  "dimension": "edge_case_coverage",
+  "category": "test_quality",
+  "severity": "medium",
+  "description": "test_killswitch.test_inputs_are_both_in_jpy_units (line 66-74) is tautological: it only inspects the function's parameter NAMES via inspect.signature and asserts 'cum_cost_jpy' / 'cum_earned_jpy' substrings appear. This is a documentation check, not a dimensional correctness check. PROP-B4-killswitch spec says 'dimensional check via type annotations + a fuzz test asserting type-coherence' \u2014 there is no fuzz test, no annotation-based type check. A future renaming or accidental swap of the args at a call site would not be caught. This is the manifest's AI-slop signal (ii): test that uses a 'magic' constant the implementation just happens to honor (here, the param name).",
+  "evidence": {
+    "filePath": "skills/_shared/__tests__/test_killswitch.py",
+    "lineRange": "66-74",
+    "snippet": "def test_inputs_are_both_in_jpy_units(): sig = inspect.signature(kill_switch_tripped); assert 'cum_cost_jpy' in sig.parameters; assert 'cum_earned_jpy' in sig.parameters"
+  },
+  "routeToPhase": "2b"
+}

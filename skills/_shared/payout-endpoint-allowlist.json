@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "coconala": {
+    "endpoints": [
+      {
+        "endpoint": "/api/v1/sales/{receipt_id}",
+        "method": "GET",
+        "response_format": "json",
+        "receipt_id_path": "$.sale.id",
+        "amount_path": "$.sale.amount",
+        "payer_path": "$.sale.buyer.id",
+        "unit": "jpy_int",
+        "comparison": "exact"
+      }
+    ]
+  },
+  "whop": {
+    "endpoints": [
+      {
+        "endpoint": "/api/v2/payouts/{receipt_id}",
+        "method": "GET",
+        "response_format": "json",
+        "receipt_id_path": "$.payout.id",
+        "amount_path": "$.payout.amount_usdc",
+        "payer_path": "$.payout.from",
+        "unit": "usdc_float_6dp",
+        "comparison": "epsilon:0.01"
+      }
+    ]
+  }
+}

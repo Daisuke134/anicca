@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-009",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "high",
+  "description": "events._amount_equal contains dead code that masks a probable implementation intent. Line 70-71: 'return isinstance(claim, int) or isinstance(claim, float) and float(claim).is_integer() if False else int(claim) == int(observed)'. Python parses 'X if False else Y' which always evaluates Y; the entire isinstance/float-check branch is unreachable. The actual returned value is always int(claim) == int(observed), which (a) raises TypeError if claim is None or a non-numeric type rather than failing closed, (b) silently truncates non-integer floats (1.7 \u2192 1 == 1). Test test_happy_path_coconala_jpy_exact_accepts passes because both sides are int. No test asserts the input-validation semantics this code appears to attempt. This is the manifest's AI-slop signal (i): test passes because of impl behavior, not spec behavior.",
+  "evidence": {
+    "filePath": "skills/_shared/lib/events.py",
+    "lineRange": "69-71",
+    "snippet": "if unit == \"jpy_int\":\n    return isinstance(claim, int) or isinstance(claim, float) and float(claim).is_integer() \\\n        if False else int(claim) == int(observed)"
+  },
+  "routeToPhase": "2c"
+}

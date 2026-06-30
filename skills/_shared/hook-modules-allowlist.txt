@@ -1,0 +1,4 @@
+dotenv
+zx
+execa
+@anthropic-ai/claude-code-hooks

@@ -12,6 +12,8 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
+from lib._common import append_jsonl  # 2c refactor extension (FIND-016 fix)
+
 
 @dataclass(frozen=True)
 class MutationResult:
@@ -71,7 +73,7 @@ def apply_strategy_mutation(
 def _log_rejection(
     lessons_path: Path, sha: str, reason: str, evidence_id: Path | None
 ) -> None:
-    row = {
+    append_jsonl(lessons_path, {
         "ts": int(time.time()),
         "requestId": None,
         "category": "self-mutation",
@@ -79,7 +81,4 @@ def _log_rejection(
         "reason": reason,
         "sha": sha,
         "evidence_id": str(evidence_id) if evidence_id else None,
-    }
-    lessons_path.parent.mkdir(parents=True, exist_ok=True)
-    with lessons_path.open("a", encoding="utf-8") as f:
-        f.write(json.dumps(row, ensure_ascii=False) + "\n")
+    })
