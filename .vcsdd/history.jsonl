@@ -101,3 +101,9 @@
 {"timestamp":"2026-06-30T22:48:36.738Z","event":"feature_created","featureName":"proactive-step6-act","mode":"lean","language":"python"}
 {"timestamp":"2026-06-30T22:49:48.384Z","event":"phase_transition","featureName":"proactive-step6-act","from":"init","to":"1a","iteration":1,"phase":"1a"}
 {"timestamp":"2026-06-30T22:49:48.386Z","event":"phase_transition","featureName":"proactive-step6-act","from":"1a","to":"1b","iteration":1,"phase":"1b"}
+{"timestamp":"2026-06-30T22:59:37.416Z","event":"gate_recorded","featureName":"proactive-step6-act","phase":"1c","verdict":"PASS","reviewedBy":"adversary"}
+{"timestamp":"2026-06-30T22:59:37.418Z","event":"phase_transition","featureName":"proactive-step6-act","from":"1b","to":"1c","iteration":1,"phase":"1c"}
+{"timestamp":"2026-06-30T22:59:37.425Z","event":"phase_transition","featureName":"proactive-step6-act","from":"1c","to":"2a","iteration":1,"phase":"2a"}
+{"timestamp":"2026-06-30T22:59:37.425Z","event":"sprint_started","featureName":"proactive-step6-act","sprintNumber":1,"phase":"2a"}
+{"timestamp":"2026-06-30T22:59:46.826Z","event":"phase_transition","featureName":"proactive-step6-act","from":"2a","to":"2b","iteration":1,"phase":"2b"}
+{"timestamp":"2026-06-30T22:59:46.884Z","event":"phase_transition","featureName":"proactive-step6-act","from":"2b","to":"2c","iteration":1,"phase":"2c"}
