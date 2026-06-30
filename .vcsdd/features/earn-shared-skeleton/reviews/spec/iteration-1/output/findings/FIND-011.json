@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-011",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "high",
+  "description": "EDGE-6 silently undermines TRAP-5 / INV-11 / PROP-B2 — the entire reason this skeleton exists. When Claude session usage stats are not exposed (CLAUDE_CODE_ENTRYPOINT=plugin, etc), EDGE-6 falls back to 'byte-count × heuristic ratio for tokens_total; clearly mark such rows with token_source: \"estimated\"'. Three problems: (1) no PROP / proof obligation binds the estimation accuracy — heuristic ratio could under-count by 10× and still satisfy PROP-B2 (`tokens_total > 0 ⇒ cost > 0`) while completely defeating INV-11's kill-switch math; (2) REQ-B1's jsonl schema (line 86-87) does not declare a `token_source` field, so the EDGE-6 marker is not actually required to be persisted; (3) REQ-B4 references `cumulative tokens_total` with no instruction to scale estimated rows differently from measured rows, so the kill-switch will fire (or fail to fire) based on a black-box heuristic. PROP-B2 required:true is the headline TRAP-5 gate; allowing a free pass via a vague estimate is exactly the 'token-rich illusion' the parent spec calls out. The spec must either prove a bounded-error estimate or refuse to compute ROI when stats are unavailable.",
+  "evidence": {
+    "filePath": ".vcsdd/features/earn-shared-skeleton/specs/behavioral-spec.md",
+    "lineRange": "205-207",
+    "snippet": "EDGE-6 Claude session usage stats not exposed (CLAUDE_CODE_ENTRYPOINT=plugin etc) → fall back to byte-count × heuristic ratio for `tokens_total`; clearly mark such rows with `token_source: \"estimated\"` for downstream filtering."
+  },
+  "routeToPhase": "1a"
+}

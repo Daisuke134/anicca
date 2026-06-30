@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-012",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "medium",
+  "description": "REQ-E1 says 'AT 03:00 local time daily for each slot, THE SYSTEM SHALL spawn a fresh-context vcsdd-adversary (Opus) subagent.' Two unspecified items: (1) the scheduling mechanism — launchd (the rest of the system) cannot spawn Claude subagents; subagents are spawned by an in-session Claude calling the Agent tool. The skeleton has no defined trigger that calls Claude at 03:00. NFR-1 enumerates allowed runtimes (tmux, jq, gh, python3, node, claude) but does not pick the scheduler. Reading the spec literally, the only thing the cron can do is `claude -p '<prompt that calls Agent tool>'` — but that fires a fresh top-level Claude session every day at 03:00 across 5 slots = 5 sessions, no shared state, and the resulting Agent spawn is the second-level subagent (=2 levels of fresh context). Is that intended? (2) 'fresh-context vcsdd-adversary' — REQ-E1 promises disk-only reading 'no shared chat context with the slot's builder', but does not constrain WHICH disk artifacts. The top-level 03:00 invoker is also fresh — does it count as the adversary, or does it spawn one? The reviewer in Phase 3 cannot mechanically check this.",
+  "evidence": {
+    "filePath": ".vcsdd/features/earn-shared-skeleton/specs/behavioral-spec.md",
+    "lineRange": "139-142",
+    "snippet": "REQ-E1 AT 03:00 local time daily for each slot, THE SYSTEM SHALL spawn a fresh-context `vcsdd-adversary` (Opus) subagent against `~/anicca/.vcsdd/features/<slot>/` reading disk-only artifacts (= no shared chat context with the slot's builder)."
+  },
+  "routeToPhase": "1a"
+}

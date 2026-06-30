@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-010",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "high",
+  "description": "Several PROP-XXX claim a Tier the chosen tooling cannot mechanically check. (1) PROP-A7 Tier 0 'unit-test (stubbed CronList)' — CronList is a Claude-Code skill verb, not a shell-callable function, and REQ-A7 reaches it 'via a short send-keys probe' which is a live tmux interaction. A stubbed unit test in the pure layer cannot demonstrate the send-keys probe actually round-trips. (2) PROP-E1 Tier 0 'unit-test (Agent call stubbed)' for `adversary-daily.sh spawns one Agent call with subagent_type=vcsdd:vcsdd-adversary' — but shell scripts cannot spawn subagents; only an in-session Claude can call the Agent tool. Stubbing the spawn in shell does not verify the actual spawn surface. (3) PROP-E2 Tier 1 'property-test' for the adversary-builder loop bounded ≤ 5 rounds — same issue: the loop is a Claude-orchestration concept living in the daily cron prompt, not a pure function, so a property-test in lib/ cannot enforce it. (4) PROP-G2 Tier 1 'static-analysis test' that 'skill code MUST NOT contain a write to its own manifest.json' — verified by grep, but grep cannot reliably catch indirect writes (writing to `$MANIFEST` where MANIFEST is built up at runtime, sourced subscripts, Python `open(json_path, 'w')` where json_path is parameterized). The required:true PROP-C3 has the same shape: 'verdict.json fixture' verifies presence of a file, not that a real fresh-context adversary executed.",
+  "evidence": {
+    "filePath": ".vcsdd/features/earn-shared-skeleton/specs/verification-architecture.md",
+    "lineRange": "54-75",
+    "snippet": "| PROP-A7 | A7 | 0 | tmux has-session ∧ ¬cron_has_slot_job ⇒ classify returns \"CRON_GONE\" | unit-test (stubbed CronList) | ... | PROP-E1 | E1 | 0 | adversary-daily.sh invocation spawns one Agent call ... | unit-test (Agent call stubbed) |"
+  },
+  "routeToPhase": "1b"
+}

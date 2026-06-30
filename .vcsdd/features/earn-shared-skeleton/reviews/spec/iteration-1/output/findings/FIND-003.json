@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "verification_readiness",
+  "category": "purity_boundary",
+  "severity": "high",
+  "description": "The pure-layer symbol `healthcheck.classify(pane_text) → enum` in verification-architecture.md (line 25) is documented as taking ONLY pane_text and producing the 8-mode classification with no side-effects. But REQ-A1, REQ-A2, REQ-A7, and REQ-A8 require inputs OUTSIDE the pane text: REQ-A1 needs `tmux has-session` (I/O), REQ-A2 needs `stat(.last-pass)` mtime (I/O / clock), REQ-A7 needs cron-job state (I/O via send-keys probe), REQ-A8 needs `stat(.restart-log)` and a 3600s wall-clock comparison (I/O + time). PROP-A1/A2/A7/A8 all then claim classify resolves these modes purely. Either (a) classify is NOT pure — it must accept a richer input record `{pane_text, has_session, last_pass_mtime, restart_log_entries, cron_state, now_ts}` and the 1b table is wrong, or (b) the pure layer cannot determine these modes and PROP-A1/A2/A7/A8 are unverifiable in Tier 0. As written, the purity boundary is incoherent with the proof obligations. This also breaks PROP-A9 (required:true mutual-exclusion property-test) because the test cannot exhaustively fuzz mutual exclusion if some classifications depend on hidden I/O state.",
+  "evidence": {
+    "filePath": ".vcsdd/features/earn-shared-skeleton/specs/verification-architecture.md",
+    "lineRange": "25-25",
+    "snippet": "| `healthcheck.classify(pane_text)` | str | enum `{TMUX_DEAD, STALE, NOT_LOGGED_IN, TRUST_DIALOG, HOOK_ERROR, API_RATE_LIMIT, CRON_GONE, BACKOFF}` | none |"
+  },
+  "routeToPhase": "1b"
+}

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "REQ-B4 (the TRAP-5/INV-11 kill-switch) is dimensionally wrong vs the parent master spec. The parent (anicca-project/docs/superpowers/specs/2026-06-30-earn-slots-daily-loop-master.md line 171-173) requires: 'cumulative_tokens > 5 × cumulative_¥_earned_in_jpy (priced at public API rates)' — meaning LHS must be COST-IN-JPY, not raw token count. The feature spec REQ-B4 (behavioral-spec.md line 97-99) writes: 'WHEN cumulative tokens_total since the slot's first-ever pass exceeds 5 × cumulative jpy_earned, THE SYSTEM SHALL create loop.disabled'. Comparing raw token count (e.g. 116018 tokens) against 5 × yen (e.g. 5 × 0 = 0) is unit-incoherent. Two concrete failures fall out: (1) on first pass every brand-new slot has jpy_earned=0, so tokens_total > 0 immediately trips the kill switch — every slot dies before its first earning attempt; (2) even after some earnings the comparison is meaningless because 1 token ≠ 1 yen. PROP-B4 inherits the same bug: it tests 'roi.kill_switch_tripped(t, j, m=5) ⇔ t > 5*j' where t is also typed as 'cumulative_tokens', not cost. This is the single most important required:true obligation in lean mode (whole reason this skeleton exists per master line 195-196: 'Today's gig pass burned 101.8k tokens'); shipping it as-spec'd guarantees zero earning days for every new slot.",
+  "evidence": {
+    "filePath": ".vcsdd/features/earn-shared-skeleton/specs/behavioral-spec.md",
+    "lineRange": "97-101",
+    "snippet": "WHEN cumulative `tokens_total` since the slot's first-ever pass exceeds 5 × cumulative `jpy_earned`, THE SYSTEM SHALL create `~/loops/<slot>/loop.disabled`."
+  },
+  "routeToPhase": "1a"
+}

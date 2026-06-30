@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-014",
+  "dimension": "verification_readiness",
+  "category": "test_coverage",
+  "severity": "medium",
+  "description": "The lean-mode required:true set undervalues security-critical and provenance-critical PROPs while overrepresenting easier-to-prove invariants. The 5 required:true are PROP-A9, B2, B4, C3, F2. NOT required: PROP-A5 (npm install of attacker-influenceable module names — FIND-004 RCE class), PROP-G2 (INV-13 'skill never writes its own manifest' — entire skill-provenance trust model), PROP-C1 (TRAP-4 faithfulness drift; lessons.jsonl evidence_id must quote raw output not paraphrase — this is the canonical anti-slop guard from the parent INV/TRAP table). Lean mode trades formal proof for adversary review, but the required-set is supposed to be the floor of what blocks convergence; that floor currently allows a self-heal with RCE potential and a manifest-self-write loophole to ship without a gate. PROP-G2's static-grep approach is also weak (see FIND-010) so even if it were required, the test would not catch indirect writes. Recommendation: promote PROP-A5, PROP-G2, PROP-C1 to required:true and harden their property language.",
+  "evidence": {
+    "filePath": ".vcsdd/features/earn-shared-skeleton/specs/verification-architecture.md",
+    "lineRange": "86-95",
+    "snippet": "In lean mode, the following PROP-XXX are `required: true` ... PROP-A9 ... PROP-B2 ... PROP-B4 ... PROP-C3 ... PROP-F2"
+  },
+  "routeToPhase": "1b"
+}
