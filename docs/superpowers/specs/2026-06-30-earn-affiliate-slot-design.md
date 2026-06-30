@@ -35,3 +35,15 @@ needed; #PR mandatory (景表法). record-affiliate-earn.mjs (INV-7) counts only
 4. record-affiliate-earn wired (INV-7) — commission accrues later.
 DONE = a real educational slideshow posted to our own account daily, BIO Amazon link live, verified in browser.
 "composed images exist" ≠ done; "posted + rendered live" = done for the post step; real USDC = commission (later).
+
+## earn/bounty (renamed from audit) — Algora, + the drizzle#1188 lesson (2026-06-30)
+VERIFIED: Algora (algora-pbc bot) = the one live paid-on-merge platform; discover gh-searches 38 real
+open issues. BUT the first target drizzle-orm#1188 ($200) was DEAD: funder @tslater WITHDREW it
+(2025-04), an identical PR #5605 is already open+mergeable, and the naive string→Buffer fix is a
+KNOWN-REJECTED breaking change (mysql2/planetscale shared-builder conflict; PR #425/#1253 closed).
+The coding subagent correctly opened NO PR (avoided a $0 duplicate). ★ LESSON: Algora's "Open" tab is
+stale — before attempting ANY bounty the discover MUST verify per-bounty: (1) funder didn't withdraw
+(scan issue comments), (2) no existing open PR doing it (gh pr list), (3) fix isn't architecturally
+blocked / previously-closed, (4) scope is genuinely agent-doable + mergeable. The winnable intersection
+(fresh × uncontested × payable × mergeable × agent-doable) is THIN. Bounty = pick ONE carefully, not spray. ★
+TODO: add the per-bounty freshness/contention gate to earn/bounty/run.sh discover before any /attempt.
