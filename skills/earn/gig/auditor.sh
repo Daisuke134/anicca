@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"  # launchd has a minimal PATH; tmux/python3/node/claude live in homebrew
 # auditor.sh — INDEPENDENT verification that the gig loop self-runs (master-spec AUDITOR, gig-scoped).
 # Runs via its OWN launchd (hourly at :45, offset from the core's :27 cron), so it observes the loop
 # WITHOUT the main session and WITHOUT being the core. Each run it answers, from the files the core

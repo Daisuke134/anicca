@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"  # launchd has a minimal PATH; tmux/python3/node/claude live in homebrew
 # gig-cli.sh — launch the ALWAYS-ON gig earn-core (cloned from clip-cli.sh / Sutando pattern):
 # a detached tmux session running headless `claude` that registers a recurring cron driving the
 # COCONALA freelance gig money loop EVERY day (scan 公開依頼 → 応募 → トーク返信 → 納品 → 評価),
