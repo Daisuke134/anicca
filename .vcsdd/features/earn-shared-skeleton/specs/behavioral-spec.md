@@ -930,6 +930,115 @@ adversary budget accordingly.
   in-progress, does not re-fire. After 5 min, a stale-in-progress row reverts to actionable
   state and a fresh handler dispatch occurs. NO human notification at any step.
 
+## Sprint-2 Architecture Simplification (added 2026-07-01 post-Sutando-study)
+
+Per Dais directive 2026-07-01 + study of `github.com/sonichi/sutando` (= 50 days, 600+ PRs,
+proven autonomous build loop), Group J is OVER-ENGINEERED for what we actually need. Sutando
+runs 50 days autonomously with ZERO per-failure-mode handlers — it relies on a much simpler
+4-pattern architecture that handles every failure class generically.
+
+### What Sutando does (= the pattern we adopt)
+
+```
+┌────────────────────────────────────────────────────────────────────────────┐
+│  ONE proactive-loop, every 5 min via cron */5 * * * *                        │
+│                                                                              │
+│  Each pass:                                                                  │
+│    0. status signal → state/core-status.json                                  │
+│    0.5 quota-tracker → FULL / MEDIUM / LIGHT / MINIMAL budget                 │
+│    1. process tasks/ (= owner asks from any channel)                          │
+│    2. check pending-questions.md                                              │
+│    3. health-check.py --fix  (= self-heal everything generic)                 │
+│    4. read build_log.md (= persistent unified memory)                          │
+│    5. pick highest ROI × probability-of-landing from infinite menu             │
+│    6. ACT (= do it)                                                            │
+│    7. update build_log.md                                                     │
+│                                                                              │
+│  ★ PIVOT-ON-BLOCK ★: if primary work blocked, switch lane, never idle.       │
+│  ★ NO PER-FAILURE-MODE HANDLERS ★ — health-check.py + pivot covers all.      │
+└────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Group J → simplified mapping (= sprint-2 plan revised)
+
+| original Group J handler | replaced by | rationale |
+|---|---|---|
+| **J1 auto-login (camofox + Gmail OTP)** | `health-check.py --fix` detects "Not logged in" + invokes credential-restore helper; SAME tool pattern handles every "auth refresh" failure mode generically | Sutando proves the agent doesn't need per-credential-store handlers — it needs ONE generic auth-repair flow |
+| **J2 auto-rollback (git checkout)** | `health-check.py --fix` detects spawn-surface-drift + invokes git-restore helper | Same: ONE git-state-repair helper handles every drift class |
+| **J3 auto-research (firecrawl npmjs)** | DELETED. If a hook needs a new module, the agent OPENS A PR via the standard build_log flow; auto-allowlist via PR review by another AI instance | Hook research is just normal build work, not a special recovery flow |
+| **J4 model ladder** | DELETED. quota-tracker already drives FULL/MEDIUM/LIGHT/MINIMAL per pass — Claude Code's `/model` switch is one of the standard menu items, not a recovery handler | Quota-aware depth is the right primitive; "model upgrade for stalled adversary" was over-specific |
+| **J5 fresh-start (tmux kill-server)** | `health-check.py --fix` detects tmux-server-corrupted + restarts; "fresh wallet" is a SCALE decision (= different feature, sprint-3 multi-instance spawn) | Restart is generic, wallet management is a different concern |
+| **J6 token-kill-switch resurrection** | quota-tracker handles graceful degradation continuously; INV-11 hard kill-switch fires only when cumulative cost exceeds the 5×earn threshold past grace | Continuous adjustment > binary disable/resurrect |
+| **J7 MOTHER queue** | gh issue label=bot2bot-review + a sibling AI instance picks it up via its own loop; PR auto-merge after another AI's adversary review with anicca-bot signature | Sutando uses `#bot2bot` Discord channel + `bot2bot-post` skill; we replace Discord with gh issues to keep it text-only and zero-side-channel |
+| **J9 measurement-seam recovery** | quota-tracker handles measurement; if seam is broken, the same quota-aware degradation path applies | Folded into quota-tracker |
+| **J8 anti-human-touch invariant** | **★ KEPT, STRENGTHENED ★** — Sutando keeps Telegram/Discord/voice channels open (≠ NO HUMAN); we are STRICTER and forbid all of them. The static analyzer + the blocklist regex stay | This is our unique invariant beyond Sutando |
+
+### New canonical files (sprint-2)
+
+Sprint-2 ships these instead of the original 9 J handlers:
+
+| file | role | replaces |
+|------|------|----------|
+| `~/anicca/skills/_shared/proactive-loop.sh` | the single 5-min cron entry that runs steps 0-7 | original `*-core-healthcheck` + per-J handlers |
+| `~/anicca/skills/_shared/health-check.py` (--fix) | generic auto-recovery for any detectable failure mode (auth, drift, tmux, etc.) | J1+J2+J5+J6+J9 |
+| `~/anicca/skills/_shared/quota-tracker.py` | reads claude usage → budget per pass → adjusts depth | J4+J6+J9 partial |
+| `~/anicca/skills/_shared/bot2bot.sh` | gh issue-based bot-to-bot coordination (review/PR) | J7 MOTHER queue |
+| `~/loops/<slot>/build_log.md` | unified per-slot memory: what passed/failed/learned/next | lessons.jsonl + strategy.json + applied.jsonl (consolidated; jsonl streams kept as immutable audit log, build_log is the narrative summary) |
+| `~/loops/<slot>/menu.json` | infinite-menu config: categories, ROI heuristics, novelty quota | strategy.json subset |
+| `loop-healthcheck.sh` (existing) | KEPT as the 5-min launchd entry; just delegates to proactive-loop.sh | (unchanged role) |
+| 9 J handler stubs in `lib/group_j.py` | DEPRECATED: dispatcher reduced to `health-check.py --fix` + `bot2bot.sh` only; `_HUMAN_TOUCH_PATTERNS` blocklist stays | J1-J7+J9 stubs |
+
+### What each loop inherits (= generalized, every-loop)
+
+★ The whole point of "generalized" is that the SAME proactive-loop.sh runs for gig, clip,
+video, affiliate, bounty, and any future slot ★. Each slot supplies:
+
+1. **`~/loops/<slot>/menu.json`** — what work this slot can do (= for gig: scan-requests,
+   nurture-talk-rooms, deliver, evaluate; for clip: source-podcast, cut, post, monitor).
+2. **`~/loops/<slot>/strategy.json`** — slot-specific tunable parameters (priority categories,
+   skip categories, max_apply_per_pass, etc.). Still mutated by the adversary-gated REQ-C3
+   flow.
+3. **`~/loops/<slot>/build_log.md`** — slot's own narrative memory.
+
+The shared `proactive-loop.sh` reads these per-slot files and runs the same 8-step body for
+each slot. Self-improvement is uniform across all 6 loops because the LOOP is the same; only
+the menu + strategy + log differ.
+
+### Sutando patterns we adopt verbatim
+
+- **build_log.md as single unified memory** (vs our 4-file lessons/strategy/applied/earnings split)
+- **pivot-on-block rule** (vs our "BACKOFF → escalate") — block never stops the loop, only switches lane
+- **quota-tracker → pass depth** (vs our binary kill-switch) — continuous degradation
+- **infinite menu + ROI × probability pick** (vs our category-priority list) — every pass has work
+- **self-contained skills, core boots without them** (vs our tight coupling) — slot disable mustn't break others
+
+### Sutando patterns we DO NOT adopt
+
+- Telegram / Discord / voice / phone bridges — REQ-J8 invariant prevents them
+- "Owner sent task in last 5min → conversation mode" — we have no owner-conversation surface
+- Meeting approval DM — we have no meeting concept
+- "VERIFIED_CALLERS" 3-tier — we have no callers
+
+### Sprint-2 work items (revised against Sutando architecture)
+
+The original 13-row Sprint-1/Sprint-2 Scope Cut table (next section) is SUPERSEDED for the
+Group J rows. The table below replaces J-row entries:
+
+| sprint-2 item | acceptance criteria |
+|---|---|
+| proactive-loop.sh + 8-step body | per-slot invocation runs all 8 steps, writes build_log.md, exits cleanly when LIGHT/MINIMAL budget |
+| health-check.py --fix | detects + auto-fixes: tmux dead, .last-pass stale, NOT_LOGGED_IN, trust dialog, hook module missing, drift; ZERO human-touch fallback |
+| quota-tracker.py | reads claude usage; computes per-pass budget; adjusts depth; emits roi.jsonl row |
+| bot2bot.sh | bidirectional gh issue-based coord with sibling instance; PR-comment loop; anicca-bot signed auto-merge after fresh adversary PASS |
+| build_log.md schema + helper | per-slot narrative memory + reader/writer that proactive-loop uses every pass |
+| menu.json schema + per-slot seeds | gig: requests/nurture/deliver/eval. clip: source/cut/post/monitor. video: gen/post. affiliate: slideshow/post. bounty: scan/deliver |
+| Slot migration: gig first | gig-core's STARTUP prompt invokes proactive-loop.sh; lessons.jsonl historical kept, build_log.md becomes new write target |
+| Other 5 slots migration | same pattern: clip, video, affiliate, bounty inherit; each ships own menu.json + strategy.json |
+
+REMOVED from original scope cut: FIND-002 (Group J handler impls) — replaced by health-check
++ bot2bot pair. FIND-006 (Pure layer missing symbols), FIND-015 (real ed25519): unchanged.
+Others adjusted accordingly.
+
 ## Sprint-1 / Sprint-2 Scope Cut (added 2026-07-01 post-Phase-3 adversary)
 
 Phase 3 sprint-1 adversary FAILed with 18 findings. ~10 are addressed in-sprint by:
