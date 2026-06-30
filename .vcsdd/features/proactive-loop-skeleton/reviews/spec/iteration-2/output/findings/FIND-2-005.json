@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-2-005",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "medium",
+  "description": "EDGE-S7 unchanged from iter-1: 'Adversary daily review is just a high-ROI menu category that fires on a once-per-day cadence inside the menu picker, not a separate launchd plist.' FIND-016 flagged that (i) the loop reviewing itself under its own quota is anti-pattern (sprint-1 used a separate plist for fresh-context isolation), and (ii) the picker per REQ-P6/REQ-M3 ranks by roi_estimate × probability_of_landing with no time-window/cadence constraint. v2 added no REQ-P6a 'time-window menu items' or REQ-M3a 'last-fired timestamp' to model the once-per-day cadence inside the picker. EDGE-S7 still relies on an unimplementable cadence-in-picker mechanism. Either move the adversary back to a separate launchd plist or add a concrete cadence-aware menu-pick contract to REQ-M3 with a corresponding PROP.",
+  "evidence": {
+    "filePath": ".vcsdd/features/proactive-loop-skeleton/specs/behavioral-spec.md",
+    "lineRange": "390-392",
+    "snippet": "EDGE-S7 Adversary daily review (= sprint-1 REQ-E1, replaced in sprint-2 as a menu item) is just a high-ROI menu category that fires on a once-per-day cadence inside the menu picker, not a separate launchd plist."
+  },
+  "routeToPhase": "1a"
+}

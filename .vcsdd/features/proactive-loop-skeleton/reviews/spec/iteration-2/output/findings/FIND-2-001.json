@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-2-001",
+  "dimension": "verification_readiness",
+  "category": "requirement_mismatch",
+  "severity": "high",
+  "description": "PROP-P1-budget-quantize contradicts REQ-Q2 at the FULL/MEDIUM boundary. PROP-P1 specifies 'FULL iff b>=3.0' (inclusive lower) but REQ-Q2 specifies 'FULL if > 3' (strict-greater) and 'MEDIUM if 1-3'. At exact b=3.0, the PROP demands FULL while the REQ demands MEDIUM. The new note 'boundaries half-open, consistent inclusive lower / exclusive upper' lives only in the PROP row; REQ-Q2 still uses the ambiguous '1-3' / '> 3' / '0.1-1' range syntax. FIND-010 is therefore not closed — the ambiguity was moved from one location to a direct PROP/REQ contradiction. Boundary fixture 3.0 in PROP-P1 will assert FULL while REQ-Q2 demands MEDIUM. Either REQ-Q2 must adopt the half-open convention verbatim (FULL iff b>=3, MEDIUM iff 1<=b<3, LIGHT iff 0.1<=b<1, MINIMAL iff b<0.1) or PROP-P1 must match the strict-greater REQ wording.",
+  "evidence": {
+    "filePath": ".vcsdd/features/proactive-loop-skeleton/specs/verification-architecture.md",
+    "lineRange": "58",
+    "snippet": "PROP-P1-budget-quantize | P1, Q2 | 1 | quantize_budget(b) returns FULL iff b>=3.0; MEDIUM iff 1.0<=b<3.0; LIGHT iff 0.1<=b<1.0; MINIMAL iff b<0.1 ... vs behavioral-spec.md line 209: 'FULL if > 3, MEDIUM if 1-3, LIGHT if 0.1-1, MINIMAL if < 0.1'"
+  },
+  "routeToPhase": "1a"
+}

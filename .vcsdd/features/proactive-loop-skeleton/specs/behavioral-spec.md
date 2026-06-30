@@ -204,9 +204,12 @@ Continuous budget. Replaces J4/J6/J9.
   it reads the current state), THE SYSTEM SHALL read Claude Code's remaining usage % and
   the next reset timestamp.
 
-- **REQ-Q2** Budget computation:
+- **REQ-Q2** Budget computation (FIND-2-001 fix: half-open boundaries verbatim,
+  matching PROP-P1):
   `budget_per_pass = remaining_pct / (minutes_until_reset / 5)`.
-  Then quantize: `FULL` if > 3, `MEDIUM` if 1-3, `LIGHT` if 0.1-1, `MINIMAL` if < 0.1.
+  Quantize: `FULL` iff `b >= 3.0`; `MEDIUM` iff `1.0 <= b < 3.0`; `LIGHT` iff
+  `0.1 <= b < 1.0`; `MINIMAL` iff `b < 0.1`. All ranges are inclusive-lower,
+  exclusive-upper.
 
 - **REQ-Q3** Measurement-seam resilience (FIND-002 fix; restores full sprint-1 REQ-J9
   semantics):
@@ -301,11 +304,18 @@ zero-side-channel (= REQ-J8 compliant).
   }
   ```
 
-- **REQ-M3** `menu.pick_next(menu, log_tail, history)` SHALL return the unblocked
-  item with highest `roi_estimate × probability_of_landing`, applying the novelty
-  quota (sprint-1 REQ-H1 inherited verbatim) — at least 10% of picks must be
-  `(category, platform)` tuples not present in `history` (FIND-005 fix: key aligns
-  to sprint-1's canonical novelty key, not a parallel `(category, novelty)` slang).
+- **REQ-M3** `menu.pick_next(menu, log_tail, history, now_ts)` SHALL return the
+  unblocked item with highest `roi_estimate × probability_of_landing`, applying:
+  (i) the novelty quota (sprint-1 REQ-H1 inherited verbatim) — at least 10% of picks
+  must be `(category, platform)` tuples not present in `history` (FIND-005 fix);
+  (ii) the cadence gate (FIND-2-005 fix): each menu item MAY declare
+  `min_cadence_seconds` in menu.json; items whose `last_fired_ts` (= read from
+  build_log.md or a sidecar cadence.json) is within `min_cadence_seconds` of
+  `now_ts` are excluded from selection — this lets "adversary-daily" be a regular
+  menu item with `min_cadence_seconds: 86400` (= once per 24h) instead of a separate
+  launchd plist;
+  (iii) the budget gate — items whose `required_budget` exceeds the current
+  budget (REQ-Q2) are excluded.
 
 - **REQ-M4** Sprint-1's existing jsonl streams (`lessons.jsonl`, `earnings.jsonl`,
   `applied.jsonl`, `roi.jsonl`) SHALL remain as immutable audit logs. `build_log.md`
@@ -387,6 +397,10 @@ zero-side-channel (= REQ-J8 compliant).
   flock REQ-NFR-3 silently exits the second tick. The first tick's `core-status.json`
   shows `step` so observers know it's still alive.
 
-- **EDGE-S7** Adversary daily review (= sprint-1 REQ-E1, replaced in sprint-2 as a
-  menu item) is just a high-ROI menu category that fires on a once-per-day cadence
-  inside the menu picker, not a separate launchd plist. Saves one launchd surface.
+- **EDGE-S7** (FIND-2-005 / FIND-016 fix) Adversary daily review is a regular menu
+  item with `min_cadence_seconds: 86400` (= once per 24h). REQ-M3(ii) cadence-aware
+  pick handles the timing. The adversary still runs as a FRESH subagent
+  (sprint-1 REQ-E1 isolation requirement preserved) — it's the SCHEDULING that
+  merged into the menu, not the EXECUTION isolation. `bash adversary-daily.sh
+  <slot>` (from sprint-1) is still the actual invocation; only the WHEN-TO-FIRE
+  decision moved into the menu picker.

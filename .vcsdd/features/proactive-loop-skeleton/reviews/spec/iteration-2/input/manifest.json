@@ -1,0 +1,25 @@
+{
+  "reviewType": "spec",
+  "feature": "proactive-loop-skeleton",
+  "iteration": 2,
+  "mode": "lean",
+  "sprint": 2,
+  "artifactsToReview": [
+    ".vcsdd/features/proactive-loop-skeleton/specs/behavioral-spec.md",
+    ".vcsdd/features/proactive-loop-skeleton/specs/verification-architecture.md"
+  ],
+  "previousIterationFindings": [
+    "iter-1: 20 findings (3 critical / 8 high / 8 medium / 1 low)",
+    "Critical: FIND-001 (Q5 14d window inconsistent), FIND-002 (Q3 drops J9 semantics), FIND-003 (B3 auto-merge no identity gate), FIND-007 (18+ REQ no PROP)",
+    "v2 fixes ALL 20 — verify each finding is genuinely closed by re-reading the cited REQ/PROP, not by trusting the addresses_findings frontmatter"
+  ],
+  "reviewDimensions": ["spec_fidelity", "verification_readiness"],
+  "extraConstraints": [
+    "Verify FIND-003 critical closure: REQ-B3 no longer auto-merges. PROP-B3-annotate enforces no auto-merge code path exists. Verify: grep the spec for 'merge' — every occurrence must be in NEGATIVE/DEFERRED context, never an action sprint-2 performs.",
+    "Verify FIND-002 critical closure: REQ-Q3 now has 5-step fallback ladder (a-e). Verify each level matches sprint-1 REQ-J9 verbatim or improves coverage.",
+    "Verify FIND-007 critical closure: 18+ new PROPs added. Verify each new PROP actually tests SPEC BEHAVIOR not implementation detail.",
+    "New surface introduced by v2: REQ-H3c credential-restore.sh, REQ-H3e auto-allowlist.sh + auto-rollback.sh, REQ-Q3 mother-recovery-queue.jsonl appender. Probe for AI-slop / hand-wave in these new sections.",
+    "Anti-leniency phrases unchanged. Cap: MAX 5 new findings if FAIL."
+  ],
+  "expectedOutputPath": ".vcsdd/features/proactive-loop-skeleton/reviews/spec/iteration-2/output/"
+}

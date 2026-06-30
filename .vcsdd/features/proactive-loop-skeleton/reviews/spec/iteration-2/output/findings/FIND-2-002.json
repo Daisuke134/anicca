@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-2-002",
+  "dimension": "verification_readiness",
+  "category": "requirement_mismatch",
+  "severity": "high",
+  "description": "PROP-H3-dispatch contradicts the v2 REQ-H3 tie-break clause. REQ-H3 (line 151-152) was strengthened to: 'Issue classes are mutually exclusive by detection priority ... when multiple match, the highest-priority issue is the only one dispatched per pass'. PROP-H3-dispatch still asserts 'ambiguous issues raise (don't silently dispatch the wrong fix)'. Under the REQ semantics, multi-match resolves to the highest-priority dispatch (no raise). Under the PROP semantics, multi-match raises. The two are mutually exclusive behaviors. FIND-014 is not closed — the spec added a concrete tie-break (good) but the PROP language was not aligned. Either PROP-H3 must change to 'multi-match always dispatches the highest-priority recipe; no raise' or REQ-H3 must say 'multi-match raises'. Currently the required-true convergence gate is testing a behavior that contradicts the REQ.",
+  "evidence": {
+    "filePath": ".vcsdd/features/proactive-loop-skeleton/specs/verification-architecture.md",
+    "lineRange": "81",
+    "snippet": "PROP-H3-dispatch | H3 | 1 | for each of 7 detectable issue classes, classify+dispatch maps to the correct FixAction recipe; ambiguous issues raise (don't silently dispatch the wrong fix) ... vs behavioral-spec.md line 151-152: 'when multiple match, the highest-priority issue is the only one dispatched per pass'"
+  },
+  "routeToPhase": "1a"
+}
