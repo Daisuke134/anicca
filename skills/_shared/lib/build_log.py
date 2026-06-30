@@ -12,9 +12,11 @@ def format_log_section(
     *, pass_id: str, ts: int, budget: str,
     picked: str, outcome: str, next_candidate: str,
 ) -> str:
-    """REQ-M1 schema: a fenced section block."""
+    """REQ-M1 schema (FIND-018 fix): '## <ISO8601Z> — pass <pass_id>' header."""
+    import datetime as _dt
+    iso = _dt.datetime.utcfromtimestamp(ts).strftime("%Y-%m-%dT%H:%MZ")
     return (
-        f"## pass {pass_id} (ts {ts})\n"
+        f"## {iso} — pass {pass_id}\n"
         f"budget: {budget}\n"
         f"picked: {picked}\n"
         f"outcome: {outcome}\n"
@@ -22,18 +24,28 @@ def format_log_section(
     )
 
 
-_PASS_ID_RE = re.compile(r"^## pass (\S+) \(ts (\d+)\)")
+_PASS_ID_RE = re.compile(r"^## (\S+) — pass (\S+)")
 _FIELD_RE = re.compile(r"^(\w[\w\-]*): (.+)$")
 
 
 def parse_log_section(section: str) -> dict:
-    """Reverse format_log_section. Returns {pass_id, ts, budget, picked, outcome, next_candidate}."""
+    """Reverse format_log_section. Returns {pass_id, ts_iso, budget, picked, outcome, next_candidate}.
+    FIND-018 fix: matches '## <ISO8601Z> — pass <pass_id>' header schema.
+    """
     out: dict = {}
     for line in section.splitlines():
         m = _PASS_ID_RE.match(line)
         if m:
-            out["pass_id"] = m.group(1)
-            out["ts"] = int(m.group(2))
+            out["ts_iso"] = m.group(1)
+            out["pass_id"] = m.group(2)
+            # also expose unix ts when parsable
+            try:
+                import datetime as _dt
+                out["ts"] = int(_dt.datetime.strptime(
+                    m.group(1), "%Y-%m-%dT%H:%MZ"
+                ).replace(tzinfo=_dt.timezone.utc).timestamp())
+            except Exception:
+                pass
             continue
         m = _FIELD_RE.match(line)
         if m:

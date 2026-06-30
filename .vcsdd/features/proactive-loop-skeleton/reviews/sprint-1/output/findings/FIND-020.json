@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-020",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "low",
+  "description": "is_dormant boundary at age_days=15 (the spec's > 14 exclusive boundary) is not tested. test_dormant_at_14_consecutive_negative_windows uses age_days=30; test_not_dormant_when_slot_young uses age_days=10. The off-by-one between '> 14' and '>= 14' is unverified. Same gap for should_route_mother_queue: age_days=14 (boundary) is not tested.",
+  "evidence": {
+    "filePath": "skills/_shared/__tests__/test_quota_tracker_v2.py",
+    "lineRange": "85-94",
+    "snippet": "def test_dormant_at_14_consecutive_negative_windows():\n    assert is_dormant(neg_7day_windows=14, age_days=30) is True\n\ndef test_not_dormant_at_13_windows():\n    assert is_dormant(neg_7day_windows=13, age_days=30) is False\n\ndef test_not_dormant_when_slot_young():\n    assert is_dormant(neg_7day_windows=14, age_days=10) is False"
+  },
+  "routeToPhase": "2a"
+}

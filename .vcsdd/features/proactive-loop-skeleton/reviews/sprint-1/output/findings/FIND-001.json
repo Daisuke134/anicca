@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "PROP-Q5 (required:true) is not actually enforced. Spec REQ-Q5 says 'THE SYSTEM SHALL write ~/loops/<slot>/.dormant.sentinel'. The implementation only exposes is_dormant(neg_7day_windows, age_days) -> bool. No code path writes the sentinel file. Test test_dormant_at_14_consecutive_negative_windows only checks the boolean predicate; it never verifies file creation. The 'graceful disable' side-effect that defines REQ-Q5 is missing entirely from disk. A consumer calling is_dormant() must implement the sentinel write itself, which sprint-2 does not provide.",
+  "evidence": {
+    "filePath": "skills/_shared/lib/quota_tracker.py",
+    "lineRange": "56-60",
+    "snippet": "def is_dormant(*, neg_7day_windows: int, age_days: int) -> bool:\n    \"\"\"REQ-Q5: 14 consecutive negative 7-day windows AND age > 14d → dormant.\"\"\"\n    if age_days <= 14:\n        return False\n    return neg_7day_windows >= 14"
+  },
+  "routeToPhase": "2b"
+}

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "implementation_correctness",
+  "category": "requirement_mismatch",
+  "severity": "high",
+  "description": "REQ-Q5 says '14 consecutive 7-day windows' (= 14 calendar days where each day's rolling-7d sum was negative). is_dormant() only checks neg_7day_windows >= 14 — a CUMULATIVE count of negative windows, not CONSECUTIVE. A slot with 14 non-consecutive negative windows scattered across 100 days would be incorrectly flagged dormant. Test only verifies the int >=14 boundary, not consecutiveness. PROP-Q5 acceptance fixture is silent on the consecutive vs cumulative distinction.",
+  "evidence": {
+    "filePath": "skills/_shared/lib/quota_tracker.py",
+    "lineRange": "56-60",
+    "snippet": "def is_dormant(*, neg_7day_windows: int, age_days: int) -> bool:\n    if age_days <= 14:\n        return False\n    return neg_7day_windows >= 14"
+  },
+  "routeToPhase": "2b"
+}

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-013",
+  "dimension": "implementation_correctness",
+  "category": "security_surface",
+  "severity": "medium",
+  "description": "bot2bot.post _HUMAN_BODY_PHRASES blocklist is narrow and bypassable. It catches 'dais' (any case via .lower()), 'human', 'manual review', 'please intervene', 'please look at this', 'needs attention', 'owner please'. Misses: 'Daisuke-san', 'owner:' (without 'please'), 'fix this for me', '@dais', any non-English phrasing, any Japanese phrasing (e.g. 'デイスさん'), and any non-ASCII spelling. PROP-B4 (required:true) verification is therefore only partial. Adversary check 'security_surface' flagged: an author could bypass with body 'デイスさん見てください' and ship an escalation issue with a human-targeted body.",
+  "evidence": {
+    "filePath": "skills/_shared/lib/bot2bot.py",
+    "lineRange": "17-20",
+    "snippet": "_HUMAN_BODY_PHRASES = [\n    \"dais\", \"owner please\", \"human\", \"manual review\",\n    \"please intervene\", \"please look at this\", \"needs attention\",\n]"
+  },
+  "routeToPhase": "2b"
+}

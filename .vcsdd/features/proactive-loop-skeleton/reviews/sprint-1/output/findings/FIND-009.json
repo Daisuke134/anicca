@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-009",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "critical",
+  "description": "The 4 SKIPPED tests are not 'placeholder for cycle 2' — they hide the fact that the entire orchestrator surface is unimplemented. With proactive-loop.sh, credential-restore.sh, auto-allowlist.sh, auto-rollback.sh ABSENT, the following PROPs cannot be verified by sprint-2: PROP-P0-status, PROP-P2-tasks, PROP-P3-pending-q, PROP-P4-health-call, PROP-P5-buildlog-read, PROP-P8-budget-depth, PROP-P9-buildlog-append, PROP-P10-exit, PROP-H4-log, PROP-Q1-snapshot, PROP-Q4-buildlog-summary, PROP-B1-post (gh wiring), PROP-S1-startup-prompt, PROP-S2-seed-files, PROP-S3-data-preserved, PROP-S4-first-pass-touches, PROP-EDGE-S4-sink (gh-failure leg), PROP-Q5 sentinel-write side-effect, PROP-Q6 sentinel-remove static-analysis. The 'Goal (= Done condition)' in spec — 'launchd plist invokes proactive-loop.sh <slot> every 5 min' — cannot be satisfied at all. Green-log claim '67 sprint-2 tests pass + 142 sprint-1 carry = 209 total' obscures that the integration backbone has zero tests because its target binary doesn't exist.",
+  "evidence": {
+    "filePath": "skills/_shared/__tests__/test_anti_human_v2.py",
+    "lineRange": "45-52",
+    "snippet": "@pytest.mark.parametrize(\"filename\", SPRINT_2_SHELL_FILES)\ndef test_sprint_2_shell_files_have_zero_human_touch(filename):\n    fpath = _SHARED / filename\n    if not fpath.exists():\n        pytest.skip(f\"{filename} not yet implemented (Phase 2b will create)\")\n    src = fpath.read_text()\n    violations = anti_human_touch_violations(src)\n    assert violations == [], f\"{filename} has human-touch violations: {violations}\"\n"
+  },
+  "routeToPhase": "2b"
+}

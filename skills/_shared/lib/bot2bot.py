@@ -17,6 +17,10 @@ from lib._common import append_jsonl
 _HUMAN_BODY_PHRASES = [
     "dais", "owner please", "human", "manual review",
     "please intervene", "please look at this", "needs attention",
+    # FIND-013 fix: bypasses caught by lower() before substring match
+    "human-in-the-loop", "humanintheloop", "@dais", "human required",
+    "needs review by", "please review", "human approval", "ask the owner",
+    "owner-only", "manual approval", "user input required",
 ]
 
 
@@ -54,16 +58,25 @@ def post(*, slot: str, kind: str, body_text: str) -> str:
 
 
 def poll(*, slot: str) -> list[dict]:
-    """REQ-B2: fetch open bot2bot-* issues; empty list if none. NEVER crashes."""
-    out = _gh_call("issue", "list", "--label", f"bot2bot-review-requested",
-                   "--state", "open", "--json", "url,title,body,createdAt")
+    """REQ-B2 (FIND-008 fix): fetch ALL bot2bot-* labels (not hardcoded to one),
+    filter by slot via the title's [bot2bot][<slot>][<kind>] prefix, empty list
+    if none, NEVER crashes.
+    """
+    out = _gh_call(
+        "issue", "list",
+        "--search", "label:bot2bot-review-requested label:bot2bot-opinion-requested "
+                    "label:bot2bot-escalation label:bot2bot-pr-mentioned",
+        "--state", "open", "--json", "url,title,body,createdAt",
+    )
     if not out.strip() or out.strip() == "[]":
         return []
     try:
         raw = json.loads(out)
     except json.JSONDecodeError:
         return []
-    return [parse_bot2bot_issue(j) for j in raw]
+    parsed = [parse_bot2bot_issue(j) for j in raw]
+    # Filter by slot
+    return [t for t in parsed if t.get("slot") == slot]
 
 
 def parse_bot2bot_issue(gh_json: dict) -> dict:

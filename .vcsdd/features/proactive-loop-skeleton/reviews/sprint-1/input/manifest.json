@@ -1,0 +1,53 @@
+{
+  "reviewType": "implementation",
+  "featureName": "proactive-loop-skeleton",
+  "sprintNumber": 1,
+  "iteration": 1,
+  "mode": "lean",
+  "artifactsToReview": {
+    "spec": [
+      ".vcsdd/features/proactive-loop-skeleton/specs/behavioral-spec.md",
+      ".vcsdd/features/proactive-loop-skeleton/specs/verification-architecture.md"
+    ],
+    "source_python": [
+      "skills/_shared/lib/quota_tracker.py",
+      "skills/_shared/lib/menu.py",
+      "skills/_shared/lib/health_check_v2.py",
+      "skills/_shared/lib/bot2bot.py",
+      "skills/_shared/lib/proactive_loop.py",
+      "skills/_shared/lib/build_log.py"
+    ],
+    "source_python_dependencies": [
+      "skills/_shared/lib/_common.py (sprint-1 carry)",
+      "skills/_shared/lib/group_j.py (sprint-1; anti_human_touch_violations function used here)"
+    ],
+    "tests": [
+      "skills/_shared/__tests__/test_quota_tracker_v2.py",
+      "skills/_shared/__tests__/test_menu.py",
+      "skills/_shared/__tests__/test_health_check_v2.py",
+      "skills/_shared/__tests__/test_bot2bot.py",
+      "skills/_shared/__tests__/test_anti_human_v2.py",
+      "skills/_shared/__tests__/test_proactive_loop.py",
+      "skills/_shared/__tests__/test_build_log.py"
+    ],
+    "evidence": [
+      ".vcsdd/features/proactive-loop-skeleton/evidence/sprint-1-red-phase.log",
+      ".vcsdd/features/proactive-loop-skeleton/evidence/sprint-1-green-phase.log"
+    ]
+  },
+  "reviewDimensions": [
+    "spec_fidelity",
+    "edge_case_coverage",
+    "implementation_correctness",
+    "structural_integrity",
+    "verification_readiness"
+  ],
+  "extraConstraints": [
+    "15 required:true PROPs in this feature's lean convergence set: PROP-P1, P7, H3, H6, M3, J8, J8a, B4, B3-annotate, novelty-key-aligned, Q3d, Q3e, Q5 (in REQ-Q5), Q6, M1 (in REQ-M1). Each must be GENUINELY enforced — not just have a passing test.",
+    "FIND-003 critical: PROP-B3-annotate must enforce ZERO auto-merge code path. Trace bot2bot.py: is there any `gh pr merge` call or analog? If yes, regression.",
+    "Sprint-1 INHERITANCE: REQ-J8 anti-human-touch invariant inherited; verify NO new human-touch surface added by sprint-2.",
+    "67 sprint-2 tests pass + 142 sprint-1 carry pass = 209 total. Verify the GREEN is not from gaming the tests (= each test asserts spec behavior not impl detail).",
+    "4 SKIPPED tests are for shell scripts that don't exist yet. Verify the skip semantics are honest (= production cannot ship without those shell scripts, and the skip is documented as such)."
+  ],
+  "expectedOutputPath": ".vcsdd/features/proactive-loop-skeleton/reviews/sprint-1/output/"
+}

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-011",
+  "dimension": "implementation_correctness",
+  "category": "requirement_mismatch",
+  "severity": "medium",
+  "description": "menu._is_novelty_eligible uses item.get('name') as the category, but history rows are tagged with .get('category'). The novelty key compares (item['name'], item['platform']) against (history['category'], history['platform']). This only works when menu items name themselves identically to the category convention. REQ-M3(v) says the novelty key is '(category, platform)'. The function should explicitly look up item.get('category') or document that name IS category. As-is, any menu where item.name != category will silently break novelty quota.",
+  "evidence": {
+    "filePath": "skills/_shared/lib/menu.py",
+    "lineRange": "71-75",
+    "snippet": "def _is_novelty_eligible(item: dict, history: list) -> bool:\n    \"\"\"Novelty key is the (category, platform) tuple from sprint-1's REQ-H1.\"\"\"\n    key = (item.get(\"name\"), item.get(\"platform\"))\n    seen = {(h.get(\"category\"), h.get(\"platform\")) for h in history if isinstance(h, dict)}\n    return key not in seen"
+  },
+  "routeToPhase": "2b"
+}
