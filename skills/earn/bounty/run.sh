@@ -41,21 +41,43 @@ PY
   emit "discover: $n open Algora bounties (state/bounties.json). Claim agent-doable ones via a PR; payout = Stripe KYC gate."
 }
 
+# ── attempt: turn the top gated survivor into a WORK-ORDER the coding-brain executes (FIND-001) ──
+# Writes an attempts.jsonl entry {repo,issue,bounty_usd,status:claim} so track() has something to
+# watch and the brain/coding-subagent has a concrete handoff (claim /attempt + open the PR, then set
+# pr:N). The actual fix IS real engineering (legitimately the brain's job) — but the artifact exists.
+attempt(){
+  local gj="$STATE/gated.json" af="$STATE/attempts.jsonl"
+  [ -f "$gj" ] || gate >/dev/null 2>&1
+  local pick; pick=$("$PY" -c "import json;s=json.load(open('$gj')).get('survivors',[]);print(json.dumps(s[0]) if s else '')" 2>/dev/null)
+  [ -n "$pick" ] || { emit "attempt: no gated survivor to claim (real-USD inventory empty)"; return; }
+  # don't double-claim the same issue
+  local key; key=$("$PY" -c "import json,sys;d=json.loads(sys.argv[1]);print(d['repo']+'#'+str(d['issue']))" "$pick" 2>/dev/null)
+  if [ -f "$af" ] && grep -qF "\"key\":\"$key\"" "$af" 2>/dev/null; then emit "attempt: $key already claimed (tracking)"; return; fi
+  "$PY" -c "import json,sys;d=json.loads(sys.argv[1]);print(json.dumps({'key':d['repo']+'#'+str(d['issue']),'repo':d['repo'],'issue':d['issue'],'bounty_usd':d.get('bounty_usd',0),'pr':None,'status':'claim','wake':sys.argv[2]}))" "$pick" "$WAKE" >> "$af"
+  emit "attempt: WORK-ORDER written for $key (\$$(printf '%s' "$pick"|"$PY" -c 'import json,sys;print(json.load(sys.stdin).get("bounty_usd",0))' 2>/dev/null)). Brain: /attempt + fix(VSDD) + PR → set pr:N."
+}
+
 track(){
   local af="$STATE/attempts.jsonl" merged=0 tracked=0
   [ -f "$af" ] || { emit "track: no attempts yet (state/attempts.jsonl empty)"; return; }
-  # each line: {"repo":"o/r","pr":N,"issue":N,"bounty_usd":X}
+  # each line: {"key","repo":"o/r","pr":N|null,"issue":N,"bounty_usd":X,"status"}
   while IFS= read -r line; do
     [ -n "$line" ] || continue
     local repo pr; repo=$("$PY" -c "import json,sys;print(json.loads(sys.argv[1]).get('repo',''))" "$line" 2>/dev/null)
-    pr=$("$PY" -c "import json,sys;print(json.loads(sys.argv[1]).get('pr',''))" "$line" 2>/dev/null)
-    [ -n "$repo" ] && [ -n "$pr" ] || continue
+    pr=$("$PY" -c "import json,sys;v=json.loads(sys.argv[1]).get('pr');print(v if v else '')" "$line" 2>/dev/null)
+    [ -n "$repo" ] || continue
     tracked=$((tracked+1))
+    [ -n "$pr" ] || { echo "[bounty] track $repo (no PR yet — awaiting brain)"; continue; }
     local st; st=$(gh pr view "$pr" -R "$repo" --json state,reviewDecision 2>/dev/null | "$PY" -c "import json,sys;d=json.load(sys.stdin);print(d.get('state',''),d.get('reviewDecision',''))" 2>/dev/null)
     echo "[bounty] track $repo#$pr → $st"
     case "$st" in MERGED*) merged=$((merged+1));; esac
   done < "$af"
-  emit "track: $tracked PR(s) monitored, $merged merged. (on merge → record-earn when payout lands)"
+  # SETTLE (FIND-002): if anything merged, call the chain oracle — only real external USDC counts (INV-7)
+  if [ "$merged" -gt 0 ]; then
+    local re="${ANICCA_HOME:-$HOME/anicca}/skills/self/founder-loop/record-earn.mjs"
+    if [ -f "$re" ]; then local out; out=$(timeout 45 node "$re" --source bounty --task settle --wake "$WAKE" 2>&1 || true); echo "[bounty] settle: $out"; fi
+  fi
+  emit "track: $tracked attempt(s), $merged merged → record-earn settle (real USDC only)."
 }
 
 # ── gate: filter discovered bounties to genuinely-attemptable ones (the drizzle#1188 lesson) ──
@@ -100,20 +122,24 @@ for it in items:
     try: prs=json.loads(pl) if pl.strip() else []
     except Exception: prs=[]
     if prs: continue   # someone already has an open PR
-    # (c) REAL project? filter the fake/farm layer (test repos, throwaway numeric-username accounts,
-    # near-zero-star playgrounds) the research flagged as fake-money. Require a real org + some traction.
+    # (c) not an obvious throwaway/farm repo (name/owner heuristic only — NOT a star cut, which
+    # over-drops real small-org bounties like microg/GmsCore $1340). Token-farms are caught by (d).
     owner=repo.split("/")[0]; name=repo.split("/")[-1]
     if name.lower() in ("test","young","playground","sandbox","demo") or re.fullmatch(r'\d{6,}',owner):
         continue
-    rj=sh(["gh","repo","view",repo,"--json","stargazerCount,isFork,description"])
-    try: r=json.loads(rj) if rj.strip() else {}
-    except Exception: r={}
-    if int(r.get("stargazerCount",0)) < 50: continue   # real funded projects have traction
-    # (d) REAL USD, not a self-issued token (Rustchain#2239 lesson: paid in 'RTC', algora page 404).
-    blob=(it.get("title","")+" "+body+" "+(r.get("description") or "")).lower()
-    if re.search(r'\bearn [a-z]{2,5}\b|\b\d+\s*(rtc|\$[a-z]{2,6}|tokens?)\b|token.?farm|social mining|clanker|/tip', blob):
-        continue   # token-reward / tip farm, not USD
-    survivors.append({**it,"issue":int(num),"stars":r.get("stargazerCount",0),"gate":"passed (funder-active, no-open-PR, real-repo>=50★, USD-not-token)"})
+    # (d) REAL USD — read the AMOUNT from the active algora-pbc comment, do NOT keyword-guess (the old
+    # `\d+ tokens?` regex false-matched ORM/CSS "N tokens" and wrongly dropped real bounties like
+    # drizzle/zod). An active bounty line "$200 bounty" → USD + amount. "75 RTC" (no $) → token, skip.
+    active=[c.get("body","") for c in algora if not c.get("body","").lstrip().startswith("~~")]
+    amt=0
+    for b in active:
+        mm=re.search(r'\$([0-9][0-9,]*)\s*(?:bounty|reward|tip)', b, re.I) or re.search(r'bounty.{0,12}\$([0-9][0-9,]*)', b, re.I)
+        if mm: amt=max(amt,int(mm.group(1).replace(",",""))); break
+    if amt<=0: continue   # no USD ($) amount in the active algora comment → token/none, skip
+    rj=sh(["gh","repo","view",repo,"--json","stargazerCount"])
+    try: stars=json.loads(rj).get("stargazerCount",0) if rj.strip() else 0
+    except Exception: stars=0
+    survivors.append({**it,"issue":int(num),"stars":stars,"bounty_usd":amt,"gate":"passed (active+funded $%d, no-PR, USD-from-comment)"%amt})
 json.dump({"survivors":survivors,"checked":len(items)}, open(gj,"w"), indent=2)
 print(f"{len(survivors)}/{len(items)}")
 PY
@@ -122,5 +148,5 @@ PY
   emit "gate: $s attemptable bounties (state/gated.json). Brain then judges fix-not-blocked + agent-doable, picks ONE."
 }
 
-case "$EARN_MODE" in track) track ;; gate) gate ;; *) discover ;; esac
+case "$EARN_MODE" in track) track ;; gate) gate ;; attempt) attempt ;; *) discover ;; esac
 exit 0
