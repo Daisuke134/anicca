@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"  # launchd has a minimal PATH; tmux/python3/node/claude live in homebrew
 # gig-healthcheck.sh — launchd supervisor (5min). Two failure modes, both self-heal:
 #   (1) DEAD: the tmux core died → restart it.
 #   (2) STALE: the core is alive but the in-session :27 cron stopped firing (no pass in >90 min) →
