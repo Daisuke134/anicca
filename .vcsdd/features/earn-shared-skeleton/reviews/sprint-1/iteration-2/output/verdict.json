@@ -1,0 +1,73 @@
+{
+  "sprintNumber": 1,
+  "feature": "earn-shared-skeleton",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-01T00:00:00Z",
+  "iteration": 2,
+  "reviewContext": {
+    "reviewType": "implementation",
+    "mode": "lean"
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-2-001", "FIND-2-003", "FIND-2-004"],
+      "evidence": [
+        {"type": "file", "location": "skills/_shared/lib/events.py:65-85", "description": "FIND-009 closed: dead `if False else` branch removed; clean if/elif handling jpy_int and usdc_float_6dp."},
+        {"type": "file", "location": "skills/_shared/lib/lessons.py:24-26", "description": "FIND-013 closed: docstring now states `^[A-Za-z][A-Za-z0-9_\\-]{3,}$` matching the regex on line 16."},
+        {"type": "file", "location": "skills/_shared/lib/mutation_gate.py:15,76", "description": "FIND-016 closed: imports + uses `_common.append_jsonl`."},
+        {"type": "file", "location": "skills/_shared/*.sh + loop-improve.py", "description": "FIND-001 closed at file-count level: 8 .sh + 1 .py exist (REQ-A/B/D/E/F entry points)."}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-2-004"],
+      "evidence": [
+        {"type": "file", "location": ".vcsdd/features/earn-shared-skeleton/specs/behavioral-spec.md:945-951", "description": "FIND-002/003/006/015/017 carried into scope-cut table with concrete sprint-2 commitments."}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-2-001", "FIND-2-005"],
+      "evidence": [
+        {"type": "file", "location": "skills/_shared/lib/group_j.py:60-63", "description": "FIND-018 narrowed to `--label\\s*[=]?\\s*['\\\"]?escalation['\\\"]?` — catches `--label escalation` and `--label=escalation`, but a list-literal form (`[\"--label\", \"escalation\"]`) where the comma/quote separator sits between the two tokens still bypasses; finding not fully closed."}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/_shared/lib/_common.py", "description": "Shared helpers (is_verdict_pass, sha256_file, append_jsonl) now used by mutation_gate (FIND-016 fix), proposal_loop, deliverable_loop, spawn_pin."},
+        {"type": "file", "location": "skills/_shared/", "description": "Layered split: lib/*.py (pure + small I/O units) vs *.sh (launchd-facing glue) is preserved; no duplication of dispatch logic across files."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-2-002"],
+      "evidence": [
+        {"type": "file", "location": ".vcsdd/features/earn-shared-skeleton/specs/behavioral-spec.md:950", "description": "FIND-015 (real ed25519) explicitly scope-deferred with file-paths and acceptance criteria (replace sha256-mix with nacl.signing; ship anicca-bot real keypair in CI secret)."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 5,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [
+      "CRIT-001", "CRIT-002", "CRIT-003", "CRIT-004", "CRIT-005",
+      "CRIT-006", "CRIT-007", "CRIT-008", "CRIT-009", "CRIT-010",
+      "CRIT-011", "CRIT-012", "CRIT-013", "CRIT-014", "CRIT-015",
+      "CRIT-016", "CRIT-017", "CRIT-018"
+    ],
+    "duplicateFindings": [],
+    "iter1ClosureSummary": {
+      "fixed": ["FIND-009", "FIND-013", "FIND-016", "FIND-001-partial"],
+      "scopeDeferredHonestly": ["FIND-002", "FIND-003", "FIND-006", "FIND-015", "FIND-017"],
+      "stillOpen": ["FIND-004", "FIND-005", "FIND-007", "FIND-008", "FIND-010", "FIND-012", "FIND-014", "FIND-018"]
+    }
+  }
+}

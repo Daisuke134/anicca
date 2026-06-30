@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-2-005",
+  "dimension": "implementation_correctness",
+  "category": "security_surface",
+  "severity": "medium",
+  "description": "FIND-018 (iter-1) flagged that the gh-issue-escalation pattern `r\"['\\\"]escalation['\\\"]\"` only matched quoted occurrences and was inconsistent with sibling patterns using `\\b...\\b`. The iter-2 fix at lib/group_j.py:63 narrows it to `r\"--label\\s*[=]?\\s*['\\\"]?escalation['\\\"]?\"` — a context-bound match requiring the literal `--label` immediately preceding `escalation`. This catches `--label escalation`, `--label=escalation`, `--label \"escalation\"`, but DOES NOT catch the most common subprocess-list form in Python: `subprocess.run([\"gh\", \"issue\", \"create\", \"--label\", \"escalation\"])`. Between the `--label` token and the `escalation` token, the source contains `\",\\s*\"` (closing quote, comma, space, opening quote), which `\\s*[=]?\\s*['\\\"]?` does not match. The sibling patterns for `needs-login`, `needs-human`, `please-review` all use `\\b<token>\\b` (no `--label` context binding), so they catch the list-literal form. The fix correctly addresses the comment/docstring false-positive concern (the spec body contains the word `escalation` in many sentences) but reintroduces a real bypass. A defensible regex is `(?:--label[\\s=,\"' ]+)?(?:^|[\"',\\s\\[])escalation(?:$|[\"',\\s\\]])` or a two-rule split: (a) `--label\\s*[=]?\\s*['\\\"]?escalation['\\\"]?` for command-line forms AND (b) `[\"']escalation[\"']` for list-literal forms, with the docstring/comment false-positive handled by excluding lines that start with `#` or are inside a multi-line string. The current single regex closes one bypass and opens another.",
+  "evidence": {
+    "filePath": "skills/_shared/lib/group_j.py",
+    "lineRange": "60-63",
+    "snippet": "(re.compile(r\"--label\\s*[=]?\\s*['\\\"]?escalation['\\\"]?\"), \"gh-issue-escalation\")  # misses subprocess.run([..., \"--label\", \"escalation\"]) list-literal form"
+  },
+  "routeToPhase": "2b"
+}

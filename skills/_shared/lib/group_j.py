@@ -57,10 +57,11 @@ _HUMAN_TOUCH_PATTERNS = [
     (re.compile(r"\bneeds-login\b"), "needs-login"),
     (re.compile(r"\bneeds-human\b"), "needs-human"),
     (re.compile(r"\bneeds-attention\b"), "needs-attention"),
-    # Match `escalation` only when used as a gh-issue label argument, NOT
-    # incidental occurrences of the word "escalation" in comments / docs / variable
-    # names. FIND-018 fix: bound the regex to the --label flag context.
+    # Match `escalation` as a gh-issue label argument. Covers BOTH:
+    #   --label escalation        (string form, FIND-018)
+    #   ["--label", "escalation"] (list-literal form, FIND-2-005)
     (re.compile(r"--label\s*[=]?\s*['\"]?escalation['\"]?"), "gh-issue-escalation"),
+    (re.compile(r"['\"]--label['\"]\s*,\s*['\"]escalation['\"]"), "gh-issue-escalation-list-form"),
     (re.compile(r"\bplease-review\b"), "please-review"),
     (re.compile(r"discord\.com"), "discord"),
     (re.compile(r"fcm\.googleapis\.com"), "fcm"),
