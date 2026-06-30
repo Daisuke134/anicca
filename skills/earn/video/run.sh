@@ -138,6 +138,8 @@ except: new=''
 print(new)" 2>/dev/null)
       if [ -n "$NEWURL" ]; then
         set_state "{\"last_post_date\": \"$TODAY\", \"status\": \"warmed\", \"last_post_url\": \"$NEWURL\"}"
+        # ★ FIND-D2-01: a RECONCILED real post must ALSO enter the eval loop (link post↔script), else it's invisible to self-improvement ★
+        $PY -c "import sys;sys.path.insert(0,'$SK');import selfimprove as S;S.record_post('$HANDLE','$NEWURL', open('${EARN_VIDEO_SCRIPT:-$OUT/today.txt}').read() if __import__('os').path.exists('${EARN_VIDEO_SCRIPT:-$OUT/today.txt}') else '', '$TODAY')" 2>/dev/null || true
         DID="reconciled prior timeout-killed post (already live, no double-post): $NEWURL"
       else
         # snapshot pre_reels for THIS attempt (ATOMIC via state_io; so a timeout-kill is reconciled next wake) + mark attempt date

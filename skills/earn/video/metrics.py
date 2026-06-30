@@ -27,15 +27,24 @@ def _ev(tid, js, port):
 
 
 def _num(s):
-    """parse IG count text → int. Handles 1,234 / 2万 / 1.2万 / 12.3K / 1.2M."""
+    """parse IG count text → int. Handles 1,234 / 2万 / 1.2万 / 12.3K / 1.2M. Fail-soft: malformed → None (never crash,
+    never fabricate). A unit suffix (万/K/M) keeps the decimal; a bare integer with thousands-commas/periods is treated
+    as an integer (locale-safe: drop both separators when no unit)."""
     if s is None:
         return None
-    s = str(s).strip().replace(",", "")
-    m = re.search(r"([\d.]+)\s*(万|億|K|M|k|m)?", s)
+    s = str(s).strip()
+    m = re.search(r"([\d.,]+)\s*(万|億|K|M|k|m)?", s)
     if not m:
         return None
-    n = float(m.group(1)); unit = m.group(2)
-    return int(n * {"万": 1e4, "億": 1e8, "K": 1e3, "k": 1e3, "M": 1e6, "m": 1e6}.get(unit, 1))
+    num, unit = m.group(1), m.group(2)
+    try:
+        if unit:
+            val = float(num.replace(",", ""))          # "1.2万" → 1.2 * 1e4
+        else:
+            val = float(re.sub(r"[.,]", "", num))      # "1,234"/"1.234" thousands → 1234 (no decimal without a unit)
+    except ValueError:
+        return None
+    return int(val * {"万": 1e4, "億": 1e8, "K": 1e3, "k": 1e3, "M": 1e6, "m": 1e6}.get(unit, 1))
 
 
 def read_reel_metrics(url, tid, port):
@@ -44,13 +53,15 @@ def read_reel_metrics(url, tid, port):
     subprocess.run([PYB, CDP, "nav", tid, surl], capture_output=True, env={**os.environ, "CDP_PORT": str(port)})
     import time; time.sleep(5)
     raw = _ev(tid, r"""(()=>{
-      const out={likes:null,comments:null,views:null,desc:null};
+      const out={desc:null,views:null};
       const og=document.querySelector('meta[property="og:description"]');
       out.desc = og?og.getAttribute('content'):null;          // e.g. "20K likes, 198 comments - user on Instagram: ..."
-      // owner/standalone view sometimes exposes a "N回再生 / N views / N plays" line in the body
-      const body=document.body.innerText||'';
-      const vm=body.match(/([\d.,]+\s*[万億KMkm]?)\s*(回再生|回視聴|plays|views)/i)||body.match(/(再生回数|視聴回数|Views|Plays)[\s:]*([\d.,]+\s*[万億KMkm]?)/i);
-      if(vm) out.views = (vm[2]&&/[\d]/.test(vm[2]))? vm[2] : vm[1];
+      // ★ FIND-D1-01: take views ONLY from the reel's OWN counter element (aria-label on a span inside the main
+      //   article), NOT page-wide innerText (which mixes in suggested-reel / comment view counts → misattribution).
+      //   If no anchored element is found, leave views null (honest) rather than a wrong number. ★
+      const main=document.querySelector('main')||document;
+      const ve=[...main.querySelectorAll('span,div')].find(e=>{const t=(e.getAttribute&&e.getAttribute('aria-label'))||'';return /(回再生|再生回数|plays|views)/i.test(t)&&/[\d]/.test(t)&&e.getBoundingClientRect().top<400;});
+      if(ve){const t=(ve.getAttribute('aria-label')||'');const m=t.match(/([\d.,]+\s*[万億KMkm]?)/);if(m)out.views=m[1];}
       return JSON.stringify(out);
     })()""", port)
     d = raw if isinstance(raw, dict) else {}
