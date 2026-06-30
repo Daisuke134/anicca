@@ -1,0 +1,139 @@
+============================= test session starts ==============================
+collecting ... collected 0 items / 11 errors
+Running teardown with pytest sessionfinish...
+
+==================================== ERRORS ====================================
+_________________ ERROR collecting __tests__/test_classify.py __________________
+ImportError while importing test module '/Users/anicca/anicca/skills/_shared/__tests__/test_classify.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/lib/python3.14/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+__tests__/test_classify.py:8: in <module>
+    from lib.healthcheck import HealthcheckContext, Mode, classify  # FAIL until 2b
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   ModuleNotFoundError: No module named 'lib.healthcheck'
+___________________ ERROR collecting __tests__/test_dedup.py ___________________
+ImportError while importing test module '/Users/anicca/anicca/skills/_shared/__tests__/test_dedup.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/lib/python3.14/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+__tests__/test_dedup.py:8: in <module>
+    from lib.escalate import dedup_key, is_duplicate, normalize_evidence  # FAIL until 2b
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   ModuleNotFoundError: No module named 'lib.escalate'
+_________________ ERROR collecting __tests__/test_evidence.py __________________
+ImportError while importing test module '/Users/anicca/anicca/skills/_shared/__tests__/test_evidence.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/lib/python3.14/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+__tests__/test_evidence.py:8: in <module>
+    from lib.lessons import validate_evidence_id  # FAIL until 2b
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   ModuleNotFoundError: No module named 'lib.lessons'
+________________ ERROR collecting __tests__/test_g2_runtime.py _________________
+ImportError while importing test module '/Users/anicca/anicca/skills/_shared/__tests__/test_g2_runtime.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/lib/python3.14/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+__tests__/test_g2_runtime.py:9: in <module>
+    from lib.events import verify_earn_event  # FAIL until 2b
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   ModuleNotFoundError: No module named 'lib.events'
+_________________ ERROR collecting __tests__/test_g2_static.py _________________
+ImportError while importing test module '/Users/anicca/anicca/skills/_shared/__tests__/test_g2_static.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/lib/python3.14/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+__tests__/test_g2_static.py:7: in <module>
+    from lib.manifest import skill_writes_own_manifest  # FAIL until 2b
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   ModuleNotFoundError: No module named 'lib.manifest'
+______________ ERROR collecting __tests__/test_hook_allowlist.py _______________
+ImportError while importing test module '/Users/anicca/anicca/skills/_shared/__tests__/test_hook_allowlist.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/lib/python3.14/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+__tests__/test_hook_allowlist.py:8: in <module>
+    from lib.healthcheck import extract_hook_module_name  # FAIL until 2b
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   ModuleNotFoundError: No module named 'lib.healthcheck'
+________________ ERROR collecting __tests__/test_killswitch.py _________________
+ImportError while importing test module '/Users/anicca/anicca/skills/_shared/__tests__/test_killswitch.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/lib/python3.14/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+__tests__/test_killswitch.py:8: in <module>
+    from lib.roi import kill_switch_tripped  # FAIL until 2b
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   ModuleNotFoundError: No module named 'lib.roi'
+_______________ ERROR collecting __tests__/test_mutation_gate.py _______________
+ImportError while importing test module '/Users/anicca/anicca/skills/_shared/__tests__/test_mutation_gate.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/lib/python3.14/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+__tests__/test_mutation_gate.py:9: in <module>
+    from lib.mutation_gate import apply_strategy_mutation  # FAIL until 2b
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   ModuleNotFoundError: No module named 'lib.mutation_gate'
+___________________ ERROR collecting __tests__/test_oauth.py ___________________
+ImportError while importing test module '/Users/anicca/anicca/skills/_shared/__tests__/test_oauth.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/lib/python3.14/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+__tests__/test_oauth.py:8: in <module>
+    from lib.healthcheck import extract_oauth_url  # FAIL until 2b
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   ModuleNotFoundError: No module named 'lib.healthcheck'
+____________________ ERROR collecting __tests__/test_roi.py ____________________
+ImportError while importing test module '/Users/anicca/anicca/skills/_shared/__tests__/test_roi.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/lib/python3.14/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+__tests__/test_roi.py:12: in <module>
+    from lib.roi import compute_token_cost_jpy  # FAIL until 2b
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   ModuleNotFoundError: No module named 'lib.roi'
+_________________ ERROR collecting __tests__/test_spawn_pin.py _________________
+ImportError while importing test module '/Users/anicca/anicca/skills/_shared/__tests__/test_spawn_pin.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/lib/python3.14/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+__tests__/test_spawn_pin.py:13: in <module>
+    from lib.spawn_pin import (  # FAIL until 2b
+E   ModuleNotFoundError: No module named 'lib.spawn_pin'
+=========================== short test summary info ============================
+ERROR __tests__/test_classify.py
+ERROR __tests__/test_dedup.py
+ERROR __tests__/test_evidence.py
+ERROR __tests__/test_g2_runtime.py
+ERROR __tests__/test_g2_static.py
+ERROR __tests__/test_hook_allowlist.py
+ERROR __tests__/test_killswitch.py
+ERROR __tests__/test_mutation_gate.py
+ERROR __tests__/test_oauth.py
+ERROR __tests__/test_roi.py
+ERROR __tests__/test_spawn_pin.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 11 errors during collection !!!!!!!!!!!!!!!!!!!
+============================== 11 errors in 0.17s ==============================
