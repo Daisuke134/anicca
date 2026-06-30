@@ -35,20 +35,25 @@ work** (strategic, not just "did it run"). Surfaces failures + improvement ideas
 | **clip** | clip real podcasts → post daily to all platforms | per-view campaigns (Whop/clipping.net USDC) + organic→own offers | ✅ full daily loop LIVE (producer+core+healthcheck); $0 (reach) | keep running; wire wallet on Whop/clipping.net; revisit when a clip breaks ~50-100k views |
 | **gig** | scan boards → bid/deliver AI-doable gigs daily | ★ client pays USDC directly (LaborX/Coconala/abillio) — no views needed ★ | ✅ run.sh(real, detect/bid/deliver/settle)+spec+live; ❌ no daily driver | ★ FIRST: add core+healthcheck+daily driver (fastest first $, 1-4wk) ★ |
 | **affiliate** | educational faceless slideshows daily, Amazon link in bio | ★ commission per sale (no campaign needed) ★ | △ earn-affiliate-slideshow skill exists; ❌ run.sh + daily loop | build run.sh (wrap slideshow) + producer + core + healthcheck |
-| **audit** | scan code4rena/Cantina → analyze → submit findings daily | ★ $60-135k USDC pools per valid finding ★ (highest unit) | ❌ declared, no run.sh | build run.sh (discover→analyze→draft/submit) + daily driver; flag KYC/account blockers honestly |
-| **video** | faceless gen (MoneyPrinterTurbo) → post daily | YouTube ad rev + clip campaigns + desc affiliate | ✅ run.sh + video-core running (other CC); $0 | add producer + healthcheck to clip parity; keep daily |
+| **bounty** | discover real agent-eligible bounties daily → deliver → payout | ★ task pays USDC per delivered bounty (Algora PR-merge; new: Superteam/ClawTasks/hackathons) ★ | ✅ run.sh+core+healthcheck LIVE; $0 (Algora inventory dry) | add Superteam Earn + ClawTasks (Base USDC, agent-native) as new sources beyond Algora; honest payout-KYC gate |
+| **video** | faceless gen (MoneyPrinterTurbo) → post daily | YouTube ad rev + clip campaigns + desc affiliate | ✅ run.sh + video-core + healthcheck (auto-revive 2026-06-30); $0 | keep daily; self-improve toward more money |
+
+NOTE (2026-06-30, Dais): the **audit** slot was DELETED. "audit" was a misnomer — it wasn't auditing anything; it
+was bounty-hunting on code4rena/Cantina, which had **no open openings** for us. `bounty` is the correct, single
+name for that job. 5 slots remain: clip · gig · affiliate · bounty · video.
 
 ## Money-certainty order (build daily-loops in this order)
-gig (fastest, client-pays) → affiliate (commission/sale) → audit (highest unit) → video (parity) ; clip = done.
+gig (fastest, client-pays) → affiliate (commission/sale) → bounty (per-task USDC) → video (parity) ; clip = done.
 
 ## Build order (each via /vcsdd, verify output one-by-one — NOT rushed)
 1. **GIG daily loop** — run.sh exists; add the earn-core (core+healthcheck+daily driver) so it bids/delivers
    every day. Verify: a real bid/delivery action observed + (eventually) a real USDC settle on-chain.
 2. **AFFILIATE** — build run.sh (wrap earn-affiliate-slideshow) + producer + core + healthcheck. Verify: a
    real slideshow posted daily to our own account (browser-verified), Amazon link in bio.
-3. **AUDIT** — build run.sh (discover→analyze→draft) + daily driver. Verify: real open-contest list fetched,
-   a candidate finding drafted; honestly flag what blocks a real submission.
-4. **VIDEO** — bring to clip parity (producer + healthcheck). Verify: a real faceless video posted daily.
+3. **BOUNTY** — broaden sources beyond Algora (dry): add Superteam Earn (superteam.fun/skill.md, agent register→
+   listings/live→submit) + ClawTasks (clawtasks.com/skill.md, Base USDC, agent-hires-agent). Verify: real
+   agent-eligible listings fetched from a NON-empty source; honestly flag the human-claim/KYC payout gate.
+4. **VIDEO** — clip parity DONE (producer + healthcheck auto-revive, 2026-06-30). Verify: a real faceless video posted daily.
 5. **AUDITOR** — build the cross-loop monitor (daily-fire check + verify-correctness + strategic "will it work").
 6. **Generalize** — extract clip's core/healthcheck/producer into an `earn-core` template each slot reuses.
 
