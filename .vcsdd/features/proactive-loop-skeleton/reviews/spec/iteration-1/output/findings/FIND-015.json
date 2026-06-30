@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-015",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "medium",
+  "description": "REQ-P7 PIVOT-ON-BLOCK rule says 'pick the next-highest-ROI unblocked item' but does not specify the unblocked-detection mechanism in PURE terms. REQ-M3 mentions `blocker_check` per category and Purity table lists `is_blocker(menu_item, slot_state) → bool`, but the spec never defines what `slot_state` contains, how `blocker_check` strings resolve to checks (the menu example shows 'coconala_search_reachable' as a free string), or how a deterministic test fixture supplies slot_state. PROP-P7-pivot uses 'blocked_set' as an input to pick_next, but the REQ funnels through is_blocker. This creates a path where PROP-P7 passes against a stubbed blocked_set while the runtime path through is_blocker is never gated. Tighten the spec: either pick_next takes a blocked_set parameter (= the implementation), or is_blocker must be gated by its own PROP.",
+  "evidence": {
+    "filePath": ".vcsdd/features/proactive-loop-skeleton/specs/verification-architecture.md",
+    "lineRange": "28-28",
+    "snippet": "is_blocker(menu_item, slot_state) | menu | dict, dict | bool | none"
+  },
+  "routeToPhase": "1a"
+}

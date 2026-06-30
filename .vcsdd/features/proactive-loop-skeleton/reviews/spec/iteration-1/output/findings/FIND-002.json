@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "critical",
+  "description": "REQ-Q3 fallback drops the sprint-1 REQ-J9 measurement-seam recovery semantics. Sprint-1 REQ-J9/REQ-B6 require: (i) probing alternate measurement seams (claude session env, pane footer parsing) before resorting to estimation; (ii) ESCALATING the penalty from 2x to 4x when the running Σ estimated / Σ all over 100 rows exceeds 0.5; (iii) routing to MOTHER queue if degradation persists 7 days. Sprint-2 REQ-Q3 only mentions the 2x baseline and emits token_source=\"estimated\". The seam-probe path, the 100-row ratio check, the 4x escalation, and the multi-day degradation routing are all silently dropped. Manifest mapping says 'J9 → REQ-Q3 fallback path' but the actual coverage is a fraction of J9.",
+  "evidence": {
+    "filePath": ".vcsdd/features/proactive-loop-skeleton/specs/behavioral-spec.md",
+    "lineRange": "165-168",
+    "snippet": "REQ-Q3 IF quota source is unavailable ... fall back to byte-count × 4-bytes-per-token heuristic AND apply 2× conservative penalty ... AND emit token_source: \"estimated\"."
+  },
+  "routeToPhase": "1a"
+}

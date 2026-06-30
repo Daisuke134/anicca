@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-011",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "medium",
+  "description": "PROP-P11-skip claims tier-0 unit-test coverage 'each condition fixture'. EDGE-S4 introduces a 5th de-facto skip condition ('all categories blocked + --fix-deep produced no work → exit idle'). REQ-P11 enumerates only 4 conditions but the EDGE clause silently adds another. PROP-P11's '4 are enumerable' assertion contradicts EDGE-S4. Either REQ-P11 must list the 5th condition, or EDGE-S4 must be folded into REQ-P7 pivot semantics. Currently the gate is not deterministic.",
+  "evidence": {
+    "filePath": ".vcsdd/features/proactive-loop-skeleton/specs/verification-architecture.md",
+    "lineRange": "49-49",
+    "snippet": "PROP-P11-skip | P11 | 0 | proactive-loop exits without running step 6 iff one of 4 conditions hold; the 4 are enumerable"
+  },
+  "routeToPhase": "1a"
+}

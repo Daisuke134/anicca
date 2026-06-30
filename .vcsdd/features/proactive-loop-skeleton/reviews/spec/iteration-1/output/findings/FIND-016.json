@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-016",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "medium",
+  "description": "EDGE-S7 declares 'Adversary daily review is just a high-ROI menu category that fires on a once-per-day cadence inside the menu picker'. This silently moves the adversary from a separate cron (sprint-1 REQ-E1) into the same proactive-loop process being adversarially reviewed. Self-review is anti-pattern (the loop reviewing the loop's own state under the loop's own quota). Sprint-1 used a separate plist for fresh-context isolation. Neither REQ-P6 nor REQ-M3 enforce 'fires once per day' (the picker is roi×prob — once-per-day cadence is a time-window constraint not modelled in the menu). EDGE-S7 is incompatible with the picker's design.",
+  "evidence": {
+    "filePath": ".vcsdd/features/proactive-loop-skeleton/specs/behavioral-spec.md",
+    "lineRange": "316-319",
+    "snippet": "EDGE-S7 Adversary daily review (= sprint-1 REQ-E1, replaced in sprint-2 as a menu item) is just a high-ROI menu category that fires on a once-per-day cadence inside the menu picker, not a separate launchd plist. Saves one launchd surface."
+  },
+  "routeToPhase": "1a"
+}

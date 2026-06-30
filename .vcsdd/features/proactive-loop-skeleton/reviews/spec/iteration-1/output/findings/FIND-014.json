@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-014",
+  "dimension": "verification_readiness",
+  "category": "test_coverage",
+  "severity": "high",
+  "description": "PROP-H3-dispatch covers '7 detectable issue classes' but REQ-H3 enumerates 7 classes (a..g). The PROP fixture count matches by accident; however the PROP demands 'ambiguous issues raise (don't silently dispatch the wrong fix)'. The spec REQ-H1 health-check snapshot DOES NOT enumerate an 'ambiguous' or 'multi-match' case. There is no spec sentence that defines (i) how to detect when two patterns match (e.g. pane contains both 'Not logged in' AND 'Quick safety check'), (ii) priority ordering, (iii) raise semantics. PROP-H3-dispatch tests a behavior that isn't in the REQ. Either add a REQ-H3a tie-breaker clause, or remove the 'ambiguous raises' clause from PROP-H3.",
+  "evidence": {
+    "filePath": ".vcsdd/features/proactive-loop-skeleton/specs/verification-architecture.md",
+    "lineRange": "51-51",
+    "snippet": "PROP-H3-dispatch | H3 | 1 | for each of 7 detectable issue classes, classify+dispatch maps to the correct FixAction recipe; ambiguous issues raise (don't silently dispatch the wrong fix)"
+  },
+  "routeToPhase": "1a"
+}

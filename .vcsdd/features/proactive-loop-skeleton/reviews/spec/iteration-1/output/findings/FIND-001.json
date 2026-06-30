@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "REQ-Q5 hard-codes a 14-day rolling window for ROI dormancy, citing 'sprint-1 REQ-B5 rolling_window'. Sprint-1 REQ-B5 explicitly defines roi_7day_jpy over a 7-day window. The sprint-2 spec invents a new 14-day boundary and falsely attributes it to inheritance. This silently changes the kill-switch latency (doubled), without justification or PROP coverage. The dormancy criterion either inherits 7 days or the spec must call out the deliberate change with rationale.",
+  "evidence": {
+    "filePath": ".vcsdd/features/proactive-loop-skeleton/specs/behavioral-spec.md",
+    "lineRange": "171-175",
+    "snippet": "IF cumulative ROI (= sprint-1 REQ-B5 rolling_window) has been < 0 for 14 consecutive days AND the slot is not freshly seeded, THE SYSTEM SHALL write ~/loops/<slot>/.dormant.sentinel"
+  },
+  "routeToPhase": "1a"
+}

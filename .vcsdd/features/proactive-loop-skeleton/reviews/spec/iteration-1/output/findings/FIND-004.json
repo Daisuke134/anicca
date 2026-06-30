@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "high",
+  "description": "EDGE-S4 mandates re-running step 3 'with a more aggressive --fix-deep flag', but no REQ in Group H defines --fix-deep semantics. health-check.py's interface per REQ-H2 is --check / --fix only. The --fix-deep escape hatch is a phantom mode — it has no auto-fix dispatch table, no logging contract, no boundary on what 'more aggressive' is allowed to do, and no PROP gates it. This invites scope creep at implementation time and bypasses the REQ-J8 anti-human-touch gate by leaving an undefined surface.",
+  "evidence": {
+    "filePath": ".vcsdd/features/proactive-loop-skeleton/specs/behavioral-spec.md",
+    "lineRange": "303-307",
+    "snippet": "EDGE-S4 ... run step 3 health-check again with a more aggressive --fix-deep flag"
+  },
+  "routeToPhase": "1a"
+}

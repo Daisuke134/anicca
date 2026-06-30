@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-008",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "high",
+  "description": "PROP-B4-no-human-escalation claims tier-1 static-analysis: 'no code path creates a gh issue with label=escalation whose body contains owner/dais/human/please/manual handling phrases'. Static analysis on shell scripts (bot2bot.sh is bash) cannot reliably tie a runtime-constructed --body file to a runtime-set --label. The body comes from a body-file argument (REQ-B1), which is composed dynamically. A plain text grep over bot2bot.sh source will never see runtime body content. Tier-1 static-analysis is mechanically incapable of enforcing this property. Either downgrade to runtime contract testing or change the mechanism (e.g., a wrapper that programmatically refuses the label/body combination).",
+  "evidence": {
+    "filePath": ".vcsdd/features/proactive-loop-skeleton/specs/verification-architecture.md",
+    "lineRange": "58-58",
+    "snippet": "PROP-B4-no-human-escalation | B4 | 1 | static-analysis: no code path creates a gh issue with label=escalation whose body contains owner/dais/human/please/manual handling phrases | static-analysis | YES"
+  },
+  "routeToPhase": "1b"
+}

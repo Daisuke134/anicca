@@ -1,0 +1,28 @@
+{
+  "reviewType": "spec",
+  "feature": "proactive-loop-skeleton",
+  "iteration": 1,
+  "mode": "lean",
+  "sprint": 2,
+  "artifactsToReview": [
+    ".vcsdd/features/proactive-loop-skeleton/specs/behavioral-spec.md",
+    ".vcsdd/features/proactive-loop-skeleton/specs/verification-architecture.md"
+  ],
+  "context_only": [
+    ".vcsdd/features/earn-shared-skeleton/specs/behavioral-spec.md (= sprint-1 parent; CONVERGED 2026-07-01; do not re-review)",
+    "github.com/sonichi/sutando AGENTS.md + skills/proactive-loop/SKILL.md (= external reference architecture)"
+  ],
+  "reviewDimensions": [
+    "spec_fidelity",
+    "verification_readiness"
+  ],
+  "extraConstraints": [
+    "Sprint-2 thesis: replace earn-shared-skeleton sprint-1's 9-handler Group J with the 4-primitive Sutando design (proactive-loop + health-check + quota-tracker + bot2bot). Verify the spec is a HONEST substitute — does each REQ here actually replace the corresponding J handler concern, or does it silently drop coverage?",
+    "Mapping table to verify (sprint-1 → sprint-2 coverage): J1 auto-login → REQ-H3(c); J2 auto-rollback → REQ-H3(f); J3 auto-research → REQ-H3(e); J4 model ladder → REQ-P8 + Q2 (folded into budget); J5 fresh-start → REQ-H3(g); J6 token-kill-switch → REQ-Q5 dormant sentinel; J7 MOTHER queue → Group B; J8 anti-human-touch → INHERITED as REQ-J8 + reinforced PROP-H6/J8/J8a/B4 (4 enforcement angles); J9 measurement-seam → REQ-Q3 fallback path.",
+    "The Sutando pattern includes Telegram/Discord/voice bridges (= they have minimal human in loop). We forbid them all via REQ-J8 inheritance. Verify the spec is STRICTER than Sutando, NOT a watered-down copy.",
+    "Verify the 'self-improvement on every loop' claim: the same proactive-loop.sh runs for 6 slots; what does each slot supply (= just menu.json + strategy.json + build_log.md)? Is the generalization actually achieved or does each slot need bespoke code?",
+    "Look for AI-slop signals (sprint-1 carry): (i) any REQ with 'should/may/typically' hedging; (ii) any test that asserts implementation details not spec behavior; (iii) any PROP claiming a tier the chosen mechanism can't mechanically check; (iv) any vague Sutando reference without concrete file-path commitment.",
+    "Anti-leniency phrases unchanged."
+  ],
+  "expectedOutputPath": ".vcsdd/features/proactive-loop-skeleton/reviews/spec/iteration-1/output/"
+}

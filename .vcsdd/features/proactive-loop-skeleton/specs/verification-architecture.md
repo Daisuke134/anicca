@@ -16,26 +16,37 @@ outputs deterministic.
 
 | symbol | module | inputs | output | side-effects |
 |--------|--------|--------|--------|--------------|
-| `compute_budget(remaining_pct, minutes_until_reset)` | quota_tracker | float, int | enum `{FULL, MEDIUM, LIGHT, MINIMAL}` | none |
-| `quantize_budget(budget_per_pass)` | quota_tracker | float | enum | none |
-| `pick_next(menu, log_tail, history)` | menu | dict, list, list | menu-item dict | none |
+| `compute_budget(remaining_pct, minutes_until_reset)` | quota_tracker | float, int | float (per-pass budget) | none |
+| `quantize_budget(budget_per_pass)` | quota_tracker | float | enum `{FULL, MEDIUM, LIGHT, MINIMAL}` | none |
+| `pick_next(menu, log_tail, history, blockers)` | menu | dict, list, list, set[str] | menu-item dict OR None | none |
 | `apply_novelty_quota(picks, history, ratio)` | menu | list, list, float | list | none |
 | `parse_log_section(text)` | build_log | str | dict (parsed pass record) | none |
 | `format_log_section(pass_id, ts, budget, picked, outcome, next)` | build_log | typed | str | none |
-| `classify_health_issue(snapshot)` | health_check | HealthSnapshot dict | list[Issue] | none |
-| `dispatch_fix(issue)` | health_check | Issue dict | FixAction dict (= the recipe, not yet executed) | none |
+| `classify_issue_from_snapshot(snapshot_dict)` | health_check | typed dict (= already-captured HealthSnapshot, see I/O note below) | list[Issue] | none |
+| `select_fix_recipe(issue)` | health_check | Issue dict | FixAction dict | none |
 | `is_blocker(menu_item, slot_state)` | menu | dict, dict | bool | none |
 | `compute_roi_score(item)` | menu | dict | float | none |
 | `parse_bot2bot_issue(gh_json)` | bot2bot | dict | TaskRow dict | none |
+| `validate_novelty_key(tuple)` | menu | `(category: str, platform: str)` | bool | none |
+| `mother_queue_route_due(estimate_ratio, days_degraded)` | quota_tracker | float, int | bool | none |
+
+FIND-017 fix: `classify_health_issue` (renamed to `classify_issue_from_snapshot`) and
+`select_fix_recipe` (renamed from `dispatch_fix`) operate on a dict that was already
+captured by the I/O layer; the SNAPSHOT capture itself is I/O-bound (see below). The pure
+half is the deterministic classification given a complete record.
 
 ### I/O-BOUND layer — shell scripts + integration modules
 
 | script / function | I/O surface |
 |-------------------|-------------|
 | `proactive-loop.sh` | reads tasks/, pending-questions.md, build_log.md, menu.json, strategy.json; writes state/core-status.json, build_log.md, roi.jsonl; calls health-check.py + quota-tracker.py + bot2bot.sh; flock guard |
-| `health-check.py --fix` | tmux capture-pane, send-keys, has-session; stat .last-pass + .last-start; reads spawn-surface pinned.json + signature; git fetch + checkout; firecrawl npmjs; file appends to logs and .unfixable.jsonl |
-| `quota-tracker.py` | reads claude session usage env vars OR pane footer fallback; writes roi.jsonl + build_log.md append |
-| `bot2bot.sh` | gh issue create / list / merge; reads/writes bot2bot-sent.jsonl |
+| `health-check.py capture_snapshot` | tmux capture-pane, send-keys, has-session; stat .last-pass + .last-start; reads spawn-surface pinned.json + signature; returns dict (= input to PURE classify) |
+| `health-check.py --fix` | calls capture_snapshot (I/O) → classify (PURE) → dispatch fix actions (I/O); per-action I/O: tmux send-keys, git fetch + checkout, firecrawl npmjs, file appends to logs and .unfixable.jsonl |
+| `credential-restore.sh` | drives camofox, reads .env, invokes gog gmail, tmux send-keys |
+| `auto-allowlist.sh` | firecrawl, file edit, git commit/push, gh PR open |
+| `auto-rollback.sh` | git fetch/checkout, verify_spawn_surface call |
+| `quota-tracker.py` | reads claude session usage env vars OR pane footer fallback; writes roi.jsonl + build_log.md append; appends mother-recovery-queue.jsonl on 7d-degradation |
+| `bot2bot.sh post/poll/annotate-pr` | gh issue create / list / pr comment; reads/writes bot2bot-sent.jsonl. NO auto-merge in sprint-2 (= sprint-3 commit, see FIND-003 fix in behavioral-spec.md REQ-B3) |
 | `lib/build_log.py:append_pass` | append to build_log.md (= the I/O side; format_log_section is the pure half) |
 | `lib/menu.py:execute_pick` | reads strategy.json + applied.jsonl history; calls pick_next (pure) |
 
@@ -44,7 +55,26 @@ outputs deterministic.
 | ID | REQ | tier | property | mechanism | required (lean) |
 |----|-----|------|----------|-----------|------------------|
 | **PROP-P0-status** | P0 | 0 | core-status.json written at start with status=running; rewritten with status=idle at end of pass | unit-test (tmp_path) | YES |
-| **PROP-P1-budget-quantize** | P1, Q2 | 1 | `quantize_budget(b)` returns FULL iff b>3; MEDIUM iff 1≤b≤3; LIGHT iff 0.1≤b<1; MINIMAL iff b<0.1; never throws | property-test (1000 random b) | **YES** (drives every pass's depth) |
+| **PROP-P1-budget-quantize** | P1, Q2 | 1 | `quantize_budget(b)` returns FULL iff b>=3.0; MEDIUM iff 1.0<=b<3.0; LIGHT iff 0.1<=b<1.0; MINIMAL iff b<0.1; never throws (FIND-010 fix: boundaries half-open, consistent inclusive lower / exclusive upper) | property-test (1000 random b + 4 boundary fixtures: 2.99/3.0/0.99/0.0999) | **YES** (drives every pass's depth) |
+| **PROP-P2-tasks** | P2 | 0 | proactive-loop step 1 reads tasks/, processes priority order (urgent > normal > low; tie = mtime), writes result file with same task-id, archives task | unit-test (tmp_path) | YES (FIND-007) |
+| **PROP-P3-pending-q** | P3 | 0 | proactive-loop step 2 reads pending-questions.md; if unanswered AND budget>=LIGHT, log to build_log.md; NEVER post to Telegram/Slack/etc (REQ-J8) | unit-test | YES (FIND-007) |
+| **PROP-P4-health-call** | P4 | 0 | step 3 invokes health-check.py --fix <slot> exactly once per pass; unfixable issues surface to .unfixable.jsonl | integration-test (health-check stubbed) | YES (FIND-007) |
+| **PROP-P5-buildlog-read** | P5 | 0 | step 4 reads build_log.md tail; if absent, falls back to empty list | unit-test | YES (FIND-007) |
+| **PROP-P6-menu-pick** | P6, M3 | 1 | step 5 calls pick_next(menu, log_tail, history, blockers) and uses the returned item; if pick_next returns None, transitions to EDGE-S4 path | integration-test | YES (FIND-007) |
+| **PROP-P8-budget-depth** | P8 | 1 | FULL budget allows subagent spawn; MEDIUM blocks subagent; LIGHT blocks code-write; MINIMAL blocks all step 6 (only owner tasks + health + log) | property-test (4 budget × N candidate actions) | YES (FIND-007) |
+| **PROP-P9-buildlog-append** | P9 | 0 | step 7 appends ONE section to build_log.md; section format matches REQ-M1 schema | unit-test (regex match on appended content) | YES (FIND-007) |
+| **PROP-P10-exit** | P10 | 0 | end-of-pass writes status=idle to core-status.json; process exits with code 0 | unit-test | YES (FIND-007) |
+| **PROP-H4-log** | H4 | 0 | every health-check fix attempt writes one line to health.log with {ts, issue, action, outcome, details} | unit-test | YES (FIND-007) |
+| **PROP-Q1-snapshot** | Q1 | 0 | quota-tracker reads at end-of-pass; produces RoiRow with all 13 sprint-1 REQ-B1 fields | integration-test | YES (FIND-007) |
+| **PROP-Q2-formula** | Q2 | 1 | budget_per_pass = remaining_pct / (minutes_until_reset / 5); when minutes_until_reset == 0 → MAX_FLOAT (=> FULL); when remaining_pct == 0 → 0 | property-test | YES (FIND-007) |
+| **PROP-Q4-buildlog-summary** | Q4 | 0 | end-of-pass appends 1-line budget+cost summary to build_log.md AND a roi.jsonl row | integration-test | YES (FIND-007) |
+| **PROP-B2-poll** | B2 | 0 | bot2bot.sh poll returns JSON list of {issue_url, comment_body, kind, ts}; empty list if no issues (NOT crash) | integration-test (gh stubbed) | YES (FIND-007) |
+| **PROP-B3-annotate** | B3 | 1 (integration) | sprint-2 ships annotate-pr ONLY; an attempt to call `bot2bot.sh auto-merge` SHALL exit 1 with "auto-merge deferred to sprint-3 per FIND-003"; PROP fixture verifies the auto-merge code path does NOT exist | static-analysis + integration | **YES** (= FIND-003 critical closure) |
+| **PROP-M2-menu-load** | M2 | 0 | menu.py load_menu(path) returns parsed schema OR falls back to {pending: investigate menu.json} when JSON malformed; logs the parse failure | unit-test | YES (FIND-007) |
+| **PROP-M4-jsonl-preserved** | M4 | 0 | sprint-1 jsonl streams (lessons/earnings/applied/roi) are NEVER rewritten; build_log.md is the ONLY narrative writer | static-analysis (grep for write modes on the 4 jsonl paths) | YES (FIND-007) |
+| **PROP-S2-seed-files** | S2 | 0 | gig migration creates ~/loops/gig/{menu.json, build_log.md, tasks/, results/} AND preserves applied.jsonl + lessons.jsonl + earnings.jsonl unchanged | integration-test on tmp_path | YES (FIND-007) |
+| **PROP-S3-data-preserved** | S3 | 1 | byte-level diff: pre-migration vs post-migration of ~/loops/gig/{applied.jsonl, lessons.jsonl, earnings.jsonl, .last-start} == zero diff | static check (sha256 compare on these specific files) | YES (FIND-007) |
+| **PROP-novelty-key-aligned** | M3 | 1 | novelty quota key is exactly the 2-tuple `(category, platform)` matching sprint-1 REQ-H1 (FIND-005 fix); any code using `(category, novelty)` or other variant FAILs static analysis | static-analysis | **YES** |
 | **PROP-P7-pivot** | P7 | 1 | given a menu of N items where K are blocked, pick_next(menu, blocked_set) returns the highest-ROI item from the (N-K) unblocked subset; if N-K==0, returns None (= step 5 logs no-unblocked) | property-test | **YES** (= core "never-idle" rule) |
 | **PROP-P11-skip** | P11 | 0 | proactive-loop exits without running step 6 iff one of 4 conditions hold; the 4 are enumerable | unit-test (each condition fixture) | YES |
 | **PROP-H1-snapshot** | H1, H2 | 0 | HealthSnapshot captures all 8 fields enumerated in REQ-H1; missing fields default to None not "" | unit-test | YES |
@@ -81,6 +111,8 @@ outputs deterministic.
 6. **PROP-J8-blocklist** — anti-human-touch invariant
 7. **PROP-J8a-new-files** — invariant enforcement on the NEW sprint-2 source files
 8. **PROP-B4-no-human-escalation** — bot2bot must not become a back-door for human touch
+9. **PROP-B3-annotate** — auto-merge SCOPE-DEFERRED enforcement (FIND-003 critical fix)
+10. **PROP-novelty-key-aligned** — sprint-1 (category, platform) key (FIND-005 fix)
 
 All other PROPs are `required: false` in lean mode.
 

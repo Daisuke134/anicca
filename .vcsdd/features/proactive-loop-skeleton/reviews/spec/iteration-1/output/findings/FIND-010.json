@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-010",
+  "dimension": "verification_readiness",
+  "category": "test_quality",
+  "severity": "high",
+  "description": "PROP-P1-budget-quantize specifies 'FULL iff b>3; MEDIUM iff 1≤b≤3; LIGHT iff 0.1≤b<1; MINIMAL iff b<0.1'. The REQ-P1/REQ-Q2 spec text uses inconsistent inclusive/exclusive boundaries: REQ-P1 says 'FULL (remaining% per pass > 3%) / MEDIUM (1-3%) / LIGHT (< 1%) / MINIMAL (0% remaining)' with no precise boundary handling at 1.0, 3.0, or 0.0; REQ-Q2 says 'FULL if > 3, MEDIUM if 1-3, LIGHT if 0.1-1, MINIMAL if < 0.1'. The property test cannot pass deterministically because the spec text for the boundary cases (exactly 1, exactly 3, exactly 0.1, exactly 0) is ambiguous. Property-test under-determined.",
+  "evidence": {
+    "filePath": ".vcsdd/features/proactive-loop-skeleton/specs/behavioral-spec.md",
+    "lineRange": "66-68",
+    "snippet": "FULL (remaining% per pass > 3%) / MEDIUM (1-3%) / LIGHT (< 1%) / MINIMAL (0% remaining)"
+  },
+  "routeToPhase": "1a"
+}
