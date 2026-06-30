@@ -162,55 +162,101 @@ Fold any novel lesson into the local `strategy.json` improvement (B4).
 }
 ```
 
-## Pass structure (ordered priority, single bounded pass)
+## Pass structure (ordered priority, single bounded pass) — as shipped (adversary-round-4 reconcile)
+
+> Note: the old spec had pass-structure out of sync with the cron prompt (FIND-006). This section now
+> matches exactly what the shipped cron prompt does.
 
 ```
 START PASS
-  1. Read ~/gig/strategy.json (bootstrap from strategy.default.json if absent)
-  2. Increment strategy.json.pass_count (write back)
-  3. NURTURE ALL (B1): sweep every active talk-room → reply / deliver / 評価依頼
-     → append rows to ~/gig/applied.jsonl
-  4. APPLY BROADLY (B2): up to strategy.max_apply_per_pass open requests
-     (dedupe via applied.jsonl requestIds)
-     → append rows to ~/gig/applied.jsonl
-  5. OBSERVE OUTCOMES (B3): for any request whose status changed (rejected/accepted/closed/rated)
-     → append row to ~/gig/lessons.jsonl
-  6. If pass_count % improve_cadence_passes == 0:
-       IMPROVE STEP (B4):
-         - read lessons.jsonl + applied.jsonl stats
-         - read peer [gig-lesson] GitHub issues (gh issue list)
-         - update strategy.json with concrete changes
-       BOT-TO-BOT SHARE (B5):
-         - if notable lesson not yet in shared-lessons.jsonl → gh issue create + append to shared-lessons.jsonl
-  7. EARNED CHECK: if any request shows 検収/支払 in the UI
-     → append {ts,requestId,jpy,status,evidence} to ~/gig/earnings.jsonl (NO-FAKE-EARN guard)
+  STEP 0 (DETERMINISTIC — passprep.py):
+    python3 ~/anicca/skills/earn/gig/passprep.py
+    → bootstraps ~/gig/strategy.json from strategy.default.json if missing or corrupt (FIND-002)
+    → enforces skip-floor: resets skip_categories to [] if it would eliminate all apply categories (FIND-005)
+    → increments pass_count, writes strategy.json back atomically
+    → prints JSON: {pass_count, do_improve, max_apply_per_pass, priority_categories, skip_categories}
+    Claude reads these values; does NOT increment pass_count itself or compute cadence itself.
+
+  PRE-STEP (every pass — not just improve passes):
+    gh issue list -R Daisuke134/anicca --label gig-lesson --limit 10 2>/dev/null
+    → read peer lessons, fold novel ones into judgment this pass
+    → if gh fails: log warning and continue; never abort
+
+  B1 NURTURE ALL (highest priority):
+    sweep every active talk-room → reply / deliver / 評価依頼
+    → append rows to ~/gig/applied.jsonl
+
+  B2 APPLY BROADLY:
+    up to max_apply_per_pass (from STEP 0) NEW requests
+    in priority_categories AND NOT in skip_categories (both from STEP 0)
+    AND NOT already in APPLIED_IDS (dedupe via applied.jsonl)
+    → append rows to ~/gig/applied.jsonl
+
+  B3 LEARN:
+    for any request whose status changed (rejected/accepted/closed/rated)
+    → append row to ~/gig/lessons.jsonl
+
+  EARNED CHECK:
+    if any request shows 検収/支払 in the UI
+    → ONLY THEN append {ts,requestId,jpy,status,evidence} to ~/gig/earnings.jsonl (NO-FAKE-EARN guard)
+
+  IF do_improve (from STEP 0):
+    B4 IMPROVE STEP:
+      - tail -n 50 ~/gig/lessons.jsonl  (last 50 lessons only, not the whole file — FIND-008)
+      - re-read peer issues from PRE-STEP
+      - compute per-category accept_rate from applied.jsonl + lessons
+      - update strategy.json with concrete changes (write valid JSON back)
+      - AI may add to skip_categories only if category repeatedly fails;
+        passprep.py enforces the skip-floor on the next pass
+    B5 BOT-TO-BOT SHARE:
+      - if notable lesson not yet in shared-lessons.jsonl
+        (dedup by requestId+outcome)
+        → gh issue create + append {ts,requestId,outcome,issue_url} to shared-lessons.jsonl
+      - if gh fails: log warning and continue; never abort
+
 FINALLY: touch ~/gig/.last-pass  ← heartbeat (ONLY on completed pass, never on startup)
 ```
+
+## FIND-007 — earnings WRITE gate: honest accounting
+
+The earnings **write gate** (deciding when to append to earnings.jsonl) is an LLM instruction in the
+cron prompt ("ONLY THEN append ... NEVER write earnings.jsonl for an applied/in-progress gig").
+This is intentional: only an LLM can read the Coconala UI to detect 検収/支払 state.
+
+The earnings **read / sum guard** is deterministic: the `isValidEarnRow()` function in
+`__tests__/self-improve.test.mjs` (and any consumer code) gates on `SETTLED.has(row.status) && evidence &&
+jnum(row.jpy) > 0`. A stray row whose status is "applied" or "in-progress" can **never inflate the
+jpy_earned sum** even if accidentally written — the deterministic read guard filters it out.
+
+Acceptable: the risk window is a stray row written by LLM mistake. The read-guard closes it without
+requiring a deterministic write gate (which would need UI automation that is brittle and not yet in scope).
+Documented, not a blocker.
 
 ## Invariants (adversary will check)
 
 | Invariant | Guard |
 |-----------|-------|
-| NO-FAKE-EARN | ¥ recorded to earnings.jsonl ONLY on real 検収/支払 + evidence + jpy>0 |
+| NO-FAKE-EARN | ¥ recorded to earnings.jsonl ONLY on real 検収/支払 + evidence + jpy>0 (LLM write + deterministic read guard) |
 | NO-USDC | cron prompt has "do NOT claim USDC / do NOT call record-earn" |
 | DEDUP-APPLY | applied.jsonl requestIds checked before each application |
-| DEDUP-LESSON-SHARE | shared-lessons.jsonl checked before gh issue create |
-| GRACEFUL-GH | gh failure → warn + skip (never abort the pass) |
+| DEDUP-LESSON-SHARE | shared-lessons.jsonl checked by requestId+outcome before gh issue create |
+| GRACEFUL-GH | gh failure → warn + skip (never abort the pass); explicit phrase in prompt |
 | NO-HUMAN-LOOP | no read -p, no "wait for Dais", no manual step; captcha→CapSolver, OTP→gog gmail |
-| BOUNDED | max_apply_per_pass cap enforced; improve step every N passes only |
+| BOUNDED | max_apply_per_pass cap enforced (from passprep STEP 0); improve step every N passes only |
 | HEARTBEAT-LAST | ~/gig/.last-pass touched ONLY at the very end of a completed pass |
+| SKIP-FLOOR | passprep.py resets skip_categories to [] if it would leave zero apply categories |
+| DETERMINISTIC-BOOKKEEPING | pass_count / do_improve / max_apply / skip_floor all computed by passprep.py, never by LLM |
 
 ## Files changed / created
 
 | File | Action |
 |------|--------|
-| `skills/earn/gig/gig-cli.sh` | Edit: replace STARTUP cron prompt with 5-behavior version |
-| `skills/earn/gig/strategy.default.json` | Create: seed default strategy |
-| `skills/earn/gig/SLOT_CC.md` | Edit: reference new behaviors |
-| `skills/earn/gig/NO_HUMAN.md` | Edit: add new scripts to audited list |
-| `skills/earn/gig/__tests__/no-human-loop.test.mjs` | Edit: add new scripts to FILES |
-| `skills/earn/gig/__tests__/self-improve.test.mjs` | Create: schema + dedup + no-fake-earn tests |
-| `docs/superpowers/specs/2026-06-30-gig-self-improving-multiapply-loop-design.md` | This file |
+| `skills/earn/gig/gig-cli.sh` | Edit: STARTUP cron prompt rewired — STEP 0 passprep.py + PRE-STEP every pass + B1-B5 |
+| `skills/earn/gig/passprep.py` | Create: deterministic pass-prep helper (bootstrap/skip-floor/pass_count/do_improve) |
+| `skills/earn/gig/strategy.default.json` | Pre-existing: seed default strategy (unchanged) |
+| `skills/earn/gig/__tests__/self-improve.test.mjs` | Edit: FIND-004 dedup test → greps actual cron text; FIND-009 graceful-gh regex tightened |
+| `skills/earn/gig/__tests__/passprep.test.mjs` | Create: 6 deterministic tests running real passprep.py in temp HOME |
+| `docs/superpowers/specs/2026-06-30-gig-self-improving-multiapply-loop-design.md` | This file (reconciled) |
 
 ## Non-goals (out of scope)
 
