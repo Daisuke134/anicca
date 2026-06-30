@@ -430,6 +430,28 @@ The slot SHALL NEVER rewrite or truncate `$ANICCA_HOME/state/ledger.jsonl`. All 
 **Acceptance Criteria:**
 - No `truncate`, `>` redirect, or `O_WRONLY` open on any `.jsonl` file within the slot.
 
+#### REQ-R5 — Yield-Keeper Isolation (trading stake must NOT be swept into DeFi)
+
+The runtime's `runtime/yield-keeper.mjs` deterministically deploys ALL idle USDC above `COMPUTE_RESERVE_USDC`
+(default $5) into stable-yield vaults. Without isolation, funded trading capital sitting idle between trades
+would be swept into a yield position and become unavailable to `earn/pm-trade` (and incur withdraw friction).
+
+WHEN the trading slot reserves working capital, THE SYSTEM SHALL write
+`~/loops/earn-pm-trade/reserved.json` = `{reserved_usdc: <float>, ts}` (= the stake the slot is actively
+managing: open positions + the bankroll it intends to deploy this session).
+
+THE SYSTEM SHALL change `yield-keeper.mjs` so its defended reserve is
+`effective_reserve = COMPUTE_RESERVE_USDC + (reserved.json.reserved_usdc if present and ts fresh < 24h else 0)`,
+and it deploys to yield ONLY USDC above `effective_reserve`. When `reserved.json` is missing/stale, behaviour
+is unchanged (defends only COMPUTE_RESERVE — fail-safe toward NOT sweeping is not possible here, so staleness
+defaults to the prior conservative-for-compute behaviour; the trading slot MUST refresh `reserved.json` every
+pass while it holds capital — REQ-T paper/live pass writes it at pass start).
+
+**Acceptance Criteria:**
+- With `reserved.json {reserved_usdc: 60}` fresh and balance $100, yield-keeper deploys at most `100 − 5 − 60 = $35`.
+- With `reserved.json` absent, yield-keeper deploys `balance − COMPUTE_RESERVE` (unchanged legacy behaviour).
+- The trading slot writes `reserved.json` at the start of every pass that holds or intends to deploy capital.
+
 ## Non-Functional Requirements
 
 | NFR | Requirement |

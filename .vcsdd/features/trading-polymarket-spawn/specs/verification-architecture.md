@@ -85,6 +85,7 @@ inherits: earn-shared-skeleton (PROP-A1..A9, PROP-B1..B6, PROP-C1..C3, PROP-D1..
 | PROP-R2 | Two instances with different ANICCA_HOME never share wallet.json path | REQ-R2 | 2 | true | integration |
 | PROP-R3 | Bot2bot dedup: two stub instances on same market_id → second reduces or skips position | REQ-R3 | 2 | true | integration (stub gh issue API) |
 | PROP-R4 | ledger.jsonl never written via truncate or O_WRONLY (only O_APPEND) | REQ-R4 | 2 | true | integration (fsevents or strace spy) |
+| PROP-R5 | yield-keeper defends COMPUTE_RESERVE + reserved.json: balance $100 & reserved_usdc 60 → deploys ≤ $35; reserved.json absent → deploys balance−COMPUTE_RESERVE (legacy) | REQ-R5 | 2 | true | integration (stub execute-yield, assert deposit amount cap) |
 | PROP-E2E-1 | After paper_pass_count ≥ required AND adversary PASS: a real Polygon/Base tx from wallet exists for a model-decided trade | REQ-T7, REQ-T8 | 3 | true | E2E (real tiny stake, on-chain verify) |
 | PROP-E2E-2 | Child runtime with its own funded wallet completes ≥1 earn pass verified on-chain | REQ-S5, REQ-S8 | 3 | true | E2E (child boot + real tithe tx) |
 
