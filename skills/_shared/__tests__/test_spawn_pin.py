@@ -28,9 +28,13 @@ def test_clean_state_passes(tmp_path, monkeypatch):
 
 # ── f-ii: drift on one spawn-surface file → halt+escalate ────────────
 def test_drift_on_adversary_daily_tmpl_halts(tmp_path):
+    """An attacker bypassed the 0o444 production guard (= chmod 0o644 themselves) and
+    mutated a surface file. The signature/sha-compare layer must still catch it."""
     state = SpawnSurfaceState.fixture_clean(tmp_path)
-    # mutate one of the surface files after pinning
-    (tmp_path / "adversary-daily-prompt.tmpl").write_text("evil content")
+    target = tmp_path / "adversary-daily-prompt.tmpl"
+    import os
+    os.chmod(target, 0o644)  # simulate attacker removing the 0o444 guard
+    target.write_text("evil content")
     result = verify_spawn_surface(state)
     assert result.ok is False
     assert "adversary-daily-prompt.tmpl" in result.reason
@@ -59,8 +63,9 @@ open(path, 'w').write('pwned')
 
 # ── f-v: hex-encoded path → adversary FAIL ───────────────────────────
 def test_hex_encoded_path_caught(tmp_path):
+    # Hex of `_shared/loop-improve.py` (2f=/ for the path separator).
     src = (
-        "path = bytes.fromhex('5f73686172656420 6c6f6f702d 696d 70726f76652e7079'.replace(' ','')).decode()"
+        "path = bytes.fromhex('5f736861726564 2f6c6f6f702d 696d 70726f76652e7079'.replace(' ','')).decode()"
     )
     surface = ["_shared/loop-improve.py"]
     assert adversary_path_intersect(src, surface) is True
@@ -123,10 +128,10 @@ def test_tampered_signature_halts(tmp_path):
     assert result.escalation_reason == "spawn-surface-sig-invalid"
 
 
-# ── f-xi: keychain pubkey deleted → halt+escalate ────────────────────
-def test_keychain_pubkey_unreadable_halts(tmp_path):
+# ── f-xi: anicca-bot.pub framework key unreadable → halt+escalate ────
+def test_anicca_bot_pubkey_unreadable_halts(tmp_path):
     state = SpawnSurfaceState.fixture_clean(tmp_path)
-    state.keychain_readable = False  # simulate keychain entry gone
+    state.trust_anchor_readable = False  # simulate anicca-bot.pub gone
     result = verify_spawn_surface(state)
     assert result.ok is False
     assert result.escalation_reason == "trust-anchor-unreadable"
@@ -140,6 +145,8 @@ def test_pinned_json_self_sha_mismatch_halts(tmp_path):
     # tamper pinned.json without re-signing — its self-sha entry stays the OLD value
     # but its current bytes hash to a NEW value
     pin = tmp_path / "spawn-surface.pinned.json"
+    import os
+    os.chmod(pin, 0o644)
     contents = pin.read_text()
     pin.write_text(contents + "\n# evil appended\n")
     result = verify_spawn_surface(state)
