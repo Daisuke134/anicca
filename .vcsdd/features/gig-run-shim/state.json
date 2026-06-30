@@ -1,0 +1,59 @@
+{
+  "featureName": "gig-run-shim",
+  "mode": "lean",
+  "language": "python",
+  "currentPhase": "2a",
+  "phaseHistory": [
+    {
+      "from": "init",
+      "to": "1a",
+      "timestamp": "2026-06-30T22:34:14.362Z"
+    },
+    {
+      "from": "1a",
+      "to": "1b",
+      "timestamp": "2026-06-30T22:34:14.366Z"
+    },
+    {
+      "from": "1b",
+      "to": "1c",
+      "timestamp": "2026-06-30T22:36:32.445Z"
+    },
+    {
+      "from": "1c",
+      "to": "2a",
+      "timestamp": "2026-06-30T22:36:38.974Z",
+      "sprint": 1
+    }
+  ],
+  "iterations": {
+    "1a": 1,
+    "1b": 1,
+    "1c": 1,
+    "2a": 1
+  },
+  "proofObligations": [],
+  "traceability": {
+    "epicId": "VCSDD-gig-run-shim-1782858806685",
+    "beads": []
+  },
+  "gates": {
+    "1c": {
+      "verdict": "PASS",
+      "timestamp": "2026-06-30T22:36:38.967Z",
+      "reviewedBy": "adversary",
+      "details": {
+        "iterations": 1,
+        "mode": "lean",
+        "findingDiminishment": [
+          0
+        ]
+      },
+      "adversaryVerdict": "PASS",
+      "adversaryReviewedAt": "2026-06-30T22:36:38.967Z"
+    }
+  },
+  "sprintCount": 1,
+  "createdAt": "2026-06-30T22:33:26.683Z",
+  "updatedAt": "2026-06-30T22:36:38.974Z"
+}

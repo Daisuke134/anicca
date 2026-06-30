@@ -1,0 +1,50 @@
+{
+  "sprintNumber": 1,
+  "feature": "gig-run-shim",
+  "overallVerdict": "PASS",
+  "timestamp": "2026-07-01T00:00:00Z",
+  "iteration": 1,
+  "reviewContext": {
+    "reviewType": "spec",
+    "mode": "lean",
+    "artifactsReviewed": [
+      ".vcsdd/features/gig-run-shim/specs/behavioral-spec.md",
+      ".vcsdd/features/gig-run-shim/specs/verification-architecture.md",
+      "docs/superpowers/specs/2026-07-01-proactive-loop-architecture-and-cleanup-design.md",
+      "skills/earn/gig/run.sh"
+    ]
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": ".vcsdd/features/gig-run-shim/specs/behavioral-spec.md:37-66", "description": "8 REQ (S1-S5, I1-I3, D1-D2) each map 1:1 to either an existing key-preservation guarantee, an observability field, or one of parent INV-1/INV-4/INV-P1. REQ-I1 explicitly cites parent INV-4 with mtime-snapshot verification method, satisfying manifest extraConstraint #2 (current run.sh:1-45 has zero writes under ~/loops/ — regression would be caught)."},
+        {"type": "file", "location": ".vcsdd/features/gig-run-shim/specs/behavioral-spec.md:42-44", "description": "REQ-S3 explicitly requires BOTH disk AND launchctl rc=0 (conjunction, not disjunction), satisfying manifest extraConstraint #3."},
+        {"type": "file", "location": ".vcsdd/features/gig-run-shim/specs/behavioral-spec.md:76", "description": "EDGE-E5 enumerates the disk-but-not-loaded case explicitly with the same conjunction wording as REQ-S3."},
+        {"type": "file", "location": ".vcsdd/features/gig-run-shim/specs/behavioral-spec.md:55-58", "description": "REQ-I2 restricts gig-cli.sh invocations to idempotent start + --status read, matching the current run.sh:16-17 behavior and parent INV-1/INV-P1 (NEVER kill LAYER C)."},
+        {"type": "file", "location": ".vcsdd/features/gig-run-shim/specs/behavioral-spec.md:30-31", "description": "Out-of-scope clause lists all 9 existing status JSON keys verbatim, matching the current run.sh:40-42 output keys (source, task, funding, earn_usdc, cost_usdc, jpy_earned, applied_total, core, wake, note) plus wallet — preserving main-loop classifier contract."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": ".vcsdd/features/gig-run-shim/specs/verification-architecture.md:20-32", "description": "12 PROPs total; 11 required:true PROPs cover REQ-S1..S5, REQ-I1..I3, REQ-D1+D2, EDGE-E2, EDGE-E5. Each REQ-X has a corresponding PROP-X with the same identifier suffix — traceable 1:1."},
+        {"type": "file", "location": ".vcsdd/features/gig-run-shim/specs/verification-architecture.md:30", "description": "PROP-NFR1-time-budget is correctly Tier 0, required:false — confirming manifest extraConstraint #4 that the <100ms NFR-1 is optional, not gating."},
+        {"type": "file", "location": ".vcsdd/features/gig-run-shim/specs/verification-architecture.md:26", "description": "PROP-I1-no-loops-writes uses snapshot-diff of mtimes under ~/loops/gig/ — concrete, executable verification method; will fail loudly if any future commit adds a write."},
+        {"type": "file", "location": ".vcsdd/features/gig-run-shim/specs/verification-architecture.md:32", "description": "PROP-E5-disk-but-not-loaded specifies the EDGE-E5 test setup (plist on disk, launchctl rc!=0 → installed=false), wired by name."},
+        {"type": "file", "location": ".vcsdd/features/gig-run-shim/specs/verification-architecture.md:13-15", "description": "Purity boundary is clean: PURE helper summarize_loops_dir takes launchctl_print_rc as an injected param, so unit tests can simulate non-Darwin (EDGE-E4) and rc=0/rc!=0 (EDGE-E5) without invoking launchctl. SHELL layer is the only thing that calls real launchctl."},
+        {"type": "file", "location": ".vcsdd/features/gig-run-shim/specs/verification-architecture.md:36-38", "description": "Test plan names 3 concrete test files (PURE unit, Darwin integration, static grep) — sufficient to exercise all 11 required PROPs in lean Tier 0/1 budget."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 0,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}

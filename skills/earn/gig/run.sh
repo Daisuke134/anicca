@@ -16,10 +16,15 @@ PY=/opt/homebrew/bin/python3
 bash "$HERE/gig-cli.sh" >/dev/null 2>&1 || true
 CORE=$(bash "$HERE/gig-cli.sh" --status 2>/dev/null | head -1)
 
-# 2) honest status from the core's ledgers (¥ only; 検収/支払 rows are the only earned rows)
-"$PY" - "$WAKE" "$CORE" <<'PY'
+# 2a) sprint-3 #31 SHIM: read LAYER B (proactive-loop) observability via
+#     lib.proactive_observe (read-only; ZERO writes under ~/loops/gig/).
+SHARED_DIR="$(cd "$HERE/../../_shared" && pwd)"
+PL_JSON="$( cd "$SHARED_DIR" && "$PY" -m lib.proactive_observe gig "$HOME/loops/gig" 2>/dev/null || echo '{}' )"
+
+# 2b) honest status from the core's ledgers (¥ only; 検収/支払 rows are the only earned rows)
+"$PY" - "$WAKE" "$CORE" "$PL_JSON" <<'PY'
 import json,sys,os
-wake,core=sys.argv[1],sys.argv[2]
+wake,core,pl_json=sys.argv[1],sys.argv[2],sys.argv[3]
 G=os.path.expanduser("~/gig")
 def jnum(v):
     try: return float(str(v).replace(',','').replace('¥','').replace('円','').strip() or 0)
@@ -37,8 +42,20 @@ applied=[r for r in rows("applied.jsonl") if r.get("status")=="applied"]
 SETTLED={"検収","支払","検収完了","completed","paid"}
 earned=[r for r in rows("earnings.jsonl") if r.get("status") in SETTLED and r.get("evidence") and jnum(r.get("jpy",0))>0]
 jpy=sum(jnum(r.get("jpy",0)) for r in earned)
+try:
+    pl = json.loads(pl_json) if pl_json else {}
+except Exception:
+    pl = {}
+# Defaults so REQ-S2 shape is honored even if the observer subprocess failed
+pl_obj = {
+    "installed": bool(pl.get("installed", False)),
+    "last_pass_ts": pl.get("last_pass_ts"),
+    "last_pass_step": pl.get("last_pass_step"),
+    "build_log_passes": int(pl.get("build_log_passes", 0)),
+}
 print(json.dumps({"wallet":None,"source":"gig","task":"supervise","funding":"human(¥→MUFG)",
   "earn_usdc":0,"cost_usdc":0,"jpy_earned":round(jpy,0),"applied_total":len(applied),
-  "core":core,"wake":wake,"note":"Coconala loop; ¥ human-funded; no USDC; earned=検収-only"}))
+  "core":core,"wake":wake,"note":"Coconala loop; ¥ human-funded; no USDC; earned=検収-only",
+  "proactive_loop": pl_obj}))
 PY
 exit 0

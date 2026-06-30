@@ -1,0 +1,5 @@
+new-feature-tests: FAIL
+regression-baseline: PASS
+total-tests: 278
+new-modules: test_proactive_observe + test_gig_run_shim_darwin + test_gig_run_shim_no_human_touch
+red-evidence: ModuleNotFoundError: No module named 'lib.proactive_observe'

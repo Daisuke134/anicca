@@ -1,0 +1,13 @@
+target-feature-tests: PASS
+regression-baseline: PASS
+
+unit: 11/11 in test_proactive_observe.py
+darwin integration: 1/1 in test_gig_run_shim_darwin.py
+no-human-touch + no-tmux-kill static: 3/3 in test_gig_run_shim_no_human_touch.py
+full regression: 286 passed (was 275 + 11 new)
+live E2E (real gig run.sh against ~/gig/ 23 in-flight apps):
+  applied_total = 23
+  core = ALIVE
+  proactive_loop = {installed: false, last_pass_ts: 1782855502,
+                    last_pass_step: 'done', build_log_passes: 5}
+  REQ-S1 back-compat: 0 missing keys
