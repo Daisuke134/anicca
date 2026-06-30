@@ -9,6 +9,8 @@ from lib.healthcheck import HealthcheckContext, Mode, classify  # FAIL until 2b
 
 
 def _ctx(**overrides):
+    # Default puts ctx into ALIVE_FRESH: last_pass is 30 min ago (< 90 min STALE).
+    # Tests that need STALE/CRON_GONE/etc override the relevant fields.
     base = dict(
         slot="gig",
         pane_text="",
@@ -17,7 +19,7 @@ def _ctx(**overrides):
         last_start_mtime=1782800000,
         restart_log_entries=[],
         cron_has_slot_job=True,
-        now_ts=1782830000,
+        now_ts=1782800000 + 30 * 60,  # 30 min after last_pass = fresh
     )
     base.update(overrides)
     return HealthcheckContext(**base)
