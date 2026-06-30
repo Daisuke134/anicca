@@ -1,0 +1,42 @@
+{
+  "sprintNumber": null,
+  "feature": "earn-shared-skeleton",
+  "overallVerdict": "PASS",
+  "timestamp": "2026-07-01T00:00:00Z",
+  "iteration": 4,
+  "reviewContext": {
+    "reviewType": "spec",
+    "mode": "lean",
+    "note": "ROUND-3-001 CLOSED: behavioral-spec.md L364-366 explicitly enumerates `spawn-surface.pinned.json` as file #6 of the spawn-surface set, with self-sha entry stated at L370-371 ('its own sha256') and verified at L389-391 (c) ('pinned.json's own sha against the self-sha entry'). Ed25519 sig over pinned.json (L370-372), keychain-sealed pubkey under `anicca-trust-anchor-pubkey` with user-gesture-enforced pubkey updates (L374-377), and ORDERED check (a) keychain read -> (b) sig verify -> (c) sha compare (L380-392) is correctly placed BEFORE reading pinned.json body. PROP-E5 fixtures f-x (sig tampered), f-xi (keychain deleted), f-xii (self-sha mismatch) close the pinned.json-itself attack. ROUND-3-002 CLOSED: behavioral-spec.md L406-428 replaces grep with structured AST/parser analysis: Python ast NodeVisitor with constant-folding of JoinedStr/BinOp/str.join and base64/hex/url-decode at sinks (open/Path/rename/shutil/subprocess/exec/eval); shell via `bash -n` + `shellcheck --format=json` with var-expansion resolution; JS via acorn/tree-sitter with same taint discipline. PROP-E5 fixture corpus f-iv..f-ix covers all 6 encoding bypasses named in ROUND-3-002 (base64, hex, concat, os.path.join, iterdir, pinned.json-read). ROUND-3-003 SCOPE-DEFERRED HONESTLY: behavioral-spec.md L548-559 explicitly names on-chain raw-integer settlement as out-of-MVP, identifies `x402-self-facilitate` as the future owner feature, asserts the 5 MVP slots all settle off-chain (Coconala/Whop/Amazon/YouTube/Algora) in jpy_int or usdc_float_6dp tiers, and the allowlist schema's per-entry `unit`+`comparison` enums are backwards-compatible — adding wei_uint256/lamport_uint64 requires zero change to existing platform entries. PROP-G2-runtime line 90 mirrors the deferral with explicit MVP scope note. NEW gaps under manifest extraConstraints (d)(a-d) reviewed: (a) keychain entry deletion is covered by REQ-E5 step (a) halt+escalate `trust-anchor-unreadable` + PROP-E5 fixture f-xi; (b) Dais private-key compromise is acknowledged as an out-of-band trust assumption (key never on Mac filesystem, L395) — not a spec defect for this feature; (c) AST coverage for Python/bash/JS is sufficient because `loop-propose.sh` imports skills under `~/.worktrees/sandbox-<sha>/` for 3-day quarantine + adversary PASS (EDGE-5) before promotion — any Rust/Go skill would be reviewed by the same adversary subagent and any path-construction in those languages would surface at the sandbox-promotion gate; this is a bounded acceptable limit, not a critical gap; (d) the `.github/workflows/spawn-surface-guard.yml` CI workflow is explicitly named as a downstream commitment out-of-scope for this feature (L397-398) — the OS-level trust anchor (signed pin + keychain pubkey + uchg flag) is the in-scope defense, CI is defense-in-depth not the load-bearing layer. All 3 iter-3 findings closed, no new critical/high gaps identified within scope. Lean-mode convergence at iter-4.",
+    "iterationCapOverride": "Per manifest: iter-4 authorized because iter-3 had 1 critical + 1 high real defects requiring closure verification."
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "specs/behavioral-spec.md:356-404", "description": "REQ-E5 spawn surface enumerates 6 files including pinned.json; self-sha entry + ordered keychain-read/sig-verify/sha-compare BEFORE reading pinned.json body. Pubkey update requires user gesture (macOS Touch ID/sudo)."},
+        {"type": "file", "location": "specs/behavioral-spec.md:548-559", "description": "ROUND-3-003 deferral is explicit: names on-chain raw-int settlement out-of-MVP, names future feature `x402-self-facilitate`, asserts MVP slots all off-chain, asserts allowlist schema backwards-compatible."},
+        {"type": "file", "location": "specs/behavioral-spec.md:529-543", "description": "Per-entry unit+comparison schema in payout-endpoint-allowlist.json (jpy_int|usdc_float_6dp, exact|epsilon) is concrete and testable; MVP-slot coverage stated."},
+        {"type": "file", "location": "specs/behavioral-spec.md:106-143", "description": "REQ-A1..A9 dispatch table is unambiguous, priority order explicit, mutex asserted with deterministic predicates."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "specs/verification-architecture.md:85", "description": "PROP-E5-spawn-pin: 3-layer trust chain with all 12 fixtures (f-i..f-xii) enumerated, including pinned.json-self-sha attack (f-xii), keychain-deleted (f-xi), sig-tampered (f-x), and all 6 encoding bypasses (f-iv base64, f-v hex, f-vi concat, f-vii os.path.join, f-viii iterdir, f-ix pinned.json-read). Keychain access mocked via temp Security.framework wrapper for integration test."},
+        {"type": "file", "location": "specs/verification-architecture.md:90", "description": "PROP-G2-runtime: 3-check pattern (endpoint allowlist + hash-fidelity + field-equality) with unit canonicalization; fixture corpus covers JPY-exact + USDC-epsilon both-directions (off-by-0.005 attack within epsilon). MVP scope note explicitly defers on-chain raw-int to future feature."},
+        {"type": "file", "location": "specs/verification-architecture.md:107-124", "description": "Required-set for lean convergence enumerates 11 PROPs covering all critical security/dimensional/anti-slop surfaces; PROP-E5 included as trust anchor for E1/E2/C3."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 0,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}
