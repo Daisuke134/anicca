@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "high",
+  "description": "REQ-F1 (escalate.sh) is the single human gate and the channel for ALL escalations (needs-login, backoff-cap, adversary-stalled) yet the spec leaves the Telegram POST under-specified: (a) no endpoint URL field, env var name, or location of 'the configured Telegram bot endpoint'; (b) no auth scheme (bot token? where?); (c) no failure-handling semantics — if Telegram is down, is the gh issue still created? Is the escalation-log row written before/after the POST? (d) no escaping rules for <evidence> being interpolated into the gh issue title/body or the POST body — `[<slot>][<reason>]` in REQ-F1(a) interpolates user-influenceable text into a shell-invoked gh command, which is exactly the same injection class as FIND-004; (e) the parent master spec line 117 says 'gh issue label=escalation + TG ping' but does not define dedup semantics, so REQ-F2's `evidence_hash` is undefined here — see FIND-007. Without these the only human gate of the entire system is non-reviewable.",
+  "evidence": {
+    "filePath": ".vcsdd/features/earn-shared-skeleton/specs/behavioral-spec.md",
+    "lineRange": "151-157",
+    "snippet": "WHEN `escalate.sh <slot> <reason> <evidence>` is called, THE SYSTEM SHALL: (a) `gh issue create --label escalation --title \"[<slot>][<reason>] short summary\" --body <evidence>`, (b) write the issue URL to `~/loops/escalation-log.jsonl`, (c) post the issue URL to the configured Telegram bot endpoint."
+  },
+  "routeToPhase": "1a"
+}

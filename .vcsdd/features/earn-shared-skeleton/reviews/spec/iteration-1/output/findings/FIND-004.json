@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "spec_fidelity",
+  "category": "security_surface",
+  "severity": "critical",
+  "description": "REQ-A5 instructs the self-heal layer to (a) grep the hook script for the failing `require(...)` path, (b) run `npm install -g <module-name>`. There is no validation of <module-name>: no allowlist, no character-set restriction, no check that the extracted string is a valid npm package name vs a path/URL/shell-injection payload. A pane error message is attacker-influenceable in practice (a malicious shared-lesson posted by another agent, a poisoned skill from loop-propose.sh, or even a crafted issue title rendered in pane via gh) can plant a `node:internal/modules/cjs/loader` substring with a hostile module name. The script would then `npm install -g` an arbitrary package — RCE under the user's account. This is the loop-healthcheck script, fired every 5 min by launchd. Because REQ-A5 is Tier 0 PROP-A5 only checks 'classify returns HOOK_ERROR' + 'module-name extractor returns a valid npm package name' (1b line 52), but 'valid npm package name' is undefined and even a 'valid' name (e.g. `pwn-anicca`) is still owned by an attacker. The required:true gate for lean convergence does NOT include PROP-A5, so a security-critical self-heal goes out without a hard gate.",
+  "evidence": {
+    "filePath": ".vcsdd/features/earn-shared-skeleton/specs/behavioral-spec.md",
+    "lineRange": "62-65",
+    "snippet": "WHEN a pane capture contains the substring `PreToolUse:Bash hook error  node:internal/modules/cjs/loader`, THE SYSTEM SHALL: (a) grep the hook script for the failing `require(...)` path, (b) run `npm install -g <module-name>`, (c) re-tick"
+  },
+  "routeToPhase": "1a"
+}

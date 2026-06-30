@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-007",
+  "dimension": "verification_readiness",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "PROP-F2 is one of the 5 required:true gates in lean mode, but REQ-F2 leaves `evidence_hash` undefined: 'THE SYSTEM SHALL deduplicate by (<slot>, <reason>, evidence_hash) so the same underlying failure does not create multiple issues within 24 hours.' Hash of what fields? The <evidence> param in REQ-F1 examples includes 'last 5 audit verdicts' (REQ-A8) and 'round-5 verdict json' (REQ-E3) — both contain timestamps, round numbers, and other rotating identifiers. If `evidence_hash := sha256(evidence_string)`, every escalation produces a unique hash → dedup silently never fires → Telegram spam (precisely the failure mode F2 is supposed to prevent). PROP-F2 (1b line 72) claims 'property-test (mtime-based dedup)' which contradicts the field-hash semantics of REQ-F2 — mtime-based dedup is a different mechanism (time-window of last-seen tuple) not specified anywhere in REQ-F2. So we have a required:true Tier-1 proof obligation whose definition disagrees with the requirement it claims to prove. As-spec'd, PROP-F2 is unverifiable: a passing test does not imply the escalation will actually dedup in production.",
+  "evidence": {
+    "filePath": ".vcsdd/features/earn-shared-skeleton/specs/behavioral-spec.md",
+    "lineRange": "156-158",
+    "snippet": "THE SYSTEM SHALL deduplicate by `(<slot>, <reason>, evidence_hash)` so the same underlying failure does not create multiple issues within 24 hours."
+  },
+  "routeToPhase": "1a"
+}

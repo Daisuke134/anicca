@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-008",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "high",
+  "description": "Migration sufficiency failure (manifest constraint #4: 'shared library is meant to be INHERITED by 5 existing slots... WITHOUT new per-slot exception code'). The existing reference slot `~/anicca/skills/earn/gig/gig-healthcheck.sh` (lines 36-45) implements a critical first-pass grace window: when `.last-pass` does not exist yet, it falls back to `.last-start` mtime so a brand-new slot is not killed mid-first-pass. REQ-A2 in the shared spec only says 'WHEN .last-pass exists AND mtime ≥ 90min ⇒ restart'. The spec has NO behavior for the case `.last-pass does not exist`. EDGE-4 ('~/loops/<slot>/ does not exist on first run → mkdir -p') addresses directory existence, NOT first-pass grace. Migrating gig as-spec'd would either (a) restart-loop a brand-new slot before it finishes its first pass, or (b) silently never restart a slot whose first pass never completes, depending on which branch the impl picks. Either is a regression vs the existing slot. Either fix requires per-slot exception logic — violating the migration invariant.",
+  "evidence": {
+    "filePath": ".vcsdd/features/earn-shared-skeleton/specs/behavioral-spec.md",
+    "lineRange": "49-51",
+    "snippet": "REQ-A2 WHEN `~/loops/<slot>/.last-pass` exists AND its mtime is older than 90 minutes, THE SYSTEM SHALL invoke `<slot>-cli.sh --restart`."
+  },
+  "routeToPhase": "1a"
+}

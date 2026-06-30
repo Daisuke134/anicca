@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-009",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "high",
+  "description": "EDGE-1 priority order A1>A2>A3>A4>A5>A6>A7>A8 contradicts the desired behavior for the 'Not logged in' mode and the parent master spec's intent. Concrete failure: when Claude is logged out, pane shows 'Not logged in · Please run /login' (A3) AND `.last-pass` will inevitably go stale within 90 minutes (A2) because no pass can complete while logged out. Because A2 outranks A3, every healthcheck tick will fire 'restart core' instead of the OAuth-URL → escalate path. Restart does not log back in; pane still shows 'Not logged in' on next tick; tick 5 hits REQ-A8 backoff-cap (5 restarts in 1 hour) and escalates 'backoff-cap reached' WITHOUT the OAuth URL — Dais then cannot one-tap-resume because the URL never surfaced. This is the exact failure the codified self-heal was meant to fix per parent master line 128 ('codifies today's manual fixes: /login OAuth → gh issue → TG'). Priority must be re-ordered so the more specific pane-content modes (A3..A6) outrank generic STALE (A2) when both match.",
+  "evidence": {
+    "filePath": ".vcsdd/features/earn-shared-skeleton/specs/behavioral-spec.md",
+    "lineRange": "190-192",
+    "snippet": "EDGE-1 Two self-heal modes match in one tick (e.g. trust dialog AND \"Not logged in\" visible) → REQ-A9 mutual-exclusion: priority order A1>A2>A3>A4>A5>A6>A7>A8; only highest fires this tick."
+  },
+  "routeToPhase": "1a"
+}

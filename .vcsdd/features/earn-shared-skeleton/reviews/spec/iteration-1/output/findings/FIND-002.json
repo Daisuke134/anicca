@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "REQ-B2's token-cost formula is ambiguously parenthesized and produces wrong cost for mixed model breakdowns. The spec writes: 'tokens_in × $3/M + tokens_out × $15/M (Sonnet+Opus mix per model_breakdown) × FX_USDJPY'. Two readings: (A) FX applies only to tokens_out term: `tin*3 + tout*15*FX` → tin priced in USD-only, never converted to JPY. (B) FX applies to entire sum: `(tin*3 + tout*15)*FX`. Neither matches the parent master spec which says '$3/M Sonnet, $15/M Opus 2026-07-01' (line 190) — Sonnet AND Opus each have BOTH input and output rates ($3/M-in, $15/M-out for Sonnet; $15/M-in, $75/M-out for Opus). The 'Sonnet+Opus mix per model_breakdown' clause has no operational definition: model_breakdown isn't a field in REQ-B1's jsonl schema (only tokens_in / tokens_out are listed). Without per-model token splits the cost cannot be computed; without FX placement the result is off by ~150×. This is required:true (PROP-B2) — the whole TRAP-5 mitigation. PROP-B2's test `tokens_total > 0 ⇒ cost > 0` is so weak it cannot catch either bug.",
+  "evidence": {
+    "filePath": ".vcsdd/features/earn-shared-skeleton/specs/behavioral-spec.md",
+    "lineRange": "89-92",
+    "snippet": "THE SYSTEM SHALL compute `token_cost_jpy` as `tokens_in × $3/M + tokens_out × $15/M (Sonnet+Opus mix per model_breakdown) × FX_USDJPY` — the per-model PUBLIC API rate, never zero (TRAP-5 token-rich illusion)."
+  },
+  "routeToPhase": "1a"
+}

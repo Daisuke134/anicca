@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-013",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "medium",
+  "description": "REQ-D2 has a duplicate-issue race: it appends `{ts, requestId, outcome, issue_url}` to `shared-lessons.jsonl` AFTER `gh issue create` succeeds. If gh succeeds but the local append fails (disk full, crash, NFR-2 'crash-restart SHALL be loss-free' violation), the next pass detects the (requestId, outcome) tuple as 'novel' again and creates a SECOND gh issue. REQ-D3 'gh failure SHALL never abort' but says nothing about the inverse — local-write failure after gh success. EDGE-2 covers rate-limit retry but not the create-then-write-fail order. The parent spec says 'gh issue create dedup by shared-lessons.jsonl' (line 115), assuming the local row is the dedup source. Operationally the dedup row must be written BEFORE the issue (claim-check pattern) or transactionally with it; the spec must declare the ordering or this is a silent duplicate-spew bug. REQ-F2's similar dedup at least binds itself to a 24h window; REQ-D2's dedup is unbounded — so a one-time race creates a permanent duplicate.",
+  "evidence": {
+    "filePath": ".vcsdd/features/earn-shared-skeleton/specs/behavioral-spec.md",
+    "lineRange": "130-133",
+    "snippet": "WHEN a pass detects a novel lesson (= a `{requestId, outcome}` tuple not present in `~/loops/<slot>/shared-lessons.jsonl`), THE SYSTEM SHALL `gh issue create --label <slot>-lesson` with body `{category, outcome, reason, lesson, evidence_id}` AND append `{ts, requestId, outcome, issue_url}` to `shared-lessons.jsonl`."
+  },
+  "routeToPhase": "1a"
+}

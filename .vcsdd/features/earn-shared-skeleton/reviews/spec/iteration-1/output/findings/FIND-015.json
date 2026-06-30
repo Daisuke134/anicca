@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-015",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "medium",
+  "description": "INV-13 (parent line 177-180: 'skill MUST NOT write its own manifest.json; skill emits events to events.jsonl; runner verifies + appends') is reflected in REQ-G2 but the spec leaves the event schema, the named-pipe vs file choice, and the verification protocol undefined. REQ-G2: 'The skill SHALL emit events to a named pipe / file events.jsonl and the runner SHALL parse + append.' Open questions: (a) what fields in an event row? Parent line 178 says `{event: \"earn\", receipt_id, amount}` — feature spec does not echo this schema. (b) How does the runner 'verify' an event before appending — re-checking against the platform's settled-payout API (INV-8), or trust-on-write? Without a verification protocol, the runner becomes a pass-through and INV-13's anti-inflation guarantee collapses. (c) PROP-G2's static-grep covers only one half of INV-13 (the must-not-write half); the must-verify half has no proof obligation at all. This is a spec gap with direct INV-8 / TRAP-1 (reward hacking) reactivation risk.",
+  "evidence": {
+    "filePath": ".vcsdd/features/earn-shared-skeleton/specs/behavioral-spec.md",
+    "lineRange": "165-167",
+    "snippet": "The skill's own code SHALL NOT write to its own `manifest.json`. The slot runner (= the claude-p in tmux invoking the skill) SHALL write. The skill SHALL emit events to a named pipe / file `events.jsonl` and the runner SHALL parse + append."
+  },
+  "routeToPhase": "1a"
+}

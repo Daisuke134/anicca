@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "spec_fidelity",
+  "category": "security_surface",
+  "severity": "high",
+  "description": "REQ-A3 OAuth URL handling: spec extracts a URL via 'regex' from pane text and posts it through escalate.sh → Telegram for Dais to one-tap-click. Three security gaps: (1) the regex is unspecified — no anchoring requirement, no host whitelist (must be exactly https://claude.com/cai/oauth/authorize…); (2) if the pane has been polluted (anything that wrote to the terminal: an earlier tool output, a malicious shared lesson surfaced via cross-learn, a crafted gh issue body) a phishing URL like https://claude.com.evil.tld/... or a homograph could be extracted and forwarded; (3) Dais's threat model is 'one-tap click' so this is a high-value phishing target. PROP-A3 only asserts 'OAuth URL regex extracts a non-empty https URL when present' — non-empty https is not a security property. Combined with REQ-F1 Telegram POST having NO authentication / endpoint configuration spec, the attacker-controlled URL travels through an unauthenticated channel to a one-tap user.",
+  "evidence": {
+    "filePath": ".vcsdd/features/earn-shared-skeleton/specs/behavioral-spec.md",
+    "lineRange": "52-56",
+    "snippet": "(c) capture pane and extract the OAuth `https://claude.com/cai/oauth/authorize…` URL via regex, (d) call `escalate.sh <slot> needs-login <url>` so the URL surfaces to Dais's Telegram via the watcher cron"
+  },
+  "routeToPhase": "1a"
+}
