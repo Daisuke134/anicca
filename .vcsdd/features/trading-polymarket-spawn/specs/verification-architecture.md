@@ -15,7 +15,7 @@ inherits: earn-shared-skeleton (PROP-A1..A9, PROP-B1..B6, PROP-C1..C3, PROP-D1..
 | Function | Module | Inputs | Output |
 |----------|--------|--------|--------|
 | `kellyFraction(edge, market_p, bankroll, kelly_max, min_pos, gas_reserve)` | `skills/earn/pm-trade/risk.py` | 6 floats | `float` position size or 0 |
-| `riskGate(risk_state, position_usdc, config)` | `skills/earn/pm-trade/risk.py` | typed records | `{decision: ALLOW\|HALT, reason: str}` |
+| `riskGate(risk_state, position_usdc, current_balance, edge, config)` | `skills/earn/pm-trade/risk.py` | typed records | `{decision: ALLOW\|HALT, reason: str}` |
 | `edgePredicate(model_p, market_p)` | `skills/earn/pm-trade/risk.py` | 2 floats | `bool` |
 | `positionSize(kelly_f, bankroll, min_size, gas_reserve)` | `skills/earn/pm-trade/risk.py` | 4 floats | `float` |
 | `spawnEligible(treasury, net_pos_days, recent_spawns, config)` | `skills/self/spawn-child/spawn.py` | typed records | `{eligible: bool, reason: str}` |
@@ -48,12 +48,12 @@ inherits: earn-shared-skeleton (PROP-A1..A9, PROP-B1..B6, PROP-C1..C3, PROP-D1..
 | PROP-T3 | `kellyFraction(e, 1.0, B, ...)` = 0 (denominator guard: 1−market_p = 0) | REQ-T5 | 1 | true | pytest |
 | PROP-T4 | `kellyFraction(e, m, 0, ...)` = 0 (zero bankroll → zero position) | REQ-T5 | 1 | true | pytest |
 | PROP-T5 | `riskGate`: daily_loss ≥ 0.05 × start_balance → HALT("daily_loss_cap_reached") for any position_usdc | REQ-T4 | 1 | true | pytest |
-| PROP-T6 | `riskGate`: daily_loss < threshold AND drawdown ≥ 0.25 × peak → HALT("drawdown_cap_reached") | REQ-T4 | 1 | true | pytest |
+| PROP-T6 | `riskGate(state, pos, current_balance, edge, cfg)`: daily_loss < threshold AND (peak − current_balance) ≥ 0.25 × peak → HALT("drawdown_cap_reached"); `current_balance` is an explicit arg, not an RPC call inside `riskGate` | REQ-T4 | 1 | true | pytest |
 | PROP-T7 | `riskGate`: position_usdc < min_position_usdc → HALT("below_min_position") | REQ-T4 | 1 | true | pytest |
 | PROP-T8 | `riskGate`: current_balance − position_usdc < gas_reserve → HALT("insufficient_gas_reserve") | REQ-T4 | 1 | true | pytest |
 | PROP-T9 | `riskGate`: edge ≤ 0 → HALT("no_edge") regardless of other fields | REQ-T4 | 1 | true | pytest |
 | PROP-T10 | `riskGate`: all conditions clear → ALLOW("risk_gate_passed") | REQ-T4 | 1 | true | pytest |
-| PROP-T11 | `riskGate` is pure: same inputs → identical output (no hidden state) | REQ-T4 | 2 | true | hypothesis stateless test |
+| PROP-T11 | `riskGate(risk_state, pos, current_balance, edge, config)` is pure: same 5-tuple of inputs → identical output (no hidden state, no I/O) | REQ-T4 | 2 | true | hypothesis stateless test |
 | PROP-T12 | `riskGate` boundary: daily_loss exactly = threshold → HALT (≥ is inclusive, not >) | REQ-T4 | 1 | true | pytest |
 | PROP-T13 | `riskGate` boundary: drawdown exactly = threshold → HALT | REQ-T4 | 1 | true | pytest |
 | PROP-T14 | `jurisdictionVenueFilter("US", "polymarket", menu)` = False when `menu.venues.polymarket.jurisdiction_ok_for_real = false` | REQ-T10 | 1 | true | pytest |
@@ -85,7 +85,10 @@ inherits: earn-shared-skeleton (PROP-A1..A9, PROP-B1..B6, PROP-C1..C3, PROP-D1..
 | PROP-R2 | Two instances with different ANICCA_HOME never share wallet.json path | REQ-R2 | 2 | true | integration |
 | PROP-R3 | Bot2bot dedup: two stub instances on same market_id → second reduces or skips position | REQ-R3 | 2 | true | integration (stub gh issue API) |
 | PROP-R4 | ledger.jsonl never written via truncate or O_WRONLY (only O_APPEND) | REQ-R4 | 2 | true | integration (fsevents or strace spy) |
-| PROP-R5 | yield-keeper defends COMPUTE_RESERVE + reserved.json: balance $100 & reserved_usdc 60 → deploys ≤ $35; reserved.json absent → deploys balance−COMPUTE_RESERVE (legacy) | REQ-R5 | 2 | true | integration (stub execute-yield, assert deposit amount cap) |
+| PROP-R5 | `execute-yield.mjs` (the surplus-math module, not yield-keeper.mjs) with EFFECTIVE_RESERVE = COMPUTE_RESERVE + reserved.json.reserved_usdc: balance $100, reserved_usdc 60 → deploys ≤ $35; reserved.json absent AND earn/pm-trade registered → deploys $0 (fail-safe, no sweep); reserved.json absent AND earn/pm-trade not in registry → deploys balance−COMPUTE_RESERVE (legacy) | REQ-R5 | 2 | true | integration (stub Base RPC balanceOf; assert deposit call amount for all 3 cases) |
+| PROP-T26 | Earn row for Polymarket settlement: only written when `settle-verify.py` returns `{verified: true}` with a matching Polygon `eth_getLogs` Transfer event to our wallet; no earn row when no matching Transfer found | REQ-T8 | 2 | true | integration (stub Polygon RPC → no matching log → assert earnings.jsonl unchanged; stub → matching log → assert earn row written) |
+| PROP-R6 | Child daemon is started with `HOME=$CHILD_HOME` and `COMPUTE_PROXY_PORT ≠ 8402`; `proxy.mjs` and `execute-yield.mjs` in child process tree resolve wallet from `$CHILD_HOME/.automaton/wallet.json`, never from parent's `$HOME` | REQ-S5, REQ-R2 | 2 | true | integration (start child with CHILD_HOME=tmpdir; inspect process env + wallet read path; assert ≠ parent wallet) |
+| PROP-S14 | `spawn.lock` flock acquired exclusively before 'initiated' row appended; concurrent spawn attempt while lock held → aborts with `spawn_lock_held`, no duplicate row | REQ-S2 | 2 | true | integration (thread-concurrent spawn calls; assert exactly one 'initiated' row in spawn-log after both complete) |
 | PROP-E2E-1 | After paper_pass_count ≥ required AND adversary PASS: a real Polygon/Base tx from wallet exists for a model-decided trade | REQ-T7, REQ-T8 | 3 | true | E2E (real tiny stake, on-chain verify) |
 | PROP-E2E-2 | Child runtime with its own funded wallet completes ≥1 earn pass verified on-chain | REQ-S5, REQ-S8 | 3 | true | E2E (child boot + real tithe tx) |
 
@@ -153,7 +156,7 @@ Each test boots a minimal Anicca runtime in a `tmpdir` with `ANICCA_HOME=<tmpdir
 | INT-T6 | Risk gate halt persists: after HALT, subsequent passes do NOT call CLOB | State machine correct; daily_loss accumulated across passes |
 | INT-T7 | Geoblock: polymarket.jurisdiction_ok_for_real=false → zero Polymarket CLOB calls | Spy on pm.py invocations; confirm venue=kalshi chosen instead |
 | INT-T8 | isEarnSlot + registry: after install, earn/pm-trade is a registered live earn slot | Node unit test + registry JSON assertion |
-| INT-T9 | Wallet isolation: two instances in different tmpdir ANICCA_HOME have different wallet.json | Address inequality assertion |
+| INT-T9 | Wallet isolation: two instances started with different `HOME` env values (`HOME=$TMPDIR_A` vs `HOME=$TMPDIR_B`) resolve `wallet.json` to different paths and different secp256k1 addresses | `process.env.HOME` path inequality + address inequality assertion; confirms `proxy.mjs` wallet read uses `$HOME`, not `$ANICCA_HOME` |
 | INT-T10 | Spawn eligibility: all conditions met → spawn-log gets "initiated" row | spawn-log.jsonl assertion |
 | INT-T11 | Spawn rate cap: second spawn within 14d → no new "initiated" row | spawn-log unchanged after second call |
 | INT-T12 | Spawn net-positive guard: cumulative_usdc_earned=0 → no spawn | spawnEligible returns false |
@@ -165,6 +168,7 @@ Each test boots a minimal Anicca runtime in a `tmpdir` with `ANICCA_HOME=<tmpdir
 | INT-T18 | Earn event REQ-G2: response hash mismatch → no append | Stub re-fetch with different body |
 | INT-T19 | compute-proxy down → skill exits non-zero; ledger records kind: "skill_error" | No CLOB call; kind check |
 | INT-T20 | Kelly fraction + riskGate: position size clamped when computed value > wallet − gas | position_usdc ≤ wallet_balance − gas_reserve assertion |
+| INT-T21 | reserved.json absent + earn/pm-trade in registry: execute-yield.mjs deploys $0 (fail-safe) | Stub Base RPC balanceOf=$100; assert no deposit call issued; assert output `deposited_usdc: 0` |
 
 ### Tier 3 — E2E (real on-chain; run against live Base/Polygon with minimal stake)
 
@@ -196,10 +200,10 @@ All `earn-shared-skeleton` tests (PROP-A1..J8) continue to pass unchanged. The n
 | Risk | Mitigation |
 |------|-----------|
 | Hardcoded strategy in skill code | PROP-T3 (no regex/keyword) + adversary static analysis of `run.sh` and `pm.py` |
-| Fake PnL (earn event without real settlement) | PROP-T21 + REQ-G2 three-check gate (endpoint allowlist + hash fidelity + field equality) |
+| Fake PnL (earn event without real settlement) | PROP-T21 + PROP-T26 + `settle-verify.py` on-chain gate (Polygon `eth_getLogs` Transfer match for Polymarket; HL API realizedPnl delta for Hyperliquid). REQ-G2 skeleton gate is NOT used for trading venues (out of scope per skeleton spec); `settle-verify.py` is the dedicated gate. |
 | Human touch in spawn flow | REQ-J8 inheritance + adversary static analysis for Telegram/gh-escalation patterns |
 | Paper mode bypass | PROP-T18 + PROP-T19 + PROP-T20 (state machine tests) |
-| Wallet collision / cross-instance key sharing | PROP-S10 + PROP-R2 (isolation integration tests) |
+| Wallet collision / cross-instance key sharing | PROP-S10 + PROP-R2 + PROP-R6 (child uses `HOME=$CHILD_HOME` so all runtime wallet reads go to child's key; isolation integration tests confirm different `$HOME` → different wallet) |
 | Kelly overbetting | PROP-T1 hypothesis sweep + kelly_fraction_max cap |
 | Spawn without net-positive history | PROP-S2 + PROP-S5 (pure function + hypothesis) |
 | Ledger truncation | PROP-R4 (O_APPEND mode spy) |

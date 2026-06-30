@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "implementation_correctness",
+  "category": "purity_boundary",
+  "severity": "critical",
+  "description": "Spec assumes each instance's EVM wallet lives at $ANICCA_HOME/.automaton/wallet.json (REQ-R1 spec.md:402, REQ-R2 spec.md:410, REQ-S5 spec.md:329). The real runtime resolves it from process.env.HOME, never ANICCA_HOME: proxy.mjs:9, execute-yield.mjs:54, hl.py:44, anicca-daemon.sh:54. A child (REQ-S2 writes $CHILD_HOME/.automaton/wallet.json, spec.md:273) shares $HOME with the parent, so the child's proxy/yield/trade code reads the PARENT wallet. Child seed is never used; parent funds pay for and sign child trades. Wallet isolation (REQ-R2 acceptance) is broken; spawn spends parent funds unsafely. No REQ modifies proxy/daemon/execute-yield to honor ANICCA_HOME, so the spec is infeasible and money-unsafe as written.",
+  "evidence": {
+    "filePath": "runtime/compute-proxy/proxy.mjs",
+    "lineRange": "9",
+    "snippet": "const walletPath = (process.env.HOME || \"\") + \"/.automaton/wallet.json\";"
+  },
+  "routeToPhase": "1a"
+}

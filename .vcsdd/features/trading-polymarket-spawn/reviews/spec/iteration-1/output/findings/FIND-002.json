@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "REQ-T8 (spec.md:202-219) records trading earnings via the inherited skeleton REQ-G2 three-check gate. But the skeleton scopes that gate to off-chain JSON payout processors and EXPLICITLY defers on-chain settlement: earn-shared-skeleton/specs/behavioral-spec.md:578-589 declares eth_getLogs/Solana RPC and wei/lamport units OUT OF SCOPE. The payout-endpoint-allowlist.json enumerates only Coconala/Stripe/Whop/Algora/Amazon with jpy_int/usdc_float_6dp units; there is NO Polymarket/Kalshi/Hyperliquid entry. REQ-T8's receipt is settlement_tx_hash_or_venue_payout_id (spec.md:206) = exactly the on-chain case the gate cannot verify. Result: either every pm-trade earn row fails the gate (E2E-1 unreachable) or the gate is bypassed = INV-7 faked-earn. The spec adds neither the venue allowlist entries nor the on-chain unit enums.",
+  "evidence": {
+    "filePath": ".vcsdd/features/earn-shared-skeleton/specs/behavioral-spec.md",
+    "lineRange": "578-589",
+    "snippet": "NO MVP slot settles directly via eth_getLogs or Solana RPC. On-chain raw-unit settlements (wei_uint256, lamport_uint64) are declared OUT OF SCOPE for earn-shared-skeleton..."
+  },
+  "routeToPhase": "1a"
+}

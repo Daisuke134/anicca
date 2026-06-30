@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "verification_readiness",
+  "category": "purity_boundary",
+  "severity": "critical",
+  "description": "riskGate is fixed as pure with signature riskGate(risk_state, position_usdc, config) (verification-architecture.md:18) and mandated 'No file read, no network call inside riskGate' (spec.md:130). Yet REQ-T4's predicates use current_balance (spec.md:113 drawdown row, spec.md:115 gas-reserve row) and edge (spec.md:116). Neither is a parameter, and neither appears in the documented risk_state fields (Tracked Quantities spec.md:44: session_start_balance, peak_balance, daily_loss_usdc, drawdown_usdc, open_positions, paper_mode, paper_pass_count, last_daily_reset_ts). current_balance is the live wallet balance (an RPC read). The function cannot compute its own conditions while staying pure; PROP-T6/T8/T9/T11 are unverifiable. The contract is internally contradictory and not unambiguously implementable.",
+  "evidence": {
+    "filePath": ".vcsdd/features/trading-polymarket-spawn/specs/behavioral-spec.md",
+    "lineRange": "113-130",
+    "snippet": "(risk_state.peak_balance − current_balance) ≥ ... drawdown_cap ; current_balance − position_usdc < gas_reserve_usdc ; ... No file read, no network call inside riskGate."
+  },
+  "routeToPhase": "1a"
+}

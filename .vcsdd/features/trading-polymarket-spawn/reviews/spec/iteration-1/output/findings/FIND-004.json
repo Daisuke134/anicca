@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "implementation_correctness",
+  "category": "security_surface",
+  "severity": "critical",
+  "description": "REQ-S5 (spec.md:329) claims the child self-pays its own inference from child_wallet_base via x402 and binds compute on parent_port+1. The real anicca-daemon.sh ensure_brain (lines 47-61): (a) starts a brain ONLY when :PORT is not already answering (line 58) — on a shared host the parent's ClawRouter already answers on 8402, so the child starts none and reuses the parent's; (b) derives the brain key from $HOME/.openclaw/.env::BLOCKRUN_WALLET_KEY then $HOME/.automaton/wallet.json (lines 53-54, process.env.HOME) = parent/OpenClaw wallet, never $CHILD_HOME; (c) the code comment states ClawRouter is :8402-only / no port split (line 51), contradicting parent_port+1. Net: child inference is paid by the parent/OpenClaw wallet, draining parent funds; the self-funded-child claim is false. No REQ modifies the daemon to isolate the child brain/wallet.",
+  "evidence": {
+    "filePath": "runtime/anicca-daemon.sh",
+    "lineRange": "51-58",
+    "snippet": "# ClawRouter is :8402-only (no port split) ... KEY=$(... $HOME/.openclaw/.env ...) ; if [ -z \"$KEY\" ]; then KEY=$(node -e 'require(process.env.HOME+\"/.automaton/wallet.json\")') ... if ! curl -sf http://127.0.0.1:$PORT/v1/models ...; then ensure_brain"
+  },
+  "routeToPhase": "1a"
+}
