@@ -32,7 +32,7 @@ Both slots run INSIDE the existing `~/anicca` runtime (`install.sh` → `registr
 
 | Layer | Functions / Modules |
 |-------|---------------------|
-| **Pure Core** | `kellyFraction(edge, bankroll)`, `riskGate(tradeState, position)`, `edgePredicate(model_p, market_p)`, `positionSize(kelly_f, bankroll, min_size, gas_reserve)`, `spawnEligible(treasury, net_pos_days, rate_cap, config)`, `titheAmount(earned, pct)`, `jurisdictionVenueFilter(jurisdiction, venue)`, `selectTier(balanceUsdc, env)` (existing, reused), `isEarnSlot(slot)` (existing, reused) |
+| **Pure Core** | `kellyFraction(edge, market_p, bankroll, kelly_max, min_pos, gas_reserve)`, `riskGate(risk_state, position_usdc, current_balance, edge, config)`, `edgePredicate(model_p, market_p)`, `positionSize(kelly_f, bankroll, min_size, gas_reserve)`, `spawnEligible(treasury, net_pos_days, rate_cap, config)`, `titheAmount(earned, pct)`, `jurisdictionVenueFilter(jurisdiction, venue, menu)`, `selectTier(balanceUsdc, env)` (existing, reused), `isEarnSlot(slot)` (existing, reused) |
 | **Effectful Shell** | `pm.py` CLOB REST calls to Polygon Polymarket API, Kalshi REST, Hyperliquid REST, on-chain tx broadcast (seed transfer, tithe), `ensure-solana-wallet.mjs` (key generation + file write), `git clone` + `install.sh` execution, `anicca-daemon.sh` child boot, `appendLedgerLine` (existing), `appendLedgerLine` for spawn log, bot2bot `gh issue create`, Predexon x402 data fetch, alpha-mcp signal fetch, agent-reach news fetch |
 
 ## Tracked Quantities
@@ -105,7 +105,7 @@ THE SYSTEM SHALL accept the model's output as the authoritative trade decision. 
 
 #### REQ-T4 — Risk Gate (pure; port of MrFadiAi caps)
 
-BEFORE any real order is placed, THE SYSTEM SHALL evaluate the pure function `riskGate(risk_state, position_usdc)` which returns `{decision: "ALLOW"|"HALT", reason: string}`:
+BEFORE any real order is placed, the effectful shell MUST (i) read `current_balance` from the Base RPC (`eth_call balanceOf(our_wallet)`) and (ii) receive `edge` from the model's REQ-T3 decision output. Both values are passed as explicit arguments. THE SYSTEM SHALL then evaluate the pure function `riskGate(risk_state, position_usdc, current_balance, edge, config)` — no RPC call, no file read, no global state occurs inside `riskGate` — which returns `{decision: "ALLOW"|"HALT", reason: string}`:
 
 | Condition | Decision | Reason |
 |-----------|----------|--------|
@@ -127,7 +127,7 @@ THE SYSTEM SHALL NOT place any order when `riskGate` returns HALT for any reason
 
 **Acceptance Criteria:**
 - `riskGate` is a pure function: same inputs always produce same output.
-- No file read, no network call inside `riskGate`.
+- No file read, no network call inside `riskGate`. `current_balance` is read from RPC by the effectful shell before calling `riskGate` and passed as an explicit parameter; `edge` is the model's REQ-T3 output, also passed explicitly. Neither is accessed via I/O inside `riskGate`.
 - All five HALT branches have unit tests with boundary values.
 
 #### REQ-T5 — Kelly Fraction Position Sizing (pure)
@@ -139,7 +139,7 @@ kelly_f = clamp(edge / (1 − market_p), 0, risk_config.kelly_fraction_max)
 position_usdc = clamp(kelly_f × current_balance, risk_config.min_position_usdc, current_balance − risk_config.gas_reserve_usdc)
 ```
 
-where `edge = model_p − market_p` and `market_p` is the current ask (buy price from CLOB).
+where `edge = model_p − market_p` and `market_p` is the current mid price from the CLOB order book (`(best_bid + best_ask) / 2`), consistent with REQ-T3's definition of `market_p`. Using the ask would bias `edge` negatively; the mid is the canonical fair-value reference.
 
 THE SYSTEM SHALL use `risk_config.kelly_fraction_max` (default: 0.05) to cap the Kelly fraction to avoid overbetting.
 
@@ -165,7 +165,7 @@ WHILE `risk_state.paper_mode == true`, THE SYSTEM SHALL:
 
 THE SYSTEM SHALL NOT transition `paper_mode` from `true` to `false` unless:
 1. `paper_pass_count ≥ risk_config.paper_passes_required` (default: 10), AND
-2. The nightly adversary (inherited REQ-E1) has reviewed at least one completed `paper-log.jsonl` batch and returned `overallVerdict: "PASS"`.
+2. The nightly adversary (inherited REQ-E1) has reviewed at least one completed `paper-log.jsonl` batch and written a PASS verdict to `$ANICCA_HOME/loops/earn-pm-trade/adversary-pass.json` with schema `{"overallVerdict": "PASS", "feature": "earn/pm-trade", "batch_end_ts": <unix_ts>, "batch_trade_count": <int>}`. The transition logic reads this exact file; if the file is absent or `overallVerdict ≠ "PASS"`, the transition is blocked (fail-closed).
 
 Transition from `paper_mode: true` to `false` is an atomic rename of `risk_state.json` (tmp file + rename; crash-safe).
 
@@ -176,18 +176,18 @@ Transition from `paper_mode: true` to `false` is an atomic rename of `risk_state
 
 **Acceptance Criteria:**
 - No CLOB order endpoint called while `paper_mode == true`.
-- Transition to `paper_mode: false` requires adversary PASS evidence file at the expected path.
+- Transition to `paper_mode: false` requires `adversary-pass.json` at `$ANICCA_HOME/loops/earn-pm-trade/adversary-pass.json` with `overallVerdict: "PASS"`. File absent = fail-closed (paper stays).
 - `paper-log.jsonl` has ≥ `paper_passes_required` rows before transition.
 
 #### REQ-T7 — Order Execution (`pm.py` CLOB client)
 
 WHEN `risk_state.paper_mode == false` AND `riskGate` returns ALLOW AND `position_usdc` ≥ `min_position_usdc`, THE SYSTEM SHALL:
-(a) call `pm.py` with action `buy` or `sell` on the model-selected `market_id` and `venue`,
-(b) `pm.py` SHALL submit a limit order to the appropriate CLOB (Polymarket beta REST / Kalshi REST / Hyperliquid REST) for the computed `position_usdc`,
+(a) call `pm.py` for Polymarket or Kalshi venues, OR the existing `skills/earn/hl-trade/hl.py` for the Hyperliquid venue, based on the model-selected `venue`,
+(b) `pm.py` SHALL submit a limit order to the appropriate prediction-market CLOB (Polymarket beta REST or Kalshi REST). For `venue = "hyperliquid"`, the slot dispatches to `hl.py`'s `open`/`close` actions and MUST pass the model's SL/TP parameters (`--sl`, `--tp`). `pm.py` SHALL NOT re-implement Hyperliquid logic (the proven `hl.py` adapter enforces SL+TP on every position).
 (c) record `{order_id, venue, market_id, side, size_usdc, entry_price, ts}` in `risk_state.open_positions`,
 (d) emit an `event: "action"` row to `~/loops/earn-pm-trade/events/<pass_id>.jsonl`.
 
-`pm.py` SHALL expose exactly four actions: `buy`, `sell`, `positions`, `close`. It SHALL NOT implement any trading strategy logic. It is a thin REST adapter only.
+`pm.py` SHALL expose exactly four actions: `buy`, `sell`, `positions`, `close` for Polymarket and Kalshi prediction-market CLOBs only. It SHALL NOT implement any trading strategy logic or Hyperliquid perp logic. It is a thin REST adapter for prediction-market CLOBs. Hyperliquid routing goes through the existing `hl.py`.
 
 **Edge Cases:**
 - Order rejected by venue (e.g. min size, liquidity): `pm.py` returns non-zero; slot logs to `build_log.md`, does NOT emit an earn event, does NOT update `risk_state` positions.
@@ -203,8 +203,11 @@ WHEN `risk_state.paper_mode == false` AND `riskGate` returns ALLOW AND `position
 
 WHEN a Polymarket/Kalshi/Hyperliquid market resolves AND an open position in `risk_state.open_positions` matches the resolved `market_id`, THE SYSTEM SHALL:
 (a) compute `realized_pnl_usdc = settlement_amount − entry_cost` (resolved from on-chain settlement or venue API),
-(b) emit an `event: "earn"` row to `~/loops/earn-pm-trade/events/<pass_id>.jsonl` with `{event: "earn", receipt_id: <settlement_tx_hash_or_venue_payout_id>, amount_usdc: realized_pnl_usdc, platform: <venue>, platform_api_call: {endpoint: <allowlisted_endpoint>, request_sha256, response_sha256}}`,
-(c) the earn-shared-skeleton runner (REQ-G2) SHALL verify this event via its three-check gate (endpoint allowlist, hash-fidelity, field-equality) before writing to `earnings.jsonl`,
+(b) `settle-verify.py` SHALL perform on-chain settlement verification BEFORE any earn row is written. The verification method is venue-specific:
+  - **Polymarket (Polygon)**: call `eth_getLogs(chain=Polygon, address=USDC_POLYGON, topics=[ERC20_Transfer_topic0, null, checksummed_our_polygon_wallet])` for blocks starting at or after `market_end_ts`, and confirm a Transfer of the expected gross payout (in 6-decimal USDC raw units, ≥ `entry_cost`) to our wallet. The `tx_hash` from the matching log event is the `receipt_id`.
+  - **Hyperliquid**: call HL REST API `POST /info` with `{"type": "clearinghouseState", "user": our_hl_address}` and confirm `realizedPnl` increased by the expected amount since position open. The SHA-256 hash of the API response JSON is the `receipt_id`.
+  pm-trade does NOT use the skeleton's REQ-G2 three-check gate for trading-venue settlements. REQ-G2 is scoped to off-chain JSON payout processors (Coconala/Stripe/Whop) and explicitly excludes `eth_getLogs` and on-chain units. `settle-verify.py` IS this slot's verification gate.
+(c) ONLY when `settle-verify.py` returns `{verified: true, receipt_id: <evidence>}`, emit an `event: "earn"` row to `~/loops/earn-pm-trade/events/<pass_id>.jsonl` with `{event: "earn", receipt_id: <evidence>, amount_usdc: realized_pnl_usdc, platform: <venue>, settle_verify_result: <settle-verify output hash>}` and append to `earnings.jsonl` directly,
 (d) remove the resolved position from `risk_state.open_positions`,
 (e) update `risk_state.daily_loss_usdc` if `realized_pnl_usdc < 0`.
 
@@ -216,7 +219,7 @@ THE SYSTEM SHALL NOT emit an `event: "earn"` row when an order is placed (open),
 - Resolution check runs on every pass; unresolved positions are left in `risk_state.open_positions` until resolved.
 
 **Acceptance Criteria:**
-- No earn row in `earnings.jsonl` without a verifiable settlement receipt.
+- No earn row in `earnings.jsonl` without `settle-verify.py` returning `{verified: true}` with on-chain evidence (Polygon `eth_getLogs` Transfer or HL API state delta).
 - `cumulative.json.cumulative_usdc_earned` reflects realized PnL (can be negative).
 - `risk_state.open_positions` is empty only when all positions are resolved.
 
@@ -230,15 +233,17 @@ WHEN the slot's ROI tracking (inherited REQ-B1) appends a `roi.jsonl` row, the `
 
 #### REQ-T10 — Geoblock Guard (jurisdiction-aware venue selection)
 
-WHEN `risk_state.paper_mode == false` AND the model has selected `venue: "polymarket"` for a real stake, THE SYSTEM SHALL check `menu.json`'s venue entry for `polymarket.jurisdiction_ok_for_real`. IF the value is `false` (= US-jurisdiction instance flag), THE SYSTEM SHALL NOT place a real Polymarket order and SHALL reroute the decision to the next-preferred venue in `menu.json` that has `jurisdiction_ok_for_real: true` (e.g. Kalshi, Hyperliquid, DEX perps). Polymarket paper trades remain allowed regardless of jurisdiction flag.
+WHEN `risk_state.paper_mode == false` AND the model has selected `venue: "polymarket"` for a real stake, THE SYSTEM SHALL check `menu.json`'s venue entry for `polymarket.jurisdiction_ok_for_real`. IF the value is `false` (= US-jurisdiction instance flag), THE SYSTEM SHALL NOT place a real Polymarket order and SHALL reroute the decision to the next venue in `menu.json` with BOTH `jurisdiction_ok_for_real: true` AND `kyc_required: false`. **Kalshi MUST NOT be used for real stakes**: Kalshi is a US-regulated exchange requiring SSN/identity KYC, which a no-human-in-the-loop instance cannot complete (J8 violation). The only currently-eligible programmatic real-stake fallback for US-jurisdiction instances is Hyperliquid perps (via `hl.py`; no identity KYC required for perp trading with an EVM wallet). Polymarket paper trades remain allowed regardless of jurisdiction flag.
 
 **Edge Cases:**
 - All real-stake venues have `jurisdiction_ok_for_real: false`: no real trade placed; slot logs `build_log.md` entry `"all venues jurisdiction-blocked; paper only"`.
 - `menu.json` missing `jurisdiction_ok_for_real` key: default to `false` (fail-closed; geoblock assumed until explicitly cleared).
+- `menu.json` is provisioned by `install.sh` with ALL venues set to `jurisdiction_ok_for_real: false` AND `kyc_required: true` by default. The operator sets `jurisdiction_ok_for_real: true` only for venues with confirmed programmatic access (no human identity KYC required). Any venue with `kyc_required: true` MUST NOT have `jurisdiction_ok_for_real: true` regardless of operator setting; the slot enforces this by checking both fields.
 
 **Acceptance Criteria:**
 - With `polymarket.jurisdiction_ok_for_real: false`, no real Polymarket CLOB call is issued.
 - With `polymarket.jurisdiction_ok_for_real: true`, real CLOB calls are allowed.
+- A venue entry with `kyc_required: true` is never selected for a real stake even if `jurisdiction_ok_for_real: true` is set (belt-and-suspenders against misconfiguration).
 
 ### Group S — Spawn Slot (`self/spawn-child`)
 
@@ -268,11 +273,12 @@ WHEN the slot `self/spawn-child` is invoked by the ReAct loop, THE SYSTEM SHALL 
 #### REQ-S2 — Child Wallet Provisioning
 
 WHEN `spawnEligible` returns `{eligible: true}`, THE SYSTEM SHALL:
+(a-pre) **Acquire an exclusive OS-level file lock** on `$ANICCA_HOME/state/spawn.lock` via `flock -n 9 9>"$LOCK_FILE"` (bash; or `lockfile -1 -r 0` on macOS) before reading the spawn-log snapshot and before writing any row. If the lock cannot be acquired immediately (another spawn pass holds it), abort with `{eligible: false, reason: "spawn_lock_held"}` without modifying spawn-log. Hold the lock through step (e), then release. This atomic claim prevents two concurrent spawn passes from both reading an empty log and both appending "initiated" rows.
 (a) compute a fresh `CHILD_HOME` path: `$ANICCA_INSTANCES_DIR/<ulid>` (where `ANICCA_INSTANCES_DIR` defaults to `~/.anicca-instances/`; `<ulid>` is a new ULID),
-(b) run `node ~/anicca/runtime/compute-proxy/ensure-solana-wallet.mjs` with `ANICCA_HOME=$CHILD_HOME` to generate a fresh self-owned Solana ed25519 keypair at `$CHILD_HOME/.automaton/solana.json`,
-(c) generate a fresh Base (EVM) private key independently (no shared entropy with parent) and write it to `$CHILD_HOME/.automaton/wallet.json` with `mode 0600`,
+(b) run `ANICCA_HOME=$CHILD_HOME node ~/anicca/runtime/compute-proxy/ensure-solana-wallet.mjs` to generate a fresh self-owned Solana ed25519 keypair at `$CHILD_HOME/.automaton/solana.json`. NOTE: `ensure-solana-wallet.mjs` writes ONLY the Solana keypair (`solana.json`); it does NOT create the EVM `wallet.json`.
+(c) generate a fresh secp256k1 Base/EVM private key independently of the Solana key (no shared entropy with parent or Solana key): `node -e 'const {generatePrivateKey,privateKeyToAddress}=require("viem/accounts");const k=generatePrivateKey();console.log(JSON.stringify({address:privateKeyToAddress(k),privateKey:k}))'`. Write the resulting JSON to `$CHILD_HOME/.automaton/wallet.json` with `mode 0600`,
 (d) assert `child_wallet_base ≠ parent_wallet_base` (addresses cannot collide; fail-closed if they do — abort and delete child home),
-(e) append an `{ts, parent_wallet, child_home, child_wallet_solana, child_wallet_base, seed_usdc: config.spawn_seed_usdc, status: "initiated"}` row to `$ANICCA_HOME/state/spawn-log.jsonl`.
+(e) append an `{ts, parent_wallet, child_home, child_wallet_solana, child_wallet_base, seed_usdc: config.spawn_seed_usdc, status: "initiated"}` row to `$ANICCA_HOME/state/spawn-log.jsonl`, then release the spawn.lock.
 
 **Edge Cases:**
 - `$CHILD_HOME` already exists (ULID collision, astronomically unlikely): abort; generate new ULID.
@@ -289,7 +295,8 @@ WHEN `spawnEligible` returns `{eligible: true}`, THE SYSTEM SHALL:
 WHEN the child wallet is provisioned (REQ-S2 row at `status: "initiated"`), THE SYSTEM SHALL:
 (a) `git clone --depth 1 https://github.com/Daisuke134/anicca.git $CHILD_HOME/anicca-framework` (the public framework; `--depth 1` for disk hygiene),
 (b) `cd $CHILD_HOME/anicca-framework && ANICCA_HOME=$CHILD_HOME bash install.sh` (registry-driven body sync; idempotent),
-(c) verify exit code 0; on failure: mark `spawn-log.jsonl` row as `status: "failed"`, clean up `$CHILD_HOME`, abort.
+(c) install Python dependencies for the `earn/pm-trade` slot: `pip3 install --quiet requests eth-account` plus any SDK enumerated in `$CHILD_HOME/anicca-framework/skills/earn/pm-trade/requirements.txt` (if present). On pip failure: mark spawn-log row `status: "failed"`, clean up `$CHILD_HOME`, abort,
+(d) verify exit code 0 for all above steps; on any failure: mark `spawn-log.jsonl` row as `status: "failed"`, clean up `$CHILD_HOME`, abort.
 
 **Edge Cases:**
 - No internet (offline): git clone fails; spawn fails cleanly with `status: "failed"`.
@@ -322,16 +329,17 @@ THE SYSTEM SHALL NOT proceed to REQ-S5 (child boot) if the transfer has not conf
 #### REQ-S5 — Child Boot via `anicca-daemon.sh`
 
 WHEN the seed transfer is confirmed, THE SYSTEM SHALL:
-(a) start `ANICCA_HOME=$CHILD_HOME ANICCA_REPO=$CHILD_HOME/anicca-framework bash $CHILD_HOME/anicca-framework/runtime/anicca-daemon.sh` in a new detached tmux session named `anicca-<child_ulid>`,
-(b) wait up to 30s for the child's `anicca-daemon.sh` to emit the `[loop] Starting Anicca loop` log line (visible in `$CHILD_HOME/logs/`),
-(c) update spawn-log row to `status: "booted"`.
+(a) assign a free TCP port above 8402 (`CHILD_PORT`) by scanning `8403..8499` for a port not already bound (`ss -tln | grep -q ":$p "` or `lsof -i TCP:$p` on macOS),
+(b) start the child daemon with `HOME=$CHILD_HOME ANICCA_HOME=$CHILD_HOME ANICCA_REPO=$CHILD_HOME/anicca-framework COMPUTE_PROXY_PORT=$CHILD_PORT bash $CHILD_HOME/anicca-framework/runtime/anicca-daemon.sh` in a new detached tmux session named `anicca-<child_ulid>`,
+(c) wait up to 30s for the child's `anicca-daemon.sh` to emit the `[loop] Starting Anicca loop` log line (visible in `$CHILD_HOME/logs/`),
+(d) update spawn-log row to `status: "booted"`.
 
-The child daemon (a) self-updates from the mother repo, (b) ensures ClawRouter/compute-proxy on a child-specific port (`COMPUTE_PROXY_PORT = parent_port + 1` or any free port above 8402), (c) exec's `runtime/loop/index.mjs` which self-pays its own inference from `child_wallet_base` via x402.
+**Wallet isolation via `$HOME`**: all wallet-consuming modules (`proxy.mjs`, `execute-yield.mjs`, `hl.py`, `anicca-daemon.sh`'s `ensure_brain` key derivation) resolve the private key from `process.env.HOME + "/.automaton/wallet.json"` (or `os.path.expanduser("~/.automaton/wallet.json")`). By setting `HOME=$CHILD_HOME`, the ENTIRE child process tree — daemon, ClawRouter, loop, skills — reads ONLY `$CHILD_HOME/.automaton/wallet.json`. The parent's wallet at the parent's `$HOME` is never accessed by the child. With `COMPUTE_PROXY_PORT=$CHILD_PORT` (≠ 8402), `ensure_brain` in the child's daemon finds nothing on `$CHILD_PORT`, starts its own ClawRouter on `$CHILD_PORT` using the child's wallet key (derived from `$HOME/.openclaw/.env` → fallback `$HOME/.automaton/wallet.json` — both now point to `$CHILD_HOME`), and the child self-pays its own inference from `$CHILD_HOME/.automaton/wallet.json`.
 
 **Edge Cases:**
 - tmux session creation fails (no tmux binary): use `nohup bash ... &` as fallback; record in spawn-log.
 - Child loop does not emit startup log within 30s: mark `status: "failed"`; child remains running for diagnostics but is flagged as suspect.
-- Child and parent share a host: the child MUST bind its compute-proxy to a different port. Port collision is detected by `curl -sf http://127.0.0.1:$PORT/v1/models` before boot.
+- No free port found in 8403..8499: abort spawn; mark `status: "failed"`.
 
 **Acceptance Criteria:**
 - After REQ-S5, `$CHILD_HOME/logs/` contains a file with `[loop] Starting Anicca loop`.
@@ -399,7 +407,7 @@ WHEN a child's treasury crosses its own `spawn_threshold_usdc` AND its own `net_
 
 #### REQ-R1 — Compute Self-Pay for Trading Decisions
 
-THE SYSTEM SHALL route all LLM inference during the `earn/pm-trade` slot's THINK step through the existing compute-proxy at `$OPENAI_BASE_URL` (default `http://127.0.0.1:8402/v1`). This means every Predexon data interpretation call, edge-formation call, and risk-contextualization call is paid in USDC via x402 from the instance's own `~/.automaton/wallet.json` via `@blockrun/llm`. No human key is used.
+THE SYSTEM SHALL route all LLM inference during the `earn/pm-trade` slot's THINK step through the existing compute-proxy at `$OPENAI_BASE_URL` (default `http://127.0.0.1:8402/v1`). Every inference is paid in USDC via x402 from the instance's own wallet. All wallet-consuming modules in the runtime (`proxy.mjs`, `execute-yield.mjs`, `hl.py`, `anicca-daemon.sh`'s `ensure_brain`) resolve the wallet from `process.env.HOME + "/.automaton/wallet.json"` (or Python's `os.path.expanduser("~/.automaton/wallet.json")`). For the parent instance `$HOME` is the system home directory. For child instances (see REQ-S5), `$HOME` MUST be set to `$CHILD_HOME` in the child process environment so the entire child process tree reads the child's own wallet — never the parent's. No human key is used.
 
 **Acceptance Criteria:**
 - With the compute-proxy running and wallet funded, a full `earn/pm-trade` pass produces a `[proxy]` log entry with a USDC x402 settlement.
@@ -407,10 +415,10 @@ THE SYSTEM SHALL route all LLM inference during the `earn/pm-trade` slot's THINK
 
 #### REQ-R2 — Wallet Collision Guard (one wallet per instance)
 
-WHEN the `earn/pm-trade` slot boots, THE SYSTEM SHALL verify that `~/.automaton/wallet.json` (in the current instance's `ANICCA_HOME`) belongs exclusively to this instance: the file is created by `ensure-solana-wallet.mjs` under the instance's `ANICCA_HOME` and is not shared. THE SYSTEM SHALL fail-closed: if `wallet.json` is missing or unreadable, the slot exits non-zero without placing any trade or spawn.
+WHEN the `earn/pm-trade` slot boots, THE SYSTEM SHALL verify that `$HOME/.automaton/wallet.json` belongs exclusively to this instance. The EVM `wallet.json` is a secp256k1 key generated by REQ-S2(c); `ensure-solana-wallet.mjs` writes ONLY the Solana ed25519 keypair to `solana.json` and does NOT create `wallet.json`. Child instances are isolated by running with `HOME=$CHILD_HOME` (REQ-S5), which causes `proxy.mjs`, `execute-yield.mjs`, `hl.py`, and `anicca-daemon.sh`'s key derivation to all resolve `wallet.json` from `$CHILD_HOME/.automaton/wallet.json`. THE SYSTEM SHALL fail-closed: if `wallet.json` is missing or unreadable at boot, the slot exits non-zero without placing any trade or spawn.
 
 **Acceptance Criteria:**
-- Two Anicca instances running on the same host MUST have different `ANICCA_HOME` values and thus different `wallet.json` paths and different wallet addresses.
+- Two Anicca instances running on the same host MUST have different `$HOME` values (parent: system `$HOME`; child: `$CHILD_HOME` per REQ-S5), and thus different resolved `wallet.json` paths (`$HOME/.automaton/wallet.json`) and different wallet addresses.
 
 #### REQ-R3 — Bot2bot Trade Dedup
 
@@ -432,31 +440,30 @@ The slot SHALL NEVER rewrite or truncate `$ANICCA_HOME/state/ledger.jsonl`. All 
 
 #### REQ-R5 — Yield-Keeper Isolation (trading stake must NOT be swept into DeFi)
 
-The runtime's `runtime/yield-keeper.mjs` deterministically deploys ALL idle USDC above `COMPUTE_RESERVE_USDC`
-(default $5) into stable-yield vaults. Without isolation, funded trading capital sitting idle between trades
-would be swept into a yield position and become unavailable to `earn/pm-trade` (and incur withdraw friction).
+The `skills/earn/execute-yield.mjs` module (not `yield-keeper.mjs`, which is only its 6h scheduler) computes `surplus = liquid - RESERVE` at line 103 and deploys idle USDC above `COMPUTE_RESERVE_USDC` (default $5) into stable-yield vaults. Without isolation, funded trading capital sitting idle between trades would be swept into a yield position and become unavailable to `earn/pm-trade` (and incur withdraw friction).
 
 WHEN the trading slot reserves working capital, THE SYSTEM SHALL write
-`~/loops/earn-pm-trade/reserved.json` = `{reserved_usdc: <float>, ts}` (= the stake the slot is actively
+`$ANICCA_HOME/loops/earn-pm-trade/reserved.json` = `{reserved_usdc: <float>, ts}` (= the stake the slot is actively
 managing: open positions + the bankroll it intends to deploy this session).
 
-THE SYSTEM SHALL change `yield-keeper.mjs` so its defended reserve is
-`effective_reserve = COMPUTE_RESERVE_USDC + (reserved.json.reserved_usdc if present and ts fresh < 24h else 0)`,
-and it deploys to yield ONLY USDC above `effective_reserve`. When `reserved.json` is missing/stale, behaviour
-is unchanged (defends only COMPUTE_RESERVE — fail-safe toward NOT sweeping is not possible here, so staleness
-defaults to the prior conservative-for-compute behaviour; the trading slot MUST refresh `reserved.json` every
-pass while it holds capital — REQ-T paper/live pass writes it at pass start).
+THE SYSTEM SHALL modify `execute-yield.mjs` so its effective reserve is
+`effective_reserve = COMPUTE_RESERVE_USDC + reserved_usdc_from_file`,
+where `reserved_usdc_from_file` is read from `reserved.json` if present AND `ts` is within 24h; otherwise:
+  - If `earn/pm-trade` is a live registered slot (`registry.json` status = "live"): treat `reserved_usdc_from_file = balance − COMPUTE_RESERVE_USDC` (= deploy NOTHING, hold all idle as reserved). This is fail-SAFE toward not sweeping the trading bankroll when the trading slot is installed but has not refreshed its reservation (e.g. crashed mid-pass).
+  - If `earn/pm-trade` is NOT a registered live slot: treat `reserved_usdc_from_file = 0` (legacy behaviour, no trading stake to protect).
+`execute-yield.mjs` deploys to yield ONLY USDC above `effective_reserve`. The trading slot MUST refresh `reserved.json` at the start of every pass while it holds or intends to deploy capital.
 
 **Acceptance Criteria:**
-- With `reserved.json {reserved_usdc: 60}` fresh and balance $100, yield-keeper deploys at most `100 − 5 − 60 = $35`.
-- With `reserved.json` absent, yield-keeper deploys `balance − COMPUTE_RESERVE` (unchanged legacy behaviour).
+- With `reserved.json {reserved_usdc: 60}` fresh and balance $100, `execute-yield.mjs` deploys at most `100 − 5 − 60 = $35`.
+- With `reserved.json` absent and `earn/pm-trade` registered as live, `execute-yield.mjs` deploys $0 (fail-safe, no sweep).
+- With `reserved.json` absent and `earn/pm-trade` NOT in registry, `execute-yield.mjs` deploys `balance − COMPUTE_RESERVE` (unchanged legacy behaviour).
 - The trading slot writes `reserved.json` at the start of every pass that holds or intends to deploy capital.
 
 ## Non-Functional Requirements
 
 | NFR | Requirement |
 |-----|-------------|
-| NFR-1 | `pm.py` SHALL run under Python 3.11+ with no dependencies beyond `requests`, `eth-account`, and the Polymarket/Kalshi SDK (or raw REST). |
+| NFR-1 | `pm.py` (Polymarket + Kalshi adapter) and `settle-verify.py` SHALL run under Python 3.11+ with no dependencies beyond `requests`, `eth-account`, and the Polymarket/Kalshi SDK (or raw REST). A `skills/earn/pm-trade/requirements.txt` file SHALL enumerate all Python deps for the slot; `install.sh` and REQ-S3 install from this file. |
 | NFR-2 | A full `earn/pm-trade` pass (data acquisition → edge → risk gate → paper trade) SHALL complete within 120s (matching `SKILL_TIMEOUT_S` default). |
 | NFR-3 | `spawn-child.sh` SHALL be idempotent: re-running with the same `CHILD_HOME` (e.g. after a crash at REQ-S3) resumes from the last completed step (checked via spawn-log status). |
 | NFR-4 | All file mutations in REQ-S (wallet, env, spawn-log) SHALL use tmp-file + atomic rename for crash-safety. |
