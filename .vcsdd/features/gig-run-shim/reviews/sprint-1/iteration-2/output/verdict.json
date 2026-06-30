@@ -1,0 +1,74 @@
+{
+  "sprintNumber": 1,
+  "feature": "gig-run-shim",
+  "overallVerdict": "PASS",
+  "timestamp": "2026-07-01T00:00:00Z",
+  "iteration": 2,
+  "reviewContext": {
+    "reviewType": "implementation",
+    "mode": "lean",
+    "priorIteration": 1,
+    "priorFindings": ["FIND-001"],
+    "closureStatus": {"FIND-001": "CLOSED"}
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/_shared/lib/proactive_observe.py:38-72", "description": "REQ-S2..S5 implemented: installed = plist.exists() && launchctl rc==0; ts/step parsed from core-status.json with EDGE-E2 swallow; build_log_passes counts '## ' headers"},
+        {"type": "file", "location": "skills/earn/gig/run.sh:21-22,49-59", "description": "REQ-S1 preserved (all existing keys still emitted at line 56-58); proactive_loop dict added with 4-key shape and defensive defaults if observer fails (EDGE-E5)"}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/_shared/__tests__/test_gig_run_shim_darwin.py:51-68", "description": "FIND-001 closed: ~/loops/gig now seeded with 3 sentinel files (build_log.md, state/core-status.json, .sentinel-noop-test) BEFORE the snapshot at line 67; assertion at line 68 'snapshot must be non-empty' makes the no-op equality have teeth"},
+        {"type": "file", "location": "skills/_shared/__tests__/test_gig_run_shim_darwin.py:88-100", "description": "Three orthogonal regression catchers: (a) file-set XOR (line 90-91), (b) per-file mtime equality (92-93), (c) content invariance (95-96) defends against same-mtime overwrite, (d) PROP-S5 sanity build_log_passes>=1 (99-100)"},
+        {"type": "file", "location": "skills/_shared/__tests__/test_gig_run_shim_darwin.py:60-65,102-105", "description": "Pre-existence snapshot captured at line 60 BEFORE the write loop at 62-65; write itself is guarded by `if not p.exists()` at line 63 so pre-existing files are never overwritten; cleanup at 102-105 unlinks only files where was_existing=False, preserving any pre-existing sentinels"}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/_shared/lib/proactive_observe.py:44-53", "description": "core-status.json parse wrapped in try/except (json.JSONDecodeError, ValueError, OSError) — EDGE-E2 malformed JSON does not crash; ts coerced via isinstance check"},
+        {"type": "file", "location": "skills/earn/gig/run.sh:45-55", "description": "pl_json parse defensive: empty/garbage falls back to {}; explicit type coercions (bool, int) ensure REQ-S2 shape; observer subprocess failure (echo '{}') handled at line 22"}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/_shared/lib/proactive_observe.py", "description": "Pure read-only module with TypedDict contract; CLI entrypoint separated from summarize_loops_dir() core; launchctl rc injected as arg (purity boundary preserved)"},
+        {"type": "file", "location": "skills/earn/gig/run.sh:21-22", "description": "Shim calls observer via `python3 -m lib.proactive_observe` subprocess; failure isolated by `|| echo '{}'`; no shared mutable state with the core tmux loop"}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/_shared/lib/proactive_observe.py:18-72", "description": "summarize_loops_dir() is pure: inputs = (loops_dir, plist_path, launchctl_print_rc); output = ObserveResult TypedDict; no globals, no time/random/network — directly verifiable"},
+        {"type": "file", "location": "skills/_shared/__tests__/test_proactive_observe.py", "description": "Unit test file exists per manifest — pure-core verification path is in place"}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 0,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": ["REQ-S1", "REQ-S2", "REQ-S3", "REQ-S4", "REQ-S5", "REQ-I1", "REQ-I2", "EDGE-E2", "EDGE-E5", "PROP-I1"],
+    "duplicateFindings": [],
+    "priorFindingClosure": {
+      "FIND-001": {
+        "status": "CLOSED",
+        "rationale": "Sentinel-seed pattern (build_log.md + state/core-status.json + .sentinel-noop-test) makes snapshot non-empty (assert at line 68); regression detection now has teeth via file-set XOR + per-file mtime + content invariance. Pre-existing files protected: pre_existing snapshot taken before write loop, write guarded by `if not p.exists()`, cleanup only unlinks files it created. PROP-S5 sanity (build_log_passes>=1) catches observer regressions where '## ' headers stop being counted."
+      }
+    }
+  }
+}

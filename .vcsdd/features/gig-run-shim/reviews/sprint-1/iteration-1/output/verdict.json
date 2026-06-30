@@ -1,0 +1,66 @@
+{
+  "sprintNumber": 1,
+  "feature": "gig-run-shim",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-01T00:00:00Z",
+  "iteration": 1,
+  "reviewContext": {
+    "reviewType": "implementation",
+    "mode": "lean"
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/_shared/lib/proactive_observe.py:39", "description": "REQ-S3 implemented as plist.exists() AND launchctl_print_rc == 0 (BOTH-AND, not OR)."},
+        {"type": "file", "location": "skills/_shared/__tests__/test_proactive_observe.py:22-32", "description": "test_installed_requires_both_disk_and_rc_zero verifies all three permutations (rc=0+no plist=False, plist+rc=1=False, BOTH=True)."},
+        {"type": "file", "location": "skills/earn/gig/run.sh:56-59", "description": "REQ-S1 existing keys (source, task, funding, earn_usdc, cost_usdc, jpy_earned, applied_total, core, wake, note) retained verbatim + REQ-S2 proactive_loop added."},
+        {"type": "file", "location": "skills/earn/gig/run.sh:50-55", "description": "REQ-I3 graceful defaults when observer subprocess fails."}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-001"],
+      "evidence": []
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/_shared/lib/proactive_observe.py:51", "description": "EDGE-E2 catch is narrow: (json.JSONDecodeError, ValueError, OSError) — NOT bare Exception. Manifest constraint #3 satisfied."},
+        {"type": "file", "location": "skills/_shared/lib/proactive_observe.py:48", "description": "Type-guards ts (isinstance int/float) before int() cast — prevents crash on malformed but valid-JSON ts."},
+        {"type": "file", "location": "skills/earn/gig/run.sh:22", "description": "Observer invoked with `|| echo '{}'` fallback — observer subprocess failure cannot crash the shim, preserving status JSON emission."}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/_shared/lib/proactive_observe.py", "description": "PURE helper isolated in lib/; CLI entrypoint cleanly separated under _cli()."},
+        {"type": "file", "location": "skills/earn/gig/run.sh:16-17", "description": "Existing gig-cli.sh invocations preserved verbatim (idempotent start + --status read); no new tmux operations added. Manifest constraint #4: grep for tmux kill / --restart / --stop / --kill in run.sh = 0 hits (verified via Grep)."},
+        {"type": "file", "location": "skills/_shared/__tests__/test_gig_run_shim_no_human_touch.py:36-42", "description": "PROP-I2 static grep test enforces the no-tmux-kill invariant."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/_shared/lib/proactive_observe.py", "description": "Pure core: file-stat-in / dict-out; launchctl rc injected as parameter, not called inside the pure function — purity boundary respected."},
+        {"type": "file", "location": "skills/_shared/__tests__/test_proactive_observe.py", "description": "8 unit tests cover PROP-S2/S3/S4/S5/I3/E2/E5 + EDGE-E3; cross-platform (no Darwin-only deps in pure tests)."},
+        {"type": "file", "location": "skills/_shared/__tests__/test_gig_run_shim_no_human_touch.py:14-19", "description": "REQ-D1/D2 enforced via static grep for osascript/terminal-notifier/telegram/slack/twilio/sudo/SecKeychain/find-generic-password across both shim sources."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 1,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}

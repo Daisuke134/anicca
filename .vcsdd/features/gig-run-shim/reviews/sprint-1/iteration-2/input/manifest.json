@@ -1,0 +1,25 @@
+{
+  "reviewType": "implementation",
+  "featureName": "gig-run-shim",
+  "sprintNumber": 1,
+  "iteration": 2,
+  "mode": "lean",
+  "artifactsToReview": {
+    "spec": [".vcsdd/features/gig-run-shim/specs/behavioral-spec.md",
+             ".vcsdd/features/gig-run-shim/specs/verification-architecture.md"],
+    "source_python": ["skills/_shared/lib/proactive_observe.py"],
+    "source_shell": ["skills/earn/gig/run.sh"],
+    "tests": ["skills/_shared/__tests__/test_proactive_observe.py",
+              "skills/_shared/__tests__/test_gig_run_shim_darwin.py",
+              "skills/_shared/__tests__/test_gig_run_shim_no_human_touch.py"]
+  },
+  "previousIterationFindings": [
+    "FIND-001 major (mtime-snapshot no-op when ~/loops/gig empty): fixed by seeding 3 sentinel files (build_log.md, state/core-status.json, .sentinel-noop-test) before snapshot + asserting file-set XOR + per-file mtime equality + content invariance + build_log_passes >= 1 sanity"
+  ],
+  "reviewDimensions": ["spec_fidelity", "edge_case_coverage", "implementation_correctness", "structural_integrity", "verification_readiness"],
+  "extraConstraints": [
+    "Verify FIND-001 closure: test now seeds files BEFORE snapshot; snapshot is non-empty; per-file mtime + content assertions added; cleanup leaves pre-existing files alone.",
+    "Check the sentinel-restoration logic: if a sentinel file ALREADY existed on disk pre-test (pre_existing[p]=True), the cleanup MUST NOT delete it. Verify the {p: p.exists()} snapshot is taken BEFORE write_text overwrites would happen."
+  ],
+  "expectedOutputPath": ".vcsdd/features/gig-run-shim/reviews/sprint-1/iteration-2/output/"
+}
