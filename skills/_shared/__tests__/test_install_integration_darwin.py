@@ -104,6 +104,8 @@ def test_collision_bootout_with_identical_disk_still_loads(probe_slot, tmp_path)
 def test_bootstrap_failure_rolls_back_disk_plist(tmp_path, monkeypatch):
     """EDGE-E5 / PROP-E5: when launchctl bootstrap fails, the disk plist must
     be removed (no half-loaded state). Shim launchctl via PATH to force fail."""
+    # tmp_path is under /private/var/folders (Darwin pytest tmp) which is in
+    # the allowed-temp-root list of the FIND-2-001 production guard.
     fake_bin = tmp_path / "bin"
     fake_bin.mkdir()
     fake_launchctl = fake_bin / "launchctl"
