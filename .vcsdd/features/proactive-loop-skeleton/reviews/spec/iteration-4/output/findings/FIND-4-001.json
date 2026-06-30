@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-4-001",
+  "dimension": "verification_readiness",
+  "category": "requirement_mismatch",
+  "severity": "high",
+  "description": "FIND-3-002 closure is INCOMPLETE. The Purity table (verification-architecture.md L21) and REQ-M3 (behavioral-spec.md L314-315) now agree on the canonical 6-arg signature `pick_next(menu, log_tail, history, blockers, now_ts, budget)`, but TWO PROP rows in verification-architecture.md still reference older signatures: (1) L63 PROP-P6-menu-pick says `step 5 calls pick_next(menu, log_tail, history, blockers)` — 4 args, missing `now_ts` and `budget`; (2) L78 PROP-P7-pivot says `pick_next(menu, blocked_set)` — 2 args, completely different shape. Consequence: PROP-P6 verifies a call that omits the cadence gate (REQ-M3(i)) and budget gate (REQ-M3(ii)); PROP-P7 verifies a call that omits the cadence, budget, AND novelty gates while collapsing the `blockers: set[str]` into an unnamed `blocked_set`. The manifest's extraConstraint explicitly required: 'every reference to pick_next must use the canonical 6-parameter signature.' Both PROP-P6 and PROP-P7 fail that check. Without fixing them, Phase 3 implementation can satisfy PROP-P6/P7 with a 2-arg or 4-arg shim and still claim the required-true PROPs are green — exactly the test-contract drift FIND-3-002 was meant to close.",
+  "evidence": {
+    "filePath": ".vcsdd/features/proactive-loop-skeleton/specs/verification-architecture.md",
+    "lineRange": "63,78",
+    "snippet": "L63: step 5 calls pick_next(menu, log_tail, history, blockers) and uses the returned item | L78: pick_next(menu, blocked_set) returns the highest-ROI item"
+  },
+  "routeToPhase": "1b"
+}
