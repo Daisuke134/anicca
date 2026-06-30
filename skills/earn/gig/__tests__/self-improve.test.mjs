@@ -126,17 +126,12 @@ test('lessons.jsonl validator: accepts a valid row', () => {
   assert.ok(r.ok, r.msg);
 });
 
-test('shared-lessons.jsonl dedup: same requestId+outcome should be deduplicated', () => {
-  // Simulate the dedup check: if the (requestId, outcome) pair is already in shared-lessons, skip.
-  const existing = [
-    { ts: '2026-06-30T00:00:00Z', requestId: '5121769', outcome: 'rejected', issue_url: 'https://github.com/.../1' },
-  ];
-  function alreadyShared(existing, requestId, outcome) {
-    return existing.some(r => r.requestId === requestId && r.outcome === outcome);
-  }
-  assert.ok(alreadyShared(existing, '5121769', 'rejected'), 'dedup should prevent re-posting');
-  assert.ok(!alreadyShared(existing, '5121769', 'accepted'), 'different outcome = not dedup');
-  assert.ok(!alreadyShared(existing, '9999999', 'rejected'), 'different requestId = not dedup');
+// FIND-004 fix: test that the ACTUAL gig-cli.sh cron prompt references the dedup key (requestId+outcome)
+// rather than a self-defined tautological helper (the old test only proved its own logic, not the shipped code).
+test('gig-cli.sh cron prompt: shared-lessons dedup explicitly checks requestId+outcome before gh issue create', () => {
+  const code = fs.readFileSync(path.join(DIR, 'gig-cli.sh'), 'utf8');
+  assert.ok(/shared-lessons\.jsonl/.test(code), 'shared-lessons.jsonl not referenced in cron prompt');
+  assert.ok(/requestId.*outcome|outcome.*requestId/i.test(code), 'dedup key (requestId+outcome) not mentioned in cron prompt');
 });
 
 // ─── 3. No-fake-earn guard (earnings.jsonl) ──────────────────────────────────
@@ -222,8 +217,9 @@ test('gig-cli.sh: shared-lessons.jsonl dedup referenced', () => {
   assert.ok(/shared-lessons\.jsonl/.test(code), 'shared-lessons.jsonl dedup missing');
 });
 
-test('gig-cli.sh: gh failure must not abort pass (graceful degradation note)', () => {
+// FIND-009 fix: require the explicit phrase — remove the '2>/dev/null' escape hatch
+// (2>/dev/null only suppresses errors, it does NOT prove the prompt instructs graceful continuation)
+test('gig-cli.sh: gh failure must not abort pass (explicit graceful degradation phrase required)', () => {
   const code = fs.readFileSync(path.join(DIR, 'gig-cli.sh'), 'utf8');
-  // The prompt says "If gh fails, log a warning and continue"
-  assert.ok(/gh fails.*continue|failure.*never abort|2>\/dev\/null/i.test(code), 'graceful gh degradation missing');
+  assert.ok(/gh fail|log a warning and continue|never abort/i.test(code), 'graceful gh degradation missing');
 });
