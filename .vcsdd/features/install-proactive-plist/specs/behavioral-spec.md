@@ -50,10 +50,15 @@ sprint-3 #27 (gig migration) + sprint-3 #28 (5 remaining slots).
 - **REQ-A4**: WHEN the slot argument contains any character outside
   `[a-z0-9_-]` OR is empty OR exceeds 32 chars, THE SCRIPT SHALL:
   (i) emit the validation error to stderr, (ii) exit non-zero,
-  (iii) HAVE NOT touched the filesystem (= `~/Library/LaunchAgents/` mtime
-  unchanged) AND HAVE NOT called `launchctl` (= no bootout/bootstrap attempted).
-  Validation MUST run as the FIRST executable line after argument parsing,
-  before any `mkdir`, file write, or subprocess invocation.
+  (iii) HAVE NOT touched the filesystem under `~/Library/LaunchAgents/` or
+  `~/.openclaw/logs/` (= mtimes unchanged) AND HAVE NOT called `launchctl`
+  (= no bootout/bootstrap attempted).
+  Validation MUST run as the FIRST executable step after argument parsing,
+  BEFORE any `mkdir`, file write, or `launchctl` call. The validation step
+  MAY itself shell out to `python3 -m lib.plist_render validate` (= a
+  read-only subprocess with no fs/launchctl side-effects); this read-only
+  subprocess invocation is part of the validation step, not a violation of
+  the ordering rule (= FIND-004 clarification).
 
 ### Group B — Idempotent install
 
@@ -84,13 +89,17 @@ sprint-3 #27 (gig migration) + sprint-3 #28 (5 remaining slots).
 
 ### Group E — Existing-plist conflict guard
 
-- **REQ-E1**: WHEN `ai.anicca.<slot>-core-healthcheck` is loaded in launchd
-  before THIS SCRIPT runs, THE SAME core-healthcheck job SHALL be loaded with
-  the SAME path + the SAME PID/load-timestamp after THIS SCRIPT exits 0
-  (= INV-6 of architecture spec). The test asserts BOTH path-identity AND
-  load-identity via `launchctl print` `path =` + `last exit code` / PID
-  comparison — a bootout-then-rebootstrap is therefore detectable and
-  considered a violation, not a no-op.
+- **REQ-E1**: WHEN any LaunchAgent labelled `ai.anicca.<other-slot>-*`
+  (= a sibling job, including but not restricted to `<slot>-core-healthcheck`)
+  is loaded in launchd before THIS SCRIPT runs, THAT SAME sibling job SHALL
+  remain loaded at the SAME path after THIS SCRIPT exits 0 (= INV-6 of
+  architecture spec). The test asserts path-identity via `launchctl print`
+  `path =` (= a bootout-then-rebootstrap to the same path STILL counts as
+  path-identity preserved; the test does NOT require PID identity because
+  the sibling may not be currently running). To make this verifiable in CI
+  even without a real core-healthcheck loaded, the test SHALL bootstrap a
+  controlled minimal sibling job before invoking THIS SCRIPT (= FIND-003 fix
+  to remove the skip-when-absent escape hatch).
 - **REQ-E2**: WHEN a plist labeled `ai.anicca.<slot>-proactive` is already
   loaded from a path DIFFERENT than the one this script will write, THE SCRIPT
   SHALL detect the collision by parsing the `path =` line of
