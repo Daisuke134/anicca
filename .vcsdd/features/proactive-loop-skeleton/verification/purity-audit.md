@@ -6,7 +6,7 @@ sprint: 2
 generated_at: 2026-07-01T08:00:00+09:00
 ---
 
-# Purity Audit — proactive-loop-skeleton sprint-2
+# Purity Boundary Audit — proactive-loop-skeleton sprint-2
 
 ## Declared Boundaries
 
