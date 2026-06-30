@@ -69,7 +69,14 @@
       "language": "typescript",
       "currentPhase": "init",
       "updatedAt": "2026-06-29T10:38:39.891Z"
+    },
+    "earn-shared-skeleton": {
+      "status": "active",
+      "createdAt": "2026-06-30T15:15:28.620Z",
+      "mode": "lean",
+      "currentPhase": "1b",
+      "updatedAt": "2026-06-30T15:18:43.934Z"
     }
   },
-  "activeFeature": "earn-slot-loop-integration"
+  "activeFeature": "earn-shared-skeleton"
 }
