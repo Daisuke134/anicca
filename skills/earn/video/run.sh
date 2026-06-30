@@ -169,6 +169,8 @@ try:
 except: u=''
 print(u)" 2>/dev/null)
           if [ -n "$PURL" ]; then set_state "{\"last_post_date\": \"$TODAY\", \"status\": \"warmed\", \"last_post_url\": \"$PURL\"}"; DID="posted reel LIVE: $PURL"
+            # ★ self-improve: link this post_url ↔ the script that made it, so metrics can be attributed to the script ★
+            $PY -c "import sys;sys.path.insert(0,'$SK');import selfimprove as S;S.record_post('$HANDLE','$PURL', open('${EARN_VIDEO_SCRIPT:-$OUT/today.txt}').read() if __import__('os').path.exists('${EARN_VIDEO_SCRIPT:-$OUT/today.txt}') else '', '$TODAY')" 2>/dev/null || true
           else set_state '{"status": "warmed"}'; DID="post FAILED/unverified ($(tail -1 /tmp/ev_post.log 2>/dev/null|cut -c1-80)) — last_post_date NOT set, will retry/reconcile next wake"; fi
         else DID="post skipped: no FRESH mp4 from this wake's generation ($(tail -1 /tmp/ev_gen.log 2>/dev/null|cut -c1-50)) — honest skip, NOT posting a stale render"; fi
       fi
@@ -197,6 +199,17 @@ if os.path.exists(INFLOWS):
 print(json.dumps({'recorded_count':c,'recorded_usdc':n}))" 2>/dev/null)
     [ -z "$REC" ] && REC='{"recorded_count":0,"recorded_usdc":0}'
     EARNED=$($PY -c "import json;print(json.loads('''$REC''').get('recorded_usdc',0))" 2>/dev/null || echo 0)
+    # ★ self-improve MEASURE: on a logged-in tab of the dedicated browser, measure recent posts' views/likes so the
+    #   agent can see what works. Bounded; best-effort (no post yet ⇒ nothing). ★
+    if [ "$DRY" != 1 ]; then
+      WPORT=$($PY -c "import json;print(json.load(open('$CREDS')).get('warmup_cdp_port',9334))" 2>/dev/null)
+      MTID=$(curl -s --max-time 4 "http://localhost:$WPORT/json" 2>/dev/null | $PY -c "import json,sys
+try:
+  t=[x for x in json.load(sys.stdin) if x.get('type')=='page' and 'instagram' in x.get('url','')]
+  print(t[0]['id'] if t else '')
+except: print('')" 2>/dev/null)
+      [ -n "$MTID" ] && timeout 45 $PY "$SK/selfimprove.py" measure --handle "$HANDLE" --tid "$MTID" --port "$WPORT" --date "$TODAY" >/dev/null 2>&1 || true
+    fi
     set_state '{"status": "monetized"}'
     DID="record-earn (onchain): $REC" ;;
   noop) DID="noop (already warmed today)" ;;
@@ -205,6 +218,13 @@ print(json.dumps({'recorded_count':c,'recorded_usdc':n}))" 2>/dev/null)
     DID="bootstrap: account not created yet — ig-account-create (0-human) runs once, then S1–S4 loop takes over" ;;
   *) DID="unknown transition: $TRANS" ;;
 esac
+
+# ★ #7 AUDIT LEDGER: append every wake's transition + evidence (append-only) so warmup/posts are PROVABLY recorded,
+#   not faked — a per-day trail anyone can inspect. ★
+AUDIT="$HOME/.cloak/earn-video-audit-${HANDLE}.jsonl"
+R_HANDLE="$HANDLE" R_TRANS="$TRANS" R_DID="$DID" R_EARNED="$EARNED" R_DATE="$TODAY" R_AUDIT="$AUDIT" $PY -c "import json,os
+rec={'date':os.environ['R_DATE'],'handle':os.environ['R_HANDLE'],'transition':os.environ['R_TRANS'],'did':os.environ['R_DID'],'earned_usdc':float(os.environ['R_EARNED'])}
+open(os.environ['R_AUDIT'],'a').write(json.dumps(rec,ensure_ascii=False)+'\n')" 2>/dev/null || true
 
 # ★ Dim5 fix: emit valid one-line JSON via json.dumps (escapes any "/\ in DID from logs) ★
 R_HANDLE="$HANDLE" R_TRANS="$TRANS" R_DID="$DID" R_EARNED="$EARNED" R_COST="$COST" $PY -c "import json,os;print(json.dumps({'slot':'earn/video','handle':os.environ['R_HANDLE'],'transition':os.environ['R_TRANS'],'did':os.environ['R_DID'],'earned_usdc':float(os.environ['R_EARNED']),'cost_usdc':float(os.environ['R_COST'])},ensure_ascii=False))"
