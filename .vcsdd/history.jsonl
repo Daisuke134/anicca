@@ -41,3 +41,5 @@
 {"timestamp":"2026-06-30T15:18:43.934Z","event":"phase_transition","featureName":"earn-shared-skeleton","from":"1a","to":"1b","iteration":1,"phase":"1b"}
 {"timestamp":"2026-06-30T15:47:21.682Z","event":"gate_recorded","featureName":"earn-shared-skeleton","phase":"1c","verdict":"PASS","reviewedBy":"adversary"}
 {"timestamp":"2026-06-30T15:47:21.684Z","event":"phase_transition","featureName":"earn-shared-skeleton","from":"1b","to":"1c","iteration":1,"phase":"1c"}
+{"timestamp":"2026-06-30T15:52:23.258Z","event":"phase_transition","featureName":"earn-shared-skeleton","from":"1c","to":"2a","iteration":1,"phase":"2a"}
+{"timestamp":"2026-06-30T15:52:23.258Z","event":"sprint_started","featureName":"earn-shared-skeleton","sprintNumber":1,"phase":"2a"}

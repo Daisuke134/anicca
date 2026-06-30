@@ -1,7 +1,7 @@
 {
   "featureName": "earn-shared-skeleton",
   "mode": "lean",
-  "currentPhase": "1c",
+  "currentPhase": "2a",
   "phaseHistory": [
     {
       "from": "init",
@@ -17,12 +17,19 @@
       "from": "1b",
       "to": "1c",
       "timestamp": "2026-06-30T15:47:21.683Z"
+    },
+    {
+      "from": "1c",
+      "to": "2a",
+      "timestamp": "2026-06-30T15:52:23.254Z",
+      "sprint": 1
     }
   ],
   "iterations": {
     "1a": 1,
     "1b": 1,
-    "1c": 1
+    "1c": 1,
+    "2a": 1
   },
   "proofObligations": [],
   "traceability": {
@@ -46,7 +53,7 @@
       "adversaryReviewedAt": "2026-06-30T15:47:21.680Z"
     }
   },
-  "sprintCount": 0,
+  "sprintCount": 1,
   "createdAt": "2026-06-30T15:15:28.620Z",
-  "updatedAt": "2026-06-30T15:47:21.683Z"
+  "updatedAt": "2026-06-30T15:52:23.255Z"
 }
