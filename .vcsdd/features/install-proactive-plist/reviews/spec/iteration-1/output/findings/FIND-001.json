@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "Parent architecture spec §3 (line 112) hard-codes the absolute path '/Users/anicca/anicca/skills/_shared/proactive-loop.sh' in the ProgramArguments array. REQ-A2 (behavioral-spec.md:32-34) says 'the absolute path of skills/_shared/proactive-loop.sh' but never pins what 'absolute' resolves to: $HOME-relative? repo-root-relative? caller-cwd-relative? On a fresh checkout in ~/anicca-project/ vs ~/anicca/ the path differs. The spec is not 100% clear (CLAUDE.md 0.10) and the implementer will guess. Either pin the literal '/Users/anicca/anicca/skills/_shared/proactive-loop.sh' (matching parent §3) or define an unambiguous resolution rule (e.g. 'realpath of the script repo root + skills/_shared/proactive-loop.sh, with an explicit error if the resolved file does not exist').",
+  "evidence": {
+    "filePath": ".vcsdd/features/install-proactive-plist/specs/behavioral-spec.md",
+    "lineRange": "32-34",
+    "snippet": "ProgramArguments pointing to /bin/bash + the absolute path of skills/_shared/proactive-loop.sh + slot."
+  },
+  "routeToPhase": "1a"
+}

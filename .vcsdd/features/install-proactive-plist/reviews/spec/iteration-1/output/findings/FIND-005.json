@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "verification_readiness",
+  "category": "test_quality",
+  "severity": "high",
+  "description": "PROP-D1-no-human-touch (verification-architecture.md:30) is defined as 'grep the script for forbidden patterns'. A static grep over the .sh source is a tautological test — it would also pass if the script invoked a helper Python module that itself called osascript or hit a Slack webhook URL. The proof obligation must extend to: (a) grep over any helper file the script invokes (lib/plist_render.py and any util it sources), (b) deny-list outbound URLs (slack.com, api.telegram.org, hooks.*), (c) deny-list 'sudo' and SecKeychain* macros in addition to osascript. Otherwise REQ-D1/D2 are theatre — the test will pass while the implementation can still ship a Telegram side-channel through lib/.",
+  "evidence": {
+    "filePath": ".vcsdd/features/install-proactive-plist/specs/verification-architecture.md",
+    "lineRange": "30-30",
+    "snippet": "PROP-D1-no-human-touch | 1 | true | REQ-D1, REQ-D2 (= grep the script for forbidden patterns)"
+  },
+  "routeToPhase": "1b"
+}

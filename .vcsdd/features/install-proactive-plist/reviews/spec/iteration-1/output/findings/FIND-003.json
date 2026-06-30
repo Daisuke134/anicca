@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "high",
+  "description": "REQ-E2 (behavioral-spec.md:73-75) says: 'WHEN a different plist labeled ai.anicca.<slot>-proactive is loaded from a different path, THE SCRIPT SHALL bootout it before installing ours.' But the spec never defines HOW the script discovers a 'different path' plist with the same label. launchctl print can show the loaded path; there is also a possibility the conflicting plist is in /Library/LaunchAgents or ~/Library/LaunchDaemons (different domain). Spec must either (a) constrain the search domain to gui/<uid> only, (b) define the exact launchctl command sequence used to detect cross-path same-label collisions, or (c) bound the bootout target by Label only (and accept that two same-Label plists on disk in different directories is undefined behavior — but say so). As written, REQ-E2 cannot be implemented unambiguously and INV-6 of the parent (one LAYER A plist per slot) is not actually enforced.",
+  "evidence": {
+    "filePath": ".vcsdd/features/install-proactive-plist/specs/behavioral-spec.md",
+    "lineRange": "73-75",
+    "snippet": "WHEN a different plist labeled ai.anicca.<slot>-proactive is loaded from a different path, THE SCRIPT SHALL bootout it before installing ours"
+  },
+  "routeToPhase": "1a"
+}

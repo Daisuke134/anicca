@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "high",
+  "description": "REQ-A3 (behavioral-spec.md:35-36) specifies StandardOutPath/StandardErrorPath as '$HOME/.openclaw/logs/<slot>-proactive.{out,err}'. The parent architecture spec §3 (line 117-118) uses literal '/Users/anicca/.openclaw/logs/<SLOT>-proactive.out|err'. launchd plists do NOT expand $HOME — plutil/launchd treat the string verbatim and the job will silently fail to open its stdout/stderr file, falling back to /dev/null. The spec must say the rendered plist contains the EXPANDED absolute path (e.g. '/Users/<user>/.openclaw/logs/...'), not the literal token '$HOME'. Otherwise REQ-A3 is unimplementable as written and contradicts the parent template.",
+  "evidence": {
+    "filePath": ".vcsdd/features/install-proactive-plist/specs/behavioral-spec.md",
+    "lineRange": "35-36",
+    "snippet": "THE PLIST SHALL set StandardOutPath and StandardErrorPath to $HOME/.openclaw/logs/<slot>-proactive.{out,err}"
+  },
+  "routeToPhase": "1a"
+}

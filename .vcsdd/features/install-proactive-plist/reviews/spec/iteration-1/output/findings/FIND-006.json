@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "verification_readiness",
+  "category": "test_coverage",
+  "severity": "high",
+  "description": "PROP-E1-no-cohealth-touch (verification-architecture.md:31) maps to REQ-E1 with the assertion '= existing core-healthcheck plist still loaded after our install'. The behavioral spec only requires the script to 'leave it untouched'. There is no PROP mapped to verifying that the core-healthcheck plist's content/mtime is byte-identical before and after install, nor that no launchctl bootout was issued against ai.anicca.<slot>-core-healthcheck. The test as scoped is satisfied even if the script booted out and re-bootstrapped the core-healthcheck plist (since 'still loaded' would still be true). Add an explicit obligation: 'core-healthcheck.plist mtime + sha256 unchanged AND launchctl print shows uninterrupted PID for that label.'",
+  "evidence": {
+    "filePath": ".vcsdd/features/install-proactive-plist/specs/verification-architecture.md",
+    "lineRange": "31-31",
+    "snippet": "PROP-E1-no-cohealth-touch | 1 | true | REQ-E1 (= existing core-healthcheck plist still loaded after our install)"
+  },
+  "routeToPhase": "1b"
+}

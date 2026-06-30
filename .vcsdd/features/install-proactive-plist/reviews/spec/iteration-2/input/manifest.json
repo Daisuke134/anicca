@@ -1,0 +1,28 @@
+{
+  "reviewType": "spec",
+  "featureName": "install-proactive-plist",
+  "iteration": 2,
+  "mode": "lean",
+  "artifactsToReview": [
+    ".vcsdd/features/install-proactive-plist/specs/behavioral-spec.md",
+    ".vcsdd/features/install-proactive-plist/specs/verification-architecture.md",
+    "docs/superpowers/specs/2026-07-01-proactive-loop-architecture-and-cleanup-design.md"
+  ],
+  "previousIterationFindings": [
+    "FIND-001 (path unpinned) → fixed: REQ-A2 pins canonical install root to /Users/anicca/anicca + uses git rev-parse + mismatch exit",
+    "FIND-002 ($HOME does not expand in launchd) → fixed: REQ-A1 + REQ-A3 require expanded absolute /Users/<uid>/... paths, NOT $HOME tokens",
+    "FIND-003 (REQ-E2 collision detection algorithm undefined) → fixed: REQ-E2 now specifies 4-step parse-then-compare-then-bootout algorithm using parse_loaded_plist_path()",
+    "FIND-004 (REQ-A4 ordering invariant missing) → fixed: REQ-A4 specifies validation runs FIRST + must have no FS/launchctl side-effect on failure; PROP-A4-injection-guard-ordering tests this via monkey-patch fail-loud",
+    "FIND-005 (PROP-D1 tautological grep) → fixed: PROP-D1-no-human-touch-comprehensive covers .sh + Python helpers + imported modules + osascript/terminal-notifier/Telegram/Slack/Twilio/sudo/SecKeychain/outbound URLs (except localhost) + runtime monkey-patch denial",
+    "FIND-006 (PROP-E1 weak; bootout-rebootstrap passes) → fixed: PROP-E1-cohealth-load-identity compares PID AND load-timestamp before/after",
+    "FIND-007 (dual bash+Python = only Python tested) → fixed: single-source decision — shell DOES NOT re-implement PURE logic; PROP-NFR1-single-source-pure grep-asserts no duplication"
+  ],
+  "reviewDimensions": ["spec_fidelity", "verification_readiness"],
+  "extraConstraints": [
+    "Verify each fix actually CLOSES the iter-1 finding (not just renames or moves).",
+    "REQ-A1 / REQ-A3 must contain literal '/Users/' path examples, not '$HOME' tokens.",
+    "REQ-E1 must compare BOTH path AND PID/load-ts.",
+    "PROP-NFR1-single-source-pure must grep-ban specific keywords (validate_slot, render_plist, parse_loaded_plist_path) from the .sh."
+  ],
+  "expectedOutputPath": ".vcsdd/features/install-proactive-plist/reviews/spec/iteration-2/output/"
+}
