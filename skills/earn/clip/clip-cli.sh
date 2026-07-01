@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"  # launchd has a minimal PATH; tmux/python3/node/claude live in homebrew
 # clip-cli.sh — launch the ALWAYS-ON clip-loop claude-p session (copied from Sutando's
 # scripts/start-cli.sh pattern: a detached tmux session running headless `claude` with
 # --dangerously-skip-permissions; the session registers a recurring cron that drives the

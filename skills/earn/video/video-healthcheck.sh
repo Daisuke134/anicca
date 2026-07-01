@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"  # launchd has a minimal PATH; tmux/python3/node/claude live in homebrew
 # video-healthcheck.sh — OS-level supervisor (launchd, every 5min). If the always-on video-core
 # tmux session is dead, restart it. Cloned from clip-healthcheck.sh so video is a real loop too.
 set -uo pipefail
