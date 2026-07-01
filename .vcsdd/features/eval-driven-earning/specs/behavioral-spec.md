@@ -95,21 +95,21 @@ the skeleton sprint-2 fields (categories, ROI heuristics, novelty quota):
 {
   "id": "<unique entry id, e.g. trading-polymarket>",
   "label": "<human-readable>",
-  "expected_usdc_per_wake": <float>,  // posterior mean of Beta(alpha, beta)
+  "expected_usd_per_wake": <float>,   // posterior mean of Beta(alpha, beta)
   "alpha": <float>,                   // Beta distribution alpha (successes + 1)
   "beta": <float>,                    // Beta distribution beta (failures + 1)
   "attempt_count": <int>,             // total wakes where this entry was picked
-  "pass_count": <int>,                // wakes where realized_usdc > 0
+  "pass_count": <int>,                // wakes where realized_usd > 0
   "novelty_tried": <bool>,            // true = has appeared ≥1 time in applied.jsonl
-  "cost_estimate_usdc": <float>,      // estimated token cost to run one wake on this arm
+  "cost_estimate_usd": <float>,       // estimated token cost to run one wake on this arm
   "admitted_at_ts": <int|null>,       // unix ts of curation admission; null = curated before this feature
   "schema_version": 1
 }
 ```
 
-`expected_usdc_per_wake` = `alpha / (alpha + beta)` × `usdc_scale_factor`, where
-`usdc_scale_factor` is the 90th-percentile observed `realized_usdc` over the slot's
-history (updated each wake; initial value = 1.0 USDC).
+`expected_usd_per_wake` = `alpha / (alpha + beta)` × `usdc_scale_factor`, where
+`usdc_scale_factor` is the 90th-percentile observed `realized_usd` over the slot's
+history (updated each wake; initial value = 1.0 USD).
 
 ---
 
@@ -299,7 +299,7 @@ invariants:
 - `alpha >= 1.0` and `beta >= 1.0` always (Beta distribution requires positive parameters;
   initialized to (1, 1) = uniform prior for a new arm),
 - `pass_count <= attempt_count`,
-- `expected_usdc_per_wake == alpha / (alpha + beta) × usdc_scale_factor` (derived; always
+- `expected_usd_per_wake == alpha / (alpha + beta) × usdc_scale_factor` (derived; always
   recomputed from alpha/beta, never stored stale).
 
 Existing skeleton sprint-2 fields (categories, ROI heuristics, novelty quota) SHALL be
@@ -320,7 +320,7 @@ preserved verbatim alongside the new bandit arm fields.
 
 **Acceptance Criteria:**
 - JSON Schema test validates all entries after each write.
-- Property test: `expected_usdc_per_wake` always in `[0, usdc_scale_factor]`.
+- Property test: `expected_usd_per_wake` always in `[0, usdc_scale_factor]`.
 
 ---
 
@@ -461,7 +461,7 @@ fall through to exploit selection.
 
 #### REQ-DA4 — Empty-menu and MINIMAL-budget sentinel
 
-WHEN `menu` is empty OR all entries have `cost_estimate_usdc > budget_cap` for the current
+WHEN `menu` is empty OR all entries have `cost_estimate_usd > budget_cap` for the current
 `budget`,
 THE SYSTEM SHALL return
 `ActivityDecision(mode="explore", pick=None, reason="discover-first")`.

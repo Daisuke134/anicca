@@ -2,7 +2,7 @@
   "featureName": "recipe-6-actions",
   "mode": "lean",
   "language": "python",
-  "currentPhase": "2c",
+  "currentPhase": "complete",
   "phaseHistory": [
     {
       "from": "init",
@@ -36,15 +36,43 @@
       "to": "2c",
       "timestamp": "2026-07-01T09:21:59.294Z",
       "sprint": 1
+    },
+    {
+      "from": "2c",
+      "to": "3",
+      "timestamp": "2026-07-01T09:24:26.744Z",
+      "sprint": 1
+    },
+    {
+      "from": "3",
+      "to": "5",
+      "timestamp": "2026-07-01T09:24:26.746Z",
+      "sprint": 1
+    },
+    {
+      "from": "5",
+      "to": "6",
+      "timestamp": "2026-07-01T09:25:10.568Z",
+      "sprint": 1
+    },
+    {
+      "from": "6",
+      "to": "complete",
+      "timestamp": "2026-07-01T09:25:16.743Z",
+      "sprint": 1
     }
   ],
   "iterations": {
+    "3": 1,
+    "5": 1,
+    "6": 1,
     "1a": 1,
     "1b": 1,
     "1c": 1,
     "2a": 1,
     "2b": 1,
-    "2c": 1
+    "2c": 1,
+    "complete": 1
   },
   "proofObligations": [],
   "traceability": {
@@ -52,6 +80,16 @@
     "beads": []
   },
   "gates": {
+    "3": {
+      "verdict": "PASS",
+      "timestamp": "2026-07-01T09:24:26.742Z",
+      "reviewedBy": "adversary"
+    },
+    "5": {
+      "verdict": "PASS",
+      "timestamp": "2026-07-01T09:25:10.564Z",
+      "reviewedBy": "verifier"
+    },
     "1c": {
       "verdict": "PASS",
       "timestamp": "2026-07-01T09:17:50.319Z",
@@ -62,5 +100,5 @@
   },
   "sprintCount": 1,
   "createdAt": "2026-07-01T09:10:47.827Z",
-  "updatedAt": "2026-07-01T09:21:59.294Z"
+  "updatedAt": "2026-07-01T09:25:16.744Z"
 }
