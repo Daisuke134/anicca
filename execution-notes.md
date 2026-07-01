@@ -24,3 +24,11 @@
 1. No settle event in 30 days across ANY slot
 2. INV regression uncloseable in 3 iters
 3. crypto primitive fails
+
+## sprint-4 (a1) post-deploy notes (2026-07-01)
+
+- (a1) STARTUP deployed successfully; gig-cli.sh --status=ALIVE
+- **task #6 hook fix**: `~/.claude/settings.json` PreToolUse:Bash hook was `rtk hook claude` (PATH-dependent). Headless tmux sessions couldn't resolve `rtk` → repeated "PreToolUse:Bash hook error". Fixed by pinning to `/opt/homebrew/bin/rtk hook claude`. Post-fix: session runs clean, no more hook errors.
+- **First post-fix pass**: correctly detected concurrency (multiple restarts + healthcheck cron) and skipped browser-driving to avoid collision. Registered cron `52b154a2` for future ticks. This is the CORRECT anti-collision behavior spec'd in HARD 0.36's INV-4.
+- **task-request-map.jsonl materialization**: waiting for first uncontested B2 apply pass (next hourly cron fire).
+- M2 auto-close path: unchanged. First real Coconala 検収 → gig-cli.sh a1 lookup → earnings row w/ pass_id → (a2) mirror → (b) reconciler → roi_jpy_realized > 0 → M2 satisfied.
