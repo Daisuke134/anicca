@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "implementation_correctness",
+  "category": "spec_gap",
+  "severity": "critical",
+  "description": "decideActivity's core decision — WHEN to choose explore vs exploit on a given wake — is never specified, so it is not implementable unambiguously (violates the 1c 'concrete enough' gate). REQ-DA2 describes what exploit does and REQ-DA3 what explore does, but the only stated triggers for choosing explore are the degenerate fallbacks (empty menu -> explore per REQ-DA4; no arm with attempt_count>=K_MIN_EXPLOIT -> explore per EDGE-DA2a). For the normal case (>=1 proven arm exists) there is NO rule that selects explore vs exploit. The novelty quota (REQ-DA3) is supposed to force ~10% explore, but the function signature (menu, novelty_quota, budget, now_ts) carries no per-wake history and NFR-ED1 forbids importing random. A deterministic, history-less, RNG-less pure function cannot realize a 10%-of-wakes stochastic explore policy. The spec also mislabels the mechanism 'Thompson Bayesian' (REQ-M2 line 312) while REQ-DA2 defines pure greedy-max selection — Thompson sampling requires posterior sampling that the pure/no-random contract prohibits.",
+  "evidence": {
+    "filePath": ".vcsdd/features/eval-driven-earning/specs/behavioral-spec.md",
+    "lineRange": "344-419",
+    "snippet": "decideActivity(menu, novelty_quota, budget, now_ts) -> ActivityDecision ... decideActivity reads NO files and makes NO system calls"
+  },
+  "routeToPhase": "1a"
+}

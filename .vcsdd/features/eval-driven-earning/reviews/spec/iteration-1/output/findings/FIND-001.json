@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "The entire 'income cannot be faked' guarantee rests on INV-7, but INV-7 is NEVER DEFINED in the earn-shared-skeleton spec this feature extends. The eval spec cites 'INV-7 on-chain reward gate' (frontmatter integration list), '(from cumulative.json, INV-7 verified)' for income_usdc, and 'a USDC payout receipt arrives per INV-7' in REQ-EV4. A grep of earn-shared-skeleton/specs/behavioral-spec.md returns INV-8, INV-11, INV-12, INV-13 but ZERO occurrences of INV-7. The load-bearing anti-fraud invariant is a dangling reference. Because INV-7 is undefined, the claim that income is 'on-chain USDC only' is unenforceable and unfalsifiable at the spec level.",
+  "evidence": {
+    "filePath": ".vcsdd/features/eval-driven-earning/specs/behavioral-spec.md",
+    "lineRange": "80,170,534",
+    "snippet": "\"income_usdc\": <float>, // cumulative_usdc_earned (from cumulative.json, INV-7 verified)"
+  },
+  "routeToPhase": "1a"
+}

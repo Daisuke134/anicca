@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-012",
+  "dimension": "structural_integrity",
+  "category": "purity_boundary",
+  "severity": "medium",
+  "description": "calibrationDrift is specified to operate over a timestamp rolling window it cannot see. REQ-EV5 gives it a window_secs parameter (line 568) and EDGE-X3 (lines 798-799) states it 'operates only on the rolling window (window_secs) -- it does not scan the entire file; tail-N rows by timestamp.' But the function receives only two value lists (scores, realized_usdc) with NO per-row timestamps, so it physically cannot tail-by-timestamp inside the pure function; and the 1b signature (line 31) drops window_secs entirely, leaving it undefined WHO performs the windowing and whether that caller is tested. The windowing responsibility is unassigned, so PROP-E4/E7 verify a function whose window semantics are not the ones the requirement describes.",
+  "evidence": {
+    "filePath": ".vcsdd/features/eval-driven-earning/specs/behavioral-spec.md",
+    "lineRange": "566-570",
+    "snippet": "calibrationDrift(scores: list[float], realized_usdc: list[float], window_secs: int, min_pairs: int = 10) -> DriftResult"
+  },
+  "routeToPhase": "1a"
+}

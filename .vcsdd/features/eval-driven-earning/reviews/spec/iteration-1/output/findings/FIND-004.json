@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "implementation_correctness",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "cost_usdc is computed with a dimensionally-wrong formula and two mutually-inconsistent definitions. REQ-S1(d) (lines 135-138): cost_usdc = (tokens_in*rate_input + tokens_out*rate_output + thinking*rate_output) / 1_000_000 / FX_USDJPY, with rates in USD/Mtok. tokens * (USD/Mtok) / 1e6 is ALREADY USD (~= USDC). Dividing again by FX_USDJPY (~150) yields USD^2/JPY and makes cost ~150x too small. The stated acceptance value is also arithmetically wrong: (1000*3 + 500*15 + 200*15) = 13500; /1e6 = 0.0135 USD; /150 = 0.00009 — not the '0.000207' the spec asserts (line 156). Meanwhile REQ-S2(b) (line 168) computes cost_usdc = cumulative_token_cost_jpy / FX_USDJPY, and since the skeleton's cumulative_token_cost_jpy is already JPY (REQ-B2 multiplies by FX), JPY/FX = USD is CORRECT. So the per-message path (S1) and the recompute path (S2) disagree by a factor of ~FX for the same quantity feeding the survival ledger.",
+  "evidence": {
+    "filePath": ".vcsdd/features/eval-driven-earning/specs/behavioral-spec.md",
+    "lineRange": "135-156",
+    "snippet": "cost_usdc = (tokens_in x rate_input[model_id] + ...) / 1_000_000 / FX_USDJPY ... cost_usdc = (1000x3 + 500x15 + 200x15) / 1_000_000 / 150 ~= 0.000207"
+  },
+  "routeToPhase": "1a"
+}

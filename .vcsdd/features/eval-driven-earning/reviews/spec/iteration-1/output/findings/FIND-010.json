@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-010",
+  "dimension": "spec_fidelity",
+  "category": "security_surface",
+  "severity": "high",
+  "description": "There is a path that deploys REAL capital on a skill that never passed the curation/adversary gate. EDGE-M1a (lines 295-297) bootstraps a default menu including 'trading-polymarket' — the master spec's PRIMARY arm and a real own-key wallet rail (master line 278) — with (alpha=1,beta=1) priors. Per REQ-M1 (line 106) a null admitted_at_ts means 'curated before this feature' (grandfathered), so bootstrap entries are treated as pre-admitted and never routed through Group CU. REQ-DA2 (lines 375-376) only bars entries where admitted_at_ts is None AND novelty_tried==False from exploit; after a single explore wake novelty_tried flips to True while admitted_at_ts stays null, making the trading arm exploit-eligible and free to deploy real funds. The most capital-risky option in the menu is exactly the one that bypasses curation. J8/no-human is preserved, but the curation guarantee (no real spend on an un-vetted earn skill) is not.",
+  "evidence": {
+    "filePath": ".vcsdd/features/eval-driven-earning/specs/behavioral-spec.md",
+    "lineRange": "295-297",
+    "snippet": "proactive-loop.sh bootstraps a default menu with one entry per active earn type (trading-polymarket, ...) with (alpha=1, beta=1) priors."
+  },
+  "routeToPhase": "1a"
+}

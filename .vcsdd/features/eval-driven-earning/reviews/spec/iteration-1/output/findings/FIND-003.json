@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "The kill-switch integration is broken and double-counted. (1) REQ-S5 (lines 252-254) calls `self-recover.sh <slot> survival-bankruptcy <net_usdc>` but the skeleton's Group J dispatcher has NO handler for reason 'survival-bankruptcy' (defined reasons are needs-login, spawn-surface-drift, hook-module-unrecognized, adversary-stalled, backoff-cap, token-kill-switch, token-source-degraded). The reason falls through to an undefined path. (2) REQ-S5 claims this 'in turn calls the skeleton's REQ-B4 kill-switch mechanism (writes loop.disabled)', but skeleton REQ-B4 (lines 219-234) is triggered INSIDE loop-roi.sh by the predicate cumulative_token_cost_jpy > 5*cumulative_jpy_earned — it is NOT reachable via self-recover.sh. The described bridge does not connect to any real mechanism. (3) Two contradictory kill CRITERIA now target the same loop.disabled file: skeleton REQ-B4 = cost_jpy > 5x earned_jpy, grace anchored to first_seen_ts; eval REQ-S5 = net_usdc < 0 (any loss), grace anchored to loss_start_ts. Different thresholds, different grace anchors, different currencies — a slot can be simultaneously 'alive' by one and 'bankrupt' by the other.",
+  "evidence": {
+    "filePath": ".vcsdd/features/eval-driven-earning/specs/behavioral-spec.md",
+    "lineRange": "250-262",
+    "snippet": "THE SYSTEM SHALL call self-recover.sh <slot> survival-bankruptcy <net_usdc> (skeleton REQ-F1) which in turn calls the skeleton's REQ-B4 kill-switch mechanism"
+  },
+  "routeToPhase": "1a"
+}

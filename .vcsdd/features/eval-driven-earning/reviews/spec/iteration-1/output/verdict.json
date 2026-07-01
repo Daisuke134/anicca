@@ -1,0 +1,26 @@
+{
+  "feature": "eval-driven-earning",
+  "reviewType": "spec",
+  "phase": "1c",
+  "mode": "lean",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-01T00:00:00Z",
+  "iteration": 1,
+  "dimensions": [
+    {"name": "spec_fidelity", "verdict": "FAIL", "findings": ["FIND-001", "FIND-002", "FIND-003", "FIND-010"], "evidence": []},
+    {"name": "edge_case_coverage", "verdict": "FAIL", "findings": ["FIND-002", "FIND-011"], "evidence": [
+      {"type": "note", "location": "behavioral-spec.md:183-188", "description": "EDGE-S2b codifies the JPY-income insolvency bug instead of covering it; no edge for missing survival-bankruptcy handler; calibrationDrift insufficient-data (PROP-E4/E7) IS correctly fail-closed."}
+    ]},
+    {"name": "implementation_correctness", "verdict": "FAIL", "findings": ["FIND-004", "FIND-005", "FIND-009", "FIND-011"], "evidence": []},
+    {"name": "structural_integrity", "verdict": "FAIL", "findings": ["FIND-007", "FIND-012", "FIND-013"], "evidence": []},
+    {"name": "verification_readiness", "verdict": "FAIL", "findings": ["FIND-006", "FIND-008"], "evidence": []}
+  ],
+  "convergenceSignals": {
+    "findingCount": 13,
+    "criticalCount": 6,
+    "highCount": 4,
+    "mediumCount": 3,
+    "allCriteriaEvaluated": true,
+    "duplicateFindings": []
+  }
+}

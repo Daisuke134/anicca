@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "verification_readiness",
+  "category": "purity_boundary",
+  "severity": "critical",
+  "description": "REQ-DA3 requires decideActivity to enforce 'the fraction of wakes selecting mode:explore SHALL be at least novelty_quota over any rolling window of 100 wakes, tracked via ~/loops/<slot>/menu-bandit.jsonl mode field' (lines 396-399). But decideActivity is declared PURE and 'reads NO files and makes NO system calls' (line 359; verification-architecture line 29), and its signature has NO parameter carrying the last-100-wake mode history. It is impossible to enforce a rolling-window quota inside a function that has no access to the window: either the function must read menu-bandit.jsonl (destroying the purity boundary this feature's NFR-ED1/anti-slop-rule-2 exist to protect) or the quota requirement is silently unmet. The purity claim and the rolling-quota requirement are mutually exclusive as written.",
+  "evidence": {
+    "filePath": ".vcsdd/features/eval-driven-earning/specs/behavioral-spec.md",
+    "lineRange": "394-399",
+    "snippet": "SHALL be at least novelty_quota (default 0.1) over any rolling window of 100 wakes, tracked via ~/loops/<slot>/menu-bandit.jsonl mode field."
+  },
+  "routeToPhase": "1a"
+}

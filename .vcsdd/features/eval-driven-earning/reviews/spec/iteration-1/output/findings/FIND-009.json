@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-009",
+  "dimension": "implementation_correctness",
+  "category": "spec_gap",
+  "severity": "high",
+  "description": "The curation gate cannot verify its own stated admission criterion, so it does not deliver the protection that is its entire purpose. REQ-CU3's evaluation_criteria (line 658) demands the adversary confirm the skill 'earns via verifiable payout endpoint'. But REQ-CU2 mandates the sandbox intercept ALL payout API calls with a mock returning {payout_id: null, amount: 0} and explicitly states 'The paper run verifies the MECHANISM works ... NOT that it earned USDC (sandbox mocks all payouts)' (lines 628-635). Earning is unobservable by construction, so a skill that will NEVER earn a cent can still pass curation. The master spec's justification for the gate is 'don't burn money on shit repos' (master line 277); as specified, the gate only proves a skill runs without crashing, not that it earns — the real-money protection is illusory.",
+  "evidence": {
+    "filePath": ".vcsdd/features/eval-driven-earning/specs/behavioral-spec.md",
+    "lineRange": "634-658",
+    "snippet": "\"evaluation_criteria\": [\"earns via verifiable payout endpoint\", ...]  // but: The paper run verifies the MECHANISM works ... NOT that it earned USDC"
+  },
+  "routeToPhase": "1a"
+}
