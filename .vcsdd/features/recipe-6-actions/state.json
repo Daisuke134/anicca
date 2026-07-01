@@ -2,7 +2,7 @@
   "featureName": "recipe-6-actions",
   "mode": "lean",
   "language": "python",
-  "currentPhase": "1b",
+  "currentPhase": "2a",
   "phaseHistory": [
     {
       "from": "init",
@@ -13,19 +13,40 @@
       "from": "1a",
       "to": "1b",
       "timestamp": "2026-07-01T09:11:36.060Z"
+    },
+    {
+      "from": "1b",
+      "to": "1c",
+      "timestamp": "2026-07-01T09:17:50.321Z"
+    },
+    {
+      "from": "1c",
+      "to": "2a",
+      "timestamp": "2026-07-01T09:17:50.328Z",
+      "sprint": 1
     }
   ],
   "iterations": {
     "1a": 1,
-    "1b": 1
+    "1b": 1,
+    "1c": 1,
+    "2a": 1
   },
   "proofObligations": [],
   "traceability": {
     "epicId": "VCSDD-recipe-6-actions-1782897047828",
     "beads": []
   },
-  "gates": {},
-  "sprintCount": 0,
+  "gates": {
+    "1c": {
+      "verdict": "PASS",
+      "timestamp": "2026-07-01T09:17:50.319Z",
+      "reviewedBy": "adversary",
+      "adversaryVerdict": "PASS",
+      "adversaryReviewedAt": "2026-07-01T09:17:50.319Z"
+    }
+  },
+  "sprintCount": 1,
   "createdAt": "2026-07-01T09:10:47.827Z",
-  "updatedAt": "2026-07-01T09:11:36.060Z"
+  "updatedAt": "2026-07-01T09:17:50.328Z"
 }
