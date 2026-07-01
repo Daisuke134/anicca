@@ -101,3 +101,40 @@ def is_allowed_sentinel_removal_call(call_source: str) -> bool:
     """
     ALLOWED = {"bot2bot.apply_sibling_response", "mutation_gate.post_merge_hook"}
     return call_source in ALLOWED
+
+
+# ─── sprint-3 #34: time-horizon-aware dormant helpers ─────────────
+def resolve_time_horizon_days(menu: dict, *, default: int = 14) -> int:
+    """REQ-T1: read menu.json's `time_horizon_days` with defensive fallback.
+
+    Returns `default` when the field is missing, None, non-castable to int,
+    or ≤ 0. Sprint-3 #34 spec REQ-T1 + EDGE-E3/E4.
+    """
+    if not isinstance(menu, dict):
+        return int(default)
+    raw = menu.get("time_horizon_days")
+    if raw is None:
+        return int(default)
+    try:
+        v = int(raw)
+    except (TypeError, ValueError):
+        return int(default)
+    return v if v > 0 else int(default)
+
+
+def is_dormant_with_horizon(
+    *,
+    consecutive_neg_windows: int,
+    slot_age_days: float,
+    time_horizon_days: int,
+) -> bool:
+    """REQ-T2: parent §7b INV-P3 canonical predicate. Returns True IFF BOTH:
+      - slot_age_days > 2 * time_horizon_days  (= we've given it enough time)
+      - consecutive_neg_windows > time_horizon_days  (= persistent failure)
+    Sprint-2's is_dormant() stays for backward compat; sprint-4 wires this
+    to the dispatcher when LAYER C settle callback lands.
+    """
+    return (
+        float(slot_age_days) > 2 * int(time_horizon_days)
+        and int(consecutive_neg_windows) > int(time_horizon_days)
+    )

@@ -1,0 +1,53 @@
+{
+  "sprintNumber": 3,
+  "feature": "roi-writer-and-dormant",
+  "overallVerdict": "PASS",
+  "timestamp": "2026-07-01T00:00:00Z",
+  "iteration": 2,
+  "reviewContext": {
+    "reviewType": "spec",
+    "mode": "lean",
+    "artifactsReviewed": [
+      ".vcsdd/features/roi-writer-and-dormant/specs/behavioral-spec.md",
+      ".vcsdd/features/roi-writer-and-dormant/specs/verification-architecture.md"
+    ]
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "specs/behavioral-spec.md:24-33", "description": "§1 explicitly defers Group D auto-write to sprint-4 with the exact roi_jpy_realized=0 → sum never < 0 → is_dormant_with_horizon guaranteed False rationale that FIND-001 demanded; PURE helper is preserved but NOT wired from dispatcher — closes FIND-001."},
+        {"type": "file", "location": "specs/behavioral-spec.md:35-40, 90-95", "description": "§2 Out-of-scope + REQ-I3 both encode the dispatcher-side removal of Group D; REQ-I3 grep guard on is_dormant\\b + write_dormant_sentinel\\b in the DISPATCHER prevents accidental re-wire."},
+        {"type": "file", "location": "specs/behavioral-spec.md:57-65", "description": "REQ-W4 rewritten as 'best-effort append'; explicit POSIX PIPE_BUF caveat cited and fcntl re-entrancy guard in proactive-loop.sh named as the concurrency-safety construction — closes FIND-003."},
+        {"type": "file", "location": "specs/behavioral-spec.md:125-132", "description": "§6 Sprint-4 carry pins concrete decisions to make: st_birthtime + .slot-created.ts fallback (closes FIND-002 handoff), 24h window boundary options enumerated with default recommendation deferred (closes FIND-006 handoff)."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "specs/verification-architecture.md:20, 29", "description": "ORCHESTRATOR row explicitly names the core-status.json failure-log path as part of STEP 7-post-append; PROP-W4-write-failure-no-crash maps to REQ-W4 + EDGE-E2 with 'log + continue' semantics — closes FIND-004."},
+        {"type": "file", "location": "specs/verification-architecture.md:33-34", "description": "PROP-I2 upgraded to 'grep + AST — parses roi_track.py imports and asserts subprocess is used ONLY with argv lists that do not contain kill primitives'; PROP-I3 uses 'is_dormant\\b' + 'write_dormant_sentinel\\b' word-boundary regex — closes FIND-005."},
+        {"type": "file", "location": "specs/verification-architecture.md:37, 40", "description": "Lean-mode required:true count = 9 obligations; test files enumerated including a permission-denied fixture for the failure-path core-status.json write."}
+      ]
+    }
+  ],
+  "closureAudit": {
+    "FIND-001": "CLOSED — §1, §2, REQ-I3 all encode Group D deferral; PURE helper still unit-tested but never called from dispatcher.",
+    "FIND-002": "CLOSED (as sprint-4 carry) — §6 documents st_birthtime + .slot-created.ts marker fix; sprint-3 no longer depends on slot age.",
+    "FIND-003": "CLOSED — REQ-W4 (behavioral-spec.md:57-65) removes the wrong 'POSIX single-write atomic' claim, cites PIPE_BUF caveat, and names fcntl re-entrancy guard as the serialization construction.",
+    "FIND-004": "CLOSED — verification-architecture.md:20 ORCHESTRATOR row + PROP-W4 (line 29) name the core-status.json failure-log write; test_dispatch_integration_roi.py:40 covers it via permission-denied fixture.",
+    "FIND-005": "CLOSED — PROP-I2 upgraded to AST-based subprocess argv inspection; PROP-I3 uses \\b word-boundary regex, not naive substring grep.",
+    "FIND-006": "CLOSED (as sprint-4 carry) — §6 pins the decision (midnight-UTC vs local vs strict-24h) to sprint-4 with rationale that sprint-3 dispatcher does not bucket."
+  },
+  "convergenceSignals": {
+    "findingCount": 0,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": ["spec_fidelity", "verification_readiness"],
+    "duplicateFindings": [],
+    "priorFindingsClosed": ["FIND-001", "FIND-002", "FIND-003", "FIND-004", "FIND-005", "FIND-006"]
+  }
+}
