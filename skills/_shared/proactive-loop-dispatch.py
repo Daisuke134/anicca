@@ -136,6 +136,7 @@ def main() -> int:
             r = execute_recipe(
                 recipe=recipe, issue_kind=top.kind, slot=slot,
                 cmd_map=cmd_map, timeout=30,
+                anicca_home=anicca_home,
             )
             _write_status(slot_dir, slot=slot, status="running",
                          step=f"3-{r['status']}")

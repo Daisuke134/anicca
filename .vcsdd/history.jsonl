@@ -196,3 +196,5 @@
 {"timestamp":"2026-07-01T09:17:50.323Z","event":"phase_transition","featureName":"recipe-6-actions","from":"1b","to":"1c","iteration":1,"phase":"1c"}
 {"timestamp":"2026-07-01T09:17:50.328Z","event":"phase_transition","featureName":"recipe-6-actions","from":"1c","to":"2a","iteration":1,"phase":"2a"}
 {"timestamp":"2026-07-01T09:17:50.328Z","event":"sprint_started","featureName":"recipe-6-actions","sprintNumber":1,"phase":"2a"}
+{"timestamp":"2026-07-01T09:21:59.293Z","event":"phase_transition","featureName":"recipe-6-actions","from":"2a","to":"2b","iteration":1,"phase":"2b"}
+{"timestamp":"2026-07-01T09:21:59.295Z","event":"phase_transition","featureName":"recipe-6-actions","from":"2b","to":"2c","iteration":1,"phase":"2c"}

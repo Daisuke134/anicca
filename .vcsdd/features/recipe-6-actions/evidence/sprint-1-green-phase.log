@@ -1,0 +1,33 @@
+target-feature-tests: PASS
+regression-baseline: PASS
+total-tests: 503 (was 480 + 25 new recipe + 2 legacy adjusted, all pass)
+
+--- Full test run (post GREEN + 2c) ---
+503 passed, 4 warnings in 7.86s
+
+--- Implementation summary (Phase 2b) ---
+1. skills/_shared/lib/step3_recipe.py — rewritten:
+   - execute_recipe signature gains `anicca_home: str = ""` kwarg (FIND-002).
+   - 6 real wires: kill_server (REQ-A1), escalate_via_bot2bot (REQ-A2),
+     send_keys (REQ-B1, keys + flow variant), login (REQ-C1),
+     npm_install (REQ-C2, flow-echo status), git_checkout (REQ-C3).
+   - SEND_KEYS_FLOW_MAP with reinject_startup → "/startup".
+   - NPM_INSTALL_FLOW_MAP with allowlist_check documented.
+   - SCAFFOLD_DEFERRED_ACTIONS reduced to {noop} (PROP-I4).
+   - All 6 wires wrapped in try/except (PROP-I2). Every subprocess call
+     has explicit timeout + rc-check + fail-soft on OSError/FileNotFoundError.
+   - INV-P1: only restart+tmux_dead invokes cmd_map (unchanged gate).
+   - INV-4: no writes under loops/<slot>/.
+2. skills/_shared/proactive-loop-dispatch.py — dispatcher STEP 3 call site
+   passes `anicca_home=anicca_home` to execute_recipe.
+3. Legacy sprint-3 tests updated:
+   - test_scaffold_deferred_actions_constant_is_7_set → _is_noop_only.
+   - test_sprint4_actions_no_subprocess parametrize: {noop} only.
+   - test_step3_recipe_has_no_tmux_kill → _no_illegitimate_tmux_kill_primitives:
+     allows `kill-server` inside the kill_server branch, still bans kill-session
+     + --stop / --kill.
+
+--- Refactor (Phase 2c) ---
+The rewrite is already the refactor (from a scaffold to a real impl). No
+additional refactor pass beyond keeping each wire as an if-block with
+identical shape (params extract → subprocess.run inside try/except → status).

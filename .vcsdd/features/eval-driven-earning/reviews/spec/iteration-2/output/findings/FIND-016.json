@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-016",
+  "dimension": "edge_case_coverage",
+  "category": "requirement_mismatch",
+  "severity": "medium",
+  "description": "EDGE-DA3b is self-contradictory and conflicts with the canonical decision rule's floor() quota. REQ-DA1 step 2 (line 393) defines the quota deterministically as `explore_due = recent_explore_count < floor(explore_epsilon x min(total_recent_wakes+1, 100))`, and the REQ-DA3 acceptance criterion (line 457-458), PROP-DA4 (verification-architecture line 66/131-134) all use FLOOR consistently. But EDGE-DA3b (line 450-452) asserts for the first-wake case 'explore_due = True' and in the SAME sentence computes '0 < floor(0.1 x 1) = 0 is False', then recommends 'use ceiling for safety: at least 1 explore per 10.' The stated conclusion (True) contradicts its own shown computation (False), and the ceiling recommendation contradicts REQ-DA1's floor formula and the DA3 acceptance criterion. This also undercuts the integration-comment (verification-architecture line 191) which annotates 'ceil(0.1x10)=1' while REQ-DA1 uses floor, and the Integration-table claim (behavioral-spec line 57) that explore_epsilon 'copies' skeleton REQ-H1's ceil-based novelty floor. The core algorithm happens to be saved on wake-1 by REQ-DA1 step 4 (unproven arms force explore), but the edge-case text is incoherent and leaves floor-vs-ceil unresolved for a spec that claims a fully deterministic pure decision rule.",
+  "evidence": {
+    "filePath": ".vcsdd/features/eval-driven-earning/specs/behavioral-spec.md",
+    "lineRange": "393, 450-452, 457-458",
+    "snippet": "EDGE-DA3b: `explore_due = True (0 < floor(0.1 x 1) = 0 is False; ... use ceiling for safety: at least 1 explore per 10)`  vs REQ-DA1: `floor(explore_epsilon x min(total_recent_wakes+1, 100))`"
+  },
+  "routeToPhase": "1a"
+}

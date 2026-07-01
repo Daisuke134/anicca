@@ -1,0 +1,69 @@
+{
+  "sprintNumber": null,
+  "feature": "eval-driven-earning",
+  "phase": "1c",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-01T00:00:00Z",
+  "iteration": 2,
+  "mode": "lean",
+  "reviewedCommit": "16ec1cc",
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-015"],
+      "evidence": [
+        {"type": "file", "location": "specs/behavioral-spec.md:255-288", "description": "REQ-S5 re-anchored: advisory-only lessons.jsonl row, SHALL NOT write loop.disabled, no survival-bankruptcy handler invented; B4 confirmed sole kill-switch owner (FIND-001/003 resolved)"},
+        {"type": "file", "location": "specs/behavioral-spec.md:54,70,80,171-173", "description": "INV-7 fully removed; INV-8 (platform_api_response_sha256 settled-payout gate, skeleton line 54/216) correctly cited (FIND-001 resolved)"},
+        {"type": "file", "location": "specs/behavioral-spec.md:309-315,406-411", "description": "trading-polymarket removed from bootstrap; REQ-DA2 makes admitted_at_ts=None NEVER exploit-eligible, novelty_tried conjunction dropped (FIND-010 resolved) — but see FIND-015 EDGE-X2/EDGE-M1a contradiction"}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-016", "FIND-015"],
+      "evidence": [
+        {"type": "file", "location": "specs/behavioral-spec.md:197-199", "description": "Mixed-currency acceptance (¥1500 + 0.5 USDC → income_usd=10.5 at FX=150) added (FIND-002 edge resolved)"}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "specs/behavioral-spec.md:135-139,157", "description": "REQ-S1(d) cost_usd = tokens×USD-rate/1e6 with NO FX; acceptance (1000×3+500×15+200×15)/1e6=0.0135 USD verified — double-FX removed (FIND-004 resolved)"},
+        {"type": "file", "location": "specs/behavioral-spec.md:173,197-199", "description": "REQ-S2(c) income_usd=(jpy/FX)+usdc normalizes both currencies; REQ-S2(b) cost from cumulative JPY/FX consistent with S1 direct-USD (skeleton stores token_cost_jpy=USD×FX)"},
+        {"type": "file", "location": "specs/behavioral-spec.md:329-361", "description": "REQ-M2 updateBanditArm arithmetic verified: {1,1} r=0→{1,2}; r=0.5s→{1.5,1.5}; r=2s→clip=1→{2,1}; alpha cap is the definition not an exception (FIND-011 resolved)"},
+        {"type": "file", "location": "specs/behavioral-spec.md:494-531", "description": "REQ-EV1 rubricScore precedence (verifiable PASS/FAIL → deliverable → weighted 0.71) verified; verifiable_result is a pure param (FIND-008 resolved)"},
+        {"type": "file", "location": "specs/behavioral-spec.md:372-396", "description": "decideActivity signature takes injected BanditStats, no RNG/file-read, deterministic epsilon-greedy; NFR-ED1 bans random/os/subprocess imports (FIND-005/006 resolved)"}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "FAIL",
+      "findings": ["FIND-014"],
+      "evidence": []
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-014"],
+      "evidence": [
+        {"type": "file", "location": "verification-architecture.md:29-32,66-68,81-82", "description": "1a/1b signatures aligned (rubricScore 5-param, calibrationDrift no window_secs, updateBanditArm, decideActivity); PROP-EV3/EV3f test rubricScore directly not phantom rubricEval (FIND-007/FIND-008/FIND-012 resolved) — but menu.json field names still drift (FIND-014)"}
+      ]
+    }
+  ],
+  "resolvedFindings": [
+    "FIND-001", "FIND-002", "FIND-003", "FIND-004", "FIND-005", "FIND-006",
+    "FIND-008", "FIND-009", "FIND-010", "FIND-011", "FIND-012", "FIND-013"
+  ],
+  "openFindings": ["FIND-014", "FIND-015", "FIND-016"],
+  "convergenceSignals": {
+    "findingCount": 3,
+    "priorFindingCount": 13,
+    "allCriteriaEvaluated": true,
+    "duplicateFindings": [],
+    "roundsUsed": 2,
+    "roundsCap": 3
+  }
+}

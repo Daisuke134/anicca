@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-015",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "high",
+  "description": "Internal contradiction introduced by the FIND-010 fix: EDGE-X2's null-admitted backstop starves the brand-new-slot cold-start path that EDGE-M1a depends on. EDGE-M1a (line 309-315) now bootstraps a brand-new slot with the four default earn types (bounty-scan, clip, affiliate, video) all carrying `admitted_at_ts=null`, and states they 'automatically route to curation on first pass; they are NOT exploit-eligible until admitted_at_ts is set' — i.e. they are reachable ONLY via the explore path (REQ-DA3 does not gate explore on admitted_at_ts). But EDGE-X2 (line 878-882) mandates that the shell, for ANY pick whose `admitted_at_ts is None`, 're-runs decideActivity with that entry excluded from the menu.' Taken literally and unconditionally, on a brand-new slot where EVERY entry is null-admitted, each explore pick is excluded one-by-one until the menu is empty, yielding the REQ-DA4 `pick=None, reason=discover-first` sentinel and invoking the discovery radar instead of ever executing a bootstrap earn action. EDGE-X2's own rationale reveals the flaw: it assumes 'REQ-DA1 only passes admitted entries to the exploit path' and treats null-admitted picks as a race, but EDGE-M1a makes null-admitted explore picks NORMAL, intended cold-start behavior. The two edge cases directly contradict: EDGE-X2 excludes exactly the entries EDGE-M1a relies on. The spec does not scope EDGE-X2 to exploit-only, so cold-start liveness is unresolved. Result: a fresh slot can never run its own default earn types until curation admits them, while EDGE-X2 actively blocks explore from running them in the meantime.",
+  "evidence": {
+    "filePath": ".vcsdd/features/eval-driven-earning/specs/behavioral-spec.md",
+    "lineRange": "309-315, 878-882",
+    "snippet": "EDGE-M1a: bootstraps ... (alpha=1, beta=1, admitted_at_ts=null) ... NOT exploit-eligible until admitted   ||   EDGE-X2: if null, re-runs decideActivity with that entry excluded from the menu"
+  },
+  "routeToPhase": "1a"
+}
