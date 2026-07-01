@@ -447,9 +447,13 @@ fall through to exploit selection.
 **Edge Cases:**
 - **EDGE-DA3a** Multiple `novelty_tried == False` entries → select the one with lowest
   `cost_estimate_usd` (minimize explore cost per the budget constraint).
-- **EDGE-DA3b** `bandit_stats.total_recent_wakes == 0` (first wake ever): `explore_due = True`
-  (0 < floor(0.1 × 1) = 0 is False; quota = 0 explores in 1 wake → explore_due=False only if
-  total_recent_wakes+1 rounds to 0 explores — use ceiling for safety: at least 1 explore per 10).
+- **EDGE-DA3b** `bandit_stats.total_recent_wakes == 0` (first wake ever):
+  `explore_due = (0 < floor(0.1 × min(0+1, 100))) = (0 < floor(0.1)) = (0 < 0) = False`.
+  The quota check does NOT trigger explore on wake 1. However, REQ-DA1 step 4 independently
+  guarantees explore: no arm has `attempt_count >= K_MIN_EXPLOIT` (all arms start at 0), so
+  decideActivity returns `mode="explore"` via the unproven-arms rule, not the quota.
+  `floor()` is the canonical formula (see REQ-DA1 step 2 and the DA3 acceptance criterion);
+  `ceiling` is NOT used and is NOT needed — the wake-1 explore invariant is enforced by step 4.
 
 **Acceptance Criteria:**
 - Given a 10-entry menu where 9 have `novelty_tried=True` and 1 has `novelty_tried=False`,
@@ -875,11 +879,19 @@ but are NOT proposed to curation.
   is reset to `null` in the next survival.json recompute; the grace window timer restarts from
   zero if net goes negative again.
 
-- **EDGE-X2** decideActivity returns `pick` for an entry whose `admitted_at_ts is None`
-  (pre-admission race): proactive-loop.sh checks `admitted_at_ts` before executing the pick;
-  if null, re-runs decideActivity with that entry excluded from the menu — this should not
-  happen because REQ-DA2 makes admitted_at_ts=None entries ineligible for exploit, and REQ-DA1
-  only passes admitted entries to the exploit path; but the shell guard is a defensive backstop.
+- **EDGE-X2** decideActivity returns `pick` with `mode="exploit"` for an entry whose
+  `admitted_at_ts is None` (pre-admission race on exploit path): proactive-loop.sh checks
+  `admitted_at_ts` ONLY when `mode="exploit"`; if null, re-runs decideActivity with that entry
+  excluded from the exploit-eligible candidates — this should not happen because REQ-DA2 already
+  filters null-admitted entries from exploit selection, but the shell guard is a defensive
+  backstop for exploit only.
+  EXPLORE picks with `admitted_at_ts=None` are NORMAL intended behavior (see EDGE-M1a cold-start
+  bootstrap): the shell executes them without re-running decideActivity. This is the path by
+  which bootstrap earn types (bounty-scan, clip, affiliate, video) receive their first curation
+  pass and eventually acquire a non-null `admitted_at_ts`, becoming exploit-eligible.
+  On a brand-new slot where every entry is null-admitted, decideActivity will always select
+  `mode="explore"` (step 4: no arm has attempt_count >= K_MIN_EXPLOIT); the EDGE-X2 guard is
+  never triggered, and bootstrap types run normally through the explore path into curation.
 
 - **EDGE-X3** calibration.jsonl has > 10,000 rows: the effectful caller reads calibration.jsonl,
   filters rows by `window_ts` field (default: last 30 days), extracts `rubric_score` and
