@@ -1,0 +1,27 @@
+{
+  "reviewType": "spec",
+  "featureName": "dispatcher-live-dormant-mode",
+  "iteration": 2,
+  "mode": "lean",
+  "artifactsToReview": [
+    ".vcsdd/features/dispatcher-live-dormant-mode/specs/behavioral-spec.md",
+    ".vcsdd/features/dispatcher-live-dormant-mode/specs/verification-architecture.md",
+    "skills/_shared/lib/quota_tracker.py"
+  ],
+  "previousIterationFindings": [
+    "FIND-001 critical (helper contract mismatch — most-recent-first vs most-recent-LAST): fixed — REQ-L3 verbatim cites `count_consecutive_negative_windows(daily_roi_7day_jpy: list[float]) -> int` helper's actual contract at quota_tracker.py:69-81 with 'MOST RECENT LAST' ordering.",
+    "FIND-002 (1-day vs 7-day rolling): fixed — REQ-L3 (ii) explicitly constructs 7-day rolling ROI list matching sprint-3 #34 PROP-T2 semantics.",
+    "FIND-003 (REQ-D1 placement undefined): fixed — REQ-D1 pins placement between STEP 3 recipe end (line 122) and SKIP guard (line 127), with rationale for both boundaries.",
+    "FIND-004 (slot_age_days / time_horizon_days sources undefined): fixed — new REQ-D1a specifies exact source for each arg (slot_dir.stat().st_ctime + resolve_time_horizon_days from sprint-3 #34).",
+    "FIND-005 (REQ-D4 fail-closed scope ambiguous): fixed — REQ-D4 enumerates 5 explicit failure points and their handling.",
+    "FIND-006 (missing PROPs for EDGE-E5/E7 + PROP-L3 ordering): fixed — added PROP-E5-sentinel-idempotent, PROP-E7-missing-expected-treated-as-zero, PROP-L3-rolling-7d-most-recent-last."
+  ],
+  "reviewDimensions": ["spec_fidelity", "verification_readiness"],
+  "extraConstraints": [
+    "Verify REQ-L3 verbatim uses the existing helper contract; substring 'most recent LAST' present.",
+    "Verify REQ-D1 placement rationale: sentinel written before SKIP guard reads it.",
+    "Verify REQ-D4 5-point exception matrix is exhaustive."
+  ],
+  "expectedOutputPath": ".vcsdd/features/dispatcher-live-dormant-mode/reviews/spec/iteration-2/output/"
+}
+</parameter>

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "verification_readiness",
+  "category": "test_coverage",
+  "severity": "medium",
+  "description": "EDGE-E5 (sentinel already exists → do NOT overwrite) has no corresponding required PROP in verification-architecture.md. The PROP list (14 items) covers E1/E2/E3/E4/E6 but SKIPS E5. Idempotency of sentinel-write is exactly the property that guards against a runaway dispatcher rewriting sentinel evidence with stale ts on every subsequent dormant tick — high-value invariant, zero test coverage requirement. Also EDGE-E7 (roi_jpy_expected missing → treat as 0) has no PROP. Both must be added to reach 4-D convergence honestly; otherwise Phase 3 can pass adversary review while these edges silently regress.",
+  "evidence": {
+    "filePath": ".vcsdd/features/dispatcher-live-dormant-mode/specs/verification-architecture.md",
+    "lineRange": "22-36",
+    "snippet": "| PROP-E1-missing-roi-file | ... | PROP-E2-all-zero-realized | ... | PROP-E3-old-realized-out-of-window | ... | PROP-E4-new-slot-not-dormant | ... | PROP-E6-malformed-roi-row-skipped |\n(no PROP-E5, no PROP-E7)"
+  },
+  "routeToPhase": "1b"
+}

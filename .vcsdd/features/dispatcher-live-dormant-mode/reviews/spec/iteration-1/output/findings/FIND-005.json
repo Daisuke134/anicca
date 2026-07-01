@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "verification_readiness",
+  "category": "test_coverage",
+  "severity": "high",
+  "description": "PROP-D4-exception-logged-and-continues claims to cover REQ-D4 fail-closed (INV-P1 preservation), but the spec never enumerates the SPECIFIC exception classes that must be caught. REQ-D4 says 'raises for any reason' and expects log step `3-dormant-check-error-<Exception>` — but the existing STEP 3 already uses this exact log-step pattern (line 138-139 `step=f\"3-health-check-error-{type(e).__name__}\"`), so a naive Exception-swallow in the new dormant check will collide/shadow the existing pattern making log-based verification ambiguous. The spec must (a) prescribe a distinct log-step prefix (e.g. `3-dormant-check-error-...`), (b) prescribe whether the exception handler wraps just the pure call, just the sentinel write, or both, and (c) confirm that catching a broad `Exception` does not accidentally suppress a `write_dormant_sentinel` I/O error whose swallowing would silently miss a real dormant state on subsequent ticks. PROP-D4 as written cannot distinguish these cases.",
+  "evidence": {
+    "filePath": ".vcsdd/features/dispatcher-live-dormant-mode/specs/behavioral-spec.md",
+    "lineRange": "71-73",
+    "snippet": "REQ-D4 (fail-closed): IF compute_dormant_state() raises for any reason, the dispatcher SHALL log step=\"3-dormant-check-error-<Exception>\" and CONTINUE the tick without writing a sentinel."
+  },
+  "routeToPhase": "1a"
+}

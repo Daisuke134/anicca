@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "high",
+  "description": "REQ-D1 says STEP 3 SHALL invoke compute_dormant_state 'post-existing recipe execution', but does not specify placement relative to the SKIP guard at proactive-loop-dispatch.py:147-163 (`dormant = (slot_dir / '.dormant.sentinel').exists()`; `should_skip_step6(...)` short-circuits with `return 0` at line 163). Ambiguity: (a) if the dormant check runs BEFORE the SKIP guard's `.dormant.sentinel` read, a sentinel written this tick still lets the tick proceed to STEP 6 — the whole point of the sentinel is lost for ONE full tick until the next; (b) if AFTER SKIP, then a slot that just became dormant this tick will still run STEP 6 ACT, defeating the intent. The spec must define the exact placement (before or after which of: SKIP guard, STEP 4, STEP 5, STEP 6) and MUST prescribe whether the current tick short-circuits after sentinel-write. Verification architecture references 'inline check after existing recipe execution, ~15 lines' but that does not disambiguate. Without this, PROP-D1 and PROP-D2 are untestable.",
+  "evidence": {
+    "filePath": "skills/_shared/proactive-loop-dispatch.py",
+    "lineRange": "147-163",
+    "snippet": "dormant = (slot_dir / \".dormant.sentinel\").exists()\nskip, reason = should_skip_step6(budget=budget.value, tasks_pending=tasks_pending, dormant=dormant, unfixable_count=unfixable_count)\nif skip:\n    ...\n    return 0"
+  },
+  "routeToPhase": "1a"
+}

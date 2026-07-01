@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "REQ-L3 uses 1-day windows ('each window = 86400s ending at now_ts') and feeds their sums to `count_consecutive_negative_windows`. But the existing helper's parameter name and docstring are explicit: `daily_roi_7day_jpy` = 'daily rolling-7d ROI values' (skills/_shared/lib/quota_tracker.py:72). The window semantic differs by a factor of 7 (raw daily net vs. 7-day rolling sum), so 'consecutive negative windows > time_horizon_days' means a completely different physical condition than sprint-3 #34 designed. Furthermore, `is_dormant_with_horizon` (line 125-140) was documented against '7-day rolling' semantics via its call-site contract from sprint-2 REQ-Q5. Silently changing the window semantic invalidates the sprint-3 #34 invariant PROP-T2 without any spec discussion. Either REQ-L3 must reuse the 7-day rolling-window definition (matching the helper), or spec must explicitly document the semantic change and re-derive the horizon math. As written, this is a silent invariant break.",
+  "evidence": {
+    "filePath": ".vcsdd/features/dispatcher-live-dormant-mode/specs/behavioral-spec.md",
+    "lineRange": "53-58",
+    "snippet": "REQ-L3: consecutive_neg_windows computation from roi_rows: read the last 2 * time_horizon_days daily windows (each window = 86400s ending at now_ts); for each window sum roi_jpy_realized - roi_jpy_expected"
+  },
+  "routeToPhase": "1a"
+}

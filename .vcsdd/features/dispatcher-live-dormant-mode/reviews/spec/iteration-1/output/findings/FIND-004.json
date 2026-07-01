@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "high",
+  "description": "REQ-D2 requires an evidence dict containing `slot_age_days` and `time_horizon_days`, and REQ-L2/L3 require the pure helper to take `slot_age_days: float` and `time_horizon_days: int`. Neither the behavioral spec nor the verification architecture defines HOW the dispatcher computes `slot_age_days` (source of truth: slot_dir mtime? menu.json created_at? earliest roi.jsonl row?) or WHERE it reads `time_horizon_days` (menu.json via `resolve_time_horizon_days()` per sprint-3 #34 REQ-T1?). Both are load-bearing for the dormant judgment. Without prescriptions, two implementations can pass the unit tests yet disagree on production behavior — for example, `slot_dir` mtime is bumped whenever `_write_status` writes core-status.json each tick (line 47-49), so slot_age would effectively reset every tick if that is the chosen source. Spec must specify both.",
+  "evidence": {
+    "filePath": ".vcsdd/features/dispatcher-live-dormant-mode/specs/behavioral-spec.md",
+    "lineRange": "60-73",
+    "snippet": "REQ-D1..D2 — no definition of slot_age_days source or time_horizon_days lookup"
+  },
+  "routeToPhase": "1a"
+}

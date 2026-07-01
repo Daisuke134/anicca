@@ -50,17 +50,52 @@ once M2 fires (real ¥ actually settles).
        slot_age_days=slot_age_days,
        time_horizon_days=time_horizon_days,
      )`
-- **REQ-L3**: `consecutive_neg_windows` computation from roi_rows: read the
-  last `2 * time_horizon_days` daily windows (each window = 86400s ending
-  at `now_ts`); for each window sum `roi_jpy_realized - roi_jpy_expected`;
-  call `count_consecutive_negative_windows(list, most-recent-first)`. If
-  fewer than `time_horizon_days` windows are present, return 0 (not enough
-  history to judge).
+- **REQ-L3** (FIND-001 + FIND-002 fix — align to existing helper contract):
+  `consecutive_neg_windows` computation from roi_rows uses the sprint-3
+  `count_consecutive_negative_windows(daily_roi_7day_jpy: list[float]) -> int`
+  helper VERBATIM. That helper's contract (verified at
+  `skills/_shared/lib/quota_tracker.py:69-81`) is:
+  * input = list of 7-DAY ROLLING ROI values (each element is a
+    `sum(roi_jpy_realized - roi_jpy_expected)` over a 7-day trailing
+    window; NOT a single-day sum)
+  * order = MOST RECENT LAST (helper uses `reversed()` to scan tail)
+  * returns count of consecutive negatives at the tail
+
+  Computation steps in `compute_dormant_state`:
+  (i) Group roi_rows by the day their `ts` falls into (midnight-UTC
+      boundary). Compute `daily_net[day] = sum(row.roi_jpy_realized) -
+      sum(row.roi_jpy_expected)`.
+  (ii) Build a list `rolling_7d` of `2 * time_horizon_days` entries. Each
+       entry `rolling_7d[i]` = sum of `daily_net[day_i - 6 .. day_i]` (a
+       7-day trailing window ending at day_i). Order: MOST RECENT LAST.
+  (iii) Call `count_consecutive_negative_windows(rolling_7d)` — the helper
+        scans from tail (most recent) backward, counting consecutive `< 0`
+        values.
+  (iv) If fewer than `time_horizon_days` complete rolling-7d windows exist
+       (= slot too young), return 0 (not enough history).
+  This matches sprint-3 #34 PROP-T2 semantics exactly.
 
 ### Group D — Dispatcher wire
 
-- **REQ-D1**: STEP 3 health-check (post-existing recipe execution) SHALL
-  invoke `compute_dormant_state` when `~/loops/<slot>/roi.jsonl` exists.
+- **REQ-D1** (FIND-003 fix — placement pinned): the dispatcher SHALL invoke
+  `compute_dormant_state` in STEP 3, AFTER the existing recipe execution
+  block completes AND BEFORE the SKIP guard at
+  `proactive-loop-dispatch.py:147-163`. Rationale: (a) STEP 3 recipe may
+  restart LAYER C — we need that to happen first for accurate state; (b)
+  the SKIP guard reads `slot_dir / ".dormant.sentinel"` to decide whether
+  to skip STEP 6 — so the sentinel MUST be written before the SKIP guard
+  reads it, else the sentinel-written-this-tick would only take effect
+  next tick. Placement is between line 122 (STEP 3 recipe block end) and
+  line 127 (SKIP guard read).
+- **REQ-D1a** (FIND-004 fix — sources for compute_dormant_state args):
+  * `roi_rows` = parsed `~/loops/<slot>/roi.jsonl` (skip malformed rows;
+    EDGE-E6).
+  * `slot_age_days` = `(now_ts - slot_dir.stat().st_ctime) / 86400.0`
+    (falls back to 0.0 if stat() raises; log to core-status).
+  * `time_horizon_days` = read from `menu.get("time_horizon_days")` via
+    the existing `resolve_time_horizon_days(menu, default=14)` helper
+    (sprint-3 #34 REQ-T1) after menu is loaded at line 145.
+  * `now_ts` = `int(time.time())` (dispatcher's clock).
 - **REQ-D2**: IF `compute_dormant_state()["is_dormant"] == True` AND
   `~/loops/<slot>/.dormant.sentinel` does NOT yet exist, THE DISPATCHER
   SHALL call `write_dormant_sentinel(slot_dir, evidence={...})` with an
@@ -68,9 +103,19 @@ once M2 fires (real ¥ actually settles).
   time_horizon_days, window_days: 90}`.
 - **REQ-D3**: THE DISPATCHER SHALL NEVER remove an existing
   `.dormant.sentinel` (spec sprint-3 #34 REQ-D5 already documents this).
-- **REQ-D4** (fail-closed): IF `compute_dormant_state()` raises for any
-  reason, the dispatcher SHALL log `step="3-dormant-check-error-<Exception>"`
-  and CONTINUE the tick without writing a sentinel.
+- **REQ-D4** (fail-closed; FIND-005 scope): IF ANY of the following raises,
+  the dispatcher SHALL log
+  `step="3-dormant-check-error-<Exception>"` and CONTINUE the tick without
+  writing a sentinel:
+  (a) reading roi.jsonl (OSError, JSONDecodeError per row = SKIP that row
+      per EDGE-E6, NOT the whole call; total-file OSError = log + continue),
+  (b) slot_dir.stat() for slot_age_days (OSError → slot_age_days=0.0),
+  (c) resolve_time_horizon_days(menu, default=14) — never raises by design
+      but catch OSError/ValueError just in case,
+  (d) compute_dormant_state itself,
+  (e) write_dormant_sentinel (OSError → log + continue; sentinel absence
+      is the safe default).
+  The dispatcher NEVER aborts a tick due to a dormant-check failure.
 
 ### Group I — Invariants
 
