@@ -1,0 +1,29 @@
+{
+  "reviewType": "spec",
+  "featureName": "earnings-to-settle-mirror",
+  "iteration": 2,
+  "mode": "lean",
+  "artifactsToReview": [
+    ".vcsdd/features/earnings-to-settle-mirror/specs/behavioral-spec.md",
+    ".vcsdd/features/earnings-to-settle-mirror/specs/verification-architecture.md",
+    "skills/earn/gig/gig-cli.sh",
+    ".vcsdd/features/earn-roi-reconciler/specs/behavioral-spec.md"
+  ],
+  "previousIterationFindings": [
+    "FIND-001 critical (substring-based pass_id lookup is architecturally impossible): fixed via SPLIT — sprint-4 (a) now ships TWO halves: (a1) LAYER C STARTUP prompt update adds pass_id field to earnings.jsonl at 検収 time (via task-request-map.jsonl linkage); (a2) mirror does DIRECT field read (no substring) with unmatched-requestId sentinel fallback for pre-(a1) rows.",
+    "FIND-002 high (substring false-positives on numeric requestIds): fixed — mirror does DIRECT `row.get('pass_id')` field read + regex validation `^p-\\d+$`. Zero substring matching.",
+    "FIND-003 high (unmatched field key mismatch): fixed — mirror returns `{new, dup, unmatched, elapsed_ms}` with `unmatched` as canonical name; REQ-M2(c) reads that key.",
+    "FIND-004 medium (dedup key accessibility): fixed — REQ-R3(iii) settle row has TOP-LEVEL `requestId` + `earnings_status` fields; REQ-R5 dedup scans those top-level fields (no evidence parsing needed).",
+    "FIND-005 low (broken self-reference in REQ-R6): fixed — REQ-R6 now correctly cross-references feature (b) reconciler REQ-R5 (i)-(v) ordering pattern.",
+    "FIND-006 high (E2E integration test architecturally impossible): fixed — PROP-integration-full-loop now seeds an earnings row WITH pass_id (post-(a1)); companion PROP-integration-sentinel-path covers the pre-(a1) fallback that produces .unmatched.jsonl entries."
+  ],
+  "reviewDimensions": ["spec_fidelity", "verification_readiness"],
+  "extraConstraints": [
+    "Verify FIND-001 (a1) STARTUP prompt update is CONCRETE — REQ-L1(i)(ii)(iii) specify the exact 3 changes.",
+    "Verify FIND-001 (a2) mirror is FIELD-BASED — REQ-R3(ii) reads earnings row's pass_id field DIRECTLY.",
+    "Verify FIND-006 both PROP-integration paths — matched (real pass_id) AND sentinel (no pass_id → .unmatched.jsonl).",
+    "Verify REQ-L3 controlled restart safety — 30s window + rollback path."
+  ],
+  "expectedOutputPath": ".vcsdd/features/earnings-to-settle-mirror/reviews/spec/iteration-2/output/"
+}
+</parameter>

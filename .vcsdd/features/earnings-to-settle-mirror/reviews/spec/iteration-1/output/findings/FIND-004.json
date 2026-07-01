@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "medium",
+  "description": "REQ-R5 mandates dedup by `(requestId, earnings_status)` against `settle.jsonl` tail (last 500 rows), but the settle.jsonl row shape defined in REQ-R3(iii) stores both fields INSIDE the `evidence` sub-dict: `evidence: {requestId, earnings_ts, earnings_status}`. The spec does not tell the implementer whether the dedup scan must (a) parse each tail row's JSON, drill into `row.evidence.requestId` and `row.evidence.earnings_status`, or (b) key on some flattened top-level field. As written, an implementer might read `row.requestId` (returns None) → dedup key `(None, None)` for every tail row → dedup collapses across unrelated rows or never dedups at all. The reconciler (feature (b)) has a `(pass_id, ts)` dedup with clear top-level keys; the mirror's REQ-R5 lacks this clarity. Manifest adversarial check #4 explicitly flagged this. Fix: spell out `row['evidence']['requestId']` + `row['evidence']['earnings_status']` and add an EDGE case for missing `evidence` on legacy rows.",
+  "evidence": {
+    "filePath": ".vcsdd/features/earnings-to-settle-mirror/specs/behavioral-spec.md",
+    "lineRange": "74-85",
+    "snippet": "REQ-R5: THE MIRROR SHALL dedup by `requestId + earnings_status` against the existing `settle.jsonl` tail (last 500 rows). ... evidence: {requestId, earnings_ts, earnings_status}"
+  },
+  "routeToPhase": "1a"
+}

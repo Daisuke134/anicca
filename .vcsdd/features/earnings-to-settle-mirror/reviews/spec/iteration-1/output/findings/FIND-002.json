@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "spec_fidelity",
+  "category": "security_surface",
+  "severity": "high",
+  "description": "REQ-R3(ii) SUBSTRING match is unsafe against Coconala numeric requestIds. Coconala `requestId` values are short numeric strings (e.g. 5123100, 7 digits). The proposed lookup does `str.contains(requestId)` against `picked.name`, `picked.category`, and roi.jsonl `outcome`. Verified pass_id format: `pass_id = f\"p-{int(time.time())}\"` at `skills/_shared/proactive-loop-dispatch.py:73` — so pass_ids embed unix timestamps like `p-1751376100`. task_filename is `<unix_ts>-<pass_id>-<name>.json` per `skills/_shared/lib/step6_act.py:26-28`. The `outcome` string in roi.jsonl is `enqueued:1751376000-p-1751376000-scan.json` — a long digit run. Any Coconala requestId whose 7-digit sequence coincidentally appears as a substring of a unix-timestamp-derived pass_id or filename will FALSE-POSITIVE match a completely unrelated pass_id, producing a settle row with a WRONG pass_id → the reconciler will happily set `roi_jpy_realized` on the WRONG row. This is a live-money silent-corruption path. requestId=`1751376` inside timestamp `1751376100` is a real collision surface. The spec's mitigation must (a) use exact-equality on a bound field (not substring on freeform text), and (b) explicitly bound the source of truth for the requestId↔pass_id mapping. Adversarial-check #2 (manifest) explicitly asked whether substring is robust — it is NOT.",
+  "evidence": {
+    "filePath": ".vcsdd/features/earnings-to-settle-mirror/specs/behavioral-spec.md",
+    "lineRange": "70-73",
+    "snippet": "picked.name` OR `picked.category` string CONTAINS the `requestId`, OR by scanning roi.jsonl for a row whose `outcome` string CONTAINS the `requestId"
+  },
+  "routeToPhase": "1a"
+}
