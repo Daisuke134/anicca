@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-024",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "high",
+  "description": "The FIND-022 fix introduced `filled_size` as the load-bearing input for the settlement amount predicate (`shares_held = filled_size / entry_price`, `gross_payout_usdc = shares_held × $1.00`). But the ONLY requirement that writes an open_positions row, REQ-T7(c), does NOT persist `filled_size`. REQ-T7(c) (behavioral-spec.md:187) records `{order_id, venue, market_id, side, size_usdc, entry_price, ts}` — `filled_size` is absent. Meanwhile the Tracked Quantities schema (behavioral-spec.md:45) lists `filled_size` in the row, REQ-T8(b) condition-2 (behavioral-spec.md:209) says `shares_held = filled_size / entry_price` with 'both fields from the risk_state.open_positions row', and PROP-T26 (verification-architecture.md:74) asserts `amount = round(filled_size/entry_price * 1e6) ±1`. A builder implementing REQ-T7(c) literally will never store `filled_size`, so the settlement gate (INV-7 / REQ-T8) reads an undefined field and PROP-T26 has no guaranteed input. This is an incomplete wiring of the FIND-022 fix: the predicate is defined but its sole input is never produced. Fix: add `filled_size` (and its definition: USDC actually spent at fill, per Tracked Quantities) to the REQ-T7(c) write list so the field exists when REQ-T8 reads it.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/.vcsdd/features/trading-polymarket-spawn/specs/behavioral-spec.md",
+    "lineRange": "187",
+    "snippet": "(c) record `{order_id, venue, market_id, side, size_usdc, entry_price, ts}` in `risk_state.open_positions`,  // filled_size MISSING — required by line 45 schema + REQ-T8(b):209 + PROP-T26 (verification-architecture.md:74)"
+  },
+  "routeToPhase": "1c"
+}

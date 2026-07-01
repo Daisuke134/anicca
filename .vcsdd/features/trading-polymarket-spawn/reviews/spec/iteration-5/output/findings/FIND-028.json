@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-028",
+  "dimension": "implementation_correctness",
+  "category": "verification_tool_mismatch",
+  "severity": "low",
+  "blocksPhase2": false,
+  "description": "NON-BLOCKING precision observation on the FIND-027 fix. The settlement gate reconstructs the CTF share count as `shares_held = filled_size / entry_price` from the stored float `entry_price` (now correctly the avg execution VWAP) rather than persisting the exact integer share count directly from the fill receipt. Because VWAP == filled_size / shares, this reconstructs the true share count in exact arithmetic, and a JSON double carries ~15-16 significant digits, so for realistic position sizes the recompute lands well within the REQ-T8(b)/PROP-T26 ±1 raw-6-decimal-unit tolerance. The only fragility is the boundary case where a venue fill response reports a coarsely-rounded average price (e.g. 2-decimal cents) alongside an exact filled share size: then `filled_size / entry_price` can diverge from the on-chain redemption by more than ±1 unit for large positions, causing settle-verify.py to fail-closed (suppress a real win — no fake earn). This is a robustness nicety, not a correctness defect: the spec already mandates `entry_price` be read back as the true VWAP from the fill response. Optional hardening: persist `shares_held` directly from the fill receipt (when the venue reports it) and prefer it over the recompute in REQ-T8(b) cond-2 and PROP-T26. Does NOT gate Phase 2.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/.vcsdd/features/trading-polymarket-spawn/specs/behavioral-spec.md",
+    "lineRange": "45",
+    "snippet": "`shares_held` = `filled_size / entry_price` (computed, not stored ...)  // recomputed from stored float VWAP rather than persisted exact share count from the fill receipt"
+  },
+  "routeToPhase": "2"
+}

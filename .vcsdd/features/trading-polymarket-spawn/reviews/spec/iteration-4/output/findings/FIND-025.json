@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-025",
+  "dimension": "structural_integrity",
+  "category": "spec_gap",
+  "severity": "low",
+  "description": "Stray spawn/tithe references survive the scope split. REQ-R4 (Ledger Immutability, behavioral-spec.md:289) still asserts: 'The spawn-log (`spawn-log.jsonl`) and tithe-log (`tithe-log.jsonl`) follow the same append-only contract.' Both `spawn-log.jsonl` and `tithe-log.jsonl` are artifacts of the DEFERRED Group S (spawn/tithe) feature — no in-scope trading requirement creates or writes either file. The iteration-4 note (lines 36-43) claims spawn-related Effectful Shell entries and tithe references were removed, but this acceptance-criteria sentence was missed. It dangles a contract over files this trading-only feature never produces, contradicting the 'spawn fully carved out' objective. Fix: delete the `spawn-log`/`tithe-log` clause from REQ-R4; the ledger-immutability contract for trading should reference only `ledger.jsonl`, `paper-log.jsonl`, `events/*.jsonl`, and `earnings.jsonl`.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/.vcsdd/features/trading-polymarket-spawn/specs/behavioral-spec.md",
+    "lineRange": "289",
+    "snippet": "All writes go through `appendLedgerLine` (existing, O_APPEND). The spawn-log (`spawn-log.jsonl`) and tithe-log (`tithe-log.jsonl`) follow the same append-only contract."
+  },
+  "routeToPhase": "1c"
+}

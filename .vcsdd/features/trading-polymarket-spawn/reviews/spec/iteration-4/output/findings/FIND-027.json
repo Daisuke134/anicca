@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-027",
+  "dimension": "implementation_correctness",
+  "category": "requirement_mismatch",
+  "severity": "medium",
+  "description": "The settlement amount predicate uses the wrong price for the share count, making PROP-T26 non-deterministically-checkable against real fills. Tracked Quantities (behavioral-spec.md:45) defines `entry_price` = 'CLOB mid price at fill time ((best_bid + best_ask)/2)'. But `shares_held = filled_size / entry_price` (behavioral-spec.md:209, verification-architecture.md:74) only yields the TRUE number of CTF outcome tokens if `entry_price` is the actual average EXECUTION price paid, not the order-book MID. On Polymarket a market/limit buy executes at the ask (or a vwap across levels), which differs from the mid; so `filled_size / mid` over- or under-counts shares. Since `gross_payout_usdc = shares_held × $1.00` is checked against the on-chain redemption Transfer with only ±1 raw-unit (6-decimal) tolerance (REQ-T8(b) cond-2), a mid-vs-execution price gap of even a fraction of a cent makes the computed `gross_payout_usdc` miss the real redemption amount by far more than ±1 unit → `settle-verify.py` fail-closed REJECTS a legitimate winning redemption → no earn row for a genuine win. This is fail-closed (no fake earn) but it silently suppresses real earnings and makes the deterministic stub assertion in PROP-T26 (`amount = round(filled_size/entry_price * 1e6) ±1`) unsatisfiable by an actual fill. Fix: define `entry_price` for settlement purposes as the realized average execution price (filled_usdc / shares from the venue fill report), or store `shares_held` directly from the fill receipt rather than recomputing it from a mid.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/.vcsdd/features/trading-polymarket-spawn/specs/behavioral-spec.md",
+    "lineRange": "45",
+    "snippet": "`entry_price` = CLOB mid price at fill time (USDC per outcome share, e.g. 0.65 for a YES at 65¢) ... `shares_held` = `filled_size / entry_price`  // mid != execution price → shares_held wrong → ±1-unit settlement predicate rejects real wins"
+  },
+  "routeToPhase": "1c"
+}
