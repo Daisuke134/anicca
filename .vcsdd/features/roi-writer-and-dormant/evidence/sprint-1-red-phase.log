@@ -1,0 +1,3 @@
+new-feature-tests: FAIL
+regression-baseline: PASS
+red-evidence: ImportError: cannot import name 'resolve_time_horizon_days' from 'lib.quota_tracker'

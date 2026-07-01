@@ -1,0 +1,125 @@
+{
+  "sprintNumber": 1,
+  "feature": "roi-writer-and-dormant",
+  "overallVerdict": "PASS",
+  "timestamp": "2026-07-01T00:00:00Z",
+  "iteration": 2,
+  "reviewContext": {
+    "reviewType": "implementation"
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/_shared/proactive-loop-dispatch.py:50-66,158-160,189-191,217-218",
+          "description": "REQ-W1 closed via _emit_roi_row helper called from all 3 exit paths (skip line 158, picked=None line 189, happy line 217). Grep confirms exactly 3 call sites plus definition at line 50."
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/proactive-loop-dispatch.py:158-160",
+          "description": "EDGE-E5 honored on skip path: picked=None, outcome=f'skip:{reason}', expected=0 (compute_expected_jpy returns 0 for non-dict picked per roi_track.py:19-20)."
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/proactive-loop-dispatch.py:189-191",
+          "description": "EDGE-E5 honored on step5-no-unblocked: picked=None, outcome='edge-s4-sink', expected=0."
+        }
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/_shared/__tests__/test_dispatch_integration_roi.py:124-141",
+          "description": "test_dispatch_emits_roi_on_skip_dormant_sentinel: pre-seeds .dormant.sentinel then asserts roi.jsonl has 1 row with picked=None, outcome contains 'skip:', expected=0. Genuinely exercises skip path."
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/__tests__/test_dispatch_integration_roi.py:144-182",
+          "description": "test_dispatch_emits_roi_on_picked_none_sink: empty categories list forces pick_next\u2192None \u2192 step5-no-unblocked branch \u2192 roi row with picked=None asserted."
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/__tests__/test_dispatch_integration_roi.py:186-215",
+          "description": "test_dispatch_roi_write_does_not_touch_unrelated_files: seeds unrelated.txt and sub/deep.txt, mtime_ns snapshot before/after, asserts unchanged (PROP-I1 REQ-I1)."
+        }
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/_shared/lib/roi_track.py:62-77",
+          "description": "append_roi_row catches OSError (including IsADirectoryError subclass) on both mkdir and open, returns {ok:False, status:'roi-write-failed-<ExcName>'} without crashing (REQ-W4)."
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/proactive-loop-dispatch.py:62-65",
+          "description": "_emit_roi_row inspects ar.get('ok'), on failure writes core-status.json step=f'7-{ar.get(status)}' matching REQ-W4 contract."
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/lib/roi_track.py:16-27",
+          "description": "compute_expected_jpy clamps prob to [0,1] (EDGE-E7), returns 0 on missing/non-numeric (EDGE-E6), handles picked=None (EDGE-E5) \u2014 matches REQ-W3."
+        }
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/_shared/proactive-loop-dispatch.py:50-66",
+          "description": "_emit_roi_row helper collapses three formerly-duplicated write paths into one call site, addressing DRY. Docstring cites REQ-W1 canonical exit hook and EDGE-E5."
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/lib/roi_track.py",
+          "description": "Purity boundary respected: roi_row + compute_expected_jpy are pure; append_roi_row is the sole I/O sink. Matches verification-architecture.md purity table."
+        }
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/_shared/__tests__/test_dispatch_integration_roi.py:219-249",
+          "description": "test_dispatch_logs_roi_write_failure_and_continues: pre-creates roi.jsonl as directory (line 227) \u2192 open('a') on dir \u2192 IsADirectoryError caught inside append_roi_row \u2192 returncode==0 asserted (line 239) \u2192 core-status.json step field non-empty asserted (line 249). Permission-denied fixture actually reaches append_roi_row (PROP-W4)."
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/__tests__/test_dispatch_integration_roi.py:186-215",
+          "description": "PROP-I1 mtime snapshot proof obligation now has green evidence via before/after st_mtime_ns comparison."
+        }
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [
+      "CRIT-001",
+      "CRIT-002",
+      "CRIT-003",
+      "CRIT-004",
+      "CRIT-005"
+    ],
+    "duplicateFindings": [],
+    "findingCount": 0,
+    "previousFindingCount": 3
+  }
+}

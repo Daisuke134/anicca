@@ -1,0 +1,28 @@
+{
+  "reviewType": "implementation",
+  "featureName": "roi-writer-and-dormant",
+  "sprintNumber": 1,
+  "iteration": 2,
+  "mode": "lean",
+  "artifactsToReview": {
+    "spec": [".vcsdd/features/roi-writer-and-dormant/specs/behavioral-spec.md",
+             ".vcsdd/features/roi-writer-and-dormant/specs/verification-architecture.md"],
+    "source_python": ["skills/_shared/lib/roi_track.py", "skills/_shared/lib/quota_tracker.py",
+                       "skills/_shared/proactive-loop-dispatch.py"],
+    "tests": ["skills/_shared/__tests__/test_roi_track.py",
+              "skills/_shared/__tests__/test_horizon_helpers.py",
+              "skills/_shared/__tests__/test_dispatch_integration_roi.py"]
+  },
+  "previousIterationFindings": [
+    "FIND-001 critical (REQ-W1 3 exit paths dropped roi row): fixed via _emit_roi_row() helper called from ALL 3 exit paths (skip/picked=None/happy). EDGE-E5 honored (picked=None → row.picked=null + expected=0).",
+    "FIND-002 (test coverage gap for minimal/dormant/picked-none paths): fixed — 4 new tests exercise skip-via-dormant-sentinel + picked=None-via-empty-menu + scoped-mtime + roi-write-failure paths.",
+    "FIND-003 (verification-architecture required permission-denied dispatcher fixture + mtime snapshot; neither implemented): fixed — test_dispatch_logs_roi_write_failure_and_continues forces IsADirectoryError; test_dispatch_roi_write_does_not_touch_unrelated_files seeds extras + snapshots mtime."
+  ],
+  "reviewDimensions": ["spec_fidelity", "edge_case_coverage", "implementation_correctness", "structural_integrity", "verification_readiness"],
+  "extraConstraints": [
+    "Verify _emit_roi_row is called from ALL 3 exit paths in proactive-loop-dispatch.py (skip path, picked=None path, happy path). Grep for _emit_roi_row → 3 call sites.",
+    "Verify the 4 new integration tests genuinely exercise the paths named (not happy path in disguise).",
+    "Verify permission-denied fixture (IsADirectoryError) actually reaches append_roi_row and is caught."
+  ],
+  "expectedOutputPath": ".vcsdd/features/roi-writer-and-dormant/reviews/sprint-1/iteration-2/output/"
+}

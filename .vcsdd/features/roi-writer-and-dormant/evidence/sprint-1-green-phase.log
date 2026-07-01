@@ -1,0 +1,4 @@
+target-feature-tests: PASS
+regression-baseline: PASS
+total: 365 passed
+live E2E: production gig roi.jsonl gained 1 row (schema OK, expected=16000, no sentinel)

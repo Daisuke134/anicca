@@ -1,0 +1,28 @@
+roi-writer-and-dormant manual security grep
+generated 2026-07-01
+
+=== RCE / injection ===
+(0 hits on shell=True, os.system, eval)
+
+=== Anti-J8 + tmux-kill ===
+(0 hits on telegram/slack/twilio/osascript/terminal-notifier/find-generic-password/SecKeychain/tmux.*kill/kill-session/kill-server)
+
+=== sudo word-boundary ===
+(0 hits)
+
+=== is_dormant call sites in dispatcher (REQ-I3) ===
+$ grep -nE "\\bis_dormant\\s*\\(|\\bwrite_dormant_sentinel\\s*\\(" \
+        skills/_shared/proactive-loop-dispatch.py
+(0 hits — sprint-3 dispatcher does NOT call legacy dormant symbols)
+
+=== _emit_roi_row call sites (REQ-W1 3-path check) ===
+$ grep -nE "_emit_roi_row" skills/_shared/proactive-loop-dispatch.py
+1 def + 3 call sites (skip / picked=None / happy)
+
+Verdict:
+- 0 RCE / injection
+- 0 anti-J8
+- 0 tmux-kill
+- 0 sudo
+- REQ-W1: exit paths all emit
+- REQ-I3: dispatcher isolated from legacy dormant symbols

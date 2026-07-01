@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "REQ-W1 requires that AT the end of EVERY proactive-loop tick (= after STEP 7 build_log append, before dispatcher exit) THE DISPATCHER SHALL append ONE line to <slot_dir>/roi.jsonl. The dispatcher has TWO early-return paths that reach the STEP-7 build_log append but skip the ROI append entirely: (a) the skip guard at lines 132-139 (skip reasons: 'dormant-sentinel', 'unfixable-cascade', 'minimal-budget-no-tasks') calls append_pass and returns 0 without ever calling append_roi_row; (b) the step5-no-unblocked path at lines 153-166 (picked is None \u2192 EDGE-S4 sink) calls append_pass and returns 0 without ever calling append_roi_row. EDGE-E5 (spec \u00a74) explicitly states 'pass had no picked (= STEP 5 returned None) \u2192 roi_jpy_expected = 0, picked = null, outcome copied verbatim' \u2014 this REQUIRES a row to be written on the picked=None path. As shipped, roi.jsonl only gains a row on the fully-happy path (budget != MINIMAL AND picked != None AND dormant sentinel absent AND unfixable_count < 3). Under any skip or no-unblocked outcome the ROI signal is silently dropped, defeating the per-pass tracking premise of the sprint. The live E2E only exercised the happy path so this gap was not caught by the smoke test. Fix: hoist the roi_row + append_roi_row block into a finally-style tail or emit an equivalent skip/no-pick row before every early return.",
+  "evidence": {
+    "filePath": "skills/_shared/proactive-loop-dispatch.py",
+    "lineRange": "132-132",
+    "snippet": "if skip:\n    _write_status(slot_dir, slot=slot, status=\"idle\", step=f\"skip-{reason}\")\n    append_pass(...)\n    return 0\n...\nif picked is None:\n    write_unfixable_cascade_sink(...)\n    _write_status(slot_dir, slot=slot, status=\"idle\", step=\"step5-no-unblocked\")\n    append_pass(...)\n    return 0\n...\n# STEP 7.5 (sprint-3 #34): append roi.jsonl row.  <-- ONLY REACHED ON HAPPY PATH"
+  },
+  "routeToPhase": "2b"
+}
