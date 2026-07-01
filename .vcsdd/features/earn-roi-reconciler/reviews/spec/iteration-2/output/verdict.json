@@ -1,0 +1,51 @@
+{
+  "sprintNumber": 1,
+  "feature": "earn-roi-reconciler",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-01T00:00:00Z",
+  "iteration": 2,
+  "reviewContext": {
+    "reviewType": "spec",
+    "mode": "lean",
+    "previousIteration": 1,
+    "closureVerdicts": {
+      "FIND-001": "PARTIAL — behavioral-spec REQ-M2 fixed verbatim, but verification-architecture PROP-M2 (line 47) still requires 'tasks/ descriptor has reconciler_report field' which directly contradicts the REQ-M2 no-enqueue + frozen-descriptor mandate. See FIND-2-001.",
+      "FIND-002": "CLOSED — REQ-R4 monotone-MAX semantics fully specified (existing/new matrix explicit); EDGE-E5 aligned to 'HIGHEST value wins'; merge_realized pure helper added at v-arch line 15 with return type (int, status).",
+      "FIND-003": "CLOSED — REQ-R5 defines (i)-(v) write ordering with fail-closed semantics and offset-LAST crash-safety pivot; REQ-R7a adds (pass_id, ts) dedup on unmatched tail; crash-then-retry semantics are explicit.",
+      "FIND-004": "CLOSED — v-arch Purity table now enumerates I/O SINK 2 (dispatcher patch) with < 15 line scope and integration-test proof obligation.",
+      "FIND-005": "CLOSED — REQ-M3 cites compute_roi_score by name (verified against skills/_shared/lib/menu.py:21-23), articulates 0×1.0=0 vs positive×positive>0 ranking, prescribes parametrized PROP-M3 test. Minor residual: sort is stable + reconciler order-in-menu determines tie-break when a live item happens to have prob=0; not raised as a finding per lean 4-cap.",
+      "FIND-006": "PARTIAL — PROP-I2 correctly upgraded to 3-check (size + SHA-256 + source grep), but the Done-condition E2E on v-arch line 62 still uses the defective 'mtime unchanged' predicate FIND-006 called out AND checks only ~/gig/applied.jsonl (not the REQ-I2 primary target ~/gig/earnings.jsonl or the full ~/gig/* subtree). See FIND-2-002."
+    }
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-2-001"],
+      "evidence": [
+        {"type": "file", "location": ".vcsdd/features/earn-roi-reconciler/specs/behavioral-spec.md:47-59", "description": "REQ-R4 monotone-max matrix explicit; FIND-002 closure verified"},
+        {"type": "file", "location": ".vcsdd/features/earn-roi-reconciler/specs/behavioral-spec.md:60-88", "description": "REQ-R5 (i)-(v) ordering + REQ-R7a dedup; FIND-003 closure verified"},
+        {"type": "file", "location": ".vcsdd/features/earn-roi-reconciler/specs/behavioral-spec.md:108-120", "description": "REQ-M2 no-enqueue + descriptor-shape-frozen; behavioral half of FIND-001 closure verified"},
+        {"type": "file", "location": ".vcsdd/features/earn-roi-reconciler/specs/behavioral-spec.md:121-132", "description": "REQ-M3 cites compute_roi_score verbatim; FIND-005 closure verified"},
+        {"type": "file", "location": "skills/_shared/lib/menu.py:21-23", "description": "compute_roi_score exists as spec claims (roi_estimate_jpy × probability_of_landing)"},
+        {"type": "file", "location": "skills/_shared/lib/step6_act.py:31-43", "description": "task_descriptor is unchanged 7-key shape as REQ-M2 mandates"}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-2-001", "FIND-2-002"],
+      "evidence": [
+        {"type": "file", "location": ".vcsdd/features/earn-roi-reconciler/specs/verification-architecture.md:10-24", "description": "Purity table lists I/O SINK 2 dispatcher patch explicitly; FIND-004 closure verified"},
+        {"type": "file", "location": ".vcsdd/features/earn-roi-reconciler/specs/verification-architecture.md:43", "description": "PROP-I2 upgraded to 3-check (size + SHA-256 + source grep); PROP obligation half of FIND-006 closure verified"}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 2,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": [],
+    "leanRoundBudget": {"used": 2, "cap": 3, "remainingAfterThis": 1}
+  }
+}

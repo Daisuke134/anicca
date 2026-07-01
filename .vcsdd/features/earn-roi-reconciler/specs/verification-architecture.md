@@ -44,7 +44,7 @@ lines, that becomes a new feature.
 | PROP-I3-no-human-touch | 1 | true | REQ-I3 grep |
 | PROP-I4-no-shell-injection | 1 | true | REQ-I4 grep for shell=True / os.system |
 | PROP-I5-no-fabricate | 1 | true | REQ-I5 (nonint jpy → realized=0, unmatched appends only, NEVER guesses) |
-| PROP-M2-dispatcher-in-process | 1 | true | REQ-M2 (integration test: STEP 6 with reconciler item invokes reconcile in-process; no subprocess spawned; tasks/ descriptor has reconciler_report field) |
+| PROP-M2-dispatcher-in-process (FIND-2-001 fix) | 1 | true | REQ-M2 — integration test: STEP 6 with reconciler item (a) invokes reconcile in-process (no subprocess), (b) `~/loops/<slot>/tasks/*.json` file count is UNCHANGED (assert glob returns same set before/after), (c) frozen 7-key task_descriptor shape is NEVER extended with a `reconciler_report` field (grep step6_act.py for `reconciler_report` = 0 hits), (d) build_log.md `outcome` starts with `reconciled:matched=`, (e) state/reconciler-last-run.json exists and matches the returned report dict. |
 | PROP-M3-lowest-priority | 1 | true | REQ-M3 (pick_next with a normal ROI item + a cadence-elapsed reconciler item → normal item wins if its ROI > 0) |
 
 19 required:true PROPs. Tests:
@@ -55,8 +55,22 @@ lines, that becomes a new feature.
 
 - spec ✓ test ✓ impl ✓ verification ✓
 - vcsdd:vcsdd-adversary PASS (fresh context, 5 dims, 0 new findings)
-- Live E2E: seed synthetic `settle.jsonl` into `~/loops/gig/` with a
-  pass_id that already exists in the current `roi.jsonl`, run
-  `python3 -c 'from lib.reconciler import reconcile; ...'`, verify the
-  row's `roi_jpy_realized` becomes > 0, `state/reconciler-last-run.json`
-  written, `~/gig/applied.jsonl` mtime unchanged.
+- Live E2E (FIND-2-002 fix — SHA-256 + size + source-grep, NOT mtime):
+  seed synthetic `settle.jsonl` into `~/loops/gig/` with a pass_id that
+  already exists in the current `roi.jsonl`, run
+  `python3 -c 'from lib.reconciler import reconcile; ...'`, verify:
+  (1) the row's `roi_jpy_realized` becomes > 0
+  (2) `state/reconciler-last-run.json` is written with matching report
+  (3) `os.stat("~/gig/earnings.jsonl").st_size` is BYTE-IDENTICAL
+      before and after
+  (4) `hashlib.sha256(open("~/gig/earnings.jsonl", "rb").read()).hexdigest()`
+      is BYTE-IDENTICAL before and after
+  (5) recursive SHA-256 over ALL `~/gig/*.jsonl` files is IDENTICAL
+      before and after (catches any accidental write to another ledger
+      like applied.jsonl / talkroom.jsonl / etc.)
+  (6) `grep -rE "~/gig|~/{HOME}/gig|earnings\\.jsonl" lib/reconciler.py`
+      returns 0 lines where the file appears in a write-mode call
+      (grep for `"a"`, `"w"`, `open(...,\s*"w"`, `write_text`, `.write(`,
+      `os.replace` with a target that resolves under `~/gig`).
+  mtime is EXPLICITLY NOT used as a predicate anywhere in this suite
+  (FIND-006 / FIND-2-002 fix).
