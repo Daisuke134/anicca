@@ -1,0 +1,23 @@
+{
+  "reviewType": "spec",
+  "featureName": "spawn-pin-real-ed25519",
+  "iteration": 1,
+  "mode": "lean",
+  "artifactsToReview": [
+    ".vcsdd/features/spawn-pin-real-ed25519/specs/behavioral-spec.md",
+    ".vcsdd/features/spawn-pin-real-ed25519/specs/verification-architecture.md",
+    "skills/_shared/lib/spawn_pin.py",
+    "skills/_shared/anicca-bot.pub",
+    ".vcsdd/features/earn-shared-skeleton/reviews/sprint-1/output/findings/FIND-006.json",
+    ".vcsdd/features/earn-shared-skeleton/reviews/sprint-1/output/findings/FIND-015.json"
+  ],
+  "reviewDimensions": ["spec_fidelity", "verification_readiness"],
+  "extraConstraints": [
+    "FIND-015 critical: verify REQ-C1..C4 + REQ-P1..P4 collectively close the sha256-fixture protocol vulnerability. Grep spawn_pin.py current state for hashlib.sha256(final_bytes) + hashlib.sha256(pinned_bytes) — those two paths must be removed in impl.",
+    "FIND-006 medium: verify REQ-A1 aligns the earn-shared-skeleton spec table with sprint-3 actual symbols (roi_track.roi_row / menu.pick_next). Do NOT invent new symbols; use what ships.",
+    "REQ-P3 removes the fixture protocol entirely (no fallback). This is a BREAKING change for any existing production spawn-surface.pinned.json.sig using sha256. Verify §6 sprint-4 handoff notes the migration audit requirement.",
+    "REQ-C3 depends on openssl ≥ 3.0 for -rawin ed25519. Verify REQ-I3 enforces this at import.",
+    "The anicca-bot.pub is 45 bytes (32 raw ed25519 pubkey base64-encoded + '\\n'). Verify REQ-C4 SPKI wrap is correct for ed25519 (spec cites the 12-byte prefix)."
+  ],
+  "expectedOutputPath": ".vcsdd/features/spawn-pin-real-ed25519/reviews/spec/iteration-1/output/"
+}
