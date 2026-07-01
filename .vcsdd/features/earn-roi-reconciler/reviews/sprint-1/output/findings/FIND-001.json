@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "REQ-R4 explicitly states 'existing > 0 and new == existing \u2192 NO-OP, counted in skipped_dup (idempotent replay).' EDGE-E5 reinforces this: 'HIGHEST value wins per REQ-R4 monotone-max; lower/equal ones counted as skipped_dup'. However, merge_realized in reconciler.py line 44-46 returns status='noop' when e == n (both positive), so the case is NOT counted in skipped_dup. Test test_same_value_noop (test_reconciler.py:42-44) locks in the wrong behavior by asserting s == 'noop'. Since 'noop' does not increment skipped_dup (see reconciler.py line 196 comment '# \"noop\" doesn't increment either'), the report will systematically under-count idempotent replays of the same-value settle. This is the exact failure mode REQ-R4 was written to prevent (Coconala re-settle of the same amount).",
+  "evidence": {
+    "filePath": "skills/_shared/lib/reconciler.py",
+    "lineRange": "44-46",
+    "snippet": "if n == e:\n    # existing == new; when both 0, no state change\n    return e, \"noop\" if e > 0 else \"noop\""
+  },
+  "routeToPhase": "2b"
+}

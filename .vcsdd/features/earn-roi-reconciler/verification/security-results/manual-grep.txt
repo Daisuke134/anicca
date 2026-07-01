@@ -1,0 +1,18 @@
+earn-roi-reconciler manual security grep
+generated 2026-07-01
+
+grep results on skills/_shared/lib/reconciler.py:
+- shell=True: 0 hits
+- os.system(: 0 hits
+- eval(: 0 hits
+- osascript / terminal-notifier / telegram / slack / twilio / SecKeychain / find-generic-password: 0 hits
+- tmux kill / kill-session / kill-server / --stop / --kill: 0 hits
+- earnings.jsonl: 0 hits (INV-4)
+- sudo: 0 hits
+
+Live E2E on production gig (2026-07-01):
+- Real pass_id p-1782887606: roi_jpy_realized 0 → 40000
+- ~/gig/*.jsonl SHA-256 hashes: BYTE-IDENTICAL before/after
+- gig-cli.sh --status: ALIVE
+- state/reconciler-last-run.json: matched=1, updated_rows=1, elapsed=0ms
+</parameter>

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "high",
+  "description": "verification-architecture.md lists PROP-R5-atomic-write as Tier-1 required (line 32, 'REQ-R5 (crash between temp write and replace \u2192 old roi.jsonl intact)'), but no test in test_reconciler.py or test_reconciler_integration.py exercises the crash-safety property. A grep of both test files for 'atomic', 'crash', 'os.replace' returns zero matches beyond the source-check helpers. Without a test that (a) forces the atomic-replace path, (b) verifies the temp .tmp file is cleaned up on success, and (c) verifies old roi.jsonl content survives a simulated failure between temp write and os.replace, the spec's crash-safety guarantee is unverified. This is especially load-bearing because the whole REQ-R5 (i)-(v) ordering exists specifically to survive step-(v) crashes; if step (ii)'s atomicity is not tested, the ordering guarantee is a paper contract only.",
+  "evidence": {
+    "filePath": ".vcsdd/features/earn-roi-reconciler/specs/verification-architecture.md",
+    "lineRange": "32-32",
+    "snippet": "| PROP-R5-atomic-write | 1 | true | REQ-R5 (crash between temp write and replace \u2192 old roi.jsonl intact) |"
+  },
+  "routeToPhase": "2a"
+}

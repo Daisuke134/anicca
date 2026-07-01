@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "high",
+  "description": "PROP-M3-lowest-priority is listed Tier-1 required in verification-architecture.md (line 48): 'REQ-M3 (pick_next with a normal ROI item + a cadence-elapsed reconciler item \u2192 normal item wins if its ROI > 0)'. REQ-M3 further mandates: 'A dedicated PROP-M3 test parametrizes a normal earner item (roi=100, prob=0.01 \u2192 score 1.0) vs the reconciler (score 0.0) and asserts the earner wins.' Neither test_reconciler.py nor test_reconciler_integration.py contains such a test. The integration test only exercises a menu with the reconciler as the sole item (line 46-57 in test_reconciler_integration.py), which does NOT test the priority-ordering guarantee \u2014 it only tests that when the reconciler IS picked, the in-process branch runs. Without a real earner-vs-reconciler priority test, we have no evidence the reconciler will actually stay in the intended lowest-priority slot; a scoring regression in lib/menu.pick_next could silently promote the reconciler over live earners.",
+  "evidence": {
+    "filePath": ".vcsdd/features/earn-roi-reconciler/specs/verification-architecture.md",
+    "lineRange": "48-48",
+    "snippet": "| PROP-M3-lowest-priority | 1 | true | REQ-M3 (pick_next with a normal ROI item + a cadence-elapsed reconciler item \u2192 normal item wins if its ROI > 0) |"
+  },
+  "routeToPhase": "2a"
+}
