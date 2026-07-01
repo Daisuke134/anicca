@@ -31,6 +31,7 @@ generated_at: 2026-07-01
 | PROP-C1-login-fail-soft-missing-script | 1 | true | REQ-C1 EDGE-E6 |
 | PROP-C1-login-timeout-caught (FIND-003 fix) | 1 | true | REQ-C1 EDGE-E1 |
 | PROP-C2-npm_install-invokes-npm | 1 | true | REQ-C2 |
+| PROP-C2-npm_install-flow-consumed (FIND-2-001 fix) | 1 | true | REQ-C2 NPM_INSTALL_FLOW_MAP: status contains `flow=allowlist_check` when hook_missing recipe fires; missing flow → plain `npm_install-ok`; unknown → `npm_install-ok-flow=<F>` |
 | PROP-C2-npm_install-timeout-caught (FIND-003 fix) | 1 | true | REQ-C2 EDGE-E1 |
 | PROP-C3-git_checkout-invokes-git | 1 | true | REQ-C3 |
 | PROP-C3-git_checkout-timeout-caught (FIND-003 fix) | 1 | true | REQ-C3 EDGE-E1 |

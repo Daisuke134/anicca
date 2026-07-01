@@ -1,0 +1,43 @@
+{
+  "sprintNumber": 4,
+  "feature": "recipe-6-actions",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-01T00:00:00Z",
+  "iteration": 2,
+  "reviewContext": {
+    "reviewType": "spec",
+    "mode": "lean"
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-2-001"],
+      "evidence": [
+        {"type": "file", "location": ".vcsdd/features/recipe-6-actions/specs/behavioral-spec.md", "description": "REQ-B1 now explicitly handles both params.keys and params.flow via SEND_KEYS_FLOW_MAP (lines 55-72) — closes iter-1 FIND-001. REQ-C2 still ignores params.flow (see FIND-2-001)."},
+        {"type": "file", "location": ".vcsdd/features/recipe-6-actions/specs/behavioral-spec.md", "description": "Group C header at lines 76-80 introduces anicca_home kwarg with env-derived default and empty-value fail-soft — closes iter-1 FIND-002."},
+        {"type": "file", "location": "skills/_shared/lib/health_check_v2.py", "description": "Lines 96-108 cross-checked against spec REQs. All 10 kinds map cleanly EXCEPT hook_missing → npm_install with flow:allowlist_check (see FIND-2-001)."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": ".vcsdd/features/recipe-6-actions/specs/verification-architecture.md", "description": "21 required:true PROPs. Per-wire timeout PROPs present for all 6 subprocess wires (kill_server:23, send_keys:30, A2-escalate:37, C1-login:32, C2-npm_install:34, C3-git_checkout:36). PROP-I3-no-slot-state-writes present at line 41 with concrete grep target (loops/<slot>/). PROP-C-no-anicca-home-fail-soft present at line 38. All three iter-1 FIND-003 sub-items closed."},
+        {"type": "file", "location": ".vcsdd/features/recipe-6-actions/specs/verification-architecture.md", "description": "Purity boundary table (lines 11-16) correctly places all 6 subprocess wires in I/O SHELL. execute_recipe signature change (anicca_home kwarg) keeps it a parameter, not hidden global — verification-friendly."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 1,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": [],
+    "previousFindingsResolved": {
+      "FIND-001": "CLOSED — REQ-B1 rewritten with dual keys/flow variants, SEND_KEYS_FLOW_MAP named as canonical constant, unknown-flow fail-soft explicit, PROP-B1-send_keys-flow-variant-mapped + PROP-B1-send_keys-unknown-flow-fail-soft added.",
+      "FIND-002": "CLOSED — execute_recipe signature extended with anicca_home kwarg, dispatcher-side ANICCA_HOME env resolution stated, empty-anicca_home fail-soft codified across all Group-C wires, PROP-C-no-anicca-home-fail-soft added.",
+      "FIND-003": "CLOSED — 5 missing per-wire timeout PROPs added (send_keys, A2-escalate, C1-login, C2-npm_install, C3-git_checkout) alongside pre-existing kill_server. PROP-I3-no-slot-state-writes added with concrete grep target. Total PROPs now 21 as claimed."
+    }
+  }
+}
