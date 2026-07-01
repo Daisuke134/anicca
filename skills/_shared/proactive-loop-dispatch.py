@@ -47,6 +47,24 @@ def _write_status(slot_dir, **fields):
     p.write_text(json.dumps(base, indent=2))
 
 
+def _emit_roi_row(slot_dir, *, slot, pass_id, budget_value, picked, outcome):
+    """REQ-W1 canonical exit hook: EVERY tick appends exactly one roi.jsonl
+    row. Called from all four exit paths (skip / picked=None / STEP 6 done /
+    STEP 6 enqueue-failed). EDGE-E5: picked=None → picked=null in row,
+    expected=0."""
+    row = roi_row(
+        ts=int(time.time()),
+        pass_id=pass_id, slot=slot, budget=budget_value,
+        picked=picked, outcome=outcome,
+        realized=0,  # LAYER C settle wire is sprint-4
+        expected=compute_expected_jpy(picked) if isinstance(picked, dict) else 0,
+    )
+    ar = append_roi_row(Path(slot_dir) / "roi.jsonl", row)
+    if not ar.get("ok"):
+        _write_status(slot_dir, slot=slot, status="running",
+                     step=f"7-{ar.get('status', 'roi-write-failed-unknown')}")
+
+
 def main() -> int:
     _lock_fh = _acquire_or_exit()  # REQ-NFR-3 fcntl re-entrancy guard
     slot = os.environ.get("ANICCA_SLOT", "gig")
@@ -136,6 +154,10 @@ def main() -> int:
             pass_id=pass_id, ts=int(time.time()), budget=budget.value,
             picked="(skipped)", outcome=f"skip:{reason}", next_candidate="(none)",
         )
+        # REQ-W1 FIND-001 fix: emit roi row even on skip
+        _emit_roi_row(slot_dir, slot=slot, pass_id=pass_id,
+                     budget_value=budget.value, picked=None,
+                     outcome=f"skip:{reason}")
         return 0
 
     # STEP 4: read build_log
@@ -163,6 +185,10 @@ def main() -> int:
             pass_id=pass_id, ts=int(time.time()), budget=budget.value,
             picked="(none)", outcome="edge-s4-sink", next_candidate="(blocked)",
         )
+        # REQ-W1 FIND-001 fix / EDGE-E5: emit roi row with picked=null
+        _emit_roi_row(slot_dir, slot=slot, pass_id=pass_id,
+                     budget_value=budget.value, picked=None,
+                     outcome="edge-s4-sink")
         return 0
 
     # STEP 6 ACT (sprint-3 #33 wire): enqueue tasks/<ts>-<pass_id>-<name>.json
@@ -187,17 +213,9 @@ def main() -> int:
         next_candidate=f"(layer-c-dequeue: tasks/{enq.get('filename','?')})",
     )
 
-    # STEP 7.5 (sprint-3 #34): append roi.jsonl row.
-    row = roi_row(
-        ts=int(time.time()), pass_id=pass_id, slot=slot,
-        budget=budget.value, picked=picked, outcome=outcome,
-        realized=0,  # LAYER C settle wire is sprint-4
-        expected=compute_expected_jpy(picked),
-    )
-    ar = append_roi_row(slot_dir / "roi.jsonl", row)
-    if not ar.get("ok"):
-        _write_status(slot_dir, slot=slot, status="running",
-                     step=f"7-{ar.get('status', 'roi-write-failed-unknown')}")
+    # STEP 7.5 (sprint-3 #34): append roi.jsonl row (happy path).
+    _emit_roi_row(slot_dir, slot=slot, pass_id=pass_id,
+                 budget_value=budget.value, picked=picked, outcome=outcome)
 
     # STEP exit
     _write_status(slot_dir, slot=slot, status="idle", step="done")
