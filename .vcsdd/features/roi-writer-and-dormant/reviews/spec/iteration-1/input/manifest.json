@@ -1,0 +1,21 @@
+{
+  "reviewType": "spec",
+  "featureName": "roi-writer-and-dormant",
+  "iteration": 1,
+  "mode": "lean",
+  "artifactsToReview": [
+    ".vcsdd/features/roi-writer-and-dormant/specs/behavioral-spec.md",
+    ".vcsdd/features/roi-writer-and-dormant/specs/verification-architecture.md",
+    "docs/superpowers/specs/2026-07-01-proactive-loop-architecture-and-cleanup-design.md",
+    "skills/_shared/lib/quota_tracker.py"
+  ],
+  "reviewDimensions": ["spec_fidelity", "verification_readiness"],
+  "extraConstraints": [
+    "Parent spec §7b patience: dormant threshold must be time_horizon_days × 2, not universal 7 days. Verify REQ-T2 + REQ-I3 forbid the old 7-day path.",
+    "Existing quota_tracker.py has is_dormant, count_consecutive_negative_windows, write_dormant_sentinel, is_allowed_sentinel_removal_call. Verify spec doesn't duplicate — is_dormant_with_horizon is NEW and additive.",
+    "REQ-D3 slot_age_days = (now_ts - slot_dir.stat().st_ctime) / 86400. On macOS st_ctime is inode-change-time; if the dir gets touched, ctime updates. Any risk of false positives?",
+    "REQ-W3 says roi_jpy_realized=0 in sprint-3. Verify sprint-4 carry documented (= LAYER C dequeue + settle wire).",
+    "Live: gig has 23 in-flight apps, ~/loops/gig ~1 hour old. Sentinel must NOT fire (per REQ-D3 age guard)."
+  ],
+  "expectedOutputPath": ".vcsdd/features/roi-writer-and-dormant/reviews/spec/iteration-1/output/"
+}
