@@ -1,0 +1,24 @@
+{
+  "reviewType": "spec",
+  "featureName": "earn-roi-reconciler",
+  "iteration": 1,
+  "mode": "lean",
+  "artifactsToReview": [
+    ".vcsdd/features/earn-roi-reconciler/specs/behavioral-spec.md",
+    ".vcsdd/features/earn-roi-reconciler/specs/verification-architecture.md",
+    "docs/superpowers/specs/2026-07-01-proactive-loop-architecture-and-cleanup-design.md",
+    "GOAL-sprint-4-M1-M2.md",
+    "skills/_shared/lib/roi_track.py",
+    "skills/_shared/proactive-loop-dispatch.py"
+  ],
+  "reviewDimensions": ["spec_fidelity", "verification_readiness"],
+  "extraConstraints": [
+    "Parent GOAL requires reconciler INV-4 preservation: reconciler MUST READ ~/gig/earnings.jsonl but NEVER write it. Verify REQ-I2 makes this concrete.",
+    "REQ-M2 says dispatcher invokes reconcile IN-PROCESS (not subprocess) and STILL enqueues the tasks/ descriptor for observability but marks dequeue:false. Is this dequeue:false mechanism defined? Does it conflict with sprint-3 #33 STEP 6 which unconditionally enqueues?",
+    "REQ-R4 monotone gate is important: settle events must not decrease an existing realized. But what about the case where a partial payment came in first (say ¥1000), then a full settle for ¥3000? Should this UPDATE (increase) or SKIP (dup)? Spec says increase — verify this is what we want for real Coconala partial payments.",
+    "REQ-R8 offset advances via reconciler-offset.json but the settle producer (feature (a)) writes settle.jsonl. If (a) writes N rows between reconciler runs but the reconciler crashes after processing K < N of them, does the offset move to K or 0? Verify REQ-R5 atomic replace covers this.",
+    "REQ-M3 lowest priority: adversary must confirm ROI=0 for the reconciler item guarantees it loses the pick_next ROI ranking to any legitimate earn item. Cadence 3600s is documented — is that enforced by min_cadence_seconds field in the menu.json template?",
+    "PROP-M2 dispatcher-in-process integration is a new coupling: reconciler is now called from proactive-loop-dispatch.py's STEP 6. This is a size >30 lines change in the dispatcher control flow — verify the spec makes this scope explicit (should be new VCSDD feature OR clearly scoped as part of THIS feature's Group M)."
+  ],
+  "expectedOutputPath": ".vcsdd/features/earn-roi-reconciler/reviews/spec/iteration-1/output/"
+}
