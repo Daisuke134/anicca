@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "The survival ledger defines income as USDC-only, which makes every JPY-earning MVP slot permanently insolvent and gets it killed. REQ-S2(c) sets income_usdc = cumulative_usdc_earned (behavioral-spec line 170). But the skeleton's own MVP earnings model (earn-shared-skeleton REQ-G2, lines 578-589) states gig=Coconala JPY and affiliate=Amazon JPY commission settle in jpy_int and are recorded into cumulative_jpy_earned, NOT cumulative_usdc_earned. Therefore for the two most-reliable earning slots, income_usdc == cumulative_usdc_earned == 0 forever, so net_usdc = -cost_usdc is always negative, so isSolvent (REQ-S4) returns False past grace, so REQ-S5 trips loop.disabled and KILLS the profitable slots. EDGE-S2b (lines 183-188) codifies this broken behavior rather than fixing it. The eval fitness signal contradicts the skeleton's currency model.",
+  "evidence": {
+    "filePath": ".vcsdd/features/eval-driven-earning/specs/behavioral-spec.md",
+    "lineRange": "168-176",
+    "snippet": "(c) computing income_usdc = cumulative_usdc_earned,"
+  },
+  "routeToPhase": "1a"
+}

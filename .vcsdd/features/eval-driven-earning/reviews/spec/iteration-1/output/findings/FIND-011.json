@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-011",
+  "dimension": "implementation_correctness",
+  "category": "requirement_mismatch",
+  "severity": "medium",
+  "description": "updateBanditArm's alpha update is self-contradictory across the spec. REQ-M2(a) (line 312) defines alpha_new = alpha + realized_usdc / usdc_scale_factor with NO cap, but EDGE-M2a (lines 327-329) states 'alpha increment is capped at 1.0 (the formula realized_usdc/usdc_scale_factor exceeds 1.0 -> clipped to 1.0 for both alpha and beta calculations).' For realized_usdc > usdc_scale_factor the two clauses disagree (uncapped alpha=1+2.0=3.0 vs capped alpha=2.0). PROP-M1/M2 only test the boundary r<=scale and cannot detect the divergence. Additionally, usdc_scale_factor is the 90th-percentile of history 'updated each wake' (line 110), so alpha increments are normalized by a moving denominator; alpha accumulates increments computed against different scales over time, making expected_usdc_per_wake comparisons across wakes non-stationary. The bandit update contract must be pinned unambiguously.",
+  "evidence": {
+    "filePath": ".vcsdd/features/eval-driven-earning/specs/behavioral-spec.md",
+    "lineRange": "310-329",
+    "snippet": "(a) setting alpha_new = alpha + realized_usdc / usdc_scale_factor ... EDGE-M2a: alpha increment is capped at 1.0"
+  },
+  "routeToPhase": "1a"
+}

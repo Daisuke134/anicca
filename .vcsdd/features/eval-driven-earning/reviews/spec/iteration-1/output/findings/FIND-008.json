@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-008",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "high",
+  "description": "Verifier's Law (REQ-EV3: 'a verifiable check is NEVER replaced by an LLM judge; an LLM judge NEVER overrides a verifiable-check failure', lines 508-509) is the security-critical property, yet the only tests guaranteeing it (PROP-EV3 / PROP-EV3f, verification-architecture lines 80-81, 146-154) exercise a function named `rubricEval(category, verifiable=..., judge_score=...)` that is NOT specified anywhere in the behavioral spec. The behavioral spec only specifies the PURE `rubricScore`, whose signature (dimension_scores, weights, has_deliverable, deliverable_required) has NO parameter for a verifiable-check result — so the pure layer cannot express the override at all. The precedence therefore lives entirely in unspecified effectful code (rubric-judge.py has no documented rubricEval contract in the Module Map), and the property is asserted against a phantom function. The single most important safety property of the eval layer is not tied to any specified symbol.",
+  "evidence": {
+    "filePath": ".vcsdd/features/eval-driven-earning/specs/verification-architecture.md",
+    "lineRange": "144-155",
+    "snippet": "result = rubricEval(\"trading-polymarket\", verifiable=True, judge_score=0.2)  # rubricEval never defined in behavioral spec"
+  },
+  "routeToPhase": "1a"
+}

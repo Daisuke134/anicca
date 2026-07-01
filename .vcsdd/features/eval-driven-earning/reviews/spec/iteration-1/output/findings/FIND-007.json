@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-007",
+  "dimension": "structural_integrity",
+  "category": "requirement_mismatch",
+  "severity": "high",
+  "description": "The pure-function contracts drift between the 1a behavioral spec and the 1b verification architecture, so a builder cannot know the true signature. (1) rubricScore: 1a REQ-EV1 declares `rubricScore(candidate: CandidateAction, rubric: Rubric) -> RubricResult` (line 452) while REQ-EV2 says it 'SHALL accept a has_deliverable: bool input' (line 486) and 1b declares `(dimension_scores: dict, weights: dict, has_deliverable: bool, deliverable_required: bool)` (verification line 30) — three incompatible shapes. (2) calibrationDrift: 1a REQ-EV5 is `(scores, realized_usdc, window_secs, min_pairs=10)` (line 568) but 1b drops window_secs entirely: `(scores, realized_usdc, min_pairs)` (line 31). (3) updateBanditArm: 1a REQ-M2 is `(arm, realized_usdc)` (line 323) but 1b is `(arm, realized_usdc, usdc_scale)` (line 32). These are the load-bearing pure functions whose determinism is the whole point of the feature; their signatures must be single-sourced before implementation.",
+  "evidence": {
+    "filePath": ".vcsdd/features/eval-driven-earning/specs/verification-architecture.md",
+    "lineRange": "30-32",
+    "snippet": "rubricScore | (dimension_scores: dict[str,float], weights: dict[str,float], has_deliverable: bool, deliverable_required: bool) -> RubricResult"
+  },
+  "routeToPhase": "1b"
+}

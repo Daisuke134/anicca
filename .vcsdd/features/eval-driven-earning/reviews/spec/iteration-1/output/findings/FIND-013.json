@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-013",
+  "dimension": "structural_integrity",
+  "category": "test_quality",
+  "severity": "medium",
+  "description": "The convergence-REQUIRED 'losing-arm-retired / winning-arm-doubled' integration test contradicts a functional requirement, so passing it would prove the wrong behavior. The test (verification-architecture lines 157-169) step 2 asserts 'Run decideActivity 10 times in FULL budget mode -- verify arm-B is selected each time (exploit mode picks highest expected_usdc_per_wake).' That presumes pure greedy exploitation with ZERO exploration across all 10 wakes, directly contradicting REQ-DA3's mandatory novelty quota that at least ~10% of wakes MUST be explore (behavioral lines 394-399). Either the quota is enforced (and arm-B is NOT picked every time, failing the test) or the test passes (proving the quota is not enforced). The 'provably retires losers + doubles down winners' Done-criterion is asserted by a test that is inconsistent with the explore policy it is meant to coexist with.",
+  "evidence": {
+    "filePath": ".vcsdd/features/eval-driven-earning/specs/verification-architecture.md",
+    "lineRange": "157-169",
+    "snippet": "2. Run decideActivity 10 times in FULL budget mode -- verify arm-B is selected each time"
+  },
+  "routeToPhase": "1b"
+}

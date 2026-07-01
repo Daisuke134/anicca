@@ -6,7 +6,7 @@ sources:
   - HKUDS/ClawWork (8.2k★) — TrackedProvider real-cost + survival ledger + decide_activity explore/exploit + rubric-judge-with-override
   - benchflow-ai/awesome-evals (608★) — pass@k / pass^k vocabulary, Verifier's Law ("verifiable > judgeable"), calibration-drift
   - garylab/MakeMoneyWithAI — auto-refreshing opportunity radar cron pattern
-  - earn-shared-skeleton/specs/behavioral-spec.md (v2) — REQ-B2 per-model rates, REQ-B4 kill-switch, REQ-H1 novelty quota, REQ-F1 self-recover, INV-7 on-chain reward, INV-11 token kill-switch, sprint-2 proactive-loop + menu.json
+  - earn-shared-skeleton/specs/behavioral-spec.md (v2) — REQ-B2 per-model rates, REQ-B4 kill-switch, REQ-H1 novelty quota, REQ-F1 self-recover, INV-8 platform-api-verified settled payout gate, INV-11 token kill-switch, sprint-2 proactive-loop + menu.json
   - anicca-project/docs/superpowers/specs/2026-06-30-earn-slots-daily-loop-master.md §EVAL-DRIVEN EARNING ARCHITECTURE
 integration:
   extends: earn-shared-skeleton
@@ -17,11 +17,11 @@ integration:
     - Group D cross-learn bot2bot
     - Group E adversary-daily
     - REQ-J8 anti-human-touch invariant
-    - INV-7 on-chain reward gate
+    - INV-8 platform-api-verified settled payout gate (earnings.jsonl rows require platform_api_response_sha256)
   integrates_at:
     - proactive-loop.sh step 5 ("pick highest ROI") → replaced by decideActivity output
     - loop-roi.sh token_source measurement → improved by TrackedProvider (REQ-S1)
-    - loop.disabled kill-switch (REQ-B4) → triggered by isSolvent=False (REQ-S5)
+    - loop.disabled kill-switch (REQ-B4, in loop-roi.sh) → survival ledger advisory signal (REQ-S5) feeds lessons.jsonl; B4 remains the SOLE kill-switch trigger
     - menu.json entries (sprint-2 schema) → extended with bandit arm fields (REQ-M1)
     - TRAP-6 sandbox isolation (skeleton) → formalised as curation gate (Group CU)
 ---
@@ -50,11 +50,11 @@ escalation.  This feature provides what the skeleton lacks:
 
 | skeleton symbol | how this feature uses it |
 |---|---|
-| REQ-B2 per-model rate table | TrackedProvider (REQ-S1) reads SAME rates to compute per-message cost_usdc |
-| `~/loops/<slot>/cumulative.json` | survival.json recomputes from `cumulative_token_cost_jpy + cumulative_usdc_earned` |
+| REQ-B2 per-model rate table | TrackedProvider (REQ-S1) reads SAME rates to compute per-message cost_usd |
+| `~/loops/<slot>/cumulative.json` | survival.json recomputes from `cumulative_token_cost_jpy` (cost) + `cumulative_jpy_earned` and `cumulative_usdc_earned` (income, both currencies converted to USD via fx.json, INV-8 verified) |
 | `~/loops/<slot>/roi.jsonl` `token_source` field | TrackedProvider promotes this field from "estimated" to "measured" where possible |
-| REQ-B4 loop.disabled kill-switch | REQ-S5 writes `loop.disabled` when `isSolvent(ledger) == False` past grace |
-| REQ-H1 novelty quota (`ceil(0.1 × max_apply_per_pass)`) | `decideActivity` novelty_quota parameter copies this floor exactly |
+| REQ-B4 loop.disabled kill-switch | survival ledger (REQ-S5) provides an ADVISORY isSolvent signal to lessons.jsonl; B4 in loop-roi.sh remains the sole owner of loop.disabled |
+| REQ-H1 novelty quota (`ceil(0.1 × max_apply_per_pass)`) | `decideActivity` explore_epsilon parameter copies this floor; explore count is INJECTED from menu-bandit.jsonl (not read inside the pure fn) |
 | `~/loops/<slot>/menu.json` (sprint-2 schema) | this feature adds bandit arm fields per REQ-M1 without removing existing fields |
 | proactive-loop.sh step 5 | replaced: step 5 now calls `decideActivity` and acts on its `pick` |
 | TRAP-6 sandbox isolation | curation gate (Group CU) formalises this with adversary PASS requirement |
@@ -65,9 +65,9 @@ These are files OWNED by this feature (not defined in skeleton):
 
 | path | semantics | writer | reader |
 |---|---|---|---|
-| `~/loops/<slot>/survival.json` | per-slot survival state; recomputed every wake from cumulative.json | TrackedProvider + survivalLedger.recompute() | decideActivity, isSolvent, REQ-S5 kill-switch check |
-| `~/loops/<slot>/calibration.jsonl` | append-only; one row per scored action: `{ts, action_id, rubric_score, realized_usdc, window_ts}` | rubric-judge.py after outcome received | calibrationDrift() |
-| `~/loops/<slot>/menu-bandit.jsonl` | append-only bandit arm update log; one row per wake outcome: `{ts, entry_id, realized_usdc, alpha_new, beta_new}` | updateBanditArm() caller (proactive-loop step 7) | bandit reconstruction on crash-restart |
+| `~/loops/<slot>/survival.json` | per-slot survival state; recomputed every wake from cumulative.json | survivalLedger.recompute() | proactive-loop.sh (calls isSolvent advisory check after each wake; logs insolvent advisory to lessons.jsonl) |
+| `~/loops/<slot>/calibration.jsonl` | append-only; one row per scored action: `{ts, action_id, rubric_score, realized_usd, window_ts}` | rubric-judge.py after outcome received | calibrationDrift() (caller pre-filters by window_ts before passing lists) |
+| `~/loops/<slot>/menu-bandit.jsonl` | append-only bandit arm update log; one row per wake outcome: `{ts, entry_id, mode, realized_usd, alpha_new, beta_new}` (mode field enables explore-count injection) | updateBanditArm() caller (proactive-loop step 7) | bandit reconstruction on crash-restart; shell reads last-100 rows to inject bandit_stats into decideActivity |
 | `~/anicca/state/menu-curation.jsonl` | append-only; skills pending curation review: `{ts, skill_id, source, status: "pending"\|"pass"\|"fail"\|"admitted"}` | curation-gate.sh | curation gate admission check |
 | `~/anicca/state/discovery.jsonl` | append-only; discovered opportunities: `{ts, source, url, description, eval_score, proposed_to_curation: bool}` | discovery-radar.sh | curation gate |
 
@@ -76,10 +76,10 @@ These are files OWNED by this feature (not defined in skeleton):
 ```jsonc
 {
   "slot": "<slot>",
-  "cost_usdc": <float>,            // cumulative_token_cost_jpy / FX_USDJPY (from cumulative.json + fx.json)
-  "income_usdc": <float>,          // cumulative_usdc_earned (from cumulative.json, INV-7 verified)
-  "net_usdc": <float>,             // income_usdc - cost_usdc  (= netWorth output)
-  "loss_start_ts": <int|null>,     // unix ts when net_usdc first went negative; null if net >= 0
+  "cost_usd": <float>,             // cumulative_token_cost_jpy / FX_USDJPY (from cumulative.json + fx.json)
+  "income_usd": <float>,           // Σ(amount_jpy/FX_USDJPY) + Σ(amount_usdc) over INV-8-verified earnings.jsonl rows
+  "net_usd": <float>,              // income_usd − cost_usd  (= netWorth output)
+  "loss_start_ts": <int|null>,     // unix ts when net_usd first went negative; null if net >= 0
   "last_recomputed_ts": <int>,     // unix ts of most recent recompute
   "wake_count": <int>,             // count of completed wakes (= roi.jsonl row count)
   "schema_version": 1
@@ -132,11 +132,12 @@ THE SYSTEM SHALL wrap that call in the TrackedProvider which:
     REQ-B2 per-model rate table — writes `{event: "cost-error", reason: "unknown-model"}`
     to `~/loops/<slot>/events/<pass_id>.jsonl` and delegates escalation to skeleton
     REQ-F1 (`self-recover.sh <slot> unknown-model-cost <model_id>`),
-(d) computes `cost_usdc = (tokens_in × rate_input[model_id] + tokens_out × rate_output[model_id]
-    + thinking_tokens × rate_output[model_id]) / 1_000_000 / FX_USDJPY`,
-    using the REQ-B2 per-model rate table (all rates are USD/Mtok; dividing by FX_USDJPY
-    converts to USDC since 1 USDC ≈ 1 USD for this computation),
-(e) appends `{ts, model_id, tokens_in, tokens_out, thinking_tokens, cost_usdc}` to
+(d) computes `cost_usd = (tokens_in × rate_input[model_id] + tokens_out × rate_output[model_id]
+    + thinking_tokens × rate_output[model_id]) / 1_000_000`,
+    using the REQ-B2 per-model rate table (all rates are in USD/Mtok; dividing by 1_000_000
+    yields USD directly — NO FX conversion applied here because the rates are already priced
+    in USD; 1 USDC ≈ 1 USD for this computation),
+(e) appends `{ts, model_id, tokens_in, tokens_out, thinking_tokens, cost_usd}` to
     `~/loops/<slot>/events/<pass_id>.jsonl` as an `event: "cost"` row,
 (f) on pane-footer-only fallback (= measurement not available from API response body),
     sets `token_source: "estimated"` in the row and applies the skeleton REQ-B6 penalty.
@@ -147,15 +148,16 @@ THE SYSTEM SHALL wrap that call in the TrackedProvider which:
   falls back to "sonnet" (most expensive safe assumption) and sets `token_source: "estimated"`.
 - **EDGE-S1b** thinking_tokens absent from response (non-extended-thinking model): recorded as
   0 without error; cost computed from tokens_in + tokens_out only.
-- **EDGE-S1c** FX_USDJPY file missing (skeleton fx.json not yet populated): defaults to 150.0
-  and logs a warning; does NOT block the cost row.
+- **EDGE-S1c** FX_USDJPY file missing: REQ-S1(d) does not use FX_USDJPY at all (rates are in
+  USD); this edge case is only relevant to REQ-S2's cost_usd conversion from cumulative_token_cost_jpy.
 
 **Acceptance Criteria:**
 - A unit test verifies that TrackedProvider with model_id="sonnet", tokens_in=1000,
-  tokens_out=500, thinking_tokens=200, FX=150 produces
-  `cost_usdc = (1000×3 + 500×15 + 200×15) / 1_000_000 / 150 ≈ 0.000207`.
+  tokens_out=500, thinking_tokens=200 produces
+  `cost_usd = (1000×3 + 500×15 + 200×15) / 1_000_000 = 13500 / 1_000_000 = 0.0135 USD`
+  (no FX division; rates are USD/Mtok already).
 - An unknown model_id triggers a REQ-F1 `self-recover.sh` call (verified by subprocess spy),
-  does NOT append to events.jsonl, and does NOT silently record cost=0.
+  does NOT append to events.jsonl, and does NOT silently record cost_usd=0.
 
 ---
 
@@ -163,27 +165,28 @@ THE SYSTEM SHALL wrap that call in the TrackedProvider which:
 
 WHEN a slot's wake completes (= `loop-roi.sh` end-of-pass row has been written),
 THE SYSTEM SHALL atomically rewrite `~/loops/<slot>/survival.json` by:
-(a) reading `cumulative.json.cumulative_token_cost_jpy` (skeleton-maintained) and
-    `cumulative.json.cumulative_usdc_earned` (INV-7 verified),
-(b) computing `cost_usdc = cumulative_token_cost_jpy / FX_USDJPY`,
-(c) computing `income_usdc = cumulative_usdc_earned`,
-(d) setting `loss_start_ts` = existing value if `net_usdc < 0` already, else the current
-    unix timestamp if `net_usdc < 0` for the first time, else `null`,
-(e) incrementing `wake_count` by 1,
-(f) writing to a tmp file and `mv`-renaming (atomic) per skeleton NFR-2.
+(a) reading `cumulative.json.cumulative_token_cost_jpy` (skeleton-maintained) and reading
+    `cumulative.json.cumulative_jpy_earned` + `cumulative.json.cumulative_usdc_earned`
+    (both INV-8 verified — each row in earnings.jsonl has a platform_api_response_sha256),
+(b) computing `cost_usd = cumulative_token_cost_jpy / FX_USDJPY`
+    (FX_USDJPY from fx.json; default 150.0 if file absent),
+(c) computing `income_usd = (cumulative_jpy_earned / FX_USDJPY) + cumulative_usdc_earned`
+    (normalises BOTH JPY-settling slots such as Coconala/Amazon AND USDC-settling slots
+    such as Whop/Algora into a single USD unit; 1 USDC ≈ 1 USD),
+(d) computing `net_usd = income_usd − cost_usd`,
+(e) setting `loss_start_ts` = existing value if already negative, else the current unix
+    timestamp if `net_usd < 0` for the first time this cycle, else `null`,
+(f) incrementing `wake_count` by 1,
+(g) writing to a tmp file and `mv`-renaming (atomic) per skeleton NFR-2.
 
 `survival.json` is recomputed from source (`cumulative.json`) each wake, not
 accumulated incrementally, so crash-restart is loss-free.
 
 **Edge Cases:**
 - **EDGE-S2a** `cumulative.json` does not exist (slot brand-new, zero wakes): survival.json
-  is written with `cost_usdc=0.0`, `income_usdc=0.0`, `net_usdc=0.0`, `loss_start_ts=null`,
+  is written with `cost_usd=0.0`, `income_usd=0.0`, `net_usd=0.0`, `loss_start_ts=null`,
   `wake_count=0`.
-- **EDGE-S2b** FX converts JPY cost to a cost_usdc that exceeds income_usdc on wake 1 (= first
-  wake burned tokens, zero income): `loss_start_ts` is set to the current wake's ts, NOT the
-  slot's `first_seen_ts` — bankruptcy grace clock starts from first income deficit, not from
-  slot birth.
-- **EDGE-S2c** Two proactive-loop ticks overlap (skeleton NFR-3 flock guard prevents concurrent
+- **EDGE-S2b** Two proactive-loop ticks overlap (skeleton NFR-3 flock guard prevents concurrent
   execution, but if flock fails): second writer reads the tmp file from the first writer and
   `mv` races — last writer wins; no corruption possible because each recomputes from source.
 
@@ -192,13 +195,15 @@ accumulated incrementally, so crash-restart is loss-free.
   JSON Schema by `test_survival_schema.py`).
 - Crash-simulation test: delete survival.json mid-process, verify it is regenerated identically
   from cumulative.json on next wake.
+- Schema test verifies `income_usd` equals `(jpy_earned / FX) + usdc_earned` for mixed-currency
+  cumulative.json fixtures (e.g., ¥1500 Coconala + 0.5 USDC Algora → income_usd = 10.0 + 0.5 = 10.5 at FX=150).
 
 ---
 
 #### REQ-S3 — Pure function: `netWorth`
 
-THE SYSTEM SHALL expose a pure function `netWorth(cost_usdc: float, income_usdc: float) → float`
-that returns `income_usdc − cost_usdc`.
+THE SYSTEM SHALL expose a pure function `netWorth(cost_usd: float, income_usd: float) → float`
+that returns `income_usd − cost_usd`.
 
 **Constraints:**
 - `netWorth` is total: defined for all float inputs including negative (overpayment or
@@ -206,10 +211,10 @@ that returns `income_usdc − cost_usdc`.
 - `netWorth` has no side effects, reads no files, makes no system calls.
 
 **Edge Cases:**
-- **EDGE-S3a** `cost_usdc = income_usdc = 0.0` → returns 0.0.
-- **EDGE-S3b** `income_usdc < 0` (API refund, rare): returns a value < -cost_usdc; this
+- **EDGE-S3a** `cost_usd = income_usd = 0.0` → returns 0.0.
+- **EDGE-S3b** `income_usd < 0` (API refund, rare): returns a value < -cost_usd; this
   is mathematically correct and does NOT trigger isSolvent=False on its own — isSolvent
-  gates on net_usdc being PERSISTENTLY negative past grace.
+  gates on net_usd being PERSISTENTLY negative past grace.
 
 **Acceptance Criteria:**
 - `netWorth(5.0, 3.0) == -2.0`
@@ -222,22 +227,22 @@ that returns `income_usdc − cost_usdc`.
 #### REQ-S4 — Pure function: `isSolvent`
 
 THE SYSTEM SHALL expose a pure function
-`isSolvent(net_usdc: float, loss_start_ts: Optional[int], grace_window_secs: int, now_ts: int) → bool`
+`isSolvent(net_usd: float, loss_start_ts: Optional[int], grace_window_secs: int, now_ts: int) → bool`
 that returns:
-- `True` if `net_usdc >= 0` (regardless of other parameters),
-- `True` if `net_usdc < 0` AND `loss_start_ts is None` (net just went negative this wake;
+- `True` if `net_usd >= 0` (regardless of other parameters),
+- `True` if `net_usd < 0` AND `loss_start_ts is None` (net just went negative this wake;
   `loss_start_ts` will be set by REQ-S2 after this call — caller passes the PRE-recompute value),
-- `True` if `net_usdc < 0` AND `(now_ts - loss_start_ts) < grace_window_secs`,
-- `False` if `net_usdc < 0` AND `(now_ts - loss_start_ts) >= grace_window_secs`.
+- `True` if `net_usd < 0` AND `(now_ts - loss_start_ts) < grace_window_secs`,
+- `False` if `net_usd < 0` AND `(now_ts - loss_start_ts) >= grace_window_secs`.
 
 Default `grace_window_secs` SHALL be `7 × 86400` (= 7 days), matching skeleton REQ-B4's
 grace window for dimensional consistency.
 
 **Edge Cases:**
 - **EDGE-S4a** `grace_window_secs = 0` (testing only): returns False immediately on first
-  negative net_usdc — useful for unit tests that need deterministic bankruptcy.
+  negative net_usd — useful for unit tests that need deterministic bankruptcy.
 - **EDGE-S4b** `now_ts < loss_start_ts` (clock skew): treats as `elapsed = 0`, returns True.
-- **EDGE-S4c** `net_usdc = -0.0` (IEEE float negative zero): treated as `>= 0`, returns True.
+- **EDGE-S4c** `net_usd = -0.0` (IEEE float negative zero): treated as `>= 0`, returns True.
 
 **Acceptance Criteria:**
 - `isSolvent(-1.0, loss_start=T, grace=7d, now=T+6d) == True`
@@ -247,31 +252,40 @@ grace window for dimensional consistency.
 
 ---
 
-#### REQ-S5 — Bankruptcy signal: bridge to kill-switch
+#### REQ-S5 — Insolvent advisory signal (feeds lessons.jsonl; does NOT own loop.disabled)
 
-WHEN `isSolvent(ledger.net_usdc, ledger.loss_start_ts, GRACE_WINDOW, now_ts) == False`,
-THE SYSTEM SHALL call `self-recover.sh <slot> survival-bankruptcy <net_usdc>` (skeleton REQ-F1)
-which in turn calls the skeleton's REQ-B4 kill-switch mechanism (writes `loop.disabled`).
+WHEN `isSolvent(ledger.net_usd, ledger.loss_start_ts, GRACE_WINDOW, now_ts) == False`
+(evaluated by proactive-loop.sh after REQ-S2 survival.json recompute completes),
+THE SYSTEM SHALL append to `~/loops/<slot>/lessons.jsonl`:
+`{ts, reason: "survival-insolvent", net_usd: <net_usd>, loss_duration_secs: <elapsed>}`
+as an ADVISORY signal for Reflexion (Group C) to learn from.
 
-THE SYSTEM SHALL pass the survival bankruptcy signal ONLY from the proactive-loop after
-`survival.json` has been recomputed (= end of every wake, after REQ-S2 completes) — never
-mid-wake.
+THE SYSTEM SHALL NOT independently write `loop.disabled` or call `self-recover.sh survival-bankruptcy`.
+There is NO `survival-bankruptcy` Group-J handler.
 
-THE SYSTEM SHALL NOT duplicate the `loop.disabled` creation logic — it delegates to the
-skeleton's existing REQ-B4 mechanism.
+The SOLE kill-switch owner is skeleton REQ-B4 (inside `loop-roi.sh`), triggered when
+`cumulative_token_cost_jpy > 5 × cumulative_jpy_earned` past the 7-day grace window.
+The isSolvent advisory (cost_usd > income_usd, lower threshold) fires earlier and feeds
+lessons.jsonl so Reflexion can tighten strategy before B4's harder 5:1 ratio is breached.
+
+**Relationship between isSolvent and REQ-B4 thresholds:**
+- isSolvent=False condition: `cost_usd > income_usd` (i.e., cost > 1× income) — advisory.
+- REQ-B4 kill condition:     `cost_jpy > 5 × earned_jpy` (i.e., cost > 5× income) — terminal.
+- Same source data (cumulative.json), same FX conversion; B4 fires ~5× later than isSolvent.
+- Both use the same 7-day grace window anchored to different timestamps:
+  B4 uses `first_seen_ts`; isSolvent uses `loss_start_ts` (first wake with negative net_usd).
 
 **Edge Cases:**
-- **EDGE-S5a** Skeleton REQ-B4 already tripped `loop.disabled` (cost-JPY ratio exceeded):
-  REQ-S5 still calls self-recover.sh; the handler is idempotent (file already exists, no-op).
-- **EDGE-S5b** Bankruptcy signal fires but income arrives in the same wake (earnings.jsonl row
-  written after roi.jsonl row): REQ-S2's recompute from cumulative.json naturally includes
-  the income row; net_usdc may become positive after recompute → isSolvent = True → no
-  kill-switch trip.
+- **EDGE-S5a** REQ-B4 kills the slot before isSolvent has reached its grace window: the slot
+  is disabled by B4; isSolvent advisory is no longer invoked (loop.disabled skips all wake steps).
+- **EDGE-S5b** Income arrives in the same wake that drove net_usd negative: REQ-S2's recompute
+  from cumulative.json includes the income row; net_usd may become positive → isSolvent = True
+  → no advisory row appended.
 
 **Acceptance Criteria:**
-- Integration test: set cost_usdc=10.0, income_usdc=0.0, grace=0 seconds → `loop.disabled`
-  is created within the same wake.
-- Subprocess spy verifies `self-recover.sh` is called exactly once per bankrupt wake.
+- Integration test: set cost_usd=1.0, income_usd=0.0, loss_start=T, grace=0 → lessons.jsonl
+  gains a `reason: "survival-insolvent"` row; `loop.disabled` is NOT created.
+- Verify `loop.disabled` is absent after the advisory fires (only REQ-B4 creates it).
 
 ---
 
@@ -294,10 +308,15 @@ preserved verbatim alongside the new bandit arm fields.
 **Edge Cases:**
 - **EDGE-M1a** `menu.json` does not exist (slot brand-new or pre-sprint-2 migration):
   proactive-loop.sh bootstraps a default menu with one entry per active earn type
-  (trading-polymarket, bounty-scan, clip, affiliate, video) with (alpha=1, beta=1) priors.
+  (bounty-scan, clip, affiliate, video) with `(alpha=1, beta=1, admitted_at_ts=null)` priors.
+  `trading-polymarket` is NOT in the bootstrap default because it is a real-wallet-capital rail
+  and MUST enter the menu only after passing Group CU curation with a non-null `admitted_at_ts`
+  (REQ-CU4). Bootstrap entries with `admitted_at_ts=null` automatically route to curation
+  (REQ-CU1) on first pass; they are NOT exploit-eligible until `admitted_at_ts` is set.
 - **EDGE-M1b** An existing entry missing the bandit arm fields (migrated from sprint-2 without
-  bandit): migration step initializes missing fields to (alpha=1, beta=1, attempt=0, pass=0,
-  novelty_tried=true since it predates this feature).
+  bandit): migration step initializes missing fields to `(alpha=1, beta=1, attempt=0, pass=0,
+  novelty_tried=true, admitted_at_ts=null)` — the null admitted_at_ts forces a curation pass
+  for any pre-feature entry whose curation status is unknown.
 
 **Acceptance Criteria:**
 - JSON Schema test validates all entries after each write.
@@ -307,35 +326,40 @@ preserved verbatim alongside the new bandit arm fields.
 
 #### REQ-M2 — Bandit arm update after wake outcome
 
-WHEN a wake completes and the slot records a pass outcome `realized_usdc >= 0.0`,
+WHEN a wake completes and the slot records a pass outcome `realized_usd >= 0.0`,
 THE SYSTEM SHALL update the chosen entry's bandit arm by:
-(a) setting `alpha_new = alpha + realized_usdc / usdc_scale_factor` (Thompson Bayesian update
-    — fractional alpha increment proportional to normalized USDC earned; 0.0 income = no alpha
-    increment = only beta increment below),
-(b) setting `beta_new = beta + (1.0 - realized_usdc / usdc_scale_factor).clip(0, 1)`,
-(c) incrementing `attempt_count += 1`, `pass_count += 1 if realized_usdc > 0`,
-(d) recomputing `expected_usdc_per_wake = alpha_new / (alpha_new + beta_new) × usdc_scale_factor`,
-(e) appending `{ts, entry_id, realized_usdc, alpha_new, beta_new}` to
+(a) computing `increment = clip(realized_usd / usdc_scale_factor, 0.0, 1.0)`
+    (Beta-distribution posterior update — fractional increment proportional to normalized USD
+    earned, capped at 1.0; this is the standard Beta-Bernoulli update with fractional evidence,
+    NOT Thompson sampling — selection uses posterior-mean greedy-max, not posterior sampling),
+(b) setting `alpha_new = alpha + increment`,
+    `beta_new  = beta  + (1.0 − increment)`,
+    (increment ∈ [0,1] ensures alpha and beta each increase by a total of 1.0 per wake,
+    so the Beta(alpha,beta) posterior remains well-formed; realized_usd=0 → increment=0
+    → alpha unchanged, beta+1 (pessimistic); realized_usd=scale → increment=1 → alpha+1,
+    beta unchanged (optimistic)),
+(c) incrementing `attempt_count += 1`, `pass_count += 1 if realized_usd > 0`,
+(d) recomputing `expected_usd_per_wake = alpha_new / (alpha_new + beta_new) × usdc_scale_factor`,
+(e) appending `{ts, entry_id, mode, realized_usd, alpha_new, beta_new}` to
     `~/loops/<slot>/menu-bandit.jsonl` BEFORE updating menu.json (claim-check against duplicate
-    update on crash-restart),
+    update on crash-restart; `mode` field enables explore-count injection for decideActivity),
 (f) atomically rewriting menu.json (tmp + mv).
 
-`updateBanditArm(arm: BanditArm, realized_usdc: float) → BanditArm` SHALL be a pure function
-(no side effects) that implements steps (a)-(d); the caller performs steps (e)-(f).
+`updateBanditArm(arm: BanditArm, realized_usd: float, usdc_scale: float) → BanditArm` SHALL
+be a pure function (no side effects) that implements steps (a)-(d); the caller performs (e)-(f).
 
 **Edge Cases:**
-- **EDGE-M2a** `realized_usdc > usdc_scale_factor` (exceptional earn): alpha increment is
-  capped at 1.0 (the formula `realized_usdc / usdc_scale_factor` exceeds 1.0 → clipped to 1.0
-  for both alpha and beta calculations).
+- **EDGE-M2a** `realized_usd > usdc_scale_factor`: `clip(..., 0.0, 1.0)` in step (a)
+  caps the increment at 1.0 — this is the CANONICAL definition in step (a), not an exception.
 - **EDGE-M2b** Wake failed mid-pass (proactive-loop exited non-zero): no bandit update for
   that entry (outcome = unknown ≠ 0); attempt_count is NOT incremented; only wakes with a
   determined outcome update the arm.
 
 **Acceptance Criteria:**
-- `updateBanditArm({alpha=1, beta=1}, realized_usdc=0)` → `{alpha=1, beta=2}` (no income = pessimistic).
-- `updateBanditArm({alpha=1, beta=1}, realized_usdc=0.5*scale)` → `{alpha=1.5, beta=1.5}`.
-- Property test: `expected_usdc_per_wake` after N updates equals observed-mean of realized_usdc
-  to within the Bayesian shrinkage bound.
+- `updateBanditArm({alpha=1, beta=1}, realized_usd=0, scale=1.0)` → `{alpha=1, beta=2}` (pessimistic).
+- `updateBanditArm({alpha=1, beta=1}, realized_usd=0.5*scale, scale=1.0)` → `{alpha=1.5, beta=1.5}`.
+- `updateBanditArm({alpha=1, beta=1}, realized_usd=2.0*scale, scale=1.0)` → `{alpha=2, beta=1}` (capped at increment=1.0).
+- Property test: `alpha >= 1.0` and `beta >= 1.0` for any sequence of updates (PROP-M3).
 
 ---
 
@@ -348,18 +372,31 @@ THE SYSTEM SHALL expose a pure function:
 ```python
 decideActivity(
     menu: list[MenuEntry],
-    novelty_quota: float,       # fraction of wakes that MUST explore (default 0.1 = skeleton REQ-H1)
-    budget: Budget,             # FULL | MEDIUM | LIGHT | MINIMAL (from skeleton quota-tracker.py)
-    now_ts: int,
+    bandit_stats: BanditStats,       # {recent_explore_count: int, total_recent_wakes: int}
+                                     # injected by shell from tail-100 of menu-bandit.jsonl;
+                                     # pure fn never reads files
+    explore_epsilon: float,          # quota fraction (default 0.1 = skeleton REQ-H1 floor)
+    budget: Budget,                  # FULL | MEDIUM | LIGHT | MINIMAL
+    config: DecideConfig,            # {k_min_exploit: int, budget_caps: dict[Budget, float]}
 ) → ActivityDecision
 ```
 
-where `ActivityDecision` = `{mode: "exploit" | "explore", pick: MenuEntry | None, reason: str}`.
+where `ActivityDecision` = `{mode: "exploit" | "explore", pick: MenuEntry | None, reason: str}`
+and `BanditStats = {recent_explore_count: int, total_recent_wakes: int}`.
 
 `decideActivity` reads NO files and makes NO system calls — all inputs are passed as arguments.
+The I/O shell is responsible for reading menu-bandit.jsonl, computing `bandit_stats`, and passing
+it in. The explore/exploit decision rule is therefore deterministic given the inputs.
+
+**Explore/exploit decision rule (deterministic, no RNG):**
+1. If `menu` is empty → return sentinel (REQ-DA4).
+2. Compute `explore_due = bandit_stats.recent_explore_count < floor(explore_epsilon × min(bandit_stats.total_recent_wakes + 1, 100))`.
+3. If `explore_due` → select explore (quota not yet met for this rolling window).
+4. If no entry has `attempt_count >= config.k_min_exploit` → select explore (all arms unproven).
+5. Otherwise → select exploit (greedy-max on `expected_usd_per_wake` among eligible arms).
 
 **Acceptance Criteria:**
-- `decideActivity([...], 0.1, FULL, T)` always returns a single ActivityDecision (never raises).
+- `decideActivity([...], BanditStats(0,0), 0.1, FULL, config)` always returns a single ActivityDecision (never raises).
 - Property test: for any valid input, `mode` is exactly one of {"exploit", "explore"}.
 
 ---
@@ -367,25 +404,27 @@ where `ActivityDecision` = `{mode: "exploit" | "explore", pick: MenuEntry | None
 #### REQ-DA2 — Exploit mode selection (pass^k reliability)
 
 WHEN `decideActivity` selects `mode: "exploit"`, THE SYSTEM SHALL pick the `MenuEntry` with the
-highest `expected_usdc_per_wake` among entries where `attempt_count >= K_MIN_EXPLOIT` (default
-K_MIN_EXPLOIT = 3, = minimum observations before an arm is considered "proven").
+highest `expected_usd_per_wake` among entries where:
+- `attempt_count >= config.k_min_exploit` (default K_MIN_EXPLOIT = 3, = minimum observations
+  before an arm is considered "proven"), AND
+- `admitted_at_ts is NOT None` (curation admission REQUIRED; entries with null `admitted_at_ts`
+  are NEVER eligible for exploit regardless of attempt_count or novelty_tried status).
 
 Ties SHALL be broken by lower `beta` value (= less pessimistic failure rate).
-
-Entries whose `admitted_at_ts is None` and `novelty_tried == False` SHALL NOT be eligible for
-exploit mode selection — they are explore-only until at least one wake has been attempted.
 
 **Edge Cases:**
 - **EDGE-DA2a** No entry has `attempt_count >= K_MIN_EXPLOIT` → mode falls back to explore
   unconditionally (all arms are unproven).
-- **EDGE-DA2b** `budget == LIGHT` or `MINIMAL` → exploit filter adds `cost_estimate_usdc <= budget_cap`
-  (budget cap: LIGHT = 0.01 USDC/wake, MINIMAL = 0.001 USDC/wake); entries above cap are
+- **EDGE-DA2b** `budget == LIGHT` or `MINIMAL` → exploit filter adds `cost_estimate_usd <= budget_cap`
+  (budget cap: LIGHT = 0.01 USD/wake, MINIMAL = 0.001 USD/wake); entries above cap are
   excluded from exploit candidates.
 
 **Acceptance Criteria:**
-- Given two entries with expected_usdc_per_wake = 0.5 and 0.3, both with attempt_count >= 3,
-  exploit selects the 0.5 entry.
+- Given two entries with expected_usd_per_wake = 0.5 and 0.3, both with attempt_count >= 3 and
+  admitted_at_ts set, exploit selects the 0.5 entry.
 - Given only entries with attempt_count < 3, mode is "explore".
+- Given an entry with attempt_count >= 3 but admitted_at_ts=None, it is NOT exploit-eligible
+  (mode is "explore").
 
 ---
 
@@ -394,28 +433,29 @@ exploit mode selection — they are explore-only until at least one wake has bee
 WHEN `decideActivity` selects `mode: "explore"`, THE SYSTEM SHALL prefer entries where
 `novelty_tried == False` (= never appeared in the slot's `applied.jsonl`).
 
-THE SYSTEM SHALL enforce the skeleton REQ-H1 novelty quota: the fraction of wakes selecting
-`mode: "explore"` SHALL be at least `novelty_quota` (default 0.1) over any rolling window of
-100 wakes, tracked via `~/loops/<slot>/menu-bandit.jsonl` mode field.
+The skeleton REQ-H1 novelty quota (at least `explore_epsilon` fraction of wakes must be explore)
+is ENFORCED by the deterministic `explore_due` check in REQ-DA1's decision rule, using
+`bandit_stats.recent_explore_count` INJECTED by the shell (not read inside the pure fn).
 
 IF no `novelty_tried == False` entry exists, THE SYSTEM SHALL select the entry with the
 LOWEST `attempt_count` among all entries (= least explored arm).
 
-IF `novelty_quota` floor cannot be met because only exploit-eligible entries remain, THE SYSTEM
+IF the quota cannot be met because only exploit-eligible entries remain, THE SYSTEM
 SHALL log `{reason: "novelty-floor-unmet"}` to `lessons.jsonl` (same as skeleton REQ-H1) and
 fall through to exploit selection.
 
 **Edge Cases:**
 - **EDGE-DA3a** Multiple `novelty_tried == False` entries → select the one with lowest
-  `cost_estimate_usdc` (minimize explore cost per the budget constraint).
-- **EDGE-DA3b** Rolling 100-wake history is all explore (e.g., menu just bootstrapped):
-  quota is satisfied; no novelty-floor-unmet log.
+  `cost_estimate_usd` (minimize explore cost per the budget constraint).
+- **EDGE-DA3b** `bandit_stats.total_recent_wakes == 0` (first wake ever): `explore_due = True`
+  (0 < floor(0.1 × 1) = 0 is False; quota = 0 explores in 1 wake → explore_due=False only if
+  total_recent_wakes+1 rounds to 0 explores — use ceiling for safety: at least 1 explore per 10).
 
 **Acceptance Criteria:**
 - Given a 10-entry menu where 9 have `novelty_tried=True` and 1 has `novelty_tried=False`,
   explore selects the one with `novelty_tried=False`.
-- Quota simulation: after 100 synthetically generated wakes with novelty_quota=0.1, at least
-  10 wakes have mode="explore".
+- Quota simulation: given bandit_stats={recent_explore_count=0, total_recent_wakes=9},
+  explore_epsilon=0.1, decideActivity returns mode="explore" (quota not met: 0 < floor(0.1×10)=1).
 
 ---
 
@@ -449,28 +489,45 @@ It does NOT replace them.
 #### REQ-EV1 — Rubric score calculation
 
 WHEN a candidate action is ready for submission or a deliverable is ready for 納品,
-THE SYSTEM SHALL call `rubricScore(candidate: CandidateAction, rubric: Rubric) → RubricResult`
-where:
-- `rubric` is loaded from `~/loops/<slot>/rubric-config.json` for the action's category,
-  falling back to a default rubric if the category is absent,
-- each rubric entry is `{dimension: str, weight: float, description: str}` with
-  `Σ weights == 1.0` (enforced at load time — mis-configured rubric is a fatal load error,
-  not a soft warning),
-- the LLM judge scores each dimension on [0.0, 1.0],
-- `weighted_score = Σ (score_d × weight_d)` over all dimensions.
+THE SYSTEM SHALL call the pure function:
 
-`rubricScore` takes pre-computed dimension scores as inputs (the LLM judge call is effectful
-and happens BEFORE `rubricScore` is invoked); `rubricScore` is the pure aggregation only.
+```python
+rubricScore(
+    dimension_scores: dict[str, float],     # pre-computed LLM judge scores per dimension
+    weights: dict[str, float],              # from rubric-config.json; must sum to 1.0
+    has_deliverable: bool,                  # effectful shell checks file existence, passes result in
+    deliverable_required: bool,             # from rubric-config.json category config
+    verifiable_result: Optional[Literal["PASS", "FAIL", "NOT_APPLICABLE"]] = None,
+                                            # set by effectful shell BEFORE calling rubricScore;
+                                            # implements Verifier's Law (REQ-EV3) inside pure fn
+) → RubricResult
+```
+
+where `RubricResult = {verdict: "PASS" | "HARD_FAIL", weighted_score: float, override_reason: str | None}`.
+
+**Precedence order (applied inside the pure function in this order):**
+1. If `verifiable_result == "PASS"` → return `RubricResult(verdict="PASS", weighted_score=1.0, override_reason="verifiable-check")` immediately.
+2. If `verifiable_result == "FAIL"` → return `RubricResult(verdict="HARD_FAIL", weighted_score=0.0, override_reason="verifiable-check")` immediately.
+3. If `deliverable_required and not has_deliverable` → return `RubricResult(verdict="HARD_FAIL", weighted_score=0.0, override_reason="missing-deliverable")` immediately.
+4. If `sum(weights.values()) != 1.0` → raise `ValueError("weights must sum to 1.0")`.
+5. Compute `weighted_score = Σ (dimension_scores[d] × weights[d])`.
+   Return `RubricResult(verdict="PASS" if weighted_score >= 0.5 else "HARD_FAIL", weighted_score=weighted_score, override_reason=None)`.
+
+The LLM judge call (effectful) happens BEFORE `rubricScore` is invoked; `rubricScore` is the
+pure aggregation and override logic only. No file I/O inside the function.
 
 **Edge Cases:**
-- **EDGE-EV1a** No rubric-config.json for this slot (brand-new slot): use the global default
-  rubric at `~/anicca/skills/_shared/rubric-default.json` (shipped with the framework).
-- **EDGE-EV1b** Rubric weights do not sum to 1.0 (misconfiguration): `rubricScore` raises
-  `ValueError("weights must sum to 1.0")` and the action is treated as HARD_FAIL.
+- **EDGE-EV1a** No rubric-config.json for this slot (brand-new slot): effectful caller loads the
+  global default rubric at `~/anicca/skills/_shared/rubric-default.json` and passes weights in.
+- **EDGE-EV1b** `verifiable_result == "NOT_APPLICABLE"` (no verifiable check configured for
+  this category): fall through to deliverable check then weighted score.
 
 **Acceptance Criteria:**
-- Given rubric `[{dim="quality", weight=0.7, score=0.8}, {dim="relevance", weight=0.3, score=0.5}]`,
+- Given `dimension_scores={"quality":0.8,"relevance":0.5}`, `weights={"quality":0.7,"relevance":0.3}`,
+  `has_deliverable=True`, `deliverable_required=False`, `verifiable_result=None`:
   `rubricScore` returns `weighted_score = 0.71`.
+- `rubricScore(..., verifiable_result="PASS")` → verdict="PASS" regardless of dimension_scores.
+- `rubricScore(..., verifiable_result="FAIL")` → verdict="HARD_FAIL" regardless of dimension_scores.
 - Property test: `weighted_score` ∈ [0.0, 1.0] for all valid inputs.
 
 ---
@@ -523,38 +580,38 @@ overrides a verifiable-check failure.
   action proceeds. Judge score is recorded to calibration.jsonl for future analysis.
 
 **Acceptance Criteria:**
-- Integration test: action with verifiable_check=pass scores PASS even if mock judge returns 0.2.
-- Integration test: action with verifiable_check=fail scores HARD_FAIL even if mock judge returns 0.9.
+- Integration test: `rubricScore(..., verifiable_result="PASS", dimension_scores={"q":0.1})` → verdict="PASS".
+- Integration test: `rubricScore(..., verifiable_result="FAIL", dimension_scores={"q":0.9})` → verdict="HARD_FAIL".
 
 ---
 
 #### REQ-EV4 — Calibration record
 
-WHEN an action's outcome is determined (= the platform confirms acceptance/rejection or a USDC
-payout receipt arrives per INV-7), THE SYSTEM SHALL append to `~/loops/<slot>/calibration.jsonl`:
+WHEN an action's outcome is determined (= the platform confirms acceptance/rejection or a payout
+receipt arrives per INV-8 verification), THE SYSTEM SHALL append to `~/loops/<slot>/calibration.jsonl`:
 
 ```jsonc
 {
   "ts": <int>,
   "action_id": "<uuid>",
   "rubric_score": <float>,        // the weighted_score at time of submission
-  "realized_usdc": <float>,       // actual USDC earned for this action (INV-7 verified; 0 if rejected)
+  "realized_usd": <float>,        // actual USD earned (INV-8 verified; JPY converted via FX; 0 if rejected)
   "outcome_type": "accepted" | "rejected" | "hard_fail_skip",
   "window_ts": <int>              // ts of the wake when the outcome was received
 }
 ```
 
-This row is the calibration dataset for `calibrationDrift`.
+This row is the calibration dataset for `calibrationDrift`. `realized_usd` is normalized from
+both JPY and USDC payouts using the same FX logic as REQ-S2(c).
 
 **Edge Cases:**
-- **EDGE-EV4a** Action was HARD_FAIL skipped (= REQ-EV2 skipped submission): append row with
-  `realized_usdc=0.0`, `outcome_type="hard_fail_skip"` — these are valid data points (the judge
-  correctly refused a no-deliverable action).
+- **EDGE-EV4a** Action was HARD_FAIL skipped (= REQ-EV2 or verifiable_result="FAIL" skipped
+  submission): append row with `realized_usd=0.0`, `outcome_type="hard_fail_skip"` — valid data.
 - **EDGE-EV4b** Action submitted but no outcome after 14 days: append row with
-  `realized_usdc=null`, `outcome_type="timeout"` — excluded from calibrationDrift calculation.
+  `realized_usd=null`, `outcome_type="timeout"` — excluded from calibrationDrift calculation.
 
 **Acceptance Criteria:**
-- After 10 completed wakes, calibration.jsonl has ≥ 1 row with `realized_usdc > 0` (assuming
+- After 10 completed wakes, calibration.jsonl has ≥ 1 row with `realized_usd > 0` (assuming
   at least one earn action was accepted).
 - Schema validation test: every row conforms to the schema.
 
@@ -565,12 +622,17 @@ This row is the calibration dataset for `calibrationDrift`.
 Source: benchflow-ai/awesome-evals criteria-drift detection.
 
 THE SYSTEM SHALL expose a pure function:
-`calibrationDrift(scores: list[float], realized_usdc: list[float], window_secs: int, min_pairs: int = 10) → DriftResult`
+`calibrationDrift(scores: list[float], realized_usd: list[float], min_pairs: int = 10) → DriftResult`
 where `DriftResult = {sufficient_data: bool, pearson_r: float | None, drift_detected: bool, threshold: float}`.
 
-The function computes the Pearson correlation coefficient between `scores` and `realized_usdc`
-over the rolling window. `drift_detected = True` when `pearson_r < threshold` (default
-threshold = 0.3 — judge scores must correlate at least weakly with actual earnings).
+`window_secs` is NOT a parameter of this pure function. The effectful caller reads
+`calibration.jsonl`, filters rows by timestamp (tail by `window_ts` field), extracts only
+`rubric_score` and `realized_usd` values into two lists, and passes those pre-windowed lists
+to `calibrationDrift`. Windowing responsibility is CALLER-SIDE (see EDGE-X3 below).
+
+The function computes the Pearson correlation coefficient between `scores` and `realized_usd`.
+`drift_detected = True` when `pearson_r < threshold` (default threshold = 0.3 — judge scores
+must correlate at least weakly with actual earnings in USD).
 
 WHEN `drift_detected == True`, proactive-loop.sh SHALL:
 (a) append `{ts, reason: "calibration-drift", pearson_r}` to `lessons.jsonl`,
@@ -584,7 +646,7 @@ returns `DriftResult(sufficient_data=False, pearson_r=None, drift_detected=False
 is raised on insufficient data.
 
 **Edge Cases:**
-- **EDGE-EV5a** All realized_usdc are 0.0 (zero earning period): correlation is undefined
+- **EDGE-EV5a** All realized_usd are 0.0 (zero earning period): correlation is undefined
   (zero variance in Y); function returns `pearson_r=None`, `drift_detected=False` (not enough
   signal to judge drift — do not penalize the judge for a zero-earn phase).
 - **EDGE-EV5b** Perfect correlation (pearson_r = 1.0): drift_detected=False, no action.
@@ -592,9 +654,9 @@ is raised on insufficient data.
   flag is still recorded in lessons.jsonl.
 
 **Acceptance Criteria:**
-- `calibrationDrift(scores=[0.9,0.8,0.7], realized_usdc=[10,8,7], ...) → pearson_r ≈ 1.0, drift=False`.
-- `calibrationDrift(scores=[0.9,0.1,0.5], realized_usdc=[0,10,0], ...) → pearson_r < 0.3, drift=True`.
-- `calibrationDrift(scores=[...] len=5, ..., min_pairs=10) → sufficient_data=False`.
+- `calibrationDrift(scores=[0.9,0.8,0.7], realized_usd=[10,8,7]) → pearson_r ≈ 1.0, drift=False`.
+- `calibrationDrift(scores=[0.9,0.1,0.5], realized_usd=[0,10,0]) → pearson_r < 0.3, drift=True`.
+- `calibrationDrift(scores=[...] len=5, min_pairs=10) → sufficient_data=False`.
 - Property test: `calibrationDrift` with all identical scores returns `pearson_r=None` (undefined).
 
 ---
@@ -646,16 +708,34 @@ Completion criterion: exit code 0 AND events.jsonl is valid JSON AND no
 
 #### REQ-CU3 — Adversary PASS requirement
 
-WHEN the sandbox paper run passes (REQ-CU2), THE SYSTEM SHALL spawn a fresh-context Opus
-adversary (same mechanism as skeleton REQ-E4 strategy-mutation seam) with manifest:
+WHEN the sandbox paper run passes (REQ-CU2), THE SYSTEM SHALL:
+
+**(a) Payout endpoint probe (REAL verification, not mocked):**
+Parse the skill's SKILL.md for a `payout_api_check:` frontmatter field specifying a read-only
+endpoint (e.g., `GET /api/v1/sales/test` on the platform). Issue that request with test-mode
+or stub credentials (a real HTTP call, not the sandbox mock). If the endpoint returns an HTTP
+response (any status code including 401/404) the rail EXISTS; if it raises a connection error
+the rail is UNREACHABLE. An unreachable payout endpoint is a curation FAIL (the skill cannot
+earn via it). If `payout_api_check` is absent from SKILL.md, the curation gate FAILS with
+`reason: "missing-payout_api_check"` (all skills MUST declare their settlement endpoint).
+
+**(b) Adversary review:**
+THE SYSTEM SHALL spawn a fresh-context Opus adversary with manifest:
 
 ```jsonc
 {
   "reviewType": "curation-gate",
   "skill_id": "<id>",
   "paper_run_events": "<path to events.jsonl>",
+  "endpoint_probe_result": {"url": "<declared endpoint>", "http_status": <int or null>, "reachable": <bool>},
   "skill_source": "<path to SKILL.md>",
-  "evaluation_criteria": ["earns via verifiable payout endpoint", "no human-touch surfaces", "no spawn-surface drift", "cost_estimate_usdc plausible"]
+  "evaluation_criteria": [
+    "declares a payout_api_check endpoint listed in payout-endpoint-allowlist.json for its platform",
+    "payout endpoint probe returned reachable=true (HTTP response received)",
+    "no human-touch surfaces (REQ-J8 pattern)",
+    "no spawn-surface drift",
+    "cost_estimate_usd plausible for declared skill runtime"
+  ]
 }
 ```
 
@@ -670,7 +750,9 @@ A `status: "fail"` skill is NOT re-evaluated unless it is re-proposed with a new
 **Acceptance Criteria:**
 - A skill whose SKILL.md contains any `human-touch surface` (skeleton REQ-J8 pattern) receives
   `overallVerdict == "FAIL"`.
-- A well-formed skill that passes paper run receives a verdict within 3 adversary rounds.
+- A skill missing `payout_api_check` in SKILL.md receives `overallVerdict == "FAIL"` (missing endpoint declaration).
+- A well-formed skill whose endpoint probe returns `reachable=true` and passes paper run
+  receives a verdict within 3 adversary rounds.
 
 ---
 
@@ -763,7 +845,9 @@ but are NOT proposed to curation.
 
 - **NFR-ED1** All pure functions (`netWorth`, `isSolvent`, `decideActivity`, `rubricScore`,
   `calibrationDrift`, `updateBanditArm`) SHALL be in `eval_spine.py` with zero imports of
-  file/network/subprocess/random modules — verified by AST import scan in tests.
+  `os`, `subprocess`, `pathlib`, `requests`, `urllib`, `random`, or `time` modules —
+  verified by AST import scan in `test_eval_spine_no_io.py`. The `bandit_stats` injection
+  pattern ensures `decideActivity` needs no file I/O to enforce the explore quota.
 
 - **NFR-ED2** `decideActivity` SHALL return within 100ms (no I/O; pure computation).
 
@@ -787,16 +871,21 @@ but are NOT proposed to curation.
 
 ## Edge Cases (Cross-Cutting)
 
-- **EDGE-X1** Survival ledger shows net_usdc going positive mid-grace-window: `loss_start_ts`
+- **EDGE-X1** Survival ledger shows net_usd going positive mid-grace-window: `loss_start_ts`
   is reset to `null` in the next survival.json recompute; the grace window timer restarts from
   zero if net goes negative again.
 
 - **EDGE-X2** decideActivity returns `pick` for an entry whose `admitted_at_ts is None`
   (pre-admission race): proactive-loop.sh checks `admitted_at_ts` before executing the pick;
-  if null, re-runs decideActivity with that entry excluded from the menu.
+  if null, re-runs decideActivity with that entry excluded from the menu — this should not
+  happen because REQ-DA2 makes admitted_at_ts=None entries ineligible for exploit, and REQ-DA1
+  only passes admitted entries to the exploit path; but the shell guard is a defensive backstop.
 
-- **EDGE-X3** Calibration.jsonl has > 10,000 rows: calibrationDrift operates only on the
-  rolling window (`window_secs`) — it does not scan the entire file; tail-N rows by timestamp.
+- **EDGE-X3** calibration.jsonl has > 10,000 rows: the effectful caller reads calibration.jsonl,
+  filters rows by `window_ts` field (default: last 30 days), extracts `rubric_score` and
+  `realized_usd` into two lists, and passes ONLY those pre-windowed lists to `calibrationDrift`.
+  The pure function receives pre-filtered lists and has no window_secs parameter; it operates
+  only on the data it is given.
 
 - **EDGE-X4** rubric-config.json for a category is updated mid-wake (concurrent cron write):
   rubric is loaded ONCE at the start of each wake's eval call (snapshot); mid-wake changes
@@ -812,16 +901,17 @@ but are NOT proposed to curation.
 
 | layer | function / module | side-effect surface |
 |---|---|---|
-| **PURE** | `netWorth`, `isSolvent` | none — trivial arithmetic |
-| **PURE** | `decideActivity` | none — reads from in-memory menu + stats |
-| **PURE** | `rubricScore` | none — aggregates pre-computed dimension scores |
-| **PURE** | `calibrationDrift` | none — statistics over in-memory arrays |
-| **PURE** | `updateBanditArm` | none — Beta param update |
+| **PURE** | `netWorth(cost_usd, income_usd)` | none — trivial arithmetic |
+| **PURE** | `isSolvent(net_usd, loss_start_ts, grace_window_secs, now_ts)` | none — boolean predicate on numeric inputs |
+| **PURE** | `decideActivity(menu, bandit_stats, explore_epsilon, budget, config)` | none — bandit_stats injected by shell; no file reads |
+| **PURE** | `rubricScore(dimension_scores, weights, has_deliverable, deliverable_required, verifiable_result)` | none — aggregates pre-computed scores; Verifier's Law applied by precedence |
+| **PURE** | `calibrationDrift(scores, realized_usd, min_pairs)` | none — statistics over pre-windowed in-memory arrays |
+| **PURE** | `updateBanditArm(arm, realized_usd, usdc_scale)` | none — Beta-distribution posterior update; returns new arm |
 | **EFFECTFUL** | TrackedProvider (tracked-provider.sh) | subprocess calls to `claude`/ClawRouter; reads pane footer; appends to events.jsonl |
-| **EFFECTFUL** | survivalLedger.recompute() | reads cumulative.json + fx.json; writes survival.json |
-| **EFFECTFUL** | rubricJudge.invoke() | LLM call (claude haiku); reads rubric-config.json |
-| **EFFECTFUL** | calibrationWriter.append() | appends to calibration.jsonl |
-| **EFFECTFUL** | curationGate.run() | sandbox spawn; adversary spawn; file writes to curation.jsonl + reviews/ |
+| **EFFECTFUL** | survivalLedger.recompute() | reads cumulative.json + fx.json; writes survival.json atomically |
+| **EFFECTFUL** | rubricJudge.invoke() | LLM call; reads rubric-config.json; runs verifiable check tool; passes results to rubricScore |
+| **EFFECTFUL** | calibrationWriter.append() | reads calibration.jsonl (windowed); appends row; passes pre-filtered lists to calibrationDrift |
+| **EFFECTFUL** | curationGate.run() | sandbox spawn; payout endpoint probe (real HTTP); adversary spawn; writes menu-curation.jsonl + reviews/ |
 | **EFFECTFUL** | discoveryRadar.scan() | firecrawl HTTP; `gh search`; appends to discovery.jsonl |
 
 The PURE layer forms a fully deterministic, testable core.
