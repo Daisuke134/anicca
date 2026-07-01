@@ -1,0 +1,44 @@
+{
+  "sprintNumber": 1,
+  "feature": "dispatcher-live-dormant-mode",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-01T00:00:00Z",
+  "iteration": 2,
+  "reviewContext": {
+    "reviewType": "spec",
+    "mode": "lean"
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-2-001"],
+      "evidence": [
+        {"type": "file", "location": ".vcsdd/features/dispatcher-live-dormant-mode/specs/behavioral-spec.md", "description": "REQ-L3 verbatim helper contract confirmed matches quota_tracker.py:69-81 (MOST RECENT LAST); 7-day rolling semantics preserved."},
+        {"type": "file", "location": "skills/_shared/lib/quota_tracker.py", "description": "Helper signature single-arg list[float], docstring 'most recent LAST' verified line 69-81."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-2-002"],
+      "evidence": [
+        {"type": "file", "location": ".vcsdd/features/dispatcher-live-dormant-mode/specs/verification-architecture.md", "description": "PROP-E5-sentinel-idempotent and PROP-E7-missing-expected-treated-as-zero both added (line 35, 37). REQ-D4 five-point exception matrix (a)-(e) exhaustively enumerated in behavioral-spec.md:106-118."}
+      ]
+    }
+  ],
+  "iter1FindingClosure": {
+    "FIND-001": "CLOSED — REQ-L3 verbatim cites helper contract 'MOST RECENT LAST' at behavioral-spec.md:61.",
+    "FIND-002": "CLOSED — REQ-L3 (ii) explicitly constructs `rolling_7d` list matching 7-day rolling semantics at behavioral-spec.md:68-70.",
+    "FIND-003": "PARTIAL — placement rationale added and pinned before SKIP guard, but cited line numbers (122, 127) are wrong (real: 139, 147) AND placement conflicts with menu-load location (line 169). See FIND-2-001.",
+    "FIND-004": "PARTIAL — slot_age_days source specified (slot_dir.stat().st_ctime), time_horizon_days source specified via resolve_time_horizon_days(menu), BUT REQ-D1a cites 'menu is loaded at line 145' which is wrong (real: 169) and after the SKIP guard, contradicting REQ-D1 placement. See FIND-2-001.",
+    "FIND-005": "CLOSED — REQ-D4 enumerates 5 exception points (a)-(e) with per-point handling at behavioral-spec.md:106-118.",
+    "FIND-006": "PARTIAL — PROP-E5-sentinel-idempotent and PROP-E7-missing-expected-treated-as-zero added, but PROP-L3 has contradictory naming ('most-recent-first' vs new 'most-recent-last' row); both required:true. See FIND-2-002."
+  },
+  "convergenceSignals": {
+    "findingCount": 2,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": ["spec_fidelity", "verification_readiness"],
+    "duplicateFindings": []
+  }
+}

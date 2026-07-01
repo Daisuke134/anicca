@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-2-001",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "REQ-D1 pins compute_dormant_state placement 'between line 122 (STEP 3 recipe block end) and line 127 (SKIP guard read)', and REQ-D1a says time_horizon_days is read via 'resolve_time_horizon_days(menu, default=14) ... after menu is loaded at line 145.' BOTH line numbers are wrong and — worse — mutually incompatible with the actual dispatcher control flow verified at skills/_shared/proactive-loop-dispatch.py:115-184. Real line numbers: the STEP 3 recipe/health block ends at line 139 (the `except` handler), the SKIP guard reads `.dormant.sentinel` at line 147, and `menu = load_menu(...)` is at line 169 (AFTER the SKIP guard). REQ-D1 requires compute_dormant_state to run BEFORE the SKIP guard (so a sentinel written this tick short-circuits STEP 6 in the same tick), yet REQ-D1a requires `menu` to feed `resolve_time_horizon_days(menu)` — but `menu` is not loaded until line 169, i.e. AFTER the SKIP guard. As written, the spec is unimplementable: Phase 2/3 either (a) violates REQ-D1 (compute after SKIP → sentinel takes effect only next tick, defeating REQ-D1 rationale (b)), or (b) violates REQ-D1a (compute before menu load → time_horizon_days source undefined), or (c) silently moves the menu load, which is a spec change not authorized here. The spec must either (i) require moving `menu = load_menu(...)` above the SKIP guard AND fix all cited line numbers, or (ii) redefine the placement to be before-line-147 with an explicit early menu read. This defect blocks PROP-D1 and PROP-D2 from being unambiguously testable.",
+  "evidence": {
+    "filePath": "skills/_shared/proactive-loop-dispatch.py",
+    "lineRange": "139-169",
+    "snippet": "    except Exception as e:\n        _write_status(slot_dir, slot=slot, status=\"running\",\n                     step=f\"3-health-check-error-{type(e).__name__}\")\n\n    unfixable_count = 0\n    ...\n    # SKIP guard\n    dormant = (slot_dir / \".dormant.sentinel\").exists()\n    skip, reason = should_skip_step6(...)\n    ...\n    # STEP 5: pick next from menu\n    menu = load_menu(slot_dir / \"menu.json\")"
+  },
+  "routeToPhase": "1a"
+}

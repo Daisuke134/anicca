@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-2-002",
+  "dimension": "verification_readiness",
+  "category": "spec_gap",
+  "severity": "medium",
+  "description": "PROP-L3 in verification-architecture.md line 26 is named `PROP-L3-window-count-uses-most-recent-first` and its mapping cell says 'count_consecutive_negative_windows called with correct ordering'. But REQ-L3 (behavioral-spec.md lines 61, 70) and the helper's own docstring (quota_tracker.py:70-71) both mandate ordering = 'MOST RECENT LAST'. The PROP name still asserts the OPPOSITE ordering ('most-recent-first'). A Phase-3 test author reading PROP-L3-*-most-recent-first can honestly implement a test that flips the list — passing the PROP name while violating the actual helper contract, reintroducing exactly the FIND-001 (iter-1) bug this iteration was supposed to close. A second PROP row (line 38, `PROP-L3-rolling-7d-most-recent-last`) exists but does NOT replace the wrongly-named one — both are marked required:true, creating a contradictory proof obligation. Rename PROP-L3 line 26 to `PROP-L3-window-count-uses-most-recent-last` (or delete it in favor of line 38).",
+  "evidence": {
+    "filePath": ".vcsdd/features/dispatcher-live-dormant-mode/specs/verification-architecture.md",
+    "lineRange": "26-38",
+    "snippet": "| PROP-L3-window-count-uses-most-recent-first | 1 | true | REQ-L3 (count_consecutive_negative_windows called with correct ordering) |\n...\n| PROP-L3-rolling-7d-most-recent-last | 1 | true | REQ-L3 — the list passed to count_consecutive_negative_windows is ordered MOST RECENT LAST"
+  },
+  "routeToPhase": "1b"
+}
