@@ -100,3 +100,27 @@ test("excludeSet(row) contains the row's own id + seed + our ids (per-row)", () 
   for (const seed of SEED_ADDRESSES) assert.ok(s.has(seed.toLowerCase()));
   for (const our of OUR_INSTANCE_IDS) assert.ok(s.has(our.toLowerCase()));
 });
+
+test("edge-008: non-finite ethUsdPrice => net_worth_src unverified (never NaN trusted)", () => {
+  const row = baseRow({ id: "0xaaa" });
+  const reader = mockReader({ bal: { "0xaaa": { usdcAtomic: 1_000000n, wei: 1_000000000000000000n } }, price: NaN });
+  const [e] = enrichOnChain([row], reader);
+  assert.strictEqual(e.net_worth_src, "unverified");
+});
+
+test("edge-007: revenue_today is clamped <= revenue_mo even if reader is inconsistent", () => {
+  const row = baseRow({ id: "0xaaa" });
+  // enrich calls externalInflowsUsd for MONTH first, then TODAY. Return mo=5 then today=9
+  // (inconsistent, today>mo) — enrich must clamp today to mo. Call-order based = date-independent.
+  let n = 0;
+  const reader = {
+    ethUsdPrice: () => 3000,
+    usdcBalanceAtomic: () => 0n,
+    nativeBalanceWei: () => 0n,
+    externalInflowsUsd: () => (n++ === 0 ? 5 : 9),
+  };
+  const [e] = enrichOnChain([row], reader);
+  assert.ok(e.revenue_today_usd <= e.revenue_mo_usd, "today must be clamped to <= mo");
+  assert.strictEqual(e.revenue_mo_usd, 5);
+  assert.strictEqual(e.revenue_today_usd, 5);
+});

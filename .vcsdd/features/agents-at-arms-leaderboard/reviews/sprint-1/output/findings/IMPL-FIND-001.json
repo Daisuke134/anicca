@@ -1,0 +1,15 @@
+{
+  "findingId": "IMPL-FIND-001",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "requirement": "R4",
+  "description": "R4 requires totals to 'sum only net_worth_src===\"chain\"' (and earned_mo_usd only earn_src===\"chain\"). The implementation instead uses isVerified(src) = src !== 'unverified', which returns TRUE for rows whose *_src is ABSENT (never enriched). Those rows' SELF-ASSERTED net_worth_usd / revenue_mo_usd are then summed into the served totals. This is the exact fake-money channel INV-NOFAKE exists to close: a raw self-reported figure is trusted whenever enrichment has not run. Note dashboard-sync.js:14 serves aggregate(rawRows) with NO src fields, so the LIVE total_net_worth_usd it emits is a sum of self-asserted balances rather than the R4-mandated 'undefined (—)'. If isVerified required src==='chain', the un-enriched live endpoint would correctly emit undefined instead of a fake sum. aggregate.test.js:12-16 cements the wrong behavior by asserting total_net_worth_usd===150 from rows that carry no net_worth_src at all.",
+  "evidence": {
+    "filePath": "apps/landing/netlify/functions/_lib/telemetry-aggregate.js",
+    "lineRange": "4-6, 22-27, 31-32",
+    "snippet": "function isVerified(src) { return src !== \"unverified\"; } // absent counts"
+  },
+  "fix": "isVerified(src) => src === 'chain' (strict), matching R4 verbatim.",
+  "routeToPhase": "2b"
+}

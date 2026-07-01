@@ -1,0 +1,15 @@
+{
+  "findingId": "IMPL-FIND-004",
+  "dimension": "verification_readiness",
+  "category": "test_coverage",
+  "severity": "major",
+  "requirement": "R2",
+  "description": "R2 has three ranking guarantees: (a) verified-first by revenue_mo_usd desc; (b) tie broken by net_worth_usd desc WHEN both rows are net_worth_src==='chain', else id asc; (c) unverified (earn_src==='unverified') appended after ALL verified — 'unverified never out-ranks verified'. Only (a) is tested: enrich.test.js:66-80 ranks two rows that are BOTH earn_src='chain' (no reader throw) by revenue. There is NO test where a row has earn_src='unverified' (i.e. throwOn:'inflows') proving it sorts below a low-revenue verified row — the central anti-fake ordering claim. There is also NO test for the net_worth tie-break, nor for the rule that a non-chain net_worth is never used to rank (rankCmp:15). The rankCmp branch that guards net_worth_src==='chain' && ... is entirely unexercised.",
+  "evidence": {
+    "filePath": "apps/landing/netlify/functions/_lib/__tests__/enrich.test.js",
+    "lineRange": "66-80",
+    "snippet": "// both rows earn_src='chain'; no unverified row is ever ranked in any test"
+  },
+  "fix": "Add tests: (1) throwOn:'inflows' on the high-revenue row => it appears AFTER a $0.01 verified earner; (2) two both-chain rows equal revenue => ordered by net_worth desc; (3) a chain earner with net_worth_src='unverified' does not use net_worth for its tie (falls to id asc).",
+  "routeToPhase": "2b"
+}

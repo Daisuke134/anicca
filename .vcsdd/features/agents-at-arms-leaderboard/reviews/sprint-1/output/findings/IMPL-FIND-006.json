@@ -1,0 +1,15 @@
+{
+  "findingId": "IMPL-FIND-006",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "medium",
+  "requirement": "R3",
+  "description": "net_worth is computed as Number(reader.usdcBalanceAtomic(id))/1e6 (enrich.js:24). usdcBalanceAtomic is a bigint of 6-dp atomic units; Number() silently loses integer precision above 2^53 (~9.007e15 atomic = ~$9.007e9 USDC). A whale balance beyond that yields a rounded (wrong) net_worth with src='chain' — a silently-corrupt VERIFIED figure that then feeds ranking and totals. No test exercises the Number(bigint) path with a value > 2^53; every fixture uses tiny balances (1_000000n). The verification-architecture R3 row claims 'dimensioned, exact' — exactness above 2^53 is neither implemented (no BigInt-scaled arithmetic) nor tested.",
+  "evidence": {
+    "filePath": "apps/landing/netlify/functions/_lib/enrich.js",
+    "lineRange": "24-25",
+    "snippet": "const usdc = Number(reader.usdcBalanceAtomic(row.id)) / 1e6;"
+  },
+  "fix": "Either document the safe ceiling, or scale with BigInt before Number() (e.g. Number(atomic / 10000n)/100). Add a >2^53 fixture asserting exactness/behavior.",
+  "routeToPhase": "2b"
+}

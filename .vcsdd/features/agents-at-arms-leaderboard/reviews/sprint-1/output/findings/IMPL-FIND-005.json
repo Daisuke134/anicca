@@ -1,0 +1,15 @@
+{
+  "findingId": "IMPL-FIND-005",
+  "dimension": "verification_readiness",
+  "category": "test_quality",
+  "severity": "major",
+  "requirement": "R3 anti-buy (INV-NOFAKE headline)",
+  "description": "The self-transfer anti-buy proof (own-id excluded via excludeSet adding row.id) is genuinely tested and holds. BUT the SEED-address exclusion — half of the headline claim 'self/seed/treasury money cannot buy rank' — is proven only against a PLACEHOLDER. leaderboard-constants.js:10 sets SEED_ADDRESSES=['0x00000000000000000000000000000000000000a1'] with a TODO to fill the real treasury (0x810f...). The anti-buy test enrich.test.js:52 references SEED_ADDRESSES[0] DYNAMICALLY, so it passes for ANY value in the array and proves nothing about the real treasury being excluded. Shipping as-is: in production a genuine transfer FROM the real founder/treasury wallet (0x810f) would count as external inflow and DOES pump rank — the headline no-fake guarantee is FALSE until the constant is filled. OUR_INSTANCE_IDS is also [] (untested against a real instance id).",
+  "evidence": {
+    "filePath": "apps/landing/netlify/functions/_lib/leaderboard-constants.js",
+    "lineRange": "6, 10",
+    "snippet": "const OUR_INSTANCE_IDS = []; const SEED_ADDRESSES = [\"0x00000000000000000000000000000000000000a1\"]; // placeholder"
+  },
+  "fix": "Fill SEED_ADDRESSES with the real treasury/founder Base wallet(s) and OUR_INSTANCE_IDS with the canonical ids BEFORE any producer serves a leaderboard; test with a hard-coded real-looking seed addr, not SEED_ADDRESSES[0].",
+  "routeToPhase": "2b"
+}

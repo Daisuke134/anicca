@@ -1,0 +1,15 @@
+{
+  "findingId": "IMPL-FIND-007",
+  "dimension": "edge_case_coverage",
+  "category": "requirement_mismatch",
+  "severity": "medium",
+  "requirement": "R9 / R3",
+  "description": "R9 makes revenue_today_usd <= revenue_mo_usd a validated invariant at ingestion. enrichOnChain OVERWRITES both from two INDEPENDENT reader calls: externalInflowsUsd(id, midnight, ex) and (id, monthStart, ex) (enrich.js:33-34). Nothing enforces monotonicity between the two reads. A live reader that queries today and month separately can observe an inflow that landed between the two calls (or any reader inconsistency) and produce revenue_today_usd > revenue_mo_usd. aggregate consumes the enriched row WITHOUT re-running validate(), so an R9-invalid figure flows straight to the served leaderboard. The invariant is checked on inbound self-reports but discarded on the authoritative chain path.",
+  "evidence": {
+    "filePath": "apps/landing/netlify/functions/_lib/enrich.js",
+    "lineRange": "33-34",
+    "snippet": "e.revenue_mo_usd = reader.externalInflowsUsd(row.id, mStart, ex); e.revenue_today_usd = reader.externalInflowsUsd(row.id, midnight, ex);"
+  },
+  "fix": "Clamp revenue_today_usd = min(today, mo) after the reads, or re-validate the enriched row and flag unverified on violation.",
+  "routeToPhase": "2b"
+}

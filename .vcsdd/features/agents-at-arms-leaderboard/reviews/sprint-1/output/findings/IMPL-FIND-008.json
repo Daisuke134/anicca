@@ -1,0 +1,15 @@
+{
+  "findingId": "IMPL-FIND-008",
+  "dimension": "edge_case_coverage",
+  "category": "implementation_correctness",
+  "severity": "low",
+  "requirement": "R4",
+  "description": "R4 requires totals 'never NaN'. enrich sets net_worth_usd = usdc + eth*reader.ethUsdPrice() and marks src='chain' whenever no method THROWS — but a reader returning NaN (ethUsdPrice() -> NaN, or a NaN balance) does not throw, so a NaN net_worth is stamped 'chain' (verified). aggregate.sumVerified then does counted.reduce((s,r)=>s+(r[valueKey]||0)) — NaN is truthy so ||0 does NOT rescue it, and total_net_worth_usd becomes NaN, violating 'never NaN'. Same for revenue_mo_usd feeding earned_mo_usd. No Number.isFinite guard anywhere; no test with a NaN reader output.",
+  "evidence": {
+    "filePath": "apps/landing/netlify/functions/_lib/enrich.js",
+    "lineRange": "24-27",
+    "snippet": "e.net_worth_usd = usdc + eth * reader.ethUsdPrice(); e.net_worth_src = \"chain\";"
+  },
+  "fix": "Treat non-finite reader output as unverified (Number.isFinite check) before stamping 'chain'; add a NaN-reader test asserting src='unverified' and total not NaN.",
+  "routeToPhase": "2b"
+}

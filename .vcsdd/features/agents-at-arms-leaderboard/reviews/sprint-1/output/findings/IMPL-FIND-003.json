@@ -1,0 +1,15 @@
+{
+  "findingId": "IMPL-FIND-003",
+  "dimension": "verification_readiness",
+  "category": "test_coverage",
+  "severity": "major",
+  "requirement": "R5",
+  "description": "R5 ('now-ts>600s => stale:true; status unchanged; dead visible') is claimed GREEN in sprint-1-green-phase.log but has ZERO proving test. Grepping the entire __tests__ dir, the ONLY 'stale' assertion is verify.test.js:60 ('rejects a stale ts (>60s old)') — that is the pre-existing verifier freshness check (reason:'stale'), NOT the leaderboard stale:boolean derivation at aggregate.js:40. No test constructs an old ts and asserts leaderboard[i].stale===true, nor a fresh ts asserting false, nor 'dead visible'. Root cause it is untestable as written: aggregate computes stale from Date.now() (aggregate.js:30) with no injectable clock, so a deterministic old-ts test cannot be written without monkey-patching global Date. R5 is unproven.",
+  "evidence": {
+    "filePath": "apps/landing/netlify/functions/_lib/telemetry-aggregate.js",
+    "lineRange": "30, 40",
+    "snippet": "const nowSec = Math.floor(Date.now() / 1000); ... stale: r.ts ? nowSec - r.ts > 600 : false"
+  },
+  "fix": "Inject nowSec (or a nowMs param like enrich.js has) into aggregate; add a unit test: old ts => stale:true, fresh => false, dead row still present.",
+  "routeToPhase": "2b"
+}

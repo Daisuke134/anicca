@@ -1,0 +1,15 @@
+{
+  "findingId": "IMPL-FIND-002",
+  "dimension": "implementation_correctness",
+  "category": "security_surface",
+  "severity": "major",
+  "requirement": "R3 / INV-NOFAKE",
+  "description": "On a reader throw, enrichOnChain flags earn_src='unverified' but does NOT clear the field: because e = {...row}, the SELF-ASSERTED revenue_mo_usd / net_worth_usd from the Supabase row survive untouched (only overwritten on success). R3 says the figure is 'flagged (never trusted)'. It IS still trusted by aggregate.js:35: selfFunded = rows.filter(r => r.status!=='dead' && r.revenue_mo_usd/30 >= r.burn_day_usd) reads revenue_mo_usd for EVERY row with no earn_src gating. So a row whose chain read failed (or that was never enriched — the live dashboard-sync path) drives self_funded_pct from a self-reported number. The served 'X% self-funded' headline is therefore self-asserted, not chain-verified — a no-fake violation shipped this sprint.",
+  "evidence": {
+    "filePath": "apps/landing/netlify/functions/_lib/telemetry-aggregate.js",
+    "lineRange": "35",
+    "snippet": "const selfFunded = rows.filter((r) => r.status !== \"dead\" && r.revenue_mo_usd / 30 >= r.burn_day_usd).length;"
+  },
+  "fix": "Gate selfFunded on earn_src==='chain' (and/or have enrich null out unverified figures so no self-asserted value can leak into any derived stat).",
+  "routeToPhase": "2b"
+}
