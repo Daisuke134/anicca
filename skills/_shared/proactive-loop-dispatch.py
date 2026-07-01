@@ -20,6 +20,7 @@ from lib.build_log import append_pass  # noqa: E402
 from lib.proactive_loop import should_skip_step6, write_unfixable_cascade_sink  # noqa: E402
 from lib.step6_act import task_descriptor, enqueue_task_descriptor  # noqa: E402
 from lib.step3_recipe import execute_recipe, default_restart_cmd_map  # noqa: E402
+from lib.roi_track import roi_row, compute_expected_jpy, append_roi_row  # noqa: E402
 
 
 def _acquire_or_exit():
@@ -185,6 +186,18 @@ def main() -> int:
         outcome=outcome,
         next_candidate=f"(layer-c-dequeue: tasks/{enq.get('filename','?')})",
     )
+
+    # STEP 7.5 (sprint-3 #34): append roi.jsonl row.
+    row = roi_row(
+        ts=int(time.time()), pass_id=pass_id, slot=slot,
+        budget=budget.value, picked=picked, outcome=outcome,
+        realized=0,  # LAYER C settle wire is sprint-4
+        expected=compute_expected_jpy(picked),
+    )
+    ar = append_roi_row(slot_dir / "roi.jsonl", row)
+    if not ar.get("ok"):
+        _write_status(slot_dir, slot=slot, status="running",
+                     step=f"7-{ar.get('status', 'roi-write-failed-unknown')}")
 
     # STEP exit
     _write_status(slot_dir, slot=slot, status="idle", step="done")
