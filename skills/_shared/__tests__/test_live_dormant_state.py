@@ -136,14 +136,14 @@ def test_L3_rolling_7d_most_recent_last_ordering():
     """
     now = 1_800_000_000
     rows = []
-    for i in range(60):
-        realized = 0 if i < 30 else 100
-        expected = 500
-        rows.append({"ts": now - (60 - i) * DAY,
-                     "roi_jpy_realized": realized,
-                     "roi_jpy_expected": expected})
-    # Add a settle so live_mode is True (else compute_dormant_state short-circuits)
-    rows.append({"ts": now - 2 * DAY, "roi_jpy_realized": 25000, "roi_jpy_expected": 0})
+    # 45 consecutive negative days ending yesterday
+    for i in range(45):
+        rows.append({"ts": now - (45 - i) * DAY,
+                     "roi_jpy_realized": 0,
+                     "roi_jpy_expected": 500})
+    # Settle placed 80 days ago → in 90d window (live_mode=True) but
+    # OUTSIDE the tail-side rolling windows (2*horizon=28 days from today)
+    rows.append({"ts": now - 80 * DAY, "roi_jpy_realized": 25000, "roi_jpy_expected": 0})
     r = compute_dormant_state(
         roi_rows=rows, slot_age_days=100.0, time_horizon_days=14, now_ts=now,
     )

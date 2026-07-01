@@ -15,17 +15,34 @@ DISPATCH_PY = REPO_ROOT / "skills" / "_shared" / "proactive-loop-dispatch.py"
 SHARED_DIR = REPO_ROOT / "skills" / "_shared"
 
 
-# ─── PROP-I3: dispatcher must NOT call legacy is_dormant / write_dormant_sentinel ─
-def test_dispatcher_does_not_call_legacy_dormant_symbols():
+# ─── PROP-I3 (sprint-4 (c) update): dispatcher must NOT call legacy is_dormant ─
+# sprint-3 baseline also banned write_dormant_sentinel; sprint-4 (c) intentionally
+# calls write_dormant_sentinel behind the LIVE-MODE gate (compute_dormant_state),
+# so that ban is relaxed. The premature-dormant residual risk is now solved by
+# the live_mode==False → is_dormant=False unconditional short-circuit in
+# compute_dormant_state (see quota_tracker.py REQ-L2).
+def test_dispatcher_does_not_call_legacy_is_dormant():
     """REQ-I3 grep with \\b word-boundary regex (upgraded per FIND-005)."""
     txt = DISPATCH_PY.read_text()
-    for sym in ("is_dormant", "write_dormant_sentinel"):
-        # Allow the WORD 'dormant' in comments; ban the SYMBOLS as call sites.
-        # A call site takes the form <symbol>( or import <symbol>.
+    # is_dormant is the sprint-2 predicate; sprint-4 (c) uses compute_dormant_state
+    # instead. Also ban is_dormant_with_horizon as a DIRECT dispatcher call site —
+    # it must only be reached via compute_dormant_state.
+    for sym in ("is_dormant",):
         call_re = re.compile(rf"\b{sym}\s*\(")
         import_re = re.compile(rf"\bimport\b[^\n]*\b{sym}\b|\bfrom\b[^\n]*\bimport\b[^\n]*\b{sym}\b")
-        assert not call_re.search(txt), f"REQ-I3 violation: {sym} call site in dispatcher"
-        assert not import_re.search(txt), f"REQ-I3 violation: {sym} imported in dispatcher"
+        # is_dormant is a substring of is_dormant_with_horizon; use exclusion.
+        for m in call_re.finditer(txt):
+            snippet = txt[max(0, m.start() - 5):m.end() + 30]
+            assert "is_dormant_with_horizon" in snippet or "compute_dormant_state" in snippet, (
+                f"REQ-I3 violation: bare {sym}() call site in dispatcher at offset {m.start()}"
+            )
+        # imports of `is_dormant` exactly (not is_dormant_with_horizon) are forbidden
+        for m in import_re.finditer(txt):
+            line = txt[max(0, m.start()):m.end()]
+            # Only fail if the import literally imports `is_dormant` as a symbol
+            # (not is_dormant_with_horizon or compute_dormant_state).
+            has_bare = re.search(r"\bis_dormant\b(?!_with_horizon)", line) is not None
+            assert not has_bare, f"REQ-I3 violation: bare {sym} imported in dispatcher"
 
 
 # ─── PROP-I2: AST guard on subprocess argv (no kill primitives) ────

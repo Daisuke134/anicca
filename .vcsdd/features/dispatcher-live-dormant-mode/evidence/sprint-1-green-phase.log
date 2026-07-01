@@ -1,0 +1,31 @@
+target-feature-tests: PASS
+regression-baseline: PASS
+total-tests: 480 (was 460 + 12 unit + 6 integration + 2 dispatcher legacy)
+new-feature-passing: 20 (test_live_dormant_state.py 14 + test_dispatcher_dormant_integration.py 6)
+
+--- Full test run (post GREEN + 2c) ---
+480 passed, 4 warnings in 8.51s
+
+--- Implementation summary (Phase 2b) ---
+1. skills/_shared/lib/quota_tracker.py — added:
+   - has_realized_in_window(roi_rows, now_ts, window_days=90) -> bool  (REQ-L1)
+   - compute_dormant_state(*, roi_rows, slot_age_days, time_horizon_days, now_ts) -> dict
+     * REQ-L2 short-circuit: live_mode=False → is_dormant=False
+     * REQ-L3: builds 7-day rolling windows, MOST RECENT LAST, calls
+       count_consecutive_negative_windows (existing helper), returns dict.
+2. skills/_shared/proactive-loop-dispatch.py — added dormant check block
+   between menu load (line 169) and STEP 6 ACT (line ~196):
+   - Imports compute_dormant_state, resolve_time_horizon_days, write_dormant_sentinel
+   - REQ-D1a slot_age_days from durable .slot_created marker file (portable,
+     testable, stable across dispatcher ticks unlike st_ctime).
+   - REQ-D2 idempotent sentinel: writes only when is_dormant AND file absent.
+   - REQ-D4 fail-closed: try/except swallows any error, logs to stderr,
+     continues the tick.
+3. test_dispatch_integration_roi.py — sprint-3 baseline test relaxed:
+   now bans only bare is_dormant (sprint-2 predicate); allows
+   write_dormant_sentinel (sprint-4 (c) intentional wire, gated by live_mode).
+
+--- Refactor (Phase 2c) ---
+No additional refactor beyond keeping the block self-contained and
+documented. The dormant-check block is a clearly scoped ~35 lines
+with try/except boundaries per REQ-D4.
