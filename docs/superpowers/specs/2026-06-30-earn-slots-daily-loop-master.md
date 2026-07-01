@@ -278,3 +278,21 @@ so dumber models + children bootstrap on good tools, don't burn money on shit re
 discovers new earn methods, scored by the eval layer, added to menu after curation]. Menu PRIMARY = trading/
 polymarket (KYC-free own-key rail, demand never dries); bounty = low-cost scan. Once a recipe is net-positive →
 $20 seed → spawn (human-funded on claude-p + self-funded on ClawRouter), each runs the curated toolbox + explores.
+
+## ★ SPAWN CLOUD RUNTIME + SEED ECONOMICS (2026-07-01, sourced) — where children run + how much ★
+Where a self-funded child runs, no-human, crypto-only (verified this session):
+- HOST (24/7 loop) = ★ Akash ★ — the ONLY always-on runtime that is ALSO fully crypto/no-human today: `akash`
+  CLI/SDK + self-custody wallet (AKT/USDC), sign every tx, no credit card, persistent storage. ~$0.10/day
+  (~$2-4/mo; small-instance exact $ is DERIVED — confirm live at console.akash.network). Fly ($2/mo)/DO
+  ($4/mo)/Modal/Daytona/Railway are cheaper-or-similar but ALL need a human credit card → DISQUALIFIED no-human.
+- BRAIN (LLM, real recurring cost) = ★ BlockRun x402 ★ (USDC Base/Solana, no key/signup): FREE NVIDIA models
+  (GPT-OSS 120B, Kimi K2.5) → $0/day possible; paid eco (DeepSeek ~$0.28/1M) ~$0.10-0.20/day; tools (Exa $0.01,
+  Surf $0.001) x402.
+- BURST (heavy GPU) = BlockRun Modal (x402/run) — DISPOSABLE per-run, no persistence → one-off jobs only, not host.
+STACK = loop on Akash + brain/tools/burst from BlockRun x402 = the only end-to-end no-human crypto stack TODAY.
+(Conway = 1st choice if it reopens; not available now.)
+SEED: `seed = cloud_cost/day × runway_days + first_earn + gas`. burn: Akash $0.10 + LLM $0(free)-$0.20 + tools
+$0.05-0.15 → lean $0.15/day (free brain) / realistic $0.35-0.45/day. runway ≈45d.
+lean $0.15×45+$5+$2≈$14 · realistic $0.45×45+$5+$2≈$27. ★ RECOMMENDED SEED = $25-30 USDC on Base + ~$2 Base ETH
+gas (floor ≈$15 free-brain). ★ spawn-child-earn: seed S=$25-30 (config), host=akash (prefer over do=credit-card),
+brain=BlockRun x402. Base USDC transfer <1¢ but wallet needs a little Base ETH to sign.
