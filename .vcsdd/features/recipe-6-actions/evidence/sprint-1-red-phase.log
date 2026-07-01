@@ -1,0 +1,18 @@
+new-feature-tests: FAIL
+regression-baseline: PASS
+total-tests-existing: 480 (post sprint-4 (c))
+new-tests-added: 25 (test_recipe_6_actions.py: 20, test_recipe_6_actions_invariants.py: 5)
+
+--- RED (import error = feature not yet impl) ---
+ImportError: cannot import name 'SEND_KEYS_FLOW_MAP' from 'lib.step3_recipe'
+  test_recipe_6_actions.py fails to load until Phase 2b ships:
+    - SEND_KEYS_FLOW_MAP (dict with reinject_startup→"/startup")
+    - NPM_INSTALL_FLOW_MAP (dict, may be empty)
+    - execute_recipe() rewrites for kill_server/escalate/send_keys/login/npm_install/git_checkout
+    - Signature change: anicca_home kwarg
+  test_recipe_6_actions_invariants.py:
+    - PROP-I1: no cmd_map references in the 6 new branches (grep)
+    - PROP-I2: every subprocess.run wrapped in try/except (AST)
+    - PROP-I3: no loops/<slot>/ writes (grep)
+    - PROP-I4: SCAFFOLD_DEFERRED_ACTIONS empty or noop-only
+    - execute_recipe signature includes anicca_home
