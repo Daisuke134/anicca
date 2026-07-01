@@ -1,0 +1,162 @@
+{
+  "sprintNumber": 1,
+  "feature": "dispatcher-live-dormant-mode",
+  "overallVerdict": "PASS",
+  "timestamp": "2026-07-01T00:00:00Z",
+  "iteration": 1,
+  "reviewContext": {
+    "reviewType": "implementation"
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/_shared/lib/quota_tracker.py:144-163",
+          "description": "has_realized_in_window implements REQ-L1: iterates roi_rows, requires int(realized)>0 AND (now_ts - int(ts)) <= window_days*86400; malformed rows skipped."
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/lib/quota_tracker.py:166-238",
+          "description": "compute_dormant_state implements REQ-L2 short-circuit (live_mode False → is_dormant False unconditionally at 188-190) and REQ-L3 rolling-7d list constructed MOST RECENT LAST via range(window_count-1, -1, -1) at 217, delegates to is_dormant_with_horizon at 231-235."
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/proactive-loop-dispatch.py:176-239",
+          "description": "Dispatcher STEP 3 wire: menu loaded at 176, dormant check block at 182-239, STEP 6 ACT begins at 267+ — placement matches REQ-D1 (between menu load and STEP 6). REQ-D1a sources (roi_rows parse at 183-193, .slot_created marker for slot_age_days at 198-211, resolve_time_horizon_days at 212, now_ts at 217) all present."
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/proactive-loop-dispatch.py:220-221",
+          "description": "REQ-D2 idempotent: `if _dormant_state.get('is_dormant') and not _sentinel_path.exists()` — sentinel only written when absent."
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/proactive-loop-dispatch.py:236-239",
+          "description": "REQ-D4 catch-all `except Exception` logs `step=3-dormant-check-error-<Type>` to stderr and continues tick (never aborts)."
+        }
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/_shared/__tests__/test_live_dormant_state.py:69-127",
+          "description": "E1 (empty rows), E2 (all-zero realized), E3 (out-of-window realized), E4 (new slot age gate), E6 (malformed ts='garbage' skipped), E7 (missing roi_jpy_expected treated as 0) all directly tested against compute_dormant_state."
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/__tests__/test_dispatcher_dormant_integration.py:103-125",
+          "description": "E5 sentinel idempotency exercised: pre-writes `{marker: pre-existing}` then verifies untouched after dispatcher run."
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/__tests__/test_dispatcher_dormant_integration.py:138-147",
+          "description": "REQ-D4 fail-closed on roi.jsonl unreadable (turned into a dir → IsADirectoryError) — asserts exit 0 AND no sentinel written."
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/lib/quota_tracker.py:155-162, 194-204",
+          "description": "Malformed row handling via try/except (TypeError, ValueError) plus `or 0` guard for None values."
+        }
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/_shared/lib/quota_tracker.py:217-222",
+          "description": "rolling_7d built via range(window_count-1, -1, -1) then appended in order — resulting list is MOST RECENT LAST, matching count_consecutive_negative_windows contract (quota_tracker.py:69-81) which does `for v in reversed(list)`."
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/lib/quota_tracker.py:226-229",
+          "description": "REQ-L3(iv) enforced: `if slot_age_days < time_horizon_days: consecutive_neg_windows = 0` — young slots cannot be marked dormant."
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/proactive-loop-dispatch.py:222-231",
+          "description": "REQ-D2 evidence dict includes ts, live_mode, consecutive_neg_windows, slot_age_days, time_horizon_days, window_days=90 — matches spec exactly."
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/proactive-loop-dispatch.py:200-211",
+          "description": "REQ-D4(b) covered: OSError on marker read/write is caught and slot_age_days falls back to 0.0."
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/proactive-loop-dispatch.py:232-235",
+          "description": "REQ-D4(e) OSError from write_dormant_sentinel logged to stderr with step string; tick continues."
+        }
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/_shared/lib/quota_tracker.py:143-238",
+          "description": "New helpers appended in cohesive section with clear comment `sprint-4 (c): live-mode dormant helpers`; compose existing has_realized_in_window + is_dormant_with_horizon + count_consecutive_negative_windows — no duplication."
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/proactive-loop-dispatch.py:178-239",
+          "description": "Dormant wire is a single try/except block inline in STEP 5 with underscore-prefixed locals (_roi_rows, _sentinel_path, _marker) to avoid namespace collision with existing STEP 6 variables."
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/proactive-loop-dispatch.py:17-24",
+          "description": "Imports of compute_dormant_state, resolve_time_horizon_days, write_dormant_sentinel grouped with existing quota_tracker imports; no legacy is_dormant import."
+        }
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/_shared/lib/quota_tracker.py:144-238",
+          "description": "PURE layer: has_realized_in_window and compute_dormant_state have zero I/O; matches verification-architecture.md purity table row 1-2."
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/proactive-loop-dispatch.py:182-239",
+          "description": "I/O confined to dispatcher orchestrator: file read (roi.jsonl at 186), marker read/write (201-207), sentinel write (223-231), stderr logging (233-239) — matches architecture row 4 (~15 line inline check)."
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/__tests__/test_dispatcher_dormant_integration.py:128-135",
+          "description": "PROP-D3 static grep for `.dormant.sentinel` deletion patterns — enforces INV that dispatcher never removes sentinel."
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/__tests__/test_dispatch_integration_roi.py:49-55",
+          "description": "PROP-I2 AST guard for kill-session / kill-server / --kill / --stop literals — INV-1 no tmux kill."
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/__tests__/test_live_dormant_state.py:131-192",
+          "description": "PROP-L2/L3 unit coverage of live-mode false short-circuit and most-recent-LAST ordering delegation."
+        }
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 0,
+    "allCriteriaEvaluated": true,
+    "duplicateFindings": []
+  }
+}

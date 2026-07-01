@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "high",
+  "description": "REQ-C2 (`npm_install`) requires running `npm install` in ANICCA_HOME, and REQ-C3 (`git_checkout`) requires `git -C <anicca_home> checkout ...`. Both refer to `anicca_home`/`ANICCA_HOME` but the existing `execute_recipe` signature in `step3_recipe.py::28-35` is `execute_recipe(*, recipe, issue_kind, slot, cmd_map, timeout=30)` — there is NO `anicca_home` parameter and the spec's Section 3 Group C does not extend the signature. The spec is therefore not concretely implementable: the builder must choose between (i) adding a new kwarg to `execute_recipe` (breaks callers), (ii) reading `os.environ['ANICCA_HOME']` (introduces hidden global state — bad for the pure/shell split in verification-architecture.md), or (iii) deriving from `cmd_map`. The spec MUST pick one and state it as a signature-level REQ; leaving it implicit will produce inconsistent implementations and defeat PROP-C2/PROP-C3 verifiability.",
+  "evidence": {
+    "filePath": ".vcsdd/features/recipe-6-actions/specs/behavioral-spec.md",
+    "lineRange": "71-80",
+    "snippet": "REQ-C2 (`npm_install`): ... SHALL run `npm install` in ANICCA_HOME ... REQ-C3 (`git_checkout`): ... SHALL invoke `git -C <anicca_home> checkout <recipe.params.target>`"
+  },
+  "routeToPhase": "1a"
+}

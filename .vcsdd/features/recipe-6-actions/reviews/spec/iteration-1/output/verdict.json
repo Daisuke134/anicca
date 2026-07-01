@@ -1,0 +1,54 @@
+{
+  "sprintNumber": 1,
+  "feature": "recipe-6-actions",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-01T00:00:00Z",
+  "iteration": 1,
+  "reviewContext": {
+    "reviewType": "spec",
+    "mode": "lean",
+    "reviewedArtifacts": [
+      ".vcsdd/features/recipe-6-actions/specs/behavioral-spec.md",
+      ".vcsdd/features/recipe-6-actions/specs/verification-architecture.md",
+      "skills/_shared/lib/step3_recipe.py",
+      "skills/_shared/lib/health_check_v2.py"
+    ]
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-002"],
+      "evidence": [
+        {
+          "type": "file",
+          "location": ".vcsdd/features/recipe-6-actions/specs/behavioral-spec.md:82-92",
+          "description": "INV-P1 preservation verified: REQ-I1 formally forbids any real-wired action from invoking restart/default_restart_cmd_map; Section 2 out-of-scope explicitly excludes default_restart_cmd_map; the 6 REQ-A/B/C wires target tmux/npm/git/bot2bot/login exclusively, none call the restart branch that step3_recipe.py:44-57 gates on issue_kind=='tmux_dead'."
+        },
+        {
+          "type": "file",
+          "location": ".vcsdd/features/recipe-6-actions/specs/behavioral-spec.md:45-51,65-69,102-103",
+          "description": "EDGE-E5/E6 fail-soft verified: REQ-A2 mandates ok:True + status 'escalate-no-script-continue' on missing bot2bot.sh; REQ-C1 mandates ok:True + 'login-no-script-deferred' on missing login-service.sh; EDGE table rows E5+E6 restate 'tick MUST continue'."
+        }
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-003"],
+      "evidence": [
+        {
+          "type": "file",
+          "location": ".vcsdd/features/recipe-6-actions/specs/verification-architecture.md:31-33",
+          "description": "PROP-I4 (SCAFFOLD_DEFERRED_ACTIONS emptied or noop-only) is correctly declared and traces to REQ-I4; the constraint that the set be reduced to at most {'noop'} is consistent with the 6 real-wire requirements A1/A2/B1/C1/C2/C3 covering every current health_check_v2 action except noop."
+        }
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 3,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "reviewType": "spec",
+  "featureName": "recipe-6-actions",
+  "iteration": 1,
+  "mode": "lean",
+  "artifactsToReview": [
+    ".vcsdd/features/recipe-6-actions/specs/behavioral-spec.md",
+    ".vcsdd/features/recipe-6-actions/specs/verification-architecture.md",
+    "skills/_shared/lib/step3_recipe.py",
+    "skills/_shared/lib/health_check_v2.py"
+  ],
+  "reviewDimensions": ["spec_fidelity", "verification_readiness"],
+  "extraConstraints": [
+    "Verify INV-P1 preservation: none of the 6 real-wired actions invoke restart or default_restart_cmd_map (the sole restart path stays action=='restart' AND issue_kind=='tmux_dead').",
+    "Verify EDGE-E5 + EDGE-E6 fail-soft: script-missing MUST NOT prevent the tick from continuing (execute_recipe returns ok:True with a -no-script- status).",
+    "Verify the send_keys tmux target naming (<slot>-cli) matches LAYER C convention.",
+    "Verify PROP-I4 SCAFFOLD_DEFERRED_ACTIONS constraint (set is emptied or reduced to noop-only) is consistent with the 6 real-wire requirements."
+  ],
+  "expectedOutputPath": ".vcsdd/features/recipe-6-actions/reviews/spec/iteration-1/output/"
+}
