@@ -4,6 +4,7 @@
 const { test } = require("node:test");
 const assert = require("node:assert");
 
+const NOWTS = Math.floor(Date.now() / 1000);
 const { enrichOnChain } = require("../enrich");
 const { excludeSet, SEED_ADDRESSES, OUR_INSTANCE_IDS } = require("../leaderboard-constants");
 const { aggregate } = require("../telemetry-aggregate");
@@ -52,9 +53,9 @@ test("R3 anti-buy: inflows from own id or a SEED address do NOT count as revenue
   const row = baseRow({ id: "0xaaa" });
   const reader = mockReader({
     inflows: { "0xaaa": [
-      { from: "0xaaa", usd: 5000, ts: 0 },      // self-transfer — excluded
-      { from: seed, usd: 5000, ts: 0 },          // seed money — excluded
-      { from: "0xcustomer", usd: 7, ts: 0 },     // real external earning — counts
+      { from: "0xaaa", usd: 5000, ts: NOWTS },      // self-transfer — excluded
+      { from: seed, usd: 5000, ts: NOWTS },          // seed money — excluded
+      { from: "0xcustomer", usd: 7, ts: NOWTS },     // real external earning — counts
     ] },
   });
   const [e] = enrichOnChain([row], reader);
@@ -69,8 +70,8 @@ test("R3 anti-buy end-to-end: a self/seed-funded whale does NOT out-rank a real 
   ];
   const reader = mockReader({
     inflows: {
-      "0xwhale": [{ from: "0xwhale", usd: 1_000_000, ts: 0 }],
-      "0xearner": [{ from: "0xcustomer", usd: 50, ts: 0 }],
+      "0xwhale": [{ from: "0xwhale", usd: 1_000_000, ts: NOWTS }],
+      "0xearner": [{ from: "0xcustomer", usd: 50, ts: NOWTS }],
     },
   });
   const enriched = enrichOnChain(rows, reader);

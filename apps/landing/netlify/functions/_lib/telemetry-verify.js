@@ -5,11 +5,18 @@ const { validate } = require("./telemetry-schema");
 // signer from the verbatim `message` bytes. Re-serializing would diverge across languages
 // (JS JSON.stringify(5.0)==="5" but python json.dumps(5.0)==="5.0") and 401 every whole-number balance.
 function canonicalMessage(p) {
-  return JSON.stringify({
+  const m = {
     id: p.id, ts: p.ts, host: p.host, geo: p.geo, model_live: p.model_live,
     model_tier: p.model_tier, net_worth_usd: p.net_worth_usd, revenue_mo_usd: p.revenue_mo_usd,
     burn_day_usd: p.burn_day_usd, runway_days: p.runway_days, status: p.status,
-  });
+  };
+  // Additive leaderboard fields — appended ONLY when present so they are covered by the signature,
+  // while base-only messages stay byte-identical (cross-language + back-compat preserved).
+  if (p.tags !== undefined) m.tags = p.tags;
+  if (p.revenue_today_usd !== undefined) m.revenue_today_usd = p.revenue_today_usd;
+  if (p.revenue_by_source !== undefined) m.revenue_by_source = p.revenue_by_source;
+  if (p.log_feed !== undefined) m.log_feed = p.log_feed;
+  return JSON.stringify(m);
 }
 
 // Verifies the exact string the client signed. Parses it for schema + checks, but recovers the
