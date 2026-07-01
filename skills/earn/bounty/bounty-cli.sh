@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"  # launchd has a minimal PATH; tmux/python3/node/claude live in homebrew
 # bounty-cli.sh — launch the ALWAYS-ON bounty-loop claude-p session (clone of clip-cli.sh /
 # affiliate-cli.sh pattern). Detached tmux headless claude that registers a daily cron: discover
 # open Algora bounties → gate (top 48) → attempt (VSDD RED→GREEN PR if a survivor exists) →

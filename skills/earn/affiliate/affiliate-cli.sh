@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"  # launchd has a minimal PATH; tmux/python3/node/claude live in homebrew
 # affiliate-cli.sh — ALWAYS-ON affiliate earn-core (clone of clip-cli.sh). Detached tmux headless
 # claude that registers a DAILY cron: producer writes a deck + builds the slideshow, then run.sh
 # posts the carousel to the ready niche account. Idles between; healthcheck restarts if it dies.

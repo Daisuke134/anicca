@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"  # launchd has a minimal PATH; tmux/python3/node/claude live in homebrew
 # video-cli.sh — launch the ALWAYS-ON video-loop claude-p session (clone of clip-cli.sh /
 # affiliate-cli.sh pattern, canonicalising the ad-hoc launch that originally had no --model).
 # Detached tmux headless claude --model sonnet that registers a cron every 4h: one faceless-video
