@@ -1,0 +1,32 @@
+{
+  "sprintNumber": 3,
+  "feature": "roi-writer-and-dormant",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-01T00:00:00Z",
+  "iteration": 1,
+  "reviewContext": {
+    "reviewType": "spec",
+    "mode": "lean",
+    "manifestPath": ".vcsdd/features/roi-writer-and-dormant/reviews/spec/iteration-1/input/manifest.json"
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-002", "FIND-003", "FIND-006"],
+      "evidence": []
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-004", "FIND-005"],
+      "evidence": []
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 6,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": ["spec_fidelity", "verification_readiness"],
+    "duplicateFindings": []
+  }
+}

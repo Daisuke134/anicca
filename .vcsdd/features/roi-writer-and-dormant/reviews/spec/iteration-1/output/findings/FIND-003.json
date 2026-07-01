@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "high",
+  "description": "NFR-3 asserts: 'on macOS/Linux, single write() of a JSON line (which fits in one page) is atomic per POSIX'. This is factually incorrect. POSIX only guarantees atomicity for writes <= PIPE_BUF bytes (512 on macOS, 4096 on Linux) to PIPES/FIFOs, NOT to regular files. On regular files, concurrent open(..., 'a') + write() from two processes CAN interleave partial bytes (see POSIX.1-2017 write() rationale + Linux kernel commit 5e4c7ec3). REQ-W4 also mandates 'atomic-append (open with a mode + write + close per row)'. Because LAYER A launchd fires proactive-loop.sh every 5 minutes and slot dispatchers can overlap on quota_wait or bot2bot poll, two dispatchers writing to the same roi.jsonl simultaneously is a real scenario. Without O_APPEND + fcntl locking (or a rename-into-place pattern), interleaved partial JSON lines will produce unparseable roi.jsonl, which then poisons the dormant sum in REQ-D2. Spec must specify O_APPEND semantics (Python 'a' mode passes O_APPEND on POSIX which gives per-write atomicity within PIPE_BUF; a single JSON row often exceeds 512 bytes) and either (a) bound the row size <= 512 bytes, (b) require flock() around the append, or (c) write to a tempfile and atomically rename.",
+  "evidence": {
+    "filePath": ".vcsdd/features/roi-writer-and-dormant/specs/behavioral-spec.md",
+    "lineRange": "51-53, 120-124",
+    "snippet": "REQ-W4: Writes SHALL be atomic-append (open with 'a' mode + write + close per row) ... NFR-3: single write() of a JSON line (which fits in one page) is atomic per POSIX."
+  },
+  "routeToPhase": "1a"
+}

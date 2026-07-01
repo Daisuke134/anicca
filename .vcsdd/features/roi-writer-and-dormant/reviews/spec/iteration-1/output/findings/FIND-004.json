@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "verification_readiness",
+  "category": "purity_boundary",
+  "severity": "high",
+  "description": "The purity-boundary table in verification-architecture.md enumerates side effects: append_roi_row (disk append) and write_dormant_sentinel (disk write). But REQ-W4 mandates a THIRD side effect on failure: 'log to core-status.json as step=7-roi-write-failed-<Exception> and CONTINUE'. That write to core-status.json is nowhere in the purity table, has no PROP obligation, and no test file listed for it. This violates the VCSDD purity-boundary requirement that every side effect be declared. Additionally, PROP-W4-write-failure-no-crash is listed as required:true and maps to REQ-W4 + EDGE-E2, but the arch does not identify WHICH module writes core-status.json, whether that write can itself raise (nested I/O failure), and whether an exception during error-logging is swallowed. Spec must (a) declare core-status.json write in the I/O SINK layer, (b) add a PROP for nested-failure-safety (the error handler must not throw), and (c) name the failure-log helper.",
+  "evidence": {
+    "filePath": ".vcsdd/features/roi-writer-and-dormant/specs/verification-architecture.md",
+    "lineRange": "13-22, 30-30",
+    "snippet": "I/O SINK enumerates only append_roi_row + write_dormant_sentinel; REQ-W4 requires core-status.json write on failure but no corresponding SINK entry or PROP for the failure-path write."
+  },
+  "routeToPhase": "1b"
+}

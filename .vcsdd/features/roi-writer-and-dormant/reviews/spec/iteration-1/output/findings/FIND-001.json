@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "REQ-W3 hard-codes roi_jpy_realized=0 for every sprint-3 row, but REQ-D2 computes the dormant signal by 'summing roi_jpy_realized per 24-hour window' and REQ-T2 fires the sentinel when 'consecutive_neg_windows > time_horizon_days'. count_consecutive_negative_windows() at skills/_shared/lib/quota_tracker.py:69-81 only counts strictly negative values (v < 0). With realized=0 on every row the per-window sum is always 0, which is NEVER < 0, so consecutive_neg_windows is permanently 0 and is_dormant_with_horizon() is guaranteed to return False for the entire sprint-3 lifetime. The entire Group D + REQ-T2 + PROP-D1..D5 machinery is dead code until sprint-4 wires LAYER C settle. The spec must either (a) state explicitly that the dormant sentinel CANNOT fire in sprint-3 and defer PROP-D1..D5 to sprint-4, or (b) redefine 'negative' vs 'zero-settled' (parent §7b INV-P2 uses 'zero SETTLED rows' — a different predicate than 'negative sum'). As written the spec is internally contradictory: it demands 15 required:true proofs for a feature it also guarantees cannot exercise its trigger path.",
+  "evidence": {
+    "filePath": ".vcsdd/features/roi-writer-and-dormant/specs/behavioral-spec.md",
+    "lineRange": "47-48, 62-66, 85-89",
+    "snippet": "REQ-W3: roi_jpy_realized SHALL be 0 in sprint-3 ... REQ-D2: summing roi_jpy_realized per 24-hour window ... REQ-T2: consecutive_neg_windows > time_horizon_days"
+  },
+  "routeToPhase": "1a"
+}
