@@ -1,0 +1,17 @@
+Security scan (grep-based) — sprint-4 (d) — 2026-07-01
+
+File scanned: skills/_shared/lib/step3_recipe.py
+
+Patterns checked: shell=True, eval(, exec(, os.system(, subprocess.getoutput(
+Result: CLEAN (0 occurrences).
+
+Additional invariants:
+- PROP-I2 (never raises): AST guard confirms every subprocess.run is wrapped
+  in try/except. See test_recipe_6_actions_invariants.py::test_I2_never_raises_ast_guard.
+- PROP-I1 (no cmd_map in 6 branches): grep guard in test_I1_no_restart_cmd_map_called_from_non_restart_path.
+- PROP-I3 (no loops/<slot>/ writes): grep guard in test_I3_no_slot_state_writes.
+- All 6 subprocess wires use argument lists (list form), NOT shell=True or
+  string concatenation. Command injection surface: zero.
+- User-controlled `params.reason`, `params.flow`, `params.target`, `params.keys`
+  are passed as individual list elements to subprocess.run, so shell metacharacters
+  cannot expand.

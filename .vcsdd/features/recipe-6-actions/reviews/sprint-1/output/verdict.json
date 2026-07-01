@@ -1,0 +1,158 @@
+{
+  "sprintNumber": 1,
+  "feature": "recipe-6-actions",
+  "overallVerdict": "PASS",
+  "timestamp": "2026-07-01T00:00:00Z",
+  "iteration": 1,
+  "reviewContext": {
+    "reviewType": "implementation"
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/_shared/lib/step3_recipe.py:76-88",
+          "description": "REQ-A1 kill_server: tmux kill-server with 5s timeout; rc/timeout/OSError branches produce specified statuses. Verified against test_A1_kill_server_invokes_tmux/_rc_fail/_timeout."
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/lib/step3_recipe.py:91-109",
+          "description": "REQ-A2 escalate_via_bot2bot: anicca_home empty → deferred; missing script → escalate-no-script-continue; rc/timeout branches present. Matches spec §Group-A REQ-A2 and EDGE-E5."
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/lib/step3_recipe.py:112-146",
+          "description": "REQ-B1 send_keys: FIND-001 fix confirmed — both params.keys (direct) and params.flow (mapped via SEND_KEYS_FLOW_MAP with reinject_startup→/startup) are handled; unknown flow returns send_keys-unknown-flow-<F> without invoking tmux; missing both returns send_keys-noop-no-params; params.enter appends Enter."
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/lib/step3_recipe.py:170-189",
+          "description": "REQ-C2 npm_install: FIND-2-001 fix confirmed — status echoes 'npm_install-ok-flow=allowlist_check' at line 184 when flow=allowlist_check; missing flow → plain 'npm_install-ok'; unknown flow → 'npm_install-ok-flow=<F>'. Aligns with test_C2_npm_install_flow_consumed/_missing/_unknown."
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/proactive-loop-dispatch.py:134-140",
+          "description": "Dispatcher passes anicca_home=os.environ.get('ANICCA_HOME','/Users/anicca/anicca') to execute_recipe, satisfying spec §Group-C signature-change contract."
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/lib/step3_recipe.py:22",
+          "description": "REQ-I4: SCAFFOLD_DEFERRED_ACTIONS = frozenset({'noop'}) — matches spec 'emptied or reduced to noop' and verified by test_scaffold_deferred_actions_constant_is_noop_only."
+        }
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/_shared/__tests__/test_recipe_6_actions.py:65-73,104-116,170-177,206-218,256-264,292-300",
+          "description": "EDGE-E1 timeout coverage: kill_server, escalate, send_keys, login, npm_install, git_checkout all have explicit TimeoutExpired tests asserting fail-soft ok:False statuses."
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/__tests__/test_recipe_6_actions.py:93-101,196-203,148-156,159-167,281-289,304-316",
+          "description": "EDGE-E3 missing-params + EDGE-E5/E6 missing-script + empty anicca_home: covered by escalate_missing_script, login_missing_script, send_keys_unknown_flow, send_keys_noop_no_params, git_checkout_missing_target_defaults, group_C_empty_anicca_home_fail_soft."
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/lib/step3_recipe.py:87,108,145,167,188,207",
+          "description": "EDGE-E2 subprocess FileNotFoundError/OSError branches implemented for all 6 wires returning '<action>-failed-<ErrorName>'."
+        }
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/_shared/lib/step3_recipe.py:56-73",
+          "description": "INV-P1 preserved: restart branch only runs for issue_kind=='tmux_dead'; stale+restart → 'stale-suppressed-INV-P1' short-circuits before cmd_map lookup."
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/__tests__/test_step3_recipe.py:138-150",
+          "description": "Legacy PROP-I1 static-grep regression guard: dispatcher forbidden pattern check ensures no accidental tmux kill-* leaked into orchestrator."
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/__tests__/test_step3_recipe.py:157-177",
+          "description": "Defense-in-depth: kill-server references confined to action=='kill_server' branch; --stop/--kill/kill-session still forbidden."
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/lib/step3_recipe.py:128",
+          "description": "send_keys uses '--' delimiter to protect key payload; str(keys) coerces non-string mapped values safely."
+        }
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/_shared/lib/step3_recipe.py:28-39",
+          "description": "SEND_KEYS_FLOW_MAP and NPM_INSTALL_FLOW_MAP declared as module-level dicts near top; open/closed for extension without touching wire logic."
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/lib/step3_recipe.py:42-50",
+          "description": "execute_recipe signature is keyword-only, backward-compatible: anicca_home defaults to '' so existing callers (test_step3_recipe.py restart tests) continue to work without change."
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/lib/step3_recipe.py:52-207",
+          "description": "Each of the 6 wires is a self-contained if-branch with its own subprocess.run + try/except; no cross-branch state, easy to grep/verify."
+        }
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/_shared/__tests__/test_recipe_6_actions_invariants.py:37-68",
+          "description": "PROP-I2 AST guard: every subprocess.run node in step3_recipe.py verified to be inside a Try ancestor; assertion protects future edits from leaking uncaught exceptions."
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/__tests__/test_recipe_6_actions_invariants.py:71-82",
+          "description": "PROP-I3 INV-4 grep guard: step3_recipe.py contains no 'loops/', '.jsonl', or '.sentinel' string literals — the 6 wires cannot write slot state."
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/__tests__/test_recipe_6_actions_invariants.py:15-34",
+          "description": "PROP-I1 branch-scoped grep confirms none of the 6 new action branches reference cmd_map, isolating restart-map coupling to the restart+tmux_dead branch only."
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/__tests__/test_recipe_6_actions_invariants.py:103-114",
+          "description": "Signature guard: execute_recipe kwargs asserted to include anicca_home — Group-C contract change enforced by test."
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/lib/step3_recipe.py:50",
+          "description": "Purity boundary honored: execute_recipe is the sole I/O shell; status string construction is pure and side-effect-free per verification-architecture.md."
+        }
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 0,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}

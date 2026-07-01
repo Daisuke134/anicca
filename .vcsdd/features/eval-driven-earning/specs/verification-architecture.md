@@ -228,7 +228,7 @@ the builder after Green phase, per VCSDD Phase 5 / HARD 0.31:
 3. **decideActivity live pick**: Verify proactive-loop.sh step 5 logs the
    `ActivityDecision.mode` and `pick.id` from a real `decideActivity` call.
 4. **Calibration record**: After a real action with a determined outcome (accepted or rejected),
-   verify `calibration.jsonl` has a new row with `rubric_score` and `realized_usdc`.
+   verify `calibration.jsonl` has a new row with `rubric_score` and `realized_usd`.
 
 ---
 

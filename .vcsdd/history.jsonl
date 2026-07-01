@@ -198,3 +198,9 @@
 {"timestamp":"2026-07-01T09:17:50.328Z","event":"sprint_started","featureName":"recipe-6-actions","sprintNumber":1,"phase":"2a"}
 {"timestamp":"2026-07-01T09:21:59.293Z","event":"phase_transition","featureName":"recipe-6-actions","from":"2a","to":"2b","iteration":1,"phase":"2b"}
 {"timestamp":"2026-07-01T09:21:59.295Z","event":"phase_transition","featureName":"recipe-6-actions","from":"2b","to":"2c","iteration":1,"phase":"2c"}
+{"timestamp":"2026-07-01T09:24:26.743Z","event":"gate_recorded","featureName":"recipe-6-actions","phase":"3","verdict":"PASS","reviewedBy":"adversary"}
+{"timestamp":"2026-07-01T09:24:26.746Z","event":"phase_transition","featureName":"recipe-6-actions","from":"2c","to":"3","iteration":1,"phase":"3"}
+{"timestamp":"2026-07-01T09:24:26.748Z","event":"phase_transition","featureName":"recipe-6-actions","from":"3","to":"5","iteration":1,"phase":"5"}
+{"timestamp":"2026-07-01T09:25:10.566Z","event":"gate_recorded","featureName":"recipe-6-actions","phase":"5","verdict":"PASS","reviewedBy":"verifier"}
+{"timestamp":"2026-07-01T09:25:10.572Z","event":"phase_transition","featureName":"recipe-6-actions","from":"5","to":"6","iteration":1,"phase":"6"}
+{"timestamp":"2026-07-01T09:25:16.747Z","event":"phase_transition","featureName":"recipe-6-actions","from":"6","to":"complete","iteration":1,"phase":"complete"}
