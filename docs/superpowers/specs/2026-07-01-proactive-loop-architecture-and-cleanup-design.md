@@ -161,6 +161,21 @@ Original table (for the record — archived items marked ✅ 2026-07-01):
 
 Archive target = `skills/_shared/archive/sprint-1/`. Reason: VCSDD convergence proved sprint-2's 4 generic primitives subsume the 9-handler sprint-1 design. Keeping both running creates double-write races on the same `~/loops/<slot>/` state.
 
+## 5b. Migration status snapshot (2026-07-01)
+
+| Slot | Class | State | Live evidence |
+|---|---|---|---|
+| gig | SLOW (14d) | ✅ migrated 2026-07-01 sprint-3 #27 | roi.jsonl 6+ rows, expected=¥16k per pick |
+| clip | FAST (1d) | ✅ migrated 2026-07-01 sprint-3 #28 | roi.jsonl 1 row, expected=¥1k, tmux ALIVE |
+| affiliate | MEDIUM (7d) | ✅ migrated 2026-07-01 sprint-3 #28 | roi.jsonl 1 row, expected=¥1.2k, tmux ALIVE |
+| bounty | MEDIUM (7d) | ✅ migrated 2026-07-01 sprint-3 #28 | roi.jsonl 1 row, expected=¥7.5k, tmux ALIVE |
+| clip-promote | (non-tmux-core pattern) | ⏳ deferred sprint-4 | uses Node/Python task decide.py, not <slot>-cli.sh tmux; needs separate migration spec |
+| hl-trade | (non-tmux-core pattern) | ⏳ deferred sprint-4 | uses fund-hl.mjs + hl.py, not <slot>-cli.sh tmux; needs separate migration spec |
+
+sprint-3 sprint completes with **4 tmux-core slots on LAYER B**
+(gig, clip, affiliate, bounty) + **2 non-tmux slots deferred** to sprint-4
+with dedicated migration specs.
+
 ## 5. Migration sequence (= sprint-3 task ordering)
 
 1. **(this spec)** Lock architecture; commit + push.
