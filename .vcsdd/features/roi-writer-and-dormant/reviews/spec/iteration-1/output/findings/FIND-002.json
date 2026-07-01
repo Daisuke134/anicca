@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "spec_fidelity",
+  "category": "security_surface",
+  "severity": "high",
+  "description": "REQ-D3 defines slot_age_days = (now_ts - slot_dir.stat().st_ctime) / 86400. On macOS/BSD Path.stat().st_ctime returns the inode-change-time (ctime), NOT the creation time. Any chmod, chown, rename, xattr set, or touch of the directory updates ctime and resets the computed 'age'. In this codebase LAYER B writes tasks/, build_log.md, roi.jsonl, and .dormant.sentinel INSIDE the slot dir every 5 minutes; while writing children does not touch parent ctime on APFS, an atomic rename or a subsequent tasks/-directory permission fix (e.g. a launchd plist reload that chmods) DOES. The Correct macOS birthtime accessor is os.stat_result.st_birthtime (available on darwin) with a documented Linux fallback to st_ctime. As specified, the age guard silently degrades to 'inode was last touched > 2×horizon ago' — meaning any admin operation on a mature slot could reset the guard and INHIBIT a legitimate dormant write, or on a fresh slot a metadata edit could inadvertently make it look older. The spec must pick a persistent creation-time source (st_birthtime with graceful fallback, or a marker file written at slot init like .created_at) rather than st_ctime.",
+  "evidence": {
+    "filePath": ".vcsdd/features/roi-writer-and-dormant/specs/behavioral-spec.md",
+    "lineRange": "67-70",
+    "snippet": "REQ-D3: slot_age_days SHALL be computed as (now_ts - slot_dir.stat().st_ctime) / 86400."
+  },
+  "routeToPhase": "1a"
+}

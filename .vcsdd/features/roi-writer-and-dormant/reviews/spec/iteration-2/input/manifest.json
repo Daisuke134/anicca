@@ -1,0 +1,27 @@
+{
+  "reviewType": "spec",
+  "featureName": "roi-writer-and-dormant",
+  "iteration": 2,
+  "mode": "lean",
+  "artifactsToReview": [
+    ".vcsdd/features/roi-writer-and-dormant/specs/behavioral-spec.md",
+    ".vcsdd/features/roi-writer-and-dormant/specs/verification-architecture.md",
+    "docs/superpowers/specs/2026-07-01-proactive-loop-architecture-and-cleanup-design.md",
+    "skills/_shared/lib/quota_tracker.py"
+  ],
+  "previousIterationFindings": [
+    "FIND-001 critical (dead-code Group D): scope-cut — Group D auto-write DEFERRED to sprint-4 with documented rationale (roi_jpy_realized=0 → count_consecutive_negative_windows always 0 → is_dormant_with_horizon always False → sentinel wire = dead code). is_dormant_with_horizon PURE helper still ships (unit-tested in isolation); dispatcher does NOT call it in sprint-3.",
+    "FIND-002 st_ctime birthtime issue: sprint-3 no longer depends on slot age (Group D deferred). Sprint-4 carry documents the fix (.slot-created.ts sentinel on first tick).",
+    "FIND-003 POSIX write() atomicity claim: REQ-W4 rewritten — 'best-effort append', explicit note that POSIX atomicity is only for ≤ PIPE_BUF pipe writes, and that fcntl re-entrancy guard in proactive-loop.sh serializes ticks within a slot so concurrent writes cannot happen.",
+    "FIND-004 core-status.json outside boundary: REQ-I1 mtime-snapshot exclusion list now explicit — the writer allowed to append core-status.json only via the existing dispatcher write path (log path, REQ-W4).",
+    "FIND-005 static-grep bypassable: PROP-I2 upgraded to grep + AST parse of imports/subprocess usage. PROP-I3 requires `is_dormant\\b` word-boundary regex on the dispatcher source.",
+    "FIND-006 24h window boundary undefined: sprint-3 dispatcher doesn't bucket rows (Group D deferred), so the ambiguity is moot. Sprint-4 carry documents the midnight-UTC vs local vs strict-24h decision required."
+  ],
+  "reviewDimensions": ["spec_fidelity", "verification_readiness"],
+  "extraConstraints": [
+    "Verify FIND-001 closure: Group D fully removed from sprint-3 scope; only Group W + PURE Group T (unit-only) ships. Sprint-4 handoff section documents the deferred work + rationale.",
+    "Verify FIND-003 closure: atomicity claim now hedged; concurrent-writer proof (fcntl re-entrancy) cited.",
+    "Verify FIND-005 closure: PROP-I2 + PROP-I3 upgraded to AST + word-boundary, not naive substring grep."
+  ],
+  "expectedOutputPath": ".vcsdd/features/roi-writer-and-dormant/reviews/spec/iteration-2/output/"
+}

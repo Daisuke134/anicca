@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "medium",
+  "description": "PROP-D5-no-sentinel-removal is 'REQ-D5 static grep — no unlink(.dormant.sentinel)' and PROP-I2-no-tmux-kill / PROP-I3-uses-horizon-not-7 are also static-grep proofs. A literal grep for 'unlink(.dormant.sentinel)' will NOT catch: (a) Path(slot_dir / name).unlink() where name is bound from a variable, (b) os.remove(sentinel_path), (c) shutil.rmtree(slot_dir) that transitively removes it, (d) Path(...).replace() with a different target, or (e) subprocess.run(['rm', str(sentinel_path)]). Similarly PROP-I3 'grep — dispatcher calls is_dormant_with_horizon, NOT is_dormant' will pass even if the dispatcher imports is_dormant under an alias, or calls the old function via getattr(quota_tracker, name). The static-grep proofs as specified are trivially bypassable and give false PASS. Spec must strengthen these to AST-based checks (ast.walk looking for Call whose target resolves to Path.unlink / os.remove / shutil.rmtree with a path expression referencing .dormant.sentinel) OR add a runtime invariant test that snapshots the sentinel file's inode before and after a dispatcher tick and asserts equality.",
+  "evidence": {
+    "filePath": ".vcsdd/features/roi-writer-and-dormant/specs/verification-architecture.md",
+    "lineRange": "35-40",
+    "snippet": "PROP-D5-no-sentinel-removal | 1 | true | REQ-D5 static grep — no `unlink(.dormant.sentinel)` ... PROP-I2-no-tmux-kill ... static grep ... PROP-I3-uses-horizon-not-7 ... grep — dispatcher calls is_dormant_with_horizon, NOT is_dormant"
+  },
+  "routeToPhase": "1b"
+}

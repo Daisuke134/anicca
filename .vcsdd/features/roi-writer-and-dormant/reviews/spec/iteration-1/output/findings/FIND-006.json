@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "medium",
+  "description": "REQ-D2 says 'summing roi_jpy_realized per 24-hour window' and PROP-D2-windowing maps to 'bucket by day, count consecutive negatives', but neither the spec nor the verification arch defines the window boundary. Is a '24-hour window' (a) calendar-day-local (00:00-24:00 in the host TZ), (b) calendar-day-UTC, or (c) rolling 24h anchored at now_ts? Each yields different consecutive_neg_windows counts and different sentinel-fire timing. For gig (time_horizon_days=14) the sentinel fires at a threshold of 15 consecutive negative windows — the difference between 'last 15 calendar days JST' vs 'last 15 rolling 24h from now_ts' at an early-morning tick can flip the verdict by ±1 window. Additionally EDGE-E7 says 'consecutive_neg_windows = number of complete windows found; is_dormant False if incomplete' but does not define 'complete' — a window with zero rows because no tick occurred (LAYER A launchd was down) is indistinguishable from a window with negative rows. The spec must (a) pin the window definition (recommend rolling 24h anchored at now_ts, per §7b Sutando BP), (b) define behavior for empty windows (missing tick = neither positive nor negative), and (c) specify how bucket_by_day handles rows whose ts crosses midnight.",
+  "evidence": {
+    "filePath": ".vcsdd/features/roi-writer-and-dormant/specs/behavioral-spec.md",
+    "lineRange": "62-66, 114-114",
+    "snippet": "REQ-D2: reading the last time_horizon_days × 2 days of roi.jsonl, summing roi_jpy_realized per 24-hour window ... E7: roi.jsonl has fewer than 2 × horizon days of rows | consecutive_neg_windows = number of complete windows found"
+  },
+  "routeToPhase": "1a"
+}
