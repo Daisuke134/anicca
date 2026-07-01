@@ -68,20 +68,82 @@ def discover(n=5):
     return out
 
 
-def paper_buy(token_id, usdc):
+def market_for_token(token_id):
+    """map a CLOB token back to its market + which outcome index the token is (0=first outcome)."""
+    r = get(f"{GAMMA}?clob_token_ids={token_id}")
+    if not r:
+        return None
+    m = r[0]
+    toks = json.loads(m.get("clobTokenIds") or "[]")
+    idx = toks.index(token_id) if token_id in toks else 0
+    return {"market_id": m.get("id"), "question": m.get("question"), "outcome_index": idx}
+
+
+def paper_buy(token_id, usdc, model_p=None):
+    """model_p = the MODEL's own probability this outcome resolves YES (its edge vs market). Optional."""
     LEDGER.parent.mkdir(parents=True, exist_ok=True)
     bk = book(token_id)
     if not bk["best_ask"]:
         print("no ask — cannot fill"); return 1
     entry = bk["best_ask"]                 # a taker BUY fills at best ask
     shares = usdc / entry                   # CTF outcome shares held
+    mk = market_for_token(token_id) or {}
+    edge = (model_p - entry) if model_p is not None else None   # model edge = p - market price
     row = {"ts": int(time.time()), "mode": "paper", "token_id": token_id, "side": "BUY",
            "size_usdc": usdc, "entry_price": entry, "shares_held": round(shares, 4),
-           "mid_at_entry": bk["mid"], "status": "open"}
+           "mid_at_entry": bk["mid"], "model_p": model_p, "edge": edge,
+           "market_id": mk.get("market_id"), "outcome_index": mk.get("outcome_index"),
+           "question": mk.get("question"), "status": "open"}
     with open(LEDGER, "a") as f:
         f.write(json.dumps(row) + "\n")
-    print(f"[pm-paper] PAPER BUY {usdc} USDC @ {entry} → {shares:.2f} shares "
-          f"(mid {bk['mid']}, cost basis ${usdc}); recorded to {LEDGER}")
+    e = f" edge={edge:+.3f}" if edge is not None else ""
+    print(f"[pm-paper] PAPER BUY {usdc} USDC @ {entry} -> {shares:.2f} shares (mid {bk['mid']}{e}) "
+          f"on '{(mk.get('question') or '?')[:40]}'; recorded to {LEDGER}")
+    return 0
+
+
+def resolve():
+    """check each open paper position's market for on-chain resolution -> realized paper PnL + edge hit."""
+    if not LEDGER.exists():
+        print("no paper positions"); return 0
+    rows = [json.loads(l) for l in LEDGER.read_text().splitlines() if l.strip()]
+    changed = False
+    realized_total = 0.0
+    hits = 0
+    for r in rows:
+        if r.get("status") == "resolved":
+            realized_total += r.get("realized_pnl", 0.0)
+            if r.get("edge_correct"):
+                hits += 1
+            continue
+        if r.get("status") != "open":
+            continue
+        mk = get(f"{GAMMA}?clob_token_ids={r['token_id']}")
+        if not mk:
+            continue
+        m = mk[0]
+        if not (m.get("closed") and m.get("umaResolutionStatus") == "resolved"):
+            continue  # not resolved yet
+        prices = json.loads(m.get("outcomePrices") or "[]")
+        idx = r.get("outcome_index", 0) or 0
+        won = idx < len(prices) and str(prices[idx]) == "1"   # our outcome paid $1
+        payout = r["shares_held"] * 1.0 if won else 0.0
+        pnl = payout - r["size_usdc"]
+        r["status"] = "resolved"; r["won"] = won; r["realized_pnl"] = round(pnl, 4)
+        r["edge_correct"] = (r.get("edge") is not None) and ((r["edge"] > 0) == won)
+        changed = True; realized_total += pnl
+        if r.get("edge_correct"):
+            hits += 1
+        print(f"  • RESOLVED '{(r.get('question') or '?')[:40]}' won={won} "
+              f"realized={'+' if pnl>=0 else ''}{pnl:.2f} USDC edge_correct={r.get('edge_correct')}")
+    if changed:
+        with open(LEDGER, "w") as f:
+            for r in rows:
+                f.write(json.dumps(r) + "\n")
+    edged = [r for r in rows if r.get("status") == "resolved" and r.get("edge") is not None]
+    winrate = round(hits / len(edged), 2) if edged else None
+    print(f"[pm-paper] resolved_realized_paper_PnL={'+' if realized_total>=0 else ''}{realized_total:.2f} "
+          f"USDC  edge_winrate={winrate} (n={len(edged)}) — income-side eval: does the model's edge win?")
     return 0
 
 
@@ -113,9 +175,12 @@ def main():
     if not a or a[0] == "discover":
         discover(int(a[1]) if len(a) > 1 else 5)
     elif a[0] == "paper-buy":
-        return paper_buy(a[1], float(a[2]))
+        model_p = float(a[3]) if len(a) > 3 else None
+        return paper_buy(a[1], float(a[2]), model_p)
     elif a[0] == "mark":
         return mark()
+    elif a[0] == "resolve":
+        return resolve()
     else:
         print(__doc__)
     return 0
