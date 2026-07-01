@@ -53,31 +53,55 @@ INV-P1 (never restart LAYER C except on `tmux_dead`).
 ### Group B — Actions that use `send_keys` to LAYER C tmux (via tmux send-keys)
 
 - **REQ-B1** (`send_keys`): WHEN `action == "send_keys"`, THE FUNCTION SHALL
-  invoke `tmux send-keys -t "<slot>-cli" -- <keys>` and, if `params.enter`
-  is truthy, also `tmux send-keys -t "<slot>-cli" Enter`. The tmux target
-  name comes from the caller's `slot` argument suffixed with `-cli` (matching
-  LAYER C tmux naming). Return `{ok: True, status: "send_keys-ok"}` on rc=0,
-  else `{ok: False, status: "send_keys-failed-rc<N>"}`. INV-1 preserved:
-  `send-keys` does NOT restart the session.
+  resolve the keys to send from ONE of two `params` variants (FIND-001 fix
+  — health_check_v2 emits both):
+    (i) `params.keys` (string, direct): send verbatim.
+    (ii) `params.flow` (string, mapped): resolve via `SEND_KEYS_FLOW_MAP`
+        (canonical map in step3_recipe.py):
+          - `"reinject_startup"` → `keys="/startup"` (LAYER C onboarding),
+          - unknown flow → return `{ok: True, status: "send_keys-unknown-flow-<F>"}`
+            without invoking tmux (fail-soft, tick continues).
+  Once keys are resolved, THE FUNCTION SHALL invoke
+  `tmux send-keys -t "<slot>-cli" -- <keys>` with a 5 s timeout, and if
+  `params.enter` is truthy also `tmux send-keys -t "<slot>-cli" Enter`.
+  Return `{ok: True, status: "send_keys-ok"}` on rc=0, else
+  `{ok: False, status: "send_keys-failed-rc<N>"}` or
+  `{ok: False, status: "send_keys-failed-timeout"}`. If BOTH `keys` and
+  `flow` are missing (EDGE-E3), return
+  `{ok: True, status: "send_keys-noop-no-params"}` (fail-soft). INV-1
+  preserved: `send-keys` does NOT restart the tmux session.
 
 ### Group C — Actions with EXTERNAL side-effects (best-effort, fail-soft)
 
+**Signature change (FIND-002 fix)**: `execute_recipe` gains a new keyword
+parameter `anicca_home: str = ""`. The dispatcher SHALL pass
+`anicca_home=os.environ.get("ANICCA_HOME", "/Users/anicca/anicca")`. When
+`anicca_home` is empty, all Group-C wires MUST fail-soft with
+`{ok: True, status: "<action>-no-anicca-home-deferred"}` (never crash).
+
 - **REQ-C1** (`login`): WHEN `action == "login"`, THE FUNCTION SHALL check
-  for `skills/_shared/login-service.sh`. If present, invoke with
-  `--flow <recipe.params.flow>` and a 60 s timeout. Return
-  `{ok: True, status: "login-ok"}` on rc=0. If missing, return
-  `{ok: True, status: "login-no-script-deferred"}`. Fail-soft (never crash).
+  for `<anicca_home>/skills/_shared/login-service.sh`. If present, invoke
+  with `--flow <recipe.params.flow>` and a 60 s timeout. Return
+  `{ok: True, status: "login-ok"}` on rc=0;
+  `{ok: False, status: "login-failed-rc<N>"}` else;
+  `{ok: False, status: "login-failed-timeout"}` on timeout.
+  If script missing, return `{ok: True, status: "login-no-script-deferred"}`.
+  Fail-soft (never crash).
 
 - **REQ-C2** (`npm_install`): WHEN `action == "npm_install"`, THE FUNCTION
-  SHALL run `npm install` in ANICCA_HOME with a 90 s timeout. Return
+  SHALL run `npm install` with `cwd=<anicca_home>` and a 90 s timeout. Return
   `{ok: True, status: "npm_install-ok"}` on rc=0. Else
-  `{ok: False, status: "npm_install-failed-rc<N>"}`. INV-1 preserved.
+  `{ok: False, status: "npm_install-failed-rc<N>"}` or
+  `{ok: False, status: "npm_install-failed-timeout"}`. INV-1 preserved.
 
 - **REQ-C3** (`git_checkout`): WHEN `action == "git_checkout"`, THE FUNCTION
   SHALL invoke `git -C <anicca_home> checkout <recipe.params.target>` with
-  a 30 s timeout. Return `{ok: True, status: "git_checkout-ok"}` on rc=0;
-  else `{ok: False, status: "git_checkout-failed-rc<N>"}`. INV-4 preserved:
-  we do NOT modify slot state; we checkout a code branch.
+  a 30 s timeout. If `params.target` is missing (EDGE-E3), default to
+  `"anicca-bot-signed"` (matches spawn_drift recipe from health_check_v2).
+  Return `{ok: True, status: "git_checkout-ok"}` on rc=0;
+  `{ok: False, status: "git_checkout-failed-rc<N>"}` else;
+  `{ok: False, status: "git_checkout-failed-timeout"}` on timeout.
+  INV-4 preserved: we do NOT modify slot state; we checkout a code branch.
 
 ### Group I — Invariants preserved
 

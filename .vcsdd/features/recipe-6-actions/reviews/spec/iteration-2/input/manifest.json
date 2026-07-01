@@ -1,0 +1,24 @@
+{
+  "reviewType": "spec",
+  "featureName": "recipe-6-actions",
+  "iteration": 2,
+  "mode": "lean",
+  "artifactsToReview": [
+    ".vcsdd/features/recipe-6-actions/specs/behavioral-spec.md",
+    ".vcsdd/features/recipe-6-actions/specs/verification-architecture.md",
+    "skills/_shared/lib/step3_recipe.py",
+    "skills/_shared/lib/health_check_v2.py"
+  ],
+  "previousIterationFindings": [
+    "FIND-001 critical (REQ-B1 misses cron_missing send_keys flow variant): fixed — REQ-B1 rewritten to accept EITHER params.keys OR params.flow (via SEND_KEYS_FLOW_MAP with reinject_startup→'/startup'; unknown flow → fail-soft ok:True 'send_keys-unknown-flow-<F>').",
+    "FIND-002 high (REQ-C2/C3 reference ANICCA_HOME undefined in signature): fixed — execute_recipe gains anicca_home kwarg; dispatcher passes ANICCA_HOME env; empty anicca_home → all Group-C wires fail-soft.",
+    "FIND-003 high (missing PROPs for timeout on 5/6 wires + missing PROP for REQ-I3 no slot writes): fixed — added 6 PROP-*-timeout-caught rows + PROP-I3-no-slot-state-writes + PROP-C-no-anicca-home-fail-soft. Total PROPs is now 21."
+  ],
+  "reviewDimensions": ["spec_fidelity", "verification_readiness"],
+  "extraConstraints": [
+    "Verify SEND_KEYS_FLOW_MAP is a well-defined constant in step3_recipe.py's design (the spec names it; impl will ship it).",
+    "Verify anicca_home resolution path: dispatcher → env → execute_recipe kwarg → subprocess cwd.",
+    "Verify PROP-I3 grep target: `loops/<slot>/` writes forbidden from Group-A/B/C code paths in step3_recipe.py."
+  ],
+  "expectedOutputPath": ".vcsdd/features/recipe-6-actions/reviews/spec/iteration-2/output/"
+}
