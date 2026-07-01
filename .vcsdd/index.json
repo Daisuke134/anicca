@@ -115,7 +115,46 @@
       "language": "python",
       "currentPhase": "complete",
       "updatedAt": "2026-06-30T23:08:44.795Z"
+    },
+    "roi-writer-and-dormant": {
+      "status": "active",
+      "createdAt": "2026-07-01T06:25:05.034Z",
+      "mode": "lean",
+      "language": "python",
+      "currentPhase": "complete",
+      "updatedAt": "2026-07-01T06:43:02.372Z"
+    },
+    "spawn-pin-real-ed25519": {
+      "status": "active",
+      "createdAt": "2026-07-01T06:55:19.554Z",
+      "mode": "lean",
+      "language": "python",
+      "currentPhase": "complete",
+      "updatedAt": "2026-07-01T07:14:39.084Z"
+    },
+    "earn-roi-reconciler": {
+      "status": "active",
+      "createdAt": "2026-07-01T08:02:41.383Z",
+      "mode": "lean",
+      "language": "python",
+      "currentPhase": "complete",
+      "updatedAt": "2026-07-01T08:25:14.887Z"
+    },
+    "earnings-to-settle-mirror": {
+      "status": "active",
+      "createdAt": "2026-07-01T08:26:10.856Z",
+      "mode": "lean",
+      "language": "python",
+      "currentPhase": "init",
+      "updatedAt": "2026-07-01T08:26:10.856Z"
+    },
+    "eval-driven-earning": {
+      "status": "active",
+      "createdAt": "2026-07-01T08:26:17.927Z",
+      "mode": "lean",
+      "currentPhase": "init",
+      "updatedAt": "2026-07-01T08:26:17.927Z"
     }
   },
-  "activeFeature": "proactive-step6-act"
+  "activeFeature": "eval-driven-earning"
 }
