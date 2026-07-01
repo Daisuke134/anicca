@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "REQ-B1 (`send_keys`) states the wire reads `params.keys` (with EDGE-E3 defaulting missing keys to \"\"). But `health_check_v2.py::select_fix_recipe` at line 106 emits `cron_missing → {action: 'send_keys', params: {flow: 'reinject_startup'}}` with NO `keys` key. Under REQ-B1 + EDGE-E3 this results in `tmux send-keys -t <slot>-cli --` with empty keys, i.e. the cron_missing auto-recovery becomes a silent noop while returning `send_keys-ok`. The spec never explains how the `send_keys` wire is supposed to translate `params.flow=='reinject_startup'` into the actual startup command. Either (a) REQ-B1 must add a sub-requirement for `params.flow` → concrete keys mapping, or (b) health_check_v2's cron_missing recipe must be updated to emit `params.keys` verbatim. As written, REQ-B1 + the existing recipe do not compose into a working cron_missing recovery — a purported real-wire silently does nothing.",
+  "evidence": {
+    "filePath": ".vcsdd/features/recipe-6-actions/specs/behavioral-spec.md",
+    "lineRange": "55-62",
+    "snippet": "REQ-B1 (`send_keys`): ... SHALL invoke `tmux send-keys -t \"<slot>-cli\" -- <keys>` ... The tmux target name comes from the caller's `slot` argument suffixed with `-cli`"
+  },
+  "routeToPhase": "1a"
+}

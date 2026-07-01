@@ -1,0 +1,20 @@
+Security scan (grep-based, sprint-4 (c) delta only) — 2026-07-01
+
+Files scanned:
+- skills/_shared/lib/quota_tracker.py (has_realized_in_window + compute_dormant_state)
+- skills/_shared/proactive-loop-dispatch.py (dormant-check block only)
+
+Patterns checked: shell=True, eval(, exec(, os.system(, subprocess.getoutput(
+
+Result: CLEAN (0 occurrences).
+
+Additional invariants verified via test grep:
+- PROP-D3-never-removes-sentinel: test_dispatcher_dormant_integration.py enforces
+  no `.dormant.sentinel` deletion path in dispatcher.
+- PROP-I2-no-tmux-kill: test asserts "kill-session" not in DISPATCH_PY source.
+
+No SAST tool (semgrep/bandit) installed in this workspace's dev env; the surface
+of change is 2 pure helpers + 1 guarded try/except block that reads files and
+writes an existing (previously reviewed) sentinel via write_dormant_sentinel.
+No new subprocess call sites, no network I/O, no external inputs beyond the
+already-trusted roi.jsonl and menu.json files owned by the slot.

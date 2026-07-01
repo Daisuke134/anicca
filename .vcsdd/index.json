@@ -160,9 +160,17 @@
       "createdAt": "2026-07-01T08:52:35.165Z",
       "mode": "lean",
       "language": "python",
-      "currentPhase": "2c",
-      "updatedAt": "2026-07-01T09:09:34.989Z"
+      "currentPhase": "complete",
+      "updatedAt": "2026-07-01T09:13:36.610Z"
+    },
+    "recipe-6-actions": {
+      "status": "active",
+      "createdAt": "2026-07-01T09:10:47.827Z",
+      "mode": "lean",
+      "language": "python",
+      "currentPhase": "1b",
+      "updatedAt": "2026-07-01T09:11:36.060Z"
     }
   },
-  "activeFeature": "dispatcher-live-dormant-mode"
+  "activeFeature": "recipe-6-actions"
 }

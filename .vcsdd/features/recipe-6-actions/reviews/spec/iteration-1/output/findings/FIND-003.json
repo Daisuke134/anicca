@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "verification_readiness",
+  "category": "test_coverage",
+  "severity": "high",
+  "description": "verification-architecture.md enumerates 12 required:true proof obligations but omits two that the constraints in the review manifest explicitly demand. (1) No PROP covers EDGE-E1 for the 5 wires that use subprocess timeouts other than kill_server (send_keys, login, npm_install, git_checkout, escalate) — only `PROP-A1-kill_server-timeout-caught` exists. Per REQ-I2 (`execute_recipe` NEVER raises), a subprocess.TimeoutExpired in any of the 5 remaining wires must be caught and mapped to `-timeout` status; without a per-wire timeout PROP, PROP-I2 becomes a single grep-for-try/except and cannot demonstrate that each wire's timeout branch is exercised. (2) No PROP covers REQ-I3 (INV-4: no action writes to slot state `~/loops/<slot>/`). REQ-I3 is claimed but has no obligation row in the Proof obligations table, so it is not testable as-is. Adversarial risk: a future edit that adds a `Path('~/loops/<slot>/foo').write_text(...)` in login or git_checkout would silently violate INV-4 with no failing test.",
+  "evidence": {
+    "filePath": ".vcsdd/features/recipe-6-actions/specs/verification-architecture.md",
+    "lineRange": "19-33",
+    "snippet": "| PROP-A1-kill_server-timeout-caught | 1 | true | REQ-A1 EDGE-E1 | ... | PROP-I2-never-raises | 1 | true | REQ-I2 (all subprocess wrapped in try/except) |"
+  },
+  "routeToPhase": "1b"
+}

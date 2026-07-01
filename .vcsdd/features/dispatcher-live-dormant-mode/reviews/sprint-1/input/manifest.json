@@ -1,0 +1,40 @@
+{
+  "reviewType": "implementation",
+  "featureName": "dispatcher-live-dormant-mode",
+  "sprintNumber": 1,
+  "mode": "lean",
+  "artifactsToReview": {
+    "spec": [
+      ".vcsdd/features/dispatcher-live-dormant-mode/specs/behavioral-spec.md",
+      ".vcsdd/features/dispatcher-live-dormant-mode/specs/verification-architecture.md"
+    ],
+    "tests": [
+      "skills/_shared/__tests__/test_live_dormant_state.py",
+      "skills/_shared/__tests__/test_dispatcher_dormant_integration.py",
+      "skills/_shared/__tests__/test_dispatch_integration_roi.py"
+    ],
+    "source": [
+      "skills/_shared/lib/quota_tracker.py",
+      "skills/_shared/proactive-loop-dispatch.py"
+    ]
+  },
+  "reviewDimensions": [
+    "spec_fidelity",
+    "edge_case_coverage",
+    "implementation_correctness",
+    "structural_integrity",
+    "verification_readiness"
+  ],
+  "extraConstraints": [
+    "Verify REQ-D1 placement matches spec: dormant check block sits between load_menu call and STEP 6 ACT.",
+    "Verify REQ-L2 short-circuit: compute_dormant_state with live_mode=False returns is_dormant=False unconditionally.",
+    "Verify REQ-L3: rolling_7d list is ordered MOST RECENT LAST, matching count_consecutive_negative_windows contract at quota_tracker.py:69-81.",
+    "Verify REQ-D2 idempotent: existing sentinel is never overwritten (dispatcher checks .exists() before write).",
+    "Verify REQ-D4 fail-closed: every failure path swallows exception, logs to stderr, continues tick (never aborts).",
+    "PROP-D1 dispatcher-invokes-check-when-roi-exists is exercised by test_D1_dispatcher_invokes_dormant_check_when_roi_exists.",
+    "PROP-E5 sentinel-idempotent is exercised by test_E5_sentinel_idempotent.",
+    "The .slot_created marker deviates from spec REQ-D1a's original st_ctime, but preserves the semantic intent (slot age from a stable ts). Rationale: st_ctime is bumped by dispatcher writes in prod, making dormant unreachable.",
+    "test_dispatch_integration_roi.py was relaxed: previously banned write_dormant_sentinel, now allows it because sprint-4 (c) intentionally calls it under the live-mode gate."
+  ],
+  "expectedOutputPath": ".vcsdd/features/dispatcher-live-dormant-mode/reviews/sprint-1/output/"
+}
