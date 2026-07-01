@@ -22,6 +22,7 @@ from lib.step6_act import task_descriptor, enqueue_task_descriptor  # noqa: E402
 from lib.step3_recipe import execute_recipe, default_restart_cmd_map  # noqa: E402
 from lib.roi_track import roi_row, compute_expected_jpy, append_roi_row  # noqa: E402
 from lib.reconciler import reconcile as _reconcile_slot  # noqa: E402
+from lib.settle_mirror import mirror_earnings_to_settle as _mirror_slot  # noqa: E402
 
 
 def _acquire_or_exit():
@@ -203,6 +204,13 @@ def main() -> int:
                    f"unmatched={report.get('unmatched', 0)}/"
                    f"updated={report.get('updated_rows', 0)}")
         # No task descriptor enqueued. The reconciler already did its work.
+    elif picked.get("category") == "settle-mirror":
+        # sprint-4 (a2) — earnings.jsonl → settle.jsonl mirror
+        earnings_path = Path.home() / slot / "earnings.jsonl"
+        r = _mirror_slot(slot_dir, earnings_path, int(time.time()))
+        outcome = (f"settle-mirror:new={r.get('new', 0)}/"
+                   f"dup={r.get('dup', 0)}/"
+                   f"unmatched={r.get('unmatched', 0)}")
     else:
         descriptor = task_descriptor(
             pass_id=pass_id, ts=int(time.time()), picked=picked,
@@ -217,6 +225,8 @@ def main() -> int:
     # STEP 7: update build_log
     if picked.get("category") == "reconciler":
         next_cand = "(reconciler-in-process)"
+    elif picked.get("category") == "settle-mirror":
+        next_cand = "(settle-mirror-in-process)"
     else:
         next_cand = f"(layer-c-dequeue: tasks/{enq.get('filename','?')})"
     append_pass(
