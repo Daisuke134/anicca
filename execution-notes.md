@@ -51,3 +51,16 @@
   clips are ever posted. NOT a M1/M2 blocker (gig is the M1/M2 primary slot).
 - Sprint-5 candidate feature: `clip-cli.sh a1-equivalent` for task-descriptor
   consumption + producer.sh wire.
+
+## task #5 status (山本さん #5123100 あい庵 SNS ¥40k/月) — CLOSED/lost
+
+Full timeline from gig data (2026-06-30 → 07-01):
+1. Applied w/ site-specific 3-improvement proposal — buyer replied "契約手続きを進めたい"
+2. Formal 見積り sent via direct_offer/4857277 (¥40,000/月, 定期購入, 期限 7/7)
+3. Two follow-ups sent (2026-06-30 23:38, 07-01 01:17)
+4. **Result**: 公開募集終了 + direct_offer/4857277 → 404 (offer link dead)
+   → outcome=`ignored_closed`, lesson: "高額見積りは決断を促す締切設定が必要"
+
+M2 candidate: NO (deal closed). The gig-cli.sh a1 pipeline still stands
+ready for the next buyer that reaches 検収 stage. Cron 52b154a2 next
+:27 tick continues the discovery.
