@@ -1,0 +1,23 @@
+{
+  "reviewType": "implementation",
+  "featureName": "spawn-pin-real-ed25519",
+  "sprintNumber": 1,
+  "iteration": 2,
+  "mode": "lean",
+  "artifactsToReview": {
+    "spec": [".vcsdd/features/spawn-pin-real-ed25519/specs/behavioral-spec.md",
+             ".vcsdd/features/spawn-pin-real-ed25519/specs/verification-architecture.md"],
+    "source_python": ["skills/_shared/lib/ed25519_util.py", "skills/_shared/lib/spawn_pin.py"],
+    "tests": ["skills/_shared/__tests__/test_ed25519_util.py", "skills/_shared/__tests__/test_spawn_pin.py"]
+  },
+  "previousIterationFindings": [
+    "FIND-001 medium (grep invariants declared required:true but no test enforces): fixed via 3 new grep-based tests in test_ed25519_util.py — test_prop_p3_no_sha256_fixture_protocol_in_spawn_pin (regex bans sha256+pubkey+pad-to-64+seed variable) + test_prop_p2_verify_uses_real_ed25519_util (import + call site) + test_prop_a1_earn_shared_skeleton_names_actual_symbols (roi_row/pick_next/load_menu).",
+    "FIND-002 medium (sign writes tmp files into privkey parent dir): fixed — sign_bytes_ed25519 now uses tempfile.TemporaryDirectory (matches verify pattern). Removes id(data) collision + 0o500 keydir failure + artifact leakage near private key."
+  ],
+  "reviewDimensions": ["spec_fidelity", "edge_case_coverage", "implementation_correctness", "structural_integrity", "verification_readiness"],
+  "extraConstraints": [
+    "Verify FIND-002 closure: sign_bytes_ed25519 uses tempfile.TemporaryDirectory (grep the function body for TemporaryDirectory and confirm the priv_path.parent tmp path is gone).",
+    "Verify FIND-001 closure: test_prop_p3 regex actually catches the old pattern (would fail if someone reintroduces hashlib.sha256(final_bytes + pubkey_raw...))."
+  ],
+  "expectedOutputPath": ".vcsdd/features/spawn-pin-real-ed25519/reviews/sprint-1/iteration-2/output/"
+}

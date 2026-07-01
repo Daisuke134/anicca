@@ -1,0 +1,135 @@
+{
+  "sprintNumber": 1,
+  "feature": "spawn-pin-real-ed25519",
+  "overallVerdict": "PASS",
+  "timestamp": "2026-07-01T00:00:00Z",
+  "iteration": 2,
+  "reviewContext": {
+    "reviewType": "implementation"
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/_shared/lib/ed25519_util.py:114-149",
+          "description": "REQ-C2 sign_bytes_ed25519 satisfied \u2014 openssl pkeyutl -sign -rawin, 64-byte sig, SigningError propagation."
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/lib/ed25519_util.py:152-186",
+          "description": "REQ-C3 verify_bytes_ed25519 exit-code-only predicate (line 186 `return r.returncode == 0`), no stdout parsing."
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/lib/spawn_pin.py:127-150",
+          "description": "REQ-P2 verify_spawn_surface imports and calls verify_bytes_ed25519; REQ-P3 no sha256+pubkey fixture protocol remains."
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/__tests__/test_ed25519_util.py:180-221",
+          "description": "PROP-P3/P2/A1 grep invariants enforced by required-true tests, closing FIND-001."
+        }
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/_shared/__tests__/test_ed25519_util.py:77-90",
+          "description": "EDGE-E5 empty-data SigningError + EDGE-E6 1MB roundtrip covered."
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/__tests__/test_ed25519_util.py:113-121",
+          "description": "EDGE-E3 63-byte + EDGE-E4 128-byte sig rejection tests present."
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/__tests__/test_ed25519_util.py:165-168",
+          "description": "EDGE-E7 missing privkey raises SigningError."
+        }
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/_shared/lib/ed25519_util.py:128-149",
+          "description": "FIND-002 closure: tempfile.TemporaryDirectory isolates tmp files from privkey dir; sig length + returncode both checked."
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/lib/ed25519_util.py:33-55",
+          "description": "REQ-I3 openssl>=3.0 enforced at import via _openssl_version_ok, UnsupportedOpenSSLError raised."
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/lib/ed25519_util.py:127",
+          "description": "REQ-I2 SigningError message 'private key not found (path scrubbed)' does not include priv_path; test at test_ed25519_util.py:154-162 enforces."
+        }
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/_shared/lib/ed25519_util.py",
+          "description": "187 lines, single-responsibility (crypto primitives). Clear separation of PURE (is_valid_ed25519_pubkey, pubkey_b64_to_pem) vs I/O (sign, verify, generate_test_keypair)."
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/lib/spawn_pin.py:103",
+          "description": "sha256_file extracted to lib._common per 2c refactor note."
+        }
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/_shared/__tests__/test_ed25519_util.py:130-139",
+          "description": "PROP-C3-exit-code-only enforced by source grep for stdout English phrases."
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/__tests__/test_ed25519_util.py:143-150",
+          "description": "PROP-I1 no-shell-injection enforced by source grep for shell=True / os.system."
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/__tests__/test_ed25519_util.py:180-221",
+          "description": "All 3 previously-unguarded required:true PROPs (P3/P2/A1) now backed by automated tests."
+        }
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [
+      "CRIT-001",
+      "CRIT-002",
+      "CRIT-003",
+      "CRIT-004",
+      "CRIT-005"
+    ],
+    "duplicateFindings": [],
+    "findingCount": 0,
+    "previousFindingCount": 2
+  }
+}

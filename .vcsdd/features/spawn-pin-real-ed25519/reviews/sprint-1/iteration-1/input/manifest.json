@@ -1,0 +1,24 @@
+{
+  "reviewType": "implementation",
+  "featureName": "spawn-pin-real-ed25519",
+  "sprintNumber": 1,
+  "iteration": 1,
+  "mode": "lean",
+  "artifactsToReview": {
+    "spec": [".vcsdd/features/spawn-pin-real-ed25519/specs/behavioral-spec.md",
+             ".vcsdd/features/spawn-pin-real-ed25519/specs/verification-architecture.md"],
+    "source_python": ["skills/_shared/lib/ed25519_util.py",
+                       "skills/_shared/lib/spawn_pin.py"],
+    "tests": ["skills/_shared/__tests__/test_ed25519_util.py",
+              "skills/_shared/__tests__/test_spawn_pin.py"]
+  },
+  "reviewDimensions": ["spec_fidelity", "edge_case_coverage", "implementation_correctness", "structural_integrity", "verification_readiness"],
+  "extraConstraints": [
+    "REQ-C3(iv) FIND-002 exit-code-only: grep verify_bytes_ed25519 body for 'stdout', 'Signature Verified', 'stderr' — must be 0. Confirmed by test_verify_source_does_not_parse_stdout_for_english.",
+    "REQ-P3 removes sha256 fixture protocol: grep spawn_pin.py for `hashlib.sha256.*(.*pubkey|final_bytes.*pubkey|pinned.*pubkey)` must be 0 — no fallback.",
+    "REQ-I3 openssl version guard: verify _openssl_version_ok() runs at import + raises UnsupportedOpenSSLError.",
+    "SPKI DER prefix 302a300506032b6570032100 is 12 bytes for ed25519 (RFC 8410 OID 1.3.101.112). Verify pubkey_b64_to_pem produces PEM openssl accepts (round-trip test proves).",
+    "395/395 tests GREEN; spawn_pin 35/35 including new PROP-C3-exit-code-only + PROP-I1-no-shell + PROP-I2-no-path-leak."
+  ],
+  "expectedOutputPath": ".vcsdd/features/spawn-pin-real-ed25519/reviews/sprint-1/iteration-1/output/"
+}

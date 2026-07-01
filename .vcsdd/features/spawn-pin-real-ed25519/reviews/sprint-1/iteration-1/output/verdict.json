@@ -1,0 +1,65 @@
+{
+  "sprintNumber": 1,
+  "feature": "spawn-pin-real-ed25519",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-01T00:00:00Z",
+  "iteration": 1,
+  "reviewContext": {
+    "reviewType": "implementation",
+    "mode": "lean"
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/_shared/lib/ed25519_util.py:33-55", "description": "REQ-I3 openssl >=3.0 version guard runs at import; raises UnsupportedOpenSSLError as spec'd"},
+        {"type": "file", "location": "skills/_shared/lib/ed25519_util.py:58-66", "description": "REQ-C1 is_valid_ed25519_pubkey: pure, handles None, base64 validate=True, len==32 check"},
+        {"type": "file", "location": "skills/_shared/lib/ed25519_util.py:69-85", "description": "REQ-C4 pubkey_b64_to_pem uses correct RFC 8410 SPKI DER prefix 302a300506032b6570032100 (12 bytes)"},
+        {"type": "file", "location": "skills/_shared/lib/ed25519_util.py:153-187", "description": "REQ-C3(iv) verify body returns solely r.returncode == 0; grep for stdout/stderr in verify body: 0 hits on English-phrase parsing. Confirmed exit-code-only."},
+        {"type": "file", "location": "skills/_shared/lib/spawn_pin.py:56-91", "description": "REQ-P1 fixture_clean generates ephemeral ed25519 via generate_test_keypair, signs pinned bytes with ephemeral private key, does NOT hard-code anicca-bot key"},
+        {"type": "file", "location": "skills/_shared/lib/spawn_pin.py:127-150", "description": "REQ-P2/P3 verify_spawn_surface uses verify_bytes_ed25519, NO sha256(final_bytes+pubkey_raw) fallback path; grep of spawn_pin.py for `hashlib.sha256.*pubkey_raw` = 0 hits confirmed"},
+        {"type": "file", "location": ".vcsdd/features/earn-shared-skeleton/specs/verification-architecture.md:28,31,34", "description": "REQ-A1 alignment present: roi_row (line 28), pick_next (line 31), load_menu (line 34) all reference the actual sprint-3 sprint-2 symbols"}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/_shared/__tests__/test_ed25519_util.py:35-40", "description": "E1 trailing newline + E2 non-b64 + None all covered in TestPubkeyValidation"},
+        {"type": "file", "location": "skills/_shared/__tests__/test_ed25519_util.py:113-121", "description": "E3 63-byte sig + E4 128-byte sig rejection tests"},
+        {"type": "file", "location": "skills/_shared/__tests__/test_ed25519_util.py:77-90", "description": "E5 empty→SigningError + E6 1MB payload tests"},
+        {"type": "file", "location": "skills/_shared/__tests__/test_ed25519_util.py:165-168", "description": "E7 missing privkey raises SigningError"},
+        {"type": "file", "location": "skills/_shared/__tests__/test_spawn_pin.py:122-155", "description": "f-x sig tamper, f-xi trust-anchor unreadable, f-xii self-sha mismatch all covered"}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-002"],
+      "evidence": []
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/_shared/lib/ed25519_util.py", "description": "Clean module split: pure helpers (is_valid_ed25519_pubkey, pubkey_b64_to_pem) separated from I/O helpers (sign_bytes_ed25519, verify_bytes_ed25519, generate_test_keypair); dedicated exception types SigningError, UnsupportedOpenSSLError"},
+        {"type": "file", "location": "skills/_shared/lib/spawn_pin.py:129-145", "description": "verify_spawn_surface delegates crypto entirely to ed25519_util; no crypto logic duplicated"}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-001"],
+      "evidence": []
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 2,
+    "allCriteriaEvaluated": true,
+    "duplicateFindings": []
+  }
+}

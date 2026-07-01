@@ -1,0 +1,27 @@
+spawn-pin-real-ed25519 manual security grep
+generated 2026-07-01
+
+=== RCE / injection ===
+(0 hits on shell=True, os.system, eval)
+
+=== Anti-J8 ===
+(0 hits on telegram/slack/twilio/osascript/terminal-notifier/find-generic-password/SecKeychain)
+
+=== sudo word-boundary ===
+(0 hits)
+
+=== Fake sha256 fixture protocol (REQ-P3) ===
+$ grep -nE "hashlib\.sha256\([^)]*final_bytes[^)]*pubkey|expected_sig_seed" skills/_shared/lib/spawn_pin.py
+(0 hits)
+
+=== Openssl always argv-list ===
+$ grep -nE "subprocess\.(run|Popen).*shell=True" skills/_shared/lib/ed25519_util.py
+(0 hits)
+
+Verdict:
+- 0 RCE / injection
+- 0 anti-J8
+- 0 sudo
+- 0 fake-sha256-fixture-protocol remnants
+- 100% argv-list subprocess calls
+</parameter>
