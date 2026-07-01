@@ -2,16 +2,67 @@
   "featureName": "agents-at-arms-leaderboard",
   "mode": "lean",
   "language": "typescript",
-  "currentPhase": "init",
-  "phaseHistory": [],
-  "iterations": {},
+  "currentPhase": "2b",
+  "phaseHistory": [
+    {
+      "from": "init",
+      "to": "1a",
+      "timestamp": "2026-07-01T06:57:51.788Z",
+      "reason": "spec authored + adversary-reviewed manually"
+    },
+    {
+      "from": "1a",
+      "to": "1b",
+      "timestamp": "2026-07-01T06:57:51.791Z",
+      "reason": "spec authored + adversary-reviewed manually"
+    },
+    {
+      "from": "1b",
+      "to": "1c",
+      "timestamp": "2026-07-01T06:58:45.726Z",
+      "reason": "spec-review by fresh adversary"
+    },
+    {
+      "from": "1c",
+      "to": "2a",
+      "timestamp": "2026-07-01T06:58:45.734Z",
+      "reason": "begin RED",
+      "sprint": 1
+    },
+    {
+      "from": "2a",
+      "to": "2b",
+      "timestamp": "2026-07-01T07:03:08.664Z",
+      "reason": "RED recorded: baseline 29/29 PASS, new-feature FAIL",
+      "sprint": 1
+    }
+  ],
+  "iterations": {
+    "1a": 1,
+    "1b": 1,
+    "1c": 1,
+    "2a": 1,
+    "2b": 1
+  },
   "proofObligations": [],
   "traceability": {
     "epicId": "VCSDD-agents-at-arms-leaderboard-1782855614037",
     "beads": []
   },
-  "gates": {},
-  "sprintCount": 0,
+  "gates": {
+    "1c": {
+      "verdict": "PASS",
+      "timestamp": "2026-07-01T06:58:45.729Z",
+      "reviewedBy": "adversary",
+      "details": {
+        "round": 5,
+        "dims": "all 5 PASS"
+      },
+      "adversaryVerdict": "PASS",
+      "adversaryReviewedAt": "2026-07-01T06:58:45.729Z"
+    }
+  },
+  "sprintCount": 1,
   "createdAt": "2026-06-30T21:40:14.034Z",
-  "updatedAt": "2026-06-30T21:40:14.034Z"
+  "updatedAt": "2026-07-01T07:03:08.664Z"
 }

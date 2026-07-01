@@ -1,2 +1,9 @@
 {"timestamp":"2026-06-29T12:34:14.398Z","event":"feature_created","featureName":"promote-fun-clip-earn","mode":"lean"}
 {"timestamp":"2026-06-30T21:40:14.042Z","event":"feature_created","featureName":"agents-at-arms-leaderboard","mode":"lean","language":"typescript"}
+{"timestamp":"2026-07-01T06:57:51.791Z","event":"phase_transition","featureName":"agents-at-arms-leaderboard","from":"init","to":"1a","iteration":1,"phase":"1a"}
+{"timestamp":"2026-07-01T06:57:51.792Z","event":"phase_transition","featureName":"agents-at-arms-leaderboard","from":"1a","to":"1b","iteration":1,"phase":"1b"}
+{"timestamp":"2026-07-01T06:58:45.729Z","event":"phase_transition","featureName":"agents-at-arms-leaderboard","from":"1b","to":"1c","iteration":1,"phase":"1c"}
+{"timestamp":"2026-07-01T06:58:45.729Z","event":"gate_recorded","featureName":"agents-at-arms-leaderboard","phase":"1c","verdict":"PASS","reviewedBy":"adversary"}
+{"timestamp":"2026-07-01T06:58:45.735Z","event":"phase_transition","featureName":"agents-at-arms-leaderboard","from":"1c","to":"2a","iteration":1,"phase":"2a"}
+{"timestamp":"2026-07-01T06:58:45.735Z","event":"sprint_started","featureName":"agents-at-arms-leaderboard","sprintNumber":1,"phase":"2a"}
+{"timestamp":"2026-07-01T07:03:08.666Z","event":"phase_transition","featureName":"agents-at-arms-leaderboard","from":"2a","to":"2b","iteration":1,"phase":"2b"}
