@@ -1,0 +1,64 @@
+{
+  "sprintNumber": 1,
+  "feature": "earn-roi-reconciler",
+  "overallVerdict": "PASS",
+  "timestamp": "2026-07-01T00:00:00Z",
+  "iteration": 3,
+  "reviewContext": {
+    "reviewType": "spec",
+    "mode": "lean",
+    "iterationLimit": 3,
+    "isLastLeanIteration": true
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": ".vcsdd/features/earn-roi-reconciler/specs/verification-architecture.md:47",
+          "description": "PROP-M2-dispatcher-in-process now enumerates all 5 sub-checks: (a) reconcile invoked in-process (no subprocess), (b) tasks/*.json glob set UNCHANGED before/after, (c) grep step6_act.py for 'reconciler_report' = 0 hits (frozen shape ban explicit), (d) build_log.md outcome starts with 'reconciled:matched=', (e) state/reconciler-last-run.json matches returned report dict. FIND-2-001 closed."
+        },
+        {
+          "type": "file",
+          "location": ".vcsdd/features/earn-roi-reconciler/specs/behavioral-spec.md:108-120",
+          "description": "REQ-M2 verbatim states (b) NOT call enqueue_task_descriptor and 'This eliminates the previous spec's dequeue: false field — the frozen task_descriptor shape (skills/_shared/lib/step6_act.py:31-43) stays unchanged.' Consistent with verification-architecture PROP-M2."
+        },
+        {
+          "type": "file",
+          "location": "skills/_shared/lib/step6_act.py:31-43",
+          "description": "Confirmed frozen 7-key task_descriptor shape: schema_version, pass_id, ts, picked, budget, proactive_loop_origin, slot. No reconciler_report field. PROP-M2 grep target exists."
+        }
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": ".vcsdd/features/earn-roi-reconciler/specs/verification-architecture.md:58-76",
+          "description": "Done E2E now enumerates 6 checks: (1) roi_jpy_realized > 0, (2) state/reconciler-last-run.json written, (3) os.stat size BYTE-IDENTICAL, (4) SHA-256 of ~/gig/earnings.jsonl BYTE-IDENTICAL, (5) recursive SHA-256 over ALL ~/gig/*.jsonl IDENTICAL (catches applied.jsonl/talkroom.jsonl leaks), (6) source grep for write-mode calls (open 'a'/'w', write_text, .write(, os.replace) resolving under ~/gig = 0 hits. Lines 75-76 explicitly state 'mtime is EXPLICITLY NOT used as a predicate anywhere in this suite'. FIND-2-002 closed."
+        },
+        {
+          "type": "file",
+          "location": ".vcsdd/features/earn-roi-reconciler/specs/verification-architecture.md:43",
+          "description": "PROP-I2-writes-scoped mirrors the same 3-check (size + SHA-256 + source grep for write-mode) — consistent with Done E2E, mtime discarded here too."
+        }
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 0,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": ["FIND-2-001", "FIND-2-002"],
+    "duplicateFindings": [],
+    "closureStatus": {
+      "FIND-2-001": "CLOSED",
+      "FIND-2-002": "CLOSED"
+    }
+  }
+}

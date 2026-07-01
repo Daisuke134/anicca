@@ -1,0 +1,4 @@
+target-feature-tests: PASS
+regression-baseline: PASS
+total: 426 passed
+live E2E: real gig pass_id p-1782887606 roi_jpy_realized 0 → 40000, ~/gig SHA unchanged, gig-cli ALIVE
