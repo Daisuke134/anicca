@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "verification_readiness",
+  "category": "security_surface",
+  "severity": "high",
+  "description": "REQ-C3(iv) makes verify success conditional on both `openssl exits 0` AND stdout containing the literal English string 'Signature Verified Successfully'. This is a fragile and unnecessary coupling: (1) openssl's human-readable status strings are NOT part of its stable API and can change per version / patch / locale; (2) openssl `pkeyutl -verify` already returns exit 0 iff the signature verifies and non-zero otherwise — the exit code IS the authoritative security signal; (3) tying the boolean to a stdout string introduces a false-negative denial-of-service risk (a valid signature could be reported as FAIL because the openssl build was rebuilt with a different message or ran under `LC_ALL=C.UTF-8`), which for a spawn-surface-integrity check means the whole earn skill halts on a false alarm. Worse, if a future openssl silently changes its exit-code semantics but keeps printing 'Signature Verified Successfully' in some path (unlikely, but the spec cites it as sufficient with exit 0), a bad-signature accept could occur. The spec must define verify success as exit==0 ONLY, with stdout scanning explicitly forbidden as a signal.",
+  "evidence": {
+    "filePath": ".vcsdd/features/spawn-pin-real-ed25519/specs/behavioral-spec.md",
+    "lineRange": "50-51",
+    "snippet": "(iv) return True iff openssl exits 0 and prints \"Signature Verified Successfully\"."
+  },
+  "routeToPhase": "2b"
+}

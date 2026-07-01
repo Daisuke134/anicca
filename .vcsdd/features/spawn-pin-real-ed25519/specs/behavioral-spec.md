@@ -42,13 +42,21 @@ is currently live-earning ¥.
   -> bytes` SHALL invoke `openssl pkeyutl -sign -inkey <privkey_pem> -rawin`
   (openssl ≥ 3.0 for ed25519 -rawin) and return the raw 64-byte signature.
   Raises SigningError on any failure (subprocess non-zero, wrong output length).
-- **REQ-C3**: THE I/O HELPER `verify_bytes_ed25519(data: bytes, sig: bytes,
-  pubkey_b64: str) -> bool` SHALL:
+- **REQ-C3** (FIND-002 fix): THE I/O HELPER `verify_bytes_ed25519(data: bytes,
+  sig: bytes, pubkey_b64: str) -> bool` SHALL:
   (i) reject non-ed25519 pubkey via is_valid_ed25519_pubkey (return False),
   (ii) reject wrong-length signature (!= 64 bytes, return False),
   (iii) invoke `openssl pkeyutl -verify -pubin -inkey <derived_pem> -rawin`
-       with the signature via stdin,
-  (iv) return True iff openssl exits 0 and prints "Signature Verified Successfully".
+       with the signature bytes via `-sigfile` or subprocess stdin,
+  (iv) return True IFF openssl exits with return code 0. THE FUNCTION MUST
+       NOT parse stdout / stderr for any English status string. openssl's
+       exit code IS the authoritative security signal; matching a literal
+       phrase like "Signature Verified Successfully" is FORBIDDEN because
+       (a) it is not part of openssl's stable API, (b) may differ per
+       version / patch / locale, (c) creates a false-negative DoS path on
+       benign openssl rebuild, (d) is a policy-level anti-pattern.
+       The test PROP-C2-sign-roundtrip already covers false positives; exit
+       code is sufficient.
 - **REQ-C4**: THE HELPER `pubkey_b64_to_pem(pubkey_b64: str) -> str` SHALL
   return an ED25519 PEM-formatted public key string using openssl's raw-to-PEM
   DER wrap (SPKI header for ed25519 = fixed 12-byte prefix `302a300506032b6570032100`).
@@ -70,7 +78,7 @@ is currently live-earning ¥.
 - **REQ-P3**: The `hashlib.sha256(final_bytes + pubkey_raw.encode())` fixture-
   protocol code path in lines 82-88 + 133-140 SHALL be REMOVED. No fallback
   fixture protocol in production.
-- **REQ-P4**: A test-only fixture `fixture_ed25519_keypair(tmp_path)` SHALL
+- **REQ-P4**: A test-only fixture `generate_test_keypair(tmp_path)` SHALL
   generate a temp keypair for tests. Tests SHALL NOT hard-code
   private key bytes.
 
@@ -124,3 +132,76 @@ is currently live-earning ¥.
   a documented location (e.g. `~/.openclaw/identity/anicca-bot.key`).
 - Rotate the fixture protocol out of anicca-bot spawn-surface.pinned.json.sig
   if any live production instance still uses it (grep audit needed).
+
+## 7. Sprint-3 migration steps (= FIND-003 breaking-change plan)
+
+Because REQ-P3 removes the sha256 fixture protocol WITHOUT fallback, existing
+production `spawn-surface.pinned.json.sig` files signed with the old protocol
+will fail verification. Sprint-3 must execute these steps in order:
+
+**Step 7.1 — Audit existing sigs (BEFORE removing fixture code)**
+- Enumerate all live `spawn-surface.pinned.json.sig` files on this host + all
+  Anicca instances. Command: `find ~/anicca ~/.openclaw ~/loops -name "spawn-surface.pinned.json.sig" 2>/dev/null`.
+- For each file, note: path, size (must be 64 bytes), owning instance, last
+  modified. Emit a single audit report `audit-spawn-sigs.txt` in the sprint-3
+  #29 evidence directory.
+
+**Step 7.2 — Determine per-file re-sign requirement**
+- For each `.sig` file found: if it was produced by the sha256 fixture
+  (identifiable by exact match against `sha256(pinned_bytes + pubkey_raw)` +
+  padding to 64 bytes), it MUST be re-signed with a real ed25519 private
+  key before this sprint deploys.
+- If any file cannot be re-signed (= no private key available), the pinned
+  file it protects MUST be REMOVED (fail-closed) rather than shipped with
+  an unverifiable sig.
+
+**Step 7.3 — Generate/document anicca-bot private key location**
+- Document the canonical private key path in this feature's Sprint-4 handoff
+  (§6 above). If no production key exists yet, sprint-3 ships the code path
+  but production remains in DEGRADED mode (verify path always returns False,
+  spawn refuses to proceed) until the key is provisioned. This is a
+  fail-closed security posture, not a regression.
+
+**Step 7.4 — Test-only fixture keypair for CI**
+- `generate_test_keypair(tmp_path)` is the ONLY signing path exercised by
+  the sprint-3 test suite. Production CI/CD (which does not have the
+  anicca-bot private key) SHALL NOT attempt to sign real spawn surfaces —
+  only verify.
+
+**Step 7.5 — Post-deploy audit**
+- After sprint-3 deploys, run a second audit to confirm 0 sha256-fixture sigs
+  remain. Any lingering fixture sigs are automatic FAIL in verification and
+  spawn refuses. This is the intended safe failure mode.
+
+## 8. Sprint-3 test-suite migration (= FIND-004 fix)
+
+Existing `test_spawn_pin.py` currently exercises the sha256 fixture protocol
+via `SpawnSurfaceState.fixture_clean`. Sprint-3 impact:
+
+**Step 8.1 — Refactor fixture_clean**
+- `SpawnSurfaceState.fixture_clean(cls, tmp_path)` now generates an ephemeral
+  ed25519 keypair via `generate_test_keypair(tmp_path)` and signs the pinned
+  bytes with the ephemeral private key (per REQ-P1).
+- The signature stored in `spawn-surface.pinned.json.sig` is now REAL 64-byte
+  ed25519, not sha256+padding.
+
+**Step 8.2 — Refactor verify_spawn_surface**
+- Reads `anicca-bot.pub` (production) OR the fixture pubkey (test); the
+  distinction is: if `SPAWN_PIN_TEST_TRUST_ANCHOR=<path>` env var is set,
+  read that pubkey instead of `anicca-bot.pub`. Tests set this env; production
+  never does.
+- Passes to `verify_bytes_ed25519` (real ed25519 path).
+
+**Step 8.3 — Existing test cases**
+- Cases that inject byte-flip corruption at `spawn-surface.pinned.json.sig`
+  (e.g. `write_bytes(b"\x00" * 64)`) STILL WORK because the real ed25519
+  path also rejects wrong signatures.
+- Cases that inject byte-flip at `spawn-surface.pinned.json` STILL WORK
+  because the sig-over-content check rejects tampering.
+- Cases that assumed `hashlib.sha256(...)` in the fixture protocol MUST be
+  rewritten to invoke `generate_test_keypair` and produce a real sig.
+
+**Step 8.4 — Green regression**
+- All existing test_spawn_pin.py tests SHALL pass after the refactor with
+  no changes to their behavioral assertions (they test verify's boolean
+  outcome, not the crypto primitive).

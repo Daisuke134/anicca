@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "verification_readiness",
+  "category": "test_coverage",
+  "severity": "medium",
+  "description": "verification-architecture.md line 44 says 'Modification to existing `test_spawn_pin.py` if the sha256 fixture protocol path is currently tested'. Grep confirms it IS currently tested: skills/_shared/__tests__/test_spawn_pin.py imports SpawnSurfaceState.fixture_clean (which today generates the sha256 fixture protocol at spawn_pin.py:83-88) and asserts `verify_spawn_surface` returns ok=True on the resulting fixture (test_clean_state_passes L21-26). After REQ-P3 removes the sha256 path AND REQ-P1 forces fixture_clean to use a real ephemeral ed25519 keypair, this test will FAIL red until fixture_clean is rewired, and every other test in test_spawn_pin.py that starts from fixture_clean (f-ii through f-xii per the file docstring) will also transitively fail. The 'if' clause in the spec understates the mandatory scope of the test-file rewrite and provides no acceptance criteria (which of the 12 fixture cases must still pass, which are now moot because sha256 protocol is gone, and which need re-baselining against the new sig). PROP-P1-fixture-uses-ephemeral is asserted as required:true but has no mapping onto the 12 existing f-i..f-xii cases.",
+  "evidence": {
+    "filePath": ".vcsdd/features/spawn-pin-real-ed25519/specs/verification-architecture.md",
+    "lineRange": "42-45",
+    "snippet": "- `__tests__/test_ed25519_util.py` — PURE + subprocess unit tests (Darwin needs openssl 3)\\n- `__tests__/test_spawn_pin_ed25519_integration.py` — spawn_pin integration with real keypair\\n- Modification to existing `test_spawn_pin.py` if the sha256 fixture protocol path is currently tested"
+  },
+  "routeToPhase": "2b"
+}
