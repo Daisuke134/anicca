@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "medium",
+  "description": "Symbol-name mismatch between behavioral-spec REQ-P4 and verification-architecture Purity Boundary table for the test-only ed25519 keypair fixture. behavioral-spec.md line 73 defines `fixture_ed25519_keypair(tmp_path)`; verification-architecture.md line 18 defines `generate_test_keypair(tmp_path) -> (privkey_pem_path, pubkey_b64)`. Both docs are in scope of THIS iteration-1 spec review, and the two names refer to the same test-only I/O helper. An implementer cannot pick a unique canonical symbol — this is precisely the class of ambiguity that produced sprint-1 FIND-006 (which REQ-A1 is trying to fix). The spec must pick one name and use it in both files, and specify the return contract in both places.",
+  "evidence": {
+    "filePath": ".vcsdd/features/spawn-pin-real-ed25519/specs/behavioral-spec.md",
+    "lineRange": "73-75",
+    "snippet": "REQ-P4: A test-only fixture `fixture_ed25519_keypair(tmp_path)` SHALL generate a temp keypair for tests. vs verification-architecture.md L18: `generate_test_keypair(tmp_path)`"
+  },
+  "routeToPhase": "2b"
+}

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "medium",
+  "description": "REQ-P3 declares the sha256 fixture protocol REMOVED with 'No fallback' and manifest extraConstraint #3 flags it as a BREAKING change requiring §6 sprint-4 handoff to document migration audit. §6 handoff (lines 121-126) mentions only two items: (1) add an integration test using a PRODUCTION private key, and (2) 'Rotate the fixture protocol out of anicca-bot spawn-surface.pinned.json.sig IF any live production instance still uses it (grep audit needed).' The 'if' + 'grep audit needed' language is not a migration procedure. Missing from §6: (a) where the production `spawn-surface.pinned.json.sig` is actually produced today (which agent/skill signs it), (b) who re-signs it with real ed25519 after this sprint ships, (c) the rollout ordering (deploy new verify code + new sig atomically, else every existing production spawn will fail-closed on the new verify path and the earn cron halts), (d) rollback plan if re-sign fails. Without these, sprint-4 handoff cannot execute the migration and the 'no fallback' policy will brick any live instance running the old sha256 sig against new verify code.",
+  "evidence": {
+    "filePath": ".vcsdd/features/spawn-pin-real-ed25519/specs/behavioral-spec.md",
+    "lineRange": "121-126",
+    "snippet": "## 6. Sprint-4 handoff (documented for later)\\n- Add an integration test that uses the anicca-bot PRODUCTION private key from a documented location (e.g. `~/.openclaw/identity/anicca-bot.key`).\\n- Rotate the fixture protocol out of anicca-bot spawn-surface.pinned.json.sig if any live production instance still uses it (grep audit needed)."
+  },
+  "routeToPhase": "2b"
+}

@@ -1,0 +1,24 @@
+{
+  "reviewType": "spec",
+  "featureName": "spawn-pin-real-ed25519",
+  "iteration": 2,
+  "mode": "lean",
+  "artifactsToReview": [
+    ".vcsdd/features/spawn-pin-real-ed25519/specs/behavioral-spec.md",
+    ".vcsdd/features/spawn-pin-real-ed25519/specs/verification-architecture.md"
+  ],
+  "previousIterationFindings": [
+    "FIND-001 medium (symbol drift fixture_ed25519_keypair vs generate_test_keypair): fixed — behavioral-spec.md now uses generate_test_keypair verbatim in REQ-P4 (matches verification-architecture.md).",
+    "FIND-002 high (English stdout coupling in REQ-C3(iv)): fixed — REQ-C3(iv) now EXPLICITLY requires exit code 0 ONLY; parsing stdout for 'Signature Verified Successfully' or any English phrase is FORBIDDEN + rationale (locale/version/patch drift + false-negative DoS + policy-level anti-pattern) documented + PROP-C3-exit-code-only added as required:true grep.",
+    "FIND-003 medium (§6 handoff doesn't cover the sprint-3 breaking-change migration): fixed — new §7 (Sprint-3 migration steps) enumerates 7.1 audit → 7.2 re-sign → 7.3 canonical key location → 7.4 test-only fixture → 7.5 post-deploy audit. Fail-closed posture documented.",
+    "FIND-004 medium (test_spawn_pin.py refactor path missing): fixed — new §8 (Sprint-3 test-suite migration) enumerates 8.1 fixture_clean refactor → 8.2 verify path with SPAWN_PIN_TEST_TRUST_ANCHOR env → 8.3 existing test cases still work → 8.4 green regression."
+  ],
+  "reviewDimensions": ["spec_fidelity", "verification_readiness"],
+  "extraConstraints": [
+    "Verify FIND-001: search both specs for 'fixture_ed25519_keypair' → 0 hits; 'generate_test_keypair' → matching count.",
+    "Verify FIND-002: REQ-C3(iv) explicitly forbids stdout parsing; PROP-C3-exit-code-only added and required.",
+    "Verify FIND-003: §7 is concrete (audit command + fail-closed posture + evidence artifacts documented).",
+    "Verify FIND-004: §8 covers all 4 refactor sub-steps; env var name SPAWN_PIN_TEST_TRUST_ANCHOR consistent."
+  ],
+  "expectedOutputPath": ".vcsdd/features/spawn-pin-real-ed25519/reviews/spec/iteration-2/output/"
+}
