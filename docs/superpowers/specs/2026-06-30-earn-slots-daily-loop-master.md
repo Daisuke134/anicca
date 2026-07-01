@@ -254,3 +254,27 @@ script/svg/base64 (token bloat), negative-constraints to reject recaps/surveys, 
 fingerprint → WAF ban), ATOMIC writes (temp→validate→overwrite) for ledgers. Names to keep probing: Superteam
 Earn (USDC $66k), toku.agency (fiat, but author-biased). Bias flags: Neil/Lily sell services + built toku;
 QuickNode = RPC ad; Hopkins + KheAi = most honest/reusable.
+
+## ★ EVAL-DRIVEN EARNING ARCHITECTURE (2026-07-01, from 6 repos) — the answer to "eval 1 vs 2" ★
+Question (Dais): eval-driven-dev via LLM-as-judge (1) vs autonomous result-based deciding (2) — which?
+ANSWER (proven by HKUDS/ClawWork 8.2k★, the reference impl): NEITHER alone — unify both as SURVIVAL ECONOMICS.
+  MASTER EVAL = survival economics (bankruptcy = the natural fitness function):
+    - real COST: a TrackedProvider wrapper reads real per-message token cost (incl. thinking), not estimates (= #2 made rigorous, ungameable)
+    - real INCOME: only quality-passing work earns → net(income − cost) is the true fitness
+    - QUALITY GATE: per-category rubric LLM-judge with a HARD missing-deliverable override (= #1 judge, but ANCHORED to "does it actually earn", so it can't reward-hack)
+  EXPLORE/EXPLOIT = a `decide_activity` "work vs learn" tool chosen each wake (ClawWork ships exactly this).
+LLM-judge alone → hallucinate into bankruptcy; result-only → too slow. ClawWork's fusion is the pattern to COPY.
+### What to borrow (curated; NOT yet implemented — battle-test first per Dais)
+- ClawWork (#5, best match): TrackedProvider real-cost + survival ledger (cost vs income) + decide_activity explore/exploit + rubric-judge-with-override. This is the eval spine to add to earn-shared-skeleton.
+- nicepkg/auto-company (#3, 169★): the LOOP HARNESS — stateless `claude -p` cycles + a single markdown-consensus baton (= our STATE.md) + bash circuit-breaker / usage-limit backoff / timeout / anti-dithering convergence rules (same Next-Action twice = ship-or-change). Lift into founder-loop.
+- benchflow-ai/awesome-evals (#1, 608★): the vocabulary — pass@k (explore) vs pass^k (exploit-reliability), "verifiable > judgeable" (Verifier's Law), error-analysis = highest ROI, criteria-drift.
+- yikart/AiToEarn (#4, 22k★): multi-platform (14 SNS) content→cash distribution modules + CPS/CPE/CPM settlement, for the content-earning arm.
+- garylab/MakeMoneyWithAI (#6): the auto-refreshing "new-opportunity radar" cron pattern for the explore arm; + netdata/mlflow for agent-health monitoring.
+- SKIP James4Ever0/agi_computer_control (vaporware; ClawWork already executes the "earning = the eval" idea).
+### The synthesis = flexible explore/exploit swarm
+earn-shared-skeleton (bandit/ROI/self-improve already there) + [ClawWork survival-economics eval + decide_activity]
++ [options MENU not fixed slots] + [curation gate: strongest model verifies a skill/repo before it enters the menu
+so dumber models + children bootstrap on good tools, don't burn money on shit repos] + [self-search: loop
+discovers new earn methods, scored by the eval layer, added to menu after curation]. Menu PRIMARY = trading/
+polymarket (KYC-free own-key rail, demand never dries); bounty = low-cost scan. Once a recipe is net-positive →
+$20 seed → spawn (human-funded on claude-p + self-funded on ClawRouter), each runs the curated toolbox + explores.
