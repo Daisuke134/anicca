@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "medium",
+  "description": "PROP-P3-no-fixture-sha256-in-prod and PROP-P2-verify-real-ed25519 are declared required:true in .vcsdd/features/spawn-pin-real-ed25519/specs/verification-architecture.md (lines 34-35) with a specified grep-based mechanism ('grep spawn_pin.py for hashlib.sha256.*pubkey_raw = 0'), but no test file in skills/_shared/__tests__/ actually enforces these invariants. test_ed25519_util.py contains PROP-C3-exit-code-only guard (line 130-139) and PROP-I1 shell-injection guard (line 143-150), but there is no equivalent grep-based test in test_spawn_pin.py that asserts hashlib.sha256(final_bytes + pubkey_raw...) or similar fixture-protocol pattern is absent from spawn_pin.py. The invariants are correct RIGHT NOW (grep verified), but any future edit that reintroduces the sha256+pubkey_raw fixture protocol will pass the test suite silently \u2014 exactly the regression PROP-P3 was declared required to prevent. Also: PROP-A1-spec-symbol-alignment is declared required:true but is only verified by a manual read of earn-shared-skeleton/specs/verification-architecture.md; no automated grep test guards the alignment. If someone reverts the earn-shared-skeleton spec back to the pre-FIND-006 symbol names, no test fires.",
+  "evidence": {
+    "filePath": ".vcsdd/features/spawn-pin-real-ed25519/specs/verification-architecture.md",
+    "lineRange": "34-36",
+    "snippet": "| PROP-P2-verify-real-ed25519 | 1 | true | REQ-P2 \u2014 spawn_pin's verify path uses ed25519_util.verify (grep for sha256 in verify path = 0) |\n| PROP-P3-no-fixture-sha256-in-prod | 1 | true | REQ-P3 \u2014 grep spawn_pin.py for `hashlib.sha256.*pubkey_raw` = 0 |\n| PROP-A1-spec-symbol-alignment | 1 | true | REQ-A1 \u2014 earn-shared-skeleton spec references roi_track / menu / no manifest module |"
+  },
+  "routeToPhase": "2a"
+}

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "implementation_correctness",
+  "category": "security_surface",
+  "severity": "medium",
+  "description": "sign_bytes_ed25519 writes plaintext-to-sign and raw signature files into the SAME DIRECTORY as the private key (skills/_shared/lib/ed25519_util.py:124-125): `data_path = priv_path.parent / f'.signdata-{id(data):x}.tmp'` and `sig_path = priv_path.parent / f'.sigout-{id(data):x}.tmp'`. Three real problems: (1) In production, if the anicca-bot key is stored under a strict-permission directory like ~/.openclaw/identity/ (Sprint-4 documented location, spec \u00a76), that directory may be 0o500 or otherwise not writable by the signing process \u2014 sign will fail with 'openssl sign failed rc=1' with no clear reason (REQ-C2 says raise SigningError, but the caller cannot distinguish 'writable dir' from 'key corrupt'). (2) `id(data)` for identical immutable bytes objects (e.g. b'') can collide across concurrent callers because CPython interns small immutables \u2014 two concurrent sign() invocations racing on the same data value overwrite each other's tmp files (EDGE-E10 concurrency claim in spec \u00a74 is not satisfied for the same-payload case). (3) The verify path correctly uses `tempfile.TemporaryDirectory()` (line 166) for isolation \u2014 sign should use the same pattern for consistency and safety. Recommendation: use `tempfile.TemporaryDirectory()` inside sign_bytes_ed25519 (identical to the verify pattern) to keep private-key directories untouched and eliminate the id(data) collision.",
+  "evidence": {
+    "filePath": "skills/_shared/lib/ed25519_util.py",
+    "lineRange": "120-150",
+    "snippet": "priv_path = Path(privkey_pem)\nif not priv_path.is_file():\n    raise SigningError(\"private key not found (path scrubbed)\")\n# Write data to temp file (openssl -rawin reads from -in file)\ndata_path = priv_path.parent / f\".signdata-{id(data):x}.tmp\"\nsig_path = priv_path.parent / f\".sigout-{id(data):x}.tmp\""
+  },
+  "routeToPhase": "2b"
+}
