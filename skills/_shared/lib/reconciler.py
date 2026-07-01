@@ -42,8 +42,11 @@ def merge_realized(existing: int, new: int) -> tuple[int, str]:
     if n > e:
         return n, "updated"
     if n == e:
-        # existing == new; when both 0, no state change
-        return e, "noop" if e > 0 else "noop"
+        # FIND-001 + FIND-006 fix: distinguish
+        # (a) both zero (nothing to replay): "noop" — not counted in skipped_dup
+        # (b) positive same-value replay (idempotent Coconala re-settle):
+        #     "skipped_dup" per REQ-R4 + EDGE-E5
+        return e, ("skipped_dup" if e > 0 else "noop")
     # n < e — never shrink
     return e, "skipped_dup"
 
@@ -128,20 +131,27 @@ def reconcile(slot_dir: Path | str, now_ts: int) -> dict:
         else:
             parsed_new_settles.append((offset_before + idx, row))
 
-    # Load current roi.jsonl
+    # Load current roi.jsonl. FIND-002 fix: preserve malformed rows verbatim
+    # so the atomic rewrite does NOT silently delete them. Malformed rows are
+    # stored as {"__raw__": "<original-line>"} sentinels that are re-emitted
+    # verbatim on rewrite (see line-render below).
     roi_rows: list[dict] = []
+    roi_row_errors: list[dict] = []
     if roi_path.exists():
         try:
-            for l in roi_path.read_text().splitlines():
+            for line_idx, l in enumerate(roi_path.read_text().splitlines()):
                 try:
                     roi_rows.append(json.loads(l))
-                except (json.JSONDecodeError, ValueError):
-                    pass  # skip malformed roi rows; do not lose them (they'll be preserved as raw on rewrite? — spec says skip)
+                except (json.JSONDecodeError, ValueError) as _e:
+                    # Preserve raw line for round-trip; record error for observability.
+                    roi_rows.append({"__raw__": l})
+                    roi_row_errors.append({"line": line_idx, "reason": "malformed-json"})
         except OSError:
             pass
 
-    # Build pass_id → roi_row index (for match)
-    roi_by_pass = {r.get("pass_id"): r for r in roi_rows if r.get("pass_id")}
+    # Build pass_id → roi_row index (for match). Skip preserved __raw__ rows.
+    roi_by_pass = {r.get("pass_id"): r for r in roi_rows
+                   if r.get("pass_id") and "__raw__" not in r}
 
     # For each settle event: compute merge, group by pass_id keep highest
     best_by_pass: dict[str, dict] = {}
@@ -157,11 +167,16 @@ def reconcile(slot_dir: Path | str, now_ts: int) -> dict:
         if prev is None or int(srow.get("jpy", 0) or 0) > int(prev.get("jpy", 0) or 0):
             best_by_pass[pid] = srow
 
-    # Also add malformed lines to unmatched
+    # Also add malformed lines to unmatched. FIND-004 fix: dedup uses
+    # (pass_id, ts) — if we set both to None, all malformed lines in one
+    # run share the same key and get collapsed to 1. Use a unique-per-line
+    # ts fallback derived from the file offset instead.
     for idx in malformed_indices:
         raw_line = new_settle_slice[idx]
+        malformed_ts_sentinel = -(offset_before + idx + 1)  # negative → cannot collide with any real ts (real ts is unix seconds > 0)
         unmatched_new.append({"raw": raw_line, "reason": "malformed-json",
-                              "pass_id": None, "ts": None})
+                              "pass_id": f"__malformed__:{offset_before + idx}",
+                              "ts": malformed_ts_sentinel})
 
     matched = 0
     updated_rows = 0
@@ -207,9 +222,15 @@ def reconcile(slot_dir: Path | str, now_ts: int) -> dict:
         to_append.append(u)
         tail_keys.add(key)
 
-    # (ii) atomic replace roi.jsonl
+    # (ii) atomic replace roi.jsonl. FIND-002: __raw__ sentinels re-emit
+    # the original malformed line verbatim so the rewrite is lossless.
     if roi_rows:
-        new_lines = [json.dumps(r) + "\n" for r in roi_rows]
+        new_lines = []
+        for r in roi_rows:
+            if "__raw__" in r:
+                new_lines.append(r["__raw__"] + "\n")
+            else:
+                new_lines.append(json.dumps(r) + "\n")
         _atomic_replace_jsonl(roi_path, new_lines)
 
     # (iii) append unmatched
