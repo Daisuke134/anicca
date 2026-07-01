@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "verification_readiness",
+  "category": "purity_boundary",
+  "severity": "high",
+  "description": "The verification-architecture 'Purity boundary' table (verification-architecture.md:12-19) claims reconcile() is an I/O function while parse_settle_line and should_update_realized are pure. But the ORCHESTRATOR row (line 19) adds 'STEP 6 hook: if picked.category == \"reconciler\", invoke reconcile directly in-process' as a mutation of proactive-loop-dispatch.py control flow — this is a non-trivial change to a security-invariant-bearing surface (INV-1/P1 restart-only-on-tmux_dead) with NO spec text saying what fields of the returned ReconcileReport get attached to the descriptor, in what shape, or via which function call. The task_descriptor() shape is FROZEN at 7 keys (step6_act.py:31-43); attaching 'reconciler_report' either mutates the frozen descriptor (breaking sprint-3 #33 REQ-T2) or requires a new descriptor variant that is unspecified. PROP-M2-dispatcher-in-process (verification-arch line 41) claims to prove 'STEP 6 with reconciler item invokes reconcile in-process; no subprocess spawned; tasks/ descriptor has reconciler_report field' but there is no REQ text defining what the dispatcher does when reconcile() raises (does STEP 6 still enqueue? does it still emit the roi row for the reconciler pass? what outcome string?). The purity boundary is therefore leaky: dispatcher control flow becomes part of this feature's pure/impure surface but the spec neither enumerates the new dispatcher failure modes nor defines proof obligations for them.",
+  "evidence": {
+    "filePath": ".vcsdd/features/earn-roi-reconciler/specs/verification-architecture.md",
+    "lineRange": "12-19, 41",
+    "snippet": "ORCHESTRATOR — proactive-loop-dispatch.py | STEP 6 hook: if picked.category == \"reconciler\", invoke reconcile directly in-process | composes"
+  },
+  "routeToPhase": "1b"
+}

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "REQ-R4's monotone-gate policy directly contradicts the E5 edge case and misclassifies Coconala's real partial-payment pattern. REQ-R4 (behavioral-spec.md:47-50) says: 'if the roi row already has roi_jpy_realized > 0 and the new settle would set it to a lower value, the update is skipped and counted in skipped_dup. Same-value updates are idempotent (no-op).' The manifest constraint clarifies the intended semantics for partial payments (¥1000 then ¥3000 for the same pass_id) is INCREASE (i.e., allow new_value > existing_value to overwrite). But EDGE-E5 (behavioral-spec.md:117) says 'Multiple settle rows for the SAME pass_id → first one wins per REQ-R4; subsequent count as skipped_dup' — which asserts first-write-wins and forbids overwrite even when the new value is HIGHER. These two clauses are mutually exclusive: on the real Coconala partial→full pattern (1000 first, then 3000), REQ-R4-strict-monotone says 'increase to 3000' (skipped_dup++ never fires because 3000 > 1000) while EDGE-E5 says 'first one wins → 3000 goes to skipped_dup'. The verification-architecture PROP-R4-monotone-no-decrease (line 26) only proves the DECREASE case ('existing > 0, new < existing → skipped_dup++'); it does not cover the INCREASE case, so the ambiguity survives to the test suite. Result: the reconciler will silently drop the second (larger) real payment or overwrite the first — either is a live-money accounting bug on the ¥ path.",
+  "evidence": {
+    "filePath": ".vcsdd/features/earn-roi-reconciler/specs/behavioral-spec.md",
+    "lineRange": "47-50 (REQ-R4) vs 117 (EDGE-E5)",
+    "snippet": "REQ-R4: 'skipped and counted in skipped_dup' when NEW is LOWER; EDGE-E5: 'first one wins ... subsequent count as skipped_dup' for the SAME pass_id regardless of value"
+  },
+  "routeToPhase": "1a"
+}

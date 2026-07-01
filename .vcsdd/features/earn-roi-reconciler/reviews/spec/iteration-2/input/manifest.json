@@ -1,0 +1,29 @@
+{
+  "reviewType": "spec",
+  "featureName": "earn-roi-reconciler",
+  "iteration": 2,
+  "mode": "lean",
+  "artifactsToReview": [
+    ".vcsdd/features/earn-roi-reconciler/specs/behavioral-spec.md",
+    ".vcsdd/features/earn-roi-reconciler/specs/verification-architecture.md",
+    "skills/_shared/lib/step6_act.py",
+    "skills/_shared/lib/menu.py",
+    "skills/_shared/proactive-loop-dispatch.py"
+  ],
+  "previousIterationFindings": [
+    "FIND-001 critical (dequeue:false on frozen descriptor): fixed — REQ-M2 rewritten. Reconciler picks NEVER produce a tasks/ descriptor. task_descriptor shape unchanged. Dispatcher STEP 6 has a new branch that invokes reconcile in-process and skips enqueue.",
+    "FIND-002 critical (R4 vs E5 partial-vs-full contradiction): fixed — REQ-R4 explicitly monotone-MAX (max(existing, new)); EDGE-E5 aligned to 'highest wins'; new PURE helper merge_realized returns (new_value, status).",
+    "FIND-003 critical (ordering across 3 writes): fixed — REQ-R5 defines exact (i)-(v) ordering: build in-memory → roi.jsonl atomic → unmatched append → last-run.json → offset LAST. Crash before (v) = replay next run, monotone-max keeps roi correct. REQ-R7a adds (pass_id, ts) dedup on unmatched to prevent double-append.",
+    "FIND-004 high (purity boundary mislabels dispatcher change): fixed — verification-architecture Purity table now lists 'I/O SINK 2 (dispatcher patch)' explicitly as < 15 lines inside STEP 6, verified by PROP-M2 integration test.",
+    "FIND-005 high (REQ-M3 no concrete pick_next semantics): fixed — REQ-M3 now cites lib.menu.compute_roi_score, explains the roi × prob = 0 vs any positive → 0 loses, and prescribes a dedicated parametrized test.",
+    "FIND-006 high (mtime unreliable for INV-4 proof): fixed — PROP-I2 upgraded to 3-check: (a) os.stat size (b) SHA-256 hash (c) grep source for ~/gig write-mode calls = 0."
+  ],
+  "reviewDimensions": ["spec_fidelity", "verification_readiness"],
+  "extraConstraints": [
+    "Verify FIND-002 closure: REQ-R4 and EDGE-E5 use consistent MAX policy verbatim.",
+    "Verify FIND-003 closure: REQ-R5 (i)-(v) ordering is explicit and REQ-R7a dedup is enforced.",
+    "Verify FIND-001 closure: REQ-M2 says NO enqueue for reconciler picks; step6_act.py's task_descriptor is unchanged.",
+    "Verify FIND-005 closure: REQ-M3 references compute_roi_score by name + PROP-M3 test parametrization is concrete."
+  ],
+  "expectedOutputPath": ".vcsdd/features/earn-roi-reconciler/reviews/spec/iteration-2/output/"
+}

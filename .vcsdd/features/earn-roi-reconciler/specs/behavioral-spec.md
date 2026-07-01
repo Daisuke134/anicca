@@ -44,13 +44,35 @@ Cadence: 3600 seconds (hourly).
 - **REQ-R3**: FOR EACH matched pair, THE RECONCILER SHALL set the roi row's
   `roi_jpy_realized` to `int(settle_row["jpy"])`. Non-integer or missing
   `jpy` in the settle row → treated as 0 (fail-closed; do NOT guess).
-- **REQ-R4**: THE RECONCILER SHALL NEVER decrease an existing non-zero
-  `roi_jpy_realized`. If the roi row already has `roi_jpy_realized > 0` and
-  the new settle would set it to a lower value, the update is skipped and
-  counted in `skipped_dup`. Same-value updates are idempotent (no-op).
-- **REQ-R5**: THE RECONCILER SHALL rewrite `roi.jsonl` atomically:
-  write to a tempfile in the SAME directory, then `os.replace`. NEVER
-  leaves a partial `roi.jsonl` on disk.
+- **REQ-R4** (FIND-002 fix — monotone MAX policy): THE RECONCILER SHALL
+  set `roi_jpy_realized = max(existing, new)` for every match. Consequences:
+  * `existing == 0` and `new > 0` → UPDATE to new (first-time settle).
+  * `existing > 0` and `new > existing` → UPDATE to new (partial → full
+    payment path; Coconala often pays ¥N partial then ¥M full, we want
+    the higher number).
+  * `existing > 0` and `new == existing` → NO-OP, counted in `skipped_dup`
+    (idempotent replay).
+  * `existing > 0` and `new < existing` → NO-OP, counted in `skipped_dup`
+    (never shrink; likely a stale settle event or corrupted row).
+  This resolves the sprint-3-spec-adversary FIND-002 monotone-vs-drop
+  contradiction: the policy is EXPLICITLY monotone-max, not first-wins.
+  EDGE-E5 below is aligned to say "highest wins" not "first wins".
+- **REQ-R5** (FIND-003 fix — total-write ordering): THE RECONCILER SHALL
+  execute writes in this EXACT order, with fail-closed semantics if any
+  step raises:
+  (i) BUILD in-memory: parse settle.jsonl from offset onward, parse
+      roi.jsonl fully, compute new roi rows + list of unmatched entries +
+      final offset value.
+  (ii) WRITE roi.jsonl atomically: tempfile in same dir + `os.replace`.
+  (iii) APPEND unmatched entries to `.unmatched.jsonl` (open "a"; single
+       `write` per line; POSIX guarantees per-line atomicity for < PIPE_BUF).
+  (iv) WRITE `state/reconciler-last-run.json` (report).
+  (v) LAST: write `state/reconciler-offset.json` atomically (tempfile +
+     os.replace). Advancing the offset LAST is the crash-safety pivot:
+     if steps (ii)-(iv) succeed but (v) crashes, the NEXT run will re-
+     scan the same settle rows — REQ-R4 monotone-max makes this safe.
+     Steps (iii) unmatched appends may double up on crash-then-retry, so
+     the reconciler dedups by `(pass_id, ts)` at read time (REQ-R7a).
 - **REQ-R6**: THE RECONCILER SHALL append a marker line to
   `~/loops/<slot>/state/reconciler-last-run.json` on completion with the
   report dict + a monotonic run counter. This is the ONLY writes outside
@@ -59,6 +81,11 @@ Cadence: 3600 seconds (hourly).
   or no pass_id at all), THE RECONCILER SHALL append the settle row
   verbatim (plus a `{"reason": "..."}` field) to
   `~/loops/<slot>/.unmatched.jsonl`. This file is append-only.
+- **REQ-R7a** (FIND-003 dedup): Before appending, THE RECONCILER SHALL
+  read the tail of `.unmatched.jsonl` (last 200 lines suffices for a
+  1-hour cadence) and skip appending any entry whose `(pass_id, ts)` pair
+  already appears there. This handles the crash-between-append-and-offset
+  case where the same unmatched row would otherwise re-appear on retry.
 - **REQ-R8**: THE RECONCILER SHALL track which settle rows have already
   been consumed via a monotonic offset stored in
   `~/loops/<slot>/state/reconciler-offset.json`: `{last_settle_line: int}`.
@@ -69,7 +96,7 @@ Cadence: 3600 seconds (hourly).
   the reconciler reads/writes the same slot dir). During its `os.replace`
   window, readers see either the old or the new file, never a partial.
 
-### Group M — Menu integration
+### Group M — Menu integration (FIND-001 + FIND-005 rewrite)
 
 - **REQ-M1**: THE PRODUCTION menu.json for each of the 4 live slots
   (gig / clip / affiliate / bounty) SHALL contain an item:
@@ -78,17 +105,31 @@ Cadence: 3600 seconds (hourly).
     "probability_of_landing": 1.0, "expected_settlement_days": 0,
     "required_budget": "LIGHT", "blocker_check": null,
     "min_cadence_seconds": 3600}`.
-- **REQ-M2**: WHEN STEP 6 picks this item, the dispatcher SHALL invoke
-  `reconcile(slot_dir, now_ts)` directly (in-process; no subprocess), then
-  attach the returned report to the tasks/ descriptor as an extra
-  `reconciler_report` field. The tasks/ descriptor is still enqueued for
-  observability, but the actual reconciliation has already happened
-  in-process; LAYER C does NOT dequeue reconciler tasks (they are marked
-  `dequeue: false`).
-- **REQ-M3**: The reconciler menu item SHALL use ROI=0 so it never wins
-  the pick_next ranking by ROI; it only fires when its cadence (3600s)
-  elapses AND all higher-ROI items have been cadence-excluded. This is
-  intentionally the lowest-priority scheduled task.
+- **REQ-M2** (FIND-001 fix — NO tasks/ descriptor for reconciler picks):
+  WHEN STEP 6 picks an item whose `category == "reconciler"`, the
+  dispatcher SHALL:
+  (a) invoke `reconcile(slot_dir, now_ts)` in-process (no subprocess),
+  (b) NOT call `enqueue_task_descriptor` for this pick,
+  (c) record the returned report in `state/reconciler-last-run.json`
+      (already covered by REQ-R6),
+  (d) set the build_log.md `outcome` to
+      `"reconciled:matched=N/unmatched=M/updated=K"`.
+  This eliminates the previous spec's `dequeue: false` field — the frozen
+  task_descriptor shape (skills/_shared/lib/step6_act.py:31-43) stays
+  unchanged. LAYER C is never invited to dequeue a reconciler task
+  because none is created.
+- **REQ-M3** (FIND-005 fix — concrete pick_next guarantee): THE reconciler
+  item's `roi_estimate_jpy=0, probability_of_landing=1.0` gives it an
+  expected value of `0 × 1.0 = 0`. `lib/menu.pick_next` computes each
+  candidate's `roi_score = roi_estimate_jpy × probability_of_landing`
+  (verified against `skills/_shared/lib/menu.py:compute_roi_score`), then
+  sorts descending. ANY candidate with `roi_estimate_jpy > 0 AND
+  probability_of_landing > 0` produces score > 0 and beats the reconciler.
+  The reconciler wins ONLY when every non-reconciler candidate is cadence-
+  excluded (recently fired), blocker-excluded, or over-budget. This is
+  the intentional lowest-priority slot. A dedicated PROP-M3 test
+  parametrizes a normal earner item (roi=100, prob=0.01 → score 1.0)
+  vs the reconciler (score 0.0) and asserts the earner wins.
 
 ### Group I — Invariants
 
@@ -114,7 +155,7 @@ Cadence: 3600 seconds (hourly).
 | E2 | `roi.jsonl` does not exist | report `{matched:0, unmatched:N, ...}` where N = settle row count; all settles go to unmatched |
 | E3 | Malformed line in `settle.jsonl` | skip that line; append to `.unmatched.jsonl` with reason `"malformed-json"`; continue |
 | E4 | Malformed line in `roi.jsonl` | skip that line during scan; log to `state/reconciler-last-run.json.errors`; continue |
-| E5 | Multiple settle rows for the SAME pass_id | first one wins per REQ-R4; subsequent count as `skipped_dup` |
+| E5 | Multiple settle rows for the SAME pass_id | HIGHEST value wins per REQ-R4 monotone-max; lower/equal ones counted as `skipped_dup` (FIND-002 fix — aligned with REQ-R4) |
 | E6 | Settle row references a pass_id that doesn't exist in roi.jsonl | append verbatim to `.unmatched.jsonl` with reason `"unknown-pass-id"` |
 | E7 | Reconciler crashes mid-write | REQ-R5 atomic replace ensures roi.jsonl is either untouched or fully updated |
 | E8 | Empty `settle.jsonl` (just created) | report `{matched:0, unmatched:0}`; offset unchanged |
