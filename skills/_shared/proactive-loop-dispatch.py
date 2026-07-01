@@ -21,6 +21,7 @@ from lib.proactive_loop import should_skip_step6, write_unfixable_cascade_sink  
 from lib.step6_act import task_descriptor, enqueue_task_descriptor  # noqa: E402
 from lib.step3_recipe import execute_recipe, default_restart_cmd_map  # noqa: E402
 from lib.roi_track import roi_row, compute_expected_jpy, append_roi_row  # noqa: E402
+from lib.reconciler import reconcile as _reconcile_slot  # noqa: E402
 
 
 def _acquire_or_exit():
@@ -192,25 +193,38 @@ def main() -> int:
         return 0
 
     # STEP 6 ACT (sprint-3 #33 wire): enqueue tasks/<ts>-<pass_id>-<name>.json
+    # SPRINT-4 (b) FIND-2-001 fix: if picked.category == "reconciler", invoke
+    # reconcile in-process and DO NOT enqueue a tasks/ descriptor.
     _write_status(slot_dir, slot=slot, status="running",
                  step=f"6-act-{picked.get('name')}")
-    descriptor = task_descriptor(
-        pass_id=pass_id, ts=int(time.time()), picked=picked,
-        budget=budget.value, slot=slot,
-    )
-    enq = enqueue_task_descriptor(slot_dir, descriptor)
-    outcome = (
-        f"enqueued:{enq['filename']}" if enq.get("ok")
-        else f"enqueue-failed:{enq.get('status', 'unknown')}"
-    )
+    if picked.get("category") == "reconciler":
+        report = _reconcile_slot(slot_dir, now_ts=int(time.time()))
+        outcome = (f"reconciled:matched={report.get('matched', 0)}/"
+                   f"unmatched={report.get('unmatched', 0)}/"
+                   f"updated={report.get('updated_rows', 0)}")
+        # No task descriptor enqueued. The reconciler already did its work.
+    else:
+        descriptor = task_descriptor(
+            pass_id=pass_id, ts=int(time.time()), picked=picked,
+            budget=budget.value, slot=slot,
+        )
+        enq = enqueue_task_descriptor(slot_dir, descriptor)
+        outcome = (
+            f"enqueued:{enq['filename']}" if enq.get("ok")
+            else f"enqueue-failed:{enq.get('status', 'unknown')}"
+        )
 
     # STEP 7: update build_log
+    if picked.get("category") == "reconciler":
+        next_cand = "(reconciler-in-process)"
+    else:
+        next_cand = f"(layer-c-dequeue: tasks/{enq.get('filename','?')})"
     append_pass(
         slot_dir / "build_log.md",
         pass_id=pass_id, ts=int(time.time()), budget=budget.value,
         picked=str(picked.get("name", "?")),
         outcome=outcome,
-        next_candidate=f"(layer-c-dequeue: tasks/{enq.get('filename','?')})",
+        next_candidate=next_cand,
     )
 
     # STEP 7.5 (sprint-3 #34): append roi.jsonl row (happy path).

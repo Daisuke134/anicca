@@ -2,7 +2,7 @@
   "featureName": "earn-roi-reconciler",
   "mode": "lean",
   "language": "python",
-  "currentPhase": "1b",
+  "currentPhase": "2c",
   "phaseHistory": [
     {
       "from": "init",
@@ -13,19 +13,62 @@
       "from": "1a",
       "to": "1b",
       "timestamp": "2026-07-01T08:04:07.889Z"
+    },
+    {
+      "from": "1b",
+      "to": "1c",
+      "timestamp": "2026-07-01T08:11:52.582Z"
+    },
+    {
+      "from": "1c",
+      "to": "2a",
+      "timestamp": "2026-07-01T08:11:52.592Z",
+      "sprint": 1
+    },
+    {
+      "from": "2a",
+      "to": "2b",
+      "timestamp": "2026-07-01T08:16:30.862Z",
+      "sprint": 1
+    },
+    {
+      "from": "2b",
+      "to": "2c",
+      "timestamp": "2026-07-01T08:16:30.866Z",
+      "sprint": 1
     }
   ],
   "iterations": {
     "1a": 1,
-    "1b": 1
+    "1b": 1,
+    "1c": 1,
+    "2a": 1,
+    "2b": 1,
+    "2c": 1
   },
   "proofObligations": [],
   "traceability": {
     "epicId": "VCSDD-earn-roi-reconciler-1782892961385",
     "beads": []
   },
-  "gates": {},
-  "sprintCount": 0,
+  "gates": {
+    "1c": {
+      "verdict": "PASS",
+      "timestamp": "2026-07-01T08:11:52.574Z",
+      "reviewedBy": "adversary",
+      "details": {
+        "iterations": 3,
+        "findingDiminishment": [
+          6,
+          2,
+          0
+        ]
+      },
+      "adversaryVerdict": "PASS",
+      "adversaryReviewedAt": "2026-07-01T08:11:52.574Z"
+    }
+  },
+  "sprintCount": 1,
   "createdAt": "2026-07-01T08:02:41.383Z",
-  "updatedAt": "2026-07-01T08:04:07.889Z"
+  "updatedAt": "2026-07-01T08:16:30.866Z"
 }
