@@ -1,0 +1,24 @@
+{
+  "reviewType": "spec",
+  "featureName": "earnings-to-settle-mirror",
+  "iteration": 1,
+  "mode": "lean",
+  "artifactsToReview": [
+    ".vcsdd/features/earnings-to-settle-mirror/specs/behavioral-spec.md",
+    ".vcsdd/features/earnings-to-settle-mirror/specs/verification-architecture.md",
+    ".vcsdd/features/earn-roi-reconciler/specs/behavioral-spec.md",
+    "skills/earn/gig/gig-cli.sh",
+    "skills/_shared/lib/reconciler.py",
+    "skills/_shared/lib/step6_act.py"
+  ],
+  "reviewDimensions": ["spec_fidelity", "verification_readiness"],
+  "extraConstraints": [
+    "This feature was reframed from the naive 'modify gig-cli.sh STARTUP' approach (rejected in §2). Verify the rejection reasons are concrete + no residual expectation that gig-cli.sh will be touched.",
+    "The pass_id lookup in REQ-R3(ii) scans tasks/*.json AND roi.jsonl for a requestId SUBSTRING match. Is this robust? Coconala requestIds are numeric like 5123100 — could this accidentally match unrelated numbers in the roi.jsonl outcome strings?",
+    "REQ-R4 unmatched-requestId-<x> sentinel format. When the reconciler sees this pass_id, does it correctly route to .unmatched.jsonl (reason='unknown-pass-id')? Verify against reconciler's REQ-R2/R7 semantics.",
+    "REQ-R5 dedup uses (requestId, earnings_status) against settle.jsonl tail. But settle.jsonl doesn't currently store earnings_status — it goes into evidence dict. Is that accessible for the tail-scan dedup?",
+    "REQ-M2 build_log outcome 'settle-mirror:new=N/dup=M/unmatched=K'. Confirm the reconciler's grep in feature (b) test_dispatch expects that exact format or is agnostic."
+  ],
+  "expectedOutputPath": ".vcsdd/features/earnings-to-settle-mirror/reviews/spec/iteration-1/output/"
+}
+</parameter>
