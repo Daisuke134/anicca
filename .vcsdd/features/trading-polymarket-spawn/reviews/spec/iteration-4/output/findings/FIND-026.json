@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-026",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "low",
+  "description": "REQ-T8(a) (behavioral-spec.md:205) defines `realized_pnl_usdc = settlement_amount − entry_cost`, but neither `settlement_amount` nor `entry_cost` is defined in Tracked Quantities or anywhere in the spec. The FIND-022 rewrite carefully defined `gross_payout_usdc`, `shares_held`, and `filled_size`, but left REQ-T8(a)'s two PnL terms as undefined synonyms. The natural reading is `settlement_amount = gross_payout_usdc` and `entry_cost = filled_size`, but the spec never states this, so `cumulative_usdc_earned` (REQ-T8 acceptance / PROP-T22) and `daily_loss_usdc` updates (REQ-T8(e) / PROP-T23) rest on undefined quantities. Per project rule 0.10 (100% clarity before implementation) this term must be bound explicitly: state `settlement_amount = gross_payout_usdc` (from REQ-T8(b)) and `entry_cost = filled_size` (USDC spent), so the PnL formula uses the same canonical quantities as the settlement gate.",
+  "evidence": {
+    "filePath": "/Users/operator/anicca/.vcsdd/features/trading-polymarket-spawn/specs/behavioral-spec.md",
+    "lineRange": "205",
+    "snippet": "(a) compute `realized_pnl_usdc = settlement_amount − entry_cost` (resolved from on-chain settlement or venue API),  // settlement_amount and entry_cost are undefined in Tracked Quantities"
+  },
+  "routeToPhase": "1c"
+}
