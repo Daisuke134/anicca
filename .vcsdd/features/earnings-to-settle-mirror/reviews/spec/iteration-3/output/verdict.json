@@ -1,0 +1,48 @@
+{
+  "sprintNumber": 4,
+  "feature": "earnings-to-settle-mirror",
+  "overallVerdict": "PASS",
+  "timestamp": "2026-07-01T00:00:00Z",
+  "iteration": 3,
+  "reviewContext": {
+    "reviewType": "spec",
+    "mode": "lean",
+    "isLastLeanIteration": true
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": ".vcsdd/features/earnings-to-settle-mirror/specs/behavioral-spec.md:72-86", "description": "REQ-L1(iii) mandates `jq -c --argjson x <X> 'select(.requestId == $x)'` exact-field match and EXPLICITLY bans `grep '\"requestId\": <X>'` substring approach with rationale (ts/pass_id digit collision e.g. 5123100 inside 1782891234). Closes FIND-2-001 primary."},
+        {"type": "file", "location": ".vcsdd/features/earnings-to-settle-mirror/specs/behavioral-spec.md:87-94", "description": "REQ-L1(iv) forces requestId serialization as str() in both task-request-map.jsonl and earnings.jsonl; mirror side casts to str before dedup/lookup. Closes FIND-2-001 numeric-vs-string sub-clause."},
+        {"type": "file", "location": ".vcsdd/features/earnings-to-settle-mirror/specs/behavioral-spec.md:64-71", "description": "REQ-L1(ii) explicitly places map-append inside per-apply loop body and documents 1 tick → N map rows with shared CURRENT_PASS_ID + distinct requestId. Closes FIND-2-003 per-apply clarification."},
+        {"type": "file", "location": ".vcsdd/features/earnings-to-settle-mirror/specs/behavioral-spec.md:73-74", "description": "REQ-L1(iii) states EARNED CHECK does NOT use CURRENT_PASS_ID (the current tick, unrelated to historical apply) — lookup-only via jq exact match. Closes FIND-2-003 EARNED CHECK sub-clause."},
+        {"type": "file", "location": ".vcsdd/features/earnings-to-settle-mirror/specs/behavioral-spec.md:96-106", "description": "REQ-L1a discloses coarse-grain 1-to-N attribution, names monotone-max lossage of smaller settle in multi-settle-per-pass case, and defers per-application splitting to sprint-5. Closes FIND-2-003 coarse-grain disclosure requirement."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": ".vcsdd/features/earnings-to-settle-mirror/specs/verification-architecture.md:44", "description": "PROP-L1iii-exact-jq-match-no-substring: greps STARTUP diff for banned substring pattern = 0 hits AND asserts jq exact-match verbatim; fixture with requestId '5123' substring-appearing in another entry's ts proves collision is not a false match. Directly maps to REQ-L1(iii) + closes FIND-2-001."},
+        {"type": "file", "location": ".vcsdd/features/earnings-to-settle-mirror/specs/verification-architecture.md:45", "description": "PROP-L1ii-per-apply-not-per-tick: inspection asserts map-append call sits inside B2 per-apply loop body, not outside. Maps to REQ-L1(ii) + closes FIND-2-003."},
+        {"type": "file", "location": ".vcsdd/features/earnings-to-settle-mirror/specs/verification-architecture.md:36", "description": "PROP-E3-non-settled-and-zero-jpy-ignored rebound to EDGE-E3 (compound: non-settled OR zero-jpy) matching behavioral-spec.md:207. Closes FIND-2-002 half A."},
+        {"type": "file", "location": ".vcsdd/features/earnings-to-settle-mirror/specs/verification-architecture.md:37", "description": "PROP-E4-malformed-pass-id-fallback renamed + rebound to EDGE-E4 (malformed pass_id) matching behavioral-spec.md:208. Closes FIND-2-002 half B."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 0,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": [],
+    "iter2FindingsClosure": {
+      "FIND-2-001": "CLOSED",
+      "FIND-2-002": "CLOSED",
+      "FIND-2-003": "CLOSED"
+    }
+  }
+}
