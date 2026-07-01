@@ -1,0 +1,31 @@
+{
+  "featureName": "recipe-6-actions",
+  "mode": "lean",
+  "language": "python",
+  "currentPhase": "1b",
+  "phaseHistory": [
+    {
+      "from": "init",
+      "to": "1a",
+      "timestamp": "2026-07-01T09:11:36.056Z"
+    },
+    {
+      "from": "1a",
+      "to": "1b",
+      "timestamp": "2026-07-01T09:11:36.060Z"
+    }
+  ],
+  "iterations": {
+    "1a": 1,
+    "1b": 1
+  },
+  "proofObligations": [],
+  "traceability": {
+    "epicId": "VCSDD-recipe-6-actions-1782897047828",
+    "beads": []
+  },
+  "gates": {},
+  "sprintCount": 0,
+  "createdAt": "2026-07-01T09:10:47.827Z",
+  "updatedAt": "2026-07-01T09:11:36.060Z"
+}
