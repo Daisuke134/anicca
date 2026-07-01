@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "REQ-L3 specifies calling `count_consecutive_negative_windows(list, most-recent-first)`, but the EXISTING helper in skills/_shared/lib/quota_tracker.py:69-81 accepts the list with 'most recent LAST' (docstring line 72 verbatim: 'most recent LAST') and iterates via `reversed()` to scan the tail. If the spec is implemented as written, the helper will scan the OLDEST windows instead of the most-recent ones, so `consecutive_neg_windows` will reflect ancient history — the exact wrong signal for dormancy. Also note the helper's single-argument signature `count_consecutive_negative_windows(daily_roi_7day_jpy: list[float])` — REQ-L3's two-argument call form does not exist. Either the spec must invert the list before calling (and update REQ-L3 to say 'most-recent-LAST') or a new helper contract must be added; sprint-4 (c) does not authorize modifying the sprint-3 helper. This directly compromises PROP-L3 and PROP-L2-live-mode-true-delegates-to-horizon-check.",
+  "evidence": {
+    "filePath": "skills/_shared/lib/quota_tracker.py",
+    "lineRange": "69-81",
+    "snippet": "def count_consecutive_negative_windows(daily_roi_7day_jpy: list[float]) -> int:\n    \"\"\"REQ-Q5 helper ... scan a list of daily rolling-7d ROI values\n    (most recent LAST) and return the count of CONSECUTIVE negatives at the tail.\"\"\"\n    for v in reversed(daily_roi_7day_jpy):"
+  },
+  "routeToPhase": "1a"
+}

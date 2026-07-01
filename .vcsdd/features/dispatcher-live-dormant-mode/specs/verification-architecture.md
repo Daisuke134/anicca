@@ -32,7 +32,10 @@ generated_at: 2026-07-01
 | PROP-E2-all-zero-realized | 1 | true | EDGE-E2 (this is where sprint-3 residual risk lived; live_mode=False saves us) |
 | PROP-E3-old-realized-out-of-window | 1 | true | EDGE-E3 |
 | PROP-E4-new-slot-not-dormant | 1 | true | EDGE-E4 |
+| PROP-E5-sentinel-idempotent | 1 | true | EDGE-E5 — existing sentinel → do NOT overwrite (FIND-006 fix; missing PROP added) |
 | PROP-E6-malformed-roi-row-skipped | 1 | true | EDGE-E6 |
+| PROP-E7-missing-expected-treated-as-zero | 1 | true | EDGE-E7 (FIND-006 fix; missing PROP added) |
+| PROP-L3-rolling-7d-most-recent-last | 1 | true | REQ-L3 — the list passed to count_consecutive_negative_windows is ordered MOST RECENT LAST; verified via test that flips the order and confirms different result |
 | PROP-I2-no-tmux-kill | 1 | true | REQ-I2 grep |
 
 14 required:true. Tests:
