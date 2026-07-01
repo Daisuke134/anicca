@@ -2,7 +2,7 @@
   "featureName": "earnings-to-settle-mirror",
   "mode": "lean",
   "language": "python",
-  "currentPhase": "2c",
+  "currentPhase": "complete",
   "phaseHistory": [
     {
       "from": "init",
@@ -36,22 +36,88 @@
       "to": "2c",
       "timestamp": "2026-07-01T08:42:14.581Z",
       "sprint": 1
+    },
+    {
+      "from": "2c",
+      "to": "3",
+      "timestamp": "2026-07-01T08:50:52.657Z",
+      "sprint": 1
+    },
+    {
+      "from": "3",
+      "to": "5",
+      "timestamp": "2026-07-01T08:50:52.660Z",
+      "sprint": 1
+    },
+    {
+      "from": "5",
+      "to": "6",
+      "timestamp": "2026-07-01T08:51:42.698Z",
+      "sprint": 1
+    },
+    {
+      "from": "6",
+      "to": "complete",
+      "timestamp": "2026-07-01T08:51:51.653Z",
+      "sprint": 1
     }
   ],
   "iterations": {
+    "3": 1,
+    "5": 1,
+    "6": 1,
     "1a": 1,
     "1b": 1,
     "1c": 1,
     "2a": 1,
     "2b": 1,
-    "2c": 1
+    "2c": 1,
+    "complete": 1
   },
   "proofObligations": [],
   "traceability": {
     "epicId": "VCSDD-earnings-to-settle-mirror-1782894370857",
-    "beads": []
+    "beads": [
+      {
+        "beadId": "BEAD-001",
+        "type": "adversary-finding",
+        "externalId": "FIND-001",
+        "artifactPath": ".vcsdd/features/earnings-to-settle-mirror/reviews/sprint-1/output/findings/FIND-001.json",
+        "status": "resolved",
+        "linkedBeads": [],
+        "createdAt": "2026-07-01T00:00:00Z"
+      }
+    ]
   },
   "gates": {
+    "3": {
+      "verdict": "PASS",
+      "timestamp": "2026-07-01T08:50:52.654Z",
+      "reviewedBy": "adversary",
+      "details": {
+        "iterations": 2,
+        "findingDiminishment": [
+          1,
+          0
+        ]
+      }
+    },
+    "6": {
+      "verdict": "PASS",
+      "timestamp": "2026-07-01T08:51:42.702Z",
+      "reviewedBy": "verifier",
+      "details": {
+        "convergenceSignals": {
+          "findingDiminishment": [
+            1,
+            0
+          ],
+          "iterations": 2,
+          "sprints": 1,
+          "totalTestsPassing": 460
+        }
+      }
+    },
     "1c": {
       "verdict": "PASS",
       "timestamp": "2026-07-01T08:38:39.747Z",
@@ -70,5 +136,5 @@
   },
   "sprintCount": 1,
   "createdAt": "2026-07-01T08:26:10.856Z",
-  "updatedAt": "2026-07-01T08:42:14.581Z"
+  "updatedAt": "2026-07-01T08:51:51.653Z"
 }

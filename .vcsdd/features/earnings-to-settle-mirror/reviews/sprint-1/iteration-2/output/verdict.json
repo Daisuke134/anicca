@@ -1,0 +1,62 @@
+{
+  "sprintNumber": 1,
+  "feature": "earnings-to-settle-mirror",
+  "overallVerdict": "PASS",
+  "timestamp": "2026-07-01T00:00:00Z",
+  "iteration": 2,
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/_shared/__tests__/test_settle_mirror_integration.py:87-121", "description": "test_dispatcher_invokes_mirror_in_process covers PROP-M2-dispatcher-invokes: menu with category=='settle-mirror' → asserts tasks/ untouched, build_log outcome contains 'settle-mirror:new=', settle.jsonl gains row with pass_id matching earnings row."},
+        {"type": "file", "location": "skills/_shared/__tests__/test_settle_mirror_integration.py:125-161", "description": "test_full_pipeline_matched_pass_id_updates_roi covers PROP-integration-full-loop: seeds earnings.jsonl with pass_id='p-42' + roi row, runs dispatcher tick 1 (mirror menu) then swaps to reconciler menu for tick 2, asserts roi_jpy_realized==3000."},
+        {"type": "file", "location": "skills/_shared/__tests__/test_settle_mirror_integration.py:165-196", "description": "test_full_pipeline_sentinel_path_creates_unmatched_entry covers PROP-integration-sentinel-path: earnings row WITHOUT pass_id → asserts settle row pass_id='unmatched-requestId-8888' after tick 1, then reconciler tick 2 → asserts .unmatched.jsonl row with reason=='unknown-pass-id' and matching sentinel pass_id."}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/_shared/__tests__/test_settle_mirror_integration.py:200-220", "description": "test_dispatcher_earnings_path_uses_gig_dir_for_gig_slot asserts dispatcher derives ~/gig/earnings.jsonl from slot='gig' — a rename of slot or wrong Path.home()/slot join would produce no settle row, failing the assert. Guard against earnings_path drift satisfied."},
+        {"type": "file", "location": "skills/_shared/__tests__/test_settle_mirror_integration.py:224-229", "description": "test_dispatcher_source_has_settle_mirror_elif_branch grep-guards the elif branch string, _mirror_slot call, and outcome format literal — catches accidental branch removal or string drift."}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/_shared/proactive-loop-dispatch.py:207-213", "description": "Dispatcher STEP 6 elif branch invokes _mirror_slot(slot_dir, Path.home()/slot/'earnings.jsonl', now_ts) in-process; outcome format 'settle-mirror:new=X/dup=Y/unmatched=Z' matches integration test assertion. No tasks/ enqueue on this branch."},
+        {"type": "file", "location": "skills/_shared/lib/reconciler.py:163", "description": "Reconciler routes rows with a sentinel pass_id (fails pass_id lookup) to .unmatched.jsonl with reason='unknown-pass-id' — matches sentinel-path test expectation exactly."},
+        {"type": "file", "location": "skills/_shared/lib/settle_mirror.py:55", "description": "extract_pass_id_or_sentinel returns f'unmatched-requestId-{requestId}' — matches integration test expected value 'unmatched-requestId-8888'."}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/_shared/__tests__/test_settle_mirror_integration.py:55-70", "description": "Single _run_dispatch subprocess helper with ANICCA_HAS_SESSION + lock/pass-mtime env vars; tests share _menu_with / _mirror_item / _reconciler_item / _roi_row factories — no duplication, no hidden global state."},
+        {"type": "file", "location": "skills/_shared/__tests__/test_settle_mirror_integration.py:18-20", "description": "REPO_ROOT / DISPATCH_PY / SHARED_DIR resolved via __file__ parents[3] — path-agnostic, no CI/local drift."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/_shared/__tests__/test_settle_mirror_integration.py:1-229", "description": "iter-1 FIND-001 closed: the promised __tests__/test_settle_mirror_integration.py exists with 5 tests. PROP-M2 + PROP-integration-full-loop + PROP-integration-sentinel-path now have automated re-runnable coverage instead of a one-shot manual live E2E. Dispatcher STEP 6 elif branch is exercised by subprocess execution of proactive-loop-dispatch.py, not by mocks."},
+        {"type": "file", "location": ".vcsdd/features/earnings-to-settle-mirror/specs/verification-architecture.md:46-51", "description": "verification-architecture.md declared this file with required:true — the disk state now matches the declaration."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 0,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": ["FIND-001-closure", "PROP-M2-dispatcher-invokes", "PROP-integration-full-loop", "PROP-integration-sentinel-path", "earnings_path-drift-guard"],
+    "duplicateFindings": []
+  }
+}

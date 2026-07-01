@@ -1,0 +1,71 @@
+{
+  "sprintNumber": 1,
+  "feature": "earnings-to-settle-mirror",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-01T00:00:00Z",
+  "iteration": 1,
+  "reviewContext": {
+    "reviewType": "implementation",
+    "mode": "lean",
+    "scope": "sprint-4 (a2) mirror only; (a1) STARTUP deferred"
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/_shared/lib/settle_mirror.py:19", "description": "SETTLED_STATUSES matches REQ-R3 verbatim: {検収, 支払, 検収完了, completed, paid}"},
+        {"type": "file", "location": "skills/_shared/lib/settle_mirror.py:46-55", "description": "REQ-R3(ii): extract_pass_id_or_sentinel reads row['pass_id'] directly, regex-validates ^p-\\d+$; falls back to unmatched-requestId-<X> sentinel. No substring, no scanning of tasks/ or roi.jsonl"},
+        {"type": "file", "location": "skills/_shared/lib/settle_mirror.py:58-73", "description": "REQ-R3(iii): build_settle_row emits requestId and earnings_status as TOP-LEVEL keys with schema_version=1"},
+        {"type": "file", "location": "skills/_shared/lib/settle_mirror.py:76-77", "description": "PROP-R5: settle_row_dedup_key uses top-level requestId + earnings_status"},
+        {"type": "file", "location": "skills/_shared/proactive-loop-dispatch.py:25,207-213,228-229", "description": "REQ-M2: dispatcher STEP 6 wires elif category=='settle-mirror' branch; does NOT enqueue_task_descriptor; outcome format 'settle-mirror:new=X/dup=Y/unmatched=Z' matches REQ-M2(c) verbatim"}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "test", "location": "skills/_shared/__tests__/test_settle_mirror.py:29-33", "description": "E2 malformed line: parse_earnings_line returns None"},
+        {"type": "test", "location": "skills/_shared/__tests__/test_settle_mirror.py:45-54", "description": "E3 non-settled AND zero-jpy branches both covered"},
+        {"type": "test", "location": "skills/_shared/__tests__/test_settle_mirror.py:63-74", "description": "E4 malformed pass_id → sentinel; E6 missing pass_id → sentinel; numeric requestId cast to string in sentinel"},
+        {"type": "test", "location": "skills/_shared/__tests__/test_settle_mirror.py:156-171", "description": "E5 duplicate (requestId, earnings_status) → dup counter"},
+        {"type": "test", "location": "skills/_shared/__tests__/test_settle_mirror.py:174-185", "description": "offset prevents replay; and settle.jsonl created on first append (E7)"},
+        {"type": "code", "location": "skills/_shared/lib/settle_mirror.py:133-140", "description": "E1 missing earnings.jsonl → earnings_lines=[] → report zeros; E8 offset > len → reset to 0"}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/_shared/lib/settle_mirror.py:170-189", "description": "REQ-R6 write ordering respected: (ii) settle.jsonl append lines 170-174; (iii) last-run marker lines 183-186; (iv) offset atomic write LAST lines 188-189 (tempfile + os.replace via _write_offset_atomic:90-94)"},
+        {"type": "file", "location": "skills/_shared/lib/settle_mirror.py:33-43", "description": "is_settled_row robust to non-numeric jpy and missing field via try/except"},
+        {"type": "file", "location": "skills/_shared/lib/settle_mirror.py:113-191", "description": "REQ-R7/I2: no write mode on earnings_path; only reads via read_text at line 135"},
+        {"type": "test", "location": "skills/_shared/__tests__/test_settle_mirror.py:189-200", "description": "SHA-256 before/after of earnings.jsonl asserted equal (INV-4 proof)"}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/_shared/lib/settle_mirror.py:1-191", "description": "PURE (parse/is_settled/extract/build/dedup_key) cleanly separated from I/O sink (mirror_earnings_to_settle) matching verification-architecture.md purity table"},
+        {"type": "file", "location": "skills/_shared/lib/settle_mirror.py:14,19-20", "description": "regex compiled at module level; SETTLED_STATUSES frozenset — no dynamic construction of pass_ids"},
+        {"type": "test", "location": "skills/_shared/__tests__/test_settle_mirror.py:204-231", "description": "grep tests block shell=True, os.system, tmux kill, human-touch surfaces, and write-mode references to earnings.jsonl"}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-001"],
+      "evidence": []
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 1,
+    "allCriteriaEvaluated": true,
+    "duplicateFindings": []
+  }
+}

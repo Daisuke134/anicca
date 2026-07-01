@@ -1,0 +1,27 @@
+{
+  "reviewType": "implementation",
+  "featureName": "earnings-to-settle-mirror",
+  "sprintNumber": 1,
+  "iteration": 2,
+  "mode": "lean",
+  "artifactsToReview": {
+    "spec": [".vcsdd/features/earnings-to-settle-mirror/specs/behavioral-spec.md",
+             ".vcsdd/features/earnings-to-settle-mirror/specs/verification-architecture.md"],
+    "source_python": ["skills/_shared/lib/settle_mirror.py",
+                       "skills/_shared/proactive-loop-dispatch.py"],
+    "tests": ["skills/_shared/__tests__/test_settle_mirror.py",
+              "skills/_shared/__tests__/test_settle_mirror_integration.py"]
+  },
+  "previousIterationFindings": [
+    "FIND-001 critical (integration test file promised but missing): fixed — test_settle_mirror_integration.py created with 5 tests: PROP-M2 dispatcher-invokes, PROP-integration-full-loop (2-tick sequence mirror→reconciler→roi), PROP-integration-sentinel-path (.unmatched.jsonl round-trip), earnings_path drift guard, dispatcher elif branch grep. 460/460 GREEN (was 455; +5)."
+  ],
+  "reviewDimensions": ["spec_fidelity", "edge_case_coverage", "implementation_correctness", "structural_integrity", "verification_readiness"],
+  "extraConstraints": [
+    "Verify test_settle_mirror_integration.py concretely covers the 3 PROP obligations the spec promised.",
+    "Verify the 2-tick full-loop test simulates the production sequence (mirror runs → then reconciler runs on separate tick).",
+    "Verify the sentinel path test asserts .unmatched.jsonl entry has reason='unknown-pass-id'.",
+    "Verify earnings_path drift guard would catch a regression (e.g. slot='clip' would need ~/clip/earnings.jsonl)."
+  ],
+  "expectedOutputPath": ".vcsdd/features/earnings-to-settle-mirror/reviews/sprint-1/iteration-2/output/"
+}
+</parameter>
