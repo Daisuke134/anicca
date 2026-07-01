@@ -64,3 +64,17 @@ Full timeline from gig data (2026-06-30 → 07-01):
 M2 candidate: NO (deal closed). The gig-cli.sh a1 pipeline still stands
 ready for the next buyer that reaches 検収 stage. Cron 52b154a2 next
 :27 tick continues the discovery.
+
+## task #6 follow-up: hook wrapper (2026-07-01, deeper root cause)
+
+- Absolute-path fix (`/opt/homebrew/bin/rtk hook claude`) alone was NOT enough.
+- Continued observing "Failed with non-blocking status code:
+  node:internal/modules/cjs/loader:1458" in gig session — Claude Code's own
+  internal Node.js error trying to interpret rtk's empty stdout on
+  non-rewrite pass-through cases.
+- FIX: `/Users/operator/.claude/hooks/rtk-hook-wrapper.sh` (installed +
+  settings.json pointed at it) — always emits valid JSON:
+  * rtk rewrite? → forward rtk's JSON
+  * rtk silent? → emit `{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow"}}`
+- Will take effect on next gig-cli restart (currently: 28min-subagent completed
+  with 0 applies but tmux still ALIVE; no active hook errors right now).
