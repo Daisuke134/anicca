@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-2-003",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "medium",
+  "description": "REQ-L1(i) requires the STARTUP prompt to bind `CURRENT_PASS_ID` at the START of each pass by reading `~/loops/gig/tasks/` for the oldest `*.json`. But the current STARTUP prompt in skills/earn/gig/gig-cli.sh:21 (verified against disk) drives a loop where a SINGLE pass performs B1 NURTURE ALL (sweeping EVERY talk-room), B2 APPLY BROADLY (up to `max_apply_per_pass` NEW applications), and EARNED CHECK for MULTIPLE requestIds. Binding ONE `CURRENT_PASS_ID` for the whole pass then attributing it to (a) every apply in B2 AND (b) every 検収 in EARNED CHECK is architecturally wrong: N distinct applies within one pass will all share the SAME pass_id, and a 検収 detected in this pass typically corresponds to an application from a PREVIOUS pass (different pass_id), not the current pass. Consequence: task-request-map.jsonl rows will have {pass_id: P, requestId: R1}, {pass_id: P, requestId: R2}, ... for many R in the same pass — the pass_id becomes non-unique per requestId, and the reconciler's `roi_jpy_realized` will be attributed to a roi row that represents ONE proactive-loop tick rather than the specific application that earned the money. Additionally, EARNED CHECK cannot use `CURRENT_PASS_ID` because 検収 fires on OLD applied rows, not on this pass's applies — the spec must state that EARNED CHECK ONLY uses the task-request-map.jsonl lookup, never CURRENT_PASS_ID. Fix: either (i) make REQ-L1(i) bind pass_id per-apply (rewriting the STARTUP so B2 generates a fresh pass_id per application), or (ii) explicitly document that pass_id is coarse (per proactive-loop tick, not per Coconala request) and downstream roi accounting reflects that.",
+  "evidence": {
+    "filePath": ".vcsdd/features/earnings-to-settle-mirror/specs/behavioral-spec.md",
+    "lineRange": "60-72",
+    "snippet": "(i) a new pre-B1 step: read `~/loops/gig/tasks/` for the oldest *.json file, parse its pass_id, hold it as CURRENT_PASS_ID for this pass. ... (ii) B2 APPLY: after each apply, append {ts, pass_id: CURRENT_PASS_ID, requestId, action:\"applied\"}"
+  },
+  "routeToPhase": "1a"
+}

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-2-001",
+  "dimension": "spec_fidelity",
+  "category": "security_surface",
+  "severity": "high",
+  "description": "REQ-L1(iii) prescribes the LAYER C STARTUP prompt to look up pass_id via `grep '\"requestId\": <X>' ~/loops/gig/state/task-request-map.jsonl` (last match wins). This grep is a substring match against the ENTIRE JSON line and is not anchored to the requestId field. Each map row has shape `{ts, pass_id, requestId, action}` where `ts` is a unix timestamp (e.g. 1751376100) and `pass_id` embeds a unix timestamp (`p-1751376100` per skills/_shared/proactive-loop-dispatch.py). A Coconala 7-digit requestId (e.g. 5123100) whose digit sequence coincidentally appears inside a `ts` value or a neighbouring `pass_id` in a rendered JSON line will FALSE-POSITIVE match a totally unrelated row → the earnings.jsonl gets stamped with a WRONG pass_id → reconciler will happily populate `roi_jpy_realized` on the WRONG roi row. This is the SAME live-money silent-corruption class as iter-1 FIND-002, just relocated from the mirror into the STARTUP prompt. The spec claims FIND-002 is fixed by 'DIRECT field read' in the mirror, but the STARTUP prompt still uses substring grep to WRITE that field, so the corruption entry point is now at the source of truth. Fix: use exact-field parse (`python3 -c \"import json,sys; [print(r['pass_id']) for l in open(...) for r in [json.loads(l)] if r.get('requestId')==<X>]\" | tail -1`), or an equivalent anchored regex like `grep -E '\"requestId\"[[:space:]]*:[[:space:]]*<X>[[:space:]]*[,}]'`. Additionally REQ-L1 does not specify how numeric vs string requestIds are compared — if applied.jsonl stores requestId as string and earnings as int (or vice versa), the grep will silently miss all rows.",
+  "evidence": {
+    "filePath": ".vcsdd/features/earnings-to-settle-mirror/specs/behavioral-spec.md",
+    "lineRange": "69-72",
+    "snippet": "EARNED CHECK: when 検収 is detected for a requestId, look up the matching `pass_id` via `grep '\"requestId\": <X>'` on `~/loops/gig/state/task-request-map.jsonl` (last match wins)"
+  },
+  "routeToPhase": "1a"
+}

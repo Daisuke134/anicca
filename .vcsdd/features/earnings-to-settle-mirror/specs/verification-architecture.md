@@ -33,13 +33,16 @@ updated: cycle-2 rewrite
 | PROP-R6-offset-last | 1 | true | REQ-R6 (iv) — offset write LAST; monkeypatched os.replace verifies ordering |
 | PROP-M2-dispatcher-invokes | 1 | true | REQ-M2 — integration test: category==settle-mirror invokes in-process, tasks/ untouched, outcome starts with "settle-mirror:new=" |
 | PROP-E3-non-settled-ignored | 1 | true | EDGE-E3 — status="applied" → not appended |
-| PROP-E4-zero-jpy-ignored | 1 | true | EDGE-E4 |
+| PROP-E3-non-settled-and-zero-jpy-ignored (FIND-2-002 fix — rebound) | 1 | true | EDGE-E3 covers BOTH non-settled status AND zero-jpy after cycle-2 renumbering; the prop tests both branches |
+| PROP-E4-malformed-pass-id-fallback (renamed for FIND-2-002 clarity) | 1 | true | EDGE-E4 (row has pass_id but not `^p-\\d+$` → sentinel) |
 | PROP-E8-offset-reset | 1 | true | EDGE-E8 |
 | PROP-I1-no-tmux-kill | 1 | true | REQ-I1 grep on settle_mirror.py + the (a1) STARTUP diff |
 | PROP-I2-no-gig-write | 1 | true | REQ-I2 — SHA-256 of earnings.jsonl before/after + source grep for `open(...earnings...`, `"w"`, `"a"` in settle_mirror.py = 0 write-mode hits |
 | PROP-I3-no-human-touch | 1 | true | REQ-I3 grep |
 | PROP-I4-no-shell-injection | 1 | true | REQ-I4 grep |
 | PROP-L3-restart-deploy-safety | 1 | true | REQ-L3 — test script (or manual runbook) that runs `gig-cli.sh --restart`, waits 30s, verifies `--status` returns ALIVE within window; if not, rollback command is provided |
+| PROP-L1iii-exact-jq-match-no-substring (FIND-2-001 fix) | 1 | true | REQ-L1(iii) — grep gig-cli.sh STARTUP diff for `grep '"requestId":` = 0 hits; must find `jq -c ... 'select(.requestId ==` verbatim. Fixture: task-request-map with two entries where requestId "5123" appears as a substring of another entry's ts → jq exact-match returns 1 row not 2 |
+| PROP-L1ii-per-apply-not-per-tick (FIND-2-003 fix) | 1 | true | REQ-L1(ii) — inspection of the STARTUP diff shows the map append call inside the per-apply loop body of B2 (i.e., each application appends a row), NOT before/after the B2 loop |
 | PROP-integration-full-loop | 1 | true | E2E: seed earnings row WITH `pass_id: "<real-gig-pass-id>"` → invoke mirror → assert settle.jsonl row created with matched pass_id → invoke reconciler → assert roi.jsonl updated with `roi_jpy_realized > 0` |
 | PROP-integration-sentinel-path | 1 | true | E2E: seed earnings row WITHOUT pass_id → invoke mirror → assert settle.jsonl row with sentinel → invoke reconciler → assert `.unmatched.jsonl` gains row with `reason: "unknown-pass-id"` |
 

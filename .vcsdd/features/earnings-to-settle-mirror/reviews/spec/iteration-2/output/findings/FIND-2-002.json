@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-2-002",
+  "dimension": "verification_readiness",
+  "category": "test_coverage",
+  "severity": "medium",
+  "description": "verification-architecture.md `PROP-E4-zero-jpy-ignored` claims to map to `EDGE-E4`, but in the rewritten behavioral spec (§4), EDGE-E4 is now 'earnings row has pass_id but it doesn't match `^p-\\d+$` → fallback to unmatched sentinel', and the zero-jpy case is folded into EDGE-E3 ('status not settled OR jpy = 0'). Result: the PROP table is stale — `PROP-E4-zero-jpy-ignored` no longer maps to the edge it names, and there is NO explicit PROP for the malformed-pass_id fallback under E4 (though `PROP-R3i-malformed-pass-id-fallback` covers it under a different name and correctly cites EDGE-E4, so the SEMANTIC coverage exists — the label reference in PROP-E4 is what is broken). This mislabeling would produce a test file that mocks a zero-jpy case but asserts against a 'malformed pass_id' expectation (or vice versa) depending on which side the implementer follows. Fix: rename `PROP-E4-zero-jpy-ignored` to `PROP-E3-zero-jpy-ignored` (or split E3 into E3a-status / E3b-zero-jpy in the spec and rebind), OR revert EDGE numbering so E4 remains zero-jpy.",
+  "evidence": {
+    "filePath": ".vcsdd/features/earnings-to-settle-mirror/specs/verification-architecture.md",
+    "lineRange": "36-37",
+    "snippet": "| PROP-E3-non-settled-ignored | 1 | true | EDGE-E3 — status=\"applied\" → not appended |\n| PROP-E4-zero-jpy-ignored | 1 | true | EDGE-E4 |"
+  },
+  "routeToPhase": "1b"
+}

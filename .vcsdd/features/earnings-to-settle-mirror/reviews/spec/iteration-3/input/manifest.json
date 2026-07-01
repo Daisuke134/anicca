@@ -1,0 +1,23 @@
+{
+  "reviewType": "spec",
+  "featureName": "earnings-to-settle-mirror",
+  "iteration": 3,
+  "mode": "lean",
+  "artifactsToReview": [
+    ".vcsdd/features/earnings-to-settle-mirror/specs/behavioral-spec.md",
+    ".vcsdd/features/earnings-to-settle-mirror/specs/verification-architecture.md"
+  ],
+  "previousIterationFindings": [
+    "FIND-2-001 high (substring in REQ-L1(iii) grep re-emerged upstream): fixed — REQ-L1(iii) rewritten to use exact `jq -c 'select(.requestId == $x)'` with `--argjson` (numeric) OR `--arg` (string); grep `\"requestId\":` substring approach explicitly banned. New REQ-L1(iv) forces requestId serialization as string in the map + earnings.jsonl to disambiguate numeric-vs-quoted. New PROP-L1iii-exact-jq-match-no-substring adds test fixture asserting substring collision (requestId 5123 as substring of ts 51239876) does NOT produce a false match.",
+    "FIND-2-002 medium (PROP↔EDGE label drift): fixed — PROP-E3 covers non-settled AND zero-jpy (E3 now compound), new PROP-E4 covers malformed-pass_id (E4 now malformed-pass_id).",
+    "FIND-2-003 medium (CURRENT_PASS_ID once-per-tick vs per-apply): fixed — REQ-L1(ii) explicitly clarifies map append is INSIDE the per-apply loop (each apply → one map row with CURRENT_PASS_ID + distinct requestId). REQ-L1(iii) EARNED CHECK explicitly does NOT use CURRENT_PASS_ID — lookup only. New REQ-L1a documents the 1-to-N coarse-grain attribution and monotone-max implications; sprint-5 refinement noted. New PROP-L1ii-per-apply-not-per-tick verifies map append is inside B2's per-apply loop."
+  ],
+  "reviewDimensions": ["spec_fidelity", "verification_readiness"],
+  "extraConstraints": [
+    "Verify FIND-2-001: EXACT jq match specified + REQ-L1(iv) string-cast in place; no substring grep survives.",
+    "Verify FIND-2-002: PROP labels aligned to renumbered EDGEs.",
+    "Verify FIND-2-003: per-apply map append + EARNED CHECK lookup-only + REQ-L1a coarse-grain disclosure."
+  ],
+  "expectedOutputPath": ".vcsdd/features/earnings-to-settle-mirror/reviews/spec/iteration-3/output/"
+}
+</parameter>
