@@ -79,11 +79,10 @@ def test_restart_timeout_logged(tmp_path):
     assert "timeout" in r["status"]
 
 
-# ─── PROP-R3: all 7 sprint-4 actions scaffold-deferred ────────────
-@pytest.mark.parametrize("action", [
-    "kill_server", "send_keys", "login", "npm_install",
-    "git_checkout", "escalate_via_bot2bot", "noop",
-])
+# ─── sprint-4 (d): only `noop` remains scaffold-deferred; the other 6 are
+# real-wired (see test_recipe_6_actions.py). This test is the residual guard
+# that `noop` still short-circuits without touching cmd_map.
+@pytest.mark.parametrize("action", ["noop"])
 def test_sprint4_actions_no_subprocess(action, tmp_path):
     cmd_log = tmp_path / "cmd-log.txt"
     fake_cmd = tmp_path / "shouldnt-run.sh"
@@ -91,7 +90,7 @@ def test_sprint4_actions_no_subprocess(action, tmp_path):
     fake_cmd.chmod(0o755)
     r = execute_recipe(
         recipe={"action": action, "params": {}},
-        issue_kind="tmux_dead",  # even for tmux_dead issue, non-restart = scaffold
+        issue_kind="tmux_dead",  # even for tmux_dead issue, noop = scaffold
         slot="gig",
         cmd_map={"gig": ["bash", str(fake_cmd)]},
         timeout=5,
@@ -130,12 +129,9 @@ def test_unknown_slot_scaffold_deferred(tmp_path):
     assert "unknown-slot-xyz" in r["status"]
 
 
-def test_scaffold_deferred_actions_constant_is_7_set():
-    # Sanity: the constant matches the spec's 7-action set exactly.
-    assert SCAFFOLD_DEFERRED_ACTIONS == frozenset({
-        "kill_server", "send_keys", "login", "npm_install",
-        "git_checkout", "escalate_via_bot2bot", "noop",
-    })
+def test_scaffold_deferred_actions_constant_is_noop_only():
+    # sprint-4 (d): the 6 wires are real-implemented; only `noop` is deferred.
+    assert SCAFFOLD_DEFERRED_ACTIONS == frozenset({"noop"})
 
 
 # ─── FIND-001 fix: REQ-I1 static-grep regression guard ─────────────
@@ -154,14 +150,28 @@ def test_dispatcher_has_no_tmux_kill_or_stop():
         assert not m, f"INV-1 violation: dispatcher contains {pat!r}: {m.group(0)}"
 
 
-# ─── FIND-001 fix: also guard the lib helpers ─────────────────────
-def test_step3_recipe_has_no_tmux_kill():
-    """Defense in depth — execute_recipe also must never contain kill primitives."""
+# ─── sprint-4 (d) update: kill_server action IS real-wired, so
+# `tmux kill-server` is legitimate — but ONLY behind action=='kill_server'.
+# Assert that `kill-session` (session-level kill) is still forbidden and
+# that `--stop`/`--kill` restart-flavored primitives are still absent.
+def test_step3_recipe_no_illegitimate_tmux_kill_primitives():
+    """Defense in depth — session kill / restart-hostile flags stay absent."""
     import re
     from pathlib import Path
     src = Path(__file__).resolve().parents[1] / "lib" / "step3_recipe.py"
     txt = src.read_text()
-    forbidden = [r"tmux\s+kill", r"--stop\b", r"--kill\b", r"kill-session", r"kill-server"]
+    forbidden = [r"--stop\b", r"--kill\b", r"kill-session"]
     for pat in forbidden:
         m = re.search(pat, txt)
         assert not m, f"INV-1 violation: step3_recipe contains {pat!r}: {m.group(0)}"
+    # `kill-server` is only allowed inside the kill_server action branch.
+    # Locate the kill_server branch and verify kill-server references are
+    # confined to it.
+    kill_server_hits = [m.start() for m in re.finditer(r"kill-server", txt)]
+    assert kill_server_hits, "expected at least one kill-server call site"
+    for pos in kill_server_hits:
+        # Look back up to 500 chars for the branch guard.
+        prefix = txt[max(0, pos - 500):pos]
+        assert 'action == "kill_server"' in prefix, (
+            f"kill-server outside kill_server branch at offset {pos}"
+        )

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-014",
+  "dimension": "verification_readiness",
+  "category": "requirement_mismatch",
+  "severity": "high",
+  "description": "Incomplete currency rename (FIND-002/FIND-007 class RE-OPENED). The iteration-note claims '_usdc renamed to _usd throughout' and 'All realized_usdc renamed to realized_usd', but the canonical MenuEntry schema still defines THREE fields with the old _usdc suffix while every consuming requirement and property test uses the new _usd name. This is a schema-vs-consumer name split: an implementer cannot bind a single field name, and the JSON-Schema validation test (REQ-M1 acceptance, line 321-323) and the pure-function property tests (PROP-DA5, PROP-M4) would reference DIFFERENT field names for the same quantity. Concretely: (1) `expected_usdc_per_wake` at schema line 98 + line 110 + REQ-M1 line 302 + acceptance line 323, versus `expected_usd_per_wake` at REQ-M2(d) line 342, REQ-DA1 line 396, REQ-DA2 line 407/423, PROP-DA5 (verification-architecture line 68), PROP-M4 (line 79), integration test (lines 181-198). (2) `cost_estimate_usdc` at schema line 104 + REQ-DA4 line 464, versus `cost_estimate_usd` at EDGE-DA2b line 418, EDGE-DA3a line 449, REQ-CU3 line 737. (3) `realized_usdc` at schema comment line 102 + line 111 + verification-architecture Tier-3 E2E line 231, versus `realized_usd` everywhere else (REQ-M2, REQ-EV4). The rename that FIND-007 required 'throughout' was applied to function-level symbols but NOT to the MenuEntry schema fields, so the drift persists.",
+  "evidence": {
+    "filePath": ".vcsdd/features/eval-driven-earning/specs/behavioral-spec.md",
+    "lineRange": "98-104, 110-111, 302, 323, 342, 396, 407, 418, 449, 464",
+    "snippet": "schema: \"expected_usdc_per_wake\": <float>,  ...  \"cost_estimate_usdc\": <float>,   vs   REQ-DA2: highest `expected_usd_per_wake`   /   EDGE-DA2b: `cost_estimate_usd <= budget_cap`"
+  },
+  "routeToPhase": "1a"
+}
