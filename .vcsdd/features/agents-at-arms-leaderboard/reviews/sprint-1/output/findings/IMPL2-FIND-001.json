@@ -1,0 +1,15 @@
+{
+  "findingId": "IMPL2-FIND-001",
+  "dimension": "verification_readiness",
+  "category": "spec_gap",
+  "severity": "major",
+  "requirement": "R3 anti-buy / INV-NOFAKE (carried to sprint 2)",
+  "description": "The per-row exclusion mechanism is real and tested (excludeSet folds in row.id + SEED_ADDRESSES + OUR_INSTANCE_IDS; enrich.test.js:51-64 excludes a seed-listed sender and the own-id self-transfer). BUT SEED_ADDRESSES is still the placeholder '0x00000000000000000000000000000000000000a1' and OUR_INSTANCE_IDS is [] (leaderboard-constants.js:6,10), each honestly flagged with a TODO. The anti-buy test references SEED_ADDRESSES[0] dynamically, so it proves the mechanism, not that the REAL treasury (0x810f...) is excluded. This is NOT a sprint-1 core blocker because the live-serving producers (R11 served-json render, R12 netlify dashboard-sync + real Base reader) are DEFERRED to sprint 2 — no leaderboard with a real chain reader ships yet, so the gap cannot produce a false ranking in sprint 1. It MUST be filled before any sprint-2 producer serves a leaderboard, otherwise the INV-NOFAKE 'self/seed/treasury money cannot buy rank' guarantee is false in production.",
+  "evidence": {
+    "filePath": "apps/landing/netlify/functions/_lib/leaderboard-constants.js",
+    "lineRange": "6, 10",
+    "snippet": "const OUR_INSTANCE_IDS = []; const SEED_ADDRESSES = [\"0x00000000000000000000000000000000000000a1\"]; // placeholder"
+  },
+  "fix": "Before the R11/R12 producers go live in sprint 2: fill SEED_ADDRESSES with the real founder/treasury Base wallet(s) and OUR_INSTANCE_IDS with canonical instance ids; add a test that excludes a hard-coded real-looking seed address (not SEED_ADDRESSES[0]).",
+  "routeToPhase": "sprint-2"
+}

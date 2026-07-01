@@ -1,0 +1,15 @@
+{
+  "findingId": "IMPL2-FIND-002",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "low",
+  "requirement": "R3 (dimensioned exact) — residual, non-blocking",
+  "description": "net_worth is Number(reader.usdcBalanceAtomic(id))/1e6 + Number(nativeBalanceWei)/1e18*price (enrich.js:24-27). Number(bigint) is not bit-exact above 2^53, but the value is immediately converted to a fractional USD double where ~15-16 significant-figure relative precision governs; a balance beyond 2^53 atomic units yields a USD error on the order of 1e-13, which is immaterial for a net-worth display and for ranking. The binding spec requirements ('never NaN' R4; 'dimensioned exact' proven at test scale in enrich.test.js:43-49) are met, and edge-008's non-finite guard now blocks NaN. This is logged only so the precision ceiling is not silently forgotten, NOT as a correctness blocker.",
+  "evidence": {
+    "filePath": "apps/landing/netlify/functions/_lib/enrich.js",
+    "lineRange": "24-27",
+    "snippet": "const usdc = Number(reader.usdcBalanceAtomic(row.id)) / 1e6; const eth = Number(reader.nativeBalanceWei(row.id)) / 1e18;"
+  },
+  "fix": "Optionally document the safe USD-precision ceiling in a code comment, or scale with BigInt before Number() (e.g. Number(atomic / 100n)/1e4); add a >2^53 fixture asserting the USD value is within tolerance.",
+  "routeToPhase": "sprint-2"
+}
