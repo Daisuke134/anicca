@@ -122,6 +122,27 @@ LAYER C runs autonomously. LAYER B steers it; if LAYER B is silent (quota=DORMAN
 
 ## 4. Sprint-1 helper cleanup (= what to archive, what to keep)
 
+**Status 2026-07-01 (sprint-3 #32 COMPLETE):**
+
+- ★ 9 files archived to `skills/_shared/archive/sprint-1/` (git mv) ★:
+  `loop-healthcheck.sh` + `loop-healthcheck-dispatch.py`,
+  `loop-roi.sh` + `loop-roi-dispatch.py`,
+  `loop-propose.sh`, `loop-scale.sh`,
+  `cross-learn-read.sh`, `cross-learn-share.sh`, `cross-learn-share-dispatch.py`.
+- ★ 3 files DEFERRED to sprint-4 archive (currently held by `spawn_pin.py`
+  SPAWN_SURFACE_FILES tuple as spawn-contract-tracked) ★:
+  `adversary-daily.sh`, `adversary-daily-prompt.tmpl`, `loop-improve.py`.
+  Sprint-4 must first amend `SPAWN_SURFACE_FILES` (behavior-changing +
+  requires new spec + vcsdd cycle) before those 3 can move.
+- ★ Audit result (pre-archive) ★: 0 active launchd jobs referenced the
+  9 archived files; 0 openclaw jobs.json references; only tests referenced
+  them (relocated with the code).
+- ★ Post-archive proof ★: 372/372 pytest GREEN; spawn_pin 12/12 GREEN;
+  production gig kickstart → roi.jsonl row appended (delta=1); INV-1/4/P1
+  all still honored.
+
+Original table (for the record — archived items marked ✅ 2026-07-01):
+
 | File under skills/_shared/ | Verdict | Reason |
 |---|---|---|
 | `proactive-loop.sh` + `proactive-loop-dispatch.py` | **KEEP** | sprint-2 canonical (LAYER A/B) |
@@ -130,13 +151,13 @@ LAYER C runs autonomously. LAYER B steers it; if LAYER B is silent (quota=DORMAN
 | `auto-allowlist.sh` / `auto-rollback.sh` | **KEEP** (scaffolds) | STEP 3 recipe targets |
 | `self-recover.sh` + `self-recover-dispatch.py` | **KEEP** | main-loop side, separate path |
 | `anicca-bot.pub` / `trusted-authors.json` / `hook-modules-allowlist.txt` / `payout-endpoint-allowlist.json` | **KEEP** | trust anchors |
-| `loop-healthcheck.sh` + `loop-healthcheck-dispatch.py` | **ARCHIVE** | replaced by `health_check_v2.dispatch_highest_priority` |
-| `loop-roi.sh` + `loop-roi-dispatch.py` | **ARCHIVE** | replaced by STEP 7 build_log + sprint-3 roi.jsonl |
-| `loop-propose.sh` | **ARCHIVE** | replaced by `pick_next` from menu.json |
-| `loop-scale.sh` | **ARCHIVE** | replaced by budget-aware ACT in STEP 6 |
-| `loop-improve.py` | **ARCHIVE** (revive as menu item) | sprint-3 re-introduces as `min_cadence_seconds=N` menu entry |
-| `adversary-daily.sh` | **ARCHIVE** | menu item with `min_cadence_seconds=86400` (per EDGE-S7) |
-| `cross-learn-read.sh` / `cross-learn-share.sh` / `cross-learn-share-dispatch.py` | **ARCHIVE** | replaced by `bot2bot` gh-issue lane |
+| `loop-healthcheck.sh` + `loop-healthcheck-dispatch.py` | ✅ **ARCHIVED 2026-07-01** | replaced by `health_check_v2.dispatch_highest_priority` |
+| `loop-roi.sh` + `loop-roi-dispatch.py` | ✅ **ARCHIVED 2026-07-01** | replaced by STEP 7 build_log + sprint-3 roi.jsonl |
+| `loop-propose.sh` | ✅ **ARCHIVED 2026-07-01** | replaced by `pick_next` from menu.json |
+| `loop-scale.sh` | ✅ **ARCHIVED 2026-07-01** | replaced by budget-aware ACT in STEP 6 |
+| `loop-improve.py` | ⏳ **DEFERRED sprint-4** (spawn_pin tracked) | sprint-4 amends SPAWN_SURFACE_FILES first |
+| `adversary-daily.sh` | ⏳ **DEFERRED sprint-4** (spawn_pin tracked) | menu item wired sprint-3 #35 but sh awaits pin surface update |
+| `cross-learn-read.sh` / `cross-learn-share.sh` / `cross-learn-share-dispatch.py` | ✅ **ARCHIVED 2026-07-01** | replaced by `bot2bot` gh-issue lane |
 
 Archive target = `skills/_shared/archive/sprint-1/`. Reason: VCSDD convergence proved sprint-2's 4 generic primitives subsume the 9-handler sprint-1 design. Keeping both running creates double-write races on the same `~/loops/<slot>/` state.
 
