@@ -89,8 +89,18 @@ parameter `anicca_home: str = ""`. The dispatcher SHALL pass
   Fail-soft (never crash).
 
 - **REQ-C2** (`npm_install`): WHEN `action == "npm_install"`, THE FUNCTION
-  SHALL run `npm install` with `cwd=<anicca_home>` and a 90 s timeout. Return
-  `{ok: True, status: "npm_install-ok"}` on rc=0. Else
+  SHALL run `npm install` with `cwd=<anicca_home>` and a 90 s timeout.
+  `params.flow` is INTERPRETED via `NPM_INSTALL_FLOW_MAP` (FIND-2-001 fix
+  — health_check_v2 emits `hook_missing → npm_install {flow: "allowlist_check"}`):
+    - `"allowlist_check"` → the default `npm install` invocation IS the
+      hook-allowlist rebuild path (npm postinstall rewrites the hook
+      allowlist); the flow value is logged into the returned status as
+      `"npm_install-ok-flow=allowlist_check"`.
+    - Any other flow → executes the same `npm install`, returns
+      `"npm_install-ok-flow=<F>"` (the flow is a hint, not a gate).
+    - Missing flow (EDGE-E3) → executes plain `npm install`, returns
+      `"npm_install-ok"`.
+  Return `{ok: True, status: "npm_install-ok[-flow=<F>]"}` on rc=0. Else
   `{ok: False, status: "npm_install-failed-rc<N>"}` or
   `{ok: False, status: "npm_install-failed-timeout"}`. INV-1 preserved.
 

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-2-001",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "high",
+  "description": "REQ-C2 (`npm_install`) SHALL run bare `npm install` in ANICCA_HOME, but health_check_v2.py::select_fix_recipe at line 104 emits `hook_missing → {action: 'npm_install', params: {flow: 'allowlist_check'}}` with a `flow` parameter that REQ-C2 completely ignores. Two problems: (1) The spec never explains what `flow=allowlist_check` means — is it a hook_missing recovery that should run `npm run allowlist_check` (or similar), or is it fine to drop and just do `npm install`? As written, `flow` is silently discarded, which is exactly the FIND-001 anti-pattern in a new location (recipe emits a param the wire ignores → the caller thinks a specific flow ran, but a generic `npm install` ran instead). (2) By symmetry with the REQ-B1 fix (which handles both `keys` and `flow`), REQ-C2 either needs a `NPM_INSTALL_FLOW_MAP` (with `allowlist_check → <specific command>`) OR a sub-clause stating `params.flow` is intentionally ignored and only bare `npm install` is invoked for all hook_missing/npm_install triggers. Without one of those, the spec + existing recipe do not compose deterministically and PROP-C2 cannot distinguish 'wire ran the right flow' from 'wire silently dropped flow and ran generic install'.",
+  "evidence": {
+    "filePath": ".vcsdd/features/recipe-6-actions/specs/behavioral-spec.md",
+    "lineRange": "91-95",
+    "snippet": "REQ-C2 (`npm_install`): WHEN `action == \"npm_install\"`, THE FUNCTION SHALL run `npm install` with `cwd=<anicca_home>` and a 90 s timeout."
+  },
+  "routeToPhase": "1a"
+}

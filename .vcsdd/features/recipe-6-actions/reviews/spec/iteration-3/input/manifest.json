@@ -1,0 +1,20 @@
+{
+  "reviewType": "spec",
+  "featureName": "recipe-6-actions",
+  "iteration": 3,
+  "mode": "lean",
+  "artifactsToReview": [
+    ".vcsdd/features/recipe-6-actions/specs/behavioral-spec.md",
+    ".vcsdd/features/recipe-6-actions/specs/verification-architecture.md",
+    "skills/_shared/lib/health_check_v2.py"
+  ],
+  "previousIterationFindings": [
+    "FIND-2-001 high (REQ-C2 silently drops params.flow=allowlist_check for hook_missing): fixed — REQ-C2 rewritten to CONSUME params.flow via NPM_INSTALL_FLOW_MAP; status now surfaces the flow (`npm_install-ok-flow=<F>`), missing flow → plain `npm_install-ok`, unknown flow still succeeds with the flow name echoed. New PROP-C2-npm_install-flow-consumed added."
+  ],
+  "reviewDimensions": ["spec_fidelity", "verification_readiness"],
+  "extraConstraints": [
+    "Verify REQ-C2 no longer silently drops params.flow.",
+    "Verify all 4 send_keys emitters (trust_dialog, api_rate_limit, cron_missing, cron_missing again via various flows) are honored by REQ-B1 or explicitly noop-fail-soft."
+  ],
+  "expectedOutputPath": ".vcsdd/features/recipe-6-actions/reviews/spec/iteration-3/output/"
+}
