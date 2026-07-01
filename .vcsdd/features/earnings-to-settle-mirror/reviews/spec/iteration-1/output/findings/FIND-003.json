@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "high",
+  "description": "REQ-M2(c) prescribes the dispatcher build_log outcome as `\"settle-mirror:new=N/dup=M/unmatched=K\"`, but REQ-R1 declares the mirror function returns `{new: int, dup: int, unmatched_pass_id: int, elapsed_ms: int}` — the unmatched field key is `unmatched_pass_id`, not `unmatched`. The spec never states which key the dispatcher formatter must read to fill the `K` placeholder. Two ambiguities result: (1) an implementer may key-lookup `report['unmatched']` (KeyError / 0), producing a silently-wrong build_log outcome, and (2) the manifest adversarial check #5 asked whether the reconciler's grep expects that exact format — but the reconciler's tests only exercise its OWN outcome (`reconciled:matched=N/unmatched=M/updated=K` per `skills/_shared/proactive-loop-dispatch.py:202-204` + `skills/_shared/__tests__/test_reconciler_integration.py:78`). No test in feature (b) covers a `settle-mirror:` outcome. Spec must (a) reconcile the field name between REQ-R1 return dict and REQ-M2(c) outcome template, and (b) explicitly state the mapping if they must differ.",
+  "evidence": {
+    "filePath": ".vcsdd/features/earnings-to-settle-mirror/specs/behavioral-spec.md",
+    "lineRange": "52-62",
+    "snippet": "(c) set the build_log outcome to `\"settle-mirror:new=N/dup=M/unmatched=K\"`, ... returning `{new: int, dup: int, unmatched_pass_id: int, elapsed_ms: int}`"
+  },
+  "routeToPhase": "1a"
+}

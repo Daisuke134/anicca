@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "verification_readiness",
+  "category": "test_coverage",
+  "severity": "high",
+  "description": "PROP-integration-full-loop mandates an E2E: seed an earnings row → invoke mirror → assert settle.jsonl gains row with MATCHED pass_id → invoke reconciler → assert roi.jsonl updated. But given FIND-001 (REQ-R3(ii) architecturally cannot find a real pass_id from a real requestId), the ONLY way this integration test can PASS with a matched pass_id is if the test author pre-fabricates a `tasks/<ts>-<pass_id>-<requestId>.json` file (planting the requestId as `picked.name` or `picked.category`), which is NOT the real production wire — LAYER C tmux never writes such a descriptor. Result: the integration test will only exercise the substring-match happy path via a synthetic fixture that misrepresents the production wire, meaning the pipeline could look green in test while failing 100% in production. Verification architecture must (a) exercise the REAL requestId↔pass_id source path once FIND-001 is resolved, and (b) explicitly include a live-fixture E2E using an actual `~/gig/applied.jsonl` row or whatever the corrected join source becomes. Additionally there is no PROP for FIND-002's substring-collision failure mode (a Coconala numeric requestId that coincidentally appears inside a pass_id/timestamp).",
+  "evidence": {
+    "filePath": ".vcsdd/features/earnings-to-settle-mirror/specs/verification-architecture.md",
+    "lineRange": "40-53",
+    "snippet": "PROP-integration-full-loop | 1 | true | E2E: seed earnings.jsonl with a 検収 row referencing a requestId that matches a real task descriptor; invoke mirror; assert settle.jsonl row created with matched pass_id"
+  },
+  "routeToPhase": "1a"
+}

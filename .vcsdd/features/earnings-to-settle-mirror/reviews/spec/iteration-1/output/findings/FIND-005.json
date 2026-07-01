@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "low",
+  "description": "REQ-R6 opens with 'writes SHALL follow REQ-R5-equivalent ordering' — this is a broken self-reference. REQ-R5 (in this same spec) is the dedup rule, not an ordering rule. The intended reference is presumably feature (b) earn-roi-reconciler REQ-R5 (which does specify build→write→append→state→offset ordering, verified at `.vcsdd/features/earn-roi-reconciler/specs/behavioral-spec.md:60-75`). As it stands, an implementer reading only this spec cannot resolve the reference and must inspect a sibling feature's spec — brittle. Fix: either inline the ordering steps (which REQ-R6 (i)-(v) already does — so the phrase is redundant and misleading) or explicitly cite the sibling: 'per earn-roi-reconciler REQ-R5 ordering discipline'.",
+  "evidence": {
+    "filePath": ".vcsdd/features/earnings-to-settle-mirror/specs/behavioral-spec.md",
+    "lineRange": "86-93",
+    "snippet": "REQ-R6: writes SHALL follow REQ-R5-equivalent ordering: (i) build in-memory settle-rows-to-append, (ii) append to settle.jsonl ..."
+  },
+  "routeToPhase": "1a"
+}

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "REQ-R3(ii) instructs the mirror to look up pass_id by scanning `~/loops/<slot>/tasks/*.json` for a `picked.name` OR `picked.category` string that CONTAINS the Coconala `requestId`, OR scanning `roi.jsonl` for an `outcome` string containing the requestId. This is architecturally impossible: `tasks/*.json` descriptors store menu-item picks (`picked.name` = e.g. 'scan', 'settle-mirror'; `picked.category` = e.g. 'apply'/'internal'), NOT Coconala requestIds — verified against `skills/_shared/lib/step6_act.py:31-43` `task_descriptor()` shape and `skills/_shared/proactive-loop-dispatch.py:200-215` where `picked` comes straight from `menu.json`. Similarly `roi.jsonl` `outcome` strings are formatted as `enqueued:<ts>-<pass_id>-<name>.json` or `reconciled:matched=N/...` — verified at `skills/_shared/proactive-loop-dispatch.py:202-215`. The Coconala requestId (a numeric like 5123100) lives ONLY in `~/gig/applied.jsonl` and `~/gig/earnings.jsonl` — LAYER C domain — never in the loops/ side. Result: the REQ-R3(ii) lookup returns None on 100% of real inputs, forcing all settled rows through the REQ-R4 unmatched-sentinel path, causing the reconciler to route every earnings event to `.unmatched.jsonl`. `roi_jpy_realized` will NEVER be populated for real gig earnings, and sprint-4 M1's stated purpose fails. Fix requires either (i) a JOIN table that binds `requestId` ↔ `pass_id` at APPLY time (LAYER C write), or (ii) redesigning REQ-R3(ii) to scan `~/gig/applied.jsonl` (the actual source of the requestId ↔ pass_id link, if it stores pass_id at all — spec does not confirm).",
+  "evidence": {
+    "filePath": ".vcsdd/features/earnings-to-settle-mirror/specs/behavioral-spec.md",
+    "lineRange": "67-73",
+    "snippet": "look up the matching `pass_id` by scanning `~/loops/<slot>/tasks/*.json` for a descriptor whose `picked.name` OR `picked.category` string CONTAINS the `requestId`, OR by scanning roi.jsonl for a row whose `outcome` string CONTAINS the `requestId`"
+  },
+  "routeToPhase": "1a"
+}
