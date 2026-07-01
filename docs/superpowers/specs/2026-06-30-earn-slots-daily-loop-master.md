@@ -296,3 +296,12 @@ $0.05-0.15 → lean $0.15/day (free brain) / realistic $0.35-0.45/day. runway �
 lean $0.15×45+$5+$2≈$14 · realistic $0.45×45+$5+$2≈$27. ★ RECOMMENDED SEED = $25-30 USDC on Base + ~$2 Base ETH
 gas (floor ≈$15 free-brain). ★ spawn-child-earn: seed S=$25-30 (config), host=akash (prefer over do=credit-card),
 brain=BlockRun x402. Base USDC transfer <1¢ but wallet needs a little Base ETH to sign.
+
+## ★ OBSERVABILITY + EVAL TOOLING (2026-07-01, 10 repos vetted) — adopt, don't reinvent ★
+ADOPT NOW into eval-driven-earning (fills observability + curation-execution + self-improve gaps; complements ClawWork+auto-company, no compete):
+- ★ Langfuse (30k★, MIT, docker-5min, $0) = OBSERVABILITY SPINE: wrap each loop wake / adversary verdict / earn run as a trace (spans search/build/verify/ship), store LLM-as-judge scores + VCSDD verdicts, Datasets = earn-case benchmark. Plugs into Group EV. (Opik 20k★ ~80% overlap → pick ONE = Langfuse.)
+- ★ Dagger (16k★, Apache, AI-sandbox, Docker, $0) = CURATION-GATE EXECUTION ENGINE + VCSDD verification runner: run a candidate skill in an ISOLATED container before menu-admit (fixes iter-1 FIND-009 all-mocked-curation with a REAL sandbox); content-addressed cache = cheap re-verify; OTel→Langfuse.
+- ★ wshobson/agents (37k★, Markdown) = drop-in SUBAGENTS: copy plugin-eval (eval-judge/orchestrator/rubrics) + agent-orchestration/improve-agent into our subagent library for earn-skill grading + self-improvement.
+- ★ agno (41k★) = MINE patterns only (NOT the runtime): eval/ (agent-as-judge/reliability/accuracy) + learn/curate.py for our 5-gate verification + curation loop. Keep our ReAct+compute-proxy runtime.
+SITUATIONAL: mlflow (27k — prompt registry/experiment-compare if Langfuse insufficient); netdata (79k — host/fleet health + ENOSPC alert per HARD 0.26, once persistent fleet runs). LEARNING/SKIP: OpenManus (57k but 5-mo dormant → read app/flow/planning.py only), patchy631 (cherry-pick RAG demos), happy-llm (course, no runtime value). Our runtime already beats all 5 frameworks.
+Mapping: EV observability=Langfuse; CU curation execution=Dagger; grading/self-improve subagents=wshobson+agno patterns; fleet health=netdata(later). Tweak-ins sequenced AFTER eval-driven spec passes adversary + Phase-2 impl.
