@@ -77,24 +77,31 @@ once M2 fires (real ¥ actually settles).
 
 ### Group D — Dispatcher wire
 
-- **REQ-D1** (FIND-003 fix — placement pinned): the dispatcher SHALL invoke
-  `compute_dormant_state` in STEP 3, AFTER the existing recipe execution
-  block completes AND BEFORE the SKIP guard at
-  `proactive-loop-dispatch.py:147-163`. Rationale: (a) STEP 3 recipe may
-  restart LAYER C — we need that to happen first for accurate state; (b)
-  the SKIP guard reads `slot_dir / ".dormant.sentinel"` to decide whether
-  to skip STEP 6 — so the sentinel MUST be written before the SKIP guard
-  reads it, else the sentinel-written-this-tick would only take effect
-  next tick. Placement is between line 122 (STEP 3 recipe block end) and
-  line 127 (SKIP guard read).
-- **REQ-D1a** (FIND-004 fix — sources for compute_dormant_state args):
+- **REQ-D1** (FIND-2-001 fix — real line numbers + placement resolution):
+  Actual dispatcher lines (verified 2026-07-01):
+  * STEP 3 recipe execution block: lines 99-145
+  * SKIP guard reads `.dormant.sentinel`: line 147-163
+  * `menu = load_menu(...)`: line 169 (AFTER SKIP guard)
+  * STEP 6 ACT begins: line 196
+
+  Because `menu` is loaded at line 169 but we need `time_horizon_days`
+  from it, the dormant check CANNOT be placed before line 147. The
+  dispatcher SHALL invoke `compute_dormant_state` AFTER `menu = load_menu`
+  at line 169 AND BEFORE STEP 6 ACT at line 196 (i.e., between lines 170
+  and 195). Consequence: a sentinel written on tick T takes effect on
+  tick T+1 (= next 5-min cron). This 1-tick delay is intentional — the
+  sprint-4 goal is to avoid PREMATURE dormant sentinels; a bounded 5-min
+  latency in enforcement is acceptable and preserves correctness.
+  Alternative (moving menu load earlier) is out of scope for sprint-4
+  because it touches unrelated dispatcher structure.
+- **REQ-D1a** (FIND-004 + FIND-2-001 fix — sources at real line 169+):
   * `roi_rows` = parsed `~/loops/<slot>/roi.jsonl` (skip malformed rows;
     EDGE-E6).
   * `slot_age_days` = `(now_ts - slot_dir.stat().st_ctime) / 86400.0`
     (falls back to 0.0 if stat() raises; log to core-status).
-  * `time_horizon_days` = read from `menu.get("time_horizon_days")` via
-    the existing `resolve_time_horizon_days(menu, default=14)` helper
-    (sprint-3 #34 REQ-T1) after menu is loaded at line 145.
+  * `time_horizon_days` = `resolve_time_horizon_days(menu, default=14)`
+    (sprint-3 #34 REQ-T1 helper) — called after menu is loaded at
+    dispatcher line 169.
   * `now_ts` = `int(time.time())` (dispatcher's clock).
 - **REQ-D2**: IF `compute_dormant_state()["is_dormant"] == True` AND
   `~/loops/<slot>/.dormant.sentinel` does NOT yet exist, THE DISPATCHER

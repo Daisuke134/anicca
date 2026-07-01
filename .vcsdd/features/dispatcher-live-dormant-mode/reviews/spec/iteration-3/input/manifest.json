@@ -1,0 +1,23 @@
+{
+  "reviewType": "spec",
+  "featureName": "dispatcher-live-dormant-mode",
+  "iteration": 3,
+  "mode": "lean",
+  "artifactsToReview": [
+    ".vcsdd/features/dispatcher-live-dormant-mode/specs/behavioral-spec.md",
+    ".vcsdd/features/dispatcher-live-dormant-mode/specs/verification-architecture.md",
+    "skills/_shared/proactive-loop-dispatch.py",
+    "skills/_shared/lib/quota_tracker.py"
+  ],
+  "previousIterationFindings": [
+    "FIND-2-001 critical (REQ-D1 line numbers wrong + mutually unimplementable with REQ-D1a menu load): fixed — REQ-D1 uses real verified line numbers (STEP 3: 99-145, SKIP guard: 147-163, menu load: 169, STEP 6: 196). Placement moved to AFTER line 169 and BEFORE 196; 1-tick sentinel enforcement delay documented as intentional trade-off. REQ-D1a updated to cite real line 169.",
+    "FIND-2-002 medium (PROP-L3 dual contradictory rows): fixed — old PROP-L3-most-recent-first name renamed to PROP-L3-most-recent-LAST; only ONE PROP-L3 row remains, matching helper contract verbatim."
+  ],
+  "reviewDimensions": ["spec_fidelity", "verification_readiness"],
+  "extraConstraints": [
+    "Verify REQ-D1 placement (between line 169 and 196) is consistent with load_menu at 169 + STEP 6 at 196.",
+    "Verify PROP-L3 has exactly ONE canonical row with 'most-recent-LAST' ordering."
+  ],
+  "expectedOutputPath": ".vcsdd/features/dispatcher-live-dormant-mode/reviews/spec/iteration-3/output/"
+}
+</parameter>

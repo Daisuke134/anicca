@@ -23,7 +23,7 @@ generated_at: 2026-07-01
 | PROP-L1-window-detection | 1 | true | REQ-L1 — realized>0 AND ts within window → True; else False |
 | PROP-L2-live-mode-false-forces-not-dormant | 1 | true | REQ-L2 (live_mode False → is_dormant False unconditionally) |
 | PROP-L2-live-mode-true-delegates-to-horizon-check | 1 | true | REQ-L2 (live_mode True → is_dormant follows is_dormant_with_horizon) |
-| PROP-L3-window-count-uses-most-recent-first | 1 | true | REQ-L3 (count_consecutive_negative_windows called with correct ordering) |
+| PROP-L3-window-count-uses-most-recent-LAST (FIND-2-002 fix — renamed to match helper contract; NO 'first' variant) | 1 | true | REQ-L3 — helper contract at quota_tracker.py:69-81 requires MOST RECENT LAST; test asserts a list built with reversed order gives a different (wrong) result |
 | PROP-D1-dispatcher-invokes-check-when-roi-exists | 1 | true | REQ-D1 |
 | PROP-D2-sentinel-written-only-when-dormant-and-not-exists | 1 | true | REQ-D2 idempotent |
 | PROP-D3-never-removes-sentinel | 1 | true | grep dispatcher for `.dormant.sentinel` deletion = 0 |
