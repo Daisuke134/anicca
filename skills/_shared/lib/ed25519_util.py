@@ -116,14 +116,20 @@ def sign_bytes_ed25519(data: bytes, privkey_pem: Path) -> bytes:
 
     Returns raw 64-byte signature. Raises SigningError on failure.
     IMPORTANT: never includes privkey path in raised exception messages.
+
+    FIND-002 fix: uses tempfile.TemporaryDirectory instead of writing tmp
+    files into the key's parent directory. This avoids (a) failing on 0o500
+    key dirs, (b) id(data) collision on interned same-payload bytes under
+    concurrent signs (EDGE-E10), (c) leaving artifacts near the private key.
     """
     priv_path = Path(privkey_pem)
     if not priv_path.is_file():
         raise SigningError("private key not found (path scrubbed)")
-    # Write data to temp file (openssl -rawin reads from -in file)
-    data_path = priv_path.parent / f".signdata-{id(data):x}.tmp"
-    sig_path = priv_path.parent / f".sigout-{id(data):x}.tmp"
-    try:
+    import tempfile
+    with tempfile.TemporaryDirectory() as td:
+        td_path = Path(td)
+        data_path = td_path / "signdata.bin"
+        sig_path = td_path / "sig.bin"
         data_path.write_bytes(data)
         r = subprocess.run(
             ["openssl", "pkeyutl", "-sign",
@@ -141,13 +147,6 @@ def sign_bytes_ed25519(data: bytes, privkey_pem: Path) -> bytes:
         if len(sig) != 64:
             raise SigningError(f"unexpected sig length {len(sig)}")
         return sig
-    finally:
-        for p in (data_path, sig_path):
-            try:
-                if p.exists():
-                    p.unlink()
-            except OSError:
-                pass
 
 
 def verify_bytes_ed25519(data: bytes, sig: bytes, pubkey_b64: str) -> bool:
