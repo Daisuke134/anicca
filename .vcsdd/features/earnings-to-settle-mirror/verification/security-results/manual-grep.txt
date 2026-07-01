@@ -1,0 +1,17 @@
+earnings-to-settle-mirror manual security grep
+generated 2026-07-01
+
+grep results on skills/_shared/lib/settle_mirror.py:
+- shell=True: 0 hits
+- os.system(: 0 hits
+- eval(: 0 hits
+- osascript / telegram / slack / twilio / SecKeychain / terminal-notifier: 0 hits
+- tmux kill / kill-session / kill-server / --stop / --kill: 0 hits
+- earnings.jsonl write-mode: 0 hits
+- sudo: 0 hits
+
+Live E2E on production gig:
+- Real pass_id p-1782887987: roi_jpy_realized 0 → 25000 via mirror + reconciler pipeline
+- gig-cli.sh --status: ALIVE
+- Synthetic seed rolled back afterward (earnings.jsonl 0 rows again)
+</parameter>

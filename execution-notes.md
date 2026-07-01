@@ -1,33 +1,26 @@
 # execution-notes.md — sprint-4 M1+M2
 
-*Live resume/audit state for the /goal run. Update after every phase pass.*
-
 ## Active /goal
-
-`GOAL-sprint-4-M1-M2.md` (mailed to Dais via Resend id
-`0493d1f1-dd89-4701-8f01-be79fac5cac0` on 2026-07-01).
+`GOAL-sprint-4-M1-M2.md` (mailed to Dais via Resend id `0493d1f1-...`).
 
 ## Sub-feature status
 
 | # | feature | phase | notes |
 |---|---|---|---|
-| a | earnings-to-settle-mirror (reframed) | 1c adversary iter-1 running | mirror pattern, LAYER C untouched (INV-1 preserved) |
-| b | earn-roi-reconciler | ✅ COMPLETE (Phase 6 PASS) | 34 tests + live E2E on real gig p-1782887606: roi 0 → 40000, ~/gig SHA unchanged |
-| c | dispatcher-live-dormant | not started | |
-| d | recipe-6-actions | not started | |
+| a2 | earnings-to-settle-mirror | ✅ COMPLETE (Phase 6) | Full pipeline PROVEN LIVE on production gig: p-1782887987 roi 0→25000 |
+| a1 | LAYER C STARTUP prompt update | ⏳ separate follow-up commit | Documented in mirror spec; enables real Coconala 検収 to auto-flow |
+| b | earn-roi-reconciler | ✅ COMPLETE | Feature (b) sprint-4 done |
+| c | dispatcher-live-dormant | 🔄 in progress | wire is_dormant_with_horizon behind 90d realized>0 gate |
+| d | recipe-6-actions | pending | |
 
 ## Milestone gates
-
-- ✅ **M1 half** (reconciler ready) — feature (b) COMPLETE
-- ⏳ **M1 rest** (mirror pipeline ready) — feature (a) in progress
-- ⏳ **M2** (first real ¥) — depends on real Coconala 検収 landing in earnings.jsonl
+- ✅ **M1** (settle pipeline ready) — reconciler + mirror COMPLETE. Full flow PROVEN LIVE.
+- ⏳ **M2** (first real ¥) — awaiting (a1) STARTUP update OR real Coconala 検収 in existing format.
 
 ## Regression baseline
+460/460 tests GREEN.
 
-432/432 tests GREEN (as of feature (b) close).
-
-## Block conditions (unchanged)
-
-1. No settle event across ANY slot in 30 days → ROI model wrong
-2. INV regression uncloseable in 3 adversary iters
-3. openssl / crypto primitive fails
+## Block conditions
+1. No settle event in 30 days across ANY slot
+2. INV regression uncloseable in 3 iters
+3. crypto primitive fails

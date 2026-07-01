@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "verification_readiness",
+  "category": "test_coverage",
+  "severity": "critical",
+  "description": "verification-architecture.md declares `__tests__/test_settle_mirror_integration.py` as a shipped test file covering PROP-M2-dispatcher-invokes, PROP-integration-full-loop, and PROP-integration-sentinel-path (all marked required:true). That file does NOT exist on disk. Only test_settle_mirror.py (unit + PURE + I/O tests) is present. The dispatcher STEP 6 elif branch at proactive-loop-dispatch.py:207-213 that wires the mirror into the loop has ZERO automated coverage: no test invokes that code path. The manifest's own note that `PROP-integration-full-loop already ran LIVE against production gig` describes a one-shot manual live E2E, which is not a re-runnable proof obligation and does not satisfy the required:true property in the verification architecture. Without an integration test, regressions in the dispatcher branch (e.g. a rename of `settle-mirror` -> another string, a wrong earnings_path derivation, an outcome-string format drift consumed by build_log parsers) will not be caught before shipping.",
+  "evidence": {
+    "filePath": ".vcsdd/features/earnings-to-settle-mirror/specs/verification-architecture.md",
+    "lineRange": "34,46-51",
+    "snippet": "| PROP-M2-dispatcher-invokes | 1 | true | REQ-M2 — integration test: category==settle-mirror invokes in-process, tasks/ untouched, outcome starts with \"settle-mirror:new=\" |\n| PROP-integration-full-loop | 1 | true | E2E: ... |\n| PROP-integration-sentinel-path | 1 | true | E2E: ... |\n\n17 required:true. Tests:\n- `__tests__/test_settle_mirror.py` — PURE + I/O unit tests\n- `__tests__/test_settle_mirror_integration.py` — dispatcher branch + BOTH full-loop paths (matched pass_id + sentinel path)"
+  },
+  "corroboratingEvidence": {
+    "filePath": "skills/_shared/proactive-loop-dispatch.py",
+    "lineRange": "207-213",
+    "snippet": "elif picked.get(\"category\") == \"settle-mirror\":\n    earnings_path = Path.home() / slot / \"earnings.jsonl\"\n    r = _mirror_slot(slot_dir, earnings_path, int(time.time()))\n    outcome = (f\"settle-mirror:new={r.get('new', 0)}/\"\n               f\"dup={r.get('dup', 0)}/\"\n               f\"unmatched={r.get('unmatched', 0)}\")"
+  },
+  "routeToPhase": "2b"
+}

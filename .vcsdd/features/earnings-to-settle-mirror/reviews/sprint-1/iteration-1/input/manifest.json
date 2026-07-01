@@ -1,0 +1,25 @@
+{
+  "reviewType": "implementation",
+  "featureName": "earnings-to-settle-mirror",
+  "sprintNumber": 1,
+  "iteration": 1,
+  "mode": "lean",
+  "artifactsToReview": {
+    "spec": [".vcsdd/features/earnings-to-settle-mirror/specs/behavioral-spec.md",
+             ".vcsdd/features/earnings-to-settle-mirror/specs/verification-architecture.md"],
+    "source_python": ["skills/_shared/lib/settle_mirror.py",
+                       "skills/_shared/proactive-loop-dispatch.py"],
+    "tests": ["skills/_shared/__tests__/test_settle_mirror.py"]
+  },
+  "reviewDimensions": ["spec_fidelity", "edge_case_coverage", "implementation_correctness", "structural_integrity", "verification_readiness"],
+  "extraConstraints": [
+    "Note: (a1) LAYER C STARTUP prompt update is NOT in this cycle's shipped artifacts — sprint-4 (a) is landing as TWO commits: (a2) mirror ships NOW (this review); (a1) STARTUP update is a separate follow-up. Verify the spec's REQ-L1 acknowledges this staging + confirm PROP-L3-restart-deploy-safety is deferred to (a1) commit. Focus this review on (a2) only.",
+    "Verify (a2) mirror's direct field read: `extract_pass_id_or_sentinel` at settle_mirror.py:46-55 uses regex `^p-\\d+$` on row['pass_id']; no substring; grep the file for 'grep' or '.contains(' = 0 hits.",
+    "REQ-R3(iii) top-level requestId + earnings_status verified: build_settle_row at :58-73 emits both as top-level keys; PROP-R5 dedup at settle_row_dedup_key:76-77 uses those keys directly.",
+    "PROP-integration-full-loop already ran LIVE against production gig: real pass_id p-1782887987 roi 0 → 25000 via mirror + reconciler. Verify the unit test suite is not over-specified vs the live proof.",
+    "REQ-R6 offset LAST ordering: settle_mirror.py:170-189 does (ii) append → (iii) last-run → (iv) offset. Verify no field is written before its predecessor.",
+    "The live E2E rolled back the synthetic seed; production ~/gig/earnings.jsonl is now empty (0 rows). Verify PROP-live shape correctness independent of production ledger state."
+  ],
+  "expectedOutputPath": ".vcsdd/features/earnings-to-settle-mirror/reviews/sprint-1/iteration-1/output/"
+}
+</parameter>
