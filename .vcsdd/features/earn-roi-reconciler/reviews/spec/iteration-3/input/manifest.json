@@ -1,0 +1,21 @@
+{
+  "reviewType": "spec",
+  "featureName": "earn-roi-reconciler",
+  "iteration": 3,
+  "mode": "lean",
+  "artifactsToReview": [
+    ".vcsdd/features/earn-roi-reconciler/specs/behavioral-spec.md",
+    ".vcsdd/features/earn-roi-reconciler/specs/verification-architecture.md",
+    "skills/_shared/lib/step6_act.py"
+  ],
+  "previousIterationFindings": [
+    "FIND-2-001 critical (PROP-M2 contradicted REQ-M2 by still requiring reconciler_report field on descriptor): fixed — PROP-M2 rewritten to explicitly assert 5 checks: (a) reconcile invoked in-process, (b) tasks/*.json file count UNCHANGED before/after (glob diff), (c) grep step6_act.py for 'reconciler_report' = 0 hits (frozen shape), (d) build_log.md outcome starts with 'reconciled:matched=', (e) state/reconciler-last-run.json matches report dict.",
+    "FIND-2-002 high (Done E2E still used mtime + wrong file): fixed — Done E2E now uses SHA-256 hash + os.stat size on ~/gig/earnings.jsonl PLUS recursive hash over ~/gig/*.jsonl PLUS source grep for write-mode calls to ~/gig. mtime EXPLICITLY not used."
+  ],
+  "reviewDimensions": ["spec_fidelity", "verification_readiness"],
+  "extraConstraints": [
+    "Verify FIND-2-001: PROP-M2 5 sub-checks are enumerated + reconciler_report field ban is explicit.",
+    "Verify FIND-2-002: Done E2E lists SHA-256 + os.stat size + recursive hash + source grep, and mtime is not used."
+  ],
+  "expectedOutputPath": ".vcsdd/features/earn-roi-reconciler/reviews/spec/iteration-3/output/"
+}

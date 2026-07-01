@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-2-002",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "high",
+  "description": "FIND-006 closure is PARTIAL. PROP-I2-writes-scoped (verification-architecture.md:43) was correctly upgraded to a 3-check (os.stat size + SHA-256 + source grep). However, the Done-condition E2E on the SAME verification-architecture file (line 62) STILL uses the exact defective predicate FIND-006 called out: '~/gig/applied.jsonl mtime unchanged'. This means the final gate that decides feature done-ness accepts the very evidence FIND-006 declared insufficient (mtime unchanged on 1s-granularity FS or with O_WRONLY-no-write). Additionally, the E2E only inspects ~/gig/applied.jsonl — REQ-I2 forbids writes to ~/gig/earnings.jsonl AND '~/gig/*' AND any file outside ~/loops/. A reconciler that writes to ~/gig/pending.md or ~/gig/audit.jsonl would clear the E2E gate. Fix must mirror PROP-I2: promote the done-E2E to SHA-256 (or byte-length) diff over the entire ~/gig/ subtree (or at minimum ~/gig/earnings.jsonl + ~/gig/applied.jsonl), plus a source-level grep on the reconciler for any '~/gig' write-mode open() call. Also update the E2E to use ~/gig/earnings.jsonl (the file REQ-I2 primarily protects) — applied.jsonl is a secondary concern.",
+  "evidence": {
+    "filePath": ".vcsdd/features/earn-roi-reconciler/specs/verification-architecture.md",
+    "lineRange": "60-62",
+    "snippet": "verify the row's roi_jpy_realized becomes > 0, state/reconciler-last-run.json written, ~/gig/applied.jsonl mtime unchanged."
+  },
+  "routeToPhase": "1b"
+}
