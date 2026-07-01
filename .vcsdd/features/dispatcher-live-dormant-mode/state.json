@@ -2,7 +2,7 @@
   "featureName": "dispatcher-live-dormant-mode",
   "mode": "lean",
   "language": "python",
-  "currentPhase": "1b",
+  "currentPhase": "2a",
   "phaseHistory": [
     {
       "from": "init",
@@ -13,19 +13,40 @@
       "from": "1a",
       "to": "1b",
       "timestamp": "2026-07-01T08:53:26.950Z"
+    },
+    {
+      "from": "1b",
+      "to": "1c",
+      "timestamp": "2026-07-01T09:02:16.986Z"
+    },
+    {
+      "from": "1c",
+      "to": "2a",
+      "timestamp": "2026-07-01T09:02:16.995Z",
+      "sprint": 1
     }
   ],
   "iterations": {
     "1a": 1,
-    "1b": 1
+    "1b": 1,
+    "1c": 1,
+    "2a": 1
   },
   "proofObligations": [],
   "traceability": {
     "epicId": "VCSDD-dispatcher-live-dormant-mode-1782895955166",
     "beads": []
   },
-  "gates": {},
-  "sprintCount": 0,
+  "gates": {
+    "1c": {
+      "verdict": "PASS",
+      "timestamp": "2026-07-01T09:02:10.585Z",
+      "reviewedBy": "adversary",
+      "adversaryVerdict": "PASS",
+      "adversaryReviewedAt": "2026-07-01T09:02:10.585Z"
+    }
+  },
+  "sprintCount": 1,
   "createdAt": "2026-07-01T08:52:35.165Z",
-  "updatedAt": "2026-07-01T08:53:26.950Z"
+  "updatedAt": "2026-07-01T09:02:16.995Z"
 }

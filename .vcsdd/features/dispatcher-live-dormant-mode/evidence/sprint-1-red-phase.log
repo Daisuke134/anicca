@@ -1,0 +1,24 @@
+new-feature-tests: FAIL
+regression-baseline: PASS
+total-tests-existing: 460
+new-tests-added: 15 (test_live_dormant_state.py: 12, test_dispatcher_dormant_integration.py: 6 — 1 D3 grep + 5 real)
+
+--- RED (import error = feature not yet impl) ---
+ImportError: cannot import name 'has_realized_in_window' from 'lib.quota_tracker'
+  test_live_dormant_state.py fails to load until Phase 2b ships:
+    - has_realized_in_window(roi_rows, now_ts, window_days=90) -> bool
+    - compute_dormant_state(roi_rows, slot_age_days, time_horizon_days, now_ts) -> dict
+
+  test_dispatcher_dormant_integration.py:
+    - test_D1_dispatcher_invokes_dormant_check_when_roi_exists: no dormant wire → no sentinel
+    - test_D1_no_sentinel_when_no_realized: OK trivially before wire (still asserts negative)
+    - test_E5_sentinel_idempotent: OK trivially (wire absent means no overwrite)
+    - test_D3_dispatcher_never_removes_sentinel: PASS today (grep-based, no removal exists)
+    - test_D4_fail_closed_on_read_error: PASS today (no wire → no read error)
+    - test_I2_no_tmux_kill_referenced_in_dormant_wire: PASS (grep — no kill-session)
+
+  → 3 of 6 integration tests actively fail (D1-positive, E5) waiting for wire impl.
+  → 3 (D3, D4, I2) are guard/invariant tests that hold today and MUST continue to hold post-impl.
+
+--- Regression baseline (existing 460 tests, excluding the two new files) ---
+460 passed, 4 warnings in 8.04s
