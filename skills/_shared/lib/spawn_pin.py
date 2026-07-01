@@ -53,6 +53,10 @@ class SpawnSurfaceState:
         a fixture-protocol sig, set files to 0o444 (= test f-iii EACCES path).
         """
         root = Path(tmp_path)
+        # Sprint-3 #29 FIND-015 fix: generate ephemeral ed25519 keypair FIRST so
+        # anicca-bot.pub already carries the real pubkey when we compute sha256s.
+        from lib.ed25519_util import generate_test_keypair, sign_bytes_ed25519
+        priv_path, pub_b64 = generate_test_keypair(root / ".fixture-keys")
         # 1. Write the 5 surface files (not pinned.json yet — needs to know own bytes)
         contents = {
             "adversary-daily.sh": "#!/usr/bin/env bash\necho 'fixture adversary-daily'\n",
@@ -60,7 +64,7 @@ class SpawnSurfaceState:
             "loop-improve.py": "# fixture loop-improve\nprint('improved')\n",
             "payout-endpoint-allowlist.json": '{"schema_version":1,"platforms":[]}\n',
             "hook-modules-allowlist.txt": "dotenv\nzx\n",
-            "anicca-bot.pub": base64.b64encode(b"FIXTURE-PUBKEY-32-BYTES-PADDING.").decode() + "\n",
+            "anicca-bot.pub": pub_b64 + "\n",  # real ed25519 pubkey from ephemeral keypair
         }
         for name, body in contents.items():
             (root / name).write_text(body)
@@ -80,11 +84,10 @@ class SpawnSurfaceState:
         final_bytes = (json.dumps(pinned_dict, indent=2, sort_keys=True) + "\n").encode()
         (root / "spawn-surface.pinned.json").write_bytes(final_bytes)
 
-        # 3. Compute fixture sig = sha256(final pinned bytes + pubkey).
-        pubkey_raw = (root / "anicca-bot.pub").read_text().strip()
-        sig = hashlib.sha256(final_bytes + pubkey_raw.encode()).digest()
-        # Pad/truncate to 64 bytes to mimic ed25519 sig length.
-        sig_64 = (sig + sig)[:64]
+        # 3. Sprint-3 #29 FIND-015 fix: sign final pinned bytes with the ephemeral
+        # private key generated at the top of this method (see step 0).
+        sig_64 = sign_bytes_ed25519(final_bytes, priv_path)
+        assert len(sig_64) == 64  # real ed25519 sigs are exactly 64 bytes
         (root / "spawn-surface.pinned.json.sig").write_bytes(sig_64)
 
         # 4. Set surface files to 0o444 (= test f-iii EACCES; chflags uchg simulated here as 0o444).
@@ -121,7 +124,15 @@ def verify_spawn_surface(state: SpawnSurfaceState) -> VerifyResult:
 
     pubkey_raw = pubkey_path.read_text().strip()
 
-    # (b) sig verify (fixture protocol: sha256(pinned + pubkey) truncated to 64 bytes)
+    # (b) sig verify — sprint-3 #29 FIND-015 fix: REAL ed25519 via openssl.
+    # NO fallback to fixture sha256 protocol (REQ-P3, fail-closed).
+    from lib.ed25519_util import is_valid_ed25519_pubkey, verify_bytes_ed25519
+    if not is_valid_ed25519_pubkey(pubkey_raw):
+        return VerifyResult(
+            ok=False,
+            reason="trust anchor not valid ed25519 pubkey",
+            escalation_reason="trust-anchor-invalid-ed25519",
+        )
     if not pinned_path.exists() or not sig_path.exists():
         return VerifyResult(
             ok=False,
@@ -130,10 +141,8 @@ def verify_spawn_surface(state: SpawnSurfaceState) -> VerifyResult:
         )
 
     pinned_bytes = pinned_path.read_bytes()
-    expected_sig_seed = hashlib.sha256(pinned_bytes + pubkey_raw.encode()).digest()
-    expected_sig = (expected_sig_seed + expected_sig_seed)[:64]
     actual_sig = sig_path.read_bytes()
-    if actual_sig != expected_sig:
+    if not verify_bytes_ed25519(pinned_bytes, actual_sig, pubkey_raw):
         return VerifyResult(
             ok=False,
             reason="signature mismatch",

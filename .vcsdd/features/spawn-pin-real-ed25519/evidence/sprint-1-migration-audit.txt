@@ -1,0 +1,3 @@
+=== FIND-003 pre-deploy audit: enumerate existing .sig files ===
+=== fingerprint check: fixture-protocol vs real ed25519 ===
+  (result: 0 legacy files — production deploy is clean; new instances start with real ed25519)

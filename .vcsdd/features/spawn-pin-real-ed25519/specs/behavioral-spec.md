@@ -112,7 +112,7 @@ is currently live-earning ¥.
 | E2 | pubkey_b64 is not valid base64 | is_valid_ed25519_pubkey returns False |
 | E3 | Signature is 63 bytes (short) | verify returns False |
 | E4 | Signature is 128 bytes (double-length) | verify returns False |
-| E5 | Data is empty bytes | sign + verify still work (openssl handles empty data) |
+| E5 | Data is empty bytes | sign raises SigningError. openssl 3.x pkeyutl refuses 0-byte data with "Could not allocate 0 bytes"; documented upstream limitation, not a code bug. Callers must ensure `len(data) > 0`. |
 | E6 | Data is 10 MB | sign + verify still work (openssl streams via stdin) |
 | E7 | Private key file does not exist | sign raises SigningError with clear reason (path NOT in message) |
 | E8 | Private key file is a directory | sign raises SigningError |

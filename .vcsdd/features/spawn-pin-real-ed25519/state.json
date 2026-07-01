@@ -2,7 +2,7 @@
   "featureName": "spawn-pin-real-ed25519",
   "mode": "lean",
   "language": "python",
-  "currentPhase": "1b",
+  "currentPhase": "2c",
   "phaseHistory": [
     {
       "from": "init",
@@ -13,19 +13,61 @@
       "from": "1a",
       "to": "1b",
       "timestamp": "2026-07-01T06:56:24.161Z"
+    },
+    {
+      "from": "1b",
+      "to": "1c",
+      "timestamp": "2026-07-01T07:01:27.152Z"
+    },
+    {
+      "from": "1c",
+      "to": "2a",
+      "timestamp": "2026-07-01T07:01:27.160Z",
+      "sprint": 1
+    },
+    {
+      "from": "2a",
+      "to": "2b",
+      "timestamp": "2026-07-01T07:05:58.227Z",
+      "sprint": 1
+    },
+    {
+      "from": "2b",
+      "to": "2c",
+      "timestamp": "2026-07-01T07:05:58.232Z",
+      "sprint": 1
     }
   ],
   "iterations": {
     "1a": 1,
-    "1b": 1
+    "1b": 1,
+    "1c": 1,
+    "2a": 1,
+    "2b": 1,
+    "2c": 1
   },
   "proofObligations": [],
   "traceability": {
     "epicId": "VCSDD-spawn-pin-real-ed25519-1782888919555",
     "beads": []
   },
-  "gates": {},
-  "sprintCount": 0,
+  "gates": {
+    "1c": {
+      "verdict": "PASS",
+      "timestamp": "2026-07-01T07:01:27.150Z",
+      "reviewedBy": "adversary",
+      "details": {
+        "iterations": 2,
+        "findingDiminishment": [
+          4,
+          0
+        ]
+      },
+      "adversaryVerdict": "PASS",
+      "adversaryReviewedAt": "2026-07-01T07:01:27.150Z"
+    }
+  },
+  "sprintCount": 1,
   "createdAt": "2026-07-01T06:55:19.554Z",
-  "updatedAt": "2026-07-01T06:56:24.161Z"
+  "updatedAt": "2026-07-01T07:05:58.232Z"
 }
