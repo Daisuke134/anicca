@@ -174,3 +174,48 @@ def test_openssl_version_check_helper_exists():
     UnsupportedOpenSSLError. Verify the class exists and can be raised."""
     err = UnsupportedOpenSSLError("test")
     assert isinstance(err, Exception)
+
+
+# ─── FIND-001 fix: PROP-P3 / P2 / A1 grep invariants ─────────────
+def test_prop_p3_no_sha256_fixture_protocol_in_spawn_pin():
+    """PROP-P3: spawn_pin.py must NOT contain the sha256(final_bytes+pubkey)
+    fixture protocol path. Grep enforces this regression."""
+    import re
+    src = (Path(__file__).resolve().parents[1] / "lib" / "spawn_pin.py").read_text()
+    # The forbidden patterns from the old fixture protocol:
+    forbidden = [
+        r"hashlib\.sha256\([^)]*final_bytes[^)]*pubkey",
+        r"hashlib\.sha256\([^)]*pinned_bytes[^)]*pubkey",
+        r"\(\s*sig\s*\+\s*sig\s*\)\s*\[\s*:\s*64\s*\]",  # pad-to-64 trick
+        r"expected_sig_seed\s*=",  # sprint-1 variable name
+    ]
+    for pat in forbidden:
+        m = re.search(pat, src)
+        assert not m, f"PROP-P3 regression: sha256 fixture pattern {pat!r} in spawn_pin.py"
+
+
+def test_prop_p2_verify_uses_real_ed25519_util():
+    """PROP-P2: spawn_pin.verify_spawn_surface must import and use
+    verify_bytes_ed25519 from lib.ed25519_util."""
+    import re
+    src = (Path(__file__).resolve().parents[1] / "lib" / "spawn_pin.py").read_text()
+    assert re.search(r"from\s+lib\.ed25519_util\s+import[^\n]*verify_bytes_ed25519", src), \
+        "PROP-P2: spawn_pin must import verify_bytes_ed25519"
+    assert "verify_bytes_ed25519(" in src, \
+        "PROP-P2: spawn_pin must call verify_bytes_ed25519"
+
+
+def test_prop_a1_earn_shared_skeleton_names_actual_symbols():
+    """PROP-A1 (FIND-006 close): the earn-shared-skeleton verification-architecture
+    Pure-layer table must reference the actual sprint-3 impl symbols."""
+    root = Path(__file__).resolve().parents[3]
+    spec = (root / ".vcsdd" / "features" / "earn-shared-skeleton"
+            / "specs" / "verification-architecture.md")
+    if not spec.exists():
+        import pytest as _pt
+        _pt.skip("earn-shared-skeleton spec not present in this repo layout")
+    txt = spec.read_text()
+    # Must reference the actual symbols
+    assert "lib.roi_track.roi_row" in txt or "roi_track.roi_row" in txt
+    assert "lib.menu.pick_next" in txt or "menu.pick_next" in txt
+    assert "lib.menu.load_menu" in txt or "menu.load_menu" in txt
