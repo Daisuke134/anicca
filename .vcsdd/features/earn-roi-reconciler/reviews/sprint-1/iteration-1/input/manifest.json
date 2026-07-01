@@ -1,0 +1,26 @@
+{
+  "reviewType": "implementation",
+  "featureName": "earn-roi-reconciler",
+  "sprintNumber": 1,
+  "iteration": 1,
+  "mode": "lean",
+  "artifactsToReview": {
+    "spec": [".vcsdd/features/earn-roi-reconciler/specs/behavioral-spec.md",
+             ".vcsdd/features/earn-roi-reconciler/specs/verification-architecture.md"],
+    "source_python": ["skills/_shared/lib/reconciler.py",
+                       "skills/_shared/proactive-loop-dispatch.py",
+                       "skills/_shared/lib/step6_act.py"],
+    "tests": ["skills/_shared/__tests__/test_reconciler.py",
+              "skills/_shared/__tests__/test_reconciler_integration.py"]
+  },
+  "reviewDimensions": ["spec_fidelity", "edge_case_coverage", "implementation_correctness", "structural_integrity", "verification_readiness"],
+  "extraConstraints": [
+    "REQ-R5 (i)-(v) ordering: verify reconcile() actually does (i) build → (ii) atomic roi.jsonl → (iii) append unmatched → (iv) last-run.json → (v) offset LAST. If offset is written before roi.jsonl replace, crash-safety is broken.",
+    "REQ-R4 monotone MAX: verify merge_realized correctly handles (existing=0, new=0) as noop not skipped_dup. Verify (existing=3000, new=3000) returns noop.",
+    "FIND-2-001 dispatcher branch: grep proactive-loop-dispatch.py for `enqueue_task_descriptor` — must NOT run when picked.category == 'reconciler'.",
+    "INV-4: grep reconciler.py for 'earnings.jsonl' or 'gig' as file paths in write-mode calls — must be 0.",
+    "Live E2E already ran on production gig — real pass_id p-1782887606 realized 0 → 40000, ~/gig SHA unchanged. Verify the test suite genuinely covers what the live proof demonstrates.",
+    "REQ-R7a unmatched dedup: verify the (pass_id, ts) key handles the (None, None) key correctly for malformed rows."
+  ],
+  "expectedOutputPath": ".vcsdd/features/earn-roi-reconciler/reviews/sprint-1/iteration-1/output/"
+}

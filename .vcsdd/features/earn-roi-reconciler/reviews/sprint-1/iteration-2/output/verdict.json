@@ -1,0 +1,71 @@
+{
+  "sprintNumber": 1,
+  "feature": "earn-roi-reconciler",
+  "overallVerdict": "PASS",
+  "timestamp": "2026-07-01T00:00:00Z",
+  "iteration": 2,
+  "reviewContext": {
+    "reviewType": "implementation",
+    "mode": "lean",
+    "previousFindingsClosed": ["FIND-001", "FIND-002", "FIND-003", "FIND-004", "FIND-005", "FIND-006"]
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/_shared/lib/reconciler.py:44-51", "description": "merge_realized correctly distinguishes positive-same-value (skipped_dup, REQ-R4) from both-zero (noop). Closes FIND-001."},
+        {"type": "file", "location": "skills/_shared/__tests__/test_reconciler.py:42-51", "description": "Test split: test_same_value_positive_is_skipped_dup asserts s == 'skipped_dup' and test_same_value_both_zero_is_noop asserts s == 'noop', locking REQ-R4 + EDGE-E5 semantics."},
+        {"type": "file", "location": "skills/_shared/__tests__/test_reconciler.py:379-401", "description": "PROP-M3 test: earner (roi=100 × prob=0.01 = 1.0) beats reconciler (0 × 1.0 = 0.0) via pick_next; verifies REQ-M3 lowest-priority guarantee."}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/_shared/__tests__/test_reconciler.py:334-360", "description": "PROP-R5 crash-safety: monkeypatches os.replace to raise on the FIRST call (roi.jsonl rewrite at reconciler.py:234, before last-run.json at 253 and offset at 256). SHA-256 pre/post confirms roi.jsonl bytes unchanged. Closes FIND-003."},
+        {"type": "file", "location": "skills/_shared/__tests__/test_reconciler.py:364-375", "description": "Multi-malformed dedup regression: 3 malformed settle lines yield 3 distinct unmatched entries. Closes FIND-004."},
+        {"type": "file", "location": "skills/_shared/__tests__/test_reconciler.py:404-422", "description": "PROP-M3 alone-with-cadence: reconciler is picked when it's the only cadence-eligible candidate. Closes FIND-005 companion sanity."}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/_shared/lib/reconciler.py:138-150", "description": "roi.jsonl parse preserves malformed lines as {'__raw__': l} sentinels + records error index; no silent deletion. Closes FIND-002 read path."},
+        {"type": "file", "location": "skills/_shared/lib/reconciler.py:227-234", "description": "Rewrite re-emits __raw__ verbatim: 'new_lines.append(r[\"__raw__\"] + \"\\n\")' with NO json.dumps re-serialization. Verified by test_reconcile_preserves_malformed_roi_line_verbatim asserting exact string match at test_reconciler.py:328."},
+        {"type": "file", "location": "skills/_shared/lib/reconciler.py:174-179", "description": "Malformed settle rows get unique per-line key: pass_id=f'__malformed__:{offset_before+idx}' and ts=-(offset_before+idx+1) (negative, cannot collide with real unix-seconds ts). Grep of pattern '__malformed__:' confirms unique keys. Closes FIND-004."},
+        {"type": "file", "location": "skills/_shared/lib/reconciler.py:152-154", "description": "roi_by_pass builder explicitly skips '__raw__' sentinels so best_by_pass matching operates only on valid roi rows."}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/_shared/lib/reconciler.py:44-49", "description": "Tautological ternary replaced with semantically meaningful branch ('skipped_dup' if e > 0 else 'noop'). Dead code eliminated. Closes FIND-006."},
+        {"type": "file", "location": "skills/_shared/__tests__/test_reconciler_integration.py:34-90", "description": "Integration test verifies dispatcher STEP-6 reconciler branch runs in-process without task enqueue; unchanged from previous iterations, still passes."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/_shared/lib/reconciler.py:19-51", "description": "Pure core (parse_settle_line, merge_realized) is fixture-testable, no I/O, small enough for property proof."},
+        {"type": "file", "location": "skills/_shared/lib/reconciler.py:54-58", "description": "_atomic_replace_jsonl isolates the os.replace side effect; write ordering (i)-(v) per REQ-R5 preserved at reconcile() 227-256."},
+        {"type": "file", "location": "skills/_shared/__tests__/test_reconciler.py:267-308", "description": "PROP-I1/I2/I3/I4 static grep guards: no tmux kill, no earnings.jsonl reference, no osascript/telegram/twilio, no shell=True or os.system(. Purity boundary enforced."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 0,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": ["FIND-001", "FIND-002", "FIND-003", "FIND-004", "FIND-005", "FIND-006"],
+    "duplicateFindings": [],
+    "closedFromPreviousIteration": ["FIND-001", "FIND-002", "FIND-003", "FIND-004", "FIND-005", "FIND-006"]
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "implementation_correctness",
+  "category": "requirement_mismatch",
+  "severity": "high",
+  "description": "REQ-R7a dedup uses (pass_id, ts) as the key. For malformed settle rows, reconciler.py line 162-164 explicitly sets pass_id=None and ts=None. In the SAME run, when multiple malformed lines appear, they all share the key (None, None). The dedup loop (lines 202-208) adds the first (None, None) to tail_keys after appending, then SKIPS every subsequent malformed line via `if key in tail_keys: continue`. This collapses N distinct malformed lines to 1 unmatched entry — silent data loss on the very evidence stream (raw settle lines) that is supposed to be preserved verbatim for post-mortem. The malformed count also disagrees with report['unmatched'], which is len(to_append), understating the actual malformed rate. No test exercises 2+ malformed lines in a single run. The intra-run dedup should key off something stable-and-unique for malformed rows (e.g. hash of raw_line, or offset index).",
+  "evidence": {
+    "filePath": "skills/_shared/lib/reconciler.py",
+    "lineRange": "161-208",
+    "snippet": "for idx in malformed_indices:\n    raw_line = new_settle_slice[idx]\n    unmatched_new.append({\"raw\": raw_line, \"reason\": \"malformed-json\",\n                          \"pass_id\": None, \"ts\": None})\n...\nfor u in unmatched_new:\n    key = (u.get(\"pass_id\"), u.get(\"ts\"))\n    if key in tail_keys:\n        continue\n    to_append.append(u)\n    tail_keys.add(key)"
+  },
+  "routeToPhase": "2b"
+}

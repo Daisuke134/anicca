@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "medium",
+  "description": "reconciler.py line 46 contains a tautological ternary: `return e, \"noop\" if e > 0 else \"noop\"` \u2014 both branches return the literal string \"noop\". The `if e > 0 else` clause is dead code and signals the author intended a distinction here (likely 'noop' when both are 0, something else when both are positive \u2014 the spec REQ-R4 says the positive case should be 'skipped_dup'; see FIND-001). This dead branch is a symptom of the FIND-001 spec violation being introduced by half-edit, and it will confuse future readers about whether the (0,0) and (positive,positive) cases were intentionally unified. Either the ternary should be simplified to `return e, \"noop\"` (locking in the bug for future readers), or \u2014 better \u2014 the (positive == positive) branch should be corrected to 'skipped_dup' per REQ-R4.",
+  "evidence": {
+    "filePath": "skills/_shared/lib/reconciler.py",
+    "lineRange": "44-46",
+    "snippet": "if n == e:\n    # existing == new; when both 0, no state change\n    return e, \"noop\" if e > 0 else \"noop\""
+  },
+  "routeToPhase": "1a"
+}

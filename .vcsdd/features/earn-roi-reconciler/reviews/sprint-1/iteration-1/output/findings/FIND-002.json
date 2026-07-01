@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "implementation_correctness",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "EDGE-E4 in the spec says a malformed roi.jsonl line SHALL be skipped during scan and LOGGED to state/reconciler-last-run.json.errors — i.e., preserved for observability, not silently deleted. But reconciler.py line 135-141 parses roi.jsonl and drops malformed lines from `roi_rows`, and then line 211-213 rewrites roi.jsonl using ONLY `roi_rows` (json.dumps of successfully-parsed rows). Consequences: any malformed roi row on disk is silently DELETED from the file whenever any valid row exists. This is data loss on a live-money ledger (roi.jsonl feeds feature (c) dormant-gate logic which depends on roi_jpy_realized > 0 in the last 90 days). There is also no code path that writes the errors field to reconciler-last-run.json.errors. No test covers EDGE-E4 (no test in test_reconciler.py named after malformed roi).",
+  "evidence": {
+    "filePath": "skills/_shared/lib/reconciler.py",
+    "lineRange": "131-213",
+    "snippet": "for l in roi_path.read_text().splitlines():\n    try:\n        roi_rows.append(json.loads(l))\n    except (json.JSONDecodeError, ValueError):\n        pass  # skip malformed roi rows; ... — spec says skip\n...\n# (ii) atomic replace roi.jsonl\nif roi_rows:\n    new_lines = [json.dumps(r) + \"\\n\" for r in roi_rows]\n    _atomic_replace_jsonl(roi_path, new_lines)"
+  },
+  "routeToPhase": "2b"
+}
