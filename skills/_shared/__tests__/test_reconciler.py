@@ -39,9 +39,16 @@ class TestMergeRealized:
         v, s = merge_realized(1000, 3000)
         assert v == 3000 and s == "updated"
 
-    def test_same_value_noop(self):
+    def test_same_value_positive_is_skipped_dup(self):
+        """FIND-001 fix: idempotent Coconala re-settle counts as skipped_dup
+        per REQ-R4 verbatim + EDGE-E5, NOT noop."""
         v, s = merge_realized(3000, 3000)
-        assert v == 3000 and s == "noop"
+        assert v == 3000 and s == "skipped_dup"
+
+    def test_same_value_both_zero_is_noop(self):
+        """Both zero is genuine noop — nothing to replay."""
+        v, s = merge_realized(0, 0)
+        assert v == 0 and s == "noop"
 
     def test_lower_new_skipped(self):
         v, s = merge_realized(3000, 1000)
@@ -299,3 +306,117 @@ def test_reconciler_source_never_writes_gig():
     for pat in write_patterns:
         m = re.search(pat, src)
         assert not m, f"REQ-I2 violation: write-mode ~/gig reference: {pat!r}"
+
+
+# ─── FIND-002 fix test: malformed roi.jsonl line preserved verbatim ─
+def test_reconcile_preserves_malformed_roi_line_verbatim(tmp_path):
+    slot = tmp_path / "gig"
+    slot.mkdir()
+    (slot / "state").mkdir()
+    # Seed roi.jsonl with one good row + one malformed line
+    good_row = _roi_row("p-1", 0)
+    (slot / "roi.jsonl").write_text(
+        json.dumps(good_row) + "\n"
+        + "{ not valid json\n"  # malformed
+        + json.dumps(_roi_row("p-2", 0)) + "\n"
+    )
+    _write_settle_file(slot, [_settle_row("p-1", 3000)])
+    reconcile(slot, now_ts=1000)
+    # After rewrite: 3 lines total, malformed line preserved VERBATIM at row 2
+    lines = (slot / "roi.jsonl").read_text().splitlines()
+    assert len(lines) == 3, f"expected 3 lines (no drop), got {len(lines)}: {lines}"
+    assert lines[1] == "{ not valid json", "FIND-002 regression: malformed roi line was dropped"
+    # And the good row updated correctly
+    assert json.loads(lines[0])["roi_jpy_realized"] == 3000
+
+
+# ─── FIND-003 fix: crash-safety atomic write ─────────────────────
+def test_reconcile_atomic_replace_leaves_old_roi_on_write_crash(tmp_path, monkeypatch):
+    """Simulate os.replace failure — old roi.jsonl must remain intact
+    (REQ-R5 (ii)): the temp file exists momentarily, then os.replace either
+    succeeds or leaves the previous file untouched."""
+    slot = tmp_path / "gig"
+    slot.mkdir()
+    (slot / "state").mkdir()
+    _write_roi_file(slot, [_roi_row("p-1", 500)])  # existing realized=500
+    _write_settle_file(slot, [_settle_row("p-1", 3000)])
+    original_hash = hashlib.sha256((slot / "roi.jsonl").read_bytes()).hexdigest()
+
+    # Monkeypatch os.replace to raise the FIRST time only (which is the roi.jsonl replace).
+    real_replace = os.replace
+    call_count = [0]
+    def flaky_replace(src, dst):
+        call_count[0] += 1
+        if call_count[0] == 1:
+            raise OSError("simulated crash during roi.jsonl replace")
+        return real_replace(src, dst)
+    monkeypatch.setattr(os, "replace", flaky_replace)
+
+    with pytest.raises(OSError):
+        reconcile(slot, now_ts=1000)
+
+    # roi.jsonl UNCHANGED (still has realized=500, not 3000)
+    after_hash = hashlib.sha256((slot / "roi.jsonl").read_bytes()).hexdigest()
+    assert after_hash == original_hash, "REQ-R5 violation: atomic-replace crash mutated roi.jsonl"
+
+
+# ─── FIND-004 fix: multiple malformed settle lines don't collapse ─
+def test_reconcile_multiple_malformed_settle_rows_all_kept(tmp_path):
+    slot = tmp_path / "gig"
+    slot.mkdir()
+    (slot / "state").mkdir()
+    _write_roi_file(slot, [_roi_row("p-1", 0)])
+    # Write settle.jsonl with 3 malformed lines (all would share (None, None) key in the buggy path)
+    (slot / "settle.jsonl").write_text("{ bad line 1\n{ bad line 2\n{ bad line 3\n")
+    reconcile(slot, now_ts=1000)
+    unmatched = (slot / ".unmatched.jsonl").read_text().splitlines()
+    # All 3 malformed lines must appear (not deduped to 1)
+    malformed_lines = [l for l in unmatched if json.loads(l).get("reason") == "malformed-json"]
+    assert len(malformed_lines) == 3, f"FIND-004 regression: expected 3 malformed unmatched rows, got {len(malformed_lines)}"
+
+
+# ─── FIND-005 fix: PROP-M3 pick_next lowest priority ─────────────
+def test_prop_m3_reconciler_loses_to_positive_roi_earner():
+    """PROP-M3 (required:true): with a normal earner item (roi=100, prob=0.01
+    → score 1.0) vs reconciler (roi=0, prob=1.0 → score 0.0), pick_next
+    picks the earner. Concrete guarantee per REQ-M3."""
+    from lib.menu import pick_next
+    from lib.quota_tracker import Budget
+    menu = {
+        "schema_version": 1,
+        "categories": [
+            {"name": "earner", "category": "e", "platform": "coconala",
+             "roi_estimate_jpy": 100, "probability_of_landing": 0.01,
+             "required_budget": "LIGHT", "min_cadence_seconds": 0},
+            {"name": "reconcile-earnings", "category": "reconciler",
+             "platform": "internal", "roi_estimate_jpy": 0,
+             "probability_of_landing": 1.0, "required_budget": "LIGHT",
+             "min_cadence_seconds": 3600},
+        ],
+        "novelty_quota_ratio": 0.0,
+    }
+    result = pick_next(menu=menu, log_tail=[], history=[], blockers=set(),
+                      now_ts=1782900000, budget=Budget.FULL)
+    assert result is not None
+    assert result["name"] == "earner", f"PROP-M3 regression: reconciler won: {result}"
+
+
+def test_prop_m3_reconciler_wins_when_alone_and_cadence_elapsed():
+    """Sanity: when the reconciler is the ONLY candidate and cadence has
+    elapsed (log_tail says last fired > 3600s ago), it wins as expected."""
+    from lib.menu import pick_next
+    from lib.quota_tracker import Budget
+    menu = {
+        "schema_version": 1,
+        "categories": [
+            {"name": "reconcile-earnings", "category": "reconciler",
+             "platform": "internal", "roi_estimate_jpy": 0,
+             "probability_of_landing": 1.0, "required_budget": "LIGHT",
+             "min_cadence_seconds": 3600},
+        ],
+        "novelty_quota_ratio": 0.0,
+    }
+    result = pick_next(menu=menu, log_tail=[], history=[], blockers=set(),
+                      now_ts=1782900000, budget=Budget.LIGHT)
+    assert result is not None
+    assert result["name"] == "reconcile-earnings"
