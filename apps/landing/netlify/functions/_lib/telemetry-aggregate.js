@@ -1,6 +1,8 @@
 // aggregate — PURE function of (already enrich-on-chained) rows. No chain/network I/O here.
 // Leaderboard ranks by VERIFIED external earnings; totals/self-funded count ONLY chain-verified figures.
 // `nowMs` is injected (default Date.now()) so `stale` is deterministically testable (no wall-clock in core).
+const { OUR_INSTANCE_IDS } = require("./leaderboard-constants");
+const OUR = new Set(OUR_INSTANCE_IDS.map((a) => String(a).toLowerCase()));
 
 function isVerified(src) {
   return src === "chain"; // ONLY on-chain-verified counts; absent OR 'unverified' is never summed (no-fake)
@@ -41,7 +43,11 @@ function aggregate(rows, nowMs = Date.now()) {
   const self_funded_pct = rows.length ? Math.round((selfFunded / rows.length) * 100) : 0;
   const frontier_pct = rows.length ? Math.round((frontier / rows.length) * 100) : 0;
   const leaderboard = rows
-    .map((r) => ({ ...r, stale: r.ts ? nowSec - r.ts > 600 : false }))
+    .map((r) => ({
+      ...r,
+      stale: r.ts ? nowSec - r.ts > 600 : false,
+      is_ours: OUR.has(String(r.id).toLowerCase()), // R7 "Ours" filter — computed where the constant lives
+    }))
     .sort(rankCmp);
   return { total_net_worth_usd, earned_mo_usd, alive, self_funded_pct, frontier_pct, leaderboard, updated_at: new Date(nowMs).toISOString() };
 }

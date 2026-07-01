@@ -67,3 +67,15 @@ test("R5: stale derives from injected nowMs (pure/testable); status not mutated"
   const dStale = aggregate(fresh, (t + 601) * 1000); // 601s later
   assert.strictEqual(dStale.leaderboard[0].stale, true);
 });
+
+test("R7: leaderboard elements carry is_ours (from OUR_INSTANCE_IDS)", () => {
+  const rows = [
+    { id: "0xa3cdd4ec6b94f01826aaf90a6d5538a2aa8c4c21", net_worth_usd: 1, revenue_mo_usd: 1, burn_day_usd: 0, runway_days: 1, status: "alive", model_tier: "free", earn_src: "chain", net_worth_src: "chain" },
+    { id: "0xstranger", net_worth_usd: 1, revenue_mo_usd: 1, burn_day_usd: 0, runway_days: 1, status: "alive", model_tier: "free", earn_src: "chain", net_worth_src: "chain" },
+  ];
+  const d = aggregate(rows);
+  const ours = d.leaderboard.find((x) => x.id.startsWith("0xa3cdd4"));
+  const stranger = d.leaderboard.find((x) => x.id === "0xstranger");
+  assert.strictEqual(ours.is_ours, true);
+  assert.strictEqual(stranger.is_ours, false);
+});

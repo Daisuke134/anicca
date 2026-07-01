@@ -1,5 +1,6 @@
 import { promises as fs } from 'fs';
 import path from 'path';
+import AgentLeaderboard from '@/components/site/AgentLeaderboard';
 
 export const metadata = {
   title: "Anicca Dashboard — Lineage + Live Numbers",
@@ -151,6 +152,8 @@ export default async function Page() {
             ))}
           </div>
         </section>
+
+        <AgentLeaderboard leaderboard={data.leaderboard ?? []} />
 
         <section style={{ marginTop: 40, padding: 24, border: '1px solid rgba(244,241,234,0.15)' }}>
           <h2 style={{ fontSize: 14, letterSpacing: 4, textTransform: 'uppercase', opacity: 0.7 }}>Group P&L</h2>
