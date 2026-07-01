@@ -14,7 +14,14 @@ shared_dir = os.environ.get("ANICCA_SHARED_DIR", "")
 if shared_dir:
     sys.path.insert(0, shared_dir)
 
-from lib.quota_tracker import compute_budget, quantize_budget, Budget  # noqa: E402
+from lib.quota_tracker import (  # noqa: E402
+    compute_budget,
+    quantize_budget,
+    Budget,
+    compute_dormant_state,
+    resolve_time_horizon_days,
+    write_dormant_sentinel,
+)
 from lib.menu import pick_next, load_menu  # noqa: E402
 from lib.build_log import append_pass  # noqa: E402
 from lib.proactive_loop import should_skip_step6, write_unfixable_cascade_sink  # noqa: E402
@@ -167,6 +174,70 @@ def main() -> int:
 
     # STEP 5: pick next from menu
     menu = load_menu(slot_dir / "menu.json")
+
+    # sprint-4 (c): live-mode dormant wire — REQ-D1/D1a/D2/D3/D4.
+    # Runs AFTER menu load (line ~169) and BEFORE STEP 6 ACT so time_horizon_days
+    # is available. Sentinel written this tick takes effect on NEXT tick's SKIP
+    # guard (line 147). Fail-closed per REQ-D4 — never aborts this tick.
+    try:
+        _roi_rows: list[dict] = []
+        _roi_path = slot_dir / "roi.jsonl"
+        if _roi_path.exists():
+            for _ln in _roi_path.read_text().splitlines():
+                _ln = _ln.strip()
+                if not _ln:
+                    continue
+                try:
+                    _roi_rows.append(json.loads(_ln))
+                except (ValueError, TypeError):
+                    continue  # EDGE-E6: skip malformed row
+        # REQ-D1a: slot_age_days from a durable .slot_created marker (created on
+        # first tick if absent). Using stat().st_ctime alone breaks in prod
+        # because the dispatcher's own writes to slot_dir bump ctime; the
+        # marker is stable across ticks, testable, and portable.
+        _marker = slot_dir / ".slot_created"
+        _now_ts_i = int(time.time())
+        try:
+            if _marker.exists():
+                _created_ts = int((_marker.read_text().strip() or "0"))
+            else:
+                _created_ts = _now_ts_i
+                try:
+                    _marker.write_text(str(_created_ts))
+                except OSError:
+                    pass  # tolerate; recompute next tick
+            _slot_age_days = max(0.0, float(_now_ts_i - _created_ts) / 86400.0)
+        except (OSError, ValueError):
+            _slot_age_days = 0.0
+        _horizon = resolve_time_horizon_days(menu, default=14)
+        _dormant_state = compute_dormant_state(
+            roi_rows=_roi_rows,
+            slot_age_days=_slot_age_days,
+            time_horizon_days=_horizon,
+            now_ts=int(time.time()),
+        )
+        # REQ-D2: only write if dormant AND sentinel does not yet exist (idempotent).
+        _sentinel_path = slot_dir / ".dormant.sentinel"
+        if _dormant_state.get("is_dormant") and not _sentinel_path.exists():
+            try:
+                write_dormant_sentinel(slot_dir, evidence={
+                    "ts": int(time.time()),
+                    "live_mode": bool(_dormant_state.get("live_mode")),
+                    "consecutive_neg_windows": int(
+                        _dormant_state.get("consecutive_neg_windows", 0)),
+                    "slot_age_days": float(_slot_age_days),
+                    "time_horizon_days": int(_horizon),
+                    "window_days": 90,
+                })
+            except OSError as _sent_err:  # REQ-D4 (e)
+                sys.stderr.write(
+                    f"[dormant-check] step=3-dormant-check-error-"
+                    f"{type(_sent_err).__name__} msg={_sent_err}\n")
+    except Exception as _dc_err:  # REQ-D4 catch-all
+        sys.stderr.write(
+            f"[dormant-check] step=3-dormant-check-error-"
+            f"{type(_dc_err).__name__} msg={_dc_err}\n")
+
     log_tail = []  # cycle 2: parse build_log.md tail
     history = []
     blockers = set()  # cycle 2: compute from slot_state

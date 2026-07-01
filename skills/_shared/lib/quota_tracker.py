@@ -138,3 +138,101 @@ def is_dormant_with_horizon(
         float(slot_age_days) > 2 * int(time_horizon_days)
         and int(consecutive_neg_windows) > int(time_horizon_days)
     )
+
+
+# ─── sprint-4 (c): live-mode dormant helpers ──────────────────────
+def has_realized_in_window(
+    roi_rows: list[dict],
+    now_ts: int,
+    window_days: int = 90,
+) -> bool:
+    """REQ-L1: True iff at least one row has realized>0 and ts within window.
+
+    Malformed rows (missing/garbage ts or realized) are skipped, not raised.
+    """
+    horizon_s = int(window_days) * 86400
+    now_i = int(now_ts)
+    for row in roi_rows or []:
+        try:
+            realized = int(row.get("roi_jpy_realized", 0) or 0)
+            ts = int(row.get("ts", 0) or 0)
+        except (TypeError, ValueError):
+            continue
+        if realized > 0 and (now_i - ts) <= horizon_s:
+            return True
+    return False
+
+
+def compute_dormant_state(
+    *,
+    roi_rows: list[dict],
+    slot_age_days: float,
+    time_horizon_days: int,
+    now_ts: int,
+) -> dict:
+    """REQ-L2 / REQ-L3: compose has_realized_in_window + is_dormant_with_horizon
+    behind a 90-day live-mode gate. Returns:
+      { live_mode: bool, consecutive_neg_windows: int, is_dormant: bool }
+
+    Semantics:
+      - live_mode = has_realized_in_window(roi_rows, now_ts, window_days=90)
+      - If live_mode is False → is_dormant is False (unconditional; slot has
+        never settled, cannot be judged dormant).
+      - If live_mode is True → consecutive_neg_windows is computed from a
+        7-day rolling list of (realized - expected) window sums, ordered
+        MOST RECENT LAST, and passed to count_consecutive_negative_windows.
+        is_dormant follows is_dormant_with_horizon(consec, slot_age_days,
+        time_horizon_days).
+    """
+    live_mode = has_realized_in_window(roi_rows, now_ts=now_ts, window_days=90)
+    if not live_mode:
+        return {"live_mode": False, "consecutive_neg_windows": 0,
+                "is_dormant": False}
+
+    # Group roi_rows by day (midnight-UTC boundary) — REQ-L3 (i)
+    daily_net: dict[int, int] = {}
+    for row in roi_rows or []:
+        try:
+            ts = int(row.get("ts", 0) or 0)
+            realized = int(row.get("roi_jpy_realized", 0) or 0)
+            expected = int(row.get("roi_jpy_expected", 0) or 0)
+        except (TypeError, ValueError):
+            continue
+        if ts <= 0:
+            continue
+        day = ts // 86400
+        daily_net[day] = daily_net.get(day, 0) + (realized - expected)
+
+    if not daily_net:
+        return {"live_mode": True, "consecutive_neg_windows": 0,
+                "is_dormant": False}
+
+    # REQ-L3 (ii): build rolling_7d list — MOST RECENT LAST — of
+    # 2 * time_horizon_days entries. Each entry = 7-day trailing sum ending
+    # at day_i. If fewer than time_horizon_days complete windows exist,
+    # return 0 (slot too young). REQ-L3 (iv).
+    day_end = int(now_ts) // 86400
+    window_count = 2 * int(time_horizon_days)
+    rolling_7d: list[float] = []
+    for offset in range(window_count - 1, -1, -1):
+        day_i = day_end - offset
+        window_sum = 0
+        for d in range(day_i - 6, day_i + 1):
+            window_sum += daily_net.get(d, 0)
+        rolling_7d.append(float(window_sum))
+    # rolling_7d[-1] = most recent complete 7-day window ending today.
+
+    # REQ-L3 (iv): if slot too young (< time_horizon_days full windows), 0.
+    if float(slot_age_days) < float(time_horizon_days):
+        consecutive_neg_windows = 0
+    else:
+        consecutive_neg_windows = count_consecutive_negative_windows(rolling_7d)
+
+    is_dormant_val = is_dormant_with_horizon(
+        consecutive_neg_windows=consecutive_neg_windows,
+        slot_age_days=slot_age_days,
+        time_horizon_days=time_horizon_days,
+    )
+    return {"live_mode": True,
+            "consecutive_neg_windows": int(consecutive_neg_windows),
+            "is_dormant": bool(is_dormant_val)}

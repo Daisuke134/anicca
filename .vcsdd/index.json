@@ -145,8 +145,8 @@
       "createdAt": "2026-07-01T08:26:10.856Z",
       "mode": "lean",
       "language": "python",
-      "currentPhase": "init",
-      "updatedAt": "2026-07-01T08:26:10.856Z"
+      "currentPhase": "complete",
+      "updatedAt": "2026-07-01T08:51:51.653Z"
     },
     "eval-driven-earning": {
       "status": "active",
@@ -154,7 +154,15 @@
       "mode": "lean",
       "currentPhase": "init",
       "updatedAt": "2026-07-01T08:26:17.927Z"
+    },
+    "dispatcher-live-dormant-mode": {
+      "status": "active",
+      "createdAt": "2026-07-01T08:52:35.165Z",
+      "mode": "lean",
+      "language": "python",
+      "currentPhase": "2c",
+      "updatedAt": "2026-07-01T09:09:34.989Z"
     }
   },
-  "activeFeature": "eval-driven-earning"
+  "activeFeature": "dispatcher-live-dormant-mode"
 }

@@ -43,9 +43,9 @@ def _seed_slot(tmp_path: Path, slot_name: str, *,
         "\n".join(json.dumps(r) for r in (roi_rows or [])) + ("\n" if roi_rows else "")
     )
     (slot_dir / "build_log.md").write_text("")
-    # Backdate slot_dir mtime to simulate age
-    st_time = time.time() - age_days * DAY
-    os.utime(slot_dir, (st_time, st_time))
+    # Write .slot_created marker to control slot_age_days deterministically.
+    (slot_dir / ".slot_created").write_text(
+        str(int(time.time()) - int(age_days * DAY)))
     return slot_dir
 
 
@@ -64,13 +64,14 @@ def test_D1_dispatcher_invokes_dormant_check_when_roi_exists(tmp_path):
     """PROP-D1: after menu load, the dormant check runs and writes sentinel
     when compute_dormant_state returns is_dormant=True."""
     now = int(time.time())
-    # 45 negative-ROI days + 1 real settle 2d ago → live_mode=True, tail neg > 14
+    # 45 negative-ROI days ending yesterday + 1 real settle 70d ago
+    # (live_mode=True via 90d window, but outside tail 28-day rolling windows).
     rows = []
     for i in range(45):
         rows.append({"ts": now - (45 - i) * DAY, "pass_id": f"p-{i}",
                      "roi_jpy_realized": 0, "roi_jpy_expected": 500,
                      "outcome": "did-nothing"})
-    rows.append({"ts": now - 2 * DAY, "pass_id": "p-settle",
+    rows.append({"ts": now - 70 * DAY, "pass_id": "p-settle",
                  "roi_jpy_realized": 25000, "roi_jpy_expected": 0,
                  "outcome": "settle:seeded"})
     slot_dir = _seed_slot(tmp_path, "gig", roi_rows=rows, age_days=100.0,
@@ -107,11 +108,16 @@ def test_E5_sentinel_idempotent(tmp_path):
         rows.append({"ts": now - (45 - i) * DAY, "pass_id": f"p-{i}",
                      "roi_jpy_realized": 0, "roi_jpy_expected": 500,
                      "outcome": "did-nothing"})
-    rows.append({"ts": now - 2 * DAY, "pass_id": "p-settle",
+    rows.append({"ts": now - 70 * DAY, "pass_id": "p-settle",
                  "roi_jpy_realized": 25000, "roi_jpy_expected": 0,
                  "outcome": "settle:seeded"})
     slot_dir = _seed_slot(tmp_path, "gig", roi_rows=rows, age_days=100.0,
                           menu=_menu(time_horizon_days=14))
+    # NOTE: the SKIP guard at dispatch line 147 fires when sentinel exists and
+    # returns before reaching the dormant-check region. Delete after dispatch
+    # exit — but that's inline: run dispatch AFTER writing marker, so the
+    # SKIP guard fires (which is exactly what we want to test — idempotent
+    # sentinel means the pre-existing content stays).
     sentinel = slot_dir / ".dormant.sentinel"
     sentinel.write_text('{"marker": "pre-existing"}')
     _run_dispatch(slot_dir, tmp_path)
