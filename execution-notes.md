@@ -32,3 +32,22 @@
 - **First post-fix pass**: correctly detected concurrency (multiple restarts + healthcheck cron) and skipped browser-driving to avoid collision. Registered cron `52b154a2` for future ticks. This is the CORRECT anti-collision behavior spec'd in HARD 0.36's INV-4.
 - **task-request-map.jsonl materialization**: waiting for first uncontested B2 apply pass (next hourly cron fire).
 - M2 auto-close path: unchanged. First real Coconala 検収 → gig-cli.sh a1 lookup → earnings row w/ pass_id → (a2) mirror → (b) reconciler → roi_jpy_realized > 0 → M2 satisfied.
+
+## task #2 diagnosis (2026-07-01)
+
+- `~/clips/queue/` is empty because it's fed by `producer.sh` (creates mp4+caption)
+  while the proactive-loop dispatcher enqueues `produce-clip` task descriptors to
+  `~/loops/clip/tasks/` (34 descriptors queued, 5-min tick, none consumed).
+- The clip LAYER C session's STARTUP (`clip-cli.sh:21`) only invokes `run.sh`
+  (POSTS from queue), never `producer.sh` (FILLS queue). No consumer bridges
+  `~/loops/clip/tasks/` → `producer.sh`.
+- FIX (out of scope for M2 sprint-4, deferred to sprint-5): mirror the gig-cli.sh a1
+  pattern in clip-cli.sh STARTUP:
+    1. Read oldest `~/loops/clip/tasks/*.json`
+    2. If `picked.name == "produce-clip"`, invoke `producer.sh` with the task's
+       platform/params
+    3. Move the consumed task descriptor to `~/loops/clip/tasks/done/`
+- Impact: without this fix, `produce-clip` tasks pile up indefinitely and no
+  clips are ever posted. NOT a M1/M2 blocker (gig is the M1/M2 primary slot).
+- Sprint-5 candidate feature: `clip-cli.sh a1-equivalent` for task-descriptor
+  consumption + producer.sh wire.
