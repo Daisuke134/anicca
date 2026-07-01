@@ -78,3 +78,16 @@ ready for the next buyer that reaches 検収 stage. Cron 52b154a2 next
   * rtk silent? → emit `{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow"}}`
 - Will take effect on next gig-cli restart (currently: 28min-subagent completed
   with 0 applies but tmux still ALIVE; no active hook errors right now).
+
+## task #6 further follow-up: wrapper newline (2026-07-01, +30min)
+
+- After installing rtk-hook-wrapper.sh, hook errors REDUCED but not to zero
+  (dropped from 8+/500lines to 3/500lines).
+- Root cause: wrapper output was missing trailing newline (`printf '%s'` →
+  `printf '%s\n'`). Some Claude Code hook parser paths need line-terminated
+  output.
+- After fix + gig-cli --restart: session progressing through Coconala gig
+  pass 45 with proper phase structure (B1 nurture → B2 apply → B3 learn →
+  B4 improve → B5 share → finalize + .last-pass).
+- Expected: task-request-map.jsonl materialized during B2 apply; task #1
+  verified on B5+finalize.
