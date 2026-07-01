@@ -124,3 +124,17 @@ test("edge-007: revenue_today is clamped <= revenue_mo even if reader is inconsi
   assert.strictEqual(e.revenue_mo_usd, 5);
   assert.strictEqual(e.revenue_today_usd, 5);
 });
+
+test("IMPL2-001: a transfer from the REAL founder/treasury wallet is excluded (seed can't buy rank)", () => {
+  const FOUNDER = "0x810f6d61f7606deee2657d3083e150a222bc29c5"; // hard-coded real treasury (not SEED_ADDRESSES[0])
+  assert.ok(SEED_ADDRESSES.map((a) => a.toLowerCase()).includes(FOUNDER), "founder must be a configured seed");
+  const row = baseRow({ id: "0xagent" });
+  const reader = mockReader({
+    inflows: { "0xagent": [
+      { from: FOUNDER, usd: 1_000_000, ts: NOWTS },  // seed from founder — excluded
+      { from: "0xrealcustomer", usd: 12, ts: NOWTS }, // real external — counts
+    ] },
+  });
+  const [e] = enrichOnChain([row], reader);
+  assert.strictEqual(e.revenue_mo_usd, 12); // NOT 1,000,012
+});
