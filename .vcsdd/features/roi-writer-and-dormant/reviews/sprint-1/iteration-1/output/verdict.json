@@ -1,0 +1,66 @@
+{
+  "sprintNumber": 1,
+  "feature": "roi-writer-and-dormant",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-01T00:00:00Z",
+  "iteration": 1,
+  "reviewContext": {
+    "reviewType": "implementation",
+    "mode": "lean"
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-001"],
+      "evidence": [
+        {"type": "file", "location": "skills/_shared/proactive-loop-dispatch.py", "description": "Dispatcher has two early-return paths (skip guard L132-139, step5-no-unblocked L153-166) that reach STEP 7 build_log append but bypass append_roi_row entirely, violating REQ-W1 'every proactive-loop tick' contract and EDGE-E5 picked=None row expectation."},
+        {"type": "file", "location": "skills/_shared/lib/roi_track.py", "description": "compute_expected_jpy correctly clamps prob>1 → 1.0 and prob<0 → 0.0 (L26), handles missing roi_estimate_jpy/probability_of_landing (L21-22), and non-numeric via try/except (L23-24). REQ-W3 realized=0 is hardcoded at dispatch site (L194)."}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-002"],
+      "evidence": [
+        {"type": "file", "location": "skills/_shared/__tests__/test_roi_track.py", "description": "PROP-W3 formula edges (prob>1, prob<0, missing roi field, missing prob field, non-numeric, None-picked) all covered at L11-33. EDGE-E1 (first write creates file) covered at L60-69. EDGE-E8 (byte-identical preservation) covered at L71-87."},
+        {"type": "file", "location": "skills/_shared/__tests__/test_horizon_helpers.py", "description": "PROP-T1 fallback parametrized over missing/None/0/-5/'14'/'abc'/valid at L9-26. PROP-T2 truth table (F/F, T/F, F/T, T/T) + strict-> boundary at L31-64."},
+        {"type": "gap", "location": "skills/_shared/__tests__/test_dispatch_integration_roi.py", "description": "No test drives skip guard (dormant/unfixable/MINIMAL) or picked=None path; those exit branches are entirely untested for ROI writer behaviour, which masks FIND-001."}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/_shared/lib/roi_track.py", "description": "append_roi_row wraps mkdir in try/except OSError (L65-68) and open/write in try/except OSError (L69-76), returning {ok:False, status:...} — never raises to caller per REQ-W4. compute_expected_jpy handles missing dict, missing keys, non-numeric, prob out-of-range (L18-27)."},
+        {"type": "file", "location": "skills/_shared/proactive-loop-dispatch.py", "description": "REQ-I3 verified: grep confirms zero call sites to is_dormant( or write_dormant_sentinel( in dispatcher; only L127 reads .dormant.sentinel filesystem state as skip input (allowed). REQ-W3 realized=0 hardcoded at L194 with sprint-4 comment. AST literal scan (PROP-I2) implemented in test at L32-38 catches kill-session/kill-server/--kill/--stop; source has no such literals."},
+        {"type": "file", "location": "skills/_shared/lib/quota_tracker.py", "description": "is_dormant_with_horizon uses STRICT > for both age gate (L138) and consecutive gate (L139), matching REQ-T2 spec ('IFF BOTH slot_age_days > 2*horizon AND consecutive > horizon'); boundary test at test_horizon_helpers L55-64 confirms 28/28 and 14/14 → False."}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/_shared/lib/roi_track.py", "description": "PURE (roi_row, compute_expected_jpy) + I/O SINK (append_roi_row) cleanly separated per verification architecture purity boundary table. All three functions < 20 lines, no hidden state, keyword-only args on roi_row prevent positional-arg mistakes."},
+        {"type": "file", "location": "skills/_shared/lib/quota_tracker.py", "description": "New horizon helpers appended at L106-140 with clear section comment; existing sprint-2 is_dormant()/write_dormant_sentinel() left intact for backward compat as declared in REQ-T2 docstring. No duplication with sprint-2 helpers."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-003"],
+      "evidence": [
+        {"type": "gap", "location": "skills/_shared/__tests__/test_dispatch_integration_roi.py", "description": "PROP-I1-writes-scoped mtime snapshot NOT implemented despite being required=true in verification-architecture.md. PROP-W4 permission-denied dispatcher fixture NOT implemented despite verification-architecture.md L40 explicitly requiring it."},
+        {"type": "file", "location": "skills/_shared/lib/roi_track.py", "description": "PURE helpers isolated from side effects; append_roi_row is the sole I/O sink and returns a Result-shaped dict rather than raising, making the effect boundary auditable."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 3,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}

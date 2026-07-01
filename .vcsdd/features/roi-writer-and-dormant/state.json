@@ -2,7 +2,7 @@
   "featureName": "roi-writer-and-dormant",
   "mode": "lean",
   "language": "python",
-  "currentPhase": "2a",
+  "currentPhase": "complete",
   "phaseHistory": [
     {
       "from": "init",
@@ -24,20 +24,118 @@
       "to": "2a",
       "timestamp": "2026-07-01T06:30:58.346Z",
       "sprint": 1
+    },
+    {
+      "from": "2a",
+      "to": "2b",
+      "timestamp": "2026-07-01T06:34:03.836Z",
+      "sprint": 1
+    },
+    {
+      "from": "2b",
+      "to": "2c",
+      "timestamp": "2026-07-01T06:34:03.840Z",
+      "sprint": 1
+    },
+    {
+      "from": "2c",
+      "to": "3",
+      "timestamp": "2026-07-01T06:41:42.808Z",
+      "sprint": 1
+    },
+    {
+      "from": "3",
+      "to": "5",
+      "timestamp": "2026-07-01T06:41:42.810Z",
+      "sprint": 1
+    },
+    {
+      "from": "5",
+      "to": "6",
+      "timestamp": "2026-07-01T06:42:53.370Z",
+      "sprint": 1
+    },
+    {
+      "from": "6",
+      "to": "complete",
+      "timestamp": "2026-07-01T06:43:02.371Z",
+      "sprint": 1
     }
   ],
   "iterations": {
+    "3": 1,
+    "5": 1,
+    "6": 1,
     "1a": 1,
     "1b": 1,
     "1c": 1,
-    "2a": 1
+    "2a": 1,
+    "2b": 1,
+    "2c": 1,
+    "complete": 1
   },
   "proofObligations": [],
   "traceability": {
     "epicId": "VCSDD-roi-writer-and-dormant-1782887105035",
-    "beads": []
+    "beads": [
+      {
+        "beadId": "BEAD-001",
+        "type": "adversary-finding",
+        "externalId": "FIND-001",
+        "artifactPath": ".vcsdd/features/roi-writer-and-dormant/reviews/sprint-1/output/findings/FIND-001.json",
+        "status": "resolved",
+        "linkedBeads": [],
+        "createdAt": "2026-07-01T00:00:00Z"
+      },
+      {
+        "beadId": "BEAD-002",
+        "type": "adversary-finding",
+        "externalId": "FIND-002",
+        "artifactPath": ".vcsdd/features/roi-writer-and-dormant/reviews/sprint-1/output/findings/FIND-002.json",
+        "status": "resolved",
+        "linkedBeads": [],
+        "createdAt": "2026-07-01T00:00:00Z"
+      },
+      {
+        "beadId": "BEAD-003",
+        "type": "adversary-finding",
+        "externalId": "FIND-003",
+        "artifactPath": ".vcsdd/features/roi-writer-and-dormant/reviews/sprint-1/output/findings/FIND-003.json",
+        "status": "resolved",
+        "linkedBeads": [],
+        "createdAt": "2026-07-01T00:00:00Z"
+      }
+    ]
   },
   "gates": {
+    "3": {
+      "verdict": "PASS",
+      "timestamp": "2026-07-01T06:41:42.804Z",
+      "reviewedBy": "adversary",
+      "details": {
+        "iterations": 2,
+        "findingDiminishment": [
+          3,
+          0
+        ]
+      }
+    },
+    "6": {
+      "verdict": "PASS",
+      "timestamp": "2026-07-01T06:42:53.373Z",
+      "reviewedBy": "verifier",
+      "details": {
+        "convergenceSignals": {
+          "findingDiminishment": [
+            3,
+            0
+          ],
+          "iterations": 2,
+          "sprints": 1,
+          "totalTestsPassing": 369
+        }
+      }
+    },
     "1c": {
       "verdict": "PASS",
       "timestamp": "2026-07-01T06:30:58.330Z",
@@ -55,5 +153,5 @@
   },
   "sprintCount": 1,
   "createdAt": "2026-07-01T06:25:05.034Z",
-  "updatedAt": "2026-07-01T06:30:58.346Z"
+  "updatedAt": "2026-07-01T06:43:02.372Z"
 }

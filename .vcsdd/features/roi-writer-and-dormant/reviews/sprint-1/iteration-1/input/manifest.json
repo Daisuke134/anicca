@@ -1,0 +1,25 @@
+{
+  "reviewType": "implementation",
+  "featureName": "roi-writer-and-dormant",
+  "sprintNumber": 1,
+  "iteration": 1,
+  "mode": "lean",
+  "artifactsToReview": {
+    "spec": [".vcsdd/features/roi-writer-and-dormant/specs/behavioral-spec.md",
+             ".vcsdd/features/roi-writer-and-dormant/specs/verification-architecture.md"],
+    "source_python": ["skills/_shared/lib/roi_track.py", "skills/_shared/lib/quota_tracker.py",
+                       "skills/_shared/proactive-loop-dispatch.py"],
+    "tests": ["skills/_shared/__tests__/test_roi_track.py",
+              "skills/_shared/__tests__/test_horizon_helpers.py",
+              "skills/_shared/__tests__/test_dispatch_integration_roi.py"]
+  },
+  "reviewDimensions": ["spec_fidelity", "edge_case_coverage", "implementation_correctness", "structural_integrity", "verification_readiness"],
+  "extraConstraints": [
+    "Verify REQ-I3: dispatcher grep for is_dormant() call sites AND is_dormant imports = 0 hits. is_dormant_with_horizon may exist as a PURE helper but must NOT be called from proactive-loop-dispatch.py in sprint-3.",
+    "Verify REQ-W3: sprint-3 always ships roi_jpy_realized=0 (never any other value). compute_expected_jpy handles missing fields + prob>1 clamp + prob<0 clamp per EDGE-E6/E7.",
+    "Verify REQ-W4: append_roi_row returns {ok:False, status:...} on OSError; never raises.",
+    "Verify PROP-I2 AST check: ast.walk over dispatcher module catches literal strings containing kill-session/kill-server/--kill/--stop.",
+    "Live E2E showed production roi.jsonl gained 1 row with expected=16000 exact + no .dormant.sentinel + gig-cli ALIVE."
+  ],
+  "expectedOutputPath": ".vcsdd/features/roi-writer-and-dormant/reviews/sprint-1/iteration-1/output/"
+}

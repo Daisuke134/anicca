@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "high",
+  "description": "REQ-W1 + EDGE-E5 (picked=None) and the skip guard (dormant/unfixable/MINIMAL) paths are not exercised by any test. test_dispatch_integration_roi.py only asserts the happy-path row shape (test_dispatch_appends_exactly_one_roi_row) and byte-identical preservation (test_dispatch_preserves_existing_roi_rows) \u2014 both of which drive the dispatcher through the pick_next success branch. There is no test that: (a) forces budget=MINIMAL with tasks_pending=0 and asserts the tick behaviour w.r.t. roi.jsonl; (b) pre-creates .dormant.sentinel and asserts behaviour; (c) supplies a menu that yields picked=None (all categories blocked) and asserts behaviour; (d) pre-creates >=3 rows in .unfixable.jsonl and asserts behaviour. The absence of these tests is what allowed the FIND-001 REQ-W1 gap to slip through \u2014 the current test suite would still PASS even though the ROI writer silently drops every non-happy tick. This is the classic 'tests assert only what the code happens to do' failure mode: green suite, unmet contract.",
+  "evidence": {
+    "filePath": "skills/_shared/__tests__/test_dispatch_integration_roi.py",
+    "lineRange": "42-120",
+    "snippet": "def _run_dispatch(slot, slot_dir):\n    ...\n    (slot_dir / \"menu.json\").write_text(json.dumps({... 'categories': [{'name': 'test-pick', 'probability_of_landing': 0.5, ...}]}))\n    ...\n# All 3 tests use this same happy-path menu; no MINIMAL/dormant/no-unblocked coverage exists."
+  },
+  "routeToPhase": "2a"
+}

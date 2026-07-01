@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "verification_readiness",
+  "category": "test_coverage",
+  "severity": "high",
+  "description": "The verification architecture explicitly declares: 'test_dispatch_integration_roi.py — integration on synthetic slot; also asserts core-status.json step=7-roi-write-failed-* log path via a permission-denied fixture' (specs/verification-architecture.md line 40). No such permission-denied fixture exists in the integration test. The only write-failure coverage is test_write_failure_returns_error_dict in test_roi_track.py which exercises the mkdir path via Path('/dev/null/impossible/roi.jsonl') and only asserts the returned dict shape — it does not assert that (a) the dispatcher observes a write failure and (b) writes step=7-roi-write-failed-<ExceptionName> to core-status.json (REQ-W4 verbatim contract), and (c) the tick continues without crashing. As a result, PROP-W4-write-failure-no-crash is unverified end-to-end. Additionally, PROP-I1-writes-scoped (verification-architecture line 32 — mtime snapshot of everything under <slot_dir> EXCEPT the allowed writes) is claimed in the test module docstring header but no mtime snapshot is actually performed; the integration tests only check for the presence/content of roi.jsonl. Two required=true proof obligations therefore have no green evidence.",
+  "evidence": {
+    "filePath": ".vcsdd/features/roi-writer-and-dormant/specs/verification-architecture.md",
+    "lineRange": "32,40",
+    "snippet": "PROP-I1-writes-scoped ... REQ-I1 (mtime snapshot outside roi.jsonl + the pre-existing dispatcher writes)\n... test_dispatch_integration_roi.py — ... also asserts core-status.json step=7-roi-write-failed-* log path via a permission-denied fixture"
+  },
+  "routeToPhase": "2b"
+}
