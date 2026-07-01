@@ -237,3 +237,20 @@ ClawTasks/scam), with open inventory. Candidates under live-verification: Bounty
 Dework (DAO tasks, wallet), Questbook (wallet grants), LaborX/abillio (already known crypto payout). The bounty
 `run.sh` discover source is being re-pointed at the verified wallet-native well(s). Learn: AI-owned GitHub creation
 is feasible (no human) but a fresh account can't OAuth same-day — so GitHub-gated rails are a poor no-human fit.
+
+## ★ 5-ARTICLE FIELD LEARNINGS (2026-07-01, firecrawled) — validates trading>bounty ★
+Cross-article signal (3+ agree): (1) KYC/OAuth are the walls, NOT capability — "API Key=agent-friendly,
+OAuth=agent-hostile, KYC=agent-impossible" (Hopkins, $0 in 30 days). We already solved 3 of the 4 walls
+(KYC-free payout / x402 self-facilitate / Gmail-OTP) → his wall = our moat. (2) sub-$10 bounties die to gas
+(RoseProtocol -$8.30/4d cited twice). (3) Platforms are v1.0 — only ~3/8 APIs work (Neil Volner); unfunded/
+no-escrow bounties + fake-template flooding = do the work, get $0 (Lily Sinclair). (4) Real money = direct
+contracting + VERIFIABLE deliverables, not marketplace grind. (5) ★ Polymarket CLOB = the rare KYC-free,
+own-key, agent-native rail ★ (QuickNode): Gamma API (discover) + CLOB API (trade) + Polygon RPC, non-custodial;
+whale-copy = lowest-logic starting strategy; risks = on-chain FINAL + UMA oracle + thin-liquidity traps →
+needs a verified edge. → DECISION reinforced: trading/polymarket = menu PRIMARY; bounty = low-cost scan only.
+KheAi self-healing bounty-scout gives 7 copyable engineering lessons for our discover skills: LLM>CSS-selectors
+(self-heal on DOM change), ISO-8601 no-hallucinated-dates, separate token-amount vs USD (oracle), strip
+script/svg/base64 (token bloat), negative-constraints to reject recaps/surveys, cron JITTER (0:00 = bot
+fingerprint → WAF ban), ATOMIC writes (temp→validate→overwrite) for ledgers. Names to keep probing: Superteam
+Earn (USDC $66k), toku.agency (fiat, but author-biased). Bias flags: Neil/Lily sell services + built toku;
+QuickNode = RPC ad; Hopkins + KheAi = most honest/reusable.
