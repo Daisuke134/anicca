@@ -1,0 +1,31 @@
+{
+  "featureName": "dispatcher-live-dormant-mode",
+  "mode": "lean",
+  "language": "python",
+  "currentPhase": "1b",
+  "phaseHistory": [
+    {
+      "from": "init",
+      "to": "1a",
+      "timestamp": "2026-07-01T08:53:26.946Z"
+    },
+    {
+      "from": "1a",
+      "to": "1b",
+      "timestamp": "2026-07-01T08:53:26.950Z"
+    }
+  ],
+  "iterations": {
+    "1a": 1,
+    "1b": 1
+  },
+  "proofObligations": [],
+  "traceability": {
+    "epicId": "VCSDD-dispatcher-live-dormant-mode-1782895955166",
+    "beads": []
+  },
+  "gates": {},
+  "sprintCount": 0,
+  "createdAt": "2026-07-01T08:52:35.165Z",
+  "updatedAt": "2026-07-01T08:53:26.950Z"
+}

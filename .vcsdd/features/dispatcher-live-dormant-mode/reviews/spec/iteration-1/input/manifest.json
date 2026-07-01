@@ -1,0 +1,23 @@
+{
+  "reviewType": "spec",
+  "featureName": "dispatcher-live-dormant-mode",
+  "iteration": 1,
+  "mode": "lean",
+  "artifactsToReview": [
+    ".vcsdd/features/dispatcher-live-dormant-mode/specs/behavioral-spec.md",
+    ".vcsdd/features/dispatcher-live-dormant-mode/specs/verification-architecture.md",
+    "skills/_shared/lib/quota_tracker.py",
+    "skills/_shared/proactive-loop-dispatch.py",
+    "docs/superpowers/specs/2026-07-01-proactive-loop-architecture-and-cleanup-design.md"
+  ],
+  "reviewDimensions": ["spec_fidelity", "verification_readiness"],
+  "extraConstraints": [
+    "Verify REQ-L2 live_mode=False → is_dormant=False unconditionally protects sprint-3 #34 dormant residual risk (parent §7b INV-P2).",
+    "REQ-L3 window computation: count_consecutive_negative_windows takes a list most-recent-first. Verify the spec explicitly orders window sums that way.",
+    "REQ-D4 fail-closed on compute_dormant_state exception is critical for INV-P1 (never restart on false-positive dormant). Verify.",
+    "The dispatcher's STEP 3 already runs a recipe; this feature adds a POST-recipe dormant check. Verify no interaction with STEP 3's tmux_dead → restart path.",
+    "Live gig currently has p-1782887987 realized=25000 (~30 min ago) — live_mode=True. But slot age is ~1 hour, horizon_days=14 → slot_age_days < 2*14. Verify PROP-E4 test proves this stays not-dormant despite live_mode."
+  ],
+  "expectedOutputPath": ".vcsdd/features/dispatcher-live-dormant-mode/reviews/spec/iteration-1/output/"
+}
+</parameter>
