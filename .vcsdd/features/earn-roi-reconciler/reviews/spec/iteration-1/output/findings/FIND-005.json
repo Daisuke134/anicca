@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "high",
+  "description": "REQ-M3 asserts the reconciler menu item 'SHALL use ROI=0 so it never wins the pick_next ranking by ROI', but the spec provides no evidence that the current pick_next algorithm (skills/_shared/lib/menu.py, referenced from proactive-loop-dispatch.py:171-174) actually ranks by ROI in a way that guarantees a ROI=0 item loses to any positive-ROI eligible item. The verification-architecture PROP-M3-lowest-priority (line 42) claims the proof reduces to 'pick_next with a normal ROI item + a cadence-elapsed reconciler item → normal item wins if its ROI > 0', but: (a) probability_of_landing=1.0 for the reconciler menu item vs typical ROI-weighted score = roi_estimate × probability, an ROI=0 * 1.0 = 0 tie with any 'blocked but cadence-elapsed' higher-ROI item could go either way depending on tie-break rules; (b) the manifest asks explicitly whether cadence 3600s is enforced by 'min_cadence_seconds field in the menu.json template' but the spec does not cite the pick_next contract that consumes this field. Additionally, REQ-M1 lists 'blocker_check: null' — meaning the reconciler NEVER goes blocked. When all live earn categories are cadence-excluded or blocker-checked out, the reconciler will be the ONLY eligible item and will fire every 3600s, but the spec does not state what happens when the reconciler fires with a currently-empty settle.jsonl and no fresh data — is a roi.jsonl row still appended by dispatch.py's _emit_roi_row (which currently emits for EVERY pass)? This creates spurious 'outcome=reconcile-noop' roi rows that pollute the ROI table.",
+  "evidence": {
+    "filePath": ".vcsdd/features/earn-roi-reconciler/specs/behavioral-spec.md",
+    "lineRange": "74-91",
+    "snippet": "'The reconciler menu item SHALL use ROI=0 so it never wins the pick_next ranking' — no cross-reference to pick_next's actual tie-break rule; blocker_check: null with min_cadence_seconds: 3600 guarantees firing"
+  },
+  "routeToPhase": "1a"
+}

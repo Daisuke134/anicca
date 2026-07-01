@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "critical",
+  "description": "REQ-M2 mandates that the tasks/ descriptor is enqueued for observability but marked 'dequeue: false' so LAYER C skips it, yet neither the behavioral spec nor the verification architecture defines the 'dequeue' field on the descriptor shape. The canonical descriptor produced by task_descriptor() (skills/_shared/lib/step6_act.py:31-43) has exactly 7 keys (schema_version, pass_id, ts, picked, budget, proactive_loop_origin, slot) and no 'dequeue' field. The spec neither (a) amends task_descriptor to add a 'dequeue' field, (b) specifies who writes 'dequeue: false' (the reconciler? the dispatcher? a new step6_act variant?), nor (c) specifies how LAYER C (feature (a), <slot>-cli.sh) is required to honor the flag. This directly conflicts with sprint-3 #33 STEP 6 which unconditionally enqueues via enqueue_task_descriptor() at proactive-loop-dispatch.py:201. Without a concrete descriptor amendment + LAYER C contract, PROP-M2 cannot be verified and (a) will double-execute the reconcile (in-process AND via tmux dequeue) the moment feature (a) ships. This is a live-money critical duplicate-execution hazard: the reconciler will run twice per cadence, potentially compounding roi_jpy_realized updates and off-by-one offset advances.",
+  "evidence": {
+    "filePath": ".vcsdd/features/earn-roi-reconciler/specs/behavioral-spec.md",
+    "lineRange": "81-87",
+    "snippet": "The tasks/ descriptor is still enqueued for observability, but the actual reconciliation has already happened in-process; LAYER C does NOT dequeue reconciler tasks (they are marked `dequeue: false`)."
+  },
+  "routeToPhase": "1a"
+}

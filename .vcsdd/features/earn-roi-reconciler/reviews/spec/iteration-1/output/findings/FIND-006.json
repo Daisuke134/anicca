@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "high",
+  "description": "PROP-I2-writes-scoped (verification-architecture.md:37) claims to prove INV-4 (reconciler READ-only for ~/gig/earnings.jsonl) via 'mtime snapshot of ~/gig/earnings.jsonl before/after'. This is insufficient: mtime does not change if a file is opened O_WRONLY and no bytes are written (or if bytes-then-truncate-back happens within the same second on filesystems with 1s mtime granularity — HFS+ / SMB / some tmpfs). A grep-based static check on the reconciler source for the substring '~/gig/' or 'earnings.jsonl' would catch the write path; a mtime check will not. Furthermore, the spec's REQ-I2 lists forbidden targets ('~/gig/earnings.jsonl, ~/gig/*, or any file outside ~/loops/') but the proof obligation only checks ONE file — the reconciler could write to ~/gig/applied.jsonl, ~/gig/pending.md, or any other ~/gig/* path undetected. The verification tooling (mtime snapshot) cannot prove the invariant it claims to prove. The done-condition E2E on verification-architecture.md:56 has the same defect ('~/gig/applied.jsonl mtime unchanged') — mtime is not proof of no-write. Required fix: either an OS-level write audit (fs_usage / dtrace / inotify), or a strict static grep on the reconciler module for any path starting with '~/gig/' / 'gig/' / str(Path.home()/'gig'), or a chroot-style test fixture that fails the run if any open() targets outside ~/loops/.",
+  "evidence": {
+    "filePath": ".vcsdd/features/earn-roi-reconciler/specs/verification-architecture.md",
+    "lineRange": "37, 55-57",
+    "snippet": "PROP-I2-writes-scoped | 1 | true | REQ-I2 (mtime snapshot of ~/gig/earnings.jsonl before/after)"
+  },
+  "routeToPhase": "1b"
+}

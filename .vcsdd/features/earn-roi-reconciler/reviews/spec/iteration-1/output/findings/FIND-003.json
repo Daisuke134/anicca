@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "REQ-R8's offset semantics + REQ-R5 atomic-replace do not compose to give the crash-safety the manifest requires. REQ-R8 (behavioral-spec.md:62-66) says 'On each run it reads settle.jsonl from last_settle_line + 1 onward' — implying the offset advances only after successful completion. But the spec never states WHEN the offset file is updated relative to (a) the atomic roi.jsonl replace, (b) the .unmatched.jsonl append, and (c) the state/reconciler-last-run.json write in REQ-R6. If the offset is written BEFORE roi.jsonl replace and the process crashes between the two, the next run reads from the new offset and PERMANENTLY LOSES the unprocessed settle rows (a data-loss violation of the manifest's 'offset-on-crash safety'). If the offset is written AFTER roi.jsonl replace but BEFORE .unmatched.jsonl append, a crash between them silently drops the unmatched settle rows on the NEXT run (they'll be past the offset and never re-scanned). The manifest explicitly asks 'If (a) writes N rows between reconciler runs but the reconciler crashes after processing K < N of them, does the offset move to K or 0?' — the spec has NO answer. REQ-R5 only protects roi.jsonl atomicity, not the (roi.jsonl, unmatched.jsonl, offset.json) 3-way. The reconciler needs either (i) a strict ordering + idempotent replay contract, or (ii) a WAL / transactional log. PROP-R8-offset-advances (verification-arch line 30) only proves the happy-path 'second run reads only new rows'; there is NO proof obligation covering crash-between-atomic-writes.",
+  "evidence": {
+    "filePath": ".vcsdd/features/earn-roi-reconciler/specs/behavioral-spec.md",
+    "lineRange": "51-66",
+    "snippet": "REQ-R5 covers only roi.jsonl atomic replace; REQ-R6 marker line + REQ-R7 unmatched append + REQ-R8 offset json have no ordering contract"
+  },
+  "routeToPhase": "1a"
+}
