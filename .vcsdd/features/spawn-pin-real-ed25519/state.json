@@ -1,0 +1,31 @@
+{
+  "featureName": "spawn-pin-real-ed25519",
+  "mode": "lean",
+  "language": "python",
+  "currentPhase": "1b",
+  "phaseHistory": [
+    {
+      "from": "init",
+      "to": "1a",
+      "timestamp": "2026-07-01T06:56:24.157Z"
+    },
+    {
+      "from": "1a",
+      "to": "1b",
+      "timestamp": "2026-07-01T06:56:24.161Z"
+    }
+  ],
+  "iterations": {
+    "1a": 1,
+    "1b": 1
+  },
+  "proofObligations": [],
+  "traceability": {
+    "epicId": "VCSDD-spawn-pin-real-ed25519-1782888919555",
+    "beads": []
+  },
+  "gates": {},
+  "sprintCount": 0,
+  "createdAt": "2026-07-01T06:55:19.554Z",
+  "updatedAt": "2026-07-01T06:56:24.161Z"
+}
