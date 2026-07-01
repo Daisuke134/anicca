@@ -1,0 +1,45 @@
+{
+  "sprintNumber": 4,
+  "feature": "earnings-to-settle-mirror",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-01T00:00:00Z",
+  "iteration": 2,
+  "reviewContext": {
+    "reviewType": "spec",
+    "mode": "lean"
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-2-001", "FIND-2-003"],
+      "evidence": [
+        {"type": "file", "location": ".vcsdd/features/earnings-to-settle-mirror/specs/behavioral-spec.md", "description": "Iter-1 FIND-001 architecturally addressed via split — REQ-L1(i-iii) LAYER C STARTUP writes pass_id into earnings.jsonl; REQ-R3(ii) reads it DIRECTLY (no substring on tasks/*.json/roi.jsonl). Substring surface eliminated in mirror, BUT re-introduced in the STARTUP grep — see FIND-2-001."},
+        {"type": "file", "location": ".vcsdd/features/earnings-to-settle-mirror/specs/behavioral-spec.md", "description": "Iter-1 FIND-003 CLOSED — REQ-R1 return dict field is `unmatched`; REQ-M2(c) format string reads `r['unmatched']` verbatim."},
+        {"type": "file", "location": ".vcsdd/features/earnings-to-settle-mirror/specs/behavioral-spec.md", "description": "Iter-1 FIND-004 CLOSED — REQ-R3(iii) settle row shape lifts requestId + earnings_status to TOP-LEVEL; REQ-R5 dedup reads `.requestId` + `.earnings_status` directly, no evidence-parsing."},
+        {"type": "file", "location": ".vcsdd/features/earnings-to-settle-mirror/specs/behavioral-spec.md", "description": "Iter-1 FIND-005 CLOSED — REQ-R6 preface now honestly references 'feature (b) reconciler REQ-R5 (i)-(v) ordering pattern' and inlines the (i)-(iv) steps."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-2-002"],
+      "evidence": [
+        {"type": "file", "location": ".vcsdd/features/earnings-to-settle-mirror/specs/verification-architecture.md", "description": "Iter-1 FIND-006 CLOSED — PROP-integration-full-loop now seeds an earnings row WITH pass_id (post-a1) and PROP-integration-sentinel-path covers pre-a1 sentinel routing to .unmatched.jsonl. Both paths declared required:true."},
+        {"type": "file", "location": ".vcsdd/features/earnings-to-settle-mirror/specs/verification-architecture.md", "description": "PROP-L3-restart-deploy-safety declared for controlled restart + 30s window + rollback per REQ-L3."},
+        {"type": "file", "location": ".vcsdd/features/earnings-to-settle-mirror/specs/verification-architecture.md", "description": "PROP label collision — PROP-E4-zero-jpy-ignored no longer aligns with EDGE-E4 semantics after rewrite; see FIND-2-002."}
+      ]
+    }
+  ],
+  "iterationDelta": {
+    "iter1FindingsResolved": ["FIND-001", "FIND-002", "FIND-003", "FIND-004", "FIND-005", "FIND-006"],
+    "iter1FindingsPartial": [],
+    "iter1FindingsStillOpen": [],
+    "newFindings": ["FIND-2-001", "FIND-2-002", "FIND-2-003"]
+  },
+  "convergenceSignals": {
+    "findingCount": 3,
+    "allCriteriaEvaluated": true,
+    "duplicateFindings": []
+  }
+}

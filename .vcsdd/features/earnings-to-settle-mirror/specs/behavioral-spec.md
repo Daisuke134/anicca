@@ -61,15 +61,49 @@ reconciler REQ-R7 routes to `.unmatched.jsonl` with reason
   (i) a new pre-B1 step: read `~/loops/gig/tasks/` for the oldest
       `*.json` file, parse its `pass_id`, hold it as `CURRENT_PASS_ID` for
       this pass. If no task file, `CURRENT_PASS_ID = null`.
-  (ii) B2 APPLY: after each apply, append
-       `{ts, pass_id: CURRENT_PASS_ID, requestId, action:"applied"}` to
-       `~/loops/gig/state/task-request-map.jsonl` (create if absent). No
-       change to applied.jsonl schema in the STARTUP itself; the map is
-       the linkage source.
-  (iii) EARNED CHECK: when 検収 is detected for a requestId, look up the
-       matching `pass_id` via `grep '"requestId": <X>'` on
-       `~/loops/gig/state/task-request-map.jsonl` (last match wins). Add
-       `pass_id: <found or null>` to the earnings.jsonl row.
+  (ii) B2 APPLY (per-application map append — CURRENT_PASS_ID used HERE
+      ONLY): AFTER EACH SUCCESSFUL apply, append
+      `{ts: <unix_ts>, pass_id: CURRENT_PASS_ID, requestId: <str-or-int>,
+        action:"applied"}` to `~/loops/gig/state/task-request-map.jsonl`
+      (append-only). ONE tick may fire N applications → N map rows all
+      sharing the same `CURRENT_PASS_ID` but each with a distinct
+      `requestId`. This is the intended coarse-grain attribution: pass_id
+      = the tick's effort; requestId = a distinct outcome of that effort.
+  (iii) EARNED CHECK (FIND-2-001 fix + FIND-2-003 clarification):
+      when 検収 is detected for a `requestId=X`, look up the matching
+      `pass_id` by EXACT JSON FIELD MATCH (NOT `CURRENT_PASS_ID` — that
+      is the *current* tick, unrelated to a historical apply). The lookup
+      is: `jq -c --argjson x <X> 'select(.requestId == $x)'
+      ~/loops/gig/state/task-request-map.jsonl | tail -n 1`. When
+      requestId is a numeric string, quote it: `--arg x "<X>"` +
+      `select(.requestId == $x)`. NEVER use `grep '"requestId": <X>'` —
+      substring in a JSON blob can collide with unix-timestamp digits in
+      `ts` or `pass_id` fields (e.g. requestId 5123100 substring could
+      appear inside `"ts": 1782891234` at other file positions). The
+      lookup result becomes the `pass_id` field written into the
+      earnings.jsonl row for that 検収. If no match, `pass_id: null` +
+      log a `pass_id_lookup_failed` line in the STARTUP-managed
+      `state/task-request-map.errors.jsonl` (never crash).
+  (iv) Numeric-vs-string requestId comparison (FIND-2-001 sub-clause):
+      Coconala requestIds are canonically numeric in their JSON responses
+      but may be quoted strings in some UI paths. The STARTUP prompt
+      SHALL emit `requestId` in the map + earnings.jsonl as a STRING
+      (`str()` cast) so exact-match jq queries are unambiguous. If the
+      earnings row happens to contain a numeric requestId (legacy rows),
+      the (a2) mirror MUST cast to str before doing its own dedup / pass
+      lookup.
+
+- **REQ-L1a** (coarse-grain attribution disclosure): The pass_id ↔
+  requestId map is 1-to-N (one tick's pass_id maps to potentially many
+  applications). When TWO different applications from the SAME tick both
+  settle at DIFFERENT amounts, the reconciler's monotone-max policy
+  (feature (b) REQ-R4) means only the LARGEST realized value survives on
+  the shared roi row — the smaller settle is lost. This is intentional
+  sprint-4 coarse-grain scope; sprint-5 changes the accumulation model
+  to `roi_jpy_realized = sum(matched_settles)` OR splits roi rows per
+  application. Sprint-4 verifies the pipeline works end-to-end for the
+  single-settle-per-pass case (M2 goal); multi-settle-per-pass is a
+  sprint-5 refinement not a bug.
 - **REQ-L2**: STARTUP prompt SHALL NOT change the existing applied.jsonl
   / earnings.jsonl / lessons.jsonl SCHEMA in any way that breaks
   backward-compat readers. The `pass_id` additions are new fields, never
