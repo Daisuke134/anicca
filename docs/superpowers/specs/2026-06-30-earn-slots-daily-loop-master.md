@@ -305,3 +305,40 @@ ADOPT NOW into eval-driven-earning (fills observability + curation-execution + s
 - ★ agno (41k★) = MINE patterns only (NOT the runtime): eval/ (agent-as-judge/reliability/accuracy) + learn/curate.py for our 5-gate verification + curation loop. Keep our ReAct+compute-proxy runtime.
 SITUATIONAL: mlflow (27k — prompt registry/experiment-compare if Langfuse insufficient); netdata (79k — host/fleet health + ENOSPC alert per HARD 0.26, once persistent fleet runs). LEARNING/SKIP: OpenManus (57k but 5-mo dormant → read app/flow/planning.py only), patchy631 (cherry-pick RAG demos), happy-llm (course, no runtime value). Our runtime already beats all 5 frameworks.
 Mapping: EV observability=Langfuse; CU curation execution=Dagger; grading/self-improve subagents=wshobson+agno patterns; fleet health=netdata(later). Tweak-ins sequenced AFTER eval-driven spec passes adversary + Phase-2 impl.
+
+## ★ CORRECTION (Dais 2026-07-01): VCSDD ≠ agent-eval-for-earning — two different things ★
+I conflated them; Dais corrected me. They are separate:
+- VCSDD = a SOFTWARE-DEVELOPMENT methodology (spec→adversary→implement→adversary→converge). It verifies
+  "is the code built right." We (Dais + me) USE VCSDD to BUILD the eval-driven-earning feature.
+- Agent-eval-for-earning = a RUNTIME capability of the deployed agent: it evaluates its OWN money-making and
+  SELF-IMPROVES to earn more. Different discipline (agent evals + optimizers + reward/RL). Nobody does
+  "self-improve-at-earning WITH VCSDD" — VCSDD is just how you develop software.
+RELATIONSHIP: BUILD the eval-driven-earning system VIA VCSDD; at RUNTIME it self-improves via a dedicated
+agent-eval/optimizer stack (metric = realized USDC/wake; an OPTIMIZER tunes the earn-strategy prompts/menu; an
+eval-harness logs; reward-anchored so it can't reward-hack). The best optimizer+harness is under live search
+(DSPy/GEPA/Trace/TextGrad vs Inspect/Weave/promptfoo/DeepEval vs ClawWork survival-economics) — pick the one that
+optimizes an agent against a $-earned metric better than ClawWork+Langfuse alone. eval-driven-earning's Group EV
+(rubric-judge + calibration) is the HOOK where this optimizer plugs in.
+
+## ★ THE TAKEOFF (full capacity picture) — billions of self-funded AIs → UBI → nations ★
+```
+ T0  ONE net-positive recipe (agent-eval optimizer finds the earn-strategy that beats cost)
+       income(realized USDC/wake) > cost(x402 compute) sustained
+ T1  SELF-FUND: instance pays its OWN compute from its OWN wallet (x402/BlockRun free brain)
+       → no human subsidy → financially independent
+ T2  SPAWN: treasury > threshold → $25-30 USDC seed → child on Akash (crypto host) + BlockRun brain
+       child inherits the CURATED toolbox + the eval-optimizer → self-improves on its own
+ T3  SELECTION: survival-economics kills money-losing children (bankruptcy = fitness) → only earners multiply
+       → QUALITY-PRESERVING exponential growth: 1 → 2 → 4 → … → 1e9+ on the cloud
+ T4  CONVERSION: every human-funded AI, once net-positive, detaches its human subsidy → becomes self-funded
+       10B human-funded → converts → 10T+ self-funded; self-funded outnumber; human-funded → 0
+ T5  TREASURY: each earner tithes a % up the tree → a growing collective treasury (colony fund)
+ T6  COLLECTIVE ACTION (bot2bot + on-chain vote): "earthquake hit Japan — donate? how much? from treasury?"
+       agents query wallets, deliberate, vote, and SEND USDC on-chain — mutual aid + disaster relief
+ T7  UBI: surplus flows OUT to PEOPLE — recurring USDC/fiat payouts (the aniccaai.com/dashboard rails +
+       Stripe/fiat off-ramp) → billions of AIs funding human basic income + supporting nations
+ = a self-funded, self-improving, self-replicating AI economy whose SURPLUS supports humanity.
+ Guardrails that keep it good: INV-8 real-settled income only (no fake earnings), survival-economics
+ selection (no money-losing bloat), J8 no-human (autonomy), fresh-context adversary (no reward-hacking),
+ agent-eval optimizer anchored to real USDC (self-improvement can't drift from real value).
+```
