@@ -72,9 +72,32 @@
 日次cron(`ai.anicca.clip-producer`、AM3:17)が完全に無人で回復する。人間/dev/私が
 二度と気づいて直す必要が無くなる。
 
-**実機検証(2026-07-04)**: `timeout` 無しで producer.sh を実行 → 実際に
-`engine venv missing` で即exitすることを再現確認(fabricationでなく実ログ)。
-修正後は同条件で自己修復→処理継続を実機再実行して確認する(下記タスクの完了条件)。
+**実機検証(2026-07-04、完了)**:
+1. `timeout` 無しで producer.sh を実行 → 実際に `engine venv missing` で即exitすることを
+   再現確認(fabricationでなく実ログ)。
+2. disk-cleaner.sh に `*/.cache/anicca-clones/*/.venv/*` 保護パターン追加(v7→v8)。
+3. producer.sh に self_heal_engine() 実装 → venv欠落状態から実行 → 実際に
+   `git clone --depth 1` + `python3 -m venv` + `pip install -r requirements-local.txt` を
+   自力実行し `"self-heal OK — engine venv rebuilt, continuing"` → pipeline.py起動まで
+   自動遷移することを実機確認(PID 22537、/tmp/producer-selfheal-*.log)。
+4. **追加で発見した根本バグ**: pipeline.py が長尺ソース(今回2時間38分=9518s)を
+   丸ごとDL+丸ごとfaster-whisper文字起こししており、self-healしても現実的な時間内に
+   完走しない設計だった(旧cronログの3連続失敗もこれが真因の可能性)。
+   `~/.claude/skills/earn-clip-rewards/scripts/pipeline.py` に `get_duration()` +
+   `--download-sections` slicing(SLICE_SECONDS=360、動画中間360秒のみDL)を追加、
+   daily.sh の既存パターンを踏襲。
+5. **E2E実機再検証(修正後、fresh evidence)**: producer.sh を再実行 → sliced download
+   (`*4579-4939`)→ whisper → highlight pick → 9:16 crop → caption burn → verify_clip
+   gate 通過 → `~/clips/queue/6xlmaorRY0w_EN.mp4` 生成、全工程 約4分で完走(旧: 10分
+   timeoutでも終わらず)。生成物を独立に ffprobe 確認: 202×360(9:16比率)、
+   60.0s、video+audioストリーム両方存在(silent NGでない)、MD5
+   `9f23f8090d9dfca0ef1657b20a94beb6`。verify_clip.sh gate は producer.sh 内で
+   実際に通過(fail-closeなら"not queued"emitでqueueに残らない設計、今回は
+   queueに実在=通過の証拠)。
+
+**Task #9 完了条件(4点とも満たした)**: ① self-heal実装 ② disk-cleaner根本原因是正
+③ 実機でvenv欠落→自己修復→処理継続を確認 ④ 実際にqueueへ検証済みclipが生成される
+ところまでE2E確認。日次cron(AM3:17)は次回から無人で完走する見込み。
 
 ### 2.3 出口(payout)の優先順位
 
