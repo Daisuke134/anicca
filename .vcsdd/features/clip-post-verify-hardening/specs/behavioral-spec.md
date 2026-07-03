@@ -1,4 +1,4 @@
-# Behavioral Spec — clip-post-verify-hardening (Phase 1a) — REV 14 (post iteration-13 FAIL)
+# Behavioral Spec — clip-post-verify-hardening (Phase 1a) — REV 15 (post iteration-14 FAIL)
 
 ## Context (why this feature exists)
 2026-07-03 live incident: `EARN_MODE=execute bash run.sh` self-reported `"posted @aiclipsvault: .../DaLKV2xP8Ij/"`
@@ -323,9 +323,13 @@ or duplicate a clip).
   ★ IMPORTANT (iteration-3 FIND-001): the live ledger file is MUTABLE and grows every time a real clip
   posts (already grew to 5 lines — a genuine new post `DaVbOajvKqO` landed — mid-review of this very
   spec). The regression TEST for this algorithm (PROP-007) MUST use a FROZEN, version-controlled copy of
-  the exact 4-line snapshot quoted above (`tests/fixtures/ledger-2026-07-03-snapshot.jsonl`), not a live
-  reference to `~/.openclaw/state/clip-earn-ledger.jsonl` — a test that reads the live path will keep
-  drifting and eventually fail for reasons unrelated to the algorithm's correctness. ★
+  the exact 4-line snapshot quoted above, at `~/anicca/skills/earn/clip/tests/fixtures/ledger-2026-07-03-snapshot.jsonl`
+  — ★ path CORRECTED after iteration-14 FIND-040: this is the REAL target codebase (`anicca` repo, where
+  `monitor.sh` itself lives), NOT the `.vcsdd/features/.../tests/fixtures/` copy under this spec's own
+  `anicca-project` staging tree, which is a separate git repository and not where the implementation or
+  its tests actually run ★ — not a live reference to `~/.openclaw/state/clip-earn-ledger.jsonl` — a test
+  that reads the live path will keep drifting and eventually fail for reasons unrelated to the algorithm's
+  correctness. ★
   Going forward (once REQ-004/005/006 ship), this exact false-positive-duplicate-URL scenario cannot
   recur (an `unverified` outcome never gets a ledger `post_url`, per REQ-006) — URL-deduplication is
   primarily a historical-data fix plus defense-in-depth, not the primary prevention mechanism (REQ-001/

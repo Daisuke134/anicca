@@ -1,0 +1,54 @@
+{
+  "feature": "clip-post-verify-hardening",
+  "reviewContext": {
+    "reviewType": "spec",
+    "phase": "1c"
+  },
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-04T00:00:00Z",
+  "iteration": 14,
+  "priorIterationResolution": [
+    {
+      "priorFinding": "FIND-037 (iteration-13, major -- all remaining concrete worked-example tokens were 9 hex characters, one short of secrets.token_hex(5)'s real 10-character output)",
+      "status": "FIXED",
+      "note": "Independently re-verified by machine-counting every `#c[0-9a-f]{6,14}` token literal across both spec files with a python3 script (not by eyeballing): behavioral-spec.md's REQ-010 example `#c3d9a1e5f70` -> 10 hex chars after `#c`; verification-architecture.md's `#c4f2a91b7c3` (appears 4x, in the purity table, PROP-006, and PROP-010) -> 10 chars each; `#ca0b1c2d3e4` (PROP-006's collision-regression fixture) -> 10 chars. Cross-checked against `python3 -c \"import secrets; print(len(secrets.token_hex(5)))\"` -> 10. All examples now match the stated generation mechanism exactly. No remaining 9-char (or any other length) examples found anywhere in either file."
+    },
+    {
+      "priorFinding": "FIND-038 (iteration-13, critical -- verification-architecture.md described post_reel.py's import of reel_verify.py as a `sys.path.insert(0, os.path.dirname(__file__))`-style import, which is factually impossible since the two files live in unrelated directory trees, and directly contradicted the REAL existing cdp.py import pattern)",
+      "status": "FIXED",
+      "note": "Verified against the real file: /Users/anicca/.claude/skills/ig-reels-poster/scripts/post_reel.py:22 is exactly `sys.path.insert(0, os.path.expanduser(\"~/.claude/skills/ig-account-create/scripts\"))` -- confirmed by direct Read, matching the spec's citation verbatim. verification-architecture.md now correctly describes reel_verify.py's import as a HARDCODED absolute path, `sys.path.insert(0, os.path.expanduser(\"~/anicca/skills/earn/clip\")); import reel_verify`, explicitly matching this real cdp.py pattern rather than a dirname(__file__) pattern. The self-heal driver's own import (plain same-directory `import reel_verify`, since REQ-008 places it inside ~/anicca/skills/earn/clip/ alongside reel_verify.py itself) is consistently described in both documents. No remaining contradiction between behavioral-spec.md's REQ-008 and verification-architecture.md's purity-boundary section on this mechanism."
+    },
+    {
+      "priorFinding": "FIND-039 (iteration-13, minor -- REQ-010's literal caption-plumbing string in behavioral-spec.md line 198 contained a hidden U+200B zero-width space between the escaped \\n and <token>)",
+      "status": "FIXED",
+      "note": "Verified by scanning the raw bytes of both spec files for U+200B (and, defensively, U+FEFF/U+200C/U+200D) via a python3 byte-search -- zero matches in either file. behavioral-spec.md's REQ-010 now reads the clean `\"\\n<token>\"` with no invisible characters. Independently confirmed clean, not merely re-labeled."
+    }
+  ],
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/.claude/skills/ig-reels-poster/scripts/post_reel.py:1-208", "description": "re-verified EVERY line number cited in behavioral-spec.md's Ground Truth section and REQ-004/008 against the real file: :95,108,127,134,141,163 (the 6 pre-share failure sites, each print+return), :118 (verify-only return), :123 (single unstabilized before-read), :169 (DRY-ok), :174-181 (10x12s post-share search loop, shape unchanged), :187-190 (except/finally fallback), :82 (--verify-only flag def), :111-118 (verify-only impl), :112-113 (verify-only's internal read). All exact, all match."},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/earn/clip/_instance_paths.sh:1-17", "description": "confirmed CLIP_QUEUE/CLIP_POSTED/CLIP_ACCTS/CLIP_LEDGER already exist with the exact -${ANICCA_INSTANCE} suffix pattern REQ-006 requires CLIP_PENDING_VERIFY to follow"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/earn/clip/run.sh:88-105", "description": "confirmed run.sh currently branches only on a truthy post_url (no outcome/3-way branch exists yet), matching the Ground Truth claim"}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-040"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca-project/.vcsdd/features/clip-post-verify-hardening/tests/fixtures/ledger-2026-07-03-snapshot.jsonl", "description": "confirmed this fixture, which PROP-007 claims is '(already created, committed)', exists ONLY inside the anicca-products repo's VCSDD staging area -- NOT anywhere under the real target codebase ~/anicca/skills/earn/clip/ (a separate git repository, origin=anicca.git), where this feature's actual implementation and PROP-005's genuinely-real sibling fixture (tests/test_n_instance_distinctness.sh) live"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/earn/clip/tests/", "description": "confirmed no fixtures/ subdirectory and no ledger-2026-07-03-snapshot.jsonl exist here at all -- `ls tests/fixtures` returns 'No such file or directory'"}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 1,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}
