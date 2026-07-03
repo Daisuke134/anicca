@@ -20,9 +20,17 @@ PM_PAPER_PASS="${GATE_OUT#PM_PAPER_PASS=}"; PM_PAPER_PASS="${PM_PAPER_PASS:-0}"
 # STEP 2 — decide on LIVE data via the pure strategy; paper mode records a paper position.
 DECISION="$("$PY" "$HERE/decide.py" "$BANKROLL" 2>/dev/null | tail -1)"
 
-# STEP 3 — real execution is fail-closed: only if executing AND the gate PRODUCED a pass.
+# STEP 3 — real execution: only if executing AND the gate PRODUCED a pass. Wired to the REAL CLOB executor
+# order.py (money-safe: order.py itself re-checks all gates). Needs Polygon USDC (bridge from Base) to fill.
 if [ "$DRY_RUN" = "false" ] && [ "$EARN_MODE" = "execute" ] && [ "$PM_PAPER_PASS" = "1" ]; then
-  echo "{\"slot\":\"earn/pm-trade\",\"mode\":\"execute-blocked\",\"paper_pass\":1,\"note\":\"real executor (polymarket-agent, RPC-fixed) not wired yet — fail-closed\",\"decision\":${DECISION:-null}}"
+  TOK=$("$PY" -c "import json,sys; d=json.loads('''$DECISION'''); print(d.get('token_id') or d.get('token') or '')" 2>/dev/null)
+  SIDE=$("$PY" -c "import json,sys; d=json.loads('''$DECISION'''); print(d.get('side') or '')" 2>/dev/null)
+  PRICE=$("$PY" -c "import json,sys; d=json.loads('''$DECISION'''); print(d.get('price') or 0)" 2>/dev/null)
+  STAKE=$("$PY" -c "import json,sys; d=json.loads('''$DECISION'''); print(d.get('stake_usdc') or 0)" 2>/dev/null)
+  if [ -n "$TOK" ] && [ "$SIDE" != "" ]; then
+    "$PY" "$HERE/order.py" "$TOK" "$PRICE" "$STAKE" "$SIDE"; exit 0
+  fi
+  echo "{\"slot\":\"earn/pm-trade\",\"mode\":\"execute-no-decision\",\"decision\":${DECISION:-null}}"
   exit 0
 fi
 

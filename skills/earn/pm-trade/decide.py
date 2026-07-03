@@ -161,7 +161,7 @@ def main():
     day_loss = _day_paper_loss(LEDGER)
     stake = lib.risk_gate(raw_stake, bankroll, day_loss, bankroll, gas_reserve=0.5) if raw_stake > 0 else 0.0
     decision = "paper-trade" if stake > 0 else ("risk-blocked" if raw_stake > 0 else "skip-below-min-edge")
-    out = {"slot": "earn/pm-trade", "decision": decision, "side": side, "price": price,
+    out = {"slot": "earn/pm-trade", "decision": decision, "token_id": tok, "side": side, "price": price,
            "est_prob": round(prob, 4), "edge": round(prob - price, 4), "stake_usdc": round(stake, 4),
            "btc_window_return": round(wr, 6), "bankroll": bankroll, "question": question}
     if stake > 0:
