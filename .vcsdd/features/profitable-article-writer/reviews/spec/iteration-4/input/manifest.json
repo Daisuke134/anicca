@@ -1,0 +1,10 @@
+{
+  "reviewType": "spec",
+  "feature": "profitable-article-writer",
+  "mode": "strict",
+  "phase": "1c",
+  "iteration": 4,
+  "artifactsToReview": ["specs/behavioral-spec.md", "specs/verification-architecture.md"],
+  "reviewDimensions": ["spec_fidelity", "verification_readiness"],
+  "priorIteration": { "iteration": 3, "verdict": "FAIL", "blockers": 0, "openFindings": ["iter3/FIND-001 V0.5(e) threshold", "iter3/FIND-002 PROP-15 record-failure", "iter3/FIND-003 PROP-15 unscheduled"] }
+}
