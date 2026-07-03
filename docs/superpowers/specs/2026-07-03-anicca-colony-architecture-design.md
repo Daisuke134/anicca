@@ -612,11 +612,23 @@ V — VERIFICATION MATRIX (Dais 2026-07-04: "we have to verify every one of them
      matters = both the human-funded AI and the self-funded AI are RUNNING these and making money or
      trying (a continuous loop of real attempts), with me watching, not gating. ★
 
+     ★★ THE JOB = MAKE THE LOOP WORK (Dais 2026-07-04, verbatim): "the loop has to be fucking working …
+     it has to be able to do these things in a loop every single day." My role = SETUP + FIX the loop
+     until the AI itself runs trade/spawn/yield every day, then MONITOR — NOT hand-run each step (stop
+     curling APIs myself; that is the AI's job). Loop bugs found + fixed 2026-07-04 (all were WHY the
+     loop wasn't doing the work): (1) `runtime/loop/balance.mjs` single Base RPC → one DNS blip on
+     `mainnet.base.org` = `getaddrinfo ENOTFOUND` → tier falsely "broke" → the wake skips earning →
+     multi-RPC fallback added. (2) `self/spawn` registry status was `declared`; the loop only offers
+     `status==='live'` slots → spawn was NEVER runnable in the loop → set live. (3) spawn hard-aborted
+     on AgentMail inbox cap (a non-survival dependency) → made best-effort so a child is still born +
+     earns from its wallet. (4) claude-p fails `claude_exit_143` (human-sub fuel) → falls back to
+     ClawRouter free/glm-4.7 = the AI's OWN fuel — confirms W3 direction (remove claude-p). ★★
+
      | capability (release-copy bullet)         | human-funded (local) | self-funded (cloud) |
      |---|---|---|
      | V1 trade Polymarket (pm-trade)           | 🟢 TRYING verified 2026-07-04: live E2E green + loop alive (node runtime/loop PID, ClawRouter free/glm-4.7 = AI's own fuel) + pm-trade in live skills; agent chose 0 trades (edge<its 15% min); first trade tx lands autonomously | ⬜ same run on cloud child |
-     | V2 trade Solana (Franklin, W2)           | ⬜ | ⬜ |
-     | V3 yield (execute-yield)                 | ✅ 0.19 aUSDC on-chain, autonomous | ⬜ |
+     | V2 trade Solana (Franklin, W2)           | 🟢 TRYING verified 2026-07-04: funded real (bridge $1.50→1.327 USDC + 0.003 SOL tx 52rB7…); first real pass — agent paid opus-4.8 via x402 FROM ITS OWN WALLET, checked balance itself, reasoned WAIT ($1.33 < fee edge); skillified earn/sol-trade, registry live | ⬜ |
+     | V3 yield (execute-yield)                 | ✅ GROWN: 0.3153 aBasUSDC on-chain 2026-07-04 (was 0.19) — still autonomous | ⬜ |
      | V4 SPAWN cloud child on AKASH, 1 command | ⬜ (human-funded parent spawns) | ⬜ (self-funded parent spawns = closed loop) |
      | V5 model-via-wallet (APIキー不要, BlockRun x402) | ✅ analyze passes paid from wallet | ⬜ child uses own wallet |
      | V6 dashboard LIVE (aniccaai.com/dashboard) | ⬜ per-instance 収支 realtime | ⬜ child appears automatically |
