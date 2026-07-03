@@ -5,11 +5,12 @@
 # per-view reward USDC is $0 until a payout-check confirms an external inflow (CLIP-E).
 set -uo pipefail
 HOME_DIR="${HOME}"
-LEDGER="${EARN_LEDGER:-$HOME_DIR/.openclaw/state/clip-earn-ledger.jsonl}"
-ACCTS="$HOME_DIR/.cloak/clip-accounts.json"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_instance_paths.sh"
+LEDGER="$CLIP_LEDGER"
+ACCTS="$CLIP_ACCTS"
 CDP_DIR="$HOME_DIR/.claude/skills/ig-account-create/scripts"
 PY=/opt/homebrew/bin/python3
-SOL_WALLET="xxKC33TYJ2czjGQAADrvDCLjF6pRvtHX125fCwP5u9H"
+SOL_WALLET="${CLIP_WALLET:-xxKC33TYJ2czjGQAADrvDCLjF6pRvtHX125fCwP5u9H}"
 
 echo "===== CLIP MONITOR $(date '+%Y-%m-%d %H:%M %Z') ====="
 
