@@ -21,8 +21,11 @@ function validate(o) {
     if (typeof o.revenue_today_usd !== "number" || o.revenue_today_usd < 0 || o.revenue_today_usd > o.revenue_mo_usd) return { ok: false, reason: "schema" };
   }
   if (o.revenue_by_source !== undefined) {
+    // Per-source PnL — can be NEGATIVE (loss / drawdown / mark-to-market). Only reject non-numbers /
+    // non-finite values. Verified against live production 2026-07-04 (row 0xa3cd… had
+    // bluechip:-0.433, aave:-0.005 — real losses). Sprint-1 tests were positive-only fixtures.
     const s = o.revenue_by_source;
-    if (typeof s !== "object" || s === null || Array.isArray(s) || Object.values(s).some((v) => typeof v !== "number" || v < 0)) return { ok: false, reason: "schema" };
+    if (typeof s !== "object" || s === null || Array.isArray(s) || Object.values(s).some((v) => typeof v !== "number" || !Number.isFinite(v))) return { ok: false, reason: "schema" };
   }
   if (o.log_feed !== undefined) {
     if (!Array.isArray(o.log_feed) || o.log_feed.some((x) => !x || typeof x.ts !== "number" || typeof x.line !== "string")) return { ok: false, reason: "schema" };

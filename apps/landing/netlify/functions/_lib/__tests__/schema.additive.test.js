@@ -16,8 +16,15 @@ test("R9: non-array tags => ok:false", () => {
 test("R9: revenue_today_usd > revenue_mo_usd => ok:false", () => {
   assert.strictEqual(validate({ ...ok(), revenue_mo_usd: 5, revenue_today_usd: 9 }).ok, false);
 });
-test("R9: negative revenue_by_source value => ok:false", () => {
-  assert.strictEqual(validate({ ...ok(), revenue_by_source: { gig: -1 } }).ok, false);
+test("R9: NEGATIVE revenue_by_source value => ok:true (per-source PnL can be a loss — verified against live 2026-07-04, row 0xa3cd… had bluechip:-0.433)", () => {
+  assert.strictEqual(validate({ ...ok(), revenue_by_source: { bluechip: -0.433, aave: -0.005, gig: 0.206 } }).ok, true);
+});
+test("R9: NON-FINITE revenue_by_source value => ok:false (NaN/Infinity still rejected)", () => {
+  assert.strictEqual(validate({ ...ok(), revenue_by_source: { gig: Number.NaN } }).ok, false);
+  assert.strictEqual(validate({ ...ok(), revenue_by_source: { gig: Number.POSITIVE_INFINITY } }).ok, false);
+});
+test("R9: revenue_by_source string value => ok:false (type check still enforced)", () => {
+  assert.strictEqual(validate({ ...ok(), revenue_by_source: { gig: "1.5" } }).ok, false);
 });
 test("R9: well-formed additive fields => ok:true", () => {
   assert.strictEqual(validate({ ...ok(), tags: ["agent-hackathon"], revenue_mo_usd: 5, revenue_today_usd: 2, revenue_by_source: { gig: 5 } }).ok, true);
