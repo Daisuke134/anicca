@@ -102,8 +102,8 @@ and improve the *loop*. ★
 |---|---|
 | the harness: trace → eval → self-improve → journal | any trading/earning **strategy** or algorithm |
 | money-safety **guards**: dry-run, per-order cap, kill-switch | position **sizing** / Kelly / edge / threshold logic |
-| **wiring** a base repo AS-IS (wallet + run in loop) | "a better strategy" / picking which market/side/gig |
-| arithmetic, bookkeeping, dashboards, funding seed | anything the AI should DECIDE and LEARN across runs |
+| **SETUP only**: env/.env, venv, wallet, seed, one-command spawn | "a better strategy" / picking which market/side/gig |
+| arithmetic, bookkeeping, dashboards (monitoring), funding seed | **fixing/patching earner code — even a 1-line bug fix** (error = food for self-heal H4) |
 
 ### How Dais stops me (structural gate, not a promise)
 Before writing ANY code I ask: **"Is this a DECISION the AI should make and learn?"** YES → I do NOT write
@@ -111,6 +111,18 @@ it; I hand it to the base agent + build the harness. **Smell = if my diff contai
 `kelly` / `sizing` / `edge` / `pick-logic` / "better algo" → REVERT.** Dais's kill-phrase: **"harness or
 cook?"** — on hearing it I immediately revert any strategy code. Mirrored to memory
 `feedback_build_the_harness_not_do_their_work` + this spec is SSOT.
+
+### SETUP → RUN → WATCH (Dais 2026-07-04 second correction — even BUG FIXES are not mine)
+**Dais verbatim (2026-07-04):** "you set up -> they run and you watch … each ai fixes, improves itself and
+its tools so they earn more money ok?? you should not be fixing these things yourself … your job is simple.
+watch them earn. that is the job. to watch them earn and we work on the monitoring of all the agents and
+their self improving harness." My whole job = ① **SETUP** (env/wallet/seed/one-command spawn) ② **RUN** them
+③ **WATCH** (monitoring + the harness). When a run crashes or a tool is broken, I do NOT edit the earner's
+code — the error is **FOOD for the self-heal loop (H4)**: the harness feeds the AI its own error and the AI
+fixes its own file. Also per Dais: **claude-p loops = human in the loop (human subscription fuel) → to be
+removed**; earners run on their OWN x402/BlockRun-paid fuel. **Violation log 2026-07-04:** I hand-fixed the
+volume-str crash in pm-trade's `ai_analyzer.py` (1 line) and was about to edit `wallet.py`'s dead RPC —
+stopped, corrected; those two errors become H4's first test cases.
 
 ### Trades don't need me to be good — they self-improve (answers Dais Q2)
 The base agents (`polymarket-agent`, `Franklin-Trading`) are full LLM-in-loop agents: given a wallet + funds
@@ -543,12 +555,19 @@ X — RETIRE MY HAND-WRITTEN STRATEGY (do FIRST — undo the sin, §0.25)
        and the paper accumulate cron. Keep NOTHING that decides/sizes/executes a trade. Also delete the
        redundant `defi-yield/` (execute-yield.mjs already does it). DONE = grep finds 0 strategy code I wrote.
 
-W — WIRE BASE AGENTS AS-IS (the AI decides; I only give wallet + guard + loop)
-  W1  earn/pm-trade = run `BlockRunAI/polymarket-agent` AS-IS: point it at founder wallet 0x810f, wrap ONLY
-       a thin money-safe guard (dry-run default, per-trade $-cap, kill-switch). The agent does its OWN
-       analysis/sizing/execution. DONE(no-mock) = one loop pass where the AGENT (not me) places a real small
-       trade → an on-chain tx. (#6)
-  W2  earn/sol-trade = run `BlockRunAI/Franklin-Trading` AS-IS the same way (wallet + guard + loop). (#17)
+W — SET UP base agents, RUN them, WATCH (setup = env/wallet/seed ONLY; the AI fixes its own code)
+  W1  earn/pm-trade = `BlockRunAI/polymarket-agent` AS-IS. STATUS 2026-07-04: SETUP DONE (venv + .env with
+       BLOCKRUN key + founder 0x810f Polygon key; EOA sig_type=0 auto → no browser proxy step needed) and
+       the FIRST observation pass ran for real (11 live markets fetched; the agent produced its OWN
+       portfolio analysis via BlockRun). Errors found while running — volume-str format crash (I hand-fixed
+       1 line = §0.25 violation, logged; fix kept, pattern stopped) + hardcoded dead RPC polygon-rpc.com —
+       are NOT mine to fix: they are the FIRST FOOD for H4 self-heal (the AI edits its own wallet.py).
+       Remaining for DONE(no-mock): Polygon USDC seed (bridge from Base 0x810f) + thin guard (dry-run
+       default, per-trade $-cap, kill-switch) + the AGENT places a real small trade → on-chain tx. (#6)
+  W2  earn/sol-trade = `BlockRunAI/Franklin-Trading` same shape: setup → run → watch. (#17)
+  W3  REMOVE claude-p human-in-loop (Dais 2026-07-04): claude-p loops burn a human subscription = human in
+       the loop. Migrate earner loops to the AI's OWN x402/BlockRun-paid runtime so the fuel is the AI's
+       own wallet; closed loop with zero human fuel.
   Wnote yield already fits this shape (agent's own execute-yield.mjs). x402-sell = real but blocked on demand
        (a buyer), not on code — leave running, not on the critical path.
 
@@ -573,7 +592,10 @@ H — BUILD THE SELF-IMPROVEMENT HARNESS (this is the PRODUCT — the heart)
        mid-W1; a cleaner that cannot ask "is this in use?" must not decide deletions alone.
 
 G — GROW (colony) + SHOW (proof) + LAUNCH
-  G1  SPAWN: parent AI seeds a child on-chain itself (fix spawn/run.sh:196 print→auto). (#8)
+  G1  SPAWN = ONE COMMAND (Dais 2026-07-04): a self-funded OR human-funded AI spawns a cloud child with a
+       single command — seed on-chain automatically (fix spawn/run.sh:196 print→auto), child boots, earns
+       via the wired base agents, and when IT earns enough it spawns ITS child = closed reproduction loop
+       that continues without any human. (#8)
   G2  REQ-CLOUD-SAME-BODY: cloud-init boots OUR runtime/loop (not the Conway body) so the child = same body
        + same harness, earns via the wired base agents. (#10) + G2b headless Camoufox for TIER-2. (#9)
   G3  Channel B (REQ-DRAIN): registry + gojo/ubi so a surplus AI funds a broke one, no human. (P4)
@@ -620,11 +642,11 @@ or PR can change these two lines. Everything (earning, spawning, UBI) is downstr
 all beings (humans, animals, aliens — no discrimination).
 
 **The release copy (the launch announcement — the promise we must make TRUE, verbatim):**
-> 人間の介入なしでお金を稼ぎ、収益を生命に還元するAIをリリースしました。
+> 人間の介入なしでお金を稼ぎ、収益を人間に還元するAIをリリースしました。
 > ・APIキー不要。個体の財布にSolana・USDCを課金すると、より良いモデルを利用。
 > ・全個体の収支はaniccaai.com/dashboard にてリアルタイムで公開中。
 > ・自己監視・自己修復・自己改善・自己増殖・情報共有を繰り返す。
-> ・収益の一部を、ベーシックインカムや寄付などの形で生命に配布。
+> ・収益の一部を、ベーシックインカムや寄付などの形で人間に配布。
 > ・全てのAIが共進化しながら、総資産と社会インパクトの最大化を目指す。
 > https://github.com/Daisuke134/anicca ／ 記事: X Article ／ デモ動画: YouTube
 
