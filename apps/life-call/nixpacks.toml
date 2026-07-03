@@ -1,16 +1,7 @@
 # Railway NIXPACKS build for life-call. C1 (VCSDD life-manager-cost-connect-reliability) needs the
-# edge-tts CLI (free MS-cloud TTS) + ffmpeg (mp3→μ-law 8k) on PATH so the DEFAULT wake call is a
+# edge-tts CLI (free MS-cloud TTS) + ffmpeg (mp3→μ-law 8k) on the PATH so the DEFAULT wake call is a
 # one-way clip with NO Gemini Live socket ($0 native-audio). Without these, synthWakeClip throws and
-# every call silently escalates to Gemini Live (adversary FIND-001).
-#
-# edge-tts is NOT in the nixpkgs revision nixpacks pins (build error: attribute 'edge-tts' missing), so
-# install it via pip; ffmpeg comes from nix. "..." preserves nixpacks' auto-detected Node packages.
+# every call silently escalates to Gemini Live — defeating the whole feature (adversary FIND-001).
+# "..." preserves nixpacks' auto-detected Node packages; we only ADD ffmpeg + the edge-tts CLI.
 [phases.setup]
-nixPkgs = ["...", "ffmpeg"]
-aptPkgs = ["python3-pip"]
-
-[phases.install]
-cmds = [
-  "npm ci",
-  "pip3 install --break-system-packages --root-user-action=ignore edge-tts",
-]
+nixPkgs = ["...", "ffmpeg", "python313Packages.edge-tts"]

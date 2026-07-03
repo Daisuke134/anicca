@@ -17,16 +17,17 @@ const { URL } = require("url");
 const WebSocket = require("ws");
 const {
   routeTelnyxMessage,
+  routeGeminiMessage,
+  geminiSetupForEvent,
   buildTelnyxMediaFrame,
 } = require("./lib/call-bridge.cjs");
 const {
-  muLawBufToPcm16,
-  resamplePcm16,
+  geminiLiveWsUrl,
+  buildGeminiTurn,
+  parseGeminiTranscripts,
 } = require("./lib/call-logic.js");
-// C1 compositional two-way voice (Groq Whisper STT + Groq Llama LLM + edge-tts) — replaces Gemini Live.
-const { createConversation } = require("./lib/compositional-voice.cjs");
-const { groqStt, groqLlmStream, ttsToMuLawFrames } = require("./lib/compositional-live.cjs");
-const GROQ_KEY = process.env.GROQ_API_KEY || "";
+const { buildWakeLine, planVoice } = require("./lib/voice-cheap.js");
+const { synthWakeClip } = require("./lib/voice-synth.cjs");
 const { startScheduler, startTravelLoop, startAskLoop, startOnboardLoop, buildStreamUrl, langForPhone } = require("./scheduler.js");
 const { maybeStartLoops } = require("./lib/maybe-start-loops.js");
 const { serve: inngestServe } = require("inngest/node"); // raw Node http server (NOT express) → use the node adapter
@@ -355,8 +356,8 @@ const server = http.createServer((req, res) => {
 const wss = new WebSocket.Server({ server, path: "/ws" });
 
 wss.on("connection", (carrierWs, req) => {
-  if (!GROQ_KEY) {
-    console.error("[bridge] GROQ_API_KEY missing — cannot run compositional voice (no Live fallback); closing");
+  if (!GEMINI_KEY) {
+    console.error("[bridge] GEMINI_API_KEY missing — closing call");
     try { carrierWs.close(); } catch {}
     return;
   }
@@ -373,52 +374,65 @@ wss.on("connection", (carrierWs, req) => {
     return;
   }
   liveCalls++;
-  const { event, urgency, lang } = ctx;
+  const { event, urgency, lang, name } = ctx;
   console.log(`[bridge] carrier connected urgency=${urgency} live=${liveCalls}`);
-  const state = { streamSid: null, inFrames: 0, outFrames: 0 };
+  const state = { streamSid: null, inFrames: 0, outFrames: 0, setupComplete: false };
 
-  // C1 (VCSDD life-manager-cost-connect-reliability): FREE COMPOSITIONAL two-way conversation —
-  // Groq Whisper STT + Groq Llama LLM (stream) + edge-tts. NO Gemini Live socket is EVER opened
-  // (Goal-1 invariant: live_ws_opened stays 0). DTMF does NOT open Live; synth-failure does NOT open Live.
-  const liveWsOpened = 0;
+  // C1 (VCSDD life-manager-cost-connect-reliability): the DEFAULT wake call is a pre-synthesized
+  // edge-tts ONE-WAY clip — NO Gemini Live socket ($0 native-audio). Gemini Live opens ONLY when the
+  // caller interacts (DTMF keypress) → escalation. `liveWsOpened` is the measurable Goal-1 invariant.
+  let gemini = null;
+  let liveWsOpened = 0;
   const carrierSend = (o) => { if (carrierWs.readyState === WebSocket.OPEN) carrierWs.send(JSON.stringify(o)); };
+  const geminiSend = (o) => { if (gemini && gemini.readyState === WebSocket.OPEN) gemini.send(JSON.stringify(o)); };
 
-  // Outbound audio with a generation counter so a barge-in (sendClear bumps genId) breaks the in-flight play.
-  let genId = 0;
-  const send = async (frames) => {
-    const my = ++genId;
-    for (const f of frames) {
-      if (my !== genId || carrierWs.readyState !== WebSocket.OPEN) break;
-      carrierSend(buildTelnyxMediaFrame(state.streamSid, f));
-      state.outFrames++;
-      await new Promise((r) => setTimeout(r, 20));
+  // Play the one-way guidance clip over the Telnyx media socket, paced at ~20ms/frame.
+  async function playWakeClip() {
+    const line = buildWakeLine({ title: event && event.summary, place: event && event.location }, {}, urgency, lang);
+    try {
+      const { frames } = await synthWakeClip({ line, lang });
+      for (const f of frames) {
+        if (carrierWs.readyState !== WebSocket.OPEN) break;
+        carrierSend(buildTelnyxMediaFrame(state.streamSid, f));
+        state.outFrames++;
+        await new Promise((r) => setTimeout(r, 20));
+      }
+      console.log(`[bridge] one-way clip played frames=${frames.length} live_ws_opened=${liveWsOpened}`);
+    } catch (e) {
+      // No audio → escalate to Live rather than a silent call (never dial silence).
+      console.error(`[bridge] edge-tts synth failed (${e.message}) → escalating to Live`);
+      openGeminiLive();
     }
-  };
-  const sendClear = async () => { genId++; carrierSend({ event: "clear" }); }; // barge-in: stop playback
+  }
 
-  // Injected fail-closed adapters. Groq is primary; on error we log + degrade (STT→empty=no response;
-  // LLM→a safe canned line) — NEVER open Gemini Live. (Local faster-whisper/DeepSeek fallbacks = follow-up.)
-  const stt = async (pcm16Buf) => {
-    if (!GROQ_KEY) return "";
-    try { return await groqStt(pcm16Buf, GROQ_KEY); }
-    catch (e) { console.error(`[bridge] STT fail (${e.status || e.message}) — skip turn (no Live)`); return ""; }
-  };
-  const llm = async (body, _key, onToken) => {
-    try { await groqLlmStream(body, GROQ_KEY, onToken); }
-    catch (e) { console.error(`[bridge] LLM fail (${e.status || e.message}) — canned reply`); await onToken(lang === "ja" ? "すみません、もう一度お願いします。" : "Sorry, could you repeat that?"); }
-  };
-  const tts = async (sentence) => { try { return await ttsToMuLawFrames(sentence, lang); } catch (e) { console.error(`[bridge] TTS fail (${e.message})`); return null; } };
+  // Escalation: open the Gemini Live bridge (billed). Called on caller interaction or synth failure.
+  function openGeminiLive() {
+    if (gemini) return;
+    liveWsOpened++;
+    console.log(`[bridge] opening Gemini Live (escalation) live_ws_opened=${liveWsOpened}`);
+    gemini = new WebSocket(geminiLiveWsUrl(GEMINI_KEY));
+    gemini.on("open", () => geminiSend(geminiSetupForEvent(event, urgency, lang, name)));
+    gemini.on("message", (data) => {
+      let msg;
+      try { msg = JSON.parse(data.toString()); } catch { return; }
+      const r = routeGeminiMessage(msg, state, carrierSend, buildTelnyxMediaFrame);
+      if (r.kind === "setupComplete") geminiSend(buildGeminiTurn("Begin the call now with your opening line."));
+      if (DEBUG_TRANSCRIPTS) {
+        const t = parseGeminiTranscripts(msg);
+        if (t.input) console.error(`[transcript] USER: ${t.input}`);
+        if (t.output) console.error(`[transcript] CHARON: ${t.output}`);
+      }
+    });
+    gemini.on("error", (e) => console.error("[bridge] gemini err", e.message));
+    gemini.on("close", () => console.log("[bridge] gemini closed"));
+  }
 
-  const convo = createConversation({
-    event, urgency, lang, groqKey: GROQ_KEY,
-    stt, llm, tts, send, sendClear,
-    vadOpts: { threshold: 500, silenceMs: 700, frameMs: 20 },
-  });
+  const plan = planVoice({}); // default plan: one-way, opensLiveWs=false
 
   carrierWs.on("message", (data) => {
     let msg;
     try { msg = JSON.parse(data.toString()); } catch { return; }
-    const kind = routeTelnyxMessage(msg, state, () => {});
+    const kind = routeTelnyxMessage(msg, state, geminiSend);
     if (kind === "start") {
       if (state.callControlId && !state.recordStarted) {
         state.recordStarted = true;
@@ -427,22 +441,18 @@ wss.on("connection", (carrierWs, req) => {
           else console.error(`[bridge] record_start FAILED: ${r.error}`);
         });
       }
-      convo.start().catch((e) => console.error("[bridge] convo.start err", e.message)); // agent opens the conversation
-    } else if (kind === "media" && msg.media && msg.media.payload) {
-      state.inFrames++;
-      // caller μ-law 8k → PCM16 8k → resample to 16k for VAD + Groq STT quality
-      const pcm16 = resamplePcm16(muLawBufToPcm16(Buffer.from(msg.media.payload, "base64")), 8000, 16000);
-      convo.pushCallerFrame(pcm16).catch((e) => console.error("[bridge] frame err", e.message));
-    } else if (kind === "dtmf") {
-      console.log("[bridge] DTMF (ignored — compositional loop, no Live)"); // FIND-104: never opens Live
+      if (plan.mode === "oneway" && !gemini) playWakeClip(); // DEFAULT: one-way clip, no Live ws
     }
+    // Caller interaction → escalate to a two-way Gemini Live session (rare, billed).
+    if (kind === "dtmf" && !gemini) openGeminiLive();
+    if (kind === "stop" && gemini) { try { gemini.close(); } catch {} }
   });
   let released = false;
   const release = () => { if (!released) { released = true; liveCalls = Math.max(0, liveCalls - 1); } };
   carrierWs.on("close", () => {
     release();
-    genId++; // stop any in-flight outbound play
     console.log(`[bridge] carrier closed in=${state.inFrames} out=${state.outFrames} live_ws_opened=${liveWsOpened} live=${liveCalls}`);
+    if (gemini) { try { gemini.close(); } catch {} }
   });
   carrierWs.on("error", release);
 });

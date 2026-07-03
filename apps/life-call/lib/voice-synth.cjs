@@ -29,17 +29,12 @@ const run = (cmd, args) =>
   );
 
 // Synthesize `line` → μ-law 8k → 20ms base64 frames. Returns { frames, ms } or throws (caller falls back).
-// TTS is invoked as `python3 -m edge_tts` (PATH-independent MODULE run) — the `edge-tts` CONSOLE SCRIPT
-// is not on the Railway runtime PATH (spawn ENOENT), but the pip-installed edge_tts MODULE is importable
-// by system python3. Override the whole command via EDGE_TTS_CMD (space-separated) if needed.
-async function synthWakeClip({ line, lang, ttsCmd, ffmpegBin = "ffmpeg" }) {
-  const cmd = ttsCmd || (process.env.EDGE_TTS_CMD ? process.env.EDGE_TTS_CMD.split(" ") : ["python3", "-m", "edge_tts"]);
-  const [ttsBin, ...ttsPre] = cmd;
+async function synthWakeClip({ line, lang, edgeTtsBin = "edge-tts", ffmpegBin = "ffmpeg" }) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "lm-tts-"));
   const mp3 = path.join(dir, "clip.mp3");
   const ulaw = path.join(dir, "clip.ulaw");
   try {
-    await run(ttsBin, [...ttsPre, "--voice", voiceForLang(lang), "--text", line, "--write-media", mp3]);
+    await run(edgeTtsBin, ["--voice", voiceForLang(lang), "--text", line, "--write-media", mp3]);
     await run(ffmpegBin, ["-y", "-i", mp3, "-ar", "8000", "-ac", "1", "-f", "mulaw", ulaw]);
     const buf = fs.readFileSync(ulaw);
     return { frames: chunkMuLawToFrames(buf), ms: Math.round((buf.length / 8000) * 1000) };
