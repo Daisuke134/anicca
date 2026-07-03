@@ -31,8 +31,9 @@ One article → funnel → per-platform native monetization → real money verif
   FIXED set of BINARY criteria; PASS = ALL true** — (a) an opening hook states a reader pain / curiosity / concrete
   number; (b) a CTA to a paid rail is present; (c) the free part ends at a payoff cut (the How is withheld); (d) the
   draft makes NO claim of having executed/run anything and contains NO error-log/stack-trace text (this is where
-  REQ-3's semantic check lives); (e) readability: the majority of sentences are short and mobile-scannable. Any FALSE
-  ⇒ V0.5 FAIL. (Resolves FIND-008/009, new FIND-002/003.)
+  REQ-3's semantic check lives); (e) readability, measured mechanically: ≥70% of
+  sentences are ≤60 characters (mobile-scannable) — an objective, computable threshold, not a subjective judgment.
+  Any FALSE ⇒ V0.5 FAIL. (Resolves FIND-008/009, iter2 FIND-002/003, iter3 FIND-001.)
 - **REQ-6** WHEN V0+V0.5 PASS AND mode = A (AUTONOMY=off, default), the skill SHALL stop at a note DRAFT and notify
   the human (URL + screenshot) for review; it SHALL NOT publish.
 - **REQ-7** WHEN V0+V0.5 PASS AND mode = B (AUTONOMY=on), the skill SHALL publish directly, then distribute to reach platforms.

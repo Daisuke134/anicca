@@ -1,0 +1,18 @@
+{
+  "reviewType": "spec",
+  "feature": "profitable-article-writer",
+  "mode": "strict",
+  "phase": "1c",
+  "iteration": 3,
+  "artifactsToReview": [
+    "specs/behavioral-spec.md",
+    "specs/verification-architecture.md"
+  ],
+  "reviewDimensions": ["spec_fidelity", "verification_readiness"],
+  "priorIteration": {
+    "iteration": 2,
+    "verdict": "FAIL",
+    "openFindings": ["FIND-006-still", "FIND-008-still", "FIND-009-still"],
+    "newFindings": ["iter2/FIND-001..FIND-005"]
+  }
+}

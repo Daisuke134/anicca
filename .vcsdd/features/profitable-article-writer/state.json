@@ -409,13 +409,13 @@
   "gates": {
     "1c": {
       "verdict": "FAIL",
-      "timestamp": "2026-07-03T15:54:21.638Z",
+      "timestamp": "2026-07-03T16:00:24.593Z",
       "reviewedBy": "adversary",
       "adversaryVerdict": "FAIL",
-      "adversaryReviewedAt": "2026-07-03T15:54:21.638Z"
+      "adversaryReviewedAt": "2026-07-03T16:00:24.593Z"
     }
   },
   "sprintCount": 0,
   "createdAt": "2026-07-03T15:16:08.410Z",
-  "updatedAt": "2026-07-03T15:54:21.643Z"
+  "updatedAt": "2026-07-03T16:00:24.594Z"
 }

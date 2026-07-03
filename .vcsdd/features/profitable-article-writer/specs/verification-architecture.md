@@ -34,7 +34,7 @@ The judgment column is the AGENT's (right-altitude prompts), never a hardcoded c
 | PROP-12 | REQ-11 | account-absent → self-create(proven rail) OR flag-unavailable; never a loud failure / error-spew | T2 | — |
 | PROP-13 | REQ-7 | Mode B: when V0∧V0.5 PASS, the skill publishes DIRECTLY then distributes (autonomous path exercised, no human gate present) | T2 | ✅ |
 | PROP-14 | REQ-4b | no-viable-topic / insufficient-research → the wake SKIPS (no article emitted), verified with a stubbed empty-research input | T2 | — |
-| PROP-15 | REQ-14 | after 3 consecutive V0/V0.5 FAILs the wake ABORTS with no publish (ceiling test: stub 3 fails → assert abort + zero publish calls) | T2 | ✅ |
+| PROP-15 | REQ-14 | after 3 consecutive V0/V0.5 FAILs the wake ABORTS with no publish AND records the failure (ceiling test: stub 3 fails → assert abort + zero publish calls + a failure entry written to state) | T2 | ✅ |
 
 ## Verification ladder as executable gates
 
@@ -51,11 +51,11 @@ The judgment column is the AGENT's (right-altitude prompts), never a hardcoded c
 ## Sprint plan (strict = sprint contracts)
 
 - **Sprint 1** (first contract): rename→profitable-article-writer + registry slot (PROP-1,10) · per-install identity
-  scaffold (PROP-2,12) · V0.5 craft gate wired fail-closed (PROP-5) · PLAYBOOK craft layer + explain-not-run (PROP-3) ·
+  scaffold (PROP-2,12) · V0.5 craft gate wired fail-closed (PROP-5,15) · topic-skip guard (PROP-14) · PLAYBOOK craft layer + explain-not-run (PROP-3) ·
   Mode A draft-first (PROP-6) · model policy (PROP-9). **Sprint-1 DONE = a draft passes V0/V0.5 (V0.5 = the REQ-5 fixed binary checklist) AND Mode A correctly STOPS at draft + notifies (the human review gate is
   INTENTIONAL in Mode A); no model literal, no external run, fail-closed wiring proven. Zero-human is asserted of
   Mode B (Sprint 2+), NOT Mode A** (T0-T2 required props green).
-- **Sprint 2:** first real earn — one rail (note ¥500) reaches **V4** (PROP-7,8, T3 live) = the money finish-line.
+- **Sprint 2:** first real earn — one rail (note ¥500) reaches **V4**, autonomous publish (PROP-7,8,13, T3 live) = the money finish-line.
 - Later sprints: distribution/reach (V2/V3), daily loop (V5), niche generalization.
 
 ## Human sign-off gate (1c, strict)

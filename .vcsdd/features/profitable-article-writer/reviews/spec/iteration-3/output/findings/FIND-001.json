@@ -1,0 +1,8 @@
+{
+  "id": "FIND-001",
+  "dimension": "spec_fidelity",
+  "severity": "major",
+  "location": "specs/behavioral-spec.md:29-35 (REQ-5, V0.5 criterion (e))",
+  "problem": "REQ-5's preamble explicitly claims 'V0.5 is a REPRODUCIBLE gate: a fresh-context adversary scores the draft against a FIXED set of BINARY criteria.' Criteria (a)-(d) each have at least one objective anchor (a concrete-number option for (a); simple presence/absence for (b); a structural cut-point for (c); a defined execution-claim/error-log check for (d)). Criterion (e) has none: 'readability: the majority of sentences are short and mobile-scannable' defines no word-count, character-count, or sentence-length threshold, and 'mobile-scannable' is undefined. Two different fresh-context adversary runs against the identical draft are not guaranteed to agree on (e) alone, which directly contradicts REQ-5's own 'REPRODUCIBLE gate ... FIXED ... BINARY' self-description and undermines PROP-5's required (T2) fail-closed publish gate, since Any FALSE on (e) alone forces V0.5 FAIL.",
+  "fix": "Give criterion (e) the same kind of objective anchor the other four criteria have, e.g. 'the majority of sentences are <= N words (N stated) OR the majority of paragraphs are <= M lines on a mobile viewport,' so all five binary criteria are equally reproducible."
+}

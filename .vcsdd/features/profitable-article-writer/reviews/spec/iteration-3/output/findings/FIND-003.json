@@ -1,0 +1,8 @@
+{
+  "id": "FIND-003",
+  "dimension": "verification_readiness",
+  "severity": "minor",
+  "location": "specs/verification-architecture.md:37 (PROP-15, required: true); specs/verification-architecture.md:53-58 (Sprint plan)",
+  "problem": "PROP-15 (REQ-14, T2, required: true) was added this round to close iteration-2 FIND-004's round-count-ceiling gap, but it is not listed in either Sprint 1's or Sprint 2's bullet list of proof obligations ('Sprint 1 ... PROP-1,10 ... PROP-2,12 ... PROP-5 ... PROP-3 ... PROP-6 ... PROP-9', 'Sprint 2 ... PROP-7,8'). Since PROP-15 directly concerns the V0.5 fix-and-re-gate retry loop that Sprint 1 is already scoped to build ('V0.5 craft gate wired fail-closed (PROP-5)'), leaving it unassigned to a sprint means a required (T2) proof obligation has no stated delivery/verification point in the sprint plan, which weakens strict-mode convergence tracking (Sprint-1 DONE currently lists T0-T2 required props green as its bar, but does not explicitly enumerate PROP-15 among them).",
+  "fix": "Add PROP-15 to Sprint 1's required-proofs bullet list (alongside PROP-5, since both concern the same fail-closed V0.5 wiring) so Sprint-1 DONE unambiguously includes the 3-round abort ceiling."
+}

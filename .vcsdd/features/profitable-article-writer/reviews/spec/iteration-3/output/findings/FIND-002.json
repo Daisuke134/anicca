@@ -1,0 +1,8 @@
+{
+  "id": "FIND-002",
+  "dimension": "verification_readiness",
+  "severity": "major",
+  "location": "specs/behavioral-spec.md:71-73 (REQ-14); specs/verification-architecture.md:37 (PROP-15)",
+  "problem": "Iteration-2 FIND-004 (major) objected that REQ-14's 3-round ceiling had no PROP testing (a) the round-count ceiling itself and (b) the 'record the failure' clause. The revision adds PROP-15, which now covers (a): 'stub 3 fails -> assert abort + zero publish calls.' It still does NOT cover (b): REQ-14's text explicitly requires the skill to 'abort the wake (produce no publish) AND record the failure,' but PROP-15's assertion is scoped only to 'abort + zero publish calls' -- it asserts nothing about a failure record being written to any checkable artifact (log/ledger). No other PROP in the table references a failure-record artifact either. As written, an implementation could satisfy 100% of PROP-15 while never persisting the abort/failure anywhere, silently violating half of REQ-14's SHALL clause with zero test coverage.",
+  "fix": "Extend PROP-15 (or add a new PROP) to also assert that a failure record is written to a named, checkable artifact (e.g. a wake-failure log/ledger entry with the topic, round count, and V0/V0.5 reasons) after the 3rd consecutive FAIL, so REQ-14's full SHALL clause -- not just the abort/no-publish half -- has proof coverage."
+}
