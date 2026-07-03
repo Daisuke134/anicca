@@ -15,7 +15,22 @@
       "language": "typescript",
       "currentPhase": "3",
       "updatedAt": "2026-07-01T07:08:00.294Z"
+    },
+    "life-manager-cost-connect-reliability": {
+      "status": "active",
+      "createdAt": "2026-07-03T13:23:41.985Z",
+      "mode": "lean",
+      "language": "typescript",
+      "currentPhase": "init",
+      "updatedAt": "2026-07-03T13:23:41.985Z"
+    },
+    "clip-loop-dual-instance-earn": {
+      "status": "active",
+      "createdAt": "2026-07-03T13:37:11.528Z",
+      "mode": "lean",
+      "currentPhase": "1b",
+      "updatedAt": "2026-07-03T13:39:01.039Z"
     }
   },
-  "activeFeature": "agents-at-arms-leaderboard"
+  "activeFeature": "clip-loop-dual-instance-earn"
 }

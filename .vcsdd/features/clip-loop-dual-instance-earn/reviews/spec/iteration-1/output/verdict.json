@@ -1,0 +1,41 @@
+{
+  "reviewType": "spec",
+  "feature": "clip-loop-dual-instance-earn",
+  "iteration": 1,
+  "dimensions": {
+    "spec_fidelity": "FAIL",
+    "verification_readiness": "FAIL"
+  },
+  "overall": "FAIL",
+  "findings": [
+    {
+      "dimension": "spec_fidelity",
+      "severity": "blocking",
+      "location": "behavioral-spec.md:42-48 (REQ-002 vs REQ-004)",
+      "issue": "REQ-002 enumerates ONLY CLIP_QUEUE/CLIP_POSTED/CLIP_ACCTS as receiving the '-<name>' suffix and silently omits CLIP_LEDGER. REQ-004 (line 46) then requires that queue/posted/accounts/LEDGER paths 'never intersect' across N instances. These contradict: a builder implementing REQ-002 literally would leave every instance's ledger at the shared default (~/.openclaw/state/clip-earn-ledger.jsonl), which violates REQ-004 and re-introduces the exact shared-ledger drain risk the feature exists to prevent. The real _instance_paths.sh:17 DOES suffix the ledger, so the authoritative spec is narrower than the code it describes — the ledger's per-instance isolation is unstated and therefore unfalsifiable at the REQ-002 level."
+    },
+    {
+      "dimension": "verification_readiness",
+      "severity": "blocking",
+      "location": "verification-architecture.md:27 (PROP-008) vs behavioral-spec.md:59-61 (REQ-008)",
+      "issue": "REQ-008 explicitly obligates BOTH run.sh AND monitor.sh to (a) report empty-state and (b) NOT read/fall back to another instance's files. PROP-008's verification method exercises run.sh ONLY ('run run.sh with ANICCA_INSTANCE=clawrouter-e2e-probe ... assert it did NOT touch the real myclaude queue'). monitor.sh's no-cross-fallback behavior is left with zero proof obligation. This is not hypothetical: the current monitor.sh (monitor.sh:6-9) does NOT source _instance_paths.sh and hardcodes LEDGER=${EARN_LEDGER:-...clip-earn-ledger.jsonl} and ACCTS=$HOME/.cloak/clip-accounts.json with no instance suffix. Therefore with ANICCA_INSTANCE=clawrouter set, monitor.sh reads myclaude's ledger and accounts — the precise cross-instance fallback REQ-008 prohibits — and the verification architecture has no obligation that would catch it. A requirement is left materially unverified."
+    },
+    {
+      "dimension": "verification_readiness",
+      "severity": "minor",
+      "location": "verification-architecture.md:24 (PROP-005) + Gate line 39",
+      "issue": "PROP-005 greps monitor.sh for model-specific branching and the Gate re-verifies PROP-001..005/008, but neither obligation asserts that monitor.sh is actually WIRED to the isolation layer. Because monitor.sh never sources _instance_paths.sh (monitor.sh:8-9), PROP-005's grep will 'PASS' while monitor.sh silently ignores ANICCA_INSTANCE entirely — a green PROP-005 gives false confidence that isolation holds system-wide when one of the three named scripts is not isolated at all."
+    },
+    {
+      "dimension": "verification_readiness",
+      "severity": "minor",
+      "location": "verification-architecture.md:26 (PROP-007)",
+      "issue": "PROP-007's method beyond the Tier-0 citation is 'just a reference check that run.sh/producer.sh never call a different, unproven flow' — no concrete command, grep target, or pass/fail criterion is given. This leaves a judgment call to the Phase 3 reviewer rather than a mechanically checkable obligation (contrast PROP-005's explicit grep string). Concreteness insufficient for hands-off verification."
+    }
+  ],
+  "positiveChecks": [
+    "PROP-001 verification (test_instance_paths.sh:9-15) exercises exact string equality of all 4 default paths incl. ledger — real regression guard, matches _instance_paths.sh:14-17.",
+    "PROP-003 override precedence (EARN_LEDGER wins) is concretely tested (test_instance_paths.sh:27-33) and code line 17 honors it.",
+    "Purity-boundary claim (_instance_paths.sh is PURE, no I/O) VERIFIED against the real file: lines 10-17 only read env (ANICCA_INSTANCE/EARN_LEDGER/HOME) and assign vars; all mkdir/filesystem I/O lives downstream in run.sh:28 and producer.sh:19 — the claim holds."
+  ]
+}

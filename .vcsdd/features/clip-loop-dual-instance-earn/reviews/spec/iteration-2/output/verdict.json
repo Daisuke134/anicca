@@ -1,0 +1,35 @@
+{
+  "reviewType": "spec",
+  "feature": "clip-loop-dual-instance-earn",
+  "iteration": 2,
+  "dimensions": {
+    "spec_fidelity": "PASS",
+    "verification_readiness": "FAIL"
+  },
+  "overall": "FAIL",
+  "findings": [
+    {
+      "dimension": "verification_readiness",
+      "severity": "blocking",
+      "location": "verification-architecture.md:24 (PROP-005) vs producer.sh:15, run.sh:25-26, monitor.sh:10",
+      "issue": "PROP-005's stated pass criterion is self-contradictory against the actual code. Its method is `grep -inE \"claude|sonnet|clawrouter|anthropic|blockrun\" producer.sh run.sh monitor.sh _instance_paths.sh` and it declares 'the ONLY permitted hits are comments/docs, never executable conditionals.' Running that exact grep on the real files returns FOUR executable variable-assignment lines: producer.sh:15 `SKILLS=\"$HOME/.claude/skills/earn-clip-rewards/scripts\"`, run.sh:25 `POSTER=\"$HOME_DIR/.claude/skills/ig-reels-poster/...\"`, run.sh:26 `CDP_DIR=\"$HOME_DIR/.claude/skills/ig-account-create/scripts\"`, monitor.sh:10 same. These are legitimate `.claude/skills/` filesystem paths — NOT comments/docs and NOT model-specific branching conditionals — so they fall in an undefined gap in PROP-005's criterion. A mechanical Phase 3 reviewer following the criterion literally will either mark PASS-worthy code as FAIL (permitted-set = comments/docs only) or be forced into an unspecified judgment call the architecture claims to have removed. This defect lands squarely on the ONE obligation the Gate (line 39) singles out for mandatory re-verification as 'most likely to silently regress,' so its reliability matters most. Fix: either narrow the grep to word-boundary model tokens that exclude the `.claude`/`ig-account-create` path segments, or explicitly enumerate `.claude/skills` path references as permitted non-branching hits."
+    },
+    {
+      "dimension": "spec_fidelity",
+      "severity": "minor",
+      "location": "behavioral-spec.md:50-52 (REQ-004) vs REQ-003 (47-49)",
+      "issue": "REQ-004 states an unconditional guarantee that resolved queue/posted/accounts/LEDGER paths 'never intersect' across N instances, but REQ-003 lets an explicitly-set EARN_LEDGER override the ledger to any path regardless of ANICCA_INSTANCE. If two instances run with the same EARN_LEDGER exported in the shared process environment, their ledgers collide — violating REQ-004's literal wording. REQ-003 does carve this out globally ('the ONLY sanctioned exception to REQ-002 ledger-suffixing'), and PROP-004's automated check exercises instance names WITHOUT EARN_LEDGER, so this is defensible, but REQ-004 does not restate that its guarantee is conditional on EARN_LEDGER being unset. Non-blocking; a one-clause note on REQ-004 would remove the residual ambiguity."
+    }
+  ],
+  "resolvedFromIteration1": [
+    "spec_fidelity blocking (REQ-002 omitted CLIP_LEDGER): FIXED. behavioral-spec.md:42-46 now enumerates CLIP_LEDGER alongside queue/posted/accounts, explains the REQ-004 rationale, and adds the '(unless overridden per REQ-003)' carve-out; REQ-003 (47-49) states the override is the ONLY sanctioned exception. Matches _instance_paths.sh:17. No new contradiction.",
+    "verification_readiness blocking (PROP-008 tested run.sh only, monitor.sh unverified): FIXED. verification-architecture.md:27 PROP-008(b) now adds a concrete monitor.sh sub-check under ANICCA_INSTANCE=clawrouter-e2e-probe asserting no myclaude ledger line/handle leaks, explicitly marked REQUIRED (not optional) and 'blocks Phase 3 PASS if monitor.sh has not yet been updated to source _instance_paths.sh.' Correctly phrased as a Phase 2/3 gate, NOT a Phase 1c blocker — appropriate since monitor.sh:6-9 still hardcodes LEDGER/ACCTS without a suffix and Phase 2 implementation has not started.",
+    "verification_readiness minor (monitor.sh not proven wired to isolation layer): FIXED via the same PROP-008(b) note ('grep proves no model-name branching, not that monitor.sh sources _instance_paths.sh at all').",
+    "verification_readiness minor (PROP-007 no concrete pass/fail): FIXED. verification-architecture.md:26 now gives a concrete grep -n target and 'zero calls into any new/unproven signup path' criterion."
+  ],
+  "positiveChecks": [
+    "_instance_paths.sh:10-17 remains PURE (env-only reads, no I/O) — purity boundary claim in verification-architecture.md:7 holds; all mkdir/FS I/O is downstream (run.sh:28, producer.sh:19).",
+    "test_instance_paths.sh:9-15 asserts exact equality of all 4 default paths incl. ledger (REQ-001/PROP-001 regression guard) and case 2/3 cover suffix distinctness + EARN_LEDGER override precedence, matching _instance_paths.sh:14-17.",
+    "run.sh:53-54 empty-state path emits 'nothing to post' and exits 0 without touching another instance's files; run.sh:28 mkdir targets only the resolved (suffixed) instance paths."
+  ]
+}

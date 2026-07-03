@@ -10,3 +10,7 @@
 {"timestamp":"2026-07-01T07:08:00.293Z","event":"phase_transition","featureName":"agents-at-arms-leaderboard","from":"2b","to":"2c","iteration":1,"phase":"2c"}
 {"timestamp":"2026-07-01T07:08:00.294Z","event":"phase_transition","featureName":"agents-at-arms-leaderboard","from":"2c","to":"3","iteration":1,"phase":"3"}
 {"timestamp":"2026-07-01T07:24:07.030Z","event":"gate_recorded","featureName":"agents-at-arms-leaderboard","phase":"3","verdict":"PASS","reviewedBy":"adversary"}
+{"timestamp":"2026-07-03T13:23:41.989Z","event":"feature_created","featureName":"life-manager-cost-connect-reliability","mode":"lean","language":"typescript"}
+{"timestamp":"2026-07-03T13:37:11.531Z","event":"feature_created","featureName":"clip-loop-dual-instance-earn","mode":"lean"}
+{"timestamp":"2026-07-03T13:39:01.038Z","event":"phase_transition","featureName":"clip-loop-dual-instance-earn","from":"init","to":"1a","iteration":1,"phase":"1a"}
+{"timestamp":"2026-07-03T13:39:01.039Z","event":"phase_transition","featureName":"clip-loop-dual-instance-earn","from":"1a","to":"1b","iteration":1,"phase":"1b"}

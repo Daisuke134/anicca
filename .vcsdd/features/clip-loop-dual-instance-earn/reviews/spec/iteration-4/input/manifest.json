@@ -1,0 +1,9 @@
+{
+  "reviewType": "spec",
+  "feature": "clip-loop-dual-instance-earn",
+  "artifactsToReview": [
+    ".vcsdd/features/clip-loop-dual-instance-earn/specs/behavioral-spec.md",
+    ".vcsdd/features/clip-loop-dual-instance-earn/specs/verification-architecture.md"
+  ],
+  "reviewDimensions": ["spec_fidelity", "verification_readiness"]
+}

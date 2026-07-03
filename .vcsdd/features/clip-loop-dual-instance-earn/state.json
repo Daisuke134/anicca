@@ -1,0 +1,30 @@
+{
+  "featureName": "clip-loop-dual-instance-earn",
+  "mode": "lean",
+  "currentPhase": "1b",
+  "phaseHistory": [
+    {
+      "from": "init",
+      "to": "1a",
+      "timestamp": "2026-07-03T13:39:01.035Z"
+    },
+    {
+      "from": "1a",
+      "to": "1b",
+      "timestamp": "2026-07-03T13:39:01.039Z"
+    }
+  ],
+  "iterations": {
+    "1a": 1,
+    "1b": 1
+  },
+  "proofObligations": [],
+  "traceability": {
+    "epicId": "VCSDD-clip-loop-dual-instance-earn-1783085831528",
+    "beads": []
+  },
+  "gates": {},
+  "sprintCount": 0,
+  "createdAt": "2026-07-03T13:37:11.528Z",
+  "updatedAt": "2026-07-03T13:39:01.039Z"
+}

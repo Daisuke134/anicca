@@ -1,0 +1,38 @@
+{
+  "reviewType": "spec",
+  "feature": "clip-loop-dual-instance-earn",
+  "iteration": 3,
+  "dimensions": {
+    "spec_fidelity": "FAIL",
+    "verification_readiness": "FAIL"
+  },
+  "overall": "FAIL",
+  "findings": [
+    {
+      "findingId": "FIND-001",
+      "dimension": "verification_readiness",
+      "category": "verification_tool_mismatch",
+      "severity": "blocking",
+      "location": "verification-architecture.md:24 (PROP-005) vs /Users/anicca/anicca/skills/earn/clip/clip-cli.sh:22-25 and tests/test_instance_paths.sh:17",
+      "issue": "The revised PROP-005 grep `grep -inE '\\b(if|elif|case)\\b.*\\b(claude|sonnet|clawrouter|anthropic|blockrun)\\b'` is LINE-BASED, so its `case` arm can never match the idiomatic multi-line shell `case` statement, where the scrutinee (`case \"$MODEL\" in`) is on one line and the model-token arm (`claude) ...`) is on the NEXT line. This is not hypothetical: this very codebase writes exactly that form at clip-cli.sh:22-25 (`case \"${1:-}\" in` then `  --status)` / `  --restart)` on following lines). A genuine model branch written as `case \"$PROVIDER\" in / claude) run_x ;; / clawrouter) run_y ;; / esac` — the natural shell construct for multi-way branching on the caller's model — would therefore return ZERO grep hits and pass PROP-005 while flagrantly violating REQ-005. The Gate (verification-architecture.md:39) singles out PROP-005 as the obligation 'most likely to silently regress,' yet its method cannot detect the most idiomatic regression form. Additionally, PROP-005's prose is factually incorrect: it claims 'the pattern only matches inside if/elif/case constructs' and 'path-literal occurrences of .claude/skills/... are out of scope by construction,' but (a) the pattern matches the ENGLISH words 'if'/'case' in comments/prose — proven live at tests/test_instance_paths.sh:17 which the pattern DOES match on 'case ... clawrouter' — and (b) it WOULD match a legitimate `.claude/skills` path literal whenever that literal shares a line with a conditional keyword (e.g. `if [ -d \"$HOME/.claude/skills/foo\" ]; then`), since `\\bclaude\\b` matches the `claude` token inside `.claude/skills`. The iteration-2 false positives on the four bare assignments are indeed gone (grep returns zero on producer.sh/run.sh/monitor.sh/_instance_paths.sh), but the method remains unsound in both directions. Fix: make the check line-independent for `case` arms (e.g. also grep for `^[[:space:]]*(claude|sonnet|clawrouter|anthropic|blockrun)\\)` as a case-arm label) OR invert the approach — strip known-safe path literals first (`grep -vE '\\.claude/skills|\\.cloak'`) then do a broad word-boundary token grep — and delete the false 'only matches inside constructs / out of scope by construction' claims.",
+      "resolvesIteration2": "partial — the exact 4 path-literal false positives cited in iteration-2 no longer match, but the replacement method is unsound (multi-line case false-negative + prose overclaim)."
+    },
+    {
+      "findingId": "FIND-002",
+      "dimension": "spec_fidelity",
+      "category": "spec_gap",
+      "severity": "major",
+      "location": "behavioral-spec.md:57-60 (REQ-005) + verification-architecture.md:24 (PROP-005) vs /Users/anicca/anicca/skills/earn/clip/clip-cli.sh:15,33",
+      "issue": "REQ-005 restricts the model-agnosticism guarantee to `producer.sh/run.sh/monitor.sh/_instance_paths.sh` and asserts 'any calling agent (human-funded Claude Code session, self-funded ClawRouter process, or any future AI) can invoke the same scripts; only env vars differ.' But the actual persistent-loop entrypoint that lives in the SAME skill directory, clip-cli.sh, hardcodes `--model sonnet` (clip-cli.sh:33) and the `claude` binary (clip-cli.sh:15) and dispatches via `case` (clip-cli.sh:22). It is neither in REQ-005's file list nor in PROP-005's grep. The spec's Out-of-scope section (lines 27-33) defers 'provisioning a full second live identity,' but it never states that the loop LAUNCHER is instance/model-specific — so REQ-005's blanket 'only env vars differ' is contradicted by the fact that keeping the loop alive (clip-cli.sh, restarted by the launchd healthcheck referenced at clip-cli.sh:6-7) is Claude+sonnet-only, and a ClawRouter self-funded instance has no agnostic way to run as a persistent service. This lets a Phase 3 reviewer mark REQ-005 PASS while the feature's stated mission ('works for every AI... no human loop') is unmet for the invocation path. Fix: either (a) bring clip-cli.sh into REQ-005's file scope and PROP-005's check (and de-hardcode the model), or (b) add an explicit REQ-005 carve-out clause stating the launcher is instance-specific and out of the agnosticism guarantee, with the ClawRouter launcher named as the follow-on feature — so 'only env vars differ' is scoped to the loop body, not overstated."
+    }
+  ],
+  "resolvedFromIteration2": [
+    "verification_readiness blocking (PROP-005 grep false-positives on 4 .claude/skills path literals): PARTIALLY RESOLVED. The revised regex `\\b(if|elif|case)\\b.*\\b(model-tokens)\\b` no longer matches producer.sh:15, run.sh:25-26, monitor.sh:10 (verified: zero hits on the 4 target files). However the replacement introduces a new soundness hole — see FIND-001 (multi-line case evasion + false 'by construction' prose). Net: the specific old false-positives are fixed, the obligation is still not reliably verifiable.",
+    "spec_fidelity minor (REQ-004 vs REQ-003 EARN_LEDGER contradiction): RESOLVED. behavioral-spec.md:50-56 now scopes REQ-004's non-intersection guarantee to 'the default (unset EARN_LEDGER) construction' and adds a coherent NOTE carving out manual identical-EARN_LEDGER collision as operator misuse, not a system defect; PROP-004 (verification-architecture.md:23) exercises instance names without EARN_LEDGER, matching the scope. Reads as a coherent, non-contradictory resolution."
+  ],
+  "positiveChecks": [
+    "_instance_paths.sh:10-17 is PURE (env-only reads, no I/O); suffix derivation `_SFX=\"-${ANICCA_INSTANCE}\"` applied to all four paths incl. ledger at line 17 (`${EARN_LEDGER:-${HOME}/.openclaw/state/clip-earn-ledger${_SFX}.jsonl}`) — REQ-002/REQ-003 precedence matches the spec.",
+    "Revised PROP-005 grep executed live against producer.sh/run.sh/monitor.sh/_instance_paths.sh: zero hits — confirms the iteration-2 path-literal false positives are eliminated for the current code.",
+    "REQ-004 note (behavioral-spec.md:50-56) is internally consistent with REQ-003 and PROP-004; no residual contradiction."
+  ]
+}
