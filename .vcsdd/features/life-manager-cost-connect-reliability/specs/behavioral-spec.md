@@ -75,12 +75,15 @@ Verifiable conditions (each MUST be demonstrated with fresh evidence):
 - **OUT**: cached result if present in `lm_travel_log` within TTL; else compute once + store.
 - **INVARIANT**: for a given (uid, event, coarse-time-bucket), external route providers are called ≤1×. TTL + bucket defined so a moved event still recomputes.
 
-### C4 — Connect (Pipedream)
-- **IN**: user consents once (Pipedream Connect token flow, CLI-provisioned).
-- **OUT**: backend holds a connected-account id able to (a) read Calendar, (b) send + read Gmail for that user.
+### C4 — Connect (Pipedream) — ONE consent for Calendar + Gmail; TELEGRAM-ONLY onboarding
+- **DECISION (Dais 2026-07-03)**: **Telegram (@LifeManagerBotbot) is the SOLE onboarding for the foreseeable future** — no app download, no site to navigate; if you have Telegram you're in. The web `/lm` onboarding stays built but gated; do not center it.
+- **DECISION**: Pipedream Connect issues **ONE OAuth consent that grants BOTH Google Calendar AND Gmail** → we RE-ADD the Gmail step that was removed from Telegram onboarding, and it costs **one fewer** onboarding step overall (cal+gmail collapse into a single tap), not one more.
+- **IN**: user taps a single Connect link from the Telegram bot → one Pipedream Connect consent.
+- **OUT**: backend holds ONE connected-account id able to (a) read/write Calendar, (b) send + read Gmail for that user.
 - **EDGE**: partial grant (calendar but not gmail) → onboarding reflects true state; do not claim gmail if absent.
-- **INVARIANT**: no Google RESTRICTED-scope audit trap re-introduced without a decision; secrets never logged.
+- **INVARIANT**: no Google RESTRICTED-scope audit trap re-introduced without a decision (see OQ3); secrets never logged.
 - **MIGRATION**: existing Composio-calendar users keep working (dual-read) until migrated.
+- **TELEGRAM FLOW (target)**: `/start` → name (chat) → phone (chat) → **ONE tap: Connect Google (Calendar+Gmail via Pipedream)** → **ONE tap: Subscribe $20/mo** → done. Only the two OAuth/Stripe taps leave chat; everything else is native Telegram.
 
 ### C5 — Money-path monitor + C6 deploy smoke/rollback
 - **IN**: a schedule (≤15 min) + each production deploy.
