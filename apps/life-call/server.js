@@ -26,6 +26,8 @@ const {
   buildGeminiTurn,
   parseGeminiTranscripts,
 } = require("./lib/call-logic.js");
+const { buildWakeLine, planVoice } = require("./lib/voice-cheap.js");
+const { synthWakeClip } = require("./lib/voice-synth.cjs");
 const { startScheduler, startTravelLoop, startAskLoop, startOnboardLoop, buildStreamUrl, langForPhone } = require("./scheduler.js");
 const { maybeStartLoops } = require("./lib/maybe-start-loops.js");
 const { serve: inngestServe } = require("inngest/node"); // raw Node http server (NOT express) → use the node adapter
@@ -376,52 +378,81 @@ wss.on("connection", (carrierWs, req) => {
   console.log(`[bridge] carrier connected urgency=${urgency} live=${liveCalls}`);
   const state = { streamSid: null, inFrames: 0, outFrames: 0, setupComplete: false };
 
-  const gemini = new WebSocket(geminiLiveWsUrl(GEMINI_KEY));
+  // C1 (VCSDD life-manager-cost-connect-reliability): the DEFAULT wake call is a pre-synthesized
+  // edge-tts ONE-WAY clip — NO Gemini Live socket ($0 native-audio). Gemini Live opens ONLY when the
+  // caller interacts (DTMF keypress) → escalation. `liveWsOpened` is the measurable Goal-1 invariant.
+  let gemini = null;
+  let liveWsOpened = 0;
   const carrierSend = (o) => { if (carrierWs.readyState === WebSocket.OPEN) carrierWs.send(JSON.stringify(o)); };
-  const geminiSend = (o) => { if (gemini.readyState === WebSocket.OPEN) gemini.send(JSON.stringify(o)); };
+  const geminiSend = (o) => { if (gemini && gemini.readyState === WebSocket.OPEN) gemini.send(JSON.stringify(o)); };
 
-  gemini.on("open", () => {
-    console.log("[bridge] Gemini connected");
-    geminiSend(geminiSetupForEvent(event, urgency, lang, name)); // per-call prompt (language + name follow the user)
-  });
-  gemini.on("message", (data) => {
-    let msg;
-    try { msg = JSON.parse(data.toString()); } catch { return; }
-    const r = routeGeminiMessage(msg, state, carrierSend, buildTelnyxMediaFrame);
-    if (r.kind === "setupComplete") {
-      console.log("[bridge] setupComplete");
-      geminiSend(buildGeminiTurn("Begin the call now with your opening line."));
+  // Play the one-way guidance clip over the Telnyx media socket, paced at ~20ms/frame.
+  async function playWakeClip() {
+    const line = buildWakeLine({ title: event && event.summary, place: event && event.location }, {}, urgency, lang);
+    try {
+      const { frames } = await synthWakeClip({ line, lang });
+      for (const f of frames) {
+        if (carrierWs.readyState !== WebSocket.OPEN) break;
+        carrierSend(buildTelnyxMediaFrame(state.streamSid, f));
+        state.outFrames++;
+        await new Promise((r) => setTimeout(r, 20));
+      }
+      console.log(`[bridge] one-way clip played frames=${frames.length} live_ws_opened=${liveWsOpened}`);
+    } catch (e) {
+      // No audio → escalate to Live rather than a silent call (never dial silence).
+      console.error(`[bridge] edge-tts synth failed (${e.message}) → escalating to Live`);
+      openGeminiLive();
     }
-    if (DEBUG_TRANSCRIPTS) {
-      const t = parseGeminiTranscripts(msg); // PII (user speech) — off unless explicitly enabled
-      if (t.input) console.error(`[transcript] USER: ${t.input}`);
-      if (t.output) console.error(`[transcript] CHARON: ${t.output}`);
-    }
-  });
-  gemini.on("error", (e) => console.error("[bridge] gemini err", e.message));
-  gemini.on("close", () => console.log("[bridge] gemini closed"));
+  }
+
+  // Escalation: open the Gemini Live bridge (billed). Called on caller interaction or synth failure.
+  function openGeminiLive() {
+    if (gemini) return;
+    liveWsOpened++;
+    console.log(`[bridge] opening Gemini Live (escalation) live_ws_opened=${liveWsOpened}`);
+    gemini = new WebSocket(geminiLiveWsUrl(GEMINI_KEY));
+    gemini.on("open", () => geminiSend(geminiSetupForEvent(event, urgency, lang, name)));
+    gemini.on("message", (data) => {
+      let msg;
+      try { msg = JSON.parse(data.toString()); } catch { return; }
+      const r = routeGeminiMessage(msg, state, carrierSend, buildTelnyxMediaFrame);
+      if (r.kind === "setupComplete") geminiSend(buildGeminiTurn("Begin the call now with your opening line."));
+      if (DEBUG_TRANSCRIPTS) {
+        const t = parseGeminiTranscripts(msg);
+        if (t.input) console.error(`[transcript] USER: ${t.input}`);
+        if (t.output) console.error(`[transcript] CHARON: ${t.output}`);
+      }
+    });
+    gemini.on("error", (e) => console.error("[bridge] gemini err", e.message));
+    gemini.on("close", () => console.log("[bridge] gemini closed"));
+  }
+
+  const plan = planVoice({}); // default plan: one-way, opensLiveWs=false
 
   carrierWs.on("message", (data) => {
     let msg;
     try { msg = JSON.parse(data.toString()); } catch { return; }
     const kind = routeTelnyxMessage(msg, state, geminiSend);
-    // Call is ANSWERED the moment the media `start` frame arrives → record_start is valid NOW
-    // (firing it right after dial fails: the call was still ringing). Once per call; log result.
-    if (kind === "start" && state.callControlId && !state.recordStarted) {
-      state.recordStarted = true;
-      startRecording(state.callControlId).then((r) => {
-        if (r.ok) console.log(`[bridge] recording started ccid=${state.callControlId}`);
-        else console.error(`[bridge] record_start FAILED: ${r.error}`);
-      });
+    if (kind === "start") {
+      if (state.callControlId && !state.recordStarted) {
+        state.recordStarted = true;
+        startRecording(state.callControlId).then((r) => {
+          if (r.ok) console.log(`[bridge] recording started ccid=${state.callControlId}`);
+          else console.error(`[bridge] record_start FAILED: ${r.error}`);
+        });
+      }
+      if (plan.mode === "oneway" && !gemini) playWakeClip(); // DEFAULT: one-way clip, no Live ws
     }
-    if (kind === "stop") { try { gemini.close(); } catch {} }
+    // Caller interaction → escalate to a two-way Gemini Live session (rare, billed).
+    if (kind === "dtmf" && !gemini) openGeminiLive();
+    if (kind === "stop" && gemini) { try { gemini.close(); } catch {} }
   });
   let released = false;
   const release = () => { if (!released) { released = true; liveCalls = Math.max(0, liveCalls - 1); } };
   carrierWs.on("close", () => {
     release();
-    console.log(`[bridge] carrier closed in=${state.inFrames} out=${state.outFrames} live=${liveCalls}`);
-    try { gemini.close(); } catch {}
+    console.log(`[bridge] carrier closed in=${state.inFrames} out=${state.outFrames} live_ws_opened=${liveWsOpened} live=${liveCalls}`);
+    if (gemini) { try { gemini.close(); } catch {} }
   });
   carrierWs.on("error", release);
 });

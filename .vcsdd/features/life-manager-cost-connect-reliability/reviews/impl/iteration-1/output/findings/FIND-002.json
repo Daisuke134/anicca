@@ -1,0 +1,11 @@
+{
+  "id": "FIND-002",
+  "dimension": "edge_cases",
+  "category": "test_coverage",
+  "severity": "major",
+  "file": "apps/life-call/lib/route-cache.test.js",
+  "line": "1-58",
+  "issue": "No test exercises coordinate-rounding behavior at cacheKey()'s q()=Math.round(n*1e4)/1e4 (route-cache.js:16). Two distinct real-world coordinates that round to the SAME 4-decimal grid cell are (by design, per the code comment) treated as the SAME cache row -- but this is never asserted. Conversely, two coordinates just barely on opposite sides of a rounding boundary (e.g. 35.68005 vs 35.68004999) are never asserted to produce DIFFERENT keys when they legitimately should. Since cacheKey (route-cache.js:18-20) is the sole correctness mechanism preventing a stale/wrong route being served for a genuinely different (from,to) pair, an untested rounding-boundary bug here would silently serve an incorrect travel duration/route on a live wake call -- a correctness and safety issue, not just a cost issue.",
+  "evidence": "route-cache.js:16 `const q = (n) => Math.round(n * 1e4) / 1e4;` and route-cache.js:18-20 `function cacheKey(...) { return [uid, q(fromGeo.lat), ...].join(\"|\"); }`; route-cache.test.js has zero assertions on q()/rounding collision behavior.",
+  "fix": "Add a test asserting two coordinates within ~5m (e.g. 35.68001 vs 35.68004) produce the SAME cacheKey (intended collision), and two coordinates ~15-20m apart that straddle a 4th-decimal rounding boundary produce DIFFERENT keys."
+}

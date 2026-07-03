@@ -1,0 +1,95 @@
+{
+  "reviewType": "spec",
+  "feature": "life-manager-cost-connect-reliability",
+  "iteration": 4,
+  "overallVerdict": "PASS",
+  "timestamp": "2026-07-03T00:00:00Z",
+  "dimensions": {
+    "spec_fidelity": {
+      "verdict": "PASS",
+      "findings": ["FIND-4-001"],
+      "evidence": [
+        {"type": "file", "location": "apps/life-call/lib/ask.js:1-9,18", "description": "Verbatim on this canonical tree: 'We NEVER read or send from the user's Gmail'; ask.js imports ONLY getCalendar (not getMail) from ./transport/index.js — matches C4's OQ3 functional claim."},
+        {"type": "file", "location": "apps/life-call/lib/travel.js,notify.js,telegram-reply.js,events.js,ask.js", "description": "Whole-codebase grep for getMail()/listInbox() usage across apps/life-call: getMail is exported by transport/index.js:25 and covered only by transport-gog.test.js — it is NEVER imported/called from any live tick path (ask.js/scheduler.js/notify.js/travel.js). Confirms no runtime Gmail-read on this canonical tree."},
+        {"type": "file", "location": "apps/life-call/server.js, lib/mail-resend.js, lib/reply-token.js, lib/inbound-reply.test.js", "description": "The Resend-domain ask + /inbound-email + /telegram webhook reply path C4 relies on is REAL, present code (not vaporware) on this tree."},
+        {"type": "file", "location": "apps/life-call/scheduler.js:30-33,42,280", "description": "WAKE_LEVELS = 2 entries (T-10 firm, T-5 harsh, no T-15) as spec §1 states; BOTH hardcoded selector sites (supaUsers:42, getUserByUid:280) use calendar_provider=eq.composio_gcal, matching C4 MIGRATION's 'BOTH selector sites' framing exactly."},
+        {"type": "file", "location": "apps/life-call/lib/call-logic.js:28,187,193-200", "description": "LIVE_MODEL=gemini-2.5-flash-native-audio-preview-09-2025, Charon voice, realtimeInputConfig.automaticActivityDetection — confirms today's call is two-way/VAD, matching spec §1 and C1's stated scope-change baseline."},
+        {"type": "file", "location": "apps/life-call/lib/travel.js:76,88,119,166-177", "description": "computeRoutes TRAFFIC_AWARE_OPTIMAL (76), routes.googleapis.com fetch (88), legacy Directions transit fetch (119); claimTravel/unclaimTravel insert only {uid,event_key,leg} into lm_travel_log (169-181) — matches C3's 'lm_travel_log stays dedup ledger, NOT a route cache' framing."},
+        {"type": "file", "location": "apps/landing/app/lm/page.tsx:10, LmClient.tsx:34, LmBody.tsx:7,41-64", "description": "force-static confirmed at page.tsx:10; STRIPE_LM_URL=process.env.NEXT_PUBLIC_STRIPE_LM_URL at LmClient.tsx:34 (exact line spec cites); LmBody.tsx statically imports LmClient (line 7) and only conditionally RENDERS it (line 41) behind ?tg= — confirming the module (and inlined STRIPE_LM_URL) IS present in the shared JS chunk regardless of ?tg=, resolving iter-2 FIND-004's bundle-vs-DOM contradiction."},
+        {"type": "file", "location": ".github/workflows/netlify-deploy.yml:39,65,67", "description": "NEXT_PUBLIC_STRIPE_LM_URL injected from GHA secret at build; netlify deploy --no-build --prod confirmed — matches C5/C6's build-time SSOT + deploy mechanism claims."},
+        {"type": "file", "location": "evidence/fixtures/transit-plan-tokyo-shinjuku.json, transit-places-suggest-shinjuku-station.json", "description": "Plan fixture's from/to are geo:lat,lon (not addresses); places/suggest fixture resolves only kind:station/place results for '新宿駅' — empirically backs C2's honest claim that places/suggest resolves landmarks/stations (not raw addresses) and that home_geo must come from a one-time Google Geocode, not from the transit feed."}
+      ]
+    },
+    "edge_case_coverage": {
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "specs/behavioral-spec.md:59", "description": "C1 TTS fallback ladder + 'do NOT dial' silent-call guard."},
+        {"type": "file", "location": "specs/behavioral-spec.md:65-67", "description": "C2 mixed/unresolvable endpoint -> whole-request Google fallback; 0 journeys/non-200/timeout -> Google fallback, logged."},
+        {"type": "file", "location": "specs/behavioral-spec.md:73", "description": "C3 TTL + time-bucket sizing forces recompute on a moved event."},
+        {"type": "file", "location": "specs/behavioral-spec.md:80", "description": "C4 partial-grant edge (calendar but not gmail) requires onboarding to reflect true state."},
+        {"type": "file", "location": "specs/behavioral-spec.md:87", "description": "C5 debounce (>=2 consecutive FAILs), rollback-target-must-itself-pass flap guard, one-message-per-incident Telegram dedup."},
+        {"type": "file", "location": "specs/behavioral-spec.md:96", "description": "C7 NO-OP-is-valid edge when leading signal is absent."}
+      ]
+    },
+    "impl_correctness": {
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "specs/behavioral-spec.md:64-65", "description": "C2's address->geo step is now concrete and non-circular: home_geo geocoded ONCE via Google (cached), event geo from ask.js's existing Places grounding, JP bbox (lat 24-46, lon 122-146) applied to already-resolved lat/lon as pure arithmetic (not a live-feed probe) — resolves iter-2 FIND-007's circularity."},
+        {"type": "file", "location": "apps/life-call/scheduler.js:42,280", "description": "Both hardcoded selector sites named in C4 MIGRATION verified present and identical on disk — resolves iter-2 FIND-003 completely (both sites, not just one)."},
+        {"type": "file", "location": "specs/behavioral-spec.md:86", "description": "C5 CHECK(b) bundle-chunk-string extraction is a coherent, implementable method given LmBody's static import of LmClient (verified apps/landing/app/lm/LmBody.tsx:7) — resolves iter-2 FIND-004."}
+      ]
+    },
+    "structural_integrity": {
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "apps/life-call/lib/transport/index.js:21-29", "description": "getCalendar/getMail behind one transport interface, LIFE_TRANSPORT-selected; ask.js/travel.js/notify.js/events.js/telegram-reply.js all depend on the interface, not a provider directly — clean module boundary; C3's new lm_route_cache is a distinct store from lm_travel_log with no structural conflation."},
+        {"type": "file", "location": "apps/life-call/lib/travel.js:166-181", "description": "claimTravel/unclaimTravel confirm lm_travel_log stays a pure {uid,event_key,leg} dedup ledger, distinct from the new lm_route_cache C3 proposes."}
+      ]
+    },
+    "verification_readiness": {
+      "verdict": "PASS",
+      "findings": ["FIND-4-001"],
+      "evidence": [
+        {"type": "file", "location": "specs/behavioral-spec.md:99-101", "description": "RED plan enumerates C2 fixture-parse tests (backed by real committed fixtures), C2 JP-bounds/mixed-endpoint fallback (pure arithmetic, no live-API dependency needed for the test), C3 cache call-count + moved-event invalidation, C1 ws-not-opened counter, C5 bundle-string assertion + debounce + flap-guard + dedup, C6 rollback trigger — all concretely testable against code/fixtures already on disk."},
+        {"type": "file", "location": "specs/behavioral-spec.md:47", "description": "Goal 5(c) ('fetch that Stripe link and assert the page contains Life Manager + $20') is drivable headlessly — a Stripe Payment Link checkout page is publicly viewable without auth, so no browser-OAuth dependency blocks the GHA monitor, resolving the second half of iter-2 FIND-004's concern."},
+        {"type": "file", "location": "apps/life-call/lib/call-logic.js:187,193-200", "description": "The C1 invariant (Live ws never opened on default path, counter=0) is asserted against real, existing setup-message-building code (buildGeminiSetup-equivalent), not a hypothetical — verification hook exists to instrument."}
+      ]
+    }
+  },
+  "priorFindings": {
+    "F1": "resolved", "F2": "resolved", "F3": "resolved", "F4": "resolved", "F5": "resolved",
+    "F6": "resolved", "F7": "resolved", "F8": "resolved", "F9": "resolved", "F10": "resolved", "F11": "resolved",
+    "FIND-001": "resolved", "FIND-002": "resolved", "FIND-003": "resolved", "FIND-004": "resolved",
+    "FIND-005": "resolved", "FIND-006": "resolved", "FIND-007": "resolved"
+  },
+  "priorFindingsNotes": {
+    "FIND-001/002 (iter-2/3, Gmail-read)": "RESOLVED on this canonical tree (origin/main, single checkout, no worktree ambiguity). Verified by three independent methods: (1) ask.js:1-9 verbatim states never-read-Gmail; (2) ask.js:18 imports only getCalendar from transport/index.js, never getMail; (3) grep across ALL of apps/life-call shows getMail()/listInbox() are exported+tested but never invoked from any live tick (ask.js/scheduler.js/notify.js/travel.js/telegram-reply.js) — the only callers are transport-gog.test.js. The real Resend + /inbound-email + /telegram webhook reply mechanism the spec relies on instead is present, working code (server.js, mail-resend.js, reply-token.js, inbound-reply.test.js). Functional claim = TRUE.",
+    "FIND-005 (branch ambiguity)": "RESOLVED structurally for this review: this iteration's manifest points at ONE clean tree checked out to origin/main HEAD 8f3b7fad with no competing worktrees to reconcile — the iteration-3 blocker (review tooling could not reach the declared canonical branch) does not recur here.",
+    "FIND-006 (wake schedule)": "RESOLVED — scheduler.js:30-33 WAKE_LEVELS = exactly 2 entries (T-10 firm, T-5 harsh), matching spec §1's table with no T-15 entry present anywhere on this tree.",
+    "FIND-007 (address->geo circularity)": "RESOLVED — C2's redesign (home_geo geocoded once via Google + cached, event geo via existing ask.js Places grounding, JP bbox as pure arithmetic on already-resolved lat/lon) removes the sequencing circularity iteration-2 flagged, and is empirically consistent with both fixtures (transit-plan takes geo: inputs; places/suggest only resolves stations/landmarks, never raw postal addresses)."
+  },
+  "findings": [
+    {
+      "id": "FIND-4-001",
+      "dimension": "spec_fidelity",
+      "category": "spec_gap",
+      "severity": "minor",
+      "file": "specs/behavioral-spec.md",
+      "line": 78,
+      "issue": "C4's GMAIL SCOPE note claims 'The mail-gog.js gmail search path exists in a STALE worktree, not main.' This specific attribution is factually incorrect on this canonical tree: apps/life-call/lib/transport/mail-gog.js (with a working listInbox -> `gog gmail search newer_than:2d` implementation) and mail-unipile.js (Unipile-backed listInbox) BOTH exist on origin/main itself, exported via transport/index.js's getMail(). They are simply dead code from ask.js's perspective (never imported/called there) rather than confined to a stale worktree. The underlying FUNCTIONAL claim the spec needs (ask.js never reads the user's Gmail on the canonical path) is independently verified TRUE by three other means (verbatim comment, import list, whole-codebase call-site grep), so this does not affect implementability, but it repeats this spec's recurring pattern (iter-2/3) of citing an incorrect worktree/branch attribution as evidence.",
+      "evidence": "apps/life-call/lib/transport/mail-gog.js:1-53 (present, full listInbox impl) and mail-unipile.js:1-36 (present, full listInbox impl) both exist on origin/main; apps/life-call/lib/transport/index.js:25-27 exports getMail() wired to both; grep for getMail()/listInbox() across apps/life-call/{scheduler,notify,ask,travel,telegram-reply,events}.js returns zero call sites (only transport-gog.test.js calls it).",
+      "fix": "Correct C4's wording: replace 'exists in a STALE worktree, not main' with 'exists on main as unused/dead code (LIFE_TRANSPORT=gog is a separate, unselected local-BYOK path) — ask.js never imports or calls getMail(), so no Gmail-read occurs on the default composio/Pipedream path.' Non-blocking; does not change the spec's engineering decision or its implementability."
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 1,
+    "blockerCount": 0,
+    "majorCount": 0,
+    "minorCount": 1,
+    "priorBlockersResolved": true,
+    "note": "All 11 iteration-1 findings and all 7 iteration-2/3 findings are resolved when checked against this single canonical origin/main tree (HEAD 8f3b7fad) with no worktree ambiguity. Every disk-fact cited in specs/behavioral-spec.md §1-§2 was independently re-verified by direct file read: voice model + two-way VAD (call-logic.js:28,187,193-200), WAKE_LEVELS=2 with both selector sites (scheduler.js:30-33,42,280), lm_travel_log shape (travel.js:166-181), Routes/Directions calls (travel.js:76,88,119), page.tsx force-static + LmClient.tsx STRIPE_LM_URL + LmBody.tsx static-import gate (exact lines match), GHA secret injection + no-build deploy (netlify-deploy.yml:39,65,67), and the Gmail-never-read claim (ask.js + whole-codebase call-site grep + working Resend/webhook alternative). The transit fixtures independently corroborate C2's honest geo-input framing (plan takes geo:lat,lon; places/suggest resolves stations only, not addresses). One MINOR finding remains (FIND-4-001: a mischaracterized 'stale worktree' citation whose underlying functional claim is nonetheless verified true) — does not block PASS per the non-blocker/non-major threshold. Overall PASS: all 5 dimensions PASS, zero blocker/major findings."
+  }
+}

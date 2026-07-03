@@ -1,0 +1,11 @@
+{
+  "id": "FIND-005",
+  "dimension": "edge_cases",
+  "category": "test_coverage",
+  "severity": "minor",
+  "file": "apps/life-call/lib/voice-cheap.test.js",
+  "line": "15-21",
+  "issue": "C1's QUALITY BAR requires the one-way clip to name event+place+route+urgency 'in call_language'. The EN test (voice-cheap.test.js:23-29) explicitly verifies harsh vs firm urgency produces different, more-insistent text (`/now/i`). The JA test (lines 15-21) only checks title/place/line substrings and absence of a newline -- it never asserts anything about the urgency wording (今すぐ出てください vs そろそろ出発しましょう), so a regression that made JA harsh/firm identical (or dropped the urgency clause entirely) would not be caught, even though the same regression IS caught for EN.",
+  "evidence": "voice-cheap.js:31-36 (JA branch, urgency-dependent `push` string) vs voice-cheap.test.js:15-21 (no harsh-vs-firm JA assertion, unlike the EN test at lines 23-29).",
+  "fix": "Add a JA test mirroring the EN harsh-vs-firm test: buildWakeLine(EV, ROUTE, \"harsh\", \"ja\") differs from the \"firm\" call and matches /今すぐ/."
+}

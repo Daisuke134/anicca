@@ -1,0 +1,125 @@
+{
+  "reviewType": "spec",
+  "iteration": 2,
+  "overallVerdict": "FAIL",
+  "dimensions": {
+    "spec_fidelity": "FAIL",
+    "edge_cases": "FAIL",
+    "impl_correctness": "FAIL",
+    "structural_integrity": "FAIL",
+    "verification_readiness": "FAIL"
+  },
+  "priorFindings": {
+    "F1": "resolved",
+    "F2": "resolved",
+    "F3": "resolved",
+    "F4": "partially",
+    "F5": "resolved",
+    "F6": "resolved",
+    "F7": "resolved",
+    "F8": "resolved",
+    "F9": "resolved",
+    "F10": "resolved",
+    "F11": "partially"
+  },
+  "priorFindingsNotes": {
+    "F1": "C1 (line 51-58) now frames one-way as an explicit SCOPE CHANGE/capability reduction with a two-way ESCALATION branch, and Goal 1 (line 37) no longer asserts 'no regression' — it says 'core guidance preserved'. Verified: call-logic.js:28 (native-audio model), :193-200 (VAD), the two-way default is real on disk. Resolved.",
+    "F2": "C3 (line 67-70) introduces a NEW store lm_route_cache with duration/geometry/computed_at/ttl and keeps lm_travel_log as the dedup/claim ledger. Verified on disk: travel.js:169-177 claimTravel still inserts only {uid,event_key,leg}. Resolved at spec level (migration DDL not yet written — acceptable pre-impl).",
+    "F3": "C7-EXT scope creep removed; portfolio loop moved to docs/superpowers/specs/2026-07-03-portfolio-self-improve-loop-design.md (confirmed present on disk) and listed under §2.1 Non-goals. Current C7 (line 90-93) is LM-only. Resolved.",
+    "F4": "C4 (line 75) widens ONLY scheduler.js:42 to calendar_provider=in.(composio_gcal,pipedream_gcal). It does NOT mention the IDENTICAL hardcoded filter in getUserByUid (scheduler.js:271, the Inngest per-user refetch path). A Pipedream user picked up by the sweep is re-excluded on per-user refetch. See FIND-003. Partially.",
+    "F5": "C5 (line 81) makes registry.json the SSOT and the monitor asserts the deployed bundle's link == registry, giving one authority. Verified: workflow injects NEXT_PUBLIC_STRIPE_LM_URL from a GHA secret (netlify-deploy.yml:39); LmClient.tsx:34 reads it. The bundle-assertion reconciliation is sound. Resolved (the alternative 'GHA secret == registry' is not cleanly implementable, but is offered as an OR).",
+    "F6": "C5 EDGE (line 83) adds >=2 consecutive FAILs debounce, rollback-target-must-pass-(a)+(b)+(c) flap guard, and one-message-per-incident Telegram dedup with a recovery-cleared state flag. Resolved.",
+    "F7": "§5 (line 99-104) now gives an in-spec resolution for OQ1-OQ5, so none are left OPEN. Resolved AS TO OPENNESS — but the OQ3 resolution (gmail.send-only) is itself unsound: see FIND-001/FIND-002.",
+    "F8": "C2 (line 61-62) makes the JP decision DETERMINISTIC (geo-bounds + feed-resolvability, no per-route LLM) and adds the mixed/unresolvable -> Google-for-whole-request branch. Removes the per-route agent cost. Resolved (residual geo-derivation gap tracked as FIND-007).",
+    "F9": "Goal 1 (line 37) + C1 INVARIANT (line 57) redefine proof as an in-process assertion the Gemini Live ws is never opened (counter=0, native-audio-token counter=0), NOT GCP billing. Feasible and code-observable. Resolved.",
+    "F10": "C7 GRADER (line 92) drops MRR-delta gating (noise at N=3), grades on LEADING indicators, and explicitly makes NO-OP valid when even leading signal is absent — reconciling Goal 8 with rule-5. Resolved.",
+    "F11": "(a) transit fixtures NOW committed and verified against the spec's parse claims — evidence/fixtures/transit-plan-tokyo-shinjuku.json (journeys[].durationSecs, legs[]) + transit-guidance-tokyo-shinjuku.json (options[]/decision/journey + geometry). Resolved. (b) Goal 7 (line 43) now = gcloud/API query of the key's restriction scope, not 'banner cleared'. Resolved. (c) Monitor Stripe-link extraction is STILL unpinned and internally contradictory — see FIND-004. Partially."
+  },
+  "findings": [
+    {
+      "id": "FIND-001",
+      "dimension": "spec_fidelity",
+      "category": "requirement_mismatch",
+      "severity": "major",
+      "file": "specs/behavioral-spec.md",
+      "line": 74,
+      "issue": "C4 GMAIL SCOPE (OQ3) asserts 'incoming replies keep using the reply-by-email domain pattern, so we never read the user's Gmail.' This misrepresents the code on disk: the ask/reply loop READS the user's own Gmail inbox today. mail-gog.js listInbox runs `gmail search newer_than:2d` and ask.js explicitly READs inbound replies ('READ replies (EMAIL users only ...)') to capture event locations. There is NO reply-by-email domain-pattern mechanism on disk for the location-reply read; the spec describes 'keep using' a mechanism that does not exist.",
+      "evidence": "apps/life-call/lib/transport/mail-gog.js:31-37 (listInbox -> `gmail search newer_than:2d`, shaped for the ask.js reply loop); apps/life-call/lib/ask.js:6-8 ('READ: Gemini reads inbound replies'), :247 ('READ replies (EMAIL users only — Telegram replies arrive via the webhook, not here)'); mail-unipile.js:23-24 ('Recent inbox messages (for reading location replies)'). No 'reply-by-email domain' inbound path exists in apps/life-call.",
+      "fix": "State the truth: today Gmail is READ for location replies. Either (a) spec the reply-by-email inbound domain pipeline as a NEW build (Resend-inbound webhook -> match to pending event) with its own contract + proof, or (b) accept a read scope for Gmail (and address the CASA/RESTRICTED consequence you were avoiding). Do not describe an unbuilt mechanism as an existing 'keep using' pattern."
+    },
+    {
+      "id": "FIND-002",
+      "dimension": "edge_cases",
+      "category": "requirement_mismatch",
+      "severity": "major",
+      "file": "specs/behavioral-spec.md",
+      "line": 74,
+      "issue": "gmail.send-only scope for Pipedream Gmail users leaves the location-reply READ path unhandled = a functional regression for the connect cohort. The ask loop's location-collection feature depends on reading the user's inbox (listInbox). A Pipedream user granted only gmail.send cannot have their inbox read, so their emailed location replies are never ingested, silently breaking calendar-location backfill for exactly the new-onboarding cohort C4 is meant to enable. C4's 'Dual-read = selector + calendar-read handle both providers' covers CALENDAR read only, not GMAIL reply read.",
+      "evidence": "apps/life-call/lib/ask.js:208-247 (ask loop sends via mail.send then READs replies via listInbox); mail-gog.js:32-37 (listInbox = gmail search). C4 (spec line 73-78) grants only Calendar + gmail.send and dual-reads only calendar_provider; no gmail-read adapter or reply-by-email fallback is specified for Pipedream users.",
+      "fix": "Add an EDGE + migration to C4: for send-only users, either route inbound location replies through the (to-be-built) reply-by-email inbound domain, or fall back to Telegram-only location capture, and assert in a test that a Pipedream user's location reply is ingested with zero gmail.readonly scope. Otherwise mark location-reply capture as EMAIL/Composio-only and downgrade the Goal-4 claim ('backend reads calendar + sends mail')."
+    },
+    {
+      "id": "FIND-003",
+      "dimension": "structural_integrity",
+      "category": "requirement_mismatch",
+      "severity": "major",
+      "file": "specs/behavioral-spec.md",
+      "line": 75,
+      "issue": "F4 is only partially closed. C4 MIGRATION widens ONLY the sweep selector (scheduler.js:42). The IDENTICAL hardcoded filter `calendar_provider=eq.composio_gcal` also lives in getUserByUid (scheduler.js:271), the Inngest per-user refetch used by wakeUserOnce/travelUserOnce/askUserOnce. If only line 42 is widened, a Pipedream user selected in the sweep is re-filtered OUT the moment the per-user function refetches them, so they still get zero wakes/travel/ask. iteration-1 F4 explicitly cited BOTH scheduler.js:42 AND the getUserByUid site; the iter-2 spec dropped the second one.",
+      "evidence": "apps/life-call/scheduler.js:42 (supaUsers base filter) and scheduler.js:271 (getUserByUid base filter) both end in `&calendar_provider=eq.composio_gcal`; scheduler.js:280-288 export wakeUserOnce/travelUserOnce/askUserOnce which call getUserByUid. Spec C4 line 75 names only scheduler.js:42.",
+      "fix": "In C4, enumerate BOTH hardcoded selector sites (scheduler.js:42 and scheduler.js:271) and require BOTH be widened to calendar_provider=in.(composio_gcal,pipedream_gcal); add a test that getUserByUid returns a pipedream_gcal user."
+    },
+    {
+      "id": "FIND-004",
+      "dimension": "verification_readiness",
+      "category": "verification_tool_mismatch",
+      "severity": "major",
+      "file": "specs/behavioral-spec.md",
+      "line": 82,
+      "issue": "F11(c) unresolved: the money-path monitor's Stripe-link extraction is internally contradictory and unpinned. C5 CHECK(b) says 'the /lm?tg=x bundle's Stripe link == registry (bare /lm has none)'. But /lm is `export const dynamic = 'force-static'` (static export) and the ?tg= gate is a CLIENT useEffect — so the SAME static HTML + SAME JS chunk is served for both /lm and /lm?tg=x. STRIPE_LM_URL is inlined into that shared chunk (LmClient is imported at module top), so at the BUNDLE level 'bare /lm has none' is FALSE (both contain it) and the /lm vs /lm?tg=x distinction is meaningless. At the RENDERED-DOM level the Stripe anchor only renders at the 'pay' step, reached only after client-side Google-OAuth + name + phone — which a black-box GHA monitor cannot drive headlessly. Neither extraction method is specified, and the two the spec conflates cannot both be true.",
+      "evidence": "apps/landing/app/lm/page.tsx:10 (force-static); LmBody.tsx (lipsync-monk worktree):22-41 (tg gate is a client useEffect; standalone -> coming-soon, tg -> LmClient); LmClient.tsx:34 (STRIPE_LM_URL inlined) + :442-448 (anchor rendered only inside the step==='pay' Shell). Spec line 82 CHECK(b) + Goal 5 line 41.",
+      "fix": "Pin ONE extraction method: fetch the built static chunk(s) under /_next/static and grep for the Stripe URL (then drop the false '/lm?tg=x vs bare /lm' distinction — the chunk is shared), OR add a dedicated SSR/edge endpoint that emits the effective Stripe link. Then the content assertion (c) fetches that Stripe URL directly. Remove the 'bare /lm has none' premise."
+    },
+    {
+      "id": "FIND-005",
+      "dimension": "spec_fidelity",
+      "category": "spec_gap",
+      "severity": "minor",
+      "file": "specs/behavioral-spec.md",
+      "line": 27,
+      "issue": "The 'verified on disk' fact — bare /lm = coming-soon gate; LmClient renders only on ?tg= (LmBody.tsx:41-63) — is true in ONLY ONE of three on-disk worktrees. In .claude/worktrees/lipsync-monk the gate exists (LmBody.tsx has the tg useEffect + coming-soon at lines ~22-63, matching the cited range). In .claude/worktrees/agent-a6417f77d0f47a1cc and agent-a0389b9e243c82be2 LmBody.tsx is 38 lines and renders <LmClient/> UNCONDITIONALLY with no gate and no ?tg= branch. The spec does not state which branch/worktree is authoritative, so the invariant the monitor depends on (Goal 5 / C5) is not uniformly true on disk.",
+      "evidence": "lipsync-monk/apps/landing/app/lm/LmBody.tsx:22-63 (gate present); agent-a6417f77d0f47a1cc/apps/landing/app/lm/LmBody.tsx:1-38 and agent-a0389b9e243c82be2/.../LmBody.tsx:1-38 (unconditional <LmClient/>, no gate). Spec §2 line 27 cites LmBody.tsx:41-63.",
+      "fix": "Pin the authoritative branch/commit for apps/landing in §0/§2 and confirm the gate exists there; a monitor built against a gate that only exists in one worktree will misfire once a different tree is deployed."
+    },
+    {
+      "id": "FIND-006",
+      "dimension": "spec_fidelity",
+      "category": "spec_gap",
+      "severity": "minor",
+      "file": "specs/behavioral-spec.md",
+      "line": 22,
+      "issue": "The 'verified external facts' table understates the wake schedule: it says 'Wake = T-10 firm + T-5 harsh | scheduler.js:30-33'. The cited code defines THREE levels including T-15 gentle. A spec whose own evidence table drops a wake level risks C1 impl reasoning about which wakes carry the one-way clip vs escalation being built on an incomplete model.",
+      "evidence": "apps/life-call/scheduler.js:29-33 WAKE_LEVELS = [{min:15,gentle},{min:10,firm},{min:5,harsh}]; spec line 22 lists only T-10 + T-5.",
+      "fix": "Correct the fact to T-15 gentle + T-10 firm + T-5 harsh, and state whether the one-way clip fires on all three levels."
+    },
+    {
+      "id": "FIND-007",
+      "dimension": "impl_correctness",
+      "category": "requirement_mismatch",
+      "severity": "major",
+      "file": "specs/behavioral-spec.md",
+      "line": 61,
+      "issue": "C2's deterministic JP gate requires each endpoint's lat/lon ('both endpoints' geo fall in a JP bounding box') but the system's inputs are free-text address strings (lm_users.home_address, gcal event location — today passed to Google as {address: src}). The spec does not specify how an address becomes geo without a paid Google Geocoding call, re-introducing per-route Google cost into a COST-REDUCTION feature. The stated gate is also circular: 'geo in JP box AND resolve in the feed (via places/suggest probe)' — the geo is produced BY the suggest call, so the bounding-box test cannot precede feed-resolution as written.",
+      "evidence": "apps/life-call/lib/travel.js:73-77 buildDriveBody({address:src}) and :106-124 legacyTransitMinutes use address strings, never lat/lon; the transit fixtures take geo coords as input (from.id='geo:35.681,139.767'). Spec line 61 asserts a geo-bounds gate with no address->geo step.",
+      "fix": "Specify the address->geo step and prove it is free (e.g. transit.ls8h.com places/suggest returns geo, used both to resolve AND to bound-check), or state the Google Geocoding cost and cap it. Define the ordering: probe places/suggest FIRST, derive geo, THEN apply the JP bounding box + feed-resolvability."
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 7,
+    "blockerCount": 0,
+    "majorCount": 5,
+    "minorCount": 2,
+    "priorBlockersResolved": true,
+    "note": "All 3 iteration-1 blockers (F1, F3, F9) are resolved and F2/F5/F6/F8/F10 are resolved. However F4 and F11 are only PARTIALLY closed, and the OQ3 (gmail.send-only) resolution introduces a NEW functional regression (FIND-001/002) plus a still-unpinned monitor extraction contradiction (FIND-004). Overall FAIL: 5 major findings across all 5 dimensions."
+  }
+}

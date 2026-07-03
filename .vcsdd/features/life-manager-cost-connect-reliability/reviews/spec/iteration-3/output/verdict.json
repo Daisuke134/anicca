@@ -1,0 +1,87 @@
+{
+  "reviewType": "spec",
+  "feature": "life-manager-cost-connect-reliability",
+  "iteration": 3,
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-03T00:00:00Z",
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-002"],
+      "evidence": []
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "specs/behavioral-spec.md:59", "description": "C1 TTS fallback ladder + 'do NOT dial' silent-call guard enumerated"},
+        {"type": "file", "location": "specs/behavioral-spec.md:65-67", "description": "C2 mixed/unresolvable endpoint -> whole-request Google fallback; 0 journeys/non-200/timeout -> Google fallback, logged"},
+        {"type": "file", "location": "specs/behavioral-spec.md:73", "description": "C3 TTL + time-bucket sizing explicitly required to force recompute on a moved event"},
+        {"type": "file", "location": "specs/behavioral-spec.md:79", "description": "C4 partial-grant edge (calendar but not gmail) requires onboarding to reflect true state"},
+        {"type": "file", "location": "specs/behavioral-spec.md:86", "description": "C5 debounce (>=2 consecutive FAILs), rollback-target-must-itself-pass flap guard, one-message-per-incident Telegram dedup"},
+        {"type": "file", "location": "specs/behavioral-spec.md:95", "description": "C7 NO-OP-is-valid edge when leading signal is absent"}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-003"],
+      "evidence": []
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": ".claude/worktrees/lipsync-monk/apps/life-call/scheduler.js:39-51,262-287", "description": "supaUsers (batch) and getUserByUid (per-uid refetch) confirmed as two distinct hardcoded calendar_provider=eq.composio_gcal call sites, consistently reproduced across both scheduler.js copies inspected -- matches C4's 'BOTH selector sites' framing (FIND-003 iter-2, now resolved)"},
+        {"type": "file", "location": ".claude/worktrees/lipsync-monk/apps/life-call/lib/travel.js:169-185", "description": "claimTravel/unclaimTravel confirm lm_travel_log stays a pure {uid,event_key,leg} dedup ledger, distinct from the new lm_route_cache C3 proposes -- no structural conflation"},
+        {"type": "file", "location": ".claude/worktrees/lipsync-monk/apps/life-call/lib/transport/index.js:7-9", "description": "mail-unipile.js / mail-gog.js kept behind a single transport interface (send/listInbox) -- clean module boundary, no duplication introduced by this spec's proposed changes"}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-002", "FIND-003", "FIND-004"],
+      "evidence": []
+    }
+  ],
+  "priorFindings": {
+    "F1": "resolved",
+    "F2": "resolved",
+    "F3": "resolved",
+    "F4": "resolved",
+    "F5": "resolved",
+    "F6": "resolved",
+    "F7": "resolved",
+    "F8": "resolved",
+    "F9": "resolved",
+    "F10": "resolved",
+    "F11": "resolved",
+    "FIND-001": "open",
+    "FIND-002": "open",
+    "FIND-003": "resolved",
+    "FIND-004": "resolved",
+    "FIND-005": "partially",
+    "FIND-006": "open",
+    "FIND-007": "partially"
+  },
+  "priorFindingsNotes": {
+    "FIND-001": "iter-2 FIND-001 (false 'reply-by-email, never read Gmail' claim) is technically corrected in spec text (C4 line 77 now says Gmail-READ stays on the existing provider for EMAIL users), BUT this corrected claim is itself now contradicted by the actual ask.js on disk in the lipsync-monk worktree, which has moved to a Resend-inbound-webhook mechanism that explicitly never reads Gmail -- while a second worktree (agent-a6417f77d0f47a1cc) still has the old Gmail-read-via-Unipile ask.js the spec describes. Reopened as iteration-3 FIND-001.",
+    "FIND-002": "Same root cause as FIND-001 above -- the Pipedream gmail.send-only regression concern (iter-2 FIND-002) is reframed around a Gmail-read mechanism that appears to already be obsolete in at least one code branch (Resend-inbound webhook, not Gmail polling), so the spec's current mitigation may be answering the wrong current-state question. Reopened as iteration-3 FIND-001.",
+    "FIND-003": "iter-2 FIND-003 (only scheduler.js:42 widened, getUserByUid:271 not mentioned) is now resolved in spec text (C4 line 78 names BOTH sites) and confirmed structurally consistent across both available scheduler.js copies. Resolved.",
+    "FIND-004": "iter-2 FIND-004 (Stripe-link extraction method internally contradictory) is resolved: C5 CHECK(b) (line 85) now correctly describes a bundle/chunk-string extraction, and LmClient.tsx:34,453-455 on disk confirms STRIPE_LM_URL is a module-level constant that will be present in the /lm route's compiled JS chunk regardless of the ?tg= gate (LmBody.tsx statically imports LmClient). Resolved.",
+    "FIND-005": "iter-2 FIND-005 (branch ambiguity) is nominally addressed by pinning CANONICAL=origin/main (spec line 8), but the practical problem recurs in a new form: neither the adversary's toolset nor the repo's checked-out state can reach origin/main (see iteration-3 FIND-004), and the available worktrees actively disagree with each other and with the spec's own attributions (see iteration-3 FIND-001/FIND-002). Partially resolved -- the DECLARATION of a canonical branch does not by itself make disk-facts checkable or true.",
+    "FIND-006": "iter-2 FIND-006 (wake schedule table dropped T-15) is NOT resolved -- reopened with a worse defect: the spec's specific claim about WHICH worktree holds the stale 3-level variant (line 25: 'the 3-level T-15 variant exists only in the stale lipsync-monk worktree') is factually backwards versus observed disk state (lipsync-monk currently has the 2-level version; agent-a6417f77d0f47a1cc has the 3-level version). See iteration-3 FIND-002.",
+    "FIND-007": "iter-2 FIND-007 (circular JP gate / unproven address->geo) is conceptually redesigned (C2 line 64: single places/suggest call resolves geo AND probes JP-resolvability, removing the sequencing circularity) but remains EMPIRICALLY unverified: no fixture demonstrates places/suggest geocoding a real postal address (only pre-resolved geo: inputs are fixture-tested), and §4's RED plan has no test for this mechanism. See iteration-3 FIND-003."
+  },
+  "convergenceSignals": {
+    "findingCount": 4,
+    "blockerCount": 0,
+    "majorCount": 4,
+    "minorCount": 0,
+    "priorBlockersResolved": true,
+    "note": "All iteration-1 blockers remain resolved. Of iteration-2's 7 findings, FIND-003 and FIND-004 are now genuinely resolved (verified against available disk copies). FIND-005 is only partially resolved (declaring 'origin/main is canonical' does not make it checkable). FIND-006 is reopened with a factually backwards worktree attribution. FIND-007 is only partially resolved (sound redesign, zero empirical evidence). FIND-001/FIND-002's underlying Gmail-read claim is reopened because the corrected spec text is itself contradicted by at least one current ask.js implementation. A structural blocker underlies all of this: this review could not reach the spec's declared canonical source (origin/main) with the tools and repository state available, so several 're-verified 2026-07-03' claims in the spec are unconfirmed or actively contradicted by the best available evidence. Overall FAIL: 4 major findings, 2 of 5 dimensions FAIL."
+  }
+}

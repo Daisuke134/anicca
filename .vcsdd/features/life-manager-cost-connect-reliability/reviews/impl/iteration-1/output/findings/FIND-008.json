@@ -1,0 +1,11 @@
+{
+  "id": "FIND-008",
+  "dimension": "verification_readiness",
+  "category": "spec_gap",
+  "severity": "minor",
+  "file": "apps/life-call/lib/transit.js, route-cache.js, voice-cheap.js, money-path.js",
+  "line": "n/a (whole-repo grep)",
+  "issue": "None of transit.js, route-cache.js, voice-cheap.js, or money-path.js is required/imported by any production code path yet (verified via repo-wide grep for `require('./transit'`, `require('./route-cache'`, `require('./voice-cheap'`, `require('./money-path'` outside their own *.test.js files -- zero hits). Only user-selector.js is actually wired (scheduler.js:12,43,281). This means Goal 1 (VOICE-COST), Goal 2 (ROUTE-JP), Goal 3 (MAPS-CACHE), Goal 5 (MONEY-PATH-MONITOR) and Goal 6 (DEPLOY-SAFETY) are currently provable only as isolated unit logic, not as real system behavior -- travel.js still calls Google Routes exclusively (per spec REALITY CHECK), call-logic.js still opens a two-way Gemini Live session by default, no GHA workflow invokes money-path.js, and the C3 `lm_route_cache` table + migration (apps/life-call/migrations/) does not exist. Per review guidance this is a follow-up item, not a unit-layer failure, but it is a material gap in what 'implementation review iteration-1' can actually claim as done against the spec's Goal section.",
+  "evidence": "Grep for `require(.*transit.js` / `route-cache.js` / `voice-cheap.js` / `money-path.js` across apps/life-call/**/*.js returns matches ONLY inside the modules' own *.test.js files; apps/life-call/migrations/ has 7 files, none named for lm_route_cache; apps/landing has no monitors/registry.json.",
+  "fix": "Track as explicit follow-up sprint(s): (a) wire transit.js+route-cache.js into travel.js's route-computation path, (b) wire voice-cheap.js into call-logic.js/dial.js as the new default, (c) add the lm_route_cache migration, (d) create apps/landing/monitors/registry.json + a GHA workflow invoking money-path.js, before claiming Goals 1/2/3/5/6 are live."
+}

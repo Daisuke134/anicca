@@ -1,0 +1,11 @@
+{
+  "id": "FIND-001",
+  "dimension": "spec_fidelity",
+  "category": "verification_tool_mismatch",
+  "severity": "blocker",
+  "file": "apps/life-call/lib/voice-synth.cjs",
+  "line": "26-44",
+  "issue": "The cheap default wake-call path shells out to `edge-tts` and `ffmpeg` binaries (voice-synth.cjs:37-38) that are not installed on the actual Railway production host, so `synthWakeClip` will throw on every real call and `playWakeClip`'s catch block (server.js:401-405) will escalate EVERY default-path call to `openGeminiLive()` (the billed path) in production — silently defeating Goal-1 (VOICE-COST: 'the Gemini Live ws is NEVER opened on the default path'), the single measurable finish-line condition this whole feature exists to satisfy.",
+  "evidence": "apps/life-call/railway.toml:1-2 sets `builder = \"NIXPACKS\"` with no `[phases.setup] nixPkgs` override, no Dockerfile, no nixpacks.toml anywhere under apps/life-call/ (confirmed via Glob for Dockerfile/nixpacks.toml/railway.json in apps/life-call and repo-wide grep for 'ffmpeg|edge-tts|nixPkgs|apt-get' outside node_modules — zero hits configuring these binaries). apps/life-call/package.json has zero Python/ffmpeg toolchain declaration (Node-only nixpacks provider will be auto-detected, which does not bundle ffmpeg or the Python `edge-tts` pip CLI). The feature's own E2E evidence file `.vcsdd/features/life-manager-cost-connect-reliability/evidence/e2e-live-2026-07-03.md:12-21` explicitly ran this proof against a 'Local life-call server' (the developer's machine, where edge-tts/ffmpeg happen to already be installed) — it was NEVER run against the actual Railway/Nixpacks deploy target, so the Goal-1 invariant ('live_ws_opened=0') has zero production evidence.",
+  "fix": "Add apps/life-call/nixpacks.toml with `[phases.setup] nixPkgs = [\"ffmpeg\", \"python3\", \"python3Packages.pip\"]` (or a Dockerfile that `pip install edge-tts` + installs ffmpeg), then re-run the C1 E2E proof against the deployed Railway URL (not localhost) and confirm `live_ws_opened=0` in the Railway logs for a real wake call. Until that is proven against prod, Goal-1 is unverified and the feature's core cost-reduction claim is false in production."
+}

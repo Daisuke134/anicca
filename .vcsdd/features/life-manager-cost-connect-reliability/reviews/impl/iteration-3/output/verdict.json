@@ -1,0 +1,108 @@
+{
+  "reviewType": "impl-wiring",
+  "feature": "life-manager-cost-connect-reliability",
+  "iteration": 3,
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-04T00:00:00Z",
+  "dimensions": {
+    "spec_fidelity": {
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-002", "FIND-003", "FIND-005"],
+      "evidence": [
+        {"type": "file", "location": "apps/life-call/server.js:378-457", "description": "Auth gate (ctxFromReq HMAC, server.js:365-370), capacity gate (server.js:371-375), recording start (server.js:437-443), and stop/close handling (server.js:448-457) are all preserved unmodified from the pre-existing bridge — verified by direct Read, no regression found here."},
+        {"type": "file", "location": "apps/life-call/scheduler.js:43,281", "description": "calendarProviderFilter() interpolated inside the backtick template at both selector sites, producing a valid PostgREST `calendar_provider=in.(composio_gcal,pipedream_gcal)` filter — verified by direct Read at both line numbers."}
+      ]
+    },
+    "edge_case_coverage": {
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-004", "FIND-003"],
+      "evidence": []
+    },
+    "implementation_correctness": {
+      "verdict": "FAIL",
+      "findings": ["FIND-002", "FIND-003", "FIND-004"],
+      "evidence": [
+        {"type": "file", "location": "apps/life-call/server.js:387,409-410,432-448", "description": "geminiSend is guarded (`if (gemini && gemini.readyState === WebSocket.OPEN)`, line 387) so inbound Telnyx media frames arriving before/without escalation cannot crash the process; openGeminiLive() early-returns when gemini is already set (line 410) and is called from two independent sites (DTMF at line 447, synth-failure catch at line 404) but JS's single-threaded event loop plus the synchronous `gemini = new WebSocket(...)` assignment inside openGeminiLive means no double-open race is possible — hand-traced both call sites."},
+        {"type": "file", "location": "apps/life-call/lib/call-bridge.cjs:73-80", "description": "routeTelnyxMessage sets state.streamSid synchronously on the 'start' event, BEFORE server.js's handler can invoke playWakeClip() on that same message — so buildTelnyxMediaFrame(state.streamSid, f) never sends a null streamSid; the carrierWs.readyState !== OPEN break in playWakeClip's frame loop (server.js:395) correctly handles a carrier that closes mid-playback."}
+      ]
+    },
+    "structural_integrity": {
+      "verdict": "FAIL",
+      "findings": ["FIND-006", "FIND-002", "FIND-003"],
+      "evidence": []
+    },
+    "verification_readiness": {
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-002", "FIND-003"],
+      "evidence": []
+    }
+  },
+  "findings": [
+    {
+      "id": "FIND-001",
+      "dimension": "spec_fidelity",
+      "severity": "blocker",
+      "file": "apps/life-call/lib/voice-synth.cjs",
+      "line": "26-44",
+      "issue": "edge-tts + ffmpeg binaries are not installed on the actual Railway (NIXPACKS, Node-only) production host (no Dockerfile/nixpacks.toml/nixPkgs anywhere in apps/life-call) → synthWakeClip throws on every real call → playWakeClip's catch escalates EVERY default-path call to Gemini Live in production, silently defeating Goal-1 (VOICE-COST). The feature's own E2E proof (evidence/e2e-live-2026-07-03.md) ran against a LOCAL dev server, never against the deployed target.",
+      "evidence": "railway.toml:1-2 (NIXPACKS, no nixPkgs); repo-wide grep for ffmpeg/edge-tts/nixPkgs/apt-get outside node_modules returns no config for apps/life-call; evidence/e2e-live-2026-07-03.md:12 says 'Local life-call server'.",
+      "fix": "Add nixpacks.toml nixPkgs=[ffmpeg, python3, python3Packages.pip] (or a Dockerfile) and re-prove live_ws_opened=0 against the deployed Railway URL."
+    },
+    {
+      "id": "FIND-002",
+      "dimension": "spec_fidelity",
+      "severity": "blocker",
+      "file": "apps/life-call/lib/travel.js",
+      "line": "174-187",
+      "issue": "C3's route-result cache (lib/route-cache.js, lm_route_cache migration) is never called from travel.js/wake-filter.js/scheduler.js — every directionsMinutes() call hits the live provider fresh, and the 60s scheduler tick's inline resolveDeparture path can re-hit paid Routes/Transit APIs up to ~30x per event before a [Travel] block exists, defeating Goal-3 (MAPS-CACHE).",
+      "evidence": "grep -r require(.*route-cache) apps/life-call → only route-cache.test.js; migrations/2026-07-04-lm-route-cache.sql table is unread/unwritten; evidence/e2e-live-2026-07-03.md:8 admits 'C3 (cache in live scheduler)... require[s] the wiring... = the remaining phase'.",
+      "fix": "Call makeRouteCache().getOrCompute(...) from wake-filter.js's resolveDeparture and travel.js's fillTravel before any provider fetch; prove ≤1-call-per-bucket against the live scheduler."
+    },
+    {
+      "id": "FIND-003",
+      "dimension": "spec_fidelity",
+      "severity": "blocker",
+      "file": ".github/workflows/netlify-deploy.yml",
+      "line": "74-97",
+      "issue": "The tested RollbackController (debounce>=2, flap-guard, telegram-dedup — money-path.js) is not wired into the real rollback path. netlify-deploy.yml instead rolls back on a SINGLE fail after only sleep 20 (CDN-flake can roll back a GOOD deploy), restores a[1] WITHOUT verifying it itself passes (no flap guard — could restore into another broken deploy silently 'succeeding'), and sends no Telegram. The C6-required standalone 15-min scheduled monitor workflow (Goal-5) does not exist at all.",
+      "evidence": "grep -r require(.*money-path|RollbackController) repo-wide (excl node_modules) → only money-path.js + its own test; money-path-smoke.mjs has no import of lib/money-path.js; .github/workflows/*.yml Glob returns only netlify-deploy.yml (no schedule: trigger anywhere).",
+      "fix": "Wire RollbackController's debounce+flap-guard+dedup into the GHA workflow (persist state across runs) and re-verify the restore target before declaring success; add the standalone schedule:-triggered 15-min monitor workflow required by C6/Goal-5."
+    },
+    {
+      "id": "FIND-004",
+      "dimension": "edge_case_coverage",
+      "severity": "major",
+      "file": "apps/life-call/lib/travel.js",
+      "line": "174-187",
+      "issue": "JP branch returns transit-only durationSecs with no MAX(transit,drive) never-late margin (unlike the documented Google-fallback bias, travel.js:127-128), AND transit.js's parseTransitPlan drops accessWalkSecs from durationSecs entirely (proven against the committed fixture: 61s access-walk present as a field but mathematically absent from the returned duration) — a real, evidenced under-estimate risk for JP users, the exact population this PR targets.",
+      "evidence": "evidence/fixtures/transit-plan-tokyo-shinjuku.json:1 — journey[0] departureSecs(83280)==leg departureSecs(83280) despite accessWalkSecs:61; durationSecs(1029)=leg(900)+egressWalkSecs(129) only.",
+      "fix": "Add accessWalkSecs (+transfer walks) into parseTransitPlan's durationSecs; keep a bounded safety margin for the JP branch consistent with the codebase's own never-late philosophy."
+    },
+    {
+      "id": "FIND-005",
+      "dimension": "spec_fidelity",
+      "severity": "major",
+      "file": "apps/life-call/lib/travel.js",
+      "line": "148-187",
+      "issue": "geocode(src)+geocode(dst) fire unconditionally on every directionsMinutes() call, including for non-JP users who gain nothing from it; the memo (_geoMemo, an in-process Map) is wiped on every Railway restart, contradicting the spec's explicit design of a persisted home_geo column on lm_users.",
+      "evidence": "travel.js:150 module-level Map (not Supabase-backed); grep -rn home_geo outside spec/verdict docs = zero code hits.",
+      "fix": "Persist geocode results (DB column or table) so caching survives restarts; avoid geocoding when the Google-fallback branch doesn't need it."
+    },
+    {
+      "id": "FIND-006",
+      "dimension": "structural_integrity",
+      "severity": "major",
+      "file": "apps/life-call/lib/money-path.js",
+      "line": "1-70",
+      "issue": "money-path.js's RollbackController/assertMoneyPath and route-cache.js's makeRouteCache/cacheKey/timeBucket are fully unit-tested (PASSED iteration-2) but have zero production callers — dead code sitting alongside separate, weaker, hand-rolled reimplementations of the same responsibility (see FIND-002, FIND-003). A future maintainer reading the passing tests would wrongly believe this logic is live.",
+      "evidence": "repo-wide grep confirms both modules' only requirers are their own *.test.js files.",
+      "fix": "Wire the tested modules into their intended callers, or delete them if the simpler inline implementations are the final intentional design."
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 6,
+    "blockerCount": 3,
+    "majorCount": 3,
+    "allCriteriaEvaluated": true
+  }
+}
