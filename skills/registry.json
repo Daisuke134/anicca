@@ -26,7 +26,7 @@
       "track": "A",
       "dir": "skills/self/spawn",
       "entrypoint": "run.sh",
-      "status": "declared",
+      "status": "live",
       "spec": "26 A4 / 27 A-self-spawn",
       "summary": "Self-replication: birth a child instance on DO/Akash with its own wallet + AgentMail inbox; no parent instruction needed for the child's first earn wake.",
       "owner": "wf-a:self-spawn"
