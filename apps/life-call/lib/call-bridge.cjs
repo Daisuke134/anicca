@@ -112,6 +112,13 @@ function routeGeminiMessage(msg, state, providerSend, frameFor) {
     state.setupComplete = true;
     return { kind: "setupComplete", frames: 0 };
   }
+  // C1 (VCSDD life-manager-cost-connect-reliability): barge-in. Gemini Live native-audio sets
+  // serverContent.interrupted:true when server-side VAD detects the caller speaking over Charon.
+  // The caller (server.js) then flushes the carrier's queued playback ({event:"clear"}); no audio
+  // frame is forwarded for this message.
+  if (msg && msg.serverContent && msg.serverContent.interrupted) {
+    return { kind: "interrupted", frames: 0 };
+  }
   const chunks = parseGeminiAudio(msg);
   let frames = 0;
   for (const b64Pcm24 of chunks) {

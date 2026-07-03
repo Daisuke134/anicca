@@ -26,8 +26,6 @@ const {
   buildGeminiTurn,
   parseGeminiTranscripts,
 } = require("./lib/call-logic.js");
-const { buildWakeLine, planVoice } = require("./lib/voice-cheap.js");
-const { synthWakeClip } = require("./lib/voice-synth.cjs");
 const { startScheduler, startTravelLoop, startAskLoop, startOnboardLoop, buildStreamUrl, langForPhone } = require("./scheduler.js");
 const { maybeStartLoops } = require("./lib/maybe-start-loops.js");
 const { serve: inngestServe } = require("inngest/node"); // raw Node http server (NOT express) → use the node adapter
@@ -378,38 +376,25 @@ wss.on("connection", (carrierWs, req) => {
   console.log(`[bridge] carrier connected urgency=${urgency} live=${liveCalls}`);
   const state = { streamSid: null, inFrames: 0, outFrames: 0, setupComplete: false };
 
-  // C1 (VCSDD life-manager-cost-connect-reliability): the DEFAULT wake call is a pre-synthesized
-  // edge-tts ONE-WAY clip — NO Gemini Live socket ($0 native-audio). Gemini Live opens ONLY when the
-  // caller interacts (DTMF keypress) → escalation. `liveWsOpened` is the measurable Goal-1 invariant.
+  // C1 (VCSDD life-manager-cost-connect-reliability): Gemini Live is the DEFAULT — every answered call
+  // is a two-way Charon conversation from the first second (no one-way clip). `liveWsOpened` is the
+  // measurable Goal-1 invariant (now ≥1 on EVERY answered call, the inverse of the old escalation-only
+  // invariant).
   let gemini = null;
   let liveWsOpened = 0;
+  let gotAudio = false;       // has Gemini emitted any audio yet on this call?
+  let geminiReconnects = 0;   // one-retry guard for a pre-audio socket drop
   const carrierSend = (o) => { if (carrierWs.readyState === WebSocket.OPEN) carrierWs.send(JSON.stringify(o)); };
   const geminiSend = (o) => { if (gemini && gemini.readyState === WebSocket.OPEN) gemini.send(JSON.stringify(o)); };
 
-  // Play the one-way guidance clip over the Telnyx media socket, paced at ~20ms/frame.
-  async function playWakeClip() {
-    const line = buildWakeLine({ title: event && event.summary, place: event && event.location }, {}, urgency, lang);
-    try {
-      const { frames } = await synthWakeClip({ line, lang });
-      for (const f of frames) {
-        if (carrierWs.readyState !== WebSocket.OPEN) break;
-        carrierSend(buildTelnyxMediaFrame(state.streamSid, f));
-        state.outFrames++;
-        await new Promise((r) => setTimeout(r, 20));
-      }
-      console.log(`[bridge] one-way clip played frames=${frames.length} live_ws_opened=${liveWsOpened}`);
-    } catch (e) {
-      // No audio → escalate to Live rather than a silent call (never dial silence).
-      console.error(`[bridge] edge-tts synth failed (${e.message}) → escalating to Live`);
-      openGeminiLive();
-    }
-  }
-
-  // Escalation: open the Gemini Live bridge (billed). Called on caller interaction or synth failure.
+  // Open the Gemini Live bridge (billed, ~$0.023/min). Called on the Telnyx `start` frame (call
+  // answered) — this IS the default path now, not an escalation. If the socket drops before any audio
+  // was heard, retry ONCE; a second pre-audio failure ends the call cleanly (never silence, never a
+  // clip fallback).
   function openGeminiLive() {
     if (gemini) return;
     liveWsOpened++;
-    console.log(`[bridge] opening Gemini Live (escalation) live_ws_opened=${liveWsOpened}`);
+    console.log(`[bridge] opening Gemini Live live_ws_opened=${liveWsOpened}`);
     gemini = new WebSocket(geminiLiveWsUrl(GEMINI_KEY));
     gemini.on("open", () => geminiSend(geminiSetupForEvent(event, urgency, lang, name)));
     gemini.on("message", (data) => {
@@ -417,17 +402,30 @@ wss.on("connection", (carrierWs, req) => {
       try { msg = JSON.parse(data.toString()); } catch { return; }
       const r = routeGeminiMessage(msg, state, carrierSend, buildTelnyxMediaFrame);
       if (r.kind === "setupComplete") geminiSend(buildGeminiTurn("Begin the call now with your opening line."));
+      if (r.kind === "audio") gotAudio = true;
+      // Barge-in: the caller spoke over Charon (Gemini server-VAD). Flush Telnyx's queued playback so
+      // the caller is heard immediately instead of talked over.
+      if (r.kind === "interrupted") carrierSend({ event: "clear" });
       if (DEBUG_TRANSCRIPTS) {
         const t = parseGeminiTranscripts(msg);
         if (t.input) console.error(`[transcript] USER: ${t.input}`);
         if (t.output) console.error(`[transcript] CHARON: ${t.output}`);
       }
     });
-    gemini.on("error", (e) => console.error("[bridge] gemini err", e.message));
-    gemini.on("close", () => console.log("[bridge] gemini closed"));
+    const onGeminiEnd = (reason) => {
+      console.log(`[bridge] gemini ${reason} gotAudio=${gotAudio} reconnects=${geminiReconnects}`);
+      if (!gotAudio && geminiReconnects < 1 && carrierWs.readyState === WebSocket.OPEN) {
+        geminiReconnects++;
+        gemini = null;
+        openGeminiLive(); // one retry
+        return;
+      }
+      // Never fall back to silence or a clip — end the call cleanly.
+      try { carrierWs.close(); } catch {}
+    };
+    gemini.on("error", (e) => onGeminiEnd(`err ${e.message}`));
+    gemini.on("close", () => onGeminiEnd("closed"));
   }
-
-  const plan = planVoice({}); // default plan: one-way, opensLiveWs=false
 
   carrierWs.on("message", (data) => {
     let msg;
@@ -441,10 +439,9 @@ wss.on("connection", (carrierWs, req) => {
           else console.error(`[bridge] record_start FAILED: ${r.error}`);
         });
       }
-      if (plan.mode === "oneway" && !gemini) playWakeClip(); // DEFAULT: one-way clip, no Live ws
+      if (!gemini) openGeminiLive(); // DEFAULT: two-way Gemini Live from second 1
     }
-    // Caller interaction → escalate to a two-way Gemini Live session (rare, billed).
-    if (kind === "dtmf" && !gemini) openGeminiLive();
+    if (kind === "dtmf") console.log("[bridge] DTMF ignored (Gemini Live already open)");
     if (kind === "stop" && gemini) { try { gemini.close(); } catch {} }
   });
   let released = false;
