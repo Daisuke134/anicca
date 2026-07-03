@@ -1,0 +1,17 @@
+{
+  "featureName": "life-manager-cost-connect-reliability",
+  "mode": "lean",
+  "language": "typescript",
+  "currentPhase": "init",
+  "phaseHistory": [],
+  "iterations": {},
+  "proofObligations": [],
+  "traceability": {
+    "epicId": "VCSDD-life-manager-cost-connect-reliability-1783085021986",
+    "beads": []
+  },
+  "gates": {},
+  "sprintCount": 0,
+  "createdAt": "2026-07-03T13:23:41.985Z",
+  "updatedAt": "2026-07-03T13:23:41.985Z"
+}

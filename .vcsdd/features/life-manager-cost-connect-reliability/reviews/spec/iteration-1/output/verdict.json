@@ -1,0 +1,124 @@
+{
+  "reviewType": "spec",
+  "iteration": 1,
+  "overallVerdict": "FAIL",
+  "dimensions": {
+    "spec_fidelity": "FAIL",
+    "edge_cases": "FAIL",
+    "impl_correctness": "FAIL",
+    "structural_integrity": "FAIL",
+    "verification_readiness": "FAIL"
+  },
+  "findings": [
+    {
+      "id": "F1",
+      "dimension": "spec_fidelity",
+      "severity": "blocker",
+      "file": "specs/behavioral-spec.md",
+      "line": 63,
+      "issue": "C1 QUALITY BAR claims the cheap TTS path delivers the 'same content as today', and Goal (line 37) claims 'NO quality regression on the wake call'. This misrepresents the current behavior on disk: the current wake call is a live TWO-WAY conversation, not a spoken line.",
+      "evidence": "call-logic.js:378-433 buildCallPrompt builds an INTERACTIVE system instruction ('This is a two-way call — answer follow-ups', 'ALWAYS respond directly to whatever the user says', 'Then ask if they need directions or how to get there') and call-logic.js:193-200 configures automatic VAD for listening. OQ1 (line 145) resolves the cheap path to 'pre-synthesize the line before dialing -> play as media', i.e. ONE-WAY playback that cannot answer the user or give directions on request. That is a behavioral regression, directly contradicting the no-regression goal.",
+      "fix": "Either (a) redefine the goal to accept a one-way reminder for the DEFAULT path and explicitly document the loss of interactivity as an accepted change, or (b) keep interactivity by routing only when the user speaks. State the real behavioral delta; do not assert 'same content'/'no regression' when interactivity is dropped."
+    },
+    {
+      "id": "F2",
+      "dimension": "spec_fidelity",
+      "severity": "major",
+      "file": "specs/behavioral-spec.md",
+      "line": 75,
+      "issue": "C3 OUT states 'cached result if present in lm_travel_log within TTL; else compute once + store' and C3 INVARIANT (line 76) leans on lm_travel_log as a route-result cache with a TTL. On disk lm_travel_log is a CLAIM/dedup ledger (uid, event_key, leg) with NO duration/result column and NO TTL/computed_at column — it cannot hold a cached route result.",
+      "evidence": "travel.js:169-177 claimTravel inserts only {uid, event_key, leg}; grep of apps/life-call/migrations for duration|ttl|computed_at|result = 0 matches. The named artifact does not store what C3 claims it stores.",
+      "fix": "Introduce a distinct route-result cache (schema: uid, from, to, time_bucket, duration_secs, computed_at) as an explicit MIGRATION, or rename/re-scope C3 to a new table. Do not describe lm_travel_log as a result cache it is not."
+    },
+    {
+      "id": "F3",
+      "dimension": "structural_integrity",
+      "severity": "blocker",
+      "file": "specs/behavioral-spec.md",
+      "line": 99,
+      "issue": "C7-EXT (lines 99-122) is massive scope creep. It applies a portfolio-wide Reflexion/Self-Refine self-improvement loop to 'every product in aniccaai.com/dais + anicca-project' with versioned SKILL.md, metric-delta grader, RevenueCat/ASC/GA4/Stripe metric pulls, AARRR funnel theory, GEO/SEO marketing strategy, and Project Vend guards. This does not belong in a feature titled 'life-manager-cost-connect-reliability'.",
+      "evidence": "Lines 99-122 describe an entirely separate engine ('this C7-EXT loop = the earn/human/ product-operator engine', line 120) unrelated to LM voice cost, JP routing, connect, or the money-path monitor. The in-scope loop is already covered by C7 (line 94) + Goal 8 (line 47).",
+      "fix": "Delete C7-EXT from this spec and file it as its own feature (e.g. 'portfolio-self-improvement-loop'). Keep only C7/Goal 8 (LM-scoped daily loop) here."
+    },
+    {
+      "id": "F4",
+      "dimension": "structural_integrity",
+      "severity": "major",
+      "file": "specs/behavioral-spec.md",
+      "line": 85,
+      "issue": "C4 MIGRATION says existing Composio-calendar users 'keep working (dual-read) until migrated', but the on-disk user-selection query HARDCODES calendar_provider=eq.composio_gcal. A Pipedream-connected user (different provider value) is excluded from wake/travel/ask loops entirely, so 'dual-read' is not sufficient and is contradicted by the code.",
+      "evidence": "scheduler.js:42 supaUsers filters '...&paid=is.true&calendar_provider=eq.composio_gcal'; scheduler.js:280 getUserByUid applies the same hardcoded filter. Nothing selects a Pipedream provider.",
+      "fix": "Specify the provider-value migration explicitly: broaden the selection filter to include the Pipedream provider (calendar_provider in {composio_gcal, pipedream_*}) and define the read-adapter dispatch. Acknowledge the query change as part of C4, not just 'dual-read'."
+    },
+    {
+      "id": "F5",
+      "dimension": "structural_integrity",
+      "severity": "major",
+      "file": "specs/behavioral-spec.md",
+      "line": 92,
+      "issue": "C5 KNOWLEDGE declares known-good values (Stripe link) live in a registry file 'not hardcoded across the codebase (SSOT)'. But the live Stripe link's actual source of truth is a Netlify/GHA build-time env var, creating TWO sources of truth (registry file vs NEXT_PUBLIC_STRIPE_LM_URL) with no stated reconciliation.",
+      "evidence": "LmClient.tsx:34 const STRIPE_LM_URL = process.env.NEXT_PUBLIC_STRIPE_LM_URL; LmClient.tsx:455 renders the href from it. The link is baked into the JS bundle at build. The spec's registry would not be the authority unless it drives the env var.",
+      "fix": "Define ONE authority: the registry file must be the source that sets NEXT_PUBLIC_STRIPE_LM_URL at build (or the monitor must assert the registry == the deployed env value). Specify how the registry and the Netlify env var are kept identical."
+    },
+    {
+      "id": "F6",
+      "dimension": "edge_cases",
+      "severity": "major",
+      "file": "specs/behavioral-spec.md",
+      "line": 90,
+      "issue": "C5/C6 auto-rollback has no debounce/self-DoS guard and no rollback-target-also-bad handling. A single transient FAIL (Netlify 5xx, synthetic-check network blip, Stripe page A/B text change) would trigger a production rollback; and if the last-good deploy ALSO fails the content assertion, the system flaps or cannot move forward. 'exactly ONE Telegram' (line 44) has no dedup mechanism across the 15-min recurring checks.",
+      "evidence": "C5 INVARIANT (line 91) says 'page a human only on a real, ongoing symptom' but the ROLLBACK trigger (line 90) states no N-consecutive-failure threshold; no guard for last-good also failing; no alert-dedup state.",
+      "fix": "Specify: rollback only after N consecutive failures (define N and interval); verify the rollback TARGET passes the same content assertion before restoring; a circuit-breaker to stop infinite rollback; and an alert-dedup key so Dais receives exactly one Telegram per incident, not per tick."
+    },
+    {
+      "id": "F7",
+      "dimension": "edge_cases",
+      "severity": "major",
+      "file": "specs/behavioral-spec.md",
+      "line": 143,
+      "issue": "Section 6 header states OQs must be 'resolve[d] in-spec before impl' (and project Rule 0.7/0.10 forbid leaving anything optional/unresolved), yet OQ2 (transit coverage/rate-limit/ToS/SLA threshold), OQ3 (Pipedream Gmail CASA-audit trap), OQ4 (monitor host), and OQ5 (does key restriction break the Live fallback / other consumers) are all left OPEN. OQ5 in particular directly gates Goal 7 and the C1 fallback.",
+      "evidence": "Lines 146-149 list OQ2-OQ5 unresolved. C1 EDGE (line 60) relies on 'last resort Gemini Live' while Goal 7 (line 46) restricts the Gemini keys — OQ5 (line 149) admits this may break that very fallback and is unresolved.",
+      "fix": "Resolve OQ2-OQ5 in-spec: define the transit fallback threshold + ToS decision, confirm Pipedream scope avoids the audit trap, pick the monitor host, and enumerate Gemini-key consumers + prove the restriction does not break the Live fallback (or move the fallback to a separately-scoped key)."
+    },
+    {
+      "id": "F8",
+      "dimension": "edge_cases",
+      "severity": "minor",
+      "file": "specs/behavioral-spec.md",
+      "line": 67,
+      "issue": "C2 routing edges are incomplete/ambiguous. 'JP (both endpoints resolvable in the feed) -> transit.ls8h.com' does not define how resolvability is determined without first calling the API, and the SPLIT case (one endpoint JP-resolvable, the other not) has no branch. C2 also assigns the JP-vs-not decision to 'the MODEL (agent)' (line 71) on a path that today is pure deterministic geometry, injecting per-route LLM latency/cost into a COST-REDUCTION feature.",
+      "evidence": "travel.js:134-146 directionsMinutes is fully deterministic (no agent). C2 line 71 mandates an agent decision per route; C2 EDGE (line 68) only covers '0 journeys', not the mixed-endpoint case.",
+      "fix": "Define the resolvability probe and the mixed-endpoint fallback (any non-JP endpoint -> Google). Justify or remove the per-route agent call; a country-of-coordinates check is parsing of a fixed format, not a judgment, so it need not be an LLM call and should not add cost."
+    },
+    {
+      "id": "F9",
+      "dimension": "impl_correctness",
+      "severity": "blocker",
+      "file": "specs/behavioral-spec.md",
+      "line": 40,
+      "issue": "Goal 1 verification is unmeasurable as written: 'the call incurs $0 Gemini-Live cost (billing shows no native-audio token spend for that call)'. GCP billing is a DAILY per-project aggregate (the spec itself cites '¥268 on 2026-07-01 alone', line 17), not per-call. You cannot prove a single call's native-audio spend is $0 from billing.",
+      "evidence": "Line 40 ties the invariant to billing; line 17 confirms billing granularity is daily/per-project. C1 INVARIANT (line 62) 'default path emits zero Gemini-Live audio tokens' is a code-path property, not a billing observation.",
+      "fix": "Redefine the proof as a code/log assertion: the default call path NEVER opens the Gemini Live websocket (assert geminiLiveWsUrl/buildGeminiSetup is not invoked; count fallback invocations = 0). Optionally corroborate with a day-over-day native-audio billing delta, but the per-call proof must be code/log-based."
+    },
+    {
+      "id": "F10",
+      "dimension": "impl_correctness",
+      "severity": "major",
+      "file": "specs/behavioral-spec.md",
+      "line": 106,
+      "issue": "C7-EXT's grader is 'metric delta (MRR/signup/conversion/cost)', but REALITY CHECK reports $0 MRR, 0 subscription rows, and lm_users = 3 rows all Dais's own tests (line 14). At that volume the metric delta is pure noise, so rule (5) 'weak/conflicting signal = NO-OP' will fire every cycle — which directly contradicts Goal 8's requirement to take '>=1 concrete action' every cycle (line 47). The regression-revert rule (7) will also thrash on noise (revert a bump because a random 0->1 signup 'got worse').",
+      "evidence": "Line 14 (0 revenue, 3 test rows) vs line 47 (>=1 action/cycle) vs line 106 rule 5 (NO-OP on weak signal) and rule 7 (revert on worse metric). These cannot all hold at $0 MRR.",
+      "fix": "Resolve the contradiction: at $0 MRR make the daily action target a LEADING/instrumentation lever (not metric-delta-graded), and gate the metric-delta grader + regression-revert behind a minimum-sample threshold so it does not fire on noise. Reconcile Goal 8's mandatory action with the NO-OP-on-weak-signal rule."
+    },
+    {
+      "id": "F11",
+      "dimension": "verification_readiness",
+      "severity": "major",
+      "file": "specs/behavioral-spec.md",
+      "line": 139,
+      "issue": "Several Goal conditions have no concrete, no-mock proof path on disk. (a) The C2 RED test is specified as a 'real fixture from live call' to api.transit.ls8h.com but no such fixture exists in the repo, and the endpoint is unverifiable from disk. (b) Goal 7 KEY-RESTRICT is proven only by 'the GCP banner clears' — a manual browser check, with OQ5 (does the restriction break the Live fallback) unresolved. (c) Goal 5b asserts the '/lm bundle's Stripe link' but the link is only present when ?tg= is set (standalone /lm renders a coming-soon gate with no link), so the monitor target and extraction method (parse built JS chunk vs SSR HTML) are unspecified.",
+      "evidence": "Line 139 RED tests reference a live fixture not committed; line 46 Goal 7 gives only 'banner clears'; LmBody.tsx:41-63 shows standalone /lm returns the coming-soon gate (no Stripe href), while LmClient.tsx:453-455 renders the Stripe link only under ?tg=. Goal 5a (line 44) lists '/lm?tg=' but 5b does not pin the extraction source.",
+      "fix": "Commit a real transit-API response fixture for the C2 RED test. Define Goal 7 verification as an API/CLI assertion on the key's restriction config (not just the banner) plus a fallback-still-works check. Pin the money-path monitor to fetch /lm?tg=<digits> and specify parsing the built LmClient JS chunk (or an SSR endpoint) for the Stripe URL."
+    }
+  ]
+}
