@@ -154,6 +154,15 @@
     "earn/_probe": {
       "status": "declared",
       "summary": "VCSDD integration probe (writes a test earn-ledger line)"
+    },
+    "earn/sol-trade": {
+      "track": "A",
+      "dir": "skills/earn/sol-trade",
+      "entrypoint": "run.sh",
+      "status": "live",
+      "owner": "sol-trade",
+      "spec": "2026-07-03-anicca-colony-architecture §0.25 PIVOT + §10 W2",
+      "summary": "LIVE (W2): runs BlockRunAI/Franklin-Trading AS-IS via franklin-trading CLI. Agent researches/sizes/trades itself and pays its own model calls via x402 from its own Solana wallet 8Fpqd (APIキー不要). Wrapper = kill-switch + max-spend + trace. First real pass verified 2026-07-04 (agent's own verdict: bankroll too small for edge → wait)."
     }
   }
 }
