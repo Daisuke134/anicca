@@ -20,3 +20,9 @@ CREATE TABLE IF NOT EXISTS public.lm_route_cache (
 
 -- Prune helper (a cron may DELETE expired rows; not required for correctness — reads check ttl).
 CREATE INDEX IF NOT EXISTS lm_route_cache_computed_at_idx ON public.lm_route_cache (computed_at);
+
+-- SECURITY: enable RLS with NO policies (matches every other lm_* table). Contains uid + home/dest geo
+-- = sensitive location data; the public anon key must NOT reach it. life-call uses the service_role key,
+-- which BYPASSES RLS, so the backend keeps full access while the internet-exposed anon key is denied.
+ALTER TABLE public.lm_route_cache ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.lm_route_cache FORCE ROW LEVEL SECURITY;
