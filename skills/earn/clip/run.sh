@@ -22,10 +22,11 @@ QUEUE="$CLIP_QUEUE"                      # *.mp4 + matching *.txt caption, fille
 POSTED="$CLIP_POSTED"
 ACCTS="$CLIP_ACCTS"
 LEDGER="$CLIP_LEDGER"
-POSTER="$HOME_DIR/.claude/skills/ig-reels-poster/scripts/post_reel.py"
+PENDING_VERIFY="$CLIP_PENDING_VERIFY"    # REQ-006: unverified-outcome clips land here, never queue/posted
+POSTER="${CLIP_POSTER_OVERRIDE:-$HOME_DIR/.claude/skills/ig-reels-poster/scripts/post_reel.py}"  # test hook (PROP-005), unset in production
 CDP_DIR="$HOME_DIR/.claude/skills/ig-account-create/scripts"
 PY=/opt/homebrew/bin/python3
-mkdir -p "$QUEUE" "$POSTED" "$(dirname "$LEDGER")"
+mkdir -p "$QUEUE" "$POSTED" "$PENDING_VERIFY" "$(dirname "$LEDGER")"
 
 emit() { printf '{"slot":"earn/clip","did":%s,"earned_usdc":0,"cost_usdc":0}\n' "$(printf '%s' "$1" | "$PY" -c 'import json,sys;print(json.dumps(sys.stdin.read()))')"; }
 
@@ -59,19 +60,28 @@ if [ "$EARN_MODE" != "execute" ]; then
 fi
 
 # --- execute: confirm the account's isolated browser is UP and logged in (no human) ---
-TID="$(curl -sS --max-time 5 "http://localhost:${PORT}/json/list" 2>/dev/null | "$PY" -c '
+# Test hooks (PROP-005), both unset in production: skip the real CDP liveness/login checks so
+# run.sh's 3-way OUTCOME routing can be tested against a stubbed POSTER without a real browser.
+if [ -n "${CLIP_TEST_TID_OVERRIDE:-}" ]; then
+  TID="$CLIP_TEST_TID_OVERRIDE"
+else
+  TID="$(curl -sS --max-time 5 "http://localhost:${PORT}/json/list" 2>/dev/null | "$PY" -c '
 import json,sys
 try: d=json.load(sys.stdin)
 except Exception: d=[]
 ps=[t for t in d if t.get("type")=="page" and "instagram.com" in (t.get("url") or "")]
 print((ps[0] if ps else (next((t for t in d if t.get("type")=="page"), {}))).get("id",""))
 ')"
+fi
 if [ -z "$TID" ]; then
   emit "account @${HANDLE} browser not up on :${PORT} (warmer/creator must keep it logged in)"; exit 0
 fi
 
 # verify logged in as HANDLE (fail-closed: do not post if we cannot confirm)
-ACTIVE="$(CDP_PORT="$PORT" "$PY" -c "
+if [ -n "${CLIP_TEST_ACTIVE_OVERRIDE:-}" ]; then
+  ACTIVE="$CLIP_TEST_ACTIVE_OVERRIDE"
+else
+  ACTIVE="$(CDP_PORT="$PORT" "$PY" -c "
 import sys,os; sys.path.insert(0,'$CDP_DIR'); import cdp
 tid='$TID'
 try:
@@ -80,27 +90,74 @@ try:
 except Exception as e:
     print('')
 " 2>/dev/null | sed 's/のプロフィール写真//')"
+fi
 if [ "$ACTIVE" != "$HANDLE" ]; then
   emit "account @${HANDLE} not logged in on :${PORT} (active='${ACTIVE}') — skipping, no wrong-account post"; exit 0
 fi
 
-# post the clip (poster has its own fail-closed account-guard too)
-RES="$(CDP_PORT="$PORT" "$PY" "$POSTER" --video "$CLIP" --caption-file "$CAP" --handle "$HANDLE" --tid "$TID" --live 2>/dev/null | tail -1)"
-URL="$(printf '%s' "$RES" | "$PY" -c 'import json,sys
-try: d=json.loads(sys.stdin.read()); print(d.get("post_url") or "")
-except Exception: print("")')"
+# REQ-010: FRESH RANDOM per-attempt tracking token (NOT clip_id-derived — producer.sh's clip_id can
+# legitimately repeat across separate attempts, e.g. a same-day channel repeat or a manual retry).
+TOKEN="#c$("$PY" -c 'import secrets; print(secrets.token_hex(5))')"
+# Write $CAP's ORIGINAL content + the token into a NEW temp file — $CAP itself is NEVER mutated.
+# NOTE: BSD/macOS mktemp does NOT randomize a template with a suffix after the X's (verified: it
+# creates the LITERAL "clip-cap-XXXXXX.txt" path every time, a real collision risk) — the X's must
+# be the very last characters of the template. post_reel.py's --caption-file has no extension
+# requirement (it just open()s + reads whatever path is given), so no extension is needed here.
+TMPCAP="$(mktemp "${TMPDIR:-/tmp}/clip-cap-XXXXXX")"
+trap 'rm -f "$TMPCAP"' EXIT
+printf '%s\n%s\n' "$(cat "$CAP")" "$TOKEN" > "$TMPCAP"
 
-if [ -n "$URL" ]; then
-  mv "$CLIP" "$POSTED/" 2>/dev/null || true
-  mv "$CAP"  "$POSTED/" 2>/dev/null || true
-  # narrate ledger line (earn_usdc=0; real USDC is recorded by the payout-check wake)
-  "$PY" - "$LEDGER" "$HANDLE" "$URL" "$WAKE" <<'PYL' 2>/dev/null
+# post the clip (poster has its own fail-closed account-guard too)
+RES="$(CDP_PORT="$PORT" "$PY" "$POSTER" --video "$CLIP" --caption-file "$TMPCAP" --handle "$HANDLE" --tid "$TID" --live 2>/dev/null | tail -1)"
+# NOTE (2 real bugs caught while writing PROP-005's test, both fixed here): (1) json.dumps' DEFAULT
+# separators include a space after each comma (e.g. `["a", "b"]`), which corrupts whitespace-based
+# field-splitting. (2) bash `read`'s default whitespace IFS COLLAPSES consecutive separators, so an
+# EMPTY middle field (post_url=="" when unverified) silently disappears and every field after it
+# shifts left. Fix: use compact JSON separators AND a non-whitespace field delimiter (\x1f, "unit
+# separator" — cannot appear in JSON/URL text) so empty fields are preserved correctly.
+IFS=$'\x1f' read -r OUTCOME URL BEFORE_HREFS_JSON < <(printf '%s' "$RES" | "$PY" -c 'import json,sys
+try:
+    d=json.loads(sys.stdin.read())
+except Exception:
+    d={}
+print("\x1f".join([d.get("outcome") or "failed", d.get("post_url") or "", json.dumps(d.get("before_hrefs") or [], separators=(",", ":"))]))')
+
+case "$OUTCOME" in
+  published)
+    mv "$CLIP" "$POSTED/" 2>/dev/null || true
+    mv "$CAP"  "$POSTED/" 2>/dev/null || true
+    "$PY" - "$LEDGER" "$HANDLE" "$URL" "$WAKE" <<'PYL' 2>/dev/null
 import json,sys,os
 ledger,handle,url,wake=sys.argv[1:5]
 line={"slot":"earn/clip","source":"ig-clip","task":f"posted reel to @{handle}: {url}",
-      "earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":wake or None,"post_url":url}
+      "status":"posted","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":wake or None,"post_url":url}
 with open(ledger,"a") as f: f.write(json.dumps(line,ensure_ascii=False)+"\n")
 PYL
-  emit "posted @${HANDLE}: ${URL}"; exit 0
-fi
-emit "post attempt did not confirm a live URL (res=${RES})"; exit 0
+    emit "posted @${HANDLE}: ${URL}"; exit 0
+    ;;
+  unverified)
+    # REQ-006/FIND-032: BOTH the clip AND its paired caption move together, mirroring the existing
+    # $CLIP/$CAP move-together pattern above. REQ-008 step 6: sidecar records before_hrefs + token.
+    BASE="$(basename "${CLIP%.mp4}")"
+    mv "$CLIP" "$PENDING_VERIFY/" 2>/dev/null || true
+    mv "$CAP"  "$PENDING_VERIFY/" 2>/dev/null || true
+    "$PY" - "$PENDING_VERIFY/${BASE}.before-hrefs.json" "$BEFORE_HREFS_JSON" "$TOKEN" <<'PYS' 2>/dev/null
+import json,sys
+sidecar_path, before_hrefs_json, token = sys.argv[1:4]
+before_hrefs = json.loads(before_hrefs_json)
+with open(sidecar_path, "w") as f:
+    json.dump({"before_hrefs": before_hrefs, "token": token}, f, ensure_ascii=False)
+PYS
+    "$PY" - "$LEDGER" "$HANDLE" "$WAKE" <<'PYL' 2>/dev/null
+import json,sys,os
+ledger,handle,wake=sys.argv[1:4]
+line={"slot":"earn/clip","source":"ig-clip","task":f"post to @{handle} unverified — pending self-heal",
+      "status":"unverified","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":wake or None,"post_url":None}
+with open(ledger,"a") as f: f.write(json.dumps(line,ensure_ascii=False)+"\n")
+PYL
+    emit "post to @${HANDLE} unverified — moved to pending-verify for self-heal"; exit 0
+    ;;
+  *)
+    emit "post attempt failed (res=${RES})"; exit 0
+    ;;
+esac
