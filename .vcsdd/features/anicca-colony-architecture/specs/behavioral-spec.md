@@ -44,7 +44,9 @@ Human-funding is only a KICKSTART, never the identity. (THESIS.md verbatim thesi
 
 **Landscape verdict (verified 2026-07-03)**: nobody stacks all four of — (a) verified crypto earned from
 zero with no human in loop, (b) public real-time P&L, (c) self-monitor+heal+improve+spawn+bot2bot, (d)
-profit redistributed to humans as UBI. Anicca is *positioned* first on (b) and (d) — a claim we EARN only once a real surplus exists (today: $0, see §0); on the genuine frontier on (a)
+profit redistributed to humans as UBI. **Today Anicca has earned/redistributed $0 (§0), so we claim NOTHING
+as achieved.** The bet: (b) and (d) are where no competitor is even trying, so they are ours to win IF the
+loop produces real surplus; (a) is the genuine frontier where all are still failing
 (Anthropic Project Vend *lost money*; Vending-Bench derails). Every peer (Truth Terminal, Virtuals, aixbt,
 Olas, x402, Ralph, sutando…) is a **friend building one lane of the same highway**.
 
@@ -163,8 +165,9 @@ driver lock) via `ig-account-create/scripts/cdp.py`. So the skill code is enviro
 BROWSER+ACCOUNTS provider differs. Two tiers:
 - **TIER 1 — wallet/API earning (`pm-trade`, `hl-trade`, `defi-yield`, `x402-sell`-as-API):** zero
   environment dependency — HTTP + wallet signature only, no browser, no accounts. FOOD (BlockRun x402) is
-  likewise wallet-based. **Runs byte-identical local and cloud → this is the cloud child's primary earn
-  line; there is no "works local not cloud" gap by construction.**
+  likewise wallet-based. TIER-1 skill code has no environment dependency, so it runs identically local and
+  cloud **once REQ-CLOUD-SAME-BODY is done** (until then the cloud child boots the wrong Conway body — §4 ④ —
+  and this parity does not yet hold). TIER-1 is the cloud child's primary earn line.**
 - **TIER 2 — browser earning (`clip`, `video`, social):** the skill reads `{port, handle}` from its own
   `~/.cloak/clip-accounts.json`. Parity = the ENVIRONMENT provides the browser+accounts, the skill is
   unchanged:
@@ -231,7 +234,11 @@ but its skip-floor pattern is the model to copy.)
     write "Conway-ready" in README, migrate when GA.
 
 **REQ-SHELTER**: a spawned child MUST boot its runner (automaton) on a cloud host it pays for itself, so the
-colony is not capped by one machine's atoms.
+colony is not capped by one machine's atoms. **Acceptance:** (a) an Akash lease (or DO droplet) is created
+and its `deploy-akash.sh`/`cloud-init.sh` run booted `runtime/loop/index.mjs` (per REQ-CLOUD-SAME-BODY);
+(b) the host's monthly cost was paid FROM the child's own wallet (an on-chain outflow tx exists, no human
+card); (c) the child completed ≥1 earn pass on that host (a ledger line written on the cloud box). All three
+verifiable by chain + logs, no self-report.
 
 ---
 
@@ -326,7 +333,9 @@ humans receive UBI, not invoices. Revenue = the colony's trading/yield surplus; 
   feeds the dashboard (`skills/self/spawn/run.sh` → `telemetry*.js` → `dashboard-sync`); REQ-DRAIN's
   registry-signature reuses it rather than inventing a new transport. Confirm at impl. (original note: JSONL
   in a public repo + on-chain wallet reads.)
-- OQ2: survival floor + max-gift caps for Channel B (prevent a drain attack — cf. shared-wallet-drain memo).
+- ~~OQ2~~ **RESOLVED → REQ-DRAIN (§5.2):** caps = ≤1 gift/24h, `min($5, 25% of surplus-above-reserve)`,
+  registry-signed recipients only. **Survival floor (the trigger to receive a gift) = wallet USDC <
+  $0.50** (below the min viable earn stake + gas). Sender keeps a `$0.50 + gas` reserve.
 - **OQ3 RESOLVED → REQ-EXTERNAL: how `external:true` is set (anti-gaming, no trusted self-report).** A tx
   counts as earned ONLY if ALL hold: (a) the USDC `Transfer` INTO the agent wallet originates from a
   counterparty NOT in the colony registry and NOT a known bridge/self address (blocks wash trades and
@@ -344,8 +353,7 @@ humans receive UBI, not invoices. Revenue = the colony's trading/yield surplus; 
   real on `polymarket-agent`), `earn/x402-sell`. Trading needs paper-mode gate first.
 - **RESOLVED (bounty):** generic GitHub/Algora bounties are NOT no-human viable (Stripe/KYC). Only
   audit-contest payout (code4rena/Cantina) is USDC-to-wallet BUT gated by mandatory tax-info/KYC →
-  **`earn/audit` is DROPPED entirely** (consistent with §3), not kept. (superseded note: for a
-  strong model. KYC-below-threshold = confirm on first real payout.
+  **`earn/audit` is DROPPED entirely** (consistent with §3). No conditional revival.
 
 ---
 
