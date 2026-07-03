@@ -1,0 +1,14 @@
+{
+  "id": "FIND-312",
+  "dimension": "verification_readiness",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "file": "specs/behavioral-spec.md",
+  "line": "40,105",
+  "issue": "Compounding FIND-301 and FIND-311: the two places that together define 'is C1 done' -- the Goal 1 proof condition (§3, line 40) and the RED test plan that is supposed to verify it (§4, line 105) -- BOTH still describe the pre-Pipecat design. Right now, nothing in the document's provability chain (what must be true + what test proves it) actually names or verifies the architecture C1 claims to specify. A live call through a correctly-built Pipecat pipeline could pass Goal 1 as literally worded (a follow-up gets answered, live_ws_opened=0) without any of it being exercised by the RED plan, and the RED plan as worded could pass in full while testing code that Pipecat replaces and that will not exist in the shipped implementation.",
+  "evidence": {
+    "file": "specs/behavioral-spec.md",
+    "lines": "40 (Goal 1, stale), 105 (§4 RED list, stale)"
+  },
+  "fix": "Fix FIND-301 and FIND-311 together as one pass so Goal 1's proof condition and §4's RED list both describe the same (Pipecat) architecture -- verification readiness for C1 cannot be judged PASS until both are internally consistent with C1 itself."
+}

@@ -1,0 +1,66 @@
+{
+  "reviewType": "spec",
+  "feature": "life-manager-cost-connect-reliability",
+  "focus": "FINAL confirmation pass: verify iteration-10's sole residual finding (FIND-501/FIND-502 — OQ8 literally read 'OPEN' under a §5 header claiming all OQs are 'RESOLVED in-spec') is fixed by the one-line reword, and that no new contradiction was introduced. Pipecat architecture NOT re-litigated.",
+  "overallVerdict": "PASS",
+  "timestamp": "2026-07-04T00:00:00Z",
+  "iteration": 11,
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "specs/behavioral-spec.md:116", "description": "FIND-501 CONFIRMED RESOLVED: OQ8's entry now reads '**OQ8 (Kokoro footprint)**: RESOLVED-as-benchmark-gate — resolve at impl by MEASURING (a §4 ship-blocking gate, not an open question) — ...'. This is exactly FIND-501's suggested fix text (RESOLVED-as-benchmark-gate form), not a paraphrase that reintroduces ambiguity."},
+        {"type": "grep", "location": "specs/behavioral-spec.md (whole document)", "description": "grep for the literal offending string 'OQ8 (Kokoro footprint)**: OPEN' = 0 hits. grep for the bare status word 'OPEN' anywhere in the document returns only line 61 ('the agent OPENS with the wake guidance' — the verb 'opens', unrelated to any OQ status field) — no remaining status-field contradiction."},
+        {"type": "file", "location": "specs/behavioral-spec.md:109 vs 110-118", "description": "All 9 OQ entries (OQ1-OQ9) now uniformly state RESOLVED / RESOLVED (corrected) / RESOLVED-as-requirement / RESOLVED-as-benchmark-gate, matching the §5 header's invariant 'Open questions — RESOLVED in-spec (F7)' with zero outliers."}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "specs/behavioral-spec.md:106 vs 116", "description": "The §4 'OQ8 GATE (before ship)' bullet and OQ8's own RESOLVED-as-benchmark-gate text now state the identical measurable condition (Kokoro-82M else Piper latency+RAM benchmark on the target Railway instance, ~500-800ms/~800ms budget, deploy-blocking) — the edge case (CPU latency exceeds budget) and its fallback (Piper / Cartesia free tier) are specified in both places with no drift."}
+      ]
+    },
+    {
+      "name": "impl_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "specs/behavioral-spec.md:65 vs 116", "description": "C1's LATENCY bullet ('footprint MEASURED at impl per OQ8 — not assumed') and OQ8's own resolution ('resolve at impl by MEASURING... not an open question') now use consistent tense and consistent framing (a measured, gated impl target, not a claimed-verified fact and not an unresolved question) — no tense or status mismatch remains between the two cross-references."}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "grep", "location": "specs/behavioral-spec.md (whole document)", "description": "Full re-sweep for the failure class iteration-9/10 named (point-patch without cross-check): 'either (a)' = 0 hits; 'node --test' / 'node---test' = 0 hits (the only 'node' + command context is line 97's OpenClaw cron description, unrelated to the RED-plan's Python/pytest framing at line 105); edge-tts/edge_tts/msedge-tts occurrences (lines 33, 55-56, 58, 65) remain confined to legitimate historical/removed-context ('are all REMOVED with the hand-rolled cascade') — none reintroduce edge-tts as a live dependency."},
+        {"type": "file", "location": "specs/behavioral-spec.md:104-118", "description": "§4 (verification architecture) and §5 (open questions) now cross-reference OQ8 and OQ9 consistently in both directions with matching status language; this is the only structural defect iteration-10 identified as remaining, and it is closed with a one-line change that touches no other content."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "specs/behavioral-spec.md:106", "description": "The §4 OQ8 GATE (deploy-blocking benchmark) is unchanged and still present, giving OQ8's now-RESOLVED-as-benchmark-gate status a real, named, enforced proof obligation rather than an unbacked claim of resolution."}
+      ]
+    }
+  ],
+  "priorFindings": {
+    "FIND-501": "resolved — OQ8 line 116 reworded to RESOLVED-as-benchmark-gate, matching the suggested fix verbatim in substance",
+    "FIND-502": "resolved — the sole remaining structural inconsistency (OQ8 status word vs §5 header) is closed; no other structural defect found in this pass"
+  },
+  "honestCall": "This is a genuine, verified fix, not a cosmetic reword that dodges the letter of the finding: line 116 no longer contains the literal word 'OPEN' as a status field, it now reads 'RESOLVED-as-benchmark-gate' in the exact style FIND-501 proposed, and every one of OQ1-OQ9 now agrees with the §5 header's invariant. A full independent whole-document sweep for the same failure class ('either (a)', node --test/deleted-module references, edge-tts reintroduction, any other OQ regressing to OPEN) found zero new contradictions. The fix is scoped to exactly the one line iteration-10 flagged; nothing else in the document changed in a way that reopens any of iterations 1-10's prior findings (spot-checked: OQ7/C1 line 57 vs 115, Smart-Turn-JA C1 line 56 vs OQ1 line 110, and the §4 OQ8 GATE at line 106 all remain intact and mutually consistent). All 5 dimensions PASS; zero open findings remain in this spec.",
+  "convergenceSignals": {
+    "findingCount": 0,
+    "blockerCount": 0,
+    "majorCount": 0,
+    "minorCount": 0,
+    "allCriteriaEvaluated": true,
+    "duplicateFindings": []
+  }
+}

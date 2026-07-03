@@ -1,0 +1,14 @@
+{
+  "id": "FIND-501",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "file": "specs/behavioral-spec.md",
+  "line": "109, 116 (vs 65)",
+  "issue": "FIND-402 (iteration-9) is only PARTIALLY resolved. The tense mismatch it flagged IS fixed: C1's LATENCY bullet (line 65) now correctly reads 'footprint MEASURED at impl per OQ8 — not assumed' (no longer claims 'verified'). But FIND-402's SECOND, explicitly-named half of the same issue is UNCHANGED: OQ8 itself (line 116) still literally begins 'OQ8 (Kokoro footprint): OPEN -> resolve at impl by MEASURING...', sitting directly under the section 5 header (line 109) 'Open questions -- RESOLVED in-spec (F7)'. Every OTHER OQ entry in the same section (OQ1,2,3,4,5,6,7,9) states 'RESOLVED' or 'RESOLVED-as-requirement'; OQ8 is the sole outlier that still contains the bare word 'OPEN', directly contradicting the header's claim that ALL entries are resolved in-spec, and in tension with CLAUDE.md 0.7 ('スペックに「任意」「optional」「推奨」禁止。全て MUST'). FIND-402's own fix offered two remediation paths -- (a) reframe OQ8 as RESOLVED with the resolution BEING the measurement procedure, or (b) explicitly cite a rule/precedent permitting a benchmark-gated exception to 0.7 -- NEITHER was applied; the text at line 116 is byte-identical to what iteration-9 already quoted as the unresolved half of FIND-402.",
+  "evidence": {
+    "file": "specs/behavioral-spec.md",
+    "lines": "109 ('## 5. Open questions — RESOLVED in-spec (F7)') vs 116 ('OQ8 (Kokoro footprint): OPEN → resolve at impl by MEASURING...') — same literal text iteration-9's FIND-402 quoted, unchanged"
+  },
+  "fix": "Reword line 116's opening from 'OQ8 (Kokoro footprint): OPEN -> resolve at impl by MEASURING' to a RESOLVED-as-requirement form matching the other 8 entries' style, e.g. 'OQ8 (Kokoro footprint): RESOLVED-as-benchmark-gate — Kokoro-82M on CPU: RAM + cold-start + per-turn latency MUST be measured on the Railway instance size before ship (see §4 OQ8 GATE); if CPU latency > the ~500-800ms budget, fall back to Piper...'. This makes OQ8 consistent with the section's own stated invariant and with the §4 GATE that already exists (line 106) without changing the actual decision procedure."
+}

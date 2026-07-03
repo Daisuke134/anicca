@@ -1,0 +1,65 @@
+{
+  "reviewType": "spec",
+  "feature": "life-manager-cost-connect-reliability",
+  "focus": "C1 (specs/behavioral-spec.md §3bis) REWRITTEN architecture pivot to Pipecat + Goal 1 (§3), reviewed against evidence/pipecat-decision-2026-07-04.md and the prior impl-review FAIL (reviews/impl/iteration-5, FIND-201/FIND-202) that motivated the pivot",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-04T00:00:00Z",
+  "iteration": 8,
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-301", "FIND-302", "FIND-303", "FIND-304"],
+      "evidence": [
+        {"type": "file", "location": "specs/behavioral-spec.md:54-64", "description": "C1's headline bullets (ARCHITECTURE PIVOT, STACK, INTEGRATION, BARGE-IN, SUPERSEDES, GEMINI LIVE FULLY REMOVED, FALLBACKS) DO genuinely adopt Pipecat with real, named, citable capabilities (TelnyxFrameSerializer, Silero VAD, Smart Turn v3, pipecat-ai[groq]/[kokoro]) and DO structurally remove Gemini Live from the call path (line 60) -- this half of C1 is real, not vaporware."},
+        {"type": "file", "location": "specs/behavioral-spec.md:40,65,109,113", "description": "But Goal 1, C1's own LATENCY bullet, and both OQ1/OQ6 in §5 still describe the pre-pivot edge-tts design in direct contradiction to C1's STACK bullet (Kokoro) -- an internally inconsistent document (FIND-301/302/303)."},
+        {"type": "file", "location": "apps/life-call/lib/dial.js:1-71 (full read)", "description": "C1's citation 'dial.js buildStreamUrl' is a fabricated symbol location; the function is scheduler.js:81, not in dial.js at all (FIND-304)."}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-305", "FIND-306"],
+      "evidence": [
+        {"type": "spec", "location": "evidence/pipecat-decision-2026-07-04.md:8-19", "description": "Fail-closed intent is preserved (C1 FALLBACKS bullet, line 63) and the Moshi rejection shows real cost due-diligence was done for the REJECTED option -- but the same due diligence is missing for two load-bearing claims about the ADOPTED stack: Smart Turn v3's Japanese support (never asserted, unlike Kokoro's explicit 'Japanese-confirmed') and Kokoro's actual self-hosting resource footprint (asserted '$0' with no RAM/CPU/cold-start figures, asymmetric vs. the explicit $280/mo GPU math done to reject Moshi)."}
+      ]
+    },
+    {
+      "name": "impl_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-307", "FIND-308", "FIND-309"],
+      "evidence": [
+        {"type": "file", "location": "apps/life-call/scheduler.js:19-25,81-92; server.js:146-175", "description": "Verified: the current Node service authenticates every /ws upgrade with an HMAC-signed context (signCtx/ctxFromReq, LM_CALL_SECRET, crypto.timingSafeEqual) specifically to prevent budget-drain/prompt-injection. C1 introduces a new service/language boundary (OQ7) but never states whether this security control is carried over (FIND-308)."},
+        {"type": "file", "location": "apps/life-call/nixpacks.toml:1-16, railway.toml:1-7", "description": "Verified: current Railway build/deploy is a single Node process with pip-installed edge-tts; no supervisor pattern exists for a co-located Python process, and no second-service build config is specified for the alternative OQ7 option (FIND-309)."},
+        {"type": "spec", "location": "specs/behavioral-spec.md:57 vs 108-114", "description": "OQ7 (the deployment split) is posed as a live (a)/(b) choice and never resolved or listed in §5's 'RESOLVED in-spec' inventory, unlike every other OQ in this document (FIND-307) -- this violates the project's own no-optional-in-spec rule and leaves the pivot's single highest-impact decision unmade."}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "FAIL",
+      "findings": ["FIND-310"],
+      "evidence": [
+        {"type": "spec", "location": "specs/behavioral-spec.md:59", "description": "SUPERSEDES bullet DOES correctly and explicitly name the 4 hand-rolled .cjs files + server.js /ws wiring for replacement, so 'two voice systems both shipping' is addressed at the code-file level -- structural intent is sound where it was actually written."},
+        {"type": "spec", "location": "specs/behavioral-spec.md:36-115 (cross-reference FIND-301/302/303/307)", "description": "But the rewrite was applied only to C1's top bullets; Goal 1, the LATENCY bullet, §5 OQ1/OQ6, and OQ7's deployment split were all left stale or unresolved -- the document is not internally coherent as a single artifact (FIND-310)."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-311", "FIND-312"],
+      "evidence": [
+        {"type": "spec", "location": "specs/behavioral-spec.md:105", "description": "Section 4's RED test plan is 100% unrevised: it enumerates node --test unit tests for energyVAD endpointing, an LLM-token sentence-splitter, and a genId-style barge-in state machine -- exactly the hand-rolled logic C1's own BARGE-IN/SUPERSEDES bullets (lines 58-59) say is deleted and replaced by Pipecat's internal Silero VAD/Smart Turn/aggregators. No Python/Pipecat test approach is named anywhere (FIND-311)."},
+        {"type": "spec", "location": "specs/behavioral-spec.md:40,105", "description": "Because both the Goal 1 proof condition and the §4 RED plan independently still describe the pre-pivot design, there is currently no consistent provability chain for C1 as actually specified (FIND-312)."}
+      ]
+    }
+  ],
+  "honestCall": "The decision to ADOPT Pipecat itself is judged sound, not scope creep: FIND-201 proved hand-rolling barge-in (energyVAD + genId) in Node is genuinely hard to get right, and Pipecat's Silero VAD + Smart Turn v3 are real, documented, bundled primitives for exactly that failure mode -- a proven framework is the correct response to a proven hand-rolled failure, not gold-plating a cost-cutting feature. The FAIL here is entirely about EXECUTION of the spec rewrite: the pivot was applied to C1's top bullets only and left five other locations in the same document (Goal 1, C1's own LATENCY bullet, §5 OQ1, §5 OQ6, §4's RED plan) describing the design it replaced, plus two real architecture/security gaps (OQ7 left undecided; HMAC auth not carried across the new service boundary) and two under-verified claims (Smart Turn v3 JA support; Kokoro's actual hosting footprint) that mirror exactly the kind of hidden-ops-cost trap this same research pass explicitly caught for Moshi.",
+  "convergenceSignals": {
+    "findingCount": 12,
+    "blockerCount": 7,
+    "majorCount": 4,
+    "minorCount": 1,
+    "allCriteriaEvaluated": true,
+    "duplicateFindings": []
+  }
+}

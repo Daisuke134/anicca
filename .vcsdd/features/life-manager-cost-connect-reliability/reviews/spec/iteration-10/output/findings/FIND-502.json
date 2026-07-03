@@ -1,0 +1,14 @@
+{
+  "id": "FIND-502",
+  "dimension": "structural_integrity",
+  "category": "spec_gap",
+  "severity": "major",
+  "file": "specs/behavioral-spec.md",
+  "line": "36-118 full re-read",
+  "issue": "Cross-referencing this iteration's sweep against iteration-9's FIND-401/402/403/405: the reconciliation pass materially fixed 2.5 of the 3 concrete cross-reference contradictions iteration-9 named (OQ7 fully propagated into C1 line 57, now reading 'DECIDED (OQ7)' with the exact apps/life-voice/ + PIPECAT_WSS + scheduler.js:81 decision, matching §5 line 115 verbatim in substance -- FIND-401 RESOLVED; Smart Turn v3 JA-support citation now appears in BOTH C1's STACK bullet line 56 ('README lists 23 languages INCLUDING 🇯🇵 Japanese') and OQ1 line 110 ('github.com/pipecat-ai/smart-turn README: 23 languages incl 🇯🇵 Japanese') with matching sourcing -- FIND-403 RESOLVED; a genuine §4 OQ8 GATE was added at line 106, giving the Kokoro-latency benchmark a named, deploy-blocking proof obligation -- FIND-404 RESOLVED). This confirms the process gap FIND-310/FIND-405 named (point-patching without a full cross-section pass) is genuinely improving, not just being re-asserted. But ONE instance of the SAME failure mode survives this pass unaddressed: OQ8's own status word ('OPEN', line 116) still contradicts §5's header claim that every entry is 'RESOLVED in-spec' (F7) -- see FIND-501. Grep confirms this is the ONLY remaining internal contradiction of this class in the document: 'either (a)' returns 0 hits, edge-tts/edge_tts/msedge-tts/energyVAD/genId/node---test all occur ONLY in legitimate historical-removal or explicit-rejection contexts (lines 33, 55-56, 58, 65, 105), and every other OQ1-OQ7,OQ9 entry states RESOLVED consistently with the section header.",
+  "evidence": {
+    "file": "specs/behavioral-spec.md",
+    "lines": "57 vs 114-115 (OQ7 — now consistent), 56 vs 109-110 (Smart Turn JA — now consistent), 105 vs 106 (OQ8 gate — now present); 109 vs 116 (OQ8 status word — still inconsistent, see FIND-501)"
+  },
+  "fix": "Apply FIND-501's fix (reword OQ8's status word to RESOLVED-as-benchmark-gate). No other structural coherence defect was found in this pass's full top-to-bottom re-read of C1 against Goal 1, §4, and §5."
+}

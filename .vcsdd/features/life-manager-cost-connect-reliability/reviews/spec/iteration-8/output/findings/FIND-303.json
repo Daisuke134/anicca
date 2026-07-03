@@ -1,0 +1,14 @@
+{
+  "id": "FIND-303",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "file": "specs/behavioral-spec.md",
+  "line": "109,113",
+  "issue": "Two entries in Section 5 ('Open questions -- RESOLVED in-spec') still describe the pre-Pipecat edge-tts fallback chain, contradicting C1's updated FALLBACKS bullet. OQ1 (line 109) says: 'FREE COMPOSITIONAL two-way agent (Groq Whisper STT + Groq Llama LLM + edge-tts TTS)... edge-tts (JP+EN, mu-law 8k) is the TTS stage only, synthesized per-sentence during the LLM stream.' OQ6 (line 113) says the fail-closed local fallback path is '(faster-whisper + Gemini-Flash-text + edge-tts)'. But C1's FALLBACKS bullet (line 63) now says TTS fallback = 'Kokoro->Piper' (no edge-tts at all, on either the primary or fallback leg). This is the third distinct location in the document (after Goal 1 / FIND-301 and the LATENCY bullet / FIND-302) still asserting edge-tts is in the stack.",
+  "evidence": {
+    "file": "specs/behavioral-spec.md",
+    "lines": "109 (OQ1), 113 (OQ6) vs 63 (C1 FALLBACKS: TTS Kokoro->Piper)"
+  },
+  "fix": "Update OQ1 and OQ6 to reference Kokoro (primary) / Piper (fallback) instead of edge-tts, consistent with C1's FALLBACKS bullet. A grep for 'edge-tts' or 'edge_tts' across the whole spec file should return zero hits once the pivot is actually reconciled."
+}

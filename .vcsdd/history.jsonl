@@ -1,1 +1,4 @@
 {"timestamp":"2026-07-03T14:34:22.840Z","event":"gate_recorded","featureName":"life-manager-cost-connect-reliability","phase":"1c","verdict":"PASS","reviewedBy":"adversary"}
+{"timestamp":"2026-07-03T14:57:00.765Z","event":"gate_recorded","featureName":"life-manager-cost-connect-reliability","phase":"3","verdict":"PASS","reviewedBy":"adversary"}
+{"timestamp":"2026-07-03T17:05:38.272Z","event":"gate_recorded","featureName":"life-manager-cost-connect-reliability","phase":"1c-C1","verdict":"PASS","reviewedBy":"adversary"}
+{"timestamp":"2026-07-03T18:22:54.532Z","event":"gate_recorded","featureName":"life-manager-cost-connect-reliability","phase":"1c-C1-pipecat","verdict":"PASS","reviewedBy":"adversary"}

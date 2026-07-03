@@ -29,6 +29,7 @@ from pipecat.processors.aggregators.llm_response_universal import (
 from pipecat.services.groq.llm import GroqLLMService
 from pipecat.services.groq.stt import GroqSTTService
 from pipecat.services.kokoro.tts import KokoroTTSService
+from pipecat.transcriptions.language import Language
 from pipecat.transports.base_transport import BaseTransport
 from pipecat.turns.user_stop import TurnAnalyzerUserTurnStopStrategy
 from pipecat.turns.user_turn_strategies import UserTurnStrategies
@@ -61,13 +62,16 @@ def _system_instruction(event: dict, urgency: str, lang: str) -> str:
 # ctx = {event, urgency, lang, name} (already HMAC-verified by server.py).
 async def run_bot(transport: BaseTransport, ctx: dict):
     event, urgency, lang = ctx.get("event", {}), ctx.get("urgency", "firm"), ctx.get("lang", "ja")
+    is_ja = str(lang).startswith("ja")
 
     stt = GroqSTTService(api_key=GROQ_KEY, model="whisper-large-v3-turbo")
     llm = GroqLLMService(api_key=GROQ_KEY, model="llama-3.1-8b-instant")
+    # language MUST be set for JA (default is Language.EN) — jf_alpha voice + EN lang code garbles Japanese.
     tts = KokoroTTSService(
-        voice_id=("jf_alpha" if str(lang).startswith("ja") else "af_heart"),
+        voice_id=("jf_alpha" if is_ja else "af_heart"),
         model_path=KOKORO_MODEL,
         voices_path=KOKORO_VOICES,
+        params=KokoroTTSService.InputParams(language=Language.JA if is_ja else Language.EN),
     )
 
     context = LLMContext([{"role": "system", "content": _system_instruction(event, urgency, lang)}])
