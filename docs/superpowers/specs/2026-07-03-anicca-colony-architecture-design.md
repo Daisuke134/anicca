@@ -89,10 +89,11 @@ picks model class by USDC balance. Broke → free model; funded → better model
 INV-MODE. `clip`/`affiliate` are de-prioritized (account/human-touch risk). **Kept — crypto-native,
 self-improving, alpha compounds**:
 
-| Slot | What it earns from | Tool/base (wallet-only, no-KYC — verified 2026-07-03) |
+| Slot | What it earns from | Tool/base (wallet-only, no-KYC — **RUN-verified live 2026-07-03**) |
 |---|---|---|
-| `earn/pm-trade` | Polymarket CLOB prediction-market trading. MODEL decides edge; Kelly sizing; risk gates; **paper mode mandatory before real stake**. | **`BlockRunAI/polymarket-agent`** — wallet-native, self-pays AI via x402, derives CLOB creds from key, real `create_and_post_order`. Lift `MrFadiAi/Polymarket-bot` smart-money win-rate filter for edge. |
-| `earn/hl-trade` | Hyperliquid perps/spot | **`hyperliquid-dex/hyperliquid-python-sdk`** (official, key-signature, no KYC) |
+| `earn/pm-trade` | Polymarket CLOB prediction-market trading. Kelly sizing; risk gates; **paper mode mandatory before real stake**. | **`BlockRunAI/polymarket-agent`** ✅RUN-verified: a throwaway unfunded EOA derived real CLOB creds (`create_or_derive_api_creds`) + authenticated `get_orders` with ZERO signup/KYC; AI layer keyless via `blockrun_llm` x402 (no OpenAI/Anthropic key at all). Real orders = `create_and_post_order` (`src/trading/executor.py:447`). **Fix before funding: dead `RPC_URL` in `src/trading/wallet.py:18` → `https://polygon-bor-rpc.publicnode.com`.** |
+| `earn/sol-trade` (general) | Solana/DEX + perps trading | **`BlockRunAI/Franklin-Trading`** ✅RUN-verified: `npx @blockrun/franklin-trading setup solana` makes a real keypair with no human step; real Jupiter Ultra swap (on-chain sig); BlockRun router has FREE models (no USDC for inference). Actively maintained (npm v0.2.4). Autonomy: set `auto_approve:true` on JupiterSwap + raise `FRANKLIN_LIVE_SWAP_CAP`. |
+| `earn/hl-trade` | Hyperliquid perps/spot | **`hyperliquid-dex/hyperliquid-python-sdk`** (official, key-signature, no KYC) — or Franklin-Trading's HL connector |
 | `earn/defi-yield` | DeFi USDC yield | **DefiLlama yields API (`yields.llama.fi/pools`) → Aave v3 / Spark `supply()`**, or `blockrun_defi` MCP. (GOAT SDK archived — do not use.) |
 | `earn/x402-sell` | sell own service/data via x402 (like aixbt/Nevermined) | skill exists |
 | `earn/video` | faceless video → crypto-monetized | skill exists |
@@ -101,6 +102,17 @@ self-improving, alpha compounds**:
 **Verified no-human earn rails (wallet-signature only, NO KYC/tax) = the real earn line:** `pm-trade`
 (Polymarket/Hyperliquid), `defi-yield` (Aave/Spark), `x402-sell`. These let ANY frontier AI (Claude/Codex/
 DeepSeek/GLM) earn with zero human. Bounty rails do NOT.
+
+**Two layers (RUN-verified 2026-07-03) — do NOT conflate:**
+- **EXECUTOR (the earner — wallet-native, self-custody, no KYC):** `polymarket-agent` (Polymarket) +
+  `Franklin-Trading` (Solana/DEX). Only these move USDC into the AI's OWN wallet.
+- **RESEARCH BRAIN (decision/backtest only — usable KEYLESS on our x402 proxy, but NOT an earner alone):**
+  `TauricResearch/TradingAgents` (★90k, `openai_compatible`+`backend_url`→our `:8402`, but execution is a
+  *simulated* exchange = never touches money) and `HKUDS/Vibe-Trading` (★17k, `pip install vibe-trading-ai`,
+  ran a real backtest through our proxy with $0 LLM spend, but live orders relay into a **human-owned KYC'd
+  CEX/broker account** = fails the no-human/custody test). Use them ONLY to feed signals into the executor.
+- **FOOD note (verified):** for tool-calling through the x402 proxy use the free **`gpt-oss-120b`** tier;
+  the `*-flash`/`*-nano` free models return tool-calls as plain text (unreliable) — Vibe-Trading confirmed.
 
 **REQ-EARN**: each earner runs INSIDE the existing runtime (`install.sh` → `registry.json` →
 `earn-slot.mjs` → `index.mjs` ReAct loop). It inherits `earn-shared-skeleton` (healthcheck, ROI tracking,
