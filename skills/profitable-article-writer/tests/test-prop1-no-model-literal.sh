@@ -21,7 +21,7 @@ ok "$([ $rc -eq 0 ] && echo 1 || echo 0)" "PROP-1 dynamic: a real wake completes
 draft="$(grep -oE '^draft_path: .*' "$T/STATE.md" 2>/dev/null | sed 's/^draft_path: //')"
 ok "$([ -n "$draft" ] && [ -f "$draft" ] && echo 1 || echo 0)" "PROP-1 dynamic: wake produced a draft artifact to literal-check"
 if [ -n "$draft" ] && [ -f "$draft" ]; then
-  dhits="$(grep -Ec "$FORBIDDEN" "$draft" 2>/dev/null || echo 0)"
+  dhits="$(grep -Ec "$FORBIDDEN" "$draft" 2>/dev/null)"; dhits="${dhits:-0}"
   ok "$([ "$dhits" = 0 ] && echo 1 || echo 0)" "PROP-1 dynamic: produced draft contains 0 model/API-key literals"
 fi
 

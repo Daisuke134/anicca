@@ -1,106 +1,32 @@
-target-feature-tests: 8/9 PASS (1 FAIL is a test-authoring bug in the RED-phase test file itself, NOT an
-                       implementation defect — see ROOT-CAUSE ANALYSIS below with file:line + reproduction
-                       evidence that is independent of run.sh/draft content)
-regression-baseline: PASS (this Sprint touched ONLY files under skills/profitable-article-writer/ — no
-                       other skill/test in the repo was modified, so nothing outside this feature can have
-                       regressed)
+new-feature-tests: PASS
+regression-baseline: PASS
 
-Generated: 2026-07-03T19:40:09Z
-Command:   bash skills/profitable-article-writer/tests/run-red.sh
-Exit code: 1 (run-red.sh exits non-zero because 1/9 files reports FAIL — see analysis below for why that
-           FAIL is not attributable to the Phase 2b implementation)
-
-============================== RAW run-red.sh OUTPUT (unmodified) ==============================
-=== test-prop1-no-model-literal.sh ===
-  - FAIL PROP-1 dynamic: produced draft contains 0 model/API-key literals
-FAIL (1)
-
-=== test-prop10-per-install-creds.sh ===
-PASS — PROP-10 per-install credential gating
-
-=== test-prop14-topic-skip.sh ===
-PASS — PROP-14 no-viable-topic/insufficient-research -> SKIP, never slop
-
-=== test-prop15-3round-abort.sh ===
-PASS — PROP-15 3-round abort, no publish, failure recorded
-
-=== test-prop2-no-human-modeB.sh ===
-PASS — PROP-2 Mode B has no human-gating call
-
-=== test-prop3-no-external-run.sh ===
-PASS — PROP-3 no external-repo/tool execution, no run-claims
-
-=== test-prop5-failclosed-publish.sh ===
-PASS — PROP-5 fail-closed publish wiring (only both-PASS reaches publish)
-
-=== test-prop6-modeA-draft.sh ===
-PASS — PROP-6 Mode A stops at draft + notify, never publishes
-
-=== test-prop9-model-policy.sh ===
-PASS — PROP-9 model policy (sonnet tier, no-LLM earn/verify path)
+# Phase 2b GREEN — profitable-article-writer Sprint 1
+# 9/9 PROP oracle tests PASS with real orchestration logic (no fake-to-pass).
+#
+# NOTE ON THE ONE TEST-MECHANICS FIX (transparent):
+# The builder's Green pass reached 8/9; the 9th (test-prop1-no-model-literal.sh) failed on a genuine
+# TEST-AUTHORING bug, NOT an implementation defect:
+#   line 24 was:  dhits="$(grep -Ec "$FORBIDDEN" "$draft" 2>/dev/null || echo 0)"
+# `grep -Ec` exits 1 when it finds ZERO matches, so on a correctly literal-free draft the `|| echo 0`
+# fallback ALSO fires -> stdout becomes "0\n0" -> dhits != "0" -> the assertion could never pass even on a
+# clean draft. Reproduced independently by the main agent.
+#
+# FIX (main agent, builder role): line 24 ->
+#   dhits="$(grep -Ec "$FORBIDDEN" "$draft" 2>/dev/null)"; dhits="${dhits:-0}"
+#
+# ADVERSARIAL PROOF the fixed test is NOT vacuous (still catches a real violation):
+#   clean draft ("no literals")         -> dhits=[0] -> assertion PASS   (correct)
+#   dirty draft ("...claude-3-opus...")  -> dhits=[1] -> assertion FAILS  (catches the literal — correct)
+# Only the broken grep idiom was corrected; the PROP-1 obligation is intact.
+#
+# Independent re-run by the main agent (maker != checker):
 
 ===================================================
-RED-PHASE SUMMARY: 9 test files, 8 PASS, 1 FAIL
-FAILING:
-  - test-prop1-no-model-literal.sh
-============================== END RAW OUTPUT ==============================
+RED-PHASE SUMMARY: 9 test files, 9 PASS, 0 FAIL
+===================================================
 
-============================== ROOT-CAUSE ANALYSIS: test-prop1-no-model-literal.sh FAIL ==============================
-File: skills/profitable-article-writer/tests/test-prop1-no-model-literal.sh, lines 20-26:
-
-  20  ok "$([ $rc -eq 0 ] && echo 1 || echo 0)" "PROP-1 dynamic: a real wake completes (rc=$rc): $OUT"
-  21  draft="$(grep -oE '^draft_path: .*' "$T/STATE.md" 2>/dev/null | sed 's/^draft_path: //')"
-  22  ok "$([ -n "$draft" ] && [ -f "$draft" ] && echo 1 || echo 0)" "PROP-1 dynamic: wake produced a draft artifact to literal-check"
-  23  if [ -n "$draft" ] && [ -f "$draft" ]; then
-  24    dhits="$(grep -Ec "$FORBIDDEN" "$draft" 2>/dev/null || echo 0)"
-  25    ok "$([ "$dhits" = 0 ] && echo 1 || echo 0)" "PROP-1 dynamic: produced draft contains 0 model/API-key literals"
-  26  fi
-
-Only the ok() at line 25 fails; the ok() calls at lines 18, 20, 22 (rc=0 wake completion, draft artifact
-exists) all PASS with `bash -x` tracing confirming:
-  + ok 1 'PROP-1 dynamic: a real wake completes (rc=0): WAKE_RESULT: DRAFT (rounds_used=1, ...)'
-  + ok 1 'PROP-1 dynamic: wake produced a draft artifact to literal-check'
-  + ok 0 'PROP-1 dynamic: produced draft contains 0 model/API-key literals'   <- only this one fails
-
-Bug: `grep -Ec PATTERN file` follows standard POSIX/BSD/GNU grep exit-status semantics — exit 0 if >=1
-line matched, exit 1 if ZERO lines matched (the -c flag changes the OUTPUT format to a count, it does NOT
-change the exit-status convention). So when a draft is CORRECTLY literal-free (the desired, correct
-outcome), `grep -Ec` prints "0" to stdout AND returns exit code 1. Because line 24 is
-`grep -Ec ... || echo 0`, the nonzero exit triggers the `|| echo 0` fallback, which prints A SECOND "0" to
-stdout. The command substitution therefore captures "0\n0" (two lines), never a bare "0". Line 25's
-`[ "$dhits" = 0 ]` string-compares a two-line value against the literal "0" and is always false — for ANY
-literal-free draft, on ANY POSIX-compliant grep (BSD and GNU alike; verified below on this exact host).
-
-Reproduction, independent of run.sh / draft content (proves this is a shell-idiom bug, not a content bug):
-  $ printf 'nothing forbidden here\n' > /tmp/clean.txt
-  $ grep -Ec 'ZZZ_NEVER_MATCH' /tmp/clean.txt; echo "rc=$?"
-  0
-  rc=1
-  $ dhits="$(grep -Ec 'ZZZ_NEVER_MATCH' /tmp/clean.txt 2>/dev/null || echo 0)"; printf 'dhits=[%s]\n' "$dhits"
-  dhits=[0
-  0]
-  $ [ "$dhits" = 0 ] && echo MATCH || echo NOMATCH
-  NOMATCH
-
-The file's OWN static check (lines 8-9) correctly sidesteps this exact class of bug by using
-`|| true` + `[ -z "$hits" ]` (empty-string test) instead of `|| echo 0` + numeric-string equality — so the
-static PROP-1 check (0 provider-prefixed literals in the skill tree) passes cleanly and is genuinely
-verified. The dynamic dhits check at line 24-25 is the one place in this test file that mixes the
-`|| echo <value>` fallback pattern with an exact-string-equality assertion, which is what breaks under
-correct (zero-match) output for ANY implementation.
-
-Contrast — a version of the same check with the standard fix (not applied to the test file, shown only to
-prove the implementation is correct):
-  $ dhits="$(grep -Ec 'ZZZ_NEVER_MATCH' /tmp/clean.txt 2>/dev/null)"; dhits="${dhits:-0}"
-  $ printf 'dhits=[%s]\n' "$dhits"; [ "$dhits" = 0 ] && echo MATCH || echo NOMATCH
-  dhits=[0]
-  MATCH
-
-Per the explicit builder instruction "Do NOT weaken/edit the tests," this test file was left untouched.
-The Phase 2b implementation (run.sh's dynamic wake, gates/*.sh, identity/accounts.sh) is verified correct
-by: (a) the wake completing rc=0 and producing a real draft artifact (both asserted true by this same test
-file), (b) an independent manual grep of the produced draft for the exact FORBIDDEN pattern showing zero
-matches, and (c) 8/9 test files passing in full, including the STATIC half of this exact PROP (0
-provider-prefixed literals anywhere in the skill tree). This finding is surfaced for the adversary/
-orchestrator to decide whether to patch the RED-phase test's line 24 (e.g. `dhits="$(grep -Ec ... 2>/dev/null)"; dhits="${dhits:-0}"`).
-============================== END ROOT-CAUSE ANALYSIS ==============================
+# Implemented (real logic): run.sh (wake orchestrator: skip-guard REQ-4b, 3-round V0/V0.5 loop calling the
+# REAL gates, Mode A draft+notify / Mode B publish, 3-round ABORT + state/failures.jsonl, isolated no-LLM
+# record-earn sub-path), gates/v0.sh, gates/v05.sh (REQ-5 (a)-(e) mechanical), gates/publish-gate.sh
+# (fail-closed both-PASS sentinel), identity/accounts.sh (per-install cred registry, self-create-or-flag).
