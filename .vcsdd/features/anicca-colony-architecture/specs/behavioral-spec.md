@@ -265,6 +265,24 @@ colony is not capped by one machine's atoms.
   **crypto-ONLY** — anything touching a human bank/Stripe/KYC is disqualified.
   **Copyable strategy library:** each ranked entry exposes its winning strategy as a copyable recipe
   (evolutionary/memetic) so the whole swarm inherits what works. One page, fused with `/dashboard`.
+
+  **Eval-design learnings (5 sources, 2026-07-04):**
+  - *Anthropic (demystifying-evals):* grade the **outcome** (state in env) not the transcript — we do
+    (on-chain tx). Combine grader types (code = RPC balance read · model = adversary autonomy attest).
+    ★ Frontier models game metrics (find loopholes) → the `external:true` guard MUST reject self-dealing /
+    wash trades so "earnings" can't be faked. ★
+  - *LayerX (EDD):* in a compounding multi-part system you can't guess a change's effect — measure
+    **per-slot AND whole-colony** net-USDC, A/B every change, chase outcome-expansion not local optima.
+  - *Hamel (3 levels):* L1 unit-test the pure logic (Kelly/risk gate, via VCSDD) · L2 **look at the actual
+    earn traces** (this doubles as the launch-article material — the "funny real logs") · L3 A/B strategies.
+  - *zenn (verify-from-start):* expose earn state on a machine-readable surface; **one judgment path**
+    (PASS/FAIL/BLOCKED/SKIP) shared by dashboard + /eval + merge-gate, so they never disagree.
+  - *Andon/Luna:* Luna is Opus-4.8 multi-agent BUT **loses money** ($3.2k rev < $4.0k token/day) and its own
+    thesis is "keep the scaffold LIGHT — test the model, not the scaffold; add a subagent only when a
+    specific failure demands it." **Decision: NOT a persistent multi-agent org per instance.** 1 instance =
+    1 automaton (1 brain) + light scaffold; multi-agent lives at the **colony** level (many self-funded
+    1-brain instances) + ephemeral subagents for bounded tasks only. A colony survives one instance's loss
+    (mutual aid) where a single Luna does not.
 - **Verified earn = tx hash + `external:true` only.** Self-reported / tx-less ledger rows are NOT earnings
   (HARD 0.24/0.31). Current truth: verified external income across ALL instances = **$0**;
   `~/.anicca-founder/STATE.md` falsely says "EARNING" → must be corrected to $0.
