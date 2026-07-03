@@ -20,8 +20,11 @@ source "$DIR/_instance_paths.sh"
   unset EARN_LEDGER
   source "$DIR/_instance_paths.sh"
   [ "$CLIP_QUEUE" = "$HOME/clips/queue-clawrouter" ] || { echo "FAIL: clawrouter QUEUE = $CLIP_QUEUE"; exit 1; }
+  [ "$CLIP_POSTED" = "$HOME/clips/posted-clawrouter" ] || { echo "FAIL: clawrouter POSTED = $CLIP_POSTED"; exit 1; }
   [ "$CLIP_ACCTS" = "$HOME/.cloak/clip-accounts-clawrouter.json" ] || { echo "FAIL: clawrouter ACCTS = $CLIP_ACCTS"; exit 1; }
+  [ "$CLIP_LEDGER" = "$HOME/.openclaw/state/clip-earn-ledger-clawrouter.jsonl" ] || { echo "FAIL: clawrouter LEDGER = $CLIP_LEDGER"; exit 1; }
   [ "$CLIP_QUEUE" != "$HOME/clips/queue" ] || { echo "FAIL: clawrouter queue collides with default"; exit 1; }
+  [ "$CLIP_LEDGER" != "$HOME/.openclaw/state/clip-earn-ledger.jsonl" ] || { echo "FAIL: clawrouter ledger collides with default"; exit 1; }
 ) || FAIL=1
 
 # case 3: EARN_LEDGER override still wins regardless of instance
