@@ -1,0 +1,16 @@
+{
+  "featureName": "anicca-colony-architecture",
+  "mode": "lean",
+  "currentPhase": "init",
+  "phaseHistory": [],
+  "iterations": {},
+  "proofObligations": [],
+  "traceability": {
+    "epicId": "VCSDD-anicca-colony-architecture-1783079030324",
+    "beads": []
+  },
+  "gates": {},
+  "sprintCount": 0,
+  "createdAt": "2026-07-03T11:43:50.323Z",
+  "updatedAt": "2026-07-03T11:43:50.323Z"
+}
