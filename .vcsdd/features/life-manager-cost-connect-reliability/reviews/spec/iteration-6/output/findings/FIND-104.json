@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-104",
+  "dimension": "edge_cases",
+  "category": "spec_gap",
+  "severity": "major",
+  "description": "Two edge cases in C1 remain unspecified after the iteration-6 rewrite. (1) DTMF role: 'GEMINI LIVE FULLY REMOVED' bullet says 'DTMF is handled in-loop, not by opening Live' but never defines what a keypress DOES in the new compositional design (no-op? repeat guidance? request human callback? barge-in signal?) -- this is a caller-observable behavior change (today a keypress escalates to a live agent; the spec removes that without saying what replaces it) and is untested by the §4 RED list (no DTMF-in-loop test named). (2) Groq free-tier rate limits: OQ6/C1 FALLBACKS gate the fail-closed switch to local fallbacks ONLY on 'GROQ_API_KEY is absent/unauthorized' (behavioral-spec.md:63); Groq's own free tier (cited in C1's STACK bullet, behavioral-spec.md:56: '20 RPM/2K RPD') can be exceeded by ordinary concurrent load (2+ overlapping wake calls, or multiple Whisper calls within one multi-turn conversation) producing HTTP 429, a response class distinct from 'absent/unauthorized' -- the spec does not say whether a 429 triggers the same local-fallback path or is left unhandled (risk: an unhandled 429 could stall the pipeline mid-call, contradicting the 'never a silent call' invariant in the same bullet).",
+  "evidence": [
+    {"type": "spec", "location": "behavioral-spec.md:59", "snippet": "the compositional loop IS the whole conversation (DTMF is handled in-loop, not by opening Live)"},
+    {"type": "spec", "location": "behavioral-spec.md:56", "snippet": "STT = Groq Whisper Large-v3-Turbo (free tier 20 RPM/2K RPD, ...)"},
+    {"type": "spec", "location": "behavioral-spec.md:63", "snippet": "If GROQ_API_KEY is absent/unauthorized, the pipeline runs on the LOCAL fallbacks ..."},
+    {"type": "spec", "location": "behavioral-spec.md:104", "description": "§4 RED test list names 'C1 fail-closed (no GROQ_API_KEY -> local fallbacks chosen, openGeminiLive never called)' but no test for a 429/rate-limited Groq response, and no DTMF-in-loop test."}
+  ],
+  "routeToPhase": "1a"
+}

@@ -1,0 +1,11 @@
+{
+  "id": "FIND-006",
+  "dimension": "edge_cases",
+  "category": "spec_gap",
+  "severity": "minor",
+  "file": ".vcsdd/features/life-manager-cost-connect-reliability/specs/behavioral-spec.md",
+  "line": "58",
+  "issue": "The INTERRUPTION bullet defers a concrete decision to impl time: '...send Telnyx's clear equivalent (verify Telnyx's clear analog against media-streaming docs at impl time)'. This information is not actually unknown -- Telnyx's Media Streaming API documents a `{\"event\":\"clear\"}` message that stops playback and clears the outbound queue (this is standard, already-researched knowledge in this project's own voice-agent reference notes). Per project HARD RULE 0.7 ('スペックに「任意」「optional」「推奨」禁止。全て MUST'), a spec should not carry a 'verify at impl time' placeholder for a fact that is already knowable and load-bearing for the barge-in behavior central to a natural two-way conversation.",
+  "evidence": "behavioral-spec.md:58 ('verify Telnyx's `clear` analog against media-streaming docs at impl time').",
+  "fix": "Replace the hedge with the concrete message: on VAD speech-start while TTS is playing, stop the local playback loop AND send `{\"event\":\"clear\"}` over the Telnyx carrier ws (per Telnyx Media Streaming docs, 'Sending RTP stream' / interruption section) to flush any already-queued outbound audio."
+}

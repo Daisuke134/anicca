@@ -1,0 +1,1 @@
+{"reviewType":"spec","feature":"life-manager-cost-connect-reliability","mode":"lean","focus":"C1 compositional two-way voice redesign","artifactsToReview":["specs/behavioral-spec.md"],"reviewDimensions":["spec_fidelity","edge_cases","impl_correctness","structural_integrity","verification_readiness"]}

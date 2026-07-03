@@ -1,0 +1,11 @@
+{
+  "id": "FIND-007",
+  "dimension": "verification_readiness",
+  "category": "test_coverage",
+  "severity": "major",
+  "file": ".vcsdd/features/life-manager-cost-connect-reliability/specs/behavioral-spec.md",
+  "line": "102-103",
+  "issue": "Section 4's RED test list covers C1 with only two items: 'C1 fallback ordering' and '\"ws-not-opened on default\" counter'. C1 is, by a wide margin, the highest-complexity and highest-risk contract in this spec -- it introduces a brand-new multi-vendor real-time pipeline (VAD endpointing, a Groq-Whisper STT call, a Groq-Llama prompt/turn builder, sentence-splitting for streamed TTS, and a barge-in stop+clear state machine) replacing a system that currently works end-to-end (the Gemini Live bridge). None of C2/C3/C5/C6's pure-logic units get away with this little RED coverage relative to their own complexity (e.g. C2 gets 'parse against fixtures' + 'JP-bounds/resolvability' + 'mixed-endpoint fallback'; C5 gets 'assertion logic' + 'debounce' + 'flap-guard' + 'telegram-dedup'). For C1, the actual new pure-logic surfaces this redesign introduces (VAD energy/silence threshold decision function, LLM-token->sentence splitter for TTS streaming, barge-in trigger/stop-and-clear decision function, Groq request/prompt builders) have NO named RED test at all -- only the emergent behaviors (fallback ordering, ws-counter) are covered, and the NO-MOCK E2E section (line 103) is necessarily a single manual real-call check, which cannot substitute for fast, deterministic unit coverage of the new turn-taking logic before that expensive manual E2E is run.",
+  "evidence": "behavioral-spec.md:102 (C1's RED list: 2 items) vs behavioral-spec.md:102 (C2's RED list: 3 items for a comparably-scoped but lower-risk contract) and behavioral-spec.md:102 (C5's RED list: 4 items).",
+  "fix": "Add named RED tests for C1's new pure-logic units before implementation starts, mirroring the granularity given to C2/C5, e.g.: 'C1 VAD energy/silence-threshold decision function (unit, synthetic PCM fixtures)'; 'C1 sentence-splitter for streamed LLM tokens -> TTS chunks (unit)'; 'C1 barge-in trigger + Telnyx clear-emission decision (unit, fake socket)'; 'C1 Groq STT/LLM request-builder shape (unit, matches OpenAI-compatible schema)'."
+}

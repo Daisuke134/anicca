@@ -1,0 +1,11 @@
+{
+  "id": "FIND-001",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "blocker",
+  "file": ".vcsdd/features/life-manager-cost-connect-reliability/specs/behavioral-spec.md",
+  "line": "54-61",
+  "issue": "C1's INVARIANT says 'Gemini Live is fully removed from the default path' but the spec never names the SPECIFIC currently-live trigger that must be deleted: server.js:447 `if (kind === \"dtmf\" && !gemini) openGeminiLive();`. This is exactly the kind of implicit escalation path that caused the incident motivating this redesign (per the spec's own §0/DESIGN CORRECTION: 'in prod it escalated to Gemini Live... Dais heard the paid model'). The spec's DESIGN CORRECTION never root-causes WHY the old design escalated in prod, so it cannot affirmatively state that the new design closes that specific hole. If an implementer extends call-bridge.cjs per C1's PIPELINE bullet while leaving server.js's DTMF branch intact (a very plausible partial-refactor outcome, since C1 doesn't say to touch it), any caller who presses a phone key during a call (common, e.g. checking voicemail menu muscle-memory) will re-open the paid Gemini Live socket on what the spec calls the 'normal path' -- reproducing the exact bug this iteration exists to fix.",
+  "evidence": "apps/life-call/server.js:447 `if (kind === \"dtmf\" && !gemini) openGeminiLive();` (read from disk, confirmed present) is the ONLY currently-coded Live-escalation trigger besides synth failure (server.js:401-404). Neither C1's INVARIANT (behavioral-spec.md:61) nor its EDGE/ERROR bullet (behavioral-spec.md:62) instructs its removal or redefinition.",
+  "fix": "Add an explicit sentence to C1 (INVARIANT or EDGE) enumerating every currently-coded trigger that opened Gemini Live under the old design (DTMF keypress = server.js:447; synth failure = server.js:401-404) and stating the new-design disposition of EACH one (e.g. 'DTMF keypress: no-op under the compositional design, do not open Live; only a hard STT/LLM/TTS failure after all fallbacks are exhausted may open Live'). This closes the exact recurrence vector and makes the spec unambiguous per HARD RULE 0.7."
+}
