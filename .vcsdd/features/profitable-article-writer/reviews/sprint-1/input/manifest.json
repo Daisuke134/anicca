@@ -1,0 +1,12 @@
+{
+  "reviewType": "implementation",
+  "featureName": "profitable-article-writer",
+  "sprintNumber": 1,
+  "contractPath": "contracts/sprint-1.md",
+  "artifactsToReview": {
+    "spec": ["specs/behavioral-spec.md", "specs/verification-architecture.md"],
+    "contract": ["contracts/sprint-1.md"],
+    "source": ["skills/profitable-article-writer/run.sh", "skills/profitable-article-writer/gates/", "skills/profitable-article-writer/identity/accounts.sh", "skills/profitable-article-writer/lib/config.sh"],
+    "tests": ["skills/profitable-article-writer/tests/"]
+  }
+}
