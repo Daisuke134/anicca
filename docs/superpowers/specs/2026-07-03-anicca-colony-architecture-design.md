@@ -1,7 +1,7 @@
 # Anicca Colony Architecture — Design Spec (v1)
 
 - **VCSDD feature**: `anicca-colony-architecture` (lean) — `~/anicca/.vcsdd/features/anicca-colony-architecture/`
-- **Status**: Phase 1a, iteration 2 (adversary iter-1 = FAIL on all 5 dims, 10 findings; this rev addresses them).
+- **Status**: Phase 1a, revised through adversary iteration 4 (finding trend 10→10→5→3; scope/completeness/open-q dims PASS; addressing the remaining consistency+groundedness findings toward Phase-1c exit).
 - **Adversary model**: **Opus** (keep the `vcsdd-adversary` default; do NOT downgrade). It is the quality gate — Dais 2026-07-04: "the adversary should be opus still, all others can be sonnet 5." Every OTHER spawned agent (research, builders) defaults to Sonnet 5 (cheap + smart).
 
 **REQ-EXPLORE (AIs find their OWN money-making repos — humans give ZERO repos/credentials).** No-human-loop
@@ -176,7 +176,9 @@ BROWSER+ACCOUNTS provider differs. Two tiers:
     Linux-server capable) **and (ii) run `ig-account-create` (standalone) to self-create the AI's OWN social
     accounts** → written to that container's `~/.cloak/clip-accounts.json`. Then `clip`/`video` run
     identically — **zero skill-code changes.**
-- **REQ-CLOUD-EARN:** a cloud child ships earning with TIER 1 (browser-free) on day one; TIER 2 unlocks once
+- **REQ-CLOUD-EARN:** a cloud child ships earning with TIER 1 (browser-free) as soon as REQ-CLOUD-SAME-BODY
+  boots our own `runtime/loop/index.mjs` on the host (NOT before — today cloud-init boots the wrong Conway
+  body per §4 ④); TIER 2 unlocks once
   `cloud-init` provisions its headless browser + self-made accounts. Job-compute (Modal/`blockrun_modal`) is
   an OPTIONAL heavy-batch tool (backtests), NOT a main dependency — food + shelter are the essentials.
 
@@ -246,13 +248,15 @@ verifiable by chain + logs, no self-report.
 
 - `aniccaai.com/dashboard` — the SOURCE OF TRUTH (radical transparency = why people trust us). Read-only;
   rendered by Dais-owned dashboard-sync; **Anicca never writes aniccaai.com**.
-  **REQ-DASH-TRUTH (dashboard is stale+fake today → fix):** current `dashboard.json` is `updated_at
-  2026-06-01` with `wallet: null` and self-reported `mrr $27`/`net worth $16` that have NO on-chain backing
-  = effectively fabricated. Every field MUST be **on-chain / log derived, verifiable by anyone**: `net_worth`
-  = live RPC wallet-balance read; `earned` = sum of ledger rows with `tx_hash` + `external:true` ONLY;
-  `funding` = human/self derived from the actual runner (claude-sub vs automaton); `model` = live config;
-  `running_now` = latest log; `basescan/solscan link` = auto-generated from the wallet. No self-reported
-  numbers. Register EVERY instance (self-funded local + human-funded founder `0x810f`).
+  **REQ-DASH-TRUTH — the on-chain engine ALREADY EXISTS (do NOT rebuild it):** `apps/landing/netlify/
+  functions/_lib/enrich.js::enrichOnChain` is "the ONLY chain caller — overwrites self-asserted money with
+  on-chain," `earned` = external inflows EXCLUDING self/seed (matches REQ-EXTERNAL), backed by
+  `_lib/chain-reader.js` (live Base RPC balances + USDC inflow logs), a Supabase `instances` table, and
+  `components/site/AgentLeaderboard.tsx` wired into `app/dashboard/page.tsx:156` (renders an em-dash, not a
+  fake number, for unverified figures). **The REAL gap (not a rewrite):** (a) the served `dashboard.json`
+  read stale (`2026-06-01`, `wallet:null`) → the enrich pipeline is not populating/deploying with OUR
+  wallets; (b) register the two live wallets (founder `0x810f`, local `0xa3cdd4`) in the `instances` table so
+  `enrichOnChain` reads them; (c) confirm the deploy runs it. No new chain-reader — reuse the existing one.
 - **REQ-DASH-CARD (daily summary on the card, not email to users):** each instance card shows
   `[name][model][place][net_worth][scan-link]` PLUS a **daily-updated summary box** in the blank space to
   the right = "what this AI did today." Humans don't want earning notifications (the money isn't going to
