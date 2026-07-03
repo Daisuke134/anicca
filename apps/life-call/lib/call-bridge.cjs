@@ -143,12 +143,28 @@ function geminiSetupForEvent(event, urgency, lang, name, model) {
   });
 }
 
+// decideGeminiEnd: when a Gemini Live socket ends, decide whether to reconnect ONCE (a transient
+// failure BEFORE any audio) or end the call cleanly. Pure → unit-testable without a real socket.
+// Guards against the ws error→close double-fire (the caller also uses a per-socket `ended` flag).
+function decideGeminiEnd({ gotAudio, reconnects, carrierOpen, maxReconnects = 1 }) {
+  if (!gotAudio && reconnects < maxReconnects && carrierOpen) return "reconnect";
+  return "close";
+}
+
+// carrierActionForGeminiKind: map a routeGeminiMessage result kind to the Telnyx carrier control frame
+// to send (or null). Barge-in = on "interrupted" flush the carrier's queued playback with {event:"clear"}.
+function carrierActionForGeminiKind(kind) {
+  return kind === "interrupted" ? { event: "clear" } : null;
+}
+
 module.exports = {
   routeTwilioMessage,
   routeTelnyxMessage,
   routeGeminiMessage,
   geminiSetupForEvent,
   buildTelnyxMediaFrame,
+  decideGeminiEnd,
+  carrierActionForGeminiKind,
 };
 
 // ── Network shell (only runs when invoked directly) ───────────────────────────

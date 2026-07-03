@@ -20,6 +20,8 @@ const {
   routeGeminiMessage,
   geminiSetupForEvent,
   buildTelnyxMediaFrame,
+  decideGeminiEnd,
+  carrierActionForGeminiKind,
 } = require("./lib/call-bridge.cjs");
 const {
   geminiLiveWsUrl,
@@ -405,19 +407,30 @@ wss.on("connection", (carrierWs, req) => {
       if (r.kind === "audio") gotAudio = true;
       // Barge-in: the caller spoke over Charon (Gemini server-VAD). Flush Telnyx's queued playback so
       // the caller is heard immediately instead of talked over.
-      if (r.kind === "interrupted") carrierSend({ event: "clear" });
+      const carrierAction = carrierActionForGeminiKind(r.kind);
+      if (carrierAction) carrierSend(carrierAction); // barge-in: flush Telnyx queued playback
       if (DEBUG_TRANSCRIPTS) {
         const t = parseGeminiTranscripts(msg);
         if (t.input) console.error(`[transcript] USER: ${t.input}`);
         if (t.output) console.error(`[transcript] CHARON: ${t.output}`);
       }
     });
+    // ws fires `error` THEN `close` for a SINGLE failure — `ended` makes THIS socket's handler act
+    // exactly once (else the paired close would hang up the call right after the reconnect socket opened).
+    let ended = false;
     const onGeminiEnd = (reason) => {
+      if (ended) return;
+      ended = true;
       console.log(`[bridge] gemini ${reason} gotAudio=${gotAudio} reconnects=${geminiReconnects}`);
-      if (!gotAudio && geminiReconnects < 1 && carrierWs.readyState === WebSocket.OPEN) {
+      const decision = decideGeminiEnd({
+        gotAudio,
+        reconnects: geminiReconnects,
+        carrierOpen: carrierWs.readyState === WebSocket.OPEN,
+      });
+      if (decision === "reconnect") {
         geminiReconnects++;
         gemini = null;
-        openGeminiLive(); // one retry
+        openGeminiLive(); // one retry (a transient pre-audio failure)
         return;
       }
       // Never fall back to silence or a clip — end the call cleanly.
