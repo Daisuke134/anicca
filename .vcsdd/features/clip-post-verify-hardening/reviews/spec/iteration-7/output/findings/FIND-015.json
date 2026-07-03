@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-015",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "REQ-008 step 2 (behavioral-spec.md lines 165-178) mandates strict one-clip-per-wake self-heal, oldest-first by sidecar mtime, with NO reordering mechanism. REQ-008 step 3 (lines 179-185) explicitly declines to advance to the next-oldest clip when the current oldest clip's sidecar is missing/corrupt: 'moving on to the next-oldest clip, if any, in THIS same wake is explicitly NOT required'. Because (a) a corrupt/missing sidecar is never repaired or deleted (step 3: 'do NOT delete a sidecar that doesn't exist'), and (b) the clip itself is never removed from $CLIP_PENDING_VERIFY on an inconclusive result, and (c) filesystem mtime of an untouched sidecar file never changes, THIS SAME CLIP remains the 'oldest' clip on every subsequent wake, forever. Combined with the strict one-clip-per-wake rule, this means NO OTHER pending clip in $CLIP_PENDING_VERIFY will EVER be attempted by self-heal again, for the lifetime of the loop, once any single clip's sidecar becomes permanently corrupt. This is a genuine, unbounded liveness/starvation bug freshly introduced by REV 7's simplification (it did not exist in iteration-6's flawed multi-clip algorithm, which at least attempted every clip). It directly contradicts REQ-008(6)'s stated invariant ('never silently drop it') for every clip queued behind the stuck one -- they are not deleted from disk, but they are permanently starved of any verification attempt, which is functionally indistinguishable from being lost for the self-heal mechanism's purpose. Step 3's own justification text ('a permanently-corrupt sidecar for the oldest clip would otherwise starve all newer ones') is self-contradictory: it names starvation as the outcome to avoid, then makes exactly the design choice (never skip to next-oldest) that CAUSES that starvation.",
+  "evidence": {
+    "filePath": ".vcsdd/features/clip-post-verify-hardening/specs/behavioral-spec.md",
+    "lineRange": "165-185",
+    "snippet": "IF `$CLIP_PENDING_VERIFY` contains more than one clip, THE SYSTEM SHALL process ONLY THE OLDEST ONE this wake ... SHALL NOT attempt any other pending clip in the same wake ... [step 3] moving on to the next-oldest clip, if any, in THIS same wake is explicitly NOT required -- keeping strictly one-clip-per-wake is simpler and still bounded; a permanently-corrupt sidecar for the oldest clip would otherwise starve all newer ones"
+  },
+  "routeToPhase": "1a"
+}

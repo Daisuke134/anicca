@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-017",
+  "dimension": "verification_readiness",
+  "category": "test_coverage",
+  "severity": "critical",
+  "description": "No proof obligation in verification-architecture.md exercises or bounds the starvation risk identified in FIND-015/FIND-016. PROP-006(b) only tests that a single missing/corrupt sidecar is skipped-not-crashed this wake (in isolation, one clip in the dir). PROP-006(c) only tests that a NEWER clip is untouched for ONE wake while the oldest is being processed -- it does not test the multi-wake case where the oldest clip's sidecar STAYS corrupt (or its diff stays ambiguous) across many consecutive wakes and asserts whether a newer, healthy clip ever gets a turn. The Gate section (verification-architecture.md lines 92-101) lists exactly what Phase 3's adversary must confirm, and none of its bullet points mention verifying that self-heal cannot be permanently wedged behind one stuck clip. Without an explicit proof obligation (even a Tier-2 integration test simulating N consecutive wakes with a permanently-corrupt oldest sidecar and asserting a newer, resolvable clip eventually gets attempted, or an explicit accepted-risk statement with a bound), an implementation could ship this exact starvation bug with zero test signal, and Phase 3's adversary (per its own gate checklist) would have no basis to catch it either.",
+  "evidence": {
+    "filePath": ".vcsdd/features/clip-post-verify-hardening/specs/verification-architecture.md",
+    "lineRange": "79,92-101",
+    "snippet": "PROP-006(c) ... assert the self-heal driver's --verify-only subprocess is invoked in the context of resolving clip1 ONLY this wake ... clip2 is provably not attempted until a LATER wake [single-wake assertion only; no multi-wake / permanent-stall assertion exists anywhere in the proof-obligation table or the Gate section]"
+  },
+  "routeToPhase": "1b"
+}

@@ -1,0 +1,60 @@
+{
+  "feature": "clip-post-verify-hardening",
+  "reviewContext": {
+    "reviewType": "spec",
+    "phase": "1c"
+  },
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-04T00:00:00Z",
+  "iteration": 7,
+  "priorIterationResolution": [
+    {
+      "priorFinding": "FIND-011 (iteration-6, simultaneous multi-clip disambiguation math mathematically broken)",
+      "status": "FIXED",
+      "note": "REQ-008 step 2 REV 7 (behavioral-spec.md lines 165-178) eliminates the multi-clip disambiguation problem entirely rather than patching it: only the OLDEST pending clip is ever attempted in a given wake, and no other pending clip's before-set is read or diffed in that wake. Hand-traced with 2 pending clips: because clip2 is never touched while clip1 is being resolved, there is no cross-clip attribution step for the algorithm to get wrong -- the class of bug iteration-6 found (a per-clip diff against an independently-captured before-set being confused by another clip's own legitimate new post) cannot occur, since there is only ever one clip's before-set in play per wake. The remaining, narrower collision (this ONE clip's own diff vs. the SAME wake's independent new-content pipeline) is a genuinely different, smaller-surface-area problem, explicitly acknowledged and handled as 'ambiguous -> inconclusive, never guess' (REQ-008 step 6). This is a real simplification, not a re-patch of the broken algorithm."
+    },
+    {
+      "priorFinding": "FIND-012 (iteration-6, no ordering signal for 'oldest')",
+      "status": "FIXED",
+      "note": "REQ-008 step 2 (behavioral-spec.md lines 172-174) now specifies a concrete, existing signal: `os.path.getmtime()` on the sidecar file `<clipname>.before-hrefs.json`, justified by the sidecar already being written at the exact moment the clip enters `$CLIP_PENDING_VERIFY` (REQ-006/008 step 6) -- no new field, no new write path, no new failure mode introduced by the ordering mechanism itself."
+    },
+    {
+      "priorFinding": "FIND-013 (iteration-6, PROP-009 didn't assert self-heal actually ran)",
+      "status": "FIXED",
+      "note": "verification-architecture.md line 80 (PROP-009) now explicitly requires 'the stub --verify-only subprocess was actually invoked at least once (a concrete call-count/call-log assertion, not merely inferred from the outcome -- this is what FIND-013 required)' as an explicit conjunct alongside the new-content-still-succeeds assertion."
+    },
+    {
+      "priorFinding": "FIND-014 (iteration-6, PROP-005's instance-isolation check weaker than existing full test)",
+      "status": "FIXED",
+      "note": "verification-architecture.md line 78 (PROP-005) now explicitly directs extending the EXISTING /Users/anicca/anicca/skills/earn/clip/tests/test_n_instance_distinctness.sh (confirmed present, confirmed to already do full N-way pairwise distinctness over CLIP_QUEUE/CLIP_POSTED/CLIP_ACCTS/CLIP_LEDGER across 4 instance names via a set-based ALL_PATHS uniqueness check) to ALSO resolve and assert-distinct CLIP_PENDING_VERIFY for the same 4 instance names -- same file, same rigor, no separate/weaker check."
+    }
+  ],
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-015", "FIND-016"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/earn/clip/_instance_paths.sh:1-17", "description": "re-confirmed the existing 4-path per-ANICCA_INSTANCE suffix pattern REQ-006's CLIP_PENDING_VERIFY line matches"},
+        {"type": "file", "location": "/Users/anicca/.claude/skills/ig-reels-poster/scripts/post_reel.py:82-190", "description": "re-confirmed byte-accurate Ground Truth citations (verify-only branch at :111-118, before-snapshot at :122-123, post-share search loop :174-181, except/finally :187-190) -- REV 7's ground truth section remains accurate"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/earn/clip/tests/test_n_instance_distinctness.sh:1-30", "description": "confirmed this is the exact set-based N-way distinctness test PROP-005 now directs extending, resolving FIND-014"}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-017"],
+      "evidence": [
+        {"type": "file", "location": ".vcsdd/features/clip-post-verify-hardening/specs/verification-architecture.md:10-13", "description": "confirmed the shared-module fix (iteration-5 FIND-010) remains correctly wired, no regression"},
+        {"type": "file", "location": ".vcsdd/features/clip-post-verify-hardening/specs/verification-architecture.md:78", "description": "confirmed PROP-005's instance-isolation fix (FIND-014) is concretely wired to the existing test file"},
+        {"type": "file", "location": ".vcsdd/features/clip-post-verify-hardening/specs/verification-architecture.md:80", "description": "confirmed PROP-009's call-count assertion fix (FIND-013) is concretely specified"}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 3,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}

@@ -1,4 +1,4 @@
-# Behavioral Spec — clip-post-verify-hardening (Phase 1a) — REV 7 (post iteration-6 FAIL)
+# Behavioral Spec — clip-post-verify-hardening (Phase 1a) — REV 8 (post iteration-7 FAIL)
 
 ## Context (why this feature exists)
 2026-07-03 live incident: `EARN_MODE=execute bash run.sh` self-reported `"posted @aiclipsvault: .../DaLKV2xP8Ij/"`
@@ -162,27 +162,32 @@ or duplicate a clip).
      does NOT block that wake's normal new-content posting pipeline regardless of its own outcome —
      self-heal and new-content posting are independent steps in the same wake; a still-unresolved
      `pending-verify/` clip is retried on the NEXT wake, indefinitely, without stalling new posts.
-  2. **ONE clip per wake, oldest-first by sidecar mtime (SIMPLIFIED after iteration-6 FIND-011/012, which
-     correctly hand-traced the original multi-clip-per-wake algorithm and found it mathematically broken:
-     a per-clip diff against each clip's own independently-captured before-set is NOT a valid way to
-     disambiguate simultaneous clips, because content unrelated to either clip — e.g. another clip's own
-     already-legitimately-posted content, or a normal new post from the same wake's independent
-     new-content pipeline — can appear in the diff and be indistinguishable from "this clip's own new
-     post". Rather than add more disambiguation machinery, THE DESIGN IS SIMPLIFIED)**: IF
-     `$CLIP_PENDING_VERIFY` contains more than one clip, THE SYSTEM SHALL process ONLY THE OLDEST ONE
-     this wake (ordering signal = the sidecar file's OWN filesystem mtime — no new field needed, `os.
-     path.getmtime()` on `<clipname>.before-hrefs.json`, since the sidecar is written at the same moment
-     the clip moves to `pending-verify/`) and SHALL NOT attempt any other pending clip in the same wake —
-     each additional pending clip simply waits its turn on a later wake. This trades a few extra wakes'
-     latency (self-heal is not urgent — a clip already sits in `pending-verify/`, one more hourly wake of
-     delay is immaterial) for eliminating the cross-clip attribution ambiguity entirely.
-  3. **Missing/corrupt sidecar (FIND-008)**: IF the oldest pending clip's sidecar file (`<clipname>.
+  2. **ONE clip per wake, LEAST-RECENTLY-ATTEMPTED by sidecar mtime — ROUND-ROBIN (SIMPLIFIED after
+     iteration-6 FIND-011/012; FURTHER FIXED after iteration-7 FIND-015/016/017, which correctly found
+     that a naive "oldest-by-original-move-time, never skip" rule permanently starves every OTHER pending
+     clip if the very-oldest one is ever stuck)**: IF `$CLIP_PENDING_VERIFY` contains more than one clip,
+     THE SYSTEM SHALL process ONLY the clip whose sidecar file has the OLDEST (least-recent) mtime this
+     wake, and SHALL NOT attempt any other pending clip in the same wake. Critically: THE SIDECAR FILE'S
+     MTIME SHALL BE TOUCHED (updated to the current time, e.g. `os.utime()`, with NO change to its
+     content) EVERY TIME that clip is attempted and remains unresolved (inconclusive) at the end of this
+     step — whether the reason is "no new href yet", "ambiguous (>1 new href)", or a missing/corrupt
+     sidecar being freshly rewritten (see step 3). This makes "oldest mtime" mean "least recently
+     attempted", not "oldest move-time" — a NATURALLY SELF-BALANCING ROUND-ROBIN using the exact same
+     ordering mechanism, with no separate rotation counter needed: a clip that gets attempted and stays
+     stuck immediately becomes the MOST recently touched, so a DIFFERENT (untried or longer-waiting) clip
+     is attempted next wake. This directly closes iteration-7's starvation finding — no single stuck clip
+     can ever block others from getting their turn, because being attempted (even unsuccessfully) is what
+     moves a clip to the back of the queue. ★ Residual, explicitly accepted limitation (unchanged from
+     REV 7, now properly SCOPED to only the one stuck clip itself, not to the whole system): a clip whose
+     own diff is permanently ambiguous may itself never resolve (this is SAFE — never guesses, never
+     duplicate-posts — but not OPTIMAL), while round-robin guarantees this does NOT prevent OTHER pending
+     clips from making progress. ★
+  3. **Missing/corrupt sidecar (FIND-008)**: IF the selected clip's sidecar file (`<clipname>.
      before-hrefs.json`, in `$CLIP_PENDING_VERIFY`) is MISSING, unreadable, or fails to parse as a JSON
      array of strings, THE SYSTEM SHALL treat that clip as **inconclusive this wake** (per REQ-002's
-     inconclusive handling — do NOT guess, do NOT delete the clip, do NOT delete a sidecar that doesn't
-     exist) and retry on a later wake (moving on to the next-oldest clip, if any, in THIS same wake is
-     explicitly NOT required — keeping strictly one-clip-per-wake is simpler and still bounded; a
-     permanently-corrupt sidecar for the oldest clip would otherwise starve all newer ones).
+     inconclusive handling — do NOT guess, do NOT delete the clip) and retry on a later wake — per step 2,
+     this still counts as "attempted", so the round-robin still rotates past it to the next clip on the
+     following wake (closing the "permanently corrupt sidecar" starvation case iteration-7 also raised).
   4. Invokes `post_reel.py --verify-only --handle <handle>` as a subprocess UP TO 3 TIMES, waiting 5
      seconds between invocations — REQ-001's stabilize model applied EXTERNALLY, at the CALLER level
      (via the shared `reel_verify.py`'s `stabilize_reads`), across separate `--verify-only` subprocess

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-016",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "high",
+  "description": "REQ-008 step 6's 'documented known limitation' (behavioral-spec.md lines 207-213) characterizes the multi-new-href ambiguity as a delay: 'this clip might never resolve ... may take many wakes'. This mischaracterizes the actual math. `new_hrefs` is computed EVERY wake as `stabilized_reels_set - set(sidecar_hrefs)` where `sidecar_hrefs` is a FIXED snapshot written once at pending-time and NEVER updated on an inconclusive wake (step 6 says leave the clip in place, does not say refresh/rebase the sidecar). Instagram's reel history is append-only under normal operation (posts are not deleted). Therefore `new_hrefs`'s size is monotonically non-decreasing across subsequent wakes -- it can never shrink back down to exactly 1 once it has grown past 1. Once ambiguous on any given wake, resolution becomes STRICTLY LESS likely (never more likely) on every subsequent wake, not 'may take many wakes' as the text implies (which suggests eventual convergence given patience). The true characterization is: once ambiguous, the clip enters a mathematically near-permanent stuck state, not a merely-slow one. Combined with FIND-015 (one-clip-per-wake ordering has no escape from a stuck oldest clip), an ambiguous clip does not just fail to resolve itself -- it also permanently blocks every other pending clip behind it from ever being attempted. The spec's own risk-acceptance language ('this is an acceptable, explicitly-documented limitation') is based on an inaccurate severity estimate and does not account for the compounding starvation effect on other clips.",
+  "evidence": {
+    "filePath": ".vcsdd/features/clip-post-verify-hardening/specs/behavioral-spec.md",
+    "lineRange": "196-213",
+    "snippet": "IF `new_hrefs` is empty ... OR has more than one element ... leave the clip in `$CLIP_PENDING_VERIFY` for the next wake ... Documented known limitation ... if new content keeps landing via the independent new-content pipeline on EVERY subsequent wake, `new_hrefs` could keep having >1 element indefinitely and this clip might never resolve. This is SAFE ... but not OPTIMAL (may take many wakes)."
+  },
+  "routeToPhase": "1a"
+}
