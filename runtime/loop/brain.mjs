@@ -11,6 +11,7 @@
 
 import https from 'node:https';
 import http from 'node:http';
+import os from 'node:os';
 import { spawn } from 'node:child_process';
 import { buildSystemPrompt, buildUserMessage, getToolDefinitions } from './prompt.mjs';
 // spec 25 O1: expose each live skill as a pickable tool (enum on run_skill.slot).
@@ -91,8 +92,17 @@ async function thinkClaudeP(ctx, config) {
     'Respond with a JSON tool_calls block using run_skill or sleep.',
   ].join('\n');
 
-  // Scrub private keys from child env (REQ-004 / PROP-023c)
-  const childEnv = scrubPrivateKeys(process.env);
+  // MINIMAL env (not the full process.env): a full env + the project cwd makes `claude -p` load this
+  // repo's .claude hooks/MCP/CLAUDE.md and HANG >2min (verified 2026-07-04: child at 0% CPU). The proven
+  // 4-second recipe = minimal env (HOME+PATH) + a neutral cwd (/tmp), so claude only reads ~/.claude auth.
+  // Private keys are excluded by construction here (we allow-list, not scrub). REQ-004 preserved.
+  const scrubbed = scrubPrivateKeys(process.env);
+  const childEnv = {
+    HOME: process.env.HOME,
+    PATH: process.env.PATH,
+    ...(scrubbed.ANTHROPIC_API_KEY ? { ANTHROPIC_API_KEY: scrubbed.ANTHROPIC_API_KEY } : {}),
+    ...(scrubbed.CLAUDE_CODE_OAUTH_TOKEN ? { CLAUDE_CODE_OAUTH_TOKEN: scrubbed.CLAUDE_CODE_OAUTH_TOKEN } : {}),
+  };
 
   return new Promise((resolve, reject) => {
     let stdout = '';
@@ -104,6 +114,7 @@ async function thinkClaudeP(ctx, config) {
       '--model', model,
     ], {
       env: childEnv,
+      cwd: os.tmpdir(),   // neutral cwd → no project .claude/hooks loaded → no 2-min hang
       stdio: ['ignore', 'pipe', 'pipe'],
     });
 
