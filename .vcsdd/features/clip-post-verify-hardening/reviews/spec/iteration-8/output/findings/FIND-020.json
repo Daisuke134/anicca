@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-020",
+  "dimension": "verification_readiness",
+  "category": "spec_gap",
+  "severity": "moderate",
+  "description": "REQ-008 step 3 (behavioral-spec.md:185-190) says a missing/corrupt sidecar is treated as inconclusive and 'a fresh (empty-or-placeholder) sidecar' gets its mtime touched (per step 2's cross-reference), but neither the behavioral spec nor the verification architecture commits to WHAT content is written into that freshly-created sidecar. verification-architecture.md's own PROP-006(b) proof obligation hedges with the identical unresolved phrase 'a fresh (empty-or-placeholder) sidecar's mtime reflects this attempt' -- i.e. the ambiguity is present in the test specification too, not just the requirement text. This matters concretely: if the placeholder content is an empty array `[]`, then on the NEXT self-heal attempt for that clip, `new_hrefs = current_reels - {}` = the entire current reel list, which for any non-trivial account will have far more than one element -- permanently classifying that clip as 'ambiguous' every wake thereafter (safe but silently different from every other inconclusive case, which is at least driven by a real prior snapshot). If instead the placeholder is meant to re-capture a FRESH live before-snapshot via a new stabilize_reads() call (which would be the only semantically sound option, but is never stated), that is a materially different, more expensive operation (requires a live --verify-only subprocess call) that the requirement text never specifies as happening in the missing-sidecar branch. The spec must pick one concrete behavior and both documents must state it identically; right now an implementer has no unambiguous instruction for this branch.",
+  "evidence": {
+    "filePath": ".vcsdd/features/clip-post-verify-hardening/specs/behavioral-spec.md",
+    "lineRange": "185-190",
+    "snippet": "IF the selected clip's sidecar file... is MISSING, unreadable, or fails to parse... THE SYSTEM SHALL treat that clip as inconclusive this wake... this still counts as \"attempted\", so the round-robin still rotates past it"
+  },
+  "routeToPhase": "1b"
+}

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-019",
+  "dimension": "verification_readiness",
+  "category": "test_coverage",
+  "severity": "critical",
+  "description": "PROP-006's sub-tests (a/b/c in verification-architecture.md:79) never exercise the scenario underlying FIND-018: an UNRELATED href landing on the account, from the independent new-content pipeline, BETWEEN the original sidecar snapshot and a later self-heal recheck (whether same-wake or a later wake). PROP-006(a)'s core case only stubs a STATIC 3-call sequence within a single self-heal invocation returning a fixed reel list with '1 new href' relative to a REAL sidecar seeded at test-setup time -- it cannot distinguish 'the 1 new href is genuinely this clip's own post' from 'the 1 new href is someone else's post that happened to land in the gap', because the test never introduces a second, independently-sourced href into the stub's before/after state at a different simulated time. PROP-006(c)'s 2-consecutive-wake round-robin test also never introduces an unrelated href change between wake 1 and wake 2 for the stuck clip -- it only tests fairness of WHICH clip is picked, not correctness of the confirmation decision when other clips post in between. As specified, a fully-implemented self-heal driver that reproduces the FIND-018 misattribution bug would PASS every currently-specified PROP-006 test. This is exactly the 'tests that would pass even if a critical edge case were unhandled' pattern this review is required to flag.",
+  "evidence": {
+    "filePath": ".vcsdd/features/clip-post-verify-hardening/specs/verification-architecture.md",
+    "lineRange": "79",
+    "snippet": "seed $CLIP_PENDING_VERIFY with a fake clip + REAL sidecar... stub 3 identical calls returning [...,\"/aiclipsvault/reel/NEW/\"] (1 new href) -> moves to $CLIP_POSTED + ledger \"post_url\":\"https://www.instagram.com/aiclipsvault/reel/NEW/\" (exact non-null value asserted)"
+  },
+  "routeToPhase": "1b"
+}

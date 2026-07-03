@@ -1,0 +1,54 @@
+{
+  "feature": "clip-post-verify-hardening",
+  "reviewContext": {
+    "reviewType": "spec",
+    "phase": "1c"
+  },
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-04T00:00:00Z",
+  "iteration": 8,
+  "priorIterationResolution": [
+    {
+      "priorFinding": "FIND-015 (iteration-7, oldest-by-original-move-time never-rotate design permanently starves other clips if the oldest is stuck)",
+      "status": "FIXED",
+      "note": "Hand-traced REV 8's mtime-touch round-robin (behavioral-spec.md REQ-008 step 2, lines 165-184) across 3 wakes with clip1 permanently stuck and clip2 resolvable, seeded so clip1's sidecar mtime is initially older than clip2's: wake 1 -> oldest mtime = clip1, attempted, stays ambiguous, mtime touched to now (clip1 becomes newest). wake 2 -> oldest mtime is now clip2 (never touched, still its original older timestamp) -> clip2 is attempted and resolves, moved to $CLIP_POSTED, sidecar deleted. wake 3 -> only clip1 remains, attempted again, still stuck, touched again. Generalized the trace to 3 pending clips (clip1 stuck, clip2/clip3 resolvable): round-robin correctly cycles clip2 then clip3 while only occasionally revisiting the touched clip1, confirming the fix is a genuine self-balancing LRU-style rotation, not a narrow 2-clip patch. Starvation of OTHER clips by one permanently-stuck clip is genuinely eliminated."
+    },
+    {
+      "priorFinding": "FIND-016 (iteration-7, append-only history makes ambiguous diffs worse than admitted)",
+      "status": "NOT FIXED",
+      "note": "REV 8 only rescoped the RESIDUAL-LIMITATION SENTENCE to clarify that a permanently-ambiguous clip does not block OTHER clips (behavioral-spec.md lines 180-184: 'now properly SCOPED to only the one stuck clip itself, not to the whole system'). That addresses the STARVATION framing only. It does NOT address the substance FIND-016 named: the sidecar's before-set is captured once and never refreshed (REQ-008 step 2: 'with NO change to its content'), so once this clip is stuck across multiple wakes while the independent new-content pipeline keeps posting other clips (guaranteed by REQ-008 step 1's non-blocking gating), the diff computation in REQ-008 step 6 degrades from merely 'ambiguous' into an actively WRONG classification the moment exactly ONE unrelated post has landed since the original snapshot -- see NEW FIND-018 for the full trace. REV 8's own text ('This is SAFE... never guesses') is not accurate for that case. FIND-016 is therefore still open, now demonstrated concretely as a critical correctness bug rather than a documentation-honesty nit."
+    },
+    {
+      "priorFinding": "FIND-017 (iteration-7, no test for the multi-wake stall / round-robin scenario)",
+      "status": "FIXED",
+      "note": "verification-architecture.md PROP-006(c) (line 79) now specifies a concrete 2-CONSECUTIVE-simulated-wake test: clip1 (older mtime, permanently ambiguous stub) and clip2 (newer mtime, cleanly resolvable stub); wake 1 asserts clip1 is attempted and stays stuck with its mtime touched; wake 2 asserts clip2 is now attempted (because clip1's touched mtime is no longer oldest) and resolves, while clip1 remains safely stuck. This directly and concretely proves round-robin fairness across wakes, replacing the single-wake-only test iteration-7 correctly flagged as insufficient."
+    }
+  ],
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-018"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/.claude/skills/ig-reels-poster/scripts/post_reel.py:82-190", "description": "re-confirmed byte-accurate ground-truth line citations (95,108,122-123,127,134,141,163,174-181,187-190) remain accurate against the real file"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/earn/clip/_instance_paths.sh:1-17", "description": "confirmed the existing 4-suffix-path pattern REQ-006's CLIP_PENDING_VERIFY line matches"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/earn/clip/run.sh:32-38,87-106", "description": "confirmed the new-content pipeline posts one new clip per wake unconditionally, the mechanism that produces an unrelated intervening href in FIND-018's trace"}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-019", "FIND-020"],
+      "evidence": [
+        {"type": "file", "location": ".vcsdd/features/clip-post-verify-hardening/specs/verification-architecture.md:79", "description": "confirmed PROP-006(c)'s 2-wake round-robin fairness test is concretely specified and resolves FIND-017"},
+        {"type": "file", "location": ".vcsdd/features/clip-post-verify-hardening/specs/verification-architecture.md:78", "description": "confirmed PROP-005's instance-isolation extension (FIND-014, prior iteration) remains correctly wired, no regression"}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 3,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}

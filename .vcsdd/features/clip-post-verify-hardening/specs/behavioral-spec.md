@@ -1,4 +1,4 @@
-# Behavioral Spec — clip-post-verify-hardening (Phase 1a) — REV 8 (post iteration-7 FAIL)
+# Behavioral Spec — clip-post-verify-hardening (Phase 1a) — REV 9 (post iteration-8 FAIL)
 
 ## Context (why this feature exists)
 2026-07-03 live incident: `EARN_MODE=execute bash run.sh` self-reported `"posted @aiclipsvault: .../DaLKV2xP8Ij/"`
@@ -162,58 +162,73 @@ or duplicate a clip).
      does NOT block that wake's normal new-content posting pipeline regardless of its own outcome —
      self-heal and new-content posting are independent steps in the same wake; a still-unresolved
      `pending-verify/` clip is retried on the NEXT wake, indefinitely, without stalling new posts.
-  2. **ONE clip per wake, LEAST-RECENTLY-ATTEMPTED by sidecar mtime — ROUND-ROBIN (SIMPLIFIED after
-     iteration-6 FIND-011/012; FURTHER FIXED after iteration-7 FIND-015/016/017, which correctly found
-     that a naive "oldest-by-original-move-time, never skip" rule permanently starves every OTHER pending
-     clip if the very-oldest one is ever stuck)**: IF `$CLIP_PENDING_VERIFY` contains more than one clip,
-     THE SYSTEM SHALL process ONLY the clip whose sidecar file has the OLDEST (least-recent) mtime this
-     wake, and SHALL NOT attempt any other pending clip in the same wake. Critically: THE SIDECAR FILE'S
-     MTIME SHALL BE TOUCHED (updated to the current time, e.g. `os.utime()`, with NO change to its
-     content) EVERY TIME that clip is attempted and remains unresolved (inconclusive) at the end of this
-     step — whether the reason is "no new href yet", "ambiguous (>1 new href)", or a missing/corrupt
-     sidecar being freshly rewritten (see step 3). This makes "oldest mtime" mean "least recently
-     attempted", not "oldest move-time" — a NATURALLY SELF-BALANCING ROUND-ROBIN using the exact same
-     ordering mechanism, with no separate rotation counter needed: a clip that gets attempted and stays
-     stuck immediately becomes the MOST recently touched, so a DIFFERENT (untried or longer-waiting) clip
-     is attempted next wake. This directly closes iteration-7's starvation finding — no single stuck clip
-     can ever block others from getting their turn, because being attempted (even unsuccessfully) is what
-     moves a clip to the back of the queue. ★ Residual, explicitly accepted limitation (unchanged from
-     REV 7, now properly SCOPED to only the one stuck clip itself, not to the whole system): a clip whose
-     own diff is permanently ambiguous may itself never resolve (this is SAFE — never guesses, never
-     duplicate-posts — but not OPTIMAL), while round-robin guarantees this does NOT prevent OTHER pending
-     clips from making progress. ★
-  3. **Missing/corrupt sidecar (FIND-008)**: IF the selected clip's sidecar file (`<clipname>.
-     before-hrefs.json`, in `$CLIP_PENDING_VERIFY`) is MISSING, unreadable, or fails to parse as a JSON
-     array of strings, THE SYSTEM SHALL treat that clip as **inconclusive this wake** (per REQ-002's
-     inconclusive handling — do NOT guess, do NOT delete the clip) and retry on a later wake — per step 2,
-     this still counts as "attempted", so the round-robin still rotates past it to the next clip on the
-     following wake (closing the "permanently corrupt sidecar" starvation case iteration-7 also raised).
+  2. **ONE clip per wake, LEAST-RECENTLY-ATTEMPTED by the CLIP FILE'S OWN mtime — ROUND-ROBIN (SIMPLIFIED
+     after iteration-6 FIND-011/012; FIXED after iteration-7 FIND-015/016/017 for starvation; ORDERING
+     SIGNAL MOVED from the sidecar's mtime to the CLIP FILE's mtime after iteration-8 FIND-020, so
+     round-robin fairness no longer depends on whether a sidecar exists at all)**: IF `$CLIP_PENDING_VERIFY`
+     contains more than one clip, THE SYSTEM SHALL process ONLY the clip file (not its sidecar) with the
+     OLDEST (least-recent) mtime this wake, and SHALL NOT attempt any other pending clip in the same wake.
+     THE CLIP FILE'S MTIME SHALL BE TOUCHED (`os.utime()`, no content change) EVERY TIME that clip is
+     attempted and remains unresolved at the end of this step — whether unresolved because "no new href
+     yet", "no caption match" (step 6), or a missing/permanently-inconclusive sidecar (step 3). This makes
+     "oldest mtime" mean "least recently attempted" — a self-balancing round-robin — and, because it keys
+     off the CLIP FILE (which always exists for every pending clip) rather than the sidecar (which may be
+     missing per step 3), fairness holds even for a clip whose sidecar was lost. A clip that gets attempted
+     and stays stuck immediately becomes the MOST recently touched, so a DIFFERENT clip is attempted next
+     wake — no single stuck clip can ever block others. ★ Residual, explicitly accepted limitation: a clip
+     whose own confirmation is permanently unresolved (lost sidecar, or genuinely never actually published)
+     may itself never resolve — SAFE (never guesses, never duplicate-posts) but not OPTIMAL — while
+     round-robin guarantees this never prevents OTHER pending clips from making progress. ★
+  3. **Missing/corrupt sidecar (FIND-008, REDESIGNED after FIND-018/019/020)**: IF the selected clip's
+     sidecar file is MISSING, unreadable, or fails to parse, THE SYSTEM SHALL treat that clip as
+     **permanently inconclusive** — no placeholder is ever written (FIND-020: there is no sound content to
+     put in a placeholder; a placeholder "diffed against current state" would trivially never show
+     anything new, which is a silently different failure mode than the honest "we lost the ability to
+     verify this clip" state). Round-robin fairness for THIS case does NOT depend on the sidecar at all
+     (see the ordering-signal change in step 2 below), so a permanently-missing sidecar cannot starve
+     other clips either way.
   4. Invokes `post_reel.py --verify-only --handle <handle>` as a subprocess UP TO 3 TIMES, waiting 5
      seconds between invocations — REQ-001's stabilize model applied EXTERNALLY, at the CALLER level
      (via the shared `reel_verify.py`'s `stabilize_reads`), across separate `--verify-only` subprocess
      calls (each individual call's own internal read at `post_reel.py:112-113` is untouched).
   5. Stops calling once 2 consecutive `reels` arrays match (stable), or after 3 calls if they never
      match (inconclusive — leave the clip in `$CLIP_PENDING_VERIFY`, try again next wake).
-  6. THE SIDECAR RECORDS A SET, NOT A COUNT (FIXED after iteration-4 FIND-005/006): when `run.sh` first
-     moves a clip to `$CLIP_PENDING_VERIFY` (REQ-006), it SHALL also write a sidecar file
-     `$CLIP_PENDING_VERIFY/<clipname>.before-hrefs.json` containing the JSON array of the EXACT
-     stabilized `before["hrefs"]` list captured at that time (the same list already computed by REQ-001
-     for that post attempt — no extra browser work, just persist it to disk instead of discarding it).
+  6. **THE SIDECAR RECORDS A SET **AND THE CLIP'S OWN CAPTION TEXT**, AND CONFIRMATION REQUIRES A CONTENT
+     MATCH, NOT JUST A COUNT (REDESIGNED after iteration-8 FIND-018/019, which correctly proved by
+     hand-tracing that pure count/URL-diffing is UNSOUND, not merely "not optimal": once exactly ONE
+     unrelated post lands via the independent new-content pipeline on ANY later wake — guaranteed possible
+     by step 1's own non-blocking gating — `new_hrefs` has exactly 1 element and the OLD rule would
+     silently misattribute that unrelated post's real URL to THIS clip, permanently dropping the actually-
+     unpublished clip from ever being retried. This is precisely the false-confirmation bug class the
+     entire feature exists to eliminate, reintroduced via the self-heal path — a real correctness defect,
+     not a documentation gap. Dais's own directive for this feature — "we have to VERIFY with browser that
+     shit is actually posted" — means confirmation must check WHAT was posted, not just THAT something
+     new exists)**: when `run.sh` first moves a clip to `$CLIP_PENDING_VERIFY` (REQ-006), it SHALL write a
+     sidecar file `$CLIP_PENDING_VERIFY/<clipname>.before-hrefs.json` containing
+     `{"before_hrefs": [...stabilized before["hrefs"]...], "caption": "<the EXACT caption text submitted
+     for this clip, i.e. the same string content already read from the caption file and passed to
+     `cdp.insert_text` during the composer flow — no extra work, persist what's already in hand>"}`.
      For the ONE clip being processed this wake (step 2), THE SELF-HEAL DRIVER SHALL compute
-     `new_hrefs = stabilized_reels_set - set(sidecar_hrefs)` (a real set difference, giving the ACTUAL new
-     href string, not a guess/index-0 assumption). IF `new_hrefs` has EXACTLY ONE element, THE SYSTEM
-     SHALL treat it as now-confirmed: move the clip to `$CLIP_POSTED`, delete the sidecar file, and
-     append the delayed `"status":"posted"` ledger line WITH `"post_url"` SET TO THE REAL CONFIRMED URL
-     (`"https://www.instagram.com" + new_hrefs[0]`, never `null` — a `status:"posted"` ledger line MUST
-     always carry a real, non-null `post_url`, per REQ-009's step-1 guard below). IF `new_hrefs` is empty
-     (no new URL yet) OR has more than one element (an ambiguous case — e.g. an unrelated new post from
-     the SAME wake's independent new-content pipeline also landed in between reads — treat as
-     inconclusive, do NOT guess), leave the clip in `$CLIP_PENDING_VERIFY` for the next wake (never
-     silently drop it, never duplicate-post it, never fabricate a `post_url`). ★ Documented known
-     limitation (accepted tradeoff, per iteration-6's finding): if new content keeps landing via the
-     independent new-content pipeline on EVERY subsequent wake, `new_hrefs` could keep having >1 element
-     indefinitely and this clip might never resolve. This is SAFE (never guesses, never duplicate-posts,
-     never loses the clip) but not OPTIMAL (may take many wakes). Given real posting cadence is roughly
+     `new_hrefs = stabilized_reels_set - set(sidecar["before_hrefs"])` (a real set difference). THEN, FOR
+     EACH href IN `new_hrefs` (whatever the count — 0, 1, or more), navigate to that reel's URL and read
+     its actual caption text from the live page; compare it EXACTLY to `sidecar["caption"]`. IF EXACTLY
+     ONE href's live caption matches, THE SYSTEM SHALL treat it as now-confirmed: move the clip to
+     `$CLIP_POSTED`, delete the sidecar file, and append the delayed `"status":"posted"` ledger line WITH
+     `"post_url"` SET TO THAT MATCHED URL (never `null` — a `status:"posted"` ledger line MUST always
+     carry a real, non-null, CONTENT-VERIFIED `post_url`, per REQ-009's step-1 guard below). IF ZERO hrefs
+     match (none of the new posts are this clip's own — genuinely still unpublished, OR the new href(s)
+     belong to other clips) OR MORE THAN ONE href matches (an extremely unlikely caption collision — do
+     NOT guess), leave the clip in `$CLIP_PENDING_VERIFY` for the next wake (never silently drop it, never
+     duplicate-post it, never fabricate a `post_url`). ★ This closes FIND-018 structurally: an unrelated
+     post landing in the gap will have ITS OWN (different) caption, so it will correctly FAIL the content
+     match and never be misattributed, regardless of how many wakes have passed or how many unrelated
+     posts accumulated. Residual limitation (rare, accepted): if two DIFFERENT clips happen to share
+     byte-identical caption text (unlikely in practice — captions include per-clip dynamic hooks), this
+     clip may need an extra wake or two to disambiguate; still SAFE (never guesses), just not instant. ★
+     Documented known limitation for the genuinely-never-published case: if new content keeps landing via
+     the independent new-content pipeline on EVERY subsequent wake and this clip's own post never actually
+     lands, this clip may sit in `$CLIP_PENDING_VERIFY` indefinitely (SAFE — never guesses, never
+     duplicate-posts). Given real posting cadence is roughly
      hourly at most and self-heal isn't time-critical, this is an acceptable, explicitly-documented
      limitation rather than a defect requiring more disambiguation machinery. ★
 - **REQ-009 (monitor honesty — REV 4, adds the null-guard iteration-4 FIND-005 found missing)**:
