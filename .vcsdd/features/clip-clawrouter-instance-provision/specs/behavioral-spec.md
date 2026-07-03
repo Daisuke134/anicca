@@ -1,4 +1,4 @@
-# Behavioral Spec — clip-clawrouter-instance-provision (Phase 1a) — REV 5 (post iteration-3 FAIL: dropped broken genesis-loop registry path, hardened REQ-103 port validation)
+# Behavioral Spec — clip-clawrouter-instance-provision (Phase 1a) — REV 6 (post iteration-4 FAIL: fixed fabricated plist key-list citation, minor line-number drift)
 
 ## ★★★ SCOPE PIVOT (Dais 2026-07-04 verbatim correction, mid-implementation) ★★★
 
@@ -106,11 +106,22 @@ isolation mechanism — this is a PROVISIONING feature, not a new mechanism.
   `com.anicca.daemon` (confirmed via `launchctl list` → currently loaded, `ANICCA_HOME=
   /Users/anicca/.anicca`); its REAL `process.env` comes from the STATIC
   `<key>EnvironmentVariables</key>` dict inside
-  `~/Library/LaunchAgents/com.anicca.daemon.plist` (confirmed via `plutil -convert xml1 -o -`:
-  `ANICCA_FREE_MODEL`, `ANICCA_FUNDED_MODEL`, `ANICCA_HOME`, `ANICCA_LEAN_MODEL`, `ANICCA_REPO`,
-  `BASE_RPC_URL`, `COMPUTE_RESERVE_USDC`, `HOME`, `PATH`, `YIELD_MIN_DEPLOY_USDC` — `ANICCA_INSTANCE`
-  is not there, and this plist dict is a completely separate, static file, NOT dynamically
-  populated from `~/.anicca/.env`'s text). `~/anicca/runtime/anicca-daemon.sh` (the daemon's
+  `~/Library/LaunchAgents/com.anicca.daemon.plist` (★ CORRECTED after iteration-4 FIND-010: an
+  earlier revision of this Ground Truth cited 10 keys including `ANICCA_FREE_MODEL`/
+  `ANICCA_FUNDED_MODEL`/`ANICCA_LEAN_MODEL`/`BASE_RPC_URL`/`COMPUTE_RESERVE_USDC`/
+  `YIELD_MIN_DEPLOY_USDC` — re-verified fresh via `plutil -convert xml1 -o -` at the time of this
+  fix, the dict genuinely contains ONLY 4 keys: `ANICCA_HOME`, `ANICCA_REPO`, `HOME`, `PATH` — this
+  also exactly matches the file's own install-time source of truth,
+  `~/anicca/runtime/com.anicca.daemon.plist.template` (also independently re-read: identical 4
+  keys). The plist's mtime is very recent (same session), and the daemon's own self-update sequence
+  (git-merge + skill rsync, per iteration-2 FIND-005) plausibly re-rendered it from the template at
+  some point, replacing whatever extra keys existed in an earlier check — this file is LIVE and can
+  legitimately drift; the load-bearing invariant for REQ-106 is the MECHANISM (add
+  `ANICCA_INSTANCE` as one more key, verified via a live `plutil` re-read AT IMPLEMENTATION TIME,
+  not a specific memorized key list), not any particular snapshot of its current contents ★ —
+  `ANICCA_INSTANCE` is not there (in either the live file or the template), and this plist dict is a
+  completely separate, static-per-load file, NOT dynamically populated from `~/.anicca/.env`'s
+  text. `~/anicca/runtime/anicca-daemon.sh` (the daemon's
   `ProgramArguments` entrypoint) does not source `~/.anicca/.env` either (confirmed: no `source
   .env` / `set -a` pattern anywhere in that file; it only explicitly exports `ANICCA_HOME`,
   `OPENAI_BASE_URL`, `OPENAI_API_KEY`, `ANICCA_WALLET_ADDRESS`). ★ The CORRECT mechanism (zero code
@@ -121,7 +132,7 @@ isolation mechanism — this is a PROVISIONING feature, not a new mechanism.
   gui/$(id -u)/com.anicca.daemon`) so launchd re-reads the plist and the NEW env var reaches the
   daemon's real `process.env` on its next start — genuinely zero `.mjs` code change, but the
   correct target file is the PLIST, not `~/.anicca/.env`. ★
-- `~/anicca/skills/registry.json:115-120`: `"earn/clip"` is ALREADY registered
+- `~/anicca/skills/registry.json:124-129`: `"earn/clip"` is ALREADY registered
   (`track: A, dir: skills/earn/clip, entrypoint: run.sh, status: live, owner: clip`) — already
   auto-discoverable by ANY genesis loop instance via `liveSlotNames(registry)`
   (`runtime/loop/prompt.mjs`). No registry change needed.
@@ -262,7 +273,7 @@ isolation mechanism — this is a PROVISIONING feature, not a new mechanism.
   bar (profile icon + bio, per that skill's own contract) — with the resulting handle provably
   distinct from `aiclipsvault`.
 - **REQ-103 (new account file, WITH VALIDATION — ★ HARDENED per iteration-3 FIND-008, a real,
-  independently-confirmed danger: `run.sh:49`'s `x.get("port",9222)` SILENTLY DEFAULTS a missing
+  independently-confirmed danger: `run.sh:50`'s `x.get("port",9222)` SILENTLY DEFAULTS a missing
   `"port"` key to 9222 — Dais's OWN daily-driver browser port — meaning an agent-written account
   entry that forgets the `port` field would make `run.sh` attempt to drive Dais's personal browser
   as if it were the clip-earn account's isolated instance, exactly the D-63 collision class this
@@ -284,7 +295,7 @@ isolation mechanism — this is a PROVISIONING feature, not a new mechanism.
   `run.sh` ever reads it, never silently defaulting into Dais's daily-driver. ★
 - **REQ-104 (isolated browser launch + login)**: THE SYSTEM SHALL launch a NEW, dedicated
   CloakBrowser persistent-profile instance (reusing the existing pattern at
-  `~/anicca-project/.claude/skills/ig-reels-poster/scripts/launch_clip_browser.py` — a 14-line
+  `~/anicca-project/.claude/skills/ig-reels-poster/scripts/launch_clip_browser.py` — a 15-line
   script: `cloakbrowser.launch_persistent_context(<profile-dir>, headless=False,
   args=["--remote-debugging-port=<port>", "--remote-allow-origins=*"])` + open an initial
   instagram.com tab + keep-alive loop; adapted with the NEW profile dir + `<new-port>`) bound to

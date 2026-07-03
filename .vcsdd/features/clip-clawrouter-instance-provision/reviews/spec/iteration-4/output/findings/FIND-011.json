@@ -1,0 +1,15 @@
+{
+  "id": "FIND-011",
+  "severity": "informational",
+  "dimension": "spec_fidelity",
+  "requirement": "Ground Truth citations (registry.json, run.sh, launch_clip_browser.py)",
+  "title": "Several file:line citations in the Ground Truth section are off by a small number of lines or characters versus the actual current file — content of each claim is otherwise accurate",
+  "evidence": [
+    "Spec cites `~/anicca/skills/registry.json:115-120` for the `earn/clip` entry; the actual entry (`grep -n '\"earn/clip\"'`) starts at line 124, not 115 — the FIELD CONTENT cited (track A, dir skills/earn/clip, entrypoint run.sh, status live, owner clip) is verbatim correct, only the line numbers are off by ~9.",
+    "Spec (REQ-103/PROP-103) cites `run.sh:49`'s `x.get(\"port\",9222)`; `grep -n 'get(\"port\"'` shows this line is actually 50, not 49 — the code content quoted is character-for-character correct, only off by one line.",
+    "REQ-104 describes `launch_clip_browser.py` as 'a 14-line script'; `wc -l` shows the actual file is 15 lines — the described behavior (launch_persistent_context + open instagram.com tab + keep-alive loop) is otherwise accurate.",
+    "post_reel.py:117-118 citation (REQ-104/PROP-104) IS exact and correct against the canonical file `~/.claude/skills/ig-reels-poster/scripts/post_reel.py` (the one run.sh/self_heal.py/reel_verify.py actually reference at `$HOME/.claude/skills/ig-reels-poster/scripts/post_reel.py`) — line 107 is genuinely the 'not logged in' check and line 118 is genuinely `if active != a.handle:`, confirming iteration-1 FIND-003's correction was itself accurate. Note there is also an OLDER, DIFFERENT copy of post_reel.py at `~/anicca-project/.claude/skills/ig-reels-poster/scripts/post_reel.py` (197 lines vs the canonical 251) where the same logic sits at different line numbers (~104-105) — the spec correctly cites the canonical one that `run.sh`'s `$HOME_DIR/.claude/...` path actually resolves to, not the older product-repo copy."
+  ],
+  "why_it_matters": "None of these affect achievability: every underlying claim about WHAT the code/config does is accurate on independent re-verification, only exact line numbers drift (plausibly because these files changed slightly between when the spec was drafted and this review). Distinguishing this from FIND-010 matters: FIND-010 is content that never existed at all in the file (a factual claim, not a citation-precision slip); these are correct content at a slightly wrong line number.",
+  "recommendation": "Non-blocking. Optionally re-run the cited grep/wc commands once more immediately before implementation to refresh exact line numbers, but no design or requirement change is needed."
+}
