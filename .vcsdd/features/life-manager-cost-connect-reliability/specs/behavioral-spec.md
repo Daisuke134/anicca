@@ -37,7 +37,7 @@ FIND-001/002 (gmail): origin/main `ask.js:5-9` = "We NEVER read/send user's Gmai
 `done` = **LM per-user monthly Google cost drops from ~$100 to <$10 with the wake call's core guidance preserved, Calendar+Gmail connect through ONE OAuth on Telegram, and a machine continuously verifies+heals the money-path — proven by real side-effect E2E + adversary PASS + my browser/call verification.**
 
 Verifiable conditions:
-1. **VOICE-COST** — a real wake call plays the cheap one-way path; proof = **in-process assertion the Gemini Live websocket is never opened on the default path** (a Live-session counter + native-audio-token counter in the app log = 0 for that call), NOT GCP billing. Dais hears the call.
+1. **VOICE (compositional two-way)** — a real answered call is a two-way CONVERSATION produced by the free compositional stack (Groq Whisper STT + Groq Llama LLM + edge-tts TTS); proof = the caller can ask a follow-up and get a spoken answer, AND `live_ws_opened=0` in the app log (Gemini Live native-audio never opened) for that call. Dais hears + converses with the free agent.
 2. **ROUTE-JP** — for a JP origin/dest, time+guidance come from `api.transit.ls8h.com` (asserted against the committed fixture), and Google Routes calls for that path = 0 (call-count assertion).
 3. **MAPS-CACHE** — provider route calls ≤1 per (uid, event, coarse-time-bucket); a moved event (changed start) recomputes. Asserted by a call-count test.
 4. **CONNECT** — a test user connects Calendar AND Gmail-send through ONE Pipedream consent on Telegram; backend reads calendar + sends mail for that user; the scheduler SELECTS that user for wakes.
@@ -51,14 +51,16 @@ Portfolio self-improve loop (separate spec). Distribution content specifics. sel
 
 ## 3bis. Behavioral contracts
 
-### C1 — Voice: cheap ONE-WAY default + two-way ESCALATION (F1)
-- **SCOPE CHANGE (explicit, not "no regression")**: today's call is a full two-way Gemini-Live conversation; the default becomes a **pre-synthesized ONE-WAY guidance clip** (cheap-text line → edge-tts → μ-law → Telnyx `play`). This is a deliberate capability reduction for the common case (a wake call is "leave now, go via X").
-- **TWO-WAY ESCALATION**: if VAD detects the caller speaking (or a keypad request), OPEN a Gemini Live session for interactive Q&A (billed, rare, logged as `voice_mode=live_escalation`). So "give directions on demand" is preserved via escalation, not the default.
-- **IN**: due wake (uid, event, urgency, resolved route/leave-time, call_language).
-- **OUT**: a phone call whose default audio is the one-way clip; on caller interaction → Live Q&A.
-- **EDGE/ERROR**: TTS fail → next provider (edge-tts → local Kokoro/piper) → last resort Live; if NO audio → do NOT dial (silent call worse than none), log+count.
-- **INVARIANT (measurable)**: on the default path the Gemini Live ws is NEVER opened (counter=0) → zero native-audio tokens. Live only on explicit escalation.
-- **QUALITY BAR**: the one-way clip names event + place + route + urgency in call_language.
+### C1 — Voice: FREE COMPOSITIONAL TWO-WAY CONVERSATIONAL agent (replaces Gemini Live native-audio)
+- **DESIGN CORRECTION (Dais 2026-07-04)**: the earlier "one-way edge-tts clip" was WRONG — the LM voice must be a **two-way CONVERSATION** (listen → understand → respond → answer follow-ups), same capability as today's Gemini Live, but built **COMPOSITIONALLY on FREE/cheap parts** instead of the monolithic paid speech-to-speech model. edge-tts is only the TTS stage. (Research: Pipecat cascaded pipeline; sources cited in evidence.)
+- **STACK** (each near-free; ~150-400× cheaper than Gemini Live native-audio, effectively $0 in free tier): STT = **Groq Whisper Large-v3-Turbo** (free tier 20 RPM/2K RPD, ~$0.04/hr, 228× realtime, JA+EN); LLM = **Groq Llama-3.1-8B-Instant** (free tier 30 RPM/14.4K RPD, 840 TPS); TTS = **edge-tts** (`python3 -m edge_tts`, free); VAD/turn = **Silero VAD (node)** or an energy+silence heuristic (silence 500–800 ms endpointing).
+- **PIPELINE** (extend the EXISTING Node bridge `lib/call-bridge.cjs` — NOT Pipecat/Python, avoids two runtimes; reuse `call-logic.js` μ-law/PCM16/resample primitives): Telnyx μ-law 8k in → PCM 8k→16k → VAD endpointing → Groq Whisper STT → Groq Llama LLM (stream sentence-by-sentence for low TTFB) → edge-tts → ffmpeg 24k→8k + μ-law → Telnyx media out.
+- **INTERRUPTION (barge-in)**: on VAD speech-start while TTS is playing, STOP the edge-tts/ffmpeg playback loop + send Telnyx's clear equivalent (verify Telnyx's `clear` analog against media-streaming docs at impl time).
+- **IN**: an answered call (uid, event, urgency, resolved route/leave-time, call_language) — the agent OPENS the conversation with the wake guidance, then converses.
+- **OUT**: a two-way phone conversation produced entirely by STT+LLM+edge-tts; the agent guides + answers.
+- **INVARIANT (measurable, Goal 1)**: the Gemini Live websocket is opened **0 times** on the normal path (`live_ws_opened=0`) → **zero native-audio tokens**. Gemini Live is fully removed from the default path (may remain only as a documented emergency fallback if the compositional stack hard-fails, logged).
+- **EDGE/ERROR**: STT/LLM/TTS transient failure → retry/fallback within the compositional stack (edge-tts→Kokoro/piper; Groq→DeepSeek/Gemini-Flash text); never a silent call. 8k→16k upsample before STT (Whisper accuracy). Latency budget ~500–800 ms/turn (stream LLM→TTS sentence-wise).
+- **QUALITY BAR**: the agent opens by naming event + place + route + urgency in call_language, then answers the caller's questions in a natural back-and-forth.
 
 ### C2 — Routing: JP via transit.ls8h.com, else Google (F8 + ToS)
 - **ADDRESS→GEO (corrected per iter-3 FIND-003 + my live tests)**: transit `/api/v1/places/suggest` resolves STATIONS/landmarks ("新宿駅"→geo, verified) but NOT raw JP postal addresses ("新宿区南元町15-27"→0, verified); OSM Nominatim also fails those JP addresses (verified 0). So geo is obtained the way the code ALREADY does it: `home_address` is geocoded ONCE (Google Geocoding) and cached as `home_geo` on `lm_users` (one-time per user = negligible cost, NOT the $100 driver); event geos already come from ask.js's existing Google-Places grounding (`ask.js` RESOLVE). The cost cut is on ROUTING (Routes Compute Pro premium, per-tick), not on one-time geocoding.
