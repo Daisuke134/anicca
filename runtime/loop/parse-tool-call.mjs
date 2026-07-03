@@ -72,8 +72,9 @@ function extractInnerResponse(response) {
     try {
       return JSON.parse(response.result);
     } catch {
-      // result is plain text, not JSON — no tool call
-      return null;
+      // result is PROSE that embeds the tool call (claude-p often writes an explanation + a
+      // ```json { "tool_calls": [...] } ``` fence). Wrap it as content so the scavenger recovers it.
+      return { choices: [{ message: { content: response.result } }] };
     }
   }
 
@@ -96,6 +97,12 @@ function extractFirstToolCall(response) {
     if (tc?.function?.name) return tc;
   }
 
+  // Structured content array (Anthropic-style): choices[0].message.content = [{type:'tool_use',...}]
+  if (Array.isArray(message.content)) {
+    const tu = message.content.find((p) => p && (p.type === 'tool_use' || p.name));
+    if (tu?.name) return { function: { name: tu.name, arguments: tu.input ?? tu.arguments ?? {} } };
+  }
+
   // SCAVENGE (copied from BlockRunAI/Franklin src/agent/llm.ts isRoleplayedJsonToolCallText +
   // repair/scavenge.ts): free models like glm-4.7 often emit the tool call as TEXT content instead of
   // the tool_calls field — e.g. {"type":"function","name":"run_skill","parameters":{...}} or
@@ -113,11 +120,18 @@ function scavengeRoleplayedToolCall(content) {
   for (const candidate of jsonObjectCandidates(content)) {
     const parsed = parseMaybeTruncated(candidate);
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) continue;
-    const name = typeof parsed.name === 'string' ? parsed.name
-      : (typeof parsed.function === 'string' ? parsed.function : null);
+    // Unwrap a nested {"tool_calls":[{name,arguments}]} (claude-p's fenced shape) or a bare {name,...}.
+    const call = (Array.isArray(parsed.tool_calls) && parsed.tool_calls.length > 0)
+      ? parsed.tool_calls[0]
+      : parsed;
+    if (!call || typeof call !== 'object') continue;
+    const name = typeof call.name === 'string' ? call.name
+      : (typeof call.function === 'string' ? call.function
+        : (call.function && typeof call.function.name === 'string' ? call.function.name : null));
     if (!name) continue;
-    // the call's arguments may be under `parameters` or `arguments`
-    const callArgs = parsed.parameters ?? parsed.arguments ?? {};
+    // the call's arguments may be under `parameters`, `arguments`, `input`, or nested function.arguments
+    const callArgs = call.parameters ?? call.arguments ?? call.input
+      ?? (call.function && call.function.arguments) ?? {};
     return { function: { name, arguments: callArgs } };
   }
   return null;
