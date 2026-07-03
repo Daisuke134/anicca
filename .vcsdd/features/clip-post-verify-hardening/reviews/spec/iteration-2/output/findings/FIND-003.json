@@ -1,0 +1,17 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "description": "REQ-002 is internally self-contradictory on the exact read/attempt count, and this contradiction propagates into inconsistent test fixtures. REQ-002's own sentence says '4 poll attempts (firm value: attempts 1v2, 2v3, 3v4 -- i.e. at most 5 total reads)'. Enumerating only 3 pairwise comparisons (1v2, 2v3, 3v4) requires exactly 4 reads, not 5 -- the trailing clause 'i.e. at most 5 total reads' does not follow from the 3 pairs just listed (a 4th pair, 4v5, is needed to justify 5 reads, but is never listed). This is not a rounding nitpick: the verification architecture's own test fixtures for the SAME function disagree on which bound is correct -- PROP-001 tests `_reads_stable` with a 4-element read list (`[[\"a\"],[\"a\",\"b\"],[\"a\",\"b\"],[\"a\",\"b\"]]`), while PROP-002 tests the failure/timeout path with a 5-element read list ('feed a 5-read sequence (4 attempts = 5 reads)'). Phase 2 cannot implement `stabilize_reads(read_fn, max_attempts=4, settle_s=5)` correctly against both PROP-001 and PROP-002 simultaneously if the underlying bound (4 reads vs 5 reads) is undefined at the requirement level.",
+  "evidence": {
+    "filePath": ".vcsdd/features/clip-post-verify-hardening/specs/behavioral-spec.md",
+    "lineRange": "66-69",
+    "snippet": "IF two consecutive reads never match within 4 poll attempts (firm value: attempts 1v2, 2v3, 3v4 -- i.e. at most 5 total reads), THEN..."
+  },
+  "additionalEvidence": [
+    {"filePath": ".vcsdd/features/clip-post-verify-hardening/specs/verification-architecture.md", "lineRange": "34", "note": "PROP-001's fixture uses a 4-read list."},
+    {"filePath": ".vcsdd/features/clip-post-verify-hardening/specs/verification-architecture.md", "lineRange": "35", "note": "PROP-002's fixture uses a 5-read sequence for the same bounded function -- contradicts PROP-001's 4-read fixture."}
+  ],
+  "routeToPhase": "1a"
+}

@@ -1,0 +1,17 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "REQ-009 REV 2's compound counting rule is a NO-OP fix for the exact real incident it claims to solve. Applying the compound rule to the ACTUAL current ledger (.openclaw/state/clip-earn-ledger.jsonl, 4 lines) yields the SAME wrong count (3) as the pre-fix code, because the false-positive marker (`false_positive_corrected:true`) is only ever written onto the NEW corrective narrative line (line 4, which already has `post_url:null` and would be excluded by the post_url-non-null clause alone, making the false_positive_corrected clause redundant for that line) -- not onto the ORIGINAL false-positive lines (lines 2 and 3, both `posted reel to @aiclipsvault: .../DaLKV2xP8Ij/`, no status field, non-null non-empty post_url, no false_positive_corrected flag on themselves). Under REQ-009's own compound rule: line 1 counts (genuine post, correctly), line 2 counts (FALSE POSITIVE, incorrectly), line 3 counts (duplicate FALSE POSITIVE, incorrectly), line 4 excluded (post_url null). Total = 3. The CURRENT pre-fix monitor.sh code (`if d.get(\"post_url\"): posts+=1`) applied to the same 4 lines ALSO yields 3 (lines 1,2,3 all have truthy post_url; line 4 doesn't). Identical wrong answer before and after the 'fix'. REQ-009 never specifies how a false-positive gets marked once discovered -- it implicitly assumes the flag lands on the false line itself, but the actual remediation pattern observed in the real ledger is to APPEND a new corrective line (post_url:null) rather than mutate the original false line(s) in place (consistent with JSONL append-only semantics). Without a rule that cross-references a correction line's superseded post_url(s) against prior lines (e.g. by matching post_url string, or by requiring the original false line itself be edited), monitor.sh's 'Honest: earned counts ONLY real...' claim (monitor.sh:5) remains false for this exact incident.",
+  "evidence": {
+    "filePath": ".vcsdd/features/clip-post-verify-hardening/specs/behavioral-spec.md",
+    "lineRange": "105-111",
+    "snippet": "REQ-009 ... SHALL count a ledger line as \"posted\" IF AND ONLY IF: status == \"posted\" ... OR (for OLD lines ... NO status field AND a non-null non-empty post_url AND does NOT have \"false_positive_corrected\": true)."
+  },
+  "additionalEvidence": [
+    {"filePath": "/Users/anicca/.openclaw/state/clip-earn-ledger.jsonl", "lineRange": "1-4", "note": "lines 2 and 3 (the false-positive DaLKV2xP8Ij post) have no status field, non-null non-empty post_url, and NO false_positive_corrected flag on themselves -- they satisfy REQ-009's 'old-format counts as posted' clause and would be counted, contradicting the ground-truth narrative that says nothing new was actually published."},
+    {"filePath": "/Users/anicca/anicca/skills/earn/clip/monitor.sh", "lineRange": "21-31", "note": "current counting logic `if d.get(\"post_url\"): posts+=1` produces the same wrong total (3) for these 4 real lines as REQ-009 REV 2's new compound rule -- the 'fix' changes nothing for the motivating incident."}
+  ],
+  "routeToPhase": "1a"
+}

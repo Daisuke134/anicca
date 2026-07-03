@@ -1,0 +1,20 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "verification_readiness",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "description": "The REV 2 purity/refactor table's central citation -- 'the current single unstabilized ev(tid, \"...querySelectorAll...\") calls at :112,116,171,177' -- is factually wrong against the real file for 3 of its 4 cited line numbers, verified by direct read of post_reel.py. Line 112 is `cdp.navigate(tid, f\"https://www.instagram.com/{a.handle}/\"); time.sleep(4)` (a navigate call, not an `ev()` read). Line 116 is `res[\"reels\"] = reels or []` (an assignment, not an `ev()` read). Line 171 is `cdp.click_xy(tid, sb[\"x\"], sb[\"y\"]); time.sleep(3); shot(tid, \"6-sharing\")` (the share click, not an `ev()` read). Only line 177 is actually an `ev()` read call. Critically, the table OMITS line 123 -- `res[\"_before_reels\"] = ev(tid, \"\"\"...querySelectorAll...\"\"\") or []` -- which is the EXACT line the ground-truth section's own root-cause narrative names as the bug source ('post_reel.py's before/after reel-diff snapshots the profile grid immediately on navigation'). Separately, the 'Concrete refactor' pseudocode positions `before = stabilize_reads(...)` immediately before the '# ...share click...' comment (i.e. right before line 171), whereas the REAL `_before_reels` capture happens far earlier (lines 121-124), BEFORE the entire composer/video-upload/caption flow (lines 125-164, likely 30s-2min of real elapsed time). If the intent is to relocate the 'before' snapshot to immediately-pre-share (a legitimate design choice), this is a meaningful change to WHEN the baseline is captured that is never stated as such; if the intent is to keep the early capture point but simply stabilize it in place, the pseudocode is drawn at the wrong place in the flow. Either way, a Phase 3 adversary relying on this table+pseudocode to confirm 'correct wiring' (per PROP-004(b) and the Gate section) is being pointed at the wrong code locations for the actual bug.",
+  "evidence": {
+    "filePath": ".vcsdd/features/clip-post-verify-hardening/specs/verification-architecture.md",
+    "lineRange": "11",
+    "snippet": "the current single unstabilized ev(tid, \"...querySelectorAll...\") calls at :112,116,171,177"
+  },
+  "additionalEvidence": [
+    {"filePath": "/Users/anicca/.claude/skills/ig-reels-poster/scripts/post_reel.py", "lineRange": "112", "note": "cdp.navigate(...) -- not an ev() call"},
+    {"filePath": "/Users/anicca/.claude/skills/ig-reels-poster/scripts/post_reel.py", "lineRange": "116", "note": "res[\"reels\"] = reels or [] -- not an ev() call"},
+    {"filePath": "/Users/anicca/.claude/skills/ig-reels-poster/scripts/post_reel.py", "lineRange": "171", "note": "cdp.click_xy(...) -- the share click, not an ev() call"},
+    {"filePath": "/Users/anicca/.claude/skills/ig-reels-poster/scripts/post_reel.py", "lineRange": "123", "note": "res[\"_before_reels\"] = ev(...) -- the ACTUAL root-cause read line, omitted from the table entirely"},
+    {"filePath": ".vcsdd/features/clip-post-verify-hardening/specs/behavioral-spec.md", "lineRange": "7-8", "note": "ground-truth root-cause narrative names the before/after reel-diff snapshot (i.e. line 123) as the bug source"}
+  ],
+  "routeToPhase": "1b"
+}

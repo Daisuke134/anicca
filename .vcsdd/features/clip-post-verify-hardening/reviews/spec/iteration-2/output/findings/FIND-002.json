@@ -1,0 +1,17 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "major",
+  "description": "REQ-004 says 'post_reel.py's output JSON SHALL include a NEW key `outcome`' unconditionally (every output, all 3 values), and explicitly assigns 'failed' to cover 'the share button was never reached, i.e. the existing `reached` field never advanced to READY/past the composer steps'. But the real code has FIVE distinct early-return paths that never reach the share-click block at all and today simply `print(json.dumps(res)); return` with no outcome-equivalent field: not-logged-in (line 95), ACCOUNT GUARD abort (line 108), no-create-btn (line 127), file-chooser-load-failed (line 134), video-never-loaded (line 141). REQ-004/PROP-004/PROP-005 only describe wiring `classify_outcome` into the post-share flow (verification-architecture.md's pseudocode starts AFTER the composer/caption steps) and only test the `no-share-btn` early-return case (PROP-005 case 3) -- the other four early-return paths are never mentioned anywhere in either spec document, so nothing guarantees they get an `outcome` key at all after Phase 2, silently violating REQ-004's own 'SHALL include' language for those paths. REQ-005/006/007 also have no branch for 'outcome key absent/None' -- run.sh's 3-way routing is unspecified for this case.",
+  "evidence": {
+    "filePath": "/Users/anicca/.claude/skills/ig-reels-poster/scripts/post_reel.py",
+    "lineRange": "94-95,105-108,126-127,133-134,140-141",
+    "snippet": "res[\"error\"] = \"not logged in\"; print(json.dumps(res)); return   /  res[\"error\"] = f\"ACCOUNT GUARD...\"; ...print(...); return   /  res[\"error\"] = \"no create btn\"; print(json.dumps(res)); return   /  res[\"error\"] = \"file chooser load failed\"; ...return   /  res[\"error\"] = \"video never loaded\"; ...return"
+  },
+  "additionalEvidence": [
+    {"filePath": ".vcsdd/features/clip-post-verify-hardening/specs/verification-architecture.md", "lineRange": "15-26", "note": "the 'Concrete refactor' pseudocode only begins after the composer/caption flow completes -- it never shows classify_outcome (or any outcome assignment) wired into the 5 early-return failure paths listed above."},
+    {"filePath": ".vcsdd/features/clip-post-verify-hardening/specs/verification-architecture.md", "lineRange": "38", "note": "PROP-005 only tests the no-share-btn early-return shape, not the other 4 early-return paths."}
+  ],
+  "routeToPhase": "1a"
+}

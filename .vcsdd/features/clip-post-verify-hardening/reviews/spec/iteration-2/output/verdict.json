@@ -1,0 +1,45 @@
+{
+  "feature": "clip-post-verify-hardening",
+  "reviewContext": {
+    "reviewType": "spec",
+    "phase": "1c"
+  },
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-03T00:00:00Z",
+  "iteration": 2,
+  "priorIterationResolution": [
+    {"priorFinding": "FIND-001 (iteration-1)", "status": "PARTIALLY_FIXED", "note": "REQ-009's compound rule is now internally non-contradictory and correctly excludes the real ledger's line 4 (the false_positive_corrected correction line itself). However, re-derivation against the REAL ledger shows the fix is a no-op for the actual motivating incident -- see NEW finding FIND-001 (iteration-2) below."},
+    {"priorFinding": "FIND-002 (iteration-1)", "status": "FIXED", "note": "REQ-004 REV2 now gives a concrete `outcome` field name and exact 3-value vocabulary, cross-checked consistent with post_reel.py's real existing reached/published/post_url fields (verified: 'shared-unconfirmed' and 'no-share-btn' literal strings in PROP-005 match post_reel.py:163,183 exactly)."},
+    {"priorFinding": "FIND-003 (iteration-1)", "status": "FIXED", "note": "REQ-008 REV2 explicitly reuses the existing --verify-only flag, citing real line numbers post_reel.py:82,111-118, verified accurate against the real file."},
+    {"priorFinding": "FIND-004 (iteration-1)", "status": "FIXED", "note": "REQ-001/002 now state firm numeric values with 'firm value, not an example' framing, no e.g./example hedging remains in the requirement text (though see NEW finding FIND-003 for an internal arithmetic inconsistency introduced/left within the firmed-up numbers)."},
+    {"priorFinding": "FIND-005 (iteration-1)", "status": "FIXED", "note": "PROP-005 REV2 gives exact literal JSON stub text for all 3 outcomes, cross-verified consistent with real post_reel.py field-naming conventions and exact 'reached' string literals."},
+    {"priorFinding": "FIND-006 (iteration-1)", "status": "PARTIALLY_FIXED", "note": "The verification architecture now honestly states this is a real code-structure refactor (not additive-only) and gives a before/after code sketch, addressing the letter of FIND-006. However, re-verification against the real file shows the sketch's own line-number citations and snapshot-timing are themselves inaccurate/ambiguous -- see NEW finding FIND-004 (iteration-2)."},
+    {"priorFinding": "FIND-007 (iteration-1)", "status": "FIXED", "note": "PROP-004(b) and the Gate section now give the concrete instruction: adversary reads the full diff of the refactored block and confirms outcome is set exclusively via classify_outcome's return, not merely grepping the string 'outcome'."}
+  ],
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-002", "FIND-003"],
+      "evidence": [
+        {"type": "file", "location": ".vcsdd/features/clip-post-verify-hardening/specs/behavioral-spec.md:75-84", "description": "REQ-004 outcome vocabulary reviewed, concrete and consistent with real code field names"},
+        {"type": "file", "location": ".vcsdd/features/clip-post-verify-hardening/specs/behavioral-spec.md:96-104", "description": "REQ-008 self-heal reuse of --verify-only reviewed, citation accurate against post_reel.py:82,111-118"}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-004", "FIND-005"],
+      "evidence": [
+        {"type": "file", "location": ".vcsdd/features/clip-post-verify-hardening/specs/verification-architecture.md:37-38", "description": "PROP-004/PROP-005 stub shapes reviewed, exact literal JSON matches real code style and reached-state strings"},
+        {"type": "file", "location": ".vcsdd/features/clip-post-verify-hardening/specs/verification-architecture.md:51-58", "description": "Gate section's adversary-instruction for PROP-004(b) is now concrete (full-diff read, not grep-only)"}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 5,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}

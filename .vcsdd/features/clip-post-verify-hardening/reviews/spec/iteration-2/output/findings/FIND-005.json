@@ -1,0 +1,16 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "verification_readiness",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "description": "The REV 2 refactor pseudocode silently drops the real code's outer retry loop that tolerates Instagram's video-processing latency, without REQ-003 or the verification architecture acknowledging or justifying the reduction. The REAL code (post_reel.py:174-181) polls for the new reel up to 10 times at 12s intervals (up to ~120s total) after the share click, specifically because IG reel processing/appearance can be slow. The REV 2 pseudocode replaces this with exactly ONE `after1 = stabilize_reads(...)` (internally bounded to ~4 reads x 5s settle, i.e. ~20s) followed by a single 5s sleep and one `recheck = stabilize_reads(...)` (another ~20s) -- a total post-share detection window of roughly 45s versus the original ~120s, with NO outer loop retrying `after1`/`recheck` if the post simply hasn't appeared yet. Nothing in REQ-001/002/003 states that the original 120s tolerance window is intentionally being shortened, nor justifies why ~45s is sufficient given the ground-truth narrative's own description of IG's grid rendering progressively/slowly. This risks a correctness regression opposite to a false-positive: genuinely successful posts that take >45s to appear will now be misclassified `outcome=\"unverified\"` and routed to `pending-verify/` unnecessarily, increasing reliance on the self-heal path (REQ-008) for what used to be same-wake confirmations, and is not covered by any proof obligation (PROP-001..008 test the pure decision functions and integration routing, not the end-to-end wait-time budget against known IG latency).",
+  "evidence": {
+    "filePath": ".vcsdd/features/clip-post-verify-hardening/specs/verification-architecture.md",
+    "lineRange": "15-26",
+    "snippet": "after1 = stabilize_reads(lambda: read_hrefs(tid, handle))  # REQ-001/002 (post-share)\\ncandidate = diff_new_href(...)\\ntime.sleep(5); # REQ-003\\nrecheck = stabilize_reads(...)"
+  },
+  "additionalEvidence": [
+    {"filePath": "/Users/anicca/.claude/skills/ig-reels-poster/scripts/post_reel.py", "lineRange": "174-181", "note": "real code's outer loop: for _ in range(10): time.sleep(12); ...re-navigate + re-read... -- up to ~120s, entirely absent from the REV2 pseudocode's single-shot design"}
+  ],
+  "routeToPhase": "1b"
+}
