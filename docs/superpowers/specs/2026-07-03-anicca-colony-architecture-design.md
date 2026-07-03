@@ -49,7 +49,15 @@ vision, so we do not center it.
 - **Elsewhere:** Coinbase → create wallet → send **USDC on Base** to the AI's Base wallet.
 
 **Model-change note (REQ-MODEL):** self-funded default model must move from a pinned `glm-4.7` to ClawRouter
-**`auto`** so the agent picks the strongest model its balance affords and self-improves *for earning*.
+**`blockrun/auto`** (15-dim scoring picks the strongest model the balance affords in <1ms) so the agent
+self-improves *for earning*; frontier pins (`anthropic/claude-opus-4.8`, `xai/grok-4`) still allowed.
+
+**Convert-to-self-funded path (REQ-CONVERT, verified live 2026-07-03):** ANY subscription instance can go
+self-funded NOW via ClawRouter — `curl -fsSL https://blockrun.ai/ClawRouter-update | bash` (or
+`npx @blockrun/clawrouter` → local proxy `:8402`), point the OpenAI-compatible client at
+`http://localhost:8402/v1/` with `apiKey: x402`, model `blockrun/auto`, fund the printed wallet ~$5 USDC.
+Wallet-signature = auth, pay-per-request USDC via x402. (OpenRouter accepts crypto top-up but needs an
+account+API key = not wallet-native → fallback only.)
 
 **Invariant INV-MODE**: a self-funded instance MUST NOT depend on any human credential (no Claude sub, no
 KYC, no bank). Its credentials are empty by construction → it runs wallet-only skills on a free model.
@@ -65,14 +73,15 @@ picks model class by USDC balance. Broke → free model; funded → better model
 INV-MODE. `clip`/`affiliate` are de-prioritized (account/human-touch risk). **Kept — crypto-native,
 self-improving, alpha compounds**:
 
-| Slot | What it earns from | Status |
+| Slot | What it earns from | Tool/base (wallet-only, no-KYC — verified 2026-07-03) |
 |---|---|---|
-| `earn/pm-trade` | Polymarket/Kalshi/Hyperliquid/DEX-perps prediction-market & perps trading. MODEL decides edge from data tools; Kelly sizing; risk gates; **paper mode mandatory before real stake**. | spec exists (adversary 5 iters) |
-| `earn/hl-trade` | Hyperliquid perps | skill exists |
-| `earn/defi-yield` | DeFi yield farming (openclawnch/defi) | THESIS-listed |
-| `earn/token-launch` | airdrop / token launch | skill exists |
+| `earn/pm-trade` | Polymarket CLOB prediction-market trading. MODEL decides edge; Kelly sizing; risk gates; **paper mode mandatory before real stake**. | **`BlockRunAI/polymarket-agent`** — wallet-native, self-pays AI via x402, derives CLOB creds from key, real `create_and_post_order`. Lift `MrFadiAi/Polymarket-bot` smart-money win-rate filter for edge. |
+| `earn/hl-trade` | Hyperliquid perps/spot | **`hyperliquid-dex/hyperliquid-python-sdk`** (official, key-signature, no KYC) |
+| `earn/defi-yield` | DeFi USDC yield | **DefiLlama yields API (`yields.llama.fi/pools`) → Aave v3 / Spark `supply()`**, or `blockrun_defi` MCP. (GOAT SDK archived — do not use.) |
 | `earn/x402-sell` | sell own service/data via x402 (like aixbt/Nevermined) | skill exists |
 | `earn/video` | faceless video → crypto-monetized | skill exists |
+| `earn/audit` (stretch, strong-model only) | **audit-contest** findings → USDC bounty | **code4rena / Cantina** (payout = USDC-to-wallet, no fiat leg; Cantina "$51.1M paid out in USDC"). Needs a strong model (e.g. Fable 5 via ClawRouter). **Algora/generic GitHub bounties = DROPPED** (Stripe Connect + KYC = the "fake/can't-withdraw" trap). |
+| ~~`earn/token-launch`~~ | airdrop / token launch | keep as optional; not prioritized |
 
 **REQ-EARN**: each earner runs INSIDE the existing runtime (`install.sh` → `registry.json` →
 `earn-slot.mjs` → `index.mjs` ReAct loop). It inherits `earn-shared-skeleton` (healthcheck, ROI tracking,
@@ -169,9 +178,13 @@ colony is not capped by one machine's atoms.
   in a public repo + on-chain wallet reads.)
 - OQ2: survival floor + max-gift caps for Channel B (prevent a drain attack — cf. shared-wallet-drain memo).
 - OQ3: PoE oracle — how a tx is proven "earned from zero, no human" and `external:true` is trustlessly set.
-- OQ4: child boot on Akash — exact SDL + cloud-init that installs the automaton + wallet + free-model env.
-- OQ5: which earner ships first to produce the first *verified* USDC (candidate: `x402-sell` or `pm-trade`
-  paper→small real).
+- OQ4: child boot on Akash — exact SDL + cloud-init that installs the automaton + wallet + ClawRouter env.
+- OQ5: which earner ships first to produce the first *verified* USDC. **Candidates (verified rails):**
+  `earn/defi-yield` (lowest risk — Aave/Spark supply pays yield to wallet), `earn/pm-trade` (paper→small
+  real on `polymarket-agent`), `earn/x402-sell`. Trading needs paper-mode gate first.
+- **RESOLVED (bounty):** generic GitHub/Algora bounties are NOT no-human viable (Stripe/KYC). Only
+  audit-contest payout (code4rena/Cantina) is USDC-to-wallet → kept as `earn/audit` stretch slot for a
+  strong model. KYC-below-threshold = confirm on first real payout.
 
 ---
 
