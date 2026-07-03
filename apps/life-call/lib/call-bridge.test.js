@@ -12,7 +12,46 @@ const {
   buildTelnyxMediaFrame,
   decideGeminiEnd,
   carrierActionForGeminiKind,
+  makeGeminiEndHandler,
 } = require("./call-bridge.cjs");
+
+// Build a handler over mutable call-scoped state, capturing the effects the real server.js injects.
+function wireEndHandler({ gotAudio = false, reconnects = 0, carrierOpen = true } = {}) {
+  const s = { gotAudio, reconnects, carrierOpen, reconnectCalls: 0, closeCalls: 0 };
+  const handler = makeGeminiEndHandler({
+    getGotAudio: () => s.gotAudio,
+    getReconnects: () => s.reconnects,
+    incReconnects: () => { s.reconnects++; },
+    carrierOpen: () => s.carrierOpen,
+    onReconnect: () => { s.reconnectCalls++; },
+    onClose: () => { s.closeCalls++; },
+  });
+  return { handler, s };
+}
+
+test("makeGeminiEndHandler: ws error THEN close for ONE socket → reconnect once, carrier NOT closed (iteration-6 bug guard)", () => {
+  const { handler, s } = wireEndHandler({ gotAudio: false, reconnects: 0, carrierOpen: true });
+  handler("err boom"); // ws `error` fires
+  handler("closed");   // the PAIRED `close` fires — must be a no-op (ended flag)
+  assert.equal(s.reconnectCalls, 1, "exactly one reconnect");
+  assert.equal(s.closeCalls, 0, "the paired close must NOT hang up the call");
+  assert.equal(s.reconnects, 1, "counter incremented once");
+});
+
+test("makeGeminiEndHandler: a reconnected socket that fails again (reconnects=1) ends the call, no 2nd retry", () => {
+  const { handler, s } = wireEndHandler({ gotAudio: false, reconnects: 1, carrierOpen: true });
+  handler("err boom2");
+  handler("closed");
+  assert.equal(s.reconnectCalls, 0, "no second reconnect (≤1 total)");
+  assert.equal(s.closeCalls, 1, "call ends cleanly");
+});
+
+test("makeGeminiEndHandler: a drop AFTER audio started ends cleanly, never reconnects", () => {
+  const { handler, s } = wireEndHandler({ gotAudio: true, reconnects: 0, carrierOpen: true });
+  handler("closed");
+  assert.equal(s.reconnectCalls, 0);
+  assert.equal(s.closeCalls, 1);
+});
 
 test("routeGeminiMessage: serverContent.interrupted → {kind:'interrupted'}, no audio frame sent", () => {
   const state = { streamSid: "abc123", outFrames: 0, setupComplete: true };

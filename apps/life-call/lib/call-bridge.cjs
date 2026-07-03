@@ -157,6 +157,31 @@ function carrierActionForGeminiKind(kind) {
   return kind === "interrupted" ? { event: "clear" } : null;
 }
 
+// makeGeminiEndHandler: build the end-handler for ONE Gemini socket. ws fires `error` THEN `close` for a
+// single failure, so the returned handler acts AT MOST ONCE (the `ended` flag collapses the pair), then
+// either reconnects once (a pre-audio transient failure) or ends the call. Effects are injected so the
+// exact `ended`-flag + reconnect wiring that caused the iteration-6 hangup is unit-testable without a real
+// socket. `getReconnects`/`incReconnects` operate on the CALL-scoped counter so a reconnect happens ≤1×.
+function makeGeminiEndHandler({ getGotAudio, getReconnects, incReconnects, carrierOpen, onReconnect, onClose, log }) {
+  let ended = false;
+  return (reason) => {
+    if (ended) return;
+    ended = true;
+    if (log) log(reason);
+    const decision = decideGeminiEnd({
+      gotAudio: getGotAudio(),
+      reconnects: getReconnects(),
+      carrierOpen: carrierOpen(),
+    });
+    if (decision === "reconnect") {
+      incReconnects();
+      onReconnect();
+      return;
+    }
+    onClose(); // never silence, never a clip — end the call cleanly
+  };
+}
+
 module.exports = {
   routeTwilioMessage,
   routeTelnyxMessage,
@@ -165,6 +190,7 @@ module.exports = {
   buildTelnyxMediaFrame,
   decideGeminiEnd,
   carrierActionForGeminiKind,
+  makeGeminiEndHandler,
 };
 
 // ── Network shell (only runs when invoked directly) ───────────────────────────

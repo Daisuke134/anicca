@@ -20,8 +20,8 @@ const {
   routeGeminiMessage,
   geminiSetupForEvent,
   buildTelnyxMediaFrame,
-  decideGeminiEnd,
   carrierActionForGeminiKind,
+  makeGeminiEndHandler,
 } = require("./lib/call-bridge.cjs");
 const {
   geminiLiveWsUrl,
@@ -415,27 +415,18 @@ wss.on("connection", (carrierWs, req) => {
         if (t.output) console.error(`[transcript] CHARON: ${t.output}`);
       }
     });
-    // ws fires `error` THEN `close` for a SINGLE failure — `ended` makes THIS socket's handler act
-    // exactly once (else the paired close would hang up the call right after the reconnect socket opened).
-    let ended = false;
-    const onGeminiEnd = (reason) => {
-      if (ended) return;
-      ended = true;
-      console.log(`[bridge] gemini ${reason} gotAudio=${gotAudio} reconnects=${geminiReconnects}`);
-      const decision = decideGeminiEnd({
-        gotAudio,
-        reconnects: geminiReconnects,
-        carrierOpen: carrierWs.readyState === WebSocket.OPEN,
-      });
-      if (decision === "reconnect") {
-        geminiReconnects++;
-        gemini = null;
-        openGeminiLive(); // one retry (a transient pre-audio failure)
-        return;
-      }
-      // Never fall back to silence or a clip — end the call cleanly.
-      try { carrierWs.close(); } catch {}
-    };
+    // ws fires `error` THEN `close` for a SINGLE failure — the factory's `ended` flag collapses the pair
+    // (else the paired close would hang up the call right after the reconnect socket opened). One retry
+    // only, for a pre-audio transient failure; otherwise end the call cleanly (never silence, never a clip).
+    const onGeminiEnd = makeGeminiEndHandler({
+      getGotAudio: () => gotAudio,
+      getReconnects: () => geminiReconnects,
+      incReconnects: () => { geminiReconnects++; },
+      carrierOpen: () => carrierWs.readyState === WebSocket.OPEN,
+      onReconnect: () => { gemini = null; openGeminiLive(); },
+      onClose: () => { try { carrierWs.close(); } catch {} },
+      log: (reason) => console.log(`[bridge] gemini ${reason} gotAudio=${gotAudio} reconnects=${geminiReconnects}`),
+    });
     gemini.on("error", (e) => onGeminiEnd(`err ${e.message}`));
     gemini.on("close", () => onGeminiEnd("closed"));
   }
