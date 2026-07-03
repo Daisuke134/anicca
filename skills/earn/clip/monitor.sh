@@ -14,19 +14,25 @@ SOL_WALLET="${CLIP_WALLET:-xxKC33TYJ2czjGQAADrvDCLjF6pRvtHX125fCwP5u9H}"
 
 echo "===== CLIP MONITOR $(date '+%Y-%m-%d %H:%M %Z') ====="
 
-# 1) ledger: posts + recorded earnings
+# 1) ledger: posts (REQ-009: URL-deduplicated + null-guarded, via count_posts.py -- NOT a raw
+#    non-null-post_url line count, which double-counts a true-positive + its false-positive
+#    duplicate) + recorded earnings
 if [ -f "$LEDGER" ]; then
-  "$PY" - "$LEDGER" <<'PYL'
+  "$PY" - "$LEDGER" "$(dirname "${BASH_SOURCE[0]}")" <<'PYL'
 import json,sys
-posts=0; earn=0.0; urls=[]
-for ln in open(sys.argv[1]):
+sys.path.insert(0, sys.argv[2])
+import count_posts
+lines = open(sys.argv[1]).readlines()
+posts = count_posts.count_confirmed_posts(lines)
+earn=0.0; urls=[]
+for ln in lines:
     ln=ln.strip()
     if not ln: continue
     try: d=json.loads(ln)
     except: continue
-    if d.get("post_url"): posts+=1; urls.append(d["post_url"])
+    if d.get("post_url"): urls.append(d["post_url"])
     earn+=float(d.get("earn_usdc",0) or 0)
-print(f"posts recorded : {posts}")
+print(f"posts recorded : {posts}  (URL-deduplicated, null-guarded)")
 print(f"USDC earned    : ${earn:.2f}  (real on-chain inflow only; $0 until a campaign payout lands)")
 for u in urls[-5:]: print(f"  - {u}")
 PYL
