@@ -117,7 +117,7 @@ Verifiable conditions (each MUST be demonstrated with fresh evidence):
 
 ## 6. Open questions (resolve in-spec before impl)
 
-- OQ1: edge-tts reliability/latency for a live PSTN call vs local Kokoro/piper — which is default? (decide in 1b with a real latency test).
+- OQ1: **RESOLVED (tested live 2026-07-03)** — default = **`edge-tts`** (Microsoft cloud TTS, free, no API key). Generated real JP (ja-JP-NanamiNeural 9.8s / ja-JP-KeitaNeural) + EN (en-US-GuyNeural 8.5s / en-US-AriaNeural) wake-call lines, valid mp3, played aloud on the Mac, and transcoded to G.711 μ-law 8kHz mono = **78,528 bytes = 9.816s × 8000 exact** → drops straight into the existing Telnyx bridge. Fallback chain: edge-tts → local Kokoro/piper (offline, if MS endpoint down) → Gemini Live (billed, last resort). Remaining sub-question = live PSTN latency budget (pre-synthesize the line before dialing → play as media, so TTS latency is off the call path).
 - OQ2: transit.ls8h.com coverage + rate limits + ToS for commercial use (read `/利用規約`); SLA/fallback threshold.
 - OQ3: Pipedream Connect Gmail scope = still Google-sensitive; does it avoid the CASA-audit trap Composio hit? (verify before migrating).
 - OQ4: money-path monitor host — GHA cron vs an OpenClaw cron vs the life-call scheduler (pick per self-heal spec's "monitor must not die with the monitored").
