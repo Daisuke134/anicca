@@ -1,0 +1,11 @@
+{
+  "id": "FIND-005",
+  "severity": "informational",
+  "blocking": false,
+  "dimension": "verification_readiness",
+  "location": "verification-architecture.md:37 (PROP-106)",
+  "claim": "PROP-106 justifies reload success solely via 'a fresh PID after reload is itself evidence of a genuine restart' (RunAtLoad+KeepAlive both true).",
+  "finding": "This is accurate but incomplete context for an implementer. Direct read of ~/anicca/runtime/anicca-daemon.sh (the plist's real ProgramArguments target) shows the daemon's startup sequence does non-trivial work on every (re)start: (1) git fetch + merge --ff-only self-update of the mother repo (non-fatal if it fails/diverges), (2) rsync of skills into ANICCA_HOME (when REPO != ANICCA_HOME), (3) an idempotency check before starting ClawRouter (skips if :8402 already answering), (4) an unconditional pkill of any stale telemetry-poster.mjs followed by a fresh spawn. None of these are a lock file or fragile state-cleanup step that would break under an unload/load cycle -- verified this is safe by reading the full script -- but the verification architecture doesn't mention this sequence at all, so an implementer relying solely on 'fresh PID = success' won't know that a plist reload will also silently re-trigger a mother-repo git merge and a telemetry-poster restart as a side effect.",
+  "suggested_fix": "Add one line to PROP-106's verification method noting that a reload also re-runs anicca-daemon.sh's self-update + telemetry-poster restart sequence (confirmed safe/idempotent by direct read), so the implementer isn't surprised by those side effects during the launchctl unload/load window.",
+  "blocking_rationale": "Non-blocking: the underlying mechanism (plist edit + launchctl reload) is correct and safe as verified; this is a documentation completeness gap, not a correctness defect."
+}
