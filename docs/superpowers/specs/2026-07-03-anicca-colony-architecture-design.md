@@ -149,10 +149,13 @@ copying an existing proven repo (`BlockRunAI/polymarket-agent` base; lift `JLowo
 sizing + `joicodev/polymarket-bot` Black-Scholes math) rather than from scratch; (b) default `DRY_RUN=true`
 and clear the **paper-mode gate** before any real stake; (c) run **3 verifier gates** (0xMovez): trade-audit
 (a separate critique pass on own history), paper-run (backtest = promise, paper = receipt), alerts-only
-(watch a week, then act) — "a loop with no gate is an agent agreeing with itself at speed"; (d) start with
-the highest-win-rate inefficiency: **arbitrage pair-cost** (buy YES+NO when combined < $1 → 95–98% win),
-then DCA / momentum-latency / market-maker. This mirrors our own fresh-context adversary — the gate is the
-point.
+(watch a week, then act) — "a loop with no gate is an agent agreeing with itself at speed"; (d) **first
+strategy corrected by LIVE MEASUREMENT (2026-07-04):** pure **arbitrage pair-cost does NOT exist on
+Polymarket's resting book** — a 70-market scan found 0 arbs, every market pinned at YES+NO sum = **$1.0010**
+(the exchange's 0.1¢ minimum spread). `lib.arb_pair_profit` is correct (it returns 0) and stays as a cheap
+always-on check, but the **primary earner is momentum/latency** (Binance BTC spot vs Polymarket's 5-min BTC
+up/down repricing lag — the ~77% share / $60M-profit segment per the Hermes/0xMovez writeups), NOT
+resting-book arb. The gate discipline (paper→$1→scale) is unchanged.
 
 ---
 
