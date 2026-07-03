@@ -5,10 +5,13 @@
 - **Author**: Claude Code (dev IDE, = VCSDD builder) with Dais
 - **Status**: Phase 1a rev-2 → resubmit `/vcsdd-spec-review` (iteration-2)
 - **Mode**: lean · **Language**: typescript/node (apps/life-call) + Next.js (apps/landing)
-- **Code locations (verified on disk)**: apps live on branch `main` / worktrees; impl targets `apps/life-call/**` + `apps/landing/**`.
+- **Code locations + AUTHORITATIVE BRANCH (FIND-005)**: the CANONICAL source = **`origin/main`** (what GHA deploys). All disk-facts in §2 are pinned to `origin/main`; worktrees (e.g. `lipsync-monk`) may diverge and are NOT authoritative. Impl reads/edits `origin/main` `apps/life-call/**` + `apps/landing/**`. Any fact below that differs on `main` at impl time MUST be re-verified against `main` first.
 
 ## 0. Adversary iteration-1 resolution map
 F1→C1 (one-way default + two-way escalation, drop false "no regression"); F2→C3 (new `lm_route_cache`, not lm_travel_log); F3→moved C7-EXT to `docs/superpowers/specs/2026-07-03-portfolio-self-improve-loop-design.md`; F4→C4 (scheduler selector must include Pipedream users); F5→C5 (single registry = build source too); F6→C5/C6 (debounce + last-good-good guard + one-telegram dedup); F7→OQ2-5 resolved below; F8→C2 (deterministic JP decision + mixed-endpoint branch); F9→Goal1 (in-process ws-not-opened assertion, not billing); F10→moved to portfolio spec + C7 leading-indicator grader; F11→committed transit fixture + Goal5b/Goal7 concrete proofs.
+
+## 0b. Adversary iteration-2 resolution map
+FIND-001/002 (major, gmail read)→C4/OQ3: dropped the false "reply-by-email never read Gmail" claim; Pipedream=Calendar+gmail.send only; Gmail-READ stays on existing provider, OUT OF SCOPE; TG users reply via Telegram. FIND-003 (major, F4 half)→C4: fix BOTH `scheduler.js:42` AND `getUserByUid` `scheduler.js:271`. FIND-004 (major, /lm bundle)→C5/Goal5: extract STRIPE_LM_URL from the /lm JS CHUNK string (inlined by force-static, present regardless of ?tg=), not a DOM/?tg= read. FIND-005 (minor, branch)→pinned CANONICAL=origin/main. FIND-006 (minor, wake levels)→re-verified origin/main = T-10+T-5 (2 levels); 3-level variant is stale worktree only. FIND-007 (major, address→geo)→C2: resolve address via transit `/api/v1/places/suggest` (free JP geocode + resolvability probe), non-circular, no Google Geocoding.
 
 ## 1. REALITY CHECK (measured 2026-07-03)
 - Revenue $0 (Stripe LM subs 0, `lm_stripe_events` 0, `lm_users` 3 = Dais's tests). Pay-link ¥700k→$20/mo bug already FIXED this session (separate hotfix).
@@ -19,7 +22,7 @@ F1→C1 (one-way default + two-way escalation, drop false "no regression"); F2�
 |---|---|
 | Voice model `gemini-2.5-flash-native-audio-preview-09-2025`, Charon | `apps/life-call/lib/call-logic.js:28` |
 | Call TODAY is a **two-way conversation** (VAD + realtimeInput) | `call-logic.js:193-200,378-433` |
-| Wake = T-10 firm + T-5 harsh | `apps/life-call/scheduler.js:30-33` |
+| Wake = T-10 firm + T-5 harsh (2 levels, NO T-15) — canonical on **origin/main** `scheduler.js:30-33` (re-verified 2026-07-03; the 3-level T-15 variant exists only in the stale `lipsync-monk` worktree, non-authoritative per FIND-006) | `git show origin/main:apps/life-call/scheduler.js` |
 | Scheduler selects `calendar_provider=eq.composio_gcal` (hardcoded) | `scheduler.js:42,280` |
 | Maps Routes computeRoutes TRAFFIC_AWARE_OPTIMAL + legacy Directions transit | `apps/life-call/lib/travel.js:76,88,119` |
 | `lm_travel_log` = dedup/claim ledger `{uid,event_key,leg}`, NO duration/TTL cols | `travel.js:169-177` |
@@ -38,7 +41,7 @@ Verifiable conditions:
 2. **ROUTE-JP** — for a JP origin/dest, time+guidance come from `api.transit.ls8h.com` (asserted against the committed fixture), and Google Routes calls for that path = 0 (call-count assertion).
 3. **MAPS-CACHE** — provider route calls ≤1 per (uid, event, coarse-time-bucket); a moved event (changed start) recomputes. Asserted by a call-count test.
 4. **CONNECT** — a test user connects Calendar AND Gmail-send through ONE Pipedream consent on Telegram; backend reads calendar + sends mail for that user; the scheduler SELECTS that user for wakes.
-5. **MONEY-PATH MONITOR** — external check asserts (a) 200 on `/ /life-manager /lm /lm?tg=x`, (b) the `/lm?tg=x` bundle's Stripe link == the registry known-good LM $20/mo link, (c) the Stripe page shows "Life Manager" + "$20". On sustained mismatch → auto-rollback + ONE Telegram.
+5. **MONEY-PATH MONITOR** — external check asserts (a) 200 on `/ /life-manager /lm`, (b) STRIPE_LM_URL string-extracted from the /lm JS chunk == registry known-good LM $20/mo link, (c) that Stripe page shows "Life Manager" + "$20". On sustained mismatch (≥2 checks) → auto-rollback + ONE Telegram.
 6. **DEPLOY-SAFETY** — GHA post-deploy smoke (5a/5b) auto-restores the previous deploy on failure; proven by injecting a bad build in a preview and observing rollback.
 7. **KEY-RESTRICT** — a dedicated LM Gemini key is API-restricted to `generativelanguage.googleapis.com` (+ IP-restricted to Railway egress); proof = `gcloud`/API query of the key's restrictions shows the scope (not merely "banner cleared"). The Live fallback still works (Live = generativelanguage, so the API-restriction does not break it).
 8. **SELF-IMPROVE (LM only)** — a daily loop reads LM leading indicators (funnel-step conversion, activation, cost-per-outcome) + writes a persisted report; takes ≥1 action WHEN a non-noise signal exists, else NO-OP (valid). Portfolio-wide version = separate epic.
@@ -58,8 +61,8 @@ Portfolio self-improve loop (separate spec). Distribution content specifics. sel
 - **QUALITY BAR**: the one-way clip names event + place + route + urgency in call_language.
 
 ### C2 — Routing: JP via transit.ls8h.com, else Google (F8 + ToS)
-- **JP decision = DETERMINISTIC (not LLM)**: JP iff both endpoints' geo fall in a JP bounding box AND both resolve in the transit feed (via a `places/suggest`/feed probe). Geo-bounds + feed-resolvability = parsing, not judgment (per build-agents rule) → no per-route LLM cost.
-- **MIXED/UNRESOLVABLE**: if either endpoint is non-JP or unresolvable in the feed → Google for the WHOLE request.
+- **ADDRESS→GEO + JP decision (FIND-007, deterministic, no LLM, no Google Geocoding)**: inputs are ADDRESS STRINGS (`home_address` e.g. "新宿区南元町15-27") + event locations, not lat/lon. Resolve each with the transit API's OWN free `/api/v1/places/suggest` (+ `/places/reverse`). This single call is BOTH the free JP geocoder AND the JP-resolvability probe: if an address resolves to a JP place/station in the feed → JP transit path; if it does NOT resolve → Google fallback (which geocodes internally). No standalone Google Geocoding call is introduced; the gate is non-circular (one free resolve step, then branch).
+- **MIXED/UNRESOLVABLE**: if either endpoint fails to resolve in the transit feed (non-JP, rural, or unknown) → Google for the WHOLE request.
 - **OUT**: `{durationSecs, legs[], guidance}`; JP → `/api/v1/plan` (+ `/api/v1/guidance/plan` for the "how to get there" line); else Google.
 - **EDGE/ERROR**: transit 0 journeys OR non-200 OR timeout → Google fallback, log. Per ToS: cache + retry + fallback are MANDATORY; the product must not present transit output as official (it's 非公式・無保証) — for a phone guidance line that's acceptable (advisory, not authoritative).
 - **INVARIANT**: no key/secret sent to transit (auth-free); no 過度なリクエスト (guaranteed by C3 cache).
@@ -71,15 +74,15 @@ Portfolio self-improve loop (separate spec). Distribution content specifics. sel
 
 ### C4 — Connect: ONE Pipedream consent (Calendar + Gmail-send); Telegram-only; scheduler must select Pipedream users (F4)
 - **DECISION**: Telegram (@LifeManagerBotbot) = sole onboarding; web `/lm` stays gated. One Pipedream Connect consent grants **Calendar + Gmail-send** → re-adds Gmail with **one fewer** onboarding step.
-- **GMAIL SCOPE (OQ3 resolved)**: use `gmail.send` (Google **sensitive**, cheap) ONLY — NOT `gmail.readonly` (RESTRICTED → CASA audit). Pipedream is the verified OAuth app; incoming replies keep using the reply-by-email domain pattern, so we never read the user's Gmail.
-- **MIGRATION (F4)**: the wake selector (`scheduler.js:42`) currently hardcodes `calendar_provider=eq.composio_gcal` → it MUST be widened to include Pipedream users (e.g. `calendar_provider=in.(composio_gcal,pipedream_gcal)`), else Pipedream users get zero wakes. Dual-read = selector + calendar-read handle both providers until Composio users are migrated.
+- **GMAIL SCOPE (OQ3, corrected per FIND-001/002)**: Pipedream grants **Calendar + `gmail.send`** (sensitive, not RESTRICTED → no CASA). The Gmail-**READ** used TODAY by ask/notify (`lib/transport/mail-gog.js:31-37` `gmail search newer_than:2d`; `ask.js`) is a SEPARATE capability — this feature does NOT migrate Gmail-read to Pipedream and does NOT add `gmail.readonly`. Gmail-read stays on the existing provider (Unipile, `lm_users.gmail_provider`) and is OUT OF SCOPE here; for Telegram-first users the location-reply READ arrives via Telegram (`telegram-reply.js`), not Gmail. (The earlier "reply-by-email, never read Gmail" claim was FALSE and is removed.)
+- **MIGRATION (F4, corrected per FIND-003)**: BOTH selector sites hardcode `calendar_provider=eq.composio_gcal` — `scheduler.js:42` (batch scan) AND `getUserByUid` `scheduler.js:271` (Inngest per-user refetch behind wakeUserOnce/travelUserOnce/askUserOnce). BOTH must widen to `in.(composio_gcal,pipedream_gcal)`, else a Pipedream user is picked in the batch but re-excluded on refetch. Dual-read until Composio users migrate.
 - **EDGE**: partial grant (calendar but not gmail) → onboarding reflects true state; never claim gmail if absent.
 - **INVARIANT**: no RESTRICTED scope; secrets never logged.
 - **TELEGRAM FLOW**: /start → name → phone → ONE tap Connect Google (Cal+Gmail) → ONE tap Subscribe $20/mo → done.
 
 ### C5 — Money-path monitor + single SSOT (F5, F6)
 - **SSOT (F5)**: the known-good LM Stripe link lives in ONE registry file `apps/landing/monitors/registry.json`. The build MUST read the link from that same registry (or the monitor additionally asserts `GHA secret NEXT_PUBLIC_STRIPE_LM_URL == registry.stripe_lm_url`) so build-source and monitor-source cannot diverge.
-- **CHECK**: (a) 200 on `/ /life-manager /lm /lm?tg=x`; (b) the **`/lm?tg=x`** bundle's Stripe link == registry (bare `/lm` has none — F11); (c) Stripe page contains "Life Manager" + "$20".
+- **CHECK (corrected per FIND-004)**: (a) 200 on `/ /life-manager /lm`; (b) STRIPE_LM_URL extracted from the **/lm page's JS chunk** (bundle-level string match on `buy.stripe.com/<slug>` — proven method: the value is inlined at build via `force-static`, so it is present in the chunk regardless of `?tg=`; this is a chunk-string read, NOT a DOM read which would need full Google OAuth) == `registry.stripe_lm_url`; (c) fetch that Stripe link and assert the page contains "Life Manager" + "$20".
 - **EDGE (F6)**: rollback requires **≥2 consecutive FAILs** (debounce, no single-transient rollback); before switching, the rollback target MUST itself pass (a)+(b)+(c) — if no recent deploy passes → escalate, do NOT rollback into another bad build (flap guard); Telegram escalation is **deduped** (one message per incident, state flag cleared on recovery).
 - **INVARIANT (SRE)**: black-box + content assertion (200 ≠ enough); low-noise (page only on a real, ongoing symptom).
 
@@ -99,6 +102,6 @@ Portfolio self-improve loop (separate spec). Distribution content specifics. sel
 ## 5. Open questions — RESOLVED in-spec (F7)
 - **OQ1 (default TTS)**: RESOLVED — `edge-tts` (free MS cloud); JP+EN tested, μ-law 8k exact; pre-synthesize before dialing so TTS latency is off the call path; fallback edge-tts→Kokoro/piper→Live.
 - **OQ2 (transit ToS/coverage/limits)**: RESOLVED — free, unofficial, no SLA; ToS REQUIRES consumer-side cache+retry+fallback+official-redirect and forbids excessive requests/posing-as-official → satisfied by C3 cache + C2 Google fallback + advisory framing. Coverage = 748 operators incl JR East (broad JP). Non-JP/rural → Google.
-- **OQ3 (Pipedream Gmail scope vs CASA)**: RESOLVED — use `gmail.send` (sensitive, not restricted) only; never `gmail.readonly`; replies via own-domain pattern → no CASA trap.
+- **OQ3 (Pipedream Gmail scope vs CASA)**: RESOLVED (corrected) — Pipedream grants Calendar + `gmail.send` only (sensitive, not RESTRICTED → no CASA). Gmail-READ (ask/notify's `mail-gog gmail search`) is NOT migrated to Pipedream and is OUT OF SCOPE; it stays on the existing provider; Telegram-first users get location-reply reads via Telegram. No `gmail.readonly`, no CASA trap.
 - **OQ4 (monitor host)**: RESOLVED — GitHub Actions scheduled workflow (independent of Railway/Netlify).
 - **OQ5 (key restriction vs Live fallback)**: RESOLVED — dedicated LM key restricted to `generativelanguage.googleapis.com` (+ Railway IP); the Live fallback is also generativelanguage → restriction does not break it. Enumerate other consumers of the old key before rotating.
