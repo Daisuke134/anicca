@@ -165,6 +165,12 @@ are the **real-execution increment** (deferred, money-gated, not yet wired = fai
 `trading-polymarket-spawn` EARS spec is SUPERSEDED by this lean momentum slot** for the pieces that differ
 (no `risk.py`/`settle-verify.py`/full paper state-machine as separately specified — their function lives in
 `lib.risk_gate`/`resolve.py`/`gate.py`). 29 tests GREEN; money-safe (no signing/order code exists yet).
+**SHIPPED 2026-07-04:** `earn/pm-trade` merged to `~/anicca` main (registry live, 29 tests pass in prod).
+The paper-accumulation cron `ai.anicca.pm-trade-accumulate` (launchd, 60s) is LOADED and firing —
+`accumulate.sh` runs decide (record ≤1/window when edge≥PM_MIN_EDGE) + resolve (Binance window outcome) +
+gate each tick, building the ≥20 resolved-trade sample. Verified live: fires, records/skips honestly,
+money-safe. Path to #6: cron accumulates over hours → winrate≥55% → gate PASS → wire the CLOB executor
+(polymarket-agent, RPC `polygon-bor-rpc.publicnode.com`) → $1 live order → first earned tx.
 
 ---
 
