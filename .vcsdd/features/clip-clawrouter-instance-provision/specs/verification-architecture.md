@@ -1,19 +1,21 @@
-# Verification Architecture — clip-clawrouter-instance-provision (Phase 1b) — REV 2 (post iteration-1 FAIL)
+# Verification Architecture — clip-clawrouter-instance-provision (Phase 1b) — REV 4 (2ND CORRECTION: wallet work removed entirely)
 
 ## Purity boundary map
 
-This feature is almost entirely PROVISIONING (wallet generation, account creation, file writes,
-browser launch) — genuinely impure, real-world side effects by design (a real wallet must exist, a
-real IG account must exist). There is no new pure decision logic to extract; the ONLY pure-function
-surface this feature touches is verifying it did NOT accidentally duplicate any of
+This feature is almost entirely WIRING (a registry entry, a prompt-text update) plus the
+downstream, agent-driven side effects that wiring enables (account creation, file writes, browser
+launch) — genuinely impure, real-world side effects by design. ★ No wallet work of any kind is in
+scope (2nd scope-pivot correction: ClawRouter already has its own wallets; PROP-101 is VOID, see
+below) ★. There is no new pure decision logic to extract; the ONLY pure-function surface this
+feature touches is verifying it did NOT accidentally duplicate any of
 `clip-post-verify-hardening`'s existing pure functions (`reel_verify.py`'s 5 functions,
 `count_posts.py`'s `count_confirmed_posts`) — it must call them, never reimplement them, exactly as
 that feature's own purity audit already established.
 
 | Step | Purity | Verification method |
 |---|---|---|
-| Wallet keypair generation | impure (real crypto RNG + file write) | REQ-101: direct pubkey inequality check against `myclaude-solana.json` |
-| IG account creation | impure (real network signup + real Gmail OTP read) | REQ-102: real live profile URL fetch, handle inequality check |
+| Registry + prompt wiring | pure DOCUMENTATION/CONFIG edit (a JSON entry + a prompt string) | REQ-102(a)/(b): real `grep`/`diff` of the edited files |
+| IG account creation (BY THE AGENT, not this session) | impure (real network signup + real Gmail OTP read, executed by an independent loop process) | REQ-102(c): real live profile URL fetch, handle inequality check, AND confirmation the creating process was the loop itself (tool-call log / cron output), not a hand-driven session |
 | `clip-accounts-clawrouter.json` write | impure (file write) | REQ-103: JSON schema + port-uniqueness check (real `lsof`/curl scan) |
 | CloakBrowser launch + login | impure (real subprocess + real browser + real network) | REQ-104: real account-guard check (same pattern as `post_reel.py:118`) |
 | Path isolation demonstration | impure (real subprocess invocation of already-shipped, already-pure-audited code) | REQ-105: real `EARN_MODE=discover` run + before/after hash comparison of claude-p's own files |
@@ -29,8 +31,8 @@ those files from this feature's commits.
 
 | ID | Requirement | Tier | Required (lean) | Verification method |
 |---|---|---|---|---|
-| PROP-101 | REQ-101 (new distinct wallet) | 3 (real artifact check) | true | Read both `~/.cloak/myclaude-solana.json` and the new `~/.cloak/clawrouter-clip-solana.json`, assert `pubkey` fields are non-empty strings and NOT equal. Assert `chmod 600` via `stat`. |
-| PROP-102 | REQ-102 (new distinct live IG account) | 3 (real network check) | true | Fetch the new account's live public profile page (e.g. via a real browser navigation or a public HTTP HEAD to `instagram.com/<handle>/`), assert HTTP 200 / page renders, assert `<handle>` != `aiclipsvault`. Assert profile icon is non-default (not IG's grey silhouette placeholder) and bio is non-empty, per REQ-102's "COMPLETE account" bar. |
+| PROP-101 | ★ VOID (2nd scope-pivot correction) — no new wallet is provisioned by this feature. ClawRouter's existing `~/.automaton/wallet.json` (EVM) and on-demand `ensure-solana-wallet.mjs` (Solana) are reused as-is if ever needed; the previously-generated `~/.cloak/clawrouter-clip-solana.json` has been deleted from disk. | n/a | false | n/a |
+| PROP-102 | REQ-102 (registry+prompt wiring, THEN agent-driven live account creation) | 3 (real network check + real process-provenance check) | true | (a) `grep -n '"ig-account-create"' ~/anicca/skills/registry.json` returns a real, well-formed entry; (b) `diff` of `clip-cli.sh` before/after shows the new self-provisioning instruction genuinely added; (c) fetch the new account's live public profile page (real browser navigation or HTTP HEAD to `instagram.com/<handle>/`), assert HTTP 200 / page renders, assert `<handle>` != `aiclipsvault`, profile icon non-default + bio non-empty per REQ-102's "COMPLETE account" bar; (d) the loop's own tool-call log / cron output for the wake that created it is captured as evidence that the DECISION to invoke `ig-account-create` was the agent's own, not the main session's. |
 | PROP-103 | REQ-103 (account file schema + port uniqueness) | 1 (unit, JSON schema) + 3 (real port scan) | true | `json.load` the new file, assert exactly 1 entry with required keys; separately, real `lsof -i :<port>` (or curl liveness check) against ports 9222/9223/`<new-port>` confirming `<new-port>` was free BEFORE this feature bound it and is now correctly serving the NEW CloakBrowser instance (not colliding with 9222/9223). |
 | PROP-104 | REQ-104 (isolated browser login confirmed) | 3 (real CDP check) | true | Real `curl http://localhost:<new-port>/json/list` returns a page whose `url` contains `instagram.com/<handle>`; real CDP `evaluate` call confirms the account-guard's active-handle read equals `<handle>` (same JS/Python expression `post_reel.py:117-118` already uses — ★ CORRECTED after iteration-1 FIND-003, was cited as line 107 which is the wrong, unrelated check ★). |
 | PROP-105 | REQ-105 (path isolation, real files) | 2/3 (integration, real subprocess) | true | Run real `ANICCA_INSTANCE=clawrouter EARN_MODE=discover bash run.sh` + `bash monitor.sh`; assert (via `echo`/print statements inserted temporarily or via reading `_instance_paths.sh`'s resolved values directly) that all 5 `CLIP_*` vars carry the `-clawrouter` suffix AND that claude-p's own 5 unsuffixed files' `mtime`/byte-content are IDENTICAL before and after this run (a real `md5`/`stat` before/after diff, not "no error seen"). Pre-existing debug/test artifacts from prior VCSDD sessions (e.g. `~/.cloak/clip-accounts-vcsdd-*.json`, `~/.openclaw/state/clip-earn-ledger-vcsdd-*.jsonl` — noted per iteration-1 FIND-004) are OUT OF SCOPE for this comparison; only claude-p's canonical unsuffixed 5 files are checked. |
@@ -45,20 +47,22 @@ those files from this feature's commits.
   (`run.sh`/`monitor.sh`), no new logic under test — the NEW thing being verified is that REAL
   provisioned data flows through correctly, not the logic itself (already proved by
   `clip-loop-dual-instance-earn` and `clip-post-verify-hardening`'s own test suites).
-- Tier 3: real, live, no-mock verification against real external systems (Solana network for
-  wallet validity if applicable, real Instagram for account/post checks) — executed by the main
+- Tier 3: real, live, no-mock verification against real external systems (real Instagram for
+  account/post checks; real launchd/`plutil` state for the plist wiring) — executed by the main
   agent, per HARD RULE 0.24/0.31, mirroring the two-gate design (adversary reviews the
-  documentation/citations; main agent runs the actual live checks — adversary has no browser or
-  wallet access).
+  documentation/citations; main agent runs the actual live checks — adversary has no browser
+  access). No wallet-related verification applies (PROP-101 void).
 
 ## Gate
 
-Phase 3 (adversarial review, fresh-context Sonnet-5) confirms: (a) REQ-101 through REQ-106 are
+Phase 3 (adversarial review, fresh-context Sonnet-5) confirms: (a) REQ-102 through REQ-106 are
 genuinely and specifically documented with real, checkable citations (file paths, line numbers,
 command outputs) — not vague claims; (b) zero modification to any already-shipped file
 (`_instance_paths.sh`, `run.sh`, `monitor.sh`, `self_heal.py`, `reel_verify.py`, `count_posts.py`,
-`post_reel.py`, `runtime/loop/index.mjs`) — a real `git diff`/`diff` check; (c) no secret
-(`secret_bytes`, IG password, session cookie) is ever written in plaintext to any spec, task list,
-commit message, or log file this feature produces. PROP-107 (live E2E) is executed by the MAIN
-AGENT after Phase 3 PASS, never by the adversary (no browser/wallet access) — same two-gate split
-already established by `clip-post-verify-hardening`.
+`post_reel.py`, `runtime/loop/index.mjs`) — a real `git diff`/`diff` check; (c) no secret (IG
+password, session cookie) is ever written in plaintext to any spec, task list, commit message, or
+log file this feature produces — note: no wallet secret is ever in scope, per PROP-101 being void;
+(d) REQ-102's account creation is genuinely traceable to the AGENT's own decision (a real tool-call
+log / cron output), not the main session's hand-driven browser actions. PROP-107 (live E2E) is
+executed by the MAIN AGENT after Phase 3 PASS, never by the adversary (no browser access) — same
+two-gate split already established by `clip-post-verify-hardening`.

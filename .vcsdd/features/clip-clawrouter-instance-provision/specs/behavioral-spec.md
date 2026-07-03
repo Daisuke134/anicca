@@ -1,4 +1,4 @@
-# Behavioral Spec — clip-clawrouter-instance-provision (Phase 1a) — REV 3 (SCOPE PIVOT, post Phase 1c PASS)
+# Behavioral Spec — clip-clawrouter-instance-provision (Phase 1a) — REV 4 (2ND CORRECTION: wallet work removed entirely)
 
 ## ★★★ SCOPE PIVOT (Dais 2026-07-04 verbatim correction, mid-implementation) ★★★
 
@@ -33,18 +33,32 @@ Dais's own words + this project's own standing architecture rules):
   skill) but neither loop has ever been told it exists / can pick it.
 
 **REVISED scope of this feature**: instead of hand-provisioning ONE account, this feature WIRES
-`ig-account-create` (and, by the same pattern, the wallet-generation step) as genuinely
-AGENT-INVOKABLE actions inside the SAME earn/clip cycle, for BOTH loops (claude-p AND the
-ClawRouter genesis loop — per `feedback_real_axis_local_vs_cloud_zero_human_loop`, both share the
-identical skill library and should behave identically), so that a REAL, LIVE wake of either loop —
-finding it has no ready clip-earn account for its own `ANICCA_INSTANCE` — autonomously decides to
-invoke `ig-account-create` and provisions its own identity, with ZERO human or dev-session hand
-execution. The already-generated wallet (`~/.cloak/clawrouter-clip-solana.json`, see Ground Truth)
-is treated as a legitimate one-time infra bootstrap artifact (analogous to how the ClawRouter
-genesis instance itself got its OWN wallet via `identity.mjs`'s `assignIdentity` on first spawn —
-that's also a one-time bootstrap, not something re-derived every wake) — it stays, but the
-ACCOUNT + POSTING + IMPROVING cycle must genuinely run inside the loop's own agentic decision-making
-from here on, never hand-driven again.
+`ig-account-create` as a genuinely AGENT-INVOKABLE action inside the SAME earn/clip cycle, for BOTH
+loops (claude-p AND the ClawRouter genesis loop — per
+`feedback_real_axis_local_vs_cloud_zero_human_loop`, both share the identical skill library and
+should behave identically), so that a REAL, LIVE wake of either loop — finding it has no ready
+clip-earn account for its own `ANICCA_INSTANCE` — autonomously decides to invoke
+`ig-account-create` and provisions its own identity, with ZERO human or dev-session hand execution.
+
+★★★ SECOND CORRECTION (Dais, immediately after the first): the wallet-generation step described in
+REV 1/2/the-first-draft-of-REV-3 was ALSO wrong, for a related but distinct reason — "why create
+wallet? you have your own wallet already and so does anicca local the self funded ai" ★★★. REQ-101
+(a brand-new, clip-earn-SPECIFIC wallet, `~/.cloak/clawrouter-clip-solana.json`) has been DELETED
+from this spec entirely, and the file that was already generated has been DELETED from disk
+(`rm ~/.cloak/clawrouter-clip-solana.json`, confirmed removed). Real investigation (not guessing)
+confirms Dais is correct: the ClawRouter genesis instance ALREADY has its own wallet(s) —
+`~/.automaton/wallet.json` (EVM/Base, `privateKey`+`createdAt`, address derived via viem — this is
+the wallet `config.ANICCA_WALLET_ADDRESS`/the plist's balance-tier logic already uses) and a Solana
+wallet auto-provisioned on demand by `~/.anicca/runtime/compute-proxy/ensure-solana-wallet.mjs`
+(writes to `$ANICCA_HOME/.automaton/solana.json` if missing — the file did not exist yet as of this
+investigation, meaning ClawRouter simply hasn't needed a Solana wallet yet, NOT that it lacks the
+capability to get one). The correct design, mirroring one-wallet-per-IDENTITY (not per-skill): if
+`earn/clip`'s ledger/monitor ever needs to reference a wallet address for the `clawrouter`
+instance, it reads/uses ClawRouter's OWN EXISTING (or on-demand self-created via the ALREADY-EXISTING
+`ensure-solana-wallet.mjs`) wallet — never a new, clip-specific one. This is now OUT OF SCOPE for
+this feature entirely (no new wallet-provisioning work of any kind), and the ACCOUNT + POSTING +
+IMPROVING cycle is the ONLY thing this feature wires — it must genuinely run inside the loop's own
+agentic decision-making from here on, never hand-driven again.
 
 ## Context (why this feature exists, ORIGINAL — superseded in framing by the pivot above, retained for history)
 
@@ -111,11 +125,18 @@ isolation mechanism — this is a PROVISIONING feature, not a new mechanism.
   (`track: A, dir: skills/earn/clip, entrypoint: run.sh, status: live, owner: clip`) — already
   auto-discoverable by ANY genesis loop instance via `liveSlotNames(registry)`
   (`runtime/loop/prompt.mjs`). No registry change needed.
-- `~/.cloak/myclaude-solana.json` (claude-p's existing wallet): shape
-  `{pubkey, secret_bytes, chain:"solana", owner, created_at, purpose}`. The new wallet for this
-  feature MUST be a DIFFERENT keypair, distinct pubkey, own file — sharing a wallet across two
-  earner identities is the exact drain/duplicate-post pitfall `_instance_paths.sh`'s own header
-  comment already warns against for queue/account/ledger; the SAME principle applies to the wallet.
+- ★ NO NEW WALLET (per the 2nd scope-pivot correction above) ★: `~/.automaton/wallet.json` (real
+  file, confirmed via Read: `{privateKey, createdAt}`, EVM/Base, address derived via viem in
+  `~/.anicca/runtime/wallet-address.mjs`) is ClawRouter's ALREADY-EXISTING wallet — this is what
+  `config.ANICCA_WALLET_ADDRESS` and the daemon's balance-tier logic already use. A Solana wallet
+  for ClawRouter is auto-provisioned ON DEMAND (not yet created, confirmed via Read: the target file
+  doesn't parse as JSON / doesn't exist yet) by the ALREADY-EXISTING
+  `~/.anicca/runtime/compute-proxy/ensure-solana-wallet.mjs`, which writes to
+  `$ANICCA_HOME/.automaton/solana.json`. If `earn/clip`'s ledger/monitor ever needs a wallet
+  reference for the `clawrouter` instance, it uses ONE OF THESE — never a new,
+  clip-specific wallet. `~/.cloak/myclaude-solana.json` (claude-p's OWN existing wallet, distinct
+  from ClawRouter's, shape `{pubkey, secret_bytes, chain:"solana", owner, created_at, purpose}`) is
+  cited here only for completeness — it needs no change either.
 - `~/.claude/skills/ig-account-create/` (proven E2E 2026-06-29, `@aiclipsvault` created this way,
   zero human, email-plus-address + Gmail OTP auto-read): the canonical, ALREADY-WORKING account
   creation mechanism. This feature REUSES it verbatim for a NEW handle — no new signup code.
@@ -133,12 +154,8 @@ isolation mechanism — this is a PROVISIONING feature, not a new mechanism.
   per-instance) — content generation itself is not identity-specific, only WHERE the output lands
   (`$CLIP_QUEUE`, already instance-suffixed) is.
 
-## In scope (REVISED per the pivot)
+## In scope (REVISED per the pivot — wallet work REMOVED entirely per the 2nd correction)
 
-- **REQ-101 (unchanged, one-time infra bootstrap, already done)**: the new Solana keypair,
-  `~/.cloak/clawrouter-clip-solana.json`, distinct from `myclaude-solana.json` — kept as a
-  legitimate one-time identity-bootstrap artifact (analogous to the ClawRouter genesis instance's
-  OWN wallet, generated once via `identity.mjs`).
 - **Register `ig-account-create` as a genuinely agent-invokable action** in
   `~/anicca/skills/registry.json` (the SAME registry `earn/clip` is already in), so the ClawRouter
   genesis loop's `activeSkillSlots` (derived from that registry via `liveSlotNames`) actually
@@ -199,12 +216,13 @@ isolation mechanism — this is a PROVISIONING feature, not a new mechanism.
 
 ## Requirements (EARS)
 
-- **REQ-101 (new wallet)**: THE SYSTEM SHALL generate ONE new Solana keypair via the same
-  mechanism/library already used for `myclaude-solana.json` (verified during implementation:
-  `solders` is importable in this environment), persist it at
-  `~/.cloak/clawrouter-clip-solana.json` with `chmod 600`, and the resulting `pubkey` SHALL be
-  provably distinct from `myclaude-solana.json`'s `pubkey` (a direct string-inequality check, not
-  an assumption).
+- **REQ-101: REMOVED (2nd scope-pivot correction) — NO new wallet of any kind is provisioned by
+  this feature.** ClawRouter already has an EVM wallet (`~/.automaton/wallet.json`) and an
+  on-demand-provisionable Solana wallet (`ensure-solana-wallet.mjs` → `$ANICCA_HOME/.automaton/solana.json`,
+  both ALREADY EXISTING mechanisms, not new). The wallet file this feature previously created
+  (`~/.cloak/clawrouter-clip-solana.json`) has been DELETED from disk. This ID is retained
+  (not renumbered) so the review history (iterations 1-3) that discussed REQ-101 remains
+  traceable; it is simply void going forward.
 - **REQ-102 (agent-invokable account provisioning — ★ REDESIGNED per the 2026-07-04 scope pivot:
   was "I create ONE account by hand", now "the LOOP decides to create it, using tooling this
   requirement wires" ★)**: THE SYSTEM SHALL (a) add an `"ig-account-create"` entry to
@@ -290,12 +308,12 @@ isolation mechanism — this is a PROVISIONING feature, not a new mechanism.
 ## Non-functional constraints
 
 - No dry runs (HARD RULE 0.24): every claim in this feature's completion report must be backed by
-  a real command execution + fresh evidence (new pubkey printed, new IG handle's live profile URL,
-  real port-liveness check, real ledger content, real post URL independently reconfirmed).
-- Secrets: the new wallet's `secret_bytes` and any new account credentials MUST go through the
-  existing `~/.cloak/`/`~/.openclaw/.env` secret-storage conventions (chmod 600, never logged in
-  plaintext to any spec/task-list/commit) — same discipline already applied to
-  `myclaude-solana.json`.
+  a real command execution + fresh evidence (new IG handle's live profile URL, real port-liveness
+  check, real ledger content, real post URL independently reconfirmed).
+- Secrets: any new account credentials MUST go through the existing
+  `~/.cloak/`/`~/.openclaw/.env` secret-storage conventions (chmod 600, never logged in plaintext
+  to any spec/task-list/commit). No wallet secret of any kind is created by this feature (per the
+  2nd scope-pivot correction) — ClawRouter's existing wallets are reused as-is if ever needed.
 - Zero regression: claude-p's existing `@aiclipsvault` queue/posted/ledger/accounts/pending-verify
   state must be byte-for-byte unaffected by any step in this feature (REQ-105's explicit
   before/after check enforces this).

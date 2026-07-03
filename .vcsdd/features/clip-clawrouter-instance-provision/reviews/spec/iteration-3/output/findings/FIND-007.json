@@ -1,0 +1,15 @@
+{
+  "id": "FIND-007",
+  "severity": "blocking",
+  "dimension": "verification_readiness",
+  "requirement": "REQ-102",
+  "title": "REQ-102's live-verification bar ('trigger a REAL wake of EITHER loop') is not achievable as written, because FIND-006 shows only one of the two named loops can actually reach the described outcome",
+  "evidence": [
+    "REQ-102's closing sentence: 'THE SYSTEM SHALL THEN, as the real verification bar ... trigger a REAL wake of EITHER loop that currently has no ready account, and CONFIRM ... that the agent itself chose to invoke ig-account-create'.",
+    "'In scope' bullet 5 similarly frames this as 'whichever is more practically triggerable within this session' — presenting claude-p and the ClawRouter genesis loop as interchangeable options.",
+    "Per FIND-006, the genesis-loop path cannot produce this outcome no matter how many times it is woken, because ig-account-create is not (and cannot correctly be, without substantial new code) reachable via that loop's run_skill/registry mechanism today.",
+    "Contrast with REQ-106, which DOES explicitly name and commit to a concrete, bounded, achievable mechanism ('a manually-exported ANICCA_INSTANCE=clawrouter in the verifying shell ... without requiring an actual autonomous wake to fire during this feature's verification window') rather than leaving the choice open — REQ-102 does not extend the same concreteness to its own verification path."
+  ],
+  "why_it_matters": "Leaving 'EITHER loop' open invites an implementer to spend the session attempting the non-viable genesis-loop route (waiting for or forcing a real autonomous wake that picks ig-account-create among many earn slots) before discovering it cannot work, or to produce a misleading completion report if the genesis-loop route is quietly abandoned without documenting why. The reviewer's own question (a bounded, immediate trigger vs. an unbounded wait for a spontaneous pick) is valid and unresolved by the current text.",
+  "recommendation": "Commit REQ-102's verification bar explicitly to the claude-p / `clip-cli.sh` STARTUP path: it is a genuinely bounded, immediate trigger ('THEN run ONE pass now (the same body)' already exists in the STARTUP string, per Ground Truth), driven by a REAL separate `claude` CLI process making its own decision from natural-language instructions embedded in the (updated) STARTUP prompt — a real, distinguishable step above the rejected 'main session hand-drives the browser' approach, and NOT equivalent to a narrow prompt that forces the exact decision as long as the STARTUP edit phrases the new guidance conditionally ('IF EARN_MODE=discover reports no ready account, THEN invoke ig-account-create ...') rather than as an unconditional imperative. The spec should say this explicitly rather than leaving 'EITHER loop' ambiguous, and should drop the genesis-loop route from REQ-102's verification bar (consistent with dropping REQ-102(a)'s registry half per FIND-006)."
+}
