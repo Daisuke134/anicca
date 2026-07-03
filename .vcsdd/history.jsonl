@@ -71,3 +71,5 @@
 {"timestamp":"2026-07-03T15:47:27.217Z","event":"bead_created","featureName":"profitable-article-writer","beadId":"BEAD-029","type":"spec-requirement","phase":"1b","externalId":"REQ-4b"}
 {"timestamp":"2026-07-03T15:47:27.218Z","event":"bead_created","featureName":"profitable-article-writer","beadId":"BEAD-030","type":"verification-property","phase":"1b","externalId":"PROP-13"}
 {"timestamp":"2026-07-03T15:47:27.219Z","event":"bead_created","featureName":"profitable-article-writer","beadId":"BEAD-031","type":"verification-property","phase":"1b","externalId":"PROP-14"}
+{"timestamp":"2026-07-03T15:54:21.642Z","event":"gate_recorded","featureName":"profitable-article-writer","phase":"1c","verdict":"FAIL","reviewedBy":"adversary"}
+{"timestamp":"2026-07-03T15:54:21.643Z","event":"bead_created","featureName":"profitable-article-writer","beadId":"BEAD-032","type":"verification-property","phase":"1b","externalId":"PROP-15"}

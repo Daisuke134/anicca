@@ -1,0 +1,8 @@
+{
+  "id": "FIND-002",
+  "dimension": "verification_readiness",
+  "severity": "major",
+  "location": "specs/verification-architecture.md:27 (PROP-5), :54-56 (Sprint-1 DONE); specs/behavioral-spec.md:27-28 (REQ-5)",
+  "problem": "Iteration-1 FIND-009 (major) objected that V0.5 has no defined pass threshold/rubric, so PROP-5 (a required financial gate) was not reproducible. The revision does NOT define a V0.5 rubric anywhere in either artifact; instead it narrows PROP-5's own claim to 'fail-closed WIRING ... independent of V0.5's internal rubric' and explicitly disclaims responsibility for the craft-score's reproducibility ('Repeatable regardless of craft-score judgment'). This is a scope-narrowing of the PROP, not a fix of the underlying gap the finding identified: REQ-5 still only lists V0.5's criteria as open questions ('hook creates desire? CTA exists? free part = sales letter? readability pass?') with no threshold (all 4 must pass? weighted score >= N? N-sample majority vote?). Sprint-1 DONE (verification-architecture.md:54-56) still asserts as an objective, re-checkable milestone that 'a draft passes V0/V0.5' -- but with no defined rubric, two different runs of V0.5 against the identical draft are not guaranteed to agree, so 'Sprint-1 DONE' remains unfalsifiable/non-regression-testable exactly as FIND-009 originally described.",
+  "fix": "Add a concrete V0.5 rubric to REQ-5 (e.g. 4 named binary sub-checks, ALL must PASS; or an N-sample adversary vote with a stated majority threshold) so that 'passes V0.5' has one deterministic definition that PROP-5's wiring test and Sprint-1 DONE can both cite, instead of leaving the craft judgment fully unspecified and merely fencing PROP-5 off from it."
+}

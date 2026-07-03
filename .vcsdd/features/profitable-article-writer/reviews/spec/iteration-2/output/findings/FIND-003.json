@@ -1,0 +1,8 @@
+{
+  "id": "FIND-003",
+  "dimension": "spec_fidelity",
+  "severity": "major",
+  "location": "specs/verification-architecture.md:25 (PROP-3); specs/behavioral-spec.md:27-28 (REQ-5), :15-17 (REQ-3)",
+  "problem": "Iteration-1 FIND-008 (major) objected that a keyword blocklist cannot reliably catch a paraphrased 'we ran/executed this' claim (REQ-3's brand-safety requirement). The revision changes PROP-3 to say this semantic check 'is delegated to the V0.5 judgment gate (adversary), NOT a keyword blocklist.' However REQ-5 -- the requirement that actually DEFINES what V0.5 checks -- was not updated: its criteria list is still only 'hook creates desire? CTA exists? free part = sales letter? readability pass?'. Nowhere does REQ-5 (or any other REQ) instruct the V0.5 judgment pass to check for a false claim-of-execution. As written, PROP-3 delegates a required brand-safety check to a gate whose own requirement text does not contain that check, so an implementer following REQ-5 literally would build a V0.5 gate that never evaluates REQ-3's 'no claim of having run anything' condition at all -- the same class of gap as before, just moved one level of indirection away.",
+  "fix": "Add the execution-claim check as an explicit fifth V0.5 sub-criterion in REQ-5 (e.g. 'does the draft claim to have executed/run/tested anything externally?') so PROP-3's delegation target actually contains the obligation it claims to satisfy."
+}

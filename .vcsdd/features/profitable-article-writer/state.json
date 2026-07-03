@@ -183,7 +183,9 @@
         "type": "spec-requirement",
         "artifactPath": "specs/behavioral-spec.md",
         "status": "active",
-        "linkedBeads": [],
+        "linkedBeads": [
+          "BEAD-032"
+        ],
         "createdAt": "2026-07-03T15:20:00.524Z",
         "createdInPhase": "1a",
         "externalId": "REQ-14"
@@ -389,19 +391,31 @@
         "createdAt": "2026-07-03T15:47:27.218Z",
         "createdInPhase": "1b",
         "externalId": "PROP-14"
+      },
+      {
+        "beadId": "BEAD-032",
+        "type": "verification-property",
+        "artifactPath": "specs/verification-architecture.md",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-014"
+        ],
+        "createdAt": "2026-07-03T15:54:21.643Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-15"
       }
     ]
   },
   "gates": {
     "1c": {
       "verdict": "FAIL",
-      "timestamp": "2026-07-03T15:45:22.018Z",
+      "timestamp": "2026-07-03T15:54:21.638Z",
       "reviewedBy": "adversary",
       "adversaryVerdict": "FAIL",
-      "adversaryReviewedAt": "2026-07-03T15:45:22.018Z"
+      "adversaryReviewedAt": "2026-07-03T15:54:21.638Z"
     }
   },
   "sprintCount": 0,
   "createdAt": "2026-07-03T15:16:08.410Z",
-  "updatedAt": "2026-07-03T15:47:27.218Z"
+  "updatedAt": "2026-07-03T15:54:21.643Z"
 }

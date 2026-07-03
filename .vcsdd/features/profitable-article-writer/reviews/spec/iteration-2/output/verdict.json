@@ -1,0 +1,40 @@
+{
+  "feature": "profitable-article-writer",
+  "phase": "1c",
+  "reviewType": "spec",
+  "iteration": 2,
+  "overallVerdict": "FAIL",
+  "verdict": "FAIL",
+  "dimensions": {
+    "spec_fidelity": "FAIL",
+    "verification_readiness": "FAIL"
+  },
+  "priorFindings": {
+    "FIND-001": "RESOLVED",
+    "FIND-002": "RESOLVED",
+    "FIND-003": "RESOLVED",
+    "FIND-004": "RESOLVED",
+    "FIND-005": "RESOLVED",
+    "FIND-006": "NOT-RESOLVED",
+    "FIND-007": "RESOLVED",
+    "FIND-008": "NOT-RESOLVED",
+    "FIND-009": "NOT-RESOLVED"
+  },
+  "priorFindingsDetail": {
+    "FIND-001": "RESOLVED — behavioral-spec.md:10-14 now scopes REQ-2's zero-human invariant to Mode B ONLY and explicitly states Mode A's review+publish gate does NOT satisfy it; verification-architecture.md:54-56 (Sprint-1 DONE) updated to match ('Zero-human is asserted of Mode B ... NOT Mode A').",
+    "FIND-002": "RESOLVED — behavioral-spec.md:40-44 (REQ-10) now explicitly states funding mode gates WHICH REQ-8 rails are usable ('self-funded ... SHALL monetize ONLY via crypto-native checkout ... REQ-8's usable rail set is gated by funding mode, not by credentials alone').",
+    "FIND-003": "RESOLVED — behavioral-spec.md:62-64 (REQ-14) now states a concrete bound: 'AT MOST 3 rounds ... IF still failing after 3 rounds THEN it SHALL abort the wake'. (Note: enforcement of this exact bound is not yet covered by any PROP — see new FIND-004 in this iteration.)",
+    "FIND-004": "RESOLVED — behavioral-spec.md:25-26 adds REQ-4b (skip wake on no-viable-topic/insufficient-research) and verification-architecture.md:36 adds PROP-14 testing it with a stubbed empty-research input.",
+    "FIND-005": "RESOLVED — verification-architecture.md:35 adds PROP-13 mapped to REQ-7, T2, required:true, testing Mode-B publish-then-distribute with no human gate present.",
+    "FIND-006": "NOT-RESOLVED — verification-architecture.md:29 (PROP-7) and behavioral-spec.md:52-56 (REQ-16) rename the human-funded V4 check from 'bank receipt' to 'platform-confirmed sale event (note/Stripe/Substack API or dashboard)' and correctly move bank withdrawal out of the runtime gate, but never name a concrete zero-human mechanism for the dashboard/API read itself, nor address the login/2FA barrier the original finding raised — the hand-wave moved from 'bank' to 'platform dashboard', it did not disappear. See new FIND-001 (this iteration).",
+    "FIND-007": "RESOLVED — verification-architecture.md:24 (PROP-2) now explicitly scopes the no-human audit to the Mode-B path and states 'Mode A's review gate is explicitly EXCLUDED', giving PROP-2 a deterministic PASS boundary.",
+    "FIND-008": "NOT-RESOLVED — verification-architecture.md:25 (PROP-3) now delegates the 'no claim of having run' semantic check to the V0.5 judgment gate instead of a keyword blocklist, which is the right direction, but REQ-5 (behavioral-spec.md:27-28), which defines V0.5's actual criteria, was never updated to include this check — the delegation target does not contain the obligation. See new FIND-003 (this iteration).",
+    "FIND-009": "NOT-RESOLVED — verification-architecture.md:27 (PROP-5) narrows its own claim to test only the deterministic fail-closed WIRING and explicitly disclaims responsibility for V0.5's internal rubric ('independent of V0.5's internal rubric ... Repeatable regardless of craft-score judgment'). This sidesteps rather than fixes the gap: REQ-5 still defines no pass threshold/rubric for V0.5, so Sprint-1 DONE's claim that 'a draft passes V0/V0.5' remains non-reproducible. See new FIND-002 (this iteration)."
+  },
+  "newFindings": ["FIND-001", "FIND-002", "FIND-003", "FIND-004", "FIND-005"],
+  "summary": "6 of 9 prior findings are genuinely resolved with real spec text changes (FIND-001,002,003,004,005,007). 3 prior findings (FIND-006, FIND-008, FIND-009) were resolved cosmetically: the spec text changed, but each change relocated or narrowed the scope of the underlying problem rather than closing it, so the original defect persists under a new name (documented as 5 fresh findings, FIND-001..005, in this iteration's findings/ dir). Sprint 2's entire money milestone (note rail -> V4) currently rests on an unspecified zero-human dashboard/API read (FIND-001, blocker) and an account-creation dependency REQ-11 itself admits is unproven zero-human (FIND-005). The V0.5 craft gate still has no defined rubric despite being the fail-closed publish gate for every wake (FIND-002), and its delegated brand-safety check (execution-claim detection) is absent from the REQ that defines it (FIND-003). REQ-14's newly-added 3-round retry cap has no corresponding proof obligation (FIND-004). Verdict is FAIL on both spec_fidelity and verification_readiness; the spec is not yet ready for 2a (Red) under strict mode.",
+  "findingsCount": 5,
+  "blockerCount": 1,
+  "majorCount": 4,
+  "minorCount": 0
+}

@@ -7,11 +7,13 @@ One article → funnel → per-platform native monetization → real money verif
 
 - **REQ-1 Model-agnostic.** The skill SHALL name no model/provider/API key and SHALL run on whatever frontier
   model the running agent uses (Claude/Opus today; GPT/Grok/DeepSeek/Kimi later).
-- **REQ-2 Zero human in the runtime loop — asserted of the END STATE (Mode B) ONLY.** In Mode B the only permitted
-  human contribution is COMPUTE (a subscription) + a one-time payout identity at install; no human
-  click/OTP/approval/delivery at runtime. **Mode A (draft-first, REQ-6) is an EXPLICIT, temporary supervised
-  bootstrap that INTENTIONALLY carries a human review+publish gate**; it is the trust ramp and does NOT satisfy —
-  and is NOT claimed to satisfy — the zero-human invariant. The invariant is asserted of Mode B, never of Mode A. (Resolves FIND-001.)
+- **REQ-2 Zero human in the runtime loop — asserted of the END STATE (Mode B) ONLY.** The only human contribution is a
+  ONE-TIME INSTALL provisioning of: COMPUTE (a subscription), a payout identity, AND — for any rail whose zero-human
+  account creation is not yet proven (REQ-11: e.g. note / phone-gated X) — the platform account itself. These are
+  install-time facts, NOT runtime steps. At RUNTIME in Mode B (write→gate→publish→verify) there is no human
+  click/OTP/approval/delivery. **Mode A (draft-first, REQ-6) is an EXPLICIT, temporary supervised bootstrap that
+  INTENTIONALLY carries a human review+publish gate**; it is the trust ramp and does NOT satisfy — and is NOT claimed
+  to satisfy — the zero-human invariant. The invariant is asserted of Mode B, never of Mode A. (Resolves FIND-001, new FIND-005.)
 - **REQ-3 Explain, don't run.** The article SHALL be a deeply-researched, VISUAL explainer. The skill SHALL NOT
   execute external repos/tools to produce the article, SHALL NOT claim to have run anything, and SHALL NOT emit
   error-log content (brand safety).
@@ -24,8 +26,13 @@ One article → funnel → per-platform native monetization → real money verif
   research → decide(theme / buy-reason-3-lines / free-vs-paid split, What-free/How-paid) → write(craft layer) → de-slop.
 - **REQ-4b** IF, at a wake, no viable topic exists OR research is insufficient for a genuinely useful piece, THEN the
   skill SHALL SKIP the wake (produce NO article) rather than emit a thin/slop piece. (Resolves FIND-004.)
-- **REQ-5** WHEN a draft is produced, the skill SHALL run gate **V0** (render/slop) and **V0.5** (craft: hook creates
-  desire? CTA exists? free part = sales letter? readability pass?) BEFORE any publish.
+- **REQ-5** WHEN a draft is produced, the skill SHALL run gate **V0** (render/slop, existing note-publish vision check)
+  and **V0.5** BEFORE any publish. **V0.5 is a REPRODUCIBLE gate: a fresh-context adversary scores the draft against a
+  FIXED set of BINARY criteria; PASS = ALL true** — (a) an opening hook states a reader pain / curiosity / concrete
+  number; (b) a CTA to a paid rail is present; (c) the free part ends at a payoff cut (the How is withheld); (d) the
+  draft makes NO claim of having executed/run anything and contains NO error-log/stack-trace text (this is where
+  REQ-3's semantic check lives); (e) readability: the majority of sentences are short and mobile-scannable. Any FALSE
+  ⇒ V0.5 FAIL. (Resolves FIND-008/009, new FIND-002/003.)
 - **REQ-6** WHEN V0+V0.5 PASS AND mode = A (AUTONOMY=off, default), the skill SHALL stop at a note DRAFT and notify
   the human (URL + screenshot) for review; it SHALL NOT publish.
 - **REQ-7** WHEN V0+V0.5 PASS AND mode = B (AUTONOMY=on), the skill SHALL publish directly, then distribute to reach platforms.
@@ -50,10 +57,12 @@ One article → funnel → per-platform native monetization → real money verif
   pattern: Gmail plus-address + OTP auto-read, no phone/captcha) OR flag the rail unavailable (phone-gated X/note account
   creation is NOT yet proven) — it SHALL NOT fail loudly or spew errors.
 - **REQ-16** IF an earn is claimed on a rail THEN V4 SHALL be verified PER RAIL and PER funding-mode by a
-  ZERO-HUMAN-verifiable signal: **self-funded = an on-chain USDC receipt** (record-earn anti-fake); **human-funded =
-  a platform-confirmed sale event** (note / Stripe / Substack API or dashboard showing the paid sale). The subsequent
-  BANK withdrawal is a ONE-TIME human install-setup, OUTSIDE the per-earn loop, and SHALL NOT be asserted as an
-  automated runtime gate (bank KYC is the human's install responsibility). (Resolves FIND-006.)
+  ZERO-HUMAN-verifiable signal read with the install's STORED creds: **self-funded = an on-chain USDC receipt**
+  (record-earn anti-fake). **human-funded = a platform sale event read with zero human** — concretely: note =
+  authenticated GET of the note sales-management endpoint the creator dashboard calls (via the stored
+  NOTE_SESSION_COOKIE), parsed for the sale; Substack = Stripe API (charge/balance) via the stored key; X = the
+  creator analytics API. The subsequent BANK withdrawal is a ONE-TIME human install-setup, OUTSIDE the per-earn loop,
+  and SHALL NOT be asserted as an automated runtime gate. (Resolves FIND-006, new FIND-001.)
 
 ## Unwanted-behavior (IF <unwanted> THEN the skill SHALL <mitigate>)
 

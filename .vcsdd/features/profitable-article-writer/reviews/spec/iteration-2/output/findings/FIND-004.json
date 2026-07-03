@@ -1,0 +1,8 @@
+{
+  "id": "FIND-004",
+  "dimension": "verification_readiness",
+  "severity": "major",
+  "location": "specs/behavioral-spec.md:62-64 (REQ-14); specs/verification-architecture.md:27 (PROP-5)",
+  "problem": "REQ-14 (resolving iteration-1 FIND-003) now specifies a concrete numeric bound: 'fix and re-gate for AT MOST 3 rounds; IF still failing after 3 rounds THEN it SHALL abort the wake ... and record the failure.' This made REQ-14 testable in principle, but no PROP in the table actually verifies the round-count ceiling. PROP-5 (the only PROP citing REQ-14) tests ONLY the fail-closed wiring for a single stubbed FAIL ('inject a stubbed FAIL from V0 OR V0.5 -> assert publish is NOT called'); it never exercises the 'after 3 consecutive failed rounds, abort + record failure' path (e.g. does a 4th round happen? is the failure actually recorded anywhere checkable?). The 'record the failure' half of REQ-14 also has no PROP referencing a ledger/log artifact to assert against.",
+  "fix": "Add a dedicated proof obligation (or extend PROP-5) that stubs V0/V0.5 to FAIL on all of rounds 1-3, asserts the wake aborts without publishing after exactly 3 rounds (not fewer, not more), and asserts a failure record is written to a checkable artifact (log/ledger entry)."
+}
