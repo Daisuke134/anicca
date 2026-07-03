@@ -48,7 +48,7 @@ vision, so we do not center it.
 | | **SELF-FUNDED** ★ default / the vision ★ | **HUMAN-FUNDED** (sub-variant / on-ramp) |
 |---|---|---|
 | Seed | a human sends **USDC/Solana** once (then it stands alone) — OR a parent's on-chain surplus | a subscription the human already pays (Claude/Sonnet) |
-| **Runner** | **automaton ReAct loop** = `~/anicca/runtime/loop/index.mjs` (context→THINK→execute→persist→sleep) + `compute-proxy/proxy.mjs` x402 self-pay | **headless `claude` in tmux** (the `*-cli.sh` SHELL pattern) |
+| **Runner** | **the "automaton" — a standalone custom Node runtime** `~/anicca/runtime/` (`anicca-daemon.sh` supervised by launchd/systemd/Docker `restart:always` → self-update git pull → `compute-proxy` :8402 → `loop/index.mjs` ReAct loop). ★ NOT OpenClaw, NOT Hermes — verified: `index.mjs` has zero openclaw/hermes imports; FOOD = `@blockrun/llm` x402 self-pay ★ | same automaton loop, brain pointed at Claude (subscription) |
 | Model | ClawRouter — **`auto` profile** (use the best model its USDC can afford; optimize for earning), free NVIDIA/GLM when broke. NOT pinned to glm-4.7. Claude NOT available (needs a human sub). | Claude (Sonnet ceiling, Opus forbidden) |
 | Earns to | its own wallet (pays own compute + spawns children) | the human's wallet + bank |
 | Shelter | its own wallet pays its own cloud (must be seeded USDC first — even to start on cloud) | cloud now (DigitalOcean); Akash later |
@@ -126,6 +126,26 @@ point.
 **NO ORCHESTRATOR THAT KILLS** (Dais 2026-07-03): each loop is a self-contained closed system that runs
 forever and self-improves; nothing stops a loop because it is "not making money" (earning takes time). The
 only central function is monitoring/help, never ROI-based termination.
+
+**REQ-PORTABILITY (cloud vs local skills — the #1 spawn risk, verified 2026-07-03 by grep):** earn skills
+split into two classes and a cloud-spawned child MUST only be handed the CLOUD class, else it errors out on a
+missing browser/credential:
+- **LOCAL-only** (need the daily-driver browser `:9222`/cloak/camofox + a human's accounts/credentials):
+  `clip`, `video`, `affiliate`, `gig`, `x402-sell` → run ONLY on the local human-funded instance that holds
+  Dais's daily driver.
+- **CLOUD-portable** (wallet-signature / API only, NO browser, NO human credential): `pm-trade`, `hl-trade`,
+  `defi-yield`, `token-launch`, `board-poller`, `finchip-publish` → run identically on any cloud child.
+- **REQ-CLOUD-EARN:** a self-funded cloud child's earn line = CLOUD-portable skills ONLY (trading/yield/pm/
+  x402). (Later: give a cloud child its OWN stealth browser + self-created accounts via `ig-account-create`
+  to unlock browser skills — v1 does NOT depend on this.)
+
+**REQ-SELFHEAL-AUTONOMY (Dais must never report a broken dashboard/site — the AI detects+fixes it itself):**
+a monitor (cron, NOT a human) MUST (a) detect staleness (`dashboard.json.updated_at` too old) and
+on-chain/ledger divergence; (b) self-remediate — re-run the sync, or if a code bug, auto-file a GitHub issue
+via `issue-dev` → `forum-rollout` auto-PR→merge→pull. Goal: Dais can discard the Mac Mini, deploy
+`anicca-daemon.sh` to his cloud, and only TALK to the cloud instance (Telegram/web) — the body self-updates
+from the mother repo, earns via CLOUD-portable skills, and heals itself. Human-funded instances MAY use
+Dais-provided credentials; self-funded (anonymous cloud) instances MUST NOT need any.
 
 ---
 
@@ -214,6 +234,19 @@ humans don't "use" it. It is a self-propagating economy of self-funded AIs that 
 redistribute surplus to all humans as UBI. Self-funded AIs spawn self-funded AIs = the closed eternal loop;
 humans receive UBI, not invoices. Revenue = the colony's trading/yield surplus; OSS so anyone can spawn one.
 
+**Positioning vs the two nearest money models (verified live 2026-07-03):**
+- **BlockRun = rail take-rate.** Verbatim: *"Provider cost + 5% margin at settlement"* (blockrun.ai) — a 5%
+  spread + per-request markup on every agent call, a middleman toll that scales with transaction volume.
+- **Worldcoin = token-funded UBI.** A free airdrop from a fixed *"7.5B … tokens allocated to the World
+  community"* (world.org), costs *"currently funded by TFH"* (a ~500-person investor-backed operator); no
+  confirmed take-rate. UBI = handing out a pre-minted token.
+- **Anicca = 0% take-rate; money flows OUT to humans, not IN as fees.** ① default: we skim nothing — agents
+  self-fund and cover their own compute; ② surplus → UBI, funded by *real work-surplus the colony earns*
+  (not a rail toll, not an inflationary token grant); ③ **optional upside: invest in the colony → a share of
+  the returns of an empire of hundreds of self-funded AIs that cost ≈nothing to run** (opt-in return-share,
+  not a fee extracted from users). "A business that makes money *for* people, not *from* them — unless you
+  choose to buy in."
+
 ---
 
 ## 9. Open Questions (resolve in-spec, do not hand to Dais)
@@ -252,10 +285,13 @@ runtime/machine-readable registry, zero-human-loop, agent earns crypto + redistr
 
 **Pre-study (event-recommended) = Garry Tan's own OSS, same stack Anicca runs on:**
 - **gstack** (`github.com/garrytan/gstack`, MIT) — his Claude Code skill pack (23 skills + 8 tools). = workflow layer.
-- **OpenClaw/Hermes** — the runtime. **★ Anicca runs on this ★** = the shared substrate.
+- **OpenClaw/Hermes** — an adjacent agent runtime in the same ecosystem (Dais's PERSONAL Anicca instances
+  run on it; the EARNER colony does NOT — it runs the custom `~/anicca/runtime` automaton). Do NOT claim
+  "Anicca runs on OpenClaw" for the earner.
 - **gbrain** (`github.com/garrytan/gbrain`) — "Garry's Opinionated OpenClaw/Hermes Agent Brain"; self-wiring
-  knowledge graph; = the reference impl of RFS #1 "Company Brain" (Tom Blomfield: *"We need Garry's G-Brain,
-  but for every business"*). Story: **Anicca = the earn/self-fund layer on top of Garry's stack.**
+  knowledge graph; = the reference impl of RFS #1 "Company Brain". Story (honest): **Anicca is an
+  agent-first project in the same frontier as Garry's stack — the earn/self-fund/UBI layer of the agent
+  economy — not built on top of it.**
 
 **Deliverables to pre-stage (submission spec):** (1) problem+solution in Epstein's frame (agents run on
 brittle human software → Anicca = agent-first earn/pay/skill substrate, zero-human); (2) product/tech/
