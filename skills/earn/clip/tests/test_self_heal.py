@@ -133,6 +133,51 @@ class TestSelfHeal(unittest.TestCase):
                           "no placeholder sidecar must ever be created")
         self.assertGreater(os.path.getmtime(mp4), old_mtime, "clip file mtime must be touched even for missing sidecar")
 
+    def test_corrupt_json_sidecar_is_permanently_inconclusive_no_placeholder_no_crash(self):
+        """PROP-006(c) second sub-case: sidecar file EXISTS but contains invalid JSON (as opposed
+        to test_missing_sidecar's file-absent case) -- must be treated identically: permanently
+        inconclusive, no placeholder, no crash, clip file mtime touched."""
+        mp4 = os.path.join(self.pending_verify, "clip3b.mp4")
+        sidecar = os.path.join(self.pending_verify, "clip3b.before-hrefs.json")
+        with open(mp4, "w") as f: f.write("fake")
+        with open(sidecar, "w") as f: f.write("{not valid json!!")
+        old_mtime = 1000000000.0
+        os.utime(mp4, (old_mtime, old_mtime))
+        result = self_heal.run_self_heal(
+            pending_verify=self.pending_verify, posted=self.posted, ledger=self.ledger,
+            handle="h", poster_path="unused", python_bin=sys.executable, tid="fake-tid",
+            read_page_text=lambda tid, href: "",
+        )
+        self.assertEqual(result["status"], "inconclusive")
+        self.assertTrue(os.path.exists(mp4), "clip must not be deleted")
+        with open(sidecar) as f:
+            self.assertEqual(f.read(), "{not valid json!!", "corrupt sidecar must be left untouched, never overwritten with a placeholder")
+        self.assertGreater(os.path.getmtime(mp4), old_mtime, "clip file mtime must be touched even for a corrupt sidecar")
+
+    def test_unrelated_post_with_same_hook_text_but_different_token_never_misattributed(self):
+        """PROP-006(b): the FIND-018/019/025 regression this feature exists to close. An unrelated
+        post landing in the gap, EVEN ONE SHARING THE SAME HOOK TEXT (HARD RULE 0.18: proven hook
+        text is deliberately reused verbatim across different clips), must NEVER be misattributed
+        -- only the mechanically-unique TOKEN gates confirmation, never the caption prose."""
+        stub = _make_stub_poster(self.tmp_path, [
+            {"reels": ["/h/reel/A/"], "ok": True},
+            {"reels": ["/h/reel/A/", "/h/reel/OTHERCLIP/"], "ok": True},
+            {"reels": ["/h/reel/A/", "/h/reel/OTHERCLIP/"], "ok": True},
+        ])
+        self._write_pending_clip("clip4", ["/h/reel/A/"], "#cmyowntoken1")
+        SAME_HOOK_TEXT = "POV: you finally understand recursion #fyp #coding"
+        result = self_heal.run_self_heal(
+            pending_verify=self.pending_verify, posted=self.posted, ledger=self.ledger,
+            handle="h", poster_path=stub, python_bin=sys.executable, tid="fake-tid",
+            # OTHERCLIP's page shares the IDENTICAL hook prose but a DIFFERENT token
+            read_page_text=lambda tid, href: (SAME_HOOK_TEXT + " #cotherclip99") if href == "/h/reel/OTHERCLIP/" else "unrelated",
+        )
+        self.assertEqual(result["status"], "still-pending",
+                          "shared hook text must NOT cause misattribution -- only the token is checked, and it doesn't match")
+        self.assertTrue(os.path.exists(os.path.join(self.pending_verify, "clip4.mp4")), "clip must stay in pending-verify")
+        self.assertTrue(os.path.exists(os.path.join(self.pending_verify, "clip4.before-hrefs.json")), "sidecar must NOT be deleted")
+        self.assertFalse(os.path.exists(os.path.join(self.posted, "clip4.mp4")), "must never be moved to posted on a prose-only match")
+
     def test_round_robin_picks_oldest_clip_file_mtime(self):
         clip_a = self._write_pending_clip("clipA", ["/h/reel/X/"], "#c1111111111")
         clip_b = self._write_pending_clip("clipB", ["/h/reel/Y/"], "#c2222222222")
