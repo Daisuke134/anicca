@@ -108,6 +108,31 @@ Each platform is a **credential-gated parameter** in `registry.json` (`content_n
 has creds for. **V4 earn-verify runs PER RAIL** (money landed on note ≠ on Substack ≠ on X). Prove ONE rail
 first (default: note ¥500), then light up the others from the same article.
 
+### §3.2 Zero-human account + payout per rail — the REAL gate (honest, 2026-07-03)
+
+"Any AI earns by writing, zero human" splits into THREE sub-gates. Only the third is genuinely hard — be honest,
+don't overclaim (brand safety):
+
+```
+ GATE 1  CREATE account  ✅ Instagram PROVEN E2E (ig-account-create: Gmail plus-address, OTP auto-read,
+                            NO phone, NO captcha). Email/GitHub rails (dev.to, Substack, Zenn) = SAME pattern,
+                            no phone → replicable but NOT yet proven here. Phone-gated (X; sometimes note) =
+                            needs SMS-rental → NOT yet proven, FLAGGED.
+ GATE 2  PUBLISH         ✅ solved for every rail given creds (existing publishers).
+ GATE 3  GET PAID (KYC)  ★ the real wall ★ note/Substack/Zenn/X withdrawals need a BANK account + identity
+                            verification. This, not login, is the zero-human blocker.
+```
+
+Payout resolves by funding mode (per the frontier-model-earn-recipe axis):
+- **HUMAN-FUNDED:** the install carries the human's payout account as a one-time install fact (the human's ONLY
+  roles = COMPUTE + a payout identity). The RUNTIME loop stays zero-human; note ¥500 / Substack sub land in the
+  human's payout account.
+- **SELF-FUNDED:** cannot pass bank KYC → money MUST be crypto-native. The article funnels to an x402-gated
+  resource / own crypto checkout → USDC to the instance wallet (reuse `skills/earn/x402-sell` + `founder-loop`).
+  Platform paywalls are the human-funded rail; the wallet checkout is the self-funded rail.
+
+V4 earn-verify runs PER RAIL and PER MODE (bank receipt for human-funded, on-chain receipt for self-funded).
+
 ## §4 The writing craft we dropped (improve INSIDE the article)
 
 Our PLAYBOOK perfected **PURITY** (clarity / anti-slop) and **deliberately killed CONVERSION** — rule #1 verbatim
