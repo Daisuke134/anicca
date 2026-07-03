@@ -94,9 +94,16 @@ picks model class by USDC balance. Broke → free model; funded → better model
 
 ---
 
-## 3. Earners = crypto-native only (gig is OUT)
+## 3. Earners = crypto-native only for the self-funded/cloud colony
 
-**Removed**: `gig` (Coconala/dealwork) — requires a bank account + KYC = human credential = violates
+**Scoped out (NOT globally deleted)**: `gig` (Coconala) settles ¥ to a bank via a KYC'd account = human
+credential → it is **OUT of the SELF-FUNDED / cloud earn line** (same reason as clip/affiliate, per
+REQ-PORTABILITY). ★ It stays LIVE for the **human-funded founder ONLY** — `skills/registry.json` has
+`earn/gig` `status:"live"` and `gig/run.sh` is currently running (tmux+cron Coconala core), and per §0 it is
+the founder's only currently-operating real-money earner (Dais provides the KYC'd account, which a
+human-funded instance MAY use; a self-funded one MAY NOT). §10 does NOT decommission it. ★ Everything below
+is the crypto-native line that ALSO works for self-funded/cloud. The original reason gig can't cross to
+self-funded: bank/KYC = human credential = violates
 INV-MODE. `clip`/`affiliate` MUST NOT be in a cloud child's earn line (they carry account/human-touch risk;
 local-only per REQ-PORTABILITY). **Kept — crypto-native,
 self-improving, alpha compounds**:
