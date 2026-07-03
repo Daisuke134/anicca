@@ -5,13 +5,19 @@
 
 ## 0. REALITY CHECK (on-chain verified 2026-07-03, not self-reported)
 
-**There is NO money yet.** I queried the chains directly (RPC): founder Base `0x810f` = **$0.006 USDC + dust
-ETH**; founder Solana `BF9vzj7` = **0 SOL / $0 USDC**; local `a3cdd4` Solana `GB7Le` = **0.005 SOL dust /
-$0 USDC**. The ledger's `$0.315 (gig)` row and the dashboard's "`~$16 net worth`" have **no matching on-chain
-tx = self-reported fiction.** `~/.anicca-founder/STATE.md` "status: EARNING" is **FALSE**. **Verified external
-income across ALL instances = $0.** Bounties (code4rena/Cantina) are **UNPROVEN** — only their marketing
-pages were read; we have never received a payout → removed from the plan until a real tx exists. Every
-"earn/net-worth" number in this spec is a TARGET, never a claim, until a tx+`external:true` row exists.
+**First real seed money is IN and swapped to USDC (on-chain verified):**
+- founder (me/claude-p) Base `0x810f` = **$8.40 USDC** — I swapped 0.104 SOL→USDC via relay.link
+  (`sol-to-usdc.py`), Solana tx `5zyWxn9…`, relay status success.
+- local self-funded `a3cdd4` Base `0xa3cdd4…` = **$8.96 USDC** — ★the automaton swapped its own SOL→USDC
+  AUTONOMOUSLY★ (two Solana txs at blockTime 1783087264/…339 while I watched) = first proof the
+  self-funded loop detects funds and acts with no human.
+- The seed arrived as **SOL** (~0.11 each ≈ $8–9 at the quoted rate 0.1 SOL→8.07 USDC), NOT USDC — so
+  SOL→USDC is step 0 of any funding, now proven working.
+
+**Still true:** verified EXTERNAL *earnings* (tx + `external:true`, i.e. money earned not seeded) across all
+instances = **$0**. This USDC is the human seed, not earnings. `~/.anicca-founder/STATE.md` "EARNING" is
+still FALSE until a real earned tx exists. Bounties (code4rena/Cantina) = removed (verified: mandatory
+tax-info/KYC → not no-human). Every "earn/net-worth" number stays a TARGET until an earned tx exists.
 - **Date**: 2026-07-03
 - **Sources read (grounding, not hypothetical)**: `~/anicca/THESIS.md`, `~/anicca/runtime/loop/index.mjs` + `tier.mjs` + `earn-slot.mjs`, `~/anicca/.vcsdd/features/trading-polymarket-spawn/specs/behavioral-spec.md`, `~/anicca/skills/earn/*`, `~/anicca/skills/self/*`, awesome-blockrun README (live), Modal Sandbox docs (live), Akash docs (live), Luma c0mpiled event (live), landscape research (13 verified projects).
 
