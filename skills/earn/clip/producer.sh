@@ -22,9 +22,30 @@ export LOCAL_WHISPER_MODEL=tiny
 export GOOGLE_API_KEY="${GOOGLE_API_KEY:-${GEMINI_API_KEY:-}}"
 
 URL=""; [ "${1:-}" = "--url" ] && URL="${2:-}"
-emit(){ printf '{"producer":"clip","did":%s}\n' "$(printf '%s' "$1" | "$PY" -c 'import json,sys;print(json.dumps(sys.stdin.read()))' 2>/dev/null || echo "\"$1\"")"; }
+emit(){ printf '{"producer":"clip","did":"%s"}\n' "$1"; }
 
-[ -x "$PY" ] || { emit "engine venv missing ($PY)"; exit 0; }
+# self-heal (タスク#9、2026-07-04): disk-cleaner (1h毎) が anicca-clones 配下の
+# 24h超ファイルを消す設計だった為、engine venv が定期的に消えていた
+# (根本原因はdisk-cleaner.sh側で is_protected 追加済だが、防御的に自己修復も持つ)。
+# 人間/devが気づいて手で再clone+venv再構築する必要を無くす。
+ENGINE_REPO_URL="https://github.com/SamurAIGPT/AI-Youtube-Shorts-Generator"
+self_heal_engine() {
+  emit "engine venv missing ($PY) — self-healing: re-clone + rebuild venv"
+  rm -rf "$ENGINE"
+  if ! git clone --depth 1 "$ENGINE_REPO_URL" "$ENGINE" >/tmp/producer-selfheal-clone.log 2>&1; then
+    emit "self-heal FAILED: git clone (see /tmp/producer-selfheal-clone.log)"; exit 0
+  fi
+  if ! /opt/homebrew/bin/python3 -m venv "$ENGINE/.venv" >/tmp/producer-selfheal-venv.log 2>&1; then
+    emit "self-heal FAILED: venv create (see /tmp/producer-selfheal-venv.log)"; exit 0
+  fi
+  if ! "$PY" -m pip install --quiet -r "$ENGINE/requirements-local.txt" >/tmp/producer-selfheal-pip.log 2>&1; then
+    emit "self-heal FAILED: pip install (see /tmp/producer-selfheal-pip.log)"; exit 0
+  fi
+  emit "self-heal OK — engine venv rebuilt, continuing"
+}
+
+[ -x "$PY" ] || self_heal_engine
+[ -x "$PY" ] || { emit "self-heal ran but venv still missing ($PY)"; exit 0; }
 
 # pick a trending single-speaker money/AI long-form if no url (engine's channel default)
 if [ -z "$URL" ]; then
