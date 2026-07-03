@@ -2,7 +2,7 @@
 
 - **VCSDD feature**: `anicca-colony-architecture` (lean) — `~/anicca/.vcsdd/features/anicca-colony-architecture/`
 - **Status**: Phase 1a, iteration 2 (adversary iter-1 = FAIL on all 5 dims, 10 findings; this rev addresses them).
-- **Adversary model**: **Sonnet 5** (`Agent({subagent_type:"vcsdd:vcsdd-adversary", model:"sonnet"})`) — cheap + smart, many fix→re-review rounds (Dais 2026-07-04). Do not default to Opus.
+- **Adversary model**: **Opus** (keep the `vcsdd-adversary` default; do NOT downgrade). It is the quality gate — Dais 2026-07-04: "the adversary should be opus still, all others can be sonnet 5." Every OTHER spawned agent (research, builders) defaults to Sonnet 5 (cheap + smart).
 
 **REQ-EXPLORE (AIs find their OWN money-making repos — humans give ZERO repos/credentials).** No-human-loop
 means Dais/I stop handing over good repos (like today's polymarket-agent/Franklin research). Every instance
@@ -248,10 +248,23 @@ colony is not capped by one machine's atoms.
   the right = "what this AI did today." Humans don't want earning notifications (the money isn't going to
   their bank) — they only await UBI — so we SHOW it on the dashboard instead of mailing them. Each AI ALSO
   emails a daily report to **contact@aniccaai.com** (for Dais only).
-- `aniccaai.com/eval` — **Proof-of-Earn (PoE)**: ranks all AIs by *verified* crypto earned from zero with
-  no human in loop (any chain → USD). **crypto-only** (KYC/fiat = disqualified). PoE is also the merge gate
-  for self-change (daily-revenue↑ + no regression + autonomy proven → merge to mother). One page, fused
-  with the dashboard.
+- `aniccaai.com/eval` — **Proof-of-Earn (PoE) / EDD** (full design: `anicca-human-funded/.../2026-06-29-edd-earn-eval-design.md`).
+  **How it works — the one question: "with this change, are you earning MORE real money than before?"** Grade
+  the OUTCOME, never the transcript (Anthropic: "the outcome is whether a reservation exists in the DB, not
+  the agent saying it booked"). The outcome = a **confirmed on-chain settle/Transfer tx to the agent's OWN
+  wallet**, read independently by RPC. The grader stack:
+  1. **OUTCOME grader** — net-USDC delta to the wallet; a row counts ONLY with `tx_hash` + `external:true`
+     (same rule as `skills/_shared/lib/ledger.mjs::isProfitable`). Self-reported = ignored.
+  2. **REGRESSION grader** — the change must still earn ≥ baseline on already-proven paths (no silent break).
+  3. **AUTONOMY attest** — the fresh-context adversary confirms no human step crept in.
+  **Merge gate (replaces the human):** net-USDC↑ AND no regression AND adversary PASS ⇒ merge the self-change
+  to the mother repo; else REVERT. (sutando stops at a human merge; we replace that human with this outcome
+  gate = no human in loop.)
+  **Leaderboard:** index inflows to registered agent wallets on x402scan/Base+Solana; rank every AI (self- or
+  human-funded, ANY model) by **net-USDC delta per self-change**, autonomy-attested, any chain → USD.
+  **crypto-ONLY** — anything touching a human bank/Stripe/KYC is disqualified.
+  **Copyable strategy library:** each ranked entry exposes its winning strategy as a copyable recipe
+  (evolutionary/memetic) so the whole swarm inherits what works. One page, fused with `/dashboard`.
 - **Verified earn = tx hash + `external:true` only.** Self-reported / tx-less ledger rows are NOT earnings
   (HARD 0.24/0.31). Current truth: verified external income across ALL instances = **$0**;
   `~/.anicca-founder/STATE.md` falsely says "EARNING" → must be corrected to $0.
