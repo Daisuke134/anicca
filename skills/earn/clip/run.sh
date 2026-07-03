@@ -17,10 +17,11 @@ set -uo pipefail
 EARN_MODE="${EARN_MODE:-discover}"
 WAKE="${WAKE_ID:-}"
 HOME_DIR="${HOME}"
-QUEUE="$HOME_DIR/clips/queue"            # *.mp4 + matching *.txt caption, filled by the producer
-POSTED="$HOME_DIR/clips/posted"
-ACCTS="$HOME_DIR/.cloak/clip-accounts.json"
-LEDGER="${EARN_LEDGER:-$HOME_DIR/.openclaw/state/clip-earn-ledger.jsonl}"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_instance_paths.sh"
+QUEUE="$CLIP_QUEUE"                      # *.mp4 + matching *.txt caption, filled by the producer
+POSTED="$CLIP_POSTED"
+ACCTS="$CLIP_ACCTS"
+LEDGER="$CLIP_LEDGER"
 POSTER="$HOME_DIR/.claude/skills/ig-reels-poster/scripts/post_reel.py"
 CDP_DIR="$HOME_DIR/.claude/skills/ig-account-create/scripts"
 PY=/opt/homebrew/bin/python3

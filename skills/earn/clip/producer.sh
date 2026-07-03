@@ -15,7 +15,8 @@ set -uo pipefail
 SKILLS="$HOME/.claude/skills/earn-clip-rewards/scripts"
 ENGINE="$HOME/.cache/anicca-clones/AI-Youtube-Shorts-Generator"
 PY="$ENGINE/.venv/bin/python"
-QUEUE="$HOME/clips/queue"; mkdir -p "$QUEUE"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_instance_paths.sh"
+QUEUE="$CLIP_QUEUE"; mkdir -p "$QUEUE"
 set -a; . "$HOME/.openclaw/.env" 2>/dev/null; set +a
 export LOCAL_WHISPER_MODEL=tiny
 export GOOGLE_API_KEY="${GOOGLE_API_KEY:-${GEMINI_API_KEY:-}}"
