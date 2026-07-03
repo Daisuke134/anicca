@@ -56,7 +56,14 @@ export async function fetchUsdcBalance(address, config) {
   const paddedAddr = address.toLowerCase().replace('0x', '').padStart(64, '0');
   const callData = '0x70a08231' + paddedAddr;
 
-  const rpcUrl = config.BASE_RPC_URL || process.env.BASE_RPC_URL || BASE_RPC_DEFAULT;
+  // Robustness (loop must survive a single-endpoint DNS/RPC blip, else it falsely goes "broke"
+  // and skips earning for the whole wake): try the configured URL first, then public fallbacks.
+  const rpcUrls = [
+    config.BASE_RPC_URL || process.env.BASE_RPC_URL || BASE_RPC_DEFAULT,
+    'https://base-rpc.publicnode.com',
+    'https://base.llamarpc.com',
+    'https://mainnet.base.org',
+  ].filter((u, i, a) => u && a.indexOf(u) === i);
   const payload = JSON.stringify({
     jsonrpc: '2.0',
     id: 1,
@@ -64,10 +71,20 @@ export async function fetchUsdcBalance(address, config) {
     params: [{ to: USDC_CONTRACT, data: callData }, 'latest'],
   });
 
-  const raw = await rpcPost(rpcUrl, payload);
-  const parsed = JSON.parse(raw);
-  if (parsed.error) {
-    throw new Error(`RPC error: ${JSON.stringify(parsed.error)}`);
+  let parsed, lastErr;
+  for (const rpcUrl of rpcUrls) {
+    try {
+      parsed = JSON.parse(await rpcPost(rpcUrl, payload));
+      if (parsed.error) throw new Error(`RPC error: ${JSON.stringify(parsed.error)}`);
+      lastErr = null;
+      break;
+    } catch (e) {
+      lastErr = e;
+      parsed = null;
+    }
+  }
+  if (!parsed) {
+    throw lastErr || new Error('all Base RPC endpoints failed');
   }
   const hexBalance = parsed.result;
   if (!hexBalance || hexBalance === '0x') {
