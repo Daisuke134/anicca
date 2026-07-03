@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# PROP-004: resolve paths for N instance names, assert every resolved path
-# (queue/posted/accounts/ledger, across ALL instances) is pairwise distinct —
+# PROP-004/PROP-005: resolve paths for N instance names, assert every resolved path
+# (queue/posted/accounts/ledger/pending-verify, across ALL instances) is pairwise distinct —
 # a set-based check, not eyeballing two instances at a time.
 set -uo pipefail
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -12,7 +12,7 @@ for inst in "${INSTANCES[@]}"; do
     if [ -n "$inst" ]; then export ANICCA_INSTANCE="$inst"; else unset ANICCA_INSTANCE; fi
     unset EARN_LEDGER
     source "$DIR/_instance_paths.sh"
-    printf '%s\n%s\n%s\n%s\n' "$CLIP_QUEUE" "$CLIP_POSTED" "$CLIP_ACCTS" "$CLIP_LEDGER"
+    printf '%s\n%s\n%s\n%s\n%s\n' "$CLIP_QUEUE" "$CLIP_POSTED" "$CLIP_ACCTS" "$CLIP_LEDGER" "$CLIP_PENDING_VERIFY"
   )
 done > /tmp/vcsdd-n-instance-paths.$$
 
