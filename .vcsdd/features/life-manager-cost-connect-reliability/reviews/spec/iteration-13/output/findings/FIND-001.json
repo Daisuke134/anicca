@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "blocker",
+  "description": "OLD FIND-001/003 IS NOT RESOLVED — it has been replaced by a NEW, independently fabricated 'current state' claim. Spec §0c/§2/§3bis-C1/Goal-1 assert the origin/main /ws default is a one-way edge-tts clip (`server.js:381` `playWakeClip`) that escalates to Gemini Live (`server.js:408` `openGeminiLive`), and that 'the two-way Gemini machinery (geminiLiveWsUrl, geminiSetupForEvent, routeGeminiMessage, buildGeminiTurn ...) is ALREADY wired into server.js'. NONE of this is true. A whole-worktree grep for `playWakeClip` and `openGeminiLive` returns zero hits in any .js/.cjs source file — the only hits anywhere on disk are inside behavioral-spec.md itself and prior review JSON files quoting/criticizing the claim. The real server.js:355-448 wires /ws to a completely different, third architecture: `createConversation()` from `lib/compositional-voice.cjs` (Groq Whisper STT + Groq Llama LLM + edge-tts), whose own header comment states 'NEVER opens a Gemini Live ws (Goal-1: live_ws_opened=0)', and server.js itself documents at lines 380-382: 'NO Gemini Live socket is EVER opened ... DTMF does NOT open Live; synth-failure does NOT open Live.' server.js:18-21 imports ONLY `routeTelnyxMessage`/`buildTelnyxMediaFrame` from `lib/call-bridge.cjs` — none of geminiLiveWsUrl/geminiSetupForEvent/routeGeminiMessage/buildGeminiTurn are imported into server.js at all; those symbols exist only inside call-bridge.cjs's own `startServer()` function, which only runs when call-bridge.cjs is invoked directly (`require.main === module`, call-bridge.cjs:269) — a standalone CLI test harness, not part of the running service.",
+  "evidence": {
+    "filePath": "apps/life-call/server.js",
+    "lineRange": "18-21, 380-448",
+    "snippet": "const { createConversation } = require(\"./lib/compositional-voice.cjs\");\nconst { groqStt, groqLlmStream, ttsToMuLawFrames } = require(\"./lib/compositional-live.cjs\");\n...\n// C1 ... FREE COMPOSITIONAL two-way conversation ... NO Gemini Live socket is EVER opened\nconst liveWsOpened = 0;"
+  },
+  "routeToPhase": "2b"
+}

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "major",
+  "description": "§4 RED check (b) states: 'grep proves the /ws start-frame handler now calls openGeminiLive() (NOT playWakeClip) as the default, and playWakeClip/synthWakeClip/buildWakeLine are no longer referenced in server.js'. Per FIND-001, `playWakeClip` and `openGeminiLive` have never existed anywhere in this codebase's history (grep across the entire worktree, including every prior review JSON, shows these strings appear ONLY inside behavioral-spec.md and reviews criticizing it — never as a real code symbol). A RED check that greps for the absence/presence of symbols that were never real cannot detect anything: it is vacuously satisfiable (both grep-for-absence checks trivially pass today, before any code changes) and gives zero signal about whether Gemini Live was actually wired in as the default. This is the same failure class as the OLD FIND-004 ('RED check too weak to detect a broken restore') but worse: the new RED check isn't just weak, it targets fictional identifiers so it structurally cannot ever go RED.",
+  "evidence": {
+    "filePath": ".vcsdd/features/life-manager-cost-connect-reliability/specs/behavioral-spec.md",
+    "lineRange": "109",
+    "snippet": "(b) grep proves the `/ws` `start`-frame handler now calls `openGeminiLive()` (NOT `playWakeClip`) as the default, and `playWakeClip`/`synthWakeClip`/`buildWakeLine` are no longer referenced in `server.js`"
+  },
+  "routeToPhase": "2b"
+}
