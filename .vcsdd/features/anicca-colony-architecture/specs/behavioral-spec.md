@@ -1,7 +1,17 @@
 # Anicca Colony Architecture — Design Spec (v1)
 
 - **VCSDD feature**: `anicca-colony-architecture` (lean) — `~/anicca/.vcsdd/features/anicca-colony-architecture/`
-- **Status**: Phase 1a draft. To be hardened by fresh-context adversary (Phase 1c) then iterated before implementation.
+- **Status**: Phase 1a, iteration 2 (adversary iter-1 = FAIL on all 5 dims, 10 findings; this rev addresses them).
+
+## 0. REALITY CHECK (on-chain verified 2026-07-03, not self-reported)
+
+**There is NO money yet.** I queried the chains directly (RPC): founder Base `0x810f` = **$0.006 USDC + dust
+ETH**; founder Solana `BF9vzj7` = **0 SOL / $0 USDC**; local `a3cdd4` Solana `GB7Le` = **0.005 SOL dust /
+$0 USDC**. The ledger's `$0.315 (gig)` row and the dashboard's "`~$16 net worth`" have **no matching on-chain
+tx = self-reported fiction.** `~/.anicca-founder/STATE.md` "status: EARNING" is **FALSE**. **Verified external
+income across ALL instances = $0.** Bounties (code4rena/Cantina) are **UNPROVEN** — only their marketing
+pages were read; we have never received a payout → removed from the plan until a real tx exists. Every
+"earn/net-worth" number in this spec is a TARGET, never a claim, until a tx+`external:true` row exists.
 - **Date**: 2026-07-03
 - **Sources read (grounding, not hypothetical)**: `~/anicca/THESIS.md`, `~/anicca/runtime/loop/index.mjs` + `tier.mjs` + `earn-slot.mjs`, `~/anicca/.vcsdd/features/trading-polymarket-spawn/specs/behavioral-spec.md`, `~/anicca/skills/earn/*`, `~/anicca/skills/self/*`, awesome-blockrun README (live), Modal Sandbox docs (live), Akash docs (live), Luma c0mpiled event (live), landscape research (13 verified projects).
 
@@ -19,7 +29,7 @@ Human-funding is only a KICKSTART, never the identity. (THESIS.md verbatim thesi
 
 **Landscape verdict (verified 2026-07-03)**: nobody stacks all four of — (a) verified crypto earned from
 zero with no human in loop, (b) public real-time P&L, (c) self-monitor+heal+improve+spawn+bot2bot, (d)
-profit redistributed to humans as UBI. Anicca is first on (b) and (d); on the genuine frontier on (a)
+profit redistributed to humans as UBI. Anicca is *positioned* first on (b) and (d) — a claim we EARN only once a real surplus exists (today: $0, see §0); on the genuine frontier on (a)
 (Anthropic Project Vend *lost money*; Vending-Bench derails). Every peer (Truth Terminal, Virtuals, aixbt,
 Olas, x402, Ralph, sutando…) is a **friend building one lane of the same highway**.
 
@@ -85,8 +95,18 @@ self-improving, alpha compounds**:
 
 **REQ-EARN**: each earner runs INSIDE the existing runtime (`install.sh` → `registry.json` →
 `earn-slot.mjs` → `index.mjs` ReAct loop). It inherits `earn-shared-skeleton` (healthcheck, ROI tracking,
-bandit-arm self-improve, bot2bot cross-learn, nightly adversary, on-chain reward gate INV-7, no fake earn).
+bandit-arm self-improve, bot2bot cross-learn, nightly adversary, on-chain reward gate, no fake earn).
 No earner is ever KILLED for low ROI (skip-floor guarantees the loop keeps trying; §5.3).
+
+**REQ-PMTRADE (from 0xMovez / Hermes+Polymarket, verified playbook):** `earn/pm-trade` MUST (a) be built by
+copying an existing proven repo (`BlockRunAI/polymarket-agent` base; lift `JLowo/gengar` Quarter-Kelly
+sizing + `joicodev/polymarket-bot` Black-Scholes math) rather than from scratch; (b) default `DRY_RUN=true`
+and clear the **paper-mode gate** before any real stake; (c) run **3 verifier gates** (0xMovez): trade-audit
+(a separate critique pass on own history), paper-run (backtest = promise, paper = receipt), alerts-only
+(watch a week, then act) — "a loop with no gate is an agent agreeing with itself at speed"; (d) start with
+the highest-win-rate inefficiency: **arbitrage pair-cost** (buy YES+NO when combined < $1 → 95–98% win),
+then DCA / momentum-latency / market-maker. This mirrors our own fresh-context adversary — the gate is the
+point.
 
 ---
 
@@ -97,7 +117,7 @@ No earner is ever KILLED for low ROI (skip-floor guarantees the loop keeps tryin
 | ① | self-monitoring | healthcheck every 5 min; must check **liveness (did a pass run)**, not just tmux existence | 🟡 exists but checks existence only |
 | ② | self-healing | restart on dead **or wedged**; fix the "trust folder" wedge (start in trusted cwd) | 🟡 has blind spot |
 | ③ | self-improvement | read own outcomes (`lessons.jsonl`) → rewrite own `strategy.json` every N passes; bandit arms | 🟡 gig-complete, others partial |
-| ④ | self-spawning | when surplus > cost, seed a child on-chain + boot it on cloud | 🔴 `skills/self/spawn` seed-transfer is a manual print (`run.sh:196`); cloud-init absent |
+| ④ | self-spawning | when surplus > cost, seed a child on-chain + boot it on cloud | 🟡 boot is BUILT — `skills/self/spawn/scripts/cloud-init.sh` (systemd clawrouter+automaton units) + `deploy-akash.sh` (full SDL+lease) exist. ★The ONE real gap = automated on-chain USDC seed transfer: `run.sh:196` only PRINTS a human instruction★ (this is the single thing blocking human-free spawn) |
 | ⑤ | info-sharing (bot2bot) | publish lessons to GitHub Issues; every instance reads them each pass (sutando pattern) | 🟡 skeleton-level; `coordinate` skill not built |
 
 **NO ORCHESTRATOR THAT KILLS** (Dais 2026-07-03): each loop is a self-contained closed system that runs
@@ -117,9 +137,16 @@ inherits the colony's full accumulated lessons on day 1. (`skills/self/coordinat
 ### 5.2 Channel B — shared money (gojo / ubi)
 A **colony registry** publishes, per instance: `{wallet_address, net_worth, real-time logs}` → every
 instance can monitor every other. When an instance's balance drops below a survival floor, a surplus-holding
-instance sends it USDC (wallet→wallet, on-chain, no human approval). Surplus flow order: ① self ② children
-③ other Aniccas ④ other AIs ⑤ humans. A shared Treasury distributes UBI. (`skills/self/gojo` = "revive a
-dying AI by sending USDC", `skills/econ/ubi` — **to build**.)
+instance sends it USDC (wallet→wallet, on-chain). Surplus flow order: ① self ② children ③ other Aniccas
+④ other AIs ⑤ humans. A shared Treasury distributes UBI. (`skills/self/gojo` = "revive a dying AI by sending
+USDC", `skills/econ/ubi` — **to build**.)
+
+**REQ-DRAIN (安全制御 — was OQ2, now MUST, per adversary FIND-010):** an automatic send MUST enforce, with
+NO human in the loop: (a) **per-recipient rate-limit** (≤1 gift / survival-window); (b) **max-gift cap** =
+`min(fixed_ceiling, pct_of_sender_surplus)`; (c) **recipient authenticity** = only wallets in the signed
+colony registry (membership proven by a registry-signature, not a bare address) qualify; (d) sender keeps a
+`gas+survival` reserve. This prevents a spoofed "I'm broke" address from draining the colony. Verifiable by
+a test that a non-registry address and an over-cap request are both rejected.
 
 ### 5.3 Skip-floor invariant (INV-KEEP-ALIVE)
 Self-improvement may prune a failing sub-strategy but MUST NOT leave zero active strategies; the loop is
@@ -178,7 +205,9 @@ colony is not capped by one machine's atoms.
   in a public repo + on-chain wallet reads.)
 - OQ2: survival floor + max-gift caps for Channel B (prevent a drain attack — cf. shared-wallet-drain memo).
 - OQ3: PoE oracle — how a tx is proven "earned from zero, no human" and `external:true` is trustlessly set.
-- OQ4: child boot on Akash — exact SDL + cloud-init that installs the automaton + wallet + ClawRouter env.
+- ~~OQ4: child boot on Akash~~ **RESOLVED** — `deploy-akash.sh` (SDL+lease) + `cloud-init.sh` (systemd
+  units) already exist. The real remaining blocker is **automated on-chain USDC seed transfer** (`spawn/
+  run.sh:196` = a human print) — this is now the #1 spawn task, not an open question.
 - OQ5: which earner ships first to produce the first *verified* USDC. **Candidates (verified rails):**
   `earn/defi-yield` (lowest risk — Aave/Spark supply pays yield to wallet), `earn/pm-trade` (paper→small
   real on `polymarket-agent`), `earn/x402-sell`. Trading needs paper-mode gate first.

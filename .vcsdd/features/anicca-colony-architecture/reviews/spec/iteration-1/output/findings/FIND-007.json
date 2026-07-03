@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-007",
+  "dimension": "completeness",
+  "category": "spec_gap",
+  "severity": "medium",
+  "description": "Requirements/invariants are named but not defined to a testable pass/fail, and one is dangling. 'INV-7' is cited at line 88 ('on-chain reward gate INV-7, no fake earn') but INV-7 is never defined anywhere in this document — an undefined load-bearing invariant. Named REQ-* items lack acceptance criteria: REQ-DASH (line 152) 'register EVERY instance' does not define the instance set nor how 'every' is verified; REQ-SHELTER (line 143) 'MUST boot its runner on a cloud host it pays for itself' gives no verifiable success condition (which host, what proves self-payment); REQ-MODEL/REQ-CONVERT mix instructions with claims but state no measurable outcome. As written these cannot be turned into RED tests unambiguously, which is the point of a Phase 1a spec feeding VCSDD.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/.vcsdd/features/anicca-colony-architecture/specs/behavioral-spec.md",
+    "lineRange": "88, 143, 152",
+    "snippet": "on-chain reward gate INV-7 ... REQ-DASH: register EVERY instance, not just one ... REQ-SHELTER: a spawned child MUST boot its runner ... on a cloud host it pays for itself"
+  },
+  "routeToPhase": "1a"
+}

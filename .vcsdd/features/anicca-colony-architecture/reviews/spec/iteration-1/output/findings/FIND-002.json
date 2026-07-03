@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "open_question_adequacy",
+  "category": "spec_gap",
+  "severity": "high",
+  "description": "OQ4 (line 181) lists 'child boot on Akash — exact SDL + cloud-init that installs the automaton + wallet + ClawRouter env' as an unresolved open question. On disk this is already substantially built: deploy-akash.sh:42-73 contains a complete SDL (version 2.0, automaton service, compute profile, placement pricing, deployment) plus the full lease flow (deployment create -> poll bids -> lease create -> wait active -> send-manifest), and cloud-init.sh supplies the ClawRouter+automaton env. The open-question section therefore misrepresents project state (presents built work as unknown). Conversely, the ACTUAL unresolved gap — automated on-chain USDC seed transfer to the child wallet — is NOT captured as an open question anywhere; run.sh:196 merely prints a human instruction ('Seed the child wallet with $X and it wakes on its own'). The load-bearing unknown is hidden while a solved item is flagged unknown.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/.vcsdd/features/anicca-colony-architecture/specs/behavioral-spec.md",
+    "lineRange": "181",
+    "snippet": "OQ4: child boot on Akash — exact SDL + cloud-init that installs the automaton + wallet + ClawRouter env.",
+    "contradictedBy": [
+      "/Users/anicca/anicca/skills/self/spawn/scripts/deploy-akash.sh:42-73 (full SDL)",
+      "/Users/anicca/anicca/skills/self/spawn/scripts/deploy-akash.sh:77-123 (full lease flow)",
+      "/Users/anicca/anicca/skills/self/spawn/run.sh:196 (seed transfer is only a printed instruction, never listed as an OQ)"
+    ]
+  },
+  "routeToPhase": "1a"
+}

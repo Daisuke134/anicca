@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-009",
+  "dimension": "scope_coherence",
+  "category": "spec_gap",
+  "severity": "high",
+  "description": "This is not one coherent feature; it is an epic bundling at least seven independently-scoped deliverables plus a marketing pitch. Section 10 itself splits the work into P1 self-heal, P2 self-improve parity, P3 bot2bot, P4 colony registry + gojo/ubi, P5 cloud spawn (always-on) and L1 X article, L2 demo, L3 dashboard/eval+README (one-shot), stating each ships 'via VCSDD' — i.e. each is its own feature. Section 11 (YC/c0mpiled hackathon prep) is a pitch/marketing artifact with no REQ, INV, or testable outcome and does not belong in an architecture behavioral spec. The phases are also NOT independently shippable as claimed: P4 (colony registry) depends on unresolved OQ1 (transport) and OQ2 (drain caps); P5 (cloud spawn + surplus trigger) depends on the unbuilt automated seed transfer (run.sh:196); and every phase is gated on the single shared external outcome 'first verified USDC' (line 196), coupling them. Split into separate feature specs with their own contracts.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/.vcsdd/features/anicca-colony-architecture/specs/behavioral-spec.md",
+    "lineRange": "191-220",
+    "snippet": "P1 ... -> P5 cloud spawn ... L1 X Article -> L2 demo -> L3 dashboard/eval ... [and] Section 11 YC / c0mpiled prep"
+  },
+  "routeToPhase": "1a"
+}

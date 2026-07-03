@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "completeness",
+  "category": "spec_gap",
+  "severity": "high",
+  "description": "Line 9 explicitly pledges the MUST-only discipline: '\"任意/optional/推奨\" は使わない（HARD 0.7）— 全て MUST.' The spec then repeatedly violates its own rule with soft/optional qualifiers that leave scope undecided: line 84 'keep as optional; not prioritized' (token-launch), line 83 and OQ5 'stretch ... stretch slot' (earn/audit), line 74 'de-prioritized' (clip/affiliate). Each of these is an optional/推奨-equivalent hedge that HARD 0.7 forbids and that leaves whether the item is in-scope undetermined. Either commit them as MUST with a bound, or move them out of the feature entirely.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/.vcsdd/features/anicca-colony-architecture/specs/behavioral-spec.md",
+    "lineRange": "9, 74, 83-84, 187",
+    "snippet": "\"任意/optional/推奨\" は使わない ... [yet] keep as optional; not prioritized ... (stretch, strong-model only) ... de-prioritized"
+  },
+  "routeToPhase": "1a"
+}

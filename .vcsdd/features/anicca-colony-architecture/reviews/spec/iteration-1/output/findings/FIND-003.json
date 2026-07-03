@@ -1,0 +1,16 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "internal_consistency",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "The spec's foundational invariant is 'NO human in the loop' (line 15-18) and INV-MODE 'a self-funded instance MUST NOT depend on any human credential' (line 62), with self-funded declared the ~100% default (line 30-34). This is not reconciled with the only spawn implementation, which REQUIRES a human to complete the on-chain USDC seed: run.sh:196 only prints 'Seed the child wallet with $X and it wakes on its own' — the seed transfer is a manual human step, not an on-chain automated action. The spec even concedes at line 44 that a self-funded instance 'must be seeded USDC first — even to start on cloud.' A design whose bootstrap mandates a human USDC seed cannot simultaneously claim self-funded/no-human-in-loop as the default at ~100%. This central tension is asserted away in prose (§1/§2/§8 say 'on-chain spawn a self-funded clone') rather than resolved or surfaced as an open question.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/.vcsdd/features/anicca-colony-architecture/specs/behavioral-spec.md",
+    "lineRange": "30-34, 44, 62, 100, 167-169",
+    "snippet": "self-funded % must trend to ~100% ... a self-funded instance MUST NOT depend on any human credential ... must be seeded USDC first — even to start on cloud",
+    "contradictedBy": [
+      "/Users/anicca/anicca/skills/self/spawn/run.sh:196 (seed = printed human instruction, not automated on-chain transfer)"
+    ]
+  },
+  "routeToPhase": "1a"
+}

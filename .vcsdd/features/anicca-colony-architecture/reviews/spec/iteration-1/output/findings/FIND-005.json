@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "internal_consistency",
+  "category": "requirement_mismatch",
+  "severity": "high",
+  "description": "Line 30 states 'self-funded % must reflect the vision (target ~100%), currently 0% = wrong.' Line 45 simultaneously lists a 'Proven instance anicca-a3cdd4 (glm, ~$16 net worth) — the dashboard's one live instance' in the SELF-FUNDED column. These cannot both be true: if a3cdd4 is a genuinely self-funded live instance, self-funded% is not 0%; if self-funded% is truly 0%, then a3cdd4 is not actually self-funded (its ~$16 is seed capital, not self-earned). The spec further conflates '~$16 net worth' with earning while §7 (line 160) states verified earned = $0, i.e. the $16 is seed, not revenue. The self-funded-% metric is left undefined (net-worth-based? earned-based? credential-based?), making the headline KPI both self-contradictory and unmeasurable.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/.vcsdd/features/anicca-colony-architecture/specs/behavioral-spec.md",
+    "lineRange": "30-34, 45, 154, 160",
+    "snippet": "currently 0% = wrong ... Proven instance `anicca-a3cdd4` (glm, ~$16 net worth) — the dashboard's one live instance"
+  },
+  "routeToPhase": "1a"
+}

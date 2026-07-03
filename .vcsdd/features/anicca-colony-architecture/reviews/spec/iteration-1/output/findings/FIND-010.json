@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-010",
+  "dimension": "open_question_adequacy",
+  "category": "security_surface",
+  "severity": "high",
+  "description": "Section 5.2 (line 117-122) describes Channel B mutual aid as automatic, unbounded wallet->wallet USDC transfers triggered when a peer drops below a 'survival floor', executed 'on-chain, no human approval', with a surplus order self/children/other-Aniccas/other-AIs/humans. This is a high-risk drain surface (a compromised or spoofed peer advertising low balance can siphon the colony). The spec presents the mechanism in prose as if operational while the actual safety control — 'survival floor + max-gift caps to prevent a drain attack' — is deferred to OQ2 as an unanswered bare question with no candidate bound, rate limit, identity/authenticity check, or cap. A load-bearing security control is thus described as settled behavior but is actually unresolved. Same pattern for OQ3 (PoE oracle: how 'external:true' is set trustlessly) — the merge gate and PoE ranking at §7 depend on it, yet trust model is an open bare question. These unknowns must be resolved in-spec before any money-moving phase (P4) can be RED-tested.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/.vcsdd/features/anicca-colony-architecture/specs/behavioral-spec.md",
+    "lineRange": "117-122, 179-180",
+    "snippet": "sends it USDC (wallet->wallet, on-chain, no human approval) ... OQ2: survival floor + max-gift caps for Channel B (prevent a drain attack) ... OQ3: PoE oracle — how a tx is proven 'earned from zero, no human'"
+  },
+  "routeToPhase": "1a"
+}
