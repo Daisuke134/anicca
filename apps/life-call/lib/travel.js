@@ -6,6 +6,7 @@
 "use strict";
 
 const { getCalendar } = require("./transport/index.js");
+const { chooseRouter, parseTransitPlan } = require("./transit.js");
 
 function isoNaiveUTC(ms) {
   // Timezone-agnostic: pass the UTC wall clock paired with timezone:"UTC" (set in createTravelBlock).
@@ -131,18 +132,58 @@ async function legacyTransitMinutes(src, dst, mapsKey, arriveByMs, nowMs = Date.
 // departureMode: when true, the time arg is a DEPARTURE anchor (for return legs — FIND-004).
 // Outbound (default false): transit uses arrival_time = event start (arrive-by).
 // Return (true): transit uses departure_time = ev.endMs (depart-at, not arrive-by).
-async function directionsMinutes(src, dst, mapsKey, departAtMs = Date.now(), nowMs = Date.now(), departureMode = false) {
+// The Google path (Routes Pro drive + legacy transit, never-late MAX bias). This is the FALLBACK now.
+async function directionsMinutesGoogle(src, dst, mapsKey, departAtMs = Date.now(), nowMs = Date.now(), departureMode = false) {
   if (!mapsKey || !src || !dst) return null;
   const [transit, drive] = await Promise.all([
     departureMode
-      // Return leg: depart AT ev.endMs → departure_time anchor (legacyTransitMinutes 6th param).
       ? legacyTransitMinutes(src, dst, mapsKey, null, nowMs, departAtMs)
-      // Outbound: arrive-by event start (legacyTransitMinutes 4th param = arriveByMs).
       : legacyTransitMinutes(src, dst, mapsKey, departAtMs, nowMs),
     routesDriveMinutes(src, dst, mapsKey, departAtMs, nowMs),
   ]);
   const cands = [transit, drive].filter((n) => n != null);
   return cands.length ? Math.max(...cands) : null;
+}
+
+// C3: address→geo memo — the 60s scheduler tick must NOT re-geocode the same home/event address every
+// time. Keyed on the address string; a geo rarely changes for a fixed address. Process-lifetime cache.
+const _geoMemo = new Map();
+
+// C2: geocode a JP address ONCE via Google Geocoding (cheap, one-time; NOT the Routes-Pro cost driver).
+// Returns {lat,lon} or null. Injected in tests via opts._geocode.
+async function geocodeAddress(addr, mapsKey) {
+  if (!addr || !mapsKey) return null;
+  if (_geoMemo.has(addr)) return _geoMemo.get(addr);
+  try {
+    const u = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(addr)}&key=${mapsKey}`;
+    const j = await (await fetch(u)).json();
+    const loc = j && j.results && j.results[0] && j.results[0].geometry && j.results[0].geometry.location;
+    return loc ? { lat: loc.lat, lon: loc.lng } : null;
+  } catch { return null; }
+}
+
+// C2: real FREE JP transit fetch (api.transit.ls8h.com /plan). Injected in tests via opts._transitFetch.
+async function transitFetchPlan(srcGeo, dstGeo) {
+  try {
+    const u = `https://api.transit.ls8h.com/api/v1/plan?from=geo:${srcGeo.lat},${srcGeo.lon}&to=geo:${dstGeo.lat},${dstGeo.lon}`;
+    return await (await fetch(u)).json();
+  } catch { return null; }
+}
+
+// C2/C3 WIRE: try the FREE JP transit path first (geocode both → JP bbox → /plan), fall back to Google.
+async function directionsMinutes(src, dst, mapsKey, departAtMs = Date.now(), nowMs = Date.now(), departureMode = false, opts = {}) {
+  const geocode = opts._geocode || geocodeAddress;
+  const transitFetch = opts._transitFetch || transitFetchPlan;
+  const googleFn = opts._directionsMinutesGoogle || directionsMinutesGoogle;
+  const google = () => googleFn(src, dst, mapsKey, departAtMs, nowMs, departureMode);
+  if (!mapsKey || !src || !dst) return null;
+  const [srcGeo, dstGeo] = await Promise.all([geocode(src, mapsKey), geocode(dst, mapsKey)]);
+  if (srcGeo && dstGeo && chooseRouter(srcGeo, dstGeo) === "transit") {
+    const plan = await transitFetch(srcGeo, dstGeo);
+    const parsed = plan && parseTransitPlan(plan);
+    if (parsed && parsed.durationSecs != null) return minutesFromSeconds(parsed.durationSecs);
+  }
+  return google(); // non-JP / unresolvable / transit empty → Google Routes (as before)
 }
 
 async function createTravelBlock(uid, apiKey, leaveMs, arriveMs, fromName, toName, dstAddr, calendar) {
