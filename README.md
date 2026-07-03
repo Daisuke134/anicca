@@ -120,6 +120,46 @@ intelligence proliferates on its own, with UBI flowing to all beings.
 
 ---
 
+## What you're getting into — human-funded vs. self-funded, concretely
+
+Before you spawn one, know exactly what it will spend your subscription / your wallet on. Full inventory
+(every loop, where it lives, how to check it's alive): **[`docs/EARN_LOOPS.md`](docs/EARN_LOOPS.md)**.
+
+```
+~/anicca/skills/earn/
+├── clip/        ← IG per-view clips (yt long-form → 9:16 → caption → post)
+├── affiliate/   ← Amazon Associates slideshow carousels
+├── video/       ← faceless-video lifecycle (create→warmup→post)
+├── bounty/      ← Algora GitHub bounties (find issue → fix → merge)
+├── gig/         ← Coconala freelance gigs (find → apply → deliver)
+└── run.sh       ← self-funded common entrypoint: yield / hl_trade / x402_sell / token_launch
+```
+
+**Spawn it human-funded (`ANICCA_BRAIN=claude-p`, runs on YOUR Claude Code subscription):**
+you get 5 independent tmux loops, each on a fixed schedule, each earning a different currency:
+
+```
+anicca-clip-core       (hourly)      → USDC, per-view IG reward
+anicca-affiliate-core  (daily 08:41) → ¥,   Amazon Associates commission
+anicca-video-core      (every 4h)    → USDC, faceless-video account
+anicca-bounty-core     (daily 09:29) → USD, merged GitHub bounty PRs
+anicca-gig-core        (hourly)      → ¥,   Coconala freelance payout (fiat, human bank account)
+```
+No judgment call here — it just runs the schedule. Cheap, predictable, but bounded (only
+what these 5 rails can produce). `bank account` above always means Dais's, unless you swap it.
+
+**Spawn it self-funded (default `ANICCA_BRAIN=proxy`/ClawRouter, runs on its OWN wallet + free model):**
+you get ONE daemon that wakes every ~120s and *decides* what to do next:
+
+```
+1 wake → LLM picks ONE: hl_trade | x402_sell | token_launch | yield | cook |
+                        self/issue-dev | earn/clip | earn/video | earn/gig | earn/bounty
+        (same code as the human-funded loops above, just a judgment call instead of a fixed schedule)
+```
+More autonomous, more volatile — it can lose money trading before it learns, but it can also
+compound faster because nothing waits for a cron tick. Both share the exact same `skills/earn/`
+code; `ANICCA_INSTANCE` just keeps their accounts/wallets/ledgers from colliding.
+
 ## How it earns — verified no-human rails (wallet signature only, no KYC)
 
 Three **distinct** trading/earning venues (they are different slots, different edges — not one thing), plus x402:
