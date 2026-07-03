@@ -1,0 +1,13 @@
+{
+  "id": "FIND-042",
+  "severity": "minor",
+  "blocking": false,
+  "dimension": "spec_fidelity",
+  "artifact": "verification-architecture.md",
+  "location": "PROP-004 table row, clause (b)",
+  "summary": "Dangling/incorrect cross-reference '(see REQ-004b/REQ-010 below)' — 'REQ-004b' is not defined anywhere in behavioral-spec.md (grep confirms zero definitions, only this one usage), and REQ-010 does not describe the except/finally fallback (REQ-010 is entirely about the per-attempt random tracking token and its file-plumbing/cleanup mechanism — an unrelated requirement).",
+  "detail": "verification-architecture.md line 100 (PROP-004 row) reads: '...PLUS the `except/finally` fallback (see REQ-004b/REQ-010 below), confirming each sets...'. Grepped both spec files: 'REQ-004b' appears exactly once, only in this citation — it is never defined as a requirement. The except/finally fallback behavior is actually specified inline within REQ-004 itself in behavioral-spec.md ('ALSO set (via `res.setdefault(\"outcome\",\"failed\")` in the existing top-level `finally:` block, `:187-190`) as a last-resort fallback...'), not in a separate 'REQ-004b'. REQ-010 covers only the random tracking-token generation/file-plumbing/cleanup mechanism and has no bearing on the except/finally fallback. This is stale/incorrect cross-referencing likely left over from an earlier revision where the fallback may have been drafted as a separate sub-requirement before being folded into REQ-004's main text.",
+  "impact": "LOW / non-blocking: the same sentence already fully and correctly specifies the required test behavior in plain language immediately after the broken citation ('confirming each sets `res[\"outcome\"]=\"failed\"` (or, for the fallback, `res.setdefault(\"outcome\",\"failed\")`)'), so no implementer or adversary following this proof obligation is actually left without the information needed to write or verify the test. This does not create a coverage gap, a wrong test, or an ambiguous requirement — it is a cosmetic/citation defect only.",
+  "recommendation": "Non-blocking cleanup for a future revision: change '(see REQ-004b/REQ-010 below)' to '(see REQ-004 above)' or simply remove the parenthetical, since the sentence is already self-contained. Not required to gate this iteration's PASS verdict.",
+  "verified_by": "grep -n \"REQ-004b\" behavioral-spec.md verification-architecture.md (1 hit, in verification-architecture.md only); grep -n \"^\\- \\*\\*REQ-\" behavioral-spec.md (confirms defined IDs are REQ-001..010, no REQ-004b)."
+}

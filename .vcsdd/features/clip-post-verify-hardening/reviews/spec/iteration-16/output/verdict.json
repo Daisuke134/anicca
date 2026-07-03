@@ -1,0 +1,49 @@
+{
+  "feature": "clip-post-verify-hardening",
+  "reviewType": "spec",
+  "iteration": 16,
+  "reviewer": "fresh-context adversary (disk-only)",
+  "artifactsReviewed": [
+    ".vcsdd/features/clip-post-verify-hardening/specs/behavioral-spec.md",
+    ".vcsdd/features/clip-post-verify-hardening/specs/verification-architecture.md"
+  ],
+  "priorFindingReVerified": {
+    "id": "FIND-041",
+    "priorSeverity": "major",
+    "status": "GENUINELY FIXED",
+    "evidence": [
+      "Read /Users/anicca/.claude/skills/ig-reels-poster/scripts/post_reel.py in full (209 lines). Confirmed line 121 is `if a.live:`, lines 122-124 (before-snapshot capture + nav back) are indented inside it (12-space indent vs 8-space `if`), and line 125 (`# 1) open composer` comment) returns to 8-space indentation — i.e. genuinely OUTSIDE and unconditional after the `if a.live:` block, exactly as behavioral-spec.md's Ground Truth section now states.",
+      "Confirmed the dry-mode early return (`if not a.live: ... res[\"reached\"]=\"DRY-ok\"; return` at lines 165-169) occurs BEFORE the live-share block (line 170+) and BEFORE `before = res.get(\"_before_reels\") or []` is ever read (line 173) — so on the dry path, `_before_reels` (only ever set when `a.live` is true) is genuinely never referenced. No bug where dry mode would crash or misbehave from a missing `before`.",
+      "Confirmed run.sh:88 unconditionally passes `--live` to post_reel.py (`... \"$POSTER\" --video \"$CLIP\" --caption-file \"$CAP\" --handle \"$HANDLE\" --tid \"$TID\" --live ...`), corroborating the spec's claim that dry mode is exclusively a manual/dev invocation path, never exercised by the automated loop.",
+      "Re-read verification-architecture.md's refactored pseudocode (lines 44-56): the new `stabilize_reads`/abort block is correctly nested inside `if a.live:`, with an explicit comment block for the `else` (dry) branch stating 'NO before-snapshot at all... before is simply never referenced again on this path' — this is accurate and matches the real code's control flow.",
+      "Checked the post-share search loop's tail (candidate/reconfirm/classify_outcome, pseudocode lines 61-80): entirely unreachable on the dry-mode path since dry mode returns at line 169, well before this code region — no ill-defined behavior for dry mode there either.",
+      "The new PROP-004(c) dry-mode zero-regression test clause is well-formed and testable as written (call-count assertion on stabilize_reads/read_hrefs, no abort, reaches DRY-ok, coarse duration bound)."
+    ]
+  },
+  "newFullReReadFindings": [
+    {
+      "id": "FIND-042",
+      "severity": "minor",
+      "blocking": false,
+      "summary": "Dangling cross-reference '(see REQ-004b/REQ-010 below)' in verification-architecture.md's PROP-004 row — 'REQ-004b' is not defined anywhere in behavioral-spec.md, and REQ-010 does not cover the except/finally fallback it's cited for. Non-blocking: the same sentence already fully specifies the required test behavior in plain language, so there is no actual ambiguity or coverage gap — cosmetic citation defect only.",
+      "file": "reviews/spec/iteration-16/output/findings/FIND-042.json"
+    }
+  ],
+  "additionalCrossChecksPerformed": [
+    "Independently re-verified ALL SIX pre-share failure-site line numbers cited in behavioral-spec.md's Ground Truth (:95, :108, :127, :134, :141, :163) against the real current post_reel.py — all six match exactly, byte-for-byte with the current file's actual print/return statements.",
+    "Verified the post-share search loop line range :174-181 matches exactly (10-iteration loop, 12s sleep, single read+diff+break).",
+    "Verified the except/finally fallback line range :187-190 matches exactly.",
+    "Verified the verify-only early-return (:118) and DRY-ok early-return (:169) are correctly described as non-failure paths.",
+    "Verified post_reel.py:22's cdp.py import IS a hardcoded absolute path (sys.path.insert(0, os.path.expanduser(\"~/.claude/skills/ig-account-create/scripts\"))), confirming verification-architecture.md's corrected import-mechanism claim (iteration-13 FIND-038) is accurate, and that ~/anicca/skills/earn/clip/reel_verify.py does NOT yet exist on disk (correctly described as NEW).",
+    "Read run.sh, _instance_paths.sh, monitor.sh, producer.sh in full at their real paths under ~/anicca/skills/earn/clip/. Confirmed: _instance_paths.sh currently defines only CLIP_QUEUE/CLIP_POSTED/CLIP_ACCTS/CLIP_LEDGER (CLIP_PENDING_VERIFY correctly absent, i.e. genuinely NEW as the spec claims); monitor.sh's current counting logic is a raw non-null-post_url line count (matches the spec's claim this is the pre-fix, buggy behavior REQ-009 replaces); producer.sh's clip_id is derived purely from --url via sed with zero dedup/history check, and its no-arg default picks yt-dlp --playlist-end 1 from a fixed channel — both exactly as REQ-010's Ground Truth justification describes.",
+    "Verified the live ledger at ~/.openclaw/state/clip-earn-ledger.jsonl now has 5 lines (a genuine new post, DaVbOajvKqO, landed) — matching behavioral-spec.md's own warning that the live file keeps growing and must never be read directly by tests.",
+    "Verified the frozen fixture ~/anicca/skills/earn/clip/tests/fixtures/ledger-2026-07-03-snapshot.jsonl exists, is committed (git log shows commit 9b47b31), and is byte-for-byte identical to the 4 lines quoted in behavioral-spec.md's Ground Truth section — confirms iteration-14 FIND-040's path-correction is genuinely resolved, not just re-worded.",
+    "Verified tests/test_n_instance_distinctness.sh currently checks 4 paths across instances (not yet extended to CLIP_PENDING_VERIFY) — consistent with PROP-005's forward-looking extension requirement, not yet implemented (correct for a not-yet-built feature).",
+    "Read REQ-005 through REQ-010 and PROP-005 through PROP-011 in full for internal consistency: no contradictions found. classify_outcome's signature and all 4 PROP-003 test cases are logically consistent with the pseudocode's call site. REQ-008 step 6's sidecar shape ({before_hrefs, token}) matches REQ-010's token design and PROP-006's test fixtures exactly. No other undefined ID references found (grep for all REQ-/PROP- ids confirms REQ-001..010 and PROP-001..011 are the complete, exhaustively cross-referenced set, aside from the single FIND-042 citation)."
+  ],
+  "verdict": {
+    "spec_fidelity": "PASS",
+    "verification_readiness": "PASS"
+  },
+  "rationale": "This iteration's targeted fix for FIND-041 is genuinely correct: the new stabilize/abort logic is properly scoped inside the real `if a.live:` gate at post_reel.py:121, dry mode gets zero new behavior, and the refactor pseudocode's control flow was independently re-derived from the real file rather than trusted from the spec's own prose. A full top-to-bottom independent re-read of both documents, including re-verifying every previously-fixed line-number/behavior claim against the real files on disk (not just the specific claims under review), surfaced only one new issue: a purely cosmetic dangling cross-reference (FIND-042) that does not create any actual ambiguity, coverage gap, or incorrect requirement — the sentence it appears in is fully self-specifying without it. Given 16 rounds of increasingly narrow, independently-reverified scrutiny (this round re-read the entire 209-line target file, all four shell scripts, the live ledger, and the frozen fixture from scratch), and given no genuine spec-fidelity or verification-readiness defect remains, PASS is the correct and expected verdict for both dimensions."
+}
