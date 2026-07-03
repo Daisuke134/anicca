@@ -72,6 +72,10 @@ skills/profitable-article-writer/
 
 ## Status
 
-Phase 2a (RED). Every script under this directory is an intentionally-unimplemented stub — see the
-`NOT_IMPLEMENTED` marker each one prints. Phase 2b (GREEN) implements the real pipeline behind this same
-interface so the tests under `tests/` pass without modification.
+Current phase: see `.vcsdd/features/profitable-article-writer/state.json`'s `currentPhase` (canonical,
+cannot drift out of sync with this doc). As of Sprint 1's contract-review round: Phase 2c (refactor
+complete) — every script under this directory is a real, non-stub implementation (`run.sh`, `gates/*.sh`,
+`identity/accounts.sh`); the `tests/` oracle suite (`tests/run-red.sh`) passes green against that real
+logic, no `NOT_IMPLEMENTED` marker remains anywhere. Sprint-1 scope is deferred-real-integration for
+content-gen, note/rail publish, and earn (see `.vcsdd/features/profitable-article-writer/contracts/
+sprint-1.md`'s "Explicitly OUT of Sprint 1").

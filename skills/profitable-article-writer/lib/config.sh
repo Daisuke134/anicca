@@ -15,6 +15,11 @@ MODEL_TIER="sonnet"
 
 # record-earn (deterministic ledger tool, reused from founder-loop) MUST run with NO LLM call anywhere in
 # the earn/verify path (REQ-12). This is a declarative marker; the earn/verify path checks against it.
-RECORD_EARN_USES_LLM=0
+#
+# Conditional default (not an unconditional assignment): this lets an external caller/test actually
+# observe a flip via the environment (e.g. RECORD_EARN_USES_LLM=1 bash run.sh ...) so run.sh's fail-closed
+# refusal branch (PROP-9/CRIT-005) is a reachable, testable runtime path — not dead code that can only be
+# exercised by editing this file's literal source text.
+: "${RECORD_EARN_USES_LLM:=0}"
 
 export MODEL_TIER RECORD_EARN_USES_LLM

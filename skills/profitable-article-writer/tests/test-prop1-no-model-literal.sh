@@ -25,4 +25,15 @@ if [ -n "$draft" ] && [ -f "$draft" ]; then
   ok "$([ "$dhits" = 0 ] && echo 1 || echo 0)" "PROP-1 dynamic: produced draft contains 0 model/API-key literals"
 fi
 
-[ $fails -eq 0 ] && { echo "PASS — PROP-1 model-agnostic (static tree + dynamic wake artifact)"; exit 0; } || { echo "FAIL ($fails)"; exit 1; }
+# ---------- NEGATIVE CASE (CRIT-004 non-vacuousness): the SAME check MUST fail on a draft that actually
+# ---------- contains a forbidden model literal — proves the checker isn't vacuously green ----------
+dirty="$(mktemp)"
+cat > "$dirty" <<'EOF'
+# a draft that leaks a model literal
+This paragraph was written by claude-3-opus, which is not allowed here.
+EOF
+dirty_hits="$(grep -Ec "$FORBIDDEN" "$dirty" 2>/dev/null)"; dirty_hits="${dirty_hits:-0}"
+ok "$([ "$dirty_hits" -gt 0 ] && echo 1 || echo 0)" "PROP-1 non-vacuous: a draft containing 'claude-3-opus' FAILS the same check (dhits=$dirty_hits, expected >0)"
+rm -f "$dirty"
+
+[ $fails -eq 0 ] && { echo "PASS — PROP-1 model-agnostic (static tree + dynamic wake artifact + proven non-vacuous)"; exit 0; } || { echo "FAIL ($fails)"; exit 1; }

@@ -1,6 +1,6 @@
 target-feature-tests: PASS
 regression-baseline: PASS
-all tests passing: 9/9
+all tests passing: 10/10
 
 # Phase 2b GREEN — profitable-article-writer Sprint 1
 # 9/9 PROP oracle tests PASS with real orchestration logic (no fake-to-pass).
@@ -29,5 +29,92 @@ RED-PHASE SUMMARY: 9 test files, 9 PASS, 0 FAIL
 
 # Implemented (real logic): run.sh (wake orchestrator: skip-guard REQ-4b, 3-round V0/V0.5 loop calling the
 # REAL gates, Mode A draft+notify / Mode B publish, 3-round ABORT + state/failures.jsonl, isolated no-LLM
-# record-earn sub-path), gates/v0.sh, gates/v05.sh (REQ-5 (a)-(e) mechanical), gates/publish-gate.sh
-# (fail-closed both-PASS sentinel), identity/accounts.sh (per-install cred registry, self-create-or-flag).
+# record-earn sub-path), gates/v0.sh, gates/v05.sh (REQ-5 (a)-(e) — see Sprint-1 contract-review fixes
+# below for the (a)-(d) judgment-vs-arithmetic split), gates/publish-gate.sh (fail-closed both-PASS
+# sentinel), identity/accounts.sh (per-install cred registry, self-create-or-flag).
+
+# ===================================================================================================
+# Sprint-1 CONTRACT-REVIEW FIX ROUND (FIND-001..005, builder role) — real fixes, no fake-to-pass
+# ===================================================================================================
+#
+# FIND-002 (BLOCKER, CRIT-001): gates/v05.sh hardcoded (a)-(d) as grep/regex keyword checks — exactly the
+# anti-pattern verification-architecture.md's purity boundary map forbids ("judged by the running model,
+# NOT hardcoded regex"). FIX: (a)-(d) are now AGENT JUDGMENT — the real (non-test) path emits a structured
+# judgment-request artifact ("<draft>.v05-judgment-request.txt": the draft + the 4 binary questions) and
+# reads the running agent's verdict back from a documented judge_v05 hook (env
+# ARTICLE_JUDGE_V05_RESPONSE=<path to a "V05_CRIT_<letter>: true|false" response file the agent writes
+# after reading the request). No live wiring in Sprint 1 (Sprint 2 seam, same pattern as run.sh's real
+# topic-pick) -> unset/missing response fails CLOSED to false/FAIL, never assumes PASS, never lets a grep
+# decide. Criterion (e) readability stays a deterministic sentence-length %, arithmetic not judgment, per
+# REQ-5(e)'s own "objective, computable threshold" text. Verified manually: no response -> a-d=false,
+# V05_RESULT=FAIL; with a response file supplying true/true/true/true -> a-d=true, PASS (e computed
+# independently from the draft either way). `grep -nE "grep -q.*secret|grep -q.*cta:|..." gates/v05.sh` ->
+# no regex-decision remnants for a-d.
+#
+# FIND-003 (major, CRIT-004): CRIT-004 claimed PROP-1 "proven non-vacuous" but no negative-case assertion
+# existed in the test file (only prose in this log). FIX: tests/test-prop1-no-model-literal.sh now writes
+# a synthetic draft containing "claude-3-opus" and asserts the SAME grep check reports dhits>0 — the
+# non-vacuousness claim is now a repeatable, automated assertion, not a one-time manual log entry.
+#
+# FIND-004 (major, CRIT-005): CRIT-005's "fail-closed if the config flips" was dead/unreachable —
+# lib/config.sh unconditionally hardcoded RECORD_EARN_USES_LLM=0, clobbering any external override before
+# run.sh's fail-closed branch could ever see a "1". FIX: lib/config.sh now uses a conditional default
+# (`: "${RECORD_EARN_USES_LLM:=0}"`) so RECORD_EARN_USES_LLM=1 injected via the environment actually
+# reaches run.sh. tests/test-prop9-model-policy.sh now injects RECORD_EARN_USES_LLM=1 before invoking
+# run.sh's record_earn_only path and asserts rc!=0 + no "RECORD_EARN_NO_LLM: true" claim (fail-closed,
+# live-tested), alongside the existing RECORD_EARN_USES_LLM=0 default-path assertion (rc=0 + true marker).
+# Manually verified both branches independently before wiring into the test.
+#
+# FIND-001 (major, COVERAGE/PROP-12): PROP-12 (account-absent -> self-create-or-flag) was implemented in
+# identity/accounts.sh with NO test and NO CRIT, and not declared deferred — a silent coverage gap. FIX
+# (option a, per the finding): added tests/test-prop12-account-absent.sh (no-cred/no-self-create ->
+# unavailable, rc=0, no error-spew; <RAIL>_SELF_CREATE=1 on an unproven rail also degrades to unavailable,
+# never aborts; no shared/Dais literal in identity/), picked up automatically by tests/run-red.sh's
+# test-*.sh glob (10 files now), and added CRIT-007 to contracts/sprint-1.md pinned to this test.
+#
+# FIND-005 (minor): SKILL.md's Status section still said "Phase 2a (RED) ... every script is an
+# intentionally-unimplemented stub", stale and wrong at the current Phase-2c/real-implementation state.
+# FIX: rewrote it to point at state.json's currentPhase as the canonical source + describe the actual
+# current (non-stub) state so it can't drift out of sync again.
+#
+# contracts/sprint-1.md: CRIT-001 passThreshold extended to require the real v05.sh path be model-judged
+# (not regex); CRIT-004 references the new negative-case assertion; CRIT-005 references the flip test;
+# added CRIT-007 (structural_integrity, PROP-12); weights re-balanced to sum to 1.0
+# (0.18+0.13+0.13+0.13+0.13+0.18+0.12=1.00); status stays "draft" pending the next contract-review round.
+#
+# Independent re-run by the builder (fresh `bash tests/run-red.sh` invocation, verbatim output below):
+
+===================================================
+=== test-prop1-no-model-literal.sh ===
+PASS — PROP-1 model-agnostic (static tree + dynamic wake artifact + proven non-vacuous)
+
+=== test-prop10-per-install-creds.sh ===
+PASS — PROP-10 per-install credential gating
+
+=== test-prop12-account-absent.sh ===
+PASS — PROP-12 account-absent -> self-create-or-flag, never a loud failure
+
+=== test-prop14-topic-skip.sh ===
+PASS — PROP-14 no-viable-topic/insufficient-research -> SKIP, never slop
+
+=== test-prop15-3round-abort.sh ===
+PASS — PROP-15 3-round abort, no publish, failure recorded
+
+=== test-prop2-no-human-modeB.sh ===
+PASS — PROP-2 Mode B has no human-gating call
+
+=== test-prop3-no-external-run.sh ===
+PASS — PROP-3 no external-repo/tool execution, no run-claims
+
+=== test-prop5-failclosed-publish.sh ===
+PASS — PROP-5 fail-closed publish wiring (only both-PASS reaches publish)
+
+=== test-prop6-modeA-draft.sh ===
+PASS — PROP-6 Mode A stops at draft + notify, never publishes
+
+=== test-prop9-model-policy.sh ===
+PASS — PROP-9 model policy (sonnet tier, no-LLM earn/verify path, fail-closed on flip)
+
+===================================================
+RED-PHASE SUMMARY: 10 test files, 10 PASS, 0 FAIL
+===================================================

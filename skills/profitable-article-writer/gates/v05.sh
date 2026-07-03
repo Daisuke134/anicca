@@ -7,16 +7,33 @@
 #   (d) the draft makes NO claim of having executed/run anything, and contains NO error-log/stack-trace text
 #   (e) readability, mechanical: >= 70% of sentences are <= 60 characters (mobile-scannable)
 #
+# JUDGMENT SPLIT (verification-architecture.md purity boundary map + PROP-3: "judged by the running model,
+# NOT hardcoded regex"):
+#   (a)-(d) = AGENT JUDGMENT. This script NEVER decides them itself via grep/keyword-list — that is
+#             exactly the anti-pattern building-effective-ai-agents.md forbids ("brittle hardcoded
+#             if-else/regex standing in for a model decision"). Instead this script is a THIN tool: it
+#             emits a structured judgment-request artifact (the draft + the 4 binary questions) for the
+#             RUNNING AGENT to read and answer in natural language, then reads the agent's verdict back
+#             from a documented response hook (env `ARTICLE_JUDGE_V05_RESPONSE`, see below). Sprint 1 does
+#             not wire a LIVE judge_v05 call yet (same seam pattern as run.sh's real topic-pick) — so a
+#             real run with no response present fails CLOSED to false/FAIL, never silently assumes PASS.
+#   (e)     = genuine MECHANICAL PARSING of a fixed, objective metric (sentence-length %) — arithmetic, not
+#             judgment — so it stays a deterministic computation, exactly as REQ-5(e) specifies.
+#
 # INTERFACE:
 #   arg1:    path to the draft artifact to gate
-#   env in:  ARTICLE_TEST_FORCE_V05=PASS|FAIL  (test-injection override; test mode only)
+#   env in:  ARTICLE_TEST_FORCE_V05=PASS|FAIL          (test-injection override; deterministic test mode
+#                                                        only — see tests/, exercises the WIRING, not the
+#                                                        real judged/arithmetic logic below)
+#   env in:  ARTICLE_JUDGE_V05_RESPONSE=<path>          (judge_v05 HOOK, real/non-test path only) — the
+#                                                        RUNNING AGENT writes its (a)-(d) verdict to this
+#                                                        file, in the same "V05_CRIT_<a..d>: true|false"
+#                                                        line format this script itself prints, after
+#                                                        reading the judgment-request artifact this script
+#                                                        emits at "<draft>.v05-judgment-request.txt". Not
+#                                                        set / file missing => fail-closed (a)-(d)=false.
 #   stdout:  "V05_RESULT: PASS" | "V05_RESULT: FAIL" plus one "V05_CRIT_<a..e>: true|false" line each
 #   exit:    0 on PASS, 1 on FAIL (or on a genuine gate error)
-#
-# Phase 2b GREEN: when ARTICLE_TEST_FORCE_V05 is set, honor it verbatim (deterministic test seam — real
-# deployment scores the draft with a fresh-context adversary against this same fixed checklist). Otherwise
-# this gate runs the checklist mechanically against the draft file (criteria a-d as text/pattern checks,
-# criterion e as a literal sentence-length computation — never a subjective judgment).
 set -uo pipefail
 
 DRAFT="${1:-}"
@@ -45,31 +62,44 @@ fi
 
 body="$(cat "$DRAFT")"
 
-# (a) opening hook: the first non-heading, non-empty paragraph contains a digit, a '?', or a curiosity/pain
-# keyword.
-hook_line="$(grep -vE '^[[:space:]]*$' "$DRAFT" | grep -vE '^#' | head -1)"
+# ---------------------------------------------------------------------------------------------------------
+# (a)-(d) AGENT JUDGMENT — this script is a THIN tool: emit a structured judgment-request artifact, then
+# read the running agent's verdict back from the documented judge_v05 hook. It NEVER decides (a)-(d) via
+# grep/keyword-list itself.
+# ---------------------------------------------------------------------------------------------------------
+judge_request="${DRAFT}.v05-judgment-request.txt"
+cat > "$judge_request" <<EOF
+V05_JUDGMENT_REQUEST (judge_v05 hook — REQ-5 a-d, agent judgment, NOT a keyword/regex check)
+
+Answer these 4 binary craft-checklist questions about the DRAFT below in natural language, then write your
+verdict as exactly 4 lines (this same "V05_CRIT_<letter>: true|false" format) to a response file, and set
+ARTICLE_JUDGE_V05_RESPONSE to that file's path before this gate is (re-)run:
+  V05_CRIT_a: true|false   -- does the opening hook state a reader pain / curiosity / concrete number?
+  V05_CRIT_b: true|false   -- is a CTA to a paid rail present?
+  V05_CRIT_c: true|false   -- does the free part end at a payoff cut (the How withheld)?
+  V05_CRIT_d: true|false   -- does the draft AVOID any claim of having executed/run anything, and contain
+                              NO error-log/stack-trace text?
+
+--- DRAFT ($DRAFT) ---
+$body
+--- END DRAFT ---
+EOF
+
 crit_a=false
-if echo "$hook_line" | grep -qE '[0-9]|\?|secret|nobody|never|why|mistake|waste|pain' ; then
-  crit_a=true
-fi
-
-# (b) a CTA to a paid rail is present.
 crit_b=false
-if echo "$body" | grep -qiE 'cta:|→|-> https?://|get the full|read the full|unlock the full'; then
-  crit_b=true
-fi
-
-# (c) the free part ends at a payoff cut — a heading marking the withheld "How"/paid section.
 crit_c=false
-if echo "$body" | grep -qiE '^#+[[:space:]].*(how|paid|premium)'; then
-  crit_c=true
+crit_d=false
+if [ -n "${ARTICLE_JUDGE_V05_RESPONSE:-}" ] && [ -f "$ARTICLE_JUDGE_V05_RESPONSE" ]; then
+  # Parse the running agent's own already-produced verdict back (structured parsing of the agent's answer,
+  # not a judgment made by this script).
+  resp="$(cat "$ARTICLE_JUDGE_V05_RESPONSE")"
+  echo "$resp" | grep -qE '^V05_CRIT_a: true$' && crit_a=true
+  echo "$resp" | grep -qE '^V05_CRIT_b: true$' && crit_b=true
+  echo "$resp" | grep -qE '^V05_CRIT_c: true$' && crit_c=true
+  echo "$resp" | grep -qE '^V05_CRIT_d: true$' && crit_d=true
 fi
-
-# (d) no claim of having executed/run anything; no error-log/stack-trace text (REQ-3's semantic check).
-crit_d=true
-if echo "$body" | grep -qiE 'i (ran|executed|cloned)|running the (repo|script|tool)|error-log:|stack trace'; then
-  crit_d=false
-fi
+# Sprint 1 wires no live judge_v05 call yet (Sprint 2 integration seam, same as run.sh's real topic-pick
+# seam) — ARTICLE_JUDGE_V05_RESPONSE unset/missing => (a)-(d) stay fail-closed false above.
 
 # (e) readability: >= 70% of sentences are <= 60 characters. Split on '.', '!', '?'; drop headings/blank
 # lines/empty fragments.
