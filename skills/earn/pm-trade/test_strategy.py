@@ -75,6 +75,32 @@ def test_gate_passes_when_proven():
     assert passed is True and stats["winrate"] >= 0.55 and stats["net_usdc"] >= 0
 
 
+def test_gate_load_resolved_reads_decide_schema():
+    # FIND-002 fix: _load_resolved must actually read decide.py/resolve.py schema rows (src=momentum,
+    # status=resolved, pnl_usdc) and IGNORE open rows + foreign (pm-paper.py) rows.
+    import json as _j, tempfile, os as _os, pathlib as _p
+    fd, path = tempfile.mkstemp(suffix=".jsonl"); _os.close(fd)
+    lg = _p.Path(path)
+    lg.write_text("\n".join([
+        _j.dumps({"src": "momentum", "status": "resolved", "pnl_usdc": 1.5}),      # counts
+        _j.dumps({"src": "momentum", "status": "open"}),                            # ignored (open)
+        _j.dumps({"status": "resolved", "realized_pnl": 9.9, "shares_held": 3}),    # ignored (pm-paper schema)
+        _j.dumps({"src": "momentum", "status": "resolved", "pnl_usdc": -0.5}),      # counts
+    ]) + "\n")
+    rows = gate._load_resolved(lg)
+    _os.unlink(path)
+    assert len(rows) == 2, rows
+    assert approx(sum(r["pnl_usdc"] for r in rows), 1.0)
+
+
+def test_settle_math_matches_gate_via_lib():
+    # a resolved win at 0.5 for $1 -> pnl +1.0 -> should count as a win in the gate
+    import lib as _lib
+    pnl = _lib.settle_pnl(True, 0.5, 1.0)
+    passed, stats = gate.evaluate_gate([{"pnl_usdc": pnl}] * 20)
+    assert stats["winrate"] == 1.0
+
+
 if __name__ == "__main__":
     import sys
     fns = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]

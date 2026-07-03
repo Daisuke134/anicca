@@ -41,7 +41,8 @@ def _load_resolved(ledger=LEDGER):
             r = json.loads(line)
         except Exception:
             continue
-        if r.get("status") == "resolved" and "pnl_usdc" in r:
+        # ONLY momentum/decide.py rows (avoid colliding with pm-paper.py's different schema)
+        if r.get("src") == "momentum" and r.get("status") == "resolved" and "pnl_usdc" in r:
             rows.append(r)
     return rows
 

@@ -36,6 +36,25 @@ def position_size(estimated_prob: float, price: float, bankroll: float,
     return stake if stake > 0.0 else 0.0
 
 
+def side_won(side: str, closed_up: bool) -> bool:
+    """Did the chosen side win? UP wins iff the window closed up; DOWN wins iff it closed down."""
+    if side == "UP":
+        return bool(closed_up)
+    if side == "DOWN":
+        return not bool(closed_up)
+    return False
+
+
+def settle_pnl(won: bool, entry_price: float, size_usdc: float) -> float:
+    """Realized P&L (USDC) for a resolved Polymarket share position bought at `entry_price` for `size_usdc`.
+    A winning share redeems at $1 → pnl = size*(1-p)/p; a loser → pnl = -size. Pure, no I/O."""
+    if size_usdc <= 0.0 or not (0.0 < entry_price < 1.0):
+        return 0.0
+    if won:
+        return size_usdc * (1.0 - entry_price) / entry_price
+    return -size_usdc
+
+
 def arb_pair_profit(ask_yes: float, ask_no: float) -> float:
     """Risk-free profit per $1 of paired YES+NO when their combined ask < $1 (one side always redeems at $1).
     Returns 0.0 when there is no arb (combined ask >= 1). This is the highest-win-rate first strategy."""
