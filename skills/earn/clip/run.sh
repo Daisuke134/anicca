@@ -51,12 +51,15 @@ for x in a:
 PYJSON
 )
 
-if [ -z "${CLIP}" ] || [ -z "${HANDLE:-}" ]; then
-  emit "nothing to post (queued_clip=${CLIP:-none} ready_account=${HANDLE:-none})"; exit 0
+# REQ-008 (gating): self-heal needs a ready account+working browser too, but is INDEPENDENT of
+# whether a new clip happens to be queued -- so the "nothing queued" check below must NOT skip it.
+# Without a ready account at all, though, neither self-heal nor new posting can do anything.
+if [ -z "${HANDLE:-}" ]; then
+  emit "nothing to post (queued_clip=${CLIP:-none} ready_account=none)"; exit 0
 fi
 
 if [ "$EARN_MODE" != "execute" ]; then
-  emit "discover: would post $(basename "$CLIP") to @${HANDLE} (port ${PORT})"; exit 0
+  emit "discover: would post $(basename "${CLIP:-<none-queued>}") to @${HANDLE} (port ${PORT})"; exit 0
 fi
 
 # --- execute: confirm the account's isolated browser is UP and logged in (no human) ---
@@ -93,6 +96,19 @@ except Exception as e:
 fi
 if [ "$ACTIVE" != "$HANDLE" ]; then
   emit "account @${HANDLE} not logged in on :${PORT} (active='${ACTIVE}') — skipping, no wrong-account post"; exit 0
+fi
+
+# REQ-008: self-heal runs ONCE per wake, BEFORE new-content posting, using the SAME resolved
+# HANDLE/TID this wake already confirmed logged-in. Runs regardless of whether a new clip is
+# queued (independent of the QUEUE-empty check below) but never blocks the posting pipeline
+# below regardless of its own outcome (best-effort; failure here must not prevent a new post).
+SELF_HEAL="${CLIP_SELF_HEAL_OVERRIDE:-$(dirname "${BASH_SOURCE[0]}")/self_heal.py}"  # test hook (PROP-009), unset in production
+if [ -f "$SELF_HEAL" ]; then
+  CDP_PORT="$PORT" "$PY" "$SELF_HEAL" --handle "$HANDLE" --tid "$TID" --wake "$WAKE" 2>/dev/null || true
+fi
+
+if [ -z "${CLIP}" ]; then
+  emit "nothing new to post (queue empty; self-heal already ran this wake)"; exit 0
 fi
 
 # REQ-010: FRESH RANDOM per-attempt tracking token (NOT clip_id-derived — producer.sh's clip_id can
