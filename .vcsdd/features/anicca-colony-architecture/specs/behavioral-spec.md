@@ -491,15 +491,18 @@ DONE
   D4 ✅ earn/defi-yield money-safe engine + synced to automaton
 
 A — DO THE NO-MOCK REAL RUN (top priority; STOP building paper — §0.3)
-  T0  **yield is ALREADY real** (execute-yield.mjs; automaton holds 0.19 aUSDC). Just WATCH it grow + verify
-       the earn is recorded honestly. Delete/merge my redundant `defi-yield` paper slot into execute-yield.
+  ✅T0  yield is ALREADY real (execute-yield.mjs; automaton holds 0.19 aUSDC, autonomous). Redundant paper
+        `defi-yield/supply.mjs` deleted. (watch it grow; merge planner into execute-yield later.)
+  ✅T3  human-funded claude-p loop is ON (launchd `ai.anicca.founder-loop`, durable). CONFIRMED waking +
+        executing earners (ledger: real `wake slot=x402_sell`). Root-cause hang FIXED in `brain.mjs` (clean
+        env + /tmp cwd). Both loops (automaton + founder) now run supervised. (#3 done)
   T1  earn/pm-trade: wire the REAL Polymarket order (polymarket-agent, RPC-fixed) so the LOOP fires a real
        $1 trade = the no-mock E2E I skipped. Watch it, fix on break — I do NOT hand-fire. (#6)
-  T2b earn/sol-trade: BUILD from `BlockRunAI/Franklin-Trading` (decided, missing) → straight to a real small
-       swap (no-mock), CLOUD-portable, wallet-only. (#17)
-  T3  turn ON the human-funded claude-p loop (currently OFF) so IT runs the same real earners. (#3)
-  Tx  make the REAL earners actually produce EXTERNAL revenue: x402-sell needs a buyer; hl-trade needs funds
-       bridged to HL; trading needs a winning edge. (the loop runs — the gap is demand/scale, not fake vs real)
+  T2b earn/sol-trade: BUILD from `BlockRunAI/Franklin-Trading` (decided, missing) → real small swap. (#17)
+  ★Tx★ make the REAL earners produce EXTERNAL revenue (the loops run + wake — the gap is demand/config, not
+       fake-vs-real): x402-sell server is DOWN + payTo is wrong (points at 0xa3cdd4, not the instance's own
+       wallet) → fix so a buyer can actually pay; hl-trade needs funds bridged to Hyperliquid; trading needs
+       a winning edge. THIS (not more scaffolding) is what turns $0 → first external:true tx.
 
 B — WIRE THE AI'S SELF-* SO IT NEEDS NO HUMAN (incl. me)
   T4  SELF-HEAL (REQ-SELFHEAL-AUTONOMY): the AI detects a stale/broken dashboard (& other breakage) and
