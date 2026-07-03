@@ -1,0 +1,49 @@
+{
+  "feature": "clip-post-verify-hardening",
+  "reviewContext": {
+    "reviewType": "spec",
+    "phase": "1c"
+  },
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-04T00:00:00Z",
+  "iteration": 15,
+  "priorIterationResolution": [
+    {
+      "priorFinding": "FIND-040 (iteration-14, major -- PROP-007's frozen ledger fixture claimed 'already created, committed' but only existed in anicca-project's own .vcsdd/ staging tree, not anywhere under the real target codebase ~/anicca/skills/earn/clip/)",
+      "status": "FIXED",
+      "note": "Independently re-verified, not trusting the spec text's claim: (a) ran `git -C ~/anicca log --oneline -1 -- skills/earn/clip/tests/fixtures/ledger-2026-07-03-snapshot.jsonl` myself -- returns commit 9b47b31 'test: add frozen ledger fixture for clip-post-verify-hardening PROP-007 (was only in anicca-project VCSDD staging, never in the real target repo)'; (b) confirmed this commit is on `anicca`'s `main` branch AND already present in `origin/main` (via `git -C ~/anicca log origin/main --oneline` and `git -C ~/anicca branch -vv` showing `* main 9b47b31 [origin/main] ...` -- genuinely pushed, not just a local commit); (c) confirmed the file physically exists at /Users/anicca/anicca/skills/earn/clip/tests/fixtures/ledger-2026-07-03-snapshot.jsonl (ls -la, real file, 1723 bytes, mtime 2026-07-04); (d) diffed it byte-for-byte against the anicca-project staging copy -- `diff` reports no differences, and independent MD5 checksums of both files are IDENTICAL (8fb5fc34512305465296e9a236711b3); (e) read the fixture's actual 4 JSON lines and confirmed they exactly match behavioral-spec.md's Ground Truth section's described content (line 1 = true-positive DaK4tlmvomQ, no status field; lines 2/3 = the identical-URL DaLKV2xP8Ij true-positive/false-positive pair, no status field, neither flagged; line 4 = the correction line, post_url:null, false_positive_corrected:true, no status field) -- confirming REQ-009's URL-dedup algorithm genuinely produces count==2 against this real, now-buildable fixture, matching PROP-007's stated expectation. Both spec documents' wording (behavioral-spec.md lines 326-332, verification-architecture.md's PROP-007 row) now correctly describes this real, verified state instead of the prior false claim. FIND-040 is genuinely and fully resolved -- this is not a re-wording, an actual file was actually copied and actually pushed to the actual target repo."
+    }
+  ],
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-041"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/.claude/skills/ig-reels-poster/scripts/post_reel.py:119-131", "description": "direct Read of the real file (not previously spot-checked in this exact framing by any of iterations 1-14's recorded findings) shows the before-snapshot read at :123 is nested inside `if a.live:` (:121), and the composer-opening code at :125-126 sits OUTSIDE and unconditionally after that gated block -- meaning dry runs (a.live=False, the file's own documented DEFAULT mode) currently skip the before-snapshot entirely and proceed straight to the composer. Neither spec document's refactor pseudocode preserves or even acknowledges this conditional; see FIND-041 for the resulting ambiguity and its two concrete harms (added latency + a new abort mode for the default dry/test path)."},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/earn/clip/run.sh:88", "description": "confirmed run.sh's ONLY call site for post_reel.py always passes --live (`... --tid \"$TID\" --live`), so the production automated posting path is unaffected by FIND-041 -- the gap is specifically in the default/manual dry-run invocation path, which is why this was rated major rather than critical."},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/earn/clip/_instance_paths.sh:1-17", "description": "independently re-verified (own Read, not relying on iteration-14's cited evidence) that CLIP_QUEUE/CLIP_POSTED/CLIP_ACCTS/CLIP_LEDGER all follow the exact `${HOME}/clips/<name>${_SFX}` / `${...}${_SFX}.json` / `${...}${_SFX}.jsonl` pattern REQ-006 requires CLIP_PENDING_VERIFY to replicate -- this part of the spec remains accurate and consistent, no new issue here."},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/earn/clip/tests/test_n_instance_distinctness.sh:1-27", "description": "independently re-verified (own Read) this file is real, already committed, and genuinely iterates INSTANCES=(\"\" \"myclaude\" \"clawrouter\" \"clawrouter-2\") doing a set-based pairwise-distinctness assertion across all 4 resolved paths -- confirms PROP-005's citation is accurate and that extending this same file (rather than writing a separate weaker test) for CLIP_PENDING_VERIFY, as PROP-005 specifies, is a sound, low-risk plan."},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/earn/clip/monitor.sh:16-30", "description": "independently re-verified (own Read, not previously cited by any prior iteration's findings) the REAL current counting logic is `if d.get(\"post_url\"): posts+=1` -- a raw truthy-post_url count with no status/dedup awareness at all. Applied to the frozen 4-line fixture this yields 3 (lines 1,2,3 all have non-null post_url; line 4's is null) -- exactly matching behavioral-spec.md's own claim that the current/naive approach over-counts to 3 for this exact snapshot, and confirming REQ-009's replacement (URL-deduplicated count == 2) is a genuine, correctly-motivated fix against the real shipped code, not a strawman."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/earn/clip/tests/fixtures/ledger-2026-07-03-snapshot.jsonl", "description": "FIND-040 fully verified fixed (see priorIterationResolution above) -- the fixture PROP-007 depends on now genuinely exists, committed and pushed, at the real target codebase location, byte-identical to the staging copy."},
+        {"type": "reasoning", "location": "verification-architecture.md Proof Obligations table + Verification tiers legend", "description": "re-read PROP-001 through PROP-011 and the tiers legend in full: no other verification-readiness gap found on this pass. Tier assignments (1/2/3) are internally consistent with what each proof obligation actually tests (pure-function fixtures vs stubbed subprocess integration vs live E2E), and PROP-008's two-gate design (adversary=disk-only, main-agent=live browser) matches HARD RULE 0.37's stated architecture. FIND-041 is filed under spec_fidelity, not verification_readiness, because the root gap is an ambiguous/incomplete REQUIREMENT (whether the new gate replaces or coexists with `a.live`), not a missing test method for an already-well-specified behavior -- once REQ-001/004 are clarified in Phase 1a, the corresponding PROP-00x test(s) can be added without needing a new verification ARCHITECTURE decision."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 1,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [
+      "REQ-001", "REQ-002", "REQ-003", "REQ-004", "REQ-005", "REQ-006", "REQ-007", "REQ-008", "REQ-009", "REQ-010",
+      "PROP-001", "PROP-002", "PROP-003", "PROP-004", "PROP-005", "PROP-006", "PROP-007", "PROP-008", "PROP-009", "PROP-010", "PROP-011"
+    ],
+    "duplicateFindings": []
+  }
+}

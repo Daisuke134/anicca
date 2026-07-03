@@ -1,4 +1,4 @@
-# Behavioral Spec — clip-post-verify-hardening (Phase 1a) — REV 15 (post iteration-14 FAIL)
+# Behavioral Spec — clip-post-verify-hardening (Phase 1a) — REV 16 (post iteration-15 FAIL)
 
 ## Context (why this feature exists)
 2026-07-03 live incident: `EARN_MODE=execute bash run.sh` self-reported `"posted @aiclipsvault: .../DaLKV2xP8Ij/"`
@@ -41,7 +41,19 @@ or duplicate a clip).
   modes, out of scope for the outcome vocabulary.)
 - **The actual root-cause single-read site**: `:123` — `res["_before_reels"] = ev(tid, "...querySelectorAll...")`
   — ONE unstabilized read, taken right after `cdp.navigate` with only a 4s sleep, no repeat-read check.
-  This is THE site REQ-001 fixes.
+  This is THE site REQ-001 fixes. ★ ADDED after iteration-15 FIND-041 (previously unmentioned in this
+  section, and previously un-preserved in verification-architecture.md's refactor pseudocode) ★: this
+  entire before-snapshot block (`:121-124`) is nested inside `if a.live:` — dry runs (`a.live=False`, the
+  script's own documented DEFAULT per its docstring: "default = dry (loads video, fills caption, stops
+  before シェア, discards)") currently skip it entirely and proceed straight to opening the composer at
+  `:125-126`, which sits OUTSIDE and unconditionally after the `if a.live:` block. `run.sh:88` always
+  passes `--live`, so dry mode is exclusively a manual/dev-testing invocation path today, never exercised
+  by the automated loop. REQ-001's new stabilize-and-abort logic (below) MUST remain scoped inside this
+  SAME `if a.live:` gate — zero regression for dry mode, exactly analogous to the "unset ANICCA_INSTANCE
+  => identical to pre-split paths" zero-regression pattern REQ-006 already uses elsewhere in this spec.
+  Applying it unconditionally would add ~10s latency to every dry run and give dry mode an entirely new
+  abort mode it never had, even though dry runs structurally cannot cause this feature's actual target
+  harm (they never reach the live-share code at `:170+`, gated by the same `a.live` flag at `:165`).
 - **The actual post-share search window**: `:174-181` — a 10-iteration loop, 12s sleep per iteration
   (~120s total search budget), each iteration re-navigates + re-reads + diffs against the (single,
   unstabilized) `before` list, breaking on the FIRST href not in `before`. REQ-003 REV 3 below explicitly
