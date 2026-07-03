@@ -7,6 +7,11 @@
 
 const { getCalendar } = require("./transport/index.js");
 const { chooseRouter, parseTransitPlan } = require("./transit.js");
+const { makeRouteCache, timeBucket } = require("./route-cache.js");
+
+// C3 (FIND-002): a process-lifetime route-result cache so the 60s scheduler tick does NOT recompute a
+// route it already has (~30 paid provider calls/event → 1). Keyed on (from_geo, to_geo, time_bucket).
+const _routeCache = makeRouteCache({ store: new Map(), ttlMs: 10 * 60_000 });
 
 function isoNaiveUTC(ms) {
   // Timezone-agnostic: pass the UTC wall clock paired with timezone:"UTC" (set in createTravelBlock).
@@ -175,15 +180,22 @@ async function directionsMinutes(src, dst, mapsKey, departAtMs = Date.now(), now
   const geocode = opts._geocode || geocodeAddress;
   const transitFetch = opts._transitFetch || transitFetchPlan;
   const googleFn = opts._directionsMinutesGoogle || directionsMinutesGoogle;
+  const cache = opts._routeCache || _routeCache; // tests inject a fresh cache to avoid cross-test leakage
   const google = () => googleFn(src, dst, mapsKey, departAtMs, nowMs, departureMode);
   if (!mapsKey || !src || !dst) return null;
   const [srcGeo, dstGeo] = await Promise.all([geocode(src, mapsKey), geocode(dst, mapsKey)]);
-  if (srcGeo && dstGeo && chooseRouter(srcGeo, dstGeo) === "transit") {
-    const plan = await transitFetch(srcGeo, dstGeo);
-    const parsed = plan && parseTransitPlan(plan);
-    if (parsed && parsed.durationSecs != null) return minutesFromSeconds(parsed.durationSecs);
-  }
-  return google(); // non-JP / unresolvable / transit empty → Google Routes (as before)
+  // The expensive part = the transit/Google provider call. Cache it per (from_geo, to_geo, time_bucket)
+  // so repeated 60s ticks for the same event reuse one result (FIND-002).
+  const compute = async () => {
+    if (srcGeo && dstGeo && chooseRouter(srcGeo, dstGeo) === "transit") {
+      const plan = await transitFetch(srcGeo, dstGeo);
+      const parsed = plan && parseTransitPlan(plan);
+      if (parsed && parsed.durationSecs != null) return minutesFromSeconds(parsed.durationSecs);
+    }
+    return google(); // non-JP / unresolvable / transit empty → Google Routes (as before)
+  };
+  if (srcGeo && dstGeo) return cache.getOrCompute("_shared", srcGeo, dstGeo, timeBucket(departAtMs), compute);
+  return compute(); // un-geocodable address → uncached (rare)
 }
 
 async function createTravelBlock(uid, apiKey, leaveMs, arriveMs, fromName, toName, dstAddr, calendar) {

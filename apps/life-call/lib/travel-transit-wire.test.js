@@ -6,6 +6,8 @@
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
 const travel = require("./travel.js");
+const { makeRouteCache } = require("./route-cache.js");
+const freshCache = () => makeRouteCache({ store: new Map(), ttlMs: 600000 });
 
 // A fake geocoder: JP addresses → JP geo; "NYC" → non-JP geo; "" → null.
 const fakeGeocode = async (addr) => {
@@ -24,6 +26,7 @@ test("directionsMinutes: JP src+dst → uses transit (17 min), NO Google call", 
     _geocode: fakeGeocode,
     _transitFetch: fakeTransitFetch,
     _directionsMinutesGoogle: async () => { googleCalled = true; return 45; },
+    _routeCache: freshCache(),
   });
   assert.equal(mins, 17); // 1029s → 17 min (ceil), from transit
   assert.equal(googleCalled, false); // free path — Google not called
@@ -35,6 +38,7 @@ test("directionsMinutes: non-JP dst → falls back to Google", async () => {
     _geocode: fakeGeocode,
     _transitFetch: fakeTransitFetch,
     _directionsMinutesGoogle: async () => { googleCalled = true; return 45; },
+    _routeCache: freshCache(),
   });
   assert.equal(googleCalled, true);
   assert.equal(mins, 45);
@@ -46,7 +50,23 @@ test("directionsMinutes: transit 0 journeys → Google fallback", async () => {
     _geocode: fakeGeocode,
     _transitFetch: async () => ({ journeys: [] }),
     _directionsMinutesGoogle: async () => { googleCalled = true; return 30; },
+    _routeCache: freshCache(),
   });
   assert.equal(googleCalled, true);
   assert.equal(mins, 30);
+});
+
+test("directionsMinutes: repeated ticks (same event) call the provider ONCE — FIND-002 cache", async () => {
+  let transitCalls = 0;
+  const cache = freshCache();
+  const opts = {
+    _geocode: fakeGeocode,
+    _transitFetch: async () => { transitCalls++; return fakeTransitFetch(); },
+    _directionsMinutesGoogle: async () => 45,
+    _routeCache: cache,
+  };
+  const at = Date.now() + 3600000; // ev.startMs is CONSTANT across the 60s ticks
+  await travel.directionsMinutes("新宿区A", "渋谷区B", "k", at, Date.now(), false, opts);
+  await travel.directionsMinutes("新宿区A", "渋谷区B", "k", at, Date.now() + 60000, false, opts); // next tick, same event
+  assert.equal(transitCalls, 1); // second tick is a cache hit
 });
