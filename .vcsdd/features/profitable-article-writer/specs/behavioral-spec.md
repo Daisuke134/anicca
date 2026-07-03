@@ -7,8 +7,11 @@ One article → funnel → per-platform native monetization → real money verif
 
 - **REQ-1 Model-agnostic.** The skill SHALL name no model/provider/API key and SHALL run on whatever frontier
   model the running agent uses (Claude/Opus today; GPT/Grok/DeepSeek/Kimi later).
-- **REQ-2 Zero human in the runtime loop.** The only permitted human contribution is COMPUTE (a subscription)
-  plus a one-time payout identity supplied at install. No human click / OTP relay / approval / delivery at runtime.
+- **REQ-2 Zero human in the runtime loop — asserted of the END STATE (Mode B) ONLY.** In Mode B the only permitted
+  human contribution is COMPUTE (a subscription) + a one-time payout identity at install; no human
+  click/OTP/approval/delivery at runtime. **Mode A (draft-first, REQ-6) is an EXPLICIT, temporary supervised
+  bootstrap that INTENTIONALLY carries a human review+publish gate**; it is the trust ramp and does NOT satisfy —
+  and is NOT claimed to satisfy — the zero-human invariant. The invariant is asserted of Mode B, never of Mode A. (Resolves FIND-001.)
 - **REQ-3 Explain, don't run.** The article SHALL be a deeply-researched, VISUAL explainer. The skill SHALL NOT
   execute external repos/tools to produce the article, SHALL NOT claim to have run anything, and SHALL NOT emit
   error-log content (brand safety).
@@ -19,6 +22,8 @@ One article → funnel → per-platform native monetization → real money verif
 
 - **REQ-4** WHEN a wake fires, the skill SHALL pick a niche/topic (default: AI-entities) and produce ONE article via
   research → decide(theme / buy-reason-3-lines / free-vs-paid split, What-free/How-paid) → write(craft layer) → de-slop.
+- **REQ-4b** IF, at a wake, no viable topic exists OR research is insufficient for a genuinely useful piece, THEN the
+  skill SHALL SKIP the wake (produce NO article) rather than emit a thin/slop piece. (Resolves FIND-004.)
 - **REQ-5** WHEN a draft is produced, the skill SHALL run gate **V0** (render/slop) and **V0.5** (craft: hook creates
   desire? CTA exists? free part = sales letter? readability pass?) BEFORE any publish.
 - **REQ-6** WHEN V0+V0.5 PASS AND mode = A (AUTONOMY=off, default), the skill SHALL stop at a note DRAFT and notify
@@ -32,8 +37,11 @@ One article → funnel → per-platform native monetization → real money verif
 
 ## State-driven (WHILE <state>)
 
-- **REQ-10** WHILE the install is human-funded, payout SHALL target the human's payout account (one-time install fact);
-  WHILE self-funded, payout SHALL be crypto-native (x402 / own checkout → instance wallet), since bank KYC is impossible.
+- **REQ-10** WHILE human-funded, payout SHALL target the human's payout account (one-time install fact) AND the
+  bank-KYC rails (note / Substack / Zenn) ARE available. WHILE self-funded, bank KYC is impossible, so those rails
+  are NOT available for payout and SHALL be disabled; the self-funded install SHALL monetize ONLY via crypto-native
+  checkout (x402 / own → instance wallet). Thus REQ-8's usable rail set is gated by funding mode, not by credentials
+  alone. (Resolves FIND-002.)
 - **REQ-12** WHILE running a loop wake, the model tier SHALL be Sonnet (never Opus); `record-earn` SHALL run with NO LLM.
 
 ## Conditional (IF <condition> THEN the skill SHALL …)
@@ -41,15 +49,19 @@ One article → funnel → per-platform native monetization → real money verif
 - **REQ-11** IF a platform account is absent THEN the skill SHALL self-create it zero-human where proven (Instagram
   pattern: Gmail plus-address + OTP auto-read, no phone/captcha) OR flag the rail unavailable (phone-gated X/note account
   creation is NOT yet proven) — it SHALL NOT fail loudly or spew errors.
-- **REQ-16** IF an earn is claimed on a rail THEN V4 SHALL be verified PER RAIL and PER funding-mode (bank receipt for
-  human-funded, on-chain receipt for self-funded).
+- **REQ-16** IF an earn is claimed on a rail THEN V4 SHALL be verified PER RAIL and PER funding-mode by a
+  ZERO-HUMAN-verifiable signal: **self-funded = an on-chain USDC receipt** (record-earn anti-fake); **human-funded =
+  a platform-confirmed sale event** (note / Stripe / Substack API or dashboard showing the paid sale). The subsequent
+  BANK withdrawal is a ONE-TIME human install-setup, OUTSIDE the per-earn loop, and SHALL NOT be asserted as an
+  automated runtime gate (bank KYC is the human's install responsibility). (Resolves FIND-006.)
 
 ## Unwanted-behavior (IF <unwanted> THEN the skill SHALL <mitigate>)
 
 - **REQ-13** IF any sub-step would need a human runtime action THEN the skill SHALL substitute an autonomous path
   (stored creds / Gmail-OTP auto-read / CapSolver+camofox) or SHALL NOT count that rail toward earn.
-- **REQ-14** IF a draft fails V0 or V0.5 THEN the skill SHALL fix and re-gate within bounded rounds and SHALL NOT
-  publish a failing draft (fail-closed).
+- **REQ-14** IF a draft fails V0 or V0.5 THEN the skill SHALL fix and re-gate for AT MOST 3 rounds; IF still failing
+  after 3 rounds THEN it SHALL abort the wake (produce no publish) and record the failure. It SHALL NEVER publish a
+  failing draft (fail-closed). (Resolves FIND-003.)
 
 ## Purity-boundary candidates (refined in 1b)
 

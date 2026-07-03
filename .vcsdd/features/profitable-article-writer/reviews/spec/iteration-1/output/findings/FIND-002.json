@@ -1,0 +1,8 @@
+{
+  "id": "FIND-002",
+  "dimension": "spec_fidelity",
+  "severity": "major",
+  "location": "specs/behavioral-spec.md:27-29 (REQ-8) and specs/behavioral-spec.md:35-36 (REQ-10)",
+  "problem": "REQ-10 states self-funded installs use crypto-native payout 'since bank KYC is impossible.' REQ-8 lists per-rail native monetization mechanisms (note single-payment, Substack paid sub, X ad-rev/Subscriptions, Zenn Books) as if uniformly available to any install. Per the design source (docs/superpowers/specs/2026-06-29-profitable-article-writer-design.md:126-134), note/Substack/Zenn/X withdrawals all require a bank account + KYC -- meaning a self-funded install cannot actually receive money from ANY of the REQ-8 platform-native paywall rails, and must use a completely different monetization mechanism (x402-gated resource / own crypto checkout to the instance wallet) instead of the platform paywalls. The behavioral spec never states this coupling: REQ-8 (which mechanism to sell through) and REQ-10 (which account receives the money) are written as orthogonal requirements, when in fact funding-mode gates WHICH monetization mechanism is even usable at all. An implementer following REQ-8 literally could attempt to sell via note ¥500 on a self-funded install with no valid payout destination.",
+  "fix": "Add an explicit cross-requirement (or amend REQ-8) stating: WHILE self-funded, the skill SHALL NOT use platform-native paywall rails that require bank KYC (note/Substack/Zenn/X) for direct monetization; it SHALL instead route all direct-$ conversion through the x402/own-checkout mechanism to the instance wallet, and treat the platform rails as top-funnel/reach-only in that mode."
+}

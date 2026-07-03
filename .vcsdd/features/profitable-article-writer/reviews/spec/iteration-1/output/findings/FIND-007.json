@@ -1,0 +1,8 @@
+{
+  "id": "FIND-007",
+  "dimension": "verification_readiness",
+  "severity": "major",
+  "location": "specs/verification-architecture.md:24 (PROP-2)",
+  "problem": "PROP-2 (T1, required: true) states: 'no-human audit: no runtime step requires human click/OTP/approval; each has an autonomous substitute or the rail is uncounted.' Under the DEFAULT configuration (Mode A per REQ-6), the publish step structurally requires a human click (see FIND-001). The spec never states whether PROP-2's audit scope includes the Mode-A review-to-publish click as a 'runtime step' to be checked, or whether it is carved out as an accepted exception. As written, an auditor cannot determine PASS/FAIL for PROP-2 against the shipped default mode: if the audit includes Mode A's human click, PROP-2 fails by construction every time Mode A is active (i.e. always, since it's the default); if it excludes Mode A, the exclusion criteria are undefined and arbitrary.",
+  "fix": "Define PROP-2's audit boundary explicitly (e.g. 'audited runtime steps = article generation, gating, and Mode-B publish/distribute; the Mode-A human review/click is an out-of-scope, explicitly-permitted bootstrap exception') so the gate has a deterministic PASS condition."
+}

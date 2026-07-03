@@ -1,0 +1,8 @@
+{
+  "id": "FIND-009",
+  "dimension": "verification_readiness",
+  "severity": "major",
+  "location": "specs/verification-architecture.md:27 (PROP-5), :39-46 (verification ladder V0.5 row); specs/behavioral-spec.md:22-23 (REQ-5)",
+  "problem": "PROP-5 (T2, required: true) is the fail-closed publish gate: 'publish is BLOCKED unless V0 AND V0.5 PASS.' V0.5 is defined only qualitatively in REQ-5 ('hook creates desire? CTA exists? free part = sales letter? readability pass?') and the purity-boundary map explicitly places 'V0.5 craft scoring' in the NON-DETERMINISTIC/agent-judgment column, scored by a fresh-context adversary. No pass threshold, rubric, or scoring scale is defined anywhere (e.g. is it 4 binary checks all must pass? a weighted score >= N? unanimous adversary vote?). Because the scorer is a non-deterministic LLM judgment with no defined rubric, the same draft is not guaranteed to receive the same V0.5 verdict on repeated evaluation, making PROP-5 -- a required financial gate -- non-repeatable as a regression/CI check, and Sprint-1 DONE ('one draft passes V0/V0.5') is not objectively re-checkable after the fact.",
+  "fix": "Define a concrete V0.5 rubric in behavioral-spec.md (e.g. explicit binary criteria per REQ-5 sub-question, majority/unanimous vote across N adversary samples, or a numeric threshold with the scoring method specified) so that PROP-5's craft-gate half has a deterministic, restatable PASS condition rather than a single non-reproducible LLM call."
+}

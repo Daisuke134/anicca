@@ -1,0 +1,8 @@
+{
+  "id": "FIND-004",
+  "dimension": "spec_fidelity",
+  "severity": "minor",
+  "location": "specs/behavioral-spec.md:20-21 (REQ-4)",
+  "problem": "REQ-4 specifies the happy-path pipeline (research -> decide -> write -> de-slop) but does not specify behavior for the edge case where the research phase yields insufficient/no viable sources for the chosen niche/topic at wake time (e.g. topic already exhausted, no fresh primary sources found). Without this, the wake could silently produce a low-quality or fabricated article, or hang, with no spec-mandated fallback.",
+  "fix": "Add an unwanted-behavior requirement: IF research yields insufficient primary sources for the selected topic THEN the skill SHALL select a different topic/niche within the same wake OR SHALL skip the wake without producing an artifact -- it SHALL NOT fabricate sourcing or force a low-source article to production."
+}

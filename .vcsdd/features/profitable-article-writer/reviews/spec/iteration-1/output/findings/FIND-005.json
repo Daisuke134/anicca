@@ -1,0 +1,8 @@
+{
+  "id": "FIND-005",
+  "dimension": "verification_readiness",
+  "severity": "blocker",
+  "location": "specs/verification-architecture.md:21-34 (Proof-obligations table); specs/behavioral-spec.md:26 (REQ-7)",
+  "problem": "REQ-7 ('WHEN V0+V0.5 PASS AND mode = B (AUTONOMY=on), the skill SHALL publish directly, then distribute to reach platforms') has NO corresponding PROP row in the proof-obligation table. Cross-checking every PROP-to-REQ mapping: PROP-1->REQ-1, PROP-2->REQ-2,13, PROP-3->REQ-3, PROP-4->REQ-4, PROP-5->REQ-5,14, PROP-6->REQ-6, PROP-7->REQ-9,16, PROP-8->REQ-10, PROP-9->REQ-12, PROP-10->REQ-15, PROP-11->REQ-8, PROP-12->REQ-11. REQ-7 is absent from all 12 rows. Mode B is explicitly the actual zero-human end-state the entire feature exists to reach (per the design source's own framing, 'Mode B is the no human in the loop end state'), yet nothing verifies that the autonomous publish-then-distribute behavior it describes actually executes as specified.",
+  "fix": "Add a PROP for REQ-7 (e.g. 'Mode B: when V0+V0.5 PASS, a publish call IS made without any notify/wait-for-human step, followed by a distribute call to reach platforms; tier T2, required: true') and include it as a Sprint-2/Mode-B graduation gate."
+}

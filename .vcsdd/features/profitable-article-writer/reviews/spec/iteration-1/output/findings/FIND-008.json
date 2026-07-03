@@ -1,0 +1,8 @@
+{
+  "id": "FIND-008",
+  "dimension": "verification_readiness",
+  "severity": "major",
+  "location": "specs/verification-architecture.md:25 (PROP-3) verifying specs/behavioral-spec.md:12-14 (REQ-3)",
+  "problem": "PROP-3 (T1, required: true) verifies REQ-3's 'SHALL NOT claim to have run anything' via 'output passes an error-log/receipt-claim blocklist (no \"we ran\"/stack traces).' A literal keyword blocklist cannot reliably verify a semantic natural-language claim: an LLM-generated article can claim to have executed something using countless paraphrases the blocklist will never enumerate (e.g. 'after executing the benchmark,' 'once the script finished,' 'testing confirmed,' 'I verified this by running the tool locally'). This is exactly the brittle-regex-for-judgment anti-pattern the project's own engineering guidelines warn against for semantic decisions. As a required, financial-adjacent (brand-safety) gate, PROP-3 will produce false negatives (claims that slip through) that the T1 grep-style test cannot catch, giving false confidence that the gate is closed.",
+  "fix": "Replace or supplement the literal blocklist with a semantic check performed by agent judgment (consistent with the purity-boundary map's own principle that judgment should not be hardcoded) -- e.g. fold this check into the V0.5 craft/adversary review as an explicit criterion ('does the draft claim to have executed/run anything?') rather than relying solely on a T1 keyword grep."
+}

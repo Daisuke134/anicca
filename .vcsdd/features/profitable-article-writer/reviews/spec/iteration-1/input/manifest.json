@@ -1,0 +1,11 @@
+{
+  "reviewType": "spec",
+  "feature": "profitable-article-writer",
+  "mode": "strict",
+  "phase": "1c",
+  "artifactsToReview": [
+    "specs/behavioral-spec.md",
+    "specs/verification-architecture.md"
+  ],
+  "reviewDimensions": ["spec_fidelity", "verification_readiness"]
+}

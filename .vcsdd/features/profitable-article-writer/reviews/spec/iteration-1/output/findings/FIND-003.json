@@ -1,0 +1,8 @@
+{
+  "id": "FIND-003",
+  "dimension": "spec_fidelity",
+  "severity": "major",
+  "location": "specs/behavioral-spec.md:51-52 (REQ-14)",
+  "problem": "REQ-14 says 'the skill SHALL fix and re-gate within bounded rounds' but no numeric bound (max retry count) is defined anywhere in behavioral-spec.md or verification-architecture.md. EARS requirements must be objectively measurable; 'bounded rounds' with no bound is not testable as written -- an implementer cannot know whether 2 rounds or 200 rounds satisfies the requirement, and no test can assert a violation (unbounded retry) because there is no threshold to check against.",
+  "fix": "Specify the actual bound (e.g. 'within 3 fix-and-re-gate rounds; if still failing after 3 rounds, the skill SHALL NOT publish and SHALL flag the topic for later retry') and add or amend a PROP that tests the round-count ceiling is enforced, not merely that a failing draft never publishes."
+}
