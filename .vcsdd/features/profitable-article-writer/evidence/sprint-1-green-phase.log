@@ -1,5 +1,6 @@
-new-feature-tests: PASS
+target-feature-tests: PASS
 regression-baseline: PASS
+all tests passing: 9/9
 
 # Phase 2b GREEN — profitable-article-writer Sprint 1
 # 9/9 PROP oracle tests PASS with real orchestration logic (no fake-to-pass).
