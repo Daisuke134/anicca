@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "blocking",
+  "description": "REQ-005/006/007 (behavioral-spec.md:61-69) say 'WHEN run.sh receives a `published`/`unverified`/`failed` result' but neither behavioral-spec.md nor verification-architecture.md defines the JSON field/key name that carries this 3-way outcome string across the process boundary from post_reel.py to run.sh. The CURRENT, real integration point (run.sh:88-91) parses ONLY `d.get(\"post_url\")` from post_reel.py's stdout JSON, and post_reel.py (post_reel.py:87, 182-183) emits `reached`/`published`(bool)/`post_url`/`error` — there is no `outcome` key anywhere in the current schema, and no such key is introduced by the spec. Without naming the wire-format field (e.g. `outcome: \"published\"|\"unverified\"|\"failed\"`) that run.sh must branch on, REQ-005/006/007's 3-way branching is not implementable unambiguously — the implementer must invent a schema, which is exactly the kind of judgment call an EARS spec at this fidelity should have already resolved.",
+  "evidence": {
+    "filePath": ".vcsdd/features/clip-post-verify-hardening/specs/behavioral-spec.md",
+    "lineRange": "61-69",
+    "snippet": "WHEN run.sh receives a `published` result ... WHEN run.sh receives an `unverified` result ... WHEN run.sh receives a `failed` result"
+  },
+  "corroboratingEvidence": {
+    "filePath": "/Users/anicca/anicca/skills/earn/clip/run.sh",
+    "lineRange": "88-91",
+    "snippet": "RES=\"$(... $POSTER ... )\"; URL=\"$(printf '%s' \"$RES\" | ... print(d.get(\"post_url\") or \"\"))\""
+  },
+  "routeToPhase": "1c"
+}

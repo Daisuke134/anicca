@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "blocking",
+  "description": "REQ-009 (behavioral-spec.md:75-77) states monitor.sh SHALL count a ledger line as posted when 'status == \"posted\" (or absent status for backward-compat with pre-existing lines)' — with NO condition on post_url. The Non-functional Constraints section (behavioral-spec.md:82-83) contradicts this by adding an un-promoted qualifier: 'treat missing status as \"posted\" for lines that have a non-null post_url'. The REAL ledger file /Users/anicca/.openclaw/state/clip-earn-ledger.jsonl line 4 is exactly the counter-example this feature exists to prevent: it has NO status field AND post_url is null (it is the corrective line for the 2026-07-03 false-positive incident, false_positive_corrected:true). If an implementer follows the literal, authoritative EARS text of REQ-009 (absent status => posted, full stop) rather than the buried NF-section caveat, monitor.sh will count line 4 as 'posted', re-inflating the exact false-positive this feature is supposed to eliminate. The current monitor.sh (monitor.sh:27) actually keys off `post_url` truthiness only, not status at all, and is not described anywhere in the spec as the model to preserve. This is an internal contradiction between the requirement and its own non-functional constraint, provable against real production data.",
+  "evidence": {
+    "filePath": ".vcsdd/features/clip-post-verify-hardening/specs/behavioral-spec.md",
+    "lineRange": "75-83",
+    "snippet": "REQ-009 ... (or absent `status` for backward-compat with pre-existing lines) ... [vs NF] treat missing `status` as `\"posted\"` for lines that have a non-null `post_url`."
+  },
+  "corroboratingEvidence": {
+    "filePath": "/Users/anicca/.openclaw/state/clip-earn-ledger.jsonl",
+    "lineRange": "4",
+    "snippet": "{\"...\": ..., \"post_url\": null, \"false_positive_corrected\": true}  -- no status field"
+  },
+  "routeToPhase": "1c"
+}

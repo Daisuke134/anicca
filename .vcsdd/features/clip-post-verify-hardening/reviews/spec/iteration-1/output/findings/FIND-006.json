@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "verification_readiness",
+  "category": "purity_boundary",
+  "severity": "blocking",
+  "description": "verification-architecture.md:13-17 claims stabilize_reads/diff_new_href/classify_outcome are extractable as 3 pure functions with the actual browser polling remaining untouched in main(), implying a small, additive change. But post_reel.py's real live-share path (post_reel.py:171-183) is a SINGLE imperative loop that interleaves navigate + sleep + read + diff + break-on-first-match all in one block (`for _ in range(10): time.sleep(12); cdp.navigate(...); hrefs=ev(...); new=[h for h in hrefs if h not in before]; if new: ... break`). There is no existing separation between 'collect reads' and 'decide stability/outcome' — today it decides and stops on the FIRST diff found, never on 2 consecutive stable reads, and never does the REQ-003 second independent re-navigation-and-recount at all. Achieving the purity boundary described requires restructuring this loop into distinct collect-phase / pure-decide-phase / second-collect-phase / pure-classify-phase stages, not merely adding 3 new functions alongside untouched existing code. The verification-architecture.md does not disclose or budget for this refactor scope, understating the actual work and risking a non-pure 'pure function' (e.g. one that still calls cdp.navigate internally to stay close to today's structure) being accepted at Phase 3 review.",
+  "evidence": {
+    "filePath": ".vcsdd/features/clip-post-verify-hardening/specs/verification-architecture.md",
+    "lineRange": "13-17",
+    "snippet": "The purity boundary is exactly the 3 pure functions above ... independent of HOW that data was obtained (real browser vs. a test fixture)."
+  },
+  "corroboratingEvidence": {
+    "filePath": "/Users/anicca/.claude/skills/ig-reels-poster/scripts/post_reel.py",
+    "lineRange": "171-183",
+    "snippet": "for _ in range(10): time.sleep(12); cdp.navigate(...); hrefs=ev(...); new=[h for h in hrefs if h not in before]; if new: url=...; break"
+  },
+  "routeToPhase": "1c"
+}

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "minor",
+  "description": "REQ-001/REQ-002 use non-committal example language ('e.g. 4 poll attempts', no stated settle-delay duration) rather than a firm, testable MUST value. Project convention (CLAUDE.md rule 0.7) explicitly forbids 'optional'/'recommended' framing in specs — everything MUST be concrete. Because the timeout bound and settle-delay are only exemplified, not mandated, PROP-002's own fixture ('a 4-read sequence that never converges') is not actually derived from a REQ-002 MUST value, leaving the exact poll-count/timeout a free implementation choice that the proof-obligation table treats as already fixed.",
+  "evidence": {
+    "filePath": ".vcsdd/features/clip-post-verify-hardening/specs/behavioral-spec.md",
+    "lineRange": "50-52",
+    "snippet": "IF the reel-href list does not stabilize within a bounded timeout (e.g. 4 poll attempts), THEN THE SYSTEM SHALL treat the snapshot as inconclusive"
+  },
+  "routeToPhase": "1c"
+}

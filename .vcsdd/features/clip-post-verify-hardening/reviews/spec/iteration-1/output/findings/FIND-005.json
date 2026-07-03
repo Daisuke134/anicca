@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "blocking",
+  "description": "PROP-005/006 (verification-architecture.md:27-28) call for 'a fake post_reel.py stub that prints each of the 3 outcome JSONs in turn' but never specify the stub's exact JSON key/value shape. The REAL post_reel.py today (post_reel.py:87, 182-183) only ever emits `reached` (a string state name like 'PUBLISHED'/'shared-unconfirmed'/'no-share-btn'/etc.), `published` (bool), `post_url`, and sometimes `error` — it NEVER emits the literal strings 'published'/'unverified'/'failed' anywhere. REQ-004's 3-outcome vocabulary has no defined mapping to/from this real schema (e.g., does 'failed' correspond to reached=='no-share-btn' AND to the account-guard abort AND to the file-chooser-load failure, all three of which are structurally different early-return branches in post_reel.py?). Without this mapping and a named output key, the PROP-005 stub's 'exact JSON output shape' is unspecified — the integration test cannot be written without the test author inventing the schema, which is precisely the judgment call a Tier-2 proof obligation should not leave open.",
+  "evidence": {
+    "filePath": ".vcsdd/features/clip-post-verify-hardening/specs/verification-architecture.md",
+    "lineRange": "27-28",
+    "snippet": "PROP-005 | ... shell test: fake a `post_reel.py` stub that prints each of the 3 outcome JSONs in turn"
+  },
+  "corroboratingEvidence": {
+    "filePath": "/Users/anicca/.claude/skills/ig-reels-poster/scripts/post_reel.py",
+    "lineRange": "87, 95, 108, 127, 134, 141, 163, 182-183",
+    "snippet": "res = {..., \"reached\": \"start\", \"published\": False} ... res[\"error\"] = ... ; res[\"published\"] = bool(url); res[\"post_url\"] = url"
+  },
+  "routeToPhase": "1c"
+}

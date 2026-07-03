@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-007",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "minor",
+  "description": "The Gate section (verification-architecture.md:39-46) correctly splits PROP-008 between disk-only adversary review and a later live main-agent E2E, but the adversary's job is only described qualitatively ('confirms that the IMPLEMENTATION correctly wires the pure decision functions into the live polling path ... achievable in principle from reading the code'). No concrete, checkable criterion is given (e.g. a specific call site the adversary must locate, or a required code shape) for what 'correctly wires' means, leaving room for the disk-only review step to be satisfied by a superficial code-read rather than tracing the actual call graph from main()'s polling loop into classify_outcome/diff_new_href/stabilize_reads.",
+  "evidence": {
+    "filePath": ".vcsdd/features/clip-post-verify-hardening/specs/verification-architecture.md",
+    "lineRange": "39-46",
+    "snippet": "the adversary instead confirms that the IMPLEMENTATION correctly wires the pure decision functions into the live polling path (i.e., that PROP-008 is achievable in principle from reading the code)"
+  },
+  "routeToPhase": "1c"
+}

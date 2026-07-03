@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "blocking",
+  "description": "post_reel.py ALREADY implements a reconciliation mechanism for exactly REQ-008's stated purpose ('so the loop never double-posts'): the `--verify-only` flag (post_reel.py:82, 111-118, comments tagged FIND-502/FIND-601) navigates to the profile and returns current reel hrefs with a fail-closed `ok` flag specifically to let a caller detect whether a previous timeout-killed attempt actually landed. The 'Out of scope' section (behavioral-spec.md:35-42) lists three unrelated out-of-scope items but never mentions this pre-existing, directly-overlapping mechanism, and REQ-008 (behavioral-spec.md:70-74) describes a self-heal re-check without saying whether it reuses `--verify-only`, replaces it, or coexists with it as a separate code path. This ambiguity risks the implementer building a second, parallel reconciliation mechanism alongside the existing one, doubling the surface area for exactly the kind of race-condition bug this feature is meant to eliminate.",
+  "evidence": {
+    "filePath": ".vcsdd/features/clip-post-verify-hardening/specs/behavioral-spec.md",
+    "lineRange": "35-42, 70-74",
+    "snippet": "## Out of scope ... [no mention of --verify-only] / REQ-008 (self-heal): WHEN a wake begins and pending-verify/ is non-empty, THE SYSTEM SHALL ... re-run the double-confirmation check"
+  },
+  "corroboratingEvidence": {
+    "filePath": "/Users/anicca/.claude/skills/ig-reels-poster/scripts/post_reel.py",
+    "lineRange": "82, 109-118",
+    "snippet": "--verify-only ... used to reconcile a timeout-killed post so the loop never double-posts ... FIND-502 / FIND-601"
+  },
+  "routeToPhase": "1c"
+}
