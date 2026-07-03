@@ -100,8 +100,8 @@
    "entrypoint": "run.sh",
    "status": "live",
    "owner": "pm-trade",
-   "spec": "2026-07-03-anicca-colony-architecture (Phase 1c PASS iter-8)",
-   "summary": "CLOUD-portable: Polymarket CLOB earn slot (wallet-only, no browser, no KYC). Base=BlockRunAI/polymarket-agent. lib.py=pure Quarter-Kelly sizing+edge+arb-pair-cost (9/9 tests). pm-paper.py=live read-only paper mechanics. run.sh DRY_RUN=true default; real orders gated behind EARN_MODE=execute + PM_PAPER_PASS=1 (paper-first, HARD 0.31). First strategy=arb pair-cost YES+NO<$1. No human, no fake earn."
+   "spec": "2026-07-03-anicca-colony-architecture (design); impl Phase-3 in progress",
+   "summary": "CLOUD-portable Polymarket earn slot (wallet-only, no browser/KYC). PRIMARY strategy = momentum/latency (Binance BTC spot vs Polymarket 5min BTC up/down repricing lag; pure arb pair-cost is dead on the resting book, verified 0/70 all at $1.0010). Files: lib.py (pure Kelly/edge/settle_pnl) + momentum.py (latency edge) + decide.py (live wiring) + resolve.py (Binance outcome->pnl) + gate.py (real PM_PAPER_PASS from resolved ledger) + run.sh (DRY_RUN default, real order fail-closed). 23 tests GREEN. Money-safe: no signing/order code yet. Base=BlockRunAI/polymarket-agent."
   },
   "earn/gig": {
    "track": "A",

@@ -55,6 +55,25 @@ def test_arb_pair_profit_zero_when_no_edge():
     assert lib.arb_pair_profit(0.5, 0.5) == 0.0     # sum exactly 1.0
 
 
+def test_side_won():
+    assert lib.side_won("UP", True) is True
+    assert lib.side_won("UP", False) is False
+    assert lib.side_won("DOWN", False) is True
+    assert lib.side_won("DOWN", True) is False
+
+
+def test_settle_pnl_win_and_loss():
+    # win: size 5 at price 0.5 -> 5*(0.5/0.5)=5.0 profit
+    assert approx(lib.settle_pnl(True, 0.5, 5.0), 5.0)
+    # win at 0.25 -> 5*(0.75/0.25)=15.0
+    assert approx(lib.settle_pnl(True, 0.25, 5.0), 15.0)
+    # loss -> -size
+    assert approx(lib.settle_pnl(False, 0.5, 5.0), -5.0)
+    # bad inputs -> 0
+    assert lib.settle_pnl(True, 1.0, 5.0) == 0.0
+    assert lib.settle_pnl(True, 0.5, 0.0) == 0.0
+
+
 if __name__ == "__main__":
     import sys
     fns = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]

@@ -25,10 +25,43 @@ def get(url):
 
 
 def btc_window_return():
-    """Return-so-far of the current 5-min BTC candle on Binance: (last - open)/open."""
-    k = get("https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=5m&limit=1")
-    o = float(k[0][1]); c = float(k[0][4])
-    return (c - o) / o if o else 0.0
+    """Return-so-far of the current 5-min BTC candle on Binance: (last - open)/open. Returns None on failure
+    (network/parse) — the caller must treat None as 'cannot decide', never as 0 (FIND-006)."""
+    try:
+        k = get("https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=5m&limit=1")
+        o = float(k[0][1]); c = float(k[0][4])
+        return (c - o) / o if o else 0.0
+    except Exception:
+        return None
+
+
+def _iso_ms(s):
+    """ISO8601 -> epoch ms, or None."""
+    if not s:
+        return None
+    try:
+        import datetime
+        s = s.replace("Z", "+00:00")
+        return int(datetime.datetime.fromisoformat(s).timestamp() * 1000)
+    except Exception:
+        return None
+
+
+def _already_traded_window(ledger, window_end_ms, side):
+    """Idempotency (FIND-007): true if a momentum row for this exact window_end + side already exists."""
+    if not ledger.exists() or window_end_ms is None:
+        return False
+    for line in ledger.read_text().splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            r = json.loads(line)
+        except Exception:
+            continue
+        if r.get("src") == "momentum" and r.get("window_end_ms") == window_end_ms and r.get("side") == side:
+            return True
+    return False
 
 
 def find_btc_updown():
@@ -57,7 +90,8 @@ def find_btc_updown():
             ay = _best_ask(t[0]); an = _best_ask(t[1])
             if ay is None or an is None:
                 continue
-            return (ay, an, m.get("question"), t[0])
+            return {"yes": ay, "no": an, "question": m.get("question"), "token_yes": t[0],
+                    "window_start_ms": _iso_ms(m.get("startDate")), "window_end_ms": _iso_ms(m.get("endDate"))}
     return None
 
 
@@ -73,29 +107,42 @@ def _best_ask(tok):
 def main():
     bankroll = float(sys.argv[1]) if len(sys.argv) > 1 else float(os.getenv("PM_BANKROLL", "8"))
     wr = btc_window_return()
+    if wr is None:
+        print(json.dumps({"slot": "earn/pm-trade", "decision": "no-data", "note": "binance BTC fetch failed"}))
+        return
     mk = find_btc_updown()
     if mk is None:
         print(json.dumps({"slot": "earn/pm-trade", "decision": "no-market",
                           "btc_window_return": round(wr, 6), "note": "no live BTC up/down market found"}))
         return
-    yes, no, question, tok = mk
+    yes, no, question, tok = mk["yes"], mk["no"], mk["question"], mk["token_yes"]
+    win_start, win_end = mk["window_start_ms"], mk["window_end_ms"]
     side, price, prob = momentum.side_and_prob(wr, yes, no)
     if side is None:
         print(json.dumps({"slot": "earn/pm-trade", "decision": "skip", "btc_window_return": round(wr, 6),
                           "yes": yes, "no": no, "question": question, "note": "no positive-edge side"}))
         return
-    stake = lib.position_size(prob, price, bankroll)
-    out = {"slot": "earn/pm-trade", "decision": "paper-trade", "side": side, "price": price,
+    # momentum/latency edges are small + frequent (not big directional bets) -> lower min_edge than the
+    # Kelly default 0.15; tune from paper results. gas_reserve keeps a buffer.
+    MOM_MIN_EDGE = float(os.getenv("PM_MIN_EDGE", "0.03"))
+    stake = lib.position_size(prob, price, bankroll, min_edge=MOM_MIN_EDGE, gas_reserve=0.5)
+    decision = "paper-trade" if stake > 0 else "skip-below-min-edge"
+    out = {"slot": "earn/pm-trade", "decision": decision, "side": side, "price": price,
            "est_prob": round(prob, 4), "edge": round(prob - price, 4), "stake_usdc": round(stake, 4),
            "btc_window_return": round(wr, 6), "bankroll": bankroll, "question": question}
     if stake > 0:
         LEDGER.parent.mkdir(parents=True, exist_ok=True)
-        row = {"ts": int(time.time()), "mode": "paper", "token_id": tok, "side": side,
-               "size_usdc": round(stake, 4), "entry_price": price, "est_prob": round(prob, 4),
-               "question": question, "status": "open"}
-        with open(LEDGER, "a") as f:
-            f.write(json.dumps(row) + "\n")
-        out["recorded"] = True
+        if _already_traded_window(LEDGER, win_end, side):
+            out["recorded"] = False
+            out["note"] = "already traded this window+side (idempotent)"
+        else:
+            row = {"ts": int(time.time()), "src": "momentum", "mode": "paper", "token_id": tok, "side": side,
+                   "size_usdc": round(stake, 4), "entry_price": price, "est_prob": round(prob, 4),
+                   "question": question, "window_start_ms": win_start, "window_end_ms": win_end,
+                   "status": "open"}
+            with open(LEDGER, "a") as f:
+                f.write(json.dumps(row) + "\n")
+            out["recorded"] = True
     print(json.dumps(out))
 
 
