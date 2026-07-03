@@ -127,17 +127,27 @@ point.
 forever and self-improves; nothing stops a loop because it is "not making money" (earning takes time). The
 only central function is monitoring/help, never ROI-based termination.
 
-**REQ-PORTABILITY (cloud vs local skills — the #1 spawn risk, verified 2026-07-03 by grep):** earn skills
-split into two classes and a cloud-spawned child MUST only be handed the CLOUD class, else it errors out on a
-missing browser/credential:
-- **LOCAL-only** (need the daily-driver browser `:9222`/cloak/camofox + a human's accounts/credentials):
-  `clip`, `video`, `affiliate`, `gig`, `x402-sell` → run ONLY on the local human-funded instance that holds
-  Dais's daily driver.
-- **CLOUD-portable** (wallet-signature / API only, NO browser, NO human credential): `pm-trade`, `hl-trade`,
-  `defi-yield`, `token-launch`, `board-poller`, `finchip-publish` → run identically on any cloud child.
-- **REQ-CLOUD-EARN:** a self-funded cloud child's earn line = CLOUD-portable skills ONLY (trading/yield/pm/
-  x402). (Later: give a cloud child its OWN stealth browser + self-created accounts via `ig-account-create`
-  to unlock browser skills — v1 does NOT depend on this.)
+**REQ-PORTABILITY (local/cloud earning parity — verified against actual code 2026-07-03).** The goal is
+"the SAME earn works local AND cloud." Investigation of `skills/earn/clip/run.sh` shows the skill is already
+**config-driven, not hardcoded**: it reads accounts + CDP port from the instance's OWN
+`~/.cloak/clip-accounts.json` (`port = x.get("port", 9222)` — a per-account default, not a global daily-
+driver lock) via `ig-account-create/scripts/cdp.py`. So the skill code is environment-agnostic; only the
+BROWSER+ACCOUNTS provider differs. Two tiers:
+- **TIER 1 — wallet/API earning (`pm-trade`, `hl-trade`, `defi-yield`, `x402-sell`-as-API):** zero
+  environment dependency — HTTP + wallet signature only, no browser, no accounts. FOOD (BlockRun x402) is
+  likewise wallet-based. **Runs byte-identical local and cloud → this is the cloud child's primary earn
+  line; there is no "works local not cloud" gap by construction.**
+- **TIER 2 — browser earning (`clip`, `video`, social):** the skill reads `{port, handle}` from its own
+  `~/.cloak/clip-accounts.json`. Parity = the ENVIRONMENT provides the browser+accounts, the skill is
+  unchanged:
+  - LOCAL: the daily-driver browser `:9222` + existing accounts.
+  - CLOUD: **`cloud-init.sh` MUST (i) start a headless Camoufox** (camofox = Camoufox/Playwright Firefox,
+    Linux-server capable) **and (ii) run `ig-account-create` (standalone) to self-create the AI's OWN social
+    accounts** → written to that container's `~/.cloak/clip-accounts.json`. Then `clip`/`video` run
+    identically — **zero skill-code changes.**
+- **REQ-CLOUD-EARN:** a cloud child ships earning with TIER 1 (browser-free) on day one; TIER 2 unlocks once
+  `cloud-init` provisions its headless browser + self-made accounts. Job-compute (Modal/`blockrun_modal`) is
+  an OPTIONAL heavy-batch tool (backtests), NOT a main dependency — food + shelter are the essentials.
 
 **REQ-SELFHEAL-AUTONOMY (Dais must never report a broken dashboard/site — the AI detects+fixes it itself):**
 a monitor (cron, NOT a human) MUST (a) detect staleness (`dashboard.json.updated_at` too old) and
