@@ -20,7 +20,7 @@ moved this window. `lib.arb_pair_profit` stays as a cheap always-on check.
 | `gate.py` | PRODUCE `PM_PAPER_PASS` from the resolved paper ledger (≥20 trades, ≥55% win, net≥0) | pure core |
 | `run.sh` | produce gate → decide → real order fail-closed | shell |
 | `pm-paper.py` | standalone live read-only paper mechanics (discover/paper-buy/mark) | shell |
-| `test_lib.py` (11) + `test_strategy.py` (12) | 23 tests, all GREEN | — |
+| `test_lib.py`(12)+`test_strategy.py`(12)+`test_resolve.py`(5) | 29 tests, all GREEN | — |
 
 ## Loop (paper → gate → real)
 1. cron every ~1 min during a window: `run.sh` → `decide.py` records a paper trade when momentum edge ≥ `PM_MIN_EDGE` (default 0.03).
