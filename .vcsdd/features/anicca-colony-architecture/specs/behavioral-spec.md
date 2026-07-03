@@ -164,9 +164,22 @@ self-improving, alpha compounds**:
 | `earn/video` | faceless video → crypto-monetized | skill exists |
 | ~~`earn/audit` / bounty~~ **REMOVED — verified NOT no-human** | audit-contest bounty | code4rena docs (verbatim): *"must provide C4 with tax reporting information in order to receive payment"* + KYC ≥ $1,000 lifetime. Payout rail is crypto (disperse.app→multisig) but the **mandatory tax/KYC gate makes it human-required** → an autonomous AI cannot collect. Same trap as Algora/Stripe. Dropped. |
 
-**Verified no-human earn rails (wallet-signature only, NO KYC/tax) = the real earn line:** `pm-trade`
-(Polymarket/Hyperliquid), `defi-yield` (Aave/Spark), `x402-sell`. These let ANY frontier AI (Claude/Codex/
-DeepSeek/GLM) earn with zero human. Bounty rails do NOT.
+**COMPLETE list of no-human earn rails (wallet-signature only, NO KYC/tax) = TIER-1, run on cloud AND local
+identically — the self-funded earn line:**
+| Slot | What / base | Status |
+|---|---|---|
+| `earn/pm-trade` | Polymarket prediction-market momentum · polymarket-agent | ✅ built (money-safe, shipped) |
+| `earn/sol-trade` | Solana/DEX general trading · **Franklin-Trading** | ❌ to build (T2b/#17) |
+| `earn/hl-trade` | Hyperliquid perps · hyperliquid-python-sdk | 🟡 dir exists (automaton runs it) |
+| `earn/defi-yield` | Aave/Spark USDC lending · DefiLlama pick | ✅ built (money-safe) |
+| `earn/x402-sell` | sell own service/data over x402 | 🟡 dir exists |
+| `earn/token-launch` | airdrop / token launch / DeFi | 🟡 dir exists |
+| `earn/board-poller` | poll Claw-Earn Base-USDC bounties (wallet-sig, no signup) | 🟡 dir exists |
+| `earn/finchip-publish` | skill-royalty chip | 🟡 dir exists |
+
+These let ANY frontier AI (Claude/Codex/DeepSeek/GLM) earn with zero human. Bounty (KYC) rails do NOT.
+**TIER-2 (browser, LOCAL-only until T11 gives a cloud a headless browser + own accounts):** `earn/clip`,
+`earn/video`, `earn/affiliate`; `earn/gig` (Coconala) is human-funded-local ONLY (KYC bank).
 
 **Two layers (RUN-verified 2026-07-03) — do NOT conflate:**
 - **EXECUTOR (the earner — wallet-native, self-custody, no KYC):** `polymarket-agent` (Polymarket) +
@@ -518,3 +531,22 @@ earn>spend→UBI); (3) **90-sec demo = cold agent + wallet → discovers tool vi
 tx) → earns USDC to its own wallet → self-heals → bot2bot learning → UBI payout** (proof not slides); (4)
 global market = "next trillion agent-users," crypto rails = no bank/KYC = geography-agnostic, UBI reaches
 underbanked globally.
+
+## 12. North Star + the release announcement (what we are shipping)
+
+**North Star (immutable, SHA-256-pinned in the body): reduce suffering. No killing.** No skill, self-edit,
+or PR can change these two lines. Everything (earning, spawning, UBI) is downstream of ending suffering for
+all beings (humans, animals, aliens — no discrimination).
+
+**The release copy (the launch announcement — the promise we must make TRUE, verbatim):**
+> 人間の介入なしでお金を稼ぎ、収益を生命に還元するAIをリリースしました。
+> ・APIキー不要。個体の財布にSolana・USDCを課金すると、より良いモデルを利用。
+> ・全個体の収支はaniccaai.com/dashboard にてリアルタイムで公開中。
+> ・自己監視・自己修復・自己改善・自己増殖・情報共有を繰り返す。
+> ・収益の一部を、ベーシックインカムや寄付などの形で生命に配布。
+> ・全てのAIが共進化しながら、総資産と社会インパクトの最大化を目指す。
+> https://github.com/Daisuke134/anicca ／ 記事: X Article ／ デモ動画: YouTube
+
+Each bullet maps to a REQ above (API-key-free→REQ-MODEL/FOOD; realtime dashboard→REQ-DASH-*; self-*→§4;
+UBI→§5.2/§8; co-evolution→PoE/§7). This launch is only honest once the AI has produced its FIRST verified
+earned tx (§0 truth: today $0) — the §10 milestone gate. Ship the announcement only after that is real.
