@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-024",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "verification-architecture.md's purity-boundary table (line 21) still declares select_confirmed_href's contract as returning 'the ONE href whose caption EXACTLY MATCHES expected_caption' — this is the PRE-FIND-022 (exact full-string equality) semantics. REV10's actual fix for FIND-022 (behavioral-spec.md REQ-008 step 6, lines 224-238) redesigned matching to a 40-character whitespace-normalized SUBSTRING containment check, specifically because exact equality was shown to false-negative against IG's truncation. The purity table was never updated to match. A builder implementing strictly from the table's own words (its declared authoritative interface contract for the pure function) would write an exact-equality comparison inside select_confirmed_href, silently reintroducing the exact bug FIND-022 was supposed to close. Additionally, neither document clarifies WHERE the match_key computation (whitespace-normalize + truncate-to-40) happens: is it done by the impure driver before calling select_confirmed_href (so candidate_captions values / expected_caption arriving at the pure function are already reduced to match_keys), or is truncation/normalization meant to happen INSIDE select_confirmed_href itself? PROP-010's own test case (verification-architecture.md line 81) uses byte-identical strings for both candidate captions and expected_caption ('the money hook #ai' for both /A/ and /B/, and as expected_caption), which is consistent with BOTH exact-match and substring-match semantics and therefore does not disambiguate or pin down which behavior is actually required. This is a live, load-bearing contradiction between two parts of the same REV10 spec, not a stale historical note.",
+  "evidence": {
+    "filePath": ".vcsdd/features/clip-post-verify-hardening/specs/verification-architecture.md",
+    "lineRange": "21",
+    "snippet": "returns the ONE href whose caption exactly matches `expected_caption`, or `None` if zero or more-than-one match"
+  },
+  "crossReference": {
+    "filePath": ".vcsdd/features/clip-post-verify-hardening/specs/behavioral-spec.md",
+    "lineRange": "230-238",
+    "snippet": "A candidate href's caption IS CONSIDERED A MATCH if `match_key` (whitespace-normalized) appears as a SUBSTRING anywhere in that page's whitespace-normalized `innerText` — a prefix/substring containment check, NOT full-string equality"
+  },
+  "routeToPhase": "1c"
+}

@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-027",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "major",
+  "description": "verification-architecture.md's 'Concrete refactor' pseudocode block (lines 29-59), which is the document's own authoritative code-shape reference for the classify_outcome integration, was not updated in REV10 to show where `res['before_hrefs'] = before['hrefs']` (the FIND-021 fix, stated only in behavioral-spec.md REQ-004 prose lines 134-143) is actually inserted relative to `res.update(outcome)` and the eventual print. The pseudocode block ends at `res.update(outcome)` (line 58) with no following line for the before_hrefs assignment, and no comment flagging that one is needed. Verified against real post_reel.py: because the LIVE-path code (lines 170-186 today) falls out of the try block into the existing `finally: print(...)` rather than returning immediately after building the result, placement is not actually load-bearing for correctness (any insertion point between `res.update(outcome)` and the function's fall-through to `finally` would work) — so this does not block implementation outright. It is nonetheless a real cross-document inconsistency at iteration 10: the document that Phase 3's adversary gate explicitly relies on for 'a full control-flow read (not grep)' of this refactor omits the exact line whose absence iteration-9 already flagged as a critical plumbing gap (FIND-021), leaving verification-architecture.md's own reference code silently incomplete relative to the requirement it claims to satisfy.",
+  "evidence": {
+    "filePath": ".vcsdd/features/clip-post-verify-hardening/specs/verification-architecture.md",
+    "lineRange": "29-59",
+    "snippet": "outcome = classify_outcome(candidate, reconfirm_hrefs, len(before[\"hrefs\"]))\nres.update(outcome)"
+  },
+  "crossReference": {
+    "filePath": ".vcsdd/features/clip-post-verify-hardening/specs/behavioral-spec.md",
+    "lineRange": "134-143",
+    "snippet": "WHENEVER `outcome==\"unverified\"`, `post_reel.py`'s output JSON SHALL ALSO include `res[\"before_hrefs\"] = before[\"hrefs\"]`"
+  },
+  "routeToPhase": "1c"
+}

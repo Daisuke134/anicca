@@ -1,4 +1,4 @@
-# Behavioral Spec — clip-post-verify-hardening (Phase 1a) — REV 10 (post iteration-9 FAIL)
+# Behavioral Spec — clip-post-verify-hardening (Phase 1a) — REV 11 (post iteration-10 FAIL)
 
 ## Context (why this feature exists)
 2026-07-03 live incident: `EARN_MODE=execute bash run.sh` self-reported `"posted @aiclipsvault: .../DaLKV2xP8Ij/"`
@@ -160,6 +160,22 @@ or duplicate a clip).
 - **REQ-007**: WHEN `run.sh` observes `outcome=="failed"`, THE SYSTEM SHALL leave the clip file in
   `queue/` (current behavior preserved, no ledger line added) so the loop naturally retries it on a later
   wake.
+- **REQ-010 (unique per-clip tracking token — NEW after iteration-10 FIND-025, which correctly found that
+  matching on hook/caption TEXT is fundamentally unsound for this project specifically: HARD RULE 0.18
+  "clone-don't-template" means proven hooks are deliberately reused VERBATIM across multiple clips, so the
+  same 40-character hook prefix can legitimately appear in TWO DIFFERENT clips' captions — the exact
+  ambiguity self-heal confirmation must never have)**: WHEN `run.sh` posts a clip (in either the direct
+  live-share path OR when preparing to re-attempt via self-heal), THE SYSTEM SHALL APPEND a machine-
+  readable, per-clip UNIQUE tracking token to the caption text actually submitted to Instagram — derived
+  from the clip's own existing filename-based ID (the same deterministic ID `producer.sh` already computes
+  from the source URL, e.g. `6xlmaorRY0w` from `6xlmaorRY0w_EN.mp4` — already unique per clip by
+  construction, no new ID-generation logic needed). Concretely: `run.sh` reads `$CAP`'s content, appends
+  `"\n​#c<clip_id>"` (a newline + zero-width space + a short hashtag-shaped token, e.g. `#c6xlmaorRY0w`
+  — visually blends in as one more hashtag, does not require any producer.sh/caption-template change,
+  stays entirely within this feature's file scope) and passes THIS appended string to `post_reel.py` as the
+  caption to insert. This tracking token, NOT the hook/caption prose, is what REQ-008 step 6's content
+  match checks for — an exact, short, unlikely-to-collide-by-chance alphanumeric substring, immune to
+  hook-text reuse across different clips.
 - **REQ-008 (self-heal, REUSING the existing mechanism — WIRING CLARIFIED after iteration-3 FIND-004,
   further hardened after iteration-5 FIND-008/009/010)**: WHEN a wake begins and `$CLIP_PENDING_VERIFY`
   (REQ-006) is non-empty, THE SYSTEM SHALL run a self-heal driver — a NEW shared module
@@ -203,52 +219,43 @@ or duplicate a clip).
      calls (each individual call's own internal read at `post_reel.py:112-113` is untouched).
   5. Stops calling once 2 consecutive `reels` arrays match (stable), or after 3 calls if they never
      match (inconclusive — leave the clip in `$CLIP_PENDING_VERIFY`, try again next wake).
-  6. **THE SIDECAR RECORDS A SET **AND THE CLIP'S OWN CAPTION TEXT**, AND CONFIRMATION REQUIRES A CONTENT
-     MATCH, NOT JUST A COUNT (REDESIGNED after iteration-8 FIND-018/019, which correctly proved by
-     hand-tracing that pure count/URL-diffing is UNSOUND, not merely "not optimal": once exactly ONE
-     unrelated post lands via the independent new-content pipeline on ANY later wake — guaranteed possible
-     by step 1's own non-blocking gating — `new_hrefs` has exactly 1 element and the OLD rule would
-     silently misattribute that unrelated post's real URL to THIS clip, permanently dropping the actually-
-     unpublished clip from ever being retried. This is precisely the false-confirmation bug class the
-     entire feature exists to eliminate, reintroduced via the self-heal path — a real correctness defect,
-     not a documentation gap. Dais's own directive for this feature — "we have to VERIFY with browser that
-     shit is actually posted" — means confirmation must check WHAT was posted, not just THAT something
-     new exists)**: when `run.sh` first moves a clip to `$CLIP_PENDING_VERIFY` (REQ-006), it SHALL write a
+  6. **THE SIDECAR RECORDS A SET AND THE CLIP'S UNIQUE TRACKING TOKEN (REQ-010), AND CONFIRMATION REQUIRES
+     A TOKEN MATCH, NOT A COUNT (REDESIGNED after iteration-8 FIND-018/019, hardened again after
+     iteration-10 FIND-024/025: hook/caption-PROSE matching was found unsound for THIS project specifically
+     — HARD RULE 0.18 "clone-don't-template" means the same proven hook text is deliberately reused
+     verbatim across different clips, so a text-based match can genuinely collide between two real,
+     different clips. REQ-010's unique-token approach removes this ambiguity entirely: the token is
+     mechanically generated per-clip, never reused, and is what gates confirmation — not the hook/caption
+     prose)**: when `run.sh` first moves a clip to `$CLIP_PENDING_VERIFY` (REQ-006), it SHALL write a
      sidecar file `$CLIP_PENDING_VERIFY/<clipname>.before-hrefs.json` containing
-     `{"before_hrefs": [...stabilized before["hrefs"]...], "caption": "<the EXACT caption text submitted
-     for this clip, i.e. the same string content already read from the caption file and passed to
-     `cdp.insert_text` during the composer flow — no extra work, persist what's already in hand>"}`.
-     For the ONE clip being processed this wake (step 2), THE SELF-HEAL DRIVER SHALL compute
+     `{"before_hrefs": [...stabilized before["hrefs"]...], "token": "#c<clip_id>"}` (REQ-010's exact
+     tracking token for this clip — already computed, just persist it). For the ONE clip being processed
+     this wake (step 2), THE SELF-HEAL DRIVER SHALL compute
      `new_hrefs = stabilized_reels_set - set(sidecar["before_hrefs"])` (a real set difference). THEN, FOR
-     EACH href IN `new_hrefs` (whatever the count — 0, 1, or more), navigate to that reel's URL and
-     extract its live caption text — CONCRETE METHOD (FIXED after iteration-9 FIND-022, which correctly
-     flagged that exact full-string match is fragile against IG's real display behavior — truncation via
-     a "…more" toggle on long captions, a leading `@handle` prefix IG renders alongside the caption, and
-     minor whitespace/newline differences): read `document.body.innerText` on the reel's permalink page
-     (the same broad text-scan style `post_reel.py` already uses elsewhere, e.g. the account-guard check
-     at `:105` — no rigid caption-specific selector, which would be brittle against IG's frequently-
-     changing DOM). Compute `match_key` = the sidecar's recorded caption, whitespace-normalized (collapse
-     runs of whitespace to a single space, trim), truncated to its FIRST 40 CHARACTERS (or the full
-     string if shorter — 40 chars reliably precedes where IG's "…more" truncation kicks in for reel
-     captions, and avoids relying on hashtag-block text which IG is more likely to reorder/truncate
-     first). A candidate href's caption IS CONSIDERED A MATCH if `match_key` (whitespace-normalized)
-     appears as a SUBSTRING anywhere in that page's whitespace-normalized `innerText` — a prefix/substring
-     containment check, NOT full-string equality, specifically so IG's own truncation of the DISPLAYED
-     caption never causes a false negative for the clip's own real post (the first 40 characters are
-     always rendered even in the truncated/"…more"-collapsed view). IF EXACTLY ONE href's page contains
-     the `match_key` substring, THE SYSTEM SHALL treat it as now-confirmed: move the clip to
+     EACH href IN `new_hrefs` (whatever the count — 0, 1, or more), navigate to that reel's URL and read
+     `document.body.innerText` on the permalink page (the same broad text-scan style `post_reel.py` already
+     uses elsewhere, e.g. the account-guard check at `:105` — no rigid caption-specific selector). A
+     candidate href IS CONSIDERED A MATCH if `sidecar["token"]` (the EXACT literal string, e.g.
+     `"#c6xlmaorRY0w"`) appears anywhere in that page's `innerText` — a plain substring containment check
+     on a short, mechanically-unique alphanumeric token (not prose, not a hook, no whitespace-normalization
+     or truncation-tolerance logic needed: the token is short enough that IG's "…more" truncation of a
+     LONG caption is irrelevant — the token is placed via REQ-010 immediately after a newline near the end
+     of the caption, alongside the existing hashtag block, which IG does render even when truncating the
+     preceding prose, per the same visibility as any other hashtag in the caption). IF EXACTLY ONE href's
+     page contains the token, THE SYSTEM SHALL treat it as now-confirmed: move the clip to
      `$CLIP_POSTED`, delete the sidecar file, and append the delayed `"status":"posted"` ledger line WITH
      `"post_url"` SET TO THAT MATCHED URL (never `null` — a `status:"posted"` ledger line MUST always
      carry a real, non-null, CONTENT-VERIFIED `post_url`, per REQ-009's step-1 guard below). IF ZERO hrefs
      match (none of the new posts are this clip's own — genuinely still unpublished, OR the new href(s)
      belong to other clips) OR MORE THAN ONE href matches (an extremely unlikely caption collision — do
      NOT guess), leave the clip in `$CLIP_PENDING_VERIFY` for the next wake (never silently drop it, never
-     duplicate-post it, never fabricate a `post_url`). ★ This closes FIND-018 structurally: an unrelated
-     post landing in the gap will have ITS OWN (different) caption, so it will correctly FAIL the content
-     match and never be misattributed, regardless of how many wakes have passed or how many unrelated
-     posts accumulated. Residual limitation (rare, accepted): if two DIFFERENT clips happen to share
-     byte-identical caption text (unlikely in practice — captions include per-clip dynamic hooks), this
-     clip may need an extra wake or two to disambiguate; still SAFE (never guesses), just not instant. ★
+     duplicate-post it, never fabricate a `post_url`). ★ This closes FIND-018/FIND-025 structurally: an
+     unrelated post landing in the gap has ITS OWN, mechanically DIFFERENT token (REQ-010 guarantees
+     tokens are never reused across clips, unlike hook prose, which per HARD RULE 0.18 IS reused
+     verbatim), so it will correctly FAIL the token match and never be misattributed — regardless of how
+     many wakes have passed, how many unrelated posts accumulated, or how many clips share identical hook
+     text. There is no meaningful residual token-collision risk (unlike the withdrawn caption-prose
+     approach): tokens are derived 1:1 from each clip's own unique source-URL-based ID. ★
      Documented known limitation for the genuinely-never-published case: if new content keeps landing via
      the independent new-content pipeline on EVERY subsequent wake and this clip's own post never actually
      lands, this clip may sit in `$CLIP_PENDING_VERIFY` indefinitely (SAFE — never guesses, never

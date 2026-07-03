@@ -1,0 +1,55 @@
+{
+  "feature": "clip-post-verify-hardening",
+  "reviewContext": {
+    "reviewType": "spec",
+    "phase": "1c"
+  },
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-04T00:00:00Z",
+  "iteration": 10,
+  "priorIterationResolution": [
+    {
+      "priorFinding": "FIND-021 (iteration-9, critical -- before_hrefs never plumbed from post_reel.py's local variable into its returned JSON, so run.sh had no data source for the sidecar write)",
+      "status": "FIXED",
+      "note": "Verified against real code. behavioral-spec.md REQ-004 (lines 134-143) now requires post_reel.py to set res['before_hrefs'] = before['hrefs'] whenever outcome=='unverified', and states run.sh reads d.get('before_hrefs') for the sidecar. Independently confirmed against /Users/anicca/anicca/skills/earn/clip/run.sh:33-38,88 that the $CAP variable (the caption file path) is genuinely already in scope and available at every later point in run.sh's execution, so the spec's claim that no new plumbing is needed for the caption half is correct. PROP-006(a) (verification-architecture.md line 80) adds an explicit FIND-021 regression assertion (stub post_reel.py to return before_hrefs, assert run.sh copies it verbatim into the sidecar; assert caption comes from $CAP not from post_reel.py's output). This closes FIND-021 as originally traced. Minor residual documentation-sync gap noted separately as FIND-027 (verification-architecture.md's own pseudocode block was not updated to show this line's insertion point -- non-blocking, see finding)."
+    },
+    {
+      "priorFinding": "FIND-022 (iteration-9, critical -- exact-string caption match untested against IG's real truncation/rendering behavior, risking false negatives)",
+      "status": "PARTIALLY FIXED",
+      "note": "The narrow original concern (exact full-string equality false-negatives against IG's own '...more' truncation) is addressed at the behavioral-spec.md prose level: REQ-008 step 6 (lines 224-238) redesigns the check to a 40-character whitespace-normalized SUBSTRING containment test, with whitespace normalization explicitly applied to BOTH the match_key and the page's innerText (closing the asymmetric-normalization ambiguity a prior reviewer might have raised). PROP-006(a)'s truncation regression test is concretely specified. HOWEVER this fix is not fully trustworthy as shipped: (1) it directly contradicts verification-architecture.md's own purity-boundary-table description of select_confirmed_href, which still says the function returns the href whose caption 'exactly matches' -- see FIND-024 (critical); (2) the substring design's own safety rationale (distinct clips have distinct captions) is contradicted by this project's own documented clone-the-hook content strategy -- see FIND-025 (critical); (3) the one live/real E2E proof obligation (PROP-008) still never exercises this path at all, an evidence gap iteration-9 already raised and which remains completely open -- see FIND-026 (critical). The original narrow finding's symptom is fixed; the fix itself introduces or leaves open more severe problems."
+    },
+    {
+      "priorFinding": "FIND-023 (iteration-9, major -- select_confirmed_href's 2+-match branch untested)",
+      "status": "FIXED",
+      "note": "PROP-010 (verification-architecture.md line 81) adds a concrete test: select_confirmed_href(['/A/','/B/'], {'/A/': 'the money hook #ai', '/B/': 'the money hook #ai'}, 'the money hook #ai') asserts a return of None, explicitly targeting the exact naive next()-based implementation bug this finding warned about. Combined with the existing 0-match and 1-match tests (referenced correctly), this gives genuine 3-way branch coverage for the function's own documented contract. The Tier-1 legend (verification-architecture.md line 88) also now lists select_confirmed_href, closing the legend-omission half of FIND-023. This finding is soundly closed."
+    }
+  ],
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-024", "FIND-025", "FIND-027"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/earn/clip/run.sh:20,33-38,88", "description": "confirmed $CAP is a genuine, already-in-scope variable throughout run.sh's execution -- the caption-plumbing half of FIND-021's fix is correct"},
+        {"type": "file", "location": "/Users/anicca/.claude/skills/ig-reels-poster/scripts/post_reel.py:94-95,106-108,126-127,133-134,140-141,162-163,186-190", "description": "re-verified all 6 pre-share failure line numbers plus the finally block cited in the Ground Truth section against the real file -- exact match, no drift"},
+        {"type": "file", "location": ".vcsdd/features/clip-post-verify-hardening/specs/verification-architecture.md:21", "description": "select_confirmed_href's purity-table contract still declares exact-match semantics, contradicting REQ-008 step 6's REV10 substring redesign"}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-026"],
+      "evidence": [
+        {"type": "file", "location": ".vcsdd/features/clip-post-verify-hardening/specs/verification-architecture.md:84", "description": "confirmed PROP-008's text is materially unchanged from the version iteration-9 already flagged as never exercising the self-heal caption-match path -- gap remains fully open"},
+        {"type": "file", "location": ".vcsdd/features/clip-post-verify-hardening/specs/verification-architecture.md:80", "description": "confirmed PROP-006(a)/(b)'s regression tests for the substring/truncation design are Tier-2 stubs using hand-authored page-text blobs, not real Instagram markup -- no proof obligation anywhere validates the 40-char/innerText assumptions against reality"},
+        {"type": "file", "location": ".vcsdd/features/clip-post-verify-hardening/specs/verification-architecture.md:87-90", "description": "Tier-1/Tier-2/Tier-3 legend confirms PROP-008 is the sole Tier-3 obligation and the only one the adversary cannot itself execute, making its gap uniquely load-bearing"}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 4,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}

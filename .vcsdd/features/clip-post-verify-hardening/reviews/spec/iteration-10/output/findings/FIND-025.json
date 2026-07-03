@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-025",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "critical",
+  "description": "The REV10 substring/40-char match_key design's own stated safety rationale ('this closes FIND-018 structurally: an unrelated post landing... will have ITS OWN (different) caption, so it will correctly FAIL the content match', behavioral-spec.md lines 246-248) and its residual-limitation note ('if two DIFFERENT clips happen to share byte-identical caption text (unlikely in practice — captions include per-clip dynamic hooks)', lines 249-251) both assume distinct clips have sufficiently distinct opening text. This assumption is not backed by any enforced minimum-distinctiveness guard and is directly at odds with this project's own documented content strategy: HARD RULE 0.18 in this repo's CLAUDE.md mandates 'CLONE-DON'T-TEMPLATE': copying a PROVEN viral hook VERBATIM and only LLM-rewriting the remainder. Under that strategy the FIRST ~40 characters (the hook) are precisely the part MOST LIKELY to be near-identical or byte-identical across different clips queued for the same or sibling accounts, while the spec explicitly chose the first-40-chars prefix BECAUSE it 'avoids relying on hashtag-block text which IG is more likely to reorder/truncate' (line 233) — i.e. it deliberately keys on the hook, the exact substring most likely to collide. Separately and independently: the spec also has no lower bound on caption length feeding match_key — a short/generic caption (e.g. a caption under ~15 chars, or one that is mostly emoji) becomes a short, generic substring searched against `document.body.innerText` of an ENTIRE Instagram reel permalink page (nav chrome, suggested-posts rail, account bio, comment previews — not scoped to the caption element at all, per line 227's own admission it uses a 'broad text-scan style'). A short/generic match_key has materially elevated odds of appearing by coincidence in an unrelated candidate's full-page text blob, producing a false single-match confirmation — the exact FIND-018 misattribution class, now reopened through a different mechanism (substring collision instead of pure count-diffing) that the spec never analyzes or bounds.",
+  "evidence": {
+    "filePath": ".vcsdd/features/clip-post-verify-hardening/specs/behavioral-spec.md",
+    "lineRange": "224-251",
+    "snippet": "truncated to its FIRST 40 CHARACTERS (or the full string if shorter ...) ... appears as a SUBSTRING anywhere in that page's whitespace-normalized `innerText` ... (unlikely in practice — captions include per-clip dynamic hooks)"
+  },
+  "crossReference": {
+    "filePath": "/Users/anicca/anicca-project/CLAUDE.md",
+    "lineRange": "HARD RULE 0.18",
+    "snippet": "CLONE-DON'T-TEMPLATE + USEFUL + HISTORY-AWARE: 投稿は proven バズパターン 100% コピー ④ LLM rewrite で fresh 文言"
+  },
+  "routeToPhase": "1c"
+}

@@ -1,0 +1,17 @@
+{
+  "findingId": "FIND-026",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "critical",
+  "description": "PROP-008 is the ONLY Tier-3 (real, no-mock, live-browser) proof obligation in this feature, and per the Gate section it is the only proof obligation the adversary itself cannot execute (adversary has no browser) — meaning it is the SOLE mechanism by which the substring/40-char/innerText-truncation design (REQ-008 step 6, the single riskiest and newest logic surface this feature introduces) ever gets checked against real Instagram rendering rather than fabricated stub text. This exact gap was already raised as evidence in iteration-9's FAIL verdict ('confirmed PROP-008 ... never exercises the self-heal caption-match path, only the direct-success posting path'). REV10's PROP-008 text is materially unchanged: it still only (a) posts a clip through the direct <120s happy path, (b) independently re-verifies the post count increased by 1 via a fresh tab, and (c) sanity-checks monitor.sh's count against the live ledger. None of that exercises: a clip actually going to $CLIP_PENDING_VERIFY, the self-heal driver's `--verify-only` reconciliation loop, navigating to a candidate href and reading its REAL `document.body.innerText`, or select_confirmed_href's real-world substring match against that real text. Every one of PROP-006(a)/(b)'s FIND-022/FIND-018 regression tests is a Tier-2 stub test using text the test author wrote by hand ('embedded within a longer realistic page-text blob') — none of it is real Instagram markup. Consequently the empirical claims underpinning the entire redesign (that IG truncation reliably preserves the first 40 characters verbatim; that document.body.innerText's real shape doesn't itself contain false substring collisions from surrounding page chrome) are asserted in prose but never checked against reality by any proof obligation in this spec, live or otherwise. A wrong assumption here would not surface until a real misattribution/duplicate-post incident in production — which is precisely the failure mode (a false 'verified' confirmation) this entire feature exists to eliminate.",
+  "evidence": {
+    "filePath": ".vcsdd/features/clip-post-verify-hardening/specs/verification-architecture.md",
+    "lineRange": "84",
+    "snippet": "actually post the real queued clip via the refactored post_reel.py; independently re-verify via a SEPARATE fresh browser navigation ... that the account's post count increased by exactly 1 ... re-run monitor.sh against the LIVE ledger"
+  },
+  "priorEvidence": {
+    "source": "reviews/spec/iteration-9/output/verdict.json",
+    "note": "verification_readiness dimension evidence: 'confirmed PROP-008 (the only Tier-3 live proof obligation) never exercises the self-heal caption-match path, only the direct-success posting path' — this evidence item is unaddressed in REV10."
+  },
+  "routeToPhase": "1c"
+}
