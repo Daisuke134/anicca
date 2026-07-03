@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "edge_case_coverage",
+  "category": "test_quality",
+  "severity": "high",
+  "description": "Zero automated test exercises the real integration path decide.py -> ledger -> gate.py, which is exactly where the FIND-001 defect lives. All 4 gate tests in test_strategy.py (test_gate_blocks_small_sample, test_gate_blocks_low_winrate, test_gate_blocks_negative_net_even_if_winrate_ok, test_gate_passes_when_proven) call `gate.evaluate_gate([...])` directly with hand-crafted `{\"pnl_usdc\": ...}` dict literals that already have the exact key evaluate_gate expects -- they never go through `_load_resolved()`, never touch a real ledger file, and never use a row shaped the way decide.py actually writes it. This means the specific function containing the schema-mismatch bug (`_load_resolved`, gate.py:32-46) has 0% test coverage, and there is no test anywhere (test_lib.py, test_strategy.py, or any other file in the directory) that writes a decide.py-shaped row to the ledger and asserts gate.py's CLI or `_load_resolved()` correctly recognizes it once resolved. This is precisely the failure mode this review's own instructions call out: 'tests that would pass even if a critical edge case were unhandled' -- all 19 tests in this slot pass while the actual wiring between decide.py's ledger writes and gate.py's ledger reads is completely unverified and, per FIND-001, broken.",
+  "evidence": {
+    "filePath": "skills/earn/pm-trade/test_strategy.py",
+    "lineRange": "52-75",
+    "snippet": "def test_gate_passes_when_proven():\n    rows = [{\"pnl_usdc\": 1.0}] * 14 + [{\"pnl_usdc\": -0.5}] * 6\n    passed, stats = gate.evaluate_gate(rows)\n    assert passed is True and stats[\"winrate\"] >= 0.55 and stats[\"net_usdc\"] >= 0"
+  },
+  "routeToPhase": "2b"
+}

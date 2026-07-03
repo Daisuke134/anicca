@@ -94,6 +94,15 @@
    "owner": "wf-a:earn",
    "summary": "Launch/manage $ANICCA token (MoltX ~$2.70). args {launch:true,name,symbol}."
   },
+  "earn/pm-trade": {
+   "track": "A",
+   "dir": "skills/earn/pm-trade",
+   "entrypoint": "run.sh",
+   "status": "live",
+   "owner": "pm-trade",
+   "spec": "2026-07-03-anicca-colony-architecture (design); impl Phase-3 in progress",
+   "summary": "CLOUD-portable Polymarket earn slot (wallet-only, no browser/KYC). PRIMARY strategy = momentum/latency (Binance BTC spot vs Polymarket 5min BTC up/down repricing lag; pure arb pair-cost is dead on the resting book, verified 0/70 all at $1.0010). Files: lib.py (pure Kelly/edge/settle_pnl) + momentum.py (latency edge) + decide.py (live wiring) + resolve.py (Binance outcome->pnl) + gate.py (real PM_PAPER_PASS from resolved ledger) + run.sh (DRY_RUN default, real order fail-closed). 29 tests GREEN (lib12+strategy12+resolve5); risk_gate wired. Money-safe: no signing/order code yet. Base=BlockRunAI/polymarket-agent."
+  },
   "earn/gig": {
    "track": "A",
    "dir": "skills/earn/gig",

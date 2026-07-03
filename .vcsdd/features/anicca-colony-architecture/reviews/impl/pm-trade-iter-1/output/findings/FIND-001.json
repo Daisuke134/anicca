@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "spec_fidelity",
+  "category": "purity_boundary",
+  "severity": "critical",
+  "description": "lib.py (the 'pure Quarter-Kelly sizing' module registry.json advertises as implementing REQ-PMTRADE) is never imported or invoked by any executable path. run.sh only shells out to pm-paper.py 'discover'; it never calls python3 to reach kelly_fraction/position_size/arb_pair_profit, and pm-paper.py itself has zero import of lib. A repo-wide grep for 'position_size|kelly_fraction|arb_pair_profit' outside lib.py/test_lib.py returns zero hits in any runtime/skill file. registry.json:104 claims 'lib.py=pure Quarter-Kelly sizing+edge+arb-pair-cost (9/9 tests)' as if this were the sizing engine of the live slot, but the running slot never consults it — the tested math and the executed behavior are two disconnected artifacts. There is also no CLI/argv entrypoint on lib.py (no `if __name__ == '__main__'`), so even the model driving the loop has no discoverable way to invoke this math as a tool.",
+  "evidence": {
+    "filePath": "skills/earn/pm-trade/run.sh",
+    "lineRange": "15-25",
+    "snippet": "DISCOVER=\"$(\"$PY\" \"$HERE/pm-paper.py\" discover 5 2>/dev/null | tail -1)\"\n... (no reference to lib.py anywhere in this file)"
+  },
+  "routeToPhase": "2b"
+}

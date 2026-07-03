@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "implementation_correctness",
+  "category": "test_coverage",
+  "severity": "medium",
+  "description": "Positive/mitigating finding, included for completeness: the real-order branch (run.sh:19-22) is currently a hardcoded no-op regardless of gate state ('real executor not wired yet; paper-only build increment', exit 0) — so no path in the CURRENT code can place a real order or spend real USDC. This is verified by reading run.sh in full; the file contains no wallet key handling, no HTTP POST to a CLOB order endpoint, and no signing code anywhere. However, there is zero automated test asserting this invariant (no bats/shell test exercising DRY_RUN=false EARN_MODE=execute PM_PAPER_PASS=1 and asserting the output still says 'execute-blocked' and never contains a real order id) — the only thing standing between the current safe behavior and a future silent regression is a code comment, not a test.",
+  "evidence": {
+    "filePath": "skills/earn/pm-trade/run.sh",
+    "lineRange": "19-23",
+    "snippet": "echo '{\"slot\":\"earn/pm-trade\",\"mode\":\"execute-blocked\",\"note\":\"real executor not wired yet; paper-only build increment\",\"paper_gate\":1}'\n  exit 0"
+  },
+  "routeToPhase": "2b"
+}

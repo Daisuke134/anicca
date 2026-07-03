@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "structural_integrity",
+  "category": "spec_gap",
+  "severity": "medium",
+  "description": "skills/registry.json's earn/pm-trade entry is now stale relative to the shipped iteration-2 architecture, and its own metadata is internally inconsistent with the spec it cites. (1) The `summary` field (registry.json:104) still says 'First strategy=arb pair-cost YES+NO<\\$1' even though behavioral-spec.md Section 3 REQ-PMTRADE explicitly documents that this was CORRECTED after a live 70-market scan found 0 arbs and states 'the primary earner is momentum/latency ... NOT resting-book arb' -- the registry summary contradicts the spec it is supposed to summarize. The summary also never mentions momentum.py, gate.py, or decide.py at all, and still describes the paper-pass gate as if PM_PAPER_PASS were an externally-set flag ('real orders gated behind EARN_MODE=execute + PM_PAPER_PASS=1') rather than a value gate.py computes from the paper ledger -- which is the exact spoofable-env-var framing iteration-1's FIND-004 was raised against. Since this summary is the model-facing description surfaced to the ReAct loop's THINK step (the skill's ACI per this project's own build-agents rule), a stale/contradictory summary actively misleads the model driving the loop about what the skill currently does. (2) registry.json:103 claims `\"spec\": \"2026-07-03-anicca-colony-architecture (Phase 1c PASS iter-8)\"`, asserting the spec has passed a Phase 1c gate at iteration 8, but behavioral-spec.md's own frontmatter status line (line 4) states 'Status: Phase 1a, revised through adversary iteration 4' -- the registry asserts a spec-approval milestone the spec document itself does not corroborate.",
+  "evidence": {
+    "filePath": "skills/registry.json",
+    "lineRange": "97-105",
+    "snippet": "\"earn/pm-trade\": {\n ...\n \"spec\": \"2026-07-03-anicca-colony-architecture (Phase 1c PASS iter-8)\",\n \"summary\": \"...First strategy=arb pair-cost YES+NO<$1. No human, no fake earn.\"\n}"
+  },
+  "routeToPhase": "2b"
+}

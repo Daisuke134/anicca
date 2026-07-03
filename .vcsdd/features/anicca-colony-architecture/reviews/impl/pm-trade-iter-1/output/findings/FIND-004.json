@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "implementation_correctness",
+  "category": "security_surface",
+  "severity": "critical",
+  "description": "PM_PAPER_PASS is checked by run.sh as the gate that proves 'paper P&L tracked backtest' passed, but nothing in the codebase ever COMPUTES this variable. pm-paper.py's resolve() computes a real winrate/realized-PnL, but no code reads that output and sets PM_PAPER_PASS based on it — the flag has zero producer anywhere in the repo (grep confirms the only occurrences of the string are run.sh's own gate check and its comment). As written, PM_PAPER_PASS=1 is a bare, un-derived env var: anyone or anything (a misconfigured cron env, a copy-pasted launchd plist, a future 'wire the executor' patch) can set it to 1 with zero relationship to an actual paper track record, defeating the entire purpose of the paper-mode gate the spec calls the safety mechanism ('a loop with no gate is an agent agreeing with itself at speed'). Today this is masked because the execute branch is a hardcoded no-op stub (see FIND-005), but the gate itself is not a real gate — it is a placeholder with no verification logic behind it.",
+  "evidence": {
+    "filePath": "skills/earn/pm-trade/run.sh",
+    "lineRange": "19",
+    "snippet": "if [ \"$DRY_RUN\" = \"false\" ] && [ \"$EARN_MODE\" = \"execute\" ] && [ \"${PM_PAPER_PASS:-0}\" = \"1\" ]; then"
+  },
+  "routeToPhase": "2b"
+}
