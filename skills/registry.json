@@ -94,6 +94,15 @@
    "owner": "wf-a:earn",
    "summary": "Launch/manage $ANICCA token (MoltX ~$2.70). args {launch:true,name,symbol}."
   },
+  "earn/pm-trade": {
+   "track": "A",
+   "dir": "skills/earn/pm-trade",
+   "entrypoint": "run.sh",
+   "status": "live",
+   "owner": "pm-trade",
+   "spec": "2026-07-03-anicca-colony-architecture (Phase 1c PASS iter-8)",
+   "summary": "CLOUD-portable: Polymarket CLOB earn slot (wallet-only, no browser, no KYC). Base=BlockRunAI/polymarket-agent. lib.py=pure Quarter-Kelly sizing+edge+arb-pair-cost (9/9 tests). pm-paper.py=live read-only paper mechanics. run.sh DRY_RUN=true default; real orders gated behind EARN_MODE=execute + PM_PAPER_PASS=1 (paper-first, HARD 0.31). First strategy=arb pair-cost YES+NO<$1. No human, no fake earn."
+  },
   "earn/gig": {
    "track": "A",
    "dir": "skills/earn/gig",
