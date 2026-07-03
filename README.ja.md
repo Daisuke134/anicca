@@ -46,6 +46,48 @@ cd runtime/compute-proxy && npm install && cd -  # 一度だけ（@blockrun/llm 
 
 ---
 
+## 何に足を踏み入れるのか — human-funded と self-funded、具体的に
+
+起動する前に、あなたのサブスク/財布が何に使われるかを正確に知っておくべきです。全loopの台帳(どこにあり、
+生死確認の仕方)は **[`docs/EARN_LOOPS.md`](docs/EARN_LOOPS.md)**（英語）を参照。
+
+```
+~/anicca/skills/earn/
+├── clip/        ← IG per-view クリップ(長尺動画→9:16切抜→字幕→投稿)
+├── affiliate/   ← Amazon アソシエイトのスライドショー
+├── video/       ← faceless動画のライフサイクル(作成→ウォームアップ→投稿)
+├── bounty/      ← Algora GitHub bounty(Issue発見→修正→マージ)
+├── gig/         ← ココナラ案件(発見→応募→納品)
+└── run.sh       ← self-funded共通入口: yield / hl_trade / x402_sell / token_launch
+```
+
+**human-funded で起動する(`ANICCA_BRAIN=claude-p`、あなたのClaude Codeサブスクで駆動)場合:**
+5本の独立したtmuxループが動き、それぞれ決まった時間・決まった通貨で稼ぎます:
+
+```
+anicca-clip-core       (毎時)        → USDC、IG per-view報酬
+anicca-affiliate-core  (毎日08:41)   → ¥、Amazonアソシエイト報酬
+anicca-video-core      (4時間毎)     → USDC、faceless動画アカウント
+anicca-bounty-core     (毎日09:29)   → USD、マージされたGitHub bountyのPR
+anicca-gig-core        (毎時)        → ¥、ココナラ報酬(法定通貨、人間の銀行口座着金)
+```
+判断は行いません — 決まったスケジュールを回すだけ。安価で予測可能ですが、この5本の
+レールが生む分にしか稼げません(上記の「銀行口座」は明示的に差し替えない限りDaisのものです)。
+
+**self-funded で起動する(既定 `ANICCA_BRAIN=proxy`/ClawRouter、自分のwallet+無料モデルで駆動)場合:**
+120秒毎に起きて「次に何をするか」を自分で判断する daemon が1本動きます:
+
+```
+1 wake → LLM が次のうち1つを選ぶ: hl_trade | x402_sell | token_launch | yield | cook |
+                                    self/issue-dev | earn/clip | earn/video | earn/gig | earn/bounty
+        (上のhuman-fundedループと全く同じコードを、固定スケジュールでなく判断で呼ぶ)
+```
+より自律的で、より不安定 — 学習前に取引で損をすることもありますが、cronの時報を待たない分
+複利も速く効きます。両者は`skills/earn/`の全く同じコードを共有し、`ANICCA_INSTANCE`が
+アカウント/wallet/ledgerの衝突だけを防いでいます。
+
+---
+
 ## アーキテクチャ（一段落）
 
 アニッチャは [Conway の automaton](https://github.com/Conway-Research/automaton) と同じ **automaton パターン**（ReAct ループ＝think → act → observe → persist ＋ heartbeat）で動きますが、**より簡素で別のスタック：ClawRouter（食＝推論・自己決済 x402）＋ 自分の Mac（ローカル）または Akash（クラウド）** の上で動き、Conway に依存しません。ループは [`runtime/loop/`](runtime/loop/) にあり、runtime root（`$ANICCA_HOME`）配下でスキルスロット群と 1 つの Base Smart Wallet とともに動きます。クラウド版では認証に **Supabase**、サービス接続に **Composio** を使います。
