@@ -32,3 +32,17 @@
 3. Harden the deploy rollback (verify restore target) + build the OpenClaw 15-min money-path monitor cron.
 4. FIND-005 (home_geo persisted) + FIND-006 (delete/consolidate dead modules).
 5. Re-run final wiring adversary → PASS → PR feature→dev→main (prod deploy, guarded by the smoke).
+
+## UPDATE 2026-07-04 — adversary FIND-001..006 addressed
+- FIND-001: nixpacks.toml adds ffmpeg + python313Packages.edge-tts to Railway PATH (disk fix). PROD PROOF
+  = re-run the real call against the DEPLOYED Railway service AFTER merge (railway up was broken: 413/wrong
+  dir; Railway deploys via git push to main). synth failure still safely escalates to Live (no silent call).
+- FIND-002: route-cache.js wired into travel.js directionsMinutes → provider called ONCE per (geo,bucket)
+  across 60s ticks (cache-hit test). FIXED.
+- FIND-003: workflow flap-guard re-verifies after restore; money-path-monitor.mjs (15-min, uses tested
+  RollbackController debounce/flap/dedup, persisted state) created as the OpenClaw-cron runnable. FIXED.
+- FIND-004: parseTransitPlan door-to-door (walk incl) → no under-estimate/late. FIXED + verified.
+- FIND-005 (accepted): geocode is memoized (no per-tick re-geocode = cost goal met); DB-persisted home_geo
+  is a deferred optimization, not a correctness issue. Documented deviation.
+- FIND-006: money-path.js (smoke+monitor), route-cache.js (travel), voice-*/transit/user-selector all now
+  imported by production paths → no dead-but-tested modules. FIXED.
