@@ -117,12 +117,15 @@ cook?"** — on hearing it I immediately revert any strategy code. Mirrored to m
 its tools so they earn more money ok?? you should not be fixing these things yourself … your job is simple.
 watch them earn. that is the job. to watch them earn and we work on the monitoring of all the agents and
 their self improving harness." My whole job = ① **SETUP** (env/wallet/seed/one-command spawn) ② **RUN** them
-③ **WATCH** (monitoring + the harness). When a run crashes or a tool is broken, I do NOT edit the earner's
-code — the error is **FOOD for the self-heal loop (H4)**: the harness feeds the AI its own error and the AI
-fixes its own file. Also per Dais: **claude-p loops = human in the loop (human subscription fuel) → to be
-removed**; earners run on their OWN x402/BlockRun-paid fuel. **Violation log 2026-07-04:** I hand-fixed the
-volume-str crash in pm-trade's `ai_analyzer.py` (1 line) and was about to edit `wallet.py`'s dead RPC —
-stopped, corrected; those two errors become H4's first test cases.
+③ **WATCH** (monitoring + the harness). **Bootstrap carve-out (Dais 2026-07-04 3rd msg):** "rigth now, we
+can fix the error ourselves ofc" — for the FIRST bring-up I MAY fix earner errors so the full thing runs
+E2E once; the END STATE is self-heal (H4): they fix themselves, we only monitor. The flow = ① verify the
+full thing works (real run, real money) ② put it inside them as a SKILL ③ watch them earn. **NO DRY RUNS —
+ever** (Dais: "we never do dry run since there is no meaning in that", = HARD 0.24): the guard is per-trade
+$-cap + kill-switch only, NOT a dry-run mode. Also per Dais: **claude-p loops = human in the loop (human
+subscription fuel) → to be removed**; earners run on their OWN x402/BlockRun-paid fuel. Known first
+self-heal test cases once H4 exists: pm-trade's volume-str crash + dead hardcoded RPC (fixed by me during
+bootstrap, logged here).
 
 ### Trades don't need me to be good — they self-improve (answers Dais Q2)
 The base agents (`polymarket-agent`, `Franklin-Trading`) are full LLM-in-loop agents: given a wallet + funds
@@ -561,9 +564,10 @@ W — SET UP base agents, RUN them, WATCH (setup = env/wallet/seed ONLY; the AI 
        the FIRST observation pass ran for real (11 live markets fetched; the agent produced its OWN
        portfolio analysis via BlockRun). Errors found while running — volume-str format crash (I hand-fixed
        1 line = §0.25 violation, logged; fix kept, pattern stopped) + hardcoded dead RPC polygon-rpc.com —
-       are NOT mine to fix: they are the FIRST FOOD for H4 self-heal (the AI edits its own wallet.py).
-       Remaining for DONE(no-mock): Polygon USDC seed (bridge from Base 0x810f) + thin guard (dry-run
-       default, per-trade $-cap, kill-switch) + the AGENT places a real small trade → on-chain tx. (#6)
+       get bootstrap-fixed by ME once (carve-out, §0.25) so the full E2E runs; from H4 on, they self-heal.
+       Remaining for DONE(no-mock): fix dead RPC + Polygon USDC seed (bridge from Base 0x810f) + thin guard
+       (per-trade $-cap + kill-switch, NO dry-run mode) + the AGENT places a real small trade → on-chain
+       tx → then SKILLIFY (put it inside the AI as a skill) → watch. (#6)
   W2  earn/sol-trade = `BlockRunAI/Franklin-Trading` same shape: setup → run → watch. (#17)
   W3  REMOVE claude-p human-in-loop (Dais 2026-07-04): claude-p loops burn a human subscription = human in
        the loop. Migrate earner loops to the AI's OWN x402/BlockRun-paid runtime so the fuel is the AI's
