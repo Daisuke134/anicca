@@ -1,4 +1,4 @@
-# Behavioral Spec — clip-post-verify-hardening (Phase 1a) — REV 3 (post iteration-2 FAIL)
+# Behavioral Spec — clip-post-verify-hardening (Phase 1a) — REV 4 (post iteration-3 FAIL)
 
 ## Context (why this feature exists)
 2026-07-03 live incident: `EARN_MODE=execute bash run.sh` self-reported `"posted @aiclipsvault: .../DaLKV2xP8Ij/"`
@@ -105,22 +105,30 @@ or duplicate a clip).
   candidate href is present in that reconfirmation read AND (b) `len(reconfirmation_hrefs) ==
   len(stable_before_hrefs) + 1`. If the outer loop exhausts all 10 iterations with no candidate ever
   found, there is nothing to reconfirm — proceed directly to REQ-004's `"unverified"` classification.
-- **REQ-004 (outcome field — every code path, including the 6 pre-share failure sites)**: `post_reel.py`'s
-  output JSON SHALL include a NEW key `outcome` with EXACTLY one of 3 literal string values, set on
-  EVERY return path (not just the live-share path):
+- **REQ-004 (outcome field — every code path, including the 6 pre-share failure sites, the
+  before-unstable abort, and the exception fallback)**: `post_reel.py`'s output JSON SHALL include a NEW
+  key `outcome` with EXACTLY one of 3 literal string values, PRESENT ON EVERY POSSIBLE RETURN PATH with
+  no gap:
   - `"failed"` — set at EACH of the 6 pre-share early-return sites (`:95,108,127,134,141,163` per the
-    Ground Truth section above) immediately before their existing `print(...); return`, AND also when the
-    post-share search loop (REQ-003) exhausts all 10 iterations with no candidate href ever found at all
-    (this is a stronger negative than "unverified": literally nothing new ever appeared, not even an
-    unconfirmed candidate).
+    Ground Truth section above) immediately before their existing `print(...); return`; ALSO set at a
+    NEW 8th site — immediately after the before-snapshot (REQ-001) if it comes back `stable=False`, THE
+    SYSTEM SHALL ABORT BEFORE OPENING THE COMPOSER (no share risk possible if the composer is never
+    opened) — this closes iteration-3's FIND-003, where an earlier draft let the composer/share flow
+    proceed unconditionally even on an unstable before-read, risking a genuine post being misclassified
+    as `"failed"` and duplicate-retried; ALSO set (via `res.setdefault("outcome","failed")` in the
+    existing top-level `finally:` block, `:187-190`) as a last-resort fallback so an uncaught exception
+    ANYWHERE in the flow (iteration-3 FIND-002's "7th path") still yields a JSON with `outcome` present,
+    never absent; ALSO set when the post-share search loop (REQ-003) exhausts all 10 iterations with no
+    candidate href ever found at all.
   - `"unverified"` — set when the search loop DID find a candidate href, but REQ-003's reconfirmation
     step failed (candidate missing on reconfirm, OR count didn't increase by exactly 1).
   - `"published"` — set when the search loop found a candidate AND REQ-003's reconfirmation passed.
   The post-share branch's mapping (loop-exhausted / unverified / published) SHALL be produced by a single
   pure function `classify_outcome(...)` — no code path may set `outcome="published"` other than through
-  it (Phase 3 adversary check, see PROP-004/verification gate below). The 6 pre-share sites set
-  `outcome="failed"` directly inline (simple early returns, no decision logic needed there). The existing
-  `published`(bool) and `post_url`(str|None) keys remain unchanged and are set consistently with `outcome`
+  it (Phase 3 adversary check, see PROP-004/verification gate below). All `"failed"` sites (6 pre-share +
+  the before-unstable abort) set `outcome="failed"` directly inline; the exception-fallback uses
+  `setdefault` so it never clobbers an outcome a normal path already set. The existing `published`(bool)
+  and `post_url`(str|None) keys remain unchanged and are set consistently with `outcome`
   (`outcome=="published"` implies `published==True` and `post_url` is the confirmed URL; both other
   outcomes imply `published==False`).
 - **REQ-005**: WHEN `run.sh` observes `outcome=="published"`, THE SYSTEM SHALL append a ledger line with
@@ -134,15 +142,25 @@ or duplicate a clip).
 - **REQ-007**: WHEN `run.sh` observes `outcome=="failed"`, THE SYSTEM SHALL leave the clip file in
   `queue/` (current behavior preserved, no ledger line added) so the loop naturally retries it on a later
   wake.
-- **REQ-008 (self-heal, REUSING the existing mechanism)**: WHEN a wake begins and `~/clips/pending-verify/`
-  is non-empty, THE SYSTEM SHALL, BEFORE producing/posting any new content, call the EXISTING
-  `post_reel.py --verify-only --handle <handle>` reconciliation flow (already implemented at
-  `post_reel.py:82,111-118` — do not build a parallel mechanism) for each pending-verify clip's expected
-  account; IF the returned `reels` list (once run through REQ-001's stabilize check) contains a URL not
-  present at the time the clip was moved to `pending-verify/` (tracked via a small sidecar file recording
-  the `stable_before_hrefs` count/set at move-time), THEN treat it as now-confirmed: move the clip to
-  `posted/` and append the delayed `"status":"posted"` ledger line; OTHERWISE leave it in
-  `pending-verify/` for the next wake (never silently drop it, never duplicate-post it).
+- **REQ-008 (self-heal, REUSING the existing mechanism — WIRING CLARIFIED after iteration-3 FIND-004)**:
+  WHEN a wake begins and `~/clips/pending-verify/` is non-empty, THE SYSTEM SHALL, BEFORE producing/
+  posting any new content, run a self-heal driver (a separate small script/function, NOT a modification
+  to `post_reel.py --verify-only` itself, which stays byte-for-byte unchanged for its other existing
+  caller) that:
+  1. Invokes `post_reel.py --verify-only --handle <handle>` as a subprocess UP TO 3 TIMES, waiting 5
+     seconds between invocations — this is REQ-001's stabilize model applied EXTERNALLY, at the
+     CALLER level, across separate `--verify-only` subprocess calls (each individual call's own internal
+     read at `post_reel.py:112-113` is untouched — `_reads_stable` is applied by the DRIVER comparing
+     the `reels` arrays returned by consecutive subprocess calls, not by any change inside
+     `post_reel.py`'s `--verify-only` branch).
+  2. Stops calling once 2 consecutive `reels` arrays match (stable), or after 3 calls if they never
+     match (inconclusive — leave the clip in `pending-verify/`, try again next wake, per REQ-002's
+     inconclusive handling).
+  3. IF the stabilized `reels` list contains a URL not present at the time the clip was moved to
+     `pending-verify/` (tracked via a small sidecar file recording the `stable_before_hrefs` count/set at
+     move-time), THEN treat it as now-confirmed: move the clip to `posted/` and append the delayed
+     `"status":"posted"` ledger line; OTHERWISE (stable but no new URL, or inconclusive) leave it in
+     `pending-verify/` for the next wake (never silently drop it, never duplicate-post it).
 - **REQ-009 (monitor honesty — REV 3, fixes the no-op found in iteration-2 FIND-001)**: `monitor.sh`'s
   posts-recorded count SHALL be computed as follows:
   1. Collect `status=="posted"` lines (new-format, this feature onward) → their `post_url` values.
@@ -153,11 +171,16 @@ or duplicate a clip).
   This is the concrete fix for the real incident: the ledger's line 2 and line 3 share the IDENTICAL
   `post_url` (`DaLKV2xP8Ij`) — line 2 is the true original post, line 3 is the false-positive duplicate
   of it. A line-count rule (REV 1/REV 2, both wrong) counts both = inflates by 1. URL-based
-  deduplication correctly collapses them to 1, giving the true count of 2 for the real ledger
-  (line 1's `DaK4tlmvomQ` + line 2/3's shared `DaLKV2xP8Ij` = 2 distinct URLs), matching the real
-  Instagram profile's actual post count of 2 tracked posts (a 3rd, `DaK36VYPYuE`, predates ledger
-  tracking entirely per D-57 and is not expected to appear in the ledger at all — monitor.sh has never
-  claimed to count untracked pre-ledger posts, that is unchanged, out of scope).
+  deduplication correctly collapses them to 1, giving the true count of 2 for that 4-line snapshot
+  (line 1's `DaK4tlmvomQ` + line 2/3's shared `DaLKV2xP8Ij` = 2 distinct URLs, matching the real
+  Instagram profile's tracked post count at that point in time; a 3rd, `DaK36VYPYuE`, predates ledger
+  tracking entirely per D-57 and is not expected to appear in the ledger — out of scope, unchanged).
+  ★ IMPORTANT (iteration-3 FIND-001): the live ledger file is MUTABLE and grows every time a real clip
+  posts (already grew to 5 lines — a genuine new post `DaVbOajvKqO` landed — mid-review of this very
+  spec). The regression TEST for this algorithm (PROP-007) MUST use a FROZEN, version-controlled copy of
+  the exact 4-line snapshot quoted above (`tests/fixtures/ledger-2026-07-03-snapshot.jsonl`), not a live
+  reference to `~/.openclaw/state/clip-earn-ledger.jsonl` — a test that reads the live path will keep
+  drifting and eventually fail for reasons unrelated to the algorithm's correctness. ★
   Going forward (once REQ-004/005/006 ship), this exact false-positive-duplicate-URL scenario cannot
   recur (an `unverified` outcome never gets a ledger `post_url`, per REQ-006) — URL-deduplication is
   primarily a historical-data fix plus defense-in-depth, not the primary prevention mechanism (REQ-001/

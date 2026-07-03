@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "verification_readiness",
+  "category": "spec_gap",
+  "severity": "high",
+  "description": "REQ-008 states the self-heal flow calls the EXISTING `--verify-only` reconciliation flow and treats the result as confirmed 'IF the returned reels list (once run through REQ-001's stabilize check) contains a URL not present...'. This implies stabilize_reads (a multi-read, 5s-settle primitive) must somehow be applied to --verify-only's output. But: (1) the verification-architecture.md purity-boundary table (lines 10-15) lists `stabilize_reads` as replacing ONLY 'the single read at :123 (before-snapshot use)' -- it never mentions wiring stabilize_reads into --verify-only's own single read at post_reel.py:112-113; (2) the refactor pseudocode (lines 19-46) only shows the :123 site being replaced, --verify-only's code (lines 111-118) is untouched by the sketch; (3) PROP-006, the integration test for REQ-008, stubs `--verify-only` as a single flat response (`{\"reels\":[3 items],\"ok\":true}`) with no multi-read/stabilize behavior exercised at all. There is no proof obligation, code-path description, or test that specifies HOW 'run the returned reels list through REQ-001's stabilize check' is actually implemented (does the self-heal caller invoke `--verify-only` 2-3 times itself and apply `_reads_stable` externally between subprocess calls? does --verify-only need its own internal modification to call stabilize_reads, which would change its return shape for its other caller too? Neither is stated). This leaves a real implementation ambiguity with zero test coverage for Phase 3.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca-project/.vcsdd/features/clip-post-verify-hardening/specs/verification-architecture.md",
+    "lineRange": "10-15,60",
+    "snippet": "stabilize_reads(...) | ... | the single read at :123 (before-snapshot use)  <-- :112-113 (verify-only) never mentioned\nPROP-006 ... stub `--verify-only` -> {\"reels\":[3 items],\"ok\":true} (2+1)  <-- single flat stub, no stabilize exercised"
+  },
+  "routeToPhase": "1b"
+}

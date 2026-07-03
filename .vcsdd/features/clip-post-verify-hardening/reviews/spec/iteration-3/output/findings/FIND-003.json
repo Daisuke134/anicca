@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "The refactor pseudocode in verification-architecture.md (lines 19-46) computes `before = stabilize_reads(...)` BEFORE the composer opens, then proceeds through 'unchanged composer/upload/caption/share steps' UNCONDITIONALLY -- there is no gate on `before[\"stable\"]` before the share button is clicked (the real share click at post_reel.py:171 happens regardless of before's stability, since it is untouched by this refactor). Only the POST-SHARE search loop is gated: `if before[\"stable\"]: for _ in range(10): ...`. If REQ-001/002's stabilize_reads returns inconclusive (`stable=False, hrefs=None` -- an explicitly anticipated outcome per REQ-002), the pseudocode SKIPS the entire post-share search loop, `candidate` stays None, and `classify_outcome(None, None, None)` is called (before_count=None since `before[\"stable\"]` is False) -- which per REQ-004/PROP-003 maps to `outcome=\"failed\"`. But REQ-007 says a 'failed' outcome leaves the clip in queue/ 'so the loop naturally retries it on a later wake'. Since the actual Instagram share click already fired (the composer flow is NOT gated on before's stability), the video may have been genuinely posted, yet gets classified as 'failed' and retried -- producing a DUPLICATE live post. This is precisely the class of harm this entire feature exists to prevent (per the Context section's incident narrative), reintroduced via the new stabilize-model's own inconclusive branch. Neither REQ-001, REQ-002, REQ-003, nor REQ-004 states what should happen to the overall posting flow (e.g. abort BEFORE opening the composer) when the initial before-snapshot fails to stabilize.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca-project/.vcsdd/features/clip-post-verify-hardening/specs/verification-architecture.md",
+    "lineRange": "19-33",
+    "snippet": "before = stabilize_reads(lambda: read_hrefs(tid, handle))   # REQ-001/002, up to 3 reads / ~10s\n# ...unchanged composer/upload/caption/share steps...\ncandidate = None\nif before[\"stable\"]:\n    for _ in range(10):"
+  },
+  "routeToPhase": "1a"
+}

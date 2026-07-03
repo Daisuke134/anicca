@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "high",
+  "description": "REQ-004 claims the new `outcome` key is 'set on EVERY return path (not just the live-share path)' and the Ground Truth section enumerates exactly 6 pre-share early-return sites (:95,108,127,134,141,163). Re-reading post_reel.py's real control flow shows a 7th output path the spec never mentions: the top-level `except Exception as e: res[\"error\"] = repr(e)[:200]` handler (post_reel.py:187-188), which wraps the ENTIRE main() body (from the initial navigate through the post-share search loop) and falls through to the unconditional `finally: print(json.dumps(res, ensure_ascii=False))` (post_reel.py:189-190). Any exception raised anywhere in that block (e.g. a CDP navigate timeout mid-search-loop, a websocket error during file-chooser load, a KeyError from an unexpected DOM shape) produces a JSON output with no `outcome` key at all -- not one of the spec's 3 documented values, but entirely ABSENT. Neither REQ-004 nor REQ-005/006/007's run.sh routing logic specifies what run.sh should do when `outcome` is missing/None (as opposed to one of 'published'/'unverified'/'failed'). Since REQ-004 explicitly claims completeness ('EVERY return path') and PROP-004(b) instructs the Phase-3 adversary to confirm 'outcome is set ONLY via classify_outcome's return' for the post-share branch and inline for the 6 sites, a future adversary has no instruction covering this 7th path, so it will predictably be missed again.",
+  "evidence": {
+    "filePath": "/Users/anicca/.claude/skills/ig-reels-poster/scripts/post_reel.py",
+    "lineRange": "187-190",
+    "snippet": "except Exception as e:\n    res[\"error\"] = repr(e)[:200]\nfinally:\n    print(json.dumps(res, ensure_ascii=False))"
+  },
+  "routeToPhase": "1a"
+}

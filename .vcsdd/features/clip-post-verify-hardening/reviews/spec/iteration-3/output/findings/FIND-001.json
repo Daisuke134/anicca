@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "verification_readiness",
+  "category": "test_quality",
+  "severity": "critical",
+  "description": "PROP-007 in verification-architecture.md instructs: 'feed monitor's counting function the ACTUAL 4 lines from ~/.openclaw/state/clip-earn-ledger.jsonl verbatim -> assert count == 2'. The behavioral-spec's Ground Truth section (behavioral-spec.md:55-63) also asserts the ledger has exactly 4 lines. Re-reading the REAL file during this review (2026-07-03) shows it now has 5 lines, not 4: a new line 5 was appended (`post_url: https://www.instagram.com/aiclipsvault/reel/DaVbOajvKqO/`, wake=00MR51XVS3E9F31A5762BC42D1, no status field). Manually tracing REQ-009's own dedup algorithm against the CURRENT real file: step1 (status==posted) = {} (no line has a status field yet); step2 (old-format, non-null, non-flagged) = {DaK4tlmvomQ, DaLKV2xP8Ij (lines 2+3 collapse to 1), DaVbOajvKqO} = 3 distinct URLs; union+dedupe = 3. Following PROP-007's own literal instruction ('feed the ACTUAL lines... verbatim') against the file AS IT EXISTS RIGHT NOW yields count=3, directly contradicting PROP-007's hardcoded 'assert count == 2'. The spec's core regression-test fixture points at a live, mutable, ever-appending production path rather than a frozen snapshot copy, so the very proof obligation meant to be the literal regression test for this incident is already stale/false within hours of being written, and will keep drifting every time run.sh posts a new real clip. This is a test_quality defect: a reproducible test must pin a versioned fixture (e.g. a copy of the exact 4 lines saved into the test directory as of 2026-07-03), not reference the live state path directly.",
+  "evidence": {
+    "filePath": "/Users/anicca/.openclaw/state/clip-earn-ledger.jsonl",
+    "lineRange": "1-5",
+    "snippet": "line5: {\"slot\":\"earn/clip\",...,\"post_url\":\"https://www.instagram.com/aiclipsvault/reel/DaVbOajvKqO/\",...} -- a 5th line that did not exist when behavioral-spec.md's Ground Truth section (lines 55-63) and verification-architecture.md's PROP-007 were authored, both of which assert exactly 4 lines / count==2."
+  },
+  "routeToPhase": "1a"
+}

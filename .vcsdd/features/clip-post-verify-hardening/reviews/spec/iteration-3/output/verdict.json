@@ -1,0 +1,43 @@
+{
+  "feature": "clip-post-verify-hardening",
+  "reviewContext": {
+    "reviewType": "spec",
+    "phase": "1c"
+  },
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-03T00:00:00Z",
+  "iteration": 3,
+  "priorIterationResolution": [
+    {"priorFinding": "FIND-001 (iteration-2, REQ-009 no-op)", "status": "FIXED", "note": "Manually traced REQ-009's URL-dedup algorithm against the exact 4-line ledger snapshot quoted in behavioral-spec.md's Ground Truth section: step1(status==posted)={}; step2(old-format,non-null,non-flagged)={DaK4tlmvomQ,DaLKV2xP8Ij} (lines 2+3 correctly collapse to 1 URL); union/dedupe=2. The algorithm design itself is correct for that snapshot. HOWEVER a new, distinct problem was found in the test-fixture wiring -- see NEW FIND-001 (iteration-3)."},
+    {"priorFinding": "FIND-002 (iteration-2, outcome missing on 5 early-return paths)", "status": "FIXED", "note": "Ground Truth + REQ-004 now correctly enumerate 6 pre-share sites (:95,108,127,134,141,163), all 6 verified byte-for-byte against the real post_reel.py file. HOWEVER a 7th, previously-unaddressed failure path was found (the top-level except/finally) -- see NEW FIND-002 (iteration-3)."},
+    {"priorFinding": "FIND-003 (iteration-2, 4-vs-5-reads self-contradiction)", "status": "FIXED", "note": "Manually traced PROP-001's two fixtures against REQ-001/002's stated algorithm (3 reads, compare latest-vs-immediately-preceding after read2 and again after read3): both fixtures (stable=True/hrefs=['a','b'] and stable=False/hrefs=None) reproduce exactly. No contradiction remains between REQ-001, REQ-002, and stabilize_reads's signature."},
+    {"priorFinding": "FIND-004 (iteration-2, wrong line citations)", "status": "FIXED", "note": "Verified every cited line number against the real post_reel.py file: :95,:108,:118,:123,:127,:134,:141,:163,:169,:174-181,:179,:82,:111-118 all match the real file exactly, including the verification-architecture.md pseudocode's inline ':174'..':180-181' comments."},
+    {"priorFinding": "FIND-005 (iteration-2, shrunk 120s window)", "status": "FIXED", "note": "The refactor pseudocode preserves the exact original `for _ in range(10): time.sleep(12)` outer loop shape (verified line-for-line against post_reel.py:174-181) and only adds a ~10s reconfirmation AFTER a candidate is found, not a replacement of the search budget."}
+  ],
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-002", "FIND-003"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/.claude/skills/ig-reels-poster/scripts/post_reel.py:95,108,127,134,141,163", "description": "all 6 pre-share failure-site line citations verified byte-accurate against the real file"},
+        {"type": "file", "location": "/Users/anicca/.claude/skills/ig-reels-poster/scripts/post_reel.py:123,174-181", "description": "the two real race-condition sites (before-snapshot read, post-share search loop) verified byte-accurate"}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-004"],
+      "evidence": [
+        {"type": "file", "location": ".vcsdd/features/clip-post-verify-hardening/specs/verification-architecture.md:55", "description": "PROP-001 fixture manually traced and confirmed to reproduce stable=True/hrefs=['a','b'] and stable=False/hrefs=None exactly per REQ-001/002"},
+        {"type": "file", "location": ".vcsdd/features/clip-post-verify-hardening/specs/verification-architecture.md:57", "description": "PROP-003's 4 classify_outcome fixtures manually traced and confirmed consistent with REQ-003/004's published/unverified/failed mapping"}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 4,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}
