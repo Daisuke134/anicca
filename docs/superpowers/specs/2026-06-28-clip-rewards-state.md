@@ -228,6 +228,21 @@ REMAINING for "prints money daily": CLIP-B 5-gate+record-earn(real payout), CLIP
 account, CLIP-E first real USDC (campaign), CLIP-F self-improve. Login-persist note: IG OTP = LATEST msg in
 the "Verify your profile" thread.
 
+## D-62 (2026-07-03, later still) — ★ IG re-login blocked on BOTH CDP-raw and camofox-stealth: likely a behavioral (not fingerprint) tell ★
+Tried the no-human re-login for @aiclipsvault twice, two different browser engines: (1) raw CDP on the
+dedicated CloakBrowser :9223, (2) camofox stealth Firefox :9377 (per HARD RULE 0.30 fallback order).
+★ BOTH hit the identical `https://www.instagram.com/auth_platform/recaptcha/` wall ★ with no visible
+sitekey / grecaptcha object / recaptcha script — CapSolver literally has nothing to solve there. Checked
+keiodaisuke@gmail.com for any IG security/verification email in the last 24h — none arrived, so this
+isn't a stuck-OTP situation. ★ Key insight: since the SAME wall appeared on a stealth-fingerprint browser
+too, this is probably NOT a fingerprint-detection issue — both attempts filled the form via instant JS
+`setter.call()`/`.click()` with ZERO mouse movement and ZERO human keystroke timing, which is exactly the
+behavioral signal invisible-recaptcha-style risk engines key on regardless of browser fingerprint. ★
+STOPPED further attempts (repeated rapid retries risk escalating the account's risk score further).
+Next attempt should: (a) wait several hours before retrying, (b) simulate real mouse movement + per-char
+typing with randomized delay instead of batch value-set. Until this resolves, the 1 queued clip cannot
+post — hourly cron will keep correctly reporting "not logged in" (fail-closed, not a new bug).
+
 ## D-61 (2026-07-03, later same day) — ★ tmux "ALIVE" ≠ actually running: caught a 2-day silent stall ★
 Dais asked to VERIFY the loop is really working (not just "process alive"). Found: `anicca-clip-core` tmux
 session (created 2026-07-01 20:56) was ALIVE per `tmux ls` but the headless claude session inside was
