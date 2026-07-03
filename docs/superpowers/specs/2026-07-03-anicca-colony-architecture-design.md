@@ -66,7 +66,7 @@ vision, so we do not center it.
 |---|---|---|
 | Seed | a human sends **USDC/Solana** once (then it stands alone) — OR a parent's on-chain surplus | a subscription the human already pays (Claude/Sonnet) |
 | **Runner** | **the "automaton" — a standalone custom Node runtime** `~/anicca/runtime/` (`anicca-daemon.sh` supervised by launchd/systemd/Docker `restart:always` → self-update git pull → `compute-proxy` :8402 → `loop/index.mjs` ReAct loop). ★ NOT OpenClaw, NOT Hermes — verified: `index.mjs` has zero openclaw/hermes imports; FOOD = `@blockrun/llm` x402 self-pay ★ | same automaton loop, brain pointed at Claude (subscription) |
-| Model | ClawRouter — **`auto` profile** (best model its USDC can afford), free NVIDIA/GLM when broke. NOT pinned to glm-4.7. Claude via a human *subscription* is NOT available (no human credential); Claude is usable ONLY if reached through a crypto-payable endpoint (BlockRun/OpenRouter serving `anthropic/*` paid in USDC) — those pins are allowed, a human Anthropic key is not. | Claude (Sonnet ceiling, Opus forbidden) |
+| Model | **`free/glm-4.7` on ALL tiers** — the LIVE, evidence-based default (`config.mjs:47-49`): best free tool-caller (BFCL #4), $0/wake, verified 4 ways. ★ `auto`/paid is BANNED at small capital — a documented experiment (gpt-5.4, 2026-06-21) earned $0, looped on explore, and burned the wallet = net-NEGATIVE; the blocker at ~$13 is DEMAND + CAPITAL, not model intelligence. ★ Claude via a human subscription = unavailable; a crypto-payable `anthropic/*` pin is allowed ONLY once earnings prove the paid brain converts to profit. | Claude (Sonnet ceiling, Opus forbidden) |
 | Earns to | its own wallet (pays own compute + spawns children) | the human's wallet + bank |
 | Shelter | its own wallet pays its own cloud (must be seeded USDC first — even to start on cloud) | cloud now (DigitalOcean); Akash later |
 | Proven instance | `anicca-a3cdd4` (glm) — Base wallet **$8.96 USDC on-chain verified (§0)**; "net worth" is NOT earnings (earned = $0) | founder `0x810f` (`~/.anicca-founder`) — me, this Claude |
@@ -75,14 +75,20 @@ vision, so we do not center it.
 - **Japan (easiest):** open Binance → move ¥ in via PayPay → withdraw **USDC on Solana** to the AI's Solana wallet.
 - **Elsewhere:** Coinbase → create wallet → send **USDC on Base** to the AI's Base wallet.
 
-**Model-change note (REQ-MODEL):** self-funded default model must move from a pinned `glm-4.7` to ClawRouter
-**`blockrun/auto`** (15-dim scoring picks the strongest model the balance affords in <1ms) so the agent
-self-improves *for earning*; frontier pins (`anthropic/claude-opus-4.8`, `xai/grok-4`) still allowed.
+**Model policy (REQ-MODEL) — grounded in the live `config.mjs` experiment, NOT the marketing:** the
+self-funded default is **`free/glm-4.7` on all tiers** (`config.mjs:47-49`), the verified best FREE
+tool-caller at $0/wake. **Do NOT switch to ClawRouter `auto`/paid at small capital** — a real, dated
+experiment (`config.mjs:25-46`, gpt-5.4 2026-06-21) proved paid = net-NEGATIVE (~$0.68/hr burn, $0 earned,
+looped on `cook`); "Do NOT use 'auto' (routes to PAID, drains wallet)" is in the code. Escalate to a paid
+model ONLY after evidence that the extra intelligence CONVERTS to earnings (which it did NOT at ~$13 — the
+blocker was demand + capital, not intelligence). **Known drift to fix (not in this spec):**
+`__tests__/config.test.mjs:48-55` expects a THIRD default set (`nvidia/deepseek-v4-flash` / `deepseek-r1` /
+`gpt-4o-mini`) matching neither the code nor this policy → a real test-vs-code bug to reconcile.
 
 **Convert-to-self-funded path (REQ-CONVERT, verified live 2026-07-03):** ANY subscription instance can go
 self-funded NOW via ClawRouter — `curl -fsSL https://blockrun.ai/ClawRouter-update | bash` (or
 `npx @blockrun/clawrouter` → local proxy `:8402`), point the OpenAI-compatible client at
-`http://localhost:8402/v1/` with `apiKey: x402`, model `blockrun/auto`, fund the printed wallet ~$5 USDC.
+`http://localhost:8402/v1/` with `apiKey: x402`, model **`free/glm-4.7`** (NOT `auto` — see REQ-MODEL), fund the printed wallet ~$5 USDC.
 Wallet-signature = auth, pay-per-request USDC via x402. (OpenRouter accepts crypto top-up but needs an
 account+API key = not wallet-native → fallback only.)
 
