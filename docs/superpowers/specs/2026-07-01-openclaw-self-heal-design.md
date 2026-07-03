@@ -26,15 +26,18 @@
 | F4 | **Scheduler / heartbeat 停止** | heartbeat session が N分以上更新されない / gateway プロセス消失 | 外部からの liveness 検知が無い |
 | F5 | **Disk 逼迫** | `df < 10GB` / err log 肥大 (F2 が 62MB) | `anicca-disk-hourly` はあるが log 肥大を root cause に遡らない |
 | F6 | **Provider / model 障害** | pinned free model が 402/403 / 無応答 | failover 経路が散在 |
+| F7 | **健全に見えるcronの副次破壊（silent collateral damage）** | 2026-07-04: `disk-janitor`(10分毎、`lastRunStatus=ok`)の `find workspace -name 'reelclaw*' -mtime +2 -exec rm -rf` が **永続アセット庫** `workspace/reelclaw-assets/`（reelclaw 6 family全部が参照する video seed/music/hooks symlink）を丸ごと削除。当のcronは「成功」のまま。実際の失敗（`FATAL: src-final not found`）は依存先の別cronが**数時間後**発火するまで顕在化しない | 既存 doctor-monkey の SCAN は `lastRunStatus=error` のみ検知 → **成功したcronが他のcronの前提を壊すクラスは一切監視されない**。同一 glob が独立した2箇所（`skills/disk-janitor/run.sh` と `~/scripts/disk-cleaner.sh`、後者は git 管理外）にコピペされており、DRY違反が同一バグの二重発生を招いた |
 
-### 1.2 既存 self-heal 資産（= 断片化。統合対象）
+### 1.2 既存 self-heal 資産（= 断片化 かつ **未配線**。統合対象）
 
 現状 `~/.openclaw/cron/jobs.json` に散在する health/heal 系 cron（統合前）:
-`anicca-health` (毎時) / `anicca-disk-hourly` (10分) / `anicca-cron-doctor` (日次) /
+`anicca-health` (毎時) / `anicca-disk-hourly` (10分、2026-07-04 disk-cleaner.sh v9 に統合済み disable) / `anicca-cron-doctor` (日次) /
 `anicca-gcal-heal` / `anicca-account-health-daily` / `anicca-postiz-health-daily` /
 `monk-factory-en-recovery` / `anicca-credit-monitor` / `agentmemory-mcp-cleanup` 他。
 
-問題: ① 統一タクソノミ無し ② 共有 remediation playbook 無し ③ 盲目 restart（F2/F3）④ 監視者が scheduler 内（F1 の盲点）。
+★ 2026-07-04 追加発見 ★: Netflix Simian Army 型の **`anicca-doctor-monkey` / `anicca-janitor-monkey` / `anicca-conformity-monkey`** は SKILL.md + scripts が **完全に実装済み**（5-strategy escalation、`pin_to_infra: true`、`do_not_delete: true` 明記）だが、**`cron/jobs.json` に一度も登録されたことがない**（`git log -S` で確認、ヒット0件）。これを監視する `anicca-monkey-watchdog`（launchd、10分毎相当）は 2026-06-23 から毎日 `DOWN: 全3体 missing` を検知し続けているが、① alert先の Slack channel は死んでいる（他211 cronは既に Telegram へ移行済みなのにこのwatchdogだけ取り残された）② 「missing」ケースへの自己修復ロジックが無い（stale/error のcronは`openclaw cron run --wait`で再実行するが、missingは検知して終わり）。**= 自己修復システムを監視する仕組みが、11日間ずっとアラートを鳴らし続けながら誰にも聞こえず、修復アクションも取らずにいた。これが「なぜ自分でエラーを直せないのか」の直接の答え。**
+
+問題: ① 統一タクソノミ無し ② 共有 remediation playbook 無し ③ 盲目 restart（F2/F3）④ 監視者が scheduler 内（F1 の盲点）⑤ **設計・実装済みの自己修復資産が配線されずに死蔵**⑥ **監視者の監視者が無い（alertが死んだchannelに落ちて誰も拾わない）**⑦ **同一 remediation ロジックがDRY違反で複数箇所にコピペされ、片方だけ直しても再発する（F7）**。
 
 ---
 
@@ -48,8 +51,18 @@
 3. **F4 注入**: gateway を kill → 外部 liveness probe が検知・再起動・heartbeat 復活。
 4. **F5 注入**: ダミー巨大 log 生成 → 検知・rotate/truncate・root cause（どの process か）を記録。
 5. **F6 注入**: model を無効 key に → failover が次 free model に切替、cron が再稼働。
-6. **Escalation**: agent tier が N 回試行しても直せない人工障害 → Dais に**1通だけ** Telegram（洪水でなく）。
-7. **VCSDD**: 上記を fresh-context adversary が disk から検証 PASS + 私が実障害注入 E2E を実走して green。
+6. **F7 注入**: 保護対象ディレクトリを模した使い捨てディレクトリ名を作り disk cleanup 系スクリプトを走らせる → asset-integrity probe が「削除される前に」保護 list と照合し除外することを実証。かつ既存の2箇所（`skills/disk-janitor/run.sh`, `~/scripts/disk-cleaner.sh`）が単一の保護パス manifest を参照する（コピペ2重管理の廃止）ことを確認。
+7. **Escalation**: agent tier が N 回試行しても直せない人工障害 → Dais に**1通だけ** Telegram（洪水でなく）。
+8. **VCSDD**: 上記を fresh-context adversary が disk から検証 PASS + 私が実障害注入 E2E を実走して green。
+
+## 2.0 Phase 0 — 即実行（既存の死蔵資産を配線するだけ、新規実装ではない）
+
+★ 下記は「設計済み・実装済みだが配線されていないだけ」なので、TIER 0-3 の本格実装を待たず **今すぐ** 着手する ★:
+
+1. `anicca-doctor-monkey` / `anicca-janitor-monkey` / `anicca-conformity-monkey` を `cron/jobs.json` に登録（各 SKILL.md 記載のスケジュール通り）。doctor-monkey 自身の安全プロトコル通り `SHADOW=1` で1回 bootstrap fire → 検証 → `SHADOW=0` に切替。`pin_to_infra`/`do_not_delete` を janitor-monkey 自身の allowlist からも保護。
+2. `anicca-monkey-watchdog` の「missing」ケースに自己修復アクションを追加（該当 monkey の cron を自動再登録）。alert 先を死んだ Slack channel から Telegram（他211 cron と同じ経路）へ移行。
+3. F7 remediation: 単一の「保護パス manifest」（例: `~/.openclaw/state/protected-paths.json` または同等）を新設し、`skills/disk-janitor/run.sh` と `~/scripts/disk-cleaner.sh` の両方がそこを参照するようリファクタ（現状は同一 glob が2箇所に手書きコピーされておりDRY違反 = 再発の温床）。`~/scripts/`（現在 git 管理外）を version control 下に置く。
+4. Phase 0 完了後、fresh-context adversary で「本当に3体が稼働しているか」「watchdogのmissingケースが実際に自己修復するか」を disk から検証。
 
 ## 2.1 Non-goals (この spec の外)
 
@@ -109,6 +122,7 @@
 | F3 バイナリ欠落 | `command -v <bin>` 失敗 | `brew install <bin>`（既知: tmux 等）| bin 存在 & process green |
 | F4 scheduler dead | gateway pid 無 / heartbeat > N分 | gateway 再起動 | heartbeat session 鮮度 < N分 |
 | F5 disk/log | `df` / log size | disk-hygiene cleanup + log rotate/truncate | df > 閾値 & log < cap |
+| F7 asset破壊 | cron fire 前に、その cron が依存する既知アセットdir(保護パスmanifest記載)の存在+非空を probe | manifest にある全パスを全 cleanup script が共通参照(除外)。誤って消えていたら直近の git/履歴 run から復元を試みる | 依存元cronの `[[ -f ]]` 系 precondition が実行前にPASS |
 | F6 model 障害 | pinned model へ ping | 次 free model へ failover | cron session が再稼働 |
 
 **判断が要る部分（P5）**: 「この失敗はどのクラスか / 決定表に無い未知失敗をどう直すか」は TIER 2 の model が ground truth（log・status・df 出力）を読んで決める。ハードコードした regex 分類器は作らない。決定表は「既知・機械的形式の一致（`ERR_MODULE_NOT_FOUND` という固定文字列、`command -v` の exit code）」にのみ使う。
