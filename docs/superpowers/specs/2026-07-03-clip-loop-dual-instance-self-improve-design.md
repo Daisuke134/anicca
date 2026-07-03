@@ -51,10 +51,30 @@
 定期的に消える(このセッション中だけで2回発生)。従来は「人間/devセッションが気づいて手で
 再構築」していた = HARD RULE #-2「人間をloopに入れるな」違反。★
 
-修正: `producer.sh` 自身が起動時にvenv欠落を検知したら、自分でリポジトリの再clone
-(`--depth 1`) + venv再構築 + pip installを行い、そのまま処理を継続する。日次cron
-(`ai.anicca.clip-producer`、AM3:17)が完全に無人で回復する。人間/dev/私が二度と気づいて
-直す必要が無くなる。
+**根本原因(2026-07-04 実機調査で確定)**: `~/scripts/disk-cleaner.sh`(launchd
+`com.anicca.disk-cleaner`、1時間毎)の `sweep "$HOME/.cache/anicca-clones" 0` が
+`anicca-clones` 配下の **mtime 24h超の全ファイル/ディレクトリを無差別削除**する
+(`find ... -mtime +0` は age=0でも「24時間以上前に変更」を意味する)。`.venv/bin/python`
+等の拡張子なしバイナリは `is_protected()` の保護パターン(拡張子/パス名ベース)に
+一致しないため毎回消える。実測: 2026-07-04 04:11-04:21 の cleaner 実行ログで
+`freed +-10GB` = このタイミングで engine ディレクトリ(clone+venv、数GB)が丸ごと
+削除されたことと符合。producer.sh 側の自己修復だけでは「直っても1時間以内にまた
+消される」いたちごっこになるため、**二重修正**とする:
+
+1. **disk-cleaner.sh 側(根本原因の是正)**: `is_protected()` に
+   `*/anicca-clones/*/.venv/*` を追加し、`sweep anicca-clones` の対象から
+   永続 venv を除外する。one-off clone (venv を持たない読み取り専用clone) は
+   従来通り即時掃除対象のまま。
+2. **producer.sh 側(防御的自己修復、Task #9 本題)**: 起動時に venv 欠落を検知したら、
+   自分でリポジトリの再clone (`--depth 1`) + venv再構築 + pip installを行い、
+   そのまま処理を継続する。①が将来別の原因で破られても、②が単独で無人回復する。
+
+日次cron(`ai.anicca.clip-producer`、AM3:17)が完全に無人で回復する。人間/dev/私が
+二度と気づいて直す必要が無くなる。
+
+**実機検証(2026-07-04)**: `timeout` 無しで producer.sh を実行 → 実際に
+`engine venv missing` で即exitすることを再現確認(fabricationでなく実ログ)。
+修正後は同条件で自己修復→処理継続を実機再実行して確認する(下記タスクの完了条件)。
 
 ### 2.3 出口(payout)の優先順位
 
