@@ -1,0 +1,15 @@
+{
+  "findingId": "S2-IMPL-FIND-004",
+  "requirement": "S9.1",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "major",
+  "description": "None of the 4 spawn-register.test.js cases feed a malformed additive field (e.g. `tags:[123]`, `revenue_today_usd > revenue_mo_usd`, negative `revenue_by_source` value) through `registerSpawn` end-to-end. The spec's own verification-architecture table only cross-references sprint-1's generic schema tests, but S9 is a NEW call site that gates the store with these exact fields per S7.2/R9; nothing proves `registerSpawn` itself rejects (and never calls the store for) a malformed additive-field payload -- only that a signer mismatch is caught. If `verifyTelemetry`'s internal `validate()` call were ever bypassed by a future refactor of spawn-register.js, this gap would not be caught by the sprint-2 suite.",
+  "evidence": {
+    "filePath": "apps/landing/netlify/functions/_lib/__tests__/spawn-register.test.js",
+    "lineRange": "37-77",
+    "snippet": "// 4 tests: byte-identical message, id-lowercase upsert, signer-mismatch throw, last_heartbeat stamp -- none exercise a schema-invalid additive field"
+  },
+  "fix": "Add: `test(\"S9.1: throws and does NOT call the store when tags contains a non-string\", ...)` with `basePayload({ tags: [\"ok\", 5] })`, asserting `stub.calls.length === 0`.",
+  "routeToPhase": "2b"
+}

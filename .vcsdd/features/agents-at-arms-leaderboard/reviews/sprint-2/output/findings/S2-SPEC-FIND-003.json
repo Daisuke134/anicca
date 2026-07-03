@@ -1,0 +1,13 @@
+{
+  "findingId": "S2-SPEC-FIND-003",
+  "dimension": "edge_case_coverage",
+  "category": "spec_gap",
+  "severity": "critical",
+  "description": "S11's entire job is production disk I/O (read SUPABASE_URL+service-role rows, write the live-served apps/landing/public/dashboard.json), but 1b only proves the PURE `renderDashboard({rows, reader, existing})` core (render-dashboard.test.js) — zero requirement or test covers the effectful CLI wrapper. Two concrete failure modes are unaddressed: (a) if SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY are unset or the fetch fails in production, does the script still run with rows=[] and silently OVERWRITE the existing good `leaderboard` with an empty array, wiping real agents off the live site? (b) app/dashboard/page.tsx:29-31 does a synchronous `fs.readFile` + `JSON.parse` per request (revalidate=60); a non-atomic partial write to dashboard.json by render-dashboard.mjs while a request is in flight would make JSON.parse throw, and page.tsx:31 catches ALL parse errors and returns null, so page.tsx:36 renders 'data unavailable' for the ENTIRE /dashboard page (not just the leaderboard section). Neither failure mode is named in S11.1-S11.3 nor proven in 1b.",
+  "evidence": {
+    "filePath": "apps/landing/app/dashboard/page.tsx",
+    "lineRange": "27-36",
+    "snippet": "async function getData() { try { ... return JSON.parse(await fs.readFile(p, 'utf-8')); } catch (e) { return null; } } ... if (!data) return <div>data unavailable</div>;"
+  },
+  "routeToPhase": "1c"
+}

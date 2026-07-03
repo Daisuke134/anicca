@@ -1,0 +1,15 @@
+{
+  "findingId": "S2-IMPL-FIND-002",
+  "requirement": "S11.1 / S11.2",
+  "dimension": "verification_readiness",
+  "category": "test_coverage",
+  "severity": "critical",
+  "description": "render-dashboard.test.js (all 4 tests) only ever imports and calls the pure `renderDashboard({ rows, reader, existing })` export. Nothing in the sprint-2 suite invokes `main()`, spawns the script as a subprocess, or otherwise exercises the CLI branch guarded at line 103. Because of S2-IMPL-FIND-001, that branch is dead in the exact deployment mode the spec claims ('production, from SUPABASE_URL + service role key'), and the test suite reports GREEN (68/68) while the actual production entrypoint has never been run once, by a test or by evidence log. The sprint-2-green-phase.log claims 'GREEN implementations' for S11 including 'CLI main' but no log line shows main() was ever invoked/verified.",
+  "evidence": {
+    "filePath": "apps/landing/netlify/functions/_lib/__tests__/render-dashboard.test.js",
+    "lineRange": "1-82",
+    "snippet": "const { renderDashboard } = await import(SCRIPT); // main()/CLI path never imported or invoked in any test"
+  },
+  "fix": "Add a test that spawns `node scripts/render-dashboard.mjs` as a real child process (relative cwd, matching real ops invocation) with SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY pointed at a local stub HTTP server, and assert dashboard.json on disk actually changed. This is the only way to catch S2-IMPL-FIND-001 class bugs.",
+  "routeToPhase": "2b"
+}

@@ -1,0 +1,15 @@
+{
+  "findingId": "S2-IMPL-FIND-001",
+  "requirement": "S11.1",
+  "dimension": "implementation_correctness",
+  "category": "verification_tool_mismatch",
+  "severity": "critical",
+  "description": "The CLI entrypoint guard at apps/landing/scripts/render-dashboard.mjs:103 (`if (import.meta.url === \\`file://${process.argv[1]}\\`)`) compares an ES-module URL against a RAW, unresolved process.argv[1]. Node.js does not guarantee argv[1] is an absolute path -- it is exactly what the invoker typed on the command line. Any relative invocation, e.g. `node scripts/render-dashboard.mjs` (from apps/landing) or `node apps/landing/scripts/render-dashboard.mjs` (from repo root -- the normal way a GH Action / cron running from repo root would invoke it), makes `file://${process.argv[1]}` a malformed/relative URL that never equals the absolute `import.meta.url`. The guard silently evaluates false: `main()` never runs, the script exits 0 with ZERO console output and ZERO error, and dashboard.json is never fetched/written. This is exactly the production path S11.1 requires ('in production, from SUPABASE_URL + service role key'). The bug is invisible because nothing throws and nothing is asserted -- it looks like a successful no-op run.",
+  "evidence": {
+    "filePath": "apps/landing/scripts/render-dashboard.mjs",
+    "lineRange": "102-105",
+    "snippet": "// CLI entrypoint (invoked by Dais-owned ops). Skipped when imported.\nif (import.meta.url === `file://${process.argv[1]}`) {\n  await main();\n}"
+  },
+  "fix": "Resolve argv[1] before comparing: `import { fileURLToPath } from 'node:url'; if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) { await main(); }`. This is the idiom Node's own ESM docs recommend precisely because argv[1] is not guaranteed absolute.",
+  "routeToPhase": "2b"
+}

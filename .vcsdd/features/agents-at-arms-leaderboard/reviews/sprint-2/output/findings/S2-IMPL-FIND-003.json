@@ -1,0 +1,15 @@
+{
+  "findingId": "S2-IMPL-FIND-003",
+  "requirement": "S9.2",
+  "dimension": "structural_integrity",
+  "category": "requirement_mismatch",
+  "severity": "minor",
+  "description": "spawn-register.js performs the signer==id invariant TWICE with two independent code paths: (1) lines 16-19 manually call ethers `verifyMessage(message, signature)` and compare to `payload.id`, throwing a custom error; (2) line 21 calls `verifyTelemetry(message, signature, ...)` which internally re-parses the message, re-derives the signer via its OWN `verifyMessage` call, and re-checks the identical invariant (telemetry-verify.js:33-35), returning `signer_mismatch` if it disagrees. Both checks encode the same business rule (S9.2) in two places with two different error message shapes ('registerSpawn: signer/id mismatch...' vs 'registerSpawn: verifyTelemetry signer_mismatch'). If one is ever changed (e.g. to add a normalization rule) without the other, the two checks can silently diverge -- a case that would only ever be caught by unlucky manual testing, not by any of the S9 unit tests since both paths currently agree.",
+  "evidence": {
+    "filePath": "apps/landing/netlify/functions/_lib/spawn-register.js",
+    "lineRange": "15-22",
+    "snippet": "const signer = verifyMessage(message, signature);\n  if (signer.toLowerCase() !== String(payload.id).toLowerCase()) {\n    throw new Error(`registerSpawn: signer/id mismatch (signer=${signer}, id=${payload.id})`);\n  }\n  const v = verifyTelemetry(message, signature, { now: payload.ts, lastTs: 0 });\n  if (!v.ok) throw new Error(`registerSpawn: verifyTelemetry ${v.reason}`);"
+  },
+  "fix": "Call `verifyTelemetry` once and branch on `v.reason === 'signer_mismatch'` for the custom message, or vice versa; delete the redundant manual `verifyMessage` call so the invariant lives in exactly one place (telemetry-verify.js), matching the ground-truth server-side verifier it must stay in lockstep with.",
+  "routeToPhase": "2c"
+}

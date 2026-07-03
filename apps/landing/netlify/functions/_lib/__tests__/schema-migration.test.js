@@ -34,6 +34,10 @@ test("S7.1: adds last_heartbeat timestamptz", () => {
   const sql = readMigration();
   assert.match(sql, /add\s+column\s+if\s+not\s+exists\s+last_heartbeat\s+timestamptz/);
 });
+test("S7.1: adds log_feed jsonb (S2-SPEC-FIND-001: matches signed+validated field so upsertInstance doesn't hit unknown column)", () => {
+  const sql = readMigration();
+  assert.match(sql, /add\s+column\s+if\s+not\s+exists\s+log_feed\s+jsonb/);
+});
 test("S7.1: adds GIN index on tags", () => {
   const sql = readMigration();
   assert.match(sql, /create\s+index\s+if\s+not\s+exists\s+idx_instances_tags_gin\s+on\s+instances\s+using\s+gin\s*\(\s*tags\s*\)/);

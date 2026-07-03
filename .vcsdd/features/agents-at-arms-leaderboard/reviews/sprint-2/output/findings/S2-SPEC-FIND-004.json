@@ -1,0 +1,13 @@
+{
+  "findingId": "S2-SPEC-FIND-004",
+  "dimension": "verification_readiness",
+  "category": "test_quality",
+  "severity": "major",
+  "description": "The S9.2 RED test asserts the thrown error matches `/signer|mismatch|id/i` (spawn-register.test.js:64). Because the alternative `id` is a bare 2-letter substring, this regex matches almost ANY thrown JavaScript error text (e.g. 'invalid payload', 'missing id field', or any unrelated crash message containing 'id'). It does not actually prove the helper throws BECAUSE of the signer!=id invariant specifically (S9.2's stated guarantee) rather than some unrelated bug. A helper that throws a generic error for the wrong reason (e.g. a TypeError before it even builds the canonical message) would still pass this assertion. This is a tautological/weak proof for a security-relevant invariant (write-authorization, INV-OWN-STATE).",
+  "evidence": {
+    "filePath": "apps/landing/netlify/functions/_lib/__tests__/spawn-register.test.js",
+    "lineRange": "58-67",
+    "snippet": "await assert.rejects(registerSpawn({...}), /signer|mismatch|id/i);"
+  },
+  "routeToPhase": "1c"
+}

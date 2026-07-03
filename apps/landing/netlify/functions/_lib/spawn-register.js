@@ -13,11 +13,23 @@ async function registerSpawn({ privateKey, payload, storeDeps, now = () => new D
   const signature = await wallet.signMessage(message);
 
   // Client-side invariant: signer MUST equal payload.id. Sprint-1 R10 + INV-OWN-STATE.
+  // Error message MUST contain the literal "signer" AND both addresses so RED tests can bind
+  // to the invariant, not to a coincidental thrown error (S9.2).
+  //
+  // S2-IMPL-FIND: verifyTelemetry ALSO checks signer==id internally, so we would be duplicating
+  // the invariant. We keep this pre-check as the ONLY place we throw the semantic
+  // "signer/id mismatch" error (the RED test binds to that specific message), and call
+  // verifyTelemetry AFTER for the remaining checks (schema + replay window) — never as a
+  // second signer check.
   const signer = verifyMessage(message, signature);
-  if (signer.toLowerCase() !== String(payload.id).toLowerCase()) {
-    throw new Error(`registerSpawn: signer/id mismatch (signer=${signer}, id=${payload.id})`);
+  const signerLc = signer.toLowerCase();
+  const idLc = String(payload.id).toLowerCase();
+  if (signerLc !== idLc) {
+    throw new Error(`registerSpawn: signer/id mismatch — signer=${signer} payload.id=${payload.id}`);
   }
-  // Full-format check with the same verifier the server uses (schema + replay window).
+  // Full-format check: schema (rejects malformed additive fields BEFORE touching the store)
+  // + replay window. verifyTelemetry re-verifies signer==id too, but that path is unreachable
+  // here because the pre-check above already threw on any mismatch.
   const v = verifyTelemetry(message, signature, { now: payload.ts, lastTs: 0 });
   if (!v.ok) throw new Error(`registerSpawn: verifyTelemetry ${v.reason}`);
 

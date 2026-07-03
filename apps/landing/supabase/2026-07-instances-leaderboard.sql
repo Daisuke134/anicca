@@ -15,5 +15,6 @@ alter table instances add column if not exists revenue_by_source jsonb;
 alter table instances add column if not exists net_worth_src text;
 alter table instances add column if not exists earn_src text;
 alter table instances add column if not exists last_heartbeat timestamptz;
+alter table instances add column if not exists log_feed jsonb;
 
 create index if not exists idx_instances_tags_gin on instances using gin(tags);

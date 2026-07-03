@@ -1,0 +1,13 @@
+{
+  "findingId": "S2-SPEC-FIND-002",
+  "dimension": "implementation_correctness",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "description": "S9.1 (sprint-2-behavioral-spec.md:34-38) states the helper is called `given (privateKey, payload, storeDeps)` — three positional-sounding arguments — and never mentions an injectable clock. But the actual RED test on disk, spawn-register.test.js:42, calls `registerSpawn({ privateKey: KEY, payload: p, storeDeps: stub.deps, now: clock })` — a single options object with a FOURTH `now` parameter that 1b's own S9.3 proof line requires ('injected clock'). 1a also never specifies the return contract; the test asserts `result.message` and `result.signature` (spawn-register.test.js:42-45) — a shape 1a text never commits to. Two builders reading only 1a (without the pre-existing test file) could reasonably implement a different call signature (positional args, no `now` injection point) or a different/no return value, and would fail the actual RED tests.",
+  "evidence": {
+    "filePath": ".vcsdd/features/agents-at-arms-leaderboard/specs/sprint-2-behavioral-spec.md",
+    "lineRange": "34-38",
+    "snippet": "The spawn-register helper `_lib/spawn-register.js` SHALL, given `(privateKey, payload, storeDeps)` ..."
+  },
+  "routeToPhase": "1c"
+}

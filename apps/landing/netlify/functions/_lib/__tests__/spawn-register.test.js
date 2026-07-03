@@ -18,7 +18,12 @@ function basePayload(over = {}) {
   return {
     id: ADDR, ts: NOW_S, host: "akash", geo: "JP", model_live: "glm-4.7", model_tier: "free",
     net_worth_usd: 1, revenue_mo_usd: 0, burn_day_usd: 0.1, runway_days: 10, status: "alive",
-    tags: ["agent-hackathon"], ...over,
+    // include every additive signed field so the byte-identity contract is fully exercised:
+    tags: ["agent-hackathon"],
+    revenue_today_usd: 0,
+    revenue_by_source: { gig: 0 },
+    log_feed: [{ ts: NOW_S, line: "spawn boot" }],
+    ...over,
   };
 }
 
@@ -34,15 +39,19 @@ function makeStoreStub() {
   };
 }
 
-test("S9.1: builds canonicalMessage byte-identical to canonicalMessage(payload), signs, verifies OK", async () => {
+test("S9.1: builds canonicalMessage byte-identical to canonicalMessage(payload) INCLUDING all additive fields (log_feed etc.), signs, verifies OK, returns {message,signature,last_heartbeat}", async () => {
   const { registerSpawn } = require("../spawn-register");
   const p = basePayload();
   const stub = makeStoreStub();
-  const clock = () => new Date(NOW_S * 1000).toISOString();
-  const result = await registerSpawn({ privateKey: KEY, payload: p, storeDeps: stub.deps, now: clock });
+  const iso = new Date(NOW_S * 1000).toISOString();
+  const result = await registerSpawn({ privateKey: KEY, payload: p, storeDeps: stub.deps, now: () => iso });
+  // byte-identity — must cover tags, revenue_today_usd, revenue_by_source, log_feed
   assert.strictEqual(result.message, canonicalMessage(p));
   const v = verifyTelemetry(result.message, result.signature, { now: NOW_S, lastTs: 0 });
   assert.strictEqual(v.ok, true, `verify must pass, got: ${v.reason}`);
+  // return shape
+  assert.strictEqual(result.last_heartbeat, iso);
+  assert.ok(typeof result.signature === "string" && result.signature.startsWith("0x"));
 });
 
 test("S9.1: calls upsertInstance exactly once with id lowercased", async () => {
@@ -55,13 +64,22 @@ test("S9.1: calls upsertInstance exactly once with id lowercased", async () => {
   assert.strictEqual(stub.calls[0].id, ADDR); // lowercased
 });
 
-test("S9.2: throws and does NOT upload when payload.id != signer address", async () => {
+test("S9.2: throws with 'signer' + both address strings and does NOT upload on signer/id mismatch (assertion binds to the invariant, not to any random error)", async () => {
   const { registerSpawn } = require("../spawn-register");
-  const p = basePayload({ id: "0x0000000000000000000000000000000000000001" });
+  const wrongId = "0x0000000000000000000000000000000000000001";
+  const p = basePayload({ id: wrongId });
   const stub = makeStoreStub();
   await assert.rejects(
     registerSpawn({ privateKey: KEY, payload: p, storeDeps: stub.deps, now: () => new Date().toISOString() }),
-    /signer|mismatch|id/i,
+    (err) => {
+      // must be an Error whose message names the invariant AND both addresses
+      assert.ok(err instanceof Error, `expected Error, got ${typeof err}`);
+      assert.match(err.message, /signer/, `message must contain literal 'signer', got: ${err.message}`);
+      assert.ok(err.message.includes(wrongId), `message must reference the mismatched payload.id ${wrongId}`);
+      // signer is the address derived from KEY (case-insensitive substring)
+      assert.match(err.message.toLowerCase(), new RegExp(ADDR.slice(2, 10)), `message must include recovered signer address`);
+      return true;
+    },
   );
   assert.strictEqual(stub.calls.length, 0, "must not touch the store on signer mismatch");
 });
@@ -74,4 +92,25 @@ test("S9.3: stamps last_heartbeat ISO string in the upsert body", async () => {
   await registerSpawn({ privateKey: KEY, payload: p, storeDeps: stub.deps, now: () => iso });
   assert.strictEqual(stub.calls[0].last_heartbeat, iso);
   assert.ok(!Number.isNaN(Date.parse(stub.calls[0].last_heartbeat)));
+});
+
+test("S2-IMPL-FIND-002: rejects malformed additive fields (tags[0] is number) BEFORE touching the store", async () => {
+  const { registerSpawn } = require("../spawn-register");
+  const p = basePayload({ tags: [123] }); // schema requires strings
+  const stub = makeStoreStub();
+  await assert.rejects(
+    registerSpawn({ privateKey: KEY, payload: p, storeDeps: stub.deps, now: () => new Date().toISOString() }),
+    /verifyTelemetry|schema/i,
+  );
+  assert.strictEqual(stub.calls.length, 0);
+});
+test("S2-IMPL-FIND-002: rejects revenue_today_usd > revenue_mo_usd BEFORE touching the store", async () => {
+  const { registerSpawn } = require("../spawn-register");
+  const p = basePayload({ revenue_mo_usd: 5, revenue_today_usd: 9 });
+  const stub = makeStoreStub();
+  await assert.rejects(
+    registerSpawn({ privateKey: KEY, payload: p, storeDeps: stub.deps, now: () => new Date().toISOString() }),
+    /verifyTelemetry|schema/i,
+  );
+  assert.strictEqual(stub.calls.length, 0);
 });

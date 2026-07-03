@@ -40,6 +40,18 @@ export async function renderDashboard({ rows = [], reader, existing = {} }) {
   return mergeIntoExisting(existing, agg);
 }
 
+// S11.4: CLI safety — determine whether the CLI is ALLOWED to write dashboard.json.
+// A missing env var OR a non-ok Supabase fetch MUST refuse the write (never let a fetch failure
+// silently wipe a good leaderboard from the served file). Exported as a pure fn so tests can
+// bind to the invariant without spawning a subprocess.
+export function shouldRefuseCliWrite({ env = {}, fetchOk = true, fetchThrew = false } = {}) {
+  if (!env.SUPABASE_URL) return { refuse: true, reason: "missing SUPABASE_URL" };
+  if (!env.SUPABASE_SERVICE_ROLE_KEY) return { refuse: true, reason: "missing SUPABASE_SERVICE_ROLE_KEY" };
+  if (fetchThrew) return { refuse: true, reason: "supabase fetch threw" };
+  if (!fetchOk) return { refuse: true, reason: "supabase fetch not ok" };
+  return { refuse: false };
+}
+
 // Live production reader — same shape enrichOnChain expects. Pre-fetches balances + inflow logs
 // so enrich stays synchronous. Any missing datum ⇒ the corresponding accessor throws ⇒ enrich
 // marks that figure `unverified` (never fabricated).
@@ -100,22 +112,38 @@ function unverifiedReader() {
 }
 
 // CLI entrypoint (invoked by Dais-owned ops). Skipped when imported.
-if (import.meta.url === `file://${process.argv[1]}`) {
+// S2-IMPL-FIND-001 fix: process.argv[1] is not guaranteed absolute — the naive
+// `import.meta.url === \`file://${process.argv[1]}\`` comparison silently returns false for
+// every relative invocation (e.g. `node apps/landing/scripts/render-dashboard.mjs` from repo
+// root, which is exactly the cron / GH-Action shape), so main() never runs. Resolve both
+// sides to absolute filesystem paths before comparing.
+export function isDirectCliInvocation(argv, importUrl) {
+  if (!argv || !argv[1]) return false;
+  try {
+    return path.resolve(argv[1]) === fileURLToPath(importUrl);
+  } catch { return false; }
+}
+if (isDirectCliInvocation(process.argv, import.meta.url)) {
   await main();
 }
 
 async function main() {
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const dashboardPath = process.env.DASHBOARD_JSON_PATH || DEFAULT_DASHBOARD_PATH;
-  const rpcUrl = process.env.BASE_RPC_URL;
-  if (!url || !key) {
-    console.error("[render-dashboard] SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY required");
+  const env = process.env;
+  const dashboardPath = env.DASHBOARD_JSON_PATH || DEFAULT_DASHBOARD_PATH;
+  const rpcUrl = env.BASE_RPC_URL;
+  // S11.4: refuse to touch dashboard.json unless env is complete AND the fetch succeeds.
+  const envCheck = shouldRefuseCliWrite({ env });
+  if (envCheck.refuse) {
+    console.error(`[render-dashboard] refusing to write: ${envCheck.reason}`);
     process.exit(2);
   }
-  const r = await fetch(`${url}/rest/v1/instances?select=*`, { headers: { apikey: key, Authorization: `Bearer ${key}` } });
-  if (!r.ok) {
-    console.error(`[render-dashboard] supabase ${r.status}: ${await r.text()}`);
+  let r, threw = false;
+  try {
+    r = await fetch(`${env.SUPABASE_URL}/rest/v1/instances?select=*`, { headers: { apikey: env.SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}` } });
+  } catch (e) { threw = true; console.error(`[render-dashboard] supabase fetch threw: ${e.message}`); }
+  const fetchCheck = shouldRefuseCliWrite({ env, fetchOk: r ? r.ok : false, fetchThrew: threw });
+  if (fetchCheck.refuse) {
+    if (r) console.error(`[render-dashboard] supabase ${r.status}: ${await r.text()}`);
     process.exit(2);
   }
   const rows = await r.json();

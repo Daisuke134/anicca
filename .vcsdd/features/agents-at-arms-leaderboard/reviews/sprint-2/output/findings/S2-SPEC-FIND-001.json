@@ -1,0 +1,13 @@
+{
+  "findingId": "S2-SPEC-FIND-001",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "critical",
+  "description": "S7.1 lists the additive columns as tags, revenue_today_usd, revenue_by_source, net_worth_src, earn_src, last_heartbeat — it omits `log_feed`, which sprint-1 already validates as an additive field (telemetry-schema.js:27-29) and already signs inside canonicalMessage (telemetry-verify.js:18; behavioral-spec.md R1/R9 name log_feed as a first-class leaderboard field). telemetry-store.js:18 upserts via `{ ...p, id, updated_at }`, spreading the ENTIRE validated payload (including log_feed, if the caller sent it) straight into the PostgREST insert body. Because `instances` (instances.sql:1-9) and the new sprint-2 migration both never add a log_feed column, any real heartbeat payload that legitimately includes log_feed (schema-legal since sprint-1) will make PostgREST reject the upsert with an unknown-column error, silently breaking registerSpawn / heartbeat writes for any agent that emits a log feed. spawn-register.test.js's basePayload() never includes log_feed, so this hole is untested and would not be caught by the sprint-2 test suite as specced.",
+  "evidence": {
+    "filePath": ".vcsdd/features/agents-at-arms-leaderboard/specs/sprint-2-behavioral-spec.md",
+    "lineRange": "25-30",
+    "snippet": "columns `tags text[]`, `revenue_today_usd double precision`, `revenue_by_source jsonb`, `net_worth_src text`, `earn_src text`, `last_heartbeat timestamptz` ... (no `log_feed`)"
+  },
+  "routeToPhase": "1c"
+}

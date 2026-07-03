@@ -24,21 +24,32 @@ Ground truth (unchanged): `_lib/telemetry-schema.js`, `_lib/telemetry-aggregate.
 
 - **S7.1 (additive columns)** The migration SHALL add to `instances`, IF NOT EXISTS, the columns
   `tags text[]`, `revenue_today_usd double precision`, `revenue_by_source jsonb`,
-  `net_worth_src text`, `earn_src text`, `last_heartbeat timestamptz` and an index
-  `idx_instances_tags_gin` on `tags` (GIN). All columns SHALL be nullable so any currently-valid
-  row remains valid (back-compat, sprint-1 R9). Running the migration twice SHALL be safe
-  (idempotent).
+  `net_worth_src text`, `earn_src text`, `last_heartbeat timestamptz`, and `log_feed jsonb` —
+  where `log_feed` mirrors the field that sprint-1 `telemetry-schema.validate` already type-checks
+  (`_lib/telemetry-schema.js:27-29`) and `canonicalMessage` already signs
+  (`_lib/telemetry-verify.js:18`), so a live payload with `log_feed` upserts without an
+  unknown-column error via `telemetry-store.upsertInstance` (which spreads the payload). The
+  migration SHALL also create index `idx_instances_tags_gin` on `tags` (GIN). All columns SHALL
+  be nullable so any currently-valid row remains valid (back-compat, sprint-1 R9). Running the
+  migration twice SHALL be safe (idempotent).
 - **S7.2 (write path constraint)** The migration SHALL NOT change the runtime contract in
   `telemetry-schema.js`: the additive fields remain OPTIONAL, and the schema validator continues
   to type-check them when present exactly as sprint-1 R9 requires. (No column becomes NOT NULL.)
-- **S9.1 (spawn upsert)** The spawn-register helper `_lib/spawn-register.js` SHALL, given
-  `(privateKey, payload, storeDeps)`, build the canonical message with the sprint-1
-  `canonicalMessage` (so the additive fields are inside the signed bytes), sign it with the
-  provided EVM private key, verify locally with `verifyTelemetry`, and then upsert the row via
-  `telemetry-store.upsertInstance`. `storeDeps` = `{ url, key, f = fetch }` for test injection.
-- **S9.2 (signer == id invariant)** If the signer's recovered address does not equal the row's
-  `id`, the helper SHALL throw and SHALL NOT call the store. This is the same invariant the
-  netlify verifier enforces (`telemetry-verify.js`), applied pre-upload.
+- **S9.1 (spawn upsert)** The spawn-register helper `_lib/spawn-register.js` SHALL export
+  `async registerSpawn({ privateKey, payload, storeDeps, now = () => new Date().toISOString() })`
+  that (a) builds `message = canonicalMessage(payload)` byte-identical to sprint-1's helper (so
+  additive fields are inside the signed bytes and cross-language signatures still hold),
+  (b) signs `message` with `privateKey` via `ethers.Wallet.signMessage`, (c) verifies locally
+  with `verifyTelemetry` (schema + replay window), (d) upserts the row via
+  `telemetry-store.upsertInstance` with `id` lowercased, and (e) returns
+  `{ message, signature, last_heartbeat }`. `storeDeps = { url, key, f = fetch }` is the same
+  shape sprint-1's `telemetry-store.js` accepts — passed through unchanged for test injection.
+- **S9.2 (signer == id invariant)** If `ethers.verifyMessage(message, signature).toLowerCase()`
+  does not equal `payload.id.toLowerCase()`, the helper SHALL throw an Error whose message
+  contains BOTH the literal token `signer` AND the mismatched address values, and SHALL NOT
+  call the store. The RED test SHALL assert on that specific token so the assertion cannot pass
+  on a generic error (e.g. a network error would fail the assertion). This is the same
+  invariant the netlify verifier enforces (`telemetry-verify.js`), applied pre-upload.
 - **S9.3 (last_heartbeat)** WHEN the helper upserts, it SHALL also stamp `last_heartbeat` to the
   current UTC ISO string.
 - **S11.1 (render script)** `scripts/render-dashboard.mjs` SHALL take an array of raw Supabase
@@ -56,6 +67,20 @@ Ground truth (unchanged): `_lib/telemetry-schema.js`, `_lib/telemetry-aggregate.
 - **S11.3 (empty is honest)** If Supabase returns zero rows OR no rows are enrich-verifiable,
   `leaderboard` SHALL still be an array (possibly empty). The UI's empty state (sprint-1 R8)
   handles rendering; no fake placeholder rows are injected.
+- **S11.4 (CLI safety — never clobber a good `dashboard.json`)** The CLI entrypoint SHALL:
+  (a) refuse to run and exit with a non-zero code if `SUPABASE_URL` or `SUPABASE_SERVICE_ROLE_KEY`
+  is missing; (b) refuse to write the served `dashboard.json` and exit non-zero if the Supabase
+  fetch fails (non-2xx or throws); (c) NEVER produce a `leaderboard=[]` result to disk from a
+  fetch-failure path — the served file MUST retain its prior `leaderboard`. The importable
+  `renderDashboard` function stays a pure transform of its inputs (empty rows ⇒ empty
+  leaderboard is correct at the function level; the CLI wrapper is the guardrail against a
+  fetch-failure silently wiping a good leaderboard).
+- **S11.5 (pre-migration row shape)** The additive columns from S7 are nullable. A Supabase row
+  fetched BEFORE ops runs the migration SHALL surface those columns as either absent OR
+  `null`; both shapes SHALL pass through `enrichOnChain` unchanged (self-asserted values are
+  never trusted anyway). Tests SHALL model at least one row with explicit `tags:null`,
+  `revenue_today_usd:null`, `revenue_by_source:null`, `net_worth_src:null`, `earn_src:null`,
+  `last_heartbeat:null`, `log_feed:null` to prove enrich + aggregate handle both shapes.
 
 ## 1b. Verification architecture (proves each requirement)
 
@@ -64,13 +89,15 @@ Ground truth (unchanged): `_lib/telemetry-schema.js`, `_lib/telemetry-aggregate.
 | S7.1 | pure SQL parse  | file exists; contains `add column if not exists tags`, `revenue_today_usd`, `revenue_by_source jsonb`, `net_worth_src`, `earn_src`, `last_heartbeat`; contains `create index if not exists idx_instances_tags_gin on instances using gin(tags)` |
 | S7.1 | idempotency     | running the SQL text through a stub applier twice yields the same normalized schema (no duplicate columns, no drop) |
 | S7.2 | contract check  | every current fixture in `handler-telemetry.test.js` still passes; new fixtures with the additive fields still validate (sprint-1 R9 already covers this — sprint-2 must not regress it) |
-| S9.1 | unit            | given a known private key + payload, helper builds the canonicalMessage EXACTLY equal to `canonicalMessage(payload)`, signs it, and `verifyTelemetry` returns `ok:true` |
-| S9.1 | unit            | on success, helper calls the injected `upsertInstance(f, ...)` exactly once with `id.toLowerCase()` |
-| S9.2 | unit            | if `id` does not match the signer (payload id is a different address), helper throws and does NOT call `upsertInstance` |
-| S9.3 | unit            | injected clock -> upsert body contains `last_heartbeat` string parseable as ISO date |
+| S9.1 | unit            | given a known private key + payload including `log_feed`, helper builds the canonicalMessage EXACTLY equal to `canonicalMessage(payload)`, signs it, and `verifyTelemetry` returns `ok:true` |
+| S9.1 | unit            | on success, helper calls the injected `upsertInstance(f, ...)` exactly once with `id.toLowerCase()` and returns `{ message, signature, last_heartbeat }` |
+| S9.2 | unit            | if `id` does not match the signer (payload id is a different address), helper throws an Error whose `.message` contains the literal `"signer"` AND both address strings, and does NOT call `upsertInstance` |
+| S9.3 | unit            | injected clock -> upsert body AND return value contain the SAME `last_heartbeat` ISO string |
 | S11.1| unit + snapshot | given a fixture existing dashboard.json (`{ mrr, goals }`) and 3 raw rows + injected reader, the render script produces a JSON with `mrr` + `goals` preserved AND top-level `leaderboard` array whose length matches the aggregate |
 | S11.2| unit            | when reader throws for every method, the resulting `leaderboard` still exists and every element carries `earn_src == 'unverified'` and `net_worth_src == 'unverified'` |
 | S11.3| unit            | zero raw rows -> `leaderboard == []`; verified count = 0 -> `total_net_worth_usd == undefined` (sprint-1 R4 already GREEN) |
+| S11.4| unit            | CLI safety helper (exportable pure fn `shouldRefuseCliWrite({env,fetchOk})`) returns `refuse:true` on missing env / non-ok fetch — so the RED assertion doesn't require spawning a subprocess |
+| S11.5| unit            | pre-migration row shape (all additive columns explicitly `null`) enriches + aggregates without throw, leaderboard length matches input rows |
 
 ## Invariants preserved (from sprint-1)
 

@@ -1,0 +1,13 @@
+{
+  "findingId": "S2-SPEC-FIND-005",
+  "dimension": "edge_case_coverage",
+  "category": "spec_gap",
+  "severity": "minor",
+  "description": "Requested edge case 'a row inserted BEFORE the migration' has no corresponding 1b proof line. After S7.1's ADD COLUMN (nullable, no default), PostgREST will serialize old rows with the new columns as explicit JSON `null` (present-but-null), not absent/undefined. render-dashboard.test.js's fixtures (baseRow()) never include this shape — all fixtures simply omit the additive keys (undefined), which is NOT the same runtime shape a real pre-migration row takes once read back through Supabase REST. Downstream code happens to tolerate it (AgentLeaderboard.tsx:43-48 uses `?? []`), but this is accidental, not specced or tested for the render pipeline.",
+  "evidence": {
+    "filePath": "apps/landing/netlify/functions/_lib/__tests__/render-dashboard.test.js",
+    "lineRange": "12-18",
+    "snippet": "function baseRow(over) { return { id, ts, host, geo, model_live, model_tier, net_worth_usd, revenue_mo_usd, burn_day_usd, runway_days, status, ...over }; } // no tags/revenue_today_usd/etc at all, not even null"
+  },
+  "routeToPhase": "1c"
+}
