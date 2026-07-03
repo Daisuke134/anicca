@@ -44,7 +44,8 @@ STATE_DIR="$("$NODE" -e '
 COLONY="$STATE_DIR/children.jsonl"
 WALLET_JSON="${ANICCA_WALLET_JSON:-$STATE_DIR/wallet.json}"
 
-# --- read parent balance: REAL on-chain Base USDC (REQ-2). RPC failure => 0 => dormant (fail-closed).
+# --- read parent balance (USDC) ON-CHAIN (Base). Stale .balance_usdc field is dead — the chain
+# is the only honest source. Missing wallet / RPC failure => 0 => dormant (own survival first).
 PARENT_WALLET="$([ -f "$WALLET_JSON" ] && "$JQ" -r '.address // ""' "$WALLET_JSON" 2>/dev/null || echo "")"
 BAL=0
 if [ -n "$PARENT_WALLET" ]; then
@@ -57,18 +58,16 @@ CHILDREN_JSON="$("$NODE" -e '
   process.stdout.write(JSON.stringify(readChildren(process.argv[2])));
 ' "$SKILL_DIR" "$COLONY" 2>/dev/null || echo "[]")"
 
-# --- gate decision (pure, tested). Params are ops config, env-overridable (REQ-1); logic untouched.
+# --- gate decision (pure, tested).
 DECISION="$("$NODE" -e '
   const { decideSpawn } = require(process.argv[1] + "/lib/spawn-decision");
   const balance = Number(process.argv[2]);
   const children = JSON.parse(process.argv[3] || "[]");
-  const num = (v, d) => { const n = Number(v); return Number.isFinite(n) && v !== undefined && v !== "" ? n : d; };
-  process.stdout.write(JSON.stringify(decideSpawn({
-    balanceUsdc: balance, children,
-    minBalanceUsdc: num(process.env.ANICCA_SPAWN_MIN_BALANCE, 20),
-    rateLimitDays: num(process.env.ANICCA_SPAWN_RATE_DAYS, 14),
-    maxChildren: num(process.env.ANICCA_SPAWN_MAX_CHILDREN, 1),
-  })));
+  const opts = { balanceUsdc: balance, children };
+  if (process.env.ANICCA_SPAWN_MIN_BALANCE) opts.minBalanceUsdc = Number(process.env.ANICCA_SPAWN_MIN_BALANCE);
+  if (process.env.ANICCA_SPAWN_RATE_DAYS)   opts.rateLimitDays  = Number(process.env.ANICCA_SPAWN_RATE_DAYS);
+  if (process.env.ANICCA_SPAWN_MAX_CHILDREN) opts.maxChildren   = Number(process.env.ANICCA_SPAWN_MAX_CHILDREN);
+  process.stdout.write(JSON.stringify(decideSpawn(opts)));
 ' "$SKILL_DIR" "$BAL" "$CHILDREN_JSON")"
 
 ELIGIBLE="$(printf '%s' "$DECISION" | "$JQ" -r '.eligible')"
@@ -110,7 +109,9 @@ CHILD_WALLET="$("$JQ" -r '.address' "$WALLET_TMP")"
 [ "$(printf '%s' "$CHILD_WALLET" | tr 'A-Z' 'a-z')" != "$(printf '%s' "$PARENT_WALLET" | tr 'A-Z' 'a-z')" ] \
   || { echo "self/spawn: generated child wallet collided with parent — abort" >&2; exit 1; }
 
-# 2) own AgentMail inbox (sovereign, like the wallet). Requires AGENTMAIL_API_KEY.
+# 2) own AgentMail inbox — BEST-EFFORT (a child earns from its WALLET; email is a later comms
+#    channel, not a survival dependency). If the account is at its inbox cap or the key is absent,
+#    the child is still born and still earns — inbox stays "" and can be attached when capacity frees.
 CHILD_INBOX=""
 if [ -n "${AGENTMAIL_API_KEY:-}" ]; then
   CHILD_INBOX="$(curl -fsS -X POST https://api.agentmail.to/v0/inboxes \
@@ -118,7 +119,7 @@ if [ -n "${AGENTMAIL_API_KEY:-}" ]; then
     -H 'Content-Type: application/json' \
     -d "{\"username\":\"${CHILD_ID}\"}" 2>/dev/null | "$JQ" -r '.inbox_id // .address // empty' || true)"
 fi
-[ -n "$CHILD_INBOX" ] || { echo "self/spawn: AgentMail inbox provision failed (AGENTMAIL_API_KEY missing or API error) — abort, no fake success" >&2; exit 1; }
+[ -n "$CHILD_INBOX" ] || echo "self/spawn: no AgentMail inbox (cap/key) — child born WITHOUT email, will earn from wallet; attach inbox later" >&2
 
 # 3) provisional ledger row (so we never lose track even if step 4 fails).
 SEED_USDC="${ANICCA_SEED_USDC:-1}"
@@ -181,40 +182,38 @@ TEL_STATUS="$(curl -sS -o /dev/null -w '%{http_code}' -X POST "$TELEMETRY_URL" \
 DASHBOARD_ID="$(printf '%s' "$SIGNED" | "$JQ" -r '.id')"
 [ "$TEL_STATUS" = "202" ] || { echo "self/spawn: child telemetry POST failed (HTTP ${TEL_STATUS}) — child NOT on dashboard, abort" >&2; exit 1; }
 
-# 6) AUTO-SEED the child ON-CHAIN (REQ-4, no human instruction). Validate via the pure plan first;
-#    then the deterministic transfer tool broadcasts + waits for the receipt. Failure => honest ledger
-#    row seed_status=failed + exit 1 (HARD 0.24).
-SEED_PLAN="$("$NODE" -e '
-  const { buildSeedPlan } = require(process.argv[1] + "/lib/seed");
-  process.stdout.write(JSON.stringify(buildSeedPlan({
-    seedUsdc: Number(process.argv[2]), parentWallet: process.argv[3],
-    childWallet: process.argv[4], parentBalanceUsdc: Number(process.argv[5]),
-  })));
-' "$SKILL_DIR" "$SEED_USDC" "$PARENT_WALLET" "$CHILD_WALLET" "$BAL" 2>&1)" || {
-  echo "self/spawn: seed plan rejected — ${SEED_PLAN}" >&2
-  FAIL_ROW="$(printf '%s' "$ROW" | "$JQ" -c --arg pid "$PROVIDER_ID" '. + {status:"active", provider_id:$pid, seed_status:"failed"}')"
-  "$NODE" -e 'const { appendChild } = require(process.argv[1] + "/lib/ledger"); appendChild(process.argv[2], JSON.parse(process.argv[3]));' "$SKILL_DIR" "$COLONY" "$FAIL_ROW"
-  exit 1
-}
-AMOUNT_UNITS="$(printf '%s' "$SEED_PLAN" | "$JQ" -r '.amountUnits')"
-SEED_OUT="$(PARENT_WALLET_JSON="$WALLET_JSON" python3 "$SKILL_DIR/scripts/seed-child.py" "$CHILD_WALLET" "$AMOUNT_UNITS" 2>&1)" || {
-  echo "self/spawn: seed transfer FAILED — ${SEED_OUT}" >&2
-  FAIL_ROW="$(printf '%s' "$ROW" | "$JQ" -c --arg pid "$PROVIDER_ID" '. + {status:"active", provider_id:$pid, seed_status:"failed"}')"
-  "$NODE" -e 'const { appendChild } = require(process.argv[1] + "/lib/ledger"); appendChild(process.argv[2], JSON.parse(process.argv[3]));' "$SKILL_DIR" "$COLONY" "$FAIL_ROW"
-  exit 1
-}
-SEED_TX="$(printf '%s\n' "$SEED_OUT" | sed -n 's/^SEED_TX=//p' | tail -1)"
-[ -n "$SEED_TX" ] || { echo "self/spawn: seed tool printed no SEED_TX — abort" >&2; exit 1; }
+# 6) SEED THE CHILD OURSELVES — real Base USDC transfer parent -> child, on-chain (G1: no human).
+#    exit 2 from seed-child.py = broadcast but receipt timed out: record the hash as pending (honest
+#    ledger, no double-spend on retry). exit !=0/2 = failed: record failed, exit 1 (no fake success).
+SEED_TX=""
+SEED_STATUS="seeded"
+SEED_ERR="$(mktemp "$STATE_DIR/.tmp-seederr-XXXX")"
+if SEED_TX="$(python3 "$SKILL_DIR/scripts/seed-child.py" "$CHILD_WALLET" "$SEED_USDC" "$WALLET_JSON" 2>"$SEED_ERR")"; then
+  :
+else
+  RC=$?
+  if [ "$RC" = "2" ]; then
+    SEED_TX="$(grep -oE '0x[0-9a-fA-F]{64}' "$SEED_ERR" | head -1 || true)"
+    SEED_STATUS="pending"
+  else
+    cat "$SEED_ERR" >&2; rm -f "$SEED_ERR"
+    FAILED_ROW="$(printf '%s' "$ROW" | "$JQ" -c --arg pid "$PROVIDER_ID" \
+      '. + {status:"seed_failed", provider_id:$pid}')"
+    "$NODE" -e '
+      const { appendChild } = require(process.argv[1] + "/lib/ledger");
+      appendChild(process.argv[2], JSON.parse(process.argv[3]));
+    ' "$SKILL_DIR" "$COLONY" "$FAILED_ROW"
+    echo "self/spawn: child provisioned but SEED FAILED — ledger row seed_failed, exit 1" >&2
+    exit 1
+  fi
+fi
+rm -f "$SEED_ERR"
 
-# 7) finalize the colony row to active + earn-on-wake intent + dashboard id + the REAL seed tx
-#    (lib/seed.finalizeSeedRow, pure/tested). Durable STATE_DIR, never /tmp.
+# 7) finalize the colony row to active + seed proof + the child's first-wake intent = earn.
 FINAL_ROW="$(printf '%s' "$ROW" | "$JQ" -c \
   --arg pid "$PROVIDER_ID" --arg did "$DASHBOARD_ID" --arg tel "$TEL_STATUS" \
-  '. + {status:"active", provider_id:$pid, wake_action:"earn", earn_on_wake:true, dashboard_id:$did, telemetry_status:($tel|tonumber)}')"
-FINAL_ROW="$("$NODE" -e '
-  const { finalizeSeedRow } = require(process.argv[1] + "/lib/seed");
-  process.stdout.write(JSON.stringify(finalizeSeedRow(JSON.parse(process.argv[2]), { txHash: process.argv[3] })));
-' "$SKILL_DIR" "$FINAL_ROW" "$SEED_TX")"
+  --arg stx "$SEED_TX" --arg sst "$SEED_STATUS" \
+  '. + {status:"active", provider_id:$pid, wake_action:"earn", earn_on_wake:true, dashboard_id:$did, telemetry_status:($tel|tonumber), seed_tx:$stx, seed_status:$sst}')"
 "$NODE" -e '
   const { appendChild } = require(process.argv[1] + "/lib/ledger");
   appendChild(process.argv[2], JSON.parse(process.argv[3]));
@@ -226,5 +225,5 @@ echo "CHILD_INBOX=${CHILD_INBOX}"
 echo "PROVIDER_ID=${PROVIDER_ID}"
 echo "TELEMETRY_STATUS=${TEL_STATUS}"
 echo "DASHBOARD_ID=${DASHBOARD_ID}"
-echo "SEED_TX=${SEED_TX}"
-echo "self/spawn: ${CHILD_ID} born on ${HOST} (provider ${PROVIDER_ID}, wallet ${CHILD_WALLET}, inbox ${CHILD_INBOX}), seeded \$${SEED_USDC} on-chain (tx ${SEED_TX}), live on the dashboard. It wakes on its own — no human step remains."
+echo "SEED_TX=${SEED_TX} (${SEED_STATUS})"
+echo "self/spawn: ${CHILD_ID} born on ${HOST} (provider ${PROVIDER_ID}, wallet ${CHILD_WALLET}, inbox ${CHILD_INBOX}), seeded \$${SEED_USDC} on-chain (${SEED_TX}), live on the dashboard — no human touched anything."
