@@ -55,3 +55,11 @@ test("getOrCompute: stale beyond TTL recomputes", async () => {
   await cache.getOrCompute("u1", G(35.68, 139.76), G(35.69, 139.70), 100, provider);
   assert.equal(calls, 2);
 });
+
+test("cacheKey: coords within ~11m (4dp) COLLIDE; coords across the rounding boundary do NOT — FIND-002", () => {
+  const a = cacheKey("u1", G(35.68000, 139.76000), G(35.69, 139.70), 5);
+  const near = cacheKey("u1", G(35.680001, 139.760001), G(35.69, 139.70), 5); // < 1e-4 diff → same row
+  const far = cacheKey("u1", G(35.6802, 139.76000), G(35.69, 139.70), 5); // > 1e-4 diff → different row
+  assert.equal(a, near);
+  assert.notEqual(a, far);
+});

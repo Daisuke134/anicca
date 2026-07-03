@@ -50,3 +50,21 @@ test("chooseRouter: both endpoints JP → 'transit', else 'google'", () => {
   assert.equal(chooseRouter({ lat: 35.681, lon: 139.767 }, { lat: 40.73, lon: -73.93 }), "google"); // mixed
   assert.equal(chooseRouter({ lat: 40.748, lon: -73.985 }, { lat: 40.73, lon: -73.93 }), "google"); // both non-JP
 });
+
+test("isJapanGeo: exact bbox boundaries 24/46/122/146 inclusive, just-outside excluded — FIND-001", () => {
+  assert.equal(isJapanGeo(24, 122), true);
+  assert.equal(isJapanGeo(46, 146), true);
+  assert.equal(isJapanGeo(23.999, 130), false);
+  assert.equal(isJapanGeo(46.001, 130), false);
+  assert.equal(isJapanGeo(35, 121.999), false);
+  assert.equal(isJapanGeo(35, 146.001), false);
+});
+
+test("parseTransitPlan: picks EARLIEST ARRIVAL, not journeys[0] — FIND-006", () => {
+  const plan = { journeys: [
+    { departureSecs: 100, arrivalSecs: 900, durationSecs: 800, transferCount: 1, legs: [{ mode: "rail" }] }, // first, LATER arrival
+    { departureSecs: 200, arrivalSecs: 700, durationSecs: 500, transferCount: 0, legs: [{ mode: "rail" }] }, // earliest arrival
+  ] };
+  const r = parseTransitPlan(plan);
+  assert.equal(r.durationSecs, 500); // the 2nd journey, proving it's not journeys[0]
+});

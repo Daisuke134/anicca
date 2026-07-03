@@ -62,3 +62,22 @@ test("RollbackController: Telegram dedup — ONE alert per incident, re-armed af
   rc.onResult(false);
   assert.equal(rc.onResult(false, { lastGoodPasses: false }).notify, true);
 });
+
+test("assertMoneyPath: FAIL when a rogue 2nd stripe link is present (¥700k class) — FIND-003", () => {
+  const registry = { stripe_lm_url: GOOD };
+  const two = `a="${GOOD}";b="${BAD}";`; // good FIRST, rogue second
+  const r = assertMoneyPath({ chunk: two }, registry);
+  assert.equal(r.ok, false);
+  assert.match(r.reason, /ambiguous|mismatch/);
+});
+
+test("RollbackController: rollback fires ONCE per incident, not every cycle — FIND-004", () => {
+  const rc = new RollbackController();
+  rc.onResult(false);
+  assert.equal(rc.onResult(false).rollback, true); // 2nd fail → restore
+  assert.equal(rc.onResult(false).rollback, false); // 3rd fail → do NOT restore again
+  assert.equal(rc.onResult(false).rollback, false); // 4th fail → still no repeat
+  rc.onResult(true); // recovery re-arms
+  rc.onResult(false);
+  assert.equal(rc.onResult(false).rollback, true); // new incident → restore once
+});

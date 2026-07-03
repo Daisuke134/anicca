@@ -47,3 +47,10 @@ test("chooseTts: fallback order edge-tts → kokoro → piper → live; picks fi
   assert.equal(chooseTts({ "edge-tts": false, kokoro: false, piper: false, live: true }), "live");
   assert.equal(chooseTts({}), null); // nothing available → caller must not dial a silent call
 });
+
+test("buildWakeLine (ja): harsh differs from firm — FIND-005", () => {
+  const firm = buildWakeLine(EV, ROUTE, "firm", "ja");
+  const harsh = buildWakeLine(EV, ROUTE, "harsh", "ja");
+  assert.notEqual(firm, harsh);
+  assert.match(harsh, /今すぐ/);
+});
