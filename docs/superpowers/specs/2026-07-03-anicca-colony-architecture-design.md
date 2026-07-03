@@ -622,7 +622,14 @@ V — VERIFICATION MATRIX (Dais 2026-07-04: "we have to verify every one of them
      `status==='live'` slots → spawn was NEVER runnable in the loop → set live. (3) spawn hard-aborted
      on AgentMail inbox cap (a non-survival dependency) → made best-effort so a child is still born +
      earns from its wallet. (4) claude-p fails `claude_exit_143` (human-sub fuel) → falls back to
-     ClawRouter free/glm-4.7 = the AI's OWN fuel — confirms W3 direction (remove claude-p). ★★
+     ClawRouter free/glm-4.7 = the AI's OWN fuel — confirms W3 direction (remove claude-p).
+     (5) ★ THE ROOT CAUSE the others hid ★ — the decision ledger was 100% kind:narrate (talk + sleep
+     120s, never a skill) for HOURS = 0 earn actions/day. Replaying the loop's EXACT brain payload
+     showed free/glm-4.7 DID decide (emitted run_skill inside a tool_call XML wrapper in
+     message.content), but parse-tool-call.mjs scavenge required content to START with a brace — the
+     wrapper made it bail to null to narrate. So every day the AI thought, chose an action, and the
+     parser threw it away. Fix = scavenge tool_call wrappers + brace-balanced JSON in prose (11/11
+     tests pass). Not model, not balance, not tools: a dropped decision was why the loop never earned. ★★
 
      | capability (release-copy bullet)         | human-funded (local) | self-funded (cloud) |
      |---|---|---|
