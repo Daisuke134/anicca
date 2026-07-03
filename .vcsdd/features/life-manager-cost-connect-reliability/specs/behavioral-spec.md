@@ -89,7 +89,7 @@ Portfolio self-improve loop (separate spec). Distribution content specifics. sel
 
 ### C6 — Deploy smoke + rollback host (OQ4)
 - GHA `netlify-deploy.yml` runs a post-deploy smoke (C5 a/b) after `netlify deploy --prod`; on failure it restores the previous deploy (`deploys/<last-good>/restore`) — with the same last-good-good guard as C5.
-- **MONITOR HOST (OQ4 resolved)**: the 15-min money-path monitor runs as a **GitHub Actions scheduled workflow** (independent of Railway/Netlify) so the monitor never dies with the monitored system (self-heal principle).
+- **MONITOR HOST (OQ4 re-resolved per project rule + FIND-104)**: the 15-min money-path monitor runs as an **OpenClaw cron** (`~/.openclaw/cron/jobs.json`, deterministic node command, no LLM) — NOT a GitHub Actions scheduled workflow, because the project rule forbids new scheduled GHA workflows (only `netlify-deploy.yml` may exist; cron is canonical in OpenClaw). OpenClaw runs on the Mac Mini = independent of Railway/Netlify, so it still satisfies 'the monitor must not die with the monitored'. Runnable = `apps/landing/scripts/money-path-monitor.mjs` (uses the tested RollbackController; state persists across runs).
 
 ### C7 — Self-improve loop (LM only) (F10)
 - **IN** daily tick. **OUT** LM metrics snapshot + report; ≥1 action when a non-noise signal exists.
@@ -104,5 +104,5 @@ Portfolio self-improve loop (separate spec). Distribution content specifics. sel
 - **OQ1 (default TTS)**: RESOLVED — `edge-tts` (free MS cloud); JP+EN tested, μ-law 8k exact; pre-synthesize before dialing so TTS latency is off the call path; fallback edge-tts→Kokoro/piper→Live.
 - **OQ2 (transit ToS/coverage/limits)**: RESOLVED — free, unofficial, no SLA; ToS REQUIRES consumer-side cache+retry+fallback+official-redirect and forbids excessive requests/posing-as-official → satisfied by C3 cache + C2 Google fallback + advisory framing. Coverage = 748 operators incl JR East (broad JP). Non-JP/rural → Google.
 - **OQ3 (Pipedream Gmail scope vs CASA)**: RESOLVED (corrected) — Pipedream grants Calendar + `gmail.send` only (sensitive, not RESTRICTED → no CASA). Gmail-READ (ask/notify's `mail-gog gmail search`) is NOT migrated to Pipedream and is OUT OF SCOPE; it stays on the existing provider; Telegram-first users get location-reply reads via Telegram. No `gmail.readonly`, no CASA trap.
-- **OQ4 (monitor host)**: RESOLVED — GitHub Actions scheduled workflow (independent of Railway/Netlify).
+- **OQ4 (monitor host)**: RESOLVED (corrected FIND-104) — OpenClaw cron (`~/.openclaw/cron/jobs.json`) running `apps/landing/scripts/money-path-monitor.mjs` every 15 min; NOT a GHA scheduled workflow (project rule forbids it). OpenClaw on the Mac Mini is independent of Railway/Netlify.
 - **OQ5 (key restriction vs Live fallback)**: RESOLVED — dedicated LM key restricted to `generativelanguage.googleapis.com` (+ Railway IP); the Live fallback is also generativelanguage → restriction does not break it. Enumerate other consumers of the old key before rotating.
