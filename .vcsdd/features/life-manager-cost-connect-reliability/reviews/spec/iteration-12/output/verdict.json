@@ -1,0 +1,69 @@
+{
+  "reviewType": "spec",
+  "feature": "life-manager-cost-connect-reliability",
+  "focus": "Fresh-context review of the iteration-3 (voice REVERSAL) rewrite: keep Gemini Live, shelve Pipecat/Kokoro, C1 = cleanup only. Hunting for stale iter-2 residue, internal contradictions, and disk-fact accuracy across Goal 1, C1, the §2 facts table, §2.1 non-goals, §4 verification, and OQ1/6/7/8/9. Also sanity-checked C2-C7 for coherence given the voice reversal.",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-04T00:00:00Z",
+  "iteration": 12,
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-002"],
+      "evidence": [
+        {"type": "file", "location": "specs/behavioral-spec.md:27,43,58", "description": "Asserts Gemini Live is TODAY's live/working/'current' voice path."},
+        {"type": "file", "location": "apps/life-call/server.js:26-27,381,400,412", "description": "The sole production entrypoint (railway.toml:5, package.json:6-8) wires /ws to the compositional-voice.cjs cascade and explicitly states 'NO Gemini Live socket is EVER opened.'"},
+        {"type": "file", "location": ".vcsdd/features/life-manager-cost-connect-reliability/execution-notes.md:50-53", "description": "This feature's own history log: the merged-to-main prod call is a ONE-WAY edge-tts clip, not a two-way Gemini Live conversation — directly contradicting the spec's 'already works/KEPT' framing."},
+        {"type": "file", "location": "specs/behavioral-spec.md:85 vs apps/life-call/lib/user-selector.js:1-14 and scheduler.js:12,43,281", "description": "C4's MIGRATION bullet describes scheduler.js:42/280 as still hardcoding composio_gcal; on disk both sites already call the shared calendarProviderFilter(), and user-selector.js's own header comment states this C4 fix is already done."}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-005"],
+      "evidence": [
+        {"type": "file", "location": "specs/behavioral-spec.md:57-67", "description": "C1 has no EDGE/ERROR bullet (unlike C2 at line 74) for a Gemini Live connect failure or mid-call drop — no stated caller-facing behavior for this realistic failure mode."},
+        {"type": "file", "location": "apps/life-call/server.js:436-437; apps/life-call/lib/call-bridge.cjs:71,94", "description": "DTMF bullet says 'keep whatever the origin/main Gemini Live path already does', but the currently-wired path ignores DTMF entirely and the dormant Gemini bridge only classifies (not forwards) the event — no provable 'already does' behavior exists to keep."}
+      ]
+    },
+    {
+      "name": "impl_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-003", "FIND-006"],
+      "evidence": [
+        {"type": "file", "location": "specs/behavioral-spec.md:60-61 vs apps/life-call/lib/call-bridge.cjs:1-34 + server.js (no reference) + railway.toml:5 + package.json:6-8", "description": "C1's 'restore the Gemini Live /ws bridge' names no target file; a standalone, unwired, un-entrypointed Gemini bridge (call-bridge.cjs) already exists and is not reconciled with server.js's other endpoints in the spec text."},
+        {"type": "file", "location": "specs/behavioral-spec.md:77-80 vs apps/life-call/lib/route-cache.js:3-4 vs apps/life-call/lib/travel.js:14", "description": "C3 and route-cache.js's own comment claim production is Supabase-backed (lm_route_cache); the actual wired caller (travel.js:14) uses a volatile in-memory Map — cache does not survive restarts/redeploys or scale across dynos, undermining the Goal-3/§1 'already fixed' cost claim."}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "FAIL",
+      "findings": ["FIND-002"],
+      "evidence": [
+        {"type": "file", "location": "specs/behavioral-spec.md:85", "description": "C4's contract text is out of sync with lib/user-selector.js, a module that exists specifically to implement that same contract and says so in its own header — the spec's line-8 governance rule ('re-verify against main before carrying a fact forward') was not applied to this carried-over section during the iter-3 rewrite."},
+        {"type": "grep", "location": "specs/behavioral-spec.md (whole document)", "description": "No leftover literal residue of iter-2's mandate found: 'live_ws_opened=0', 'SUPERSEDES', 'GEMINI LIVE FULLY REMOVED' = 0 hits; every Pipecat/Kokoro/Groq/Silero/SmartTurn/edge-tts mention is correctly framed as shelved/historical (lines 4,11,37,53,58,110,115,116) — the REVERSAL itself is textually consistent where it is explicit. The remaining structural defects (FIND-002, FIND-003) are about UNSTATED wiring targets and a stale sub-claim, not textual iter-2 leakage."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-004"],
+      "evidence": [
+        {"type": "file", "location": "specs/behavioral-spec.md:106", "description": "RED check (c) 'the Gemini Live path is intact (call-logic.js unchanged)' proves nothing about wiring: call-logic.js is already unchanged/dormant today and would remain 'unchanged' whether or not server.js is actually rewired to call it, so this check cannot fail a broken cleanup."},
+        {"type": "file", "location": "specs/behavioral-spec.md:106,107", "description": "The NO-MOCK E2E plan ('real wake call on the Gemini Live path... Dais hears + converses + interrupts') is the actual proof for wiring, but it runs AFTER adversary PASS on the (underspecified, per FIND-004) RED checks — meaning a spec-compliant RED phase could pass while the real wiring is still broken, only caught much later at E2E."}
+      ]
+    }
+  ],
+  "priorFindings": {
+    "note": "This is a fresh review folder (iteration-12) for the iter-3 (voice-reversal) rewrite of the spec; it does not inherit or re-litigate reviews/spec/iteration-1..11 (which reviewed the pre-reversal, Pipecat-forward spec). The iter-2→iter-3 REVERSAL itself is coherent and free of stale Pipecat-as-mandatory residue (see structural_integrity evidence); the FAILs found here are new: (a) the spec's disk-fact claims about 'what is live today' are inaccurate for both the voice path and the C4 selector fix, and (b) C1's cleanup instructions are underspecified on which file becomes the restored bridge and how server.js's other endpoints survive the merge."
+  },
+  "honestCall": "Six findings, all with concrete file:line evidence read directly off this worktree's disk (not inferred). The most consequential is FIND-001: the spec's central §0c claim — that Gemini Live 'already works' and only needs to be 'kept' — is contradicted by the feature's OWN execution-notes.md, which documents that the currently-merged production call is a one-way edge-tts clip, not Gemini Live. This means C1 is materially harder than the spec frames it (real re-wiring, not a pure deletion), which in turn explains why FIND-003 (no named restore target) and FIND-004 (a RED check that can't detect a broken restore) are real gaps and not nitpicks — an implementer following this spec literally could delete the cascade, leave /ws unwired to anything, and have every stated RED check still pass. FIND-002 and FIND-006 show the iter-3 rewrite carried forward C3/C4 contract text without re-diffing it against code that has already changed underneath it, in one direction each way (C4's claim is stale-pessimistic; C3's claim is stale-optimistic about durability). FIND-005 is a genuine, if smaller, edge-case gap (no error-path bullet for a phone call that goes dead mid-conversation). None of these are resolved by re-reading the document more charitably — each is anchored to a specific line in a real file on this disk.",
+  "convergenceSignals": {
+    "findingCount": 6,
+    "blockerCount": 2,
+    "majorCount": 4,
+    "minorCount": 0,
+    "allCriteriaEvaluated": true,
+    "duplicateFindings": []
+  }
+}

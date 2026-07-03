@@ -1,0 +1,14 @@
+{
+  "id": "FIND-005",
+  "dimension": "edge_case_coverage",
+  "category": "spec_gap",
+  "severity": "major",
+  "title": "C1 has no EDGE/ERROR bullet for a Gemini Live connection failure/drop, and DTMF's 'keep whatever it already does' is unverifiable",
+  "issue": "Unlike C2 (which has an explicit 'EDGE/ERROR' bullet, specs/behavioral-spec.md:74), C1 (lines 57-67) has no EDGE/ERROR bullet at all — no stated behavior for what happens if the Gemini Live websocket fails to open, is rejected (e.g. quota, the Goal-7 key-restriction change misconfigured), or drops mid-call. This is a real, consequential gap for a service whose whole job is placing live phone calls (a caller getting dead air is exactly the 'Never a silent call' failure class FIND-202 flagged for the OLD cascade — C1 states no equivalent requirement for the NEW/restored path). Separately, C1's DTMF bullet (line 66: 'keep whatever the origin/main Gemini Live path already does') is not independently verifiable: the currently-wired live path (the cascade) explicitly IGNORES DTMF (server.js:437: 'DTMF (ignored — compositional loop, no Live)'), and call-bridge.cjs (the dormant Gemini bridge) only classifies the event kind as 'dtmf' (call-bridge.cjs:94) with no evident forwarding of digits into the Gemini session — so there is no live, provable 'already does X' DTMF behavior to keep; the bullet does not commit to any concrete behavior.",
+  "evidence": {
+    "file": "specs/behavioral-spec.md",
+    "lines": "57-67 (no EDGE/ERROR bullet), 66 (DTMF bullet)",
+    "corroborating": "apps/life-call/server.js:436-437 (DTMF ignored in the currently-wired cascade); apps/life-call/lib/call-bridge.cjs:71,94 (dormant bridge only classifies the event, no digit-forwarding logic)"
+  },
+  "fix": "Add an EDGE/ERROR bullet to C1 mirroring C2's pattern: on Gemini Live connect failure/drop mid-call, specify the exact behavior (e.g. log + graceful TwiML/Telnyx hangup with a spoken apology, not silent dead air) and make it a verification-architecture (§4) assertion. Replace the DTMF bullet with a concrete, testable statement (e.g. 'DTMF is ignored — no digit forwarding to Gemini, matches pre-iteration-2 behavior') rather than a reference to unverifiable 'already does' behavior."
+}
