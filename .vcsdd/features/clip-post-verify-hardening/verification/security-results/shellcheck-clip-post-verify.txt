@@ -1,0 +1,27 @@
+
+In _instance_paths.sh line 14:
+CLIP_QUEUE="${HOME}/clips/queue${_SFX}"
+^--------^ SC2034 (warning): CLIP_QUEUE appears unused. Verify use (or export if used externally).
+
+
+In _instance_paths.sh line 15:
+CLIP_POSTED="${HOME}/clips/posted${_SFX}"
+^---------^ SC2034 (warning): CLIP_POSTED appears unused. Verify use (or export if used externally).
+
+
+In _instance_paths.sh line 16:
+CLIP_ACCTS="${HOME}/.cloak/clip-accounts${_SFX}.json"
+^--------^ SC2034 (warning): CLIP_ACCTS appears unused. Verify use (or export if used externally).
+
+
+In _instance_paths.sh line 17:
+CLIP_LEDGER="${EARN_LEDGER:-${HOME}/.openclaw/state/clip-earn-ledger${_SFX}.jsonl}"
+^---------^ SC2034 (warning): CLIP_LEDGER appears unused. Verify use (or export if used externally).
+
+
+In _instance_paths.sh line 21:
+CLIP_PENDING_VERIFY="${HOME}/clips/pending-verify${_SFX}"
+^-----------------^ SC2034 (warning): CLIP_PENDING_VERIFY appears unused. Verify use (or export if used externally).
+
+For more information:
+  https://www.shellcheck.net/wiki/SC2034 -- CLIP_ACCTS appears unused. Verify...

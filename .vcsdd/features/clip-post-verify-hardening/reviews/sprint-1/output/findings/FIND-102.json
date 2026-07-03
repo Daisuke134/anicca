@@ -1,0 +1,25 @@
+{
+  "findingId": "FIND-102",
+  "dimension": "verification_readiness",
+  "category": "missing_required_test",
+  "severity": "major",
+  "blocking": true,
+  "summary": "Three proof obligations explicitly marked 'Required (lean): true' in the approved verification-architecture.md have ZERO corresponding tests anywhere in the manifest's test file list: PROP-004(c) (dry-mode zero-regression against the real post_reel.py), PROP-006(b) (the hook-text-collision-but-different-token regression test), and PROP-011's temp-caption-file-cleanup-across-3-outcomes assertion. PROP-006(c)'s second sub-case (corrupt-JSON sidecar, as opposed to missing-file sidecar) is also untested.",
+  "description": "Grepped all 9 test files in the manifest for any trace of these required tests: `grep -rn 'DRY-ok|dry.mode|dry_mode|stubbed composer' tests/` returns zero hits (PROP-004(c) is entirely absent -- and per FIND-100, a faithful implementation of this exact test would have caught a real bug). `grep -n 'hook|OTHERCLIP|same.*text|shared.*hook' tests/test_self_heal.py` finds no integration test seeding an unrelated post with the SAME hook prose but a DIFFERENT token (PROP-006(b), the specific FIND-018/019/025 regression the spec calls out by name as needing its own dedicated test). `grep -n 'corrupt|invalid.*json|malformed|bad.*json' tests/test_self_heal.py` finds nothing -- only the missing-sidecar-file case is tested (test_missing_sidecar_is_permanently_inconclusive_no_placeholder_no_crash), not the 'sidecar containing invalid JSON' case PROP-006(c) explicitly also requires ('separately seed a sidecar containing invalid JSON -> same assertion'). `grep -rn 'TMPCAP|mktemp.*clip-cap|! -f.*TMPCAP' tests/*.sh` finds nothing -- PROP-011's explicit 3-outcome temp-file-cleanup assertion ('run the same token-generation step 3 TIMES, once... outcome=\"published\", once... \"unverified\", once... \"failed\" -- assert in ALL THREE cases the mktemp-created temp caption file path no longer exists on disk') has no test at all; test_prop011_token_not_clip_id_derived.sh only exercises the 'published' outcome path and never asserts on TMPCAP's existence either way.",
+  "codeCorrectnessNote": "Independently traced the actual code for all four gaps and confirmed the underlying implementation IS correct for 3 of the 4 (PROP-006(b)'s token-vs-prose distinction in select_confirmed_href is correctly substring-based per reel_verify.py:57-61; PROP-006(c)'s corrupt-JSON handling is correctly caught by self_heal.py:_read_sidecar's broad except at lines 40-41; PROP-011's cleanup is correctly implemented via `trap 'rm -f \"$TMPCAP\"' EXIT` registered before all 3 outcome branches, each of which calls `exit 0` -- empirically verified 0 leaked /tmp/clip-cap-* files before and after a real test run). Only PROP-004(c) actually corresponds to a real bug (FIND-100). The other three are pure coverage gaps: correct-but-unverified code paths that a future refactor could silently break with no test to catch the regression.",
+  "evidence": {
+    "filePath": "~/anicca/skills/earn/clip/tests/",
+    "lineRange": "n/a (absence across all 9 test files)",
+    "commandsRun": [
+      "grep -rn \"DRY-ok|dry.mode|dry_mode|stubbed composer\" tests/  -> 0 hits",
+      "grep -n \"hook|OTHERCLIP|same.*text|shared.*hook\" tests/test_self_heal.py -> 0 hits (only a docstring mention of 'test-hook pattern', unrelated)",
+      "grep -n \"corrupt|invalid.*json|malformed|bad.*json\" tests/test_self_heal.py -> 0 hits",
+      "grep -rn \"TMPCAP|mktemp.*clip-cap|! -f.*TMPCAP|trap.*EXIT\" tests/*.sh -> 0 hits"
+    ]
+  },
+  "crossCheck": {
+    "filePath": ".vcsdd/features/clip-post-verify-hardening/specs/verification-architecture.md",
+    "lineRange": "proof-obligations table, PROP-004 row (c), PROP-006 row (b) and (c), PROP-011 row second paragraph",
+    "snippet": "All four marked 'Required (lean): true'."
+  }
+}

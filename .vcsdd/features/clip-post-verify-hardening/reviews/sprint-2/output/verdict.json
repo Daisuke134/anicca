@@ -1,0 +1,75 @@
+{
+  "feature": "clip-post-verify-hardening",
+  "reviewType": "implementation",
+  "sprint": 2,
+  "reviewer": "fresh-context adversary (disk-only, no browser) -- re-review after sprint-1 fixes",
+  "specArtifactsReviewed": [
+    ".vcsdd/features/clip-post-verify-hardening/specs/behavioral-spec.md",
+    ".vcsdd/features/clip-post-verify-hardening/specs/verification-architecture.md"
+  ],
+  "implementationFilesReviewed": [
+    "~/anicca/skills/earn/clip/reel_verify.py",
+    "~/anicca/skills/earn/clip/self_heal.py",
+    "~/anicca/skills/earn/clip/count_posts.py",
+    "~/anicca/skills/earn/clip/run.sh",
+    "~/anicca/skills/earn/clip/monitor.sh",
+    "~/anicca/skills/earn/clip/_instance_paths.sh",
+    "~/.claude/skills/ig-reels-poster/scripts/post_reel.py"
+  ],
+  "testFilesReviewed": [
+    "~/anicca/skills/earn/clip/tests/test_reel_verify.py",
+    "~/anicca/skills/earn/clip/tests/test_count_posts.py",
+    "~/anicca/skills/earn/clip/tests/test_self_heal.py",
+    "~/anicca/skills/earn/clip/tests/test_post_reel_single_print.py",
+    "~/anicca/skills/earn/clip/tests/test_run_sh_3way_routing.sh",
+    "~/anicca/skills/earn/clip/tests/test_prop009_self_heal_gating.sh",
+    "~/anicca/skills/earn/clip/tests/test_prop011_token_not_clip_id_derived.sh",
+    "~/anicca/skills/earn/clip/tests/test_n_instance_distinctness.sh",
+    "~/anicca/skills/earn/clip/tests/test_instance_paths.sh",
+    "~/anicca/skills/earn/clip/tests/test_prop008_isolation.sh"
+  ],
+  "priorSprintFindingsVerified": {
+    "FIND-100": {
+      "claimedFix": "every early-return site inside main()'s try block does a bare `return` (no print); the shared `finally:` is the sole print point, exempting verify-only/DRY-ok from the outcome-fallback.",
+      "verification": "Read the full current post_reel.py. Traced EVERY return statement inside main() by grep + manual control-flow read: lines 107 (not-logged-in), 121 (account-guard), 131 (verify-only), 144 (before-snapshot-unstable-abort), 149 (no-create-btn), 156 (file-chooser-fail), 163 (video-never-loaded), 185 (no-share-btn), 191 (DRY-ok) are ALL bare `return` with zero print/json.dumps calls anywhere before them (confirmed via `grep -n 'print(json.dumps(res'` -> exactly ONE hit, at line 233 inside finally). The finally block (lines 220-233) correctly excludes verify-only/DRY-ok from the outcome-fallback via `if res.get(\"reached\") not in (\"verify-only\", \"DRY-ok\"): res.setdefault(...)`. The success/failure path (post-share, lines 192-217) also has no print inside try, falling through to the same single finally print. CONFIRMED: exactly one printed JSON line per invocation, for all 9 early-return paths plus the fall-through success/failure path -- including the account-guard and before-unstable-abort paths the task specifically flagged, which were not directly unit-tested but are structurally identical (bare return, no print) to the 3 paths that ARE tested (not-logged-in, verify-only, DRY-ok). GENUINELY FIXED.",
+      "verdict": "CONFIRMED FIXED"
+    },
+    "FIND-101": {
+      "claimedFix": "video/caption reads moved inside the try: block so the existing except/finally now handles a missing caption file cleanly (outcome:failed) instead of an uncaught crash.",
+      "verification": "Confirmed lines 98-100 (video abspath+exists assert, caption file read) are now inside the try: block that starts at line 88 (previously these were before it, per FIND-101's original evidence at lines 87-90 pre-fix). A missing --caption-file now raises FileNotFoundError INSIDE try, caught by `except Exception as e: res[\"error\"] = repr(e)[:200]` (line 218-219), then the finally block prints once with outcome:failed. Traced res[\"video\"]'s two assignments: line 87 sets res[\"video\"]=os.path.basename(a.video) (raw arg, before abspath), line 99 reassigns res[\"video\"]=os.path.basename(video) where video=os.path.abspath(a.video) (line 98). os.path.basename() of a path and os.path.basename() of that same path's abspath are identical for any realistic video filename (no trailing slash, no '.'/'..' as the final component -- real .mp4 paths never hit this edge). Grepped the entire clip skill + post_reel.py for any other read of res[\"video\"]: zero downstream consumers exist (run.sh/self_heal.py never read this key). CONFIRMED: the reassignment is harmless and this fix introduces no observable behavior change on the success path, while making the previously-accidental safety on the missing-caption path intentional and logged.",
+      "verdict": "CONFIRMED FIXED"
+    },
+    "FIND-102": {
+      "claimedFix": "4 new/extended tests added: test_post_reel_single_print.py (PROP-004c), test_self_heal.py's different-token and corrupt-JSON-sidecar tests (PROP-006b/c), test_prop011's 3-outcome TMPCAP cleanup helper.",
+      "verification": "Read all 4 additions in full. (1) test_post_reel_single_print.py::test_dry_ok_prints_exactly_once... explicitly asserts `mock_stabilize.assert_not_called()` for PROP-004(c)'s dry-mode-zero-regression claim, AND asserts len(parsed)==1 + 'outcome' not in parsed[0] -- mentally reverting FIND-100's fix (restoring a print before every early return) would make len(parsed)==2 for all 3 tests in this file, failing the assertEqual; genuine regression test. (2) test_self_heal.py::test_unrelated_post_with_same_hook_text_but_different_token_never_misattributed -- read reel_verify.py:select_confirmed_href (lines 57-64): matches ONLY on `expected_token in candidate_page_texts.get(h,\"\")`, a pure substring/token check, never hook prose. The test's OTHERCLIP page text contains the identical hook sentence but NOT the clip's own token '#cmyowntoken1' -> matches=[] -> None -> status stays 'still-pending'. If select_confirmed_href were hypothetically changed to prose-match, this test would flip to 'resolved' and fail its assertEqual -- genuine regression guard for PROP-006(b)/FIND-018/019/025. (3) test_self_heal.py::test_corrupt_json_sidecar_is_permanently_inconclusive_no_placeholder_no_crash -- read _read_sidecar (self_heal.py:33-44): a broad `except Exception: return None` catches json.JSONDecodeError from the malformed '{not valid json!!' fixture; if that except were narrowed or removed, json.load would raise uncaught and the test would error, not merely fail an assertion -- genuine test. (4) test_prop011_token_not_clip_id_derived.sh's test_tmpcap_cleanup_for_outcome helper (lines 86-109) is run 3x against published/unverified/failed stub outcomes, each asserting TMPCAP's mktemp path no longer exists after the run -- ACTUALLY EXECUTED (see testsActuallyExecuted below), all 3 PASS. All 4 additions genuinely test what they claim.",
+      "verdict": "CONFIRMED FIXED"
+    },
+    "FIND-103": {
+      "claimedFix": "self_heal.py's __main__ CLI wrapper now takes --pending-verify/--posted/--ledger as REQUIRED argparse args; run.sh passes its already-resolved $PENDING_VERIFY/$POSTED/$LEDGER as those args instead of the wrapper re-deriving ANICCA_INSTANCE suffixing independently.",
+      "verification": "Read self_heal.py's __main__ block (lines 118-156): the independent Python re-derivation of ANICCA_INSTANCE suffixing is GONE -- `ap.add_argument(\"--pending-verify\", required=True)` / `--posted` / `--ledger` are all required=True (argparse will exit 2 with an error if any is missing, not silently fall back), and pending_verify/posted/ledger are assigned directly from a.pending_verify/a.posted/a.ledger with zero path-derivation logic remaining in this file. Read run.sh's actual self-heal invocation (lines 105-111): `CDP_PORT=\"$PORT\" \"$PY\" \"$SELF_HEAL\" --handle \"$HANDLE\" --tid \"$TID\" --wake \"$WAKE\" --pending-verify \"$PENDING_VERIFY\" --posted \"$POSTED\" --ledger \"$LEDGER\"` -- confirmed via direct grep of the real file, all 3 new args present and correctly quoted. Confirmed PENDING_VERIFY/POSTED/LEDGER are assigned at run.sh lines 22/24/26 (from CLIP_POSTED/CLIP_LEDGER/CLIP_PENDING_VERIFY, themselves sourced from _instance_paths.sh at line 18) -- well before the line-110 use, so no ordering bug. RAN test_prop009_self_heal_gating.sh directly (see below): its SELF_HEAL_STUB is a plain python3 script that does `sys.argv[1:]` and unconditionally prints a fixed JSON string -- it does NOT use argparse, so it silently accepts (and ignores) the 3 new required CLI args with no parsing error; the test PASSED (both case A and case B). Confirmed this is not accidentally broken by the extra args.",
+      "verdict": "CONFIRMED FIXED"
+    }
+  },
+  "testsActuallyExecuted": {
+    "python": "python3 tests/test_reel_verify.py -> 15/15 PASS; python3 tests/test_count_posts.py -> 5/5 PASS; python3 tests/test_self_heal.py -> 6/6 PASS (up from 4 in sprint-1, +2 new for FIND-102); python3 tests/test_post_reel_single_print.py -> 3/3 PASS (new file for FIND-100/102)",
+    "shell": "bash tests/test_instance_paths.sh -> ALL PASS; bash tests/test_n_instance_distinctness.sh -> ALL PASS (20 paths, 20 unique, 4 instances); bash tests/test_prop008_isolation.sh -> ALL PASS; bash tests/test_run_sh_3way_routing.sh -> ALL PASS (3/3 outcome-routing cases); bash tests/test_prop009_self_heal_gating.sh -> ALL PASS (both case A parts + case B, confirming the stub tolerates the 3 new required CLI args); bash tests/test_prop011_token_not_clip_id_derived.sh -> ALL PASS (including all 3 new TMPCAP-cleanup-per-outcome assertions)",
+    "cleanup": "no /tmp/vcsdd-* or /tmp/clip-cap-* leftovers found after the full run (checked via ls, both patterns empty)."
+  },
+  "verdict": {
+    "spec_fidelity": "PASS",
+    "edge_cases": "PASS",
+    "impl_correctness": "PASS",
+    "structural_integrity": "PASS",
+    "verification_readiness": "PASS"
+  },
+  "findings": [],
+  "positiveFindings": [
+    "FIND-100 (single-print + outcome-scope violation, blocking/major): genuinely fixed. Every one of the 9 early-return sites in post_reel.py's main() is now a bare `return` with zero prints before it (independently verified via grep for every print(json.dumps(res call in the file -> exactly 1 hit, in the finally block); the shared finally correctly excludes verify-only/DRY-ok from the outcome-fallback.",
+    "FIND-101 (uncaught crash on missing caption, non-blocking edge case): genuinely fixed. video/caption reads moved inside try:; the harmless res[\"video\"] reassignment (basename of raw arg vs basename of abspath) was independently confirmed to have zero downstream readers and to be value-identical for any realistic path.",
+    "FIND-102 (4 missing required-proof tests, blocking/major): genuinely fixed. All 4 new/extended tests were read in full, independently reasoned about (not just 'exists'), and confirmed to be genuine regression guards -- 2 were explicitly hand-verified against the underlying pure-function logic (select_confirmed_href's token-only substring match; _read_sidecar's broad except catching JSONDecodeError) to confirm they would fail if the corresponding fix/logic were reverted.",
+    "FIND-103 (duplicate path-derivation logic, blocking/medium): genuinely fixed. self_heal.py's __main__ wrapper has zero remaining ANICCA_INSTANCE derivation logic; the 3 new CLI args are argparse required=True (fails loudly on omission, does not silently fall back); run.sh's real invocation line was grepped directly and confirmed to pass all 3 args from its own already-resolved variables, defined well before use.",
+    "All 10 test files (up from 9 in sprint-1) were ACTUALLY EXECUTED in this review, not merely read -- 29/29 python unit/integration tests pass, 6/6 shell integration scripts pass, including the newly-added test_post_reel_single_print.py and the 2 new test_self_heal.py cases and the extended test_prop011 3-outcome TMPCAP helper.",
+    "No adjacent regressions found from any of the 4 fixes: the FIND-100 fix's control-flow change was traced through every one of the 9 return sites individually (not sampled); the FIND-101 fix's res['video'] reassignment was grepped project-wide for downstream readers (none exist); the FIND-103 fix's argparse required=True change was verified compatible with the existing PROP-009 stub (which bypasses argparse entirely and simply ignores extra argv), confirmed by actually running that test, not just reading its code."
+  ],
+  "rationale": "All four sprint-1 findings (FIND-100 through FIND-103) were independently re-verified against the CURRENT code on disk, not the commit message's claims. Each fix was traced by hand: FIND-100's control-flow claim was checked by enumerating every return statement in post_reel.py's main() via grep and confirming each is a bare return with no preceding print, plus confirming exactly one print(json.dumps(res call exists in the entire file (inside finally). FIND-101's claim was checked by confirming the video/caption reads are now inside try:, and additionally verifying the incidental res['video'] double-assignment introduces no observable behavior change (no downstream reader exists, and basename-of-abspath equals basename-of-raw-path for all realistic inputs). FIND-102's four new/extended tests were read in full and reasoned about against the underlying pure functions they exercise (select_confirmed_href, _read_sidecar) to confirm they are genuine regression guards, not tests that pass regardless of the underlying logic. FIND-103's fix was checked end-to-end: self_heal.py's argparse definition, run.sh's actual invocation line (grepped directly, not assumed), the ordering of PENDING_VERIFY/POSTED/LEDGER assignment before use, and compatibility with the existing PROP-009 test stub (confirmed by actually executing it, since that test's stub bypasses argparse and could theoretically choke on unexpected argv -- it does not). All 10 test files in the current manifest (up from 9) were actually executed as real subprocess/unittest runs, not read-only reviews: 29/29 python tests pass, 6/6 shell scripts pass. No new findings were manufactured -- the fixes are genuinely correct, the new tests genuinely test what they claim, and no adjacent regression was introduced by any of the 4 changes. All 5 review dimensions PASS."
+}

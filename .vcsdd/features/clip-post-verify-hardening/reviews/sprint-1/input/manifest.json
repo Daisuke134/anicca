@@ -1,0 +1,30 @@
+{
+  "reviewType": "implementation",
+  "feature": "clip-post-verify-hardening",
+  "sprint": 1,
+  "specArtifacts": [
+    ".vcsdd/features/clip-post-verify-hardening/specs/behavioral-spec.md",
+    ".vcsdd/features/clip-post-verify-hardening/specs/verification-architecture.md"
+  ],
+  "implementationFiles": [
+    "~/anicca/skills/earn/clip/reel_verify.py",
+    "~/anicca/skills/earn/clip/self_heal.py",
+    "~/anicca/skills/earn/clip/count_posts.py",
+    "~/anicca/skills/earn/clip/run.sh",
+    "~/anicca/skills/earn/clip/monitor.sh",
+    "~/anicca/skills/earn/clip/_instance_paths.sh",
+    "~/.claude/skills/ig-reels-poster/scripts/post_reel.py"
+  ],
+  "testFiles": [
+    "~/anicca/skills/earn/clip/tests/test_reel_verify.py",
+    "~/anicca/skills/earn/clip/tests/test_count_posts.py",
+    "~/anicca/skills/earn/clip/tests/test_self_heal.py",
+    "~/anicca/skills/earn/clip/tests/test_run_sh_3way_routing.sh",
+    "~/anicca/skills/earn/clip/tests/test_prop009_self_heal_gating.sh",
+    "~/anicca/skills/earn/clip/tests/test_prop011_token_not_clip_id_derived.sh",
+    "~/anicca/skills/earn/clip/tests/test_n_instance_distinctness.sh",
+    "~/anicca/skills/earn/clip/tests/test_instance_paths.sh",
+    "~/anicca/skills/earn/clip/tests/test_prop008_isolation.sh"
+  ],
+  "reviewDimensions": ["spec_fidelity", "edge_cases", "impl_correctness", "structural_integrity", "verification_readiness"]
+}

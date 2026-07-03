@@ -1,0 +1,85 @@
+{
+  "feature": "clip-post-verify-hardening",
+  "reviewType": "implementation",
+  "sprint": 1,
+  "reviewer": "fresh-context adversary (disk-only, no browser)",
+  "specArtifactsReviewed": [
+    ".vcsdd/features/clip-post-verify-hardening/specs/behavioral-spec.md",
+    ".vcsdd/features/clip-post-verify-hardening/specs/verification-architecture.md"
+  ],
+  "implementationFilesReviewed": [
+    "~/anicca/skills/earn/clip/reel_verify.py",
+    "~/anicca/skills/earn/clip/self_heal.py",
+    "~/anicca/skills/earn/clip/count_posts.py",
+    "~/anicca/skills/earn/clip/run.sh",
+    "~/anicca/skills/earn/clip/monitor.sh",
+    "~/anicca/skills/earn/clip/_instance_paths.sh",
+    "~/.claude/skills/ig-reels-poster/scripts/post_reel.py"
+  ],
+  "testFilesReviewed": [
+    "~/anicca/skills/earn/clip/tests/test_reel_verify.py",
+    "~/anicca/skills/earn/clip/tests/test_count_posts.py",
+    "~/anicca/skills/earn/clip/tests/test_self_heal.py",
+    "~/anicca/skills/earn/clip/tests/test_run_sh_3way_routing.sh",
+    "~/anicca/skills/earn/clip/tests/test_prop009_self_heal_gating.sh",
+    "~/anicca/skills/earn/clip/tests/test_prop011_token_not_clip_id_derived.sh",
+    "~/anicca/skills/earn/clip/tests/test_n_instance_distinctness.sh",
+    "~/anicca/skills/earn/clip/tests/test_instance_paths.sh",
+    "~/anicca/skills/earn/clip/tests/test_prop008_isolation.sh"
+  ],
+  "testsActuallyExecuted": {
+    "python": "python3 -m unittest tests.test_reel_verify tests.test_count_posts tests.test_self_heal -v -> 24/24 PASS (20 unit + 4 self_heal integration)",
+    "shell": "bash tests/test_instance_paths.sh, test_n_instance_distinctness.sh, test_run_sh_3way_routing.sh, test_prop009_self_heal_gating.sh, test_prop011_token_not_clip_id_derived.sh, test_prop008_isolation.sh -> 6/6 scripts ALL PASS",
+    "note": "All existing, written tests genuinely pass. The verdict below is about tests that were NEVER WRITTEN for spec-required proof obligations, and one control-flow bug the missing test would have caught, not about any failing test."
+  },
+  "verdict": {
+    "spec_fidelity": "FAIL",
+    "edge_cases": "FAIL",
+    "impl_correctness": "FAIL",
+    "structural_integrity": "FAIL",
+    "verification_readiness": "FAIL"
+  },
+  "findings": [
+    {
+      "id": "FIND-100",
+      "dimension": ["spec_fidelity", "impl_correctness"],
+      "severity": "major",
+      "file": "reviews/sprint-1/output/findings/FIND-100.json",
+      "summary": "post_reel.py's shared finally: block unconditionally fires on every early return inside try:, including verify-only (:121) and DRY-ok (:181) -- both explicitly declared 'out of scope for the outcome vocabulary' by the spec's own Ground Truth section. This double-prints JSON on all 9 early-return paths and injects an unwanted outcome:\"failed\" key into the two non-failure paths, directly contradicting PROP-004(c)(iii)'s literal test assertion. Low production impact today (both real consumers read only the last stdout line and only fields unaffected by the leak), but a genuine, concretely-evidenced spec deviation."
+    },
+    {
+      "id": "FIND-101",
+      "dimension": "edge_cases",
+      "severity": "medium",
+      "file": "reviews/sprint-1/output/findings/FIND-101.json",
+      "summary": "A pending-verify clip whose sidecar is valid but whose .txt caption is ALSO missing crashes post_reel.py silently (caption file opened outside any try/except) -- self_heal.py accidentally stays safe via a 3-layer chain of exception-swallowing, but this is undesigned, unlogged, and completely untested."
+    },
+    {
+      "id": "FIND-102",
+      "dimension": "verification_readiness",
+      "severity": "major",
+      "file": "reviews/sprint-1/output/findings/FIND-102.json",
+      "summary": "PROP-004(c) (dry-mode zero-regression), PROP-006(b) (hook-collision/different-token regression), PROP-006(c)'s corrupt-JSON-sidecar sub-case, and PROP-011's 3-outcome temp-file-cleanup assertion are all explicitly 'Required (lean): true' in the approved spec but have ZERO corresponding tests. One of the four (PROP-004(c)) would have caught a real bug (FIND-100) had it been written; the other three guard correct-but-unverified code."
+    },
+    {
+      "id": "FIND-103",
+      "dimension": "structural_integrity",
+      "severity": "medium",
+      "file": "reviews/sprint-1/output/findings/FIND-103.json",
+      "summary": "self_heal.py's actual __main__ CLI entrypoint (what run.sh really invokes) re-derives the ANICCA_INSTANCE path-suffix convention independently in Python instead of receiving it from the canonical _instance_paths.sh (which run.sh has already sourced moments earlier in the same script). Correct today, but an unenforced duplication with zero test coverage of the entrypoint itself -- test_self_heal.py only exercises run_self_heal() directly, bypassing __main__."
+    }
+  ],
+  "positiveFindings": [
+    "reel_verify.py's 4 pure functions (_reads_stable, stabilize_reads, diff_new_href, classify_outcome, select_confirmed_href) are genuinely singly-defined in one shared module and imported (not reimplemented) by both post_reel.py and post_reel.py's caller chain -- no drift, matching the Gate's explicit 'no duplicate implementation' criterion for these specific functions.",
+    "REQ-001/002's exact 3-read/2-pair stabilize model is implemented correctly and matches PROP-001/002's fixtures exactly (independently re-derived by hand: reads=[[a],[a,b],[a,b]] -> stable via read2==read3; reads=[[a],[b],[c]] -> inconclusive, hrefs=None not last-read).",
+    "REQ-003's classify_outcome correctly requires BOTH candidate-present-on-reconfirm AND exact count+1 -- independently re-derived classify_outcome(\"X\",[\"X\",\"a\"],2) by hand and confirmed it correctly returns unverified (count 2 != 2+1) despite candidate X being present, matching PROP-003's specific regression intent.",
+    "All 6 documented pre-share failure sites (:95,108,127,134,141,163) plus the new before-unstable-abort site correctly set outcome=\"failed\" inline; classify_outcome is genuinely the ONLY site that can produce outcome=\"published\" (confirmed via full control-flow read of post_reel.py's post-share branch).",
+    "REQ-010's token generation is confirmed to happen at exactly one site (run.sh:116, via secrets.token_hex(5)); self_heal.py never generates/derives a token, only reads sidecar[\"token\"] -- confirmed via grep across both files.",
+    "$CAP is confirmed read-only across a real post attempt (test_prop011 empirically re-run: byte-identical content before/after); the mktemp+trap EXIT cleanup mechanism was empirically re-verified independently (0 leaked /tmp/clip-cap-* files before and after a real run), even though no test asserts this for all 3 outcomes (see FIND-102).",
+    "REQ-009's count_posts.py hand-verified against the real frozen 4-line fixture: dedup by URL correctly collapses lines 2+3 (identical DaLKV2xP8Ij) to count 2, matching the documented real-world incident math exactly. Fixture is genuinely committed to the anicca repo (git log confirms commit 9b47b31).",
+    "run.sh's IFS=$'\\x1f' field-splitting was independently stress-tested with a URL containing query-string special characters and an href containing a literal space -- both round-tripped correctly through the JSON/shell boundary.",
+    "REQ-008's round-robin (oldest clip-file mtime) and REQ-006's clip+caption move-together were both independently hand-verified against their own test fixtures and additionally confirmed correct against a manually-traced trace of self_heal.py's control flow, not merely 'tests pass'.",
+    "All 30 existing tests (24 python unit/integration + 6 shell integration scripts) were actually executed in this review and genuinely pass -- no test failures found anywhere in the existing suite."
+  ],
+  "rationale": "The core algorithmic implementation of this feature -- the race-free stabilize model, the outcome classification, the 3-way run.sh routing, the token-based self-heal confirmation, the round-robin fairness, and the URL-deduplicated monitor count -- is genuinely solid: independently re-derived by hand against multiple fixtures (not just 'tests pass'), and matches the approved spec's REQ-001 through REQ-010 with only one narrow, well-evidenced deviation (FIND-100). However, per the Gate's own requirement that Phase 3 confirm PROP-001..007 and PROP-009 PASS via a full control-flow read (not grep), that same control-flow read surfaced a real, concrete bug in post_reel.py's finally-block scope (FIND-100) that directly violates the spec's own explicit 'out of scope for the outcome vocabulary' carve-out and its own PROP-004(c) test requirement. Combined with three explicitly 'Required: true' proof obligations that were never implemented as tests (FIND-102, one of which would have caught FIND-100), one narrow but real cross-language logic duplication with zero test coverage of its actual entrypoint (FIND-103), and one edge case whose safety is accidental rather than designed and entirely untested (FIND-101), all five review dimensions have at least one concrete, citable, blocking finding. This sprint should route FIND-100 to a fix (scope the finally's setdefault+print to only fire when outcome is not already 'complete' for a non-failure path, or split verify-only/DRY-ok returns to fully bypass the shared finally's print), add the four missing tests named in FIND-102, add a test for FIND-101's missing-caption scenario (even if only to document the accidental-safety behavior as intentional), and either pass the already-resolved _instance_paths.sh values into self_heal.py's CLI wrapper as arguments or add a dedicated subprocess-level test asserting the wrapper's path derivation matches _instance_paths.sh (FIND-103) before Phase 3 can PASS."
+}

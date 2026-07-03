@@ -1,0 +1,25 @@
+{
+  "findingId": "FIND-103",
+  "dimension": "structural_integrity",
+  "category": "duplicate_logic_drift_risk",
+  "severity": "medium",
+  "blocking": true,
+  "summary": "self_heal.py's `if __name__ == \"__main__\"` CLI wrapper (the ACTUAL entrypoint run.sh invokes every wake) independently re-derives the ANICCA_INSTANCE path-suffix convention in Python instead of obtaining it from the single canonical source _instance_paths.sh -- and this duplicated logic has zero test coverage of its own (test_self_heal.py only exercises the underlying run_self_heal() function directly, bypassing the CLI wrapper entirely).",
+  "description": "_instance_paths.sh is the established single source of truth for CLIP_QUEUE/CLIP_POSTED/CLIP_ACCTS/CLIP_LEDGER/CLIP_PENDING_VERIFY path resolution (bash-only, sourced by run.sh, producer.sh, monitor.sh). Because it is a bash file, self_heal.py's `__main__` block cannot source it, so it independently re-implements the identical suffix/override logic in Python: `_sfx = f\"-{os.environ['ANICCA_INSTANCE']}\" if os.environ.get(\"ANICCA_INSTANCE\") else \"\"`, `pending_verify = f\"{home}/clips/pending-verify{_sfx}\"`, `posted = f\"{home}/clips/posted{_sfx}\"`, `ledger = os.environ.get(\"EARN_LEDGER\") or f\"{home}/.openclaw/state/clip-earn-ledger{_sfx}.jsonl\"`. Verified byte-for-byte this matches _instance_paths.sh's bash definitions TODAY, but run.sh's actual self-heal invocation (`CDP_PORT=\"$PORT\" \"$PY\" \"$SELF_HEAL\" --handle \"$HANDLE\" --tid \"$TID\" --wake \"$WAKE\"`) passes NEITHER $CLIP_PENDING_VERIFY nor $CLIP_POSTED nor $CLIP_LEDGER as CLI args or env vars to the child process -- even though run.sh has ALREADY resolved all three via its own `source _instance_paths.sh` a few lines earlier in the SAME script. This means the paths are computed twice, in two languages, with no mechanism to keep them in sync: a future edit to _instance_paths.sh (e.g. a new instance-selection convention, a renamed directory, or a change to the EARN_LEDGER override precedence) would silently NOT propagate to self_heal.py's hardcoded Python copy, reintroducing exactly the class of cross-instance collision/drift risk that _instance_paths.sh itself was built to prevent (per its own header comment and the clip-loop-dual-instance-earn feature it belongs to). This is the same category of risk the spec's own Gate criterion explicitly guards against for reel_verify.py's 4 pure functions ('no duplicate/drifting implementation') -- except here it applies to path-resolution logic, which the spec/gate never mentions. Compounding this: test_self_heal.py's setUp calls run_self_heal() directly with explicit path arguments (self.pending_verify, self.posted, self.ledger, all obtained by sourcing _instance_paths.sh in a bash subshell) -- it never actually invokes `python3 self_heal.py --handle ... --tid ...` as a real subprocess, so the __main__ wrapper's independent path-derivation logic is completely untested. A silent drift here would be caught by neither the existing test suite nor a casual read of run_self_heal()'s own (correct) logic.",
+  "evidence": {
+    "filePath": "~/anicca/skills/earn/clip/self_heal.py",
+    "lineRange": "126-146 (the `if __name__ == \"__main__\":` block)",
+    "snippet": "_sfx = f\"-{os.environ['ANICCA_INSTANCE']}\" if os.environ.get(\"ANICCA_INSTANCE\") else \"\"\nhome = os.path.expanduser(\"~\")\npending_verify = f\"{home}/clips/pending-verify{_sfx}\"\nposted = f\"{home}/clips/posted{_sfx}\"\nledger = os.environ.get(\"EARN_LEDGER\") or f\"{home}/.openclaw/state/clip-earn-ledger{_sfx}.jsonl\""
+  },
+  "crossCheck": {
+    "filePath": "~/anicca/skills/earn/clip/_instance_paths.sh",
+    "lineRange": "full file",
+    "snippet": "ANICCA_INSTANCE=\"${ANICCA_INSTANCE:-}\"\n_SFX=\"\"\n[ -n \"$ANICCA_INSTANCE\" ] && _SFX=\"-${ANICCA_INSTANCE}\"\nCLIP_PENDING_VERIFY=\"${HOME}/clips/pending-verify${_SFX}\"\nCLIP_LEDGER=\"${EARN_LEDGER:-${HOME}/.openclaw/state/clip-earn-ledger${_SFX}.jsonl}\""
+  },
+  "crossCheck2": {
+    "filePath": "~/anicca/skills/earn/clip/run.sh",
+    "lineRange": "self-heal invocation line",
+    "snippet": "CDP_PORT=\"$PORT\" \"$PY\" \"$SELF_HEAL\" --handle \"$HANDLE\" --tid \"$TID\" --wake \"$WAKE\" 2>/dev/null || true   # note: does NOT pass PENDING_VERIFY/POSTED/LEDGER despite already having resolved them via _instance_paths.sh a few lines above"
+  },
+  "testCoverageGap": "test_self_heal.py's setUp() resolves paths via a bash subshell sourcing _instance_paths.sh directly and calls self_heal.run_self_heal(...) with those exact strings as explicit kwargs -- it never subprocess-invokes `self_heal.py --handle ... --tid ...` (the real __main__ entrypoint run.sh actually calls), so the duplicated path-derivation logic itself has no test."
+}
