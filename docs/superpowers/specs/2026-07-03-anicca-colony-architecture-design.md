@@ -602,11 +602,28 @@ H — BUILD THE SELF-IMPROVEMENT HARNESS (this is the PRODUCT — the heart)
        never delete). Rationale: 2026-07-04 the blind cleaner deleted the in-use polymarket-agent clone
        mid-W1; a cleaner that cannot ask "is this in use?" must not decide deletions alone.
 
+V — VERIFICATION MATRIX (Dais 2026-07-04: "we have to verify every one of them and keep iterating until
+     that verification is done"). EVERY capability × EVERY instance type must be VERIFIED with a real
+     no-mock run (fresh evidence: tx hash / trace line / live URL). A cell stays open until green — we
+     ITERATE (run → error → fix[bootstrap now, self-heal later] → re-run) until it passes. This matrix IS
+     the release-copy made checkable: each 発表文 bullet maps to rows below.
+
+     | capability (release-copy bullet)         | human-funded (local) | self-funded (cloud) |
+     |---|---|---|
+     | V1 trade Polymarket (pm-trade)           | 🟡 pipeline E2E green, agent chose 0 trades; DONE=first real trade tx | ⬜ same run on cloud child |
+     | V2 trade Solana (Franklin, W2)           | ⬜ | ⬜ |
+     | V3 yield (execute-yield)                 | ✅ 0.19 aUSDC on-chain, autonomous | ⬜ |
+     | V4 SPAWN cloud child on AKASH, 1 command | ⬜ (human-funded parent spawns) | ⬜ (self-funded parent spawns = closed loop) |
+     | V5 model-via-wallet (APIキー不要, BlockRun x402) | ✅ analyze passes paid from wallet | ⬜ child uses own wallet |
+     | V6 dashboard LIVE (aniccaai.com/dashboard) | ⬜ per-instance 収支 realtime | ⬜ child appears automatically |
+     | V7 self-monitor/heal/improve/replicate/share (自己監視・修復・改善・増殖・情報共有) | ⬜ H1-H6 each with 1 real proof | ⬜ |
+     | V8 UBI/寄付 redistribute to humans        | ⬜ first real payout tx | ⬜ |
+
 G — GROW (colony) + SHOW (proof) + LAUNCH
-  G1  SPAWN = ONE COMMAND (Dais 2026-07-04): a self-funded OR human-funded AI spawns a cloud child with a
-       single command — seed on-chain automatically (fix spawn/run.sh:196 print→auto), child boots, earns
-       via the wired base agents, and when IT earns enough it spawns ITS child = closed reproduction loop
-       that continues without any human. (#8)
+  G1  SPAWN = ONE COMMAND (Dais 2026-07-04): a self-funded OR human-funded AI spawns a cloud child ON
+       AKASH with a single command — seed on-chain automatically (fix spawn/run.sh:196 print→auto), child
+       boots, earns via the wired base agents, and when IT earns enough it spawns ITS child = closed
+       reproduction loop that continues without any human. (#8)
   G2  REQ-CLOUD-SAME-BODY: cloud-init boots OUR runtime/loop (not the Conway body) so the child = same body
        + same harness, earns via the wired base agents. (#10) + G2b headless Camoufox for TIER-2. (#9)
   G3  Channel B (REQ-DRAIN): registry + gojo/ubi so a surplus AI funds a broke one, no human. (P4)
@@ -637,6 +654,17 @@ runtime/machine-readable registry, zero-human-loop, agent earns crypto + redistr
   knowledge graph; = the reference impl of RFS #1 "Company Brain". Story (honest): **Anicca is an
   agent-first project in the same frontier as Garry's stack — the earn/self-fund/UBI layer of the agent
   economy — not built on top of it.**
+
+**★ SUBMISSION DUE 2026-07-05 (TOMORROW) — official required items (verbatim from organizer):**
+> 参加チームには、以下を提出していただきます。①RFSに基づく課題設定と解決アプローチ ②プロダクト、技術、
+> ビジネスモデルの概要 ③デモまたは90秒以内のデモ動画 ④グローバル展開を前提とした市場・ユーザー視点
+
+Mapping: ①② = the submission doc (RFS #3 framing below) ③ = the 90-sec demo video (real evidence only:
+bridge txs, agent live pass, spawn-on-Akash, dashboard) ④ = agent-economy global market + crypto rails =
+geography-agnostic + UBI to humans. **We must be able to say the §12 release copy EXACTLY** — every bullet
+backed by a green V-matrix cell (or honestly scoped to what is green by demo time). Also needed regardless
+of hackathon: the ARTICLE (what Anicca is, what it does, how much it earned — real numbers from traces/
+on-chain) + demo video = G5 assets, pulled EARLIER for the hackathon.
 
 **Deliverables to pre-stage (submission spec):** (1) problem+solution in Epstein's frame (agents run on
 brittle human software → Anicca = agent-first earn/pay/skill substrate, zero-human); (2) product/tech/
