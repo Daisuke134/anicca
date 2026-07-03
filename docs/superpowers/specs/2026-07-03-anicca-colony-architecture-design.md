@@ -499,10 +499,20 @@ A — DO THE NO-MOCK REAL RUN (top priority; STOP building paper — §0.3)
   T1  earn/pm-trade: wire the REAL Polymarket order (polymarket-agent, RPC-fixed) so the LOOP fires a real
        $1 trade = the no-mock E2E I skipped. Watch it, fix on break — I do NOT hand-fire. (#6)
   T2b earn/sol-trade: BUILD from `BlockRunAI/Franklin-Trading` (decided, missing) → real small swap. (#17)
-  ★Tx★ make the REAL earners produce EXTERNAL revenue (the loops run + wake — the gap is demand/config, not
-       fake-vs-real): x402-sell server is DOWN + payTo is wrong (points at 0xa3cdd4, not the instance's own
-       wallet) → fix so a buyer can actually pay; hl-trade needs funds bridged to Hyperliquid; trading needs
-       a winning edge. THIS (not more scaffolding) is what turns $0 → first external:true tx.
+  ~~Tx x402-sell~~ **DEPRIORITIZED (Dais 2026-07-04):** investigated — payTo IS correct (0x810f), but the
+       real blocker is **no BUYER / no public tunnel = zero demand**, and a past external settle can't be
+       found. Demand can't be written in code (needs a listing + an audience wanting the product). Skip for
+       now; the controllable path to a first external tx is TRADING (we control placing a trade; a WIN pays
+       out from the counterparty = external:true), even though a trade can also lose.
+  **HONEST REALITY (Dais 2026-07-04):** the loops work; ~90% of the tooling exists; the last 10% —
+   *external money actually flowing in* — is the genuine frontier (Anthropic's Project Vend LOST money with
+   far more resources). Every earn path needs something we don't fully control: x402/gig = a buyer; trading
+   = a winning edge; yield = real but is own-capital growth, not `external:true`. "Loop runs" ≠ "earns."
+  ★NEXT (T1)★ earn/pm-trade: build the REAL Polymarket CLOB order executor (money-safe, gated behind the
+       paper→PASS gate + adversary) so the LOOP fires a real $1-2 trade once the edge is proven. A win = the
+       first external:true tx; a loss = a $2 tuition. We control the shot. (#6)
+  T2b earn/sol-trade from `BlockRunAI/Franklin-Trading` — a ready autonomous wallet-trader (`npx
+       @blockrun/franklin-trading --max-spend 5`) = another controllable real-trade path. (#17)
 
 B — WIRE THE AI'S SELF-* SO IT NEEDS NO HUMAN (incl. me)
   T4  SELF-HEAL (REQ-SELFHEAL-AUTONOMY): the AI detects a stale/broken dashboard (& other breakage) and
