@@ -69,7 +69,14 @@
       "language": "typescript",
       "currentPhase": "init",
       "updatedAt": "2026-06-29T10:38:39.891Z"
+    },
+    "profitable-article-writer": {
+      "status": "active",
+      "createdAt": "2026-07-03T15:16:08.410Z",
+      "mode": "strict",
+      "currentPhase": "1b",
+      "updatedAt": "2026-07-03T15:19:40.619Z"
     }
   },
-  "activeFeature": "earn-slot-loop-integration"
+  "activeFeature": "profitable-article-writer"
 }
