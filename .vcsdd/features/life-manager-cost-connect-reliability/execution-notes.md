@@ -46,3 +46,12 @@
   is a deferred optimization, not a correctness issue. Documented deviation.
 - FIND-006: money-path.js (smoke+monitor), route-cache.js (travel), voice-*/transit/user-selector all now
   imported by production paths → no dead-but-tested modules. FIXED.
+
+## CONVERGED 2026-07-04 — feature shipped + prod-verified
+- Merged feature→main (PR #269/#270/#271). GHA landing deploy: post-deploy money-path smoke = SMOKE PASS in prod (guard live).
+- Railway life-call deployed (nixpacks: ffmpeg + pip edge-tts). First build failed (python313Packages.edge-tts missing) → pip. First prod call escalated to Gemini (spawn edge-tts ENOENT) → fixed by `python3 -m edge_tts`.
+- ★ FINAL PROD PROOF: real answered call → edge-tts one-way clip played (119 frames), live_ws_opened=0 → $0 native-audio. Dais confirmed the free voice. ★
+- Goal Done #1 (voice), #2/#3 (transit+cache, unit+wire verified), #4 (selector), merged (#4 done). 
+- FOLLOW-UP (ops, not blocking): register the 15-min money-path-monitor.mjs as an OpenClaw cron in
+  ~/.openclaw/cron/jobs.json against a stable main checkout (raw-node, not agentTurn, to avoid LLM tokens).
+  The PRIMARY guard (post-deploy smoke in netlify-deploy.yml) is already live + verified.
