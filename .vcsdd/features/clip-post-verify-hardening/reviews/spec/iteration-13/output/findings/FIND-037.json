@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-037",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "major",
+  "description": "FIND-035 (iteration-12) correctly flagged that some worked-example tokens contained non-hex characters, contradicting REQ-010's `secrets.token_hex(5)` mechanism. The alphabet has now been fixed (every remaining concrete example token uses only [0-9a-f]), but a DIFFERENT, closely-related defect in the same examples was never caught and remains: `secrets.token_hex(5)` returns exactly 2*5=10 hex characters (verified: `python3 -c \"import secrets; print(len(secrets.token_hex(5)))\"` -> 10), but every single concrete worked-example token left in the current spec is only 9 hex characters long, one short. behavioral-spec.md:277 gives `\"#c3d9a1e5f7\"` -- the part after `#c` is `3d9a1e5f7`, which is 9 characters (verified by direct count: 3-d-9-a-1-e-5-f-7). verification-architecture.md:82/83 gives `\"#c4f2a91b7c\"` (`4f2a91b7c` = 9 chars) and `\"#ca0b1c2d3e\"` (`a0b1c2d3e` = 9 chars) -- both also 9, not 10. This is systematic across every remaining concrete example (3 for 3), not a one-off typo, meaning it was never actually cross-checked against the stated generation mechanism's real output length. An implementer or test-writer who treats these worked examples as the literal expected shape (e.g. writing a regex `^#c[0-9a-f]{9}$` for a sidecar/ledger validator, or a fixed-width string-slice assumption anywhere token length matters) will silently mismatch real `secrets.token_hex(5)` output, which is always exactly 10 hex characters after the `#c` prefix.",
+  "evidence": {
+    "filePath": ".vcsdd/features/clip-post-verify-hardening/specs/behavioral-spec.md and verification-architecture.md",
+    "lineRange": "behavioral-spec.md:277; verification-architecture.md:82,83",
+    "snippet": "REQ-010 mechanism: `secrets.token_hex(5)` -> verified via python3 to always produce 10 hex chars. Worked examples: `#c3d9a1e5f7` (9 chars after #c), `#c4f2a91b7c` (9 chars), `#ca0b1c2d3e` (9 chars) -- all three concrete examples remaining in the spec are one character short of the stated mechanism's real output length"
+  },
+  "routeToPhase": "1a"
+}

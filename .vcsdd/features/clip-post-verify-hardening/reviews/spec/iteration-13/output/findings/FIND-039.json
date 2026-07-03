@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-039",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "minor",
+  "description": "REQ-010's literal-string specification for the trailing caption line contains a hidden zero-width space character (U+200B) that is invisible in normal rendering but present in the actual file bytes. Verified by reading the raw line via python3 with `repr()`: behavioral-spec.md line 198 is `'  ORIGINAL `$CAP` content plus a trailing `\"\\\\n\\\\u200b<token>\"` line into a NEW TEMPORARY file via `mktemp` under...'` -- i.e. the quoted literal string is `\"\\n\\u200b<token>\"`, not the intended-looking `\"\\n<token>\"`. This is almost certainly an unintentional copy-paste/rendering artifact from an earlier editing pass, never mentioned or explained anywhere in either document (no requirement anywhere calls for an invisible unicode character in the posted caption). It is low-severity because a competent implementer writing actual Python/bash code (e.g. `content + \"\\n\" + token`) would not copy the literal markdown bytes verbatim and so would likely not reproduce this specific artifact -- but it is nonetheless a genuine defect in a spec that has been held, across 12 prior review iterations, to an unusually high bar of literal precision (e.g. FIND-035's concern about exact worked-example fidelity), and if anyone DID treat the quoted string as copy-paste-ready (e.g. embedding it directly into a test fixture asserting exact caption-file byte content), it would silently bake an invisible character into every live Instagram caption post.",
+  "evidence": {
+    "filePath": ".vcsdd/features/clip-post-verify-hardening/specs/behavioral-spec.md",
+    "lineRange": "198",
+    "snippet": "python3 repr() of the raw line: '  ORIGINAL `$CAP` content plus a trailing `\"\\\\n\\\\u200b<token>\"` line into a NEW TEMPORARY file via `mktemp` under...' -- a U+200B zero-width space sits between the escaped \\n and <token> in the literal string, invisible in normal rendering"
+  },
+  "routeToPhase": "1a"
+}

@@ -1,4 +1,4 @@
-# Behavioral Spec — clip-post-verify-hardening (Phase 1a) — REV 13 (post iteration-12 FAIL)
+# Behavioral Spec — clip-post-verify-hardening (Phase 1a) — REV 14 (post iteration-13 FAIL)
 
 ## Context (why this feature exists)
 2026-07-03 live incident: `EARN_MODE=execute bash run.sh` self-reported `"posted @aiclipsvault: .../DaLKV2xP8Ij/"`
@@ -195,7 +195,7 @@ or duplicate a clip).
   ★ Concrete file-plumbing mechanism (FIXED after FIND-029, which correctly found `post_reel.py`'s
   `--caption-file` only accepts a file PATH via `open()`, never inline string content, and using `$CAP`
   in-place would risk corrupting the original file across retries/moves) ★: `run.sh` SHALL write the
-  ORIGINAL `$CAP` content plus a trailing `"\n​<token>"` line into a NEW TEMPORARY file via `mktemp` under
+  ORIGINAL `$CAP` content plus a trailing `"\n<token>"` line into a NEW TEMPORARY file via `mktemp` under
   the existing disk-hygiene convention (HARD RULE 0.26), and pass THAT TEMP FILE's path as `--caption-file`
   to `post_reel.py`. `$CAP` itself is NEVER mutated, NEVER read-modified-written in place — it is only ever
   READ (to build the temp file's content) — so its existing move-on-success (`$CLIP_POSTED`) /
@@ -274,7 +274,7 @@ or duplicate a clip).
      `document.body.innerText` on the permalink page (the same broad text-scan style `post_reel.py` already
      uses elsewhere, e.g. the account-guard check at `:105` — no rigid caption-specific selector). A
      candidate href IS CONSIDERED A MATCH if `sidecar["token"]` (the EXACT literal string, e.g.
-     `"#c3d9a1e5f7"`) appears anywhere in that page's `innerText` — a plain substring containment check
+     `"#c3d9a1e5f70"`) appears anywhere in that page's `innerText` — a plain substring containment check
      on a short, mechanically-unique alphanumeric token (not prose, not a hook, no whitespace-normalization
      or truncation-tolerance logic needed: the token is short enough that IG's "…more" truncation of a
      LONG caption is irrelevant — the token is placed via REQ-010 immediately after a newline near the end

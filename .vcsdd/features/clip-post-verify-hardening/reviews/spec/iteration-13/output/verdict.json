@@ -1,0 +1,77 @@
+{
+  "feature": "clip-post-verify-hardening",
+  "reviewContext": {
+    "reviewType": "spec",
+    "phase": "1c"
+  },
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-04T00:00:00Z",
+  "iteration": 13,
+  "priorIterationResolution": [
+    {
+      "priorFinding": "FIND-031 (iteration-12, critical -- REQ-004 said the sidecar has a 'caption' field, contradicting REQ-008 step 6's 2-key {before_hrefs, token} shape and PROP-006(a)'s literal fixture)",
+      "status": "FIXED",
+      "note": "Re-verified by reading the current text: REQ-004's paragraph (behavioral-spec.md ~140-146) now explicitly says 'the sidecar does NOT contain a \"caption\" field at all (superseded by REQ-010's token design)' and states run.sh persists the SAME token it already generated, pointing to REQ-010/REQ-008 step 6 for the sidecar's 'actual (and only) shape: {\"before_hrefs\": [...], \"token\": \"...\"}'. This now matches REQ-008 step 6's shape verbatim and matches PROP-006(a)'s fixture. No remaining 3-key-vs-2-key contradiction."
+    },
+    {
+      "priorFinding": "FIND-032 (iteration-12, major -- REQ-006 never specified whether the paired .txt caption file moves alongside the .mp4 into $CLIP_PENDING_VERIFY)",
+      "status": "FIXED",
+      "note": "REQ-006 now explicitly states 'BOTH $CLIP (the .mp4) AND $CAP (its paired .txt caption ...) move to $CLIP_PENDING_VERIFY together, exactly mirroring the existing run.sh:94-95 pattern' -- verified run.sh:94-95 in the real file does exactly 'mv \"$CLIP\" \"$POSTED/\"; mv \"$CAP\" \"$POSTED/\"', so the cited precedent is accurate. REQ-008 step 6 also correctly cross-references this same fix when describing the eventual move to $CLIP_POSTED ('its paired .txt caption file (which travelled together into $CLIP_PENDING_VERIFY per REQ-006's FIND-032 fix)')."
+    },
+    {
+      "priorFinding": "FIND-033 (iteration-12, major -- PROP-011 never asserted the new temp caption file is actually deleted after any outcome branch)",
+      "status": "FIXED",
+      "note": "PROP-011 now includes a new paragraph: run the token-generation step 3 times against stubbed outcome=published/unverified/failed, and assert in ALL THREE cases the mktemp-created temp file no longer exists on disk afterward (`[ ! -f \"$TMPCAP\" ]`), explicitly tied to the new `trap ... EXIT` mechanism. This closes the coverage gap."
+    },
+    {
+      "priorFinding": "FIND-034 (iteration-12, major -- no concrete cleanup mechanism/bash construct specified for the temp caption file, and the SIGKILL edge case was unaddressed)",
+      "status": "FIXED",
+      "note": "REQ-010 now specifies the concrete construct: `trap 'rm -f \"$TMPCAP\"' EXIT` registered immediately after mktemp and before invoking post_reel.py, and explicitly discusses and bounds the SIGKILL residual-leak case as an accepted, low-severity, out-of-scope limitation (inert leaked file, never confused with $CAP, never causes misattribution) rather than silently ignoring it. This is concrete and internally consistent."
+    },
+    {
+      "priorFinding": "FIND-035 (iteration-12, major -- worked-example tokens contained non-hex characters, contradicting the secrets.token_hex(5) mechanism)",
+      "status": "PARTIALLY FIXED -- new adjacent defect found (see FIND-037)",
+      "note": "The specific defect named in FIND-035 (non-hex characters, e.g. 'x','l','m','o','r','R','Y','z','Y','o','t','h','e','r') is gone -- every remaining concrete example token uses only [0-9a-f]. However, independently checking length against the stated secrets.token_hex(5) mechanism (verified via python3: always exactly 10 hex chars) shows every one of the 3 remaining concrete examples is only 9 hex characters, one short. This is a new, closely-related-but-distinct defect in the exact same worked-example text FIND-035 was about, never caught by the fix. See FIND-037."
+    },
+    {
+      "priorFinding": "FIND-036 (iteration-12, major -- REQ-010's own sentence self-contradicted on whether self-heal ever generates a token)",
+      "status": "FIXED",
+      "note": "REQ-010 now reads 'token generation happens at EXACTLY ONE place: WHEN run.sh is about to attempt POSTING a clip via the direct live-share path ... NOT --verify-only' and adds an explicit separate sentence '★ Self-heal NEVER generates, derives, or regenerates a token, under any circumstance ★: self-heal (REQ-008) only ever READS the one token already persisted into the sidecar'. This is now unambiguous and consistent with REQ-008 step 6's read-only usage. No remaining self-contradiction."
+    },
+    {
+      "priorFinding": "(extra, self-caught in iteration-12) Verification tiers legend line said the REAL/live ledger file could be used as a PROP-007 fixture, contradicting PROP-007's own frozen-fixture requirement",
+      "status": "FIXED",
+      "note": "The legend now reads 'for PROP-007 this means the FROZEN tests/fixtures/ledger-2026-07-03-snapshot.jsonl file, NEVER the live, ever-growing ~/.openclaw/state/clip-earn-ledger.jsonl (this legend line previously said \"the REAL ledger file\" here, which contradicted PROP-007's own frozen-fixture requirement below -- corrected)'. Verified the fixture file actually exists on disk (tests/fixtures/ledger-2026-07-03-snapshot.jsonl, 4 lines matching the Ground Truth section's quoted content exactly) and is already committed (git log shows commit e5680f73 added it). Consistent with PROP-007's own text."
+    }
+  ],
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-037", "FIND-038", "FIND-039"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/.claude/skills/ig-reels-poster/scripts/post_reel.py:1-209", "description": "read the REAL post_reel.py in full and cross-checked every line-numbered claim in the spec's Ground Truth section (:22 cdp.py import, :82 --verify-only flag def, :95/:108/:127/:134/:141/:163 the 6 pre-share failure sites, :111-118 verify-only impl, :123 the single before-snapshot read, :169 DRY-ok, :174-181 the 10x12s post-share search loop, :187-190 the except/finally fallback) -- every single one matched EXACTLY, character-for-character with the actual file. This spec's ground-truth line citations are highly accurate."},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/earn/clip/run.sh:1-107", "description": "read the REAL run.sh and cross-checked :25 (POSTER path), :34-38 (clip/caption selection loop), :87-105/:93-95 (URL branch + paired mv), all matched exactly"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/earn/clip/producer.sh:1-70, _instance_paths.sh:1-17", "description": "confirmed clip_id is purely source-URL-derived with no dedup (:60-62), confirmed the existing per-instance path-suffixing pattern _instance_paths.sh actually uses, and confirmed producer.sh's own trap 'rm -rf \"$WORK\"' EXIT precedent (:38) cited by FIND-034's evidence"},
+        {"type": "computation", "location": "python3 -c \"import secrets; print(len(secrets.token_hex(5)))\"", "description": "confirmed secrets.token_hex(5) always returns exactly 10 hex characters, then counted every remaining concrete example token in both spec docs and found all three are 9 characters -- see FIND-037"},
+        {"type": "file", "location": ".vcsdd/features/clip-post-verify-hardening/specs/behavioral-spec.md:198 (raw bytes via python3 repr())", "description": "found a hidden U+200B zero-width space embedded in REQ-010's literal caption-suffix string spec -- see FIND-039"}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": ".vcsdd/features/clip-post-verify-hardening/specs/verification-architecture.md:84 (PROP-011)", "description": "confirmed FIND-033's gap is closed -- PROP-011 now explicitly asserts, across all 3 outcome branches, that the mktemp-created temp caption file no longer exists on disk after run.sh completes"},
+        {"type": "file", "location": ".vcsdd/features/clip-post-verify-hardening/tests/fixtures/ledger-2026-07-03-snapshot.jsonl", "description": "confirmed this frozen fixture exists on disk, is already committed to git, and its 4 lines match the Ground Truth section's quoted content exactly (line-by-line diff by inspection) -- PROP-007 has a real, verifiable frozen fixture to run against, not a promise"},
+        {"type": "note", "location": "n/a", "description": "the new spec_fidelity findings (FIND-037/038/039) are design-description defects (worked-example fidelity, an import-mechanism contradiction, a hidden character in a literal-string spec) rather than gaps in WHAT is proposed to be tested or HOW rigorously -- the proof-obligation table (PROP-001..011) itself remains comprehensive, correctly tiered, and each fixed item from iteration-12 has a concrete corresponding test change. Verification readiness as a dimension is not degraded by these findings; they belong to spec_fidelity because they are about the correctness of the design description, not the adequacy of its verification plan."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 3,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}
