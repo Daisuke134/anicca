@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "high",
+  "description": "Carried forward from iteration 1, still unresolved: REQ-PMTRADE(c) (behavioral-spec.md Section 3) requires 3 verifier gates -- trade-audit (a separate critique pass on own trade history), paper-run, and alerts-only (watch a week before acting) -- 'a loop with no gate is an agent agreeing with itself at speed.' Only paper-run exists (decide.py + gate.py). A full directory listing of skills/earn/pm-trade/ in this iteration (lib.py, test_lib.py, momentum.py, gate.py, test_strategy.py, pm-paper.py, run.sh, decide.py) confirms there is still no trade-audit script and no alerts-only mode anywhere in the slot. Two of the three spec-mandated gates remain entirely unbuilt.",
+  "evidence": {
+    "filePath": "skills/earn/pm-trade",
+    "lineRange": "n/a (directory listing)",
+    "snippet": "dir contents: lib.py, test_lib.py, momentum.py, gate.py, test_strategy.py, pm-paper.py, run.sh, decide.py -- no trade-audit, no alerts-only artifact"
+  },
+  "routeToPhase": "2b"
+}

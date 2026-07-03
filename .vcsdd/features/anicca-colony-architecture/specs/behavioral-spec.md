@@ -156,6 +156,15 @@ Polymarket's resting book** — a 70-market scan found 0 arbs, every market pinn
 always-on check, but the **primary earner is momentum/latency** (Binance BTC spot vs Polymarket's 5-min BTC
 up/down repricing lag — the ~77% share / $60M-profit segment per the Hermes/0xMovez writeups), NOT
 resting-book arb. The gate discipline (paper→$1→scale) is unchanged.
+**Impl reconciliation (2026-07-04, per Phase-3 adversary):** the slot REIMPLEMENTS polymarket-agent's *logic*
+(Kelly, CLOB order approach) cleanly in `lib.py`/`momentum.py` rather than vendoring its Flask webapp — the
+"copy the base" intent is satisfied by porting the patterns, not the code. **Verifier gates are PHASED:**
+the paper-run gate (`gate.py`, real PM_PAPER_PASS from the resolved ledger) + a pure `lib.risk_gate`
+(daily-loss/drawdown caps) are built NOW; the trade-audit and alerts-only gates + the CLOB signing executor
+are the **real-execution increment** (deferred, money-gated, not yet wired = fail-closed). **The older
+`trading-polymarket-spawn` EARS spec is SUPERSEDED by this lean momentum slot** for the pieces that differ
+(no `risk.py`/`settle-verify.py`/full paper state-machine as separately specified — their function lives in
+`lib.risk_gate`/`resolve.py`/`gate.py`). 29 tests GREEN; money-safe (no signing/order code exists yet).
 
 ---
 

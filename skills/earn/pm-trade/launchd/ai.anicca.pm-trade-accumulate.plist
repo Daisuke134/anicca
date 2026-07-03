@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>ai.anicca.pm-trade-accumulate</string>
+  <key>ProgramArguments</key><array>
+    <string>/bin/bash</string>
+    <string>/Users/operator/anicca/skills/earn/pm-trade/accumulate.sh</string>
+  </array>
+  <key>StartInterval</key><integer>60</integer>
+  <key>StandardOutPath</key><string>/Users/operator/loops/earn-pm-trade/accumulate.out.log</string>
+  <key>StandardErrorPath</key><string>/Users/operator/loops/earn-pm-trade/accumulate.err.log</string>
+</dict></plist>

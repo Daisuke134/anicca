@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "implementation_correctness",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "gate.py's paper-pass producer can never observe a single resolved trade, so PM_PAPER_PASS is mathematically stuck at 0 forever regardless of how many paper trades decide.py records or how profitable the underlying momentum strategy actually is. gate.py's `_load_resolved()` (gate.py:44) only counts a ledger row toward the gate if `r.get(\"status\") == \"resolved\" and \"pnl_usdc\" in r`. But decide.py -- the ONLY writer to this ledger that run.sh actually invokes (run.sh:21) -- writes rows with `\"status\": \"open\"` and NEVER writes `\"status\": \"resolved\"` or a `\"pnl_usdc\"` key anywhere (decide.py:91-93); there is no resolution/settlement step anywhere in decide.py, gate.py, or run.sh that would ever transition an open paper row to resolved. The only script in this codebase that ever sets `status = \"resolved\"` is pm-paper.py's resolve() function (pm-paper.py:132), but that function is (a) never called by run.sh -- it is a separate, unwired CLI action -- and (b) uses an entirely different field name, `\"realized_pnl\"`, not `\"pnl_usdc\"` (pm-paper.py:132: `r[\"realized_pnl\"] = round(pnl, 4)`), and requires fields (`shares_held`, `outcome_index`) that decide.py's row schema does not contain at all. Concretely: if pm-paper.py resolve() were ever run against the shared ledger file (both scripts point at the identical path `~/loops/earn-pm-trade/paper-positions.jsonl`), it would raise `KeyError: 'shares_held'` on the very first row decide.py ever wrote (pm-paper.py:130: `payout = r[\"shares_held\"] * 1.0 if won else 0.0`). This is fail-CLOSED (money-safe -- the gate can never spuriously pass), but it means REQ-PMTRADE(b)'s mandate to 'clear the paper-mode gate before any real stake' can literally never be satisfied by the current pipeline as wired -- not a strategy-quality problem, a missing-code problem: nothing in the shipped slot ever produces a schema-compatible resolved+pnl_usdc row for decide.py's own paper trades.",
+  "evidence": {
+    "filePath": "skills/earn/pm-trade/gate.py",
+    "lineRange": "32-46",
+    "snippet": "def _load_resolved(ledger=LEDGER):\n    ...\n    if r.get(\"status\") == \"resolved\" and \"pnl_usdc\" in r:\n        rows.append(r)\n    return rows"
+  },
+  "routeToPhase": "2b"
+}

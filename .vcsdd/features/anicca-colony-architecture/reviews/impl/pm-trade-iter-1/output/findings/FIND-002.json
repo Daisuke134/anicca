@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "REQ-PMTRADE(d) mandates starting with 'arbitrage pair-cost (buy YES+NO when combined < $1)' as the highest-win-rate first strategy. pm-paper.py's discover() only reads toks[0] (the first/YES CLOB token) per market and calls book() on that single token; it never fetches the complementary NO-outcome token's book, so ask_yes and ask_no are never both surfaced together anywhere in the tool output. arb_pair_profit(ask_yes, ask_no) in lib.py therefore has no live data source that could feed it inside this slot's actual data path — the mandated 'first strategy' cannot be executed with the shipped tool.",
+  "evidence": {
+    "filePath": "skills/earn/pm-trade/pm-paper.py",
+    "lineRange": "47-68",
+    "snippet": "toks = json.loads(m.get(\"clobTokenIds\") or \"[]\")\n...\nout.append({\"question\": m.get(\"question\"), \"token_id\": toks[0], ...})\n... bk = book(o[\"token_id\"])  # only ONE side's book, never toks[1]"
+  },
+  "routeToPhase": "2b"
+}

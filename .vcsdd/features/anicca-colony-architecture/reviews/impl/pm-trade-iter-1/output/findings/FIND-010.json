@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-010",
+  "dimension": "structural_integrity",
+  "category": "spec_gap",
+  "severity": "medium",
+  "description": "There is no SKILL.md (or equivalent onboarding doc) for skills/earn/pm-trade/, unlike sibling earn slots (e.g. skills/earn/x402-sell/SKILL.md, skills/earn/video/SKILL.md, skills/earn/gig/SLOT_CC.md exist for their slots). Per this project's own building-agents rule (skill = NL instructions + deterministic tools, the model does judgment), the model driving the ReAct loop has no documented interface telling it that lib.py's position_size/kelly_fraction/arb_pair_profit exist, what units they expect, or how to invoke them (there isn't even a CLI to invoke — see FIND-001). Without this, the model has no discoverable path to actually use the Quarter-Kelly sizing math REQ-PMTRADE mandates.",
+  "evidence": {
+    "filePath": "skills/earn/pm-trade",
+    "lineRange": "n/a (directory listing)",
+    "snippet": "no SKILL.md present; compare skills/earn/x402-sell/SKILL.md, skills/earn/video/SKILL.md which exist for sibling slots"
+  },
+  "routeToPhase": "2b"
+}

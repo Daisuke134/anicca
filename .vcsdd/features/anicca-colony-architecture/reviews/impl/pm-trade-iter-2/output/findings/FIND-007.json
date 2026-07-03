@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-007",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "low",
+  "description": "decide.py has no de-duplication / idempotency guard against repeatedly recording the same open paper signal. Every invocation that finds a positive-edge side unconditionally appends a NEW row to the ledger (decide.py:89-96), with no check for an already-open position on the same token_id/market from a prior pass. If run.sh is invoked repeatedly (e.g. cron every few minutes) while a sustained BTC momentum window keeps producing a positive edge, the ledger will accumulate multiple duplicate 'open' rows representing the same underlying signal rather than one position tracked to resolution, inflating the paper-trade count without adding distinct trading decisions. This compounds FIND-001 (there is also no resolution step at all yet) but is a separate, independent gap: even once resolution exists, this write path would still need a same-market open-position check to avoid unbounded duplicate stacking.",
+  "evidence": {
+    "filePath": "skills/earn/pm-trade/decide.py",
+    "lineRange": "89-96",
+    "snippet": "if stake > 0:\n    LEDGER.parent.mkdir(parents=True, exist_ok=True)\n    row = {...}\n    with open(LEDGER, \"a\") as f:\n        f.write(json.dumps(row) + \"\\n\")"
+  },
+  "routeToPhase": "2b"
+}

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-009",
+  "dimension": "structural_integrity",
+  "category": "purity_boundary",
+  "severity": "high",
+  "description": "The module split does not respect a meaningful purity boundary in practice: lib.py is presented as 'the pure core' that the effectful shell (run.sh/pm-paper.py) is supposed to call into (per lib.py's own docstring: 'the effectful shell ... reads the live book and calls these'), but no effectful file actually calls it (see FIND-001). This means the pure/effectful split described in the code's own comments does not exist at the wiring level — there are simply two unconnected pieces of code, one tested-but-inert, one executed-but-partially-untested (FIND-006/007). A purity boundary that nothing crosses is not a verified architecture, it is an aspiration documented in a docstring.",
+  "evidence": {
+    "filePath": "skills/earn/pm-trade/lib.py",
+    "lineRange": "3-6",
+    "snippet": "\"\"\"pm-trade/lib.py — PURE decision math ... The effectful shell (run.sh / pm-paper.py / executor) reads the live book and calls these ...\"\"\""
+  },
+  "routeToPhase": "2b"
+}

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "high",
+  "description": "pm-paper.py has ZERO automated tests (no test_pm_paper.py, no fixtures). book()'s best_bid/best_ask extraction assumes bids[-1] is the best bid and asks[-1] is the best ask ('bids, asks = b.get(\"bids\") or [], b.get(\"asks\") or []; best_bid = float(bids[-1][\"price\"]) ...; best_ask = float(asks[-1][\"price\"])'). This ordering assumption about the Polymarket CLOB /book response is asserted with a comment but never locked down by a fixture test. If the CLOB API's asks/bids arrays are ordered the opposite way for either side, best_ask would silently resolve to the WORST ask instead of the best, corrupting every paper entry_price, every recorded edge (model_p - entry), and every mark-to-market PnL computed downstream in mark()/resolve() — with no test to catch the regression either now or if Polymarket ever changes response ordering.",
+  "evidence": {
+    "filePath": "skills/earn/pm-trade/pm-paper.py",
+    "lineRange": "33-40",
+    "snippet": "def book(token_id):\n    b = get(CLOB + token_id)\n    bids, asks = b.get(\"bids\") or [], b.get(\"asks\") or []\n    best_bid = float(bids[-1][\"price\"]) if bids else None\n    best_ask = float(asks[-1][\"price\"]) if asks else None"
+  },
+  "routeToPhase": "2b"
+}

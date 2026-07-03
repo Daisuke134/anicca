@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-007",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "medium",
+  "description": "run.sh's real safety-critical logic (the DRY_RUN/EARN_MODE/PM_PAPER_PASS 3-way gate combinator, which is the ONLY thing standing between the current build and firing a real order once an executor is wired) has zero test coverage — there is no shell-level test file anywhere under skills/earn/pm-trade/ for run.sh. Meanwhile test_lib.py thoroughly covers the lowest-risk pure-math part. Coverage is inverted relative to risk: 9/9 tests exist for arithmetic that isn't even wired in (FIND-001), while the actual gate that gua rds real money has 0/0 tests. A test asserting e.g. 'PM_PAPER_PASS unset -> execute path never reached even with DRY_RUN=false EARN_MODE=execute' does not exist.",
+  "evidence": {
+    "filePath": "skills/earn/pm-trade/run.sh",
+    "lineRange": "1-26",
+    "snippet": "(whole file — no corresponding test_run.sh / bats spec exists in the directory)"
+  },
+  "routeToPhase": "2b"
+}
