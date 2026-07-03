@@ -566,6 +566,11 @@ H — BUILD THE SELF-IMPROVEMENT HARNESS (this is the PRODUCT — the heart)
   H5  journal/article: the SAME trace → each AI writes its journey (tried/failed/won/learned); a collective
        "Anicca" article Dais + the AIs co-author. Observability doubles as content. (#14)
   H6  bot2bot: an AI shares a lesson to GitHub issues; other instances read + apply it (collaboration). (P3/#8)
+  H7  self-refactor/self-cleanup: disk cleanup + refactor run INSIDE the AI's loop WITH JUDGMENT (read what
+       a path is for before deleting; snapshot-diff; protected-path awareness) — blind external rm is
+       retired. Stopgap until then = disk-cleaner v10 kind/marker protection (.anicca-keep in a clone dir =
+       never delete). Rationale: 2026-07-04 the blind cleaner deleted the in-use polymarket-agent clone
+       mid-W1; a cleaner that cannot ask "is this in use?" must not decide deletions alone.
 
 G — GROW (colony) + SHOW (proof) + LAUNCH
   G1  SPAWN: parent AI seeds a child on-chain itself (fix spawn/run.sh:196 print→auto). (#8)
