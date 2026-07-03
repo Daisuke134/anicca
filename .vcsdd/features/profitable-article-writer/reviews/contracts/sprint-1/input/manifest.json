@@ -1,0 +1,12 @@
+{
+  "reviewType": "contract",
+  "featureName": "profitable-article-writer",
+  "sprintNumber": 1,
+  "contractPath": "contracts/sprint-1.md",
+  "contractDigest": "947ca5d967d3feb8cbf6a7fb689fcdc06e14635ce8eadc592fa85bdbab463b60",
+  "artifactsToReview": {
+    "spec": ["specs/behavioral-spec.md", "specs/verification-architecture.md"],
+    "tests": ["skills/profitable-article-writer/tests/"],
+    "source": ["skills/profitable-article-writer/"]
+  }
+}
