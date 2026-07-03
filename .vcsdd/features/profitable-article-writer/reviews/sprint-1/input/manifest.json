@@ -1,10 +1,6 @@
 {
-  "reviewType": "implementation", "featureName": "profitable-article-writer", "sprintNumber": 1, "round": 2,
+  "reviewType": "implementation", "featureName": "profitable-article-writer", "sprintNumber": 1, "round": 3,
   "contractPath": "contracts/sprint-1.md",
-  "priorRound": { "verdict": "FAIL", "findings": ["FIND-001 real-gate untested","FIND-002 tier mismatch","FIND-003 unescaped topic","FIND-004 dead case"] },
-  "artifactsToReview": {
-    "spec": ["specs/behavioral-spec.md","specs/verification-architecture.md"], "contract": ["contracts/sprint-1.md"],
-    "source": ["skills/profitable-article-writer/run.sh","skills/profitable-article-writer/gates/","skills/profitable-article-writer/identity/accounts.sh","skills/profitable-article-writer/lib/config.sh"],
-    "tests": ["skills/profitable-article-writer/tests/"]
-  }
+  "priorRound": { "verdict": "FAIL", "findings": ["FIND-005 PROP-13/15 tier mislabel (major)","FIND-006 sed-fallback untested (minor)"] },
+  "artifactsToReview": { "spec": ["specs/behavioral-spec.md","specs/verification-architecture.md"], "contract": ["contracts/sprint-1.md"], "source": ["skills/profitable-article-writer/"], "tests": ["skills/profitable-article-writer/tests/"] }
 }
