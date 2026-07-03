@@ -2,6 +2,15 @@
 
 - **VCSDD feature**: `anicca-colony-architecture` (lean) — `~/anicca/.vcsdd/features/anicca-colony-architecture/`
 - **Status**: Phase 1a, iteration 2 (adversary iter-1 = FAIL on all 5 dims, 10 findings; this rev addresses them).
+- **Adversary model**: **Sonnet 5** (`Agent({subagent_type:"vcsdd:vcsdd-adversary", model:"sonnet"})`) — cheap + smart, many fix→re-review rounds (Dais 2026-07-04). Do not default to Opus.
+
+**REQ-EXPLORE (AIs find their OWN money-making repos — humans give ZERO repos/credentials).** No-human-loop
+means Dais/I stop handing over good repos (like today's polymarket-agent/Franklin research). Every instance
+runs an `explore`/`exploit` capability alongside `earn`: 80% EXPLOIT proven earn loops; 20% EXPLORE — search
+repos/rails itself (agent-reach $0 + `gh search` + x402 data), verify (`gh repo view`→README, no full clone),
+probe ONE with ≤$1/paper (`earn/_probe`), let PoE judge by earned-tx only, promote winners to `registry.json`,
+share the lesson via bot-to-bot GitHub issues so the swarm co-evolves. Humans supply only a one-time USDC
+seed — no My-Number card, no Google account, no credential of any kind. This is the takeoff mechanism.
 
 ## 0. REALITY CHECK (on-chain verified 2026-07-03, not self-reported)
 
