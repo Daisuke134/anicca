@@ -28,6 +28,12 @@ Non-negotiable invariants inherited:
   provider / API key. Same skill runs on Claude/Opus today, GPT/Grok/DeepSeek/Kimi later — swap the model.
 - **LOCAL vs CLOUD** differ ONLY in the browser/compute body: CloakBrowser (`:9222` CDP) local vs a cloud
   headless browser (browser-sh) cloud. Same skill, same loop, swapped body.
+- **EXPLAIN, don't RUN (Dais 2026-07-03).** The article is a **deeply-researched, detailed, VISUAL explainer** —
+  NOT a "we ran it and here are the receipts" lab report. The skill does NOT execute external repos/tools to
+  produce the piece, MUST NOT claim to have run anything, and MUST NOT emit error-log content. Running is
+  brittle and error-spew damages the brand ("we did it together but the agent isn't there yet"). The moat becomes
+  **research depth + synthesis across primary sources + original diagrams/visuals + honest verdict from those
+  sources** — not receipts. Revisit only once execution is reliable enough to never spew failures publicly.
 
 ## §1 AS-IS — supply is perfect, demand & money are uninstrumented
 
@@ -36,7 +42,7 @@ The current skill writes world-class articles and publishes them with a render/s
 
 ```
  SUPPLY (build)                         DEMAND · MONEY (earn)
- ✅ deep research / RUN it / verdict     ❌ did anyone READ it (reach)
+ ✅ deep research / synthesize / verdict  ❌ did anyone READ it (reach)
  ✅ de-slop + language purity            ❌ did the funnel CONVERT (free→paid→backend)
  ✅ render screenshot verify (V0)        ❌ did real ¥/USDC LAND (earn)
  ✅ live publish, logged-out (V1)        ❌ does it keep earning daily (sustain)
@@ -68,9 +74,13 @@ the OSS-replicable, model-agnostic, self-fundable thing.
 | 5 | **Per-install identity (model/cred-agnostic)** | earn-recipe「ZERO human」+ memory「model-agnostic」 | hardwired to Dais creds |
 | 6 | **Earn + payout verify (closed loop)** | 5-gate earn memory + GLVS | render-verify only; no money-verify, no payout rail |
 
-**The one resolved fork — backend (#2) = each agent's OWN digital-product funnel** (note有料 + Payhip EN +
-note月額マガジン), NOT Brain/Tips affiliate (ties us to others' accounts + JP-only). Own product = OSS-replicable,
-wallet-payable, on-brand for the niche. (Dais approved 2026-06-29.)
+**Monetization (Dais 2026-07-03) — per-article ONE-TIME payment is PRIMARY:**
+- **PRIMARY** = sell EACH note as a one-time purchase in the **¥500「迷う前にポチ」band** (high conversion, a cold
+  audience buys, fastest first-sale). Money = volume × ¥500, NOT a subscription wall. (BP: せいぬ/イケイケ兎 — ¥500 =
+  "ポチられる" 閾値; 設計=テーマ/見出し/価格で決まる.)
+- **OPTIONAL** = a subscription / 月額マガジン for readers who want everything — an add-on join, not the main gate.
+- NOT Brain/Tips affiliate (others' accounts, JP-only). Payout → the install's OWN note account/wallet.
+This supersedes the earlier "own-product funnel primary" line.
 
 ## §4 The writing craft we dropped (improve INSIDE the article)
 
@@ -89,7 +99,7 @@ Eight additions from BP — each kept HONEST (no hype, the moat stays):
 | 5 | まな's 10 techniques, honest only (両面提示/失敗談/生活の小変化/比較仮想敵/大義名分=透明性/プロフィール=最終兵器) | §ライティング術 | honest verdict ≈ half of 両面提示 only |
 | 6 | Scannability gate (一文≤60字 / 漢字率≤30% / 改行多め / 箇条書き≤5 / mobile-first) | note買者の読み方 | natural-JP checked, no numeric gate |
 | 7 | CTR title formula (KW × 切り口 × 感情) | 【完全保存版】【悲報】数字 | accurate, not CTR-optimized |
-| 8 | Proof = social proof framing | 売上SS / before-after | we gather receipts (time×money), don't frame for conversion |
+| 8 | Proof = social proof framing | 売上SS / before-after | no running → proof = research depth + primary-source citations + original diagrams; frame these as the reason to trust/buy |
 
 **Synthesis (dialectic, not pick-one):** the article BODY keeps explainer purity (that earns trust = the 無料
 教育 role); DESIRE comes from the hook on top + the backend CTA at the end + the paid part being the exclusive
@@ -125,7 +135,7 @@ Daisuke134/anicca
 │   ├─ SKILL.md          NL only, no model/provider named = AI-agnostic
 │   ├─ run.sh            1-wake entrypoint                     🟢 claude -p sonnet
 │   ├─ PLAYBOOK.md       purity moat + §4 craft layer + §2 BP   (read)
-│   ├─ brain/            ① write: research / run-it / verdict / de-slop / language-purity  🟢 sonnet
+│   ├─ brain/            ① write: research / synthesize / VISUAL-explain / verdict / de-slop (NO external run)  🟢 sonnet
 │   ├─ funnel/           ③ free→paid→backend + backend-product/ (#1,#2)                   🟢 sonnet
 │   ├─ publish/          note-/zenn-/substack-/devto-/x-publish + render verify (V0/V1)    🟢 sonnet
 │   ├─ distribute/       ④ x-buzz / x-article / threads (#3, reach→V2)                     🟢 sonnet
@@ -159,6 +169,22 @@ fresh-context vcsdd adversary — **never inside the loop**. The daily loop burn
 We ADD the skill body + registry slot; the daemon, founder-loop ledger, note-publish pipeline, and publishers
 are EXISTING and reused.
 
+### §7.1 Publish lifecycle — draft-first, graduate to autonomous (Dais 2026-07-03)
+
+Slop must never go public, so publishing ramps in two modes (the note-publish pipeline already defaults to
+`AUTONOMY=off` = stop at draft, notify for review):
+
+```
+ MODE A (default, trust-building):  agent writes → note DRAFT → V0/V0.5 self-check →
+   notify Dais (URL + screenshot) → Dais reviews/edits → Dais clicks publish.   (human = final gate)
+        │  Dais says "post directly" (HARD 0.27 verbatim go)
+        ▼
+ MODE B (autonomous, the full loop):  agent writes → V0/V0.5 PASS → publishes directly →
+   distributes → record-earn verifies V4 → daily, zero human.
+```
+Mode A = `AUTONOMY=off` (human-review gate sits between V0.5 and V1); Mode B = `AUTONOMY=on` (gate removed). The
+switch is per-install, flipped ONLY on Dais's explicit go. Mode B is the "no human in the loop" end state.
+
 ## §8 Build order (each piece = its own VSDD cycle: SPEC→RED→GREEN→fresh-context adversary→my browser/on-chain E2E)
 
 ```
@@ -178,8 +204,11 @@ on the niche the agent chose, runnable on any frontier model by swapping the mod
 
 ## §10 Non-goals / open
 
-- NOT Brain/Tips affiliate (resolved: own product funnel).
-- NOT a hosted SaaS, NOT Dais's domain/accounts — per-install creds only.
+- NOT Brain/Tips affiliate. NOT a hosted SaaS, NOT Dais's domain/accounts — per-install creds only.
 - NOT Opus in the loop.
-- OPEN (resolve in Spec 1 plan): exact backend product format per niche (ebook vs note magazine vs Payhip PDF —
+- NOT "run it / receipts" articles (Dais 2026-07-03) — research + visual explainer only, no external execution,
+  no error-spew. Revisit when execution is reliable.
+- RESOLVED 2026-07-03: monetization = ¥500 per-article one-time (primary) + optional subscription; publishing =
+  Mode A (draft-first, Dais reviews) → Mode B (autonomous) on Dais's go.
+- OPEN (resolve in Spec 1 plan): backend/upsell format beyond the ¥500 note (magazine vs bundle —
   agent picks per market); first niche to prove V4 on (default: AI-entities, the flagship).
