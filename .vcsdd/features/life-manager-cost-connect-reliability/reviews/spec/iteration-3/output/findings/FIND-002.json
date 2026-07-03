@@ -1,0 +1,22 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "major",
+  "description": "Spec §2 (line 25) claims: 'Wake = T-10 firm + T-5 harsh (2 levels, NO T-15) — canonical on origin/main scheduler.js:30-33 (re-verified 2026-07-03; the 3-level T-15 variant exists only in the stale lipsync-monk worktree, non-authoritative per FIND-006)'. Direct inspection of the two available worktrees shows the OPPOSITE attribution: .claude/worktrees/lipsync-monk/apps/life-call/scheduler.js:26-33 currently contains the 2-LEVEL version (WAKE_LEVELS = [{min:10,firm},{min:5,harsh}], comment 'Dais 2026-06-25: just call me 10 min before and 5 min before, that's it') -- i.e. it MATCHES the spec's claimed canonical, not the 'stale 3-level' variant the spec attributes to it. Meanwhile .claude/worktrees/agent-a6417f77d0f47a1cc/apps/life-call/scheduler.js:26-33 (branch feature/hard2-inngest) contains the 3-LEVEL T-15/T-10/T-5 version the spec calls 'stale'. The spec's specific worktree attribution is factually backwards versus what is observable on disk right now. This is not a cosmetic slip: the spec explicitly frames this as a 're-verified 2026-07-03' fact used to close iteration-2 FIND-006, and the citation is wrong, which means the 're-verification' claimed in §0b for FIND-006 cannot be trusted, and by extension undermines confidence in the other 're-verified on origin/main' claims in §2 that I cannot independently confirm (no origin/main access -- see FIND-004).",
+  "evidence": {
+    "filePath": ".claude/worktrees/lipsync-monk/apps/life-call/scheduler.js",
+    "lineRange": "26-33",
+    "snippet": "const WAKE_LEVELS = [\n  { min: 10, urgency: \"firm\" },\n  { min: 5, urgency: \"harsh\" },\n];"
+  },
+  "contradictingEvidence": {
+    "filePath": ".claude/worktrees/agent-a6417f77d0f47a1cc/apps/life-call/scheduler.js",
+    "lineRange": "26-33",
+    "snippet": "const WAKE_LEVELS = [\n  { min: 15, urgency: \"gentle\" },\n  { min: 10, urgency: \"firm\" },\n  { min: 5, urgency: \"harsh\" },\n];"
+  },
+  "specCitation": {
+    "filePath": "specs/behavioral-spec.md",
+    "lineRange": "25"
+  },
+  "routeToPhase": "1a"
+}

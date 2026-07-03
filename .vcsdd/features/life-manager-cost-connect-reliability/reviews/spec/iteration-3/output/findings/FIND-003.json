@@ -1,0 +1,17 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "impl_correctness",
+  "category": "verification_tool_mismatch",
+  "severity": "major",
+  "description": "C2's address->geo resolution ('Resolve each with the transit API's OWN free /api/v1/places/suggest (+ /places/reverse). This single call is BOTH the free JP geocoder AND the JP-resolvability probe', spec line 64) is the claimed fix for iteration-2 FIND-007 (circular JP gate / unproven address->geo). It is UNVERIFIED by the spec's own evidence: the only two committed fixtures (evidence/fixtures/transit-plan-tokyo-shinjuku.json and transit-guidance-tokyo-shinjuku.json) both take a PRE-RESOLVED 'geo:lat,lon' id as INPUT ({'from':{'id':'geo:35.681,139.767',...}}) -- proving address->geo conversion is a mandatory precursor to calling /api/v1/plan or /api/v1/guidance/plan at all, yet neither fixture demonstrates the actual precursor step (feeding a raw postal address, e.g. the spec's own worked example home_address '新宿区南元町15-27', into /api/v1/places/suggest and getting back a usable geo). '/places/suggest' style endpoints are typically station/POI-name autocomplete, not general-purpose full-postal-address geocoders; no evidence rules out the realistic failure mode where most residential home addresses (as opposed to station/landmark names) simply do not resolve in the suggest feed, forcing spurious Google fallback for the majority of real users' home addresses and defeating C2's own cost-reduction goal. §4's RED test plan ('C2 parse against evidence/fixtures/transit-plan-*.json + guidance-*.json; C2 JP-bounds/resolvability + mixed-endpoint fallback') never mentions a places/suggest fixture or test, so the verification architecture has NO planned test for the single mechanism that was the entire subject of the prior FIND-007 blocker. The §2 table's claim that places/suggest was 'live-tested' is not backed by any committed fixture (only /plan and /guidance/plan have fixtures on disk).",
+  "evidence": {
+    "filePath": "evidence/fixtures/transit-plan-tokyo-shinjuku.json",
+    "lineRange": "1",
+    "snippet": "{\"date\":\"20260703\",...,\"from\":{\"id\":\"geo:35.681,139.767\",...},\"to\":{\"id\":\"geo:35.690,139.700\",...},\"journeys\":[...]}"
+  },
+  "specCitation": {
+    "filePath": "specs/behavioral-spec.md",
+    "lineRange": "64, 99"
+  },
+  "routeToPhase": "1a"
+}
