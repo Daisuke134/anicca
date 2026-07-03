@@ -1,0 +1,52 @@
+{
+  "feature": "clip-post-verify-hardening",
+  "reviewContext": {
+    "reviewType": "spec",
+    "phase": "1c"
+  },
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-04T00:00:00Z",
+  "iteration": 12,
+  "priorIterationResolution": [
+    {
+      "priorFinding": "FIND-028 (iteration-11, critical -- clip_id derived from source URL by producer.sh can legitimately repeat across separate post attempts, making clip_id-derived tokens unsafe)",
+      "status": "FIXED",
+      "note": "Verified against /Users/anicca/anicca/skills/earn/clip/producer.sh:60-62 (clip_id remains purely source-URL-derived, unfixed, explicitly out of scope) and REQ-010 in behavioral-spec.md, which redesigned the token to be generated FRESH and RANDOM (secrets.token_hex(5)) for EACH ATTEMPT, structurally independent of clip_id/filename/source-URL. Traced concretely: even if producer.sh re-derives an identical clip_id on two separate occasions (same-day channel repeat, or a manual retry with the same --url), each separate run.sh post attempt calls the token-generation step independently and gets a cryptographically-random, attempt-scoped value -- collision no longer depends on producer.sh's own (still-absent) dedup behavior. This is a genuine structural fix, not a probabilistic mitigation."
+    },
+    {
+      "priorFinding": "FIND-029 (iteration-11, critical -- no concrete file-plumbing mechanism specified for how a MODIFIED caption gets passed to post_reel.py, which only accepts a --caption-file path)",
+      "status": "PARTIALLY FIXED",
+      "note": "The WRITE side is now concrete and correctly scoped: REQ-010 specifies run.sh writes $CAP's original content plus the token into a NEW temp file (mktemp) and passes THAT path as --caption-file, verified against the real call site /Users/anicca/anicca/skills/earn/clip/run.sh:88 ('POSTER ... --caption-file \"$CAP\"' -- confirmed this is the exact, single, localized call site the swap targets) -- $CAP itself is never mutated. However the CLEANUP side of the same mechanism remains underspecified (see NEW FIND-034: no concrete bash construct specified, no handling of a SIGKILL-based external timeout per run.sh's own 'bounded (respects SKILL_TIMEOUT_S)' contract), and PROP-011 never actually tests that the temp file gets deleted (see NEW FIND-033). The sidecar-shape side of the same plumbing area also now has a fresh internal contradiction (see NEW FIND-031: REQ-004 says the sidecar needs a 'caption' field, REQ-008 step 6 and PROP-006(a)'s literal fixture say it has only 2 keys, no caption). FIND-029 is not yet fully closed."
+    },
+    {
+      "priorFinding": "FIND-030 (iteration-11, major -- no test for the clip_id-collision scenario)",
+      "status": "FIXED",
+      "note": "PROP-011 in verification-architecture.md now explicitly requires: run run.sh's token-generation step TWICE for the SAME clip filename/clip_id (directly simulating FIND-028's exact scenario) and assert the two generated tokens are DIFFERENT -- a direct, deterministic regression test, not a probabilistic argument. Concretely closes FIND-030."
+    }
+  ],
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-031", "FIND-032", "FIND-034", "FIND-035", "FIND-036"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/earn/clip/run.sh:1-38,88,94-95", "description": "confirmed the exact current POSTER call site, clip/caption pairing selection loop, and existing pair-move behavior against which REQ-006/REQ-010's new requirements must be traced"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/earn/clip/producer.sh:60-62", "description": "re-confirmed clip_id derivation is purely source-URL-based with no dedup, consistent with REQ-010's stated ground truth, and confirmed the new token design genuinely does not depend on it"}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-033"],
+      "evidence": [
+        {"type": "file", "location": ".vcsdd/features/clip-post-verify-hardening/specs/verification-architecture.md:84", "description": "confirmed PROP-011 tests $CAP immutability but has zero assertion that the new temporary caption file is actually deleted after any outcome branch, despite REQ-010's absolute 'cleaned up ... regardless of outcome' claim"}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 6,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}

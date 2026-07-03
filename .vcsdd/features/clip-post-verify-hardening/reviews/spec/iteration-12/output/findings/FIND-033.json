@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-033",
+  "dimension": "verification_readiness",
+  "category": "test_coverage",
+  "severity": "major",
+  "description": "PROP-011 (the regression test explicitly written to close iteration-11's FIND-029) asserts that $CAP's content and mtime are unchanged before/after a post attempt, but never asserts that the NEW TEMPORARY caption file itself is actually deleted after the attempt -- across ANY of the three outcome branches (published / unverified / failed) or the exception/timeout path. REQ-010 explicitly claims the temp file is 'cleaned up after the post attempt regardless of outcome,' but zero proof obligation in the entire PROP table (PROP-001..011) verifies this cleanup claim. This is a live-Instagram-posting feature that runs on an unattended repeating wake cycle (per HARD RULE 0.26, disk hygiene is a standing operational concern for exactly this kind of accumulating small artifact) -- an unverified cleanup claim on a script that fires repeatedly, unattended, indefinitely, is a real gap, not a cosmetic one.",
+  "evidence": {
+    "filePath": ".vcsdd/features/clip-post-verify-hardening/specs/verification-architecture.md",
+    "lineRange": "84 (PROP-011 row)",
+    "snippet": "\"Also assert `$CAP`'s file content and mtime are IDENTICAL before and after a post attempt (FIND-029: `$CAP` is read-only ... only a separate temp file is written+read+cleaned-up).\" -- no corresponding assertion that the temp file itself no longer exists post-attempt, in any outcome branch"
+  },
+  "routeToPhase": "1b"
+}

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-031",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "critical",
+  "description": "Unresolved internal contradiction over the pending-verify sidecar's JSON shape. REQ-004's closing paragraph (behavioral-spec.md, the '★ FIXED after iteration-9 FIND-021' paragraph) states: 'The clip's caption text does NOT need to come from post_reel.py at all — run.sh already has the caption file path in hand ... so run.sh reads $CAP's content directly for the sidecar's \"caption\" field — no new plumbing needed for that part.' This explicitly asserts the sidecar JSON contains a 'caption' key populated from $CAP. However REQ-008 step 6 (the actual authoritative definition of the sidecar's shape) states the sidecar contains EXACTLY: '{\"before_hrefs\": [...stabilized before[\"hrefs\"]...], \"token\": \"#c<10-hex-random>\"}' — two keys, no 'caption' key anywhere. This is not a stylistic ambiguity: verification-architecture.md's PROP-006(a) gives the literal fixture JSON the self-heal test seeds: '{\"before_hrefs\":[\"/aiclipsvault/reel/A/\",\"/aiclipsvault/reel/B/\"],\"token\":\"#c4f2a91b7c\"}' — confirming, in the one place meant to be unambiguous (a concrete test fixture), that there is NO caption key. REQ-004's sentence is dead text left over from an earlier (pre-iteration-8/10) design where matching was done against caption/hook PROSE and therefore needed the caption text persisted in the sidecar; that design was fully superseded by the token-substring match (REQ-008 step 6, iteration-8/10 redesign) which never reads or compares caption content at all. A builder implementing REQ-004 literally would write a 3-key sidecar that contradicts REQ-008's 2-key sidecar and PROP-006(a)'s literal test fixture, causing an immediate test failure or an implementer guessing which requirement is authoritative.",
+  "evidence": {
+    "filePath": ".vcsdd/features/clip-post-verify-hardening/specs/behavioral-spec.md",
+    "lineRange": "134-143 vs 239-241",
+    "snippet": "REQ-004: \"so `run.sh` reads `$CAP`'s content directly for the sidecar's `\"caption\"` field\" -- CONTRADICTS REQ-008 step 6: \"a sidecar file ... containing `{\"before_hrefs\": [...], \"token\": \"#c<10-hex-random>\"}`\" (no caption key), and verification-architecture.md:82's literal PROP-006(a) fixture `{\"before_hrefs\":[...],\"token\":\"#c4f2a91b7c\"}`"
+  },
+  "routeToPhase": "1a"
+}

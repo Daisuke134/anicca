@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-035",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "major",
+  "description": "Illustrative example token strings scattered across the two spec documents are internally inconsistent with REQ-010's own canonical generation mechanism. REQ-010 fixes the mechanism to `secrets.token_hex(5)`, whose output alphabet is STRICTLY `[0-9a-f]`, exactly 10 characters. Yet: (1) REQ-008 step 6's own worked example token is `\"#c6xlmaorRY0w\"` -- containing non-hex characters (x,l,m,o,r,R,Y) and 11 characters after the '#c' prefix, not 10; (2) PROP-006(b)'s stub token is `\"#c9zY2other1\"` -- containing non-hex characters (z,Y,o,t,h,e,r). Only PROP-006(a)/PROP-010's `\"#c4f2a91b7c\"` is actually a valid hex string consistent with the stated mechanism. This split (some examples correctly hex, some not) is evidence the document was never fully reconciled after the mechanism was pinned down to strict hex in this revision, and risks an implementer or test-writer producing token-format assumptions, regexes, or fixtures based on a broader alphanumeric alphabet than what `secrets.token_hex` will ever actually emit.",
+  "evidence": {
+    "filePath": ".vcsdd/features/clip-post-verify-hardening/specs/behavioral-spec.md",
+    "lineRange": "250 (REQ-008 step 6 worked example) vs 173-174 (REQ-010's secrets.token_hex(5) mechanism)",
+    "snippet": "REQ-010: \"via `python3 -c \\\"import secrets;print(secrets.token_hex(5))\\\"`\" (strict hex, 10 chars) vs REQ-008 step6 example: `\"#c6xlmaorRY0w\"` (non-hex chars present, 11 chars) and verification-architecture.md:82 PROP-006(b): `\"#c9zY2other1\"` (non-hex chars present)"
+  },
+  "routeToPhase": "1a"
+}

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-034",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "major",
+  "description": "REQ-010's cleanup mechanism for the new temporary caption file ('e.g. mktemp under the existing disk-hygiene convention, HARD RULE 0.26 — cleaned up after the post attempt regardless of outcome') is not concrete enough to implement unambiguously. It never specifies WHICH bash construct is required to guarantee cleanup across all three outcome branches (published/unverified/failed) plus an uncaught exception or non-zero exit from `post_reel.py` -- e.g. whether run.sh must add a `trap 'rm -f \"$TMPCAP\"' EXIT` (the one cleanup pattern that already exists precedent for in this exact codebase, at producer.sh:38's `trap 'rm -rf \"$WORK\"' EXIT`) or rely on explicit rm calls in each branch. Critically, run.sh's own file header states its contract is 'bounded (respects SKILL_TIMEOUT_S)' implying an external orchestrator (run-skill.mjs) may forcibly terminate the process after a timeout -- if that termination is a SIGKILL, no bash trap of any kind can fire, and the temp file leaks regardless of what cleanup code the spec eventually prescribes. The spec makes an absolute claim ('regardless of outcome') without acknowledging or bounding this residual leak path, which iteration-11's FIND-029 already identified as a class of gap in this exact area of the spec and which remains only half-closed (the write mechanism is now concrete; the cleanup mechanism is not).",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/earn/clip/run.sh",
+    "lineRange": "1-15 (header comment: 'Idempotent + bounded (respects SKILL_TIMEOUT_S)')",
+    "snippet": "Contract (run-skill.mjs): reads env, does ONE bounded step, prints ONE structured stdout line, exits 0. Idempotent + bounded (respects SKILL_TIMEOUT_S). -- no trap-based cleanup pattern currently exists in run.sh (only producer.sh:38 has one), and the spec does not mandate adding one nor address SIGKILL-survivability"
+  },
+  "routeToPhase": "1a"
+}

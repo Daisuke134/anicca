@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-036",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "description": "REQ-010's own wording about WHEN a token is generated is internally self-contradictory. It reads: 'THE SYSTEM SHALL generate a FRESH, RANDOM tracking token for THAT ATTEMPT ... (each individual attempt — the direct live-share path, AND separately each time self-heal reconciliation would need one, though self-heal itself does not re-post, only re-checks an EXISTING attempt's token per REQ-008)'. The clause 'each time self-heal reconciliation would need one' literally states self-heal generates a fresh token per invocation, directly contradicting the very next clause in the SAME sentence ('self-heal itself does not re-post, only re-checks an EXISTING attempt's token') and directly contradicting REQ-008 step 6's actual mechanism, where the self-heal driver ONLY EVER READS `sidecar[\"token\"]` (already persisted at REQ-006 write-time) and never generates, regenerates, or re-derives a token anywhere in its own logic. A builder implementing REQ-010 in isolation -- without cross-referencing REQ-008 step 6's precise wording -- could plausibly add token (re)generation inside the self-heal driver, silently invalidating the sidecar's already-stored token for an already-pending clip and breaking REQ-008 step 6's token-match confirmation logic for that clip permanently (the newly-generated token would never appear in the already-posted reel's page text, since the actual posted caption carries the ORIGINAL token from the original attempt).",
+  "evidence": {
+    "filePath": ".vcsdd/features/clip-post-verify-hardening/specs/behavioral-spec.md",
+    "lineRange": "163-172 (REQ-010 opening sentence)",
+    "snippet": "\"(each individual attempt — the direct live-share path, AND separately each time self-heal reconciliation would need one, though self-heal itself does not re-post, only re-checks an EXISTING attempt's token per REQ-008)\" -- self-contradictory within one sentence, and contradicts REQ-008 step 6's read-only sidecar[\"token\"] usage"
+  },
+  "routeToPhase": "1a"
+}

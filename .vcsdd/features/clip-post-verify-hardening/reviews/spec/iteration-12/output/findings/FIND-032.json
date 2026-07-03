@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-032",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "major",
+  "description": "REQ-006 ('WHEN run.sh observes outcome==\"unverified\" ... move the clip file to $CLIP_PENDING_VERIFY') never specifies whether the paired caption sidecar file ($CAP, the .txt originally selected alongside the .mp4) also moves. This matters because: (1) the CURRENT, unchanged code (run.sh:94-95) always moves the .mp4 AND its .txt together on success ('mv \"$CLIP\" \"$POSTED/\"' followed by 'mv \"$CAP\" \"$POSTED/\"'), establishing an existing pair-move convention this new requirement silently breaks or must explicitly continue; (2) run.sh's own clip-selection loop (run.sh:34-38) requires a .mp4 with a matching same-basename .txt to even be selected as a candidate -- if $CAP is left behind in queue/ while the .mp4 moves to pending-verify, that .txt becomes a permanently orphaned file with no matching .mp4, silently accumulating in queue/ forever (violates HARD RULE 0.26 disk hygiene) with zero cleanup path specified anywhere in this spec or its proof obligations (PROP-005/006 do not assert on the caption file's location in the unverified case).",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/earn/clip/run.sh",
+    "lineRange": "34-38, 94-95",
+    "snippet": "for f in \"$QUEUE\"/*.mp4; do ... c=\"${f%.mp4}.txt\"; if [ -f \"$c\" ]; then CLIP=\"$f\"; CAP=\"$c\"; break; fi; done  # selection requires paired .txt\nmv \"$CLIP\" \"$POSTED/\" ...; mv \"$CAP\" \"$POSTED/\" ...  # existing code always moves BOTH together"
+  },
+  "routeToPhase": "1a"
+}

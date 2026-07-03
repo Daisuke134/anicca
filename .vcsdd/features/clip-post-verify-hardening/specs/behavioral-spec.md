@@ -1,4 +1,4 @@
-# Behavioral Spec — clip-post-verify-hardening (Phase 1a) — REV 12 (post iteration-11 FAIL)
+# Behavioral Spec — clip-post-verify-hardening (Phase 1a) — REV 13 (post iteration-12 FAIL)
 
 ## Context (why this feature exists)
 2026-07-03 live incident: `EARN_MODE=execute bash run.sh` self-reported `"posted @aiclipsvault: .../DaLKV2xP8Ij/"`
@@ -137,10 +137,13 @@ or duplicate a clip).
   `res["before_hrefs"] = before["hrefs"]` (the exact stabilized list from REQ-001, already computed and
   in scope at that point in the function — no extra browser work, just also assigning it into `res`
   before printing). `run.sh` reads `d.get("before_hrefs")` from this JSON for REQ-006's sidecar write.
-  The clip's caption text does NOT need to come from `post_reel.py` at all — `run.sh` already has the
-  caption file path in hand (it is the `--caption-file` argument `run.sh` itself passes to
-  `post_reel.py`, per the existing `POSTER ... --caption-file "$CAP"` call), so `run.sh` reads
-  `$CAP`'s content directly for the sidecar's `"caption"` field — no new plumbing needed for that part.
+  ★ CORRECTION (iteration-12 FIND-031: stale leftover text from the pre-token, hook-matching design
+  scrubbed here) ★ — the sidecar does NOT contain a `"caption"` field at all (superseded by REQ-010's
+  token design). `run.sh` does not need `post_reel.py` to return the caption either: `run.sh` already
+  GENERATED the token itself (REQ-010, before the post attempt) and already has that exact token value in
+  hand at sidecar-write time — it simply persists the SAME token string it already generated, not
+  anything read back from `post_reel.py` or `$CAP`. See REQ-010 and REQ-008 step 6 for the sidecar's
+  actual (and only) shape: `{"before_hrefs": [...], "token": "..."}`.
 - **REQ-005**: WHEN `run.sh` observes `outcome=="published"`, THE SYSTEM SHALL append a ledger line with
   `"status":"posted"` (in addition to keeping the existing line shape) and move the clip file to `posted/`
   — unchanged from current behavior except for the added `status` field.
@@ -151,8 +154,14 @@ or duplicate a clip).
   `_instance_paths.sh` (the same file that already defines `CLIP_QUEUE`/`CLIP_POSTED`/`CLIP_ACCTS`/
   `CLIP_LEDGER`, all suffixed `-${ANICCA_INSTANCE}` when set — see `feature/clip-loop-dual-instance-earn`,
   already shipped). `CLIP_PENDING_VERIFY="${HOME}/clips/pending-verify${_SFX}"`, following the exact same
-  pattern as the other four. NOT back to `$CLIP_QUEUE` (duplicate-post risk) and NOT to `$CLIP_POSTED`
-  (false-confirmation risk). This closes the cross-instance collision risk iteration-5 correctly
+  pattern as the other four. ★ FIXED after iteration-12 FIND-032 (unspecified whether the paired caption
+  file moves too) ★: BOTH `$CLIP` (the `.mp4`) AND `$CAP` (its paired `.txt` caption — the SAME original,
+  never-mutated file per REQ-010) move to `$CLIP_PENDING_VERIFY` together, exactly mirroring the existing
+  `run.sh:94-95` pattern (`mv "$CLIP" "$POSTED/"; mv "$CAP" "$POSTED/"`) — self-heal and any future manual
+  inspection need the original caption alongside the video, and this is zero new logic, just the same
+  two-file move applied to a different destination directory. NOT back to `$CLIP_QUEUE` (duplicate-post
+  risk) and NOT to `$CLIP_POSTED` (false-confirmation risk). This closes the cross-instance collision risk
+  iteration-5 correctly
   identified: without instance-suffixing, a self-funded (ClawRouter) instance and the human-funded
   (claude-p) instance sharing one unsuffixed `pending-verify/` dir would corrupt each other's self-heal
   state — the exact class of bug `clip-loop-dual-instance-earn` was built to prevent, now reintroduced by
@@ -167,25 +176,43 @@ or duplicate a clip).
   that channel hasn't published something new, or on any manual retry with the same `--url`, `producer.sh`
   deterministically re-derives the IDENTICAL clip_id, which would have produced the IDENTICAL token under
   REV 11's design — reopening the exact misattribution risk REQ-010 exists to close, just via clip_id
-  reuse instead of hook-text reuse)**: WHEN `run.sh` is about to attempt posting a clip (each individual
-  attempt — the direct live-share path, AND separately each time self-heal reconciliation would need one,
-  though self-heal itself does not re-post, only re-checks an EXISTING attempt's token per REQ-008), THE
-  SYSTEM SHALL generate a FRESH, RANDOM tracking token for THAT ATTEMPT — e.g. `"#c" + <10 random hex
+  reuse instead of hook-text reuse)**: ★ CLARIFIED after iteration-12 FIND-036 (prior wording ambiguously
+  implied self-heal might itself generate a token; the sentence below is scoped to remove that reading
+  entirely) ★ — token generation happens at EXACTLY ONE place: WHEN `run.sh` is about to attempt POSTING a
+  clip via the direct live-share path (i.e., the ONE call site that invokes `post_reel.py` WITHOUT
+  `--verify-only`). THE SYSTEM SHALL generate a FRESH, RANDOM tracking token for THAT ATTEMPT — e.g. `"#c" + <10 random hex
   characters>` (via `python3 -c "import secrets;print(secrets.token_hex(5))"` or equivalent) — NOT derived
   from the clip's filename/ID/source-URL in any way, so two attempts of the identical source video (whether
   a same-day channel-repeat or a manual retry) always get DIFFERENT tokens, structurally eliminating
   FIND-028's collision path regardless of `producer.sh`'s own dedup behavior (which remains unfixed and
   out of scope — this feature does not need `producer.sh` to be collision-free, only the TOKEN to be).
+  ★ Self-heal NEVER generates, derives, or regenerates a token, under any circumstance ★: self-heal
+  (REQ-008) only ever READS the one token already persisted into the sidecar by THIS post-attempt-time
+  generation step, at the moment `run.sh` first wrote `$CLIP_PENDING_VERIFY`'s sidecar (REQ-008 step 6).
+  Self-heal's own `--verify-only` calls (REQ-008 step 4) never invoke this token-generation logic at all —
+  `--verify-only` is a read-only reconciliation check, not a posting attempt, so there is no new attempt
+  for it to generate a token for.
   ★ Concrete file-plumbing mechanism (FIXED after FIND-029, which correctly found `post_reel.py`'s
   `--caption-file` only accepts a file PATH via `open()`, never inline string content, and using `$CAP`
   in-place would risk corrupting the original file across retries/moves) ★: `run.sh` SHALL write the
-  ORIGINAL `$CAP` content plus a trailing `"\n​<token>"` line into a NEW TEMPORARY file (e.g.
-  `mktemp` under the existing disk-hygiene convention, HARD RULE 0.26 — cleaned up after the post attempt
-  regardless of outcome) and pass THAT TEMP FILE's path as `--caption-file` to `post_reel.py`. `$CAP`
-  itself is NEVER mutated, NEVER read-modified-written in place — it is only ever READ (to build the temp
-  file's content) — so its existing move-on-success (`$CLIP_POSTED`) / reuse-on-retry (`queue/`) behavior
-  is completely unaffected. This tracking token, not any derived-from-content value, is what REQ-008 step
-  6's content match checks for.
+  ORIGINAL `$CAP` content plus a trailing `"\n​<token>"` line into a NEW TEMPORARY file via `mktemp` under
+  the existing disk-hygiene convention (HARD RULE 0.26), and pass THAT TEMP FILE's path as `--caption-file`
+  to `post_reel.py`. `$CAP` itself is NEVER mutated, NEVER read-modified-written in place — it is only ever
+  READ (to build the temp file's content) — so its existing move-on-success (`$CLIP_POSTED`) /
+  reuse-on-retry (`queue/`) behavior is completely unaffected. This tracking token, not any
+  derived-from-content value, is what REQ-008 step 6's content match checks for.
+  ★ Concrete cleanup mechanism (FIXED after iteration-12 FIND-034, which correctly found no concrete
+  cleanup construct was ever specified) ★: `run.sh` SHALL register the temp file's removal via
+  `trap 'rm -f "$TMPCAP"' EXIT` immediately after `mktemp` creates it and BEFORE invoking `post_reel.py` —
+  this fires on every normal exit path (success/failed/unverified) AND on any ordinary signal `run.sh`'s
+  own shell receives, requiring zero outcome-specific cleanup code. Explicitly accepted residual risk: a
+  SIGKILL (`kill -9`) delivered to `run.sh` between `mktemp` and the trap firing cannot be caught by any
+  shell trap (POSIX-fundamental, not a gap in this design) and would leak one temp file under
+  `${TMPDIR:-/tmp}`. This is LOW severity and explicitly out of scope for this feature: a leaked temp
+  caption file is inert (never read by anything after the attempt ends, never confused with `$CAP`, never
+  causes a misattributed post) — unlike a misattributed post, which is the actual failure mode this whole
+  feature exists to eliminate. Ordinary disk hygiene (HARD RULE 0.26) sweeps stray temp files
+  independently of this feature.
 - **REQ-008 (self-heal, REUSING the existing mechanism — WIRING CLARIFIED after iteration-3 FIND-004,
   further hardened after iteration-5 FIND-008/009/010)**: WHEN a wake begins and `$CLIP_PENDING_VERIFY`
   (REQ-006) is non-empty, THE SYSTEM SHALL run a self-heal driver — a NEW shared module
@@ -247,14 +274,15 @@ or duplicate a clip).
      `document.body.innerText` on the permalink page (the same broad text-scan style `post_reel.py` already
      uses elsewhere, e.g. the account-guard check at `:105` — no rigid caption-specific selector). A
      candidate href IS CONSIDERED A MATCH if `sidecar["token"]` (the EXACT literal string, e.g.
-     `"#c6xlmaorRY0w"`) appears anywhere in that page's `innerText` — a plain substring containment check
+     `"#c3d9a1e5f7"`) appears anywhere in that page's `innerText` — a plain substring containment check
      on a short, mechanically-unique alphanumeric token (not prose, not a hook, no whitespace-normalization
      or truncation-tolerance logic needed: the token is short enough that IG's "…more" truncation of a
      LONG caption is irrelevant — the token is placed via REQ-010 immediately after a newline near the end
      of the caption, alongside the existing hashtag block, which IG does render even when truncating the
      preceding prose, per the same visibility as any other hashtag in the caption). IF EXACTLY ONE href's
-     page contains the token, THE SYSTEM SHALL treat it as now-confirmed: move the clip to
-     `$CLIP_POSTED`, delete the sidecar file, and append the delayed `"status":"posted"` ledger line WITH
+     page contains the token, THE SYSTEM SHALL treat it as now-confirmed: move BOTH the clip file AND its
+     paired `.txt` caption file (which travelled together into `$CLIP_PENDING_VERIFY` per REQ-006's
+     FIND-032 fix) to `$CLIP_POSTED`, delete the sidecar file, and append the delayed `"status":"posted"` ledger line WITH
      `"post_url"` SET TO THAT MATCHED URL (never `null` — a `status:"posted"` ledger line MUST always
      carry a real, non-null, CONTENT-VERIFIED `post_url`, per REQ-009's step-1 guard below). IF ZERO hrefs
      match (none of the new posts are this clip's own — genuinely still unpublished, OR the new href(s)
