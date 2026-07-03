@@ -154,3 +154,47 @@ disk-cleaner.shの`.venv`保護追加だけでは不十分だった。実際に�
 6. promote.fun Sutando loop harness (`clip-promote-cli.sh` + healthcheck + launchd) — 出口を1つ確定させる本命
 
 各項目は vcsdd-init → spec → red → green → adversary → E2E(実際にIG/YT投稿URL確認)で進める。
+
+## 4. 2026-07-04 実機監査で発見した追加課題(Dais「クリーナーが危険」指摘への調査から派生)
+
+Dais から disk-cleaner の安全性 + claude-p/ClawRouter の実稼働状況を問われ、実機ログ・実プロセスを
+監査した結果、当初のタスク#9スコープを超える複数の実問題を発見した。
+
+1. **disk cleaner 3重問題**(解決済み): `com.anicca.disk-cleaner`(1h毎)/`ai.anicca.disk-janitor`
+   (5分毎)/OpenClaw cron `anicca-disk-hourly`(10分毎、LLM経由)の3つが独立に`anicca-clones`を
+   別ロジックで掃除しており、うち`anicca-disk-hourly`は年齢条件すら無く毎回無条件`rm -rf`。
+   1つ(`~/scripts/disk-cleaner.sh` v9、5分毎)に統合、他2つは無効化(disabled、復元可能)。
+   統合直後に$HOME全体11回findループがI/O律速で5分超かかり最大9プロセス重複起動する事故を
+   実機確認→find統合+スコープ限定(既知プロジェクトルートのみ)+mkdir atomicロックで解決。
+   実機12秒完走・venv保護を確認。
+
+2. **tmuxソケット消失→4loop重複起動**(解決済み): clip/affiliate/video/bounty の4つのclaude-p
+   loop全てで`/tmp/anicca-*-tmux.sock`が消失、5分毎healthcheckが「死んでいる」と誤判定して
+   新規セッションを重複起動(元のtmuxサーバー自体は生存していた為、新旧セット計8プロセスが
+   並行稼働、Load Avg 8.99まで悪化)。孤立した古いプロセスをkillして解消。ソケット消失自体の
+   根本原因は未特定(Task登録、disk-cleanerのsweepはtype f/dのみでsocket非対象と確認済み)。
+
+3. **ClawRouter用producer.sh実行経路が存在しない**(発覚、対応中): ClawRouterのledger実機調査
+   (`~/.anicca/state/ledger.jsonl`)で、`earn/clip`スロットは自律的に75回選択されているが全て
+   `"queued_clip=none"`で空振りと判明。原因: 日次producer cron(`ai.anicca.clip-producer`、
+   AM3:17)にANICCA_INSTANCE環境変数が無く claude-p専用。ClawRouter用に
+   `ai.anicca.clip-producer-clawrouter.plist`(AM3:47、ANICCA_INSTANCE=clawrouter)を新規作成・
+   ロード済み。instance分離導入(本spec §2.1)以前は実際にClawRouterがclaude-p専用アカウント
+   `@aiclipsvault`へ誤投稿していた形跡もledgerに残っている(分離配線後は解消を確認)。
+   ClawRouter専用IGアカウントがまだ無い為(REQ-102未達成)、E2E生成確認はTask #6で継続中。
+
+4. **pipeline.py: get_duration()のcookie無し呼び出しバグ**(修正済み): sliced-download判定用の
+   `get_duration()`が`--cookies-from-browser`無しでyt-dlpを呼んでおり、YouTube bot検出
+   ("Sign in to confirm you're not a bot")で失敗→durationがNone→sliceされずフル長(2h38m)を
+   ダウンロードしてしまう実機事象を確認。`yt_dlp()`と同じcookie引数を追加して修正。
+
+5. **CloakBrowser cookie復号失敗**(原因特定、未解決): 上記4の修正後もyt-dlpの
+   `--cookies-from-browser chromium:~/.cloak/profiles/clip-en`が
+   `"Extracted 0 cookies from chromium (12 could not be decrypted)"`で実質機能せず。根本原因は
+   macOS Keychainに`"Chromium Safe Storage"`エントリが存在しないこと(`security find-generic-
+   password`で未検出)。無人/ヘッドレス運用環境でKeychainがアンロックされていない可能性が高い。
+   cookie無しの状態でYouTubeへ問い合わせると不安定にbot検出へ引っかかる。次回対応候補:
+   Netscape形式cookieファイルのプリエクスポート方式へ切り替え(Keychain復号を経由しない)。
+
+タスク化(#6〜#8、TaskList参照): #6 ClawRouter producer経路E2E確認、#7 tmuxソケット消失原因
++healthcheck重複防止、#8 cookie復号失敗の根本解決。
