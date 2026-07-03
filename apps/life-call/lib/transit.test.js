@@ -26,7 +26,7 @@ test("parseTransitPlan: best journey → {durationSecs, legs, transferCount}", (
   // fixture journey[0] = 中央線快速, durationSecs 1029, 0 transfers
   assert.equal(typeof r.durationSecs, "number");
   assert.ok(r.durationSecs > 0 && r.durationSecs < 7200);
-  assert.equal(r.durationSecs, 1219); // door-to-door: 61 access + 1029 vehicle + 129 egress (FIND-004)
+  assert.equal(r.durationSecs, 1090); // door-to-door = 1029 duration(incl egress) + 61 access (FIND-101: no egress double-count)
   assert.ok(Array.isArray(r.legs) && r.legs.length >= 1);
   assert.equal(r.legs[0].mode, "rail");
   assert.equal(r.transferCount, 0);

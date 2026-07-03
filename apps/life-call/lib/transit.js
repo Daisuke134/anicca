@@ -39,12 +39,14 @@ function parseTransitPlan(plan) {
   if (journeys.length === 0) return null;
   // Best = earliest arrival (the fixture is departure-sorted; arrival is the honest "you're there by").
   const best = journeys.reduce((a, b) => (b.arrivalSecs < a.arrivalSecs ? b : a));
-  // NEVER-LATE (FIND-004): durationSecs is in-vehicle+transfer only; the user also WALKS to the first
-  // stop and from the last. Return DOOR-TO-DOOR = accessWalk + duration + egressWalk, or the caller
-  // under-estimates travel time and the user leaves late. Missing walk fields default to 0.
-  const walk = (Number(best.accessWalkSecs) || 0) + (Number(best.egressWalkSecs) || 0);
+  // NEVER-LATE door-to-door (FIND-004 + FIND-101): the journey's durationSecs = arrivalSecs − departureSecs,
+  // where arrivalSecs ALREADY includes the egress walk (journey arrival = last-leg arrival + egressWalk,
+  // verified against the fixture: 81789 − 81660 = 129 = egressWalkSecs). departureSecs = first-leg (train)
+  // departure, so the ACCESS walk to the first stop is NOT yet included. Door-to-door = accessWalk + duration.
+  // Adding egress again would double-count it.
+  const access = Number(best.accessWalkSecs) || 0;
   return {
-    durationSecs: (best.durationSecs || 0) + walk,
+    durationSecs: (best.durationSecs || 0) + access,
     inVehicleSecs: best.durationSecs,
     transferCount: best.transferCount || 0,
     legs: (best.legs || []).map((l) => ({
