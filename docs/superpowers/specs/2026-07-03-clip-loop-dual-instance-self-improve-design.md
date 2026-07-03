@@ -45,6 +45,17 @@
   4. producer/run.shが5日以上fail-closedし続けている等の異常は self/issue-dev 経由で自動issue化
 ```
 
+### 2.2.5 producer.sh 自己修復(2026-07-04 追加、タスク#9)
+
+★ 実インシデント: `~/.cache/anicca-clones/AI-Youtube-Shorts-Generator/.venv` はディスク掃除で
+定期的に消える(このセッション中だけで2回発生)。従来は「人間/devセッションが気づいて手で
+再構築」していた = HARD RULE #-2「人間をloopに入れるな」違反。★
+
+修正: `producer.sh` 自身が起動時にvenv欠落を検知したら、自分でリポジトリの再clone
+(`--depth 1`) + venv再構築 + pip installを行い、そのまま処理を継続する。日次cron
+(`ai.anicca.clip-producer`、AM3:17)が完全に無人で回復する。人間/dev/私が二度と気づいて
+直す必要が無くなる。
+
 ### 2.3 出口(payout)の優先順位
 
 記事原則1「出口のために作れ」に従い、着手順は **出口の確度が高い順**:
