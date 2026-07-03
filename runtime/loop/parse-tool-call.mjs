@@ -105,15 +105,54 @@ function extractFirstToolCall(response) {
 
 function scavengeRoleplayedToolCall(content) {
   if (typeof content !== 'string') return null;
-  const trimmed = content.trim();
-  if (!trimmed.startsWith('{') || !trimmed.endsWith('}')) return null;
-  let parsed;
-  try { parsed = JSON.parse(trimmed); } catch { return null; }
-  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
-  const name = typeof parsed.name === 'string' ? parsed.name
-    : (typeof parsed.function === 'string' ? parsed.function : null);
-  if (!name) return null;
-  // the call's arguments may be under `parameters` or `arguments`
-  const callArgs = parsed.parameters ?? parsed.arguments ?? {};
-  return { function: { name, arguments: callArgs } };
+  // free models (glm-4.7 etc) emit the tool call as TEXT, in several shapes:
+  //   1. bare JSON: {"name":"run_skill","arguments":{...}}
+  //   2. XML-wrapped: <tool_call>\n{"name":...}\n</tool_call>  (glm-4.7's actual output)
+  //   3. JSON inside surrounding prose / markdown fences
+  // Collect candidate JSON objects and return the first that names a tool.
+  for (const candidate of jsonObjectCandidates(content)) {
+    let parsed;
+    try { parsed = JSON.parse(candidate); } catch { continue; }
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) continue;
+    const name = typeof parsed.name === 'string' ? parsed.name
+      : (typeof parsed.function === 'string' ? parsed.function : null);
+    if (!name) continue;
+    // the call's arguments may be under `parameters` or `arguments`
+    const callArgs = parsed.parameters ?? parsed.arguments ?? {};
+    return { function: { name, arguments: callArgs } };
+  }
+  return null;
+}
+
+/**
+ * Yield candidate JSON-object substrings from free-form model text, most-specific first:
+ * whatever is inside <tool_call>…</tool_call> tags, then every brace-balanced {...} span.
+ */
+function* jsonObjectCandidates(text) {
+  const stripFences = (s) => s.replace(/```(?:json)?/gi, '').trim();
+  // 1. XML-style tool_call wrappers
+  const tagRe = /<tool_call>([\s\S]*?)<\/tool_call>/gi;
+  let m;
+  while ((m = tagRe.exec(text)) !== null) {
+    const inner = stripFences(m[1]);
+    if (inner.startsWith('{')) yield inner;
+  }
+  // 2. every brace-balanced object span in the raw text (handles prose around the JSON)
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] !== '{') continue;
+    let depth = 0, inStr = false, esc = false;
+    for (let j = i; j < text.length; j++) {
+      const ch = text[j];
+      if (inStr) {
+        if (esc) esc = false;
+        else if (ch === '\\') esc = true;
+        else if (ch === '"') inStr = false;
+      } else if (ch === '"') inStr = true;
+      else if (ch === '{') depth++;
+      else if (ch === '}') {
+        depth--;
+        if (depth === 0) { yield text.slice(i, j + 1); i = j; break; }
+      }
+    }
+  }
 }
