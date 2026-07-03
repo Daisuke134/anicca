@@ -1,100 +1,101 @@
 {
-  "reviewType": "impl-wiring",
+  "reviewType": "impl-c1-compositional-voice",
   "feature": "life-manager-cost-connect-reliability",
   "iteration": 5,
   "overallVerdict": "FAIL",
   "timestamp": "2026-07-04T00:00:00Z",
+  "scope": "C1 COMPOSITIONAL VOICE pre-merge review: apps/life-call/lib/voice-turn.cjs, compositional-voice.cjs, compositional-live.cjs (+ their .test.js) and the server.js /ws wiring, reviewed against specs/behavioral-spec.md C1 (fresh context, disk only).",
   "dimensions": {
     "spec_fidelity": {
       "verdict": "FAIL",
-      "findings": ["FIND-104"],
+      "findings": ["FIND-202", "FIND-203"],
       "evidence": [
-        {"type": "file", "location": "apps/life-call/lib/transit.js:42-49, apps/life-call/lib/transit.test.js:29", "description": "FIND-101 confirmed RESOLVED by direct Read + hand computation against evidence/fixtures/transit-plan-tokyo-shinjuku.json: best journey (earliest arrival=84309) has departureSecs=83280 → durationSecs=1029; leg.arrivalSecs=84180 so journey.arrivalSecs(84309)-leg.arrivalSecs(84180)=129=egressWalkSecs, proving durationSecs ALREADY includes egress. accessWalkSecs=61 is NOT yet included (departureSecs equals the leg's own departureSecs, not door-departure). durationSecs(1029)+access(61)=1090, matching transit.js:49's formula exactly and transit.test.js:29's updated assertion of 1090 (was 1219, the double-counted value). No re-add of egressWalkSecs remains in the code."},
-        {"type": "file", "location": "apps/life-call/lib/route-cache.js, apps/life-call/lib/travel.js:10,153-199, apps/life-call/lib/travel-transit-wire.test.js:59-72", "description": "FIND-002 spot-check: still wired — makeRouteCache imported, cache.getOrCompute keyed on (uid,geo,geo,bucket) gates the compute closure, travel-transit-wire.test.js's 'repeated ticks... call the provider ONCE' test still exercises this path unchanged."},
-        {"type": "file", "location": "apps/life-call/lib/money-path.js, apps/landing/scripts/money-path-smoke.mjs, apps/landing/scripts/money-path-monitor.mjs", "description": "FIND-006 spot-check: still resolved — both previously-dead modules (money-path.js, route-cache.js) retain real non-test production importers (grep-confirmed)."}
+        {"type": "file", "location": "apps/life-call/server.js:357-448", "description": "Confirmed by full read: Gemini Live is never opened on this path (no openGeminiLive/new WebSocket(geminiLiveWsUrl) call anywhere in server.js; grep across apps/life-call confirms the only new WebSocket(geminiLiveWsUrl(...)) call is lib/call-bridge.cjs:206 inside startServer(), which is gated by `if (require.main === module)` at call-bridge.cjs:269 and therefore dead when the service runs via `npm start` = `node server.js` (server.js only imports routeTelnyxMessage/buildTelnyxMediaFrame from call-bridge.cjs). DTMF is confirmed logged-and-ignored at server.js:436-438 (no escalation). `liveWsOpened` in server.js:383 is a plain, never-reassigned `const 0`, making Goal-1's live_ws_opened=0 invariant structurally guaranteed for every call handled by this handler."},
+        {"type": "file", "location": "apps/life-call/lib/voice-cheap.js, voice-cheap.test.js", "description": "Confirmed deleted (Glob for apps/life-call/lib/voice-cheap* = no results) and no remaining import of voice-cheap anywhere in apps/life-call (grep-confirmed). package.json's `test` script (line 9) no longer references voice-cheap.test.js and now runs lib/voice-turn.test.js, lib/compositional-voice.test.js, lib/compositional-live.test.js — matches the spec's 'npm test updated accordingly' requirement."}
       ]
     },
     "edge_case_coverage": {
-      "verdict": "PASS",
-      "findings": [],
+      "verdict": "FAIL",
+      "findings": ["FIND-201"],
       "evidence": [
-        {"type": "file", "location": "apps/landing/scripts/money-path-monitor.mjs:18-31, apps/landing/scripts/money-path-monitor.test.mjs:9-33", "description": "FIND-103 confirmed RESOLVED: loadController wraps existsSync+JSON.parse+field-read in try/catch, falling back to a fresh RollbackController on any parse failure. money-path-monitor.test.mjs exercises exactly the 3 required cases (corrupt JSON → fresh controller no-throw, valid JSON → restored, missing file → fresh) — all 3 read and hand-verified logically consistent with loadController's implementation (default rc.consecutiveFail=0/incidentOpen=false/rollbackFired=false from the RollbackController constructor, per money-path.js:38-44)."},
-        {"type": "file", "location": "apps/life-call/lib/transit.test.js:63-70", "description": "The pre-existing 'picks EARLIEST ARRIVAL, not journeys[0]' synthetic test uses journey objects with no accessWalkSecs/egressWalkSecs fields; `Number(best.accessWalkSecs) || 0` correctly defaults to 0, so the FIND-101 fix does not regress this test (500+0=500, matches assertion) — hand-traced, no double-counting introduced for fixtures lacking walk fields."}
+        {"type": "file", "location": "apps/life-call/lib/compositional-voice.test.js:34-43,45-51", "description": "The multi-sentence streamed-response test and the empty-transcript (no LLM call) test are both read and correctly exercise their stated behavior in isolation. The energyVAD frame-timing question raised in the review brief was hand-verified NOT a bug: resamplePcm16 (call-logic.js:120-140) preserves audio DURATION when upsampling 8k→16k (only sample COUNT changes), so a Telnyx 20ms media frame is still a 20ms frame after resampling to 16k, and energyVAD's `needed = ceil(silenceMs/frameMs)` counts PUSH CALLS not bytes — the silenceMs math holds correctly at 16k."}
       ]
     },
     "implementation_correctness": {
-      "verdict": "PASS",
-      "findings": [],
+      "verdict": "FAIL",
+      "findings": ["FIND-201"],
       "evidence": [
-        {"type": "file", "location": "apps/landing/scripts/money-path-monitor.mjs:80-90, .github/workflows/netlify-deploy.yml:86-102", "description": "FIND-102 confirmed RESOLVED to the standard the finding itself named: money-path-monitor.mjs now performs the SAME restore→sleep(20s)→re-run-liveOk pattern as netlify-deploy.yml's own flap guard (lines 91-98: restore, sleep 20, re-smoke, log FLAP GUARD if still failing) — hand-compared line-by-line, the two are structurally identical. Neither implementation pre-checks the candidate deploy's content before restoring (Netlify's API does not expose a way to probe a non-live deploy's served content without restoring it first); judged against the finding's own stated reference standard ('mirroring netlify-deploy.yml's approach'), this is met. The RollbackController's persisted one-restore-per-incident + one-alert-per-incident semantics (money-path.js:38-66, unchanged) mean a failed-restore's escalate=true IS surfaced in that incident's single Telegram alert (money-path-monitor.mjs:92) — hand-traced across 3 simulated ticks (fail→fail+rollback+unhealthy+alert→fail+no-op-by-design) and found consistent with the documented dedup/flap-guard invariant, not a new bug."},
-        {"type": "file", "location": "apps/life-call/server.js:389-406,408-428,444,447", "description": "Synth-failure fallback re-confirmed unchanged and safe: playWakeClip's catch always calls openGeminiLive(); openGeminiLive is idempotent via `if (gemini) return;`; never a silent call."}
+        {"type": "file", "location": "apps/life-call/lib/compositional-live.cjs:9-19,22-36,53-76", "description": "pcm16ToWav header hand-verified correct (44-byte RIFF/WAVE/fmt/data header, byteRate/blockAlign formulas standard, matches compositional-live.test.js:7-15's byte-level assertions). parseGroqSSE hand-verified correct including partial-JSON tolerance. groqLlmStream's buffering (buf.lastIndexOf(\"\\n\") splits complete-vs-partial lines across chunks) is correct: only lines before the last newline are parsed each read, the remainder is preserved in buf across the next chunk — no truncation/duplication risk found."},
+        {"type": "file", "location": "apps/life-call/lib/voice-synth.cjs:13-19 + apps/life-call/lib/call-logic.js:298-300", "description": "ttsToMuLawFrames→chunkMuLawToFrames returns an array of base64 strings; server.js's send() iterates that array and calls buildTelnyxMediaFrame(state.streamSid, f) per frame, matching buildTelnyxMediaFrame's documented (string,string)->{event,media:{payload}} signature exactly — no shape mismatch."}
       ]
     },
     "structural_integrity": {
-      "verdict": "PASS",
-      "findings": [],
+      "verdict": "FAIL",
+      "findings": ["FIND-204"],
       "evidence": [
-        {"type": "file", "location": "apps/life-call/lib/transit.js:50", "description": "Minor naming imprecision noted but not filed as a finding: transit.js:50 labels `inVehicleSecs: best.durationSecs` even though best.durationSecs includes the egress walk (per the FIND-101 analysis), so the field is not literally in-vehicle time. Grep-confirmed zero consumers of parsed.inVehicleSecs anywhere in apps/ — it is dead/unused output, so this is a documentation-accuracy nit with no behavioral impact, not a structural defect."},
-        {"type": "file", "location": "apps/landing/scripts/money-path-monitor.mjs:96-99", "description": "The `if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1])` run-only-when-main guard is the correct, standard ESM idiom — verified it lets money-path-monitor.test.mjs import loadController without triggering main()'s network calls (the test file only imports { loadController }, never invokes main), and does not affect direct `node money-path-monitor.mjs` invocation."}
+        {"type": "file", "location": "apps/life-call/server.js:18-28", "description": "Import surface is otherwise clean: only routeTelnyxMessage/buildTelnyxMediaFrame remain imported from call-bridge.cjs (no geminiSetupForEvent/routeGeminiMessage import, confirming the Live-specific wiring was actually removed from server.js, not just unused-but-imported)."}
       ]
     },
     "verification_readiness": {
       "verdict": "FAIL",
-      "findings": ["FIND-104"],
+      "findings": ["FIND-205"],
       "evidence": [
-        {"type": "file", "location": "apps/life-call/nixpacks.toml:1-7, .vcsdd/features/life-manager-cost-connect-reliability/execution-notes.md:37-39", "description": "FIND-001 re-confirmed non-blocking per this iteration's charter: nixpacks.toml is syntactically correct (real nix packages, correct '...' preservation), the synth-failure fallback is proven safe independent of whether the config works on Railway, and execution-notes.md explicitly documents the remaining PROD PROOF step (re-run the real-call E2E against the deployed Railway service post-merge) as OUTSTANDING but not disk-verifiable — accepted as deferred per this review's own charter, not re-raised as a blocker."}
+        {"type": "file", "location": "apps/life-call/server.js:383,445", "description": "live_ws_opened is a hardcoded const 0, logged verbatim at carrier-close (server.js:445) — the strongest possible disk-level guarantee of Goal-1's counter invariant (it cannot become nonzero without a code change), independent of any live call. This part of Goal 1 IS provable from disk alone."}
       ]
-    }
-  },
-  "priorFindings": {
-    "FIND-001": {
-      "status": "partially",
-      "note": "Unchanged from iteration-4: disk-level fix (nixpacks.toml) verified correct; PROD PROOF remains a documented, required post-merge step (execution-notes.md:37-39), not re-litigated as a blocker per this iteration's explicit charter."
-    },
-    "FIND-002": {
-      "status": "resolved",
-      "note": "Spot-checked, still intact: route-cache.js wired into travel.js's directionsMinutes via cache.getOrCompute; travel-transit-wire.test.js's cache-hit test unchanged."
-    },
-    "FIND-005": {
-      "status": "resolved",
-      "note": "Spot-checked, still intact: geocodeAddress memoizes on module-level _geoMemo Map (travel.js:155,161), accepted deviation as documented."
-    },
-    "FIND-006": {
-      "status": "resolved",
-      "note": "Spot-checked, still intact: money-path.js and route-cache.js retain real production importers (grep-confirmed)."
-    },
-    "FIND-101": {
-      "status": "resolved",
-      "note": "parseTransitPlan no longer double-counts egressWalkSecs: durationSecs = best.durationSecs (already includes egress, hand-proven from the fixture's own numbers) + accessWalkSecs only. transit.test.js:29 now asserts the correct 1090, not the buggy 1219."
-    },
-    "FIND-102": {
-      "status": "resolved",
-      "note": "money-path-monitor.mjs now re-runs liveOk() after the Netlify restore and logs/alerts a distinct 'FLAP GUARD: restored ... but site STILL failing' state when the rollback target is itself unhealthy — structurally identical to netlify-deploy.yml's own flap-guard pattern (the reference standard the original finding named), which also restores-then-reverifies rather than pre-checking."
-    },
-    "FIND-103": {
-      "status": "resolved",
-      "note": "loadController wraps the state-file read (existsSync + JSON.parse + field access) in try/catch, falling back to a fresh RollbackController on any corruption. money-path-monitor.test.mjs covers corrupt/valid/missing-file cases, hand-verified consistent with the implementation."
     }
   },
   "findings": [
     {
-      "id": "FIND-104",
+      "id": "FIND-201",
+      "dimension": "edge_case_coverage",
+      "severity": "blocker",
+      "file": "apps/life-call/lib/compositional-voice.cjs",
+      "line": "41-56,59-76",
+      "issue": "Barge-in only sends Telnyx {\"event\":\"clear\"}; it never actually stops the outbound send LOOP as C1 explicitly requires. respond()'s per-sentence tts()+send() loop has no cancellation check against the botSpeaking flag pushCallerFrame flips false on barge-in, and server.js:435 calls convo.pushCallerFrame without awaiting it, so a new caller utterance can trigger a second, concurrent respond() while the first is still mid-flight. Net effect: audio from an interrupted answer can keep playing (or interleave with the new answer) after the caller has already barged in and Telnyx has already been told to clear.",
+      "fix": "See findings/FIND-201.json for the full trace + fix (per-turn cancellation token checked before every tts()/send() call; await pushCallerFrame in server.js; add a test asserting no further audio after mid-response barge-in)."
+    },
+    {
+      "id": "FIND-202",
       "dimension": "spec_fidelity",
-      "category": "requirement_mismatch",
+      "severity": "blocker",
+      "file": "apps/life-call/server.js",
+      "line": "358-362,401-410",
+      "issue": "C1's MUST fallback chain (Groq→faster-whisper-local/Deepgram for STT, Groq→Gemini-Flash-text/DeepSeek for LLM, edge-tts→Kokoro/piper for TTS) is not wired: missing GROQ_API_KEY closes the call outright instead of degrading to local providers; STT/LLM/TTS errors degrade to empty-string/canned-line/null instead of calling any fallback provider; the tested chooseSttProvider/chooseLlmProvider selectors in voice-turn.cjs are never called from production code. A total TTS failure for a turn can leave the caller in literal silence, violating C1's explicit 'Never a silent call' invariant.",
+      "fix": "See findings/FIND-202.json."
+    },
+    {
+      "id": "FIND-203",
+      "dimension": "spec_fidelity",
       "severity": "major",
-      "file": "apps/landing/scripts/money-path-monitor.mjs",
-      "line": "1-6",
-      "issue": "specs/behavioral-spec.md C6/OQ4 explicitly requires the 15-min monitor host to be a GitHub Actions SCHEDULED workflow (RESOLVED text, a MUST per this project's own no-optional-spec rule). The implementation instead targets OpenClaw cron (code comment cites a conflicting project rule), the spec was never updated to match, and this repo contains ZERO scheduled GHA workflow (.github/workflows/ has only the deploy-triggered netlify-deploy.yml) and no verifiable evidence the monitor is registered on any host — the OpenClaw cron config lives in a separate private repo outside this worktree. C5/C6's core 'continuous 15-min monitoring' guarantee is therefore unverifiable from disk and possibly not wired at all in production.",
-      "fix": "See findings/FIND-104.json for the two acceptable remediation paths (implement the spec'd GHA schedule workflow, OR update the spec + attach verifiable registration evidence for the OpenClaw alternative)."
+      "file": "apps/life-call/lib/compositional-voice.cjs",
+      "line": "35-38",
+      "issue": "C1's QUALITY BAR requires the opening line to name event + place + route + urgency, but start() passes a hardcoded {} for the route argument to buildWakeLine, and no code path (ctxFromReq, buildStreamUrl) carries route/line/duration data over the /ws wire at all — the wake line can never mention the route.",
+      "fix": "See findings/FIND-203.json."
+    },
+    {
+      "id": "FIND-204",
+      "dimension": "structural_integrity",
+      "severity": "minor",
+      "file": "apps/life-call/package.json",
+      "line": "13",
+      "issue": "msedge-tts remains an unused dependency despite the spec explicitly instructing its removal during impl; chooseSttProvider/chooseLlmProvider are dead (tested, uncalled) code; server.js's compositional media handler redundantly runs a full Gemini-shaped PCM transcode (via routeTelnyxMessage) that is immediately discarded on every inbound frame, duplicating the real decode done one line later.",
+      "fix": "See findings/FIND-204.json."
+    },
+    {
+      "id": "FIND-205",
+      "dimension": "verification_readiness",
+      "severity": "major",
+      "file": ".vcsdd/features/life-manager-cost-connect-reliability/evidence/e2e-live-2026-07-03.md",
+      "line": "11-35",
+      "issue": "No real-call E2E evidence exists for the compositional two-way loop under review; the only E2E transcripts on disk are for the SUPERSEDED one-way edge-tts-clip design (the spec itself calls that design 'WRONG'), and the current server.js no longer contains the symbols (openGeminiLive/playWakeClip) that those transcripts were proving out.",
+      "fix": "See findings/FIND-205.json."
     }
   ],
   "convergenceSignals": {
-    "findingCount": 1,
-    "blockerCount": 0,
-    "majorCount": 1,
-    "allCriteriaEvaluated": true,
-    "priorFindingsResolved": 6,
-    "priorFindingsPartial": 1,
-    "priorFindingsOpen": 0
+    "findingCount": 5,
+    "blockerCount": 2,
+    "majorCount": 2,
+    "minorCount": 1,
+    "allCriteriaEvaluated": true
   }
 }

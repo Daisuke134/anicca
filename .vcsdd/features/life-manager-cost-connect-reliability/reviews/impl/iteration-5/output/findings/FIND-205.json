@@ -1,0 +1,15 @@
+{
+  "id": "FIND-205",
+  "dimension": "verification_readiness",
+  "category": "spec_gap",
+  "severity": "major",
+  "file": ".vcsdd/features/life-manager-cost-connect-reliability/evidence/e2e-live-2026-07-03.md",
+  "line": "11-35",
+  "issue": "Goal 1 in specs/behavioral-spec.md §3 requires proof that 'a real answered call is a two-way CONVERSATION ... the caller can ask a follow-up and get a spoken answer, AND live_ws_opened=0.' The only real-call E2E evidence on disk (evidence/e2e-live-2026-07-03.md, evidence/execution-notes.md 'CONVERGED') is for the SUPERSEDED one-way edge-tts-clip design — the transcripts show 'one-way clip played frames=119' with no STT/LLM turn, no follow-up question, no caller speech at all. behavioral-spec.md itself states at the top of C1: 'DESIGN CORRECTION (Dais 2026-07-04): the earlier \"one-way edge-tts clip\" was WRONG ... the LM voice must be a two-way CONVERSATION.' The code under review here (voice-turn.cjs, compositional-voice.cjs, compositional-live.cjs, and the new server.js /ws wiring using createConversation/groqStt/groqLlmStream/ttsToMuLawFrames) is a DIFFERENT implementation than what was proven in that evidence file (the old design used `openGeminiLive`/`playWakeClip`, which no longer exist in server.js). There is no evidence file documenting a real Telnyx call that exercises the Groq-Whisper→Groq-Llama→edge-tts loop end-to-end (i.e. caller speaks, gets transcribed, LLM responds, TTS plays the answer, and a genuine barge-in was exercised). evidence/compositional-voice-research-2026-07-04.md is design research only, not an E2E run log.",
+  "evidence": {
+    "file": ".vcsdd/features/life-manager-cost-connect-reliability/evidence/execution-notes.md",
+    "lines": "6-7,50-57",
+    "corroborating": "specs/behavioral-spec.md C1 line 55 ('DESIGN CORRECTION ... the earlier one-way edge-tts clip was WRONG'); apps/life-call/server.js:1-467 (current file has no openGeminiLive/playWakeClip symbols — confirms the evidence log is for a prior, now-replaced implementation)"
+  },
+  "fix": "Run a real answered Telnyx call against the compositional loop (local or deployed), speak an actual follow-up question, and record: STT transcript, LLM-driven spoken answer, live_ws_opened=0, and (given FIND-201) a deliberate barge-in mid-answer with confirmation that the interrupted sentence's audio does NOT continue after the clear. Commit that transcript/log to evidence/ before merge-to-production, matching the rigor of the (now-superseded) one-way clip's own proof."
+}

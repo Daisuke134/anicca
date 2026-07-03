@@ -1,0 +1,15 @@
+{
+  "id": "FIND-203",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "file": "apps/life-call/lib/compositional-voice.cjs",
+  "line": "35-38",
+  "issue": "C1's QUALITY BAR states: 'the agent opens by naming event + place + route + urgency in call_language.' `start()` calls `buildWakeLine({ title: event && event.summary, place: event && event.location }, {}, urgency, lang)` — the second argument (route) is a HARDCODED empty object `{}`. buildWakeLine (lib/voice-turn.cjs:97-112) reads `route.line`/`route.durationMin` from that argument, so `via`/`mins` are always empty strings and the spoken wake line NEVER names the route/transit line or travel duration, regardless of what route data the scheduler actually resolved for the call. Tracing the call chain confirms this is structural, not incidental: `ctxFromReq` (server.js:151-175) parses the /ws query into `{summary,dateTime,location,urgency,lang,name}` — no route/line/duration field exists on the wire at all — and `scheduler.js`'s `buildStreamUrl` (scheduler.js:81-92) never puts one there either. So there is no code path by which route info could reach buildWakeLine even if the `{}` literal were removed; the whole /ws contract is missing a route field.",
+  "evidence": {
+    "file": "apps/life-call/lib/compositional-voice.cjs",
+    "lines": "35-38",
+    "corroborating": "apps/life-call/server.js:151-175 (ctxFromReq — no route field parsed from the /ws query), apps/life-call/scheduler.js:81-92 (buildStreamUrl — no route/line/duration param ever added to the stream URL), evidence/e2e-live-2026-07-03.md:20 (the one real-call transcript on file, 'そろそろ出発しましょう' style wake line, confirms no route/line is spoken in practice for the shipped predecessor design — same gap persists in the current rewrite)"
+  },
+  "fix": "Thread the resolved route ({line, durationMin}) through the wake-call chain: add it to buildStreamUrl's query params (HMAC-signed like the other fields), parse it in ctxFromReq, and pass the real route object (not `{}`) into buildWakeLine in compositional-voice.cjs's start()."
+}

@@ -1,0 +1,15 @@
+{
+  "id": "FIND-204",
+  "dimension": "structural_integrity",
+  "category": "spec_gap",
+  "severity": "minor",
+  "file": "apps/life-call/package.json",
+  "line": "13",
+  "issue": "C1's spec text explicitly instructs: 'package.json currently lists an unused msedge-tts Node dep ... remove it (dead dep) during impl.' It is still present at package.json:13 (`\"msedge-tts\": \"^2.0.6\"`). Two further dead/duplicate-work items in the same area: (1) `lib/voice-turn.cjs`'s `chooseSttProvider`/`chooseLlmProvider` (lines 78-85) are exported, unit-tested, but have zero production callers (see FIND-202) — dead code per this project's own coding-style.md 'Refactoring Policy: 容赦なく削除する（例外なし）'; (2) `server.js`'s carrier message handler calls `routeTelnyxMessage(msg, state, () => {})` for every 'media' event (server.js:421), and that function's media branch (lib/call-bridge.cjs:81-90) unconditionally runs `twilioMuLawToGeminiPcm16(msg.media.payload)` — a full PCM8→16 resample producing a Gemini-shaped payload that is immediately discarded (the no-op `geminiSend`) — on every single inbound audio frame, duplicating the real decode server.js does one line later at server.js:434 (`muLawBufToPcm16`+`resamplePcm16`) for the actual compositional path. This is wasted per-frame CPU inherited from reusing a Gemini-Live-era helper for a purpose it wasn't designed for.",
+  "evidence": {
+    "file": "apps/life-call/package.json",
+    "lines": "13",
+    "corroborating": "apps/life-call/lib/voice-turn.cjs:78-85 (dead exports); apps/life-call/server.js:421,434 + apps/life-call/lib/call-bridge.cjs:81-90 (duplicate per-frame decode work)"
+  },
+  "fix": "Remove msedge-tts from package.json dependencies. Either wire chooseSttProvider/chooseLlmProvider into the real fallback path (see FIND-202) or delete them + their tests. Stop calling routeTelnyxMessage's Gemini-audio conversion path for the compositional loop — either give it a Telnyx-specific media-routing function that only updates state (streamSid/callControlId/track-skip) without the wasted Gemini transcode, or pass a real no-op-aware variant."
+}
