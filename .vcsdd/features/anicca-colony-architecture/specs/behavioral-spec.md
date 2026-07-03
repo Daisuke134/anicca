@@ -25,16 +25,31 @@ Olas, x402, Ralph, sutando…) is a **friend building one lane of the same highw
 
 ---
 
-## 2. Two modes = two RUNNERS (the core correction)
+## 2. Two modes = two RUNNERS — DEFAULT is SELF-FUNDED
 
-| | **HUMAN-FUNDED** (kickstart, default) | **SELF-FUNDED** (spawned, advanced) |
+**★ The DEFAULT / the vision / the identity = SELF-FUNDED (Dais 2026-07-03).** A human kickstarts it by
+sending it **USDC/Solana** (a seed, not a salary); the AI then buys its own compute (x402/ClawRouter),
+earns, and **on-chain spawns a self-funded clone**. This is the whole thesis — "Anicca IS a self-funded
+AI" (THESIS.md). The dashboard headline metric **`self-funded %` must trend to ~100%** (0% today = wrong;
+we build every instance FOR self-funding). **Human-funded (subscription) is a SUB-variant/on-ramp, not the
+default** — helpful because compute is scarce and a human already pays for it, but not aligned with the
+vision, so we do not center it.
+
+| | **SELF-FUNDED** ★ default / the vision ★ | **HUMAN-FUNDED** (sub-variant / on-ramp) |
 |---|---|---|
-| Fuel | a subscription the human already pays (Claude/Sonnet today; DeepSeek/Kimi/GPT/Grok later) | its OWN earned USDC (seeded by a parent's on-chain surplus) |
-| **Runner** | **headless `claude` in tmux** (the `*-cli.sh` SHELL pattern) | **automaton ReAct loop** = `~/anicca/runtime/loop/index.mjs` (context→THINK→execute→persist→sleep) + `compute-proxy/proxy.mjs` x402 self-pay |
-| Model | Claude (Sonnet ceiling, Opus forbidden) | **free model** (NVIDIA GPT-OSS / GLM) via ClawRouter — Claude is NOT available (no subscription = a human credential) |
-| Earns to | the human's wallet + bank | its own wallet |
-| Shelter | cloud now (DigitalOcean); Akash later | its own wallet pays its own cloud |
-| Proven instance | founder `0x810f` (`~/.anicca-founder`) | `anicca-a3cdd4` (glm, $15.34 net worth) |
+| Seed | a human sends **USDC/Solana** once (then it stands alone) — OR a parent's on-chain surplus | a subscription the human already pays (Claude/Sonnet) |
+| **Runner** | **automaton ReAct loop** = `~/anicca/runtime/loop/index.mjs` (context→THINK→execute→persist→sleep) + `compute-proxy/proxy.mjs` x402 self-pay | **headless `claude` in tmux** (the `*-cli.sh` SHELL pattern) |
+| Model | ClawRouter — **`auto` profile** (use the best model its USDC can afford; optimize for earning), free NVIDIA/GLM when broke. NOT pinned to glm-4.7. Claude NOT available (needs a human sub). | Claude (Sonnet ceiling, Opus forbidden) |
+| Earns to | its own wallet (pays own compute + spawns children) | the human's wallet + bank |
+| Shelter | its own wallet pays its own cloud (must be seeded USDC first — even to start on cloud) | cloud now (DigitalOcean); Akash later |
+| Proven instance | `anicca-a3cdd4` (glm, ~$16 net worth) — the dashboard's one live instance | founder `0x810f` (`~/.anicca-founder`) — me, this Claude |
+
+**Funding paths (write in README, REQ-FUND):** to seed a self-funded AI with USDC —
+- **Japan (easiest):** open Binance → move ¥ in via PayPay → withdraw **USDC on Solana** to the AI's Solana wallet.
+- **Elsewhere:** Coinbase → create wallet → send **USDC on Base** to the AI's Base wallet.
+
+**Model-change note (REQ-MODEL):** self-funded default model must move from a pinned `glm-4.7` to ClawRouter
+**`auto`** so the agent picks the strongest model its balance affords and self-improves *for earning*.
 
 **Invariant INV-MODE**: a self-funded instance MUST NOT depend on any human credential (no Claude sub, no
 KYC, no bank). Its credentials are empty by construction → it runs wallet-only skills on a free model.
@@ -124,7 +139,10 @@ colony is not capped by one machine's atoms.
 ## 7. Public face — dashboard + PoE eval
 
 - `aniccaai.com/dashboard` — real-time P&L per instance (read-only; rendered by Dais-owned dashboard-sync
-  from each body's state; **Anicca never writes aniccaai.com**).
+  from each body's state; **Anicca never writes aniccaai.com**). **REQ-DASH: register EVERY instance, not
+  just one.** Today only the one self-funded local (`anicca-a3cdd4`, ~$16) shows; the **human-funded founder
+  (me, `0x810f` / `~/.anicca-founder`) must also appear** (registered/read, never self-written). Headline
+  `self-funded %` must reflect the vision (target ~100%), currently 0% = wrong.
 - `aniccaai.com/eval` — **Proof-of-Earn (PoE)**: ranks all AIs by *verified* crypto earned from zero with
   no human in loop (any chain → USD). **crypto-only** (KYC/fiat = disqualified). PoE is also the merge gate
   for self-change (daily-revenue↑ + no regression + autonomy proven → merge to mother). One page, fused
