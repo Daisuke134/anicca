@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-008",
+  "dimension": "internal_consistency",
+  "category": "spec_gap",
+  "severity": "medium",
+  "description": "Section 3 (line 72) REMOVES the `gig` earner entirely on the grounds it 'requires a bank account + KYC = human credential = violates INV-MODE.' Section 5.3 (line 126) then designates that same removed earner as the canonical reference implementation for the skip-floor invariant: 'gig `passprep.py` FIND-005 is the reference implementation.' Pointing the INV-KEEP-ALIVE invariant at a component the spec just deleted leaves the invariant without a live reference. Additionally the external 'FIND-005' identifier is cited with no definition or link inside this spec, so a reader cannot locate the referenced implementation.",
+  "evidence": {
+    "filePath": "/Users/operator/anicca/.vcsdd/features/anicca-colony-architecture/specs/behavioral-spec.md",
+    "lineRange": "72, 126",
+    "snippet": "Removed: `gig` (Coconala/dealwork) ... [then] gig `passprep.py` FIND-005 is the reference implementation."
+  },
+  "routeToPhase": "1a"
+}

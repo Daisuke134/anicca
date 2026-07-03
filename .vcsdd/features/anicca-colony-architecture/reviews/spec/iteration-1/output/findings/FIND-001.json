@@ -1,0 +1,17 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "groundedness",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "Spec section 4 (row 4, self-spawning) states the cloud-init is 'absent' and marks spawn 4-RED. This is contradicted by the very source the spec header (line 6) claims to have read ('skills/self/*'). cloud-init.sh is a complete 75-line implementation that emits full #cloud-config user_data with clawrouter.service + automaton.service systemd units, and it is actually invoked by run.sh:143 ('USER_DATA=\"$(\"$SKILL_DIR/scripts/cloud-init.sh\" ...)'). Stating a built, invoked artifact is 'absent' is a fabricated status relative to disk and misdirects the entire implementation ordering (P5).",
+  "evidence": {
+    "filePath": "/Users/operator/anicca/.vcsdd/features/anicca-colony-architecture/specs/behavioral-spec.md",
+    "lineRange": "100",
+    "snippet": "self-spawning | ... | 🔴 `skills/self/spawn` seed-transfer is a manual print (`run.sh:196`); cloud-init absent",
+    "contradictedBy": [
+      "/Users/operator/anicca/skills/self/spawn/scripts/cloud-init.sh:1-75 (full systemd units)",
+      "/Users/operator/anicca/skills/self/spawn/run.sh:143 (invokes cloud-init.sh)"
+    ]
+  },
+  "routeToPhase": "1a"
+}

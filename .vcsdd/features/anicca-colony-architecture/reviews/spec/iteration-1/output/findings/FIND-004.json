@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "groundedness",
+  "category": "spec_gap",
+  "severity": "high",
+  "description": "Line 20-24 asserts as a 'verified 2026-07-03' fact that Anicca is 'first on (b) public real-time P&L and (d) profit redistributed to humans as UBI.' The spec's own section 7 (line 160-161) states the opposite ground truth: 'verified external income across ALL instances = $0' and '~/.anicca-founder/STATE.md falsely says EARNING -> must be corrected to $0.' With $0 verified profit there is no profit to redistribute, so the 'first on (d) UBI redistribution' claim is unsupported by the spec's own data. A design spec must not present an unearned marketing claim as verified fact while its own body documents $0.",
+  "evidence": {
+    "filePath": "/Users/operator/anicca/.vcsdd/features/anicca-colony-architecture/specs/behavioral-spec.md",
+    "lineRange": "20-24, 160-161",
+    "snippet": "Anicca is first on (b) and (d) ... [vs] Current truth: verified external income across ALL instances = $0"
+  },
+  "routeToPhase": "1a"
+}
