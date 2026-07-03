@@ -228,6 +228,27 @@ REMAINING for "prints money daily": CLIP-B 5-gate+record-earn(real payout), CLIP
 account, CLIP-E first real USDC (campaign), CLIP-F self-improve. Login-persist note: IG OTP = LATEST msg in
 the "Verify your profile" thread.
 
+## D-61 (2026-07-03, later same day) — ★ tmux "ALIVE" ≠ actually running: caught a 2-day silent stall ★
+Dais asked to VERIFY the loop is really working (not just "process alive"). Found: `anicca-clip-core` tmux
+session (created 2026-07-01 20:56) was ALIVE per `tmux ls` but the headless claude session inside was
+STUCK the entire time at the initial "trust this folder?" dialog — it never advanced past onboarding, so
+it never registered its CronCreate driver and never ran a single pass for 2+ days. ★ This is the exact
+false-positive healthcheck class flagged earlier (`ai.anicca.clip-core-healthcheck` only checks "is the
+tmux session alive", not "is real work happening inside it") ★. Fixed by sending Enter to accept the
+trust dialog. Confirmed it then actually ran: registered cron `8bffc640` (hourly :07, 7-day durable),
+ran one real pass, correctly reported (fail-closed) that `~/clips/queue` has 1 clip waiting but
+`@aiclipsvault`'s dedicated browser (CloakBrowser :9223) is NOT logged in, so it skipped posting rather
+than risk a wrong-account post.
+Investigated the login gap: attempted a no-human re-login (cred `~/.cloak/ig-aiclipsvault.json`, CDP-driven
+fill+submit) → IG redirected to `https://www.instagram.com/auth_platform/recaptcha/` with NO actual
+Google reCAPTCHA widget present (no sitekey, no grecaptcha object, no recaptcha script — CapSolver has
+nothing to solve). This looks like IG's own anti-automation soft-block from the raw-CDP-driven login
+(no human-like mouse movement). ★ NOT YET FIXED ★ — tracked as its own follow-up (needs camofox-level
+stealth or a different re-login approach). Until this is fixed, the queue (1 clip ready) cannot drain.
+★ Lesson for future healthchecks (any loop, not just clip): "tmux/process alive" is NOT sufficient
+liveness evidence — must also check the agent actually progressed past onboarding / registered its cron /
+produced fresh output within an expected window. ★
+
 ## D-60 (2026-07-03) — ★ 5-DAY STALL ROOT-CAUSE FIXED ★
 producer.sh had failed daily since ~06-29 with "engine venv missing" —
 `~/.cache/anicca-clones/AI-Youtube-Shorts-Generator/.venv` was gone (disk-cleanup casualty). Re-cloned
