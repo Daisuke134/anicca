@@ -1,0 +1,60 @@
+{
+  "reviewType": "spec",
+  "feature": "life-manager-cost-connect-reliability",
+  "focus": "C1 (§3bis) compositional two-way voice redesign + Goal 1 (§3) + OQ1/OQ6 + C1 RED test list (§4) — re-review after iteration-5 fixes",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-04T00:00:00Z",
+  "iteration": 6,
+  "priorFindings": {
+    "FIND-001": {"status": "PARTIALLY_RESOLVED", "note": "server.js:447's DTMF trigger and openGeminiLive() are correctly named for removal, and the LM_VOICE_EMERGENCY_LIVE=1 off-by-default flag is a sound design. BUT the root-cause module that IMPLEMENTS the old escalation behavior (lib/voice-cheap.js, imported live at server.js:29/430/444, plus its currently-GREEN contradictory test lib/voice-cheap.test.js wired into package.json's canonical test script) is never named or reconciled by C1 — see new FIND-101."},
+    "FIND-002": {"status": "RESOLVED", "note": "STT fallback chain now named: Groq Whisper -> faster-whisper (local) -> Deepgram (behavioral-spec.md:63)."},
+    "FIND-003": {"status": "RESOLVED", "note": "Per-sentence edge-tts streaming + mkdtemp + measured-latency framing specified; unused msedge-tts dep called out (behavioral-spec.md:64) — confirmed still present in apps/life-call/package.json:13, matching the spec's claim."},
+    "FIND-004": {"status": "RESOLVED", "note": "OQ6 (behavioral-spec.md:112) specifies GROQ_API_KEY provisioning + fail-closed to local fallbacks, never re-opening Live. Confirmed GROQ_API_KEY has 0 refs in ~/.openclaw/.env (grep returned no match), matching the spec's own disk-fact claim."},
+    "FIND-005": {"status": "RESOLVED", "note": "OQ1 (behavioral-spec.md:108) rewritten to describe the compositional two-way design and explicitly marks the prior one-way-clip design SUPERSEDED — text is no longer stale."},
+    "FIND-006": {"status": "NOT_RESOLVED", "note": "The barge-in mechanism's justification ('Telnyx ... has NO clear websocket event ... verified against developers.telnyx.com') directly contradicts this project's own already-recorded, dated verification of the identical URL (/Users/anicca/.claude/rules/building-voice-agents.md:42: 'Interruption: {\"event\":\"clear\"} stops playback + clears queue'). See new FIND-102 — this is a fresh contradiction introduced by the iteration-6 edit, not a pre-existing one."},
+    "FIND-007": {"status": "RESOLVED", "note": "§4 RED test list now enumerates 6 distinct C1 unit areas (VAD endpointing, sentence-splitter, barge-in state machine, Groq request builders, fail-closed, live_ws_opened=0 incl. DTMF) — substantially more than the prior thin list. (Still incomplete per new FIND-104: no test for a Groq 429/rate-limit path or DTMF-in-loop behavior, and no test instructing retirement of the contradictory lib/voice-cheap.test.js per FIND-101.)"}
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-101", "FIND-103"],
+      "evidence": [
+        {"type": "file", "location": "apps/life-call/lib/call-logic.js:1-43", "description": "Re-confirmed on disk: the μ-law/PCM16/resample/Telnyx-frame primitives call-logic.js exports (geminiLiveWsUrl, mu-law codec, etc.) are real and reusable as C1 claims — no defect in this specific claim."}
+      ]
+    },
+    {
+      "name": "edge_cases",
+      "verdict": "FAIL",
+      "findings": ["FIND-102", "FIND-104"],
+      "evidence": []
+    },
+    {
+      "name": "impl_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-102"],
+      "evidence": [
+        {"type": "file", "location": "apps/life-call/lib/call-logic.js:120-140", "description": "resamplePcm16 (linear interpolation, mono LE int16) remains generically correct and reusable — re-confirmed, no new defect found in the reused primitives themselves."}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "FAIL",
+      "findings": ["FIND-101", "FIND-103"],
+      "evidence": []
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-101", "FIND-104"],
+      "evidence": [
+        {"type": "spec", "location": "behavioral-spec.md:40", "description": "Goal 1's proof condition (real answered call + caller follow-up answered + live_ws_opened=0 in the app log) remains concretely provable by a real call + log grep — this part is sound and requires no further fix."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 4,
+    "allCriteriaEvaluated": true,
+    "duplicateFindings": []
+  }
+}

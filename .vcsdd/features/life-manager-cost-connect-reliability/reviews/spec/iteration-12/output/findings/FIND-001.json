@@ -1,0 +1,14 @@
+{
+  "id": "FIND-001",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "blocker",
+  "title": "\"Gemini Live already works / KEPT / current stack\" contradicts the actual wired production entrypoint",
+  "issue": "specs/behavioral-spec.md:27 ('Call TODAY is a two-way conversation (VAD + realtimeInput) — this is KEPT | call-logic.js:193-200,378-433'), :58 ('it is ALREADY a two-way conversation, already works'), and :43 ('...on the current stack') all assert that Gemini Live is TODAY's live, working voice path. This is false on disk. apps/life-call/server.js — the sole production entrypoint (railway.toml:5 startCommand='node server.js'; package.json:6-8 main/start='server.js') — wires its /ws handler to createConversation from lib/compositional-voice.cjs (server.js:27,412), and its own comments state 'NO Gemini Live socket is EVER opened' (server.js:381) and 'NEVER open Gemini Live' (server.js:400). grep across apps/life-call/server.js for geminiLiveWsUrl/buildGeminiSetup returns zero hits — none of the Gemini Live pure functions cited at call-logic.js:193-200,378-433 are called anywhere in the live entrypoint. This is corroborated by this SAME feature's own history file, .vcsdd/features/life-manager-cost-connect-reliability/execution-notes.md:50-53 ('CONVERGED 2026-07-04 — feature shipped + prod-verified. Merged feature→main (PR #269/#270/#271)... FINAL PROD PROOF: real answered call → edge-tts one-way clip played (119 frames), live_ws_opened=0'), which documents that the merged-to-main production call is a ONE-WAY edge-tts clip, not a two-way Gemini Live conversation.",
+  "evidence": {
+    "file": "specs/behavioral-spec.md",
+    "lines": "27, 43, 58",
+    "corroborating": "apps/life-call/server.js:26-27,381,400,412 (cascade wired, Gemini explicitly never opened); .vcsdd/features/life-manager-cost-connect-reliability/execution-notes.md:50-53 (merged-to-main prod proof is a one-way edge-tts clip, not Gemini Live two-way)"
+  },
+  "fix": "Reword §2's fact row and §0c/Goal-1 to state the true disk state: the Gemini Live implementation is HISTORICALLY PROVEN (pre-iteration-2) and its pure logic still exists in call-logic.js, but it is NOT currently wired into the production entrypoint (server.js currently routes to the cascade merged in iteration-2). C1 must therefore be framed as 'RE-WIRE server.js's /ws handler to Gemini Live' (real integration work), not 'KEEP/already works' (implying zero wiring work remains)."
+}

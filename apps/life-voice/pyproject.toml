@@ -1,0 +1,17 @@
+[project]
+name = "life-voice"
+version = "0.1.0"
+description = "Life Manager free compositional two-way voice agent (Pipecat: Silero VAD + Smart Turn v3 + Groq STT/LLM + Kokoro TTS over Telnyx)"
+# Python 3.12 (NOT 3.13): base dep audioop-lts only kicks in >=3.13; 3.12 has native audioop, widest wheel coverage.
+requires-python = ">=3.11,<3.13"
+dependencies = [
+    # Pinned to the exact version the bot.py/server.py imports were verified against (pipecat.pipeline.worker
+    # PipelineWorker/PipelineParams, pipecat.workers.runner WorkerRunner, pipecat.turns.* UserTurnStrategies,
+    # LLMContext(messages=...)). Smart Turn v3 needs NO extra (onnxruntime is a base dep + the smart-turn-v3.2
+    # ONNX model ships in the wheel); [silero] is empty (VAD also runs off base onnxruntime); dropped [webrtc]
+    # (aiortc/opencv) because we use FastAPIWebsocketTransport + Telnyx serializer, not WebRTC.
+    "pipecat-ai[groq,kokoro,silero,websocket]==1.4.0",
+    "uvicorn[standard]",
+    "loguru",
+    "python-dotenv",
+]

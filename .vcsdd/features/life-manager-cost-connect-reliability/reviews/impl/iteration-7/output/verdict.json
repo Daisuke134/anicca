@@ -1,0 +1,57 @@
+{
+  "sprintNumber": 1,
+  "feature": "life-manager-cost-connect-reliability",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-04T00:00:00Z",
+  "iteration": 7,
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "apps/life-call/server.js:396-441", "description": "C1 EDGE/ERROR clause ('drop before any audio → ONE reconnect, else close cleanly') traced by hand and confirmed correctly implemented via the per-invocation `ended` flag + call-scoped `geminiReconnects`/`gotAudio` counters."},
+        {"type": "file", "location": "apps/life-call/server.js:447-455", "description": "Gemini Live confirmed DEFAULT on the Telnyx `start` frame; zero grep hits for playWakeClip/synthWakeClip/buildWakeLine/planVoice/voice-cheap/voice-synth/compositional-*/voice-turn anywhere in apps/life-call."},
+        {"type": "file", "location": "apps/life-call/lib/call-bridge.cjs:109-121", "description": "routeGeminiMessage checks serverContent.interrupted BEFORE parseGeminiAudio; server.js:410-411 routes the resulting {event:'clear'} to the CARRIER socket via carrierSend, not the Gemini socket."},
+        {"type": "file", "location": "apps/life-call/nixpacks.toml:5", "description": "nixPkgs = [\"...\"] — still clean, no edge-tts/ffmpeg."},
+        {"type": "file", "location": "apps/life-call/server.js:178-350", "description": "/health, /test-call, /telegram, /inbound-email, /api/inngest, /api/stripe/webhook all present and unchanged in shape; ctxFromReq, MAX_CONCURRENT, startRecording all present."},
+        {"type": "file", "location": "apps/life-voice/**", "description": "still on disk, shelved not deleted, per spec."}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-001"],
+      "evidence": []
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "apps/life-call/server.js:420-423", "description": "`let ended = false;` is declared INSIDE openGeminiLive(), so each invocation (including the recursive reconnect call) gets a fresh closure binding — the paired error+close for socket #1 is now suppressed after the first fires, and socket #2 (the reconnect) has its OWN independent ended flag. Traced by hand for all 4 required scenarios: (1) pre-audio drop → reconnect once; (2) reconnect socket also fails pre-audio → geminiReconnects=1 → decideGeminiEnd returns close, no 2nd retry, no infinite loop; (3) post-audio drop (gotAudio=true) → close, never reconnect; (4) carrierOpen=false → close (no-op close on already-dead carrier, caught by try/catch)."},
+        {"type": "file", "location": "apps/life-call/lib/call-bridge.cjs:149-152", "description": "decideGeminiEnd is pure: (!gotAudio && reconnects<maxReconnects(1) && carrierOpen) → reconnect, else close. Matches C1 EDGE/ERROR exactly."}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "apps/life-call/lib/call-bridge.cjs:146-158", "description": "decideGeminiEnd + carrierActionForGeminiKind extracted as pure, testable helpers consistent with this feature's own established pattern (routeGeminiMessage 'testable with a fake socket', call-bridge.cjs:36). The remaining inline code in server.js is minimal, necessarily-effectful WebSocket lifecycle glue (register 4 listeners, call the pure decision fn, close a socket) — a reasonable thin-shell/tested-core split for this class of code."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-002"],
+      "evidence": []
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 2,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}

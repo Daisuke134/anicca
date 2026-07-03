@@ -1,0 +1,11 @@
+{
+  "id": "FIND-004",
+  "dimension": "structural_integrity",
+  "category": "spec_gap",
+  "severity": "major",
+  "file": ".vcsdd/features/life-manager-cost-connect-reliability/specs/behavioral-spec.md",
+  "line": "56, 105-110",
+  "issue": "C1's entire cost/architecture claim is built on a GROQ_API_KEY that does not exist anywhere in this codebase or its secrets inventory today, and the spec never tracks its provisioning as a dependency. Grep across the whole repo for GROQ/groq finds ZERO hits in any life-call source, config, or `.cursor/plans/reference/secrets.md` (the canonical secrets doc) -- the only hits are unrelated (an NLP homework dataset dev-split named 'uzb.dev', an api/package-lock.json transitive string match, and the new research evidence doc itself). Compare this to how the spec treats the OTHER external API dependency it touches: OQ5 (line 110) explicitly resolves the Gemini key's restriction/provisioning story as a named open question with a concrete verification step. Groq gets no equivalent treatment -- no env var name, no Railway secret-provisioning step, no signup/verification note, and no stated behavior for the 'key missing' case (contrast server.js:359-363's explicit `if (!GEMINI_KEY) { ... close(); }` fail-closed guard for the CURRENT key -- C1 doesn't say the new bridge needs an equivalent guard for GROQ_API_KEY).",
+  "evidence": "Grep 'GROQ_API_KEY|groq' across the worktree: only compositional-voice-research-2026-07-04.md (the new evidence doc, price citation) and 3 unrelated files. `.cursor/plans/reference/secrets.md` has zero GROQ references (Grep return: No matches found).",
+  "fix": "Add a resolved Open Question (OQ6, mirroring OQ5's treatment of the Gemini key) naming: the GROQ_API_KEY env var, where it is provisioned/stored (Railway secret + .cursor/plans/reference/secrets.md entry), and the fail-closed behavior when it is missing/invalid (e.g. same pattern as server.js:359-363's GEMINI_KEY guard) so the compositional path never silently degrades to Live for a config reason rather than a real hard-fail."
+}

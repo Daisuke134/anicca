@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "verification_readiness",
+  "category": "test_quality",
+  "severity": "medium",
+  "description": "Carried over from iteration-6 FIND-006, still unresolved: no persisted evidence artifact of a green `node --test` run exists anywhere on disk (Glob for `**/evidence/**` under `apps/life-call/` and under the feature directory returns only pre-existing transit fixtures + two unrelated research notes — nothing for this C1 fix). Additionally, this review session — despite the review brief's instruction 'You HAVE a Bash tool — USE IT to run node --test and node --check yourself' — was NOT actually provisioned with a Bash tool (only Read/Write/Edit/Grep/Glob were available). Per this project's own HONESTY RULES (Rule 4: 'test/build success claims only after an actual run this session') I am disclosing this rather than fabricating pass/fail counts: I did NOT execute `node --check server.js`, `node --check lib/call-bridge.cjs`, or `node --test` in this session, and I found no evidence log proving anyone else did after the FIND-001 fix commit either. My review is static (Read/Grep) only. Necessary-but-not-sufficient static checks (all requires resolve, no orphaned references to deleted clip files, nixpacks.toml clean) are in the verdict, but they do not substitute for an actual green test-run transcript.",
+  "evidence": {
+    "filePath": "apps/life-call/package.json",
+    "lineRange": "7-10",
+    "snippet": "\"test\": \"... && node --test lib/call-bridge.test.js && ...\""
+  },
+  "routeToPhase": "2b"
+}

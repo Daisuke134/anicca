@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "verification_readiness",
+  "category": "test_coverage",
+  "severity": "major",
+  "description": "§4 RED check (e) 'call-logic.js + call-bridge.cjs unchanged' is asserted as a regression guard, but (per FIND-003) C1 nowhere specifies what code actually replaces the deleted compositional-voice cascade inside server.js's /ws handler. An implementer could leave call-logic.js and call-bridge.cjs byte-for-byte unchanged (satisfying check (e)) while server.js is left `require()`ing four now-deleted files and crashing at boot, or while server.js is left with an empty/no-op `start` handler that never opens any socket at all (silent call). None of RED checks (a)-(e) assert that a Gemini WebSocket is actually opened on the Telnyx `start` frame, that `geminiSetupForEvent`/`routeGeminiMessage` are actually called from server.js, or that the service still boots after the file deletions in step 2 of C1. The only real proof offered is the post-adversary NO-MOCK E2E call, which runs after the (unenforceable) RED gate and after adversary PASS — meaning a spec-compliant RED phase can pass on a build that is completely broken.",
+  "evidence": {
+    "filePath": ".vcsdd/features/life-manager-cost-connect-reliability/specs/behavioral-spec.md",
+    "lineRange": "109",
+    "snippet": "(e) `call-logic.js` + `call-bridge.cjs` unchanged. NO new Python pipeline to test (life-voice is shelved)."
+  },
+  "routeToPhase": "2b"
+}

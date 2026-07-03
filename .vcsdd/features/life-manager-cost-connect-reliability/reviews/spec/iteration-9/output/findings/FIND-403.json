@@ -1,0 +1,14 @@
+{
+  "id": "FIND-403",
+  "dimension": "edge_case_coverage",
+  "category": "spec_gap",
+  "severity": "major",
+  "file": "specs/behavioral-spec.md",
+  "line": "56, 109",
+  "issue": "Iteration-8's FIND-305 required: 'Add an explicit line to C1... stating Smart Turn v3's actual JA support status, WITH A CITATION (github.com/pipecat-ai/smart-turn model card / training-language docs)'. The reconciliation added the ASSERTION ('Smart Turn v3 (turn-taking, JA-confirmed)' at OQ1, line 109) but not the citation the fix explicitly demanded — no §2 verified-facts row, no evidence-doc reference, no model-card/README link anywhere in the spec supports the claim. This is a bare, newly-upgraded claim (from unconfirmed in iteration-8 to 'confirmed' in iteration-9) with zero evidence trail, which is exactly the fabrication risk this project's own HONESTY RULES prohibit ('確認せずにsymbol名/事実を書く=fabrication=罪'; '引用なき判断は削除'). Additionally, the claim is ASYMMETRIC within the document itself: C1's own STACK bullet (line 56), which is the bullet iteration-8 pointed at for the missing citation, still does NOT repeat 'JA-confirmed' for Smart Turn v3 at all -- only OQ1 (a different section) makes the claim, while STACK bullet 9 lines above only says 'pipecat-ai/smart-turn, bundled ONNX, $0' with no language claim. Two sections describing the same component disagree on what is known about it.",
+  "evidence": {
+    "file": "specs/behavioral-spec.md",
+    "lines": "56 (C1 STACK bullet: Smart Turn v3 cited with NO Japanese-support claim) vs 109 (OQ1: 'Smart Turn v3 (turn-taking, JA-confirmed)', no citation anywhere)"
+  },
+  "fix": "Add the citation the original fix required (e.g. github.com/pipecat-ai/smart-turn README/model-card language list) to either C1's STACK bullet or a new §2 verified-facts row, and make both C1 (line 56) and OQ1 (line 109) state the SAME claim with the SAME sourcing so the two do not disagree on Smart Turn v3's JA-readiness."
+}

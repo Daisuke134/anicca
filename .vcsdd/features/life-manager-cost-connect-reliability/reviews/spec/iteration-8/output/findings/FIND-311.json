@@ -1,0 +1,15 @@
+{
+  "id": "FIND-311",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "blocker",
+  "file": "specs/behavioral-spec.md",
+  "line": "105",
+  "issue": "Section 4's RED test plan is entirely unrevised and describes unit tests for the SUPERSEDED hand-rolled Node internals: 'C1 VAD endpointing (energy+silence threshold -> utterance boundaries on a fixture PCM buffer)', 'C1 sentence-splitter (LLM token stream -> sentence chunks fed to TTS)', 'C1 barge-in state machine (speech-start while speaking -> stop outbound send + drop buffer...)', all to be run via 'node --test'. Per C1's own SUPERSEDES bullet, ALL THREE of these responsibilities (VAD endpointing, sentence aggregation for TTS, barge-in/interruption) are now handled internally by Pipecat (Silero VAD, its frame aggregators, and Smart Turn v3) -- they are exactly 'what Pipecat doesn't provide' NOT, i.e. code the spec says will be deleted, not written. Testing deleted code with node --test proves nothing about the actual C1 implementation, which will be Python (Pipecat pipeline, Groq/Kokoro service adapters) -- a language `node --test` cannot execute at all. No Python test approach (pytest, Pipecat's own test utilities, a fixture-driven assertion on TelnyxFrameSerializer/SmartTurnAnalyzer behavior) is named anywhere in the document. There is currently no provable RED->GREEN path for C1 as rewritten.",
+  "evidence": {
+    "file": "specs/behavioral-spec.md",
+    "lines": "105 (full RED list: VAD endpointing / sentence-splitter / barge-in state machine / Groq request builders, all via node --test)",
+    "corroborating": "specs/behavioral-spec.md:58-59 (BARGE-IN and SUPERSEDES bullets: 'this REPLACES my broken hand-rolled genId/clear logic... with the framework's proven implementation' -- explicitly says the hand-rolled logic these RED tests target is being deleted)"
+  },
+  "fix": "Rewrite Section 4's C1 RED list for the actual Pipecat architecture: name the Python test tool (pytest), and concrete Pipecat-level assertions (e.g. TelnyxFrameSerializer round-trip on a fixture mu-law frame, a fixture-driven SmartTurnAnalyzer end-of-turn assertion, a fail-closed test that no GROQ_API_KEY routes to the named local fallback service objects, an assertion that Gemini Live's WebSocket class/URL is never imported/constructed in the Pipecat service). Keep the Groq-request-builder and live_ws_opened=0 items if they still apply to the new service; drop VAD-endpointing/sentence-splitter/barge-in-state-machine as Node unit tests since that logic no longer exists in this design."
+}

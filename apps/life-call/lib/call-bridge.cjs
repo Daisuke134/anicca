@@ -112,6 +112,13 @@ function routeGeminiMessage(msg, state, providerSend, frameFor) {
     state.setupComplete = true;
     return { kind: "setupComplete", frames: 0 };
   }
+  // C1 (VCSDD life-manager-cost-connect-reliability): barge-in. Gemini Live native-audio sets
+  // serverContent.interrupted:true when server-side VAD detects the caller speaking over Charon.
+  // The caller (server.js) then flushes the carrier's queued playback ({event:"clear"}); no audio
+  // frame is forwarded for this message.
+  if (msg && msg.serverContent && msg.serverContent.interrupted) {
+    return { kind: "interrupted", frames: 0 };
+  }
   const chunks = parseGeminiAudio(msg);
   let frames = 0;
   for (const b64Pcm24 of chunks) {
@@ -136,12 +143,54 @@ function geminiSetupForEvent(event, urgency, lang, name, model) {
   });
 }
 
+// decideGeminiEnd: when a Gemini Live socket ends, decide whether to reconnect ONCE (a transient
+// failure BEFORE any audio) or end the call cleanly. Pure → unit-testable without a real socket.
+// Guards against the ws error→close double-fire (the caller also uses a per-socket `ended` flag).
+function decideGeminiEnd({ gotAudio, reconnects, carrierOpen, maxReconnects = 1 }) {
+  if (!gotAudio && reconnects < maxReconnects && carrierOpen) return "reconnect";
+  return "close";
+}
+
+// carrierActionForGeminiKind: map a routeGeminiMessage result kind to the Telnyx carrier control frame
+// to send (or null). Barge-in = on "interrupted" flush the carrier's queued playback with {event:"clear"}.
+function carrierActionForGeminiKind(kind) {
+  return kind === "interrupted" ? { event: "clear" } : null;
+}
+
+// makeGeminiEndHandler: build the end-handler for ONE Gemini socket. ws fires `error` THEN `close` for a
+// single failure, so the returned handler acts AT MOST ONCE (the `ended` flag collapses the pair), then
+// either reconnects once (a pre-audio transient failure) or ends the call. Effects are injected so the
+// exact `ended`-flag + reconnect wiring that caused the iteration-6 hangup is unit-testable without a real
+// socket. `getReconnects`/`incReconnects` operate on the CALL-scoped counter so a reconnect happens ≤1×.
+function makeGeminiEndHandler({ getGotAudio, getReconnects, incReconnects, carrierOpen, onReconnect, onClose, log }) {
+  let ended = false;
+  return (reason) => {
+    if (ended) return;
+    ended = true;
+    if (log) log(reason);
+    const decision = decideGeminiEnd({
+      gotAudio: getGotAudio(),
+      reconnects: getReconnects(),
+      carrierOpen: carrierOpen(),
+    });
+    if (decision === "reconnect") {
+      incReconnects();
+      onReconnect();
+      return;
+    }
+    onClose(); // never silence, never a clip — end the call cleanly
+  };
+}
+
 module.exports = {
   routeTwilioMessage,
   routeTelnyxMessage,
   routeGeminiMessage,
   geminiSetupForEvent,
   buildTelnyxMediaFrame,
+  decideGeminiEnd,
+  carrierActionForGeminiKind,
+  makeGeminiEndHandler,
 };
 
 // ── Network shell (only runs when invoked directly) ───────────────────────────

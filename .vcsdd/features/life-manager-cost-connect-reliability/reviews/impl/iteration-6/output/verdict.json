@@ -1,0 +1,61 @@
+{
+  "sprintNumber": 6,
+  "feature": "life-manager-cost-connect-reliability",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-04T00:00:00Z",
+  "iteration": 6,
+  "reviewContext": {
+    "reviewType": "implementation",
+    "commit": "090b2109",
+    "branch": "feature/lm-cost-connect-reliability",
+    "contract": "C1 (Voice: make Gemini Live the DEFAULT on the existing Node bridge)",
+    "reviewerExecutionCapability": "NONE — no Bash tool was available to this review session; node --test / node --check were NOT executed by the reviewer. All findings are from static disk review (Read/Grep/Glob) only. See FIND-006."
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-005"],
+      "evidence": [
+        {"type": "file", "location": "apps/life-call/server.js:442", "description": "openGeminiLive() confirmed as the DEFAULT on the Telnyx start frame (not playWakeClip) — matches C1 change #1"},
+        {"type": "file", "location": "apps/life-call/lib/call-bridge.cjs:119-121", "description": "interrupted branch correctly placed BEFORE parseGeminiAudio, correct kind returned — matches C1 change #2 at the pure-function level"},
+        {"type": "grep", "location": "apps/life-call/ (repo-wide)", "description": "0 hits for playWakeClip/synthWakeClip/buildWakeLine/planVoice and for voice-cheap/voice-synth/compositional-*/voice-turn — matches C1 change #3"},
+        {"type": "file", "location": "apps/life-call/nixpacks.toml:5", "description": "nixPkgs reverted to [\"...\"], edge-tts/ffmpeg removed — matches C1 change #4"}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-002", "FIND-003"],
+      "evidence": []
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-001"],
+      "evidence": [
+        {"type": "file", "location": "apps/life-call/lib/call-bridge.cjs:109-131", "description": "routeGeminiMessage pure function: interrupted-before-audio ordering verified correct; {event:clear} correctly targets the carrier socket, not Gemini"}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "FAIL",
+      "findings": ["FIND-004"],
+      "evidence": [
+        {"type": "file", "location": "apps/life-call/server.js:176-352", "description": "HTTP route handlers (/health,/test-call,/telegram,/inbound-email,/api/inngest,/api/stripe/webhook) preserved unmodified in structure"}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-002", "FIND-006"],
+      "evidence": []
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 6,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": ["C1"],
+    "duplicateFindings": []
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "structural_integrity",
+  "category": "spec_gap",
+  "severity": "high",
+  "description": "C1's delete-list is STILL incomplete — it repeats the exact defect class that round-3 (iteration-14) FIND-002/FIND-005 flagged (an orphaned test file for a deleted lib), just on a different file. Spec §3bis C1 step 3 (behavioral-spec.md:62) enumerates the files to delete as 'apps/life-call/lib/voice-cheap.js` + `voice-cheap.test.js` + `voice-synth.cjs`' — it lists voice-cheap.js AND its companion voice-cheap.test.js, and voice-synth.cjs, but OMITS voice-synth.cjs's own companion test file `voice-synth.test.js`. On disk, `apps/life-call/lib/voice-synth.test.js` EXISTS (27 lines) and `require`s `./voice-synth.cjs` directly (line 7: `const { chunkMuLawToFrames, voiceForLang } = require(\"./voice-synth.cjs\");`), exercising `chunkMuLawToFrames`/`voiceForLang` — functions that exist ONLY to support the one-way-clip `synthWakeClip` path being deleted. If a builder executes C1's delete-list literally (as §4 RED item (d) instructs them to grep-verify), `voice-synth.test.js` survives as a dead test file requiring a now-deleted module, which will hard-crash (`Cannot find module './voice-synth.cjs'`) the very first time the test suite runs post-C1 — this is a WORSE outcome than round-3's silent-orphan bug (that one was merely dead code; this one breaks CI). This is precisely the anti-pattern the project's own coding-style rule forbids ('原則: 容赦なく削除する（例外なし）') and demonstrates the same class of gap the adversary already caught once was not closed with enough rigor to prevent it recurring on a sibling file.",
+  "evidence": {
+    "filePath": "apps/life-call/lib/voice-synth.test.js",
+    "lineRange": "1-27",
+    "snippet": "// lib/voice-synth.test.js — C1 unit (pure parts)...\nconst { chunkMuLawToFrames, voiceForLang } = require(\"./voice-synth.cjs\");"
+  },
+  "routeToPhase": "2b"
+}

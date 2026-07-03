@@ -1,0 +1,14 @@
+{
+  "id": "FIND-401",
+  "dimension": "impl_correctness",
+  "category": "requirement_mismatch",
+  "severity": "blocker",
+  "file": "specs/behavioral-spec.md",
+  "line": "57 vs 114",
+  "issue": "OQ7's §5 resolution was NOT propagated back into C1 itself. C1's own INTEGRATION bullet (line 57) is UNCHANGED from the exact text iteration-8's FIND-307 flagged as an unresolved live choice: 'Deployment DECISION (OQ7): run the Pipecat pipeline so Telnyx's stream_url points at it — either (a) a NEW Python service (Railway) that scheduler.js:81 buildStreamUrl targets, or (b) co-located; the Node service keeps scheduling/dialing/Telegram/Stripe.' Meanwhile §5's OQ7 entry (line 114) was rewritten to say 'RESOLVED — a NEW Python Pipecat service (apps/life-voice/), own Railway service...scheduler.js:81 buildStreamUrl points Telnyx's stream_url at the Pipecat service's public WSS (env PIPECAT_WSS)... Build: apps/life-voice/ = Pipecat app (pipecat-ai[groq,kokoro,silero] + Kokoro model) with its own railway.toml (Python/NIXPACKS)'. C1 (titled 'Behavioral contracts', §3bis — the section this review scope is specifically asked to check) still literally reads as an open (a)/(b) choice while §5 says the choice is already made as (a) with concrete file paths and env vars. An implementer reading C1 top-to-bottom (its own self-contained contract) cannot tell the decision is resolved, and the two sections of the same document now directly contradict each other on whether this is decided.",
+  "evidence": {
+    "file": "specs/behavioral-spec.md",
+    "lines": "57 ('either (a)...or (b)', verbatim unchanged from the FIND-307-flagged text) vs 114 ('RESOLVED — a NEW Python Pipecat service (apps/life-voice/)...')"
+  },
+  "fix": "Rewrite C1's INTEGRATION bullet (line 57) to state the resolved decision directly (apps/life-voice/ new Python Railway service, PIPECAT_WSS env var, buildStreamUrl retargeted) instead of 'either (a)...or (b)'. Delete the OQ7-as-open-choice phrasing from C1 entirely now that §5 has made the call; C1 should read the decision, not re-pose it."
+}

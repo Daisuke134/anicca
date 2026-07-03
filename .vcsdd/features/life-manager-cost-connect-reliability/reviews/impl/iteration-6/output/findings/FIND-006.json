@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "verification_readiness",
+  "category": "test_quality",
+  "severity": "medium",
+  "description": "This project's own convention (CLAUDE.md HARD RULE 0.12/0.31: 'no completion claim without fresh evidence'; adversary calibration example cites `.vcsdd/features/x/evidence/sprint-1-green-phase.log') expects a persisted green-run evidence artifact for a sprint before it is claimed complete. No `evidence/` directory exists under `.vcsdd/features/life-manager-cost-connect-reliability/` and no `apps/life-call/evidence/` or equivalent log file exists on disk (confirmed via Glob — zero matches for `**/evidence/**` under apps/life-call and under the feature directory). Spec §4 RED item (a) requires 'apps/life-call boots + `node --test` runs green AFTER the deletes (no orphaned require)' — there is no artifact on disk proving this was ever actually executed post-change, only the claim in the spec/commit narrative. This reviewer has no Bash/execution tool available in this review session and could not independently run `node --test` / `node --check` to confirm; static grep confirms no orphaned `require()` of the deleted files (voice-cheap.js, voice-synth.cjs, compositional-*.cjs, voice-turn.cjs — 0 hits repo-wide), which is necessary but not sufficient for a green run. Recommend the pipeline attach a fresh `node --test` transcript (or equivalent CI log) as an evidence artifact before this sprint is marked converged.",
+  "evidence": {
+    "filePath": "apps/life-call/package.json",
+    "lineRange": "7-10",
+    "snippet": "\"test\": \"node test/scheduler.test.js && ... && node --test lib/call-bridge.test.js && ...\""
+  },
+  "routeToPhase": "2b"
+}

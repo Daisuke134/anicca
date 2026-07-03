@@ -1,0 +1,64 @@
+{
+  "reviewType": "spec",
+  "feature": "life-manager-cost-connect-reliability",
+  "focus": "Round-2 verification of iteration-12's 6 findings (FIND-001..006) against the current behavioral-spec.md (iteration-3, round 2) AND the actual apps/life-call source on this worktree, fresh context, disk only.",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-04T00:00:00Z",
+  "iteration": 13,
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-002", "FIND-004", "FIND-008"],
+      "evidence": [
+        {"type": "file", "location": "apps/life-call/server.js:18-21,355-448", "description": "server.js's /ws default is the compositional-voice.cjs Groq+edge-tts cascade; server.js imports ONLY routeTelnyxMessage/buildTelnyxMediaFrame from call-bridge.cjs; playWakeClip/openGeminiLive do not exist anywhere in the codebase (whole-worktree grep)."}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-007"],
+      "evidence": [
+        {"type": "file", "location": "specs/behavioral-spec.md:65", "description": "Gemini-drop EDGE/ERROR bullet is textually present but specifies reconnect behavior for a socket that is not wired into server.js and conflicts with the real, currently-live GROQ_KEY hard-close gate at server.js:358-361."}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-002", "FIND-003", "FIND-004"],
+      "evidence": [
+        {"type": "file", "location": "apps/life-call/lib/call-logic.js:378; apps/life-call/lib/call-bridge.cjs:131-137", "description": "geminiSetupForEvent/buildCallPrompt signatures carry no route/duration parameter, falsifying C1's 'route INCLUDED via geminiSetupForEvent' claim independent of which voice system is live."}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "FAIL",
+      "findings": ["FIND-003"],
+      "evidence": [
+        {"type": "file", "location": "apps/life-call/server.js:27-28,412-416", "description": "C1's delete-list would remove files server.js actively requires and calls to build its only /ws handler, with no specified replacement wiring — literal execution crashes the whole service at boot, contradicting C1's own INVARIANT."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-005", "FIND-006"],
+      "evidence": [
+        {"type": "file", "location": "specs/behavioral-spec.md:109", "description": "RED checks (b) and (e) grep for/preserve symbols that are either fictional (openGeminiLive/playWakeClip never existed) or insufficient to prove the /ws handler actually opens a Gemini socket — a spec-compliant RED phase can pass on a build that is completely broken or unbootable."}
+      ]
+    }
+  ],
+  "priorFindingsResolution": {
+    "FIND-001": "NOT RESOLVED — replaced by a new, independently fabricated 'current state' narrative (playWakeClip/openGeminiLive cite non-existent code). See FIND-001 (this iteration).",
+    "FIND-002": "RESOLVED IN SUBSTANCE — scheduler.js both selector sites confirmed to call calendarProviderFilter() (actual lines 43,281; spec cites 42,280 — see FIND-008 minor).",
+    "FIND-003": "NOT RESOLVED — see FIND-001 (this iteration is the same defect renamed/renumbered from the prior review's FIND-001/FIND-003 pairing).",
+    "FIND-004": "NOT RESOLVED — the replacement RED check is weaker than before: it now greps for symbols that never existed, making it structurally unable to ever go RED. See FIND-005/FIND-006 (this iteration).",
+    "FIND-005": "PARTIALLY RESOLVED — an EDGE/ERROR bullet for Gemini-drop now exists textually, but is inert because it edge-cases unwired code and conflicts with the real live GROQ gate. See FIND-007 (this iteration).",
+    "FIND-006": "RESOLVED IN SUBSTANCE — route cache confirmed in-process Map()+10min TTL, not Supabase (actual line 14; spec cites 16 — see FIND-008 minor)."
+  },
+  "convergenceSignals": {
+    "findingCount": 8,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}

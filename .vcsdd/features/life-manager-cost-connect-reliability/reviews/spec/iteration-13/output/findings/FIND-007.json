@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-007",
+  "dimension": "edge_case_coverage",
+  "category": "spec_gap",
+  "severity": "major",
+  "description": "The OLD FIND-005 gap (no EDGE/ERROR bullet for a Gemini-Live drop) is textually addressed by the new C1 EDGE/ERROR bullet ('Gemini socket error/close mid-call → log; if it drops before any audio, attempt ONE reconnect, else end the call cleanly'). However this edge case is inert/unverifiable as written: it specifies error handling for a Gemini Live WebSocket that (per FIND-001/003) is not wired into server.js and has no specified target implementation. There is no way to write a RED test for 'attempt ONE reconnect' against code that doesn't exist yet, and the spec gives no reconnect-count state variable, no backoff, and no interaction with the already-live GROQ_KEY-gating branch (server.js:358-361) that currently closes the call outright on a missing/failed provider — i.e. the spec has TWO different 'no fallback → close call' policies (the real GROQ gate today, and the proposed Gemini-reconnect-then-close policy) with no reconciliation of which one governs once C1 lands.",
+  "evidence": {
+    "filePath": ".vcsdd/features/life-manager-cost-connect-reliability/specs/behavioral-spec.md",
+    "lineRange": "65",
+    "snippet": "**EDGE/ERROR (FIND-005)**: `GEMINI_API_KEY` missing → close the call (existing `server.js:359`). Gemini socket `error`/`close` mid-call → log; if it drops before any audio, attempt ONE reconnect, else end the call cleanly"
+  },
+  "routeToPhase": "2b"
+}

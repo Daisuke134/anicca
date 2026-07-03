@@ -1,0 +1,14 @@
+{
+  "id": "FIND-310",
+  "dimension": "structural_integrity",
+  "category": "spec_gap",
+  "severity": "major",
+  "file": "specs/behavioral-spec.md",
+  "line": "36-115",
+  "issue": "Cross-referencing FIND-301/302/303/307, the pivot rewrite only touched C1's top bullets (ARCHITECTURE PIVOT, STACK, INTEGRATION, BARGE-IN, SUPERSEDES, GEMINI LIVE REMOVED). Everything downstream of C1 that describes the voice stack -- Goal 1 (line 40), C1's own LATENCY bullet (line 65), OQ1 (line 109), OQ6 (line 113), and the entire section 4 RED test plan (line 105, see FIND-311) -- still describes the PRE-PIVOT edge-tts/hand-rolled design. As a single document, the spec is not internally coherent: a reader following C1's cross-references outward (to the Goal it satisfies, the OQs it resolves, the tests that verify it) lands on stale, contradicting content in every direction. This is a process signal, not a one-off typo -- it indicates the rewrite was done as a local patch to C1 without a pass over the document's other sections that reference the same subsystem, which is exactly the kind of drift a spec-review gate exists to catch.",
+  "evidence": {
+    "file": "specs/behavioral-spec.md",
+    "lines": "40, 65, 105, 109, 113 (five separate stale references to the superseded edge-tts/hand-rolled design, cataloged individually in FIND-301/302/303/311)"
+  },
+  "fix": "Do a full-document grep for 'edge-tts', 'edge_tts', 'msedge-tts', 'genId', 'energyVAD' and reconcile every hit against C1's new STACK before resubmitting; the Pipecat adoption decision itself (framework choice, given FIND-201's proven hand-rolled-barge-in failure) is judged sound and not scope creep -- the defect is that the rewrite is incomplete, not that Pipecat was the wrong call."
+}

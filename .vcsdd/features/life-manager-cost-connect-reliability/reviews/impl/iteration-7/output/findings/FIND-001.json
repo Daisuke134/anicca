@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "high",
+  "description": "Spec §4 RED item (e) requires: 'simulate the gemini ws emitting error/close before any audio → assert exactly ONE reconnect attempt, then (on a second failure) a clean carrier close.' The iteration-6 CRITICAL bug (FIND-001, now genuinely fixed by the per-invocation `ended` flag at server.js:420-423,439-440) was NOT a bug in a decision function — it was a bug in the EVENT-WIRING itself (ws firing `error` THEN `close` for one failure, and the handler being invoked twice with a stale `geminiReconnects` value in between). The iteration-7 fix adds `decideGeminiEnd` as a pure, well-tested function (lib/call-bridge.test.js:35-44 — 4 cases: reconnect, close-after-max, close-after-audio, close-when-carrier-gone), but this only tests the DECISION policy in isolation with hand-crafted args. It does NOT simulate 'the gemini ws emitting error/close' as the spec literally requires, and it does NOT exercise the `ended` guard / `openGeminiLive` closure structure in server.js at all — that code is still 100% inline inside `wss.on('connection', ...)` and NOT exported (module.exports at server.js:486 still only exposes `inngestServeAllowed, testCallAllowed, TEST_CALL_COOLDOWN_MS, TEST_CALL_DAILY_MAX`; confirmed via grep, zero change from iteration-6). I traced the fix by hand (see verdict.md) and it is currently correct, but there is ZERO automated regression protection for the EXACT mechanism (the `ended` flag / per-socket closure lifetime) that caused the iteration-6 critical bug. A future edit that moves `let ended = false;` out of `openGeminiLive()`'s function scope, or that re-registers `error`/`close` on a shared/stale reference, would reintroduce the iteration-6 hangup bug with 100% green `node --test` (decideGeminiEnd's tests would still pass unchanged, since they never touch the wiring). This is precisely the class of gap the spec's RED item (e) was written to prevent, and iteration-6's own FIND-004 (structural_integrity) already flagged that the reconnect state machine should be made testable the same way routeGeminiMessage was — that has been done for the DECISION half only, not for the 'act at most once per socket' half.",
+  "evidence": {
+    "filePath": "apps/life-call/server.js",
+    "lineRange": "396-441,486",
+    "snippet": "let ended = false;\nconst onGeminiEnd = (reason) => {\n  if (ended) return;\n  ended = true;\n  ...\n};\ngemini.on(\"error\", (e) => onGeminiEnd(`err ${e.message}`));\ngemini.on(\"close\", () => onGeminiEnd(\"closed\"));\n...\nmodule.exports = { inngestServeAllowed, testCallAllowed, TEST_CALL_COOLDOWN_MS, TEST_CALL_DAILY_MAX };"
+  },
+  "routeToPhase": "2b"
+}

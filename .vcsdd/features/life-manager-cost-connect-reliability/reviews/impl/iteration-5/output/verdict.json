@@ -1,0 +1,101 @@
+{
+  "reviewType": "impl-c1-compositional-voice",
+  "feature": "life-manager-cost-connect-reliability",
+  "iteration": 5,
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-04T00:00:00Z",
+  "scope": "C1 COMPOSITIONAL VOICE pre-merge review: apps/life-call/lib/voice-turn.cjs, compositional-voice.cjs, compositional-live.cjs (+ their .test.js) and the server.js /ws wiring, reviewed against specs/behavioral-spec.md C1 (fresh context, disk only).",
+  "dimensions": {
+    "spec_fidelity": {
+      "verdict": "FAIL",
+      "findings": ["FIND-202", "FIND-203"],
+      "evidence": [
+        {"type": "file", "location": "apps/life-call/server.js:357-448", "description": "Confirmed by full read: Gemini Live is never opened on this path (no openGeminiLive/new WebSocket(geminiLiveWsUrl) call anywhere in server.js; grep across apps/life-call confirms the only new WebSocket(geminiLiveWsUrl(...)) call is lib/call-bridge.cjs:206 inside startServer(), which is gated by `if (require.main === module)` at call-bridge.cjs:269 and therefore dead when the service runs via `npm start` = `node server.js` (server.js only imports routeTelnyxMessage/buildTelnyxMediaFrame from call-bridge.cjs). DTMF is confirmed logged-and-ignored at server.js:436-438 (no escalation). `liveWsOpened` in server.js:383 is a plain, never-reassigned `const 0`, making Goal-1's live_ws_opened=0 invariant structurally guaranteed for every call handled by this handler."},
+        {"type": "file", "location": "apps/life-call/lib/voice-cheap.js, voice-cheap.test.js", "description": "Confirmed deleted (Glob for apps/life-call/lib/voice-cheap* = no results) and no remaining import of voice-cheap anywhere in apps/life-call (grep-confirmed). package.json's `test` script (line 9) no longer references voice-cheap.test.js and now runs lib/voice-turn.test.js, lib/compositional-voice.test.js, lib/compositional-live.test.js — matches the spec's 'npm test updated accordingly' requirement."}
+      ]
+    },
+    "edge_case_coverage": {
+      "verdict": "FAIL",
+      "findings": ["FIND-201"],
+      "evidence": [
+        {"type": "file", "location": "apps/life-call/lib/compositional-voice.test.js:34-43,45-51", "description": "The multi-sentence streamed-response test and the empty-transcript (no LLM call) test are both read and correctly exercise their stated behavior in isolation. The energyVAD frame-timing question raised in the review brief was hand-verified NOT a bug: resamplePcm16 (call-logic.js:120-140) preserves audio DURATION when upsampling 8k→16k (only sample COUNT changes), so a Telnyx 20ms media frame is still a 20ms frame after resampling to 16k, and energyVAD's `needed = ceil(silenceMs/frameMs)` counts PUSH CALLS not bytes — the silenceMs math holds correctly at 16k."}
+      ]
+    },
+    "implementation_correctness": {
+      "verdict": "FAIL",
+      "findings": ["FIND-201"],
+      "evidence": [
+        {"type": "file", "location": "apps/life-call/lib/compositional-live.cjs:9-19,22-36,53-76", "description": "pcm16ToWav header hand-verified correct (44-byte RIFF/WAVE/fmt/data header, byteRate/blockAlign formulas standard, matches compositional-live.test.js:7-15's byte-level assertions). parseGroqSSE hand-verified correct including partial-JSON tolerance. groqLlmStream's buffering (buf.lastIndexOf(\"\\n\") splits complete-vs-partial lines across chunks) is correct: only lines before the last newline are parsed each read, the remainder is preserved in buf across the next chunk — no truncation/duplication risk found."},
+        {"type": "file", "location": "apps/life-call/lib/voice-synth.cjs:13-19 + apps/life-call/lib/call-logic.js:298-300", "description": "ttsToMuLawFrames→chunkMuLawToFrames returns an array of base64 strings; server.js's send() iterates that array and calls buildTelnyxMediaFrame(state.streamSid, f) per frame, matching buildTelnyxMediaFrame's documented (string,string)->{event,media:{payload}} signature exactly — no shape mismatch."}
+      ]
+    },
+    "structural_integrity": {
+      "verdict": "FAIL",
+      "findings": ["FIND-204"],
+      "evidence": [
+        {"type": "file", "location": "apps/life-call/server.js:18-28", "description": "Import surface is otherwise clean: only routeTelnyxMessage/buildTelnyxMediaFrame remain imported from call-bridge.cjs (no geminiSetupForEvent/routeGeminiMessage import, confirming the Live-specific wiring was actually removed from server.js, not just unused-but-imported)."}
+      ]
+    },
+    "verification_readiness": {
+      "verdict": "FAIL",
+      "findings": ["FIND-205"],
+      "evidence": [
+        {"type": "file", "location": "apps/life-call/server.js:383,445", "description": "live_ws_opened is a hardcoded const 0, logged verbatim at carrier-close (server.js:445) — the strongest possible disk-level guarantee of Goal-1's counter invariant (it cannot become nonzero without a code change), independent of any live call. This part of Goal 1 IS provable from disk alone."}
+      ]
+    }
+  },
+  "findings": [
+    {
+      "id": "FIND-201",
+      "dimension": "edge_case_coverage",
+      "severity": "blocker",
+      "file": "apps/life-call/lib/compositional-voice.cjs",
+      "line": "41-56,59-76",
+      "issue": "Barge-in only sends Telnyx {\"event\":\"clear\"}; it never actually stops the outbound send LOOP as C1 explicitly requires. respond()'s per-sentence tts()+send() loop has no cancellation check against the botSpeaking flag pushCallerFrame flips false on barge-in, and server.js:435 calls convo.pushCallerFrame without awaiting it, so a new caller utterance can trigger a second, concurrent respond() while the first is still mid-flight. Net effect: audio from an interrupted answer can keep playing (or interleave with the new answer) after the caller has already barged in and Telnyx has already been told to clear.",
+      "fix": "See findings/FIND-201.json for the full trace + fix (per-turn cancellation token checked before every tts()/send() call; await pushCallerFrame in server.js; add a test asserting no further audio after mid-response barge-in)."
+    },
+    {
+      "id": "FIND-202",
+      "dimension": "spec_fidelity",
+      "severity": "blocker",
+      "file": "apps/life-call/server.js",
+      "line": "358-362,401-410",
+      "issue": "C1's MUST fallback chain (Groq→faster-whisper-local/Deepgram for STT, Groq→Gemini-Flash-text/DeepSeek for LLM, edge-tts→Kokoro/piper for TTS) is not wired: missing GROQ_API_KEY closes the call outright instead of degrading to local providers; STT/LLM/TTS errors degrade to empty-string/canned-line/null instead of calling any fallback provider; the tested chooseSttProvider/chooseLlmProvider selectors in voice-turn.cjs are never called from production code. A total TTS failure for a turn can leave the caller in literal silence, violating C1's explicit 'Never a silent call' invariant.",
+      "fix": "See findings/FIND-202.json."
+    },
+    {
+      "id": "FIND-203",
+      "dimension": "spec_fidelity",
+      "severity": "major",
+      "file": "apps/life-call/lib/compositional-voice.cjs",
+      "line": "35-38",
+      "issue": "C1's QUALITY BAR requires the opening line to name event + place + route + urgency, but start() passes a hardcoded {} for the route argument to buildWakeLine, and no code path (ctxFromReq, buildStreamUrl) carries route/line/duration data over the /ws wire at all — the wake line can never mention the route.",
+      "fix": "See findings/FIND-203.json."
+    },
+    {
+      "id": "FIND-204",
+      "dimension": "structural_integrity",
+      "severity": "minor",
+      "file": "apps/life-call/package.json",
+      "line": "13",
+      "issue": "msedge-tts remains an unused dependency despite the spec explicitly instructing its removal during impl; chooseSttProvider/chooseLlmProvider are dead (tested, uncalled) code; server.js's compositional media handler redundantly runs a full Gemini-shaped PCM transcode (via routeTelnyxMessage) that is immediately discarded on every inbound frame, duplicating the real decode done one line later.",
+      "fix": "See findings/FIND-204.json."
+    },
+    {
+      "id": "FIND-205",
+      "dimension": "verification_readiness",
+      "severity": "major",
+      "file": ".vcsdd/features/life-manager-cost-connect-reliability/evidence/e2e-live-2026-07-03.md",
+      "line": "11-35",
+      "issue": "No real-call E2E evidence exists for the compositional two-way loop under review; the only E2E transcripts on disk are for the SUPERSEDED one-way edge-tts-clip design (the spec itself calls that design 'WRONG'), and the current server.js no longer contains the symbols (openGeminiLive/playWakeClip) that those transcripts were proving out.",
+      "fix": "See findings/FIND-205.json."
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 5,
+    "blockerCount": 2,
+    "majorCount": 2,
+    "minorCount": 1,
+    "allCriteriaEvaluated": true
+  }
+}

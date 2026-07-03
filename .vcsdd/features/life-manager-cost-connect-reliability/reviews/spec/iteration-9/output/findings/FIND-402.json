@@ -1,0 +1,14 @@
+{
+  "id": "FIND-402",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "file": "specs/behavioral-spec.md",
+  "line": "65 vs 115",
+  "issue": "C1's LATENCY bullet (line 65) claims: 'Kokoro-82M runs on CPU (self-hosted; footprint verified in OQ8)' — past tense, asserting the footprint IS verified. But OQ8 itself (line 115, §5) is explicitly labeled 'OPEN → resolve at impl by MEASURING' and states 'Do NOT assume $0/instant like the rejected Moshi trap; benchmark before shipping' — i.e. OQ8 is a plan to verify later, not a completed verification. This is a tense/status mismatch inside the same document: C1 claims a fact is settled ('verified') that §5's own entry for that fact says is explicitly unsettled ('OPEN'). Compounding this, OQ8 sitting under a section header that reads '## 5. Open questions — RESOLVED in-spec (F7)' while itself starting with the word 'OPEN' directly clashes with the section's own stated invariant (every entry RESOLVED in-spec) and with the project's own no-optional/no-pending spec rule (CLAUDE.md 0.7: 'スペックに「任意」「optional」「推奨」禁止。全て MUST').",
+  "evidence": {
+    "file": "specs/behavioral-spec.md",
+    "lines": "65 ('footprint verified in OQ8') vs 115 ('OQ8 (Kokoro footprint): OPEN → resolve at impl by MEASURING')"
+  },
+  "fix": "Change line 65 to 'footprint benchmark plan in OQ8' (not 'verified'). For OQ8 itself, either (a) reframe it as RESOLVED with the resolution BEING the concrete decision procedure (primary=Kokoro, trigger=CPU latency>500-800ms, fallback=Piper, gate=a named RED benchmark test — see FIND-404) rather than leaving the literal word 'OPEN' in a section whose header promises everything is resolved, or (b) if the project's own rule genuinely permits a benchmark-gated 'resolve-at-impl' pattern, say so explicitly and cite the rule/precedent that allows this one exception to 0.7."
+}

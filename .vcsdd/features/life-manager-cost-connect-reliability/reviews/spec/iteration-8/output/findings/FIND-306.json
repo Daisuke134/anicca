@@ -1,0 +1,14 @@
+{
+  "id": "FIND-306",
+  "dimension": "edge_case_coverage",
+  "category": "spec_gap",
+  "severity": "major",
+  "file": "specs/behavioral-spec.md",
+  "line": "56",
+  "issue": "Kokoro TTS is asserted as '$0' with no resource/latency due diligence, in contrast to the explicit, careful cost-rejection given to Moshi in the same research pass. evidence/pipecat-decision-2026-07-04.md:19 does the math to REJECT self-hosted Moshi specifically because of hidden ops cost ('~$280/mo idle GPU + no JA + no Telnyx bridge -> NOT viable for a phone agent'), but the document never applies the same scrutiny to Kokoro, which is ALSO self-hosted (line 11: 'self-hosted, $0'). Unanswered: what compute tier does Kokoro need to run with acceptable per-sentence latency for real-time barge-in on Railway (CPU-only viable? RAM footprint? model download/cold-start time on a fresh deploy)? Asserting '$0' for a self-hosted model without stating its resource footprint is exactly the class of hidden-ops-cost trap the research explicitly warned against for Moshi, just not verified for the option that was actually adopted.",
+  "evidence": {
+    "file": ".vcsdd/features/life-manager-cost-connect-reliability/evidence/pipecat-decision-2026-07-04.md",
+    "lines": "11 (Kokoro: '$0' with no resource claim), 19 (Moshi: explicit $280/mo GPU rejection math)"
+  },
+  "fix": "State Kokoro's actual hosting requirement in C1 or the evidence doc (CPU-only feasible / RAM MB / cold-start seconds / Railway plan tier needed) with a citation (github.com/remsky/Kokoro-FastAPI resource docs), so the '$0' claim is verified the same way the Moshi rejection was, not merely asserted."
+}

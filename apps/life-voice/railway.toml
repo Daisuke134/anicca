@@ -1,0 +1,11 @@
+# Railway build for the Pipecat voice service. requirements.txt (frozen from the venv whose imports were
+# verified against pipecat 1.4.0) drives the install → Nixpacks runs `pip install -r requirements.txt`
+# (no packaging step, unlike pip install . on a flat-script pyproject). Python pinned to 3.12 via the
+# NIXPACKS_PYTHON_VERSION service variable (set at deploy) — 3.13 drops native audioop + narrows wheels.
+[build]
+builder = "NIXPACKS"
+
+[deploy]
+startCommand = "python server.py"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10

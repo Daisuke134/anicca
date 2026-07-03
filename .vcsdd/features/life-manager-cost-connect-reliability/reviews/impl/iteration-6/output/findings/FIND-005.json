@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "high",
+  "description": "C1's stated INVARIANT is 'after the change, the ONLY voice path is Gemini Live (default); ... no silent-call regression.' Given FIND-001 (the reconnect/double-dispatch bug), a Gemini socket that drops before any audio (e.g. transient DNS blip, Gemini quota hiccup, TLS handshake failure) now reliably ENDS the call on the very first failure rather than surviving via the described one-retry safety net. Because the pre-flip baseline (one-way edge-tts clip) is now fully deleted (server.js no longer references playWakeClip/synthWakeClip/buildWakeLine/planVoice — confirmed 0 grep hits repo-wide), there is no fallback of any kind left: a transient Gemini connect failure now = a hard hangup for the caller, which is a WORSE outcome for that failure mode than before the flip (previously such a failure only affected the escalation branch; now Gemini IS the only branch). This is a direct violation of the explicitly-stated 'no silent-call regression' invariant (it is not silence, but an unexpected hangup is an equivalent-severity regression the invariant is meant to prevent) and undercuts the C1 justification's Goal-1 reliability claim.",
+  "evidence": {
+    "filePath": "apps/life-call/server.js",
+    "lineRange": "415-424,442",
+    "snippet": "if (!gotAudio && geminiReconnects < 1 && carrierWs.readyState === WebSocket.OPEN) { geminiReconnects++; gemini = null; openGeminiLive(); return; }\n// Never fall back to silence or a clip — end the call cleanly.\ntry { carrierWs.close(); } catch {}"
+  },
+  "routeToPhase": "2b"
+}

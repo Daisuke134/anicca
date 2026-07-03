@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "implementation_correctness",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "C1 step 2's barge-in instruction requires 'stop the local outbound frame loop' as one of two mandatory actions, but no such construct exists (or will exist) in the code path that becomes the default after the flip — the instruction describes a mechanism borrowed from the DELETED one-way-clip code, not the Gemini-Live path it is supposed to apply to. Goal-1 (behavioral-spec.md:43) and C1 step 2 (behavioral-spec.md:61) both require: on `serverContent.interrupted`, '(i) send Telnyx {\"event\":\"clear\"} ... and (ii) stop the local outbound frame loop.' On disk, the ONLY place server.js has an explicit paced 'outbound frame loop' is `playWakeClip` (server.js:394-399): `for (const f of frames) { ...carrierSend(...); await new Promise((r) => setTimeout(r, 20)); }` — a construct that C1 step 3 explicitly DELETES. The Gemini-Live audio-forwarding path that becomes the default (`openGeminiLive` → `gemini.on(\"message\")` → `routeGeminiMessage`, call-bridge.cjs:109-124) has NO equivalent loop: `routeGeminiMessage` synchronously iterates `parseGeminiAudio(msg)` chunks from ONE already-received Gemini websocket message and calls `providerSend` immediately for each — there is no buffered/paced/interval-driven send queue on the Node side to 'stop'. Sending Telnyx `{event:\"clear\"}` (action i) is well-defined and matches this project's own building-voice-agents.md rule (Telnyx clears ITS OWN queued playback). But action (ii) has no corresponding state or control-flow to act on in the post-flip architecture — a builder implementing this literally must either (a) invent new buffering/queueing machinery not otherwise specified anywhere in C1 (scope creep, contradicts C1's own 'small, surgical... only the /ws DEFAULT branch flips' framing), or (b) implement it as a no-op, silently failing to satisfy the spec's own stated requirement. This is not resolved by 'the interrupted kind can be added to routeGeminiMessage' (C1 step 2's suggested wiring) — extending routeGeminiMessage's return `kind` only tells server.js an interrupt happened; it still does not identify what 'the outbound loop' refers to for this code path.",
+  "evidence": {
+    "filePath": "apps/life-call/server.js",
+    "lineRange": "394-399, 415-425",
+    "snippet": "for (const f of frames) { ... carrierSend(...); await new Promise((r) => setTimeout(r, 20)); }  // playWakeClip's loop (to be DELETED)\n// vs. openGeminiLive's gemini.on(\"message\") handler: synchronous, no loop, no buffer to 'stop'\nconst r = routeGeminiMessage(msg, state, carrierSend, buildTelnyxMediaFrame);"
+  },
+  "routeToPhase": "2b"
+}

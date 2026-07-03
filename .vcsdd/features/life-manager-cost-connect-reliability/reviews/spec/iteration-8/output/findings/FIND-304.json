@@ -1,0 +1,15 @@
+{
+  "id": "FIND-304",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "file": "specs/behavioral-spec.md",
+  "line": "57",
+  "issue": "C1's INTEGRATION bullet states the deployment choice is 'either (a) a NEW Python service (Railway) that `dial.js buildStreamUrl` targets, or (b) co-located'. This cites a symbol location that does not exist: `buildStreamUrl` is NOT defined in `apps/life-call/lib/dial.js`. Verified by reading dial.js in full: its only exports are `{ placeCall, startRecording, telnyxStreamingStartBody, balanceUsd }` (dial.js:70) and it takes a pre-built `streamUrl` string as an argument to `placeCall({ to, streamUrl })` (dial.js:30). `buildStreamUrl` is actually defined in `apps/life-call/scheduler.js:81` and called from `scheduler.js:125` and `server.js:217`. This is exactly the class of fabricated-symbol citation this project's own CLAUDE.md Honesty Rule 1 prohibits ('function... が存在すると主張する前に必ず... Read で確認... 確認せずにsymbol名を書く=fabrication=罪').",
+  "evidence": {
+    "file": "apps/life-call/lib/dial.js",
+    "lines": "1-71 (full file read; module.exports at line 70 lists placeCall, startRecording, telnyxStreamingStartBody, balanceUsd -- no buildStreamUrl)",
+    "corroborating": "apps/life-call/scheduler.js:81 'function buildStreamUrl(ev, urgency, lang, name) {' -- the actual definition site; scheduler.js:125 and server.js:217 are the actual call sites."
+  },
+  "fix": "Correct the citation to 'scheduler.js's buildStreamUrl (line 81), which currently targets PUBLIC_WSS/ws (this Node service) -- whichever OQ7 option is chosen, buildStreamUrl's PUBLIC_WSS base (or a new env var) must point at the Pipecat service instead.'"
+}

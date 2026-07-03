@@ -1,0 +1,14 @@
+{
+  "id": "FIND-404",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "major",
+  "file": "specs/behavioral-spec.md",
+  "line": "105, 115",
+  "issue": "OQ8 (line 115) states the Kokoro footprint/latency question is 'resolve at impl by MEASURING' with a concrete trigger ('if CPU latency > the ~500-800ms budget, fall back to Piper') — this is a real, testable proof obligation. But §4's RED test plan (line 105), which was otherwise correctly rewritten to be Pipecat/pytest-appropriate (service config, fail-closed selection, auth gate, no-mock pipeline smoke, plus C2/C3/C1-fallback/C5/C6 items), contains NO corresponding item for this benchmark. There is no named test, script, or gate anywhere in §4 that forces the Kokoro CPU-latency measurement to actually run and forces the Piper fallback decision if the budget is exceeded. Without a named proof obligation, OQ8's 'benchmark before shipping' is an unenforced aspiration, not a provable requirement — exactly the gap the project's own GLVS goal condition rejects ('proven by real side-effect E2E + adversary PASS').",
+  "evidence": {
+    "file": "specs/behavioral-spec.md",
+    "lines": "105 (§4 RED list — no Kokoro-latency-benchmark item) vs 115 (OQ8 — 'resolve at impl by MEASURING... benchmark before shipping', no test named)"
+  },
+  "fix": "Add an explicit RED/verification item to §4 for OQ8: a pytest benchmark that measures Kokoro-82M cold-start + per-turn CPU latency on the target Railway instance size and asserts against the ~500-800ms budget, with a named assertion for the Piper-fallback path if the budget is exceeded."
+}

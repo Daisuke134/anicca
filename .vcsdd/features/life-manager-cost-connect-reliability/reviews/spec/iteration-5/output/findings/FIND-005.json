@@ -1,0 +1,11 @@
+{
+  "id": "FIND-005",
+  "dimension": "structural_integrity",
+  "category": "spec_gap",
+  "severity": "minor",
+  "file": ".vcsdd/features/life-manager-cost-connect-reliability/specs/behavioral-spec.md",
+  "line": "106",
+  "issue": "OQ1 ('default TTS') at line 106 is a dead reference to the earlier one-way-clip design that C1's DESIGN CORRECTION (line 55) explicitly says 'was WRONG'. OQ1's resolution text -- 'pre-synthesize before dialing so TTS latency is off the call path' -- describes a strategy that only makes sense for a single static opening clip computed before the phone even rings; it was never revised to say whether/how it still applies once C1 requires the ENTIRE call (opening line included, per C1's IN bullet: 'the agent OPENS the conversation with the wake guidance, then converses') to be produced by a live STT->LLM->TTS loop. It is left ambiguous whether the opening line is still a pre-synth static clip (as OQ1 says) or the first turn of the new live pipeline (as C1's IN/PIPELINE bullets imply).",
+  "evidence": "behavioral-spec.md:106 (OQ1, unrevised since the pre-redesign iteration) vs behavioral-spec.md:59 (C1's IN bullet, new design) -- the two sections were not reconciled in this iteration's edit.",
+  "fix": "Either delete OQ1 (superseded by C1) or add one sentence explicitly stating the opening line's mechanism under the new design (e.g. 'the opening line is still pre-synthesized via the same edge-tts template path for near-zero first-word latency; only the caller's follow-up turns run the live STT->LLM->TTS loop') so C1 and OQ1 do not silently disagree."
+}
