@@ -73,6 +73,17 @@ One article → funnel → per-platform native monetization → real money verif
   after 3 rounds THEN it SHALL abort the wake (produce no publish) and record the failure. It SHALL NEVER publish a
   failing draft (fail-closed). (Resolves FIND-003.)
 
+## Self-operation (self-heal + self-improve — zero Opus + zero human, Dais 2026-07-04)
+
+- **REQ-17 Self-heal.** WHILE running unattended, IF a wake fails (crash, stuck gate, publish error, expired/blocked
+  cred) THEN the skill SHALL detect it from its OWN logs/state, diagnose the root cause, and attempt an autonomous fix
+  (retry, refresh cred, back off, switch rail) with NO Opus and NO human in the loop. An unrecoverable rail SHALL be
+  quarantined + recorded and the wake loop SHALL survive — a single failure NEVER crashes the whole loop. (Sprint 5.)
+- **REQ-18 Self-improve.** WHILE running daily, the skill SHALL read its OWN per-rail stats (V2 reach, V3 convert,
+  V4 earn) and adjust the NEXT wake's choices (topic / niche / hook / price / rail-mix) to increase earn — a closed
+  improvement loop the running model drives BY JUDGMENT (right-altitude prompt, NOT hardcoded rules), with NO Opus and
+  NO human. Every change SHALL be recorded to state for audit. (Sprint 5.)
+
 ## Purity-boundary candidates (refined in 1b)
 
 - **Deterministic tools:** `record-earn` ledger, render/screenshot verify, platform publishers, dedup, git, payout routing.
@@ -82,4 +93,5 @@ One article → funnel → per-platform native monetization → real money verif
 
 ## Out of scope (this feature)
 
-Spawning self-funded children (Spec 4); rebuilding the daemon / founder-loop ledger (reused); Brain/Tips affiliate.
+Spawning self-funded children (Sprint 6); rebuilding the daemon / founder-loop ledger (reused); Brain/Tips affiliate.
+Opus is OUT of the runtime loop entirely (build-time only); self-heal + self-improve run on the same Sonnet loop.

@@ -75,3 +75,13 @@
 {"timestamp":"2026-07-03T15:54:21.643Z","event":"bead_created","featureName":"profitable-article-writer","beadId":"BEAD-032","type":"verification-property","phase":"1b","externalId":"PROP-15"}
 {"timestamp":"2026-07-03T16:00:24.594Z","event":"gate_recorded","featureName":"profitable-article-writer","phase":"1c","verdict":"FAIL","reviewedBy":"adversary"}
 {"timestamp":"2026-07-03T16:02:14.345Z","event":"gate_recorded","featureName":"profitable-article-writer","phase":"1c","verdict":"PASS","reviewedBy":"adversary"}
+{"timestamp":"2026-07-03T19:21:29.762Z","event":"gate_recorded","featureName":"profitable-article-writer","phase":"1c","verdict":"PASS","reviewedBy":"human"}
+{"timestamp":"2026-07-03T19:21:29.768Z","event":"phase_transition","featureName":"profitable-article-writer","from":"1b","to":"1c","iteration":1,"phase":"1c"}
+{"timestamp":"2026-07-03T19:21:29.780Z","event":"phase_transition","featureName":"profitable-article-writer","from":"1c","to":"2a","iteration":1,"phase":"2a"}
+{"timestamp":"2026-07-03T19:21:29.780Z","event":"sprint_started","featureName":"profitable-article-writer","sprintNumber":1,"phase":"2a"}
+{"timestamp":"2026-07-03T19:31:26.829Z","event":"phase_transition","featureName":"profitable-article-writer","from":"2a","to":"2b","iteration":1,"phase":"2b"}
+{"timestamp":"2026-07-03T19:43:37.546Z","event":"phase_transition","featureName":"profitable-article-writer","from":"2b","to":"2c","iteration":1,"phase":"2c"}
+{"timestamp":"2026-07-03T19:49:00.495Z","event":"bead_created","featureName":"profitable-article-writer","beadId":"BEAD-033","type":"spec-requirement","phase":"2c","externalId":"REQ-17"}
+{"timestamp":"2026-07-03T19:49:00.496Z","event":"bead_created","featureName":"profitable-article-writer","beadId":"BEAD-034","type":"spec-requirement","phase":"2c","externalId":"REQ-18"}
+{"timestamp":"2026-07-03T19:49:00.497Z","event":"bead_created","featureName":"profitable-article-writer","beadId":"BEAD-035","type":"verification-property","phase":"2c","externalId":"PROP-16"}
+{"timestamp":"2026-07-03T19:49:00.497Z","event":"bead_created","featureName":"profitable-article-writer","beadId":"BEAD-036","type":"verification-property","phase":"2c","externalId":"PROP-17"}

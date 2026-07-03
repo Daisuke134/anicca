@@ -35,6 +35,8 @@ The judgment column is the AGENT's (right-altitude prompts), never a hardcoded c
 | PROP-13 | REQ-7 | Mode B: when V0∧V0.5 PASS, the skill publishes DIRECTLY then distributes (autonomous path exercised, no human gate present) | T2 | ✅ |
 | PROP-14 | REQ-4b | no-viable-topic / insufficient-research → the wake SKIPS (no article emitted), verified with a stubbed empty-research input | T2 | — |
 | PROP-15 | REQ-14 | after 3 consecutive V0/V0.5 FAILs the wake ABORTS with no publish AND records the failure (ceiling test: stub 3 fails → assert abort + zero publish calls + a failure entry written to state) | T2 | ✅ |
+| PROP-16 | REQ-17 | self-heal: inject a wake failure (crash/stuck-gate/expired-cred) → skill detects + attempts an autonomous fix + the loop SURVIVES (no crash); unrecoverable → rail quarantined + recorded; NO Opus/human call in the heal path | T2/T3 | ✅ |
+| PROP-17 | REQ-18 | self-improve: given a stubbed per-rail stats history (e.g. rail low convert) → the NEXT-wake choice CHANGES toward higher earn AND the change is recorded; the decision USES the stats (model-judged, not hardcoded, not ignored) | T2 | ✅ |
 
 ## Verification ladder as executable gates
 
@@ -56,7 +58,10 @@ The judgment column is the AGENT's (right-altitude prompts), never a hardcoded c
   INTENTIONAL in Mode A); no model literal, no external run, fail-closed wiring proven. Zero-human is asserted of
   Mode B (Sprint 2+), NOT Mode A** (T0-T2 required props green).
 - **Sprint 2:** first real earn — one rail (note ¥500) reaches **V4**, autonomous publish (PROP-7,8,13, T3 live) = the money finish-line.
-- Later sprints: distribution/reach (V2/V3), daily loop (V5), niche generalization.
+- **Sprint 3:** distribution (X/Threads) + trust ramp → reach (V2) + convert (V3).
+- **Sprint 4:** wire the daily GLVS loop (runtime daemon, sonnet) + V5 continuous earn-verify.
+- **Sprint 5 (Dais 2026-07-04):** self-heal (PROP-16) + self-improve (PROP-17) — zero Opus, zero human: the loop finds its own errors, reads its own stats, and iterates to earn more, unattended.
+- **Sprint 6:** niche generalization (niche as parameter) + spawn self-funded child.
 
 ## Human sign-off gate (1c, strict)
 

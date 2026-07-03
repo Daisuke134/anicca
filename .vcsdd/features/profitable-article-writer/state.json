@@ -1,7 +1,7 @@
 {
   "featureName": "profitable-article-writer",
   "mode": "strict",
-  "currentPhase": "1b",
+  "currentPhase": "2c",
   "phaseHistory": [
     {
       "from": "init",
@@ -14,11 +14,42 @@
       "to": "1b",
       "timestamp": "2026-07-03T15:19:40.619Z",
       "reason": "Phase 1b verification-architecture.md authored (12 PROPs, tiers, sprint plan)"
+    },
+    {
+      "from": "1b",
+      "to": "1c",
+      "timestamp": "2026-07-03T19:21:29.766Z",
+      "reason": "1c adversary+human PASS → advance"
+    },
+    {
+      "from": "1c",
+      "to": "2a",
+      "timestamp": "2026-07-03T19:21:29.778Z",
+      "reason": "1c adversary+human PASS → advance",
+      "sprint": 1
+    },
+    {
+      "from": "2a",
+      "to": "2b",
+      "timestamp": "2026-07-03T19:31:26.824Z",
+      "reason": "Red verified: 9/9 fail, real assertions, red log markers ok",
+      "sprint": 1
+    },
+    {
+      "from": "2b",
+      "to": "2c",
+      "timestamp": "2026-07-03T19:43:37.543Z",
+      "reason": "Green 9/9 PASS, markers fixed",
+      "sprint": 1
     }
   ],
   "iterations": {
     "1a": 1,
-    "1b": 1
+    "1b": 1,
+    "1c": 1,
+    "2a": 1,
+    "2b": 1,
+    "2c": 1
   },
   "proofObligations": [],
   "traceability": {
@@ -403,19 +434,73 @@
         "createdAt": "2026-07-03T15:54:21.643Z",
         "createdInPhase": "1b",
         "externalId": "PROP-15"
+      },
+      {
+        "beadId": "BEAD-033",
+        "type": "spec-requirement",
+        "artifactPath": "specs/behavioral-spec.md",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-035"
+        ],
+        "createdAt": "2026-07-03T19:49:00.491Z",
+        "createdInPhase": "2c",
+        "externalId": "REQ-17"
+      },
+      {
+        "beadId": "BEAD-034",
+        "type": "spec-requirement",
+        "artifactPath": "specs/behavioral-spec.md",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-036"
+        ],
+        "createdAt": "2026-07-03T19:49:00.496Z",
+        "createdInPhase": "2c",
+        "externalId": "REQ-18"
+      },
+      {
+        "beadId": "BEAD-035",
+        "type": "verification-property",
+        "artifactPath": "specs/verification-architecture.md",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-033"
+        ],
+        "createdAt": "2026-07-03T19:49:00.496Z",
+        "createdInPhase": "2c",
+        "externalId": "PROP-16"
+      },
+      {
+        "beadId": "BEAD-036",
+        "type": "verification-property",
+        "artifactPath": "specs/verification-architecture.md",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-034"
+        ],
+        "createdAt": "2026-07-03T19:49:00.497Z",
+        "createdInPhase": "2c",
+        "externalId": "PROP-17"
       }
     ]
   },
   "gates": {
     "1c": {
       "verdict": "PASS",
-      "timestamp": "2026-07-03T16:02:14.344Z",
-      "reviewedBy": "adversary",
+      "timestamp": "2026-07-03T19:21:29.756Z",
+      "reviewedBy": "human",
       "adversaryVerdict": "PASS",
-      "adversaryReviewedAt": "2026-07-03T16:02:14.344Z"
+      "adversaryReviewedAt": "2026-07-03T16:02:14.344Z",
+      "details": {
+        "approvedBasedOn": "adversary"
+      },
+      "humanVerdict": "PASS",
+      "humanApproved": true,
+      "humanApprovedAt": "2026-07-03T19:21:29.756Z"
     }
   },
-  "sprintCount": 0,
+  "sprintCount": 1,
   "createdAt": "2026-07-03T15:16:08.410Z",
-  "updatedAt": "2026-07-03T16:02:14.344Z"
+  "updatedAt": "2026-07-03T19:49:00.497Z"
 }
