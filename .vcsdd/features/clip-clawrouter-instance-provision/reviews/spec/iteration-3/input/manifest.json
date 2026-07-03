@@ -1,0 +1,9 @@
+{
+  "reviewType": "spec",
+  "feature": "clip-clawrouter-instance-provision",
+  "artifactsToReview": [
+    ".vcsdd/features/clip-clawrouter-instance-provision/specs/behavioral-spec.md",
+    ".vcsdd/features/clip-clawrouter-instance-provision/specs/verification-architecture.md"
+  ],
+  "reviewDimensions": ["spec_fidelity", "verification_readiness"]
+}

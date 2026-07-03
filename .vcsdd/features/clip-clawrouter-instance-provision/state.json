@@ -2,7 +2,7 @@
   "featureName": "clip-clawrouter-instance-provision",
   "mode": "lean",
   "language": "python",
-  "currentPhase": "2a",
+  "currentPhase": "1c",
   "phaseHistory": [
     {
       "from": "init",
@@ -24,12 +24,24 @@
       "to": "2a",
       "timestamp": "2026-07-03T18:06:30.649Z",
       "sprint": 1
+    },
+    {
+      "from": "2a",
+      "to": "1b",
+      "timestamp": "2026-07-03T18:16:04.104Z",
+      "reason": "SCOPE PIVOT (Dais correction): reopening spec-review before any Phase 2a implementation began, per REQ-102 redesign"
+    },
+    {
+      "from": "1b",
+      "to": "1c",
+      "timestamp": "2026-07-03T18:16:10.795Z",
+      "sprint": 1
     }
   ],
   "iterations": {
     "1a": 1,
     "1b": 1,
-    "1c": 1,
+    "1c": 2,
     "2a": 1
   },
   "proofObligations": [],
@@ -48,5 +60,5 @@
   },
   "sprintCount": 1,
   "createdAt": "2026-07-03T17:48:37.378Z",
-  "updatedAt": "2026-07-03T18:06:30.649Z"
+  "updatedAt": "2026-07-03T18:16:10.797Z"
 }
