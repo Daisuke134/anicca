@@ -118,3 +118,105 @@ PASS — PROP-9 model policy (sonnet tier, no-LLM earn/verify path, fail-closed 
 ===================================================
 RED-PHASE SUMMARY: 10 test files, 10 PASS, 0 FAIL
 ===================================================
+
+# =====================================================================================================
+# Sprint-1 IMPLEMENTATION-REVIEW FIX ROUND (Phase 3, FIND-001..004, builder role) — real fixes, no
+# fake-to-pass. Adversary confirmed the core logic (fail-closed publish, 3-round ceiling, Mode A never
+# publishes, v05 (a)-(d) genuinely model-judged with no draft regex, no model literal) is CORRECT; the
+# gaps below are test-coverage + tier-labeling + 2 small bugs.
+# =====================================================================================================
+#
+# FIND-001 (major, edge_case_coverage): EVERY test reaching gates/v0.sh or gates/v05.sh did so exclusively
+# via ARTICLE_TEST_FORCE_V0/ARTICLE_TEST_FORCE_V05, so the real (non-forced) heading/size/line-count check
+# in v0.sh, the real judge_v05 response-file parser in v05.sh, and the real criterion-(e) sentence-length
+# arithmetic in v05.sh had ZERO test coverage. FIX: added tests/test-v0-real.sh (invokes gates/v0.sh with
+# ARTICLE_TEST_FORCE_V0 unset: a well-formed draft (heading + adequate size/lines) real-PASSes; a malformed
+# draft (no heading, too short) real-FAILs; a missing draft artifact real-FAILs) and tests/test-v05-real.sh
+# (invokes gates/v05.sh with ARTICLE_TEST_FORCE_V05 unset: a short-sentence draft computes crit_e=true via
+# the real arithmetic; a long-sentence draft (2/3 sentences >60 chars) computes crit_e=false; a real
+# ARTICLE_JUDGE_V05_RESPONSE file with V05_CRIT_a..d: true lines is parsed correctly by the real parser,
+# producing an overall PASS; an absent/missing response file fails closed to (a)-(d)=false and
+# V05_RESULT=FAIL even though (e) alone would be true — proving the fail-closed-when-unwired claim is
+# actually exercised, not just asserted in a comment). Both picked up automatically by tests/run-red.sh's
+# test-*.sh glob (12 files now). SKILL.md's Status section corrected: removed the inaccurate "tests pass
+# green against that real logic" claim and added an explicit "wiring vs real-gate mechanics" section
+# naming which test files cover which.
+#
+# FIND-002 (major, verification_readiness): specs/verification-architecture.md labeled PROP-5/PROP-6 as
+# Tier T2 "integration/property (no-mock)", but their tests (test-prop5-failclosed-publish.sh,
+# test-prop6-modeA-draft.sh) drive the gates exclusively via the ARTICLE_TEST_FORCE_V0/V05 injection seam —
+# a mock, not a no-mock integration test. FIX: relabeled PROP-5/PROP-6 in verification-architecture.md to
+# state honestly that they prove fail-closed WIRING via a documented, deterministic injected-seam (T1), and
+# that the REAL gate mechanics are now covered no-mock (T2) by test-v0-real.sh/test-v05-real.sh.
+# contracts/sprint-1.md's CRIT-001/CRIT-002/CRIT-007 passThresholds + body sections updated to reference the
+# new real-gate tests. No claim of "no-mock" remains where injection is actually used.
+#
+# FIND-003 (minor, implementation_correctness): run.sh:167-168 and run.sh:197-198 interpolated the raw
+# $topic value unescaped into hand-built JSON for state/failures.jsonl — a doublequote or embedded newline
+# in an agent-picked topic would corrupt the JSONL ledger (invalid JSON or a broken one-object-per-line
+# contract). FIX: added a json_escape() helper to run.sh (uses python3 json.dumps when available, a sed
+# fallback otherwise) and applied it to $topic at both failure-record call sites. Added an assertion to
+# tests/test-prop15-3round-abort.sh: a topic containing a doublequote + an embedded newline still yields
+# EXACTLY one physical line in failures.jsonl, and (when python3 is available) that line parses as valid
+# JSON via json.loads with the topic value round-tripping correctly.
+#
+# FIND-004 (minor, structural_integrity): identity/accounts.sh:44-56's PROVEN_SELF_CREATE_RAILS case
+# statement was dead — both arms produced "unavailable" because PROVEN_SELF_CREATE_RAILS was an
+# unconditional empty-string literal, so the matched arm could never be reached even by a test. FIX: (1)
+# PROVEN_SELF_CREATE_RAILS is now a CONDITIONAL default (`: "${PROVEN_SELF_CREATE_RAILS:=}"`, same pattern
+# as lib/config.sh's RECORD_EARN_USES_LLM), still empty by default for Sprint 1 (honest: no proven
+# self-create rail exists yet) but now externally injectable; (2) the matched-rail arm now resolves to a
+# status DISTINCT from the default arm ("self-create-eligible" vs "unavailable"), making the branch
+# structurally meaningful. Added test cases to tests/test-prop12-account-absent.sh: injecting
+# PROVEN_SELF_CREATE_RAILS="note" + NOTE_SELF_CREATE=1 asserts the distinct "self-create-eligible" status
+# (rc=0, no crash, no error text); the same injected proven-rail list with NO self-create flag set still
+# degrades to "unavailable" (proving the flag AND the proven-list membership are both required, not just
+# one).
+#
+# Independent re-run by the builder (fresh `bash tests/run-red.sh` invocation, verbatim output below,
+# maker != checker — this is a second, separate invocation after all four fixes were applied):
+
+target-feature-tests: PASS
+regression-baseline: PASS
+all tests passing: 12/12
+
+===================================================
+=== test-prop1-no-model-literal.sh ===
+PASS — PROP-1 model-agnostic (static tree + dynamic wake artifact + proven non-vacuous)
+
+=== test-prop10-per-install-creds.sh ===
+PASS — PROP-10 per-install credential gating
+
+=== test-prop12-account-absent.sh ===
+PASS — PROP-12 account-absent -> self-create-or-flag, never a loud failure
+
+=== test-prop14-topic-skip.sh ===
+PASS — PROP-14 no-viable-topic/insufficient-research -> SKIP, never slop
+
+=== test-prop15-3round-abort.sh ===
+PASS — PROP-15 3-round abort, no publish, failure recorded
+
+=== test-prop2-no-human-modeB.sh ===
+PASS — PROP-2 Mode B has no human-gating call
+
+=== test-prop3-no-external-run.sh ===
+PASS — PROP-3 no external-repo/tool execution, no run-claims
+
+=== test-prop5-failclosed-publish.sh ===
+PASS — PROP-5 fail-closed publish wiring (only both-PASS reaches publish)
+
+=== test-prop6-modeA-draft.sh ===
+PASS — PROP-6 Mode A stops at draft + notify, never publishes
+
+=== test-prop9-model-policy.sh ===
+PASS — PROP-9 model policy (sonnet tier, no-LLM earn/verify path, fail-closed on flip)
+
+=== test-v0-real.sh ===
+PASS — real (non-FORCE) gates/v0.sh mechanics
+
+=== test-v05-real.sh ===
+PASS — real (non-FORCE) gates/v05.sh mechanics (readability arithmetic + judge_v05 parser)
+
+===================================================
+RED-PHASE SUMMARY: 12 test files, 12 PASS, 0 FAIL
+===================================================

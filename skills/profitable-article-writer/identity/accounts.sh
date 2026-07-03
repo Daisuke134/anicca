@@ -25,9 +25,16 @@ RAILS="note:NOTE_SESSION_COOKIE substack:SUBSTACK_API_KEY x:X_API_KEY zenn:ZENN_
 
 # Rails whose zero-human self-create path is PROVEN (REQ-11: e.g. the Instagram Gmail-plus-address +
 # OTP-auto-read pattern). None of this skill's rails have a proven self-create path yet — note/X account
-# creation is phone-gated and NOT yet proven — so self-create always falls through to "unavailable" today.
-# This list is the seam a later sprint extends once a rail's self-create is proven.
-PROVEN_SELF_CREATE_RAILS=""
+# creation is phone-gated and NOT yet proven — so the default is empty and self-create falls through to
+# "unavailable" today.
+#
+# Conditional default (not an unconditional assignment, same pattern as lib/config.sh's
+# RECORD_EARN_USES_LLM — contract-review FIND-004's fix): this lets an external caller/test actually inject
+# a proven rail via the environment (e.g. PROVEN_SELF_CREATE_RAILS="note" bash accounts.sh ...) so the
+# self-create-eligible branch below is REACHABLE and TESTABLE, not dead code that can only be exercised by
+# editing this file's literal source text. This list is the seam a later sprint extends once a rail's
+# self-create is genuinely proven.
+: "${PROVEN_SELF_CREATE_RAILS:=}"
 
 json="{"
 first=1
@@ -45,11 +52,16 @@ for pair in $RAILS; do
     if [ "$self_create_flag" = "1" ]; then
       case " $PROVEN_SELF_CREATE_RAILS " in
         *" $rail "*)
-          # Proven rail: attempt zero-human self-create (Sprint 2+ live seam). Never a loud failure either
-          # way — a failed attempt still flags "unavailable", it does not abort the wake.
-          status="unavailable"
+          # Proven rail: the zero-human self-create path is proven for this rail (REQ-11) — this is a
+          # DISTINCT, reachable status from the unproven-rail default below, so downstream Sprint-2+ wiring
+          # (the actual self-create attempt call) has a real branch to plug into. Sprint 1 does not wire the
+          # live self-create call itself (that call is the Sprint 2+ seam), so it never claims "active" —
+          # it flags "self-create-eligible" (never a loud failure either way) rather than collapsing into
+          # the same "unavailable" the not-proven branch below produces.
+          status="self-create-eligible"
           ;;
         *)
+          # No proven self-create path for this rail yet -> degrade to "unavailable" (never a loud failure).
           status="unavailable"
           ;;
       esac

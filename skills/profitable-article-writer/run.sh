@@ -47,6 +47,23 @@ write_state() {
 }
 
 # ---------------------------------------------------------------------------------------------------------
+# json_escape (contract-review FIND-003 fix): escape a free-text value (e.g. the agent-picked $topic, which
+# is NOT sanitized upstream) for safe embedding inside a hand-built JSON string, so a quote/backslash/
+# newline in the value can never corrupt state/failures.jsonl's one-JSON-object-per-line JSONL contract.
+# Escapes backslash, double-quote, and newline (the characters this file's callers can realistically emit);
+# uses python3's json.dumps when available for a fully-correct escape, else falls back to a sed pipeline
+# covering the same three characters.
+# ---------------------------------------------------------------------------------------------------------
+json_escape() {
+  local val="$1"
+  if command -v python3 >/dev/null 2>&1; then
+    python3 -c 'import json, sys; s = json.dumps(sys.argv[1]); print(s[1:-1])' "$val"
+  else
+    printf '%s' "$val" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g' | sed -e ':a' -e 'N' -e '$!ba' -e 's/\n/\\n/g'
+  fi
+}
+
+# ---------------------------------------------------------------------------------------------------------
 # REQ-12/PROP-9 isolated sub-path: exercise ONLY the record-earn call, tied to lib/config.sh's declarative
 # RECORD_EARN_USES_LLM marker (real logic, not a hardcoded string dump — if the config marker ever flips to
 # 1 this refuses instead of blindly asserting no-LLM). record-earn itself (REQ-9/16, V4 real-money receipt
@@ -164,7 +181,8 @@ rounds_used=$round
 # ---------------------------------------------------------------------------------------------------------
 if [ "$success" -ne 1 ]; then
   fail_ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-  fail_line="{\"ts\": \"$fail_ts\", \"topic\": \"$topic\", \"rounds_used\": $rounds_used, \"last_v0\": \"$last_v0\", \"last_v05\": \"$last_v05\"}"
+  topic_json="$(json_escape "$topic")"
+  fail_line="{\"ts\": \"$fail_ts\", \"topic\": \"$topic_json\", \"rounds_used\": $rounds_used, \"last_v0\": \"$last_v0\", \"last_v05\": \"$last_v05\"}"
   printf '%s\n' "$fail_line" >> "$ARTICLE_DIR/state/failures.jsonl"
 
   write_state <<EOF
@@ -195,7 +213,8 @@ if [ "$AUTONOMY" = "on" ]; then
     # Gate re-check disagreed at the publish step (should not happen given a BOTH-PASS round above) —
     # fail-closed: treat as an abort, never a partial publish.
     fail_ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-    printf '%s\n' "{\"ts\": \"$fail_ts\", \"topic\": \"$topic\", \"rounds_used\": $rounds_used, \"reason\": \"publish-gate re-check failed\"}" >> "$ARTICLE_DIR/state/failures.jsonl"
+    topic_json="$(json_escape "$topic")"
+    printf '%s\n' "{\"ts\": \"$fail_ts\", \"topic\": \"$topic_json\", \"rounds_used\": $rounds_used, \"reason\": \"publish-gate re-check failed\"}" >> "$ARTICLE_DIR/state/failures.jsonl"
     write_state <<EOF
 last_wake_result: ABORTED
 rounds_used: $rounds_used

@@ -35,4 +35,26 @@ if [ -f "$reg2" ]; then
 fi
 ok "$(! echo "$OUT2" | grep -qiE 'error|traceback|exception' && echo 1 || echo 0)" "self-create attempt on unproven rail: no error-log/stack-trace/exception text"
 
+# ---------- DYNAMIC 3 (contract-review FIND-004): account absent + <RAIL>_SELF_CREATE=1 on a rail injected
+# ---------- into PROVEN_SELF_CREATE_RAILS -> the proven-rail branch is REACHABLE and resolves to a status
+# ---------- DISTINCT from "unavailable" (the case construct is no longer dead code) ----------
+T3="$(mktemp -d)"; mkdir -p "$T3/state"
+OUT3="$(ARTICLE_DIR="$T3" NOTE_SELF_CREATE=1 PROVEN_SELF_CREATE_RAILS="note" bash "$SKILL/identity/accounts.sh" 2>&1)"; rc3=$?
+ok "$([ $rc3 -eq 0 ] && echo 1 || echo 0)" "NOTE_SELF_CREATE=1 with 'note' injected into PROVEN_SELF_CREATE_RAILS -> still completes cleanly, rc=0 (rc=$rc3): $OUT3"
+reg3="$T3/state/accounts.json"
+ok "$([ -f "$reg3" ] && echo 1 || echo 0)" "a registry was written for the proven-rail self-create attempt"
+if [ -f "$reg3" ]; then
+  ok "$(grep -q '"note": *"self-create-eligible"' "$reg3" && echo 1 || echo 0)" "proven-rail self-create resolves to a status DISTINCT from 'unavailable' (self-create-eligible) — the case branch is live, not dead"
+fi
+ok "$(! echo "$OUT3" | grep -qiE 'error|traceback|exception' && echo 1 || echo 0)" "proven-rail self-create attempt: no error-log/stack-trace/exception text"
+# same rail, no self-create requested at all -> still degrades to unavailable (the proven-rails list alone
+# does not activate a rail; the flag AND the proven-list membership are both required)
+T4="$(mktemp -d)"; mkdir -p "$T4/state"
+OUT4="$(ARTICLE_DIR="$T4" PROVEN_SELF_CREATE_RAILS="note" bash "$SKILL/identity/accounts.sh" 2>&1)"; rc4=$?
+ok "$([ $rc4 -eq 0 ] && echo 1 || echo 0)" "'note' in PROVEN_SELF_CREATE_RAILS but NO self-create flag set -> still completes cleanly, rc=0 (rc=$rc4)"
+reg4="$T4/state/accounts.json"
+if [ -f "$reg4" ]; then
+  ok "$(grep -q '"note": *"unavailable"' "$reg4" && echo 1 || echo 0)" "proven rail with no self-create flag requested still degrades to unavailable (default path unaffected by the seam)"
+fi
+
 [ $fails -eq 0 ] && { echo "PASS — PROP-12 account-absent -> self-create-or-flag, never a loud failure"; exit 0; } || { echo "FAIL ($fails)"; exit 1; }

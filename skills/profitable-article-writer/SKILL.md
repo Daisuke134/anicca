@@ -73,9 +73,18 @@ skills/profitable-article-writer/
 ## Status
 
 Current phase: see `.vcsdd/features/profitable-article-writer/state.json`'s `currentPhase` (canonical,
-cannot drift out of sync with this doc). As of Sprint 1's contract-review round: Phase 2c (refactor
+cannot drift out of sync with this doc). As of Sprint 1's implementation-review round: Phase 2c (refactor
 complete) — every script under this directory is a real, non-stub implementation (`run.sh`, `gates/*.sh`,
-`identity/accounts.sh`); the `tests/` oracle suite (`tests/run-red.sh`) passes green against that real
-logic, no `NOT_IMPLEMENTED` marker remains anywhere. Sprint-1 scope is deferred-real-integration for
-content-gen, note/rail publish, and earn (see `.vcsdd/features/profitable-article-writer/contracts/
-sprint-1.md`'s "Explicitly OUT of Sprint 1").
+`identity/accounts.sh`); the `tests/` oracle suite (`tests/run-red.sh`) passes green, no `NOT_IMPLEMENTED`
+marker remains anywhere. Sprint-1 scope is deferred-real-integration for content-gen, note/rail publish, and
+earn (see `.vcsdd/features/profitable-article-writer/contracts/sprint-1.md`'s "Explicitly OUT of Sprint 1").
+
+**Test coverage: wiring vs real-gate mechanics.** Most `test-prop*.sh` files (PROP-2/5/6/9/14/15 etc.) drive
+`gates/v0.sh` and `gates/v05.sh` via `ARTICLE_TEST_FORCE_V0`/`ARTICLE_TEST_FORCE_V05` — a deterministic
+test-injection seam that proves the ORCHESTRATION WIRING (round-counting, fail-closed publish, Mode A/B
+branching, abort+record) end-to-end, but short-circuits BEFORE either gate's real, non-forced check ever
+runs. The REAL mechanics — `gates/v0.sh`'s heading/size/line-count checklist, `gates/v05.sh`'s criterion-(e)
+sentence-length arithmetic, and `gates/v05.sh`'s `judge_v05` response-file parser for criteria (a)-(d)
+(including its fail-closed-when-unwired default) — are covered SEPARATELY, with `ARTICLE_TEST_FORCE_V0`/
+`ARTICLE_TEST_FORCE_V05` explicitly unset, by `tests/test-v0-real.sh` and `tests/test-v05-real.sh`. Together
+the two test groups cover both the wiring and the real gate logic it wires to.

@@ -1,7 +1,7 @@
 ---
 sprintNumber: 1
 feature: profitable-article-writer
-scope: "Sprint 1 = the orchestration skeleton, draft-first, verified by 10 required PROP oracle tests (incl. PROP-12). Real content-gen + real note publish + real earn are Sprint 2+, explicitly OUT of this contract."
+scope: "Sprint 1 = the orchestration skeleton, draft-first, verified by 10 required PROP oracle tests (incl. PROP-12) PLUS 2 real-gate-mechanics tests (test-v0-real.sh, test-v05-real.sh) that exercise gates/v0.sh and gates/v05.sh with the ARTICLE_TEST_FORCE_V0/V05 injection seam explicitly unset. Real content-gen + real note publish + real earn are Sprint 2+, explicitly OUT of this contract."
 status: approved
 negotiationRound: 0
 criteria:
@@ -9,12 +9,12 @@ criteria:
     dimension: implementation_correctness
     description: "Fail-closed publish wiring: publish fires ONLY when V0 AND V0.5 both PASS. Real V0.5 (a)-(d) scoring is AGENT JUDGMENT, never hardcoded regex."
     weight: 0.18
-    passThreshold: "PROP-5 test green: stubbed V0 or V0.5 FAIL -> no PUBLISHED sentinel and rc!=0; only both-PASS writes the sentinel with rc=0. AND: the non-test-mode path of gates/v05.sh delegates criteria (a)-(d) to the running agent's judgment via a documented judge_v05 request/response hook (ARTICLE_JUDGE_V05_RESPONSE) — grep confirms NO keyword/pattern grep decides (a)-(d) in that real path (criterion (e) readability stays a deterministic arithmetic computation, which is allowed)."
+    passThreshold: "PROP-5 test green: stubbed V0 or V0.5 FAIL -> no PUBLISHED sentinel and rc!=0; only both-PASS writes the sentinel with rc=0 (tests/test-prop5-failclosed-publish.sh — an injected-seam WIRING proof via ARTICLE_TEST_FORCE_V0/V05, not a claim about the real gate mechanics). AND: tests/test-v0-real.sh + tests/test-v05-real.sh green with the FORCE env vars unset, proving the REAL (non-injected) gate mechanics no-mock: gates/v0.sh's real heading/size/line-count check, gates/v05.sh's real criterion-(e) sentence-length arithmetic, and gates/v05.sh's real judge_v05 response-file parser for (a)-(d) — including its fail-closed-when-unwired default (no response file present => (a)-(d) all false, never PASS). Grep confirms NO keyword/pattern grep decides (a)-(d) in that real path (criterion (e) readability stays a deterministic arithmetic computation, which is allowed)."
   - id: CRIT-002
     dimension: implementation_correctness
     description: "Mode A draft-first: stops at a note DRAFT and notifies, never publishes."
     weight: 0.13
-    passThreshold: "PROP-6 test green: Mode A STATE result = DRAFT, a notify record (URL+screenshot fields) is written, and publish is never called."
+    passThreshold: "PROP-6 test green: Mode A STATE result = DRAFT, a notify record (URL+screenshot fields) is written, and publish is never called (tests/test-prop6-modeA-draft.sh — an injected-seam WIRING proof via ARTICLE_TEST_FORCE_V0/V05; the gates it stubs past are proven no-mock separately by tests/test-v0-real.sh / tests/test-v05-real.sh, per CRIT-001)."
   - id: CRIT-003
     dimension: edge_case_coverage
     description: "Bounded failure handling: 3-round abort with recorded failure, and no-viable-topic skip."
@@ -39,7 +39,7 @@ criteria:
     dimension: structural_integrity
     description: "Account-absent self-create-or-flag (PROP-12): never a loud failure/error-spew."
     weight: 0.12
-    passThreshold: "PROP-12 green (tests/test-prop12-account-absent.sh): with no credential and no self-create requested, identity/accounts.sh completes rc=0, flags the rail 'unavailable' in accounts.json, and emits no error/traceback/exception text; with <RAIL>_SELF_CREATE=1 set on a rail that has NO proven self-create path (PROVEN_SELF_CREATE_RAILS), the attempt still degrades to 'unavailable' (rc=0, no crash, no loud failure); no shared/Dais account literal anywhere in identity/."
+    passThreshold: "PROP-12 green (tests/test-prop12-account-absent.sh): with no credential and no self-create requested, identity/accounts.sh completes rc=0, flags the rail 'unavailable' in accounts.json, and emits no error/traceback/exception text; with <RAIL>_SELF_CREATE=1 set on a rail that has NO proven self-create path (PROVEN_SELF_CREATE_RAILS default empty), the attempt still degrades to 'unavailable' (rc=0, no crash, no loud failure); with <RAIL>_SELF_CREATE=1 AND that rail injected into PROVEN_SELF_CREATE_RAILS via the environment, the proven-rail branch is REACHABLE and resolves to a status DISTINCT from 'unavailable' ('self-create-eligible', rc=0, no crash) — proving the case construct is live, not dead code; no shared/Dais account literal anywhere in identity/."
 ---
 
 # Sprint 1 Contract — profitable-article-writer
@@ -48,12 +48,18 @@ The Sprint-1 acceptance surface. Each criterion is binary and pinned to a requir
 runs green (Phase 2b). Phase 3 (implementation adversary) judges the CODE against these.
 
 ### CRIT-001
-Fail-closed publish wiring (PROP-5). Only a both-PASS round reaches publish. Real V0.5 (a)-(d) is
-AGENT-JUDGED via the judge_v05 hook, never a hardcoded regex/keyword classifier (verification-architecture.md's
-purity boundary map); (e) readability stays a deterministic arithmetic computation.
+Fail-closed publish wiring (PROP-5). Only a both-PASS round reaches publish, proven at two levels: the
+WIRING (tests/test-prop5-failclosed-publish.sh, an injected-seam test — see verification-architecture.md's
+tier note on PROP-5) and the REAL gate mechanics with the injection seam explicitly unset
+(tests/test-v0-real.sh, tests/test-v05-real.sh). Real V0.5 (a)-(d) is AGENT-JUDGED via the judge_v05 hook,
+never a hardcoded regex/keyword classifier (verification-architecture.md's purity boundary map) — the real
+judge_v05 response-file parser AND its fail-closed-when-unwired default are exercised by test-v05-real.sh;
+(e) readability stays a deterministic arithmetic computation, also exercised for real by test-v05-real.sh.
 
 ### CRIT-002
-Mode A draft-first (PROP-6). Draft + notify, never publish.
+Mode A draft-first (PROP-6). Draft + notify, never publish (tests/test-prop6-modeA-draft.sh, an
+injected-seam wiring test; the gates it stubs past are proven no-mock by test-v0-real.sh/test-v05-real.sh
+per CRIT-001).
 
 ### CRIT-003
 Bounded failure handling (PROP-15 abort+record, PROP-14 topic-skip).
@@ -70,7 +76,8 @@ Per-install identity + zero-human Mode-B path (PROP-10, PROP-2).
 
 ### CRIT-007
 Account-absent self-create-or-flag, never a loud failure (PROP-12), covered by
-tests/test-prop12-account-absent.sh.
+tests/test-prop12-account-absent.sh, including the proven-rail branch (a rail injected into
+PROVEN_SELF_CREATE_RAILS resolves to a distinct 'self-create-eligible' status, not dead code).
 
 ## Explicitly OUT of Sprint 1
 Real article content generation, real note/rail publishing over the network, and real earn/V4 — those are
