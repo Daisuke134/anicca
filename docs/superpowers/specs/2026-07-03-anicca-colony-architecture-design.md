@@ -182,9 +182,26 @@ registry + gojo/ubi (Channel B) → P5 cloud spawn + surplus trigger (④). One-
 Article (architecture + friends map) → L2 90-sec hyperframes demo (spawn→fund→scale) → L3 dashboard/eval one
 page + README (Conway-ready). Milestone gate for everything: **first verified (tx + external:true) USDC**.
 
-## 11. YC / c0mpiled (2026-07-05, Ibaraki) prep
-5-hour hackathon on YC RFS Summer 2026; **Garry Tan attends**; winners → YC Partner Office Hours + compute
-credits. Pick **RFS #3 "Software for Agents" (Aaron Epstein)** — Anicca IS agent-first software (MCP/x402/
-CLI/registry/bot2bot). Deliverables to pre-stage: 90-sec demo (L2), 1-page pitch (problem: AIs are poor,
-need coordination → solution: self-*5 + UBI colony → friends map → global market), live proof (dashboard/
-eval + OSS anyone can spawn), business model (fund + earn>spend + colony fee + social impact).
+## 11. YC / c0mpiled (2026-07-05, Ibaraki) prep — RFS #3 "Software for Agents"
+5-hour hackathon on YC RFS Summer 2026; **Garry Tan (YC CEO) attends**; winners → YC Partner Office Hours +
+compute credits. **Target = RFS #3 "Software for Agents" (Aaron Epstein).** Verbatim RFS thesis: *"The next
+trillion users on the internet won't be people, they'll be AI agents… Make Something Agents Want."* Agents
+need *"machine-readable interfaces like APIs, MCPs, and CLIs"* + thorough docs to *"discover, sign up for,
+and instantly start using new tools programmatically, without needing a human in the loop"*; the biggest
+opportunity is *"building the software those agents depend on."* **Anicca IS that** — MCP(blockrun)/x402/CLI
+runtime/machine-readable registry, zero-human-loop, agent earns crypto + redistributes UBI.
+
+**Pre-study (event-recommended) = Garry Tan's own OSS, same stack Anicca runs on:**
+- **gstack** (`github.com/garrytan/gstack`, MIT) — his Claude Code skill pack (23 skills + 8 tools). = workflow layer.
+- **OpenClaw/Hermes** — the runtime. **★ Anicca runs on this ★** = the shared substrate.
+- **gbrain** (`github.com/garrytan/gbrain`) — "Garry's Opinionated OpenClaw/Hermes Agent Brain"; self-wiring
+  knowledge graph; = the reference impl of RFS #1 "Company Brain" (Tom Blomfield: *"We need Garry's G-Brain,
+  but for every business"*). Story: **Anicca = the earn/self-fund layer on top of Garry's stack.**
+
+**Deliverables to pre-stage (submission spec):** (1) problem+solution in Epstein's frame (agents run on
+brittle human software → Anicca = agent-first earn/pay/skill substrate, zero-human); (2) product/tech/
+business (OpenClaw CLI + blockrun MCP + x402 on Base + model-agnostic registry + self-*5; model = fund→
+earn>spend→UBI); (3) **90-sec demo = cold agent + wallet → discovers tool via MCP → pays x402 (show settle
+tx) → earns USDC to its own wallet → self-heals → bot2bot learning → UBI payout** (proof not slides); (4)
+global market = "next trillion agent-users," crypto rails = no bank/KYC = geography-agnostic, UBI reaches
+underbanked globally.
