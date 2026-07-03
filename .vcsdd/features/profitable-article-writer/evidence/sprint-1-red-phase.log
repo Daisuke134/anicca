@@ -1,0 +1,83 @@
+new-feature-tests: FAIL
+regression-baseline: PASS
+
+# regression-baseline: PASS — there are no pre-existing tests for skills/profitable-article-writer
+# (this is a brand-new skill scaffold; nothing prior to this Sprint 1 RED phase existed at this path
+# to regress). Baseline confirmed clean by directory listing before this phase began:
+#   $ ls skills/profitable-article-writer -> No such file or directory (pre-existing state)
+# No other skill under skills/ was touched by this phase.
+
+# ---------------------------------------------------------------------------
+# RAW OUTPUT — bash skills/profitable-article-writer/tests/run-red.sh
+# Command exit code: 1 (non-zero == correct: ALL 9 new PROP test files FAIL in RED, as required)
+# ---------------------------------------------------------------------------
+=== test-prop1-no-model-literal.sh ===
+  - FAIL PROP-1 dynamic: a real wake completes (rc=1): NOT_IMPLEMENTED: run.sh (Phase 2b implements the 1-wake pipeline: pick topic -> research -> decide ->
+  write -> de-slop -> V0/V0.5 gate loop, <=3 rounds -> Mode A draft+notify OR Mode B publish+distribute)
+  - FAIL PROP-1 dynamic: wake produced a draft artifact to literal-check
+FAIL (2)
+
+=== test-prop10-per-install-creds.sh ===
+  - FAIL accounts.sh runs with only NOTE_SESSION_COOKIE set, rc=0 (rc=1): NOT_IMPLEMENTED: identity/accounts.sh (Phase 2b implements per-install credential gating + self-create-or-flag)
+  - FAIL accounts.sh wrote a per-install registry (/var/folders/c1/11fd4j597vx4fb8tnv25y28r0000gn/T/tmp.j0wJbprFBK/state/accounts.json)
+FAIL (2)
+
+=== test-prop14-topic-skip.sh ===
+  - FAIL no-viable-topic wake completes cleanly, rc=0 (rc=1): NOT_IMPLEMENTED: run.sh (Phase 2b implements the 1-wake pipeline: pick topic -> research -> decide ->
+  write -> de-slop -> V0/V0.5 gate loop, <=3 rounds -> Mode A draft+notify OR Mode B publish+distribute)
+  - FAIL no-viable-topic -> STATE result SKIPPED
+  - FAIL insufficient-research wake completes cleanly, rc=0 (rc=1): NOT_IMPLEMENTED: run.sh (Phase 2b implements the 1-wake pipeline: pick topic -> research -> decide ->
+  write -> de-slop -> V0/V0.5 gate loop, <=3 rounds -> Mode A draft+notify OR Mode B publish+distribute)
+  - FAIL insufficient-research -> STATE result SKIPPED
+FAIL (4)
+
+=== test-prop15-3round-abort.sh ===
+  - FAIL 3-round-fail wake completes (abort is a legitimate outcome), rc=0 (rc=1): NOT_IMPLEMENTED: run.sh (Phase 2b implements the 1-wake pipeline: pick topic -> research -> decide ->
+  write -> de-slop -> V0/V0.5 gate loop, <=3 rounds -> Mode A draft+notify OR Mode B publish+distribute)
+  - FAIL 3-round-fail -> STATE result ABORTED
+  - FAIL abort happened after exactly 3 rounds (ceiling), not sooner/later
+  - FAIL a failure entry was recorded to state/failures.jsonl
+FAIL (4)
+
+=== test-prop2-no-human-modeB.sh ===
+  - FAIL Mode B wake completes with no human gate, rc=0 (rc=1): NOT_IMPLEMENTED: run.sh (Phase 2b implements the 1-wake pipeline: pick topic -> research -> decide ->
+  write -> de-slop -> V0/V0.5 gate loop, <=3 rounds -> Mode A draft+notify OR Mode B publish+distribute)
+  - FAIL Mode B wake result is PUBLISHED (autonomous, no notify-and-wait)
+FAIL (2)
+
+=== test-prop3-no-external-run.sh ===
+  - FAIL a real wake completes so the write-path can be traced (rc=1): NOT_IMPLEMENTED: run.sh (Phase 2b implements the 1-wake pipeline: pick topic -> research -> decide ->
+  write -> de-slop -> V0/V0.5 gate loop, <=3 rounds -> Mode A draft+notify OR Mode B publish+distribute)
+  - FAIL wake produced a draft artifact to trace
+FAIL (2)
+
+=== test-prop5-failclosed-publish.sh ===
+  - FAIL V0=PASS,V05=PASS: publish sentinel written, rc=0 (rc=1 — NOT_IMPLEMENTED: gates/publish-gate.sh (Phase 2b implements fail-closed publish wiring))
+FAIL (1)
+
+=== test-prop6-modeA-draft.sh ===
+  - FAIL Mode A wake completes, rc=0 (rc=1): NOT_IMPLEMENTED: run.sh (Phase 2b implements the 1-wake pipeline: pick topic -> research -> decide ->
+  write -> de-slop -> V0/V0.5 gate loop, <=3 rounds -> Mode A draft+notify OR Mode B publish+distribute)
+  - FAIL Mode A STATE result is DRAFT (not PUBLISHED)
+  - FAIL Mode A produced a draft artifact
+  - FAIL Mode A wrote a notify record (URL + screenshot) for human review
+FAIL (4)
+
+=== test-prop9-model-policy.sh ===
+  - FAIL record-earn-only test-mode wake completes, rc=0 (rc=1): NOT_IMPLEMENTED: run.sh (Phase 2b implements the 1-wake pipeline: pick topic -> research -> decide ->
+  write -> de-slop -> V0/V0.5 gate loop, <=3 rounds -> Mode A draft+notify OR Mode B publish+distribute)
+  - FAIL wake asserts its record-earn call made NO LLM call
+FAIL (2)
+
+===================================================
+RED-PHASE SUMMARY: 9 test files, 0 PASS, 9 FAIL
+FAILING:
+  - test-prop1-no-model-literal.sh
+  - test-prop10-per-install-creds.sh
+  - test-prop14-topic-skip.sh
+  - test-prop15-3round-abort.sh
+  - test-prop2-no-human-modeB.sh
+  - test-prop3-no-external-run.sh
+  - test-prop5-failclosed-publish.sh
+  - test-prop6-modeA-draft.sh
+  - test-prop9-model-policy.sh
