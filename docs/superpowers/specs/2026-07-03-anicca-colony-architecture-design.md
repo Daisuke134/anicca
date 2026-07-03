@@ -565,9 +565,16 @@ W — SET UP base agents, RUN them, WATCH (setup = env/wallet/seed ONLY; the AI 
        portfolio analysis via BlockRun). Errors found while running — volume-str format crash (I hand-fixed
        1 line = §0.25 violation, logged; fix kept, pattern stopped) + hardcoded dead RPC polygon-rpc.com —
        get bootstrap-fixed by ME once (carve-out, §0.25) so the full E2E runs; from H4 on, they self-heal.
-       Remaining for DONE(no-mock): fix dead RPC + Polygon USDC seed (bridge from Base 0x810f) + thin guard
-       (per-trade $-cap + kill-switch, NO dry-run mode) + the AGENT places a real small trade → on-chain
-       tx → then SKILLIFY (put it inside the AI as a skill) → watch. (#6)
+       ★ STATUS 2026-07-04 05:45 JST — SKILLIFIED + LIVE ★: ① bootstrap fixes done (volume-str normalized
+       at Gamma boundary `_to_float`; RPC env-overridable → publicnode; agent.py wallet-object→private_key)
+       ② SEEDED for real: Base→Polygon LiFi bridge, $6→5.976 USDC.e (Across, tx 0x21266d…) + $0.60→7.56 POL
+       (Mayan, tx 0x638945…); agent's own approve_usdc() ran → approval tx 0x1ae0ff…, approved=True
+       ③ full live pipeline E2E green: fetch 20 markets → agent's OWN analysis → recommendations →
+       execution stage, exit 0; agent's own verdict this pass = 0 trades (edge 5% < its 15% minimum — a
+       CORRECT outcome, not forced) ④ skill `skills/earn/pm-trade/` (run.sh = kill-switch + trace ONLY,
+       "THIS FILE DECIDES NOTHING") + registry status=live in mother + founder; trace line verified in
+       `state/pm-trade.trace.jsonl`. REMAINING for DONE(no-mock) = the AGENT's first real trade tx, which
+       lands when ITS edge criterion is met in the loop — our job now = WATCH (H1/H2 will surface it). (#6)
   W2  earn/sol-trade = `BlockRunAI/Franklin-Trading` same shape: setup → run → watch. (#17)
   W3  REMOVE claude-p human-in-loop (Dais 2026-07-04): claude-p loops burn a human subscription = human in
        the loop. Migrate earner loops to the AI's OWN x402/BlockRun-paid runtime so the fuel is the AI's
